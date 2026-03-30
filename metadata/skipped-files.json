@@ -1,5 +1,5 @@
 {
-  "total_skipped": 1003,
+  "total_skipped": 1036,
   "files": [
     {
       "title": "第 10 章：内存性能",
@@ -12802,6 +12802,574 @@
       "path": "Cubox/Claude Code 浏览器自动化方案，怎么选？-2026-01-28.md",
       "scores": 10,
       "reason": "no_chapter_match"
+    },
+    {
+      "file": "Claude Code 订阅费太贵？这个工具让你0成本用上 Claude 和 Gemini-2026-01-06.md",
+      "score": 3,
+      "reason": "AI工具介绍，非Android技术"
+    },
+    {
+      "file": "Claude Code之父：Claude Code是怎么被创造出来的？-哔哩哔哩-2025-12-09.md",
+      "score": 2,
+      "reason": "AI工具视频，非Android"
+    },
+    {
+      "file": "Claude Code推荐的终端 - Ghostty-2026-03-29.md",
+      "score": 2,
+      "reason": "AI终端工具，非Android"
+    },
+    {
+      "file": "Claude for Chrome 一手体验-2025-09-06.md",
+      "score": 2,
+      "reason": "AI浏览器扩展，非Android"
+    },
+    {
+      "file": "Claude刚登顶，OpenAI就放出24小时不休息的编程AI-2025-12-06.md",
+      "score": 2,
+      "reason": "AI行业新闻，非Android"
+    },
+    {
+      "file": "Claude悄悄更新了Skills生成器-2026-03-12.md",
+      "score": 2,
+      "reason": "AI工具更新，非Android"
+    },
+    {
+      "file": "Clean 架构下的现代 Android 架构指南-2023-12-04.md",
+      "score": 8,
+      "reason": "与2024版重复且更旧，相关性3+深度2+时效3+可验证0"
+    },
+    {
+      "file": "Cloudflare从入门到精通-2024-08-11.md",
+      "score": 2,
+      "reason": "网络基础设施，非Android"
+    },
+    {
+      "file": "Codex迎来史诗级升级-2025-09-16.md",
+      "score": 2,
+      "reason": "AI编程工具，非Android"
+    },
+    {
+      "file": "Coffee vs. tea smackdown-2022-12-14.md",
+      "score": 1,
+      "reason": "完全无关"
+    },
+    {
+      "file": "Colored Logcat Message in Android Studio-2022-02-28.md",
+      "score": 9,
+      "reason": "logcat工具技巧，深度不足"
+    },
+    {
+      "file": "Commander 2023 Wallpaper & T-Shirts-2023-04-07.md",
+      "score": 1,
+      "reason": "完全无关"
+    },
+    {
+      "file": "Compose Multiplatform iOS 稳定版发布-2025-05-08.md",
+      "score": 6,
+      "reason": "产品发布新闻，无技术深度"
+    },
+    {
+      "file": "Compose Multiplatform for iOS 稳定版已经发布-2025-05-07.md",
+      "score": 6,
+      "reason": "产品发布新闻，与上方重复"
+    },
+    {
+      "file": "Compose and Conquer-2024-01-18.md",
+      "score": 9,
+      "reason": "Compose导航入门，深度不足"
+    },
+    {
+      "file": "Compose 中的 ViewPager 详解-2022-07-01.md",
+      "score": 7,
+      "reason": "UI组件使用教程，无性能/架构深度"
+    },
+    {
+      "file": "Compose 为什么可以跨平台-2023-07-19.md",
+      "score": 7,
+      "reason": "概念科普，无技术深度"
+    },
+    {
+      "file": "Compose 的 State 状态到底是个啥-2022-03-08.md",
+      "score": 7,
+      "reason": "基础概念介绍，无深度"
+    },
+    {
+      "file": "Comprehensive Guide Location-2025-03-03.md",
+      "score": 6,
+      "reason": "定位API教程，偏应用层"
+    },
+    {
+      "file": "Context Engineering for AI Agents-2025-07-19.md",
+      "score": 3,
+      "reason": "AI Agent设计，非Android"
+    },
+    {
+      "file": "Culture & society-2023-12-27.md",
+      "score": 1,
+      "reason": "完全无关"
+    },
+    {
+      "file": "Cursor 常用提示词手册-2024-12-30.md",
+      "score": 2,
+      "reason": "AI工具提示词，非Android"
+    },
+    {
+      "file": "Cursor 深度评测-2024-12-31.md",
+      "score": 2,
+      "reason": "AI工具评测，非Android"
+    },
+    {
+      "file": "Cursor+Claude3.7的绝杀-2025-03-02.md",
+      "score": 2,
+      "reason": "AI工具，非Android"
+    },
+    {
+      "file": "Cursor 每秒1000 Token编辑文件-2025-02-16.md",
+      "score": 2,
+      "reason": "AI工具，非Android"
+    },
+    {
+      "file": "Cursor｜软件开发行业新变革-2024-09-11.md",
+      "score": 2,
+      "reason": "AI工具评论，非Android"
+    },
+    {
+      "file": "CyberClip #46 智能共生-2023-12-16.md",
+      "score": 2,
+      "reason": "科技哲学，非Android"
+    },
+    {
+      "file": "CyberClip #49 如何提出好问题-2024-01-21.md",
+      "score": 2,
+      "reason": "方法论，非Android"
+    },
+    {
+      "file": "DPS 周刊 184 - 张忠谋的洞见-2025-02-09.md",
+      "score": 2,
+      "reason": "商业人物，非Android"
+    },
+    {
+      "file": "Daily Productive Sharing 1162-2025-01-29.md",
+      "score": 2,
+      "reason": "AGI思考，非Android"
+    },
+    {
+      "file": "Dalvik, ART, JIT, AOT (2025版)-2025-03-08.md",
+      "score": 8,
+      "reason": "与2024版重复"
+    },
+    {
+      "file": "Dart 2.17 现已发布-2022-05-16.md",
+      "score": 5,
+      "reason": "语言版本发布新闻"
+    },
+    {
+      "file": "Dart 3.8发布-2025-05-22.md",
+      "score": 5,
+      "reason": "语言版本发布新闻"
+    },
+    {
+      "file": "Claude Code 订阅费太贵-2026-01-06.md",
+      "score": 3,
+      "reason": "AI工具介绍，非Android技术"
+    },
+    {
+      "file": "Claude Code之父-2025-12-09.md",
+      "score": 2,
+      "reason": "AI工具视频，非Android"
+    },
+    {
+      "file": "Claude Code推荐的终端 Ghostty-2026-03-29.md",
+      "score": 2,
+      "reason": "AI终端工具，非Android"
+    },
+    {
+      "file": "Claude for Chrome-2025-09-06.md",
+      "score": 2,
+      "reason": "AI浏览器扩展，非Android"
+    },
+    {
+      "file": "Claude刚登顶-2025-12-06.md",
+      "score": 2,
+      "reason": "AI行业新闻，非Android"
+    },
+    {
+      "file": "Claude悄悄更新了Skills生成器-2026-03-12.md",
+      "score": 2,
+      "reason": "AI工具更新，非Android"
+    },
+    {
+      "file": "Clean 架构指南(2023旧版)-2023-12-04.md",
+      "score": 8,
+      "reason": "与2024版重复且更旧"
+    },
+    {
+      "file": "Cloudflare从入门到精通-2024-08-11.md",
+      "score": 2,
+      "reason": "网络基础设施，非Android"
+    },
+    {
+      "file": "Codex迎来史诗级升级-2025-09-16.md",
+      "score": 2,
+      "reason": "AI编程工具，非Android"
+    },
+    {
+      "file": "Coffee vs tea smackdown-2022-12-14.md",
+      "score": 1,
+      "reason": "完全无关"
+    },
+    {
+      "file": "Colored Logcat Message-2022-02-28.md",
+      "score": 9,
+      "reason": "logcat技巧，深度不足"
+    },
+    {
+      "file": "Commander 2023 Wallpaper-2023-04-07.md",
+      "score": 1,
+      "reason": "完全无关"
+    },
+    {
+      "file": "Compose Multiplatform iOS稳定版-2025-05-08.md",
+      "score": 6,
+      "reason": "产品发布新闻，无技术深度"
+    },
+    {
+      "file": "Compose Multiplatform for iOS-2025-05-07.md",
+      "score": 6,
+      "reason": "产品发布新闻，重复"
+    },
+    {
+      "file": "Compose and Conquer-2024-01-18.md",
+      "score": 9,
+      "reason": "Compose导航入门，深度不足"
+    },
+    {
+      "file": "Compose ViewPager详解-2022-07-01.md",
+      "score": 7,
+      "reason": "UI组件教程，无性能深度"
+    },
+    {
+      "file": "Compose为什么可以跨平台-2023-07-19.md",
+      "score": 7,
+      "reason": "概念科普，无技术深度"
+    },
+    {
+      "file": "Compose State状态-2022-03-08.md",
+      "score": 7,
+      "reason": "基础概念介绍，无深度"
+    },
+    {
+      "file": "Get User Location Compose-2025-03-03.md",
+      "score": 6,
+      "reason": "定位API教程，偏应用层"
+    },
+    {
+      "file": "Context Engineering AI Agents-2025-07-19.md",
+      "score": 3,
+      "reason": "AI Agent设计，非Android"
+    },
+    {
+      "file": "Culture & society-2023-12-27.md",
+      "score": 1,
+      "reason": "完全无关"
+    },
+    {
+      "file": "Cursor常用提示词手册-2024-12-30.md",
+      "score": 2,
+      "reason": "AI工具，非Android"
+    },
+    {
+      "file": "Cursor深度评测-2024-12-31.md",
+      "score": 2,
+      "reason": "AI工具，非Android"
+    },
+    {
+      "file": "Cursor+Claude3.7绝杀-2025-03-02.md",
+      "score": 2,
+      "reason": "AI工具，非Android"
+    },
+    {
+      "file": "Cursor每秒1000Token-2025-02-16.md",
+      "score": 2,
+      "reason": "AI工具，非Android"
+    },
+    {
+      "file": "Cursor软件开发行业新变革-2024-09-11.md",
+      "score": 2,
+      "reason": "AI工具评论，非Android"
+    },
+    {
+      "file": "CyberClip #46 智能共生-2023-12-16.md",
+      "score": 2,
+      "reason": "科技哲学，非Android"
+    },
+    {
+      "file": "CyberClip #49 如何提出好问题-2024-01-21.md",
+      "score": 2,
+      "reason": "方法论，非Android"
+    },
+    {
+      "file": "DPS 周刊 184-2025-02-09.md",
+      "score": 2,
+      "reason": "商业人物，非Android"
+    },
+    {
+      "file": "Daily Productive Sharing 1162-2025-01-29.md",
+      "score": 2,
+      "reason": "AGI思考，非Android"
+    },
+    {
+      "file": "Dalvik ART JIT AOT(2025重复版)-2025-03-08.md",
+      "score": 8,
+      "reason": "与2024版重复"
+    },
+    {
+      "file": "Dart 2.17发布-2022-05-16.md",
+      "score": 5,
+      "reason": "语言版本发布新闻"
+    },
+    {
+      "file": "Dart 3.8发布-2025-05-22.md",
+      "score": 5,
+      "reason": "语言版本发布新闻"
+    },
+    {
+      "path": "Cubox/FastNative  -  Android Developers-2024-01-08.md",
+      "title": "FastNative  |  Android Developers",
+      "total_score": 11,
+      "reason": "低相关性",
+      "indexed_at": "2026-03-30T23:18:45.896333"
+    },
+    {
+      "path": "Cubox/Faster. Better. More focused. Reading.-2022-05-19.md",
+      "title": "Faster. Better. More focused. Reading.",
+      "total_score": 7,
+      "reason": "低相关性",
+      "indexed_at": "2026-03-30T23:18:45.896463"
+    },
+    {
+      "path": "Cubox/Fine-tuning - OpenAI API-2023-04-03.md",
+      "title": "Fine-tuning - OpenAI API",
+      "total_score": 10,
+      "reason": "低相关性",
+      "indexed_at": "2026-03-30T23:18:45.896707"
+    },
+    {
+      "path": "Cubox/Firebase Crashlytics 近期更新 - 在 Android Studio 中更好地调试应用-2022-08-30.md",
+      "title": "Firebase Crashlytics 近期更新 | 在 Android Studio 中更好地调试应用",
+      "total_score": 8,
+      "reason": "低相关性",
+      "indexed_at": "2026-03-30T23:18:45.896860"
+    },
+    {
+      "path": "Cubox/First Step for web developper - 使用Instruments了解iOS应用启动时长（Xcode13）-2022-05-22.md",
+      "title": "First Step for web developper | 使用Instruments了解iOS应用启动时长（Xcode13）",
+      "total_score": 8,
+      "reason": "低相关性",
+      "indexed_at": "2026-03-30T23:18:45.897012"
+    },
+    {
+      "path": "Cubox/First steps with Jetpack Glance for App Widgets - by Igor Escodro - Jan, 2022 - ProAndroidDev-2022-0.md",
+      "title": "First steps with Jetpack Glance for App Widgets | by Igor Escodro | Jan, 2022 | ProAndroidDev",
+      "total_score": 8,
+      "reason": "低相关性",
+      "indexed_at": "2026-03-30T23:18:45.897143"
+    },
+    {
+      "path": "Cubox/Fixing Performance Regressions Before they Happen - by Netflix Technology Blog - Jan, 2022 - Netflix.md",
+      "title": "Fixing Performance Regressions Before they Happen | by Netflix Technology Blog | Jan, 2022 | Netflix",
+      "total_score": 8,
+      "reason": "低相关性",
+      "indexed_at": "2026-03-30T23:18:45.897301"
+    },
+    {
+      "path": "Cubox/Flow 转 LiveData 后数据丢了，肿么回事？-2023-01-09.md",
+      "title": "Flow 转 LiveData 后数据丢了，肿么回事？",
+      "total_score": 8,
+      "reason": "低相关性",
+      "indexed_at": "2026-03-30T23:18:45.897556"
+    },
+    {
+      "path": "Cubox/FlowSpeech：第一个书面语转口语的 TTS-2025-08-08.md",
+      "title": "FlowSpeech：第一个书面语转口语的 TTS",
+      "total_score": 9,
+      "reason": "低相关性",
+      "indexed_at": "2026-03-30T23:18:45.897701"
+    },
+    {
+      "path": "Cubox/Fluid - Hexo-2023-12-06.md",
+      "title": "Fluid - Hexo",
+      "total_score": 8,
+      "reason": "低相关性",
+      "indexed_at": "2026-03-30T23:18:45.897844"
+    },
+    {
+      "path": "Cubox/Flutter  双向聊天列表效果进阶优化-2022-03-15.md",
+      "title": "Flutter  双向聊天列表效果进阶优化",
+      "total_score": 7,
+      "reason": "低相关性",
+      "indexed_at": "2026-03-30T23:18:45.897983"
+    },
+    {
+      "path": "Cubox/Flutter + Dart三端一体化动态化平台实践-2023-02-21.md",
+      "title": "Flutter + Dart三端一体化动态化平台实践",
+      "total_score": 8,
+      "reason": "低相关性",
+      "indexed_at": "2026-03-30T23:18:45.898139"
+    },
+    {
+      "path": "Cubox/Flutter - 聊天面板库动画生硬？这次让你丝滑个够这次的更新主要是带来了自定义底部容器的功能，即容器的结构可完全由 - 掘金-2025-07-21.md",
+      "title": "Flutter - 聊天面板库动画生硬？这次让你丝滑个够这次的更新主要是带来了自定义底部容器的功能，即容器的结构可完全由 - 掘金",
+      "total_score": 9,
+      "reason": "低相关性",
+      "indexed_at": "2026-03-30T23:18:45.898297"
+    },
+    {
+      "path": "Cubox/Flutter 2.10 - 一文解读重点更新-2022-02-18.md",
+      "title": "Flutter 2.10 | 一文解读重点更新",
+      "total_score": 9,
+      "reason": "低相关性",
+      "indexed_at": "2026-03-30T23:18:45.898454"
+    },
+    {
+      "path": "Cubox/Flutter 2025 年产品路线图发布这份路线图是我们希望实现的愿景目标，主要由我们这些在 Google 任职、从事 - 掘金-2025-04-13.md",
+      "title": "Flutter 2025 年产品路线图发布这份路线图是我们希望实现的愿景目标，主要由我们这些在 Google 任职、从事 - 掘金",
+      "total_score": 9,
+      "reason": "低相关性",
+      "indexed_at": "2026-03-30T23:18:45.898608"
+    },
+    {
+      "path": "Cubox/Flutter 3.0 之 PlatformView ：告别 VirtualDisplay ，拥抱 TextureLayer-2022-05-17.md",
+      "title": "Flutter 3.0 之 PlatformView ：告别 VirtualDisplay ，拥抱 TextureLayer",
+      "total_score": 9,
+      "reason": "低相关性",
+      "indexed_at": "2026-03-30T23:18:45.898751"
+    },
+    {
+      "path": "Cubox/Flutter 3.0 发布啦～快来看看有什么新功能-2022 Google I-O-2022-05-12.md",
+      "title": "Flutter 3.0 发布啦～快来看看有什么新功能-2022 Google I/O",
+      "total_score": 10,
+      "reason": "低相关性",
+      "indexed_at": "2026-03-30T23:18:45.898897"
+    },
+    {
+      "path": "Cubox/Flutter 3.22 发布，快来看看有什么更新吧？-2024-05-15.md",
+      "title": "Flutter 3.22 发布，快来看看有什么更新吧？",
+      "total_score": 10,
+      "reason": "低相关性",
+      "indexed_at": "2026-03-30T23:18:45.899048"
+    },
+    {
+      "path": "Cubox/Flutter 3.24 发布啦，快来看重磅更新-2024-08-07.md",
+      "title": "Flutter 3.24 发布啦，快来看重磅更新",
+      "total_score": 10,
+      "reason": "低相关性",
+      "indexed_at": "2026-03-30T23:18:45.899193"
+    },
+    {
+      "path": "Cubox/Flutter 3.27 发布啦，快来看有什么更新吧-2024-12-13.md",
+      "title": "Flutter 3.27 发布啦，快来看有什么更新吧",
+      "total_score": 10,
+      "reason": "低相关性",
+      "indexed_at": "2026-03-30T23:18:45.899349"
+    },
+    {
+      "path": "Cubox/Flutter 3.3 之 SelectionArea 好不好用？用 -Bug- 带您全面了解它 - 开发者说·DTalk-2022-10-21.md",
+      "title": "Flutter 3.3 之 SelectionArea 好不好用？用 \"Bug\" 带您全面了解它 | 开发者说·DTalk",
+      "total_score": 9,
+      "reason": "低相关性",
+      "indexed_at": "2026-03-30T23:18:45.899507"
+    },
+    {
+      "path": "Cubox/Flutter 3.3 之 SelectionArea 好不好用？用 “Bug” 带你全面了解它-2022-09-07.md",
+      "title": "Flutter 3.3 之 SelectionArea 好不好用？用 “Bug” 带你全面了解它",
+      "total_score": 9,
+      "reason": "低相关性",
+      "indexed_at": "2026-03-30T23:18:45.899658"
+    },
+    {
+      "path": "Cubox/Flutter Android 逆向介绍-2024-05-09.md",
+      "title": "Flutter Android 逆向介绍",
+      "total_score": 9,
+      "reason": "低相关性",
+      "indexed_at": "2026-03-30T23:18:45.899790"
+    },
+    {
+      "path": "Cubox/Flutter App Architecture with Riverpod- An Introduction-2022-03-19.md",
+      "title": "Flutter App Architecture with Riverpod: An Introduction",
+      "total_score": 9,
+      "reason": "低相关性",
+      "indexed_at": "2026-03-30T23:18:45.899912"
+    },
+    {
+      "path": "Cubox/Flutter TolyUI 框架#05 - 树形菜单设计-2024-05-23.md",
+      "title": "Flutter TolyUI 框架#05 | 树形菜单设计",
+      "total_score": 10,
+      "reason": "低相关性",
+      "indexed_at": "2026-03-30T23:18:45.900329"
+    },
+    {
+      "path": "Cubox/Flutter Web 的发展历程：Dart、Flutter 与 WasmGC-2025-07-17.md",
+      "title": "Flutter Web 的发展历程：Dart、Flutter 与 WasmGC",
+      "total_score": 9,
+      "reason": "低相关性",
+      "indexed_at": "2026-03-30T23:18:45.900472"
+    },
+    {
+      "path": "Cubox/Flutter for Web 首次首屏优化——JS 分片优化-2022-11-30.md",
+      "title": "Flutter for Web 首次首屏优化——JS 分片优化",
+      "total_score": 9,
+      "reason": "低相关性",
+      "indexed_at": "2026-03-30T23:18:45.900624"
+    },
+    {
+      "path": "Cubox/Flutter 上了 Apple 第三方重大列表，2024 春季 iOS 的隐私清单究竟是什么？ -...-2023-12-25.md",
+      "title": "Flutter 上了 Apple 第三方重大列表，2024 春季 iOS 的隐私清单究竟是什么？ -...",
+      "total_score": 10,
+      "reason": "低相关性",
+      "indexed_at": "2026-03-30T23:18:45.900776"
+    },
+    {
+      "path": "Cubox/Flutter 上字体的另类玩法：FontFeature-2022-03-25.md",
+      "title": "Flutter 上字体的另类玩法：FontFeature",
+      "total_score": 7,
+      "reason": "低相关性",
+      "indexed_at": "2026-03-30T23:18:45.900909"
+    },
+    {
+      "path": "Cubox/Flutter 上的 Platform 和 UI 线程合并是怎么回事？它会带来什么？-2025-02-24.md",
+      "title": "Flutter 上的 Platform 和 UI 线程合并是怎么回事？它会带来什么？",
+      "total_score": 9,
+      "reason": "低相关性",
+      "indexed_at": "2026-03-30T23:18:45.901048"
+    },
+    {
+      "path": "Cubox/Flutter 与 Dart 的市场应用-2024-05-03.md",
+      "title": "Flutter 与 Dart 的市场应用",
+      "total_score": 8,
+      "reason": "低相关性",
+      "indexed_at": "2026-03-30T23:18:45.901247"
+    },
+    {
+      "path": "Cubox/Flutter 全埋点的实现｜得物技术-2023-12-13.md",
+      "title": "Flutter 全埋点的实现｜得物技术",
+      "total_score": 8,
+      "reason": "低相关性",
+      "indexed_at": "2026-03-30T23:18:45.901402"
+    },
+    {
+      "path": "Cubox/Flutter 启动页的前世今生适配历程-2022-11-22.md",
+      "title": "Flutter 启动页的前世今生适配历程",
+      "total_score": 9,
+      "reason": "总分不足",
+      "indexed_at": "2026-03-30T23:18:45.901541"
+    },
+    {
+      "path": "Cubox/Flutter 在全新 Platform 和 UI 线程合并后，出现了什么大坑和变化？-2025-04-24.md",
+      "title": "Flutter 在全新 Platform 和 UI 线程合并后，出现了什么大坑和变化？",
+      "total_score": 9,
+      "reason": "低相关性",
+      "indexed_at": "2026-03-30T23:18:45.901823"
     }
   ]
 }

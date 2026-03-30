@@ -1,24 +1,39 @@
 {
-  "total_files": 4323,
-  "indexed_files": 201,
+  "total_files": 241,
+  "indexed_files": 241,
   "chapters_distribution": {
-    "ch01-架构": 16,
-    "ch02-进程": 5,
-    "ch03-线程": 15,
-    "ch04-启动": 5,
-    "ch05-渲染": 44,
-    "ch06-功耗": 1,
-    "ch07-内存": 19,
-    "ch08-存储": 2,
-    "ch09-网络": 1,
-    "ch10-包体积": 2,
-    "ch11-Profiling": 11,
+    "待定": 1,
+    "ch05-渲染": 47,
+    "ch04-启动": 6,
     "ch12-安全": 7,
+    "ch01-架构": 16,
     "ch13-调度": 28,
-    "ch14-工具": 13,
+    "ch03-线程": 16,
+    "ch07-内存": 19,
+    "ch11-Profiling": 13,
+    "ch09-网络": 1,
     "ch15-Kotlin": 5,
+    "ch14-工具": 14,
+    "ch02-进程": 5,
+    "ch06": 4,
+    "ch04": 8,
+    "ch12": 3,
+    "ch01": 18,
+    "ch08": 3,
+    "ch03": 5,
+    "ch15": 5,
+    "ch13": 2,
+    "ch02": 3,
+    "ch11": 1,
+    "ch07": 5,
+    "ch05": 13,
     "ch16-构建": 6,
-    "ch17-新版本": 2
+    "ch17-新版本": 2,
+    "ch10-包体积": 2,
+    "ch08-存储": 3,
+    "ch06-功耗": 1,
+    "ch16": 2,
+    "ch14": 2
   },
   "files": [
     {
@@ -3961,7 +3976,859 @@
         }
       ],
       "indexed_at": "2026-03-30T22:18:58.159805"
+    },
+    {
+      "title": "Clean 架构下的现代 Android 架构指南",
+      "path": "Cubox/Clean 架构下的现代 Android 架构指南 - 开发者说·DTalk-2024-01-26.md",
+      "scores": {
+        "relevance": 3,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 2
+      },
+      "total": 11,
+      "quality": "medium",
+      "chapters": [
+        {
+          "id": "ch01",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "按Clean架构思想介绍Android应用开发的关键模块概念及依赖关系处理"
+    },
+    {
+      "title": "ColorOS 动画曲线粗浅分析",
+      "path": "Cubox/ColorOS 动画曲线粗浅分析：为何有的地方怪，怪在哪里？ - 少数派-2025-03-03.md",
+      "scores": {
+        "relevance": 4,
+        "depth": 4,
+        "timeliness": 4,
+        "verifiability": 3
+      },
+      "total": 15,
+      "quality": "medium",
+      "chapters": [
+        {
+          "id": "ch05",
+          "confidence": "high"
+        }
+      ],
+      "summary": "分析ColorOS动画曲线实现细节，解释部分场景动画不自然的根因"
+    },
+    {
+      "title": "Compose Multiplatform Skia 对比 Flutter Impeller",
+      "path": "Cubox/Compose Multiplatform Skia 对比 Flutter Impeller ，都是跨平台自绘有什么差异 - 掘金-2025-05-28.md",
+      "scores": {
+        "relevance": 4,
+        "depth": 4,
+        "timeliness": 5,
+        "verifiability": 4
+      },
+      "total": 17,
+      "quality": "high",
+      "chapters": [
+        {
+          "id": "ch05",
+          "confidence": "high"
+        }
+      ],
+      "summary": "对比Compose Multiplatform Skia与Flutter Impeller两大跨平台自绘渲染引擎的架构差异"
+    },
+    {
+      "title": "Compose Performance Review",
+      "path": "Cubox/Compose Performance Review-2025-12-11.md",
+      "scores": {
+        "relevance": 5,
+        "depth": 4,
+        "timeliness": 5,
+        "verifiability": 4
+      },
+      "total": 18,
+      "quality": "high",
+      "chapters": [
+        {
+          "id": "ch05",
+          "confidence": "high"
+        },
+        {
+          "id": "ch15",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "逐步分析Compose重组要点与性能优化关键，涵盖recomposition避坑实践"
+    },
+    {
+      "title": "Compose 与 AGP、KGP 的关系",
+      "path": "Cubox/Compose 与 AGP、KGP 的关系-2022-07-12.md",
+      "scores": {
+        "relevance": 3,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "total": 12,
+      "quality": "medium",
+      "chapters": [
+        {
+          "id": "ch16",
+          "confidence": "medium"
+        },
+        {
+          "id": "ch01",
+          "confidence": "low"
+        }
+      ],
+      "summary": "梳理Compose、AGP、KGP版本对应关系，解释构建工具链依赖"
+    },
+    {
+      "title": "Compose 与原生 UI 混排原理解析",
+      "path": "Cubox/Compose 与原生 UI 混排原理解析前言 在跨平台开发中，尽管 Compose Multiplatform 提供了 - 掘金-2025-02-09.md",
+      "scores": {
+        "relevance": 3,
+        "depth": 4,
+        "timeliness": 5,
+        "verifiability": 3
+      },
+      "total": 15,
+      "quality": "medium",
+      "chapters": [
+        {
+          "id": "ch05",
+          "confidence": "high"
+        },
+        {
+          "id": "ch01",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "解析Compose Multiplatform与平台原生UI组件混排的底层原理与协同开发方式"
+    },
+    {
+      "title": "Compose 与原生启动性能对比",
+      "path": "Cubox/Compose 与原生启动性能对比-2022-07-15.md",
+      "scores": {
+        "relevance": 5,
+        "depth": 4,
+        "timeliness": 3,
+        "verifiability": 4
+      },
+      "total": 16,
+      "quality": "high",
+      "chapters": [
+        {
+          "id": "ch04",
+          "confidence": "high"
+        },
+        {
+          "id": "ch05",
+          "confidence": "high"
+        }
+      ],
+      "summary": "实测对比Compose与原生View的启动性能数据，分析Compose启动开销根因"
+    },
+    {
+      "title": "Compose 纪元下的 Android 生命周期感知",
+      "path": "Cubox/Compose 纪元下的 Android 生命周期感知-2023-09-25.md",
+      "scores": {
+        "relevance": 4,
+        "depth": 4,
+        "timeliness": 4,
+        "verifiability": 4
+      },
+      "total": 16,
+      "quality": "high",
+      "chapters": [
+        {
+          "id": "ch01",
+          "confidence": "high"
+        },
+        {
+          "id": "ch02",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "总结Compose中LiveData/StateFlow/mutableStateOf等数据类在不同UI框架下的生命周期处理"
+    },
+    {
+      "title": "Consuming flows safely in Jetpack Compose",
+      "path": "Cubox/Consuming flows safely in Jetpack Compose - by Manuel Vivo - Android Developers - Aug, 2022 - Medium.md",
+      "scores": {
+        "relevance": 3,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "total": 12,
+      "quality": "medium",
+      "chapters": [
+        {
+          "id": "ch15",
+          "confidence": "high"
+        },
+        {
+          "id": "ch03",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "官方指南讲解在Jetpack Compose中安全消费Flow的最佳实践"
+    },
+    {
+      "title": "Core 文件损坏还能补救吗",
+      "path": "Cubox/Core 文件损坏还能补救吗？有的兄弟，有的。 - 掘金-2025-02-25.md",
+      "scores": {
+        "relevance": 3,
+        "depth": 4,
+        "timeliness": 5,
+        "verifiability": 4
+      },
+      "total": 16,
+      "quality": "high",
+      "chapters": [
+        {
+          "id": "ch14",
+          "confidence": "high"
+        },
+        {
+          "id": "ch07",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "介绍Core dump文件损坏或截断后的补救方法与调试技巧"
+    },
+    {
+      "title": "CriticalNative",
+      "path": "Cubox/CriticalNative  -  Android Developers-2024-01-08.md",
+      "scores": {
+        "relevance": 4,
+        "depth": 4,
+        "timeliness": 4,
+        "verifiability": 5
+      },
+      "total": 17,
+      "quality": "high",
+      "chapters": [
+        {
+          "id": "ch01",
+          "confidence": "high"
+        },
+        {
+          "id": "ch07",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Android官方CriticalNative注解文档，优化JNI调用开销的底层机制"
+    },
+    {
+      "title": "Customize WorkManager with AppStartup & Hilt",
+      "path": "Cubox/Customize WorkManager with AppStartup & Hilt-2022-07-20.md",
+      "scores": {
+        "relevance": 4,
+        "depth": 4,
+        "timeliness": 3,
+        "verifiability": 4
+      },
+      "total": 15,
+      "quality": "medium",
+      "chapters": [
+        {
+          "id": "ch06",
+          "confidence": "high"
+        },
+        {
+          "id": "ch04",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "使用AppStartup库优化WorkManager初始化性能的最佳实践"
+    },
+    {
+      "title": "DRM生态以及架构介绍",
+      "path": "Cubox/DRM(Digital Rights Management)生态以及架构介绍-2025-04-11.md",
+      "scores": {
+        "relevance": 3,
+        "depth": 4,
+        "timeliness": 5,
+        "verifiability": 3
+      },
+      "total": 15,
+      "quality": "medium",
+      "chapters": [
+        {
+          "id": "ch12",
+          "confidence": "high"
+        }
+      ],
+      "summary": "介绍Android DRM数字版权管理生态架构与关键技术组件"
+    },
+    {
+      "title": "Dalvik, ART, JIT, and AOT in Android",
+      "path": "Cubox/Dalvik, ART, JIT, and AOT in Android-2024-01-31.md",
+      "scores": {
+        "relevance": 5,
+        "depth": 4,
+        "timeliness": 4,
+        "verifiability": 4
+      },
+      "total": 17,
+      "quality": "high",
+      "chapters": [
+        {
+          "id": "ch01",
+          "confidence": "high"
+        },
+        {
+          "id": "ch04",
+          "confidence": "high"
+        }
+      ],
+      "summary": "系统讲解Android运行时演进：Dalvik→ART、JIT→AOT编译机制与性能影响"
+    },
+    {
+      "title": "Dart 单线程异步模型：从原理到工程实践",
+      "path": "Cubox/Dart 单线程异步模型：从原理到工程实践的系统化解析深入探讨 Dart 单线程异步模型，通过非阻塞 I-O 与事件循环 - 掘金-2025-04-13.md",
+      "scores": {
+        "relevance": 3,
+        "depth": 4,
+        "timeliness": 5,
+        "verifiability": 4
+      },
+      "total": 16,
+      "quality": "high",
+      "chapters": [
+        {
+          "id": "ch03",
+          "confidence": "high"
+        }
+      ],
+      "summary": "深入Dart事件循环双队列架构、执行流程及任务优先级机制"
+    },
+    {
+      "title": "DataStore and synchronous work",
+      "path": "Cubox/DataStore and synchronous work. In the following posts from our Jetpack… - by Simona Stojanovic - An.md",
+      "scores": {
+        "relevance": 3,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "total": 12,
+      "quality": "medium",
+      "chapters": [
+        {
+          "id": "ch08",
+          "confidence": "high"
+        }
+      ],
+      "summary": "官方指南讲解DataStore同步操作的最佳实践与注意事项"
+    },
+    {
+      "title": "Compose 渲染性能到底怎么样",
+      "path": "Cubox/Compose 渲染性能到底怎么样--2022-04-26.md",
+      "scores": {
+        "relevance": 5,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "total": 14,
+      "quality": "medium",
+      "chapters": [
+        {
+          "id": "ch05",
+          "confidence": "high"
+        }
+      ],
+      "summary": "实测评估Compose渲染性能表现，与原生View渲染对比分析"
+    },
+    {
+      "title": "Clean 架构下的现代 Android 架构指南",
+      "path": "Cubox/Clean 架构下的现代 Android 架构指南 - 开发者说·DTalk-2024-01-26.md",
+      "scores": {
+        "relevance": 3,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 2
+      },
+      "total": 11,
+      "quality": "medium",
+      "chapters": [
+        {
+          "id": "ch01",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "按Clean架构思想介绍Android应用开发的关键模块概念及依赖关系处理"
+    },
+    {
+      "title": "ColorOS 动画曲线粗浅分析",
+      "path": "Cubox/ColorOS 动画曲线粗浅分析：为何有的地方怪，怪在哪里？ - 少数派-2025-03-03.md",
+      "scores": {
+        "relevance": 4,
+        "depth": 4,
+        "timeliness": 4,
+        "verifiability": 3
+      },
+      "total": 15,
+      "quality": "medium",
+      "chapters": [
+        {
+          "id": "ch05",
+          "confidence": "high"
+        }
+      ],
+      "summary": "分析ColorOS动画曲线实现细节，解释部分场景动画不自然的根因"
+    },
+    {
+      "title": "Compose Multiplatform Skia 对比 Flutter Impeller",
+      "path": "Cubox/Compose Multiplatform Skia 对比 Flutter Impeller ，都是跨平台自绘有什么差异 - 掘金-2025-05-28.md",
+      "scores": {
+        "relevance": 4,
+        "depth": 4,
+        "timeliness": 5,
+        "verifiability": 4
+      },
+      "total": 17,
+      "quality": "high",
+      "chapters": [
+        {
+          "id": "ch05",
+          "confidence": "high"
+        }
+      ],
+      "summary": "对比Compose Multiplatform Skia与Flutter Impeller两大跨平台自绘渲染引擎的架构差异"
+    },
+    {
+      "title": "Compose Performance Review",
+      "path": "Cubox/Compose Performance Review-2025-12-11.md",
+      "scores": {
+        "relevance": 5,
+        "depth": 4,
+        "timeliness": 5,
+        "verifiability": 4
+      },
+      "total": 18,
+      "quality": "high",
+      "chapters": [
+        {
+          "id": "ch05",
+          "confidence": "high"
+        },
+        {
+          "id": "ch15",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "逐步分析Compose重组要点与性能优化关键，涵盖recomposition避坑实践"
+    },
+    {
+      "title": "Compose 与 AGP、KGP 的关系",
+      "path": "Cubox/Compose 与 AGP、KGP 的关系-2022-07-12.md",
+      "scores": {
+        "relevance": 3,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "total": 12,
+      "quality": "medium",
+      "chapters": [
+        {
+          "id": "ch16",
+          "confidence": "medium"
+        },
+        {
+          "id": "ch01",
+          "confidence": "low"
+        }
+      ],
+      "summary": "梳理Compose、AGP、KGP版本对应关系，解释构建工具链依赖"
+    },
+    {
+      "title": "Compose 与原生 UI 混排原理解析",
+      "path": "Cubox/Compose 与原生 UI 混排原理解析前言 在跨平台开发中，尽管 Compose Multiplatform 提供了 - 掘金-2025-02-09.md",
+      "scores": {
+        "relevance": 3,
+        "depth": 4,
+        "timeliness": 5,
+        "verifiability": 3
+      },
+      "total": 15,
+      "quality": "medium",
+      "chapters": [
+        {
+          "id": "ch05",
+          "confidence": "high"
+        },
+        {
+          "id": "ch01",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "解析Compose Multiplatform与平台原生UI组件混排的底层原理与协同开发方式"
+    },
+    {
+      "title": "Compose 与原生启动性能对比",
+      "path": "Cubox/Compose 与原生启动性能对比-2022-07-15.md",
+      "scores": {
+        "relevance": 5,
+        "depth": 4,
+        "timeliness": 3,
+        "verifiability": 4
+      },
+      "total": 16,
+      "quality": "high",
+      "chapters": [
+        {
+          "id": "ch04",
+          "confidence": "high"
+        },
+        {
+          "id": "ch05",
+          "confidence": "high"
+        }
+      ],
+      "summary": "实测对比Compose与原生View的启动性能数据，分析Compose启动开销根因"
+    },
+    {
+      "title": "Compose 纪元下的 Android 生命周期感知",
+      "path": "Cubox/Compose 纪元下的 Android 生命周期感知-2023-09-25.md",
+      "scores": {
+        "relevance": 4,
+        "depth": 4,
+        "timeliness": 4,
+        "verifiability": 4
+      },
+      "total": 16,
+      "quality": "high",
+      "chapters": [
+        {
+          "id": "ch01",
+          "confidence": "high"
+        },
+        {
+          "id": "ch02",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "总结Compose中LiveData/StateFlow/mutableStateOf等数据类在不同UI框架下的生命周期处理"
+    },
+    {
+      "title": "Consuming flows safely in Jetpack Compose",
+      "path": "Cubox/Consuming flows safely in Jetpack Compose - by Manuel Vivo - Android Developers - Aug, 2022 - Medium.md",
+      "scores": {
+        "relevance": 3,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "total": 12,
+      "quality": "medium",
+      "chapters": [
+        {
+          "id": "ch15",
+          "confidence": "high"
+        },
+        {
+          "id": "ch03",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "官方指南讲解在Jetpack Compose中安全消费Flow的最佳实践"
+    },
+    {
+      "title": "Core 文件损坏还能补救吗",
+      "path": "Cubox/Core 文件损坏还能补救吗？有的兄弟，有的。 - 掘金-2025-02-25.md",
+      "scores": {
+        "relevance": 3,
+        "depth": 4,
+        "timeliness": 5,
+        "verifiability": 4
+      },
+      "total": 16,
+      "quality": "high",
+      "chapters": [
+        {
+          "id": "ch14",
+          "confidence": "high"
+        },
+        {
+          "id": "ch07",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "介绍Core dump文件损坏或截断后的补救方法与调试技巧"
+    },
+    {
+      "title": "CriticalNative",
+      "path": "Cubox/CriticalNative  -  Android Developers-2024-01-08.md",
+      "scores": {
+        "relevance": 4,
+        "depth": 4,
+        "timeliness": 4,
+        "verifiability": 5
+      },
+      "total": 17,
+      "quality": "high",
+      "chapters": [
+        {
+          "id": "ch01",
+          "confidence": "high"
+        },
+        {
+          "id": "ch07",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Android官方CriticalNative注解文档，优化JNI调用开销的底层机制"
+    },
+    {
+      "title": "Customize WorkManager with AppStartup & Hilt",
+      "path": "Cubox/Customize WorkManager with AppStartup & Hilt-2022-07-20.md",
+      "scores": {
+        "relevance": 4,
+        "depth": 4,
+        "timeliness": 3,
+        "verifiability": 4
+      },
+      "total": 15,
+      "quality": "medium",
+      "chapters": [
+        {
+          "id": "ch06",
+          "confidence": "high"
+        },
+        {
+          "id": "ch04",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "使用AppStartup库优化WorkManager初始化性能的最佳实践"
+    },
+    {
+      "title": "DRM生态以及架构介绍",
+      "path": "Cubox/DRM(Digital Rights Management)生态以及架构介绍-2025-04-11.md",
+      "scores": {
+        "relevance": 3,
+        "depth": 4,
+        "timeliness": 5,
+        "verifiability": 3
+      },
+      "total": 15,
+      "quality": "medium",
+      "chapters": [
+        {
+          "id": "ch12",
+          "confidence": "high"
+        }
+      ],
+      "summary": "介绍Android DRM数字版权管理生态架构与关键技术组件"
+    },
+    {
+      "title": "Dalvik, ART, JIT, and AOT in Android",
+      "path": "Cubox/Dalvik, ART, JIT, and AOT in Android-2024-01-31.md",
+      "scores": {
+        "relevance": 5,
+        "depth": 4,
+        "timeliness": 4,
+        "verifiability": 4
+      },
+      "total": 17,
+      "quality": "high",
+      "chapters": [
+        {
+          "id": "ch01",
+          "confidence": "high"
+        },
+        {
+          "id": "ch04",
+          "confidence": "high"
+        }
+      ],
+      "summary": "系统讲解Android运行时演进：Dalvik→ART、JIT→AOT编译机制与性能影响"
+    },
+    {
+      "title": "Dart 单线程异步模型：从原理到工程实践",
+      "path": "Cubox/Dart 单线程异步模型：从原理到工程实践的系统化解析深入探讨 Dart 单线程异步模型，通过非阻塞 I-O 与事件循环 - 掘金-2025-04-13.md",
+      "scores": {
+        "relevance": 3,
+        "depth": 4,
+        "timeliness": 5,
+        "verifiability": 4
+      },
+      "total": 16,
+      "quality": "high",
+      "chapters": [
+        {
+          "id": "ch03",
+          "confidence": "high"
+        }
+      ],
+      "summary": "深入Dart事件循环双队列架构、执行流程及任务优先级机制"
+    },
+    {
+      "title": "DataStore and synchronous work",
+      "path": "Cubox/DataStore and synchronous work. In the following posts from our Jetpack… - by Simona Stojanovic - An.md",
+      "scores": {
+        "relevance": 3,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "total": 12,
+      "quality": "medium",
+      "chapters": [
+        {
+          "id": "ch08",
+          "confidence": "high"
+        }
+      ],
+      "summary": "官方指南讲解DataStore同步操作的最佳实践与注意事项"
+    },
+    {
+      "title": "Compose 渲染性能到底怎么样",
+      "path": "Cubox/Compose 渲染性能到底怎么样--2022-04-26.md",
+      "scores": {
+        "relevance": 5,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "total": 14,
+      "quality": "medium",
+      "chapters": [
+        {
+          "id": "ch05",
+          "confidence": "high"
+        }
+      ],
+      "summary": "实测评估Compose渲染性能表现，与原生View渲染对比分析"
+    },
+    {
+      "title": "Facebook开源Screenshot Tests for Android：视觉回归自动化测试",
+      "path": "Cubox/Facebook开源Screenshot Tests for Android：视觉回归自动化测试-2025-02-26.md",
+      "scores": {
+        "relevance": 3,
+        "depth": 2,
+        "timeliness": 5,
+        "verifiability": 1,
+        "total": 11
+      },
+      "total": 11,
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch14-工具",
+          "confidence": "low"
+        }
+      ],
+      "summary": "# Facebook开源Screenshot Tests for Android：视觉回归自动化测试  Screenshot Tests for Android是Facebook开源的一款自动化测试工具，核心功能是在Android设备测试过",
+      "indexed_at": "2026-03-30T23:18:45.896188"
+    },
+    {
+      "title": "File locking in Linux",
+      "path": "Cubox/File locking in Linux-2023-08-14.md",
+      "scores": {
+        "relevance": 3,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 1,
+        "total": 10
+      },
+      "total": 10,
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch08-存储",
+          "confidence": "low"
+        }
+      ],
+      "summary": "# File locking in Linux  Table of contents Introduction Advisory locking Common features Differing features File descrip",
+      "indexed_at": "2026-03-30T23:18:45.896586"
+    },
+    {
+      "title": "Fixing simpleperf broken records",
+      "path": "Cubox/Fixing simpleperf broken records-2022-01-24.md",
+      "scores": {
+        "relevance": 4,
+        "depth": 2,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 10
+      },
+      "total": 10,
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch11-Profiling",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "# Fixing simpleperf broken records  Summary This blog shows how to fix simpleperf traces which are otherwise unusable be",
+      "indexed_at": "2026-03-30T23:18:45.897417"
+    },
+    {
+      "title": "Flutter Impeller裁剪后搭建渲染Demo要点（ flutter裁减 移除dart依赖，...",
+      "path": "Cubox/Flutter Impeller裁剪后搭建渲染Demo要点（ flutter裁减 移除dart依赖，...-2024-01-06.md",
+      "scores": {
+        "relevance": 4,
+        "depth": 4,
+        "timeliness": 4,
+        "verifiability": 1,
+        "total": 13
+      },
+      "total": 13,
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "# Flutter Impeller裁剪后搭建渲染Demo要点（ flutter裁减 移除dart依赖，...  说明：Flutter的Impeller引擎具有四大独特优势，可以考虑把Impeller裁剪出来，用于其它架构，源码裁剪方式见：",
+      "indexed_at": "2026-03-30T23:18:45.900045"
+    },
+    {
+      "title": "Flutter RenderSurface 选择说明 - 知乎",
+      "path": "Cubox/Flutter RenderSurface 选择说明 - 知乎-2024-03-08.md",
+      "scores": {
+        "relevance": 5,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 1,
+        "total": 12
+      },
+      "total": 12,
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "high"
+        }
+      ],
+      "summary": "# Flutter RenderSurface 选择说明 - 知乎  RenderSurface 的作用是提供给 Flutter 光栅化引擎一个渲染的输出 Surface，最终这个 Surface 会输出到屏幕上，实现 Flutter 渲染",
+      "indexed_at": "2026-03-30T23:18:45.900179"
+    },
+    {
+      "title": "Flutter 图片预加载在构建 Flutter 应用时，提前加载图片资源是一种常见优化手段，尤其适用于展示型页面、动画 - 掘金",
+      "path": "Cubox/Flutter 图片预加载在构建 Flutter 应用时，提前加载图片资源是一种常见优化手段，尤其适用于展示型页面、动画 - 掘金-2025-05-25.md",
+      "scores": {
+        "relevance": 3,
+        "depth": 2,
+        "timeliness": 5,
+        "verifiability": 1,
+        "total": 11
+      },
+      "total": 11,
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch03-线程",
+          "confidence": "low"
+        }
+      ],
+      "summary": "# Flutter 图片预加载在构建 Flutter 应用时，提前加载图片资源是一种常见优化手段，尤其适用于展示型页面、动画 - 掘金  在构建 Flutter 应用时，提前加载图片资源是一种常见优化手段，尤其适用于展示型页面、动画首帧、轮",
+      "indexed_at": "2026-03-30T23:18:45.901687"
     }
   ],
-  "last_updated": "2026-03-30T20:56:22.312563"
+  "last_updated": "2026-03-30T22:51:48.743833"
 }
