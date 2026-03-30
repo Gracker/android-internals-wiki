@@ -162,15 +162,26 @@
       "extensions_total": 2,
       "verification_level": "L2",
       "word_count": "~7500"
+    },
+    {
+      "section": "7.2",
+      "title": "卡顿原因体系",
+      "completed_at": "2026-03-31T07:29:54.381093+08:00",
+      "anchors_covered": 6,
+      "anchors_total": 6,
+      "extensions_covered": 0,
+      "extensions_total": 3,
+      "verification_level": "L2",
+      "word_count": "~7500"
     }
   ],
   "ready_for_review": 10,
-  "last_updated": "2026-03-31T06:28:54.824806",
+  "last_updated": "2026-03-31T07:29:54.381093+08:00",
   "stats": {
     "total": 102,
-    "completed": 11,
-    "pending": 91,
-    "last_updated": "2026-03-30T21:28:51.853958+00:00"
+    "completed": 12,
+    "pending": 90,
+    "last_updated": "2026-03-31T07:29:54.381093+08:00"
   },
   "research_stats": {
     "runs_today": [
@@ -185,6 +196,19 @@
           "Perfetto架构映射",
           "性能分析误区",
           "Treble/AIDL演进"
+        ]
+      },
+      {
+        "time": "2026-03-31T07:03:00+08:00",
+        "focus": "Kotlin 与协程 (20260331%20=11)",
+        "source": "topic-rotation",
+        "candidates": 3,
+        "passed": 3,
+        "delivered": 3,
+        "themes": [
+          "Compose性能对等里程碑",
+          "Strong Skipping模式",
+          "androidx.tracing 2.0协程追踪"
         ]
       }
     ]
