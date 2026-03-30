@@ -22,18 +22,10 @@
     },
     "1.1": {
       "reviewed_date": "2026-03-30",
-      "reviewed_by": "openclaw-task2-review-v2",
-      "review_status": "fixed-v2",
-      "fixes_applied": [
-        "Perfetto表现：补充三种数据源(ftrace/atrace/proc)与三层架构的对应关系",
-        "Perfetto表现：补充各层Track的具体atrace category映射",
-        "Perfetto表现：增加FrameMissed判断合成层问题",
-        "Treble架构：补充hwbinder vs binder底层差异及Perfetto中的表现",
-        "Treble架构：补充HAL问题完整追踪方法(三步跨进程链路)",
-        "常见误区：新增线程状态Running≠有效工作",
-        "常见误区：新增Binder调用端到端延迟取决于目标进程",
-        "常见误区：增强App性能问题不只在App层的论述"
-      ]
+      "reviewed_by": "openclaw-task6",
+      "review_status": "needs-rework",
+      "issues": 4,
+      "fixes_applied": 9
     }
   },
   "review_stats": {
@@ -66,7 +58,7 @@
     }
   ],
   "ready_for_review": 2,
-  "last_updated": "2026-03-30T19:28:32.413458+08:00",
+  "last_updated": "2026-03-30T07:33:07Z",
   "stats": {
     "total": 102,
     "completed": 2,

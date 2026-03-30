@@ -15,7 +15,7 @@ sources:
     path: "https://androidperformance.com"
 tags: ['architecture', '分层架构', 'HAL', 'HIDL', 'AIDL', '性能优化', 'Perfetto']
 related_chapters: ["1.2", "2.1", "4.1"]
-review_notes: "2026-03-30 task6 review 回炉：开头改现象驱动、列表转叙述、补充 Perfetto 表现、补充常见问题与误区"
+review_notes: "2026-03-30 task6 review 回炉 v2：集成3篇新研究素材（Perfetto映射/误区/Treble演进），补充数据源三层映射、HAL追踪完整方法、hwbinder vs binder区别、新增3条误区（线程状态/Binder阻塞/全系统视角），所有锚点已覆盖"
 ---
 
 # Android 分层架构
@@ -164,7 +164,20 @@ HIDL（Hardware Interface Definition Language）是 Treble 初期引入的接口
 
 AIDL 的优势在于：它就是 Android Framework 开发者已经熟悉的语言，学习成本低；工具链（`aidl` 编译器）更成熟稳定；支持更复杂的数据类型。到 Android 16，几乎所有新 HAL 接口都使用 AIDL，HIDL 只保留向后兼容。
 
+有一个重要的底层差异值得一提：HIDL 使用的是 `hwbinder`（`/dev/hwbinder`），而 AIDL HAL 使用标准 `binder`（`/dev/binder`）。这个变化在 Perfetto Trace 中体现为：AIDL HAL 的 IPC 事件出现在标准的 Binder Track 中，与 App ↔ system_server 的通信混在一起，需要通过进程名来区分。如果你在分析 Binder 延迟时发现一个不认识的目标进程，它很可能就是一个 AIDL HAL 服务进程。
+
 [已验证: 官方文档, https://source.android.com/docs/core/architecture/hal/aidl]
+[来源: obsidian/intake/research-feeds/2026-03-30-19-ch01-treble-aidl-evolution.md]
+
+### 在 Perfetto 中追踪 HAL 问题的完整方法
+
+Treble 架构给 HAL 分析带来了一个根本性的改变：Treble 之前，HAL 代码藏在 `system_server` 或 `mediaserver` 进程内部，Trace 中看不到进程边界，HAL 崩溃会拖垮整个宿主进程。Treble 之后，HAL 有了自己的独立进程和 Track，我们可以在 Trace 中直接观察 Framework 和 HAL 之间的通信延迟，这在以前是不可能的。
+
+但这也意味着分析 HAL 问题需要一套完整的方法：首先在 Framework 线程找到 Binder 调用发起的时间点，然后切换到 Binder Transaction Track 找到对应的 Transaction 记录，再跳到 HAL 进程的线程 Track 检查它的处理逻辑——HAL 可能因为 I/O 等待（"Uninterruptible Sleep"）、锁竞争或其他 HAL 客户端的请求排队而导致响应慢。只看 Framework 侧的 Binder 调用发起时间是不够的，需要看到完整的跨进程链路。
+
+对于 AIDL HAL，还需要额外启用 `aidl` atrace category 才能看到 AIDL 层面的追踪事件。
+
+[来源: obsidian/intake/research-feeds/2026-03-30-19-ch01-treble-aidl-evolution.md]
 
 ## Android 16 架构层面的最新变化
 
@@ -216,19 +229,33 @@ HAL 层的延迟往往是最难优化的，因为它取决于具体的硬件实�
 
 Android 分层架构不是一个抽象概念——在 Perfetto Trace 中，每一层都有直观的可视化表现。学会在 Trace 中"看到"分层架构，是性能分析的基本功。
 
+### 三种数据源与三层架构的对应关系
+
+Perfetto 采集数据的方式恰好与 Android 的三层结构一一对应。最底层是 **ftrace**，它直接从 Linux 内核采集调度切换（`sched_switch`）、CPU 频率变化（`freq`）、Binder 驱动事务（`binder_transaction`）、I/O 事件等。这些事件对应的就是架构中的内核层。
+
+中间层是 **atrace**（Android Trace），它通过系统属性和服务接口从 Framework 和 HAL 层采集标记事件。atrace 按 category 组织：`hal` 追踪 HAL 模块活动，`hwui` 追踪硬件加速渲染过程（DisplayList 录制、GPU 命令提交），`sched` 和 `freq` 追踪调度和频率，`binder_driver` 追踪所有 Binder IPC。每个 category 恰好对应架构的一个或多个层级——理解这些 category，就能在 Perfetto 中快速定位到感兴趣的架构层。
+
+最上层是 **`/proc` 和 `/sys` 轮询**，Perfetto 定期读取这些虚拟文件系统来获取进程状态、内存计数器、电池信息等系统级状态。这些数据横跨所有架构层，提供宏观视角。
+
+[来源: obsidian/intake/research-feeds/2026-03-30-19-ch01-architecture-perfetto-mapping.md]
+
 ### 各层对应的 Track 和事件
 
-**应用层**的表现最直观：每个 App 都是一个独立的进程 track。展开一个 App 进程，可以看到它的主线程（`main`）、Binder 线程（`Binder:xxxx_x`）和 RenderThread。主线程上的 CPU 切片就是 App 的 Java/Kotlin 代码执行时间。如果主线程出现长时间连续的 CPU 切片，说明有耗时的业务逻辑阻塞了 UI 渲染。
+在 Perfetto UI 中打开一个系统级 Trace，最上面是按 CPU 编号排列的调度 Track（内核层），中间是各进程的线程 Track（App/Framework/Native 层），底部是各类 Counter Track（内存、功耗等）。其中 Binder Transaction Track 贯穿所有进程——它就是架构分层图中那条"跨层通信"的箭头在 Trace 中的具象化。
 
-**Framework 层**主要体现在 `system_server` 进程中。展开它可以看到几十个线程，每个线程对应一个或多个系统服务。比如 `ActivityManager` 线程处理 Activity 相关请求，`WindowManager` 线程处理窗口相关请求。当 App 向这些服务发起 Binder 调用时，在 Trace 中可以看到一条从 App 进程指向 `system_server` 对应线程的箭头。
+**应用层**的表现最直观：每个 App 都是一个独立的进程 Track。展开一个 App 进程，可以看到它的主线程（`main`）、Binder 线程（`Binder:xxxx_x`）和 RenderThread。主线程上的 CPU 切片就是 App 的 Java/Kotlin 代码执行时间。如果主线程出现长时间连续的 CPU 切片，说明有耗时的业务逻辑阻塞了 UI 渲染。ART 的 GC 事件也在主线程 Track 中可见，标注为 "GC" slice——如果 GC 频繁出现且耗时长，说明存在内存抖动问题。
 
-`surfaceflinger` 进程是 Framework 层中另一个关键组件。它的主线程上可以看到 `onMessageReceived` → `handleMessageRefresh` → `doComposition` 的调用链。如果 `doComposition` 耗时过长，说明 GPU 合成负担重，可能需要减少 Surface 数量或降低图层复杂度。
+**Framework 层**主要体现在 `system_server` 进程中。展开它可以看到几十个线程，每个线程对应一个或多个系统服务。比如 `ActivityManager` 线程处理 Activity 相关请求，`WindowManager` 线程处理窗口相关请求。当 App 向这些服务发起 Binder 调用时，在 Trace 中可以看到一条从 App 进程指向 `system_server` 对应线程的箭头。如果这个箭头很长（等待时间长），需要到 `system_server` 对应线程中看它在忙什么。
 
-**Native/HAL 层**的表现比较分散。HAL Service 通常是独立的进程，名字类似 `android.hardware.camera.provider@2.4-service`。它们的 CPU 活动在各自的进程 track 上。如果这些进程频繁出现 "Runnable" 但不被调度的状态，说明系统 CPU 负载高，HAL 请求排队等待。
+`surfaceflinger` 进程是 Framework 层中另一个关键组件。它的主线程上可以看到 `onMessageReceived` → `handleMessageRefresh` → `doComposition` 的调用链。如果 `doComposition` 耗时过长，说明 GPU 合成负担重，可能需要减少 Surface 数量或降低图层复杂度。SurfaceFlinger 的 `FrameMissed` 行可以直接告诉我们问题出在合成层而非 App 层。
 
-**内核层**在 Perfetto 中表现为底层的 CPU 调度 track 和 ftrace 事件。每个 CPU core 上的调度切片（sched slice）显示了哪个线程正在执行。Binder 的事务事件（`binder_transaction`）可以看到跨进程通信的发起方、目标方和数据大小。
+**Native/HAL 层**的表现比较分散。HAL Service 通常是独立的进程（Treble 之后），名字类似 `android.hardware.camera.provider@2.4-service`。它们的 CPU 活动在各自的进程 Track 上。如果这些进程频繁出现 "Runnable" 但不被调度的状态，说明系统 CPU 负载高，HAL 请求排队等待。需要同时启用 `hal` 和 `binder_driver` 这两个 atrace category 才能看到完整的 Framework → HAL 调用链路——只看 Framework 侧是不够的，因为 HAL 是独立进程。
 
-[图：Perfetto Trace 截图示意，标注 App/system_server/surfaceflinger 进程，标注 Binder 调用箭头，标注 VSync 信号线]
+**内核层**在 Perfetto 中表现为底层的 CPU 调度 Track 和 ftrace 事件。每个 CPU core 上的调度切片（sched slice）显示了哪个线程正在执行。Binder 的事务事件（`binder_transaction`）可以看到跨进程通信的发起方、目标方和数据大小。这是唯一一个横跨所有架构层的数据源——无论跨的是哪两层，Binder 事务都会在这里留下记录。
+
+[图：Perfetto Trace 截图示意，标注 App/system_server/surfaceflinger 进程，标注 Binder 调用箭头，标注 VSync 信号线，标注三种数据源的对应区域]
+
+[已验证: 官方文档, https://perfetto.dev/docs/data-sources/atrace]
 
 ### 正常 vs 异常的表现对比
 
@@ -262,7 +289,25 @@ HAL 不仅仅是接口封装——在现代 Android（Treble 之后），HAL Ser
 - **渲染卡顿**：可能是因为 SurfaceFlinger 的 `doComposition` 耗时过长（GPU 合成负担重），而不是 App 端的绘制慢。
 - **ANR**：Input ANR 的根因可能不是 App 主线程阻塞，而是 SystemServer 端的 InputDispatcher 被其他工作拖慢了。
 
-在 Perfetto 中遇到性能问题时，**不要只看 App 进程**——把视线扩展到 `system_server`、`surfaceflinger`、相关 HAL 进程，往往能发现真正的根因。
+在 Perfetto 中遇到性能问题时，**不要只看 App 进程**——把视线扩展到 `system_server`、`surfaceflinger`、相关 HAL 进程，往往能发现真正的根因。当你在 Perfetto 中看到 Main Thread 上有一个持续几十毫秒的 Binder slice 时，不要急着去优化 App 代码。先翻到 `system_server` 进程，找到处理这个 Binder 调用的线程——问题可能不在你的 App，而在系统服务那边排队等待。这就是为什么理解架构分层对性能分析至关重要：每一层都可能是瓶颈所在。
+
+[来源: obsidian/intake/research-feeds/2026-03-30-19-ch01-architecture-misconceptions.md]
+
+### 误区：线程状态 "Running" 就意味着在干有用的事
+
+在 Perfetto 的 CPU Track 中，"Running"（绿色）表示线程被 CPU 调度执行，但不一定在做有用的工作。它可能在等待自旋锁（spinlock）、忙轮询，甚至在做无意义的空转。需要结合线程 Track 中的 slice 信息（如 Binder transaction 标记、锁等待标记）一起判断。
+
+反过来，"Uninterruptible Sleep"（紫色）通常意味着 I/O 等待或内核阻塞——这是性能瓶颈的强信号，不应该被忽略。CPU 使用率高不一定有效率（可能在空转），CPU 使用率低不一定没问题（可能被 I/O 或 Binder 等待阻塞）。只有结合 CPU Track + 线程 Track + Binder Track 三个维度，才能给出正确判断。
+
+[来源: obsidian/intake/research-feeds/2026-03-30-19-ch01-architecture-misconceptions.md]
+
+### 误区：Binder 调用很快，不需要关注
+
+Binder 确实通过 `mmap()` 实现了单次数据拷贝，设计目标是高效 IPC。但"高效"不等于"免费"——同步 Binder 调用会阻塞调用线程。如果在 Main Thread 上执行同步 Binder 调用，而 `system_server` 端恰好忙于处理其他请求（比如后台 App 在做 `dex2oat`），App 侧就会看到 Main Thread 上一个持续的 "binder" slice，等待时间可能从几毫秒涨到几十甚至上百毫秒，直接导致掉帧甚至 ANR。
+
+关键不在于 Binder 本身快不快，而在于 **Binder 调用链的端到端延迟取决于目标进程的处理速度**。目标进程忙、排队、被锁阻塞，都会传导为调用方的阻塞。分析 Binder 延迟时，永远要同时看调用方和被调用方。
+
+[来源: obsidian/intake/research-feeds/2026-03-30-19-ch01-architecture-misconceptions.md]
 
 ### 面试常问：为什么 Android 要用 Binder 而不是 Socket/管道？
 

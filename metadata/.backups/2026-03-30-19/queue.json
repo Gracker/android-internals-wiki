@@ -1073,21 +1073,18 @@
       ],
       "added_by": "task6-review",
       "added_at": "2026-03-30T17:39:52",
-      "status": "completed",
-      "original_review_log": "logs/review/2026-03-30-17-review.md",
-      "processed_at": "2026-03-30T19:28:13.921512+08:00",
-      "word_count": 9500,
-      "verification_status": "L2_verified_all_anchors_3_research_feeds_integrated"
+      "status": "pending",
+      "original_review_log": "logs/review/2026-03-30-17-review.md"
     }
   ],
   "completed": [
     {
       "section": "1.1",
       "section_title": "Android 分层架构",
-      "processed_at": "2026-03-30T19:28:13.921707+08:00",
+      "processed_at": "2026-03-29T21:05:00Z",
       "status": "completed",
-      "word_count": 9500,
-      "verification_status": "L2_verified_all_anchors_3_research_feeds_integrated_review_v2"
+      "word_count": 12450,
+      "verification_status": "L2_verified_all_anchors"
     },
     {
       "section": "1.2",
@@ -1151,5 +1148,5 @@
       "verification_status": "L2_verified_all_anchors"
     }
   ],
-  "last_updated": "2026-03-30T19:28:13.921710+08:00"
+  "last_updated": "2026-03-30T19:00:00+08:00"
 }

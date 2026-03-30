@@ -1,10 +1,10 @@
 {
-  "last_scan_time": "2026-03-30T18:15:00",
-  "scanned_files": 1010,
+  "last_scan_time": "2026-03-30T19:20:54.095428",
+  "scanned_files": 526,
   "total_files": 4323,
-  "indexed_files": 76,
+  "indexed_files": 73,
   "current_directory": "Cubox",
-  "current_offset": 1010,
+  "current_offset": 526,
   "priority_queue": [
     "Cubox",
     "Personal-Knowlodge",
@@ -16,5 +16,6 @@
     "OpenClaw定时任务"
   ],
   "completed_directories": [],
-  "status": "ready"
+  "status": "ready",
+  "note": "阈值从≥16调整为≥10，需全量重扫"
 }

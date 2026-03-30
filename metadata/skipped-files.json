@@ -1,5 +1,5 @@
 {
-  "total_skipped": 933,
+  "total_skipped": 973,
   "files": [
     {
       "title": "第 10 章：内存性能",
@@ -11152,6 +11152,526 @@
         "total": 10
       },
       "reason": "游戏引擎"
+    },
+    {
+      "title": "#01 创始人解密 Discord",
+      "path": "Cubox/#01 创始人解密 Discord-2023-02-20.md",
+      "score": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 4,
+        "verifiability": 1,
+        "total": 7
+      },
+      "reason": "总分7<10分 (相关性1+深度1+时效4+可验证1)",
+      "skipped_at": "2026-03-30T19:20:54.095428"
+    },
+    {
+      "title": "#15 新兴外企的工作体验【Grab - Yifen】篇",
+      "path": "Cubox/#15 新兴外企的工作体验【Grab - Yifen】篇-2022-02-24.md",
+      "score": {
+        "relevance": 2,
+        "depth": 1,
+        "timeliness": 4,
+        "verifiability": 1,
+        "total": 8
+      },
+      "reason": "总分8<10分 (相关性2+深度1+时效4+可验证1)",
+      "skipped_at": "2026-03-30T19:20:54.095428"
+    },
+    {
+      "title": "#2021最爱的3个产品  2021年，我最钦佩的博客有三个，高产且硬核，我辈楷模。这三个博客，我从去年的年初看到年尾：  - 首先是 happy xiao 的",
+      "path": "Cubox/#2021最爱的3个产品  2021年，我最钦佩的博客有三个，高产且硬核，我辈楷模。这三个博客，我从去年的年初看到年尾：  - 首先是 happy xiao 的博客：https---happyxiao.md",
+      "score": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 6
+      },
+      "reason": "总分6<10分 (相关性1+深度1+时效3+可验证1)",
+      "skipped_at": "2026-03-30T19:20:54.095428"
+    },
+    {
+      "title": "#2023最爱的3个产品   分为软件类与硬件类，每一类说三",
+      "path": "Cubox/#2023最爱的3个产品   分为软件类与硬件类，每一类说三-2024-01-09.md",
+      "score": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 4,
+        "verifiability": 1,
+        "total": 7
+      },
+      "reason": "总分7<10分 (相关性1+深度1+时效4+可验证1)",
+      "skipped_at": "2026-03-30T19:20:54.095428"
+    },
+    {
+      "title": "#222 - 资产配置答疑解惑",
+      "path": "Cubox/#222 - 资产配置答疑解惑-2022-01-17.md",
+      "score": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 4,
+        "verifiability": 1,
+        "total": 7
+      },
+      "reason": "总分7<10分 (相关性1+深度1+时效4+可验证1)",
+      "skipped_at": "2026-03-30T19:20:54.095428"
+    },
+    {
+      "title": "#67 OpenAI CEO 详解 GPT-4与AI的未来（播客笔记）",
+      "path": "Cubox/#67 OpenAI CEO 详解 GPT-4与AI的未来（播客笔记）-2023-04-01.md",
+      "score": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 4,
+        "verifiability": 1,
+        "total": 7
+      },
+      "reason": "总分7<10分 (相关性1+深度1+时效4+可验证1)",
+      "skipped_at": "2026-03-30T19:20:54.095428"
+    },
+    {
+      "title": "#UNTAG",
+      "path": "Cubox/#UNTAG-2023-07-13.md",
+      "score": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 4,
+        "verifiability": 1,
+        "total": 7
+      },
+      "reason": "总分7<10分 (相关性1+深度1+时效4+可验证1)",
+      "skipped_at": "2026-03-30T19:20:54.095428"
+    },
+    {
+      "title": "#三只羊# 小杨哥今天的轨迹真是一言难尽，合肥市现在也是骑虎难下。三只羊从20",
+      "path": "Cubox/#三只羊# 小杨哥今天的轨迹真是一言难尽，合肥市现在也是骑虎难下。三只羊从20-2024-09-17.md",
+      "score": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 1,
+        "total": 8
+      },
+      "reason": "总分8<10分 (相关性1+深度1+时效5+可验证1)",
+      "skipped_at": "2026-03-30T19:20:54.095428"
+    },
+    {
+      "title": "(1 条消息) 如何评价 2023 年 2 月 AI 绘画的最新水平？ - 知乎",
+      "path": "Cubox/(1 条消息) 如何评价 2023 年 2 月 AI 绘画的最新水平？ - 知乎-2023-02-21.md",
+      "score": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 4,
+        "verifiability": 1,
+        "total": 7
+      },
+      "reason": "总分7<10分 (相关性1+深度1+时效4+可验证1)",
+      "skipped_at": "2026-03-30T19:20:54.095428"
+    },
+    {
+      "title": "(4 条消息) 如何锻炼领导力？ - 知乎",
+      "path": "Cubox/(4 条消息) 如何锻炼领导力？ - 知乎-2022-07-23.md",
+      "score": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 4,
+        "verifiability": 1,
+        "total": 7
+      },
+      "reason": "总分7<10分 (相关性1+深度1+时效4+可验证1)",
+      "skipped_at": "2026-03-30T19:20:54.095428"
+    },
+    {
+      "title": "(727) Bot to the future: Two years later - YouTube",
+      "path": "Cubox/(727) Bot to the future- Two years later - YouTube-2025-06-14.md",
+      "score": {
+        "relevance": 2,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 1,
+        "total": 9
+      },
+      "reason": "总分9<10分 (相关性2+深度1+时效5+可验证1)",
+      "skipped_at": "2026-03-30T19:20:54.095428"
+    },
+    {
+      "title": "(73 条消息) Flutter 120hz 高刷新率在 Android 和 iOS 上的调研总结_恋猫 de 小郭的博客 - CSDN 博客_preferre",
+      "path": "Cubox/(73 条消息) Flutter 120hz 高刷新率在 Android 和 iOS 上的调研总结_恋猫 de 小郭的博客 - CSDN 博客_preferreddisplaymodeid-2022-.md",
+      "score": {
+        "relevance": 2,
+        "depth": 1,
+        "timeliness": 4,
+        "verifiability": 1,
+        "total": 8
+      },
+      "reason": "总分8<10分 (相关性2+深度1+时效4+可验证1)",
+      "skipped_at": "2026-03-30T19:20:54.095428"
+    },
+    {
+      "title": "\"Acquire the habit of attending carefully to what is being said by another.\" | R",
+      "path": "Cubox/-Acquire the habit of attending carefully to what is being said by another.- - Revue-2022-01-24.md",
+      "score": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 4,
+        "verifiability": 1,
+        "total": 7
+      },
+      "reason": "总分7<10分 (相关性1+深度1+时效4+可验证1)",
+      "skipped_at": "2026-03-30T19:20:54.095428"
+    },
+    {
+      "title": "\"Associate with people who are likely to improve you. Welcome those who you are ",
+      "path": "Cubox/-Associate with people who are likely to improve you. Welcome those who you are capable of improving.md",
+      "score": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 6
+      },
+      "reason": "总分6<10分 (相关性1+深度1+时效3+可验证1)",
+      "skipped_at": "2026-03-30T19:20:54.095428"
+    },
+    {
+      "title": "\"Get back up when you fail. Celebrate behaving like a human.\" | Revue",
+      "path": "Cubox/-Get back up when you fail. Celebrate behaving like a human.- - Revue-2022-01-24.md",
+      "score": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 4,
+        "verifiability": 1,
+        "total": 7
+      },
+      "reason": "总分7<10分 (相关性1+深度1+时效4+可验证1)",
+      "skipped_at": "2026-03-30T19:20:54.095428"
+    },
+    {
+      "title": "\"I am satisfied if each day I make some reduction in the number of my vices...\" ",
+      "path": "Cubox/-I am satisfied if each day I make some reduction in the number of my vices...- - Revue-2022-01-24.md",
+      "score": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 4,
+        "verifiability": 1,
+        "total": 7
+      },
+      "reason": "总分7<10分 (相关性1+深度1+时效4+可验证1)",
+      "skipped_at": "2026-03-30T19:20:54.095428"
+    },
+    {
+      "title": "\"I was working in the lab late one night when my eyes beheld an eerie sight...\" ",
+      "path": "Cubox/-I was working in the lab late one night when my eyes beheld an eerie sight...- - Revue-2022-01-24.md",
+      "score": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 4,
+        "verifiability": 1,
+        "total": 7
+      },
+      "reason": "总分7<10分 (相关性1+深度1+时效4+可验证1)",
+      "skipped_at": "2026-03-30T19:20:54.095428"
+    },
+    {
+      "title": "\"If something is humanly possible, it's attainable by you too.\" | Revue",
+      "path": "Cubox/-If something is humanly possible, it's attainable by you too.- - Revue-2022-01-24.md",
+      "score": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 4,
+        "verifiability": 1,
+        "total": 7
+      },
+      "reason": "总分7<10分 (相关性1+深度1+时效4+可验证1)",
+      "skipped_at": "2026-03-30T19:20:54.095428"
+    },
+    {
+      "title": "\"Judge a person by their questions rather than by their answers.\" | Revue",
+      "path": "Cubox/-Judge a person by their questions rather than by their answers.- - Revue-2022-01-24.md",
+      "score": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 4,
+        "verifiability": 3,
+        "total": 9
+      },
+      "reason": "总分9<10分 (相关性1+深度1+时效4+可验证3)",
+      "skipped_at": "2026-03-30T19:20:54.095428"
+    },
+    {
+      "title": "\"Magic Trick\" of Galaxy App Booster",
+      "path": "Cubox/-Magic Trick- of Galaxy App Booster-2022-02-12.md",
+      "score": {
+        "relevance": 2,
+        "depth": 1,
+        "timeliness": 4,
+        "verifiability": 1,
+        "total": 8
+      },
+      "reason": "总分8<10分 (相关性2+深度1+时效4+可验证1)",
+      "skipped_at": "2026-03-30T19:20:54.095428"
+    },
+    {
+      "title": "\"No one can lead a happy life if they think only of themselves.\" | Revue",
+      "path": "Cubox/-No one can lead a happy life if they think only of themselves.- - Revue-2022-01-24.md",
+      "score": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 4,
+        "verifiability": 1,
+        "total": 7
+      },
+      "reason": "总分7<10分 (相关性1+深度1+时效4+可验证1)",
+      "skipped_at": "2026-03-30T19:20:54.095428"
+    },
+    {
+      "title": "\"Philosophers warn us not to be satisfied with mere learning, but to add practic",
+      "path": "Cubox/-Philosophers warn us not to be satisfied with mere learning, but to add practice and then training..md",
+      "score": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 6
+      },
+      "reason": "总分6<10分 (相关性1+深度1+时效3+可验证1)",
+      "skipped_at": "2026-03-30T19:20:54.095428"
+    },
+    {
+      "title": "\"They are wise who do not grieve for the things which they have not...\" | Revue",
+      "path": "Cubox/-They are wise who do not grieve for the things which they have not...- - Revue-2022-01-24.md",
+      "score": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 4,
+        "verifiability": 1,
+        "total": 7
+      },
+      "reason": "总分7<10分 (相关性1+深度1+时效4+可验证1)",
+      "skipped_at": "2026-03-30T19:20:54.095428"
+    },
+    {
+      "title": "\"To enter others' minds and let them enter yours.\" | Revue",
+      "path": "Cubox/-To enter others' minds and let them enter yours.- - Revue-2022-01-24.md",
+      "score": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 4,
+        "verifiability": 1,
+        "total": 7
+      },
+      "reason": "总分7<10分 (相关性1+深度1+时效4+可验证1)",
+      "skipped_at": "2026-03-30T19:20:54.095428"
+    },
+    {
+      "title": "\"We should always allow some time to elapse, for time discloses the truth.\" | Re",
+      "path": "Cubox/-We should always allow some time to elapse, for time discloses the truth.- - Revue-2022-01-24.md",
+      "score": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 4,
+        "verifiability": 1,
+        "total": 7
+      },
+      "reason": "总分7<10分 (相关性1+深度1+时效4+可验证1)",
+      "skipped_at": "2026-03-30T19:20:54.095428"
+    },
+    {
+      "title": "\"Whatever you’re doing right now is the best use of your time, according to you.",
+      "path": "Cubox/-Whatever you’re doing right now is the best use of your time, according to you.- - Revue-2022-01-24.md",
+      "score": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 4,
+        "verifiability": 1,
+        "total": 7
+      },
+      "reason": "总分7<10分 (相关性1+深度1+时效4+可验证1)",
+      "skipped_at": "2026-03-30T19:20:54.095428"
+    },
+    {
+      "title": "\"When witches go riding, and black cats are seen. The moon laughs and whispers, ",
+      "path": "Cubox/-When witches go riding, and black cats are seen. The moon laughs and whispers, 'tis near Halloween..md",
+      "score": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 6
+      },
+      "reason": "总分6<10分 (相关性1+深度1+时效3+可验证1)",
+      "skipped_at": "2026-03-30T19:20:54.095428"
+    },
+    {
+      "title": "006_数字生活周刊 | 懒人的数字生活",
+      "path": "Cubox/006_数字生活周刊 - 懒人的数字生活-2024-07-15.md",
+      "score": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 1,
+        "total": 8
+      },
+      "reason": "总分8<10分 (相关性1+深度1+时效5+可验证1)",
+      "skipped_at": "2026-03-30T19:20:54.095428"
+    },
+    {
+      "title": "007_数字生活周刊 07-16-2024 | 懒人的数字生活",
+      "path": "Cubox/007_数字生活周刊 07-16-2024 - 懒人的数字生活-2024-07-22.md",
+      "score": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 1,
+        "total": 8
+      },
+      "reason": "总分8<10分 (相关性1+深度1+时效5+可验证1)",
+      "skipped_at": "2026-03-30T19:20:54.095428"
+    },
+    {
+      "title": "01-iOS底层原理|iOS的各个渲染框架以及iOS图层渲染原理 - 掘金",
+      "path": "Cubox/01-iOS底层原理-iOS的各个渲染框架以及iOS图层渲染原理 - 掘金-2023-01-17.md",
+      "score": {
+        "relevance": 2,
+        "depth": 1,
+        "timeliness": 4,
+        "verifiability": 1,
+        "total": 8
+      },
+      "reason": "总分8<10分 (相关性2+深度1+时效4+可验证1)",
+      "skipped_at": "2026-03-30T19:20:54.095428"
+    },
+    {
+      "title": "057｜行动派的一期分享",
+      "path": "Cubox/057｜行动派的一期分享-2024-01-25.md",
+      "score": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 1,
+        "total": 8
+      },
+      "reason": "总分8<10分 (相关性1+深度1+时效5+可验证1)",
+      "skipped_at": "2026-03-30T19:20:54.095428"
+    },
+    {
+      "title": "0x1 Underlying LLMs",
+      "path": "Cubox/0x1 Underlying LLMs-2024-09-03.md",
+      "score": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 1,
+        "total": 8
+      },
+      "reason": "总分8<10分 (相关性1+深度1+时效5+可验证1)",
+      "skipped_at": "2026-03-30T19:20:54.095428"
+    },
+    {
+      "title": "1 min guide to android development best practices — 2022",
+      "path": "Cubox/1 min guide to android development best practices — 2022-2022-03-15.md",
+      "score": {
+        "relevance": 2,
+        "depth": 1,
+        "timeliness": 4,
+        "verifiability": 1,
+        "total": 8
+      },
+      "reason": "总分8<10分 (相关性2+深度1+时效4+可验证1)",
+      "skipped_at": "2026-03-30T19:20:54.095428"
+    },
+    {
+      "title": "1 月闲书阅读记录 | Hello, Polebug",
+      "path": "Cubox/1 月闲书阅读记录 - Hello, Polebug-2023-01-26.md",
+      "score": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 4,
+        "verifiability": 1,
+        "total": 7
+      },
+      "reason": "总分7<10分 (相关性1+深度1+时效4+可验证1)",
+      "skipped_at": "2026-03-30T19:20:54.095428"
+    },
+    {
+      "title": "10.14.24: 意义的分歧，分歧的意义",
+      "path": "Cubox/10.14.24- 意义的分歧，分歧的意义-2024-10-14.md",
+      "score": {
+        "relevance": 2,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 1,
+        "total": 9
+      },
+      "reason": "总分9<10分 (相关性2+深度1+时效5+可验证1)",
+      "skipped_at": "2026-03-30T19:20:54.095428"
+    },
+    {
+      "title": "10.20.24: 过早成熟的风险",
+      "path": "Cubox/10.20.24- 过早成熟的风险-2024-10-21.md",
+      "score": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 1,
+        "total": 8
+      },
+      "reason": "总分8<10分 (相关性1+深度1+时效5+可验证1)",
+      "skipped_at": "2026-03-30T19:20:54.095428"
+    },
+    {
+      "title": "100 Notable Books of 2023 2023 年 100 本值得关注的图书",
+      "path": "Cubox/100 Notable Books of 2023 2023 年 100 本值得关注的图书-2023-12-14.md",
+      "score": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 4,
+        "verifiability": 1,
+        "total": 7
+      },
+      "reason": "总分7<10分 (相关性1+深度1+时效4+可验证1)",
+      "skipped_at": "2026-03-30T19:20:54.095428"
+    },
+    {
+      "title": "100 Notable Books of 2023",
+      "path": "Cubox/100 Notable Books of 2023-2023-12-27.md",
+      "score": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 4,
+        "verifiability": 1,
+        "total": 7
+      },
+      "reason": "总分7<10分 (相关性1+深度1+时效4+可验证1)",
+      "skipped_at": "2026-03-30T19:20:54.095428"
+    },
+    {
+      "title": "10分钟掌握Java性能分析诀窍 - SegmentFault 思否",
+      "path": "Cubox/10分钟掌握Java性能分析诀窍 - SegmentFault 思否-2022-02-09.md",
+      "score": {
+        "relevance": 2,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 1,
+        "total": 9
+      },
+      "reason": "总分9<10分 (相关性2+深度2+时效4+可验证1)",
+      "skipped_at": "2026-03-30T19:20:54.095428"
+    },
+    {
+      "title": "10分钟搞定Visual Studio Code配置C/C++开发环境 - 二的次方 - 博客园",
+      "path": "Cubox/10分钟搞定Visual Studio Code配置C-C++开发环境 - 二的次方 - 博客园-2022-03-04.md",
+      "score": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 4,
+        "verifiability": 1,
+        "total": 7
+      },
+      "reason": "总分7<10分 (相关性1+深度1+时效4+可验证1)",
+      "skipped_at": "2026-03-30T19:20:54.095428"
     }
   ]
 }
