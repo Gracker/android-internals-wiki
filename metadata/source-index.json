@@ -41,7 +41,10 @@
       "path": "src/SUMMARY.md",
       "score": 20,
       "chapters": [
-        "待定"
+        {
+          "chapter": "待定",
+          "confidence": "unknown"
+        }
       ],
       "confidence": "medium"
     },
@@ -50,7 +53,10 @@
       "path": "src/ch08/01-responsiveness-principles.md/01-responsiveness-principles.md",
       "score": 19,
       "chapters": [
-        "ch05-渲染"
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "unknown"
+        }
       ],
       "confidence": "high"
     },
@@ -59,7 +65,10 @@
       "path": "src/part1-fundamentals/ch01-architecture/01-layered-architecture.md",
       "score": 17,
       "chapters": [
-        "ch04-启动"
+        {
+          "chapter": "ch04-启动",
+          "confidence": "unknown"
+        }
       ],
       "confidence": "medium"
     },
@@ -1202,7 +1211,10 @@
         "verifiability": 2
       },
       "chapters": [
-        "ch11-Profiling"
+        {
+          "chapter": "ch11-Profiling",
+          "confidence": "unknown"
+        }
       ],
       "confidence": "medium",
       "year": 2022,
@@ -4320,8 +4332,14 @@
         "verifiability": 5
       },
       "chapters": [
-        "ch04",
-        "ch14"
+        {
+          "chapter": "ch04",
+          "confidence": "unknown"
+        },
+        {
+          "chapter": "ch14",
+          "confidence": "unknown"
+        }
       ],
       "confidence": "high",
       "quality": "high",
@@ -4339,7 +4357,10 @@
         "verifiability": 3
       },
       "chapters": [
-        "ch01"
+        {
+          "chapter": "ch01",
+          "confidence": "unknown"
+        }
       ],
       "confidence": "low",
       "quality": "medium",
@@ -4357,7 +4378,10 @@
         "verifiability": 4
       },
       "chapters": [
-        "ch05"
+        {
+          "chapter": "ch05",
+          "confidence": "unknown"
+        }
       ],
       "confidence": "high",
       "quality": "high",
@@ -4375,7 +4399,10 @@
         "verifiability": 3
       },
       "chapters": [
-        "ch05"
+        {
+          "chapter": "ch05",
+          "confidence": "unknown"
+        }
       ],
       "confidence": "high",
       "quality": "high",
@@ -4393,7 +4420,10 @@
         "verifiability": 3
       },
       "chapters": [
-        "ch05"
+        {
+          "chapter": "ch05",
+          "confidence": "unknown"
+        }
       ],
       "confidence": "high",
       "quality": "medium",
@@ -4411,7 +4441,10 @@
         "verifiability": 4
       },
       "chapters": [
-        "ch05"
+        {
+          "chapter": "ch05",
+          "confidence": "unknown"
+        }
       ],
       "confidence": "high",
       "quality": "high",
@@ -4429,7 +4462,10 @@
         "verifiability": 3
       },
       "chapters": [
-        "ch05"
+        {
+          "chapter": "ch05",
+          "confidence": "unknown"
+        }
       ],
       "confidence": "medium",
       "quality": "medium",
@@ -4447,8 +4483,14 @@
         "verifiability": 4
       },
       "chapters": [
-        "ch05",
-        "ch11"
+        {
+          "chapter": "ch05",
+          "confidence": "unknown"
+        },
+        {
+          "chapter": "ch11",
+          "confidence": "unknown"
+        }
       ],
       "confidence": "high",
       "quality": "high",
@@ -4466,7 +4508,10 @@
         "verifiability": 4
       },
       "chapters": [
-        "ch05"
+        {
+          "chapter": "ch05",
+          "confidence": "unknown"
+        }
       ],
       "confidence": "high",
       "quality": "high",
@@ -4484,7 +4529,10 @@
         "verifiability": 3
       },
       "chapters": [
-        "ch05"
+        {
+          "chapter": "ch05",
+          "confidence": "unknown"
+        }
       ],
       "confidence": "medium",
       "quality": "medium",
@@ -4502,7 +4550,10 @@
         "verifiability": 2
       },
       "chapters": [
-        "ch05"
+        {
+          "chapter": "ch05",
+          "confidence": "unknown"
+        }
       ],
       "confidence": "medium",
       "quality": "medium",
@@ -4520,7 +4571,10 @@
         "verifiability": 4
       },
       "chapters": [
-        "ch17"
+        {
+          "chapter": "ch17",
+          "confidence": "unknown"
+        }
       ],
       "confidence": "high",
       "quality": "high",
@@ -4932,8 +4986,14 @@
       "title": "Gotchas in Jetpack Compose Recomposition",
       "score": 14,
       "chapters": [
-        "ch15",
-        "ch05"
+        {
+          "chapter": "ch15",
+          "confidence": "unknown"
+        },
+        {
+          "chapter": "ch05",
+          "confidence": "unknown"
+        }
       ],
       "confidence": "high"
     },
@@ -4942,8 +5002,14 @@
       "title": "Guide to Foreground Services on Android 14",
       "score": 17,
       "chapters": [
-        "ch06",
-        "ch12"
+        {
+          "chapter": "ch06",
+          "confidence": "unknown"
+        },
+        {
+          "chapter": "ch12",
+          "confidence": "unknown"
+        }
       ],
       "confidence": "high"
     },
@@ -4952,7 +5018,10 @@
       "title": "Guide to background work | Android Developers",
       "score": 16,
       "chapters": [
-        "ch06"
+        {
+          "chapter": "ch06",
+          "confidence": "unknown"
+        }
       ],
       "confidence": "high"
     },
@@ -4961,7 +5030,10 @@
       "title": "HPC：程序优化思考",
       "score": 13,
       "chapters": [
-        "ch13"
+        {
+          "chapter": "ch13",
+          "confidence": "unknown"
+        }
       ],
       "confidence": "medium"
     },
@@ -4970,8 +5042,14 @@
       "title": "Hardcoder框架的集成与调试",
       "score": 16,
       "chapters": [
-        "ch13",
-        "ch04"
+        {
+          "chapter": "ch13",
+          "confidence": "unknown"
+        },
+        {
+          "chapter": "ch04",
+          "confidence": "unknown"
+        }
       ],
       "confidence": "high"
     },
@@ -4980,7 +5058,10 @@
       "title": "High performance with idiomatic Kotlin",
       "score": 12,
       "chapters": [
-        "ch15"
+        {
+          "chapter": "ch15",
+          "confidence": "unknown"
+        }
       ],
       "confidence": "medium"
     },
@@ -4989,7 +5070,10 @@
       "title": "Holistic Guide to Mobile App Performance Testing",
       "score": 13,
       "chapters": [
-        "ch14"
+        {
+          "chapter": "ch14",
+          "confidence": "unknown"
+        }
       ],
       "confidence": "medium"
     },
@@ -4998,7 +5082,10 @@
       "title": "How UIScrollView works",
       "score": 11,
       "chapters": [
-        "ch05"
+        {
+          "chapter": "ch05",
+          "confidence": "unknown"
+        }
       ],
       "confidence": "low"
     },
@@ -5007,7 +5094,10 @@
       "title": "How cc Works 中文译文",
       "score": 14,
       "chapters": [
-        "ch05"
+        {
+          "chapter": "ch05",
+          "confidence": "unknown"
+        }
       ],
       "confidence": "high"
     },
@@ -5016,7 +5106,10 @@
       "title": "How do Video Game Graphics Work?",
       "score": 12,
       "chapters": [
-        "ch05"
+        {
+          "chapter": "ch05",
+          "confidence": "unknown"
+        }
       ],
       "confidence": "low"
     },
@@ -5025,8 +5118,14 @@
       "title": "How to Improve Android App Performance with Baseline Profiles",
       "score": 18,
       "chapters": [
-        "ch04",
-        "ch14"
+        {
+          "chapter": "ch04",
+          "confidence": "unknown"
+        },
+        {
+          "chapter": "ch14",
+          "confidence": "unknown"
+        }
       ],
       "confidence": "high"
     },
@@ -5035,7 +5134,10 @@
       "title": "How to understand Jetpack Compose code",
       "score": 12,
       "chapters": [
-        "ch15"
+        {
+          "chapter": "ch15",
+          "confidence": "unknown"
+        }
       ],
       "confidence": "high"
     },
@@ -5044,8 +5146,14 @@
       "title": "How to use bpftrace to analysis issues in Android",
       "score": 18,
       "chapters": [
-        "ch11",
-        "ch14"
+        {
+          "chapter": "ch11",
+          "confidence": "unknown"
+        },
+        {
+          "chapter": "ch14",
+          "confidence": "unknown"
+        }
       ],
       "confidence": "high"
     },
@@ -5054,7 +5162,10 @@
       "title": "How to write a well-Structured app using Android Architecture",
       "score": 12,
       "chapters": [
-        "ch01"
+        {
+          "chapter": "ch01",
+          "confidence": "unknown"
+        }
       ],
       "confidence": "medium"
     },
@@ -5063,7 +5174,10 @@
       "title": "How we improved Android app startup time by over 20%",
       "score": 16,
       "chapters": [
-        "ch04"
+        {
+          "chapter": "ch04",
+          "confidence": "unknown"
+        }
       ],
       "confidence": "high"
     },
@@ -5072,7 +5186,10 @@
       "title": "How we increased Zomato App speed by over 90%",
       "score": 13,
       "chapters": [
-        "ch04"
+        {
+          "chapter": "ch04",
+          "confidence": "unknown"
+        }
       ],
       "confidence": "medium"
     },
@@ -5081,7 +5198,10 @@
       "title": "Android功耗优化参考",
       "score": 12,
       "chapters": [
-        "ch06"
+        {
+          "chapter": "ch06",
+          "confidence": "unknown"
+        }
       ],
       "confidence": "medium"
     },
@@ -5090,7 +5210,10 @@
       "title": "Hummer引擎优化：Flutter SurfaceView动态切换方案",
       "score": 15,
       "chapters": [
-        "ch05"
+        {
+          "chapter": "ch05",
+          "confidence": "unknown"
+        }
       ],
       "confidence": "high"
     },
@@ -5099,8 +5222,14 @@
       "title": "Hummer引擎优化：内存稳定性研究与优化",
       "score": 15,
       "chapters": [
-        "ch07",
-        "ch05"
+        {
+          "chapter": "ch07",
+          "confidence": "unknown"
+        },
+        {
+          "chapter": "ch05",
+          "confidence": "unknown"
+        }
       ],
       "confidence": "high"
     },
@@ -5109,8 +5238,14 @@
       "title": "Hungtask原理及分析",
       "score": 16,
       "chapters": [
-        "ch03",
-        "ch02"
+        {
+          "chapter": "ch03",
+          "confidence": "unknown"
+        },
+        {
+          "chapter": "ch02",
+          "confidence": "unknown"
+        }
       ],
       "confidence": "high"
     },
@@ -5119,9 +5254,18 @@
       "path": "Cubox/ITGSA｜游戏类稳定性和性能问题报告-2024-04-26.md",
       "score": 16,
       "chapters": [
-        "ch07-内存",
-        "ch05-渲染",
-        "ch11-Profiling"
+        {
+          "chapter": "ch07-内存",
+          "confidence": "unknown"
+        },
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "unknown"
+        },
+        {
+          "chapter": "ch11-Profiling",
+          "confidence": "unknown"
+        }
       ],
       "confidence": "high",
       "scores": {
@@ -5140,8 +5284,14 @@
       "path": "Cubox/Improve app performance with Baseline Profiles  -  Android Developers-2023-05-13.md",
       "score": 19,
       "chapters": [
-        "ch04-启动",
-        "ch14-工具"
+        {
+          "chapter": "ch04-启动",
+          "confidence": "unknown"
+        },
+        {
+          "chapter": "ch14-工具",
+          "confidence": "unknown"
+        }
       ],
       "confidence": "high",
       "scores": {
@@ -5160,8 +5310,14 @@
       "path": "Cubox/Improving App Performance with Baseline Profiles-2022-02-05.md",
       "score": 18,
       "chapters": [
-        "ch04-启动",
-        "ch14-工具"
+        {
+          "chapter": "ch04-启动",
+          "confidence": "unknown"
+        },
+        {
+          "chapter": "ch14-工具",
+          "confidence": "unknown"
+        }
       ],
       "confidence": "high",
       "scores": {
@@ -5180,8 +5336,14 @@
       "path": "Cubox/Improving Performance with Baseline Profiles - by Ben Weiss - Android Developers - Aug, 2022 - Mediu.md",
       "score": 16,
       "chapters": [
-        "ch04-启动",
-        "ch14-工具"
+        {
+          "chapter": "ch04-启动",
+          "confidence": "unknown"
+        },
+        {
+          "chapter": "ch14-工具",
+          "confidence": "unknown"
+        }
       ],
       "confidence": "high",
       "scores": {
@@ -5200,9 +5362,18 @@
       "path": "Cubox/Input ANR on Android 13-2022-10-14.md",
       "score": 18,
       "chapters": [
-        "ch01-架构",
-        "ch03-线程",
-        "ch11-Profiling"
+        {
+          "chapter": "ch01-架构",
+          "confidence": "unknown"
+        },
+        {
+          "chapter": "ch03-线程",
+          "confidence": "unknown"
+        },
+        {
+          "chapter": "ch11-Profiling",
+          "confidence": "unknown"
+        }
       ],
       "confidence": "high",
       "scores": {
@@ -5221,8 +5392,14 @@
       "path": "Cubox/Introducing the MAD Skills series on Performance - by Ben Weiss - Android Developers - Aug, 2022 - M.md",
       "score": 13,
       "chapters": [
-        "ch11-Profiling",
-        "ch14-工具"
+        {
+          "chapter": "ch11-Profiling",
+          "confidence": "unknown"
+        },
+        {
+          "chapter": "ch14-工具",
+          "confidence": "unknown"
+        }
       ],
       "confidence": "high",
       "scores": {
@@ -5241,8 +5418,14 @@
       "path": "Cubox/JIT Performance- Ahead-Of-Time versus Just-In-Time-2022-11-08.md",
       "score": 13,
       "chapters": [
-        "ch04-启动",
-        "ch07-内存"
+        {
+          "chapter": "ch04-启动",
+          "confidence": "unknown"
+        },
+        {
+          "chapter": "ch07-内存",
+          "confidence": "unknown"
+        }
       ],
       "confidence": "medium",
       "scores": {
@@ -5261,7 +5444,10 @@
       "path": "Cubox/JNI FindClass 遇到的 NoClassDefFoundError 错误-2024-01-14.md",
       "score": 16,
       "chapters": [
-        "ch01-架构"
+        {
+          "chapter": "ch01-架构",
+          "confidence": "unknown"
+        }
       ],
       "confidence": "medium",
       "scores": {
@@ -5280,8 +5466,14 @@
       "path": "Cubox/JVM 垃圾回收算法与ART CC回收器实现概述-2022-01-21.md",
       "score": 17,
       "chapters": [
-        "ch07-内存",
-        "ch01-架构"
+        {
+          "chapter": "ch07-内存",
+          "confidence": "unknown"
+        },
+        {
+          "chapter": "ch01-架构",
+          "confidence": "unknown"
+        }
       ],
       "confidence": "high",
       "scores": {
@@ -5300,8 +5492,14 @@
       "path": "Cubox/JVMTI 在手淘 Profiler 中的应用-2023-03-16.md",
       "score": 19,
       "chapters": [
-        "ch11-Profiling",
-        "ch07-内存"
+        {
+          "chapter": "ch11-Profiling",
+          "confidence": "unknown"
+        },
+        {
+          "chapter": "ch07-内存",
+          "confidence": "unknown"
+        }
       ],
       "confidence": "high",
       "scores": {
@@ -5320,7 +5518,10 @@
       "path": "Cubox/JVM｜翻越内存管理的墙 - 掘金-2022-07-05.md",
       "score": 12,
       "chapters": [
-        "ch07-内存"
+        {
+          "chapter": "ch07-内存",
+          "confidence": "unknown"
+        }
       ],
       "confidence": "medium",
       "scores": {
@@ -5339,8 +5540,14 @@
       "path": "Cubox/JakeWharton-diffuse- Diffuse is a tool for diffing APKs, AABs, AARs, and JARs-2022-02-19.md",
       "score": 16,
       "chapters": [
-        "ch10-包体积",
-        "ch14-工具"
+        {
+          "chapter": "ch10-包体积",
+          "confidence": "unknown"
+        },
+        {
+          "chapter": "ch14-工具",
+          "confidence": "unknown"
+        }
       ],
       "confidence": "high",
       "scores": {
@@ -5359,9 +5566,18 @@
       "path": "Cubox/JankStats Goes Alpha-2022-02-11.md",
       "score": 17,
       "chapters": [
-        "ch05-渲染",
-        "ch11-Profiling",
-        "ch14-工具"
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "unknown"
+        },
+        {
+          "chapter": "ch11-Profiling",
+          "confidence": "unknown"
+        },
+        {
+          "chapter": "ch14-工具",
+          "confidence": "unknown"
+        }
       ],
       "confidence": "high",
       "scores": {
@@ -5380,7 +5596,10 @@
       "path": "Cubox/JankTest  -  Android Developers-2022-02-02.md",
       "score": 15,
       "chapters": [
-        "ch14-工具"
+        {
+          "chapter": "ch14-工具",
+          "confidence": "unknown"
+        }
       ],
       "confidence": "high",
       "scores": {
@@ -5405,8 +5624,14 @@
         "total": 13
       },
       "chapters": [
-        "ch11-Profiling",
-        "ch13-调度"
+        {
+          "chapter": "ch11-Profiling",
+          "confidence": "unknown"
+        },
+        {
+          "chapter": "ch13-调度",
+          "confidence": "unknown"
+        }
       ],
       "confidence": "medium",
       "quality": "medium",
@@ -5423,7 +5648,10 @@
         "total": 12
       },
       "chapters": [
-        "ch13-调度"
+        {
+          "chapter": "ch13-调度",
+          "confidence": "unknown"
+        }
       ],
       "confidence": "medium",
       "quality": "medium",
@@ -5440,7 +5668,10 @@
         "total": 12
       },
       "chapters": [
-        "ch07-内存"
+        {
+          "chapter": "ch07-内存",
+          "confidence": "unknown"
+        }
       ],
       "confidence": "medium",
       "quality": "medium",
@@ -5457,8 +5688,14 @@
         "total": 11
       },
       "chapters": [
-        "ch13-调度",
-        "ch06-功耗"
+        {
+          "chapter": "ch13-调度",
+          "confidence": "unknown"
+        },
+        {
+          "chapter": "ch06-功耗",
+          "confidence": "unknown"
+        }
       ],
       "confidence": "medium",
       "quality": "medium",
@@ -5475,7 +5712,10 @@
         "total": 11
       },
       "chapters": [
-        "ch01-架构"
+        {
+          "chapter": "ch01-架构",
+          "confidence": "unknown"
+        }
       ],
       "confidence": "low",
       "quality": "medium",
@@ -5492,8 +5732,14 @@
         "total": 14
       },
       "chapters": [
-        "ch07-内存",
-        "ch11-Profiling"
+        {
+          "chapter": "ch07-内存",
+          "confidence": "unknown"
+        },
+        {
+          "chapter": "ch11-Profiling",
+          "confidence": "unknown"
+        }
       ],
       "confidence": "medium",
       "quality": "medium",
@@ -5510,7 +5756,10 @@
         "total": 12
       },
       "chapters": [
-        "ch07-内存"
+        {
+          "chapter": "ch07-内存",
+          "confidence": "unknown"
+        }
       ],
       "confidence": "medium",
       "quality": "medium",
@@ -5527,7 +5776,10 @@
         "total": 11
       },
       "chapters": [
-        "ch11-Profiling"
+        {
+          "chapter": "ch11-Profiling",
+          "confidence": "unknown"
+        }
       ],
       "confidence": "medium",
       "quality": "medium",
@@ -5544,7 +5796,10 @@
         "total": 11
       },
       "chapters": [
-        "ch07-内存"
+        {
+          "chapter": "ch07-内存",
+          "confidence": "unknown"
+        }
       ],
       "confidence": "low",
       "quality": "medium",
@@ -5561,7 +5816,10 @@
         "total": 16
       },
       "chapters": [
-        "ch13-调度"
+        {
+          "chapter": "ch13-调度",
+          "confidence": "unknown"
+        }
       ],
       "confidence": "high",
       "quality": "high",
@@ -5578,8 +5836,14 @@
         "total": 11
       },
       "chapters": [
-        "ch13-调度",
-        "ch03-线程"
+        {
+          "chapter": "ch13-调度",
+          "confidence": "unknown"
+        },
+        {
+          "chapter": "ch03-线程",
+          "confidence": "unknown"
+        }
       ],
       "confidence": "medium",
       "quality": "medium",
@@ -5596,8 +5860,14 @@
         "total": 12
       },
       "chapters": [
-        "ch04-启动",
-        "ch13-调度"
+        {
+          "chapter": "ch04-启动",
+          "confidence": "unknown"
+        },
+        {
+          "chapter": "ch13-调度",
+          "confidence": "unknown"
+        }
       ],
       "confidence": "medium",
       "quality": "medium",
@@ -5614,8 +5884,14 @@
         "total": 15
       },
       "chapters": [
-        "ch14-工具",
-        "ch05-渲染"
+        {
+          "chapter": "ch14-工具",
+          "confidence": "unknown"
+        },
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "unknown"
+        }
       ],
       "confidence": "high",
       "quality": "medium",
@@ -5632,7 +5908,10 @@
         "total": 10
       },
       "chapters": [
-        "ch08-存储"
+        {
+          "chapter": "ch08-存储",
+          "confidence": "unknown"
+        }
       ],
       "confidence": "low",
       "quality": "medium",
@@ -7222,8 +7501,458 @@
       ],
       "quality": "medium",
       "summary": "OPPO芯片调校与启动性能一致性"
+    },
+    {
+      "path": "Cubox/Performance with Jetpack Compose — Part 2-2023-07-03.md",
+      "title": "Performance with Jetpack Compose — Part 2",
+      "scores": {
+        "relevance": 4,
+        "tech_depth": 2,
+        "timeliness": 4,
+        "verifiability": 1,
+        "total": 11
+      },
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "medium"
+        },
+        {
+          "chapter": "ch15-Kotlin",
+          "confidence": "medium"
+        }
+      ],
+      "indexed_at": "2026-03-31T04:49:46.281487"
+    },
+    {
+      "path": "Cubox/Pinduoduo App Malware Detailed by Cybersecurity Researchers at Kaspersky - Bloomberg-2023-03-28.md",
+      "title": "Pinduoduo App Malware Detailed by Cybersecurity Researchers at Kaspersky - Bloom",
+      "scores": {
+        "relevance": 3,
+        "tech_depth": 2,
+        "timeliness": 4,
+        "verifiability": 2,
+        "total": 11
+      },
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch12-安全",
+          "confidence": "medium"
+        }
+      ],
+      "indexed_at": "2026-03-31T04:49:46.281497"
+    },
+    {
+      "path": "Cubox/Practical Modularisation for Android Developers-2022-01-31.md",
+      "title": "Practical Modularisation for Android Developers",
+      "scores": {
+        "relevance": 2,
+        "tech_depth": 2,
+        "timeliness": 4,
+        "verifiability": 2,
+        "total": 10
+      },
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch08-存储",
+          "confidence": "low"
+        }
+      ],
+      "indexed_at": "2026-03-31T04:49:46.281499"
+    },
+    {
+      "path": "Cubox/QQ 客户端性能稳定性防劣化系统 Hodor 技术方案-2024-06-13.md",
+      "title": "QQ 客户端性能稳定性防劣化系统 Hodor 技术方案",
+      "scores": {
+        "relevance": 3,
+        "tech_depth": 2,
+        "timeliness": 5,
+        "verifiability": 1,
+        "total": 11
+      },
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch11-Profiling",
+          "confidence": "medium"
+        }
+      ],
+      "indexed_at": "2026-03-31T04:49:46.281502"
+    },
+    {
+      "path": "Cubox/Qualcomm Snapdragon X2 Elite微架构-2025-12-03.md",
+      "title": "Qualcomm Snapdragon X2 Elite微架构",
+      "scores": {
+        "relevance": 3,
+        "tech_depth": 3,
+        "timeliness": 5,
+        "verifiability": 1,
+        "total": 12
+      },
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch13-调度",
+          "confidence": "medium"
+        }
+      ],
+      "indexed_at": "2026-03-31T04:49:46.281503"
+    },
+    {
+      "path": "Cubox/R8疑难杂症分析实战 - 类反射篇｜得物技术-2024-01-17.md",
+      "title": "R8疑难杂症分析实战 - 类反射篇｜得物技术",
+      "scores": {
+        "relevance": 4,
+        "tech_depth": 4,
+        "timeliness": 5,
+        "verifiability": 1,
+        "total": 14
+      },
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch10-包体积",
+          "confidence": "medium"
+        }
+      ],
+      "indexed_at": "2026-03-31T04:49:46.281505"
+    },
+    {
+      "path": "Cubox/RCU前传：从同步到RCU的引入-2023-03-18.md",
+      "title": "RCU前传：从同步到RCU的引入",
+      "scores": {
+        "relevance": 4,
+        "tech_depth": 2,
+        "timeliness": 4,
+        "verifiability": 1,
+        "total": 11
+      },
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch03-线程",
+          "confidence": "medium"
+        }
+      ],
+      "indexed_at": "2026-03-31T04:49:46.281507"
+    },
+    {
+      "path": "Cubox/RTC 性能自动化工具在内存优化场景下的实践-2022-07-22.md",
+      "title": "RTC 性能自动化工具在内存优化场景下的实践",
+      "scores": {
+        "relevance": 4,
+        "tech_depth": 4,
+        "timeliness": 4,
+        "verifiability": 2,
+        "total": 14
+      },
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch07-内存",
+          "confidence": "medium"
+        }
+      ],
+      "indexed_at": "2026-03-31T04:49:46.281509"
+    },
+    {
+      "path": "Cubox/React Native 前瞻式重大更新 Skia & WebGPU & ThreeJS，未来可期-2025-05-09.md",
+      "title": "React Native 前瞻式重大更新 Skia & WebGPU & ThreeJS，未来可期",
+      "scores": {
+        "relevance": 4,
+        "tech_depth": 2,
+        "timeliness": 5,
+        "verifiability": 1,
+        "total": 12
+      },
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "medium"
+        }
+      ],
+      "indexed_at": "2026-03-31T04:49:46.281511"
+    },
+    {
+      "path": "Cubox/RecyclerView面试宝典：7大高频问题解析-2024-05-21.md",
+      "title": "RecyclerView面试宝典：7大高频问题解析",
+      "scores": {
+        "relevance": 3,
+        "tech_depth": 2,
+        "timeliness": 5,
+        "verifiability": 1,
+        "total": 11
+      },
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "medium"
+        },
+        {
+          "chapter": "ch14-工具",
+          "confidence": "medium"
+        }
+      ],
+      "indexed_at": "2026-03-31T04:49:46.281513"
+    },
+    {
+      "path": "Cubox/Recyclerview竟能如此丝滑，这14个优化策略不容错过...-2024-03-26.md",
+      "title": "Recyclerview竟能如此丝滑，这14个优化策略不容错过...",
+      "scores": {
+        "relevance": 4,
+        "tech_depth": 2,
+        "timeliness": 5,
+        "verifiability": 1,
+        "total": 12
+      },
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "medium"
+        },
+        {
+          "chapter": "ch07-内存",
+          "confidence": "medium"
+        }
+      ],
+      "indexed_at": "2026-03-31T04:49:46.281515"
+    },
+    {
+      "path": "Cubox/Remote Profiling Firefox for Android - Firefox Profiler - Documentation-2022-01-15.md",
+      "title": "Remote Profiling Firefox for Android - Firefox Profiler - Documentation",
+      "scores": {
+        "relevance": 3,
+        "tech_depth": 2,
+        "timeliness": 4,
+        "verifiability": 1,
+        "total": 10
+      },
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch11-Profiling",
+          "confidence": "medium"
+        }
+      ],
+      "indexed_at": "2026-03-31T04:49:46.281519"
+    },
+    {
+      "path": "Cubox/RenderDoc 分析王者荣耀游戏-2026-01-02.md",
+      "title": "RenderDoc 分析王者荣耀游戏",
+      "scores": {
+        "relevance": 3,
+        "tech_depth": 2,
+        "timeliness": 5,
+        "verifiability": 1,
+        "total": 11
+      },
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "medium"
+        }
+      ],
+      "indexed_at": "2026-03-31T04:49:46.281521"
+    },
+    {
+      "path": "Cubox/RenderEngineType简介-2022-04-09.md",
+      "title": "RenderEngineType简介",
+      "scores": {
+        "relevance": 5,
+        "tech_depth": 4,
+        "timeliness": 4,
+        "verifiability": 3,
+        "total": 16
+      },
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "high"
+        }
+      ],
+      "indexed_at": "2026-03-31T04:49:46.281523"
+    },
+    {
+      "path": "Cubox/Retrofit + Kotlin-Coroutines 如何去掉 try catch - 程涛的博客 - ChengTao Blog-2022-01-14.md",
+      "title": "Retrofit + Kotlin-Coroutines 如何去掉 try catch - 程涛的博客 | ChengTao Blog",
+      "scores": {
+        "relevance": 3,
+        "tech_depth": 2,
+        "timeliness": 4,
+        "verifiability": 5,
+        "total": 14
+      },
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch09-网络",
+          "confidence": "medium"
+        },
+        {
+          "chapter": "ch15-Kotlin",
+          "confidence": "medium"
+        }
+      ],
+      "indexed_at": "2026-03-31T04:49:46.281525"
+    },
+    {
+      "path": "Cubox/Retrofit 的好朋友：RetrofitAssistant 插件 - 开发者说·DTalk-2024-02-02.md",
+      "title": "Retrofit 的好朋友：RetrofitAssistant 插件 | 开发者说·DTalk",
+      "scores": {
+        "relevance": 3,
+        "tech_depth": 2,
+        "timeliness": 5,
+        "verifiability": 1,
+        "total": 11
+      },
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch09-网络",
+          "confidence": "medium"
+        }
+      ],
+      "indexed_at": "2026-03-31T04:49:46.281527"
+    },
+    {
+      "path": "Cubox/Rust - 性能超越 Kotlin 的跨平台方案-2024-06-13.md",
+      "title": "Rust - 性能超越 Kotlin 的跨平台方案",
+      "scores": {
+        "relevance": 2,
+        "tech_depth": 2,
+        "timeliness": 5,
+        "verifiability": 2,
+        "total": 11
+      },
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "low"
+        }
+      ],
+      "indexed_at": "2026-03-31T04:49:46.281529"
+    },
+    {
+      "path": "Cubox/Rust - 性能超越 Kotlin 的跨平台方案-2024-07-21.md",
+      "title": "Rust - 性能超越 Kotlin 的跨平台方案",
+      "scores": {
+        "relevance": 2,
+        "tech_depth": 2,
+        "timeliness": 5,
+        "verifiability": 2,
+        "total": 11
+      },
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "low"
+        }
+      ],
+      "indexed_at": "2026-03-31T04:49:46.281530"
+    },
+    {
+      "path": "Cubox/Rust in the Android platform-2022-03-16.md",
+      "title": "Rust in the Android platform",
+      "scores": {
+        "relevance": 2,
+        "tech_depth": 2,
+        "timeliness": 4,
+        "verifiability": 2,
+        "total": 10
+      },
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch07-内存",
+          "confidence": "low"
+        }
+      ],
+      "indexed_at": "2026-03-31T04:49:46.281532"
+    },
+    {
+      "path": "Cubox/Rust写aosp13的AIDL系统级服务-2023-03-13.md",
+      "title": "Rust写aosp13的AIDL系统级服务",
+      "scores": {
+        "relevance": 3,
+        "tech_depth": 2,
+        "timeliness": 4,
+        "verifiability": 1,
+        "total": 10
+      },
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch01-架构",
+          "confidence": "medium"
+        }
+      ],
+      "indexed_at": "2026-03-31T04:49:46.281534"
+    },
+    {
+      "path": "Cubox/SOSP'25 全解读之1-13：操作系统文艺复兴，六大神作颠覆系统设计-2025-10-18.md",
+      "title": "SOSP'25 全解读之1/13：操作系统文艺复兴，六大神作颠覆系统设计",
+      "scores": {
+        "relevance": 3,
+        "tech_depth": 2,
+        "timeliness": 5,
+        "verifiability": 1,
+        "total": 11
+      },
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch08-存储",
+          "confidence": "medium"
+        }
+      ],
+      "indexed_at": "2026-03-31T04:49:46.281536"
+    },
+    {
+      "path": "Cubox/SPE profiling及其使用 - 极术社区 - 连接开发者与智能计算生态-2025-01-08.md",
+      "title": "SPE profiling及其使用 - 极术社区 - 连接开发者与智能计算生态",
+      "scores": {
+        "relevance": 3,
+        "tech_depth": 2,
+        "timeliness": 5,
+        "verifiability": 3,
+        "total": 13
+      },
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch11-Profiling",
+          "confidence": "medium"
+        }
+      ],
+      "indexed_at": "2026-03-31T04:49:46.281538"
+    },
+    {
+      "title": "SmartPerfetto AI Agent 的 Harness Engineering 实战分享",
+      "path": "Cubox/SmartPerfetto AI Agent 的 Harness Engineering 实战分享-2026-03-30.md",
+      "source": "Cubox",
+      "score": {
+        "relevance": 5,
+        "technical_depth": 4,
+        "timeliness": 5,
+        "verifiability": 3,
+        "total": 17
+      },
+      "matched_chapters": [
+        "ch14-工具"
+      ],
+      "indexed_at": "2026-03-31T05:17:50.469096"
     }
   ],
-  "last_updated": "2026-03-31T03:15:00",
+  "last_updated": "2026-03-31T04:50:27.138844",
   "total_indexed": 324
 }

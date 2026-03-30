@@ -61,18 +61,10 @@
       "section_title": "Android 版本演进中的架构变化",
       "priority": 60,
       "reason": "待加工（素材0篇）",
-      "material_paths": [
-        "obsidian/Cubox/谈Android架构创新性-2022-04-02.md",
-        "obsidian/Personal-Knowlodge/source/2026-03-07_wechat_深度_Android_整体设计及背后意义.md",
-        "obsidian/Personal-Knowlodge/source/2026-03-06_wechat_后AOSP时代还能贡献代码吗.md",
-        "obsidian/Personal-Knowlodge/source/2026-03-07_wechat_Android_运行时更新_为数十亿设备提高内存.md"
-      ],
-      "status": "completed",
+      "material_paths": [],
+      "status": "pending",
       "added_by": "manual-init",
-      "added_at": "2026-03-29T21:00:00",
-      "processed_at": "2026-03-30T21:28:51.853958+00:00",
-      "word_count": "~8000",
-      "verification_status": "L2_verified_all_anchors_2_extensions_covered"
+      "added_at": "2026-03-29T21:00:00"
     },
     {
       "section": "2.1",
@@ -1234,18 +1226,7 @@
       "extensions_total": 2,
       "verification_level": "L2",
       "word_count": "~8000"
-    },
-    {
-      "section": "1.6",
-      "title": "Android 版本演进中的架构变化",
-      "completed_at": "2026-03-30T21:28:51.853958+00:00",
-      "anchors_covered": 5,
-      "anchors_total": 5,
-      "extensions_covered": 2,
-      "extensions_total": 2,
-      "verification_level": "L2",
-      "word_count": "~8000"
     }
   ],
-  "last_updated": "2026-03-30T21:28:51.853958+00:00"
+  "last_updated": "2026-03-30T20:33:03.150823+00:00"
 }
