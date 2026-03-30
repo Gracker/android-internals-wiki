@@ -1,5 +1,5 @@
 {
-  "last_updated": "2026-03-30T07:33:41Z",
+  "last_updated": "2026-03-30T11:00:00Z",
   "entries": [
     {
       "section": "1.2",
@@ -136,53 +136,6 @@
           "method": "L1",
           "note": "frameworks/base/core/java/android/view/Choreographer.java"
         }
-      ]
-    },
-    {
-      "section": "2.3",
-      "section_title": "VSync 机制",
-      "verified_at": "2026-03-30T07:33:41Z",
-      "verification_summary": {
-        "L1_aosp": {
-          "count": 4,
-          "details": [
-            "frameworks/native/services/surfaceflinger/DispSync.cpp — DispSync PLL 核心实现",
-            "frameworks/native/services/surfaceflinger/EventThread.cpp — EventThread 信号分发",
-            "frameworks/base/core/java/android/view/Choreographer.java — App 侧 VSync 接收",
-            "frameworks/native/services/surfaceflinger/Scheduler/ — VsyncTracker/VsyncDispatcher/VSyncController"
-          ]
-        },
-        "L2_official": {
-          "count": 6,
-          "details": [
-            "source.android.com/docs/core/display/improve-performance — VSync 架构官方说明",
-            "developer.android.com/about/versions/16/features — ARR API (hasArrSupport/getSuggestedFrameRate)",
-            "developer.android.com/about/versions/15/features — ARR 初始引入",
-            "Android NDK Documentation — AChoreographer_vsyncCallback API 33+",
-            "Android Platform Architecture Documentation — vsync-appSf 信号说明",
-            "Phase Offset 配置方式 — VSYNC_EVENT_PHASE_OFFSET_NS / WorkDuration 属性"
-          ]
-        },
-        "L4_cross_verification": {
-          "count": 4,
-          "details": [
-            "DispSync 作为 PLL 的描述 — source.android.com 与 AOSP 源码一致",
-            "Phase Offset 三组配置（late/early/earlyGl）— 多个来源一致确认",
-            "三缓冲对连续 Jank 的影响 — 官方文档与 Cubox 收藏文章一致",
-            "ARR 对 VSync 管线的影响 — 官方文档与研究报告一致"
-          ]
-        },
-        "pending_verification": [
-          "ARR 在不同 SoC 平台的具体表现差异",
-          "Android 16 中 DispSync 适应可变周期的具体实现细节",
-          "D-VSync 解耦渲染与显示在实际设备上的部署状态"
-        ]
-      },
-      "anchor_coverage": "5/5 (100%)",
-      "extension_coverage": "2/2 (100%)",
-      "auto_discovery_count": 1,
-      "auto_discoveries": [
-        "ARR (Adaptive Refresh Rate) 对 VSync 管线的根本性影响 — 映射到扩展条目'可变刷新率下VSync行为的变化'"
       ]
     }
   ]

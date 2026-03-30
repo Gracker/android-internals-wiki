@@ -33,6 +33,829 @@
         "ch04-启动"
       ],
       "confidence": "medium"
+    },
+    {
+      "title": "BlastBufferQueue 原理解读",
+      "path": "Cubox/BlastBufferQueue 原理解读 - 简书-2023-11-06.md",
+      "score": {
+        "relevance": 5,
+        "technical": 4,
+        "timeliness": 4,
+        "verifiability": 4,
+        "total": 17
+      },
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "high"
+        }
+      ],
+      "summary": "详解BlastBufferQueue JAVA层API如setNextTransaction、SurfaceControl等，Android 12新同步机制"
+    },
+    {
+      "title": "BlastBufferQueue 机制介绍",
+      "path": "Cubox/BlastBufferQueue 机制介绍 - 简书-2023-11-06.md",
+      "score": {
+        "relevance": 5,
+        "technical": 4,
+        "timeliness": 4,
+        "verifiability": 4,
+        "total": 17
+      },
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "high"
+        }
+      ],
+      "summary": "介绍BLAST机制背景：解决Android S前BufferQueue提交灵活性不足、窗口与绘制无法同步等问题"
+    },
+    {
+      "title": "BlastBufferQueue 运用场景",
+      "path": "Cubox/BlastBufferQueue 运用场景 - 简书-2023-11-06.md",
+      "score": {
+        "relevance": 5,
+        "technical": 4,
+        "timeliness": 4,
+        "verifiability": 4,
+        "total": 17
+      },
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "high"
+        }
+      ],
+      "summary": "演示SurfaceControl.Transaction与BBQ配合的实际场景，包含Geometry同步代码示例"
+    },
+    {
+      "title": "Bundle风水——Android序列化与反序列化不匹配漏洞详解",
+      "path": "Cubox/Bundle风水——Android序列化与反序列化不匹配漏洞详解 - 先知社区-2023-03-09.md",
+      "score": {
+        "relevance": 5,
+        "technical": 5,
+        "timeliness": 4,
+        "verifiability": 5,
+        "total": 19
+      },
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch12-安全",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch01-架构",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "详解Android框架层Parcelable序列化不匹配导致的提权漏洞（CVE-2017-0806等），含AOSP源码分析"
+    },
+    {
+      "title": "CFS线程调度机制分析",
+      "path": "Cubox/CFS线程调度机制分析-2022-11-04.md",
+      "score": {
+        "relevance": 5,
+        "technical": 5,
+        "timeliness": 4,
+        "verifiability": 4,
+        "total": 18
+      },
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch13-调度",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch03-线程",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "分析CFS调度器的权重、虚拟运行时间、调度延迟等核心机制，探讨关键线程调度保障"
+    },
+    {
+      "title": "CFS组调度",
+      "path": "Cubox/CFS组调度-2023-01-06.md",
+      "score": {
+        "relevance": 5,
+        "technical": 4,
+        "timeliness": 4,
+        "verifiability": 3,
+        "total": 16
+      },
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch13-调度",
+          "confidence": "high"
+        }
+      ],
+      "summary": "介绍CFS组调度功能的引入原因、配置方法和实现细节，用于进程组间的CPU资源公平分配"
+    },
+    {
+      "title": "CMA技术原理分析",
+      "path": "Cubox/CMA技术原理分析-2023-03-10.md",
+      "score": {
+        "relevance": 5,
+        "technical": 5,
+        "timeliness": 4,
+        "verifiability": 5,
+        "total": 19
+      },
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch07-内存",
+          "confidence": "high"
+        }
+      ],
+      "summary": "从源码分析CMA（Contiguous Memory Allocator）的初始化和内存分配流程，连续内存管理核心机制"
+    },
+    {
+      "title": "CPU 使用率高就一定有效率吗？",
+      "path": "Cubox/CPU 使用率高就一定有效率吗？ - plantegg-2025-01-08.md",
+      "score": {
+        "relevance": 3,
+        "technical": 4,
+        "timeliness": 5,
+        "verifiability": 4,
+        "total": 16
+      },
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch13-调度",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "通过火焰图分析8C升16C后RT反而增加的案例，定位CPU消耗在自旋锁上，含测试数据"
+    },
+    {
+      "title": "CPU 性能和Cache Line",
+      "path": "Cubox/CPU 性能和Cache Line - plantegg-2026-01-28.md",
+      "score": {
+        "relevance": 3,
+        "technical": 5,
+        "timeliness": 4,
+        "verifiability": 5,
+        "total": 17
+      },
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch07-内存",
+          "confidence": "medium"
+        },
+        {
+          "chapter": "ch13-调度",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "CPU性能优化系列：多核、超线程、NUMA、cache line失效、加锁代价、IPC等指标，含大量实验数据"
+    },
+    {
+      "title": "CPU 那些事儿 - 前端(下）",
+      "path": "Cubox/CPU 那些事儿 - 前端(下）-2025-09-01.md",
+      "score": {
+        "relevance": 3,
+        "technical": 4,
+        "timeliness": 5,
+        "verifiability": 4,
+        "total": 16
+      },
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch13-调度",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "如何构造测试程序探测CPU前端关键部件，分支预测与流水线性能分析"
+    },
+    {
+      "title": "CPU性能指标提取及源码分析",
+      "path": "Cubox/CPU性能指标提取及源码分析-2022-09-13.md",
+      "score": {
+        "relevance": 5,
+        "technical": 5,
+        "timeliness": 4,
+        "verifiability": 4,
+        "total": 18
+      },
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch13-调度",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch11-Profiling",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "基于CPU运行队列长度、调度延迟和平均负载等指标分析系统性能，含源码级分析"
+    },
+    {
+      "title": "CDN加速工作原理",
+      "path": "Cubox/CDN加速工作原理-2025-08-31.md",
+      "score": {
+        "relevance": 3,
+        "technical": 2,
+        "timeliness": 5,
+        "verifiability": 2,
+        "total": 12
+      },
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch09-网络",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "CDN基本原理：缓存服务器分布、全局负载技术将用户指向最近节点"
+    },
+    {
+      "title": "Breaking to Build: Fuzzing the Kotlin Compiler",
+      "path": "Cubox/Breaking to Build- Fuzzing the Kotlin Compiler - The Research Blog-2025-07-18.md",
+      "score": {
+        "relevance": 3,
+        "technical": 4,
+        "timeliness": 5,
+        "verifiability": 3,
+        "total": 15
+      },
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch15-Kotlin",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "JetBrains通过Fuzzing技术测试Kotlin编译器质量，发现传统测试难以覆盖的bug"
+    },
+    {
+      "title": "C++无锁队列的探索：多种实现方案及性能对比",
+      "path": "Cubox/C++无锁队列的探索：多种实现方案及性能对比-2024-04-18.md",
+      "score": {
+        "relevance": 3,
+        "technical": 4,
+        "timeliness": 4,
+        "verifiability": 4,
+        "total": 15
+      },
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch03-线程",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "C++无锁队列实现方案与性能对比，涉及原子操作和内存序等并发编程核心技术"
+    },
+    {
+      "title": "CMU 15513 CSAPP - Thread Level Parallelism",
+      "path": "Cubox/CMU 15513 CSAPP - 深入理解计算机系统 - Lecture 26 Thread Level Parallelism - 知乎-2023-01-12.md",
+      "score": {
+        "relevance": 3,
+        "technical": 4,
+        "timeliness": 4,
+        "verifiability": 3,
+        "total": 14
+      },
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch03-线程",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "CMU CSAPP课程笔记：线程级并行、并行求和、Amdahl定律、并行快排、内存一致性"
+    },
+    {
+      "title": "CPU 是如何与内存交互的（知乎版）",
+      "path": "Cubox/CPU 是如何与内存交互的 - 知乎-2023-10-12.md",
+      "score": {
+        "relevance": 3,
+        "technical": 3,
+        "timeliness": 4,
+        "verifiability": 3,
+        "total": 13
+      },
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch07-内存",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "整理计算机内存结构、CPU读写内存流程、缓存一致性维护、虚拟内存概念"
+    },
+    {
+      "title": "CPU 是如何与内存交互的（微信版）",
+      "path": "Cubox/CPU 是如何与内存交互的-2022-10-17.md",
+      "score": {
+        "relevance": 3,
+        "technical": 3,
+        "timeliness": 3,
+        "verifiability": 3,
+        "total": 12
+      },
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch07-内存",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "计算机内存结构整理总结，CPU缓存层次与内存交互基础"
+    },
+    {
+      "title": "CPU三级缓存(L1-L2-L3)工作原理",
+      "path": "Cubox/CPU三级缓存(L1-L2-L3)工作原理-2025-06-13.md",
+      "score": {
+        "relevance": 3,
+        "technical": 3,
+        "timeliness": 5,
+        "verifiability": 3,
+        "total": 14
+      },
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch07-内存",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "现代CPU缓存L1/L2/L3工作原理，解决CPU运算速度与内存访问速度不匹配问题"
+    },
+    {
+      "title": "CPU性能提升的技术瓶颈和优化方案",
+      "path": "Cubox/CPU性能提升的技术瓶颈和优化方案-2025-08-29.md",
+      "score": {
+        "relevance": 3,
+        "technical": 3,
+        "timeliness": 5,
+        "verifiability": 3,
+        "total": 14
+      },
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch13-调度",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "CPU性能公式分析（指令数×CPI×时钟周期），从主频、微架构、指令集等维度优化"
+    },
+    {
+      "title": "CPU指令执行过程",
+      "path": "Cubox/CPU指令执行过程-2025-09-01.md",
+      "score": {
+        "relevance": 2,
+        "technical": 2,
+        "timeliness": 5,
+        "verifiability": 2,
+        "total": 11
+      },
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch13-调度",
+          "confidence": "low"
+        }
+      ],
+      "summary": "CPU指令执行基础：PC寄存器、指令读取、顺序执行流程"
+    },
+    {
+      "title": "CPU的分支预测",
+      "path": "Cubox/CPU的分支预测-2025-03-06.md",
+      "score": {
+        "relevance": 3,
+        "technical": 4,
+        "timeliness": 5,
+        "verifiability": 4,
+        "total": 16
+      },
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch13-调度",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "CPU分支预测技术原理，对理解Android中条件分支性能开销有参考价值"
+    },
+    {
+      "title": "CPU调频、线程绑核、优先级控制实践",
+      "path": "Cubox/CPU调频、线程绑核、优先级控制实践 - 精选-2023-09-18.md",
+      "score": {
+        "relevance": 5,
+        "technical": 5,
+        "timeliness": 4,
+        "verifiability": 5,
+        "total": 19
+      },
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch13-调度",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch03-线程",
+          "confidence": "high"
+        }
+      ],
+      "summary": "App性能优化实战：CPU调频、线程绑核、线程优先级控制，直接关联Android性能优化"
+    },
+    {
+      "title": "CPU那些事儿-CPU benchmarks（上）",
+      "path": "Cubox/CPU那些事儿-CPU benchmarks（上）-2025-08-04.md",
+      "score": {
+        "relevance": 3,
+        "technical": 4,
+        "timeliness": 5,
+        "verifiability": 4,
+        "total": 16
+      },
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch14-工具",
+          "confidence": "medium"
+        },
+        {
+          "chapter": "ch13-调度",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "如何衡量CPU性能和功耗，benchmark测试方法论"
+    },
+    {
+      "title": "CPU那些事儿-CPU benchmarks（下）",
+      "path": "Cubox/CPU那些事儿-CPU benchmarks（下）-2025-08-12.md",
+      "score": {
+        "relevance": 3,
+        "technical": 4,
+        "timeliness": 5,
+        "verifiability": 4,
+        "total": 16
+      },
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch14-工具",
+          "confidence": "medium"
+        },
+        {
+          "chapter": "ch13-调度",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "SPEC CPU2006/2017及Geekbench V5/V6原理与优化分析"
+    },
+    {
+      "title": "CallStack相关的编译报错undefined symbol正面解决方案",
+      "path": "Cubox/CallStack相关的编译报错undefined symbol正面解决方案-2024-11-26.md",
+      "score": {
+        "relevance": 4,
+        "technical": 4,
+        "timeliness": 4,
+        "verifiability": 4,
+        "total": 16
+      },
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch14-工具",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Android Native开发中CallStack打印编译报错的正面解决方案"
+    },
+    {
+      "title": "Can you trust time measurements in Profiler?",
+      "path": "Cubox/Can you trust time measurements in Profiler- - by Paulina Sadowska - ProAndroidDev-2022-02-20.md",
+      "score": {
+        "relevance": 5,
+        "technical": 4,
+        "timeliness": 4,
+        "verifiability": 4,
+        "total": 17
+      },
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch11-Profiling",
+          "confidence": "high"
+        }
+      ],
+      "summary": "深入分析Android Studio Profiler时间测量准确性，探讨工具局限性和偏差"
+    },
+    {
+      "title": "Chrome for Android 渲染架构解析",
+      "path": "Cubox/Chrome for Android 渲染架构解析 - 知乎-2024-03-08.md",
+      "score": {
+        "relevance": 5,
+        "technical": 5,
+        "timeliness": 4,
+        "verifiability": 4,
+        "total": 18
+      },
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Chrome for Android浏览器渲染架构：页面布局管理、图层树、合成器架构"
+    },
+    {
+      "title": "Chromium OOPD 合成器架构介绍",
+      "path": "Cubox/Chromium OOPD 合成器架构介绍 - 知乎-2024-03-08.md",
+      "score": {
+        "relevance": 4,
+        "technical": 5,
+        "timeliness": 4,
+        "verifiability": 4,
+        "total": 17
+      },
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Chromium OOPD合成器架构与Ubercompositor对比，关键接口与对象设计"
+    },
+    {
+      "title": "Chromium WebView - In Renderer Gpu 进程架构设计",
+      "path": "Cubox/Chromium WebView - In Renderer Gpu 进程架构设计 - 知乎-2024-03-08.md",
+      "score": {
+        "relevance": 4,
+        "technical": 5,
+        "timeliness": 4,
+        "verifiability": 4,
+        "total": 17
+      },
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch01-架构",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "WebView四种进程架构组合（独立GPU/In Process/单进程）及降级策略"
+    },
+    {
+      "title": "Chromium WebView - In Renderer 渲染和进程架构",
+      "path": "Cubox/Chromium WebView - In Renderer 渲染和进程架构 - 知乎-2024-03-08.md",
+      "score": {
+        "relevance": 5,
+        "technical": 5,
+        "timeliness": 4,
+        "verifiability": 4,
+        "total": 18
+      },
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch01-架构",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "WebView渲染流水线配置与进程架构（多Renderer）的关系，含单进程到多进程方案"
+    },
+    {
+      "title": "Chromium WebView - 以 Renderer 为中心的系统架构思考",
+      "path": "Cubox/Chromium WebView - 以 Renderer 为中心的系统架构的思考 - 知乎-2024-03-08.md",
+      "score": {
+        "relevance": 5,
+        "technical": 5,
+        "timeliness": 4,
+        "verifiability": 4,
+        "total": 18
+      },
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch01-架构",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "high"
+        }
+      ],
+      "summary": "WebView直接合成（Direct Compositing）渲染流水线设计，Renderer端Localized Viz Services"
+    },
+    {
+      "title": "CPU时钟周期结构原理",
+      "path": "Cubox/CPU时钟周期结构原理-2025-06-03.md",
+      "score": {
+        "relevance": 2,
+        "technical": 3,
+        "timeliness": 5,
+        "verifiability": 3,
+        "total": 13
+      },
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch13-调度",
+          "confidence": "low"
+        }
+      ],
+      "summary": "从晶体电路与时钟网络级别剖析CPU时钟周期工作原理"
+    },
+    {
+      "title": "CPU是怎样一步步读写内存的？",
+      "path": "Cubox/CPU是怎样一步步读写内存的？-2024-08-22.md",
+      "score": {
+        "relevance": 3,
+        "technical": 3,
+        "timeliness": 4,
+        "verifiability": 3,
+        "total": 13
+      },
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch07-内存",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "CPU读写内存的完整流程解析"
+    },
+    {
+      "title": "CPU流水线技术原理",
+      "path": "Cubox/CPU流水线技术原理-2025-06-17.md",
+      "score": {
+        "relevance": 2,
+        "technical": 3,
+        "timeliness": 5,
+        "verifiability": 3,
+        "total": 13
+      },
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch13-调度",
+          "confidence": "low"
+        }
+      ],
+      "summary": "指令流水线思想：CPU部件对不同指令并行处理"
+    },
+    {
+      "title": "CPU的制造和概念",
+      "path": "Cubox/CPU的制造和概念 - plantegg-2024-03-20.md",
+      "score": {
+        "relevance": 3,
+        "technical": 4,
+        "timeliness": 4,
+        "verifiability": 4,
+        "total": 15
+      },
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch13-调度",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "plantegg CPU系列：多核、超线程、NUMA、睿频、功耗、大小核、分支预测等概念"
+    },
+    {
+      "title": "CPU的基本结构",
+      "path": "Cubox/CPU的基本结构-2025-08-21.md",
+      "score": {
+        "relevance": 2,
+        "technical": 2,
+        "timeliness": 5,
+        "verifiability": 2,
+        "total": 11
+      },
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch13-调度",
+          "confidence": "low"
+        }
+      ],
+      "summary": "CPU基本结构：运算器、控制器、寄存器、时钟、总线"
+    },
+    {
+      "title": "CPU眼里的：系统调用",
+      "path": "Cubox/CPU眼里的：系统调用-2024-04-22.md",
+      "score": {
+        "relevance": 3,
+        "technical": 3,
+        "timeliness": 4,
+        "verifiability": 3,
+        "total": 13
+      },
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch01-架构",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "从CPU视角理解系统调用过程，库函数到内核的切换机制"
+    },
+    {
+      "title": "CUDA 内存管理器",
+      "path": "Cubox/CUDA 内存管理器 - 知乎-2025-01-19.md",
+      "score": {
+        "relevance": 2,
+        "technical": 4,
+        "timeliness": 5,
+        "verifiability": 3,
+        "total": 14
+      },
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch07-内存",
+          "confidence": "low"
+        }
+      ],
+      "summary": "GPU内存管理器设计，内存分配与回收策略"
+    },
+    {
+      "title": "Chrome 浏览器运行原理",
+      "path": "Cubox/Chrome 浏览器运行原理你了解多少？-2023-08-07.md",
+      "score": {
+        "relevance": 3,
+        "technical": 3,
+        "timeliness": 4,
+        "verifiability": 3,
+        "total": 13
+      },
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Chrome浏览器与V8引擎底层原理，前端开发者视角"
+    },
+    {
+      "title": "Chromium多进程架构",
+      "path": "Cubox/Chromium多进程架构，你知道多少？-2023-08-02.md",
+      "score": {
+        "relevance": 4,
+        "technical": 4,
+        "timeliness": 4,
+        "verifiability": 3,
+        "total": 15
+      },
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch01-架构",
+          "confidence": "medium"
+        },
+        {
+          "chapter": "ch02-进程",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Chromium多进程架构演进历史，进程与线程种类和用途详解"
+    },
+    {
+      "title": "Chasing Monet inside the Android framework",
+      "path": "Cubox/Chasing Monet inside the Android framework-2022-04-29.md",
+      "score": {
+        "relevance": 4,
+        "technical": 4,
+        "timeliness": 3,
+        "verifiability": 4,
+        "total": 15
+      },
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch01-架构",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Android 12 Monet动态主题系统框架内部实现，SystemUI与Material You"
     }
   ]
 }

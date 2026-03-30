@@ -8822,6 +8822,968 @@
         "total": 7
       },
       "reason": "总分不足 7/20 (相关性2+技术1+时效3+可验证1)"
+    },
+    {
+      "title": "BlackBerry 黑莓之死（下）",
+      "path": "Cubox/BlackBerry 黑莓之死（下）-2025-12-01.md",
+      "score": {
+        "relevance": 1,
+        "technical": 1,
+        "timeliness": 5,
+        "verifiability": 1,
+        "total": 8
+      },
+      "reason": "商业史文章，与Android技术无关"
+    },
+    {
+      "title": "Bob 1.0.0 正式发布",
+      "path": "Cubox/Bob 1.0.0 正式发布啦！ - Bob-2022-07-04.md",
+      "score": {
+        "relevance": 1,
+        "technical": 1,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 6
+      },
+      "reason": "macOS翻译软件，与Android无关"
+    },
+    {
+      "title": "BrowserBench Speedometer 3.0",
+      "path": "Cubox/BrowserBench.org — Announcements-2024-03-23.md",
+      "score": {
+        "relevance": 2,
+        "technical": 2,
+        "timeliness": 4,
+        "verifiability": 3,
+        "total": 11
+      },
+      "reason": "浏览器基准测试，Android关联度不足"
+    },
+    {
+      "title": "Build a WhatsApp Clone With Compose",
+      "path": "Cubox/Build a Real-Time Android WhatsApp Clone With Jetpack Compose - by Jaewoong Eum - Aug, 2022 - ProAnd.md",
+      "score": {
+        "relevance": 3,
+        "technical": 2,
+        "timeliness": 3,
+        "verifiability": 3,
+        "total": 11
+      },
+      "reason": "Compose应用教程，偏应用层非系统底层"
+    },
+    {
+      "title": "Building A Generative AI Platform",
+      "path": "Cubox/Building A Generative AI Platform-2024-08-08.md",
+      "score": {
+        "relevance": 1,
+        "technical": 2,
+        "timeliness": 4,
+        "verifiability": 2,
+        "total": 9
+      },
+      "reason": "AI平台架构，与Android无关"
+    },
+    {
+      "title": "Building design system with Compose",
+      "path": "Cubox/Building design system with Jetpack Compose - by Damian Petla - ProAndroidDev-2022-01-18.md",
+      "score": {
+        "relevance": 2,
+        "technical": 2,
+        "timeliness": 3,
+        "verifiability": 2,
+        "total": 9
+      },
+      "reason": "Compose主题设计教程，技术深度不足"
+    },
+    {
+      "title": "B站移动端低代码测试探索与实践",
+      "path": "Cubox/B站移动端低代码测试探索与实践-2022-07-12.md",
+      "score": {
+        "relevance": 2,
+        "technical": 2,
+        "timeliness": 3,
+        "verifiability": 2,
+        "total": 9
+      },
+      "reason": "移动端测试实践，Android技术深度不足"
+    },
+    {
+      "title": "C# 为什么要支持主构造器？",
+      "path": "Cubox/C# 为什么要支持主构造器？-2024-02-20.md",
+      "score": {
+        "relevance": 1,
+        "technical": 1,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 6
+      },
+      "reason": "C#语言特性，与Android无关"
+    },
+    {
+      "title": "C++ Annotated November 2021",
+      "path": "Cubox/C++ Annotated November 2021- Discussions on C++ Ecosystem, a Book on C++ Core Guidelines, Designated.md",
+      "score": {
+        "relevance": 1,
+        "technical": 1,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 6
+      },
+      "reason": "C++生态新闻 roundup，与Android无关"
+    },
+    {
+      "title": "C++ 中的值类别",
+      "path": "Cubox/C++ 中的值类别-2022-01-23.md",
+      "score": {
+        "relevance": 1,
+        "technical": 3,
+        "timeliness": 3,
+        "verifiability": 3,
+        "total": 10
+      },
+      "reason": "C++语言特性（值类别/移动语义），Android关联度不足"
+    },
+    {
+      "title": "C++14新增特性汇总",
+      "path": "Cubox/C++14新增特性汇总-2022-03-22.md",
+      "score": {
+        "relevance": 1,
+        "technical": 2,
+        "timeliness": 3,
+        "verifiability": 2,
+        "total": 8
+      },
+      "reason": "C++14特性汇总，与Android无关"
+    },
+    {
+      "title": "C++17常用新特性(一) if和switch",
+      "path": "Cubox/C++17常用新特性(一)---带初始化的 if 和 switch 语句-2022-03-07.md",
+      "score": {
+        "relevance": 1,
+        "technical": 2,
+        "timeliness": 3,
+        "verifiability": 2,
+        "total": 8
+      },
+      "reason": "C++17特性，与Android无关"
+    },
+    {
+      "title": "C++17常用新特性(三) 结构化绑定",
+      "path": "Cubox/C++17常用新特性(三)---结构化绑定-2022-03-07.md",
+      "score": {
+        "relevance": 1,
+        "technical": 2,
+        "timeliness": 3,
+        "verifiability": 2,
+        "total": 8
+      },
+      "reason": "C++17特性，与Android无关"
+    },
+    {
+      "title": "C++17常用新特性(二) 内联变量",
+      "path": "Cubox/C++17常用新特性(二)---内联变量-2022-03-07.md",
+      "score": {
+        "relevance": 1,
+        "technical": 2,
+        "timeliness": 3,
+        "verifiability": 2,
+        "total": 8
+      },
+      "reason": "C++17特性，与Android无关"
+    },
+    {
+      "title": "C++17常用新特性(五) 强制省略拷贝",
+      "path": "Cubox/C++17常用新特性(五)---强制省略拷贝或传递未实质化的对象-2022-03-17.md",
+      "score": {
+        "relevance": 1,
+        "technical": 2,
+        "timeliness": 3,
+        "verifiability": 2,
+        "total": 8
+      },
+      "reason": "C++17特性，与Android无关"
+    },
+    {
+      "title": "C++17常用新特性(六) lambda扩展",
+      "path": "Cubox/C++17常用新特性(六)---lambda表达式的扩展-2022-03-21.md",
+      "score": {
+        "relevance": 1,
+        "technical": 2,
+        "timeliness": 3,
+        "verifiability": 2,
+        "total": 8
+      },
+      "reason": "C++17特性，与Android无关"
+    },
+    {
+      "title": "C++17常用新特性",
+      "path": "Cubox/C++17常用新特性-2022-03-07.md",
+      "score": {
+        "relevance": 1,
+        "technical": 2,
+        "timeliness": 3,
+        "verifiability": 2,
+        "total": 8
+      },
+      "reason": "C++17特性总览，与Android无关"
+    },
+    {
+      "title": "CCCF精选｜面向2030的操作系统架构与演进思考",
+      "path": "Cubox/CCCF精选｜面向2030的操作系统架构与演进思考-2024-01-08.md",
+      "score": {
+        "relevance": 2,
+        "technical": 2,
+        "timeliness": 4,
+        "verifiability": 1,
+        "total": 9
+      },
+      "reason": "宏观OS演进展望，Android技术关联不足"
+    },
+    {
+      "title": "CES 2024 回顾：新气象",
+      "path": "Cubox/CES 2024 回顾：新气象-2024-01-21.md",
+      "score": {
+        "relevance": 1,
+        "technical": 1,
+        "timeliness": 4,
+        "verifiability": 1,
+        "total": 7
+      },
+      "reason": "消费电子展回顾，与Android技术无关"
+    },
+    {
+      "title": "CHATGPT API 对 LLM 领域的影响",
+      "path": "Cubox/CHATGPT API（降价 90%）对 LLM 领域的影响 - 高策-2023-03-03.md",
+      "score": {
+        "relevance": 1,
+        "technical": 2,
+        "timeliness": 3,
+        "verifiability": 2,
+        "total": 8
+      },
+      "reason": "LLM行业分析，与Android无关"
+    },
+    {
+      "title": "CS61C 浮点数 IEEE 754",
+      "path": "Cubox/CS61C系列-计算体系结构的伟大思想- 浮点数的表示IEEE 754-Lecture 07-2025-03-09.md",
+      "score": {
+        "relevance": 1,
+        "technical": 2,
+        "timeliness": 5,
+        "verifiability": 2,
+        "total": 10
+      },
+      "reason": "通用计算机体系结构课程，与Android技术关联不足"
+    },
+    {
+      "title": "Can GPT-4 Actually Write Code?",
+      "path": "Cubox/Can GPT-4 -Actually- Write Code--2023-03-19.md",
+      "score": {
+        "relevance": 1,
+        "technical": 2,
+        "timeliness": 3,
+        "verifiability": 2,
+        "total": 8
+      },
+      "reason": "AI编程能力评测，与Android无关"
+    },
+    {
+      "title": "ChatGPT Apps - Ranking",
+      "path": "Cubox/ChatGPT Apps - Ranking ~ ...-2023-03-30.md",
+      "score": {
+        "relevance": 1,
+        "technical": 1,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 6
+      },
+      "reason": "ChatGPT项目排名列表，与Android无关"
+    },
+    {
+      "title": "ChatGPT Plus新手教程",
+      "path": "Cubox/ChatGPT Plus官方推荐新手教程-2023-03-26.md",
+      "score": {
+        "relevance": 1,
+        "technical": 1,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 6
+      },
+      "reason": "ChatGPT使用教程，与Android无关"
+    },
+    {
+      "title": "ChatGPT 在做什么…以及它为何发挥作用？",
+      "path": "Cubox/ChatGPT 在做什么… 以及它为何发挥作用？-2023-03-09.md",
+      "score": {
+        "relevance": 1,
+        "technical": 2,
+        "timeliness": 3,
+        "verifiability": 2,
+        "total": 8
+      },
+      "reason": "ChatGPT原理科普，与Android无关"
+    },
+    {
+      "title": "ChatGPT Code Interpreter高级指南",
+      "path": "Cubox/ChatGPT 探索：Code Interpreter 高级指南-2023-07-09.md",
+      "score": {
+        "relevance": 1,
+        "technical": 1,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 6
+      },
+      "reason": "ChatGPT使用指南，与Android无关"
+    },
+    {
+      "title": "ChatGPT 正在杀死编程里的乐趣",
+      "path": "Cubox/ChatGPT 正在杀死编程里的乐趣  - Piglei-2023-12-15.md",
+      "score": {
+        "relevance": 1,
+        "technical": 1,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 6
+      },
+      "reason": "AI与编程的思考文章，与Android无关"
+    },
+    {
+      "title": "ChatGPT 算法原理",
+      "path": "Cubox/ChatGPT 算法原理-2023-02-14.md",
+      "score": {
+        "relevance": 1,
+        "technical": 2,
+        "timeliness": 3,
+        "verifiability": 2,
+        "total": 8
+      },
+      "reason": "GPT模型技术拆解，与Android无关"
+    },
+    {
+      "title": "ChatGPT 问世两年成为iOS开发者",
+      "path": "Cubox/ChatGPT 问世两年，我在 AI 的辅助下成为了一名 iOS 业余开发者 - 少数派-2024-11-12.md",
+      "score": {
+        "relevance": 1,
+        "technical": 1,
+        "timeliness": 4,
+        "verifiability": 1,
+        "total": 7
+      },
+      "reason": "AI辅助iOS开发个人经历，与Android无关"
+    },
+    {
+      "title": "ChatGPT-Siri",
+      "path": "Cubox/ChatGPT-Siri-README-zh_CN.md at main · Yue-Yang-ChatGPT-Siri · GitHub-2023-03-20.md",
+      "score": {
+        "relevance": 1,
+        "technical": 1,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 6
+      },
+      "reason": "Siri+ChatGPT快捷指令项目，与Android无关"
+    },
+    {
+      "title": "ChatGPT为什么这么强",
+      "path": "Cubox/ChatGPT为什么这么强-2022-12-05.md",
+      "score": {
+        "relevance": 1,
+        "technical": 1,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 6
+      },
+      "reason": "ChatGPT科普，与Android无关"
+    },
+    {
+      "title": "ChatGPT内核：InstructGPT",
+      "path": "Cubox/ChatGPT内核：InstructGPT，基于反馈指令的PPO强化学习-2022-12-09.md",
+      "score": {
+        "relevance": 1,
+        "technical": 2,
+        "timeliness": 3,
+        "verifiability": 2,
+        "total": 8
+      },
+      "reason": "InstructGPT论文解读，与Android无关"
+    },
+    {
+      "title": "ChatGPT应用开发小记",
+      "path": "Cubox/ChatGPT应用开发小记-2023-04-08.md",
+      "score": {
+        "relevance": 1,
+        "technical": 1,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 6
+      },
+      "reason": "ChatGPT应用开发，与Android无关"
+    },
+    {
+      "title": "ChatGPT时代新书上市",
+      "path": "Cubox/ChatGPT时代，我的新书《智慧共生》上市了...-2023-06-15.md",
+      "score": {
+        "relevance": 1,
+        "technical": 1,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 6
+      },
+      "reason": "书籍推广，与Android无关"
+    },
+    {
+      "title": "ChatGPT的工作原理",
+      "path": "Cubox/ChatGPT的工作原理，这篇文章说清楚了-2023-02-20.md",
+      "score": {
+        "relevance": 1,
+        "technical": 1,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 6
+      },
+      "reason": "ChatGPT科普，与Android无关"
+    },
+    {
+      "title": "ChatGPT研究框架（80页PPT）",
+      "path": "Cubox/ChatGPT研究框架（80页PPT）-2023-02-12.md",
+      "score": {
+        "relevance": 1,
+        "technical": 1,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 6
+      },
+      "reason": "ChatGPT研究PPT，与Android无关"
+    },
+    {
+      "title": "ChatGPT背后的经济账",
+      "path": "Cubox/ChatGPT背后的经济账-2023-02-07.md",
+      "score": {
+        "relevance": 1,
+        "technical": 1,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 6
+      },
+      "reason": "LLM经济学分析，与Android无关"
+    },
+    {
+      "title": "ChatGPT背后的语言模型简史",
+      "path": "Cubox/ChatGPT背后的语言模型简史-2023-05-07.md",
+      "score": {
+        "relevance": 1,
+        "technical": 2,
+        "timeliness": 3,
+        "verifiability": 2,
+        "total": 8
+      },
+      "reason": "NLP语言模型发展史，与Android无关"
+    },
+    {
+      "title": "ChatPDF",
+      "path": "Cubox/ChatPDF也来了！一键上传文件即可解读-2023-03-11.md",
+      "score": {
+        "relevance": 1,
+        "technical": 1,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 6
+      },
+      "reason": "AI PDF解读工具，与Android无关"
+    },
+    {
+      "title": "Chromium多进程架构，你知道多少？-CSDN博客",
+      "path": "Cubox/Chromium多进程架构，你知道多少？-CSDN博客-2024-02-29.md",
+      "scores": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 4,
+        "verifiability": 1,
+        "total": 7
+      },
+      "skip_reason": "总分7/20",
+      "skipped_at": "2026-03-30T15:15:00"
+    },
+    {
+      "title": "Claude Code 2.1 发布：一口气更新了80多个功能特性",
+      "path": "Cubox/Claude Code 2.1 发布：一口气更新了80多个功能特性-2026-01-09.md",
+      "scores": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 5,
+        "verifiability": 1,
+        "total": 8
+      },
+      "skip_reason": "总分8/20",
+      "skipped_at": "2026-03-30T15:15:00"
+    },
+    {
+      "title": "Claude Code 之父自爆：Claude Code 的终极用法",
+      "path": "Cubox/Claude Code 之父自爆：Claude Code 的终极用法-2026-01-08.md",
+      "scores": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 5,
+        "verifiability": 1,
+        "total": 8
+      },
+      "skip_reason": "总分8/20",
+      "skipped_at": "2026-03-30T15:15:00"
+    },
+    {
+      "title": "Claude Code 浏览器自动化方案，怎么选？",
+      "path": "Cubox/Claude Code 浏览器自动化方案，怎么选？-2026-01-28.md",
+      "scores": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 5,
+        "verifiability": 1,
+        "total": 8
+      },
+      "skip_reason": "总分8/20",
+      "skipped_at": "2026-03-30T15:15:00"
+    },
+    {
+      "title": "Claude Code 订阅费太贵？这个工具让你0成本用上 Claude 和 Gemini",
+      "path": "Cubox/Claude Code 订阅费太贵？这个工具让你0成本用上 Claude 和 Gemini-2026-01-06.md",
+      "scores": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 5,
+        "verifiability": 1,
+        "total": 8
+      },
+      "skip_reason": "总分8/20",
+      "skipped_at": "2026-03-30T15:15:00"
+    },
+    {
+      "title": "Claude Code之父：Claude Code是怎么被创造出来的？-哔哩哔哩",
+      "path": "Cubox/Claude Code之父：Claude Code是怎么被创造出来的？-哔哩哔哩-2025-12-09.md",
+      "scores": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 5,
+        "verifiability": 1,
+        "total": 8
+      },
+      "skip_reason": "总分8/20",
+      "skipped_at": "2026-03-30T15:15:00"
+    },
+    {
+      "title": "Claude Code推荐的终端 - Ghostty",
+      "path": "Cubox/Claude Code推荐的终端 - Ghostty-2026-03-29.md",
+      "scores": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 5,
+        "verifiability": 1,
+        "total": 8
+      },
+      "skip_reason": "总分8/20",
+      "skipped_at": "2026-03-30T15:15:00"
+    },
+    {
+      "title": "Claude for Chrome 一手体验！自动回复微信、发Twitter、做调研……做AI浏览器的创业者该慌了，比赛已经结束",
+      "path": "Cubox/Claude for Chrome 一手体验！自动回复微信、发Twitter、做调研……做AI浏览器的创业者该慌了，比赛已经结束-2025-09-06.md",
+      "scores": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 5,
+        "verifiability": 1,
+        "total": 8
+      },
+      "skip_reason": "总分8/20",
+      "skipped_at": "2026-03-30T15:15:00"
+    },
+    {
+      "title": "Claude刚登顶，OpenAI就放出24小时不休息的编程AI，谁才是最强？",
+      "path": "Cubox/Claude刚登顶，OpenAI就放出24小时不休息的编程AI，谁才是最强？-2025-12-06.md",
+      "scores": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 5,
+        "verifiability": 1,
+        "total": 8
+      },
+      "skip_reason": "总分8/20",
+      "skipped_at": "2026-03-30T15:15:00"
+    },
+    {
+      "title": "Claude悄悄更新了Skills生成器，这绝对是一次史诗级升级。",
+      "path": "Cubox/Claude悄悄更新了Skills生成器，这绝对是一次史诗级升级。-2026-03-12.md",
+      "scores": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 5,
+        "verifiability": 1,
+        "total": 8
+      },
+      "skip_reason": "总分8/20",
+      "skipped_at": "2026-03-30T15:15:00"
+    },
+    {
+      "title": "Clean 架构下的现代 Android 架构指南 | 开发者说·DTalk",
+      "path": "Cubox/Clean 架构下的现代 Android 架构指南 - 开发者说·DTalk-2024-01-26.md",
+      "scores": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 4,
+        "verifiability": 1,
+        "total": 7
+      },
+      "skip_reason": "总分7/20",
+      "skipped_at": "2026-03-30T15:15:00"
+    },
+    {
+      "title": "Clean 架构下的现代 Android 架构指南",
+      "path": "Cubox/Clean 架构下的现代 Android 架构指南-2023-12-04.md",
+      "scores": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 4,
+        "verifiability": 1,
+        "total": 7
+      },
+      "skip_reason": "总分7/20",
+      "skipped_at": "2026-03-30T15:15:00"
+    },
+    {
+      "title": "Cloudflare从入门到精通 | 0. Cloudflare简介",
+      "path": "Cubox/Cloudflare从入门到精通 - 0. Cloudflare简介-2024-08-11.md",
+      "scores": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 4,
+        "verifiability": 1,
+        "total": 7
+      },
+      "skip_reason": "总分7/20",
+      "skipped_at": "2026-03-30T15:15:00"
+    },
+    {
+      "title": "Codex迎来史诗级升级！能一口气卷自己7小时、自带云端虚拟机，连开发环境都不用配置了！Cursor存在的理由又弱了一分",
+      "path": "Cubox/Codex迎来史诗级升级！能一口气卷自己7小时、自带云端虚拟机，连开发环境都不用配置了！Cursor存在的理由又弱了一分-2025-09-16.md",
+      "scores": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 5,
+        "verifiability": 1,
+        "total": 8
+      },
+      "skip_reason": "总分8/20",
+      "skipped_at": "2026-03-30T15:15:00"
+    },
+    {
+      "title": "Coffee vs. tea smackdown",
+      "path": "Cubox/Coffee vs. tea smackdown-2022-12-14.md",
+      "scores": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 6
+      },
+      "skip_reason": "总分6/20",
+      "skipped_at": "2026-03-30T15:15:00"
+    },
+    {
+      "title": "ColorOS 动画曲线粗浅分析：为何有的地方怪，怪在哪里？ - 少数派",
+      "path": "Cubox/ColorOS 动画曲线粗浅分析：为何有的地方怪，怪在哪里？ - 少数派-2025-03-03.md",
+      "scores": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 5,
+        "verifiability": 1,
+        "total": 8
+      },
+      "skip_reason": "总分8/20",
+      "skipped_at": "2026-03-30T15:15:00"
+    },
+    {
+      "title": "Colored Logcat Message in Android Studio",
+      "path": "Cubox/Colored Logcat Message in Android Studio-2022-02-28.md",
+      "scores": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 6
+      },
+      "skip_reason": "总分6/20",
+      "skipped_at": "2026-03-30T15:15:00"
+    },
+    {
+      "title": "Commander 2023 Wallpaper & T-Shirts",
+      "path": "Cubox/Commander 2023 Wallpaper & T-Shirts-2023-04-07.md",
+      "scores": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 4,
+        "verifiability": 1,
+        "total": 7
+      },
+      "skip_reason": "总分7/20",
+      "skipped_at": "2026-03-30T15:15:00"
+    },
+    {
+      "title": "Compose Multiplatform  iOS 稳定版发布：可用于生产环境，并支持 hotload",
+      "path": "Cubox/Compose Multiplatform  iOS 稳定版发布：可用于生产环境，并支持 hotload-2025-05-08.md",
+      "scores": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 5,
+        "verifiability": 1,
+        "total": 8
+      },
+      "skip_reason": "总分8/20",
+      "skipped_at": "2026-03-30T15:15:00"
+    },
+    {
+      "title": "Compose Multiplatform for iOS 稳定版已经发布",
+      "path": "Cubox/Compose Multiplatform for iOS 稳定版已经发布-2025-05-07.md",
+      "scores": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 5,
+        "verifiability": 2,
+        "total": 9
+      },
+      "skip_reason": "总分9/20",
+      "skipped_at": "2026-03-30T15:15:00"
+    },
+    {
+      "title": "Compose Performance Review",
+      "path": "Cubox/Compose Performance Review-2025-12-11.md",
+      "scores": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 5,
+        "verifiability": 1,
+        "total": 8
+      },
+      "skip_reason": "总分8/20",
+      "skipped_at": "2026-03-30T15:15:00"
+    },
+    {
+      "title": "Compose and Conquer: A Tale of Effortless Android ...",
+      "path": "Cubox/Compose and Conquer- A Tale of Effortless Android ...-2024-01-18.md",
+      "scores": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 4,
+        "verifiability": 1,
+        "total": 7
+      },
+      "skip_reason": "总分7/20",
+      "skipped_at": "2026-03-30T15:15:00"
+    },
+    {
+      "title": "Compose 与 AGP、KGP 的关系",
+      "path": "Cubox/Compose 与 AGP、KGP 的关系-2022-07-12.md",
+      "scores": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 3,
+        "verifiability": 2,
+        "total": 7
+      },
+      "skip_reason": "总分7/20",
+      "skipped_at": "2026-03-30T15:15:00"
+    },
+    {
+      "title": "Compose 与原生 UI 混排原理解析前言 在跨平台开发中，尽管 Compose Multiplatform 提供了 - 掘金",
+      "path": "Cubox/Compose 与原生 UI 混排原理解析前言 在跨平台开发中，尽管 Compose Multiplatform 提供了 - 掘金-2025-02-09.md",
+      "scores": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 5,
+        "verifiability": 1,
+        "total": 8
+      },
+      "skip_reason": "总分8/20",
+      "skipped_at": "2026-03-30T15:15:00"
+    },
+    {
+      "title": "Compose 与原生启动性能对比",
+      "path": "Cubox/Compose 与原生启动性能对比-2022-07-15.md",
+      "scores": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 6
+      },
+      "skip_reason": "总分6/20",
+      "skipped_at": "2026-03-30T15:15:00"
+    },
+    {
+      "title": "Compose 中的 \"ViewPager\" 详解 | 开发者说·DTalk",
+      "path": "Cubox/Compose 中的 -ViewPager- 详解 - 开发者说·DTalk-2022-07-01.md",
+      "scores": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 6
+      },
+      "skip_reason": "总分6/20",
+      "skipped_at": "2026-03-30T15:15:00"
+    },
+    {
+      "title": "Compose 为什么可以跨平台？",
+      "path": "Cubox/Compose 为什么可以跨平台？-2023-07-19.md",
+      "scores": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 4,
+        "verifiability": 1,
+        "total": 7
+      },
+      "skip_reason": "总分7/20",
+      "skipped_at": "2026-03-30T15:15:00"
+    },
+    {
+      "title": "Compose 渲染性能到底怎么样?",
+      "path": "Cubox/Compose 渲染性能到底怎么样--2022-04-26.md",
+      "scores": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 6
+      },
+      "skip_reason": "总分6/20",
+      "skipped_at": "2026-03-30T15:15:00"
+    },
+    {
+      "title": "Compose 的 State 状态到底是个啥？",
+      "path": "Cubox/Compose 的 State 状态到底是个啥？-2022-03-08.md",
+      "scores": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 6
+      },
+      "skip_reason": "总分6/20",
+      "skipped_at": "2026-03-30T15:15:00"
+    },
+    {
+      "title": "Compose 纪元下的 Android 生命周期感知",
+      "path": "Cubox/Compose 纪元下的 Android 生命周期感知-2023-09-25.md",
+      "scores": {
+        "relevance": 2,
+        "technical_depth": 1,
+        "timeliness": 4,
+        "verifiability": 1,
+        "total": 8
+      },
+      "skip_reason": "总分8/20",
+      "skipped_at": "2026-03-30T15:15:00"
+    },
+    {
+      "title": "Comprehensive Guide: Get User Location on Android with Jetpack Compose",
+      "path": "Cubox/Comprehensive Guide- Get User Location on Android with Jetpack Compose-2025-03-03.md",
+      "scores": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 5,
+        "verifiability": 1,
+        "total": 8
+      },
+      "skip_reason": "总分8/20",
+      "skipped_at": "2026-03-30T15:15:00"
+    },
+    {
+      "title": "Consuming flows safely in Jetpack Compose | by Manuel Vivo | Android Developers | Aug, 2022 | Medium",
+      "path": "Cubox/Consuming flows safely in Jetpack Compose - by Manuel Vivo - Android Developers - Aug, 2022 - Medium.md",
+      "scores": {
+        "relevance": 2,
+        "technical_depth": 1,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 7
+      },
+      "skip_reason": "总分7/20",
+      "skipped_at": "2026-03-30T15:15:00"
+    },
+    {
+      "title": "Context Engineering for AI Agents: Lessons from Building Manus",
+      "path": "Cubox/Context Engineering for AI Agents- Lessons from Building Manus-2025-07-19.md",
+      "scores": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 5,
+        "verifiability": 1,
+        "total": 8
+      },
+      "skip_reason": "总分8/20",
+      "skipped_at": "2026-03-30T15:15:00"
+    },
+    {
+      "title": "Core 文件损坏还能补救吗？有的兄弟，有的。 - 掘金",
+      "path": "Cubox/Core 文件损坏还能补救吗？有的兄弟，有的。 - 掘金-2025-02-25.md",
+      "scores": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 5,
+        "verifiability": 1,
+        "total": 8
+      },
+      "skip_reason": "总分8/20",
+      "skipped_at": "2026-03-30T15:15:00"
+    },
+    {
+      "title": "CriticalNative  |  Android Developers",
+      "path": "Cubox/CriticalNative  -  Android Developers-2024-01-08.md",
+      "scores": {
+        "relevance": 1,
+        "technical_depth": 2,
+        "timeliness": 4,
+        "verifiability": 2,
+        "total": 9
+      },
+      "skip_reason": "总分9/20",
+      "skipped_at": "2026-03-30T15:15:00"
+    },
+    {
+      "title": "Culture & society",
+      "path": "Cubox/Culture & society-2023-12-27.md",
+      "scores": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 4,
+        "verifiability": 1,
+        "total": 7
+      },
+      "skip_reason": "总分7/20",
+      "skipped_at": "2026-03-30T15:15:00"
+    },
+    {
+      "title": "Cursor 常用提示词手册",
+      "path": "Cubox/Cursor 常用提示词手册-2024-12-30.md",
+      "scores": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 4,
+        "verifiability": 1,
+        "total": 7
+      },
+      "skip_reason": "总分7/20",
+      "skipped_at": "2026-03-30T15:15:00"
+    },
+    {
+      "title": "Cursor 深度评测：革命性提效工具还是过誉的玩具？",
+      "path": "Cubox/Cursor 深度评测：革命性提效工具还是过誉的玩具？-2024-12-31.md",
+      "scores": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 4,
+        "verifiability": 1,
+        "total": 7
+      },
+      "skip_reason": "总分7/20",
+      "skipped_at": "2026-03-30T15:15:00"
     }
   ]
 }
