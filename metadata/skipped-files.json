@@ -1,5 +1,5 @@
 {
-  "total_skipped": 408,
+  "total_skipped": 933,
   "files": [
     {
       "title": "第 10 章：内存性能",
@@ -10453,6 +10453,705 @@
       },
       "reason": "no_chapter_match",
       "skipped_at": "2026-03-30T16:15:00"
+    },
+    {
+      "file": "Cubox/Flutter - 聊天面板库动画生硬？这次让你丝滑个够这次的更新主要是带来了自定义底部容器的功能，即容器的结构可完全由 - 掘金-2025-07-21.md",
+      "reason": "Flutter框架专题，与Android系统内部机制相关性低（AIW聚焦Android native/Framework层）",
+      "scores": {
+        "relevance": 1,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 2,
+        "total": 9
+      },
+      "scanned_at": "2026-03-30T17:48:06.596396"
+    },
+    {
+      "file": "Cubox/Flutter 2.10 - 一文解读重点更新-2022-02-18.md",
+      "reason": "Flutter框架专题，与Android系统内部机制相关性低（AIW聚焦Android native/Framework层）",
+      "scores": {
+        "relevance": 1,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 2,
+        "total": 9
+      },
+      "scanned_at": "2026-03-30T17:48:06.596403"
+    },
+    {
+      "file": "Cubox/Flutter 2025 年产品路线图发布这份路线图是我们希望实现的愿景目标，主要由我们这些在 Google 任职、从事 - 掘金-2025-04-13.md",
+      "reason": "Flutter框架专题，与Android系统内部机制相关性低（AIW聚焦Android native/Framework层）",
+      "scores": {
+        "relevance": 1,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 2,
+        "total": 9
+      },
+      "scanned_at": "2026-03-30T17:48:06.596404"
+    },
+    {
+      "file": "Cubox/Flutter 3.0 之 PlatformView ：告别 VirtualDisplay ，拥抱 TextureLayer-2022-05-17.md",
+      "reason": "Flutter框架专题，与Android系统内部机制相关性低（AIW聚焦Android native/Framework层）",
+      "scores": {
+        "relevance": 1,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 2,
+        "total": 9
+      },
+      "scanned_at": "2026-03-30T17:48:06.596406"
+    },
+    {
+      "file": "Cubox/Flutter 3.0 发布啦～快来看看有什么新功能-2022 Google I-O-2022-05-12.md",
+      "reason": "Flutter框架专题，与Android系统内部机制相关性低（AIW聚焦Android native/Framework层）",
+      "scores": {
+        "relevance": 1,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 2,
+        "total": 9
+      },
+      "scanned_at": "2026-03-30T17:48:06.596407"
+    },
+    {
+      "file": "Cubox/Flutter 3.22 发布，快来看看有什么更新吧？-2024-05-15.md",
+      "reason": "Flutter框架专题，与Android系统内部机制相关性低（AIW聚焦Android native/Framework层）",
+      "scores": {
+        "relevance": 1,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 2,
+        "total": 9
+      },
+      "scanned_at": "2026-03-30T17:48:06.596408"
+    },
+    {
+      "file": "Cubox/Flutter 3.24 发布啦，快来看重磅更新-2024-08-07.md",
+      "reason": "Flutter框架专题，与Android系统内部机制相关性低（AIW聚焦Android native/Framework层）",
+      "scores": {
+        "relevance": 1,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 2,
+        "total": 9
+      },
+      "scanned_at": "2026-03-30T17:48:06.596409"
+    },
+    {
+      "file": "Cubox/Flutter 3.27 发布啦，快来看有什么更新吧-2024-12-13.md",
+      "reason": "Flutter框架专题，与Android系统内部机制相关性低（AIW聚焦Android native/Framework层）",
+      "scores": {
+        "relevance": 1,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 2,
+        "total": 9
+      },
+      "scanned_at": "2026-03-30T17:48:06.596410"
+    },
+    {
+      "file": "Cubox/Flutter 3.3 之 SelectionArea 好不好用？用 -Bug- 带您全面了解它 - 开发者说·DTalk-2022-10-21.md",
+      "reason": "Flutter框架专题，与Android系统内部机制相关性低（AIW聚焦Android native/Framework层）",
+      "scores": {
+        "relevance": 1,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 2,
+        "total": 9
+      },
+      "scanned_at": "2026-03-30T17:48:06.596411"
+    },
+    {
+      "file": "Cubox/Flutter 3.3 之 SelectionArea 好不好用？用 “Bug” 带你全面了解它-2022-09-07.md",
+      "reason": "Flutter框架专题，与Android系统内部机制相关性低（AIW聚焦Android native/Framework层）",
+      "scores": {
+        "relevance": 1,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 2,
+        "total": 9
+      },
+      "scanned_at": "2026-03-30T17:48:06.596412"
+    },
+    {
+      "file": "Cubox/Flutter Android 逆向介绍-2024-05-09.md",
+      "reason": "Flutter框架专题，与Android系统内部机制相关性低（AIW聚焦Android native/Framework层）",
+      "scores": {
+        "relevance": 1,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 2,
+        "total": 9
+      },
+      "scanned_at": "2026-03-30T17:48:06.596413"
+    },
+    {
+      "file": "Cubox/Flutter App Architecture with Riverpod- An Introduction-2022-03-19.md",
+      "reason": "Flutter框架专题，与Android系统内部机制相关性低（AIW聚焦Android native/Framework层）",
+      "scores": {
+        "relevance": 1,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 2,
+        "total": 9
+      },
+      "scanned_at": "2026-03-30T17:48:06.596414"
+    },
+    {
+      "file": "Cubox/Flutter Impeller裁剪后搭建渲染Demo要点（ flutter裁减 移除dart依赖，...-2024-01-06.md",
+      "reason": "Flutter框架专题，与Android系统内部机制相关性低（AIW聚焦Android native/Framework层）",
+      "scores": {
+        "relevance": 1,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 2,
+        "total": 9
+      },
+      "scanned_at": "2026-03-30T17:48:06.596415"
+    },
+    {
+      "file": "Cubox/Flutter RenderSurface 选择说明 - 知乎-2024-03-08.md",
+      "reason": "Flutter框架专题，与Android系统内部机制相关性低（AIW聚焦Android native/Framework层）",
+      "scores": {
+        "relevance": 1,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 2,
+        "total": 9
+      },
+      "scanned_at": "2026-03-30T17:48:06.596416"
+    },
+    {
+      "file": "Cubox/Flutter TolyUI 框架#05 - 树形菜单设计-2024-05-23.md",
+      "reason": "Flutter框架专题，与Android系统内部机制相关性低（AIW聚焦Android native/Framework层）",
+      "scores": {
+        "relevance": 1,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 2,
+        "total": 9
+      },
+      "scanned_at": "2026-03-30T17:48:06.596417"
+    },
+    {
+      "file": "Cubox/Flutter Web 的发展历程：Dart、Flutter 与 WasmGC-2025-07-17.md",
+      "reason": "Flutter框架专题，与Android系统内部机制相关性低（AIW聚焦Android native/Framework层）",
+      "scores": {
+        "relevance": 1,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 2,
+        "total": 9
+      },
+      "scanned_at": "2026-03-30T17:48:06.596418"
+    },
+    {
+      "file": "Cubox/Flutter for Web 首次首屏优化——JS 分片优化-2022-11-30.md",
+      "reason": "Flutter框架专题，与Android系统内部机制相关性低（AIW聚焦Android native/Framework层）",
+      "scores": {
+        "relevance": 1,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 2,
+        "total": 9
+      },
+      "scanned_at": "2026-03-30T17:48:06.596419"
+    },
+    {
+      "file": "Cubox/Flutter 上了 Apple 第三方重大列表，2024 春季 iOS 的隐私清单究竟是什么？ -...-2023-12-25.md",
+      "reason": "Flutter框架专题，与Android系统内部机制相关性低（AIW聚焦Android native/Framework层）",
+      "scores": {
+        "relevance": 1,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 2,
+        "total": 9
+      },
+      "scanned_at": "2026-03-30T17:48:06.596420"
+    },
+    {
+      "file": "Cubox/Flutter 上字体的另类玩法：FontFeature-2022-03-25.md",
+      "reason": "Flutter框架专题，与Android系统内部机制相关性低（AIW聚焦Android native/Framework层）",
+      "scores": {
+        "relevance": 1,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 2,
+        "total": 9
+      },
+      "scanned_at": "2026-03-30T17:48:06.596421"
+    },
+    {
+      "file": "Cubox/Flutter 上的 Platform 和 UI 线程合并是怎么回事？它会带来什么？-2025-02-24.md",
+      "reason": "Flutter框架专题，与Android系统内部机制相关性低（AIW聚焦Android native/Framework层）",
+      "scores": {
+        "relevance": 1,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 2,
+        "total": 9
+      },
+      "scanned_at": "2026-03-30T17:48:06.596422"
+    },
+    {
+      "file": "Cubox/Flutter 与 Dart 的市场应用-2024-05-03.md",
+      "reason": "Flutter框架专题，与Android系统内部机制相关性低（AIW聚焦Android native/Framework层）",
+      "scores": {
+        "relevance": 1,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 2,
+        "total": 9
+      },
+      "scanned_at": "2026-03-30T17:48:06.596425"
+    },
+    {
+      "file": "Cubox/Flutter 全埋点的实现｜得物技术-2023-12-13.md",
+      "reason": "Flutter框架专题，与Android系统内部机制相关性低（AIW聚焦Android native/Framework层）",
+      "scores": {
+        "relevance": 1,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 2,
+        "total": 9
+      },
+      "scanned_at": "2026-03-30T17:48:06.596426"
+    },
+    {
+      "file": "Cubox/Flutter 启动页的前世今生适配历程-2022-11-22.md",
+      "reason": "Flutter框架专题，与Android系统内部机制相关性低（AIW聚焦Android native/Framework层）",
+      "scores": {
+        "relevance": 1,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 2,
+        "total": 9
+      },
+      "scanned_at": "2026-03-30T17:48:06.596427"
+    },
+    {
+      "file": "Cubox/Flutter 图片预加载在构建 Flutter 应用时，提前加载图片资源是一种常见优化手段，尤其适用于展示型页面、动画 - 掘金-2025-05-25.md",
+      "reason": "Flutter框架专题，与Android系统内部机制相关性低（AIW聚焦Android native/Framework层）",
+      "scores": {
+        "relevance": 1,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 2,
+        "total": 9
+      },
+      "scanned_at": "2026-03-30T17:48:06.596428"
+    },
+    {
+      "file": "Cubox/Flutter 在全新 Platform 和 UI 线程合并后，出现了什么大坑和变化？-2025-04-24.md",
+      "reason": "Flutter框架专题，与Android系统内部机制相关性低（AIW聚焦Android native/Framework层）",
+      "scores": {
+        "relevance": 1,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 2,
+        "total": 9
+      },
+      "scanned_at": "2026-03-30T17:48:06.596429"
+    },
+    {
+      "file": "Cubox/Flutter 多引擎渲染，在稿定 App 的实践-2022-11-02.md",
+      "reason": "Flutter框架专题，与Android系统内部机制相关性低（AIW聚焦Android native/Framework层）",
+      "scores": {
+        "relevance": 1,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 2,
+        "total": 9
+      },
+      "scanned_at": "2026-03-30T17:48:06.596430"
+    },
+    {
+      "file": "Cubox/Flutter 多引擎渲染，在稿定 App 的实践（三）：躺坑篇-2022-11-02.md",
+      "reason": "Flutter框架专题，与Android系统内部机制相关性低（AIW聚焦Android native/Framework层）",
+      "scores": {
+        "relevance": 1,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 2,
+        "total": 9
+      },
+      "scanned_at": "2026-03-30T17:48:06.596431"
+    },
+    {
+      "file": "Cubox/Flutter 多引擎渲染，在稿定 App 的实践（二）：原理篇-2022-11-02.md",
+      "reason": "Flutter框架专题，与Android系统内部机制相关性低（AIW聚焦Android native/Framework层）",
+      "scores": {
+        "relevance": 1,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 2,
+        "total": 9
+      },
+      "scanned_at": "2026-03-30T17:48:06.596432"
+    },
+    {
+      "file": "Cubox/Flutter 如何与 Native (Android) 进行交互 - 开发者说·DTalk-2022-01-21.md",
+      "reason": "Flutter框架专题，与Android系统内部机制相关性低（AIW聚焦Android native/Framework层）",
+      "scores": {
+        "relevance": 1,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 2,
+        "total": 9
+      },
+      "scanned_at": "2026-03-30T17:48:06.596433"
+    },
+    {
+      "file": "Cubox/Flutter 官方正式解决 WebView 在 iOS 26 上有点击问题-2025-12-15.md",
+      "reason": "Flutter框架专题，与Android系统内部机制相关性低（AIW聚焦Android native/Framework层）",
+      "scores": {
+        "relevance": 1,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 2,
+        "total": 9
+      },
+      "scanned_at": "2026-03-30T17:48:06.596458"
+    },
+    {
+      "file": "Cubox/Flutter 实现 “真” 3D 动画效果，用纯代码实现立体 Dash 和 3D 掘金 Logo-2022-08-08.md",
+      "reason": "Flutter框架专题，与Android系统内部机制相关性低（AIW聚焦Android native/Framework层）",
+      "scores": {
+        "relevance": 1,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 2,
+        "total": 9
+      },
+      "scanned_at": "2026-03-30T17:48:06.596460"
+    },
+    {
+      "file": "Cubox/Flutter 小技巧之通过 MediaQuery 优化 App 性能-2025-03-13.md",
+      "reason": "Flutter框架专题，与Android系统内部机制相关性低（AIW聚焦Android native/Framework层）",
+      "scores": {
+        "relevance": 1,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 2,
+        "total": 9
+      },
+      "scanned_at": "2026-03-30T17:48:06.596461"
+    },
+    {
+      "file": "Cubox/Flutter 小技巧之：Flutter 3.32 的 Property Editor 生产力工具-2025-05-25.md",
+      "reason": "Flutter框架专题，与Android系统内部机制相关性低（AIW聚焦Android native/Framework层）",
+      "scores": {
+        "relevance": 1,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 2,
+        "total": 9
+      },
+      "scanned_at": "2026-03-30T17:48:06.596462"
+    },
+    {
+      "file": "Cubox/Flutter 性能优化之降内存、降刷新篇 - 掘金-2023-11-24.md",
+      "reason": "Flutter框架专题，与Android系统内部机制相关性低（AIW聚焦Android native/Framework层）",
+      "scores": {
+        "relevance": 1,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 2,
+        "total": 9
+      },
+      "scanned_at": "2026-03-30T17:48:06.596463"
+    },
+    {
+      "file": "Cubox/Flutter 性能分析 - Flutter 中文文档 - Flutter 中文开发者网站 - Fl...-2023-07-17.md",
+      "reason": "Flutter框架专题，与Android系统内部机制相关性低（AIW聚焦Android native/Framework层）",
+      "scores": {
+        "relevance": 1,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 2,
+        "total": 9
+      },
+      "scanned_at": "2026-03-30T17:48:06.596464"
+    },
+    {
+      "file": "Cubox/Flutter 性能分析 - Flutter 中文文档 - Flutter 中文开发者网站 - Fl...-2023-08-02.md",
+      "reason": "Flutter框架专题，与Android系统内部机制相关性低（AIW聚焦Android native/Framework层）",
+      "scores": {
+        "relevance": 1,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 2,
+        "total": 9
+      },
+      "scanned_at": "2026-03-30T17:48:06.596465"
+    },
+    {
+      "file": "Cubox/Flutter 新一代状态管理框架 signals ，它究竟具备什么魔法和优势-2025-03-24.md",
+      "reason": "Flutter框架专题，与Android系统内部机制相关性低（AIW聚焦Android native/Framework层）",
+      "scores": {
+        "relevance": 1,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 2,
+        "total": 9
+      },
+      "scanned_at": "2026-03-30T17:48:06.596466"
+    },
+    {
+      "file": "Cubox/Flutter 新春第一弹，Dart 宏功能推进暂停，后续专注定制数据处理支持-2025-01-30.md",
+      "reason": "Flutter框架专题，与Android系统内部机制相关性低（AIW聚焦Android native/Framework层）",
+      "scores": {
+        "relevance": 1,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 2,
+        "total": 9
+      },
+      "scanned_at": "2026-03-30T17:48:06.596467"
+    },
+    {
+      "file": "Cubox/Flutter 正在切换成 Monorepo 和支持 workspaces-2024-11-06.md",
+      "reason": "Flutter框架专题，与Android系统内部机制相关性低（AIW聚焦Android native/Framework层）",
+      "scores": {
+        "relevance": 1,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 2,
+        "total": 9
+      },
+      "scanned_at": "2026-03-30T17:48:06.596468"
+    },
+    {
+      "title": "Flutter混合开发演进",
+      "score": {
+        "total": 8
+      },
+      "reason": "Flutter泛谈"
+    },
+    {
+      "title": "Flutter Widget Key",
+      "score": {
+        "total": 7
+      },
+      "reason": "Widget机制"
+    },
+    {
+      "title": "Flutter+鸿蒙",
+      "score": {
+        "total": 7
+      },
+      "reason": "非Android"
+    },
+    {
+      "title": "Flutter长截屏Miui",
+      "score": {
+        "total": 7
+      },
+      "reason": "无系统层相关"
+    },
+    {
+      "title": "FlutterUnit 3.0",
+      "score": {
+        "total": 5
+      },
+      "reason": "项目介绍"
+    },
+    {
+      "title": "FlutterWeb启动优化",
+      "score": {
+        "total": 9
+      },
+      "reason": "Web端"
+    },
+    {
+      "title": "Flutter布局指南",
+      "score": {
+        "total": 6
+      },
+      "reason": "入门"
+    },
+    {
+      "title": "Flutter混合架构",
+      "score": {
+        "total": 8
+      },
+      "reason": "缺技术细节"
+    },
+    {
+      "title": "Flutter Font桥接",
+      "score": {
+        "total": 6
+      },
+      "reason": "无相关"
+    },
+    {
+      "title": "Flutter鸿蒙-混沌初开",
+      "score": {
+        "total": 6
+      },
+      "reason": "非Android"
+    },
+    {
+      "title": "Flutter鸿蒙-珠联璧合",
+      "score": {
+        "total": 6
+      },
+      "reason": "非Android"
+    },
+    {
+      "title": "Flutter HybridComp",
+      "score": {
+        "total": 9
+      },
+      "reason": "偏应用层"
+    },
+    {
+      "title": "Follow信息获取",
+      "score": {
+        "total": 3
+      },
+      "reason": "RSS工具"
+    },
+    {
+      "title": "Android Weekly #581",
+      "score": {
+        "total": 5
+      },
+      "reason": "Newsletter"
+    },
+    {
+      "title": "Android Weekly #592",
+      "score": {
+        "total": 5
+      },
+      "reason": "Newsletter"
+    },
+    {
+      "title": "Android Weekly #504",
+      "score": {
+        "total": 4
+      },
+      "reason": "Newsletter"
+    },
+    {
+      "title": "Android Weekly #505",
+      "score": {
+        "total": 4
+      },
+      "reason": "Newsletter"
+    },
+    {
+      "title": "Android Weekly #606",
+      "score": {
+        "total": 5
+      },
+      "reason": "Newsletter"
+    },
+    {
+      "title": "Android Weekly #609",
+      "score": {
+        "total": 5
+      },
+      "reason": "Newsletter"
+    },
+    {
+      "title": "Android Weekly #664",
+      "score": {
+        "total": 5
+      },
+      "reason": "Newsletter"
+    },
+    {
+      "title": "Android Weekly #666",
+      "score": {
+        "total": 5
+      },
+      "reason": "Newsletter"
+    },
+    {
+      "title": "Android Weekly #684",
+      "score": {
+        "total": 4
+      },
+      "reason": "Newsletter"
+    },
+    {
+      "title": "FreeRTOS内存",
+      "score": {
+        "total": 9
+      },
+      "reason": "非Android"
+    },
+    {
+      "title": "CS职业经历",
+      "score": {
+        "total": 3
+      },
+      "reason": "非技术"
+    },
+    {
+      "title": "idea to validation",
+      "score": {
+        "total": 3
+      },
+      "reason": "产品方法论"
+    },
+    {
+      "title": "架构模式",
+      "score": {
+        "total": 6
+      },
+      "reason": "通用架构"
+    },
+    {
+      "title": "GDG DevFest",
+      "score": {
+        "total": 3
+      },
+      "reason": "活动"
+    },
+    {
+      "title": "GMO泡沫",
+      "score": {
+        "total": 2
+      },
+      "reason": "财经"
+    },
+    {
+      "title": "GPT-4发布",
+      "score": {
+        "total": 4
+      },
+      "reason": "AI产品"
+    },
+    {
+      "title": "GPT-4震撼",
+      "score": {
+        "total": 4
+      },
+      "reason": "AI产品"
+    },
+    {
+      "title": "GPT-4o(5.14)",
+      "score": {
+        "total": 4
+      },
+      "reason": "AI产品"
+    },
+    {
+      "title": "GPT-4o(5.15)",
+      "score": {
+        "total": 4
+      },
+      "reason": "AI产品"
+    },
+    {
+      "title": "GPU Driven Rendering",
+      "score": {
+        "total": 10
+      },
+      "reason": "游戏引擎"
     }
   ]
 }
