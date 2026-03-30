@@ -26,25 +26,7 @@
     "reviewed_today": 1,
     "review_issues_total": 3
   },
-  "completed": [
-    {
-      "section": "2.9",
-      "title": "渲染机制的版本演进",
-      "completed_at": "2026-03-30T16:20:00+08:00",
-      "anchors_covered": 5,
-      "anchors_total": 5,
-      "extensions_covered": 2,
-      "extensions_total": 2,
-      "verification_level": "L2",
-      "word_count": "TBD"
-    }
-  ],
+  "completed": 7,
   "ready_for_review": 2,
-  "last_updated": "2026-03-30T07:33:07Z",
-  "stats": {
-    "total": 102,
-    "completed": 6,
-    "pending": 96,
-    "last_updated": "2026-03-30T16:20:00+08:00"
-  }
+  "last_updated": "2026-03-30T07:33:07Z"
 }
