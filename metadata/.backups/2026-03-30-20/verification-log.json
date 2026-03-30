@@ -285,35 +285,6 @@
         }
       ],
       "pending_verifications": []
-    },
-    {
-      "section": "2.5",
-      "title": "MainThread 与 RenderThread 协作",
-      "verification_date": "2026-03-30",
-      "verification_level": "L2",
-      "verified_by": "openclaw-task2-2026-03-30-20",
-      "anchors": {
-        "MainThread职责": "L2 - AOSP源码+官方文档",
-        "RenderThread职责": "L2 - AOSP源码",
-        "SyncFrameState": "L2 - AOSP源码+Obsidian素材",
-        "GPU命令提交与Fence": "L2 - AOSP源码+Obsidian素材",
-        "Perfetto分析": "L2 - Obsidian素材+交叉验证",
-        "常见性能问题": "L2 - 实践经验+Obsidian素材"
-      },
-      "extensions": {
-        "Deferred GPU Commands": "L2 - AOSP源码",
-        "RenderThread Animations": "L2 - 官方文档"
-      },
-      "auto_discoveries": [
-        "多窗口场景下的线程争抢",
-        "BLAST模式下的提交流程"
-      ],
-      "sources_verified": [
-        "AOSP android-16.0.0_r1",
-        "Obsidian/Android/rendering_pipelines/presentation.md",
-        "Obsidian/Cubox/结合源码和Perfetto分析Android渲染机制"
-      ],
-      "notes": "SyncFrameState机制与Fence同步流程经过多源交叉验证"
     }
   ]
 }

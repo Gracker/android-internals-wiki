@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-03-29",
+  "generated_at": "2026-03-30",
   "documents": [
     {
       "path": "Cubox/#01 创始人解密 Discord-2023-02-20.md",
@@ -44143,14 +44143,20 @@
     },
     {
       "path": "src/part1-fundamentals/ch02-rendering/03-vsync.md",
-      "title": "03-vsync.md",
+      "title": "2.3 VSync 机制",
       "mapped_chapters": [
-        "2"
+        "2.3"
       ],
-      "total_score": 45,
+      "total_score": 90,
       "size": 1285,
       "status": "outline",
-      "mtime": "2026-03-29 18:03"
+      "mtime": "2026-03-29 18:03",
+      "source_type": "高爷原创",
+      "breakdown": "篇幅25|新鲜度25|准确性20(含AOSP源码引用)|可用度20(原创)",
+      "last_modified": "2026-03-30",
+      "scanned_at": "2026-03-30T22:00",
+      "chars": 33589,
+      "note": "今日重点更新：4篇研究素材直接支撑"
     },
     {
       "path": "src/part1-fundamentals/ch02-rendering/04-choreographer.md",
@@ -44176,36 +44182,52 @@
     },
     {
       "path": "src/part1-fundamentals/ch02-rendering/05-main-render-thread.md",
-      "title": "05-main-render-thread.md",
+      "title": "2.5 MainThread 与 RenderThread 协作",
       "mapped_chapters": [
-        "2"
+        "2.5"
       ],
-      "total_score": 45,
+      "total_score": 83,
       "size": 1482,
       "status": "outline",
-      "mtime": "2026-03-28 18:02"
+      "mtime": "2026-03-28 18:02",
+      "source_type": "高爷原创",
+      "breakdown": "篇幅25|新鲜度25|准确性15|可用度18(原创)",
+      "last_modified": "2026-03-30",
+      "scanned_at": "2026-03-30T22:00",
+      "chars": 28387
     },
     {
       "path": "src/part1-fundamentals/ch02-rendering/10-gpu-rendering.md",
-      "title": "10-gpu-rendering.md",
+      "title": "2.10 GPU 渲染深入",
       "mapped_chapters": [
-        "2"
+        "2.10"
       ],
-      "total_score": 45,
+      "total_score": 83,
       "size": 1419,
       "status": "outline",
-      "mtime": "2026-03-28 18:23"
+      "mtime": "2026-03-28 18:23",
+      "source_type": "高爷原创",
+      "breakdown": "篇幅25|新鲜度25|准确性15|可用度18(原创)",
+      "last_modified": "2026-03-30",
+      "scanned_at": "2026-03-30T22:00",
+      "chars": 30795
     },
     {
       "path": "src/part1-fundamentals/ch02-rendering/09-rendering-evolution.md",
-      "title": "09-rendering-evolution.md",
+      "title": "2.9 渲染机制的版本演进",
       "mapped_chapters": [
-        "2"
+        "2.9"
       ],
-      "total_score": 45,
+      "total_score": 78,
       "size": 1346,
       "status": "outline",
-      "mtime": "2026-03-28 18:02"
+      "mtime": "2026-03-28 18:02",
+      "source_type": "高爷原创",
+      "breakdown": "篇幅20|新鲜度25|准确性15|可用度18(原创)",
+      "last_modified": "2026-03-30",
+      "scanned_at": "2026-03-30T22:00",
+      "chars": 17971,
+      "note": "建议priority从70提升至75（ARR素材支撑）"
     },
     {
       "path": "src/part1-fundamentals/ch02-rendering/README.md",
@@ -44220,25 +44242,35 @@
     },
     {
       "path": "src/part1-fundamentals/ch02-rendering/01-rendering-overview.md",
-      "title": "01-rendering-overview.md",
+      "title": "2.1 Android 渲染架构全景",
       "mapped_chapters": [
-        "2"
+        "2.1"
       ],
-      "total_score": 45,
+      "total_score": 83,
       "size": 1440,
       "status": "outline",
-      "mtime": "2026-03-29 18:03"
+      "mtime": "2026-03-29 18:03",
+      "source_type": "高爷原创",
+      "breakdown": "篇幅25|新鲜度25|准确性15|可用度18(原创)",
+      "last_modified": "2026-03-30",
+      "scanned_at": "2026-03-30T22:00",
+      "chars": 25427
     },
     {
       "path": "src/part1-fundamentals/ch02-rendering/06-surfaceflinger.md",
-      "title": "06-surfaceflinger.md",
+      "title": "2.6 SurfaceFlinger 与合成",
       "mapped_chapters": [
-        "2"
+        "2.6"
       ],
-      "total_score": 45,
+      "total_score": 85,
       "size": 1490,
       "status": "outline",
-      "mtime": "2026-03-28 18:24"
+      "mtime": "2026-03-28 18:24",
+      "source_type": "高爷原创",
+      "breakdown": "篇幅25|新鲜度25|准确性15|可用度20(原创)",
+      "last_modified": "2026-03-30",
+      "scanned_at": "2026-03-30T22:00",
+      "chars": 37131
     },
     {
       "path": "src/part1-fundamentals/ch02-rendering/08-overdraw.md",
@@ -44253,14 +44285,19 @@
     },
     {
       "path": "src/part1-fundamentals/ch02-rendering/02-framerate.md",
-      "title": "02-framerate.md",
+      "title": "2.2 帧率与刷新率",
       "mapped_chapters": [
-        "2"
+        "2.2"
       ],
-      "total_score": 45,
+      "total_score": 85,
       "size": 1400,
       "status": "outline",
-      "mtime": "2026-03-28 18:02"
+      "mtime": "2026-03-28 18:02",
+      "source_type": "高爷原创",
+      "breakdown": "篇幅25|新鲜度25|准确性15|可用度20(原创)",
+      "last_modified": "2026-03-30",
+      "scanned_at": "2026-03-30T22:00",
+      "chars": 34850
     },
     {
       "path": "src/part1-fundamentals/ch05-cpu-power/04-dvfs.md",
@@ -44374,14 +44411,20 @@
     },
     {
       "path": "src/part1-fundamentals/ch01-architecture/01-layered-architecture.md",
-      "title": "01-layered-architecture.md",
+      "title": "1.1 Android 分层架构",
       "mapped_chapters": [
-        "1"
+        "1.1"
       ],
-      "total_score": 50,
+      "total_score": 85,
       "size": 22106,
       "status": "substantial",
-      "mtime": "2026-03-29 21:40"
+      "mtime": "2026-03-29 21:40",
+      "source_type": "高爷原创",
+      "breakdown": "篇幅25|新鲜度25|准确性15|可用度20(原创)",
+      "last_modified": "2026-03-30",
+      "scanned_at": "2026-03-30T22:00",
+      "chars": 32472,
+      "note": "Task6 Review发现需重写：百科词条式→叙述式，缺Perfetto映射和常见误区"
     },
     {
       "path": "src/part1-fundamentals/ch01-architecture/04-binder.md",
@@ -44583,14 +44626,19 @@
     },
     {
       "path": "src/part1-fundamentals/ch03-input/01-input-dispatch.md",
-      "title": "01-input-dispatch.md",
+      "title": "3.1 Input 事件分发全流程",
       "mapped_chapters": [
-        "3"
+        "3.1"
       ],
-      "total_score": 45,
+      "total_score": 83,
       "size": 1550,
       "status": "outline",
-      "mtime": "2026-03-28 18:02"
+      "mtime": "2026-03-28 18:02",
+      "source_type": "高爷原创",
+      "breakdown": "篇幅25|新鲜度25|准确性15|可用度18(原创)",
+      "last_modified": "2026-03-30",
+      "scanned_at": "2026-03-30T22:00",
+      "chars": 28817
     },
     {
       "path": "src/part1-fundamentals/ch03-input/README.md",
@@ -44758,14 +44806,19 @@
     },
     {
       "path": "src/part2-performance/ch08-responsiveness/01-responsiveness-principles.md",
-      "title": "01-responsiveness-principles.md",
+      "title": "8.1 响应速度原理",
       "mapped_chapters": [
-        "8"
+        "8.1"
       ],
-      "total_score": 50,
+      "total_score": 80,
       "size": 13019,
       "status": "substantial",
-      "mtime": "2026-03-29 21:24"
+      "mtime": "2026-03-29 21:24",
+      "source_type": "高爷原创",
+      "breakdown": "篇幅20|新鲜度25|准确性15|可用度20(原创)",
+      "last_modified": "2026-03-30",
+      "scanned_at": "2026-03-30T22:00",
+      "chars": 21041
     },
     {
       "path": "src/part2-performance/ch08-responsiveness/06-coroutine-performance.md",
@@ -45316,6 +45369,141 @@
       "size": 1392,
       "status": "outline",
       "mtime": "2026-03-28 18:02"
+    },
+    {
+      "path": "intake/research-feeds/2026-03-30-15-vsync-dispsync-pipeline.md",
+      "title": "[研究] Android VSync/DispSync 管线架构（官方源码级）",
+      "source_type": "高爷原创",
+      "mapped_chapters": [
+        "2.3"
+      ],
+      "total_score": 95,
+      "breakdown": "篇幅25|新鲜度25|准确性25(含AOSP源码)|可用度20(原创)",
+      "last_modified": "2026-03-30",
+      "scanned_at": "2026-03-30T22:00"
+    },
+    {
+      "path": "intake/research-feeds/2026-03-30-vsync-android16-optimization.md",
+      "title": "[研究] Android 16 VSync机制优化：ARR深度解析",
+      "source_type": "高爷原创",
+      "mapped_chapters": [
+        "8.1"
+      ],
+      "total_score": 95,
+      "breakdown": "篇幅25|新鲜度25|准确性25(含官方文档)|可用度20(原创)",
+      "last_modified": "2026-03-30",
+      "scanned_at": "2026-03-30T22:00"
+    },
+    {
+      "path": "intake/research-feeds/2026-03-30-15-dispsync-model-workduration.md",
+      "title": "[研究] DispSync VsyncModel 内部模型与现代 WorkDuration 抽象",
+      "source_type": "高爷原创",
+      "mapped_chapters": [
+        "2.3"
+      ],
+      "total_score": 90,
+      "breakdown": "篇幅25|新鲜度20|准确性25(含AOSP源码)|可用度20(原创)",
+      "last_modified": "2026-03-30",
+      "scanned_at": "2026-03-30T22:00"
+    },
+    {
+      "path": "intake/research-feeds/2026-03-30-15-arr-vsync-android15-16.md",
+      "title": "[研究] Android 15/16 自适应刷新率(ARR)与VSync演进",
+      "source_type": "高爷原创",
+      "mapped_chapters": [
+        "2.3",
+        "2.9"
+      ],
+      "total_score": 88,
+      "breakdown": "篇幅25|新鲜度25|准确性20(含官方文档)|可用度18(原创)",
+      "last_modified": "2026-03-30",
+      "scanned_at": "2026-03-30T22:00"
+    },
+    {
+      "path": "intake/research-feeds/2026-03-30-15-vsync-appsf-eventthread.md",
+      "title": "[研究] Android 13+ Vsync-AppSF信号与EventThread架构重构",
+      "source_type": "高爷原创",
+      "mapped_chapters": [
+        "2.3"
+      ],
+      "total_score": 85,
+      "breakdown": "篇幅25|新鲜度20|准确性20(含AOSP源码)|可用度20(原创)",
+      "last_modified": "2026-03-30",
+      "scanned_at": "2026-03-30T22:00"
+    },
+    {
+      "path": "intake/research-feeds/2026-03-30-19-ch01-architecture-perfetto-mapping.md",
+      "title": "[研究] Android 分层架构在 Perfetto Trace 中的映射",
+      "source_type": "高爷原创",
+      "mapped_chapters": [
+        "1.1"
+      ],
+      "total_score": 88,
+      "breakdown": "篇幅25|新鲜度20|准确性23(含Perfetto文档)|可用度20(原创)",
+      "last_modified": "2026-03-30",
+      "scanned_at": "2026-03-30T22:00"
+    },
+    {
+      "path": "intake/research-feeds/2026-03-30-19-ch01-treble-aidl-evolution.md",
+      "title": "[研究] Project Treble 架构演进与 HIDL→AIDL 过渡",
+      "source_type": "高爷原创",
+      "mapped_chapters": [
+        "1.1"
+      ],
+      "total_score": 88,
+      "breakdown": "篇幅25|新鲜度25|准确性20(含官方文档)|可用度18(原创)",
+      "last_modified": "2026-03-30",
+      "scanned_at": "2026-03-30T22:00"
+    },
+    {
+      "path": "intake/research-feeds/2026-03-30-19-ch01-architecture-misconceptions.md",
+      "title": "[研究] Android 性能分析中的常见误区（架构理解）",
+      "source_type": "高爷原创",
+      "mapped_chapters": [
+        "1.1"
+      ],
+      "total_score": 83,
+      "breakdown": "篇幅25|新鲜度20|准确性20(综合来源)|可用度18(原创)",
+      "last_modified": "2026-03-30",
+      "scanned_at": "2026-03-30T22:00"
+    },
+    {
+      "path": "intake/research-feeds/2026-03-30-ch02-gpu-optimization.md",
+      "title": "[研究] Android GPU性能优化实战：Vulkan渲染管线",
+      "source_type": "高爷原创",
+      "mapped_chapters": [
+        "2.10",
+        "2.9"
+      ],
+      "total_score": 88,
+      "breakdown": "篇幅25|新鲜度20|准确性20(含Google文档)|可用度23(原创)",
+      "last_modified": "2026-03-30",
+      "scanned_at": "2026-03-30T22:00"
+    },
+    {
+      "path": "intake/research-feeds/2026-03-30-ch02-skia-surfaceflinger.md",
+      "title": "[研究] Skia与SurfaceFlinger的协作机制",
+      "source_type": "高爷原创",
+      "mapped_chapters": [
+        "2.1",
+        "2.6"
+      ],
+      "total_score": 80,
+      "breakdown": "篇幅25|新鲜度20|准确性15(含Skia文档)|可用度20(原创)",
+      "last_modified": "2026-03-30",
+      "scanned_at": "2026-03-30T22:00"
+    },
+    {
+      "path": "intake/research-feeds/2026-03-30-ch02-vulkan-android16.md",
+      "title": "[研究] Android 16：Vulkan成为默认图形API",
+      "source_type": "高爷原创",
+      "mapped_chapters": [
+        "2.10"
+      ],
+      "total_score": 88,
+      "breakdown": "篇幅25|新鲜度25|准确性18(含官方文档)|可用度20(原创)",
+      "last_modified": "2026-03-30",
+      "scanned_at": "2026-03-30T22:00"
     }
   ],
   "stats": {
@@ -45331,5 +45519,13 @@
     "chapters_with_substantial": 4,
     "total_chapters": 17,
     "last_scan": "2026-03-29"
+  },
+  "last_scan_time": "2026-03-30T22:00:00+08:00",
+  "scan_summary": {
+    "new_research_feeds": 11,
+    "updated_source_chapters": 10,
+    "total_documents": 7465,
+    "chapters_with_content": 5,
+    "chapters_total": 17
   }
 }
