@@ -41,7 +41,7 @@
 | ch02-进程 | 进程, lifecycle, low memory killer, lmk, oom_adj, 进程优先级 |
 | ch03-线程 | 线程, handler, looper, threadpool, async, 并发, concurrent |
 | ch04-启动 | 启动, startup, 冷启动, zygote, app startup, 启动速度 |
-| ch05-渲染 | 渲染, render, vsync, choreographer, surfaceflinger, bufferqueue, draw, measure, layout |
+| ch05-渲染 | 渲染, render, vsync, choreographer, surfaceflinger, bufferqueue, draw, measure, layout, skia, flutter, impeller, gpu渲染, 过度绘制 |
 | ch06-功耗 | 功耗, power, battery, wakelock, doze, app standby, 省电, job scheduler, workmanager |
 | ch07-内存 | 内存, memory, gc, leak, 内存泄漏, zram, memcg, lmkd, oom, heap |
 | ch08-存储 | 存储, storage, io, f2fs, ext4, sqlite, 文件系统, shared preference |
@@ -104,7 +104,7 @@
 
 扫描目录：{目录名}
 扫描范围：第 {offset} - {offset+batch} 个文件（本批次 {N} 个）
-纳入索引：{X} 个（≥16分） | 跳过：{Y} 个（<16分）
+纳入索引：{X} 个（≥10分，其中高质量≥16分：{Z}个） | 跳过：{Y} 个（<10分）
 
 ### 本轮高分素材
 每条：

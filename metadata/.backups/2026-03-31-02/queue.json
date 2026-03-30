@@ -42,19 +42,10 @@
       "section_title": "线程模型",
       "priority": 60,
       "reason": "待加工（素材0篇）",
-      "material_paths": [
-        "Personal-Knowlodge/source/Android-Perfetto-07-MainThread-And-RenderThread.md",
-        "Personal-Knowlodge/source/Android-Systrace-MainThread-And-RenderThread.md",
-        "Personal-Knowlodge/source/2026-03-05_wechat_Looper到底在等什么.md",
-        "Personal-Knowlodge/source/2026-03-07_wechat_万字解析Android_Handler实现原理.md",
-        "Personal-Knowlodge/source/2026-03-06_wechat_Android性能优化之绑定RenderThread到大核CPU.md"
-      ],
-      "status": "completed",
+      "material_paths": [],
+      "status": "pending",
       "added_by": "manual-init",
-      "added_at": "2026-03-29T21:00:00",
-      "processed_at": "2026-03-30T18:37:58.288757+00:00",
-      "word_count": "~8500",
-      "verification_status": "L2_verified_all_anchors_3_extensions_covered_1_auto_discovery"
+      "added_at": "2026-03-29T21:00:00"
     },
     {
       "section": "1.6",
@@ -1183,15 +1174,7 @@
       "status": "completed",
       "word_count": 8500,
       "verification_status": "L2_verified_all_anchors_3_extensions_covered"
-    },
-    {
-      "section": "1.5",
-      "title": "线程模型",
-      "processed_at": "2026-03-30T18:37:58.288757+00:00",
-      "status": "completed",
-      "word_count": "~8500",
-      "verification_status": "L2_verified_all_anchors_3_extensions_covered_1_auto_discovery"
     }
   ],
-  "last_updated": "2026-03-30T18:37:58.288757+00:00"
+  "last_updated": "2026-03-30T21:35:05"
 }

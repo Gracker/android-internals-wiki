@@ -96,37 +96,15 @@
       "extensions_total": 2,
       "verification_level": "L2",
       "word_count": "~8500"
-    },
-    {
-      "section": "1.4",
-      "title": "Binder IPC 机制与性能影响",
-      "completed_at": "2026-03-31T01:42:45.108799",
-      "anchors_covered": 6,
-      "anchors_total": 6,
-      "extensions_covered": 3,
-      "extensions_total": 3,
-      "verification_level": "L2",
-      "word_count": "~9500"
-    },
-    {
-      "section": "1.5",
-      "title": "线程模型",
-      "completed_at": "2026-03-30T18:37:58.288757+00:00",
-      "anchors_covered": 6,
-      "anchors_total": 6,
-      "extensions_covered": 3,
-      "extensions_total": 3,
-      "verification_level": "L2",
-      "word_count": "~8500"
     }
   ],
   "ready_for_review": 9,
-  "last_updated": "2026-03-30T18:37:58.288757+00:00",
+  "last_updated": "2026-03-30T14:27:41.534Z",
   "stats": {
     "total": 102,
-    "completed": 7,
-    "pending": 95,
-    "last_updated": "2026-03-30T18:37:58.288757+00:00"
+    "completed": 5,
+    "pending": 97,
+    "last_updated": "2026-03-30T20:47:20.369322"
   },
   "research_stats": {
     "runs_today": [
