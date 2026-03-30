@@ -1,5 +1,5 @@
 {
-  "total_skipped": 1380,
+  "total_skipped": 1452,
   "files": [
     {
       "title": "第 10 章：内存性能",
@@ -14587,7 +14587,742 @@
       },
       "skip_reason": "与英文原版内容相同，中文翻译",
       "skipped_at": "2026-03-31T02:15:00"
+    },
+    {
+      "title": "Leading Effective Engineering Teams in the Age of GenAI",
+      "path": "Cubox/Leading Effective Engineering Teams in the Age of GenAI-2025-03-26.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 2,
+        "timeliness": 5,
+        "verifiability": 1,
+        "total": 9
+      },
+      "reason": "总分9<10分，管理类非技术文章"
+    },
+    {
+      "title": "Learn In Public",
+      "path": "Cubox/Learn In Public-2023-12-23.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 2,
+        "timeliness": 4,
+        "verifiability": 1,
+        "total": 8
+      },
+      "reason": "总分8<10分，学习方法论"
+    },
+    {
+      "title": "Learn a paper in a minute - Micropaper",
+      "path": "Cubox/Learn a paper in a minute - Micropaper-2023-01-29.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 4,
+        "verifiability": 1,
+        "total": 7
+      },
+      "reason": "总分7<10分，工具网站收藏"
+    },
+    {
+      "title": "Let's Talk about Kotlin K2",
+      "path": "Cubox/Let's Talk about Kotlin K2-2023-09-19.md",
+      "score": {
+        "relevance": 2,
+        "technical_depth": 2,
+        "timeliness": 4,
+        "verifiability": 1,
+        "total": 9
+      },
+      "reason": "总分9<10分，Kotlin K2语言特性"
+    },
+    {
+      "title": "Let's Build A Simple Interpreter Part 1",
+      "path": "Cubox/Let's Build A Simple Interpreter. Part 1. - Ruslan's Blog-2022-01-14.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 3,
+        "timeliness": 3,
+        "verifiability": 2,
+        "total": 9
+      },
+      "reason": "总分9<10分，编译器教程"
+    },
+    {
+      "title": "Let's Build A Simple Interpreter Part 10",
+      "path": "Cubox/Let's Build A Simple Interpreter. Part 10. - Ruslan's Blog-2022-01-14.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 3,
+        "timeliness": 3,
+        "verifiability": 2,
+        "total": 9
+      },
+      "reason": "总分9<10分，编译器教程"
+    },
+    {
+      "title": "Let's Build A Simple Interpreter Part 11",
+      "path": "Cubox/Let's Build A Simple Interpreter. Part 11. - Ruslan's Blog-2022-01-14.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 3,
+        "timeliness": 3,
+        "verifiability": 2,
+        "total": 9
+      },
+      "reason": "总分9<10分，编译器教程"
+    },
+    {
+      "title": "Let's Build A Simple Interpreter Part 12",
+      "path": "Cubox/Let's Build A Simple Interpreter. Part 12. - Ruslan's Blog-2022-01-14.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 3,
+        "timeliness": 3,
+        "verifiability": 2,
+        "total": 9
+      },
+      "reason": "总分9<10分，编译器教程"
+    },
+    {
+      "title": "Let's Build A Simple Interpreter Part 13",
+      "path": "Cubox/Let's Build A Simple Interpreter. Part 13- Semantic Analysis. - Ruslan's Blog-2022-01-14.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 3,
+        "timeliness": 3,
+        "verifiability": 2,
+        "total": 9
+      },
+      "reason": "总分9<10分，编译器教程"
+    },
+    {
+      "title": "Let's Build A Simple Interpreter Part 14",
+      "path": "Cubox/Let's Build A Simple Interpreter. Part 14- Nested Scopes and a Source-to-Source Compiler. - Ruslan's.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 3,
+        "timeliness": 3,
+        "verifiability": 2,
+        "total": 9
+      },
+      "reason": "总分9<10分，编译器教程"
+    },
+    {
+      "title": "Let's Build A Simple Interpreter Part 15",
+      "path": "Cubox/Let's Build A Simple Interpreter. Part 15. - Ruslan's Blog-2022-01-14.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 3,
+        "timeliness": 3,
+        "verifiability": 2,
+        "total": 9
+      },
+      "reason": "总分9<10分，编译器教程"
+    },
+    {
+      "title": "Let's Build A Simple Interpreter Part 16",
+      "path": "Cubox/Let's Build A Simple Interpreter. Part 16- Recognizing Procedure Calls - Ruslan's Blog-2022-01-14.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 3,
+        "timeliness": 3,
+        "verifiability": 2,
+        "total": 9
+      },
+      "reason": "总分9<10分，编译器教程"
+    },
+    {
+      "title": "Let's Build A Simple Interpreter Part 17",
+      "path": "Cubox/Let's Build A Simple Interpreter. Part 17- Call Stack and Activation Records - Ruslan's Blog-2022-01.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 3,
+        "timeliness": 3,
+        "verifiability": 2,
+        "total": 9
+      },
+      "reason": "总分9<10分，编译器教程"
+    },
+    {
+      "title": "Let's Build A Simple Interpreter Part 18",
+      "path": "Cubox/Let's Build A Simple Interpreter. Part 18- Executing Procedure Calls - Ruslan's Blog-2022-01-14.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 3,
+        "timeliness": 3,
+        "verifiability": 2,
+        "total": 9
+      },
+      "reason": "总分9<10分，编译器教程"
+    },
+    {
+      "title": "Let's Build A Simple Interpreter Part 19",
+      "path": "Cubox/Let's Build A Simple Interpreter. Part 19- Nested Procedure Calls - Ruslan's Blog-2022-01-14.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 3,
+        "timeliness": 3,
+        "verifiability": 2,
+        "total": 9
+      },
+      "reason": "总分9<10分，编译器教程"
+    },
+    {
+      "title": "Let's Build A Simple Interpreter Part 2",
+      "path": "Cubox/Let's Build A Simple Interpreter. Part 2. - Ruslan's Blog-2022-01-14.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 3,
+        "timeliness": 3,
+        "verifiability": 2,
+        "total": 9
+      },
+      "reason": "总分9<10分，编译器教程"
+    },
+    {
+      "title": "Let's Build A Simple Interpreter Part 3",
+      "path": "Cubox/Let's Build A Simple Interpreter. Part 3. - Ruslan's Blog-2022-01-14.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 3,
+        "timeliness": 3,
+        "verifiability": 2,
+        "total": 9
+      },
+      "reason": "总分9<10分，编译器教程"
+    },
+    {
+      "title": "Let's Build A Simple Interpreter Part 4",
+      "path": "Cubox/Let's Build A Simple Interpreter. Part 4. - Ruslan's Blog-2022-01-14.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 3,
+        "timeliness": 3,
+        "verifiability": 2,
+        "total": 9
+      },
+      "reason": "总分9<10分，编译器教程"
+    },
+    {
+      "title": "Let's Build A Simple Interpreter Part 5",
+      "path": "Cubox/Let's Build A Simple Interpreter. Part 5. - Ruslan's Blog-2022-01-14.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 3,
+        "timeliness": 3,
+        "verifiability": 2,
+        "total": 9
+      },
+      "reason": "总分9<10分，编译器教程"
+    },
+    {
+      "title": "Let's Build A Simple Interpreter Part 6",
+      "path": "Cubox/Let's Build A Simple Interpreter. Part 6. - Ruslan's Blog-2022-01-14.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 3,
+        "timeliness": 3,
+        "verifiability": 2,
+        "total": 9
+      },
+      "reason": "总分9<10分，编译器教程"
+    },
+    {
+      "title": "Let's Build A Simple Interpreter Part 7",
+      "path": "Cubox/Let's Build A Simple Interpreter. Part 7- Abstract Syntax Trees - Ruslan's Blog-2022-01-14.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 3,
+        "timeliness": 3,
+        "verifiability": 2,
+        "total": 9
+      },
+      "reason": "总分9<10分，编译器教程"
+    },
+    {
+      "title": "Let's Build A Simple Interpreter Part 8",
+      "path": "Cubox/Let's Build A Simple Interpreter. Part 8. - Ruslan's Blog-2022-01-14.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 3,
+        "timeliness": 3,
+        "verifiability": 2,
+        "total": 9
+      },
+      "reason": "总分9<10分，编译器教程"
+    },
+    {
+      "title": "Let's Build A Simple Interpreter Part 9",
+      "path": "Cubox/Let's Build A Simple Interpreter. Part 9. - Ruslan's Blog-2022-01-14.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 3,
+        "timeliness": 3,
+        "verifiability": 2,
+        "total": 9
+      },
+      "reason": "总分9<10分，编译器教程"
+    },
+    {
+      "title": "Leverage Gemini in your Android apps",
+      "path": "Cubox/Leverage Gemini in your Android apps-2023-12-14.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 2,
+        "timeliness": 4,
+        "verifiability": 1,
+        "total": 8
+      },
+      "reason": "总分8<10分，AI集成非性能"
+    },
+    {
+      "title": "Lifecycle for Android Developers (Part 3)",
+      "path": "Cubox/Lifecycle for Android Developers (Part 3)-2022-04-13.md",
+      "score": {
+        "relevance": 2,
+        "technical_depth": 2,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 8
+      },
+      "reason": "总分8<10分，Lifecycle组件教程"
+    },
+    {
+      "title": "Likely errors for Chinese speakers",
+      "path": "Cubox/Likely erros for Chinese speakers.pdf - Google Drive-2024-10-02.md",
+      "score": {
+        "relevance": 0,
+        "technical_depth": 1,
+        "timeliness": 4,
+        "verifiability": 1,
+        "total": 6
+      },
+      "reason": "总分6<10分，英语学习资料"
+    },
+    {
+      "path": "Cubox/LineageOS：开源手机操作系统的未来之路-2024-02-21.md",
+      "score": 9,
+      "reason": "ROM介绍，无技术深度",
+      "scanned_at": "2026-03-31T03:15:00"
+    },
+    {
+      "path": "Cubox/Linux 之父终于被劝动：用了 30 年的 Linux 内核 C 语言将升级至 C11-2022-02-27.md",
+      "score": 6,
+      "reason": "新闻资讯，无技术内容",
+      "scanned_at": "2026-03-31T03:15:00"
+    },
+    {
+      "path": "Cubox/Linux 中的负载高低和 CPU 开销并不完全对应-2023-01-15.md",
+      "score": 4,
+      "reason": "与2023-01-10重复",
+      "scanned_at": "2026-03-31T03:15:00"
+    },
+    {
+      "path": "Cubox/Linux丨进程僵尸态的实战成因-2025-02-12.md",
+      "score": 4,
+      "reason": "与2025-02-11重复",
+      "scanned_at": "2026-03-31T03:15:00"
+    },
+    {
+      "title": "Meditations On Moloch",
+      "path": "Cubox/Meditations On Moloch-2022-01-17.md",
+      "score": 3,
+      "reason": "哲学散文，与Android技术无关",
+      "skipped_at": "2026-03-31T03:58:00"
+    },
+    {
+      "title": "Meet Vanitha Kumar - Qualcomm",
+      "path": "Cubox/Meet Vanitha Kumar, the Qualcomm inventor whose work on modem software helped make 5G a reality-2025.md",
+      "score": 4,
+      "reason": "Qualcomm招聘/人物介绍，无技术内容",
+      "skipped_at": "2026-03-31T03:58:00"
+    },
+    {
+      "title": "Midjourney 挑战100位动漫泳装角色专题",
+      "path": "Cubox/Midjourney 挑战100位动漫泳装角色专题-2023-04-12.md",
+      "score": 2,
+      "reason": "AI绘画娱乐内容，与Android无关",
+      "skipped_at": "2026-03-31T03:58:00"
+    },
+    {
+      "title": "Midjourney创始人分享创新心法",
+      "path": "Cubox/Midjourney创始人分享创新心法：Midjourney是怎么成功的？-2023-04-08.md",
+      "score": 3,
+      "reason": "AI创业故事，非Android技术",
+      "skipped_at": "2026-03-31T03:58:00"
+    },
+    {
+      "title": "Mimic Shhans 黑猫NFT",
+      "path": "Cubox/Mimic Shhans 黑猫NFT研究：引爆去中心化社区传播的PFP NFT-2022-07-09.md",
+      "score": 2,
+      "reason": "NFT/Web3内容",
+      "skipped_at": "2026-03-31T03:58:00"
+    },
+    {
+      "title": "Mirror: Create and connect your world on web3",
+      "path": "Cubox/Mirror- Create and connect your world on web3-2022-03-23.md",
+      "score": 2,
+      "reason": "Web3平台介绍",
+      "skipped_at": "2026-03-31T03:58:00"
+    },
+    {
+      "title": "Monoliths are the future",
+      "path": "Cubox/Monoliths are the future-2025-08-13.md",
+      "score": 5,
+      "reason": "软件架构观点讨论，泛泛非Android具体",
+      "skipped_at": "2026-03-31T03:58:00"
+    },
+    {
+      "title": "My 2023",
+      "path": "Cubox/My 2023-2024-01-29.md",
+      "score": 2,
+      "reason": "个人年度总结",
+      "skipped_at": "2026-03-31T03:58:00"
+    },
+    {
+      "title": "My 2024",
+      "path": "Cubox/My 2024-2025-02-03.md",
+      "score": 2,
+      "reason": "个人年度总结",
+      "skipped_at": "2026-03-31T03:58:00"
+    },
+    {
+      "title": "My Weekly Reading - Econlib",
+      "path": "Cubox/My Weekly Reading for February 16, 2025 - Econlib-2025-02-17.md",
+      "score": 3,
+      "reason": "经济学阅读列表",
+      "skipped_at": "2026-03-31T03:58:00"
+    },
+    {
+      "title": "NordVPN Baseline Profiles (duplicate)",
+      "path": "Cubox/NordVPN boosted the speed of its login user flow by 60% using Baseline Profiles-2023-12-01.md",
+      "score": 3,
+      "reason": "与11/30版本重复",
+      "skipped_at": "2026-03-31T03:58:00"
+    },
+    {
+      "title": "Notion AI 背后的关键时刻与决策",
+      "path": "Cubox/Notion AI 背后的关键时刻与决策-2023-12-01.md",
+      "score": 3,
+      "reason": "Notion AI产品分析",
+      "skipped_at": "2026-03-31T03:58:00"
+    },
+    {
+      "title": "Notion workspace (2022)",
+      "path": "Cubox/Notion – The all-in-one workspace for your notes, tasks, wikis, and databases.-2022-03-05.md",
+      "score": 2,
+      "reason": "Notion产品页面",
+      "skipped_at": "2026-03-31T03:58:00"
+    },
+    {
+      "title": "Notion workspace (2024)",
+      "path": "Cubox/Notion – The all-in-one workspace for your notes, tasks, wikis, and databases.-2024-09-13.md",
+      "score": 3,
+      "reason": "OpenAI Level相关，非Android",
+      "skipped_at": "2026-03-31T03:58:00"
+    },
+    {
+      "title": "Notion 作为一种 Web 3 的可能",
+      "path": "Cubox/Notion 作为一种 Web 3 的可能 – 虹线-2023-02-18.md",
+      "score": 3,
+      "reason": "Notion/Web3讨论",
+      "skipped_at": "2026-03-31T03:58:00"
+    },
+    {
+      "title": "Notion，牛逼",
+      "path": "Cubox/Notion，牛逼。-2023-03-09.md",
+      "score": 2,
+      "reason": "Notion产品评论",
+      "skipped_at": "2026-03-31T03:58:00"
+    },
+    {
+      "title": "Now in Android #56 (podcast)",
+      "path": "Cubox/Now in Android - 56 - Jetpack Compose 1.1 stable, DataStore, Android 13 preview, and more!-2022-02-2.md",
+      "score": 4,
+      "reason": "播客文字版，与Medium版重复",
+      "skipped_at": "2026-03-31T03:58:00"
+    },
+    {
+      "title": "Now in Android #64",
+      "path": "Cubox/Now in Android #64. CTS-D, Compose library versioning… - by Daniel Galpin - Android Developers - Jul.md",
+      "score": 5,
+      "reason": "newsletter概览，技术深度不足",
+      "skipped_at": "2026-03-31T03:58:00"
+    },
+    {
+      "title": "Now in Android #66",
+      "path": "Cubox/Now in Android #66. Android 13, MAD Skills Performance… - by Meghan Mehta - Android Developers - Aug.md",
+      "score": 9,
+      "reason": "newsletter概览，性能相关但深度不够",
+      "skipped_at": "2026-03-31T03:58:00"
+    },
+    {
+      "title": "NuPhy Air75 V2键盘评测",
+      "path": "Cubox/NuPhy Air75 V2键盘评测 – 衛斯理-2024-03-02.md",
+      "score": 2,
+      "reason": "键盘硬件评测",
+      "skipped_at": "2026-03-31T03:58:00"
+    },
+    {
+      "title": "No.1 - 关于AI的107个人61个工具",
+      "path": "Cubox/No.1 - 关于 AI 的 107 个人，61 个工具和 28 个通讯-2023-02-20.md",
+      "score": 3,
+      "reason": "AI行业概览，非Android技术",
+      "skipped_at": "2026-03-31T03:58:00"
+    },
+    {
+      "path": "Cubox/OPPO内存反碎片优化原理-2022-10-26.md",
+      "title": "OPPO内存反碎片(2022版)",
+      "score": {
+        "relevance": 4,
+        "technical_depth": 4,
+        "timeliness": 3,
+        "verifiability": 4,
+        "total": 9
+      },
+      "reason": "与2023版重复"
+    },
+    {
+      "path": "Cubox/On-Device Machine Learning In Android- Frameworks and Ecosystem-2024-02-16.md",
+      "title": "On-Device ML in Android",
+      "score": {
+        "relevance": 2,
+        "technical_depth": 3,
+        "timeliness": 4,
+        "verifiability": 3,
+        "total": 9
+      },
+      "reason": "ML框架非AIW核心"
+    },
+    {
+      "path": "Cubox/OPPO 姜昱辰：从 GUI 到 Agent-2025-12-08.md",
+      "title": "OPPO AI手机交互",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 2,
+        "timeliness": 5,
+        "verifiability": 1,
+        "total": 9
+      },
+      "reason": "AI产品思考非技术"
+    },
+    {
+      "path": "Cubox/OpenClaw + Claude Code 超强教程-2026-02-26.md",
+      "title": "OpenClaw+Claude Code教程",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 2,
+        "timeliness": 5,
+        "verifiability": 2,
+        "total": 9
+      },
+      "reason": "Agent工具非AIW"
+    },
+    {
+      "path": "Cubox/OpenClaw 闭门局-2026-03-29.md",
+      "title": "OpenClaw闭门局",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 2,
+        "timeliness": 5,
+        "verifiability": 1,
+        "total": 9
+      },
+      "reason": "Agent生态非AIW"
+    },
+    {
+      "path": "Cubox/OpenAI Agents SDK-2025-03-13.md",
+      "title": "OpenAI Agents SDK",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 2,
+        "timeliness": 5,
+        "verifiability": 2,
+        "total": 9
+      },
+      "reason": "AI SDK非AIW"
+    },
+    {
+      "path": "Cubox/OpenAI o1模型的前世今生-2024-10-31.md",
+      "title": "OpenAI o1模型",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 2,
+        "timeliness": 5,
+        "verifiability": 1,
+        "total": 9
+      },
+      "reason": "AI模型非AIW"
+    },
+    {
+      "path": "Cubox/OpenAI o3-mini-2025-02-03.md",
+      "title": "OpenAI o3-mini",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 5,
+        "verifiability": 1,
+        "total": 8
+      },
+      "reason": "AI模型非AIW"
+    },
+    {
+      "path": "Cubox/OpenAI 推出超神 ChatGPT-2022-12-05.md",
+      "title": "ChatGPT注册攻略",
+      "score": {
+        "relevance": 0,
+        "technical_depth": 1,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 5
+      },
+      "reason": "与AIW无关"
+    },
+    {
+      "path": "Cubox/PIVOT Vol.12-2025-01-29.md",
+      "title": "PIVOT Newsletter",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 5,
+        "verifiability": 1,
+        "total": 8
+      },
+      "reason": "Newsletter非AIW"
+    },
+    {
+      "path": "Cubox/Paradigm比特币-2022-01-29.md",
+      "title": "Paradigm比特币投资",
+      "score": {
+        "relevance": 0,
+        "technical_depth": 1,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 5
+      },
+      "reason": "与AIW无关"
+    },
+    {
+      "path": "Cubox/Paul Graham超线性回报-2023-10-30.md",
+      "title": "Paul Graham超线性回报",
+      "score": {
+        "relevance": 0,
+        "technical_depth": 2,
+        "timeliness": 4,
+        "verifiability": 1,
+        "total": 7
+      },
+      "reason": "创业思考非AIW"
+    },
+    {
+      "path": "Cubox/Paul Graham创业笨事情-2022-09-06.md",
+      "title": "Paul Graham创业笨事情",
+      "score": {
+        "relevance": 0,
+        "technical_depth": 2,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 6
+      },
+      "reason": "创业文章非AIW"
+    },
+    {
+      "path": "Cubox/Odaily星球日报-2022-01-25.md",
+      "title": "Odaily区块链",
+      "score": {
+        "relevance": 0,
+        "technical_depth": 1,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 5
+      },
+      "reason": "与AIW无关"
+    },
+    {
+      "path": "Cubox/Odaily星球日报-2022-03-31.md",
+      "title": "Odaily区块链",
+      "score": {
+        "relevance": 0,
+        "technical_depth": 1,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 5
+      },
+      "reason": "与AIW无关"
+    },
+    {
+      "path": "Cubox/Perfetto数据流故障CSDN版-2024-02-29.md",
+      "title": "Perfetto数据流故障(CSDN)",
+      "score": {
+        "relevance": 4,
+        "technical_depth": 4,
+        "timeliness": 4,
+        "verifiability": 3,
+        "total": 9
+      },
+      "reason": "与2024-02-23版重复"
+    },
+    {
+      "path": "Cubox/Podcast Kotlin炉边漫谈15期-2024-01-10.md",
+      "title": "Kotlin炉边漫谈15",
+      "score": {
+        "relevance": 2,
+        "technical_depth": 2,
+        "timeliness": 4,
+        "verifiability": 1,
+        "total": 8
+      },
+      "reason": "播客非AIW核心"
+    },
+    {
+      "path": "Cubox/Podcast Kotlin炉边漫谈3期-2022-09-05.md",
+      "title": "Kotlin炉边漫谈3",
+      "score": {
+        "relevance": 2,
+        "technical_depth": 2,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 7
+      },
+      "reason": "播客非AIW核心"
+    },
+    {
+      "path": "Cubox/Podcast Kotlin炉边漫谈2期-2022-07-27.md",
+      "title": "Kotlin炉边漫谈2",
+      "score": {
+        "relevance": 2,
+        "technical_depth": 2,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 7
+      },
+      "reason": "播客非AIW核心"
+    },
+    {
+      "path": "Cubox/Power's Memos-2023-02-28.md",
+      "title": "Power's Memos",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 4,
+        "verifiability": 1,
+        "total": 6
+      },
+      "reason": "个人笔记非AIW"
+    },
+    {
+      "path": "Cubox/Practical Modularisation-2022-01-31.md",
+      "title": "Android模块化",
+      "score": {
+        "relevance": 2,
+        "technical_depth": 3,
+        "timeliness": 3,
+        "verifiability": 2,
+        "total": 9
+      },
+      "reason": "模块化关联度低"
     }
   ],
-  "last_updated": "2026-03-31T02:15:00"
+  "last_updated": "2026-03-31T04:15:00"
 }

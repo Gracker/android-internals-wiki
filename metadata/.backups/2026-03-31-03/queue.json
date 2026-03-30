@@ -202,18 +202,10 @@
       "section_title": "触摸响应的性能分析",
       "priority": 60,
       "reason": "待加工（素材0篇）",
-      "material_paths": [
-        "Personal-Knowlodge/source/Android-Systrace-Input.md",
-        "Personal-Knowlodge/source/android-systrace-Responsiveness-in-action-1.md",
-        "Personal-Knowlodge/source/2026-03-06_wechat_从input响应性能差的issue演示perfetto_trace用法.md",
-        "Personal-Knowlodge/source/2026-03-06_wechat_响应时延的科学研究.md"
-      ],
-      "status": "completed",
+      "material_paths": [],
+      "status": "pending",
       "added_by": "manual-init",
-      "added_at": "2026-03-29T21:00:00",
-      "processed_at": "2026-03-30T19:48:28.247193+00:00",
-      "word_count": "~7500",
-      "verification_status": "L2_verified_all_anchors_2_extensions_3_auto_discoveries"
+      "added_at": "2026-03-29T21:00:00"
     },
     {
       "section": "3.3",
@@ -400,18 +392,10 @@
       "section_title": "卡顿的定义与分类",
       "priority": 55,
       "reason": "待加工（素材0篇）",
-      "material_paths": [
-        "Personal-Knowlodge/source/2026-03-07_wechat_Android深入卡顿分析与实践.md",
-        "Personal-Knowlodge/source/2026-03-07_wechat_Android卡顿监测的方方面面.md",
-        "Personal-Knowlodge/source/Android-Perfetto-06-Why-120Hz.md",
-        "Personal-Knowlodge/source/Android-Perfetto-05-Chorergrapher.md"
-      ],
-      "status": "completed",
+      "material_paths": [],
+      "status": "pending",
       "added_by": "manual-init",
-      "added_at": "2026-03-29T21:00:00",
-      "processed_at": "2026-03-30T20:33:03.150823+00:00",
-      "word_count": "~8000",
-      "verification_status": "L2_verified_all_anchors_1_extension_covered_1_auto_discovery"
+      "added_at": "2026-03-29T21:00:00"
     },
     {
       "section": "7.2",
@@ -1207,26 +1191,7 @@
       "status": "completed",
       "word_count": "~8500",
       "verification_status": "L2_verified_all_anchors_3_extensions_covered_1_auto_discovery"
-    },
-    {
-      "section": "3.2",
-      "title": "触摸响应的性能分析",
-      "processed_at": "2026-03-30T19:38:41.367932+00:00",
-      "status": "completed",
-      "word_count": "~7500",
-      "verification_status": "L2_verified_all_anchors_2_extensions_covered_3_auto_discoveries"
-    },
-    {
-      "section": "7.1",
-      "title": "卡顿的定义与分类",
-      "completed_at": "2026-03-30T20:33:03.150823+00:00",
-      "anchors_covered": 5,
-      "anchors_total": 5,
-      "extensions_covered": 1,
-      "extensions_total": 2,
-      "verification_level": "L2",
-      "word_count": "~8000"
     }
   ],
-  "last_updated": "2026-03-30T20:33:03.150823+00:00"
+  "last_updated": "2026-03-30T18:37:58.288757+00:00"
 }

@@ -3,37 +3,37 @@
   "indexed_files": 282,
   "chapters_distribution": {
     "待定": 1,
-    "ch05-渲染": 47,
-    "ch04-启动": 6,
+    "ch05-渲染": 55,
+    "ch04-启动": 14,
     "ch12-安全": 7,
-    "ch01-架构": 16,
-    "ch13-调度": 28,
+    "ch01-架构": 28,
+    "ch13-调度": 30,
     "ch03-线程": 16,
-    "ch07-内存": 19,
-    "ch11-Profiling": 13,
-    "ch09-网络": 1,
-    "ch15-Kotlin": 5,
-    "ch14-工具": 14,
-    "ch02-进程": 5,
-    "ch06": 4,
-    "ch04": 8,
-    "ch12": 3,
-    "ch01": 18,
-    "ch08": 3,
-    "ch03": 5,
-    "ch15": 5,
+    "ch07-内存": 25,
+    "ch11-Profiling": 19,
+    "ch09-网络": 5,
+    "ch15-Kotlin": 9,
+    "ch14-工具": 25,
+    "ch02-进程": 6,
+    "": 93,
+    "ch16-构建": 7,
+    "ch17-新版本": 5,
+    "ch10-包体积": 3,
+    "ch08-存储": 5,
+    "ch06-功耗": 3,
+    "ch04": 5,
+    "ch14": 4,
+    "ch01": 2,
+    "ch05": 15,
+    "ch11": 2,
+    "ch17": 1,
+    "ch15": 3,
+    "ch06": 3,
+    "ch12": 1,
     "ch13": 2,
-    "ch02": 3,
-    "ch11": 1,
-    "ch07": 5,
-    "ch05": 13,
-    "ch16-构建": 6,
-    "ch17-新版本": 2,
-    "ch10-包体积": 2,
-    "ch08-存储": 3,
-    "ch06-功耗": 1,
-    "ch16": 2,
-    "ch14": 2
+    "ch07": 1,
+    "ch03": 1,
+    "ch02": 1
   },
   "files": [
     {
@@ -5393,7 +5393,1837 @@
       "quality": "medium",
       "summary": "Android官方JankTest API，用于UI性能和帧率测试",
       "indexed_at": "2026-03-31T02:15:00"
+    },
+    {
+      "title": "LWN：AutoFDO以及Propeller优化",
+      "path": "Cubox/LWN：AutoFDO以及Propeller优化！-CSDN博客-2025-10-21.md",
+      "score": {
+        "relevance": 2,
+        "technical_depth": 3,
+        "timeliness": 5,
+        "verifiability": 3,
+        "total": 13
+      },
+      "chapters": [
+        "ch11-Profiling",
+        "ch13-调度"
+      ],
+      "confidence": "medium",
+      "quality": "medium",
+      "summary": "LWN翻译：AutoFDO和Propeller编译器优化技术，通过profile引导优化提升性能"
+    },
+    {
+      "title": "LWN：中断感知自旋锁的新API",
+      "path": "Cubox/LWN：中断感知自旋锁的新API！-2025-10-28.md",
+      "score": {
+        "relevance": 2,
+        "technical_depth": 3,
+        "timeliness": 5,
+        "verifiability": 2,
+        "total": 12
+      },
+      "chapters": [
+        "ch13-调度"
+      ],
+      "confidence": "medium",
+      "quality": "medium",
+      "summary": "内核中断感知自旋锁新API，减少中断延迟对系统响应的影响"
+    },
+    {
+      "title": "LWN：减少TLB压力的措施",
+      "path": "Cubox/LWN：减少TLB压力的措施！-2025-04-10.md",
+      "score": {
+        "relevance": 2,
+        "technical_depth": 3,
+        "timeliness": 5,
+        "verifiability": 2,
+        "total": 12
+      },
+      "chapters": [
+        "ch07-内存"
+      ],
+      "confidence": "medium",
+      "quality": "medium",
+      "summary": "LWN关于减少TLB压力的内核优化措施，涉及内存管理性能"
+    },
+    {
+      "title": "LWN：删除调度器中功耗差异幅度的检查",
+      "path": "Cubox/LWN：删除调度器中功耗差异幅度的检查！-2022-07-15.md",
+      "score": {
+        "relevance": 3,
+        "technical_depth": 3,
+        "timeliness": 3,
+        "verifiability": 2,
+        "total": 11
+      },
+      "chapters": [
+        "ch13-调度",
+        "ch06-功耗"
+      ],
+      "confidence": "medium",
+      "quality": "medium",
+      "summary": "Linux调度器移除功耗差异幅度检查的内核补丁分析"
+    },
+    {
+      "title": "LWN：安卓Binder的Rust实现",
+      "path": "Cubox/LWN：安卓Binder的Rust实现！-2023-12-18.md",
+      "score": {
+        "relevance": 2,
+        "technical_depth": 3,
+        "timeliness": 4,
+        "verifiability": 2,
+        "total": 11
+      },
+      "chapters": [
+        "ch01-架构"
+      ],
+      "confidence": "low",
+      "quality": "medium",
+      "summary": "Android Binder IPC的Rust语言实现，内核驱动层面的改进"
+    },
+    {
+      "title": "LWN：对内核内存分配进行profiling",
+      "path": "Cubox/LWN：对内核内存分配进行profiling！-2024-05-31.md",
+      "score": {
+        "relevance": 3,
+        "technical_depth": 4,
+        "timeliness": 4,
+        "verifiability": 3,
+        "total": 14
+      },
+      "chapters": [
+        "ch07-内存",
+        "ch11-Profiling"
+      ],
+      "confidence": "medium",
+      "quality": "medium",
+      "summary": "内核内存分配profiling方法，分析内核层内存分配行为与性能影响"
+    },
+    {
+      "title": "LWN：更好地控制透明巨页的使用",
+      "path": "Cubox/LWN：更好地控制透明巨页的使用！-2025-08-14.md",
+      "score": {
+        "relevance": 2,
+        "technical_depth": 3,
+        "timeliness": 5,
+        "verifiability": 2,
+        "total": 12
+      },
+      "chapters": [
+        "ch07-内存"
+      ],
+      "confidence": "medium",
+      "quality": "medium",
+      "summary": "透明巨页(THP)控制的内核改进，对Android内存管理有参考价值"
+    },
+    {
+      "title": "LWN：用户空间trace event合入一年之后",
+      "path": "Cubox/LWN：用户空间trace event合入一年之后……-2023-04-13.md",
+      "score": {
+        "relevance": 3,
+        "technical_depth": 3,
+        "timeliness": 3,
+        "verifiability": 2,
+        "total": 11
+      },
+      "chapters": [
+        "ch11-Profiling"
+      ],
+      "confidence": "medium",
+      "quality": "medium",
+      "summary": "用户空间trace event在内核合入一年后的回顾，与Perfetto/atrace相关"
+    },
+    {
+      "title": "LWN：网络代码中着手处理冻结页",
+      "path": "Cubox/LWN：网络代码中着手处理冻结页！-2025-04-06.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 3,
+        "timeliness": 5,
+        "verifiability": 2,
+        "total": 11
+      },
+      "chapters": [
+        "ch07-内存"
+      ],
+      "confidence": "low",
+      "quality": "medium",
+      "summary": "网络代码中处理冻结页的内核改进，间接涉及内存管理"
+    },
+    {
+      "title": "LWN：让CPU调度器考虑Cache",
+      "path": "Cubox/LWN：让 CPU 调度器考虑 Cache！-2025-05-12.md",
+      "score": {
+        "relevance": 4,
+        "technical_depth": 4,
+        "timeliness": 5,
+        "verifiability": 3,
+        "total": 16
+      },
+      "chapters": [
+        "ch13-调度"
+      ],
+      "confidence": "high",
+      "quality": "high",
+      "summary": "CPU调度器考虑Cache亲和性的内核优化，直接影响Android多核调度性能"
+    },
+    {
+      "title": "LWN：让用户态来管理一组线程的调度",
+      "path": "Cubox/LWN：让用户态来管理一组线程的调度！-2022-01-26.md",
+      "score": {
+        "relevance": 3,
+        "technical_depth": 3,
+        "timeliness": 3,
+        "verifiability": 2,
+        "total": 11
+      },
+      "chapters": [
+        "ch13-调度",
+        "ch03-线程"
+      ],
+      "confidence": "medium",
+      "quality": "medium",
+      "summary": "用户态管理线程组调度的内核机制，与Android线程调度相关"
+    },
+    {
+      "title": "LWN：采用latency nice改善响应时间",
+      "path": "Cubox/LWN：采用latency nice改善响应时间！-2022-03-31.md",
+      "score": {
+        "relevance": 4,
+        "technical_depth": 3,
+        "timeliness": 3,
+        "verifiability": 2,
+        "total": 12
+      },
+      "chapters": [
+        "ch04-启动",
+        "ch13-调度"
+      ],
+      "confidence": "medium",
+      "quality": "medium",
+      "summary": "latency nice调度策略改善响应延迟，与Android启动速度和交互响应相关"
+    },
+    {
+      "title": "Leveling Guide for your Performance Journey",
+      "path": "Cubox/Leveling Guide for your Performance Journey-2025-12-10.md",
+      "score": {
+        "relevance": 4,
+        "technical_depth": 3,
+        "timeliness": 5,
+        "verifiability": 3,
+        "total": 15
+      },
+      "chapters": [
+        "ch14-工具",
+        "ch05-渲染"
+      ],
+      "confidence": "high",
+      "quality": "medium",
+      "summary": "Google官方Android性能优化指南，涵盖性能工具和渲染优化最佳实践"
+    },
+    {
+      "title": "Leveldb代码阅读笔记",
+      "path": "Cubox/Leveldb代码阅读笔记 - codedump的网络日志-2022-03-15.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 4,
+        "timeliness": 3,
+        "verifiability": 2,
+        "total": 10
+      },
+      "chapters": [
+        "ch08-存储"
+      ],
+      "confidence": "low",
+      "quality": "medium",
+      "summary": "Leveldb源码阅读笔记，深入分析LSM-Tree存储引擎实现，对理解存储I/O有参考价值"
+    },
+    {
+      "path": "Cubox/Leverage Gemini in your Android apps-2023-12-14.md",
+      "title": "Leverage Gemini in Android Apps",
+      "score": 10,
+      "dimensions": {
+        "relevance": 2,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 2
+      },
+      "chapters": [
+        {
+          "id": "ch17",
+          "confidence": "low"
+        }
+      ],
+      "quality": "medium",
+      "summary": "Android集成Gemini AI官方指南",
+      "indexed_at": "2026-03-31T03:15:00",
+      "source": "Cubox"
+    },
+    {
+      "path": "Cubox/Lifecycle for Android Developers (Part 3)-2022-04-13.md",
+      "title": "Lifecycle for Android Developers Part 3",
+      "score": 14,
+      "dimensions": {
+        "relevance": 4,
+        "depth": 4,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "chapters": [
+        {
+          "id": "ch01",
+          "confidence": "medium"
+        }
+      ],
+      "quality": "medium",
+      "summary": "LifecycleOwner内部实现机制分析",
+      "indexed_at": "2026-03-31T03:15:00",
+      "source": "Cubox"
+    },
+    {
+      "path": "Cubox/Linux - 关于CPU 调频的一些QA从事Android 开发过程中，我们经常会遇到关于cpu 频率的疑问，由此整理 - 掘金-2025-04-13.md",
+      "title": "Linux CPU调频QA(Android)",
+      "score": 18,
+      "dimensions": {
+        "relevance": 5,
+        "depth": 4,
+        "timeliness": 5,
+        "verifiability": 4
+      },
+      "chapters": [
+        {
+          "id": "ch13",
+          "confidence": "high"
+        },
+        {
+          "id": "ch06",
+          "confidence": "medium"
+        }
+      ],
+      "quality": "high",
+      "summary": "Android CPU调频常见QA，基于实际开发经验",
+      "indexed_at": "2026-03-31T03:15:00",
+      "source": "Cubox"
+    },
+    {
+      "path": "Cubox/Linux 6.10 - CPU 调度本文基于MTK 平台、kernel 6.10 画了几个框图以及选了两个简单的案例， - 掘金-2025-03-28.md",
+      "title": "Linux 6.10 CPU调度(MTK)",
+      "score": 20,
+      "dimensions": {
+        "relevance": 5,
+        "depth": 5,
+        "timeliness": 5,
+        "verifiability": 5
+      },
+      "chapters": [
+        {
+          "id": "ch13",
+          "confidence": "high"
+        }
+      ],
+      "quality": "high",
+      "summary": "MTK平台kernel 6.10调度分析，含框图和案例",
+      "indexed_at": "2026-03-31T03:15:00",
+      "source": "Cubox"
+    },
+    {
+      "path": "Cubox/Linux Cpuidle介绍-2022-07-08.md",
+      "title": "Linux Cpuidle介绍",
+      "score": 14,
+      "dimensions": {
+        "relevance": 4,
+        "depth": 4,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "chapters": [
+        {
+          "id": "ch06",
+          "confidence": "medium"
+        },
+        {
+          "id": "ch13",
+          "confidence": "medium"
+        }
+      ],
+      "quality": "medium",
+      "summary": "Cpuidle framework架构及governor机制",
+      "indexed_at": "2026-03-31T03:15:00",
+      "source": "Cubox"
+    },
+    {
+      "path": "Cubox/Linux EAS介绍-2023-04-28.md",
+      "title": "Linux EAS介绍",
+      "score": 17,
+      "dimensions": {
+        "relevance": 5,
+        "depth": 5,
+        "timeliness": 3,
+        "verifiability": 4
+      },
+      "chapters": [
+        {
+          "id": "ch06",
+          "confidence": "high"
+        },
+        {
+          "id": "ch13",
+          "confidence": "high"
+        }
+      ],
+      "quality": "high",
+      "summary": "EAS节能调度原理：80%阈值、6%迁移规则",
+      "indexed_at": "2026-03-31T03:15:00",
+      "source": "Cubox"
+    },
+    {
+      "path": "Cubox/Linux OOM 基本原理解析-2023-09-18.md",
+      "title": "Linux OOM基本原理",
+      "score": 15,
+      "dimensions": {
+        "relevance": 4,
+        "depth": 4,
+        "timeliness": 3,
+        "verifiability": 4
+      },
+      "chapters": [
+        {
+          "id": "ch07",
+          "confidence": "high"
+        }
+      ],
+      "quality": "medium",
+      "summary": "OOM Killer机制原理，oom_score参数分析",
+      "indexed_at": "2026-03-31T03:15:00",
+      "source": "Cubox"
+    },
+    {
+      "path": "Cubox/Linux V4L2子系统与视频编解码设备介绍-2024-04-26.md",
+      "title": "Linux V4L2与视频编解码",
+      "score": 11,
+      "dimensions": {
+        "relevance": 2,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "chapters": [
+        {
+          "id": "ch14",
+          "confidence": "low"
+        }
+      ],
+      "quality": "medium",
+      "summary": "V4L2框架及视频编解码应用介绍",
+      "indexed_at": "2026-03-31T03:15:00",
+      "source": "Cubox"
+    },
+    {
+      "path": "Cubox/Linux ftrace 1.3、tracer (function、function_graph、irq_off)-2022-02-14.md",
+      "title": "Linux ftrace tracer详解",
+      "score": 15,
+      "dimensions": {
+        "relevance": 4,
+        "depth": 4,
+        "timeliness": 3,
+        "verifiability": 4
+      },
+      "chapters": [
+        {
+          "id": "ch11",
+          "confidence": "high"
+        }
+      ],
+      "quality": "medium",
+      "summary": "ftrace三种tracer：function/function_graph/irqoff",
+      "indexed_at": "2026-03-31T03:15:00",
+      "source": "Cubox"
+    },
+    {
+      "path": "Cubox/Linux schedule 1、调度的时刻___schedule(bool preempt, bo...-2023-10-27.md",
+      "title": "Linux schedule调度的时刻",
+      "score": 18,
+      "dimensions": {
+        "relevance": 5,
+        "depth": 5,
+        "timeliness": 3,
+        "verifiability": 5
+      },
+      "chapters": [
+        {
+          "id": "ch13",
+          "confidence": "high"
+        }
+      ],
+      "quality": "high",
+      "summary": "调度框架核心：runqueue/调度时机/源码分析(kernel 4.4)",
+      "indexed_at": "2026-03-31T03:15:00",
+      "source": "Cubox"
+    },
+    {
+      "path": "Cubox/Linux schedule 2、调度算法_pvr_defer_free-CSDN博客-2023-10-27.md",
+      "title": "Linux schedule调度算法",
+      "score": 18,
+      "dimensions": {
+        "relevance": 5,
+        "depth": 5,
+        "timeliness": 3,
+        "verifiability": 5
+      },
+      "chapters": [
+        {
+          "id": "ch13",
+          "confidence": "high"
+        }
+      ],
+      "quality": "high",
+      "summary": "CFS/RT/Idle调度算法与sched_class结构详解",
+      "indexed_at": "2026-03-31T03:15:00",
+      "source": "Cubox"
+    },
+    {
+      "path": "Cubox/Linux schedule 3、负载计算-CSDN博客-2023-10-27.md",
+      "title": "Linux schedule负载计算",
+      "score": 18,
+      "dimensions": {
+        "relevance": 5,
+        "depth": 5,
+        "timeliness": 3,
+        "verifiability": 5
+      },
+      "chapters": [
+        {
+          "id": "ch13",
+          "confidence": "high"
+        }
+      ],
+      "quality": "high",
+      "summary": "负载计算三层架构：entity/cpu/系统级PELT",
+      "indexed_at": "2026-03-31T03:15:00",
+      "source": "Cubox"
+    },
+    {
+      "path": "Cubox/Linux schedule 4、负载均衡_sgedts-CSDN博客-2023-10-27.md",
+      "title": "Linux schedule负载均衡",
+      "score": 18,
+      "dimensions": {
+        "relevance": 5,
+        "depth": 5,
+        "timeliness": 3,
+        "verifiability": 5
+      },
+      "chapters": [
+        {
+          "id": "ch13",
+          "confidence": "high"
+        }
+      ],
+      "quality": "high",
+      "summary": "SMP负载均衡：Scheduling Domains/NUMA/迁移策略",
+      "indexed_at": "2026-03-31T03:15:00",
+      "source": "Cubox"
+    },
+    {
+      "path": "Cubox/Linux schedule 5、EAS(Energy-Aware Scheduling)_linu...-2023-10-27.md",
+      "title": "Linux schedule EAS调度",
+      "score": 18,
+      "dimensions": {
+        "relevance": 5,
+        "depth": 5,
+        "timeliness": 3,
+        "verifiability": 5
+      },
+      "chapters": [
+        {
+          "id": "ch06",
+          "confidence": "high"
+        },
+        {
+          "id": "ch13",
+          "confidence": "high"
+        }
+      ],
+      "quality": "high",
+      "summary": "EAS对SMP负载均衡的影响，overutilized与能耗模型",
+      "indexed_at": "2026-03-31T03:15:00",
+      "source": "Cubox"
+    },
+    {
+      "path": "Cubox/Linux schedule 6、Cgoup-CSDN博客-2023-10-27.md",
+      "title": "Linux schedule Cgroup",
+      "score": 15,
+      "dimensions": {
+        "relevance": 4,
+        "depth": 4,
+        "timeliness": 3,
+        "verifiability": 4
+      },
+      "chapters": [
+        {
+          "id": "ch13",
+          "confidence": "high"
+        }
+      ],
+      "quality": "medium",
+      "summary": "Cgroup调度：cpu/cpuset控制组配置使用",
+      "indexed_at": "2026-03-31T03:15:00",
+      "source": "Cubox"
+    },
+    {
+      "path": "Cubox/Linux tracing systems & how they fit together-2022-03-17.md",
+      "title": "Linux tracing systems概述",
+      "score": 12,
+      "dimensions": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 2,
+        "verifiability": 3
+      },
+      "chapters": [
+        {
+          "id": "ch11",
+          "confidence": "medium"
+        }
+      ],
+      "quality": "medium",
+      "summary": "tracing全景图：ftrace/perf/eBPF关系梳理",
+      "indexed_at": "2026-03-31T03:15:00",
+      "source": "Cubox"
+    },
+    {
+      "path": "Cubox/Linux 中的负载高低和 CPU 开销并不完全对应-2023-01-10.md",
+      "title": "Linux负载与CPU开销差异",
+      "score": 11,
+      "dimensions": {
+        "relevance": 3,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 2
+      },
+      "chapters": [
+        {
+          "id": "ch13",
+          "confidence": "medium"
+        }
+      ],
+      "quality": "medium",
+      "summary": "分析load average与CPU实际开销差异",
+      "indexed_at": "2026-03-31T03:15:00",
+      "source": "Cubox"
+    },
+    {
+      "path": "Cubox/Linux 内核的配置、编译与安装 [一]-2022-02-07.md",
+      "title": "Linux内核配置编译安装(上)",
+      "score": 10,
+      "dimensions": {
+        "relevance": 2,
+        "depth": 3,
+        "timeliness": 2,
+        "verifiability": 3
+      },
+      "chapters": [
+        {
+          "id": "ch14",
+          "confidence": "low"
+        }
+      ],
+      "quality": "medium",
+      "summary": "内核config/编译流程基础教程",
+      "indexed_at": "2026-03-31T03:15:00",
+      "source": "Cubox"
+    },
+    {
+      "path": "Cubox/Linux 内核的配置、编译与安装 [二]-2022-02-07.md",
+      "title": "Linux内核配置编译安装(下)",
+      "score": 10,
+      "dimensions": {
+        "relevance": 2,
+        "depth": 3,
+        "timeliness": 2,
+        "verifiability": 3
+      },
+      "chapters": [
+        {
+          "id": "ch14",
+          "confidence": "low"
+        }
+      ],
+      "quality": "medium",
+      "summary": "内核安装/模块管理实践",
+      "indexed_at": "2026-03-31T03:15:00",
+      "source": "Cubox"
+    },
+    {
+      "path": "Cubox/Linux 调度器中的 PELT 算法浅析-2023-01-30.md",
+      "title": "Linux PELT算法浅析",
+      "score": 18,
+      "dimensions": {
+        "relevance": 5,
+        "depth": 5,
+        "timeliness": 3,
+        "verifiability": 5
+      },
+      "chapters": [
+        {
+          "id": "ch13",
+          "confidence": "high"
+        }
+      ],
+      "quality": "high",
+      "summary": "PELT算法原理：信号衰减与per-entity负载追踪",
+      "indexed_at": "2026-03-31T03:15:00",
+      "source": "Cubox"
+    },
+    {
+      "path": "Cubox/Linux丨进程僵尸态的实战成因-2025-02-11.md",
+      "title": "Linux进程僵尸态实战",
+      "score": 14,
+      "dimensions": {
+        "relevance": 3,
+        "depth": 3,
+        "timeliness": 5,
+        "verifiability": 3
+      },
+      "chapters": [
+        {
+          "id": "ch02",
+          "confidence": "medium"
+        }
+      ],
+      "quality": "medium",
+      "summary": "僵尸态实际案例：成因分析与排查",
+      "indexed_at": "2026-03-31T03:15:00",
+      "source": "Cubox"
+    },
+    {
+      "path": "Cubox/Linux任务调度探秘（下）：实时调度（RT）-2025-12-29.md",
+      "title": "Linux实时调度RT探秘",
+      "score": 18,
+      "dimensions": {
+        "relevance": 5,
+        "depth": 4,
+        "timeliness": 5,
+        "verifiability": 4
+      },
+      "chapters": [
+        {
+          "id": "ch13",
+          "confidence": "high"
+        }
+      ],
+      "quality": "high",
+      "summary": "RT调度器(2025)：SCHED_FIFO/SCHED_RR策略",
+      "indexed_at": "2026-03-31T03:15:00",
+      "source": "Cubox"
+    },
+    {
+      "path": "Cubox/Linux内存变低会发生什么问题-2024-09-09.md",
+      "title": "Linux内存不足的系统行为",
+      "score": 13,
+      "dimensions": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "chapters": [
+        {
+          "id": "ch07",
+          "confidence": "medium"
+        }
+      ],
+      "quality": "medium",
+      "summary": "内存不足时OOM与回收机制分析",
+      "indexed_at": "2026-03-31T03:15:00",
+      "source": "Cubox"
+    },
+    {
+      "path": "Cubox/Linux内存管理中锁使用分析及典型优化案例总结-2024-08-09.md",
+      "title": "Linux内存管理锁优化",
+      "score": 16,
+      "dimensions": {
+        "relevance": 4,
+        "depth": 5,
+        "timeliness": 3,
+        "verifiability": 4
+      },
+      "chapters": [
+        {
+          "id": "ch07",
+          "confidence": "high"
+        }
+      ],
+      "quality": "high",
+      "summary": "内核内存管理锁机制及性能优化案例",
+      "indexed_at": "2026-03-31T03:15:00",
+      "source": "Cubox"
+    },
+    {
+      "path": "Cubox/Linux内核分析：页回收导致的cpu load瞬间飙高的问题分析与思考-2024-01-19.md",
+      "title": "页回收致CPU load飙高",
+      "score": 15,
+      "dimensions": {
+        "relevance": 4,
+        "depth": 4,
+        "timeliness": 3,
+        "verifiability": 4
+      },
+      "chapters": [
+        {
+          "id": "ch07",
+          "confidence": "medium"
+        },
+        {
+          "id": "ch13",
+          "confidence": "medium"
+        }
+      ],
+      "quality": "medium",
+      "summary": "页回收引发CPU异常的根因分析",
+      "indexed_at": "2026-03-31T03:15:00",
+      "source": "Cubox"
+    },
+    {
+      "path": "Cubox/Linux内核并发与同步机制解读（arm64）上-2023-12-30.md",
+      "title": "Linux内核并发同步arm64(上)",
+      "score": 16,
+      "dimensions": {
+        "relevance": 4,
+        "depth": 5,
+        "timeliness": 3,
+        "verifiability": 4
+      },
+      "chapters": [
+        {
+          "id": "ch03",
+          "confidence": "high"
+        },
+        {
+          "id": "ch13",
+          "confidence": "medium"
+        }
+      ],
+      "quality": "high",
+      "summary": "arm64内核并发同步机制详解",
+      "indexed_at": "2026-03-31T03:15:00",
+      "source": "Cubox"
+    },
+    {
+      "path": "Cubox/Linux内核并发与同步机制解读（arm64）下-2024-01-05.md",
+      "title": "Linux内核并发同步arm64(下)",
+      "score": 16,
+      "dimensions": {
+        "relevance": 4,
+        "depth": 5,
+        "timeliness": 3,
+        "verifiability": 4
+      },
+      "chapters": [
+        {
+          "id": "ch03",
+          "confidence": "high"
+        },
+        {
+          "id": "ch13",
+          "confidence": "medium"
+        }
+      ],
+      "quality": "high",
+      "summary": "arm64高级同步：RCU/读写锁等",
+      "indexed_at": "2026-03-31T03:15:00",
+      "source": "Cubox"
+    },
+    {
+      "path": "Cubox/Linux内核性能剖析的方法学和主要工具-2022-07-01.md",
+      "title": "Linux内核性能剖析方法",
+      "score": 16,
+      "dimensions": {
+        "relevance": 5,
+        "depth": 4,
+        "timeliness": 3,
+        "verifiability": 4
+      },
+      "chapters": [
+        {
+          "id": "ch11",
+          "confidence": "high"
+        },
+        {
+          "id": "ch14",
+          "confidence": "medium"
+        }
+      ],
+      "quality": "high",
+      "summary": "on-cpu/off-cpu分析方法学与perf/ftrace工具",
+      "indexed_at": "2026-03-31T03:15:00",
+      "source": "Cubox"
+    },
+    {
+      "title": "Memory Allocation",
+      "path": "Cubox/Memory Allocation-2024-12-25.md",
+      "score": {
+        "relevance": 4,
+        "depth": 4,
+        "timeliness": 5,
+        "verifiability": 4,
+        "total": 17
+      },
+      "quality": "high",
+      "chapters": [
+        {
+          "id": "ch07",
+          "confidence": "high"
+        }
+      ],
+      "summary": "可视化讲解内存分配器基础原理，介绍堆内存管理、空闲链表、伙伴系统等核心概念",
+      "indexed_at": "2026-03-31T03:58:00"
+    },
+    {
+      "title": "MemoryThrashing：抖音直播解决内存抖动实践",
+      "path": "Cubox/MemoryThrashing：抖音直播解决内存抖动实践-2022-07-20.md",
+      "score": {
+        "relevance": 5,
+        "depth": 4,
+        "timeliness": 3,
+        "verifiability": 4,
+        "total": 16
+      },
+      "quality": "high",
+      "chapters": [
+        {
+          "id": "ch07",
+          "confidence": "high"
+        }
+      ],
+      "summary": "抖音直播团队解决内存抖动（MemoryThrashing）的实战经验，包含问题定位与优化方案",
+      "indexed_at": "2026-03-31T03:58:00"
+    },
+    {
+      "title": "Merge Your Computations",
+      "path": "Cubox/Merge Your Computations-2025-05-16.md",
+      "score": {
+        "relevance": 4,
+        "depth": 5,
+        "timeliness": 5,
+        "verifiability": 5,
+        "total": 19
+      },
+      "quality": "high",
+      "chapters": [
+        {
+          "id": "ch05",
+          "confidence": "high"
+        },
+        {
+          "id": "ch03",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Romain Guy讲解合并计算函数的性能优化技巧，手动内联减少函数调用开销",
+      "indexed_at": "2026-03-31T03:58:00"
+    },
+    {
+      "title": "Micro-optimizations in Kotlin — 1",
+      "path": "Cubox/Micro-optimizations in Kotlin — 1 · Romain Guy-2024-01-16.md",
+      "score": {
+        "relevance": 5,
+        "depth": 5,
+        "timeliness": 4,
+        "verifiability": 5,
+        "total": 19
+      },
+      "quality": "high",
+      "chapters": [
+        {
+          "id": "ch15",
+          "confidence": "high"
+        },
+        {
+          "id": "ch05",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Romain Guy分享Jetpack Compose中的Kotlin微优化经验，涉及性能敏感代码的调优",
+      "indexed_at": "2026-03-31T03:58:00"
+    },
+    {
+      "title": "Micro-optimizations in Kotlin — 3",
+      "path": "Cubox/Micro-optimizations in Kotlin — 3-2024-02-01.md",
+      "score": {
+        "relevance": 4,
+        "depth": 4,
+        "timeliness": 4,
+        "verifiability": 5,
+        "total": 17
+      },
+      "quality": "high",
+      "chapters": [
+        {
+          "id": "ch15",
+          "confidence": "high"
+        }
+      ],
+      "summary": "分析Kotlin标准库minOf/maxOf函数的隐藏性能陷阱及优化建议",
+      "indexed_at": "2026-03-31T03:58:00"
+    },
+    {
+      "title": "Migrating Architecture Blueprints to Jetpack Compose",
+      "path": "Cubox/Migrating Architecture Blueprints to Jetpack Compose - by Manuel Vivo - Android Developers - Medium-.md",
+      "score": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 3,
+        "total": 13
+      },
+      "quality": "medium",
+      "chapters": [
+        {
+          "id": "ch01",
+          "confidence": "medium"
+        },
+        {
+          "id": "ch15",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Android官方架构蓝图迁移到Jetpack Compose的实践指南",
+      "indexed_at": "2026-03-31T03:58:00"
+    },
+    {
+      "title": "Mobile Device Management Guide 2022: AOSP for custom MDM",
+      "path": "Cubox/Mobile Device Management Guide 2022- AOSP for custom MDM-2022-04-06.md",
+      "score": {
+        "relevance": 3,
+        "depth": 3,
+        "timeliness": 2,
+        "verifiability": 3,
+        "total": 11
+      },
+      "quality": "medium",
+      "chapters": [
+        {
+          "id": "ch12",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "基于AOSP的移动设备管理方案开发指南，涉及安全与监控",
+      "indexed_at": "2026-03-31T03:58:00"
+    },
+    {
+      "title": "Multi-generational LRU(MGLRU)算法和实现分析",
+      "path": "Cubox/Multi-generational LRU(MGLRU)算法和实现分析-2025-12-29.md",
+      "score": {
+        "relevance": 5,
+        "depth": 5,
+        "timeliness": 5,
+        "verifiability": 5,
+        "total": 20
+      },
+      "quality": "high",
+      "chapters": [
+        {
+          "id": "ch07",
+          "confidence": "high"
+        },
+        {
+          "id": "ch02",
+          "confidence": "high"
+        }
+      ],
+      "summary": "深度分析MGLRU多代LRU算法原理与内核实现，涵盖页面回收策略与性能影响",
+      "indexed_at": "2026-03-31T03:58:00"
+    },
+    {
+      "title": "Mutex内核同步机制详解",
+      "path": "Cubox/Mutex内核同步机制详解-2022-04-22.md",
+      "score": {
+        "relevance": 4,
+        "depth": 5,
+        "timeliness": 3,
+        "verifiability": 5,
+        "total": 17
+      },
+      "quality": "high",
+      "chapters": [
+        {
+          "id": "ch03",
+          "confidence": "high"
+        },
+        {
+          "id": "ch13",
+          "confidence": "high"
+        }
+      ],
+      "summary": "从数据结构、接口、乐观自旋等维度详解Linux内核Mutex同步机制",
+      "indexed_at": "2026-03-31T03:58:00"
+    },
+    {
+      "title": "NativeTombstoneManagerService & Native Crash流程 - Android V（15）",
+      "path": "Cubox/NativeTombstoneManagerService & Native Crash流程 -基于Android V（15）-2025-08-08.md",
+      "score": {
+        "relevance": 5,
+        "depth": 5,
+        "timeliness": 5,
+        "verifiability": 5,
+        "total": 20
+      },
+      "quality": "high",
+      "chapters": [
+        {
+          "id": "ch11",
+          "confidence": "high"
+        },
+        {
+          "id": "ch01",
+          "confidence": "high"
+        }
+      ],
+      "summary": "基于Android 15源码分析NativeTombstoneManagerService、Dropbox去重规则及Native Crash流程",
+      "indexed_at": "2026-03-31T03:58:00"
+    },
+    {
+      "title": "New Splash Screen Api for Android",
+      "path": "Cubox/New Splash Screen Api for Android-2022-02-16.md",
+      "score": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 4,
+        "total": 14
+      },
+      "quality": "medium",
+      "chapters": [
+        {
+          "id": "ch04",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Android新Splash Screen API的使用指南，涉及启动画面定制",
+      "indexed_at": "2026-03-31T03:58:00"
+    },
+    {
+      "title": "NordVPN boosted login speed 60% with Baseline Profiles",
+      "path": "Cubox/NordVPN boosted the speed of its login user flow by 60% using Baseline Profiles-2023-11-30.md",
+      "score": {
+        "relevance": 5,
+        "depth": 4,
+        "timeliness": 4,
+        "verifiability": 5,
+        "total": 18
+      },
+      "quality": "high",
+      "chapters": [
+        {
+          "id": "ch04",
+          "confidence": "high"
+        },
+        {
+          "id": "ch14",
+          "confidence": "high"
+        }
+      ],
+      "summary": "NordVPN使用Baseline Profiles优化登录流程速度提升60%的真实案例",
+      "indexed_at": "2026-03-31T03:58:00"
+    },
+    {
+      "title": "Notification runtime permission - Android 13",
+      "path": "Cubox/Notification runtime permission-Android13-2022-03-22.md",
+      "score": {
+        "relevance": 3,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 4,
+        "total": 13
+      },
+      "quality": "medium",
+      "chapters": [
+        {
+          "id": "ch12",
+          "confidence": "medium"
+        },
+        {
+          "id": "ch17",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Android 13新增通知运行时权限详解，涉及危险权限保护级别",
+      "indexed_at": "2026-03-31T03:58:00"
+    },
+    {
+      "title": "Now In Android 精讲 5 - Data Layer与离线优先",
+      "path": "Cubox/Now In Android 精讲 5 - Data Layer 文章介绍了 Data layer 的设计，以及离线优先 - 掘金-2025-01-20.md",
+      "score": {
+        "relevance": 4,
+        "depth": 4,
+        "timeliness": 5,
+        "verifiability": 4,
+        "total": 17
+      },
+      "quality": "high",
+      "chapters": [
+        {
+          "id": "ch01",
+          "confidence": "high"
+        }
+      ],
+      "summary": "NIA项目Data Layer架构精讲，离线优先设计模式与Repository实现",
+      "indexed_at": "2026-03-31T03:58:00"
+    },
+    {
+      "title": "Now In Android 精讲 6 - UI Layer与状态管理",
+      "path": "Cubox/Now In Android 精讲 6 - UI Layer本文通过 Now in Android 项目，深入解析 An - 掘金-2025-02-03.md",
+      "score": {
+        "relevance": 4,
+        "depth": 4,
+        "timeliness": 5,
+        "verifiability": 4,
+        "total": 17
+      },
+      "quality": "high",
+      "chapters": [
+        {
+          "id": "ch15",
+          "confidence": "high"
+        },
+        {
+          "id": "ch01",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "NIA项目UI Layer精讲，Compose单向数据流、UI State与Event设计",
+      "indexed_at": "2026-03-31T03:58:00"
+    },
+    {
+      "title": "Now in Android #87 - Android新变化",
+      "path": "Cubox/Now in Android #87 带你了解近期 Android 的一些新变化-2023-07-31.md",
+      "score": {
+        "relevance": 3,
+        "depth": 2,
+        "timeliness": 3,
+        "verifiability": 3,
+        "total": 11
+      },
+      "quality": "medium",
+      "chapters": [
+        {
+          "id": "ch17",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Android Studio Giraffe、Android 14 Beta 4、Kotlin 1.9.0等近期更新汇总",
+      "indexed_at": "2026-03-31T03:58:00"
+    },
+    {
+      "title": "Now in Android: 113 - Android 16 DP2",
+      "path": "Cubox/Now in Android- 113 - Android 16 Developer Preview 2, Android XR, Android Studio Ladybug, and more!-.md",
+      "score": {
+        "relevance": 4,
+        "depth": 2,
+        "timeliness": 5,
+        "verifiability": 3,
+        "total": 14
+      },
+      "quality": "medium",
+      "chapters": [
+        {
+          "id": "ch17",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Android 16 DP2、Android XR、Camera/Media聚焦周、Android Studio更新",
+      "indexed_at": "2026-03-31T03:58:00"
+    },
+    {
+      "title": "OHOS适配实战 - 图标拖拽卡屏分析与解决",
+      "path": "Cubox/OHOS适配实战 - 图标拖拽卡屏分析与解决-2024-01-04.md",
+      "score": {
+        "relevance": 4,
+        "depth": 4,
+        "timeliness": 4,
+        "verifiability": 4,
+        "total": 16
+      },
+      "quality": "high",
+      "chapters": [
+        {
+          "id": "ch05",
+          "confidence": "high"
+        }
+      ],
+      "summary": "鸿蒙OS适配中图标拖拽导致卡屏的源码追踪分析与解决方案",
+      "indexed_at": "2026-03-31T03:58:00"
+    },
+    {
+      "title": "OPPO内存反碎片优化原理",
+      "path": "Cubox/OPPO内存反碎片优化原理-2023-04-06.md",
+      "score": 16,
+      "scores": {
+        "relevance": 4,
+        "depth": 4,
+        "timeliness": 4,
+        "verifiability": 4
+      },
+      "chapters": [
+        {
+          "chapter": "ch07-内存",
+          "confidence": "high"
+        }
+      ],
+      "quality": "high",
+      "summary": "物理内存反碎片与虚拟内存反碎片化机制详解"
+    },
+    {
+      "title": "OS 设计之性能设计",
+      "path": "Cubox/OS 设计之性能设计-2023-09-04.md",
+      "score": 15,
+      "scores": {
+        "relevance": 4,
+        "depth": 4,
+        "timeliness": 4,
+        "verifiability": 3
+      },
+      "chapters": [
+        {
+          "chapter": "ch01-架构",
+          "confidence": "medium"
+        },
+        {
+          "chapter": "ch13-调度",
+          "confidence": "medium"
+        }
+      ],
+      "quality": "medium",
+      "summary": "OS性能设计方法论，涵盖系统架构层面性能考量"
+    },
+    {
+      "title": "PC GWP-ASan方案原理 | 堆破坏问题排查",
+      "path": "Cubox/PC GWP-ASan方案原理 - 堆破坏问题排查实践-2023-04-10.md",
+      "score": 15,
+      "scores": {
+        "relevance": 3,
+        "depth": 4,
+        "timeliness": 4,
+        "verifiability": 4
+      },
+      "chapters": [
+        {
+          "chapter": "ch07-内存",
+          "confidence": "medium"
+        },
+        {
+          "chapter": "ch12-安全",
+          "confidence": "medium"
+        }
+      ],
+      "quality": "medium",
+      "summary": "字节GWP-ASan堆破坏检测，快速定位堆破坏问题"
+    },
+    {
+      "title": "PGO 新玩法: 优化移动端 APP 性能和体积",
+      "path": "Cubox/PGO 新玩法- 优化移动端 APP 性能和体积-2023-05-05.md",
+      "score": 16,
+      "scores": {
+        "relevance": 4,
+        "depth": 4,
+        "timeliness": 4,
+        "verifiability": 4
+      },
+      "chapters": [
+        {
+          "chapter": "ch04-启动",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch10-包体积",
+          "confidence": "high"
+        }
+      ],
+      "quality": "high",
+      "summary": "PGO代码布局优化移动端安装包体积和冷启动"
+    },
+    {
+      "title": "PLT Hook从入门到实战",
+      "path": "Cubox/PLT Hook从入门到实战-2024-03-25.md",
+      "score": 18,
+      "scores": {
+        "relevance": 4,
+        "depth": 5,
+        "timeliness": 4,
+        "verifiability": 5
+      },
+      "chapters": [
+        {
+          "chapter": "ch07-内存",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch14-工具",
+          "confidence": "high"
+        }
+      ],
+      "quality": "high",
+      "summary": "PLT Hook技术详解，Native内存泄漏检测实战"
+    },
+    {
+      "title": "PMU, AMU的区别",
+      "path": "Cubox/PMU, AMU的区别 - 极术社区 - 连接开发者与智能计算生态-2025-01-18.md",
+      "score": 17,
+      "scores": {
+        "relevance": 4,
+        "depth": 4,
+        "timeliness": 5,
+        "verifiability": 4
+      },
+      "chapters": [
+        {
+          "chapter": "ch13-调度",
+          "confidence": "high"
+        }
+      ],
+      "quality": "high",
+      "summary": "PMU与AMU硬件监控单元区别及性能分析应用"
+    },
+    {
+      "title": "Page Cache和Buffer Cache关系及演化",
+      "path": "Cubox/Page Cache和Buffer Cache关系及演化历史-2024-01-19.md",
+      "score": 15,
+      "scores": {
+        "relevance": 4,
+        "depth": 4,
+        "timeliness": 4,
+        "verifiability": 3
+      },
+      "chapters": [
+        {
+          "chapter": "ch08-存储",
+          "confidence": "high"
+        }
+      ],
+      "quality": "medium",
+      "summary": "Linux Page Cache与Buffer Cache关系及演化"
+    },
+    {
+      "title": "Parcelable和Bundle(一)读写不匹配",
+      "path": "Cubox/Parcelable和Bundle的爱恨情仇（一）——读写不匹配-2024-07-01.md",
+      "score": 17,
+      "scores": {
+        "relevance": 3,
+        "depth": 4,
+        "timeliness": 5,
+        "verifiability": 5
+      },
+      "chapters": [
+        {
+          "chapter": "ch01-架构",
+          "confidence": "medium"
+        },
+        {
+          "chapter": "ch12-安全",
+          "confidence": "medium"
+        }
+      ],
+      "quality": "high",
+      "summary": "Parcelable读写不匹配漏洞原理及安全分析"
+    },
+    {
+      "title": "Parcelable和Bundle(二)LazyValue",
+      "path": "Cubox/Parcelable和Bundle的爱恨情仇（二）——LazyValue-2024-07-01.md",
+      "score": 16,
+      "scores": {
+        "relevance": 3,
+        "depth": 4,
+        "timeliness": 5,
+        "verifiability": 4
+      },
+      "chapters": [
+        {
+          "chapter": "ch01-架构",
+          "confidence": "medium"
+        }
+      ],
+      "quality": "high",
+      "summary": "Parcelable LazyValue机制深入分析"
+    },
+    {
+      "title": "Perfetto SQL查询分析trace",
+      "path": "Cubox/Perfetto - 使用 SQL 查询分析 trace 文件 - 知乎-2023-02-28.md",
+      "score": 18,
+      "scores": {
+        "relevance": 5,
+        "depth": 4,
+        "timeliness": 4,
+        "verifiability": 5
+      },
+      "chapters": [
+        {
+          "chapter": "ch11-Profiling",
+          "confidence": "high"
+        }
+      ],
+      "quality": "high",
+      "summary": "Perfetto SQL查询trace三种方式及实操"
+    },
+    {
+      "title": "Perfetto分析Linux调度问题",
+      "path": "Cubox/Perfetto for linux-使用 Perfetto 分析调度问题 - 知乎-2023-02-28.md",
+      "score": 18,
+      "scores": {
+        "relevance": 5,
+        "depth": 4,
+        "timeliness": 4,
+        "verifiability": 5
+      },
+      "chapters": [
+        {
+          "chapter": "ch11-Profiling",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch13-调度",
+          "confidence": "high"
+        }
+      ],
+      "quality": "high",
+      "summary": "Perfetto分析Linux调度问题，trace框架"
+    },
+    {
+      "title": "Perfetto tooling (Microsoft)",
+      "path": "Cubox/Perfetto tooling for analyzing Android, Linux, and Chromium browser performance - Microsoft-Performa.md",
+      "score": 13,
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "chapters": [
+        {
+          "chapter": "ch11-Profiling",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch14-工具",
+          "confidence": "medium"
+        }
+      ],
+      "quality": "medium",
+      "summary": "微软维护的Perfetto性能分析工具集文档"
+    },
+    {
+      "title": "Perfetto 内存工具分析",
+      "path": "Cubox/Perfetto 内存工具分析-2022-01-22.md",
+      "score": 14,
+      "scores": {
+        "relevance": 5,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "chapters": [
+        {
+          "chapter": "ch11-Profiling",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch07-内存",
+          "confidence": "medium"
+        }
+      ],
+      "quality": "medium",
+      "summary": "Perfetto内存分析工具使用指南"
+    },
+    {
+      "title": "Perfetto 快速上手指南1",
+      "path": "Cubox/Perfetto 快速上手指南1 —— Trace 的抓取-2025-03-20.md",
+      "score": 17,
+      "scores": {
+        "relevance": 5,
+        "depth": 3,
+        "timeliness": 5,
+        "verifiability": 4
+      },
+      "chapters": [
+        {
+          "chapter": "ch11-Profiling",
+          "confidence": "high"
+        }
+      ],
+      "quality": "high",
+      "summary": "Perfetto trace抓取快速上手教程"
+    },
+    {
+      "title": "Perfetto核心数据Concept",
+      "path": "Cubox/Perfetto中的核心数据Concept-2025-08-19.md",
+      "score": 18,
+      "scores": {
+        "relevance": 5,
+        "depth": 4,
+        "timeliness": 5,
+        "verifiability": 4
+      },
+      "chapters": [
+        {
+          "chapter": "ch11-Profiling",
+          "confidence": "high"
+        }
+      ],
+      "quality": "high",
+      "summary": "Perfetto核心数据概念，内存buffer与数据流"
+    },
+    {
+      "title": "Perfetto分析进阶",
+      "path": "Cubox/Perfetto分析进阶-2022-09-03.md",
+      "score": 16,
+      "scores": {
+        "relevance": 5,
+        "depth": 4,
+        "timeliness": 3,
+        "verifiability": 4
+      },
+      "chapters": [
+        {
+          "chapter": "ch11-Profiling",
+          "confidence": "high"
+        }
+      ],
+      "quality": "high",
+      "summary": "Perfetto使用、SQL查询与展现进阶"
+    },
+    {
+      "title": "Perfetto工具集traced_perf",
+      "path": "Cubox/Perfetto工具集之traced_perf-2023-01-20.md",
+      "score": 19,
+      "scores": {
+        "relevance": 5,
+        "depth": 5,
+        "timeliness": 4,
+        "verifiability": 5
+      },
+      "chapters": [
+        {
+          "chapter": "ch11-Profiling",
+          "confidence": "high"
+        }
+      ],
+      "quality": "high",
+      "summary": "traced_perf工作流：嵌入、Sample获取、Unwinding"
+    },
+    {
+      "title": "Perfetto数据流故障：trace丢失分析",
+      "path": "Cubox/Perfetto数据流架构故障分析：带你研究 trace 为何丢失-2024-02-23.md",
+      "score": 18,
+      "scores": {
+        "relevance": 5,
+        "depth": 5,
+        "timeliness": 4,
+        "verifiability": 4
+      },
+      "chapters": [
+        {
+          "chapter": "ch11-Profiling",
+          "confidence": "high"
+        }
+      ],
+      "quality": "high",
+      "summary": "Perfetto Data Flow架构，trace丢失原因分析"
+    },
+    {
+      "title": "Perfetto的IPC设计创意",
+      "path": "Cubox/Perfetto的IPC设计创意-2025-09-09.md",
+      "score": 17,
+      "scores": {
+        "relevance": 4,
+        "depth": 4,
+        "timeliness": 5,
+        "verifiability": 4
+      },
+      "chapters": [
+        {
+          "chapter": "ch11-Profiling",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch01-架构",
+          "confidence": "medium"
+        }
+      ],
+      "quality": "high",
+      "summary": "Perfetto IPC设计创新思路分析"
+    },
+    {
+      "title": "Performance In Compose: Stability",
+      "path": "Cubox/Performance In Jetpack Compose — Stability & Immutability-2024-02-01.md",
+      "score": 16,
+      "scores": {
+        "relevance": 4,
+        "depth": 4,
+        "timeliness": 4,
+        "verifiability": 4
+      },
+      "chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch15-Kotlin",
+          "confidence": "high"
+        }
+      ],
+      "quality": "high",
+      "summary": "Compose性能：Stability与Immutability优化"
+    },
+    {
+      "title": "Performance With Compose Part 1",
+      "path": "Cubox/Performance With Jetpack Compose — Part 1 - by Udit Verma - Jun, 2023 - ProAndroidDev-2023-07-03.md",
+      "score": 14,
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 4,
+        "verifiability": 3
+      },
+      "chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "medium"
+        },
+        {
+          "chapter": "ch15-Kotlin",
+          "confidence": "medium"
+        }
+      ],
+      "quality": "medium",
+      "summary": "Jetpack Compose性能优化Part 1"
+    },
+    {
+      "title": "Performance with Compose Part 2",
+      "path": "Cubox/Performance with Jetpack Compose — Part 2-2023-07-03.md",
+      "score": 14,
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 4,
+        "verifiability": 3
+      },
+      "chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "medium"
+        },
+        {
+          "chapter": "ch15-Kotlin",
+          "confidence": "medium"
+        }
+      ],
+      "quality": "medium",
+      "summary": "Jetpack Compose性能优化Part 2"
+    },
+    {
+      "title": "Physically Based Rendering in Filament",
+      "path": "Cubox/Physically Based Rendering in Filament-2023-07-06.md",
+      "score": 17,
+      "scores": {
+        "relevance": 4,
+        "depth": 5,
+        "timeliness": 4,
+        "verifiability": 4
+      },
+      "chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "high"
+        }
+      ],
+      "quality": "high",
+      "summary": "Google Filament引擎PBR渲染原理"
+    },
+    {
+      "title": "Optimizing Compose Recomposition: Stability",
+      "path": "Cubox/Optimizing Recomposition in Jetpack Compose- Stability System - by jisungbin - Aug, 2022 - Better Pr.md",
+      "score": 15,
+      "scores": {
+        "relevance": 4,
+        "depth": 4,
+        "timeliness": 3,
+        "verifiability": 4
+      },
+      "chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "medium"
+        },
+        {
+          "chapter": "ch15-Kotlin",
+          "confidence": "high"
+        }
+      ],
+      "quality": "medium",
+      "summary": "Compose Recomposition优化与Stability System"
+    },
+    {
+      "title": "Pixel 8 pro刷AOSP 14源码教程",
+      "path": "Cubox/Pixel 8 pro 刷AOSP 14源码 详细教程 & 救砖处理-2025-04-01.md",
+      "score": 14,
+      "scores": {
+        "relevance": 2,
+        "depth": 3,
+        "timeliness": 5,
+        "verifiability": 4
+      },
+      "chapters": [
+        {
+          "chapter": "ch14-工具",
+          "confidence": "medium"
+        }
+      ],
+      "quality": "medium",
+      "summary": "Pixel 8 pro刷AOSP 14源码与救砖"
+    },
+    {
+      "title": "Paper: RL Agent内核config调优",
+      "path": "Cubox/Paper摘要：基于强化学习的AI Agent调整内核configuration选项-2026-02-03.md",
+      "score": 16,
+      "scores": {
+        "relevance": 3,
+        "depth": 4,
+        "timeliness": 5,
+        "verifiability": 4
+      },
+      "chapters": [
+        {
+          "chapter": "ch13-调度",
+          "confidence": "medium"
+        }
+      ],
+      "quality": "high",
+      "summary": "OS-R1：强化学习Agent自动调优内核配置"
+    },
+    {
+      "title": "OPPO调校芯片秘籍",
+      "path": "Cubox/OPPO调校芯片的秘籍，对外公布-2023-12-27.md",
+      "score": 11,
+      "scores": {
+        "relevance": 3,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 2
+      },
+      "chapters": [
+        {
+          "chapter": "ch13-调度",
+          "confidence": "low"
+        },
+        {
+          "chapter": "ch04-启动",
+          "confidence": "low"
+        }
+      ],
+      "quality": "medium",
+      "summary": "OPPO芯片调校与启动性能一致性"
     }
   ],
-  "last_updated": "2026-03-31T02:15:00"
+  "last_updated": "2026-03-31T03:15:00",
+  "total_indexed": 324
 }
