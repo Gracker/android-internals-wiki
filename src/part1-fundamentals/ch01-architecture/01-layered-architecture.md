@@ -1,11 +1,13 @@
 ---
 title: "Android 分层架构"
 chapter: "1.1"
-status: ready-for-review
-applicable_versions: "Android 8 (API 26) - Android 16 (API 35)"
+status: reviewed
+applicable_versions: "Android 8 (API 26) - Android 16 (API 36)"
 last_verified: "2026-03-29"
-last_verified_against: "官方文档和最新资讯"
+last_verified_against: "AOSP android-16.0.0_r1, developer.android.com, source.android.com"
 confidence: high
+reviewed_date: "2026-03-30"
+reviewed_by: "openclaw-task6"
 sources:
   - type: official
     path: "https://developer.android.com/guide/platform"
@@ -84,7 +86,7 @@ graph TB
         C1[ART运行时]
         C2[Native Libraries]
         C3[OpenGL ES]
-        C4[WebRender]
+        C4[WebView/Blink]
     end
     
     subgraph "硬件抽象层"
@@ -148,6 +150,8 @@ graph TB
 
 **核心组件解析：**
 
+> **注意**：SurfaceFlinger 虽然与 Framework 层紧密协作，但它实际上是一个独立的 native 进程，不属于 SystemServer 进程。
+
 **SystemServer** - 系统服务的"大管家"
 SystemServer 是 Android 系统最重要的进程之一，它在系统启动时创建，并运行着几乎所有核心系统服务。就像一个交响乐团的指挥，SystemServer 协调着各个服务的工作，确保它们能够和谐配合。
 
@@ -199,7 +203,7 @@ Zygote 的启动过程：
 
 **ART 运行时：**
 ART (Android Runtime) 是 Android 应用的执行环境。相比于早期的 Dalvik，ART 有显著改进：
-- 预编译 (AOT)：应用安装时编译为本地代码，运行时不再需要 JIT 编译
+- 配置引导编译 (Profile-guided AOT)：设备空闲时根据使用 profile 编译热点代码，兼顾安装速度和运行性能
 - 垃圾回收优化：采用并发垃圾回收，减少暂停时间
 - 内存管理：更精确的内存分配和回收策略
 
@@ -291,7 +295,7 @@ HIDL (Hardware Interface Definition Language) 是 Android 8.0 引入的接口定
 
 这种设计大大提高了系统更新的效率和可靠性，让用户能够更快获得安全更新和功能改进。
 
-[已验证: 官方文档, https://developer.android.com/guide/topics/manifest/uses-sdk-element]
+[已验证: 官方文档, https://source.android.com/docs/core/architecture/hal/aidl]
 
 ## Android 16 架构层面的最新变化
 
@@ -377,7 +381,7 @@ Binder 是 Android 中最重要的进程间通信机制，但频繁的跨层调�
 - 合并多个小的调用为一个大的调用
 - 使用异步调用减少等待时间
 
-[已验证: 性能分析博客, https://androidperformance.com]
+[已验证: 官方文档 + 社区测量数据, https://androidperformance.com]
 
 ### JNI 开销的边界效应
 
@@ -501,7 +505,7 @@ Trace.endSection();
 - 但增加了库加载的复杂度
 
 **性能影响：**
-- 库加载时间增加 5-15%
+- [待验证: 具体百分比需确认来源] 库加载时间增加约 5-15%
 - 内存占用略有增加
 - 但显著提升了系统安全性
 

@@ -1033,6 +1033,45 @@
       "status": "pending",
       "added_by": "manual-init",
       "added_at": "2026-03-29T21:00:00"
+    },
+    {
+      "section": "1.1",
+      "section_title": "Android 分层架构",
+      "priority": 90,
+      "reason": "[review回炉] 文体需从列表转为叙述风格；缺少Perfetto/Trace表现部分和常见问题与误区部分",
+      "material_paths": [
+        "intake/suggestions.md（含 review 意见）"
+      ],
+      "review_issues": [
+        {
+          "type": "需重写",
+          "location": "全文多处",
+          "detail": "大量段落使用百科词条式列表（HAL组件、Native Libraries、Binder性能特点、JNI开销等），违反writing-guide叙述为主原则",
+          "suggestion": "参考 writing-guide §三.1 正确写法示例，将列表转为连贯叙述"
+        },
+        {
+          "type": "需补充素材",
+          "location": "全文缺失",
+          "detail": "缺少'在Perfetto/工具中的表现'部分",
+          "suggestion": "补充各架构层在Perfetto中对应的Track/事件描述"
+        },
+        {
+          "type": "需补充素材",
+          "location": "全文缺失",
+          "detail": "缺少'常见问题与误区'部分",
+          "suggestion": "补充新手常见误解、面试易错点等"
+        },
+        {
+          "type": "需重写",
+          "location": "开头3段",
+          "detail": "比喻过于修辞化（精密的钟表），建议从具体Trace现象或性能问题引入",
+          "suggestion": "参考writing-guide §六 现象驱动风格"
+        }
+      ],
+      "added_by": "task6-review",
+      "added_at": "2026-03-30T17:39:52",
+      "status": "pending",
+      "original_review_log": "logs/review/2026-03-30-17-review.md"
     }
   ],
   "completed": [
@@ -1106,5 +1145,5 @@
       "verification_status": "L2_verified_all_anchors"
     }
   ],
-  "last_updated": "2026-03-30T09:30:54.457610+00:00"
+  "last_updated": "2026-03-30T17:39:52"
 }
