@@ -9784,6 +9784,675 @@
       },
       "skip_reason": "总分7/20",
       "skipped_at": "2026-03-30T15:15:00"
+    },
+    {
+      "path": "Cubox/Cursor 深度评测：革命性提效工具还是过誉的玩具？-2024-12-31.md",
+      "score": 2,
+      "reason": "AI工具评测，非Android内部技术",
+      "skipped_at": "2026-03-30T15:45:00"
+    },
+    {
+      "path": "Cubox/Cursor+Claude3.7的绝杀：从原型到app，两步完成app开发-2025-03-02.md",
+      "score": 2,
+      "reason": "AI应用开发，非Android",
+      "skipped_at": "2026-03-30T15:45:00"
+    },
+    {
+      "path": "Cubox/Cursor- 以每秒 1000 个 Token 的速度编辑文件 - 宝玉的分享-2025-02-16.md",
+      "score": 1,
+      "reason": "AI工具，非Android",
+      "skipped_at": "2026-03-30T15:45:00"
+    },
+    {
+      "path": "Cubox/Cursor｜软件开发行业新变革-2024-09-11.md",
+      "score": 2,
+      "reason": "AI行业趋势，非Android技术",
+      "skipped_at": "2026-03-30T15:45:00"
+    },
+    {
+      "path": "Cubox/CyberClip #46 智能共生-2023-12-16.md",
+      "score": 3,
+      "reason": "AI哲学，非Android技术",
+      "skipped_at": "2026-03-30T15:45:00"
+    },
+    {
+      "path": "Cubox/CyberClip #49 如何提出好问题-2024-01-21.md",
+      "score": 3,
+      "reason": "方法论，非Android技术",
+      "skipped_at": "2026-03-30T15:45:00"
+    },
+    {
+      "path": "Cubox/DPS 周刊 184 - 张忠谋的洞见-2025-02-09.md",
+      "score": 2,
+      "reason": "商业周刊，非技术",
+      "skipped_at": "2026-03-30T15:45:00"
+    },
+    {
+      "path": "Cubox/Daily Productive Sharing 1162 - Thoughts on AGI-2025-01-29.md",
+      "score": 2,
+      "reason": "AGI观点，非Android",
+      "skipped_at": "2026-03-30T15:45:00"
+    },
+    {
+      "path": "Cubox/Dalvik, ART, JIT, and AOT in Android-2024-01-31.md",
+      "score": 0,
+      "reason": "与2025版重复，跳过旧版",
+      "skipped_at": "2026-03-30T15:45:00"
+    },
+    {
+      "path": "Cubox/Dart 2.17 现已发布-2022-05-16.md",
+      "score": 2,
+      "reason": "Dart语言，非Android内部",
+      "skipped_at": "2026-03-30T15:45:00"
+    },
+    {
+      "path": "Cubox/Dart 3.8发布，新格式化，新语法支持-2025-05-22.md",
+      "score": 2,
+      "reason": "Dart语言，非Android内部",
+      "skipped_at": "2026-03-30T15:45:00"
+    },
+    {
+      "path": "Cubox/Dart 单线程异步模型：从原理到工程实践的系统化解析深入探讨 Dart 单线程异步模型，通过非阻塞 I-O 与事件循环 - 掘金-2025-04-13.md",
+      "score": 2,
+      "reason": "Dart异步模型，非Android",
+      "skipped_at": "2026-03-30T15:45:00"
+    },
+    {
+      "path": "Cubox/DecoHack - Best Product 2022-2022-07-07.md",
+      "score": 1,
+      "reason": "产品推荐列表，非技术",
+      "skipped_at": "2026-03-30T15:45:00"
+    },
+    {
+      "path": "Cubox/DeepSeek R1范式复现笔记-2025-02-19.md",
+      "score": 2,
+      "reason": "AI模型训练，非Android",
+      "skipped_at": "2026-03-30T15:45:00"
+    },
+    {
+      "path": "Cubox/DeepSeek 赋能 A 股交易：用 AI 让你快人一步！-2025-03-17.md",
+      "score": 1,
+      "reason": "AI炒股，非技术",
+      "skipped_at": "2026-03-30T15:45:00"
+    },
+    {
+      "path": "Cubox/DeepSeek-R1 发布，性能对标 OpenAI o1 正式版-2025-01-21.md",
+      "score": 2,
+      "reason": "AI新闻，非Android",
+      "skipped_at": "2026-03-30T15:45:00"
+    },
+    {
+      "path": "Cubox/DeepSeek-R1 论文解析——人工智能领域的 RL LLM 新时代？-2025-02-04.md",
+      "score": 2,
+      "reason": "AI论文，非Android",
+      "skipped_at": "2026-03-30T15:45:00"
+    },
+    {
+      "path": "Cubox/DeepSeek高效率使用的指南-2025-02-13.md",
+      "score": 2,
+      "reason": "AI使用指南，非Android",
+      "skipped_at": "2026-03-30T15:45:00"
+    },
+    {
+      "path": "Cubox/Deepseek R1可能找到了超越人类的办法 - TL;DR-2025-01-31.md",
+      "score": 2,
+      "reason": "AI观点，非Android",
+      "skipped_at": "2026-03-30T15:45:00"
+    },
+    {
+      "path": "Cubox/Demystifying evals for AI agents - Anthropic-2026-01-10.md",
+      "score": 2,
+      "reason": "AI agent评估，非Android",
+      "skipped_at": "2026-03-30T15:45:00"
+    },
+    {
+      "path": "Cubox/Demystifying evals for AI agents-2026-01-10.md",
+      "score": 0,
+      "reason": "重复，跳过",
+      "skipped_at": "2026-03-30T15:45:00"
+    },
+    {
+      "path": "Cubox/Deploying Transformers on the Apple Neural Engine - Apple Machine Learning Research-2023-04-02.md",
+      "score": 3,
+      "reason": "Apple ML，非Android",
+      "skipped_at": "2026-03-30T15:45:00"
+    },
+    {
+      "path": "Cubox/Designing Fluid Interfaces - WWDC18 - Videos - Apple Developer-2022-12-29.md",
+      "score": 9,
+      "reason": "Apple设计，非Android（相关性2+深度3+时效1+可验证3=9）",
+      "skipped_at": "2026-03-30T15:45:00"
+    },
+    {
+      "path": "Cubox/Do Things that Don't Scale-2022-09-06.md",
+      "score": 1,
+      "reason": "创业随笔，非技术",
+      "skipped_at": "2026-03-30T15:45:00"
+    },
+    {
+      "path": "Cubox/Docs-2024-02-17.md",
+      "score": 1,
+      "reason": "飞书链接，内容不明确",
+      "skipped_at": "2026-03-30T15:45:00"
+    },
+    {
+      "path": "Cubox/Docs-2025-03-02.md",
+      "score": 1,
+      "reason": "飞书链接，内容不明确",
+      "skipped_at": "2026-03-30T15:45:00"
+    },
+    {
+      "path": "Cubox/Double, Double, floating-point trouble; Backlog burn and errors bubble. - Revue-2022-01-24.md",
+      "score": 2,
+      "reason": "Newsletter，非Android",
+      "skipped_at": "2026-03-30T15:45:00"
+    },
+    {
+      "title": "Dr. Andy Galpin: How to Assess & Improve All Aspec...",
+      "path": "Cubox/Dr. Andy Galpin- How to Assess & Improve All Aspec...-2023-10-08.md",
+      "score": 7,
+      "scores": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 4,
+        "verifiability": 1
+      },
+      "reason": "no_chapter_match",
+      "skipped_at": "2026-03-30T16:15:00"
+    },
+    {
+      "title": "Dropbox CEO Drew Houston：你只需要成功一次",
+      "path": "Cubox/Dropbox CEO Drew Houston：你只需要成功一次-2023-05-08.md",
+      "score": 7,
+      "scores": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 4,
+        "verifiability": 1
+      },
+      "reason": "no_chapter_match",
+      "skipped_at": "2026-03-30T16:15:00"
+    },
+    {
+      "title": "Dutter | 前车之鉴：聊聊钉钉 Flutter 落地桌面端踩过的“坑”",
+      "path": "Cubox/Dutter - 前车之鉴：聊聊钉钉 Flutter 落地桌面端踩过的“坑”-2022-05-12.md",
+      "score": 7,
+      "scores": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 4,
+        "verifiability": 1
+      },
+      "reason": "no_chapter_match",
+      "skipped_at": "2026-03-30T16:15:00"
+    },
+    {
+      "title": "E26｜创业10年面试2000人，他们如何识别顶级人才？",
+      "path": "Cubox/E26｜创业10年面试2000人，他们如何识别顶级人才？-2022-03-24.md",
+      "score": 7,
+      "scores": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 4,
+        "verifiability": 1
+      },
+      "reason": "no_chapter_match",
+      "skipped_at": "2026-03-30T16:15:00"
+    },
+    {
+      "title": "EBook-自洽的程序员",
+      "path": "Cubox/EBook-自洽的程序员-2025-01-20.md",
+      "score": 8,
+      "scores": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "reason": "no_chapter_match",
+      "skipped_at": "2026-03-30T16:15:00"
+    },
+    {
+      "title": "EP-016 许成钢：中国经济还有希望吗？（文字版） – 不明白播客",
+      "path": "Cubox/EP-016 许成钢：中国经济还有希望吗？（文字版） – 不明白播客-2022-09-16.md",
+      "score": 7,
+      "scores": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 4,
+        "verifiability": 1
+      },
+      "reason": "no_chapter_match",
+      "skipped_at": "2026-03-30T16:15:00"
+    },
+    {
+      "title": "EP-035 Victor Shih：地方债会拖垮中国经济吗？（文字版）",
+      "path": "Cubox/EP-035 Victor Shih：地方债会拖垮中国经济吗？（文字版）-2023-04-30.md",
+      "score": 7,
+      "scores": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 4,
+        "verifiability": 1
+      },
+      "reason": "no_chapter_match",
+      "skipped_at": "2026-03-30T16:15:00"
+    },
+    {
+      "title": "EROFS 碎片去重实践",
+      "path": "Cubox/EROFS 碎片去重实践-2022-12-27.md",
+      "score": 7,
+      "scores": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 4,
+        "verifiability": 1
+      },
+      "reason": "no_chapter_match",
+      "skipped_at": "2026-03-30T16:15:00"
+    },
+    {
+      "title": "Eddy：简明网络安全手册",
+      "path": "Cubox/Eddy：简明网络安全手册-2023-12-14.md",
+      "score": 7,
+      "scores": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 4,
+        "verifiability": 1
+      },
+      "reason": "no_chapter_match",
+      "skipped_at": "2026-03-30T16:15:00"
+    },
+    {
+      "title": "Eliminating Array Bounds Checks",
+      "path": "Cubox/Eliminating Array Bounds Checks-2025-05-14.md",
+      "score": 9,
+      "scores": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 2
+      },
+      "reason": "no_chapter_match",
+      "skipped_at": "2026-03-30T16:15:00"
+    },
+    {
+      "title": "Engineering Blogs",
+      "path": "Cubox/Engineering Blogs-2024-08-11.md",
+      "score": 8,
+      "scores": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "reason": "no_chapter_match",
+      "skipped_at": "2026-03-30T16:15:00"
+    },
+    {
+      "title": "English for IT 1",
+      "path": "Cubox/English for IT 1-2023-12-18.md",
+      "score": 7,
+      "scores": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 4,
+        "verifiability": 1
+      },
+      "reason": "no_chapter_match",
+      "skipped_at": "2026-03-30T16:15:00"
+    },
+    {
+      "title": "English-introduction | 若批评不自由，则赞美无意义",
+      "path": "Cubox/English-introduction - 若批评不自由，则赞美无意义-2022-05-04.md",
+      "score": 7,
+      "scores": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 4,
+        "verifiability": 1
+      },
+      "reason": "no_chapter_match",
+      "skipped_at": "2026-03-30T16:15:00"
+    },
+    {
+      "title": "English-level-up-tips",
+      "path": "Cubox/English-level-up-tips-2023-09-18.md",
+      "score": 7,
+      "scores": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 4,
+        "verifiability": 1
+      },
+      "reason": "no_chapter_match",
+      "skipped_at": "2026-03-30T16:15:00"
+    },
+    {
+      "title": "English-level-up-tips",
+      "path": "Cubox/English-level-up-tips-2023-11-25.md",
+      "score": 7,
+      "scores": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 4,
+        "verifiability": 1
+      },
+      "reason": "no_chapter_match",
+      "skipped_at": "2026-03-30T16:15:00"
+    },
+    {
+      "title": "Enhancing Cursor and CodeBuddy: A Structured AI Collaboration Methodology",
+      "path": "Cubox/Enhancing Cursor and CodeBuddy- A Structured AI Collaboration Methodology-2025-09-24.md",
+      "score": 8,
+      "scores": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "reason": "no_chapter_match",
+      "skipped_at": "2026-03-30T16:15:00"
+    },
+    {
+      "title": "Ep.135 直觉系人生：开夜车去海拔5070米的湖边睡觉",
+      "path": "Cubox/Ep.135 直觉系人生：开夜车去海拔5070米的湖边睡觉-2023-11-01.md",
+      "score": 7,
+      "scores": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 4,
+        "verifiability": 1
+      },
+      "reason": "no_chapter_match",
+      "skipped_at": "2026-03-30T16:15:00"
+    },
+    {
+      "title": "Eric思考｜Chatgpt对小红书的意义，与Chatgpt聊聊女性主义",
+      "path": "Cubox/Eric思考｜Chatgpt对小红书的意义，与Chatgpt聊聊女性主义-2023-03-11.md",
+      "score": 7,
+      "scores": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 4,
+        "verifiability": 1
+      },
+      "reason": "no_chapter_match",
+      "skipped_at": "2026-03-30T16:15:00"
+    },
+    {
+      "title": "Eric的思维提升笔记本【2023年11月刊】",
+      "path": "Cubox/Eric的思维提升笔记本【2023年11月刊】-2023-12-12.md",
+      "score": 7,
+      "scores": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 4,
+        "verifiability": 1
+      },
+      "reason": "no_chapter_match",
+      "skipped_at": "2026-03-30T16:15:00"
+    },
+    {
+      "title": "Evaluating Performance  |  Android Open Source Pro...",
+      "path": "Cubox/Evaluating Performance  -  Android Open Source Pro...-2024-01-09.md",
+      "score": 10,
+      "scores": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 3
+      },
+      "reason": "no_chapter_match",
+      "skipped_at": "2026-03-30T16:15:00"
+    },
+    {
+      "title": "EventHub代码原理详解",
+      "path": "Cubox/EventHub代码原理详解-2022-02-18.md",
+      "score": 8,
+      "scores": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 4,
+        "verifiability": 2
+      },
+      "reason": "no_chapter_match",
+      "skipped_at": "2026-03-30T16:15:00"
+    },
+    {
+      "title": "ExoPlayer 自适应流切换分析",
+      "path": "Cubox/ExoPlayer 自适应流切换分析-2023-10-18.md",
+      "score": 7,
+      "scores": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 4,
+        "verifiability": 1
+      },
+      "reason": "no_chapter_match",
+      "skipped_at": "2026-03-30T16:15:00"
+    },
+    {
+      "title": "Exploring Jetpack WindowManager for Foldable Devices | by Jaewoong Eum | Feb, 20",
+      "path": "Cubox/Exploring Jetpack WindowManager for Foldable Devices - by Jaewoong Eum - Feb, 2022 - ProAndroidDev-2.md",
+      "score": 7,
+      "scores": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 3,
+        "verifiability": 2
+      },
+      "reason": "no_chapter_match",
+      "skipped_at": "2026-03-30T16:15:00"
+    },
+    {
+      "title": "FART 主动调用组件深度解析：破解 ART 下函数抽取壳的终极武器",
+      "path": "Cubox/FART 主动调用组件深度解析：破解 ART 下函数抽取壳的终极武器-2025-09-03.md",
+      "score": 8,
+      "scores": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "reason": "no_chapter_match",
+      "skipped_at": "2026-03-30T16:15:00"
+    },
+    {
+      "title": "FTX集团申请破产，134家附属公司将参与破产重组。一文带你深度复盘FTX暴雷事件",
+      "path": "Cubox/FTX集团申请破产，134家附属公司将参与破产重组。一文带你深度复盘FTX暴雷事件-2022-11-14.md",
+      "score": 7,
+      "scores": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 4,
+        "verifiability": 1
+      },
+      "reason": "no_chapter_match",
+      "skipped_at": "2026-03-30T16:15:00"
+    },
+    {
+      "title": "Facebook开源Screenshot Tests for Android：视觉回归自动化测试",
+      "path": "Cubox/Facebook开源Screenshot Tests for Android：视觉回归自动化测试-2025-02-26.md",
+      "score": 9,
+      "scores": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 2
+      },
+      "reason": "no_chapter_match",
+      "skipped_at": "2026-03-30T16:15:00"
+    },
+    {
+      "title": "FastNative  |  Android Developers",
+      "path": "Cubox/FastNative  -  Android Developers-2024-01-08.md",
+      "score": 10,
+      "scores": {
+        "relevance": 1,
+        "depth": 2,
+        "timeliness": 5,
+        "verifiability": 2
+      },
+      "reason": "no_chapter_match",
+      "skipped_at": "2026-03-30T16:15:00"
+    },
+    {
+      "title": "Faster. Better. More focused. Reading.",
+      "path": "Cubox/Faster. Better. More focused. Reading.-2022-05-19.md",
+      "score": 7,
+      "scores": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 4,
+        "verifiability": 1
+      },
+      "reason": "no_chapter_match",
+      "skipped_at": "2026-03-30T16:15:00"
+    },
+    {
+      "title": "File locking in Linux",
+      "path": "Cubox/File locking in Linux-2023-08-14.md",
+      "score": 7,
+      "scores": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 4,
+        "verifiability": 1
+      },
+      "reason": "no_chapter_match",
+      "skipped_at": "2026-03-30T16:15:00"
+    },
+    {
+      "title": "Fine-tuning - OpenAI API",
+      "path": "Cubox/Fine-tuning - OpenAI API-2023-04-03.md",
+      "score": 7,
+      "scores": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 4,
+        "verifiability": 1
+      },
+      "reason": "no_chapter_match",
+      "skipped_at": "2026-03-30T16:15:00"
+    },
+    {
+      "title": "Firebase Crashlytics 近期更新 | 在 Android Studio 中更好地调试应用",
+      "path": "Cubox/Firebase Crashlytics 近期更新 - 在 Android Studio 中更好地调试应用-2022-08-30.md",
+      "score": 8,
+      "scores": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 4,
+        "verifiability": 2
+      },
+      "reason": "no_chapter_match",
+      "skipped_at": "2026-03-30T16:15:00"
+    },
+    {
+      "title": "First Step for web developper | 使用Instruments了解iOS应用启动时长（Xcode13）",
+      "path": "Cubox/First Step for web developper - 使用Instruments了解iOS应用启动时长（Xcode13）-2022-05-22.md",
+      "score": 9,
+      "scores": {
+        "relevance": 3,
+        "depth": 1,
+        "timeliness": 4,
+        "verifiability": 1
+      },
+      "reason": "low_score",
+      "skipped_at": "2026-03-30T16:15:00"
+    },
+    {
+      "title": "First steps with Jetpack Glance for App Widgets | by Igor Escodro | Jan, 2022 | ",
+      "path": "Cubox/First steps with Jetpack Glance for App Widgets - by Igor Escodro - Jan, 2022 - ProAndroidDev-2022-0.md",
+      "score": 7,
+      "scores": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 3,
+        "verifiability": 2
+      },
+      "reason": "no_chapter_match",
+      "skipped_at": "2026-03-30T16:15:00"
+    },
+    {
+      "title": "Fixing Performance Regressions Before they Happen | by Netflix Technology Blog |",
+      "path": "Cubox/Fixing Performance Regressions Before they Happen - by Netflix Technology Blog - Jan, 2022 - Netflix.md",
+      "score": 6,
+      "scores": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 3,
+        "verifiability": 1
+      },
+      "reason": "no_chapter_match",
+      "skipped_at": "2026-03-30T16:15:00"
+    },
+    {
+      "title": "Flow 转 LiveData 后数据丢了，肿么回事？",
+      "path": "Cubox/Flow 转 LiveData 后数据丢了，肿么回事？-2023-01-09.md",
+      "score": 7,
+      "scores": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 4,
+        "verifiability": 1
+      },
+      "reason": "no_chapter_match",
+      "skipped_at": "2026-03-30T16:15:00"
+    },
+    {
+      "title": "FlowSpeech：第一个书面语转口语的 TTS",
+      "path": "Cubox/FlowSpeech：第一个书面语转口语的 TTS-2025-08-08.md",
+      "score": 8,
+      "scores": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "reason": "no_chapter_match",
+      "skipped_at": "2026-03-30T16:15:00"
+    },
+    {
+      "title": "Fluid - Hexo",
+      "path": "Cubox/Fluid - Hexo-2023-12-06.md",
+      "score": 7,
+      "scores": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 4,
+        "verifiability": 1
+      },
+      "reason": "no_chapter_match",
+      "skipped_at": "2026-03-30T16:15:00"
+    },
+    {
+      "title": "Flutter  双向聊天列表效果进阶优化",
+      "path": "Cubox/Flutter  双向聊天列表效果进阶优化-2022-03-15.md",
+      "score": 7,
+      "scores": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 4,
+        "verifiability": 1
+      },
+      "reason": "no_chapter_match",
+      "skipped_at": "2026-03-30T16:15:00"
+    },
+    {
+      "title": "Flutter + Dart三端一体化动态化平台实践",
+      "path": "Cubox/Flutter + Dart三端一体化动态化平台实践-2023-02-21.md",
+      "score": 7,
+      "scores": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 4,
+        "verifiability": 1
+      },
+      "reason": "no_chapter_match",
+      "skipped_at": "2026-03-30T16:15:00"
     }
   ]
 }

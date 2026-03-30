@@ -184,62 +184,6 @@
       "auto_discoveries": [
         "ARR (Adaptive Refresh Rate) 对 VSync 管线的根本性影响 — 映射到扩展条目'可变刷新率下VSync行为的变化'"
       ]
-    },
-    {
-      "section": "2.9",
-      "title": "渲染机制的版本演进",
-      "date": "2026-03-30T16:20:00+08:00",
-      "model": "zai/glm-5.1",
-      "verifications": [
-        {
-          "anchor": "Android 3.0 HWUI 硬件加速 OpenGL ES 2.0",
-          "level": "L2",
-          "source": "developer.android.com",
-          "result": "verified"
-        },
-        {
-          "anchor": "Android 4.0 ICS 默认开启硬件加速",
-          "level": "L2",
-          "source": "developer.android.com",
-          "result": "verified"
-        },
-        {
-          "anchor": "Android 5.0 RenderThread",
-          "level": "L2",
-          "source": "developer.android.com, AOSP",
-          "result": "verified"
-        },
-        {
-          "anchor": "Android 12 BlastBufferQueue",
-          "level": "L2",
-          "source": "developer.android.com, source.android.com",
-          "result": "verified"
-        },
-        {
-          "anchor": "HWUI 后端演进 OpenGL ES → SkiaGL → SkiaVulkan",
-          "level": "L2",
-          "source": "developer.android.com, skia.org, XDA",
-          "result": "verified"
-        },
-        {
-          "anchor": "Android 16 Vulkan 正式图形 API + ARR",
-          "level": "L2",
-          "source": "developer.android.com",
-          "result": "verified"
-        },
-        {
-          "extension": "Project Butter 4.1 VSync/Choreographer",
-          "level": "L2",
-          "source": "developer.android.com",
-          "result": "verified"
-        },
-        {
-          "extension": "FrameMetrics API 演进",
-          "level": "L2",
-          "source": "developer.android.com",
-          "result": "verified"
-        }
-      ]
     }
   ]
 }

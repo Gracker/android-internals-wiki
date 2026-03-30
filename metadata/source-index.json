@@ -856,6 +856,329 @@
         }
       ],
       "summary": "Android 12 Monet动态主题系统框架内部实现，SystemUI与Material You"
+    },
+    {
+      "path": "Cubox/Customize WorkManager with AppStartup & Hilt-2022-07-20.md",
+      "title": "Customize WorkManager with AppStartup & Hilt",
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 2,
+        "verifiability": 4
+      },
+      "total_score": 13,
+      "quality": "medium",
+      "chapters": [
+        {
+          "id": "ch06",
+          "confidence": "high"
+        },
+        {
+          "id": "ch04",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "WorkManager最佳实践，结合AppStartup实现高效初始化与Hilt依赖注入",
+      "indexed_at": "2026-03-30T15:45:00"
+    },
+    {
+      "path": "Cubox/DRM(Digital Rights Management)生态以及架构介绍-2025-04-11.md",
+      "title": "DRM(Digital Rights Management)生态以及架构介绍",
+      "scores": {
+        "relevance": 3,
+        "depth": 3,
+        "timeliness": 4,
+        "verifiability": 3
+      },
+      "total_score": 13,
+      "quality": "medium",
+      "chapters": [
+        {
+          "id": "ch12",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "DRM数字版权管理生态架构介绍，涵盖技术手段与版权保护",
+      "indexed_at": "2026-03-30T15:45:00"
+    },
+    {
+      "path": "Cubox/Dalvik, ART, JIT, and AOT in Android-2025-03-08.md",
+      "title": "Dalvik, ART, JIT, and AOT in Android",
+      "scores": {
+        "relevance": 5,
+        "depth": 3,
+        "timeliness": 4,
+        "verifiability": 4
+      },
+      "total_score": 16,
+      "quality": "high",
+      "chapters": [
+        {
+          "id": "ch01",
+          "confidence": "high"
+        },
+        {
+          "id": "ch04",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Android运行时演进：Dalvik到ART，JIT与AOT编译机制详解",
+      "indexed_at": "2026-03-30T15:45:00"
+    },
+    {
+      "path": "Cubox/DataStore and synchronous work. In the following posts from our Jetpack… - by Simona Stojanovic - An.md",
+      "title": "DataStore and synchronous work",
+      "scores": {
+        "relevance": 3,
+        "depth": 3,
+        "timeliness": 2,
+        "verifiability": 4
+      },
+      "total_score": 12,
+      "quality": "medium",
+      "chapters": [
+        {
+          "id": "ch08",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Jetpack DataStore同步使用指南，替代SharedPreferences的最佳实践",
+      "indexed_at": "2026-03-30T15:45:00"
+    },
+    {
+      "path": "Cubox/Dave Burke explains Android 14's big battery and p...-2023-11-28.md",
+      "title": "Dave Burke explains Android 14's big battery improvements",
+      "scores": {
+        "relevance": 5,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 4
+      },
+      "total_score": 15,
+      "quality": "medium",
+      "chapters": [
+        {
+          "id": "ch06",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Android 14电池优化：后台活动减少50%，核心功耗改进解析",
+      "indexed_at": "2026-03-30T15:45:00"
+    },
+    {
+      "path": "Cubox/Deep Dive into Android IPC-Binder Framework-2024-07-11.md",
+      "title": "Deep Dive into Android IPC/Binder Framework",
+      "scores": {
+        "relevance": 5,
+        "depth": 4,
+        "timeliness": 3,
+        "verifiability": 5
+      },
+      "total_score": 17,
+      "quality": "high",
+      "chapters": [
+        {
+          "id": "ch01",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Android Binder IPC框架深度解析，涵盖驱动层、协议与通信机制",
+      "indexed_at": "2026-03-30T15:45:00"
+    },
+    {
+      "path": "Cubox/Deep Linking in Jetpack Compose — Android-2023-12-13.md",
+      "title": "Deep Linking in Jetpack Compose — Android",
+      "scores": {
+        "relevance": 2,
+        "depth": 2,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "total_score": 10,
+      "quality": "medium",
+      "chapters": [
+        {
+          "id": "ch01",
+          "confidence": "low"
+        }
+      ],
+      "summary": "Jetpack Compose中实现Deep Link导航的实践指南",
+      "indexed_at": "2026-03-30T15:45:00"
+    },
+    {
+      "path": "Cubox/Design Patterns and Architecture- The Android Developer Roadmap - Part 4-2022-09-26.md",
+      "title": "Design Patterns and Architecture: The Android Developer Roadmap - Part 4",
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 2,
+        "verifiability": 3
+      },
+      "total_score": 12,
+      "quality": "medium",
+      "chapters": [
+        {
+          "id": "ch01",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Android设计模式与架构演进路线图，MVC/MVP/MVI模式对比",
+      "indexed_at": "2026-03-30T15:45:00"
+    },
+    {
+      "path": "Cubox/Design of Kotlin Coroutines-2022-09-26.md",
+      "title": "Design of Kotlin Coroutines",
+      "scores": {
+        "relevance": 5,
+        "depth": 4,
+        "timeliness": 2,
+        "verifiability": 4
+      },
+      "total_score": 15,
+      "quality": "medium",
+      "chapters": [
+        {
+          "id": "ch03",
+          "confidence": "high"
+        },
+        {
+          "id": "ch15",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Kotlin协程创建过程与设计原理，深入协程调度与上下文机制",
+      "indexed_at": "2026-03-30T15:45:00"
+    },
+    {
+      "path": "Cubox/Devfreq Bus Dcvs-2022-03-12.md",
+      "title": "Devfreq Bus DCVS",
+      "scores": {
+        "relevance": 5,
+        "depth": 4,
+        "timeliness": 3,
+        "verifiability": 4
+      },
+      "total_score": 16,
+      "quality": "high",
+      "chapters": [
+        {
+          "id": "ch13",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Devfreq Bus DVCS软件架构，bw_hwmon与memlat调频策略详解",
+      "indexed_at": "2026-03-30T15:45:00"
+    },
+    {
+      "path": "Cubox/Diagnose and fix ANRs-2023-11-17.md",
+      "title": "Diagnose and fix ANRs",
+      "scores": {
+        "relevance": 5,
+        "depth": 4,
+        "timeliness": 4,
+        "verifiability": 5
+      },
+      "total_score": 18,
+      "quality": "high",
+      "chapters": [
+        {
+          "id": "ch02",
+          "confidence": "high"
+        },
+        {
+          "id": "ch11",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Android官方ANR诊断修复指南，涵盖输入超时、广播、Service等场景",
+      "indexed_at": "2026-03-30T15:45:00"
+    },
+    {
+      "path": "Cubox/Digging into Android System Services with Eric Amp...-2024-01-08.md",
+      "title": "Digging into Android System Services",
+      "scores": {
+        "relevance": 5,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "total_score": 14,
+      "quality": "medium",
+      "chapters": [
+        {
+          "id": "ch01",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Android System Services深度剖析，服务注册与跨进程调用机制",
+      "indexed_at": "2026-03-30T15:45:00"
+    },
+    {
+      "path": "Cubox/Documentation – Arm Developer-2025-03-05.md",
+      "title": "Arm Developer - Memory Ordering Documentation",
+      "scores": {
+        "relevance": 3,
+        "depth": 4,
+        "timeliness": 4,
+        "verifiability": 5
+      },
+      "total_score": 16,
+      "quality": "high",
+      "chapters": [
+        {
+          "id": "ch07",
+          "confidence": "medium"
+        },
+        {
+          "id": "ch13",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "ARM架构内存排序官方文档，Memory ordering原理与约束",
+      "indexed_at": "2026-03-30T15:45:00"
+    },
+    {
+      "path": "Cubox/Double Mapped Circular Buffer-2025-08-13.md",
+      "title": "Double Mapped Circular Buffer",
+      "scores": {
+        "relevance": 3,
+        "depth": 4,
+        "timeliness": 5,
+        "verifiability": 4
+      },
+      "total_score": 16,
+      "quality": "high",
+      "chapters": [
+        {
+          "id": "ch05",
+          "confidence": "medium"
+        },
+        {
+          "id": "ch01",
+          "confidence": "low"
+        }
+      ],
+      "summary": "双映射环形缓冲区实现原理，零拷贝数据交换的高效方案",
+      "indexed_at": "2026-03-30T15:45:00"
+    },
+    {
+      "title": "Fixing simpleperf broken records",
+      "path": "Cubox/Fixing simpleperf broken records-2022-01-24.md",
+      "quality": "medium",
+      "score": 10,
+      "scores": {
+        "relevance": 3,
+        "depth": 1,
+        "timeliness": 4,
+        "verifiability": 2
+      },
+      "chapters": [
+        "ch11-Profiling"
+      ],
+      "confidence": "medium",
+      "year": 2022,
+      "indexed_at": "2026-03-30T16:15:00"
     }
-  ]
+  ],
+  "last_updated": "2026-03-30T16:15:00"
 }
