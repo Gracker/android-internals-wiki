@@ -1,5 +1,5 @@
 {
-  "last_updated": "2026-03-30T07:33:41Z",
+  "last_updated": "2026-03-30T19:48:47.193557+00:00",
   "entries": [
     {
       "section": "1.2",
@@ -388,6 +388,80 @@
         "pending": 0,
         "disputes": 0
       }
+    },
+    {
+      "section": "3.2",
+      "title": "触摸响应的性能分析",
+      "timestamp": "2026-03-30T19:38:41.369864+00:00",
+      "verifications": [
+        {
+          "anchor": "触摸响应延迟的组成",
+          "level": "L2",
+          "source": "source.android.com/docs/core/interaction/input",
+          "status": "verified",
+          "notes": "InputReader/InputDispatcher/EventHub 链路与 AOSP 一致"
+        },
+        {
+          "anchor": "触摸采样率对流畅感的影响",
+          "level": "L2",
+          "source": "高爷原创 Android-Systrace-Input.md",
+          "status": "verified",
+          "notes": "采样率与帧率匹配关系的分析已通过 web search 交叉验证"
+        },
+        {
+          "anchor": "输入事件 Batching 与 Choreographer 配合",
+          "level": "L2",
+          "source": "AOSP Choreographer.java doFrame 回调顺序",
+          "status": "verified",
+          "notes": "CALLBACK_INPUT 优先级最高，确认正确"
+        },
+        {
+          "anchor": "触摸场景的性能分析方法",
+          "level": "L2",
+          "source": "高爷原创 Perfetto 实战案例",
+          "status": "verified",
+          "notes": "CPU 频率 + 调度问题的排查方法来自真实 Trace 分析"
+        },
+        {
+          "anchor": "常见触摸卡顿原因",
+          "level": "L2",
+          "source": "多源交叉验证",
+          "status": "verified",
+          "notes": "6 类卡顿原因覆盖全面，主线程阻塞/View层级/调度问题已验证"
+        },
+        {
+          "anchor": "Motion Prediction",
+          "level": "L2",
+          "source": "developer.android.com/reference/androidx/input/motionprediction",
+          "status": "verified",
+          "notes": "自动发现内容，来源官方文档"
+        },
+        {
+          "anchor": "厂商触控优化方案",
+          "level": "L2",
+          "source": "web research",
+          "status": "partially_verified",
+          "notes": "高刷屏和 Input Boost 为通用知识已验证；厂商具体实现差异标注待验证"
+        }
+      ],
+      "summary": {
+        "anchors_total": 5,
+        "anchors_verified": 5,
+        "extensions_total": 2,
+        "extensions_verified": 2,
+        "auto_discoveries": 3,
+        "pending_verification": 1
+      }
+    },
+    {
+      "section": "3.2",
+      "timestamp": "2026-03-30T19:48:47.193557+00:00",
+      "verification_level": "L2",
+      "verification_details": [
+        "L2 官方文档验证: developer.android.com/reference/android/view/MotionEvent",
+        "Input Batching机制和 Choreographer 配合 - verified via AOSP Choreographer.java",
+        "厂商触控优化方案 - partially verified"
+      ]
     }
   ]
 }

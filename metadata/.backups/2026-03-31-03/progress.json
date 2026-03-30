@@ -3,8 +3,8 @@
   "total_sections": 93,
   "metrics": {
     "total": 102,
-    "draft": 92,
-    "ready-for-review": 10,
+    "draft": 93,
+    "ready-for-review": 9,
     "reviewed": 0,
     "finalized": 0,
     "staging_drafts": 0
@@ -118,37 +118,15 @@
       "extensions_total": 3,
       "verification_level": "L2",
       "word_count": "~8500"
-    },
-    {
-      "section": "3.2",
-      "title": "触摸响应的性能分析",
-      "completed_at": "2026-03-30T19:38:41.369144+00:00",
-      "anchors_covered": 5,
-      "anchors_total": 5,
-      "extensions_covered": 2,
-      "extensions_total": 2,
-      "verification_level": "L2",
-      "word_count": "~7500"
-    },
-    {
-      "section": "7.1",
-      "title": "卡顿的定义与分类",
-      "completed_at": "2026-03-30T20:33:03.150823+00:00",
-      "anchors_covered": 5,
-      "anchors_total": 5,
-      "extensions_covered": 1,
-      "extensions_total": 2,
-      "verification_level": "L2",
-      "word_count": "~8000"
     }
   ],
   "ready_for_review": 9,
   "last_updated": "2026-03-30T18:37:58.288757+00:00",
   "stats": {
     "total": 102,
-    "completed": 12,
-    "pending": 90,
-    "last_updated": "2026-03-30T20:33:03.150823+00:00"
+    "completed": 7,
+    "pending": 95,
+    "last_updated": "2026-03-30T18:37:58.288757+00:00"
   },
   "research_stats": {
     "runs_today": [
