@@ -1,0 +1,20 @@
+{
+  "last_scan_time": "2026-03-30T11:47:04.306405",
+  "scanned_files": 160,
+  "total_files": 7973,
+  "indexed_files": 0,
+  "current_directory": "Cubox",
+  "current_offset": 160,
+  "priority_queue": [
+    "Cubox",
+    "Personal-Knowlodge",
+    "公众号文章",
+    "X 文章",
+    "调研",
+    "论文",
+    "知识库",
+    "OpenClaw定时任务"
+  ],
+  "completed_directories": [],
+  "status": "ready"
+}
