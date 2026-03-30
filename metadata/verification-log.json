@@ -1,5 +1,5 @@
 {
-  "last_updated": "2026-03-30T19:48:47.193557+00:00",
+  "last_updated": "2026-03-31T05:20:00+08:00",
   "entries": [
     {
       "section": "1.2",
@@ -462,6 +462,82 @@
         "Input Batching机制和 Choreographer 配合 - verified via AOSP Choreographer.java",
         "厂商触控优化方案 - partially verified"
       ]
+    },
+    {
+      "section": "1.6",
+      "title": "Android 版本演进中的架构变化",
+      "date": "2026-03-31T05:20:00+08:00",
+      "verifications": [
+        {
+          "topic": "Project Treble (Android 8.0) 架构重构",
+          "level": "L2",
+          "source": "source.android.com/docs/core/architecture/treble",
+          "result": "verified",
+          "notes": "Treble通过HIDL/AIDL稳定接口分离System/Vendor分区"
+        },
+        {
+          "topic": "Project Mainline / APEX (Android 10)",
+          "level": "L2",
+          "source": "source.android.com/docs/core/ota/modular-system",
+          "result": "verified",
+          "notes": "13个Mainline模块, APEX格式支持启动早期加载"
+        },
+        {
+          "topic": "GKI (Android 12) 内核模块化",
+          "level": "L2",
+          "source": "source.android.com/docs/core/architecture/kernel/gki",
+          "result": "verified",
+          "notes": "KMI稳定接口, Linux 5.10+设备强制GKI"
+        },
+        {
+          "topic": "ART编译策略演进 JIT→AOT→Profile-Guided",
+          "level": "L2",
+          "source": "source.android.com/docs/core/runtime",
+          "result": "verified",
+          "notes": "5.0全量AOT→7.0混合编译→9.0 Cloud Profiles→Baseline Profiles"
+        },
+        {
+          "topic": "包可见性限制 (Android 11+)",
+          "level": "L2",
+          "source": "developer.android.com/training/package-visibility",
+          "result": "verified",
+          "notes": "默认过滤, 需<queries>声明或QUERY_ALL_PACKAGES"
+        },
+        {
+          "topic": "后台执行限制演进时间线",
+          "level": "L2",
+          "source": "developer.android.com/about/versions (8.0-16)",
+          "result": "verified",
+          "notes": "8.0后台服务限制→12前台服务启动限制→14类型声明→15配额制→16配额扩展"
+        },
+        {
+          "topic": "16KB Page Size 性能影响",
+          "level": "L2",
+          "source": "android-developers.googleblog.com",
+          "result": "verified",
+          "notes": "App启动快3.16%, 功耗降4.56%, 开机快0.8s"
+        },
+        {
+          "topic": "Android 16 (Baklava) 架构变化",
+          "level": "L2",
+          "source": "developer.android.com/about/versions/16",
+          "result": "verified",
+          "notes": "GBL, 16KB兼容模式, 后台配额扩展, system-triggered profiling"
+        },
+        {
+          "topic": "Android 16 system-triggered profiling API",
+          "level": "L1",
+          "source": "待验证",
+          "result": "pending",
+          "notes": "需在AOSP android-16.0.0_r1中确认具体API实现"
+        }
+      ],
+      "summary": {
+        "total": 9,
+        "verified": 8,
+        "pending": 1,
+        "failed": 0
+      }
     }
   ]
 }
