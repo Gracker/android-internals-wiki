@@ -1178,7 +1178,27 @@
       "confidence": "medium",
       "year": 2022,
       "indexed_at": "2026-03-30T16:15:00"
+    },
+    {
+      "title": "Flutter RenderSurface 选择说明 - 知乎-2024-03-08",
+      "path": "Cubox/Flutter RenderSurface 选择说明 - 知乎-2024-03-08.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 2,
+        "timeliness": 5,
+        "verifiability": 2,
+        "total": 10
+      },
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "# Flutter RenderSurface 选择说明 - 知乎  RenderSurface 的作用是提供给 Flutter 光栅化引擎一个渲染的输出 S",
+      "indexed_at": "2026-03-30T17:13:13.522767"
     }
   ],
-  "last_updated": "2026-03-30T16:15:00"
+  "last_updated": "2026-03-30T17:13:13.526251"
 }
