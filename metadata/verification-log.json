@@ -75,6 +75,68 @@
       "anchor_coverage": "5/5 (100%)",
       "extension_coverage": "2/2 (100%)",
       "auto_discovery_count": 2
+    },
+    {
+      "section": "8.1",
+      "section_title": "响应速度原理",
+      "verification_date": "2026-03-30T06:20:00Z",
+      "verifier": "openclaw-task2",
+      "verification_type": "L2_revision",
+      "summary": "修复review issues后重新验证",
+      "details": [
+        {
+          "claim": "RAIL模型Response目标100ms",
+          "status": "verified",
+          "source": "web.dev/articles/rail",
+          "method": "L2"
+        },
+        {
+          "claim": "Android Vitals TTID/TTFD指标定义",
+          "status": "verified",
+          "source": "developer.android.com/topic/performance/vitals",
+          "method": "L2"
+        },
+        {
+          "claim": "Touch latency对用户感知的关键影响",
+          "status": "verified",
+          "source": "source.android.google.cn/docs/core/tests/debug/eval_perf",
+          "method": "L2"
+        },
+        {
+          "claim": "INP在Android中的对应",
+          "status": "verified",
+          "source": "web search - 多个来源确认Android未采用INP",
+          "method": "L4",
+          "note": "Android没有直接等价于INP的指标，但有Input Dispatch Latency + Frame Rendering + TTID/TTFD的组合体系"
+        },
+        {
+          "claim": "Android 16 VSync机制优化细节",
+          "status": "unverified",
+          "source": "N/A",
+          "method": "L1_pending",
+          "note": "缺乏具体AOSP源码支撑，已标注为待验证"
+        },
+        {
+          "claim": "华为流畅性指标：点击响应≤100ms",
+          "status": "verified",
+          "source": "华为开发者文档",
+          "method": "L2"
+        },
+        {
+          "claim": "AOSP InputFlinger源码路径",
+          "status": "verified",
+          "source": "AOSP repository",
+          "method": "L1",
+          "note": "frameworks/native/services/inputflinger/"
+        },
+        {
+          "claim": "Choreographer.java源码路径",
+          "status": "verified",
+          "source": "AOSP repository",
+          "method": "L1",
+          "note": "frameworks/base/core/java/android/view/Choreographer.java"
+        }
+      ]
     }
   ]
 }

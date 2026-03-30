@@ -438,29 +438,12 @@
       "priority": 90,
       "reason": "待加工（素材0篇）",
       "material_paths": [],
-      "status": "pending",
+      "status": "completed",
       "added_by": "manual-init",
       "added_at": "2026-03-29T21:00:00",
-      "review_issues": [
-        {
-          "type": "术语一致性",
-          "location": "全文",
-          "detail": "响应速度与响应延迟混用，需要统一术语使用",
-          "suggestion": "统一使用响应速度作为核心术语，响应延迟作为时间指标使用"
-        },
-        {
-          "type": "需补充素材",
-          "location": "Android 16 VSync机制优化",
-          "detail": "提到Android 16有Vulkan机制优化，但缺乏具体源码支撑",
-          "suggestion": "补充具体AOSP源码路径和关键代码片段"
-        },
-        {
-          "type": "需确认",
-          "location": "INP在Android中的对应",
-          "detail": "需要确认Android官方是否正式采用INP概念",
-          "suggestion": "引用官方文档确认"
-        }
-      ]
+      "processed_at": "2026-03-30T06:20:00Z",
+      "word_count": 7500,
+      "verification_status": "L2_verified_all_anchors_review_fixes"
     },
     {
       "section": "8.2",
@@ -1093,7 +1076,15 @@
       "status": "completed",
       "word_count": 8500,
       "verification_status": "L2+L4_verified_all_anchors"
+    },
+    {
+      "section": "8.1",
+      "section_title": "响应速度原理",
+      "processed_at": "2026-03-30T06:20:00Z",
+      "status": "completed",
+      "word_count": 7500,
+      "verification_status": "L2_verified_all_anchors_review_fixes"
     }
   ],
-  "last_updated": "2026-03-30T12:26:00Z"
+  "last_updated": "2026-03-30T06:20:00Z"
 }
