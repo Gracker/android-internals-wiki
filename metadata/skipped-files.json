@@ -1,0 +1,7027 @@
+{
+  "total_skipped": 408,
+  "files": [
+    {
+      "title": "第 10 章：内存性能",
+      "path": "src/part2-performance/ch10-memory-perf/README.md",
+      "score": {
+        "relevance": 5,
+        "technical_depth": 3,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 12
+      },
+      "reason": "总分12<16分"
+    },
+    {
+      "title": "\"Android 功耗模型\"",
+      "path": "src/part2-performance/ch11-power/01-power-model.md",
+      "score": {
+        "relevance": 4,
+        "technical_depth": 3,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 11
+      },
+      "reason": "总分11<16分"
+    },
+    {
+      "title": "\"App 耗电优化\"",
+      "path": "src/part2-performance/ch11-power/02-app-power-optimization.md",
+      "score": {
+        "relevance": 4,
+        "technical_depth": 3,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 11
+      },
+      "reason": "总分11<16分"
+    },
+    {
+      "title": "\"系统级功耗优化\"",
+      "path": "src/part2-performance/ch11-power/03-system-power-optimization.md",
+      "score": {
+        "relevance": 4,
+        "technical_depth": 3,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 11
+      },
+      "reason": "总分11<16分"
+    },
+    {
+      "title": "\"案例集\"",
+      "path": "src/part2-performance/ch11-power/04-case-studies.md",
+      "score": {
+        "relevance": 4,
+        "technical_depth": 4,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 12
+      },
+      "reason": "总分12<16分"
+    },
+    {
+      "title": "第 11 章：功耗",
+      "path": "src/part2-performance/ch11-power/README.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 3,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 8
+      },
+      "reason": "总分8<16分"
+    },
+    {
+      "title": "\"APK 体积优化\"",
+      "path": "src/part2-performance/ch12-apk-network/01-apk-size.md",
+      "score": {
+        "relevance": 3,
+        "technical_depth": 4,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 11
+      },
+      "reason": "总分11<16分"
+    },
+    {
+      "title": "\"网络性能优化\"",
+      "path": "src/part2-performance/ch12-apk-network/02-network-performance.md",
+      "score": {
+        "relevance": 3,
+        "technical_depth": 4,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 11
+      },
+      "reason": "总分11<16分"
+    },
+    {
+      "title": "第 12 章：包体积与其他",
+      "path": "src/part2-performance/ch12-apk-network/README.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 4,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 9
+      },
+      "reason": "总分9<16分"
+    },
+    {
+      "title": "\"Perfetto 简介与演进\"",
+      "path": "src/part3-tools/ch13-perfetto/01-perfetto-intro.md",
+      "score": {
+        "relevance": 5,
+        "technical_depth": 1,
+        "timeliness": 3,
+        "verifiability": 3,
+        "total": 12
+      },
+      "reason": "总分12<16分"
+    },
+    {
+      "title": "\"Trace 抓取\"",
+      "path": "src/part3-tools/ch13-perfetto/02-trace-capture.md",
+      "score": {
+        "relevance": 5,
+        "technical_depth": 1,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 10
+      },
+      "reason": "总分10<16分"
+    },
+    {
+      "title": "\"Perfetto View 解读\"",
+      "path": "src/part3-tools/ch13-perfetto/03-perfetto-view.md",
+      "score": {
+        "relevance": 4,
+        "technical_depth": 1,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 9
+      },
+      "reason": "总分9<16分"
+    },
+    {
+      "title": "\"命令行打开超大 Trace\"",
+      "path": "src/part3-tools/ch13-perfetto/04-large-traces.md",
+      "score": {
+        "relevance": 5,
+        "technical_depth": 1,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 10
+      },
+      "reason": "总分10<16分"
+    },
+    {
+      "title": "\"专题解读\"",
+      "path": "src/part3-tools/ch13-perfetto/05-topic-analysis.md",
+      "score": {
+        "relevance": 5,
+        "technical_depth": 1,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 10
+      },
+      "reason": "总分10<16分"
+    },
+    {
+      "title": "\"线程 CPU 状态分析\"",
+      "path": "src/part3-tools/ch13-perfetto/06-thread-cpu-states.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 6
+      },
+      "reason": "总分6<16分"
+    },
+    {
+      "title": "\"Perfetto 的高级用法\"",
+      "path": "src/part3-tools/ch13-perfetto/07-advanced-usage.md",
+      "score": {
+        "relevance": 5,
+        "technical_depth": 3,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 12
+      },
+      "reason": "总分12<16分"
+    },
+    {
+      "title": "第 13 章：Perfetto",
+      "path": "src/part3-tools/ch13-perfetto/README.md",
+      "score": {
+        "relevance": 5,
+        "technical_depth": 1,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 10
+      },
+      "reason": "总分10<16分"
+    },
+    {
+      "title": "\"Android Studio Profiler\"",
+      "path": "src/part3-tools/ch14-other-tools/01-as-profiler.md",
+      "score": {
+        "relevance": 5,
+        "technical_depth": 1,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 10
+      },
+      "reason": "总分10<16分"
+    },
+    {
+      "title": "\"Simpleperf\"",
+      "path": "src/part3-tools/ch14-other-tools/02-simpleperf.md",
+      "score": {
+        "relevance": 5,
+        "technical_depth": 1,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 10
+      },
+      "reason": "总分10<16分"
+    },
+    {
+      "title": "\"内存分析工具\"",
+      "path": "src/part3-tools/ch14-other-tools/03-memory-tools.md",
+      "score": {
+        "relevance": 5,
+        "technical_depth": 1,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 10
+      },
+      "reason": "总分10<16分"
+    },
+    {
+      "title": "\"dumpsys 系列命令\"",
+      "path": "src/part3-tools/ch14-other-tools/04-dumpsys.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 6
+      },
+      "reason": "总分6<16分"
+    },
+    {
+      "title": "\"三方性能库\"",
+      "path": "src/part3-tools/ch14-other-tools/05-third-party-libs.md",
+      "score": {
+        "relevance": 5,
+        "technical_depth": 4,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 13
+      },
+      "reason": "总分13<16分"
+    },
+    {
+      "title": "\"自动化测试工具\"",
+      "path": "src/part3-tools/ch14-other-tools/06-automation-tools.md",
+      "score": {
+        "relevance": 3,
+        "technical_depth": 5,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 12
+      },
+      "reason": "总分12<16分"
+    },
+    {
+      "title": "\"ProfilingManager\"",
+      "path": "src/part3-tools/ch14-other-tools/07-profiling-manager.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 4,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 9
+      },
+      "reason": "总分9<16分"
+    },
+    {
+      "title": "第 14 章：其他分析工具",
+      "path": "src/part3-tools/ch14-other-tools/README.md",
+      "score": {
+        "relevance": 5,
+        "technical_depth": 4,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 13
+      },
+      "reason": "总分13<16分"
+    },
+    {
+      "title": "\"性能优化的术、道、器\"",
+      "path": "src/part3-tools/ch15-methodology/01-philosophy.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 5,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 10
+      },
+      "reason": "总分10<16分"
+    },
+    {
+      "title": "\"如何区分系统问题和 App 问题\"",
+      "path": "src/part3-tools/ch15-methodology/02-system-vs-app.md",
+      "score": {
+        "relevance": 4,
+        "technical_depth": 1,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 9
+      },
+      "reason": "总分9<16分"
+    },
+    {
+      "title": "\"性能指标体系\"",
+      "path": "src/part3-tools/ch15-methodology/03-metrics.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 3,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 8
+      },
+      "reason": "总分8<16分"
+    },
+    {
+      "title": "\"竞品分析方法\"",
+      "path": "src/part3-tools/ch15-methodology/04-competitive-analysis.md",
+      "score": {
+        "relevance": 4,
+        "technical_depth": 3,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 11
+      },
+      "reason": "总分11<16分"
+    },
+    {
+      "title": "\"线上性能监控\"",
+      "path": "src/part3-tools/ch15-methodology/05-online-monitoring.md",
+      "score": {
+        "relevance": 4,
+        "technical_depth": 5,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 13
+      },
+      "reason": "总分13<16分"
+    },
+    {
+      "title": "\"性能测试最佳实践\"",
+      "path": "src/part3-tools/ch15-methodology/06-testing-best-practices.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 5,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 10
+      },
+      "reason": "总分10<16分"
+    },
+    {
+      "title": "\"AOSP 代码阅读\"",
+      "path": "src/part3-tools/ch15-methodology/07-aosp-reading.md",
+      "score": {
+        "relevance": 3,
+        "technical_depth": 5,
+        "timeliness": 3,
+        "verifiability": 3,
+        "total": 14
+      },
+      "reason": "总分14<16分"
+    },
+    {
+      "title": "第 15 章：方法论",
+      "path": "src/part3-tools/ch15-methodology/README.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 5,
+        "timeliness": 3,
+        "verifiability": 3,
+        "total": 12
+      },
+      "reason": "总分12<16分"
+    },
+    {
+      "title": "\"Google 官方的性能优化思路\"",
+      "path": "src/part4-system/ch16-aosp/01-google-optimization.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 4,
+        "timeliness": 3,
+        "verifiability": 3,
+        "total": 11
+      },
+      "reason": "总分11<16分"
+    },
+    {
+      "title": "\"各 Android 版本性能变更追踪\"",
+      "path": "src/part4-system/ch16-aosp/02-version-changes.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 4,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 9
+      },
+      "reason": "总分9<16分"
+    },
+    {
+      "title": "附录 D：性能分析 Checklist",
+      "path": "src/appendix/analysis-checklist.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 6
+      },
+      "reason": "总分6<16分"
+    },
+    {
+      "title": "附录 B：常用 adb / dumpsys 命令速查",
+      "path": "src/appendix/commands-cheatsheet.md",
+      "score": {
+        "relevance": 2,
+        "technical_depth": 2,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 8
+      },
+      "reason": "总分8<16分"
+    },
+    {
+      "title": "附录 E：术语表（中英对照）",
+      "path": "src/appendix/glossary.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 6
+      },
+      "reason": "总分6<16分"
+    },
+    {
+      "title": "附录 C：Perfetto TraceConfig 模板集",
+      "path": "src/appendix/perfetto-templates.md",
+      "score": {
+        "relevance": 2,
+        "technical_depth": 1,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 7
+      },
+      "reason": "总分7<16分"
+    },
+    {
+      "title": "附录 F：推荐阅读与资源",
+      "path": "src/appendix/recommended-reading.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 6
+      },
+      "reason": "总分6<16分"
+    },
+    {
+      "title": "附录 A：Android 版本性能变更速查表",
+      "path": "src/appendix/version-changelog.md",
+      "score": {
+        "relevance": 2,
+        "technical_depth": 1,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 7
+      },
+      "reason": "总分7<16分"
+    },
+    {
+      "title": "响应速度原理",
+      "path": "src/ch08/01-responsiveness-principles.md/01-responsiveness-principles.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 6
+      },
+      "reason": "总分6<16分"
+    },
+    {
+      "title": "Android 分层架构",
+      "path": "src/part1-fundamentals/ch01-architecture/01-layered-architecture.md",
+      "score": {
+        "relevance": 2,
+        "technical_depth": 2,
+        "timeliness": 3,
+        "verifiability": 2,
+        "total": 9
+      },
+      "reason": "总分9<16分"
+    },
+    {
+      "title": "系统启动全流程",
+      "path": "src/part1-fundamentals/ch01-architecture/02-boot-process.md",
+      "score": {
+        "relevance": 2,
+        "technical_depth": 2,
+        "timeliness": 3,
+        "verifiability": 2,
+        "total": 9
+      },
+      "reason": "总分9<16分"
+    },
+    {
+      "title": "进程模型与生命周期管理",
+      "path": "src/part1-fundamentals/ch01-architecture/03-process-model.md",
+      "score": {
+        "relevance": 2,
+        "technical_depth": 1,
+        "timeliness": 3,
+        "verifiability": 2,
+        "total": 8
+      },
+      "reason": "总分8<16分"
+    },
+    {
+      "title": "Binder IPC 机制与性能影响",
+      "path": "src/part1-fundamentals/ch01-architecture/04-binder.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 6
+      },
+      "reason": "总分6<16分"
+    },
+    {
+      "title": "线程模型",
+      "path": "src/part1-fundamentals/ch01-architecture/05-threading-model.md",
+      "score": {
+        "relevance": 2,
+        "technical_depth": 1,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 7
+      },
+      "reason": "总分7<16分"
+    },
+    {
+      "title": "Android 版本演进中的架构变化",
+      "path": "src/part1-fundamentals/ch01-architecture/06-version-evolution.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 6
+      },
+      "reason": "总分6<16分"
+    },
+    {
+      "title": "第 1 章：系统架构全景",
+      "path": "src/part1-fundamentals/ch01-architecture/README.md",
+      "score": {
+        "relevance": 2,
+        "technical_depth": 1,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 7
+      },
+      "reason": "总分7<16分"
+    },
+    {
+      "title": "Android 渲染架构全景",
+      "path": "src/part1-fundamentals/ch02-rendering/01-rendering-overview.md",
+      "score": {
+        "relevance": 2,
+        "technical_depth": 1,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 7
+      },
+      "reason": "总分7<16分"
+    },
+    {
+      "title": "帧率与刷新率",
+      "path": "src/part1-fundamentals/ch02-rendering/02-framerate.md",
+      "score": {
+        "relevance": 2,
+        "technical_depth": 1,
+        "timeliness": 3,
+        "verifiability": 2,
+        "total": 8
+      },
+      "reason": "总分8<16分"
+    },
+    {
+      "title": "VSync 机制",
+      "path": "src/part1-fundamentals/ch02-rendering/03-vsync.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 6
+      },
+      "reason": "总分6<16分"
+    },
+    {
+      "title": "Choreographer 与渲染流水线",
+      "path": "src/part1-fundamentals/ch02-rendering/04-choreographer.md",
+      "score": {
+        "relevance": 2,
+        "technical_depth": 1,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 7
+      },
+      "reason": "总分7<16分"
+    },
+    {
+      "title": "MainThread 与 RenderThread 协作",
+      "path": "src/part1-fundamentals/ch02-rendering/05-main-render-thread.md",
+      "score": {
+        "relevance": 2,
+        "technical_depth": 1,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 7
+      },
+      "reason": "总分7<16分"
+    },
+    {
+      "title": "SurfaceFlinger 与合成",
+      "path": "src/part1-fundamentals/ch02-rendering/06-surfaceflinger.md",
+      "score": {
+        "relevance": 2,
+        "technical_depth": 1,
+        "timeliness": 3,
+        "verifiability": 2,
+        "total": 8
+      },
+      "reason": "总分8<16分"
+    },
+    {
+      "title": "Hardware Layer",
+      "path": "src/part1-fundamentals/ch02-rendering/07-hardware-layer.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 6
+      },
+      "reason": "总分6<16分"
+    },
+    {
+      "title": "过度绘制",
+      "path": "src/part1-fundamentals/ch02-rendering/08-overdraw.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 6
+      },
+      "reason": "总分6<16分"
+    },
+    {
+      "title": "渲染机制的版本演进",
+      "path": "src/part1-fundamentals/ch02-rendering/09-rendering-evolution.md",
+      "score": {
+        "relevance": 2,
+        "technical_depth": 1,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 7
+      },
+      "reason": "总分7<16分"
+    },
+    {
+      "title": "GPU 渲染深入",
+      "path": "src/part1-fundamentals/ch02-rendering/10-gpu-rendering.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 6
+      },
+      "reason": "总分6<16分"
+    },
+    {
+      "title": "第 2 章：渲染系统",
+      "path": "src/part1-fundamentals/ch02-rendering/README.md",
+      "score": {
+        "relevance": 2,
+        "technical_depth": 1,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 7
+      },
+      "reason": "总分7<16分"
+    },
+    {
+      "title": "Input 事件分发全流程",
+      "path": "src/part1-fundamentals/ch03-input/01-input-dispatch.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 6
+      },
+      "reason": "总分6<16分"
+    },
+    {
+      "title": "触摸响应的性能分析",
+      "path": "src/part1-fundamentals/ch03-input/02-touch-performance.md",
+      "score": {
+        "relevance": 2,
+        "technical_depth": 1,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 7
+      },
+      "reason": "总分7<16分"
+    },
+    {
+      "title": "手势导航与系统交互",
+      "path": "src/part1-fundamentals/ch03-input/03-gesture-navigation.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 6
+      },
+      "reason": "总分6<16分"
+    },
+    {
+      "title": "第 3 章：输入系统",
+      "path": "src/part1-fundamentals/ch03-input/README.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 6
+      },
+      "reason": "总分6<16分"
+    },
+    {
+      "title": "Android 内存模型全景",
+      "path": "src/part1-fundamentals/ch04-memory/01-memory-overview.md",
+      "score": {
+        "relevance": 2,
+        "technical_depth": 1,
+        "timeliness": 3,
+        "verifiability": 2,
+        "total": 8
+      },
+      "reason": "总分8<16分"
+    },
+    {
+      "title": "Linux 内核内存管理",
+      "path": "src/part1-fundamentals/ch04-memory/02-linux-memory.md",
+      "score": {
+        "relevance": 2,
+        "technical_depth": 1,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 7
+      },
+      "reason": "总分7<16分"
+    },
+    {
+      "title": "ART 虚拟机内存管理",
+      "path": "src/part1-fundamentals/ch04-memory/03-art-memory.md",
+      "score": {
+        "relevance": 2,
+        "technical_depth": 1,
+        "timeliness": 3,
+        "verifiability": 2,
+        "total": 8
+      },
+      "reason": "总分8<16分"
+    },
+    {
+      "title": "Low Memory Killer",
+      "path": "src/part1-fundamentals/ch04-memory/04-lmk.md",
+      "score": {
+        "relevance": 3,
+        "technical_depth": 1,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 8
+      },
+      "reason": "总分8<16分"
+    },
+    {
+      "title": "App 内存优化",
+      "path": "src/part1-fundamentals/ch04-memory/05-app-memory-optimization.md",
+      "score": {
+        "relevance": 2,
+        "technical_depth": 1,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 7
+      },
+      "reason": "总分7<16分"
+    },
+    {
+      "title": "系统启动全流程",
+      "path": "src/part1-fundamentals/ch01-architecture/02-boot-process.md",
+      "score": {
+        "relevance": 2,
+        "technical_depth": 1,
+        "timeliness": 1,
+        "verifiability": 1,
+        "total": 5
+      },
+      "reason": "总分5<16分"
+    },
+    {
+      "title": "第 1 章：系统架构全景",
+      "path": "src/part1-fundamentals/ch01-architecture/README.md",
+      "score": {
+        "relevance": 2,
+        "technical_depth": 1,
+        "timeliness": 3,
+        "verifiability": 2,
+        "total": 8
+      },
+      "reason": "总分8<16分"
+    },
+    {
+      "title": "Android 分层架构",
+      "path": "src/part1-fundamentals/ch01-architecture/01-layered-architecture.md",
+      "score": {
+        "relevance": 3,
+        "technical_depth": 1,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 7
+      },
+      "reason": "总分7<16分"
+    },
+    {
+      "title": "Binder IPC 机制与性能影响",
+      "path": "src/part1-fundamentals/ch01-architecture/04-binder.md",
+      "score": {
+        "relevance": 2,
+        "technical_depth": 1,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 6
+      },
+      "reason": "总分6<16分"
+    },
+    {
+      "title": "线程模型",
+      "path": "src/part1-fundamentals/ch01-architecture/05-threading-model.md",
+      "score": {
+        "relevance": 2,
+        "technical_depth": 1,
+        "timeliness": 1,
+        "verifiability": 1,
+        "total": 5
+      },
+      "reason": "总分5<16分"
+    },
+    {
+      "title": "Android 版本演进中的架构变化",
+      "path": "src/part1-fundamentals/ch01-architecture/06-version-evolution.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 6
+      },
+      "reason": "总分6<16分"
+    },
+    {
+      "title": "进程模型与生命周期管理",
+      "path": "src/part1-fundamentals/ch01-architecture/03-process-model.md",
+      "score": {
+        "relevance": 2,
+        "technical_depth": 1,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 7
+      },
+      "reason": "总分7<16分"
+    },
+    {
+      "title": "I/O 调度与性能",
+      "path": "src/part2-performance/ch08-io/01-io-scheduling.md",
+      "score": {
+        "relevance": 2,
+        "technical_depth": 1,
+        "timeliness": 1,
+        "verifiability": 1,
+        "total": 5
+      },
+      "reason": "总分5<16分"
+    },
+    {
+      "title": "第 6 章：存储与 I/O",
+      "path": "src/part2-performance/ch08-io/README.md",
+      "score": {
+        "relevance": 2,
+        "technical_depth": 1,
+        "timeliness": 3,
+        "verifiability": 2,
+        "total": 8
+      },
+      "reason": "总分8<16分"
+    },
+    {
+      "title": "Android 存储架构",
+      "path": "src/part2-performance/ch08-io/02-storage-architecture.md",
+      "score": {
+        "relevance": 3,
+        "technical_depth": 1,
+        "timeliness": 3,
+        "verifiability": 3,
+        "total": 10
+      },
+      "reason": "总分10<16分"
+    },
+    {
+      "title": "存储相关的版本演进",
+      "path": "src/part2-performance/ch08-io/03-version-evolution.md",
+      "score": {
+        "relevance": 2,
+        "technical_depth": 1,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 7
+      },
+      "reason": "总分7<16分"
+    },
+    {
+      "title": "文件系统",
+      "path": "src/part2-performance/ch08-io/04-file-systems.md",
+      "score": {
+        "relevance": 2,
+        "technical_depth": 1,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 7
+      },
+      "reason": "总分7<16分"
+    },
+    {
+      "title": "ART 虚拟机内存管理",
+      "path": "src/part1-fundamentals/ch04-memory/03-art-memory.md",
+      "score": {
+        "relevance": 2,
+        "technical_depth": 1,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 6
+      },
+      "reason": "总分6<16分"
+    },
+    {
+      "title": "第 4 章：内存管理",
+      "path": "src/part1-fundamentals/ch04-memory/README.md",
+      "score": {
+        "relevance": 2,
+        "technical_depth": 1,
+        "timeliness": 3,
+        "verifiability": 2,
+        "total": 8
+      },
+      "reason": "总分8<16分"
+    },
+    {
+      "title": "Android 内存模型全景",
+      "path": "src/part1-fundamentals/ch04-memory/01-memory-overview.md",
+      "score": {
+        "relevance": 2,
+        "technical_depth": 1,
+        "timeliness": 3,
+        "verifiability": 2,
+        "total": 8
+      },
+      "reason": "总分8<16分"
+    },
+    {
+      "title": "内存相关的版本演进",
+      "path": "src/part1-fundamentals/ch04-memory/04-version-evolution.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 5
+      },
+      "reason": "总分5<16分"
+    },
+    {
+      "title": "Linux 内核内存管理",
+      "path": "src/part1-fundamentals/ch04-memory/02-linux-memory.md",
+      "score": {
+        "relevance": 2,
+        "technical_depth": 1,
+        "timeliness": 1,
+        "verifiability": 1,
+        "total": 5
+      },
+      "reason": "总分5<16分"
+    },
+    {
+      "title": "Low Memory Killer",
+      "path": "src/part1-fundamentals/ch04-memory/05-lmk.md",
+      "score": {
+        "relevance": 3,
+        "technical_depth": 1,
+        "timeliness": 1,
+        "verifiability": 1,
+        "total": 6
+      },
+      "reason": "总分6<16分"
+    },
+    {
+      "title": "App 内存优化",
+      "path": "src/part1-fundamentals/ch04-memory/06-app-memory-optimization.md",
+      "score": {
+        "relevance": 2,
+        "technical_depth": 1,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 6
+      },
+      "reason": "总分6<16分"
+    },
+    {
+      "title": "触摸响应的性能分析",
+      "path": "src/part1-fundamentals/ch03-input/02-touch-performance.md",
+      "score": {
+        "relevance": 2,
+        "technical_depth": 1,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 6
+      },
+      "reason": "总分6<16分"
+    },
+    {
+      "title": "手势导航与系统交互",
+      "path": "src/part1-fundamentals/ch03-input/03-gesture-navigation.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 5
+      },
+      "reason": "总分5<16分"
+    },
+    {
+      "title": "Input 事件分发全流程",
+      "path": "src/part1-fundamentals/ch03-input/01-input-dispatch.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 1,
+        "verifiability": 1,
+        "total": 4
+      },
+      "reason": "总分4<16分"
+    },
+    {
+      "title": "第 3 章：输入系统",
+      "path": "src/part1-fundamentals/ch03-input/README.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 1,
+        "verifiability": 1,
+        "total": 4
+      },
+      "reason": "总分4<16分"
+    },
+    {
+      "title": "适用读者",
+      "path": "src/intro/01-audience.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 5
+      },
+      "reason": "总分5<16分"
+    },
+    {
+      "title": "版本约定",
+      "path": "src/intro/02-version-convention.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 5
+      },
+      "reason": "总分5<16分"
+    },
+    {
+      "title": "写在前面",
+      "path": "src/intro/03-preface.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 3,
+        "verifiability": 3,
+        "total": 8
+      },
+      "reason": "总分8<16分"
+    },
+    {
+      "title": "内容验证标准说明",
+      "path": "src/intro/04-validation.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 2,
+        "verifiability": 2,
+        "total": 6
+      },
+      "reason": "总分6<16分"
+    },
+    {
+      "title": "阅读路径推荐",
+      "path": "src/intro/05-reading-path.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 5
+      },
+      "reason": "总分5<16分"
+    },
+    {
+      "title": "本书的使用方式",
+      "path": "src/intro/06-usage.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 1,
+        "verifiability": 1,
+        "total": 4
+      },
+      "reason": "总分4<16分"
+    },
+    {
+      "title": "第 12 章：包体积与其他",
+      "path": "src/part2-performance/ch12-apk-network/README.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 5
+      },
+      "reason": "总分5<16分"
+    },
+    {
+      "title": "网络性能优化",
+      "path": "src/part2-performance/ch12-apk-network/02-network-performance.md",
+      "score": {
+        "relevance": 2,
+        "technical_depth": 2,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 7
+      },
+      "reason": "总分7<16分"
+    },
+    {
+      "title": "APK 体积优化",
+      "path": "src/part2-performance/ch12-apk-network/01-apk-size.md",
+      "score": {
+        "relevance": 2,
+        "technical_depth": 2,
+        "timeliness": 3,
+        "verifiability": 2,
+        "total": 9
+      },
+      "reason": "总分9<16分"
+    },
+    {
+      "title": "Android 功耗模型",
+      "path": "src/part2-performance/ch11-power/01-power-model.md",
+      "score": {
+        "relevance": 3,
+        "technical_depth": 2,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 8
+      },
+      "reason": "总分8<16分"
+    },
+    {
+      "title": "App 耗电优化",
+      "path": "src/part2-performance/ch11-power/02-app-power-optimization.md",
+      "score": {
+        "relevance": 2,
+        "technical_depth": 1,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 6
+      },
+      "reason": "总分6<16分"
+    },
+    {
+      "title": "系统级功耗优化",
+      "path": "src/part2-performance/ch11-power/03-system-power-optimization.md",
+      "score": {
+        "relevance": 2,
+        "technical_depth": 1,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 6
+      },
+      "reason": "总分6<16分"
+    },
+    {
+      "title": "第 9 章：ANR",
+      "path": "src/part2-performance/ch09-anr/README.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 5
+      },
+      "reason": "总分5<16分"
+    },
+    {
+      "title": "App 内存分析",
+      "path": "src/part2-performance/ch10-memory-perf/01-app-memory-analysis.md",
+      "score": {
+        "relevance": 4,
+        "technical_depth": 1,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 8
+      },
+      "reason": "总分8<16分"
+    },
+    {
+      "title": "内存泄漏",
+      "path": "src/part2-performance/ch10-memory-perf/02-memory-leak.md",
+      "score": {
+        "relevance": 3,
+        "technical_depth": 1,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 7
+      },
+      "reason": "总分7<16分"
+    },
+    {
+      "title": "内存持续增长",
+      "path": "src/part2-performance/ch10-memory-perf/03-memory-growth.md",
+      "score": {
+        "relevance": 3,
+        "technical_depth": 1,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 7
+      },
+      "reason": "总分7<16分"
+    },
+    {
+      "title": "低内存对系统性能的影响",
+      "path": "src/part2-performance/ch10-memory-perf/04-low-memory-impact.md",
+      "score": {
+        "relevance": 3,
+        "technical_depth": 2,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 8
+      },
+      "reason": "总分8<16分"
+    },
+    {
+      "title": "案例集",
+      "path": "src/part2-performance/ch10-memory-perf/05-case-studies.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 2,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 6
+      },
+      "reason": "总分6<16分"
+    },
+    {
+      "title": "内存抖动与频繁 GC",
+      "path": "src/part2-performance/ch10-memory-perf/06-memory-churn.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 2,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 6
+      },
+      "reason": "总分6<16分"
+    },
+    {
+      "title": "第 10 章：内存性能",
+      "path": "src/part2-performance/ch10-memory-perf/README.md",
+      "score": {
+        "relevance": 3,
+        "technical_depth": 2,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 8
+      },
+      "reason": "总分8<16分"
+    },
+    {
+      "title": "Android 功耗模型",
+      "path": "src/part2-performance/ch11-power/01-power-model.md",
+      "score": {
+        "relevance": 3,
+        "technical_depth": 1,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 7
+      },
+      "reason": "总分7<16分"
+    },
+    {
+      "title": "App 耗电优化",
+      "path": "src/part2-performance/ch11-power/02-app-power-optimization.md",
+      "score": {
+        "relevance": 3,
+        "technical_depth": 1,
+        "timeliness": 4,
+        "verifiability": 1,
+        "total": 9
+      },
+      "reason": "总分9<16分"
+    },
+    {
+      "title": "系统级功耗优化",
+      "path": "src/part2-performance/ch11-power/03-system-power-optimization.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 5
+      },
+      "reason": "总分5<16分"
+    },
+    {
+      "title": "案例集",
+      "path": "src/part2-performance/ch11-power/04-case-studies.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 5
+      },
+      "reason": "总分5<16分"
+    },
+    {
+      "title": "第 11 章：功耗",
+      "path": "src/part2-performance/ch11-power/README.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 5
+      },
+      "reason": "总分5<16分"
+    },
+    {
+      "title": "APK 体积优化",
+      "path": "src/part2-performance/ch12-apk-network/01-apk-size.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 5
+      },
+      "reason": "总分5<16分"
+    },
+    {
+      "title": "网络性能优化",
+      "path": "src/part2-performance/ch12-apk-network/02-network-performance.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 2,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 6
+      },
+      "reason": "总分6<16分"
+    },
+    {
+      "title": "第 12 章：包体积与其他",
+      "path": "src/part2-performance/ch12-apk-network/README.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 2,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 6
+      },
+      "reason": "总分6<16分"
+    },
+    {
+      "title": "Perfetto 简介与演进",
+      "path": "src/part3-tools/ch13-perfetto/01-perfetto-intro.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 5
+      },
+      "reason": "总分5<16分"
+    },
+    {
+      "title": "Trace 抓取",
+      "path": "src/part3-tools/ch13-perfetto/02-trace-capture.md",
+      "score": {
+        "relevance": 4,
+        "technical_depth": 1,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 8
+      },
+      "reason": "总分8<16分"
+    },
+    {
+      "title": "Perfetto View 解读",
+      "path": "src/part3-tools/ch13-perfetto/03-perfetto-view.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 2,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 6
+      },
+      "reason": "总分6<16分"
+    },
+    {
+      "title": "命令行打开超大 Trace",
+      "path": "src/part3-tools/ch13-perfetto/04-large-traces.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 2,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 6
+      },
+      "reason": "总分6<16分"
+    },
+    {
+      "title": "专题解读",
+      "path": "src/part3-tools/ch13-perfetto/05-topic-analysis.md",
+      "score": {
+        "relevance": 3,
+        "technical_depth": 2,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 8
+      },
+      "reason": "总分8<16分"
+    },
+    {
+      "title": "线程 CPU 状态分析",
+      "path": "src/part3-tools/ch13-perfetto/06-thread-cpu-states.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 5
+      },
+      "reason": "总分5<16分"
+    },
+    {
+      "title": "Perfetto 的高级用法",
+      "path": "src/part3-tools/ch13-perfetto/07-advanced-usage.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 5
+      },
+      "reason": "总分5<16分"
+    },
+    {
+      "title": "第 13 章：Perfetto",
+      "path": "src/part3-tools/ch13-perfetto/README.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 5
+      },
+      "reason": "总分5<16分"
+    },
+    {
+      "title": "Android Studio Profiler",
+      "path": "src/part3-tools/ch14-other-tools/01-as-profiler.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 5
+      },
+      "reason": "总分5<16分"
+    },
+    {
+      "title": "Simpleperf",
+      "path": "src/part3-tools/ch14-other-tools/02-simpleperf.md",
+      "score": {
+        "relevance": 3,
+        "technical_depth": 1,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 7
+      },
+      "reason": "总分7<16分"
+    },
+    {
+      "title": "内存分析工具",
+      "path": "src/part3-tools/ch14-other-tools/03-memory-tools.md",
+      "score": {
+        "relevance": 4,
+        "technical_depth": 1,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 8
+      },
+      "reason": "总分8<16分"
+    },
+    {
+      "title": "dumpsys 系列命令",
+      "path": "src/part3-tools/ch14-other-tools/04-dumpsys.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 5
+      },
+      "reason": "总分5<16分"
+    },
+    {
+      "title": "三方性能库",
+      "path": "src/part3-tools/ch14-other-tools/05-third-party-libs.md",
+      "score": {
+        "relevance": 3,
+        "technical_depth": 2,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 8
+      },
+      "reason": "总分8<16分"
+    },
+    {
+      "title": "自动化测试工具",
+      "path": "src/part3-tools/ch14-other-tools/06-automation-tools.md",
+      "score": {
+        "relevance": 4,
+        "technical_depth": 3,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 10
+      },
+      "reason": "总分10<16分"
+    },
+    {
+      "title": "ProfilingManager",
+      "path": "src/part3-tools/ch14-other-tools/07-profiling-manager.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 2,
+        "timeliness": 5,
+        "verifiability": 5,
+        "total": 13
+      },
+      "reason": "总分13<16分"
+    },
+    {
+      "title": "第 14 章：其他分析工具",
+      "path": "src/part3-tools/ch14-other-tools/README.md",
+      "score": {
+        "relevance": 3,
+        "technical_depth": 3,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 9
+      },
+      "reason": "总分9<16分"
+    },
+    {
+      "title": "性能优化的术、道、器",
+      "path": "src/part3-tools/ch15-methodology/01-philosophy.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 2,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 6
+      },
+      "reason": "总分6<16分"
+    },
+    {
+      "title": "如何区分系统问题和 App 问题",
+      "path": "src/part3-tools/ch15-methodology/02-system-vs-app.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 5
+      },
+      "reason": "总分5<16分"
+    },
+    {
+      "title": "性能指标体系",
+      "path": "src/part3-tools/ch15-methodology/03-metrics.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 2,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 6
+      },
+      "reason": "总分6<16分"
+    },
+    {
+      "title": "竞品分析方法",
+      "path": "src/part3-tools/ch15-methodology/04-competitive-analysis.md",
+      "score": {
+        "relevance": 3,
+        "technical_depth": 2,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 8
+      },
+      "reason": "总分8<16分"
+    },
+    {
+      "title": "线上性能监控",
+      "path": "src/part3-tools/ch15-methodology/05-online-monitoring.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 3,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 7
+      },
+      "reason": "总分7<16分"
+    },
+    {
+      "title": "性能测试最佳实践",
+      "path": "src/part3-tools/ch15-methodology/06-testing-best-practices.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 3,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 7
+      },
+      "reason": "总分7<16分"
+    },
+    {
+      "title": "AOSP 代码阅读",
+      "path": "src/part3-tools/ch15-methodology/07-aosp-reading.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 2,
+        "timeliness": 2,
+        "verifiability": 5,
+        "total": 10
+      },
+      "reason": "总分10<16分"
+    },
+    {
+      "title": "第 15 章：方法论",
+      "path": "src/part3-tools/ch15-methodology/README.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 4,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 8
+      },
+      "reason": "总分8<16分"
+    },
+    {
+      "title": "Google 官方的性能优化思路",
+      "path": "src/part4-system/ch16-aosp/01-google-optimization.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 2,
+        "timeliness": 2,
+        "verifiability": 3,
+        "total": 8
+      },
+      "reason": "总分8<16分"
+    },
+    {
+      "title": "各 Android 版本性能变更追踪",
+      "path": "src/part4-system/ch16-aosp/02-version-changes.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 2,
+        "timeliness": 5,
+        "verifiability": 1,
+        "total": 9
+      },
+      "reason": "总分9<16分"
+    },
+    {
+      "title": "AOSP 源码编译与调试环境",
+      "path": "src/part4-system/ch16-aosp/03-aosp-build.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 2,
+        "timeliness": 2,
+        "verifiability": 5,
+        "total": 10
+      },
+      "reason": "总分10<16分"
+    },
+    {
+      "title": "第 16 章：AOSP 性能优化",
+      "path": "src/part4-system/ch16-aosp/README.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 3,
+        "timeliness": 2,
+        "verifiability": 3,
+        "total": 9
+      },
+      "reason": "总分9<16分"
+    },
+    {
+      "title": "OEM 性能优化的通用思路",
+      "path": "src/part4-system/ch17-oem/01-oem-overview.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 3,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 7
+      },
+      "reason": "总分7<16分"
+    },
+    {
+      "title": "SoC 平台差异",
+      "path": "src/part4-system/ch17-oem/02-soc-differences.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 2,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 6
+      },
+      "reason": "总分6<16分"
+    },
+    {
+      "title": "行业案例",
+      "path": "src/part4-system/ch17-oem/03-industry-cases.md",
+      "score": {
+        "relevance": 3,
+        "technical_depth": 2,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 8
+      },
+      "reason": "总分8<16分"
+    },
+    {
+      "title": "第 17 章：厂商优化实践",
+      "path": "src/part4-system/ch17-oem/README.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 2,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 6
+      },
+      "reason": "总分6<16分"
+    },
+    {
+      "title": "本书的使用方式",
+      "path": "src/preface/how-to-use.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 5
+      },
+      "reason": "总分5<16分"
+    },
+    {
+      "title": "写在前面",
+      "path": "src/preface/intro.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 2,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 6
+      },
+      "reason": "总分6<16分"
+    },
+    {
+      "title": "阅读路径推荐",
+      "path": "src/preface/reading-paths.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 2,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 6
+      },
+      "reason": "总分6<16分"
+    },
+    {
+      "title": "适用读者",
+      "path": "src/preface/target-audience.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 5
+      },
+      "reason": "总分5<16分"
+    },
+    {
+      "title": "内容验证标准说明",
+      "path": "src/preface/verification-standards.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 3,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 7
+      },
+      "reason": "总分7<16分"
+    },
+    {
+      "title": "版本约定",
+      "path": "src/preface/version-conventions.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 5
+      },
+      "reason": "总分5<16分"
+    },
+    {
+      "title": "目录",
+      "path": "src/SUMMARY.md",
+      "score": {
+        "relevance": 3,
+        "technical_depth": 4,
+        "timeliness": 2,
+        "verifiability": 5,
+        "total": 14
+      },
+      "reason": "总分14<16分"
+    },
+    {
+      "title": "附录 D：性能分析 Checklist",
+      "path": "src/appendix/analysis-checklist.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 3,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 7
+      },
+      "reason": "总分7<16分"
+    },
+    {
+      "title": "附录 B：常用 adb / dumpsys 命令速查",
+      "path": "src/appendix/commands-cheatsheet.md",
+      "score": {
+        "relevance": 3,
+        "technical_depth": 1,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 7
+      },
+      "reason": "总分7<16分"
+    },
+    {
+      "title": "附录 E：术语表（中英对照）",
+      "path": "src/appendix/glossary.md",
+      "score": {
+        "relevance": 4,
+        "technical_depth": 3,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 10
+      },
+      "reason": "总分10<16分"
+    },
+    {
+      "title": "附录 C：Perfetto TraceConfig 模板集",
+      "path": "src/appendix/perfetto-templates.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 5
+      },
+      "reason": "总分5<16分"
+    },
+    {
+      "title": "附录 F：推荐阅读与资源",
+      "path": "src/appendix/recommended-reading.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 5
+      },
+      "reason": "总分5<16分"
+    },
+    {
+      "title": "附录 A：Android 版本性能变更速查表",
+      "path": "src/appendix/version-changelog.md",
+      "score": {
+        "relevance": 3,
+        "technical_depth": 2,
+        "timeliness": 5,
+        "verifiability": 1,
+        "total": 11
+      },
+      "reason": "总分11<16分"
+    },
+    {
+      "title": "系统启动全流程",
+      "path": "src/part1-fundamentals/ch01-architecture/02-boot-process.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 3,
+        "timeliness": 5,
+        "verifiability": 5,
+        "total": 14
+      },
+      "reason": "总分14<16分"
+    },
+    {
+      "title": "进程模型与生命周期管理",
+      "path": "src/part1-fundamentals/ch01-architecture/03-process-model.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 6
+      },
+      "reason": "总分6<16分"
+    },
+    {
+      "title": "Binder IPC 机制与性能影响",
+      "path": "src/part1-fundamentals/ch01-architecture/04-binder.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 3,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 7
+      },
+      "reason": "总分7<16分"
+    },
+    {
+      "title": "线程模型",
+      "path": "src/part1-fundamentals/ch01-architecture/05-threading-model.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 5
+      },
+      "reason": "总分5<16分"
+    },
+    {
+      "title": "Android 版本演进中的架构变化",
+      "path": "src/part1-fundamentals/ch01-architecture/06-version-evolution.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 5,
+        "verifiability": 1,
+        "total": 8
+      },
+      "reason": "总分8<16分"
+    },
+    {
+      "title": "第 1 章：系统架构全景",
+      "path": "src/part1-fundamentals/ch01-architecture/README.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 3,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 7
+      },
+      "reason": "总分7<16分"
+    },
+    {
+      "title": "Android 渲染架构全景",
+      "path": "src/part1-fundamentals/ch02-rendering/01-rendering-overview.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 5,
+        "verifiability": 1,
+        "total": 8
+      },
+      "reason": "总分8<16分"
+    },
+    {
+      "title": "帧率与刷新率",
+      "path": "src/part1-fundamentals/ch02-rendering/02-framerate.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 5
+      },
+      "reason": "总分5<16分"
+    },
+    {
+      "title": "VSync 机制",
+      "path": "src/part1-fundamentals/ch02-rendering/03-vsync.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 5
+      },
+      "reason": "总分5<16分"
+    },
+    {
+      "title": "Choreographer 与渲染流水线",
+      "path": "src/part1-fundamentals/ch02-rendering/04-choreographer.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 3,
+        "timeliness": 5,
+        "verifiability": 5,
+        "total": 14
+      },
+      "reason": "总分14<16分"
+    },
+    {
+      "title": "MainThread 与 RenderThread 协作",
+      "path": "src/part1-fundamentals/ch02-rendering/05-main-render-thread.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 5
+      },
+      "reason": "总分5<16分"
+    },
+    {
+      "title": "SurfaceFlinger 与合成",
+      "path": "src/part1-fundamentals/ch02-rendering/06-surfaceflinger.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 2,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 7
+      },
+      "reason": "总分7<16分"
+    },
+    {
+      "title": "Hardware Layer",
+      "path": "src/part1-fundamentals/ch02-rendering/07-hardware-layer.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 5
+      },
+      "reason": "总分5<16分"
+    },
+    {
+      "title": "过度绘制",
+      "path": "src/part1-fundamentals/ch02-rendering/08-overdraw.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 5
+      },
+      "reason": "总分5<16分"
+    },
+    {
+      "title": "渲染机制的版本演进",
+      "path": "src/part1-fundamentals/ch02-rendering/09-rendering-evolution.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 5,
+        "verifiability": 1,
+        "total": 8
+      },
+      "reason": "总分8<16分"
+    },
+    {
+      "title": "GPU 渲染深入",
+      "path": "src/part1-fundamentals/ch02-rendering/10-gpu-rendering.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 5
+      },
+      "reason": "总分5<16分"
+    },
+    {
+      "title": "第 2 章：渲染系统",
+      "path": "src/part1-fundamentals/ch02-rendering/README.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 2,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 6
+      },
+      "reason": "总分6<16分"
+    },
+    {
+      "title": "Input 事件分发全流程",
+      "path": "src/part1-fundamentals/ch03-input/01-input-dispatch.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 5
+      },
+      "reason": "总分5<16分"
+    },
+    {
+      "title": "触摸响应的性能分析",
+      "path": "src/part1-fundamentals/ch03-input/02-touch-performance.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 3,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 7
+      },
+      "reason": "总分7<16分"
+    },
+    {
+      "title": "手势导航与系统交互",
+      "path": "src/part1-fundamentals/ch03-input/03-gesture-navigation.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 6
+      },
+      "reason": "总分6<16分"
+    },
+    {
+      "title": "第 3 章：输入系统",
+      "path": "src/part1-fundamentals/ch03-input/README.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 3,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 7
+      },
+      "reason": "总分7<16分"
+    },
+    {
+      "title": "Android 内存模型全景",
+      "path": "src/part1-fundamentals/ch04-memory/01-memory-overview.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 5
+      },
+      "reason": "总分5<16分"
+    },
+    {
+      "title": "Linux 内核内存管理",
+      "path": "src/part1-fundamentals/ch04-memory/02-linux-memory.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 4,
+        "verifiability": 1,
+        "total": 7
+      },
+      "reason": "总分7<16分"
+    },
+    {
+      "title": "ART 虚拟机内存管理",
+      "path": "src/part1-fundamentals/ch04-memory/03-art-memory.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 5,
+        "verifiability": 1,
+        "total": 8
+      },
+      "reason": "总分8<16分"
+    },
+    {
+      "title": "Low Memory Killer",
+      "path": "src/part1-fundamentals/ch04-memory/04-lmk.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 5,
+        "verifiability": 1,
+        "total": 8
+      },
+      "reason": "总分8<16分"
+    },
+    {
+      "title": "App 内存优化",
+      "path": "src/part1-fundamentals/ch04-memory/05-app-memory-optimization.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 2,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 6
+      },
+      "reason": "总分6<16分"
+    },
+    {
+      "title": "内存相关的版本演进",
+      "path": "src/part1-fundamentals/ch04-memory/06-memory-evolution.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 4,
+        "verifiability": 1,
+        "total": 7
+      },
+      "reason": "总分7<16分"
+    },
+    {
+      "title": "第 4 章：内存管理",
+      "path": "src/part1-fundamentals/ch04-memory/README.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 2,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 6
+      },
+      "reason": "总分6<16分"
+    },
+    {
+      "title": "Linux 进程调度基础",
+      "path": "src/part1-fundamentals/ch05-cpu-power/01-linux-scheduling.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 5
+      },
+      "reason": "总分5<16分"
+    },
+    {
+      "title": "EAS 能量感知调度",
+      "path": "src/part1-fundamentals/ch05-cpu-power/02-eas.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 5
+      },
+      "reason": "总分5<16分"
+    },
+    {
+      "title": "大小核架构",
+      "path": "src/part1-fundamentals/ch05-cpu-power/03-big-little.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 2,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 6
+      },
+      "reason": "总分6<16分"
+    },
+    {
+      "title": "DVFS 与功耗管理",
+      "path": "src/part1-fundamentals/ch05-cpu-power/04-dvfs.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 5
+      },
+      "reason": "总分5<16分"
+    },
+    {
+      "title": "Thermal 管控",
+      "path": "src/part1-fundamentals/ch05-cpu-power/05-thermal.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 5
+      },
+      "reason": "总分5<16分"
+    },
+    {
+      "title": "Android 功耗管理",
+      "path": "src/part1-fundamentals/ch05-cpu-power/06-android-power.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 5
+      },
+      "reason": "总分5<16分"
+    },
+    {
+      "title": "CPU 相关的版本演进",
+      "path": "src/part1-fundamentals/ch05-cpu-power/07-cpu-evolution.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 5,
+        "verifiability": 1,
+        "total": 8
+      },
+      "reason": "总分8<16分"
+    },
+    {
+      "title": "第 5 章：CPU 调度与能耗管理",
+      "path": "src/part1-fundamentals/ch05-cpu-power/README.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 2,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 6
+      },
+      "reason": "总分6<16分"
+    },
+    {
+      "title": "Android 存储架构",
+      "path": "src/part1-fundamentals/ch06-storage/01-storage-architecture.md",
+      "score": {
+        "relevance": 3,
+        "technical_depth": 1,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 7
+      },
+      "reason": "总分7<16分"
+    },
+    {
+      "title": "文件系统",
+      "path": "src/part1-fundamentals/ch06-storage/02-filesystem.md",
+      "score": {
+        "relevance": 3,
+        "technical_depth": 1,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 7
+      },
+      "reason": "总分7<16分"
+    },
+    {
+      "title": "I/O 调度与性能",
+      "path": "src/part1-fundamentals/ch06-storage/03-io-scheduling.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 2,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 6
+      },
+      "reason": "总分6<16分"
+    },
+    {
+      "title": "存储相关的版本演进",
+      "path": "src/part1-fundamentals/ch06-storage/04-storage-evolution.md",
+      "score": {
+        "relevance": 3,
+        "technical_depth": 1,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 8
+      },
+      "reason": "总分8<16分"
+    },
+    {
+      "title": "第 6 章：存储与 I/O",
+      "path": "src/part1-fundamentals/ch06-storage/README.md",
+      "score": {
+        "relevance": 3,
+        "technical_depth": 2,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 8
+      },
+      "reason": "总分8<16分"
+    },
+    {
+      "title": "目录",
+      "path": "src/SUMMARY.md",
+      "score": {
+        "relevance": 3,
+        "technical_depth": 4,
+        "timeliness": 2,
+        "verifiability": 5,
+        "total": 14
+      },
+      "reason": "总分14<16分"
+    },
+    {
+      "title": "附录 D：性能分析 Checklist",
+      "path": "src/appendix/analysis-checklist.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 3,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 7
+      },
+      "reason": "总分7<16分"
+    },
+    {
+      "title": "附录 B：常用 adb / dumpsys 命令速查",
+      "path": "src/appendix/commands-cheatsheet.md",
+      "score": {
+        "relevance": 3,
+        "technical_depth": 1,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 7
+      },
+      "reason": "总分7<16分"
+    },
+    {
+      "title": "附录 E：术语表（中英对照）",
+      "path": "src/appendix/glossary.md",
+      "score": {
+        "relevance": 4,
+        "technical_depth": 3,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 10
+      },
+      "reason": "总分10<16分"
+    },
+    {
+      "title": "附录 C：Perfetto TraceConfig 模板集",
+      "path": "src/appendix/perfetto-templates.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 5
+      },
+      "reason": "总分5<16分"
+    },
+    {
+      "title": "附录 F：推荐阅读与资源",
+      "path": "src/appendix/recommended-reading.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 5
+      },
+      "reason": "总分5<16分"
+    },
+    {
+      "title": "附录 A：Android 版本性能变更速查表",
+      "path": "src/appendix/version-changelog.md",
+      "score": {
+        "relevance": 3,
+        "technical_depth": 2,
+        "timeliness": 5,
+        "verifiability": 1,
+        "total": 11
+      },
+      "reason": "总分11<16分"
+    },
+    {
+      "title": "系统启动全流程",
+      "path": "src/part1-fundamentals/ch01-architecture/02-boot-process.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 3,
+        "timeliness": 5,
+        "verifiability": 5,
+        "total": 14
+      },
+      "reason": "总分14<16分"
+    },
+    {
+      "title": "进程模型与生命周期管理",
+      "path": "src/part1-fundamentals/ch01-architecture/03-process-model.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 6
+      },
+      "reason": "总分6<16分"
+    },
+    {
+      "title": "Binder IPC 机制与性能影响",
+      "path": "src/part1-fundamentals/ch01-architecture/04-binder.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 3,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 7
+      },
+      "reason": "总分7<16分"
+    },
+    {
+      "title": "线程模型",
+      "path": "src/part1-fundamentals/ch01-architecture/05-threading-model.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 5
+      },
+      "reason": "总分5<16分"
+    },
+    {
+      "title": "Android 版本演进中的架构变化",
+      "path": "src/part1-fundamentals/ch01-architecture/06-version-evolution.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 5,
+        "verifiability": 1,
+        "total": 8
+      },
+      "reason": "总分8<16分"
+    },
+    {
+      "title": "第 1 章：系统架构全景",
+      "path": "src/part1-fundamentals/ch01-architecture/README.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 3,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 7
+      },
+      "reason": "总分7<16分"
+    },
+    {
+      "title": "Android 渲染架构全景",
+      "path": "src/part1-fundamentals/ch02-rendering/01-rendering-overview.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 5,
+        "verifiability": 1,
+        "total": 8
+      },
+      "reason": "总分8<16分"
+    },
+    {
+      "title": "帧率与刷新率",
+      "path": "src/part1-fundamentals/ch02-rendering/02-framerate.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 5
+      },
+      "reason": "总分5<16分"
+    },
+    {
+      "title": "VSync 机制",
+      "path": "src/part1-fundamentals/ch02-rendering/03-vsync.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 5
+      },
+      "reason": "总分5<16分"
+    },
+    {
+      "title": "Choreographer 与渲染流水线",
+      "path": "src/part1-fundamentals/ch02-rendering/04-choreographer.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 3,
+        "timeliness": 5,
+        "verifiability": 5,
+        "total": 14
+      },
+      "reason": "总分14<16分"
+    },
+    {
+      "title": "MainThread 与 RenderThread 协作",
+      "path": "src/part1-fundamentals/ch02-rendering/05-main-render-thread.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 5
+      },
+      "reason": "总分5<16分"
+    },
+    {
+      "title": "SurfaceFlinger 与合成",
+      "path": "src/part1-fundamentals/ch02-rendering/06-surfaceflinger.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 2,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 7
+      },
+      "reason": "总分7<16分"
+    },
+    {
+      "title": "Hardware Layer",
+      "path": "src/part1-fundamentals/ch02-rendering/07-hardware-layer.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 5
+      },
+      "reason": "总分5<16分"
+    },
+    {
+      "title": "过度绘制",
+      "path": "src/part1-fundamentals/ch02-rendering/08-overdraw.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 5
+      },
+      "reason": "总分5<16分"
+    },
+    {
+      "title": "渲染机制的版本演进",
+      "path": "src/part1-fundamentals/ch02-rendering/09-rendering-evolution.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 5,
+        "verifiability": 1,
+        "total": 8
+      },
+      "reason": "总分8<16分"
+    },
+    {
+      "title": "GPU 渲染深入",
+      "path": "src/part1-fundamentals/ch02-rendering/10-gpu-rendering.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 5
+      },
+      "reason": "总分5<16分"
+    },
+    {
+      "title": "第 2 章：渲染系统",
+      "path": "src/part1-fundamentals/ch02-rendering/README.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 2,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 6
+      },
+      "reason": "总分6<16分"
+    },
+    {
+      "title": "Input 事件分发全流程",
+      "path": "src/part1-fundamentals/ch03-input/01-input-dispatch.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 5
+      },
+      "reason": "总分5<16分"
+    },
+    {
+      "title": "触摸响应的性能分析",
+      "path": "src/part1-fundamentals/ch03-input/02-touch-performance.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 3,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 7
+      },
+      "reason": "总分7<16分"
+    },
+    {
+      "title": "手势导航与系统交互",
+      "path": "src/part1-fundamentals/ch03-input/03-gesture-navigation.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 6
+      },
+      "reason": "总分6<16分"
+    },
+    {
+      "title": "第 3 章：输入系统",
+      "path": "src/part1-fundamentals/ch03-input/README.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 3,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 7
+      },
+      "reason": "总分7<16分"
+    },
+    {
+      "title": "Android 内存模型全景",
+      "path": "src/part1-fundamentals/ch04-memory/01-memory-overview.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 5
+      },
+      "reason": "总分5<16分"
+    },
+    {
+      "title": "Linux 内核内存管理",
+      "path": "src/part1-fundamentals/ch04-memory/02-linux-memory.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 4,
+        "verifiability": 1,
+        "total": 7
+      },
+      "reason": "总分7<16分"
+    },
+    {
+      "title": "ART 虚拟机内存管理",
+      "path": "src/part1-fundamentals/ch04-memory/03-art-memory.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 5,
+        "verifiability": 1,
+        "total": 8
+      },
+      "reason": "总分8<16分"
+    },
+    {
+      "title": "Low Memory Killer",
+      "path": "src/part1-fundamentals/ch04-memory/04-lmk.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 5,
+        "verifiability": 1,
+        "total": 8
+      },
+      "reason": "总分8<16分"
+    },
+    {
+      "title": "App 内存优化",
+      "path": "src/part1-fundamentals/ch04-memory/05-app-memory-optimization.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 2,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 6
+      },
+      "reason": "总分6<16分"
+    },
+    {
+      "title": "内存相关的版本演进",
+      "path": "src/part1-fundamentals/ch04-memory/06-memory-evolution.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 4,
+        "verifiability": 1,
+        "total": 7
+      },
+      "reason": "总分7<16分"
+    },
+    {
+      "title": "第 4 章：内存管理",
+      "path": "src/part1-fundamentals/ch04-memory/README.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 2,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 6
+      },
+      "reason": "总分6<16分"
+    },
+    {
+      "title": "Linux 进程调度基础",
+      "path": "src/part1-fundamentals/ch05-cpu-power/01-linux-scheduling.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 5
+      },
+      "reason": "总分5<16分"
+    },
+    {
+      "title": "EAS 能量感知调度",
+      "path": "src/part1-fundamentals/ch05-cpu-power/02-eas.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 5
+      },
+      "reason": "总分5<16分"
+    },
+    {
+      "title": "大小核架构",
+      "path": "src/part1-fundamentals/ch05-cpu-power/03-big-little.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 2,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 6
+      },
+      "reason": "总分6<16分"
+    },
+    {
+      "title": "DVFS 与功耗管理",
+      "path": "src/part1-fundamentals/ch05-cpu-power/04-dvfs.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 5
+      },
+      "reason": "总分5<16分"
+    },
+    {
+      "title": "Thermal 管控",
+      "path": "src/part1-fundamentals/ch05-cpu-power/05-thermal.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 5
+      },
+      "reason": "总分5<16分"
+    },
+    {
+      "title": "Android 功耗管理",
+      "path": "src/part1-fundamentals/ch05-cpu-power/06-android-power.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 5
+      },
+      "reason": "总分5<16分"
+    },
+    {
+      "title": "CPU 相关的版本演进",
+      "path": "src/part1-fundamentals/ch05-cpu-power/07-cpu-evolution.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 5,
+        "verifiability": 1,
+        "total": 8
+      },
+      "reason": "总分8<16分"
+    },
+    {
+      "title": "第 5 章：CPU 调度与能耗管理",
+      "path": "src/part1-fundamentals/ch05-cpu-power/README.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 2,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 6
+      },
+      "reason": "总分6<16分"
+    },
+    {
+      "title": "Android 存储架构",
+      "path": "src/part1-fundamentals/ch06-storage/01-storage-architecture.md",
+      "score": {
+        "relevance": 3,
+        "technical_depth": 1,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 7
+      },
+      "reason": "总分7<16分"
+    },
+    {
+      "title": "文件系统",
+      "path": "src/part1-fundamentals/ch06-storage/02-filesystem.md",
+      "score": {
+        "relevance": 3,
+        "technical_depth": 1,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 7
+      },
+      "reason": "总分7<16分"
+    },
+    {
+      "title": "I/O 调度与性能",
+      "path": "src/part1-fundamentals/ch06-storage/03-io-scheduling.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 2,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 6
+      },
+      "reason": "总分6<16分"
+    },
+    {
+      "title": "存储相关的版本演进",
+      "path": "src/part1-fundamentals/ch06-storage/04-storage-evolution.md",
+      "score": {
+        "relevance": 3,
+        "technical_depth": 1,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 8
+      },
+      "reason": "总分8<16分"
+    },
+    {
+      "title": "第 6 章：存储与 I/O",
+      "path": "src/part1-fundamentals/ch06-storage/README.md",
+      "score": {
+        "relevance": 3,
+        "technical_depth": 2,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 8
+      },
+      "reason": "总分8<16分"
+    },
+    {
+      "title": "目录",
+      "path": "src/SUMMARY.md",
+      "score": {
+        "relevance": 3,
+        "technical_depth": 4,
+        "timeliness": 2,
+        "verifiability": 5,
+        "total": 14
+      },
+      "reason": "总分14<16分"
+    },
+    {
+      "title": "附录 D：性能分析 Checklist",
+      "path": "src/appendix/analysis-checklist.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 3,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 7
+      },
+      "reason": "总分7<16分"
+    },
+    {
+      "title": "附录 B：常用 adb / dumpsys 命令速查",
+      "path": "src/appendix/commands-cheatsheet.md",
+      "score": {
+        "relevance": 3,
+        "technical_depth": 1,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 7
+      },
+      "reason": "总分7<16分"
+    },
+    {
+      "title": "附录 E：术语表（中英对照）",
+      "path": "src/appendix/glossary.md",
+      "score": {
+        "relevance": 4,
+        "technical_depth": 3,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 10
+      },
+      "reason": "总分10<16分"
+    },
+    {
+      "title": "附录 C：Perfetto TraceConfig 模板集",
+      "path": "src/appendix/perfetto-templates.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 5
+      },
+      "reason": "总分5<16分"
+    },
+    {
+      "title": "附录 F：推荐阅读与资源",
+      "path": "src/appendix/recommended-reading.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 5
+      },
+      "reason": "总分5<16分"
+    },
+    {
+      "title": "附录 A：Android 版本性能变更速查表",
+      "path": "src/appendix/version-changelog.md",
+      "score": {
+        "relevance": 3,
+        "technical_depth": 2,
+        "timeliness": 5,
+        "verifiability": 1,
+        "total": 11
+      },
+      "reason": "总分11<16分"
+    },
+    {
+      "title": "系统启动全流程",
+      "path": "src/part1-fundamentals/ch01-architecture/02-boot-process.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 3,
+        "timeliness": 5,
+        "verifiability": 5,
+        "total": 14
+      },
+      "reason": "总分14<16分"
+    },
+    {
+      "title": "进程模型与生命周期管理",
+      "path": "src/part1-fundamentals/ch01-architecture/03-process-model.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 6
+      },
+      "reason": "总分6<16分"
+    },
+    {
+      "title": "Binder IPC 机制与性能影响",
+      "path": "src/part1-fundamentals/ch01-architecture/04-binder.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 3,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 7
+      },
+      "reason": "总分7<16分"
+    },
+    {
+      "title": "线程模型",
+      "path": "src/part1-fundamentals/ch01-architecture/05-threading-model.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 5
+      },
+      "reason": "总分5<16分"
+    },
+    {
+      "title": "Android 版本演进中的架构变化",
+      "path": "src/part1-fundamentals/ch01-architecture/06-version-evolution.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 5,
+        "verifiability": 1,
+        "total": 8
+      },
+      "reason": "总分8<16分"
+    },
+    {
+      "title": "第 1 章：系统架构全景",
+      "path": "src/part1-fundamentals/ch01-architecture/README.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 3,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 7
+      },
+      "reason": "总分7<16分"
+    },
+    {
+      "title": "Android 渲染架构全景",
+      "path": "src/part1-fundamentals/ch02-rendering/01-rendering-overview.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 5,
+        "verifiability": 1,
+        "total": 8
+      },
+      "reason": "总分8<16分"
+    },
+    {
+      "title": "帧率与刷新率",
+      "path": "src/part1-fundamentals/ch02-rendering/02-framerate.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 5
+      },
+      "reason": "总分5<16分"
+    },
+    {
+      "title": "VSync 机制",
+      "path": "src/part1-fundamentals/ch02-rendering/03-vsync.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 5
+      },
+      "reason": "总分5<16分"
+    },
+    {
+      "title": "Choreographer 与渲染流水线",
+      "path": "src/part1-fundamentals/ch02-rendering/04-choreographer.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 3,
+        "timeliness": 5,
+        "verifiability": 5,
+        "total": 14
+      },
+      "reason": "总分14<16分"
+    },
+    {
+      "title": "MainThread 与 RenderThread 协作",
+      "path": "src/part1-fundamentals/ch02-rendering/05-main-render-thread.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 5
+      },
+      "reason": "总分5<16分"
+    },
+    {
+      "title": "SurfaceFlinger 与合成",
+      "path": "src/part1-fundamentals/ch02-rendering/06-surfaceflinger.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 2,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 7
+      },
+      "reason": "总分7<16分"
+    },
+    {
+      "title": "Hardware Layer",
+      "path": "src/part1-fundamentals/ch02-rendering/07-hardware-layer.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 5
+      },
+      "reason": "总分5<16分"
+    },
+    {
+      "title": "过度绘制",
+      "path": "src/part1-fundamentals/ch02-rendering/08-overdraw.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 5
+      },
+      "reason": "总分5<16分"
+    },
+    {
+      "title": "渲染机制的版本演进",
+      "path": "src/part1-fundamentals/ch02-rendering/09-rendering-evolution.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 5,
+        "verifiability": 1,
+        "total": 8
+      },
+      "reason": "总分8<16分"
+    },
+    {
+      "title": "GPU 渲染深入",
+      "path": "src/part1-fundamentals/ch02-rendering/10-gpu-rendering.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 5
+      },
+      "reason": "总分5<16分"
+    },
+    {
+      "title": "第 2 章：渲染系统",
+      "path": "src/part1-fundamentals/ch02-rendering/README.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 2,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 6
+      },
+      "reason": "总分6<16分"
+    },
+    {
+      "title": "Input 事件分发全流程",
+      "path": "src/part1-fundamentals/ch03-input/01-input-dispatch.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 5
+      },
+      "reason": "总分5<16分"
+    },
+    {
+      "title": "触摸响应的性能分析",
+      "path": "src/part1-fundamentals/ch03-input/02-touch-performance.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 3,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 7
+      },
+      "reason": "总分7<16分"
+    },
+    {
+      "title": "手势导航与系统交互",
+      "path": "src/part1-fundamentals/ch03-input/03-gesture-navigation.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 6
+      },
+      "reason": "总分6<16分"
+    },
+    {
+      "title": "第 3 章：输入系统",
+      "path": "src/part1-fundamentals/ch03-input/README.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 3,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 7
+      },
+      "reason": "总分7<16分"
+    },
+    {
+      "title": "Android 内存模型全景",
+      "path": "src/part1-fundamentals/ch04-memory/01-memory-overview.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 5
+      },
+      "reason": "总分5<16分"
+    },
+    {
+      "title": "Linux 内核内存管理",
+      "path": "src/part1-fundamentals/ch04-memory/02-linux-memory.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 4,
+        "verifiability": 1,
+        "total": 7
+      },
+      "reason": "总分7<16分"
+    },
+    {
+      "title": "ART 虚拟机内存管理",
+      "path": "src/part1-fundamentals/ch04-memory/03-art-memory.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 5,
+        "verifiability": 1,
+        "total": 8
+      },
+      "reason": "总分8<16分"
+    },
+    {
+      "title": "Low Memory Killer",
+      "path": "src/part1-fundamentals/ch04-memory/04-lmk.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 5,
+        "verifiability": 1,
+        "total": 8
+      },
+      "reason": "总分8<16分"
+    },
+    {
+      "title": "App 内存优化",
+      "path": "src/part1-fundamentals/ch04-memory/05-app-memory-optimization.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 2,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 6
+      },
+      "reason": "总分6<16分"
+    },
+    {
+      "title": "内存相关的版本演进",
+      "path": "src/part1-fundamentals/ch04-memory/06-memory-evolution.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 4,
+        "verifiability": 1,
+        "total": 7
+      },
+      "reason": "总分7<16分"
+    },
+    {
+      "title": "第 4 章：内存管理",
+      "path": "src/part1-fundamentals/ch04-memory/README.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 2,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 6
+      },
+      "reason": "总分6<16分"
+    },
+    {
+      "title": "Linux 进程调度基础",
+      "path": "src/part1-fundamentals/ch05-cpu-power/01-linux-scheduling.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 5
+      },
+      "reason": "总分5<16分"
+    },
+    {
+      "title": "EAS 能量感知调度",
+      "path": "src/part1-fundamentals/ch05-cpu-power/02-eas.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 5
+      },
+      "reason": "总分5<16分"
+    },
+    {
+      "title": "大小核架构",
+      "path": "src/part1-fundamentals/ch05-cpu-power/03-big-little.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 2,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 6
+      },
+      "reason": "总分6<16分"
+    },
+    {
+      "title": "DVFS 与功耗管理",
+      "path": "src/part1-fundamentals/ch05-cpu-power/04-dvfs.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 5
+      },
+      "reason": "总分5<16分"
+    },
+    {
+      "title": "Thermal 管控",
+      "path": "src/part1-fundamentals/ch05-cpu-power/05-thermal.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 5
+      },
+      "reason": "总分5<16分"
+    },
+    {
+      "title": "Android 功耗管理",
+      "path": "src/part1-fundamentals/ch05-cpu-power/06-android-power.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 5
+      },
+      "reason": "总分5<16分"
+    },
+    {
+      "title": "CPU 相关的版本演进",
+      "path": "src/part1-fundamentals/ch05-cpu-power/07-cpu-evolution.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 5,
+        "verifiability": 1,
+        "total": 8
+      },
+      "reason": "总分8<16分"
+    },
+    {
+      "title": "第 5 章：CPU 调度与能耗管理",
+      "path": "src/part1-fundamentals/ch05-cpu-power/README.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 2,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 6
+      },
+      "reason": "总分6<16分"
+    },
+    {
+      "title": "Android 存储架构",
+      "path": "src/part1-fundamentals/ch06-storage/01-storage-architecture.md",
+      "score": {
+        "relevance": 3,
+        "technical_depth": 1,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 7
+      },
+      "reason": "总分7<16分"
+    },
+    {
+      "title": "文件系统",
+      "path": "src/part1-fundamentals/ch06-storage/02-filesystem.md",
+      "score": {
+        "relevance": 3,
+        "technical_depth": 1,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 7
+      },
+      "reason": "总分7<16分"
+    },
+    {
+      "title": "I/O 调度与性能",
+      "path": "src/part1-fundamentals/ch06-storage/03-io-scheduling.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 2,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 6
+      },
+      "reason": "总分6<16分"
+    },
+    {
+      "title": "存储相关的版本演进",
+      "path": "src/part1-fundamentals/ch06-storage/04-storage-evolution.md",
+      "score": {
+        "relevance": 3,
+        "technical_depth": 1,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 8
+      },
+      "reason": "总分8<16分"
+    },
+    {
+      "title": "第 6 章：存储与 I/O",
+      "path": "src/part1-fundamentals/ch06-storage/README.md",
+      "score": {
+        "relevance": 3,
+        "technical_depth": 2,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 8
+      },
+      "reason": "总分8<16分"
+    },
+    {
+      "title": "目录",
+      "path": "src/SUMMARY.md",
+      "score": {
+        "relevance": 3,
+        "technical_depth": 4,
+        "timeliness": 2,
+        "verifiability": 5,
+        "total": 14
+      },
+      "reason": "总分14<16分"
+    },
+    {
+      "title": "附录 D：性能分析 Checklist",
+      "path": "src/appendix/analysis-checklist.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 3,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 7
+      },
+      "reason": "总分7<16分"
+    },
+    {
+      "title": "附录 B：常用 adb / dumpsys 命令速查",
+      "path": "src/appendix/commands-cheatsheet.md",
+      "score": {
+        "relevance": 3,
+        "technical_depth": 1,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 7
+      },
+      "reason": "总分7<16分"
+    },
+    {
+      "title": "附录 E：术语表（中英对照）",
+      "path": "src/appendix/glossary.md",
+      "score": {
+        "relevance": 4,
+        "technical_depth": 3,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 10
+      },
+      "reason": "总分10<16分"
+    },
+    {
+      "title": "附录 C：Perfetto TraceConfig 模板集",
+      "path": "src/appendix/perfetto-templates.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 5
+      },
+      "reason": "总分5<16分"
+    },
+    {
+      "title": "附录 F：推荐阅读与资源",
+      "path": "src/appendix/recommended-reading.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 5
+      },
+      "reason": "总分5<16分"
+    },
+    {
+      "title": "附录 A：Android 版本性能变更速查表",
+      "path": "src/appendix/version-changelog.md",
+      "score": {
+        "relevance": 3,
+        "technical_depth": 2,
+        "timeliness": 5,
+        "verifiability": 1,
+        "total": 11
+      },
+      "reason": "总分11<16分"
+    },
+    {
+      "title": "系统启动全流程",
+      "path": "src/part1-fundamentals/ch01-architecture/02-boot-process.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 3,
+        "timeliness": 5,
+        "verifiability": 5,
+        "total": 14
+      },
+      "reason": "总分14<16分"
+    },
+    {
+      "title": "进程模型与生命周期管理",
+      "path": "src/part1-fundamentals/ch01-architecture/03-process-model.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 6
+      },
+      "reason": "总分6<16分"
+    },
+    {
+      "title": "Binder IPC 机制与性能影响",
+      "path": "src/part1-fundamentals/ch01-architecture/04-binder.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 3,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 7
+      },
+      "reason": "总分7<16分"
+    },
+    {
+      "title": "线程模型",
+      "path": "src/part1-fundamentals/ch01-architecture/05-threading-model.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 5
+      },
+      "reason": "总分5<16分"
+    },
+    {
+      "title": "Android 版本演进中的架构变化",
+      "path": "src/part1-fundamentals/ch01-architecture/06-version-evolution.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 5,
+        "verifiability": 1,
+        "total": 8
+      },
+      "reason": "总分8<16分"
+    },
+    {
+      "title": "第 1 章：系统架构全景",
+      "path": "src/part1-fundamentals/ch01-architecture/README.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 3,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 7
+      },
+      "reason": "总分7<16分"
+    },
+    {
+      "title": "Android 渲染架构全景",
+      "path": "src/part1-fundamentals/ch02-rendering/01-rendering-overview.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 5,
+        "verifiability": 1,
+        "total": 8
+      },
+      "reason": "总分8<16分"
+    },
+    {
+      "title": "帧率与刷新率",
+      "path": "src/part1-fundamentals/ch02-rendering/02-framerate.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 5
+      },
+      "reason": "总分5<16分"
+    },
+    {
+      "title": "VSync 机制",
+      "path": "src/part1-fundamentals/ch02-rendering/03-vsync.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 5
+      },
+      "reason": "总分5<16分"
+    },
+    {
+      "title": "Choreographer 与渲染流水线",
+      "path": "src/part1-fundamentals/ch02-rendering/04-choreographer.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 3,
+        "timeliness": 5,
+        "verifiability": 5,
+        "total": 14
+      },
+      "reason": "总分14<16分"
+    },
+    {
+      "title": "MainThread 与 RenderThread 协作",
+      "path": "src/part1-fundamentals/ch02-rendering/05-main-render-thread.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 5
+      },
+      "reason": "总分5<16分"
+    },
+    {
+      "title": "SurfaceFlinger 与合成",
+      "path": "src/part1-fundamentals/ch02-rendering/06-surfaceflinger.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 2,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 7
+      },
+      "reason": "总分7<16分"
+    },
+    {
+      "title": "Hardware Layer",
+      "path": "src/part1-fundamentals/ch02-rendering/07-hardware-layer.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 5
+      },
+      "reason": "总分5<16分"
+    },
+    {
+      "title": "过度绘制",
+      "path": "src/part1-fundamentals/ch02-rendering/08-overdraw.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 5
+      },
+      "reason": "总分5<16分"
+    },
+    {
+      "title": "渲染机制的版本演进",
+      "path": "src/part1-fundamentals/ch02-rendering/09-rendering-evolution.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 5,
+        "verifiability": 1,
+        "total": 8
+      },
+      "reason": "总分8<16分"
+    },
+    {
+      "title": "GPU 渲染深入",
+      "path": "src/part1-fundamentals/ch02-rendering/10-gpu-rendering.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 5
+      },
+      "reason": "总分5<16分"
+    },
+    {
+      "title": "第 2 章：渲染系统",
+      "path": "src/part1-fundamentals/ch02-rendering/README.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 2,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 6
+      },
+      "reason": "总分6<16分"
+    },
+    {
+      "title": "Input 事件分发全流程",
+      "path": "src/part1-fundamentals/ch03-input/01-input-dispatch.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 5
+      },
+      "reason": "总分5<16分"
+    },
+    {
+      "title": "触摸响应的性能分析",
+      "path": "src/part1-fundamentals/ch03-input/02-touch-performance.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 3,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 7
+      },
+      "reason": "总分7<16分"
+    },
+    {
+      "title": "手势导航与系统交互",
+      "path": "src/part1-fundamentals/ch03-input/03-gesture-navigation.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 6
+      },
+      "reason": "总分6<16分"
+    },
+    {
+      "title": "第 3 章：输入系统",
+      "path": "src/part1-fundamentals/ch03-input/README.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 3,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 7
+      },
+      "reason": "总分7<16分"
+    },
+    {
+      "title": "Android 内存模型全景",
+      "path": "src/part1-fundamentals/ch04-memory/01-memory-overview.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 5
+      },
+      "reason": "总分5<16分"
+    },
+    {
+      "title": "Linux 内核内存管理",
+      "path": "src/part1-fundamentals/ch04-memory/02-linux-memory.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 4,
+        "verifiability": 1,
+        "total": 7
+      },
+      "reason": "总分7<16分"
+    },
+    {
+      "title": "ART 虚拟机内存管理",
+      "path": "src/part1-fundamentals/ch04-memory/03-art-memory.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 5,
+        "verifiability": 1,
+        "total": 8
+      },
+      "reason": "总分8<16分"
+    },
+    {
+      "title": "Low Memory Killer",
+      "path": "src/part1-fundamentals/ch04-memory/04-lmk.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 5,
+        "verifiability": 1,
+        "total": 8
+      },
+      "reason": "总分8<16分"
+    },
+    {
+      "title": "App 内存优化",
+      "path": "src/part1-fundamentals/ch04-memory/05-app-memory-optimization.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 2,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 6
+      },
+      "reason": "总分6<16分"
+    },
+    {
+      "title": "内存相关的版本演进",
+      "path": "src/part1-fundamentals/ch04-memory/06-memory-evolution.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 4,
+        "verifiability": 1,
+        "total": 7
+      },
+      "reason": "总分7<16分"
+    },
+    {
+      "title": "第 4 章：内存管理",
+      "path": "src/part1-fundamentals/ch04-memory/README.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 2,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 6
+      },
+      "reason": "总分6<16分"
+    },
+    {
+      "title": "Linux 进程调度基础",
+      "path": "src/part1-fundamentals/ch05-cpu-power/01-linux-scheduling.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 5
+      },
+      "reason": "总分5<16分"
+    },
+    {
+      "title": "EAS 能量感知调度",
+      "path": "src/part1-fundamentals/ch05-cpu-power/02-eas.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 5
+      },
+      "reason": "总分5<16分"
+    },
+    {
+      "title": "大小核架构",
+      "path": "src/part1-fundamentals/ch05-cpu-power/03-big-little.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 2,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 6
+      },
+      "reason": "总分6<16分"
+    },
+    {
+      "title": "DVFS 与功耗管理",
+      "path": "src/part1-fundamentals/ch05-cpu-power/04-dvfs.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 5
+      },
+      "reason": "总分5<16分"
+    },
+    {
+      "title": "Thermal 管控",
+      "path": "src/part1-fundamentals/ch05-cpu-power/05-thermal.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 5
+      },
+      "reason": "总分5<16分"
+    },
+    {
+      "title": "Android 功耗管理",
+      "path": "src/part1-fundamentals/ch05-cpu-power/06-android-power.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 5
+      },
+      "reason": "总分5<16分"
+    },
+    {
+      "title": "CPU 相关的版本演进",
+      "path": "src/part1-fundamentals/ch05-cpu-power/07-cpu-evolution.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 5,
+        "verifiability": 1,
+        "total": 8
+      },
+      "reason": "总分8<16分"
+    },
+    {
+      "title": "第 5 章：CPU 调度与能耗管理",
+      "path": "src/part1-fundamentals/ch05-cpu-power/README.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 2,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 6
+      },
+      "reason": "总分6<16分"
+    },
+    {
+      "title": "Android 存储架构",
+      "path": "src/part1-fundamentals/ch06-storage/01-storage-architecture.md",
+      "score": {
+        "relevance": 3,
+        "technical_depth": 1,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 7
+      },
+      "reason": "总分7<16分"
+    },
+    {
+      "title": "文件系统",
+      "path": "src/part1-fundamentals/ch06-storage/02-filesystem.md",
+      "score": {
+        "relevance": 3,
+        "technical_depth": 1,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 7
+      },
+      "reason": "总分7<16分"
+    },
+    {
+      "title": "I/O 调度与性能",
+      "path": "src/part1-fundamentals/ch06-storage/03-io-scheduling.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 2,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 6
+      },
+      "reason": "总分6<16分"
+    },
+    {
+      "title": "存储相关的版本演进",
+      "path": "src/part1-fundamentals/ch06-storage/04-storage-evolution.md",
+      "score": {
+        "relevance": 3,
+        "technical_depth": 1,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 8
+      },
+      "reason": "总分8<16分"
+    },
+    {
+      "title": "第 6 章：存储与 I/O",
+      "path": "src/part1-fundamentals/ch06-storage/README.md",
+      "score": {
+        "relevance": 3,
+        "technical_depth": 2,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 8
+      },
+      "reason": "总分8<16分"
+    },
+    {
+      "title": "\"卡顿的定义与分类\"",
+      "path": "src/part2-performance/ch07-smoothness/01-jank-definition.md",
+      "score": {
+        "relevance": 0,
+        "technical_depth": 3,
+        "timeliness": 3,
+        "verifiability": 3,
+        "total": 9,
+        "chapters": []
+      },
+      "reason": "总分9<16分"
+    },
+    {
+      "title": "\"卡顿原因体系\"",
+      "path": "src/part2-performance/ch07-smoothness/02-jank-causes.md",
+      "score": {
+        "relevance": 0,
+        "technical_depth": 3,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 7,
+        "chapters": []
+      },
+      "reason": "总分7<16分"
+    },
+    {
+      "title": "\"卡顿分析方法论\"",
+      "path": "src/part2-performance/ch07-smoothness/03-jank-methodology.md",
+      "score": {
+        "relevance": 0,
+        "technical_depth": 4,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 8,
+        "chapters": []
+      },
+      "reason": "总分8<16分"
+    },
+    {
+      "title": "\"典型场景分析\"",
+      "path": "src/part2-performance/ch07-smoothness/04-typical-scenarios.md",
+      "score": {
+        "relevance": 0,
+        "technical_depth": 3,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 7,
+        "chapters": []
+      },
+      "reason": "总分7<16分"
+    },
+    {
+      "title": "\"优化策略\"",
+      "path": "src/part2-performance/ch07-smoothness/05-optimization.md",
+      "score": {
+        "relevance": 2,
+        "technical_depth": 3,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 9,
+        "chapters": [
+          "ch05-渲染"
+        ]
+      },
+      "reason": "总分9<16分"
+    },
+    {
+      "title": "\"案例集\"",
+      "path": "src/part2-performance/ch07-smoothness/06-case-studies.md",
+      "score": {
+        "relevance": 0,
+        "technical_depth": 3,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 7,
+        "chapters": []
+      },
+      "reason": "总分7<16分"
+    },
+    {
+      "title": "\"Jetpack Compose 性能优化\"",
+      "path": "src/part2-performance/ch07-smoothness/07-compose-performance.md",
+      "score": {
+        "relevance": 0,
+        "technical_depth": 3,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 7,
+        "chapters": []
+      },
+      "reason": "总分7<16分"
+    },
+    {
+      "title": "第 7 章：流畅性",
+      "path": "src/part2-performance/ch07-smoothness/README.md",
+      "score": {
+        "relevance": 0,
+        "technical_depth": 1,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 5,
+        "chapters": []
+      },
+      "reason": "总分5<16分"
+    },
+    {
+      "title": "\"响应速度原理\"",
+      "path": "src/part2-performance/ch08-responsiveness/01-responsiveness-principles.md",
+      "score": {
+        "relevance": 0,
+        "technical_depth": 3,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 7,
+        "chapters": []
+      },
+      "reason": "总分7<16分"
+    },
+    {
+      "title": "\"App 启动全流程\"",
+      "path": "src/part2-performance/ch08-responsiveness/02-app-launch.md",
+      "score": {
+        "relevance": 2,
+        "technical_depth": 3,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 9,
+        "chapters": [
+          "ch04-启动"
+        ]
+      },
+      "reason": "总分9<16分"
+    },
+    {
+      "title": "\"启动优化策略\"",
+      "path": "src/part2-performance/ch08-responsiveness/03-launch-optimization.md",
+      "score": {
+        "relevance": 0,
+        "technical_depth": 3,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 7,
+        "chapters": []
+      },
+      "reason": "总分7<16分"
+    },
+    {
+      "title": "\"其他响应速度场景\"",
+      "path": "src/part2-performance/ch08-responsiveness/04-other-scenarios.md",
+      "score": {
+        "relevance": 0,
+        "technical_depth": 3,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 7,
+        "chapters": []
+      },
+      "reason": "总分7<16分"
+    },
+    {
+      "title": "\"案例集\"",
+      "path": "src/part2-performance/ch08-responsiveness/05-case-studies.md",
+      "score": {
+        "relevance": 2,
+        "technical_depth": 3,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 9,
+        "chapters": [
+          "ch04-启动"
+        ]
+      },
+      "reason": "总分9<16分"
+    },
+    {
+      "title": "\"Kotlin Coroutine 性能实践\"",
+      "path": "src/part2-performance/ch08-responsiveness/06-coroutine-performance.md",
+      "score": {
+        "relevance": 2,
+        "technical_depth": 3,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 9,
+        "chapters": [
+          "ch03-线程"
+        ]
+      },
+      "reason": "总分9<16分"
+    },
+    {
+      "title": "第 8 章：响应速度",
+      "path": "src/part2-performance/ch08-responsiveness/README.md",
+      "score": {
+        "relevance": 0,
+        "technical_depth": 1,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 5,
+        "chapters": []
+      },
+      "reason": "总分5<16分"
+    },
+    {
+      "title": "\"ANR 设计思想\"",
+      "path": "src/part2-performance/ch09-anr/01-anr-design.md",
+      "score": {
+        "relevance": 0,
+        "technical_depth": 3,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 7,
+        "chapters": []
+      },
+      "reason": "总分7<16分"
+    },
+    {
+      "title": "\"ANR 类型与触发条件\"",
+      "path": "src/part2-performance/ch09-anr/02-anr-types.md",
+      "score": {
+        "relevance": 0,
+        "technical_depth": 3,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 7,
+        "chapters": []
+      },
+      "reason": "总分7<16分"
+    },
+    {
+      "title": "\"ANR 分析方法\"",
+      "path": "src/part2-performance/ch09-anr/03-anr-analysis.md",
+      "score": {
+        "relevance": 0,
+        "technical_depth": 4,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 8,
+        "chapters": []
+      },
+      "reason": "总分8<16分"
+    },
+    {
+      "title": "\"特殊场景的 ANR\"",
+      "path": "src/part2-performance/ch09-anr/04-special-anr.md",
+      "score": {
+        "relevance": 2,
+        "technical_depth": 3,
+        "timeliness": 3,
+        "verifiability": 3,
+        "total": 11,
+        "chapters": [
+          "ch04-启动"
+        ]
+      },
+      "reason": "总分11<16分"
+    },
+    {
+      "title": "\"案例集\"",
+      "path": "src/part2-performance/ch09-anr/05-case-studies.md",
+      "score": {
+        "relevance": 0,
+        "technical_depth": 3,
+        "timeliness": 3,
+        "verifiability": 3,
+        "total": 9,
+        "chapters": []
+      },
+      "reason": "总分9<16分"
+    },
+    {
+      "title": "第 9 章：ANR",
+      "path": "src/part2-performance/ch09-anr/README.md",
+      "score": {
+        "relevance": 0,
+        "technical_depth": 1,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 5,
+        "chapters": []
+      },
+      "reason": "总分5<16分"
+    },
+    {
+      "title": "\"App 内存分析\"",
+      "path": "src/part2-performance/ch10-memory-perf/01-app-memory-analysis.md",
+      "score": {
+        "relevance": 2,
+        "technical_depth": 3,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 9,
+        "chapters": [
+          "ch14-工具"
+        ]
+      },
+      "reason": "总分9<16分"
+    },
+    {
+      "title": "\"内存泄漏\"",
+      "path": "src/part2-performance/ch10-memory-perf/02-memory-leak.md",
+      "score": {
+        "relevance": 2,
+        "technical_depth": 3,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 9,
+        "chapters": [
+          "ch07-内存"
+        ]
+      },
+      "reason": "总分9<16分"
+    },
+    {
+      "title": "\"内存持续增长\"",
+      "path": "src/part2-performance/ch10-memory-perf/03-memory-growth.md",
+      "score": {
+        "relevance": 2,
+        "technical_depth": 3,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 9,
+        "chapters": [
+          "ch07-内存"
+        ]
+      },
+      "reason": "总分9<16分"
+    },
+    {
+      "title": "\"低内存对系统性能的影响\"",
+      "path": "src/part2-performance/ch10-memory-perf/04-low-memory-impact.md",
+      "score": {
+        "relevance": 5,
+        "technical_depth": 3,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 12,
+        "chapters": [
+          "ch02-进程",
+          "ch04-启动",
+          "ch07-内存"
+        ]
+      },
+      "reason": "总分12<16分"
+    },
+    {
+      "title": "\"案例集\"",
+      "path": "src/part2-performance/ch10-memory-perf/05-case-studies.md",
+      "score": {
+        "relevance": 0,
+        "technical_depth": 3,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 7,
+        "chapters": []
+      },
+      "reason": "总分7<16分"
+    },
+    {
+      "title": "\"内存抖动与频繁 GC\"",
+      "path": "src/part2-performance/ch10-memory-perf/06-memory-churn.md",
+      "score": {
+        "relevance": 0,
+        "technical_depth": 3,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 7,
+        "chapters": []
+      },
+      "reason": "总分7<16分"
+    },
+    {
+      "title": "第 10 章：内存性能",
+      "path": "src/part2-performance/ch10-memory-perf/README.md",
+      "score": {
+        "relevance": 2,
+        "technical_depth": 1,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 7,
+        "chapters": [
+          "ch07-内存"
+        ]
+      },
+      "reason": "总分7<16分"
+    },
+    {
+      "title": "\"Android 功耗模型\"",
+      "path": "src/part2-performance/ch11-power/01-power-model.md",
+      "score": {
+        "relevance": 2,
+        "technical_depth": 3,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 9,
+        "chapters": [
+          "ch06-功耗"
+        ]
+      },
+      "reason": "总分9<16分"
+    },
+    {
+      "title": "\"App 耗电优化\"",
+      "path": "src/part2-performance/ch11-power/02-app-power-optimization.md",
+      "score": {
+        "relevance": 2,
+        "technical_depth": 3,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 9,
+        "chapters": [
+          "ch06-功耗"
+        ]
+      },
+      "reason": "总分9<16分"
+    },
+    {
+      "title": "\"系统级功耗优化\"",
+      "path": "src/part2-performance/ch11-power/03-system-power-optimization.md",
+      "score": {
+        "relevance": 0,
+        "technical_depth": 3,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 7,
+        "chapters": []
+      },
+      "reason": "总分7<16分"
+    },
+    {
+      "title": "\"案例集\"",
+      "path": "src/part2-performance/ch11-power/04-case-studies.md",
+      "score": {
+        "relevance": 0,
+        "technical_depth": 3,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 7,
+        "chapters": []
+      },
+      "reason": "总分7<16分"
+    },
+    {
+      "title": "第 11 章：功耗",
+      "path": "src/part2-performance/ch11-power/README.md",
+      "score": {
+        "relevance": 0,
+        "technical_depth": 1,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 5,
+        "chapters": []
+      },
+      "reason": "总分5<16分"
+    },
+    {
+      "title": "\"APK 体积优化\"",
+      "path": "src/part2-performance/ch12-apk-network/01-apk-size.md",
+      "score": {
+        "relevance": 0,
+        "technical_depth": 3,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 7,
+        "chapters": []
+      },
+      "reason": "总分7<16分"
+    },
+    {
+      "title": "\"网络性能优化\"",
+      "path": "src/part2-performance/ch12-apk-network/02-network-performance.md",
+      "score": {
+        "relevance": 0,
+        "technical_depth": 3,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 7,
+        "chapters": []
+      },
+      "reason": "总分7<16分"
+    },
+    {
+      "title": "第 16 章：AOSP 性能优化",
+      "path": "src/part4-system/ch16-aosp/README.md",
+      "score": {
+        "relevance": 0,
+        "technical_depth": 3,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 7,
+        "chapters": []
+      },
+      "reason": "总分7<16分"
+    },
+    {
+      "title": "\"OEM 性能优化的通用思路\"",
+      "path": "src/part4-system/ch17-oem/01-oem-overview.md",
+      "score": {
+        "relevance": 0,
+        "technical_depth": 3,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 7,
+        "chapters": []
+      },
+      "reason": "总分7<16分"
+    },
+    {
+      "title": "\"SoC 平台差异\"",
+      "path": "src/part4-system/ch17-oem/02-soc-differences.md",
+      "score": {
+        "relevance": 0,
+        "technical_depth": 3,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 7,
+        "chapters": []
+      },
+      "reason": "总分7<16分"
+    },
+    {
+      "title": "\"行业案例\"",
+      "path": "src/part4-system/ch17-oem/03-industry-cases.md",
+      "score": {
+        "relevance": 2,
+        "technical_depth": 3,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 9,
+        "chapters": [
+          "ch04-启动"
+        ]
+      },
+      "reason": "总分9<16分"
+    },
+    {
+      "title": "第 17 章：厂商优化实践",
+      "path": "src/part4-system/ch17-oem/README.md",
+      "score": {
+        "relevance": 0,
+        "technical_depth": 1,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 5,
+        "chapters": []
+      },
+      "reason": "总分5<16分"
+    },
+    {
+      "title": "本书的使用方式",
+      "path": "src/preface/how-to-use.md",
+      "score": {
+        "relevance": 0,
+        "technical_depth": 1,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 5,
+        "chapters": []
+      },
+      "reason": "总分5<16分"
+    },
+    {
+      "title": "写在前面",
+      "path": "src/preface/intro.md",
+      "score": {
+        "relevance": 0,
+        "technical_depth": 1,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 5,
+        "chapters": []
+      },
+      "reason": "总分5<16分"
+    },
+    {
+      "title": "阅读路径推荐",
+      "path": "src/preface/reading-paths.md",
+      "score": {
+        "relevance": 0,
+        "technical_depth": 1,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 5,
+        "chapters": []
+      },
+      "reason": "总分5<16分"
+    },
+    {
+      "title": "适用读者",
+      "path": "src/preface/target-audience.md",
+      "score": {
+        "relevance": 0,
+        "technical_depth": 1,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 5,
+        "chapters": []
+      },
+      "reason": "总分5<16分"
+    },
+    {
+      "title": "内容验证标准说明",
+      "path": "src/preface/verification-standards.md",
+      "score": {
+        "relevance": 0,
+        "technical_depth": 3,
+        "timeliness": 3,
+        "verifiability": 3,
+        "total": 9,
+        "chapters": []
+      },
+      "reason": "总分9<16分"
+    },
+    {
+      "title": "版本约定",
+      "path": "src/preface/version-conventions.md",
+      "score": {
+        "relevance": 0,
+        "technical_depth": 1,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 5,
+        "chapters": []
+      },
+      "reason": "总分5<16分"
+    },
+    {
+      "title": "性能优化的术、道、器",
+      "path": "src/part3-tools/ch15-methodology/01-philosophy.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 2,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 6
+      },
+      "reason": "总分6<16分"
+    },
+    {
+      "title": "竞品分析方法",
+      "path": "src/part3-tools/ch15-methodology/04-competitive-analysis.md",
+      "score": {
+        "relevance": 3,
+        "technical_depth": 2,
+        "timeliness": 1,
+        "verifiability": 1,
+        "total": 7
+      },
+      "reason": "总分7<16分"
+    },
+    {
+      "title": "性能测试最佳实践",
+      "path": "src/part3-tools/ch15-methodology/06-testing-best-practices.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 3,
+        "timeliness": 1,
+        "verifiability": 2,
+        "total": 7
+      },
+      "reason": "总分7<16分"
+    },
+    {
+      "title": "AOSP 代码阅读",
+      "path": "src/part3-tools/ch15-methodology/07-aosp-reading.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 2,
+        "timeliness": 2,
+        "verifiability": 5,
+        "total": 10
+      },
+      "reason": "总分10<16分"
+    },
+    {
+      "title": "线程 CPU 状态分析",
+      "path": "src/part3-tools/ch13-perfetto/06-thread-cpu-states.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 2,
+        "verifiability": 3,
+        "total": 7
+      },
+      "reason": "总分7<16分"
+    },
+    {
+      "title": "Perfetto 的高级用法",
+      "path": "src/part3-tools/ch13-perfetto/07-advanced-usage.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 2,
+        "verifiability": 2,
+        "total": 6
+      },
+      "reason": "总分6<16分"
+    },
+    {
+      "title": "专题解读",
+      "path": "src/part3-tools/ch13-perfetto/05-topic-analysis.md",
+      "score": {
+        "relevance": 3,
+        "technical_depth": 2,
+        "timeliness": 2,
+        "verifiability": 2,
+        "total": 9
+      },
+      "reason": "总分9<16分"
+    },
+    {
+      "title": "Perfetto 简介与演进",
+      "path": "src/part3-tools/ch13-perfetto/01-perfetto-intro.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 2,
+        "verifiability": 6,
+        "total": 10
+      },
+      "reason": "总分10<16分"
+    },
+    {
+      "title": "第 13 章：Perfetto",
+      "path": "src/part3-tools/ch13-perfetto/README.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 2,
+        "verifiability": 6,
+        "total": 10
+      },
+      "reason": "总分10<16分"
+    },
+    {
+      "title": "命令行打开超大 Trace",
+      "path": "src/part3-tools/ch13-perfetto/04-large-traces.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 2,
+        "timeliness": 2,
+        "verifiability": 4,
+        "total": 9
+      },
+      "reason": "总分9<16分"
+    },
+    {
+      "title": "Perfetto View 解读",
+      "path": "src/part3-tools/ch13-perfetto/03-perfetto-view.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 2,
+        "verifiability": 2,
+        "total": 6
+      },
+      "reason": "总分6<16分"
+    },
+    {
+      "title": "Trace 抓取",
+      "path": "src/part3-tools/ch13-perfetto/02-trace-capture.md",
+      "score": {
+        "relevance": 4,
+        "technical_depth": 1,
+        "timeliness": 2,
+        "verifiability": 2,
+        "total": 9
+      },
+      "reason": "总分9<16分"
+    },
+    {
+      "title": "ChatGPT 算法原理",
+      "path": "Cubox/ChatGPT 算法原理-2023-02-14.md",
+      "score": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 2,
+        "total": 9,
+        "matched_chapters": []
+      },
+      "skip_reason": "Total score < 16 (relevance:1 depth:1 timeliness:5 verifiability:2)"
+    },
+    {
+      "title": "播放器系列1——总概述",
+      "path": "Cubox/播放器系列1——总概述-2025-03-03.md",
+      "score": {
+        "relevance": 1,
+        "depth": 2,
+        "timeliness": 5,
+        "verifiability": 2,
+        "total": 10,
+        "matched_chapters": []
+      },
+      "skip_reason": "Total score < 16 (relevance:1 depth:2 timeliness:5 verifiability:2)"
+    },
+    {
+      "title": "提示艺术：PromptPerfect 提示优化器测试体验（一）",
+      "path": "Cubox/提示艺术：PromptPerfect 提示优化器测试体验（一）-2023-03-09.md",
+      "score": {
+        "relevance": 1,
+        "depth": 2,
+        "timeliness": 5,
+        "verifiability": 3,
+        "total": 11,
+        "matched_chapters": []
+      },
+      "skip_reason": "Total score < 16 (relevance:1 depth:2 timeliness:5 verifiability:3)"
+    },
+    {
+      "title": "2026 AI First 系列（三）：在被替代之前变得有价值——新经济下的生存法则",
+      "path": "Cubox/2026 AI First 系列（三）：在被替代之前变得有价值——新经济下的生存法则-2026-01-05.md",
+      "score": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 2,
+        "total": 9,
+        "matched_chapters": []
+      },
+      "skip_reason": "Total score < 16 (relevance:1 depth:1 timeliness:5 verifiability:2)"
+    },
+    {
+      "title": "AI 和写作 | Randy's Blog | Randy's Blog",
+      "path": "Cubox/AI 和写作 - Randy's Blog - Randy's Blog-2024-10-10.md",
+      "score": {
+        "relevance": 1,
+        "depth": 2,
+        "timeliness": 5,
+        "verifiability": 1,
+        "total": 9,
+        "matched_chapters": []
+      },
+      "skip_reason": "Total score < 16 (relevance:1 depth:2 timeliness:5 verifiability:1)"
+    },
+    {
+      "title": "自己动手制作电子书的最佳方式（支持PDF、ePub、mobi等格式）",
+      "path": "Cubox/自己动手制作电子书的最佳方式（支持PDF、ePub、mobi等格式）-2024-05-10.md",
+      "score": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 2,
+        "total": 9,
+        "matched_chapters": []
+      },
+      "skip_reason": "Total score < 16 (relevance:1 depth:1 timeliness:5 verifiability:2)"
+    },
+    {
+      "title": "抖音 Android 端图片优化实践",
+      "path": "Cubox/抖音 Android 端图片优化实践-2024-06-11.md",
+      "score": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 2,
+        "total": 9,
+        "matched_chapters": []
+      },
+      "skip_reason": "Total score < 16 (relevance:1 depth:1 timeliness:5 verifiability:2)"
+    },
+    {
+      "title": "谈Android架构创新性",
+      "path": "Cubox/谈Android架构创新性-2022-04-02.md",
+      "score": {
+        "relevance": 1,
+        "depth": 2,
+        "timeliness": 5,
+        "verifiability": 5,
+        "total": 13,
+        "matched_chapters": []
+      },
+      "skip_reason": "Total score < 16 (relevance:1 depth:2 timeliness:5 verifiability:5)"
+    },
+    {
+      "title": "科技爱好者周刊（第226期）：谷歌出了什么问题？",
+      "path": "Cubox/科技爱好者周刊（第226期）：谷歌出了什么问题？-2022-10-14.md",
+      "score": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 2,
+        "total": 9,
+        "matched_chapters": []
+      },
+      "skip_reason": "Total score < 16 (relevance:1 depth:1 timeliness:5 verifiability:2)"
+    },
+    {
+      "title": "2021，年度优秀技术文章汇总",
+      "path": "Cubox/2021，年度优秀技术文章汇总-2022-01-14.md",
+      "score": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 2,
+        "total": 9,
+        "matched_chapters": []
+      },
+      "skip_reason": "Total score < 16 (relevance:1 depth:1 timeliness:5 verifiability:2)"
+    },
+    {
+      "title": "移动端算法优化|CPU 优化技术-NEON 开发进阶",
+      "path": "Cubox/移动端算法优化-CPU 优化技术-NEON 开发进阶-2022-03-14.md",
+      "score": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 2,
+        "total": 9,
+        "matched_chapters": []
+      },
+      "skip_reason": "Total score < 16 (relevance:1 depth:1 timeliness:5 verifiability:2)"
+    },
+    {
+      "title": "Android 强推的 Baseline Profiles 国内能用吗？我找 Google 工程师求证了！ - 掘金",
+      "path": "Cubox/Android 强推的 Baseline Profiles 国内能用吗？我找 Google 工程师求证了！ - 掘金-2022-07-17.md",
+      "score": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 2,
+        "total": 9,
+        "matched_chapters": []
+      },
+      "skip_reason": "Total score < 16 (relevance:1 depth:1 timeliness:5 verifiability:2)"
+    },
+    {
+      "title": "如何正确地理解应用架构并开发",
+      "path": "Cubox/如何正确地理解应用架构并开发-2024-01-09.md",
+      "score": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 2,
+        "total": 9,
+        "matched_chapters": []
+      },
+      "skip_reason": "Total score < 16 (relevance:1 depth:1 timeliness:5 verifiability:2)"
+    },
+    {
+      "title": "Android bugreport 分析方法",
+      "path": "Cubox/Android bugreport 分析方法-2024-02-01.md",
+      "score": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 2,
+        "total": 9,
+        "matched_chapters": []
+      },
+      "skip_reason": "Total score < 16 (relevance:1 depth:1 timeliness:5 verifiability:2)"
+    },
+    {
+      "title": "对话《狂飙》编剧：如何挖掘官商勾结细节？",
+      "path": "Cubox/对话《狂飙》编剧：如何挖掘官商勾结细节？-2023-02-06.md",
+      "score": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 2,
+        "total": 9,
+        "matched_chapters": []
+      },
+      "skip_reason": "Total score < 16 (relevance:1 depth:1 timeliness:5 verifiability:2)"
+    },
+    {
+      "title": "How to Become the Best in the World at Something",
+      "path": "Cubox/How to Become the Best in the World at Something-2022-02-07.md",
+      "score": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 2,
+        "total": 9,
+        "matched_chapters": []
+      },
+      "skip_reason": "Total score < 16 (relevance:1 depth:1 timeliness:5 verifiability:2)"
+    },
+    {
+      "title": "【Shader篇】GPU架构与其逻辑管线",
+      "path": "Cubox/【Shader篇】GPU架构与其逻辑管线-2023-08-10.md",
+      "score": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 2,
+        "total": 9,
+        "matched_chapters": []
+      },
+      "skip_reason": "Total score < 16 (relevance:1 depth:1 timeliness:5 verifiability:2)"
+    },
+    {
+      "title": "[译]AI算力民主化 第五部分：CUDA C++替代方案（如OpenCL）现状如何？",
+      "path": "Cubox/[译]AI算力民主化 第五部分：CUDA C++替代方案（如OpenCL）现状如何？-2025-03-21.md",
+      "score": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 2,
+        "total": 9,
+        "matched_chapters": []
+      },
+      "skip_reason": "Total score < 16 (relevance:1 depth:1 timeliness:5 verifiability:2)"
+    },
+    {
+      "title": "内核是如何给容器中的进程分配CPU资源的？",
+      "path": "Cubox/内核是如何给容器中的进程分配CPU资源的？-2023-03-14.md",
+      "score": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 2,
+        "total": 9,
+        "matched_chapters": []
+      },
+      "skip_reason": "Total score < 16 (relevance:1 depth:1 timeliness:5 verifiability:2)"
+    },
+    {
+      "title": "新姿势绕过应用的ROOT检测",
+      "path": "Cubox/新姿势绕过应用的ROOT检测-2022-02-03.md",
+      "score": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 2,
+        "total": 9,
+        "matched_chapters": []
+      },
+      "skip_reason": "Total score < 16 (relevance:1 depth:1 timeliness:5 verifiability:2)"
+    },
+    {
+      "title": "Java Annotated Monthly – February 2022 | The IntelliJ IDEA Blog",
+      "path": "Cubox/Java Annotated Monthly – February 2022 - The IntelliJ IDEA Blog-2022-02-05.md",
+      "score": {
+        "relevance": 1,
+        "depth": 3,
+        "timeliness": 5,
+        "verifiability": 1,
+        "total": 10,
+        "matched_chapters": []
+      },
+      "skip_reason": "Total score < 16 (relevance:1 depth:3 timeliness:5 verifiability:1)"
+    },
+    {
+      "title": "所谓的“技术路线”到底是什么东西？",
+      "path": "Cubox/所谓的“技术路线”到底是什么东西？-2025-09-30.md",
+      "score": {
+        "relevance": 1,
+        "depth": 2,
+        "timeliness": 5,
+        "verifiability": 2,
+        "total": 10,
+        "matched_chapters": []
+      },
+      "skip_reason": "Total score < 16 (relevance:1 depth:2 timeliness:5 verifiability:2)"
+    },
+    {
+      "title": "这本书助你成为Android性能优化专家，送10本",
+      "path": "Cubox/这本书助你成为Android性能优化专家，送10本-2024-05-15.md",
+      "score": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 2,
+        "total": 9,
+        "matched_chapters": []
+      },
+      "skip_reason": "Total score < 16 (relevance:1 depth:1 timeliness:5 verifiability:2)"
+    },
+    {
+      "title": "手把手教你uinput命令的使用方式-重学安卓input子系统",
+      "path": "Cubox/手把手教你uinput命令的使用方式-重学安卓input子系统-2025-05-07.md",
+      "score": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 2,
+        "total": 9,
+        "matched_chapters": []
+      },
+      "skip_reason": "Total score < 16 (relevance:1 depth:1 timeliness:5 verifiability:2)"
+    },
+    {
+      "title": "Glue work considered harmful | sean goedecke",
+      "path": "Cubox/Glue work considered harmful - sean goedecke-2025-01-04.md",
+      "score": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 2,
+        "total": 9,
+        "matched_chapters": []
+      },
+      "skip_reason": "Total score < 16 (relevance:1 depth:1 timeliness:5 verifiability:2)"
+    },
+    {
+      "title": "淘宝小程序体验优化：数据分析和优化实践",
+      "path": "Cubox/淘宝小程序体验优化：数据分析和优化实践-2022-03-31.md",
+      "score": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 3,
+        "total": 10,
+        "matched_chapters": []
+      },
+      "skip_reason": "Total score < 16 (relevance:1 depth:1 timeliness:5 verifiability:3)"
+    },
+    {
+      "title": "Android Weekly - Free weekly Android & Kotlin deve...",
+      "path": "Cubox/Android Weekly - Free weekly Android & Kotlin deve...-2024-01-08.md",
+      "score": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 2,
+        "total": 9,
+        "matched_chapters": []
+      },
+      "skip_reason": "Total score < 16 (relevance:1 depth:1 timeliness:5 verifiability:2)"
+    },
+    {
+      "title": "2024年App从备案到上架（国内各大应用市场）全过程",
+      "path": "Cubox/2024年App从备案到上架（国内各大应用市场）全过程-2023-12-01.md",
+      "score": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 2,
+        "total": 9,
+        "matched_chapters": []
+      },
+      "skip_reason": "Total score < 16 (relevance:1 depth:1 timeliness:5 verifiability:2)"
+    },
+    {
+      "title": "微信业务开发方法与实践",
+      "path": "Cubox/微信业务开发方法与实践-2024-01-08.md",
+      "score": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 2,
+        "total": 9,
+        "matched_chapters": []
+      },
+      "skip_reason": "Total score < 16 (relevance:1 depth:1 timeliness:5 verifiability:2)"
+    },
+    {
+      "title": "Dropbox CEO Drew Houston：你只需要成功一次",
+      "path": "Cubox/Dropbox CEO Drew Houston：你只需要成功一次-2023-05-08.md",
+      "score": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 1,
+        "total": 8,
+        "matched_chapters": []
+      },
+      "skip_reason": "Total score < 16 (relevance:1 depth:1 timeliness:5 verifiability:1)"
+    },
+    {
+      "title": "What Is Camarts | Camarts Photography",
+      "path": "Cubox/What Is Camarts - Camarts Photography-2023-12-12.md",
+      "score": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 2,
+        "total": 9,
+        "matched_chapters": []
+      },
+      "skip_reason": "Total score < 16 (relevance:1 depth:1 timeliness:5 verifiability:2)"
+    },
+    {
+      "title": "手机能跑图生成和 LLM 大模型吗",
+      "path": "Cubox/手机能跑图生成和 LLM 大模型吗-2024-06-12.md",
+      "score": {
+        "relevance": 1,
+        "depth": 2,
+        "timeliness": 5,
+        "verifiability": 2,
+        "total": 10,
+        "matched_chapters": []
+      },
+      "skip_reason": "Total score < 16 (relevance:1 depth:2 timeliness:5 verifiability:2)"
+    },
+    {
+      "title": "Flutter性能优化实践之Timeline ",
+      "path": "Cubox/Flutter性能优化实践之Timeline -2022-01-14.md",
+      "score": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 2,
+        "total": 9,
+        "matched_chapters": []
+      },
+      "skip_reason": "Total score < 16 (relevance:1 depth:1 timeliness:5 verifiability:2)"
+    },
+    {
+      "title": "First steps with Jetpack Glance for App Widgets | by Igor Escodro | Jan, 2022 | ProAndroidDev",
+      "path": "Cubox/First steps with Jetpack Glance for App Widgets - by Igor Escodro - Jan, 2022 - ProAndroidDev-2022-0.md",
+      "score": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 2,
+        "total": 9,
+        "matched_chapters": []
+      },
+      "skip_reason": "Total score < 16 (relevance:1 depth:1 timeliness:5 verifiability:2)"
+    },
+    {
+      "title": "GPT-4 重磅发布，有哪些升级和变化？",
+      "path": "Cubox/GPT-4 重磅发布，有哪些升级和变化？-2023-03-16.md",
+      "score": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 2,
+        "total": 9,
+        "matched_chapters": []
+      },
+      "skip_reason": "Total score < 16 (relevance:1 depth:1 timeliness:5 verifiability:2)"
+    },
+    {
+      "title": "perf: Linux profiling with performance counters",
+      "path": "Cubox/perf- Linux profiling with performance counters-2025-01-03.md",
+      "score": {
+        "relevance": 1,
+        "depth": 4,
+        "timeliness": 5,
+        "verifiability": 3,
+        "total": 13,
+        "matched_chapters": []
+      },
+      "skip_reason": "Total score < 16 (relevance:1 depth:4 timeliness:5 verifiability:3)"
+    },
+    {
+      "title": "“大梦”一场",
+      "path": "Cubox/“大梦”一场-2023-11-22.md",
+      "score": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 2,
+        "total": 9,
+        "matched_chapters": []
+      },
+      "skip_reason": "Total score < 16 (relevance:1 depth:1 timeliness:5 verifiability:2)"
+    },
+    {
+      "title": "居家健身入门指南 | 椒盐豆豉",
+      "path": "Cubox/居家健身入门指南 - 椒盐豆豉-2025-01-03.md",
+      "score": {
+        "relevance": 1,
+        "depth": 2,
+        "timeliness": 5,
+        "verifiability": 2,
+        "total": 10,
+        "matched_chapters": []
+      },
+      "skip_reason": "Total score < 16 (relevance:1 depth:2 timeliness:5 verifiability:2)"
+    },
+    {
+      "title": "基于 C++ 的 Android 协程设计 - 张涛",
+      "path": "Cubox/基于 C++ 的 Android 协程设计 - 张涛-2022-03-30.md",
+      "score": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 2,
+        "total": 9,
+        "matched_chapters": []
+      },
+      "skip_reason": "Total score < 16 (relevance:1 depth:1 timeliness:5 verifiability:2)"
+    },
+    {
+      "title": "[070]一文带你看懂Vsync Phase",
+      "path": "Cubox/[070]一文带你看懂Vsync Phase-2023-12-18.md",
+      "score": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 2,
+        "total": 9,
+        "matched_chapters": []
+      },
+      "skip_reason": "Total score < 16 (relevance:1 depth:1 timeliness:5 verifiability:2)"
+    },
+    {
+      "title": "Flutter 深入探索混合开发的技术演进 | 开发者说·DTalk",
+      "path": "Cubox/Flutter 深入探索混合开发的技术演进 - 开发者说·DTalk-2022-08-26.md",
+      "score": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 2,
+        "total": 9,
+        "matched_chapters": []
+      },
+      "skip_reason": "Total score < 16 (relevance:1 depth:1 timeliness:5 verifiability:2)"
+    },
+    {
+      "title": "流处理系统中状态的表示和存储 - Alex Chi",
+      "path": "Cubox/流处理系统中状态的表示和存储 - Alex Chi-2022-01-15.md",
+      "score": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 2,
+        "total": 9,
+        "matched_chapters": []
+      },
+      "skip_reason": "Total score < 16 (relevance:1 depth:1 timeliness:5 verifiability:2)"
+    },
+    {
+      "title": "抖音 Android 性能优化系列：新一代全能型性能分析工具 Rhea",
+      "path": "Cubox/抖音 Android 性能优化系列：新一代全能型性能分析工具 Rhea-2022-01-13.md",
+      "score": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 2,
+        "total": 9,
+        "matched_chapters": []
+      },
+      "skip_reason": "Total score < 16 (relevance:1 depth:1 timeliness:5 verifiability:2)"
+    },
+    {
+      "title": "移动 OS 设计之性能设计 1 - 应用程序与 OS 之间的边界思考",
+      "path": "Cubox/移动 OS 设计之性能设计 1 - 应用程序与 OS 之间的边界思考-2025-03-03.md",
+      "score": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 2,
+        "total": 9,
+        "matched_chapters": []
+      },
+      "skip_reason": "Total score < 16 (relevance:1 depth:1 timeliness:5 verifiability:2)"
+    },
+    {
+      "title": "Android：解决 MVI 架构实战痛点",
+      "path": "Cubox/Android：解决 MVI 架构实战痛点-2022-08-23.md",
+      "score": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 2,
+        "total": 9,
+        "matched_chapters": []
+      },
+      "skip_reason": "Total score < 16 (relevance:1 depth:1 timeliness:5 verifiability:2)"
+    },
+    {
+      "title": "使用AI自动优化网站PageSpeed性能",
+      "path": "Cubox/使用AI自动优化网站PageSpeed性能-2025-12-11.md",
+      "score": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 2,
+        "total": 9,
+        "matched_chapters": []
+      },
+      "skip_reason": "Total score < 16 (relevance:1 depth:1 timeliness:5 verifiability:2)"
+    },
+    {
+      "title": "网友投稿 | 如何集中注意力并进入心流状态？ – 书伴",
+      "path": "Cubox/网友投稿 - 如何集中注意力并进入心流状态？ – 书伴-2023-02-20.md",
+      "score": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 2,
+        "total": 9,
+        "matched_chapters": []
+      },
+      "skip_reason": "Total score < 16 (relevance:1 depth:1 timeliness:5 verifiability:2)"
+    },
+    {
+      "title": "一张新冠吃药顺序图，集合了中国人吃药的四大误区",
+      "path": "Cubox/一张新冠吃药顺序图，集合了中国人吃药的四大误区-2022-12-09.md",
+      "score": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 2,
+        "total": 9,
+        "matched_chapters": []
+      },
+      "skip_reason": "Total score < 16 (relevance:1 depth:1 timeliness:5 verifiability:2)"
+    },
+    {
+      "title": "GitHub - knemik97/Manifesto-against-the-Plagiarist-Yunhe-Wang: 讨贼王云鹤檄文",
+      "path": "Cubox/GitHub - knemik97-Manifesto-against-the-Plagiarist-Yunhe-Wang- 讨贼王云鹤檄文-2025-07-08.md",
+      "score": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 1,
+        "total": 8,
+        "matched_chapters": []
+      },
+      "skip_reason": "Total score < 16 (relevance:1 depth:1 timeliness:5 verifiability:1)"
+    },
+    {
+      "title": "使用 AndroidX 增强 WebView 的能力 | 开发者说·DTalk",
+      "path": "Cubox/使用 AndroidX 增强 WebView 的能力 - 开发者说·DTalk-2024-01-12.md",
+      "score": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 2,
+        "total": 9,
+        "matched_chapters": []
+      },
+      "skip_reason": "Total score < 16 (relevance:1 depth:1 timeliness:5 verifiability:2)"
+    },
+    {
+      "title": "Android内存泄漏检测全解析：从手动分析到自动化治理的实战指南引言 内存泄漏是Android应用的“隐形杀手”。当不 - 掘金",
+      "path": "Cubox/Android内存泄漏检测全解析：从手动分析到自动化治理的实战指南引言 内存泄漏是Android应用的“隐形杀手”。当不 - 掘金-2025-05-25.md",
+      "score": {
+        "relevance": 2,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 2,
+        "total": 10,
+        "matched_chapters": [
+          "ch07-内存"
+        ]
+      },
+      "skip_reason": "Total score < 16 (relevance:2 depth:1 timeliness:5 verifiability:2)"
+    },
+    {
+      "title": "Kotlin 协程太难学不会？《深入理解 Kotlin 协程》作者亲自对本书做解读！",
+      "path": "Cubox/Kotlin 协程太难学不会？《深入理解 Kotlin 协程》作者亲自对本书做解读！-2022-04-30.md",
+      "score": {
+        "relevance": 2,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 2,
+        "total": 10,
+        "matched_chapters": [
+          "ch15-Kotlin"
+        ]
+      },
+      "skip_reason": "Total score < 16 (relevance:2 depth:1 timeliness:5 verifiability:2)"
+    },
+    {
+      "title": "TI2025线下观赛——完美世界影城(五道口购物中心店)",
+      "path": "Cubox/TI2025线下观赛——完美世界影城(五道口购物中心店)-2025-09-09.md",
+      "score": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 2,
+        "total": 9,
+        "matched_chapters": []
+      },
+      "skip_reason": "Total score < 16 (relevance:1 depth:1 timeliness:5 verifiability:2)"
+    },
+    {
+      "title": "Flutter 新一代状态管理框架 signals ，它究竟具备什么魔法和优势",
+      "path": "Cubox/Flutter 新一代状态管理框架 signals ，它究竟具备什么魔法和优势-2025-03-24.md",
+      "score": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 2,
+        "total": 9,
+        "matched_chapters": []
+      },
+      "skip_reason": "Total score < 16 (relevance:1 depth:1 timeliness:5 verifiability:2)"
+    },
+    {
+      "title": "一文看懂 | 医保亲情账户是什么？怎么绑定亲情账户！",
+      "path": "Cubox/一文看懂 - 医保亲情账户是什么？怎么绑定亲情账户！-2025-12-02.md",
+      "score": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 2,
+        "total": 9,
+        "matched_chapters": []
+      },
+      "skip_reason": "Total score < 16 (relevance:1 depth:1 timeliness:5 verifiability:2)"
+    },
+    {
+      "title": "9个不舍得取关的公众号",
+      "path": "Cubox/9个不舍得取关的公众号-2022-02-12.md",
+      "score": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 2,
+        "total": 9,
+        "matched_chapters": []
+      },
+      "skip_reason": "Total score < 16 (relevance:1 depth:1 timeliness:5 verifiability:2)"
+    },
+    {
+      "title": "学习一下 nowinandroid 的构建脚本",
+      "path": "Cubox/学习一下 nowinandroid 的构建脚本-2022-12-14.md",
+      "score": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 2,
+        "total": 9,
+        "matched_chapters": []
+      },
+      "skip_reason": "Total score < 16 (relevance:1 depth:1 timeliness:5 verifiability:2)"
+    },
+    {
+      "title": "1元搞定ChatGPT的注册",
+      "path": "Cubox/1元搞定ChatGPT的注册-2022-12-05.md",
+      "score": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 2,
+        "total": 9,
+        "matched_chapters": []
+      },
+      "skip_reason": "Total score < 16 (relevance:1 depth:1 timeliness:5 verifiability:2)"
+    },
+    {
+      "title": "像火箭科学家一样思考-迭代思维",
+      "path": "Cubox/像火箭科学家一样思考-迭代思维-2024-08-12.md",
+      "score": {
+        "relevance": 1,
+        "depth": 2,
+        "timeliness": 5,
+        "verifiability": 2,
+        "total": 10,
+        "matched_chapters": []
+      },
+      "skip_reason": "Total score < 16 (relevance:1 depth:2 timeliness:5 verifiability:2)"
+    },
+    {
+      "title": "The Android Lifecycle Cheat Sheet — Part I: Application Process",
+      "path": "Cubox/The Android Lifecycle Cheat Sheet — Part I- Application Process-2023-12-11.md",
+      "score": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 2,
+        "total": 9,
+        "matched_chapters": []
+      },
+      "skip_reason": "Total score < 16 (relevance:1 depth:1 timeliness:5 verifiability:2)"
+    },
+    {
+      "title": "鸿蒙的持久战，将决胜于生态之巅",
+      "path": "Cubox/鸿蒙的持久战，将决胜于生态之巅-2024-05-12.md",
+      "score": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 2,
+        "total": 9,
+        "matched_chapters": []
+      },
+      "skip_reason": "Total score < 16 (relevance:1 depth:1 timeliness:5 verifiability:2)"
+    },
+    {
+      "title": "AI编程：从Copilot到Autopilot",
+      "path": "Cubox/AI编程：从Copilot到Autopilot-2025-04-10.md",
+      "score": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 2,
+        "total": 9,
+        "matched_chapters": []
+      },
+      "skip_reason": "Total score < 16 (relevance:1 depth:1 timeliness:5 verifiability:2)"
+    },
+    {
+      "title": "知识工作者的普世智慧",
+      "path": "Cubox/知识工作者的普世智慧-2022-06-20.md",
+      "score": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 2,
+        "total": 9,
+        "matched_chapters": []
+      },
+      "skip_reason": "Total score < 16 (relevance:1 depth:1 timeliness:5 verifiability:2)"
+    },
+    {
+      "title": "Android 列表滚动优化之 OverScroller 揭秘 | HansChen 的博客",
+      "path": "Cubox/Android 列表滚动优化之 OverScroller 揭秘 - HansChen 的博客-2022-03-03.md",
+      "score": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 1,
+        "total": 8,
+        "matched_chapters": []
+      },
+      "skip_reason": "Total score < 16 (relevance:1 depth:1 timeliness:5 verifiability:1)"
+    },
+    {
+      "title": "闲谈丨一名AI体验者的自述当年ChatGPT 3横空出世的时候，我对它不屑一顾，心想这不就是超大知识库的复读机么。如今， - 掘金",
+      "path": "Cubox/闲谈丨一名AI体验者的自述当年ChatGPT 3横空出世的时候，我对它不屑一顾，心想这不就是超大知识库的复读机么。如今， - 掘金-2025-03-31.md",
+      "score": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 2,
+        "total": 9,
+        "matched_chapters": []
+      },
+      "skip_reason": "Total score < 16 (relevance:1 depth:1 timeliness:5 verifiability:2)"
+    },
+    {
+      "title": "Android 重学系列 Binder驱动的初始化 syscall原理(一)",
+      "path": "Cubox/Android 重学系列 Binder驱动的初始化 syscall原理(一)-2022-01-14.md",
+      "score": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 2,
+        "total": 9,
+        "matched_chapters": []
+      },
+      "skip_reason": "Total score < 16 (relevance:1 depth:1 timeliness:5 verifiability:2)"
+    },
+    {
+      "title": "深入探索 Flutter 性能优化（全网首发）",
+      "path": "Cubox/深入探索 Flutter 性能优化（全网首发）-2022-02-21.md",
+      "score": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 2,
+        "total": 9,
+        "matched_chapters": []
+      },
+      "skip_reason": "Total score < 16 (relevance:1 depth:1 timeliness:5 verifiability:2)"
+    },
+    {
+      "title": "10 ideas to improve your Gradle build times [Part I]",
+      "path": "Cubox/10 ideas to improve your Gradle build times [Part I]-2022-03-22.md",
+      "score": {
+        "relevance": 2,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 2,
+        "total": 10,
+        "matched_chapters": [
+          "ch16-构建"
+        ]
+      },
+      "skip_reason": "Total score < 16 (relevance:2 depth:1 timeliness:5 verifiability:2)"
+    },
+    {
+      "title": "系统调用 sync、fsync 和 fdatasync 的区别",
+      "path": "Cubox/系统调用 sync、fsync 和 fdatasync 的区别-2025-03-11.md",
+      "score": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 2,
+        "total": 9,
+        "matched_chapters": []
+      },
+      "skip_reason": "Total score < 16 (relevance:1 depth:1 timeliness:5 verifiability:2)"
+    },
+    {
+      "title": "关于 Yak Shaving",
+      "path": "Cubox/关于 Yak Shaving-2022-02-07.md",
+      "score": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 2,
+        "total": 9,
+        "matched_chapters": []
+      },
+      "skip_reason": "Total score < 16 (relevance:1 depth:1 timeliness:5 verifiability:2)"
+    },
+    {
+      "title": "Android Weekly #202520",
+      "path": "Cubox/Android Weekly #202520-2025-08-04.md",
+      "score": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 2,
+        "total": 9,
+        "matched_chapters": []
+      },
+      "skip_reason": "Total score < 16 (relevance:1 depth:1 timeliness:5 verifiability:2)"
+    },
+    {
+      "title": "Simpleperf介绍_zhuyong006的博客-CSDN博客",
+      "path": "Cubox/Simpleperf介绍_zhuyong006的博客-CSDN博客-2023-01-03.md",
+      "score": {
+        "relevance": 2,
+        "depth": 3,
+        "timeliness": 5,
+        "verifiability": 3,
+        "total": 13,
+        "matched_chapters": [
+          "ch14-工具"
+        ]
+      },
+      "skip_reason": "Total score < 16 (relevance:2 depth:3 timeliness:5 verifiability:3)"
+    },
+    {
+      "title": "外刊精读96期：阿根廷疯子总统，还没上任就光速打脸",
+      "path": "Cubox/外刊精读96期：阿根廷疯子总统，还没上任就光速打脸-2023-12-13.md",
+      "score": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 2,
+        "total": 9,
+        "matched_chapters": []
+      },
+      "skip_reason": "Total score < 16 (relevance:1 depth:1 timeliness:5 verifiability:2)"
+    },
+    {
+      "title": "Harness design for long-running application development",
+      "path": "Cubox/Harness design for long-running application development-2026-03-25.md",
+      "score": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 1,
+        "total": 8,
+        "matched_chapters": []
+      },
+      "skip_reason": "Total score < 16 (relevance:1 depth:1 timeliness:5 verifiability:1)"
+    },
+    {
+      "title": "从深圳去香港不去网点柜台最快开通汇丰银行账号全流程攻略分享",
+      "path": "Cubox/从深圳去香港不去网点柜台最快开通汇丰银行账号全流程攻略分享-2025-02-08.md",
+      "score": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 2,
+        "total": 9,
+        "matched_chapters": []
+      },
+      "skip_reason": "Total score < 16 (relevance:1 depth:1 timeliness:5 verifiability:2)"
+    },
+    {
+      "title": "Android  性能优化 - 通过 ASM 实现大图监控",
+      "path": "Cubox/Android  性能优化 - 通过 ASM 实现大图监控-2022-03-08.md",
+      "score": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 2,
+        "total": 9,
+        "matched_chapters": []
+      },
+      "skip_reason": "Total score < 16 (relevance:1 depth:1 timeliness:5 verifiability:2)"
+    },
+    {
+      "title": "量子共读直播《钱：7步创造终身收入》 能量摘录",
+      "path": "Cubox/量子共读直播《钱：7步创造终身收入》 能量摘录-2022-01-29.md",
+      "score": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 2,
+        "total": 9,
+        "matched_chapters": []
+      },
+      "skip_reason": "Total score < 16 (relevance:1 depth:1 timeliness:5 verifiability:2)"
+    },
+    {
+      "title": "张忠谋两万字访谈：谈黄仁勋、28nm、苹果和其他",
+      "path": "Cubox/张忠谋两万字访谈：谈黄仁勋、28nm、苹果和其他-2025-02-05.md",
+      "score": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 2,
+        "total": 9,
+        "matched_chapters": []
+      },
+      "skip_reason": "Total score < 16 (relevance:1 depth:1 timeliness:5 verifiability:2)"
+    },
+    {
+      "title": "【双语视界】【硬核科普】CPU调度算法：让电脑流畅运行的核心原理",
+      "path": "Cubox/【双语视界】【硬核科普】CPU调度算法：让电脑流畅运行的核心原理-2025-05-28.md",
+      "score": {
+        "relevance": 2,
+        "depth": 2,
+        "timeliness": 5,
+        "verifiability": 2,
+        "total": 11,
+        "matched_chapters": [
+          "ch13-调度"
+        ]
+      },
+      "skip_reason": "Total score < 16 (relevance:2 depth:2 timeliness:5 verifiability:2)"
+    },
+    {
+      "title": "独立开发变现周刊（第71期）：全力投入副业项目中，网络小工具获得了250万用户",
+      "path": "Cubox/独立开发变现周刊（第71期）：全力投入副业项目中，网络小工具获得了250万用户-2022-09-09.md",
+      "score": {
+        "relevance": 2,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 2,
+        "total": 10,
+        "matched_chapters": [
+          "ch09-网络"
+        ]
+      },
+      "skip_reason": "Total score < 16 (relevance:2 depth:1 timeliness:5 verifiability:2)"
+    },
+    {
+      "path": "Cubox/funstory-ai-BabelDOC- Yet Another Document Translator-2025-04-03.md",
+      "title": "funstory-ai/BabelDOC: Yet Another Document Translator",
+      "score": 7,
+      "scores": {
+        "relevance": 0,
+        "depth": 1,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "timestamp": "2026-03-30T08:17:07.438178",
+      "reason": "Total score 7 < 16"
+    },
+    {
+      "path": "Cubox/思考 - 泛精英社区「即刻」的高传播写作 (周刊7号)-2022-02-16.md",
+      "title": "思考 | 泛精英社区「即刻」的高传播写作 (周刊7号)",
+      "score": 5,
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 5,
+        "verifiability": 0
+      },
+      "timestamp": "2026-03-30T08:17:07.438539",
+      "reason": "Total score 5 < 16"
+    },
+    {
+      "path": "Cubox/外语学习简明指南 - by wuyagege - 不如读书-2023-01-02.md",
+      "title": "外语学习简明指南 - by wuyagege - 不如读书",
+      "score": 5,
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 5,
+        "verifiability": 0
+      },
+      "timestamp": "2026-03-30T08:17:07.438844",
+      "reason": "Total score 5 < 16"
+    },
+    {
+      "path": "Cubox/Android 启动系列之属性服务的设计魅力 - 掘金-2024-01-27.md",
+      "title": "Android 启动系列之属性服务的设计魅力 - 掘金",
+      "score": 4,
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 4,
+        "verifiability": 0
+      },
+      "timestamp": "2026-03-30T08:17:07.439185",
+      "reason": "Total score 4 < 16"
+    },
+    {
+      "path": "Cubox/视频编码原理简介 - Skywind InsideSkywind Inside-2024-10-21.md",
+      "title": "视频编码原理简介 - Skywind InsideSkywind Inside",
+      "score": 5,
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 5,
+        "verifiability": 0
+      },
+      "timestamp": "2026-03-30T08:17:07.439499",
+      "reason": "Total score 5 < 16"
+    },
+    {
+      "path": "Cubox/独立开发者手册-2023-11-30.md",
+      "title": "独立开发者手册",
+      "score": 3,
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiability": 0
+      },
+      "timestamp": "2026-03-30T08:17:07.439823",
+      "reason": "Total score 3 < 16"
+    },
+    {
+      "path": "Cubox/华为-性能最佳实践导读-2025-02-18.md",
+      "title": "华为-性能最佳实践导读",
+      "score": 4,
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiability": 1
+      },
+      "timestamp": "2026-03-30T08:17:07.440121",
+      "reason": "Total score 4 < 16"
+    },
+    {
+      "path": "Cubox/鸿蒙应用开发 管理组件状态-2023-12-11.md",
+      "title": "鸿蒙应用开发 管理组件状态",
+      "score": 5,
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 5,
+        "verifiability": 0
+      },
+      "timestamp": "2026-03-30T08:17:07.440436",
+      "reason": "Total score 5 < 16"
+    },
+    {
+      "path": "Cubox/对抗软件复杂度的战争-2023-10-20.md",
+      "title": "对抗软件复杂度的战争",
+      "score": 5,
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 5,
+        "verifiability": 0
+      },
+      "timestamp": "2026-03-30T08:17:07.440775",
+      "reason": "Total score 5 < 16"
+    },
+    {
+      "path": "Cubox/TikTok and the Sorting Hat — Remains of the Day-2023-07-11.md",
+      "title": "TikTok and the Sorting Hat — Remains of the Day",
+      "score": 5,
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 5,
+        "verifiability": 0
+      },
+      "timestamp": "2026-03-30T08:17:07.441067",
+      "reason": "Total score 5 < 16"
+    },
+    {
+      "path": "Cubox/Kotzilla 和 Firebase 哪个更适合？性能监控实测对比-2025-08-22.md",
+      "title": "Kotzilla 和 Firebase 哪个更适合？性能监控实测对比",
+      "score": 5,
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 5,
+        "verifiability": 0
+      },
+      "timestamp": "2026-03-30T08:17:07.441308",
+      "reason": "Total score 5 < 16"
+    },
+    {
+      "path": "Cubox/ChatGPT-Siri-README-zh_CN.md at main · Yue-Yang-ChatGPT-Siri · GitHub-2023-03-20.md",
+      "title": "ChatGPT-Siri/README-zh_CN.md at main · Yue-Yang/ChatGPT-Siri · GitHub",
+      "score": 6,
+      "scores": {
+        "relevance": 0,
+        "depth": 1,
+        "timeliness": 4,
+        "verifiability": 1
+      },
+      "timestamp": "2026-03-30T08:17:07.441542",
+      "reason": "Total score 6 < 16"
+    },
+    {
+      "path": "Cubox/传达室书单 02-2022-02-02.md",
+      "title": "传达室书单 02",
+      "score": 5,
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 5,
+        "verifiability": 0
+      },
+      "timestamp": "2026-03-30T08:17:07.441800",
+      "reason": "Total score 5 < 16"
+    },
+    {
+      "path": "Cubox/Android APP系统渲染管线优化小点-2025-05-12.md",
+      "title": "Android APP系统渲染管线优化小点",
+      "score": 5,
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 5,
+        "verifiability": 0
+      },
+      "timestamp": "2026-03-30T08:17:07.442079",
+      "reason": "Total score 5 < 16"
+    },
+    {
+      "path": "Cubox/是这份热爱一直在发烫-2023-02-28.md",
+      "title": "是这份热爱一直在发烫",
+      "score": 4,
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 4,
+        "verifiability": 0
+      },
+      "timestamp": "2026-03-30T08:17:07.442297",
+      "reason": "Total score 4 < 16"
+    },
+    {
+      "path": "Cubox/一个简单的面试问题：Kotlin 协程能够完全取代线程吗？为什么？-2025-01-03.md",
+      "title": "一个简单的面试问题：Kotlin 协程能够完全取代线程吗？为什么？",
+      "score": 6,
+      "scores": {
+        "relevance": 2,
+        "depth": 0,
+        "timeliness": 4,
+        "verifiability": 0
+      },
+      "timestamp": "2026-03-30T08:17:07.442538",
+      "reason": "Total score 6 < 16"
+    },
+    {
+      "path": "Cubox/ebpf工作原理介绍——ebpf指令集及虚拟机-2025-05-16.md",
+      "title": "ebpf工作原理介绍——ebpf指令集及虚拟机",
+      "score": 4,
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 4,
+        "verifiability": 0
+      },
+      "timestamp": "2026-03-30T08:17:07.442981",
+      "reason": "Total score 4 < 16"
+    },
+    {
+      "path": "Cubox/重读《暗时间》：如何写「更健康更长久」的文字（4） - Revue-2022-05-23.md",
+      "title": "重读《暗时间》：如何写「更健康更长久」的文字（4） | Revue",
+      "score": 4,
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 4,
+        "verifiability": 0
+      },
+      "timestamp": "2026-03-30T08:17:07.443445",
+      "reason": "Total score 4 < 16"
+    },
+    {
+      "path": "Cubox/Unlimited Refill Cursor-2024-10-30.md",
+      "title": "Unlimited Refill Cursor",
+      "score": 4,
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 4,
+        "verifiability": 0
+      },
+      "timestamp": "2026-03-30T08:17:07.443887",
+      "reason": "Total score 4 < 16"
+    },
+    {
+      "path": "Cubox/study vlog #38｜享受晚间阅读所带来的平静与思考｜女程序员的学习日常｜TEDxTalks...-2023-11-22.md",
+      "title": "study vlog #38｜享受晚间阅读所带来的平静与思考｜女程序员的学习日常｜TEDxTalks...",
+      "score": 3,
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiability": 0
+      },
+      "timestamp": "2026-03-30T08:17:07.444201",
+      "reason": "Total score 3 < 16"
+    },
+    {
+      "path": "Cubox/Android 重学系列 Ashmem匿名共享内存-2022-07-12.md",
+      "title": "Android 重学系列 Ashmem匿名共享内存",
+      "score": 3,
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiability": 0
+      },
+      "timestamp": "2026-03-30T08:17:07.444614",
+      "reason": "Total score 3 < 16"
+    },
+    {
+      "path": "Cubox/Android ANR的设计原理 - 掘金-2022-04-21.md",
+      "title": "Android ANR的设计原理 - 掘金",
+      "score": 4,
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 4,
+        "verifiability": 0
+      },
+      "timestamp": "2026-03-30T08:17:07.444930",
+      "reason": "Total score 4 < 16"
+    },
+    {
+      "path": "Cubox/一文详解硬件项目开发概念-预研-立项-EVT-DVT-PVT-MP各阶段活动及输出物-2023-08-22.md",
+      "title": "一文详解硬件项目开发概念/预研/立项/EVT/DVT/PVT/MP各阶段活动及输出物",
+      "score": 5,
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 5,
+        "verifiability": 0
+      },
+      "timestamp": "2026-03-30T08:17:07.445213",
+      "reason": "Total score 5 < 16"
+    },
+    {
+      "path": "Cubox/启动优化 ·  基础论 ·  浅析Android启动优化-2022-12-31.md",
+      "title": "启动优化 ·  基础论 ·  浅析Android启动优化",
+      "score": 3,
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiability": 0
+      },
+      "timestamp": "2026-03-30T08:17:07.445681",
+      "reason": "Total score 3 < 16"
+    },
+    {
+      "path": "Cubox/湾区与独立开发 - laike9m's blog-2023-07-31.md",
+      "title": "湾区与独立开发 - laike9m's blog",
+      "score": 4,
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 4,
+        "verifiability": 0
+      },
+      "timestamp": "2026-03-30T08:17:07.445960",
+      "reason": "Total score 4 < 16"
+    },
+    {
+      "path": "Cubox/梁胜博士：写给程序员的话-2022-07-28.md",
+      "title": "梁胜博士：写给程序员的话",
+      "score": 4,
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 4,
+        "verifiability": 0
+      },
+      "timestamp": "2026-03-30T08:17:07.446248",
+      "reason": "Total score 4 < 16"
+    },
+    {
+      "path": "Cubox/【原理篇】《BPF性能之巅》如何快速分析系统的 I-O 瓶颈？-2024-01-30.md",
+      "title": "【原理篇】《BPF性能之巅》如何快速分析系统的 I/O 瓶颈？",
+      "score": 4,
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 4,
+        "verifiability": 0
+      },
+      "timestamp": "2026-03-30T08:17:07.446557",
+      "reason": "Total score 4 < 16"
+    },
+    {
+      "path": "Cubox/科技爱好者周刊#361：暗网 Tor 安全吗？-2025-08-15.md",
+      "title": "科技爱好者周刊#361：暗网 Tor 安全吗？",
+      "score": 5,
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 5,
+        "verifiability": 0
+      },
+      "timestamp": "2026-03-30T08:17:07.446877",
+      "reason": "Total score 5 < 16"
+    },
+    {
+      "path": "Cubox/【开业倒计时】PAPOO开业倒计时4日｜前所未有的会员体验与idmatch Fitting-2025-04-22.md",
+      "title": "【开业倒计时】PAPOO开业倒计时4日｜前所未有的会员体验与idmatch Fitting",
+      "score": 4,
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 4,
+        "verifiability": 0
+      },
+      "timestamp": "2026-03-30T08:17:07.447129",
+      "reason": "Total score 4 < 16"
+    },
+    {
+      "path": "Cubox/内存加压 - mem-pressure - 秋城 - 博客园-2022-04-04.md",
+      "title": "内存加压 | mem-pressure - 秋城 - 博客园",
+      "score": 4,
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 4,
+        "verifiability": 0
+      },
+      "timestamp": "2026-03-30T08:17:07.447419",
+      "reason": "Total score 4 < 16"
+    },
+    {
+      "path": "Cubox/SurfaceFlinger 图层合成过程分析上-2024-08-05.md",
+      "title": "SurfaceFlinger 图层合成过程分析上",
+      "score": 4,
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 4,
+        "verifiability": 0
+      },
+      "timestamp": "2026-03-30T08:17:07.447961",
+      "reason": "Total score 4 < 16"
+    },
+    {
+      "path": "Cubox/华为开发者问答专区 - 华为开发者联盟-2024-10-23.md",
+      "title": "华为开发者问答专区 | 华为开发者联盟",
+      "score": 3,
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiability": 0
+      },
+      "timestamp": "2026-03-30T08:17:07.448253",
+      "reason": "Total score 3 < 16"
+    },
+    {
+      "path": "Cubox/Learn a paper in a minute - Micropaper-2023-01-29.md",
+      "title": "Learn a paper in a minute | Micropaper",
+      "score": 4,
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 4,
+        "verifiability": 0
+      },
+      "timestamp": "2026-03-30T08:17:07.448510",
+      "reason": "Total score 4 < 16"
+    },
+    {
+      "path": "Cubox/[译]AI算力民主化 第8部分：MLIR编译器基础设施如何？-2025-04-19.md",
+      "title": "[译]AI算力民主化 第8部分：MLIR编译器基础设施如何？",
+      "score": 3,
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiability": 0
+      },
+      "timestamp": "2026-03-30T08:17:07.448804",
+      "reason": "Total score 3 < 16"
+    },
+    {
+      "path": "Cubox/FullyDrawnReporter—一个官方冷启动耗时统计小工具 - 掘金-2023-12-24.md",
+      "title": "FullyDrawnReporter—一个官方冷启动耗时统计小工具 - 掘金",
+      "score": 6,
+      "scores": {
+        "relevance": 2,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiability": 1
+      },
+      "timestamp": "2026-03-30T08:17:07.449078",
+      "reason": "Total score 6 < 16"
+    },
+    {
+      "path": "Cubox/xHook-2024-02-02.md",
+      "title": "xHook",
+      "score": 6,
+      "scores": {
+        "relevance": 0,
+        "depth": 1,
+        "timeliness": 3,
+        "verifiability": 2
+      },
+      "timestamp": "2026-03-30T08:17:07.449397",
+      "reason": "Total score 6 < 16"
+    },
+    {
+      "path": "Cubox/利用ADPF性能提示优化Android应用体验-2024-12-06.md",
+      "title": "利用ADPF性能提示优化Android应用体验",
+      "score": 3,
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiability": 0
+      },
+      "timestamp": "2026-03-30T08:17:07.449684",
+      "reason": "Total score 3 < 16"
+    },
+    {
+      "path": "Cubox/体验碎周报第 109 期（2022.8.22）-2022-08-22.md",
+      "title": "体验碎周报第 109 期（2022.8.22）",
+      "score": 4,
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 4,
+        "verifiability": 0
+      },
+      "timestamp": "2026-03-30T08:17:07.449984",
+      "reason": "Total score 4 < 16"
+    },
+    {
+      "path": "Cubox/Making Complex UIs using Jetpack Compose. Building Leadership App-2022-01-14.md",
+      "title": "Making Complex UIs using Jetpack Compose. Building Leadership App",
+      "score": 5,
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 5,
+        "verifiability": 0
+      },
+      "timestamp": "2026-03-30T08:17:07.450241",
+      "reason": "Total score 5 < 16"
+    },
+    {
+      "path": "Cubox/2021 总结 - bennyhuo-2022-01-20.md",
+      "title": "2021 总结 - bennyhuo",
+      "score": 5,
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 5,
+        "verifiability": 0
+      },
+      "timestamp": "2026-03-30T08:17:07.450517",
+      "reason": "Total score 5 < 16"
+    },
+    {
+      "filename": "2024 年我在有知有行做了些什么？答：最好的家庭财务分析工具没有之一（上）-2025-01-20.md",
+      "title": "2024 年我在有知有行做了些什么？答：最好的家庭财务分析工具没有之一（上）",
+      "reason": "总分不足16分（10/20）",
+      "scores": {
+        "relevance": 1,
+        "depth": 2,
+        "freshness": 5,
+        "verifiability": 2
+      },
+      "total_score": 10
+    },
+    {
+      "filename": "2024 年数字工具箱-2024-12-29.md",
+      "title": "2024 年数字工具箱",
+      "reason": "总分不足16分（10/20）",
+      "scores": {
+        "relevance": 1,
+        "depth": 2,
+        "freshness": 5,
+        "verifiability": 2
+      },
+      "total_score": 10
+    },
+    {
+      "filename": "2024 年科技领域的重大创新思想 [译] - 宝玉的分享-2023-12-15.md",
+      "title": "2024 年科技领域的重大创新思想 [译] | 宝玉的分享",
+      "reason": "总分不足16分（10/20）",
+      "scores": {
+        "relevance": 1,
+        "depth": 2,
+        "freshness": 5,
+        "verifiability": 2
+      },
+      "total_score": 10
+    },
+    {
+      "filename": "2024- 在夜海中观望浪潮 - Randy's Blog-2024-12-29.md",
+      "title": "2024: 在夜海中观望浪潮 | Randy's Blog",
+      "reason": "总分不足16分（10/20）",
+      "scores": {
+        "relevance": 1,
+        "depth": 2,
+        "freshness": 5,
+        "verifiability": 2
+      },
+      "total_score": 10
+    },
+    {
+      "filename": "2024年App从备案到上架（国内各大应用市场）全过程-2023-12-01.md",
+      "title": "2024年App从备案到上架（国内各大应用市场）全过程",
+      "reason": "总分不足16分（10/20）",
+      "scores": {
+        "relevance": 1,
+        "depth": 2,
+        "freshness": 5,
+        "verifiability": 2
+      },
+      "total_score": 10
+    },
+    {
+      "filename": "2024年成都开山节来啦！-2024-03-29.md",
+      "title": "2024年成都开山节来啦！",
+      "reason": "总分不足16分（10/20）",
+      "scores": {
+        "relevance": 1,
+        "depth": 2,
+        "freshness": 5,
+        "verifiability": 2
+      },
+      "total_score": 10
+    },
+    {
+      "filename": "2024年的CES国际消费电子展上有哪些黑科技国货？ - 知乎-2024-01-15.md",
+      "title": "2024年的CES国际消费电子展上有哪些黑科技国货？ - 知乎",
+      "reason": "总分不足16分（10/20）",
+      "scores": {
+        "relevance": 1,
+        "depth": 2,
+        "freshness": 5,
+        "verifiability": 2
+      },
+      "total_score": 10
+    },
+    {
+      "filename": "2025 CCF ChinaSoft：智能终端基础软件论坛参会记录-2025-12-03.md",
+      "title": "2025 CCF ChinaSoft：智能终端基础软件论坛参会记录",
+      "reason": "总分不足16分（10/20）",
+      "scores": {
+        "relevance": 1,
+        "depth": 2,
+        "freshness": 5,
+        "verifiability": 2
+      },
+      "total_score": 10
+    },
+    {
+      "filename": "2025 Google I-O 大会开发者主旨演讲干货盘点-2025-05-25.md",
+      "title": "2025 Google I/O 大会开发者主旨演讲干货盘点",
+      "reason": "总分不足16分（11/20）",
+      "scores": {
+        "relevance": 1,
+        "depth": 2,
+        "freshness": 5,
+        "verifiability": 3
+      },
+      "total_score": 11
+    },
+    {
+      "filename": "2025 KMP 的现状和未来，选择 KMP 会有什么问题吗？-2025-05-25.md",
+      "title": "2025 KMP 的现状和未来，选择 KMP 会有什么问题吗？",
+      "reason": "总分不足16分（13/20）",
+      "scores": {
+        "relevance": 3,
+        "depth": 2,
+        "freshness": 5,
+        "verifiability": 3
+      },
+      "total_score": 13
+    },
+    {
+      "filename": "2025 LLM Year in Review-2025-12-22.md",
+      "title": "2025 LLM Year in Review",
+      "reason": "总分不足16分（10/20）",
+      "scores": {
+        "relevance": 1,
+        "depth": 2,
+        "freshness": 5,
+        "verifiability": 2
+      },
+      "total_score": 10
+    },
+    {
+      "filename": "2025 LLVM开发者大会回顾 - 华为加拿大实验室的编译器前沿实践-2025-12-04.md",
+      "title": "2025 LLVM开发者大会回顾 | 华为加拿大实验室的编译器前沿实践",
+      "reason": "总分不足16分（11/20）",
+      "scores": {
+        "relevance": 1,
+        "depth": 3,
+        "freshness": 5,
+        "verifiability": 2
+      },
+      "total_score": 11
+    },
+    {
+      "filename": "2025 年 Linux 内核十大技术创新｜年终盘点-2026-02-16.md",
+      "title": "2025 年 Linux 内核十大技术创新｜年终盘点",
+      "reason": "总分不足16分（10/20）",
+      "scores": {
+        "relevance": 1,
+        "depth": 2,
+        "freshness": 5,
+        "verifiability": 2
+      },
+      "total_score": 10
+    },
+    {
+      "filename": "2025 年不同程序员如何用好 AI 模型： 1：经济实力 - 即刻App-2025-02-23.md",
+      "title": "2025 年不同程序员如何用好 AI 模型： 1：经济实力 - 即刻App",
+      "reason": "总分不足16分（10/20）",
+      "scores": {
+        "relevance": 1,
+        "depth": 2,
+        "freshness": 5,
+        "verifiability": 2
+      },
+      "total_score": 10
+    },
+    {
+      "filename": "2025 年终总结神器！NotebookLM 最强玩法汇总：从一键生成高阶PPT到秒变播客-2025-12-14.md",
+      "title": "2025 年终总结神器！NotebookLM 最强玩法汇总：从一键生成高阶PPT到秒变播客",
+      "reason": "总分不足16分（10/20）",
+      "scores": {
+        "relevance": 1,
+        "depth": 2,
+        "freshness": 5,
+        "verifiability": 2
+      },
+      "total_score": 10
+    },
+    {
+      "filename": "2025年-慢慢的日子-2026-01-01.md",
+      "title": "2025年-慢慢的日子",
+      "reason": "总分不足16分（10/20）",
+      "scores": {
+        "relevance": 1,
+        "depth": 2,
+        "freshness": 5,
+        "verifiability": 2
+      },
+      "total_score": 10
+    },
+    {
+      "filename": "2025年Arm最新处理器架构介绍——全新C1系列-2025-10-10.md",
+      "title": "2025年Arm最新处理器架构介绍——全新C1系列",
+      "reason": "总分不足16分（10/20）",
+      "scores": {
+        "relevance": 1,
+        "depth": 2,
+        "freshness": 5,
+        "verifiability": 2
+      },
+      "total_score": 10
+    },
+    {
+      "filename": "2025年的年终总结 - MkSaaS - Make Your AI SaaS Product in a Weekend-2026-01-04.md",
+      "title": "2025年的年终总结 | MkSaaS - Make Your AI SaaS Product in a Weekend",
+      "reason": "总分不足16分（10/20）",
+      "scores": {
+        "relevance": 1,
+        "depth": 2,
+        "freshness": 5,
+        "verifiability": 2
+      },
+      "total_score": 10
+    },
+    {
+      "filename": "2025开年最炸特工片CIA程序员黑进全球暗网-2025-04-11.md",
+      "title": "2025开年最炸特工片CIA程序员黑进全球暗网",
+      "reason": "总分不足16分（10/20）",
+      "scores": {
+        "relevance": 1,
+        "depth": 2,
+        "freshness": 5,
+        "verifiability": 2
+      },
+      "total_score": 10
+    },
+    {
+      "filename": "2025稳定性业务研讨问题 - 知乎-2025-01-19.md",
+      "title": "2025稳定性业务研讨问题 - 知乎",
+      "reason": "总分不足16分（10/20）",
+      "scores": {
+        "relevance": 1,
+        "depth": 2,
+        "freshness": 5,
+        "verifiability": 2
+      },
+      "total_score": 10
+    },
+    {
+      "filename": "2025，MCP、Agent、AI Coding-2026-01-05.md",
+      "title": "2025，MCP、Agent、AI Coding",
+      "reason": "总分不足16分（10/20）",
+      "scores": {
+        "relevance": 1,
+        "depth": 2,
+        "freshness": 5,
+        "verifiability": 2
+      },
+      "total_score": 10
+    },
+    {
+      "filename": "2025，我做的产品和我踩的坑-2025-12-17.md",
+      "title": "2025，我做的产品和我踩的坑",
+      "reason": "总分不足16分（10/20）",
+      "scores": {
+        "relevance": 1,
+        "depth": 2,
+        "freshness": 5,
+        "verifiability": 2
+      },
+      "total_score": 10
+    },
+    {
+      "filename": "2025：生活是个缓慢受锤的过程-2026-01-01.md",
+      "title": "2025：生活是个缓慢受锤的过程",
+      "reason": "总分不足16分（10/20）",
+      "scores": {
+        "relevance": 1,
+        "depth": 2,
+        "freshness": 5,
+        "verifiability": 2
+      },
+      "total_score": 10
+    },
+    {
+      "filename": "2026 AI First 系列（一）：从助手到智能体——代理工程时代的到来-2026-01-05.md",
+      "title": "2026 AI First 系列（一）：从助手到智能体——代理工程时代的到来",
+      "reason": "总分不足16分（10/20）",
+      "scores": {
+        "relevance": 1,
+        "depth": 2,
+        "freshness": 5,
+        "verifiability": 2
+      },
+      "total_score": 10
+    },
+    {
+      "filename": "2026 AI First 系列（三）：在被替代之前变得有价值——新经济下的生存法则-2026-01-05.md",
+      "title": "2026 AI First 系列（三）：在被替代之前变得有价值——新经济下的生存法则",
+      "reason": "总分不足16分（10/20）",
+      "scores": {
+        "relevance": 1,
+        "depth": 2,
+        "freshness": 5,
+        "verifiability": 2
+      },
+      "total_score": 10
+    },
+    {
+      "filename": "2026 AI First 系列（二）：Vibe Coding——思维速度编程的民主化革命-2026-01-05.md",
+      "title": "2026 AI First 系列（二）：Vibe Coding——思维速度编程的民主化革命",
+      "reason": "总分不足16分（10/20）",
+      "scores": {
+        "relevance": 1,
+        "depth": 2,
+        "freshness": 5,
+        "verifiability": 2
+      },
+      "total_score": 10
+    },
+    {
+      "filename": "2026 AI First 系列（五）：从消费AI到创造AI——成为超级个体的最后窗口期-2026-01-05.md",
+      "title": "2026 AI First 系列（五）：从消费AI到创造AI——成为超级个体的最后窗口期",
+      "reason": "总分不足16分（10/20）",
+      "scores": {
+        "relevance": 1,
+        "depth": 2,
+        "freshness": 5,
+        "verifiability": 2
+      },
+      "total_score": 10
+    },
+    {
+      "filename": "2026 AI First 系列（四）：connecting the dots——你的独特人生路径-2026-01-05.md",
+      "title": "2026 AI First 系列（四）：connecting the dots——你的独特人生路径",
+      "reason": "总分不足16分（10/20）",
+      "scores": {
+        "relevance": 1,
+        "depth": 2,
+        "freshness": 5,
+        "verifiability": 2
+      },
+      "total_score": 10
+    },
+    {
+      "filename": "2026 年 AI 行业预测汇总，AI 将如何改变世界？-2026-01-06.md",
+      "title": "2026 年 AI 行业预测汇总，AI 将如何改变世界？",
+      "reason": "总分不足16分（10/20）",
+      "scores": {
+        "relevance": 1,
+        "depth": 2,
+        "freshness": 5,
+        "verifiability": 2
+      },
+      "total_score": 10
+    },
+    {
+      "filename": "2026年AI趋势观察：模型飞轮、应用爆发与个人发展-2026-02-26.md",
+      "title": "2026年AI趋势观察：模型飞轮、应用爆发与个人发展",
+      "reason": "总分不足16分（10/20）",
+      "scores": {
+        "relevance": 1,
+        "depth": 2,
+        "freshness": 5,
+        "verifiability": 2
+      },
+      "total_score": 10
+    },
+    {
+      "filename": "257 - Future of AndroidDev in an AI world with Vinay Gaba · Fragmented - #androiddev Podcast-2025-03.md",
+      "title": "257 - Future of AndroidDev in an AI world with Vinay Gaba · Fragmented | #androiddev Podcast",
+      "reason": "总分不足16分（10/20）",
+      "scores": {
+        "relevance": 1,
+        "depth": 2,
+        "freshness": 5,
+        "verifiability": 2
+      },
+      "total_score": 10
+    },
+    {
+      "filename": "29.97帧率，是什么鬼？-2024-12-07.md",
+      "title": "29.97帧率，是什么鬼？",
+      "reason": "总分不足16分（10/20）",
+      "scores": {
+        "relevance": 1,
+        "depth": 2,
+        "freshness": 5,
+        "verifiability": 2
+      },
+      "total_score": 10
+    },
+    {
+      "filename": "2小时入门 Jetpack Compose（上）-2022-07-17.md",
+      "title": "2小时入门 Jetpack Compose（上）",
+      "reason": "总分不足16分（10/20）",
+      "scores": {
+        "relevance": 1,
+        "depth": 2,
+        "freshness": 5,
+        "verifiability": 2
+      },
+      "total_score": 10
+    },
+    {
+      "filename": "3.20 StepN 日记-2022-03-22.md",
+      "title": "3.20 StepN 日记",
+      "reason": "总分不足16分（10/20）",
+      "scores": {
+        "relevance": 1,
+        "depth": 2,
+        "freshness": 5,
+        "verifiability": 2
+      },
+      "total_score": 10
+    },
+    {
+      "filename": "3.31 STEPN 日记（第28天）拉盘才是最好的广告 — 0xBigPineapple-2022-03-31.md",
+      "title": "3.31 STEPN 日记（第28天）拉盘才是最好的广告 — 0xBigPineapple",
+      "reason": "总分不足16分（10/20）",
+      "scores": {
+        "relevance": 1,
+        "depth": 2,
+        "freshness": 5,
+        "verifiability": 2
+      },
+      "total_score": 10
+    },
+    {
+      "filename": "33 岁在重庆，程序员，在 2024 年拥有的面试经历 · w2solo - 独立开发者社区-2025-01-21.md",
+      "title": "33 岁在重庆，程序员，在 2024 年拥有的面试经历 · w2solo - 独立开发者社区",
+      "reason": "总分不足16分（10/20）",
+      "scores": {
+        "relevance": 1,
+        "depth": 2,
+        "freshness": 5,
+        "verifiability": 2
+      },
+      "total_score": 10
+    },
+    {
+      "filename": "360度无死角，Android Jetpack面试技巧大揭秘-2024-01-25.md",
+      "title": "360度无死角，Android Jetpack面试技巧大揭秘",
+      "reason": "总分不足16分（10/20）",
+      "scores": {
+        "relevance": 1,
+        "depth": 2,
+        "freshness": 5,
+        "verifiability": 2
+      },
+      "total_score": 10
+    },
+    {
+      "filename": "3个重点讲清楚GPT4.1：OpenAI 的新一代基础模型-2025-04-15.md",
+      "title": "3个重点讲清楚GPT4.1：OpenAI 的新一代基础模型",
+      "reason": "总分不足16分（10/20）",
+      "scores": {
+        "relevance": 1,
+        "depth": 2,
+        "freshness": 5,
+        "verifiability": 2
+      },
+      "total_score": 10
+    },
+    {
+      "filename": "3分钟读懂OKR - 不和绩效挂钩的OKR到底有什么用？-2022-03-29.md",
+      "title": "3分钟读懂OKR | 不和绩效挂钩的OKR到底有什么用？",
+      "reason": "总分不足16分（10/20）",
+      "scores": {
+        "relevance": 1,
+        "depth": 2,
+        "freshness": 5,
+        "verifiability": 2
+      },
+      "total_score": 10
+    },
+    {
+      "filename": "4 段超神提示词解锁 Claude 3.7 能力上限-2025-03-17.md",
+      "title": "4 段超神提示词解锁 Claude 3.7 能力上限",
+      "reason": "总分不足16分（10/20）",
+      "scores": {
+        "relevance": 1,
+        "depth": 2,
+        "freshness": 5,
+        "verifiability": 2
+      },
+      "total_score": 10
+    }
+  ]
+}

@@ -1,0 +1,38 @@
+{
+  "total_files": 3,
+  "indexed_files": 3,
+  "chapters_distribution": {
+    "待定": 3,
+    "ch05-渲染": 3,
+    "ch04-启动": 3
+  },
+  "files": [
+    {
+      "title": "SUMMARY",
+      "path": "src/SUMMARY.md",
+      "score": 20,
+      "chapters": [
+        "待定"
+      ],
+      "confidence": "medium"
+    },
+    {
+      "title": "响应速度原理",
+      "path": "src/ch08/01-responsiveness-principles.md/01-responsiveness-principles.md",
+      "score": 19,
+      "chapters": [
+        "ch05-渲染"
+      ],
+      "confidence": "high"
+    },
+    {
+      "title": "Android 分层架构",
+      "path": "src/part1-fundamentals/ch01-architecture/01-layered-architecture.md",
+      "score": 17,
+      "chapters": [
+        "ch04-启动"
+      ],
+      "confidence": "medium"
+    }
+  ]
+}
