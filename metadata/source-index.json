@@ -1,10 +1,32 @@
 {
   "total_files": 3,
-  "indexed_files": 3,
+  "indexed_files": 76,
   "chapters_distribution": {
-    "待定": 3,
-    "ch05-渲染": 3,
-    "ch04-启动": 3
+    "待定": 1,
+    "ch05-渲染": 19,
+    "ch04-启动": 3,
+    "ch12-安全": 2,
+    "ch01-架构": 8,
+    "ch13-调度": 17,
+    "ch03-线程": 4,
+    "ch07-内存": 8,
+    "ch11-Profiling": 6,
+    "ch09-网络": 1,
+    "ch15-Kotlin": 1,
+    "ch14-工具": 7,
+    "ch02-进程": 2,
+    "ch06": 2,
+    "ch04": 2,
+    "ch12": 1,
+    "ch01": 6,
+    "ch08": 1,
+    "ch03": 1,
+    "ch15": 1,
+    "ch13": 2,
+    "ch02": 1,
+    "ch11": 1,
+    "ch07": 1,
+    "ch05": 1
   },
   "files": [
     {
@@ -1198,6 +1220,350 @@
       ],
       "summary": "# Flutter RenderSurface 选择说明 - 知乎  RenderSurface 的作用是提供给 Flutter 光栅化引擎一个渲染的输出 S",
       "indexed_at": "2026-03-30T17:13:13.522767"
+    },
+    {
+      "title": "Frame rate | Android Developers",
+      "path": "Cubox/Frame rate  -  Android Developers-2022-02-08.md",
+      "score": {
+        "relevance": 4,
+        "technical": 4,
+        "timeliness": 4,
+        "verifiability": 5,
+        "total": 17
+      },
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Android官方文档，setFrameRate()API使用、帧率切换策略",
+      "scan_date": "2026-03-30"
+    },
+    {
+      "title": "Frida实现JNI方法地址跟踪、反汇编",
+      "path": "Cubox/Frida 实现 JNI 方法地址跟踪、反汇编、PatchFrida 反汇编 Frida 提供了反汇编 API，主要用于 - 掘金-2025-02-09.md",
+      "score": {
+        "relevance": 3,
+        "technical": 4,
+        "timeliness": 5,
+        "verifiability": 4,
+        "total": 16
+      },
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch12-安全",
+          "confidence": "medium"
+        },
+        {
+          "chapter": "ch14-工具",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Frida对JNI方法地址跟踪、反汇编和Patch，含ARM汇编和native hook",
+      "scan_date": "2026-03-30"
+    },
+    {
+      "title": "How Android's Zygote Enables Fast App Launching",
+      "path": "Cubox/From Biology to Code- How Android's Zygote Enables Fast and Efficient App Launching-2025-07-27.md",
+      "score": {
+        "relevance": 4,
+        "technical": 4,
+        "timeliness": 5,
+        "verifiability": 4,
+        "total": 17
+      },
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch04-启动",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch01-架构",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Zygote进程工作机制，通过预加载和fork实现快速应用启动",
+      "scan_date": "2026-03-30"
+    },
+    {
+      "title": "FullyDrawnReporter冷启动耗时统计",
+      "path": "Cubox/FullyDrawnReporter—一个官方冷启动耗时统计小工具 - 掘金-2023-12-24.md",
+      "score": {
+        "relevance": 4,
+        "technical": 4,
+        "timeliness": 4,
+        "verifiability": 5,
+        "total": 17
+      },
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch04-启动",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch14-工具",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "AndroidX FullyDrawnReporter实现冷启动TTID/TTFD耗时统计",
+      "scan_date": "2026-03-30"
+    },
+    {
+      "title": "GC超时导致后台应用崩溃",
+      "path": "Cubox/GC超时导致的后台应用崩溃问题分析 · 李海洲-2022-03-08.md",
+      "score": {
+        "relevance": 4,
+        "technical": 5,
+        "timeliness": 3,
+        "verifiability": 5,
+        "total": 17
+      },
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch07-内存",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch02-进程",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Android R GC超时崩溃分析，涉及finalize和HeapTaskRunner",
+      "scan_date": "2026-03-30"
+    },
+    {
+      "title": "Flutter高延迟渲染流水线调度",
+      "path": "Cubox/Flutter 高延迟渲染流水线调度-2022-06-17.md",
+      "score": {
+        "relevance": 2,
+        "technical": 4,
+        "timeliness": 3,
+        "verifiability": 4,
+        "total": 13
+      },
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "vsync周期、帧耗时、惯性滚动掉帧和高延迟调度策略",
+      "scan_date": "2026-03-30"
+    },
+    {
+      "title": "Flutter帧率监控详解",
+      "path": "Cubox/Flutter帧率监控  - 由浅入深，详解获取帧率的那些事 - 掘金-2023-01-14.md",
+      "score": {
+        "relevance": 2,
+        "technical": 4,
+        "timeliness": 3,
+        "verifiability": 4,
+        "total": 13
+      },
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "medium"
+        },
+        {
+          "chapter": "ch11-Profiling",
+          "confidence": "low"
+        }
+      ],
+      "summary": "基于FrameTiming的帧率监控方案，FPS计算流程",
+      "scan_date": "2026-03-30"
+    },
+    {
+      "title": "Flutter Layer解析与渲染逻辑",
+      "path": "Cubox/Flutter 里的  Layer 解析，带你了解不一样角度下的 Flutter  渲染逻辑-2025-07-30.md",
+      "score": {
+        "relevance": 2,
+        "technical": 4,
+        "timeliness": 5,
+        "verifiability": 4,
+        "total": 15
+      },
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Dart Layer与C++ EngineLayer关系，LayerTree光栅化合成流程",
+      "scan_date": "2026-03-30"
+    },
+    {
+      "title": "Ftrace function graph简介",
+      "path": "Cubox/Ftrace function graph简介-2022-08-22.md",
+      "score": {
+        "relevance": 4,
+        "technical": 4,
+        "timeliness": 3,
+        "verifiability": 4,
+        "total": 15
+      },
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch11-Profiling",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch13-调度",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "ftrace function graph机制，与systrace/sched事件关联",
+      "scan_date": "2026-03-30"
+    },
+    {
+      "title": "Flutter HCPP PlatformView",
+      "path": "Cubox/Flutter 正在推进全新 PlatformView 实现 HCPP， 它又用到了 Android 上的什么黑科技-2025-02-17.md",
+      "score": {
+        "relevance": 2,
+        "technical": 3,
+        "timeliness": 5,
+        "verifiability": 3,
+        "total": 13
+      },
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "low"
+        }
+      ],
+      "summary": "HCPP PlatformView，HybridComposition与VirtualDisplay对比",
+      "scan_date": "2026-03-30"
+    },
+    {
+      "title": "Flutter渲染性能问题分析",
+      "path": "Cubox/Flutter 渲染性能问题分析-2022-05-13.md",
+      "score": {
+        "relevance": 2,
+        "technical": 3,
+        "timeliness": 3,
+        "verifiability": 3,
+        "total": 11
+      },
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "low"
+        }
+      ],
+      "summary": "Flutter与Web渲染性能对比，惯性滚动和光栅化差异",
+      "scan_date": "2026-03-30"
+    },
+    {
+      "title": "Flutter富文本性能优化—渲染",
+      "path": "Cubox/Flutter富文本性能优化 — 渲染-2022-11-21.md",
+      "score": {
+        "relevance": 2,
+        "technical": 3,
+        "timeliness": 3,
+        "verifiability": 3,
+        "total": 11
+      },
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "low"
+        }
+      ],
+      "summary": "Flutter文本排版渲染，RenderParagraph/TextPainter渲染流程",
+      "scan_date": "2026-03-30"
+    },
+    {
+      "title": "Flutter性能优化之Timeline",
+      "path": "Cubox/Flutter性能优化实践之Timeline -2022-01-14.md",
+      "score": {
+        "relevance": 2,
+        "technical": 3,
+        "timeliness": 3,
+        "verifiability": 3,
+        "total": 11
+      },
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch11-Profiling",
+          "confidence": "low"
+        }
+      ],
+      "summary": "Flutter Profile模式Timeline性能分析工具",
+      "scan_date": "2026-03-30"
+    },
+    {
+      "title": "GDB Core Dumps调试",
+      "path": "Cubox/GDB - Core Dumps — Debugging  documentation-2023-06-19.md",
+      "score": {
+        "relevance": 2,
+        "technical": 3,
+        "timeliness": 3,
+        "verifiability": 3,
+        "total": 11
+      },
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch14-工具",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "GDB core dump调试，段错误分析",
+      "scan_date": "2026-03-30"
+    },
+    {
+      "title": "GDB快速入门",
+      "path": "Cubox/GDB 快速入门 - Sangria Chant-2023-06-19.md",
+      "score": {
+        "relevance": 2,
+        "technical": 3,
+        "timeliness": 3,
+        "verifiability": 3,
+        "total": 11
+      },
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch14-工具",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "GDB调试入门，断点/单步/core/attach操作",
+      "scan_date": "2026-03-30"
+    },
+    {
+      "title": "Flutter滑动曲线优化",
+      "path": "Cubox/Flutter滑动体验对齐原生-滑动曲线篇-2022-03-29.md",
+      "score": {
+        "relevance": 2,
+        "technical": 3,
+        "timeliness": 3,
+        "verifiability": 3,
+        "total": 11
+      },
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "low"
+        }
+      ],
+      "summary": "Flutter滑动曲线手感优化，对比原生Android",
+      "scan_date": "2026-03-30"
     }
   ],
   "last_updated": "2026-03-30T17:13:13.526251"
