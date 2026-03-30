@@ -1,6 +1,6 @@
 {
-  "total_files": 3,
-  "indexed_files": 76,
+  "total_files": 4323,
+  "indexed_files": 73,
   "chapters_distribution": {
     "待定": 1,
     "ch05-渲染": 19,
@@ -1566,5 +1566,5 @@
       "scan_date": "2026-03-30"
     }
   ],
-  "last_updated": "2026-03-30T17:13:13.526251"
+  "last_updated": "2026-03-30T19:20:54.095428"
 }

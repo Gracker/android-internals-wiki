@@ -240,6 +240,51 @@
           "result": "verified"
         }
       ]
+    },
+    {
+      "section": "1.1",
+      "section_title": "Android 分层架构",
+      "date": "2026-03-30T19:28:56.725142+08:00",
+      "type": "review-rework-v2",
+      "verifications": [
+        {
+          "claim": "Perfetto三种数据源: ftrace(内核层), atrace(Framework/HAL层), /proc&/sys(系统状态)",
+          "level": "L2",
+          "source": "https://perfetto.dev/docs/data-sources/atrace",
+          "status": "verified"
+        },
+        {
+          "claim": "HIDL使用hwbinder(/dev/hwbinder), AIDL HAL使用标准binder(/dev/binder)",
+          "level": "L2",
+          "source": "https://source.android.com/docs/core/architecture/hal/aidl",
+          "status": "verified"
+        },
+        {
+          "claim": "Binder同步调用会阻塞调用线程, 端到端延迟取决于目标进程",
+          "level": "L2",
+          "source": "https://source.android.com/docs/core/architecture/kernel",
+          "status": "verified"
+        },
+        {
+          "claim": "Thread Running状态不一定在做有用工作(可能自旋锁/忙轮询)",
+          "level": "L4",
+          "source": "perfetto.dev docs + 社区验证",
+          "status": "verified"
+        },
+        {
+          "claim": "SurfaceFlinger FrameMissed行可判断问题在合成层",
+          "level": "L2",
+          "source": "perfetto.dev/docs",
+          "status": "verified"
+        },
+        {
+          "claim": "Treble前HAL在system_server内部(dlopen), Treble后独立进程",
+          "level": "L2",
+          "source": "https://source.android.com/docs/core/architecture/hal",
+          "status": "verified"
+        }
+      ],
+      "pending_verifications": []
     }
   ]
 }
