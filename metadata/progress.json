@@ -2,9 +2,9 @@
   "generated_at": "2026-03-29",
   "total_sections": 93,
   "metrics": {
-    "total": 93,
-    "draft": 98,
-    "ready-for-review": 3,
+    "total": 102,
+    "draft": 93,
+    "ready-for-review": 9,
     "reviewed": 0,
     "finalized": 0,
     "staging_drafts": 0
@@ -63,15 +63,37 @@
       "extensions_total": 3,
       "verification_level": "L2",
       "word_count": "~7500"
+    },
+    {
+      "section": "2.5",
+      "title": "MainThread 与 RenderThread 协作",
+      "completed_at": "2026-03-30T20:47:20.369317",
+      "anchors_covered": 6,
+      "anchors_total": 6,
+      "extensions_covered": 2,
+      "extensions_total": 2,
+      "verification_level": "L2",
+      "word_count": "~8500"
+    },
+    {
+      "section": "2.2",
+      "title": "帧率与刷新率",
+      "completed_at": "2026-03-30T21:35:05",
+      "anchors_covered": 5,
+      "anchors_total": 5,
+      "extensions_covered": 3,
+      "extensions_total": 3,
+      "verification_level": "L2",
+      "word_count": "~8500"
     }
   ],
-  "ready_for_review": 2,
-  "last_updated": "2026-03-30T19:28:32.413458+08:00",
+  "ready_for_review": 9,
+  "last_updated": "2026-03-30T21:35:05",
   "stats": {
     "total": 102,
-    "completed": 2,
-    "pending": 100,
-    "last_updated": "2026-03-30T09:30:54.458837+00:00"
+    "completed": 4,
+    "pending": 98,
+    "last_updated": "2026-03-30T20:47:20.369322"
   },
   "research_stats": {
     "runs_today": [

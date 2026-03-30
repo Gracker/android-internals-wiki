@@ -83,9 +83,12 @@
       "priority": 60,
       "reason": "待加工（素材0篇）",
       "material_paths": [],
-      "status": "pending",
+      "status": "completed",
       "added_by": "manual-init",
-      "added_at": "2026-03-29T21:00:00"
+      "added_at": "2026-03-29T21:00:00",
+      "processed_at": "2026-03-30T21:35:05",
+      "word_count": 8500,
+      "verification_status": "L2_verified_all_anchors_extensions_covered"
     },
     {
       "section": "2.3",
@@ -111,9 +114,10 @@
       "priority": 60,
       "reason": "待加工（素材0篇）",
       "material_paths": [],
-      "status": "pending",
+      "status": "completed",
       "added_by": "manual-init",
-      "added_at": "2026-03-29T21:00:00"
+      "added_at": "2026-03-29T21:00:00",
+      "processed_at": "2026-03-30T21:35:05"
     },
     {
       "section": "2.5",
@@ -121,9 +125,10 @@
       "priority": 60,
       "reason": "待加工（素材0篇）",
       "material_paths": [],
-      "status": "pending",
+      "status": "ready-for-review",
       "added_by": "manual-init",
-      "added_at": "2026-03-29T21:00:00"
+      "added_at": "2026-03-29T21:00:00",
+      "processed_at": "2026-03-30T20:47:20.368141"
     },
     {
       "section": "2.6",
@@ -1149,7 +1154,15 @@
       "processed_at": "2026-03-30T09:30:54.457364+00:00",
       "word_count": 7500,
       "verification_status": "L2_verified_all_anchors"
+    },
+    {
+      "section": "2.2",
+      "title": "帧率与刷新率",
+      "processed_at": "2026-03-30T21:35:05",
+      "status": "completed",
+      "word_count": 8500,
+      "verification_status": "L2_verified_all_anchors_3_extensions_covered"
     }
   ],
-  "last_updated": "2026-03-30T19:28:13.921710+08:00"
+  "last_updated": "2026-03-30T21:35:05"
 }
