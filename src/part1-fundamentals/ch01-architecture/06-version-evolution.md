@@ -1,14 +1,28 @@
 ---
 title: "Android 版本演进中的架构变化"
 chapter: "1.6"
-status: draft
-applicable_versions: "TBD"
-last_verified: ""
-last_verified_against: ""
-confidence: low
-sources: []
-tags: ['treble', 'mainline', 'apex']
-related_chapters: []
+status: ready-for-review
+applicable_versions: "Android 4.4 (API 19) - Android 16 (API 36)"
+last_verified: "2026-03-31"
+last_verified_against: "AOSP android-16.0.0_r1, 官方文档"
+confidence: medium
+sources:
+  - type: official
+    path: "https://source.android.com/docs/core/architecture"
+  - type: official
+    path: "https://source.android.com/docs/core/runtime"
+  - type: blog
+    path: "https://android-developers.googleblog.com (ART Mainline Updates)"
+  - type: blog
+    path: "obsidian/Cubox/谈Android架构创新性-2022-04-02.md"
+  - type: blog
+    path: "obsidian/Personal-Knowlodge/source/2026-03-07_wechat_深度_Android_整体设计及背后意义.md"
+  - type: blog
+    path: "obsidian/Personal-Knowlodge/source/2026-03-06_wechat_后AOSP时代还能贡献代码吗.md"
+  - type: official
+    path: "https://developer.android.com/about/versions"
+tags: ['treble', 'mainline', 'apex', 'gki', 'art', 'dalvik', 'privacy', 'background-restrictions', '16k-page']
+related_chapters: ["1.1", "1.4", "2.9", "4.4", "5.6"]
 ---
 
 # Android 版本演进中的架构变化
@@ -38,4 +52,316 @@ related_chapters: []
 > 锚点内容需 L1/L2 验证，扩展内容至少 L2 验证，自动发现内容至少标注来源。
 <!-- outline-end -->
 
-> 本节内容待加工。
+## 为什么要了解 Android 版本演进
+
+打开 Perfetto 抓一份 Trace，你看到的那些进程、线程、Binder 调用、渲染管线——它们的形态并非一成不变。Android 从 2008 年的 1.0 到今天的 16，每一次大版本的架构变更都在重塑这些行为。如果你不了解这些变化，就会在分析问题时犯经验主义的错误：用 Android 8 的经验去解释 Android 15 的 Trace，得出错误的结论。
+
+更重要的是，Android 的版本演进不是随意的功能堆叠——它有一条清晰的主线：**模块化**。从 Project Treble 到 Project Mainline，从 GKI 到 APEX，Google 一直在把 Android 从一个"铁板一块"的操作系统拆解为可独立升级的模块。理解这条主线，不仅能帮你看懂系统架构的设计意图，还能帮你在实际工作中判断"这个问题是系统层面的还是厂商层面的"——这在 OEM 和 App 开发者的日常工作中至关重要。
+
+本节会梳理 Android 版本演进中那些对性能分析有直接影响的架构变化，而不是事无巨细地罗列每个版本的新功能。
+
+## 关键版本的架构里程碑
+
+Android 的架构演进不是线性的——有些版本在底层做了根本性的重构（如 5.0 引入 ART、8.0 引入 Treble），而有些版本则在应用层和 API 层做了大量工作。我们聚焦于那些改变了系统底层行为的版本。
+
+### Android 4.4 KitKat：ART 初登场
+
+Android 4.4（2013 年）是一个特殊的过渡版本。它首次将 ART（Android Runtime）作为实验性选项引入，与 Dalvik 并存。此时 ART 还不是默认运行时，但它的出现意味着 Google 已经在为 Dalvik 的替代方案做准备了。
+
+从性能角度看，ART 的 AOT（Ahead-Of-Time）编译策略与 Dalvik 的 JIT（Just-In-Time）形成了鲜明对比：ART 在安装时就把 DEX 字节码编译成本地机器码，运行时不再需要即时编译的开销。这在当时的低端设备（512MB 内存）上带来了可感知的流畅度提升。
+
+### Android 5.0 Lollipop：64 位与 ART 正式上位
+
+Android 5.0（2014 年）是 Android 历史上架构变动最大的版本之一，两件事同时发生：
+
+**ART 完全取代 Dalvik。** 从 5.0 开始，Dalvik 被移除，ART 成为唯一的运行时。所有应用在安装时都会被 dex2oat 编译为本地代码。这意味着安装时间变长了，但运行时性能显著提升。垃圾回收器也做了重大改进，GC 暂停时间从 Dalvik 时代的上百毫秒降低到了几毫秒。
+
+**64 位支持。** Android 5.0 正式支持 64 位 ARMv8 架构。这不仅仅是为了寻址更大的内存空间——ARMv8 的指令集设计比 ARMv7 更高效，寄存器数量翻倍（从 16 个通用寄存器增加到 31 个），使得编译器生成的本地代码质量更高。Zygote 也因此有了 zygote64 和 zygote 两个进程，分别用于 fork 64 位和 32 位的应用进程。
+
+### Android 8.0 Oreo：Project Treble——模块化的起点
+
+Android 8.0（2017 年）引入了 **Project Treble**，这是 Android 架构演进中最重要的一次重构。[已验证: 官方文档 source.android.com/docs/core/architecture]
+
+在 Treble 之前，每次升级 Android 版本，芯片厂商（高通、MTK、三星LSI）都需要先更新他们底层驱动代码以适配新的 Framework API，然后设备厂商再基于芯片厂商的适配做整机集成。这条链路动辄需要半年以上，这也是 Android 设备系统更新缓慢的根本原因。
+
+Treble 的解决方案简洁而彻底：在 Android Framework 和厂商实现（HAL）之间插入一层稳定的接口（HIDL/AIDL），将系统分为 **System 分区**（Google 控制）和 **Vendor 分区**（芯片/设备厂商控制）。这样，Framework 可以独立于 Vendor 进行升级。
+
+```
+[图：Project Treble 前后的架构对比]
+┌──────────────┐    ┌──────────────┐
+│   Framework   │    │   Framework   │
+│              │    │              │
+│  (直接调用     │ →  │  HIDL/AIDL   │ ← 稳定接口层
+│   HAL .so)   │    │  接口层       │
+│              │    │              │
+│  HAL (.so)   │    │  HAL (.so)   │
+└──────────────┘    └──────────────┘
+  Treble 之前          Treble 之后
+```
+
+[来源: obsidian/Cubox/谈Android架构创新性-2022-04-02.md] 从系统架构的角度看，Treble 的核心思想是**接口依赖倒置**——Google 定义接口，下层去实现，而不是下层定义接口，上层来适配。这让 Google 牢牢控制了 Android 的演进方向。
+
+对性能分析的影响：Treble 之后，Binder IPC 中出现了两类通信——传统的 `binder`（Framework 层）和新增的 `hwbinder`（HAL 层）。在 Perfetto 中你可以看到这两种 Binder 调用，它们的行为特征有所不同。hwbinder 调用通常涉及硬件操作（如相机、传感器），延迟更高。
+
+### Android 10：Project Mainline 与 APEX
+
+Android 10（2019 年）在 Treble 的基础上更进一步，引入了 **Project Mainline**（也叫 Project Mainline 或 Mainline modules）。[已验证: 官方文档 source.android.com/docs/core/ota/modular-system]
+
+如果说 Treble 是让 Framework 可以独立升级，那 Mainline 就是让 Framework **内部的特定组件**可以通过 Google Play 独立升级。想象一下：ART 虚拟机、媒体编解码器、DNS 解析器——这些核心组件不再需要等待完整的 OTA 更新，而是像 App 一样通过 Play Store 后台更新。
+
+为了实现这一点，Google 设计了 **APEX**（Android Pony EXpress）——一种类似于 APK 但可以包含本地库和服务的打包格式。APEX 模块可以在启动早期（比常规 APK 更早）被加载，因此适合承载像 ART 这样的底层组件。Android 10 首次发布时包含 13 个 Mainline 模块，后续版本中数量持续增加。
+
+[自动发现: 来源 obsidian/Personal-Knowlodge/source/2026-03-07_wechat_Android_运行时更新_为数十亿设备提高内存.md] ART 作为 Mainline 模块的特别意义在于：ART 的性能优化（如写入屏障消除、隐式挂起检查等编译器改进）可以通过 Play Store 推送到 Android 12+ 的设备上，无需完整系统更新。Google 称这些优化为全球超过 10 亿台设备节省了约 47-95 PB 的存储空间。
+
+### Android 12：GKI 与 Material You
+
+Android 12（2021 年）在模块化道路上又迈了一步：**GKI（Generic Kernel Image）**。[已验证: 官方文档 source.android.com/docs/core/architecture/kernel/gki]
+
+GKI 将模块化的边界推进到了 Linux 内核。在 GKI 之前，每个设备都有一个定制的内核（SoC 厂商 + 设备厂商的各种补丁），导致内核碎片化严重。GKI 的思路与 Treble 一脉相承：定义一个稳定的 **KMI（Kernel Module Interface）**，将 SoC 和设备特定的代码从核心内核中移出到可加载的厂商模块中。
+
+搭载 Android 12 且使用 Linux 5.10+ 内核的设备被要求使用 GKI 内核。这意味着同一个 GKI 内核镜像可以运行在不同 SoC 的设备上——这在以前是不可想象的。
+
+对性能分析的影响：GKI 意味着内核行为更加标准化。在做跨设备的性能对比时，内核层面的差异会越来越小，更多差异集中在 HAL 和 Vendor 层。
+
+### Android 16 (Baklava)：最新架构变化
+
+Android 16（2025 年 6 月发布，代号 Baklava）延续了模块化和性能优化的趋势。[已验证: 官方文档 developer.android.com/about/versions/16]
+
+几个对性能分析有直接影响的架构变化：
+
+**Generic Bootloader (GBL)。** Android 16 引入了标准化的可更新 Bootloader，将模块化从内核进一步延伸到了引导程序。Bootloader 的标准化意味着启动链的前半段（Boot ROM → Bootloader → Kernel）也可以通过标准化接口进行独立更新。
+
+**16KB 页面大小的兼容模式。** Android 15 开始支持 16KB 内存页面（详见本节扩展内容），Android 16 为此增加了兼容模式——允许为 4KB 页面构建的 App 在 16KB 设备上运行。同时，TLS 相关的缓冲区被隔离到独立的内存页面中，在 16KB 页面大小的设备上可以显著节省内存。
+
+**更严格的后台限制。** Android 16 将前台服务启动的后台 Job 也纳入了运行时配额管理，进一步收紧了后台执行的自由度。
+
+**性能监控 API 增强。** 新增了 system-triggered profiling（系统触发的性能分析）和 ApplicationStartInfo 中的组件启动信息，为开发者提供了更精细的性能分析能力。[待验证: 具体API在 android-16.0.0_r1 中的实现细节]
+
+**修订的 SDK 发布节奏。** Android 16 引入了新的 SDK 发布结构——2025 年内发布两个 API 版本。第一个包含新 API 和行为变更，第二个只增加 API 不改变行为。这对 App 开发者意味着更平滑的适配周期。
+
+## Project Treble → VINTF → GSI → GKI：模块化的完整链条
+
+上面我们按时间线梳理了各个里程碑。现在让我们把这些变化串起来，看看它们是如何形成一条完整的模块化链条的。
+
+这条链条的目标只有一个：**让 Android 的每一层都可以独立更新。**
+
+```
+[图：Android 模块化演进全景]
+
+┌─────────────────────────────────────┐
+│           App Layer                  │  ← 一直可以独立更新（Play Store）
+├─────────────────────────────────────┤
+│       Framework Layer                │  ← Treble (8.0) 后可独立更新
+├─────────────────────────────────────┤
+│     Framework 内部组件               │  ← Mainline/APEX (10) 后可独立更新
+├─────────────────────────────────────┤
+│       HAL / Vendor Layer            │  ← Treble (8.0) 定义了稳定接口
+├─────────────────────────────────────┤
+│       Linux Kernel                   │  ← GKI (12) 后可独立更新核心内核
+├─────────────────────────────────────┤
+│       Bootloader                     │  ← GBL (16) 标准化引导程序
+├─────────────────────────────────────┤
+│       Boot ROM                       │  ← 芯片固化，不可更新
+└─────────────────────────────────────┘
+```
+
+### VINTF：Treble 的"契约"
+
+VINTF（Vendor Interface）是 Treble 架构中定义 HAL 接口版本和兼容性的框架。设备厂商需要在 VINTF manifest 中声明自己实现了哪些 HAL 接口（版本号、类型），而 Framework 则在 compatibility matrix 中声明它需要哪些 HAL 接口。OTA 更新时，系统会校验这两份"契约"是否匹配——如果 Framework 的要求超出了 Vendor 的实现范围，更新会被拒绝。
+
+这种设计保证了一个老设备的 Vendor 分区可以和新版本的 Framework 正常配合工作。
+
+### GSI：Treble 的"试金石"
+
+GSI（Generic System Image）是 Treble 架构的一个副产品——如果 Treble 的接口定义足够完善，那么一个纯 AOSP 编译出来的 System Image 理论上应该能在任何 Treble 兼容的设备上运行。GSI 就是这个"通用系统镜像"，主要用于：
+
+1. **CTS-V（Compatibility Test Suite for Vendors）验证**：设备必须通过 GSI 测试才能获得 Google 认证
+2. **开发调试**：开发者可以在自己的设备上刷入 GSI 来测试纯 AOSP 的行为
+3. **Project Treble 合规性检查**：确保厂商的 Vendor 实现确实遵循了 Treble 接口
+
+[来源: obsidian/Cubox/谈Android架构创新性-2022-04-02.md] 从系统工程师的视角看，Android 架构设计的核心要素可以归纳为：接口定义（IDL）、接口约束（VINTF/CTS）、接口调用约束（namespace/linker namespace），以及配套的测试套件。Treble 和 GKI 都遵循了这个模式。
+
+## 从 Dalvik 到 ART：编译策略的演进
+
+Android 的运行时经历了从 Dalvik 到 ART 的迁移，但这个故事比"换个虚拟机"复杂得多——编译策略本身也在不断演进，每一次调整都直接影响着 App 的启动速度和运行时性能。
+
+### Dalvik 时代：JIT 编译（Android 2.2 - 4.4）
+
+早期的 Android 设备内存非常有限（200MB RAM 很常见）。Dalvik 运行时采用 **JIT（Just-In-Time）编译**策略：应用运行时，Dalvik 会跟踪频繁执行的代码路径（"trace"），并将这些热点代码动态编译为本地机器码。未编译的代码则以解释方式执行。
+
+JIT 的优势是内存占用小——只编译真正用到的代码。劣势也显而易见：每次运行都需要重新编译（编译结果不持久化），运行时开销大，耗电。
+
+Android 2.2 引入的 trace-based JIT 让 Dalvik 的性能有了质的飞跃，但随着 App 越来越大、功能越来越多，JIT 的局限性也日益明显。
+
+### ART 初期：全量 AOT 编译（Android 5.0 - 6.0）
+
+ART 在 Android 5.0 取代 Dalvik 后，采取了截然不同的策略——**AOT（Ahead-Of-Time）全量编译**。安装 App 时，dex2oat 工具会将整个 DEX 文件编译为 OAT（Optimized Android applicaTion）格式的本地代码。[已验证: 官方文档 source.android.com/docs/core/runtime]
+
+全量 AOT 的好处是运行时零编译开销——所有代码都是本地机器码，直接执行。GC 暂停时间也从 Dalvik 时代的"World Pause"（上百毫秒）大幅缩短。App 运行更流畅，这是 5.0 被誉为"最流畅的 Android 版本"的技术基础。
+
+但全量 AOT 有三个严重的问题：
+
+1. **安装时间暴增**：一个大型 App 的 dex2oat 编译可能需要几分钟
+2. **存储空间占用大**：OAT 文件体积是原始 DEX 的数倍
+3. **系统更新后全部重编译**：OTA 更新后，所有 App 都需要重新 dex2oat，导致更新后首次启动极慢
+
+这恰恰说明了性能优化中没有银弹——AOT 解决了运行时性能问题，却引入了安装时间和空间的问题。
+
+### Profile-Guided 混合编译（Android 7.0 至今）
+
+Android 7.0 引入了**混合编译策略**，这是 ART 编译策略的最终形态，至今仍是 Android 的核心编译方案。[已验证: 官方文档 source.android.com/docs/core/runtime]
+
+核心思路是结合 JIT 和 AOT 的优势：
+
+1. **首次启动**：App 以解释模式或 JIT 模式运行，不做全量 AOT。安装速度飞快。
+2. **运行时画像（Profile）**：ART 在运行过程中记录哪些方法被频繁调用（"hot methods"），生成本地 Profile 文件。
+3. **后台 AOT 编译**：当设备空闲且充电时，编译守护进程根据 Profile 数据，只对"hot methods"进行 AOT 编译。冷代码不需要浪费编译资源。
+4. **后续启动**：已经 AOT 编译的 hot methods 直接执行本地代码，未编译的部分仍然走 JIT 或解释。
+
+这样就兼顾了安装速度（不全量编译）、运行性能（hot methods 有本地代码）和存储空间（只编译必要的代码）。
+
+后续的改进包括：
+
+- **Cloud Profiles（Android 9+）**：Google Play 收集大量用户的 Profile 数据，在 App 安装时就提供聚合后的 Profile，让首次启动就有 AOT 编译的热点代码
+- **Baseline Profiles（Android 7+，库开发者可提供）**：开发者可以在 APK 中内置 Profile 文件，定义自己 App 的关键代码路径。Jetpack 库（如 Compose）已经内置了 Baseline Profiles。这对 Compose 的首次启动性能至关重要——没有 Baseline Profile 的 Compose App 在首次启动时会有明显的卡顿。
+
+从 Perfetto 的角度看，编译策略直接影响你在 Trace 中看到的模式：如果一个 App 首次安装后启动很慢但后续变快，那就是 Profile-Guided 编译在起作用。你可以在 Trace 中观察到首次启动时更多的 JIT 编译活动（对应 CPU 使用率高峰），以及后续启动时这些活动消失。
+
+## Privacy 变更对性能监控工具的影响
+
+Android 的隐私保护在不断加强，这对性能监控工具的开发和使用产生了深远影响。这不是一个"锦上添花"的话题——如果你在做性能监控 SDK 或内部工具，不了解这些限制，你的工具可能在新版本上直接失效。
+
+### 包可见性限制（Android 11+）
+
+Android 11（API 30）引入了**包可见性（Package Visibility）限制**。[已验证: 官方文档 developer.android.com/training/package-visibility]
+
+在此之前，任何 App 都可以通过 `PackageManager.getInstalledApplications()` 获取设备上所有已安装 App 的列表。在 Android 11+ 上，这个方法默认只返回本 App 和少数系统 App。要查询其他 App，必须在 Manifest 中通过 `<queries>` 元素显式声明，或者申请 `QUERY_ALL_PACKAGES` 权限（Google Play 对此权限有严格审查）。
+
+对性能监控的影响：
+
+- **竞品对比工具**无法再自动发现竞品 App
+- **系统级性能分析工具**（如检测后台 App 占用的工具）受限
+- **SDK** 如果需要检测宿主 App 的依赖库版本，需要在 AAR 的 Manifest 中声明 queries
+
+### 其他关键隐私限制
+
+- **Android 10**：后台位置权限需要单独授权（`ACCESS_BACKGROUND_LOCATION`）
+- **Android 11**：一次性权限授权、权限自动撤销（长期未使用的 App 的权限被自动回收）
+- **Android 12**：精确闹钟需要 `SCHEDULE_EXACT_ALARM` 权限（进一步限制后台定时任务）
+- **Android 13**：通知权限（`POST_NOTIFICATIONS`）需要运行时授权；`SCHEDULE_EXACT_ALARM` 默认拒绝
+- **Android 14**：前台服务必须声明类型并申请对应权限（如 `FOREGROUND_SERVICE_CAMERA`）
+- **Android 15**：`dataSync` 和 `mediaProcessing` 类型的前台服务有 6 小时/24 小时的配额限制；后台 App 网络请求被限制
+
+[适用版本: Android 10 (API 29) 起，隐私限制逐版本收紧]
+
+对性能分析工具开发者的启示：设计工具时就要考虑最小权限原则。能用 `<queries>` 精确声明的就不要申请 `QUERY_ALL_PACKAGES`；能用 WorkManager 的就不要用前台服务；能用 ProfilingManager API 的就不要自己做 proc 文件读取。
+
+## 扩展：后台限制的持续收紧
+
+Android 对后台执行的管制经历了从"放任"到"严管"的渐进过程。这个趋势对 App 开发者和性能优化工程师都至关重要——因为很多"以前能用的招"现在不能用了。
+
+### 限制演进时间线
+
+**Android 8.0（2017）——后台执行限制元年。** 这是 Android 第一次系统性地限制后台行为。App 进入缓存状态后，后台服务会在几分钟内被系统杀死。为了给必要的后台任务留一条路，Android 8.0 引入了 `startForegroundService()`——但服务必须在 5 秒内调用 `startForeground()` 显示通知，否则触发 ANR。隐式广播也受到了限制。
+
+**Android 12（2021）——前台服务启动限制。** App 在后台时，一般情况下不能再启动前台服务，否则抛出 `ForegroundServiceStartNotAllowedException`。同时引入了 "Phantom Process Killer"——限制 App 的子进程总数（全局 32 个）和后台 CPU 使用。精确闹钟需要声明 `SCHEDULE_EXACT_ALARM` 权限。
+
+**Android 13（2022）——精确闹钟收紧。** `SCHEDULE_EXACT_ALARM` 对新安装的 App 默认拒绝，只有闹钟、日历等核心场景可以通过 `USE_EXACT_ALARM` 获得权限。
+
+**Android 14（2023）——前台服务类型强制声明。** 所有前台服务必须在 Manifest 中声明具体类型（mediaPlayback、location、connectedDevice 等），并申请对应权限。`BOOT_COMPLETED` 广播对某些前台服务类型的启动也做了限制。
+
+**Android 15（2024）——配额制。** `dataSync` 和 `mediaProcessing` 前台服务类型引入了 6 小时/24 小时的配额。后台 App 的网络请求在非 WorkManager/前台服务场景下直接失败（`UnknownHostException`）。
+
+**Android 16（2025）——配额扩展。** 从前台服务启动的后台 Job 也必须遵守运行时配额。JobScheduler 的配额根据 App 的 standby bucket 和启动时的状态动态调整。
+
+[已验证: 官方文档 developer.android.com/about/versions]
+
+对性能优化的影响：
+
+- **App 不能再依赖后台长时间运行**——必须用 WorkManager 等调度框架
+- **定时任务的精度受限**——精确闹钟不再是默认能力
+- **后台网络请求可能静默失败**——需要在错误处理中考虑 `UnknownHostException`
+- **前台服务的通知要求越来越严格**——用户更容易感知并关闭
+
+## 扩展：16K Page Size 对性能和兼容性的影响
+
+这是 Android 15 引入的底层架构变化，对性能和 App 兼容性都有直接影响。
+
+### 为什么需要更大的页面
+
+传统上，Linux（包括 Android）使用 4KB 的内存页面大小。这是早期硬件条件下的合理选择。但现代 ARM CPU 普遍支持更大的页面大小（16KB、64KB），而 Android 设备的物理内存也已经从早期的 512MB 增长到 8GB、12GB 甚至 16GB。
+
+更大的页面带来的好处是 **TLB（Translation Lookaside Buffer）命中率更高**。TLB 是 CPU 中缓存虚拟地址到物理地址映射的高速缓存，更大的页面意味着同样的 TLB 容量可以覆盖更多的内存，减少 TLB miss 导致的页面遍历开销。
+
+### 实测性能提升
+
+Google 官方的测试数据显示，在 16KB 页面大小的设备上：[已验证: 官方博客 android-developers.googleblog.com]
+
+- **App 启动时间**平均缩短 3.16%，部分 App 提升达 30%
+- **功耗**在 App 启动场景降低 4.56%
+- **相机冷启动**加快 6.60%
+- **系统开机时间**缩短约 0.8 秒（8%）
+
+整体性能提升约 5-10%，代价是内存使用略有增加（因为内存对齐导致的内部碎片）。
+
+### 对 App 兼容性的影响
+
+**纯 Kotlin/Java 应用**几乎不需要改动——ART 虚拟机屏蔽了页面大小的差异。
+
+**使用 Native 代码（C/C++）的应用**需要重新编译，确保 ELF 文件使用 16KB 对齐。具体来说：
+- NDK 构建需要配置 `max-page-size=16384`
+- 直接操作内存的 Native 代码需要检查是否有假设 4KB 页面大小的硬编码
+- 某些使用 `mmap` 的代码需要检查对齐参数
+
+从 2025 年 11 月起，Google Play 要求所有新提交的 App（targeting Android 15+）必须在 64 位设备上支持 16KB 页面大小。不支持的应用可能会被拒绝上架。
+
+Android 16 增加了兼容模式，让部分为 4KB 页面构建的 App 能在 16KB 设备上运行，但这只是过渡方案——开发者最终需要正确支持 16KB。
+
+## 在 Perfetto 中的版本差异观察
+
+了解版本演进后，你可以在 Perfetto 中观察到一些具体的版本差异：
+
+| 特征 | Android 8 之前 | Android 8-10 | Android 11+ |
+|------|----------------|-------------|-------------|
+| Binder 类型 | 只有 binder | binder + hwbinder | binder + hwbinder |
+| Zygote | zygote + zygote64 | zygote64 + zygote | zygote64 + zygote |
+| 编译产物 | 完整 OAT（全量AOT） | VDEX+ODEX（Profile-AOT） | VDEX+ODEX（Profile-AOT） |
+| 后台进程 | 可长期存活 | 受限但仍可后台服务 | 配额制 + 网络限制 |
+
+[待补充：不同版本 Perfetto Trace 的对比截图]
+
+## 常见问题与误区
+
+### 误区："升级 Android 版本会让 App 变慢"
+
+实际情况取决于具体场景。ART 的编译策略优化、GC 改进通常会让 App 更快。但后台限制的收紧可能影响依赖后台运行的 App。如果 App 做了适当的适配（使用 WorkManager、合理声明前台服务类型），新版本上通常会更快。
+
+### 误区："Treble 只影响系统开发者，App 开发者不需要了解"
+
+Treble 改变了 HAL 层的通信方式，间接影响了硬件相关操作（相机、传感器、音频）的延迟特征。如果你在分析涉及硬件的延迟问题（如相机启动慢），了解 Treble 架构有助于判断问题出在 Framework 层还是 HAL 层。
+
+### 误区："Profile-Guided 编译意味着 App 安装后第一次都很慢"
+
+Cloud Profiles 和 Baseline Profiles 大幅缓解了这个问题。大多数通过 Google Play 分发的 App 在安装时就能获得 Profile 数据，首次启动时热点代码已经有 AOT 编译。真正"裸启动"（无任何 Profile）的场景越来越少见。
+
+## 参考资料
+
+- 官方文档：
+  - [Android Architecture](https://source.android.com/docs/core/architecture)
+  - [Project Treble](https://source.android.com/docs/core/architecture/treble)
+  - [Project Mainline](https://source.android.com/docs/core/ota/modular-system)
+  - [GKI](https://source.android.com/docs/core/architecture/kernel/gki)
+  - [ART and Dalvik](https://source.android.com/docs/core/runtime)
+  - [Package Visibility](https://developer.android.com/training/package-visibility)
+  - [Background Execution Limits](https://developer.android.com/about/versions/oreo/background)
+  - [16KB Page Size](https://developer.android.com/guide/practices/page-sizes)
+  - [Android 16 Features](https://developer.android.com/about/versions/16)
+- AOSP 源码路径：
+  - `art/dex2oat/dex2oat.cc` — dex2oat 编译器入口
+  - `system/apex/` — APEX 模块定义
+  - `hardware/interfaces/` — HIDL 接口定义
+- Obsidian 素材：
+  - [谈Android架构创新性](obsidian://open?vault=Obsidian&file=Cubox%2F%E8%B0%88Android%E6%9E%B6%E6%9E%84%E5%88%9B%E6%96%B0%E6%80%A7-2022-04-02.md)
+  - [深度 | Android 整体设计及背后意义](obsidian://open?vault=Obsidian&file=Personal-Knowlodge%2Fsource%2F2026-03-07_wechat_%E6%B7%B1%E5%BA%A6_Android_%E6%95%B4%E4%BD%93%E8%AE%BE%E8%AE%A1%E5%8F%8A%E8%83%8C%E5%90%8E%E6%84%8F%E4%B9%89.md)
+  - [Android 运行时更新 | 为数十亿设备提高内存](obsidian://open?vault=Obsidian&file=Personal-Knowlodge%2Fsource%2F2026-03-07_wechat_Android_%E8%BF%90%E8%A1%8C%E6%97%B6%E6%9B%B4%E6%96%B0_%E4%B8%BA%E6%95%B0%E5%8D%81%E4%BA%BF%E8%AE%BE%E5%A4%87%E6%8F%90%E9%AB%98%E5%86%85%E5%AD%98.md)
+  - [后AOSP时代还能贡献代码吗](obsidian://open?vault=Obsidian&file=Personal-Knowlodge%2Fsource%2F2026-03-06_wechat_%E5%90%8EAOSP%E6%97%B6%E4%BB%A3%E8%BF%98%E8%83%BD%E8%B4%A1%E7%8C%AE%E4%BB%A3%E7%A0%81%E5%90%97.md)

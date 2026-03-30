@@ -1,5 +1,5 @@
 {
-  "total_skipped": 1452,
+  "total_skipped": 1501,
   "files": [
     {
       "title": "第 10 章：内存性能",
@@ -15322,6 +15322,868 @@
         "total": 9
       },
       "reason": "模块化关联度低"
+    },
+    {
+      "path": "Cubox/Podcast -《Kotlin 炉边漫谈》第 3 期：技术社区组织者都在忙什么--2022-09-05.md",
+      "title": "Podcast |《Kotlin 炉边漫谈》第 3 期：技术社区组织者都在忙什么?",
+      "total_score": 9,
+      "skip_reason": "Score 9/20 < threshold 10",
+      "skipped_at": "2026-03-31T04:49:46.281540"
+    },
+    {
+      "path": "Cubox/Podcast -《Kotlin炉边漫谈》第2期：听说Kotlin能算命？-2022-07-27.md",
+      "title": "Podcast |《Kotlin炉边漫谈》第2期：听说Kotlin能算命？",
+      "total_score": 9,
+      "skip_reason": "Score 9/20 < threshold 10",
+      "skipped_at": "2026-03-31T04:49:46.281542"
+    },
+    {
+      "path": "Cubox/Prompt Engineering-2023-03-20.md",
+      "title": "Prompt Engineering",
+      "total_score": 9,
+      "skip_reason": "Score 9/20 < threshold 10",
+      "skipped_at": "2026-03-31T04:49:46.281544"
+    },
+    {
+      "path": "Cubox/Qualcomm Works with Meta to Enable On-device AI Applications Using Llama 2-2023-07-24.md",
+      "title": "Qualcomm Works with Meta to Enable On-device AI Applications Using Llama 2",
+      "total_score": 9,
+      "skip_reason": "Score 9/20 < threshold 10",
+      "skipped_at": "2026-03-31T04:49:46.281545"
+    },
+    {
+      "path": "Cubox/Re-Build 产品重构计划 #4：独立开发不要犯的 10 个错误-2022-03-17.md",
+      "title": "Re:Build 产品重构计划 #4：独立开发不要犯的 10 个错误",
+      "total_score": 9,
+      "skip_reason": "Score 9/20 < threshold 10",
+      "skipped_at": "2026-03-31T04:49:46.281547"
+    },
+    {
+      "path": "Cubox/Repository files navigation-2023-09-15.md",
+      "title": "Repository files navigation",
+      "total_score": 9,
+      "skip_reason": "Score 9/20 < threshold 10",
+      "skipped_at": "2026-03-31T04:49:46.281548"
+    },
+    {
+      "path": "Cubox/Repository files navigation-2023-11-13.md",
+      "title": "Repository files navigation",
+      "total_score": 9,
+      "skip_reason": "Score 9/20 < threshold 10",
+      "skipped_at": "2026-03-31T04:49:46.281552"
+    },
+    {
+      "path": "Cubox/Requirements for Chinese Text Layout - 中文排版需求-2022-01-19.md",
+      "title": "Requirements for Chinese Text Layout - 中文排版需求",
+      "total_score": 9,
+      "skip_reason": "Score 9/20 < threshold 10",
+      "skipped_at": "2026-03-31T04:49:46.281553"
+    },
+    {
+      "path": "Cubox/Review- Performance Modeling and Design of Computer Systems- Queueing Theory in Action-2023-09-05.md",
+      "title": "Review: Performance Modeling and Design of Computer Systems: Queueing Theory in ",
+      "total_score": 9,
+      "skip_reason": "Score 9/20 < threshold 10",
+      "skipped_at": "2026-03-31T04:49:46.281555"
+    },
+    {
+      "path": "Cubox/Robert Love 在 Quora 上的问答 [一]-2023-02-12.md",
+      "title": "Robert Love 在 Quora 上的问答 [一]",
+      "total_score": 9,
+      "skip_reason": "Score 9/20 < threshold 10",
+      "skipped_at": "2026-03-31T04:49:46.281556"
+    },
+    {
+      "path": "Cubox/STEPN 为健身领域带来 Web3 革命-2022-03-17.md",
+      "title": "STEPN 为健身领域带来 Web3 革命",
+      "total_score": 9,
+      "skip_reason": "Score 9/20 < threshold 10",
+      "skipped_at": "2026-03-31T04:49:46.281558"
+    },
+    {
+      "path": "Cubox/STEPN 我動故我賺，8000 字新手必讀聖經！-2022-03-22.md",
+      "title": "STEPN 我動故我賺，8000 字新手必讀聖經！",
+      "total_score": 9,
+      "skip_reason": "Score 9/20 < threshold 10",
+      "skipped_at": "2026-03-31T04:49:46.281559"
+    },
+    {
+      "path": "Cubox/STEPN 新手入门及进阶 — 0xBigPineapple-2022-04-03.md",
+      "title": "STEPN 新手入门及进阶 — 0xBigPineapple",
+      "total_score": 9,
+      "skip_reason": "Score 9/20 < threshold 10",
+      "skipped_at": "2026-03-31T04:49:46.281560"
+    },
+    {
+      "path": "Cubox/STEPN 白皮书2.1-翻译.docx - Google 文档-2022-04-10.md",
+      "title": "STEPN 白皮书2.1-翻译.docx - Google 文档",
+      "total_score": 9,
+      "skip_reason": "Score 9/20 < threshold 10",
+      "skipped_at": "2026-03-31T04:49:46.281562"
+    },
+    {
+      "path": "Cubox/Podcast -《Kotlin 炉边漫谈》第 15 期：和在 Meta 写 Kotlin 编译器插...-2024-01-10.md",
+      "title": "Podcast |《Kotlin 炉边漫谈》第 15 期：和在 Meta 写 Kotlin 编译器插...",
+      "total_score": 10,
+      "skip_reason": "False positive: not Android technical content",
+      "skipped_at": "2026-03-31T04:49:46.281564"
+    },
+    {
+      "path": "Cubox/Productivity-2025-05-12.md",
+      "title": "Productivity",
+      "total_score": 11,
+      "skip_reason": "False positive: not Android technical content",
+      "skipped_at": "2026-03-31T04:49:46.281565"
+    },
+    {
+      "path": "Cubox/Promoting AI agents-2026-01-07.md",
+      "title": "Promoting AI agents",
+      "total_score": 10,
+      "skip_reason": "False positive: not Android technical content",
+      "skipped_at": "2026-03-31T04:49:46.281567"
+    },
+    {
+      "path": "Cubox/Prompt Engineering - Kaggle-2025-04-12.md",
+      "title": "Prompt Engineering | Kaggle",
+      "total_score": 10,
+      "skip_reason": "False positive: not Android technical content",
+      "skipped_at": "2026-03-31T04:49:46.281568"
+    },
+    {
+      "path": "Cubox/Python 潮流周刊#90：uv 一周岁了，优缺点分析 - 豌豆花下猫-2025-02-23.md",
+      "title": "Python 潮流周刊#90：uv 一周岁了，优缺点分析 - 豌豆花下猫",
+      "total_score": 11,
+      "skip_reason": "False positive: not Android technical content",
+      "skipped_at": "2026-03-31T04:49:46.281569"
+    },
+    {
+      "path": "Cubox/QuestMobile2024微信小程序年度报告：微信小程序用户规模达9.49亿，月人均使用近70次……-行业研究报告-QuestMobile-2025-11-18.md",
+      "title": "QuestMobile2024微信小程序年度报告：微信小程序用户规模达9.49亿，月人均使用近70次……-行业研究报告-QuestMobile",
+      "total_score": 10,
+      "skip_reason": "False positive: not Android technical content",
+      "skipped_at": "2026-03-31T04:49:46.281571"
+    },
+    {
+      "path": "Cubox/Qwen3-Coder- 在世界中自主编程-2025-07-23.md",
+      "title": "Qwen3-Coder: 在世界中自主编程",
+      "total_score": 10,
+      "skip_reason": "False positive: not Android technical content",
+      "skipped_at": "2026-03-31T04:49:46.281572"
+    },
+    {
+      "path": "Cubox/Recently uploaded-2024-07-11.md",
+      "title": "Recently uploaded",
+      "total_score": 12,
+      "skip_reason": "False positive: not Android technical content",
+      "skipped_at": "2026-03-31T04:49:46.281574"
+    },
+    {
+      "path": "Cubox/Repository files navigation-2023-12-26.md",
+      "title": "Repository files navigation",
+      "total_score": 12,
+      "skip_reason": "False positive: not Android technical content",
+      "skipped_at": "2026-03-31T04:49:46.281575"
+    },
+    {
+      "path": "Cubox/SP05.愿意主动承受痛苦，才是热爱的证明-2025-01-20.md",
+      "title": "SP05.愿意主动承受痛苦，才是热爱的证明",
+      "total_score": 10,
+      "skip_reason": "False positive: not Android technical content",
+      "skipped_at": "2026-03-31T04:49:46.281577"
+    },
+    {
+      "title": "STEPN 研究报告",
+      "path": "Cubox/STEPN 研究报告：X to Earn 会点燃 GameFi Summer 吗？｜响指出品-2022-05-03.md",
+      "score": {
+        "relevance": 0,
+        "technical_depth": 1,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 4
+      },
+      "matched_chapters": [],
+      "reason": "总分4<16分"
+    },
+    {
+      "title": "STEPN设计思路和经济模型的分析",
+      "path": "Cubox/STEPN设计思路和经济模型的分析 — 0xBigPineapple-2022-04-05.md",
+      "score": {
+        "relevance": 0,
+        "technical_depth": 1,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 4
+      },
+      "matched_chapters": [],
+      "reason": "总分4<16分"
+    },
+    {
+      "title": "STEPN设计思路和经济模型的分析",
+      "path": "Cubox/STEPN设计思路和经济模型的分析 — 0xBigPineapple-2022-04-08.md",
+      "score": {
+        "relevance": 0,
+        "technical_depth": 1,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 4
+      },
+      "matched_chapters": [],
+      "reason": "总分4<16分"
+    },
+    {
+      "title": "Sam Altman 与开发者的一小时",
+      "path": "Cubox/Sam Altman 与开发者的一小时：GPT-5 搞砸了、招聘放缓、以及 2026 年最担心的事-2026-01-28.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 5,
+        "verifiability": 2,
+        "total": 9
+      },
+      "matched_chapters": [],
+      "reason": "总分9<16分"
+    },
+    {
+      "title": "San Jose Downtown 徒步",
+      "path": "Cubox/San Jose Downtown 徒步-2023-09-25.md",
+      "score": {
+        "relevance": 0,
+        "technical_depth": 1,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 4
+      },
+      "matched_chapters": [],
+      "reason": "总分4<16分"
+    },
+    {
+      "title": "Scheduling for the Android display pipeline",
+      "path": "Cubox/Scheduling for the Android display pipeline [LWN.net]-2025-09-18.md",
+      "score": {
+        "relevance": 4,
+        "technical_depth": 4,
+        "timeliness": 3,
+        "verifiability": 4,
+        "total": 15
+      },
+      "matched_chapters": [
+        "ch02-渲染",
+        "ch05-渲染"
+      ],
+      "reason": "总分15<16分"
+    },
+    {
+      "title": "Schedutil governor情景分析",
+      "path": "Cubox/Schedutil governor情景分析-2022-03-18.md",
+      "score": {
+        "relevance": 3,
+        "technical_depth": 3,
+        "timeliness": 2,
+        "verifiability": 2,
+        "total": 10
+      },
+      "matched_chapters": [
+        "ch06-功耗"
+      ],
+      "reason": "总分10<16分"
+    },
+    {
+      "title": "Scripting News",
+      "path": "Cubox/Scripting News-2022-01-18.md",
+      "score": {
+        "relevance": 0,
+        "technical_depth": 1,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 4
+      },
+      "matched_chapters": [],
+      "reason": "总分4<16分"
+    },
+    {
+      "title": "Scudo内存分配器介绍",
+      "path": "Cubox/Scudo内存分配器介绍-2022-01-14.md",
+      "score": {
+        "relevance": 4,
+        "technical_depth": 3,
+        "timeliness": 3,
+        "verifiability": 2,
+        "total": 12
+      },
+      "matched_chapters": [
+        "ch07-内存"
+      ],
+      "reason": "总分12<16分"
+    },
+    {
+      "title": "Searching for outliers",
+      "path": "Cubox/Searching for outliers-2025-04-08.md",
+      "score": {
+        "relevance": 0,
+        "technical_depth": 1,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 5
+      },
+      "matched_chapters": [],
+      "reason": "总分5<16分"
+    },
+    {
+      "title": "Seeing Like an Algorithm",
+      "path": "Cubox/Seeing Like an Algorithm — Remains of the Day-2023-07-11.md",
+      "score": {
+        "relevance": 0,
+        "technical_depth": 1,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 4
+      },
+      "matched_chapters": [],
+      "reason": "总分4<16分"
+    },
+    {
+      "title": "Seeking the Productive Life",
+      "path": "Cubox/Seeking the Productive Life- Some Details of My Personal Infrastructure—Stephen Wolfram Writings-202.md",
+      "score": {
+        "relevance": 0,
+        "technical_depth": 1,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 4
+      },
+      "matched_chapters": [],
+      "reason": "总分4<16分"
+    },
+    {
+      "title": "Shadowrocket GeoIP2",
+      "path": "Cubox/Shadowrocket GeoIP2 数据库以及配置规则优化-2024-12-01.md",
+      "score": {
+        "relevance": 0,
+        "technical_depth": 1,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 5
+      },
+      "matched_chapters": [],
+      "reason": "总分5<16分"
+    },
+    {
+      "title": "SharedFlow 也丢事件",
+      "path": "Cubox/SharedFlow 也丢事件？一起来看 MVI-Dispatcher-KTX 如何解决-2022-07-18.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 2,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 6
+      },
+      "matched_chapters": [],
+      "reason": "总分6<16分"
+    },
+    {
+      "title": "Silk-安卓GC与内核内存管理的进一步融合",
+      "path": "Cubox/Silk-安卓GC与内核内存管理的进一步融合-2025-10-20.md",
+      "score": {
+        "relevance": 5,
+        "technical_depth": 4,
+        "timeliness": 4,
+        "verifiability": 2,
+        "total": 15
+      },
+      "matched_chapters": [
+        "ch07-内存"
+      ],
+      "reason": "总分15<16分"
+    },
+    {
+      "title": "Simple Editor 动效设计",
+      "path": "Cubox/Simple Editor - 高效智能地设计动效一、概述 在当今数字化时代，动效设计已成为用户体验设计中不可或缺的一环 - 掘金-2025-07-21.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 2,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 7
+      },
+      "matched_chapters": [],
+      "reason": "总分7<16分"
+    },
+    {
+      "title": "Simpleperf 工具生成火焰图无法打开或加载",
+      "path": "Cubox/Simpleperf 工具生成火焰图无法打开或加载 - 知乎-2024-12-05.md",
+      "score": {
+        "relevance": 4,
+        "technical_depth": 3,
+        "timeliness": 3,
+        "verifiability": 3,
+        "total": 13
+      },
+      "matched_chapters": [
+        "ch14-工具"
+      ],
+      "reason": "总分13<16分"
+    },
+    {
+      "title": "Simpleperf 理论与实践指南（前言篇）",
+      "path": "Cubox/Simpleperf 理论与实践指南（前言篇） - 知乎-2024-02-25.md",
+      "score": {
+        "relevance": 5,
+        "technical_depth": 4,
+        "timeliness": 3,
+        "verifiability": 3,
+        "total": 15
+      },
+      "matched_chapters": [
+        "ch14-工具"
+      ],
+      "reason": "总分15<16分"
+    },
+    {
+      "title": "Simpleperf 理论与实践指南（前言篇）dup",
+      "path": "Cubox/Simpleperf 理论与实践指南（前言篇） - 知乎-2024-12-05.md",
+      "score": {
+        "relevance": 5,
+        "technical_depth": 4,
+        "timeliness": 3,
+        "verifiability": 3,
+        "total": 15
+      },
+      "matched_chapters": [
+        "ch14-工具"
+      ],
+      "reason": "总分15<16分"
+    },
+    {
+      "title": "Simpleperf 理论与实践指南（总结篇）",
+      "path": "Cubox/Simpleperf 理论与实践指南（总结篇） - 知乎-2024-12-05.md",
+      "score": {
+        "relevance": 5,
+        "technical_depth": 3,
+        "timeliness": 3,
+        "verifiability": 3,
+        "total": 14
+      },
+      "matched_chapters": [
+        "ch14-工具"
+      ],
+      "reason": "总分14<16分"
+    },
+    {
+      "title": "Simpleperf 理论篇（七）- 查看结果",
+      "path": "Cubox/Simpleperf 理论篇（七）- 查看结果 - 知乎-2024-02-25.md",
+      "score": {
+        "relevance": 5,
+        "technical_depth": 4,
+        "timeliness": 3,
+        "verifiability": 3,
+        "total": 15
+      },
+      "matched_chapters": [
+        "ch14-工具"
+      ],
+      "reason": "总分15<16分"
+    },
+    {
+      "title": "Simpleperf 理论篇（五）- 可执行命令",
+      "path": "Cubox/Simpleperf 理论篇（五）- 可执行命令 - 知乎-2024-02-25.md",
+      "score": {
+        "relevance": 5,
+        "technical_depth": 4,
+        "timeliness": 3,
+        "verifiability": 3,
+        "total": 15
+      },
+      "matched_chapters": [
+        "ch14-工具"
+      ],
+      "reason": "总分15<16分"
+    },
+    {
+      "title": "Simpleperf 理论篇（六）- 脚本参考",
+      "path": "Cubox/Simpleperf 理论篇（六）- 脚本参考 - 知乎-2024-02-25.md",
+      "score": {
+        "relevance": 5,
+        "technical_depth": 4,
+        "timeliness": 3,
+        "verifiability": 3,
+        "total": 15
+      },
+      "matched_chapters": [
+        "ch14-工具"
+      ],
+      "reason": "总分15<16分"
+    },
+    {
+      "title": "Simpleperf 理论篇（四）- Android 平台分析",
+      "path": "Cubox/Simpleperf 理论篇（四）- Android 平台分析 - 知乎-2024-02-25.md",
+      "score": {
+        "relevance": 5,
+        "technical_depth": 4,
+        "timeliness": 3,
+        "verifiability": 3,
+        "total": 15
+      },
+      "matched_chapters": [
+        "ch14-工具"
+      ],
+      "reason": "总分15<16分"
+    },
+    {
+      "title": "Simpleperf 翻译篇1-概述",
+      "path": "Cubox/Simpleperf 翻译篇1-概述 - 知乎-2024-02-25.md",
+      "score": {
+        "relevance": 5,
+        "technical_depth": 4,
+        "timeliness": 3,
+        "verifiability": 3,
+        "total": 15
+      },
+      "matched_chapters": [
+        "ch14-工具"
+      ],
+      "reason": "总分15<16分"
+    },
+    {
+      "title": "Simpleperf 翻译篇1-概述 dup",
+      "path": "Cubox/Simpleperf 翻译篇1-概述 - 知乎-2024-12-05.md",
+      "score": {
+        "relevance": 5,
+        "technical_depth": 4,
+        "timeliness": 3,
+        "verifiability": 3,
+        "total": 15
+      },
+      "matched_chapters": [
+        "ch14-工具"
+      ],
+      "reason": "总分15<16分"
+    },
+    {
+      "title": "Simpleperf 翻译篇2-幻灯片",
+      "path": "Cubox/Simpleperf 翻译篇2-幻灯片 - 知乎-2024-02-25.md",
+      "score": {
+        "relevance": 5,
+        "technical_depth": 3,
+        "timeliness": 3,
+        "verifiability": 3,
+        "total": 14
+      },
+      "matched_chapters": [
+        "ch14-工具"
+      ],
+      "reason": "总分14<16分"
+    },
+    {
+      "title": "Simpleperf 翻译篇2-幻灯片 dup",
+      "path": "Cubox/Simpleperf 翻译篇2-幻灯片 - 知乎-2024-12-05.md",
+      "score": {
+        "relevance": 5,
+        "technical_depth": 3,
+        "timeliness": 3,
+        "verifiability": 3,
+        "total": 14
+      },
+      "matched_chapters": [
+        "ch14-工具"
+      ],
+      "reason": "总分14<16分"
+    },
+    {
+      "title": "Simpleperf 翻译篇3-Android 应用分析",
+      "path": "Cubox/Simpleperf 翻译篇3-Android 应用分析 - 知乎-2024-02-25.md",
+      "score": {
+        "relevance": 5,
+        "technical_depth": 4,
+        "timeliness": 3,
+        "verifiability": 3,
+        "total": 15
+      },
+      "matched_chapters": [
+        "ch14-工具"
+      ],
+      "reason": "总分15<16分"
+    },
+    {
+      "title": "Simpleperf 翻译篇3-Android 应用分析 dup",
+      "path": "Cubox/Simpleperf 翻译篇3-Android 应用分析 - 知乎-2024-12-05.md",
+      "score": {
+        "relevance": 5,
+        "technical_depth": 4,
+        "timeliness": 3,
+        "verifiability": 3,
+        "total": 15
+      },
+      "matched_chapters": [
+        "ch14-工具"
+      ],
+      "reason": "总分15<16分"
+    },
+    {
+      "title": "Simpleperf 翻译篇4-Android 平台分析",
+      "path": "Cubox/Simpleperf 翻译篇4-Android 平台分析 - 知乎-2024-12-05.md",
+      "score": {
+        "relevance": 5,
+        "technical_depth": 4,
+        "timeliness": 3,
+        "verifiability": 3,
+        "total": 15
+      },
+      "matched_chapters": [
+        "ch14-工具"
+      ],
+      "reason": "总分15<16分"
+    },
+    {
+      "title": "Simpleperf 翻译篇5-可执行命令",
+      "path": "Cubox/Simpleperf 翻译篇5-可执行命令 - 知乎-2024-12-05.md",
+      "score": {
+        "relevance": 5,
+        "technical_depth": 4,
+        "timeliness": 3,
+        "verifiability": 3,
+        "total": 15
+      },
+      "matched_chapters": [
+        "ch14-工具"
+      ],
+      "reason": "总分15<16分"
+    },
+    {
+      "title": "Simpleperf 翻译篇6-脚本",
+      "path": "Cubox/Simpleperf 翻译篇6-脚本 - 知乎-2024-12-05.md",
+      "score": {
+        "relevance": 5,
+        "technical_depth": 4,
+        "timeliness": 3,
+        "verifiability": 3,
+        "total": 15
+      },
+      "matched_chapters": [
+        "ch14-工具"
+      ],
+      "reason": "总分15<16分"
+    },
+    {
+      "title": "Simpleperf 翻译篇7-查看结果",
+      "path": "Cubox/Simpleperf 翻译篇7-查看结果 - 知乎-2024-12-05.md",
+      "score": {
+        "relevance": 5,
+        "technical_depth": 4,
+        "timeliness": 3,
+        "verifiability": 3,
+        "total": 15
+      },
+      "matched_chapters": [
+        "ch14-工具"
+      ],
+      "reason": "总分15<16分"
+    },
+    {
+      "title": "Simpleperf介绍",
+      "path": "Cubox/Simpleperf介绍_zhuyong006的博客-CSDN博客-2023-01-03.md",
+      "score": {
+        "relevance": 5,
+        "technical_depth": 3,
+        "timeliness": 3,
+        "verifiability": 2,
+        "total": 13
+      },
+      "matched_chapters": [
+        "ch14-工具"
+      ],
+      "reason": "总分13<16分"
+    },
+    {
+      "title": "Simpleperf介绍 dup",
+      "path": "Cubox/Simpleperf介绍_zhuyong006的博客-CSDN博客-2023-01-12.md",
+      "score": {
+        "relevance": 5,
+        "technical_depth": 3,
+        "timeliness": 3,
+        "verifiability": 2,
+        "total": 13
+      },
+      "matched_chapters": [
+        "ch14-工具"
+      ],
+      "reason": "总分13<16分"
+    },
+    {
+      "title": "Simpleperf 操作实践篇",
+      "path": "Cubox/Simplepref 操作实践篇 - 知乎-2024-02-25.md",
+      "score": {
+        "relevance": 5,
+        "technical_depth": 4,
+        "timeliness": 3,
+        "verifiability": 3,
+        "total": 15
+      },
+      "matched_chapters": [
+        "ch14-工具"
+      ],
+      "reason": "总分15<16分"
+    },
+    {
+      "title": "Sina LTPO高刷新率",
+      "path": "Cubox/Sina Visitor System-2022-01-26.md",
+      "score": {
+        "relevance": 3,
+        "technical_depth": 2,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 8
+      },
+      "matched_chapters": [
+        "ch02-渲染"
+      ],
+      "reason": "总分8<16分"
+    },
+    {
+      "title": "So Long, and Thanks for All the Bytes",
+      "path": "Cubox/So Long, and Thanks for All the Bytes-2024-02-17.md",
+      "score": {
+        "relevance": 0,
+        "technical_depth": 1,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 4
+      },
+      "matched_chapters": [],
+      "reason": "总分4<16分"
+    },
+    {
+      "title": "SoC低功耗问题定位及优化的10个思路",
+      "path": "Cubox/SoC低功耗问题定位及优化的10个思路-2022-12-14.md",
+      "score": {
+        "relevance": 5,
+        "technical_depth": 4,
+        "timeliness": 3,
+        "verifiability": 2,
+        "total": 14
+      },
+      "matched_chapters": [
+        "ch06-功耗"
+      ],
+      "reason": "总分14<16分"
+    },
+    {
+      "title": "Software Engineering at Google",
+      "path": "Cubox/Software Engineering at Google-2023-12-18.md",
+      "score": {
+        "relevance": 0,
+        "technical_depth": 1,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 4
+      },
+      "matched_chapters": [],
+      "reason": "总分4<16分"
+    },
+    {
+      "title": "Software Estimation Is Hard",
+      "path": "Cubox/Software Estimation Is Hard. Do It Anyway. - Jacob Kaplan-Moss-2024-08-23.md",
+      "score": {
+        "relevance": 0,
+        "technical_depth": 1,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 4
+      },
+      "matched_chapters": [],
+      "reason": "总分4<16分"
+    },
+    {
+      "title": "Software architecture diagramming and patterns",
+      "path": "Cubox/Software architecture diagramming and patterns-2022-07-06.md",
+      "score": {
+        "relevance": 0,
+        "technical_depth": 1,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 4
+      },
+      "matched_chapters": [],
+      "reason": "总分4<16分"
+    },
+    {
+      "title": "Soul Android端稳定性背后的事",
+      "path": "Cubox/Soul Android端稳定性背后的事-2023-07-23.md",
+      "score": {
+        "relevance": 2,
+        "technical_depth": 2,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 7
+      },
+      "matched_chapters": [],
+      "reason": "总分7<16分"
+    },
+    {
+      "title": "Sound Advice - Chet Haase",
+      "path": "Cubox/Sound Advice. Recording an audio book was… a lot more… - by Chet Haase - Nov, 2022 - Medium-2022-12-.md",
+      "score": {
+        "relevance": 0,
+        "technical_depth": 1,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 4
+      },
+      "matched_chapters": [],
+      "reason": "总分4<16分"
+    },
+    {
+      "title": "Speed Up Mandelbrot Drawing",
+      "path": "Cubox/Speed Up Mandelbrot Drawing on Android Jetpack Compose - by Elye - Mobile App Development Publicatio.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 2,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 6
+      },
+      "matched_chapters": [],
+      "reason": "总分6<16分"
+    },
+    {
+      "title": "Speedometer 3.0",
+      "path": "Cubox/Speedometer 3.0：测量浏览器性能的最佳方式-2024-03-23.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 6
+      },
+      "matched_chapters": [],
+      "reason": "总分6<16分"
+    },
+    {
+      "title": "SplashScreen 优化启动体验",
+      "path": "Cubox/SplashScreen 优化启动体验 - 开发者说·DTalk-2022-04-15.md",
+      "score": {
+        "relevance": 4,
+        "technical_depth": 3,
+        "timeliness": 2,
+        "verifiability": 2,
+        "total": 11
+      },
+      "matched_chapters": [
+        "ch04-启动"
+      ],
+      "reason": "总分11<16分"
+    },
+    {
+      "title": "SpookilyTyped",
+      "path": "Cubox/SpookilyTyped 🎃 - Revue-2022-01-24.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 2,
+        "verifiability": 1,
+        "total": 5
+      },
+      "matched_chapters": [],
+      "reason": "总分5<16分"
     }
   ],
   "last_updated": "2026-03-31T04:15:00"

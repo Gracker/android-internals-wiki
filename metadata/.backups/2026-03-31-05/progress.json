@@ -140,26 +140,15 @@
       "extensions_total": 2,
       "verification_level": "L2",
       "word_count": "~8000"
-    },
-    {
-      "section": "1.6",
-      "title": "Android 版本演进中的架构变化",
-      "completed_at": "2026-03-30T21:28:51.853958+00:00",
-      "anchors_covered": 5,
-      "anchors_total": 5,
-      "extensions_covered": 2,
-      "extensions_total": 2,
-      "verification_level": "L2",
-      "word_count": "~8000"
     }
   ],
   "ready_for_review": 9,
-  "last_updated": "2026-03-30T21:28:51.853958+00:00",
+  "last_updated": "2026-03-30T18:37:58.288757+00:00",
   "stats": {
     "total": 102,
-    "completed": 13,
-    "pending": 89,
-    "last_updated": "2026-03-30T21:28:51.853958+00:00"
+    "completed": 12,
+    "pending": 90,
+    "last_updated": "2026-03-30T20:33:03.150823+00:00"
   },
   "research_stats": {
     "runs_today": [
