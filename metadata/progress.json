@@ -151,14 +151,25 @@
       "extensions_total": 2,
       "verification_level": "L2",
       "word_count": "~8000"
+    },
+    {
+      "section": "3.3",
+      "title": "手势导航与系统交互",
+      "completed_at": "2026-03-31T06:28:54.824806",
+      "anchors_covered": 4,
+      "anchors_total": 4,
+      "extensions_covered": 0,
+      "extensions_total": 2,
+      "verification_level": "L2",
+      "word_count": "~7500"
     }
   ],
-  "ready_for_review": 9,
-  "last_updated": "2026-03-30T21:28:51.853958+00:00",
+  "ready_for_review": 10,
+  "last_updated": "2026-03-31T06:28:54.824806",
   "stats": {
     "total": 102,
-    "completed": 13,
-    "pending": 89,
+    "completed": 11,
+    "pending": 91,
     "last_updated": "2026-03-30T21:28:51.853958+00:00"
   },
   "research_stats": {
