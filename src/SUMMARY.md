@@ -30,6 +30,7 @@
   - [2.8 过度绘制](part1-fundamentals/ch02-rendering/08-overdraw.md)
   - [2.9 渲染机制的版本演进](part1-fundamentals/ch02-rendering/09-rendering-evolution.md)
   - [2.10 GPU 渲染深入](part1-fundamentals/ch02-rendering/10-gpu-rendering.md)
+  - [2.11 Flutter 渲染管线与性能](part1-fundamentals/ch02-rendering/11-flutter-rendering.md)
 
 - [第 3 章：输入系统](part1-fundamentals/ch03-input/README.md)
   - [3.1 Input 事件分发全流程](part1-fundamentals/ch03-input/01-input-dispatch.md)
