@@ -147,16 +147,11 @@
       "section": "2.7",
       "section_title": "Hardware Layer",
       "priority": 60,
-      "reason": "已加工（素材1篇：高爷原创Hardware Layer详解）",
-      "material_paths": [
-        "Personal-Knowlodge/source/Android-Hardware-Layer.md"
-      ],
-      "status": "completed",
+      "reason": "待加工（素材0篇）",
+      "material_paths": [],
+      "status": "pending",
       "added_by": "manual-init",
-      "added_at": "2026-03-29T21:00:00",
-      "processed_at": "2026-03-30T14:27:41.534Z",
-      "word_count": 8500,
-      "verification_status": "L2_verified_all_anchors_1_extension_covered"
+      "added_at": "2026-03-29T21:00:00"
     },
     {
       "section": "2.8",

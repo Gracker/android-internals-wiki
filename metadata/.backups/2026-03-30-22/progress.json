@@ -85,25 +85,14 @@
       "extensions_total": 3,
       "verification_level": "L2",
       "word_count": "~8500"
-    },
-    {
-      "section": "2.7",
-      "title": "Hardware Layer",
-      "completed_at": "2026-03-30T14:27:41.534Z",
-      "anchors_covered": 4,
-      "anchors_total": 4,
-      "extensions_covered": 1,
-      "extensions_total": 2,
-      "verification_level": "L2",
-      "word_count": "~8500"
     }
   ],
   "ready_for_review": 9,
-  "last_updated": "2026-03-30T14:27:41.534Z",
+  "last_updated": "2026-03-30T21:35:05",
   "stats": {
     "total": 102,
-    "completed": 5,
-    "pending": 97,
+    "completed": 4,
+    "pending": 98,
     "last_updated": "2026-03-30T20:47:20.369322"
   },
   "research_stats": {
