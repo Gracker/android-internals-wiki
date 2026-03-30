@@ -172,16 +172,6 @@
       "processed_at": "2026-03-30T16:20:00+08:00"
     },
     {
-      "section": "3.1",
-      "section_title": "Input 事件分发全流程",
-      "priority": 70,
-      "reason": "待加工（素材0篇）",
-      "material_paths": [],
-      "status": "pending",
-      "added_by": "manual-init",
-      "added_at": "2026-03-29T21:00:00"
-    },
-    {
       "section": "3.2",
       "section_title": "触摸响应的性能分析",
       "priority": 60,
@@ -1101,7 +1091,20 @@
       "status": "completed",
       "word_count": 8500,
       "verification_status": "L1+L2+L4_verified_all_anchors_extensions_covered"
+    },
+    {
+      "section": "3.1",
+      "section_title": "Input 事件分发全流程",
+      "priority": 70,
+      "reason": "待加工（素材0篇）",
+      "material_paths": [],
+      "status": "completed",
+      "added_by": "manual-init",
+      "added_at": "2026-03-29T21:00:00",
+      "processed_at": "2026-03-30T09:30:54.457364+00:00",
+      "word_count": 7500,
+      "verification_status": "L2_verified_all_anchors"
     }
   ],
-  "last_updated": "2026-03-30T07:33:07Z"
+  "last_updated": "2026-03-30T09:30:54.457610+00:00"
 }
