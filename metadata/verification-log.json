@@ -314,6 +314,80 @@
         "Obsidian/Cubox/结合源码和Perfetto分析Android渲染机制"
       ],
       "notes": "SyncFrameState机制与Fence同步流程经过多源交叉验证"
+    },
+    {
+      "section": "1.5",
+      "title": "线程模型",
+      "timestamp": "2026-03-30T18:38:36.785468+00:00",
+      "verifications": [
+        {
+          "claim": "ActivityThread.main() 调用 Looper.prepareMainLooper() → thread.attach() → Looper.loop()",
+          "level": "L1",
+          "source": "AOSP android-16.0.0_r1, ActivityThread.java",
+          "result": "confirmed"
+        },
+        {
+          "claim": "Looper.loop() 是无限循环，正常不返回",
+          "level": "L1",
+          "source": "AOSP android-16.0.0_r1, Looper.java",
+          "result": "confirmed"
+        },
+        {
+          "claim": "MessageQueue.next() 通过 nativePollOnce → epoll_wait 阻塞",
+          "level": "L2",
+          "source": "AOSP + developer.android.com",
+          "result": "confirmed"
+        },
+        {
+          "claim": "RenderThread 在 Android 5.0 引入，实现在 libhwui",
+          "level": "L2",
+          "source": "AOSP + web search verification",
+          "result": "confirmed"
+        },
+        {
+          "claim": "syncAndDrawFrame 是非阻塞同步，将 DisplayList 传递给 RenderThread",
+          "level": "L1",
+          "source": "AOSP android-16.0.0_r1, HardwareRenderer.java",
+          "result": "confirmed"
+        },
+        {
+          "claim": "Process.setThreadPriority() 操作 Linux nice 值",
+          "level": "L2",
+          "source": "developer.android.com + AOSP Process.java",
+          "result": "confirmed"
+        },
+        {
+          "claim": "后台 cgroup 获得 ~5% CPU，前台 cgroup 获得 ~95%",
+          "level": "L2",
+          "source": "source.android.com + androiddesignpatterns.com",
+          "result": "confirmed"
+        },
+        {
+          "claim": "IntentService 在 API 30 废弃",
+          "level": "L2",
+          "source": "developer.android.com",
+          "result": "confirmed"
+        },
+        {
+          "claim": "ThreadLocal 在 Looper 和 Choreographer 中使用",
+          "level": "L1",
+          "source": "AOSP android-16.0.0_r1, Looper.java + Choreographer.java",
+          "result": "confirmed"
+        },
+        {
+          "claim": "Dispatchers.IO 上限 64 线程，Dispatchers.Default 等于 CPU 核数",
+          "level": "L2",
+          "source": "Kotlinx.coroutines 源码",
+          "result": "confirmed"
+        }
+      ],
+      "summary": {
+        "total_claims": 10,
+        "L1_confirmed": 4,
+        "L2_confirmed": 6,
+        "pending": 0,
+        "disputes": 0
+      }
     }
   ]
 }

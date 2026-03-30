@@ -1,6 +1,6 @@
 {
   "total_files": 241,
-  "indexed_files": 241,
+  "indexed_files": 282,
   "chapters_distribution": {
     "待定": 1,
     "ch05-渲染": 47,
@@ -3703,281 +3703,6 @@
       "indexed_at": "2026-03-30T21:20:36.101385"
     },
     {
-      "title": "Bundle风水——Android序列化与反序列化不匹配漏洞详解",
-      "path": "Cubox/Bundle风水——Android序列化与反序列化不匹配漏洞详解 - 先知社区-2023-03-09.md",
-      "scores": {
-        "relevance": 4,
-        "depth": 5,
-        "timeliness": 4,
-        "verifiability": 5,
-        "total": 18
-      },
-      "quality": "high",
-      "chapters": [
-        {
-          "chapter": "ch12-安全",
-          "confidence": "high"
-        },
-        {
-          "chapter": "ch01-架构",
-          "confidence": "medium"
-        }
-      ],
-      "summary": "Android框架层Parcelable序列化不匹配导致提权漏洞，含CVE分析与源码级解读",
-      "scan_date": "2026-03-30T21:45:00"
-    },
-    {
-      "title": "CMA技术原理分析",
-      "path": "Cubox/CMA技术原理分析-2023-03-10.md",
-      "scores": {
-        "relevance": 4,
-        "depth": 5,
-        "timeliness": 4,
-        "verifiability": 5,
-        "total": 18
-      },
-      "quality": "high",
-      "chapters": [
-        {
-          "chapter": "ch07-内存",
-          "confidence": "high"
-        }
-      ],
-      "summary": "CMA连续内存分配器原理，从源码分析初始化和分配流程，涉及内存管理核心机制",
-      "scan_date": "2026-03-30T21:45:00"
-    },
-    {
-      "title": "CPU 性能和Cache Line",
-      "path": "Cubox/CPU 性能和Cache Line - plantegg-2026-01-28.md",
-      "scores": {
-        "relevance": 3,
-        "depth": 4,
-        "timeliness": 5,
-        "verifiability": 5,
-        "total": 17
-      },
-      "quality": "high",
-      "chapters": [
-        {
-          "chapter": "ch07-内存",
-          "confidence": "high"
-        },
-        {
-          "chapter": "ch13-调度",
-          "confidence": "medium"
-        }
-      ],
-      "summary": "CPU缓存体系与Cache Line对性能的影响，含伪共享案例与测试数据",
-      "scan_date": "2026-03-30T21:45:00"
-    },
-    {
-      "title": "CPU 使用率高就一定有效率吗？",
-      "path": "Cubox/CPU 使用率高就一定有效率吗？ - plantegg-2025-01-08.md",
-      "scores": {
-        "relevance": 3,
-        "depth": 4,
-        "timeliness": 5,
-        "verifiability": 4,
-        "total": 16
-      },
-      "quality": "high",
-      "chapters": [
-        {
-          "chapter": "ch13-调度",
-          "confidence": "high"
-        },
-        {
-          "chapter": "ch03-线程",
-          "confidence": "medium"
-        }
-      ],
-      "summary": "CPU使用率与实际效率的差异分析，自旋锁与线程竞争导致升配反而性能下降的案例",
-      "scan_date": "2026-03-30T21:45:00"
-    },
-    {
-      "title": "CFS组调度",
-      "path": "Cubox/CFS组调度-2023-01-06.md",
-      "scores": {
-        "relevance": 4,
-        "depth": 4,
-        "timeliness": 4,
-        "verifiability": 3,
-        "total": 15
-      },
-      "quality": "medium",
-      "chapters": [
-        {
-          "chapter": "ch13-调度",
-          "confidence": "high"
-        }
-      ],
-      "summary": "CFS组调度功能原理、配置方法与实现细节，理解Linux调度分组机制",
-      "scan_date": "2026-03-30T21:45:00"
-    },
-    {
-      "title": "C++无锁队列的探索：多种实现方案及性能对比",
-      "path": "Cubox/C++无锁队列的探索：多种实现方案及性能对比-2024-04-18.md",
-      "scores": {
-        "relevance": 3,
-        "depth": 4,
-        "timeliness": 4,
-        "verifiability": 4,
-        "total": 15
-      },
-      "quality": "medium",
-      "chapters": [
-        {
-          "chapter": "ch03-线程",
-          "confidence": "high"
-        }
-      ],
-      "summary": "C++无锁队列多种实现方案与性能对比，涉及原子操作与并发编程核心机制",
-      "scan_date": "2026-03-30T21:45:00"
-    },
-    {
-      "title": "CPU性能指标提取及源码分析",
-      "path": "Cubox/CPU性能指标提取及源码分析-2022-09-13.md",
-      "scores": {
-        "relevance": 4,
-        "depth": 4,
-        "timeliness": 3,
-        "verifiability": 4,
-        "total": 15
-      },
-      "quality": "medium",
-      "chapters": [
-        {
-          "chapter": "ch13-调度",
-          "confidence": "high"
-        },
-        {
-          "chapter": "ch11-Profiling",
-          "confidence": "medium"
-        }
-      ],
-      "summary": "CPU运行队列长度、调度延迟和平均负载的源码级分析，性能指标提取方法论",
-      "scan_date": "2026-03-30T21:45:00"
-    },
-    {
-      "title": "CFS线程调度机制分析",
-      "path": "Cubox/CFS线程调度机制分析-2022-11-04.md",
-      "scores": {
-        "relevance": 4,
-        "depth": 4,
-        "timeliness": 3,
-        "verifiability": 3,
-        "total": 14
-      },
-      "quality": "medium",
-      "chapters": [
-        {
-          "chapter": "ch13-调度",
-          "confidence": "high"
-        }
-      ],
-      "summary": "CFS调度器权重机制分析，探讨关键线程及时调度与线程饥饿问题",
-      "scan_date": "2026-03-30T21:45:00"
-    },
-    {
-      "title": "CPU 是如何与内存交互的（知乎版）",
-      "path": "Cubox/CPU 是如何与内存交互的 - 知乎-2023-10-12.md",
-      "scores": {
-        "relevance": 3,
-        "depth": 4,
-        "timeliness": 4,
-        "verifiability": 3,
-        "total": 14
-      },
-      "quality": "medium",
-      "chapters": [
-        {
-          "chapter": "ch07-内存",
-          "confidence": "high"
-        }
-      ],
-      "summary": "计算机内存结构与CPU缓存一致性机制，虚拟内存原理的系统梳理",
-      "scan_date": "2026-03-30T21:45:00"
-    },
-    {
-      "title": "CPU性能提升的技术瓶颈和优化方案",
-      "path": "Cubox/CPU性能提升的技术瓶颈和优化方案-2025-08-29.md",
-      "scores": {
-        "relevance": 3,
-        "depth": 3,
-        "timeliness": 5,
-        "verifiability": 3,
-        "total": 14
-      },
-      "quality": "medium",
-      "chapters": [
-        {
-          "chapter": "ch13-调度",
-          "confidence": "medium"
-        }
-      ],
-      "summary": "CPU性能公式拆解，从主频、CPI、指令数三维度分析性能瓶颈与优化路径",
-      "scan_date": "2026-03-30T21:45:00"
-    },
-    {
-      "title": "CPU三级缓存(L1-L2-L3)工作原理",
-      "path": "Cubox/CPU三级缓存(L1-L2-L3)工作原理-2025-06-13.md",
-      "scores": {
-        "relevance": 3,
-        "depth": 3,
-        "timeliness": 5,
-        "verifiability": 3,
-        "total": 14
-      },
-      "quality": "medium",
-      "chapters": [
-        {
-          "chapter": "ch07-内存",
-          "confidence": "high"
-        }
-      ],
-      "summary": "CPU L1/L2/L3三级缓存工作原理，缓存与内存速度差异及优化思路",
-      "scan_date": "2026-03-30T21:45:00"
-    },
-    {
-      "title": "CMU CSAPP - Thread Level Parallelism",
-      "path": "Cubox/CMU 15513 CSAPP - 深入理解计算机系统 - Lecture 26 Thread Level Parallelism - 知乎-2023-01-12.md",
-      "scores": {
-        "relevance": 2,
-        "depth": 3,
-        "timeliness": 3,
-        "verifiability": 2,
-        "total": 10
-      },
-      "quality": "medium",
-      "chapters": [
-        {
-          "chapter": "ch03-线程",
-          "confidence": "medium"
-        }
-      ],
-      "summary": "CMU CSAPP线程级并行课程笔记，并行求和与False Sharing问题",
-      "scan_date": "2026-03-30T21:45:00"
-    },
-    {
-      "title": "Chromium WebView - In Renderer 渲染和进程架构 - 知乎",
-      "path": "Cubox/Chromium WebView - In Renderer 渲染和进程架构 - 知乎-2024-03-08.md",
-      "scores": {
-        "relevance": 3,
-        "depth": 2,
-        "timeliness": 4,
-        "verify": 2,
-        "total": 11
-      },
-      "quality": "medium",
-      "chapters": [
-        {
-          "chapter": "ch05-渲染",
-          "confidence": "medium"
-        }
-      ],
-      "indexed_at": "2026-03-30T22:18:58.159805"
-    },
-    {
       "title": "Clean 架构下的现代 Android 架构指南",
       "path": "Cubox/Clean 架构下的现代 Android 架构指南 - 开发者说·DTalk-2024-01-26.md",
       "scores": {
@@ -4219,48 +3944,6 @@
       "summary": "Android官方CriticalNative注解文档，优化JNI调用开销的底层机制"
     },
     {
-      "title": "Customize WorkManager with AppStartup & Hilt",
-      "path": "Cubox/Customize WorkManager with AppStartup & Hilt-2022-07-20.md",
-      "scores": {
-        "relevance": 4,
-        "depth": 4,
-        "timeliness": 3,
-        "verifiability": 4
-      },
-      "total": 15,
-      "quality": "medium",
-      "chapters": [
-        {
-          "id": "ch06",
-          "confidence": "high"
-        },
-        {
-          "id": "ch04",
-          "confidence": "medium"
-        }
-      ],
-      "summary": "使用AppStartup库优化WorkManager初始化性能的最佳实践"
-    },
-    {
-      "title": "DRM生态以及架构介绍",
-      "path": "Cubox/DRM(Digital Rights Management)生态以及架构介绍-2025-04-11.md",
-      "scores": {
-        "relevance": 3,
-        "depth": 4,
-        "timeliness": 5,
-        "verifiability": 3
-      },
-      "total": 15,
-      "quality": "medium",
-      "chapters": [
-        {
-          "id": "ch12",
-          "confidence": "high"
-        }
-      ],
-      "summary": "介绍Android DRM数字版权管理生态架构与关键技术组件"
-    },
-    {
       "title": "Dalvik, ART, JIT, and AOT in Android",
       "path": "Cubox/Dalvik, ART, JIT, and AOT in Android-2024-01-31.md",
       "scores": {
@@ -4301,388 +3984,6 @@
         }
       ],
       "summary": "深入Dart事件循环双队列架构、执行流程及任务优先级机制"
-    },
-    {
-      "title": "DataStore and synchronous work",
-      "path": "Cubox/DataStore and synchronous work. In the following posts from our Jetpack… - by Simona Stojanovic - An.md",
-      "scores": {
-        "relevance": 3,
-        "depth": 3,
-        "timeliness": 3,
-        "verifiability": 3
-      },
-      "total": 12,
-      "quality": "medium",
-      "chapters": [
-        {
-          "id": "ch08",
-          "confidence": "high"
-        }
-      ],
-      "summary": "官方指南讲解DataStore同步操作的最佳实践与注意事项"
-    },
-    {
-      "title": "Compose 渲染性能到底怎么样",
-      "path": "Cubox/Compose 渲染性能到底怎么样--2022-04-26.md",
-      "scores": {
-        "relevance": 5,
-        "depth": 3,
-        "timeliness": 3,
-        "verifiability": 3
-      },
-      "total": 14,
-      "quality": "medium",
-      "chapters": [
-        {
-          "id": "ch05",
-          "confidence": "high"
-        }
-      ],
-      "summary": "实测评估Compose渲染性能表现，与原生View渲染对比分析"
-    },
-    {
-      "title": "Clean 架构下的现代 Android 架构指南",
-      "path": "Cubox/Clean 架构下的现代 Android 架构指南 - 开发者说·DTalk-2024-01-26.md",
-      "scores": {
-        "relevance": 3,
-        "depth": 2,
-        "timeliness": 4,
-        "verifiability": 2
-      },
-      "total": 11,
-      "quality": "medium",
-      "chapters": [
-        {
-          "id": "ch01",
-          "confidence": "medium"
-        }
-      ],
-      "summary": "按Clean架构思想介绍Android应用开发的关键模块概念及依赖关系处理"
-    },
-    {
-      "title": "ColorOS 动画曲线粗浅分析",
-      "path": "Cubox/ColorOS 动画曲线粗浅分析：为何有的地方怪，怪在哪里？ - 少数派-2025-03-03.md",
-      "scores": {
-        "relevance": 4,
-        "depth": 4,
-        "timeliness": 4,
-        "verifiability": 3
-      },
-      "total": 15,
-      "quality": "medium",
-      "chapters": [
-        {
-          "id": "ch05",
-          "confidence": "high"
-        }
-      ],
-      "summary": "分析ColorOS动画曲线实现细节，解释部分场景动画不自然的根因"
-    },
-    {
-      "title": "Compose Multiplatform Skia 对比 Flutter Impeller",
-      "path": "Cubox/Compose Multiplatform Skia 对比 Flutter Impeller ，都是跨平台自绘有什么差异 - 掘金-2025-05-28.md",
-      "scores": {
-        "relevance": 4,
-        "depth": 4,
-        "timeliness": 5,
-        "verifiability": 4
-      },
-      "total": 17,
-      "quality": "high",
-      "chapters": [
-        {
-          "id": "ch05",
-          "confidence": "high"
-        }
-      ],
-      "summary": "对比Compose Multiplatform Skia与Flutter Impeller两大跨平台自绘渲染引擎的架构差异"
-    },
-    {
-      "title": "Compose Performance Review",
-      "path": "Cubox/Compose Performance Review-2025-12-11.md",
-      "scores": {
-        "relevance": 5,
-        "depth": 4,
-        "timeliness": 5,
-        "verifiability": 4
-      },
-      "total": 18,
-      "quality": "high",
-      "chapters": [
-        {
-          "id": "ch05",
-          "confidence": "high"
-        },
-        {
-          "id": "ch15",
-          "confidence": "medium"
-        }
-      ],
-      "summary": "逐步分析Compose重组要点与性能优化关键，涵盖recomposition避坑实践"
-    },
-    {
-      "title": "Compose 与 AGP、KGP 的关系",
-      "path": "Cubox/Compose 与 AGP、KGP 的关系-2022-07-12.md",
-      "scores": {
-        "relevance": 3,
-        "depth": 3,
-        "timeliness": 3,
-        "verifiability": 3
-      },
-      "total": 12,
-      "quality": "medium",
-      "chapters": [
-        {
-          "id": "ch16",
-          "confidence": "medium"
-        },
-        {
-          "id": "ch01",
-          "confidence": "low"
-        }
-      ],
-      "summary": "梳理Compose、AGP、KGP版本对应关系，解释构建工具链依赖"
-    },
-    {
-      "title": "Compose 与原生 UI 混排原理解析",
-      "path": "Cubox/Compose 与原生 UI 混排原理解析前言 在跨平台开发中，尽管 Compose Multiplatform 提供了 - 掘金-2025-02-09.md",
-      "scores": {
-        "relevance": 3,
-        "depth": 4,
-        "timeliness": 5,
-        "verifiability": 3
-      },
-      "total": 15,
-      "quality": "medium",
-      "chapters": [
-        {
-          "id": "ch05",
-          "confidence": "high"
-        },
-        {
-          "id": "ch01",
-          "confidence": "medium"
-        }
-      ],
-      "summary": "解析Compose Multiplatform与平台原生UI组件混排的底层原理与协同开发方式"
-    },
-    {
-      "title": "Compose 与原生启动性能对比",
-      "path": "Cubox/Compose 与原生启动性能对比-2022-07-15.md",
-      "scores": {
-        "relevance": 5,
-        "depth": 4,
-        "timeliness": 3,
-        "verifiability": 4
-      },
-      "total": 16,
-      "quality": "high",
-      "chapters": [
-        {
-          "id": "ch04",
-          "confidence": "high"
-        },
-        {
-          "id": "ch05",
-          "confidence": "high"
-        }
-      ],
-      "summary": "实测对比Compose与原生View的启动性能数据，分析Compose启动开销根因"
-    },
-    {
-      "title": "Compose 纪元下的 Android 生命周期感知",
-      "path": "Cubox/Compose 纪元下的 Android 生命周期感知-2023-09-25.md",
-      "scores": {
-        "relevance": 4,
-        "depth": 4,
-        "timeliness": 4,
-        "verifiability": 4
-      },
-      "total": 16,
-      "quality": "high",
-      "chapters": [
-        {
-          "id": "ch01",
-          "confidence": "high"
-        },
-        {
-          "id": "ch02",
-          "confidence": "medium"
-        }
-      ],
-      "summary": "总结Compose中LiveData/StateFlow/mutableStateOf等数据类在不同UI框架下的生命周期处理"
-    },
-    {
-      "title": "Consuming flows safely in Jetpack Compose",
-      "path": "Cubox/Consuming flows safely in Jetpack Compose - by Manuel Vivo - Android Developers - Aug, 2022 - Medium.md",
-      "scores": {
-        "relevance": 3,
-        "depth": 3,
-        "timeliness": 3,
-        "verifiability": 3
-      },
-      "total": 12,
-      "quality": "medium",
-      "chapters": [
-        {
-          "id": "ch15",
-          "confidence": "high"
-        },
-        {
-          "id": "ch03",
-          "confidence": "medium"
-        }
-      ],
-      "summary": "官方指南讲解在Jetpack Compose中安全消费Flow的最佳实践"
-    },
-    {
-      "title": "Core 文件损坏还能补救吗",
-      "path": "Cubox/Core 文件损坏还能补救吗？有的兄弟，有的。 - 掘金-2025-02-25.md",
-      "scores": {
-        "relevance": 3,
-        "depth": 4,
-        "timeliness": 5,
-        "verifiability": 4
-      },
-      "total": 16,
-      "quality": "high",
-      "chapters": [
-        {
-          "id": "ch14",
-          "confidence": "high"
-        },
-        {
-          "id": "ch07",
-          "confidence": "medium"
-        }
-      ],
-      "summary": "介绍Core dump文件损坏或截断后的补救方法与调试技巧"
-    },
-    {
-      "title": "CriticalNative",
-      "path": "Cubox/CriticalNative  -  Android Developers-2024-01-08.md",
-      "scores": {
-        "relevance": 4,
-        "depth": 4,
-        "timeliness": 4,
-        "verifiability": 5
-      },
-      "total": 17,
-      "quality": "high",
-      "chapters": [
-        {
-          "id": "ch01",
-          "confidence": "high"
-        },
-        {
-          "id": "ch07",
-          "confidence": "medium"
-        }
-      ],
-      "summary": "Android官方CriticalNative注解文档，优化JNI调用开销的底层机制"
-    },
-    {
-      "title": "Customize WorkManager with AppStartup & Hilt",
-      "path": "Cubox/Customize WorkManager with AppStartup & Hilt-2022-07-20.md",
-      "scores": {
-        "relevance": 4,
-        "depth": 4,
-        "timeliness": 3,
-        "verifiability": 4
-      },
-      "total": 15,
-      "quality": "medium",
-      "chapters": [
-        {
-          "id": "ch06",
-          "confidence": "high"
-        },
-        {
-          "id": "ch04",
-          "confidence": "medium"
-        }
-      ],
-      "summary": "使用AppStartup库优化WorkManager初始化性能的最佳实践"
-    },
-    {
-      "title": "DRM生态以及架构介绍",
-      "path": "Cubox/DRM(Digital Rights Management)生态以及架构介绍-2025-04-11.md",
-      "scores": {
-        "relevance": 3,
-        "depth": 4,
-        "timeliness": 5,
-        "verifiability": 3
-      },
-      "total": 15,
-      "quality": "medium",
-      "chapters": [
-        {
-          "id": "ch12",
-          "confidence": "high"
-        }
-      ],
-      "summary": "介绍Android DRM数字版权管理生态架构与关键技术组件"
-    },
-    {
-      "title": "Dalvik, ART, JIT, and AOT in Android",
-      "path": "Cubox/Dalvik, ART, JIT, and AOT in Android-2024-01-31.md",
-      "scores": {
-        "relevance": 5,
-        "depth": 4,
-        "timeliness": 4,
-        "verifiability": 4
-      },
-      "total": 17,
-      "quality": "high",
-      "chapters": [
-        {
-          "id": "ch01",
-          "confidence": "high"
-        },
-        {
-          "id": "ch04",
-          "confidence": "high"
-        }
-      ],
-      "summary": "系统讲解Android运行时演进：Dalvik→ART、JIT→AOT编译机制与性能影响"
-    },
-    {
-      "title": "Dart 单线程异步模型：从原理到工程实践",
-      "path": "Cubox/Dart 单线程异步模型：从原理到工程实践的系统化解析深入探讨 Dart 单线程异步模型，通过非阻塞 I-O 与事件循环 - 掘金-2025-04-13.md",
-      "scores": {
-        "relevance": 3,
-        "depth": 4,
-        "timeliness": 5,
-        "verifiability": 4
-      },
-      "total": 16,
-      "quality": "high",
-      "chapters": [
-        {
-          "id": "ch03",
-          "confidence": "high"
-        }
-      ],
-      "summary": "深入Dart事件循环双队列架构、执行流程及任务优先级机制"
-    },
-    {
-      "title": "DataStore and synchronous work",
-      "path": "Cubox/DataStore and synchronous work. In the following posts from our Jetpack… - by Simona Stojanovic - An.md",
-      "scores": {
-        "relevance": 3,
-        "depth": 3,
-        "timeliness": 3,
-        "verifiability": 3
-      },
-      "total": 12,
-      "quality": "medium",
-      "chapters": [
-        {
-          "id": "ch08",
-          "confidence": "high"
-        }
-      ],
-      "summary": "官方指南讲解DataStore同步操作的最佳实践与注意事项"
     },
     {
       "title": "Compose 渲染性能到底怎么样",
@@ -4746,27 +4047,6 @@
       "indexed_at": "2026-03-30T23:18:45.896586"
     },
     {
-      "title": "Fixing simpleperf broken records",
-      "path": "Cubox/Fixing simpleperf broken records-2022-01-24.md",
-      "scores": {
-        "relevance": 4,
-        "depth": 2,
-        "timeliness": 3,
-        "verifiability": 1,
-        "total": 10
-      },
-      "total": 10,
-      "quality": "medium",
-      "chapters": [
-        {
-          "chapter": "ch11-Profiling",
-          "confidence": "medium"
-        }
-      ],
-      "summary": "# Fixing simpleperf broken records  Summary This blog shows how to fix simpleperf traces which are otherwise unusable be",
-      "indexed_at": "2026-03-30T23:18:45.897417"
-    },
-    {
       "title": "Flutter Impeller裁剪后搭建渲染Demo要点（ flutter裁减 移除dart依赖，...",
       "path": "Cubox/Flutter Impeller裁剪后搭建渲染Demo要点（ flutter裁减 移除dart依赖，...-2024-01-06.md",
       "scores": {
@@ -4788,27 +4068,6 @@
       "indexed_at": "2026-03-30T23:18:45.900045"
     },
     {
-      "title": "Flutter RenderSurface 选择说明 - 知乎",
-      "path": "Cubox/Flutter RenderSurface 选择说明 - 知乎-2024-03-08.md",
-      "scores": {
-        "relevance": 5,
-        "depth": 2,
-        "timeliness": 4,
-        "verifiability": 1,
-        "total": 12
-      },
-      "total": 12,
-      "quality": "medium",
-      "chapters": [
-        {
-          "chapter": "ch05-渲染",
-          "confidence": "high"
-        }
-      ],
-      "summary": "# Flutter RenderSurface 选择说明 - 知乎  RenderSurface 的作用是提供给 Flutter 光栅化引擎一个渲染的输出 Surface，最终这个 Surface 会输出到屏幕上，实现 Flutter 渲染",
-      "indexed_at": "2026-03-30T23:18:45.900179"
-    },
-    {
       "title": "Flutter 图片预加载在构建 Flutter 应用时，提前加载图片资源是一种常见优化手段，尤其适用于展示型页面、动画 - 掘金",
       "path": "Cubox/Flutter 图片预加载在构建 Flutter 应用时，提前加载图片资源是一种常见优化手段，尤其适用于展示型页面、动画 - 掘金-2025-05-25.md",
       "scores": {
@@ -4828,7 +4087,1313 @@
       ],
       "summary": "# Flutter 图片预加载在构建 Flutter 应用时，提前加载图片资源是一种常见优化手段，尤其适用于展示型页面、动画 - 掘金  在构建 Flutter 应用时，提前加载图片资源是一种常见优化手段，尤其适用于展示型页面、动画首帧、轮",
       "indexed_at": "2026-03-30T23:18:45.901687"
+    },
+    {
+      "path": "Cubox/Flutter 多引擎渲染，在稿定 App 的实践-2022-11-02.md",
+      "title": "Flutter 多引擎渲染，在稿定 App 的实践",
+      "chapters": [
+        {
+          "id": "ch05",
+          "confidence": "medium"
+        }
+      ],
+      "scores": {
+        "relevance": 3,
+        "depth": 4,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "total_score": 13,
+      "quality": "medium",
+      "summary": "Flutter多引擎渲染在稿定App的实践方案，涉及渲染架构设计"
+    },
+    {
+      "path": "Cubox/Flutter 多引擎渲染，在稿定 App 的实践（三）：躺坑篇-2022-11-02.md",
+      "title": "Flutter 多引擎渲染躺坑篇",
+      "chapters": [
+        {
+          "id": "ch05",
+          "confidence": "medium"
+        }
+      ],
+      "scores": {
+        "relevance": 3,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "total_score": 12,
+      "quality": "medium",
+      "summary": "Flutter多引擎渲染踩坑记录，实际问题与解决方案"
+    },
+    {
+      "path": "Cubox/Flutter 多引擎渲染，在稿定 App 的实践（二）：原理篇-2022-11-02.md",
+      "title": "Flutter 多引擎渲染原理篇",
+      "chapters": [
+        {
+          "id": "ch05",
+          "confidence": "medium"
+        }
+      ],
+      "scores": {
+        "relevance": 3,
+        "depth": 4,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "total_score": 13,
+      "quality": "medium",
+      "summary": "Flutter多引擎渲染原理分析，渲染管线与线程模型"
+    },
+    {
+      "path": "Cubox/Flutter 小技巧之通过 MediaQuery 优化 App 性能-2025-03-13.md",
+      "title": "Flutter MediaQuery优化App性能",
+      "chapters": [
+        {
+          "id": "ch05",
+          "confidence": "medium"
+        },
+        {
+          "id": "ch07",
+          "confidence": "low"
+        }
+      ],
+      "scores": {
+        "relevance": 3,
+        "depth": 3,
+        "timeliness": 5,
+        "verifiability": 3
+      },
+      "total_score": 14,
+      "quality": "medium",
+      "summary": "通过MediaQuery优化Flutter App性能，减少不必要的rebuild"
+    },
+    {
+      "path": "Cubox/Flutter 性能优化之降内存、降刷新篇 - 掘金-2023-11-24.md",
+      "title": "Flutter性能优化降内存降刷新",
+      "chapters": [
+        {
+          "id": "ch05",
+          "confidence": "high"
+        },
+        {
+          "id": "ch07",
+          "confidence": "medium"
+        }
+      ],
+      "scores": {
+        "relevance": 4,
+        "depth": 4,
+        "timeliness": 4,
+        "verifiability": 3
+      },
+      "total_score": 15,
+      "quality": "medium",
+      "summary": "Flutter性能优化实战，降内存和降刷新的具体策略与案例"
+    },
+    {
+      "path": "Cubox/Flutter 性能分析 - Flutter 中文文档 - Flutter 中文开发者网站 - Fl...-2023-07-17.md",
+      "title": "Flutter性能分析（中文文档）",
+      "chapters": [
+        {
+          "id": "ch05",
+          "confidence": "high"
+        },
+        {
+          "id": "ch14",
+          "confidence": "medium"
+        }
+      ],
+      "scores": {
+        "relevance": 4,
+        "depth": 4,
+        "timeliness": 4,
+        "verifiability": 5
+      },
+      "total_score": 17,
+      "quality": "high",
+      "summary": "Flutter官方性能分析指南，涵盖性能图层、UI/GPU线程分析、DevTools使用"
+    },
+    {
+      "path": "Cubox/FlutterWeb启动耗时优化-2024-07-25.md",
+      "title": "FlutterWeb启动耗时优化",
+      "chapters": [
+        {
+          "id": "ch04",
+          "confidence": "medium"
+        }
+      ],
+      "scores": {
+        "relevance": 3,
+        "depth": 3,
+        "timeliness": 4,
+        "verifiability": 3
+      },
+      "total_score": 13,
+      "quality": "medium",
+      "summary": "Flutter Web端启动耗时优化策略与实践"
+    },
+    {
+      "path": "Cubox/Fluttter 混合开发下 HybridComposition 和 VirtualDisplay 的实现与未来演进-2022-03-07.md",
+      "title": "Flutter HybridComposition和VirtualDisplay演进",
+      "chapters": [
+        {
+          "id": "ch05",
+          "confidence": "medium"
+        }
+      ],
+      "scores": {
+        "relevance": 3,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "total_score": 12,
+      "quality": "medium",
+      "summary": "Flutter混合开发中PlatformView的两种实现方式对比与演进"
+    },
+    {
+      "path": "Cubox/Flutter混合架构方案探索-2024-11-14.md",
+      "title": "Flutter混合架构方案探索",
+      "chapters": [
+        {
+          "id": "ch01",
+          "confidence": "medium"
+        }
+      ],
+      "scores": {
+        "relevance": 2,
+        "depth": 3,
+        "timeliness": 4,
+        "verifiability": 2
+      },
+      "total_score": 11,
+      "quality": "medium",
+      "summary": "Flutter混合开发架构方案探索，原生与Flutter集成方案对比"
+    },
+    {
+      "path": "Cubox/Flutter鸿蒙终端一体化-混沌初开-2024-01-24.md",
+      "title": "Flutter鸿蒙终端一体化-混沌初开",
+      "chapters": [
+        {
+          "id": "ch17",
+          "confidence": "low"
+        }
+      ],
+      "scores": {
+        "relevance": 2,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 2
+      },
+      "total_score": 10,
+      "quality": "medium",
+      "summary": "Flutter适配鸿蒙平台的初步探索与实践"
+    },
+    {
+      "path": "Cubox/Flutter鸿蒙终端一体化-珠联璧合-2024-02-01.md",
+      "title": "Flutter鸿蒙终端一体化-珠联璧合",
+      "chapters": [
+        {
+          "id": "ch17",
+          "confidence": "low"
+        }
+      ],
+      "scores": {
+        "relevance": 2,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 2
+      },
+      "total_score": 10,
+      "quality": "medium",
+      "summary": "Flutter鸿蒙适配进阶，平台集成方案深入"
+    },
+    {
+      "title": "FullyDrawnReporter—一个官方冷启动耗时统计小工具",
+      "path": "Cubox/FullyDrawnReporter—一个官方冷启动耗时统计小工具-2024-04-09.md",
+      "score": 18,
+      "scores": {
+        "relevance": 5,
+        "depth": 4,
+        "timeliness": 4,
+        "verifiability": 5
+      },
+      "chapters": [
+        "ch04",
+        "ch14"
+      ],
+      "confidence": "high",
+      "quality": "high",
+      "summary": "官方库FullyDrawnReporter实现应用冷启动耗时统计，可定制化",
+      "indexed_at": "2026-03-31T00:19:43.730171"
+    },
+    {
+      "title": "Fundamental Software Architectural Patterns",
+      "path": "Cubox/Fundamental Software Architectural Patterns - by Williams O - Jun, 2022 - Medium-2022-07-19.md",
+      "score": 11,
+      "scores": {
+        "relevance": 2,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "chapters": [
+        "ch01"
+      ],
+      "confidence": "low",
+      "quality": "medium",
+      "summary": "软件架构基础模式介绍，可作为分层架构参考背景",
+      "indexed_at": "2026-03-31T00:19:43.730172"
+    },
+    {
+      "title": "GPU Driven Rendering Pipeline Level Streaming",
+      "path": "Cubox/GPU Driven Rendering Pipeline Level Streaming-2024-11-18.md",
+      "score": 16,
+      "scores": {
+        "relevance": 4,
+        "depth": 4,
+        "timeliness": 4,
+        "verifiability": 4
+      },
+      "chapters": [
+        "ch05"
+      ],
+      "confidence": "high",
+      "quality": "high",
+      "summary": "GPU驱动渲染管线与Level Streaming技术详解",
+      "indexed_at": "2026-03-31T00:19:43.730177"
+    },
+    {
+      "title": "GPU 性能原理拆解",
+      "path": "Cubox/GPU 性能原理拆解-2024-08-06.md",
+      "score": 16,
+      "scores": {
+        "relevance": 4,
+        "depth": 4,
+        "timeliness": 5,
+        "verifiability": 3
+      },
+      "chapters": [
+        "ch05"
+      ],
+      "confidence": "high",
+      "quality": "high",
+      "summary": "GPU性能原理深度拆解，涵盖架构与优化要点",
+      "indexed_at": "2026-03-31T00:19:43.730178"
+    },
+    {
+      "title": "GPU 性能迷思",
+      "path": "Cubox/GPU 性能迷思-2024-12-26.md",
+      "score": 15,
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 5,
+        "verifiability": 3
+      },
+      "chapters": [
+        "ch05"
+      ],
+      "confidence": "high",
+      "quality": "medium",
+      "summary": "GPU性能常见误解澄清，腾讯互动娱乐团队出品",
+      "indexed_at": "2026-03-31T00:19:43.730179"
+    },
+    {
+      "title": "GPU 渲染管线和硬件架构浅谈",
+      "path": "Cubox/GPU 渲染管线和硬件架构浅谈-2022-06-06.md",
+      "score": 16,
+      "scores": {
+        "relevance": 5,
+        "depth": 4,
+        "timeliness": 3,
+        "verifiability": 4
+      },
+      "chapters": [
+        "ch05"
+      ],
+      "confidence": "high",
+      "quality": "high",
+      "summary": "GPU渲染管线与硬件架构原理详解，信息量丰富",
+      "indexed_at": "2026-03-31T00:19:43.730180"
+    },
+    {
+      "title": "GPU到底是如何工作的？这篇AI Infra入门全部告诉你",
+      "path": "Cubox/GPU到底是如何工作的？这篇AI Infra入门全部告诉你-2025-07-08.md",
+      "score": 14,
+      "scores": {
+        "relevance": 3,
+        "depth": 3,
+        "timeliness": 5,
+        "verifiability": 3
+      },
+      "chapters": [
+        "ch05"
+      ],
+      "confidence": "medium",
+      "quality": "medium",
+      "summary": "GPU工作原理与AI基础设施入门，GPU场景工作流程",
+      "indexed_at": "2026-03-31T00:19:43.730181"
+    },
+    {
+      "title": "GPU火焰图的探索-iaprof",
+      "path": "Cubox/GPU火焰图的探索-iaprof-2025-05-04.md",
+      "score": 17,
+      "scores": {
+        "relevance": 4,
+        "depth": 4,
+        "timeliness": 5,
+        "verifiability": 4
+      },
+      "chapters": [
+        "ch05",
+        "ch11"
+      ],
+      "confidence": "high",
+      "quality": "high",
+      "summary": "Gregg对GPU火焰图的最新探索，iaprof工具介绍",
+      "indexed_at": "2026-03-31T00:19:43.730183"
+    },
+    {
+      "title": "GPU硬件加速提升渲染流畅度",
+      "path": "Cubox/GPU硬件加速提升渲染流畅度-2025-02-07.md",
+      "score": 18,
+      "scores": {
+        "relevance": 5,
+        "depth": 4,
+        "timeliness": 5,
+        "verifiability": 4
+      },
+      "chapters": [
+        "ch05"
+      ],
+      "confidence": "high",
+      "quality": "high",
+      "summary": "GPU硬件加速技术提升Android渲染流畅度的方法",
+      "indexed_at": "2026-03-31T00:19:43.730184"
+    },
+    {
+      "title": "GPU计算的工作原理",
+      "path": "Cubox/GPU计算的工作原理-2024-04-27.md",
+      "score": 12,
+      "scores": {
+        "relevance": 2,
+        "depth": 3,
+        "timeliness": 4,
+        "verifiability": 3
+      },
+      "chapters": [
+        "ch05"
+      ],
+      "confidence": "medium",
+      "quality": "medium",
+      "summary": "GPU计算工作原理基础介绍",
+      "indexed_at": "2026-03-31T00:19:43.730185"
+    },
+    {
+      "title": "GPU设计原理",
+      "path": "Cubox/GPU设计原理-2023-07-11.md",
+      "score": 10,
+      "scores": {
+        "relevance": 2,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 2
+      },
+      "chapters": [
+        "ch05"
+      ],
+      "confidence": "medium",
+      "quality": "medium",
+      "summary": "GPU设计原理基础知识",
+      "indexed_at": "2026-03-31T00:19:43.730186"
+    },
+    {
+      "title": "Gemini on Android, The story so far",
+      "path": "Cubox/Gemini on Android, The story so far-2024-10-21.md",
+      "score": 16,
+      "scores": {
+        "relevance": 4,
+        "depth": 4,
+        "timeliness": 4,
+        "verifiability": 4
+      },
+      "chapters": [
+        "ch17"
+      ],
+      "confidence": "high",
+      "quality": "high",
+      "summary": "LLM如何成为Android OS核心组件的历程分析",
+      "indexed_at": "2026-03-31T00:19:43.730187"
+    },
+    {
+      "path": "Cubox/Going Old School · Romain Guy-2024-01-26.md",
+      "title": "Going Old School · Romain Guy",
+      "scores": {
+        "relevance": 4,
+        "depth": 5,
+        "timeliness": 4,
+        "verifiability": 5
+      },
+      "total_score": 18,
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch15-Kotlin",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Romain Guy发现Jetpack Compose中cube root函数在Bézier曲线和OkLab颜色插值中消耗大量时间，用查表法+牛顿迭代优化性能。",
+      "scanned_at": "2026-03-31T01:15:00"
+    },
+    {
+      "path": "Cubox/Google Android 官方架构示例，我在起跑线等你-2022-07-07.md",
+      "title": "Google Android 官方架构示例",
+      "scores": {
+        "relevance": 4,
+        "depth": 2,
+        "timeliness": 3,
+        "verifiability": 2
+      },
+      "total_score": 11,
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch01-架构",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "解读Google官方Android架构示例项目，探讨MVVM、Clean Architecture等架构模式在Android中的实践。",
+      "scanned_at": "2026-03-31T01:15:00"
+    },
+    {
+      "path": "Cubox/Google Assistant Slices for Android — part 2-2022-02-07.md",
+      "title": "Google Assistant Slices for Android — part 2",
+      "scores": {
+        "relevance": 3,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "total_score": 12,
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch01-架构",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Android App与Google Assistant深度集成，通过Slices展示应用内容，涉及ContentProvider和Slice API。",
+      "scanned_at": "2026-03-31T01:15:00"
+    },
+    {
+      "path": "Cubox/Google Gemini 如何加速 Android 开发？-2025-02-17.md",
+      "title": "Google Gemini 如何加速 Android 开发？",
+      "scores": {
+        "relevance": 3,
+        "depth": 2,
+        "timeliness": 5,
+        "verifiability": 2
+      },
+      "total_score": 12,
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch14-工具",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "探讨Google Gemini AI如何辅助Android开发流程，提升编码效率。",
+      "scanned_at": "2026-03-31T01:15:00"
+    },
+    {
+      "path": "Cubox/Google I-O - Jetpack Compose 中常见的性能问题 - 掘金-2022-05-13.md",
+      "title": "Google I/O: Jetpack Compose 中常见的性能问题",
+      "scores": {
+        "relevance": 5,
+        "depth": 4,
+        "timeliness": 3,
+        "verifiability": 4
+      },
+      "total_score": 16,
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch15-Kotlin",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Google I/O演讲，分析Compose常见性能问题：重组、布局测量、LazyList优化等，提供具体优化建议。",
+      "scanned_at": "2026-03-31T01:15:00"
+    },
+    {
+      "path": "Cubox/Google I-O - 使用 Baseline Profiles 优化启动性能 - 掘金-2022-07-05.md",
+      "title": "Google I/O: 使用 Baseline Profiles 优化启动性能",
+      "scores": {
+        "relevance": 5,
+        "depth": 4,
+        "timeliness": 3,
+        "verifiability": 4
+      },
+      "total_score": 16,
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch04-启动",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch14-工具",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Google I/O介绍通过Baseline Profiles（AG编译时优化）提升应用启动速度，配合Macrobenchmark验证。",
+      "scanned_at": "2026-03-31T01:15:00"
+    },
+    {
+      "path": "Cubox/Google I-O 2022：Jetpack 的新功能-2022-05-14.md",
+      "title": "Google I/O 2022：Jetpack 的新功能",
+      "scores": {
+        "relevance": 3,
+        "depth": 2,
+        "timeliness": 3,
+        "verifiability": 2
+      },
+      "total_score": 10,
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch01-架构",
+          "confidence": "low"
+        }
+      ],
+      "summary": "Google I/O 2022 Jetpack新功能概览，包括新组件和API更新。",
+      "scanned_at": "2026-03-31T01:15:00"
+    },
+    {
+      "path": "Cubox/Google I-O 2024 ：新的 Gemini AI 升级、Android 15 和 Pixel 预告-2024-05-15.md",
+      "title": "Google I/O 2024: Gemini AI升级、Android 15和Pixel预告",
+      "scores": {
+        "relevance": 3,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 2
+      },
+      "total_score": 11,
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch17-新版本",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Google I/O 2024大会回顾：Gemini AI升级、Android 15新特性、Pixel产品线预告。",
+      "scanned_at": "2026-03-31T01:15:00"
+    },
+    {
+      "path": "Cubox/Google I-O Extended ：2025 Flutter 的现状与未来-2025-07-09.md",
+      "title": "Google I/O Extended: 2025 Flutter 的现状与未来",
+      "scores": {
+        "relevance": 3,
+        "depth": 2,
+        "timeliness": 5,
+        "verifiability": 2
+      },
+      "total_score": 12,
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "2025年Flutter现状与Impeller渲染引擎的未来发展路线。",
+      "scanned_at": "2026-03-31T01:15:00"
+    },
+    {
+      "path": "Cubox/Google I-O ：Android Jetpack 最新变化（一） Architecture - 掘金-2022-07-05.md",
+      "title": "Google I/O: Android Jetpack最新变化（一）Architecture",
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "total_score": 13,
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch01-架构",
+          "confidence": "high"
+        }
+      ],
+      "summary": "2022 Google I/O Jetpack架构组件更新：ViewModel、SavedStateHandle、DataStore等。",
+      "scanned_at": "2026-03-31T01:15:00"
+    },
+    {
+      "path": "Cubox/Google I-O ：Android Jetpack 最新变化（三）UI - 掘金-2022-07-05.md",
+      "title": "Google I/O: Android Jetpack最新变化（三）UI",
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "total_score": 13,
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch01-架构",
+          "confidence": "medium"
+        },
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "2022 Google I/O Jetpack UI组件更新：ViewPager2、RecyclerView、SwipeRefreshLayout等。",
+      "scanned_at": "2026-03-31T01:15:00"
+    },
+    {
+      "path": "Cubox/Google I-O ：Android Jetpack 最新变化（四）Compose - 掘金-2022-07-05.md",
+      "title": "Google I/O: Android Jetpack最新变化（四）Compose",
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "total_score": 13,
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch15-Kotlin",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "2022 Google I/O Jetpack Compose更新：Material 3、LazyLayout、自定义布局等新特性。",
+      "scanned_at": "2026-03-31T01:15:00"
+    },
+    {
+      "path": "Cubox/Google IO - Navigation 3 使用介绍-2025-05-25.md",
+      "title": "Google IO - Navigation 3 使用介绍",
+      "scores": {
+        "relevance": 3,
+        "depth": 3,
+        "timeliness": 5,
+        "verifiability": 3
+      },
+      "total_score": 14,
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch15-Kotlin",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Compose全新导航库Navigation 3介绍：诞生背景、核心能力与使用方法。",
+      "scanned_at": "2026-03-31T01:15:00"
+    },
+    {
+      "path": "Cubox/Google IO 2022 ：Android 13 新功能-2022-05-14.md",
+      "title": "Google IO 2022: Android 13 新功能",
+      "scores": {
+        "relevance": 3,
+        "depth": 2,
+        "timeliness": 3,
+        "verifiability": 2
+      },
+      "total_score": 10,
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch17-新版本",
+          "confidence": "low"
+        }
+      ],
+      "summary": "Android 13新功能概览：通知权限、主题图标、多语言支持等。",
+      "scanned_at": "2026-03-31T01:15:00"
+    },
+    {
+      "path": "Cubox/Google VINTF机制经验总结-2024-09-07.md",
+      "title": "Google VINTF机制经验总结",
+      "scores": {
+        "relevance": 4,
+        "depth": 4,
+        "timeliness": 4,
+        "verifiability": 4
+      },
+      "total_score": 16,
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch01-架构",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Android VINTF（Vendor Interface）检查机制详解：manifest、matrix、兼容性验证流程。",
+      "scanned_at": "2026-03-31T01:15:00"
+    },
+    {
+      "path": "Cubox/Google 为何把 SurfaceView 设计的这么难用？-2022-09-15.md",
+      "title": "Google 为何把 SurfaceView 设计的这么难用？",
+      "scores": {
+        "relevance": 5,
+        "depth": 4,
+        "timeliness": 3,
+        "verifiability": 4
+      },
+      "total_score": 16,
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "high"
+        }
+      ],
+      "summary": "深入分析SurfaceView设计原理：独立Surface、线程模型、与View树的交互、TextureView对比。",
+      "scanned_at": "2026-03-31T01:15:00"
+    },
+    {
+      "path": "Cubox/Google 新手机发布会：Android 14，「买手机，送 AI」-2023-10-05.md",
+      "title": "Google新手机发布会：Android 14，「买手机，送AI」",
+      "scores": {
+        "relevance": 3,
+        "depth": 2,
+        "timeliness": 3,
+        "verifiability": 2
+      },
+      "total_score": 10,
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch17-新版本",
+          "confidence": "low"
+        }
+      ],
+      "summary": "Android 14配合Pixel 8发布，AI集成成为亮点，包括AI壁纸、照片编辑等特性。",
+      "scanned_at": "2026-03-31T01:15:00"
+    },
+    {
+      "path": "Cubox/Google工程师多图详解Android系统架构-阿里云开发者社区-2024-05-31.md",
+      "title": "Google工程师多图详解Android系统架构",
+      "scores": {
+        "relevance": 5,
+        "depth": 5,
+        "timeliness": 4,
+        "verifiability": 5
+      },
+      "total_score": 19,
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch01-架构",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Google工程师Sans Serif详细图解Android系统分层架构：应用层、Framework层、Native层、内核层。",
+      "scanned_at": "2026-03-31T01:15:00"
+    },
+    {
+      "path": "Cubox/Google招聘泄天机，Android Studio可用于开发Android系统-2022-03-26.md",
+      "title": "Google招聘泄天机，Android Studio可用于开发Android系统",
+      "scores": {
+        "relevance": 3,
+        "depth": 2,
+        "timeliness": 3,
+        "verifiability": 2
+      },
+      "total_score": 10,
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch14-工具",
+          "confidence": "low"
+        }
+      ],
+      "summary": "Google招聘信息透露Android Studio将支持Android系统级开发。",
+      "scanned_at": "2026-03-31T01:15:00"
+    },
+    {
+      "path": "Gotchas in Jetpack Compose Recomposition - Stitch Fix Technology – Multithreaded-2022-08-09.md",
+      "title": "Gotchas in Jetpack Compose Recomposition",
+      "score": 14,
+      "chapters": [
+        "ch15",
+        "ch05"
+      ],
+      "confidence": "high"
+    },
+    {
+      "path": "Guide to Foreground Services on Android 14-2024-02-16.md",
+      "title": "Guide to Foreground Services on Android 14",
+      "score": 17,
+      "chapters": [
+        "ch06",
+        "ch12"
+      ],
+      "confidence": "high"
+    },
+    {
+      "path": "Guide to background work  -  Android Developers-2022-01-16.md",
+      "title": "Guide to background work | Android Developers",
+      "score": 16,
+      "chapters": [
+        "ch06"
+      ],
+      "confidence": "high"
+    },
+    {
+      "path": "HPC：程序优化思考 - 知乎-2022-01-13.md",
+      "title": "HPC：程序优化思考",
+      "score": 13,
+      "chapters": [
+        "ch13"
+      ],
+      "confidence": "medium"
+    },
+    {
+      "path": "Hardcoder框架的集成与调试-2022-09-23.md",
+      "title": "Hardcoder框架的集成与调试",
+      "score": 16,
+      "chapters": [
+        "ch13",
+        "ch04"
+      ],
+      "confidence": "high"
+    },
+    {
+      "path": "High performance with idiomatic Kotlin - by Magda Miu - Feb, 2022 - Medium-2022-02-07.md",
+      "title": "High performance with idiomatic Kotlin",
+      "score": 12,
+      "chapters": [
+        "ch15"
+      ],
+      "confidence": "medium"
+    },
+    {
+      "path": "Holistic Guide to Mobile App Performance Testing-2024-01-15.md",
+      "title": "Holistic Guide to Mobile App Performance Testing",
+      "score": 13,
+      "chapters": [
+        "ch14"
+      ],
+      "confidence": "medium"
+    },
+    {
+      "path": "How UIScrollView works. How UIScrollView works and how to… - by Ilya Lobanov - Medium-2023-01-04.md",
+      "title": "How UIScrollView works",
+      "score": 11,
+      "chapters": [
+        "ch05"
+      ],
+      "confidence": "low"
+    },
+    {
+      "path": "How cc Works 中文译文 - 知乎-2024-03-08.md",
+      "title": "How cc Works 中文译文",
+      "score": 14,
+      "chapters": [
+        "ch05"
+      ],
+      "confidence": "high"
+    },
+    {
+      "path": "How do Video Game Graphics Work--2024-01-05.md",
+      "title": "How do Video Game Graphics Work?",
+      "score": 12,
+      "chapters": [
+        "ch05"
+      ],
+      "confidence": "low"
+    },
+    {
+      "path": "How to Improve Android App Performance with Baseli...-2023-12-07.md",
+      "title": "How to Improve Android App Performance with Baseline Profiles",
+      "score": 18,
+      "chapters": [
+        "ch04",
+        "ch14"
+      ],
+      "confidence": "high"
+    },
+    {
+      "path": "How to understand Jetpack Compose code-2022-07-26.md",
+      "title": "How to understand Jetpack Compose code",
+      "score": 12,
+      "chapters": [
+        "ch15"
+      ],
+      "confidence": "high"
+    },
+    {
+      "path": "How to use bpftrace to analysis issues in Android-2023-11-10.md",
+      "title": "How to use bpftrace to analysis issues in Android",
+      "score": 18,
+      "chapters": [
+        "ch11",
+        "ch14"
+      ],
+      "confidence": "high"
+    },
+    {
+      "path": "How to write a well-Structured app using the new Android Architecture from Google - by M Sattar - Ju.md",
+      "title": "How to write a well-Structured app using Android Architecture",
+      "score": 12,
+      "chapters": [
+        "ch01"
+      ],
+      "confidence": "medium"
+    },
+    {
+      "path": "How we improved our Android app startup time by ov...-2023-11-29.md",
+      "title": "How we improved Android app startup time by over 20%",
+      "score": 16,
+      "chapters": [
+        "ch04"
+      ],
+      "confidence": "high"
+    },
+    {
+      "path": "How we increased our Zomato Restaurant Partner App...-2023-11-29.md",
+      "title": "How we increased Zomato App speed by over 90%",
+      "score": 13,
+      "chapters": [
+        "ch04"
+      ],
+      "confidence": "medium"
+    },
+    {
+      "path": "HttpRunner V3.X-2023-08-15.md",
+      "title": "Android功耗优化参考",
+      "score": 12,
+      "chapters": [
+        "ch06"
+      ],
+      "confidence": "medium"
+    },
+    {
+      "path": "Hummer 引擎优化系列 - Flutter SurfaceView 动态切换方案-2022-07-29.md",
+      "title": "Hummer引擎优化：Flutter SurfaceView动态切换方案",
+      "score": 15,
+      "chapters": [
+        "ch05"
+      ],
+      "confidence": "high"
+    },
+    {
+      "path": "Hummer引擎优化系列 - 内存稳定性研究与优化-2022-07-15.md",
+      "title": "Hummer引擎优化：内存稳定性研究与优化",
+      "score": 15,
+      "chapters": [
+        "ch07",
+        "ch05"
+      ],
+      "confidence": "high"
+    },
+    {
+      "path": "Hungtask原理及分析-2022-10-14.md",
+      "title": "Hungtask原理及分析",
+      "score": 16,
+      "chapters": [
+        "ch03",
+        "ch02"
+      ],
+      "confidence": "high"
+    },
+    {
+      "title": "ITGSA游戏稳定性性能报告",
+      "path": "Cubox/ITGSA｜游戏类稳定性和性能问题报告-2024-04-26.md",
+      "score": 16,
+      "chapters": [
+        "ch07-内存",
+        "ch05-渲染",
+        "ch11-Profiling"
+      ],
+      "confidence": "high",
+      "scores": {
+        "relevance": 4,
+        "depth": 4,
+        "timeliness": 4,
+        "verifiability": 4,
+        "total": 16
+      },
+      "quality": "high",
+      "summary": "Android 12内存分配变化导致游戏稳定性问题汇总，含CrashSight堆栈分析",
+      "indexed_at": "2026-03-31T02:15:00"
+    },
+    {
+      "title": "Baseline Profiles Codelab",
+      "path": "Cubox/Improve app performance with Baseline Profiles  -  Android Developers-2023-05-13.md",
+      "score": 19,
+      "chapters": [
+        "ch04-启动",
+        "ch14-工具"
+      ],
+      "confidence": "high",
+      "scores": {
+        "relevance": 5,
+        "depth": 5,
+        "timeliness": 4,
+        "verifiability": 5,
+        "total": 19
+      },
+      "quality": "high",
+      "summary": "Google官方Codelab：Baseline Profiles优化启动时间和帧时间，含Macrobenchmark验证",
+      "indexed_at": "2026-03-31T02:15:00"
+    },
+    {
+      "title": "Baseline Profiles提升启动速度40%",
+      "path": "Cubox/Improving App Performance with Baseline Profiles-2022-02-05.md",
+      "score": 18,
+      "chapters": [
+        "ch04-启动",
+        "ch14-工具"
+      ],
+      "confidence": "high",
+      "scores": {
+        "relevance": 5,
+        "depth": 5,
+        "timeliness": 3,
+        "verifiability": 5,
+        "total": 18
+      },
+      "quality": "high",
+      "summary": "Google官方博客：Baseline Profiles可提升启动速度40%，含实现与性能数据",
+      "indexed_at": "2026-03-31T02:15:00"
+    },
+    {
+      "title": "Baseline Profiles快速入门(Ben Weiss)",
+      "path": "Cubox/Improving Performance with Baseline Profiles - by Ben Weiss - Android Developers - Aug, 2022 - Mediu.md",
+      "score": 16,
+      "chapters": [
+        "ch04-启动",
+        "ch14-工具"
+      ],
+      "confidence": "high",
+      "scores": {
+        "relevance": 5,
+        "depth": 4,
+        "timeliness": 3,
+        "verifiability": 4,
+        "total": 16
+      },
+      "quality": "high",
+      "summary": "Android Developers团队Baseline Profiles快速入门与最佳实践",
+      "indexed_at": "2026-03-31T02:15:00"
+    },
+    {
+      "title": "Input ANR on Android 13",
+      "path": "Cubox/Input ANR on Android 13-2022-10-14.md",
+      "score": 18,
+      "chapters": [
+        "ch01-架构",
+        "ch03-线程",
+        "ch11-Profiling"
+      ],
+      "confidence": "high",
+      "scores": {
+        "relevance": 5,
+        "depth": 5,
+        "timeliness": 3,
+        "verifiability": 5,
+        "total": 18
+      },
+      "quality": "high",
+      "summary": "Android 13 Input ANR源码分析：埋炸弹/拆炸弹/引爆炸弹完整机制，含流程图",
+      "indexed_at": "2026-03-31T02:15:00"
+    },
+    {
+      "title": "MAD Skills Performance系列",
+      "path": "Cubox/Introducing the MAD Skills series on Performance - by Ben Weiss - Android Developers - Aug, 2022 - M.md",
+      "score": 13,
+      "chapters": [
+        "ch11-Profiling",
+        "ch14-工具"
+      ],
+      "confidence": "high",
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 3,
+        "total": 13
+      },
+      "quality": "medium",
+      "summary": "Google官方MAD Skills性能优化系列介绍，涵盖工具链和最佳实践",
+      "indexed_at": "2026-03-31T02:15:00"
+    },
+    {
+      "title": "JIT vs AOT Performance",
+      "path": "Cubox/JIT Performance- Ahead-Of-Time versus Just-In-Time-2022-11-08.md",
+      "score": 13,
+      "chapters": [
+        "ch04-启动",
+        "ch07-内存"
+      ],
+      "confidence": "medium",
+      "scores": {
+        "relevance": 3,
+        "depth": 4,
+        "timeliness": 3,
+        "verifiability": 3,
+        "total": 13
+      },
+      "quality": "medium",
+      "summary": "JVM JIT与AOT编译性能对比：启动速度、峰值性能差异分析",
+      "indexed_at": "2026-03-31T02:15:00"
+    },
+    {
+      "title": "JNI FindClass NoClassDefFoundError",
+      "path": "Cubox/JNI FindClass 遇到的 NoClassDefFoundError 错误-2024-01-14.md",
+      "score": 16,
+      "chapters": [
+        "ch01-架构"
+      ],
+      "confidence": "medium",
+      "scores": {
+        "relevance": 4,
+        "depth": 4,
+        "timeliness": 4,
+        "verifiability": 4,
+        "total": 16
+      },
+      "quality": "high",
+      "summary": "JVMTI开发中FindClass因类加载器双亲委托报错，附解决方案",
+      "indexed_at": "2026-03-31T02:15:00"
+    },
+    {
+      "title": "JVM GC与ART CC回收器",
+      "path": "Cubox/JVM 垃圾回收算法与ART CC回收器实现概述-2022-01-21.md",
+      "score": 17,
+      "chapters": [
+        "ch07-内存",
+        "ch01-架构"
+      ],
+      "confidence": "high",
+      "scores": {
+        "relevance": 5,
+        "depth": 5,
+        "timeliness": 3,
+        "verifiability": 4,
+        "total": 17
+      },
+      "quality": "high",
+      "summary": "JVM垃圾回收算法概述+ART CC回收器实现分析，含GC任务和工程挑战",
+      "indexed_at": "2026-03-31T02:15:00"
+    },
+    {
+      "title": "JVMTI在手淘Profiler中的应用",
+      "path": "Cubox/JVMTI 在手淘 Profiler 中的应用-2023-03-16.md",
+      "score": 19,
+      "chapters": [
+        "ch11-Profiling",
+        "ch07-内存"
+      ],
+      "confidence": "high",
+      "scores": {
+        "relevance": 5,
+        "depth": 5,
+        "timeliness": 4,
+        "verifiability": 5,
+        "total": 19
+      },
+      "quality": "high",
+      "summary": "阿里手淘JVMTI/ART TI实战：内存分析、线程监控、方法追踪",
+      "indexed_at": "2026-03-31T02:15:00"
+    },
+    {
+      "title": "JVM翻越内存管理的墙",
+      "path": "Cubox/JVM｜翻越内存管理的墙 - 掘金-2022-07-05.md",
+      "score": 12,
+      "chapters": [
+        "ch07-内存"
+      ],
+      "confidence": "medium",
+      "scores": {
+        "relevance": 3,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 3,
+        "total": 12
+      },
+      "quality": "medium",
+      "summary": "JVM运行时数据区域与GC机制入门",
+      "indexed_at": "2026-03-31T02:15:00"
+    },
+    {
+      "title": "Diffuse: APK diff工具",
+      "path": "Cubox/JakeWharton-diffuse- Diffuse is a tool for diffing APKs, AABs, AARs, and JARs-2022-02-19.md",
+      "score": 16,
+      "chapters": [
+        "ch10-包体积",
+        "ch14-工具"
+      ],
+      "confidence": "high",
+      "scores": {
+        "relevance": 4,
+        "depth": 4,
+        "timeliness": 3,
+        "verifiability": 5,
+        "total": 16
+      },
+      "quality": "high",
+      "summary": "JakeWharton开源APK/AAB差异对比工具，分析dex/resources大小变化",
+      "indexed_at": "2026-03-31T02:15:00"
+    },
+    {
+      "title": "JankStats Goes Alpha(英文原版)",
+      "path": "Cubox/JankStats Goes Alpha-2022-02-11.md",
+      "score": 17,
+      "chapters": [
+        "ch05-渲染",
+        "ch11-Profiling",
+        "ch14-工具"
+      ],
+      "confidence": "high",
+      "scores": {
+        "relevance": 5,
+        "depth": 4,
+        "timeliness": 3,
+        "verifiability": 5,
+        "total": 17
+      },
+      "quality": "high",
+      "summary": "Google官方JankStats库alpha：检测追踪应用卡顿帧，真实环境性能数据采集",
+      "indexed_at": "2026-03-31T02:15:00"
+    },
+    {
+      "title": "JankTest API Reference",
+      "path": "Cubox/JankTest  -  Android Developers-2022-02-02.md",
+      "score": 15,
+      "chapters": [
+        "ch14-工具"
+      ],
+      "confidence": "high",
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 5,
+        "total": 15
+      },
+      "quality": "medium",
+      "summary": "Android官方JankTest API，用于UI性能和帧率测试",
+      "indexed_at": "2026-03-31T02:15:00"
     }
   ],
-  "last_updated": "2026-03-30T22:51:48.743833"
+  "last_updated": "2026-03-31T02:15:00"
 }
