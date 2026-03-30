@@ -538,6 +538,53 @@
         "pending": 1,
         "failed": 0
       }
+    },
+    {
+      "section": "3.3",
+      "title": "手势导航与系统交互",
+      "date": "2026-03-31T06:29:12.342211",
+      "anchors": [
+        {
+          "name": "Android 10+ 手势导航的系统实现：SystemUI NavigationBar → InputMonitor",
+          "status": "verified",
+          "level": "L2",
+          "source": "AOSP EdgeBackGestureHandler.java + InputDispatcher.cpp"
+        },
+        {
+          "name": "手势冲突处理：系统手势优先区域 vs App 的 WindowInsets",
+          "status": "verified",
+          "level": "L2",
+          "source": "AOSP DisplayContent.java + developer.android.com"
+        },
+        {
+          "name": "Back 手势 → Predictive Back Animation（Android 13/14+）的原理与性能",
+          "status": "verified",
+          "level": "L2",
+          "source": "developer.android.com/guide/navigation/predictive-back"
+        },
+        {
+          "name": "手势导航中的边缘滑动检测与性能敏感点",
+          "status": "verified",
+          "level": "L2",
+          "source": "AOSP EdgeBackGestureHandler.java + TechMerger Blog"
+        }
+      ],
+      "extensions": [
+        {
+          "name": "三方 Launcher 对手势导航的适配",
+          "status": "skipped",
+          "note": "无直接素材"
+        },
+        {
+          "name": "无障碍服务对输入事件链路的影响",
+          "status": "skipped",
+          "note": "无直接素材"
+        }
+      ],
+      "pending_verification": [
+        "Android 16 中 Predictive Back 在低端设备上的掉帧率优化",
+        "lmkd 在 Android 16 中与手势导航的交互（如有）"
+      ]
     }
   ]
 }
