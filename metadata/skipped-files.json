@@ -1,5 +1,5 @@
 {
-  "total_skipped": 1501,
+  "total_skipped": 1547,
   "files": [
     {
       "title": "第 10 章：内存性能",
@@ -16184,6 +16184,138 @@
       },
       "matched_chapters": [],
       "reason": "总分5<16分"
+    },
+    {
+      "path": "Cubox/Stable Diffusion 2.0 相比 1.5  是倒退吗？Prompt 实验给你真相-2022-12-14.md",
+      "title": "Stable Diffusion 2.0",
+      "score": 4,
+      "reason": "AI绘图，非Android"
+    },
+    {
+      "path": "Cubox/State of AI - OpenRouter-2025-12-06.md",
+      "title": "State of AI",
+      "score": 3,
+      "reason": "AI行业报告"
+    },
+    {
+      "path": "Cubox/StepN日记4.18，GST持有地址突破17w，出金量的减少12%-2022-04-18.md",
+      "title": "StepN日记",
+      "score": 1,
+      "reason": "Web3"
+    },
+    {
+      "path": "Cubox/Store and Share Your Prompts-2025-04-02.md",
+      "title": "Store Prompts",
+      "score": 2,
+      "reason": "AI prompt工具"
+    },
+    {
+      "path": "Cubox/StormQ's Blog-2024-05-27.md",
+      "title": "StormQ's Blog",
+      "score": 5,
+      "reason": "博客索引，无实质内容"
+    },
+    {
+      "path": "Cubox/Stream Andro idiots-2024-11-11.md",
+      "title": "Andro idiots",
+      "score": 2,
+      "reason": "播客主页"
+    },
+    {
+      "path": "Cubox/Structure Member Alignment, Padding and Data Packi...-2023-08-18.md",
+      "title": "Struct Alignment",
+      "score": 6,
+      "reason": "C结构体对齐，关联弱"
+    },
+    {
+      "path": "Cubox/Studies On Slack-2022-01-17.md",
+      "title": "Studies On Slack",
+      "score": 2,
+      "reason": "哲学文章"
+    },
+    {
+      "path": "Cubox/Superlinear Returns --- 超线性回报-2023-11-25.md",
+      "title": "Superlinear Returns",
+      "score": 2,
+      "reason": "Paul Graham随笔"
+    },
+    {
+      "path": "Cubox/Support the Guardian-2023-12-27.md",
+      "title": "Guardian",
+      "score": 1,
+      "reason": "书评"
+    },
+    {
+      "path": "Cubox/Surge 官方中文指引：理解 Surge 原理-2023-07-31.md",
+      "title": "Surge原理",
+      "score": 5,
+      "reason": "网络代理工具"
+    },
+    {
+      "path": "Cubox/TI2025线下观赛-2025-09-09.md",
+      "title": "TI2025",
+      "score": 1,
+      "reason": "游戏"
+    },
+    {
+      "path": "Cubox/TL-XDR6088 刷入 Openwrt-2023-07-31.md",
+      "title": "刷Openwrt",
+      "score": 2,
+      "reason": "路由器"
+    },
+    {
+      "path": "Cubox/Table of Contents-2023-12-21.md",
+      "title": "Learn in Public",
+      "score": 2,
+      "reason": "学习方法"
+    },
+    {
+      "path": "Cubox/Tackling EDA challenges-2024-0.md",
+      "title": "EDA Billing",
+      "score": 4,
+      "reason": "事件驱动架构"
+    },
+    {
+      "path": "Cubox/Team Leader 究竟要不要写代码？ - 知乎-2023-12-03.md",
+      "title": "TL写代码",
+      "score": 3,
+      "reason": "管理话题"
+    },
+    {
+      "path": "Cubox/Tech Talk丨如何调校一颗满级芯片-2022-04-06.md",
+      "title": "调校芯片",
+      "score": 6,
+      "reason": "芯片科普"
+    },
+    {
+      "path": "Cubox/Telegram电报验证码-2024-01-20.md",
+      "title": "Telegram",
+      "score": 1,
+      "reason": "工具使用"
+    },
+    {
+      "path": "Cubox/Thanks, Past-Me-2024-01-04.md",
+      "title": "Thanks Past-Me",
+      "score": 2,
+      "reason": "个人博客"
+    },
+    {
+      "path": "Cubox/The 10 Best Books of 2023 2023 年的 10 本最佳图书-2023-12-27.md",
+      "title": "Best Books",
+      "score": 1,
+      "reason": "书单"
+    },
+    {
+      "path": "Cubox/The 10 Best Books of 2023-2023-12-27.md",
+      "title": "Best Books 2023",
+      "score": 1,
+      "reason": "书单重复"
+    },
+    {
+      "path": "Cubox/The 2025 AI Engineering Reading List-2025-01-04.md",
+      "title": "AI Reading List",
+      "score": 3,
+      "reason": "AI阅读列表"
     }
   ],
   "last_updated": "2026-03-31T04:15:00"

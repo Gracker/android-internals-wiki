@@ -7951,6 +7951,349 @@
         "ch14-工具"
       ],
       "indexed_at": "2026-03-31T05:17:50.469096"
+    },
+    {
+      "title": "SurfaceFlinger 图层合成过程分析上",
+      "path": "Cubox/SurfaceFlinger 图层合成过程分析上-2024-08-05.md",
+      "score": 18,
+      "scores": {
+        "relevance": 5,
+        "depth": 4,
+        "timeliness": 5,
+        "verifiability": 4
+      },
+      "chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "high"
+        }
+      ],
+      "quality": "high",
+      "summary": "Android SurfaceFlinger图层合成过程分析，涵盖合成流程与源码解析"
+    },
+    {
+      "title": "SurfaceFlinger 图层合成过程分析（上）",
+      "path": "Cubox/SurfaceFlinger 图层合成过程分析（上）-2024-08-19.md",
+      "score": 18,
+      "scores": {
+        "relevance": 5,
+        "depth": 4,
+        "timeliness": 5,
+        "verifiability": 4
+      },
+      "chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "high"
+        }
+      ],
+      "quality": "high",
+      "summary": "Android14 SurfaceFlinger合成过程分析，系统渲染管线核心流程"
+    },
+    {
+      "title": "SurfaceFlinger 图层合成过程分析（下）",
+      "path": "Cubox/SurfaceFlinger 图层合成过程分析（下）-2024-08-19.md",
+      "score": 18,
+      "scores": {
+        "relevance": 5,
+        "depth": 4,
+        "timeliness": 5,
+        "verifiability": 4
+      },
+      "chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "high"
+        }
+      ],
+      "quality": "high",
+      "summary": "Android14 SurfaceFlinger合成过程分析下篇，深入合成实现细节"
+    },
+    {
+      "title": "SurfaceSyncGroup的改进",
+      "path": "Cubox/SurfaceSyncGroup的改进-2024-05-09.md",
+      "score": 18,
+      "scores": {
+        "relevance": 5,
+        "depth": 4,
+        "timeliness": 5,
+        "verifiability": 4
+      },
+      "chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "high"
+        }
+      ],
+      "quality": "high",
+      "summary": "SurfaceSyncGroup改进方案，Android多窗口同步渲染优化"
+    },
+    {
+      "title": "SurfaceSyncGroup的细节",
+      "path": "Cubox/SurfaceSyncGroup的细节-2024-05-10.md",
+      "score": 18,
+      "scores": {
+        "relevance": 5,
+        "depth": 4,
+        "timeliness": 5,
+        "verifiability": 4
+      },
+      "chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "high"
+        }
+      ],
+      "quality": "high",
+      "summary": "SurfaceSyncGroup使用细节与注意事项，实践中的坑与解法"
+    },
+    {
+      "title": "Synchronized 锁与锁升级策略",
+      "path": "Cubox/Synchronized 锁与锁升级策略：从对象头到操作系统的全链路拆解-2026-02-01.md",
+      "score": 19,
+      "scores": {
+        "relevance": 4,
+        "depth": 5,
+        "timeliness": 5,
+        "verifiability": 5
+      },
+      "chapters": [
+        {
+          "chapter": "ch03-线程",
+          "confidence": "high"
+        }
+      ],
+      "quality": "high",
+      "summary": "Java synchronized锁升级全链路：对象头Mark Word→偏向锁→轻量锁→重量锁"
+    },
+    {
+      "title": "Systrace 的原理、流程及定制",
+      "path": "Cubox/Systrace 的原理、流程及定制-2022-04-16.md",
+      "score": 16,
+      "scores": {
+        "relevance": 5,
+        "depth": 4,
+        "timeliness": 3,
+        "verifiability": 4
+      },
+      "chapters": [
+        {
+          "chapter": "ch11-Profiling",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "medium"
+        }
+      ],
+      "quality": "high",
+      "summary": "Systrace工具原理、数据采集流程与定制方法"
+    },
+    {
+      "title": "Systrace 线程 CPU Running 篇",
+      "path": "Cubox/Systrace 线程 CPU 运行状态分析技巧 - Running 篇-2022-06-30.md",
+      "score": 16,
+      "scores": {
+        "relevance": 5,
+        "depth": 4,
+        "timeliness": 3,
+        "verifiability": 4
+      },
+      "chapters": [
+        {
+          "chapter": "ch11-Profiling",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch03-线程",
+          "confidence": "medium"
+        }
+      ],
+      "quality": "high",
+      "summary": "Systrace CPU Running状态分析，Running过长的排查与优化"
+    },
+    {
+      "title": "Systrace 线程 CPU Sleep 篇",
+      "path": "Cubox/Systrace 线程 CPU 运行状态分析技巧 - Sleep 和 Uninterruptible Sleep 篇-2022-06-30.md",
+      "score": 16,
+      "scores": {
+        "relevance": 5,
+        "depth": 4,
+        "timeliness": 3,
+        "verifiability": 4
+      },
+      "chapters": [
+        {
+          "chapter": "ch11-Profiling",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch03-线程",
+          "confidence": "medium"
+        }
+      ],
+      "quality": "high",
+      "summary": "Systrace Sleep与Uninterruptible Sleep排查方法"
+    },
+    {
+      "title": "Systrace角度拆解启动流程",
+      "path": "Cubox/Systrace角度- 拆解分析应用的启动流程 · 李海洲-2022-11-02.md",
+      "score": 16,
+      "scores": {
+        "relevance": 5,
+        "depth": 4,
+        "timeliness": 3,
+        "verifiability": 4
+      },
+      "chapters": [
+        {
+          "chapter": "ch04-启动",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch11-Profiling",
+          "confidence": "high"
+        }
+      ],
+      "quality": "high",
+      "summary": "Systrace拆解应用启动流程，支付宝启动速度案例"
+    },
+    {
+      "title": "TCP 性能和发送接收窗口",
+      "path": "Cubox/TCP 性能和发送接收窗口、Buffer 的关系 - plantegg-2022-12-03.md",
+      "score": 16,
+      "scores": {
+        "relevance": 4,
+        "depth": 5,
+        "timeliness": 3,
+        "verifiability": 4
+      },
+      "chapters": [
+        {
+          "chapter": "ch09-网络",
+          "confidence": "high"
+        }
+      ],
+      "quality": "high",
+      "summary": "TCP窗口Buffer与性能关系，socket参数与系统调优"
+    },
+    {
+      "title": "Tap Response Time: Jetpack Navigation",
+      "path": "Cubox/Tap Response Time- Jetpack Navigation 🗺 - DEV Community-2022-01-17.md",
+      "score": 16,
+      "scores": {
+        "relevance": 5,
+        "depth": 4,
+        "timeliness": 3,
+        "verifiability": 4
+      },
+      "chapters": [
+        {
+          "chapter": "ch04-启动",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch14-工具",
+          "confidence": "medium"
+        }
+      ],
+      "quality": "high",
+      "summary": "Android Vitals点击响应时间，Jetpack Navigation影响分析"
+    },
+    {
+      "title": "TargetSdk 30 ARSC 压缩方案",
+      "path": "Cubox/TargetSdk 30升级后的 ARSC 压缩方案探索-2025-01-06.md",
+      "score": 20,
+      "scores": {
+        "relevance": 5,
+        "depth": 5,
+        "timeliness": 5,
+        "verifiability": 5
+      },
+      "chapters": [
+        {
+          "chapter": "ch10-包体积",
+          "confidence": "high"
+        }
+      ],
+      "quality": "high",
+      "summary": "快手TargetSdk 30后resources.arsc重新压缩，巨大包体收益"
+    },
+    {
+      "title": "TextureView 的血与泪 PART II",
+      "path": "Cubox/TextureView 的血与泪 PART II - 知乎-2022-06-30.md",
+      "score": 16,
+      "scores": {
+        "relevance": 5,
+        "depth": 4,
+        "timeliness": 3,
+        "verifiability": 4
+      },
+      "chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "high"
+        }
+      ],
+      "quality": "high",
+      "summary": "TextureView流水线调度掉帧优化"
+    },
+    {
+      "title": "TextureView 的血与泪（完整修订版）",
+      "path": "Cubox/TextureView 的血与泪（完整修订版） - 知乎-2022-06-30.md",
+      "score": 16,
+      "scores": {
+        "relevance": 5,
+        "depth": 4,
+        "timeliness": 3,
+        "verifiability": 4
+      },
+      "chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "high"
+        }
+      ],
+      "quality": "high",
+      "summary": "TextureView完整踩坑：GL绘制、UI线程分离、混合渲染"
+    },
+    {
+      "title": "Stack Overflow Kotlin热门问题",
+      "path": "Cubox/Stack Overflow 上最热门的 10 个 Kotlin 问题？-2022-04-06.md",
+      "score": 11,
+      "scores": {
+        "relevance": 3,
+        "depth": 2,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "chapters": [
+        {
+          "chapter": "ch15-Kotlin",
+          "confidence": "medium"
+        }
+      ],
+      "quality": "medium",
+      "summary": "Stack Overflow热门Kotlin问题集锦"
+    },
+    {
+      "title": "2022 Android Developer Roadmap",
+      "path": "Cubox/The 2022 Android Developer Roadmap — Part1 - by Jaewoong Eum - Jan, 2022 - Medium-2022-02-16.md",
+      "score": 10,
+      "scores": {
+        "relevance": 3,
+        "depth": 2,
+        "timeliness": 3,
+        "verifiability": 2
+      },
+      "chapters": [
+        {
+          "chapter": "ch01-架构",
+          "confidence": "low"
+        }
+      ],
+      "quality": "medium",
+      "summary": "2022年Android开发者路线图全景"
     }
   ],
   "last_updated": "2026-03-31T04:50:27.138844",
