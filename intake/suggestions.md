@@ -29,3 +29,35 @@
 1. **ARR在不同SoC平台的表现差异**：可关注高通、联发科等平台的ARR实现差异
 2. **Vulkan与VSync的协同优化**：Android 16对Vulkan渲染的进一步优化
 3. **机器学习在响应预测中的应用**：Android系统级AI对用户行为的预测和优化
+
+## [Task6 Review] 1.1 Android 分层架构 — 2026-03-30
+
+- **类型**：需重写
+- **位置**：全文多处（HAL 组件、Native Libraries、Binder 性能特点、JNI 开销等段落）
+- **问题**：大量段落使用百科词条式列表罗列，违反 writing-guide "叙述为主，列表为辅"原则。读者读完知道各层有什么组件，但缺乏因果关系和上下文连贯性。
+- **建议**：参考 writing-guide §三.1 的正确写法示例，将列表转为工程师对工程师的对话式叙述。每个组件的介绍要回答"为什么这样设计"和"对性能分析意味着什么"。
+- **review 日志**：logs/review/2026-03-30-17-review.md
+
+## [Task6 Review] 1.1 Android 分层架构 — 2026-03-30 (补充)
+
+- **类型**：需补充素材
+- **位置**：全文缺失
+- **问题**：缺少"在 Perfetto/工具 中的表现"部分。writing-guide 类型 A 模板要求每个机制篇都要展示在 Trace 中的表现。
+- **建议**：补充各架构层在 Perfetto 中的对应 Track/事件（如 SurfaceFlinger track、各进程的 CPU slice、Binder 调用事件等），以及正常 vs 异常表现对比。
+- **review 日志**：logs/review/2026-03-30-17-review.md
+
+## [Task6 Review] 1.1 Android 分层架构 — 2026-03-30 (补充2)
+
+- **类型**：需补充素材
+- **位置**：全文缺失
+- **问题**：缺少"常见问题与误区"部分。作为全书第一章，这是读者建立正确认知的关键入口。
+- **建议**：补充常见误解（如 SurfaceFlinger 在 Framework 进程中、Zygote fork 会复制 ART 堆、HAL 不影响性能等），以及面试易错点。
+- **review 日志**：logs/review/2026-03-30-17-review.md
+
+## [Task6 Review] 1.1 Android 分层架构 — 2026-03-30 (风格)
+
+- **类型**：需重写
+- **位置**：开头 3 段
+- **问题**：开头使用"精密的钟表"比喻，过于修辞化，不符合 writing-guide §六 的"现象驱动"风格。
+- **建议**：从具体 Perfetto Trace 中的某一现象引入（如"打开 Perfetto，你看到的那些进程/线程/Track，就是 Android 分层架构的可视化"），直接把读者带入实战场景。
+- **review 日志**：logs/review/2026-03-30-17-review.md

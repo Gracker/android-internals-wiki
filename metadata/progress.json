@@ -19,11 +19,18 @@
         "INP在Android中的对应：明确Android未采用INP，列出等价指标",
         "Android 16 VSync：移除未验证的具体细节，标注待验证"
       ]
+    },
+    "1.1": {
+      "reviewed_date": "2026-03-30",
+      "reviewed_by": "openclaw-task6",
+      "review_status": "needs-rework",
+      "issues": 4,
+      "fixes_applied": 9
     }
   },
   "review_stats": {
-    "total_reviewed": 1,
-    "reviewed_today": 1,
+    "total_reviewed": 2,
+    "reviewed_today": 2,
     "review_issues_total": 3
   },
   "completed": [
