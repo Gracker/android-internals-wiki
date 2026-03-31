@@ -4,11 +4,11 @@
   "metrics": {
     "total": 102,
     "draft": 72,
-    "ready-for-review": 4,
+    "ready-for-review": 5,
     "reviewed": 1,
     "finalized": 3,
     "staging_drafts": 0,
-    "last_updated": "2026-03-31T22:30:39.620507"
+    "last_updated": "2026-04-01T00:30:01.030651"
   },
   "reviewed_sections": {
     "8.1": {
@@ -308,14 +308,25 @@
       "extensions_total": 2,
       "verification_level": "L2",
       "word_count": "~9500"
+    },
+    {
+      "section": "5.4",
+      "title": "DVFS 与功耗管理",
+      "completed_at": "2026-04-01T00:30:01.030651",
+      "anchors_covered": 5,
+      "anchors_total": 5,
+      "extensions_covered": 3,
+      "extensions_total": 3,
+      "verification_level": "L2",
+      "word_count": "~8000"
     }
   ],
   "ready_for_review": 3,
-  "last_updated": "2026-03-31T23:32:41.858622",
+  "last_updated": "2026-04-01T00:30:01.030651",
   "stats": {
     "total": 97,
-    "completed": 23,
-    "pending": 74,
+    "completed": 24,
+    "pending": 73,
     "last_updated": "2026-03-31T22:30:39.620507"
   },
   "research_stats": {
