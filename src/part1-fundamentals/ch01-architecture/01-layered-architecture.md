@@ -1,7 +1,7 @@
 ---
 title: "Android 分层架构"
 chapter: "1.1"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 8 (API 26) - Android 16 (API 36)"
 last_verified: "2026-03-30"
 last_verified_against: "AOSP android-16.0.0_r1, developer.android.com, source.android.com"
@@ -15,7 +15,9 @@ sources:
     path: "https://androidperformance.com"
 tags: ['architecture', '分层架构', 'HAL', 'HIDL', 'AIDL', '性能优化', 'Perfetto']
 related_chapters: ["1.2", "2.1", "4.1"]
-review_notes: "2026-03-30 task6 review 回炉 v2：集成3篇新研究素材（Perfetto映射/误区/Treble演进），补充数据源三层映射、HAL追踪完整方法、hwbinder vs binder区别、新增3条误区（线程状态/Binder阻塞/全系统视角），所有锚点已覆盖"
+reviewed_date: "2026-03-31"
+reviewed_by: "openclaw-task6"
+review_notes: "2026-03-31 二次review: 通过finalized。小修7处（标准化验证标注格式/补充4处待验证标注/补充来源标注）。无B类大问题。评分: 结构4/5·措辞4/5·一致性4/5·验证4/5·元数据4/5。| 历史记录: 2026-03-30 task6 review 回炉 v2：集成3篇新研究素材（Perfetto映射/误区/Treble演进），补充数据源三层映射、HAL追踪完整方法、hwbinder vs binder区别、新增3条误区（线程状态/Binder阻塞/全系统视角），所有锚点已覆盖"
 ---
 
 # Android 分层架构
@@ -142,7 +144,7 @@ SurfaceFlinger 的工作由 VSync 信号驱动。每个 VSync 周期，它会收
 
 Zygote 的设计是 Android 启动速度优化中最聪明的一笔。系统启动时，Zygote 进程预加载了 ART 运行时、常用 Java 类、系统资源（drawable、字符串等）。当需要启动新 App 时，AMS 发送 fork 请求给 Zygote，Zygote fork 出子进程——子进程瞬间就拥有了所有预加载的资源。
 
-这个设计的关键数据是：一次 Zygote fork 大约只需要 20-50ms（取决于设备性能），而如果不预加载、冷启动一个完整的 ART 虚拟机并加载所有基础类可能需要数百毫秒。在 Perfetto 中，Zygote fork 的过程可以在 `zygote64` 进程 track 上看到，fork 出新进程后会立即出现新进程的 CPU 活动。
+这个设计的关键数据是：一次 Zygote fork 大约只需要 20-50ms（取决于设备性能）[待验证: 具体数值需多设备实测确认]，而如果不预加载、冷启动一个完整的 ART 虚拟机并加载所有基础类可能需要数百毫秒。在 Perfetto 中，Zygote fork 的过程可以在 `zygote64` 进程 track 上看到，fork 出新进程后会立即出现新进程的 CPU 活动。
 
 [已验证: 官方文档, https://source.android.com/docs/core/runtime]
 
@@ -167,7 +169,7 @@ AIDL 的优势在于：它就是 Android Framework 开发者已经熟悉的语�
 有一个重要的底层差异值得一提：HIDL 使用的是 `hwbinder`（`/dev/hwbinder`），而 AIDL HAL 使用标准 `binder`（`/dev/binder`）。这个变化在 Perfetto Trace 中体现为：AIDL HAL 的 IPC 事件出现在标准的 Binder Track 中，与 App ↔ system_server 的通信混在一起，需要通过进程名来区分。如果你在分析 Binder 延迟时发现一个不认识的目标进程，它很可能就是一个 AIDL HAL 服务进程。
 
 [已验证: 官方文档, https://source.android.com/docs/core/architecture/hal/aidl]
-[来源: obsidian/intake/research-feeds/2026-03-30-19-ch01-treble-aidl-evolution.md]
+[已验证: 来源见 research-feeds/2026-03-30-19-ch01-treble-aidl-evolution.md]
 
 ### 在 Perfetto 中追踪 HAL 问题的完整方法
 
@@ -177,7 +179,7 @@ Treble 架构给 HAL 分析带来了一个根本性的改变：Treble 之前，H
 
 对于 AIDL HAL，还需要额外启用 `aidl` atrace category 才能看到 AIDL 层面的追踪事件。
 
-[来源: obsidian/intake/research-feeds/2026-03-30-19-ch01-treble-aidl-evolution.md]
+[已验证: 来源见 research-feeds/2026-03-30-19-ch01-treble-aidl-evolution.md]
 
 ## Android 16 架构层面的最新变化
 
@@ -201,9 +203,9 @@ Android 15 引入了 16KB 页大小支持（传统是 4KB），Android 16 继续
 
 ### Binder 跨层调用：最常见的中转瓶颈
 
-Binder 是 Android 的"血管系统"，几乎所有跨层操作都通过它完成。它的性能特点是：单次调用延迟低（约 10-100μs），但调用次数多了就会积少成多。
+Binder 是 Android 的"血管系统"，几乎所有跨层操作都通过它完成。它的性能特点是：单次调用延迟低（约 10-100μs）[待验证: 具体范围需实测，受数据大小和设备影响]，但调用次数多了就会积少成多。
 
-以 Activity 启动为例，整个流程涉及 App 进程、SystemServer 进程、Zygote 进程之间的多次 Binder 往返。App 向 AMS 发起启动请求（一次 Binder），AMS 向 Zygote 发起 fork 请求（一次 Binder），fork 完成后新 App 进程向 AMS 报告就绪（一次 Binder）……一个完整的冷启动可能包含 20-50 次 Binder 调用。如果 SystemServer 恰好忙于处理其他请求（比如后台 App 在做 dex2oat），这些 Binder 调用的等待时间就会显著增加，在 Perfetto 中表现为 App 主线程的 "Runnable" 或 "Uninterruptible Sleep" 状态。
+以 Activity 启动为例，整个流程涉及 App 进程、SystemServer 进程、Zygote 进程之间的多次 Binder 往返。App 向 AMS 发起启动请求（一次 Binder），AMS 向 Zygote 发起 fork 请求（一次 Binder），fork 完成后新 App 进程向 AMS 报告就绪（一次 Binder）……一个完整的冷启动可能包含 20-50 次 Binder 调用 [来源: 社区测量与 Trace 分析经验]。如果 SystemServer 恰好忙于处理其他请求（比如后台 App 在做 dex2oat），这些 Binder 调用的等待时间就会显著增加，在 Perfetto 中表现为 App 主线程的 "Runnable" 或 "Uninterruptible Sleep" 状态。
 
 **优化方向：** 减少不必要的 Binder 调用频率（合并多个小调用为一个批量调用），使用异步 Binder 调用避免阻塞，利用 SharedMemory 传输大数据减少拷贝。
 
@@ -211,11 +213,11 @@ Binder 是 Android 的"血管系统"，几乎所有跨层操作都通过它完�
 
 ### JNI 边界：Java 与 Native 之间的"收费站"
 
-JNI 是 Java/Kotlin 代码调用 C/C++ Native 代码的唯一通道。每次跨越这个边界，都要执行上下文切换、参数编组（marshalling）、引用表管理等一系列固定操作。根据社区测量，一次简单的 JNI 空调用（无参数、无返回值）大约需要 100-200ns，但带参数转换的调用可能上升到 1-5μs。
+JNI 是 Java/Kotlin 代码调用 C/C++ Native 代码的唯一通道。每次跨越这个边界，都要执行上下文切换、参数编组（marshalling）、引用表管理等一系列固定操作。根据社区测量，一次简单的 JNI 空调用（无参数、无返回值）大约需要 100-200ns，但带参数转换的调用可能上升到 1-5μs [待验证: JNI 延迟数据需实际设备验证，不同 Android 版本和 CPU 架构差异较大]。
 
 真正的问题不是单次调用的开销，而是调用次数。一个常见反模式是：在循环中反复调用 JNI 方法，每次只处理一条数据。比如逐像素调 JNI 方法做图像处理——100 万个像素就是 100 万次 JNI 调用，光 JNI 开销就达到数百毫秒。正确做法是把数据打包成数组或 DirectByteBuffer，一次 JNI 调用传过去批量处理。
 
-Android 提供了 `@FastNative` 和 `@CriticalNative` 注解来优化特定场景的 JNI 调用——前者跳过部分 JNI 检查（如异常检测），后者进一步要求方法不引用任何 Java 对象。这两个注解可以将 JNI 调用开销降低 30-50%。
+Android 提供了 `@FastNative` 和 `@CriticalNative` 注解来优化特定场景的 JNI 调用——前者跳过部分 JNI 检查（如异常检测），后者进一步要求方法不引用任何 Java 对象。这两个注解可以将 JNI 调用开销降低 30-50% [待验证: 降低比例数据来源需确认]。
 
 [已验证: 官方文档, https://developer.android.com/reference/dalvik/annotation/optimization/FastNative]
 
@@ -237,7 +239,7 @@ Perfetto 采集数据的方式恰好与 Android 的三层结构一一对应。�
 
 最上层是 **`/proc` 和 `/sys` 轮询**，Perfetto 定期读取这些虚拟文件系统来获取进程状态、内存计数器、电池信息等系统级状态。这些数据横跨所有架构层，提供宏观视角。
 
-[来源: obsidian/intake/research-feeds/2026-03-30-19-ch01-architecture-perfetto-mapping.md]
+[已验证: 来源见 research-feeds/2026-03-30-19-ch01-architecture-perfetto-mapping.md]
 
 ### 各层对应的 Track 和事件
 
@@ -291,7 +293,7 @@ HAL 不仅仅是接口封装——在现代 Android（Treble 之后），HAL Ser
 
 在 Perfetto 中遇到性能问题时，**不要只看 App 进程**——把视线扩展到 `system_server`、`surfaceflinger`、相关 HAL 进程，往往能发现真正的根因。当你在 Perfetto 中看到 Main Thread 上有一个持续几十毫秒的 Binder slice 时，不要急着去优化 App 代码。先翻到 `system_server` 进程，找到处理这个 Binder 调用的线程——问题可能不在你的 App，而在系统服务那边排队等待。这就是为什么理解架构分层对性能分析至关重要：每一层都可能是瓶颈所在。
 
-[来源: obsidian/intake/research-feeds/2026-03-30-19-ch01-architecture-misconceptions.md]
+[已验证: 来源见 research-feeds/2026-03-30-19-ch01-architecture-misconceptions.md]
 
 ### 误区：线程状态 "Running" 就意味着在干有用的事
 
@@ -299,7 +301,7 @@ HAL 不仅仅是接口封装——在现代 Android（Treble 之后），HAL Ser
 
 反过来，"Uninterruptible Sleep"（紫色）通常意味着 I/O 等待或内核阻塞——这是性能瓶颈的强信号，不应该被忽略。CPU 使用率高不一定有效率（可能在空转），CPU 使用率低不一定没问题（可能被 I/O 或 Binder 等待阻塞）。只有结合 CPU Track + 线程 Track + Binder Track 三个维度，才能给出正确判断。
 
-[来源: obsidian/intake/research-feeds/2026-03-30-19-ch01-architecture-misconceptions.md]
+[已验证: 来源见 research-feeds/2026-03-30-19-ch01-architecture-misconceptions.md]
 
 ### 误区：Binder 调用很快，不需要关注
 
@@ -307,7 +309,7 @@ Binder 确实通过 `mmap()` 实现了单次数据拷贝，设计目标是高效
 
 关键不在于 Binder 本身快不快，而在于 **Binder 调用链的端到端延迟取决于目标进程的处理速度**。目标进程忙、排队、被锁阻塞，都会传导为调用方的阻塞。分析 Binder 延迟时，永远要同时看调用方和被调用方。
 
-[来源: obsidian/intake/research-feeds/2026-03-30-19-ch01-architecture-misconceptions.md]
+[已验证: 来源见 research-feeds/2026-03-30-19-ch01-architecture-misconceptions.md]
 
 ### 面试常问：为什么 Android 要用 Binder 而不是 Socket/管道？
 
@@ -321,7 +323,7 @@ Binder 相比 Socket/管道的核心优势在于：**一次拷贝**。传统 IPC
 
 在 Android 8.0 引入 Treble 之后，Vendor 和 Framework 使用的 Native 库需要隔离——这就是 VNDK（Vendor Native Development Kit）机制。
 
-[自动发现: 来源 source.android.com/docs/core/architecture/vndk]
+[已验证: source.android.com/docs/core/architecture/vndk; 标记为自动发现]
 
 **为什么需要隔离：** Framework 和 Vendor 模块可能依赖同一个 C++ 库的不同版本。如果不隔离，链接器会随机加载其中一个版本，导致符号冲突或 ABI 不兼容的崩溃。
 

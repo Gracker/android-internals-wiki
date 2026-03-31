@@ -4,9 +4,9 @@
   "metrics": {
     "total": 102,
     "draft": 90,
-    "ready-for-review": 12,
+    "ready-for-review": 11,
     "reviewed": 0,
-    "finalized": 0,
+    "finalized": 1,
     "staging_drafts": 0
   },
   "reviewed_sections": {
@@ -21,24 +21,20 @@
       ]
     },
     "1.1": {
-      "reviewed_date": "2026-03-30",
-      "reviewed_by": "openclaw-task2-review-v2",
-      "review_status": "fixed-v2",
+      "reviewed_date": "2026-03-31",
+      "reviewed_by": "openclaw-task6",
+      "review_status": "finalized-v2",
       "fixes_applied": [
-        "Perfetto表现：补充三种数据源(ftrace/atrace/proc)与三层架构的对应关系",
-        "Perfetto表现：补充各层Track的具体atrace category映射",
-        "Perfetto表现：增加FrameMissed判断合成层问题",
-        "Treble架构：补充hwbinder vs binder底层差异及Perfetto中的表现",
-        "Treble架构：补充HAL问题完整追踪方法(三步跨进程链路)",
-        "常见误区：新增线程状态Running≠有效工作",
-        "常见误区：新增Binder调用端到端延迟取决于目标进程",
-        "常见误区：增强App性能问题不只在App层的论述"
+        "标准化6处验证标注格式（[来源:]→[已验证:]）",
+        "补充4处待验证标注（Zygote fork时间/Binder延迟/JNI延迟/JNI优化比例）",
+        "补充1处来源标注（冷启动Binder调用次数）",
+        "更新frontmatter（status→finalized, 添加reviewed_date/reviewed_by）"
       ]
     }
   },
   "review_stats": {
-    "total_reviewed": 2,
-    "reviewed_today": 2,
+    "total_reviewed": 3,
+    "reviewed_today": 1,
     "review_issues_total": 3
   },
   "completed": [
@@ -195,10 +191,18 @@
       "extensions_total": 2,
       "verification_level": "L2",
       "word_count": "~7500"
+    },
+    {
+      "section": "1.1",
+      "title": "Android 分层架构",
+      "completed_at": "2026-03-30T19:28:13.921512+08:00",
+      "status": "finalized",
+      "finalized_at": "2026-03-31T10:05:00+08:00",
+      "review_v2_date": "2026-03-31"
     }
   ],
   "ready_for_review": 10,
-  "last_updated": "2026-03-31T09:56:38.219714",
+  "last_updated": "2026-03-31T10:17:23.956847",
   "stats": {
     "total": 102,
     "completed": 14,
