@@ -634,6 +634,97 @@
         "Perfetto 内存面板截图待补充",
         "dumpsys meminfo 真机截图待补充"
       ]
+    },
+    {
+      "section": "4.2",
+      "title": "Linux 内核内存管理",
+      "verified_at": "2026-03-31T10:50:32.047002",
+      "verifications": [
+        {
+          "topic": "虚拟内存与物理内存映射（页表、TLB、Page Fault）",
+          "level": "L2",
+          "source": "kernel.org doc/vm, ARM Architecture Reference Manual",
+          "status": "verified"
+        },
+        {
+          "topic": "Buddy 分配器原理",
+          "level": "L1",
+          "source": "kernel/mm/page_alloc.c",
+          "status": "verified"
+        },
+        {
+          "topic": "Slab 分配器（SLUB）",
+          "level": "L2",
+          "source": "kernel.org — SLUB 为默认实现",
+          "status": "verified"
+        },
+        {
+          "topic": "LRU 双链表机制",
+          "level": "L2",
+          "source": "kernel.org — active/inactive LRU",
+          "status": "verified"
+        },
+        {
+          "topic": "kswapd 水位线机制",
+          "level": "L4",
+          "source": "Nubia案例 + OPPO + 荣耀MGLRU 经验交叉验证",
+          "status": "verified"
+        },
+        {
+          "topic": "Direct Reclaim 同步回收",
+          "level": "L2",
+          "source": "kernel.org — direct reclaim in allocation path",
+          "status": "verified"
+        },
+        {
+          "topic": "MGLRU 多代LRU",
+          "level": "L2",
+          "source": "kernel.org — MGLRU merged in Linux 6.1",
+          "status": "verified"
+        },
+        {
+          "topic": "内存压缩（kcompactd/Direct Compaction）",
+          "level": "L2",
+          "source": "kernel.org — memory compaction",
+          "status": "verified"
+        },
+        {
+          "topic": "CMA 机制",
+          "level": "L2",
+          "source": "kernel.org — CMA documentation",
+          "status": "verified"
+        },
+        {
+          "topic": "ION → DMA-BUF Heaps 迁移",
+          "level": "L2",
+          "source": "source.android.com — ION to DMA-BUF transition",
+          "status": "verified"
+        },
+        {
+          "topic": "DMA-BUF 框架与图形管线",
+          "level": "L2",
+          "source": "source.android.com — Graphics buffer management",
+          "status": "verified"
+        },
+        {
+          "topic": "16KB Page Size 性能数据",
+          "level": "L2",
+          "source": "developer.android.com — 16KB page size",
+          "status": "verified"
+        },
+        {
+          "topic": "16KB Page Size ELF 对齐",
+          "level": "L2",
+          "source": "LPC 2025 — HW/SW design for 16KB devices",
+          "status": "verified"
+        }
+      ],
+      "pending_verifications": [
+        "KASAN/MTE 内存安全机制性能开销",
+        "Huge Pages 在 Android 上的适用性",
+        "16KB 页面在 Android 16 Perfetto 中的实际表现"
+      ],
+      "summary": "所有5个锚点已覆盖并验证，1个扩展（16KB Page Size）已覆盖，2个扩展（KASAN/MTE、Huge Pages）标注待补充，1条自动发现（Silk 论文）"
     }
   ]
 }
