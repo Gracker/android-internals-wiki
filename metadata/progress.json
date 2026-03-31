@@ -3,12 +3,12 @@
   "total_sections": 93,
   "metrics": {
     "total": 102,
-    "draft": 72,
-    "ready-for-review": 5,
+    "draft": 71,
+    "ready-for-review": 6,
     "reviewed": 1,
     "finalized": 3,
     "staging_drafts": 0,
-    "last_updated": "2026-04-01T02:22:00+08:00"
+    "last_updated": "2026-04-01T03:24:00+08:00"
   },
   "reviewed_sections": {
     "8.1": {
@@ -336,9 +336,9 @@
   "last_updated": "2026-04-01T02:22:00+08:00",
   "stats": {
     "total": 97,
-    "completed": 24,
-    "pending": 73,
-    "last_updated": "2026-03-31T22:30:39.620507"
+    "completed": 25,
+    "pending": 72,
+    "last_updated": "2026-04-01T03:24:00+08:00"
   },
   "research_stats": {
     "runs_today": [
@@ -435,6 +435,13 @@
       "title": "Android 功耗管理",
       "action": "draft-completed",
       "word_count": "~9500"
+    },
+    {
+      "date": "2026-04-01",
+      "section": "5.7",
+      "title": "CPU 相关的版本演进",
+      "action": "draft-completed",
+      "word_count": "~9000"
     }
   ]
 }
