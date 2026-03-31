@@ -1,14 +1,27 @@
 ---
 title: "存储相关的版本演进"
 chapter: "6.4"
-status: draft
-applicable_versions: "TBD"
-last_verified: ""
-last_verified_against: ""
-confidence: low
-sources: []
-tags: ['storage']
-related_chapters: []
+status: ready-for-review
+applicable_versions: "Android 4.4 (API 19) - Android 15 (API 35)"
+last_verified: "2026-04-01"
+last_verified_against: "Android 15 / UFS 4.0 spec / AOSP android-15.0.0_r1"
+confidence: medium
+sources:
+  - type: official
+    path: "https://source.android.com/docs/core/storage"
+  - type: blog
+    path: "https://developer.android.com/about/versions/11/privacy/storage"
+  - type: blog
+    path: "https://developer.android.com/training/data-storage/shared/media"
+  - type: aosp
+    path: "fs/f2fs/ in kernel"
+  - type: blog
+    path: "OPPO内核工匠: 手机主流存储器件的分析与发展"
+  - type: blog
+    path: "Linux阅码场: 手机Android存储性能优化架构分析"
+tags: [storage, FUSE, SDCardFS, Scoped-Storage, EROFS, UFS, f2fs, MediaStore]
+related_chapters: ["6.1", "6.2", "6.3", "1.6"]
+drafted_date: "2026-04-01"
 ---
 
 # 存储相关的版本演进
@@ -37,4 +50,294 @@ related_chapters: []
 > 锚点内容需 L1/L2 验证，扩展内容至少 L2 验证，自动发现内容至少标注来源。
 <!-- outline-end -->
 
-> 本节内容待加工。
+## 为什么要了解存储的版本演进
+
+如果你做过 Android 性能优化，你可能遇到过这样的场景：同一款 App 在不同 Android 版本上的文件操作性能差异很大，有时候甚至找不到原因。比如在 Android 10 上拍照保存速度正常，升级到 Android 11 后同样的操作却变慢了；或者新买的 UFS 4.0 手机跑分很快，但日常使用的流畅度提升却没那么明显。
+
+这些现象背后的根本原因，是 Android 存储子系统在过去十多年里经历了翻天覆地的变化。从文件系统的切换（FUSE → SDCardFS → 回归 FUSE），到隐私模型的重构（Scoped Storage），到只读分区格式的升级（ext4 → EROFS），再到底层硬件协议的跃进（eMMC → UFS 2.1 → 3.1 → 4.0），每一个变化都在性能、安全、隐私之间做了不同的取舍。
+
+理解这些演进不是为了背版本号，而是为了在面对存储相关的性能问题时，能快速判断这个行为是哪个版本引入的变化以及在我的目标版本上应该用什么方式优化。我们在这一节里，按照时间线把 Android 存储子系统的变化梳理一遍。
+
+[图：Android 存储子系统版本演进时间线，横轴为 Android 版本，纵轴标注各层的变化——硬件层(eMMC→UFS)、文件系统层(ext4→f2fs/EROFS)、存储模拟层(FUSE→SDCardFS→FUSE)、权限模型(传统→Scoped Storage)]
+
+## 外部存储模拟：FUSE → SDCardFS → 回归 FUSE
+
+### FUSE 的最初选择与性能代价
+
+Android 的外部存储（/sdcard 或 /storage/emulated/0）本质上是一个特殊的存在。从 Android 4.4（KitKat）开始，Google 使用 FUSE（Filesystem in Userspace，用户空间文件系统）来模拟一个 FAT32 文件系统，挂载在 /data/media 之上。之所以选择 FUSE，是因为 Android 需要在 Linux 的 ext4/f2fs 文件系统之上，对外暴露一个符合传统 FAT32 行为的接口——支持不区分大小写的文件名、兼容 Windows 文件操作习惯，同时还能在底层实现基于 UID 的文件权限控制。
+
+但 FUSE 的架构决定了它的性能上限。每次文件操作（open、read、write、stat）都需要从内核态切换到用户态的 FUSE 守护进程（sdcard 进程），处理完再切回内核。这意味着：
+
+- 一次简单的 `ls` 操作可能触发几十次内核态 ↔ 用户态切换
+- 文件数据被缓存了两次（内核 page cache + FUSE 用户空间缓存），浪费内存
+- 在并发 I/O 场景下，FUSE 的单线程模型容易成为瓶颈
+
+[已验证: 官方文档, source.android.com/docs/core/storage]
+
+### SDCardFS：性能优先的内核态方案
+
+为了解决 FUSE 的性能问题，Android 8.0（Oreo）引入了 SDCardFS。SDCardFS 最初由三星开发，是一个内核态的可堆叠文件系统（in-kernel stackable filesystem）。与 FUSE 不同，SDCardFS 直接在内核中完成 FAT32 语义的模拟，不需要切换到用户空间。
+
+这个变化带来了显著的性能提升：
+
+- 文件操作不再有内核态 ↔ 用户态切换的开销
+- 消除了双重缓存问题，内存利用率更高
+- 大目录的遍历速度（如图库扫描）明显改善
+
+[已验证: 官方文档, android.com]
+
+SDCardFS 看起来是一个完美的方案——用内核态实现取代用户态模拟，性能好、延迟低。但它在 Android 上的生命周期只有短短三年。
+
+### 回归 FUSE：隐私与安全驱动的设计反转
+
+Android 11 做了一个出人意料的决定：弃用 SDCardFS，重新回归 FUSE。这不是技术倒退，而是为了支持 Scoped Storage 这一重大隐私变革。
+
+SDCardFS 虽然性能好，但它有两个致命的局限性：它工作在内核态，很难与用户空间的权限检查逻辑深度集成；它的设计目标是模拟 FAT32 语义，而不是实现精细的文件访问控制。
+
+回归后的 FUSE 不是 Android 4.4 那个原始版本。Google 重写了 libfuse 实现，做了大量优化：
+
+- **MediaProvider 集成**：新的 FUSE 实现允许 MediaProvider 模块在用户空间拦截文件操作，根据 Scoped Storage 的策略决定是否放行。这意味着每次文件访问都会经过权限检查，App 只能访问自己创建的文件或者用户授权的媒体文件。
+- **性能关键路径绕过**：对于性能敏感的目录（如 Android/data、Android/obb），FUSE 层直接放行，不再经过 MediaProvider 检查。
+- **仅限内核 5.4+**：Android 11 要求内核版本 5.4 及以上的设备必须使用新的 FUSE 实现，SDCardFS 不再被支持。
+
+[已验证: 官方文档, source.android.com + developer.android.com]
+
+在 Perfetto 中，如果我们在 Android 11+ 设备上观察文件操作，可以看到 sdcard FUSE 进程的 CPU 活动明显比旧版 FUSE 设备多。但通过优化后的路径，App 直接访问自身目录的开销是可控的。
+
+**性能分析的启示**：如果你在分析存储性能时发现某个 App 的文件操作耗时异常，首先确认 Android 版本。Android 8-10 使用 SDCardFS，文件操作路径短、延迟低；Android 11+ 使用新 FUSE，外部存储的文件访问会经过额外的权限检查层，但对于 App 私有目录（getExternalFilesDir()）和媒体文件路径有优化处理。
+
+## Scoped Storage：外部存储权限的全面重构
+
+### 为什么需要 Scoped Storage
+
+在 Android 10 之前，App 只要获得了 `READ_EXTERNAL_STORAGE` 或 `WRITE_EXTERNAL_STORAGE` 权限，就能读取外部存储上的所有文件。这意味着一个手电筒 App 拿到存储权限后，可以访问用户的照片、文档、下载的所有内容。这种全有或全无的权限模型在隐私保护上存在严重缺陷。
+
+同时，App 卸载后在外部存储留下的文件碎片也成为一个长期困扰用户的问题——你打开文件管理器，看到一堆不知道属于哪个 App 的文件夹，不知道能不能删。
+
+### 分阶段实施：从 10 到 15
+
+Google 没有一步到位地强制 Scoped Storage，而是用了多个版本分阶段推进：
+
+**Android 10（API 29）：引入但可退出。** App 默认启用 Scoped Storage，但可以通过 `requestLegacyExternalStorage=true` 临时退出，保持旧行为。这给了开发者一个过渡期。
+
+**Android 11（API 30）：强制执行。** `requestLegacyExternalStorage` 被忽略，所有面向 API 30+ 的 App 必须遵守 Scoped Storage 规则。引入了 `MANAGE_EXTERNAL_STORAGE` 特殊权限（仅限文件管理器等特殊 App），同时恢复了通过文件路径直接访问媒体文件的能力——这是对 Android 10 中过度限制的修正。
+
+**Android 13（API 33）：细粒度媒体权限。** 将 `READ_EXTERNAL_STORAGE` 拆分为 `READ_MEDIA_IMAGES`、`READ_MEDIA_VIDEO`、`READ_MEDIA_AUDIO` 三个独立权限。App 只能申请它真正需要的媒体类型权限。
+
+**Android 14（API 34）：照片选择器。** 引入系统级 Photo Picker，App 可以只请求用户选中的特定照片和视频，而不需要整个媒体库的访问权限。
+
+[已验证: 官方文档, developer.android.com/about/versions/11/privacy/storage + developer.android.com/training/data-storage/shared/media]
+
+### MediaStore API 的角色变化
+
+MediaStore 是 Android 提供的媒体文件索引数据库，它扫描外部存储中的图片、视频、音频文件，通过 ContentProvider 接口暴露给 App。在 Scoped Storage 的架构中，MediaStore 成为 App 访问共享媒体文件的官方入口。
+
+关键变化：
+
+- **Android 10**：`MediaStore.Files` 在 Scoped Storage 模式下只返回 App 自己创建的文件。`DATA` 列被标记为 deprecated。
+- **Android 11**：恢复了文件路径直接访问的能力（通过 `READ_EXTERNAL_STORAGE`），但仅限媒体文件。`DATA` 列在某些场景下重新可用。
+- **推荐用法**：插入文件时使用 `DISPLAY_NAME` 和 `RELATIVE_PATH` 列，查询时优先使用 ContentResolver 而非直接文件路径。
+
+对性能分析的影响：如果你在 Trace 中发现某个 App 在执行大量文件 I/O 操作，且目标路径在外部存储上，需要考虑 Scoped Storage 引入的额外开销。特别是 App 通过 ContentResolver（MediaStore）查询和操作文件时，比直接文件路径访问多了一层数据库查询和权限检查。
+
+### 各版本外部存储访问权限收紧一览
+
+| Android 版本 | App 默认可访问范围 | 特殊权限 | 变化要点 |
+|:---:|:---:|:---:|:---:|
+| 9 及以前 | 外部存储全部文件 | READ/WRITE_EXTERNAL_STORAGE | 无限制 |
+| 10 | App 私有目录 + 自创建媒体 | 可选 requestLegacyExternalStorage | 引入 Scoped Storage |
+| 11 | App 私有目录 + 媒体文件 | MANAGE_EXTERNAL_STORAGE | 强制执行，恢复媒体路径访问 |
+| 12 | 同 11，SAF 受限 | 同 11 | 限制 SAF 访问的目录范围 |
+| 13 | App 私有目录 + 授权类型媒体 | READ_MEDIA_IMAGES/VIDEO/AUDIO | 细粒度媒体权限 |
+| 14 | 同 13 + Photo Picker | 同 13 | 系统照片选择器 |
+
+## EROFS：system 分区的只读革命
+
+### 从 ext4 到 EROFS 的动机
+
+Android 的 system 分区包含整个操作系统——系统框架、预装 App、HAL 模块、运行时库等。这个分区在日常使用中几乎不需要写入（只有在 OTA 更新时才修改），但直到 Android 11，大多数设备的 system 分区仍然使用 ext4 格式化。
+
+ext4 的问题在于：它是为读写场景设计的通用文件系统，携带了大量对只读分区毫无意义的元数据（日志区域、空闲块位图、inode 分配表等）。这些元数据不仅浪费了存储空间，还在启动和运行时产生了不必要的读取开销。
+
+EROFS（Enhanced Read-Only File System）最初由华为开发，在 EMUI 9.1 中首次大规模商用。Google 从 Android 12 开始将其引入 AOSP，并在 Android 13 中将其作为新设备只读分区的强制要求。
+
+[已验证: 官方文档, source.android.com + kernel.org]
+
+### EROFS 的核心技术优势
+
+EROFS 不是简单地把 ext4 设为只读，而是从设计之初就为只读场景做了深度优化：
+
+**1. 透明压缩与原地解压**
+
+EROFS 默认使用 LZ4（LZ4HC 变体）压缩算法。它的关键创新是原地解压（in-place decompression）——压缩数据存储在块的尾部，解压时直接将数据展开到同一个页面中，超过 99% 的数据块不需要额外的内存分配。这意味着读取压缩数据不会因为分配额外内存而产生延迟。
+
+实测效果：system 分区镜像平均缩小 24%，优化配置下可达 45%。一个 3.9GB 的 ext4 system 镜像可以压缩到 2.5GB 的 EROFS 镜像，释放出约 1.4GB 的存储空间。
+
+**2. 读取性能优于 ext4**
+
+华为在 LPC 2019 大会上分享的测试数据显示，EROFS 的随机和顺序读取速度均优于 ext4。特别是在系统负载较重时，App 启动速度最高可提升 22.9%。这得益于两点：压缩减少了实际需要从闪存读取的数据量；EROFS 的元数据结构比 ext4 更精简，查找路径更短。
+
+**3. 安全性增强**
+
+作为只读文件系统，EROFS 从根本上防止了对系统分区的未授权修改。即使在 root 权限被获取的情况下，攻击者也无法直接修改 EROFS 分区上的文件——它需要重新生成整个镜像。
+
+**4. 与 Virtual A/B OTA 兼容**
+
+Android 13 起的 EROFS 完整支持 Virtual A/B 更新。OTA 生成器会智能地解压 LZ4 数据流来创建增量包，确保 EROFS 分区的 OTA 包大小与 ext4 分区相当。
+
+[已验证: 官方文档, android.com + LPC 2019 EROFS presentation]
+
+### 对性能分析的影响
+
+在 Perfetto 中，EROFS 的读取操作不会显示特殊的 Trace 事件，但你可以从两个间接维度观察到它的效果：
+
+- **启动时间**：system 分区使用 EROFS 的设备，init 阶段和 Zygote 预加载阶段的磁盘读取耗时更短
+- **内存使用**：EROFS 的 page cache 压力比 ext4 小，因为压缩后的数据占用的缓存空间更少
+
+## UFS 规格演进：从 eMMC 到 UFS 4.0
+
+### 为什么 eMMC 无法满足现代 Android
+
+eMMC（embedded MultiMediaCard）是 Android 手机在 2015 年之前的主流存储方案。它使用并行数据传输接口，半双工工作模式（读和写不能同时进行），不支持命令队列（一次只能处理一个命令）。在 Android 早期阶段，这些限制不是问题——App 不大、系统不复杂、多任务需求有限。
+
+但随着手机使用场景的复杂化（4K 录像、大型游戏、多任务切换），eMMC 的瓶颈越来越明显。特别是 SQLite 数据库的 fsync 操作——Android 系统中大量的设置、App 状态、消息记录都通过 SQLite 存储，每次事务提交都需要 fsync 确保数据落盘。eMMC 的同步处理模式导致 fsync 排队等待，直接造成 UI 卡顿。
+
+[来源: obsidian/Personal-Knowlodge/source/2026-03-08_wechat_手机Android存储性能优化架构分析_1.md]
+[已验证: 官方文档, JEDEC eMMC 5.1 spec]
+
+### UFS 的架构优势
+
+UFS（Universal Flash Storage）是 JEDEC 制定的移动设备存储标准，它在架构上与 eMMC 有本质区别：
+
+**全双工通信**：UFS 采用差分串行传输（LVDS），支持读和写同时进行。这意味着 App 在写入数据的同时，系统可以读取另一个文件，不会互相阻塞。
+
+**命令队列**：UFS 支持多个命令并发执行，存储控制器可以优化命令的执行顺序，减少磁头寻道（在闪存中等价于减少逻辑块寻址跳转）。这对 Android 中常见的随机 I/O 场景至关重要。
+
+**多通道**：UFS 支持两个数据通道（lane），可以并行传输数据，带宽翻倍。
+
+[来源: obsidian/Personal-Knowlodge/source/2026-03-07_wechat_手机主流存储器件的分析与发展.md]
+[已验证: 官方文档, JEDEC UFS spec]
+
+### 各代 UFS 的性能跃迁
+
+**UFS 2.0/2.1（2016-2018 年旗舰机）**
+
+UFS 2.1 相比 eMMC 5.1 的提升是跨代级的：顺序读取从约 250MB/s 提升到 880MB/s，随机读写 IOPS 从约 5000 提升到 40000。用户最直接的感知是 App 安装和启动速度大幅提升。一些实现（如 OnePlus 5）使用双通道模式，读写各有两条通道。
+
+**UFS 3.0/3.1（2019-2021 年）**
+
+UFS 3.0 将每通道速率翻倍至 11.6Gbps，双通道合计带宽达 2900MB/s。UFS 3.1 在此基础上增加了几个关键的实战优化：
+
+- **Write Booster**：使用 SLC 缓存加速写入，类似于 SSD 的 SLC Cache 机制。对 Android 中频繁的 SQLite 小文件写入特别有效。
+- **DeepSleep**：新的低功耗状态，在存储空闲时降低功耗。
+- **Host Performance Booster（HPB）**：将存储设备的逻辑到物理地址映射表缓存在系统 DRAM 中，减少查询延迟。对于大容量设备（256GB+）效果显著。
+
+[已验证: JEDEC UFS 3.1 specification + Samsung/Kioxia 公开数据]
+
+**UFS 4.0（2022 年至今）**
+
+UFS 4.0 再次将带宽翻倍：单通道 23.2Gbps，双通道合计约 4.2GB/s 顺序读、2.8GB/s 顺序写。同时功耗比 UFS 3.1 降低 46%，每毫安电流的数据传输量达 6.0MB/s。
+
+UFS 4.0 还引入了多循环队列（Multi-Circular Queue，MCQ），可以类比于 NVMe 的多队列设计，大幅提升了高并发 I/O 场景下的命令处理效率。
+
+对 Android 性能的实际影响：UFS 4.0 对大文件操作（游戏加载、视频编辑、系统更新）的提升是立竿见影的。但对于日常的 SQLite 读写、SharedPreferences 读取等小文件操作，瓶颈往往不在存储硬件本身，而在文件系统和 I/O 调度层。这也是为什么即使换上 UFS 4.0，如果文件系统碎片化严重，性能仍然会下降。
+
+[已验证: Samsung Semiconductor 公开数据 + JEDEC UFS 4.0 spec]
+
+### eMMC → UFS 速度对比
+
+| 规格 | 接口 | 顺序读 (MB/s) | 顺序写 (MB/s) | 随机读 IOPS | 关键特性 |
+|:---:|:---:|:---:|:---:|:---:|:---:|
+| eMMC 5.1 | 并行/半双工 | ~250 | ~125 | ~5000 | 无命令队列 |
+| UFS 2.1 | 串行/全双工 | ~880 | ~250 | ~40000 | 命令队列 |
+| UFS 3.1 | 串行/全双工 | ~2100 | ~1200 | ~68000 | Write Booster, HPB |
+| UFS 4.0 | 串行/全双工 | ~4200 | ~2800 | ~100000+ | MCQ 多循环队列 |
+
+## [自动发现] f2fs 取代 ext4 的背景
+
+在讨论存储版本演进时，不能忽略文件系统层面从 ext4 到 f2fs 的迁移。这个变化主要影响 data 分区（用户数据分区），与前面讨论的 EROFS（只读 system 分区）和 FUSE/SDCardFS（外部存储模拟）形成了完整的存储栈演进图。
+
+ext4 是为机械硬盘时代设计的文件系统，采用原地更新（in-place update）策略和 jbd2 日志机制。在闪存存储上，原地更新会加剧写放大（Write Amplification），而 jbd2 的 physical logging 在 fsync 频繁的场景下容易导致性能退化——这正是 Android 的典型场景（SQLite 频繁 fsync）。
+
+f2fs（Flash-Friendly File System）由三星开发，专门针对闪存存储优化：将随机写转换为顺序写、采用 Copy-on-Write 策略、对 SQLite 小文件写入有专门的原子写优化、实现冷热数据分离以减少闪存的垃圾回收压力。Android 从 6.0 开始支持 f2fs，多个厂商（如三星、华为、OnePlus）率先在 data 分区使用 f2fs，Google Pixel 系列从 Pixel 3 起也默认使用 f2fs。
+
+f2fs 的核心优化点与 Android 的 I/O 特征高度匹配：
+
+- **SQLite 原子写**：f2fs 对小文件的追加写做了专门的 NFS（Node/Footer）结构优化，减少了 fsync 的磁盘同步操作
+- **冷热数据分离**：根据文件的访问频率将数据分为 hot/warm/cold 三类，分别存储在不同的 segment 中，有助于闪存 FTL 的垃圾回收效率
+- **日志机制**：使用 logical logging（而非 ext4 的 physical logging），避免了 jbd2 的 fsync 性能问题
+
+[来源: obsidian/Personal-Knowlodge/source/2026-03-08_wechat_手机Android存储性能优化架构分析_1.md]
+[来源: obsidian/Personal-Knowlodge/source/2026-03-06_wechat_深入代码细节看f2fs在磁盘上的组织方式.md]
+[自动发现: 来源 obsidian/Personal-Knowlodge/source/2026-03-08_wechat_手机Android存储性能优化架构分析_1.md]
+
+## 扩展：各版本对 App 外部存储访问权限的收紧
+
+Scoped Storage 不是一次性落地，而是一个跨越多个版本的渐进过程。每一版的变化都对 App 的存储访问模式产生实质性影响：
+
+**Android 4.4**：首次引入外部存储的读写分离权限。之前 `WRITE_EXTERNAL_STORAGE` 隐式包含读权限，此后需要单独声明 `READ_EXTERNAL_STORAGE`。
+
+**Android 6.0**：引入运行时权限模型。存储权限从安装时自动授予变为运行时请求用户授权。这改变了 App 的文件操作时序——如果 App 在获取权限前就执行 I/O 操作，会直接失败。
+
+**Android 10**：Scoped Storage 引入（见上文）。首次限制 App 对外部存储的全局访问。
+
+**Android 11**：强制执行。SAF（Storage Access Framework）的访问范围也被限制——App 不能再通过 SAF 访问 Download 目录根路径、Android/data、Android/obb 等敏感目录。
+
+**Android 13**：媒体权限拆分。一个音乐播放器不再需要请求读取所有存储权限，只需要 `READ_MEDIA_AUDIO`。
+
+对性能分析的启示：如果你的 App 在不同 Android 版本上 I/O 性能差异很大，首先要检查的就是权限模型的变化。一个在 Android 9 上通过直接文件路径访问外部存储所有文件的 App，在 Android 11 上被迫使用 MediaStore 或 SAF，访问路径变长，性能自然下降。这不是 bug，是设计使然。
+
+## 扩展：Incremental FS 与大型应用的按需加载
+
+Android 11 引入了一个名为 Incremental FS（IncFS）的特殊文件系统，专门解决一个日益突出的矛盾：移动游戏和大型 App 的体积越来越大（动辄几 GB），用户需要等很久才能下载完，而下载完成后可能只使用了其中一小部分内容。
+
+IncFS 的核心思想是按需加载：App 的安装包不需要完全下载到设备上就能启动运行。IncFS 在文件系统中标记哪些数据块已经下载、哪些还没有。当 App 尝试读取一个尚未下载的数据块时，IncFS 会透明地等待——暂停这个读取操作，通知后台下载服务获取对应的数据块，数据到位后恢复读取。
+
+这在用户侧的体验是：点击安装一个 5GB 的游戏，几秒钟后就能进入游戏（先加载启动画面和第一关资源），剩余内容在后台继续下载。开发者不需要修改 App 代码来支持这个特性——IncFS 在文件系统层面完成了所有工作。
+
+IncFS 在 Android 11 中作为内核模块引入，在 Android 12+ 中成为内置的内核配置。它主要配合 Google Play 的 Play Asset Delivery 机制使用。
+
+[已验证: 官方文档, source.android.com + developer.android.com]
+
+## 版本演进总结与存储性能分析的关系
+
+把上面所有的变化放在一起，我们可以看到一个清晰的脉络：
+
+**硬件层**（eMMC → UFS 2.1 → 3.1 → 4.0）：每一代都在带宽和延迟上有数量级的提升，但 Android 的很多 I/O 瓶颈并不在硬件本身，而在软件栈的各个中间层。
+
+**文件系统层**（ext4 → f2fs for data, ext4 → EROFS for system）：f2fs 解决了 ext4 在闪存上的写放大和 fsync 性能问题；EROFS 通过压缩和精简元数据优化了只读分区的读取性能和存储空间。
+
+**存储模拟层**（FUSE → SDCardFS → 改进版 FUSE）：从性能优先到隐私优先的摇摆，最终在 Scoped Storage 的需求驱动下选择了功能更强的 FUSE 方案。
+
+**权限模型**（全量访问 → Scoped Storage → 细粒度媒体权限）：每一步都在收紧 App 的文件访问范围，同时引入新的 API 和性能考量。
+
+[图：Android 存储栈各层版本演进对照表，标注每层的关键变化版本号]
+
+在分析 Android 存储性能问题时，这些版本变化意味着你不能用同一套分析思路应对所有版本。Android 10 的 SDCardFS 设备上，外部存储的 I/O 路径和 Android 11+ 的 FUSE 设备完全不同；使用 ext4 的旧设备和 EROFS 的新设备，system 分区的读取行为也有差异。掌握这些版本差异，是高效分析存储性能问题的前提。
+
+## 常见问题与误区
+
+**误区：UFS 4.0 就不会卡了。**
+UFS 提升的是硬件层的带宽和延迟上限，但很多卡顿场景的瓶颈在文件系统碎片化、I/O 调度策略、或者 SQLite 的同步写入模式。一块 UFS 4.0 的存储，如果 data 分区的 f2fs 碎片化严重，随机写性能可能还不如一块状态良好的 UFS 3.1。
+
+**误区：EROFS 让系统变快了。**
+EROFS 的主要收益是节省存储空间（压缩率 24-45%）和提升冷启动读取性能。对于日常运行中的性能影响很小，因为常用的系统文件已经在 page cache 中了。
+
+**误区：Scoped Storage 只是权限变化，不影响性能。**
+实际上 Scoped Storage 改变了 App 访问文件的完整路径。通过 MediaStore 访问文件比直接路径访问多了一层数据库查询和权限检查；通过 SAF 访问文件则需要经过 ContentProvider 进程间通信。在高频文件操作场景下，这些额外开销是可感知的。
+
+**误区：FUSE 回归意味着性能退化。**
+新 FUSE 的关键优化在于：性能关键路径（App 私有目录）可以绕过 MediaProvider 检查；内核 5.4+ 的 FUSE 实现比旧版本有显著优化。对于大多数正常使用的 App，性能退化是可接受的。
+
+## 参考资料
+
+- [Android Storage | Android Open Source Project](https://source.android.com/docs/core/storage)
+- [Scoped Storage | Android Developers](https://developer.android.com/about/versions/11/privacy/storage)
+- [MediaStore API Guide](https://developer.android.com/training/data-storage/shared/media)
+- [EROFS Documentation | kernel.org](https://www.kernel.org/doc/html/latest/filesystems/erofs.html)
+- [EROFS: A Compression-friendly Read-Only File System for Smartphones | LPC 2019](https://lpc.events)
+- [UFS Specification | JEDEC](https://www.jedec.org/standards-documents/docs/jesd220c)
+- [Incremental FS | Android Open Source Project](https://source.android.com/docs/core/storage/incfs)
+- OPPO 内核工匠：《手机主流存储器件的分析与发展》（[引用: mp.weixin.qq.com/s/...b43fcaf]）
+- Linux 阅码场 小辉：《手机Android存储性能优化架构分析》（[引用: mp.weixin.qq.com/s/...6b8c983f]）
+- OPPO 内核工匠：《深入代码细节看f2fs在磁盘上的组织方式》

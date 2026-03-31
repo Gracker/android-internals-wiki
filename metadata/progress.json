@@ -330,93 +330,51 @@
       "extensions_total": 3,
       "verification_level": "L2",
       "word_count": "~9500"
+    },
+    {
+      "section": "6.3",
+      "title": "I/O 调度与性能",
+      "completed_at": "2026-04-01T06:46:53",
+      "anchors_covered": 5,
+      "anchors_total": 5,
+      "extensions_covered": 2,
+      "extensions_total": 2,
+      "verification_level": "L2",
+      "word_count": "~4338"
+    },
+    {
+      "section": "6.4",
+      "title": "存储相关的版本演进",
+      "completed_at": "2026-04-01T07:26:31",
+      "anchors_covered": 4,
+      "anchors_total": 4,
+      "extensions_covered": 2,
+      "extensions_total": 2,
+      "verification_level": "L2",
+      "word_count": "~7500"
     }
   ],
   "ready_for_review": 4,
-  "last_updated": "2026-04-01T02:22:00+08:00",
+  "last_updated": "2026-04-01T07:26:31",
   "stats": {
     "total": 97,
-    "completed": 37,
-    "pending": 60,
-    "last_updated": "2026-04-01T05:29:06"
+    "completed": 26,
+    "pending": 64,
+    "last_updated": "2026-04-01T06:46:53"
   },
   "research_stats": {
     "runs_today": [
       {
-        "time": "2026-03-30T19:00:00+08:00",
-        "focus": "1.1 Android 分层架构 (review回炉)",
-        "source": "queue联动 (priority 90)",
-        "candidates": 5,
-        "passed": 3,
-        "delivered": 3,
-        "themes": [
-          "Perfetto架构映射",
-          "性能分析误区",
-          "Treble/AIDL演进"
-        ]
-      },
-      {
-        "time": "2026-03-31T07:03:00+08:00",
-        "focus": "Kotlin 与协程 (20260331%20=11)",
+        "time": "2026-04-01T07:03:00+08:00",
+        "focus": "Binder IPC 机制 (20260401%20=1, topic-rotation)",
         "source": "topic-rotation",
-        "candidates": 3,
-        "passed": 3,
-        "delivered": 3,
-        "themes": [
-          "Compose性能对等里程碑",
-          "Strong Skipping模式",
-          "androidx.tracing 2.0协程追踪"
-        ]
-      },
-      {
-        "time": "2026-03-31T11:08:00+08:00",
-        "focus": "4.3 ART 虚拟机内存管理 (queue联动：pending章节，承接4.1/4.2)",
-        "source": "queue-pending-continuation",
-        "candidates": 5,
-        "passed": 3,
-        "delivered": 3,
-        "themes": [
-          "ART内存分配器演进（dlmalloc→RosAlloc→RegionTLAB）",
-          "ART分代GC架构（Young/Old Generation + Concurrent Copying）",
-          "Android 15/16 16KB Page Size对ART内存的影响"
-        ]
-      },
-      {
-        "time": "2026-03-31T15:04:00+08:00",
-        "focus": "1.2 系统启动全流程 (queue联动 priority 90, BootTimingsTraceLog 回炉)",
-        "source": "queue-priority",
-        "candidates": 4,
-        "passed": 2,
-        "delivered": 2,
-        "themes": [
-          "BootTimingsTraceLog + TimingsTraceAndSlog 双层追踪体系",
-          "Android 16 并行模块加载与 AutoFDO 启动优化"
-        ]
-      },
-      {
-        "time": "2026-03-31T19:00:00+08:00",
-        "focus": "4.5 App 内存优化 (queue联动：pending章节，承接4.1-4.4)",
-        "source": "queue-pending-continuation",
-        "candidates": 5,
-        "passed": 4,
-        "delivered": 3,
-        "themes": [
-          "Android 15/16 16KB Page Size 迁移对 App 内存的影响与性能收益",
-          "内存抖动(Memory Churn)、GC 冻结与对象池优化策略",
-          "Bitmap 内存优化：inBitmap/Bitmap Pool/图片加载库策略"
-        ]
-      },
-      {
-        "time": "2026-03-31T19:33:29+08:00",
-        "focus": "4.5 App 内存优化 (queue联动：pending章节，承接4.1-4.4)",
-        "source": "queue-pending-continuation",
         "candidates": 4,
         "passed": 3,
         "delivered": 3,
         "themes": [
-          "16KB Page Size迁移对App内存的影响与性能收益",
-          "内存抖动(Memory Churn)、GC冻结与对象池优化策略",
-          "Bitmap内存优化：inBitmap/Bitmap Pool/图片加载库策略"
+          "Binder Rust 后端（libbinder_rs）：±2% 性能持平 + 68% 内存漏洞减少",
+          "Perfetto Binder 事务三维延迟指标（client_dur/server_dur/dispatch_dur）",
+          "Android 15/16/17 服务超时策略演进对 Binder-ANR 链路的影响"
         ]
       }
     ]
@@ -456,6 +414,20 @@
       "title": "文件系统",
       "action": "draft-completed",
       "word_count": "~9000"
+    },
+    {
+      "date": "2026-04-01",
+      "section": "6.3",
+      "title": "I/O 调度与性能",
+      "action": "draft-completed",
+      "word_count": "~4338"
+    },
+    {
+      "date": "2026-04-01",
+      "section": "6.4",
+      "title": "存储相关的版本演进",
+      "action": "draft-completed",
+      "word_count": "~7500"
     }
   ]
 }

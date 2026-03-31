@@ -473,20 +473,17 @@
       "section_title": "I/O 调度与性能",
       "priority": 55,
       "reason": "待加工（素材0篇）",
-      "material_paths": [],
-      "status": "pending",
+      "material_paths": [
+        "Cubox/IO调度器详解-2024-03-08.md",
+        "Personal-Knowlodge/source/2026-03-08_wechat_手机Android存储性能优化架构分析_1.md",
+        "Personal-Knowlodge/source/2026-03-07_wechat_性能优化基础_深入理解Linux文件系统.md"
+      ],
+      "status": "completed",
       "added_by": "manual-init",
-      "added_at": "2026-03-29T21:00:00"
-    },
-    {
-      "section": "6.4",
-      "section_title": "存储相关的版本演进",
-      "priority": 55,
-      "reason": "待加工（素材0篇）",
-      "material_paths": [],
-      "status": "pending",
-      "added_by": "manual-init",
-      "added_at": "2026-03-29T21:00:00"
+      "added_at": "2026-03-29T21:00:00",
+      "processed_at": "2026-04-01T06:46:53",
+      "word_count": "~4338",
+      "verification_status": "L2_verified_all_5_anchors_2_extensions_1_auto_discovery"
     },
     {
       "section": "7.1",
@@ -1563,7 +1560,31 @@
       "extensions_total": 2,
       "verification_level": "L2",
       "word_count": "~9000"
+    },
+    {
+      "section": "6.3",
+      "title": "I/O 调度与性能",
+      "completed_at": "2026-04-01T06:46:53",
+      "anchors_covered": 5,
+      "anchors_total": 5,
+      "extensions_covered": 2,
+      "extensions_total": 2,
+      "verification_level": "L2",
+      "word_count": "~4338"
+    },
+    {
+      "section": "6.4",
+      "section_title": "存储相关的版本演进",
+      "priority": 55,
+      "reason": "待加工（素材0篇）",
+      "material_paths": [],
+      "status": "completed",
+      "added_by": "manual-init",
+      "added_at": "2026-03-29T21:00:00",
+      "processed_at": "2026-04-01T07:26:31",
+      "word_count": "~7500",
+      "verification_status": "L2_verified_all_4_anchors_2_extensions_covered_1_auto_discovery"
     }
   ],
-  "last_updated": "2026-04-01T05:29:06"
+  "last_updated": "2026-04-01T07:26:31"
 }
