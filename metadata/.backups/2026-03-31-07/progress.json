@@ -3,8 +3,8 @@
   "total_sections": 93,
   "metrics": {
     "total": 102,
-    "draft": 91,
-    "ready-for-review": 11,
+    "draft": 92,
+    "ready-for-review": 10,
     "reviewed": 0,
     "finalized": 0,
     "staging_drafts": 0
@@ -162,37 +162,15 @@
       "extensions_total": 2,
       "verification_level": "L2",
       "word_count": "~7500"
-    },
-    {
-      "section": "7.2",
-      "title": "卡顿原因体系",
-      "completed_at": "2026-03-31T07:29:54.381093+08:00",
-      "anchors_covered": 6,
-      "anchors_total": 6,
-      "extensions_covered": 0,
-      "extensions_total": 3,
-      "verification_level": "L2",
-      "word_count": "~7500"
-    },
-    {
-      "section": "7.3",
-      "title": "卡顿分析方法论",
-      "completed_at": "2026-03-31T08:20:00+08:00",
-      "anchors_covered": 5,
-      "anchors_total": 5,
-      "extensions_covered": 2,
-      "extensions_total": 2,
-      "verification_level": "L2",
-      "word_count": "~7500"
     }
   ],
   "ready_for_review": 10,
-  "last_updated": "2026-03-31T08:20:00+08:00",
+  "last_updated": "2026-03-31T07:03:00+08:00",
   "stats": {
     "total": 102,
-    "completed": 13,
-    "pending": 89,
-    "last_updated": "2026-03-31T08:20:00+08:00"
+    "completed": 11,
+    "pending": 91,
+    "last_updated": "2026-03-30T21:28:51.853958+00:00"
   },
   "research_stats": {
     "runs_today": [
