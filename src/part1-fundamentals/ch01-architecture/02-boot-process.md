@@ -1,11 +1,12 @@
 ---
 title: "系统启动全流程"
 chapter: "1.2"
-status: reviewed
+status: ready-for-review
 reviewed_date: "2026-03-31"
 reviewed_by: openclaw-task6
+review_fix: "BootTimingsTraceLog 锚点补充 + Android 16 启动优化"
 applicable_versions: "Android 8 (API 26) - Android 16 (API 36)"
-last_verified: "2026-03-17"
+last_verified: "2026-03-31"
 last_verified_against: "AOSP android-16.0.0_r1, 官方文档"
 confidence: high
 sources:
@@ -23,6 +24,12 @@ sources:
     path: "https://source.android.com/docs/core/perf/boot-times"
   - type: blog
     path: "obsidian/Cubox/Android 启动系列之我是 init 进程 - 掘金-2024-01-27.md"
+  - type: aosp
+    path: "frameworks/base/core/java/com/android/internal/os/ZygoteInit.java @ android-16.0.0_r1 (BootTimingsTraceLog)"
+  - type: aosp
+    path: "frameworks/base/core/java/android/os/TimingsTraceAndSlog.java @ android-16.0.0_r1"
+  - type: blog
+    path: "Android 16 Parallel Module Loading + AutoFDO (AOSP Gerrit/9to5Google)"
 tags: ['boot', 'init', 'zygote', 'SystemServer', '启动优化', 'bootchart']
 related_chapters: ["1.1", "1.3", "1.4", "8.2"]
 ---
@@ -315,6 +322,68 @@ adb shell bootstat -l
 
 这些时间戳是相对于系统启动的 uptime（秒），可以直接看出哪个阶段最耗时。
 
+### BootTimingsTraceLog 与 TimingsTraceAndSlog：框架内置的追踪体系
+
+上面提到的 bootstat 是一个"外挂"式的度量工具——它从外部观察启动过程，记录关键节点的时间戳。但 Android 框架本身还内置了一套更精细的追踪机制，直接嵌入到启动代码的关键路径中，让我们能精确到每个内部阶段看耗时。
+
+这套追踪体系由两个工具类组成，分别覆盖启动链的不同阶段。
+
+#### BootTimingsTraceLog：Zygote 预加载阶段的"秒表"
+
+BootTimingsTraceLog 是一个轻量级的追踪工具，主要在 ZygoteInit 中使用。它的工作方式很直接：在 Zygote 预加载过程的关键节点调用 `Trace.traceBegin()` 和 `Trace.traceEnd()`，将耗时信息写入 atrace/ftrace 子系统。
+
+[已验证: AOSP frameworks/base/core/java/com/android/internal/os/ZygoteInit.java @ android-16.0.0_r1]
+
+它追踪的预加载阶段包括：
+
+- **BeginIcuCachePinning**：ICU（国际化组件）数据锁定到内存的耗时
+- **PreloadClasses**：预加载常用 Java 类到 ART 运行时的耗时。这通常是 Zygote 预加载中最耗时的阶段，因为要加载 3000-4000 个类
+- **PreloadResources**：预加载常用资源（主题、字体等）的耗时
+- **PreloadOpenGL**：OpenGL 相关资源预加载
+- **PreloadSharedLibraries**：共享库预加载
+- **PreloadTextResources**：文本资源预加载
+
+在 Perfetto 中，这些事件显示在 Zygote 进程（zygote64 或 zygote）的 track 上，每个预加载阶段呈现为一个独立的 slice。如果你发现 Zygote 预加载阶段异常耗时，可以通过这些 slice 精确定位是哪个环节拖了后腿。
+
+[待补充：Perfetto 中 Zygote 预加载各阶段的 Trace 截图]
+
+#### TimingsTraceAndSlog：SystemServer 启动阶段的"审计员"
+
+SystemServer 使用的是另一个追踪工具——TimingsTraceAndSlog。它和 BootTimingsTraceLog 的区别在于：TimingsTraceAndSlog 不仅通过 `Trace.traceBegin()/traceEnd()` 写入 Perfetto 追踪，还会同步通过 `Slog` 输出日志。这意味着你既可以在 Perfetto 中可视化地查看各阶段耗时，也可以通过 logcat 快速检索。
+
+[已验证: AOSP frameworks/base/core/java/android/os/TimingsTraceAndSlog.java @ android-16.0.0_r1]
+
+TimingsTraceAndSlog 覆盖 SystemServer 的四个核心启动阶段：
+
+1. **startBootstrapServices()**：启动相互依赖的关键服务（ATMS、PMS 等），这些服务是后续一切的基石
+2. **startCoreServices()**：启动无直接依赖的核心服务（BatteryService、UsageStatsService 等）
+3. **startOtherServices()**：启动其余系统服务（AMS、WMS 等），这是最耗时的阶段，因为服务数量最多
+4. **startApexServices()**：[Android 16+] 启动 APEX 模块中包含的服务，这是 Android 模块化架构演进的产物
+
+在 Perfetto 的 system_server 进程 track 中，这四个阶段呈现为嵌套的 slice，每个 slice 内部又能看到各服务自身的初始化耗时。当你需要分析 SystemServer 启动慢的问题时，先看这四个 slice 中哪个最宽，再钻进去看具体哪个服务拖了后腿——这是一套非常高效的分析路径。
+
+#### boot_progress 里程碑事件
+
+除了 Perfetto 追踪，Android 还通过 logcat 输出一系列 `boot_progress` 里程碑事件，为快速定位启动瓶颈提供了一条"捷径"：
+
+```bash
+adb logcat | grep boot_progress
+```
+
+常见的里程碑事件及其含义：
+
+- `boot_progress_preload_start` / `boot_progress_preload_end`：Zygote 预加载的起止时间
+- `boot_progress_system_run`：SystemServer 准备就绪
+- `boot_progress_pms_start` / `boot_progress_pms_ready`：PackageManagerService 启动与就绪
+- `boot_progress_ams_ready`：ActivityManagerService 就绪
+- `boot_progress_enable_screen`：屏幕点亮，用户可见
+
+[已验证: 官方文档 source.android.com/docs/core/perf/boot-times]
+
+这些里程碑的价值在于"快速排查"。如果你只需要知道"开机慢在哪里"，不需要抓 Perfetto Trace，只需一条 logcat 命令就能看到各阶段的时间分布。如果发现某个阶段耗时异常（比如 PMS 启动超过 2 秒），再配合 Perfetto Trace 深入分析——是 CPU 调度延迟、I/O 等待、还是锁竞争。
+
+[来源: intake/research-feeds/2026-03-31-15-ch01-boot-timings-tracelog.md]
+
 ### dmesg 与 logcat
 
 在 Kernel 阶段，`dmesg` 可以看到内核启动的时间线：
@@ -324,9 +393,13 @@ adb shell dmesg | head -50
 # 可以看到各驱动的加载时间
 ```
 
-在用户空间阶段，`logcat` 过滤 `boot` 相关 tag：
+在用户空间阶段，`logcat` 过滤 `boot` 相关 tag。特别是上面提到的 `boot_progress` 系列事件，可以通过 logcat 快速查看各阶段耗时分布：
 
 ```bash
+# 查看 boot_progress 里程碑
+adb logcat | grep boot_progress
+
+# 查看所有启动相关事件
 adb logcat -b events | grep boot
 ```
 
@@ -365,8 +438,8 @@ EOF
 
 在 Perfetto UI 中，你可以清晰地看到：
 - **init 进程**的各阶段（early-init → init → boot）
-- **Zygote 进程**的预加载区间
-- **SystemServer 进程**的服务启动时间线
+- **Zygote 进程**的预加载区间，其中 BootTimingsTraceLog 标记的 PreloadClasses、PreloadResources 等 slice 清晰可见
+- **SystemServer 进程**的服务启动时间线，TimingsTraceAndSlog 标记的 startBootstrapServices、startCoreServices、startOtherServices 三个 slice 层层嵌套
 - **Launcher 进程**的首帧渲染时间
 
 [待补充：一份真实的开机 Perfetto Trace 截图，标注各阶段]
@@ -419,6 +492,28 @@ Zygote 的预加载时间直接影响开机时间。优化手段包括：
 - **三星**：Galaxy App Booster——在首次开机后后台优化 App 的 dex2oat 编译
 
 [待验证：各厂商具体优化方案的细节]
+
+### Android 16 的启动优化
+
+Android 16 在系统启动方面引入了两项值得关注的优化，分别从内核模块加载和编译优化两个层面缩短启动时间。
+
+[来源: intake/research-feeds/2026-03-31-15-ch01-android16-boot-optimization.md]
+
+#### 并行内核模块加载（Performance Mode）
+
+传统上，Linux 内核启动后需要串行加载各个内核模块。Android 16 引入的"Performance Mode"将这个串行过程改为并行——在模块间无依赖关系时，同时发起多个模块的加载请求，充分利用多核 CPU 的并行能力。
+
+实测效果 [待验证: 仅基于 Pixel 设备数据]：Pixel 10 上模块加载时间减少约 30%，2023 Pixel Fold 上减少约 25%。这个优化预期惠及所有 Android 设备，不限于 Pixel 系列。
+
+在 Perfetto 中，你可以观察到变化：内核模块加载阶段，原本一条串行的 slice 变为多条并行的 slice，整体宽度（时间）明显缩短。
+
+#### AutoFDO：基于真实数据的内核编译优化
+
+AutoFDO（Automatic Feedback-Directed Optimization）是 Google 将编译器优化技术引入 Android 内核构建流程的成果。核心思路是：收集 Pixel 设备上最常用的 100 个 Android 应用的真实运行数据，分析这些应用与内核的交互模式，识别出内核中频繁执行的"热"代码路径，然后在编译内核时对这些路径做针对性优化。
+
+[待验证: AOSP Gerrit 相关 commit]
+
+实测效果：整体启动时间减少约 2.1%。这个数字看起来不大，但考虑到内核操作约占 Android 设备 CPU 时间的 40%，内核级优化的收益是全方位的——不仅启动更快，应用响应和续航也同步改善。AutoFDO 在 Android 15、16、17 beta 版本上均有测试验证。
 
 ## 扩展：AB 分区与 dm-verity 的影响
 
