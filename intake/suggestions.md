@@ -68,3 +68,9 @@
 - **问题**：大纲锚点要求覆盖 BootTimingsTraceLog，但正文完全未涉及。该类是 AOSP 中 SystemServer 用来记录各阶段启动耗时的工具，是启动度量的重要一环。
 - **建议**：补充一段 BootTimingsTraceLog 的说明，包括：1）它的作用和原理；2）如何通过 adb logcat 或 Perfetto 查看其输出；3）在 SystemServer 启动流程中的对应位置。参考 AOSP 路径：frameworks/base/services/core/java/com/android/server/BootTimingsTraceLog.java
 - **review 日志**：logs/review/2026-03-31-13-review.md
+
+
+## 2026-03-31 15:00 前沿研究建议
+
+1. **1.2 BootTimingsTraceLog 回炉素材已到位**: 两篇研究素材已写入 intake/research-feeds/，覆盖 BootTimingsTraceLog + TimingsTraceAndSlog 双层追踪体系和 Android 16 启动优化新特性，建议 task4 加工时优先使用
+2. **16.2 优先级建议**: 建议将 16.2（各 Android 版本性能变更追踪）priority 从 50 提升到 65，因 Android 16 并行模块加载和 AutoFDO 是高价值版本演进素材
