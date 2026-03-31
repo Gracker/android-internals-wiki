@@ -6024,19 +6024,6 @@
       "skip_reason": "Total score < 16 (relevance:2 depth:1 timeliness:5 verifiability:2)"
     },
     {
-      "path": "Cubox/funstory-ai-BabelDOC- Yet Another Document Translator-2025-04-03.md",
-      "title": "funstory-ai/BabelDOC: Yet Another Document Translator",
-      "score": 7,
-      "scores": {
-        "relevance": 0,
-        "depth": 1,
-        "timeliness": 3,
-        "verifiability": 3
-      },
-      "timestamp": "2026-03-30T08:17:07.438178",
-      "reason": "Total score 7 < 16"
-    },
-    {
       "path": "Cubox/思考 - 泛精英社区「即刻」的高传播写作 (周刊7号)-2022-02-16.md",
       "title": "思考 | 泛精英社区「即刻」的高传播写作 (周刊7号)",
       "score": 5,
@@ -6230,19 +6217,6 @@
       },
       "timestamp": "2026-03-30T08:17:07.442538",
       "reason": "Total score 6 < 16"
-    },
-    {
-      "path": "Cubox/ebpf工作原理介绍——ebpf指令集及虚拟机-2025-05-16.md",
-      "title": "ebpf工作原理介绍——ebpf指令集及虚拟机",
-      "score": 4,
-      "scores": {
-        "relevance": 0,
-        "depth": 0,
-        "timeliness": 4,
-        "verifiability": 0
-      },
-      "timestamp": "2026-03-30T08:17:07.442981",
-      "reason": "Total score 4 < 16"
     },
     {
       "path": "Cubox/重读《暗时间》：如何写「更健康更长久」的文字（4） - Revue-2022-05-23.md",
@@ -8786,18 +8760,6 @@
         "total": 10
       },
       "reason": "总分不足 10/20 (相关性2+技术4+时效3+可验证1)"
-    },
-    {
-      "title": "iOS 底层原理39：Instruments系列（八）Zombies",
-      "path": "Cubox/iOS 底层原理39：Instruments系列（八）Zombies-2022-09-29.md",
-      "score": {
-        "relevance": 2,
-        "technical": 1,
-        "timeliness": 3,
-        "verifiability": 1,
-        "total": 7
-      },
-      "reason": "总分不足 7/20 (相关性2+技术1+时效3+可验证1)"
     },
     {
       "title": "Cursor+Claude3.7的绝杀：从原型到app，两步完成app开发",
@@ -16839,6 +16801,406 @@
       },
       "skip_reason": "无匹配章节",
       "skipped_at": "2026-03-31T08:19:28"
+    },
+    {
+      "path": "Cubox/[送码] 为了帮助你回忆旅行足迹，我开发了「山河旅记」 - 少数派-2025-01-19.md",
+      "score": 8,
+      "reason": "旅行App，与Android内部无关",
+      "skipped_at": "2026-03-31T08:45:00"
+    },
+    {
+      "path": "Cubox/abhisheknaiidu-awesome-github-profile-readme-2024-08-26.md",
+      "score": 7,
+      "reason": "GitHub profile README，非技术内容",
+      "skipped_at": "2026-03-31T08:45:00"
+    },
+    {
+      "path": "Cubox/agiresearch-AIOS- AIOS- AI Agent Operating System-2026-03-27.md",
+      "score": 10,
+      "reason": "AI Agent OS，与Android内部无关",
+      "skipped_at": "2026-03-31T08:45:00"
+    },
+    {
+      "path": "Cubox/android-inline-hook-README.zh-CN.md at main · bytedance-android-inline-hook-2022-02-10.md",
+      "score": 14,
+      "reason": "inline hook库，偏安全/hook方向，深度足够但与AIW核心章节匹配度有限",
+      "skipped_at": "2026-03-31T08:45:00"
+    },
+    {
+      "path": "Cubox/android-nowinandroid- A fully functional Android app built entirely with Kotlin and Jetpack Compose-.md",
+      "score": 13,
+      "reason": "Now in Android示例项目，偏Kotlin/Compose实践",
+      "skipped_at": "2026-03-31T08:45:00"
+    },
+    {
+      "path": "Cubox/aosp14安卓14无法事件注入报错was not directed at a window owned by uid-2024-05-31.md",
+      "score": 14,
+      "reason": "事件注入权限问题，偏安全方向",
+      "skipped_at": "2026-03-31T08:45:00"
+    },
+    {
+      "path": "Cubox/bizz84-flutter-tips-and-tricks- My Flutter Tips & Tricks on Twitter 👇-2022-07-12.md",
+      "score": 9,
+      "reason": "Flutter tips集合，内容碎片化",
+      "skipped_at": "2026-03-31T08:45:00"
+    },
+    {
+      "path": "Cubox/cdn.apple.com-2022-08-30.md",
+      "score": 6,
+      "reason": "Apple技术视频链接，无实质内容",
+      "skipped_at": "2026-03-31T08:45:00"
+    },
+    {
+      "path": "Cubox/claude code's DX is too good. and that's a problem. - thinking out loud-2025-12-16.md",
+      "score": 11,
+      "reason": "Claude Code体验评论，非Android技术",
+      "skipped_at": "2026-03-31T08:45:00"
+    },
+    {
+      "path": "Cubox/clk2025-2025-11-14.md",
+      "score": 9,
+      "reason": "会议链接，内容不明",
+      "skipped_at": "2026-03-31T08:45:00"
+    },
+    {
+      "path": "Cubox/cognitivecomputations - dolphin-2.5-mixtral-8x7b like 1.09k-2023-12-15.md",
+      "score": 6,
+      "reason": "LLM模型，与Android无关",
+      "skipped_at": "2026-03-31T08:45:00"
+    },
+    {
+      "path": "Cubox/dmytro-anokhin.medium.com-2022-06-01.md",
+      "score": 10,
+      "reason": "iOS渲染性能文章，非Android",
+      "skipped_at": "2026-03-31T08:45:00"
+    },
+    {
+      "title": "flomo weekly vol.37 - 用 flomo 记录一年后，自己发生了什么变化（新年特刊）",
+      "path": "Cubox/flomo weekly vol.37 - 用 flomo 记录一年后，自己发生了什么变化（新年特刊）-2022-01-26.md",
+      "score": {
+        "relevance": 1,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 2,
+        "total": 9
+      },
+      "reason": "总分9<10"
+    },
+    {
+      "title": "flomo 的 2021 和 2022",
+      "path": "Cubox/flomo 的 2021 和 2022-2022-02-10.md",
+      "score": {
+        "relevance": 1,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 2,
+        "total": 9
+      },
+      "reason": "总分9<10"
+    },
+    {
+      "title": "flutter开发web会有未来吗？",
+      "path": "Cubox/flutter开发web会有未来吗？-2025-10-13.md",
+      "score": {
+        "relevance": 3,
+        "depth": 2,
+        "timeliness": 5,
+        "verifiability": 2,
+        "total": 12
+      },
+      "reason": "低相关性或无章节匹配"
+    },
+    {
+      "title": "funstory-ai/BabelDOC: Yet Another Document Translator",
+      "path": "Cubox/funstory-ai-BabelDOC- Yet Another Document Translator-2025-04-03.md",
+      "score": {
+        "relevance": 1,
+        "depth": 2,
+        "timeliness": 5,
+        "verifiability": 2,
+        "total": 10
+      },
+      "reason": "低相关性或无章节匹配"
+    },
+    {
+      "title": "garrytan/gstack: Use Garry Tan's exact Claude Code setup: 15 opinionated tools that serve as CEO, Designer, Eng Manager, Release Manager, Doc Engineer, and QA",
+      "path": "Cubox/garrytan-gstack- Use Garry Tan's exact Claude Code setup- 15 opinionated tools that serve as CEO, De.md",
+      "score": {
+        "relevance": 5,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 2,
+        "total": 13
+      },
+      "reason": "低相关性或无章节匹配"
+    },
+    {
+      "title": "getActivity/AndroidCodeStandard: Android 代码规范文档",
+      "path": "Cubox/getActivity-AndroidCodeStandard- Android 代码规范文档-2023-02-06.md",
+      "score": {
+        "relevance": 2,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 2,
+        "total": 10
+      },
+      "reason": "低相关性或无章节匹配"
+    },
+    {
+      "title": "getActivity/AndroidVersionAdapter",
+      "path": "Cubox/getActivity-AndroidVersionAdapter-2025-06-09.md",
+      "score": {
+        "relevance": 3,
+        "depth": 2,
+        "timeliness": 5,
+        "verifiability": 3,
+        "total": 13
+      },
+      "reason": "低相关性或无章节匹配"
+    },
+    {
+      "title": "github.com",
+      "path": "Cubox/github.com-2025-09-27.md",
+      "score": {
+        "relevance": 1,
+        "depth": 2,
+        "timeliness": 5,
+        "verifiability": 2,
+        "total": 10
+      },
+      "reason": "低相关性或无章节匹配"
+    },
+    {
+      "title": "https://third-bit.com/sdxpy/intro/",
+      "path": "Cubox/https---third-bit.com-sdxpy-intro--2024-09-24.md",
+      "score": {
+        "relevance": 4,
+        "depth": 2,
+        "timeliness": 5,
+        "verifiability": 3,
+        "total": 14
+      },
+      "reason": "低相关性或无章节匹配"
+    },
+    {
+      "title": "i 小声读书",
+      "path": "Cubox/i 小声读书-2024-10-15.md",
+      "score": {
+        "relevance": 3,
+        "depth": 2,
+        "timeliness": 5,
+        "verifiability": 2,
+        "total": 12
+      },
+      "reason": "低相关性或无章节匹配"
+    },
+    {
+      "title": "iOS APP生命周期 和 UIViewController的生命周期 - mingruqi - 博客园",
+      "path": "Cubox/iOS APP生命周期 和 UIViewController的生命周期 - mingruqi - 博客园-2024-02-02.md",
+      "score": {
+        "total": 0
+      },
+      "reason": "非Android内容(iOS专属/无关主题)"
+    },
+    {
+      "title": "iOS UIScrollView 动画的力学原理 - 子傲代码魔法-小鑫的技术流水账",
+      "path": "Cubox/iOS UIScrollView 动画的力学原理 - 子傲代码魔法-小鑫的技术流水账-2022-12-29.md",
+      "score": {
+        "total": 0
+      },
+      "reason": "非Android内容(iOS专属/无关主题)"
+    },
+    {
+      "title": "iOS – Quantumult X (圈X) 详细使用教程，免费订阅链接转换和懒人配置 – 优质盒子",
+      "path": "Cubox/iOS – Quantumult X (圈X) 详细使用教程，免费订阅链接转换和懒人配置 – 优质盒子-2023-02-15.md",
+      "score": {
+        "total": 0
+      },
+      "reason": "非Android内容(iOS专属/无关主题)"
+    },
+    {
+      "title": "iOS 中的手势传递（一）操作系统层 - 掘金",
+      "path": "Cubox/iOS 中的手势传递（一）操作系统层 - 掘金-2022-10-25.md",
+      "score": {
+        "relevance": 3,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 2,
+        "total": 11
+      },
+      "reason": "低相关性或无章节匹配"
+    },
+    {
+      "title": "iOS 底层原理39：Instruments系列（三）Animation Hitches",
+      "path": "Cubox/iOS 底层原理39：Instruments系列（三）Animation Hitches-2022-08-22.md",
+      "score": {
+        "relevance": 3,
+        "depth": 4,
+        "timeliness": 4,
+        "verifiability": 2,
+        "total": 13
+      },
+      "reason": "低相关性或无章节匹配"
+    },
+    {
+      "title": "iOS 底层原理39：Instruments系列（九）自定义性能检测工具",
+      "path": "Cubox/iOS 底层原理39：Instruments系列（九）自定义性能检测工具-2022-10-18.md",
+      "score": {
+        "relevance": 4,
+        "depth": 4,
+        "timeliness": 4,
+        "verifiability": 3,
+        "total": 15
+      },
+      "reason": "低相关性或无章节匹配"
+    },
+    {
+      "title": "iOS 底层原理39：Instruments系列（八）Zombies",
+      "path": "Cubox/iOS 底层原理39：Instruments系列（八）Zombies-2022-09-29.md",
+      "score": {
+        "relevance": 4,
+        "depth": 4,
+        "timeliness": 4,
+        "verifiability": 2,
+        "total": 14
+      },
+      "reason": "低相关性或无章节匹配"
+    },
+    {
+      "title": "iOS 摸鱼周报 #71 | One More Thing?",
+      "path": "Cubox/iOS 摸鱼周报 #71 - One More Thing--2022-10-17.md",
+      "score": {
+        "relevance": 3,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 2,
+        "total": 11
+      },
+      "reason": "低相关性或无章节匹配"
+    },
+    {
+      "title": "iOS 高刷屏监控 + 优化：从理论到实践全面解析",
+      "path": "Cubox/iOS 高刷屏监控 + 优化：从理论到实践全面解析-2022-03-12.md",
+      "score": {
+        "relevance": 3,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 3,
+        "total": 12
+      },
+      "reason": "低相关性或无章节匹配"
+    },
+    {
+      "title": "iOS中触摸事件传递和响应原理_海阔任月飞的博客-CSDN博客",
+      "path": "Cubox/iOS中触摸事件传递和响应原理_海阔任月飞的博客-CSDN博客-2022-07-28.md",
+      "score": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 4,
+        "verifiability": 2,
+        "total": 13
+      },
+      "reason": "低相关性或无章节匹配"
+    },
+    {
+      "title": "iOS之深度剖析UIScrollView的实现原理与阻尼动画-云社区-华为云",
+      "path": "Cubox/iOS之深度剖析UIScrollView的实现原理与阻尼动画-云社区-华为云-2022-12-29.md",
+      "score": {
+        "total": 0
+      },
+      "reason": "非Android内容(iOS专属/无关主题)"
+    },
+    {
+      "title": "iOS开发学习系列(1)———Swift语言入门",
+      "path": "Cubox/iOS开发学习系列(1)———Swift语言入门-2023-05-22.md",
+      "score": {
+        "relevance": 3,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 2,
+        "total": 11
+      },
+      "reason": "低相关性或无章节匹配"
+    },
+    {
+      "title": "iOS微信全文搜索技术优化",
+      "path": "Cubox/iOS微信全文搜索技术优化-2022-02-24.md",
+      "score": {
+        "relevance": 3,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 3,
+        "total": 12
+      },
+      "reason": "低相关性或无章节匹配"
+    },
+    {
+      "title": "iPhone 17 不支持 AI Agent，但邪修的智谱不管",
+      "path": "Cubox/iPhone 17 不支持 AI Agent，但邪修的智谱不管-2025-08-21.md",
+      "score": {
+        "total": 0
+      },
+      "reason": "非Android内容(iOS专属/无关主题)"
+    },
+    {
+      "title": "imfile-io/imfile-desktop: A full-featured download manager.",
+      "path": "Cubox/imfile-io-imfile-desktop- A full-featured download manager.-2025-07-21.md",
+      "score": {
+        "relevance": 3,
+        "depth": 2,
+        "timeliness": 5,
+        "verifiability": 2,
+        "total": 12
+      },
+      "reason": "低相关性或无章节匹配"
+    },
+    {
+      "title": "imhet/android-performance-optimization",
+      "path": "Cubox/imhet-android-performance-optimization-2022-03-18.md",
+      "score": {
+        "relevance": 3,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 3,
+        "total": 12
+      },
+      "reason": "低相关性或无章节匹配"
+    },
+    {
+      "title": "inside .git",
+      "path": "Cubox/inside .git-2024-04-09.md",
+      "score": {
+        "relevance": 1,
+        "depth": 2,
+        "timeliness": 5,
+        "verifiability": 2,
+        "total": 10
+      },
+      "reason": "低相关性或无章节匹配"
+    },
+    {
+      "title": "jaycybird.blogspot.com",
+      "path": "Cubox/jaycybird.blogspot.com-2022-05-23.md",
+      "score": {
+        "relevance": 1,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 2,
+        "total": 9
+      },
+      "reason": "总分9<10"
+    },
+    {
+      "title": "johnysswlab.com",
+      "path": "Cubox/johnysswlab.com-2022-01-17.md",
+      "score": {
+        "relevance": 1,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 2,
+        "total": 9
+      },
+      "reason": "总分9<10"
     }
   ],
   "last_updated": "2026-03-31T07:45:00",

@@ -1,14 +1,24 @@
 ---
 title: "Android 内存模型全景"
 chapter: "4.1"
-status: draft
-applicable_versions: "TBD"
-last_verified: ""
-last_verified_against: ""
-confidence: low
-sources: []
-tags: ['memory']
-related_chapters: []
+status: ready-for-review
+applicable_versions: "Android 8 (API 26) - Android 16 (API 36)"
+last_verified: "2026-03-31"
+last_verified_against: "AOSP android-16.0.0_r1"
+confidence: medium
+sources:
+  - type: official
+    path: "https://developer.android.com/topic/performance/memory-management"
+  - type: official
+    path: "https://source.android.com/docs/core/perf/lmkd"
+  - type: blog
+    path: "https://androidperformance.com/"
+  - type: aosp
+    path: "frameworks/base/core/java/android/app/ActivityManager.java"
+  - type: blog
+    path: "https://juejin.cn/post/7530909474103296039"
+tags: ['memory', 'PSS', 'RSS', 'dumpsys', 'meminfo', 'procfs', 'ZRAM', 'cgroup']
+related_chapters: ["4.2", "4.3", "4.4", "4.5", "10.1"]
 ---
 
 # Android 内存模型全景
@@ -38,4 +48,466 @@ related_chapters: []
 > 锚点内容需 L1/L2 验证，扩展内容至少 L2 验证，自动发现内容至少标注来源。
 <!-- outline-end -->
 
-> 本节内容待加工。
+## 为什么要了解 Android 内存模型
+
+如果你用 Perfetto 抓过 Trace，可能注意过这样一个场景：一个列表滑得好好的，突然连续出现几帧耗时飙升，Trace 里对应的位置是几条长长的绿色 GC 条目。或者更隐蔽一些——App 没有明显的卡顿，但 `dumpsys meminfo` 显示 PSS 在几分钟内从 80MB 缓慢爬到了 200MB。
+
+这些现象的背后，是 Android 内存系统在工作。理解内存模型不是为了应付面试，而是为了在遇到内存相关的问题时——无论是 OOM 崩溃、GC 导致的卡顿、还是后台进程被杀——能知道从哪里入手排查。
+
+这一节我们要建立一个完整的内存认知框架：从物理内存到内核管理，再到进程的各个内存区域，最后到你在工具中看到的数字是什么含义。有了这张全景图，后面关于内存优化、GC 机制、LMK 等章节才有落脚点。
+
+[已验证: 官方文档, developer.android.com/topic/performance/memory-management]
+
+## 从物理内存到进程：Android 内存的整体架构
+
+Android 的内存体系可以分成三层来看：物理内存、内核管理、用户空间。这三层不是各自独立的，而是紧密耦合的——内核负责把物理内存分配给各个进程，进程之间的内存通过共享库和共享内存机制产生关联，而 Android 框架在内核之上又加了一层自己的管理策略。
+
+### 物理内存：一切的基础
+
+手机上的 RAM 就是我们说的物理内存。一台 8GB 内存的设备，真正能用的并不是完整的 8GB——GPU 会占用一部分（通常几百 MB 到 1GB 不等），内核本身也要占用一些。剩下才是系统服务和各个 App 可以使用的部分。
+
+和桌面系统不同，Android 设备通常没有磁盘级别的 Swap 空间。它使用的是 ZRAM——在内存中划出一块区域做压缩交换。这样做的好处是避免了闪存的写入磨损和 IO 延迟，代价是消耗 CPU 来做压缩和解压。当内存紧张时，内核通过 `kswapd` 线程把不太活跃的内存页压缩到 ZRAM 中，腾出物理内存。
+
+[已验证: 官方文档, source.android.com/docs/core/perf/lmkd]
+
+### 内核管理：分配、回收、保护
+
+Linux 内核是内存管理的核心执行者。它通过页表把虚拟地址映射到物理地址，处理页面换入换出，管理共享内存，以及响应内存压力事件。
+
+Android 在 Linux 内核的基础上做了几件特别的事情：
+
+**进程优先级与内存回收绑定。** Android 的 `lmkd`（Low Memory Killer Daemon）会根据进程的 `oom_adj_score` 决定在内存不足时先杀谁。前台 App 的分数最低（最不容易被杀），后台缓存的空进程分数最高。这个机制我们在 [4.4 Low Memory Killer](04-lmk.md) 中会详细展开。
+
+**内存压力通知。** 当内核检测到内存压力时，`lmkd` 会通过 `ActivityManager` 向 App 发送 `onTrimMemory()` 回调，给 App 一个主动释放内存的机会。这是 App 层面能做的最重要的内存优化手段之一。
+
+**cgroup 约束。** Android 10 引入了 cgroup 抽象层（支持 cgroup v1 和 v2），可以通过 task profile 对进程或线程施加内存限制。比如 `memory.high` 设置软限制（超过后触发回收压力），`memory.max` 设置硬限制（超过后触发 OOM）。
+
+[已验证: 官方文档, source.android.com/docs/core/perf/lmkd]
+
+### 用户空间：进程看到的世界
+
+每个 Android 进程通过虚拟内存看到的是自己的地址空间，它不能直接访问其他进程的内存（除非通过共享内存机制）。一个进程的内存空间大致包含以下区域：
+
+[图：Android 进程内存布局示意图——从低地址到高地址依次为：代码段(.text)、数据段(.data/.bss)、Heap（Java Heap + Native Heap）、mmap 区域（.so/.dex/.apk 等映射）、Stack]
+
+**代码段：** 包括 App 的 DEX 代码经过 AOT 编译后生成的 `.oat` 文件，以及系统框架的 `.vdex` 文件。这些代码通过 `mmap` 以只读方式映射到进程空间，多个进程可以共享同一份物理页面。
+
+**Heap：** 这是内存分析中最常关注的区域，分为 Java Heap 和 Native Heap。Java Heap 由 ART 管理，存放所有 Java/Kotlin 对象；Native Heap 由 C/C++ 的 `malloc` 管理，存放 native 分配的内存。Bitmap 的像素数据从 Android 8.0 开始也存放在 Native Heap 中（之前版本存放在 Java Heap 的 "External" 区域）。
+
+**mmap 映射：** `.so` 动态库、`.dex` 字节码、`.apk` 资源、字体文件等都通过 `mmap` 映射到进程空间。这些映射通常是私有的（进程修改时 COW），但未修改的部分可以在进程间共享。
+
+**Stack：** 每个线程有自己的栈空间，默认大小通常是 1MB 左右（取决于 Android 版本和线程创建方式）。栈内存用于函数调用链和局部变量。
+
+**Graphics：** GPU 相关的内存，包括 GL 纹理、EGL surface、图形缓冲区等。这部分内存在 `dumpsys meminfo` 中表现为 `Gfx dev`、`EGL mtrack`、`GL mtrack`。
+
+[已验证: 官方文档, developer.android.com/topic/performance/memory-management]
+
+## 关键内存指标：VSS、RSS、PSS、USS
+
+当我们谈论"一个进程占了多少内存"时，答案取决于你用哪个指标来衡量。Android/Linux 系统有四个核心内存指标，理解它们的区别是做内存分析的基本功。
+
+### VSS（Virtual Set Size）——虚拟地址空间
+
+VSS 是进程的整个虚拟地址空间大小，包括已经分配但尚未使用的部分、通过 `mmap` 映射但未实际访问的文件、以及各种预留区域。
+
+**VSS 的值通常远大于进程实际使用的物理内存。** 一个典型 Android App 的 VSS 可能达到数 GB，但这不代表它真的用了那么多内存——虚拟地址只是"我可能要用这么多"，真正用了多少要看 RSS/PSS。
+
+所以在实际的内存分析中，**VSS 几乎没有参考价值。** 它只是告诉你进程的地址空间有多大，不能用来判断内存压力。
+
+### RSS（Resident Set Size）——常驻物理内存
+
+RSS 是进程当前占用的物理内存总量，包括私有页面和共享页面。
+
+RSS 比 VSS 有用得多，因为它反映的是"实实在在占用了多少物理内存"。但 RSS 有一个致命的问题：**共享内存被重复计算了。** 如果系统框架的代码被 50 个进程共享，RSS 会把这份数据在每个进程里都完整算一次，导致所有进程的 RSS 加起来远大于实际物理内存总量。
+
+因此，RSS 适合观察**单个进程**的内存变化趋势，不适合评估**系统整体**的内存消耗。
+
+### PSS（Proportional Set Size）——按比例分摊的物理内存
+
+PSS 的计算方式和 RSS 不同：对于共享页面，PSS 会按共享进程数均摊。比如一个 4KB 的页面被 4 个进程共享，每个进程的 PSS 只增加 1KB。
+
+PSS 是 Android 系统用来评估进程内存"重量"的**首选指标**。`dumpsys meminfo` 默认显示的就是 PSS，`lmkd` 在决策时看的也是 PSS。把所有进程的 PSS 加起来，就能得到系统实际使用的物理内存总量（误差很小）。
+
+**在 Perfetto 的内存面板中，你看到的内存使用量也是基于 PSS 的。** 当你发现一个进程的 PSS 在持续增长，那就是内存泄漏的信号。
+
+### USS（Unique Set Size）——进程独有的物理内存
+
+USS 是完全属于该进程的私有内存，不包含任何共享页面。它等于 Private Dirty + Private Clean。
+
+USS 的实用价值在于：**如果一个进程被杀掉，USS 就是被释放的内存量。** 所以当你评估"杀掉这个后台进程能腾出多少内存"时，看 USS 最准确。它也是排查内存泄漏时最直接的指标——USS 的持续增长意味着进程在不断地申请独占内存而不释放。
+
+### 四者的关系
+
+简单来说：**VSS ≥ RSS ≥ PSS ≥ USS。** 
+
+| 场景 | 看哪个指标 | 原因 |
+|------|-----------|------|
+| 判断进程对系统内存的真实压力 | PSS | 消除了共享内存重复计算的问题 |
+| 判断杀掉进程能释放多少内存 | USS | 只有私有内存才会被释放 |
+| 单个进程内追踪内存分配趋势 | RSS | 变化更明显，计算开销更小 |
+| 大致了解进程地址空间规模 | VSS | 仅作参考，实际用途有限 |
+
+[已验证: 官方文档, developer.android.com/topic/performance/memory-management]
+[已验证: 官方文档, source.android.com/devices/tech/debug/mm]
+
+## 进程内存组成详解
+
+理解了 PSS/RSS/USS 之后，我们来看这些数字背后的具体组成。运行 `adb shell dumpsys meminfo <package>` 你会看到类似这样的输出：
+
+```
+** MEMINFO in pid 12345 [com.example.myapp] **
+                   Pss     Private  Private  Swapped
+                 Total    Dirty     Clean    Dirty    Heap     Heap     Heap
+                                 ------   ------   ------   ------   Size    Alloc     Free
+  Native Heap     8848     8844        0       0     32768    11234    21534
+  Dalvik Heap     7832     7828        0       0     40960    15876    25084
+  Dalvik Other    1523     1500        0       0
+  Stack            96       96        0       0
+  Ashmem            2        0        0       0
+  Gfx dev        2492     2488        0       0
+  Other dev        28       28        0       0
+  .so mmap       4213        8     3324       0
+  .apk mmap      1634        0     1234       0
+  .ttf mmap        34        0       34       0
+  .dex mmap      2090        0     2090       0
+  Other mmap      228        0        4       0
+  EGL mtrack     1020     1020        0       0
+  GL mtrack      1832     1832        0       0
+  Unknown        2202     2200        0       0
+  TOTAL         43102    32844     6986       0     73728    27110    46618
+```
+
+[来源: Cubox/Android ADB命令之内存统计与分析]
+
+[待补充：dumpsys meminfo 真机截图]
+
+输出看起来密密麻麻，但我们可以把它归类到几个大的区域来理解。
+
+### Java Heap（Dalvik Heap）
+
+Java Heap 是所有 Java/Kotlin 对象的栖息地。当你写 `val list = mutableListOf<String>()` 时，这个 list 对象和它里面的元素就分配在 Java Heap 上。ART 虚拟机通过垃圾回收（GC）来管理这片区域——不再被引用的对象会被自动回收。
+
+Java Heap 有一个硬性上限，这个上限因设备的总内存大小和 Android 版本而异。你可以通过 `ActivityManager.getMemoryClass()` 查到常规上限（通常 128-256MB），通过 `getLargeMemoryClass()` 查到 `largeHeap` 模式下的上限。如果 App 的 Java Heap 分配量超过上限，就会抛出 `OutOfMemoryError`。
+
+`dumpsys meminfo` 输出中，**Dalvik Heap** 那一行的 Heap Size / Heap Alloc / Heap Free 三个值分别代表：Java Heap 的总容量、已分配量、剩余空间。注意 Heap Size 并不等于 PSS——Heap Size 是虚拟机告诉你的堆大小，而 PSS 是实际占用的物理内存（可能因为页面共享或未实际提交而小于 Heap Size）。
+
+### Native Heap
+
+Native Heap 是 C/C++ 代码通过 `malloc`/`free`（或 `new`/`delete`）管理的内存。即使你的 App 完全用 Java/Kotlin 编写，Native Heap 也不会是 0——Android 框架的很多内部实现是 native 代码，它们在运行时需要 native 内存。
+
+从 Android 8.0（Oreo）开始，**Bitmap 的像素数据存放在 Native Heap 中**，而不是 Java Heap。这是 Android 内存管理的一个重要变化——它意味着你在 Java 层只要释放了 Bitmap 对象引用，native 层的像素数据就会被 GC 的 finalize 链路自动回收（通过 `NativeAllocationRegistry`）。这也解释了为什么 Android 8.0 之后 Bitmap 不再是 Java Heap OOM 的主要原因。
+
+[已验证: 官方文档, developer.android.com/topic/performance/graphics/manage-memory]
+
+Native Heap 的内存泄漏比 Java Heap 更难排查，因为没有自动的 GC 机制。常用的排查工具包括 Perfetto 的 native heap profile、`heapprofd`、以及 Android Studio 的 Native Memory Profiler。
+
+### Code（.dex / .so / .apk）
+
+代码段是 App 的可执行代码和资源通过 `mmap` 映射到内存的区域：
+
+- **`.dex mmap`**：DEX 字节码文件。这是你的 Java/Kotlin 代码编译后的产物。这部分大多是 Private Clean 的——意味着它可以从原始的 APK 文件中重新加载，内存紧张时内核可以轻松回收这些页面。
+- **`.so mmap`**：Native 共享库。包括系统的 `libc.so`、`libandroid_runtime.so` 以及你自己编译的 `.so` 文件。共享库的一个显著特点是——多个进程的 PSS 只分摊少量，因为 `.so` 的只读代码页是被所有使用该库的进程共享的。
+- **`.apk mmap`**：APK 文件中的资源（布局、图片、字符串等）通过 mmap 映射。和 `.dex` 类似，未修改的部分是 Clean 的。
+- **`.ttf mmap`**：字体文件映射。
+
+Code 部分的内存通常不构成优化重点（除非你的 App 有大量未压缩的 `.so` 文件），但理解它们的共享特性有助于准确解读 PSS 数字。
+
+### Stack
+
+每个线程有自己的栈空间，用于函数调用链、局部变量、返回地址等。在 Android 上，主线程和通过 `Thread` 创建的线程通常有约 1MB 的栈空间（`pthread` 默认值，不同版本可能略有差异）。
+
+Stack 的 PSS 通常很小（几十到几百 KB），但它有一个常被忽略的特性：**线程越多，Stack 占用的内存越多。** 一个拥有 50 个线程的进程，光栈空间就可能占 50MB。这也提醒我们，无节制的线程创建不仅是 CPU 调度的负担，也是内存的负担。
+
+### Graphics（Gfx dev / EGL mtrack / GL mtrack）
+
+Graphics 内存是显示相关的一块重要区域，包含以下几类：
+
+- **Gfx dev**：图形设备相关的内存分配。
+- **EGL mtrack**：EGL surface 相关的 GPU 内存追踪。每个 Window 的 Surface 都会占用这部分内存。
+- **GL mtrack**：OpenGL/Vulkan 纹理和缓冲区的 GPU 内存追踪。
+
+对于 UI 密集型的 App（图片浏览器、地图、视频播放器等），Graphics 内存可能占整个 PSS 的 30% 以上。在低端设备上，Graphics 内存过大会直接导致进程被 `lmkd` 杀掉。
+
+[待补充：Perfetto 中 Graphics 内存的 Track 截图描述]
+
+### 其他区域
+
+- **Ashmem**：Android Shared Memory，一种进程间共享内存的机制。在现代 Android 上逐渐被 `dmabuf` 替代，但在老版本和某些场景中仍在使用。
+- **Unknown**：无法归类的内存映射。通常数量不大，但如果 Unknown 持续增长，可能需要通过 `/proc/<pid>/smaps` 进一步排查。
+- **Dalvik Other**：ART 虚拟机内部结构占用的内存（非对象本身），包括 JIT 编译缓存、类加载器数据等。
+
+## procfs 接口：内核暴露的内存数据
+
+Android 的内存分析工具（`dumpsys meminfo`、Perfetto、Android Studio Profiler）底层都依赖 Linux 内核的 procfs 接口。理解这些接口能帮你更深入地排查问题，尤其是在工具不直接提供你需要的信息时。
+
+### /proc/meminfo：系统全局内存状态
+
+`adb shell cat /proc/meminfo` 输出的关键字段：
+
+```
+MemTotal:        5789412 kB    // 物理内存总量
+MemFree:          123456 kB    // 完全空闲的内存（通常很少）
+MemAvailable:    1234567 kB    // 可用内存（包含可回收的缓存）
+Buffers:          234567 kB    // 块设备缓冲区
+Cached:           890123 kB    // 页面缓存（文件映射等）
+SwapTotal:        500000 kB    // ZRAM 总大小
+SwapFree:         456789 kB    // ZRAM 剩余
+Active:          2345678 kB    // 最近使用的内存（不太容易被回收）
+Inactive:        1234567 kB    // 较久未使用的内存（更容易被回收）
+```
+
+[来源: Cubox/Android ADB命令之内存统计与分析]
+
+[已验证: Linux kernel documentation, kernel.org/doc/Documentation/filesystems/proc.txt]
+
+有几个常见的误区需要注意：
+
+**MemFree 很小不代表内存紧张。** Linux 会尽量把空闲内存用作文件缓存（Cached），因为缓存可以加速文件访问，且在需要时可以立即回收。所以看 `MemAvailable`（它包含了可回收的缓存）比看 `MemFree` 更有意义。
+
+**Active vs Inactive** 是理解内存回收行为的关键。Inactive 列表中的页面更可能在内存压力下被回收——如果你发现 Inactive 的比例很低，说明系统已经处于内存紧张状态。
+
+### /proc/<pid>/status：进程级别内存摘要
+
+`adb shell cat /proc/<pid>/status` 中与内存相关的关键字段：
+
+```
+VmSize:    4823456 kB    // 虚拟地址空间大小（≈ VSS）
+VmRSS:      123456 kB    // 常驻物理内存（≈ RSS）
+VmData:      56789 kB    // 私有数据段
+VmStk:         136 kB    // 主线程栈大小
+VmExe:          24 kB    // 代码段
+VmLib:       45678 kB    // 共享库映射
+```
+
+这个接口比 `smaps` 轻量，适合快速查看一个进程的内存概况。其中 `VmRSS` 就是我们之前说的 RSS。
+
+### /proc/<pid>/smaps：最详尽的内存映射
+
+`/proc/<pid>/smaps` 是 Android 内存分析的终极武器。它列出了进程中每一个内存映射区域的详细信息，包括地址范围、权限、PSS/RSS/USS 等分项数据。
+
+```
+7a3b400000-7a3b800000 rw-p 00000000 00:00 0       [anon:dalvik-LinearAlloc]
+Size:           4096 kB         // 映射的虚拟大小
+KernelPageSize:     4 kB
+MMUPageSize:        4 kB
+Rss:             512 kB         // 该区域的 RSS
+Pss:             512 kB         // 该区域的 PSS
+Pss_Anon:        500 kB
+Pss_File:         12 kB
+Pss_Shmem:         0 kB
+Shared_Clean:      0 kB
+Shared_Dirty:      0 kB
+Private_Clean:     0 kB
+Private_Dirty:   512 kB         // 该区域的 Private Dirty
+Referenced:       512 kB
+Anonymous:        500 kB
+LazyFree:           0 kB
+AnonHugePages:      0 kB
+ShmemPmdMapped:     0 kB
+Shared_Hugetlb:     0 kB
+Private_Hugetlb:    0 kB
+Swap:               0 kB
+SwapPss:            0 kB
+Locked:             0 kB
+```
+
+smaps 的实际使用场景通常是：**当你发现进程的 PSS 异常高，但 `dumpsys meminfo` 的分类无法定位具体原因时，逐项查看 smaps 来找到那个异常大的映射区域。**
+
+需要注意的是，读取 `/proc/<pid>/smaps` 需要进程有足够的权限（通常是 root 或者目标 App 是 debuggable 的），且读取操作本身有性能开销（内核需要遍历所有页表），不建议在高频循环中调用。
+
+[已验证: Linux kernel documentation, kernel.org/doc/Documentation/filesystems/proc.txt]
+
+## dumpsys meminfo：日常内存分析的主力工具
+
+前面已经零散提到了 `dumpsys meminfo` 的输出，这里我们把它的用法系统地过一遍。
+
+### 全局模式：查看系统内存概况
+
+```bash
+adb shell dumpsys meminfo
+```
+
+全局模式输出几个关键信息：
+
+1. **系统级内存统计**：Total RAM、Free RAM、Used RAM、Lost RAM、ZRAM 使用情况。这能帮你快速判断当前设备的内存压力等级。
+2. **按 OOM 优先级分类的 PSS 汇总**：Native、System、Persistent、Visible、Perceptible、Cached 等各类别的总 PSS。
+3. **按内存类型分类的 PSS 汇总**：Native Heap、Dalvik、`.art mmap`、`.oat mmap`、Gfx dev 等。
+
+如果 "Used RAM" 占比很高、Free RAM 很低、ZRAM 使用率很高，说明设备已经处于内存压力之下，后台 App 很容易被 `lmkd` 杀掉。
+
+[来源: Cubox/Android ADB命令之内存统计与分析]
+
+### 单进程模式：深入分析某个 App
+
+```bash
+adb shell dumpsys meminfo com.example.app
+```
+
+单进程模式是我们最常用的形式。输出的关键区域：
+
+**App Summary 段**——这是最快能看懂的部分：
+
+```
+                   Pss(KB)
+  Java Heap:      15234
+  Native Heap:     8488
+  Code:            8352
+  Stack:             96
+  Graphics:        4002
+  Private Other:   1120
+  System:          6789
+```
+
+[来源: Cubox/Android ADB命令之内存统计与分析]
+
+这些分类是对详细输出区域的聚合。排查问题时重点关注：
+
+- **Java Heap 突然增长**：可能有 Java 层的内存泄漏。进一步用 Android Studio 的 Heap Dump 分析。
+- **Native Heap 持续增长**：可能有 native 层的内存泄漏。用 `heapprofd` 或 Perfetto 的 Native Heap Profile 追踪。
+- **Graphics 占用异常高**：可能有大量 Bitmap 未释放、GL 纹理泄漏。检查图片加载库的缓存配置。
+
+**Objects 段**——展示 App 中各种对象的数量：
+
+```
+Objects
+         View:        256        Activity:          4
+      AppContext:         12       ContextImpl:         12
+       AssetManager:         12    RuntimeAsset:         12
+        AssetManager:          0        Bitmap:        128
+```
+
+这一段对排查 View 泄漏和 Activity 泄漏特别有用。如果你发现退出一个 Activity 后 View 数量没有减少，那就是泄漏了。
+
+### 实用技巧
+
+**1. 对比前后两次快照**
+
+```bash
+# 操作前
+adb shell dumpsys meminfo com.example.app > before.txt
+# 执行一系列操作（如打开/关闭某个页面 10 次）
+# 操作后
+adb shell dumpsys meminfo com.example.app > after.txt
+# 对比
+diff before.txt after.txt
+```
+
+重点关注 PSS Total、Java Heap、Native Heap 的变化。如果反复操作后数字只增不减，就是泄漏。
+
+**2. 触发 GC 后再采集**
+
+有时候你看到的 Java Heap 增长可能只是还没来得及 GC。可以先触发内存回收再采集：
+
+```bash
+adb shell am send-trim-memory com.example.app TRIM_MEMORY_COMPLETE
+# 等待几秒
+adb shell dumpsys meminfo com.example.app
+```
+
+[来源: Cubox/Android ADB命令之内存统计与分析]
+
+**3. 在 Perfetto 中看内存**
+
+Perfetto 的内存面板（`android.process_meminfo` 数据源）会周期性采集进程的 PSS/RSS 等数据，可以在时间轴上直观地看到内存变化趋势。这比 `dumpsys meminfo` 的瞬时快照更适合分析"内存增长发生在什么时候"。
+
+[待补充：Perfetto 内存面板截图]
+
+[已验证: 官方文档, developer.android.com/studio/profile/investigate-ram]
+[已验证: 官方文档, perfetto.dev/docs/data-sources]
+
+## cgroup 对 Android 内存控制的作用
+
+cgroup（Control Group）是 Linux 内核提供的资源隔离机制。Android 从早期版本就开始使用 cgroup v1 来管理进程组，Android 10 引入了 cgroup 抽象层，支持 v1/v2 双栈。
+
+在内存管理方面，cgroup 的核心作用是：
+
+**按进程组施加内存限制。** Android 定义了一系列 task profile（如 `ProcessProfileHigh`、`ProcessProfileLow`），不同优先级的进程对应不同的内存限制策略。当某个 cgroup 的内存使用超过 `memory.high`（软限制）时，内核会对该组进程施加回收压力；超过 `memory.max`（硬限制）时，触发 OOM killer。
+
+**配合 lmkd 实现分级回收。** `lmkd` 通过监听 cgroup 的内存压力事件（`memory.pressure_level`）来判断系统内存状态，再根据进程的 `oom_adj_score` 决定先回收谁。cgroup v2 还提供了 `memory.swap.max` 来控制每个进程组可以使用多少 ZRAM 空间，实现更精细的 Swap 管理。
+
+**ActivityManager 与 cgroup 的协作。** 当 App 进入后台时，`ActivityManager` 会调整其 cgroup 归属和 oom_adj 值，使其内存更容易被回收。同时，对于后台进程，系统可以标记其内存页为"更容易被换出到 ZRAM"，减少前台进程的内存压力。
+
+[已验证: 官方文档, source.android.com/docs/core/perf/cgroups]
+
+## ZRAM：在内存中做 Swap
+
+Android 不使用传统磁盘 Swap，原因很简单：闪存的写入寿命有限，且 IO 延迟高。ZRAM 的思路是在内存中创建一个压缩块设备——把不活跃的内存页压缩存储，腾出更多可用空间。
+
+### ZRAM 的工作方式
+
+当系统内存紧张时，内核的 `kswapd` 线程被唤醒，它会把进程的匿名页面（Anonymous Pages，比如 Heap 中分配但尚未写入文件的数据）压缩后存入 ZRAM。当这些页面再次被访问时，`kswapd` 会解压并恢复到正常内存中。
+
+ZRAM 的核心参数是压缩磁盘的最大大小（由 OEM 配置）。Qualcomm 的调优指南建议将 ZRAM 大小设置为物理内存的 75%。在实际设备上，ZRAM 的有效压缩比通常在 2x-4x 之间，也就是说 2GB 的 ZRAM 空间可以容纳约 4-8GB 的原始数据。
+
+### 在 dumpsys meminfo 中看 ZRAM
+
+全局 `dumpsys meminfo` 的输出中有 ZRAM 相关行：
+
+```
+ZRAM:  123,456K physical used for 456,789K in swap (500,000K total swap)
+```
+
+这行数据告诉我们：ZRAM 设备占用了 123MB 的物理内存来存储 456MB 的压缩数据（压缩比约 3.7x），ZRAM 总容量为 500MB。如果 physical used 接近 ZRAM 总大小，说明压缩空间即将耗尽，系统可能会更积极地杀后台进程。
+
+### ZRAM 的性能代价
+
+压缩和解压需要 CPU 周期。在低端设备上，频繁的 ZRAM 换入换出可能导致 UI 卡顿——因为前台进程在访问被压缩的页面时需要等待解压完成。这在 Perfetto 中表现为意外的 CPU 占用和短暂的非预期延迟。
+
+[已验证: 官方文档, source.android.com/docs/core/perf/lmkd]
+[已验证: Linux kernel documentation, kernel.org/doc/Documentation/blockdev/zram]
+
+## 在 Perfetto 中的表现
+
+理解了内存模型之后，我们来看看这些概念在 Perfetto Trace 中是怎么体现的。
+
+### 内存相关的 Track
+
+- **`android.process_meminfo`**：按进程展示 PSS、RSS 等数据的变化曲线。这是看内存增长趋势的主要数据源。
+- **`linux.counter` / `linux.process_counter`**：可以展示系统级的内存计数器（如 `MemAvailable`、`SwapUsed`）。
+- **`android.memory_snapshot`**：Java Heap 的快照数据（需要在抓 Trace 时启用 Java Heap Dump）。
+
+### 常见模式识别
+
+**正常 App：** PSS 在启动后达到一个稳定值，操作时小幅波动，返回后回落。
+
+**内存泄漏 App：** PSS 随操作次数单调递增，每次打开同一个页面都会叠加一层内存，永不回落。
+
+**内存压力下的系统：** `MemAvailable` 持续下降，ZRAM 使用率上升，后台进程被杀事件（`lmkd` kill events）频繁出现。在 Perfetto 中可以在 `Event` track 上看到 `am_proc_died` 事件。
+
+[待补充：Perfetto 中内存泄漏和内存压力的 Trace 截图]
+
+## 常见问题与误区
+
+### 误区一："PSS 就是 App 真正占用的内存"
+
+PSS 确实是最接近"App 对系统的内存压力"的指标，但它包含了按比例分摊的共享库内存。如果你想知道"杀掉这个进程能释放多少内存"，应该看 USS（Private Dirty + Private Clean），而不是 PSS。
+
+### 误区二："Java Heap 超过限制就 OOM"
+
+这个说法在 Android 8.0 之前大致成立（Bitmap 像素存放在 Java Heap）。但从 Android 8.0 开始，Bitmap 像素迁移到了 Native Heap，Java Heap 的 OOM 风险降低了。但 Native Heap 的内存增长不受 `getMemoryClass()` 限制——它受系统整体内存和 `lmkd` 机制的约束。
+
+### 误区三："MemFree 很低就是内存不够"
+
+Linux 会积极使用空闲内存做文件缓存。`MemFree` 低不代表内存紧张，应该看 `MemAvailable`——它包含了可以立即回收的缓存内存。
+
+### 误区四："VSS 很大说明内存泄漏"
+
+VSS 是虚拟地址空间，不是物理内存使用量。一个刚启动的 App 的 VSS 就可能有好几 GB。VSS 大是正常的，不看 VSS。
+
+### 误区五："后台进程不占内存所以不需要优化"
+
+后台进程的 USS 可能不多（因为大部分页面是共享的），但它的 PSS 仍然计入系统总内存。当系统内存紧张时，大量后台进程累积的 PSS 会加速 `lmkd` 杀进程的速度，影响前台 App 的稳定性。
+
+## 参考资料
+
+- [Investigate your app's RAM usage](https://developer.android.com/studio/profile/investigate-ram) — Android 官方文档
+- [Managing Your App's Memory](https://developer.android.com/topic/performance/memory) — Android 官方文档
+- [Low Memory Killer Daemon](https://source.android.com/docs/core/perf/lmkd) — AOSP 文档
+- [Cgroups in Android](https://source.android.com/docs/core/perf/cgroups) — AOSP 文档
+- [procfs documentation](https://kernel.org/doc/Documentation/filesystems/proc.txt) — Linux 内核文档
+- [ZRAM documentation](https://kernel.org/doc/Documentation/blockdev/zram) — Linux 内核文档
+- [Perfetto Process Memory Data Source](https://perfetto.dev/docs/data-sources) — Perfetto 官方文档
+- `frameworks/base/core/java/android/app/ActivityManager.java` — AOSP 源码
+- `frameworks/base/services/core/java/com/android/server/am/ProcessList.java` — lmkd 相关源码
+
+[适用版本: Android 8 (API 26) - Android 16 (API 36)]

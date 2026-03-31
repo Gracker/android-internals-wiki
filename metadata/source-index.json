@@ -10309,8 +10309,780 @@
       ],
       "quality": "high",
       "indexed_at": "2026-03-31T08:19:28"
+    },
+    {
+      "title": "Android 12 GraphicBuffer同步机制 - Fence",
+      "path": "Cubox/[转载]Android 12(S) 图像显示系统 - GraphicBuffer同步机制 - Fence - 掘金-2022-11-02.md",
+      "scores": {
+        "relevance": 4,
+        "depth": 4,
+        "timeliness": 4,
+        "verifiability": 4,
+        "total": 16
+      },
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "high"
+        }
+      ],
+      "summary": "深入分析Android 12中GraphicBuffer的Fence同步机制，涵盖BufferQueue生产消费流程",
+      "indexed_at": "2026-03-31T08:45:00"
+    },
+    {
+      "title": "Android 13-14 SurfaceFlinger VSYNC问题分析",
+      "path": "Cubox/android 13-14的SurfaceFlinger出现VSYNC-app-VSYNC-appS...-2023-10-23.md",
+      "scores": {
+        "relevance": 4,
+        "depth": 4,
+        "timeliness": 4,
+        "verifiability": 4,
+        "total": 16
+      },
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "high"
+        }
+      ],
+      "summary": "分析SurfaceFlinger中VSYNC-app/VSYNC-sf的产生机制与调试方法",
+      "indexed_at": "2026-03-31T08:45:00"
+    },
+    {
+      "title": "Android 13-14 SurfaceFlinger VSYNC-app/VSYNC-appSf/VSYNC-sf剖析",
+      "path": "Cubox/android 13-14高版本SurfaceFlinger出现VSYNC-app-VSYNC-appSf-VSYNC-sf剖析-CSDN博客-2025-07-17.md",
+      "scores": {
+        "relevance": 5,
+        "depth": 5,
+        "timeliness": 5,
+        "verifiability": 5,
+        "total": 20
+      },
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "high"
+        }
+      ],
+      "summary": "深入剖析高版本SurfaceFlinger VSyncDispatch与EventThread的变化，含源码分析",
+      "indexed_at": "2026-03-31T08:45:00"
+    },
+    {
+      "title": "Android APP温启动卡顿优化思路",
+      "path": "Cubox/android APP温启动卡顿优化思路-2025-12-21.md",
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 5,
+        "verifiability": 3,
+        "total": 15
+      },
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch04-启动",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "针对Android应用温启动场景的卡顿优化实践与思路",
+      "indexed_at": "2026-03-31T08:45:00"
+    },
+    {
+      "title": "Android App绘制数据的流转",
+      "path": "Cubox/android app 绘制数据的流转-2025-05-07.md",
+      "scores": {
+        "relevance": 4,
+        "depth": 4,
+        "timeliness": 5,
+        "verifiability": 4,
+        "total": 17
+      },
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "high"
+        }
+      ],
+      "summary": "从数据流转角度分析Android App的绘制全流程",
+      "indexed_at": "2026-03-31T08:45:00"
+    },
+    {
+      "title": "Android App渲染流水线图解",
+      "path": "Cubox/android app渲染流水线图解-2025-01-16.md",
+      "scores": {
+        "relevance": 5,
+        "depth": 4,
+        "timeliness": 5,
+        "verifiability": 4,
+        "total": 18
+      },
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "high"
+        }
+      ],
+      "summary": "以图解方式完整呈现Android App渲染流水线的各个阶段",
+      "indexed_at": "2026-03-31T08:45:00"
+    },
+    {
+      "title": "Android App渲染流水线图解(重存)",
+      "path": "Cubox/android app渲染流水线图解-2025-04-17.md",
+      "scores": {
+        "relevance": 5,
+        "depth": 4,
+        "timeliness": 4,
+        "verifiability": 4,
+        "total": 17
+      },
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Android App渲染流水线图解（与2025-01-16版本重复收录）",
+      "indexed_at": "2026-03-31T08:45:00"
+    },
+    {
+      "title": "AS Debug AOSP源码userdebug版本局部变量问题",
+      "path": "Cubox/android studio Debug安卓aosp源码userdebug版本看不到局部变量怎么办？-2025-03-28.md",
+      "scores": {
+        "relevance": 3,
+        "depth": 3,
+        "timeliness": 5,
+        "verifiability": 4,
+        "total": 15
+      },
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch14-工具",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "解决AOSP源码userdebug版本调试时局部变量不可见的问题",
+      "indexed_at": "2026-03-31T08:45:00"
+    },
+    {
+      "title": "Android系统SystemServer进程流程分析",
+      "path": "Cubox/android系统SystemServer进程流程分析-2025-02-21.md",
+      "scores": {
+        "relevance": 4,
+        "depth": 4,
+        "timeliness": 5,
+        "verifiability": 4,
+        "total": 17
+      },
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch01-架构",
+          "confidence": "high"
+        }
+      ],
+      "summary": "系统级分析Android SystemServer进程的启动与核心服务初始化流程",
+      "indexed_at": "2026-03-31T08:45:00"
+    },
+    {
+      "title": "Android Activity转场动画实现",
+      "path": "Cubox/android：怎样实现 Activity 的转场动画-2024-05-16.md",
+      "scores": {
+        "relevance": 3,
+        "depth": 3,
+        "timeliness": 4,
+        "verifiability": 3,
+        "total": 13
+      },
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "总结五种实现Activity切换动画效果的方式",
+      "indexed_at": "2026-03-31T08:45:00"
+    },
+    {
+      "title": "AOSP15 VSCode调试Native程序完整笔记",
+      "path": "Cubox/aosp15 VSCode调试 native程序完整笔记-2025-05-30.md",
+      "scores": {
+        "relevance": 3,
+        "depth": 4,
+        "timeliness": 5,
+        "verifiability": 4,
+        "total": 16
+      },
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch14-工具",
+          "confidence": "high"
+        }
+      ],
+      "summary": "AOSP15开发中使用VSCode调试C/C++ native程序的完整配置流程",
+      "indexed_at": "2026-03-31T08:45:00"
+    },
+    {
+      "title": "AOSP15 SurfaceFlinger dump新特性",
+      "path": "Cubox/aosp15上SurfaceFlinger的dump部分新特性-无Layer信息输出如何解决？-2025-07-18.md",
+      "scores": {
+        "relevance": 4,
+        "depth": 4,
+        "timeliness": 5,
+        "verifiability": 4,
+        "total": 17
+      },
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "high"
+        }
+      ],
+      "summary": "分析AOSP15上SurfaceFlinger dump输出变化，解决Layer信息缺失问题",
+      "indexed_at": "2026-03-31T08:45:00"
+    },
+    {
+      "title": "AOSP15 eBPF进程异常退出监控工具",
+      "path": "Cubox/aosp15进程异常退出监控工具-ebpf监控signal的发送和接收-2025-12-25.md",
+      "scores": {
+        "relevance": 4,
+        "depth": 4,
+        "timeliness": 5,
+        "verifiability": 4,
+        "total": 17
+      },
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch11-Profiling",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch02-进程",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "基于eBPF实现的进程异常退出监控，监控signal发送与接收",
+      "indexed_at": "2026-03-31T08:45:00"
+    },
+    {
+      "title": "atrace和perfetto的区别",
+      "path": "Cubox/atrace 和 perfetto 的区别-2024-04-19.md",
+      "scores": {
+        "relevance": 5,
+        "depth": 4,
+        "timeliness": 4,
+        "verifiability": 4,
+        "total": 17
+      },
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch11-Profiling",
+          "confidence": "high"
+        }
+      ],
+      "summary": "对比分析atrace与perfetto两种Android性能追踪工具的差异",
+      "indexed_at": "2026-03-31T08:45:00"
+    },
+    {
+      "title": "Binder深入研究-传输机制篇(上)",
+      "path": "Cubox/binder深入研究-传输机制篇_上-2025-07-27.md",
+      "scores": {
+        "relevance": 5,
+        "depth": 5,
+        "timeliness": 5,
+        "verifiability": 5,
+        "total": 20
+      },
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch01-架构",
+          "confidence": "high"
+        }
+      ],
+      "summary": "深入分析Binder传输机制的底层实现，含源码级解析",
+      "indexed_at": "2026-03-31T08:45:00"
+    },
+    {
+      "title": "Block IO生命历程",
+      "path": "Cubox/block io生命历程-2022-01-14.md",
+      "scores": {
+        "relevance": 4,
+        "depth": 4,
+        "timeliness": 3,
+        "verifiability": 4,
+        "total": 15
+      },
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch08-存储",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "从块设备定义、IO调度到下发的完整block IO生命周期分析",
+      "indexed_at": "2026-03-31T08:45:00"
+    },
+    {
+      "title": "btrace开源-基于Systrace高性能Trace工具",
+      "path": "Cubox/btrace 开源！基于 Systrace 高性能 Trace 工具-2022-01-13.md",
+      "scores": {
+        "relevance": 4,
+        "depth": 4,
+        "timeliness": 3,
+        "verifiability": 4,
+        "total": 15
+      },
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch11-Profiling",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "抖音团队开源的高性能Trace工具btrace(RheaTrace)，基于Systrace改进",
+      "indexed_at": "2026-03-31T08:45:00"
+    },
+    {
+      "title": "btrace开源(重存)",
+      "path": "Cubox/btrace 开源！基于 Systrace 高性能 Trace 工具-2022-01-14.md",
+      "scores": {
+        "relevance": 4,
+        "depth": 4,
+        "timeliness": 3,
+        "verifiability": 4,
+        "total": 15
+      },
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch11-Profiling",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "btrace/RheaTrace开源文章重复收录",
+      "indexed_at": "2026-03-31T08:45:00"
+    },
+    {
+      "title": "cgroup基础介绍",
+      "path": "Cubox/cgroup基础介绍-2023-02-17.md",
+      "scores": {
+        "relevance": 4,
+        "depth": 4,
+        "timeliness": 4,
+        "verifiability": 4,
+        "total": 16
+      },
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch02-进程",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch07-内存",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "cgroup数据结构与基本概念详解，Android进程资源管理基础",
+      "indexed_at": "2026-03-31T08:45:00"
+    },
+    {
+      "title": "crash实战-使用crash分析内核dump",
+      "path": "Cubox/crash实战：手把手教你使用crash分析内核dump-2023-12-15.md",
+      "scores": {
+        "relevance": 4,
+        "depth": 4,
+        "timeliness": 3,
+        "verifiability": 4,
+        "total": 15
+      },
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch14-工具",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "通过实例介绍使用crash工具分析kernel dump的方法",
+      "indexed_at": "2026-03-31T08:45:00"
+    },
+    {
+      "title": "am trace-ipc源码分析",
+      "path": "Cubox/debug：am trace-ipc源码分析 - 秋城 - 博客园-2022-01-17.md",
+      "scores": {
+        "relevance": 4,
+        "depth": 4,
+        "timeliness": 3,
+        "verifiability": 4,
+        "total": 15
+      },
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch11-Profiling",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch01-架构",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "分析adb shell am trace-ipc命令的源码实现，binder事务追踪",
+      "indexed_at": "2026-03-31T08:45:00"
+    },
+    {
+      "title": "dex优化编年史(2023)",
+      "path": "Cubox/dex 优化编年史-2023-02-17.md",
+      "scores": {
+        "relevance": 5,
+        "depth": 4,
+        "timeliness": 3,
+        "verifiability": 4,
+        "total": 16
+      },
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch10-包体积",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch04-启动",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Android 5.0+动态加载dex优化实现方式与原理全解析",
+      "indexed_at": "2026-03-31T08:45:00"
+    },
+    {
+      "title": "dex优化编年史(2024)",
+      "path": "Cubox/dex 优化编年史-2024-07-15.md",
+      "scores": {
+        "relevance": 5,
+        "depth": 5,
+        "timeliness": 5,
+        "verifiability": 5,
+        "total": 20
+      },
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch10-包体积",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch04-启动",
+          "confidence": "high"
+        }
+      ],
+      "summary": "热修复/插件化场景下动态加载dex优化完整编年史，含详细原理",
+      "indexed_at": "2026-03-31T08:45:00"
+    },
+    {
+      "title": "dex文件格式介绍",
+      "path": "Cubox/dex文件格式介绍-2022-05-13.md",
+      "scores": {
+        "relevance": 4,
+        "depth": 4,
+        "timeliness": 3,
+        "verifiability": 5,
+        "total": 16
+      },
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch10-包体积",
+          "confidence": "high"
+        }
+      ],
+      "summary": "从dex生成过程到文件格式的详细分析",
+      "indexed_at": "2026-03-31T08:45:00"
+    },
+    {
+      "title": "dma buf简单介绍",
+      "path": "Cubox/dma buf简单介绍-2024-10-31.md",
+      "scores": {
+        "relevance": 3,
+        "depth": 4,
+        "timeliness": 4,
+        "verifiability": 4,
+        "total": 15
+      },
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "medium"
+        },
+        {
+          "chapter": "ch08-存储",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Linux dma-buf机制介绍，Android图形buffer共享的基础",
+      "indexed_at": "2026-03-31T08:45:00"
+    },
+    {
+      "title": "dma_(un)map_sg和dma sync 3倍提速",
+      "path": "Cubox/dma_(un)map_sg和dma sync的3倍提速-2025-12-21.md",
+      "scores": {
+        "relevance": 3,
+        "depth": 4,
+        "timeliness": 5,
+        "verifiability": 4,
+        "total": 16
+      },
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch08-存储",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch13-调度",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "DMA映射与同步操作的优化方案，实现3倍性能提升",
+      "indexed_at": "2026-03-31T08:45:00"
+    },
+    {
+      "title": "eBPF简史",
+      "path": "Cubox/eBPF 简史-2022-01-17.md",
+      "scores": {
+        "relevance": 3,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 3,
+        "total": 12
+      },
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch11-Profiling",
+          "confidence": "medium"
+        },
+        {
+          "chapter": "ch14-工具",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "eBPF技术发展历史回顾，Android可观测性工具基础",
+      "indexed_at": "2026-03-31T08:45:00"
+    },
+    {
+      "title": "eBPF与可观测性",
+      "path": "Cubox/eBPF是什么？为什么对可观测性很重要？-2022-02-10.md",
+      "scores": {
+        "relevance": 3,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 3,
+        "total": 12
+      },
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch11-Profiling",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "介绍eBPF技术及其在可观测性领域的重要性",
+      "indexed_at": "2026-03-31T08:45:00"
+    },
+    {
+      "title": "eBPF程序注入到内核中的流程，现在就带你研究(上）",
+      "path": "Cubox/eBPF程序注入到内核中的流程，现在就带你研究(上）-2023-08-25.md",
+      "scores": {
+        "relevance": 4,
+        "depth": 4,
+        "timeliness": 4,
+        "verifiability": 2,
+        "total": 14
+      },
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch11-Profiling",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "eBPF程序注入到内核中的流程，现在就带你研究(上） 我们以libbpf-tools的vfsstat为例子，继续深入探究一下这个bpf程序都干了些啥？  [Re",
+      "indexed_at": "2026-03-31T09:15:00"
+    },
+    {
+      "title": "eCapture：无需CA证书抓https网络明文通讯 – CFC4N的博客",
+      "path": "Cubox/eCapture：无需CA证书抓https网络明文通讯 – CFC4N的博客-2023-02-22.md",
+      "scores": {
+        "relevance": 5,
+        "depth": 4,
+        "timeliness": 4,
+        "verifiability": 3,
+        "total": 16
+      },
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch11-Profiling",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "eCapture：无需CA证书抓https网络明文通讯 – CFC4N的博客 [Read in Cubox](https://cubox.pro/web/car",
+      "indexed_at": "2026-03-31T09:15:00"
+    },
+    {
+      "title": "ebpf在 Android 上的玩法示例",
+      "path": "Cubox/ebpf在 Android 上的玩法示例-2025-12-22.md",
+      "scores": {
+        "relevance": 3,
+        "depth": 3,
+        "timeliness": 5,
+        "verifiability": 2,
+        "total": 13
+      },
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch11-Profiling",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "ebpf在 Android 上的玩法示例 [Read in Cubox](https://cubox.pro/web/card/7402592962925824",
+      "indexed_at": "2026-03-31T09:15:00"
+    },
+    {
+      "title": "ebpf工作原理介绍——ebpf指令集及虚拟机",
+      "path": "Cubox/ebpf工作原理介绍——ebpf指令集及虚拟机-2025-05-16.md",
+      "scores": {
+        "relevance": 3,
+        "depth": 4,
+        "timeliness": 5,
+        "verifiability": 2,
+        "total": 14
+      },
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch11-Profiling",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "ebpf工作原理介绍——ebpf指令集及虚拟机 [Read in Cubox](https://cubox.pro/web/card/7323043793857",
+      "indexed_at": "2026-03-31T09:15:00"
+    },
+    {
+      "title": "framework 学习路线和方法 - 掘金",
+      "path": "Cubox/framework 学习路线和方法 - 掘金-2023-01-02.md",
+      "scores": {
+        "relevance": 3,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 2,
+        "total": 11
+      },
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch01-架构",
+          "confidence": "low"
+        }
+      ],
+      "summary": "framework 学习路线和方法 - 掘金 之前分享过我转framework的经历，可以看这里《我是如何从Android开发转framework开发的》  [",
+      "indexed_at": "2026-03-31T09:15:00"
+    },
+    {
+      "title": "framework工作中遇到陌生窗口怎么高效找代码？-vip学员疑问解答",
+      "path": "Cubox/framework工作中遇到陌生窗口怎么高效找代码？-vip学员疑问解答-2024-05-10.md",
+      "scores": {
+        "relevance": 3,
+        "depth": 2,
+        "timeliness": 5,
+        "verifiability": 2,
+        "total": 12
+      },
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch01-架构",
+          "confidence": "low"
+        }
+      ],
+      "summary": "framework工作中遇到陌生窗口怎么高效找代码？-vip学员疑问解答 背景：经常在实际开发过程中会遇到系统中各个不同的窗口，特别是系统中的各个窗口，种类非常",
+      "indexed_at": "2026-03-31T09:15:00"
+    },
+    {
+      "title": "hwui 介绍与分析 · 语雀",
+      "path": "Cubox/hwui 介绍与分析 · 语雀-2022-03-22.md",
+      "scores": {
+        "relevance": 3,
+        "depth": 3,
+        "timeliness": 4,
+        "verifiability": 3,
+        "total": 13
+      },
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "low"
+        }
+      ],
+      "summary": "hwui 介绍与分析 · 语雀 https://www.yuque.com/docs/share/0a92fc0e-185c-4f03-a088-458bb9f",
+      "indexed_at": "2026-03-31T09:15:00"
+    },
+    {
+      "title": "iOS Rendering 渲染全解析（长文干货） - 掘金",
+      "path": "Cubox/iOS Rendering 渲染全解析（长文干货） - 掘金-2022-05-25.md",
+      "scores": {
+        "relevance": 5,
+        "depth": 3,
+        "timeliness": 4,
+        "verifiability": 2,
+        "total": 14
+      },
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "iOS Rendering 渲染全解析（长文干货） - 掘金 1. 计算机渲染原理 对于现代计算机系统，简单来说可以大概视作三层架构：硬件、操作系统与进程。对于",
+      "indexed_at": "2026-03-31T09:15:00"
+    },
+    {
+      "title": "iOS之深入解析渲染的底层原理_╰つ栺尖篴夢ゞ的博客-CSDN博客_ios 视图渲染原理",
+      "path": "Cubox/iOS之深入解析渲染的底层原理_╰つ栺尖篴夢ゞ的博客-CSDN博客_ios 视图渲染原理-2023-01-17.md",
+      "scores": {
+        "relevance": 5,
+        "depth": 4,
+        "timeliness": 4,
+        "verifiability": 2,
+        "total": 15
+      },
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "low"
+        }
+      ],
+      "summary": "iOS之深入解析渲染的底层原理_╰つ栺尖篴夢ゞ的博客-CSDN博客_ios 视图渲染原理 一、计算机渲染原理① CPU 与 GPU 的架构对于现代计算机系统，简",
+      "indexed_at": "2026-03-31T09:15:00"
     }
   ],
-  "last_updated": "2026-03-31T07:45:00",
+  "last_updated": "2026-03-31T08:45:00",
   "total_indexed": 324
 }
