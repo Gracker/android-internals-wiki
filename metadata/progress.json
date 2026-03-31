@@ -8,7 +8,7 @@
     "reviewed": 1,
     "finalized": 3,
     "staging_drafts": 0,
-    "last_updated": "2026-04-01T00:30:01.030651"
+    "last_updated": "2026-04-01T02:22:00+08:00"
   },
   "reviewed_sections": {
     "8.1": {
@@ -319,10 +319,21 @@
       "extensions_total": 3,
       "verification_level": "L2",
       "word_count": "~8000"
+    },
+    {
+      "section": "5.6",
+      "title": "Android 功耗管理",
+      "completed_at": "2026-04-01T02:22:00+08:00",
+      "anchors_covered": 5,
+      "anchors_total": 5,
+      "extensions_covered": 3,
+      "extensions_total": 3,
+      "verification_level": "L2",
+      "word_count": "~9500"
     }
   ],
   "ready_for_review": 4,
-  "last_updated": "2026-04-01T00:30:01.030651",
+  "last_updated": "2026-04-01T02:22:00+08:00",
   "stats": {
     "total": 97,
     "completed": 24,
@@ -417,6 +428,13 @@
       "title": "Thermal 管控",
       "action": "draft-completed",
       "word_count": "~8000"
+    },
+    {
+      "date": "2026-04-01",
+      "section": "5.6",
+      "title": "Android 功耗管理",
+      "action": "draft-completed",
+      "word_count": "~9500"
     }
   ]
 }
