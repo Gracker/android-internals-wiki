@@ -3,8 +3,8 @@
   "total_sections": 93,
   "metrics": {
     "total": 102,
-    "draft": 90,
-    "ready-for-review": 12,
+    "draft": 91,
+    "ready-for-review": 11,
     "reviewed": 0,
     "finalized": 0,
     "staging_drafts": 0
@@ -184,25 +184,14 @@
       "extensions_total": 2,
       "verification_level": "L2",
       "word_count": "~7500"
-    },
-    {
-      "section": "4.1",
-      "title": "Android 内存模型全景",
-      "completed_at": "2026-03-31T09:56:38.219714",
-      "anchors_covered": 5,
-      "anchors_total": 5,
-      "extensions_covered": 2,
-      "extensions_total": 2,
-      "verification_level": "L2",
-      "word_count": "~7500"
     }
   ],
   "ready_for_review": 10,
-  "last_updated": "2026-03-31T09:56:38.219714",
+  "last_updated": "2026-03-31T08:20:00+08:00",
   "stats": {
     "total": 102,
-    "completed": 14,
-    "pending": 88,
+    "completed": 13,
+    "pending": 89,
     "last_updated": "2026-03-31T08:20:00+08:00"
   },
   "research_stats": {

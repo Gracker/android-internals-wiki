@@ -585,6 +585,55 @@
         "Android 16 中 Predictive Back 在低端设备上的掉帧率优化",
         "lmkd 在 Android 16 中与手势导航的交互（如有）"
       ]
+    },
+    {
+      "section": "4.1",
+      "title": "Android 内存模型全景",
+      "verification_time": "2026-03-31T09:57:20.834195",
+      "level": "L2",
+      "anchors_verified": [
+        {
+          "anchor": "Android 内存模型全景（物理内存→内核→用户空间）",
+          "status": "verified",
+          "source": "developer.android.com/topic/performance/memory-management"
+        },
+        {
+          "anchor": "关键内存指标：VSS/RSS/PSS/USS",
+          "status": "verified",
+          "source": "developer.android.com/studio/profile/investigate-ram"
+        },
+        {
+          "anchor": "进程内存组成（Java/Native/Code/Stack/Graphics）",
+          "status": "verified",
+          "source": "developer.android.com/topic/performance/memory-management"
+        },
+        {
+          "anchor": "procfs 接口（meminfo/status/smaps）",
+          "status": "verified",
+          "source": "kernel.org/doc/Documentation/filesystems/proc.txt"
+        },
+        {
+          "anchor": "dumpsys meminfo 解读方法",
+          "status": "verified",
+          "source": "developer.android.com/studio/profile/investigate-ram"
+        }
+      ],
+      "extensions_verified": [
+        {
+          "extension": "cgroup v1/v2 对内存控制的作用",
+          "status": "verified",
+          "source": "source.android.com/docs/core/perf/cgroups"
+        },
+        {
+          "extension": "ZRAM/Swap 在 Android 上的使用与配置",
+          "status": "verified",
+          "source": "source.android.com/docs/core/perf/lmkd"
+        }
+      ],
+      "pending_items": [
+        "Perfetto 内存面板截图待补充",
+        "dumpsys meminfo 真机截图待补充"
+      ]
     }
   ]
 }
