@@ -725,6 +725,41 @@
         "16KB 页面在 Android 16 Perfetto 中的实际表现"
       ],
       "summary": "所有5个锚点已覆盖并验证，1个扩展（16KB Page Size）已覆盖，2个扩展（KASAN/MTE、Huge Pages）标注待补充，1条自动发现（Silk 论文）"
+    },
+    {
+      "section": "4.4",
+      "title": "Low Memory Killer",
+      "verified_at": "2026-03-31T18:23:00+08:00",
+      "verification_results": {
+        "L1_aosp": {
+          "count": 3,
+          "details": [
+            "ProcessList.java oom_adj constants",
+            "lmkd.cpp PSI threshold logic",
+            "lowmemorykiller.c (historical)"
+          ]
+        },
+        "L2_official": {
+          "count": 4,
+          "details": [
+            "source.android.com/docs/core/perf/lmkd",
+            "developer.android.com ComponentCallbacks2",
+            "developer.android.com 16KB Page Size",
+            "perfetto.dev ftrace config"
+          ]
+        },
+        "L4_cross": {
+          "count": 2,
+          "details": [
+            "Android Developers Blog lmkd post",
+            "LPC 2019 PSI presentation"
+          ]
+        },
+        "pending": [
+          "OEM 厂商具体定制策略",
+          "Perfetto 截图"
+        ]
+      }
     }
   ]
 }

@@ -1,41 +1,43 @@
 {
   "total_files": 241,
-  "indexed_files": 563,
+  "indexed_files": 649,
   "chapters_distribution": {
     "待定": 1,
-    "ch05-渲染": 96,
-    "ch04-启动": 23,
-    "ch12-安全": 15,
-    "ch01-架构": 42,
-    "ch13-调度": 39,
-    "ch03-线程": 22,
-    "ch07-内存": 37,
-    "ch11-Profiling": 59,
-    "ch09-网络": 9,
-    "ch15-Kotlin": 18,
-    "ch14-工具": 37,
-    "ch02-进程": 10,
-    "ch06": 10,
-    "ch04": 12,
-    "ch12": 10,
-    "ch01": 24,
-    "ch08": 2,
-    "ch03": 14,
-    "ch15": 12,
-    "ch13": 25,
-    "ch02": 5,
-    "ch11": 10,
-    "ch07": 20,
-    "ch05": 63,
+    "ch05-渲染": 116,
+    "ch04-启动": 35,
+    "ch12-安全": 21,
+    "ch01-架构": 56,
+    "ch13-调度": 45,
+    "ch03-线程": 28,
+    "ch07-内存": 44,
+    "ch11-Profiling": 69,
+    "ch09-网络": 8,
+    "ch15-Kotlin": 21,
+    "ch14-工具": 43,
+    "ch02-进程": 21,
+    "unknown": 170,
     "ch16-构建": 11,
     "ch17-新版本": 5,
     "ch10-包体积": 9,
-    "ch08-存储": 12,
-    "ch06-功耗": 4,
-    "ch16": 2,
-    "ch14": 14,
-    "ch17": 8,
-    "ch09": 43
+    "ch08-存储": 14,
+    "ch06-功耗": 5,
+    "ch04": 5,
+    "ch14": 6,
+    "ch01": 3,
+    "ch05": 38,
+    "ch11": 2,
+    "ch17": 1,
+    "ch15": 3,
+    "ch06": 4,
+    "ch12": 7,
+    "ch13": 5,
+    "ch07": 6,
+    "ch03": 6,
+    "ch02": 1,
+    "ch09": 43,
+    "ch08": 1,
+    "ch07-流畅性": 2,
+    "ch11-工具": 1
   },
   "files": [
     {
@@ -12220,8 +12222,2377 @@
         "verifiability": 4
       },
       "indexed_at": "2026-03-31T12:24:45.798832"
+    },
+    {
+      "path": "Cubox/【Android Native】信号的底层逻辑-2024-09-25.md",
+      "title": "【Android Native】信号的底层逻辑",
+      "scores": {
+        "relevance": 4,
+        "depth": 4,
+        "timeliness": 5,
+        "verifiability": 4
+      },
+      "total_score": 17,
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch02-进程",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch12-安全",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "分析Android中Signal底层运作逻辑",
+      "indexed_at": "2026-03-31T12:51:00"
+    },
+    {
+      "path": "Cubox/【Android V】SkSurface_Ganesh总结-2025-02-19.md",
+      "title": "【Android V】SkSurface_Ganesh总结",
+      "scores": {
+        "relevance": 5,
+        "depth": 4,
+        "timeliness": 5,
+        "verifiability": 4
+      },
+      "total_score": 18,
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Android V中SkSurface_Ganesh渲染总结",
+      "indexed_at": "2026-03-31T12:51:00"
+    },
+    {
+      "path": "Cubox/【Android V】skia绘制分析-2024-11-12.md",
+      "title": "【Android V】skia绘制分析",
+      "scores": {
+        "relevance": 5,
+        "depth": 4,
+        "timeliness": 5,
+        "verifiability": 3
+      },
+      "total_score": 17,
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Android V版本中Skia绘制流程深入分析",
+      "indexed_at": "2026-03-31T12:51:00"
+    },
+    {
+      "path": "Cubox/【Android】深入底层Binder拦截-2024-01-10.md",
+      "title": "【Android】深入底层Binder拦截",
+      "scores": {
+        "relevance": 5,
+        "depth": 4,
+        "timeliness": 4,
+        "verifiability": 4
+      },
+      "total_score": 17,
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch01-架构",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch12-安全",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "深入分析Android Binder底层拦截机制",
+      "indexed_at": "2026-03-31T12:51:00"
+    },
+    {
+      "path": "Cubox/【Android原生问题分析】夸克、抖音划动无响应问题【Android14】 - 掘金-2024-11-17.md",
+      "title": "夸克抖音划动无响应问题分析",
+      "scores": {
+        "relevance": 5,
+        "depth": 4,
+        "timeliness": 5,
+        "verifiability": 4
+      },
+      "total_score": 18,
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch04-启动",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Android 14划动无响应问题排查含log分析",
+      "indexed_at": "2026-03-31T12:51:00"
+    },
+    {
+      "path": "Cubox/【Shader篇】GPU架构与其逻辑管线-2023-08-10.md",
+      "title": "【Shader篇】GPU架构与其逻辑管线",
+      "scores": {
+        "relevance": 5,
+        "depth": 4,
+        "timeliness": 4,
+        "verifiability": 3
+      },
+      "total_score": 16,
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "high"
+        }
+      ],
+      "summary": "从GPU架构出发解析Shader执行原理",
+      "indexed_at": "2026-03-31T12:51:00"
+    },
+    {
+      "path": "Cubox/【Simpleperf】Android的CPU分析，性能优化利器_Yngz_Miao的博客-CSDN博客_simpleperf-2023-01-12.md",
+      "title": "Simpleperf Android CPU分析性能优化利器",
+      "scores": {
+        "relevance": 5,
+        "depth": 4,
+        "timeliness": 3,
+        "verifiability": 5
+      },
+      "total_score": 17,
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch11-Profiling",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch14-工具",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Simpleperf工具使用详解CPU性能分析",
+      "indexed_at": "2026-03-31T12:51:00"
+    },
+    {
+      "path": "Cubox/【V】Surface的size分析 - 掘金-2024-06-14.md",
+      "title": "【V】Surface的size分析",
+      "scores": {
+        "relevance": 5,
+        "depth": 4,
+        "timeliness": 4,
+        "verifiability": 4
+      },
+      "total_score": 17,
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "high"
+        }
+      ],
+      "summary": "分析Surface的render size与screen size区别",
+      "indexed_at": "2026-03-31T12:51:00"
+    },
+    {
+      "path": "Cubox/【V】native_window_set_buffers_timestamp介绍 - 掘金-2024-06-16.md",
+      "title": "【V】native_window_set_buffers_timestamp介绍",
+      "scores": {
+        "relevance": 5,
+        "depth": 4,
+        "timeliness": 4,
+        "verifiability": 5
+      },
+      "total_score": 18,
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "high"
+        }
+      ],
+      "summary": "native_window_set_buffers_timestamp函数详解",
+      "indexed_at": "2026-03-31T12:51:00"
+    },
+    {
+      "path": "Cubox/【原理篇】《BPF性能之巅》如何快速分析系统的 I-O 瓶颈？-2024-01-30.md",
+      "title": "BPF性能之巅：快速分析系统I/O瓶颈",
+      "scores": {
+        "relevance": 4,
+        "depth": 4,
+        "timeliness": 4,
+        "verifiability": 4
+      },
+      "total_score": 16,
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch08-存储",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch11-Profiling",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "使用BPF工具快速定位系统I/O瓶颈",
+      "indexed_at": "2026-03-31T12:51:00"
+    },
+    {
+      "path": "Cubox/【快速入门】Perfetto - Android性能追踪、系统分析工具上手文档 - 知乎-2023-02-28.md",
+      "title": "Perfetto快速入门上手文档",
+      "scores": {
+        "relevance": 5,
+        "depth": 4,
+        "timeliness": 4,
+        "verifiability": 5
+      },
+      "total_score": 18,
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch11-Profiling",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch14-工具",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Perfetto快速入门指南系统级应用级跟踪",
+      "indexed_at": "2026-03-31T12:51:00"
+    },
+    {
+      "path": "Cubox/【性能优化】使用Perfetto定位应用启动性能的瓶颈 - 掘金-2024-01-05.md",
+      "title": "使用Perfetto定位应用启动性能瓶颈",
+      "scores": {
+        "relevance": 5,
+        "depth": 4,
+        "timeliness": 4,
+        "verifiability": 5
+      },
+      "total_score": 18,
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch11-Profiling",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch04-启动",
+          "confidence": "high"
+        }
+      ],
+      "summary": "使用Perfetto分析识别应用启动性能瓶颈",
+      "indexed_at": "2026-03-31T12:51:00"
+    },
+    {
+      "path": "Cubox/【Android Native】信号的底层逻辑-2024-09-27.md",
+      "title": "【Android Native】信号的底层逻辑(副本)",
+      "scores": {
+        "relevance": 4,
+        "depth": 4,
+        "timeliness": 5,
+        "verifiability": 4
+      },
+      "total_score": 17,
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch02-进程",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch12-安全",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Android信号底层逻辑分析（重复收藏）",
+      "indexed_at": "2026-03-31T12:51:00"
+    },
+    {
+      "path": "Cubox/【Android ART】回退到解释执行-2024-05-22.md",
+      "title": "【Android ART】回退到解释执行",
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 4,
+        "verifiability": 3
+      },
+      "total_score": 14,
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch07-内存",
+          "confidence": "medium"
+        },
+        {
+          "chapter": "ch01-架构",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "ART虚拟机deoptimize机制分析",
+      "indexed_at": "2026-03-31T12:51:00"
+    },
+    {
+      "path": "Cubox/【Android Monkey源码解析一】-系统执行 - 知乎-2022-03-21.md",
+      "title": "【Android Monkey源码解析一】系统执行",
+      "scores": {
+        "relevance": 3,
+        "depth": 4,
+        "timeliness": 3,
+        "verifiability": 4
+      },
+      "total_score": 14,
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch14-工具",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Android Monkey测试工具源码解析",
+      "indexed_at": "2026-03-31T12:51:00"
+    },
+    {
+      "path": "Cubox/【Android Monkey源码解析三】- 运行解析 - 知乎-2022-03-21.md",
+      "title": "【Android Monkey源码解析三】运行解析",
+      "scores": {
+        "relevance": 3,
+        "depth": 4,
+        "timeliness": 3,
+        "verifiability": 4
+      },
+      "total_score": 14,
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch14-工具",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Monkey运行时解析run方法执行流程",
+      "indexed_at": "2026-03-31T12:51:00"
+    },
+    {
+      "path": "Cubox/【Android Monkey源码解析二】- 参数解析 - 知乎-2022-03-21.md",
+      "title": "【Android Monkey源码解析二】参数解析",
+      "scores": {
+        "relevance": 3,
+        "depth": 4,
+        "timeliness": 3,
+        "verifiability": 4
+      },
+      "total_score": 14,
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch14-工具",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Monkey命令行参数解析源码分析",
+      "indexed_at": "2026-03-31T12:51:00"
+    },
+    {
+      "path": "Cubox/【Android Monkey源码解析四】- 异常捕获-页面控制 - 知乎-2022-03-21.md",
+      "title": "【Android Monkey源码解析四】异常捕获页面控制",
+      "scores": {
+        "relevance": 3,
+        "depth": 4,
+        "timeliness": 3,
+        "verifiability": 4
+      },
+      "total_score": 14,
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch14-工具",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Monkey异常捕获与页面控制机制",
+      "indexed_at": "2026-03-31T12:51:00"
+    },
+    {
+      "path": "Cubox/【Android】拨开“类加载”的迷雾-2024-12-05.md",
+      "title": "【Android】拨开类加载的迷雾",
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 5,
+        "verifiability": 3
+      },
+      "total_score": 15,
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch01-架构",
+          "confidence": "high"
+        }
+      ],
+      "summary": "深入解析Android类加载机制",
+      "indexed_at": "2026-03-31T12:51:00"
+    },
+    {
+      "path": "Cubox/【GDE 分享】移植 Mediapipe LLM Demo 到 Kotlin Multiplatform-2024-12-04.md",
+      "title": "移植Mediapipe LLM Demo到KMP",
+      "scores": {
+        "relevance": 3,
+        "depth": 3,
+        "timeliness": 5,
+        "verifiability": 3
+      },
+      "total_score": 14,
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch15-Kotlin",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Mediapipe LLM Demo移植到KMP的实践",
+      "indexed_at": "2026-03-31T12:51:00"
+    },
+    {
+      "path": "Cubox/【Hummer Flutter引擎】Flutter破坏Dart堆数据问题分析和解决-2022-04-30.md",
+      "title": "Flutter破坏Dart堆数据问题分析",
+      "scores": {
+        "relevance": 4,
+        "depth": 4,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "total_score": 14,
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "medium"
+        },
+        {
+          "chapter": "ch07-内存",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Flutter引擎中Dart堆数据被破坏问题分析",
+      "indexed_at": "2026-03-31T12:51:00"
+    },
+    {
+      "path": "Cubox/【Hummer 引擎优化系列】究极GC难题定位记-2022-07-08.md",
+      "title": "究极GC难题定位记",
+      "scores": {
+        "relevance": 4,
+        "depth": 4,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "total_score": 14,
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch07-内存",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Flutter 2.2.3升级后GC相关崩溃分析",
+      "indexed_at": "2026-03-31T12:51:00"
+    },
+    {
+      "path": "Cubox/【从源码过反调试】给安卓 12 内核增加个 syscall-2023-01-09.md",
+      "title": "给安卓12内核增加syscall反调试",
+      "scores": {
+        "relevance": 3,
+        "depth": 4,
+        "timeliness": 3,
+        "verifiability": 4
+      },
+      "total_score": 14,
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch12-安全",
+          "confidence": "high"
+        }
+      ],
+      "summary": "在Android 12内核中添加自定义syscall反调试",
+      "indexed_at": "2026-03-31T12:51:00"
+    },
+    {
+      "path": "Cubox/【双语视界】【硬核科普】CPU调度算法：让电脑流畅运行的核心原理-2025-05-28.md",
+      "title": "CPU调度算法核心原理",
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 5,
+        "verifiability": 2
+      },
+      "total_score": 14,
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch13-调度",
+          "confidence": "high"
+        }
+      ],
+      "summary": "CPU调度算法科普视频进程调度核心原理",
+      "indexed_at": "2026-03-31T12:51:00"
+    },
+    {
+      "path": "Cubox/【图文】小白测评数据库5.0更新 小米OPPO苹果vivo荣耀等机型续航新测-2025-11-29.md",
+      "title": "小白测评数据库5.0续航新测",
+      "scores": {
+        "relevance": 3,
+        "depth": 2,
+        "timeliness": 5,
+        "verifiability": 3
+      },
+      "total_score": 13,
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch06-功耗",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "多机型续航横向测试数据",
+      "indexed_at": "2026-03-31T12:51:00"
+    },
+    {
+      "path": "Cubox/【干货】言简意赅 Android 架构设计与挑选 - 掘金-2022-06-06.md",
+      "title": "Android架构设计与挑选",
+      "scores": {
+        "relevance": 4,
+        "depth": 2,
+        "timeliness": 3,
+        "verifiability": 2
+      },
+      "total_score": 11,
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch01-架构",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Android应用架构模式对比与选择建议",
+      "indexed_at": "2026-03-31T12:51:00"
+    },
+    {
+      "path": "Cubox/【开源分享】深挖 Linux 内核的新功能特性，以 io_uring, cgroup, ebpf, llvm 为代表，包含开源项目，代码案例，文章，视频，架构脑图等 - 知乎-2022-02-27.md",
+      "title": "深挖Linux内核新功能特性",
+      "scores": {
+        "relevance": 4,
+        "depth": 4,
+        "timeliness": 3,
+        "verifiability": 4
+      },
+      "total_score": 15,
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch08-存储",
+          "confidence": "medium"
+        },
+        {
+          "chapter": "ch11-Profiling",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Linux内核新特性汇总io_uring cgroup eBPF",
+      "indexed_at": "2026-03-31T12:51:00"
+    },
+    {
+      "file": "Cubox/【性能优化】使用Perfetto定位应用启动性能的瓶颈-2023-08-03.md",
+      "title": "【性能优化】使用Perfetto定位应用启动性能的瓶颈",
+      "scores": {
+        "relevance": 5,
+        "depth": 4,
+        "timeliness": 4,
+        "verifiability": 4
+      },
+      "total_score": 17,
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch04-启动",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch11-Profiling",
+          "confidence": "high"
+        }
+      ],
+      "summary": "结合实际使用经历，讲解使用Perfetto测量车载应用启动时间并分析性能瓶颈的方法",
+      "indexed_at": "2026-03-31T13:15:00"
+    },
+    {
+      "file": "Cubox/【性能优化】使用Perfetto定位应用启动性能的瓶颈-2024-10-21.md",
+      "title": "【性能优化】使用Perfetto定位应用启动性能的瓶颈（重复收藏）",
+      "scores": {
+        "relevance": 5,
+        "depth": 4,
+        "timeliness": 4,
+        "verifiability": 4
+      },
+      "total_score": 17,
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch04-启动",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch11-Profiling",
+          "confidence": "high"
+        }
+      ],
+      "summary": "同上，Perfetto测量车载应用启动时间并分析性能瓶颈",
+      "indexed_at": "2026-03-31T13:15:00"
+    },
+    {
+      "file": "Cubox/【笔记】Android 耗时统计概述 对于 Android 的耗时统计，在 Android 7.0, 增加了一个 Api - 掘金-2025-03-31.md",
+      "title": "Android 耗时统计概述",
+      "scores": {
+        "relevance": 5,
+        "depth": 4,
+        "timeliness": 5,
+        "verifiability": 4
+      },
+      "total_score": 18,
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch04-启动",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch11-Profiling",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Android 7.0+ Window View树绘制耗时统计API及Choreographer方案",
+      "indexed_at": "2026-03-31T13:15:00"
+    },
+    {
+      "file": "Cubox/【案例】奇怪，为什么Hook不生效？-2024-10-10.md",
+      "title": "奇怪，为什么Hook不生效？",
+      "scores": {
+        "relevance": 3,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "total_score": 12,
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch01-架构",
+          "confidence": "medium"
+        },
+        {
+          "chapter": "ch12-安全",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "通过代理替换方式Hook方法时部分生效部分不生效的案例分析与解决",
+      "indexed_at": "2026-03-31T13:15:00"
+    },
+    {
+      "file": "Cubox/【直播回顾】谷歌社区说｜Android 开发者的跨平台 - Flutter or Compose ？-2022-11-25.md",
+      "title": "Android 开发者的跨平台 - Flutter or Compose？",
+      "scores": {
+        "relevance": 3,
+        "depth": 2,
+        "timeliness": 3,
+        "verifiability": 2
+      },
+      "total_score": 10,
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "low"
+        }
+      ],
+      "summary": "Flutter GDE分享Flutter与Compose跨平台方案对比",
+      "indexed_at": "2026-03-31T13:15:00"
+    },
+    {
+      "file": "Cubox/【线上故障】通过系统日志分析和定位-2022-02-07.md",
+      "title": "通过系统日志分析和定位线上故障",
+      "scores": {
+        "relevance": 3,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "total_score": 12,
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch14-工具",
+          "confidence": "medium"
+        },
+        {
+          "chapter": "ch11-Profiling",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "通过系统日志分析和定位线上故障的方法与实践",
+      "indexed_at": "2026-03-31T13:15:00"
+    },
+    {
+      "file": "Cubox/【译】Netflix APP已经用上Kotlin 跨平台（KM）了 - 掘金-2023-02-26.md",
+      "title": "Netflix APP已经用上Kotlin跨平台（KM）",
+      "scores": {
+        "relevance": 3,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 2
+      },
+      "total_score": 11,
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch15-Kotlin",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Netflix使用Kotlin Multiplatform开发实体电视节目制作App Prodicle的实践",
+      "indexed_at": "2026-03-31T13:15:00"
+    },
+    {
+      "file": "Cubox/【车载Android】模拟Android系统的高负载环境-2024-04-27.md",
+      "title": "车载Android：模拟Android系统的高负载环境",
+      "scores": {
+        "relevance": 4,
+        "depth": 4,
+        "timeliness": 4,
+        "verifiability": 4
+      },
+      "total_score": 16,
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch02-进程",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch13-调度",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "车载Android高负载环境模拟方法，同时运行地图、智驾、视频等资源密集应用测试",
+      "indexed_at": "2026-03-31T13:15:00"
+    },
+    {
+      "file": "Cubox/【车载Android】模拟Android系统的高负载环境-2024-10-21.md",
+      "title": "车载Android：模拟Android系统的高负载环境（重复收藏）",
+      "scores": {
+        "relevance": 4,
+        "depth": 4,
+        "timeliness": 4,
+        "verifiability": 4
+      },
+      "total_score": 16,
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch02-进程",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch13-调度",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "同上，车载Android高负载环境模拟方法",
+      "indexed_at": "2026-03-31T13:15:00"
+    },
+    {
+      "file": "Cubox/【车载性能优化】将线程&进程运行在期望的CPU核心上-2024-10-21.md",
+      "title": "将线程&进程运行在期望的CPU核心上",
+      "scores": {
+        "relevance": 5,
+        "depth": 4,
+        "timeliness": 4,
+        "verifiability": 4
+      },
+      "total_score": 17,
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch03-线程",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch13-调度",
+          "confidence": "high"
+        }
+      ],
+      "summary": "车载Android中将线程和进程绑定到指定CPU核心的前后台差异化调度策略",
+      "indexed_at": "2026-03-31T13:15:00"
+    },
+    {
+      "file": "Cubox/【转】今日头条 ANR 优化实践系列（1）- 设计原理及影响因素 - Cyrus Blog-2023-12-06.md",
+      "title": "今日头条ANR优化实践(1)：设计原理及影响因素",
+      "scores": {
+        "relevance": 5,
+        "depth": 5,
+        "timeliness": 4,
+        "verifiability": 5
+      },
+      "total_score": 19,
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch02-进程",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch03-线程",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch11-Profiling",
+          "confidence": "high"
+        }
+      ],
+      "summary": "ANR设计原理深入分析，覆盖消息调度、输入事件超时、Service/Broadcast/Provider超时机制",
+      "indexed_at": "2026-03-31T13:15:00"
+    },
+    {
+      "file": "Cubox/【转】今日头条 ANR 优化实践系列（2）- 监控工具与分析思路 - Cyrus Blog-2023-12-06.md",
+      "title": "今日头条ANR优化实践(2)：监控工具与分析思路",
+      "scores": {
+        "relevance": 5,
+        "depth": 5,
+        "timeliness": 4,
+        "verifiability": 5
+      },
+      "total_score": 19,
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch02-进程",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch11-Profiling",
+          "confidence": "high"
+        }
+      ],
+      "summary": "应用侧ANR消息调度监控工具实现，弥补系统日志信息不足，建立完整分析思路",
+      "indexed_at": "2026-03-31T13:15:00"
+    },
+    {
+      "file": "Cubox/【转】今日头条 ANR 优化实践系列（3）- 实例剖析集锦 - Cyrus Blog-2023-12-06.md",
+      "title": "今日头条ANR优化实践(3)：实例剖析集锦",
+      "scores": {
+        "relevance": 5,
+        "depth": 5,
+        "timeliness": 4,
+        "verifiability": 5
+      },
+      "total_score": 19,
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch02-进程",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch03-线程",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch11-Profiling",
+          "confidence": "high"
+        }
+      ],
+      "summary": "六大ANR场景线上案例剖析：消息耗时、业务密集、进程内外资源抢占、NativePollOnce",
+      "indexed_at": "2026-03-31T13:15:00"
+    },
+    {
+      "file": "Cubox/【转】今日头条 ANR 优化实践系列（4）- Barrier 导致主线程假死 - Cyrus Blo...-2023-12-06.md",
+      "title": "今日头条ANR优化实践(4)：Barrier导致主线程假死",
+      "scores": {
+        "relevance": 5,
+        "depth": 5,
+        "timeliness": 4,
+        "verifiability": 5
+      },
+      "total_score": 19,
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch02-进程",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch03-线程",
+          "confidence": "high"
+        }
+      ],
+      "summary": "深入分析Barrier机制导致主线程假死的原理，同步屏障与异步消息处理问题",
+      "indexed_at": "2026-03-31T13:15:00"
+    },
+    {
+      "file": "Cubox/【转】今日头条 ANR 优化实践系列（5）- 告别 SharedPreference 等待 - Cy...-2023-12-06.md",
+      "title": "今日头条ANR优化实践(5)：告别SharedPreference等待",
+      "scores": {
+        "relevance": 5,
+        "depth": 5,
+        "timeliness": 4,
+        "verifiability": 4
+      },
+      "total_score": 18,
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch02-进程",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch08-存储",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch11-Profiling",
+          "confidence": "high"
+        }
+      ],
+      "summary": "SP的apply/wait机制在系统组件中的设计冲突导致ANR的深入分析与优化方案",
+      "indexed_at": "2026-03-31T13:15:00"
+    },
+    {
+      "file": "Cubox/【问题】Debuggable app在Android 14上运行卡顿-2024-04-02.md",
+      "title": "Debuggable app在Android 14上运行卡顿",
+      "scores": {
+        "relevance": 4,
+        "depth": 4,
+        "timeliness": 4,
+        "verifiability": 4
+      },
+      "total_score": 16,
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch14-工具",
+          "confidence": "high"
+        }
+      ],
+      "summary": "debuggable版app在Android 14上卡顿问题分析，疑似虚拟机相关，向谷歌提Bug",
+      "indexed_at": "2026-03-31T13:15:00"
+    },
+    {
+      "file": "Cubox/【问题分析】WMS无焦点窗口的ANR问题【Android 14】_waiting because no window has focus but activityre-CSDN博客-2025-03-0.md",
+      "title": "WMS无焦点窗口的ANR问题（Android 14）",
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 4,
+        "verifiability": 4
+      },
+      "total_score": 15,
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch01-架构",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch02-进程",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Android 14中WMS无焦点窗口导致ANR的问题分析",
+      "indexed_at": "2026-03-31T13:15:00"
+    },
+    {
+      "file": "Cubox/【音视频】视频播放卡顿问题的分析和解决丨音视频实战经验-2025-01-13.md",
+      "title": "视频播放卡顿问题的分析和解决",
+      "scores": {
+        "relevance": 3,
+        "depth": 3,
+        "timeliness": 4,
+        "verifiability": 3
+      },
+      "total_score": 13,
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "视频播放卡顿问题分析架构图与伪代码解决方案",
+      "indexed_at": "2026-03-31T13:15:00"
+    },
+    {
+      "file": "Cubox/一个大型 Android 项目的模块划分哲学-2024-11-05.md",
+      "title": "一个大型Android项目的模块划分哲学",
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 4,
+        "verifiability": 3
+      },
+      "total_score": 14,
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch01-架构",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch16-构建",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "大型Android项目模块划分的哲学思考与实践经验",
+      "indexed_at": "2026-03-31T13:15:00"
+    },
+    {
+      "file": "Cubox/一个循环依赖引发的严重内存泄露分析循环依赖导致了严重的内存泄露，这是一个发生在鸿蒙上的真实案例，同时所有使用对象追踪gc - 掘金-2025-07-27.md",
+      "title": "循环依赖引发的严重内存泄露分析",
+      "scores": {
+        "relevance": 4,
+        "depth": 4,
+        "timeliness": 5,
+        "verifiability": 4
+      },
+      "total_score": 17,
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch07-内存",
+          "confidence": "high"
+        }
+      ],
+      "summary": "鸿蒙上循环依赖导致内存泄露的真实案例，适用于Java/Go等所有GC语言",
+      "indexed_at": "2026-03-31T13:15:00"
+    },
+    {
+      "file": "Cubox/一个新进程的内核之旅-2022-02-28.md",
+      "title": "一个新进程的内核之旅",
+      "scores": {
+        "relevance": 5,
+        "depth": 4,
+        "timeliness": 3,
+        "verifiability": 4
+      },
+      "total_score": 16,
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch02-进程",
+          "confidence": "high"
+        }
+      ],
+      "summary": "从用户态触发、内核fork、copy_process到新进程调度的完整流程解析",
+      "indexed_at": "2026-03-31T13:15:00"
+    },
+    {
+      "file": "Cubox/一文搞定Android VSync机制来龙去脉-2023-08-10.md",
+      "title": "一文搞定Android VSync机制来龙去脉",
+      "scores": {
+        "relevance": 5,
+        "depth": 4,
+        "timeliness": 3,
+        "verifiability": 4
+      },
+      "total_score": 16,
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch07-流畅性",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Android VSync机制完整解析：VSync来源、虚拟化、同步、分发，涵盖Choreographer与SurfaceFlinger协作",
+      "indexed_at": "2026-03-31T14:04:20"
+    },
+    {
+      "file": "Cubox/一帧从 app 到上屏的  systrace 图示-2025-09-06.md",
+      "title": "一帧从 app 到上屏的 systrace 图示",
+      "scores": {
+        "relevance": 5,
+        "depth": 4,
+        "timeliness": 4,
+        "verifiability": 4
+      },
+      "total_score": 17,
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch07-流畅性",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch11-工具",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "用systrace图示完整展示一帧从App处理→RenderThread→SurfaceFlinger→屏幕上屏的全流程",
+      "indexed_at": "2026-03-31T14:04:20"
+    },
+    {
+      "file": "Cubox/万字长文，GPU Render Engine 详细介绍-2023-05-15.md",
+      "title": "万字长文，GPU Render Engine 详细介绍",
+      "scores": {
+        "relevance": 4,
+        "depth": 1,
+        "timeliness": 4,
+        "verifiability": 1
+      },
+      "total_score": 10,
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "万字长文，GPU Render Engine 详细介绍 本文主要介绍 render 引擎， 从 GPU 渲染的硬件单元，到用户态顶点，命令等数据下发给 GPU ..."
+    },
+    {
+      "file": "Cubox/不改一行业务代码，飞书 iOS 低端机启动优化实践-2022-08-24.md",
+      "title": "不改一行业务代码，飞书 iOS 低端机启动优化实践",
+      "scores": {
+        "relevance": 4,
+        "depth": 1,
+        "timeliness": 4,
+        "verifiability": 1
+      },
+      "total_score": 10,
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch03-线程",
+          "confidence": "medium"
+        },
+        {
+          "chapter": "ch04-启动",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "不改一行业务代码，飞书 iOS 低端机启动优化实践 增加并发是否是启动优化的良策？本文将结合飞书 iOS 端启动优化，探索 QoS 对线程调度的影响。 Read..."
+    },
+    {
+      "title": "云音乐 Android Baseline Profiles 实践",
+      "path": "Cubox/云音乐 Android Baseline Profiles 实践-2024-07-15.md",
+      "score": 16,
+      "chapters": [
+        {
+          "chapter": "ch04-启动",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch13-工具",
+          "confidence": "medium"
+        }
+      ],
+      "confidence": "high",
+      "source_type": "Cubox",
+      "date": "2024-07-15",
+      "summary": "云音乐团队在 Android Baseline Profiles 上的实践，覆盖国内应用市场兼容、加固/热修复场景下的配置文件适配，以及启动和关键路径性能优化。",
+      "keywords": [
+        "Baseline Profiles",
+        "AOT",
+        "启动优化",
+        "加固",
+        "热修复"
+      ]
+    },
+    {
+      "title": "今日头条 ANR 优化实践系列 - 告别 SharedPreference 等待",
+      "path": "Cubox/今日头条 ANR 优化实践系列 - 告别 SharedPreference 等待-2023-12-20.md",
+      "score": 18,
+      "chapters": [
+        {
+          "chapter": "ch09-ANR",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch08-响应",
+          "confidence": "medium"
+        }
+      ],
+      "confidence": "high",
+      "source_type": "Cubox",
+      "date": "2023-12-20",
+      "summary": "从源码层面分析 SharedPreference 在加载和写入过程中导致 ANR 的原因及优化方案。",
+      "keywords": [
+        "ANR",
+        "SharedPreference",
+        "apply",
+        "ANR优化"
+      ]
+    },
+    {
+      "title": "从 ApplicationExitInfo 看 Android 应用的退出类型",
+      "path": "Cubox/从 ApplicationExitInfo 看 Android 应用的退出类型-2024-04-03.md",
+      "score": 18,
+      "chapters": [
+        {
+          "chapter": "ch02-进程",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch07-内存",
+          "confidence": "medium"
+        },
+        {
+          "chapter": "ch09-ANR",
+          "confidence": "medium"
+        }
+      ],
+      "confidence": "high",
+      "source_type": "Cubox",
+      "date": "2024-04-03",
+      "summary": "通过 ApplicationExitInfo API 系统性梳理 Android 应用退出的所有类型，包括 LMK、ANR、crash、用户退出等。",
+      "keywords": [
+        "ApplicationExitInfo",
+        "进程退出",
+        "LMK",
+        "ANR",
+        "crash"
+      ]
+    },
+    {
+      "title": "从 Hprof 源码初探虚拟机内存管理",
+      "path": "Cubox/从 Hprof 源码初探虚拟机内存管理-2022-03-07.md",
+      "score": 16,
+      "scores": {
+        "relevance": 5,
+        "depth": 4,
+        "timeliness": 3,
+        "verifiability": 4
+      },
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch07-内存",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Android hprof 快照格式解析，ART Space 空间管理，不同 Space 的内存回收策略分析"
+    },
+    {
+      "title": "从0到1学Binder-ServiceManager详解(1)",
+      "path": "Cubox/从0到1学Binder-ServiceManager详解(1)-2024-07-01.md",
+      "score": 19,
+      "scores": {
+        "relevance": 5,
+        "depth": 5,
+        "timeliness": 4,
+        "verifiability": 5
+      },
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch01-架构",
+          "confidence": "high"
+        }
+      ],
+      "summary": "讲解 ServiceManager 进程启动中 ProcessState 初始化，包含 binder_open、binder_ioctl 等"
+    },
+    {
+      "title": "从0到1学Binder-环境准备",
+      "path": "Cubox/从0到1学Binder-环境准备-2024-02-04.md",
+      "score": 15,
+      "scores": {
+        "relevance": 5,
+        "depth": 3,
+        "timeliness": 4,
+        "verifiability": 3
+      },
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch01-架构",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Binder 学习系列的环境准备篇，目标是 2024 年完成 Binder 系统学习"
+    },
+    {
+      "title": "从input响应性能差的issue演示perfetto trace用法",
+      "path": "Cubox/从input响应性能差的issue演示perfetto trace用法-2025-02-27.md",
+      "score": 19,
+      "scores": {
+        "relevance": 5,
+        "depth": 4,
+        "timeliness": 5,
+        "verifiability": 5
+      },
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch11-Profiling",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "从 input 响应性能差的实际 issue 出发，演示 Perfetto trace 的分析方法"
+    },
+    {
+      "title": "从一例 Lottie OOM 线上事故读源码",
+      "path": "Cubox/从一例 Lottie OOM 线上事故读源码-2025-07-18.md",
+      "score": 17,
+      "scores": {
+        "relevance": 4,
+        "depth": 4,
+        "timeliness": 5,
+        "verifiability": 4
+      },
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch07-内存",
+          "confidence": "high"
+        }
+      ],
+      "summary": "分析线上 Lottie 动画导致的 OOM 事故，深入源码定位内存泄漏原因"
+    },
+    {
+      "title": "从华为Mate50聊聊手机跟手性",
+      "path": "Cubox/从华为Mate50聊聊手机跟手性-2023-03-13.md",
+      "score": 14,
+      "scores": {
+        "relevance": 4,
+        "depth": 4,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "high"
+        }
+      ],
+      "summary": "从华为 Mate50 出发讨论手机触控跟手性的技术原理和优化"
+    },
+    {
+      "title": "从华为的Link Turbo看android网络优化",
+      "path": "Cubox/从华为的Link Turbo看android网络优化-2024-11-06.md",
+      "score": 17,
+      "scores": {
+        "relevance": 5,
+        "depth": 4,
+        "timeliness": 4,
+        "verifiability": 4
+      },
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch09-网络",
+          "confidence": "high"
+        }
+      ],
+      "summary": "分析华为 Link Turbo 技术实现原理及其在 Android 网络优化中的应用"
+    },
+    {
+      "title": "从 Lambda 表达式到字节码插桩",
+      "path": "Cubox/从 Lambda 表达式到字节码插桩-2022-10-09.md",
+      "score": 15,
+      "scores": {
+        "relevance": 4,
+        "depth": 4,
+        "timeliness": 3,
+        "verifiability": 4
+      },
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch16-构建",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Android 字节码插桩技术应用：无痕埋点、隐私合规、耗时统计、性能检测等"
+    },
+    {
+      "title": "从 GPU 硬件架构到性能优化",
+      "path": "Cubox/从GPU硬件架构到性能优化-2023-06-19.md",
+      "score": 15,
+      "scores": {
+        "relevance": 4,
+        "depth": 4,
+        "timeliness": 3,
+        "verifiability": 4
+      },
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch13-调度",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "GPU 硬件架构原理与移动端 GPU 渲染性能优化实践"
+    },
+    {
+      "title": "从0到1掌握Flutter（一）Flutter与移动端跨平台",
+      "path": "Cubox/从0到1掌握Flutter（一）Flutter与移动端跨平台本文作为《从0到1掌握Flutter》的第一篇文章，初步介绍 - 掘金-2025-02-03.md",
+      "score": 15,
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 5,
+        "verifiability": 3
+      },
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Flutter 系列入门教程，介绍 Flutter 架构与移动端跨平台发展历史"
+    },
+    {
+      "title": "从 Kotlin 开发者角度看 Java 缺失的特性",
+      "path": "Cubox/从 Kotlin 开发者角度看 Java 缺失的特性-2022-08-18.md",
+      "score": 13,
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch15-Kotlin",
+          "confidence": "high"
+        }
+      ],
+      "summary": "从 Kotlin 开发者视角对比 Java 缺失的语言特性"
+    },
+    {
+      "title": "从 SQLlin 的更新看 Kotlin Multiplatform 技术更迭",
+      "path": "Cubox/从 SQLlin 的更新看 Kotlin Multiplatform 技术更迭-2024-01-25.md",
+      "score": 13,
+      "scores": {
+        "relevance": 3,
+        "depth": 3,
+        "timeliness": 4,
+        "verifiability": 3
+      },
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch15-Kotlin",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "通过开源项目 SQLlin 看 Kotlin Multiplatform 一年内的技术迭代"
+    },
+    {
+      "title": "从 Google IO 看移动端发展",
+      "path": "Cubox/从 Google IO 看移动端发展-2025-05-25.md",
+      "score": 13,
+      "scores": {
+        "relevance": 3,
+        "depth": 2,
+        "timeliness": 5,
+        "verifiability": 3
+      },
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch17-新版本",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Google IO 2025 移动端相关发布内容汇总与分析"
+    },
+    {
+      "title": "从入门到精通：如何解决C++模板代码膨胀问题？",
+      "path": "Cubox/从入门到精通：如何解决C++模板代码膨胀问题？-2024-02-21.md",
+      "score": 15,
+      "scores": {
+        "relevance": 3,
+        "depth": 4,
+        "timeliness": 4,
+        "verifiability": 4
+      },
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch10-包体积",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "C++ 模板代码膨胀问题的成因分析与解决技巧，影响包体积优化"
+    },
+    {
+      "title": "从多核到众核处理器",
+      "path": "Cubox/从多核到众核处理器-2022-02-18.md",
+      "score": 11,
+      "scores": {
+        "relevance": 3,
+        "depth": 3,
+        "timeliness": 2,
+        "verifiability": 3
+      },
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch13-调度",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "多核到众核处理器架构演进，与 CPU 调度策略背景知识相关"
+    },
+    {
+      "title": "从无栈协程到 C++异步框架",
+      "path": "Cubox/从无栈协程到 C++异步框架-2022-10-12.md",
+      "score": 15,
+      "scores": {
+        "relevance": 4,
+        "depth": 4,
+        "timeliness": 3,
+        "verifiability": 4
+      },
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch03-线程",
+          "confidence": "high"
+        }
+      ],
+      "summary": "C++ 无栈协程原理与异步框架在业务中的实际使用形态"
+    },
+    {
+      "title": "从显示 Tap 原理一探 Android 12 的 Input 系统",
+      "path": "Cubox/从显示 Tap 原理一探 Android 12 的 Input 系统-2022-03-21.md",
+      "score": 16,
+      "scores": {
+        "relevance": 5,
+        "depth": 4,
+        "timeliness": 3,
+        "verifiability": 4
+      },
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch01-架构",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "从 ViewRootImpl 显示 Tap 原理入手，深入分析 Android 12 Input 系统"
+    },
+    {
+      "title": "从小米14安装不上应用说起【适配64位】",
+      "path": "Cubox/从小米14安装不上应用说起【适配64位】 - 掘金-2024-01-09.md",
+      "score": 13,
+      "scores": {
+        "relevance": 3,
+        "depth": 3,
+        "timeliness": 4,
+        "verifiability": 3
+      },
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch10-包体积",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "64 位应用适配问题，从小米14安装失败分析 ABI 兼容性"
+    },
+    {
+      "path": "Cubox/从源码看Flutter Android端的启动流程-2024-04-07.md",
+      "title": "从源码看Flutter Android端的启动流程",
+      "scores": {
+        "relevance": 4,
+        "depth": 4,
+        "timeliness": 4,
+        "verifiability": 4
+      },
+      "total": 16,
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch04-启动",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "从源码角度分析Flutter在Android端的启动流程，涉及引擎初始化与渲染管线",
+      "indexed_at": "2026-03-31T17:25:16.191029"
+    },
+    {
+      "path": "Cubox/从点击桌面APP图标，到APP界面显示的全流程（二）-基于Android 13(Android T)...-2023-11-06.md",
+      "title": "从点击桌面APP图标到界面显示全流程（二）",
+      "scores": {
+        "relevance": 5,
+        "depth": 5,
+        "timeliness": 4,
+        "verifiability": 5
+      },
+      "total": 19,
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch04-启动",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch01-架构",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Android 13从点击图标到界面显示全流程，详述IMS/AMS/Zygote/SurfaceFlinger调用链",
+      "indexed_at": "2026-03-31T17:25:16.191038"
+    },
+    {
+      "path": "Cubox/从硬件到软件，Linux 时间子系统全栈解析-2024-01-19.md",
+      "title": "从硬件到软件Linux时间子系统全栈解析",
+      "scores": {
+        "relevance": 3,
+        "depth": 5,
+        "timeliness": 4,
+        "verifiability": 4
+      },
+      "total": 16,
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch13-调度",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Linux时间子系统全栈解析，从硬件时钟到软件调度涉及tick/hrtimer/sched",
+      "indexed_at": "2026-03-31T17:25:16.191040"
+    },
+    {
+      "path": "Cubox/从稳定性角度看应用启动时序图 这个图是根据Android P代码画的，和android最新的代码有些差异，但是整体流程无 - 掘金-2024-09-03.md",
+      "title": "从稳定性角度看应用启动时序图",
+      "scores": {
+        "relevance": 5,
+        "depth": 4,
+        "timeliness": 3,
+        "verifiability": 4
+      },
+      "total": 16,
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch04-启动",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch01-架构",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "基于Android P代码的应用启动时序图，从稳定性角度分析启动流程关键节点",
+      "indexed_at": "2026-03-31T17:25:16.191041"
+    },
+    {
+      "path": "Cubox/从计算机图形学的发展简史看GPU的演进-2024-02-05.md",
+      "title": "从计算机图形学发展简史看GPU演进",
+      "scores": {
+        "relevance": 3,
+        "depth": 4,
+        "timeliness": 4,
+        "verifiability": 3
+      },
+      "total": 14,
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "计算机图形学视角下GPU演进历程，帮助理解现代移动GPU架构",
+      "indexed_at": "2026-03-31T17:25:16.191042"
+    },
+    {
+      "path": "Cubox/从进程栈内存底层原理到Segmentation fault报错-2023-02-07.md",
+      "title": "从进程栈内存底层原理到Segmentation fault报错",
+      "scores": {
+        "relevance": 4,
+        "depth": 5,
+        "timeliness": 3,
+        "verifiability": 5
+      },
+      "total": 17,
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch07-内存",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch02-进程",
+          "confidence": "high"
+        }
+      ],
+      "summary": "进程栈内存底层原理分析，从虚拟内存到物理内存映射详解Segfault成因",
+      "indexed_at": "2026-03-31T17:25:16.191043"
+    },
+    {
+      "path": "Cubox/他把闲鱼APP长列表流畅度翻了倍_测试_云从_InfoQ精选文章-2022-09-24.md",
+      "title": "闲鱼APP长列表流畅度翻倍优化",
+      "scores": {
+        "relevance": 5,
+        "depth": 4,
+        "timeliness": 3,
+        "verifiability": 4
+      },
+      "total": 16,
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch14-工具",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "闲鱼长列表滑动流畅度优化实战，从系统全局角度分析掉帧原因",
+      "indexed_at": "2026-03-31T17:25:16.191045"
+    },
+    {
+      "path": "Cubox/代理执行：Linux内核调度器在解决优先级反转问题上的努力-2025-11-10.md",
+      "title": "代理执行：Linux内核调度器解决优先级反转",
+      "scores": {
+        "relevance": 5,
+        "depth": 5,
+        "timeliness": 5,
+        "verifiability": 5
+      },
+      "total": 20,
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch13-调度",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch03-线程",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Linux 6.17 proxy execution机制解析，内核调度器解决优先级反转方案",
+      "indexed_at": "2026-03-31T17:25:16.191046"
+    },
+    {
+      "path": "Cubox/以小窥大：IO 卡顿探寻苹果文件系统-2022-08-04.md",
+      "title": "IO卡顿探寻苹果文件系统APFS",
+      "scores": {
+        "relevance": 3,
+        "depth": 4,
+        "timeliness": 3,
+        "verifiability": 4
+      },
+      "total": 14,
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch08-存储",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "通过IO卡顿问题探究苹果APFS文件系统bug，对Android存储优化有参考价值",
+      "indexed_at": "2026-03-31T17:25:16.191047"
+    },
+    {
+      "path": "Cubox/以感知生命周期的方式观察 Flow 数据-2022-10-27.md",
+      "title": "以感知生命周期的方式观察Flow数据",
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 4
+      },
+      "total": 14,
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch15-Kotlin",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch01-架构",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Android UI及Compose中安全简洁使用Flow的方式，lifecycle-aware数据观察",
+      "indexed_at": "2026-03-31T17:25:16.191048"
+    },
+    {
+      "path": "Cubox/以控制论视角设计移动 OS 中的内存回收策略-2025-02-15.md",
+      "title": "以控制论视角设计移动OS内存回收策略",
+      "scores": {
+        "relevance": 5,
+        "depth": 5,
+        "timeliness": 5,
+        "verifiability": 4
+      },
+      "total": 19,
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch07-内存",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch02-进程",
+          "confidence": "high"
+        }
+      ],
+      "summary": "控制论视角下移动OS内存回收策略设计，涉及lmkd/zram/memcg等内核机制",
+      "indexed_at": "2026-03-31T17:25:16.191049"
+    },
+    {
+      "path": "Cubox/以鸿蒙为例，详解统一渲染技术-2025-04-02.md",
+      "title": "以鸿蒙为例详解统一渲染技术",
+      "scores": {
+        "relevance": 4,
+        "depth": 4,
+        "timeliness": 5,
+        "verifiability": 3
+      },
+      "total": 16,
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "high"
+        }
+      ],
+      "summary": "鸿蒙统一渲染技术详解，对Android渲染架构有横向参考价值",
+      "indexed_at": "2026-03-31T17:25:16.191050"
+    },
+    {
+      "path": "Cubox/任务被唤醒后在哪个CPU跑？wake_affine和select_idle_sibling-2025-03-30.md",
+      "title": "任务唤醒后CPU选择：wake_affine和select_idle_sibling",
+      "scores": {
+        "relevance": 5,
+        "depth": 5,
+        "timeliness": 5,
+        "verifiability": 5
+      },
+      "total": 20,
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch13-调度",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Linux内核调度器wake_affine和select_idle_sibling机制详解，CPU选择策略",
+      "indexed_at": "2026-03-31T17:25:16.191051"
+    },
+    {
+      "path": "Cubox/任务调度器：从入门到放弃（一）-2025-05-31.md",
+      "title": "任务调度器：从入门到放弃（一）",
+      "scores": {
+        "relevance": 5,
+        "depth": 5,
+        "timeliness": 5,
+        "verifiability": 5
+      },
+      "total": 20,
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch13-调度",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Linux内核任务调度器系列开篇，CFS调度核心概念与源码分析",
+      "indexed_at": "2026-03-31T17:25:16.191052"
+    },
+    {
+      "path": "Cubox/任务调度器：从入门到放弃（三）-2025-06-16.md",
+      "title": "任务调度器：从入门到放弃（三）",
+      "scores": {
+        "relevance": 5,
+        "depth": 5,
+        "timeliness": 5,
+        "verifiability": 5
+      },
+      "total": 20,
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch13-调度",
+          "confidence": "high"
+        }
+      ],
+      "summary": "调度器系列第三篇，深入调度策略与实现细节",
+      "indexed_at": "2026-03-31T17:25:16.191053"
+    },
+    {
+      "path": "Cubox/任务调度器：从入门到放弃（二）-2025-05-30.md",
+      "title": "任务调度器：从入门到放弃（二）",
+      "scores": {
+        "relevance": 5,
+        "depth": 5,
+        "timeliness": 5,
+        "verifiability": 5
+      },
+      "total": 20,
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch13-调度",
+          "confidence": "high"
+        }
+      ],
+      "summary": "调度器系列第二篇，继续深入Linux内核任务调度机制",
+      "indexed_at": "2026-03-31T17:25:16.191055"
+    },
+    {
+      "path": "Cubox/任务调度器：从入门到放弃（四）-2025-07-11.md",
+      "title": "任务调度器：从入门到放弃（四）",
+      "scores": {
+        "relevance": 5,
+        "depth": 5,
+        "timeliness": 5,
+        "verifiability": 5
+      },
+      "total": 20,
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch13-调度",
+          "confidence": "high"
+        }
+      ],
+      "summary": "调度器系列第四篇，继续Linux内核调度器深度解析",
+      "indexed_at": "2026-03-31T17:25:16.191056"
+    },
+    {
+      "path": "Cubox/企业微信大型Android系统重构之路-2024-01-25.md",
+      "title": "企业微信大型Android系统重构之路",
+      "scores": {
+        "relevance": 4,
+        "depth": 4,
+        "timeliness": 4,
+        "verifiability": 4
+      },
+      "total": 16,
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch01-架构",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch16-构建",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "企业微信大型Android系统重构实践，涉及架构演进与模块化",
+      "indexed_at": "2026-03-31T17:25:16.191057"
+    },
+    {
+      "path": "Cubox/优先级反转那些事儿-2022-11-23.md",
+      "title": "优先级反转那些事儿",
+      "scores": {
+        "relevance": 4,
+        "depth": 4,
+        "timeliness": 3,
+        "verifiability": 4
+      },
+      "total": 15,
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch03-线程",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch13-调度",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "优先级反转概念与解决思路，结合iOS平台锁的调研",
+      "indexed_at": "2026-03-31T17:25:16.191058"
+    },
+    {
+      "path": "Cubox/优先级反转那些事儿-2022-12-25.md",
+      "title": "优先级反转那些事儿(完整版)",
+      "scores": {
+        "relevance": 4,
+        "depth": 5,
+        "timeliness": 3,
+        "verifiability": 5
+      },
+      "total": 17,
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch03-线程",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch13-调度",
+          "confidence": "high"
+        }
+      ],
+      "summary": "优先级反转详解含线上问题案例与iOS平台多种锁详细调研",
+      "indexed_at": "2026-03-31T17:25:16.191059"
+    },
+    {
+      "path": "Cubox/优先级反转那点事儿-2022-09-27.md",
+      "title": "优先级反转那点事儿",
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 4
+      },
+      "total": 14,
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch03-线程",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch13-调度",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "实时操作系统优先级反转基础概念与解决方案",
+      "indexed_at": "2026-03-31T17:25:16.191060"
+    },
+    {
+      "path": "Cubox/优化Camera功耗时需要从哪些方面入手-2023-08-19.md",
+      "title": "优化Camera功耗需要从哪些方面入手",
+      "scores": {
+        "relevance": 5,
+        "depth": 4,
+        "timeliness": 4,
+        "verifiability": 3
+      },
+      "total": 16,
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch06-功耗",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Camera功耗优化切入点，涵盖硬件/软件/场景多维度分析",
+      "indexed_at": "2026-03-31T17:25:16.191061"
+    },
+    {
+      "path": "Cubox/优化实践- 高刷下列表滑动出现卡顿掉帧的现象-2022-03-23.md",
+      "title": "高刷下列表滑动卡顿掉帧优化",
+      "scores": {
+        "relevance": 5,
+        "depth": 4,
+        "timeliness": 3,
+        "verifiability": 4
+      },
+      "total": 16,
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch14-工具",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "从系统全局角度调查高刷新率下列表滑动掉帧原因与优化方案",
+      "indexed_at": "2026-03-31T17:25:16.191062"
+    },
+    {
+      "path": "Cubox/优化实践-从系统层面优化应用启动速度 · 李海洲-2022-11-02.md",
+      "title": "从系统层面优化应用启动速度",
+      "scores": {
+        "relevance": 5,
+        "depth": 4,
+        "timeliness": 3,
+        "verifiability": 4
+      },
+      "total": 16,
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch04-启动",
+          "confidence": "high"
+        }
+      ],
+      "summary": "从系统层面优化应用启动速度的实践，作者李海洲",
+      "indexed_at": "2026-03-31T17:25:16.191063"
+    },
+    {
+      "path": "Cubox/优雅的Kotlin事件处理 - 重构-2024-02-07.md",
+      "title": "优雅的Kotlin事件处理与重构",
+      "scores": {
+        "relevance": 3,
+        "depth": 3,
+        "timeliness": 4,
+        "verifiability": 3
+      },
+      "total": 13,
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch15-Kotlin",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Kotlin事件处理重构技巧，释放代码性能",
+      "indexed_at": "2026-03-31T17:25:16.191066"
+    },
+    {
+      "title": "全面解析 Android 之 ANR 日志",
+      "path": "Cubox/全面解析 Android 之 ANR 日志-2022-03-24.md",
+      "scores": {
+        "relevance": 4,
+        "depth": 2,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "total_score": 12,
+      "quality": "medium",
+      "chapters": [
+        {
+          "id": "ch02",
+          "confidence": "high"
+        },
+        {
+          "id": "ch03",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "ANR日志分析方法，从开发、测试、监控三个维度全面解析",
+      "indexed_at": "2026-03-31T18:20:44.976495"
+    },
+    {
+      "title": "公平CFS调度类：SCHED_NORMAL/BATCH/IDLE",
+      "path": "Cubox/公平CFS调度类-SCHED_NORMAL、SCHED_BATCH和SCHED_IDLE-2024-12-22.md",
+      "scores": {
+        "relevance": 5,
+        "depth": 2,
+        "timeliness": 5,
+        "verifiability": 3
+      },
+      "total_score": 15,
+      "quality": "medium",
+      "chapters": [
+        {
+          "id": "ch13",
+          "confidence": "high"
+        }
+      ],
+      "summary": "CFS调度类三种策略的异同对比分析",
+      "indexed_at": "2026-03-31T18:20:44.976495"
+    },
+    {
+      "title": "公平调度类的延伸：EEVDF",
+      "path": "Cubox/公平调度类的延伸：EEVDF-2024-12-26.md",
+      "scores": {
+        "relevance": 5,
+        "depth": 3,
+        "timeliness": 5,
+        "verifiability": 3
+      },
+      "total_score": 16,
+      "quality": "high",
+      "chapters": [
+        {
+          "id": "ch13",
+          "confidence": "high"
+        }
+      ],
+      "summary": "EEVDF作为CFS替代方案，Linux调度器演进方向",
+      "indexed_at": "2026-03-31T18:20:44.976495"
+    },
+    {
+      "title": "六万字深入理解Linux进程调度",
+      "path": "Cubox/六万字 - 深入理解Linux进程调度-2022-08-09.md",
+      "scores": {
+        "relevance": 5,
+        "depth": 5,
+        "timeliness": 3,
+        "verifiability": 4
+      },
+      "total_score": 17,
+      "quality": "high",
+      "chapters": [
+        {
+          "id": "ch13",
+          "confidence": "high"
+        },
+        {
+          "id": "ch02",
+          "confidence": "high"
+        }
+      ],
+      "summary": "六万字长文全面解析Linux进程调度机制",
+      "indexed_at": "2026-03-31T18:20:44.976495"
+    },
+    {
+      "title": "Android渲染你应该了解的知识点",
+      "path": "Cubox/关于 Android 渲染你应该了解的知识点-2022-04-20.md",
+      "scores": {
+        "relevance": 4,
+        "depth": 2,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "total_score": 12,
+      "quality": "medium",
+      "chapters": [
+        {
+          "id": "ch05",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Android渲染管线、VSync、硬件加速等知识点汇总",
+      "indexed_at": "2026-03-31T18:20:44.976495"
+    },
+    {
+      "title": "Kotlin Lazy你应该了解的这些事",
+      "path": "Cubox/关于 Kotlin - Lazy ，你应该了解的这些事-2023-04-10.md",
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 4,
+        "verifiability": 3
+      },
+      "total_score": 14,
+      "quality": "medium",
+      "chapters": [
+        {
+          "id": "ch15",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Kotlin Lazy委托属性懒加载模式与线程安全详解",
+      "indexed_at": "2026-03-31T18:20:44.976495"
+    },
+    {
+      "title": "音视频解码帧率与渲染帧率",
+      "path": "Cubox/关于音视频里面的 解码帧率 和 渲染帧率-2022-04-11.md",
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "total_score": 13,
+      "quality": "medium",
+      "chapters": [
+        {
+          "id": "ch05",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "解码帧率与渲染帧率的区别，对理解Android渲染管线有参考价值",
+      "indexed_at": "2026-03-31T18:20:44.976495"
+    },
+    {
+      "title": "Android15 GKI导致加固App崩溃",
+      "path": "Cubox/关于 Android15 GKI2407R40 导致梆梆加固软件崩溃-2024-11-13.md",
+      "scores": {
+        "relevance": 3,
+        "depth": 4,
+        "timeliness": 5,
+        "verifiability": 4
+      },
+      "total_score": 16,
+      "quality": "high",
+      "chapters": [
+        {
+          "id": "ch12",
+          "confidence": "medium"
+        },
+        {
+          "id": "ch17",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Android15 GKI更新导致/proc/self/maps缺失引发加固App闪退",
+      "indexed_at": "2026-03-31T18:20:44.976495"
+    },
+    {
+      "title": "eBPF技术原理粗浅理解",
+      "path": "Cubox/关于 eBPF 的一些粗浅理解-2022-03-06.md",
+      "scores": {
+        "relevance": 3,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "total_score": 12,
+      "quality": "medium",
+      "chapters": [
+        {
+          "id": "ch11",
+          "confidence": "medium"
+        },
+        {
+          "id": "ch14",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "eBPF/BPF技术原理，对Android性能分析工具有参考价值",
+      "indexed_at": "2026-03-31T18:20:44.976495"
     }
   ],
-  "last_updated": "2026-03-31T11:02:51.415809",
-  "total_indexed": 324
+  "last_updated": "2026-03-31T16:15:00Z",
+  "total_indexed": 646
 }

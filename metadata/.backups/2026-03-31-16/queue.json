@@ -299,10 +299,9 @@
         "intake/research-feeds/2026-03-31-11-ch04-art-generational-gc.md",
         "intake/research-feeds/2026-03-31-11-ch04-art-16kb-page-memory.md"
       ],
-      "status": "completed",
+      "status": "pending",
       "added_by": "manual-init",
-      "added_at": "2026-03-29T21:00:00",
-      "processed_at": "2026-03-31T17:00:26.518990"
+      "added_at": "2026-03-29T21:00:00"
     },
     {
       "section": "4.4",
@@ -310,12 +309,9 @@
       "priority": 55,
       "reason": "待加工（素材0篇）",
       "material_paths": [],
-      "status": "completed",
+      "status": "pending",
       "added_by": "manual-init",
-      "added_at": "2026-03-29T21:00:00",
-      "processed_at": "2026-03-31T18:32:44.758186",
-      "word_count": "~7500",
-      "verification_status": "L2_verified_all_anchors_3_extensions_covered"
+      "added_at": "2026-03-29T21:00:00"
     },
     {
       "section": "4.5",
@@ -1383,27 +1379,7 @@
       "processed_at": "2026-03-31T15:26:18+08:00",
       "word_count": "~11000",
       "verification_status": "L2_verified_all_anchors_BootTimingsTraceLog_added_Android16_optimization_added"
-    },
-    {
-      "section": "4.3",
-      "title": "ART 虚拟机内存管理",
-      "completed_at": "2026-03-31T17:00:26.518990",
-      "anchors_covered": 5,
-      "anchors_total": 5,
-      "verification_level": "L2",
-      "word_count": "~7500"
-    },
-    {
-      "section": "4.4",
-      "title": "Low Memory Killer",
-      "completed_at": "2026-03-31T18:32:44.758186",
-      "anchors_covered": 5,
-      "anchors_total": 5,
-      "extensions_covered": 3,
-      "extensions_total": 3,
-      "verification_level": "L2",
-      "word_count": "~7500"
     }
   ],
-  "last_updated": "2026-03-31T18:32:44.758186"
+  "last_updated": "2026-03-31T15:26:18"
 }
