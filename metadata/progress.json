@@ -3,8 +3,8 @@
   "total_sections": 93,
   "metrics": {
     "total": 102,
-    "draft": 90,
-    "ready-for-review": 11,
+    "draft": 89,
+    "ready-for-review": 12,
     "reviewed": 0,
     "finalized": 1,
     "staging_drafts": 0
@@ -199,15 +199,26 @@
       "status": "finalized",
       "finalized_at": "2026-03-31T10:05:00+08:00",
       "review_v2_date": "2026-03-31"
+    },
+    {
+      "section": "4.2",
+      "title": "Linux 内核内存管理",
+      "completed_at": "2026-03-31T10:50:04.545995",
+      "anchors_covered": 5,
+      "anchors_total": 5,
+      "extensions_covered": 1,
+      "extensions_total": 3,
+      "verification_level": "L2",
+      "word_count": "~7500"
     }
   ],
   "ready_for_review": 10,
-  "last_updated": "2026-03-31T10:17:23.956847",
+  "last_updated": "2026-03-31T10:50:04.545995",
   "stats": {
     "total": 102,
-    "completed": 14,
-    "pending": 88,
-    "last_updated": "2026-03-31T08:20:00+08:00"
+    "completed": 16,
+    "pending": 86,
+    "last_updated": "2026-03-31T10:50:04.545995"
   },
   "research_stats": {
     "runs_today": [
