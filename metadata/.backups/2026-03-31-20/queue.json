@@ -323,12 +323,9 @@
       "priority": 55,
       "reason": "待加工（素材0篇）",
       "material_paths": [],
-      "status": "completed",
+      "status": "pending",
       "added_by": "manual-init",
-      "added_at": "2026-03-29T21:00:00",
-      "processed_at": "2026-03-31T20:34:41.955848",
-      "word_count": "~7500",
-      "verification_status": "L2_verified_all_anchors_3_extensions_covered_1_auto_discovery"
+      "added_at": "2026-03-29T21:00:00"
     },
     {
       "section": "4.6",
@@ -336,29 +333,19 @@
       "priority": 55,
       "reason": "待加工（素材0篇）",
       "material_paths": [],
-      "status": "completed",
+      "status": "pending",
       "added_by": "manual-init",
-      "added_at": "2026-03-29T21:00:00",
-      "processed_at": "2026-03-31T20:34:41.955848",
-      "word_count": "~8000",
-      "verification_status": "L2_verified_all_5_anchors_2_extensions_covered"
+      "added_at": "2026-03-29T21:00:00"
     },
     {
       "section": "5.1",
       "section_title": "Linux 进程调度基础",
       "priority": 55,
       "reason": "待加工（素材0篇）",
-      "material_paths": [
-        "Personal-Knowlodge/source/Android-Perfetto-09-CPU.md",
-        "Personal-Knowlodge/source/android-systrace-cpu-state-sleep.md",
-        "Personal-Knowlodge/source/2026-03-06_wechat_Android性能优化之绑定RenderThread到大核CPU.md"
-      ],
-      "status": "completed",
+      "material_paths": [],
+      "status": "pending",
       "added_by": "manual-init",
-      "added_at": "2026-03-29T21:00:00",
-      "processed_at": "2026-03-31T21:37:01.681846",
-      "word_count": "~13000",
-      "verification_status": "L2_verified_all_5_anchors_1_extension_covered_1_auto_discovery"
+      "added_at": "2026-03-29T21:00:00"
     },
     {
       "section": "5.2",
@@ -1416,38 +1403,7 @@
       "extensions_total": 3,
       "verification_level": "L2",
       "word_count": "~7500"
-    },
-    {
-      "section": "4.5",
-      "title": "App 内存优化",
-      "completed_at": "2026-03-31T20:34:41.955848",
-      "anchors_covered": 5,
-      "anchors_total": 5,
-      "extensions_covered": 3,
-      "verification_level": "L2",
-      "word_count": "~7500"
-    },
-    {
-      "section": "4.6",
-      "title": "内存相关的版本演进",
-      "completed_at": "2026-03-31T20:34:41.955848",
-      "anchors_covered": 5,
-      "anchors_total": 5,
-      "extensions_covered": 2,
-      "verification_level": "L2",
-      "word_count": "~8000"
-    },
-    {
-      "section": "5.1",
-      "title": "Linux 进程调度基础",
-      "completed_at": "2026-03-31T21:37:01.681846",
-      "anchors_covered": 5,
-      "anchors_total": 5,
-      "extensions_covered": 1,
-      "extensions_total": 3,
-      "verification_level": "L2",
-      "word_count": "~13000"
     }
   ],
-  "last_updated": "2026-03-31T21:37:01.681846"
+  "last_updated": "2026-03-31T18:32:44.758186"
 }
