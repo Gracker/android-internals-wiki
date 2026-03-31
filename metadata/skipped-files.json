@@ -1,5 +1,5 @@
 {
-  "total_skipped": 1547,
+  "total_skipped": 1684,
   "files": [
     {
       "title": "第 10 章：内存性能",
@@ -10426,7 +10426,8 @@
         "verifiability": 2,
         "total": 9
       },
-      "scanned_at": "2026-03-30T17:48:06.596396"
+      "scanned_at": "2026-03-30T17:48:06.596396",
+      "path": "Cubox/Flutter - 聊天面板库动画生硬？这次让你丝滑个够这次的更新主要是带来了自定义底部容器的功能，即容器的结构可完全由 - 掘金-2025-07-21.md"
     },
     {
       "file": "Cubox/Flutter 2.10 - 一文解读重点更新-2022-02-18.md",
@@ -10438,7 +10439,8 @@
         "verifiability": 2,
         "total": 9
       },
-      "scanned_at": "2026-03-30T17:48:06.596403"
+      "scanned_at": "2026-03-30T17:48:06.596403",
+      "path": "Cubox/Flutter 2.10 - 一文解读重点更新-2022-02-18.md"
     },
     {
       "file": "Cubox/Flutter 2025 年产品路线图发布这份路线图是我们希望实现的愿景目标，主要由我们这些在 Google 任职、从事 - 掘金-2025-04-13.md",
@@ -10450,7 +10452,8 @@
         "verifiability": 2,
         "total": 9
       },
-      "scanned_at": "2026-03-30T17:48:06.596404"
+      "scanned_at": "2026-03-30T17:48:06.596404",
+      "path": "Cubox/Flutter 2025 年产品路线图发布这份路线图是我们希望实现的愿景目标，主要由我们这些在 Google 任职、从事 - 掘金-2025-04-13.md"
     },
     {
       "file": "Cubox/Flutter 3.0 之 PlatformView ：告别 VirtualDisplay ，拥抱 TextureLayer-2022-05-17.md",
@@ -10462,7 +10465,8 @@
         "verifiability": 2,
         "total": 9
       },
-      "scanned_at": "2026-03-30T17:48:06.596406"
+      "scanned_at": "2026-03-30T17:48:06.596406",
+      "path": "Cubox/Flutter 3.0 之 PlatformView ：告别 VirtualDisplay ，拥抱 TextureLayer-2022-05-17.md"
     },
     {
       "file": "Cubox/Flutter 3.0 发布啦～快来看看有什么新功能-2022 Google I-O-2022-05-12.md",
@@ -10474,7 +10478,8 @@
         "verifiability": 2,
         "total": 9
       },
-      "scanned_at": "2026-03-30T17:48:06.596407"
+      "scanned_at": "2026-03-30T17:48:06.596407",
+      "path": "Cubox/Flutter 3.0 发布啦～快来看看有什么新功能-2022 Google I-O-2022-05-12.md"
     },
     {
       "file": "Cubox/Flutter 3.22 发布，快来看看有什么更新吧？-2024-05-15.md",
@@ -10486,7 +10491,8 @@
         "verifiability": 2,
         "total": 9
       },
-      "scanned_at": "2026-03-30T17:48:06.596408"
+      "scanned_at": "2026-03-30T17:48:06.596408",
+      "path": "Cubox/Flutter 3.22 发布，快来看看有什么更新吧？-2024-05-15.md"
     },
     {
       "file": "Cubox/Flutter 3.24 发布啦，快来看重磅更新-2024-08-07.md",
@@ -10498,7 +10504,8 @@
         "verifiability": 2,
         "total": 9
       },
-      "scanned_at": "2026-03-30T17:48:06.596409"
+      "scanned_at": "2026-03-30T17:48:06.596409",
+      "path": "Cubox/Flutter 3.24 发布啦，快来看重磅更新-2024-08-07.md"
     },
     {
       "file": "Cubox/Flutter 3.27 发布啦，快来看有什么更新吧-2024-12-13.md",
@@ -10510,7 +10517,8 @@
         "verifiability": 2,
         "total": 9
       },
-      "scanned_at": "2026-03-30T17:48:06.596410"
+      "scanned_at": "2026-03-30T17:48:06.596410",
+      "path": "Cubox/Flutter 3.27 发布啦，快来看有什么更新吧-2024-12-13.md"
     },
     {
       "file": "Cubox/Flutter 3.3 之 SelectionArea 好不好用？用 -Bug- 带您全面了解它 - 开发者说·DTalk-2022-10-21.md",
@@ -10522,7 +10530,8 @@
         "verifiability": 2,
         "total": 9
       },
-      "scanned_at": "2026-03-30T17:48:06.596411"
+      "scanned_at": "2026-03-30T17:48:06.596411",
+      "path": "Cubox/Flutter 3.3 之 SelectionArea 好不好用？用 -Bug- 带您全面了解它 - 开发者说·DTalk-2022-10-21.md"
     },
     {
       "file": "Cubox/Flutter 3.3 之 SelectionArea 好不好用？用 “Bug” 带你全面了解它-2022-09-07.md",
@@ -10534,7 +10543,8 @@
         "verifiability": 2,
         "total": 9
       },
-      "scanned_at": "2026-03-30T17:48:06.596412"
+      "scanned_at": "2026-03-30T17:48:06.596412",
+      "path": "Cubox/Flutter 3.3 之 SelectionArea 好不好用？用 “Bug” 带你全面了解它-2022-09-07.md"
     },
     {
       "file": "Cubox/Flutter Android 逆向介绍-2024-05-09.md",
@@ -10546,7 +10556,8 @@
         "verifiability": 2,
         "total": 9
       },
-      "scanned_at": "2026-03-30T17:48:06.596413"
+      "scanned_at": "2026-03-30T17:48:06.596413",
+      "path": "Cubox/Flutter Android 逆向介绍-2024-05-09.md"
     },
     {
       "file": "Cubox/Flutter App Architecture with Riverpod- An Introduction-2022-03-19.md",
@@ -10558,7 +10569,8 @@
         "verifiability": 2,
         "total": 9
       },
-      "scanned_at": "2026-03-30T17:48:06.596414"
+      "scanned_at": "2026-03-30T17:48:06.596414",
+      "path": "Cubox/Flutter App Architecture with Riverpod- An Introduction-2022-03-19.md"
     },
     {
       "file": "Cubox/Flutter Impeller裁剪后搭建渲染Demo要点（ flutter裁减 移除dart依赖，...-2024-01-06.md",
@@ -10570,7 +10582,8 @@
         "verifiability": 2,
         "total": 9
       },
-      "scanned_at": "2026-03-30T17:48:06.596415"
+      "scanned_at": "2026-03-30T17:48:06.596415",
+      "path": "Cubox/Flutter Impeller裁剪后搭建渲染Demo要点（ flutter裁减 移除dart依赖，...-2024-01-06.md"
     },
     {
       "file": "Cubox/Flutter RenderSurface 选择说明 - 知乎-2024-03-08.md",
@@ -10582,7 +10595,8 @@
         "verifiability": 2,
         "total": 9
       },
-      "scanned_at": "2026-03-30T17:48:06.596416"
+      "scanned_at": "2026-03-30T17:48:06.596416",
+      "path": "Cubox/Flutter RenderSurface 选择说明 - 知乎-2024-03-08.md"
     },
     {
       "file": "Cubox/Flutter TolyUI 框架#05 - 树形菜单设计-2024-05-23.md",
@@ -10594,7 +10608,8 @@
         "verifiability": 2,
         "total": 9
       },
-      "scanned_at": "2026-03-30T17:48:06.596417"
+      "scanned_at": "2026-03-30T17:48:06.596417",
+      "path": "Cubox/Flutter TolyUI 框架#05 - 树形菜单设计-2024-05-23.md"
     },
     {
       "file": "Cubox/Flutter Web 的发展历程：Dart、Flutter 与 WasmGC-2025-07-17.md",
@@ -10606,7 +10621,8 @@
         "verifiability": 2,
         "total": 9
       },
-      "scanned_at": "2026-03-30T17:48:06.596418"
+      "scanned_at": "2026-03-30T17:48:06.596418",
+      "path": "Cubox/Flutter Web 的发展历程：Dart、Flutter 与 WasmGC-2025-07-17.md"
     },
     {
       "file": "Cubox/Flutter for Web 首次首屏优化——JS 分片优化-2022-11-30.md",
@@ -10618,7 +10634,8 @@
         "verifiability": 2,
         "total": 9
       },
-      "scanned_at": "2026-03-30T17:48:06.596419"
+      "scanned_at": "2026-03-30T17:48:06.596419",
+      "path": "Cubox/Flutter for Web 首次首屏优化——JS 分片优化-2022-11-30.md"
     },
     {
       "file": "Cubox/Flutter 上了 Apple 第三方重大列表，2024 春季 iOS 的隐私清单究竟是什么？ -...-2023-12-25.md",
@@ -10630,7 +10647,8 @@
         "verifiability": 2,
         "total": 9
       },
-      "scanned_at": "2026-03-30T17:48:06.596420"
+      "scanned_at": "2026-03-30T17:48:06.596420",
+      "path": "Cubox/Flutter 上了 Apple 第三方重大列表，2024 春季 iOS 的隐私清单究竟是什么？ -...-2023-12-25.md"
     },
     {
       "file": "Cubox/Flutter 上字体的另类玩法：FontFeature-2022-03-25.md",
@@ -10642,7 +10660,8 @@
         "verifiability": 2,
         "total": 9
       },
-      "scanned_at": "2026-03-30T17:48:06.596421"
+      "scanned_at": "2026-03-30T17:48:06.596421",
+      "path": "Cubox/Flutter 上字体的另类玩法：FontFeature-2022-03-25.md"
     },
     {
       "file": "Cubox/Flutter 上的 Platform 和 UI 线程合并是怎么回事？它会带来什么？-2025-02-24.md",
@@ -10654,7 +10673,8 @@
         "verifiability": 2,
         "total": 9
       },
-      "scanned_at": "2026-03-30T17:48:06.596422"
+      "scanned_at": "2026-03-30T17:48:06.596422",
+      "path": "Cubox/Flutter 上的 Platform 和 UI 线程合并是怎么回事？它会带来什么？-2025-02-24.md"
     },
     {
       "file": "Cubox/Flutter 与 Dart 的市场应用-2024-05-03.md",
@@ -10666,7 +10686,8 @@
         "verifiability": 2,
         "total": 9
       },
-      "scanned_at": "2026-03-30T17:48:06.596425"
+      "scanned_at": "2026-03-30T17:48:06.596425",
+      "path": "Cubox/Flutter 与 Dart 的市场应用-2024-05-03.md"
     },
     {
       "file": "Cubox/Flutter 全埋点的实现｜得物技术-2023-12-13.md",
@@ -10678,7 +10699,8 @@
         "verifiability": 2,
         "total": 9
       },
-      "scanned_at": "2026-03-30T17:48:06.596426"
+      "scanned_at": "2026-03-30T17:48:06.596426",
+      "path": "Cubox/Flutter 全埋点的实现｜得物技术-2023-12-13.md"
     },
     {
       "file": "Cubox/Flutter 启动页的前世今生适配历程-2022-11-22.md",
@@ -10690,7 +10712,8 @@
         "verifiability": 2,
         "total": 9
       },
-      "scanned_at": "2026-03-30T17:48:06.596427"
+      "scanned_at": "2026-03-30T17:48:06.596427",
+      "path": "Cubox/Flutter 启动页的前世今生适配历程-2022-11-22.md"
     },
     {
       "file": "Cubox/Flutter 图片预加载在构建 Flutter 应用时，提前加载图片资源是一种常见优化手段，尤其适用于展示型页面、动画 - 掘金-2025-05-25.md",
@@ -10702,7 +10725,8 @@
         "verifiability": 2,
         "total": 9
       },
-      "scanned_at": "2026-03-30T17:48:06.596428"
+      "scanned_at": "2026-03-30T17:48:06.596428",
+      "path": "Cubox/Flutter 图片预加载在构建 Flutter 应用时，提前加载图片资源是一种常见优化手段，尤其适用于展示型页面、动画 - 掘金-2025-05-25.md"
     },
     {
       "file": "Cubox/Flutter 在全新 Platform 和 UI 线程合并后，出现了什么大坑和变化？-2025-04-24.md",
@@ -10714,7 +10738,8 @@
         "verifiability": 2,
         "total": 9
       },
-      "scanned_at": "2026-03-30T17:48:06.596429"
+      "scanned_at": "2026-03-30T17:48:06.596429",
+      "path": "Cubox/Flutter 在全新 Platform 和 UI 线程合并后，出现了什么大坑和变化？-2025-04-24.md"
     },
     {
       "file": "Cubox/Flutter 多引擎渲染，在稿定 App 的实践-2022-11-02.md",
@@ -10726,7 +10751,8 @@
         "verifiability": 2,
         "total": 9
       },
-      "scanned_at": "2026-03-30T17:48:06.596430"
+      "scanned_at": "2026-03-30T17:48:06.596430",
+      "path": "Cubox/Flutter 多引擎渲染，在稿定 App 的实践-2022-11-02.md"
     },
     {
       "file": "Cubox/Flutter 多引擎渲染，在稿定 App 的实践（三）：躺坑篇-2022-11-02.md",
@@ -10738,7 +10764,8 @@
         "verifiability": 2,
         "total": 9
       },
-      "scanned_at": "2026-03-30T17:48:06.596431"
+      "scanned_at": "2026-03-30T17:48:06.596431",
+      "path": "Cubox/Flutter 多引擎渲染，在稿定 App 的实践（三）：躺坑篇-2022-11-02.md"
     },
     {
       "file": "Cubox/Flutter 多引擎渲染，在稿定 App 的实践（二）：原理篇-2022-11-02.md",
@@ -10750,7 +10777,8 @@
         "verifiability": 2,
         "total": 9
       },
-      "scanned_at": "2026-03-30T17:48:06.596432"
+      "scanned_at": "2026-03-30T17:48:06.596432",
+      "path": "Cubox/Flutter 多引擎渲染，在稿定 App 的实践（二）：原理篇-2022-11-02.md"
     },
     {
       "file": "Cubox/Flutter 如何与 Native (Android) 进行交互 - 开发者说·DTalk-2022-01-21.md",
@@ -10762,7 +10790,8 @@
         "verifiability": 2,
         "total": 9
       },
-      "scanned_at": "2026-03-30T17:48:06.596433"
+      "scanned_at": "2026-03-30T17:48:06.596433",
+      "path": "Cubox/Flutter 如何与 Native (Android) 进行交互 - 开发者说·DTalk-2022-01-21.md"
     },
     {
       "file": "Cubox/Flutter 官方正式解决 WebView 在 iOS 26 上有点击问题-2025-12-15.md",
@@ -10774,7 +10803,8 @@
         "verifiability": 2,
         "total": 9
       },
-      "scanned_at": "2026-03-30T17:48:06.596458"
+      "scanned_at": "2026-03-30T17:48:06.596458",
+      "path": "Cubox/Flutter 官方正式解决 WebView 在 iOS 26 上有点击问题-2025-12-15.md"
     },
     {
       "file": "Cubox/Flutter 实现 “真” 3D 动画效果，用纯代码实现立体 Dash 和 3D 掘金 Logo-2022-08-08.md",
@@ -10786,7 +10816,8 @@
         "verifiability": 2,
         "total": 9
       },
-      "scanned_at": "2026-03-30T17:48:06.596460"
+      "scanned_at": "2026-03-30T17:48:06.596460",
+      "path": "Cubox/Flutter 实现 “真” 3D 动画效果，用纯代码实现立体 Dash 和 3D 掘金 Logo-2022-08-08.md"
     },
     {
       "file": "Cubox/Flutter 小技巧之通过 MediaQuery 优化 App 性能-2025-03-13.md",
@@ -10798,7 +10829,8 @@
         "verifiability": 2,
         "total": 9
       },
-      "scanned_at": "2026-03-30T17:48:06.596461"
+      "scanned_at": "2026-03-30T17:48:06.596461",
+      "path": "Cubox/Flutter 小技巧之通过 MediaQuery 优化 App 性能-2025-03-13.md"
     },
     {
       "file": "Cubox/Flutter 小技巧之：Flutter 3.32 的 Property Editor 生产力工具-2025-05-25.md",
@@ -10810,7 +10842,8 @@
         "verifiability": 2,
         "total": 9
       },
-      "scanned_at": "2026-03-30T17:48:06.596462"
+      "scanned_at": "2026-03-30T17:48:06.596462",
+      "path": "Cubox/Flutter 小技巧之：Flutter 3.32 的 Property Editor 生产力工具-2025-05-25.md"
     },
     {
       "file": "Cubox/Flutter 性能优化之降内存、降刷新篇 - 掘金-2023-11-24.md",
@@ -10822,7 +10855,8 @@
         "verifiability": 2,
         "total": 9
       },
-      "scanned_at": "2026-03-30T17:48:06.596463"
+      "scanned_at": "2026-03-30T17:48:06.596463",
+      "path": "Cubox/Flutter 性能优化之降内存、降刷新篇 - 掘金-2023-11-24.md"
     },
     {
       "file": "Cubox/Flutter 性能分析 - Flutter 中文文档 - Flutter 中文开发者网站 - Fl...-2023-07-17.md",
@@ -10834,7 +10868,8 @@
         "verifiability": 2,
         "total": 9
       },
-      "scanned_at": "2026-03-30T17:48:06.596464"
+      "scanned_at": "2026-03-30T17:48:06.596464",
+      "path": "Cubox/Flutter 性能分析 - Flutter 中文文档 - Flutter 中文开发者网站 - Fl...-2023-07-17.md"
     },
     {
       "file": "Cubox/Flutter 性能分析 - Flutter 中文文档 - Flutter 中文开发者网站 - Fl...-2023-08-02.md",
@@ -10846,7 +10881,8 @@
         "verifiability": 2,
         "total": 9
       },
-      "scanned_at": "2026-03-30T17:48:06.596465"
+      "scanned_at": "2026-03-30T17:48:06.596465",
+      "path": "Cubox/Flutter 性能分析 - Flutter 中文文档 - Flutter 中文开发者网站 - Fl...-2023-08-02.md"
     },
     {
       "file": "Cubox/Flutter 新一代状态管理框架 signals ，它究竟具备什么魔法和优势-2025-03-24.md",
@@ -10858,7 +10894,8 @@
         "verifiability": 2,
         "total": 9
       },
-      "scanned_at": "2026-03-30T17:48:06.596466"
+      "scanned_at": "2026-03-30T17:48:06.596466",
+      "path": "Cubox/Flutter 新一代状态管理框架 signals ，它究竟具备什么魔法和优势-2025-03-24.md"
     },
     {
       "file": "Cubox/Flutter 新春第一弹，Dart 宏功能推进暂停，后续专注定制数据处理支持-2025-01-30.md",
@@ -10870,7 +10907,8 @@
         "verifiability": 2,
         "total": 9
       },
-      "scanned_at": "2026-03-30T17:48:06.596467"
+      "scanned_at": "2026-03-30T17:48:06.596467",
+      "path": "Cubox/Flutter 新春第一弹，Dart 宏功能推进暂停，后续专注定制数据处理支持-2025-01-30.md"
     },
     {
       "file": "Cubox/Flutter 正在切换成 Monorepo 和支持 workspaces-2024-11-06.md",
@@ -10882,7 +10920,8 @@
         "verifiability": 2,
         "total": 9
       },
-      "scanned_at": "2026-03-30T17:48:06.596468"
+      "scanned_at": "2026-03-30T17:48:06.596468",
+      "path": "Cubox/Flutter 正在切换成 Monorepo 和支持 workspaces-2024-11-06.md"
     },
     {
       "title": "Flutter混合开发演进",
@@ -12391,145 +12430,169 @@
       "file": "Breaking to Build- Fuzzing the Kotlin Compiler-2025-07-18.md",
       "reason": "Kotlin编译器模糊测试，偏编译器工程非Android应用开发",
       "total": 9,
-      "scan_date": "2026-03-30T21:45:00"
+      "scan_date": "2026-03-30T21:45:00",
+      "path": "Breaking to Build- Fuzzing the Kotlin Compiler-2025-07-18.md"
     },
     {
       "file": "BrowserBench.org — Announcements-2024-03-23.md",
       "reason": "浏览器基准测试Speedometer3，非Android相关",
       "total": 6,
-      "scan_date": "2026-03-30T21:45:00"
+      "scan_date": "2026-03-30T21:45:00",
+      "path": "BrowserBench.org — Announcements-2024-03-23.md"
     },
     {
       "file": "Build a Real-Time Android WhatsApp Clone With Jetpack Compose-2022.md",
       "reason": "Compose应用教程，泛泛开发实践无深度性能分析",
       "total": 9,
-      "scan_date": "2026-03-30T21:45:00"
+      "scan_date": "2026-03-30T21:45:00",
+      "path": "Build a Real-Time Android WhatsApp Clone With Jetpack Compose-2022.md"
     },
     {
       "file": "Building A Generative AI Platform-2024-08-08.md",
       "reason": "AI平台架构，非Android相关",
       "total": 5,
-      "scan_date": "2026-03-30T21:45:00"
+      "scan_date": "2026-03-30T21:45:00",
+      "path": "Building A Generative AI Platform-2024-08-08.md"
     },
     {
       "file": "Building design system with Jetpack Compose-2022-01-18.md",
       "reason": "Compose设计系统，无性能/底层分析",
       "total": 8,
-      "scan_date": "2026-03-30T21:45:00"
+      "scan_date": "2026-03-30T21:45:00",
+      "path": "Building design system with Jetpack Compose-2022-01-18.md"
     },
     {
       "file": "B站移动端低代码测试探索与实践-2022-07-12.md",
       "reason": "移动端测试方法论，非Android系统层",
       "total": 8,
-      "scan_date": "2026-03-30T21:45:00"
+      "scan_date": "2026-03-30T21:45:00",
+      "path": "B站移动端低代码测试探索与实践-2022-07-12.md"
     },
     {
       "file": "C# 为什么要支持主构造器？-2024-02-20.md",
       "reason": "C#语言特性，非Android相关",
       "total": 4,
-      "scan_date": "2026-03-30T21:45:00"
+      "scan_date": "2026-03-30T21:45:00",
+      "path": "C# 为什么要支持主构造器？-2024-02-20.md"
     },
     {
       "file": "C++ Annotated November 2021-2021.md",
       "reason": "C++生态新闻聚合，无深度技术内容",
       "total": 5,
-      "scan_date": "2026-03-30T21:45:00"
+      "scan_date": "2026-03-30T21:45:00",
+      "path": "C++ Annotated November 2021-2021.md"
     },
     {
       "file": "C++ 中的值类别-2022-01-23.md",
       "reason": "C++语言特性，非Android相关",
       "total": 6,
-      "scan_date": "2026-03-30T21:45:00"
+      "scan_date": "2026-03-30T21:45:00",
+      "path": "C++ 中的值类别-2022-01-23.md"
     },
     {
       "file": "C++14新增特性汇总-2022-03-22.md",
       "reason": "C++14特性，非Android相关",
       "total": 5,
-      "scan_date": "2026-03-30T21:45:00"
+      "scan_date": "2026-03-30T21:45:00",
+      "path": "C++14新增特性汇总-2022-03-22.md"
     },
     {
       "file": "C++17常用新特性(一~六)-2022-03.md",
       "reason": "C++17特性系列，非Android相关",
       "total": 5,
-      "scan_date": "2026-03-30T21:45:00"
+      "scan_date": "2026-03-30T21:45:00",
+      "path": "C++17常用新特性(一~六)-2022-03.md"
     },
     {
       "file": "C++17常用新特性-2022-03-07.md",
       "reason": "C++17特性总览，非Android相关",
       "total": 5,
-      "scan_date": "2026-03-30T21:45:00"
+      "scan_date": "2026-03-30T21:45:00",
+      "path": "C++17常用新特性-2022-03-07.md"
     },
     {
       "file": "CCCF精选｜面向2030的操作系统架构与演进思考-2024-01-08.md",
       "reason": "宏观OS趋势展望，缺乏具体技术深度",
       "total": 9,
-      "scan_date": "2026-03-30T21:45:00"
+      "scan_date": "2026-03-30T21:45:00",
+      "path": "CCCF精选｜面向2030的操作系统架构与演进思考-2024-01-08.md"
     },
     {
       "file": "CDN加速工作原理-2025-08-31.md",
       "reason": "CDN原理，非Android相关",
       "total": 5,
-      "scan_date": "2026-03-30T21:45:00"
+      "scan_date": "2026-03-30T21:45:00",
+      "path": "CDN加速工作原理-2025-08-31.md"
     },
     {
       "file": "CES 2024 回顾：新气象-2024-01-21.md",
       "reason": "CES展会回顾，非技术深度文章",
       "total": 4,
-      "scan_date": "2026-03-30T21:45:00"
+      "scan_date": "2026-03-30T21:45:00",
+      "path": "CES 2024 回顾：新气象-2024-01-21.md"
     },
     {
       "file": "CHATGPT API降价90%对LLM领域的影响-2023-03-03.md",
       "reason": "LLM行业分析，非Android相关",
       "total": 5,
-      "scan_date": "2026-03-30T21:45:00"
+      "scan_date": "2026-03-30T21:45:00",
+      "path": "CHATGPT API降价90%对LLM领域的影响-2023-03-03.md"
     },
     {
       "file": "CPU 是如何与内存交互的-2022-10-17.md",
       "reason": "与知乎版重复，较旧版本",
       "total": 8,
-      "scan_date": "2026-03-30T21:45:00"
+      "scan_date": "2026-03-30T21:45:00",
+      "path": "CPU 是如何与内存交互的-2022-10-17.md"
     },
     {
       "file": "CPU 那些事儿 - 前端(下）-2025-09-01.md",
       "reason": "CPU前端硬件探测，关键词命中不足无法映射AIW章节",
       "total": 9,
-      "scan_date": "2026-03-30T21:45:00"
+      "scan_date": "2026-03-30T21:45:00",
+      "path": "CPU 那些事儿 - 前端(下）-2025-09-01.md"
     },
     {
       "file": "CPU指令执行过程-2025-09-01.md",
       "reason": "基础CPU原理，过于通用缺乏Android关联",
       "total": 9,
-      "scan_date": "2026-03-30T21:45:00"
+      "scan_date": "2026-03-30T21:45:00",
+      "path": "CPU指令执行过程-2025-09-01.md"
     },
     {
       "file": "CPU时钟周期结构原理-2025-06-03.md",
       "reason": "时钟电路级原理，过于底层缺乏Android关联",
       "total": 9,
-      "scan_date": "2026-03-30T21:45:00"
+      "scan_date": "2026-03-30T21:45:00",
+      "path": "CPU时钟周期结构原理-2025-06-03.md"
     },
     {
       "file": "CPU是怎样一步步读写内存的？-2024-08-22.md",
       "reason": "通用CPU内存访问，与已索引文章内容重叠",
       "total": 9,
-      "scan_date": "2026-03-30T21:45:00"
+      "scan_date": "2026-03-30T21:45:00",
+      "path": "CPU是怎样一步步读写内存的？-2024-08-22.md"
     },
     {
       "file": "CPU流水线技术原理-2025-06-17.md",
       "reason": "通用CPU流水线知识，缺乏Android/性能优化关联",
       "total": 9,
-      "scan_date": "2026-03-30T21:45:00"
+      "scan_date": "2026-03-30T21:45:00",
+      "path": "CPU流水线技术原理-2025-06-17.md"
     },
     {
       "file": "CPU的分支预测-2025-03-06.md",
       "reason": "通用分支预测知识，关键词命中不足无法映射AIW章节",
       "total": 9,
-      "scan_date": "2026-03-30T21:45:00"
+      "scan_date": "2026-03-30T21:45:00",
+      "path": "CPU的分支预测-2025-03-06.md"
     },
     {
       "file": "CPU的制造和概念-2024-03-20.md",
       "reason": "CPU制造工艺概论，过于通用",
       "total": 7,
-      "scan_date": "2026-03-30T21:45:00"
+      "scan_date": "2026-03-30T21:45:00",
+      "path": "CPU的制造和概念-2024-03-20.md"
     },
     {
       "title": "CPU的基本结构",
@@ -12768,332 +12831,398 @@
     {
       "file": "Claude Code 订阅费太贵？这个工具让你0成本用上 Claude 和 Gemini-2026-01-06.md",
       "score": 3,
-      "reason": "AI工具介绍，非Android技术"
+      "reason": "AI工具介绍，非Android技术",
+      "path": "Claude Code 订阅费太贵？这个工具让你0成本用上 Claude 和 Gemini-2026-01-06.md"
     },
     {
       "file": "Claude Code之父：Claude Code是怎么被创造出来的？-哔哩哔哩-2025-12-09.md",
       "score": 2,
-      "reason": "AI工具视频，非Android"
+      "reason": "AI工具视频，非Android",
+      "path": "Claude Code之父：Claude Code是怎么被创造出来的？-哔哩哔哩-2025-12-09.md"
     },
     {
       "file": "Claude Code推荐的终端 - Ghostty-2026-03-29.md",
       "score": 2,
-      "reason": "AI终端工具，非Android"
+      "reason": "AI终端工具，非Android",
+      "path": "Claude Code推荐的终端 - Ghostty-2026-03-29.md"
     },
     {
       "file": "Claude for Chrome 一手体验-2025-09-06.md",
       "score": 2,
-      "reason": "AI浏览器扩展，非Android"
+      "reason": "AI浏览器扩展，非Android",
+      "path": "Claude for Chrome 一手体验-2025-09-06.md"
     },
     {
       "file": "Claude刚登顶，OpenAI就放出24小时不休息的编程AI-2025-12-06.md",
       "score": 2,
-      "reason": "AI行业新闻，非Android"
+      "reason": "AI行业新闻，非Android",
+      "path": "Claude刚登顶，OpenAI就放出24小时不休息的编程AI-2025-12-06.md"
     },
     {
       "file": "Claude悄悄更新了Skills生成器-2026-03-12.md",
       "score": 2,
-      "reason": "AI工具更新，非Android"
+      "reason": "AI工具更新，非Android",
+      "path": "Claude悄悄更新了Skills生成器-2026-03-12.md"
     },
     {
       "file": "Clean 架构下的现代 Android 架构指南-2023-12-04.md",
       "score": 8,
-      "reason": "与2024版重复且更旧，相关性3+深度2+时效3+可验证0"
+      "reason": "与2024版重复且更旧，相关性3+深度2+时效3+可验证0",
+      "path": "Clean 架构下的现代 Android 架构指南-2023-12-04.md"
     },
     {
       "file": "Cloudflare从入门到精通-2024-08-11.md",
       "score": 2,
-      "reason": "网络基础设施，非Android"
+      "reason": "网络基础设施，非Android",
+      "path": "Cloudflare从入门到精通-2024-08-11.md"
     },
     {
       "file": "Codex迎来史诗级升级-2025-09-16.md",
       "score": 2,
-      "reason": "AI编程工具，非Android"
+      "reason": "AI编程工具，非Android",
+      "path": "Codex迎来史诗级升级-2025-09-16.md"
     },
     {
       "file": "Coffee vs. tea smackdown-2022-12-14.md",
       "score": 1,
-      "reason": "完全无关"
+      "reason": "完全无关",
+      "path": "Coffee vs. tea smackdown-2022-12-14.md"
     },
     {
       "file": "Colored Logcat Message in Android Studio-2022-02-28.md",
       "score": 9,
-      "reason": "logcat工具技巧，深度不足"
+      "reason": "logcat工具技巧，深度不足",
+      "path": "Colored Logcat Message in Android Studio-2022-02-28.md"
     },
     {
       "file": "Commander 2023 Wallpaper & T-Shirts-2023-04-07.md",
       "score": 1,
-      "reason": "完全无关"
+      "reason": "完全无关",
+      "path": "Commander 2023 Wallpaper & T-Shirts-2023-04-07.md"
     },
     {
       "file": "Compose Multiplatform iOS 稳定版发布-2025-05-08.md",
       "score": 6,
-      "reason": "产品发布新闻，无技术深度"
+      "reason": "产品发布新闻，无技术深度",
+      "path": "Compose Multiplatform iOS 稳定版发布-2025-05-08.md"
     },
     {
       "file": "Compose Multiplatform for iOS 稳定版已经发布-2025-05-07.md",
       "score": 6,
-      "reason": "产品发布新闻，与上方重复"
+      "reason": "产品发布新闻，与上方重复",
+      "path": "Compose Multiplatform for iOS 稳定版已经发布-2025-05-07.md"
     },
     {
       "file": "Compose and Conquer-2024-01-18.md",
       "score": 9,
-      "reason": "Compose导航入门，深度不足"
+      "reason": "Compose导航入门，深度不足",
+      "path": "Compose and Conquer-2024-01-18.md"
     },
     {
       "file": "Compose 中的 ViewPager 详解-2022-07-01.md",
       "score": 7,
-      "reason": "UI组件使用教程，无性能/架构深度"
+      "reason": "UI组件使用教程，无性能/架构深度",
+      "path": "Compose 中的 ViewPager 详解-2022-07-01.md"
     },
     {
       "file": "Compose 为什么可以跨平台-2023-07-19.md",
       "score": 7,
-      "reason": "概念科普，无技术深度"
+      "reason": "概念科普，无技术深度",
+      "path": "Compose 为什么可以跨平台-2023-07-19.md"
     },
     {
       "file": "Compose 的 State 状态到底是个啥-2022-03-08.md",
       "score": 7,
-      "reason": "基础概念介绍，无深度"
+      "reason": "基础概念介绍，无深度",
+      "path": "Compose 的 State 状态到底是个啥-2022-03-08.md"
     },
     {
       "file": "Comprehensive Guide Location-2025-03-03.md",
       "score": 6,
-      "reason": "定位API教程，偏应用层"
+      "reason": "定位API教程，偏应用层",
+      "path": "Comprehensive Guide Location-2025-03-03.md"
     },
     {
       "file": "Context Engineering for AI Agents-2025-07-19.md",
       "score": 3,
-      "reason": "AI Agent设计，非Android"
+      "reason": "AI Agent设计，非Android",
+      "path": "Context Engineering for AI Agents-2025-07-19.md"
     },
     {
       "file": "Culture & society-2023-12-27.md",
       "score": 1,
-      "reason": "完全无关"
+      "reason": "完全无关",
+      "path": "Culture & society-2023-12-27.md"
     },
     {
       "file": "Cursor 常用提示词手册-2024-12-30.md",
       "score": 2,
-      "reason": "AI工具提示词，非Android"
+      "reason": "AI工具提示词，非Android",
+      "path": "Cursor 常用提示词手册-2024-12-30.md"
     },
     {
       "file": "Cursor 深度评测-2024-12-31.md",
       "score": 2,
-      "reason": "AI工具评测，非Android"
+      "reason": "AI工具评测，非Android",
+      "path": "Cursor 深度评测-2024-12-31.md"
     },
     {
       "file": "Cursor+Claude3.7的绝杀-2025-03-02.md",
       "score": 2,
-      "reason": "AI工具，非Android"
+      "reason": "AI工具，非Android",
+      "path": "Cursor+Claude3.7的绝杀-2025-03-02.md"
     },
     {
       "file": "Cursor 每秒1000 Token编辑文件-2025-02-16.md",
       "score": 2,
-      "reason": "AI工具，非Android"
+      "reason": "AI工具，非Android",
+      "path": "Cursor 每秒1000 Token编辑文件-2025-02-16.md"
     },
     {
       "file": "Cursor｜软件开发行业新变革-2024-09-11.md",
       "score": 2,
-      "reason": "AI工具评论，非Android"
+      "reason": "AI工具评论，非Android",
+      "path": "Cursor｜软件开发行业新变革-2024-09-11.md"
     },
     {
       "file": "CyberClip #46 智能共生-2023-12-16.md",
       "score": 2,
-      "reason": "科技哲学，非Android"
+      "reason": "科技哲学，非Android",
+      "path": "CyberClip #46 智能共生-2023-12-16.md"
     },
     {
       "file": "CyberClip #49 如何提出好问题-2024-01-21.md",
       "score": 2,
-      "reason": "方法论，非Android"
+      "reason": "方法论，非Android",
+      "path": "CyberClip #49 如何提出好问题-2024-01-21.md"
     },
     {
       "file": "DPS 周刊 184 - 张忠谋的洞见-2025-02-09.md",
       "score": 2,
-      "reason": "商业人物，非Android"
+      "reason": "商业人物，非Android",
+      "path": "DPS 周刊 184 - 张忠谋的洞见-2025-02-09.md"
     },
     {
       "file": "Daily Productive Sharing 1162-2025-01-29.md",
       "score": 2,
-      "reason": "AGI思考，非Android"
+      "reason": "AGI思考，非Android",
+      "path": "Daily Productive Sharing 1162-2025-01-29.md"
     },
     {
       "file": "Dalvik, ART, JIT, AOT (2025版)-2025-03-08.md",
       "score": 8,
-      "reason": "与2024版重复"
+      "reason": "与2024版重复",
+      "path": "Dalvik, ART, JIT, AOT (2025版)-2025-03-08.md"
     },
     {
       "file": "Dart 2.17 现已发布-2022-05-16.md",
       "score": 5,
-      "reason": "语言版本发布新闻"
+      "reason": "语言版本发布新闻",
+      "path": "Dart 2.17 现已发布-2022-05-16.md"
     },
     {
       "file": "Dart 3.8发布-2025-05-22.md",
       "score": 5,
-      "reason": "语言版本发布新闻"
+      "reason": "语言版本发布新闻",
+      "path": "Dart 3.8发布-2025-05-22.md"
     },
     {
       "file": "Claude Code 订阅费太贵-2026-01-06.md",
       "score": 3,
-      "reason": "AI工具介绍，非Android技术"
+      "reason": "AI工具介绍，非Android技术",
+      "path": "Claude Code 订阅费太贵-2026-01-06.md"
     },
     {
       "file": "Claude Code之父-2025-12-09.md",
       "score": 2,
-      "reason": "AI工具视频，非Android"
+      "reason": "AI工具视频，非Android",
+      "path": "Claude Code之父-2025-12-09.md"
     },
     {
       "file": "Claude Code推荐的终端 Ghostty-2026-03-29.md",
       "score": 2,
-      "reason": "AI终端工具，非Android"
+      "reason": "AI终端工具，非Android",
+      "path": "Claude Code推荐的终端 Ghostty-2026-03-29.md"
     },
     {
       "file": "Claude for Chrome-2025-09-06.md",
       "score": 2,
-      "reason": "AI浏览器扩展，非Android"
+      "reason": "AI浏览器扩展，非Android",
+      "path": "Claude for Chrome-2025-09-06.md"
     },
     {
       "file": "Claude刚登顶-2025-12-06.md",
       "score": 2,
-      "reason": "AI行业新闻，非Android"
+      "reason": "AI行业新闻，非Android",
+      "path": "Claude刚登顶-2025-12-06.md"
     },
     {
       "file": "Claude悄悄更新了Skills生成器-2026-03-12.md",
       "score": 2,
-      "reason": "AI工具更新，非Android"
+      "reason": "AI工具更新，非Android",
+      "path": "Claude悄悄更新了Skills生成器-2026-03-12.md"
     },
     {
       "file": "Clean 架构指南(2023旧版)-2023-12-04.md",
       "score": 8,
-      "reason": "与2024版重复且更旧"
+      "reason": "与2024版重复且更旧",
+      "path": "Clean 架构指南(2023旧版)-2023-12-04.md"
     },
     {
       "file": "Cloudflare从入门到精通-2024-08-11.md",
       "score": 2,
-      "reason": "网络基础设施，非Android"
+      "reason": "网络基础设施，非Android",
+      "path": "Cloudflare从入门到精通-2024-08-11.md"
     },
     {
       "file": "Codex迎来史诗级升级-2025-09-16.md",
       "score": 2,
-      "reason": "AI编程工具，非Android"
+      "reason": "AI编程工具，非Android",
+      "path": "Codex迎来史诗级升级-2025-09-16.md"
     },
     {
       "file": "Coffee vs tea smackdown-2022-12-14.md",
       "score": 1,
-      "reason": "完全无关"
+      "reason": "完全无关",
+      "path": "Coffee vs tea smackdown-2022-12-14.md"
     },
     {
       "file": "Colored Logcat Message-2022-02-28.md",
       "score": 9,
-      "reason": "logcat技巧，深度不足"
+      "reason": "logcat技巧，深度不足",
+      "path": "Colored Logcat Message-2022-02-28.md"
     },
     {
       "file": "Commander 2023 Wallpaper-2023-04-07.md",
       "score": 1,
-      "reason": "完全无关"
+      "reason": "完全无关",
+      "path": "Commander 2023 Wallpaper-2023-04-07.md"
     },
     {
       "file": "Compose Multiplatform iOS稳定版-2025-05-08.md",
       "score": 6,
-      "reason": "产品发布新闻，无技术深度"
+      "reason": "产品发布新闻，无技术深度",
+      "path": "Compose Multiplatform iOS稳定版-2025-05-08.md"
     },
     {
       "file": "Compose Multiplatform for iOS-2025-05-07.md",
       "score": 6,
-      "reason": "产品发布新闻，重复"
+      "reason": "产品发布新闻，重复",
+      "path": "Compose Multiplatform for iOS-2025-05-07.md"
     },
     {
       "file": "Compose and Conquer-2024-01-18.md",
       "score": 9,
-      "reason": "Compose导航入门，深度不足"
+      "reason": "Compose导航入门，深度不足",
+      "path": "Compose and Conquer-2024-01-18.md"
     },
     {
       "file": "Compose ViewPager详解-2022-07-01.md",
       "score": 7,
-      "reason": "UI组件教程，无性能深度"
+      "reason": "UI组件教程，无性能深度",
+      "path": "Compose ViewPager详解-2022-07-01.md"
     },
     {
       "file": "Compose为什么可以跨平台-2023-07-19.md",
       "score": 7,
-      "reason": "概念科普，无技术深度"
+      "reason": "概念科普，无技术深度",
+      "path": "Compose为什么可以跨平台-2023-07-19.md"
     },
     {
       "file": "Compose State状态-2022-03-08.md",
       "score": 7,
-      "reason": "基础概念介绍，无深度"
+      "reason": "基础概念介绍，无深度",
+      "path": "Compose State状态-2022-03-08.md"
     },
     {
       "file": "Get User Location Compose-2025-03-03.md",
       "score": 6,
-      "reason": "定位API教程，偏应用层"
+      "reason": "定位API教程，偏应用层",
+      "path": "Get User Location Compose-2025-03-03.md"
     },
     {
       "file": "Context Engineering AI Agents-2025-07-19.md",
       "score": 3,
-      "reason": "AI Agent设计，非Android"
+      "reason": "AI Agent设计，非Android",
+      "path": "Context Engineering AI Agents-2025-07-19.md"
     },
     {
       "file": "Culture & society-2023-12-27.md",
       "score": 1,
-      "reason": "完全无关"
+      "reason": "完全无关",
+      "path": "Culture & society-2023-12-27.md"
     },
     {
       "file": "Cursor常用提示词手册-2024-12-30.md",
       "score": 2,
-      "reason": "AI工具，非Android"
+      "reason": "AI工具，非Android",
+      "path": "Cursor常用提示词手册-2024-12-30.md"
     },
     {
       "file": "Cursor深度评测-2024-12-31.md",
       "score": 2,
-      "reason": "AI工具，非Android"
+      "reason": "AI工具，非Android",
+      "path": "Cursor深度评测-2024-12-31.md"
     },
     {
       "file": "Cursor+Claude3.7绝杀-2025-03-02.md",
       "score": 2,
-      "reason": "AI工具，非Android"
+      "reason": "AI工具，非Android",
+      "path": "Cursor+Claude3.7绝杀-2025-03-02.md"
     },
     {
       "file": "Cursor每秒1000Token-2025-02-16.md",
       "score": 2,
-      "reason": "AI工具，非Android"
+      "reason": "AI工具，非Android",
+      "path": "Cursor每秒1000Token-2025-02-16.md"
     },
     {
       "file": "Cursor软件开发行业新变革-2024-09-11.md",
       "score": 2,
-      "reason": "AI工具评论，非Android"
+      "reason": "AI工具评论，非Android",
+      "path": "Cursor软件开发行业新变革-2024-09-11.md"
     },
     {
       "file": "CyberClip #46 智能共生-2023-12-16.md",
       "score": 2,
-      "reason": "科技哲学，非Android"
+      "reason": "科技哲学，非Android",
+      "path": "CyberClip #46 智能共生-2023-12-16.md"
     },
     {
       "file": "CyberClip #49 如何提出好问题-2024-01-21.md",
       "score": 2,
-      "reason": "方法论，非Android"
+      "reason": "方法论，非Android",
+      "path": "CyberClip #49 如何提出好问题-2024-01-21.md"
     },
     {
       "file": "DPS 周刊 184-2025-02-09.md",
       "score": 2,
-      "reason": "商业人物，非Android"
+      "reason": "商业人物，非Android",
+      "path": "DPS 周刊 184-2025-02-09.md"
     },
     {
       "file": "Daily Productive Sharing 1162-2025-01-29.md",
       "score": 2,
-      "reason": "AGI思考，非Android"
+      "reason": "AGI思考，非Android",
+      "path": "Daily Productive Sharing 1162-2025-01-29.md"
     },
     {
       "file": "Dalvik ART JIT AOT(2025重复版)-2025-03-08.md",
       "score": 8,
-      "reason": "与2024版重复"
+      "reason": "与2024版重复",
+      "path": "Dalvik ART JIT AOT(2025重复版)-2025-03-08.md"
     },
     {
       "file": "Dart 2.17发布-2022-05-16.md",
       "score": 5,
-      "reason": "语言版本发布新闻"
+      "reason": "语言版本发布新闻",
+      "path": "Dart 2.17发布-2022-05-16.md"
     },
     {
       "file": "Dart 3.8发布-2025-05-22.md",
       "score": 5,
-      "reason": "语言版本发布新闻"
+      "reason": "语言版本发布新闻",
+      "path": "Dart 3.8发布-2025-05-22.md"
     },
     {
       "path": "Cubox/FastNative  -  Android Developers-2024-01-08.md",
@@ -16455,7 +16584,8 @@
         "total": 9
       },
       "skip_reason": "低分",
-      "skipped_at": "2026-03-31T08:17:43"
+      "skipped_at": "2026-03-31T08:17:43",
+      "path": "./Writing Code Is One Thing, Learning to Be a Software Engineer Is Another - by Ben -The Hosk- Hosking.md"
     },
     {
       "title": "X上值得关注的独立开发者",
@@ -16468,7 +16598,8 @@
         "total": 9
       },
       "skip_reason": "低分",
-      "skipped_at": "2026-03-31T08:17:43"
+      "skipped_at": "2026-03-31T08:17:43",
+      "path": "./X上值得关注的独立开发者-2025-03-21.md"
     },
     {
       "title": "Zwift车架与轮组测试数据表格更新2025.07.03",
@@ -16481,7 +16612,8 @@
         "total": 13
       },
       "skip_reason": "无匹配章节",
-      "skipped_at": "2026-03-31T08:17:43"
+      "skipped_at": "2026-03-31T08:17:43",
+      "path": "./Zwift车架与轮组测试数据表格更新2025.07.03-2025-07-04.md"
     },
     {
       "title": "[2411.10640] BlueLM-V-3B: Algorithm and System Co-Design for Multimodal Large Language Models on Mob...",
@@ -16494,7 +16626,8 @@
         "total": 11
       },
       "skip_reason": "无匹配章节",
-      "skipped_at": "2026-03-31T08:17:43"
+      "skipped_at": "2026-03-31T08:17:43",
+      "path": "./[2411.10640] BlueLM-V-3B- Algorithm and System Co-Design for Multimodal Large Language Models on Mob.md"
     },
     {
       "title": "WorkManager multi-process for libraries",
@@ -16503,7 +16636,8 @@
         "total": 0
       },
       "skip_reason": "无匹配章节",
-      "skipped_at": "2026-03-31T08:19:28"
+      "skipped_at": "2026-03-31T08:19:28",
+      "path": "./WorkManager multi-process for libraries-2022-01-24.md"
     },
     {
       "title": "Write Combine 和 Cache 是什么关系",
@@ -16512,7 +16646,8 @@
         "total": 0
       },
       "skip_reason": "无匹配章节",
-      "skipped_at": "2026-03-31T08:19:28"
+      "skipped_at": "2026-03-31T08:19:28",
+      "path": "./Write Combine 和 Cache 是什么关系-2023-03-06.md"
     },
     {
       "title": "Write code that is easy to delete, not easy to... — programming is terrible",
@@ -16521,7 +16656,8 @@
         "total": 0
       },
       "skip_reason": "无匹配章节",
-      "skipped_at": "2026-03-31T08:19:28"
+      "skipped_at": "2026-03-31T08:19:28",
+      "path": "./Write code that is easy to delete, not easy to... — programming is terrible-2024-10-28.md"
     },
     {
       "title": "Writes and Write-Nots",
@@ -16530,7 +16666,8 @@
         "total": 0
       },
       "skip_reason": "无匹配章节",
-      "skipped_at": "2026-03-31T08:19:28"
+      "skipped_at": "2026-03-31T08:19:28",
+      "path": "./Writes and Write-Nots-2024-10-28.md"
     },
     {
       "title": "Writing Code Is One Thing, Learning to Be a Software Engineer Is Another | by Ben \"The Hosk\" Hosking | Better Programming",
@@ -16539,7 +16676,8 @@
         "total": 0
       },
       "skip_reason": "无匹配章节",
-      "skipped_at": "2026-03-31T08:19:28"
+      "skipped_at": "2026-03-31T08:19:28",
+      "path": "./Writing Code Is One Thing, Learning to Be a Software Engineer Is Another - by Ben -The Hosk- Hosking.md"
     },
     {
       "title": "Writing my own ChatGPT Code Interpreter",
@@ -16548,7 +16686,8 @@
         "total": 0
       },
       "skip_reason": "无匹配章节",
-      "skipped_at": "2026-03-31T08:19:28"
+      "skipped_at": "2026-03-31T08:19:28",
+      "path": "./Writing my own ChatGPT Code Interpreter-2023-07-12.md"
     },
     {
       "title": "Writing system software: code comments. - <antirez>",
@@ -16557,7 +16696,8 @@
         "total": 0
       },
       "skip_reason": "无匹配章节",
-      "skipped_at": "2026-03-31T08:19:28"
+      "skipped_at": "2026-03-31T08:19:28",
+      "path": "./Writing system software- code comments. - -antirez--2024-10-21.md"
     },
     {
       "title": "X 上的 yiqifacai.eth：“#英语学习 很多中国人一直在努力学英语，前一代人听力输入不够...",
@@ -16566,7 +16706,8 @@
         "total": 0
       },
       "skip_reason": "无匹配章节",
-      "skipped_at": "2026-03-31T08:19:28"
+      "skipped_at": "2026-03-31T08:19:28",
+      "path": "./X 上的 yiqifacai.eth：“#英语学习 很多中国人一直在努力学英语，前一代人听力输入不够...-2023-10-18.md"
     },
     {
       "title": "XMind (2022) 闪亮登场！",
@@ -16575,7 +16716,8 @@
         "total": 0
       },
       "skip_reason": "无匹配章节",
-      "skipped_at": "2026-03-31T08:19:28"
+      "skipped_at": "2026-03-31T08:19:28",
+      "path": "./XMind (2022) 闪亮登场！-2022-03-14.md"
     },
     {
       "title": "XXIIVV — paper computing",
@@ -16584,7 +16726,8 @@
         "total": 0
       },
       "skip_reason": "无匹配章节",
-      "skipped_at": "2026-03-31T08:19:28"
+      "skipped_at": "2026-03-31T08:19:28",
+      "path": "./XXIIVV — paper computing-2022-01-14.md"
     },
     {
       "title": "Xray 一键安装脚本使用方法 - 彧繎博客",
@@ -16593,7 +16736,8 @@
         "total": 0
       },
       "skip_reason": "无匹配章节",
-      "skipped_at": "2026-03-31T08:19:28"
+      "skipped_at": "2026-03-31T08:19:28",
+      "path": "./Xray 一键安装脚本使用方法 - 彧繎博客-2022-04-10.md"
     },
     {
       "title": "X上值得关注的独立开发者",
@@ -16602,7 +16746,8 @@
         "total": 0
       },
       "skip_reason": "无匹配章节",
-      "skipped_at": "2026-03-31T08:19:28"
+      "skipped_at": "2026-03-31T08:19:28",
+      "path": "./X上值得关注的独立开发者-2025-03-21.md"
     },
     {
       "title": "YC 创始人 Paul Graham 最好的一篇文章",
@@ -16611,7 +16756,8 @@
         "total": 0
       },
       "skip_reason": "无匹配章节",
-      "skipped_at": "2026-03-31T08:19:28"
+      "skipped_at": "2026-03-31T08:19:28",
+      "path": "./YC 创始人 Paul Graham 最好的一篇文章-2025-04-07.md"
     },
     {
       "title": "YOLOv8 模型训练入门指南：手把手搞定目标检测AI",
@@ -16620,7 +16766,8 @@
         "total": 0
       },
       "skip_reason": "无匹配章节",
-      "skipped_at": "2026-03-31T08:19:28"
+      "skipped_at": "2026-03-31T08:19:28",
+      "path": "./YOLOv8 模型训练入门指南：手把手搞定目标检测AI-2025-05-26.md"
     },
     {
       "title": "Youtube 官方给创作者提供了10种赚钱的方式 – Tinyfool的自媒体实验室",
@@ -16629,7 +16776,8 @@
         "total": 0
       },
       "skip_reason": "无匹配章节",
-      "skipped_at": "2026-03-31T08:19:28"
+      "skipped_at": "2026-03-31T08:19:28",
+      "path": "./Youtube 官方给创作者提供了10种赚钱的方式 – Tinyfool的自媒体实验室-2022-02-16.md"
     },
     {
       "title": "Zwift车架与轮组测试数据表格更新2025.07.03",
@@ -16638,7 +16786,8 @@
         "total": 0
       },
       "skip_reason": "无匹配章节",
-      "skipped_at": "2026-03-31T08:19:28"
+      "skipped_at": "2026-03-31T08:19:28",
+      "path": "./Zwift车架与轮组测试数据表格更新2025.07.03-2025-07-04.md"
     },
     {
       "title": "[092]untrusted-touch-events - 简书",
@@ -16647,7 +16796,8 @@
         "total": 0
       },
       "skip_reason": "无匹配章节",
-      "skipped_at": "2026-03-31T08:19:28"
+      "skipped_at": "2026-03-31T08:19:28",
+      "path": "./[092]untrusted-touch-events - 简书-2023-12-05.md"
     },
     {
       "title": "[2303.10130] GPTs are GPTs: An Early Look at the Labor Market Impact Potential of Large Language Models",
@@ -16656,7 +16806,8 @@
         "total": 0
       },
       "skip_reason": "无匹配章节",
-      "skipped_at": "2026-03-31T08:19:28"
+      "skipped_at": "2026-03-31T08:19:28",
+      "path": "./[2303.10130] GPTs are GPTs- An Early Look at the Labor Market Impact Potential of Large Language Mod.md"
     },
     {
       "title": "[2411.10640] BlueLM-V-3B: Algorithm and System Co-Design for Multimodal Large Language Models on Mob...",
@@ -16665,7 +16816,8 @@
         "total": 0
       },
       "skip_reason": "无匹配章节",
-      "skipped_at": "2026-03-31T08:19:28"
+      "skipped_at": "2026-03-31T08:19:28",
+      "path": "./[2411.10640] BlueLM-V-3B- Algorithm and System Co-Design for Multimodal Large Language Models on Mob.md"
     },
     {
       "title": "[AI里程碑] AiPhone is coming | AI+手机时代已来",
@@ -16674,7 +16826,8 @@
         "total": 0
       },
       "skip_reason": "无匹配章节",
-      "skipped_at": "2026-03-31T08:19:28"
+      "skipped_at": "2026-03-31T08:19:28",
+      "path": "./[AI里程碑] AiPhone is coming - AI+手机时代已来-2024-02-29.md"
     },
     {
       "title": "[Agentic AI] 使用Cursor作为AI的通用入口",
@@ -16683,7 +16836,8 @@
         "total": 0
       },
       "skip_reason": "无匹配章节",
-      "skipped_at": "2026-03-31T08:19:28"
+      "skipped_at": "2026-03-31T08:19:28",
+      "path": "./[Agentic AI] 使用Cursor作为AI的通用入口-2025-05-14.md"
     },
     {
       "title": "[Android]记一次com.android.tethering导致的system_server crash问题",
@@ -16692,7 +16846,8 @@
         "total": 0
       },
       "skip_reason": "无匹配章节",
-      "skipped_at": "2026-03-31T08:19:28"
+      "skipped_at": "2026-03-31T08:19:28",
+      "path": "./[Android]记一次com.android.tethering导致的system_server crash问题-2024-03-26.md"
     },
     {
       "title": "[原创]通过sendevent实现多点连续滑动-Android安全-看雪论坛-安全社区|安全招聘|bbs.pediy.com",
@@ -16701,7 +16856,8 @@
         "total": 0
       },
       "skip_reason": "无匹配章节",
-      "skipped_at": "2026-03-31T08:19:28"
+      "skipped_at": "2026-03-31T08:19:28",
+      "path": "./[原创]通过sendevent实现多点连续滑动-Android安全-看雪论坛-安全社区-安全招聘-bbs.pediy.com-2023-01-05.md"
     },
     {
       "title": "[干货建议收藏]我们对 Java 有哪些常见的误区？",
@@ -16710,7 +16866,8 @@
         "total": 0
       },
       "skip_reason": "无匹配章节",
-      "skipped_at": "2026-03-31T08:19:28"
+      "skipped_at": "2026-03-31T08:19:28",
+      "path": "./[干货建议收藏]我们对 Java 有哪些常见的误区？-2024-01-16.md"
     },
     {
       "title": "[总结] 漫谈HDR和色彩管理（一）光、颜色和色度图",
@@ -16719,7 +16876,8 @@
         "total": 0
       },
       "skip_reason": "无匹配章节",
-      "skipped_at": "2026-03-31T08:19:28"
+      "skipped_at": "2026-03-31T08:19:28",
+      "path": "./[总结] 漫谈HDR和色彩管理（一）光、颜色和色度图-2025-08-01.md"
     },
     {
       "title": "[翻译] 富士康在印度生产 iPhone 的艰难历程",
@@ -16728,7 +16886,8 @@
         "total": 0
       },
       "skip_reason": "无匹配章节",
-      "skipped_at": "2026-03-31T08:19:28"
+      "skipped_at": "2026-03-31T08:19:28",
+      "path": "./[翻译] 富士康在印度生产 iPhone 的艰难历程-2023-11-29.md"
     },
     {
       "title": "[译] AI计算民主化 第七部分：如何看待Triton与Python eDSLs？",
@@ -16737,7 +16896,8 @@
         "total": 0
       },
       "skip_reason": "无匹配章节",
-      "skipped_at": "2026-03-31T08:19:28"
+      "skipped_at": "2026-03-31T08:19:28",
+      "path": "./[译] AI计算民主化 第七部分：如何看待Triton与Python eDSLs？-2025-04-06.md"
     },
     {
       "title": "[译]AI算力民主化 第8部分：MLIR编译器基础设施如何？",
@@ -16746,7 +16906,8 @@
         "total": 0
       },
       "skip_reason": "无匹配章节",
-      "skipped_at": "2026-03-31T08:19:28"
+      "skipped_at": "2026-03-31T08:19:28",
+      "path": "./[译]AI算力民主化 第8部分：MLIR编译器基础设施如何？-2025-04-19.md"
     },
     {
       "title": "[译]AI算力民主化 第三部分：CUDA是如何成功的？",
@@ -16755,7 +16916,8 @@
         "total": 0
       },
       "skip_reason": "无匹配章节",
-      "skipped_at": "2026-03-31T08:19:28"
+      "skipped_at": "2026-03-31T08:19:28",
+      "path": "./[译]AI算力民主化 第三部分：CUDA是如何成功的？-2025-03-19.md"
     },
     {
       "title": "[译]AI算力民主化 第二部分：究竟何为“CUDA”？",
@@ -16764,7 +16926,8 @@
         "total": 0
       },
       "skip_reason": "无匹配章节",
-      "skipped_at": "2026-03-31T08:19:28"
+      "skipped_at": "2026-03-31T08:19:28",
+      "path": "./[译]AI算力民主化 第二部分：究竟何为“CUDA”？-2025-03-18.md"
     },
     {
       "title": "[译]AI算力民主化 第五部分：CUDA C++替代方案（如OpenCL）现状如何？",
@@ -16773,7 +16936,8 @@
         "total": 0
       },
       "skip_reason": "无匹配章节",
-      "skipped_at": "2026-03-31T08:19:28"
+      "skipped_at": "2026-03-31T08:19:28",
+      "path": "./[译]AI算力民主化 第五部分：CUDA C++替代方案（如OpenCL）现状如何？-2025-03-21.md"
     },
     {
       "title": "[译]AI算力民主化 第六部分：TVM和XLA等AI编译器现状？",
@@ -16782,7 +16946,8 @@
         "total": 0
       },
       "skip_reason": "无匹配章节",
-      "skipped_at": "2026-03-31T08:19:28"
+      "skipped_at": "2026-03-31T08:19:28",
+      "path": "./[译]AI算力民主化 第六部分：TVM和XLA等AI编译器现状？-2025-03-22.md"
     },
     {
       "title": "[译]AI算力民主化 第四部分：CUDA虽为现有主导者，但它真的完美吗？",
@@ -16791,7 +16956,8 @@
         "total": 0
       },
       "skip_reason": "无匹配章节",
-      "skipped_at": "2026-03-31T08:19:28"
+      "skipped_at": "2026-03-31T08:19:28",
+      "path": "./[译]AI算力民主化 第四部分：CUDA虽为现有主导者，但它真的完美吗？-2025-03-20.md"
     },
     {
       "title": "[译]AI计算民主化 第一部分：DeepSeek对AI 的影响",
@@ -16800,7 +16966,8 @@
         "total": 0
       },
       "skip_reason": "无匹配章节",
-      "skipped_at": "2026-03-31T08:19:28"
+      "skipped_at": "2026-03-31T08:19:28",
+      "path": "./[译]AI计算民主化 第一部分：DeepSeek对AI 的影响-2025-03-19.md"
     },
     {
       "path": "Cubox/[送码] 为了帮助你回忆旅行足迹，我开发了「山河旅记」 - 少数派-2025-01-19.md",
@@ -17201,9 +17368,849 @@
         "total": 9
       },
       "reason": "总分9<10"
+    },
+    {
+      "title": "kernel/git/stable/linux.git - Linux kernel stable tree",
+      "path": "Cubox/kernel-git-stable-linux.git - Linux kernel stable tree-2022-03-17.md",
+      "score": {
+        "relevance": 2,
+        "technical_depth": 1,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 7
+      },
+      "reason": "总分7<10分"
+    },
+    {
+      "title": "kgsl负载分析 - 掘金",
+      "path": "Cubox/kgsl负载分析 - 掘金-2024-06-20.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 4,
+        "verifiability": 1,
+        "total": 7
+      },
+      "reason": "总分7<10分"
+    },
+    {
+      "title": "kiennt26's home | Linux Network Performance Ultimate Guide",
+      "path": "Cubox/kiennt26's home - Linux Network Performance Ultimate Guide-2024-12-12.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 4,
+        "verifiability": 1,
+        "total": 7
+      },
+      "reason": "总分7<10分"
+    },
+    {
+      "title": "lululemon创始人强推的《高效能人士的七个习惯》到底有什么魔力？",
+      "path": "Cubox/lululemon创始人强推的《高效能人士的七个习惯》到底有什么魔力？-2022-02-12.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 6
+      },
+      "reason": "总分6<10分"
+    },
+    {
+      "title": "make things happen",
+      "path": "Cubox/make things happen-2026-01-14.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 5,
+        "verifiability": 1,
+        "total": 8
+      },
+      "reason": "总分8<10分"
+    },
+    {
+      "title": "memory-leak-detector/README_cn.md at master · bytedance/memory-leak-detector",
+      "path": "Cubox/memory-leak-detector-README_cn.md at master · bytedance-memory-leak-detector-2024-02-04.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 4,
+        "verifiability": 1,
+        "total": 7
+      },
+      "reason": "总分7<10分"
+    },
+    {
+      "title": "nader dabit (@dabit3)",
+      "path": "Cubox/nader dabit (@dabit3)-6K likes · 139 replies-2026-01-10.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 5,
+        "verifiability": 1,
+        "total": 8
+      },
+      "reason": "总分8<10分"
+    },
+    {
+      "title": "niezhiyang/open_source_team: 国内顶尖团队的开源地址",
+      "path": "Cubox/niezhiyang-open_source_team- 国内顶尖团队的开源地址-2025-04-13.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 5,
+        "verifiability": 1,
+        "total": 8
+      },
+      "reason": "总分8<10分"
+    },
+    {
+      "title": "o1发布后，信息量最大的圆桌对话：杨植麟、姜大昕、朱军探讨大模型技术路径",
+      "path": "Cubox/o1发布后，信息量最大的圆桌对话：杨植麟、姜大昕、朱军探讨大模型技术路径-2024-09-19.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 4,
+        "verifiability": 1,
+        "total": 7
+      },
+      "reason": "总分7<10分"
+    },
+    {
+      "title": "object，史上最 “快” 单例 ？ － 小专栏",
+      "path": "Cubox/object，史上最 “快” 单例 ？ － 小专栏-2022-01-20.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 6
+      },
+      "reason": "总分6<10分"
+    },
+    {
+      "title": "onCreate",
+      "path": "Cubox/onCreate-2023-10-11.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 6
+      },
+      "reason": "总分6<10分"
+    },
+    {
+      "title": "onCreate",
+      "path": "Cubox/onCreate-2023-12-08.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 6
+      },
+      "reason": "总分6<10分"
+    },
+    {
+      "title": "ongoing by Tim Bray · What Android Is",
+      "path": "Cubox/ongoing by Tim Bray · What Android Is-2024-06-17.md",
+      "score": {
+        "relevance": 2,
+        "technical_depth": 1,
+        "timeliness": 4,
+        "verifiability": 1,
+        "total": 8
+      },
+      "reason": "总分8<10分"
+    },
+    {
+      "title": "oppo怎么做性能优化的",
+      "path": "Cubox/oppo怎么做性能优化的-2025-10-19.md",
+      "score": {
+        "relevance": 2,
+        "technical_depth": 1,
+        "timeliness": 5,
+        "verifiability": 1,
+        "total": 9
+      },
+      "reason": "总分9<10分"
+    },
+    {
+      "title": "perf: Linux profiling with performance counters",
+      "path": "Cubox/perf- Linux profiling with performance counters-2025-01-06.md",
+      "score": {
+        "relevance": 2,
+        "technical_depth": 1,
+        "timeliness": 5,
+        "verifiability": 1,
+        "total": 9
+      },
+      "reason": "总分9<10分"
+    },
+    {
+      "title": "perfetto  |  Android 开发者  |  Android Developers",
+      "path": "Cubox/perfetto  -  Android 开发者  -  Android Developers-2022-02-28.md",
+      "score": {
+        "relevance": 3,
+        "technical_depth": 2,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 9
+      },
+      "reason": "总分9<10分"
+    },
+    {
+      "title": "perfetto.dev",
+      "path": "Cubox/perfetto.dev-2022-03-05.md",
+      "score": {
+        "relevance": 2,
+        "technical_depth": 2,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 8
+      },
+      "reason": "总分8<10分"
+    },
+    {
+      "title": "perfetto高阶使用：编译浏览器UI核心步骤简述： 1. 搞到 perfetto 工程的源码 2. 执行 tools - 掘金",
+      "path": "Cubox/perfetto高阶使用：编译浏览器UI核心步骤简述： 1. 搞到 perfetto 工程的源码 2. 执行 tools - 掘金-2025-01-16.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 2,
+        "timeliness": 5,
+        "verifiability": 1,
+        "total": 9
+      },
+      "reason": "总分9<10分"
+    },
+    {
+      "title": "sched_ext: a BPF-extensible scheduler class (Part 1)",
+      "path": "Cubox/sched_ext- a BPF-extensible scheduler class (Part 1)-2024-12-20.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 4,
+        "verifiability": 1,
+        "total": 7
+      },
+      "reason": "总分7<10分"
+    },
+    {
+      "title": "sched_ext: scheduler architecture and interfaces (Part 2)",
+      "path": "Cubox/sched_ext- scheduler architecture and interfaces (Part 2)-2024-12-24.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 4,
+        "verifiability": 1,
+        "total": 7
+      },
+      "reason": "总分7<10分"
+    },
+    {
+      "title": "sf干货：SurfaceControl数据如何与Layer的bounds进行关联及Winscope查看方法",
+      "path": "Cubox/sf干货：SurfaceControl数据如何与Layer的bounds进行关联及Winscope查看方法-2025-12-22.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 5,
+        "verifiability": 1,
+        "total": 8
+      },
+      "reason": "总分8<10分"
+    },
+    {
+      "title": "sitin (@sitinme)",
+      "path": "Cubox/sitin (@sitinme)-27 likes · 3 replies-2026-02-22.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 5,
+        "verifiability": 1,
+        "total": 8
+      },
+      "reason": "总分8<10分"
+    },
+    {
+      "title": "skydoves/android-developer-roadmap: 🗺 Android Developer Roadmap 2022 suggests learning paths to understanding Android development.",
+      "path": "Cubox/skydoves-android-developer-roadmap- 🗺 Android Developer Roadmap 2022 suggests learning paths to und.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 6
+      },
+      "reason": "总分6<10分"
+    },
+    {
+      "title": "skydoves/compose-performance: 📚 Curated articles to understand Compose internals and optimize Jetpa...",
+      "path": "Cubox/skydoves-compose-performance- 📚 Curated articles to understand Compose internals and optimize Jetpa.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 6
+      },
+      "reason": "总分6<10分"
+    },
+    {
+      "title": "sonnylazuardi/cursor-talk-to-figma-mcp: Cursor Talk To Figma MCP",
+      "path": "Cubox/sonnylazuardi-cursor-talk-to-figma-mcp- Cursor Talk To Figma MCP-2025-03-18.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 5,
+        "verifiability": 1,
+        "total": 8
+      },
+      "reason": "总分8<10分"
+    },
+    {
+      "title": "sysctl 参数防篡改 - 基于 ebpf 的实现 [一]",
+      "path": "Cubox/sysctl 参数防篡改 - 基于 ebpf 的实现 [一]-2022-03-14.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 3,
+        "verifiability": 3,
+        "total": 8
+      },
+      "reason": "总分8<10分"
+    },
+    {
+      "title": "sysctl 参数防篡改 - 基于传统方法的实现",
+      "path": "Cubox/sysctl 参数防篡改 - 基于传统方法的实现-2022-03-08.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 6
+      },
+      "reason": "总分6<10分"
+    },
+    {
+      "title": "systemserver binder线程耗尽问题分析及优化方案_一杯咖啡的专栏-CSDN博客_binder线程池满了",
+      "path": "Cubox/systemserver binder线程耗尽问题分析及优化方案_一杯咖啡的专栏-CSDN博客_binder线程池满了-2022-01-14.md",
+      "score": {
+        "relevance": 3,
+        "technical_depth": 1,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 8
+      },
+      "reason": "总分8<10分"
+    },
+    {
+      "path": "Cubox/\"Hello World\"程序的工作原理：从编译到执行-2026-01-15.md",
+      "title": "Hello World程序的工作原理",
+      "score": {
+        "total": 6
+      },
+      "reason": "编译原理，非Android专项",
+      "skipped_at": "2026-03-31T11:58:32.842144"
+    },
+    {
+      "path": "Cubox/\"一把梭：REST API 全用 POST\" - 酷 壳 - CoolShell-2022-02-17.md",
+      "title": "REST API全用POST",
+      "score": {
+        "total": 4
+      },
+      "reason": "REST API设计，非Android",
+      "skipped_at": "2026-03-31T11:58:32.842144"
+    },
+    {
+      "path": "Cubox/\"不卷 AI、不碰币、下班不收消息\"——Jake Wharton的求职价值观-2026-02-26.md",
+      "title": "Jake Wharton求职价值观",
+      "score": {
+        "total": 5
+      },
+      "reason": "人物观点，非技术",
+      "skipped_at": "2026-03-31T11:58:32.842144"
+    },
+    {
+      "path": "Cubox/\"内卷\"、躺平、政治、经济、工人阶级和民族主义-2022-11-28.md",
+      "title": "全方位看中国",
+      "score": {
+        "total": 2
+      },
+      "reason": "社会评论",
+      "skipped_at": "2026-03-31T11:58:32.842144"
+    },
+    {
+      "path": "Cubox/\"大梦\"一场-2023-11-22.md",
+      "title": "大梦一场",
+      "score": {
+        "total": 2
+      },
+      "reason": "生活感悟",
+      "skipped_at": "2026-03-31T11:58:32.842144"
+    },
+    {
+      "path": "Cubox/\"失去的三十年\"：日本曾代表着未来-2023-01-27.md",
+      "title": "日本失去的三十年",
+      "score": {
+        "total": 2
+      },
+      "reason": "经济评论",
+      "skipped_at": "2026-03-31T11:58:32.842144"
+    },
+    {
+      "path": "Cubox/\"我发了一组 NFT，但无人接收\"-2022-07-24.md",
+      "title": "NFT相关",
+      "score": {
+        "total": 2
+      },
+      "reason": "NFT话题",
+      "skipped_at": "2026-03-31T11:58:32.842144"
+    },
+    {
+      "path": "Cubox/\"我是爱知乎的，但我们不能假装一切都没有发生\"-2022-01-24.md",
+      "title": "关于知乎",
+      "score": {
+        "total": 2
+      },
+      "reason": "平台评论",
+      "skipped_at": "2026-03-31T11:58:32.842144"
+    },
+    {
+      "path": "Cubox/\"立刻开始做\" - 技术人金句系列-2022-12-17.md",
+      "title": "技术人金句",
+      "score": {
+        "total": 3
+      },
+      "reason": "生产力语录",
+      "skipped_at": "2026-03-31T11:58:32.842144"
+    },
+    {
+      "path": "Cubox/\"聊天式编程\"让代码听你的话-2025-03-29.md",
+      "title": "Cursor聊天式编程",
+      "score": {
+        "total": 6
+      },
+      "reason": "AI编程工具，非Android",
+      "skipped_at": "2026-03-31T11:58:32.842144"
+    },
+    {
+      "path": "Cubox/\"这不是一篇阅读理解\"-2022-07-13.md",
+      "title": "最伟大的作品",
+      "score": {
+        "total": 1
+      },
+      "reason": "音乐评论",
+      "skipped_at": "2026-03-31T11:58:32.842144"
+    },
+    {
+      "path": "Cubox/\"这是可以做一辈子的事么\"-2022-03-16.md",
+      "title": "职业思考",
+      "score": {
+        "total": 2
+      },
+      "reason": "职业话题",
+      "skipped_at": "2026-03-31T11:58:32.842144"
+    },
+    {
+      "path": "Cubox/■■■■ ■■■■■■■■■-2022-11-26.md",
+      "title": "（内容屏蔽）",
+      "score": {
+        "total": 1
+      },
+      "reason": "内容不可读",
+      "skipped_at": "2026-03-31T11:58:32.842144"
+    },
+    {
+      "path": "Cubox/▶ 科学60秒：又菜又爱玩-2023-01-29.md",
+      "title": "科学60秒",
+      "score": {
+        "total": 1
+      },
+      "reason": "心理学",
+      "skipped_at": "2026-03-31T11:58:32.842144"
+    },
+    {
+      "path": "Cubox/⭐️ To HomePod- the music DNA-2023-01-20.md",
+      "title": "To HomePod",
+      "score": {
+        "total": 1
+      },
+      "reason": "音乐产品",
+      "skipped_at": "2026-03-31T11:58:32.842144"
+    },
+    {
+      "path": "Cubox/\"It isn't the things\"",
+      "title": "StoicallyTyped Newsletter",
+      "score": {
+        "total": 3
+      },
+      "reason": "Newsletter摘要",
+      "skipped_at": "2026-03-31T11:58:32.842144"
+    },
+    {
+      "path": "Cubox/\"Progress is not achieved\"",
+      "title": "StoicallyTyped Newsletter",
+      "score": {
+        "total": 3
+      },
+      "reason": "Newsletter摘要",
+      "skipped_at": "2026-03-31T11:58:32.842144"
+    },
+    {
+      "path": "Cubox/\"Remind yourself\"",
+      "title": "StoicallyTyped Newsletter",
+      "score": {
+        "total": 3
+      },
+      "reason": "Newsletter摘要",
+      "skipped_at": "2026-03-31T11:58:32.842144"
+    },
+    {
+      "path": "Cubox/\"The things you think\"",
+      "title": "StoicallyTyped Newsletter",
+      "score": {
+        "total": 3
+      },
+      "reason": "Newsletter摘要",
+      "skipped_at": "2026-03-31T11:58:32.842144"
+    },
+    {
+      "path": "Cubox/\"Time doesn't heal\"",
+      "title": "StoicallyTyped Newsletter",
+      "score": {
+        "total": 3
+      },
+      "reason": "Newsletter摘要",
+      "skipped_at": "2026-03-31T11:58:32.842144"
+    },
+    {
+      "path": "Cubox/\"What happens to one\"",
+      "title": "StoicallyTyped Newsletter",
+      "score": {
+        "total": 3
+      },
+      "reason": "Newsletter摘要",
+      "skipped_at": "2026-03-31T11:58:32.842144"
+    },
+    {
+      "path": "Cubox/\"Wherever there is\"",
+      "title": "StoicallyTyped Newsletter",
+      "score": {
+        "total": 3
+      },
+      "reason": "Newsletter摘要",
+      "skipped_at": "2026-03-31T11:58:32.842144"
+    },
+    {
+      "path": "Cubox/\"Whether you think\"",
+      "title": "StoicallyTyped Newsletter",
+      "score": {
+        "total": 3
+      },
+      "reason": "Newsletter摘要",
+      "skipped_at": "2026-03-31T11:58:32.842144"
+    },
+    {
+      "path": "Cubox/\"You are hurt",
+      "title": "StoicallyTyped Newsletter",
+      "score": {
+        "total": 3
+      },
+      "reason": "Newsletter摘要",
+      "skipped_at": "2026-03-31T11:58:32.842144"
+    },
+    {
+      "path": "Cubox/\"不卷 AI、不碰币、下班不收消息\"——Android 知名技术大牛 Jake Wharton 的求职价值观-2026-02-26.md",
+      "title": "\"不卷 AI、不碰币、下班不收消息\"——Android 知名",
+      "score": {
+        "total": 3
+      },
+      "reason": "人物观点",
+      "skipped_at": "2026-03-31T12:00:55.680804"
+    },
+    {
+      "path": "Cubox/\"内卷\"、躺平、政治、经济、工人阶级和民族主义：全方位看中国 - iyouport-2022-11-28.md",
+      "title": "\"内卷\"、躺平、政治、经济、工人阶级和民族主义：全方位看中国",
+      "score": {
+        "total": 3
+      },
+      "reason": "社会评论",
+      "skipped_at": "2026-03-31T12:00:55.680804"
+    },
+    {
+      "path": "Cubox/\"立刻开始做，也许是提升生产力的关键\" - 技术人金句系列-2022-12-17.md",
+      "title": "\"立刻开始做，也许是提升生产力的关键\" - 技术人金句系列-",
+      "score": {
+        "total": 3
+      },
+      "reason": "生产力语录",
+      "skipped_at": "2026-03-31T12:00:55.680804"
+    },
+    {
+      "path": "Cubox/\"聊天式编程\"让代码听你的话：Cursor打造极致心流体验-2025-03-29.md",
+      "title": "\"聊天式编程\"让代码听你的话：Cursor打造极致心流体验-",
+      "score": {
+        "total": 3
+      },
+      "reason": "AI编程工具",
+      "skipped_at": "2026-03-31T12:00:55.680804"
+    },
+    {
+      "path": "Cubox/\"这不是一篇阅读理解\"，这是《最伟大的作品》（上）-2022-07-13.md",
+      "title": "\"这不是一篇阅读理解\"，这是《最伟大的作品》（上）-2022",
+      "score": {
+        "total": 3
+      },
+      "reason": "音乐评论",
+      "skipped_at": "2026-03-31T12:00:55.680804"
+    },
+    {
+      "path": "Cubox/▶ 科学60秒：又菜又爱玩，无异于心理自残 - 1-21 - 生涯频道 - 领研网-2023-01-29.md",
+      "title": "▶ 科学60秒：又菜又爱玩，无异于心理自残 - 1-21 -",
+      "score": {
+        "total": 3
+      },
+      "reason": "心理学",
+      "skipped_at": "2026-03-31T12:00:55.680804"
+    },
+    {
+      "path": "Cubox/⭐️ To HomePod- the music DNA - 大破进击-2023-01-20.md",
+      "title": "⭐️ To HomePod- the music DNA -",
+      "score": {
+        "total": 3
+      },
+      "reason": "音乐产品",
+      "skipped_at": "2026-03-31T12:00:55.680804"
+    },
+    {
+      "path": "Cubox/\"It isn't the things themselves that disturb people, but the judgements that they form about them.\".md",
+      "title": "\"It isn't the things themselve",
+      "score": {
+        "total": 3
+      },
+      "reason": "非Android技术/Newsletter摘要",
+      "skipped_at": "2026-03-31T12:00:55.680804"
+    },
+    {
+      "path": "Cubox/\"Progress is not achieved by luck or accident, but by working on yourself daily.\" - Revue-2022-01-24.md",
+      "title": "\"Progress is not achieved by l",
+      "score": {
+        "total": 3
+      },
+      "reason": "非Android技术/Newsletter摘要",
+      "skipped_at": "2026-03-31T12:00:55.680804"
+    },
+    {
+      "path": "Cubox/\"Remind yourself what you've been through and what you've had the strength to endure.\" - Revue-2022-.md",
+      "title": "\"Remind yourself what you've b",
+      "score": {
+        "total": 3
+      },
+      "reason": "非Android技术/Newsletter摘要",
+      "skipped_at": "2026-03-31T12:00:55.680804"
+    },
+    {
+      "path": "Cubox/\"The things you think about determine the quality of your mind.\" - Revue-2022-01-24.md",
+      "title": "\"The things you think about de",
+      "score": {
+        "total": 3
+      },
+      "reason": "非Android技术/Newsletter摘要",
+      "skipped_at": "2026-03-31T12:00:55.680804"
+    },
+    {
+      "path": "Cubox/\"Time doesn't heal. It's what you do with the time.\" - Revue-2022-01-24.md",
+      "title": "\"Time doesn't heal. It's what ",
+      "score": {
+        "total": 3
+      },
+      "reason": "非Android技术/Newsletter摘要",
+      "skipped_at": "2026-03-31T12:00:55.680804"
+    },
+    {
+      "path": "Cubox/\"What happens to one person may happen to all.\" - Revue-2022-01-24.md",
+      "title": "\"What happens to one person ma",
+      "score": {
+        "total": 3
+      },
+      "reason": "非Android技术/Newsletter摘要",
+      "skipped_at": "2026-03-31T12:00:55.680804"
+    },
+    {
+      "path": "Cubox/\"Wherever there is a human being there is an opportunity for kindness\" - Revue-2022-01-24.md",
+      "title": "\"Wherever there is a human bei",
+      "score": {
+        "total": 3
+      },
+      "reason": "非Android技术/Newsletter摘要",
+      "skipped_at": "2026-03-31T12:00:55.680804"
+    },
+    {
+      "path": "Cubox/\"Whether you think you can or think you can't, either way you are right.\" - Revue-2022-01-24.md",
+      "title": "\"Whether you think you can or ",
+      "score": {
+        "total": 3
+      },
+      "reason": "非Android技术/Newsletter摘要",
+      "skipped_at": "2026-03-31T12:00:55.680804"
+    },
+    {
+      "path": "Cubox/\"You are hurt the moment you believe yourself to be\" - Revue-2022-01-24.md",
+      "title": "\"You are hurt the moment you b",
+      "score": {
+        "total": 3
+      },
+      "reason": "非Android技术/Newsletter摘要",
+      "skipped_at": "2026-03-31T12:00:55.680804"
+    },
+    {
+      "path": "Cubox/《GPT-4 ，通用人工智能的火花》论文内容精选与翻译-2023-03-26.md",
+      "reason": "AI/GPT论文非Android",
+      "total_score": 4,
+      "skipped_at": "2026-03-31T12:24:45.798832"
+    },
+    {
+      "path": "Cubox/《V字仇杀队》里有哪些暗藏的细节？ - 知乎-2022-06-22.md",
+      "reason": "影视评论",
+      "total_score": 1,
+      "skipped_at": "2026-03-31T12:24:45.798832"
+    },
+    {
+      "path": "Cubox/《人类简史》作者赫拉利- 这是一场会影响世界每个人的战争 - 新华二代在德国 - Medium-2022-03-08.md",
+      "reason": "时事评论",
+      "total_score": 1,
+      "skipped_at": "2026-03-31T12:24:45.798832"
+    },
+    {
+      "path": "Cubox/《你是一个有用的邮件助理》和其他 Apple Intelligence 指示 [译] - 宝玉的分享-2024-08-06.md",
+      "reason": "Apple Intelligence非Android",
+      "total_score": 3,
+      "skipped_at": "2026-03-31T12:24:45.798832"
+    },
+    {
+      "path": "Cubox/《动物庄园》使我成为今天的我-2023-07-18.md",
+      "reason": "文学评论",
+      "total_score": 1,
+      "skipped_at": "2026-03-31T12:24:45.798832"
+    },
+    {
+      "path": "Cubox/《动物庄园》译后记+全书目录-2023-02-17.md",
+      "reason": "文学评论",
+      "total_score": 1,
+      "skipped_at": "2026-03-31T12:24:45.798832"
+    },
+    {
+      "path": "Cubox/《千面英雄》：神话与现代社会的联系和连接-2022-01-29.md",
+      "reason": "读书笔记",
+      "total_score": 1,
+      "skipped_at": "2026-03-31T12:24:45.798832"
+    },
+    {
+      "path": "Cubox/《奔跑吧，程序员：从零开始打造产品、技术和团队》-2025-01-22.md",
+      "reason": "职业发展无技术深度",
+      "total_score": 4,
+      "skipped_at": "2026-03-31T12:24:45.798832"
+    },
+    {
+      "path": "Cubox/《成都市锦江区关于支持开源鸿蒙产业生态发展的若干政策措施》-2024-06-27.md",
+      "reason": "政策文件非技术",
+      "total_score": 2,
+      "skipped_at": "2026-03-31T12:24:45.798832"
+    },
+    {
+      "path": "Cubox/《柳叶刀》中风醒脑液双盲试验作者：没想过无效-2024-11-25.md",
+      "reason": "医学",
+      "total_score": 1,
+      "skipped_at": "2026-03-31T12:24:45.798832"
+    },
+    {
+      "path": "Cubox/《给字节卖命两年，被恶意劝退并要求退还全部工资》作者回应字节辟谣-2024-01-15.md",
+      "reason": "职场纠纷",
+      "total_score": 1,
+      "skipped_at": "2026-03-31T12:24:45.798832"
+    },
+    {
+      "path": "Cubox/《编程卓越之道》推荐序-2023-02-06.md",
+      "reason": "仅推荐序无实质内容",
+      "total_score": 5,
+      "skipped_at": "2026-03-31T12:24:45.798832"
+    },
+    {
+      "path": "Cubox/《自控力》 - 读书笔记-2023-07-26.md",
+      "reason": "心理学",
+      "total_score": 1,
+      "skipped_at": "2026-03-31T12:24:45.798832"
+    },
+    {
+      "path": "Cubox/《蒸汽、钢铁与无限心智》（Steam, Steel, and Infinite Minds）-2026-01-26.md",
+      "reason": "AI随笔非Android",
+      "total_score": 3,
+      "skipped_at": "2026-03-31T12:24:45.798832"
+    },
+    {
+      "path": "Cubox/《详谈》的6位优秀同行者：三十岁做事，四十岁做人，五十岁做自己-2022-02-17.md",
+      "reason": "人物访谈",
+      "total_score": 1,
+      "skipped_at": "2026-03-31T12:24:45.798832"
+    },
+    {
+      "path": "Cubox/《黑神话：悟空》要想玩得好，这个得学起来-2024-08-23.md",
+      "reason": "游戏攻略",
+      "total_score": 1,
+      "skipped_at": "2026-03-31T12:24:45.798832"
+    },
+    {
+      "path": "Cubox/「4000字干货」一条完美的英语国家润学路线：近乎100%实现当地就业+移民-2024-09-01.md",
+      "reason": "移民攻略",
+      "total_score": 1,
+      "skipped_at": "2026-03-31T12:24:45.798832"
+    },
+    {
+      "path": "Cubox/「代码艺术家」不会被 AI 取代 - Randy's Blog-2025-02-09.md",
+      "reason": "AI职业讨论非Android",
+      "total_score": 3,
+      "skipped_at": "2026-03-31T12:24:45.798832"
+    },
+    {
+      "path": "Cubox/「原创」左-右政治光谱及中共对其畸化-2022-07-16.md",
+      "reason": "政治评论",
+      "total_score": 1,
+      "skipped_at": "2026-03-31T12:24:45.798832"
+    },
+    {
+      "path": "Cubox/『北京故事44-都好难啊！』  分享几件今晚我在青年路上看到-2022-03-22.md",
+      "reason": "个人随笔",
+      "total_score": 1,
+      "skipped_at": "2026-03-31T12:24:45.798832"
+    },
+    {
+      "path": "Cubox/【0101】技术的定位：程序员是这个时代的手艺人-2024-11-10.md",
+      "reason": "职业思考无技术深度",
+      "total_score": 4,
+      "skipped_at": "2026-03-31T12:24:45.798832"
+    },
+    {
+      "path": "Cubox/【2024 年终总结】北漂四年，奔三，直面天命，和鸿洋成为跑步搭子-2025-01-27.md",
+      "reason": "个人年终总结",
+      "total_score": 1,
+      "skipped_at": "2026-03-31T12:24:45.798832"
+    },
+    {
+      "path": "Cubox/《大明历史年鉴》4小时35分完整版，历时140天倾情制作，挑战全网最全最详实明朝历史年表-哔哩哔哩-2022-09-29.md",
+      "reason": "历史视频",
+      "total_score": 1,
+      "skipped_at": "2026-03-31T12:24:45.798832"
+    },
+    {
+      "path": "Cubox/【2021 年度十大图书】大脑上瘾的植物、人工智能、城市与计算机的隐喻｜Deep Reading#073 – Dailyio-2022-01-20.md",
+      "reason": "图书推荐",
+      "total_score": 1,
+      "skipped_at": "2026-03-31T12:24:45.798832"
     }
   ],
-  "last_updated": "2026-03-31T07:45:00",
+  "last_updated": "2026-03-31T11:02:51.416383",
   "skipped": [
     {
       "path": "Cubox/TikTok and the Sorting Hat — Remains of the Day-2023-07-11.md",
@@ -17581,6 +18588,370 @@
       "total": 8,
       "reason": "个人工具箱，非技术",
       "skipped_at": "2026-03-31T07:20:14"
+    },
+    {
+      "path": "Cubox/t.co-2025-07-19.md",
+      "title": "t.co-2025-07-19",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 4,
+        "verifiability": 1,
+        "total": 7
+      },
+      "reason": "AI新闻(Manus)",
+      "skipped_at": "2026-03-31T11:02:51.413162"
+    },
+    {
+      "path": "Cubox/tuteng-Best-websites-a-programmer-should-visit-zh-2023-12-16.md",
+      "title": "tuteng-Best-websites-a-programmer-should-visit-zh-2023-12-16",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 4,
+        "verifiability": 1,
+        "total": 7
+      },
+      "reason": "程序员网站列表",
+      "skipped_at": "2026-03-31T11:02:51.413401"
+    },
+    {
+      "path": "Cubox/tuteng-Best-websites-a-programmer-should-visit-zh-2024-01-15.md",
+      "title": "tuteng-Best-websites-a-programmer-should-visit-zh-2024-01-15",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 4,
+        "verifiability": 1,
+        "total": 7
+      },
+      "reason": "程序员网站列表",
+      "skipped_at": "2026-03-31T11:02:51.413482"
+    },
+    {
+      "path": "Cubox/tw93.fun-我的极简生活经验 - Tw93-2024-04-21.md",
+      "title": "tw93.fun-我的极简生活经验 - Tw93-2024-04-21",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 4,
+        "verifiability": 1,
+        "total": 7
+      },
+      "reason": "极简生活方式",
+      "skipped_at": "2026-03-31T11:02:51.413552"
+    },
+    {
+      "path": "Cubox/vLLM 深度解析：Deekseek and vLLM -1-2025-03-20.md",
+      "title": "vLLM 深度解析：Deekseek and vLLM -1-2025-03-20",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 4,
+        "verifiability": 1,
+        "total": 7
+      },
+      "reason": "vLLM推理，非Android",
+      "skipped_at": "2026-03-31T11:02:51.413620"
+    },
+    {
+      "path": "Cubox/vLLM 深度解析：production stack-2025-03-17.md",
+      "title": "vLLM 深度解析：production stack-2025-03-17",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 4,
+        "verifiability": 1,
+        "total": 7
+      },
+      "reason": "vLLM推理，非Android",
+      "skipped_at": "2026-03-31T11:02:51.413687"
+    },
+    {
+      "path": "Cubox/vandadnp-flutter-tips-and-tricks- A Collection of Flutter and Dart Tips and Tricks-2022-03-16.md",
+      "title": "vandadnp-flutter-tips-and-tricks- A Collection of Flutter and Dart Tips and Tric",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 4,
+        "verifiability": 1,
+        "total": 7
+      },
+      "reason": "Flutter tips集合，非性能",
+      "skipped_at": "2026-03-31T11:02:51.413751"
+    },
+    {
+      "path": "Cubox/vivo X200 Pro 使用体验 – 陈仓颉-2025-01-09.md",
+      "title": "vivo X200 Pro 使用体验 – 陈仓颉-2025-01-09",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 4,
+        "verifiability": 1,
+        "total": 7
+      },
+      "reason": "手机使用体验，非技术深度",
+      "skipped_at": "2026-03-31T11:02:51.413822"
+    },
+    {
+      "path": "Cubox/vol10.增加「选择的机会」，而不是提高「选择的成功率」 - 独立开发沉思录-2024-09-02.md",
+      "title": "vol10.增加「选择的机会」，而不是提高「选择的成功率」 - 独立开发沉思录-2024-09-02",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 4,
+        "verifiability": 1,
+        "total": 7
+      },
+      "reason": "独立开发/方法论",
+      "skipped_at": "2026-03-31T11:02:51.414028"
+    },
+    {
+      "path": "Cubox/vol28.信息过载自救指南 - 独立开发沉思录-2025-01-13.md",
+      "title": "vol28.信息过载自救指南 - 独立开发沉思录-2025-01-13",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 4,
+        "verifiability": 1,
+        "total": 7
+      },
+      "reason": "独立开发/方法论",
+      "skipped_at": "2026-03-31T11:02:51.414093"
+    },
+    {
+      "path": "Cubox/williamfzc-stagesepx- detect stages in video automatically-2024-04-15.md",
+      "title": "williamfzc-stagesepx- detect stages in video automatically-2024-04-15",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 4,
+        "verifiability": 1,
+        "total": 7
+      },
+      "reason": "视频阶段检测工具，非Android性能",
+      "skipped_at": "2026-03-31T11:02:51.414156"
+    },
+    {
+      "path": "Cubox/wiseflow-README_CN.md at master · TeamWiseFlow-wiseflow · GitHub-2024-08-07.md",
+      "title": "wiseflow-README_CN at master · TeamWiseFlow-wiseflow · GitHub-2024-08-07",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 4,
+        "verifiability": 1,
+        "total": 7
+      },
+      "reason": "信息挖掘工具",
+      "skipped_at": "2026-03-31T11:02:51.414236"
+    },
+    {
+      "path": "Cubox/www.anthropic.com-2026-03-26.md",
+      "title": "www.anthropic.com-2026-03-26",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 4,
+        "verifiability": 1,
+        "total": 7
+      },
+      "reason": "Claude Code，非Android",
+      "skipped_at": "2026-03-31T11:02:51.414294"
+    },
+    {
+      "path": "Cubox/www.jianshu.com-2022-07-28.md",
+      "title": "www.jianshu.com-2022-07-28",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 4,
+        "verifiability": 1,
+        "total": 7
+      },
+      "reason": "iOS渲染框架，非Android",
+      "skipped_at": "2026-03-31T11:02:51.414359"
+    },
+    {
+      "path": "Cubox/www.wsj.com-2025-02-05.md",
+      "title": "www.wsj.com-2025-02-05",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 4,
+        "verifiability": 1,
+        "total": 7
+      },
+      "reason": "NVIDIA AI新闻",
+      "skipped_at": "2026-03-31T11:02:51.414414"
+    },
+    {
+      "path": "Cubox/www.zhihu.com-2025-10-21.md",
+      "title": "www.zhihu.com-2025-10-21",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 4,
+        "verifiability": 1,
+        "total": 7
+      },
+      "reason": "非Android技术内容",
+      "skipped_at": "2026-03-31T11:02:51.414470"
+    },
+    {
+      "path": "Cubox/yibie (@yibie) on X-2026-03-22.md",
+      "title": "yibie (@yibie) on X-2026-03-22",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 4,
+        "verifiability": 1,
+        "total": 7
+      },
+      "reason": "AI编程推文",
+      "skipped_at": "2026-03-31T11:02:51.414743"
+    },
+    {
+      "path": "Cubox/yifeikong-reverse-interview-zh- 技术面试最后反问面试官的话-2022-02-13.md",
+      "title": "yifeikong-reverse-interview-zh- 技术面试最后反问面试官的话-2022-02-13",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 4,
+        "verifiability": 1,
+        "total": 7
+      },
+      "reason": "面试反问清单",
+      "skipped_at": "2026-03-31T11:02:51.414809"
+    },
+    {
+      "path": "Cubox/yuuou blog-2025-09-17.md",
+      "title": "yuuou blog-2025-09-17",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 4,
+        "verifiability": 1,
+        "total": 7
+      },
+      "reason": "个人博客",
+      "skipped_at": "2026-03-31T11:02:51.414873"
+    },
+    {
+      "path": "Cubox/zhaoolee-ChromeAppHeroes- 🌈谷粒-Chrome插件英雄榜, 为优秀的Chrome插件写一本中文说明书, 让Chrome插件英雄们造福人类~ ChromePluginHero.md",
+      "title": "zhaoolee-ChromeAppHeroes- 🌈谷粒-Chrome插件英雄榜, 为优秀的Chrome插件写一本中文说明书, 让Chrome插件英雄们造福人",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 4,
+        "verifiability": 1,
+        "total": 7
+      },
+      "reason": "Chrome插件列表",
+      "skipped_at": "2026-03-31T11:02:51.414951"
+    },
+    {
+      "path": "Cubox/zhuanlan.zhihu.com-2025-04-08.md",
+      "title": "zhuanlan.zhihu.com-2025-04-08",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 4,
+        "verifiability": 1,
+        "total": 7
+      },
+      "reason": "知乎链接，非Android",
+      "skipped_at": "2026-03-31T11:02:51.415013"
+    },
+    {
+      "path": "Cubox/zhuanlan.zhihu.com-2026-01-27.md",
+      "title": "zhuanlan.zhihu.com-2026-01-27",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 4,
+        "verifiability": 1,
+        "total": 7
+      },
+      "reason": "知乎链接，非Android",
+      "skipped_at": "2026-03-31T11:02:51.415080"
+    },
+    {
+      "path": "Cubox/​TikTok内幕：张一鸣的巨浪征途-2022-04-25.md",
+      "title": "​TikTok内幕：张一鸣的巨浪征途-2022-04-25",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 4,
+        "verifiability": 1,
+        "total": 7
+      },
+      "reason": "TikTok商业书籍",
+      "skipped_at": "2026-03-31T11:02:51.415413"
+    },
+    {
+      "path": "Cubox/​微信图片智能裁剪技术介绍-2024-01-31.md",
+      "title": "​微信图片智能裁剪技术介绍-2024-01-31",
+      "score": {
+        "relevance": 2,
+        "technical_depth": 2,
+        "timeliness": 4,
+        "verifiability": 1,
+        "total": 9
+      },
+      "reason": "图片裁剪，与AIW关联度低",
+      "skipped_at": "2026-03-31T11:02:51.415535"
+    },
+    {
+      "path": "Cubox/​浅谈协程-2022-06-30.md",
+      "title": "​浅谈协程-2022-06-30",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 4,
+        "verifiability": 1,
+        "total": 7
+      },
+      "reason": "非Android技术内容",
+      "skipped_at": "2026-03-31T11:02:51.415602"
+    },
+    {
+      "path": "Cubox/‌﻿⁡⁣​‌‬﻿‍‍​​​﻿‍⁣​‌﻿‬‬⁤⁢​​​⁢​⁣‬‌​​⁣﻿⁤​⁢‬​​​‬﻿⁡​​⁢⁡​AI编程蓝皮书 - 飞书云文档-2025-01-16.md",
+      "title": "‌﻿⁡⁣​‌‬﻿‍‍​​​﻿‍⁣​‌﻿‬‬⁤⁢​​​⁢​⁣‬‌​​⁣﻿⁤​⁢‬​​​‬﻿⁡​​⁢⁡​AI编程蓝皮书 - 飞书云文档-2025-01-16",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 4,
+        "verifiability": 1,
+        "total": 7
+      },
+      "reason": "AI编程蓝皮书",
+      "skipped_at": "2026-03-31T11:02:51.415670"
+    },
+    {
+      "path": "Cubox/“10x Cursor”开发体验， Claude Code 如何带来 AI Coding 的 L4 时刻？｜Best Ideas - BestBlogs.dev-2025-07-15.md",
+      "title": "“10x Cursor”开发体验， Claude Code 如何带来 AI Coding 的 L4 时刻？｜Best Ideas - BestBlogs.dev",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 4,
+        "verifiability": 1,
+        "total": 7
+      },
+      "reason": "AI编程工具评论",
+      "skipped_at": "2026-03-31T11:02:51.415742"
+    },
+    {
+      "path": "Cubox/“Do not spoil what you have by desiring what you have not- - Revue-2022-01-24.md",
+      "title": "“Do not spoil what you have by desiring what you have not- - Revue-2022-01-24",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 4,
+        "verifiability": 1,
+        "total": 7
+      },
+      "reason": "哲学Newsletter",
+      "skipped_at": "2026-03-31T11:02:51.415808"
     }
   ]
 }
