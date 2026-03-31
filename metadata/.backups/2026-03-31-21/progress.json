@@ -4,7 +4,7 @@
   "metrics": {
     "total": 102,
     "draft": 83,
-    "ready-for-review": 4,
+    "ready-for-review": 3,
     "reviewed": 1,
     "finalized": 3,
     "staging_drafts": 0,
@@ -275,26 +275,15 @@
       "extensions_total": 3,
       "verification_level": "L2",
       "word_count": "~7500"
-    },
-    {
-      "section": "5.1",
-      "title": "Linux 进程调度基础",
-      "completed_at": "2026-03-31T21:37:01.681846",
-      "anchors_covered": 5,
-      "anchors_total": 5,
-      "extensions_covered": 1,
-      "extensions_total": 3,
-      "verification_level": "L2",
-      "word_count": "~13000"
     }
   ],
   "ready_for_review": 3,
   "last_updated": "2026-03-31T18:32:44.758186",
   "stats": {
     "total": 102,
-    "completed": 21,
-    "pending": 81,
-    "last_updated": "2026-03-31T21:37:01.681846"
+    "completed": 20,
+    "pending": 82,
+    "last_updated": "2026-03-31T19:33:29.484317"
   },
   "research_stats": {
     "runs_today": [

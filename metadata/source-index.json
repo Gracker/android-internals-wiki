@@ -1,43 +1,46 @@
 {
-  "total_files": 241,
-  "indexed_files": 649,
+  "total_files": 835,
+  "indexed_files": 835,
   "chapters_distribution": {
     "待定": 1,
-    "ch05-渲染": 116,
-    "ch04-启动": 35,
-    "ch12-安全": 21,
-    "ch01-架构": 56,
-    "ch13-调度": 45,
-    "ch03-线程": 28,
-    "ch07-内存": 44,
-    "ch11-Profiling": 69,
-    "ch09-网络": 8,
-    "ch15-Kotlin": 21,
-    "ch14-工具": 43,
-    "ch02-进程": 21,
-    "unknown": 170,
-    "ch16-构建": 11,
-    "ch17-新版本": 5,
-    "ch10-包体积": 9,
-    "ch08-存储": 14,
-    "ch06-功耗": 5,
-    "ch04": 5,
-    "ch14": 6,
-    "ch01": 3,
-    "ch05": 38,
-    "ch11": 2,
+    "ch05-渲染": 141,
+    "ch04-启动": 49,
+    "ch12-安全": 23,
+    "ch01-架构": 73,
+    "ch13-调度": 71,
+    "ch03-线程": 38,
+    "ch07-内存": 77,
+    "ch11-Profiling": 80,
+    "ch09-网络": 10,
+    "ch15-Kotlin": 29,
+    "ch14-工具": 57,
+    "ch02-进程": 24,
+    "unknown": 218,
+    "ch16-构建": 16,
+    "ch17-新版本": 6,
+    "ch10-包体积": 12,
+    "ch08-存储": 15,
+    "ch06-功耗": 6,
+    "ch04": 7,
+    "ch14": 11,
+    "ch01": 8,
+    "ch05": 40,
+    "ch11": 3,
     "ch17": 1,
-    "ch15": 3,
+    "ch15": 4,
     "ch06": 4,
     "ch12": 7,
-    "ch13": 5,
-    "ch07": 6,
-    "ch03": 6,
+    "ch13": 10,
+    "ch07": 18,
+    "ch03": 8,
     "ch02": 1,
     "ch09": 43,
     "ch08": 1,
     "ch07-流畅性": 2,
-    "ch11-工具": 1
+    "ch11-工具": 1,
+    "ch13-工具": 1,
+    "ch09-ANR": 2,
+    "ch08-响应": 1
   },
   "files": [
     {
@@ -14591,8 +14594,3050 @@
       ],
       "summary": "eBPF/BPF技术原理，对Android性能分析工具有参考价值",
       "indexed_at": "2026-03-31T18:20:44.976495"
+    },
+    {
+      "file": "Cubox/关键字volatile正确理解和使用！-2022-04-16.md",
+      "title": "关键字volatile正确理解和使用！",
+      "scores": {
+        "relevance": 3,
+        "depth": 2,
+        "timeliness": 3,
+        "verifiability": 2,
+        "total": 10
+      },
+      "quality": "medium",
+      "chapters": [
+        {
+          "ch": "ch03",
+          "confidence": "low"
+        }
+      ],
+      "summary": "",
+      "indexed_at": "2026-03-31T18:45:00"
+    },
+    {
+      "file": "Cubox/内存优化- 纹理压缩技术-2022-03-16.md",
+      "title": "内存优化: 纹理压缩技术",
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 3,
+        "total": 13
+      },
+      "quality": "medium",
+      "chapters": [
+        {
+          "ch": "ch07",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Android纹理压缩技术与内存优化实践",
+      "indexed_at": "2026-03-31T18:45:00"
+    },
+    {
+      "file": "Cubox/内存划分为什么要分为堆和栈，当初设计这两个的时候分别是要解决什么问题？ - 知乎-2023-12-05.md",
+      "title": "内存划分：堆和栈的设计目的",
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 2,
+        "total": 12
+      },
+      "quality": "medium",
+      "chapters": [
+        {
+          "ch": "ch07",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "从设计角度解释堆栈内存划分原理",
+      "indexed_at": "2026-03-31T18:45:00"
+    },
+    {
+      "file": "Cubox/内存加压 - mem-pressure - 秋城 - 博客园-2022-04-04.md",
+      "title": "内存加压 mem-pressure",
+      "scores": {
+        "relevance": 5,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 3,
+        "total": 14
+      },
+      "quality": "medium",
+      "chapters": [
+        {
+          "ch": "ch07",
+          "confidence": "high"
+        },
+        {
+          "ch": "ch14",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Android内存加压工具mem-pressure介绍与使用",
+      "indexed_at": "2026-03-31T18:45:00"
+    },
+    {
+      "file": "Cubox/内存如何记录方法调用和返回过程-2022-06-06.md",
+      "title": "内存如何记录方法调用和返回过程",
+      "scores": {
+        "relevance": 3,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 2,
+        "total": 11
+      },
+      "quality": "medium",
+      "chapters": [
+        {
+          "ch": "ch07",
+          "confidence": "medium"
+        },
+        {
+          "ch": "ch03",
+          "confidence": "low"
+        }
+      ],
+      "summary": "图解方法调用栈帧的内存记录机制",
+      "indexed_at": "2026-03-31T18:45:00"
+    },
+    {
+      "file": "Cubox/内存检测工具KASAN：精准定位内存越界的“幽灵”-2025-05-29.md",
+      "title": "内存检测工具KASAN",
+      "scores": {
+        "relevance": 4,
+        "depth": 4,
+        "timeliness": 5,
+        "verifiability": 4,
+        "total": 17
+      },
+      "quality": "high",
+      "chapters": [
+        {
+          "ch": "ch07",
+          "confidence": "high"
+        },
+        {
+          "ch": "ch14",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Linux内核KASAN内存越界检测工具原理与使用",
+      "indexed_at": "2026-03-31T18:45:00"
+    },
+    {
+      "file": "Cubox/内存泄漏-原因、避免以及定位-2022-01-24.md",
+      "title": "内存泄漏-原因、避免以及定位",
+      "scores": {
+        "relevance": 5,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 3,
+        "total": 14
+      },
+      "quality": "medium",
+      "chapters": [
+        {
+          "ch": "ch07",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Android内存泄漏原因分析、避免策略和定位方法",
+      "indexed_at": "2026-03-31T18:45:00"
+    },
+    {
+      "file": "Cubox/内存管理 - 物理内存-2022-06-12.md",
+      "title": "内存管理 - 物理内存",
+      "scores": {
+        "relevance": 4,
+        "depth": 4,
+        "timeliness": 3,
+        "verifiability": 4,
+        "total": 15
+      },
+      "quality": "medium",
+      "chapters": [
+        {
+          "ch": "ch07",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Linux物理内存管理：页框、伙伴系统、SLAB",
+      "indexed_at": "2026-03-31T18:45:00"
+    },
+    {
+      "file": "Cubox/内存管理中的LRU算法探索-2023-03-24.md",
+      "title": "内存管理中的LRU算法探索",
+      "scores": {
+        "relevance": 4,
+        "depth": 4,
+        "timeliness": 3,
+        "verifiability": 4,
+        "total": 15
+      },
+      "quality": "medium",
+      "chapters": [
+        {
+          "ch": "ch07",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Linux LRU页面管理算法、页面回收与workingset机制",
+      "indexed_at": "2026-03-31T18:45:00"
+    },
+    {
+      "file": "Cubox/内存系列一：快速读懂内存条标签-2025-12-25.md",
+      "title": "内存系列一：快速读懂内存条标签",
+      "scores": {
+        "relevance": 2,
+        "depth": 2,
+        "timeliness": 5,
+        "verifiability": 2,
+        "total": 11
+      },
+      "quality": "medium",
+      "chapters": [
+        {
+          "ch": "ch07",
+          "confidence": "low"
+        }
+      ],
+      "summary": "硬件内存条标签参数解读",
+      "indexed_at": "2026-03-31T18:45:00"
+    },
+    {
+      "file": "Cubox/内存系列二：深入理解硬件原理-2025-12-25.md",
+      "title": "内存系列二：深入理解硬件原理",
+      "scores": {
+        "relevance": 3,
+        "depth": 3,
+        "timeliness": 5,
+        "verifiability": 3,
+        "total": 14
+      },
+      "quality": "medium",
+      "chapters": [
+        {
+          "ch": "ch07",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "DDR内存硬件原理：寻址、时序与时延",
+      "indexed_at": "2026-03-31T18:45:00"
+    },
+    {
+      "file": "Cubox/内核优化之 PSI 篇-快速发现性能瓶颈，提高资源利用率-2022-12-31.md",
+      "title": "内核优化之 PSI 篇",
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 3,
+        "total": 13
+      },
+      "quality": "medium",
+      "chapters": [
+        {
+          "ch": "ch13",
+          "confidence": "high"
+        },
+        {
+          "ch": "ch14",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Linux PSI机制快速发现资源瓶颈",
+      "indexed_at": "2026-03-31T18:45:00"
+    },
+    {
+      "file": "Cubox/内核优化之 PSI 篇-快速发现性能瓶颈，提高资源利用率-2023-01-10.md",
+      "title": "内核优化之 PSI 篇(二)",
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 3,
+        "total": 13
+      },
+      "quality": "medium",
+      "chapters": [
+        {
+          "ch": "ch13",
+          "confidence": "high"
+        },
+        {
+          "ch": "ch14",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "PSI优化方案帮助快速发现性能资源瓶颈",
+      "indexed_at": "2026-03-31T18:45:00"
+    },
+    {
+      "file": "Cubox/内核内存稳定性新特性：Page Table Check 机制解读-2024-05-27.md",
+      "title": "Page Table Check 机制解读",
+      "scores": {
+        "relevance": 4,
+        "depth": 4,
+        "timeliness": 4,
+        "verifiability": 3,
+        "total": 15
+      },
+      "quality": "medium",
+      "chapters": [
+        {
+          "ch": "ch07",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Linux内核Page Table Check内存损坏检测机制",
+      "indexed_at": "2026-03-31T18:45:00"
+    },
+    {
+      "file": "Cubox/内核抢占，让世界变得更美好 - Linux 内核-2025-03-31.md",
+      "title": "内核抢占机制详解",
+      "scores": {
+        "relevance": 4,
+        "depth": 4,
+        "timeliness": 4,
+        "verifiability": 4,
+        "total": 16
+      },
+      "quality": "high",
+      "chapters": [
+        {
+          "ch": "ch13",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Linux内核抢占机制原理与实现分析",
+      "indexed_at": "2026-03-31T18:45:00"
+    },
+    {
+      "file": "Cubox/内核是如何给容器中的进程分配CPU资源的？-2023-03-14.md",
+      "title": "容器进程CPU资源分配",
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 3,
+        "total": 13
+      },
+      "quality": "medium",
+      "chapters": [
+        {
+          "ch": "ch13",
+          "confidence": "high"
+        }
+      ],
+      "summary": "内核cgroup机制给容器进程分配CPU资源",
+      "indexed_at": "2026-03-31T18:45:00"
+    },
+    {
+      "file": "Cubox/内核空间内存profiler： memprofiling-2025-01-21.md",
+      "title": "内核空间内存profiler：memprofiling",
+      "scores": {
+        "relevance": 5,
+        "depth": 3,
+        "timeliness": 5,
+        "verifiability": 3,
+        "total": 16
+      },
+      "quality": "high",
+      "chapters": [
+        {
+          "ch": "ch07",
+          "confidence": "high"
+        },
+        {
+          "ch": "ch14",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Linux内核空间内存profiling工具",
+      "indexed_at": "2026-03-31T18:45:00"
+    },
+    {
+      "file": "Cubox/内核调度客制化利器：SCHED_EXT-2024-05-31.md",
+      "title": "内核调度客制化利器：SCHED_EXT",
+      "scores": {
+        "relevance": 5,
+        "depth": 4,
+        "timeliness": 4,
+        "verifiability": 4,
+        "total": 17
+      },
+      "quality": "high",
+      "chapters": [
+        {
+          "ch": "ch13",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Linux sched_ext调度器扩展机制详解",
+      "indexed_at": "2026-03-31T18:45:00"
+    },
+    {
+      "file": "Cubox/再学安卓 - SystemServer-2024-12-07.md",
+      "title": "再学安卓 - SystemServer",
+      "scores": {
+        "relevance": 5,
+        "depth": 4,
+        "timeliness": 5,
+        "verifiability": 4,
+        "total": 18
+      },
+      "quality": "high",
+      "chapters": [
+        {
+          "ch": "ch01",
+          "confidence": "high"
+        },
+        {
+          "ch": "ch04",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "SystemServer启动流程与核心服务解析",
+      "indexed_at": "2026-03-31T18:45:00"
+    },
+    {
+      "file": "Cubox/再学安卓 - Zygote-2024-12-07.md",
+      "title": "再学安卓 - Zygote",
+      "scores": {
+        "relevance": 5,
+        "depth": 4,
+        "timeliness": 5,
+        "verifiability": 4,
+        "total": 18
+      },
+      "quality": "high",
+      "chapters": [
+        {
+          "ch": "ch01",
+          "confidence": "high"
+        },
+        {
+          "ch": "ch04",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Zygote进程启动与fork机制详解",
+      "indexed_at": "2026-03-31T18:45:00"
+    },
+    {
+      "file": "Cubox/再学安卓 - binder之ServiceManager-2025-01-05.md",
+      "title": "再学安卓 - binder之ServiceManager",
+      "scores": {
+        "relevance": 5,
+        "depth": 4,
+        "timeliness": 5,
+        "verifiability": 4,
+        "total": 18
+      },
+      "quality": "high",
+      "chapters": [
+        {
+          "ch": "ch01",
+          "confidence": "high"
+        }
+      ],
+      "summary": "ServiceManager启动与运行机制解析",
+      "indexed_at": "2026-03-31T18:45:00"
+    },
+    {
+      "file": "Cubox/再学安卓 - binder之驱动函数ioctl-2025-03-05.md",
+      "title": "再学安卓 - binder之驱动函数ioctl",
+      "scores": {
+        "relevance": 5,
+        "depth": 5,
+        "timeliness": 5,
+        "verifiability": 5,
+        "total": 20
+      },
+      "quality": "high",
+      "chapters": [
+        {
+          "ch": "ch01",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Binder驱动核心ioctl函数深度解析",
+      "indexed_at": "2026-03-31T18:45:00"
+    },
+    {
+      "file": "Cubox/再学安卓 - binder之驱动加载-2025-01-16.md",
+      "title": "再学安卓 - binder之驱动加载",
+      "scores": {
+        "relevance": 5,
+        "depth": 4,
+        "timeliness": 5,
+        "verifiability": 4,
+        "total": 18
+      },
+      "quality": "high",
+      "chapters": [
+        {
+          "ch": "ch01",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Binder内核驱动加载过程深入分析",
+      "indexed_at": "2026-03-31T18:45:00"
+    },
+    {
+      "file": "Cubox/再探Kotlin 跨平台——迁移Paging分页库至KMM-2022-11-25.md",
+      "title": "迁移Paging分页库至KMM",
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 3,
+        "total": 13
+      },
+      "quality": "medium",
+      "chapters": [
+        {
+          "ch": "ch15",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Kotlin跨平台迁移Paging库的设计思想",
+      "indexed_at": "2026-03-31T18:45:00"
+    },
+    {
+      "file": "Cubox/再来谈谈GPU体系结构及互联-2025-04-21.md",
+      "title": "GPU体系结构及互联",
+      "scores": {
+        "relevance": 3,
+        "depth": 3,
+        "timeliness": 5,
+        "verifiability": 2,
+        "total": 13
+      },
+      "quality": "medium",
+      "chapters": [
+        {
+          "ch": "ch05",
+          "confidence": "low"
+        }
+      ],
+      "summary": "GPU架构与互联技术分析",
+      "indexed_at": "2026-03-31T18:45:00"
+    },
+    {
+      "file": "Cubox/再浅谈性能根因 - 知乎-2023-12-22.md",
+      "title": "再浅谈性能根因",
+      "scores": {
+        "relevance": 5,
+        "depth": 4,
+        "timeliness": 4,
+        "verifiability": 3,
+        "total": 16
+      },
+      "quality": "high",
+      "chapters": [
+        {
+          "ch": "ch11",
+          "confidence": "high"
+        },
+        {
+          "ch": "ch05",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Android系统性能问题根因系统总结",
+      "indexed_at": "2026-03-31T18:45:00"
+    },
+    {
+      "file": "Cubox/关键字volatile正确理解和使用！-2022-04-16.md",
+      "title": "关键字volatile正确理解和使用",
+      "scores": {
+        "relevance": 3,
+        "depth": 2,
+        "timeliness": 3,
+        "verifiability": 2,
+        "total": 10
+      },
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch03",
+          "confidence": "low"
+        }
+      ],
+      "summary": "volatile关键字正确理解与使用",
+      "indexed_at": "2026-03-31T18:45:00"
+    },
+    {
+      "file": "Cubox/内存优化- 纹理压缩技术-2022-03-16.md",
+      "title": "内存优化: 纹理压缩技术",
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 3,
+        "total": 13
+      },
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch07",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Android纹理压缩技术与内存优化实践",
+      "indexed_at": "2026-03-31T18:45:00"
+    },
+    {
+      "file": "Cubox/内存划分为什么要分为堆和栈，当初设计这两个的时候分别是要解决什么问题？ - 知乎-2023-12-05.md",
+      "title": "内存划分堆和栈的设计目的",
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 2,
+        "total": 12
+      },
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch07",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "从设计角度解释堆栈内存划分原理",
+      "indexed_at": "2026-03-31T18:45:00"
+    },
+    {
+      "file": "Cubox/内存加压 - mem-pressure - 秋城 - 博客园-2022-04-04.md",
+      "title": "内存加压 mem-pressure",
+      "scores": {
+        "relevance": 5,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 3,
+        "total": 14
+      },
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch07",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch14",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Android内存加压工具mem-pressure介绍",
+      "indexed_at": "2026-03-31T18:45:00"
+    },
+    {
+      "file": "Cubox/内存如何记录方法调用和返回过程-2022-06-06.md",
+      "title": "内存记录方法调用和返回过程",
+      "scores": {
+        "relevance": 3,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 2,
+        "total": 11
+      },
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch07",
+          "confidence": "medium"
+        },
+        {
+          "chapter": "ch03",
+          "confidence": "low"
+        }
+      ],
+      "summary": "图解方法调用栈帧内存记录机制",
+      "indexed_at": "2026-03-31T18:45:00"
+    },
+    {
+      "file": "Cubox/内存检测工具KASAN：精准定位内存越界的“幽灵”-2025-05-29.md",
+      "title": "内存检测工具KASAN",
+      "scores": {
+        "relevance": 4,
+        "depth": 4,
+        "timeliness": 5,
+        "verifiability": 4,
+        "total": 17
+      },
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch07",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch14",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Linux内核KASAN内存越界检测工具",
+      "indexed_at": "2026-03-31T18:45:00"
+    },
+    {
+      "file": "Cubox/内存泄漏-原因、避免以及定位-2022-01-24.md",
+      "title": "内存泄漏原因避免以及定位",
+      "scores": {
+        "relevance": 5,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 3,
+        "total": 14
+      },
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch07",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Android内存泄漏原因分析与定位方法",
+      "indexed_at": "2026-03-31T18:45:00"
+    },
+    {
+      "file": "Cubox/内存管理 - 物理内存-2022-06-12.md",
+      "title": "内存管理-物理内存",
+      "scores": {
+        "relevance": 4,
+        "depth": 4,
+        "timeliness": 3,
+        "verifiability": 4,
+        "total": 15
+      },
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch07",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Linux物理内存管理：页框、伙伴系统、SLAB",
+      "indexed_at": "2026-03-31T18:45:00"
+    },
+    {
+      "file": "Cubox/内存管理中的LRU算法探索-2023-03-24.md",
+      "title": "内存管理中的LRU算法探索",
+      "scores": {
+        "relevance": 4,
+        "depth": 4,
+        "timeliness": 3,
+        "verifiability": 4,
+        "total": 15
+      },
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch07",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Linux LRU页面管理、页面回收与workingset",
+      "indexed_at": "2026-03-31T18:45:00"
+    },
+    {
+      "file": "Cubox/内存系列一：快速读懂内存条标签-2025-12-25.md",
+      "title": "内存系列一快速读懂内存条标签",
+      "scores": {
+        "relevance": 2,
+        "depth": 2,
+        "timeliness": 5,
+        "verifiability": 2,
+        "total": 11
+      },
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch07",
+          "confidence": "low"
+        }
+      ],
+      "summary": "硬件内存条标签参数解读",
+      "indexed_at": "2026-03-31T18:45:00"
+    },
+    {
+      "file": "Cubox/内存系列二：深入理解硬件原理-2025-12-25.md",
+      "title": "内存系列二深入理解硬件原理",
+      "scores": {
+        "relevance": 3,
+        "depth": 3,
+        "timeliness": 5,
+        "verifiability": 3,
+        "total": 14
+      },
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch07",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "DDR内存硬件原理：寻址、时序与时延",
+      "indexed_at": "2026-03-31T18:45:00"
+    },
+    {
+      "file": "Cubox/内核优化之 PSI 篇-快速发现性能瓶颈，提高资源利用率-2022-12-31.md",
+      "title": "内核优化之PSI篇",
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 3,
+        "total": 13
+      },
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch13",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch14",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Linux PSI机制快速发现资源瓶颈",
+      "indexed_at": "2026-03-31T18:45:00"
+    },
+    {
+      "file": "Cubox/内核优化之 PSI 篇-快速发现性能瓶颈，提高资源利用率-2023-01-10.md",
+      "title": "内核优化之PSI篇(二)",
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 3,
+        "total": 13
+      },
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch13",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch14",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "PSI优化方案发现性能资源瓶颈",
+      "indexed_at": "2026-03-31T18:45:00"
+    },
+    {
+      "file": "Cubox/内核内存稳定性新特性：Page Table Check 机制解读-2024-05-27.md",
+      "title": "Page Table Check机制解读",
+      "scores": {
+        "relevance": 4,
+        "depth": 4,
+        "timeliness": 4,
+        "verifiability": 3,
+        "total": 15
+      },
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch07",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Linux内核Page Table Check内存损坏检测",
+      "indexed_at": "2026-03-31T18:45:00"
+    },
+    {
+      "file": "Cubox/内核抢占，让世界变得更美好 - Linux 内核-2025-03-31.md",
+      "title": "内核抢占机制详解",
+      "scores": {
+        "relevance": 4,
+        "depth": 4,
+        "timeliness": 4,
+        "verifiability": 4,
+        "total": 16
+      },
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch13",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Linux内核抢占机制原理与实现",
+      "indexed_at": "2026-03-31T18:45:00"
+    },
+    {
+      "file": "Cubox/内核是如何给容器中的进程分配CPU资源的？-2023-03-14.md",
+      "title": "容器进程CPU资源分配",
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 3,
+        "total": 13
+      },
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch13",
+          "confidence": "high"
+        }
+      ],
+      "summary": "内核cgroup给容器进程分配CPU资源",
+      "indexed_at": "2026-03-31T18:45:00"
+    },
+    {
+      "file": "Cubox/内核空间内存profiler： memprofiling-2025-01-21.md",
+      "title": "内核空间内存profiler-memprofiling",
+      "scores": {
+        "relevance": 5,
+        "depth": 3,
+        "timeliness": 5,
+        "verifiability": 3,
+        "total": 16
+      },
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch07",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch14",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Linux内核空间内存profiling工具",
+      "indexed_at": "2026-03-31T18:45:00"
+    },
+    {
+      "file": "Cubox/内核调度客制化利器：SCHED_EXT-2024-05-31.md",
+      "title": "内核调度客制化SCHED_EXT",
+      "scores": {
+        "relevance": 5,
+        "depth": 4,
+        "timeliness": 4,
+        "verifiability": 4,
+        "total": 17
+      },
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch13",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Linux sched_ext调度器扩展机制",
+      "indexed_at": "2026-03-31T18:45:00"
+    },
+    {
+      "file": "Cubox/再学安卓 - SystemServer-2024-12-07.md",
+      "title": "再学安卓-SystemServer",
+      "scores": {
+        "relevance": 5,
+        "depth": 4,
+        "timeliness": 5,
+        "verifiability": 4,
+        "total": 18
+      },
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch01",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch04",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "SystemServer启动流程与核心服务解析",
+      "indexed_at": "2026-03-31T18:45:00"
+    },
+    {
+      "file": "Cubox/再学安卓 - Zygote-2024-12-07.md",
+      "title": "再学安卓-Zygote",
+      "scores": {
+        "relevance": 5,
+        "depth": 4,
+        "timeliness": 5,
+        "verifiability": 4,
+        "total": 18
+      },
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch01",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch04",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Zygote进程启动与fork机制详解",
+      "indexed_at": "2026-03-31T18:45:00"
+    },
+    {
+      "file": "Cubox/再学安卓 - binder之ServiceManager-2025-01-05.md",
+      "title": "再学安卓-binder之ServiceManager",
+      "scores": {
+        "relevance": 5,
+        "depth": 4,
+        "timeliness": 5,
+        "verifiability": 4,
+        "total": 18
+      },
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch01",
+          "confidence": "high"
+        }
+      ],
+      "summary": "ServiceManager启动与运行机制解析",
+      "indexed_at": "2026-03-31T18:45:00"
+    },
+    {
+      "file": "Cubox/再学安卓 - binder之驱动函数ioctl-2025-03-05.md",
+      "title": "再学安卓-binder之驱动函数ioctl",
+      "scores": {
+        "relevance": 5,
+        "depth": 5,
+        "timeliness": 5,
+        "verifiability": 5,
+        "total": 20
+      },
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch01",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Binder驱动核心ioctl函数深度解析",
+      "indexed_at": "2026-03-31T18:45:00"
+    },
+    {
+      "file": "Cubox/再学安卓 - binder之驱动加载-2025-01-16.md",
+      "title": "再学安卓-binder之驱动加载",
+      "scores": {
+        "relevance": 5,
+        "depth": 4,
+        "timeliness": 5,
+        "verifiability": 4,
+        "total": 18
+      },
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch01",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Binder内核驱动加载过程分析",
+      "indexed_at": "2026-03-31T18:45:00"
+    },
+    {
+      "file": "Cubox/再探Kotlin 跨平台——迁移Paging分页库至KMM-2022-11-25.md",
+      "title": "迁移Paging分页库至KMM",
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 3,
+        "total": 13
+      },
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch15",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Kotlin跨平台迁移Paging库设计思想",
+      "indexed_at": "2026-03-31T18:45:00"
+    },
+    {
+      "file": "Cubox/再来谈谈GPU体系结构及互联-2025-04-21.md",
+      "title": "GPU体系结构及互联",
+      "scores": {
+        "relevance": 3,
+        "depth": 3,
+        "timeliness": 5,
+        "verifiability": 2,
+        "total": 13
+      },
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch05",
+          "confidence": "low"
+        }
+      ],
+      "summary": "GPU架构与互联技术分析",
+      "indexed_at": "2026-03-31T18:45:00"
+    },
+    {
+      "file": "Cubox/再浅谈性能根因 - 知乎-2023-12-22.md",
+      "title": "再浅谈性能根因",
+      "scores": {
+        "relevance": 5,
+        "depth": 4,
+        "timeliness": 4,
+        "verifiability": 3,
+        "total": 16
+      },
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch11",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch05",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Android系统性能问题根因系统总结",
+      "indexed_at": "2026-03-31T18:45:00"
+    },
+    {
+      "title": "关键字volatile正确理解和使用",
+      "path": "Cubox/关键字volatile正确理解和使用！-2022-04-16.md",
+      "score": {
+        "relevance": 3,
+        "technical": 2,
+        "timeliness": 3,
+        "verifiability": 2,
+        "total": 10
+      },
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch03-线程",
+          "confidence": "low"
+        }
+      ],
+      "summary": "volatile关键字正确理解与使用",
+      "indexed_at": "2026-03-31T18:45:00"
+    },
+    {
+      "title": "内存优化:纹理压缩技术",
+      "path": "Cubox/内存优化- 纹理压缩技术-2022-03-16.md",
+      "score": {
+        "relevance": 4,
+        "technical": 3,
+        "timeliness": 3,
+        "verifiability": 3,
+        "total": 13
+      },
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch07-内存",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Android纹理压缩技术与内存优化",
+      "indexed_at": "2026-03-31T18:45:00"
+    },
+    {
+      "title": "内存划分堆和栈的设计目的",
+      "path": "Cubox/内存划分为什么要分为堆和栈，当初设计这两个的时候分别是要解决什么问题？ - 知乎-2023-12-05.md",
+      "score": {
+        "relevance": 4,
+        "technical": 3,
+        "timeliness": 3,
+        "verifiability": 2,
+        "total": 12
+      },
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch07-内存",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "从设计角度解释堆栈内存划分原理",
+      "indexed_at": "2026-03-31T18:45:00"
+    },
+    {
+      "title": "内存加压mem-pressure",
+      "path": "Cubox/内存加压 - mem-pressure - 秋城 - 博客园-2022-04-04.md",
+      "score": {
+        "relevance": 5,
+        "technical": 3,
+        "timeliness": 3,
+        "verifiability": 3,
+        "total": 14
+      },
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch07-内存",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch14-工具",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Android内存加压工具mem-pressure",
+      "indexed_at": "2026-03-31T18:45:00"
+    },
+    {
+      "title": "内存记录方法调用返回过程",
+      "path": "Cubox/内存如何记录方法调用和返回过程-2022-06-06.md",
+      "score": {
+        "relevance": 3,
+        "technical": 3,
+        "timeliness": 3,
+        "verifiability": 2,
+        "total": 11
+      },
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch07-内存",
+          "confidence": "medium"
+        },
+        {
+          "chapter": "ch03-线程",
+          "confidence": "low"
+        }
+      ],
+      "summary": "图解方法调用栈帧内存记录机制",
+      "indexed_at": "2026-03-31T18:45:00"
+    },
+    {
+      "title": "内存检测工具KASAN",
+      "path": "Cubox/内存检测工具KASAN：精准定位内存越界的“幽灵”-2025-05-29.md",
+      "score": {
+        "relevance": 4,
+        "technical": 4,
+        "timeliness": 5,
+        "verifiability": 4,
+        "total": 17
+      },
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch07-内存",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch14-工具",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Linux内核KASAN内存越界检测工具",
+      "indexed_at": "2026-03-31T18:45:00"
+    },
+    {
+      "title": "内存泄漏原因避免定位",
+      "path": "Cubox/内存泄漏-原因、避免以及定位-2022-01-24.md",
+      "score": {
+        "relevance": 5,
+        "technical": 3,
+        "timeliness": 3,
+        "verifiability": 3,
+        "total": 14
+      },
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch07-内存",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Android内存泄漏原因分析与定位",
+      "indexed_at": "2026-03-31T18:45:00"
+    },
+    {
+      "title": "内存管理-物理内存",
+      "path": "Cubox/内存管理 - 物理内存-2022-06-12.md",
+      "score": {
+        "relevance": 4,
+        "technical": 4,
+        "timeliness": 3,
+        "verifiability": 4,
+        "total": 15
+      },
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch07-内存",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Linux物理内存：页框、伙伴系统、SLAB",
+      "indexed_at": "2026-03-31T18:45:00"
+    },
+    {
+      "title": "内存管理中的LRU算法",
+      "path": "Cubox/内存管理中的LRU算法探索-2023-03-24.md",
+      "score": {
+        "relevance": 4,
+        "technical": 4,
+        "timeliness": 3,
+        "verifiability": 4,
+        "total": 15
+      },
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch07-内存",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Linux LRU页面管理、回收与workingset",
+      "indexed_at": "2026-03-31T18:45:00"
+    },
+    {
+      "title": "内存系列一内存条标签",
+      "path": "Cubox/内存系列一：快速读懂内存条标签-2025-12-25.md",
+      "score": {
+        "relevance": 2,
+        "technical": 2,
+        "timeliness": 5,
+        "verifiability": 2,
+        "total": 11
+      },
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch07-内存",
+          "confidence": "low"
+        }
+      ],
+      "summary": "硬件内存条标签参数解读",
+      "indexed_at": "2026-03-31T18:45:00"
+    },
+    {
+      "title": "内存系列二硬件原理",
+      "path": "Cubox/内存系列二：深入理解硬件原理-2025-12-25.md",
+      "score": {
+        "relevance": 3,
+        "technical": 3,
+        "timeliness": 5,
+        "verifiability": 3,
+        "total": 14
+      },
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch07-内存",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "DDR内存硬件原理：寻址、时序时延",
+      "indexed_at": "2026-03-31T18:45:00"
+    },
+    {
+      "title": "内核优化PSI篇",
+      "path": "Cubox/内核优化之 PSI 篇-快速发现性能瓶颈，提高资源利用率-2022-12-31.md",
+      "score": {
+        "relevance": 4,
+        "technical": 3,
+        "timeliness": 3,
+        "verifiability": 3,
+        "total": 13
+      },
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch13-调度",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch14-工具",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Linux PSI机制快速发现资源瓶颈",
+      "indexed_at": "2026-03-31T18:45:00"
+    },
+    {
+      "title": "内核优化PSI篇(二)",
+      "path": "Cubox/内核优化之 PSI 篇-快速发现性能瓶颈，提高资源利用率-2023-01-10.md",
+      "score": {
+        "relevance": 4,
+        "technical": 3,
+        "timeliness": 3,
+        "verifiability": 3,
+        "total": 13
+      },
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch13-调度",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch14-工具",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "PSI优化方案发现性能资源瓶颈",
+      "indexed_at": "2026-03-31T18:45:00"
+    },
+    {
+      "title": "Page Table Check机制",
+      "path": "Cubox/内核内存稳定性新特性：Page Table Check 机制解读-2024-05-27.md",
+      "score": {
+        "relevance": 4,
+        "technical": 4,
+        "timeliness": 4,
+        "verifiability": 3,
+        "total": 15
+      },
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch07-内存",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Page Table Check内存损坏检测",
+      "indexed_at": "2026-03-31T18:45:00"
+    },
+    {
+      "title": "内核抢占机制详解",
+      "path": "Cubox/内核抢占，让世界变得更美好 - Linux 内核-2025-03-31.md",
+      "score": {
+        "relevance": 4,
+        "technical": 4,
+        "timeliness": 4,
+        "verifiability": 4,
+        "total": 16
+      },
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch13-调度",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Linux内核抢占机制原理与实现",
+      "indexed_at": "2026-03-31T18:45:00"
+    },
+    {
+      "title": "容器进程CPU资源分配",
+      "path": "Cubox/内核是如何给容器中的进程分配CPU资源的？-2023-03-14.md",
+      "score": {
+        "relevance": 4,
+        "technical": 3,
+        "timeliness": 3,
+        "verifiability": 3,
+        "total": 13
+      },
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch13-调度",
+          "confidence": "high"
+        }
+      ],
+      "summary": "内核cgroup给容器分配CPU资源",
+      "indexed_at": "2026-03-31T18:45:00"
+    },
+    {
+      "title": "内核空间内存profiler",
+      "path": "Cubox/内核空间内存profiler： memprofiling-2025-01-21.md",
+      "score": {
+        "relevance": 5,
+        "technical": 3,
+        "timeliness": 5,
+        "verifiability": 3,
+        "total": 16
+      },
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch07-内存",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch14-工具",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Linux内核空间内存profiling工具",
+      "indexed_at": "2026-03-31T18:45:00"
+    },
+    {
+      "title": "SCHED_EXT调度器扩展",
+      "path": "Cubox/内核调度客制化利器：SCHED_EXT-2024-05-31.md",
+      "score": {
+        "relevance": 5,
+        "technical": 4,
+        "timeliness": 4,
+        "verifiability": 4,
+        "total": 17
+      },
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch13-调度",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Linux sched_ext调度器扩展机制",
+      "indexed_at": "2026-03-31T18:45:00"
+    },
+    {
+      "title": "再学安卓-SystemServer",
+      "path": "Cubox/再学安卓 - SystemServer-2024-12-07.md",
+      "score": {
+        "relevance": 5,
+        "technical": 4,
+        "timeliness": 5,
+        "verifiability": 4,
+        "total": 18
+      },
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch01-架构",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch04-启动",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "SystemServer启动流程与核心服务",
+      "indexed_at": "2026-03-31T18:45:00"
+    },
+    {
+      "title": "再学安卓-Zygote",
+      "path": "Cubox/再学安卓 - Zygote-2024-12-07.md",
+      "score": {
+        "relevance": 5,
+        "technical": 4,
+        "timeliness": 5,
+        "verifiability": 4,
+        "total": 18
+      },
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch01-架构",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch04-启动",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Zygote启动与fork机制详解",
+      "indexed_at": "2026-03-31T18:45:00"
+    },
+    {
+      "title": "再学安卓-binder之ServiceManager",
+      "path": "Cubox/再学安卓 - binder之ServiceManager-2025-01-05.md",
+      "score": {
+        "relevance": 5,
+        "technical": 4,
+        "timeliness": 5,
+        "verifiability": 4,
+        "total": 18
+      },
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch01-架构",
+          "confidence": "high"
+        }
+      ],
+      "summary": "ServiceManager启动与运行机制",
+      "indexed_at": "2026-03-31T18:45:00"
+    },
+    {
+      "title": "再学安卓-binder之ioctl",
+      "path": "Cubox/再学安卓 - binder之驱动函数ioctl-2025-03-05.md",
+      "score": {
+        "relevance": 5,
+        "technical": 5,
+        "timeliness": 5,
+        "verifiability": 5,
+        "total": 20
+      },
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch01-架构",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Binder驱动核心ioctl函数深度解析",
+      "indexed_at": "2026-03-31T18:45:00"
+    },
+    {
+      "title": "再学安卓-binder之驱动加载",
+      "path": "Cubox/再学安卓 - binder之驱动加载-2025-01-16.md",
+      "score": {
+        "relevance": 5,
+        "technical": 4,
+        "timeliness": 5,
+        "verifiability": 4,
+        "total": 18
+      },
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch01-架构",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Binder内核驱动加载过程分析",
+      "indexed_at": "2026-03-31T18:45:00"
+    },
+    {
+      "title": "迁移Paging分页库至KMM",
+      "path": "Cubox/再探Kotlin 跨平台——迁移Paging分页库至KMM-2022-11-25.md",
+      "score": {
+        "relevance": 4,
+        "technical": 3,
+        "timeliness": 3,
+        "verifiability": 3,
+        "total": 13
+      },
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch15-Kotlin",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Kotlin跨平台迁移Paging库",
+      "indexed_at": "2026-03-31T18:45:00"
+    },
+    {
+      "title": "GPU体系结构及互联",
+      "path": "Cubox/再来谈谈GPU体系结构及互联-2025-04-21.md",
+      "score": {
+        "relevance": 3,
+        "technical": 3,
+        "timeliness": 5,
+        "verifiability": 2,
+        "total": 13
+      },
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "low"
+        }
+      ],
+      "summary": "GPU架构与互联技术分析",
+      "indexed_at": "2026-03-31T18:45:00"
+    },
+    {
+      "title": "再浅谈性能根因",
+      "path": "Cubox/再浅谈性能根因 - 知乎-2023-12-22.md",
+      "score": {
+        "relevance": 5,
+        "technical": 4,
+        "timeliness": 4,
+        "verifiability": 3,
+        "total": 16
+      },
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch11-Profiling",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Android系统性能问题根因总结",
+      "indexed_at": "2026-03-31T18:45:00"
+    },
+    {
+      "title": "关键字volatile正确理解和使用",
+      "path": "Cubox/关键字volatile正确理解和使用！-2022-04-16.md",
+      "score": {
+        "relevance": 3,
+        "technical": 2,
+        "timeliness": 3,
+        "verifiability": 2,
+        "total": 10
+      },
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch03-线程",
+          "confidence": "low"
+        }
+      ],
+      "summary": "volatile关键字正确理解与使用",
+      "indexed_at": "2026-03-31T18:45:00"
+    },
+    {
+      "title": "内存优化:纹理压缩技术",
+      "path": "Cubox/内存优化- 纹理压缩技术-2022-03-16.md",
+      "score": {
+        "relevance": 4,
+        "technical": 3,
+        "timeliness": 3,
+        "verifiability": 3,
+        "total": 13
+      },
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch07-内存",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Android纹理压缩技术与内存优化",
+      "indexed_at": "2026-03-31T18:45:00"
+    },
+    {
+      "title": "内存划分堆和栈的设计目的",
+      "path": "Cubox/内存划分为什么要分为堆和栈，当初设计这两个的时候分别是要解决什么问题？ - 知乎-2023-12-05.md",
+      "score": {
+        "relevance": 4,
+        "technical": 3,
+        "timeliness": 3,
+        "verifiability": 2,
+        "total": 12
+      },
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch07-内存",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "堆栈内存划分原理",
+      "indexed_at": "2026-03-31T18:45:00"
+    },
+    {
+      "title": "内存加压mem-pressure",
+      "path": "Cubox/内存加压 - mem-pressure - 秋城 - 博客园-2022-04-04.md",
+      "score": {
+        "relevance": 5,
+        "technical": 3,
+        "timeliness": 3,
+        "verifiability": 3,
+        "total": 14
+      },
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch07-内存",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch14-工具",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Android内存加压工具mem-pressure",
+      "indexed_at": "2026-03-31T18:45:00"
+    },
+    {
+      "title": "内存记录方法调用返回过程",
+      "path": "Cubox/内存如何记录方法调用和返回过程-2022-06-06.md",
+      "score": {
+        "relevance": 3,
+        "technical": 3,
+        "timeliness": 3,
+        "verifiability": 2,
+        "total": 11
+      },
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch07-内存",
+          "confidence": "medium"
+        },
+        {
+          "chapter": "ch03-线程",
+          "confidence": "low"
+        }
+      ],
+      "summary": "图解方法调用栈帧机制",
+      "indexed_at": "2026-03-31T18:45:00"
+    },
+    {
+      "title": "内存检测工具KASAN",
+      "path": "Cubox/内存检测工具KASAN：精准定位内存越界的“幽灵”-2025-05-29.md",
+      "score": {
+        "relevance": 4,
+        "technical": 4,
+        "timeliness": 5,
+        "verifiability": 4,
+        "total": 17
+      },
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch07-内存",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch14-工具",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Linux内核KASAN内存越界检测",
+      "indexed_at": "2026-03-31T18:45:00"
+    },
+    {
+      "title": "内存泄漏原因避免定位",
+      "path": "Cubox/内存泄漏-原因、避免以及定位-2022-01-24.md",
+      "score": {
+        "relevance": 5,
+        "technical": 3,
+        "timeliness": 3,
+        "verifiability": 3,
+        "total": 14
+      },
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch07-内存",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Android内存泄漏分析与定位",
+      "indexed_at": "2026-03-31T18:45:00"
+    },
+    {
+      "title": "内存管理-物理内存",
+      "path": "Cubox/内存管理 - 物理内存-2022-06-12.md",
+      "score": {
+        "relevance": 4,
+        "technical": 4,
+        "timeliness": 3,
+        "verifiability": 4,
+        "total": 15
+      },
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch07-内存",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Linux物理内存管理：伙伴系统、SLAB",
+      "indexed_at": "2026-03-31T18:45:00"
+    },
+    {
+      "title": "内存管理LRU算法",
+      "path": "Cubox/内存管理中的LRU算法探索-2023-03-24.md",
+      "score": {
+        "relevance": 4,
+        "technical": 4,
+        "timeliness": 3,
+        "verifiability": 4,
+        "total": 15
+      },
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch07-内存",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Linux LRU页面管理与workingset",
+      "indexed_at": "2026-03-31T18:45:00"
+    },
+    {
+      "title": "内存系列一内存条标签",
+      "path": "Cubox/内存系列一：快速读懂内存条标签-2025-12-25.md",
+      "score": {
+        "relevance": 2,
+        "technical": 2,
+        "timeliness": 5,
+        "verifiability": 2,
+        "total": 11
+      },
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch07-内存",
+          "confidence": "low"
+        }
+      ],
+      "summary": "硬件内存条标签参数解读",
+      "indexed_at": "2026-03-31T18:45:00"
+    },
+    {
+      "title": "内存系列二硬件原理",
+      "path": "Cubox/内存系列二：深入理解硬件原理-2025-12-25.md",
+      "score": {
+        "relevance": 3,
+        "technical": 3,
+        "timeliness": 5,
+        "verifiability": 3,
+        "total": 14
+      },
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch07-内存",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "DDR内存硬件原理",
+      "indexed_at": "2026-03-31T18:45:00"
+    },
+    {
+      "title": "内核优化PSI篇",
+      "path": "Cubox/内核优化之 PSI 篇-快速发现性能瓶颈，提高资源利用率-2022-12-31.md",
+      "score": {
+        "relevance": 4,
+        "technical": 3,
+        "timeliness": 3,
+        "verifiability": 3,
+        "total": 13
+      },
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch13-调度",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch14-工具",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Linux PSI机制发现资源瓶颈",
+      "indexed_at": "2026-03-31T18:45:00"
+    },
+    {
+      "title": "内核优化PSI篇(二)",
+      "path": "Cubox/内核优化之 PSI 篇-快速发现性能瓶颈，提高资源利用率-2023-01-10.md",
+      "score": {
+        "relevance": 4,
+        "technical": 3,
+        "timeliness": 3,
+        "verifiability": 3,
+        "total": 13
+      },
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch13-调度",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch14-工具",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "PSI方案发现性能瓶颈",
+      "indexed_at": "2026-03-31T18:45:00"
+    },
+    {
+      "title": "Page Table Check机制",
+      "path": "Cubox/内核内存稳定性新特性：Page Table Check 机制解读-2024-05-27.md",
+      "score": {
+        "relevance": 4,
+        "technical": 4,
+        "timeliness": 4,
+        "verifiability": 3,
+        "total": 15
+      },
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch07-内存",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Page Table Check内存损坏检测",
+      "indexed_at": "2026-03-31T18:45:00"
+    },
+    {
+      "title": "内核抢占机制详解",
+      "path": "Cubox/内核抢占，让世界变得更美好 - Linux 内核-2025-03-31.md",
+      "score": {
+        "relevance": 4,
+        "technical": 4,
+        "timeliness": 4,
+        "verifiability": 4,
+        "total": 16
+      },
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch13-调度",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Linux内核抢占机制原理实现",
+      "indexed_at": "2026-03-31T18:45:00"
+    },
+    {
+      "title": "容器进程CPU分配",
+      "path": "Cubox/内核是如何给容器中的进程分配CPU资源的？-2023-03-14.md",
+      "score": {
+        "relevance": 4,
+        "technical": 3,
+        "timeliness": 3,
+        "verifiability": 3,
+        "total": 13
+      },
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch13-调度",
+          "confidence": "high"
+        }
+      ],
+      "summary": "cgroup给容器分配CPU资源",
+      "indexed_at": "2026-03-31T18:45:00"
+    },
+    {
+      "title": "内核空间内存profiler",
+      "path": "Cubox/内核空间内存profiler： memprofiling-2025-01-21.md",
+      "score": {
+        "relevance": 5,
+        "technical": 3,
+        "timeliness": 5,
+        "verifiability": 3,
+        "total": 16
+      },
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch07-内存",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch14-工具",
+          "confidence": "high"
+        }
+      ],
+      "summary": "内核空间内存profiling工具",
+      "indexed_at": "2026-03-31T18:45:00"
+    },
+    {
+      "title": "SCHED_EXT调度器扩展",
+      "path": "Cubox/内核调度客制化利器：SCHED_EXT-2024-05-31.md",
+      "score": {
+        "relevance": 5,
+        "technical": 4,
+        "timeliness": 4,
+        "verifiability": 4,
+        "total": 17
+      },
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch13-调度",
+          "confidence": "high"
+        }
+      ],
+      "summary": "sched_ext调度器扩展机制",
+      "indexed_at": "2026-03-31T18:45:00"
+    },
+    {
+      "title": "再学安卓-SystemServer",
+      "path": "Cubox/再学安卓 - SystemServer-2024-12-07.md",
+      "score": {
+        "relevance": 5,
+        "technical": 4,
+        "timeliness": 5,
+        "verifiability": 4,
+        "total": 18
+      },
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch01-架构",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch04-启动",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "SystemServer启动与核心服务",
+      "indexed_at": "2026-03-31T18:45:00"
+    },
+    {
+      "title": "再学安卓-Zygote",
+      "path": "Cubox/再学安卓 - Zygote-2024-12-07.md",
+      "score": {
+        "relevance": 5,
+        "technical": 4,
+        "timeliness": 5,
+        "verifiability": 4,
+        "total": 18
+      },
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch01-架构",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch04-启动",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Zygote启动与fork机制",
+      "indexed_at": "2026-03-31T18:45:00"
+    },
+    {
+      "title": "再学安卓-binder之ServiceManager",
+      "path": "Cubox/再学安卓 - binder之ServiceManager-2025-01-05.md",
+      "score": {
+        "relevance": 5,
+        "technical": 4,
+        "timeliness": 5,
+        "verifiability": 4,
+        "total": 18
+      },
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch01-架构",
+          "confidence": "high"
+        }
+      ],
+      "summary": "ServiceManager启动与运行",
+      "indexed_at": "2026-03-31T18:45:00"
+    },
+    {
+      "title": "再学安卓-binder之ioctl",
+      "path": "Cubox/再学安卓 - binder之驱动函数ioctl-2025-03-05.md",
+      "score": {
+        "relevance": 5,
+        "technical": 5,
+        "timeliness": 5,
+        "verifiability": 5,
+        "total": 20
+      },
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch01-架构",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Binder驱动ioctl函数深度解析",
+      "indexed_at": "2026-03-31T18:45:00"
+    },
+    {
+      "title": "再学安卓-binder之驱动加载",
+      "path": "Cubox/再学安卓 - binder之驱动加载-2025-01-16.md",
+      "score": {
+        "relevance": 5,
+        "technical": 4,
+        "timeliness": 5,
+        "verifiability": 4,
+        "total": 18
+      },
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch01-架构",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Binder驱动加载过程分析",
+      "indexed_at": "2026-03-31T18:45:00"
+    },
+    {
+      "title": "迁移Paging至KMM",
+      "path": "Cubox/再探Kotlin 跨平台——迁移Paging分页库至KMM-2022-11-25.md",
+      "score": {
+        "relevance": 4,
+        "technical": 3,
+        "timeliness": 3,
+        "verifiability": 3,
+        "total": 13
+      },
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch15-Kotlin",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Kotlin跨平台迁移Paging库",
+      "indexed_at": "2026-03-31T18:45:00"
+    },
+    {
+      "title": "GPU体系结构及互联",
+      "path": "Cubox/再来谈谈GPU体系结构及互联-2025-04-21.md",
+      "score": {
+        "relevance": 3,
+        "technical": 3,
+        "timeliness": 5,
+        "verifiability": 2,
+        "total": 13
+      },
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "low"
+        }
+      ],
+      "summary": "GPU架构与互联技术",
+      "indexed_at": "2026-03-31T18:45:00"
+    },
+    {
+      "title": "再浅谈性能根因",
+      "path": "Cubox/再浅谈性能根因 - 知乎-2023-12-22.md",
+      "score": {
+        "relevance": 5,
+        "technical": 4,
+        "timeliness": 4,
+        "verifiability": 3,
+        "total": 16
+      },
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch11-Profiling",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Android性能问题根因总结",
+      "indexed_at": "2026-03-31T18:45:00"
+    },
+    {
+      "title": "启动优化 · 基础论 · 浅析Android启动优化",
+      "path": "Cubox/启动优化 ·  基础论 ·  浅析Android启动优化-2022-12-31.md",
+      "score": {
+        "relevance": 5,
+        "technical_depth": 3,
+        "timeliness": 3,
+        "verifiability": 3,
+        "total": 14
+      },
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch04-启动",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Android启动优化基础教程，从四个维度解析启动优化，涵盖冷启动/暖启动/热启动分类及优化策略。"
+    },
+    {
+      "title": "启动优化：盘点那些《不常规》的黑科技",
+      "path": "Cubox/启动优化：盘点那些《不常规》的黑科技-2024-10-21.md",
+      "score": {
+        "relevance": 5,
+        "technical_depth": 4,
+        "timeliness": 4,
+        "verifiability": 3,
+        "total": 16
+      },
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch04-启动",
+          "confidence": "high"
+        }
+      ],
+      "summary": "盘点Android启动优化中非常规的黑科技方案，包含具体的技术实现和效果数据。"
+    },
+    {
+      "title": "启动信息全掌握，Android 15 重磅 API：ApplicationStartInfo",
+      "path": "Cubox/启动信息全掌握，Android 15 重磅 API：ApplicationStartInfo - 掘金-2024-04-19.md",
+      "score": {
+        "relevance": 5,
+        "technical_depth": 4,
+        "timeliness": 5,
+        "verifiability": 4,
+        "total": 18
+      },
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch04-启动",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch14-工具",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "详解Android 15新API ApplicationStartInfo，可获取冷/暖/热启动类型、启动原因等详细信息。"
+    },
+    {
+      "title": "启动画面 - Android Developers",
+      "path": "Cubox/启动画面  -  Android 开发者  -  Android Developers-2022-02-26.md",
+      "score": {
+        "relevance": 4,
+        "technical_depth": 3,
+        "timeliness": 3,
+        "verifiability": 5,
+        "total": 15
+      },
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch04-启动",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Google官方Splash Screen API文档，涵盖启动画面配置、迁移指南及与启动速度优化相关的最佳实践。"
+    },
+    {
+      "title": "响应时延的科学研究",
+      "path": "Cubox/响应时延的科学研究-2025-04-17.md",
+      "score": {
+        "relevance": 5,
+        "technical_depth": 4,
+        "timeliness": 5,
+        "verifiability": 3,
+        "total": 17
+      },
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch04-启动",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "从科学研究角度分析响应时延，探讨用户感知与系统性能的关系，对启动速度和渲染优化有理论指导意义。"
+    },
+    {
+      "title": "哔哩哔哩APP的 AGP8 升级之旅",
+      "path": "Cubox/哔哩哔哩APP的 AGP8 升级之旅-2024-07-24.md",
+      "score": {
+        "relevance": 2,
+        "technical_depth": 3,
+        "timeliness": 4,
+        "verifiability": 2,
+        "total": 11
+      },
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch16-构建",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "B站APP从AGP7升级到AGP8的完整实践，包含编译性能对比和兼容性问题处理。"
+    },
+    {
+      "title": "哔哩哔哩Android编译优化",
+      "path": "Cubox/哔哩哔哩Android编译优化-2022-05-07.md",
+      "score": {
+        "relevance": 3,
+        "technical_depth": 3,
+        "timeliness": 3,
+        "verifiability": 2,
+        "total": 11
+      },
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch16-构建",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "B站Android编译优化实践，涵盖Gradle配置优化、增量编译等构建性能提升方案。"
+    },
+    {
+      "title": "四年之后，重新审视 MTE：从硬件架构到工程落地",
+      "path": "Cubox/四年之后，重新审视 MTE：从硬件架构到工程落地-2025-12-18.md",
+      "score": {
+        "relevance": 3,
+        "technical_depth": 4,
+        "timeliness": 5,
+        "verifiability": 3,
+        "total": 15
+      },
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch07-内存",
+          "confidence": "medium"
+        },
+        {
+          "chapter": "ch12-安全",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "重新审视ARM MTE(Memory Tagging Extension)技术，从硬件架构原理到Android工程落地的全链路分析。"
+    },
+    {
+      "title": "向工程腐化开炮｜动态链接库so治理",
+      "path": "Cubox/向工程腐化开炮｜动态链接库so治理-2022-03-07.md",
+      "score": {
+        "relevance": 2,
+        "technical_depth": 3,
+        "timeliness": 3,
+        "verifiability": 2,
+        "total": 10
+      },
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch10-包体积",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "优酷工程腐化治理系列，聚焦动态链接库so文件的治理策略，与APK包体积优化相关。"
+    },
+    {
+      "title": "哔哩哔哩Android编译优化",
+      "path": "Cubox/哔哩哔哩Android编译优化-2022-05-07.md",
+      "score": 13,
+      "chapters": [
+        {
+          "chapter": "ch16-构建",
+          "confidence": "high"
+        }
+      ],
+      "confidence": "high",
+      "quality": "medium",
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "summary": "B站Android编译优化实战经验"
+    },
+    {
+      "title": "四层负载均衡漫谈",
+      "path": "Cubox/四层负载均衡漫谈 - 卡瓦邦噶！-2023-12-04.md",
+      "score": 11,
+      "chapters": [
+        {
+          "chapter": "ch09-网络",
+          "confidence": "low"
+        }
+      ],
+      "confidence": "low",
+      "quality": "medium",
+      "scores": {
+        "relevance": 2,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "summary": "四层负载均衡与TCP反向代理原理"
+    },
+    {
+      "title": "四年之后重新审视MTE：从硬件架构到工程落地",
+      "path": "Cubox/四年之后，重新审视 MTE：从硬件架构到工程落地-2025-12-18.md",
+      "score": 18,
+      "chapters": [
+        {
+          "chapter": "ch07-内存",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch12-安全",
+          "confidence": "medium"
+        }
+      ],
+      "confidence": "high",
+      "quality": "high",
+      "scores": {
+        "relevance": 4,
+        "depth": 5,
+        "timeliness": 5,
+        "verifiability": 4
+      },
+      "summary": "MTE内存标记扩展从ARM硬件到Android工程落地"
+    },
+    {
+      "title": "回顾Kotlin的2021",
+      "path": "Cubox/回顾 Kotlin 的 2021：「无限生长」又一年-2022-01-26.md",
+      "score": 10,
+      "chapters": [
+        {
+          "chapter": "ch15-Kotlin",
+          "confidence": "medium"
+        }
+      ],
+      "confidence": "medium",
+      "quality": "medium",
+      "scores": {
+        "relevance": 3,
+        "depth": 2,
+        "timeliness": 3,
+        "verifiability": 2
+      },
+      "summary": "Kotlin 2021年终生态总结"
+    },
+    {
+      "title": "团队框架选型：Flutter vs React Native",
+      "path": "Cubox/团队框架终极选型：Flutter 还是 React Native-2023-11-07.md",
+      "score": 10,
+      "chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "low"
+        }
+      ],
+      "confidence": "low",
+      "quality": "medium",
+      "scores": {
+        "relevance": 3,
+        "depth": 2,
+        "timeliness": 3,
+        "verifiability": 2
+      },
+      "summary": "Flutter与RN跨平台框架对比"
+    },
+    {
+      "title": "图形学数字信号处理基础",
+      "path": "Cubox/图形学数字信号处理基础 · 语雀-2022-04-10.md",
+      "score": 13,
+      "chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "medium"
+        }
+      ],
+      "confidence": "medium",
+      "quality": "medium",
+      "scores": {
+        "relevance": 3,
+        "depth": 4,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "summary": "卷积和傅立叶变换等图形学DSP基础"
+    },
+    {
+      "title": "在Android Studio中用CPU Profiler锁定卡顿",
+      "path": "Cubox/在 Android Studio 中使用 CPU 性能分析器锁定界面卡顿-2022-07-19.md",
+      "score": 16,
+      "chapters": [
+        {
+          "chapter": "ch11-Profiling",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "medium"
+        }
+      ],
+      "confidence": "high",
+      "quality": "high",
+      "scores": {
+        "relevance": 5,
+        "depth": 4,
+        "timeliness": 3,
+        "verifiability": 4
+      },
+      "summary": "CPU Profiler定位界面卡顿的具体操作"
+    },
+    {
+      "title": "在Android中使用eBPF：开篇",
+      "path": "Cubox/在 Android 中使用 eBPF：开篇-2022-06-12.md",
+      "score": 13,
+      "chapters": [
+        {
+          "chapter": "ch11-Profiling",
+          "confidence": "medium"
+        },
+        {
+          "chapter": "ch13-调度",
+          "confidence": "low"
+        }
+      ],
+      "confidence": "medium",
+      "quality": "medium",
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "summary": "eBPF在Android上的应用介绍"
+    },
+    {
+      "title": "在Android中使用eBPF：环境搭建",
+      "path": "Cubox/在 Android 中使用 eBPF：环境搭建-2022-06-17.md",
+      "score": 14,
+      "chapters": [
+        {
+          "chapter": "ch11-Profiling",
+          "confidence": "medium"
+        },
+        {
+          "chapter": "ch14-工具",
+          "confidence": "medium"
+        }
+      ],
+      "confidence": "medium",
+      "quality": "medium",
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 4
+      },
+      "summary": "eadb搭建eBPF开发环境"
+    },
+    {
+      "title": "Jetpack Compose解锁CameraX",
+      "path": "Cubox/在 Jetpack Compose 中解锁 CameraX 的强大功能-2025-02-23.md",
+      "score": 14,
+      "chapters": [
+        {
+          "chapter": "ch15-Kotlin",
+          "confidence": "medium"
+        }
+      ],
+      "confidence": "medium",
+      "quality": "medium",
+      "scores": {
+        "relevance": 3,
+        "depth": 3,
+        "timeliness": 5,
+        "verifiability": 3
+      },
+      "summary": "camera-compose组件构建相机预览"
+    },
+    {
+      "title": "Android丝滑页面展开关闭动画",
+      "path": "Cubox/在Android上实现一个丝滑流畅的页面展开和关闭的效果动画-2024-01-26.md",
+      "score": 14,
+      "chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "high"
+        }
+      ],
+      "confidence": "high",
+      "quality": "medium",
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 4,
+        "verifiability": 3
+      },
+      "summary": "Compose实现丝滑页面展开关闭动画"
+    },
+    {
+      "title": "微信小程序运行Flutter技术原理",
+      "path": "Cubox/在微信小程序里运行完整的 Flutter，我们是怎么做到的？ - 掘金-2024-01-24.md",
+      "score": 14,
+      "chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "medium"
+        }
+      ],
+      "confidence": "medium",
+      "quality": "medium",
+      "scores": {
+        "relevance": 3,
+        "depth": 4,
+        "timeliness": 4,
+        "verifiability": 3
+      },
+      "summary": "Skia CanvasKit在微信小程序中运行Flutter"
+    },
+    {
+      "title": "在线杀死App卡顿难题",
+      "path": "Cubox/在线\"杀死 \" App 的卡顿难题！-2022-02-18.md",
+      "score": 13,
+      "chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch11-Profiling",
+          "confidence": "medium"
+        }
+      ],
+      "confidence": "high",
+      "quality": "medium",
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "summary": "在线解决App卡顿的方法与工具"
+    },
+    {
+      "title": "基于C++的Android协程设计",
+      "path": "Cubox/基于 C++ 的 Android 协程设计 - 张涛-2022-03-30.md",
+      "score": 14,
+      "chapters": [
+        {
+          "chapter": "ch03-线程",
+          "confidence": "high"
+        }
+      ],
+      "confidence": "high",
+      "quality": "medium",
+      "scores": {
+        "relevance": 4,
+        "depth": 4,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "summary": "Android上C++协程设计方案"
+    },
+    {
+      "title": "基于Core文件的Android调试分析套件",
+      "path": "Cubox/基于 Core 文件的 Android 调试与分析套件 - 掘金-2024-07-01.md",
+      "score": 18,
+      "chapters": [
+        {
+          "chapter": "ch11-Profiling",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch07-内存",
+          "confidence": "high"
+        }
+      ],
+      "confidence": "high",
+      "quality": "high",
+      "scores": {
+        "relevance": 5,
+        "depth": 4,
+        "timeliness": 4,
+        "verifiability": 5
+      },
+      "summary": "开源离线内存分析，兼容Android 8~15"
+    },
+    {
+      "title": "基于eBPF的CPU利用率精准计算工具",
+      "path": "Cubox/基于eBPF的CPU利用率精准计算小工具开发-2022-03-13.md",
+      "score": 15,
+      "chapters": [
+        {
+          "chapter": "ch13-调度",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch11-Profiling",
+          "confidence": "medium"
+        }
+      ],
+      "confidence": "high",
+      "quality": "medium",
+      "scores": {
+        "relevance": 4,
+        "depth": 4,
+        "timeliness": 3,
+        "verifiability": 4
+      },
+      "summary": "eBPF精准计算CPU利用率含内核接口"
+    },
+    {
+      "title": "eBPF sched-ext产品成功逻辑",
+      "path": "Cubox/基于eBPF的sched-ext会在产品成功的底层逻辑是什么-2025-10-18.md",
+      "score": 18,
+      "chapters": [
+        {
+          "chapter": "ch13-调度",
+          "confidence": "high"
+        }
+      ],
+      "confidence": "high",
+      "quality": "high",
+      "scores": {
+        "relevance": 5,
+        "depth": 4,
+        "timeliness": 5,
+        "verifiability": 4
+      },
+      "summary": "sched-ext可编程调度器深度分析"
+    },
+    {
+      "title": "基于GPU counters的性能优化",
+      "path": "Cubox/基于gpu counters数据的性能优化-2025-02-27.md",
+      "score": 18,
+      "chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch11-Profiling",
+          "confidence": "high"
+        }
+      ],
+      "confidence": "high",
+      "quality": "high",
+      "scores": {
+        "relevance": 5,
+        "depth": 4,
+        "timeliness": 5,
+        "verifiability": 4
+      },
+      "summary": "GPU counters数据驱动的性能优化方法"
+    },
+    {
+      "title": "安卓墓碑文件FakeCore原理",
+      "path": "Cubox/基于安卓墓碑文件制作 FakeCore 原理 - 掘金-2023-12-06.md",
+      "score": 15,
+      "chapters": [
+        {
+          "chapter": "ch11-Profiling",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch07-内存",
+          "confidence": "medium"
+        }
+      ],
+      "confidence": "high",
+      "quality": "medium",
+      "scores": {
+        "relevance": 4,
+        "depth": 4,
+        "timeliness": 3,
+        "verifiability": 4
+      },
+      "summary": "tombstone整合FakeCore用于crash分析"
+    },
+    {
+      "title": "RecyclerView滑动场景回收复用机制",
+      "path": "Cubox/基于滑动场景解析RecyclerView的回收复用机制原理最近在研究 RecyclerView 的回收复用机制，顺便记录 - 掘金-2025-06-05.md",
+      "score": 17,
+      "chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "high"
+        }
+      ],
+      "confidence": "high",
+      "quality": "high",
+      "scores": {
+        "relevance": 4,
+        "depth": 4,
+        "timeliness": 5,
+        "verifiability": 4
+      },
+      "summary": "RecyclerView四级缓存滑动场景回收复用机制"
+    },
+    {
+      "title": "基于预测模型的GPU绘制效率优化",
+      "path": "Cubox/基于预测模型的 GPU 绘制效率优化方法-2025-04-16.md",
+      "score": 18,
+      "chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch13-调度",
+          "confidence": "medium"
+        }
+      ],
+      "confidence": "high",
+      "quality": "high",
+      "scores": {
+        "relevance": 5,
+        "depth": 4,
+        "timeliness": 5,
+        "verifiability": 4
+      },
+      "summary": "预测模型优化GPU绘制效率的方法"
+    },
+    {
+      "path": "Cubox/基本功 - 一文讲清多线程和多线程同步 - 美团技术团队-2024-07-22.md",
+      "title": "基本功 | 一文讲清多线程和多线程同步",
+      "score": {
+        "relevance": 5,
+        "depth": 4,
+        "timeliness": 5,
+        "verifiability": 4,
+        "total": 18
+      },
+      "quality": "high",
+      "chapters": [
+        {
+          "id": "ch03",
+          "name": "线程",
+          "confidence": "high"
+        }
+      ],
+      "summary": "美团技术团队深入讲解多线程编程核心概念：原子操作、CAS、Lock-free、内存屏障、伪共享、乱序执行等，含代码示例"
+    },
+    {
+      "path": "Cubox/增加内存会让计算机变快吗？-2022-10-31.md",
+      "title": "增加内存会让计算机变快吗？",
+      "score": {
+        "relevance": 3,
+        "depth": 2,
+        "timeliness": 3,
+        "verifiability": 2,
+        "total": 10
+      },
+      "quality": "medium",
+      "chapters": [
+        {
+          "id": "ch07",
+          "name": "内存",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "讨论内存容量与计算机性能关系的科普文章"
+    },
+    {
+      "path": "Cubox/多图文教你看懂单个图层的绘制流程-2023-11-27.md",
+      "title": "多图文教你看懂单个图层的绘制流程",
+      "score": {
+        "relevance": 5,
+        "depth": 4,
+        "timeliness": 4,
+        "verifiability": 4,
+        "total": 17
+      },
+      "quality": "high",
+      "chapters": [
+        {
+          "id": "ch05",
+          "name": "渲染",
+          "confidence": "high"
+        }
+      ],
+      "summary": "详细介绍HWUI基础知识及HWUI与Skia之间的关系，讲解单个图层绘制流程"
+    },
+    {
+      "path": "Cubox/多线程的性能杀手 - 知乎-2024-01-27.md",
+      "title": "多线程的性能杀手",
+      "score": {
+        "relevance": 5,
+        "depth": 4,
+        "timeliness": 5,
+        "verifiability": 4,
+        "total": 18
+      },
+      "quality": "high",
+      "chapters": [
+        {
+          "id": "ch03",
+          "name": "线程",
+          "confidence": "high"
+        }
+      ],
+      "summary": "深入分析多线程性能问题，涉及Cache伪共享、内存屏障等底层机制，从CPU缓存角度解释多线程性能瓶颈"
+    },
+    {
+      "path": "Cubox/大厂实战：TikTok跨平台框架Lynx终于开源-2025-04-27.md",
+      "title": "大厂实战：TikTok跨平台框架Lynx终于开源",
+      "score": {
+        "relevance": 3,
+        "depth": 3,
+        "timeliness": 5,
+        "verifiability": 3,
+        "total": 14
+      },
+      "quality": "medium",
+      "chapters": [
+        {
+          "id": "ch05",
+          "name": "渲染",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "TikTok跨平台框架Lynx开源介绍，涉及渲染引擎架构与跨平台实现方案"
+    },
+    {
+      "path": "Cubox/大型 APP 的性能优化思路 - 掘金-2024-01-05.md",
+      "title": "大型 APP 的性能优化思路",
+      "score": {
+        "relevance": 5,
+        "depth": 4,
+        "timeliness": 5,
+        "verifiability": 3,
+        "total": 17
+      },
+      "quality": "high",
+      "chapters": [
+        {
+          "id": "ch04",
+          "name": "启动",
+          "confidence": "high"
+        },
+        {
+          "id": "ch05",
+          "name": "渲染",
+          "confidence": "high"
+        },
+        {
+          "id": "ch07",
+          "name": "内存",
+          "confidence": "high"
+        }
+      ],
+      "summary": "大型APP性能优化全面梳理，涵盖启动速度、流畅性、内存占用等多个维度的优化经验和思路"
+    },
+    {
+      "path": "Cubox/大麦 Android 选座场景性能优化全解析-2022-11-03.md",
+      "title": "大麦 Android 选座场景性能优化全解析",
+      "score": {
+        "relevance": 5,
+        "depth": 4,
+        "timeliness": 3,
+        "verifiability": 4,
+        "total": 16
+      },
+      "quality": "high",
+      "chapters": [
+        {
+          "id": "ch05",
+          "name": "渲染",
+          "confidence": "high"
+        },
+        {
+          "id": "ch07",
+          "name": "内存",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "大麦Android选座场景性能优化实战，包括超大场馆实时在线选座的核心方案和策略"
+    },
+    {
+      "path": "Cubox/如何从Wall-CPU time理解多线程程序的并行效率 - 知乎-2024-02-25.md",
+      "title": "如何从Wall/CPU time理解多线程程序的并行效率",
+      "score": {
+        "relevance": 5,
+        "depth": 4,
+        "timeliness": 5,
+        "verifiability": 4,
+        "total": 18
+      },
+      "quality": "high",
+      "chapters": [
+        {
+          "id": "ch03",
+          "name": "线程",
+          "confidence": "high"
+        }
+      ],
+      "summary": "从wall-clock time和CPU time角度分析多线程程序并行效率，含具体时间统计与性能分析方法"
     }
   ],
   "last_updated": "2026-03-31T16:15:00Z",
-  "total_indexed": 646
+  "total_indexed": 814
 }

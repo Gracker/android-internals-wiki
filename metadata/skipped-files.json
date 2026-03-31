@@ -1,5 +1,5 @@
 {
-  "total_skipped": 1971,
+  "total_skipped": 2090,
   "files": [
     {
       "title": "第 10 章：内存性能",
@@ -20411,6 +20411,1266 @@
       "path": "Cubox/关于 TweetID-1658453862561501184 中典型诡辩论部分的拆解 - Kivinsae's Nest-2023-05-17.md",
       "score": 0,
       "reason": "非Android技术"
+    },
+    {
+      "file": "Cubox/其实关于 ChatGPT plugins 的大部分 myth-2023-03-24.md",
+      "title": "ChatGPT plugins myth",
+      "scores": {
+        "relevance": 1,
+        "depth": 2,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 7
+      },
+      "reason": "AI闲谈，无技术深度",
+      "skipped_at": "2026-03-31T18:45:00"
+    },
+    {
+      "file": "Cubox/内地赴港办理永隆卡攻略-2023-08-21.md",
+      "title": "内地赴港办理永隆卡攻略",
+      "scores": {
+        "relevance": 0,
+        "depth": 1,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 5
+      },
+      "reason": "生活攻略",
+      "skipped_at": "2026-03-31T18:45:00"
+    },
+    {
+      "file": "Cubox/内核团队需要在社区和产品同时成功-2025-10-17.md",
+      "title": "内核团队需要在社区和产品同时成功",
+      "scores": {
+        "relevance": 1,
+        "depth": 2,
+        "timeliness": 5,
+        "verifiability": 1,
+        "total": 9
+      },
+      "reason": "内核团队管理哲学，非技术内容",
+      "skipped_at": "2026-03-31T18:45:00"
+    },
+    {
+      "file": "Cubox/再次勇闯稳定性岗位！vivo社招面经——linux系统工程师（底软稳定性与性能）-2025-03-20.md",
+      "title": "vivo社招面经-linux系统工程师",
+      "scores": {
+        "relevance": 2,
+        "depth": 2,
+        "timeliness": 5,
+        "verifiability": 1,
+        "total": 10
+      },
+      "reason": "面试经验，无实质技术内容",
+      "skipped_at": "2026-03-31T18:45:00"
+    },
+    {
+      "file": "Cubox/再见，字节跳动！-2023-07-26.md",
+      "title": "再见字节跳动",
+      "scores": {
+        "relevance": 0,
+        "depth": 1,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 5
+      },
+      "reason": "职场文章",
+      "skipped_at": "2026-03-31T18:45:00"
+    },
+    {
+      "file": "Cubox/再见，字节跳动！-2023-07-31.md",
+      "title": "再见字节跳动(二)",
+      "scores": {
+        "relevance": 0,
+        "depth": 1,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 5
+      },
+      "reason": "职场文章",
+      "skipped_at": "2026-03-31T18:45:00"
+    },
+    {
+      "file": "Cubox/再见，极客时间-2022-04-07.md",
+      "title": "再见极客时间",
+      "scores": {
+        "relevance": 0,
+        "depth": 1,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 5
+      },
+      "reason": "职场文章",
+      "skipped_at": "2026-03-31T18:45:00"
+    },
+    {
+      "file": "Cubox/再见，阿里 - 拾月的博客-2023-01-30.md",
+      "title": "再见阿里",
+      "scores": {
+        "relevance": 0,
+        "depth": 1,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 5
+      },
+      "reason": "职场文章",
+      "skipped_at": "2026-03-31T18:45:00"
+    },
+    {
+      "file": "Cubox/冒雨堵车三小时，为什么还要主动选择去公司上班？-2023-01-31.md",
+      "title": "冒雨堵车三小时",
+      "scores": {
+        "relevance": 0,
+        "depth": 1,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 5
+      },
+      "reason": "生活随笔",
+      "skipped_at": "2026-03-31T18:45:00"
+    },
+    {
+      "file": "Cubox/写作即思考-2025-07-27.md",
+      "title": "写作即思考",
+      "scores": {
+        "relevance": 0,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 1,
+        "total": 7
+      },
+      "reason": "写作方法论",
+      "skipped_at": "2026-03-31T18:45:00"
+    },
+    {
+      "file": "Cubox/写在 34 岁-2024-07-29.md",
+      "title": "写在34岁",
+      "scores": {
+        "relevance": 0,
+        "depth": 1,
+        "timeliness": 4,
+        "verifiability": 1,
+        "total": 6
+      },
+      "reason": "个人随笔",
+      "skipped_at": "2026-03-31T18:45:00"
+    },
+    {
+      "file": "Cubox/写在 Kimi K2 发布之后：再也不仅仅是 ChatBot - K.I.S.S-2025-07-14.md",
+      "title": "Kimi K2发布后的思考",
+      "scores": {
+        "relevance": 0,
+        "depth": 2,
+        "timeliness": 5,
+        "verifiability": 1,
+        "total": 8
+      },
+      "reason": "AI产品评论",
+      "skipped_at": "2026-03-31T18:45:00"
+    },
+    {
+      "file": "Cubox/写在我的 M1 Max 深度使用3个月后 - 少数派-2022-02-27.md",
+      "title": "M1 Max深度使用3个月",
+      "scores": {
+        "relevance": 1,
+        "depth": 2,
+        "timeliness": 3,
+        "verifiability": 2,
+        "total": 8
+      },
+      "reason": "硬件评测，非Android",
+      "skipped_at": "2026-03-31T18:45:00"
+    },
+    {
+      "file": "Cubox/写在第二十五万字 · 构建我的被动收入-2022-02-24.md",
+      "title": "构建被动收入",
+      "scores": {
+        "relevance": 0,
+        "depth": 1,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 5
+      },
+      "reason": "写作与收入",
+      "skipped_at": "2026-03-31T18:45:00"
+    },
+    {
+      "file": "Cubox/其实关于 ChatGPT plugins 的大部分 myth-2023-03-24.md",
+      "title": "ChatGPT plugins myth",
+      "scores": {
+        "relevance": 1,
+        "depth": 2,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 7
+      },
+      "reason": "AI闲谈无技术深度",
+      "skipped_at": "2026-03-31T18:45:00"
+    },
+    {
+      "file": "Cubox/内地赴港办理永隆卡攻略-2023-08-21.md",
+      "title": "内地赴港办理永隆卡攻略",
+      "scores": {
+        "relevance": 0,
+        "depth": 1,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 5
+      },
+      "reason": "生活攻略",
+      "skipped_at": "2026-03-31T18:45:00"
+    },
+    {
+      "file": "Cubox/内核团队需要在社区和产品同时成功-2025-10-17.md",
+      "title": "内核团队需在社区和产品同时成功",
+      "scores": {
+        "relevance": 1,
+        "depth": 2,
+        "timeliness": 5,
+        "verifiability": 1,
+        "total": 9
+      },
+      "reason": "内核团队管理哲学",
+      "skipped_at": "2026-03-31T18:45:00"
+    },
+    {
+      "file": "Cubox/再次勇闯稳定性岗位！vivo社招面经——linux系统工程师（底软稳定性与性能）-2025-03-20.md",
+      "title": "vivo社招面经-linux系统工程师",
+      "scores": {
+        "relevance": 2,
+        "depth": 2,
+        "timeliness": 5,
+        "verifiability": 1,
+        "total": 10
+      },
+      "reason": "面试经验无实质技术",
+      "skipped_at": "2026-03-31T18:45:00"
+    },
+    {
+      "file": "Cubox/再见，字节跳动！-2023-07-26.md",
+      "title": "再见字节跳动",
+      "scores": {
+        "relevance": 0,
+        "depth": 1,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 5
+      },
+      "reason": "职场文章",
+      "skipped_at": "2026-03-31T18:45:00"
+    },
+    {
+      "file": "Cubox/再见，字节跳动！-2023-07-31.md",
+      "title": "再见字节跳动(二)",
+      "scores": {
+        "relevance": 0,
+        "depth": 1,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 5
+      },
+      "reason": "职场文章",
+      "skipped_at": "2026-03-31T18:45:00"
+    },
+    {
+      "file": "Cubox/再见，极客时间-2022-04-07.md",
+      "title": "再见极客时间",
+      "scores": {
+        "relevance": 0,
+        "depth": 1,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 5
+      },
+      "reason": "职场文章",
+      "skipped_at": "2026-03-31T18:45:00"
+    },
+    {
+      "file": "Cubox/再见，阿里 - 拾月的博客-2023-01-30.md",
+      "title": "再见阿里",
+      "scores": {
+        "relevance": 0,
+        "depth": 1,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 5
+      },
+      "reason": "职场文章",
+      "skipped_at": "2026-03-31T18:45:00"
+    },
+    {
+      "file": "Cubox/冒雨堵车三小时，为什么还要主动选择去公司上班？-2023-01-31.md",
+      "title": "冒雨堵车三小时",
+      "scores": {
+        "relevance": 0,
+        "depth": 1,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 5
+      },
+      "reason": "生活随笔",
+      "skipped_at": "2026-03-31T18:45:00"
+    },
+    {
+      "file": "Cubox/写作即思考-2025-07-27.md",
+      "title": "写作即思考",
+      "scores": {
+        "relevance": 0,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 1,
+        "total": 7
+      },
+      "reason": "写作方法论",
+      "skipped_at": "2026-03-31T18:45:00"
+    },
+    {
+      "file": "Cubox/写在 34 岁-2024-07-29.md",
+      "title": "写在34岁",
+      "scores": {
+        "relevance": 0,
+        "depth": 1,
+        "timeliness": 4,
+        "verifiability": 1,
+        "total": 6
+      },
+      "reason": "个人随笔",
+      "skipped_at": "2026-03-31T18:45:00"
+    },
+    {
+      "file": "Cubox/写在 Kimi K2 发布之后：再也不仅仅是 ChatBot - K.I.S.S-2025-07-14.md",
+      "title": "Kimi K2发布后的思考",
+      "scores": {
+        "relevance": 0,
+        "depth": 2,
+        "timeliness": 5,
+        "verifiability": 1,
+        "total": 8
+      },
+      "reason": "AI产品评论",
+      "skipped_at": "2026-03-31T18:45:00"
+    },
+    {
+      "file": "Cubox/写在我的 M1 Max 深度使用3个月后 - 少数派-2022-02-27.md",
+      "title": "M1 Max深度使用3个月",
+      "scores": {
+        "relevance": 1,
+        "depth": 2,
+        "timeliness": 3,
+        "verifiability": 2,
+        "total": 8
+      },
+      "reason": "硬件评测非Android",
+      "skipped_at": "2026-03-31T18:45:00"
+    },
+    {
+      "file": "Cubox/写在第二十五万字 · 构建我的被动收入-2022-02-24.md",
+      "title": "构建被动收入",
+      "scores": {
+        "relevance": 0,
+        "depth": 1,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 5
+      },
+      "reason": "写作收入",
+      "skipped_at": "2026-03-31T18:45:00"
+    },
+    {
+      "path": "Cubox/其实关于 ChatGPT plugins 的大部分 myth-2023-03-24.md",
+      "title": "ChatGPT plugins myth",
+      "score": {
+        "relevance": 1,
+        "technical": 2,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 7
+      },
+      "reason": "",
+      "skipped_at": "2026-03-31T18:45:00"
+    },
+    {
+      "path": "Cubox/内地赴港办理永隆卡攻略-2023-08-21.md",
+      "title": "内地赴港办理永隆卡攻略",
+      "score": {
+        "relevance": 0,
+        "technical": 1,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 5
+      },
+      "reason": "",
+      "skipped_at": "2026-03-31T18:45:00"
+    },
+    {
+      "path": "Cubox/内核团队需要在社区和产品同时成功-2025-10-17.md",
+      "title": "内核团队需社区产品双成功",
+      "score": {
+        "relevance": 1,
+        "technical": 2,
+        "timeliness": 5,
+        "verifiability": 1,
+        "total": 9
+      },
+      "reason": "内核团队管理哲学",
+      "skipped_at": "2026-03-31T18:45:00"
+    },
+    {
+      "path": "Cubox/再次勇闯稳定性岗位！vivo社招面经——linux系统工程师（底软稳定性与性能）-2025-03-20.md",
+      "title": "vivo社招面经",
+      "score": {
+        "relevance": 2,
+        "technical": 2,
+        "timeliness": 5,
+        "verifiability": 1,
+        "total": 10
+      },
+      "reason": "面试经验无实质技术内容",
+      "skipped_at": "2026-03-31T18:45:00"
+    },
+    {
+      "path": "Cubox/再见，字节跳动！-2023-07-26.md",
+      "title": "再见字节跳动",
+      "score": {
+        "relevance": 0,
+        "technical": 1,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 5
+      },
+      "reason": "职场文章",
+      "skipped_at": "2026-03-31T18:45:00"
+    },
+    {
+      "path": "Cubox/再见，字节跳动！-2023-07-31.md",
+      "title": "再见字节跳动(二)",
+      "score": {
+        "relevance": 0,
+        "technical": 1,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 5
+      },
+      "reason": "职场文章",
+      "skipped_at": "2026-03-31T18:45:00"
+    },
+    {
+      "path": "Cubox/再见，极客时间-2022-04-07.md",
+      "title": "再见极客时间",
+      "score": {
+        "relevance": 0,
+        "technical": 1,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 5
+      },
+      "reason": "职场文章",
+      "skipped_at": "2026-03-31T18:45:00"
+    },
+    {
+      "path": "Cubox/再见，阿里 - 拾月的博客-2023-01-30.md",
+      "title": "再见阿里",
+      "score": {
+        "relevance": 0,
+        "technical": 1,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 5
+      },
+      "reason": "职场文章",
+      "skipped_at": "2026-03-31T18:45:00"
+    },
+    {
+      "path": "Cubox/冒雨堵车三小时，为什么还要主动选择去公司上班？-2023-01-31.md",
+      "title": "冒雨堵车三小时",
+      "score": {
+        "relevance": 0,
+        "technical": 1,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 5
+      },
+      "reason": "生活随笔",
+      "skipped_at": "2026-03-31T18:45:00"
+    },
+    {
+      "path": "Cubox/写作即思考-2025-07-27.md",
+      "title": "写作即思考",
+      "score": {
+        "relevance": 0,
+        "technical": 1,
+        "timeliness": 5,
+        "verifiability": 1,
+        "total": 7
+      },
+      "reason": "写作方法论",
+      "skipped_at": "2026-03-31T18:45:00"
+    },
+    {
+      "path": "Cubox/写在 34 岁-2024-07-29.md",
+      "title": "写在34岁",
+      "score": {
+        "relevance": 0,
+        "technical": 1,
+        "timeliness": 4,
+        "verifiability": 1,
+        "total": 6
+      },
+      "reason": "个人随笔",
+      "skipped_at": "2026-03-31T18:45:00"
+    },
+    {
+      "path": "Cubox/写在 Kimi K2 发布之后：再也不仅仅是 ChatBot - K.I.S.S-2025-07-14.md",
+      "title": "Kimi K2发布后思考",
+      "score": {
+        "relevance": 0,
+        "technical": 2,
+        "timeliness": 5,
+        "verifiability": 1,
+        "total": 8
+      },
+      "reason": "AI产品评论",
+      "skipped_at": "2026-03-31T18:45:00"
+    },
+    {
+      "path": "Cubox/写在我的 M1 Max 深度使用3个月后 - 少数派-2022-02-27.md",
+      "title": "M1 Max深度使用3个月",
+      "score": {
+        "relevance": 1,
+        "technical": 2,
+        "timeliness": 3,
+        "verifiability": 2,
+        "total": 8
+      },
+      "reason": "硬件评测非Android",
+      "skipped_at": "2026-03-31T18:45:00"
+    },
+    {
+      "path": "Cubox/写在第二十五万字 · 构建我的被动收入-2022-02-24.md",
+      "title": "构建被动收入",
+      "score": {
+        "relevance": 0,
+        "technical": 1,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 5
+      },
+      "reason": "写作收入",
+      "skipped_at": "2026-03-31T18:45:00"
+    },
+    {
+      "path": "Cubox/其实关于 ChatGPT plugins 的大部分 myth-2023-03-24.md",
+      "title": "ChatGPT plugins myth",
+      "score": {
+        "relevance": 1,
+        "technical": 2,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 7
+      },
+      "reason": "score < 10",
+      "skipped_at": "2026-03-31T18:45:00"
+    },
+    {
+      "path": "Cubox/内地赴港办理永隆卡攻略-2023-08-21.md",
+      "title": "内地赴港办理永隆卡攻略",
+      "score": {
+        "relevance": 0,
+        "technical": 1,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 5
+      },
+      "reason": "score < 10",
+      "skipped_at": "2026-03-31T18:45:00"
+    },
+    {
+      "path": "Cubox/内核团队需要在社区和产品同时成功-2025-10-17.md",
+      "title": "内核团队社区产品双成功",
+      "score": {
+        "relevance": 1,
+        "technical": 2,
+        "timeliness": 5,
+        "verifiability": 1,
+        "total": 9
+      },
+      "reason": "内核团队管理",
+      "skipped_at": "2026-03-31T18:45:00"
+    },
+    {
+      "path": "Cubox/再次勇闯稳定性岗位！vivo社招面经——linux系统工程师（底软稳定性与性能）-2025-03-20.md",
+      "title": "vivo社招面经",
+      "score": {
+        "relevance": 2,
+        "technical": 2,
+        "timeliness": 5,
+        "verifiability": 1,
+        "total": 10
+      },
+      "reason": "面试经验",
+      "skipped_at": "2026-03-31T18:45:00"
+    },
+    {
+      "path": "Cubox/再见，字节跳动！-2023-07-26.md",
+      "title": "再见字节跳动",
+      "score": {
+        "relevance": 0,
+        "technical": 1,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 5
+      },
+      "reason": "职场",
+      "skipped_at": "2026-03-31T18:45:00"
+    },
+    {
+      "path": "Cubox/再见，字节跳动！-2023-07-31.md",
+      "title": "再见字节跳动(二)",
+      "score": {
+        "relevance": 0,
+        "technical": 1,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 5
+      },
+      "reason": "职场",
+      "skipped_at": "2026-03-31T18:45:00"
+    },
+    {
+      "path": "Cubox/再见，极客时间-2022-04-07.md",
+      "title": "再见极客时间",
+      "score": {
+        "relevance": 0,
+        "technical": 1,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 5
+      },
+      "reason": "职场",
+      "skipped_at": "2026-03-31T18:45:00"
+    },
+    {
+      "path": "Cubox/再见，阿里 - 拾月的博客-2023-01-30.md",
+      "title": "再见阿里",
+      "score": {
+        "relevance": 0,
+        "technical": 1,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 5
+      },
+      "reason": "职场",
+      "skipped_at": "2026-03-31T18:45:00"
+    },
+    {
+      "path": "Cubox/冒雨堵车三小时，为什么还要主动选择去公司上班？-2023-01-31.md",
+      "title": "冒雨堵车",
+      "score": {
+        "relevance": 0,
+        "technical": 1,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 5
+      },
+      "reason": "生活",
+      "skipped_at": "2026-03-31T18:45:00"
+    },
+    {
+      "path": "Cubox/写作即思考-2025-07-27.md",
+      "title": "写作即思考",
+      "score": {
+        "relevance": 0,
+        "technical": 1,
+        "timeliness": 5,
+        "verifiability": 1,
+        "total": 7
+      },
+      "reason": "写作",
+      "skipped_at": "2026-03-31T18:45:00"
+    },
+    {
+      "path": "Cubox/写在 34 岁-2024-07-29.md",
+      "title": "写在34岁",
+      "score": {
+        "relevance": 0,
+        "technical": 1,
+        "timeliness": 4,
+        "verifiability": 1,
+        "total": 6
+      },
+      "reason": "个人",
+      "skipped_at": "2026-03-31T18:45:00"
+    },
+    {
+      "path": "Cubox/写在 Kimi K2 发布之后：再也不仅仅是 ChatBot - K.I.S.S-2025-07-14.md",
+      "title": "Kimi K2思考",
+      "score": {
+        "relevance": 0,
+        "technical": 2,
+        "timeliness": 5,
+        "verifiability": 1,
+        "total": 8
+      },
+      "reason": "AI评论",
+      "skipped_at": "2026-03-31T18:45:00"
+    },
+    {
+      "path": "Cubox/写在我的 M1 Max 深度使用3个月后 - 少数派-2022-02-27.md",
+      "title": "M1 Max使用",
+      "score": {
+        "relevance": 1,
+        "technical": 2,
+        "timeliness": 3,
+        "verifiability": 2,
+        "total": 8
+      },
+      "reason": "硬件评测",
+      "skipped_at": "2026-03-31T18:45:00"
+    },
+    {
+      "path": "Cubox/写在第二十五万字 · 构建我的被动收入-2022-02-24.md",
+      "title": "构建被动收入",
+      "score": {
+        "relevance": 0,
+        "technical": 1,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 5
+      },
+      "reason": "写作",
+      "skipped_at": "2026-03-31T18:45:00"
+    },
+    {
+      "title": "向工程腐化开炮｜资源治理",
+      "path": "Cubox/向工程腐化开炮｜资源治理-2022-03-06.md",
+      "score": {
+        "relevance": 2,
+        "technical_depth": 2,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 8
+      },
+      "reason": "总分8<10分"
+    },
+    {
+      "title": "向死而生：面向失败设计之道、术、技",
+      "path": "Cubox/向死而生：面向失败设计之道、术、技-2022-03-14.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 2,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 7
+      },
+      "reason": "总分7<10分"
+    },
+    {
+      "title": "向量数据库",
+      "path": "Cubox/向量数据库-2024-03-26.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 2,
+        "timeliness": 4,
+        "verifiability": 1,
+        "total": 8
+      },
+      "reason": "总分8<10分，与Android性能无关"
+    },
+    {
+      "title": "吕奕的金融帝国和他背后难以估量的老虎",
+      "path": "Cubox/吕奕的金融帝国和他背后难以估量的老虎 - 昆仑策-2022-07-11.md",
+      "score": {
+        "relevance": 0,
+        "technical_depth": 1,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 5
+      },
+      "reason": "总分5<10分，非技术内容"
+    },
+    {
+      "title": "听了Andrej Karpathy最新2小时访谈",
+      "path": "Cubox/听了Andrej Karpathy最新2小时访谈，我对Agent彻底祛魅了-2025-10-20.md",
+      "score": {
+        "relevance": 0,
+        "technical_depth": 2,
+        "timeliness": 5,
+        "verifiability": 2,
+        "total": 9
+      },
+      "reason": "总分9<10分，AI Agent话题非Android性能"
+    },
+    {
+      "title": "听了一期六个小时的播客",
+      "path": "Cubox/听了一期六个小时的播客，北美科技圈大主播Lex Fridma-2024-02-05.md",
+      "score": {
+        "relevance": 0,
+        "technical_depth": 1,
+        "timeliness": 4,
+        "verifiability": 1,
+        "total": 6
+      },
+      "reason": "总分6<10分，播客非技术"
+    },
+    {
+      "title": "听众的三种形态",
+      "path": "Cubox/听众的三种形态-2022-01-16.md",
+      "score": {
+        "relevance": 0,
+        "technical_depth": 1,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 5
+      },
+      "reason": "总分5<10分"
+    },
+    {
+      "title": "启动信息全掌握(duplicate)",
+      "path": "Cubox/启动信息全掌握，Android 15 重磅 API：ApplicationStartInfo-2024-04-03.md",
+      "score": {
+        "relevance": 5,
+        "technical_depth": 4,
+        "timeliness": 5,
+        "verifiability": 4,
+        "total": 18
+      },
+      "reason": "与掘金版本重复，跳过"
+    },
+    {
+      "title": "吴军GTP七问七答",
+      "path": "Cubox/吴军GTP七问七答：ChatGTP不算是新技术革命，也带不来什么所谓的新机会 - 知乎-2023-04-11.md",
+      "score": {
+        "relevance": 0,
+        "technical_depth": 1,
+        "timeliness": 3,
+        "verifiability": 2,
+        "total": 6
+      },
+      "reason": "总分6<10分，非Android"
+    },
+    {
+      "title": "吴恩达：从 Agent 到 Agentic Workflow",
+      "path": "Cubox/吴恩达：从 Agent 到 Agentic Workflow ，AI 的未来何去何从？-2024-06-24.md",
+      "score": {
+        "relevance": 0,
+        "technical_depth": 2,
+        "timeliness": 4,
+        "verifiability": 2,
+        "total": 8
+      },
+      "reason": "总分8<10分，AI话题"
+    },
+    {
+      "title": "吴敬琏：中国经济社会矛盾几乎到了临界点",
+      "path": "Cubox/吴敬琏：中国经济社会矛盾几乎到了临界点-2023-12-07.md",
+      "score": {
+        "relevance": 0,
+        "technical_depth": 1,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 5
+      },
+      "reason": "总分5<10分，社会经济话题"
+    },
+    {
+      "title": "吴海：国家经济发展面临四重挑战",
+      "path": "Cubox/吴海：国家经济发展面临四重挑战，信心是最大的资产-2022-10-09.md",
+      "score": {
+        "relevance": 0,
+        "technical_depth": 1,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 5
+      },
+      "reason": "总分5<10分，经济话题"
+    },
+    {
+      "title": "吹捧远程办公的硅谷巨头",
+      "path": "Cubox/吹捧「远程办公」的硅谷巨头，背地里却在偷偷买楼-2022-03-15.md",
+      "score": {
+        "relevance": 0,
+        "technical_depth": 1,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 5
+      },
+      "reason": "总分5<10分"
+    },
+    {
+      "title": "安卓逆向入门教程IDA",
+      "path": "Cubox/吾爱破解安卓逆向入门教程《安卓逆向这档事》十、不是我说，有了IDA还要什么女朋友？-2023-05-20.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 2,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 7
+      },
+      "reason": "总分7<10分，逆向非性能优化"
+    },
+    {
+      "title": "告别2023迎接2024的37个答案",
+      "path": "Cubox/告别 2023 、迎接 2024 的 37 个答案-2024-01-02.md",
+      "score": {
+        "relevance": 0,
+        "technical_depth": 1,
+        "timeliness": 4,
+        "verifiability": 1,
+        "total": 6
+      },
+      "reason": "总分6<10分"
+    },
+    {
+      "title": "周刊第1期",
+      "path": "Cubox/周刊第1期：开刊，数字化生活数据-2022-01-18.md",
+      "score": {
+        "relevance": 0,
+        "technical_depth": 1,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 5
+      },
+      "reason": "总分5<10分"
+    },
+    {
+      "title": "周刊（第10期）",
+      "path": "Cubox/周刊（第10期）：\"忘记目标，专注于体系\"-2022-03-21.md",
+      "score": {
+        "relevance": 0,
+        "technical_depth": 1,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 5
+      },
+      "reason": "总分5<10分"
+    },
+    {
+      "title": "周刊（第15期）ARIES论文",
+      "path": "Cubox/周刊（第15期）：图解ARIES论文（上）-2022-05-23.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 3,
+        "timeliness": 3,
+        "verifiability": 2,
+        "total": 9
+      },
+      "reason": "总分9<10分，存储引擎论文非Android"
+    },
+    {
+      "title": "周刊（第16期）ARIES论文",
+      "path": "Cubox/周刊（第16期）：图解ARIES论文（下）-2022-05-23.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 3,
+        "timeliness": 3,
+        "verifiability": 2,
+        "total": 9
+      },
+      "reason": "总分9<10分"
+    },
+    {
+      "title": "周刊（第23期）Blink-Tree",
+      "path": "Cubox/周刊（第23期）：图解Blink-Tree：B+Tree的一种并发优化结构和算法-2022-08-08.md",
+      "score": {
+        "relevance": 1,
+        "technical_depth": 3,
+        "timeliness": 3,
+        "verifiability": 2,
+        "total": 9
+      },
+      "reason": "总分9<10分，数据结构非Android"
+    },
+    {
+      "title": "周刊（第2期）",
+      "path": "Cubox/周刊（第2期）：从笔记软件谈被体制化-2022-01-24.md",
+      "score": {
+        "relevance": 0,
+        "technical_depth": 1,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 5
+      },
+      "reason": "总分5<10分"
+    },
+    {
+      "title": "周刊（第8期）技术配图",
+      "path": "Cubox/周刊（第8期）：技术配图的一些心得-2022-03-07.md",
+      "score": {
+        "relevance": 0,
+        "technical_depth": 2,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 6
+      },
+      "reason": "总分6<10分"
+    },
+    {
+      "title": "周报#08",
+      "path": "Cubox/周报 #08 - 职业杂谈、404 Not Found 与猫-2022-08-22.md",
+      "score": {
+        "relevance": 0,
+        "technical_depth": 1,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 5
+      },
+      "reason": "总分5<10分，个人博客"
+    },
+    {
+      "title": "周报#09",
+      "path": "Cubox/周报 #09 - 工作和长期主义-2023-12-18.md",
+      "score": {
+        "relevance": 0,
+        "technical_depth": 1,
+        "timeliness": 4,
+        "verifiability": 1,
+        "total": 6
+      },
+      "reason": "总分6<10分"
+    },
+    {
+      "title": "周报#100",
+      "path": "Cubox/周报 #100 - 过去这十年-2025-08-05.md",
+      "score": {
+        "relevance": 0,
+        "technical_depth": 1,
+        "timeliness": 5,
+        "verifiability": 1,
+        "total": 7
+      },
+      "reason": "总分7<10分"
+    },
+    {
+      "title": "周报#23",
+      "path": "Cubox/周报 #23 - 如何学习一门新的技术（文科转码选手浅谈） · Pseudoyu-2022-12-19.md",
+      "score": {
+        "relevance": 0,
+        "technical_depth": 1,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 5
+      },
+      "reason": "总分5<10分"
+    },
+    {
+      "title": "周报#26",
+      "path": "Cubox/周报 #26 - 博客、客制化键盘和新服务器 · Pseudoyu-2023-01-16.md",
+      "score": {
+        "relevance": 0,
+        "technical_depth": 1,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total": 5
+      },
+      "reason": "总分5<10分"
+    },
+    {
+      "title": "周报#76",
+      "path": "Cubox/周报 #76 - 关于 Audlting 的思考 · Pseudoyu-2024-10-24.md",
+      "score": {
+        "relevance": 0,
+        "technical_depth": 1,
+        "timeliness": 5,
+        "verifiability": 1,
+        "total": 7
+      },
+      "reason": "总分7<10分"
+    },
+    {
+      "title": "周报#83(duplicate)",
+      "path": "Cubox/周报 #83 - 年初收纳（房间、设备、服务、软件） · Pseudoyu-2025-01-20.md",
+      "score": {
+        "relevance": 0,
+        "technical_depth": 1,
+        "timeliness": 5,
+        "verifiability": 1,
+        "total": 7
+      },
+      "reason": "总分7<10分"
+    },
+    {
+      "title": "周报#83",
+      "path": "Cubox/周报 #83 - 年初收纳（房间、设备、服务、软件）-2025-01-22.md",
+      "score": {
+        "relevance": 0,
+        "technical_depth": 1,
+        "timeliness": 5,
+        "verifiability": 1,
+        "total": 7
+      },
+      "reason": "总分7<10分"
+    },
+    {
+      "title": "哄哄模拟器的完整复盘",
+      "path": "Cubox/哄哄模拟器的完整复盘，火了，但一度让我很发愁-2024-01-22.md",
+      "score": {
+        "relevance": 0,
+        "technical_depth": 1,
+        "timeliness": 4,
+        "verifiability": 1,
+        "total": 6
+      },
+      "reason": "总分6<10分，AI产品复盘"
+    },
+    {
+      "path": "Cubox/复盘接手 Flutter 生态中顶级热门的 dio 库的几个月，我们做了什么？-2023-08-14.md",
+      "reason": "Flutter第三方库维护复盘，非Android系统内部知识",
+      "score": 8
+    },
+    {
+      "path": "Cubox/外刊精读96期：阿根廷疯子总统，还没上任就光速打脸-2023-12-13.md",
+      "reason": "非技术内容",
+      "score": 2
+    },
+    {
+      "path": "Cubox/外语学习简明指南 - by wuyagege - 不如读书-2023-01-02.md",
+      "reason": "非技术内容",
+      "score": 2
+    },
+    {
+      "path": "Cubox/多模态人物视频驱动技术回顾与业务应用-2025-02-24.md",
+      "reason": "AIGC视频生成技术，非Android系统内部",
+      "score": 9
+    },
+    {
+      "path": "Cubox/夜天之书 #76 远程工作、开源协同与饱和沟通-2023-03-20.md",
+      "reason": "远程工作话题，非技术",
+      "score": 3
+    },
+    {
+      "path": "Cubox/大公司如何做 APP：背后的开发流程和技术 - 掘金-2024-01-23.md",
+      "reason": "泛泛APP开发流程，技术深度不足",
+      "score": 9
+    },
+    {
+      "path": "Cubox/大厂失业后，我被迫用cursor开发出了第一款海外产品谋生-2025-05-06.md",
+      "reason": "个人经历/产品开发，非Android技术",
+      "score": 3
+    },
+    {
+      "path": "Cubox/大模型时代手机的杀手锏功能思考-2025-03-08.md",
+      "reason": "AI+手机产品思考，非系统技术",
+      "score": 8
+    },
+    {
+      "path": "Cubox/大汉王朝之：我们为什么迟迟不救经济？-2023-06-10.md",
+      "reason": "非技术内容",
+      "score": 1
+    },
+    {
+      "path": "Cubox/大语言模型 - LLMBook-zh-2025-01-08.md",
+      "reason": "LLM教材，非Android技术",
+      "score": 4
+    },
+    {
+      "path": "Cubox/大陆KYC最佳出金姿势 — a10.eth-2022-04-05.md",
+      "reason": "加密货币相关，非技术",
+      "score": 1
+    },
+    {
+      "path": "Cubox/天府绿道国际自行车赛终于结束了-2024-07-02.md",
+      "reason": "骑行赛事，非技术",
+      "score": 1
+    },
+    {
+      "path": "Cubox/失业和降薪的影响，也会刻在后代的DNA上-2023-01-29.md",
+      "reason": "社会话题，非技术",
+      "score": 1
+    },
+    {
+      "path": "Cubox/失業半年，我用 AI 打造每日輸出系統，結果 AI 公司主動找上門-2025-08-21.md",
+      "reason": "AI工具使用/个人经历",
+      "score": 4
+    },
+    {
+      "path": "Cubox/头条文章-2022-01-14.md",
+      "reason": "微博头条，内容不明确",
+      "score": 4
+    },
+    {
+      "path": "Cubox/头条文章-2022-01-17.md",
+      "reason": "微博头条，内容不明确",
+      "score": 3
+    },
+    {
+      "path": "Cubox/头条文章-2022-04-08.md",
+      "reason": "微博头条，内容不明确",
+      "score": 3
+    },
+    {
+      "path": "Cubox/头条文章-2022-04-13.md",
+      "reason": "微博头条，内容不明确",
+      "score": 3
+    },
+    {
+      "path": "Cubox/头条稳定性治理：ARC 环境中对 Objective-C  对象赋值的 Crash 隐患-2022-12-28.md",
+      "reason": "iOS/ObjC稳定性，非Android",
+      "score": 8
+    },
+    {
+      "path": "Cubox/夸克 iOS Top1 JSC 崩溃攻克之旅-2023-02-07.md",
+      "reason": "iOS崩溃治理，非Android",
+      "score": 8
+    },
+    {
+      "path": "Cubox/奔赴眉山彭山 - 骑行赛事之约，邂逅山水舌尖盛宴-2025-09-23.md",
+      "reason": "骑行活动，非技术",
+      "score": 1
+    },
+    {
+      "path": "Cubox/奥特曼斯坦福对话万字实录来了！关于GPT5、AGI、核聚变发电、人类未来-2024-05-02.md",
+      "reason": "AI/AGI话题，非Android技术",
+      "score": 3
+    },
+    {
+      "path": "Cubox/好好的\"代码优化\"是怎么一步步变成\"过度设计\"的-2024-01-15.md",
+      "reason": "Java设计模式讨论，泛泛编程",
+      "score": 9
+    },
+    {
+      "path": "Cubox/如今越南的权力路线的内部斗争-2023-04-13.md",
+      "reason": "政治话题",
+      "score": 1
+    },
+    {
+      "path": "Cubox/如何一键分享双语好内容到朋友圈？-2023-12-12.md",
+      "reason": "工具使用技巧，非技术",
+      "score": 2
+    },
+    {
+      "path": "Cubox/如何不努力也能财富自由 -#2 - GeekPlux Lab-2022-01-13.md",
+      "reason": "财富话题，非技术",
+      "score": 1
+    },
+    {
+      "path": "Cubox/如何买到正规的苹果外区礼品卡？ - 知乎-2023-09-22.md",
+      "reason": "购物指南，非技术",
+      "score": 1
+    },
+    {
+      "path": "Cubox/如何优雅地开启个人博客？ - Rolen's Blog-2025-01-19.md",
+      "reason": "博客搭建，非Android技术",
+      "score": 3
+    },
+    {
+      "path": "Cubox/如何使用 Claude Code 的每个功能-2026-01-03.md",
+      "reason": "AI工具使用，非Android技术",
+      "score": 5
+    },
+    {
+      "path": "Cubox/如何使用 Relay 构建 Compose 应用 - 开发者说·DTalk-2024-01-05.md",
+      "reason": "Relay+Compose工具教程，技术深度不足",
+      "score": 9
+    },
+    {
+      "path": "Cubox/如何使用MarginNote阅读外刊新闻-2022-02-24.md",
+      "reason": "工具使用，非技术",
+      "score": 2
+    },
+    {
+      "path": "Cubox/如何做一个有质量的技术分享 - 酷 壳 - CoolShell-2022-01-13.md",
+      "reason": "技术分享方法论，非Android技术",
+      "score": 5
     }
   ],
   "last_updated": "2026-03-31T18:22:42.411313",
@@ -40126,6 +41386,101 @@
       "chapters": [],
       "summary": "两个月 $12000 ARR 实践之路 – 硬地骇客 Read in Cubox https://cubox.pro/web/card/721037023233...",
       "skip_reason": "总分8/20，相关性不足或技术深度不够"
+    },
+    {
+      "title": "哪些书改变了我",
+      "score": 4,
+      "reason": "个人读书推荐"
+    },
+    {
+      "title": "四月小结：开始有睡后收入",
+      "score": 3,
+      "reason": "个人收入小结"
+    },
+    {
+      "title": "四问vivo",
+      "score": 4,
+      "reason": "企业分析无技术深度"
+    },
+    {
+      "title": "回望我在谷歌18年（云原生）",
+      "score": 5,
+      "reason": "职业回顾无Android深度"
+    },
+    {
+      "title": "回望我在谷歌18年（重复）",
+      "score": 5,
+      "reason": "重复文章"
+    },
+    {
+      "title": "回顾2023中美技术竞争",
+      "score": 3,
+      "reason": "宏观政策非Android"
+    },
+    {
+      "title": "国内外码农区别",
+      "score": 4,
+      "reason": "职业文化讨论"
+    },
+    {
+      "title": "温家宝答记者问",
+      "score": 1,
+      "reason": "完全无关"
+    },
+    {
+      "title": "图拉鼎产品通讯",
+      "score": 3,
+      "reason": "个人产品通讯"
+    },
+    {
+      "title": "DeepSeek-R1创新原理",
+      "score": 4,
+      "reason": "AI模型非Android系统"
+    },
+    {
+      "title": "ChatWise使用MCP",
+      "score": 5,
+      "reason": "MCP使用非Android"
+    },
+    {
+      "title": "Code Review实践",
+      "score": 4,
+      "reason": "Review流程无Android深度"
+    },
+    {
+      "title": "重复感染潮准备",
+      "score": 1,
+      "reason": "完全无关"
+    },
+    {
+      "title": "北美科技公司One on One",
+      "score": 3,
+      "reason": "管理方法论"
+    },
+    {
+      "title": "技术人坐稳领导岗位",
+      "score": 3,
+      "reason": "职场文化"
+    },
+    {
+      "title": "遇见三亚旅行",
+      "score": 1,
+      "reason": "完全无关"
+    },
+    {
+      "title": "培养taste和intuition",
+      "score": 3,
+      "reason": "个人成长"
+    },
+    {
+      "title": "Core文件调试套件（重复）",
+      "score": 5,
+      "reason": "与掘金版重复"
+    },
+    {
+      "title": "MCP AI Agent开发",
+      "score": 5,
+      "reason": "MCP Agent非Android"
     }
   ]
 }
