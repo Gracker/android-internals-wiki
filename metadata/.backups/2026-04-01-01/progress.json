@@ -321,7 +321,7 @@
       "word_count": "~8000"
     }
   ],
-  "ready_for_review": 4,
+  "ready_for_review": 3,
   "last_updated": "2026-04-01T00:30:01.030651",
   "stats": {
     "total": 97,
@@ -409,14 +409,5 @@
         ]
       }
     ]
-  },
-  "history": [
-    {
-      "date": "2026-04-01",
-      "section": "5.5",
-      "title": "Thermal 管控",
-      "action": "draft-completed",
-      "word_count": "~8000"
-    }
-  ]
+  }
 }
