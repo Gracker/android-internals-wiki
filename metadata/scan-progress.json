@@ -1,10 +1,10 @@
 {
-  "last_scan_time": "2026-03-31T09:15:00",
-  "scanned_files": 1880,
+  "last_scan_time": "2026-03-31T12:25:10.639464",
+  "scanned_files": 2040,
   "total_files": 4324,
-  "indexed_files": 543,
+  "indexed_files": 594,
   "current_directory": "Cubox",
-  "current_offset": 1880,
+  "current_offset": 2040,
   "priority_queue": [
     "Cubox",
     "Personal-Knowlodge",
