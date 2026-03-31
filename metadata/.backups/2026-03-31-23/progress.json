@@ -297,25 +297,14 @@
       "extensions_total": 2,
       "verification_level": "L2",
       "word_count": "~9000"
-    },
-    {
-      "section": "5.3",
-      "title": "大小核架构",
-      "completed_at": "2026-03-31T23:32:41.856375",
-      "anchors_covered": 5,
-      "anchors_total": 5,
-      "extensions_covered": 1,
-      "extensions_total": 2,
-      "verification_level": "L2",
-      "word_count": "~9500"
     }
   ],
   "ready_for_review": 3,
-  "last_updated": "2026-03-31T23:32:41.858622",
+  "last_updated": "2026-03-31T22:30:39.620507",
   "stats": {
     "total": 97,
-    "completed": 23,
-    "pending": 74,
+    "completed": 25,
+    "pending": 72,
     "last_updated": "2026-03-31T22:30:39.620507"
   },
   "research_stats": {

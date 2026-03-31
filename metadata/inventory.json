@@ -44364,14 +44364,35 @@
     },
     {
       "path": "src/part1-fundamentals/ch05-cpu-power/01-linux-scheduling.md",
-      "title": "01-linux-scheduling.md",
+      "title": "Linux 进程调度基础",
       "mapped_chapters": [
-        "5"
+        "5.1"
       ],
       "total_score": 45,
       "size": 1440,
-      "status": "outline",
-      "mtime": "2026-03-28 18:02"
+      "status": "ready-for-review",
+      "mtime": "2026-03-28 18:02",
+      "chapter": "5.1",
+      "word_count": 22608,
+      "last_modified": "2026-03-31T19:00:00",
+      "source_type": "高爷原创",
+      "confidence": "high",
+      "quality_score": {
+        "篇幅分": 25,
+        "新鲜度": 25,
+        "准确性线索": 25,
+        "可用度": 25,
+        "total": 100
+      },
+      "tags": [
+        "cpu",
+        "scheduler",
+        "cfs",
+        "rt",
+        "eas",
+        "uptime"
+      ],
+      "scanned_at": "2026-03-31T22:10:00"
     },
     {
       "path": "src/part1-fundamentals/ch05-cpu-power/07-cpu-evolution.md",
@@ -44419,14 +44440,34 @@
     },
     {
       "path": "src/part1-fundamentals/ch01-architecture/02-boot-process.md",
-      "title": "02-boot-process.md",
+      "title": "系统启动全流程",
       "mapped_chapters": [
-        "1"
+        "1.2"
       ],
       "total_score": 45,
       "size": 1623,
-      "status": "outline",
-      "mtime": "2026-03-28 18:02"
+      "status": "ready-for-review",
+      "mtime": "2026-03-28 18:02",
+      "chapter": "1.2",
+      "word_count": 31827,
+      "last_modified": "2026-03-31T16:21:00",
+      "source_type": "高爷原创",
+      "confidence": "high",
+      "quality_score": {
+        "篇幅分": 25,
+        "新鲜度": 25,
+        "准确性线索": 23,
+        "可用度": 25,
+        "total": 98
+      },
+      "tags": [
+        "boot",
+        "init",
+        "zygote",
+        "systemserver",
+        "BootTimingsTraceLog"
+      ],
+      "scanned_at": "2026-03-31T22:10:00"
     },
     {
       "path": "src/part1-fundamentals/ch01-architecture/README.md",
@@ -44544,9 +44585,9 @@
       "mapped_chapters": [
         "1.3"
       ],
-      "word_count": 23720,
-      "status": "ready-for-review",
-      "last_modified": "2026-03-31T00:31:00",
+      "word_count": 24390,
+      "status": "finalized",
+      "last_modified": "2026-03-31T16:21:00",
       "source_type": "高爷原创",
       "confidence": "medium",
       "quality_score": {
@@ -44561,9 +44602,9 @@
         "ams",
         "oom_adj",
         "lmkd",
-        "zygote",
-        "binder"
-      ]
+        "zygote"
+      ],
+      "scanned_at": "2026-03-31T22:10:00"
     },
     {
       "path": "src/part1-fundamentals/ch06-storage/03-io-scheduling.md",
@@ -44655,14 +44696,35 @@
     },
     {
       "path": "src/part1-fundamentals/ch04-memory/06-memory-evolution.md",
-      "title": "06-memory-evolution.md",
+      "title": "内存相关的版本演进",
       "mapped_chapters": [
-        "4"
+        "4.6"
       ],
       "total_score": 45,
       "size": 1350,
-      "status": "outline",
-      "mtime": "2026-03-28 18:02"
+      "status": "ready-for-review",
+      "mtime": "2026-03-28 18:02",
+      "chapter": "4.6",
+      "word_count": 37455,
+      "last_modified": "2026-03-31T19:00:00",
+      "source_type": "高爷原创",
+      "confidence": "medium",
+      "quality_score": {
+        "篇幅分": 25,
+        "新鲜度": 25,
+        "准确性线索": 23,
+        "可用度": 25,
+        "total": 98
+      },
+      "tags": [
+        "memory",
+        "art",
+        "gc",
+        "16kb-page",
+        "mte",
+        "evolution"
+      ],
+      "scanned_at": "2026-03-31T22:10:00"
     },
     {
       "path": "src/part1-fundamentals/ch04-memory/02-linux-memory.md",
@@ -44677,25 +44739,65 @@
     },
     {
       "path": "src/part1-fundamentals/ch04-memory/04-lmk.md",
-      "title": "04-lmk.md",
+      "title": "Low Memory Killer",
       "mapped_chapters": [
-        "4"
+        "4.4"
       ],
       "total_score": 45,
       "size": 1458,
-      "status": "outline",
-      "mtime": "2026-03-28 18:24"
+      "status": "ready-for-review",
+      "mtime": "2026-03-28 18:24",
+      "chapter": "4.4",
+      "word_count": 24703,
+      "last_modified": "2026-03-31T19:00:00",
+      "source_type": "高爷原创",
+      "confidence": "medium",
+      "quality_score": {
+        "篇幅分": 25,
+        "新鲜度": 25,
+        "准确性线索": 23,
+        "可用度": 25,
+        "total": 98
+      },
+      "tags": [
+        "lmk",
+        "lmkd",
+        "oom_adj",
+        "psi",
+        "memory-pressure"
+      ],
+      "scanned_at": "2026-03-31T22:10:00"
     },
     {
       "path": "src/part1-fundamentals/ch04-memory/05-app-memory-optimization.md",
-      "title": "05-app-memory-optimization.md",
+      "title": "App 内存优化",
       "mapped_chapters": [
-        "4"
+        "4.5"
       ],
       "total_score": 45,
       "size": 1460,
-      "status": "outline",
-      "mtime": "2026-03-28 18:02"
+      "status": "ready-for-review",
+      "mtime": "2026-03-28 18:02",
+      "chapter": "4.5",
+      "word_count": 36736,
+      "last_modified": "2026-03-31T19:00:00",
+      "source_type": "高爷原创",
+      "confidence": "medium",
+      "quality_score": {
+        "篇幅分": 25,
+        "新鲜度": 25,
+        "准确性线索": 23,
+        "可用度": 25,
+        "total": 98
+      },
+      "tags": [
+        "memory",
+        "bitmap",
+        "gc",
+        "memory-churn",
+        "object-pool"
+      ],
+      "scanned_at": "2026-03-31T22:10:00"
     },
     {
       "path": "src/part1-fundamentals/ch03-input/02-touch-performance.md",
@@ -45630,6 +45732,79 @@
       "breakdown": "篇幅25|新鲜度25|准确性18(含官方文档)|可用度20(原创)",
       "last_modified": "2026-03-30",
       "scanned_at": "2026-03-30T22:00"
+    },
+    {
+      "path": "intake/research-feeds/2026-03-31-15-ch01-android16-boot-optimization.md",
+      "title": "[研究] Android 16 启动性能优化：并行模块加载与 AutoFDO",
+      "source_type": "高爷原创",
+      "mapped_chapters": [
+        "1.2",
+        "16.2"
+      ],
+      "total_score": 90,
+      "breakdown": "篇幅15|新鲜度25|准确性25(含AOSP源码)|可用度25(原创)",
+      "size": 3378,
+      "status": "research-feed",
+      "last_modified": "2026-03-31",
+      "scanned_at": "2026-03-31T22:10:00"
+    },
+    {
+      "path": "intake/research-feeds/2026-03-31-15-ch01-boot-timings-tracelog.md",
+      "title": "[研究] BootTimingsTraceLog 与 SystemServer 启动时间度量体系",
+      "source_type": "高爷原创",
+      "mapped_chapters": [
+        "1.2"
+      ],
+      "total_score": 92,
+      "breakdown": "篇幅20|新鲜度25|准确性25(含AOSP源码)|可用度22(原创)",
+      "size": 4952,
+      "status": "research-feed",
+      "last_modified": "2026-03-31",
+      "scanned_at": "2026-03-31T22:10:00"
+    },
+    {
+      "path": "intake/research-feeds/2026-03-31-19-ch04-app-bitmap-pool-optimization.md",
+      "title": "[研究] Bitmap 内存优化：inBitmap、Bitmap Pool 与图片加载库策略",
+      "source_type": "高爷原创",
+      "mapped_chapters": [
+        "4.5"
+      ],
+      "total_score": 85,
+      "breakdown": "篇幅15|新鲜度25|准确性23(含官方文档)|可用度22(原创)",
+      "size": 3012,
+      "status": "research-feed",
+      "last_modified": "2026-03-31",
+      "scanned_at": "2026-03-31T22:10:00"
+    },
+    {
+      "path": "intake/research-feeds/2026-03-31-19-ch04-app-memory-16kb-migration.md",
+      "title": "[研究] Android 15/16 16KB Page Size 迁移对 App 内存的影响",
+      "source_type": "高爷原创",
+      "mapped_chapters": [
+        "4.5",
+        "4.6"
+      ],
+      "total_score": 88,
+      "breakdown": "篇幅15|新鲜度25|准确性23(含官方文档)|可用度25(原创)",
+      "size": 2402,
+      "status": "research-feed",
+      "last_modified": "2026-03-31",
+      "scanned_at": "2026-03-31T22:10:00"
+    },
+    {
+      "path": "intake/research-feeds/2026-03-31-19-ch04-app-memory-churn-gc-objectpool.md",
+      "title": "[研究] 内存抖动(Memory Churn)、GC 冻结与对象池优化",
+      "source_type": "高爷原创",
+      "mapped_chapters": [
+        "4.5",
+        "7"
+      ],
+      "total_score": 85,
+      "breakdown": "篇幅15|新鲜度25|准确性20(含Perfetto文档)|可用度25(原创)",
+      "size": 3751,
+      "status": "research-feed",
+      "last_modified": "2026-03-31",
+      "scanned_at": "2026-03-31T22:10:00"
     }
   ],
   "stats": {
@@ -45644,14 +45819,14 @@
     "chapters_with_content": 4,
     "chapters_with_substantial": 4,
     "total_chapters": 17,
-    "last_scan": "2026-03-29"
+    "last_scan": "2026-03-31"
   },
-  "last_scan_time": "2026-03-31T06:08:00",
+  "last_scan_time": "2026-03-31T22:10:00",
   "scan_summary": {
-    "new_research_feeds": 11,
-    "updated_source_chapters": 10,
-    "total_documents": 7465,
-    "chapters_with_content": 5,
+    "new_research_feeds": 5,
+    "updated_source_chapters": 6,
+    "total_documents": 7470,
+    "chapters_with_content": 8,
     "chapters_total": 17
   }
 }

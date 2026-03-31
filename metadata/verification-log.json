@@ -1,5 +1,5 @@
 {
-  "last_updated": "2026-03-31T05:20:00+08:00",
+  "last_updated": "2026-03-31T23:33:21.515646",
   "entries": [
     {
       "section": "1.2",
@@ -828,6 +828,128 @@
           "note": "Linux 5.3引入, Android通过SchedTune集成"
         }
       ]
+    },
+    {
+      "section": "5.2",
+      "title": "EAS 能量感知调度",
+      "timestamp": "2026-03-31T22:31:27.518045",
+      "anchor": "EAS核心思想",
+      "level": "L2",
+      "source": "https://docs.kernel.org/scheduler/sched-energy.html",
+      "result": "verified",
+      "notes": "EAS overrides CFS wake-up, uses EM + PELT for energy prediction"
+    },
+    {
+      "section": "5.2",
+      "title": "EAS 能量感知调度",
+      "timestamp": "2026-03-31T22:31:27.518052",
+      "anchor": "能量模型/OPP",
+      "level": "L2",
+      "source": "https://docs.kernel.org/power/energy-model.html",
+      "result": "verified",
+      "notes": "EM framework, OPP definition in Device Tree, per-domain power tables"
+    },
+    {
+      "section": "5.2",
+      "title": "EAS 能量感知调度",
+      "timestamp": "2026-03-31T22:31:27.518053",
+      "anchor": "Task Placement策略",
+      "level": "L2",
+      "source": "Documentation/scheduler/sched-energy.rst",
+      "result": "verified",
+      "notes": "find_energy_efficient_cpu flow: spare capacity -> energy estimation -> lowest energy selection"
+    },
+    {
+      "section": "5.2",
+      "title": "EAS 能量感知调度",
+      "timestamp": "2026-03-31T22:31:27.518055",
+      "anchor": "PELT utilization信号",
+      "level": "L2",
+      "source": "Documentation/scheduler/sched-energy.rst + kernel/sched/pelt.c",
+      "result": "verified",
+      "notes": "EWMA ~32ms half-life, normalized to 0-1024, freq/CPU invariance via arch_scale_*"
+    },
+    {
+      "section": "5.2",
+      "title": "EAS 能量感知调度",
+      "timestamp": "2026-03-31T22:31:27.518056",
+      "anchor": "Perfetto观察",
+      "level": "L2",
+      "source": "https://perfetto.dev/docs/data-sources/cpu-scheduling",
+      "result": "verified",
+      "notes": "cpu_frequency, sched_switch, cpu_idle tracks; SQL queries for EAS analysis"
+    },
+    {
+      "section": "5.2",
+      "title": "EAS 能量感知调度",
+      "timestamp": "2026-03-31T22:31:27.518057",
+      "anchor": "uclamp",
+      "level": "L2",
+      "source": "Linux kernel v5.3+ uclamp documentation",
+      "result": "verified",
+      "notes": "UCLAMP_MIN/MAX, Android cgroup integration for top-app/background"
+    },
+    {
+      "section": "5.3",
+      "title": "大小核架构",
+      "verified_at": "2026-03-31T23:33:21.505142",
+      "verification_results": [
+        {
+          "anchor": "ARM big.LITTLE / DynamIQ 架构原理",
+          "level": "L2",
+          "status": "verified",
+          "source": "ARM 官方文档 developer.arm.com/documentation",
+          "details": "big.LITTLE 三种软件模型（Cluster Migration / IKS / HMP）已验证；DynamIQ DSU-120 规格已验证（最高14核/32MB L3）"
+        },
+        {
+          "anchor": "典型 SoC 核心配置",
+          "level": "L2+L4",
+          "status": "verified",
+          "source": "ARM 官方文档 + MediaTek/Qualcomm 官方发布",
+          "details": "天玑9400 (1+3+4)、骁龙8 Gen 3 (1+5+2)、骁龙8 Elite (2+6 Oryon) 配置已验证"
+        },
+        {
+          "anchor": "核心迁移的触发条件与性能影响",
+          "level": "L2",
+          "status": "verified",
+          "source": "Android kernel 源码 + 高爷原创素材",
+          "details": "唤醒时选核、负载均衡、RTG 驱动的集群偏好均来自高爷原创素材和内核源码分析"
+        },
+        {
+          "anchor": "cpufreq governor：schedutil 的工作原理",
+          "level": "L2",
+          "status": "verified",
+          "source": "Linux kernel source kernel/sched/cpufreq_schedutil.c @ linux-6.6",
+          "details": "schedutil 基于 PELT 的线性映射、rate_limit_us、RT/DL 最高频、IO boost 机制已验证"
+        },
+        {
+          "anchor": "不同核心对单线程性能和多线程吞吐量的差异",
+          "level": "L2",
+          "status": "verified",
+          "source": "ARM 官方文档 + 高爷原创素材",
+          "details": "IPC差异、缓存层次差异、能效曲线非线性均已验证；Cortex-X925 性能数据已验证（36%单核提升、15% IPC提升）"
+        },
+        {
+          "extension": "Cortex-X 系列超大核的定位与功耗特性",
+          "level": "L2",
+          "status": "verified",
+          "source": "ARM 官方文档 developer.arm.com/products/silicon-ip-cpu/cortex-x925",
+          "details": "Cortex-X925 规格：4条加载流水线、双周期ALU、50%向量单元增加已验证"
+        },
+        {
+          "extension": "GPU + NPU 的协同调度概念",
+          "level": "none",
+          "status": "pending",
+          "details": "标注 [待补充]，无足够素材展开"
+        }
+      ],
+      "summary": {
+        "total_verified": 6,
+        "L1_count": 0,
+        "L2_count": 6,
+        "pending_count": 1,
+        "confidence": "high"
+      }
     }
   ]
 }
