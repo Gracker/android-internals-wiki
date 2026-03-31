@@ -8294,8 +8294,2023 @@
       ],
       "quality": "medium",
       "summary": "2022年Android开发者路线图全景"
+    },
+    {
+      "path": "Cubox/Tips-为什么Vsync需要分成 App VSync和 SurfaceFlinger VSync呢？-2025-03-31.md",
+      "title": "Tips: 为什么Vsync需要分成 App VSync和 SurfaceFlinger VSync呢？",
+      "chapters": [
+        {
+          "id": "ch05-渲染",
+          "confidence": 0.95
+        }
+      ],
+      "scores": {
+        "relevance": 5,
+        "technical_depth": 4,
+        "timeliness": 5,
+        "verifiability": 4
+      },
+      "total_score": 18,
+      "quality": "high",
+      "indexed_at": "2026-03-31T07:20:14"
+    },
+    {
+      "path": "Cubox/Tool and library interdependencies  -  Android Studio  -  Android Developers-2025-03-05.md",
+      "title": "Tool and library interdependencies | Android Studio",
+      "chapters": [
+        {
+          "id": "ch16-构建",
+          "confidence": 0.7
+        }
+      ],
+      "scores": {
+        "relevance": 3,
+        "technical_depth": 3,
+        "timeliness": 5,
+        "verifiability": 3
+      },
+      "total_score": 14,
+      "quality": "medium",
+      "indexed_at": "2026-03-31T07:20:14"
+    },
+    {
+      "path": "Cubox/TraceView被淘汰的安卓性能优化神器-2026-01-26.md",
+      "title": "TraceView被淘汰的安卓性能优化神器",
+      "chapters": [
+        {
+          "id": "ch11-Profiling",
+          "confidence": 0.9
+        }
+      ],
+      "scores": {
+        "relevance": 5,
+        "technical_depth": 4,
+        "timeliness": 5,
+        "verifiability": 3
+      },
+      "total_score": 17,
+      "quality": "high",
+      "indexed_at": "2026-03-31T07:20:14"
+    },
+    {
+      "path": "Cubox/Trace完美的卡顿问题-2024-01-10.md",
+      "title": "Trace完美的卡顿问题",
+      "chapters": [
+        {
+          "id": "ch05-渲染",
+          "confidence": 0.9
+        },
+        {
+          "id": "ch11-Profiling",
+          "confidence": 0.85
+        }
+      ],
+      "scores": {
+        "relevance": 5,
+        "technical_depth": 4,
+        "timeliness": 4,
+        "verifiability": 3
+      },
+      "total_score": 16,
+      "quality": "high",
+      "indexed_at": "2026-03-31T07:20:14"
+    },
+    {
+      "path": "Cubox/TracingSummit2025会议-2025-09-10.md",
+      "title": "TracingSummit2025会议",
+      "chapters": [
+        {
+          "id": "ch11-Profiling",
+          "confidence": 0.85
+        }
+      ],
+      "scores": {
+        "relevance": 4,
+        "technical_depth": 3,
+        "timeliness": 5,
+        "verifiability": 3
+      },
+      "total_score": 15,
+      "quality": "medium",
+      "indexed_at": "2026-03-31T07:20:14"
+    },
+    {
+      "path": "Cubox/Ubuntu 22.04.1  Cuttlefish+WebRTC 实现Android云端多开。-2024-02-04.md",
+      "title": "Ubuntu 22.04.1 Cuttlefish+WebRTC 实现Android云端多开",
+      "chapters": [
+        {
+          "id": "ch14-工具",
+          "confidence": 0.75
+        }
+      ],
+      "scores": {
+        "relevance": 3,
+        "technical_depth": 3,
+        "timeliness": 4,
+        "verifiability": 3
+      },
+      "total_score": 13,
+      "quality": "medium",
+      "indexed_at": "2026-03-31T07:20:14"
+    },
+    {
+      "path": "Cubox/Ubuntu20.04编译安卓aosp 15源码编译到模拟器运行-2024-10-20.md",
+      "title": "Ubuntu20.04编译安卓AOSP 15源码编译到模拟器运行",
+      "chapters": [
+        {
+          "id": "ch16-构建",
+          "confidence": 0.75
+        }
+      ],
+      "scores": {
+        "relevance": 3,
+        "technical_depth": 3,
+        "timeliness": 5,
+        "verifiability": 3
+      },
+      "total_score": 14,
+      "quality": "medium",
+      "indexed_at": "2026-03-31T07:20:14"
+    },
+    {
+      "path": "Cubox/Understanding Android Core- Looper, Handler, and HandlerThread-2022-01-23.md",
+      "title": "Understanding Android Core: Looper, Handler, and HandlerThread",
+      "chapters": [
+        {
+          "id": "ch03-线程",
+          "confidence": 0.9
+        },
+        {
+          "id": "ch01-架构",
+          "confidence": 0.7
+        }
+      ],
+      "scores": {
+        "relevance": 4,
+        "technical_depth": 3,
+        "timeliness": 4,
+        "verifiability": 3
+      },
+      "total_score": 14,
+      "quality": "medium",
+      "indexed_at": "2026-03-31T07:20:14"
+    },
+    {
+      "path": "Cubox/Usap64 进程莫名死锁问题分析 - 掘金-2023-11-01.md",
+      "title": "Usap64 进程莫名死锁问题分析",
+      "chapters": [
+        {
+          "id": "ch02-进程",
+          "confidence": 0.9
+        }
+      ],
+      "scores": {
+        "relevance": 4,
+        "technical_depth": 4,
+        "timeliness": 4,
+        "verifiability": 3
+      },
+      "total_score": 15,
+      "quality": "medium",
+      "indexed_at": "2026-03-31T07:20:14"
+    },
+    {
+      "path": "Cubox/Use Android Studio like a pro — Best navigation shortcuts and tips - by İlyas İpek - wereprotein - J.md",
+      "title": "Use Android Studio like a pro — Best navigation shortcuts and tips",
+      "chapters": [
+        {
+          "id": "ch14-工具",
+          "confidence": 0.6
+        }
+      ],
+      "scores": {
+        "relevance": 2,
+        "technical_depth": 2,
+        "timeliness": 4,
+        "verifiability": 2
+      },
+      "total_score": 10,
+      "quality": "medium",
+      "indexed_at": "2026-03-31T07:20:14"
+    },
+    {
+      "path": "Cubox/User-Centric Mobile Performance --- 用户中心的移动性能-2023-08-29.md",
+      "title": "User-Centric Mobile Performance — 用户中心的移动性能",
+      "chapters": [
+        {
+          "id": "ch05-渲染",
+          "confidence": 0.75
+        }
+      ],
+      "scores": {
+        "relevance": 3,
+        "technical_depth": 3,
+        "timeliness": 4,
+        "verifiability": 2
+      },
+      "total_score": 12,
+      "quality": "medium",
+      "indexed_at": "2026-03-31T07:20:14"
+    },
+    {
+      "path": "Cubox/Velocity Based Animation with Compose - DEV Community-2022-08-09.md",
+      "title": "Velocity Based Animation with Compose",
+      "chapters": [
+        {
+          "id": "ch05-渲染",
+          "confidence": 0.7
+        },
+        {
+          "id": "ch15-Kotlin",
+          "confidence": 0.6
+        }
+      ],
+      "scores": {
+        "relevance": 3,
+        "technical_depth": 3,
+        "timeliness": 4,
+        "verifiability": 2
+      },
+      "total_score": 12,
+      "quality": "medium",
+      "indexed_at": "2026-03-31T07:20:14"
+    },
+    {
+      "path": "Cubox/ViewBinding，您真的理解了吗- - 开发者说·DTalk-2022-07-08.md",
+      "title": "ViewBinding，您真的理解了吗？",
+      "chapters": [
+        {
+          "id": "ch01-架构",
+          "confidence": 0.6
+        }
+      ],
+      "scores": {
+        "relevance": 2,
+        "technical_depth": 2,
+        "timeliness": 4,
+        "verifiability": 2
+      },
+      "total_score": 10,
+      "quality": "medium",
+      "indexed_at": "2026-03-31T07:20:14"
+    },
+    {
+      "path": "Cubox/WWDC 2021- Avoid hitches and discover the Render Loop-2024-02-02.md",
+      "title": "WWDC 2021: Avoid hitches and discover the Render Loop",
+      "chapters": [
+        {
+          "id": "ch05-渲染",
+          "confidence": 0.8
+        }
+      ],
+      "scores": {
+        "relevance": 3,
+        "technical_depth": 4,
+        "timeliness": 4,
+        "verifiability": 4
+      },
+      "total_score": 15,
+      "quality": "medium",
+      "indexed_at": "2026-03-31T07:20:14"
+    },
+    {
+      "path": "Cubox/Weaver - 基于安全硬件的锁屏密码方案-2025-03-14.md",
+      "title": "Weaver — 基于安全硬件的锁屏密码方案",
+      "chapters": [
+        {
+          "id": "ch12-安全",
+          "confidence": 0.9
+        }
+      ],
+      "scores": {
+        "relevance": 4,
+        "technical_depth": 4,
+        "timeliness": 5,
+        "verifiability": 3
+      },
+      "total_score": 16,
+      "quality": "high",
+      "indexed_at": "2026-03-31T07:20:14"
+    },
+    {
+      "path": "Cubox/WebGPU重塑Web开发未来-2023-08-18.md",
+      "title": "WebGPU重塑Web开发未来",
+      "chapters": [
+        {
+          "id": "ch05-渲染",
+          "confidence": 0.55
+        }
+      ],
+      "scores": {
+        "relevance": 2,
+        "technical_depth": 3,
+        "timeliness": 4,
+        "verifiability": 2
+      },
+      "total_score": 11,
+      "quality": "medium",
+      "indexed_at": "2026-03-31T07:20:14"
+    },
+    {
+      "path": "Cubox/WebView 经历的各种干货方案分享-2024-11-28.md",
+      "title": "WebView 经历的各种干货方案分享",
+      "chapters": [
+        {
+          "id": "ch01-架构",
+          "confidence": 0.7
+        },
+        {
+          "id": "ch09-网络",
+          "confidence": 0.6
+        }
+      ],
+      "scores": {
+        "relevance": 3,
+        "technical_depth": 3,
+        "timeliness": 5,
+        "verifiability": 2
+      },
+      "total_score": 13,
+      "quality": "medium",
+      "indexed_at": "2026-03-31T07:20:14"
+    },
+    {
+      "path": "Cubox/Webpage- android-developers.googleblog.com-2025-07-18.md",
+      "title": "Transition to 16 KB page sizes (Android Developers Blog)",
+      "chapters": [
+        {
+          "id": "ch07-内存",
+          "confidence": 0.95
+        },
+        {
+          "id": "ch08-存储",
+          "confidence": 0.8
+        }
+      ],
+      "scores": {
+        "relevance": 5,
+        "technical_depth": 4,
+        "timeliness": 5,
+        "verifiability": 5
+      },
+      "total_score": 19,
+      "quality": "high",
+      "indexed_at": "2026-03-31T07:20:14"
+    },
+    {
+      "path": "Cubox/Webpage- android.googlesource.com-2024-07-11.md",
+      "title": "Perfetto README (android.googlesource.com)",
+      "chapters": [
+        {
+          "id": "ch11-Profiling",
+          "confidence": 0.95
+        }
+      ],
+      "scores": {
+        "relevance": 5,
+        "technical_depth": 5,
+        "timeliness": 4,
+        "verifiability": 5
+      },
+      "total_score": 19,
+      "quality": "high",
+      "indexed_at": "2026-03-31T07:20:14"
+    },
+    {
+      "path": "Cubox/Webpage- android.googlesource.com-2025-10-21.md",
+      "title": "Simpleperf collect_etm_data_for_autofdo (android.googlesource.com)",
+      "chapters": [
+        {
+          "id": "ch11-Profiling",
+          "confidence": 0.9
+        },
+        {
+          "id": "ch14-工具",
+          "confidence": 0.7
+        }
+      ],
+      "scores": {
+        "relevance": 5,
+        "technical_depth": 4,
+        "timeliness": 5,
+        "verifiability": 4
+      },
+      "total_score": 18,
+      "quality": "high",
+      "indexed_at": "2026-03-31T07:20:14"
+    },
+    {
+      "path": "Cubox/Webpage- medium.com-2023-12-05.md",
+      "title": "Coroutine with Basic Interview Questions (Medium)",
+      "chapters": [
+        {
+          "id": "ch15-Kotlin",
+          "confidence": 0.7
+        }
+      ],
+      "scores": {
+        "relevance": 3,
+        "technical_depth": 3,
+        "timeliness": 4,
+        "verifiability": 2
+      },
+      "total_score": 12,
+      "quality": "medium",
+      "indexed_at": "2026-03-31T07:20:14"
+    },
+    {
+      "path": "Cubox/Webpage- pnbharat.medium.com-2023-12-29.md",
+      "title": "Performance Optimization in Jetpack Compose",
+      "chapters": [
+        {
+          "id": "ch05",
+          "confidence": "high"
+        },
+        {
+          "id": "ch15",
+          "confidence": "medium"
+        }
+      ],
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 4,
+        "verifiability": 3
+      },
+      "total_score": 14,
+      "quality": "medium",
+      "summary": "Jetpack Compose性能优化实践，涵盖derivedStateOf使用、重组优化等具体API建议。"
+    },
+    {
+      "path": "Cubox/Webpage- web.dev-2025-11-10.md",
+      "title": "RAIL性能模型（web.dev中文版）",
+      "chapters": [
+        {
+          "id": "ch05",
+          "confidence": "medium"
+        }
+      ],
+      "scores": {
+        "relevance": 3,
+        "depth": 3,
+        "timeliness": 5,
+        "verifiability": 3
+      },
+      "total_score": 14,
+      "quality": "medium",
+      "summary": "RAIL以用户为中心的性能模型，定义关键操作的性能目标，理念可借鉴Android端。"
+    },
+    {
+      "path": "Cubox/Webpage-zhuanlan.zhihu.com-2025-07-10.md",
+      "title": "性能系列文章目录（知乎专栏）",
+      "chapters": [
+        {
+          "id": "ch05",
+          "confidence": "high"
+        },
+        {
+          "id": "ch07",
+          "confidence": "medium"
+        },
+        {
+          "id": "ch11",
+          "confidence": "medium"
+        }
+      ],
+      "scores": {
+        "relevance": 5,
+        "depth": 3,
+        "timeliness": 5,
+        "verifiability": 2
+      },
+      "total_score": 15,
+      "quality": "medium",
+      "summary": "知乎性能系列文章索引目录，涵盖渲染、内存、Profiling等多个性能方向。"
+    },
+    {
+      "path": "Cubox/Webpage-zhuanlan.zhihu.com-2025-07-14.md",
+      "title": "Android调试系统演进与Profile接口",
+      "chapters": [
+        {
+          "id": "ch11",
+          "confidence": "high"
+        },
+        {
+          "id": "ch14",
+          "confidence": "high"
+        }
+      ],
+      "scores": {
+        "relevance": 5,
+        "depth": 4,
+        "timeliness": 5,
+        "verifiability": 4
+      },
+      "total_score": 18,
+      "quality": "high",
+      "summary": "介绍Android调试系统演进，建议三方应用使用系统Profile接口替代自研方案，包含具体API。"
+    },
+    {
+      "path": "Cubox/Webpage-zhuanlan.zhihu.com-2025-09-02.md",
+      "title": "LWN：让CPU调度器考虑Cache",
+      "chapters": [
+        {
+          "id": "ch13",
+          "confidence": "high"
+        }
+      ],
+      "scores": {
+        "relevance": 5,
+        "depth": 4,
+        "timeliness": 5,
+        "verifiability": 4
+      },
+      "total_score": 18,
+      "quality": "high",
+      "summary": "LWN文章，讨论CPU调度器如何利用Cache信息做更智能的调度决策，涉及内核调度机制。"
+    },
+    {
+      "path": "Cubox/Webpage-zhuanlan.zhihu.com-2025-12-31.md",
+      "title": "Android 18% Faster Compiles",
+      "chapters": [
+        {
+          "id": "ch16",
+          "confidence": "high"
+        }
+      ],
+      "scores": {
+        "relevance": 5,
+        "depth": 4,
+        "timeliness": 5,
+        "verifiability": 4
+      },
+      "total_score": 18,
+      "quality": "high",
+      "summary": "Android编译速度优化18%的实践，涉及构建系统改进。"
+    },
+    {
+      "path": "Cubox/Weex购物车长列表横滑操作优化\"编年史\"-2025-02-10.md",
+      "title": "Weex购物车长列表横滑操作优化编年史",
+      "chapters": [
+        {
+          "id": "ch05",
+          "confidence": "high"
+        },
+        {
+          "id": "ch03",
+          "confidence": "medium"
+        }
+      ],
+      "scores": {
+        "relevance": 4,
+        "depth": 4,
+        "timeliness": 5,
+        "verifiability": 4
+      },
+      "total_score": 17,
+      "quality": "high",
+      "summary": "Weex长列表横滑操作优化历程，涉及手势冲突、动画流畅度等渲染优化实践。"
+    },
+    {
+      "path": "Cubox/Webpage-zhuanlan.zhihu.com-2025-08-28.md",
+      "title": "Flutter iOS 26真机Hotload",
+      "chapters": [
+        {
+          "id": "ch05",
+          "confidence": "medium"
+        }
+      ],
+      "scores": {
+        "relevance": 3,
+        "depth": 3,
+        "timeliness": 5,
+        "verifiability": 3
+      },
+      "total_score": 14,
+      "quality": "medium",
+      "summary": "Flutter在iOS 26真机上的hotload支持，涉及渲染管线与平台集成。"
+    },
+    {
+      "path": "Cubox/What's new in Android 12. Android 12 coming with a lot of… - by Cengiz Toru - Huawei Developers - Fe.md",
+      "title": "What's new in Android 12",
+      "chapters": [
+        {
+          "id": "ch17",
+          "confidence": "high"
+        },
+        {
+          "id": "ch01",
+          "confidence": "medium"
+        }
+      ],
+      "scores": {
+        "relevance": 5,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "total_score": 14,
+      "quality": "medium",
+      "summary": "Android 12新特性汇总，涵盖UI变更、性能改进和隐私增强等。"
+    },
+    {
+      "path": "Cubox/What's new in Android Performance — Google I-O 2023 edition - by Ben Weiss - Android Developers - Ma.md",
+      "title": "What's new in Android Performance — Google I/O 2023",
+      "chapters": [
+        {
+          "id": "ch05",
+          "confidence": "high"
+        },
+        {
+          "id": "ch07",
+          "confidence": "high"
+        },
+        {
+          "id": "ch11",
+          "confidence": "high"
+        }
+      ],
+      "scores": {
+        "relevance": 5,
+        "depth": 4,
+        "timeliness": 4,
+        "verifiability": 4
+      },
+      "total_score": 17,
+      "quality": "high",
+      "summary": "Google I/O 2023 Android性能更新，涵盖渲染、内存、Profiling工具的最新改进。"
+    },
+    {
+      "path": "Cubox/What's new in the Jetpack Compose January '24 release-2024-01-25.md",
+      "title": "Jetpack Compose 1.6发布",
+      "chapters": [
+        {
+          "id": "ch15",
+          "confidence": "high"
+        },
+        {
+          "id": "ch05",
+          "confidence": "medium"
+        }
+      ],
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 4,
+        "verifiability": 3
+      },
+      "total_score": 14,
+      "quality": "medium",
+      "summary": "Compose 1.6版本发布，聚焦性能和效率改进，涉及recomposition优化。"
+    },
+    {
+      "path": "Cubox/What's the maximal frame rate humans can perceive- – xcorr-2022-11-24.md",
+      "title": "Max Frame Rate Humans Can Perceive",
+      "chapters": [
+        {
+          "id": "ch05",
+          "confidence": "medium"
+        }
+      ],
+      "scores": {
+        "relevance": 3,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 2
+      },
+      "total_score": 11,
+      "quality": "medium",
+      "summary": "人眼最大可感知帧率探讨，涉及vsync和刷新率的科学背景。"
+    },
+    {
+      "path": "Cubox/Why Android Worked - Chet Haase.md",
+      "title": "Why Android Worked — Chet Haase",
+      "chapters": [
+        {
+          "id": "ch01",
+          "confidence": "high"
+        }
+      ],
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 2
+      },
+      "total_score": 12,
+      "quality": "medium",
+      "summary": "Chet Haase分析Android成功的原因，涵盖架构决策和生态发展。"
+    },
+    {
+      "path": "Cubox/Why should we use Use Case classes in our Android Projects.md",
+      "title": "Use Case classes in Android",
+      "chapters": [
+        {
+          "id": "ch01",
+          "confidence": "medium"
+        }
+      ],
+      "scores": {
+        "relevance": 3,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 2
+      },
+      "total_score": 11,
+      "quality": "medium",
+      "summary": "Android项目中Use Case类的使用，涉及Clean Architecture架构模式。"
+    },
+    {
+      "title": "Wireshark常用功能笔记",
+      "file": "./Wireshark常用功能笔记-2023-07-27.md",
+      "scores": {
+        "relevance": 5,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 3,
+        "total": 14
+      },
+      "chapters": [
+        {
+          "chapter": "ch09",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch14",
+          "confidence": "low"
+        }
+      ],
+      "quality": "medium",
+      "indexed_at": "2026-03-31T08:17:43"
+    },
+    {
+      "title": "WorkManager multi-process for libraries",
+      "file": "./WorkManager multi-process for libraries-2022-01-24.md",
+      "scores": {
+        "relevance": 3,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 2,
+        "total": 11
+      },
+      "chapters": [
+        {
+          "chapter": "ch06",
+          "confidence": "low"
+        },
+        {
+          "chapter": "ch07",
+          "confidence": "low"
+        },
+        {
+          "chapter": "ch09",
+          "confidence": "low"
+        }
+      ],
+      "quality": "medium",
+      "indexed_at": "2026-03-31T08:17:43"
+    },
+    {
+      "title": "Write Combine 和 Cache 是什么关系",
+      "file": "./Write Combine 和 Cache 是什么关系-2023-03-06.md",
+      "scores": {
+        "relevance": 4,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 2,
+        "total": 12
+      },
+      "chapters": [
+        {
+          "chapter": "ch13",
+          "confidence": "medium"
+        },
+        {
+          "chapter": "ch09",
+          "confidence": "low"
+        }
+      ],
+      "quality": "medium",
+      "indexed_at": "2026-03-31T08:17:43"
+    },
+    {
+      "title": "Write code that is easy to delete, not easy to... — programming is terrible",
+      "file": "./Write code that is easy to delete, not easy to... — programming is terrible-2024-10-28.md",
+      "scores": {
+        "relevance": 3,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 2,
+        "total": 11
+      },
+      "chapters": [
+        {
+          "chapter": "ch13",
+          "confidence": "low"
+        }
+      ],
+      "quality": "medium",
+      "indexed_at": "2026-03-31T08:17:43"
+    },
+    {
+      "title": "Writes and Write-Nots",
+      "file": "./Writes and Write-Nots-2024-10-28.md",
+      "scores": {
+        "relevance": 3,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 2,
+        "total": 11
+      },
+      "chapters": [
+        {
+          "chapter": "ch09",
+          "confidence": "low"
+        }
+      ],
+      "quality": "medium",
+      "indexed_at": "2026-03-31T08:17:43"
+    },
+    {
+      "title": "Writing a storage engine for Postgres: an in-memor...",
+      "file": "./Writing a storage engine for Postgres- an in-memor...-2023-11-02.md",
+      "scores": {
+        "relevance": 3,
+        "depth": 3,
+        "timeliness": 4,
+        "verifiability": 2,
+        "total": 12
+      },
+      "chapters": [
+        {
+          "chapter": "ch07",
+          "confidence": "low"
+        },
+        {
+          "chapter": "ch08",
+          "confidence": "low"
+        },
+        {
+          "chapter": "ch09",
+          "confidence": "low"
+        }
+      ],
+      "quality": "medium",
+      "indexed_at": "2026-03-31T08:17:43"
+    },
+    {
+      "title": "Writing my own ChatGPT Code Interpreter",
+      "file": "./Writing my own ChatGPT Code Interpreter-2023-07-12.md",
+      "scores": {
+        "relevance": 3,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 2,
+        "total": 11
+      },
+      "chapters": [
+        {
+          "chapter": "ch09",
+          "confidence": "low"
+        }
+      ],
+      "quality": "medium",
+      "indexed_at": "2026-03-31T08:17:43"
+    },
+    {
+      "title": "Writing system software: code comments. - <antirez>",
+      "file": "./Writing system software- code comments. - -antirez--2024-10-21.md",
+      "scores": {
+        "relevance": 3,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 2,
+        "total": 11
+      },
+      "chapters": [
+        {
+          "chapter": "ch09",
+          "confidence": "low"
+        }
+      ],
+      "quality": "medium",
+      "indexed_at": "2026-03-31T08:17:43"
+    },
+    {
+      "title": "X 上的 yiqifacai.eth：“#英语学习 很多中国人一直在努力学英语，前一代人听力输入不够...",
+      "file": "./X 上的 yiqifacai.eth：“#英语学习 很多中国人一直在努力学英语，前一代人听力输入不够...-2023-10-18.md",
+      "scores": {
+        "relevance": 3,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 2,
+        "total": 11
+      },
+      "chapters": [
+        {
+          "chapter": "ch09",
+          "confidence": "low"
+        }
+      ],
+      "quality": "medium",
+      "indexed_at": "2026-03-31T08:17:43"
+    },
+    {
+      "title": "XMind (2022) 闪亮登场！",
+      "file": "./XMind (2022) 闪亮登场！-2022-03-14.md",
+      "scores": {
+        "relevance": 3,
+        "depth": 2,
+        "timeliness": 3,
+        "verifiability": 2,
+        "total": 10
+      },
+      "chapters": [
+        {
+          "chapter": "ch09",
+          "confidence": "low"
+        }
+      ],
+      "quality": "medium",
+      "indexed_at": "2026-03-31T08:17:43"
+    },
+    {
+      "title": "XXIIVV — paper computing",
+      "file": "./XXIIVV — paper computing-2022-01-14.md",
+      "scores": {
+        "relevance": 3,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 2,
+        "total": 11
+      },
+      "chapters": [
+        {
+          "chapter": "ch09",
+          "confidence": "low"
+        }
+      ],
+      "quality": "medium",
+      "indexed_at": "2026-03-31T08:17:43"
+    },
+    {
+      "title": "Xray 一键安装脚本使用方法 - 彧繎博客",
+      "file": "./Xray 一键安装脚本使用方法 - 彧繎博客-2022-04-10.md",
+      "scores": {
+        "relevance": 4,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 5,
+        "total": 15
+      },
+      "chapters": [
+        {
+          "chapter": "ch09",
+          "confidence": "medium"
+        }
+      ],
+      "quality": "medium",
+      "indexed_at": "2026-03-31T08:17:43"
+    },
+    {
+      "title": "YC 创始人 Paul Graham 最好的一篇文章",
+      "file": "./YC 创始人 Paul Graham 最好的一篇文章-2025-04-07.md",
+      "scores": {
+        "relevance": 3,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 2,
+        "total": 11
+      },
+      "chapters": [
+        {
+          "chapter": "ch09",
+          "confidence": "low"
+        }
+      ],
+      "quality": "medium",
+      "indexed_at": "2026-03-31T08:17:43"
+    },
+    {
+      "title": "YOLOv8 模型训练入门指南：手把手搞定目标检测AI",
+      "file": "./YOLOv8 模型训练入门指南：手把手搞定目标检测AI-2025-05-26.md",
+      "scores": {
+        "relevance": 3,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 2,
+        "total": 11
+      },
+      "chapters": [
+        {
+          "chapter": "ch09",
+          "confidence": "low"
+        }
+      ],
+      "quality": "medium",
+      "indexed_at": "2026-03-31T08:17:43"
+    },
+    {
+      "title": "Youtube 官方给创作者提供了10种赚钱的方式 – Tinyfool的自媒体实验室",
+      "file": "./Youtube 官方给创作者提供了10种赚钱的方式 – Tinyfool的自媒体实验室-2022-02-16.md",
+      "scores": {
+        "relevance": 3,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 3,
+        "total": 12
+      },
+      "chapters": [
+        {
+          "chapter": "ch09",
+          "confidence": "low"
+        }
+      ],
+      "quality": "medium",
+      "indexed_at": "2026-03-31T08:17:43"
+    },
+    {
+      "title": "[070]一文带你看懂Vsync Phase",
+      "file": "./[070]一文带你看懂Vsync Phase-2023-12-18.md",
+      "scores": {
+        "relevance": 3,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 2,
+        "total": 11
+      },
+      "chapters": [
+        {
+          "chapter": "ch05",
+          "confidence": "low"
+        },
+        {
+          "chapter": "ch09",
+          "confidence": "low"
+        }
+      ],
+      "quality": "medium",
+      "indexed_at": "2026-03-31T08:17:43"
+    },
+    {
+      "title": "[090]unsignaled-buffer-latch功能-腾讯云开发者社区-腾讯云",
+      "file": "./[090]unsignaled-buffer-latch功能-腾讯云开发者社区-腾讯云-2024-08-27.md",
+      "scores": {
+        "relevance": 5,
+        "depth": 5,
+        "timeliness": 4,
+        "verifiability": 2,
+        "total": 16
+      },
+      "chapters": [
+        {
+          "chapter": "ch05",
+          "confidence": "high"
+        }
+      ],
+      "quality": "high",
+      "indexed_at": "2026-03-31T08:17:43"
+    },
+    {
+      "title": "[090]unsignaled-buffer-latch功能-腾讯云开发者社区-腾讯云",
+      "file": "./[090]unsignaled-buffer-latch功能-腾讯云开发者社区-腾讯云-2024-09-03.md",
+      "scores": {
+        "relevance": 5,
+        "depth": 5,
+        "timeliness": 4,
+        "verifiability": 2,
+        "total": 16
+      },
+      "chapters": [
+        {
+          "chapter": "ch05",
+          "confidence": "high"
+        }
+      ],
+      "quality": "high",
+      "indexed_at": "2026-03-31T08:17:43"
+    },
+    {
+      "title": "[092]untrusted-touch-events - 简书",
+      "file": "./[092]untrusted-touch-events - 简书-2023-12-05.md",
+      "scores": {
+        "relevance": 3,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 2,
+        "total": 11
+      },
+      "chapters": [
+        {
+          "chapter": "ch09",
+          "confidence": "low"
+        },
+        {
+          "chapter": "ch12",
+          "confidence": "low"
+        }
+      ],
+      "quality": "medium",
+      "indexed_at": "2026-03-31T08:17:43"
+    },
+    {
+      "title": "[093]SurfaceSyncer的致命缺陷 - 简书",
+      "file": "./[093]SurfaceSyncer的致命缺陷 - 简书-2023-12-08.md",
+      "scores": {
+        "relevance": 5,
+        "depth": 5,
+        "timeliness": 4,
+        "verifiability": 2,
+        "total": 16
+      },
+      "chapters": [
+        {
+          "chapter": "ch05",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch03",
+          "confidence": "low"
+        },
+        {
+          "chapter": "ch09",
+          "confidence": "low"
+        }
+      ],
+      "quality": "high",
+      "indexed_at": "2026-03-31T08:17:43"
+    },
+    {
+      "title": "[2303.10130] GPTs are GPTs: An Early Look at the Labor Market Impact Potential of Large Language Models",
+      "file": "./[2303.10130] GPTs are GPTs- An Early Look at the Labor Market Impact Potential of Large Language Mod.md",
+      "scores": {
+        "relevance": 3,
+        "depth": 2,
+        "timeliness": 5,
+        "verifiability": 2,
+        "total": 12
+      },
+      "chapters": [
+        {
+          "chapter": "ch09",
+          "confidence": "low"
+        }
+      ],
+      "quality": "medium",
+      "indexed_at": "2026-03-31T08:17:43"
+    },
+    {
+      "title": "[AI里程碑] AiPhone is coming | AI+手机时代已来",
+      "file": "./[AI里程碑] AiPhone is coming - AI+手机时代已来-2024-02-29.md",
+      "scores": {
+        "relevance": 3,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 2,
+        "total": 11
+      },
+      "chapters": [
+        {
+          "chapter": "ch09",
+          "confidence": "low"
+        }
+      ],
+      "quality": "medium",
+      "indexed_at": "2026-03-31T08:17:43"
+    },
+    {
+      "title": "[Agentic AI] 使用Cursor作为AI的通用入口",
+      "file": "./[Agentic AI] 使用Cursor作为AI的通用入口-2025-05-14.md",
+      "scores": {
+        "relevance": 3,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 2,
+        "total": 11
+      },
+      "chapters": [
+        {
+          "chapter": "ch09",
+          "confidence": "low"
+        }
+      ],
+      "quality": "medium",
+      "indexed_at": "2026-03-31T08:17:43"
+    },
+    {
+      "title": "[Android] anr 你的 nSyncAndDrawFrame 到底卡在了哪里? - 掘金",
+      "file": "./[Android] anr 你的 nSyncAndDrawFrame 到底卡在了哪里- - 掘金-2022-11-08.md",
+      "scores": {
+        "relevance": 5,
+        "depth": 4,
+        "timeliness": 4,
+        "verifiability": 4,
+        "total": 17
+      },
+      "chapters": [
+        {
+          "chapter": "ch05",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch03",
+          "confidence": "low"
+        },
+        {
+          "chapter": "ch09",
+          "confidence": "low"
+        }
+      ],
+      "quality": "high",
+      "indexed_at": "2026-03-31T08:17:43"
+    },
+    {
+      "title": "[Android][ASM] 指令注入入门（一）—— services.core.unboosted...",
+      "file": "./[Android][ASM] 指令注入入门（一）—— services.core.unboosted...-2023-12-12.md",
+      "scores": {
+        "relevance": 4,
+        "depth": 5,
+        "timeliness": 4,
+        "verifiability": 4,
+        "total": 17
+      },
+      "chapters": [
+        {
+          "chapter": "ch12",
+          "confidence": "medium"
+        }
+      ],
+      "quality": "high",
+      "indexed_at": "2026-03-31T08:17:43"
+    },
+    {
+      "title": "[Android]记一次com.android.tethering导致的system_server crash问题",
+      "file": "./[Android]记一次com.android.tethering导致的system_server crash问题-2024-03-26.md",
+      "scores": {
+        "relevance": 3,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 2,
+        "total": 11
+      },
+      "chapters": [
+        {
+          "chapter": "ch01",
+          "confidence": "low"
+        },
+        {
+          "chapter": "ch09",
+          "confidence": "low"
+        }
+      ],
+      "quality": "medium",
+      "indexed_at": "2026-03-31T08:17:43"
+    },
+    {
+      "title": "[Android禅修之路] Android图形系统，从Activity到Surface - 掘金",
+      "file": "./[Android禅修之路] Android图形系统，从Activity到Surface - 掘金-2023-02-02.md",
+      "scores": {
+        "relevance": 3,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 2,
+        "total": 11
+      },
+      "chapters": [
+        {
+          "chapter": "ch05",
+          "confidence": "low"
+        },
+        {
+          "chapter": "ch09",
+          "confidence": "low"
+        }
+      ],
+      "quality": "medium",
+      "indexed_at": "2026-03-31T08:17:43"
+    },
+    {
+      "title": "[Android禅修之路] SurfaceFlinger 合成中的工作 - 掘金",
+      "file": "./[Android禅修之路] SurfaceFlinger 合成中的工作 - 掘金-2022-03-24.md",
+      "scores": {
+        "relevance": 4,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 2,
+        "total": 12
+      },
+      "chapters": [
+        {
+          "chapter": "ch05",
+          "confidence": "medium"
+        },
+        {
+          "chapter": "ch09",
+          "confidence": "low"
+        }
+      ],
+      "quality": "medium",
+      "indexed_at": "2026-03-31T08:17:43"
+    },
+    {
+      "title": "[Android禅修之路] SurfaceFlinger 合成前的预处理 - 掘金",
+      "file": "./[Android禅修之路] SurfaceFlinger 合成前的预处理 - 掘金-2022-03-24.md",
+      "scores": {
+        "relevance": 4,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 2,
+        "total": 12
+      },
+      "chapters": [
+        {
+          "chapter": "ch05",
+          "confidence": "medium"
+        },
+        {
+          "chapter": "ch09",
+          "confidence": "low"
+        }
+      ],
+      "quality": "medium",
+      "indexed_at": "2026-03-31T08:17:43"
+    },
+    {
+      "title": "[Flutter 渲染优化系列] Flutter Android 线程优先级问题和优化方案 - 知乎",
+      "file": "./[Flutter 渲染优化系列] Flutter Android 线程优先级问题和优化方案 - 知乎-2023-07-17.md",
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 4,
+        "verifiability": 2,
+        "total": 13
+      },
+      "chapters": [
+        {
+          "chapter": "ch05",
+          "confidence": "medium"
+        },
+        {
+          "chapter": "ch03",
+          "confidence": "low"
+        },
+        {
+          "chapter": "ch09",
+          "confidence": "low"
+        }
+      ],
+      "quality": "medium",
+      "indexed_at": "2026-03-31T08:17:43"
+    },
+    {
+      "title": "[Flutter 渲染优化系列] Flutter TextureView 的性能优化 - 知乎",
+      "file": "./[Flutter 渲染优化系列] Flutter TextureView 的性能优化 - 知乎-2024-03-08.md",
+      "scores": {
+        "relevance": 5,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 2,
+        "total": 13
+      },
+      "chapters": [
+        {
+          "chapter": "ch05",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch09",
+          "confidence": "low"
+        },
+        {
+          "chapter": "ch13",
+          "confidence": "low"
+        }
+      ],
+      "quality": "medium",
+      "indexed_at": "2026-03-31T08:17:43"
+    },
+    {
+      "title": "[Flutter 渲染优化系列] Flutter 渲染性能问题分析 - 知乎",
+      "file": "./[Flutter 渲染优化系列] Flutter 渲染性能问题分析 - 知乎-2022-06-30.md",
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 4,
+        "verifiability": 2,
+        "total": 13
+      },
+      "chapters": [
+        {
+          "chapter": "ch05",
+          "confidence": "medium"
+        },
+        {
+          "chapter": "ch09",
+          "confidence": "low"
+        }
+      ],
+      "quality": "medium",
+      "indexed_at": "2026-03-31T08:17:43"
+    },
+    {
+      "title": "[原创]用魔法打败魔法：互联网大厂虚拟机分析还原-Android安全-看雪-安全社区|安全招聘|kanxue.com",
+      "file": "./[原创]用魔法打败魔法：互联网大厂虚拟机分析还原-Android安全-看雪-安全社区-安全招聘-kanxue.com-2025-04-13.md",
+      "scores": {
+        "relevance": 3,
+        "depth": 3,
+        "timeliness": 4,
+        "verifiability": 2,
+        "total": 12
+      },
+      "chapters": [
+        {
+          "chapter": "ch03",
+          "confidence": "low"
+        },
+        {
+          "chapter": "ch09",
+          "confidence": "low"
+        },
+        {
+          "chapter": "ch12",
+          "confidence": "low"
+        }
+      ],
+      "quality": "medium",
+      "indexed_at": "2026-03-31T08:17:43"
+    },
+    {
+      "title": "[原创]通过sendevent实现多点连续滑动-Android安全-看雪论坛-安全社区|安全招聘|bbs.pediy.com",
+      "file": "./[原创]通过sendevent实现多点连续滑动-Android安全-看雪论坛-安全社区-安全招聘-bbs.pediy.com-2023-01-05.md",
+      "scores": {
+        "relevance": 3,
+        "depth": 3,
+        "timeliness": 4,
+        "verifiability": 2,
+        "total": 12
+      },
+      "chapters": [
+        {
+          "chapter": "ch09",
+          "confidence": "low"
+        },
+        {
+          "chapter": "ch12",
+          "confidence": "low"
+        },
+        {
+          "chapter": "ch14",
+          "confidence": "low"
+        }
+      ],
+      "quality": "medium",
+      "indexed_at": "2026-03-31T08:17:43"
+    },
+    {
+      "title": "[干货建议收藏]我们对 Java 有哪些常见的误区？",
+      "file": "./[干货建议收藏]我们对 Java 有哪些常见的误区？-2024-01-16.md",
+      "scores": {
+        "relevance": 3,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 2,
+        "total": 11
+      },
+      "chapters": [
+        {
+          "chapter": "ch09",
+          "confidence": "low"
+        }
+      ],
+      "quality": "medium",
+      "indexed_at": "2026-03-31T08:17:43"
+    },
+    {
+      "title": "[总结] 漫谈HDR和色彩管理（一）光、颜色和色度图",
+      "file": "./[总结] 漫谈HDR和色彩管理（一）光、颜色和色度图-2025-08-01.md",
+      "scores": {
+        "relevance": 3,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 2,
+        "total": 11
+      },
+      "chapters": [
+        {
+          "chapter": "ch05",
+          "confidence": "low"
+        },
+        {
+          "chapter": "ch09",
+          "confidence": "low"
+        }
+      ],
+      "quality": "medium",
+      "indexed_at": "2026-03-31T08:17:43"
+    },
+    {
+      "title": "[翻译] 富士康在印度生产 iPhone 的艰难历程",
+      "file": "./[翻译] 富士康在印度生产 iPhone 的艰难历程-2023-11-29.md",
+      "scores": {
+        "relevance": 3,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 2,
+        "total": 11
+      },
+      "chapters": [
+        {
+          "chapter": "ch09",
+          "confidence": "low"
+        }
+      ],
+      "quality": "medium",
+      "indexed_at": "2026-03-31T08:17:43"
+    },
+    {
+      "title": "[译] AI计算民主化 第七部分：如何看待Triton与Python eDSLs？",
+      "file": "./[译] AI计算民主化 第七部分：如何看待Triton与Python eDSLs？-2025-04-06.md",
+      "scores": {
+        "relevance": 3,
+        "depth": 3,
+        "timeliness": 4,
+        "verifiability": 2,
+        "total": 12
+      },
+      "chapters": [
+        {
+          "chapter": "ch09",
+          "confidence": "low"
+        }
+      ],
+      "quality": "medium",
+      "indexed_at": "2026-03-31T08:17:43"
+    },
+    {
+      "title": "[译]AI算力民主化 第8部分：MLIR编译器基础设施如何？",
+      "file": "./[译]AI算力民主化 第8部分：MLIR编译器基础设施如何？-2025-04-19.md",
+      "scores": {
+        "relevance": 3,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 2,
+        "total": 11
+      },
+      "chapters": [
+        {
+          "chapter": "ch09",
+          "confidence": "low"
+        }
+      ],
+      "quality": "medium",
+      "indexed_at": "2026-03-31T08:17:43"
+    },
+    {
+      "title": "[译]AI算力民主化 第三部分：CUDA是如何成功的？",
+      "file": "./[译]AI算力民主化 第三部分：CUDA是如何成功的？-2025-03-19.md",
+      "scores": {
+        "relevance": 3,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 2,
+        "total": 11
+      },
+      "chapters": [
+        {
+          "chapter": "ch09",
+          "confidence": "low"
+        }
+      ],
+      "quality": "medium",
+      "indexed_at": "2026-03-31T08:17:43"
+    },
+    {
+      "title": "[译]AI算力民主化 第二部分：究竟何为“CUDA”？",
+      "file": "./[译]AI算力民主化 第二部分：究竟何为“CUDA”？-2025-03-18.md",
+      "scores": {
+        "relevance": 3,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 2,
+        "total": 11
+      },
+      "chapters": [
+        {
+          "chapter": "ch09",
+          "confidence": "low"
+        }
+      ],
+      "quality": "medium",
+      "indexed_at": "2026-03-31T08:17:43"
+    },
+    {
+      "title": "[译]AI算力民主化 第五部分：CUDA C++替代方案（如OpenCL）现状如何？",
+      "file": "./[译]AI算力民主化 第五部分：CUDA C++替代方案（如OpenCL）现状如何？-2025-03-21.md",
+      "scores": {
+        "relevance": 3,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 2,
+        "total": 11
+      },
+      "chapters": [
+        {
+          "chapter": "ch09",
+          "confidence": "low"
+        }
+      ],
+      "quality": "medium",
+      "indexed_at": "2026-03-31T08:17:43"
+    },
+    {
+      "title": "[译]AI算力民主化 第六部分：TVM和XLA等AI编译器现状？",
+      "file": "./[译]AI算力民主化 第六部分：TVM和XLA等AI编译器现状？-2025-03-22.md",
+      "scores": {
+        "relevance": 3,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 2,
+        "total": 11
+      },
+      "chapters": [
+        {
+          "chapter": "ch09",
+          "confidence": "low"
+        }
+      ],
+      "quality": "medium",
+      "indexed_at": "2026-03-31T08:17:43"
+    },
+    {
+      "title": "[译]AI算力民主化 第四部分：CUDA虽为现有主导者，但它真的完美吗？",
+      "file": "./[译]AI算力民主化 第四部分：CUDA虽为现有主导者，但它真的完美吗？-2025-03-20.md",
+      "scores": {
+        "relevance": 3,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 2,
+        "total": 11
+      },
+      "chapters": [
+        {
+          "chapter": "ch09",
+          "confidence": "low"
+        }
+      ],
+      "quality": "medium",
+      "indexed_at": "2026-03-31T08:17:43"
+    },
+    {
+      "title": "[译]AI计算民主化 第一部分：DeepSeek对AI 的影响",
+      "file": "./[译]AI计算民主化 第一部分：DeepSeek对AI 的影响-2025-03-19.md",
+      "scores": {
+        "relevance": 3,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 2,
+        "total": 11
+      },
+      "chapters": [
+        {
+          "chapter": "ch09",
+          "confidence": "low"
+        }
+      ],
+      "quality": "medium",
+      "indexed_at": "2026-03-31T08:17:43"
+    },
+    {
+      "title": "[译文]ART虚拟机新一代GC算法原理介绍",
+      "file": "./[译文]ART虚拟机新一代GC算法原理介绍-2023-03-13.md",
+      "scores": {
+        "relevance": 4,
+        "depth": 5,
+        "timeliness": 4,
+        "verifiability": 3,
+        "total": 16
+      },
+      "chapters": [
+        {
+          "chapter": "ch07",
+          "confidence": "medium"
+        },
+        {
+          "chapter": "ch09",
+          "confidence": "low"
+        }
+      ],
+      "quality": "high",
+      "indexed_at": "2026-03-31T08:17:43"
+    },
+    {
+      "title": "Wireshark常用功能笔记",
+      "file": "./Wireshark常用功能笔记-2023-07-27.md",
+      "scores": {
+        "relevance": 5,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 3,
+        "total": 14
+      },
+      "chapters": [
+        {
+          "chapter": "ch09",
+          "confidence": "medium"
+        }
+      ],
+      "quality": "medium",
+      "indexed_at": "2026-03-31T08:19:28"
+    },
+    {
+      "title": "Writing a storage engine for Postgres: an in-memor...",
+      "file": "./Writing a storage engine for Postgres- an in-memor...-2023-11-02.md",
+      "scores": {
+        "relevance": 3,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 2,
+        "total": 11
+      },
+      "chapters": [
+        {
+          "chapter": "ch07",
+          "confidence": "low"
+        }
+      ],
+      "quality": "medium",
+      "indexed_at": "2026-03-31T08:19:28"
+    },
+    {
+      "title": "[070]一文带你看懂Vsync Phase",
+      "file": "./[070]一文带你看懂Vsync Phase-2023-12-18.md",
+      "scores": {
+        "relevance": 4,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 2,
+        "total": 12
+      },
+      "chapters": [
+        {
+          "chapter": "ch05",
+          "confidence": "medium"
+        }
+      ],
+      "quality": "medium",
+      "indexed_at": "2026-03-31T08:19:28"
+    },
+    {
+      "title": "[090]unsignaled-buffer-latch功能-腾讯云开发者社区-腾讯云",
+      "file": "./[090]unsignaled-buffer-latch功能-腾讯云开发者社区-腾讯云-2024-08-27.md",
+      "scores": {
+        "relevance": 5,
+        "depth": 5,
+        "timeliness": 5,
+        "verifiability": 2,
+        "total": 17
+      },
+      "chapters": [
+        {
+          "chapter": "ch05",
+          "confidence": "medium"
+        }
+      ],
+      "quality": "high",
+      "indexed_at": "2026-03-31T08:19:28"
+    },
+    {
+      "title": "[090]unsignaled-buffer-latch功能-腾讯云开发者社区-腾讯云",
+      "file": "./[090]unsignaled-buffer-latch功能-腾讯云开发者社区-腾讯云-2024-09-03.md",
+      "scores": {
+        "relevance": 5,
+        "depth": 5,
+        "timeliness": 5,
+        "verifiability": 2,
+        "total": 17
+      },
+      "chapters": [
+        {
+          "chapter": "ch05",
+          "confidence": "medium"
+        }
+      ],
+      "quality": "high",
+      "indexed_at": "2026-03-31T08:19:28"
+    },
+    {
+      "title": "[093]SurfaceSyncer的致命缺陷 - 简书",
+      "file": "./[093]SurfaceSyncer的致命缺陷 - 简书-2023-12-08.md",
+      "scores": {
+        "relevance": 5,
+        "depth": 5,
+        "timeliness": 4,
+        "verifiability": 2,
+        "total": 16
+      },
+      "chapters": [
+        {
+          "chapter": "ch05",
+          "confidence": "medium"
+        }
+      ],
+      "quality": "high",
+      "indexed_at": "2026-03-31T08:19:28"
+    },
+    {
+      "title": "[Android] anr 你的 nSyncAndDrawFrame 到底卡在了哪里? - 掘金",
+      "file": "./[Android] anr 你的 nSyncAndDrawFrame 到底卡在了哪里- - 掘金-2022-11-08.md",
+      "scores": {
+        "relevance": 5,
+        "depth": 5,
+        "timeliness": 3,
+        "verifiability": 4,
+        "total": 17
+      },
+      "chapters": [
+        {
+          "chapter": "ch05",
+          "confidence": "high"
+        }
+      ],
+      "quality": "high",
+      "indexed_at": "2026-03-31T08:19:28"
+    },
+    {
+      "title": "[Android][ASM] 指令注入入门（一）—— services.core.unboosted...",
+      "file": "./[Android][ASM] 指令注入入门（一）—— services.core.unboosted...-2023-12-12.md",
+      "scores": {
+        "relevance": 4,
+        "depth": 5,
+        "timeliness": 4,
+        "verifiability": 4,
+        "total": 17
+      },
+      "chapters": [
+        {
+          "chapter": "ch12",
+          "confidence": "medium"
+        }
+      ],
+      "quality": "high",
+      "indexed_at": "2026-03-31T08:19:28"
+    },
+    {
+      "title": "[Android禅修之路] Android图形系统，从Activity到Surface - 掘金",
+      "file": "./[Android禅修之路] Android图形系统，从Activity到Surface - 掘金-2023-02-02.md",
+      "scores": {
+        "relevance": 3,
+        "depth": 3,
+        "timeliness": 4,
+        "verifiability": 2,
+        "total": 12
+      },
+      "chapters": [
+        {
+          "chapter": "ch05",
+          "confidence": "low"
+        }
+      ],
+      "quality": "medium",
+      "indexed_at": "2026-03-31T08:19:28"
+    },
+    {
+      "title": "[Android禅修之路] SurfaceFlinger 合成中的工作 - 掘金",
+      "file": "./[Android禅修之路] SurfaceFlinger 合成中的工作 - 掘金-2022-03-24.md",
+      "scores": {
+        "relevance": 5,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 2,
+        "total": 13
+      },
+      "chapters": [
+        {
+          "chapter": "ch05",
+          "confidence": "medium"
+        }
+      ],
+      "quality": "medium",
+      "indexed_at": "2026-03-31T08:19:28"
+    },
+    {
+      "title": "[Android禅修之路] SurfaceFlinger 合成前的预处理 - 掘金",
+      "file": "./[Android禅修之路] SurfaceFlinger 合成前的预处理 - 掘金-2022-03-24.md",
+      "scores": {
+        "relevance": 5,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 2,
+        "total": 13
+      },
+      "chapters": [
+        {
+          "chapter": "ch05",
+          "confidence": "medium"
+        }
+      ],
+      "quality": "medium",
+      "indexed_at": "2026-03-31T08:19:28"
+    },
+    {
+      "title": "[Flutter 渲染优化系列] Flutter Android 线程优先级问题和优化方案 - 知乎",
+      "file": "./[Flutter 渲染优化系列] Flutter Android 线程优先级问题和优化方案 - 知乎-2023-07-17.md",
+      "scores": {
+        "relevance": 5,
+        "depth": 4,
+        "timeliness": 4,
+        "verifiability": 2,
+        "total": 15
+      },
+      "chapters": [
+        {
+          "chapter": "ch03",
+          "confidence": "medium"
+        },
+        {
+          "chapter": "ch05",
+          "confidence": "medium"
+        }
+      ],
+      "quality": "medium",
+      "indexed_at": "2026-03-31T08:19:28"
+    },
+    {
+      "title": "[Flutter 渲染优化系列] Flutter TextureView 的性能优化 - 知乎",
+      "file": "./[Flutter 渲染优化系列] Flutter TextureView 的性能优化 - 知乎-2024-03-08.md",
+      "scores": {
+        "relevance": 5,
+        "depth": 3,
+        "timeliness": 5,
+        "verifiability": 2,
+        "total": 15
+      },
+      "chapters": [
+        {
+          "chapter": "ch05",
+          "confidence": "high"
+        }
+      ],
+      "quality": "medium",
+      "indexed_at": "2026-03-31T08:19:28"
+    },
+    {
+      "title": "[Flutter 渲染优化系列] Flutter 渲染性能问题分析 - 知乎",
+      "file": "./[Flutter 渲染优化系列] Flutter 渲染性能问题分析 - 知乎-2022-06-30.md",
+      "scores": {
+        "relevance": 5,
+        "depth": 4,
+        "timeliness": 3,
+        "verifiability": 2,
+        "total": 14
+      },
+      "chapters": [
+        {
+          "chapter": "ch05",
+          "confidence": "medium"
+        }
+      ],
+      "quality": "medium",
+      "indexed_at": "2026-03-31T08:19:28"
+    },
+    {
+      "title": "[原创]用魔法打败魔法：互联网大厂虚拟机分析还原-Android安全-看雪-安全社区|安全招聘|kanxue.com",
+      "file": "./[原创]用魔法打败魔法：互联网大厂虚拟机分析还原-Android安全-看雪-安全社区-安全招聘-kanxue.com-2025-04-13.md",
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 5,
+        "verifiability": 2,
+        "total": 14
+      },
+      "chapters": [
+        {
+          "chapter": "ch12",
+          "confidence": "medium"
+        }
+      ],
+      "quality": "medium",
+      "indexed_at": "2026-03-31T08:19:28"
+    },
+    {
+      "title": "[译文]ART虚拟机新一代GC算法原理介绍",
+      "file": "./[译文]ART虚拟机新一代GC算法原理介绍-2023-03-13.md",
+      "scores": {
+        "relevance": 4,
+        "depth": 5,
+        "timeliness": 4,
+        "verifiability": 3,
+        "total": 16
+      },
+      "chapters": [
+        {
+          "chapter": "ch07",
+          "confidence": "medium"
+        }
+      ],
+      "quality": "high",
+      "indexed_at": "2026-03-31T08:19:28"
     }
   ],
-  "last_updated": "2026-03-31T04:50:27.138844",
+  "last_updated": "2026-03-31T07:45:00",
   "total_indexed": 324
 }

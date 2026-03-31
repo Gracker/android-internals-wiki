@@ -453,20 +453,10 @@
       "section_title": "卡顿分析方法论",
       "priority": 55,
       "reason": "待加工（素材0篇）",
-      "material_paths": [
-        "Personal-Knowlodge/source/Android-Perfetto-03-how-to-analysis-perfetto.md",
-        "Personal-Knowlodge/source/android-systrace-smooth-in-action-2.md",
-        "Personal-Knowlodge/source/android-systrace-smooth-in-action-3.md",
-        "Personal-Knowlodge/source/Android-Perfetto-09-CPU.md",
-        "Personal-Knowlodge/source/2026-03-07_wechat_Android深入卡顿分析与实践.md",
-        "Personal-Knowlodge/source/2026-03-07_wechat_Android卡顿监测的方方面面.md"
-      ],
-      "status": "completed",
+      "material_paths": [],
+      "status": "pending",
       "added_by": "manual-init",
-      "added_at": "2026-03-29T21:00:00",
-      "processed_at": "2026-03-31T08:20:00+08:00",
-      "word_count": "~7500",
-      "verification_status": "L2_verified_all_anchors_2_extensions_covered_2_auto_discoveries"
+      "added_at": "2026-03-29T21:00:00"
     },
     {
       "section": "7.4",
@@ -1294,18 +1284,7 @@
       "extensions_total": 3,
       "verification_level": "L2",
       "word_count": "~7500"
-    },
-    {
-      "section": "7.3",
-      "title": "卡顿分析方法论",
-      "completed_at": "2026-03-31T08:20:00+08:00",
-      "anchors_covered": 5,
-      "anchors_total": 5,
-      "extensions_covered": 2,
-      "extensions_total": 2,
-      "verification_level": "L2",
-      "word_count": "~7500"
     }
   ],
-  "last_updated": "2026-03-31T08:20:00+08:00"
+  "last_updated": "2026-03-31T07:29:54.381093+08:00"
 }

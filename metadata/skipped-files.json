@@ -16316,7 +16316,909 @@
       "title": "AI Reading List",
       "score": 3,
       "reason": "AI阅读列表"
+    },
+    {
+      "path": "Cubox/Webpage- rolen.wiki-2025-03-15.md",
+      "reason": "AI编程实践，非Android技术",
+      "total_score": 9
+    },
+    {
+      "path": "Cubox/Webpage- t.co-2023-12-13.md",
+      "reason": "独立开发经验，非技术",
+      "total_score": 8
+    },
+    {
+      "path": "Cubox/Webpage- time.com-2023-12-07.md",
+      "reason": "非技术(Sam Altman)",
+      "total_score": 7
+    },
+    {
+      "path": "Cubox/Webpage- www.ncbi.nlm.nih.gov-2023-09-10.md",
+      "reason": "医学论文",
+      "total_score": 7
+    },
+    {
+      "path": "Cubox/Webpage- x.com-2026-01-23.md",
+      "reason": "内容为空",
+      "total_score": 6
+    },
+    {
+      "path": "Cubox/Webpage- x.com-2026-03-21.md",
+      "reason": "内容不足",
+      "total_score": 8
+    },
+    {
+      "path": "Cubox/Webpage-heygen.com-2024-10-24.md",
+      "reason": "产品介绍",
+      "total_score": 7
+    },
+    {
+      "path": "Cubox/Webpage-lemire.me-2024-12-16.md",
+      "reason": "SIMD HTML解析，非Android",
+      "total_score": 12
+    },
+    {
+      "path": "Cubox/Webpage-udemy.com-2024-09-14.md",
+      "reason": "英语课程",
+      "total_score": 4
+    },
+    {
+      "path": "Cubox/Webpage-zhuanlan.zhihu.com-2025-04-23.md",
+      "reason": "个人经历，非技术",
+      "total_score": 8
+    },
+    {
+      "path": "Cubox/Webpage-zhuanlan.zhihu.com-2025-10-13.md",
+      "reason": "内容不足",
+      "total_score": 8
+    },
+    {
+      "path": "Cubox/Welcome to Comprehensive Rust 🦀 - Comprehensive R...-2023-10-07.md",
+      "reason": "Rust教程，非Android",
+      "total_score": 12
+    },
+    {
+      "path": "Cubox/Welcome to Comprehensive Rust 🦀 - Comprehensive Rust 🦀-2024-08-12.md",
+      "reason": "Rust教程重复",
+      "total_score": 12
+    },
+    {
+      "path": "Cubox/Welcome to the Machine...-2026-01-07.md",
+      "reason": "AI agent基础设施，非Android",
+      "total_score": 11
+    },
+    {
+      "path": "Cubox/What I Wish Someone Had Told Me - Sam Altman-2023-12-22.md",
+      "reason": "人生建议",
+      "total_score": 7
+    },
+    {
+      "path": "Cubox/What Is Camarts -2023-12-12.md",
+      "reason": "摄影项目",
+      "total_score": 6
+    },
+    {
+      "path": "Cubox/What Is ChatGPT Doing-2023-07-31.md",
+      "reason": "ChatGPT科普，非Android",
+      "total_score": 9
+    },
+    {
+      "path": "Cubox/Whatsapp Clone Flutter-2022-07-05.md",
+      "reason": "Flutter教程，非性能",
+      "total_score": 9
+    },
+    {
+      "path": "Cubox/When life gives you lemons-2022-10-19.md",
+      "reason": "错误信息设计，非Android",
+      "total_score": 9
+    },
+    {
+      "path": "Cubox/Why Blog If Nobody Reads It--2025-02-06.md",
+      "reason": "博客写作",
+      "total_score": 8
+    },
+    {
+      "path": "Cubox/Why Facts Don't Change Our Minds-2022-03-19.md",
+      "reason": "认知科学",
+      "total_score": 6
+    },
+    {
+      "path": "Cubox/Why I Quit Google -2022-01-13.md",
+      "reason": "个人故事",
+      "total_score": 6
+    },
+    {
+      "path": "Cubox/Why I Quit Google to Work-2023-08-30.md",
+      "reason": "个人故事",
+      "total_score": 7
+    },
+    {
+      "path": "Cubox/Why I quit Android Dev-10years.md",
+      "reason": "职业规划",
+      "total_score": 7
+    },
+    {
+      "path": "Cubox/Why You Should Write a Blog Post-2023-05-06.md",
+      "reason": "博客写作",
+      "total_score": 7
+    },
+    {
+      "path": "Cubox/Why did I choose Android not iOS.md",
+      "reason": "职业选择",
+      "total_score": 7
+    },
+    {
+      "path": "Cubox/Why do we need HTTPS-2024-07-03.md",
+      "reason": "HTTPS科普，Web安全",
+      "total_score": 10
+    },
+    {
+      "path": "Cubox/Why the Past 10 Years-2022-04-13.md",
+      "reason": "社会评论",
+      "total_score": 5
+    },
+    {
+      "path": "Cubox/Why the Past 10 Years-2022-06-28.md",
+      "reason": "重复",
+      "total_score": 5
+    },
+    {
+      "path": "Cubox/Why the Past 10 Years-2024-07-18.md",
+      "reason": "重复",
+      "total_score": 6
+    },
+    {
+      "path": "Cubox/What's the maximal frame rate-2023-06-19.md",
+      "reason": "重复(已有2022版)",
+      "total_score": 12
+    },
+    {
+      "path": "Cubox/Windsurf AI编程工具-2025-01-08.md",
+      "reason": "AI编程工具，非Android",
+      "total_score": 10
+    },
+    {
+      "path": "Cubox/Webpage- uxdesign.cc-2023-12-12.md",
+      "reason": "UX导航模式，非性能",
+      "total_score": 10
+    },
+    {
+      "title": "Writing Code Is One Thing, Learning to Be a Software Engineer Is Another | by Ben \"The Hosk\" Hosking | Better Programming",
+      "file": "./Writing Code Is One Thing, Learning to Be a Software Engineer Is Another - by Ben -The Hosk- Hosking.md",
+      "scores": {
+        "relevance": 1,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 2,
+        "total": 9
+      },
+      "skip_reason": "低分",
+      "skipped_at": "2026-03-31T08:17:43"
+    },
+    {
+      "title": "X上值得关注的独立开发者",
+      "file": "./X上值得关注的独立开发者-2025-03-21.md",
+      "scores": {
+        "relevance": 1,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 2,
+        "total": 9
+      },
+      "skip_reason": "低分",
+      "skipped_at": "2026-03-31T08:17:43"
+    },
+    {
+      "title": "Zwift车架与轮组测试数据表格更新2025.07.03",
+      "file": "./Zwift车架与轮组测试数据表格更新2025.07.03-2025-07-04.md",
+      "scores": {
+        "relevance": 1,
+        "depth": 2,
+        "timeliness": 5,
+        "verifiability": 5,
+        "total": 13
+      },
+      "skip_reason": "无匹配章节",
+      "skipped_at": "2026-03-31T08:17:43"
+    },
+    {
+      "title": "[2411.10640] BlueLM-V-3B: Algorithm and System Co-Design for Multimodal Large Language Models on Mob...",
+      "file": "./[2411.10640] BlueLM-V-3B- Algorithm and System Co-Design for Multimodal Large Language Models on Mob.md",
+      "scores": {
+        "relevance": 1,
+        "depth": 3,
+        "timeliness": 5,
+        "verifiability": 2,
+        "total": 11
+      },
+      "skip_reason": "无匹配章节",
+      "skipped_at": "2026-03-31T08:17:43"
+    },
+    {
+      "title": "WorkManager multi-process for libraries",
+      "file": "./WorkManager multi-process for libraries-2022-01-24.md",
+      "scores": {
+        "total": 0
+      },
+      "skip_reason": "无匹配章节",
+      "skipped_at": "2026-03-31T08:19:28"
+    },
+    {
+      "title": "Write Combine 和 Cache 是什么关系",
+      "file": "./Write Combine 和 Cache 是什么关系-2023-03-06.md",
+      "scores": {
+        "total": 0
+      },
+      "skip_reason": "无匹配章节",
+      "skipped_at": "2026-03-31T08:19:28"
+    },
+    {
+      "title": "Write code that is easy to delete, not easy to... — programming is terrible",
+      "file": "./Write code that is easy to delete, not easy to... — programming is terrible-2024-10-28.md",
+      "scores": {
+        "total": 0
+      },
+      "skip_reason": "无匹配章节",
+      "skipped_at": "2026-03-31T08:19:28"
+    },
+    {
+      "title": "Writes and Write-Nots",
+      "file": "./Writes and Write-Nots-2024-10-28.md",
+      "scores": {
+        "total": 0
+      },
+      "skip_reason": "无匹配章节",
+      "skipped_at": "2026-03-31T08:19:28"
+    },
+    {
+      "title": "Writing Code Is One Thing, Learning to Be a Software Engineer Is Another | by Ben \"The Hosk\" Hosking | Better Programming",
+      "file": "./Writing Code Is One Thing, Learning to Be a Software Engineer Is Another - by Ben -The Hosk- Hosking.md",
+      "scores": {
+        "total": 0
+      },
+      "skip_reason": "无匹配章节",
+      "skipped_at": "2026-03-31T08:19:28"
+    },
+    {
+      "title": "Writing my own ChatGPT Code Interpreter",
+      "file": "./Writing my own ChatGPT Code Interpreter-2023-07-12.md",
+      "scores": {
+        "total": 0
+      },
+      "skip_reason": "无匹配章节",
+      "skipped_at": "2026-03-31T08:19:28"
+    },
+    {
+      "title": "Writing system software: code comments. - <antirez>",
+      "file": "./Writing system software- code comments. - -antirez--2024-10-21.md",
+      "scores": {
+        "total": 0
+      },
+      "skip_reason": "无匹配章节",
+      "skipped_at": "2026-03-31T08:19:28"
+    },
+    {
+      "title": "X 上的 yiqifacai.eth：“#英语学习 很多中国人一直在努力学英语，前一代人听力输入不够...",
+      "file": "./X 上的 yiqifacai.eth：“#英语学习 很多中国人一直在努力学英语，前一代人听力输入不够...-2023-10-18.md",
+      "scores": {
+        "total": 0
+      },
+      "skip_reason": "无匹配章节",
+      "skipped_at": "2026-03-31T08:19:28"
+    },
+    {
+      "title": "XMind (2022) 闪亮登场！",
+      "file": "./XMind (2022) 闪亮登场！-2022-03-14.md",
+      "scores": {
+        "total": 0
+      },
+      "skip_reason": "无匹配章节",
+      "skipped_at": "2026-03-31T08:19:28"
+    },
+    {
+      "title": "XXIIVV — paper computing",
+      "file": "./XXIIVV — paper computing-2022-01-14.md",
+      "scores": {
+        "total": 0
+      },
+      "skip_reason": "无匹配章节",
+      "skipped_at": "2026-03-31T08:19:28"
+    },
+    {
+      "title": "Xray 一键安装脚本使用方法 - 彧繎博客",
+      "file": "./Xray 一键安装脚本使用方法 - 彧繎博客-2022-04-10.md",
+      "scores": {
+        "total": 0
+      },
+      "skip_reason": "无匹配章节",
+      "skipped_at": "2026-03-31T08:19:28"
+    },
+    {
+      "title": "X上值得关注的独立开发者",
+      "file": "./X上值得关注的独立开发者-2025-03-21.md",
+      "scores": {
+        "total": 0
+      },
+      "skip_reason": "无匹配章节",
+      "skipped_at": "2026-03-31T08:19:28"
+    },
+    {
+      "title": "YC 创始人 Paul Graham 最好的一篇文章",
+      "file": "./YC 创始人 Paul Graham 最好的一篇文章-2025-04-07.md",
+      "scores": {
+        "total": 0
+      },
+      "skip_reason": "无匹配章节",
+      "skipped_at": "2026-03-31T08:19:28"
+    },
+    {
+      "title": "YOLOv8 模型训练入门指南：手把手搞定目标检测AI",
+      "file": "./YOLOv8 模型训练入门指南：手把手搞定目标检测AI-2025-05-26.md",
+      "scores": {
+        "total": 0
+      },
+      "skip_reason": "无匹配章节",
+      "skipped_at": "2026-03-31T08:19:28"
+    },
+    {
+      "title": "Youtube 官方给创作者提供了10种赚钱的方式 – Tinyfool的自媒体实验室",
+      "file": "./Youtube 官方给创作者提供了10种赚钱的方式 – Tinyfool的自媒体实验室-2022-02-16.md",
+      "scores": {
+        "total": 0
+      },
+      "skip_reason": "无匹配章节",
+      "skipped_at": "2026-03-31T08:19:28"
+    },
+    {
+      "title": "Zwift车架与轮组测试数据表格更新2025.07.03",
+      "file": "./Zwift车架与轮组测试数据表格更新2025.07.03-2025-07-04.md",
+      "scores": {
+        "total": 0
+      },
+      "skip_reason": "无匹配章节",
+      "skipped_at": "2026-03-31T08:19:28"
+    },
+    {
+      "title": "[092]untrusted-touch-events - 简书",
+      "file": "./[092]untrusted-touch-events - 简书-2023-12-05.md",
+      "scores": {
+        "total": 0
+      },
+      "skip_reason": "无匹配章节",
+      "skipped_at": "2026-03-31T08:19:28"
+    },
+    {
+      "title": "[2303.10130] GPTs are GPTs: An Early Look at the Labor Market Impact Potential of Large Language Models",
+      "file": "./[2303.10130] GPTs are GPTs- An Early Look at the Labor Market Impact Potential of Large Language Mod.md",
+      "scores": {
+        "total": 0
+      },
+      "skip_reason": "无匹配章节",
+      "skipped_at": "2026-03-31T08:19:28"
+    },
+    {
+      "title": "[2411.10640] BlueLM-V-3B: Algorithm and System Co-Design for Multimodal Large Language Models on Mob...",
+      "file": "./[2411.10640] BlueLM-V-3B- Algorithm and System Co-Design for Multimodal Large Language Models on Mob.md",
+      "scores": {
+        "total": 0
+      },
+      "skip_reason": "无匹配章节",
+      "skipped_at": "2026-03-31T08:19:28"
+    },
+    {
+      "title": "[AI里程碑] AiPhone is coming | AI+手机时代已来",
+      "file": "./[AI里程碑] AiPhone is coming - AI+手机时代已来-2024-02-29.md",
+      "scores": {
+        "total": 0
+      },
+      "skip_reason": "无匹配章节",
+      "skipped_at": "2026-03-31T08:19:28"
+    },
+    {
+      "title": "[Agentic AI] 使用Cursor作为AI的通用入口",
+      "file": "./[Agentic AI] 使用Cursor作为AI的通用入口-2025-05-14.md",
+      "scores": {
+        "total": 0
+      },
+      "skip_reason": "无匹配章节",
+      "skipped_at": "2026-03-31T08:19:28"
+    },
+    {
+      "title": "[Android]记一次com.android.tethering导致的system_server crash问题",
+      "file": "./[Android]记一次com.android.tethering导致的system_server crash问题-2024-03-26.md",
+      "scores": {
+        "total": 0
+      },
+      "skip_reason": "无匹配章节",
+      "skipped_at": "2026-03-31T08:19:28"
+    },
+    {
+      "title": "[原创]通过sendevent实现多点连续滑动-Android安全-看雪论坛-安全社区|安全招聘|bbs.pediy.com",
+      "file": "./[原创]通过sendevent实现多点连续滑动-Android安全-看雪论坛-安全社区-安全招聘-bbs.pediy.com-2023-01-05.md",
+      "scores": {
+        "total": 0
+      },
+      "skip_reason": "无匹配章节",
+      "skipped_at": "2026-03-31T08:19:28"
+    },
+    {
+      "title": "[干货建议收藏]我们对 Java 有哪些常见的误区？",
+      "file": "./[干货建议收藏]我们对 Java 有哪些常见的误区？-2024-01-16.md",
+      "scores": {
+        "total": 0
+      },
+      "skip_reason": "无匹配章节",
+      "skipped_at": "2026-03-31T08:19:28"
+    },
+    {
+      "title": "[总结] 漫谈HDR和色彩管理（一）光、颜色和色度图",
+      "file": "./[总结] 漫谈HDR和色彩管理（一）光、颜色和色度图-2025-08-01.md",
+      "scores": {
+        "total": 0
+      },
+      "skip_reason": "无匹配章节",
+      "skipped_at": "2026-03-31T08:19:28"
+    },
+    {
+      "title": "[翻译] 富士康在印度生产 iPhone 的艰难历程",
+      "file": "./[翻译] 富士康在印度生产 iPhone 的艰难历程-2023-11-29.md",
+      "scores": {
+        "total": 0
+      },
+      "skip_reason": "无匹配章节",
+      "skipped_at": "2026-03-31T08:19:28"
+    },
+    {
+      "title": "[译] AI计算民主化 第七部分：如何看待Triton与Python eDSLs？",
+      "file": "./[译] AI计算民主化 第七部分：如何看待Triton与Python eDSLs？-2025-04-06.md",
+      "scores": {
+        "total": 0
+      },
+      "skip_reason": "无匹配章节",
+      "skipped_at": "2026-03-31T08:19:28"
+    },
+    {
+      "title": "[译]AI算力民主化 第8部分：MLIR编译器基础设施如何？",
+      "file": "./[译]AI算力民主化 第8部分：MLIR编译器基础设施如何？-2025-04-19.md",
+      "scores": {
+        "total": 0
+      },
+      "skip_reason": "无匹配章节",
+      "skipped_at": "2026-03-31T08:19:28"
+    },
+    {
+      "title": "[译]AI算力民主化 第三部分：CUDA是如何成功的？",
+      "file": "./[译]AI算力民主化 第三部分：CUDA是如何成功的？-2025-03-19.md",
+      "scores": {
+        "total": 0
+      },
+      "skip_reason": "无匹配章节",
+      "skipped_at": "2026-03-31T08:19:28"
+    },
+    {
+      "title": "[译]AI算力民主化 第二部分：究竟何为“CUDA”？",
+      "file": "./[译]AI算力民主化 第二部分：究竟何为“CUDA”？-2025-03-18.md",
+      "scores": {
+        "total": 0
+      },
+      "skip_reason": "无匹配章节",
+      "skipped_at": "2026-03-31T08:19:28"
+    },
+    {
+      "title": "[译]AI算力民主化 第五部分：CUDA C++替代方案（如OpenCL）现状如何？",
+      "file": "./[译]AI算力民主化 第五部分：CUDA C++替代方案（如OpenCL）现状如何？-2025-03-21.md",
+      "scores": {
+        "total": 0
+      },
+      "skip_reason": "无匹配章节",
+      "skipped_at": "2026-03-31T08:19:28"
+    },
+    {
+      "title": "[译]AI算力民主化 第六部分：TVM和XLA等AI编译器现状？",
+      "file": "./[译]AI算力民主化 第六部分：TVM和XLA等AI编译器现状？-2025-03-22.md",
+      "scores": {
+        "total": 0
+      },
+      "skip_reason": "无匹配章节",
+      "skipped_at": "2026-03-31T08:19:28"
+    },
+    {
+      "title": "[译]AI算力民主化 第四部分：CUDA虽为现有主导者，但它真的完美吗？",
+      "file": "./[译]AI算力民主化 第四部分：CUDA虽为现有主导者，但它真的完美吗？-2025-03-20.md",
+      "scores": {
+        "total": 0
+      },
+      "skip_reason": "无匹配章节",
+      "skipped_at": "2026-03-31T08:19:28"
+    },
+    {
+      "title": "[译]AI计算民主化 第一部分：DeepSeek对AI 的影响",
+      "file": "./[译]AI计算民主化 第一部分：DeepSeek对AI 的影响-2025-03-19.md",
+      "scores": {
+        "total": 0
+      },
+      "skip_reason": "无匹配章节",
+      "skipped_at": "2026-03-31T08:19:28"
     }
   ],
-  "last_updated": "2026-03-31T04:15:00"
+  "last_updated": "2026-03-31T07:45:00",
+  "skipped": [
+    {
+      "path": "Cubox/TikTok and the Sorting Hat — Remains of the Day-2023-07-11.md",
+      "title": "TikTok and the Sorting Hat",
+      "scores": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 4,
+        "verifiability": 1
+      },
+      "total": 7,
+      "reason": "产品/商业分析，非Android技术",
+      "skipped_at": "2026-03-31T07:20:14"
+    },
+    {
+      "path": "Cubox/TikTok败诉案判决全文（中英对照表）-2024-12-18.md",
+      "title": "TikTok败诉案判决全文",
+      "scores": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "total": 8,
+      "reason": "法律/政策类，非技术",
+      "skipped_at": "2026-03-31T07:20:14"
+    },
+    {
+      "path": "Cubox/Trae 重磅更新：AI编程+智能体+MCP，言出法随的新境界-2025-04-22.md",
+      "title": "Trae AI编程+MCP",
+      "scores": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "total": 8,
+      "reason": "AI编程工具，非Android技术",
+      "skipped_at": "2026-03-31T07:20:14"
+    },
+    {
+      "path": "Cubox/Twitter 上有趣的代码-2022-09-19.md",
+      "title": "Twitter有趣的代码",
+      "scores": {
+        "relevance": 2,
+        "technical_depth": 1,
+        "timeliness": 4,
+        "verifiability": 2
+      },
+      "total": 9,
+      "reason": "Kotlin代码谜题，深度不足",
+      "skipped_at": "2026-03-31T07:20:14"
+    },
+    {
+      "path": "Cubox/Understanding Memory Management in Rust-2023-12-26.md",
+      "title": "Memory Management in Rust",
+      "scores": {
+        "relevance": 1,
+        "technical_depth": 3,
+        "timeliness": 5,
+        "verifiability": 2
+      },
+      "total": 11,
+      "reason": "Rust语言内存管理，无AIW章节匹配",
+      "skipped_at": "2026-03-31T07:20:14"
+    },
+    {
+      "path": "Cubox/Unlimited Refill Cursor-2024-10-30.md",
+      "title": "Unlimited Refill Cursor",
+      "scores": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "total": 8,
+      "reason": "AI工具，非Android",
+      "skipped_at": "2026-03-31T07:20:14"
+    },
+    {
+      "path": "Cubox/Updated main function-2023-12-21.md",
+      "title": "Updated main function",
+      "scores": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 4,
+        "verifiability": 1
+      },
+      "total": 7,
+      "reason": "个人博客，非技术",
+      "skipped_at": "2026-03-31T07:20:14"
+    },
+    {
+      "path": "Cubox/Use saved searches to filter your results more quickly-2024-09-04.md",
+      "title": "Use saved searches(1)",
+      "scores": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "total": 8,
+      "reason": "GitHub搜索功能，非技术",
+      "skipped_at": "2026-03-31T07:20:14"
+    },
+    {
+      "path": "Cubox/Use saved searches to filter your results more quickly-2025-04-01.md",
+      "title": "Use saved searches(2)",
+      "scores": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "total": 8,
+      "reason": "重复/非技术",
+      "skipped_at": "2026-03-31T07:20:14"
+    },
+    {
+      "path": "Cubox/Use saved searches to filter your results more quickly-2025-11-17.md",
+      "title": "Use saved searches(3)",
+      "scores": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "total": 8,
+      "reason": "重复/非技术",
+      "skipped_at": "2026-03-31T07:20:14"
+    },
+    {
+      "path": "Cubox/User-Eugene M. Izhikevich-Proposed-Flicker fusion - Scholarpedia-2022-11-24.md",
+      "title": "Flicker fusion (Scholarpedia)",
+      "scores": {
+        "relevance": 1,
+        "technical_depth": 2,
+        "timeliness": 4,
+        "verifiability": 2
+      },
+      "total": 9,
+      "reason": "视觉科学/心理学，非Android",
+      "skipped_at": "2026-03-31T07:20:14"
+    },
+    {
+      "path": "Cubox/V2ray-Configs-Chinese-README.md at main · barry-far-V2ray-Configs-2024-02-13.md",
+      "title": "V2ray Configs",
+      "scores": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 4,
+        "verifiability": 1
+      },
+      "total": 7,
+      "reason": "VPN配置，非Android技术",
+      "skipped_at": "2026-03-31T07:20:14"
+    },
+    {
+      "path": "Cubox/Vibe Coding 技术白皮书：技术平权时代的到来-2025-04-14.md",
+      "title": "Vibe Coding技术白皮书",
+      "scores": {
+        "relevance": 1,
+        "technical_depth": 2,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "total": 9,
+      "reason": "AI编程趋势，非Android技术",
+      "skipped_at": "2026-03-31T07:20:14"
+    },
+    {
+      "path": "Cubox/Vision #09｜元宇宙 （Vision 已升级，更易阅读、收藏）-2022-01-24.md",
+      "title": "Vision #09 元宇宙",
+      "scores": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 4,
+        "verifiability": 1
+      },
+      "total": 7,
+      "reason": "元宇宙观点，非Android",
+      "skipped_at": "2026-03-31T07:20:14"
+    },
+    {
+      "path": "Cubox/Vol. 05 逃出妙瓦底：电诈集中营亲历者访谈-2025-01-13.md",
+      "title": "Vol.05 逃出妙瓦底",
+      "scores": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "total": 8,
+      "reason": "社会纪实，非技术",
+      "skipped_at": "2026-03-31T07:20:14"
+    },
+    {
+      "path": "Cubox/Walter Isaacson- Elon Musk, Steve Jobs, Einstein, ...-2023-09-25.md",
+      "title": "Walter Isaacson传记合集",
+      "scores": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 4,
+        "verifiability": 1
+      },
+      "total": 7,
+      "reason": "人物传记，非技术",
+      "skipped_at": "2026-03-31T07:20:14"
+    },
+    {
+      "path": "Cubox/We invested 10% to pay back tech debt; Here's what happened-2023-01-16.md",
+      "title": "10% Tech Debt Payback",
+      "scores": {
+        "relevance": 1,
+        "technical_depth": 2,
+        "timeliness": 4,
+        "verifiability": 1
+      },
+      "total": 8,
+      "reason": "工程管理类，非Android",
+      "skipped_at": "2026-03-31T07:20:14"
+    },
+    {
+      "path": "Cubox/Web 3.0 漫游指南 2022【完整篇】 — Tannhauser2049-2022-03-23.md",
+      "title": "Web 3.0漫游指南",
+      "scores": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 4,
+        "verifiability": 1
+      },
+      "total": 7,
+      "reason": "Web3概念，非Android",
+      "skipped_at": "2026-03-31T07:20:14"
+    },
+    {
+      "path": "Cubox/Web 3三问-2022-06-30.md",
+      "title": "Web3三问",
+      "scores": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 4,
+        "verifiability": 1
+      },
+      "total": 7,
+      "reason": "Web3讨论，非Android",
+      "skipped_at": "2026-03-31T07:20:14"
+    },
+    {
+      "path": "Cubox/Web3建设者的去中心化宝典 — malatang-2022-04-13.md",
+      "title": "Web3建设者宝典",
+      "scores": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 4,
+        "verifiability": 1
+      },
+      "total": 7,
+      "reason": "Web3，非Android",
+      "skipped_at": "2026-03-31T07:20:14"
+    },
+    {
+      "path": "Cubox/WebAssembly 学习笔记 - aneasystone's blog-2023-06-19.md",
+      "title": "WebAssembly学习笔记",
+      "scores": {
+        "relevance": 1,
+        "technical_depth": 3,
+        "timeliness": 4,
+        "verifiability": 2
+      },
+      "total": 10,
+      "reason": "WASM技术，无AIW章节匹配",
+      "skipped_at": "2026-03-31T07:20:14"
+    },
+    {
+      "path": "Cubox/WebRTC泄露源IP的防范措施-2023-04-14.md",
+      "title": "WebRTC泄露源IP",
+      "scores": {
+        "relevance": 1,
+        "technical_depth": 2,
+        "timeliness": 4,
+        "verifiability": 2
+      },
+      "total": 9,
+      "reason": "网络安全/隐私，非性能相关",
+      "skipped_at": "2026-03-31T07:20:14"
+    },
+    {
+      "path": "Cubox/Webpage- android-developers.googleblog.com-2023-12-07.md",
+      "title": "AI on Android Blog",
+      "scores": {
+        "relevance": 1,
+        "technical_depth": 2,
+        "timeliness": 4,
+        "verifiability": 3
+      },
+      "total": 10,
+      "reason": "AI on Android公告，非性能/系统层",
+      "skipped_at": "2026-03-31T07:20:14"
+    },
+    {
+      "path": "Cubox/Webpage- android-developers.googleblog.com-2025-02-07.md",
+      "title": "Meet the Android Studio Team",
+      "scores": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "total": 8,
+      "reason": "团队介绍，非技术",
+      "skipped_at": "2026-03-31T07:20:14"
+    },
+    {
+      "path": "Cubox/Webpage- blog.yuusann.com-2023-08-29.md",
+      "title": "裁员经历 blog.yuusann.com",
+      "scores": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 4,
+        "verifiability": 1
+      },
+      "total": 7,
+      "reason": "个人经历，非技术",
+      "skipped_at": "2026-03-31T07:20:14"
+    },
+    {
+      "path": "Cubox/Webpage- chromium.googlesource.com-2024-11-09.md",
+      "title": "Chromium LoadLine Benchmark Config",
+      "scores": {
+        "relevance": 2,
+        "technical_depth": 2,
+        "timeliness": 5,
+        "verifiability": 2
+      },
+      "total": 11,
+      "reason": "Chromium benchmark配置，非Android系统层",
+      "skipped_at": "2026-03-31T07:20:14"
+    },
+    {
+      "path": "Cubox/Webpage- github.com-2022-12-05.md",
+      "title": "中文博客琅琊榜",
+      "scores": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 4,
+        "verifiability": 1
+      },
+      "total": 7,
+      "reason": "博客列表，非技术",
+      "skipped_at": "2026-03-31T07:20:14"
+    },
+    {
+      "path": "Cubox/Webpage- github.com-2023-12-28.md",
+      "title": "Awesome Mac",
+      "scores": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 4,
+        "verifiability": 1
+      },
+      "total": 7,
+      "reason": "Mac工具列表，非Android",
+      "skipped_at": "2026-03-31T07:20:14"
+    },
+    {
+      "path": "Cubox/Webpage- github.com-2025-01-20.md",
+      "title": "yu-tools个人工具箱",
+      "scores": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "total": 8,
+      "reason": "个人工具箱，非技术",
+      "skipped_at": "2026-03-31T07:20:14"
+    }
+  ]
 }
