@@ -3,12 +3,12 @@
   "total_sections": 93,
   "metrics": {
     "total": 102,
-    "draft": 50,
-    "ready-for-review": 6,
+    "draft": 72,
+    "ready-for-review": 5,
     "reviewed": 1,
     "finalized": 3,
     "staging_drafts": 0,
-    "last_updated": "2026-04-01T05:29:06"
+    "last_updated": "2026-04-01T00:30:01.030651"
   },
   "reviewed_sections": {
     "8.1": {
@@ -319,26 +319,15 @@
       "extensions_total": 3,
       "verification_level": "L2",
       "word_count": "~8000"
-    },
-    {
-      "section": "5.6",
-      "title": "Android 功耗管理",
-      "completed_at": "2026-04-01T02:22:00+08:00",
-      "anchors_covered": 5,
-      "anchors_total": 5,
-      "extensions_covered": 3,
-      "extensions_total": 3,
-      "verification_level": "L2",
-      "word_count": "~9500"
     }
   ],
   "ready_for_review": 4,
-  "last_updated": "2026-04-01T02:22:00+08:00",
+  "last_updated": "2026-04-01T00:30:01.030651",
   "stats": {
     "total": 97,
-    "completed": 37,
-    "pending": 60,
-    "last_updated": "2026-04-01T05:29:06"
+    "completed": 24,
+    "pending": 73,
+    "last_updated": "2026-03-31T22:30:39.620507"
   },
   "research_stats": {
     "runs_today": [
@@ -428,34 +417,6 @@
       "title": "Thermal 管控",
       "action": "draft-completed",
       "word_count": "~8000"
-    },
-    {
-      "date": "2026-04-01",
-      "section": "5.6",
-      "title": "Android 功耗管理",
-      "action": "draft-completed",
-      "word_count": "~9500"
-    },
-    {
-      "date": "2026-04-01",
-      "section": "5.7",
-      "title": "CPU 相关的版本演进",
-      "action": "draft-completed",
-      "word_count": "~9000"
-    },
-    {
-      "date": "2026-04-01",
-      "section": "6.1",
-      "title": "Android 存储架构",
-      "action": "queue-status-corrected",
-      "word_count": "~9500"
-    },
-    {
-      "date": "2026-04-01",
-      "section": "6.2",
-      "title": "文件系统",
-      "action": "draft-completed",
-      "word_count": "~9000"
     }
   ]
 }
