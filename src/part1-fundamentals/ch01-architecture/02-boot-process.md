@@ -1,9 +1,11 @@
 ---
 title: "系统启动全流程"
 chapter: "1.2"
-status: ready-for-review
-applicable_versions: "Android 8 (API 26) - Android 16 (API 35)"
-last_verified: "2026-07-17"
+status: reviewed
+reviewed_date: "2026-03-31"
+reviewed_by: openclaw-task6
+applicable_versions: "Android 8 (API 26) - Android 16 (API 36)"
+last_verified: "2026-03-17"
 last_verified_against: "AOSP android-16.0.0_r1, 官方文档"
 confidence: high
 sources:

@@ -4,8 +4,8 @@
   "metrics": {
     "total": 102,
     "draft": 89,
-    "ready-for-review": 12,
-    "reviewed": 0,
+    "ready-for-review": 11,
+    "reviewed": 1,
     "finalized": 1,
     "staging_drafts": 0
   },
@@ -30,12 +30,19 @@
         "补充1处来源标注（冷启动Binder调用次数）",
         "更新frontmatter（status→finalized, 添加reviewed_date/reviewed_by）"
       ]
+    },
+    "1.2": {
+      "reviewed_date": "2026-03-31",
+      "reviewed_by": "openclaw-task6",
+      "issues": [
+        "BootTimingsTraceLog 锚点未覆盖"
+      ]
     }
   },
   "review_stats": {
-    "total_reviewed": 3,
-    "reviewed_today": 1,
-    "review_issues_total": 3
+    "total_reviewed": 4,
+    "reviewed_today": 2,
+    "review_issues_total": 4
   },
   "completed": [
     {
@@ -212,8 +219,8 @@
       "word_count": "~7500"
     }
   ],
-  "ready_for_review": 10,
-  "last_updated": "2026-03-31T11:08:00+08:00",
+  "ready_for_review": 9,
+  "last_updated": "2026-03-31T13:58:26",
   "stats": {
     "total": 102,
     "completed": 16,
