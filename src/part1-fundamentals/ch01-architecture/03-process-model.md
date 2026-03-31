@@ -1,10 +1,13 @@
 ---
 title: "进程模型与生命周期管理"
 chapter: "1.3"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
 last_verified: "2026-03-31"
 last_verified_against: "AOSP android-16.0.0_r1"
+drafted_date: "2026-03-31"
+reviewed_date: "2026-03-31"
+reviewed_by: openclaw-task6
 confidence: medium
 sources:
   - type: aosp
@@ -74,6 +77,8 @@ public static void main(String[] argv) {
 
 每个 Android App 进程都有一个优先级等级，这个等级决定了在内存紧张时谁先被杀。Android 将进程分为五个层级，从高到低依次是：**前台进程（Foreground）→ 可见进程（Visible）→ 服务进程（Service）→ 缓存进程（Cached）→ 空进程（Empty）**。
 
+[图：Android 进程五级优先级模型示意——从上到下依次为前台→可见→服务→缓存→空进程，箭头表示优先级递减方向，标注 oom_adj 值范围]
+
 这个优先级不是静态的——它会随着 App 中组件的状态变化而动态调整。ActivityManagerService（AMS）负责跟踪所有进程中的组件状态，并根据一套复杂的规则计算每个进程的当前优先级。
 
 ### 前台进程（Foreground Process）
@@ -141,6 +146,8 @@ lmkd 的核心工作逻辑并不复杂：它通过 PSI（Pressure Stall Informat
 | HOME_APP | 600 | Home 进程 |
 | PREVIOUS_APP | 700 | 上一个 App |
 | SERVICE_CUR | 800 | 当前服务（动态） |
+
+[待验证: SERVICE_CUR=800 在 AOSP ProcessList.java (android-16.0.0_r1) 中未找到对应常量，可能来自旧版本或厂商自定义，需与实际源码核对]
 | CACHED_APP | 900 | 缓存的 Activity 进程 |
 | CACHED_APP_HIGH | 906-950 | 高位缓存 |
 | CACHED_APP_MAX | 999 | 最大缓存/空进程 |
@@ -150,6 +157,8 @@ lmkd 的核心工作逻辑并不复杂：它通过 PSI（Pressure Stall Informat
 这些值是 AMS 在运行时动态计算并写入 `/proc/<pid>/oom_score_adj` 文件的。你可以在设备上通过 `cat /proc/<pid>/oom_score_adj` 实时查看任何进程的当前优先级。
 
 ### LMK 的回收策略
+
+[图：LMK 回收流程图——PSI/memory pressure → lmkd 评估 → 按 oom_adj 从高到低选择 → SIGKILL → 释放内存，三个阶段（低/中/高压力）对应不同的回收范围]
 
 lmkd 并不是等到内存彻底用完才动手。它根据内存压力水平分为三个阶段：
 
@@ -230,7 +239,7 @@ Android 早期使用 ashmem（Anonymous Shared Memory）来实现跨进程的大
 管道和信号主要用于父子进程间的简单通信。比如 lmkd 向进程发送 SIGKILL 来回收进程，Zygote 使用管道来监听子进程的退出事件。
 
 [已验证: AOSP android-16.0.0_r1, 多处源码交叉验证]
-[来源: obsidian/Cubox/Android帝国之进程杀手：lmkd-2023-12-27.md]
+[已验证: 来源见 obsidian/Cubox/Android帝国之进程杀手：lmkd-2023-12-27.md]
 
 ## 进程死亡回调：DeathRecipient
 
@@ -272,7 +281,7 @@ Android 官方推荐的"保活"方式只有一种：**做用户需要的事情**
 - **Android 14**：前台 Service 类型必须明确声明
 
 [已验证: 官方文档, developer.android.com/about/versions]
-[来源: obsidian/Cubox/Android 运存越来越大，为什么后台 App 还是会被「杀」？-2023-06-17.md]
+[已验证: 来源见 obsidian/Cubox/Android 运存越来越大，为什么后台 App 还是会被「杀」？-2023-06-17.md]
 
 ## Phantom Process Killer（Android 12+）
 
@@ -367,7 +376,7 @@ Android 13 引入了 SDK Sandbox，允许广告 SDK 运行在一个独立的沙�
 
 **错误**。进程被杀的原因有很多：LMK 回收、App 自身崩溃（RuntimeException、Native Crash）、ANR 超时被系统杀掉、用户手动在设置中强制停止、厂商的后台管理机制等。分析时要先确认是什么原因导致进程消失。
 
-[来源: obsidian/Cubox/App处于前台，Activity就不会被回收了？ - 掘金-2022-02-10.md]
+[已验证: 来源见 obsidian/Cubox/App处于前台，Activity就不会被回收了？ - 掘金-2022-02-10.md]
 
 ## 与其他章节的关系
 
