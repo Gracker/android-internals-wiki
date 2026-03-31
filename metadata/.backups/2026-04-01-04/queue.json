@@ -444,29 +444,19 @@
       "priority": 55,
       "reason": "待加工（素材0篇）",
       "material_paths": [],
-      "status": "completed",
+      "status": "pending",
       "added_by": "manual-init",
-      "added_at": "2026-03-29T21:00:00",
-      "processed_at": "2026-04-01T05:29:06",
-      "word_count": "~9500",
-      "verification_status": "L2_verified_all_anchors_2_extensions_covered"
+      "added_at": "2026-03-29T21:00:00"
     },
     {
       "section": "6.2",
       "section_title": "文件系统",
       "priority": 55,
       "reason": "待加工（素材0篇）",
-      "material_paths": [
-        "Personal-Knowlodge/source/2026-03-08_wechat_手机Android存储性能优化架构分析_1.md",
-        "Personal-Knowlodge/source/2026-03-06_wechat_深入代码细节看f2fs在磁盘上的组织方式.md",
-        "Personal-Knowlodge/source/2026-03-07_wechat_性能优化基础_深入理解Linux文件系统.md"
-      ],
-      "status": "completed",
+      "material_paths": [],
+      "status": "pending",
       "added_by": "manual-init",
-      "added_at": "2026-03-29T21:00:00",
-      "processed_at": "2026-04-01T05:29:06",
-      "word_count": "~9000",
-      "verification_status": "L2_verified_all_5_anchors_2_extensions_covered"
+      "added_at": "2026-03-29T21:00:00"
     },
     {
       "section": "6.3",
@@ -1541,29 +1531,7 @@
       "extensions_total": 2,
       "verification_level": "L2",
       "word_count": "~9000"
-    },
-    {
-      "section": "6.1",
-      "title": "Android 存储架构",
-      "completed_at": "2026-04-01T05:29:06",
-      "anchors_covered": 5,
-      "anchors_total": 5,
-      "extensions_covered": 2,
-      "extensions_total": 2,
-      "verification_level": "L2",
-      "word_count": "~9500"
-    },
-    {
-      "section": "6.2",
-      "title": "文件系统",
-      "completed_at": "2026-04-01T05:29:06",
-      "anchors_covered": 5,
-      "anchors_total": 5,
-      "extensions_covered": 2,
-      "extensions_total": 2,
-      "verification_level": "L2",
-      "word_count": "~9000"
     }
   ],
-  "last_updated": "2026-04-01T05:29:06"
+  "last_updated": "2026-04-01T03:24:00+08:00"
 }

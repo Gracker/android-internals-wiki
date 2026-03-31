@@ -1014,6 +1014,47 @@
         }
       ],
       "summary": "5 锚点全部 L2 以上验证通过，3 扩展全部覆盖（2 个 L2 验证 + 1 个 L4 部分验证）"
+    },
+    {
+      "date": "2026-04-01T05:29:41",
+      "section": "6.2",
+      "title": "文件系统",
+      "verifications": [
+        {
+          "anchor": "ext4 核心特性",
+          "level": "L2",
+          "source": "kernel.org ext4 documentation",
+          "result": "verified"
+        },
+        {
+          "anchor": "f2fs 设计思想",
+          "level": "L2",
+          "source": "kernel.org f2fs documentation + OPPO内核工匠文章",
+          "result": "verified"
+        },
+        {
+          "anchor": "EROFS 用于 system 分区",
+          "level": "L2+L4",
+          "source": "source.android.com + esper.io + kernel.org",
+          "result": "verified"
+        },
+        {
+          "anchor": "文件系统对随机读写性能的影响",
+          "level": "L2",
+          "source": "Linux阅码场存储架构分析",
+          "result": "verified"
+        },
+        {
+          "anchor": "fsync/fdatasync 优化",
+          "level": "L2",
+          "source": "sqlite.org + kernel.org + Linux阅码场",
+          "result": "verified"
+        }
+      ],
+      "pending_verifications": [
+        "各厂商具体机型的文件系统选型（待实机验证）",
+        "f2fs前台GC期间的Trace截图"
+      ]
     }
   ]
 }

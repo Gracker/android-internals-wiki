@@ -2599,5 +2599,4609 @@
     "confidence": "high",
     "summary": "ART虚拟机方法追踪技术原理与实现解析",
     "indexed_at": "2026-04-01T01:20:22"
+  },
+  {
+    "title": "ART虚拟机中的栈上替换编译(OSR)",
+    "path": "Cubox/ART虚拟机中的栈上替换编译(OSR)-2024-05-23.md",
+    "score": {
+      "relevance": 4,
+      "technical_depth": 4,
+      "timeliness": 4,
+      "verifiability": 4,
+      "total": 16
+    },
+    "chapters": [
+      "ch07-内存"
+    ],
+    "quality": "high",
+    "confidence": "high",
+    "summary": "ART JIT编译三个档位kBaseline/kOptimized/kOsr的OSR机制详解",
+    "indexed_at": "2026-04-01"
+  },
+  {
+    "title": "ART虚拟机内存分配原理浅析",
+    "path": "Cubox/ART虚拟机内存分配原理浅析-2024-03-17.md",
+    "score": {
+      "relevance": 4,
+      "technical_depth": 3,
+      "timeliness": 4,
+      "verifiability": 3,
+      "total": 14
+    },
+    "chapters": [
+      "ch07-内存"
+    ],
+    "quality": "medium",
+    "confidence": "high",
+    "summary": "Android ART虚拟机内存分配原理的浅析文章",
+    "indexed_at": "2026-04-01"
+  },
+  {
+    "title": "ASM字节码插桩：进行线程整治",
+    "path": "Cubox/ASM 字节码插桩：进行线程整治-2022-03-07.md",
+    "score": {
+      "relevance": 4,
+      "technical_depth": 4,
+      "timeliness": 3,
+      "verifiability": 4,
+      "total": 15
+    },
+    "chapters": [
+      "ch03-线程",
+      "ch14-工具"
+    ],
+    "quality": "medium",
+    "confidence": "high",
+    "summary": "基于AOP/ASM字节码插桩实现线程数量优化，含具体实现方案",
+    "indexed_at": "2026-04-01"
+  },
+  {
+    "title": "Activity启动速度分析方法（启动流程分析）",
+    "path": "Cubox/Activity 启动速度分析方法（启动流程分析） - Light.Moon-2022-02-24.md",
+    "score": {
+      "relevance": 5,
+      "technical_depth": 4,
+      "timeliness": 3,
+      "verifiability": 5,
+      "total": 17
+    },
+    "chapters": [
+      "ch04-启动",
+      "ch11-Profiling"
+    ],
+    "quality": "high",
+    "confidence": "high",
+    "summary": "系统梳理Activity启动时间统计方法：logcat Displayed、adb shell等",
+    "indexed_at": "2026-04-01"
+  },
+  {
+    "title": "Adreno Memory",
+    "path": "Cubox/Adreno Memory · 语雀-2022-05-09.md",
+    "score": {
+      "relevance": 4,
+      "technical_depth": 4,
+      "timeliness": 3,
+      "verifiability": 4,
+      "total": 15
+    },
+    "chapters": [
+      "ch05-渲染",
+      "ch07-内存"
+    ],
+    "quality": "medium",
+    "confidence": "medium",
+    "summary": "Adreno GPU驱动显存数据结构与内存管理机制",
+    "indexed_at": "2026-04-01"
+  },
+  {
+    "title": "Airbnb's Page Performance Score on Android",
+    "path": "Cubox/Airbnb's Page Performance Score on Android - by Luping Lin - The Airbnb Tech Blog - Dec, 2021 - Medi.md",
+    "score": {
+      "relevance": 4,
+      "technical_depth": 4,
+      "timeliness": 3,
+      "verifiability": 4,
+      "total": 15
+    },
+    "chapters": [
+      "ch04-启动",
+      "ch14-工具"
+    ],
+    "quality": "medium",
+    "confidence": "high",
+    "summary": "Airbnb自研PPS指标体系设计，量化页面性能",
+    "indexed_at": "2026-04-01"
+  },
+  {
+    "title": "Analyze AOSP input architecture",
+    "path": "Cubox/Analyze AOSP input architecture - Blog-2024-05-31.md",
+    "score": {
+      "relevance": 4,
+      "technical_depth": 4,
+      "timeliness": 3,
+      "verifiability": 4,
+      "total": 15
+    },
+    "chapters": [
+      "ch01-架构"
+    ],
+    "quality": "medium",
+    "confidence": "high",
+    "summary": "基于AOSP 9.0源码分析Android输入系统架构",
+    "indexed_at": "2026-04-01"
+  },
+  {
+    "title": "采样型内存调试工具GWP-ASan",
+    "path": "Cubox/Andriod Native - 采样型内存调试工具GWP-ASan - 掘金-2022-01-14.md",
+    "score": {
+      "relevance": 5,
+      "technical_depth": 4,
+      "timeliness": 3,
+      "verifiability": 4,
+      "total": 16
+    },
+    "chapters": [
+      "ch07-内存",
+      "ch14-工具"
+    ],
+    "quality": "high",
+    "confidence": "high",
+    "summary": "对比ASan/HWASan/MTE/GWP-ASan，详解采样型Native内存调试",
+    "indexed_at": "2026-04-01"
+  },
+  {
+    "title": "Android shader cache进一步优化",
+    "path": "Cubox/Android  shader cache 进一步优化-2026-01-09.md",
+    "score": {
+      "relevance": 5,
+      "technical_depth": 4,
+      "timeliness": 5,
+      "verifiability": 3,
+      "total": 17
+    },
+    "chapters": [
+      "ch05-渲染"
+    ],
+    "quality": "high",
+    "confidence": "high",
+    "summary": "Android shader cache优化方案，提升渲染性能",
+    "indexed_at": "2026-04-01"
+  },
+  {
+    "title": "Android性能优化-ASM实现大图监控",
+    "path": "Cubox/Android  性能优化 - 通过 ASM 实现大图监控-2022-03-08.md",
+    "score": {
+      "relevance": 4,
+      "technical_depth": 4,
+      "timeliness": 3,
+      "verifiability": 4,
+      "total": 15
+    },
+    "chapters": [
+      "ch05-渲染",
+      "ch14-工具"
+    ],
+    "quality": "medium",
+    "confidence": "high",
+    "summary": "通过ASM字节码插桩监控大图加载，优化过度绘制",
+    "indexed_at": "2026-04-01"
+  },
+  {
+    "title": "理解Window和WindowManager",
+    "path": "Cubox/Android - 理解 Window 和 WindowManager - 掘金-2022-03-29.md",
+    "score": {
+      "relevance": 4,
+      "technical_depth": 3,
+      "timeliness": 3,
+      "verifiability": 3,
+      "total": 13
+    },
+    "chapters": [
+      "ch01-架构"
+    ],
+    "quality": "medium",
+    "confidence": "medium",
+    "summary": "Window概念解析：Activity/Dialog/Toast视图载体机制",
+    "indexed_at": "2026-04-01"
+  },
+  {
+    "title": "Android 11 IORap通过IO预取改善应用启动",
+    "path": "Cubox/Android 11 IORap --通过I - O预取来改善应用启动-腾讯云开发者社区-腾讯云-2025-07-16.md",
+    "score": {
+      "relevance": 5,
+      "technical_depth": 4,
+      "timeliness": 3,
+      "verifiability": 5,
+      "total": 17
+    },
+    "chapters": [
+      "ch04-启动",
+      "ch08-存储"
+    ],
+    "quality": "high",
+    "confidence": "high",
+    "summary": "IORap通过预读IO数据减少启动阻塞，平均提速5%-26%",
+    "indexed_at": "2026-04-01"
+  },
+  {
+    "title": "Android 11可变刷新率策略",
+    "path": "Cubox/Android 11 可变刷新率策略-2022-09-07.md",
+    "score": {
+      "relevance": 5,
+      "technical_depth": 4,
+      "timeliness": 3,
+      "verifiability": 4,
+      "total": 16
+    },
+    "chapters": [
+      "ch05-渲染"
+    ],
+    "quality": "high",
+    "confidence": "high",
+    "summary": "Android 11可变刷新率控制策略，平台控制设备刷新率",
+    "indexed_at": "2026-04-01"
+  },
+  {
+    "title": "Android 11提高App冷启动速度5%以上",
+    "path": "Cubox/Android 11 提高 App 冷启动速度 5% 以上-2022-04-18.md",
+    "score": {
+      "relevance": 5,
+      "technical_depth": 3,
+      "timeliness": 3,
+      "verifiability": 3,
+      "total": 14
+    },
+    "chapters": [
+      "ch04-启动"
+    ],
+    "quality": "medium",
+    "confidence": "medium",
+    "summary": "Android 11对冷启动的自动优化，开发者无需额外操作",
+    "indexed_at": "2026-04-01"
+  },
+  {
+    "title": "Android 12 SplashScreen优化启动体验",
+    "path": "Cubox/Android 12 新功能：SplashScreen优化启动体验-2022-01-21.md",
+    "score": {
+      "relevance": 5,
+      "technical_depth": 4,
+      "timeliness": 3,
+      "verifiability": 5,
+      "total": 17
+    },
+    "chapters": [
+      "ch04-启动",
+      "ch17-新版本"
+    ],
+    "quality": "high",
+    "confidence": "high",
+    "summary": "Android 12新增SplashScreen API统一启动界面体验",
+    "indexed_at": "2026-04-01"
+  },
+  {
+    "title": "Android 12 SurfaceView/SF/BLASTBufferQueue",
+    "path": "Cubox/Android 12(S) SurfaceView-SurfaceFlinger-BLASTBufferQueue 零星点记录，好烦 - 二的次方 - 博客园-2022-03-04.md",
+    "score": {
+      "relevance": 5,
+      "technical_depth": 5,
+      "timeliness": 3,
+      "verifiability": 5,
+      "total": 18
+    },
+    "chapters": [
+      "ch05-渲染"
+    ],
+    "quality": "high",
+    "confidence": "high",
+    "summary": "源码级分析Android S SurfaceView/SF/BLASTBufferQueue变更",
+    "indexed_at": "2026-04-01"
+  },
+  {
+    "title": "Android 12 GraphicBuffer同步机制Fence",
+    "path": "Cubox/Android 12(S) 图像显示系统 - GraphicBuffer同步机制 - Fence - 二的次方 - 博客园-2022-11-03.md",
+    "score": {
+      "relevance": 5,
+      "technical_depth": 5,
+      "timeliness": 3,
+      "verifiability": 5,
+      "total": 18
+    },
+    "chapters": [
+      "ch05-渲染"
+    ],
+    "quality": "high",
+    "confidence": "high",
+    "summary": "深入分析GraphicBuffer的Fence同步机制原理与实现",
+    "indexed_at": "2026-04-01"
+  },
+  {
+    "title": "Android 12 SurfaceFlinger GPU合成",
+    "path": "Cubox/Android 12(S) 图像显示系统 - SurfaceFlinger  GPU合成-CLIENT合成方式 - 随笔1 - 二的次方 - 博客园-2022-11-02.md",
+    "score": {
+      "relevance": 5,
+      "technical_depth": 5,
+      "timeliness": 3,
+      "verifiability": 5,
+      "total": 18
+    },
+    "chapters": [
+      "ch05-渲染"
+    ],
+    "quality": "high",
+    "confidence": "high",
+    "summary": "SurfaceFlinger CLIENT合成：renderengine绘制与GraphicBuffer",
+    "indexed_at": "2026-04-01"
+  },
+  {
+    "title": "SurfaceFlinger启动和消息队列处理机制",
+    "path": "Cubox/Android 12(S) 图形显示系统 - SurfaceFlinger的启动和消息队列处理机制（四） - 二的次方 - 博客园-2022-03-04.md",
+    "score": {
+      "relevance": 5,
+      "technical_depth": 4,
+      "timeliness": 3,
+      "verifiability": 4,
+      "total": 16
+    },
+    "chapters": [
+      "ch05-渲染"
+    ],
+    "quality": "high",
+    "confidence": "high",
+    "summary": "SurfaceFlinger启动初始化与消息队列处理机制分析",
+    "indexed_at": "2026-04-01"
+  },
+  {
+    "title": "Android 12图形显示系统基本概念",
+    "path": "Cubox/Android 12(S) 图形显示系统 - 基本概念（一） - 二的次方 - 博客园-2022-03-04.md",
+    "score": {
+      "relevance": 5,
+      "technical_depth": 3,
+      "timeliness": 3,
+      "verifiability": 3,
+      "total": 14
+    },
+    "chapters": [
+      "ch05-渲染"
+    ],
+    "quality": "medium",
+    "confidence": "medium",
+    "summary": "Android图形系统基本概念：2D/3D渲染API与框架概述",
+    "indexed_at": "2026-04-01"
+  },
+  {
+    "title": "应用与SurfaceFlinger沟通桥梁",
+    "path": "Cubox/Android 12(S) 图形显示系统 - 应用建立和SurfaceFlinger的沟通桥梁（三） - 二的次方 - 博客园-2022-03-04.md",
+    "score": {
+      "relevance": 5,
+      "technical_depth": 4,
+      "timeliness": 3,
+      "verifiability": 4,
+      "total": 16
+    },
+    "chapters": [
+      "ch05-渲染"
+    ],
+    "quality": "high",
+    "confidence": "high",
+    "summary": "BufferQueue内部实现：应用与SurfaceFlinger通信机制",
+    "indexed_at": "2026-04-01"
+  },
+  {
+    "title": "Android 12图形显示系统开篇",
+    "path": "Cubox/Android 12(S) 图形显示系统 - 开篇 - 二的次方 - 博客园-2022-03-04.md",
+    "score": {
+      "relevance": 4,
+      "technical_depth": 2,
+      "timeliness": 3,
+      "verifiability": 2,
+      "total": 11
+    },
+    "chapters": [
+      "ch05-渲染"
+    ],
+    "quality": "medium",
+    "confidence": "medium",
+    "summary": "Android图形显示子系统系列文章开篇概述",
+    "indexed_at": "2026-04-01"
+  },
+  {
+    "title": "Android 12图形显示系统示例应用",
+    "path": "Cubox/Android 12(S) 图形显示系统 - 示例应用（二） - 二的次方 - 博客园-2022-03-04.md",
+    "score": {
+      "relevance": 4,
+      "technical_depth": 3,
+      "timeliness": 3,
+      "verifiability": 3,
+      "total": 13
+    },
+    "chapters": [
+      "ch05-渲染"
+    ],
+    "quality": "medium",
+    "confidence": "medium",
+    "summary": "Native Level图形系统API示例程序与BufferQueue实践",
+    "indexed_at": "2026-04-01"
+  },
+  {
+    "title": "Android 13 changelog deep dive",
+    "path": "Cubox/Android 13 changelog- A deep dive by Mishaal Rahman-2022-08-22.md",
+    "score": {
+      "relevance": 4,
+      "technical_depth": 4,
+      "timeliness": 3,
+      "verifiability": 4,
+      "total": 15
+    },
+    "chapters": [
+      "ch17-新版本"
+    ],
+    "quality": "medium",
+    "confidence": "high",
+    "summary": "Mishaal Rahman全面梳理Android 13所有变更",
+    "indexed_at": "2026-04-01"
+  },
+  {
+    "title": "Android 13 deep dive全面变更文档",
+    "path": "Cubox/Android 13 deep dive- Every change, thoroughly documented - Esper Blog-2022-02-15.md",
+    "score": {
+      "relevance": 4,
+      "technical_depth": 4,
+      "timeliness": 3,
+      "verifiability": 4,
+      "total": 15
+    },
+    "chapters": [
+      "ch17-新版本"
+    ],
+    "quality": "medium",
+    "confidence": "high",
+    "summary": "Esper Blog逐项记录Android 13新功能与API更新",
+    "indexed_at": "2026-04-01"
+  },
+  {
+    "title": "Android 13新功能与适配工作",
+    "path": "Cubox/Android 13 带来了哪些新功能？需要哪些适配工作？- 开发者说·DTalk-2022-11-04.md",
+    "score": {
+      "relevance": 3,
+      "technical_depth": 2,
+      "timeliness": 3,
+      "verifiability": 2,
+      "total": 10
+    },
+    "chapters": [
+      "ch17-新版本"
+    ],
+    "quality": "medium",
+    "confidence": "low",
+    "summary": "Android 13新功能概览及开发者适配建议",
+    "indexed_at": "2026-04-01"
+  },
+  {
+    "title": "Android 13 适配指南",
+    "path": "Cubox/Android 13 适配指南-2022-05-20.md",
+    "score": {
+      "relevance": 3,
+      "technical_depth": 2,
+      "timeliness": 3,
+      "verifiability": 2,
+      "total": 10
+    },
+    "chapters": [
+      "ch17-新版本"
+    ],
+    "quality": "medium",
+    "confidence": "low",
+    "summary": "Android 13适配指南，涵盖适配要点与新特性",
+    "indexed_at": "2026-04-01"
+  },
+  {
+    "title": "Android 13启动速度提升，优化AMS加速启动",
+    "path": "Cubox/Android 13启动速度提升，优化AMS加速启动-2022-12-05.md",
+    "score": {
+      "relevance": 5,
+      "technical_depth": 3,
+      "timeliness": 3,
+      "verifiability": 2,
+      "total": 13
+    },
+    "chapters": [
+      "ch04-启动"
+    ],
+    "quality": "medium",
+    "confidence": "medium",
+    "summary": "Android 13启动速度优化，通过AMS加速应用启动",
+    "indexed_at": "2026-04-01"
+  },
+  {
+    "title": "Android 13运行时权限变更一览",
+    "path": "Cubox/Android 13运行时权限变更一览-2022-08-16.md",
+    "score": {
+      "relevance": 4,
+      "technical_depth": 3,
+      "timeliness": 3,
+      "verifiability": 3,
+      "total": 13
+    },
+    "chapters": [
+      "ch12-安全",
+      "ch17-新版本"
+    ],
+    "quality": "medium",
+    "confidence": "medium",
+    "summary": "Android 13运行时权限变更详解与适配",
+    "indexed_at": "2026-04-01"
+  },
+  {
+    "title": "Android 14 HWUI 源码研究 View Canvas RenderThread",
+    "path": "Cubox/Android 14 HWUI 源码研究 View Canvas RenderThread View...-2024-01-05.md",
+    "score": {
+      "relevance": 5,
+      "technical_depth": 5,
+      "timeliness": 4,
+      "verifiability": 5,
+      "total": 19
+    },
+    "chapters": [
+      "ch05-渲染"
+    ],
+    "quality": "high",
+    "confidence": "high",
+    "summary": "Android 14 HWUI源码级研究，涵盖View/Canvas/RenderThread渲染管线全流程",
+    "indexed_at": "2026-04-01"
+  },
+  {
+    "title": "Android 14 彻底终结大厂流氓应用",
+    "path": "Cubox/Android 14 彻底终结大厂流氓应用？ - 掘金-2023-11-10.md",
+    "score": {
+      "relevance": 4,
+      "technical_depth": 2,
+      "timeliness": 3,
+      "verifiability": 2,
+      "total": 11
+    },
+    "chapters": [
+      "ch02-进程",
+      "ch06-功耗"
+    ],
+    "quality": "medium",
+    "confidence": "medium",
+    "summary": "Android 14对后台应用存活策略的限制措施",
+    "indexed_at": "2026-04-01"
+  },
+  {
+    "title": "Android 14 正式发布",
+    "path": "Cubox/Android 14 正式发布，已经在 AOSP 中上线，快来看看有什么吧 - 掘金-2023-10-26.md",
+    "score": {
+      "relevance": 3,
+      "technical_depth": 2,
+      "timeliness": 3,
+      "verifiability": 3,
+      "total": 11
+    },
+    "chapters": [
+      "ch17-新版本"
+    ],
+    "quality": "medium",
+    "confidence": "medium",
+    "summary": "Android 14正式发布，涵盖主要新功能与API变更",
+    "indexed_at": "2026-04-01"
+  },
+  {
+    "title": "Android 14 predictive back gesture",
+    "path": "Cubox/Android 14's predictive back gesture lets you preview where you're going when you swipe back-2023-02.md",
+    "score": {
+      "relevance": 3,
+      "technical_depth": 2,
+      "timeliness": 3,
+      "verifiability": 2,
+      "total": 10
+    },
+    "chapters": [
+      "ch17-新版本"
+    ],
+    "quality": "medium",
+    "confidence": "low",
+    "summary": "Android 14预测性返回手势功能介绍",
+    "indexed_at": "2026-04-01"
+  },
+  {
+    "title": "Android 15 上适配 16K Page Size（IJKPlayer）",
+    "path": "Cubox/Android 15 上适配 16K Page Size 的填坑思路，以 IJKPlayer 为例子-2024-07-29.md",
+    "score": {
+      "relevance": 4,
+      "technical_depth": 3,
+      "timeliness": 4,
+      "verifiability": 3,
+      "total": 14
+    },
+    "chapters": [
+      "ch08-存储",
+      "ch17-新版本"
+    ],
+    "quality": "medium",
+    "confidence": "high",
+    "summary": "以IJKPlayer为例详解16K Page Size适配填坑",
+    "indexed_at": "2026-04-01"
+  },
+  {
+    "title": "Android 15 如何快速适配 16K Page Size",
+    "path": "Cubox/Android 15 之如何快速适配 16K Page Size-2024-07-22.md",
+    "score": {
+      "relevance": 4,
+      "technical_depth": 3,
+      "timeliness": 4,
+      "verifiability": 3,
+      "total": 14
+    },
+    "chapters": [
+      "ch08-存储",
+      "ch17-新版本"
+    ],
+    "quality": "medium",
+    "confidence": "high",
+    "summary": "Android 15 16K Page Size快速适配指南",
+    "indexed_at": "2026-04-01"
+  },
+  {
+    "title": "Android 15 内存追踪利器：ProfilingManager",
+    "path": "Cubox/Android 15 内存追踪利器：ProfilingManager！-2025-01-21.md",
+    "score": {
+      "relevance": 5,
+      "technical_depth": 4,
+      "timeliness": 5,
+      "verifiability": 4,
+      "total": 18
+    },
+    "chapters": [
+      "ch07-内存",
+      "ch11-Profiling"
+    ],
+    "quality": "high",
+    "confidence": "high",
+    "summary": "Android 15新增ProfilingManager API，支持内存profiling追踪",
+    "indexed_at": "2026-04-01"
+  },
+  {
+    "title": "Android 15 线程挂起超时崩溃与修复",
+    "path": "Cubox/Android 15 线程挂起超时崩溃与修复-2024-07-31.md",
+    "score": {
+      "relevance": 4,
+      "technical_depth": 3,
+      "timeliness": 4,
+      "verifiability": 3,
+      "total": 14
+    },
+    "chapters": [
+      "ch03-线程",
+      "ch02-进程"
+    ],
+    "quality": "medium",
+    "confidence": "medium",
+    "summary": "Android 15线程挂起超时导致的崩溃分析与修复",
+    "indexed_at": "2026-04-01"
+  },
+  {
+    "title": "Android 15 适配之16K Page Size最坑适配点",
+    "path": "Cubox/Android 15 适配之16K Page Size ：为什么它会是最坑的一个适配点-2024-07-09.md",
+    "score": {
+      "relevance": 4,
+      "technical_depth": 3,
+      "timeliness": 4,
+      "verifiability": 3,
+      "total": 14
+    },
+    "chapters": [
+      "ch08-存储",
+      "ch17-新版本"
+    ],
+    "quality": "medium",
+    "confidence": "high",
+    "summary": "分析16K Page Size适配中最容易踩坑的问题",
+    "indexed_at": "2026-04-01"
+  },
+  {
+    "title": "Android 15 16kb页对齐适配大扫盲",
+    "path": "Cubox/Android 15- 16kb页对齐适配大扫盲-2025-01-13.md",
+    "score": {
+      "relevance": 4,
+      "technical_depth": 4,
+      "timeliness": 5,
+      "verifiability": 4,
+      "total": 17
+    },
+    "chapters": [
+      "ch08-存储",
+      "ch17-新版本"
+    ],
+    "quality": "high",
+    "confidence": "high",
+    "summary": "16K页对齐适配全面扫盲，含shadowhook mprotect实战案例",
+    "indexed_at": "2026-04-01"
+  },
+  {
+    "title": "Android 15新特性：预测性返回手势",
+    "path": "Cubox/Android 15新特性，预测性返回手势-2025-01-17.md",
+    "score": {
+      "relevance": 3,
+      "technical_depth": 2,
+      "timeliness": 5,
+      "verifiability": 2,
+      "total": 12
+    },
+    "chapters": [
+      "ch17-新版本"
+    ],
+    "quality": "medium",
+    "confidence": "medium",
+    "summary": "Android 15预测性返回手势新特性介绍",
+    "indexed_at": "2026-04-01"
+  },
+  {
+    "title": "Android 16 显示系统(10) SurfaceFlinger合成(三)",
+    "path": "Cubox/Android 16 显示系统 - 从View 到屏幕系列 - 10 - SurfaceFlinger 合成 (三) - 掘金-2025-10-13.md",
+    "score": {
+      "relevance": 5,
+      "technical_depth": 5,
+      "timeliness": 5,
+      "verifiability": 4,
+      "total": 19
+    },
+    "chapters": [
+      "ch05-渲染"
+    ],
+    "quality": "high",
+    "confidence": "high",
+    "summary": "Android 16显示系统系列：SurfaceFlinger合成流程深入分析（第三部分）",
+    "indexed_at": "2026-04-01"
+  },
+  {
+    "title": "Android 16 显示系统(2) Surface",
+    "path": "Cubox/Android 16 显示系统 - 从View 到屏幕系列 - 2 - Surface写在前面 Surface 是整个 - 掘金-2025-07-27.md",
+    "score": {
+      "relevance": 5,
+      "technical_depth": 4,
+      "timeliness": 5,
+      "verifiability": 4,
+      "total": 18
+    },
+    "chapters": [
+      "ch05-渲染"
+    ],
+    "quality": "high",
+    "confidence": "high",
+    "summary": "Android 16显示系统：Surface概念详解，App UI显示基础组件",
+    "indexed_at": "2026-04-01"
+  },
+  {
+    "title": "Android 16 显示系统(3) BLASTBufferQueue",
+    "path": "Cubox/Android 16 显示系统 - 从View 到屏幕系列 - 3 - BLASTBufferQueue写在前面 BLa - 掘金-2025-07-27.md",
+    "score": {
+      "relevance": 5,
+      "technical_depth": 5,
+      "timeliness": 5,
+      "verifiability": 4,
+      "total": 19
+    },
+    "chapters": [
+      "ch05-渲染"
+    ],
+    "quality": "high",
+    "confidence": "high",
+    "summary": "BLASTBufferQueue作为App与SurfaceFlinger的桥梁，异步事务缓冲区详解",
+    "indexed_at": "2026-04-01"
+  },
+  {
+    "title": "Android 16 显示系统(4) GraphicBuffer & Gralloc",
+    "path": "Cubox/Android 16 显示系统 - 从View 到屏幕系列 - 4 - GraphicBuffer & Gralloc - 掘金-2025-07-27.md",
+    "score": {
+      "relevance": 5,
+      "technical_depth": 5,
+      "timeliness": 5,
+      "verifiability": 4,
+      "total": 19
+    },
+    "chapters": [
+      "ch05-渲染",
+      "ch07-内存"
+    ],
+    "quality": "high",
+    "confidence": "high",
+    "summary": "GraphicBuffer内存分配与Gralloc HAL接口详解",
+    "indexed_at": "2026-04-01"
+  },
+  {
+    "title": "Android 16 显示系统(5) App内部绘制",
+    "path": "Cubox/Android 16 显示系统 - 从View 到屏幕系列 - 5 - App 内部绘制 写在前面 前面了解 BLAST - 掘金-2025-07-27.md",
+    "score": {
+      "relevance": 5,
+      "technical_depth": 5,
+      "timeliness": 5,
+      "verifiability": 4,
+      "total": 19
+    },
+    "chapters": [
+      "ch05-渲染"
+    ],
+    "quality": "high",
+    "confidence": "high",
+    "summary": "App如何将UI绘制到GraphicBuffer，dequeueBuffer/draw流程详解",
+    "indexed_at": "2026-04-01"
+  },
+  {
+    "title": "Android 16 显示系统(6) 提交GraphicBuffer到SurfaceFlinger",
+    "path": "Cubox/Android 16 显示系统 - 从View 到屏幕系列 - 6 - 提交 GraphicBuffer 到 SurfaceFlinger - 掘金-2025-10-13.md",
+    "score": {
+      "relevance": 5,
+      "technical_depth": 5,
+      "timeliness": 5,
+      "verifiability": 4,
+      "total": 19
+    },
+    "chapters": [
+      "ch05-渲染"
+    ],
+    "quality": "high",
+    "confidence": "high",
+    "summary": "App到SurfaceFlinger的GraphicBuffer提交流程，queueBuffer机制",
+    "indexed_at": "2026-04-01"
+  },
+  {
+    "title": "Android 16 显示系统(7) SurfaceFlinger Commit",
+    "path": "Cubox/Android 16 显示系统 - 从View 到屏幕系列 - 7 - SurfaceFling Commit - 掘金-2025-10-13.md",
+    "score": {
+      "relevance": 5,
+      "technical_depth": 5,
+      "timeliness": 5,
+      "verifiability": 4,
+      "total": 19
+    },
+    "chapters": [
+      "ch05-渲染"
+    ],
+    "quality": "high",
+    "confidence": "high",
+    "summary": "SurfaceFlinger Commit流程：处理图层状态/事务请求/Z-Order",
+    "indexed_at": "2026-04-01"
+  },
+  {
+    "title": "Android 16 显示系统(8) SurfaceFlinger合成(一)",
+    "path": "Cubox/Android 16 显示系统 - 从View 到屏幕系列 - 8 - SurfaceFlinger 合成 (一) - 掘金-2025-10-13.md",
+    "score": {
+      "relevance": 5,
+      "technical_depth": 5,
+      "timeliness": 5,
+      "verifiability": 4,
+      "total": 19
+    },
+    "chapters": [
+      "ch05-渲染"
+    ],
+    "quality": "high",
+    "confidence": "high",
+    "summary": "SurfaceFlinger合成流程第一部分，Device Overlay与GPU合成",
+    "indexed_at": "2026-04-01"
+  },
+  {
+    "title": "Android 16 显示系统(9) SurfaceFlinger合成(二)",
+    "path": "Cubox/Android 16 显示系统 - 从View 到屏幕系列 - 9 - SurfaceFlinger 合成 (二) - 掘金-2025-10-13.md",
+    "score": {
+      "relevance": 5,
+      "technical_depth": 4,
+      "timeliness": 5,
+      "verifiability": 4,
+      "total": 18
+    },
+    "chapters": [
+      "ch05-渲染"
+    ],
+    "quality": "high",
+    "confidence": "high",
+    "summary": "SurfaceFlinger合成流程第二部分，合成策略与实现",
+    "indexed_at": "2026-04-01"
+  },
+  {
+    "title": "Android 16版本调测新特性汇总",
+    "path": "Cubox/Android 16版本调测新特性汇总-2025-05-23.md",
+    "score": {
+      "relevance": 3,
+      "technical_depth": 2,
+      "timeliness": 5,
+      "verifiability": 2,
+      "total": 12
+    },
+    "chapters": [
+      "ch17-新版本",
+      "ch14-工具"
+    ],
+    "quality": "medium",
+    "confidence": "medium",
+    "summary": "Android 16版本调测相关新特性汇总",
+    "indexed_at": "2026-04-01"
+  },
+  {
+    "title": "Android 8.0 ART功能改进",
+    "path": "Cubox/Android 8.0 中的 ART 功能改进 - Android 开源项目 - Android Open Source Project-2022-01-25.md",
+    "score": {
+      "relevance": 4,
+      "technical_depth": 4,
+      "timeliness": 2,
+      "verifiability": 4,
+      "total": 14
+    },
+    "chapters": [
+      "ch07-内存",
+      "ch01-架构"
+    ],
+    "quality": "medium",
+    "confidence": "high",
+    "summary": "Android 8.0中ART虚拟机功能改进官方文档",
+    "indexed_at": "2026-04-01"
+  },
+  {
+    "title": "Android ADB命令之内存统计与分析",
+    "path": "Cubox/Android ADB命令之内存统计与分析一、核心命令总览 工具 - 命令 用途 示例 adb shell dumps - 掘金-2025-07-27.md",
+    "score": {
+      "relevance": 5,
+      "technical_depth": 3,
+      "timeliness": 5,
+      "verifiability": 4,
+      "total": 17
+    },
+    "chapters": [
+      "ch07-内存",
+      "ch14-工具"
+    ],
+    "quality": "high",
+    "confidence": "high",
+    "summary": "ADB内存统计与分析命令大全，dumpsys meminfo等工具详解",
+    "indexed_at": "2026-04-01"
+  },
+  {
+    "title": "Android ANR 系列1：理解设计思想",
+    "path": "Cubox/Android ANR 系列 1 ：理解 Android ANR 设计思想 · Android Performance-2025-02-09.md",
+    "score": {
+      "relevance": 5,
+      "technical_depth": 4,
+      "timeliness": 5,
+      "verifiability": 3,
+      "total": 17
+    },
+    "chapters": [
+      "ch02-进程",
+      "ch03-线程"
+    ],
+    "quality": "high",
+    "confidence": "high",
+    "summary": "Android Performance站点ANR系列首篇，深入理解ANR设计思想",
+    "indexed_at": "2026-04-01"
+  },
+  {
+    "title": "Android ANR原理解析及常见案例(2022)",
+    "path": "Cubox/Android ANR-原理解析及常见案例-2022-03-24.md",
+    "score": {
+      "relevance": 5,
+      "technical_depth": 4,
+      "timeliness": 3,
+      "verifiability": 3,
+      "total": 15
+    },
+    "chapters": [
+      "ch02-进程",
+      "ch03-线程"
+    ],
+    "quality": "medium",
+    "confidence": "high",
+    "summary": "ANR原理介绍与常见案例分析",
+    "indexed_at": "2026-04-01"
+  },
+  {
+    "title": "Android ANR原理解析及常见案例(2024)",
+    "path": "Cubox/Android ANR-原理解析及常见案例-2024-02-02.md",
+    "score": {
+      "relevance": 5,
+      "technical_depth": 4,
+      "timeliness": 4,
+      "verifiability": 3,
+      "total": 16
+    },
+    "chapters": [
+      "ch02-进程",
+      "ch03-线程"
+    ],
+    "quality": "high",
+    "confidence": "high",
+    "summary": "ANR原理与常见案例重新整理版",
+    "indexed_at": "2026-04-01"
+  },
+  {
+    "title": "Android ANR深入分析",
+    "path": "Cubox/Android ANR深入分析 - 掘金-2022-12-05.md",
+    "score": {
+      "relevance": 5,
+      "technical_depth": 4,
+      "timeliness": 3,
+      "verifiability": 4,
+      "total": 16
+    },
+    "chapters": [
+      "ch02-进程",
+      "ch03-线程"
+    ],
+    "quality": "high",
+    "confidence": "high",
+    "summary": "从Android 9源码梳理ANR全分类，input类与后台组件类ANR详解",
+    "indexed_at": "2026-04-01"
+  },
+  {
+    "title": "Android ANR的设计原理",
+    "path": "Cubox/Android ANR的设计原理 - 掘金-2022-04-21.md",
+    "score": {
+      "relevance": 5,
+      "technical_depth": 4,
+      "timeliness": 3,
+      "verifiability": 4,
+      "total": 16
+    },
+    "chapters": [
+      "ch02-进程",
+      "ch03-线程"
+    ],
+    "quality": "high",
+    "confidence": "high",
+    "summary": "ANR检测机制设计：观测者/被观测者模式，超时检测原理",
+    "indexed_at": "2026-04-01"
+  },
+  {
+    "title": "Android APP系统渲染管线主流程优化",
+    "path": "Cubox/Android APP系统渲染管线主流程优化-2025-05-13.md",
+    "score": {
+      "relevance": 5,
+      "technical_depth": 4,
+      "timeliness": 5,
+      "verifiability": 3,
+      "total": 17
+    },
+    "chapters": [
+      "ch05-渲染"
+    ],
+    "quality": "high",
+    "confidence": "high",
+    "summary": "Android APP渲染管线主流程的系统性优化实践",
+    "indexed_at": "2026-04-01"
+  },
+  {
+    "title": "Android APP系统渲染管线优化小点",
+    "path": "Cubox/Android APP系统渲染管线优化小点-2025-05-12.md",
+    "score": {
+      "relevance": 5,
+      "technical_depth": 3,
+      "timeliness": 5,
+      "verifiability": 3,
+      "total": 16
+    },
+    "chapters": [
+      "ch05-渲染"
+    ],
+    "quality": "high",
+    "confidence": "high",
+    "summary": "View.measure/layout等渲染环节的细粒度优化点",
+    "indexed_at": "2026-04-01"
+  },
+  {
+    "title": "Android ART dex2oat 浅析",
+    "path": "Cubox/Android ART dex2oat 浅析 - 内核工匠 - 博客园-2022-02-12.md",
+    "score": {
+      "relevance": 5,
+      "technical_depth": 4,
+      "timeliness": 3,
+      "verifiability": 4,
+      "total": 16
+    },
+    "chapters": [
+      "ch07-内存",
+      "ch16-构建"
+    ],
+    "quality": "high",
+    "confidence": "high",
+    "summary": "dex2oat编译优化程序详解，dex到oat文件的编译流程",
+    "indexed_at": "2026-04-01"
+  },
+  {
+    "title": "Android App Startup System Trace (Part 2)",
+    "path": "Cubox/Android App Startup and Performance Optimisation using System Trace. (Part 2) - by Vishu Gupta - Pro.md",
+    "score": {
+      "relevance": 5,
+      "technical_depth": 3,
+      "timeliness": 3,
+      "verifiability": 3,
+      "total": 14
+    },
+    "chapters": [
+      "ch04-启动",
+      "ch11-Profiling"
+    ],
+    "quality": "medium",
+    "confidence": "high",
+    "summary": "使用System Trace进行App启动性能优化实战Part 2",
+    "indexed_at": "2026-04-01"
+  },
+  {
+    "title": "Android App Startup: The right way",
+    "path": "Cubox/Android App Startup and Performance Optimisation — The right way !!-2022-01-17.md",
+    "score": {
+      "relevance": 4,
+      "technical_depth": 3,
+      "timeliness": 3,
+      "verifiability": 2,
+      "total": 12
+    },
+    "chapters": [
+      "ch04-启动"
+    ],
+    "quality": "medium",
+    "confidence": "medium",
+    "summary": "App启动优化方法论，正确的启动性能优化方式",
+    "indexed_at": "2026-04-01"
+  },
+  {
+    "title": "Android Binder 设计与实现 - 设计篇",
+    "path": "Cubox/Android Bander 设计与实现 - 设计篇-2022-01-23.md",
+    "score": {
+      "relevance": 5,
+      "technical_depth": 5,
+      "timeliness": 3,
+      "verifiability": 5,
+      "total": 18
+    },
+    "chapters": [
+      "ch01-架构"
+    ],
+    "quality": "high",
+    "confidence": "high",
+    "summary": "Binder IPC设计原理，对比Linux传统IPC，详解Android进程间通信机制",
+    "indexed_at": "2026-04-01"
+  },
+  {
+    "title": "Android C++ JNI开发准则",
+    "path": "Cubox/Android C++系列：JNI开发准则 - 掘金-2022-04-21.md",
+    "score": {
+      "relevance": 3,
+      "technical_depth": 3,
+      "timeliness": 3,
+      "verifiability": 3,
+      "total": 12
+    },
+    "chapters": [
+      "ch01-架构"
+    ],
+    "quality": "medium",
+    "confidence": "medium",
+    "summary": "JNI开发准则与最佳实践，Java/Kotlin与C/C++互操作",
+    "indexed_at": "2026-04-01"
+  },
+  {
+    "title": "Android 13 适配指南",
+    "path": "Cubox/Android 13 适配指南-2022-05-20.md",
+    "score": {
+      "relevance": 3,
+      "technical_depth": 2,
+      "timeliness": 3,
+      "verifiability": 2,
+      "total": 10
+    },
+    "chapters": [
+      "ch17-新版本"
+    ],
+    "quality": "medium",
+    "confidence": "low",
+    "summary": "Android 13适配指南，涵盖适配要点与新特性",
+    "indexed_at": "2026-04-01"
+  },
+  {
+    "title": "Android 13启动速度提升，优化AMS加速启动",
+    "path": "Cubox/Android 13启动速度提升，优化AMS加速启动-2022-12-05.md",
+    "score": {
+      "relevance": 5,
+      "technical_depth": 3,
+      "timeliness": 3,
+      "verifiability": 2,
+      "total": 13
+    },
+    "chapters": [
+      "ch04-启动"
+    ],
+    "quality": "medium",
+    "confidence": "medium",
+    "summary": "Android 13启动速度优化，通过AMS加速应用启动",
+    "indexed_at": "2026-04-01"
+  },
+  {
+    "title": "Android 13运行时权限变更一览",
+    "path": "Cubox/Android 13运行时权限变更一览-2022-08-16.md",
+    "score": {
+      "relevance": 4,
+      "technical_depth": 3,
+      "timeliness": 3,
+      "verifiability": 3,
+      "total": 13
+    },
+    "chapters": [
+      "ch12-安全",
+      "ch17-新版本"
+    ],
+    "quality": "medium",
+    "confidence": "medium",
+    "summary": "Android 13运行时权限变更详解与适配",
+    "indexed_at": "2026-04-01"
+  },
+  {
+    "title": "Android 14 HWUI 源码研究 View Canvas RenderThread",
+    "path": "Cubox/Android 14 HWUI 源码研究 View Canvas RenderThread View...-2024-01-05.md",
+    "score": {
+      "relevance": 5,
+      "technical_depth": 5,
+      "timeliness": 4,
+      "verifiability": 5,
+      "total": 19
+    },
+    "chapters": [
+      "ch05-渲染"
+    ],
+    "quality": "high",
+    "confidence": "high",
+    "summary": "Android 14 HWUI源码级研究，涵盖View/Canvas/RenderThread渲染管线",
+    "indexed_at": "2026-04-01"
+  },
+  {
+    "title": "Android 14 彻底终结大厂流氓应用",
+    "path": "Cubox/Android 14 彻底终结大厂流氓应用？ - 掘金-2023-11-10.md",
+    "score": {
+      "relevance": 4,
+      "technical_depth": 2,
+      "timeliness": 3,
+      "verifiability": 2,
+      "total": 11
+    },
+    "chapters": [
+      "ch02-进程",
+      "ch06-功耗"
+    ],
+    "quality": "medium",
+    "confidence": "medium",
+    "summary": "Android 14对后台应用存活策略的限制措施",
+    "indexed_at": "2026-04-01"
+  },
+  {
+    "title": "Android 14 正式发布",
+    "path": "Cubox/Android 14 正式发布，已经在 AOSP 中上线，快来看看有什么吧 - 掘金-2023-10-26.md",
+    "score": {
+      "relevance": 3,
+      "technical_depth": 2,
+      "timeliness": 3,
+      "verifiability": 3,
+      "total": 11
+    },
+    "chapters": [
+      "ch17-新版本"
+    ],
+    "quality": "medium",
+    "confidence": "medium",
+    "summary": "Android 14正式发布，主要新功能与API变更",
+    "indexed_at": "2026-04-01"
+  },
+  {
+    "title": "Android 14 predictive back gesture",
+    "path": "Cubox/Android 14's predictive back gesture lets you preview where you're going when you swipe back-2023-02.md",
+    "score": {
+      "relevance": 3,
+      "technical_depth": 2,
+      "timeliness": 3,
+      "verifiability": 2,
+      "total": 10
+    },
+    "chapters": [
+      "ch17-新版本"
+    ],
+    "quality": "medium",
+    "confidence": "low",
+    "summary": "Android 14预测性返回手势功能介绍",
+    "indexed_at": "2026-04-01"
+  },
+  {
+    "title": "Android 15 适配16K Page Size（IJKPlayer实例）",
+    "path": "Cubox/Android 15 上适配 16K Page Size 的填坑思路，以 IJKPlayer 为例子-2024-07-29.md",
+    "score": {
+      "relevance": 4,
+      "technical_depth": 3,
+      "timeliness": 4,
+      "verifiability": 3,
+      "total": 14
+    },
+    "chapters": [
+      "ch08-存储",
+      "ch17-新版本"
+    ],
+    "quality": "medium",
+    "confidence": "high",
+    "summary": "以IJKPlayer为例详解16K Page Size适配填坑",
+    "indexed_at": "2026-04-01"
+  },
+  {
+    "title": "Android 15 如何快速适配 16K Page Size",
+    "path": "Cubox/Android 15 之如何快速适配 16K Page Size-2024-07-22.md",
+    "score": {
+      "relevance": 4,
+      "technical_depth": 3,
+      "timeliness": 4,
+      "verifiability": 3,
+      "total": 14
+    },
+    "chapters": [
+      "ch08-存储",
+      "ch17-新版本"
+    ],
+    "quality": "medium",
+    "confidence": "high",
+    "summary": "Android 15 16K Page Size快速适配指南",
+    "indexed_at": "2026-04-01"
+  },
+  {
+    "title": "Android 15 内存追踪利器：ProfilingManager",
+    "path": "Cubox/Android 15 内存追踪利器：ProfilingManager！-2025-01-21.md",
+    "score": {
+      "relevance": 5,
+      "technical_depth": 4,
+      "timeliness": 5,
+      "verifiability": 4,
+      "total": 18
+    },
+    "chapters": [
+      "ch07-内存",
+      "ch11-Profiling"
+    ],
+    "quality": "high",
+    "confidence": "high",
+    "summary": "Android 15新增ProfilingManager API，内存profiling追踪",
+    "indexed_at": "2026-04-01"
+  },
+  {
+    "title": "Android 15 线程挂起超时崩溃与修复",
+    "path": "Cubox/Android 15 线程挂起超时崩溃与修复-2024-07-31.md",
+    "score": {
+      "relevance": 4,
+      "technical_depth": 3,
+      "timeliness": 4,
+      "verifiability": 3,
+      "total": 14
+    },
+    "chapters": [
+      "ch03-线程",
+      "ch02-进程"
+    ],
+    "quality": "medium",
+    "confidence": "medium",
+    "summary": "Android 15线程挂起超时导致的崩溃分析与修复",
+    "indexed_at": "2026-04-01"
+  },
+  {
+    "title": "Android 15 16K Page Size最坑适配点",
+    "path": "Cubox/Android 15 适配之16K Page Size ：为什么它会是最坑的一个适配点-2024-07-09.md",
+    "score": {
+      "relevance": 4,
+      "technical_depth": 3,
+      "timeliness": 4,
+      "verifiability": 3,
+      "total": 14
+    },
+    "chapters": [
+      "ch08-存储",
+      "ch17-新版本"
+    ],
+    "quality": "medium",
+    "confidence": "high",
+    "summary": "分析16K Page Size适配中最容易踩坑的问题",
+    "indexed_at": "2026-04-01"
+  },
+  {
+    "title": "Android 15 16kb页对齐适配大扫盲",
+    "path": "Cubox/Android 15- 16kb页对齐适配大扫盲-2025-01-13.md",
+    "score": {
+      "relevance": 4,
+      "technical_depth": 4,
+      "timeliness": 5,
+      "verifiability": 4,
+      "total": 17
+    },
+    "chapters": [
+      "ch08-存储",
+      "ch17-新版本"
+    ],
+    "quality": "high",
+    "confidence": "high",
+    "summary": "16K页对齐适配扫盲，含shadowhook mprotect实战",
+    "indexed_at": "2026-04-01"
+  },
+  {
+    "title": "Android 15新特性：预测性返回手势",
+    "path": "Cubox/Android 15新特性，预测性返回手势-2025-01-17.md",
+    "score": {
+      "relevance": 3,
+      "technical_depth": 2,
+      "timeliness": 5,
+      "verifiability": 2,
+      "total": 12
+    },
+    "chapters": [
+      "ch17-新版本"
+    ],
+    "quality": "medium",
+    "confidence": "medium",
+    "summary": "Android 15预测性返回手势新特性",
+    "indexed_at": "2026-04-01"
+  },
+  {
+    "title": "Android 16 显示系统(10) SF合成(三)",
+    "path": "Cubox/Android 16 显示系统 - 从View 到屏幕系列 - 10 - SurfaceFlinger 合成 (三) - 掘金-2025-10-13.md",
+    "score": {
+      "relevance": 5,
+      "technical_depth": 5,
+      "timeliness": 5,
+      "verifiability": 4,
+      "total": 19
+    },
+    "chapters": [
+      "ch05-渲染"
+    ],
+    "quality": "high",
+    "confidence": "high",
+    "summary": "SurfaceFlinger合成流程深入分析第三部分",
+    "indexed_at": "2026-04-01"
+  },
+  {
+    "title": "Android 16 显示系统(2) Surface",
+    "path": "Cubox/Android 16 显示系统 - 从View 到屏幕系列 - 2 - Surface写在前面 Surface 是整个 - 掘金-2025-07-27.md",
+    "score": {
+      "relevance": 5,
+      "technical_depth": 4,
+      "timeliness": 5,
+      "verifiability": 4,
+      "total": 18
+    },
+    "chapters": [
+      "ch05-渲染"
+    ],
+    "quality": "high",
+    "confidence": "high",
+    "summary": "Surface概念详解，App UI显示基础组件",
+    "indexed_at": "2026-04-01"
+  },
+  {
+    "title": "Android 16 显示系统(3) BLASTBufferQueue",
+    "path": "Cubox/Android 16 显示系统 - 从View 到屏幕系列 - 3 - BLASTBufferQueue写在前面 BLa - 掘金-2025-07-27.md",
+    "score": {
+      "relevance": 5,
+      "technical_depth": 5,
+      "timeliness": 5,
+      "verifiability": 4,
+      "total": 19
+    },
+    "chapters": [
+      "ch05-渲染"
+    ],
+    "quality": "high",
+    "confidence": "high",
+    "summary": "BLASTBufferQueue连接App与SF的异步事务缓冲区",
+    "indexed_at": "2026-04-01"
+  },
+  {
+    "title": "Android 16 显示系统(4) GraphicBuffer & Gralloc",
+    "path": "Cubox/Android 16 显示系统 - 从View 到屏幕系列 - 4 - GraphicBuffer & Gralloc - 掘金-2025-07-27.md",
+    "score": {
+      "relevance": 5,
+      "technical_depth": 5,
+      "timeliness": 5,
+      "verifiability": 4,
+      "total": 19
+    },
+    "chapters": [
+      "ch05-渲染",
+      "ch07-内存"
+    ],
+    "quality": "high",
+    "confidence": "high",
+    "summary": "GraphicBuffer内存分配与Gralloc HAL详解",
+    "indexed_at": "2026-04-01"
+  },
+  {
+    "title": "Android 16 显示系统(5) App内部绘制",
+    "path": "Cubox/Android 16 显示系统 - 从View 到屏幕系列 - 5 - App 内部绘制 写在前面 前面了解 BLAST - 掘金-2025-07-27.md",
+    "score": {
+      "relevance": 5,
+      "technical_depth": 5,
+      "timeliness": 5,
+      "verifiability": 4,
+      "total": 19
+    },
+    "chapters": [
+      "ch05-渲染"
+    ],
+    "quality": "high",
+    "confidence": "high",
+    "summary": "App将UI绘制到GraphicBuffer，dequeue/draw流程",
+    "indexed_at": "2026-04-01"
+  },
+  {
+    "title": "Android 16 显示系统(6) 提交GraphicBuffer到SF",
+    "path": "Cubox/Android 16 显示系统 - 从View 到屏幕系列 - 6 - 提交 GraphicBuffer 到 SurfaceFlinger - 掘金-2025-10-13.md",
+    "score": {
+      "relevance": 5,
+      "technical_depth": 5,
+      "timeliness": 5,
+      "verifiability": 4,
+      "total": 19
+    },
+    "chapters": [
+      "ch05-渲染"
+    ],
+    "quality": "high",
+    "confidence": "high",
+    "summary": "App到SF的GraphicBuffer提交，queueBuffer机制",
+    "indexed_at": "2026-04-01"
+  },
+  {
+    "title": "Android 16 显示系统(7) SF Commit",
+    "path": "Cubox/Android 16 显示系统 - 从View 到屏幕系列 - 7 - SurfaceFling Commit - 掘金-2025-10-13.md",
+    "score": {
+      "relevance": 5,
+      "technical_depth": 5,
+      "timeliness": 5,
+      "verifiability": 4,
+      "total": 19
+    },
+    "chapters": [
+      "ch05-渲染"
+    ],
+    "quality": "high",
+    "confidence": "high",
+    "summary": "SF Commit流程：图层状态/事务/Z-Order处理",
+    "indexed_at": "2026-04-01"
+  },
+  {
+    "title": "Android 16 显示系统(8) SF合成(一)",
+    "path": "Cubox/Android 16 显示系统 - 从View 到屏幕系列 - 8 - SurfaceFlinger 合成 (一) - 掘金-2025-10-13.md",
+    "score": {
+      "relevance": 5,
+      "technical_depth": 5,
+      "timeliness": 5,
+      "verifiability": 4,
+      "total": 19
+    },
+    "chapters": [
+      "ch05-渲染"
+    ],
+    "quality": "high",
+    "confidence": "high",
+    "summary": "SF合成第一部分：Device Overlay与GPU合成",
+    "indexed_at": "2026-04-01"
+  },
+  {
+    "title": "Android 16 显示系统(9) SF合成(二)",
+    "path": "Cubox/Android 16 显示系统 - 从View 到屏幕系列 - 9 - SurfaceFlinger 合成 (二) - 掘金-2025-10-13.md",
+    "score": {
+      "relevance": 5,
+      "technical_depth": 4,
+      "timeliness": 5,
+      "verifiability": 4,
+      "total": 18
+    },
+    "chapters": [
+      "ch05-渲染"
+    ],
+    "quality": "high",
+    "confidence": "high",
+    "summary": "SF合成第二部分：合成策略与实现细节",
+    "indexed_at": "2026-04-01"
+  },
+  {
+    "title": "Android 16版本调测新特性汇总",
+    "path": "Cubox/Android 16版本调测新特性汇总-2025-05-23.md",
+    "score": {
+      "relevance": 3,
+      "technical_depth": 2,
+      "timeliness": 5,
+      "verifiability": 2,
+      "total": 12
+    },
+    "chapters": [
+      "ch17-新版本",
+      "ch14-工具"
+    ],
+    "quality": "medium",
+    "confidence": "medium",
+    "summary": "Android 16版本调测相关新特性汇总",
+    "indexed_at": "2026-04-01"
+  },
+  {
+    "title": "Android 8.0 ART功能改进",
+    "path": "Cubox/Android 8.0 中的 ART 功能改进 - Android 开源项目 - Android Open Source Project-2022-01-25.md",
+    "score": {
+      "relevance": 4,
+      "technical_depth": 4,
+      "timeliness": 2,
+      "verifiability": 4,
+      "total": 14
+    },
+    "chapters": [
+      "ch07-内存",
+      "ch01-架构"
+    ],
+    "quality": "medium",
+    "confidence": "high",
+    "summary": "Android 8.0 ART虚拟机功能改进官方文档",
+    "indexed_at": "2026-04-01"
+  },
+  {
+    "title": "Android ADB命令之内存统计与分析",
+    "path": "Cubox/Android ADB命令之内存统计与分析一、核心命令总览 工具 - 命令 用途 示例 adb shell dumps - 掘金-2025-07-27.md",
+    "score": {
+      "relevance": 5,
+      "technical_depth": 3,
+      "timeliness": 5,
+      "verifiability": 4,
+      "total": 17
+    },
+    "chapters": [
+      "ch07-内存",
+      "ch14-工具"
+    ],
+    "quality": "high",
+    "confidence": "high",
+    "summary": "ADB内存统计命令大全，dumpsys meminfo等详解",
+    "indexed_at": "2026-04-01"
+  },
+  {
+    "title": "Android ANR系列1：理解设计思想",
+    "path": "Cubox/Android ANR 系列 1 ：理解 Android ANR 设计思想 · Android Performance-2025-02-09.md",
+    "score": {
+      "relevance": 5,
+      "technical_depth": 4,
+      "timeliness": 5,
+      "verifiability": 3,
+      "total": 17
+    },
+    "chapters": [
+      "ch02-进程",
+      "ch03-线程"
+    ],
+    "quality": "high",
+    "confidence": "high",
+    "summary": "ANR系列首篇，深入理解ANR设计思想",
+    "indexed_at": "2026-04-01"
+  },
+  {
+    "title": "Android ANR原理解析及常见案例(2022)",
+    "path": "Cubox/Android ANR-原理解析及常见案例-2022-03-24.md",
+    "score": {
+      "relevance": 5,
+      "technical_depth": 4,
+      "timeliness": 3,
+      "verifiability": 3,
+      "total": 15
+    },
+    "chapters": [
+      "ch02-进程",
+      "ch03-线程"
+    ],
+    "quality": "medium",
+    "confidence": "high",
+    "summary": "ANR原理介绍与常见案例分析",
+    "indexed_at": "2026-04-01"
+  },
+  {
+    "title": "Android ANR原理解析及常见案例(2024)",
+    "path": "Cubox/Android ANR-原理解析及常见案例-2024-02-02.md",
+    "score": {
+      "relevance": 5,
+      "technical_depth": 4,
+      "timeliness": 4,
+      "verifiability": 3,
+      "total": 16
+    },
+    "chapters": [
+      "ch02-进程",
+      "ch03-线程"
+    ],
+    "quality": "high",
+    "confidence": "high",
+    "summary": "ANR原理与常见案例重新整理版",
+    "indexed_at": "2026-04-01"
+  },
+  {
+    "title": "Android ANR深入分析",
+    "path": "Cubox/Android ANR深入分析 - 掘金-2022-12-05.md",
+    "score": {
+      "relevance": 5,
+      "technical_depth": 4,
+      "timeliness": 3,
+      "verifiability": 4,
+      "total": 16
+    },
+    "chapters": [
+      "ch02-进程",
+      "ch03-线程"
+    ],
+    "quality": "high",
+    "confidence": "high",
+    "summary": "从Android 9源码梳理ANR全分类详解",
+    "indexed_at": "2026-04-01"
+  },
+  {
+    "title": "Android ANR的设计原理",
+    "path": "Cubox/Android ANR的设计原理 - 掘金-2022-04-21.md",
+    "score": {
+      "relevance": 5,
+      "technical_depth": 4,
+      "timeliness": 3,
+      "verifiability": 4,
+      "total": 16
+    },
+    "chapters": [
+      "ch02-进程",
+      "ch03-线程"
+    ],
+    "quality": "high",
+    "confidence": "high",
+    "summary": "ANR检测机制：观测者/被观测者超时检测原理",
+    "indexed_at": "2026-04-01"
+  },
+  {
+    "title": "Android APP系统渲染管线主流程优化",
+    "path": "Cubox/Android APP系统渲染管线主流程优化-2025-05-13.md",
+    "score": {
+      "relevance": 5,
+      "technical_depth": 4,
+      "timeliness": 5,
+      "verifiability": 3,
+      "total": 17
+    },
+    "chapters": [
+      "ch05-渲染"
+    ],
+    "quality": "high",
+    "confidence": "high",
+    "summary": "APP渲染管线主流程系统性优化实践",
+    "indexed_at": "2026-04-01"
+  },
+  {
+    "title": "Android APP系统渲染管线优化小点",
+    "path": "Cubox/Android APP系统渲染管线优化小点-2025-05-12.md",
+    "score": {
+      "relevance": 5,
+      "technical_depth": 3,
+      "timeliness": 5,
+      "verifiability": 3,
+      "total": 16
+    },
+    "chapters": [
+      "ch05-渲染"
+    ],
+    "quality": "high",
+    "confidence": "high",
+    "summary": "View.measure/layout渲染环节细粒度优化",
+    "indexed_at": "2026-04-01"
+  },
+  {
+    "title": "Android ART dex2oat 浅析",
+    "path": "Cubox/Android ART dex2oat 浅析 - 内核工匠 - 博客园-2022-02-12.md",
+    "score": {
+      "relevance": 5,
+      "technical_depth": 4,
+      "timeliness": 3,
+      "verifiability": 4,
+      "total": 16
+    },
+    "chapters": [
+      "ch07-内存",
+      "ch16-构建"
+    ],
+    "quality": "high",
+    "confidence": "high",
+    "summary": "dex2oat编译优化详解，dex到oat编译流程",
+    "indexed_at": "2026-04-01"
+  },
+  {
+    "title": "Android App Startup System Trace (Part 2)",
+    "path": "Cubox/Android App Startup and Performance Optimisation using System Trace. (Part 2) - by Vishu Gupta - Pro.md",
+    "score": {
+      "relevance": 5,
+      "technical_depth": 3,
+      "timeliness": 3,
+      "verifiability": 3,
+      "total": 14
+    },
+    "chapters": [
+      "ch04-启动",
+      "ch11-Profiling"
+    ],
+    "quality": "medium",
+    "confidence": "high",
+    "summary": "System Trace进行App启动优化实战Part 2",
+    "indexed_at": "2026-04-01"
+  },
+  {
+    "title": "Android App Startup: The right way",
+    "path": "Cubox/Android App Startup and Performance Optimisation — The right way !!-2022-01-17.md",
+    "score": {
+      "relevance": 4,
+      "technical_depth": 3,
+      "timeliness": 3,
+      "verifiability": 2,
+      "total": 12
+    },
+    "chapters": [
+      "ch04-启动"
+    ],
+    "quality": "medium",
+    "confidence": "medium",
+    "summary": "App启动优化方法论",
+    "indexed_at": "2026-04-01"
+  },
+  {
+    "title": "Android Binder 设计与实现 - 设计篇",
+    "path": "Cubox/Android Bander 设计与实现 - 设计篇-2022-01-23.md",
+    "score": {
+      "relevance": 5,
+      "technical_depth": 5,
+      "timeliness": 3,
+      "verifiability": 5,
+      "total": 18
+    },
+    "chapters": [
+      "ch01-架构"
+    ],
+    "quality": "high",
+    "confidence": "high",
+    "summary": "Binder IPC设计原理，Android进程间通信核心机制",
+    "indexed_at": "2026-04-01"
+  },
+  {
+    "title": "Android C++ JNI开发准则",
+    "path": "Cubox/Android C++系列：JNI开发准则 - 掘金-2022-04-21.md",
+    "score": {
+      "relevance": 3,
+      "technical_depth": 3,
+      "timeliness": 3,
+      "verifiability": 3,
+      "total": 12
+    },
+    "chapters": [
+      "ch01-架构"
+    ],
+    "quality": "medium",
+    "confidence": "medium",
+    "summary": "JNI开发准则与最佳实践",
+    "indexed_at": "2026-04-01"
+  },
+  {
+    "title": "Android Camera内存问题剖析",
+    "path": "Cubox/Android Camera内存问题剖析-2024-02-04.md",
+    "score": {
+      "relevance": 5,
+      "technical_depth": 4,
+      "timeliness": 4,
+      "verifiability": 4
+    },
+    "total": 17,
+    "quality": "high",
+    "chapters": [
+      "ch07-内存"
+    ],
+    "confidence": "high",
+    "summary": "通过native内存OOM问题展开，借助内存快照裁剪回捞和Native内存监控工具深入剖析Camera内存问题",
+    "indexed_date": "2026-04-01"
+  },
+  {
+    "title": "Android Code Style And Guidelines",
+    "path": "Cubox/Android Code Style And Guidelines-2022-01-17.md",
+    "score": {
+      "relevance": 3,
+      "technical_depth": 2,
+      "timeliness": 3,
+      "verifiability": 2
+    },
+    "total": 10,
+    "quality": "medium",
+    "chapters": [
+      "ch01-架构"
+    ],
+    "confidence": "medium",
+    "summary": "Android代码风格和架构指南，涵盖开发前架构选择和代码规范",
+    "indexed_date": "2026-04-01"
+  },
+  {
+    "title": "Android Developers Backstage - Baseline Profiles",
+    "path": "Cubox/Android Developers Backstage - Episode 183- Baseline Profiles-2022-02-28.md",
+    "score": {
+      "relevance": 4,
+      "technical_depth": 4,
+      "timeliness": 3,
+      "verifiability": 4
+    },
+    "total": 15,
+    "quality": "medium",
+    "chapters": [
+      "ch04-启动",
+      "ch14-工具"
+    ],
+    "confidence": "high",
+    "summary": "Android toolkit团队介绍Baseline Profiles机制，允许应用定义关键代码路径以提前AOT编译优化",
+    "indexed_date": "2026-04-01"
+  },
+  {
+    "title": "Android Developers Backstage: Linting - Safety & Security",
+    "path": "Cubox/Android Developers Backstage- Linting on the Side of Caution- Safety & Security-2025-04-13.md",
+    "score": {
+      "relevance": 3,
+      "technical_depth": 3,
+      "timeliness": 5,
+      "verifiability": 3
+    },
+    "total": 14,
+    "quality": "medium",
+    "chapters": [
+      "ch12-安全"
+    ],
+    "confidence": "medium",
+    "summary": "Android Lint在安全和隐私方面的检查能力介绍",
+    "indexed_date": "2026-04-01"
+  },
+  {
+    "title": "Discontinuing Kotlin synthetics for views",
+    "path": "Cubox/Android Developers Blog- Discontinuing Kotlin synthetics for views-2022-02-20.md",
+    "score": {
+      "relevance": 3,
+      "technical_depth": 2,
+      "timeliness": 3,
+      "verifiability": 3
+    },
+    "total": 11,
+    "quality": "medium",
+    "chapters": [
+      "ch15-Kotlin"
+    ],
+    "confidence": "medium",
+    "summary": "Google宣布废弃Kotlin Android Extensions合成属性，推荐迁移到ViewBinding",
+    "indexed_date": "2026-04-01"
+  },
+  {
+    "title": "How a single Android developer improved Lyft's Drivers app startup time by 21%",
+    "path": "Cubox/Android Developers Blog- How a single Android developer improved Lyft's Drivers app startup time by.md",
+    "score": {
+      "relevance": 5,
+      "technical_depth": 4,
+      "timeliness": 4,
+      "verifiability": 5
+    },
+    "total": 18,
+    "quality": "high",
+    "chapters": [
+      "ch04-启动",
+      "ch14-工具"
+    ],
+    "confidence": "high",
+    "summary": "Lyft单个开发者一个月内将司机端启动速度提升21%的实战案例",
+    "indexed_date": "2026-04-01"
+  },
+  {
+    "title": "Improving app performance - ART optimizing profiles",
+    "path": "Cubox/Android Developers Blog- Improving app performance...-2023-11-29.md",
+    "score": {
+      "relevance": 5,
+      "technical_depth": 5,
+      "timeliness": 4,
+      "verifiability": 5
+    },
+    "total": 19,
+    "quality": "high",
+    "chapters": [
+      "ch04-启动",
+      "ch11-Profiling"
+    ],
+    "confidence": "high",
+    "summary": "Android Pie引入ART优化配置文件，通过Play Cloud分发大幅提升应用启动速度",
+    "indexed_date": "2026-04-01"
+  },
+  {
+    "title": "Why Android Widgets are a Game-Changer",
+    "path": "Cubox/Android Developers Blog- Level Up Your App- Why Android Widgets are a Game-Changer-2025-03-04.md",
+    "score": {
+      "relevance": 2,
+      "technical_depth": 1,
+      "timeliness": 5,
+      "verifiability": 2
+    },
+    "total": 10,
+    "quality": "medium",
+    "chapters": [
+      "ch01-架构"
+    ],
+    "confidence": "low",
+    "summary": "Android Widgets开发指南和设计最佳实践",
+    "indexed_date": "2026-04-01"
+  },
+  {
+    "title": "Prioritize media privacy with Android Photo Picker",
+    "path": "Cubox/Android Developers Blog- Prioritize media privacy with Android Photo Picker and build user trust-202.md",
+    "score": {
+      "relevance": 3,
+      "technical_depth": 2,
+      "timeliness": 4,
+      "verifiability": 3
+    },
+    "total": 12,
+    "quality": "medium",
+    "chapters": [
+      "ch12-安全"
+    ],
+    "confidence": "medium",
+    "summary": "Android Photo Picker API帮助应用安全地访问用户媒体，保护隐私",
+    "indexed_date": "2026-04-01"
+  },
+  {
+    "title": "Prompt users to update to your latest app version",
+    "path": "Cubox/Android Developers Blog- Prompt users to update to your latest app version-2024-01-31.md",
+    "score": {
+      "relevance": 2,
+      "technical_depth": 2,
+      "timeliness": 4,
+      "verifiability": 3
+    },
+    "total": 11,
+    "quality": "medium",
+    "chapters": [
+      "ch14-工具"
+    ],
+    "confidence": "low",
+    "summary": "Google Play In-app Update API引导用户更新到最新版本",
+    "indexed_date": "2026-04-01"
+  },
+  {
+    "title": "Rebuilding our guide to app architecture",
+    "path": "Cubox/Android Developers Blog- Rebuilding our guide to app architecture-2022-01-14.md",
+    "score": {
+      "relevance": 4,
+      "technical_depth": 3,
+      "timeliness": 3,
+      "verifiability": 4
+    },
+    "total": 14,
+    "quality": "medium",
+    "chapters": [
+      "ch01-架构"
+    ],
+    "confidence": "high",
+    "summary": "Google重构Android应用架构指南，涵盖MVVM、Repository模式等现代架构方案",
+    "indexed_date": "2026-04-01"
+  },
+  {
+    "title": "Reddit improved app startup speed by over 50% using Baseline Profiles and R8",
+    "path": "Cubox/Android Developers Blog- Reddit improved app startup speed by over 50% using Baseline Profiles and R.md",
+    "score": {
+      "relevance": 5,
+      "technical_depth": 4,
+      "timeliness": 3,
+      "verifiability": 5
+    },
+    "total": 17,
+    "quality": "high",
+    "chapters": [
+      "ch04-启动",
+      "ch10-包体积",
+      "ch16-构建"
+    ],
+    "confidence": "high",
+    "summary": "Reddit通过实施Baseline Profiles、R8 full mode和Jetpack Compose启动速度提升超50%",
+    "indexed_date": "2026-04-01"
+  },
+  {
+    "title": "Android Fence同步框架",
+    "path": "Cubox/Android Fence 同步框架本文简要分析了 Android 同步框架—Fence 机制，用于保证 Android - 掘金-2025-02-23.md",
+    "score": {
+      "relevance": 5,
+      "technical_depth": 5,
+      "timeliness": 5,
+      "verifiability": 4
+    },
+    "total": 19,
+    "quality": "high",
+    "chapters": [
+      "ch05-渲染"
+    ],
+    "confidence": "high",
+    "summary": "深入分析Android Fence同步框架机制，保证图形系统中不同异步操作之间的依赖关系",
+    "indexed_date": "2026-04-01"
+  },
+  {
+    "title": "Android Framework - 读懂异常调用栈",
+    "path": "Cubox/Android Framework - 读懂异常调用栈 - 掘金-2022-10-14.md",
+    "score": {
+      "relevance": 3,
+      "technical_depth": 3,
+      "timeliness": 3,
+      "verifiability": 4
+    },
+    "total": 13,
+    "quality": "medium",
+    "chapters": [
+      "ch01-架构",
+      "ch11-Profiling"
+    ],
+    "confidence": "medium",
+    "summary": "深入理解Android异常调用栈，包含跨进程通信场景下的异常处理分析",
+    "indexed_date": "2026-04-01"
+  },
+  {
+    "title": "Android Fresco调优实践",
+    "path": "Cubox/Android Fresco调优实践｜得物技术-2024-05-10.md",
+    "score": {
+      "relevance": 4,
+      "technical_depth": 4,
+      "timeliness": 4,
+      "verifiability": 4
+    },
+    "total": 16,
+    "quality": "high",
+    "chapters": [
+      "ch05-渲染",
+      "ch07-内存"
+    ],
+    "confidence": "high",
+    "summary": "得物技术针对Fresco图片库历史缺陷的调优实践，涉及图片加载体验和内存问题治理",
+    "indexed_date": "2026-04-01"
+  },
+  {
+    "title": "Android GPU硬件加速渲染流程（上）",
+    "path": "Cubox/Android GPU硬件加速渲染流程（上） - 知乎-2023-02-02.md",
+    "score": {
+      "relevance": 5,
+      "technical_depth": 5,
+      "timeliness": 4,
+      "verifiability": 5
+    },
+    "total": 19,
+    "quality": "high",
+    "chapters": [
+      "ch05-渲染"
+    ],
+    "confidence": "high",
+    "summary": "详细介绍Android上层硬件加速渲染流程，涵盖Window、DisplayList、RenderNode等核心概念",
+    "indexed_date": "2026-04-01"
+  },
+  {
+    "title": "Android GUI系统之SurfaceFlinger(11)-HWComposer",
+    "path": "Cubox/Android GUI系统之SurfaceFlinger（11）理解HWComposer_51CTO博客_Android surfaceflinger-2022-10-20.md",
+    "score": {
+      "relevance": 5,
+      "technical_depth": 5,
+      "timeliness": 3,
+      "verifiability": 5
+    },
+    "total": 18,
+    "quality": "high",
+    "chapters": [
+      "ch05-渲染"
+    ],
+    "confidence": "high",
+    "summary": "深入分析SurfaceFlinger中HWComposer模块原理和HAL层窗口合成与显示",
+    "indexed_date": "2026-04-01"
+  },
+  {
+    "title": "Android GUI系统之SurfaceFlinger(15)-handleMessageRefresh",
+    "path": "Cubox/Android GUI系统之SurfaceFlinger（15）服务端分析4-handleMessageRefresh处理_51CTO博客_Android surfaceflinger-2022-10.md",
+    "score": {
+      "relevance": 5,
+      "technical_depth": 5,
+      "timeliness": 3,
+      "verifiability": 5
+    },
+    "total": 18,
+    "quality": "high",
+    "chapters": [
+      "ch05-渲染"
+    ],
+    "confidence": "high",
+    "summary": "SurfaceFlinger服务端handleMessageRefresh处理流程的源码级分析",
+    "indexed_date": "2026-04-01"
+  },
+  {
+    "title": "Android Gradle学习-gradle任务解析",
+    "path": "Cubox/Android Gradle学习（八）- gradle任务解析一：前言 gradle是如何构建apk的 各个Task做了 - 掘金-2025-02-09.md",
+    "score": {
+      "relevance": 4,
+      "technical_depth": 4,
+      "timeliness": 5,
+      "verifiability": 4
+    },
+    "total": 17,
+    "quality": "high",
+    "chapters": [
+      "ch16-构建"
+    ],
+    "confidence": "high",
+    "summary": "解析Gradle构建APK的各个Task操作，涵盖assembleDebug流程和关键任务详解",
+    "indexed_date": "2026-04-01"
+  },
+  {
+    "title": "Android Graphics显示系统-Source Crop和Display Frame",
+    "path": "Cubox/Android Graphics 显示系统 - 解读Source Crop和Display Frame((三二)-2024-03-23.md",
+    "score": {
+      "relevance": 5,
+      "technical_depth": 4,
+      "timeliness": 4,
+      "verifiability": 4
+    },
+    "total": 17,
+    "quality": "high",
+    "chapters": [
+      "ch05-渲染"
+    ],
+    "confidence": "high",
+    "summary": "Android图形显示系统中Source Crop和Display Frame的概念和原理解读",
+    "indexed_date": "2026-04-01"
+  },
+  {
+    "title": "Android IO监控",
+    "path": "Cubox/Android IO监控 - 性能监控系列-2022-02-24.md",
+    "score": {
+      "relevance": 5,
+      "technical_depth": 4,
+      "timeliness": 3,
+      "verifiability": 4
+    },
+    "total": 16,
+    "quality": "high",
+    "chapters": [
+      "ch08-存储",
+      "ch11-Profiling"
+    ],
+    "confidence": "high",
+    "summary": "Android IO性能监控系列文章，系统化讲解IO监控方案和实现",
+    "indexed_date": "2026-04-01"
+  },
+  {
+    "title": "Android Input调试与优化",
+    "path": "Cubox/Android Input 调试与优化 - 魅族内核团队-2025-08-05.md",
+    "score": {
+      "relevance": 4,
+      "technical_depth": 4,
+      "timeliness": 5,
+      "verifiability": 4
+    },
+    "total": 17,
+    "quality": "high",
+    "chapters": [
+      "ch05-渲染",
+      "ch14-工具"
+    ],
+    "confidence": "high",
+    "summary": "魅族内核团队分享Android Input子系统的调试方法与优化实践",
+    "indexed_date": "2026-04-01"
+  },
+  {
+    "title": "Android Input和SendEvent脚本命令模拟连续滑动事件",
+    "path": "Cubox/Android Input和SendEvent脚本命令模拟连续滑动事件_wd623894174的博客-CSDN博客_adb模拟连续滑动-2023-01-05.md",
+    "score": {
+      "relevance": 3,
+      "technical_depth": 3,
+      "timeliness": 4,
+      "verifiability": 3
+    },
+    "total": 13,
+    "quality": "medium",
+    "chapters": [
+      "ch14-工具"
+    ],
+    "confidence": "high",
+    "summary": "使用input命令和sendevent脚本模拟连续滑动事件，含源码解析和脚本实现",
+    "indexed_date": "2026-04-01"
+  },
+  {
+    "title": "Android JNI原理分析",
+    "path": "Cubox/Android JNI原理分析-2022-05-23.md",
+    "score": {
+      "relevance": 3,
+      "technical_depth": 3,
+      "timeliness": 3,
+      "verifiability": 3
+    },
+    "total": 12,
+    "quality": "medium",
+    "chapters": [
+      "ch01-架构"
+    ],
+    "confidence": "medium",
+    "summary": "Android JNI机制原理分析，涵盖Java与Native交互的底层实现",
+    "indexed_date": "2026-04-01"
+  },
+  {
+    "title": "Android JVMTI实现应用内存动态检测",
+    "path": "Cubox/Android JVMTI实现应用内存动态检测 - 简书-2022-02-20.md",
+    "score": {
+      "relevance": 4,
+      "technical_depth": 4,
+      "timeliness": 3,
+      "verifiability": 4
+    },
+    "total": 15,
+    "quality": "medium",
+    "chapters": [
+      "ch07-内存",
+      "ch11-Profiling"
+    ],
+    "confidence": "high",
+    "summary": "利用JVMTI实现Android应用内存动态检测，定位内存问题根因",
+    "indexed_date": "2026-04-01"
+  },
+  {
+    "title": "Android Jank detection with FrameTimeline",
+    "path": "Cubox/Android Jank detection with FrameTimeline - Perfetto Tracing Docs-2022-01-22.md",
+    "score": {
+      "relevance": 5,
+      "technical_depth": 5,
+      "timeliness": 3,
+      "verifiability": 5
+    },
+    "total": 18,
+    "quality": "high",
+    "chapters": [
+      "ch05-渲染",
+      "ch11-Profiling"
+    ],
+    "confidence": "high",
+    "summary": "Perfetto官方文档，使用FrameTimeline数据源检测Android Jank卡顿问题",
+    "indexed_date": "2026-04-01"
+  },
+  {
+    "title": "Android JankStats发布Alpha版",
+    "path": "Cubox/Android JankStats 发布 Alpha 版本啦-2022-02-14.md",
+    "score": {
+      "relevance": 4,
+      "technical_depth": 3,
+      "timeliness": 3,
+      "verifiability": 3
+    },
+    "total": 13,
+    "quality": "medium",
+    "chapters": [
+      "ch05-渲染",
+      "ch11-Profiling"
+    ],
+    "confidence": "high",
+    "summary": "JankStats库Alpha版发布介绍，用于检测应用帧卡顿和糟糕的UI性能",
+    "indexed_date": "2026-04-01"
+  },
+  {
+    "title": "Android JankStats实现解析",
+    "path": "Cubox/Android JankStats实现解析JankStats 是安卓 JetPack里新出的一个专门用来检测帧卡顿的库。 - 掘金-2025-03-16.md",
+    "score": {
+      "relevance": 5,
+      "technical_depth": 5,
+      "timeliness": 5,
+      "verifiability": 5
+    },
+    "total": 20,
+    "quality": "high",
+    "chapters": [
+      "ch05-渲染",
+      "ch11-Profiling"
+    ],
+    "confidence": "high",
+    "summary": "深入分析JankStats内部实现机制，涵盖不同Android版本的适配和帧卡顿检测原理",
+    "indexed_date": "2026-04-01"
+  },
+  {
+    "title": "Android Jetpack-利用Palette进行图片取色",
+    "path": "Cubox/Android Jetpack- 利用 Palette 进行图片取色 - 开发者说·DTalk-2022-08-26.md",
+    "score": {
+      "relevance": 2,
+      "technical_depth": 2,
+      "timeliness": 3,
+      "verifiability": 3
+    },
+    "total": 10,
+    "quality": "medium",
+    "chapters": [
+      "ch05-渲染"
+    ],
+    "confidence": "low",
+    "summary": "Jetpack Palette库的图片取色功能介绍和使用方法",
+    "indexed_date": "2026-04-01"
+  },
+  {
+    "title": "Android Kotlin RoadMap",
+    "path": "Cubox/Android Kotlin RoadMap-2024-02-22.md",
+    "score": {
+      "relevance": 3,
+      "technical_depth": 2,
+      "timeliness": 4,
+      "verifiability": 2
+    },
+    "total": 11,
+    "quality": "medium",
+    "chapters": [
+      "ch15-Kotlin"
+    ],
+    "confidence": "medium",
+    "summary": "Kotlin语言学习路线图，覆盖JVM上的现代编程语言特性",
+    "indexed_date": "2026-04-01"
+  },
+  {
+    "title": "Android Kotlin协程初探",
+    "path": "Cubox/Android Kotlin 协程初探 - 京东物流技术团队 - 掘金-2024-01-09.md",
+    "score": {
+      "relevance": 4,
+      "technical_depth": 3,
+      "timeliness": 4,
+      "verifiability": 3
+    },
+    "total": 14,
+    "quality": "medium",
+    "chapters": [
+      "ch15-Kotlin",
+      "ch03-线程"
+    ],
+    "confidence": "high",
+    "summary": "京东物流团队介绍Kotlin协程概念和在Android中的应用实践",
+    "indexed_date": "2026-04-01"
+  },
+  {
+    "title": "Android Memory Tracker原理分析",
+    "path": "Cubox/Android Memory Tracker原理分析 - 简书-2022-02-08.md",
+    "score": {
+      "relevance": 4,
+      "technical_depth": 4,
+      "timeliness": 3,
+      "verifiability": 4
+    },
+    "total": 15,
+    "quality": "medium",
+    "chapters": [
+      "ch07-内存",
+      "ch11-Profiling"
+    ],
+    "confidence": "high",
+    "summary": "分析dumpsys meminfo中EGL/GL mtrack的统计原理，深入Memory Tracker实现",
+    "indexed_date": "2026-04-01"
+  },
+  {
+    "title": "Android Native - fdtrack概述",
+    "path": "Cubox/Android Native - fdtrack概述 - 掘金-2023-02-15.md",
+    "score": {
+      "relevance": 4,
+      "technical_depth": 4,
+      "timeliness": 4,
+      "verifiability": 4
+    },
+    "total": 16,
+    "quality": "high",
+    "chapters": [
+      "ch07-内存",
+      "ch11-Profiling"
+    ],
+    "confidence": "high",
+    "summary": "Android fd leak检测工具fdtrack介绍，与fdsan互补解决fd相关问题",
+    "indexed_date": "2026-04-01"
+  },
+  {
+    "title": "Android Native - 调用栈回溯",
+    "path": "Cubox/Android Native - 调用栈回溯 - 掘金-2023-06-14.md",
+    "score": {
+      "relevance": 4,
+      "technical_depth": 4,
+      "timeliness": 4,
+      "verifiability": 4
+    },
+    "total": 16,
+    "quality": "high",
+    "chapters": [
+      "ch11-Profiling",
+      "ch14-工具"
+    ],
+    "confidence": "high",
+    "summary": "Native层调用栈回溯原理分析，从指令地址到函数名行号的反解析过程",
+    "indexed_date": "2026-04-01"
+  },
+  {
+    "title": "Android Native - Message/Handler/Looper机制",
+    "path": "Cubox/Android Native -- Message-Handler-Looper机制（原理篇） - 二的次方 - 博客园-2022-03-06.md",
+    "score": {
+      "relevance": 4,
+      "technical_depth": 4,
+      "timeliness": 3,
+      "verifiability": 4
+    },
+    "total": 15,
+    "quality": "medium",
+    "chapters": [
+      "ch03-线程",
+      "ch01-架构"
+    ],
+    "confidence": "high",
+    "summary": "Native层Message/Handler/Looper机制的原理分析",
+    "indexed_date": "2026-04-01"
+  },
+  {
+    "title": "Android Native -- Message/Handler/Looper机制（原理篇） - 二的次方 - 博客园",
+    "path": "Cubox/Android Native -- Message-Handler-Looper机制（原理篇） - 二的次方 - 博客园-2022-03-08.md",
+    "score": {
+      "relevance": 2,
+      "depth": 4,
+      "timeliness": 3,
+      "verifiability": 1,
+      "total": 10
+    },
+    "total": 10,
+    "quality": "medium",
+    "chapters": [
+      "ch03-线程"
+    ],
+    "confidence": "medium",
+    "summary": "--- id: \"6900888395183030727\" cubox_url: https://cubox.pro/web/card/690088839518",
+    "indexed_at": "2026-04-01T03:24:04.187606"
+  },
+  {
+    "title": "Android Native Crash 问题分析第一弹",
+    "path": "Cubox/Android Native Crash 问题分析第一弹-2024-01-10.md",
+    "score": {
+      "relevance": 2,
+      "depth": 3,
+      "timeliness": 4,
+      "verifiability": 1,
+      "total": 10
+    },
+    "total": 10,
+    "quality": "medium",
+    "chapters": [
+      "uncategorized"
+    ],
+    "confidence": "medium",
+    "summary": "--- id: \"7144565269141128625\" cubox_url: https://cubox.pro/web/card/714456526914",
+    "indexed_at": "2026-04-01T03:24:04.188920"
+  },
+  {
+    "title": "Android Native 内存泄漏检测全解析：从原理到工具的深度实践",
+    "path": "Cubox/Android Native 内存泄漏检测全解析：从原理到工具的深度实践-2025-08-12.md",
+    "score": {
+      "relevance": 3,
+      "depth": 4,
+      "timeliness": 5,
+      "verifiability": 1,
+      "total": 13
+    },
+    "total": 13,
+    "quality": "medium",
+    "chapters": [
+      "ch07-内存"
+    ],
+    "confidence": "medium",
+    "summary": "--- id: \"7354845340228390310\" cubox_url: https://cubox.pro/web/card/735484534022",
+    "indexed_at": "2026-04-01T03:24:04.189427"
+  },
+  {
+    "title": "Android Native 内存泄漏检测方案详解",
+    "path": "Cubox/Android Native 内存泄漏检测方案详解-2024-07-03.md",
+    "score": {
+      "relevance": 3,
+      "depth": 3,
+      "timeliness": 4,
+      "verifiability": 1,
+      "total": 11
+    },
+    "total": 11,
+    "quality": "medium",
+    "chapters": [
+      "ch07-内存"
+    ],
+    "confidence": "medium",
+    "summary": "--- id: \"7207978634294856471\" cubox_url: https://cubox.pro/web/card/720797863429",
+    "indexed_at": "2026-04-01T03:24:04.189968"
+  },
+  {
+    "title": "Android NativeHook实现WebView无损内录音频",
+    "path": "Cubox/Android NativeHook实现WebView无损内录音频-2024-07-17.md",
+    "score": {
+      "relevance": 2,
+      "depth": 3,
+      "timeliness": 4,
+      "verifiability": 1,
+      "total": 10
+    },
+    "total": 10,
+    "quality": "medium",
+    "chapters": [
+      "uncategorized"
+    ],
+    "confidence": "medium",
+    "summary": "--- id: \"7213043663222342078\" cubox_url: https://cubox.pro/web/card/721304366322",
+    "indexed_at": "2026-04-01T03:24:04.190284"
+  },
+  {
+    "title": "Android Native内存型漏洞实例",
+    "path": "Cubox/Android Native内存型漏洞实例-2024-11-29.md",
+    "score": {
+      "relevance": 3,
+      "depth": 2,
+      "timeliness": 4,
+      "verifiability": 1,
+      "total": 10
+    },
+    "total": 10,
+    "quality": "medium",
+    "chapters": [
+      "uncategorized"
+    ],
+    "confidence": "medium",
+    "summary": "--- id: \"7262095322917113681\" cubox_url: https://cubox.pro/web/card/726209532291",
+    "indexed_at": "2026-04-01T03:24:04.190787"
+  },
+  {
+    "title": "Android Native内存泄漏检测方案详解",
+    "path": "Cubox/Android Native内存泄漏检测方案详解-2024-07-02.md",
+    "score": {
+      "relevance": 3,
+      "depth": 3,
+      "timeliness": 4,
+      "verifiability": 1,
+      "total": 11
+    },
+    "total": 11,
+    "quality": "medium",
+    "chapters": [
+      "ch07-内存"
+    ],
+    "confidence": "medium",
+    "summary": "--- id: \"7207760251087490788\" cubox_url: https://cubox.pro/web/card/720776025108",
+    "indexed_at": "2026-04-01T03:24:04.191100"
+  },
+  {
+    "title": "Android Native内存泄漏检测方案详解",
+    "path": "Cubox/Android Native内存泄漏检测方案详解-2024-07-05.md",
+    "score": {
+      "relevance": 3,
+      "depth": 3,
+      "timeliness": 4,
+      "verifiability": 1,
+      "total": 11
+    },
+    "total": 11,
+    "quality": "medium",
+    "chapters": [
+      "ch07-内存"
+    ],
+    "confidence": "medium",
+    "summary": "--- id: \"7208840178159323888\" cubox_url: https://cubox.pro/web/card/720884017815",
+    "indexed_at": "2026-04-01T03:24:04.191407"
+  },
+  {
+    "title": "Android OutOfMemoryError原理解析",
+    "path": "Cubox/Android OutOfMemoryError原理解析-2024-03-20.md",
+    "score": {
+      "relevance": 2,
+      "depth": 3,
+      "timeliness": 4,
+      "verifiability": 1,
+      "total": 10
+    },
+    "total": 10,
+    "quality": "medium",
+    "chapters": [
+      "uncategorized"
+    ],
+    "confidence": "medium",
+    "summary": "--- id: \"7169995496046461444\" cubox_url: https://cubox.pro/web/card/716999549604",
+    "indexed_at": "2026-04-01T03:24:04.192154"
+  },
+  {
+    "title": "Android Perfetto 系列 4：使用命令行在本地打开超大 Trace · Android Performance",
+    "path": "Cubox/Android Perfetto 系列 4：使用命令行在本地打开超大 Trace · Android Performance-2025-02-09.md",
+    "score": {
+      "relevance": 4,
+      "depth": 1,
+      "timeliness": 5,
+      "verifiability": 1,
+      "total": 11
+    },
+    "total": 11,
+    "quality": "medium",
+    "chapters": [
+      "ch11-Profiling"
+    ],
+    "confidence": "medium",
+    "summary": "--- id: \"7288257252593503615\" cubox_url: https://cubox.pro/web/card/728825725259",
+    "indexed_at": "2026-04-01T03:24:04.192723"
+  },
+  {
+    "title": "Android Performance — Capture a system trace — Perfetto",
+    "path": "Cubox/Android Performance — Capture a system trace — Perfetto-2024-09-03.md",
+    "score": {
+      "relevance": 4,
+      "depth": 1,
+      "timeliness": 4,
+      "verifiability": 1,
+      "total": 10
+    },
+    "total": 10,
+    "quality": "medium",
+    "chapters": [
+      "ch11-Profiling"
+    ],
+    "confidence": "medium",
+    "summary": "--- id: \"7230647120192079781\" cubox_url: https://cubox.pro/web/card/723064712019",
+    "indexed_at": "2026-04-01T03:24:04.193624"
+  },
+  {
+    "title": "Android Runtime | Trace 文件的生成机制 - 掘金",
+    "path": "Cubox/Android Runtime - Trace 文件的生成机制 - 掘金-2022-01-13.md",
+    "score": {
+      "relevance": 5,
+      "depth": 2,
+      "timeliness": 3,
+      "verifiability": 1,
+      "total": 11
+    },
+    "total": 11,
+    "quality": "medium",
+    "chapters": [
+      "uncategorized"
+    ],
+    "confidence": "medium",
+    "summary": "--- id: \"6881255383885678349\" cubox_url: https://cubox.pro/web/card/688125538388",
+    "indexed_at": "2026-04-01T03:24:04.194772"
+  },
+  {
+    "title": "Android Runtime即时编译触发条件与阈值深度解析(38)",
+    "path": "Cubox/Android Runtime即时编译触发条件与阈值深度解析(38)-2025-06-14.md",
+    "score": {
+      "relevance": 3,
+      "depth": 2,
+      "timeliness": 5,
+      "verifiability": 1,
+      "total": 11
+    },
+    "total": 11,
+    "quality": "medium",
+    "chapters": [
+      "uncategorized"
+    ],
+    "confidence": "medium",
+    "summary": "--- id: \"7333514748161427173\" cubox_url: https://cubox.pro/web/card/733351474816",
+    "indexed_at": "2026-04-01T03:24:04.195357"
+  },
+  {
+    "title": "Android Studio  的 AI  Agent 有什么特别？未来会有惊艳什么功能？",
+    "path": "Cubox/Android Studio  的 AI  Agent 有什么特别？未来会有惊艳什么功能？-2026-01-04.md",
+    "score": {
+      "relevance": 3,
+      "depth": 1,
+      "timeliness": 5,
+      "verifiability": 1,
+      "total": 10
+    },
+    "total": 10,
+    "quality": "medium",
+    "chapters": [
+      "uncategorized"
+    ],
+    "confidence": "medium",
+    "summary": "--- id: \"7407313823238981418\" cubox_url: https://cubox.pro/web/card/740731382323",
+    "indexed_at": "2026-04-01T03:24:04.197254"
+  },
+  {
+    "title": "Android Studio 中 CPU Profiler 系统性能分析工具的使用 - 掘金",
+    "path": "Cubox/Android Studio 中 CPU Profiler 系统性能分析工具的使用 - 掘金-2022-07-05.md",
+    "score": {
+      "relevance": 5,
+      "depth": 2,
+      "timeliness": 3,
+      "verifiability": 1,
+      "total": 11
+    },
+    "total": 11,
+    "quality": "medium",
+    "chapters": [
+      "uncategorized"
+    ],
+    "confidence": "medium",
+    "summary": "--- id: \"6943893103342258719\" cubox_url: https://cubox.pro/web/card/694389310334",
+    "indexed_at": "2026-04-01T03:24:04.199255"
+  },
+  {
+    "title": "Android Studio 正式版 10 周年回顾，承载 Androider 的峥嵘十年Android Studio - 掘金",
+    "path": "Cubox/Android Studio 正式版 10 周年回顾，承载 Androider 的峥嵘十年Android Studio - 掘金-2025-01-30.md",
+    "score": {
+      "relevance": 3,
+      "depth": 1,
+      "timeliness": 5,
+      "verifiability": 1,
+      "total": 10
+    },
+    "total": 10,
+    "quality": "medium",
+    "chapters": [
+      "uncategorized"
+    ],
+    "confidence": "medium",
+    "summary": "--- id: \"7284644351697750212\" cubox_url: https://cubox.pro/web/card/728464435169",
+    "indexed_at": "2026-04-01T03:24:04.200027"
+  },
+  {
+    "title": "Android SurfaceFlinger中Fence机制--个人理解整理_入琞的博客-CSDN博客_android fence",
+    "path": "Cubox/Android SurfaceFlinger中Fence机制--个人理解整理_入琞的博客-CSDN博客_android fence-2022-10-27.md",
+    "score": {
+      "relevance": 5,
+      "depth": 2,
+      "timeliness": 3,
+      "verifiability": 1,
+      "total": 11
+    },
+    "total": 11,
+    "quality": "medium",
+    "chapters": [
+      "ch05-渲染"
+    ],
+    "confidence": "medium",
+    "summary": "--- id: \"6985134216996457178\" cubox_url: https://cubox.pro/web/card/698513421699",
+    "indexed_at": "2026-04-01T03:24:04.200610"
+  },
+  {
+    "title": "Android Systrace 基础知识 - Binder 和锁竞争解读・Android Performance",
+    "path": "Cubox/Android Systrace 基础知识 - Binder 和锁竞争解读・Android Performance-2022-01-23.md",
+    "score": {
+      "relevance": 5,
+      "depth": 1,
+      "timeliness": 3,
+      "verifiability": 1,
+      "total": 10
+    },
+    "total": 10,
+    "quality": "medium",
+    "chapters": [
+      "ch11-Profiling"
+    ],
+    "confidence": "medium",
+    "summary": "--- id: \"6884917849479972024\" cubox_url: https://cubox.pro/web/card/688491784947",
+    "indexed_at": "2026-04-01T03:24:04.200895"
+  },
+  {
+    "title": "Android UI架构(十)--App请求切换帧率(1)_SwallowJoe的博客-CSDN博客_android app 帧率-2022-01-26",
+    "path": "Cubox/Android UI架构(十)--App请求切换帧率(1).md_SwallowJoe的博客-CSDN博客_android app 帧率-2022-01-26.md",
+    "score": {
+      "relevance": 4,
+      "technical_depth": 4,
+      "timeliness": 3,
+      "verifiability": 4,
+      "total": 15
+    },
+    "chapters": [
+      [
+        "ch05-渲染",
+        "medium"
+      ]
+    ],
+    "quality": "medium",
+    "confidence": "medium",
+    "summary": "App请求切换帧率(1)：设备刷新率/分辨率查询，Android Q与R版本帧率设置API差异",
+    "indexed_at": "2026-04-01T03:49:08.070496"
+  },
+  {
+    "title": "Android UI架构(十一)--App请求切换帧率(2)之DisplayModeId_SwallowJoe的博客-CSDN博客_android displa",
+    "path": "Cubox/Android UI架构(十一)--App请求切换帧率(2)之DisplayModeId.md_SwallowJoe的博客-CSDN博客_android displaymode-2022-01-26.md",
+    "score": {
+      "relevance": 4,
+      "technical_depth": 4,
+      "timeliness": 3,
+      "verifiability": 4,
+      "total": 15
+    },
+    "chapters": [
+      [
+        "ch05-渲染",
+        "medium"
+      ]
+    ],
+    "quality": "medium",
+    "confidence": "medium",
+    "summary": "App请求切换帧率(2)：preferredDisplayModeId变化机制，RootWindowContainer到DisplayContent帧率传递",
+    "indexed_at": "2026-04-01T03:49:08.070496"
+  },
+  {
+    "title": "Android UI架构(十三)--App请求切换帧率(4)之SurfaceFlinger切换帧率_SwallowJoe的博客-CSDN博客-2022-01-2",
+    "path": "Cubox/Android UI架构(十三)--App请求切换帧率(4)之SurfaceFlinger切换帧率.md_SwallowJoe的博客-CSDN博客-2022-01-26.md",
+    "score": {
+      "relevance": 4,
+      "technical_depth": 4,
+      "timeliness": 3,
+      "verifiability": 4,
+      "total": 15
+    },
+    "chapters": [
+      [
+        "ch05-渲染",
+        "medium"
+      ]
+    ],
+    "quality": "medium",
+    "confidence": "medium",
+    "summary": "App请求切换帧率(4)：SurfaceFlinger接受帧率变化，setDesiredActiveConfig、repaintEverythingForHWC",
+    "indexed_at": "2026-04-01T03:49:08.070496"
+  },
+  {
+    "title": "Android UI架构(十二)--App请求切换帧率(3)之SurfaceFlinger计算最佳帧率_SwallowJoe的博客-CSDN博客-2022-01",
+    "path": "Cubox/Android UI架构(十二)--App请求切换帧率(3)之SurfaceFlinger计算最佳帧率.md_SwallowJoe的博客-CSDN博客-2022-01-26.md",
+    "score": {
+      "relevance": 4,
+      "technical_depth": 4,
+      "timeliness": 3,
+      "verifiability": 4,
+      "total": 15
+    },
+    "chapters": [
+      [
+        "ch05-渲染",
+        "medium"
+      ]
+    ],
+    "quality": "medium",
+    "confidence": "medium",
+    "summary": "App请求切换帧率(3)：SurfaceControl.setDesiredDisplayConfigSpecs到SF计算最佳帧率完整链路",
+    "indexed_at": "2026-04-01T03:49:08.070496"
+  },
+  {
+    "title": "Android USAP简介本文主要介绍Android中的USAP(unspecialized app processe - 掘金-2025-07-27",
+    "path": "Cubox/Android USAP简介本文主要介绍Android中的USAP(unspecialized app processe - 掘金-2025-07-27.md",
+    "score": {
+      "relevance": 4,
+      "technical_depth": 3,
+      "timeliness": 5,
+      "verifiability": 3,
+      "total": 15
+    },
+    "chapters": [
+      [
+        "ch04-启动",
+        "medium"
+      ],
+      [
+        "ch01-架构",
+        "low"
+      ]
+    ],
+    "quality": "medium",
+    "confidence": "medium",
+    "summary": "USAP(Unspecialized App Process)预创建进程池加速应用启动机制介绍",
+    "indexed_at": "2026-04-01T03:49:08.070496"
+  },
+  {
+    "title": "Android V app 冷启动(12) 真窗显示-2025-05-25",
+    "path": "Cubox/Android V app 冷启动(12) 真窗显示-2025-05-25.md",
+    "score": {
+      "relevance": 5,
+      "technical_depth": 4,
+      "timeliness": 5,
+      "verifiability": 4,
+      "total": 18
+    },
+    "chapters": [
+      [
+        "ch04-启动",
+        "high"
+      ]
+    ],
+    "quality": "high",
+    "confidence": "high",
+    "summary": "Android V冷启动(12)：启动窗口移除后真窗Surface显示流程，View动画与Surface提交",
+    "indexed_at": "2026-04-01T03:49:08.070496"
+  },
+  {
+    "title": "Android V app 冷启动(13) 焦点窗口更新上一篇文章分析了焦点窗口更新框架，本文从实战的角度，分析 app - 掘金-2025-06-14",
+    "path": "Cubox/Android V app 冷启动(13) 焦点窗口更新上一篇文章分析了焦点窗口更新框架，本文从实战的角度，分析 app - 掘金-2025-06-14.md",
+    "score": {
+      "relevance": 5,
+      "technical_depth": 4,
+      "timeliness": 5,
+      "verifiability": 4,
+      "total": 18
+    },
+    "chapters": [
+      [
+        "ch04-启动",
+        "high"
+      ]
+    ],
+    "quality": "high",
+    "confidence": "high",
+    "summary": "Android V冷启动(13)：焦点窗口更新流程分析，启动过程中焦点转移完整机制",
+    "indexed_at": "2026-04-01T03:49:08.070496"
+  },
+  {
+    "title": "Android V app 冷启动(8) 动画结束WMShell finish transition 当 Launche - 掘金-2025-04-06",
+    "path": "Cubox/Android V app 冷启动(8) 动画结束WMShell finish transition 当 Launche - 掘金-2025-04-06.md",
+    "score": {
+      "relevance": 5,
+      "technical_depth": 4,
+      "timeliness": 5,
+      "verifiability": 4,
+      "total": 18
+    },
+    "chapters": [
+      [
+        "ch04-启动",
+        "high"
+      ]
+    ],
+    "quality": "high",
+    "confidence": "high",
+    "summary": "Android V冷启动(8)：WMShell finish transition机制，Launcher动画结束与WallpaperWindowToken",
+    "indexed_at": "2026-04-01T03:49:08.070496"
+  },
+  {
+    "title": "Android Vitals - Diving into cold start waters 🥶 - DEV Community-2022-01-17",
+    "path": "Cubox/Android Vitals - Diving into cold start waters 🥶 - DEV Community-2022-01-17.md",
+    "score": {
+      "relevance": 4,
+      "technical_depth": 3,
+      "timeliness": 3,
+      "verifiability": 3,
+      "total": 13
+    },
+    "chapters": [
+      [
+        "ch04-启动",
+        "medium"
+      ]
+    ],
+    "quality": "medium",
+    "confidence": "medium",
+    "summary": "Android Vitals系列：深入冷启动各阶段和性能指标分析",
+    "indexed_at": "2026-04-01T03:49:08.070496"
+  },
+  {
+    "title": "Android Vitals - How adb measures App Startup 🔎 - DEV Community-2022-01-17",
+    "path": "Cubox/Android Vitals - How adb measures App Startup 🔎 - DEV Community-2022-01-17.md",
+    "score": {
+      "relevance": 4,
+      "technical_depth": 3,
+      "timeliness": 3,
+      "verifiability": 4,
+      "total": 14
+    },
+    "chapters": [
+      [
+        "ch04-启动",
+        "medium"
+      ],
+      [
+        "ch11-Profiling",
+        "medium"
+      ]
+    ],
+    "quality": "medium",
+    "confidence": "medium",
+    "summary": "Android Vitals系列：adb测量应用启动时间的命令与方法",
+    "indexed_at": "2026-04-01T03:49:08.070496"
+  },
+  {
+    "title": "Android Vitals - Is this a cold start- 🦋 - DEV Community-2022-01-17",
+    "path": "Cubox/Android Vitals - Is this a cold start- 🦋 - DEV Community-2022-01-17.md",
+    "score": {
+      "relevance": 4,
+      "technical_depth": 2,
+      "timeliness": 3,
+      "verifiability": 3,
+      "total": 12
+    },
+    "chapters": [
+      [
+        "ch04-启动",
+        "medium"
+      ]
+    ],
+    "quality": "medium",
+    "confidence": "medium",
+    "summary": "Android Vitals系列：冷启动判断标准与方法论",
+    "indexed_at": "2026-04-01T03:49:08.070496"
+  },
+  {
+    "title": "Android Vitals - Profiling App Startup 🔬 - DEV Community-2022-01-17",
+    "path": "Cubox/Android Vitals - Profiling App Startup 🔬 - DEV Community-2022-01-17.md",
+    "score": {
+      "relevance": 4,
+      "technical_depth": 3,
+      "timeliness": 3,
+      "verifiability": 3,
+      "total": 13
+    },
+    "chapters": [
+      [
+        "ch04-启动",
+        "medium"
+      ],
+      [
+        "ch11-Profiling",
+        "medium"
+      ]
+    ],
+    "quality": "medium",
+    "confidence": "medium",
+    "summary": "Android Vitals系列：应用启动性能分析方法与工具",
+    "indexed_at": "2026-04-01T03:49:08.070496"
+  },
+  {
+    "title": "Android Vitals - Rising to the first drawn surface 🤽‍♂️ - DEV Community-2022-01-",
+    "path": "Cubox/Android Vitals - Rising to the first drawn surface 🤽‍♂️ - DEV Community-2022-01-17.md",
+    "score": {
+      "relevance": 4,
+      "technical_depth": 3,
+      "timeliness": 3,
+      "verifiability": 3,
+      "total": 13
+    },
+    "chapters": [
+      [
+        "ch04-启动",
+        "medium"
+      ],
+      [
+        "ch05-渲染",
+        "low"
+      ]
+    ],
+    "quality": "medium",
+    "confidence": "medium",
+    "summary": "Android Vitals系列：进程启动到首次绘制Surface路径分析",
+    "indexed_at": "2026-04-01T03:49:08.070496"
+  },
+  {
+    "title": "Android Vitals - Tap Response Time 👉 - DEV Community-2022-01-17",
+    "path": "Cubox/Android Vitals - Tap Response Time 👉 - DEV Community-2022-01-17.md",
+    "score": {
+      "relevance": 5,
+      "technical_depth": 3,
+      "timeliness": 3,
+      "verifiability": 3,
+      "total": 14
+    },
+    "chapters": [
+      [
+        "ch04-启动",
+        "medium"
+      ]
+    ],
+    "quality": "medium",
+    "confidence": "medium",
+    "summary": "Android Vitals系列：点击响应时间测量，用户交互到应用响应全链路",
+    "indexed_at": "2026-04-01T03:49:08.070496"
+  },
+  {
+    "title": "Android Vitals - What time is it- - DEV Community-2022-01-17",
+    "path": "Cubox/Android Vitals - What time is it- - DEV Community-2022-01-17.md",
+    "score": {
+      "relevance": 4,
+      "technical_depth": 2,
+      "timeliness": 3,
+      "verifiability": 3,
+      "total": 12
+    },
+    "chapters": [
+      [
+        "ch04-启动",
+        "medium"
+      ]
+    ],
+    "quality": "medium",
+    "confidence": "medium",
+    "summary": "Android Vitals系列：启动测量中不同时间点含义讨论",
+    "indexed_at": "2026-04-01T03:49:08.070496"
+  },
+  {
+    "title": "Android Vitals - When did my app start- ⏱ - DEV Community-2022-01-17",
+    "path": "Cubox/Android Vitals - When did my app start- ⏱ - DEV Community-2022-01-17.md",
+    "score": {
+      "relevance": 5,
+      "technical_depth": 3,
+      "timeliness": 3,
+      "verifiability": 3,
+      "total": 14
+    },
+    "chapters": [
+      [
+        "ch04-启动",
+        "medium"
+      ]
+    ],
+    "quality": "medium",
+    "confidence": "medium",
+    "summary": "Android Vitals系列：应用启动时间点定义与测量方法",
+    "indexed_at": "2026-04-01T03:49:08.070496"
+  },
+  {
+    "title": "Android Vitals - Why did my process start- 🌄 - DEV Community-2022-01-17",
+    "path": "Cubox/Android Vitals - Why did my process start- 🌄 - DEV Community-2022-01-17.md",
+    "score": {
+      "relevance": 4,
+      "technical_depth": 3,
+      "timeliness": 3,
+      "verifiability": 3,
+      "total": 13
+    },
+    "chapters": [
+      [
+        "ch02-进程",
+        "medium"
+      ],
+      [
+        "ch04-启动",
+        "medium"
+      ]
+    ],
+    "quality": "medium",
+    "confidence": "medium",
+    "summary": "Android Vitals系列：进程启动原因分析，ContentProvider/Broadcast触发场景",
+    "indexed_at": "2026-04-01T03:49:08.070496"
+  },
+  {
+    "title": "Android Vulkan 官宣转正并统一渲染堆栈 ，这对 Flutter 又有什么影响？-2025-03-18",
+    "path": "Cubox/Android Vulkan 官宣转正并统一渲染堆栈 ，这对 Flutter 又有什么影响？-2025-03-18.md",
+    "score": {
+      "relevance": 4,
+      "technical_depth": 3,
+      "timeliness": 5,
+      "verifiability": 3,
+      "total": 15
+    },
+    "chapters": [
+      [
+        "ch05-渲染",
+        "medium"
+      ]
+    ],
+    "quality": "medium",
+    "confidence": "medium",
+    "summary": "Android Vulkan统一渲染堆栈对Flutter影响，OpenGL到Vulkan渲染架构迁移",
+    "indexed_at": "2026-04-01T03:49:08.070496"
+  },
+  {
+    "title": "Android Watchdog机制介绍-2025-06-08",
+    "path": "Cubox/Android Watchdog机制介绍-2025-06-08.md",
+    "score": {
+      "relevance": 3,
+      "technical_depth": 3,
+      "timeliness": 5,
+      "verifiability": 2,
+      "total": 13
+    },
+    "chapters": [
+      [
+        "ch01-架构",
+        "medium"
+      ]
+    ],
+    "quality": "medium",
+    "confidence": "medium",
+    "summary": "Android Watchdog机制：system_server进程监控，系统服务死锁检测与恢复",
+    "indexed_at": "2026-04-01T03:49:08.070496"
+  },
+  {
+    "title": "Android WebView 秒开实战-2024-11-28",
+    "path": "Cubox/Android WebView 秒开实战-2024-11-28.md",
+    "score": {
+      "relevance": 4,
+      "technical_depth": 3,
+      "timeliness": 4,
+      "verifiability": 2,
+      "total": 13
+    },
+    "chapters": [
+      [
+        "ch04-启动",
+        "medium"
+      ]
+    ],
+    "quality": "medium",
+    "confidence": "medium",
+    "summary": "WebView秒开实战优化：预加载/缓存/渲染优化策略",
+    "indexed_at": "2026-04-01T03:49:08.070496"
+  },
+  {
+    "title": "Android 大话binder通信",
+    "path": "Cubox/Android 大话binder通信-2024-07-08.md",
+    "score": {
+      "relevance": 5,
+      "technical_depth": 4,
+      "timeliness": 4,
+      "verifiability": 4,
+      "total": 17
+    },
+    "chapters": [
+      "ch01-架构"
+    ],
+    "quality": "high",
+    "confidence": "high",
+    "summary": "用故事方式描述binder通信全过程，涵盖通信节点、数据变化和关键细节",
+    "indexed_at": "2026-04-01"
+  },
+  {
+    "title": "Android 如何监控 Loop Message 长消息",
+    "path": "Cubox/Android 如何监控 Loop Message 长消息 - 掘金-2023-12-15.md",
+    "score": {
+      "relevance": 4,
+      "technical_depth": 4,
+      "timeliness": 4,
+      "verifiability": 4,
+      "total": 16
+    },
+    "chapters": [
+      "ch03-线程"
+    ],
+    "quality": "high",
+    "confidence": "high",
+    "summary": "监控Handler Loop长消息，分析主线程消息调度与卡顿检测",
+    "indexed_at": "2026-04-01"
+  },
+  {
+    "title": "Android 子线程 UI 操作真的不可以？",
+    "path": "Cubox/Android 子线程 UI 操作真的不可以？-2022-05-18.md",
+    "score": {
+      "relevance": 4,
+      "technical_depth": 4,
+      "timeliness": 3,
+      "verifiability": 3,
+      "total": 14
+    },
+    "chapters": [
+      "ch03-线程",
+      "ch05-渲染"
+    ],
+    "quality": "medium",
+    "confidence": "high",
+    "summary": "分析Android UI刷新与多线程限制关系，探索多UI线程可行性与屏幕刷新原理",
+    "indexed_at": "2026-04-01"
+  },
+  {
+    "title": "Android 官方模块化方案解读",
+    "path": "Cubox/Android 官方模块化方案解读 - 开发者说·DTalk-2023-03-17.md",
+    "score": {
+      "relevance": 3,
+      "technical_depth": 3,
+      "timeliness": 3,
+      "verifiability": 2,
+      "total": 11
+    },
+    "chapters": [
+      "ch01-架构",
+      "ch16-构建"
+    ],
+    "quality": "medium",
+    "confidence": "medium",
+    "summary": "Android官方模块化方案解读，含实用技巧和模板搭建",
+    "indexed_at": "2026-04-01"
+  },
+  {
+    "title": "Android 官方模块化方案解读",
+    "path": "Cubox/Android 官方模块化方案解读-2022-11-21.md",
+    "score": {
+      "relevance": 3,
+      "technical_depth": 3,
+      "timeliness": 3,
+      "verifiability": 2,
+      "total": 11
+    },
+    "chapters": [
+      "ch01-架构",
+      "ch16-构建"
+    ],
+    "quality": "medium",
+    "confidence": "medium",
+    "summary": "Android官方模块化方案快速了解，含实用技巧和模板搭建",
+    "indexed_at": "2026-04-01"
+  },
+  {
+    "title": "Android 官方现代 App 架构指南",
+    "path": "Cubox/Android 官方现代 App 架构指南 - 总结 - 掘金-2022-07-05.md",
+    "score": {
+      "relevance": 4,
+      "technical_depth": 3,
+      "timeliness": 3,
+      "verifiability": 3,
+      "total": 13
+    },
+    "chapters": [
+      "ch01-架构"
+    ],
+    "quality": "medium",
+    "confidence": "high",
+    "summary": "Android官方架构指南总结，提供速记手册和架构徽章",
+    "indexed_at": "2026-04-01"
+  },
+  {
+    "title": "Android Runtime 编译速度提升18%",
+    "path": "Cubox/Android 宣布 Runtime 编译速度史诗级提升：在编译时间上优化了 18%-2025-12-16.md",
+    "score": {
+      "relevance": 4,
+      "technical_depth": 3,
+      "timeliness": 5,
+      "verifiability": 4,
+      "total": 16
+    },
+    "chapters": [
+      "ch04-启动",
+      "ch13-调度"
+    ],
+    "quality": "high",
+    "confidence": "high",
+    "summary": "ART编译时间优化18%，涉及Runtime编译性能改进",
+    "indexed_at": "2026-04-01"
+  },
+  {
+    "title": "Android 抓捕和利用主线程碎片时间",
+    "path": "Cubox/Android 居然还能这样抓捕和利用主线程碎片时间 - 掘金-2024-01-29.md",
+    "score": {
+      "relevance": 4,
+      "technical_depth": 4,
+      "timeliness": 4,
+      "verifiability": 3,
+      "total": 15
+    },
+    "chapters": [
+      "ch03-线程",
+      "ch04-启动"
+    ],
+    "quality": "medium",
+    "confidence": "high",
+    "summary": "利用主线程碎片时间优化，将耗时任务合理调度到子线程",
+    "indexed_at": "2026-04-01"
+  },
+  {
+    "title": "Android 嵌套滑动设计思想",
+    "path": "Cubox/Android 嵌套滑动设计思想本文介绍Android嵌套滑动的设计思想。通过本文，您可以了解到：为什么需要Nested - 掘金-2025-07-28.md",
+    "score": {
+      "relevance": 4,
+      "technical_depth": 4,
+      "timeliness": 5,
+      "verifiability": 4,
+      "total": 17
+    },
+    "chapters": [
+      "ch05-渲染"
+    ],
+    "quality": "high",
+    "confidence": "high",
+    "summary": "Android嵌套滑动机制设计思想，聚焦NestedScrolling原理而非代码细节",
+    "indexed_at": "2026-04-01"
+  },
+  {
+    "title": "Android 广播，你可能不知道的事",
+    "path": "Cubox/Android 广播，你可能不知道的事 - 掘金-2022-01-23.md",
+    "score": {
+      "relevance": 3,
+      "technical_depth": 3,
+      "timeliness": 3,
+      "verifiability": 3,
+      "total": 12
+    },
+    "chapters": [
+      "ch01-架构"
+    ],
+    "quality": "medium",
+    "confidence": "medium",
+    "summary": "Android广播机制详解，含O版本隐式广播限制、权限过滤等",
+    "indexed_at": "2026-04-01"
+  },
+  {
+    "title": "Android 应用启动全流程分析（源码深度剖析）",
+    "path": "Cubox/Android 应用启动全流程分析（源码深度剖析） - 简书-2022-01-17.md",
+    "score": {
+      "relevance": 5,
+      "technical_depth": 5,
+      "timeliness": 3,
+      "verifiability": 5,
+      "total": 18
+    },
+    "chapters": [
+      "ch04-启动",
+      "ch01-架构"
+    ],
+    "quality": "high",
+    "confidence": "high",
+    "summary": "源码级深度剖析应用启动全流程，从点击图标到Activity显示",
+    "indexed_at": "2026-04-01"
+  },
+  {
+    "title": "Android 应用的CPU调度策略优化",
+    "path": "Cubox/Android 应用的CPU调度策略优化Android 应用和程序代码性能优化中，非常规的方式就是添加对CPU调度策略的 - 掘金-2025-04-13.md",
+    "score": {
+      "relevance": 5,
+      "technical_depth": 4,
+      "timeliness": 5,
+      "verifiability": 4,
+      "total": 18
+    },
+    "chapters": [
+      "ch13-调度"
+    ],
+    "quality": "high",
+    "confidence": "high",
+    "summary": "Android应用CPU调度策略配置，线程优先级和资源分配优化方法",
+    "indexed_at": "2026-04-01"
+  },
+  {
+    "title": "Android 协程常犯的 10 个错误",
+    "path": "Cubox/Android 开发中使用协程常犯的 10 个错误-2024-11-08.md",
+    "score": {
+      "relevance": 4,
+      "technical_depth": 4,
+      "timeliness": 4,
+      "verifiability": 3,
+      "total": 15
+    },
+    "chapters": [
+      "ch15-Kotlin"
+    ],
+    "quality": "medium",
+    "confidence": "high",
+    "summary": "Android开发中协程使用常见错误汇总，含正确实践方法",
+    "indexed_at": "2026-04-01"
+  },
+  {
+    "title": "通过 Compiler Explorer 成为更好的 Android 开发者",
+    "path": "Cubox/Android 开发者博客：工具而非规则：通过 Compiler Explorer 成为更好的 Android 开发者 --- Android Developers Blog- Tools, not.md",
+    "score": {
+      "relevance": 2,
+      "technical_depth": 2,
+      "timeliness": 4,
+      "verifiability": 2,
+      "total": 10
+    },
+    "chapters": [
+      "ch14-工具"
+    ],
+    "quality": "medium",
+    "confidence": "low",
+    "summary": "Google官方博客介绍Compiler Explorer工具用于Android开发学习",
+    "indexed_at": "2026-04-01"
+  },
+  {
+    "title": "Baseline Profiles 国内能用吗？",
+    "path": "Cubox/Android 强推的 Baseline Profiles 国内能用吗？我找 Google 工程师求证了！ - 掘金-2022-07-17.md",
+    "score": {
+      "relevance": 5,
+      "technical_depth": 4,
+      "timeliness": 3,
+      "verifiability": 4,
+      "total": 16
+    },
+    "chapters": [
+      "ch04-启动",
+      "ch14-工具"
+    ],
+    "quality": "high",
+    "confidence": "high",
+    "summary": "Baseline Profiles底层原理剖析，向Google工程师求证国内可用性",
+    "indexed_at": "2026-04-01"
+  },
+  {
+    "title": "Baseline Profiles 黑科技",
+    "path": "Cubox/Android 性能优化「黑科技」Baseline Profiles - 开发者说·DTalk-2022-10-28.md",
+    "score": {
+      "relevance": 4,
+      "technical_depth": 2,
+      "timeliness": 3,
+      "verifiability": 2,
+      "total": 11
+    },
+    "chapters": [
+      "ch04-启动",
+      "ch14-工具"
+    ],
+    "quality": "medium",
+    "confidence": "medium",
+    "summary": "Baseline Profiles介绍，开发者说活动分享内容",
+    "indexed_at": "2026-04-01"
+  },
+  {
+    "title": "Android 性能优化之黑科技开道（一）",
+    "path": "Cubox/Android 性能优化之黑科技开道（一）-2024-10-14.md",
+    "score": {
+      "relevance": 4,
+      "technical_depth": 4,
+      "timeliness": 4,
+      "verifiability": 3,
+      "total": 15
+    },
+    "chapters": [
+      "ch04-启动",
+      "ch05-渲染"
+    ],
+    "quality": "medium",
+    "confidence": "medium",
+    "summary": "电视系统Android性能优化实战，含卡顿分析和黑科技方案",
+    "indexed_at": "2026-04-01"
+  },
+  {
+    "title": "Android 性能优化之黑科技开道（二）",
+    "path": "Cubox/Android 性能优化之黑科技开道（二）-2024-10-14.md",
+    "score": {
+      "relevance": 4,
+      "technical_depth": 4,
+      "timeliness": 4,
+      "verifiability": 3,
+      "total": 15
+    },
+    "chapters": [
+      "ch04-启动",
+      "ch05-渲染"
+    ],
+    "quality": "medium",
+    "confidence": "medium",
+    "summary": "国内Android黑科技发展回顾，从插件化到官方标配的演进",
+    "indexed_at": "2026-04-01"
+  },
+  {
+    "title": "Android 启动优化理论与实践",
+    "path": "Cubox/Android 性能优化（一）： 启动优化理论与实践-2023-02-11.md",
+    "score": {
+      "relevance": 5,
+      "technical_depth": 4,
+      "timeliness": 3,
+      "verifiability": 4,
+      "total": 16
+    },
+    "chapters": [
+      "ch04-启动"
+    ],
+    "quality": "high",
+    "confidence": "high",
+    "summary": "启动优化常用手段汇总，开发与面试必备的启动优化理论与实践",
+    "indexed_at": "2026-04-01"
+  },
+  {
+    "title": "Android 启动优化理论与实践（更新版）",
+    "path": "Cubox/Android 性能优化： 启动优化理论与实践-2024-07-25.md",
+    "score": {
+      "relevance": 5,
+      "technical_depth": 4,
+      "timeliness": 4,
+      "verifiability": 4,
+      "total": 17
+    },
+    "chapters": [
+      "ch04-启动"
+    ],
+    "quality": "high",
+    "confidence": "high",
+    "summary": "启动优化理论与实践更新版，涵盖主流启动优化手段",
+    "indexed_at": "2026-04-01"
+  },
+  {
+    "title": "Android 内存优化（实践篇）",
+    "path": "Cubox/Android 性能优化：内存优化（实践篇）1. 前言 2. 获取内存信息 这里还是要先插入下Android App的内 - 掘金-2025-01-08.md",
+    "score": {
+      "relevance": 5,
+      "technical_depth": 5,
+      "timeliness": 5,
+      "verifiability": 4,
+      "total": 19
+    },
+    "chapters": [
+      "ch07-内存"
+    ],
+    "quality": "high",
+    "confidence": "high",
+    "summary": "内存优化实践篇，含Android App内存构成分析和内存信息获取方法",
+    "indexed_at": "2026-04-01"
+  },
+  {
+    "title": "Android 内存优化（理论篇）",
+    "path": "Cubox/Android 性能优化：内存优化（理论篇）【本文正在参加金石计划附加挑战赛——第一（或二、三、四）期命题】   限于篇 - 掘金-2025-01-08.md",
+    "score": {
+      "relevance": 5,
+      "technical_depth": 5,
+      "timeliness": 5,
+      "verifiability": 4,
+      "total": 19
+    },
+    "chapters": [
+      "ch07-内存"
+    ],
+    "quality": "high",
+    "confidence": "high",
+    "summary": "内存优化理论篇，系统梳理内存知识体系，工作实践总结",
+    "indexed_at": "2026-04-01"
+  },
+  {
+    "title": "Android 提升应用启动速度（GC抑制）",
+    "path": "Cubox/Android 性能优化：提升应用启动速度（GC抑制）前言 在移动应用开发领域，启动速度是用户体验的重要指标。对于And - 掘金-2025-07-28.md",
+    "score": {
+      "relevance": 5,
+      "technical_depth": 5,
+      "timeliness": 5,
+      "verifiability": 4,
+      "total": 19
+    },
+    "chapters": [
+      "ch04-启动",
+      "ch07-内存"
+    ],
+    "quality": "high",
+    "confidence": "high",
+    "summary": "通过GC抑制优化启动速度，分析垃圾回收对启动性能的影响及对策",
+    "indexed_at": "2026-04-01"
+  },
+  {
+    "title": "Android 性能分析工具介绍",
+    "path": "Cubox/Android 性能分析工具介绍 - 开发者说·DTalk-2022-02-18.md",
+    "score": {
+      "relevance": 3,
+      "technical_depth": 2,
+      "timeliness": 3,
+      "verifiability": 2,
+      "total": 10
+    },
+    "chapters": [
+      "ch11-Profiling",
+      "ch14-工具"
+    ],
+    "quality": "medium",
+    "confidence": "medium",
+    "summary": "性能分析工具介绍，开发者说活动分享",
+    "indexed_at": "2026-04-01"
+  },
+  {
+    "title": "Android FD监控实现原理",
+    "path": "Cubox/Android 性能：FD监控实现原理-2024-03-29.md",
+    "score": {
+      "relevance": 4,
+      "technical_depth": 4,
+      "timeliness": 4,
+      "verifiability": 4,
+      "total": 16
+    },
+    "chapters": [
+      "ch03-线程",
+      "ch14-工具"
+    ],
+    "quality": "high",
+    "confidence": "high",
+    "summary": "文件描述符(FD)监控实现原理，分析FD泄漏检测机制",
+    "indexed_at": "2026-04-01"
+  },
+  {
+    "title": "Android 自适应高刷为什么没能讨好用户",
+    "path": "Cubox/Android 手机的自适应高刷，为什么没能讨好用户？-2022-02-07.md",
+    "score": {
+      "relevance": 3,
+      "technical_depth": 2,
+      "timeliness": 3,
+      "verifiability": 2,
+      "total": 10
+    },
+    "chapters": [
+      "ch05-渲染"
+    ],
+    "quality": "medium",
+    "confidence": "low",
+    "summary": "自适应高刷新率屏幕的用户体验分析",
+    "indexed_at": "2026-04-01"
+  },
+  {
+    "title": "为什么后台应用还是会被杀",
+    "path": "Cubox/Android 手机运存越来越大，为什么后台应用还是会被「杀」？-2022-11-30.md",
+    "score": {
+      "relevance": 4,
+      "technical_depth": 3,
+      "timeliness": 3,
+      "verifiability": 3,
+      "total": 13
+    },
+    "chapters": [
+      "ch02-进程",
+      "ch07-内存"
+    ],
+    "quality": "medium",
+    "confidence": "medium",
+    "summary": "分析Android后台应用被杀原因，涉及LMK和内存管理机制",
+    "indexed_at": "2026-04-01"
+  },
+  {
+    "title": "Android 接入 QuickJS 源码阅读",
+    "path": "Cubox/Android 接入 QuickJS（二）- 源码阅读 - 掘金-2023-12-20.md",
+    "score": {
+      "relevance": 2,
+      "technical_depth": 3,
+      "timeliness": 3,
+      "verifiability": 2,
+      "total": 10
+    },
+    "chapters": [
+      "ch01-架构"
+    ],
+    "quality": "medium",
+    "confidence": "low",
+    "summary": "QuickJS接入Android的源码阅读方法与API提取",
+    "indexed_at": "2026-04-01"
+  },
+  {
+    "title": "Android 推出隐私沙盒",
+    "path": "Cubox/Android 推出隐私沙盒 - 掘金-2022-02-20.md",
+    "score": {
+      "relevance": 3,
+      "technical_depth": 2,
+      "timeliness": 3,
+      "verifiability": 2,
+      "total": 10
+    },
+    "chapters": [
+      "ch12-安全"
+    ],
+    "quality": "medium",
+    "confidence": "medium",
+    "summary": "Android隐私沙盒计划介绍，Google广告与隐私平衡方案",
+    "indexed_at": "2026-04-01"
+  },
+  {
+    "title": "Android 官方架构引入 UseCase",
+    "path": "Cubox/Android 最新官方架构推荐引入 UseCase，这是个啥？该怎么写？-2024-01-08.md",
+    "score": {
+      "relevance": 3,
+      "technical_depth": 2,
+      "timeliness": 3,
+      "verifiability": 2,
+      "total": 10
+    },
+    "chapters": [
+      "ch01-架构"
+    ],
+    "quality": "medium",
+    "confidence": "medium",
+    "summary": "Android最新官方架构推荐UseCase模式，介绍写法和最佳实践",
+    "indexed_at": "2026-04-01"
+  },
+  {
+    "title": "Android 流畅度评估及卡顿定位、优化",
+    "path": "Cubox/Android 流畅度评估及卡顿定位、优化 · TesterHome-2023-08-14.md",
+    "quality": "medium",
+    "score": 15,
+    "scores": {
+      "relevance": 4,
+      "depth": 4,
+      "timeliness": 4,
+      "verifiability": 3
+    },
+    "chapters": [
+      {
+        "chapter": "ch05-渲染",
+        "confidence": "medium"
+      }
+    ],
+    "summary": "流畅度评估与卡顿定位方法，涵盖60fps/16ms原理、渲染管线分析",
+    "indexed_at": "2026-04-01T05:21:17.920549"
+  },
+  {
+    "title": "Android 流畅性三板斧之帧率监控",
+    "path": "Cubox/Android 流畅性三板斧之帧率监控 - 掘金-2023-07-03.md",
+    "quality": "medium",
+    "score": 15,
+    "scores": {
+      "relevance": 4,
+      "depth": 4,
+      "timeliness": 4,
+      "verifiability": 3
+    },
+    "chapters": [
+      {
+        "chapter": "ch05-渲染",
+        "confidence": "medium"
+      }
+    ],
+    "summary": "帧率监控、卡顿监控、ANR监控三大流畅性监控手段详解",
+    "indexed_at": "2026-04-01T05:21:17.920549"
+  },
+  {
+    "title": "Android 画面显示流程分析 (2)",
+    "path": "Cubox/Android 画面显示流程分析 (2)-2022-01-25.md",
+    "quality": "high",
+    "score": 19,
+    "scores": {
+      "relevance": 5,
+      "depth": 5,
+      "timeliness": 5,
+      "verifiability": 4
+    },
+    "chapters": [
+      {
+        "chapter": "ch05-渲染",
+        "confidence": "high"
+      }
+    ],
+    "summary": "DRM直接渲染管理器工作流程及用户空间使用详解",
+    "indexed_at": "2026-04-01T05:21:17.920549"
+  },
+  {
+    "title": "Android 画面显示流程分析 (3)",
+    "path": "Cubox/Android 画面显示流程分析 (3)-2022-01-26.md",
+    "quality": "high",
+    "score": 19,
+    "scores": {
+      "relevance": 5,
+      "depth": 5,
+      "timeliness": 5,
+      "verifiability": 4
+    },
+    "chapters": [
+      {
+        "chapter": "ch05-渲染",
+        "confidence": "high"
+      }
+    ],
+    "summary": "BufferQueue运行流程及Fence机制深度分析",
+    "indexed_at": "2026-04-01T05:21:17.920549"
+  },
+  {
+    "title": "Android 画面显示流程分析 (4)",
+    "path": "Cubox/Android 画面显示流程分析 (4)-2022-01-27.md",
+    "quality": "high",
+    "score": 19,
+    "scores": {
+      "relevance": 5,
+      "depth": 5,
+      "timeliness": 5,
+      "verifiability": 4
+    },
+    "chapters": [
+      {
+        "chapter": "ch05-渲染",
+        "confidence": "high"
+      }
+    ],
+    "summary": "应用申请画布、Android渲染全流程源码级分析",
+    "indexed_at": "2026-04-01T05:21:17.920549"
+  },
+  {
+    "title": "Android 的越狱时代已经到来",
+    "path": "Cubox/Android 的越狱时代已经到来-2026-03-09.md",
+    "quality": "medium",
+    "score": 12,
+    "scores": {
+      "relevance": 3,
+      "depth": 2,
+      "timeliness": 5,
+      "verifiability": 2
+    },
+    "chapters": [
+      {
+        "chapter": "ch12-安全",
+        "confidence": "medium"
+      }
+    ],
+    "summary": "免拆机解锁BootLoader新方法，Android安全生态分析",
+    "indexed_at": "2026-04-01T05:21:17.920549"
+  },
+  {
+    "title": "Android 硬件渲染相关文章推荐",
+    "path": "Cubox/Android 硬件渲染相关文章推荐-2025-02-03.md",
+    "quality": "medium",
+    "score": 13,
+    "scores": {
+      "relevance": 4,
+      "depth": 2,
+      "timeliness": 5,
+      "verifiability": 2
+    },
+    "chapters": [
+      {
+        "chapter": "ch05-渲染",
+        "confidence": "medium"
+      }
+    ],
+    "summary": "Android硬件渲染技术相关文章汇总与推荐",
+    "indexed_at": "2026-04-01T05:21:17.920549"
+  },
+  {
+    "title": "Android 确定废弃屏幕方向锁定等API",
+    "path": "Cubox/Android 确定废弃「屏幕方向锁定」等 API ，如何让 App 适配大屏和 PC-XR 等场景-2025-03-31.md",
+    "quality": "medium",
+    "score": 12,
+    "scores": {
+      "relevance": 2,
+      "depth": 2,
+      "timeliness": 5,
+      "verifiability": 3
+    },
+    "chapters": [
+      {
+        "chapter": "ch17-新版本",
+        "confidence": "medium"
+      }
+    ],
+    "summary": "Android废弃屏幕方向锁定API，大屏和PC-XR适配方案",
+    "indexed_at": "2026-04-01T05:21:17.920549"
+  },
+  {
+    "title": "Android 系统 Bar 沉浸式完美兼容方案",
+    "path": "Cubox/Android 系统 Bar 沉浸式完美兼容方案-2022-03-16.md",
+    "quality": "medium",
+    "score": 11,
+    "scores": {
+      "relevance": 2,
+      "depth": 2,
+      "timeliness": 5,
+      "verifiability": 2
+    },
+    "chapters": [
+      {
+        "chapter": "ch05-渲染",
+        "confidence": "medium"
+      }
+    ],
+    "summary": "系统Bar沉浸式方案兼容性分析与实现",
+    "indexed_at": "2026-04-01T05:21:17.920549"
+  },
+  {
+    "title": "Android 系统 内存不足时kswapd性能问题",
+    "path": "Cubox/Android 系统 内存不足时，kswapd 导致的性能问题之冷热文件回收方案-2025-05-31.md",
+    "quality": "high",
+    "score": 17,
+    "scores": {
+      "relevance": 5,
+      "depth": 4,
+      "timeliness": 5,
+      "verifiability": 3
+    },
+    "chapters": [
+      {
+        "chapter": "ch07-内存",
+        "confidence": "high"
+      }
+    ],
+    "summary": "kswapd导致的性能问题分析及冷热文件回收优化方案",
+    "indexed_at": "2026-04-01T05:21:17.920549"
+  },
+  {
+    "title": "Android 系统 高负载的优化思路",
+    "path": "Cubox/Android 系统 高负载的优化思路-2025-12-20.md",
+    "quality": "medium",
+    "score": 15,
+    "scores": {
+      "relevance": 4,
+      "depth": 3,
+      "timeliness": 5,
+      "verifiability": 3
+    },
+    "chapters": [
+      {
+        "chapter": "ch13-调度",
+        "confidence": "medium"
+      }
+    ],
+    "summary": "系统高负载场景下的CPU调度与资源优化思路",
+    "indexed_at": "2026-04-01T05:21:17.920549"
+  },
+  {
+    "title": "Android 系统上 AI Agent",
+    "path": "Cubox/Android 系统上 AI Agent 的一些可能性-2025-12-05.md",
+    "quality": "medium",
+    "score": 11,
+    "scores": {
+      "relevance": 2,
+      "depth": 2,
+      "timeliness": 5,
+      "verifiability": 2
+    },
+    "chapters": [
+      {
+        "chapter": "ch17-新版本",
+        "confidence": "medium"
+      }
+    ],
+    "summary": "Android系统上AI Agent的可能性探讨",
+    "indexed_at": "2026-04-01T05:21:17.920549"
+  },
+  {
+    "title": "Android 系统低内存性能优化",
+    "path": "Cubox/Android 系统低内存性能优化的一种实现-2023-06-13.md",
+    "quality": "medium",
+    "score": 15,
+    "scores": {
+      "relevance": 4,
+      "depth": 4,
+      "timeliness": 4,
+      "verifiability": 3
+    },
+    "chapters": [
+      {
+        "chapter": "ch07-内存",
+        "confidence": "medium"
+      }
+    ],
+    "summary": "低内存场景下系统性能优化的具体实现方案",
+    "indexed_at": "2026-04-01T05:21:17.920549"
+  },
+  {
+    "title": "Android 系统全局性能优化碎碎念",
+    "path": "Cubox/Android 系统全局性能优化碎碎念-2024-11-13.md",
+    "quality": "high",
+    "score": 16,
+    "scores": {
+      "relevance": 5,
+      "depth": 3,
+      "timeliness": 5,
+      "verifiability": 3
+    },
+    "chapters": [
+      {
+        "chapter": "ch13-调度",
+        "confidence": "high"
+      },
+      {
+        "chapter": "ch07-内存",
+        "confidence": "high"
+      }
+    ],
+    "summary": "系统全局性能优化经验总结，涵盖多维度优化思路",
+    "indexed_at": "2026-04-01T05:21:17.920549"
+  },
+  {
+    "title": "Android 系统服务DisplayManagerService",
+    "path": "Cubox/Android 系统服务DisplayManagerService和DisplayDevice生命周期解读-2025-01-03.md",
+    "quality": "high",
+    "score": 16,
+    "scores": {
+      "relevance": 4,
+      "depth": 4,
+      "timeliness": 5,
+      "verifiability": 3
+    },
+    "chapters": [
+      {
+        "chapter": "ch05-渲染",
+        "confidence": "high"
+      }
+    ],
+    "summary": "DisplayManagerService和DisplayDevice生命周期源码解读",
+    "indexed_at": "2026-04-01T05:21:17.920549"
+  },
+  {
+    "title": "Android 线程性能优化",
+    "path": "Cubox/Android 线程性能优化 - 掘金-2024-01-05.md",
+    "quality": "high",
+    "score": 17,
+    "scores": {
+      "relevance": 5,
+      "depth": 4,
+      "timeliness": 4,
+      "verifiability": 4
+    },
+    "chapters": [
+      {
+        "chapter": "ch03-线程",
+        "confidence": "high"
+      }
+    ],
+    "summary": "线程性能优化实战，涵盖COW、线程池、调度策略",
+    "indexed_at": "2026-04-01T05:21:17.920549"
+  },
+  {
+    "title": "Android 线程死锁场景与优化",
+    "path": "Cubox/Android 线程死锁场景与优化 - 掘金-2024-01-05.md",
+    "quality": "high",
+    "score": 16,
+    "scores": {
+      "relevance": 4,
+      "depth": 4,
+      "timeliness": 4,
+      "verifiability": 4
+    },
+    "chapters": [
+      {
+        "chapter": "ch03-线程",
+        "confidence": "high"
+      }
+    ],
+    "summary": "线程池死锁场景分析与优化方案，含具体代码案例",
+    "indexed_at": "2026-04-01T05:21:17.920549"
+  },
+  {
+    "title": "Android 线程池周期性任务踩坑",
+    "path": "Cubox/Android 线程池周期性任务踩坑探究-2024-04-11.md",
+    "quality": "medium",
+    "score": 13,
+    "scores": {
+      "relevance": 3,
+      "depth": 3,
+      "timeliness": 4,
+      "verifiability": 3
+    },
+    "chapters": [
+      {
+        "chapter": "ch03-线程",
+        "confidence": "medium"
+      }
+    ],
+    "summary": "线程池周期性任务使用踩坑与解决方案",
+    "indexed_at": "2026-04-01T05:21:17.920549"
+  },
+  {
+    "title": "Android 设备树的匹配流程",
+    "path": "Cubox/Android 设备树的匹配流程-2022-01-14.md",
+    "quality": "medium",
+    "score": 13,
+    "scores": {
+      "relevance": 2,
+      "depth": 3,
+      "timeliness": 5,
+      "verifiability": 3
+    },
+    "chapters": [
+      {
+        "chapter": "ch01-架构",
+        "confidence": "medium"
+      }
+    ],
+    "summary": "设备树编译、分区与运行时匹配流程详解",
+    "indexed_at": "2026-04-01T05:21:17.920549"
+  },
+  {
+    "title": "Android 车载应用开发与分析（4）AIDL",
+    "path": "Cubox/Android 车载应用开发与分析 （4）- 编写基于AIDL 的 SDK - 掘金-2022-04-21.md",
+    "quality": "medium",
+    "score": 14,
+    "scores": {
+      "relevance": 3,
+      "depth": 3,
+      "timeliness": 5,
+      "verifiability": 3
+    },
+    "chapters": [
+      {
+        "chapter": "ch01-架构",
+        "confidence": "medium"
+      }
+    ],
+    "summary": "车载应用开发中基于AIDL的SDK编写实践",
+    "indexed_at": "2026-04-01T05:21:17.920549"
+  },
+  {
+    "title": "Android 转场动画的前世今生",
+    "path": "Cubox/Android 转场动画的前世今生 - 开发者说·DTalk-2022-01-14.md",
+    "quality": "medium",
+    "score": 14,
+    "scores": {
+      "relevance": 3,
+      "depth": 3,
+      "timeliness": 5,
+      "verifiability": 3
+    },
+    "chapters": [
+      {
+        "chapter": "ch05-渲染",
+        "confidence": "medium"
+      }
+    ],
+    "summary": "Android转场动画发展历程与实现原理详解",
+    "indexed_at": "2026-04-01T05:21:17.920549"
+  },
+  {
+    "title": "Android 运存越来越大后台被杀",
+    "path": "Cubox/Android 运存越来越大，为什么后台 App 还是会被「杀」？-2023-01-03.md",
+    "quality": "medium",
+    "score": 11,
+    "scores": {
+      "relevance": 3,
+      "depth": 2,
+      "timeliness": 4,
+      "verifiability": 2
+    },
+    "chapters": [
+      {
+        "chapter": "ch07-内存",
+        "confidence": "medium"
+      },
+      {
+        "chapter": "ch02-进程",
+        "confidence": "medium"
+      }
+    ],
+    "summary": "分析Android后台App被杀原因，LMK机制科普",
+    "indexed_at": "2026-04-01T05:21:17.920549"
+  },
+  {
+    "title": "Android 运行时更新-为数十亿设备提高内存",
+    "path": "Cubox/Android 运行时更新 - 为数十亿设备提高内存-2023-12-18.md",
+    "quality": "medium",
+    "score": 15,
+    "scores": {
+      "relevance": 4,
+      "depth": 4,
+      "timeliness": 4,
+      "verifiability": 3
+    },
+    "chapters": [
+      {
+        "chapter": "ch07-内存",
+        "confidence": "medium"
+      }
+    ],
+    "summary": "ART运行时内存优化更新，提升数十亿设备内存效率",
+    "indexed_at": "2026-04-01T05:21:17.920549"
+  },
+  {
+    "title": "Android 重学系列 Ashmem匿名共享内存",
+    "path": "Cubox/Android 重学系列 Ashmem匿名共享内存-2022-07-12.md",
+    "quality": "high",
+    "score": 18,
+    "scores": {
+      "relevance": 4,
+      "depth": 5,
+      "timeliness": 5,
+      "verifiability": 4
+    },
+    "chapters": [
+      {
+        "chapter": "ch07-内存",
+        "confidence": "high"
+      }
+    ],
+    "summary": "Ashmem匿名共享内存诞生背景、原理与跨进程通信应用",
+    "indexed_at": "2026-04-01T05:21:17.920549"
+  },
+  {
+    "title": "Android 重学系列 Binder驱动初始化",
+    "path": "Cubox/Android 重学系列 Binder驱动的初始化 syscall原理(一)-2022-01-14.md",
+    "quality": "high",
+    "score": 19,
+    "scores": {
+      "relevance": 5,
+      "depth": 5,
+      "timeliness": 5,
+      "verifiability": 4
+    },
+    "chapters": [
+      {
+        "chapter": "ch01-架构",
+        "confidence": "high"
+      }
+    ],
+    "summary": "Binder驱动初始化流程与syscall原理源码级分析",
+    "indexed_at": "2026-04-01T05:21:17.920549"
+  },
+  {
+    "title": "Android 针对app的view input优化",
+    "path": "Cubox/Android 针对app的view input优化-2025-07-04.md",
+    "quality": "medium",
+    "score": 15,
+    "scores": {
+      "relevance": 4,
+      "depth": 3,
+      "timeliness": 5,
+      "verifiability": 3
+    },
+    "chapters": [
+      {
+        "chapter": "ch05-渲染",
+        "confidence": "medium"
+      }
+    ],
+    "summary": "App层View和Input事件分发优化实践",
+    "indexed_at": "2026-04-01T05:21:17.920549"
+  },
+  {
+    "title": "Android 项目的 Code Reviewer 清单",
+    "path": "Cubox/Android 项目的 Code Reviewer 清单 - 掘金-2022-07-17.md",
+    "quality": "medium",
+    "score": 11,
+    "scores": {
+      "relevance": 2,
+      "depth": 2,
+      "timeliness": 5,
+      "verifiability": 2
+    },
+    "chapters": [],
+    "summary": "Android代码审查清单，涵盖架构、性能、安全等维度",
+    "indexed_at": "2026-04-01T05:21:17.920549"
+  },
+  {
+    "title": "Android图形栈疑问汇总",
+    "path": "Cubox/Android-图形栈疑问汇总(持续更新) · 李海洲-2022-10-31.md",
+    "quality": "high",
+    "score": 17,
+    "scores": {
+      "relevance": 5,
+      "depth": 4,
+      "timeliness": 5,
+      "verifiability": 3
+    },
+    "chapters": [
+      {
+        "chapter": "ch05-渲染",
+        "confidence": "high"
+      }
+    ],
+    "summary": "Android图形栈常见疑问汇总与解答，持续更新",
+    "indexed_at": "2026-04-01T05:21:17.920549"
+  },
+  {
+    "title": "Android-渲染机制",
+    "path": "Cubox/Android-渲染机制 - LuisLiu-2022-03-11.md",
+    "quality": "high",
+    "score": 17,
+    "scores": {
+      "relevance": 5,
+      "depth": 4,
+      "timeliness": 5,
+      "verifiability": 3
+    },
+    "chapters": [
+      {
+        "chapter": "ch05-渲染",
+        "confidence": "high"
+      }
+    ],
+    "summary": "Android渲染机制系统梳理，从硬件到软件全链路",
+    "indexed_at": "2026-04-01T05:21:17.920549"
+  },
+  {
+    "title": "Android.bp中添加条件判断编译方式",
+    "path": "Cubox/Android.bp中添加条件判断编译方式-CSDN博客-2025-04-13.md",
+    "quality": "high",
+    "score": 17,
+    "scores": {
+      "relevance": 4,
+      "depth": 4,
+      "timeliness": 5,
+      "verifiability": 4
+    },
+    "chapters": [
+      {
+        "chapter": "ch16-构建",
+        "confidence": "high"
+      }
+    ],
+    "summary": "Android.bp条件编译配置，多机型差异适配方案",
+    "indexed_at": "2026-04-01T05:21:17.920549"
+  },
+  {
+    "title": "Android11+ AIDL专为提升应用性能而生",
+    "path": "Cubox/Android11+ AIDL：专为提升应用性能而生！-2023-12-27.md",
+    "quality": "medium",
+    "score": 15,
+    "scores": {
+      "relevance": 4,
+      "depth": 4,
+      "timeliness": 4,
+      "verifiability": 3
+    },
+    "chapters": [
+      {
+        "chapter": "ch01-架构",
+        "confidence": "medium"
+      }
+    ],
+    "summary": "Android11新版AIDL性能提升机制详解",
+    "indexed_at": "2026-04-01T05:21:17.920549"
+  },
+  {
+    "title": "Android11外部存储权限适配",
+    "path": "Cubox/Android11外部存储权限适配指南及方案-2022-02-04.md",
+    "quality": "medium",
+    "score": 14,
+    "scores": {
+      "relevance": 3,
+      "depth": 3,
+      "timeliness": 5,
+      "verifiability": 3
+    },
+    "chapters": [
+      {
+        "chapter": "ch08-存储",
+        "confidence": "medium"
+      }
+    ],
+    "summary": "Android11外部存储权限适配指南与方案详解",
+    "indexed_at": "2026-04-01T05:21:17.920549"
+  },
+  {
+    "title": "Android14 SurfaceSyncGroup实现分析",
+    "path": "Cubox/Android14 Surface 同步机制 SurfaceSyncGroup 实现分析-2024-11-06.md",
+    "quality": "high",
+    "score": 19,
+    "scores": {
+      "relevance": 5,
+      "depth": 5,
+      "timeliness": 5,
+      "verifiability": 4
+    },
+    "chapters": [
+      {
+        "chapter": "ch05-渲染",
+        "confidence": "high"
+      }
+    ],
+    "summary": "Android14 SurfaceSyncGroup同步机制源码级实现分析",
+    "indexed_at": "2026-04-01T05:21:17.920549"
+  },
+  {
+    "title": "Android14 VSync机制深入解读",
+    "path": "Cubox/Android14 VSync 机制深入解读-2024-07-31.md",
+    "quality": "high",
+    "score": 19,
+    "scores": {
+      "relevance": 5,
+      "depth": 5,
+      "timeliness": 5,
+      "verifiability": 4
+    },
+    "chapters": [
+      {
+        "chapter": "ch05-渲染",
+        "confidence": "high"
+      }
+    ],
+    "summary": "Android14 VSync机制深度解读，含游戏VSync对比",
+    "indexed_at": "2026-04-01T05:21:17.920549"
+  },
+  {
+    "title": "Android14音频Perfetto定位音频问题",
+    "path": "Cubox/Android14音频进阶第十三弹：Perfetto如何定位系统音频问题-2024-02-07.md",
+    "quality": "high",
+    "score": 16,
+    "scores": {
+      "relevance": 4,
+      "depth": 4,
+      "timeliness": 4,
+      "verifiability": 4
+    },
+    "chapters": [
+      {
+        "chapter": "ch11-Profiling",
+        "confidence": "high"
+      }
+    ],
+    "summary": "使用Perfetto定位Android14系统音频问题的实战方法",
+    "indexed_at": "2026-04-01T05:21:17.920549"
+  },
+  {
+    "title": "Android15编译Pixel内核源码",
+    "path": "Cubox/Android15调试专题第九弹：编译Pixel内核源码-2025-01-18.md",
+    "quality": "medium",
+    "score": 15,
+    "scores": {
+      "relevance": 3,
+      "depth": 4,
+      "timeliness": 5,
+      "verifiability": 3
+    },
+    "chapters": [
+      {
+        "chapter": "ch14-工具",
+        "confidence": "medium"
+      }
+    ],
+    "summary": "Pixel设备内核源码编译流程与调试环境搭建",
+    "indexed_at": "2026-04-01T05:21:17.920549"
+  },
+  {
+    "title": "AndroidUtilCode-DeviceUtils",
+    "path": "Cubox/AndroidUtilCode-DeviceUtils.java at master · Blankj-AndroidUtilCode · GitHub-2022-01-17.md",
+    "quality": "medium",
+    "score": 10,
+    "scores": {
+      "relevance": 1,
+      "depth": 2,
+      "timeliness": 5,
+      "verifiability": 2
+    },
+    "chapters": [],
+    "summary": "Android设备信息工具类源码，设备信息获取API",
+    "indexed_at": "2026-04-01T05:21:17.920549"
   }
 ]
