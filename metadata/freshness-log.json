@@ -1,5 +1,5 @@
 {
-  "last_check": "2026-03-30T02:06:00Z",
+  "last_check": "2026-04-01T02:08:00+08:00",
   "entries": [
     {
       "date": "2026-03-30",
@@ -16,6 +16,26 @@
         "更新版本变更追踪",
         "更新 ART 优化内容",
         "更新各章节版本演进"
+      ]
+    },
+    {
+      "date": "2026-04-01",
+      "total_content_checked": 125,
+      "high_risks": 4,
+      "medium_risks": 3,
+      "low_risks": "multiple",
+      "key_findings": [
+        "Android 17 Beta 3 平台稳定性达成 (3/26)，API 锁定",
+        "Android 17 新增 lock-free MessageQueue (API 37) 影响线程模型章节",
+        "AutoFDO 确认扩展至 android17-6.18 内核",
+        "Android 17 AlarmManager 新 OnAlarmListener 减少唤醒锁"
+      ],
+      "action_items": [
+        "更新 1.5 线程模型 — 新增 lock-free MessageQueue",
+        "更新附录 A — 补充 Android 17 Beta 3 完整 API 变更",
+        "更新 5.7 CPU 版本演进 — AutoFDO 扩展至 17",
+        "更新 5.6 Android 功耗管理 — AlarmManager 优化",
+        "修正 4.3 ART 内存 applicable_versions (API 36→37)"
       ]
     }
   ]
