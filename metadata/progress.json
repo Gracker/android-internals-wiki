@@ -3,12 +3,12 @@
   "total_sections": 93,
   "metrics": {
     "total": 102,
-    "draft": 83,
+    "draft": 72,
     "ready-for-review": 4,
     "reviewed": 1,
     "finalized": 3,
     "staging_drafts": 0,
-    "last_updated": "2026-03-31T19:33:29.484307"
+    "last_updated": "2026-03-31T22:30:39.620507"
   },
   "reviewed_sections": {
     "8.1": {
@@ -286,15 +286,26 @@
       "extensions_total": 3,
       "verification_level": "L2",
       "word_count": "~13000"
+    },
+    {
+      "section": "5.2",
+      "title": "EAS 能量感知调度",
+      "completed_at": "2026-03-31T22:30:39.620507",
+      "anchors_covered": 5,
+      "anchors_total": 5,
+      "extensions_covered": 0,
+      "extensions_total": 2,
+      "verification_level": "L2",
+      "word_count": "~9000"
     }
   ],
   "ready_for_review": 3,
-  "last_updated": "2026-03-31T18:32:44.758186",
+  "last_updated": "2026-03-31T22:30:39.620507",
   "stats": {
-    "total": 102,
-    "completed": 21,
-    "pending": 81,
-    "last_updated": "2026-03-31T21:37:01.681846"
+    "total": 97,
+    "completed": 25,
+    "pending": 72,
+    "last_updated": "2026-03-31T22:30:39.620507"
   },
   "research_stats": {
     "runs_today": [
