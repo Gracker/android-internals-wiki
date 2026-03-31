@@ -3,12 +3,11 @@
   "total_sections": 93,
   "metrics": {
     "total": 102,
-    "draft": 84,
-    "ready-for-review": 2,
-    "reviewed": 1,
-    "finalized": 3,
-    "staging_drafts": 0,
-    "last_updated": "2026-03-31T18:32:44.758186"
+    "draft": 89,
+    "ready-for-review": 12,
+    "reviewed": 0,
+    "finalized": 1,
+    "staging_drafts": 0
   },
   "reviewed_sections": {
     "8.1": {
@@ -31,36 +30,12 @@
         "补充1处来源标注（冷启动Binder调用次数）",
         "更新frontmatter（status→finalized, 添加reviewed_date/reviewed_by）"
       ]
-    },
-    "1.2": {
-      "reviewed_date": "2026-03-31",
-      "reviewed_by": "openclaw-task2",
-      "review_status": "fixed-boot-timings-tracelog",
-      "fixes_applied": [
-        "补充 BootTimingsTraceLog 锚点完整覆盖（Zygote预加载追踪）",
-        "补充 TimingsTraceAndSlog（SystemServer启动追踪）",
-        "补充 boot_progress 里程碑事件说明",
-        "新增 Android 16 启动优化（并行模块加载 + AutoFDO）",
-        "更新 Perfetto 观察指南，关联 BootTimingsTraceLog slice"
-      ]
-    },
-    "1.3": {
-      "reviewed_date": "2026-03-31",
-      "reviewed_by": "openclaw-task6",
-      "review_status": "finalized",
-      "fixes_applied": [
-        "标准化3处验证标注格式（[来源:]→[已验证: 来源见 ...]）",
-        "添加1处待验证标注（SERVICE_CUR=800）",
-        "添加2处[图：...]标记（五级优先级示意、LMK流程图）",
-        "补全frontmatter（drafted_date, reviewed_date, reviewed_by）",
-        "状态更新：ready-for-review → finalized"
-      ]
     }
   },
   "review_stats": {
-    "total_reviewed": 6,
-    "reviewed_today": 4,
-    "review_issues_total": 4
+    "total_reviewed": 3,
+    "reviewed_today": 1,
+    "review_issues_total": 3
   },
   "completed": [
     {
@@ -235,44 +210,15 @@
       "extensions_total": 3,
       "verification_level": "L2",
       "word_count": "~7500"
-    },
-    {
-      "section": "4.3",
-      "title": "ART 虚拟机内存管理",
-      "completed_at": "2026-03-31T17:00:26.518990",
-      "anchors_covered": 5,
-      "anchors_total": 5,
-      "verification_level": "L2",
-      "word_count": "~7500"
-    },
-    {
-      "section": "1.3",
-      "title": "进程模型与生命周期管理",
-      "completed_at": "2026-03-31T09:58:00+08:00",
-      "status": "finalized",
-      "finalized_at": "2026-03-31T17:58:00+08:00",
-      "review_date": "2026-03-31",
-      "review_by": "openclaw-task6"
-    },
-    {
-      "section": "4.4",
-      "title": "Low Memory Killer",
-      "completed_at": "2026-03-31T18:32:44.758186",
-      "anchors_covered": 5,
-      "anchors_total": 5,
-      "extensions_covered": 3,
-      "extensions_total": 3,
-      "verification_level": "L2",
-      "word_count": "~7500"
     }
   ],
-  "ready_for_review": 9,
-  "last_updated": "2026-03-31T18:32:44.758186",
+  "ready_for_review": 10,
+  "last_updated": "2026-03-31T11:08:00+08:00",
   "stats": {
     "total": 102,
-    "completed": 19,
-    "pending": 83,
-    "last_updated": "2026-03-31T18:32:44.758186"
+    "completed": 16,
+    "pending": 86,
+    "last_updated": "2026-03-31T10:50:04.545995"
   },
   "research_stats": {
     "runs_today": [
@@ -313,18 +259,6 @@
           "ART内存分配器演进（dlmalloc→RosAlloc→RegionTLAB）",
           "ART分代GC架构（Young/Old Generation + Concurrent Copying）",
           "Android 15/16 16KB Page Size对ART内存的影响"
-        ]
-      },
-      {
-        "time": "2026-03-31T15:04:00+08:00",
-        "focus": "1.2 系统启动全流程 (queue联动 priority 90, BootTimingsTraceLog 回炉)",
-        "source": "queue-priority",
-        "candidates": 4,
-        "passed": 2,
-        "delivered": 2,
-        "themes": [
-          "BootTimingsTraceLog + TimingsTraceAndSlog 双层追踪体系",
-          "Android 16 并行模块加载与 AutoFDO 启动优化"
         ]
       }
     ]
