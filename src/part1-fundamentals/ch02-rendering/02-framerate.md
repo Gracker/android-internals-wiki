@@ -1,7 +1,9 @@
 ---
 title: "帧率与刷新率"
 chapter: "2.2"
-status: ready-for-review
+status: reviewed
+reviewed_date: 2026-04-02
+reviewed_by: openclaw-task6
 applicable_versions: "Android 4.1 (API 16) - Android 16 (API 36)"
 last_verified: "2026-03-30"
 last_verified_against: "AOSP android-16.0.0_r1, 官方文档最新版本"
@@ -279,7 +281,9 @@ Swappy 的工作原理：
 
 3. **Sync Fence 防止管线堵塞**：使用 GPU 同步栅栏（EGL fence / VkFence）来检测 GPU 是否还在使用前一帧的 Buffer。如果 GPU 还没完成，Swappy 会主动等待，避免向渲染管线塞入过多帧导致延迟堆积。
 
-4. **自动选择最佳刷新率**：在支持多刷新率的设备上，Swappy 会根据游戏的实际渲染速度，选择一个最佳的刷新率。比如，一个跑不到 60 FPS 的游戏，在 90Hz 设备上 Swappy 可能会选择 45 FPS（90Hz 的一半），而不是在 60Hz 下挣扎。
+4. **自动选择最佳刷新率**：在支持多刷新率的设备上，Swappy 会根据游戏的实际渲染速度，通过 `setFrameRate()` 向 SurfaceFlinger 传递刷新率偏好，由 SurfaceFlinger 做出最终决策。比如，一个跑不到 60 FPS 的游戏，在 90Hz 设备上可能会被安排以 45 FPS（90Hz 的一半）运行，而不是在 60Hz 下挣扎。
+
+[存疑: 原文表述"Swappy 选择 45 FPS"暗示 Swappy 直接决策刷新率，实际 Swappy 通过 setFrameRate() 传递偏好，最终由 SurfaceFlinger 决策。已修正表述，请高爷确认。]
 
 ### API 33+ 的 Frame Timeline 选择
 
@@ -294,6 +298,8 @@ void doFrame(long frameTimeNanos, int frameId,
     // App 可以选择一个最合适的来提交帧
 }
 ```
+
+[存疑: 此 doFrame 回调签名与 AOSP API 33+ 的实际 Choreographer API 不符。实际 API 使用 FrameData 对象传递 VSync 信息和候选时间线，而非 Map<String, Long> + int[]。需要高爷核实并替换为正确的 API 示例。]
 
 这个机制的目的是让 App 告诉 SurfaceFlinger："我这帧在哪个 VSync 时刻显示最合适"。SurfaceFlinger 会据此在正确的时间提交帧，实现更精确的 Frame Pacing。
 
@@ -488,8 +494,11 @@ Android 14 引入了 Frame Rate Override 机制，系统可以直接覆盖 App �
 
 App 可以通过 `FrameRateOverride` 回调感知到被覆盖的情况：
 
+[存疑: 以下代码示例不准确——Choreographer.postFrameCallback 不是检测 Frame Rate Override 的正确方式。应使用 DisplayManager.DisplayListener 或 Surface.OnFrameRateOverrideListener (API 35+) 来感知帧率被覆盖的情况。需要高爷替换为正确的监听代码。]
+
 ```java
-// 注册帧率覆盖监听
+// 示例：监听帧率被系统覆盖的情况（示意代码，非实际 API）
+// 实际应使用 Surface.OnFrameRateOverrideListener (API 35+)
 Choreographer.getInstance().postFrameCallback(frameTimeNanos -> {
     // 检查实际帧率是否与请求一致
     // 如果不一致，可能被系统 Override 了
@@ -568,6 +577,16 @@ SurfaceFlinger 会根据前台 App 的类型自动决定是否使用高刷新率
 
 [自动发现: 来源 web research on SurfaceFlinger refresh rate selection]
 [已验证: 官方文档, developer.android.com/reference/android/view/Surface#setFrameRate]
+
+## 常见问题与误区
+
+[需补充素材: writing-guide.md Type A 模板要求本节。建议高爷补充以下常见误解：
+1. "高刷新率=更流畅"的误区——帧率跟不上刷新率时反而更卡
+2. "FPS 60 就够了"的误区——帧间隔一致性比平均 FPS 更重要
+3. "120Hz 手机上 App 一定更流畅"——需要 App 真正跑满 120 FPS
+4. "掉帧只是主线程问题"——RenderThread/GPU/调度都可能导致掉帧
+5. "setFrameRate() 是命令"——它只是建议，SurfaceFlinger 有最终决策权
+]
 
 ## 总结
 
