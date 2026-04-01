@@ -685,5 +685,11 @@
       "reviewed_date": "2026-04-02",
       "reviewed_by": "openclaw-task6"
     }
+  },
+  "5.1": {
+    "title": "Linux 进程调度基础",
+    "status": "ready-for-review",
+    "rework_notes": "EEVDF + SchedTune/UClamp 回炉修复完成",
+    "last_updated": "2026-04-02T04:44:22.221424+08:00"
   }
 }
