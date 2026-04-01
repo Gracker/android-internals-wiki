@@ -1142,5 +1142,27 @@
       }
     ],
     "pending": []
+  },
+,
+  {
+    "section": "4.5",
+    "section_title": "App 内存优化 (review rework)",
+    "verified_at": "2026-04-01T18:20:00+08:00",
+    "verification_summary": {
+      "L2_official": {
+        "count": 5,
+        "details": [
+          "developer.android.com/topic/performance/memory - System.gc() 不建议手动触发",
+          "developer.android.com/topic/performance/graphics/manage-memory - Bitmap recycle API 26+ 仍推荐",
+          "developer.android.com/reference/android/content/ComponentCallbacks2 - onTrimMemory 级别含义",
+          "developer.android.com/guide/topics/manifest/application-element - largeHeap 属性说明",
+          "developer.android.com/topic/performance/memory - 内存抖动与帧率关系"
+        ]
+      },
+      "pending_verification": [
+        "120Hz vs 60Hz 设备上 GC 暂停导致掉帧的实际测试数据对比"
+      ]
+    }
   }
+
 ]
