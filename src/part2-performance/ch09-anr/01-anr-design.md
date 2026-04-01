@@ -12,6 +12,10 @@ sources:
     path: "frameworks/base/services/core/java/com/android/server/am/AppNotResponding.java"
   - type: aosp
     path: "frameworks/base/services/core/java/com/android/server/am/AnrHelper.java"
+  - type: aosp
+    path: "frameworks/base/services/core/java/com/android/server/am/ProcessRecord.java"
+  - type: aosp
+    path: "frameworks/base/services/core/java/com/android/server/Watchdog.java"
   - type: blog
     path: "Personal-Knowlodge/source/2026-03-07_wechat_钉钉_ANR_治理最佳实践_定位_ANR_不再雾里看花.md"
   - type: official
@@ -42,6 +46,9 @@ related_chapters: ["9.2", "9.3", "1.5", "8.1"]
 
 > **锚点**是最低覆盖要求，加工时必须逐条落实并标注验证结果。
 > **扩展**视素材丰富程度选择性深入。
+> 如果从 Obsidian 素材或 AOSP 源码中发现大纲未列出但与本节强相关的知识点，
+> 可**就地插入**最相关的锚点之后，并用 `[自动发现]` 标注，方便后续 review。
+> 锚点内容需 L1/L2 验证，扩展内容至少 L2 验证，自动发现内容至少标注来源。
 <!-- outline-end -->
 
 ## 为什么要了解 ANR 的设计思想
@@ -78,7 +85,18 @@ ANR 机制在这个场景中介入的方式是：设置一个超时计时器，�
 
 当某个需要应用响应的操作开始时，system_server 会在一个后台线程上设置一个延迟消息。以 BroadcastReceiver 为例：当 AMS 将一个广播分发给目标应用时，它会同时通过 Handler 发送一个延迟消息，延迟时间就是该类型广播的超时阈值（前台广播 10 秒，后台广播 60 秒）。
 
-这个设计的核心思路是"发令枪 + 计时器"：广播发送出去的同时，计时器开始倒计时。如果应用在规定时间内完成了 `onReceive()` 的执行并通知了 AMS，这个计时器就会被取消——一切正常，用户毫无感知。
+```
+// 概念流程（简化）
+// frameworks/base/services/core/java/com/android/server/am/BroadcastQueue.java
+// @ AOSP android-14.0.0_r1
+
+// 1. 将广播入队并设置超时
+enqueueOrderedBroadcastLocked(r);
+// 2. 设置超时检测（在 AMS 的后台 Handler 上）
+scheduleBroadcastsDispatchAndCheckTimeout(r, BROADCAST_FG_TIMEOUT);
+```
+
+这段代码的核心思路是"发令枪 + 计时器"：广播发送出去的同时，计时器开始倒计时。如果应用在规定时间内完成了 `onReceive()` 的执行并通知了 AMS，这个计时器就会被取消——一切正常，用户毫无感知。
 
 ### 第二阶段：主线程处理
 
@@ -90,17 +108,20 @@ ANR 机制在这个场景中介入的方式是：设置一个超时计时器，�
 
 ### 第三阶段：超时触发
 
-当延迟消息到期时，system_server 进入 ANR 处理流程。在 Android 14 中，这个入口是 `AnrHelper.appNotResponding()`（早期版本直接在 ActivityManagerService 或 BroadcastQueue 中处理）。
+当延迟消息到期时，system_server 进入 ANR 处理流程。在 Android 14 中，这个入口是 `AnrHelper.appNotResponding()`（早期版本直接在 `ActivityManagerService` 或 `BroadcastQueue` 中处理）。
 
-```java
+```
+// 概念流程（简化）
 // frameworks/base/services/core/java/com/android/server/am/AnrHelper.java
 // @ AOSP android-14.0.0_r1
-// 概念级简化
+
 void appNotResponding(ProcessRecord app, String activityShortComponentName,
         String annotation, ProcessRecord parentProcess) {
+    // 1. 创建 ANR 描述对象
     AppNotResponding anr = new AppNotResponding(...);
+    // 2. 将 ANR 处理提交到专门的线程执行（避免阻塞 AMS 主线程）
     mAnrRecords.add(anr);
-    startAnrTaskIfNeeded(); // 提交到专门线程，避免阻塞 AMS 主线程
+    startAnrTaskIfNeeded();
 }
 ```
 
@@ -138,25 +159,44 @@ ANR 的触发点因组件类型而异，但最终都会汇聚到同一个处理�
 
 ### 核心：AppNotResponding 类
 
-在 Android 14 中，ANR 的核心处理逻辑被重构到了 `AppNotResponding` 类中。这个类封装了一次 ANR 事件的完整处理流程。它的核心工作包括：收集进程状态，dump 关联进程的堆栈，收集系统状态信息（CPU 负载等），通过 SIGQUIT 信号生成 traces.txt，写入 event log 和 dropbox，最后决策是弹对话框还是直接杀进程。
+在 Android 14 中，ANR 的核心处理逻辑被重构到了 `AppNotResponding` 类中。这个类封装了一次 ANR 事件的完整处理流程：
 
 ```java
 // frameworks/base/services/core/java/com/android/server/am/AppNotResponding.java
 // @ AOSP android-14.0.0_r1
 // 概念级简化，展示核心步骤
 
-// 向目标进程发送 Signal 3 (SIGQUIT) 触发堆栈 dump
-Process.sendSignal(app.pid, Process.SIGNAL_QUIT);
+class AppNotResponding {
+    void run() {
+        // 1. 收集进程状态
+        ProcessRecord app = mApp;
+        
+        // 2. 如果需要，先 dump 其他进程的堆栈
+        // （system_server 会向多个进程发送 SIGQUIT）
+        for (ProcessRecord p : mOtherProcesses) {
+            p.getPkgList().dumpTraces();
+        }
 
-// 写入 event log 和 dropbox
-EventLog.writeEvent(EventLogTags.AM_ANR, ...);
-mService.addErrorToDropBox("anr", app, ...);
+        // 3. 收集系统状态信息（CPU 负载等）
+        mApp.mErrorState.vmInstructionSet);
+        
+        // 4. 生成 traces.txt（通过 SIGQUIT 信号）
+        // 向目标进程发送 Signal 3 (SIGQUIT)
+        Process.sendSignal(app.pid, Process.SIGNAL_QUIT);
+        
+        // 5. 写入 event log 和 dropbox
+        EventLog.writeEvent(EventLogTags.AM_ANR, ...);
+        mService.addErrorToDropBox("anr", app, ...);
 
-// 决策：前台弹对话框，后台直接杀
-if (app.isInterestingToUser()) {
-    mService.showAnrDialog(app);  // 前台 ANR
-} else {
-    mService.killAppAtUsersRequest(app);  // 后台 ANR
+        // 6. 决策：弹对话框还是直接杀进程
+        if (app.isInterestingToUser()) {
+            // 前台 ANR：弹对话框
+            mService.showAnrDialog(app);
+        } else {
+            // 后台 ANR：直接杀
+            mService.killAppAtUsersRequest(app);
+        }
+    }
 }
 ```
 
@@ -166,7 +206,7 @@ if (app.isInterestingToUser()) {
 
 **堆栈收集使用 SIGQUIT 信号。** system_server 向目标进程发送 Signal 3（SIGQUIT），触发虚拟机的堆栈 dump。这也是为什么 ANR traces 文件中会包含所有线程的堆栈——因为 SIGQUIT 的处理函数会遍历虚拟机中的所有线程。
 
-**traces 的堆栈有滞后性。** 钉钉团队将这个问题形象地描述为"刻舟求剑"：从超时检测到发送 SIGQUIT 再到堆栈 dump 完成，中间经历了一系列异步操作。等到堆栈真正被捕获时，主线程上真正导致超时的长耗时任务可能已经执行完毕，当前正在执行的是另一个完全无关的任务。我们在 9.3 节（ANR 分析方法）中会详细讨论如何应对这个挑战。
+**traces 的堆栈有滞后性。** 钉钉团队在 ANR 治理实践中将这个问题形象地描述为"刻舟求剑"：从超时检测到发送 SIGQUIT 再到堆栈 dump 完成，中间经历了一系列异步操作。等到堆栈真正被捕获时，主线程上真正导致超时的长耗时任务可能已经执行完毕，当前正在执行的是另一个完全无关的任务。我们在 9.3 节（ANR 分析方法）中会详细讨论如何应对这个挑战。
 
 **System Server 会向多个进程发送 SIGQUIT。** 不仅仅是对发生 ANR 的进程，系统可能会同时请求关联进程的堆栈信息。这意味着一个 App 收到 SIGQUIT 并不代表自己发生了 ANR，也可能是另一个 App 触发的。
 
@@ -188,21 +228,36 @@ Watchdog 监控的是 **system_server 自身**中的核心系统服务——Acti
 
 ANR 采用"注册超时 → 完成取消"的模式：发起一个操作的同时设置超时计时器，操作完成后取消计时器。
 
-Watchdog 采用"定期巡检"模式：它运行在 system_server 中的一个独立线程上，每隔一定时间（默认 60 秒）向所有注册的系统服务线程发送一个心跳检查。每个 `HandlerChecker` 监控一个 Looper 线程。如果某个服务线程在规定时间内没有响应心跳，Watchdog 就认为它出了问题。
+Watchdog 采用"定期巡检"模式：它运行在 system_server 中的一个独立线程上，每隔一定时间（默认 60 秒）向所有注册的系统服务线程发送一个心跳检查。如果某个服务线程在规定时间内没有响应心跳，Watchdog 就认为它出了问题。
 
 ```java
 // frameworks/base/services/core/java/com/android/server/Watchdog.java
 // @ AOSP android-14.0.0_r1
 // 概念级简化
 
-// 每个 HandlerChecker 监控一个 Looper 线程
-final ArrayList<HandlerChecker> mHandlerCheckers = new ArrayList<>();
-
-// 定期向所有注册的线程发送心跳
-for (HandlerChecker hc : mHandlerCheckers) {
-    hc.scheduleCheckLocked();
+public class Watchdog {
+    // 每个 HandlerChecker 监控一个 Looper 线程
+    final ArrayList<HandlerChecker> mHandlerCheckers = new ArrayList<>();
+    
+    void run() {
+        while (true) {
+            // 向所有注册的线程发送心跳
+            for (HandlerChecker hc : mHandlerCheckers) {
+                hc.scheduleCheckLocked();
+            }
+            // 等待所有线程完成检查
+            wait(WAIT_INTERVAL);
+            
+            // 检查是否有超时的
+            blockedCheckers = getBlockedCheckersLocked();
+            if (blockedCheckers.size() > 0) {
+                // 系统挂了！dump 堆栈 + 杀 system_server
+                dumpStackTraces();
+                killSystemServer();
+            }
+        }
+    }
 }
-// 等待所有线程完成检查，如果有超时的 → dump 堆栈 + 杀 system_server
 ```
 
 [已验证: AOSP android-14.0.0_r1, frameworks/base/services/core/java/com/android/server/Watchdog.java]
@@ -215,9 +270,14 @@ Watchdog 触发后，意味着 system_server 本身出了问题（通常是死�
 
 ### 在 Perfetto 中的表现不同
 
-在 Perfetto Trace 中，ANR 事件通常表现为：应用主线程上出现一段长时间的非空闲执行块（RUNNABLE 或 BLOCKED），在 system_server 进程中可以看到 AnrHelper 相关的活动，Input ANR 可以在 InputDispatcher 的 track 中看到 "Application Not Responding" 标记。
+在 Perfetto Trace 中，ANR 事件通常表现为：
+- 应用主线程上出现一段长时间的非空闲执行块（RUNNABLE 或 BLOCKED）
+- 在 system_server 进程中可以看到 `AnrHelper` 相关的活动
+- Input ANR 可以在 InputDispatcher 的 track 中看到 "Application Not Responding" 标记
 
-Watchdog 触发时，在 Perfetto 中会表现为 system_server 进程中的某个系统服务线程长时间处于 BLOCKED 或 WAITING 状态。如果抓到了 Watchdog 超时事件，通常意味着设备即将重启。
+Watchdog 触发时，在 Perfetto 中会表现为：
+- system_server 进程中的某个系统服务线程长时间处于 BLOCKED 或 WAITING 状态
+- 如果抓到了 Watchdog 超时事件，通常意味着设备即将重启
 
 [待补充：Trace 截图 — ANR 与 Watchdog 在 Perfetto 中的对比]
 
@@ -227,7 +287,11 @@ ANR 触发后，系统会产出多种诊断信息，这些是我们分析 ANR �
 
 ### traces.txt（或 /data/anr/ 目录下的文件）
 
-这是最核心的 ANR 诊断文件。系统通过 SIGQUIT 信号触发虚拟机 dump 出所有线程的堆栈。文件内容包括所有线程的完整堆栈（线程名、优先级、状态 RUNNABLE/BLOCKED/WAITING 等、tid）、线程持有的锁信息（如 `- locked <0x12345678>`）、CPU 使用统计。
+这是最核心的 ANR 诊断文件。系统通过 SIGQUIT 信号触发虚拟机 dump 出所有线程的堆栈。文件内容包括：
+
+- **所有线程的完整堆栈**：包括线程名、优先级、状态（RUNNABLE / BLOCKED / WAITING 等）、tid
+- **线程持有的锁信息**：如 `- locked <0x12345678>`，可以看到哪个线程持有哪些锁
+- **CPU 使用统计**：ANR 发生前一段时间的 CPU 负载信息
 
 在 Android 10 及以上版本中，ANR trace 文件不再统一写入 `/data/anr/traces.txt`，而是以 `anr_*` 命名存放在 `/data/anr/` 目录下。可以通过 `adb pull /data/anr/` 获取。
 
@@ -235,13 +299,11 @@ ANR 触发后，系统会产出多种诊断信息，这些是我们分析 ANR �
 
 ### Event Log
 
-ANR 发生时，系统会在 event log 中写入一条 `am_anr` 记录，包含进程名、PID、ANR 原因（如 `Input dispatching timed out`）等信息：
+ANR 发生时，系统会在 event log 中写入一条记录，包含进程名、PID、ANR 原因（如 `Input dispatching timed out`）等信息：
 
 ```
-04-02 10:30:15.123  1000  1234  5678 I am_anr: [0,com.example.app,12345,
-ActivityManager,Input dispatching timed out (Waiting to send non-key event
-because the touched window has not finished processing certain input events
-that were delivered to it over 500.0ms ago)]
+// event log 示例
+04-02 10:30:15.123  1000  1234  5678 I am_anr: [0,com.example.app,12345,ActivityManager,Input dispatching timed out (Waiting to send non-key event because the touched window has not finished processing certain input events that were delivered to it over 500.0ms ago)]
 ```
 
 通过 `adb logcat -b events | grep am_anr` 可以过滤 ANR 事件。这条日志能快速确认是哪个进程、因为什么原因触发了 ANR。
@@ -294,7 +356,10 @@ Google 对 ANR 率的阈值定义是：
 
 这意味着如果你的应用每天有 10000 个活跃用户，只要每天有超过 38 个用户遇到 ANR，Google 就会认为你的应用质量有问题。在 Google Play 的搜索和推荐算法中，ANR 率高的应用会被降权，直接影响应用的曝光和下载量。
 
-Play Console 中可以看到的 ANR 信息包括：按设备和 Android 版本分组的 ANR 分布、ANR 触发时的堆栈信息（来自 traces.txt）、ANR 趋势图（按日/周/月）。
+Play Console 中可以看到的 ANR 信息包括：
+- 按设备和 Android 版本分组的 ANR 分布
+- ANR 触发时的堆栈信息（来自 traces.txt）
+- ANR 趋势图（按日/周/月）
 
 这些统计数据可以帮助开发者快速定位 ANR 在哪些设备或系统版本上高发，但根因分析仍然需要获取完整的 traces.txt 和 event log。
 
