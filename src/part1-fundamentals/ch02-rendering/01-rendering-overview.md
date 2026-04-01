@@ -1,11 +1,14 @@
 ---
 title: "Android 渲染架构全景"
 chapter: "2.1"
-status: ready-for-review
-applicable_versions: "Android 12 (API 31) - Android 16 (API B)"
+status: reviewed
+applicable_versions: "Android 12 (API 31) - Android 16 (API 36)"
 last_verified: "2026-03-30"
 last_verified_against: "AOSP android-16.0.0_r1, 官方文档最新版本"
 confidence: high
+drafted_date: "2026-03-30"
+reviewed_date: "2026-04-02"
+reviewed_by: "openclaw-task6"
 sources:
   - type: official
     path: "https://developer.android.com/guide/topics/graphics/overview"
@@ -67,7 +70,7 @@ Android 渲染管线是一个精密的流水线系统，将 XML 布局文件和 
 
 ### 第一阶段：UI 线程准备阶段
 
-这一阶段发生在 UI 线程（主线程），负责计算 View 树的结构和绘制指令。
+这一阶段发生在主线程（也称 UI 线程），负责计算 View 树的结构和绘制指令。
 
 #### 1. Measure 过程：决定每个 View 的大小
 

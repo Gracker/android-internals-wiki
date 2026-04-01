@@ -87,3 +87,41 @@
   4. "申请 largeHeap 是解决内存不足的好办法" — largeHeap 有代价，会增加 LMK 优先级
   5. "内存抖动只发生在低端设备上" — 120Hz 设备因帧间隔更短反而更容易暴露
 - **review 日志**：logs/review/2026-04-01-17-review.md
+
+
+## [Task6 Review] 2.1 Android 渲染架构全景 — 2026-04-02
+
+### B1: 需重写 — 文体违规（全文性，11+处列表罗列）
+- **位置**：全文至少 11 处"关键机制/核心功能/优势/优缺点/合成层次/显示机制"列表块
+- **问题**：违反 writing-guide "叙述为主，列表为辅"核心原则，属于"反面1: 百科词条式"。每个技术点都用 bullet list 罗列，缺少因果关系、上下文衔接、工程师对工程师的叙述语感。
+- **建议**：参照 writing-guide.md 中 VSync 的"正确写法"示例，将每个列表块重写为连贯叙述。优先处理 Measure/Layout/Draw 三节的"关键机制"列表、三缓冲的"优势"列表、软件渲染的"优缺点"列表。
+- **review 日志**：logs/review/2026-04-02-00-review.md
+
+### B2: 需补充素材 — 缺少 5 个 Type A 模板标准节
+- **位置**：全文结构
+- **问题**：缺少"在 Perfetto/工具中的表现"专节、"与其他机制的关系"专节、"版本演进"说明、"常见问题与误区"专节、"参考资料"列表。当前 Perfetto 内容仅在开头简略提及，无专节。
+- **建议**：
+  - Perfetto 专节：描述渲染管线各阶段在 Trace 中对应的 Track（Choreographer/RenderThread/SurfaceFlinger/GPU），正常vs异常表现
+  - 关系节：ch2.3 VSync → ch2.4 Choreographer → ch2.5 MainThread/RenderThread → ch2.6 SurfaceFlinger 的上下游链路
+  - 版本演进：Android 3.0(硬件加速引入) → 4.1(Project Butter/VSync) → 5.0(RenderThread) → 12(BlastBufferQueue) → 16(最新变化)
+  - 常见误区：如"GPU渲染一定比CPU快"、"三缓冲越多越好"、"硬件加速解决一切"
+  - 参考资料：AOSP 源码路径 + developer.android.com 链接
+- **review 日志**：logs/review/2026-04-02-00-review.md
+
+### B3: 需重写 — 源码引用过长（多处代码块）
+- **位置**：getDefaultSize() (~15行)、dequeueBuffer() 签名 (~10行)、RenderNode class (~20行)、DisplayListData class (~15行)
+- **问题**：违反 writing guide "只贴决定行为的那几行"原则。dequeueBuffer 签名块完全是函数签名，无实质内容。
+- **建议**：每个代码块精简到关键 3-5 行，加上注释标注"这段代码在做什么"。删除纯签名代码块。前后必须有"这意味着什么"的解释。
+- **review 日志**：logs/review/2026-04-02-00-review.md
+
+### B4: 需重写 — 总结概述式
+- **位置**：文末"总结"节
+- **问题**：两个编号列表（5个要点 + 4个能力），符合"反面3: 概述式"特征。
+- **建议**：重写为 2-3 段连贯叙述，回扣开头"为什么要了解渲染架构"的动机，自然引出下一节（VSync/Choreographer）。
+- **review 日志**：logs/review/2026-04-02-00-review.md
+
+### B5: 存疑 — 部分源码示例准确性
+- **位置**：OpenGLCanvas 类、VulkanRenderer::drawRect、DisplayListData 类结构、RenderNode class 定义
+- **问题**：这些代码示例可能是简化的伪代码，不完全反映 AOSP android-16.0.0_r1 的实际结构。Android 16 中 HWUI 已大幅重构，DisplayList 可能已不再以该类名存在。
+- **建议**：task2 重新对照 AOSP android-16.0.0_r1 源码验证这些代码块，标注 [待验证] 或替换为准确的代码。
+- **review 日志**：logs/review/2026-04-02-00-review.md

@@ -4,11 +4,11 @@
   "metrics": {
     "total": 102,
     "draft": 47,
-    "ready-for-review": 9,
-    "reviewed": 2,
+    "ready-for-review": 8,
+    "reviewed": 3,
     "finalized": 3,
     "staging_drafts": 0,
-    "last_updated": "2026-04-01T20:20:00+08:00"
+    "last_updated": "2026-04-02T00:27:00+08:00"
   },
   "reviewed_sections": {
     "8.1": {
@@ -73,10 +73,21 @@
         "每个误区均使用连贯叙述风格（非列表罗列），符合 writing-guide 要求",
         "全部 5 条误区已通过 L2 官方文档验证"
       ]
+    },
+    "2.1": {
+      "reviewed_date": "2026-04-02",
+      "reviewed_by": "openclaw-task6",
+      "review_status": "reviewed",
+      "fixes_applied": [
+        "frontmatter: 补 drafted_date/reviewed_date/reviewed_by",
+        "frontmatter: applicable_versions API B → API 36",
+        "frontmatter: status ready-for-review → reviewed",
+        "措辞: UI 线程（主线程）→ 主线程（也称 UI 线程）"
+      ]
     }
   },
   "review_stats": {
-    "total_reviewed": 6,
+    "total_reviewed": 7,
     "reviewed_today": 4,
     "review_issues_total": 4
   },
