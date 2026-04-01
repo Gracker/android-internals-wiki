@@ -172,3 +172,33 @@
 - **问题**：16KB Page Size 仅在速查表中出现，正文无对应说明
 - **建议**：在正文增加 16KB Page Size 对内存管理影响的简要说明
 - **review 日志**：logs/review/2026-04-02-0630-review.md
+
+## [Task6 Review] 2.2 帧率与刷新率 — 2026-04-02
+
+### 问题 1：API 33+ doFrame 回调签名不准确
+- **类型**：存疑
+- **位置**：Frame Pacing 章节 → "API 33+ 的 Frame Timeline 选择" → 代码示例
+- **问题**：代码示例中的 `doFrame(long frameTimeNanos, int frameId, Map<String, Long> frameData, int[] preferredFrameTimelines)` 签名与 AOSP 实际 API 不符。实际 API 33+ 使用 `FrameData` 对象传递 VSync 信息和候选时间线。
+- **建议**：查阅 AOSP `frameworks/base/core/java/android/view/Choreographer.java` 中 API 33+ 的 `FrameCallback` / `FrameData` 定义，替换为正确的代码示例。
+- **review 日志**：logs/review/2026-04-02-0735-review.md
+
+### 问题 2：FrameRateOverride 检测代码示例不准确
+- **类型**：存疑
+- **位置**：扩展 → Game Mode / Frame Rate → "Frame Rate Override（Android 14+）" → 代码示例
+- **问题**：`Choreographer.getInstance().postFrameCallback(...)` 不是检测 Frame Rate Override 的正确方式。`postFrameCallback` 只是注册下一帧回调，无法检测帧率被覆盖的情况。
+- **建议**：替换为 `Surface.OnFrameRateOverrideListener`（API 35+）或 `DisplayManager.DisplayListener` 的实际监听代码。
+- **review 日志**：logs/review/2026-04-02-0735-review.md
+
+### 问题 3：缺少"常见问题与误区"独立小节
+- **类型**：需补充素材
+- **位置**：全文末尾、总结之前
+- **问题**：writing-guide.md Type A 模板要求有"常见问题与误区"独立小节，本文缺失。文章虽然正文中散见一些误解澄清（如"同样的60 FPS流畅度可以天差地别"），但缺少系统性的误区梳理。
+- **建议**：补充5个常见误解：(1) 高刷=更流畅 (2) FPS够就行 (3) 120Hz一定好 (4) 掉帧=主线程问题 (5) setFrameRate是命令
+- **review 日志**：logs/review/2026-04-02-0735-review.md
+
+### 问题 4：Swappy 刷新率选择表述需确认
+- **类型**：存疑
+- **位置**：Frame Pacing 章节 → "Android Frame Pacing Library（Swappy）" → 第4点
+- **问题**：原文"Swappy 会...选择一个最佳的刷新率"表述暗示 Swappy 直接决策刷新率。实际上 Swappy 通过 setFrameRate() 向 SurfaceFlinger 传递偏好，由 SurfaceFlinger 做出最终决策。已在源文件中微调表述并标注，需高爷确认。
+- **建议**：确认 Swappy 与 SurfaceFlinger 的刷新率决策分工是否准确。
+- **review 日志**：logs/review/2026-04-02-0735-review.md

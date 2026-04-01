@@ -158,15 +158,41 @@
     {
       "section": "2.2",
       "section_title": "帧率与刷新率",
-      "priority": 60,
-      "reason": "待加工（素材0篇）",
-      "material_paths": [],
-      "status": "completed",
-      "added_by": "manual-init",
-      "added_at": "2026-03-29T21:00:00",
-      "processed_at": "2026-03-30T21:35:05",
-      "word_count": 8500,
-      "verification_status": "L2_verified_all_anchors_extensions_covered"
+      "priority": 90,
+      "reason": "[review回炉] 4个B类问题：2处代码示例API不准确、1处缺常见问题与误区小节、1处Swappy描述需确认",
+      "material_paths": [
+        "intake/suggestions.md（含 review 意见）"
+      ],
+      "review_issues": [
+        {
+          "type": "存疑",
+          "location": "API 33+ doFrame 代码示例",
+          "detail": "doFrame 回调签名与 AOSP 实际 API 不符，使用了 Map<String, Long> + int[] 而非 FrameData 对象",
+          "suggestion": "参考 AOSP Choreographer.java API 33+ 的 FrameData/FrameTimeline API 重写代码示例"
+        },
+        {
+          "type": "存疑",
+          "location": "FrameRateOverride 检测代码示例",
+          "detail": "Choreographer.postFrameCallback 不是检测 Frame Rate Override 的正确方式",
+          "suggestion": "替换为 Surface.OnFrameRateOverrideListener (API 35+) 或 DisplayManager 相关监听代码"
+        },
+        {
+          "type": "需补充素材",
+          "location": "全文末尾（总结前）",
+          "detail": "缺少 writing-guide.md Type A 模板要求的'常见问题与误区'独立小节",
+          "suggestion": "补充5个常见误解：高刷=更流畅、FPS够就行、120Hz一定好、掉帧=主线程、setFrameRate是命令"
+        },
+        {
+          "type": "存疑",
+          "location": "Swappy 自动选择刷新率段落",
+          "detail": "原文'Swappy选择45FPS'表述不够准确，已微调为'通过setFrameRate传递偏好'，需高爷确认",
+          "suggestion": "确认 Swappy 与 SurfaceFlinger 的刷新率决策分工"
+        }
+      ],
+      "added_by": "task6-review",
+      "added_at": "2026-04-02T07:40:34",
+      "status": "pending",
+      "original_review_log": "logs/review/2026-04-02-0735-review.md"
     },
     {
       "section": "2.3",
@@ -392,7 +418,10 @@
       "priority": 90,
       "reason": "[review回炉] 章节标题准确性问题 + 16KB Page Size 待补充",
       "material_paths": [
-        "intake/suggestions.md"
+        "intake/suggestions.md",
+        "intake/research-feeds/2026-04-02-07-ch04-16kb-page-size-impact.md",
+        "intake/research-feeds/2026-04-02-07-ch04-art-gc-pause-time-data.md",
+        "intake/research-feeds/2026-04-02-07-ch04-autofdo-dex2oat-optimization.md"
       ],
       "review_issues": [
         {
@@ -1720,5 +1749,5 @@
       "word_count": "~8000"
     }
   ],
-  "last_updated": "2026-04-02T06:30:27"
+  "last_updated": "2026-04-02T07:05:59.175272"
 }

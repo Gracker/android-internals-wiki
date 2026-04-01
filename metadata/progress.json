@@ -519,7 +519,7 @@
     }
   ],
   "ready_for_review": 4,
-  "last_updated": "2026-04-02T05:20:00",
+  "last_updated": "2026-04-02T07:05:59.176547",
   "stats": {
     "total": 97,
     "completed": 37,
@@ -551,6 +551,19 @@
         "themes": [
           "Compose 1.10 Pausable Composition 默认 + Strong Skipping Mode + Lazy prefetch + 性能对等 View 系统（目标 §7.7）",
           "Android 16/17 ProfilingManager 系统触发式追踪：TRIGGER_TYPE_COLD_START/ANR/OOM/EXCESSIVE_CPU（目标 §8.2/§9.1/§9.3/§14.7）"
+        ]
+      },
+      {
+        "time": "2026-04-02T07:05:59.176534",
+        "focus": "内存相关的版本演进（4.6 review 回炉 + 轮转主题2：内存管理）",
+        "source": "queue-priority-90 + topic-rotation-2",
+        "candidates": 5,
+        "passed": 3,
+        "delivered": 3,
+        "themes": [
+          "16KB Page Size 全面性能影响：TLB 效率、量化数据（冷启动3.16%~30%/功耗-4.56%/系统启动-8%）、强制适配时间线（目标 §4.6）",
+          "ART GC 暂停时间精确数据：CC 收集器 85% 降低、分代 GC 1-3ms（平均1.83ms）、标题亚毫秒准确性修正（目标 §4.6）",
+          "AutoFDO 内核集成 + dex2oat 18% 编译优化：内核占 CPU 40%、PGO 生态、Mainline 推送 Android 12+（目标 §4.6/§1.6）"
         ]
       }
     ]
@@ -728,6 +741,21 @@
       "title": "ANR 设计思想",
       "action": "draft-completed",
       "word_count": "~8500"
+    },
+    {
+      "date": "2026-04-02",
+      "section": "4.6",
+      "title": "内存相关的版本演进",
+      "action": "research-completed",
+      "focus": "16KB Page Size + ART GC 暂停时间 + AutoFDO/dex2oat",
+      "candidates": 5,
+      "passed": 3,
+      "delivered": 3,
+      "themes": [
+        "16KB Page Size 全面性能影响：TLB 效率、量化数据（冷启动3.16%~30%/功耗-4.56%/系统启动-8%）、强制适配时间线（目标 §4.6",
+        "ART GC 暂停时间精确数据：CC 收集器 85% 降低、分代 GC 1-3ms（平均1.83ms）、标题亚毫秒准确性修正（目标 §4.6）",
+        "AutoFDO 内核集成 + dex2oat 18% 编译优化：内核占 CPU 40%、PGO 生态、Mainline 推送 Android 12+（目标 §4"
+      ]
     }
   ],
   "sections": {
@@ -755,6 +783,13 @@
       "status": "finalized",
       "reviewed_date": "2026-04-02",
       "reviewed_by": "openclaw-task6"
+    },
+    "2.2": {
+      "title": "帧率与刷新率",
+      "status": "reviewed",
+      "reviewed_date": "2026-04-02",
+      "reviewed_by": "openclaw-task6",
+      "review_issues": 4
     }
   },
   "5.1": {
