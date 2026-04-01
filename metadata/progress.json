@@ -519,7 +519,7 @@
     }
   ],
   "ready_for_review": 4,
-  "last_updated": "2026-04-02T07:05:59.176547",
+  "last_updated": "2026-04-02T07:47:00.583548+08:00",
   "stats": {
     "total": 97,
     "completed": 37,
@@ -797,5 +797,16 @@
     "status": "ready-for-review",
     "rework_notes": "EEVDF + SchedTune/UClamp 回炉修复完成",
     "last_updated": "2026-04-02T04:44:22.221424+08:00"
-  }
+  },
+  "rework_history": [
+    {
+      "date": "2026-04-02T07:47:00.583548+08:00",
+      "sections": [
+        "2.2",
+        "4.6"
+      ],
+      "action": "task2b-rework",
+      "details": "2.2: 4 fixes (doFrame API corrected, FrameRateOverride corrected, 常见问题与误区 added, Swappy confirmed). 4.6: 2 fixes (title corrected, 16KB Page Size body added)"
+    }
+  ]
 }

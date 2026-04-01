@@ -1,10 +1,12 @@
 ---
 title: "内存相关的版本演进"
 chapter: "4.6"
-status: reviewed
+status: ready-for-review
 section: "4.6"
 reviewed_date: "2026-04-02"
 reviewed_by: "openclaw-task6"
+rework_date: "2026-04-02"
+rework_by: "openclaw-task2b"
 applicable_versions: "Android 5.0 (API 21) - Android 16 (API 36)"
 last_verified: "2026-03-31"
 last_verified_against: "AOSP android-16.0.0_r1"
@@ -437,8 +439,27 @@ Glide 和 Coil 等图片加载库默认在 API 26+ 上使用硬件 Bitmap。这�
 | Android 11 | Scudo 替代 jemalloc（64 位大内存设备） | Native 内存安全检测增强，double-free/UAF 可检测 |
 | Android 14+ | MTE 支持开始落地（Pixel 8 首发硬件） | 硬件级内存安全检测，Async 模式开销 1-2% |
 | Android 15 | CMC GC（基于 UFFD）替代 CC GC | 去掉 Read Barrier，GC 不运行时零额外开销 |
-| Android 15 | 16KB Page Size 支持 | TLB miss 减少 5-10% 性能提升；App 需适配 |
-[待补充: 16KB Page Size 仅在速查表中提及，建议在正文中增加简要说明，包括对内存管理的具体影响]
+| Android 15 | 16KB Page Size 支持 | TLB 命中率提升；冷启动快 3-16%；App 需适配 NDK r28+ |
+
+### 16KB Page Size：从 4KB 到 16KB 的跨越
+
+传统 Android 设备使用 4KB 的内存页面大小，这是 Linux 内核在大多数架构上的默认值。Android 15 引入了 16KB 页面大小的支持，Android 16 开始在高端设备（8GB+ RAM）上默认启用。Google Play 自 2025 年 11 月起强制要求所有新 App 和更新支持 16KB 页面对齐。
+
+这个变化的核心动机是 TLB（Translation Lookaside Buffer）效率。TLB 是 CPU 内部缓存页表映射的高速缓存，容量有限。在 12-16GB 内存的高端设备上，4KB 页面意味着需要管理数百万个页表条目，TLB 的命中率会显著下降。切换到 16KB 页面后，页表条目数量减少为原来的四分之一，TLB 命中率大幅提升——这是所有后续性能改善的底层机制。
+
+Google 官方测试的量化数据相当可观：
+
+- **App 冷启动**平均快 3.16%，在内存压力下最高可达 30%
+- **启动功耗**降低约 4.56%
+- **相机冷启动**快 6.6%，热启动快 4.48%
+- **系统启动**快约 8%（约节省 950ms）
+
+这些性能提升的代价是**内部碎片**：原本只需要 4KB 的小内存分配（如 `mmap` 映射），现在实际占用 16KB。对于内存分配密集的应用，这意味着更高的内存占用。不过在 8GB+ 的大内存设备上，这个代价相对 TLB 收益来说是可以接受的。
+
+对于开发者的适配要求：纯 Java/Kotlin 应用自动兼容，无需修改；但使用 NDK/C++ 的应用需要用 NDK r28+ 重新编译，确保 ELF 段对齐到 16KB。硬编码 `PAGE_SIZE = 4096` 的代码必须改为 `sysconf(_SC_PAGESIZE)` 动态获取。可以通过 `adb shell getconf PAGE_SIZE` 检查设备当前的页面大小。
+
+[已验证: 官方文档 source.android.com/docs/architecture/16kb-page-size]
+[来源: intake/research-feeds/2026-04-02-07-ch04-16kb-page-size-impact.md]
 
 [来源: 综合本节各锚点的验证结果汇总]
 
