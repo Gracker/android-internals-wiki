@@ -141,3 +141,20 @@
 - **问题**：writing-guide.md 要求每节提供"在 Perfetto/工具中的实际表现"。当前仅 heapprofd 小节有 Perfetto 对照，其他小节缺少对应的 Track 描述或截图占位。
 - **建议**：补充以下 Track 说明：① Java Heap Track 在 Perfetto 中的表现 ② GC Event Track 与内存抖动的对应关系 ③ dmabuf/GPU memory Track 的说明
 - **review 日志**：logs/review/2026-04-02-0320-review.md
+
+
+## [Task6 Review] 5.1 Linux 进程调度基础 — 2026-04-02
+
+### B1: 需补充素材 — EEVDF 调度器章节
+- **类型**：需补充素材
+- **位置**：「EEVDF：CFS 的下一代演进（Linux 6.6+）」章节
+- **问题**：EEVDF 是 Linux 6.6+ 替代 CFS 的新调度器，引入了虚拟截止时间（virtual deadline）概念，使调度决策更加确定性。当前仅有 [待补充] 占位符和一句话概述，缺少：① 虚拟截止时间的计算机制 ② EEVDF 与 CFS 的核心区别（latency nose、eligibility 机制）③ 对 Android 延迟敏感型工作负载的影响分析 ④ 在 Perfetto 中的观察方法
+- **建议**：参考 Linux kernel documentation (sched-design-EEVDF.html)、LWN 相关文章，补充完整内容。标注 [待验证: Android 17 是否默认启用 EEVDF] 保留。
+- **review 日志**：logs/review/2026-04-02-0421-review.md
+
+### B2: 需补充素材 — SchedTune 与 UClamp 章节
+- **类型**：需补充素材
+- **位置**：「SchedTune 与 UClamp：Android 的调度增强」章节
+- **问题**：这两个机制直接影响 Android 的 CPU 选核和频率决策，对 MTK/高通平台性能优化至关重要。当前仅有 [待补充] 占位符。缺少：① SchedTune boost 机制（per-task boosting、cgroup 集成）② UClamp 的 min/max clamp 原理及其与 EAS 的配合 ③ MTK/高通平台上的厂商定制化差异 ④ 在 Perfetto 中的 Track 表现
+- **建议**：参考 AOSP kernel/sched/ufreq.h（uclamp 定义）、Android 源码中 SchedTune cgroup 实现、高爷博客素材 Personal-Knowlodge/source/Android-Perfetto-09-CPU.md
+- **review 日志**：logs/review/2026-04-02-0421-review.md

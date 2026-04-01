@@ -3,12 +3,12 @@
   "total_sections": 93,
   "metrics": {
     "total": 102,
-    "draft": 47,
+    "draft": 46,
     "ready-for-review": 7,
-    "reviewed": 3,
+    "reviewed": 4,
     "finalized": 4,
     "staging_drafts": 0,
-    "last_updated": "2026-04-02T03:20:00+08:00"
+    "last_updated": "2026-04-02T04:21:00+08:00"
   },
   "reviewed_sections": {
     "8.1": {
@@ -82,12 +82,26 @@
         "frontmatter: status ready-for-review → reviewed",
         "措辞: UI 线程（主线程）→ 主线程（也称 UI 线程）"
       ]
+    },
+    "5.1": {
+      "reviewed_date": "2026-04-02",
+      "reviewed_by": "openclaw-task6",
+      "review_status": "reviewed",
+      "fixes_applied": [
+        "量词修正：一颗红黑树→一棵红黑树",
+        "frontmatter: status ready-for-review → reviewed, 添加 reviewed_date/reviewed_by"
+      ],
+      "b_type_issues": 2,
+      "b_issues": [
+        "EEVDF 章节内容不充分（仅有[待补充]占位符）",
+        "SchedTune/UClamp 章节内容不充分（仅有[待补充]占位符）"
+      ]
     }
   },
   "review_stats": {
-    "total_reviewed": 8,
-    "reviewed_today": 5,
-    "review_issues_total": 4
+    "total_reviewed": 9,
+    "reviewed_today": 6,
+    "review_issues_total": 6
   },
   "completed": [
     {
@@ -447,6 +461,17 @@
       "extensions_total": 2,
       "verification_level": "L2",
       "word_count": "~9000"
+    },
+    {
+      "section": "8.6",
+      "title": "Kotlin Coroutine 性能实践",
+      "completed_at": "2026-04-02T04:18:00+08:00",
+      "anchors_covered": 5,
+      "anchors_total": 5,
+      "extensions_covered": 2,
+      "extensions_total": 2,
+      "verification_level": "L2",
+      "word_count": "~8500"
     }
   ],
   "ready_for_review": 4,
