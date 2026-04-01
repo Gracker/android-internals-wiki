@@ -8562,5 +8562,355 @@
     "confidence": "low",
     "summary": "# Documentation – Arm Developer [Read in Cubox](https://cubox.pro/web/card/7296784389025826762) [Rea",
     "indexed_at": "2026-04-01T14:50:41.564101"
+  },
+  {
+    "title": "Flutter 3.0 之 PlatformView：告别 VirtualDisplay，拥抱 TextureLayer",
+    "path": "Cubox/Flutter 3.0 之 PlatformView ：告别 VirtualDisplay ，拥抱 TextureLayer-2022-05-17.md",
+    "score": {
+      "relevance": 3,
+      "technical_depth": 3,
+      "timeliness": 2,
+      "verifiability": 3,
+      "total": 11
+    },
+    "chapters": [
+      "ch05-渲染"
+    ],
+    "quality": "medium",
+    "confidence": "medium",
+    "summary": "Flutter 3.0 PlatformView从VirtualDisplay迁移到TextureLayer，影响Android渲染路径",
+    "indexed_at": "2026-04-01"
+  },
+  {
+    "title": "Flutter 3.22 发布：Vulkan backend与Wasm Native落地",
+    "path": "Cubox/Flutter 3.22 发布，快来看看有什么更新吧？-2024-05-15.md",
+    "score": {
+      "relevance": 3,
+      "technical_depth": 3,
+      "timeliness": 4,
+      "verifiability": 3,
+      "total": 13
+    },
+    "chapters": [
+      "ch05-渲染"
+    ],
+    "quality": "medium",
+    "confidence": "high",
+    "summary": "Flutter 3.22引入Vulkan backend和Wasm Native，Dart macro进展",
+    "indexed_at": "2026-04-01"
+  },
+  {
+    "title": "Flutter Android 逆向介绍",
+    "path": "Cubox/Flutter Android 逆向介绍-2024-05-09.md",
+    "score": {
+      "relevance": 3,
+      "technical_depth": 4,
+      "timeliness": 4,
+      "verifiability": 3,
+      "total": 14
+    },
+    "chapters": [
+      "ch12-安全",
+      "ch14-工具"
+    ],
+    "quality": "medium",
+    "confidence": "medium",
+    "summary": "Flutter应用逆向分析方法，涉及Android平台安全与工具链",
+    "indexed_at": "2026-04-01"
+  },
+  {
+    "title": "Flutter Impeller裁剪后搭建渲染Demo要点",
+    "path": "Cubox/Flutter Impeller裁剪后搭建渲染Demo要点（ flutter裁减 移除dart依赖，...-2024-01-06.md",
+    "score": {
+      "relevance": 4,
+      "technical_depth": 4,
+      "timeliness": 4,
+      "verifiability": 3,
+      "total": 15
+    },
+    "chapters": [
+      "ch05-渲染"
+    ],
+    "quality": "medium",
+    "confidence": "high",
+    "summary": "Flutter Impeller引擎裁剪与渲染Demo搭建，C++层文字/图片渲染",
+    "indexed_at": "2026-04-01"
+  },
+  {
+    "title": "Flutter RenderSurface 选择说明",
+    "path": "Cubox/Flutter RenderSurface 选择说明 - 知乎-2024-03-08.md",
+    "score": {
+      "relevance": 4,
+      "technical_depth": 4,
+      "timeliness": 4,
+      "verifiability": 3,
+      "total": 15
+    },
+    "chapters": [
+      "ch05-渲染"
+    ],
+    "quality": "medium",
+    "confidence": "high",
+    "summary": "Flutter RenderSurface选择：SurfaceView vs TextureView对渲染流水线的影响",
+    "indexed_at": "2026-04-01"
+  },
+  {
+    "title": "Flutter Platform和UI线程合并是怎么回事",
+    "path": "Cubox/Flutter 上的 Platform 和 UI 线程合并是怎么回事？它会带来什么？-2025-02-24.md",
+    "score": {
+      "relevance": 4,
+      "technical_depth": 4,
+      "timeliness": 5,
+      "verifiability": 3,
+      "total": 16
+    },
+    "chapters": [
+      "ch03-线程",
+      "ch05-渲染"
+    ],
+    "quality": "high",
+    "confidence": "high",
+    "summary": "Flutter Platform与UI线程合并的架构变化，影响渲染和线程模型",
+    "indexed_at": "2026-04-01"
+  },
+  {
+    "title": "Flutter 全埋点的实现｜得物技术",
+    "path": "Cubox/Flutter 全埋点的实现｜得物技术-2023-12-13.md",
+    "score": {
+      "relevance": 3,
+      "technical_depth": 3,
+      "timeliness": 3,
+      "verifiability": 3,
+      "total": 12
+    },
+    "chapters": [
+      "ch11-Profiling",
+      "ch14-工具"
+    ],
+    "quality": "medium",
+    "confidence": "medium",
+    "summary": "基于Dart AOP实现Flutter全埋点，性能监控工具实践",
+    "indexed_at": "2026-04-01"
+  },
+  {
+    "title": "Flutter 启动页的前世今生适配历程",
+    "path": "Cubox/Flutter 启动页的前世今生适配历程-2022-11-22.md",
+    "score": {
+      "relevance": 4,
+      "technical_depth": 3,
+      "timeliness": 2,
+      "verifiability": 2,
+      "total": 11
+    },
+    "chapters": [
+      "ch04-启动",
+      "ch05-渲染"
+    ],
+    "quality": "medium",
+    "confidence": "medium",
+    "summary": "Flutter APP启动页在iOS和Android的适配历程与最佳实践",
+    "indexed_at": "2026-04-01"
+  },
+  {
+    "title": "Flutter 在全新Platform和UI线程合并后的大坑和变化",
+    "path": "Cubox/Flutter 在全新 Platform 和 UI 线程合并后，出现了什么大坑和变化？-2025-04-24.md",
+    "score": {
+      "relevance": 4,
+      "technical_depth": 4,
+      "timeliness": 5,
+      "verifiability": 3,
+      "total": 16
+    },
+    "chapters": [
+      "ch03-线程",
+      "ch05-渲染"
+    ],
+    "quality": "high",
+    "confidence": "high",
+    "summary": "Flutter Platform/UI线程合并后实际遇到的坑和变化详解",
+    "indexed_at": "2026-04-01"
+  },
+  {
+    "title": "Flutter 多引擎渲染实践",
+    "path": "Cubox/Flutter 多引擎渲染，在稿定 App 的实践-2022-11-02.md",
+    "score": {
+      "relevance": 4,
+      "technical_depth": 3,
+      "timeliness": 2,
+      "verifiability": 2,
+      "total": 11
+    },
+    "chapters": [
+      "ch05-渲染"
+    ],
+    "quality": "medium",
+    "confidence": "medium",
+    "summary": "Flutter多引擎渲染在稿定App的实际应用实践",
+    "indexed_at": "2026-04-01"
+  },
+  {
+    "title": "Flutter 多引擎渲染躺坑篇",
+    "path": "Cubox/Flutter 多引擎渲染，在稿定 App 的实践（三）：躺坑篇-2022-11-02.md",
+    "score": {
+      "relevance": 3,
+      "technical_depth": 3,
+      "timeliness": 2,
+      "verifiability": 2,
+      "total": 10
+    },
+    "chapters": [
+      "ch05-渲染"
+    ],
+    "quality": "medium",
+    "confidence": "medium",
+    "summary": "Flutter多引擎渲染实践中踩到的坑和解决方案",
+    "indexed_at": "2026-04-01"
+  },
+  {
+    "title": "Flutter 多引擎渲染原理篇",
+    "path": "Cubox/Flutter 多引擎渲染，在稿定 App 的实践（二）：原理篇-2022-11-02.md",
+    "score": {
+      "relevance": 4,
+      "technical_depth": 3,
+      "timeliness": 2,
+      "verifiability": 2,
+      "total": 11
+    },
+    "chapters": [
+      "ch05-渲染"
+    ],
+    "quality": "medium",
+    "confidence": "medium",
+    "summary": "Flutter多引擎渲染的原理机制详解",
+    "indexed_at": "2026-04-01"
+  },
+  {
+    "title": "Flutter MediaQuery优化App性能",
+    "path": "Cubox/Flutter 小技巧之通过 MediaQuery 优化 App 性能-2025-03-13.md",
+    "score": {
+      "relevance": 4,
+      "technical_depth": 3,
+      "timeliness": 5,
+      "verifiability": 3,
+      "total": 15
+    },
+    "chapters": [
+      "ch05-渲染"
+    ],
+    "quality": "medium",
+    "confidence": "high",
+    "summary": "通过MediaQuery优化Flutter App性能的实用技巧",
+    "indexed_at": "2026-04-01"
+  },
+  {
+    "title": "Flutter 性能优化之降内存、降刷新篇",
+    "path": "Cubox/Flutter 性能优化之降内存、降刷新篇 - 掘金-2023-11-24.md",
+    "score": {
+      "relevance": 5,
+      "technical_depth": 3,
+      "timeliness": 3,
+      "verifiability": 2,
+      "total": 13
+    },
+    "chapters": [
+      "ch05-渲染",
+      "ch07-内存"
+    ],
+    "quality": "medium",
+    "confidence": "high",
+    "summary": "Flutter性能优化：降内存和降刷新的实战方案",
+    "indexed_at": "2026-04-01"
+  },
+  {
+    "title": "Flutter 性能分析（中文文档）",
+    "path": "Cubox/Flutter 性能分析 - Flutter 中文文档 - Flutter 中文开发者网站 - Fl...-2023-07-17.md",
+    "score": {
+      "relevance": 4,
+      "technical_depth": 3,
+      "timeliness": 3,
+      "verifiability": 3,
+      "total": 13
+    },
+    "chapters": [
+      "ch11-Profiling",
+      "ch05-渲染"
+    ],
+    "quality": "medium",
+    "confidence": "high",
+    "summary": "Flutter官方中文文档：诊断UI性能问题的方法论",
+    "indexed_at": "2026-04-01"
+  },
+  {
+    "title": "Flutter 性能分析（重复保存）",
+    "path": "Cubox/Flutter 性能分析 - Flutter 中文文档 - Flutter 中文开发者网站 - Fl...-2023-08-02.md",
+    "score": {
+      "relevance": 4,
+      "technical_depth": 3,
+      "timeliness": 3,
+      "verifiability": 3,
+      "total": 13
+    },
+    "chapters": [
+      "ch11-Profiling",
+      "ch05-渲染"
+    ],
+    "quality": "medium",
+    "confidence": "high",
+    "summary": "同2023-07-17版本的重复保存",
+    "indexed_at": "2026-04-01"
+  },
+  {
+    "title": "Flutter 2025年产品路线图",
+    "path": "Cubox/Flutter 2025 年产品路线图发布这份路线图是我们希望实现的愿景目标，主要由我们这些在 Google 任职、从事 - 掘金-2025-04-13.md",
+    "score": {
+      "relevance": 2,
+      "technical_depth": 2,
+      "timeliness": 5,
+      "verifiability": 2,
+      "total": 11
+    },
+    "chapters": [
+      "ch05-渲染"
+    ],
+    "quality": "medium",
+    "confidence": "medium",
+    "summary": "Flutter 2025年产品路线图，Google团队愿景目标",
+    "indexed_at": "2026-04-01"
+  },
+  {
+    "title": "Flutter 图片预加载优化",
+    "path": "Cubox/Flutter 图片预加载在构建 Flutter 应用时，提前加载图片资源是一种常见优化手段，尤其适用于展示型页面、动画 - 掘金-2025-05-25.md",
+    "score": {
+      "relevance": 3,
+      "technical_depth": 3,
+      "timeliness": 5,
+      "verifiability": 2,
+      "total": 13
+    },
+    "chapters": [
+      "ch05-渲染"
+    ],
+    "quality": "medium",
+    "confidence": "medium",
+    "summary": "Flutter图片预加载工具，支持批量并发和SVG加载",
+    "indexed_at": "2026-04-01"
+  },
+  {
+    "title": "Flutter 聊天面板动画优化",
+    "path": "Cubox/Flutter - 聊天面板库动画生硬？这次让你丝滑个够这次的更新主要是带来了自定义底部容器的功能，即容器的结构可完全由 - 掘金-2025-07-21.md",
+    "score": {
+      "relevance": 2,
+      "technical_depth": 2,
+      "timeliness": 5,
+      "verifiability": 1,
+      "total": 10
+    },
+    "chapters": [
+      "ch05-渲染"
+    ],
+    "quality": "medium",
+    "confidence": "low",
+    "summary": "Flutter聊天面板动画优化，自定义容器与丝滑动画",
+    "indexed_at": "2026-04-01"
   }
 ]

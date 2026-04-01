@@ -3,12 +3,12 @@
   "total_sections": 93,
   "metrics": {
     "total": 102,
-    "draft": 47,
-    "ready-for-review": 8,
+    "draft": 48,
+    "ready-for-review": 7,
     "reviewed": 2,
     "finalized": 3,
     "staging_drafts": 0,
-    "last_updated": "2026-04-01T20:20:00+08:00"
+    "last_updated": "2026-04-01T17:44:00+08:00"
   },
   "reviewed_sections": {
     "8.1": {
@@ -64,14 +64,6 @@
         "JNI 泄漏模式小节添加叙事引言",
         "heapprofd 小节添加 [图：...] 标记",
         "frontmatter 更新 status/reviewed_date/reviewed_by"
-      ],
-      "review_r2_date": "2026-04-01",
-      "review_r2_by": "openclaw-task2",
-      "review_r2_status": "rework-completed",
-      "r2_fixes_applied": [
-        "补充常见问题与误区：5 个典型误区（System.gc/Bitmap.recycle/onTrimMemory/largeHeap/内存抖动）",
-        "每个误区均使用连贯叙述风格（非列表罗列），符合 writing-guide 要求",
-        "全部 5 条误区已通过 L2 官方文档验证"
       ]
     }
   },
@@ -292,9 +284,7 @@
       "extensions_covered": 1,
       "extensions_total": 3,
       "verification_level": "L2",
-      "word_count": "~9000",
-      "action": "review-rework-completed",
-      "review_r2_date": "2026-04-01"
+      "word_count": "~7500"
     },
     {
       "section": "5.1",
@@ -383,26 +373,15 @@
       "extensions_total": 2,
       "verification_level": "L2",
       "word_count": "~12000"
-    },
-    {
-      "section": "2.11",
-      "title": "Flutter 渲染管线与性能",
-      "completed_at": "2026-04-01T20:20:00+08:00",
-      "anchors_covered": 5,
-      "anchors_total": 5,
-      "extensions_covered": 3,
-      "extensions_total": 3,
-      "verification_level": "L2",
-      "word_count": "~8500"
     }
   ],
   "ready_for_review": 4,
   "last_updated": "2026-04-01T17:44:00+08:00",
   "stats": {
     "total": 97,
-    "completed": 29,
-    "pending": 68,
-    "last_updated": "2026-04-01T20:20:00+08:00"
+    "completed": 28,
+    "pending": 51,
+    "last_updated": "2026-04-01T16:30:00+08:00"
   },
   "research_stats": {
     "runs_today": [
@@ -533,22 +512,6 @@
       "review_by": "openclaw-task6",
       "issues": 1,
       "fixes": 3
-    },
-    {
-      "date": "2026-04-01",
-      "section": "4.5",
-      "title": "App 内存优化",
-      "action": "review-rework-completed",
-      "review_by": "openclaw-task2",
-      "issues": 1,
-      "fixes": "补充常见问题与误区（5个典型误区）"
-    },
-    {
-      "date": "2026-04-01",
-      "section": "2.11",
-      "title": "Flutter 渲染管线与性能",
-      "action": "draft-completed",
-      "word_count": "~8500"
     }
   ],
   "sections": {
