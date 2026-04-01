@@ -8,7 +8,7 @@
     "reviewed": 3,
     "finalized": 3,
     "staging_drafts": 0,
-    "last_updated": "2026-04-02T00:27:00+08:00"
+    "last_updated": "2026-04-02T01:42:00+08:00"
   },
   "reviewed_sections": {
     "8.1": {
@@ -427,15 +427,26 @@
       "extensions_total": 2,
       "verification_level": "L2",
       "word_count": "~8500"
+    },
+    {
+      "section": "8.4",
+      "title": "其他响应速度场景",
+      "completed_at": "2026-04-02T01:42:00+08:00",
+      "anchors_covered": 4,
+      "anchors_total": 4,
+      "extensions_covered": 0,
+      "extensions_total": 2,
+      "verification_level": "L2",
+      "word_count": "~9500"
     }
   ],
   "ready_for_review": 4,
   "last_updated": "2026-04-01T20:20:00+08:00",
   "stats": {
     "total": 97,
-    "completed": 31,
-    "pending": 66,
-    "last_updated": "2026-04-01T20:20:00+08:00"
+    "completed": 32,
+    "pending": 65,
+    "last_updated": "2026-04-02T01:42:00+08:00"
   },
   "research_stats": {
     "runs_today": [
@@ -596,6 +607,13 @@
       "title": "Flutter 渲染管线与性能",
       "action": "draft-completed",
       "word_count": "~8500"
+    },
+    {
+      "date": "2026-04-02",
+      "section": "8.4",
+      "title": "其他响应速度场景",
+      "action": "draft-completed",
+      "word_count": "~9500"
     }
   ],
   "sections": {
