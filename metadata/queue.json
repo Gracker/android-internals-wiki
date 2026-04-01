@@ -389,15 +389,29 @@
     {
       "section": "4.6",
       "section_title": "内存相关的版本演进",
-      "priority": 55,
-      "reason": "待加工（素材0篇）",
-      "material_paths": [],
-      "status": "completed",
-      "added_by": "manual-init",
-      "added_at": "2026-03-29T21:00:00",
-      "processed_at": "2026-03-31T20:34:41.955848",
-      "word_count": "~8000",
-      "verification_status": "L2_verified_all_5_anchors_2_extensions_covered"
+      "priority": 90,
+      "reason": "[review回炉] 章节标题准确性问题 + 16KB Page Size 待补充",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "存疑",
+          "location": "章节标题",
+          "detail": "标题称降至亚毫秒但正文数据为 1-3ms",
+          "suggestion": "改为暂停时间大幅降低或补充官方亚毫秒数据"
+        },
+        {
+          "type": "待补充",
+          "location": "速查表 16KB Page Size",
+          "detail": "仅在速查表中出现正文无支撑",
+          "suggestion": "正文增加简要说明"
+        }
+      ],
+      "added_by": "task6-review",
+      "added_at": "2026-04-02T06:30:27",
+      "status": "pending",
+      "original_review_log": "logs/review/2026-04-02-0630-review.md"
     },
     {
       "section": "5.2",
@@ -1706,5 +1720,5 @@
       "word_count": "~8000"
     }
   ],
-  "last_updated": "2026-04-02T04:44:22.221424+08:00"
+  "last_updated": "2026-04-02T06:30:27"
 }
