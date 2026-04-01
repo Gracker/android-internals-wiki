@@ -4,7 +4,7 @@
   "metrics": {
     "total": 102,
     "draft": 47,
-    "ready-for-review": 8,
+    "ready-for-review": 9,
     "reviewed": 2,
     "finalized": 3,
     "staging_drafts": 0,
@@ -394,14 +394,36 @@
       "extensions_total": 3,
       "verification_level": "L2",
       "word_count": "~8500"
+    },
+    {
+      "section": "2.11",
+      "title": "Flutter 渲染管线与性能",
+      "completed_at": "2026-04-01T20:20:00+08:00",
+      "anchors_covered": 5,
+      "anchors_total": 5,
+      "extensions_covered": 2,
+      "extensions_total": 3,
+      "verification_level": "L2",
+      "word_count": "~8000"
+    },
+    {
+      "section": "2.11",
+      "title": "Flutter 渲染管线与性能",
+      "completed_at": "2026-04-01T20:20:00+08:00",
+      "anchors_covered": 5,
+      "anchors_total": 5,
+      "extensions_covered": 1,
+      "extensions_total": 2,
+      "verification_level": "L2",
+      "word_count": "~8500"
     }
   ],
   "ready_for_review": 4,
-  "last_updated": "2026-04-01T17:44:00+08:00",
+  "last_updated": "2026-04-01T20:20:00+08:00",
   "stats": {
     "total": 97,
-    "completed": 29,
-    "pending": 68,
+    "completed": 31,
+    "pending": 66,
     "last_updated": "2026-04-01T20:20:00+08:00"
   },
   "research_stats": {
@@ -542,6 +564,20 @@
       "review_by": "openclaw-task2",
       "issues": 1,
       "fixes": "补充常见问题与误区（5个典型误区）"
+    },
+    {
+      "date": "2026-04-01",
+      "section": "2.11",
+      "title": "Flutter 渲染管线与性能",
+      "action": "draft-completed",
+      "word_count": "~8500"
+    },
+    {
+      "date": "2026-04-01",
+      "section": "2.11",
+      "title": "Flutter 渲染管线与性能",
+      "action": "draft-completed",
+      "word_count": "~8000"
     },
     {
       "date": "2026-04-01",
