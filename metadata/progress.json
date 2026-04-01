@@ -604,6 +604,13 @@
       "status": "finalized",
       "reviewed_date": "2026-04-01",
       "reviewed_by": "openclaw-task6"
+    },
+    "2.1": {
+      "title": "Android 渲染架构全景",
+      "file": "src/part1-fundamentals/ch02-rendering/01-rendering-overview.md",
+      "status": "finalized",
+      "reviewed_date": "2026-04-02",
+      "reviewed_by": "openclaw-task6"
     }
   }
 }

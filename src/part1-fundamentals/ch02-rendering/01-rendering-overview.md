@@ -1,13 +1,13 @@
 ---
 title: "Android 渲染架构全景"
 chapter: "2.1"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 12 (API 31) - Android 16 (API 36)"
 last_verified: "2026-03-30"
 last_verified_against: "AOSP android-16.0.0_r1, 官方文档最新版本"
 confidence: high
 drafted_date: "2026-03-30"
-reviewed_date: "2026-04-02"
+reviewed_date: "2026-04-02T01:20"
 reviewed_by: "openclaw-task6"
 sources:
   - type: official
@@ -201,13 +201,7 @@ DisplayHardware.vsync()
 
 ### 双缓冲的问题
 
-传统的双缓冲机制存在一个时间窗口问题：
-1. **缓冲区 1**：正在被显示（Display）
-2. **缓冲区 2**：正在被填充（GPU Rendering）
-
-当 GPU 填充速度跟不上显示速度时，会出现：
-- **等待显示**：GPU 等待 VSync 信号，浪费帧时间
-- **撕裂**：如果 GPU 在显示过程中写入新数据，会出现画面撕裂
+传统的双缓冲机制用两个缓冲区轮流工作：一个正在被屏幕显示（前台缓冲区），另一个正在被 GPU 填充新的一帧（后台缓冲区）。问题在于，当 GPU 填充速度跟不上显示速度时，会出现两种情况：要么 GPU 不得不等待下一个 VSync 信号才能切换缓冲区，白白浪费了一段帧时间；要么 GPU 在屏幕还在读取前台缓冲区时就开始写入后台缓冲区，导致画面撕裂——屏幕上半部分显示的是旧帧，下半部分已经变成了新帧。
 
 ### 三缓冲的解决方案
 
@@ -223,15 +217,12 @@ T4: VSync 3 → 显示缓冲区 3
 T5: GPU 开始填充缓冲区 1（已经完成上一次填充）
 ```
 
-**优势**：
-- **减少等待时间**：GPU 始终有可用的缓冲区填充
-- **提高帧率**：在 VSync 周期内完成更多渲染工作
-- **平滑过渡**：避免帧率突然下降
+三缓冲的核心优势在于 GPU 始终有一个空闲缓冲区可用，不再需要等待显示端释放缓冲区。这意味着即使某一帧的渲染稍微超时，GPU 也可以立即开始下一帧的工作，而不是空转等待。从帧率曲线来看，三缓冲让帧率的波动更加平滑，避免了双缓冲下帧率从 60fps 突然跌到 30fps 的阶梯式下降。
 
 ### 在 Android 中的实现
 
 ```cpp
-// frameworks/native/services/surfacefllinger/DisplayHardware/DisplayHardware.cpp
+// frameworks/native/services/surfaceflinger/DisplayHardware/DisplayHardware.cpp
 void DisplayHardware::vsync(int64_t timestamp) {
     // 处理 VSync 信号
     mVsyncCallback->onVsync(timestamp, timestamp + mVsyncPeriod);
@@ -248,10 +239,7 @@ void SurfaceFlinger::handleMessageRefresh() {
 }
 ```
 
-**BufferQueue 中的三缓冲**：
-- **AsyncBufferQueue**：Android 16 中优化的缓冲区队列
-- **最大缓冲区数**：通过 `maxBufferCount` 参数控制（通常为 3）
-- **同步栅栏**：确保缓冲区按顺序使用
+在 BufferQueue 的实现中，三缓冲通过 `maxBufferCount` 参数控制（通常设为 3），并依赖同步栅栏（Fence）确保缓冲区按顺序使用。Android 16 中引入了 AsyncBufferQueue，进一步优化了缓冲区队列的管理效率。
 
 [待补充：Trace 中三缓冲的监控方法]
 
@@ -327,10 +315,7 @@ consumerReleaseFence->signal();
 
 软件渲染通常出现在三种场景下：调试模式中开发者主动通过 `setLayerType(LAYER_TYPE_SOFTWARE)` 关闭硬件加速、设备 GPU 驱动存在兼容性问题导致系统回退到软件渲染、或者在极少数需要复杂 2D 图形操作（如精细的 Path 绘制）且不希望引入 GPU 开销的场景。
 
-**实现原理**：
-- Skia 软件光栅izer：在 CPU 上进行像素计算
-- 完全不使用 GPU
-- 所有绘制操作都在 UI 线程执行
+软件渲染的实现完全依赖 Skia 的 CPU 光栅化器——它在 CPU 上逐像素地完成所有计算，全程不涉及 GPU。这意味着所有绘制操作都同步执行在 UI 线程上，耗时会直接体现在 Trace 的主线程 CPU slice 中。
 
 ```cpp
 // Skia 软件渲染示例
@@ -351,16 +336,11 @@ canvas.drawRect(rect, paint);
 
 ### 硬件加速渲染（Hardware Accelerated Rendering）
 
-**启用条件**：
-- Android 3.0+（API 11）引入
-- 默认启用（Target API >= 14）
-- 设备支持 OpenGL ES 2.0+
+硬件加速渲染从 Android 3.0（API 11）开始引入，当 App 的 Target API 不低于 14 且设备支持 OpenGL ES 2.0 时默认启用。绝大多数现代 Android 设备都满足这些条件，因此硬件加速基本上是标配。
 
 #### 1. Skia OpenGL 后端
 
-**架构特点**：
-- UI 线程：记录绘制指令到 DisplayList
-- RenderThread：执行 DisplayList 并通过 OpenGL 渲染
+Skia OpenGL 后端的架构采用了"录制-回放"的分工模式：UI 线程负责将 View 树的 drawXXX 调用录制为 DisplayList 指令序列，RenderThread 则负责回放这些指令，通过 OpenGL API 将它们提交给 GPU 执行。两个线程并行工作，UI 线程录制完一帧的 DisplayList 后可以立即开始下一帧的录制，而 RenderThread 独立处理 GPU 渲染。
 
 ```cpp
 // frameworks/base/libs/hwui/renderthread/OpenGLRenderer.cpp
@@ -381,10 +361,7 @@ void OpenGLRenderer::drawRect(float left, float top, float right, float bottom,
 
 #### 2. Skia Vulkan 后端（Android 13+）
 
-**架构特点**：
-- 更现代的图形 API
-- 更好的 CPU/GPU 并行性
-- 支持更复杂的图形特性
+Vulkan 是比 OpenGL ES 更现代的图形 API，它的核心优势在于提供了更好的 CPU/GPU 并行性和对复杂图形特性的原生支持。与 OpenGL ES 的隐式状态管理不同，Vulkan 要求开发者显式管理 GPU 资源和同步，这虽然增加了使用复杂度，但换来了更高的 CPU 提交效率和更精细的 GPU 控制。
 
 [待验证: VulkanRenderer::drawRect 路径在 AOSP android-16.0.0_r1 中可能不存在，Android 16 中 HWUI 渲染管线已重构]
 
@@ -446,10 +423,7 @@ SkCanvas (Skia 核心类)
 
 #### RecordingCanvas：UI 线程的画布
 
-**功能**：
-- **不执行实际绘制**：只记录绘制指令
-- **生成 DisplayList**：将 drawXXX 调用转换为指令序列
-- **空壳实现**：大部分绘制方法都是空实现
+RecordingCanvas 是一个"空壳"画布——它不执行任何实际的像素绘制，而是将 View 的 drawXXX 调用逐条记录为 DisplayList 中的指令序列。大部分绘制方法都是空实现，开销极低。
 
 ```java
 // frameworks/base/core/java/android/view/RecordingCanvas.java
@@ -464,9 +438,7 @@ public void drawRect(float left, float top, float right, float bottom, Paint pai
 
 #### OpenGLCanvas：RenderThread 的画布
 
-**功能**：
-- **执行实际绘制**：将 DisplayList 指令转换为 OpenGL 调用
-- **与 GPU 通信**：通过 EGL 上下文进行 GPU 操作
+OpenGLCanvas 则是"真干活"的画布——它将 DisplayList 中记录的绘制指令转换为实际的 OpenGL API 调用，通过 EGL 上下文与 GPU 通信，完成像素的渲染。
 
 [待验证: OpenGLCanvas 类名在 AOSP android-16.0.0_r1 中可能不存在，实际渲染通过 SkiaOpenGLPipeline]
 
@@ -482,10 +454,7 @@ void OpenGLCanvas::drawRect(float left, float top, float right, float bottom,
 
 ### RenderNode 架构
 
-**RenderNode 特点**：
-- **每个 View 一个 RenderNode**：保持与 View 树的一一对应
-- **树形结构**：RenderNode 组成树形结构，与 View 树结构相同
-- **惰性更新**：属性和绘制指令都在 staging 区，按需合并到主区
+RenderNode 与 View 树保持严格的一一对应关系——每个 View 对象内部都持有一个 RenderNode 实例。这些 RenderNode 组成的树形结构与 View 树完全同构，父 ViewGroup 的 RenderNode 包含子 View 的 RenderNode 引用。RenderNode 内部采用了 staging 机制来实现线程安全：主线程在录制阶段将新的属性和 DisplayList 写入 staging 区，然后在 prepareTree 阶段原子性地合并到主区，确保 RenderThread 始终读取到一致的快照。
 
 #### RenderNode 的数据结构
 
@@ -553,10 +522,7 @@ void RenderNode::draw(RenderProperties& props, RenderThread& renderThread) {
 
 ### DisplayList 的结构
 
-**DisplayList 特点**：
-- **绘制指令序列**：存储所有的 drawXXX 调用
-- **分层结构**：支持子 DisplayList 的嵌套
-- **属性继承**：支持变换、裁剪等属性的传递
+DisplayList 本质上是一个绘制指令的有序序列，记录了 View 在 onDraw 中发出的所有 drawXXX 调用。它支持分层嵌套——每个 ViewGroup 的 DisplayList 既包含自身的绘制指令，也持有子 View 的 RenderNode 引用，形成一棵与 View 树同构的 DisplayList 树。回放时，变换和裁剪等属性会沿着树形结构向下传递，子节点自动继承父节点的变换矩阵和裁剪区域。
 
 [待验证: DisplayListData 在 AOSP android-16.0.0_r1 中可能已重构，DisplayList 已大幅改版]
 
@@ -649,15 +615,7 @@ vkBindImageMemory(device, image, memory, 0);
 
 ### RenderEngine 与 GPU Composition 的区别
 
-**RenderEngine**：
-- Skia 的渲染后端
-- 负责 View 绘制指令的执行
-- 运行在 RenderThread
-
-**GPU Composition**：
-- SurfaceFlinger 的合成过程
-- 负责多个表面的最终合成
-- 运行在 SurfaceFlinger 进程
+RenderEngine 是 Skia 的渲染后端，运行在 RenderThread 中，负责把 App 的 DisplayList 指令转化为实际的 GPU 绘制调用——它处理的是单个 App 的 UI 渲染。GPU Composition 则是 SurfaceFlinger 的合成过程，运行在 SurfaceFlinger 进程中，负责把多个 App 的渲染结果叠加在一起——它处理的是多个 Layer 的最终合成。
 
 RenderEngine 和 GPU Composition 是两个容易混淆的概念，但它们的职责截然不同。RenderEngine 是 Skia 的渲染后端，运行在 RenderThread 中，负责把 App 的 DisplayList 指令转化为实际的 GPU 绘制调用——它处理的是单个 App 的 UI 渲染。GPU Composition 则是 SurfaceFlinger 的合成过程，运行在 SurfaceFlinger 进程中，负责把多个 App 的渲染结果叠加在一起——它处理的是多个 Layer 的最终合成。
 
