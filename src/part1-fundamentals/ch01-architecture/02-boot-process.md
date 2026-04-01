@@ -1,10 +1,10 @@
 ---
 title: "系统启动全流程"
 chapter: "1.2"
-status: ready-for-review
-reviewed_date: "2026-03-31"
+status: finalized
+reviewed_date: "2026-04-02"
 reviewed_by: openclaw-task6
-review_fix: "BootTimingsTraceLog 锚点补充 + Android 16 启动优化"
+review_v2_fix: "误区 section boot_completed 事件描述修正 + 事件排序对齐"
 applicable_versions: "Android 8 (API 26) - Android 16 (API 36)"
 last_verified: "2026-03-31"
 last_verified_against: "AOSP android-16.0.0_r1, 官方文档"
@@ -565,9 +565,9 @@ dm-verity（Device Mapper Verity）是 Android 用于验证系统分区完整性
 
 ### 误区："开机时间就是到桌面显示的时间"
 
-Android 定义了多个"开机完成"节点：
-- `boot_completed`：系统启动完成（可能还处于锁屏状态）
-- `locked_boot_completed`：启动完成，但设备仍处于 Direct Boot 模式
+Android 定义了多个"开机完成"节点，按时间顺序：
+- `locked_boot_completed`：设备启动完成，但仍处于 Direct Boot 模式（锁屏状态）——这是最先发出的
+- `boot_completed`：用户解锁后发出，表示系统完全就绪
 - `user_setup_complete`：用户完成首次设置向导
 
 不同场景关注不同的节点。对于性能优化，通常关注从开机到 `boot_completed` 的总时间。
