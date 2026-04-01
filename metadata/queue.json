@@ -356,7 +356,7 @@
       "section": "4.5",
       "section_title": "App 内存优化",
       "priority": 90,
-      "reason": "[review回炉] 缺少\"常见问题与误区\"部分",
+      "reason": "[review回炉] onTrimMemory 回调级别数值与 AOSP 不一致；部分小节缺少 Perfetto Track 对照",
       "material_paths": [],
       "status": "completed",
       "added_by": "task6-review",
@@ -370,6 +370,18 @@
           "location": "全文缺失",
           "detail": "缺少\"常见问题与误区\"部分，writing-guide Type A 模板明确要求此节",
           "suggestion": "补充常见误区：System.gc()误区、Bitmap.recycle在API 26+的适用条件、onTrimMemory≠即将被杀、largeHeap利弊等"
+        },
+        {
+          "type": "存疑",
+          "location": "onTrimMemory 前台回调表",
+          "detail": "TRIM_MEMORY_RUNNING_MODERATE 标注为 20（AOSP=5），TRIM_MEMORY_RUNNING_CRITICAL 标注为 40（AOSP=15）。后台回调值（UI_HIDDEN=20, BACKGROUND=40, MODERATE=60, COMPLETE=80）均正确",
+          "suggestion": "核实 AOSP frameworks/base/core/java/android/content/ComponentCallbacks2.java 源码后修正运行级别回调的数值"
+        },
+        {
+          "type": "需补充素材",
+          "location": "Bitmap/泄漏检测/监控兜底等小节",
+          "detail": "writing-guide 要求每节提供 Perfetto/Trace 中的实际表现，当前仅 heapprofd 有 Trace 对照，其他小节缺少对应的 Track 描述",
+          "suggestion": "补充 Java Heap Track、GC Event Track 与内存抖动的对应关系、dmabuf/GPU memory Track 的说明或 [图：...] 占位"
         }
       ],
       "original_review_log": "logs/review/2026-04-01-17-review.md"

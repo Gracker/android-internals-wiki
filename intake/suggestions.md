@@ -125,3 +125,19 @@
 - **问题**：这些代码示例可能是简化的伪代码，不完全反映 AOSP android-16.0.0_r1 的实际结构。Android 16 中 HWUI 已大幅重构，DisplayList 可能已不再以该类名存在。
 - **建议**：task2 重新对照 AOSP android-16.0.0_r1 源码验证这些代码块，标注 [待验证] 或替换为准确的代码。
 - **review 日志**：logs/review/2026-04-02-00-review.md
+
+## [Task6 Review] 4.5 App 内存优化 — 2026-04-02 (二次 review)
+
+### 问题 1
+- **类型**：存疑
+- **位置**：onTrimMemory 前台回调表
+- **问题**：TRIM_MEMORY_RUNNING_MODERATE 常量值标注为 20，TRIM_MEMORY_RUNNING_CRITICAL 标注为 40。根据 AOSP ComponentCallbacks2.java 源码，实际值分别为 5 和 15。TRIM_MEMORY_RUNNING_LOW=10 正确。后台回调值（UI_HIDDEN=20, BACKGROUND=40, MODERATE=60, COMPLETE=80）均正确。
+- **建议**：核实 AOSP 源码后修正运行级别回调的数值
+- **review 日志**：logs/review/2026-04-02-0320-review.md
+
+### 问题 2
+- **类型**：需补充素材
+- **位置**：Bitmap 优化、内存泄漏检测、监控兜底等小节
+- **问题**：writing-guide.md 要求每节提供"在 Perfetto/工具中的实际表现"。当前仅 heapprofd 小节有 Perfetto 对照，其他小节缺少对应的 Track 描述或截图占位。
+- **建议**：补充以下 Track 说明：① Java Heap Track 在 Perfetto 中的表现 ② GC Event Track 与内存抖动的对应关系 ③ dmabuf/GPU memory Track 的说明
+- **review 日志**：logs/review/2026-04-02-0320-review.md

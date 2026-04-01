@@ -8,7 +8,7 @@
     "reviewed": 3,
     "finalized": 4,
     "staging_drafts": 0,
-    "last_updated": "2026-04-02T02:20:00+08:00"
+    "last_updated": "2026-04-02T03:20:00+08:00"
   },
   "reviewed_sections": {
     "8.1": {
@@ -55,13 +55,13 @@
       ]
     },
     "4.5": {
-      "reviewed_date": "2026-04-01",
-      "reviewed_by": "openclaw-task6",
-      "review_status": "reviewed",
+      "reviewed_date": "2026-04-02",
+      "reviewed_by": "openclaw-task6-v2",
+      "review_status": "reviewed-needs-fix",
       "fixes_applied": [
-        "JNI 泄漏模式小节添加叙事引言",
-        "heapprofd 小节添加 [图：...] 标记",
-        "frontmatter 更新 status/reviewed_date/reviewed_by"
+        "标注 onTrimMemory 前台回调数值存疑（B类）",
+        "标注 Perfetto Track 对照缺失（B类）",
+        "frontmatter status → reviewed, reviewed_date → 2026-04-02"
       ],
       "review_r2_date": "2026-04-01",
       "review_r2_by": "openclaw-task2",
