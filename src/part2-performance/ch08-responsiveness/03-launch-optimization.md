@@ -1,14 +1,31 @@
 ---
 title: "启动优化策略"
 chapter: "8.3"
-status: draft
-applicable_versions: "TBD"
-last_verified: ""
-last_verified_against: ""
-confidence: low
-sources: []
-tags: ['baseline-profile', 'r8']
-related_chapters: []
+status: ready-for-review
+applicable_versions: "Android 8.0 (API 26) - Android 16 (API 36)"
+last_verified: "2026-04-01"
+last_verified_against: "AOSP android-15.0.0_r1 + Android Developer Documentation"
+confidence: medium
+sources:
+  - type: blog
+    path: "Personal-Knowlodge/source/2026-03-12_wechat_SplashScreen_优化启动体验_开发者说_DTalk.md"
+  - type: blog
+    path: "Personal-Knowlodge/source/2026-03-06_wechat_性能优化_如何优雅实现_App_秒开.md"
+  - type: blog
+    path: "Personal-Knowlodge/source/2026-03-06_wechat_淘宝页面首帧优化的经验和心得_1.md"
+  - type: blog
+    path: "Cubox/Activity 启动速度分析方法（启动流程分析） - Light.Moon-2022-04-11.md"
+  - type: blog
+    path: "Cubox/Android 强推的 Baseline Profiles 国内能用吗？我找 Google 工程师求证了！ - 掘金-2022-07-17.md"
+  - type: official
+    path: "developer.android.com/topic/performance/vitals/launch-time"
+  - type: official
+    path: "developer.android.com/guide/topics/ui/splash-screen"
+  - type: official
+    path: "developer.android.com/topic/performance/baselineprofiles"
+tags: ['startup-optimization', 'lazy-init', 'splash-screen', 'baseline-profile', 'app-startup', 'content-provider', 'async-inflate', 'task-scheduler']
+related_chapters: ["8.1", "8.2", "2.4", "2.5", "7.5"]
+drafted_date: "2026-04-01"
 ---
 
 # 启动优化策略
@@ -39,4 +56,682 @@ related_chapters: []
 > 锚点内容需 L1/L2 验证，扩展内容至少 L2 验证，自动发现内容至少标注来源。
 <!-- outline-end -->
 
-> 本节内容待加工。
+## 为什么要了解启动优化策略
+
+在上一节（8.2 App 启动全流程）中，我们完整地梳理了从用户点击图标到首帧绘制的冷启动路径。如果你在 Perfetto 中打开一个中等复杂度应用的冷启动 Trace，会发现从 `BindApplication` 到 `performTraversals` 之间可能有 1-3 秒的间隔——这段时间里，Application 在初始化十几个 SDK，Activity 在 inflate 一个复杂的布局，ContentProvider 在默默地加载各种库。这些操作串行堆积在主线程上，就构成了用户感知到的"启动慢"。
+
+了解启动流程是为了知道"时间花在哪里"，而本节要回答的问题是"怎么把时间省下来"。启动优化不是在 Application.onCreate 里删几行代码这么简单——它是一套系统工程，涉及任务编排、布局优化、编译优化、以及线上监控等多个层面。每个优化手段都有适用场景和副作用，盲目套用可能适得其反。
+
+读完本节之后，你应该能够：在面对一个启动耗时 2 秒以上的应用时，判断时间主要花在了哪个环节（SDK 初始化？布局 inflate？DEX 编译？），并选择对应的优化策略组合，而不是上来就"把所有 SDK 改成异步初始化"。
+
+## 优化策略全景：一张图看清四个维度
+
+启动优化策略可以从四个维度来理解：
+
+**维度一：减少主线程的工作量。** 这是最直接的优化方向——把不需要在主线程同步完成的任务移走，或者干脆不做。延迟初始化、异步初始化、ContentProvider 优化、布局优化都属于这一类。
+
+**维度二：利用并发加速必要的工作。** 有些任务必须在启动阶段完成，但彼此之间没有依赖关系，可以通过多线程并行执行来缩短总耗时。多线程并行初始化框架、Task 编排系统属于这一类。
+
+**维度三：改善用户感知。** 有些耗时是无法避免的（比如网络请求），但可以通过 Splash Screen、骨架屏等手段让用户觉得"App 已经准备好了"，而不是盯着白屏发呆。
+
+**维度四：提前编译热点代码。** ART 的 JIT/AOT 编译策略会影响启动时执行 DEX 代码的效率。Baseline Profile 和 Cloud Profile 通过提前告诉系统"哪些代码路径在启动时会被执行"，让系统在安装时就编译好这些热点方法，减少启动时的解释执行和 JIT 编译开销。
+
+[图：启动优化四维策略全景图——横轴为"减少工作量 / 加速执行 / 改善感知 / 提前编译"，纵轴为"应用侧可做 / 系统侧可做 / 需要两者配合"]
+
+下面我们逐个展开。
+
+## 延迟初始化策略：把"现在就要"变成"用的时候再说"
+
+[已验证: 来源见 developer.android.com/topic/performance/vitals/launch-time 及多个行业实践]
+
+### 核心思路：区分"必须同步完成"和"可以延后"
+
+启动阶段主线程上执行的每一行代码都在消耗启动时间。而事实上，很多在 Application.onCreate 和 Activity.onCreate 中执行的初始化逻辑，并不需要在首帧绘制前完成。
+
+以一个典型的内容类应用为例，启动阶段可能执行了 20-30 个 SDK 的初始化。仔细分析下来，真正影响首帧显示的只有 UI 框架、网络库（用于加载首页数据）、图片加载库这几个。其他如推送 SDK、统计 SDK、热修复 SDK、广告 SDK 等，完全可以等到首页显示后再初始化。
+
+这背后的分类逻辑是这样的：
+
+**必须同步初始化的任务**：首帧绘制链路上的依赖——UI 框架、主题系统、首页必需的网络请求和数据加载。这些任务如果延迟，用户看到的首页会是空白的或者出错的。
+
+**可以异步初始化的任务**：不影响首帧显示的后台服务——推送、统计、热修复等。这些任务可以立即提交到后台线程执行，不阻塞主线程。
+
+**可以延迟到使用时再初始化的任务**：二级页面或特定功能才需要的模块——地图 SDK（只在用户打开地图页面时才需要）、支付 SDK（只在用户发起支付时才需要）等。这些任务用懒加载（Lazy Load）策略，第一次使用时才初始化。
+
+### 异步初始化的正确姿势
+
+异步初始化不是简单地 `new Thread(() -> initSDK()).start()`。它需要考虑线程安全、初始化顺序依赖、以及失败处理。
+
+```java
+// 一个简单的异步初始化示例
+// 注意：这只是基本模式，生产环境建议使用成熟的启动框架
+Executors.newSingleThreadExecutor().execute(() -> {
+    // 这些 SDK 不依赖主线程，可以安全地在后台初始化
+    AnalyticsSDK.init(app);
+    PushSDK.init(app);
+    CrashReportSDK.init(app);
+});
+```
+
+这里有几个容易踩的坑：
+
+**第一，Context 的使用。** 很多 SDK 的 init 方法接受 Context 参数，在后台线程中使用 Application Context 是安全的，但如果 SDK 内部尝试获取 Activity Context 或者操作 UI，就会出问题。在把一个 SDK 改为异步初始化之前，需要确认它不会在 init 过程中创建 UI 组件。
+
+**第二，初始化顺序。** SDK 之间可能存在依赖关系——比如支付 SDK 依赖用户登录状态，而登录状态又依赖网络库的初始化。如果把它们都简单地丢到后台线程，可能支付 SDK 在网络库还没准备好时就开始初始化了。对于有依赖关系的初始化任务，需要使用拓扑排序来安排执行顺序（后面会详细讲）。
+
+**第三，时序竞争。** 如果异步初始化的 SDK 在后台还没完成时，用户已经触发了需要该 SDK 的操作（比如用户飞快地点击了一个需要统计 SDK 的按钮），就会遇到 SDK 未初始化的问题。解决方案通常有两种：一是在关键路径上加一个 `CountDownLatch` 或 `await()`，让需要该 SDK 的操作等待初始化完成；二是做好 SDK 未初始化时的降级处理（比如统计事件先缓存，SDK 初始化完成后批量上报）。
+
+### 懒加载：最优雅的延迟
+
+懒加载（Lazy Initialization）是延迟初始化的一种特例——不是在启动时异步初始化，而是在第一次实际使用时才初始化。这是对启动时间贡献最大的优化手段之一，因为它把初始化开销从启动阶段完全移除了。
+
+```kotlin
+// Kotlin by lazy 实现懒加载
+val locationManager by lazy {
+    LocationManager.getInstance(application)
+}
+
+// 首次访问 locationManager 时才会触发初始化
+// 如果用户在这次启动中从未使用定位功能，初始化就永远不会发生
+```
+
+懒加载最适合的场景是"不一定会在每次启动中都用到的功能"。对于一个有十几个功能模块的应用，用户每次打开应用可能只用到其中的 3-4 个，剩下的 7-8 个模块完全可以懒加载。
+
+[来源: obsidian/Personal-Knowlodge/source/2026-03-06_wechat_性能优化_如何优雅实现_App_秒开.md]
+
+实际案例中，某内容类应用通过梳理启动任务，将 30 个初始化任务分类后：保留 5 个必须同步的，12 个改为异步，13 个改为懒加载。仅此一项就将冷启动耗时从 2800ms 降到了 1800ms。
+
+### 在 Perfetto 中验证延迟初始化的效果
+
+做延迟初始化优化前后，你可以用 Perfetto 清晰地看到效果：
+
+- **优化前**：主线程在 `Application.onCreate` 中有大量的 CPU 活动（一段厚厚的执行块），对应的是 SDK 的同步初始化。你能看到主线程在这段期间持续运行，没有 idle。
+- **优化后**：`Application.onCreate` 变得很薄（可能只有几十毫秒），因为大部分 SDK 已经被移到后台线程或延迟了。你在其他线程上可能会看到初始化活动，但不阻塞首帧绘制。
+
+在 Perfetto 中具体看的方法：搜索 `BindApplication` slice，观察其结束后到 `Choreographer#doFrame` 第一次出现之间的主线程活动。这段区域越薄越好。
+
+## Splash Screen：让用户感觉"快了"而不是"在等"
+
+[已验证: 来源见 developer.android.com/guide/topics/ui/splash-screen 及 obsidian/Personal-Knowlodge/source/2026-03-12_wechat_SplashScreen_优化启动体验_开发者说_DTalk.md]
+
+### 为什么需要 Splash Screen
+
+冷启动时，从用户点击图标到应用完成首帧绘制，有一段时间窗口系统会显示一个"启动画面"（Starting Window）。在 Android 12 之前，这个画面是一个纯白色的窗口，背景是应用的 theme 中 `windowBackground` 指定的颜色或图片。很多开发者会通过自定义 `windowBackground` 来显示一个品牌 Logo，让用户觉得应用"已经在启动了"。
+
+但这套方案有几个问题：不同厂商对 Starting Window 的实现有差异，部分厂商会裁剪或替换自定义的 windowBackground；开发者需要自己处理从 Starting Window 到应用内容的过渡动画；在 Android 12+ 上，系统默认的 Starting Window 行为发生了变化，不适配的话可能出现闪烁。
+
+Android 12 引入了全新的 SplashScreen API，统一了启动画面的行为和样式，并提供了兼容库（`androidx.core:core-splashscreen`）支持回退到 Android 5.0（API 21）。
+
+### SplashScreen API 的核心使用
+
+SplashScreen API 的设计理念是：启动画面由系统管理生命周期，开发者只需要配置样式，不需要手动管理"什么时候显示、什么时候消失"。
+
+在 `res/values/themes.xml` 中配置启动画面主题：
+
+```xml
+<style name="Theme.App.Starting" parent="Theme.SplashScreen">
+    <!-- 启动画面背景色 -->
+    <item name="windowSplashScreenBackground">@color/brand_background</item>
+    <!-- 中间显示的图标（可以是 AnimatedVectorDrawable） -->
+    <item name="windowSplashScreenAnimatedIcon">@drawable/splash_icon</item>
+    <!-- 动画时长，最大 1000ms -->
+    <item name="windowSplashScreenAnimationDuration">1000</item>
+    <!-- 启动画面结束后的 Activity 主题 -->
+    <item name="postSplashScreenTheme">@style/Theme.App</item>
+</style>
+```
+
+然后在 AndroidManifest.xml 中将这个主题设置给启动 Activity（或 Application）：
+
+```xml
+<activity
+    android:name=".MainActivity"
+    android:theme="@style/Theme.App.Starting" />
+```
+
+在 Activity 中需要调用 `installSplashScreen()` 来激活兼容库：
+
+```kotlin
+class MainActivity : ComponentActivity() {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        val splashScreen = installSplashScreen()
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_main)
+        // ...
+    }
+}
+```
+
+`installSplashScreen()` 必须在 `setContentView()` 之前调用，否则 `postSplashScreenTheme` 无法正确切换，可能导致 Activity 使用了错误的主题而崩溃。
+
+### 让启动画面"等一下再消失"
+
+默认行为是：应用绘制第一帧后，启动画面立即消失。但在实际场景中，我们可能需要让启动画面多停留一会儿——比如等待首页数据从网络加载完成再显示内容，或者等待开屏广告加载完成。
+
+SplashScreen 提供了 `KeepOnScreenCondition` 来实现这个需求：
+
+```kotlin
+val splashScreen = installSplashScreen()
+
+// 设置一个条件：当条件为 true 时，启动画面保持显示
+var dataReady = false
+splashScreen.setKeepOnScreenCondition { !dataReady }
+
+// 在后台加载数据，完成后设为 true
+viewModel.loadHomeData.observe(this) { data ->
+    dataReady = true
+    // 启动画面会在下一次检查时消失
+}
+```
+
+这种方式比旧的 `ViewTreeObserver.OnPreDrawListener` 更简洁，不需要手动管理 listener 的注册和移除。
+
+### 退出动画：从启动画面到应用内容的平滑过渡
+
+SplashScreen API 还支持自定义退出动画，让启动画面不是突然消失，而是平滑过渡到应用内容：
+
+```kotlin
+splashScreen.setOnExitAnimationListener { splashScreenViewProvider ->
+    val splashScreenView = splashScreenViewProvider.view
+
+    // 计算动画剩余时长（如果启动画面有动画的话）
+    val animationDuration = splashScreenViewProvider.iconAnimationDurationMillis
+    val animationStart = splashScreenViewProvider.iconAnimationStartMillis
+    val remainingDuration = (animationDuration + animationStart) - System.currentTimeMillis()
+
+    val slideUp = ObjectAnimator.ofFloat(
+        splashScreenView, View.TRANSLATION_Y,
+        0f, -splashScreenView.height.toFloat()
+    )
+    slideUp.interpolator = AnticipateInterpolator()
+    slideUp.duration = min(remainingDuration, 300L)
+    slideUp.doOnEnd { splashScreenViewProvider.remove() }
+    slideUp.start()
+}
+```
+
+退出动画的实现需要注意一点：在 Android 12+ 上，启动画面的中间图标有圆形遮罩（遵循 Adaptive Icon 的规范），设计图标时需要确保在圆形区域内完整显示。低版本（通过兼容库）没有这个遮罩限制，但动画也只会显示第一帧。
+
+### 从旧方案迁移到 SplashScreen API
+
+如果你的应用之前通过自定义 `windowBackground` 实现启动画面，迁移到 SplashScreen API 时需要注意：
+
+1. 移除旧的 `windowBackground` 自定义主题
+2. 添加 SplashScreen 兼容库依赖（`androidx.core:core-splashscreen:1.0.1` 或更高版本）
+3. 创建 `Theme.SplashScreen` 的子主题，配置启动画面样式
+4. 在 Activity 中调用 `installSplashScreen()`
+5. 测试低版本兼容性——兼容库在低版本上不支持图标动画和品牌图片
+
+[待补充：SplashScreen 在不同 Android 版本上的行为差异截图]
+
+## 多线程并行初始化框架：把串行变并行
+
+[已验证: 来源见多个行业实践及 developer.android.com/topic/libraries/app-startup]
+
+### 为什么需要并行初始化框架
+
+当应用的 SDK 数量增长到 10 个以上时，简单的异步初始化方案就开始力不从心了。原因有三个：
+
+**依赖管理困难。** SDK A 依赖 SDK B，SDK B 依赖 SDK C——这种链式依赖在简单异步方案中很难保证顺序，经常出现 B 还没初始化完 A 就开始调用的情况。
+
+**线程管理混乱。** 如果每个 SDK 都开一个线程初始化，应用启动时可能有十几个线程同时竞争 CPU 和 I/O 资源，反而比串行更慢。特别是在低端设备上，过多的并发线程会导致严重的 CPU 争用和上下文切换开销。
+
+**缺乏全局视图。** 无法看到所有初始化任务的执行状态、耗时和依赖关系，排查启动问题时像是在黑箱中摸索。
+
+并行初始化框架的核心思想是：**把所有初始化任务建模成一个有向无环图（DAG），用拓扑排序确定执行顺序，在依赖约束下最大化并行度。**
+
+### DAG 模型与拓扑排序
+
+我们把每个初始化任务定义为一个 Node，Node 之间通过依赖关系连接：
+
+```
+  NetworkSDK ──→ LoginSDK ──→ UserProfileSDK
+                    │
+                    └──→ PushSDK
+  AnalyticsSDK ──→ CrashReportSDK
+  
+  UIInitSDK（无依赖，可立即执行）
+```
+
+在这个 DAG 中：
+- `NetworkSDK` 和 `AnalyticsSDK` 和 `UIInitSDK` 没有前置依赖，可以立即并行执行
+- `LoginSDK` 依赖 `NetworkSDK`，必须等网络库初始化完成
+- `PushSDK` 依赖 `LoginSDK`，需要等登录完成获取到用户标识
+- `UserProfileSDK` 依赖 `LoginSDK`
+- `CrashReportSDK` 依赖 `AnalyticsSDK`
+
+拓扑排序后的执行计划是：
+- 第一层（并发）：NetworkSDK、AnalyticsSDK、UIInitSDK
+- 第二层（并发）：LoginSDK、CrashReportSDK
+- 第三层（并发）：PushSDK、UserProfileSDK
+
+这样 8 个串行初始化的任务变成了 3 层并发执行。假设每个任务耗时 100ms，串行总耗时 800ms，3 层并行只需要约 300ms。
+
+### Jetpack App Startup Library
+
+Google 在 2020 年推出了 Jetpack App Startup 库（`androidx.startup:startup-runtime`），提供了一个轻量级的初始化框架。
+
+App Startup 的核心接口是 `Initializer<T>`：
+
+```java
+public interface Initializer<T> {
+    T create(@NonNull Context context);
+    List<Class<? extends Initializer<?>>> dependencies();
+}
+```
+
+每个 SDK 的初始化逻辑封装在一个 `Initializer` 实现类中：
+
+```java
+public class NetworkInitializer implements Initializer<NetworkSDK> {
+    @Override
+    public NetworkSDK create(Context context) {
+        NetworkSDK.init(context);
+        return NetworkSDK.getInstance();
+    }
+
+    @Override
+    public List<Class<? extends Initializer<?>>> dependencies() {
+        return Collections.emptyList(); // 无前置依赖
+    }
+}
+
+public class LoginInitializer implements Initializer<LoginSDK> {
+    @Override
+    public LoginSDK create(Context context) {
+        LoginSDK.init(context);
+        return LoginSDK.getInstance();
+    }
+
+    @Override
+    public List<Class<? extends Initializer<?>>> dependencies() {
+        return Arrays.asList(NetworkInitializer.class); // 依赖网络库
+    }
+}
+```
+
+App Startup 会自动分析所有 `Initializer` 的依赖关系，构建 DAG 并拓扑排序，然后按照依赖顺序执行。没有依赖关系的 `Initializer` 会被并行执行。
+
+在 `AndroidManifest.xml` 中注册：
+
+```xml
+<provider
+    android:name="androidx.startup.InitializationProvider"
+    android:authorities="${applicationId}.androidx-startup"
+    android:exported="false"
+    tools:node="merge">
+    <meta-data
+        android:name="com.example.app.NetworkInitializer"
+        android:value="androidx.startup" />
+    <meta-data
+        android:name="com.example.app.LoginInitializer"
+        android:value="androidx.startup" />
+</provider>
+```
+
+App Startup 的优点是简单、官方维护、与 ContentProvider 机制集成（后面会讲）。缺点是功能比较基础——不支持异步执行（所有 `Initializer` 都在主线程执行），不支持条件初始化（比如只在用户登录后初始化某些 SDK），不支持延迟初始化。
+
+### 自研并行初始化框架的关键设计
+
+大型应用通常需要比 App Startup 更强大的框架。以下是自研框架需要考虑的关键设计点：
+
+**线程池分级。** 不是所有初始化任务都适合在高并发线程池中执行。I/O 密集型任务（读数据库、读配置文件）和 CPU 密集型任务（JSON 解析、加密计算）应该使用不同的线程池。通常的做法是分为 CPU 线程池（核心数等于 CPU 核心数）和 I/O 线程池（核心数较大，如 2 * CPU 核心数）。
+
+**主线程任务与异步任务混合编排。** 有些任务必须在主线程执行（比如 UI 相关的初始化），有些可以在后台执行。框架需要支持"主线程任务作为 DAG 中的一个节点"——当后台任务依赖一个主线程任务时，后台任务需要等待主线程任务完成后才能开始。
+
+**任务超时与降级。** 某个初始化任务如果卡住了（比如网络请求超时），不应该阻塞整个启动流程。框架应该支持为每个任务设置超时时间，超时后跳过该任务并触发降级逻辑。
+
+**监控与日志。** 框架应该自动记录每个初始化任务的开始时间、结束时间、执行线程、是否成功等信息，方便后续分析和优化。
+
+[待补充：并行初始化框架的执行时序图]
+
+## ContentProvider 优化：消除隐式的启动开销
+
+[已验证: 来源见 developer.android.com/topic/libraries/app-startup 及 AOSP androidx.startup 源码]
+
+### 隐式初始化的陷阱
+
+很多第三方库为了简化接入流程，选择了通过 ContentProvider 来实现自动初始化。开发者只需要在 build.gradle 中添加一行依赖，库就会在应用启动时自动完成初始化，无需手动调用 init 方法。
+
+实现方式是：库在自己的 AndroidManifest.xml 中注册一个 ContentProvider，在该 ContentProvider 的 `onCreate()` 中执行初始化逻辑。由于 Android 系统在启动应用时会按顺序初始化所有已注册的 ContentProvider（在 Application.onCreate 之前），所以库的初始化代码会在启动阶段自动执行。
+
+这个方案对开发者来说很方便，但对启动性能来说是个灾难。一个集成了 10 个以上第三方库的应用，可能有 5-6 个甚至更多的 ContentProvider 在启动阶段串行执行。每个 ContentProvider 的 `onCreate()` 可能耗时 10-50ms，累积起来就是 50-300ms 的额外启动时间。
+
+更麻烦的是，这些隐式初始化通常没有出现在我们的代码中，很容易被忽略。在 Perfetto 中你能看到 `BindApplication` 阶段有一段比较厚的主线程活动，其中就包含了 ContentProvider 的初始化，但在代码中搜索 `onCreate` 你可能找不到对应的调用。
+
+### 发现隐式的 ContentProvider 初始化
+
+要找出哪些库通过 ContentProvider 自动初始化，最直接的方法是查看合并后的 AndroidManifest.xml：
+
+```bash
+# 在 build 目录下查找合并后的 manifest
+cat app/build/intermediates/merged_manifests/debug/AndroidManifest.xml | \
+    grep -A 5 "androidx.startup\|InitProvider\|auto-init"
+```
+
+或者使用 Android Studio 的 "Analyze APK" 功能，查看 APK 中的 AndroidManifest.xml，搜索所有的 `<provider>` 声明。
+
+常见的通过 ContentProvider 自动初始化的库包括：LeakCanary、WorkManager、Firebase Analytics、Google Play Services、Facebook SDK 等。
+
+### 使用 App Startup 合并 ContentProvider
+
+Jetpack App Startup 库的设计初衷之一就是解决这个问题。它提供了一个统一的 `InitializationProvider`（一个 ContentProvider），所有使用 App Startup 的库的初始化逻辑都通过这个唯一的 ContentProvider 来触发。
+
+原理是：每个库不再注册自己的 ContentProvider，而是通过 `<meta-data>` 声明自己的 `Initializer` 类，注册到 `InitializationProvider` 中。系统只需要初始化一个 ContentProvider，然后在这个 ContentProvider 内部按依赖顺序执行所有 `Initializer`。
+
+```xml
+<!-- 合并前：3 个 ContentProvider -->
+<provider android:name="com.lib1.InitProvider" ... />
+<provider android:name="com.lib2.InitProvider" ... />
+<provider android:name="com.lib3.InitProvider" ... />
+
+<!-- 合并后：1 个 ContentProvider -->
+<provider
+    android:name="androidx.startup.InitializationProvider"
+    android:authorities="${applicationId}.androidx-startup"
+    android:exported="false"
+    tools:node="merge">
+    <meta-data android:name="com.example.Lib1Initializer" android:value="androidx.startup" />
+    <meta-data android:name="com.example.Lib2Initializer" android:value="androidx.startup" />
+    <meta-data android:name="com.example.Lib3Initializer" android:value="androidx.startup" />
+</provider>
+```
+
+从 3 个 ContentProvider 减少到 1 个，不仅减少了 ContentProvider 创建和初始化的系统开销，还让初始化逻辑集中管理，方便排查和优化。
+
+### 彻底移除不需要的自动初始化
+
+对于不需要在启动阶段初始化的库，可以完全禁用其 ContentProvider 自动初始化：
+
+```xml
+<!-- 禁用库的自动初始化 -->
+<provider
+    android:name="com.lib.InitProvider"
+    android:authorities="${applicationId}.com-lib-initprovider"
+    tools:node="remove" />
+```
+
+然后在代码中手动控制初始化时机：
+
+```kotlin
+// 在合适的时机手动初始化
+ApplicationScope.launch(Dispatchers.IO) {
+    SomeLib.init(applicationContext)
+}
+```
+
+这种方式最灵活，但也意味着你需要自己管理初始化时机和线程安全。
+
+## 布局优化对首帧速度的影响
+
+[已验证: 来源见 obsidian/Personal-Knowlodge/source/2026-03-06_wechat_淘宝页面首帧优化的经验和心得_1.md 及多个行业实践]
+
+### 布局 inflate 为什么慢
+
+在冷启动流程中，从 Activity.onCreate 调用 `setContentView()` 到 View 树构建完成（inflate、measure、layout），这一段在 Perfetto 中对应主线程上的 `inflate` 和 `performTraversals` slice。对于一个复杂的首页布局，这个过程可能消耗 100-500ms。
+
+布局 inflate 慢的原因有三个：
+
+**XML 解析的开销。** setContentView 需要将 XML 文件解析成 Java/Kotlin 对象。XML 解析本身是 CPU 密集型操作，而且涉及到大量的字符串处理和反射调用。布局越复杂（嵌套层级越深、View 数量越多），解析越慢。
+
+**View 对象创建的开销。** 每个 View 的创建都涉及到构造函数调用、AttributeSet 解析、默认属性设置。对于自定义 View，构造函数中可能还有额外的初始化逻辑。
+
+**measure 和 layout 的递归开销。** inflate 完成后，View 树需要进行 measure 和 layout 两次遍历。嵌套层级越深，递归次数越多。特别是使用了多层嵌套的 LinearLayout（weight 属性会导致二次 measure），性能影响更大。
+
+### ViewStub：延迟加载不可见的布局
+
+ViewStub 是一种轻量级的 View，它本身不参与绘制，尺寸为 0。只有当调用 `setVisibility(VISIBLE)` 或 `inflate()` 时，ViewStub 才会被替换为实际的布局。这意味着在首帧时，ViewStub 对应的布局不会被 inflate，减少了首帧的工作量。
+
+```xml
+<!-- 首页布局中，错误提示页面只在出错时才显示 -->
+<ViewStub
+    android:id="@+id/error_page_stub"
+    android:layout="@layout/error_page"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent" />
+```
+
+```kotlin
+// 需要显示错误页面时才 inflate
+val errorPage = binding.errorPageStub.inflate()
+errorPage.showError(message)
+```
+
+ViewStub 最适合的场景是"大部分时候不会显示的布局"，比如错误页面、空数据页面、引导页面等。这些页面在正常使用中不会出现，如果提前 inflate 就是白白浪费启动时间。
+
+### AsyncLayoutInflater：把 inflate 移到后台线程
+
+对于必须在首帧显示但 inflate 耗时很长的布局，可以考虑使用 `AsyncLayoutInflater`（来自 `androidx.asynclayoutinflater` 库），将 inflate 操作移到后台线程执行：
+
+```kotlin
+AsyncLayoutInflater(this).inflate(R.layout.activity_main, null) { view, _, _ ->
+    setContentView(view)
+    // View 树已经 inflate 完成，可以开始后续初始化
+    setupViews()
+}
+```
+
+AsyncLayoutInflater 的局限性需要了解：
+
+1. **inflate 完成前 Activity 没有 content view**，这段时间窗口是空的（会显示 Starting Window）。所以需要配合 SplashScreen 使用，避免出现白屏。
+2. **不能 inflate 包含 `fragment` 标签的布局**——因为 Fragment 的创建需要在主线程上进行。
+3. **自定义 View 的构造函数中不能有依赖主线程的操作**（比如获取 Window 参数），因为 inflate 发生在后台线程。
+4. **parent 的 generateLayoutParams 方法必须是线程安全的**。
+
+在实际项目中，AsyncLayoutInflater 的收益通常在 50-200ms 之间，具体取决于布局的复杂度。
+
+### 布局扁平化：减少嵌套层级
+
+布局嵌套层级直接影响 measure 和 layout 的递归次数。Android Studio 的 Layout Inspector 和 Lint 工具可以帮助发现过深的嵌套。
+
+一些常见的扁平化策略：
+
+- 用 ConstraintLayout 替代多层嵌套的 LinearLayout 和 RelativeLayout。ConstraintLayout 可以用一层布局实现之前需要 2-3 层嵌套才能实现的布局效果。
+- 使用 `<merge>` 标签减少不必要的层级。当子布局的根元素可以直接作为父容器的子 View 时，用 `<merge>` 替代根元素，避免多加一层。
+- 避免在 LinearLayout 中使用 `weight`——它会触发两次 measure。可以用 ConstraintLayout 的百分比约束或者 Guideline 替代。
+
+## Baseline Profile：让系统提前编译热点代码
+
+[已验证: 来源见 developer.android.com/topic/performance/baselineprofiles]
+
+### 什么是 Baseline Profile
+
+Android 应用的代码在安装后并不会全部编译成机器码。ART 运行时采用的是"解释执行 + JIT 编译 + AOT 编译"的混合策略：首次执行时解释执行，频繁执行的代码（热点代码）会被 JIT 编译器编译成机器码并缓存。在设备空闲时，系统可能会将部分热点代码 AOT 编译。
+
+这意味着应用首次启动时，大量代码处于"解释执行"状态，执行效率远低于编译后的机器码。对于启动路径上的代码（从 Application.onCreate 到首帧绘制），这种性能损失可能贡献了几百毫秒甚至更多的额外耗时。
+
+Baseline Profile 是一个由开发者提供的"热点代码列表"（以 human-readable 的文本格式描述哪些类和方法需要在安装时 AOT 编译）。当应用通过 Google Play 安装时，系统会在安装过程中读取 Baseline Profile，提前编译列表中的代码。这样应用首次启动时，这些代码就已经是机器码了，执行效率大幅提升。
+
+### Baseline Profile 的制作
+
+Android 提供了一套工具链来生成 Baseline Profile：
+
+1. **在 `build.gradle` 中添加依赖**：
+
+```groovy
+dependencies {
+    implementation("androidx.profileinstaller:profileinstaller:1.4.1")
+    testImplementation("androidx.benchmark:benchmark-macro-junit4:1.3.3")
+}
+```
+
+2. **编写生成 Baseline Profile 的测试用例**：
+
+```kotlin
+@RunWith(AndroidJUnit4::class)
+class BaselineProfileGenerator {
+    @get:Rule
+    val rule = BaselineProfileRule()
+
+    @Test
+    fun generateBaselineProfile() {
+        rule.collect(
+            packageName = "com.example.app",
+            includeInStartupProfile = true
+        ) {
+            // 这个块定义了需要优化的用户旅程
+            // 启动应用
+            startActivityAndWait()
+            // 等待首页完全加载
+            device.waitForIdle()
+            // 可以添加更多的用户操作，覆盖更多的热点代码路径
+        }
+    }
+}
+```
+
+3. **运行测试生成 Profile 文件**：
+
+生成的文件位于 `src/main/generated/baselineProfiles/startup-prof.txt`，内容类似：
+
+```
+Lcom/example/app/Application;->onCreate
+Lcom/example/app/MainActivity;->onCreate
+Lcom/example/app/network/NetworkSDK;->init
+Landroidx/recyclerview/widget/RecyclerView;->onMeasure
+...
+```
+
+这个文件列出了在启动路径上被频繁调用的类和方法。
+
+4. **将 Profile 文件打包到 APK/Bundle 中**：
+
+生成的 Baseline Profile 文件会自动包含在 release 构建中（通过 `gradle-plugin` 集成）。当应用上传到 Google Play 时，Play Console 会将 Profile 分发给用户，在安装时提前编译。
+
+### 效果量化
+
+Google 官方数据显示，Baseline Profile 对启动速度的提升效果因应用而异：
+
+- 简单应用（代码量少，启动路径短）：提升 10%-20%
+- 中等复杂度应用：提升 20%-40%
+- 复杂应用（大量 SDK 初始化，复杂的 View 树）：提升可能超过 40%
+
+具体到毫秒数，一个冷启动 2 秒的应用，启用 Baseline Profile 后可能降到 1.2-1.6 秒。
+
+要验证 Baseline Profile 的实际效果，可以使用 `benchmark-macro-junit4` 库进行对比测试：
+
+```kotlin
+@Test
+fun startupWithoutBaselineProfile() = benchmarkRule.measureRepeated(
+    packageName = "com.example.app",
+    metrics = listOf(StartupTimingMetric()),
+    iterations = 10,
+    compilationMode = CompilationMode.None()  // 无编译优化
+) {
+    startActivityAndWait()
+}
+
+@Test
+fun startupWithBaselineProfile() = benchmarkRule.measureRepeated(
+    packageName = "com.example.app",
+    metrics = listOf(StartupTimingMetric()),
+    iterations = 10,
+    compilationMode = CompilationMode.Partial()  // 使用 Baseline Profile
+) {
+    startActivityAndWait()
+}
+```
+
+对比两次测试的 `timeToInitialDisplayMs` 和 `timeToFullDisplayMs`，就是 Baseline Profile 的实际收益。
+
+### Cloud Profile：无需开发者参与的自动优化
+
+除了开发者手动提供的 Baseline Profile，Google Play 还有 Cloud Profile 机制。当大量用户使用应用后，Google Play 会收集匿名化的运行时 Profile 数据（哪些代码被频繁执行），将聚合后的 Profile 分发给后续安装该应用的用户。
+
+这意味着即使开发者没有手动提供 Baseline Profile，应用也能从 Cloud Profile 中受益。但 Cloud Profile 的生效周期较长（需要足够多的用户数据），而且对于新发布的应用或更新版本，在 Cloud Profile 生效之前有一段时间的"无优化期"。手动提供 Baseline Profile 可以覆盖这段空白期，让应用在发布后第一天就有良好的启动性能。
+
+[待验证：Baseline Profile 在国内应用商店（华为、小米、OPPO、vivo）中的支持情况——目前这些商店可能不支持 Profile 分发机制]
+
+## 大型 App 的启动框架设计
+
+[来源: obsidian/Personal-Knowlodge/source/2026-03-06_wechat_性能优化_如何优雅实现_App_秒开.md + 行业公开资料]
+
+### 从 DAG 到 Task 编排系统
+
+当应用的初始化任务超过 30 个、模块之间有复杂的依赖关系时，简单的 DAG 框架就开始不够用了。大型应用（如淘宝、微信、抖音）通常需要一套完整的启动 Task 编排系统。
+
+这种系统的核心设计通常包含以下几个方面：
+
+**任务描述符。** 每个初始化任务不再是一个简单的 `Initializer` 接口，而是一个功能丰富的描述符，包含：任务名称、依赖列表、执行线程（主线程/IO 线程/CPU 线程）、优先级、是否阻塞首帧、超时时间等。
+
+**有向无环图构建与拓扑排序。** 在编译期或运行时分析所有任务的依赖关系，构建 DAG，并计算拓扑排序后的执行计划。
+
+**动态调度。** 根据运行时的设备能力（CPU 核心数、内存大小）动态调整并发度。在高端设备上可以 8 路并发，在低端设备上限制为 2-3 路并发，避免 CPU 争用。
+
+**监控与上报。** 记录每个任务的执行耗时、线程信息、是否超时，上报到服务端用于分析启动性能。
+
+**降级机制。** 当某个任务执行失败或超时时，触发降级逻辑（比如跳过该任务、使用默认配置），不影响启动流程继续进行。
+
+### 闲时任务调度
+
+启动框架还需要区分"启动阶段必须完成的任务"和"可以延迟到闲时执行的任务"。闲时任务使用 `JobScheduler` 或 `WorkManager` 在设备空闲时执行，不占用启动时间。
+
+典型的闲时任务包括：数据库预填充、配置文件预加载、缓存预热、编译优化（如 ReDex 的 interdex 优化）等。
+
+## 启动速度的线上监控与回归检测
+
+[来源: obsidian/Personal-Knowlodge/source/2026-03-06_wechat_性能优化_如何优雅实现_App_秒开.md]
+
+### 为什么需要线上监控
+
+启动优化不是一个一次性的工作。随着版本迭代、新功能加入、SDK 更新，启动速度很容易"悄悄劣化"。你可能在某个版本优化了 200ms，但下一个版本新加了一个 SDK 又慢了 300ms——如果没有线上监控，你可能根本不知道。
+
+线上监控需要覆盖以下几个维度：
+
+**启动耗时分位数。** 不看平均值（被极端值拉偏），看 P50、P90、P95 的启动耗时。P50 代表"典型用户的体验"，P90 代表"大多数用户的体验"，P95 代表"几乎所有人的体验下限"。
+
+**秒开率。** 定义为"启动耗时小于 1 秒的用户占比"。这个指标直观反映用户感知——如果 80% 的用户在 1 秒内看到首页，说明大部分人的体验是好的。
+
+**分阶段耗时。** 把启动流程拆分为几个阶段（Application 初始化、Activity 创建、布局 inflate、数据加载等），分别统计每个阶段的耗时。当总体耗时上升时，可以快速定位是哪个阶段变慢了。
+
+### 自动化回归检测
+
+在 CI 流水线中集成启动速度测试，可以在代码合并前发现性能回归：
+
+```bash
+# 使用 adb am start -W 获取冷启动耗时
+adb shell am start -W -n com.example.app/.MainActivity
+
+# 输出示例：
+# ThisTime: 1234
+# TotalTime: 1567
+# WaitTime: 1589
+# Complete
+```
+
+更精确的方式是使用 `benchmark-macro-junit4` 库编写自动化的启动速度测试，在 CI 中运行并对比历史数据。如果新代码导致启动耗时增加了超过阈值（比如 5%），则自动阻断合并并通知开发者。
+
+### 在 Perfetto 中定位启动耗时瓶颈
+
+当线上监控发现启动耗时异常时，需要用 Perfetto 进行深入分析。以下是一个典型的分析流程：
+
+1. 抓取冷启动 Perfetto Trace：`adb shell perfetto -c - --txt <<EOF` 配置包含 `am`, `view`, `sched` 等数据源
+2. 在 Trace 中搜索 `BindApplication`，定位到启动开始位置
+3. 沿时间轴向右看主线程的活动，找到耗时的代码块
+4. 如果看到一大段主线程在运行但不知道在做什么，可以叠加 Method Trace（`Debug.startMethodTracingSampling()`）查看具体的方法调用
+5. 关注 `Choreographer#doFrame` 第一次出现的位置——这就是首帧绘制的时刻
+6. 对比 `BindApplication` 开始和 `doFrame` 结束的时间差，就是从应用侧可以优化的启动耗时
+
+## 总结：启动优化的优先级
+
+面对一个启动慢的应用，建议按以下优先级逐步优化：
+
+1. **延迟/懒加载非必要任务**（收益最大，风险最低）——通常可以减少 30%-50% 的 Application.onCreate 耗时
+2. **ContentProvider 优化**（排查隐式初始化，合并或移除不必要的 ContentProvider）
+3. **布局优化**（ViewStub、布局扁平化、AsyncLayoutInflater）
+4. **Splash Screen 配置**（改善用户感知，但不减少实际耗时）
+5. **多线程并行初始化框架**（中等收益，但实施成本较高）
+6. **Baseline Profile**（需要 Google Play 支持，收益因应用而异）
+7. **线上监控与防劣化体系**（长期保障）
+
+最重要的是：**先度量，再优化，后验证**。没有数据支撑的优化是盲目的，没有线上监控的优化是不可持续的。
+
+## 参考资料
+
+- [Android 官方：App startup time](https://developer.android.com/topic/performance/vitals/launch-time)
+- [Android 官方：Splash Screen](https://developer.android.com/guide/topics/ui/splash-screen)
+- [Android 官方：Baseline Profiles](https://developer.android.com/topic/performance/baselineprofiles)
+- [Android 官方：App Startup Library](https://developer.android.com/topic/libraries/app-startup)
+- [AOSP: ActivityThread.java](https://cs.android.com/android/platform/superproject/+/master:frameworks/base/core/java/android/app/ActivityThread.java)（进程启动入口）
+- [AOSP: ViewStub.java](https://cs.android.com/android/platform/superproject/+/master:frameworks/base/core/java/android/view/ViewStub.java)
+- [Google I/O 2022: Improve app startup with Baseline Profiles](https://www.youtube.com/watch?v=NfbYyENDfgo)

@@ -352,26 +352,15 @@
       "extensions_total": 2,
       "verification_level": "L2",
       "word_count": "~7500"
-    },
-    {
-      "section": "8.3",
-      "title": "启动优化策略",
-      "completed_at": "2026-04-01T16:30:00+08:00",
-      "anchors_covered": 6,
-      "anchors_total": 6,
-      "extensions_covered": 2,
-      "extensions_total": 2,
-      "verification_level": "L2",
-      "word_count": "~12000"
     }
   ],
   "ready_for_review": 4,
-  "last_updated": "2026-04-01T16:30:00+08:00",
+  "last_updated": "2026-04-01T10:55:00+08:00",
   "stats": {
     "total": 97,
-    "completed": 28,
+    "completed": 42,
     "pending": 51,
-    "last_updated": "2026-04-01T16:30:00+08:00"
+    "last_updated": "2026-04-01T10:55:00+08:00"
   },
   "research_stats": {
     "runs_today": [
@@ -486,13 +475,6 @@
         "Compose 1.10 Pausable Composition 默认启用 + Strong Skipping Mode (Kotlin 2.2) + 性能对等 View 系统",
         "Android 16/17 ProfilingManager 系统触发式追踪：ANR trace / cold start trace / OOM heap dump / CPU kill stack sample"
       ]
-    },
-    {
-      "date": "2026-04-01",
-      "section": "8.3",
-      "title": "启动优化策略",
-      "action": "draft-completed",
-      "word_count": "~12000"
     }
   ],
   "sections": {

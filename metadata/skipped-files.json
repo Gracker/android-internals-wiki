@@ -3010,18 +3010,6 @@
     "reason": "总分不足 7/20 (相关性2+技术1+时效3+可验证1)"
   },
   {
-    "title": "Android画面显示流程分析(5) - 简书",
-    "path": "Cubox/Android画面显示流程分析(5) - 简书-2022-01-18.md",
-    "score": {
-      "relevance": 2,
-      "technical": 4,
-      "timeliness": 3,
-      "verifiability": 1,
-      "total": 10
-    },
-    "reason": "总分不足 10/20 (相关性2+技术4+时效3+可验证1)"
-  },
-  {
     "title": "2025：生活是个缓慢受锤的过程",
     "path": "Cubox/2025：生活是个缓慢受锤的过程-2026-01-01.md",
     "score": {
@@ -6154,74 +6142,10 @@
     "date": "2026-03-30T20:29:46"
   },
   {
-    "title": "[旧版]duplicate",
-    "path": "Cubox/Android图形系统（四）应用篇：自定义View-ViewGroup详解-2022-12-06.md",
-    "reason": "duplicate: newer version exists",
-    "date": "2026-03-30T20:29:46"
-  },
-  {
-    "title": "[旧]进程杀手lmkd",
-    "path": "Cubox/Android帝国之进程杀手：lmkd-2023-12-27.md",
-    "reason": "duplicate: newer 2024-09-07",
-    "date": "2026-03-30T20:29:46"
-  },
-  {
     "title": "Android提升开发测试效率",
     "path": "Cubox/Android提升开发测试效率，程序员应该多干了些什么？Android提升开发测试效率，程序员应该多干了些什么？ 1. - 掘金-2025-04-13.md",
     "reason": "low_score:11, not AIW relevant",
     "date": "2026-03-30T20:29:46"
-  },
-  {
-    "path": "Cubox/Android画面显示流程分析(1) - 简书-2022-01-18.md",
-    "title": "Android画面显示流程分析(1) - 简书",
-    "date": "2022-01-18",
-    "scores": {
-      "relevance": 2,
-      "depth": 2,
-      "timeliness": 3,
-      "verifiability": 2,
-      "total": 9
-    },
-    "reason": "总分9<10"
-  },
-  {
-    "path": "Cubox/Android画面显示流程分析(2) - 简书-2022-01-18.md",
-    "title": "Android画面显示流程分析(2) - 简书",
-    "date": "2022-01-18",
-    "scores": {
-      "relevance": 2,
-      "depth": 2,
-      "timeliness": 3,
-      "verifiability": 2,
-      "total": 9
-    },
-    "reason": "总分9<10"
-  },
-  {
-    "path": "Cubox/Android画面显示流程分析(3) - 简书-2022-01-18.md",
-    "title": "Android画面显示流程分析(3) - 简书",
-    "date": "2022-01-18",
-    "scores": {
-      "relevance": 2,
-      "depth": 2,
-      "timeliness": 3,
-      "verifiability": 2,
-      "total": 9
-    },
-    "reason": "总分9<10"
-  },
-  {
-    "path": "Cubox/Android画面显示流程分析(4) - 简书-2022-01-18.md",
-    "title": "Android画面显示流程分析(4) - 简书",
-    "date": "2022-01-18",
-    "scores": {
-      "relevance": 2,
-      "depth": 2,
-      "timeliness": 3,
-      "verifiability": 2,
-      "total": 9
-    },
-    "reason": "总分9<10"
   },
   {
     "path": "Cubox/Android编译优化系列-kapt篇-2022-03-06.md",
@@ -36819,5 +36743,1569 @@
     },
     "reason": "与2023-01-03版本重复",
     "skipped_at": "2026-04-01T05:21:17.920549"
+  },
+  {
+    "path": "Cubox/Android×AI 技术刊#第11期——都是Android技术文-2025-06-17.md",
+    "title": "Android×AI 技术刊#第11期——都是Android技术文",
+    "reason": "low score (9/20)",
+    "score": 9,
+    "scores": [
+      2,
+      1,
+      5,
+      1
+    ]
+  },
+  {
+    "path": "Cubox/Android×鸿蒙×AI 周刊#7：Android 16适配避坑｜AI工具“扣子空间”实测｜鸿蒙性能调优...-2025-04-21.md",
+    "title": "Android×鸿蒙×AI 周刊#7：Android 16适配避坑｜AI工具“扣子空间”实测｜鸿蒙性能调优...",
+    "reason": "low score (9/20)",
+    "score": 9,
+    "scores": [
+      2,
+      1,
+      5,
+      1
+    ]
+  },
+  {
+    "path": "Cubox/Android×鸿蒙×AI 技术刊#第10期——端侧AI · Kuikly性能 · Flow避坑 · 脱壳 · Dex解析...-2025-06-09.md",
+    "title": "Android×鸿蒙×AI 技术刊#第10期——端侧AI · Kuikly性能 · Flow避坑 · 脱壳 · Dex解析...",
+    "reason": "low score (9/20)",
+    "score": 9,
+    "scores": [
+      2,
+      1,
+      5,
+      1
+    ]
+  },
+  {
+    "path": "Cubox/Android×鸿蒙×AI 技术刊#第13期——APK极速瘦身策略、MVI架构实践与AI工具链新动态-2025-06-30.md",
+    "title": "Android×鸿蒙×AI 技术刊#第13期——APK极速瘦身策略、MVI架构实践与AI工具链新动态",
+    "reason": "low score (9/20)",
+    "score": 9,
+    "scores": [
+      2,
+      1,
+      5,
+      1
+    ]
+  },
+  {
+    "path": "Cubox/Android×鸿蒙×AI 技术刊#第14期——Compose动画深度解析、KMP多端实践落地、Android 16适配指南-2025-07-07.md",
+    "title": "Android×鸿蒙×AI 技术刊#第14期——Compose动画深度解析、KMP多端实践落地、Android 16适配指南",
+    "reason": "low score (9/20)",
+    "score": 9,
+    "scores": [
+      2,
+      1,
+      5,
+      1
+    ]
+  },
+  {
+    "path": "Cubox/Android×鸿蒙×AI 技术周刊 - 第1期-2025-03-03.md",
+    "title": "Android×鸿蒙×AI 技术周刊 - 第1期",
+    "reason": "low score (9/20)",
+    "score": 9,
+    "scores": [
+      2,
+      1,
+      5,
+      1
+    ]
+  },
+  {
+    "path": "Cubox/Android上的FreeSync（下）实现方法 - 知乎-2022-01-20.md",
+    "title": "Android上的FreeSync（下）实现方法 - 知乎",
+    "reason": "low score (7/20)",
+    "score": 7,
+    "scores": [
+      2,
+      1,
+      3,
+      1
+    ]
+  },
+  {
+    "path": "Cubox/Android丨如何解决CFI检测报错-2025-05-06.md",
+    "title": "Android丨如何解决CFI检测报错",
+    "reason": "low score (9/20)",
+    "score": 9,
+    "scores": [
+      2,
+      1,
+      5,
+      1
+    ]
+  },
+  {
+    "path": "Cubox/Android中AIDL和HIDL的区别，Google为什么更推荐AIDL？-2025-02-04.md",
+    "title": "Android中AIDL和HIDL的区别，Google为什么更推荐AIDL？",
+    "reason": "low score (9/20)",
+    "score": 9,
+    "scores": [
+      2,
+      1,
+      5,
+      1
+    ]
+  },
+  {
+    "path": "Cubox/Android中的进程名和线程名 - 掘金-2022-03-29.md",
+    "title": "Android中的进程名和线程名 - 掘金",
+    "reason": "low score (7/20)",
+    "score": 7,
+    "scores": [
+      2,
+      1,
+      3,
+      1
+    ]
+  },
+  {
+    "path": "Cubox/Android修炼系列（34），内存监控技术方案（中） - 掘金-2022-04-21.md",
+    "title": "Android修炼系列（34），内存监控技术方案（中） - 掘金",
+    "reason": "low score (9/20)",
+    "score": 9,
+    "scores": [
+      4,
+      1,
+      3,
+      1
+    ]
+  },
+  {
+    "path": "Cubox/Android内存安全革命性改变：快手MTE探索与实践-2023-05-23.md",
+    "title": "Android内存安全革命性改变：快手MTE探索与实践",
+    "reason": "low score (8/20)",
+    "score": 8,
+    "scores": [
+      2,
+      1,
+      4,
+      1
+    ]
+  },
+  {
+    "path": "Cubox/Android分区挂载原理介绍（上）-2024-01-19.md",
+    "title": "Android分区挂载原理介绍（上）",
+    "reason": "low score (9/20)",
+    "score": 9,
+    "scores": [
+      2,
+      1,
+      5,
+      1
+    ]
+  },
+  {
+    "path": "Cubox/Android分区挂载原理介绍（下）-2024-01-26.md",
+    "title": "Android分区挂载原理介绍（下）",
+    "reason": "low score (9/20)",
+    "score": 9,
+    "scores": [
+      2,
+      1,
+      5,
+      1
+    ]
+  },
+  {
+    "path": "Cubox/Android卡顿掉帧问题分析之原理篇 - 简书-2022-04-02.md",
+    "title": "Android卡顿掉帧问题分析之原理篇 - 简书",
+    "reason": "low score (7/20)",
+    "score": 7,
+    "scores": [
+      2,
+      1,
+      3,
+      1
+    ]
+  },
+  {
+    "path": "Cubox/Android卡顿监测的方方面面-2023-09-22.md",
+    "title": "Android卡顿监测的方方面面",
+    "reason": "low score (8/20)",
+    "score": 8,
+    "scores": [
+      2,
+      1,
+      4,
+      1
+    ]
+  },
+  {
+    "path": "Cubox/Android发热监控实践｜得物技术-2023-10-23.md",
+    "title": "Android发热监控实践｜得物技术",
+    "reason": "low score (9/20)",
+    "score": 9,
+    "scores": [
+      3,
+      1,
+      4,
+      1
+    ]
+  },
+  {
+    "path": "Cubox/Android启动优化实践 - 秒开率从17%提升至75% - 掘金-2023-12-03.md",
+    "title": "Android启动优化实践 - 秒开率从17%提升至75% - 掘金",
+    "reason": "low score (8/20)",
+    "score": 8,
+    "scores": [
+      2,
+      1,
+      4,
+      1
+    ]
+  },
+  {
+    "path": "Cubox/Android图形显示流程简介-2023-02-10.md",
+    "title": "Android图形显示流程简介",
+    "reason": "low score (9/20)",
+    "score": 9,
+    "scores": [
+      3,
+      1,
+      4,
+      1
+    ]
+  },
+  {
+    "path": "Cubox/Android图形架构缺陷-2024-12-22.md",
+    "title": "Android图形架构缺陷",
+    "reason": "low score (9/20)",
+    "score": 9,
+    "scores": [
+      2,
+      1,
+      5,
+      1
+    ]
+  },
+  {
+    "path": "Cubox/Android图形架构缺陷-2024-12-23.md",
+    "title": "Android图形架构缺陷",
+    "reason": "low score (9/20)",
+    "score": 9,
+    "scores": [
+      2,
+      1,
+      5,
+      1
+    ]
+  },
+  {
+    "path": "Cubox/Android图形系统（二）驱动篇：垂直同步到底要不要开？-2025-06-20.md",
+    "title": "Android图形系统（二）驱动篇：垂直同步到底要不要开？",
+    "reason": "low score (9/20)",
+    "score": 9,
+    "scores": [
+      2,
+      1,
+      5,
+      1
+    ]
+  },
+  {
+    "path": "Cubox/Android图形系统（五）番外篇：触摸事件详解-2025-06-20.md",
+    "title": "Android图形系统（五）番外篇：触摸事件详解",
+    "reason": "low score (9/20)",
+    "score": 9,
+    "scores": [
+      2,
+      1,
+      5,
+      1
+    ]
+  },
+  {
+    "title": "Android系统优化工程师-豆包手机助手（招聘）",
+    "path": "Cubox/Android系统优化工程师-豆包手机助手-base：北京，深圳-大力发展方向，机会多多，欢迎大家来呀-2026-01-26.md",
+    "score": {
+      "relevance": 0,
+      "depth": 0,
+      "timeliness": 5,
+      "verifiability": 0,
+      "total": 5,
+      "matched_chapters": []
+    },
+    "skip_reason": "招聘信息，非技术内容",
+    "skipped_at": "2026-04-01T06:24:39.246896"
+  },
+  {
+    "path": "Cubox/Android线程锁机制：monitor机制解析-2024-07-14.md",
+    "title": "Android线程锁机制：monitor机制解析",
+    "score": {
+      "relevance": 1,
+      "tech_depth": 2,
+      "timeliness": 4,
+      "verifiability": 1,
+      "total": 8
+    },
+    "skip_reason": "总分不足10分"
+  },
+  {
+    "path": "Cubox/Android线程锁机制：monitor机制解析-2024-08-06.md",
+    "title": "Android线程锁机制：monitor机制解析",
+    "score": {
+      "relevance": 1,
+      "tech_depth": 2,
+      "timeliness": 4,
+      "verifiability": 1,
+      "total": 8
+    },
+    "skip_reason": "总分不足10分"
+  },
+  {
+    "path": "Cubox/Android组件系列：Handler机制详解-2022-12-06.md",
+    "title": "Android组件系列：Handler机制详解",
+    "score": {
+      "relevance": 1,
+      "tech_depth": 2,
+      "timeliness": 4,
+      "verifiability": 1,
+      "total": 8
+    },
+    "skip_reason": "总分不足10分"
+  },
+  {
+    "path": "Cubox/Android编译优化之kapt优化-2024-06-11.md",
+    "title": "Android编译优化之kapt优化",
+    "score": {
+      "relevance": 1,
+      "tech_depth": 2,
+      "timeliness": 4,
+      "verifiability": 1,
+      "total": 8
+    },
+    "skip_reason": "总分不足10分"
+  },
+  {
+    "path": "Cubox/Android编译优化之kapt优化-2024-06-27.md",
+    "title": "Android编译优化之kapt优化",
+    "score": {
+      "relevance": 1,
+      "tech_depth": 2,
+      "timeliness": 4,
+      "verifiability": 1,
+      "total": 8
+    },
+    "skip_reason": "总分不足10分"
+  },
+  {
+    "path": "Cubox/Android编译解析 - Java是如何编译的-2022-04-14.md",
+    "title": "Android编译解析 - Java是如何编译的",
+    "score": {
+      "relevance": 1,
+      "tech_depth": 2,
+      "timeliness": 4,
+      "verifiability": 1,
+      "total": 8
+    },
+    "skip_reason": "总分不足10分"
+  },
+  {
+    "path": "Cubox/Android编译解析-Kotlin是如何编译的-2022-04-16.md",
+    "title": "Android编译解析-Kotlin是如何编译的",
+    "score": {
+      "relevance": 1,
+      "tech_depth": 2,
+      "timeliness": 4,
+      "verifiability": 1,
+      "total": 8
+    },
+    "skip_reason": "总分不足10分"
+  },
+  {
+    "path": "Cubox/Android耗电原理及飞书耗电治理-2022-12-04.md",
+    "title": "Android耗电原理及飞书耗电治理",
+    "score": {
+      "relevance": 1,
+      "tech_depth": 2,
+      "timeliness": 4,
+      "verifiability": 1,
+      "total": 8
+    },
+    "skip_reason": "总分不足10分"
+  },
+  {
+    "path": "Cubox/Android自定义表情删除时卡顿问题的定位与优化-2024-07-25.md",
+    "title": "Android自定义表情删除时卡顿问题的定位与优化",
+    "score": {
+      "relevance": 1,
+      "tech_depth": 2,
+      "timeliness": 4,
+      "verifiability": 1,
+      "total": 8
+    },
+    "skip_reason": "总分不足10分"
+  },
+  {
+    "path": "Cubox/Android跨进程通信：图文详解 Binder机制 原理_Carson带你学Android的博客-CSDN博客_跨进程通信-2022-03-18.md",
+    "title": "Android跨进程通信：图文详解 Binder机制 原理_Carson带你学Android的博客-CSDN博客_跨进程通信",
+    "score": {
+      "relevance": 1,
+      "tech_depth": 2,
+      "timeliness": 4,
+      "verifiability": 1,
+      "total": 8
+    },
+    "skip_reason": "总分不足10分"
+  },
+  {
+    "path": "Cubox/Android运行时更新，为数十亿设备提高内存-2023-12-28.md",
+    "title": "Android运行时更新，为数十亿设备提高内存",
+    "score": {
+      "relevance": 1,
+      "tech_depth": 2,
+      "timeliness": 4,
+      "verifiability": 1,
+      "total": 8
+    },
+    "skip_reason": "总分不足10分"
+  },
+  {
+    "path": "Cubox/Android适配16 KB Page Size，看这一篇就够了！ - 优测云真机实验室-2025-07-23.md",
+    "title": "Android适配16 KB Page Size，看这一篇就够了！ | 优测云真机实验室",
+    "score": {
+      "relevance": 1,
+      "tech_depth": 2,
+      "timeliness": 5,
+      "verifiability": 1,
+      "total": 9
+    },
+    "skip_reason": "总分不足10分"
+  },
+  {
+    "path": "Cubox/Android逆向总结 · 语雀-2022-06-18.md",
+    "title": "Android逆向总结 · 语雀",
+    "score": {
+      "relevance": 1,
+      "tech_depth": 2,
+      "timeliness": 4,
+      "verifiability": 1,
+      "total": 8
+    },
+    "skip_reason": "总分不足10分"
+  },
+  {
+    "path": "Cubox/Android：解决 MVI 架构实战痛点 v2.0-2022-09-02.md",
+    "title": "Android：解决 MVI 架构实战痛点 v2.0",
+    "score": {
+      "relevance": 1,
+      "tech_depth": 2,
+      "timeliness": 4,
+      "verifiability": 1,
+      "total": 8
+    },
+    "skip_reason": "总分不足10分"
+  },
+  {
+    "path": "Cubox/Android：解决 MVI 架构实战痛点 v3.0-2022-09-20.md",
+    "title": "Android：解决 MVI 架构实战痛点 v3.0",
+    "score": {
+      "relevance": 1,
+      "tech_depth": 2,
+      "timeliness": 4,
+      "verifiability": 1,
+      "total": 8
+    },
+    "skip_reason": "总分不足10分"
+  },
+  {
+    "path": "Cubox/Android：解决 MVI 架构实战痛点-2022-08-22.md",
+    "title": "Android：解决 MVI 架构实战痛点",
+    "score": {
+      "relevance": 1,
+      "tech_depth": 2,
+      "timeliness": 4,
+      "verifiability": 1,
+      "total": 8
+    },
+    "skip_reason": "总分不足10分"
+  },
+  {
+    "path": "Cubox/Anthropic Skills 深度解析：当通用 Agent 学会专业技能-2025-10-18.md",
+    "title": "Anthropic Skills 深度解析：当通用 Agent 学会专业技能",
+    "score": {
+      "relevance": 1,
+      "tech_depth": 2,
+      "timeliness": 5,
+      "verifiability": 1,
+      "total": 9
+    },
+    "skip_reason": "总分不足10分"
+  },
+  {
+    "path": "Cubox/Anthropic courses-2026-03-02.md",
+    "title": "Anthropic courses",
+    "score": {
+      "relevance": 1,
+      "tech_depth": 2,
+      "timeliness": 5,
+      "verifiability": 1,
+      "total": 9
+    },
+    "skip_reason": "总分不足10分"
+  },
+  {
+    "path": "Cubox/Anthropic 官方分享：为 AI 智能体打造高效工具——让 AI 智能体来帮忙-2025-09-12.md",
+    "title": "Anthropic 官方分享：为 AI 智能体打造高效工具——让 AI 智能体来帮忙",
+    "score": {
+      "relevance": 1,
+      "tech_depth": 2,
+      "timeliness": 5,
+      "verifiability": 1,
+      "total": 9
+    },
+    "skip_reason": "总分不足10分"
+  },
+  {
+    "path": "Cubox/Anthropic 揭秘：上下文工程如何让 Agent 专注核心任务-2025-10-20.md",
+    "title": "Anthropic 揭秘：上下文工程如何让 Agent 专注核心任务",
+    "score": {
+      "relevance": 1,
+      "tech_depth": 2,
+      "timeliness": 5,
+      "verifiability": 1,
+      "total": 9
+    },
+    "skip_reason": "总分不足10分"
+  },
+  {
+    "path": "Cubox/Anthropic全网追杀的人，可能是我……-2025-08-15.md",
+    "title": "Anthropic全网追杀的人，可能是我……",
+    "score": {
+      "relevance": 1,
+      "tech_depth": 2,
+      "timeliness": 5,
+      "verifiability": 1,
+      "total": 9
+    },
+    "skip_reason": "总分不足10分"
+  },
+  {
+    "path": "Cubox/Anthropic：我们如何构建多智能体研究系统-2025-06-18.md",
+    "title": "Anthropic：我们如何构建多智能体研究系统",
+    "score": {
+      "relevance": 1,
+      "tech_depth": 2,
+      "timeliness": 5,
+      "verifiability": 1,
+      "total": 9
+    },
+    "skip_reason": "总分不足10分"
+  },
+  {
+    "path": "Cubox/Apk从编译到安装发生了什么？-2023-03-17.md",
+    "title": "Apk从编译到安装发生了什么？",
+    "score": {
+      "relevance": 1,
+      "tech_depth": 2,
+      "timeliness": 4,
+      "verifiability": 1,
+      "total": 8
+    },
+    "skip_reason": "总分不足10分"
+  },
+  {
+    "path": "Cubox/App widgets in Android with Glance - by Husayn Hakeem - Jan, 2022 - ProAndroidDev-2022-01-24.md",
+    "title": "App widgets in Android with Glance | by Husayn Hakeem | Jan, 2022 | ProAndroidDev",
+    "score": {
+      "relevance": 1,
+      "tech_depth": 2,
+      "timeliness": 4,
+      "verifiability": 1,
+      "total": 8
+    },
+    "skip_reason": "总分不足10分"
+  },
+  {
+    "path": "Cubox/AppStore首页推荐后，依然月入不足3000，独立开发两年血泪复盘-2025-03-27.md",
+    "title": "AppStore首页推荐后，依然月入不足3000，独立开发两年血泪复盘",
+    "score": {
+      "relevance": 1,
+      "tech_depth": 2,
+      "timeliness": 5,
+      "verifiability": 1,
+      "total": 9
+    },
+    "skip_reason": "总分不足10分"
+  },
+  {
+    "path": "Cubox/Apple announces top podcasts of 2023 alongside new...-2023-11-29.md",
+    "title": "Apple announces top podcasts of 2023 alongside new...",
+    "score": {
+      "relevance": 1,
+      "tech_depth": 2,
+      "timeliness": 4,
+      "verifiability": 1,
+      "total": 8
+    },
+    "skip_reason": "总分不足10分"
+  },
+  {
+    "path": "Cubox/Apple introduces a delightful and elegant new software design - Apple-2025-10-29.md",
+    "title": "Apple introduces a delightful and elegant new software design - Apple",
+    "score": {
+      "relevance": 1,
+      "tech_depth": 2,
+      "timeliness": 5,
+      "verifiability": 1,
+      "total": 9
+    },
+    "skip_reason": "总分不足10分"
+  },
+  {
+    "path": "Cubox/Appyx vs Jetpack Compose Navigation - by Andrey Kovalev - Bumble Tech - Aug, 2022 - Medium-2022-08-2.md",
+    "title": "Appyx vs Jetpack Compose Navigation | by Andrey Kovalev | Bumble Tech | Aug, 2022 | Medium",
+    "score": {
+      "relevance": 1,
+      "tech_depth": 2,
+      "timeliness": 4,
+      "verifiability": 1,
+      "total": 8
+    },
+    "skip_reason": "总分不足10分"
+  },
+  {
+    "path": "Cubox/App卡顿-从零了解到系统解决 - 简书-2022-01-16.md",
+    "title": "App卡顿-从零了解到系统解决 - 简书",
+    "score": {
+      "relevance": 1,
+      "tech_depth": 2,
+      "timeliness": 4,
+      "verifiability": 1,
+      "total": 8
+    },
+    "skip_reason": "总分不足10分"
+  },
+  {
+    "path": "Cubox/App处于前台，Activity就不会被回收了？ - 掘金-2022-02-10.md",
+    "title": "App处于前台，Activity就不会被回收了？ - 掘金",
+    "score": {
+      "relevance": 1,
+      "tech_depth": 2,
+      "timeliness": 4,
+      "verifiability": 1,
+      "total": 8
+    },
+    "skip_reason": "总分不足10分"
+  },
+  {
+    "path": "Cubox/Archsummit直击｜构建顺滑自然的 Flutter 页面-2022-01-14.md",
+    "title": "Archsummit直击｜构建顺滑自然的 Flutter 页面",
+    "score": {
+      "relevance": 1,
+      "tech_depth": 2,
+      "timeliness": 4,
+      "verifiability": 1,
+      "total": 8
+    },
+    "skip_reason": "总分不足10分"
+  },
+  {
+    "title": "BPF | CPU scheduler 可行性调研 · 李海洲",
+    "path": "Cubox/BPF - CPU scheduler 可行性调研 · 李海洲-2024-01-24.md",
+    "score": {
+      "relevance": 3,
+      "tech_depth": 1,
+      "timeliness": 4,
+      "verifiability": 1,
+      "total": 9
+    },
+    "skip_reason": "总分9不足10分"
+  },
+  {
+    "title": "Binder中的SEAndroid控制",
+    "path": "Cubox/Binder中的SEAndroid控制-2022-08-22.md",
+    "score": {
+      "relevance": 3,
+      "tech_depth": 1,
+      "timeliness": 4,
+      "verifiability": 1,
+      "total": 9
+    },
+    "skip_reason": "总分9不足10分"
+  },
+  {
+    "title": "Bitmap: Android 内存刺客 | 开发者说·DTalk",
+    "path": "Cubox/Bitmap- Android 内存刺客 - 开发者说·DTalk-2023-01-13.md",
+    "score": {
+      "relevance": 2,
+      "tech_depth": 1,
+      "timeliness": 4,
+      "verifiability": 1,
+      "total": 8
+    },
+    "skip_reason": "总分8不足10分"
+  },
+  {
+    "title": "BlastBufferQueue 运用场景 - 简书",
+    "path": "Cubox/BlastBufferQueue 运用场景 - 简书-2023-11-06.md",
+    "score": {
+      "relevance": 3,
+      "tech_depth": 1,
+      "timeliness": 4,
+      "verifiability": 1,
+      "total": 9
+    },
+    "skip_reason": "总分9不足10分"
+  },
+  {
+    "title": "Breaking to Build: Fuzzing the Kotlin Compiler | The Research Blog",
+    "path": "Cubox/Breaking to Build- Fuzzing the Kotlin Compiler - The Research Blog-2025-07-18.md",
+    "score": {
+      "relevance": 2,
+      "tech_depth": 1,
+      "timeliness": 5,
+      "verifiability": 1,
+      "total": 9
+    },
+    "skip_reason": "总分9不足10分"
+  },
+  {
+    "path": "Cubox/C++无锁队列的探索：多种实现方案及性能对比-2024-04-18.md",
+    "title": "C++无锁队列探索",
+    "score": 13,
+    "reason": "C++无锁队列通用编程，Android关联度不足 (13/20)",
+    "skipped_at": "2026-04-01T07:15:00"
+  },
+  {
+    "path": "Cubox/CFS组调度-2023-01-06.md",
+    "title": "CFS组调度",
+    "score": 15,
+    "reason": "CFS组调度主题相关但深度/时效不足 (15/20)",
+    "skipped_at": "2026-04-01T07:15:00"
+  },
+  {
+    "path": "Cubox/CPU三级缓存(L1-L2-L3)工作原理-2025-06-13.md",
+    "title": "CPU三级缓存工作原理",
+    "score": 12,
+    "reason": "通用CPU知识，非Android专属 (12/20)",
+    "skipped_at": "2026-04-01T07:15:00"
+  },
+  {
+    "path": "Cubox/CPU性能指标提取及源码分析-2022-09-13.md",
+    "title": "CPU性能指标提取及源码分析",
+    "score": 13,
+    "reason": "Linux内核CPU指标通用知识 (13/20)",
+    "skipped_at": "2026-04-01T07:15:00"
+  },
+  {
+    "path": "Cubox/CPU性能提升的技术瓶颈和优化方案-2025-08-29.md",
+    "title": "CPU性能提升技术瓶颈",
+    "score": 12,
+    "reason": "通用CPU优化科普 (12/20)",
+    "skipped_at": "2026-04-01T07:15:00"
+  },
+  {
+    "path": "Cubox/CPU是怎样一步步读写内存的？-2024-08-22.md",
+    "title": "CPU是怎样读写内存的",
+    "score": 11,
+    "reason": "通用CS基础知识 (11/20)",
+    "skipped_at": "2026-04-01T07:15:00"
+  },
+  {
+    "path": "Cubox/CPU流水线技术原理-2025-06-17.md",
+    "title": "CPU流水线技术原理",
+    "score": 12,
+    "reason": "通用CPU流水线知识 (12/20)",
+    "skipped_at": "2026-04-01T07:15:00"
+  },
+  {
+    "path": "Cubox/CPU的分支预测-2025-03-06.md",
+    "title": "CPU的分支预测",
+    "score": 14,
+    "reason": "CPU分支预测通用知识，Android关联度不足 (14/20)",
+    "skipped_at": "2026-04-01T07:15:00"
+  },
+  {
+    "path": "Cubox/CPU 使用率高就一定有效率吗？ - plantegg-2025-01-08.md",
+    "title": "CPU使用率高就一定有效率吗",
+    "score": 15,
+    "reason": "CPU自旋锁分析，偏服务器场景 (15/20)",
+    "skipped_at": "2026-04-01T07:15:00"
+  },
+  {
+    "path": "Cubox/CPU 是如何与内存交互的 - 知乎-2023-10-12.md",
+    "title": "CPU如何与内存交互(2023)",
+    "score": 11,
+    "reason": "通用CS基础知识 (11/20)",
+    "skipped_at": "2026-04-01T07:15:00"
+  },
+  {
+    "path": "Cubox/CPU 是如何与内存交互的-2022-10-17.md",
+    "title": "CPU如何与内存交互(2022)",
+    "score": 0,
+    "reason": "与2023版重复，跳过旧版",
+    "skipped_at": "2026-04-01T07:15:00"
+  },
+  {
+    "path": "Cubox/CPU时钟周期结构原理-2025-06-03.md",
+    "title": "CPU时钟周期结构原理",
+    "score": 13,
+    "reason": "深度CPU硬件知识，Android关联度不足 (13/20)",
+    "skipped_at": "2026-04-01T07:15:00"
+  },
+  {
+    "path": "Cubox/CPU的制造和概念 - plantegg-2024-03-20.md",
+    "title": "CPU的制造和概念",
+    "score": 12,
+    "reason": "CPU制造通用知识 (12/20)",
+    "skipped_at": "2026-04-01T07:15:00"
+  },
+  {
+    "path": "Cubox/CMU 15513 CSAPP - 深入理解计算机系统 - Lecture 26 Thread Level Parallelism - 知乎-2023-01-12.md",
+    "title": "CSAPP Lecture 26 TLP",
+    "score": 10,
+    "reason": "通用计算机体系结构课程 (10/20)",
+    "skipped_at": "2026-04-01T07:15:00"
+  },
+  {
+    "path": "Cubox/CDN加速工作原理-2025-08-31.md",
+    "title": "CDN加速工作原理",
+    "score": 8,
+    "reason": "CDN网络知识，非Android内部技术 (8/20)",
+    "skipped_at": "2026-04-01T07:15:00"
+  },
+  {
+    "title": "Qualcomm Works with Meta to Enable On-device AI Applications Using Llama 2",
+    "path": "Cubox/Qualcomm Works with Meta to Enable On-device AI Applications Using Llama 2-2023-07-24.md",
+    "score": {
+      "relevance": 1,
+      "depth": 1,
+      "timeliness": 4,
+      "verifiability": 2,
+      "total": 8
+    },
+    "chapters": [],
+    "quality": "low",
+    "confidence": "medium",
+    "summary": "# Qualcomm Works with Meta to Enable On-device AI Applications Using Llama 2    [Read in Cubox](http...",
+    "indexed_at": "2026-04-01T14:18:31.022008",
+    "skip_reason": "总分不足 8/20"
+  },
+  {
+    "title": "DecoHack - Best Product 2022",
+    "path": "Cubox/DecoHack - Best Product 2022-2022-07-07.md",
+    "score": {
+      "relevance": 1,
+      "depth": 1,
+      "timeliness": 4,
+      "verifiability": 2,
+      "total": 8
+    },
+    "chapters": [],
+    "quality": "low",
+    "confidence": "medium",
+    "summary": "# DecoHack - Best Product 2022  👋 我是 viggo , 欢迎来到这个列表  我每天都会看大量的互联网新产品，2022年开始，我每周都会挑选一些有意思的产品以 周刊 的...",
+    "indexed_at": "2026-04-01T14:18:31.024351",
+    "skip_reason": "总分不足 8/20"
+  },
+  {
+    "title": "006_数字生活周刊 | 懒人的数字生活",
+    "path": "Cubox/006_数字生活周刊 - 懒人的数字生活-2024-07-15.md",
+    "score": {
+      "relevance": 1,
+      "depth": 1,
+      "timeliness": 5,
+      "verifiability": 2,
+      "total": 9
+    },
+    "chapters": [],
+    "quality": "low",
+    "confidence": "medium",
+    "summary": "# 006_数字生活周刊 | 懒人的数字生活  数字生活周刊回归，并介绍了一些关于Notion的资源和插件，以及其他数字生活工具和AI相关的内容。  [Read in Cubox](https://c...",
+    "indexed_at": "2026-04-01T14:18:31.025183",
+    "skip_reason": "总分不足 9/20"
+  },
+  {
+    "title": "Prompt Engineering",
+    "path": "Cubox/Prompt Engineering-2023-03-20.md",
+    "score": {
+      "relevance": 1,
+      "depth": 2,
+      "timeliness": 4,
+      "verifiability": 1,
+      "total": 8
+    },
+    "chapters": [],
+    "quality": "low",
+    "confidence": "medium",
+    "summary": "# Prompt Engineering  Prompt Engineering, also known as In-Context Prompting, refers to methods for ...",
+    "indexed_at": "2026-04-01T14:18:31.027750",
+    "skip_reason": "总分不足 8/20"
+  },
+  {
+    "title": "Core 文件损坏还能补救吗？有的兄弟，有的。 - 掘金",
+    "path": "Cubox/Core 文件损坏还能补救吗？有的兄弟，有的。 - 掘金-2025-02-25.md",
+    "score": {
+      "relevance": 1,
+      "depth": 1,
+      "timeliness": 5,
+      "verifiability": 2,
+      "total": 9
+    },
+    "chapters": [],
+    "quality": "low",
+    "confidence": "medium",
+    "summary": "# Core 文件损坏还能补救吗？有的兄弟，有的。 - 掘金  Core 文件损坏或者被截断了，就一定没法使用了吗？有的兄弟，有的。莫慌还有一线生机，办法总比困难多。  [Read in Cubox]...",
+    "indexed_at": "2026-04-01T14:18:31.028400",
+    "skip_reason": "总分不足 9/20"
+  },
+  {
+    "title": "邀你见证一本 flomo 小册的诞生 ——《知识资产：从一张卡片开始积累》",
+    "path": "Cubox/邀你见证一本 flomo 小册的诞生 ——《知识资产：从一张卡片开始积累》-2022-08-25.md",
+    "score": {
+      "relevance": 1,
+      "depth": 1,
+      "timeliness": 4,
+      "verifiability": 2,
+      "total": 8
+    },
+    "chapters": [],
+    "quality": "low",
+    "confidence": "medium",
+    "summary": "# 邀你见证一本 flomo 小册的诞生 ——《知识资产：从一张卡片开始积累》  ⭐ 在创造 flomo 的 850 多天里，我们看到许多用户的困惑并非来自产品本身，而是缺少对应的思维方式。  [Re...",
+    "indexed_at": "2026-04-01T14:18:31.029882",
+    "skip_reason": "总分不足 8/20"
+  },
+  {
+    "title": "\"No one can lead a happy life if they think only of themselves.\" | Revue",
+    "path": "Cubox/-No one can lead a happy life if they think only of themselves.- - Revue-2022-01-24.md",
+    "score": {
+      "relevance": 1,
+      "depth": 1,
+      "timeliness": 4,
+      "verifiability": 1,
+      "total": 7
+    },
+    "chapters": [],
+    "quality": "low",
+    "confidence": "medium",
+    "summary": "# \"No one can lead a happy life if they think only of themselves.\" | Revue  StoicallyTyped Newslette...",
+    "indexed_at": "2026-04-01T14:18:31.031403",
+    "skip_reason": "总分不足 7/20"
+  },
+  {
+    "title": "端侧 AI",
+    "path": "Cubox/端侧 AI-2024-06-20.md",
+    "score": {
+      "relevance": 1,
+      "depth": 1,
+      "timeliness": 5,
+      "verifiability": 2,
+      "total": 9
+    },
+    "chapters": [],
+    "quality": "low",
+    "confidence": "medium",
+    "summary": "# 端侧 AI    [Read in Cubox](https://cubox.pro/web/card/7203439680518357690)   [Read Original](https:/...",
+    "indexed_at": "2026-04-01T14:18:31.032068",
+    "skip_reason": "总分不足 9/20"
+  },
+  {
+    "title": "一份关于 AI 编程的简明行为指南",
+    "path": "Cubox/一份关于 AI 编程的简明行为指南-2026-03-22.md",
+    "score": {
+      "relevance": 1,
+      "depth": 1,
+      "timeliness": 5,
+      "verifiability": 2,
+      "total": 9
+    },
+    "chapters": [],
+    "quality": "low",
+    "confidence": "medium",
+    "summary": "# 一份关于 AI 编程的简明行为指南    [Read in Cubox](https://cubox.pro/web/card/7435393387248747087)   [Read Origi...",
+    "indexed_at": "2026-04-01T14:18:31.032902",
+    "skip_reason": "总分不足 9/20"
+  },
+  {
+    "title": "面向 AI 的编程：是时候该坐下来应对不确定性了",
+    "path": "Cubox/面向 AI 的编程：是时候该坐下来应对不确定性了-2023-06-13.md",
+    "score": {
+      "relevance": 1,
+      "depth": 2,
+      "timeliness": 4,
+      "verifiability": 1,
+      "total": 8
+    },
+    "chapters": [],
+    "quality": "low",
+    "confidence": "medium",
+    "summary": "# 面向 AI 的编程：是时候该坐下来应对不确定性了  前段时间一直在做「面向 AI 的编程」——其实就是调用 OpenAI 和开源的 LLM。写本文的动机是总结在这段时间里涉及到的各类「技巧」。 我...",
+    "indexed_at": "2026-04-01T14:18:31.034685",
+    "skip_reason": "总分不足 8/20"
+  },
+  {
+    "title": "个人知识库搭建教程",
+    "path": "Cubox/个人知识库搭建教程-2025-02-14.md",
+    "score": {
+      "relevance": 1,
+      "depth": 1,
+      "timeliness": 5,
+      "verifiability": 2,
+      "total": 9
+    },
+    "chapters": [],
+    "quality": "low",
+    "confidence": "medium",
+    "summary": "# 个人知识库搭建教程  本文介绍如何基于DeepSeek V3模型+Obsidian搭建个人知识库，效果就是你可以对Obsidian工作区的笔记进行提问，让AI帮你梳理和总结。  [Read in ...",
+    "indexed_at": "2026-04-01T14:18:31.035167",
+    "skip_reason": "总分不足 9/20"
+  },
+  {
+    "title": "Google I/O ：Android Jetpack 最新变化（一） Architecture - 掘金",
+    "path": "Cubox/Google I-O ：Android Jetpack 最新变化（一） Architecture - 掘金-2022-07-05.md",
+    "score": {
+      "relevance": 1,
+      "depth": 2,
+      "timeliness": 4,
+      "verifiability": 2,
+      "total": 9
+    },
+    "chapters": [],
+    "quality": "low",
+    "confidence": "medium",
+    "summary": "# Google I/O ：Android Jetpack 最新变化（一） Architecture - 掘金  2022 年 Google I/O 开发者大会上介绍了哪些 Android Jetpa...",
+    "indexed_at": "2026-04-01T14:18:31.035907",
+    "skip_reason": "总分不足 9/20"
+  },
+  {
+    "title": "Android Vitals - Diving into cold start waters 🥶 - DEV Community",
+    "path": "Cubox/Android Vitals - Diving into cold start waters 🥶 - DEV Community-2022-01-17.md",
+    "score": {
+      "relevance": 1,
+      "depth": 2,
+      "timeliness": 4,
+      "verifiability": 1,
+      "total": 8
+    },
+    "chapters": [],
+    "quality": "low",
+    "confidence": "medium",
+    "summary": "# Android Vitals - Diving into cold start waters 🥶 - DEV Community  Header image: A Song of Ice and ...",
+    "indexed_at": "2026-04-01T14:18:31.037566",
+    "skip_reason": "总分不足 8/20"
+  },
+  {
+    "title": "BlackBerry 黑莓之死（上）",
+    "path": "Cubox/BlackBerry 黑莓之死（上）-2025-12-01.md",
+    "score": {
+      "relevance": 1,
+      "depth": 1,
+      "timeliness": 5,
+      "verifiability": 2,
+      "total": 9
+    },
+    "chapters": [],
+    "quality": "low",
+    "confidence": "medium",
+    "summary": "# BlackBerry 黑莓之死（上）  消费电子行业的战场上，从来不存在常胜将军  [Read in Cubox](https://cubox.pro/web/card/7394990713919...",
+    "indexed_at": "2026-04-01T14:18:31.039511",
+    "skip_reason": "总分不足 9/20"
+  },
+  {
+    "title": "关于本指南 · A Programmer's Guide to English",
+    "path": "Cubox/关于本指南 · A Programmer's Guide to English-2024-10-23.md",
+    "score": {
+      "relevance": 1,
+      "depth": 1,
+      "timeliness": 5,
+      "verifiability": 2,
+      "total": 9
+    },
+    "chapters": [],
+    "quality": "low",
+    "confidence": "medium",
+    "summary": "# 关于本指南 · A Programmer's Guide to English    [Read in Cubox](https://cubox.pro/web/card/724859315374...",
+    "indexed_at": "2026-04-01T14:18:31.040095",
+    "skip_reason": "总分不足 9/20"
+  },
+  {
+    "title": "English for IT 1",
+    "path": "Cubox/English for IT 1-2023-12-18.md",
+    "score": {
+      "relevance": 1,
+      "depth": 1,
+      "timeliness": 4,
+      "verifiability": 2,
+      "total": 8
+    },
+    "chapters": [],
+    "quality": "low",
+    "confidence": "medium",
+    "summary": "# English for IT 1    [Read in Cubox](https://cubox.pro/web/card/7136277312164594583)   [Read Origin...",
+    "indexed_at": "2026-04-01T14:18:31.040543",
+    "skip_reason": "总分不足 8/20"
+  },
+  {
+    "title": "文润 - The Best Programmers I Know | Matthias Endler",
+    "path": "Cubox/文润 - The Best Programmers I Know - Matthias Endler-2025-04-10.md",
+    "score": {
+      "relevance": 1,
+      "depth": 1,
+      "timeliness": 5,
+      "verifiability": 2,
+      "total": 9
+    },
+    "chapters": [],
+    "quality": "low",
+    "confidence": "medium",
+    "summary": "# 文润 - The Best Programmers I Know | Matthias Endler  查看由文润转译的内容: The Best Programmers I Know | Matt...",
+    "indexed_at": "2026-04-01T14:18:31.041087",
+    "skip_reason": "总分不足 9/20"
+  },
+  {
+    "title": "三张图看遍Linux 性能监控、测试、优化工具",
+    "path": "Cubox/三张图看遍Linux 性能监控、测试、优化工具-2022-01-14.md",
+    "score": {
+      "relevance": 1,
+      "depth": 2,
+      "timeliness": 4,
+      "verifiability": 2,
+      "total": 9
+    },
+    "chapters": [],
+    "quality": "low",
+    "confidence": "medium",
+    "summary": "# 三张图看遍Linux 性能监控、测试、优化工具  Linux 平台上的性能工具有很多，眼花缭乱，长期的摸索和经验发现最好用的还是那些久经考验的、简单的小工具。系统性能专家 Brendan D.Gr...",
+    "indexed_at": "2026-04-01T14:18:31.041748",
+    "skip_reason": "总分不足 9/20"
+  },
+  {
+    "title": "Git最佳实践，这样用就对了",
+    "path": "Cubox/Git最佳实践，这样用就对了-2024-06-19.md",
+    "score": {
+      "relevance": 1,
+      "depth": 1,
+      "timeliness": 5,
+      "verifiability": 2,
+      "total": 9
+    },
+    "chapters": [],
+    "quality": "low",
+    "confidence": "medium",
+    "summary": "# Git最佳实践，这样用就对了  越了解越有好处  [Read in Cubox](https://cubox.pro/web/card/7202892386446348190)   [Read O...",
+    "indexed_at": "2026-04-01T14:18:31.042563",
+    "skip_reason": "总分不足 9/20"
+  },
+  {
+    "title": "软件测试周刊（第71期）：大悲时不发言，大怒时不争辩，大喜时不许诺。",
+    "path": "Cubox/软件测试周刊（第71期）：大悲时不发言，大怒时不争辩，大喜时不许诺。-2022-05-13.md",
+    "score": {
+      "relevance": 1,
+      "depth": 1,
+      "timeliness": 4,
+      "verifiability": 1,
+      "total": 7
+    },
+    "chapters": [],
+    "quality": "low",
+    "confidence": "medium",
+    "summary": "# 软件测试周刊（第71期）：大悲时不发言，大怒时不争辩，大喜时不许诺。  从头到脚说单测——谈有效的单元测试；前端测试一共有哪几种？如何对小程序进行压测？DevOps发布策略简介；需求优先级评估模型...",
+    "indexed_at": "2026-04-01T14:18:31.045948",
+    "skip_reason": "总分不足 7/20"
+  },
+  {
+    "title": "尽量控制产品走向 | 井底之蛙 | 马行千里·不洗尘沙",
+    "path": "Cubox/尽量控制产品走向 - 井底之蛙 - 马行千里·不洗尘沙-2023-08-09.md",
+    "score": {
+      "relevance": 1,
+      "depth": 1,
+      "timeliness": 4,
+      "verifiability": 2,
+      "total": 8
+    },
+    "chapters": [],
+    "quality": "low",
+    "confidence": "medium",
+    "summary": "# 尽量控制产品走向 | 井底之蛙 | 马行千里·不洗尘沙    [Read in Cubox](https://cubox.pro/web/card/7088786017007699581)   [...",
+    "indexed_at": "2026-04-01T14:18:31.046474",
+    "skip_reason": "总分不足 8/20"
+  },
+  {
+    "title": "“终于懂了“系列：Jetpack AAC完整解析（三）ViewModel 完全掌握！",
+    "path": "Cubox/“终于懂了“系列：Jetpack AAC完整解析（三）ViewModel 完全掌握！-2022-03-17.md",
+    "score": {
+      "relevance": 1,
+      "depth": 1,
+      "timeliness": 4,
+      "verifiability": 2,
+      "total": 8
+    },
+    "chapters": [],
+    "quality": "low",
+    "confidence": "medium",
+    "summary": "# “终于懂了“系列：Jetpack AAC完整解析（三）ViewModel 完全掌握！  掌握 ViewModel 必备文章，推荐阅读～  [Read in Cubox](https://cubox...",
+    "indexed_at": "2026-04-01T14:18:31.047344",
+    "skip_reason": "总分不足 8/20"
+  },
+  {
+    "title": "Linux schedule 3、负载计算-CSDN博客",
+    "path": "Cubox/Linux schedule 3、负载计算-CSDN博客-2023-10-27.md",
+    "score": {
+      "relevance": 1,
+      "depth": 1,
+      "timeliness": 4,
+      "verifiability": 2,
+      "total": 8
+    },
+    "chapters": [],
+    "quality": "low",
+    "confidence": "medium",
+    "summary": "# Linux schedule 3、负载计算-CSDN博客  文章浏览阅读7.2k次，点赞3次，收藏20次。3、负载计算schedule里面这个负载(load average)的概念常常被理解成cp...",
+    "indexed_at": "2026-04-01T14:18:31.048851",
+    "skip_reason": "总分不足 8/20"
+  },
+  {
+    "title": "Input ANR on Android 13",
+    "path": "Cubox/Input ANR on Android 13-2022-12-16.md",
+    "score": {
+      "relevance": 1,
+      "depth": 2,
+      "timeliness": 4,
+      "verifiability": 2,
+      "total": 9
+    },
+    "chapters": [],
+    "quality": "low",
+    "confidence": "medium",
+    "summary": "# Input ANR on Android 13  好久没更新文章了，这次文章是组内一个新来的应届生-小石匠写的。目前的效果来看，我的教学方案是没有问题的，而且  [Read in Cubox](h...",
+    "indexed_at": "2026-04-01T14:18:31.049492",
+    "skip_reason": "总分不足 9/20"
+  },
+  {
+    "title": "周报 #09 - 工作和长期主义",
+    "path": "Cubox/周报 #09 - 工作和长期主义-2023-12-18.md",
+    "score": {
+      "relevance": 1,
+      "depth": 1,
+      "timeliness": 4,
+      "verifiability": 2,
+      "total": 8
+    },
+    "chapters": [],
+    "quality": "low",
+    "confidence": "medium",
+    "summary": "# 周报 #09 - 工作和长期主义    [Read in Cubox](https://cubox.pro/web/card/7136244501705655023)   [Read Origin...",
+    "indexed_at": "2026-04-01T14:18:31.051203",
+    "skip_reason": "总分不足 8/20"
+  },
+  {
+    "title": "深入浅出NFT系列2，NFT的价值基础",
+    "path": "Cubox/深入浅出NFT系列2，NFT的价值基础-2022-08-12.md",
+    "score": {
+      "relevance": 1,
+      "depth": 1,
+      "timeliness": 4,
+      "verifiability": 2,
+      "total": 8
+    },
+    "chapters": [],
+    "quality": "low",
+    "confidence": "medium",
+    "summary": "# 深入浅出NFT系列2，NFT的价值基础  备注：本文只是科普区块链项目，不具备投资建议，且通过介绍提高大家的防骗姿势；社区的NFT白名单在新群的公告栏  [Read in Cubox](https...",
+    "indexed_at": "2026-04-01T14:18:31.051784",
+    "skip_reason": "总分不足 8/20"
+  },
+  {
+    "title": "面试必备：为什么onCreate时机没法获取View的宽、高？",
+    "path": "Cubox/面试必备：为什么onCreate时机没法获取View的宽、高？-2024-07-08.md",
+    "score": {
+      "relevance": 1,
+      "depth": 1,
+      "timeliness": 5,
+      "verifiability": 2,
+      "total": 9
+    },
+    "chapters": [],
+    "quality": "low",
+    "confidence": "medium",
+    "summary": "# 面试必备：为什么onCreate时机没法获取View的宽、高？  非常高频的出现在面试中  [Read in Cubox](https://cubox.pro/web/card/720979847...",
+    "indexed_at": "2026-04-01T14:18:31.052865",
+    "skip_reason": "总分不足 9/20"
+  },
+  {
+    "title": "禅意简历 - 我第二个独立开发的作品",
+    "path": "Cubox/禅意简历 - 我第二个独立开发的作品-2022-01-31.md",
+    "score": {
+      "relevance": 1,
+      "depth": 1,
+      "timeliness": 4,
+      "verifiability": 2,
+      "total": 8
+    },
+    "chapters": [],
+    "quality": "low",
+    "confidence": "medium",
+    "summary": "# 禅意简历 - 我第二个独立开发的作品  前言 我的上一个独立作品Ego Reader (egorss.com) 曾经因为UI…  [Read in Cubox](https://cubox.pro...",
+    "indexed_at": "2026-04-01T14:18:31.053589",
+    "skip_reason": "总分不足 8/20"
+  },
+  {
+    "title": "安卓输入事件处理流程分享（1） - 简书",
+    "path": "Cubox/安卓输入事件处理流程分享（1） - 简书-2022-01-18.md",
+    "score": {
+      "relevance": 1,
+      "depth": 1,
+      "timeliness": 4,
+      "verifiability": 3,
+      "total": 9
+    },
+    "chapters": [],
+    "quality": "low",
+    "confidence": "medium",
+    "summary": "# 安卓输入事件处理流程分享（1） - 简书  努比亚技术团队原创内容，转载请务必注明出处。 传递流程 Java层事件传递流程传递过程详细传递过程Native传递事件到JavaInputEventRe...",
+    "indexed_at": "2026-04-01T14:18:31.054379",
+    "skip_reason": "总分不足 9/20"
+  },
+  {
+    "title": "你真的知道onCreate和onResume 耗时操作为什么不会ANR吗？",
+    "path": "Cubox/你真的知道onCreate和onResume 耗时操作为什么不会ANR吗？-2025-02-17.md",
+    "score": {
+      "relevance": 1,
+      "depth": 1,
+      "timeliness": 5,
+      "verifiability": 2,
+      "total": 9
+    },
+    "chapters": [],
+    "quality": "low",
+    "confidence": "medium",
+    "summary": "# 你真的知道onCreate和onResume 耗时操作为什么不会ANR吗？  感谢 jakeprim学员朋友的再次投稿，在学习了课程的相关的ANR知识点后，针对Activity生命周期方法耗时操作...",
+    "indexed_at": "2026-04-01T14:18:31.055719",
+    "skip_reason": "总分不足 9/20"
+  },
+  {
+    "title": "Customize WorkManager with AppStartup & Hilt",
+    "path": "Cubox/Customize WorkManager with AppStartup & Hilt-2022-07-20.md",
+    "score": {
+      "relevance": 2,
+      "depth": 1,
+      "timeliness": 4,
+      "verifiability": 1,
+      "total": 8
+    },
+    "chapters": [],
+    "quality": "low",
+    "confidence": "low",
+    "summary": "# Customize WorkManager with AppStartup & Hilt Learn about WorkManager best-practices including perf",
+    "indexed_at": "2026-04-01T14:50:41.558480",
+    "skip_reason": "总分8/20 < 10"
+  },
+  {
+    "title": "DRM(Digital Rights Management)生态以及架构介绍",
+    "path": "Cubox/DRM(Digital Rights Management)生态以及架构介绍-2025-04-11.md",
+    "score": {
+      "relevance": 1,
+      "depth": 1,
+      "timeliness": 5,
+      "verifiability": 1,
+      "total": 8
+    },
+    "chapters": [],
+    "quality": "low",
+    "confidence": "low",
+    "summary": "# DRM(Digital Rights Management)生态以及架构介绍 DRM是数字内容分发的基石，通过技术手段平衡版权保护与用户体验 [Read in Cubox](https://cub",
+    "indexed_at": "2026-04-01T14:50:41.558857",
+    "skip_reason": "总分8/20 < 10"
+  },
+  {
+    "title": "Dalvik, ART, JIT, and AOT in Android",
+    "path": "Cubox/Dalvik, ART, JIT, and AOT in Android-2025-03-08.md",
+    "score": {
+      "relevance": 1,
+      "depth": 1,
+      "timeliness": 5,
+      "verifiability": 1,
+      "total": 8
+    },
+    "chapters": [],
+    "quality": "low",
+    "confidence": "low",
+    "summary": "# Dalvik, ART, JIT, and AOT in Android In this blog, we will learn about the terms Dalvik, ART, JIT,",
+    "indexed_at": "2026-04-01T14:50:41.559365",
+    "skip_reason": "总分8/20 < 10"
+  },
+  {
+    "title": "DataStore and synchronous work. In the following posts from our Jetpack… | by Simona Stojanovic | Android Developers | Feb, 2022 | Medium",
+    "path": "Cubox/DataStore and synchronous work. In the following posts from our Jetpack… - by Simona Stojanovic - An.md",
+    "score": {
+      "relevance": 1,
+      "depth": 1,
+      "timeliness": 3,
+      "verifiability": 1,
+      "total": 6
+    },
+    "chapters": [],
+    "quality": "low",
+    "confidence": "low",
+    "summary": "# DataStore and synchronous work. In the following posts from our Jetpack… | by Simona Stojanovic | ",
+    "indexed_at": "2026-04-01T14:50:41.559665",
+    "skip_reason": "总分6/20 < 10"
+  },
+  {
+    "title": "Deep Dive into Android IPC/Binder Framework",
+    "path": "Cubox/Deep Dive into Android IPC-Binder Framework-2024-07-11.md",
+    "score": {
+      "relevance": 2,
+      "depth": 1,
+      "timeliness": 5,
+      "verifiability": 1,
+      "total": 9
+    },
+    "chapters": [
+      "ch01-架构"
+    ],
+    "quality": "low",
+    "confidence": "low",
+    "summary": "# Deep Dive into Android IPC/Binder Framework [Read in Cubox](https://cubox.pro/web/card/72109329915",
+    "indexed_at": "2026-04-01T14:50:41.560108",
+    "skip_reason": "总分9/20 < 10"
+  },
+  {
+    "title": "Deep Linking in Jetpack Compose — Android",
+    "path": "Cubox/Deep Linking in Jetpack Compose — Android-2023-12-13.md",
+    "score": {
+      "relevance": 2,
+      "depth": 1,
+      "timeliness": 4,
+      "verifiability": 1,
+      "total": 8
+    },
+    "chapters": [],
+    "quality": "low",
+    "confidence": "low",
+    "summary": "# Deep Linking in Jetpack Compose — Android [Read in Cubox](https://cubox.pro/web/card/7134462245148",
+    "indexed_at": "2026-04-01T14:50:41.560321",
+    "skip_reason": "总分8/20 < 10"
+  },
+  {
+    "title": "Design Patterns and Architecture: The Android Developer Roadmap - Part 4",
+    "path": "Cubox/Design Patterns and Architecture- The Android Developer Roadmap - Part 4-2022-09-26.md",
+    "score": {
+      "relevance": 1,
+      "depth": 1,
+      "timeliness": 4,
+      "verifiability": 1,
+      "total": 7
+    },
+    "chapters": [],
+    "quality": "low",
+    "confidence": "low",
+    "summary": "# Design Patterns and Architecture: The Android Developer Roadmap - Part 4 In this post, you’ll lear",
+    "indexed_at": "2026-04-01T14:50:41.561387",
+    "skip_reason": "总分7/20 < 10"
+  },
+  {
+    "title": "Design of Kotlin Coroutines",
+    "path": "Cubox/Design of Kotlin Coroutines-2022-09-26.md",
+    "score": {
+      "relevance": 3,
+      "depth": 1,
+      "timeliness": 4,
+      "verifiability": 1,
+      "total": 9
+    },
+    "chapters": [
+      "ch15-Kotlin"
+    ],
+    "quality": "low",
+    "confidence": "low",
+    "summary": "# Design of Kotlin Coroutines What does the coroutine creation process look like? [Read in Cubox](ht",
+    "indexed_at": "2026-04-01T14:50:41.562249",
+    "skip_reason": "总分9/20 < 10"
+  },
+  {
+    "title": "Devfreq Bus Dcvs",
+    "path": "Cubox/Devfreq Bus Dcvs-2022-03-12.md",
+    "score": {
+      "relevance": 1,
+      "depth": 1,
+      "timeliness": 4,
+      "verifiability": 1,
+      "total": 7
+    },
+    "chapters": [],
+    "quality": "low",
+    "confidence": "low",
+    "summary": "# Devfreq Bus Dcvs 本文主要从BUS DCVS，BUS DCVS 软件架构，bw_hwmon 策略、memlat策略几大块，对Devfreq Bus Dcvs进行简单介绍。 [Rea",
+    "indexed_at": "2026-04-01T14:50:41.562608",
+    "skip_reason": "总分7/20 < 10"
+  },
+  {
+    "title": "Diagnose and fix ANRs",
+    "path": "Cubox/Diagnose and fix ANRs-2023-11-17.md",
+    "score": {
+      "relevance": 1,
+      "depth": 2,
+      "timeliness": 4,
+      "verifiability": 1,
+      "total": 8
+    },
+    "chapters": [],
+    "quality": "low",
+    "confidence": "low",
+    "summary": "# Diagnose and fix ANRs [Read in Cubox](https://cubox.pro/web/card/7124986269825764512) [Read Origin",
+    "indexed_at": "2026-04-01T14:50:41.563574",
+    "skip_reason": "总分8/20 < 10"
+  },
+  {
+    "title": "Digging into Android System Services with Eric Amp...",
+    "path": "Cubox/Digging into Android System Services with Eric Amp...-2024-01-08.md",
+    "score": {
+      "relevance": 1,
+      "depth": 1,
+      "timeliness": 5,
+      "verifiability": 1,
+      "total": 8
+    },
+    "chapters": [],
+    "quality": "low",
+    "confidence": "low",
+    "summary": "# Digging into Android System Services with Eric Amp... In this YouTube video, Eric Ampire gives a d",
+    "indexed_at": "2026-04-01T14:50:41.563859",
+    "skip_reason": "总分8/20 < 10"
+  },
+  {
+    "title": "Double Mapped Circular Buffer",
+    "path": "Cubox/Double Mapped Circular Buffer-2025-08-13.md",
+    "score": {
+      "relevance": 1,
+      "depth": 1,
+      "timeliness": 5,
+      "verifiability": 1,
+      "total": 8
+    },
+    "chapters": [],
+    "quality": "low",
+    "confidence": "low",
+    "summary": "# Double Mapped Circular Buffer [Read in Cubox](https://cubox.pro/web/card/7354976949518732211) [Rea",
+    "indexed_at": "2026-04-01T14:50:41.564279",
+    "skip_reason": "总分8/20 < 10"
+  },
+  {
+    "title": "Fixing simpleperf broken records",
+    "path": "Cubox/Fixing simpleperf broken records-2022-01-24.md",
+    "score": {
+      "relevance": 2,
+      "depth": 1,
+      "timeliness": 4,
+      "verifiability": 1,
+      "total": 8
+    },
+    "chapters": [
+      "ch11-Profiling"
+    ],
+    "quality": "low",
+    "confidence": "low",
+    "summary": "# Fixing simpleperf broken records Summary This blog shows how to fix simpleperf traces which are ot",
+    "indexed_at": "2026-04-01T14:51:03.852652",
+    "skip_reason": "总分8/20 < 10"
   }
 ]

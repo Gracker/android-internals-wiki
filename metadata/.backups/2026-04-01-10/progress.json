@@ -3,12 +3,12 @@
   "total_sections": 93,
   "metrics": {
     "total": 102,
-    "draft": 48,
-    "ready-for-review": 8,
+    "draft": 50,
+    "ready-for-review": 6,
     "reviewed": 1,
     "finalized": 3,
     "staging_drafts": 0,
-    "last_updated": "2026-04-01T10:55:00+08:00"
+    "last_updated": "2026-04-01T08:20:00"
   },
   "reviewed_sections": {
     "8.1": {
@@ -352,26 +352,15 @@
       "extensions_total": 2,
       "verification_level": "L2",
       "word_count": "~7500"
-    },
-    {
-      "section": "8.3",
-      "title": "启动优化策略",
-      "completed_at": "2026-04-01T16:30:00+08:00",
-      "anchors_covered": 6,
-      "anchors_total": 6,
-      "extensions_covered": 2,
-      "extensions_total": 2,
-      "verification_level": "L2",
-      "word_count": "~12000"
     }
   ],
   "ready_for_review": 4,
-  "last_updated": "2026-04-01T16:30:00+08:00",
+  "last_updated": "2026-04-01T07:26:31",
   "stats": {
     "total": 97,
-    "completed": 28,
-    "pending": 51,
-    "last_updated": "2026-04-01T16:30:00+08:00"
+    "completed": 26,
+    "pending": 64,
+    "last_updated": "2026-04-01T06:46:53"
   },
   "research_stats": {
     "runs_today": [
@@ -386,18 +375,6 @@
           "Binder Rust 后端（libbinder_rs）：±2% 性能持平 + 68% 内存漏洞减少",
           "Perfetto Binder 事务三维延迟指标（client_dur/server_dur/dispatch_dur）",
           "Android 15/16/17 服务超时策略演进对 Binder-ANR 链路的影响"
-        ]
-      },
-      {
-        "time": "2026-04-01T12:34:00+08:00",
-        "focus": "Compose 性能里程碑 2025 + Android 16/17 ProfilingManager（轮转主题 Binder 已在 07:00 覆盖，转向 pending 高价值章节）",
-        "source": "supplementary-research",
-        "candidates": 2,
-        "passed": 2,
-        "delivered": 2,
-        "themes": [
-          "Compose 1.10 Pausable Composition 默认 + Strong Skipping Mode + Lazy prefetch + 性能对等 View 系统（目标 §7.7）",
-          "Android 16/17 ProfilingManager 系统触发式追踪：TRIGGER_TYPE_COLD_START/ANR/OOM/EXCESSIVE_CPU（目标 §8.2/§9.1/§9.3/§14.7）"
         ]
       }
     ]
@@ -458,49 +435,6 @@
       "title": "典型场景分析",
       "action": "draft-completed",
       "word_count": "~7500"
-    },
-    {
-      "date": "2026-04-01",
-      "section": "7.5",
-      "title": "优化策略",
-      "action": "queue-status-corrected-to-completed",
-      "word_count": "~7500"
-    },
-    {
-      "date": "2026-04-01",
-      "section": "7.6",
-      "title": "案例集",
-      "action": "draft-completed",
-      "word_count": "~8000"
-    },
-    {
-      "date": "2026-04-01",
-      "section": "",
-      "title": "research-discovery (12:34 run)",
-      "action": "research-completed",
-      "focus": "Compose 性能里程碑 2025 + Android 16/17 ProfilingManager 系统触发",
-      "candidates": 2,
-      "passed": 2,
-      "delivered": 2,
-      "themes": [
-        "Compose 1.10 Pausable Composition 默认启用 + Strong Skipping Mode (Kotlin 2.2) + 性能对等 View 系统",
-        "Android 16/17 ProfilingManager 系统触发式追踪：ANR trace / cold start trace / OOM heap dump / CPU kill stack sample"
-      ]
-    },
-    {
-      "date": "2026-04-01",
-      "section": "8.3",
-      "title": "启动优化策略",
-      "action": "draft-completed",
-      "word_count": "~12000"
     }
-  ],
-  "sections": {
-    "1.5": {
-      "title": "线程模型",
-      "status": "finalized",
-      "reviewed_date": "2026-04-01",
-      "reviewed_by": "openclaw-task6"
-    }
-  }
+  ]
 }
