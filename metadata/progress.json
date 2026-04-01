@@ -483,15 +483,26 @@
       "extensions_total": 2,
       "verification_level": "L2",
       "word_count": "~9500"
+    },
+    {
+      "section": "9.1",
+      "title": "ANR 设计思想",
+      "completed_at": "2026-04-02T05:03:00+08:00",
+      "anchors_covered": 5,
+      "anchors_total": 5,
+      "extensions_covered": 2,
+      "extensions_total": 2,
+      "verification_level": "L2",
+      "word_count": "~9000"
     }
   ],
   "ready_for_review": 4,
   "last_updated": "2026-04-01T20:20:00+08:00",
   "stats": {
     "total": 97,
-    "completed": 35,
-    "pending": 62,
-    "last_updated": "2026-04-02T04:41:00+08:00"
+    "completed": 36,
+    "pending": 61,
+    "last_updated": "2026-04-02T05:03:00+08:00"
   },
   "research_stats": {
     "runs_today": [
@@ -681,6 +692,13 @@
       "title": "Kotlin Coroutine 性能实践",
       "action": "draft-completed",
       "word_count": "~9500"
+    },
+    {
+      "date": "2026-04-02",
+      "section": "9.1",
+      "title": "ANR 设计思想",
+      "action": "draft-completed",
+      "word_count": "~9000"
     }
   ],
   "sections": {
