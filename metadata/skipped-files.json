@@ -38307,5 +38307,377 @@
     "summary": "# Fixing simpleperf broken records Summary This blog shows how to fix simpleperf traces which are ot",
     "indexed_at": "2026-04-01T14:51:03.852652",
     "skip_reason": "总分8/20 < 10"
+  },
+  {
+    "file": "Flutter 深入探索混合开发的技术演进 - 开发者说·DTalk-2022-08-26.md",
+    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Cubox/Flutter 深入探索混合开发的技术演进 - 开发者说·DTalk-2022-08-26.md",
+    "reason": "总分低于10分",
+    "score": 9,
+    "scores": {
+      "相关性": 2,
+      "技术深度": 3,
+      "时效性": 4,
+      "可验证性": 0
+    }
+  },
+  {
+    "file": "Flutter 渲染性能问题分析-2022-05-13.md",
+    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Cubox/Flutter 渲染性能问题分析-2022-05-13.md",
+    "reason": "总分低于10分",
+    "score": 9,
+    "scores": {
+      "相关性": 4,
+      "技术深度": 1,
+      "时效性": 4,
+      "可验证性": 0
+    }
+  },
+  {
+    "file": "Flutter 的 Widget Key 提议大调整？深入聊一聊 Key 的作用-2025-02-12.md",
+    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Cubox/Flutter 的 Widget Key 提议大调整？深入聊一聊 Key 的作用-2025-02-12.md",
+    "reason": "总分低于10分",
+    "score": 8,
+    "scores": {
+      "相关性": 2,
+      "技术深度": 1,
+      "时效性": 5,
+      "可验证性": 0
+    }
+  },
+  {
+    "file": "Flutter 长截屏适配 Miui 系统，一点都不难-2022-08-10.md",
+    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Cubox/Flutter 长截屏适配 Miui 系统，一点都不难-2022-08-10.md",
+    "reason": "总分低于10分",
+    "score": 7,
+    "scores": {
+      "相关性": 2,
+      "技术深度": 1,
+      "时效性": 4,
+      "可验证性": 0
+    }
+  },
+  {
+    "file": "Flutter 高延迟渲染流水线调度-2022-06-17.md",
+    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Cubox/Flutter 高延迟渲染流水线调度-2022-06-17.md",
+    "reason": "总分低于10分",
+    "score": 9,
+    "scores": {
+      "相关性": 4,
+      "技术深度": 1,
+      "时效性": 4,
+      "可验证性": 0
+    }
+  },
+  {
+    "file": "FlutterWeb启动耗时优化-2024-07-25.md",
+    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Cubox/FlutterWeb启动耗时优化-2024-07-25.md",
+    "reason": "总分低于10分",
+    "score": 7,
+    "scores": {
+      "相关性": 2,
+      "技术深度": 1,
+      "时效性": 4,
+      "可验证性": 0
+    }
+  },
+  {
+    "file": "Flutter富文本性能优化 — 渲染-2022-11-21.md",
+    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Cubox/Flutter富文本性能优化 — 渲染-2022-11-21.md",
+    "reason": "总分低于10分",
+    "score": 9,
+    "scores": {
+      "相关性": 4,
+      "技术深度": 1,
+      "时效性": 4,
+      "可验证性": 0
+    }
+  },
+  {
+    "file": "Flutter布局指南之Box套盒子-2022-03-16.md",
+    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Cubox/Flutter布局指南之Box套盒子-2022-03-16.md",
+    "reason": "总分低于10分",
+    "score": 7,
+    "scores": {
+      "相关性": 2,
+      "技术深度": 1,
+      "时效性": 4,
+      "可验证性": 0
+    }
+  },
+  {
+    "file": "Flutter帧率监控  - 由浅入深，详解获取帧率的那些事 - 掘金-2023-01-14.md",
+    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Cubox/Flutter帧率监控  - 由浅入深，详解获取帧率的那些事 - 掘金-2023-01-14.md",
+    "reason": "总分低于10分",
+    "score": 9,
+    "scores": {
+      "相关性": 2,
+      "技术深度": 3,
+      "时效性": 4,
+      "可验证性": 0
+    }
+  },
+  {
+    "file": "Flutter性能优化实践之Timeline -2022-01-14.md",
+    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Cubox/Flutter性能优化实践之Timeline -2022-01-14.md",
+    "reason": "总分低于10分",
+    "score": 7,
+    "scores": {
+      "相关性": 2,
+      "技术深度": 1,
+      "时效性": 4,
+      "可验证性": 0
+    }
+  },
+  {
+    "file": "Flutter混合架构方案探索-2024-11-14.md",
+    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Cubox/Flutter混合架构方案探索-2024-11-14.md",
+    "reason": "总分低于10分",
+    "score": 7,
+    "scores": {
+      "相关性": 2,
+      "技术深度": 1,
+      "时效性": 4,
+      "可验证性": 0
+    }
+  },
+  {
+    "file": "Flutter混编工程之Font桥接-2022-03-16.md",
+    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Cubox/Flutter混编工程之Font桥接-2022-03-16.md",
+    "reason": "总分低于10分",
+    "score": 7,
+    "scores": {
+      "相关性": 2,
+      "技术深度": 1,
+      "时效性": 4,
+      "可验证性": 0
+    }
+  },
+  {
+    "file": "Flutter滑动体验对齐原生-滑动曲线篇-2022-03-29.md",
+    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Cubox/Flutter滑动体验对齐原生-滑动曲线篇-2022-03-29.md",
+    "reason": "总分低于10分",
+    "score": 7,
+    "scores": {
+      "相关性": 2,
+      "技术深度": 1,
+      "时效性": 4,
+      "可验证性": 0
+    }
+  },
+  {
+    "file": "Flutter鸿蒙终端一体化-混沌初开-2024-01-24.md",
+    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Cubox/Flutter鸿蒙终端一体化-混沌初开-2024-01-24.md",
+    "reason": "总分低于10分",
+    "score": 7,
+    "scores": {
+      "相关性": 2,
+      "技术深度": 1,
+      "时效性": 4,
+      "可验证性": 0
+    }
+  },
+  {
+    "file": "Flutter鸿蒙终端一体化-珠联璧合-2024-02-01.md",
+    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Cubox/Flutter鸿蒙终端一体化-珠联璧合-2024-02-01.md",
+    "reason": "总分低于10分",
+    "score": 7,
+    "scores": {
+      "相关性": 2,
+      "技术深度": 1,
+      "时效性": 4,
+      "可验证性": 0
+    }
+  },
+  {
+    "file": "Fluttter 混合开发下 HybridComposition 和 VirtualDisplay 的实现与未来演进-2022-03-07.md",
+    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Cubox/Fluttter 混合开发下 HybridComposition 和 VirtualDisplay 的实现与未来演进-2022-03-07.md",
+    "reason": "总分低于10分",
+    "score": 7,
+    "scores": {
+      "相关性": 2,
+      "技术深度": 1,
+      "时效性": 4,
+      "可验证性": 0
+    }
+  },
+  {
+    "file": "Follow —— 信息获取的另一种形态 · Pseudoyu-2024-11-04.md",
+    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Cubox/Follow —— 信息获取的另一种形态 · Pseudoyu-2024-11-04.md",
+    "reason": "总分低于10分",
+    "score": 6,
+    "scores": {
+      "相关性": 2,
+      "技术深度": 0,
+      "时效性": 4,
+      "可验证性": 0
+    }
+  },
+  {
+    "file": "Frame rate  -  Android Developers-2022-02-08.md",
+    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Cubox/Frame rate  -  Android Developers-2022-02-08.md",
+    "reason": "总分低于10分",
+    "score": 9,
+    "scores": {
+      "相关性": 2,
+      "技术深度": 1,
+      "时效性": 4,
+      "可验证性": 2
+    }
+  },
+  {
+    "file": "Free weekly Android & Kotlin development newslette...-2023-07-31.md",
+    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Cubox/Free weekly Android & Kotlin development newslette...-2023-07-31.md",
+    "reason": "总分低于10分",
+    "score": 9,
+    "scores": {
+      "相关性": 2,
+      "技术深度": 1,
+      "时效性": 4,
+      "可验证性": 2
+    }
+  },
+  {
+    "file": "Free weekly Android & Kotlin development newslette...-2023-10-16.md",
+    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Cubox/Free weekly Android & Kotlin development newslette...-2023-10-16.md",
+    "reason": "总分低于10分",
+    "score": 9,
+    "scores": {
+      "相关性": 2,
+      "技术深度": 1,
+      "时效性": 4,
+      "可验证性": 2
+    }
+  },
+  {
+    "file": "Free weekly Android & Kotlin development newsletter-2022-02-07.md",
+    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Cubox/Free weekly Android & Kotlin development newsletter-2022-02-07.md",
+    "reason": "总分低于10分",
+    "score": 9,
+    "scores": {
+      "相关性": 2,
+      "技术深度": 1,
+      "时效性": 4,
+      "可验证性": 2
+    }
+  },
+  {
+    "file": "Free weekly Android & Kotlin development newsletter-2022-02-14.md",
+    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Cubox/Free weekly Android & Kotlin development newsletter-2022-02-14.md",
+    "reason": "总分低于10分",
+    "score": 9,
+    "scores": {
+      "相关性": 2,
+      "技术深度": 1,
+      "时效性": 4,
+      "可验证性": 2
+    }
+  },
+  {
+    "file": "Free weekly Android & Kotlin development newsletter-2024-01-22.md",
+    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Cubox/Free weekly Android & Kotlin development newsletter-2024-01-22.md",
+    "reason": "总分低于10分",
+    "score": 9,
+    "scores": {
+      "相关性": 2,
+      "技术深度": 1,
+      "时效性": 4,
+      "可验证性": 2
+    }
+  },
+  {
+    "file": "Free weekly Android & Kotlin development newsletter-2024-02-12.md",
+    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Cubox/Free weekly Android & Kotlin development newsletter-2024-02-12.md",
+    "reason": "总分低于10分",
+    "score": 9,
+    "scores": {
+      "相关性": 2,
+      "技术深度": 1,
+      "时效性": 4,
+      "可验证性": 2
+    }
+  },
+  {
+    "file": "FreeRTOS内存机制-2022-01-14.md",
+    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Cubox/FreeRTOS内存机制-2022-01-14.md",
+    "reason": "总分低于10分",
+    "score": 7,
+    "scores": {
+      "相关性": 2,
+      "技术深度": 1,
+      "时效性": 4,
+      "可验证性": 0
+    }
+  },
+  {
+    "file": "From Civil Engineering to Computer Science- My 20-Year Journey to Tech Expertise - by Wangbin - Sep,.md",
+    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Cubox/From Civil Engineering to Computer Science- My 20-Year Journey to Tech Expertise - by Wangbin - Sep,.md",
+    "reason": "总分低于10分",
+    "score": 5,
+    "scores": {
+      "相关性": 2,
+      "技术深度": 0,
+      "时效性": 3,
+      "可验证性": 0
+    }
+  },
+  {
+    "file": "From idea to validation in 24 hours-2024-01-15.md",
+    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Cubox/From idea to validation in 24 hours-2024-01-15.md",
+    "reason": "总分低于10分",
+    "score": 6,
+    "scores": {
+      "相关性": 2,
+      "技术深度": 0,
+      "时效性": 4,
+      "可验证性": 0
+    }
+  },
+  {
+    "file": "Ftrace function graph简介-2022-08-22.md",
+    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Cubox/Ftrace function graph简介-2022-08-22.md",
+    "reason": "总分低于10分",
+    "score": 8,
+    "scores": {
+      "相关性": 4,
+      "技术深度": 0,
+      "时效性": 4,
+      "可验证性": 0
+    }
+  },
+  {
+    "file": "FullyDrawnReporter—一个官方冷启动耗时统计小工具 - 掘金-2023-12-24.md",
+    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Cubox/FullyDrawnReporter—一个官方冷启动耗时统计小工具 - 掘金-2023-12-24.md",
+    "reason": "总分低于10分",
+    "score": 9,
+    "scores": {
+      "相关性": 4,
+      "技术深度": 1,
+      "时效性": 4,
+      "可验证性": 0
+    }
+  },
+  {
+    "file": "FullyDrawnReporter—一个官方冷启动耗时统计小工具-2024-04-09.md",
+    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Cubox/FullyDrawnReporter—一个官方冷启动耗时统计小工具-2024-04-09.md",
+    "reason": "总分低于10分",
+    "score": 9,
+    "scores": {
+      "相关性": 4,
+      "技术深度": 1,
+      "时效性": 4,
+      "可验证性": 0
+    }
+  },
+  {
+    "file": "Fundamental Software Architectural Patterns - by Williams O - Jun, 2022 - Medium-2022-07-19.md",
+    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Cubox/Fundamental Software Architectural Patterns - by Williams O - Jun, 2022 - Medium-2022-07-19.md",
+    "reason": "总分低于10分",
+    "score": 6,
+    "scores": {
+      "相关性": 2,
+      "技术深度": 0,
+      "时效性": 4,
+      "可验证性": 0
+    }
   }
 ]
