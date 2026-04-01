@@ -1,10 +1,13 @@
 ---
 title: "线程模型"
 chapter: "1.5"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 5.0 (API 21) - Android 16 (API 36)"
 last_verified: "2026-03-31"
+reviewed_date: "2026-04-01"
+reviewed_by: openclaw-task6
 last_verified_against: "AOSP android-16.0.0_r1"
+drafted_date: "2026-03-31"
 confidence: medium
 sources:
   - type: blog
@@ -140,6 +143,8 @@ public static void loop() {
 
 这里有一个容易被忽略但非常重要的设计：`msg.target` 就是发送这条消息的 Handler。这意味着同一条 MessageQueue 可以被多个 Handler 共享——不同 Handler 发送的消息都会进入同一个队列，但每条消息都会被自己的 Handler 处理。主线程上，ActivityThread 的内部类 `H` 就是最核心的 Handler，它处理 BIND_APPLICATION、CREATE_SERVICE、RECEIVER、BIND_SERVICE 等消息，驱动四大组件的生命周期。
 
+[图：Looper → MessageQueue → Handler 消息驱动模型示意图 — 展示多 Handler 共享同一 MessageQueue 的消息流转]
+
 ### nativePollOnce：epoll 驱动的高效等待
 
 主线程空闲时在做什么？这个看似简单的问题，背后牵扯到 Linux 内核的 epoll 机制。
@@ -186,6 +191,8 @@ IdleHandler 的典型用途包括：
 Android 5.0（Lollipop）引入了 RenderThread，将渲染工作从主线程分离出去。这个改动的核心思想是：主线程只负责构建绘制指令（DisplayList），构建完成后通过 `syncAndDrawFrame()` 将 DisplayList 同步给 RenderThread，然后主线程就可以解放出来处理下一个 VSync 周期的消息。RenderThread 在自己的线程上独立执行 GPU 渲染命令、管理 Buffer、与 SurfaceFlinger 交互。
 
 这种"生产者-消费者"模式让主线程和 GPU 可以并行工作：主线程在构建第 N+1 帧的 DisplayList 时，RenderThread 可能在渲染第 N 帧。这就是为什么在 Perfetto 中你会看到主线程和 RenderThread 的活动是交叠的，而非串行的。
+
+[图：主线程与 RenderThread 的生产者-消费者模式示意图 — 展示 DisplayList 构建与 GPU 渲染的并行时间线]
 
 [已验证: AOSP android-16.0.0_r1, frameworks/base/libs/hwui/renderthread/RenderThread.cpp]
 [来源: obsidian/Personal-Knowlodge/source/Android-Perfetto-07-MainThread-And-RenderThread.md]
@@ -392,7 +399,7 @@ Choreographer 也使用了同样的模式：通过 `ThreadLocal` 为每个线程
 
 理解了线程模型之后，我们在 Perfetto 中就可以有目的地观察线程行为：
 
-### 1. 识别关键线程
+### 识别关键线程
 
 在 App 进程下，你会看到以下几个重要的线程：
 
@@ -402,7 +409,7 @@ Choreographer 也使用了同样的模式：通过 `ThreadLocal` 为每个线程
 - **FinalizerDaemon**：执行对象 finalize 方法的守护线程。如果这个线程频繁活动，说明有大量对象在被 GC 回收时需要执行 finalize，这可能导致 GC 暂停时间变长。
 - **DefaultDispatcher-worker-\***：Kotlin Coroutine 的默认线程池线程。
 
-### 2. 主线程状态解读
+### 主线程状态解读
 
 在 Perfetto 的 CPU Slice 视图中，主线程的状态有几种典型表现：
 
@@ -411,15 +418,17 @@ Choreographer 也使用了同样的模式：通过 `ThreadLocal` 为每个线程
 - **Sleep（白色/浅色）**：在 `epoll_wait` 中等待消息，或者阻塞在 I/O 操作上。正常空闲时应该是 Sleep 在 `nativePollOnce` 上。
 - **Uninterruptible Sleep（深橙色）**：通常在等待磁盘 I/O。如果主线程频繁进入这个状态，说明有同步 I/O 操作阻塞了主线程。
 
-### 3. RenderThread 延迟分析
+### RenderThread 延迟分析
 
 通过对比主线程 `syncAndDrawFrame` 的结束时间和 RenderThread `DrawFrame` 的结束时间，可以判断渲染是否成为瓶颈。如果 RenderThread 的执行时间经常超过一个 VSync 周期（120Hz 下约 8.33ms），就说明 GPU 渲染是性能瓶颈，需要从减少过度绘制、简化 DisplayList 等方向优化。
 
-[待补充：Perfetto 中主线程各状态的 Trace 截图]
+[待补充：Perfetto Trace 截图 — 主线程各状态（Running/Runnable/Sleep/Uninterruptible Sleep）对应的外观与判断方法]
 
 ## 线程数量对性能的影响
 
-每个线程都有自己的栈空间（Android 上默认约 1MB）、寄存器上下文、以及内核调度开销。当线程数量过多时，会产生以下问题：
+了解了 Android 线程模型的各个组件之后，我们还需要关注一个容易被忽视的全局问题：线程数量本身对性能的影响。
+
+每个线程都有自己的栈空间（Android 上默认约 1MB）、寄存器上下文、以及内核调度开销。当线程数量过多时，会从多个维度拖慢系统：
 
 1. **调度开销增加**：内核需要在更多线程之间做上下文切换，每次切换都需要保存和恢复寄存器状态、刷新 TLB（Translation Lookaside Buffer）。在 CPU 密集型场景中，过多的上下文切换会直接导致性能下降。
 
