@@ -4,11 +4,11 @@
   "metrics": {
     "total": 102,
     "draft": 48,
-    "ready-for-review": 8,
-    "reviewed": 1,
+    "ready-for-review": 7,
+    "reviewed": 2,
     "finalized": 3,
     "staging_drafts": 0,
-    "last_updated": "2026-04-01T10:55:00+08:00"
+    "last_updated": "2026-04-01T17:44:00+08:00"
   },
   "reviewed_sections": {
     "8.1": {
@@ -54,6 +54,16 @@
         "添加2处[图：...]标记（五级优先级示意、LMK流程图）",
         "补全frontmatter（drafted_date, reviewed_date, reviewed_by）",
         "状态更新：ready-for-review → finalized"
+      ]
+    },
+    "4.5": {
+      "reviewed_date": "2026-04-01",
+      "reviewed_by": "openclaw-task6",
+      "review_status": "reviewed",
+      "fixes_applied": [
+        "JNI 泄漏模式小节添加叙事引言",
+        "heapprofd 小节添加 [图：...] 标记",
+        "frontmatter 更新 status/reviewed_date/reviewed_by"
       ]
     }
   },
@@ -366,7 +376,7 @@
     }
   ],
   "ready_for_review": 4,
-  "last_updated": "2026-04-01T16:30:00+08:00",
+  "last_updated": "2026-04-01T17:44:00+08:00",
   "stats": {
     "total": 97,
     "completed": 28,
@@ -493,6 +503,15 @@
       "title": "启动优化策略",
       "action": "draft-completed",
       "word_count": "~12000"
+    },
+    {
+      "date": "2026-04-01",
+      "section": "4.5",
+      "title": "App 内存优化",
+      "action": "reviewed",
+      "review_by": "openclaw-task6",
+      "issues": 1,
+      "fixes": 3
     }
   ],
   "sections": {

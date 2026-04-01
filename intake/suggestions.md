@@ -74,3 +74,16 @@
 
 1. **1.2 BootTimingsTraceLog 回炉素材已到位**: 两篇研究素材已写入 intake/research-feeds/，覆盖 BootTimingsTraceLog + TimingsTraceAndSlog 双层追踪体系和 Android 16 启动优化新特性，建议 task4 加工时优先使用
 2. **16.2 优先级建议**: 建议将 16.2（各 Android 版本性能变更追踪）priority 从 50 提升到 65，因 Android 16 并行模块加载和 AutoFDO 是高价值版本演进素材
+
+
+## [Task6 Review] 4.5 App 内存优化 — 2026-04-01
+- **类型**：需补充素材
+- **位置**：全文缺失"常见问题与误区"部分
+- **问题**：writing-guide.md Type A 模板明确要求"常见问题与误区"部分，当前草稿缺少此节。虽然内存泄漏的常见模式部分涵盖了部分常见问题，但没有独立的小节总结开发者对 App 内存优化的常见误解。
+- **建议**：补充以下常见误区：
+  1. "调用 System.gc() 能解决内存问题" — 实际上 Android 明确不建议手动触发 GC
+  2. "Android 8.0+ 不需要 recycle Bitmap" — 适用条件并非"完全不需要"，而是 Native 回收时机不同
+  3. "onTrimMemory 触发 = App 即将被杀" — 实际上有前台/后台多种级别，多数是预警而非死刑
+  4. "申请 largeHeap 是解决内存不足的好办法" — largeHeap 有代价，会增加 LMK 优先级
+  5. "内存抖动只发生在低端设备上" — 120Hz 设备因帧间隔更短反而更容易暴露
+- **review 日志**：logs/review/2026-04-01-17-review.md

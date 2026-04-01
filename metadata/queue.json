@@ -320,15 +320,24 @@
     {
       "section": "4.5",
       "section_title": "App 内存优化",
-      "priority": 55,
-      "reason": "待加工（素材0篇）",
+      "priority": 90,
+      "reason": "[review回炉] 缺少\"常见问题与误区\"部分",
       "material_paths": [],
-      "status": "completed",
-      "added_by": "manual-init",
-      "added_at": "2026-03-29T21:00:00",
+      "status": "pending",
+      "added_by": "task6-review",
+      "added_at": "2026-04-01T17:44:00",
       "processed_at": "2026-03-31T20:34:41.955848",
       "word_count": "~7500",
-      "verification_status": "L2_verified_all_anchors_3_extensions_covered_1_auto_discovery"
+      "verification_status": "L2_verified_all_anchors_3_extensions_covered_1_auto_discovery",
+      "review_issues": [
+        {
+          "type": "需补充素材",
+          "location": "全文缺失",
+          "detail": "缺少\"常见问题与误区\"部分，writing-guide Type A 模板明确要求此节",
+          "suggestion": "补充常见误区：System.gc()误区、Bitmap.recycle在API 26+的适用条件、onTrimMemory≠即将被杀、largeHeap利弊等"
+        }
+      ],
+      "original_review_log": "logs/review/2026-04-01-17-review.md"
     },
     {
       "section": "4.6",
@@ -1629,5 +1638,5 @@
       "word_count": "~8000"
     }
   ],
-  "last_updated": "2026-04-01T10:55:00+08:00"
+  "last_updated": "2026-04-01T17:44:00"
 }

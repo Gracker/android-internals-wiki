@@ -1,7 +1,7 @@
 ---
 title: "App 内存优化"
 chapter: "4.5"
-status: ready-for-review
+status: reviewed
 applicable_versions: "Android 8 (API 26) - Android 16 (API 36)"
 last_verified: "2026-03-31"
 last_verified_against: "AOSP android-16.0.0_r1"
@@ -29,6 +29,8 @@ tags: ['memory-optimization', 'bitmap', 'memory-leak', 'onTrimMemory', 'native-m
 related_chapters: ["4.1", "4.2", "4.3", "4.4", "7.2", "7.3"]
 drafted_date: "2026-03-31"
 drafted_by: "openclaw-task2"
+reviewed_date: "2026-04-01"
+reviewed_by: "openclaw-task6"
 ---
 
 # App 内存优化
@@ -490,6 +492,8 @@ Java 层的内存泄漏可以通过 GC 和工具比较容易地发现，但 Nati
 
 ### JNI 层的常见泄漏模式
 
+JNI 层的内存泄漏比 Java 层更隐蔽，因为 Native 代码没有 GC 机制。我们在 Code Review 中反复见到以下三种模式：
+
 - **`NewGlobalRef` 不 `DeleteGlobalRef`**：JNI 中的全局引用会阻止 GC 回收被引用的 Java 对象。每次 `NewGlobalRef` 都必须有对应的 `DeleteGlobalRef`。
 - **`malloc` 不 `free`**：最基础的 C 层泄漏，但当代码路径复杂（提前 return、异常分支）时很容易遗漏。
 - **文件描述符不关闭**：`open()` 后不 `close()`。虽然不占堆内存，但 FD 耗尽可能导致系统无法打开新文件（`Too many open files`）。
@@ -552,6 +556,8 @@ adb shell heapprofd --pid=<PID>
 # 同时追踪 Java 堆（Android 12+）
 adb shell heapprofd --pid=<PID> --java
 ```
+
+[图：Perfetto UI 中 heapprofd 的 Heap Profiles 面板，标注按分配大小排序的调用栈火焰图]
 
 在 Perfetto UI 中，`heapprofd` 的数据出现在 "Heap Profiles" 面板中。你可以按分配大小排序，找到分配最多的调用栈——这就是内存热点。
 
