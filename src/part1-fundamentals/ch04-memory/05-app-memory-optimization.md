@@ -1,7 +1,7 @@
 ---
 title: "App 内存优化"
 chapter: "4.5"
-status: reviewed
+status: ready-for-review
 applicable_versions: "Android 8 (API 26) - Android 16 (API 36)"
 last_verified: "2026-03-31"
 last_verified_against: "AOSP android-16.0.0_r1"
@@ -741,6 +741,79 @@ Bitmap 像素数据存储在 Native 堆。在 16KB 页模式下，每个 Bitmap 
 - **Bitmap 数量**：通过 `Debug.getMemoryInfo()` 中的 `nativePss` 间接推算
 
 当这些指标接近阈值时，触发降级策略（释放缓存、降低图片质量、关闭预加载）。
+
+## 常见问题与误区
+
+内存优化是 Android 开发中最容易产生误解的领域之一。一部分原因是 Android 的内存管理机制在不同版本之间发生了显著变化，一些曾经正确的做法在新版本上不再适用，而一些从未正确过的做法却因为"看起来有效"而被广泛传播。我们把在实际开发和技术面试中反复遇到的几个典型误区梳理一遍。
+
+### 误区一："调用 System.gc() 能解决内存问题"
+
+这个想法的出发点可以理解——内存不够了，那就主动告诉系统"来回收一下吧"。但 Android 明确不建议手动触发 GC，原因有两层。
+
+第一层原因是 **GC 本身有开销**。ART 的 Concurrent Copying Collector 虽然大部分工作是并发的，但仍然需要短暂的"暂停"阶段（Young Generation 暂停）来拷贝存活对象。你调用 `System.gc()` 的时候，实际上是在主动制造一次 GC 周期，这会让正在运行的线程暂停——如果这个调用发生在主线程的渲染路径中，就是一次额外的掉帧风险。
+
+第二层原因是 **它掩盖了真正的问题**。内存紧张通常意味着存在泄漏或过度分配。调用 `System.gc()` 可能在短时间内"解决"了内存不足的症状（因为 GC 确实回收了一些可达但暂时未引用的对象），但它不会修复泄漏——泄漏的对象仍然有从 GC Root 到达的强引用链，GC 无法回收它们。正确的做法是用 Memory Profiler 或 LeakCanary 找到泄漏源头，而不是用 `System.gc()` 掩盖症状。
+
+有一种极少数情况下 `System.gc()` 是有意义的：当你刚执行完一次大批量的内存释放操作（比如清空了一个大型缓存 Map），想让系统尽快回收这些对象以降低内存水位。但即使在这种场景下，你也可以通过调用 `System.runFinalization()` 配合使用，或者直接信赖 ART 的 GC 会在下次自然周期中处理。
+
+[已验证: 官方文档, developer.android.com/topic/performance/memory — 避免手动触发 GC]
+
+### 误区二："Android 8.0+ 不需要 recycle Bitmap"
+
+我们在前面讲过，Android 8.0（API 26）将 Bitmap 的像素数据从 Java 堆移到了 Native 堆。这确实意味着 Bitmap 不再直接占用 Java 堆配额，也不再直接导致 `OutOfMemoryError`。但"不需要 recycle"这个结论过于简化了。
+
+实际情况是：Bitmap 的 Java 对象仍然在 Java 堆中（它是一个普通 Java 对象，包含宽高、配置等元数据），而像素数据在 Native 堆。当 Java 层的 Bitmap 对象变得不可达时，GC 会回收 Java 对象，并触发 Native 层的 finalize 机制来释放像素数据。但这个 finalize 过程是**异步的、延迟的**——GC 不保证立即回收，finalize 队列的处理也可能滞后。
+
+在以下场景中，显式调用 `Bitmap.recycle()` 仍然有意义：
+
+- **内存密集型操作**（如图片编辑 App 同时操作多张大图），需要尽快释放 Native 内存，而不是等待 finalize 队列慢慢处理
+- **低内存设备**上，Native 内存的压力同样会触发系统的 OOM Killer，不 recycle 意味着大量 Bitmap 像素数据占着 Native 堆
+- **需要确认 Bitmap 已被释放**：`recycle()` 会将 Bitmap 标记为"dead"，后续任何使用都会抛异常——这比让一个"僵尸 Bitmap"悄悄占用内存要好
+
+不过，如果你使用的是 Glide、Coil 这样的图片加载库，通常不需要手动 recycle。这些库通过 Bitmap Pool 管理 Bitmap 的生命周期，会自动决定何时复用、何时释放。手动 recycle 一个由 Glide 管理的 Bitmap，反而会破坏它的复用池。
+
+[已验证: 官方文档, developer.android.com/topic/performance/graphics/manage-memory — Bitmap 管理最佳实践]
+
+### 误区三："onTrimMemory 触发 = App 即将被杀"
+
+这个误解导致了很多 App 在收到 `onTrimMemory` 回调时反应过度——清空所有缓存、停止所有后台任务、甚至弹窗提示用户"内存不足"。
+
+实际上，`onTrimMemory` 有多个级别，大部分是**预警**而非"死刑通知"。我们在前面详细列出了每个级别的含义，这里我们用一个简化的判断框架来帮助理解：
+
+- **前台回调**（`TRIM_MEMORY_RUNNING_LOW/MODERATE/CRITICAL`）：你的 App 仍在前台运行，系统只是说"整个设备的内存有点紧了"。这时候你应该释放非关键缓存（比如预加载的数据），但不要影响用户正在使用的核心功能——不要清空当前列表的图片缓存，不要停止正在播放的视频。
+- **`TRIM_MEMORY_UI_HIDDEN`**：你的 App 的 UI 不可见了（比如用户按了 Home 键）。这是最常见的前后台切换回调，和"即将被杀"没有关系。你只需要释放 UI 相关的资源（比如大的 View 缓存）。
+- **后台回调**（`TRIM_MEMORY_BACKGROUND/MODERATE`）：你的 App 在后台 LRU 列表中，系统在考虑要不要回收你的进程。你应该释放大部分可重建的缓存，但还没到"最后关头"。
+- **`TRIM_MEMORY_COMPLETE`**：这是唯一一个可以理解为"系统正在认真考虑杀掉你"的级别。到了这个级别，你应该释放一切可释放的资源，并保存关键状态数据，以备下次冷启动时恢复。
+
+简单来说：**不要把 `onTrimMemory` 当成 `onDestroy`**。它是一个梯度式的预警系统，不是一次性开关。正确的做法是根据级别做差异化的响应，而不是一收到回调就清空一切。
+
+### 误区四："申请 largeHeap 是解决内存不足的好办法"
+
+`android:largeHeap="true"` 看起来是一个简单的解决方案——在 Manifest 里加一行配置，Java 堆的大小限制就提高了。但它有几个不容易被注意到的代价。
+
+首先是 **GC 开销增大**。ART 的 GC 时间与堆的大小正相关——堆越大，GC 需要扫描的对象越多，单次 GC 的耗时越长。在 120Hz 设备上，帧间隔只有 8.3ms，GC 暂停多出 2-3ms 就可能导致掉帧。一个普通堆大小 256MB 的 App 和一个 largeHeap 512MB 的 App，在相同分配模式下，后者的 GC 暂停时间可能是前者的 1.5-2 倍。
+
+其次是 **设备碎片化问题**。"large heap"的具体大小由设备厂商决定，不同设备差异很大。在高内存设备上可能是 512MB，在低内存设备上可能只有 384MB——你以为申请了"很大"的堆，实际上可能只多了一点点。
+
+第三，也是最关键的：**largeHeap 不解决内存泄漏**。如果你的 App 有 Activity 泄漏，申请更大的堆只是让泄漏的"容量"变大了——从"泄漏 20 个 Activity 后 OOM" 变成了"泄漏 40 个 Activity 后 OOM"。根本问题依然存在。
+
+Google 的官方建议是：`largeHeap` 仅适用于确实需要大内存的特定场景（图片/视频编辑、大型游戏、地图渲染），而不应该作为解决 OOM 的常规手段。在申请 largeHeap 之前，先用 Memory Profiler 分析你的 App 的内存分配模式，确认是真的需要更多内存，还是只需要修复泄漏和优化分配。
+
+[已验证: 官方文档, developer.android.com/guide/topics/manifest/application-element — largeHeap 属性说明]
+
+### 误区五："内存抖动只发生在低端设备上"
+
+直觉上我们会认为：低端设备内存小、CPU 慢，所以更容易出现内存抖动导致的卡顿。高端设备内存大、CPU 快，应该不会有这个问题。
+
+但实际情况是反过来的：**120Hz 高刷新率设备比 60Hz 设备更容易暴露内存抖动问题**。
+
+原因我们在前面的"内存抖动"小节分析过：卡顿是否发生，取决于 GC 暂停时间是否超过帧间隔。60Hz 设备的帧间隔是 16.6ms，GC 暂停 5ms 还有 11.6ms 的余量。但 120Hz 设备的帧间隔只有 8.3ms，同样的 5ms GC 暂停就只剩 3.3ms——如果这一帧的 UI 工作本身需要 5ms，总共就是 10ms，超过了 8.3ms 的帧间隔，掉帧就发生了。
+
+这意味着：你在开发时用 60Hz 设备测试没发现卡顿，到了用户的 120Hz 设备上可能就暴露了。这也是为什么内存优化不应该只在低端设备上做——高刷设备同样需要减少不必要的对象分配，特别是 `onDraw()`、`onBindViewHolder()` 这类高频回调路径中的分配。
+
+[待验证: 120Hz vs 60Hz 设备上 GC 暂停导致掉帧的实际测试数据对比]
+
+---
 
 ## 参考资料
 
