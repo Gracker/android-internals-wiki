@@ -45805,11 +45805,69 @@
       "status": "research-feed",
       "last_modified": "2026-03-31",
       "scanned_at": "2026-03-31T22:10:00"
+    },
+    {
+      "path": "intake/research-feeds/2026-03-31-11-ch04-art-16kb-page-memory.md",
+      "title": "[研究] ART 虚拟机 16KB Page Size 内存优化",
+      "source_type": "高爷原创",
+      "mapped_chapters": [
+        "4.3",
+        "4.6"
+      ],
+      "total_score": 88,
+      "breakdown": "篇幅15|新鲜度25|准确性23(含AOSP源码)|可用度25(原创)",
+      "size": 3867,
+      "status": "research-feed",
+      "last_modified": "2026-03-31",
+      "scanned_at": "2026-04-01T06:07:00"
+    },
+    {
+      "path": "intake/research-feeds/2026-03-31-11-ch04-art-allocator-evolution.md",
+      "title": "[研究] ART 内存分配器演进：RosAlloc/DlMalloc/Jemalloc",
+      "source_type": "高爷原创",
+      "mapped_chapters": [
+        "4.3"
+      ],
+      "total_score": 85,
+      "breakdown": "篇幅15|新鲜度25|准确性23(含AOSP源码)|可用度22(原创)",
+      "size": 2760,
+      "status": "research-feed",
+      "last_modified": "2026-03-31",
+      "scanned_at": "2026-04-01T06:07:00"
+    },
+    {
+      "path": "intake/research-feeds/2026-03-31-11-ch04-art-generational-gc.md",
+      "title": "[研究] ART 分代 GC（Generational GC）原理与 Perfetto 映射",
+      "source_type": "高爷原创",
+      "mapped_chapters": [
+        "4.3",
+        "7"
+      ],
+      "total_score": 90,
+      "breakdown": "篇幅20|新鲜度25|准确性23(含AOSP源码)|可用度22(原创)",
+      "size": 3965,
+      "status": "research-feed",
+      "last_modified": "2026-03-31",
+      "scanned_at": "2026-04-01T06:07:00"
+    },
+    {
+      "path": "src/part1-fundamentals/ch02-rendering/11-flutter-rendering.md",
+      "title": "2.11 Flutter 渲染管线与性能",
+      "mapped_chapters": [
+        "2.11"
+      ],
+      "total_score": 10,
+      "size": 0,
+      "status": "stub",
+      "mtime": "2026-03-30 18:22",
+      "source_type": "高爷原创",
+      "last_modified": "2026-03-30",
+      "scanned_at": "2026-04-01T06:07:00"
     }
   ],
   "stats": {
     "total_indexed": 7330,
-    "total_scanned": 7330,
+    "total_scanned": 7474,
     "coverage_rate": "10.3%"
   },
   "scan_stats": {
@@ -45821,11 +45879,11 @@
     "total_chapters": 17,
     "last_scan": "2026-03-31"
   },
-  "last_scan_time": "2026-03-31T22:10:00",
+  "last_scan_time": "2026-04-01T06:07:00",
   "scan_summary": {
-    "new_research_feeds": 5,
-    "updated_source_chapters": 6,
-    "total_documents": 7470,
+    "new_research_feeds": 3,
+    "new_src_stubs": 1,
+    "total_documents": 7474,
     "chapters_with_content": 8,
     "chapters_total": 17
   }
