@@ -96,15 +96,47 @@
     {
       "section": "2.1",
       "section_title": "Android 渲染架构全景",
-      "priority": 75,
-      "reason": "已有1篇高质量素材（Skia与SurfaceFlinger架构）",
+      "priority": 90,
+      "reason": "[review回炉] 文体需从列表罗列转为叙述风格 + 补充5个Type A标准节 + 源码引用精简",
       "material_paths": [
-        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/research-feeds/2026-03-30-ch02-skia-surfaceflinger.md"
+        "intake/suggestions.md（含 review 意见）"
       ],
-      "status": "completed",
-      "processed_at": "2026-03-30T12:26:00Z",
-      "word_count": 8500,
-      "verification_status": "L2+L4_verified_all_anchors"
+      "review_issues": [
+        {
+          "type": "需重写",
+          "location": "全文（至少11处列表块）",
+          "detail": "关键机制/核心功能/优势/优缺点等列表违反叙述规范，需转为工程师对工程师的对话式叙述",
+          "suggestion": "参考 writing-guide.md 的 VSync 正确写法示例，每个列表块重写为因果关系叙述"
+        },
+        {
+          "type": "需补充素材",
+          "location": "全文结构",
+          "detail": "缺少 Perfetto对照专节/机制关系/版本演进/常见误区/参考资料 5 个 Type A 标准节",
+          "suggestion": "按 writing-guide Type A 模板补充。Perfetto专节可复用开头已有内容扩展"
+        },
+        {
+          "type": "需重写",
+          "location": "文末总结",
+          "detail": "编号列表概述式，违反writing-guide",
+          "suggestion": "重写为2-3段连贯叙述"
+        },
+        {
+          "type": "需重写",
+          "location": "多处代码块",
+          "detail": "getDefaultSize/dequeueBuffer签名/RenderNode class/DisplayListData class 等代码块过长",
+          "suggestion": "精简到关键3-5行+前后叙述。删除纯签名代码块"
+        },
+        {
+          "type": "存疑",
+          "location": "OpenGLCanvas/VulkanRenderer/DisplayListData",
+          "detail": "部分代码示例可能是简化伪代码，不完全反映AOSP android-16.0.0_r1实际结构",
+          "suggestion": "task2重新验证这些代码块与AOSP一致性"
+        }
+      ],
+      "added_by": "task6-review",
+      "added_at": "2026-04-02T00:27:00",
+      "status": "pending",
+      "original_review_log": "logs/review/2026-04-02-00-review.md"
     },
     {
       "section": "2.10",
@@ -326,7 +358,6 @@
       "status": "completed",
       "added_by": "task6-review",
       "added_at": "2026-04-01T17:44:00",
-      "processed_at": "2026-04-01T18:20:00+08:00",
       "processed_at": "2026-03-31T20:34:41.955848",
       "word_count": "~7500",
       "verification_status": "L2_verified_all_anchors_3_extensions_covered_1_auto_discovery",
