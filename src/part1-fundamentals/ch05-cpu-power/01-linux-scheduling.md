@@ -1,7 +1,7 @@
 ---
 title: "Linux 进程调度基础"
 chapter: "5.1"
-status: ready-for-review
+status: reviewed
 applicable_versions: "Android 6.0 (API 23) - Android 16 (API 36)"
 last_verified: "2026-03-31"
 last_verified_against: "AOSP android-16.0.0_r1, Linux kernel 6.6"
@@ -22,6 +22,8 @@ sources:
 tags: ['scheduler', 'CFS', 'vruntime', 'nice', 'sched_setaffinity', 'cpuset', 'Perfetto']
 related_chapters: ["5.2", "5.3", "2.5", "7.3"]
 drafted_date: "2026-03-31"
+reviewed_date: "2026-04-02"
+reviewed_by: "openclaw-task6"
 ---
 
 <!-- outline-start -->
@@ -80,7 +82,7 @@ delta_vruntime = delta_exec × (NICE_0_LOAD / weight)
 
 ### 红黑树：O(log N) 的调度队列
 
-CFS 使用一颗红黑树（Red-Black Tree）来管理所有可运行进程。这是一棵自平衡二叉搜索树，以 vruntime 为 key 排序。
+CFS 使用一棵红黑树（Red-Black Tree）来管理所有可运行进程。这是一棵自平衡二叉搜索树，以 vruntime 为 key 排序。
 
 [图：CFS 红黑树结构示意，展示 vruntime 从小到大排列，最左节点为下一个被调度的进程]
 
