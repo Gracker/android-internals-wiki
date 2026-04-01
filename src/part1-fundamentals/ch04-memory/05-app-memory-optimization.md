@@ -1,7 +1,7 @@
 ---
 title: "App 内存优化"
 chapter: "4.5"
-status: ready-for-review
+status: reviewed
 applicable_versions: "Android 8 (API 26) - Android 16 (API 36)"
 last_verified: "2026-03-31"
 last_verified_against: "AOSP android-16.0.0_r1"
@@ -29,8 +29,8 @@ tags: ['memory-optimization', 'bitmap', 'memory-leak', 'onTrimMemory', 'native-m
 related_chapters: ["4.1", "4.2", "4.3", "4.4", "7.2", "7.3"]
 drafted_date: "2026-03-31"
 drafted_by: "openclaw-task2"
-reviewed_date: "2026-04-01"
-reviewed_by: "openclaw-task6"
+reviewed_date: "2026-04-02"
+reviewed_by: "openclaw-task6-v2"
 ---
 
 # App 内存优化
@@ -122,6 +122,8 @@ reviewed_by: "openclaw-task6"
 - **开发期**：LeakCanary 自动检测 Activity/Fragment 泄漏
 - **测试期**：Android Studio Memory Profiler 检查内存分配热点
 - **线上**：通过 `Runtime.getRuntime().maxMemory() - Runtime.getRuntime().totalMemory() + Runtime.getRuntime().freeMemory()` 监控可用堆空间，接近上限时主动释放缓存
+
+> [需补充素材: writing-guide 要求"每节提供在 Perfetto/工具中的实际表现"。当前章节 heapprofd 部分已有 Perfetto 对照，但 Bitmap 优化、内存泄漏检测等小节缺少 Trace/Perfetto Track 的具体描述。建议补充：① Java Heap Track 在 Perfetto 中的表现 ② GC Event Track 与内存抖动的对应关系 ③ dmabuf/ GPU memory Track 的说明]
 
 [已验证: 官方文档, developer.android.com/studio/profile/memory-profiler — Memory Profiler 使用方法]
 
@@ -580,6 +582,15 @@ adb shell heapprofd --pid=<PID> --java
 | `TRIM_MEMORY_RUNNING_LOW` | 10 | 系统内存开始紧张 | 释放非关键缓存 |
 | `TRIM_MEMORY_RUNNING_MODERATE` | 20 | 内存进一步紧张 | 释放更多缓存 |
 | `TRIM_MEMORY_RUNNING_CRITICAL` | 40 | 内存严重紧张，后台进程可能被杀 | 释放所有可释放的缓存 |
+
+> [存疑: onTrimMemory 回调级别数值与 AOSP ComponentCallbacks2.java 源码不一致]
+> AOSP 源码（frameworks/base/core/java/android/content/ComponentCallbacks2.java）中的实际常量值为：
+> - `TRIM_MEMORY_RUNNING_MODERATE` = **5**（本文标注为 20）
+> - `TRIM_MEMORY_RUNNING_LOW` = **10** ✅
+> - `TRIM_MEMORY_RUNNING_CRITICAL` = **15**（本文标注为 40）
+>
+> 后台回调值（UI_HIDDEN=20, BACKGROUND=40, MODERATE=60, COMPLETE=80）均正确。
+> 建议核实后修正运行级别回调的数值。
 
 注意：这些回调在进程**仍然在前台运行**时就会触发。系统还没杀任何后台进程，但已经在预警了。及时响应这些回调，可以降低系统进入更严重内存压力状态的概率。
 
