@@ -497,7 +497,7 @@
     }
   ],
   "ready_for_review": 4,
-  "last_updated": "2026-04-01T20:20:00+08:00",
+  "last_updated": "2026-04-02T05:20:00",
   "stats": {
     "total": 97,
     "completed": 36,
@@ -717,6 +717,12 @@
     },
     "1.2": {
       "title": "系统启动全流程",
+      "status": "finalized",
+      "reviewed_date": "2026-04-02",
+      "reviewed_by": "openclaw-task6"
+    },
+    "1.6": {
+      "title": "Android 版本演进中的架构变化",
       "status": "finalized",
       "reviewed_date": "2026-04-02",
       "reviewed_by": "openclaw-task6"

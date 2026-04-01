@@ -1,7 +1,7 @@
 ---
 title: "Android 版本演进中的架构变化"
 chapter: "1.6"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 4.4 (API 19) - Android 16 (API 36)"
 last_verified: "2026-03-31"
 last_verified_against: "AOSP android-16.0.0_r1, 官方文档"
@@ -23,6 +23,8 @@ sources:
     path: "https://developer.android.com/about/versions"
 tags: ['treble', 'mainline', 'apex', 'gki', 'art', 'dalvik', 'privacy', 'background-restrictions', '16k-page']
 related_chapters: ["1.1", "1.4", "2.9", "4.4", "5.6"]
+reviewed_date: "2026-04-02"
+reviewed_by: "openclaw-task6"
 ---
 
 # Android 版本演进中的架构变化
@@ -105,7 +107,7 @@ Treble 的解决方案简洁而彻底：在 Android Framework 和厂商实现（
 
 ### Android 10：Project Mainline 与 APEX
 
-Android 10（2019 年）在 Treble 的基础上更进一步，引入了 **Project Mainline**（也叫 Project Mainline 或 Mainline modules）。[已验证: 官方文档 source.android.com/docs/core/ota/modular-system]
+Android 10（2019 年）在 Treble 的基础上更进一步，引入了 **Project Mainline**（也叫 Mainline modules）。[已验证: 官方文档 source.android.com/docs/core/ota/modular-system]
 
 如果说 Treble 是让 Framework 可以独立升级，那 Mainline 就是让 Framework **内部的特定组件**可以通过 Google Play 独立升级。想象一下：ART 虚拟机、媒体编解码器、DNS 解析器——这些核心组件不再需要等待完整的 OTA 更新，而是像 App 一样通过 Play Store 后台更新。
 
@@ -327,6 +329,8 @@ Android 16 增加了兼容模式，让部分为 4KB 页面构建的 App 能在 1
 | Zygote | zygote + zygote64 | zygote64 + zygote | zygote64 + zygote |
 | 编译产物 | 完整 OAT（全量AOT） | VDEX+ODEX（Profile-AOT） | VDEX+ODEX（Profile-AOT） |
 | 后台进程 | 可长期存活 | 受限但仍可后台服务 | 配额制 + 网络限制 |
+
+> **表格阅读提示**：Android 8-10 和 11+ 的编译产物格式看起来相同（VDEX+ODEX），但 Android 11+ 由于 ART 已成为 Mainline 模块，编译器的行为和优化策略可能已经通过 Play Store 更新发生了变化。因此在分析 11+ 设备的 Trace 时，不能简单假设编译行为与 8-10 一致。同样，Zygote 行中顺序的变化反映了 64 位成为主架构的演进——Android 8.0 之后 zygote64 优先启动，32 位 zygote 按需启动。
 
 [待补充：不同版本 Perfetto Trace 的对比截图]
 
