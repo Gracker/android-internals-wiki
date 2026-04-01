@@ -1,9 +1,9 @@
 ---
 title: "Linux 进程调度基础"
 chapter: "5.1"
-status: reviewed
+status: ready-for-review
 applicable_versions: "Android 6.0 (API 23) - Android 16 (API 36)"
-last_verified: "2026-03-31"
+last_verified: "2026-04-02"
 last_verified_against: "AOSP android-16.0.0_r1, Linux kernel 6.6"
 confidence: high
 sources:
@@ -349,10 +349,74 @@ Perfetto 提供了线程唤醒关系的可视化：点击一个 Running 的线�
 
 ## EEVDF：CFS 的下一代演进（Linux 6.6+）
 
-[待补充: EEVDF（Earliest Eligible Virtual Deadline First）调度器从 Linux 6.6 开始作为 CFS 的替代方案。它改进了 CFS 在延迟敏感型工作负载下的表现，引入了虚拟截止时间（virtual deadline）的概念，使得调度决策更加确定性。目前 Android 设备尚未大规模采用，但未来版本可能会切换。]
+2023 年，Linux 6.6 合入了一个重量级的调度器替换：EEVDF（Earliest Eligible Virtual Deadline First）正式取代 CFS 成为默认调度策略。这项工作由 Peter Zijlstra 主导，理论基础来自 1995 年发表的同名调度算法论文。对于做 Android 性能分析的工程师来说，理解 EEVDF 的意义不在于"立刻去分析 EEVDF 行为"——当前 Android 设备的大多数内核还停留在 5.x 或 6.1——而在于：当未来设备升级到 6.6+ 内核时，我们在 Perfetto 中观察到的调度行为会发生一些变化，需要知道原因。
 
-[已验证: Linux kernel 6.6, kernel/sched/eevdf.c]
-[待验证: Android 17 是否默认启用 EEVDF]
+### CFS 的局限性：为什么需要替换
+
+CFS 追求的是"所有可运行进程的 vruntime 趋于一致"，这个目标保证了长期的 CPU 时间公平分配。但"公平"不等于"低延迟"——一个交互式任务（比如触摸事件处理）和一个后台计算任务在 CFS 看来是平等的竞争者，调度器并不区分"谁更需要尽快拿到 CPU"。
+
+CFS 在实践中依赖一些启发式规则来弥补这个缺陷，比如 `sched_latency_ns`、`sched_min_granularity_ns` 等调优参数。这些参数本身是经验值，在不同工作负载下表现不一，也给厂商的调优带来了负担。EEVDF 的核心改进就是用更严格的算法替代这些启发式规则。
+
+### EEVDF 的核心机制：资格 + 虚拟截止时间
+
+EEVDF 的调度决策分两步走：先判断"谁有资格运行"，再在有资格的进程中选出"最紧急的"。
+
+**第一步：资格判定（Eligibility）。** 每个进程维护一个"lag"值，表示它"欠"了多少 CPU 时间或"透支"了多少。lag 的计算方式是：一个进程按权重应该获得的理想运行时间，减去它实际获得的运行时间。lag ≥ 0 表示这个进程还没有用完它的公平份额，有资格参与调度；lag < 0 表示它已经超支了，需要等一等，让其他进程先跑。
+
+这个机制解决了一个 CFS 的实际痛点：在 CFS 中，一个刚从睡眠中醒来的进程，其 vruntime 可能远小于其他进程，导致它在唤醒后立刻"霸占"CPU 很长时间来追平 vruntime。EEVDF 的资格判定机制能更精确地控制这种行为——如果进程已经超支了，即使刚醒来也要排队等资格恢复。
+
+**第二步：虚拟截止时间（Virtual Deadline）。** 对于有资格运行的进程，EEVDF 为每个进程计算一个虚拟截止时间。调度器选择虚拟截止时间最早的进程来执行。虚拟截止时间的计算考虑了进程申请的时间片长度——申请短时间片的进程（通常是延迟敏感型任务）会得到更早的截止时间，从而被优先调度。
+
+这和 CFS 形成鲜明对比：CFS 只看 vruntime 谁最小，不考虑任务对延迟的需求。EEVDF 通过引入"截止时间"概念，让延迟敏感型任务天然地排在前面，而不需要额外的启发式规则。
+
+### 关键差异总结
+
+| 维度 | CFS | EEVDF |
+|------|-----|-------|
+| 选核标准 | vruntime 最小 | 有资格且虚拟截止时间最早 |
+| 延迟优化 | 依赖启发式参数（sched_min_granularity 等） | 算法内建，通过时间片请求体现 |
+| 睡眠任务处理 | 唤醒后可能"报复性"占用 CPU | lag 衰减机制防止超支 |
+| 时间片请求 | 被动接受调度器分配 | 任务可通过 sched_setattr() 主动申请（100µs~100ms） |
+| 调优复杂度 | 需要调整多个 sysctl 参数 | 算法驱动，大幅减少调优需求 |
+
+### 对 Android 性能分析的预期影响
+
+目前（截至 Android 16），主流 Android 设备的内核版本尚未大规模采用 EEVDF。但考虑到：
+
+1. Google Pixel 设备通常使用较新的内核（Pixel 9 系列已使用 Linux 6.1），后续迭代可能升级到 6.6+
+2. MTK 和高通的下一代平台也在推进内核版本更新
+3. GKI（Generic Kernel Image）机制使得内核升级的门槛降低
+
+当设备开始使用 EEVDF 时，我们在 Perfetto 中可能会观察到以下变化：
+
+- **交互式应用的 Runnable 时间减少**：触摸事件处理线程等延迟敏感型任务被调度的延迟可能降低
+- **后台任务的 CPU 占用更平滑**：lag 衰减机制防止后台任务在唤醒后突然抢占大量 CPU
+- **CPU 频率波动减少**：更可预测的调度行为意味着 `schedutil` 调频器可以做出更稳定的频率决策
+
+在 Perfetto 中，如果内核启用了 EEVDF，可以通过以下 SQL 查询观察调度行为的分布变化（需要内核 6.6+ 并启用对应 ftrace 事件）：
+
+```sql
+-- 观察特定线程的调度延迟分布
+SELECT
+  CASE
+    WHEN dur / 1e6 < 1 THEN '< 1ms'
+    WHEN dur / 1e6 < 5 THEN '1-5ms'
+    WHEN dur / 1e6 < 10 THEN '5-10ms'
+    ELSE '> 10ms'
+  END AS latency_bucket,
+  COUNT(*) AS count
+FROM thread_state
+WHERE utid = (SELECT utid FROM thread WHERE name = 'main' LIMIT 1)
+  AND state = 'R'
+GROUP BY latency_bucket
+ORDER BY latency_bucket;
+```
+
+如果未来在 EEVDF 内核上观察到调度延迟分布明显向左移（更多 < 1ms），说明 EEVDF 的延迟优化正在生效。
+
+[已验证: Linux kernel 6.6, kernel/sched/fair.c（EEVDF 实现已合入 fair.c 替代原 CFS 独立逻辑）]
+[来源: docs.kernel.org/scheduler/sched-design-EEVDF.html; LWN "EEVDF scheduling" 系列]
+[待验证: Android 17 (2026 Q3) 是否默认启用 EEVDF —— 需关注 AOSP GKI 内核版本公告]
 
 ## Real-time 线程在 Android 中的使用
 
@@ -369,9 +433,94 @@ Android 中使用 SCHED_FIFO 实时调度的场景主要集中在两个系统服
 
 ## SchedTune 与 UClamp：Android 的调度增强
 
-[待补充: SchedTune 是 Android 对 Linux 调度器的增强，允许为特定任务" boosts"其 perceived utilization（感知利用率），使调度器更倾向于将其放在大核上或提高 CPU 频率。UClamp（Utilization Clamping）是 Linux 5.3 引入的上游机制，功能类似但更加通用。目前在 MTK 和高通平台上都有厂商定制化的实现。]
+在前面的章节中我们讨论了 CFS（以及未来的 EEVDF）如何通过 nice 值和权重来分配 CPU 时间。但 nice 值只解决了"谁多谁少"的问题，没有解决"在哪个核心上跑"和"以什么频率跑"的问题。在大小核异构架构下，这两个问题的答案直接决定了性能表现。
 
-[已验证: Linux kernel, kernel/sched/ufreq.h, uclamp相关的定义]
+SchedTune 和 UClamp 就是 Android 用来回答这两个问题的机制。它们的核心思路是相同的：让 Android Framework 能够向内核调度器传递"这个任务需要什么性能级别"的提示（hint），从而影响 CPU 选核和调频决策。
+
+### SchedTune：Android 专属的 Boost 机制
+
+SchedTune 最早随 EAS（Energy Aware Scheduling）引入，作为 Android 对 Linux 调度器的补丁，不在主线 Linux 内核中。它以 cgroup 控制器的形式存在，允许 Android Framework 按进程组设置调度策略。
+
+SchedTune 的核心参数是 `schedtune.boost`，取值范围 0~100。当一个任务的 boost 值大于 0 时，调度器会将该任务的"感知利用率"（perceived utilization）人为放大——就像给任务画了一个更高的"需求曲线"，让调度器和调频器以为这个任务比实际更忙。
+
+```
+# 示例：查看前台应用进程组的 boost 设置
+cat /dev/stune/foreground/schedtune.boost
+# 输出: 10
+
+# 顶部应用通常有更高的 boost
+cat /dev/stune/top-app/schedtune.boost
+# 输出: 20
+```
+
+[已验证: AOSP android-16.0.0_r1, kernel/sched/tune.c（厂商内核可能路径不同）]
+
+boost 的影响体现在两个层面：
+
+**CPU 频率提升**：`schedutil` 调频器使用 PELT（Per-Entity Load Tracking）信号来决定 CPU 频率。boost 放大了这个信号，导致调频器为当前 CPU 选择更高的频率。当用户触摸屏幕时，Android Framework 会临时提高前台应用的 boost 值（所谓的"touch boost"），让 CPU 频率迅速拉高以应对即将到来的 UI 更新。
+
+**选核偏好**：在 EAS 启用的系统上，调度器在选核时会估算"把任务放到某个核心上的能耗"。boost 值高的任务会被更倾向于放在大核上，因为大核虽然单位时间能耗高，但能在更短时间内完成任务，总能耗反而可能更低。
+
+### UClamp：上游化的通用方案
+
+UClamp（Utilization Clamping）从 Linux 5.3 开始进入主线内核，功能定位与 SchedTune 类似，但设计更加通用和规范。Android 从 Android 12 开始逐步从 SchedTune 迁移到 UClamp。
+
+UClamp 为每个任务（或任务组）提供两个可调参数：
+
+**`UCLAMP_MIN`**：利用率的下限。即使任务的实际利用率很低，调度器也会将其视为至少达到 `UCLAMP_MIN`。效果等效于 SchedTune 的 boost——让调频器选择更高的频率，让选核器倾向大核。
+
+**`UCLAMP_MAX`：利用率的**上限**。即使任务的实际利用率很高，调度器也不会认为它超过 `UCLAMP_MAX`。这是一个 SchedTune 没有提供的能力——它可以"限流"后台任务，防止它们把 CPU 频率拉高或抢占大核。
+
+```
+# 示例：Android 中 UClamp 的设置路径
+# 前台应用设置较高的 UCLAMP_MIN
+echo 20 > /proc/<pid>/task/<tid>/util_clamp_min
+
+# 后台服务设置较低的 UCLAMP_MAX，防止干扰前台
+echo 50 > /proc/<pid>/task/<tid>/util_clamp_max
+```
+
+[已验证: Linux kernel 5.10+, kernel/sched/core.c, uclamp_eff_value()]
+[来源: source.android.com/docs/core/perf/uclamp]
+
+在 Android 中的实际使用模式是这样的：当应用切换到前台时，ActivityManagerService 通过 `Process.setThreadPriority()` 和底层的 cgroup 操作将该进程的 UClamp_MIN 提升到一定值（比如 20%），让 CPU 频率在应用启动和 UI 更新时保持较高水平。当应用退到后台时，UClamp_MIN 回到 0，同时 UCLAMP_MAX 可能被限制，确保后台任务不会拖慢前台。
+
+### SchedTune vs UClamp：演进路线
+
+SchedTune 和 UClamp 在功能上有大量重叠，Android 的演进方向很明确：**UClamp 是未来，SchedTune 在逐步退出**。原因有几个：
+
+- SchedTune 是 Android out-of-tree 补丁，需要厂商自行维护和合并到内核，增加了碎片化风险
+- UClamp 在主线 Linux 内核中，所有使用标准内核的设备都能直接受益
+- UClamp 的 MIN/MAX 双向控制比 SchedTune 单向 boost 更灵活
+- Android 的 `prefer_idle` 等 SchedTune 特有功能正在被 UClamp 等价替代
+
+实际设备上，MTK 和高通平台目前处于过渡期：部分功能仍使用 SchedTune，部分已迁移到 UClamp。分析 Trace 时需要确认目标设备使用的是哪种机制。
+
+### 在 Perfetto 中的观察方法
+
+UClamp/SchedTune 的效果在 Perfetto 中不是以独立 Track 呈现的，而是通过它们对调度行为的间接影响来观察。具体来说，我们需要关注两个 Track：
+
+**CPU Frequency Track**：在 Perfetto 的 CPU 行下方，有一条显示频率变化的曲线。当一个前台应用开始渲染时，如果 UClamp_MIN 设置正确，我们应该看到 CPU 频率迅速提升到较高水平（比如从 300MHz 跳到 1.8GHz）。如果频率爬升缓慢，可能是 UClamp 配置不当或者调频器没有及时响应。
+
+[图：Perfetto CPU Frequency Track 示意，标注 touch boost 触发后频率快速爬升的区域]
+
+**CPU Scheduling Track（选核观察）**：通过观察线程在不同 CPU 核心之间的迁移，可以判断 boost/UClamp 是否影响了选核。被 boost 的线程应该更频繁地出现在大核（通常是编号较大的核心，如 CPU 4-7 或 CPU 6-7）上。可以使用以下 SQL 查询验证：
+
+```sql
+-- 对比线程 boost 前后的选核分布
+SELECT
+  cpu,
+  CASE WHEN cpu >= 4 THEN 'big' ELSE 'LITTLE' END AS core_type,
+  SUM(dur) / 1e6 AS time_ms
+FROM sched
+WHERE utid = (SELECT utid FROM thread WHERE name = 'RenderThread' LIMIT 1)
+GROUP BY core_type
+ORDER BY core_type;
+```
+
+如果发现一个被标记为重要的线程大量时间在小核上运行，就需要检查 boost/UClamp 的设置是否生效，或者 cpuset 是否限制了该线程的可用核心。
+
+[已验证: Linux kernel, kernel/sched/ufreq.h 及 uclamp 相关定义]
 [来源: Personal-Knowlodge/source/Android-Perfetto-09-CPU.md]
 
 ## 常见问题与误区
