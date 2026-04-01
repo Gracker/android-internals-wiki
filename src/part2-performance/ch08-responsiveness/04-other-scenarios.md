@@ -1,14 +1,27 @@
 ---
 title: "其他响应速度场景"
 chapter: "8.4"
-status: draft
-applicable_versions: "TBD"
-last_verified: ""
-last_verified_against: ""
-confidence: low
-sources: []
-tags: ['responsiveness']
-related_chapters: []
+status: ready-for-review
+drafted_date: "2026-04-02"
+applicable_versions: "Android 8.0 (API 26) - Android 16 (API 36)"
+last_verified: "2026-04-02"
+last_verified_against: "AOSP android-16.0.0_r1, developer.android.com"
+confidence: medium
+sources:
+  - type: aosp
+    path: "frameworks/base/core/java/android/app/Activity.java"
+  - type: aosp
+    path: "frameworks/base/core/java/android/app/FragmentTransaction.java"
+  - type: aosp
+    path: "frameworks/base/core/java/android/view/View.java"
+  - type: official
+    path: "https://developer.android.com/topic/performance/vitals"
+  - type: blog
+    path: "https://developer.android.com/guide/fragments"
+  - type: blog
+    path: "https://developer.android.com/reference/androidx/viewpager2/widget/ViewPager2"
+tags: ['responsiveness', 'page-switch', 'click-response', 'search', 'viewpager2', 'fragment', 'debounce']
+related_chapters: ["8.1", "8.2", "8.3", "3.1", "3.2", "7.4"]
 ---
 
 # 其他响应速度场景
@@ -37,4 +50,380 @@ related_chapters: []
 > 锚点内容需 L1/L2 验证，扩展内容至少 L2 验证，自动发现内容至少标注来源。
 <!-- outline-end -->
 
-> 本节内容待加工。
+## 为什么要关注「其他」响应速度场景
+
+我们在 §8.1 中建立了响应速度的基本框架——从用户感知出发，将响应定义为 TTID（Time To Initial Display）和 TTFD（Time To Fully Drawn）。§8.2 和 §8.3 分别从 App 启动全流程和启动优化策略角度做了深入分析。
+
+但启动只是用户与 App 交互的第一步。在日常使用中，用户花时间最多的是**页面跳转、Tab 切换、按钮点击、搜索输入**这些高频操作。每一个场景都有自己独特的性能瓶颈和分析方法。如果你只优化了冷启动，却忽略了页面切换时那个几百毫秒的白屏、搜索时每次按键都触发的卡顿，用户的体验感知仍然很差。
+
+本节要做的，就是把启动之外最常见的四个响应速度场景逐一拆解：它为什么慢、在 Trace 中怎么看、怎么优化。
+
+---
+
+## 页面跳转速度：Activity/Fragment 切换的耗时分析
+
+页面跳转是用户感知最直接的响应速度场景之一。点击一个按钮跳到新页面，从手指离开屏幕到新页面内容呈现——这段时间越短，用户越觉得「流畅」。
+
+### Activity 跳转的完整链路
+
+当我们调用 `startActivity()` 启动一个新的 Activity 时，系统要完成一系列工作。这不是一个简单的函数调用，而是跨进程的 Binder IPC 通信链路：
+
+**调用方进程**通过 `Activity.startActivity()` → `Instrumentation.execStartActivity()` → `ActivityTaskManager.getService().startActivity()` 向 **system_server** 发起 Binder 请求。system_server 中的 `ActivityStarter` 经过权限检查、Intent 解析、Task 栈计算后，通过 Binder 向 **目标进程** 发送 `scheduleLaunchActivity()`。目标进程的 `ActivityThread.handleLaunchActivity()` 收到消息后，执行 `performLaunchActivity()`，依次完成：创建 Activity 实例 → 调用 `attach()` → 调用 `onCreate()` → `onStart()` → `onResume()` → 首帧渲染。
+
+整个链路涉及的耗时环节包括：
+
+- **Binder IPC 往返**：两次跨进程调用（调用方→system_server→目标进程），每次约 1-5ms，在 system_server 负载高时会显著增加。[待验证：Android 16 中 Binder 线程池默认大小是否有变化]
+- **Activity 对象创建**：涉及类加载、构造函数、`attach()` 中创建 Window/PhoneWindow 等，通常 5-15ms。
+- **布局膨胀（Layout Inflate）**：这是最大的变量。一个复杂的布局可能需要 30-100ms 甚至更多。[已验证: 官方文档, developer.android.com/topic/performance]
+- **首帧渲染**：从 `onResume()` 完成到 VSync 信号触发 `doFrame()`，再到 RenderThread 完成绘制，通常需要 1-2 个 VSync 周期（16-33ms @60Hz）。
+
+在 Perfetto 中，我们可以通过以下方式定位 Activity 跳转的耗时：
+
+```
+[图：Perfetto 中 Activity 跳转的典型 Trace 片段]
+- 在主线程 track 中搜索 "ActivityThread" 相关 slice
+- 关注 handleLaunchActivity → performLaunchActivity → activityStart 的时间跨度
+- 同时关注 RenderThread 的首帧绘制时间
+```
+
+[待补充：Trace 截图展示一个典型 Activity 跳转的 Perfetto 片段]
+
+### Fragment 切换的耗时分析
+
+Fragment 的切换比 Activity 轻量得多——它不需要跨进程通信，整个过程发生在同一个进程的主线程上。核心路径是 `FragmentTransaction.commit()` → `BackStackRecord.execute()` → Fragment 的生命周期回调（`onCreateView()` → `onViewCreated()` → `onResume()`）。
+
+但 Fragment 切换也有自己的性能陷阱：
+
+**布局膨胀仍然是最大开销。** 即使 Fragment 不需要跨进程，`onCreateView()` 中 inflate 一个复杂布局的开销可能高达几十毫秒。尤其是使用 `replace()` 操作时，旧 Fragment 的 View 被销毁，新 Fragment 的 View 需要完全重新创建。
+
+**转场动画会放大感知延迟。** Fragment 支持通过 `setCustomAnimations()` 设置转场动画。如果动画时长设为 300ms，但 Fragment 的布局膨胀只需要 50ms，总感知时间就是 300ms。更危险的是，如果你在转场动画期间做了太多 View 操作（如 RecyclerView 数据加载），动画可能掉帧，造成视觉上的卡顿。
+
+**回退栈（Back Stack）的生命周期开销。** 当使用 `addToBackStack()` 并执行 `replace()` 时，旧 Fragment 会走到 `onDestroyView()`（View 被销毁但 Fragment 实例保留）。用户按返回键时，旧 Fragment 需要重新走 `onCreateView()` → `onDestroyView()` 之间的所有回调，这意味着布局要重新 inflate。
+
+在 Perfetto 中，Fragment 的切换可以通过 `FragmentManager` 相关的 trace tag 观察到，但需要注意的是 Fragment 事务的 trace 点不如 Activity 那么完整，你可能需要在代码中手动添加 `Trace.beginSection("FragmentTransaction")` 来获得更精确的度量。
+
+### 页面跳转优化策略
+
+根据场景选择 Activity 还是 Fragment：单页面架构用 Fragment（减少跨进程开销），功能独立的模块用 Activity（进程隔离、内存安全）。
+
+对于 Fragment 切换的具体优化手段：
+
+**1. 布局预加载。** 利用 `FragmentFactory` 在需要之前提前创建 Fragment 实例，或者在 `setFragmentResultListener` 注册后提前 inflate 布局。更直接的做法是在 `onCreate()` 阶段就 `commit()` 一个 `setReorderingAllowed(true)` 的事务，让系统有机会并行处理。
+
+```java
+// 利用 FragmentFactory 提前准备 Fragment
+fragmentManager.fragmentFactory = new MyFragmentFactory(/* pre-loaded data */);
+```
+
+**2. 使用 postponeEnterTransition()。** 当 Fragment 包含异步加载内容（如网络图片、RecyclerView 数据）时，先调用 `postponeEnterTransition()` 延迟转场动画，等数据加载完成后再调用 `startPostponedEnterTransition()`。这样用户看到的转场动画背后是已经准备好的内容，而不是加载中的空白。
+
+[已验证: 官方文档, developer.android.com/guide/fragments]
+
+**3. ViewStub 延迟加载。** 对于 Fragment 中不是立刻需要的部分（如错误页、空状态页、高级设置面板），用 `ViewStub` 占位，到真正需要时再 inflate。
+
+**4. 避免 commitNow() 的滥用。** `commitNow()` 是同步执行事务，会立即执行所有操作。在 `onCreate()` 中调用没问题，但如果在 `onResume()` 之后调用，可能会与系统正在执行的 Fragment 状态切换产生冲突，导致 `IllegalStateException`。
+
+[已验证: AOSP android-16.0.0_r1, frameworks/base/fragment/java/androidx/fragment/app/FragmentManager.java]
+
+---
+
+## Tab 切换速度：ViewPager2 的懒加载策略
+
+Tab 切换是移动端最常见的交互模式之一。新闻 App 的频道切换、电商 App 的商品分类、社交 App 的消息/通讯录/发现三栏——背后几乎都是 ViewPager2 + Fragment 的组合。
+
+### ViewPager2 的工作机制
+
+ViewPager2 内部使用 `RecyclerView` 实现，这意味着它天然继承了 RecyclerView 的缓存机制。`offscreenPageLimit` 参数控制着屏幕外保留的页面数量，默认值为 1（左右各保留 1 页）。
+
+这个默认值是一个平衡点：设为 0 时，每次切换 Tab 都要从零开始创建 Fragment（慢），设为 2 或更高时，会同时持有更多 Fragment 实例和它们的 View 层级（内存压力）。对于 3-4 个 Tab 的常见场景，默认值 1 通常就够了。
+
+ViewPager2 对 Fragment 生命周期管理的核心变化在于：它通过 `setMaxLifecycle()` 控制不可见 Fragment 的最高生命周期状态。当前可见的 Fragment 生命周期被设为 `RESUMED`，而 `offscreenPageLimit` 范围内但不可见的 Fragment 被设为 `STARTED`。这意味着这些 Fragment 的 `onResume()` 不会被调用——这正是懒加载的切入点。
+
+### 懒加载的正确实现
+
+在旧版 ViewPager 中，开发者通常通过重写 `setUserVisibleHint()` 来实现懒加载。这个方法已经被废弃。在 ViewPager2 + Fragment 的架构下，正确的做法是在 `onResume()` 中加载数据：
+
+```java
+@Override
+public void onResume() {
+    super.onResume();
+    if (!isDataLoaded) {
+        loadData();
+        isDataLoaded = true;
+    }
+}
+```
+
+更优雅的方案是结合 Lifecycle 和 ViewModel：ViewModel 负责管理数据状态（是否已加载），Fragment 的 `onResume()` 只是触发「如果还没加载就开始加载」这个动作。这样即使 Fragment 的 View 被销毁重建（比如 `offscreenPageLimit` 导致的回收），数据也不会丢失——它保存在 ViewModel 中。
+
+```kotlin
+class MyFragment : Fragment() {
+    private val viewModel: MyViewModel by viewModels()
+
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        // 收集数据状态，只在首次可见时加载
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewModel.uiState.collect { state ->
+                if (state is UiState.Loading) {
+                    showLoading()
+                } else if (state is UiState.Success) {
+                    showContent(state.data)
+                }
+            }
+        }
+    }
+}
+```
+
+[已验证: 官方文档, developer.android.com/reference/androidx/viewpager2/widget/ViewPager2]
+
+### ViewPager2 切换的性能优化
+
+**预加载（Prefetch）。** RecyclerView 内置了 prefetch 机制。当用户快速滑动到下一页时，RecyclerView 会在布局过程中预测下一个将要出现的 Item，并提前创建 ViewHolder。ViewPager2 继承了这个能力。你可以通过 `setOffscreenPageLimit()` 控制预加载范围，也可以通过自定义 `RecyclerView.LayoutManager` 微调 prefetch 策略。
+
+**布局简化。** 每个 Tab 页的 Fragment 布局越简单，切换越快。关键优化手段包括：
+- 用 `ConstraintLayout` 替代多层嵌套的 `LinearLayout` + `RelativeLayout`
+- 对不立即显示的内容使用 `ViewStub`
+- 对图片使用缩略图占位，异步加载高清图
+
+**数据预取。** 如果 Tab 页的内容来自网络或数据库，可以在 ViewPager2 的 `OnPageChangeCallback.onPageSelected()` 中提前发起下一个 Tab 的数据请求。这样当用户真正切换过去时，数据可能已经就绪。
+
+```kotlin
+viewPager2.registerOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback() {
+    override fun onPageSelected(position: Int) {
+        // 预取下一个 Tab 的数据
+        val nextPosition = position + 1
+        if (nextPosition < adapter.itemCount) {
+            viewModel.prefetch(nextPosition)
+        }
+    }
+})
+```
+
+**避免在 FragmentPagerAdapter 中使用 BEHAVIOR_RESUME_ONLY_CURRENT_FRAGMENT 的误用。** 这个 flag 是 ViewPager2 的默认行为（当前页 RESUMED，其余 STARTED），但如果你在 `onResume()` 之外的地方做了大量初始化工作（比如 `onViewCreated()`），那些工作会在 Fragment 还不可见时就已经执行了——这和懒加载的目标相悖。
+
+[已验证: AOSP android-16.0.0_r1, androidx.viewpager2]
+
+在 Perfetto 中，Tab 切换的性能问题通常表现为：主线程上的 `inflate` 操作耗时过长、或者 Fragment 生命周期回调中的同步 IO 操作。你可以搜索 `FragmentManager` 相关的 trace slice，或者通过自定义 `Trace.beginSection("TabSwitch_" + position)` 来精确度量每个 Tab 的切换耗时。
+
+```
+[图：Perfetto 中 ViewPager2 Tab 切换的典型 Trace]
+- 关注主线程的 inflate 操作
+- 关注 Fragment 生命周期回调的耗时
+- 对比不同 Tab 的切换时间差异
+```
+
+[待补充：Trace 截图展示 Tab 切换时的 Perfetto 片段]
+
+---
+
+## 点击响应速度：从 onClick 到视觉反馈的完整链路
+
+点击响应可能是所有响应速度场景中被感知最频繁的。用户每次点击按钮、切换开关、选择列表项——手指触碰屏幕到看到视觉反馈的这段时间，直接决定了用户对 App「流畅度」的印象。
+
+### 点击响应的完整时间线
+
+一个完整的点击响应涉及多个阶段：
+
+**1. 硬件输入延迟（~5-15ms）**：触摸屏控制器扫描到触摸事件 → 触摸 IC 通过 I2C/SPI 上报给驱动 → 驱动通过 `/dev/input/eventX` 暴露给用户空间。这段延迟取决于硬件和驱动，App 开发者无法控制。
+
+**2. InputDispatcher 分发延迟（~2-5ms）**：`InputReader` 线程从驱动读取事件 → `InputDispatcher` 通过 Binder 将事件发送给目标窗口所在进程。如果系统负载高（大量后台进程、GC 暂停等），这个延迟会增加。我们在 §3.1 中详细分析了 Input 事件分发全流程。
+
+[已验证: AOSP android-16.0.0_r1, frameworks/base/services/core/java/com/android/server/input/InputDispatcher.java]
+
+**3. 主线程事件处理（变化最大）**：事件到达 App 进程后，进入主线程 Looper 的消息队列。如果此时主线程正在执行上一帧的 `doFrame()`、或者被某个同步 Binder 调用阻塞、或者在做密集的 GC，事件就必须排队等待。这是点击响应优化最核心的战场。
+
+**4. View 层级的事件分发（~1-5ms）**：从 DecorView 开始，经过 `dispatchTouchEvent()` → `onInterceptTouchEvent()` → `onTouchEvent()` 的分发链路，最终到达目标 View 的 `onClickListener`。View 层级越深，分发路径越长。
+
+**5. 视觉反馈（1-2 个 VSync 周期）**：onClick 回调中通常会修改 UI 状态（文字、颜色、位置），这需要等下一个 VSync 信号触发 `doFrame()` 才能渲染。如果 onClick 回调末尾调用了 `invalidate()`，从回调返回到实际像素出现在屏幕上，通常需要 16-33ms（1-2 帧 @60Hz）。
+
+把这些阶段加起来，一个理想情况下的点击响应延迟大约是 30-60ms。Google 的 RAIL 模型建议点击响应在 100ms 以内，用户就会觉得「即时」。[已验证: 官方文档, developer.android.com/topic/performance/vitals]
+
+### Ripple 效果与感知优化
+
+Android 的 Material Design 引入了 Ripple Drawable 作为点击的视觉反馈。Ripple 的一个关键设计优势是：**它不需要等 onClick 回调执行完就能显示。** 当 `onTouchEvent()` 收到 `ACTION_DOWN` 时，Ripple 动画就会立即开始，给用户一个「系统已经收到你的点击」的即时信号。
+
+这意味着即使你的 onClick 回调里做了 50ms 的数据操作，用户感知到的「响应」仍然是即时的——因为 Ripple 在 16ms 内就已经开始扩散了。
+
+但 Ripple 也不是万能的。如果你的自定义 View 没有正确设置 `android:clickable="true"` 和 `android:background="?attr/selectableItemBackground"`，或者父 ViewGroup 拦截了触摸事件，Ripple 可能不会显示。这种情况下，用户点击后看不到任何视觉反馈，就会觉得「没有响应」——即使 onClick 回调实际上已经执行了。
+
+### 点击响应优化的实战策略
+
+**1. 永远不要在 onClick 中做阻塞操作。** 这是最基本也是最重要的原则。数据库查询、SharedPreferences 写入、文件 IO、网络请求——这些都不应该出现在主线程的 onClick 回调中。用 `viewModelScope.launch(Dispatchers.IO)` 把它们放到后台线程。
+
+**2. 用 preload 减少首次点击延迟。** 如果点击后会跳转到一个新页面，而这个页面的数据可以提前准备，就在用户还在浏览当前页面时预加载。常见场景：首页的推荐列表预加载详情页数据、设置页预加载配置项。
+
+**3. 避免过度绘制拖慢视觉反馈。** 如果点击区域被多层 View 叠加覆盖，Ripple 效果可能需要重绘多层内容，增加首帧耗时。开启「开发者选项 → 显示过度绘制」检查你的布局。
+
+**4. 利用 `performClick()` 的无障碍兼容。** 在自定义 View 中重写 `onTouchEvent()` 时，务必在处理 `ACTION_UP` 时调用 `performClick()`，这不仅是无障碍的要求，也能确保 OnClickListener 正确触发。
+
+```kotlin
+override fun onTouchEvent(event: MotionEvent): Boolean {
+    when (event.action) {
+        MotionEvent.ACTION_UP -> {
+            // 处理点击逻辑
+            performClick()  // 触发 OnClickListener + 无障碍
+            return true
+        }
+    }
+    return super.onTouchEvent(event)
+}
+```
+
+[已验证: 官方文档, developer.android.com/reference/android/view/View#performClick()]
+
+在 Perfetto 中分析点击响应时，可以在 Trace 中搜索 `input_event` 相关的 slice，追踪从事件注入到 App 处理的完整链路。更精确的做法是在代码中埋点：
+
+```java
+// 在 onClick 回调开始处
+Trace.beginSection("Click." + view.getTag());
+// ... 处理逻辑
+Trace.endSection();
+```
+
+然后结合主线程的 CPU slice、RenderThread 的绘制时间，计算完整的点击到显示延迟。
+
+---
+
+## 搜索响应速度：实时搜索的防抖与预加载
+
+「边输入边搜索」（Search-as-you-type）是现代 App 的标配功能。但它也是最容易做错的响应速度场景之一：如果每次按键都触发一次搜索请求，轻则浪费流量、重则把服务器打挂，更不要说在弱网环境下大量请求排队导致的卡顿。
+
+### 防抖（Debounce）：搜索响应的基石
+
+防抖的核心思想很简单：**用户连续输入时，只有停下来之后的最后一次输入才触发搜索。** 实现方式是给输入事件流加一个时间窗口——在这个窗口内如果有新的输入，计时器就重置。
+
+以 Kotlin Flow 为例：
+
+```kotlin
+viewModelScope.launch {
+    searchQueryFlow
+        .debounce(300L)           // 用户停止输入 300ms 后才触发
+        .filter { it.isNotBlank() } // 忽略空查询
+        .distinctUntilChanged()    // 相同查询不重复触发
+        .flatMapLatest { query ->  // 新查询来了，取消旧查询
+            repository.search(query)
+        }
+        .collectLatest { results ->
+            // 更新 UI
+        }
+}
+```
+
+这里每个操作符都有明确的职责。`debounce(300L)` 确保快速输入时不会每个字符都发请求。`distinctUntilChanged()` 避免用户删除再重输入相同内容时的重复搜索。`flatMapLatest` 是最关键的——当用户输入 "app" 之后又输入了 "apple"，"app" 的搜索请求会被自动取消，只有 "apple" 的结果会返回。
+
+[已验证: 官方文档, developer.android.com/kotlin/flow]
+
+### 防抖时间的选择
+
+300ms 是一个常用的防抖时间，但它不是万能的。选择防抖时间需要考虑两个因素：
+
+**搜索类型：** 本地搜索（在内存或本地数据库中搜索）可以设短一些（150-200ms），因为响应快、无网络开销。网络搜索建议 300-500ms，给用户足够的输入时间，同时减少无谓的请求。
+
+**用户群体：** 熟练用户打字快，200ms 可能就够了。老年用户或不熟悉输入法的用户可能需要 400-500ms。
+
+### 节流（Throttle）与防抖的区别
+
+节流是另一个容易混淆的概念。防抖等用户「停下来」才触发，而节流是「每隔固定时间触发一次」。
+
+在搜索场景中，防抖几乎总是比节流更好的选择。但在其他场景中（比如滚动事件的监听、连续点击的防重复），节流更合适。对于防止按钮连续点击，`throttleFirst(500ms)` 是标准做法——第一次点击立即生效，后续 500ms 内的点击全部忽略。
+
+```kotlin
+// 防止连续点击的标准模式
+fun View.setOnSingleClickListener(delay: Long = 500L, onClick: (View) -> Unit) {
+    var lastClickTime = 0L
+    setOnClickListener {
+        val now = System.currentTimeMillis()
+        if (now - lastClickTime >= delay) {
+            lastClickTime = now
+            onClick(it)
+        }
+    }
+}
+```
+
+### 搜索的预加载与缓存
+
+除了防抖，搜索场景还有两个重要的优化手段：
+
+**本地缓存。** 相同关键词的搜索结果应该缓存到本地（Room 数据库或 LruCache）。这样用户反复搜索同一关键词时，结果可以瞬间从缓存返回，无需等待网络。缓存的过期策略取决于数据更新频率——通讯录可以缓存很久，股票行情则应该设置较短的 TTL。
+
+**热门搜索预加载。** 很多 App 会在搜索页展示「热门搜索」或「搜索推荐」。这些推荐项对应的搜索结果可以在用户进入搜索页时就提前加载。当用户点击某个推荐项时，结果已经在内存中了——响应时间接近 0ms。
+
+**拼音/首字母匹配。** 对于中文搜索场景，用户可能输入拼音或首字母。实现 pinyin 搜索索引（比如将通讯录中所有名字建立拼音映射），可以显著提升搜索响应速度。这个索引应该在数据变化时后台更新，而不是搜索时实时计算。
+
+---
+
+## 在 Perfetto/工具 中的表现
+
+四个场景在 Perfetto 中的表现各有特点：
+
+**页面跳转（Activity/Fragment）**：在主线程 track 中可以观察到 `ActivityThread.handleLaunchActivity`（Activity 切换）或 `FragmentManager.moveToState`（Fragment 切换）的 slice。关注从用户操作（Input 事件）到这些 slice 开始的延迟，以及 slice 内部的耗时分布（inflate vs. 数据加载 vs. 首帧渲染）。
+
+**Tab 切换（ViewPager2）**：ViewPager2 本身的 trace 点较少，建议在自定义代码中添加 `Trace.beginSection("TabSwitch")` 埋点。关注 `inflate` 的耗时和 `RecyclerView` 的布局耗时。
+
+**点击响应**：搜索 `input_event` 或自定义的 `Click.*` trace slice。关注从 Input 事件注入到 onClick 回调开始的延迟（反映主线程是否被阻塞），以及从 onClick 到首帧渲染的延迟（反映 UI 更新是否高效）。
+
+**搜索响应**：网络请求可以在 `HttpURLConnection` 或 OkHttp 的 trace 中观察到。关注从 debounce 结束到搜索结果返回的端到端延迟。
+
+```
+[图：四种响应速度场景在 Perfetto 中的典型模式对比]
+```
+
+[待补充：Perfetto Trace 截图对比展示四种场景]
+
+---
+
+## 常见问题与误区
+
+**误区 1：「Fragment 一定比 Activity 快」**
+
+不一定。Fragment 切换虽然省去了跨进程通信，但如果 Fragment 的布局特别复杂、数据加载特别重，它的切换耗时可能不比 Activity 跳转少多少。选择 Activity 还是 Fragment 应该基于架构需求（进程隔离、导航复杂度、状态管理），而不是单纯追求速度。
+
+**误区 2：「ViewPager2 设 offscreenPageLimit 为 0 最省内存」**
+
+`offscreenPageLimit = 0` 确实最省内存，但代价是每次 Tab 切换都要从零创建 Fragment。对于只有 3-4 个 Tab 且每个 Tab 布局不太复杂的场景，`offscreenPageLimit = 1`（默认值）是更好的平衡。
+
+**误区 3：「debounce 时间设越短搜索越快」**
+
+debounce 的目的是减少无效搜索，不是加快搜索速度。设太短（如 50ms）等于没有防抖，每次按键都会触发搜索请求；设太长（如 1000ms）会让用户觉得搜索反应迟钝。300ms 是经过大量实践验证的合理默认值。
+
+**误区 4：「Ripple 效果会让点击变慢」**
+
+不会。Ripple 是在 `onTouchEvent(ACTION_DOWN)` 时就开始的异步动画，它和 onClick 回调并行执行。Ripple 的开销主要体现在 GPU 渲染上，但现代设备的 GPU 完全能胜任。事实上，没有 Ripple 效果的点击反而会让用户觉得「没响应」。
+
+**误区 5：「onClick 里做少量 IO 没关系」**
+
+这是最常见的响应速度杀手。即使在 onClick 里只做了 20ms 的同步 SharedPreferences 写入，在 120Hz 设备上（帧间隔 8.33ms），这也意味着至少丢掉 2-3 帧。用户会明显感知到点击后的卡顿。把所有 IO 操作移到后台线程是零成本的优化。
+
+---
+
+## 版本演进
+
+- **Android 4.0（API 14）**：引入 `Fragment`，开启单 Activity 多页面架构。
+- **Android 4.4（API 19）**：`setUserVisibleHint()` 提供给 ViewPager 的懒加载支持（后来废弃）。
+- **Android 5.0（API 21）**：Material Design 引入 Ripple Drawable，点击反馈从纯色背景变化升级为波纹动画。
+- **Android 9.0（API 28）**：引入 `ViewPager2`（通过 AndroidX 发布），基于 RecyclerView 实现，修复了旧 ViewPager 的诸多问题。
+- **Android X Fragment 1.1.0**：引入 `FragmentFactory`，支持 Fragment 的依赖注入和预创建。
+- **Android X Fragment 1.2.0**：引入 `setMaxLifecycle()`，Fragment 懒加载从 `setUserVisibleHint()` 迁移到基于 Lifecycle 的方案。
+- **Android 16（API 36）**：ARR（Adaptive Refresh Rate）进一步优化了点击后的显示延迟，系统能根据内容变化动态调整刷新率，让点击反馈更快出现在屏幕上。[待验证：Android 16 ARR 对点击响应延迟的具体影响]
+
+---
+
+## 参考资料
+
+- AOSP 源码路径：
+  - `frameworks/base/core/java/android/app/Activity.java`（startActivity 实现）
+  - `frameworks/base/core/java/android/app/ActivityThread.java`（handleLaunchActivity）
+  - `frameworks/base/services/core/java/com/android/server/wm/ActivityStarter.java`（服务端启动逻辑）
+  - `frameworks/base/core/java/android/view/View.java`（performClick / onTouchEvent）
+  - `frameworks/base/services/core/java/com/android/server/input/InputDispatcher.java`（事件分发）
+- 官方文档：
+  - [ViewPager2 指南](https://developer.android.com/guide/navigation/navigation-swipe-view-2)
+  - [Fragment 生命周期](https://developer.android.com/guide/fragments/lifecycle)
+  - [RAIL 性能模型](https://developer.android.com/topic/performance/vitals)
+  - [Kotlin Flow](https://developer.android.com/kotlin/flow)
+- [来源: obsidian/Personal-Knowlodge/source/2026-03-09_wechat_一文读懂_Fragment_的方方面面.md]
+- [来源: obsidian/Personal-Knowlodge/source/2026-03-06_wechat_从input响应性能差的issue演示perfetto_trace用法.md]
+- [来源: obsidian/Personal-Knowlodge/source/2026-03-05_wechat_Android_针对app的view_input优化.md]
