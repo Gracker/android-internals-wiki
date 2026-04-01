@@ -158,3 +158,17 @@
 - **问题**：这两个机制直接影响 Android 的 CPU 选核和频率决策，对 MTK/高通平台性能优化至关重要。当前仅有 [待补充] 占位符。缺少：① SchedTune boost 机制（per-task boosting、cgroup 集成）② UClamp 的 min/max clamp 原理及其与 EAS 的配合 ③ MTK/高通平台上的厂商定制化差异 ④ 在 Perfetto 中的 Track 表现
 - **建议**：参考 AOSP kernel/sched/ufreq.h（uclamp 定义）、Android 源码中 SchedTune cgroup 实现、高爷博客素材 Personal-Knowlodge/source/Android-Perfetto-09-CPU.md
 - **review 日志**：logs/review/2026-04-02-0421-review.md
+
+## [Task6 Review] 4.6 内存相关的版本演进 — 2026-04-02
+- **类型**：存疑
+- **位置**：章节标题「Android 8.0–10：GC 演进为 Concurrent Copying，暂停时间降至亚毫秒」
+- **问题**：标题称降至亚毫秒，但正文数据显示 Young GC 暂停 1-3ms，均非亚毫秒（<1ms）
+- **建议**：确认是否有 Google 官方数据支持；如无建议改为暂停时间大幅降低
+- **review 日志**：logs/review/2026-04-02-0630-review.md
+
+## [Task6 Review] 4.6 内存相关的版本演进 — 2026-04-02 (2)
+- **类型**：待补充
+- **位置**：速查表「Android 15 | 16KB Page Size 支持」
+- **问题**：16KB Page Size 仅在速查表中出现，正文无对应说明
+- **建议**：在正文增加 16KB Page Size 对内存管理影响的简要说明
+- **review 日志**：logs/review/2026-04-02-0630-review.md

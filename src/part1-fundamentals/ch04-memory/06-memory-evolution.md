@@ -1,7 +1,10 @@
 ---
 title: "内存相关的版本演进"
 chapter: "4.6"
-status: ready-for-review
+status: reviewed
+section: "4.6"
+reviewed_date: "2026-04-02"
+reviewed_by: "openclaw-task6"
 applicable_versions: "Android 5.0 (API 21) - Android 16 (API 36)"
 last_verified: "2026-03-31"
 last_verified_against: "AOSP android-16.0.0_r1"
@@ -149,6 +152,8 @@ AOSP 源码路径：
 
 ## Android 8.0–10：GC 演进为 Concurrent Copying，暂停时间降至亚毫秒
 
+[存疑: 标题称“降至亚毫秒”，但正文数据显示 Young GC 暂停 1-3ms、CC 暂停减少 85%（从 ~10-20ms 基线），均非严格亚毫秒（<1ms）。需确认是否有 Google 官方数据支持亚毫秒级暂停的说法。如无，建议标题改为“暂停时间大幅降低”或“降至毫秒级”]
+
 我们在 4.3 节中详细解析了 ART 的 CC GC 机制，这里聚焦于"版本差异"这个维度——从 CMS 到 CC 的跨越，以及在 Android 10 上的进一步优化。
 
 ### Android 8.0：CC GC 的革命性突破
@@ -164,6 +169,8 @@ CC GC 带来的性能数据非常亮眼：
 | 堆大小 | 基准 | 平均减少 32% | 不再需要预留碎片空间 |
 | GC 暂停时间 | 基准 | 减少 85% | 大部分工作并发完成 |
 | 对象分配速度 | 基准 | 快 70% | RegionTLAB 零同步分配 |
+
+[图：GC 算法演进对比（CMS → CC → CMC 堆布局、暂停时间与分配策略变化示意）]
 
 CC GC 还引入了 RegionTLAB（Thread Local Allocation Buffer）分配策略。每个应用线程从 `RegionSpace` 中获取专属的 TLAB，分配对象时只需移动一个 top 指针（bump pointer），无需任何同步操作。
 
@@ -431,6 +438,7 @@ Glide 和 Coil 等图片加载库默认在 API 26+ 上使用硬件 Bitmap。这�
 | Android 14+ | MTE 支持开始落地（Pixel 8 首发硬件） | 硬件级内存安全检测，Async 模式开销 1-2% |
 | Android 15 | CMC GC（基于 UFFD）替代 CC GC | 去掉 Read Barrier，GC 不运行时零额外开销 |
 | Android 15 | 16KB Page Size 支持 | TLB miss 减少 5-10% 性能提升；App 需适配 |
+[待补充: 16KB Page Size 仅在速查表中提及，建议在正文中增加简要说明，包括对内存管理的具体影响]
 
 [来源: 综合本节各锚点的验证结果汇总]
 

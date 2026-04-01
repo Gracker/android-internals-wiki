@@ -4,11 +4,11 @@
   "metrics": {
     "total": 102,
     "draft": 46,
-    "ready-for-review": 7,
-    "reviewed": 4,
+    "ready-for-review": 6,
+    "reviewed": 5,
     "finalized": 4,
     "staging_drafts": 0,
-    "last_updated": "2026-04-02T04:21:00+08:00"
+    "last_updated": "2026-04-02T06:30:27"
   },
   "reviewed_sections": {
     "8.1": {
@@ -95,6 +95,17 @@
       "b_issues": [
         "EEVDF 章节内容不充分（仅有[待补充]占位符）",
         "SchedTune/UClamp 章节内容不充分（仅有[待补充]占位符）"
+      ]
+    },
+    "4.6": {
+      "reviewed_date": "2026-04-02",
+      "reviewed_by": "openclaw-task6",
+      "review_status": "reviewed",
+      "fixes_applied": [
+        "frontmatter: 补 section/reviewed_date/reviewed_by, status → reviewed",
+        "添加 [图：GC 算法演进对比] 占位符",
+        "标注章节标题亚毫秒准确性存疑 B类",
+        "标注 16KB Page Size 速查表待补充 B类"
       ]
     }
   },
