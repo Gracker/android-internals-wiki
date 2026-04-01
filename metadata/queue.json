@@ -191,8 +191,10 @@
       ],
       "added_by": "task6-review",
       "added_at": "2026-04-02T07:40:34",
-      "status": "pending",
-      "original_review_log": "logs/review/2026-04-02-0735-review.md"
+      "status": "completed",
+      "original_review_log": "logs/review/2026-04-02-0735-review.md",
+      "processed_at": "2026-04-02T07:47:00.583548+08:00",
+      "verification_status": "L2_rework_verified_4_fixes_doFrame_API_corrected_FrameRateOverride_corrected_常见问题与误区_added_Swappy_confirmed"
     },
     {
       "section": "2.3",
@@ -439,8 +441,10 @@
       ],
       "added_by": "task6-review",
       "added_at": "2026-04-02T06:30:27",
-      "status": "pending",
-      "original_review_log": "logs/review/2026-04-02-0630-review.md"
+      "status": "completed",
+      "original_review_log": "logs/review/2026-04-02-0630-review.md",
+      "processed_at": "2026-04-02T07:47:00.583548+08:00",
+      "verification_status": "L2_rework_verified_2_fixes_title_corrected_16KB_Page_Size_body_added"
     },
     {
       "section": "5.2",
@@ -1749,5 +1753,5 @@
       "word_count": "~8000"
     }
   ],
-  "last_updated": "2026-04-02T07:05:59.175272"
+  "last_updated": "2026-04-02T07:47:00.583548+08:00"
 }

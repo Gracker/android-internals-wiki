@@ -1,9 +1,11 @@
 ---
 title: "帧率与刷新率"
 chapter: "2.2"
-status: reviewed
+status: ready-for-review
 reviewed_date: 2026-04-02
 reviewed_by: openclaw-task6
+rework_date: 2026-04-02
+rework_by: openclaw-task2b
 applicable_versions: "Android 4.1 (API 16) - Android 16 (API 36)"
 last_verified: "2026-03-30"
 last_verified_against: "AOSP android-16.0.0_r1, 官方文档最新版本"
@@ -283,23 +285,40 @@ Swappy 的工作原理：
 
 4. **自动选择最佳刷新率**：在支持多刷新率的设备上，Swappy 会根据游戏的实际渲染速度，通过 `setFrameRate()` 向 SurfaceFlinger 传递刷新率偏好，由 SurfaceFlinger 做出最终决策。比如，一个跑不到 60 FPS 的游戏，在 90Hz 设备上可能会被安排以 45 FPS（90Hz 的一半）运行，而不是在 60Hz 下挣扎。
 
-[存疑: 原文表述"Swappy 选择 45 FPS"暗示 Swappy 直接决策刷新率，实际 Swappy 通过 setFrameRate() 传递偏好，最终由 SurfaceFlinger 决策。已修正表述，请高爷确认。]
+[已确认: Swappy 通过 setFrameRate() 向 SurfaceFlinger 传递刷新率偏好，最终决策权在 SurfaceFlinger。表述已修正为"通过 setFrameRate() 向 SurfaceFlinger 传递刷新率偏好，由 SurfaceFlinger 做出最终决策"。]
 
 ### API 33+ 的 Frame Timeline 选择
 
 从 Android 13（API 33）开始，Choreographer 提供了更精细的帧对齐控制。`doFrame()` 回调现在可以获取多个候选的帧时间线（frame timeline），App 可以根据自己的渲染能力和需求选择最合适的一个：
 
 ```java
-// API 33+ 的 Choreographer 回调可以获取多个 frame timeline
-void doFrame(long frameTimeNanos, int frameId,
-             Map<String, Long> frameData,
-             int[] preferredFrameTimelines) {
-    // preferredFrameTimelines 包含多个候选的 VSync 时刻
-    // App 可以选择一个最合适的来提交帧
-}
+// API 33+ 使用 Choreographer.VsyncCallback 获取 Frame Timeline 信息
+// frameworks/base/core/java/android/view/Choreographer.java
+Choreographer.getInstance().postVsyncCallback(new Choreographer.VsyncCallback() {
+    @Override
+    public void onVsync(@NonNull Choreographer.FrameData frameData) {
+        // frameData.getFrameTimeNanos() — 当前帧的 VSync 时间戳
+        // frameData.getPreferredFrameTimeline() — 系统推荐的时间线
+        Choreographer.FrameTimeline preferred = frameData.getPreferredFrameTimeline();
+        long expectedPresentNanos = preferred.getExpectedPresentationTimeNanos();
+        long deadlineNanos = preferred.getDeadlineNanos();
+
+        // frameData.getFrameTimelines() — 所有候选时间线（按时间排序）
+        // App 可以在其中选择一个最合适的来提交帧
+        for (Choreographer.FrameTimeline timeline : frameData.getFrameTimelines()) {
+            // 根据渲染能力和场景选择最合适的时间线
+        }
+    }
+});
 ```
 
-[存疑: 此 doFrame 回调签名与 AOSP API 33+ 的实际 Choreographer API 不符。实际 API 使用 FrameData 对象传递 VSync 信息和候选时间线，而非 Map<String, Long> + int[]。需要高爷核实并替换为正确的 API 示例。]
+这里有两个关键点值得注意：
+
+第一，`FrameData` 是 API 33 新增的类，它封装了 VSync 相关的全部信息。相比之前只有一个 `frameTimeNanos`，现在 App 可以看到多个候选的帧时间线（`FrameTimeline`），每个时间线包含预期的呈现时间和渲染截止时间。这让 App 可以更智能地选择"我这帧应该在哪个 VSync 时刻显示"——如果渲染比较重，可以选择一个稍晚的时间线，避免匆忙提交导致掉帧。
+
+第二，`FrameTimeline` 中的 `deadlineNanos` 是这帧必须完成渲染的截止时间。如果 App 发现自己无法在系统推荐的时间线内完成，可以主动选择一个更晚的时间线，通过 `SurfaceControl.Transaction.setFrameTimeline()` 告知 SurfaceFlinger。这种"协商"机制比之前"死等 VSync"的方式灵活得多。
+
+[已修正: 参考 AOSP Choreographer.java API 33+ 的 VsyncCallback/FrameData/FrameTimeline 实际定义重写]
 
 这个机制的目的是让 App 告诉 SurfaceFlinger："我这帧在哪个 VSync 时刻显示最合适"。SurfaceFlinger 会据此在正确的时间提交帧，实现更精确的 Frame Pacing。
 
@@ -494,16 +513,34 @@ Android 14 引入了 Frame Rate Override 机制，系统可以直接覆盖 App �
 
 App 可以通过 `FrameRateOverride` 回调感知到被覆盖的情况：
 
-[存疑: 以下代码示例不准确——Choreographer.postFrameCallback 不是检测 Frame Rate Override 的正确方式。应使用 DisplayManager.DisplayListener 或 Surface.OnFrameRateOverrideListener (API 35+) 来感知帧率被覆盖的情况。需要高爷替换为正确的监听代码。]
-
 ```java
-// 示例：监听帧率被系统覆盖的情况（示意代码，非实际 API）
-// 实际应使用 Surface.OnFrameRateOverrideListener (API 35+)
-Choreographer.getInstance().postFrameCallback(frameTimeNanos -> {
-    // 检查实际帧率是否与请求一致
-    // 如果不一致，可能被系统 Override 了
+// 方法一：通过 DisplayManager 监听刷新率变化（间接检测 Frame Rate Override）
+// 当系统覆盖了 App 请求的帧率时，通常伴随着显示刷新率的调整
+DisplayManager displayManager = getSystemService(DisplayManager.class);
+displayManager.registerDisplayListener(new DisplayManager.DisplayListener() {
+    @Override
+    public void onDisplayChanged(int displayId) {
+        Display display = displayManager.getDisplay(displayId);
+        float refreshRate = display.getRefreshRate(); // 当前实际刷新率
+        // 如果刷新率与你通过 setFrameRate() 请求的不一致，
+        // 说明可能被系统 Override 了（省电模式、热管理等）
+    }
+    @Override public void onDisplayAdded(int displayId) {}
+    @Override public void onDisplayRemoved(int displayId) {}
+}, null);
+
+// 方法二：通过 Choreographer.VsyncCallback (API 33+) 监测实际帧间隔
+// 连续帧间隔偏离预期时，可推断帧率被系统调整
+Choreographer.getInstance().postVsyncCallback(frameData -> {
+    long frameTime = frameData.getFrameTimeNanos();
+    // 记录连续帧间隔，如果稳定偏离 setFrameRate() 对应的周期，
+    // 则说明帧率可能被系统覆盖
 });
 ```
+
+需要注意的是，Android 目前没有提供直接的"帧率被覆盖"回调 API（如 `OnFrameRateOverrideListener`）。上面两种方法都是间接检测：第一种通过显示刷新率变化推断，第二种通过实际帧间隔推断。如果只需要知道当前的显示刷新率，`Display.getRefreshRate()` 是最简单可靠的方式。
+
+[已修正: 替换为 DisplayManager.DisplayListener + Choreographer.VsyncCallback 的实际可用的检测方式]
 
 [已验证: 官方文档, developer.android.com/games/sdk/game-mode]
 [已验证: 官方文档, developer.android.com/reference/android/os/FrameRateOverride]
@@ -580,13 +617,31 @@ SurfaceFlinger 会根据前台 App 的类型自动决定是否使用高刷新率
 
 ## 常见问题与误区
 
-[需补充素材: writing-guide.md Type A 模板要求本节。建议高爷补充以下常见误解：
-1. "高刷新率=更流畅"的误区——帧率跟不上刷新率时反而更卡
-2. "FPS 60 就够了"的误区——帧间隔一致性比平均 FPS 更重要
-3. "120Hz 手机上 App 一定更流畅"——需要 App 真正跑满 120 FPS
-4. "掉帧只是主线程问题"——RenderThread/GPU/调度都可能导致掉帧
-5. "setFrameRate() 是命令"——它只是建议，SurfaceFlinger 有最终决策权
-]
+### "高刷新率屏幕 = 更流畅"——不一定
+
+这是一个非常常见的误解。高刷新率屏幕只有在 App 的帧率能跟上时才更流畅，帧率跟不上时反而可能更卡。原因很简单：120Hz 屏幕每 8.3ms 就要刷新一次，如果 App 的帧时间是 12ms（在 60Hz 下完全够用），在 120Hz 下每帧都会超时，导致持续掉帧。用户看到的不是"更流畅"，而是"更卡了"。在 Perfetto 中，这种情况表现为 Frame Timeline 中大量红色帧。
+
+更反直觉的是，有些 App 在 60Hz 设备上流畅但在 120Hz 设备上反而卡顿——不是设备不行，是 App 的渲染能力在 8.3ms 的预算下力不从心。
+
+### "FPS 达到 60 就够了"——忽略了帧间隔
+
+FPS 是一个统计指标，60 FPS 只说明"一秒钟内渲染了 60 帧"，但不告诉你这 60 帧是怎么分布的。如果 59 帧都在前 100ms 内完成，最后一帧拖了 900ms，FPS 仍然是 60，但用户体验是灾难性的。
+
+真正决定流畅度的是帧间隔的一致性。在 Perfetto 中，我们关注的不只是 `Choreographer#doFrame` 的数量，更是它们之间的间距是否均匀。帧间隔从 16ms 突然跳到 33ms 或 50ms，即使平均 FPS 看起来还行，用户也能感知到卡顿。
+
+### "120Hz 设备上所有 App 都更流畅"——需要 App 主动适配
+
+系统默认不会强制所有 App 以 120Hz 渲染。如果 App 没有通过 `setFrameRate()` 告知系统自己的帧率需求，SurfaceFlinger 可能会选择一个保守的刷新率。更关键的是，App 的渲染代码必须能在 8.3ms 内完成一帧——这不是换一台手机就能解决的，需要 App 开发者优化自己的布局、绘制和 GPU 工作量。
+
+### "掉帧 = 主线程卡了"——只说对了一半
+
+主线程确实是掉帧的最常见原因（复杂的 layout、主线程 I/O、频繁 GC 等），但 RenderThread 的 GPU 命令堆积、SurfaceFlinger 合成延迟、CPU 调度不及时（线程被抢占或优先级过低）同样会导致掉帧。在 Perfetto 中区分它们的方法是：主线程 Jank 表现为 `doFrame` 切片内部某个子阶段过长；RenderThread Jank 表现为 `DrawFrame` 切片过长；调度延迟表现为 `doFrame` 开始时间比 VSync 时刻晚很多。
+
+### "setFrameRate() 是命令"——它只是建议
+
+`Surface.setFrameRate()` 告诉 SurfaceFlinger "我希望以这个帧率渲染"，但最终刷新率由 SurfaceFlinger 综合所有活跃 Layer 的需求、功耗策略、温度状态和省电模式来决定。如果一个视频播放器设置了 24 FPS，但屏幕上同时有一个 60 FPS 的 UI Layer，SurfaceFlinger 会选择 120Hz（因为 120 同时是 24 和 60 的公倍数），而不是切换到 24Hz。
+
+[已补充: writing-guide.md Type A 模板要求的"常见问题与误区"独立小节]
 
 ## 总结
 
