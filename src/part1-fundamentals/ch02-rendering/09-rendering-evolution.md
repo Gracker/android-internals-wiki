@@ -1,7 +1,8 @@
 ---
 title: "渲染机制的版本演进"
 chapter: "2.9"
-status: ready-for-review
+section: "2.9"
+status: finalized
 drafted_date: 2026-03-30
 reviewed_date: 2026-04-03
 reviewed_by: openclaw-task6
@@ -30,7 +31,7 @@ related_chapters: ["2.1", "2.3", "2.6", "2.10", "3.1", "8.2"]
 
 当我们打开 Perfetto 抓一份 Trace，看到 `RenderThread` 在主线程旁边有条不紊地执行 GPU 命令，看到 `VSYNC-app` 和 `VSYNC-sf` 的信号整齐排列——这套"主线程构建 DisplayList → RenderThread 执行 GPU 命令 → SurfaceFlinger 合成上屏"的流水线，并非一蹴而就。它经历了十多个 Android 大版本的持续重构。
 
-理解这段演进历史，对于性能分析来说不是"课外阅读"，而是刚需：你在 Perfetto 中看到的每一个 Track 名称、每一项 API 行为，都带着版本烙印。当你面对一份来自 Android 12 设备的 Trace 时，如果不知道 `BLASTBufferQueue` 已经取代了旧的 `BufferQueue`，就可能对着一个不存在的概念去排查问题。
+理解这段演进历史，对于性能分析来说不是"课外阅读"，而是刚需：我们在 Perfetto 中看到的每一个 Track 名称、每一项 API 行为，都带着版本烙印。当我们面对一份来自 Android 12 设备的 Trace 时，如果不知道 `BLASTBufferQueue` 已经取代了旧的 `BufferQueue`，就可能对着一个不存在的概念去排查问题。
 
 本节按时间线梳理 Android 渲染管线的关键版本里程碑，覆盖从硬件加速的引入到 Vulkan 统一渲染堆栈的全过程。
 
@@ -107,7 +108,7 @@ Android 5.0 Lollipop（API 21，2014 年）引入了 **RenderThread**——一�
 3. **RenderThread** 独立执行 GPU 命令：遍历 `RenderNode` 树，将 Skia draw 命令转为 GL/Vulkan 调用，提交给 GPU
 4. RenderThread 完成后通过 `FrameMetrics` 或 `FrameTimeline` 通知帧完成
 
-在 Perfetto 中，你可以看到 `UI Thread` 和 `RenderThread` 两个独立的 Track。`UI Thread` 上的 `performTraversals` 结束后，`RenderThread` 上的 `DrawFrame` 才开始执行 GPU 工作。如果 `DrawFrame` 耗时长，但 `UI Thread` 已经空闲，说明 GPU 是瓶颈，而非主线程代码问题。
+在 Perfetto 中，我们可以看到 `UI Thread` 和 `RenderThread` 两个独立的 Track。`UI Thread` 上的 `performTraversals` 结束后，`RenderThread` 上的 `DrawFrame` 才开始执行 GPU 工作。如果 `DrawFrame` 耗时长，但 `UI Thread` 已经空闲，说明 GPU 是瓶颈，而非主线程代码问题。
 
 [图：Perfetto 中 UI Thread 与 RenderThread 的 Track 分离示意图，标注 performTraversals 和 DrawFrame 的时序关系]
 
@@ -161,7 +162,7 @@ Android 12（API 31，2021 年）引入了 **BLASTBufferQueue**（BLAST = Buffer
 2. **事务与 Buffer 绑定**：窗口几何变化（位置、大小、裁剪）与 Buffer 内容打包在一起提交，确保状态一致性
 3. **多进程同步优化**：当多个 App 进程向同一个 SurfaceFlinger 提交内容时，`BLASTBufferQueue` 提供了更健壮的同步机制
 
-在 Perfetto 中，这个变化主要体现在 Buffer 流转相关的事件和 Fence 时间线上。如果你习惯了 Android 11 及之前的 `BufferQueue` Track，在 Android 12+ 上需要关注 `BLASTBufferQueue` 相关的 slice。
+在 Perfetto 中，这个变化主要体现在 Buffer 流转相关的事件和 Fence 时间线上。如果我们习惯了 Android 11 及之前的 `BufferQueue` Track，在 Android 12+ 上需要关注 `BLASTBufferQueue` 相关的 slice。
 
 [图：Android 11 BufferQueue 与 Android 12 BLASTBufferQueue 的 Buffer 流转对比示意图]
 
@@ -229,13 +230,11 @@ RecyclerView 1.4 已内置 ARR 支持，在 fling 和 smooth scroll 操作时自
 
 ### FrameMetrics API：量化每一帧的"慢"在哪里
 
-当我们分析卡顿时，最常面对的问题是"这帧为什么超了 16.67ms"。FrameMetrics 就是回答这个问题的工具——它把一帧的完整生命周期拆解为多个阶段，告诉你时间究竟花在了哪里。
+当我们分析卡顿时，最常面对的问题是"这帧为什么超了 16.67ms"。FrameMetrics 就是回答这个问题的工具——它把一帧的完整生命周期拆解为多个阶段，告诉我们时间究竟花在了哪里。
 
 FrameMetrics 在 Android 7.0（API 24）引入，通过 `Window.addOnFrameMetricsAvailableListener()` 注册回调，系统会在每帧渲染完成后回调一次，附带该帧各阶段的精确耗时。这意味着我们不需要在代码里手动打点，就能拿到完整的帧耗时分布。
 
-下面是 FrameMetrics 拆解出的各个阶段：
-
-它将一帧的渲染拆解为多个阶段：
+FrameMetrics 将一帧的渲染拆解为以下阶段：
 
 | 阶段 | 含义 |
 |------|------|
@@ -320,4 +319,4 @@ Android 渲染管线的演进可以归纳为三个方向：
 2. **从同步到异步**：主线程独占渲染 → RenderThread 分离 → BLASTBufferQueue 异步提交，主线程越来越轻量
 3. **从固定到自适应**：固定 60Hz VSync → 可变刷新率 → ARR 动态帧率匹配，渲染节奏越来越贴合内容需求
 
-理解这段演进历史，是读懂 Perfetto Trace 的前提。当你看到 `RenderThread` Track 上的 `DrawFrame` slice 时，应该知道它从 Android 5.0 才出现；当你分析 `VSYNC-app` 间隔不一致时，应该意识到设备可能开启了 ARR。每一个 Perfetto Track 都是版本演进留在系统中的印记。
+理解这段演进历史，是读懂 Perfetto Trace 的前提。当我们看到 `RenderThread` Track 上的 `DrawFrame` slice 时，应该知道它从 Android 5.0 才出现；当我们分析 `VSYNC-app` 间隔不一致时，应该意识到设备可能开启了 ARR。每一个 Perfetto Track 都是版本演进留在系统中的印记。
