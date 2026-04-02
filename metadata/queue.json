@@ -1,5 +1,5 @@
 {
-  "last_updated": "2026-04-03T03:25:48",
+  "last_updated": "2026-04-03T03:44:45",
   "total_items": 9,
   "priority_breakdown": {
     "high": 4,
@@ -125,8 +125,15 @@
       ],
       "added_by": "task6-review",
       "added_at": "2026-04-03T03:25:48",
-      "status": "pending",
-      "original_review_log": "logs/review/2026-04-03-03-review.md"
+      "status": "completed",
+      "original_review_log": "logs/review/2026-04-03-03-review.md",
+      "completed_at": "2026-04-03T03:44:45",
+      "rework_fixes": [
+        "AOSP源码路径：5条路径经web搜索验证为AOSP稳定路径，标注[已确认]",
+        "Android 16年份：确认2025年6月10日正式发布，移除[待验证]标注",
+        "图注：4处[图：...]标注补充[待高爷补充]说明，明确需要实际Perfetto截图",
+        "FrameMetrics段落：添加叙述式开头（量化每一帧的慢在哪里）+ 两层分析视角（单帧瓶颈/整体趋势）+ FrameTimeline对照说明"
+      ]
     }
   ]
 }
