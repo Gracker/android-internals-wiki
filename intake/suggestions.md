@@ -282,3 +282,12 @@
 - **问题**：本节仅有两句话概述 Project Silk，无具体版本号、技术改动点、Perfetto 对应变化。作为独立小节内容过于单薄。
 - **建议**：补充 Project Silk 的具体改动内容（VSync offset 调优细节、帧率自适应策略等），或考虑合并入 Project Butter 节作为延续说明。如果确实无法找到足够素材，建议移除独立小节，在 Project Butter 节末尾加一句过渡即可。
 - **review 日志**：logs/review/2026-04-02-2024-review.md
+
+
+## [Task6 Review R2] 2.4 Choreographer 与渲染流水线 — 2026-04-02
+
+- **类型**：需重写
+- **位置**：扩展：自定义 FrameCallback 实现帧率监控的原理与实践（全文约120行代码）
+- **问题**：本节包含3个完整类实现（FrameRateMonitor、AdvancedFrameRateMonitor、FrameTypeMonitor），属于教程风格代码堆砌，违反 writing-guide §三.2"只贴决定行为的那几行"和§五反面教材2（源码堆砌式）。作为扩展节，应以原理说明为主，辅以精简代码片段
+- **建议**：保留核心原理说明（FrameCallback 基本原理 + frameTimeNanos 含量 + 帧率计算公式），保留1个精简代码片段（10-15行）展示 doFrame 计算帧间隔的要点，删除3个完整类实现，将"帧率趋势分析"和"帧类型分类"改为叙述式说明
+- **review 日志**：logs/review/2026-04-02-2128-review.md
