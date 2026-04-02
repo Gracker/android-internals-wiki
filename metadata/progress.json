@@ -4,11 +4,11 @@
   "metrics": {
     "total": 96,
     "draft": 37,
-    "ready-for-review": 40,
+    "ready-for-review": 39,
     "reviewed": 7,
-    "finalized": 12,
+    "finalized": 13,
     "staging_drafts": 0,
-    "last_updated": "2026-04-03T02:04:00+08:00"
+    "last_updated": "2026-04-03T02:21:00+08:00"
   },
   "reviewed_sections": {
     "8.1": {
@@ -112,17 +112,13 @@
       "file": "src/part1-fundamentals/ch02-rendering/03-vsync.md"
     },
     "2.4": {
-      "reviewed_date": "2026-04-02",
+      "reviewed_date": "2026-04-03",
       "reviewed_by": "openclaw-task6",
-      "review_status": "reviewed-r2",
+      "review_status": "finalized",
       "fixes_applied": [
-        "frontmatter: applicable_versions API 35 → API 36（Android 16 版本号修正）",
-        "版本演进节: API 34-35 → API 34-36",
-        "frontmatter: status ready-for-review → reviewed",
-        "B-class标注: FrameCallback 扩展节过于教程化（3个完整类实现，~120行代码）"
-      ],
-      "review_r2_date": "2026-04-02",
-      "review_r2_by": "openclaw-task6"
+        "5处'你'→'我们'替换（writing-guide §3.5合规）",
+        "1处大小写修正（Choreographer#doframe→#doFrame）"
+      ]
     },
     "2.6": {
       "reviewed_date": "2026-04-02",

@@ -2,7 +2,7 @@
 title: "Choreographer 与渲染流水线"
 chapter: "2.4"
 section: "2.4"
-status: ready-for-review
+status: finalized
 drafted_date: "2026-03-30"
 applicable_versions: "Android 12 (API 31) - Android 16 (API 36)"
 last_verified: "2026-04-02"
@@ -13,6 +13,8 @@ review2_date: "2026-04-02"
 review2_by: "openclaw-task6"
 rework_date: "2026-04-02"
 rework_by: "openclaw-task2b"
+review3_date: "2026-04-03"
+review3_by: "openclaw-task6"
 rework_reason: "Task6 review 回炉修复：doFrame伪代码修正+总结重写+Compose节重写+补充3个Type A标准节+厂商优化标注"
 confidence: high
 sources:
@@ -123,7 +125,7 @@ sequenceDiagram
     T->>S: 完整帧提交
 ```
 
-**INPUT 优先的原因**：用户的交互是最高优先级的。如果你点击了一个按钮，系统应该立即处理你的输入，而不是等待其他操作完成。
+**INPUT 优先的原因**：用户的交互是最高优先级的。当我们点击一个按钮，系统应该立即处理这个输入，而不是等待其他操作完成。
 
 **ANIMATION 次之的原因**：动画通常是用户交互的直接结果。比如你滑动屏幕，动画应该立即响应你的输入，而不是被其他操作延迟。
 
@@ -327,7 +329,7 @@ getWindow().getDecorView().post(new Runnable() {
 在 Systrace 中，`Choreographer#doFrame` 是一个非常重要的标记点，它清晰地展示了 UI 线程的帧调度情况：
 
 ```
-Choreographer#doframe [  12.345ms]  # 红色表示超时
+Choreographer#doFrame [  12.345ms]  # 红色表示超时
 ├── Callback_Input [    0.234ms]
 ├── Callback_Animation [    1.567ms]
 ├── Callback_Insets_Animation [    0.123ms]
@@ -428,7 +430,7 @@ Compose 1.10（2025 年 12 月稳定版）引入了“可暂停组合”（Pausa
 - **传统 View**：Traversal 内部是 `measure → layout → draw`，每个阶段有明确的 Trace 标记
 - **Compose**：Traversal 内部可能出现 `compose → layout → draw` 的标记，其中 `compose` 的耗时取决于重组范围
 
-如果你在分析 Compose 应用的卡顿时发现 Traversal 耗时异常，可以展开 Traversal 切片查看内部的 `compose` 子切片。如果 `compose` 占了大头，说明重组范围过大或某个 Composable 计算过重；如果 `layout` 或 `draw` 占了大头，说明布局或绘制本身是瓶颈。
+如果我们在分析 Compose 应用的卡顿时发现 Traversal 耗时异常，可以展开 Traversal 切片查看内部的 `compose` 子切片。如果 `compose` 占了大头，说明重组范围过大或某个 Composable 计算过重；如果 `layout` 或 `draw` 占了大头，说明布局或绘制本身是瓶颈。
 
 [待验证: Compose 1.10 可暂停组合的具体 Trace 表现需实机验证]
 
@@ -481,7 +483,7 @@ Choreographer 自 Android 4.1（Project Butter）引入以来，经历了多次�
 
 ### "Choreographer 只管 UI 线程吗？"
 
-是的。每个 `Choreographer` 实例与一个 `Looper` 绑定，而 `Choreographer.getInstance()` 返回的是主线程 Looper 对应的实例。所以默认情况下，Choreographer 的所有回调都在主线程执行。如果你需要在后台线程做帧同步（比如视频渲染），需要创建独立的 `Choreographer`（通过 `Choreographer.getSfInstance()` 获取 SurfaceFlinger 进程的实例，但这通常只对系统进程可用）。
+是的。每个 `Choreographer` 实例与一个 `Looper` 绑定，而 `Choreographer.getInstance()` 返回的是主线程 Looper 对应的实例。所以默认情况下，Choreographer 的所有回调都在主线程执行。如果我们需要在后台线程做帧同步（比如视频渲染），需要创建独立的 `Choreographer`（通过 `Choreographer.getSfInstance()` 获取 SurfaceFlinger 进程的实例，但这通常只对系统进程可用）。
 
 ### "doFrame 超时就是卡顿吗？"
 
@@ -495,7 +497,7 @@ Choreographer 自 Android 4.1（Project Butter）引入以来，经历了多次�
 
 ### "Choreographer 能用来做精确的帧率控制吗？"
 
-Choreographer 是帧调度器，不是帧率控制器。它的工作是“在 VSync 到来时执行回调”，而不是“以某个帧率执行回调”。实际帧率取决于你的回调耗时和 VSync 的频率。如果你想做帧率控制（比如游戏固定 30FPS），需要在 `FrameCallback` 内部自行计算跳帧逻辑，或者使用 `Surface.setFrameRate()` 表达帧率偏好，让 SurfaceFlinger 做出调度决策。
+Choreographer 是帧调度器，不是帧率控制器。它的工作是“在 VSync 到来时执行回调”，而不是“以某个帧率执行回调”。实际帧率取决于你的回调耗时和 VSync 的频率。如果我们需要做帧率控制（比如游戏固定 30FPS），需要在 `FrameCallback` 内部自行计算跳帧逻辑，或者使用 `Surface.setFrameRate()` 表达帧率偏好，让 SurfaceFlinger 做出调度决策。
 
 [已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/view/Choreographer.java]
 
