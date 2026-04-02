@@ -4,11 +4,11 @@
   "metrics": {
     "total": 96,
     "draft": 38,
-    "ready-for-review": 40,
+    "ready-for-review": 39,
     "reviewed": 7,
-    "finalized": 11,
+    "finalized": 12,
     "staging_drafts": 0,
-    "last_updated": "2026-04-03T00:20:00+08:00"
+    "last_updated": "2026-04-03T01:20:00+08:00"
   },
   "reviewed_sections": {
     "8.1": {
@@ -84,17 +84,14 @@
       ]
     },
     "5.1": {
-      "reviewed_date": "2026-04-02",
+      "reviewed_date": "2026-04-03",
       "reviewed_by": "openclaw-task6",
-      "review_status": "reviewed",
+      "review_status": "finalized",
       "fixes_applied": [
-        "量词修正：一颗红黑树→一棵红黑树",
-        "frontmatter: status ready-for-review → reviewed, 添加 reviewed_date/reviewed_by"
-      ],
-      "b_type_issues": 2,
-      "b_issues": [
-        "EEVDF 章节内容不充分（仅有[待补充]占位符）",
-        "SchedTune/UClamp 章节内容不充分（仅有[待补充]占位符）"
+        "frontmatter: 补 section 字段",
+        "frontmatter: status ready-for-review → finalized",
+        "标注标准化: 3 处 [来源] → [已验证]",
+        "frontmatter: reviewed_date 更新为 2026-04-03"
       ]
     },
     "4.6": {
