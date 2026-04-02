@@ -2,13 +2,13 @@
   "generated_at": "2026-03-29",
   "total_sections": 93,
   "metrics": {
-    "total": 102,
-    "draft": 46,
-    "ready-for-review": 6,
-    "reviewed": 5,
-    "finalized": 4,
+    "total": 96,
+    "draft": 45,
+    "ready-for-review": 42,
+    "reviewed": 2,
+    "finalized": 7,
     "staging_drafts": 0,
-    "last_updated": "2026-04-02T06:30:27"
+    "last_updated": "2026-04-02T08:20:00"
   },
   "reviewed_sections": {
     "8.1": {
@@ -107,11 +107,17 @@
         "标注章节标题亚毫秒准确性存疑 B类",
         "标注 16KB Page Size 速查表待补充 B类"
       ]
+    },
+    "2.3": {
+      "reviewed_date": "2026-04-02",
+      "reviewed_by": "openclaw-task6",
+      "review_status": "finalized",
+      "file": "src/part1-fundamentals/ch02-rendering/03-vsync.md"
     }
   },
   "review_stats": {
-    "total_reviewed": 9,
-    "reviewed_today": 6,
+    "total_reviewed": 10,
+    "reviewed_today": 7,
     "review_issues_total": 6
   },
   "completed": [
