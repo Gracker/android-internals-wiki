@@ -4,11 +4,11 @@
   "metrics": {
     "total": 96,
     "draft": 43,
-    "ready-for-review": 41,
+    "ready-for-review": 40,
     "reviewed": 4,
-    "finalized": 8,
+    "finalized": 9,
     "staging_drafts": 0,
-    "last_updated": "2026-04-02T15:30:00+08:00"
+    "last_updated": "2026-04-02T15:55:00+08:00"
   },
   "reviewed_sections": {
     "8.1": {
@@ -151,6 +151,17 @@
         "Software Layer 适用场景：从列表改为连贯叙述（writing-guide 合规）",
         "规律总结过渡措辞优化",
         "frontmatter：补 drafted_date/reviewed_date/reviewed_by，status → finalized"
+      ]
+    },
+    "2.8": {
+      "reviewed_date": "2026-04-02",
+      "reviewed_by": "openclaw-task6",
+      "review_status": "finalized",
+      "fixes_applied": [
+        "修正 you -> women (writing-guide compliance)",
+        "添加 GPU overdraw debug color figure marker",
+        "补充 frontmatter: drafted_date, reviewed_date, reviewed_by",
+        "status: ready-for-review -> finalized"
       ]
     }
   },
