@@ -2,11 +2,13 @@
 title: "ANR 分析方法"
 chapter: "9.3"
 section: "9.3"
-status: ready-for-review
+status: finalized
 drafted_date: "2026-04-02"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 36)"
 last_verified: "2026-04-02"
 last_verified_against: "AOSP android-16.0.0_r1"
+reviewed_date: "2026-04-03"
+reviewed_by: openclaw-task6
 confidence: medium
 sources:
   - type: blog
@@ -52,15 +54,15 @@ related_chapters: ["9.1", "9.2", "9.4", "9.5", "1.4", "2.4"]
 
 [来源: Personal-Knowlodge/source/Android-ANR-02-How-to-analysis-ANR.md]
 
-ANR 问题是 Android 性能分析中最棘手的类别之一。和卡顿不同，卡顿只是"不够流畅"，用户可能忍一忍就过去了；但 ANR 是系统认为你的应用已经"死亡"——用户看到的是一个无响应对话框，或者在某些厂商的 ROM 上直接被闪退到桌面。更麻烦的是，很多 ANR 并不是应用自身代码的问题：系统负载过高、内存紧张、Binder 通信阻塞、甚至内核级别的 Bug，都可能触发一次 ANR。如果你不知道怎么分析，拿到一份 traces.txt 只能看到主线程挂在 `nativePollOnce` 上，然后一头雾水。
+ANR 问题是 Android 性能分析中最棘手的类别之一。和卡顿不同，卡顿只是"不够流畅"，用户可能忍一忍就过去了；但 ANR 是系统认为应用已经"死亡"——用户看到的是一个无响应对话框，或者在某些厂商的 ROM 上直接被闪退到桌面。更麻烦的是，很多 ANR 并不是应用自身代码的问题：系统负载过高、内存紧张、Binder 通信阻塞、甚至内核级别的 Bug，都可能触发一次 ANR。如果我们不知道怎么分析，拿到一份 traces.txt 只能看到主线程挂在 `nativePollOnce` 上，然后一头雾水。
 
-本节的目标是让你掌握一套系统的 ANR 分析方法论。读完之后，当你拿到一份 ANR 日志，你应该知道从哪里入手、看哪些关键信息、如何区分"应用的锅"和"系统的锅"、以及什么时候该放弃深究那些十万分之一概率的疑难 ANR。
+本节的目标是帮我们掌握一套系统的 ANR 分析方法论。读完之后，当我们拿到一份 ANR 日志，我们就知道从哪里入手、看哪些关键信息、如何区分"应用的锅"和"系统的锅"、以及什么时候该放弃深究那些十万分之一概率的疑难 ANR。
 
 ## traces.txt 的解读方法
 
 [已验证: 官方文档, developer.android.com/topic/performance/anrs]
 
-当 ANR 发生时，系统会通过发送 `SIGQUIT` 信号给目标进程，触发 ART 虚拟机 dump 所有线程的调用栈。这份输出就是 traces.txt。在较新的 Android 版本中，你可以通过 `adb bugreport` 获取，也可以直接从设备的 `/data/anr/` 目录拉取。
+当 ANR 发生时，系统会通过发送 `SIGQUIT` 信号给目标进程，触发 ART 虚拟机 dump 所有线程的调用栈。这份输出就是 traces.txt。在较新的 Android 版本中，我们可以通过 `adb bugreport` 获取，也可以直接从设备的 `/data/anr/` 目录拉取。
 
 ### traces.txt 的结构
 
@@ -175,7 +177,7 @@ traces.txt 能告诉我们 ANR 发生时各个线程在做什么，但它只是�
 
 ### 死锁
 
-死锁是最容易排查的 ANR 类型。在 traces.txt 中，主线程的状态为 `Blocked`，trace 会明确告诉你"waiting to lock <地址> held by thread X"。
+死锁是最容易排查的 ANR 类型。在 traces.txt 中，主线程的状态为 `Blocked`，trace 会明确告诉我们"waiting to lock <地址> held by thread X"。
 
 排查步骤：
 1. 找到主线程 trace 中的 `waiting to lock` 信息
@@ -199,7 +201,7 @@ traces.txt 能告诉我们 ANR 发生时各个线程在做什么，但它只是�
 
 主线程通过 Binder 与 system_server 或其他进程通信时，如果对端处理慢或线程池满了，主线程就会被阻塞。在 trace 中，堆栈通常包含 `Binder.proxyXXX`、或 native 层的 `IPCThreadState::waitForResponse`。
 
-系统日志中的 `binder_sample` 条目能直接告诉你哪个 Binder 调用耗时多久：
+系统日志中的 `binder_sample` 条目能直接告诉我们哪个 Binder 调用耗时多久：
 
 ```
 binder_sample: [android.view.accessibility.IAccessibilityManager,6,2010,com.xxx.community,100]
@@ -215,7 +217,7 @@ binder_sample: [android.view.accessibility.IAccessibilityManager,6,2010,com.xxx.
 
 有时候主线程代码没有问题，但它就是拿不到 CPU 时间。在 Perfetto 中表现为：主线程处于 Runnable 状态（已经准备好运行了），但长时间没有被调度到 CPU 上执行。
 
-CPU 饥饿的判断需要结合 CPU 使用率信息和 Perfetto 的全局视图。如果在 ANR 时间窗口内，整体 CPU 使用率接近饱和（比如 8 核全满），而你的应用 CPU 占比很低，那就可以判定是 CPU 饥饿导致的 ANR。
+CPU 饥饿的判断需要结合 CPU 使用率信息和 Perfetto 的全局视图。如果在 ANR 时间窗口内，整体 CPU 使用率接近饱和（比如 8 核全满），而应用 CPU 占比很低，那就可以判定是 CPU 饥饿导致的 ANR。
 
 ### 系统负载高
 

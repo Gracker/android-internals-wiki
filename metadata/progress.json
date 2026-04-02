@@ -4,11 +4,11 @@
   "metrics": {
     "total": 96,
     "draft": 34,
-    "ready-for-review": 44,
+    "ready-for-review": 43,
     "reviewed": 2,
-    "finalized": 20,
+    "finalized": 21,
     "staging_drafts": 0,
-    "last_updated": "2026-04-03T06:24:36.976589+08:00"
+    "last_updated": "2026-04-03T07:25:44"
   },
   "reviewed_sections": {
     "8.1": {
@@ -199,11 +199,21 @@
         "标准化 4 处 [来源:] → [已验证:] 标注格式",
         "ZRAM 75% 声明添加 [待验证] 标注"
       ]
+    },
+    "9.3": {
+      "reviewed_date": "2026-04-03",
+      "reviewed_by": "openclaw-task6",
+      "review_status": "finalized",
+      "fixes_applied": [
+        "8处'你'→'我们'替换（writing-guide §3.5合规）",
+        "frontmatter: status ready-for-review → finalized",
+        "frontmatter: 补 reviewed_date/reviewed_by"
+      ]
     }
   },
   "review_stats": {
-    "total_reviewed": 19,
-    "reviewed_today": 4,
+    "total_reviewed": 20,
+    "reviewed_today": 5,
     "review_issues_total": 13
   },
   "completed": [
@@ -806,9 +816,22 @@
           "AOSP AnrHelper + ProcessErrorStateRecord ANR 异步处理管线源码分析（目标 §9.3/§9.1）",
           "Foreground Service ANR 超时机制演进 Android 12→16（目标 §9.2/§9.4）"
         ]
+      },
+      {
+        "time": "2026-04-03T07:02:00+08:00",
+        "focus": "调度器与 EAS（20260403%20=3, topic-rotation）",
+        "source": "topic-rotation",
+        "candidates": 6,
+        "passed": 3,
+        "delivered": 3,
+        "themes": [
+          "EEVDF 取代 CFS 成为默认调度器：lag 追踪 + 虚拟截止时间 + sched_setattr() 时间片请求（目标 §5.1/§5.7）",
+          "sched_ext BPF 可扩展调度器 Linux 6.12：Meta/Google 投入 + scx_lavd 游戏优化 + Android 实验性移植（目标 §5.1/§5.7）",
+          "PREEMPT_LAZY 懒抢占 Linux 6.13：双模式抢占 + 减少 lock holder preemption + ARM 支持待跟进（目标 §5.1/§5.7）"
+        ]
       }
     ],
-    "last_updated": "2026-04-02T11:00+08:00"
+    "last_updated": "2026-04-03T07:02:00+08:00"
   },
   "history": [
     {
@@ -1113,6 +1136,21 @@
       "title": "APK 体积优化",
       "action": "draft-completed",
       "word_count": "~8500"
+    },
+    {
+      "date": "2026-04-03",
+      "section": "5.1/5.7",
+      "title": "调度器与 EAS 前沿研究",
+      "action": "research-completed",
+      "focus": "EEVDF + sched_ext + PREEMPT_LAZY",
+      "candidates": 6,
+      "passed": 3,
+      "delivered": 3,
+      "themes": [
+        "EEVDF 取代 CFS：lag + virtual deadline + sched_setattr",
+        "sched_ext BPF：scx_lavd + Android port",
+        "PREEMPT_LAZY：双模式抢占 + lock holder preemption"
+      ]
     }
   ],
   "sections": {
@@ -1185,6 +1223,12 @@
     },
     "2.11": {
       "title": "Flutter 渲染管线与性能",
+      "status": "finalized",
+      "reviewed_date": "2026-04-03",
+      "reviewed_by": "openclaw-task6"
+    },
+    "9.3": {
+      "title": "ANR 分析方法",
       "status": "finalized",
       "reviewed_date": "2026-04-03",
       "reviewed_by": "openclaw-task6"
