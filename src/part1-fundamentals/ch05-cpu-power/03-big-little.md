@@ -1,7 +1,7 @@
 ---
 title: "大小核架构"
 chapter: "5.3"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 5.0 (API 21) - Android 16 (API 36)"
 last_verified: "2026-03-31"
 last_verified_against: "ARM official documentation, Linux kernel 6.6"
@@ -20,6 +20,8 @@ sources:
 tags: ['big.LITTLE', 'DynamIQ', 'schedutil', 'cpufreq', 'capacity', 'cluster', 'DVFS']
 related_chapters: ["5.1", "5.2", "5.4"]
 drafted_date: "2026-03-31"
+reviewed_date: "2026-04-02"
+reviewed_by: openclaw-task6
 ---
 
 # 大小核架构
