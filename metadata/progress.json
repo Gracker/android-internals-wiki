@@ -202,9 +202,9 @@
     }
   },
   "review_stats": {
-    "total_reviewed": 15,
-    "reviewed_today": 10,
-    "review_issues_total": 9
+    "total_reviewed": 16,
+    "reviewed_today": 1,
+    "review_issues_total": 13
   },
   "completed": [
     {
@@ -688,7 +688,7 @@
     }
   ],
   "ready_for_review": 4,
-  "last_updated": "2026-04-02T19:00:00+08:00",
+  "last_updated": "2026-04-03T03:25:57+08:00",
   "stats": {
     "total": 97,
     "completed": 40,
