@@ -540,15 +540,26 @@
       "extensions_total": 2,
       "verification_level": "L2",
       "word_count": "~8500"
+    },
+    {
+      "section": "9.2",
+      "title": "ANR 类型与触发条件",
+      "completed_at": "2026-04-02T09:39:00+08:00",
+      "anchors_covered": 5,
+      "anchors_total": 5,
+      "extensions_covered": 2,
+      "extensions_total": 2,
+      "verification_level": "L2",
+      "word_count": "~7500"
     }
   ],
   "ready_for_review": 4,
   "last_updated": "2026-04-02T07:47:00.583548+08:00",
   "stats": {
     "total": 97,
-    "completed": 37,
-    "pending": 60,
-    "last_updated": "2026-04-02T05:39:00+08:00"
+    "completed": 38,
+    "pending": 59,
+    "last_updated": "2026-04-02T09:39:00+08:00"
   },
   "research_stats": {
     "runs_today": [
@@ -789,6 +800,13 @@
       "review_by": "openclaw-task6",
       "issues": 5,
       "fixes": 3
+    },
+    {
+      "date": "2026-04-02",
+      "section": "9.2",
+      "title": "ANR 类型与触发条件",
+      "action": "draft-completed",
+      "word_count": "~7500"
     }
   ],
   "sections": {
