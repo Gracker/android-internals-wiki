@@ -1,11 +1,14 @@
 ---
 title: "MainThread 与 RenderThread 协作"
 chapter: "2.5"
-status: ready-for-review
+status: finalized
+drafted_date: "2026-03-30"
 applicable_versions: "Android 12 (API 31) - Android 16 (API 35)"
 last_verified: "2026-03-30"
 last_verified_against: "AOSP android-16.0.0_r1"
 confidence: high
+reviewed_date: "2026-04-02"
+reviewed_by: openclaw-task6
 sources:
   - type: aosp
     path: "platform/frameworks/base/libs/hwui/renderthread/RenderThread.cpp"
@@ -51,7 +54,7 @@ related_chapters: ["2.3", "2.4", "2.6", "3.1"]
 
 ## 开头：为什么要了解这两个线程的协作
 
-在 Perfetto 里打开一个滑动场景的 Trace，你会看到主线程（UI Thread）和 RenderThread 两条 Track 交替出现密集的色块。如果一切正常，它们像齿轮一样精密咬合——主线程画完蓝图，RenderThread 拿去执行，一帧接一帧流畅运转。如果出了问题，你会看到一条 Track 延迟、另一条 Track 饥饿等待，最终帧超时掉帧。
+在 Perfetto 里打开一个滑动场景的 Trace，我们会看到主线程（UI Thread）和 RenderThread 两条 Track 交替出现密集的色块。如果一切正常，它们像齿轮一样精密咬合——主线程画完蓝图，RenderThread 拿去执行，一帧接一帧流畅运转。如果出了问题，你会看到一条 Track 延迟、另一条 Track 饥饿等待，最终帧超时掉帧。
 
 Android 5.0（Lollipop）引入 RenderThread 的目的是把"构建绘制指令"和"执行 GPU 命令"拆分到两个线程上并行执行。在此之前，measure、layout、draw 和 GPU 渲染全部在主线程完成，意味着 App 的 UI 逻辑和 GPU 的渲染工作互相阻塞。引入 RenderThread 后，主线程只负责构建 DisplayList（一份绘制指令清单），真正的 GPU 渲染工作交给了 RenderThread，从而让 CPU 和 GPU 实现流水线式并行。
 
@@ -231,7 +234,7 @@ VSync-app (0ms)
 └── VSync-sf (~11ms offset) → SurfaceFlinger 合成
 ```
 
-在 Perfetto 中，你应该能在 UI Thread Track 上看到 `Choreographer#doFrame` 切片，其中包含 `performTraversals` 子切片；在 RenderThread Track 上看到 `DrawFrame` 切片，其中包含 `dequeueBuffer` 和 `queueBuffer` 子切片。
+在 Perfetto 中，我们能在 UI Thread Track 上看到 `Choreographer#doFrame` 切片，其中包含 `performTraversals` 子切片；在 RenderThread Track 上看到 `DrawFrame` 切片，其中包含 `dequeueBuffer` 和 `queueBuffer` 子切片。
 
 ### 常见异常模式
 
@@ -298,7 +301,7 @@ LIMIT 20;
 
 **第四步：切到 RenderThread Track。** 检查 `DrawFrame` 的总耗时。展开它看 `dequeueBuffer` 和 GPU 渲染各占多少。如果 `dequeueBuffer` 很长，说明 Buffer 被耗尽；如果 GPU 渲染时间很长，说明画面复杂度过高。
 
-**第五步：结合 Frame Timeline Track。** Android 12+ 提供了 Frame Timeline Track，它同时显示 Expected（预期时间线）和 Actual（实际时间线），一目了然地告诉你哪帧是 Jank、哪帧正常。Frame Timeline 是最直观的"帧健康度"指标。
+**第五步：结合 Frame Timeline Track。** Android 12+ 提供了 Frame Timeline Track，它同时显示 Expected（预期时间线）和 Actual（实际时间线），一目了然地告诉我们哪帧是 Jank、哪帧正常。Frame Timeline 是最直观的"帧健康度"指标。
 
 [图：Perfetto 中主线程与 RenderThread 的典型协作时序，标注 syncFrameState 阻塞点]
 
@@ -341,7 +344,7 @@ LIMIT 20;
 1. 两个窗口的 `performTraversals` 在主线程上**串行执行**。
 2. 两个窗口的 GPU 渲染在 RenderThread 上**串行执行**。
 
-在 Perfetto 中，你会看到一个 `doFrame` 内连续出现两个 `performTraversals`，以及 RenderThread 上连续的两个 `DrawFrame`。如果第一个窗口的渲染很重，第二个窗口会被直接拖累。这在 Dialog 弹出动画、分屏模式、悬浮窗等场景中尤其需要注意。
+在 Perfetto 中，我们会看到一个 `doFrame` 内连续出现两个 `performTraversals`，以及 RenderThread 上连续的两个 `DrawFrame`。如果第一个窗口的渲染很重，第二个窗口会被直接拖累。这在 Dialog 弹出动画、分屏模式、悬浮窗等场景中尤其需要注意。
 
 **优化建议**：尽量使用 Fragment/View 方式实现弹层（如 DialogFragment），而非真正的 Window Dialog，这样可以将两次 Traversal 合并为一次。
 
@@ -381,7 +384,7 @@ view.animate()
 // 这会在 RenderThread 上执行，不阻塞主线程
 ```
 
-**注意事项**：不是所有动画都能在 RenderThread 上执行。如果你在动画的 UpdateListener 中做了 UI 修改（如改变 View 内容），动画会退回到主线程执行。只有纯粹的几何变换（translate、scale、rotate、alpha）才能享受 RenderThread 加速。
+**注意事项**：不是所有动画都能在 RenderThread 上执行。如果在动画的 UpdateListener 中做了 UI 修改（如改变 View 内容），动画会退回到主线程执行。只有纯粹的几何变换（translate、scale、rotate、alpha）才能享受 RenderThread 加速。
 
 [已验证: 官方文档, developer.android.com/reference/android/view/ViewPropertyAnimator]
 
