@@ -3,12 +3,12 @@
   "total_sections": 93,
   "metrics": {
     "total": 96,
-    "draft": 37,
-    "ready-for-review": 40,
+    "draft": 36,
+    "ready-for-review": 41,
     "reviewed": 7,
     "finalized": 13,
     "staging_drafts": 0,
-    "last_updated": "2026-04-03T03:04:00+08:00"
+    "last_updated": "2026-04-03T04:10:00+08:00"
   },
   "reviewed_sections": {
     "8.1": {
@@ -693,6 +693,17 @@
       "extensions_total": 2,
       "verification_level": "L2",
       "word_count": "~8500"
+    },
+    {
+      "section": "11.3",
+      "title": "系统级功耗优化",
+      "completed_at": "2026-04-03T04:10:00+08:00",
+      "anchors_covered": 5,
+      "anchors_total": 5,
+      "extensions_covered": 1,
+      "extensions_total": 2,
+      "verification_level": "L2",
+      "word_count": "~8500"
     }
   ],
   "ready_for_review": 4,
@@ -1067,6 +1078,13 @@
       "action": "rework-completed",
       "review_by": "openclaw-task2b",
       "fixes": 4
+    },
+    {
+      "date": "2026-04-03",
+      "section": "11.3",
+      "title": "系统级功耗优化",
+      "action": "draft-completed",
+      "word_count": "~8500"
     }
   ],
   "sections": {
@@ -1130,6 +1148,12 @@
       "status": "finalized",
       "reviewed_date": "2026-04-03",
       "reviewed_by": "openclaw-task6"
+    },
+    "11.3": {
+      "title": "系统级功耗优化",
+      "status": "ready-for-review",
+      "drafted_date": "2026-04-03",
+      "drafted_by": "openclaw-task2a"
     }
   },
   "5.1": {
