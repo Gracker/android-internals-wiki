@@ -974,6 +974,11 @@
       "status": "finalized",
       "reviewed_date": "2026-04-02",
       "reviewed_by": "openclaw-task6"
+    },
+    "3.1": {
+      "title": "Input 事件分发全流程",
+      "status": "finalized",
+      "reviewed_date": "2026-04-02"
     }
   },
   "5.1": {

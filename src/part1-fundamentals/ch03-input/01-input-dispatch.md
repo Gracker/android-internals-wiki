@@ -1,11 +1,13 @@
 ---
 title: "Input 事件分发全流程"
 chapter: "3.1"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 12 (API 31) - Android 16 (API 36)"
 last_verified: "2026-03-30"
 last_verified_against: "AOSP android-14.0.0_r1"
 confidence: high
+reviewed_date: "2026-04-02"
+reviewed_by: openclaw-task6
 sources:
   - type: blog
     path: "https://utzcoz.github.io/2020/05/06/Analyze-AOSP-input-architecture.html"
@@ -123,7 +125,7 @@ void InputReader::loopOnce() {
 
 以触摸事件为例，`TouchInputMapper` 会将多点触控的原始坐标数据加工为包含坐标、压力、触摸点数量等完整信息的 `NotifyMotionArgs`，然后通过 `InputDispatcher::notifyMotion()` 提交给分发队列。
 
-一个容易忽略的细节：开发者选项中的 "Show taps"（显示触摸操作）功能，就是在 `InputReader` 这一层处理的，而不是在 App 层。`TouchInputMapper` 在加工触摸事件时，如果检测到 `showTouches` 配置开启，会通过 `PointerController` 直接在系统层绘制触摸圆点。这样做的好处是响应更快、不占用 App 进程资源。这也是为什么即使 App 卡住了，你依然能看到触摸圆点在动。
+一个容易忽略的细节：开发者选项中的 "Show taps"（显示触摸操作）功能，就是在 `InputReader` 这一层处理的，而不是在 App 层。`TouchInputMapper` 在加工触摸事件时，如果检测到 `showTouches` 配置开启，会通过 `PointerController` 直接在系统层绘制触摸圆点。这样做的好处是响应更快、不占用 App 进程资源。这也是为什么即使 App 卡住了，我们依然能看到触摸圆点在动。
 
 > [来源: obsidian/Cubox/从显示 Tap 原理一探 Android 12 的 Input 系统-2022-03-21.md]
 > [已验证: AOSP android-14.0.0_r1, frameworks/native/services/inputflinger/reader/]
@@ -163,7 +165,7 @@ bool InputDispatcher::dispatchMotionLocked(nsecs_t currentTime,
 
 ### 三大队列：iq / oq / wq
 
-在 Perfetto 中追踪 Input 问题时，你会经常看到三个计数器 Track：`iq`、`oq`、`wq`。它们对应 `InputDispatcher` 内部的三个关键队列：
+在 Perfetto 中追踪 Input 问题时，我们经常看到三个计数器 Track：`iq`、`oq`、`wq`。它们对应 `InputDispatcher` 内部的三个关键队列：
 
 **InboundQueue（iq）**：`InputReader` 加工完的事件首先进入这个队列。`InputDispatcher` 的主循环从这个队列取出事件进行分发。在 Perfetto 中通过 `ATRACE_INT("iq", mInboundQueue.size())` 追踪。
 
@@ -177,7 +179,7 @@ bool InputDispatcher::dispatchMotionLocked(nsecs_t currentTime,
 iq（等待分发）→ oq（准备发送）→ wq（等待 App 反馈）→ 移除
 ```
 
-如果你在 Perfetto 中看到 `wq` 的值持续增长不下降，说明 App 没有及时处理 Input 事件——这是 Input ANR 的前兆。
+如果我们在 Perfetto 中看到 `wq` 的值持续增长不下降，说明 App 没有及时处理 Input 事件——这是 Input ANR 的前兆。
 
 > [已验证: AOSP android-14.0.0_r1, frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp]
 
@@ -363,7 +365,7 @@ static final long DEFAULT_INPUT_DISPATCHING_TIMEOUT_NANOS = 5000 * 1000000L; // 
 
 这个值可以通过 `InputWindowHandle.dispatchingTimeoutNanos` 覆盖。系统窗口（如状态栏、导航栏）可能使用不同的超时值，但 App 窗口默认是 5 秒。
 
-在 Perfetto 中，如果你看到某个 App 的 `wq` 值持续大于 0 超过 5 秒，那么接下来就会出现 Input ANR。这就是为什么分析 Input 问题时，`wq` Track 是最重要的观察指标之一。
+在 Perfetto 中，如果我们看到某个 App 的 `wq` 值持续大于 0 超过 5 秒，那么接下来就会出现 Input ANR。这就是为什么分析 Input 问题时，`wq` Track 是最重要的观察指标之一。
 
 > [已验证: AOSP android-14.0.0_r1, frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp]
 > [来源: obsidian/Cubox/Input ANR on Android 13-2022-12-16.md]
