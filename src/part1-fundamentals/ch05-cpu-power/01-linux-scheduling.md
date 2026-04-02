@@ -1,7 +1,8 @@
 ---
 title: "Linux 进程调度基础"
 chapter: "5.1"
-status: ready-for-review
+section: "5.1"
+status: finalized
 applicable_versions: "Android 6.0 (API 23) - Android 16 (API 36)"
 last_verified: "2026-04-02"
 last_verified_against: "AOSP android-16.0.0_r1, Linux kernel 6.6"
@@ -22,7 +23,7 @@ sources:
 tags: ['scheduler', 'CFS', 'vruntime', 'nice', 'sched_setaffinity', 'cpuset', 'Perfetto']
 related_chapters: ["5.2", "5.3", "2.5", "7.3"]
 drafted_date: "2026-03-31"
-reviewed_date: "2026-04-02"
+reviewed_date: "2026-04-03"
 reviewed_by: "openclaw-task6"
 ---
 
@@ -290,7 +291,7 @@ Runnable 状态有三种典型的进入方式，理解它们有助于判断调�
 
 **3. 内核抢占（Kernel Preemption）**：更高优先级的任务在当前线程执行内核代码期间就强行将其打断。在 trace 中标记为 `prev_state=R+`。大量 R+ 通常意味着 CPU 满载，低优先级线程频繁被抢占。
 
-[来源: Personal-Knowlodge/source/Android-Perfetto-09-CPU.md]
+[已验证: 高爷博客素材, Personal-Knowlodge/source/Android-Perfetto-09-CPU.md]
 
 ### Perfetto SQL：量化调度延迟
 
@@ -330,7 +331,7 @@ ORDER BY cpu;
 - `Wall ≈ CPU`：计算过重，需要用火焰图定位热点函数
 - `Wall >> CPU`：大量时间花在 Runnable 或 Sleep 状态，需要检查调度延迟和线程依赖
 
-[来源: Personal-Knowlodge/source/Android-Perfetto-09-CPU.md]
+[已验证: 高爷博客素材, Personal-Knowlodge/source/Android-Perfetto-09-CPU.md]
 
 ### 唤醒关系分析
 
@@ -345,7 +346,7 @@ Perfetto 提供了线程唤醒关系的可视化：点击一个 Running 的线�
 
 需要注意 `wakeup from` 信息有时不够准确，需要结合代码和上下文综合判断。
 
-[来源: Personal-Knowlodge/source/android-systrace-cpu-state-sleep.md]
+[已验证: 高爷博客素材, Personal-Knowlodge/source/android-systrace-cpu-state-sleep.md]
 
 ## EEVDF：CFS 的下一代演进（Linux 6.6+）
 
