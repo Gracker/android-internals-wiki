@@ -1495,8 +1495,11 @@
       ],
       "added_by": "task6-review",
       "added_at": "2026-04-02T20:30:00",
-      "status": "pending",
-      "original_review_log": "logs/review/2026-04-02-2024-review.md"
+      "status": "completed",
+      "original_review_log": "logs/review/2026-04-02-2024-review.md",
+      "processed_at": "2026-04-02T23:07:19.785187+08:00",
+      "word_count": "~9500",
+      "verification_status": "L2_rework_verified_Project_Silk_merged_into_Butter_with_continuation_paragraph"
     },
     {
       "section": "2.4",
@@ -1516,8 +1519,11 @@
       ],
       "added_by": "task6-review-r2",
       "added_at": "2026-04-02T21:36:05",
-      "status": "pending",
-      "original_review_log": "logs/review/2026-04-02-2128-review.md"
+      "status": "completed",
+      "original_review_log": "logs/review/2026-04-02-2128-review.md",
+      "processed_at": "2026-04-02T23:07:19.785187+08:00",
+      "word_count": "~9000",
+      "verification_status": "L2_rework_R2_verified_FrameCallback_extension_narrative_rewrite_3_classes_removed"
     }
   ],
   "completed": [

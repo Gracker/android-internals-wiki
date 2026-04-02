@@ -2,7 +2,7 @@
 title: "Choreographer 与渲染流水线"
 chapter: "2.4"
 section: "2.4"
-status: reviewed
+status: ready-for-review
 drafted_date: "2026-03-30"
 applicable_versions: "Android 12 (API 31) - Android 16 (API 36)"
 last_verified: "2026-04-02"
@@ -374,149 +374,36 @@ ORDER BY ts;
 
 [已验证: 官方文档, perfetto.dev/docs/reference/track-events#android]
 
-## 扩展：自定义 FrameCallback 实现帧率监控的原理与实践
+## 扩展：基于 FrameCallback 的帧率监控原理
 
-[需重写: 本节过于教程化，包含 3 个完整类实现（~120 行代码），违反 writing-guide §三.2 源码引用规范"只贴决定行为的那几行"。建议：保留核心原理说明和 1 个精简代码片段（10-15 行），删除 FrameRateMonitor / AdvancedFrameRateMonitor / FrameTypeMonitor 完整类实现，改为叙述式说明实现思路]
-
-### 基础帧率监控实现
-
-基于 `FrameCallback`，我们可以实现一个完整的帧率监控系统：
+`FrameCallback` 的 `doFrame(long frameTimeNanos)` 回调为我们提供了一个直接感知帧节奏的窗口。`frameTimeNanos` 是 VSync 信号的 monotonic 时间戳，通过计算连续两次回调的时间差，就能得到实际的帧间隔：
 
 ```java
-public class FrameRateMonitor {
-    private Choreographer choreographer = Choreographer.getInstance();
-    private FrameCallback frameCallback = new FrameCallback() {
-        private long lastFrameTimeNanos = 0;
-        private int frameCount = 0;
-        private long lastReportTimeNanos = 0;
-        private static final long REPORT_INTERVAL_MS = 1000; // 1秒报告一次
-        
-        @Override
-        public void doFrame(long frameTimeNanos) {
-            if (lastFrameTimeNanos == 0) {
-                lastFrameTimeNanos = frameTimeNanos;
-                lastReportTimeNanos = frameTimeNanos;
-                return;
-            }
-            
-            frameCount++;
-            long currentTimeNanos = frameTimeNanos;
-            long timeSinceLastReport = currentTimeNanos - lastReportTimeNanos;
-            
-            if (timeSinceLastReport >= TimeUnit.MILLISECONDS.toNanos(REPORT_INTERVAL_MS)) {
-                double avgFPS = (double) frameCount / (timeSinceLastReport / 1_000_000.0);
-                Log.d("FrameRateMonitor", String.format("平均帧率: %.2f FPS", avgFPS));
-                
-                // 重置计数器
-                frameCount = 0;
-                lastReportTimeNanos = currentTimeNanos;
-            }
-            
-            lastFrameTimeNanos = currentTimeNanos;
-            choreographer.postFrameCallback(this);
-        }
-    };
-    
-    public void start() {
-        choreographer.postFrameCallback(frameCallback);
+// 核心原理：通过 frameTimeNanos 计算帧间隔
+choreographer.postFrameCallback(frameTimeNanos -> {
+    if (lastFrameTimeNanos != 0) {
+        long intervalNs = frameTimeNanos - lastFrameTimeNanos;
+        double fps = 1_000_000_000.0 / intervalNs;
+        // intervalNs 超过目标帧间隔（如 16.67ms@60Hz）即意味着掉帧
     }
-    
-    public void stop() {
-        choreographer.removeFrameCallback(frameCallback);
-    }
-}
+    lastFrameTimeNanos = frameTimeNanos;
+    choreographer.postFrameCallback(this); // 持续监控
+});
 ```
 
-### 高级帧率监控功能
+这里有两个关键细节值得注意。第一，`postFrameCallback(this)` 在回调末尾重新注册自己，形成持续监控链——只要不主动调用 `removeFrameCallback()` 取消，每一帧都会触发回调。第二，`frameTimeNanos` 是纳秒精度的 monotonic 时间，不受系统时钟调整影响，比 `System.currentTimeMillis()` 更适合做帧间隔测量。
 
-#### 帧率趋势分析
+基于这个核心原理，实际工程中的帧率监控系统通常在以下几个方向做扩展：
 
-```java
-public class AdvancedFrameRateMonitor {
-    private static final int SAMPLE_SIZE = 60; // 保存最近60帧的数据
-    private Long[] frameTimestamps = new Long[SAMPLE_SIZE];
-    private int currentIndex = 0;
-    
-    public void doFrame(long frameTimeNanos) {
-        frameTimestamps[currentIndex] = frameTimeNanos;
-        currentIndex = (currentIndex + 1) % SAMPLE_SIZE;
-        
-        // 计算实时帧率
-        calculateCurrentFPS();
-        // 检测帧率异常
-        detectFrameRateIssues();
-    }
-    
-    private void calculateCurrentFPS() {
-        // 计算最近1秒的帧率
-    }
-    
-    private void detectFrameRateIssues() {
-        // 检测帧率突降、持续低帧率等问题
-    }
-}
-```
+**滑动窗口统计**。不逐帧报告，而是维护一个环形缓冲区保存最近 N 帧的时间戳，每隔 1 秒计算一次平均帧率和帧率方差。帧率方差大比平均帧率低更有分析价值——它意味着帧间隔不稳定，即使平均帧率达标，用户仍会感知到卡顿。这种统计在 Perfetto 中可以通过 SQL 查询 `Choreographer#doFrame` slice 的 `ts` 差值来实现，不一定需要在 App 内部做。
 
-#### 帧类型分类监控
+**帧类型分类**。将每一帧按帧间隔归类为"正常帧"（在目标帧预算 10% 容差内）、"轻微掉帧"（超出预算 10%-50%）和"严重掉帧"（超出预算 50% 以上）。这种分类可以快速定位是偶发性长帧还是系统性的调度问题。
 
-```java
-public class FrameTypeMonitor {
-    public enum FrameType {
-        PERFECT,    // 帧间隔在目标范围内
-        EARLY,     // 帧间隔过短
-        LATE,      // 帧间隔过长
-        DROPPED    // 帧被丢弃
-    }
-    
-    private FrameType[] frameTypes = new FrameType[100];
-    private int frameTypeIndex = 0;
-    
-    public FrameType analyzeFrame(long frameIntervalNanos, long targetIntervalNanos) {
-        double tolerance = targetIntervalNanos * 0.1; // 10%容差
-        
-        if (frameIntervalNanos == 0) {
-            return FrameType.DROPPED;
-        } else if (Math.abs(frameIntervalNanos - targetIntervalNanos) <= tolerance) {
-            return FrameType.PERFECT;
-        } else if (frameIntervalNanos < targetIntervalNanos - tolerance) {
-            return FrameType.EARLY;
-        } else {
-            return FrameType.LATE;
-        }
-    }
-}
-```
+**与 FrameMetrics 的协同**。`FrameCallback` 只提供帧间隔的时间点信息，如果需要更细粒度的阶段耗时（draw 阶段多久、GPU 阶段多久），需要配合 `FrameMetrics` API（API 24+）。`FrameMetrics` 拆解了每一帧从 VSync 到呈现的完整生命周期，包括 Input Handling、Animation、Layout/Measure、Draw、Sync、GPU 命令、Swap 等阶段。我们在 §2.9 的 FrameMetrics API 演进部分有更详细的介绍。
 
-### 实际应用建议
+**性能影响注意**。`doFrame` 回调在主线程执行，如果监控逻辑本身耗时过长（比如做了 IO 写入或复杂数据统计），反而会恶化帧性能。线上监控通常采用异步上报模式——在 `doFrame` 中只做时间戳记录（几纳秒），统计和上报推迟到后台线程执行。
 
-1. **选择性监控**：只在关键页面启用帧率监控，避免影响性能
-2. **后台自动暂停**：应用进入后台时自动停止监控
-3. **阈值报警**：设置帧率阈值，低于阈值时记录日志或发出通知
-4. **性能影响最小化**：避免在 `doFrame` 中执行复杂的计算
-
-### 与其他监控工具的集成
-
-```java
-public class IntegratedFrameRateMonitor {
-    private FrameRateMonitor frameRateMonitor;
-    private Performance performanceTracker;
-    
-    public void doFrame(long frameTimeNanos) {
-        frameRateMonitor.recordFrame(frameTimeNanos);
-        
-        if (frameRateMonitor.hasFrameRateIssue()) {
-            performanceTracker.recordFrameRateIssue(
-                frameRateMonitor.getCurrentFPS(),
-                frameRateMonitor.getFrameType()
-            );
-        }
-    }
-}
-```
-
-这种集成方式让我们能够在监控帧率的同时，记录相关的性能指标，便于后续分析。
-
-[已验证: 官方文档, developer.android.com/reference/android/view/Choreographer.FrameCallback]
+[已验证: developer.android.com/reference/android/view/Choreographer.FrameCallback]
 
 ## 扩展：Compose 对 Choreographer 的使用差异
 

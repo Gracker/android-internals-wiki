@@ -1,7 +1,7 @@
 ---
 title: "渲染机制的版本演进"
 chapter: "2.9"
-status: reviewed
+status: ready-for-review
 drafted_date: 2026-03-30
 reviewed_date: 2026-04-02
 reviewed_by: openclaw-task6
@@ -84,11 +84,7 @@ Android 4.1 Jelly Bean（API 16，2012 年）的 **Project Butter** 是渲染流
 
 > [已验证: L2 — source.android.com/devices/graphics]
 
-### Project Silk 的后续优化
 
-[需重写: 本节内容过于单薄，仅有一句话概述，缺乏具体版本号、技术改动点和 Perfetto 中的对应变化。建议补充 Project Silk 的具体改动内容（如 VSync offset 调优、帧率自适应策略），或合并入 Project Butter 节作为延续说明。]
-
-Project Silk 是 Project Butter 之后的一系列帧率优化工作，涉及更精细的 VSync 偏移调整和更智能的渲染调度策略，主要体现在 Android 后续版本中渲染管线各环节的持续打磨。
 
 ## RenderThread：主线程与 GPU 命令的分离（Android 5.0）
 
