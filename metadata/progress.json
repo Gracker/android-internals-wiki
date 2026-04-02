@@ -4,11 +4,11 @@
   "metrics": {
     "total": 96,
     "draft": 37,
-    "ready-for-review": 39,
+    "ready-for-review": 40,
     "reviewed": 7,
     "finalized": 13,
     "staging_drafts": 0,
-    "last_updated": "2026-04-03T02:21:00+08:00"
+    "last_updated": "2026-04-03T03:04:00+08:00"
   },
   "reviewed_sections": {
     "8.1": {
@@ -1033,6 +1033,13 @@
     },
     {
       "date": "2026-04-03",
+      "section": "11.2",
+      "title": "App 耗电优化",
+      "action": "draft-completed",
+      "word_count": "~8500"
+    },
+    {
+      "date": "2026-04-03",
       "section": "11.1",
       "title": "Android 功耗模型",
       "action": "draft-completed",
@@ -1152,5 +1159,12 @@
       "metadata": 5
     },
     "last_updated": "2026-04-02T22:29:32.067195"
+  },
+  "11.2": {
+    "title": "App 耗电优化",
+    "status": "ready-for-review",
+    "drafted_date": "2026-04-03",
+    "drafted_by": "openclaw-task2a",
+    "word_count": "~8500"
   }
 }
