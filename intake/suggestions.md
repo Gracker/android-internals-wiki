@@ -202,3 +202,21 @@
 - **问题**：原文"Swappy 会...选择一个最佳的刷新率"表述暗示 Swappy 直接决策刷新率。实际上 Swappy 通过 setFrameRate() 向 SurfaceFlinger 传递偏好，由 SurfaceFlinger 做出最终决策。已在源文件中微调表述并标注，需高爷确认。
 - **建议**：确认 Swappy 与 SurfaceFlinger 的刷新率决策分工是否准确。
 - **review 日志**：logs/review/2026-04-02-0735-review.md
+
+## [Task6 Review] 2.4 Choreographer 与渲染流水线 — 2026-04-02
+
+- **类型**：存疑 + 需重写 + 需补充素材
+- **位置**：doFrame()代码块 / 总结 / Compose扩展节 / 全文结构 / 厂商优化实践
+- **问题**：
+  1. doFrame() 为简化伪代码，方法签名与逻辑可能不反映 AOSP 实际实现
+  2. 总结使用编号列表，违反 writing-guide 叙述要求
+  3. Compose 节教程风格过重，缺少机制分析
+  4. 缺少 Type A 必需节：版本演进/常见问题与误区/与其他机制的关系
+  5. 厂商优化实践缺少可验证来源
+- **建议**：
+  1. 对照 AOSP Choreographer.java 重写 doFrame 关键代码引用
+  2. 总结改为 2-3 段连贯叙述
+  3. Compose 节转为分析式：内部调度机制、与 View 系统差异、Trace 影响
+  4. 按 Type A 模板补充 3 个标准节
+  5. 厂商优化补充来源或标注待验证
+- **review 日志**：logs/review/2026-04-02-0920-review.md
