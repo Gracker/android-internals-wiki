@@ -3,12 +3,12 @@
   "total_sections": 93,
   "metrics": {
     "total": 96,
-    "draft": 44,
-    "ready-for-review": 40,
+    "draft": 43,
+    "ready-for-review": 41,
     "reviewed": 4,
     "finalized": 8,
     "staging_drafts": 0,
-    "last_updated": "2026-04-02T15:20:00+08:00"
+    "last_updated": "2026-04-02T15:30:00+08:00"
   },
   "reviewed_sections": {
     "8.1": {
@@ -864,6 +864,13 @@
       "title": "ANR 类型与触发条件",
       "action": "draft-completed",
       "word_count": "~7500"
+    },
+    {
+      "date": "2026-04-02",
+      "section": "9.5",
+      "title": "案例集",
+      "action": "draft-completed",
+      "word_count": "~9500"
     },
     {
       "date": "2026-04-02",
