@@ -1,7 +1,7 @@
 ---
 title: "EAS 能量感知调度"
 chapter: "5.2"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 9 (API 28) - Android 16 (API 36)"
 last_verified: "2026-03-31"
 last_verified_against: "Linux kernel 6.6, Documentation/scheduler/sched-energy.rst"
@@ -20,6 +20,8 @@ sources:
 tags: ['EAS', 'energy-aware-scheduling', 'PELT', 'energy-model', 'OPP', 'task-placement', 'uclamp', 'schedutil']
 related_chapters: ["5.1", "5.3", "5.4", "2.5"]
 drafted_date: "2026-03-31"
+reviewed_date: "2026-04-02"
+reviewed_by: openclaw-task6
 ---
 
 # EAS 能量感知调度
@@ -126,11 +128,13 @@ EM 框架是通用的——除了 EAS，thermal 管理（IPA 智能功率分配�
 
 ### 能耗计算的核心公式
 
-EAS 的能耗预测并不复杂。对每个候选 CPU，它估算：
+EAS 的能耗预测并不复杂。对每个候选 CPU，它计算的是一个能量增量（energy delta）：
 
 ```
-energy = 系统当前总能耗 - 当前总能耗 + 将任务放到目标CPU后的系统总能耗
+energy_delta = 放置任务后的系统总能耗 - 当前的系统总能耗
 ```
+
+选择 energy_delta 最小的那个候选 CPU。
 
 具体来说，它会：
 
