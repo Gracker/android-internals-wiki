@@ -274,3 +274,11 @@
 - **问题**：本章缺少 `<!-- outline-start -->...<!-- outline-end -->` 大纲块，与项目大部分已加工章节的格式不统一。
 - **建议**：task2 回炉时补充 outline 块，用 🔹 锚点标注每个子主题。
 - **review 日志**：logs/review/2026-04-02-1924-review.md
+
+
+## [Task6 Review] 2.9 渲染机制的版本演进 — 2026-04-02
+- **类型**：需重写
+- **位置**：Project Silk 的后续优化
+- **问题**：本节仅有两句话概述 Project Silk，无具体版本号、技术改动点、Perfetto 对应变化。作为独立小节内容过于单薄。
+- **建议**：补充 Project Silk 的具体改动内容（VSync offset 调优细节、帧率自适应策略等），或考虑合并入 Project Butter 节作为延续说明。如果确实无法找到足够素材，建议移除独立小节，在 Project Butter 节末尾加一句过渡即可。
+- **review 日志**：logs/review/2026-04-02-2024-review.md

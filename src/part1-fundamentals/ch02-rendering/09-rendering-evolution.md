@@ -1,7 +1,10 @@
 ---
 title: "渲染机制的版本演进"
 chapter: "2.9"
-status: ready-for-review
+status: reviewed
+drafted_date: 2026-03-30
+reviewed_date: 2026-04-02
+reviewed_by: openclaw-task6
 applicable_versions: "Android 3.0 (API 11) ~ Android 16 (API 36)"
 last_verified: "2026-03-30"
 last_verified_against: "developer.android.com + source.android.com"
@@ -82,6 +85,8 @@ Android 4.1 Jelly Bean（API 16，2012 年）的 **Project Butter** 是渲染流
 > [已验证: L2 — source.android.com/devices/graphics]
 
 ### Project Silk 的后续优化
+
+[需重写: 本节内容过于单薄，仅有一句话概述，缺乏具体版本号、技术改动点和 Perfetto 中的对应变化。建议补充 Project Silk 的具体改动内容（如 VSync offset 调优、帧率自适应策略），或合并入 Project Butter 节作为延续说明。]
 
 Project Silk 是 Project Butter 之后的一系列帧率优化工作，涉及更精细的 VSync 偏移调整和更智能的渲染调度策略，主要体现在 Android 后续版本中渲染管线各环节的持续打磨。
 
@@ -257,6 +262,25 @@ Unreal Engine 已集成 Swappy。
 | 13 | 2022 | Vulkan 1.3 强制要求 + AGSL 引入 | 自定义图形着色器可用 |
 | 15 | 2024 | ARR 自适应刷新率引入 | `VSYNC-app` 间隔不再固定 |
 | 16 | 2025 | Vulkan 官方图形 API + ANGLE + ARR 增强 | 渲染堆栈统一；帧率动态切换更频繁 |
+
+
+## 参考资料
+
+### AOSP 源码路径
+-  — HWUI 渲染引擎（含 RenderThread、RenderNode）
+-  — Choreographer 实现
+-  — FrameMetrics API
+-  — BLASTBufferQueue 实现
+-  — SurfaceFlinger 合成逻辑
+
+### 官方文档
+- [Hardware Acceleration](https://developer.android.com/guide/topics/graphics/hardware-accel)
+- [Android Versions](https://developer.android.com/about/versions)
+- [Android 16 Features](https://developer.android.com/about/versions/16/features)
+- [Graphics Architecture](https://source.android.com/devices/graphics)
+- [Frame Pacing Library](https://developer.android.com/games/sdk/frame-pacing)
+- [FrameMetrics API](https://developer.android.com/reference/android/view/FrameMetrics)
+- [Vulkan on Android](https://developer.android.com/ndk/guides/graphics)
 
 <!-- outline-end -->
 
