@@ -1390,5 +1390,458 @@
       "skip_reason": "Total score 9 < 10 (relevance: 3, depth: 1, timeliness: 3, verifiability: 2)",
       "indexed_at": "2026-04-02T19:37:09.252822"
     }
+  ],
+  "skipped": [
+    {
+      "file": "Perfetto中的核心数据Concept-2025-08-19.md",
+      "reason": "总分不足10分 (7/20)",
+      "scores": {
+        "relevance": 2,
+        "depth": 0,
+        "freshness": 5,
+        "verifiability": 0
+      },
+      "total": 7
+    },
+    {
+      "file": "Perfetto分析进阶-2022-09-03.md",
+      "reason": "总分不足10分 (8/20)",
+      "scores": {
+        "relevance": 2,
+        "depth": 1,
+        "freshness": 5,
+        "verifiability": 0
+      },
+      "total": 8
+    },
+    {
+      "file": "Perfetto工具集之traced_perf-2023-01-20.md",
+      "reason": "总分不足10分 (9/20)",
+      "scores": {
+        "relevance": 4,
+        "depth": 0,
+        "freshness": 5,
+        "verifiability": 0
+      },
+      "total": 9
+    },
+    {
+      "file": "Perfetto数据流架构故障分析：带你研究 trace 为何丢失-CSDN博客-2024-02-29.md",
+      "reason": "总分不足10分 (8/20)",
+      "scores": {
+        "relevance": 3,
+        "depth": 2,
+        "freshness": 3,
+        "verifiability": 0
+      },
+      "total": 8
+    },
+    {
+      "file": "Perfetto的IPC设计创意-2025-09-09.md",
+      "reason": "总分不足10分 (7/20)",
+      "scores": {
+        "relevance": 2,
+        "depth": 0,
+        "freshness": 5,
+        "verifiability": 0
+      },
+      "total": 7
+    },
+    {
+      "file": "Performance In Jetpack Compose — Stability & Immutability-2024-02-01.md",
+      "reason": "总分不足10分 (7/20)",
+      "scores": {
+        "relevance": 2,
+        "depth": 2,
+        "freshness": 3,
+        "verifiability": 0
+      },
+      "total": 7
+    },
+    {
+      "file": "Performance With Jetpack Compose — Part 1 - by Udit Verma - Jun, 2023 - ProAndroidDev-2023-07-03.md",
+      "reason": "总分不足10分 (6/20)",
+      "scores": {
+        "relevance": 2,
+        "depth": 1,
+        "freshness": 3,
+        "verifiability": 0
+      },
+      "total": 6
+    },
+    {
+      "file": "Performance with Jetpack Compose — Part 2-2023-07-03.md",
+      "reason": "总分不足10分 (7/20)",
+      "scores": {
+        "relevance": 3,
+        "depth": 1,
+        "freshness": 3,
+        "verifiability": 0
+      },
+      "total": 7
+    },
+    {
+      "file": "Physically Based Rendering in Filament-2023-07-06.md",
+      "reason": "总分不足10分 (9/20)",
+      "scores": {
+        "relevance": 3,
+        "depth": 1,
+        "freshness": 5,
+        "verifiability": 0
+      },
+      "total": 9
+    },
+    {
+      "file": "Pinduoduo App Malware Detailed by Cybersecurity Researchers at Kaspersky - Bloomberg-2023-03-28.md",
+      "reason": "总分不足10分 (9/20)",
+      "scores": {
+        "relevance": 3,
+        "depth": 1,
+        "freshness": 5,
+        "verifiability": 0
+      },
+      "total": 9
+    },
+    {
+      "file": "Pixel 8 pro 刷AOSP 14源码 详细教程 & 救砖处理-2025-04-01.md",
+      "reason": "总分不足10分 (7/20)",
+      "scores": {
+        "relevance": 1,
+        "depth": 1,
+        "freshness": 5,
+        "verifiability": 0
+      },
+      "total": 7
+    },
+    {
+      "file": "Please register for I-O 2025-2025-02-22.md",
+      "reason": "总分不足10分 (7/20)",
+      "scores": {
+        "relevance": 2,
+        "depth": 0,
+        "freshness": 5,
+        "verifiability": 0
+      },
+      "total": 7
+    },
+    {
+      "file": "Podcast -《Kotlin 炉边漫谈》第 15 期：和在 Meta 写 Kotlin 编译器插...-2024-01-10.md",
+      "reason": "总分不足10分 (7/20)",
+      "scores": {
+        "relevance": 2,
+        "depth": 0,
+        "freshness": 5,
+        "verifiability": 0
+      },
+      "total": 7
+    },
+    {
+      "file": "Podcast -《Kotlin 炉边漫谈》第 3 期：技术社区组织者都在忙什么--2022-09-05.md",
+      "reason": "总分不足10分 (7/20)",
+      "scores": {
+        "relevance": 2,
+        "depth": 0,
+        "freshness": 5,
+        "verifiability": 0
+      },
+      "total": 7
+    },
+    {
+      "file": "Podcast -《Kotlin炉边漫谈》第2期：听说Kotlin能算命？-2022-07-27.md",
+      "reason": "总分不足10分 (7/20)",
+      "scores": {
+        "relevance": 2,
+        "depth": 0,
+        "freshness": 5,
+        "verifiability": 0
+      },
+      "total": 7
+    },
+    {
+      "file": "Power's Memos-2023-02-28.md",
+      "reason": "总分不足10分 (7/20)",
+      "scores": {
+        "relevance": 2,
+        "depth": 0,
+        "freshness": 5,
+        "verifiability": 0
+      },
+      "total": 7
+    },
+    {
+      "file": "Practical Modularisation for Android Developers-2022-01-31.md",
+      "reason": "总分不足10分 (9/20)",
+      "scores": {
+        "relevance": 2,
+        "depth": 2,
+        "freshness": 5,
+        "verifiability": 0
+      },
+      "total": 9
+    },
+    {
+      "file": "Productivity-2025-05-12.md",
+      "reason": "总分不足10分 (6/20)",
+      "scores": {
+        "relevance": 1,
+        "depth": 0,
+        "freshness": 5,
+        "verifiability": 0
+      },
+      "total": 6
+    },
+    {
+      "file": "Promoting AI agents-2026-01-07.md",
+      "reason": "总分不足10分 (4/20)",
+      "scores": {
+        "relevance": 1,
+        "depth": 0,
+        "freshness": 3,
+        "verifiability": 0
+      },
+      "total": 4
+    },
+    {
+      "file": "Prompt Engineering - Kaggle-2025-04-12.md",
+      "reason": "总分不足10分 (7/20)",
+      "scores": {
+        "relevance": 3,
+        "depth": 1,
+        "freshness": 3,
+        "verifiability": 0
+      },
+      "total": 7
+    },
+    {
+      "file": "Prompt Engineering-2023-03-20.md",
+      "reason": "总分不足10分 (5/20)",
+      "scores": {
+        "relevance": 1,
+        "depth": 1,
+        "freshness": 3,
+        "verifiability": 0
+      },
+      "total": 5
+    },
+    {
+      "file": "Python 潮流周刊#90：uv 一周岁了，优缺点分析 - 豌豆花下猫-2025-02-23.md",
+      "reason": "总分不足10分 (7/20)",
+      "scores": {
+        "relevance": 1,
+        "depth": 1,
+        "freshness": 5,
+        "verifiability": 0
+      },
+      "total": 7
+    },
+    {
+      "file": "QQ 客户端性能稳定性防劣化系统 Hodor 技术方案-2024-06-13.md",
+      "reason": "总分不足10分 (7/20)",
+      "scores": {
+        "relevance": 1,
+        "depth": 1,
+        "freshness": 5,
+        "verifiability": 0
+      },
+      "total": 7
+    },
+    {
+      "file": "Qualcomm Snapdragon X2 Elite微架构-2025-12-03.md",
+      "reason": "总分不足10分 (6/20)",
+      "scores": {
+        "relevance": 1,
+        "depth": 0,
+        "freshness": 5,
+        "verifiability": 0
+      },
+      "total": 6
+    },
+    {
+      "file": "Qualcomm Works with Meta to Enable On-device AI Applications Using Llama 2-2023-07-24.md",
+      "reason": "总分不足10分 (8/20)",
+      "scores": {
+        "relevance": 3,
+        "depth": 0,
+        "freshness": 5,
+        "verifiability": 0
+      },
+      "total": 8
+    },
+    {
+      "file": "QuestMobile2024微信小程序年度报告：微信小程序用户规模达9.49亿，月人均使用近70次……-行业研究报告-QuestMobile-2025-11-18.md",
+      "reason": "总分不足10分 (6/20)",
+      "scores": {
+        "relevance": 1,
+        "depth": 1,
+        "freshness": 4,
+        "verifiability": 0
+      },
+      "total": 6
+    },
+    {
+      "file": "Qwen3-Coder- 在世界中自主编程-2025-07-23.md",
+      "reason": "总分不足10分 (7/20)",
+      "scores": {
+        "relevance": 1,
+        "depth": 1,
+        "freshness": 5,
+        "verifiability": 0
+      },
+      "total": 7
+    },
+    {
+      "file": "RCU前传：从同步到RCU的引入-2023-03-18.md",
+      "reason": "总分不足10分 (6/20)",
+      "scores": {
+        "relevance": 1,
+        "depth": 0,
+        "freshness": 5,
+        "verifiability": 0
+      },
+      "total": 6
+    },
+    {
+      "file": "Re-Build 产品重构计划 #4：独立开发不要犯的 10 个错误-2022-03-17.md",
+      "reason": "总分不足10分 (7/20)",
+      "scores": {
+        "relevance": 2,
+        "depth": 0,
+        "freshness": 5,
+        "verifiability": 0
+      },
+      "total": 7
+    },
+    {
+      "file": "React Native 前瞻式重大更新 Skia & WebGPU & ThreeJS，未来可期-2025-05-09.md",
+      "reason": "总分不足10分 (7/20)",
+      "scores": {
+        "relevance": 2,
+        "depth": 0,
+        "freshness": 5,
+        "verifiability": 0
+      },
+      "total": 7
+    },
+    {
+      "file": "Recently uploaded-2024-07-11.md",
+      "reason": "总分不足10分 (7/20)",
+      "scores": {
+        "relevance": 2,
+        "depth": 0,
+        "freshness": 5,
+        "verifiability": 0
+      },
+      "total": 7
+    },
+    {
+      "file": "RecyclerView面试宝典：7大高频问题解析-2024-05-21.md",
+      "reason": "总分不足10分 (6/20)",
+      "scores": {
+        "relevance": 1,
+        "depth": 0,
+        "freshness": 5,
+        "verifiability": 0
+      },
+      "total": 6
+    },
+    {
+      "file": "Recyclerview竟能如此丝滑，这14个优化策略不容错过...-2024-03-26.md",
+      "reason": "总分不足10分 (7/20)",
+      "scores": {
+        "relevance": 1,
+        "depth": 1,
+        "freshness": 5,
+        "verifiability": 0
+      },
+      "total": 7
+    },
+    {
+      "file": "RenderDoc 分析王者荣耀游戏-2026-01-02.md",
+      "reason": "总分不足10分 (8/20)",
+      "scores": {
+        "relevance": 2,
+        "depth": 1,
+        "freshness": 5,
+        "verifiability": 0
+      },
+      "total": 8
+    },
+    {
+      "file": "RenderEngineType简介-2022-04-09.md",
+      "reason": "总分不足10分 (8/20)",
+      "scores": {
+        "relevance": 3,
+        "depth": 0,
+        "freshness": 5,
+        "verifiability": 0
+      },
+      "total": 8
+    },
+    {
+      "file": "Repository files navigation-2023-09-15.md",
+      "reason": "总分不足10分 (9/20)",
+      "scores": {
+        "relevance": 2,
+        "depth": 1,
+        "freshness": 5,
+        "verifiability": 1
+      },
+      "total": 9
+    },
+    {
+      "file": "Repository files navigation-2023-11-13.md",
+      "reason": "总分不足10分 (9/20)",
+      "scores": {
+        "relevance": 2,
+        "depth": 1,
+        "freshness": 5,
+        "verifiability": 1
+      },
+      "total": 9
+    },
+    {
+      "file": "Repository files navigation-2023-12-26.md",
+      "reason": "总分不足10分 (9/20)",
+      "scores": {
+        "relevance": 2,
+        "depth": 1,
+        "freshness": 5,
+        "verifiability": 1
+      },
+      "total": 9
+    },
+    {
+      "file": "Requirements for Chinese Text Layout - 中文排版需求-2022-01-19.md",
+      "reason": "总分不足10分 (5/20)",
+      "scores": {
+        "relevance": 2,
+        "depth": 0,
+        "freshness": 3,
+        "verifiability": 0
+      },
+      "total": 5
+    },
+    {
+      "file": "Retrofit + Kotlin-Coroutines 如何去掉 try catch - 程涛的博客 - ChengTao Blog-2022-01-14.md",
+      "reason": "总分不足10分 (6/20)",
+      "scores": {
+        "relevance": 4,
+        "depth": 0,
+        "freshness": 2,
+        "verifiability": 0
+      },
+      "total": 6
+    },
+    {
+      "file": "Retrofit 的好朋友：RetrofitAssistant 插件 - 开发者说·DTalk-2024-02-02.md",
+      "reason": "总分不足10分 (7/20)",
+      "scores": {
+        "relevance": 2,
+        "depth": 0,
+        "freshness": 5,
+        "verifiability": 0
+      },
+      "total": 7
+    }
   ]
 }
