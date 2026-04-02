@@ -1,12 +1,12 @@
 {
-  "generated_at": "2026-03-29",
+  "generated_at": "2026-04-03T04:25:57.937619+08:00",
   "total_sections": 93,
   "metrics": {
     "total": 96,
     "draft": 36,
-    "ready-for-review": 41,
-    "reviewed": 7,
-    "finalized": 13,
+    "ready-for-review": 44,
+    "reviewed": 2,
+    "finalized": 18,
     "staging_drafts": 0,
     "last_updated": "2026-04-03T04:10:00+08:00"
   },
@@ -95,15 +95,14 @@
       ]
     },
     "4.6": {
-      "reviewed_date": "2026-04-02",
+      "reviewed_date": "2026-04-03",
       "reviewed_by": "openclaw-task6",
-      "review_status": "reviewed",
+      "review_status": "finalized-v2",
       "fixes_applied": [
-        "frontmatter: 补 section/reviewed_date/reviewed_by, status → reviewed",
-        "添加 [图：GC 算法演进对比] 占位符",
-        "标注章节标题亚毫秒准确性存疑 B类",
-        "标注 16KB Page Size 速查表待补充 B类"
-      ]
+        "补充3处[图：...]标注（Bitmap迁移/Scudo架构/MTE Tag比对）",
+        "frontmatter更新：status→finalized, reviewed_date→2026-04-03"
+      ],
+      "notes": "二次review（回炉后），无B类大问题，保留已有[存疑]标注待高爷决策"
     },
     "2.3": {
       "reviewed_date": "2026-04-02",
@@ -210,8 +209,8 @@
     }
   },
   "review_stats": {
-    "total_reviewed": 16,
-    "reviewed_today": 1,
+    "total_reviewed": 17,
+    "reviewed_today": 2,
     "review_issues_total": 13
   },
   "completed": [
