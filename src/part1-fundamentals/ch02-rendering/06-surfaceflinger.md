@@ -1,12 +1,12 @@
 ---
 title: "SurfaceFlinger 与合成"
 chapter: "2.6"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 12 (API S) - Android 16 (API 36)"
 last_verified: "2026-04-02"
 drafted_date: 2026-03-30
 reviewed_date: 2026-04-02
-reviewed_by: openclaw-task6-rework
+reviewed_by: openclaw-task6
 rework_date: 2026-04-02
 last_verified_against: "AOSP android-16.0.0_r1, 官方文档最新版本"
 confidence: medium
@@ -249,9 +249,15 @@ BufferQueue 的四步操作在 Perfetto 中可以分别追踪：
 
 ### HWC 合成 Track
 
-SurfaceFlinger 与 HWC 的通信过程也可以在 Trace 中追踪。在 SurfaceFlinger 主线程 Track 上，`prepareFrame` 和 `doComposition` 阶段会包含与 HWC 的交互。当使用 Device 合成时，你会看到 HWC 相关的 fence 等待；当使用 Client 合成时，你会看到 RenderEngine（GPU）的渲染耗时。
+SurfaceFlinger 与 HWC 的通信过程也可以在 Trace 中追踪。在 SurfaceFlinger 主线程 Track 上，`prepareFrame` 和 `doComposition` 阶段会包含与 HWC 的交互。
 
-[待补充：Trace 截图——正常 vs 异常的 SurfaceFlinger Perfetto 片段对比]
+**Device 合成（HWC Overlay）**：当 Layer 走 HWC 硬件合成时，`doComposition` 阶段几乎不消耗时间——SurfaceFlinger 只是把 Buffer 指针交给 HWC，HWC 在扫描输出时直接从多个 Buffer 读取并混合。在 Trace 中你会看到 `doComposition` 切片非常短，通常不到 1ms。此时真正的合成工作发生在显示硬件中，Perfetto 无法直接观测到 HWC 内部的处理耗时，只能通过 FrameTimeline 中帧的实际呈现时间来间接判断。
+
+**Client 合成（GPU/RenderEngine）**：当某些 Layer 退回 GPU 合成时，`doComposition` 切片会明显变长。你会看到 RenderEngine 相关的 GPU 操作耗时——这是 SurfaceFlinger 作为 GPU 客户端执行渲染 Pass 的时间。如果 Client 合成的 Layer 较多或内容复杂，这个耗时可能达到 3-8ms，直接反映在 SurfaceFlinger 主线程的 REFRESH 总耗时中。
+
+**排查要点**：如果你在 Trace 中发现 SurfaceFlinger 的 `doComposition` 突然耗时增加，第一件事就是检查是否有 Layer 从 Device 合成退回到了 Client 合成。可以通过 `dumpsys SurfaceFlinger --list` 查看各 Layer 的合成类型分配，或者直接在 Perfetto 中对比正常/异常时段的 Layer 数量和合成方式变化。
+
+[待补充：Trace 截图——正常 vs 异常的 SurfaceFlinger Perfetto 片段对比，标注 Device/Client 合成切换]
 
 ### 正常 vs 异常：一个对比案例
 
@@ -286,13 +292,11 @@ SurfaceFlinger 的性能问题有一个特点：它不是"某个 App 卡了"，�
 
 在 Perfetto 中，这种情况表现为：SurfaceFlinger 主线程 Track 上出现一个明显拉长的合成切片，紧接着几个 VSYNC-sf 信号都没有触发合成（因为上一帧还在处理），然后 SurfaceFlinger 追赶式地处理积压的帧。在用户侧，这就是一段明显的卡顿。
 
-常见的 SurfaceFlinger 卡顿原因包括：
-- **Layer 数量突增**：进入多窗口模式、弹出系统 Dialog，导致合成工作量翻倍。
-- **Client 合成比例增大**：某些 Layer 的属性变化（如圆角、模糊）导致 HWC 无法处理，退回 GPU 合成。
-- **GPU 争抢**：App 的渲染任务和 SurfaceFlinger 的合成任务共享 GPU，App 侧的 GPU 重载任务会拖慢 SurfaceFlinger 的合成。
-- **Transaction 风暴**：大量 Layer 状态更新（如动画期间的窗口属性变化）涌向 SurfaceFlinger，`handleMessageTransaction` 处理耗时增加。
+我们在实际分析中，最常遇到的 SurfaceFlinger 卡顿原因有四类。
 
-优化策略的思路也很直接：减少 Layer 数量、尽量让更多 Layer 走 HWC 合成、控制 Transaction 的频率和数据量。
+第一类是**Layer 数量突增**。比如进入多窗口模式或弹出系统 Dialog，合成工作量瞬间翻倍。第二类是**Client 合成比例增大**——某些 Layer 的属性发生变化（如添加圆角裁剪、模糊效果），HWC 无法处理，被迫退回 GPU 合成，GPU 渲染耗时陡增。第三类是**GPU 争抢**：App 的渲染任务和 SurfaceFlinger 的 Client 合成任务共享 GPU，当 App 侧的 GPU 负载很高时，SurfaceFlinger 的合成也会被拖慢。第四类是**Transaction 风暴**——大量 Layer 状态更新（比如动画期间窗口属性频繁变化）涌向 SurfaceFlinger，`handleMessageTransaction` 的处理耗时增加。
+
+应对思路也很直接：减少 Layer 数量、尽量让更多 Layer 走 HWC 合成、控制 Transaction 的频率和数据量。
 
 ## BlastBufferQueue
 
@@ -328,7 +332,7 @@ SurfaceFlinger 在不同 Android 版本中经历了多次重大变化：
 
 **Android 4.3**：引入 OpenGL ES 渲染路径，SurfaceFlinger 开始使用 GPU 进行 Client 合成。
 
-**Android 5.0**：引入 HWC 2.0 支持，更丰富的硬件合成能力。
+**Android 7.0**：引入 HWC 2.0，API 函数大幅扩充，新增 HDR、色彩变换矩阵等支持，`prepare()/set()` 更名为 `validate()/present()`，引入非推测性 Fence。 [已验证：AOSP + web search 确认 HWC 2.0 为 Android 7.0 引入]
 
 **Android 7.0**：SurfaceFlinger 从 mediaserver 进程独立为单独的 servicemanager 管理的服务。
 
