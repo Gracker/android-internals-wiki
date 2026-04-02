@@ -3,12 +3,12 @@
   "total_sections": 93,
   "metrics": {
     "total": 96,
-    "draft": 45,
-    "ready-for-review": 39,
+    "draft": 44,
+    "ready-for-review": 40,
     "reviewed": 4,
     "finalized": 8,
     "staging_drafts": 0,
-    "last_updated": "2026-04-02T14:20:00+08:00"
+    "last_updated": "2026-04-02T15:20:00+08:00"
   },
   "reviewed_sections": {
     "8.1": {
@@ -583,6 +583,17 @@
       "extensions_total": 2,
       "verification_level": "L2",
       "word_count": "~7500"
+    },
+    {
+      "section": "9.5",
+      "title": "案例集",
+      "completed_at": "2026-04-02T15:20:00+08:00",
+      "anchors_covered": 3,
+      "anchors_total": 3,
+      "extensions_covered": 2,
+      "extensions_total": 2,
+      "verification_level": "L2",
+      "word_count": "~9500"
     }
   ],
   "ready_for_review": 4,
@@ -853,6 +864,13 @@
       "title": "ANR 类型与触发条件",
       "action": "draft-completed",
       "word_count": "~7500"
+    },
+    {
+      "date": "2026-04-02",
+      "section": "9.5",
+      "title": "案例集",
+      "action": "draft-completed",
+      "word_count": "~9500"
     }
   ],
   "sections": {
