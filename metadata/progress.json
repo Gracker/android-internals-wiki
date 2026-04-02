@@ -3,12 +3,12 @@
   "total_sections": 93,
   "metrics": {
     "total": 96,
-    "draft": 43,
-    "ready-for-review": 40,
+    "draft": 42,
+    "ready-for-review": 41,
     "reviewed": 4,
     "finalized": 9,
     "staging_drafts": 0,
-    "last_updated": "2026-04-02T15:55:00+08:00"
+    "last_updated": "2026-04-02T17:19:45+08:00"
   },
   "reviewed_sections": {
     "8.1": {
@@ -605,6 +605,17 @@
       "extensions_total": 2,
       "verification_level": "L2",
       "word_count": "~9500"
+    },
+    {
+      "section": "10.1",
+      "title": "App 内存分析",
+      "completed_at": "2026-04-02T17:19:45.089499",
+      "anchors_covered": 5,
+      "anchors_total": 5,
+      "extensions_covered": 2,
+      "extensions_total": 2,
+      "verification_level": "L2",
+      "word_count": "~8500"
     }
   ],
   "ready_for_review": 4,
@@ -896,6 +907,13 @@
       "title": "案例集",
       "action": "draft-completed",
       "word_count": "~9500"
+    },
+    {
+      "date": "2026-04-02",
+      "section": "10.1",
+      "title": "App 内存分析",
+      "action": "draft-completed",
+      "word_count": "~8500"
     }
   ],
   "sections": {
