@@ -539,6 +539,44 @@
       ],
       "content_preview": "# Perfetto 快速上手指南1 —— Trace 的抓取\n\nPerfetto 快速上手指南1 —— Trace 的抓取\n\n[Read in Cubox](https://cubox.pro/web/card/7302330924211896722)  \n[Read Original](https://mp.weixin.qq.com/s?__biz=MzIyMDg5MzEyMA==&mid=",
       "indexed_at": "2026-04-02T19:37:09.255794"
+    },
+    {
+      "title": "Perfetto数据流架构故障分析：带你研究 trace 为何丢失",
+      "path": "Perfetto数据流架构故障分析：带你研究 trace 为何丢失-2024-02-23.md",
+      "scores": {
+        "relevance": 4,
+        "depth": 1,
+        "freshness": 5,
+        "verifiability": 0
+      },
+      "total": 10,
+      "chapters": [
+        {
+          "chapter": "ch11-Profiling",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "# Perfetto数据流架构故障分析：带你研究 trace 为何丢失  让大家对于 Perfett",
+      "quality": "medium"
+    },
+    {
+      "title": "Remote Profiling Firefox for Android - Firefox Profiler - Documentation",
+      "path": "Remote Profiling Firefox for Android - Firefox Profiler - Documentation-2022-01-15.md",
+      "scores": {
+        "relevance": 5,
+        "depth": 0,
+        "freshness": 5,
+        "verifiability": 0
+      },
+      "total": 10,
+      "chapters": [
+        {
+          "chapter": "ch11-Profiling",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "# Remote Profiling Firefox for Android - Firefox P",
+      "quality": "medium"
     }
   ]
 }
