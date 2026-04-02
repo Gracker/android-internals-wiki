@@ -1,11 +1,14 @@
 ---
 title: "过度绘制"
 chapter: "2.8"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 4.2 (API 17) - Android 16 (API 36)"
 last_verified: "2026-03-30"
 last_verified_against: "AOSP android-16.0.0_r1"
+drafted_date: "2026-03-30"
 confidence: medium
+reviewed_date: "2026-04-02"
+reviewed_by: openclaw-task6
 sources:
   - type: blog
     path: "Personal-Knowlodge/source/android-performance-optimization-overdraw-1.md"
@@ -48,7 +51,7 @@ related_chapters: ["2.1", "2.4", "2.5", "7.2"]
 
 ## 为什么需要关注过度绘制
 
-打开 Android 设备的开发者选项，启用"调试 GPU 过度绘制"，你会看到屏幕上覆盖了一层彩色滤镜——蓝色、绿色、粉色、红色交织在一起。这些颜色不是 UI 的一部分，而是系统在告诉你：有些像素被画了不止一次。红色越多的区域，说明 GPU 在做更多无用功。如果一个像素被绘制了四次、五次，而用户最终只能看到最上面那一层的结果，那么前面几次绘制就是纯粹的浪费。
+打开 Android 设备的开发者选项，启用"调试 GPU 过度绘制"，我们会看到屏幕上覆盖了一层彩色滤镜——蓝色、绿色、粉色、红色交织在一起。这些颜色不是 UI 的一部分，而是系统在告诉你：有些像素被画了不止一次。红色越多的区域，说明 GPU 在做更多无用功。如果一个像素被绘制了四次、五次，而用户最终只能看到最上面那一层的结果，那么前面几次绘制就是纯粹的浪费。
 
 过度绘制（Overdraw）指的是屏幕上同一像素在一帧内被绘制了多次。在一个典型的 Android 应用中，界面由多层 View 叠加组成——Window 背景层、Activity 布局层、Fragment 层、各种 ViewGroup 和 View 依次叠加。如果每一层都绘制了背景，那么最底层那个被完全遮挡的背景就是在做无用功。
 
@@ -77,6 +80,8 @@ GPU 的渲染能力有一个上限，叫做 fillrate（填充率），即每秒�
 | 绿色 | 2x | 像素被绘制了 3 次，需要关注 |
 | 粉色 | 3x | 像素被绘制了 4 次，需要优化 |
 | 红色 | 4x+ | 像素被绘制了 5 次以上，严重浪费 |
+
+[图：GPU 过度绘制调试颜色叠加示例，展示蓝/绿/粉/红各层次覆盖效果]
 
 一般性的优化验收标准是：控制大部分区域在蓝色以内（2x 以内），不允许存在大面积红色区域，不允许存在面积超过屏幕 1/4 的粉色区域。
 
