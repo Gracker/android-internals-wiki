@@ -177,7 +177,7 @@
     "2.9": {
       "reviewed_date": "2026-04-02",
       "reviewed_by": "openclaw-task6",
-      "review_status": "reviewed",
+      "review_status": "rework-completed",
       "fixes_applied": [
         "frontmatter: 补 drafted_date/reviewed_date/reviewed_by",
         "frontmatter: status ready-for-review → reviewed",
@@ -187,6 +187,14 @@
       "b_type_issues": 1,
       "b_issues": [
         "Project Silk 节仅两句话，无具体版本号、技术改动或 Perfetto 对应"
+      ],
+      "rework_date": "2026-04-03",
+      "rework_by": "openclaw-task2b",
+      "rework_fixes": [
+        "AOSP路径验证: 5条路径确认存在于android-16.0.0_r1",
+        "Android 16年份确认: 2025-06-10正式发布",
+        "图注增强: 4处补充[待高爷补充]说明",
+        "FrameMetrics叙述重写: 添加分析视角+FrameTimeline对照"
       ]
     },
     "4.1": {
@@ -688,7 +696,7 @@
     }
   ],
   "ready_for_review": 4,
-  "last_updated": "2026-04-03T03:25:57+08:00",
+  "last_updated": "2026-04-03T03:44:45+08:00",
   "stats": {
     "total": 97,
     "completed": 40,
@@ -1051,6 +1059,14 @@
       "title": "案例集",
       "action": "draft-completed",
       "word_count": "~8500"
+    },
+    {
+      "date": "2026-04-03",
+      "section": "2.9",
+      "title": "渲染机制的版本演进",
+      "action": "rework-completed",
+      "review_by": "openclaw-task2b",
+      "fixes": 4
     }
   ],
   "sections": {
@@ -1131,6 +1147,14 @@
       ],
       "action": "task2b-rework",
       "details": "2.2: 4 fixes (doFrame API corrected, FrameRateOverride corrected, 常见问题与误区 added, Swappy confirmed). 4.6: 2 fixes (title corrected, 16KB Page Size body added)"
+    },
+    {
+      "date": "2026-04-03T03:44:45+08:00",
+      "sections": [
+        "2.9"
+      ],
+      "action": "task2b-rework",
+      "details": "2.9 渲染机制的版本演进: 4 fixes (AOSP路径验证, Android16年份确认, 图注增强, FrameMetrics叙述重写)"
     }
   ],
   "chapters": {

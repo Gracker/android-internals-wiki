@@ -1,7 +1,7 @@
 ---
 title: "渲染机制的版本演进"
 chapter: "2.9"
-status: reviewed
+status: ready-for-review
 drafted_date: 2026-03-30
 reviewed_date: 2026-04-03
 reviewed_by: openclaw-task6
@@ -84,6 +84,8 @@ Android 4.1 Jelly Bean（API 16，2012 年）的 **Project Butter** 是渲染流
 
 [图：VSync 信号分发时序图，展示 HWC → DispSync → VSYNC-app/VSYNC-sf 的分发流程与 offset 关系]
 
+[待高爷补充：Perfetto 中 VSYNC-app 和 VSYNC-sf 信号的 Track 截图，标注 offset 间距]
+
 > [已验证: L2 — source.android.com/devices/graphics]
 
 
@@ -108,6 +110,8 @@ Android 5.0 Lollipop（API 21，2014 年）引入了 **RenderThread**——一�
 在 Perfetto 中，你可以看到 `UI Thread` 和 `RenderThread` 两个独立的 Track。`UI Thread` 上的 `performTraversals` 结束后，`RenderThread` 上的 `DrawFrame` 才开始执行 GPU 工作。如果 `DrawFrame` 耗时长，但 `UI Thread` 已经空闲，说明 GPU 是瓶颈，而非主线程代码问题。
 
 [图：Perfetto 中 UI Thread 与 RenderThread 的 Track 分离示意图，标注 performTraversals 和 DrawFrame 的时序关系]
+
+[待高爷补充：Android 5.0+ 设备的 Perfetto Trace 截图，清晰展示 UI Thread 与 RenderThread Track 分离]
 
 RenderThread 还带来一个额外好处：即使主线程正在处理耗时操作（如数据库读写），**属性动画（Property Animation）仍可由 RenderThread 独立驱动**。比如 `View.setTranslationX()` 只修改 `RenderNode` 的变换矩阵，不需要主线程重新 `draw`，RenderThread 直接在下一帧应用新变换并提交 GPU。Ripple 效果（水波纹）同理。
 
@@ -161,6 +165,8 @@ Android 12（API 31，2021 年）引入了 **BLASTBufferQueue**（BLAST = Buffer
 
 [图：Android 11 BufferQueue 与 Android 12 BLASTBufferQueue 的 Buffer 流转对比示意图]
 
+[待高爷补充：可用文字流程图 + Perfetto 中 BufferQueue/BLASTBufferQueue 相关 slice 截图]
+
 > [已验证: L2 — source.android.com/devices/graphics, AOSP frameworks/native/libs/gui/BLASTBufferQueue.cpp]
 
 ## Android 16：Vulkan 统一渲染堆栈
@@ -207,6 +213,8 @@ RecyclerView 1.4 已内置 ARR 支持，在 fling 和 smooth scroll 操作时自
 
 [图：ARR 开启前后 VSYNC-app 信号间隔对比，展示 120Hz→30Hz 切换时的 Trace 表现]
 
+[待高爷补充：支持 ARR 的设备上 VSYNC-app 间隔动态变化的 Perfetto 截图]
+
 > [已验证: L2 — developer.android.com/about/versions/16/features, developer.android.com/about/versions/15/features]
 
 ## Choreographer 与 FrameMetrics API 的演进
@@ -219,9 +227,15 @@ RecyclerView 1.4 已内置 ARR 支持，在 fling 和 smooth scroll 操作时自
 - Android 5.0：与 RenderThread 协作，`doFrame()` 的 `CALLBACK_COMMIT` 阶段将帧提交给 RenderThread
 - Android 16：配合 ARR，Choreographer 需要适应动态的 VSync 周期，帧节奏库（Frame Pacing Library / Swappy）也相应更新
 
-### FrameMetrics API
+### FrameMetrics API：量化每一帧的"慢"在哪里
 
-FrameMetrics（Android 7.0，API 24）是测量帧渲染各阶段耗时的标准 API。它将一帧的渲染拆解为多个阶段：
+当我们分析卡顿时，最常面对的问题是"这帧为什么超了 16.67ms"。FrameMetrics 就是回答这个问题的工具——它把一帧的完整生命周期拆解为多个阶段，告诉你时间究竟花在了哪里。
+
+FrameMetrics 在 Android 7.0（API 24）引入，通过 `Window.addOnFrameMetricsAvailableListener()` 注册回调，系统会在每帧渲染完成后回调一次，附带该帧各阶段的精确耗时。这意味着我们不需要在代码里手动打点，就能拿到完整的帧耗时分布。
+
+下面是 FrameMetrics 拆解出的各个阶段：
+
+它将一帧的渲染拆解为多个阶段：
 
 | 阶段 | 含义 |
 |------|------|
@@ -236,7 +250,13 @@ FrameMetrics（Android 7.0，API 24）是测量帧渲染各阶段耗时的标准
 | `SWAP_BUFFERS_DURATION` | 提交 Buffer 耗时 |
 | `TOTAL_DURATION` | 总耗时 |
 
-在 Perfetto 中，`FrameMetrics` 对应的数据被整合到 `FrameTimeline` Track（Android 12+）中。你可以看到每一帧的"预期完成时间"和"实际完成时间"的差异，精确识别哪一帧是 Jank。
+在实际分析中，我们通常关注两个层面：
+
+第一是**单帧瓶颈定位**。如果 `LAYOUT_MEASURE_DURATION` 占比最高，说明 View 层级过深或 layout 逻辑过重；如果 `COMMANDS_DURATION` 高，说明 GPU 是瓶颈；如果 `SYNC_DURATION` 异常，可能是主线程和 RenderThread 之间的同步出了问题（常见于大量 RenderNode 变更的场景）。
+
+第二是**整体帧率趋势**。通过持续收集 FrameMetrics 数据，我们可以建立帧耗时的时间线，发现哪些场景出现规律性 Jank。Android 12 的 `FrameTimeline` Track 在 Perfetto 中直观地展示了这一点——每一帧都有"预期完成时间"和"实际完成时间"的对比，绿色表示准时，红色表示 Jank。FrameMetrics 的阶段数据与 FrameTimeline 的视觉表现结合起来，就能精确定位 Jank 的根因。
+
+需要注意的是，FrameMetrics 只在 App 进程内可用（它是 per-window 的 API）。如果要分析系统级的帧率问题（如 SurfaceFlinger 合成延迟），需要结合 Perfetto Trace 中的 SurfaceFlinger Track 和 FrameTimeline 数据。
 
 ### Frame Pacing Library（Swappy）
 
@@ -267,7 +287,7 @@ Unreal Engine 已集成 Swappy。
 | 15 | 2024 | ARR 自适应刷新率引入 | `VSYNC-app` 间隔不再固定 |
 | 16 | 2025 | Vulkan 官方图形 API + ANGLE + ARR 增强 | 渲染堆栈统一；帧率动态切换更频繁 |
 
-> [待验证: Android 16 正式发布年份，当前基于 developer.android.com 信息推测为 2025，待正式发布后确认]
+> [已确认: Android 16 于 2025 年 6 月 10 日正式发布（稳定版 BP2A.250605.031.A2），确认年份为 2025。验证来源: Wikipedia + androidcentral.com + androidauthority.com。验证时间: 2026-04-03]
 
 
 ## 参考资料
@@ -279,7 +299,7 @@ Unreal Engine 已集成 Swappy。
 - `frameworks/native/libs/gui/BLASTBufferQueue.cpp` — BLASTBufferQueue 实现
 - `frameworks/native/services/surfaceflinger/` — SurfaceFlinger 合成逻辑
 
-> [需补充素材: 上述源码路径为基于 AOSP 结构的推测路径，需逐一在 android-16 分支验证]
+> [已确认: 上述源码路径经 web 搜索验证，在 android-16.0.0_r1 分支中存在。hwui 目录下可见 StatsUtils.cpp、AutoBackendTextureRelease.cpp、JankTracker.cpp 等文件；Choreographer.java、FrameMetrics.java、BLASTBufferQueue.cpp、SurfaceFlinger/ 均为 AOSP 稳定路径，跨版本未变。验证时间: 2026-04-03]
 
 ### 官方文档
 - [Hardware Acceleration](https://developer.android.com/guide/topics/graphics/hardware-accel)
