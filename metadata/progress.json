@@ -4,11 +4,11 @@
   "metrics": {
     "total": 96,
     "draft": 45,
-    "ready-for-review": 41,
-    "reviewed": 3,
+    "ready-for-review": 40,
+    "reviewed": 4,
     "finalized": 7,
     "staging_drafts": 0,
-    "last_updated": "2026-04-02T12:42:00+08:00"
+    "last_updated": "2026-04-02T13:30:27+08:00"
   },
   "reviewed_sections": {
     "8.1": {
@@ -125,6 +125,23 @@
         "补充3个Type A标准节：版本演进(4.1-16)/常见问题与误区(4个Q&A)/与其他机制的关系(§2.3/§2.5/§2.6)",
         "厂商优化实践：5条全部标注[待验证]"
       ]
+    },
+    "2.6": {
+      "reviewed_date": "2026-04-02",
+      "reviewed_by": "openclaw-task6",
+      "review_status": "reviewed",
+      "fixes_applied": [
+        "frontmatter: 补 drafted_date/reviewed_date/reviewed_by, status -> reviewed",
+        "frontmatter: applicable_versions API B -> API 36",
+        "frontmatter: sources 移除 androidcentral.com, skia.org -> source.android.com",
+        "confidence: high -> medium",
+        "添加 [待补充: Trace 截图] 标注",
+        "标记 6 处 [存疑] 代码",
+        "标记 1 处 [需重写] BlastBufferQueue Java 虚构 API",
+        "标记 1 处 [需验证] HWC 3.0 版本",
+        "添加全文 [需重写] 文体标注"
+      ],
+      "b_class_issues": 4
     }
   },
   "review_stats": {
