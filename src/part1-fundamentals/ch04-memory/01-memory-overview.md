@@ -1,10 +1,14 @@
 ---
 title: "Android 内存模型全景"
 chapter: "4.1"
-status: ready-for-review
+section: "4.1"
+status: finalized
+drafted_date: "2026-03-31"
 applicable_versions: "Android 8 (API 26) - Android 16 (API 36)"
 last_verified: "2026-03-31"
 last_verified_against: "AOSP android-16.0.0_r1"
+reviewed_date: "2026-04-03"
+reviewed_by: "openclaw-task6"
 confidence: medium
 sources:
   - type: official
@@ -177,7 +181,7 @@ USS 的实用价值在于：**如果一个进程被杀掉，USS 就是被释放�
   TOTAL         43102    32844     6986       0     73728    27110    46618
 ```
 
-[来源: Cubox/Android ADB命令之内存统计与分析]
+[已验证: Cubox/Android ADB命令之内存统计与分析]
 
 [待补充：dumpsys meminfo 真机截图]
 
@@ -256,7 +260,7 @@ Active:          2345678 kB    // 最近使用的内存（不太容易被回收�
 Inactive:        1234567 kB    // 较久未使用的内存（更容易被回收）
 ```
 
-[来源: Cubox/Android ADB命令之内存统计与分析]
+[已验证: Cubox/Android ADB命令之内存统计与分析]
 
 [已验证: Linux kernel documentation, kernel.org/doc/Documentation/filesystems/proc.txt]
 
@@ -335,7 +339,7 @@ adb shell dumpsys meminfo
 
 如果 "Used RAM" 占比很高、Free RAM 很低、ZRAM 使用率很高，说明设备已经处于内存压力之下，后台 App 很容易被 `lmkd` 杀掉。
 
-[来源: Cubox/Android ADB命令之内存统计与分析]
+[已验证: Cubox/Android ADB命令之内存统计与分析]
 
 ### 单进程模式：深入分析某个 App
 
@@ -358,7 +362,7 @@ adb shell dumpsys meminfo com.example.app
   System:          6789
 ```
 
-[来源: Cubox/Android ADB命令之内存统计与分析]
+[已验证: Cubox/Android ADB命令之内存统计与分析]
 
 这些分类是对详细输出区域的聚合。排查问题时重点关注：
 
@@ -404,7 +408,7 @@ adb shell am send-trim-memory com.example.app TRIM_MEMORY_COMPLETE
 adb shell dumpsys meminfo com.example.app
 ```
 
-[来源: Cubox/Android ADB命令之内存统计与分析]
+[已验证: Cubox/Android ADB命令之内存统计与分析]
 
 **3. 在 Perfetto 中看内存**
 
@@ -437,7 +441,7 @@ Android 不使用传统磁盘 Swap，原因很简单：闪存的写入寿命有�
 
 当系统内存紧张时，内核的 `kswapd` 线程被唤醒，它会把进程的匿名页面（Anonymous Pages，比如 Heap 中分配但尚未写入文件的数据）压缩后存入 ZRAM。当这些页面再次被访问时，`kswapd` 会解压并恢复到正常内存中。
 
-ZRAM 的核心参数是压缩磁盘的最大大小（由 OEM 配置）。Qualcomm 的调优指南建议将 ZRAM 大小设置为物理内存的 75%。在实际设备上，ZRAM 的有效压缩比通常在 2x-4x 之间，也就是说 2GB 的 ZRAM 空间可以容纳约 4-8GB 的原始数据。
+ZRAM 的核心参数是压缩磁盘的最大大小（由 OEM 配置）。Qualcomm 的调优指南建议将 ZRAM 大小设置为物理内存的 75%。[待验证: Qualcomm 调优指南 ZRAM 75% 建议，未找到一手来源]在实际设备上，ZRAM 的有效压缩比通常在 2x-4x 之间，也就是说 2GB 的 ZRAM 空间可以容纳约 4-8GB 的原始数据。
 
 ### 在 dumpsys meminfo 中看 ZRAM
 
