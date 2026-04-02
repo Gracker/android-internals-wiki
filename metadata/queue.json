@@ -584,7 +584,10 @@
       "section_title": "CPU 相关的版本演进",
       "priority": 55,
       "reason": "待加工（素材0篇）",
-      "material_paths": [],
+      "material_paths": [
+        "intake/research-feeds/2026-04-02-15-ch05-sched-ext-bpf-android.md",
+        "intake/research-feeds/2026-04-02-15-ch05-eevdf-lag-fix-deadline-server.md"
+      ],
       "status": "completed",
       "added_by": "manual-init",
       "added_at": "2026-03-29T21:00:00",
@@ -769,7 +772,9 @@
       "section_title": "App 启动全流程",
       "priority": 55,
       "reason": "待加工（素材0篇）",
-      "material_paths": [],
+      "material_paths": [
+        "intake/research-feeds/2026-04-02-15-ch05-appflow-cold-launch-scheduler.md"
+      ],
       "status": "pending",
       "added_by": "manual-init",
       "added_at": "2026-03-29T21:00:00"
@@ -1413,7 +1418,9 @@
       "material_paths": [
         "intake/suggestions.md（含 review 意见）",
         "https://docs.kernel.org/scheduler/sched-design-EEVDF.html",
-        "Personal-Knowlodge/source/Android-Perfetto-09-CPU.md"
+        "Personal-Knowlodge/source/Android-Perfetto-09-CPU.md",
+        "intake/research-feeds/2026-04-02-15-ch05-sched-ext-bpf-android.md",
+        "intake/research-feeds/2026-04-02-15-ch05-eevdf-lag-fix-deadline-server.md"
       ],
       "review_issues": [
         {
@@ -1869,5 +1876,5 @@
       "verification_status": "L2_rework_verified_doFrame_AOSP_code_confirmed_summary_narrative_compose_analytical_3_TypeA_sections_added_厂商优化_待验证_marked"
     }
   ],
-  "last_updated": "2026-04-02T12:42:00+08:00"
+  "last_updated": "2026-04-02T15:30:00+08:00"
 }
