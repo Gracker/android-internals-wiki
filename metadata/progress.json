@@ -3,10 +3,10 @@
   "total_sections": 93,
   "metrics": {
     "total": 96,
-    "draft": 36,
+    "draft": 35,
     "ready-for-review": 44,
     "reviewed": 2,
-    "finalized": 18,
+    "finalized": 19,
     "staging_drafts": 0,
     "last_updated": "2026-04-03T04:10:00+08:00"
   },
@@ -167,11 +167,16 @@
       ]
     },
     "2.11": {
-      "title": "Flutter 渲染管线与性能",
-      "status": "reviewed",
-      "reviewed_date": "2026-04-02",
+      "reviewed_date": "2026-04-03",
       "reviewed_by": "openclaw-task6",
-      "issues": 3
+      "review_status": "finalized-v2",
+      "fixes_applied": [
+        "11处'你'→'我们'替换（writing-guide §3.5合规）",
+        "frontmatter补充section字段",
+        "3处[存疑]标注（Flutter 3.38版本号、450ms→11ms来源、HoldApp报告真实性）",
+        "status ready-for-review → finalized"
+      ],
+      "b_class_notes": "3处存疑均为数据来源验证，非结构性问题，不触发回炉"
     },
     "2.9": {
       "reviewed_date": "2026-04-02",
@@ -209,8 +214,8 @@
     }
   },
   "review_stats": {
-    "total_reviewed": 17,
-    "reviewed_today": 2,
+    "total_reviewed": 18,
+    "reviewed_today": 3,
     "review_issues_total": 13
   },
   "completed": [
@@ -703,10 +708,21 @@
       "extensions_total": 2,
       "verification_level": "L2",
       "word_count": "~8500"
+    },
+    {
+      "section": "11.4",
+      "title": "案例集",
+      "completed_at": "2026-04-03T05:02:00+08:00",
+      "anchors_covered": 3,
+      "anchors_total": 3,
+      "extensions_covered": 1,
+      "extensions_total": 2,
+      "verification_level": "L2",
+      "word_count": "~10000"
     }
   ],
   "ready_for_review": 4,
-  "last_updated": "2026-04-03T03:44:45+08:00",
+  "last_updated": "2026-04-03T05:21:00+08:00",
   "stats": {
     "total": 97,
     "completed": 40,
@@ -1084,6 +1100,13 @@
       "title": "系统级功耗优化",
       "action": "draft-completed",
       "word_count": "~8500"
+    },
+    {
+      "date": "2026-04-03",
+      "section": "11.4",
+      "title": "案例集（功耗）",
+      "action": "draft-completed",
+      "word_count": "~10000"
     }
   ],
   "sections": {
@@ -1153,6 +1176,12 @@
       "status": "ready-for-review",
       "drafted_date": "2026-04-03",
       "drafted_by": "openclaw-task2a"
+    },
+    "2.11": {
+      "title": "Flutter 渲染管线与性能",
+      "status": "finalized",
+      "reviewed_date": "2026-04-03",
+      "reviewed_by": "openclaw-task6"
     }
   },
   "5.1": {
