@@ -1,10 +1,10 @@
 ---
 title: "内存相关的版本演进"
 chapter: "4.6"
-status: ready-for-review
+status: finalized
 section: "4.6"
-reviewed_date: "2026-04-02"
-reviewed_by: "openclaw-task6"
+reviewed_date: "2026-04-03"
+reviewed_by: "openclaw-task6"  # second review after rework
 rework_date: "2026-04-02"
 rework_by: "openclaw-task2b"
 applicable_versions: "Android 5.0 (API 21) - Android 16 (API 36)"
@@ -117,6 +117,8 @@ AOSP 源码路径：
 
 这导致了一个非常常见的问题：App 的 Java 堆被 Bitmap 填满，抛出 `OutOfMemoryError`，但此时 Native 内存和系统整体内存明明还有大量空闲。Bitmap 占了 Java 堆的最大头，但它只是一个"数据搬运工"——像素数据本身不需要 GC 管理，它们只是放在那里等待 GPU 读取。把像素数据放在 Java 堆里，让 GC 每次都要扫描这些不需要 GC 管理的大块数据，既浪费了 GC 的时间，又挤占了真正需要 GC 管理的 Java 对象的空间。
 
+[图：Bitmap 像素数据从 Java Heap 迁移到 Native Heap 的内存布局对比（Android 7.1 vs 8.0）]
+
 从 Android 8.0 开始，Bitmap 的像素数据迁移到了 Native 堆。Java 层的 `Bitmap` 对象只保留一个指向 Native Bitmap 的 `long mNativePtr` 指针，不再持有 `byte[] mBuffer`。
 
 [已验证: Cubox/不同版本上 Bitmap 内存分配与回收原理对比-2023-01-24.md — 源码级分析 Android 7.1 vs 8.0 Bitmap.java 差异]
@@ -221,6 +223,8 @@ Scudo 的全称是 Scudo Hardened Allocator，它的设计目标是在"性能"�
 [已验证: Cubox/Scudo内存分配器介绍-2022-01-14.md — Android R 开始 Scudo 替代 jemalloc]
 
 ### Scudo 的核心架构
+
+[图：Scudo 分配器四大组件架构（Primary Allocator / Secondary Allocator / TSD 线程缓存 / Quarantine 隔离区）]
 
 Scudo 由四个核心组件构成：
 
@@ -337,6 +341,8 @@ adb shell dumpsys meminfo <package_name> --checkin
 MTE（Memory Tagging Extension）是 ARMv8.5 引入的硬件级内存安全特性，也是 Android 近年在内存安全方面最重要的平台级投入。它的目标是让 Native 内存的越界访问和 use-after-free 等错误在发生时就能被硬件检测到，而不是等到安全漏洞被利用才后知后觉。
 
 ### MTE 的工作原理
+
+[图：MTE Tag 比对机制示意（指针顶部 4-bit Tag 与内存 Tag Storage 中的 Tag 比对流程）]
 
 MTE 的核心思想是给每块内存和一个指针都打上一个 4-bit 的 Tag（标签，取值 0-15）。当 CPU 访问内存时，硬件自动比较指针的 Tag 和内存的 Tag：如果匹配，正常执行；如果不匹配，触发异常。由于 Tag 只有 4 bit（16 个值），随机 Tag 的碰撞概率是 1/16，这意味着大约 93.75% 的错误访问会被检测到。
 
