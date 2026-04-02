@@ -256,8 +256,11 @@
       ],
       "added_by": "task6-review",
       "added_at": "2026-04-02T09:26:21",
-      "status": "pending",
-      "original_review_log": "logs/review/2026-04-02-0920-review.md"
+      "status": "completed",
+      "original_review_log": "logs/review/2026-04-02-0920-review.md",
+      "processed_at": "2026-04-02T12:42:00+08:00",
+      "word_count": "~9500",
+      "verification_status": "L2_rework_verified_doFrame_AOSP_code_confirmed_summary_narrative_compose_analytical_3_TypeA_sections_added_厂商优化_待验证_marked"
     },
     {
       "section": "2.5",
@@ -1785,7 +1788,55 @@
       "extensions_total": 2,
       "verification_level": "L2",
       "word_count": "~8000"
+    },
+    {
+      "section": "2.4",
+      "section_title": "Choreographer 与渲染流水线",
+      "priority": 90,
+      "reason": "[review回炉] doFrame伪代码需修正+总结/Compose节需重写+缺少3个Type A标准节",
+      "material_paths": [
+        "intake/suggestions.md（含 review 意见）"
+      ],
+      "review_issues": [
+        {
+          "type": "存疑",
+          "location": "doFrame() 代码块",
+          "detail": "doFrame() 方法签名与内部实现为简化伪代码，可能不反映 AOSP android-16.0.0_r1 实际源码（如 jitter 计算、帧丢弃检测逻辑）",
+          "suggestion": "对照 AOSP Choreographer.java 实际 doFrame 实现，重写为精确的关键行引用（3-5行）+ 前后叙述说明"
+        },
+        {
+          "type": "需重写",
+          "location": "总结",
+          "detail": "总结使用编号列表格式（5条要点），违反 writing-guide 叙述为主要求",
+          "suggestion": "改为 2-3 段连贯叙述，回扣开头'为什么要了解 Choreographer'的动机"
+        },
+        {
+          "type": "需重写",
+          "location": "Compose 扩展节",
+          "detail": "教程风格过重：错误示例/正确示例/tutorial 代码占大量篇幅，缺少对 Compose 内部如何使用 Choreographer 的机制分析",
+          "suggestion": "重写为分析式叙述：Compose 内部对 Choreographer 的使用方式、与 View 系统的调度差异、对 Trace 分析的影响"
+        },
+        {
+          "type": "需补充素材",
+          "location": "全文结构",
+          "detail": "缺少 writing-guide.md Type A 模板要求的3个标准节：版本演进/常见问题与误区/与其他机制的关系",
+          "suggestion": "按 Type A 模板补充。版本演进：4.1引入→16关键变化；常见误区：doFrame超时=卡顿？等；机制关系：与§2.3/§2.5/§2.6上下游"
+        },
+        {
+          "type": "存疑",
+          "location": "厂商优化实践",
+          "detail": "5条厂商优化为通用描述，缺少具体厂商/平台可验证来源",
+          "suggestion": "补充具体来源或标注[待验证]"
+        }
+      ],
+      "added_by": "task6-review",
+      "added_at": "2026-04-02T09:26:21",
+      "status": "completed",
+      "original_review_log": "logs/review/2026-04-02-0920-review.md",
+      "processed_at": "2026-04-02T12:42:00+08:00",
+      "word_count": "~9500",
+      "verification_status": "L2_rework_verified_doFrame_AOSP_code_confirmed_summary_narrative_compose_analytical_3_TypeA_sections_added_厂商优化_待验证_marked"
     }
   ],
-  "last_updated": "2026-04-02T09:26:21"
+  "last_updated": "2026-04-02T12:42:00+08:00"
 }

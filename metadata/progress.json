@@ -8,7 +8,7 @@
     "reviewed": 3,
     "finalized": 7,
     "staging_drafts": 0,
-    "last_updated": "2026-04-02T09:20:00+08:00"
+    "last_updated": "2026-04-02T12:42:00+08:00"
   },
   "reviewed_sections": {
     "8.1": {
@@ -116,20 +116,14 @@
     },
     "2.4": {
       "reviewed_date": "2026-04-02",
-      "reviewed_by": "openclaw-task6",
-      "review_status": "reviewed",
+      "reviewed_by": "openclaw-task2b",
+      "review_status": "rework-completed",
       "fixes_applied": [
-        "修正 jigger→jitter 拼写错误（doFrame 伪代码）",
-        "修正 FrameRateMonitor FPS 计算除数错误（1_000_000_0→1_000_000.0）",
-        "frontmatter: 补 section/drafted_date, status→reviewed, 添加 reviewed_date/reviewed_by"
-      ],
-      "b_type_issues": 5,
-      "b_issues": [
-        "doFrame() 代码块为简化伪代码，可能不反映 AOSP 实际实现",
-        "总结使用编号列表，违反 writing-guide 叙述要求",
-        "Compose 节教程风格过重，需转为分析式叙述",
-        "缺少 Type A 必需节：版本演进/常见问题与误区/与其他机制的关系",
-        "厂商优化实践缺少可验证来源"
+        "doFrame() 代码块：替换为 AOSP android-16.0.0_r1 实际源码关键行引用（VsyncEventData签名+回调序列）",
+        "总结：从编号列表重写为3段连贯叙述，回扣开头动机",
+        "Compose扩展节：从教程式(错误/正确示例)重写为分析式(三阶段管线+AndroidUiDispatcher桥接+Trace差异)",
+        "补充3个Type A标准节：版本演进(4.1-16)/常见问题与误区(4个Q&A)/与其他机制的关系(§2.3/§2.5/§2.6)",
+        "厂商优化实践：5条全部标注[待验证]"
       ]
     }
   },
