@@ -3,12 +3,12 @@
   "total_sections": 93,
   "metrics": {
     "total": 96,
-    "draft": 35,
-    "ready-for-review": 44,
+    "draft": 34,
+    "ready-for-review": 45,
     "reviewed": 2,
     "finalized": 19,
     "staging_drafts": 0,
-    "last_updated": "2026-04-03T04:10:00+08:00"
+    "last_updated": "2026-04-03T06:02:00+08:00"
   },
   "reviewed_sections": {
     "8.1": {
@@ -719,6 +719,17 @@
       "extensions_total": 2,
       "verification_level": "L2",
       "word_count": "~10000"
+    },
+    {
+      "section": "12.1",
+      "title": "APK 体积优化",
+      "completed_at": "2026-04-03T06:02:00+08:00",
+      "anchors_covered": 6,
+      "anchors_total": 6,
+      "extensions_covered": 2,
+      "extensions_total": 2,
+      "verification_level": "L2",
+      "word_count": "~8500"
     }
   ],
   "ready_for_review": 4,
@@ -1107,6 +1118,13 @@
       "title": "案例集（功耗）",
       "action": "draft-completed",
       "word_count": "~10000"
+    },
+    {
+      "date": "2026-04-03",
+      "section": "12.1",
+      "title": "APK 体积优化",
+      "action": "draft-completed",
+      "word_count": "~8500"
     }
   ],
   "sections": {
