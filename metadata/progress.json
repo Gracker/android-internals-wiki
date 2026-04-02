@@ -600,8 +600,22 @@
           "ART GC 暂停时间精确数据：CC 收集器 85% 降低、分代 GC 1-3ms（平均1.83ms）、标题亚毫秒准确性修正（目标 §4.6）",
           "AutoFDO 内核集成 + dex2oat 18% 编译优化：内核占 CPU 40%、PGO 生态、Mainline 推送 Android 12+（目标 §4.6/§1.6）"
         ]
+      },
+      {
+        "time": "2026-04-02T11:00+08:00",
+        "focus": "§2.4 Choreographer 与渲染流水线（queue priority 90, pending）+ 主题 #2 内存管理（20260402 % 20 = 2）",
+        "source": "queue-priority-90 + topic-rotation-2",
+        "candidates": 6,
+        "passed": 3,
+        "delivered": 3,
+        "themes": [
+          "Android 17 DeliQueue 无锁 MessageQueue：15% 主线程锁等待减少 + 4% 掉帧减少 + 9.1% 冷启动首帧 P95 改善（目标 §2.4/§1.5）",
+          "Choreographer API 演进史 API 16→33→36→37：FrameCallback/VsyncCallback/FrameTimeline/ARR（目标 §2.4 版本演进节）",
+          "zRAM 多算法重压缩（Kernel 6.12）+ MGLRU + AI 驱动 ART（目标 §4.2/4.4/4.6）"
+        ]
       }
-    ]
+    ],
+    "last_updated": "2026-04-02T11:00+08:00"
   },
   "history": [
     {
