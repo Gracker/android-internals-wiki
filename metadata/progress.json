@@ -602,7 +602,7 @@
     "total": 97,
     "completed": 38,
     "pending": 59,
-    "last_updated": "2026-04-02T09:39:00+08:00"
+    "last_updated": "2026-04-02T15:20:00+08:00"
   },
   "research_stats": {
     "runs_today": [
@@ -864,6 +864,13 @@
       "title": "ANR 类型与触发条件",
       "action": "draft-completed",
       "word_count": "~7500"
+    },
+    {
+      "date": "2026-04-02",
+      "section": "9.5",
+      "title": "案例集",
+      "action": "draft-completed",
+      "word_count": "~9500"
     },
     {
       "date": "2026-04-02",
