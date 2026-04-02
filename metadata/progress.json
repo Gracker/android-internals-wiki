@@ -4,11 +4,11 @@
   "metrics": {
     "total": 96,
     "draft": 45,
-    "ready-for-review": 42,
-    "reviewed": 2,
+    "ready-for-review": 41,
+    "reviewed": 3,
     "finalized": 7,
     "staging_drafts": 0,
-    "last_updated": "2026-04-02T08:20:00"
+    "last_updated": "2026-04-02T09:20:00+08:00"
   },
   "reviewed_sections": {
     "8.1": {
@@ -113,10 +113,28 @@
       "reviewed_by": "openclaw-task6",
       "review_status": "finalized",
       "file": "src/part1-fundamentals/ch02-rendering/03-vsync.md"
+    },
+    "2.4": {
+      "reviewed_date": "2026-04-02",
+      "reviewed_by": "openclaw-task6",
+      "review_status": "reviewed",
+      "fixes_applied": [
+        "修正 jigger→jitter 拼写错误（doFrame 伪代码）",
+        "修正 FrameRateMonitor FPS 计算除数错误（1_000_000_0→1_000_000.0）",
+        "frontmatter: 补 section/drafted_date, status→reviewed, 添加 reviewed_date/reviewed_by"
+      ],
+      "b_type_issues": 5,
+      "b_issues": [
+        "doFrame() 代码块为简化伪代码，可能不反映 AOSP 实际实现",
+        "总结使用编号列表，违反 writing-guide 叙述要求",
+        "Compose 节教程风格过重，需转为分析式叙述",
+        "缺少 Type A 必需节：版本演进/常见问题与误区/与其他机制的关系",
+        "厂商优化实践缺少可验证来源"
+      ]
     }
   },
   "review_stats": {
-    "total_reviewed": 10,
+    "total_reviewed": 11,
     "reviewed_today": 7,
     "review_issues_total": 6
   },
@@ -762,6 +780,15 @@
         "ART GC 暂停时间精确数据：CC 收集器 85% 降低、分代 GC 1-3ms（平均1.83ms）、标题亚毫秒准确性修正（目标 §4.6）",
         "AutoFDO 内核集成 + dex2oat 18% 编译优化：内核占 CPU 40%、PGO 生态、Mainline 推送 Android 12+（目标 §4"
       ]
+    },
+    {
+      "date": "2026-04-02",
+      "section": "2.4",
+      "title": "Choreographer 与渲染流水线",
+      "action": "reviewed",
+      "review_by": "openclaw-task6",
+      "issues": 5,
+      "fixes": 3
     }
   ],
   "sections": {
@@ -796,6 +823,12 @@
       "reviewed_date": "2026-04-02",
       "reviewed_by": "openclaw-task6",
       "review_issues": 4
+    },
+    "2.4": {
+      "title": "Choreographer 与渲染流水线",
+      "status": "reviewed",
+      "reviewed_date": "2026-04-02",
+      "reviewed_by": "openclaw-task6"
     }
   },
   "5.1": {

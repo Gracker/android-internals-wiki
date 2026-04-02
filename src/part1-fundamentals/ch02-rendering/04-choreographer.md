@@ -1,10 +1,14 @@
 ---
 title: "Choreographer 与渲染流水线"
 chapter: "2.4"
-status: ready-for-review
+section: "2.4"
+status: reviewed
+drafted_date: "2026-03-30"
 applicable_versions: "Android 12 (API 31) - Android 16 (API 35)"
 last_verified: "2026-03-29"
 last_verified_against: "AOSP android-16.0.0_r1"
+reviewed_date: "2026-04-02"
+reviewed_by: "openclaw-task6"
 confidence: high
 sources:
   - type: official
@@ -133,6 +137,7 @@ sequenceDiagram
 ```java
 // frameworks/base/core/java/android/view/Choreographer.java
 // @ AOSP android-16.0.0_r1
+// [存疑: 以下 doFrame() 为简化伪代码，方法签名与内部逻辑可能不反映 AOSP 实际实现，需对照 AOSP android-16.0.0_r1 验证]
 void doFrame(long frameTimeNanos, int frameId, VsyncId vsyncId) {
     if (mFrameScheduled) {
         // 1. 帧调度状态管理
@@ -391,7 +396,7 @@ public class FrameRateMonitor {
             long timeSinceLastReport = currentTimeNanos - lastReportTimeNanos;
             
             if (timeSinceLastReport >= TimeUnit.MILLISECONDS.toNanos(REPORT_INTERVAL_MS)) {
-                double avgFPS = (double) frameCount / (timeSinceLastReport / 1_000_000_0);
+                double avgFPS = (double) frameCount / (timeSinceLastReport / 1_000_000.0);
                 Log.d("FrameRateMonitor", String.format("平均帧率: %.2f FPS", avgFPS));
                 
                 // 重置计数器
@@ -506,6 +511,8 @@ public class IntegratedFrameRateMonitor {
 [已验证: 官方文档, developer.android.com/reference/android/view/Choreographer.FrameCallback]
 
 ## 扩展：Compose 对 Choreographer 的使用差异
+
+<!-- [需重写: 本节教程风格过重（错误示例/正确示例/tutorial 代码），应转为分析式叙述：Compose 如何内部使用 Choreographer、与 View 系统的调度差异、对 Trace 分析的影响] -->
 
 ### Jetpack Compose 中的帧调度机制
 
@@ -725,6 +732,8 @@ fun PerformanceMonitoring() {
 
 ## 总结
 
+<!-- [需重写: 总结使用编号列表格式，违反 writing-guide.md 叙述为主要求，应改为 2-3 段连贯叙述，回扣开头动机] -->
+
 Choreographer 是 Android 渲染流水线的核心协调者，它通过精确的 VSync 同步机制，确保 Input、Animation、Traversal 各个环节能够有序执行，最终呈现给用户流畅的视觉体验。
 
 通过本章的学习，我们深入理解了 Choreographer 的工作机制，包括：
@@ -739,6 +748,8 @@ Choreographer 是 Android 渲染流水线的核心协调者，它通过精确的
 
 [自动发现: 个人知识库/source/Android-Choreographer.md] **厂商优化实践**
 
+<!-- [存疑: 以下厂商优化为通用描述，缺少具体厂商/平台的可验证来源，部分优化（如"input消息直接集成到Choreographer"）需要与 AOSP 实际实现对照] -->
+
 各厂商基于对 Choreographer 深入理解，实施了多种优化策略：
 
 1. **移动事件优化**：将 input 消息直接集成到 Choreographer 中，实现提前响应，减少等待 VSync 的延迟，显著提升跟手性。
@@ -752,6 +763,12 @@ Choreographer 是 Android 渲染流水线的核心协调者，它通过精确的
 5. **高帧率优化**：针对 90Hz/120Hz 屏幕优化帧调度，平衡性能与功耗。这些优化考虑了超高性能 App 的表现、游戏高帧率合作以及不同帧率之间的切换逻辑。
 
 这些厂商级优化体现了对 Android 渲染机制的深刻理解，也是高端设备与普通设备性能差异的重要原因。
+
+<!-- [需补充素材: 缺少 writing-guide.md Type A 模板要求的以下标准节：
+1. "版本演进" — Choreographer 从 Android 4.1 引入到 Android 16 的关键变化（如 API 31+ FrameData、API 33+ 帧时间线 API 等）
+2. "常见问题与误区" — 新手常见误解（如 Choreographer 只管 UI 线程？doFrame 超时就是卡顿？postFrameCallback 与 invalidate 的关系？）
+3. "与其他机制的关系" — 与 VSync(§2.3)、SurfaceFlinger(§2.6)、RenderThread(§2.5) 的上下游关联
+补充时参考 writing-guide.md §二 类型 A 模板] -->
 
 ## 参考资料
 
