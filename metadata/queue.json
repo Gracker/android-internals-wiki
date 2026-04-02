@@ -346,19 +346,6 @@
       "verification_status": "L2_verified_all_anchors"
     },
     {
-      "section": "2.9",
-      "section_title": "渲染机制的版本演进",
-      "priority": 70,
-      "reason": "已有1篇高质量素材（GPU性能优化策略）",
-      "material_paths": [
-        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/research-feeds/2026-03-30-ch02-gpu-optimization.md"
-      ],
-      "status": "completed",
-      "added_by": "manual-init",
-      "added_at": "2026-03-29T21:00:00",
-      "processed_at": "2026-03-30T16:20:00+08:00"
-    },
-    {
       "section": "3.2",
       "section_title": "触摸响应的性能分析",
       "priority": 60,
@@ -1486,6 +1473,27 @@
       "original_review_log": "logs/review/2026-04-02-1924-review.md",
       "processed_at": "2026-04-02T19:43:50.954772+08:00",
       "verification_status": "L2_rework_verified_3_fixes_applicable_versions_corrected_outline_added_Impeller_benchmark_sourced"
+    },
+    {
+      "section": "2.9",
+      "section_title": "渲染机制的版本演进",
+      "priority": 90,
+      "reason": "[review回炉] Project Silk 节内容过于单薄，需补充具体技术内容或合并入 Project Butter 节",
+      "material_paths": [
+        "intake/suggestions.md（含 review 意见）"
+      ],
+      "review_issues": [
+        {
+          "type": "需重写",
+          "location": "Project Silk 的后续优化",
+          "detail": "仅两句话概述，缺乏具体版本号、技术改动点和 Perfetto 中的对应变化",
+          "suggestion": "补充 Project Silk 的具体改动（VSync offset 调优、帧率自适应策略等），或合并入 Project Butter 节作为延续说明"
+        }
+      ],
+      "added_by": "task6-review",
+      "added_at": "2026-04-02T20:30:00",
+      "status": "pending",
+      "original_review_log": "logs/review/2026-04-02-2024-review.md"
     }
   ],
   "completed": [
