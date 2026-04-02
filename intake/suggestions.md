@@ -243,3 +243,34 @@
 - **建议**：核实 AOSP android-16 中的 HWC HAL 版本
 
 - **review 日志**：logs/review/2026-04-02-1320-review.md
+
+## 2026-04-02 15:00 前沿研究建议
+
+### AppFlow 素材联动建议
+- 8.2（App 启动全流程）当前 priority=55，鉴于 AppFlow（MobiCom '26）是 2026 年最新的冷启动优化前沿研究，建议将 8.2 的 priority 从 55 提升到 70
+- AppFlow 的三大组件（Selective File Preloader / Adaptive Memory Reclaimer / Context-Aware Process Killer）覆盖了 8.2 启动流程和 4.4 内存管理两个章节的交叉内容
+
+### sched_ext + EEVDF 素材联动建议
+- 5.1 已完成加工，但 sched_ext（6.12 合并）和 EEVDF lag fix（6.13）是 2025 年的最新发展，建议在下次 review 时检查 5.1 中是否需要补充 sched_ext 的前瞻性讨论
+- 5.7（CPU 相关的版本演进）建议补充 sched_ext 的 Android 前景分析
+
+
+## [Task6 Review] 2.11 Flutter 渲染管线与性能 — 2026-04-02
+
+- **类型**：需确认
+- **位置**：frontmatter applicable_versions
+- **问题**：`"Android 10 (API 29) - Android 17 (API 35)"` 中 Android 17 ≠ API 35。项目其他章节中 Android 16 = API 36，此版本号映射明显有误。
+- **建议**：确认实际覆盖的 Android 版本范围，修正为类似 "Android 10 (API 29) - Android 16 (API 36)" 的格式。
+- **review 日志**：logs/review/2026-04-02-1924-review.md
+
+- **类型**：需补充素材
+- **位置**：## Impeller 引擎 > ### Impeller 在 Android 上的表现
+- **问题**："光栅化时间降低约 30%"和"内存使用比 Skia 低约 100MB"均缺乏具体来源。Flutter 官方 benchmark 链接或第三方测试报告均未引用。
+- **建议**：补充 Flutter 官方性能基准测试页面或 GitHub issue/discussion 链接作为佐证。
+- **review 日志**：logs/review/2026-04-02-1924-review.md
+
+- **类型**：需补充
+- **位置**：全文结构
+- **问题**：本章缺少 `<!-- outline-start -->...<!-- outline-end -->` 大纲块，与项目大部分已加工章节的格式不统一。
+- **建议**：task2 回炉时补充 outline 块，用 🔹 锚点标注每个子主题。
+- **review 日志**：logs/review/2026-04-02-1924-review.md
