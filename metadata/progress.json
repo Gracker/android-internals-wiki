@@ -3,12 +3,12 @@
   "total_sections": 93,
   "metrics": {
     "total": 96,
-    "draft": 38,
-    "ready-for-review": 39,
+    "draft": 37,
+    "ready-for-review": 40,
     "reviewed": 7,
     "finalized": 12,
     "staging_drafts": 0,
-    "last_updated": "2026-04-03T01:20:00+08:00"
+    "last_updated": "2026-04-03T02:04:00+08:00"
   },
   "reviewed_sections": {
     "8.1": {
@@ -1034,6 +1034,13 @@
       "title": "内存持续增长",
       "action": "draft-completed",
       "word_count": "~8000"
+    },
+    {
+      "date": "2026-04-03",
+      "section": "11.1",
+      "title": "Android 功耗模型",
+      "action": "draft-completed",
+      "word_count": "~9500"
     },
     {
       "date": "2026-04-02",
