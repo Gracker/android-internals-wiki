@@ -4,11 +4,11 @@
   "metrics": {
     "total": 96,
     "draft": 34,
-    "ready-for-review": 45,
+    "ready-for-review": 44,
     "reviewed": 2,
-    "finalized": 19,
+    "finalized": 20,
     "staging_drafts": 0,
-    "last_updated": "2026-04-03T06:02:00+08:00"
+    "last_updated": "2026-04-03T06:24:36.976589+08:00"
   },
   "reviewed_sections": {
     "8.1": {
@@ -179,26 +179,14 @@
       "b_class_notes": "3处存疑均为数据来源验证，非结构性问题，不触发回炉"
     },
     "2.9": {
-      "reviewed_date": "2026-04-02",
+      "reviewed_date": "2026-04-03",
       "reviewed_by": "openclaw-task6",
-      "review_status": "rework-completed",
+      "review_status": "finalized-v3",
+      "review_round": 2,
       "fixes_applied": [
-        "frontmatter: 补 drafted_date/reviewed_date/reviewed_by",
-        "frontmatter: status ready-for-review → reviewed",
-        "新增参考资料节（AOSP 源码路径 + 官方文档链接）",
-        "标注 Project Silk 节为 [需重写]（内容过于单薄）"
-      ],
-      "b_type_issues": 1,
-      "b_issues": [
-        "Project Silk 节仅两句话，无具体版本号、技术改动或 Perfetto 对应"
-      ],
-      "rework_date": "2026-04-03",
-      "rework_by": "openclaw-task2b",
-      "rework_fixes": [
-        "AOSP路径验证: 5条路径确认存在于android-16.0.0_r1",
-        "Android 16年份确认: 2025-06-10正式发布",
-        "图注增强: 4处补充[待高爷补充]说明",
-        "FrameMetrics叙述重写: 添加分析视角+FrameTimeline对照"
+        "8处'你'→'我们'替换（writing-guide §3.5合规）",
+        "合并冗余FrameMetrics过渡句",
+        "frontmatter补充section字段, status→finalized"
       ]
     },
     "4.1": {
@@ -214,8 +202,8 @@
     }
   },
   "review_stats": {
-    "total_reviewed": 18,
-    "reviewed_today": 3,
+    "total_reviewed": 19,
+    "reviewed_today": 4,
     "review_issues_total": 13
   },
   "completed": [
