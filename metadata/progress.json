@@ -586,7 +586,7 @@
     }
   ],
   "ready_for_review": 4,
-  "last_updated": "2026-04-02T07:47:00.583548+08:00",
+  "last_updated": "2026-04-02T14:50:19.993843+08:00",
   "stats": {
     "total": 97,
     "completed": 38,
@@ -911,5 +911,15 @@
       "action": "task2b-rework",
       "details": "2.2: 4 fixes (doFrame API corrected, FrameRateOverride corrected, 常见问题与误区 added, Swappy confirmed). 4.6: 2 fixes (title corrected, 16KB Page Size body added)"
     }
-  ]
+  ],
+  "chapters": {
+    "2.6": {
+      "title": "SurfaceFlinger 与合成",
+      "status": "ready-for-review",
+      "rework_round": 1,
+      "last_updated": "2026-04-02T14:50:19.993678+08:00",
+      "review_log": "logs/review/2026-04-02-1320-review.md",
+      "verification": "L2 rework verified"
+    }
+  }
 }
