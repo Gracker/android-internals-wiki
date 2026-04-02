@@ -3,12 +3,12 @@
   "total_sections": 93,
   "metrics": {
     "total": 96,
-    "draft": 42,
-    "ready-for-review": 39,
+    "draft": 41,
+    "ready-for-review": 40,
     "reviewed": 5,
     "finalized": 10,
     "staging_drafts": 0,
-    "last_updated": "2026-04-02T19:24:00+08:00"
+    "last_updated": "2026-04-02T20:21:58+08:00"
   },
   "reviewed_sections": {
     "8.1": {
@@ -643,6 +643,17 @@
       "extensions_total": 2,
       "verification_level": "L2",
       "word_count": "~9500"
+    },
+    {
+      "section": "10.3",
+      "title": "内存持续增长",
+      "completed_at": "2026-04-02T20:21:58.911026",
+      "anchors_covered": 5,
+      "anchors_total": 5,
+      "extensions_covered": 2,
+      "extensions_total": 2,
+      "verification_level": "L2",
+      "word_count": "~8000"
     }
   ],
   "ready_for_review": 4,
@@ -981,6 +992,13 @@
       "title": "内存泄漏",
       "action": "draft-completed",
       "word_count": "~9500"
+    },
+    {
+      "date": "2026-04-02",
+      "section": "10.3",
+      "title": "内存持续增长",
+      "action": "draft-completed",
+      "word_count": "~8000"
     }
   ],
   "sections": {
