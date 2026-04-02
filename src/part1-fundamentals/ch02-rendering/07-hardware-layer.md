@@ -1,11 +1,14 @@
 ---
 title: "Hardware Layer"
 chapter: "2.7"
-status: ready-for-review
+status: finalized
+drafted_date: "2026-03-30"
 applicable_versions: "Android 3.0 (API 11) - Android 16 (API 36)"
 last_verified: "2026-03-30"
 last_verified_against: "AOSP android-16.0.0_r1"
 confidence: medium
+reviewed_date: "2026-04-02"
+reviewed_by: openclaw-task6
 sources:
   - type: blog
     path: "https://www.androidperformance.com/2019/07/27/Android-Hardware-Layer/ (高爷原创)"
@@ -112,10 +115,7 @@ public void buildLayer() {
 
 从代码可以看到，`LAYER_TYPE_SOFTWARE` 走的是 `buildDrawingCache` 路径，最终会调用 `buildDrawingCacheImpl` 生成一个 Bitmap。这个操作发生在主线程。
 
-Software Layer 的适用场景比较有限：
-- App 没有开启硬件加速时，需要给 View 应用颜色过滤器、混合模式或半透明效果
-- 硬件加速模式下，View 使用了不被硬件渲染管线支持的 API（这类 API 列表可以在官方文档中查到）
-- 作为 Hardware Layer 的降级方案
+Software Layer 的适用场景比较有限。最常见的情况是 App 没有开启硬件加速时，需要给 View 应用颜色过滤器、混合模式或半透明效果——此时 Software Layer 是唯一能提供离屏缓冲的方式。在硬件加速模式下，如果某个 View 使用了不被硬件渲染管线支持的 API（这类 API 列表可以在官方文档中查到），Software Layer 也可以作为一种降级方案，让该 View 用 CPU 渲染后以 Bitmap 形式参与后续合成。
 
 有一个重要限制：**如果 View 的内容频繁变化，不要使用 Software Layer。** 因为每次内容变化都会导致 Bitmap 缓存失效，需要重新在主线程执行 `buildDrawingCache`，这个过程比较耗时——尤其是硬件加速开启时，每次重建后还需要把 Bitmap 上传到 GPU 纹理。
 
@@ -201,7 +201,7 @@ Hardware Layer 不是万能的。它的收益来源于"缓存一次、复用多�
 
 ### 规律总结
 
-简单来说：
+把两组实验数据放在一起，规律非常清晰：
 
 **不修改内容时**：Hardware Layer ≥ Software Layer > No Layer
 

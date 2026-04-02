@@ -4,11 +4,11 @@
   "metrics": {
     "total": 96,
     "draft": 45,
-    "ready-for-review": 40,
+    "ready-for-review": 39,
     "reviewed": 4,
-    "finalized": 7,
+    "finalized": 8,
     "staging_drafts": 0,
-    "last_updated": "2026-04-02T13:30:27+08:00"
+    "last_updated": "2026-04-02T14:20:00+08:00"
   },
   "reviewed_sections": {
     "8.1": {
@@ -142,6 +142,16 @@
         "添加全文 [需重写] 文体标注"
       ],
       "b_class_issues": 4
+    },
+    "2.7": {
+      "reviewed_date": "2026-04-02",
+      "reviewed_by": "openclaw-task6",
+      "review_status": "finalized",
+      "fixes_applied": [
+        "Software Layer 适用场景：从列表改为连贯叙述（writing-guide 合规）",
+        "规律总结过渡措辞优化",
+        "frontmatter：补 drafted_date/reviewed_date/reviewed_by，status → finalized"
+      ]
     }
   },
   "review_stats": {
