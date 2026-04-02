@@ -3,12 +3,12 @@
   "total_sections": 93,
   "metrics": {
     "total": 96,
-    "draft": 39,
-    "ready-for-review": 40,
+    "draft": 38,
+    "ready-for-review": 41,
     "reviewed": 7,
     "finalized": 10,
     "staging_drafts": 0,
-    "last_updated": "2026-04-02T22:02:00+08:00"
+    "last_updated": "2026-04-03T00:02:00+08:00"
   },
   "reviewed_sections": {
     "8.1": {
