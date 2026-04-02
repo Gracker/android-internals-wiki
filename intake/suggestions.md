@@ -291,3 +291,11 @@
 - **问题**：本节包含3个完整类实现（FrameRateMonitor、AdvancedFrameRateMonitor、FrameTypeMonitor），属于教程风格代码堆砌，违反 writing-guide §三.2"只贴决定行为的那几行"和§五反面教材2（源码堆砌式）。作为扩展节，应以原理说明为主，辅以精简代码片段
 - **建议**：保留核心原理说明（FrameCallback 基本原理 + frameTimeNanos 含量 + 帧率计算公式），保留1个精简代码片段（10-15行）展示 doFrame 计算帧间隔的要点，删除3个完整类实现，将"帧率趋势分析"和"帧类型分类"改为叙述式说明
 - **review 日志**：logs/review/2026-04-02-2128-review.md
+
+
+## [Task6 Review] 2.9 渲染机制的版本演进 — 2026-04-03
+- **类型**：需补充素材 / 需确认 / 需重写
+- **位置**：AOSP源码路径、版本时间线、4处图注、FrameMetrics段落
+- **问题**：详见 logs/review/2026-04-03-03-review.md
+- **建议**：task2 下一轮优先处理（priority: critical）
+- **review 日志**：logs/review/2026-04-03-03-review.md

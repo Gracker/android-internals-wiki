@@ -1,5 +1,5 @@
 {
-  "last_updated": "2026-04-03",
+  "last_updated": "2026-04-03T03:25:48",
   "total_items": 9,
   "priority_breakdown": {
     "high": 4,
@@ -87,6 +87,46 @@
       "estimated_days": 3,
       "category": "Version evolution chapters",
       "last_checked": "2026-04-03"
+    },
+    {
+      "id": "review-rework-2.9-2026-04-03",
+      "file": "ch02-rendering/09-rendering-evolution.md",
+      "section": "2.9",
+      "section_title": "渲染机制的版本演进",
+      "priority": "critical",
+      "reason": "[review回炉] AOSP源码路径未验证、Android 16年份待确认、4处图注待截图、FrameMetrics段落文体可优化",
+      "estimated_days": 2,
+      "category": "review-rework",
+      "review_issues": [
+        {
+          "type": "需补充素材",
+          "location": "参考资料-AOSP源码路径",
+          "detail": "5条AOSP路径基于结构推测，未在android-16分支实际验证",
+          "suggestion": "在实机/源码中逐一确认路径准确性"
+        },
+        {
+          "type": "需确认",
+          "location": "版本时间线表格-Android 16行",
+          "detail": "Android 16发布年份标记为2025，待正式发布后确认",
+          "suggestion": "关注Google I/O 2025正式发布信息"
+        },
+        {
+          "type": "需补充素材",
+          "location": "全文4处 [图：...] 标注",
+          "detail": "图注已标注但需要实际截图或示意图",
+          "suggestion": "高爷在Perfetto中抓取对应场景截图"
+        },
+        {
+          "type": "需重写",
+          "location": "FrameMetrics段落",
+          "detail": "表格形式虽合理但考虑改为叙述+表格混合",
+          "suggestion": "添加叙述段落解释'怎么在分析中用FrameMetrics'"
+        }
+      ],
+      "added_by": "task6-review",
+      "added_at": "2026-04-03T03:25:48",
+      "status": "pending",
+      "original_review_log": "logs/review/2026-04-03-03-review.md"
     }
   ]
 }

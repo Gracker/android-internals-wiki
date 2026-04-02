@@ -1,9 +1,9 @@
 ---
 title: "渲染机制的版本演进"
 chapter: "2.9"
-status: ready-for-review
+status: reviewed
 drafted_date: 2026-03-30
-reviewed_date: 2026-04-02
+reviewed_date: 2026-04-03
 reviewed_by: openclaw-task6
 applicable_versions: "Android 3.0 (API 11) ~ Android 16 (API 36)"
 last_verified: "2026-03-30"
@@ -82,6 +82,8 @@ Android 4.1 Jelly Bean（API 16，2012 年）的 **Project Butter** 是渲染流
 
 两者的时间偏移（在 Perfetto 中可以观察 `VSYNC-app` 和 `VSYNC-sf` 的间距）决定了 App 渲染和 SF 合成之间的流水线配合。
 
+[图：VSync 信号分发时序图，展示 HWC → DispSync → VSYNC-app/VSYNC-sf 的分发流程与 offset 关系]
+
 > [已验证: L2 — source.android.com/devices/graphics]
 
 
@@ -104,6 +106,8 @@ Android 5.0 Lollipop（API 21，2014 年）引入了 **RenderThread**——一�
 4. RenderThread 完成后通过 `FrameMetrics` 或 `FrameTimeline` 通知帧完成
 
 在 Perfetto 中，你可以看到 `UI Thread` 和 `RenderThread` 两个独立的 Track。`UI Thread` 上的 `performTraversals` 结束后，`RenderThread` 上的 `DrawFrame` 才开始执行 GPU 工作。如果 `DrawFrame` 耗时长，但 `UI Thread` 已经空闲，说明 GPU 是瓶颈，而非主线程代码问题。
+
+[图：Perfetto 中 UI Thread 与 RenderThread 的 Track 分离示意图，标注 performTraversals 和 DrawFrame 的时序关系]
 
 RenderThread 还带来一个额外好处：即使主线程正在处理耗时操作（如数据库读写），**属性动画（Property Animation）仍可由 RenderThread 独立驱动**。比如 `View.setTranslationX()` 只修改 `RenderNode` 的变换矩阵，不需要主线程重新 `draw`，RenderThread 直接在下一帧应用新变换并提交 GPU。Ripple 效果（水波纹）同理。
 
@@ -155,6 +159,8 @@ Android 12（API 31，2021 年）引入了 **BLASTBufferQueue**（BLAST = Buffer
 
 在 Perfetto 中，这个变化主要体现在 Buffer 流转相关的事件和 Fence 时间线上。如果你习惯了 Android 11 及之前的 `BufferQueue` Track，在 Android 12+ 上需要关注 `BLASTBufferQueue` 相关的 slice。
 
+[图：Android 11 BufferQueue 与 Android 12 BLASTBufferQueue 的 Buffer 流转对比示意图]
+
 > [已验证: L2 — source.android.com/devices/graphics, AOSP frameworks/native/libs/gui/BLASTBufferQueue.cpp]
 
 ## Android 16：Vulkan 统一渲染堆栈
@@ -198,6 +204,8 @@ ARR 将**显示刷新率与内容帧率解耦**：当内容以 30 FPS 渲染时�
 RecyclerView 1.4 已内置 ARR 支持，在 fling 和 smooth scroll 操作时自动请求合适的帧率。
 
 在 Perfetto 中，ARR 的变化体现在 **`VSYNC-app` 信号不再固定间隔**。当 App 请求 30 FPS 时，`VSYNC-app` 的周期间隔会变为约 33.3ms 而非 8.33ms（120Hz）。这让 Perfetto 分析需要更仔细地识别帧率切换场景。
+
+[图：ARR 开启前后 VSYNC-app 信号间隔对比，展示 120Hz→30Hz 切换时的 Trace 表现]
 
 > [已验证: L2 — developer.android.com/about/versions/16/features, developer.android.com/about/versions/15/features]
 
@@ -259,15 +267,19 @@ Unreal Engine 已集成 Swappy。
 | 15 | 2024 | ARR 自适应刷新率引入 | `VSYNC-app` 间隔不再固定 |
 | 16 | 2025 | Vulkan 官方图形 API + ANGLE + ARR 增强 | 渲染堆栈统一；帧率动态切换更频繁 |
 
+> [待验证: Android 16 正式发布年份，当前基于 developer.android.com 信息推测为 2025，待正式发布后确认]
+
 
 ## 参考资料
 
 ### AOSP 源码路径
--  — HWUI 渲染引擎（含 RenderThread、RenderNode）
--  — Choreographer 实现
--  — FrameMetrics API
--  — BLASTBufferQueue 实现
--  — SurfaceFlinger 合成逻辑
+- `frameworks/base/libs/hwui/` — HWUI 渲染引擎（含 RenderThread、RenderNode）
+- `frameworks/base/core/java/android/view/Choreographer.java` — Choreographer 实现
+- `frameworks/base/core/java/android/view/FrameMetrics.java` — FrameMetrics API
+- `frameworks/native/libs/gui/BLASTBufferQueue.cpp` — BLASTBufferQueue 实现
+- `frameworks/native/services/surfaceflinger/` — SurfaceFlinger 合成逻辑
+
+> [需补充素材: 上述源码路径为基于 AOSP 结构的推测路径，需逐一在 android-16 分支验证]
 
 ### 官方文档
 - [Hardware Acceleration](https://developer.android.com/guide/topics/graphics/hardware-accel)
