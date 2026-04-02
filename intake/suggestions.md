@@ -220,3 +220,26 @@
   4. 按 Type A 模板补充 3 个标准节
   5. 厂商优化补充来源或标注待验证
 - **review 日志**：logs/review/2026-04-02-0920-review.md
+## [Task6 Review] 2.6 SurfaceFlinger 与合成 — 2026-04-02
+
+### B1: 需重写 — 全文文体
+- **位置**：全文
+- **问题**：整体呈百科词条+源码堆砌风格，违反 writing-guide.md §三核心要求。大量 bullet points 替代连贯叙述，代码前后缺少因果说明，Perfetto/Trace 关联几乎为零
+- **建议**：参考 writing-guide §三写作手法要求，将列表段落改写为叙述段落
+
+### B2: 需重写 — 多处 C++ 代码疑似编造
+- **位置**：多处代码段
+- **问题**：ClientCompositor/DeviceCompositor/DisplayManager 不存在于 AOSP；SurfaceFlinger::composite() 签名与实际不符；BlastBufferQueue 无公开 Java API
+- **建议**：对照 AOSP android-16.0.0_r1 实际源码重写
+
+### B3: 需补充素材 — Perfetto Trace 对照
+- **位置**：全文
+- **问题**：开头提到 Perfetto 但正文无 Trace 对照，未说明 SF track 等 Track 对应关系
+- **建议**：增加“在 Perfetto 中的表现”小节
+
+### B4: 需验证 — HWC 版本号
+- **位置**：HWC 协议版本演进
+- **问题**：声称 HWC 3.0 含 Vulkan 后端，但 AOSP 中 HWC HAL 为 2.x
+- **建议**：核实 AOSP android-16 中的 HWC HAL 版本
+
+- **review 日志**：logs/review/2026-04-02-1320-review.md

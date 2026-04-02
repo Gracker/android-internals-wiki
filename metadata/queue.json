@@ -276,15 +276,43 @@
     {
       "section": "2.6",
       "section_title": "SurfaceFlinger 与合成",
-      "priority": 75,
-      "reason": "已有1篇高质量素材（Skia与SurfaceFlinger架构）",
+      "priority": 90,
+      "reason": "[review回炉] 全文文体违反叙述规范，多处代码疑似编造，缺少 Perfetto Trace 对照",
       "material_paths": [
-        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/research-feeds/2026-03-30-ch02-skia-surfaceflinger.md"
+        "intake/suggestions.md（含 review 意见）",
+        "Personal-Knowlodge/source/Android-Systrace-SurfaceFlinger.md",
+        "Personal-Knowlodge/source/Android-Perfetto-SurfaceFlinger.md"
       ],
-      "status": "completed",
-      "processed_at": "2026-03-30T12:26:00Z",
-      "word_count": 12000,
-      "verification_status": "L2+L4_verified_all_anchors"
+      "review_issues": [
+        {
+          "type": "需重写",
+          "location": "全文文体",
+          "detail": "整体呈 百科词条+源码堆砌 风格，大量使用列表替代连贯叙述，代码前后缺少因果说明",
+          "suggestion": "参考 writing-guide.md §三写作手法要求，将列表段落改为叙述段落"
+        },
+        {
+          "type": "需重写",
+          "location": "多处 C++ 代码",
+          "detail": "ClientCompositor/DeviceCompositor/DisplayManager 等类不存在于 AOSP，BlastBufferQueue 无公开 Java API",
+          "suggestion": "对照 AOSP android-16.0.0_r1 实际源码重写代码示例"
+        },
+        {
+          "type": "需补充素材",
+          "location": "Perfetto Trace 对照",
+          "detail": "文章开头提到 Perfetto 但正文几乎没有 Trace 中的实际表现描述",
+          "suggestion": "补充 SF track / VSYNC-sf / VSYNC-app / BufferQueue Track 的对照描述"
+        },
+        {
+          "type": "需验证",
+          "location": "HWC 版本号",
+          "detail": "声称 HWC 3.0 (Android 16+) 含 Vulkan 后端，但 AOSP 中 HWC HAL 为 2.x 版本",
+          "suggestion": "核实 AOSP android-16 分支中的 HWC HAL 版本定义"
+        }
+      ],
+      "added_by": "task6-review",
+      "added_at": "2026-04-02T13:30:27",
+      "status": "pending",
+      "original_review_log": "logs/review/2026-04-02-1320-review.md"
     },
     {
       "section": "2.7",

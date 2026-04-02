@@ -1,11 +1,14 @@
 ---
 title: "SurfaceFlinger 与合成"
 chapter: "2.6"
-status: ready-for-review
-applicable_versions: "Android 12 (API S) - Android 16 (API B)"
+status: reviewed
+applicable_versions: "Android 12 (API S) - Android 16 (API 36)"
 last_verified: "2026-03-30"
+drafted_date: 2026-03-30
+reviewed_date: 2026-04-02
+reviewed_by: openclaw-task6
 last_verified_against: "AOSP android-16.0.0_r1, 官方文档最新版本"
-confidence: high
+confidence: medium
 sources:
   - type: aosp
     path: "frameworks/native/services/surfaceflinger/"
@@ -52,6 +55,8 @@ related_chapters: ["2.1", "2.3", "2.4", "2.10"]
 
 ## 开头：为什么了解 SurfaceFlinger
 
+[需重写: 开头应从具体现象/Trace 入手引出 SurfaceFlinger，而非列表式提问。参考 writing-guide 类型 A 模板的"开头"要求：用 1-2 段连贯叙述说清楚 SF 解决什么问题，可引用 Perfetto 中的具体 Track 名称]
+
 作为 Android 开发者，你是否遇到过这些问题：
 - App UI 流畅，但整体系统感觉卡顿
 - 多个应用切换时出现短暂黑屏
@@ -86,6 +91,7 @@ SurfaceFlinger
 
 **合成算法**：
 ```cpp
+// ⚠️ [存疑: 以下为简化伪代码，非实际 AOSP 实现。SurfaceFlinger::composite() 的真实调用链经过 handleMessageInvalidate → handleMessageRefresh → computeFrame]
 // frameworks/native/services/surfaceflinger/SurfaceFlinger.cpp
 void SurfaceFlinger::composite() {
     // 遍历所有 Layer，按 Z-Order 排序
@@ -111,6 +117,7 @@ void SurfaceFlinger::composite() {
 
 **VSync 控制器**：
 ```cpp
+// ⚠️ [存疑: SurfaceFlinger 中不存在独立的 DisplayManager 类，VSync 分发由 DispSync/MessageQueue 处理]
 // frameworks/native/services/surfaceflinger/DisplayManager.cpp
 void DisplayManager::onHotplug(const sp<IBinder>& display, bool connected) {
     if (connected) {
@@ -169,6 +176,10 @@ App（重新利用）
 
 [图：SurfaceFlinger 三大职责的交互关系图，显示 Layer 合成、VSync 分发、Buffer 管理的时序]
 
+[待补充：Trace 截图 — SurfaceFlinger 在 Perfetto 中各 Track 的对应关系]
+
+[需补充素材: 本文缺少"在 Perfetto 中的表现"内容。应在核心机制讲完后，给出 SF 在 Perfetto 中的 Track 对照（如 SurfaceFlinger track、VSYNC-sf、VSYNC-app 等），以及正常/异常 Trace 片段描述]
+
 ## 合成方式：Client Composition (GPU) vs Device Composition (HWC)
 
 Android 提供了两种主要的合成方式，它们在性能、兼容性和功能上有显著差异。[已验证: AOSP android-16.0.0_r1, frameworks/native/services/surfaceflinger/]
@@ -183,6 +194,7 @@ Android 提供了两种主要的合成方式，它们在性能、兼容性和功
 
 **实现代码**：
 ```cpp
+// ⚠️ [存疑: AOSP 中不存在 ClientCompositor 类，Client 合成实际在 SurfaceFlinger::renderScreenImplLocked 或 via RenderEngine]
 // frameworks/native/services/surfaceflinger/ClientCompositor.cpp
 void ClientCompositor::composite() {
     // 创建 OpenGL 上下文
@@ -238,6 +250,7 @@ Display 硬件
 
 **实现代码**：
 ```cpp
+// ⚠️ [存疑: AOSP 中不存在 DeviceCompositor 类，Device 合成通过 HWComposer (Hwc2) 模块处理]
 // frameworks/native/services/surfaceflinger/DeviceCompositor.cpp
 void DeviceCompositor::prepareLayers() {
     // 创建 HWC 会话
@@ -833,6 +846,7 @@ App Memory Region ←→ BlastBufferQueue ←→ SurfaceFlinger
 
 **实现原理**：
 ```cpp
+// ⚠️ [存疑: 以下 BlastBufferQueue 代码为简化伪代码。实际 BBQ 实现在 frameworks/native/libs/gui/BlastBufferQueue.cpp，不继承 ConsumerBase]
 // frameworks/native/services/surfaceflinger/BlastBufferQueue.cpp
 class BlastBufferQueue : public ConsumerBase {
 public:
@@ -894,6 +908,7 @@ void BlastBufferQueue::queueBufferAsync(const sp<Fence>& fence) {
 ### 使用示例
 
 ```java
+// ⚠️ [需重写: BlastBufferQueue 无公开 Java API，以下 Java 示例为虚构代码。BBQ 仅在 C++ 层使用，App 开发者通过 Surface/Bitmap 间接使用]
 // Java 层使用 BlastBufferQueue
 public class BlastBufferQueueActivity extends Activity {
     private BlastBufferQueue mBlastBufferQueue;
@@ -977,8 +992,8 @@ status_t BlastBufferQueue::dequeueBuffer(int* slot, sp<GraphicBuffer>* buffer,
 - 更丰富的 Layer 类型支持
 - 直接 Layer 混合支持
 
-**HWC 3.0（Android 16+）**：
-- Vulkan 后端支持
+**HWC 3.0（Android 16+）**： [待验证: HWC 版本号需核实，AOSP 中 HWC HAL 为 2.x（HIDL/AIDL），未见官方"HWC 3.0"版本定义]
+- Vulkan 后端支持 [待验证]
 - 实时 Layer 混合
 - 增强的性能监控
 
@@ -1355,5 +1370,7 @@ SurfaceFlinger 是 Android 图形系统的核心组件，理解它的工作原�
 下一步，我们将深入探讨 VSync 机制和 Choreographer，了解渲染管线的"节拍器"如何工作。
 
 ---
+
+> **[需重写: 全文文体]** 本文整体呈现"百科词条 + 源码堆砌"风格，违反 writing-guide.md 的核心要求："叙述为主，列表为辅"、"连贯叙述而非知识点罗列"。主要问题：(1) 大量使用 bullet points 替代连贯叙述 (2) 代码段前后缺少充分的因果说明 (3) 缺少"工程师对工程师"的对话式语气 (4) Perfetto/Trace 实操关联几乎为零。建议参考 writing-guide.md §三"写作手法要求"和§六"好文章的标准"进行全文重写。
 
 *本章完成于 2026-03-30，已通过 AOSP 源码验证和官方文档确认*
