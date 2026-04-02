@@ -938,9 +938,12 @@
       "priority": 50,
       "reason": "待加工（素材0篇）",
       "material_paths": [],
-      "status": "pending",
+      "status": "completed",
       "added_by": "manual-init",
-      "added_at": "2026-03-29T21:00:00"
+      "added_at": "2026-03-29T21:00:00",
+      "processed_at": "2026-04-02T19:23:57+08:00",
+      "word_count": "~9500",
+      "verification_status": "L2_verified_all_5_anchors_2_extensions_2_auto_discoveries"
     },
     {
       "section": "10.3",
@@ -1340,7 +1343,10 @@
       "section_title": "ANR 分析方法",
       "priority": 50,
       "reason": "待加工（素材0篇）",
-      "material_paths": [],
+      "material_paths": [
+        "intake/research-feeds/2026-04-02-19-ch09-profiling-manager-anr-trigger.md",
+        "intake/research-feeds/2026-04-02-19-ch09-anr-helper-aosp-pipeline.md"
+      ],
       "status": "pending",
       "added_by": "manual-init",
       "added_at": "2026-03-29T21:00:00"
@@ -1350,7 +1356,9 @@
       "section_title": "特殊场景的 ANR",
       "priority": 50,
       "reason": "待加工（素材0篇）",
-      "material_paths": [],
+      "material_paths": [
+        "intake/research-feeds/2026-04-02-19-ch09-fg-service-anr-timeout-evolution.md"
+      ],
       "status": "pending",
       "added_by": "manual-init",
       "added_at": "2026-03-29T21:00:00"
@@ -1443,6 +1451,39 @@
       "processed_at": "2026-04-02T04:44:22.221424+08:00",
       "word_count": "~13500",
       "verification_status": "L2_rework_verified_EEVDF_full_section_SchedTune_UClamp_full_section_no_remaining_待补充"
+    },
+    {
+      "section": "2.11",
+      "section_title": "Flutter 渲染管线与性能",
+      "priority": 90,
+      "reason": "[review回炉] applicable_versions 版本号有误 + 性能数据缺乏来源 + 缺少 outline 块",
+      "material_paths": [
+        "intake/suggestions.md（含 review 意见）"
+      ],
+      "review_issues": [
+        {
+          "type": "需确认",
+          "location": "frontmatter applicable_versions",
+          "detail": "Android 17 (API 35) 版本号映射有误，Android 16 = API 36",
+          "suggestion": "确认后修正为正确的版本范围"
+        },
+        {
+          "type": "需补充素材",
+          "location": "Impeller 在 Android 上的表现",
+          "detail": "光栅化时间降低30%、内存降低100MB 缺乏来源",
+          "suggestion": "补充 Flutter 官方 benchmark 或第三方报告链接"
+        },
+        {
+          "type": "需补充",
+          "location": "全文结构",
+          "detail": "缺少 outline 块",
+          "suggestion": "补充 <!-- outline-start -->...<!-- outline-end --> 块"
+        }
+      ],
+      "added_by": "task6-review",
+      "added_at": "2026-04-02T19:32:56",
+      "status": "pending",
+      "original_review_log": "logs/review/2026-04-02-1924-review.md"
     }
   ],
   "completed": [
@@ -1876,5 +1917,5 @@
       "verification_status": "L2_rework_verified_doFrame_AOSP_code_confirmed_summary_narrative_compose_analytical_3_TypeA_sections_added_厂商优化_待验证_marked"
     }
   ],
-  "last_updated": "2026-04-02T15:30:00+08:00"
+  "last_updated": "2026-04-02T19:23:57+08:00"
 }

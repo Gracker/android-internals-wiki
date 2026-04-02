@@ -4,11 +4,11 @@
   "metrics": {
     "total": 96,
     "draft": 42,
-    "ready-for-review": 40,
-    "reviewed": 4,
+    "ready-for-review": 39,
+    "reviewed": 5,
     "finalized": 10,
     "staging_drafts": 0,
-    "last_updated": "2026-04-02T17:20:00+08:00"
+    "last_updated": "2026-04-02T19:24:00+08:00"
   },
   "reviewed_sections": {
     "8.1": {
@@ -172,12 +172,19 @@
         "措辞修正：集群迁移\"中断\"→\"迁移开销\"（更准确的术语）",
         "frontmatter：补 reviewed_date/reviewed_by, status ready-for-review → finalized"
       ]
+    },
+    "2.11": {
+      "title": "Flutter 渲染管线与性能",
+      "status": "reviewed",
+      "reviewed_date": "2026-04-02",
+      "reviewed_by": "openclaw-task6",
+      "issues": 3
     }
   },
   "review_stats": {
-    "total_reviewed": 12,
-    "reviewed_today": 8,
-    "review_issues_total": 6
+    "total_reviewed": 13,
+    "reviewed_today": 9,
+    "review_issues_total": 9
   },
   "completed": [
     {
@@ -625,15 +632,26 @@
       "extensions_total": 2,
       "verification_level": "L2",
       "word_count": "~8500"
+    },
+    {
+      "section": "10.2",
+      "title": "内存泄漏",
+      "completed_at": "2026-04-02T19:23:57+08:00",
+      "anchors_covered": 5,
+      "anchors_total": 5,
+      "extensions_covered": 2,
+      "extensions_total": 2,
+      "verification_level": "L2",
+      "word_count": "~9500"
     }
   ],
   "ready_for_review": 4,
-  "last_updated": "2026-04-02T16:20:00",
+  "last_updated": "2026-04-02T19:00:00+08:00",
   "stats": {
     "total": 97,
-    "completed": 38,
-    "pending": 59,
-    "last_updated": "2026-04-02T15:20:00+08:00"
+    "completed": 40,
+    "pending": 57,
+    "last_updated": "2026-04-02T19:24:11+08:00"
   },
   "research_stats": {
     "runs_today": [
@@ -686,6 +704,32 @@
           "Android 17 DeliQueue 无锁 MessageQueue：15% 主线程锁等待减少 + 4% 掉帧减少 + 9.1% 冷启动首帧 P95 改善（目标 §2.4/§1.5）",
           "Choreographer API 演进史 API 16→33→36→37：FrameCallback/VsyncCallback/FrameTimeline/ARR（目标 §2.4 版本演进节）",
           "zRAM 多算法重压缩（Kernel 6.12）+ MGLRU + AI 驱动 ART（目标 §4.2/4.4/4.6）"
+        ]
+      },
+      {
+        "time": "2026-04-02T19:00:00+08:00",
+        "focus": "§9.3/§9.4 ANR 分析方法 + 特殊场景（strategic: 第9章活跃管线）",
+        "source": "strategic-pipeline",
+        "candidates": 5,
+        "passed": 3,
+        "delivered": 3,
+        "themes": [
+          "Android 16 ProfilingManager TRIGGER_TYPE_ANR 系统触发式 Profiling（目标 §9.3/§14.7）",
+          "AOSP AnrHelper + ProcessErrorStateRecord ANR 异步处理管线源码分析（目标 §9.3/§9.1）",
+          "Foreground Service ANR 超时机制演进 Android 12→16（目标 §9.2/§9.4）"
+        ]
+      },
+      {
+        "time": "2026-04-02T19:00:00+08:00",
+        "focus": "§9.3/§9.4 ANR 分析方法 + 特殊场景（strategic: 第9章活跃管线）",
+        "source": "strategic-pipeline",
+        "candidates": 5,
+        "passed": 3,
+        "delivered": 3,
+        "themes": [
+          "Android 16 ProfilingManager TRIGGER_TYPE_ANR 系统触发式 Profiling（目标 §9.3/§14.7）",
+          "AOSP AnrHelper + ProcessErrorStateRecord ANR 异步处理管线源码分析（目标 §9.3/§9.1）",
+          "Foreground Service ANR 超时机制演进 Android 12→16（目标 §9.2/§9.4）"
         ]
       }
     ],
@@ -923,6 +967,20 @@
       "title": "App 内存分析",
       "action": "draft-completed",
       "word_count": "~8500"
+    },
+    {
+      "date": "2026-04-02",
+      "section": "10.2",
+      "title": "内存泄漏",
+      "action": "draft-completed",
+      "word_count": "~9500"
+    },
+    {
+      "date": "2026-04-02",
+      "section": "10.2",
+      "title": "内存泄漏",
+      "action": "draft-completed",
+      "word_count": "~9500"
     }
   ],
   "sections": {

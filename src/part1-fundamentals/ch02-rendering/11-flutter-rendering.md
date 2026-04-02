@@ -1,9 +1,11 @@
 ---
 title: "2.11 Flutter 渲染管线与性能"
 chapter: "2.11"
-status: ready-for-review
+status: reviewed
 drafted_date: "2026-04-01"
-applicable_versions: "Android 10 (API 29) - Android 17 (API 35)"
+reviewed_date: "2026-04-02"
+reviewed_by: "openclaw-task6"
+applicable_versions: "Android 10 (API 29) - Android 17 (API 35)" <!-- [存疑: Android 17 对应的 API Level 不应是 35，项目其他章节中 Android 16 = API 36，请确认实际范围] -->
 last_verified: "2026-04-01"
 last_verified_against: "Flutter 3.27 / Impeller default on Android API 29+"
 confidence: medium
@@ -17,6 +19,8 @@ sources:
 tags: [flutter, rendering, impeller, skia, cross-platform, shader-compilation, jank]
 related_chapters: ["2.1", "2.3", "2.4", "2.5", "7.1", "7.7"]
 ---
+
+<!-- [需补充: 本章缺少 outline 块（<!-- outline-start -->...<!-- outline-end -->），与项目大部分章节的格式不统一，建议 task2 加工时补充] -->
 
 # 2.11 Flutter 渲染管线与性能
 
@@ -212,11 +216,11 @@ Impeller 在 Android 上优先使用 Vulkan 后端。对于不支持 Vulkan 的�
 
 从性能数据来看，Impeller 相比 Skia 有几个明显改善：
 
-**光栅化时间降低**：Flutter 团队的基准测试显示，Impeller 在复杂渲染场景下可以将平均每帧的 GPU 光栅化时间降低约 30%。这主要得益于 Impeller 对移动 GPU 的 tiling 架构做了针对性优化。
+**光栅化时间降低**：Flutter 团队的基准测试显示，Impeller 在复杂渲染场景下可以将平均每帧的 GPU 光栅化时间降低约 30%。<!-- [需补充素材: 该数据缺乏具体来源/基准测试引用，请补充 Flutter 官方 benchmark 或第三方测试报告链接] -->这主要得益于 Impeller 对移动 GPU 的 tiling 架构做了针对性优化。
 
 **帧率稳定性提升**：因为消除了 shader 编译卡顿，帧率的波动大幅减小。在 120Hz 设备上，Impeller 能够更稳定地在 8ms 帧预算内完成渲染。
 
-**内存效率改善**：一些报告指出 Impeller 的内存使用比 Skia 低约 100MB（在复杂应用中）。这可能与 Impeller 更紧凑的资源管理和不需要运行时 shader 缓存有关。
+**内存效率改善**：一些报告指出 Impeller 的内存使用比 Skia 低约 100MB（在复杂应用中）。<!-- [需补充素材: "一些报告"缺乏具体来源，请补充引用] -->这可能与 Impeller 更紧凑的资源管理和不需要运行时 shader 缓存有关。
 
 `[已验证: Impeller 默认状态基于 Flutter 3.27 release notes, flutter.dev]`
 
