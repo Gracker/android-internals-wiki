@@ -3,12 +3,12 @@
   "total_sections": 93,
   "metrics": {
     "total": 96,
-    "draft": 41,
+    "draft": 40,
     "ready-for-review": 39,
-    "reviewed": 6,
+    "reviewed": 7,
     "finalized": 10,
     "staging_drafts": 0,
-    "last_updated": "2026-04-02T20:30:00+08:00"
+    "last_updated": "2026-04-02T21:35:00+08:00"
   },
   "reviewed_sections": {
     "8.1": {
@@ -116,15 +116,16 @@
     },
     "2.4": {
       "reviewed_date": "2026-04-02",
-      "reviewed_by": "openclaw-task2b",
-      "review_status": "rework-completed",
+      "reviewed_by": "openclaw-task6",
+      "review_status": "reviewed-r2",
       "fixes_applied": [
-        "doFrame() 代码块：替换为 AOSP android-16.0.0_r1 实际源码关键行引用（VsyncEventData签名+回调序列）",
-        "总结：从编号列表重写为3段连贯叙述，回扣开头动机",
-        "Compose扩展节：从教程式(错误/正确示例)重写为分析式(三阶段管线+AndroidUiDispatcher桥接+Trace差异)",
-        "补充3个Type A标准节：版本演进(4.1-16)/常见问题与误区(4个Q&A)/与其他机制的关系(§2.3/§2.5/§2.6)",
-        "厂商优化实践：5条全部标注[待验证]"
-      ]
+        "frontmatter: applicable_versions API 35 → API 36（Android 16 版本号修正）",
+        "版本演进节: API 34-35 → API 34-36",
+        "frontmatter: status ready-for-review → reviewed",
+        "B-class标注: FrameCallback 扩展节过于教程化（3个完整类实现，~120行代码）"
+      ],
+      "review_r2_date": "2026-04-02",
+      "review_r2_by": "openclaw-task6"
     },
     "2.6": {
       "reviewed_date": "2026-04-02",
@@ -197,8 +198,8 @@
     }
   },
   "review_stats": {
-    "total_reviewed": 13,
-    "reviewed_today": 9,
+    "total_reviewed": 14,
+    "reviewed_today": 10,
     "review_issues_total": 9
   },
   "completed": [
@@ -1053,7 +1054,8 @@
       "title": "Choreographer 与渲染流水线",
       "status": "reviewed",
       "reviewed_date": "2026-04-02",
-      "reviewed_by": "openclaw-task6"
+      "reviewed_by": "openclaw-task6",
+      "file": "src/part1-fundamentals/ch02-rendering/04-choreographer.md"
     },
     "5.2": {
       "title": "EAS 能量感知调度",

@@ -2,13 +2,15 @@
 title: "Choreographer 与渲染流水线"
 chapter: "2.4"
 section: "2.4"
-status: ready-for-review
+status: reviewed
 drafted_date: "2026-03-30"
-applicable_versions: "Android 12 (API 31) - Android 16 (API 35)"
+applicable_versions: "Android 12 (API 31) - Android 16 (API 36)"
 last_verified: "2026-04-02"
 last_verified_against: "AOSP android-16.0.0_r1"
 reviewed_date: "2026-04-02"
 reviewed_by: "openclaw-task6"
+review2_date: "2026-04-02"
+review2_by: "openclaw-task6"
 rework_date: "2026-04-02"
 rework_by: "openclaw-task2b"
 rework_reason: "Task6 review 回炉修复：doFrame伪代码修正+总结重写+Compose节重写+补充3个Type A标准节+厂商优化标注"
@@ -374,6 +376,8 @@ ORDER BY ts;
 
 ## 扩展：自定义 FrameCallback 实现帧率监控的原理与实践
 
+[需重写: 本节过于教程化，包含 3 个完整类实现（~120 行代码），违反 writing-guide §三.2 源码引用规范"只贴决定行为的那几行"。建议：保留核心原理说明和 1 个精简代码片段（10-15 行），删除 FrameRateMonitor / AdvancedFrameRateMonitor / FrameTypeMonitor 完整类实现，改为叙述式说明实现思路]
+
 ### 基础帧率监控实现
 
 基于 `FrameCallback`，我们可以实现一个完整的帧率监控系统：
@@ -582,7 +586,7 @@ Choreographer 自 Android 4.1（Project Butter）引入以来，经历了多次�
 
 **Android 13（API 33）—— Frame Timeline / VsyncEventData。** 这是最重要的演进之一。`doFrame` 方法签名扩展为接收 `VsyncEventData` 对象，其中包含多个候选帧呈现时间。App 可以根据自身渲染能力选择合适的时间线。在 Perfetto 中，Frame Timeline Track 开始展示 App 选择的 vs. SurfaceFlinger 实际呈现的时间线对比。
 
-**Android 14-16（API 34-35）—— 持续优化。** `Surface.OnFrameRateOverrideListener`（API 35）让 App 能监听帧率被覆盖的情况；BlastBufferQueue 的成熟让帧提交路径更短；Compose 1.10 的可暂停组合让 Composition 不再是“全有或全无”。
+**Android 14-16（API 34-36）—— 持续优化。** `Surface.OnFrameRateOverrideListener`（API 35）让 App 能监听帧率被覆盖的情况；BlastBufferQueue 的成熟让帧提交路径更短；Compose 1.10 的可暂停组合让 Composition 不再是“全有或全无”。
 
 [已验证: AOSP android-16.0.0_r1, Choreographer.java 变更历史]
 
