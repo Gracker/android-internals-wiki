@@ -24,6 +24,10 @@ sources:
     path: "https://developer.android.com/topic/performance/baselineprofiles"
 tags: ['art', 'gc', 'heap', 'tlab', 'aot', 'jit', 'cc-gc', 'cmc-gc']
 related_chapters: ["4.1", "4.2", "4.4", "4.6", "7.1", "7.7"]
+
+re-review-triggered-date: 2026-04-03
+re-review-triggered-by: task7-incremental-index
+re-review-triggered-reason: 新高质量素材「Hummer GC(16分)」— 涉及ART GC算法/堆内存管理
 ---
 
 # ART 虚拟机内存管理

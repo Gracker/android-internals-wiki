@@ -19,6 +19,10 @@ sources:
     path: "https://github.com/flutter/flutter/wiki/Impeller"
 tags: [flutter, rendering, impeller, skia, cross-platform, shader-compilation, jank]
 related_chapters: ["2.1", "2.3", "2.4", "2.5", "7.1", "7.7"]
+
+re-review-triggered-date: 2026-04-03
+re-review-triggered-by: task7-incremental-index
+re-review-triggered-reason: 新高质量素材「Hummer GC(16分)」— 直接涉及Flutter引擎GC/Dart堆问题
 ---
 
 <!-- outline-start -->
