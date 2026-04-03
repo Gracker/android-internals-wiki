@@ -98,6 +98,52 @@
 - 更新 `scan-progress.json`：推进 offset
 - 如果 source-index.json 不存在，创建新文件
 
+### Step 4.5：定稿冲击检测（新高质量素材 → 已定稿章节）
+
+**触发条件**：新索引素材同时满足以下所有条件：
+1. `quality: high`（总分 ≥16）
+2. 映射到至少 1 个 `status: finalized` 的章节
+3. 该章节的 frontmatter 中 `re-review-triggered-date` 不等于今天日期（24h 防抖）
+
+**执行逻辑**：
+
+对每个命中已定稿章节的高质量素材：
+1. 读取目标章节文件 `src/` 下对应的 .md 文件的 frontmatter
+2. 检查 `re-review-triggered-date` 是否等于今天（`YYYY-MM-DD`）
+   - 如果等于今天 → **跳过**（24h 内已触发过，不重复触发）
+   - 如果不等于今天或字段不存在 → **执行触发**
+3. 触发动作：
+   - `status: finalized` → `status: ready-for-review`
+   - 新增/追加 `re-review-reason: "新素材: <素材标题>"`（如有多个素材，用分号连接）
+   - 新增/追加 `re-review-materials: ["<素材相对路径>"]`（数组追加模式）
+   - 设置 `re-review-triggered-date: "YYYY-MM-DD"`
+   - 设置 `re-review-triggered-by: "task7-incremental-index"`
+4. 使用 exec + python/pathlib + 绝对路径修改 frontmatter
+
+**防抖规则**：
+- 同一章节每天最多触发 1 次重审
+- 24h 内的新素材持续追加到 `re-review-materials` 数组，但不重复改 status
+- `re-review-materials` 数组上限 10 条（超出只保留最新的 10 条）
+
+**不触发的情况**：
+- 素材 `quality: medium`（<16 分）→ 只入库，不冲击定稿
+- 目标章节 `status` 不是 `finalized` → 不处理（已经在流转中）
+- 目标章节不存在对应的 src/ 文件 → 跳过
+
+**示例 frontmatter 变化**：
+```yaml
+# 变化前
+status: finalized
+
+# 变化后
+status: ready-for-review
+re-review-reason: "新素材: Android 16 16KB Page Size 深度分析"
+re-review-materials:
+  - "Cubox/Android16-16KB-Page-Size.md"
+re-review-triggered-date: "2026-04-03"
+re-review-triggered-by: "task7-incremental-index"
+```
+
 ### Step 5：输出报告
 
 📊 AIW素材增量扫描 | {日期} {时间}
@@ -120,8 +166,15 @@
 - 剩余：{remaining} 个文件待扫描
 - 当前目录：{目录名}（{offset}/{该目录总数}）
 
-### 覆盖最匮乏的章节（Top 3）
-按 source-index.json 中各章节数量排序，最少的3个
+### 🔄 定稿冲击触发（如有）
+列出本次触发重审的已定稿章节：
+- 章节：{章节号} {章节名}
+- 触发素材：{素材标题}
+- 素材路径：{相对路径}
+- 状态变化：finalized → ready-for-review
+- 重审原因：{re-review-reason}
+
+如果本次无触发，写
 
 ## 约束
 - 每次扫描 30-50 个文件，不多不少
