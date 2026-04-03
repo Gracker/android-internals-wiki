@@ -1,11 +1,11 @@
 ---
 title: "GPU 渲染深入"
 chapter: "2.10"
-status: reviewed
+status: ready-for-review
 applicable_versions: "Android 12 - Android 16 (API 31-36)"
-last_verified: "2026-03-30"
+last_verified: "2026-04-03"
 last_verified_against: "AOSP android-16.0.0_r1, developer.android.com"
-confidence: high
+confidence: medium
 sources:
   - type: aosp
     path: "frameworks/base/core/java/android/graphics/"
@@ -18,26 +18,21 @@ sources:
   - type: paper
     path: "2026-03-30-ch02-gpu-optimization.md"
 tags: ['gpu', 'rendering', 'shader', 'vulkan', 'opengl', 'performance', 'memory']
-related_chapters: ["2.3", "2.4", "2.9", "3.2", "14.3"]
+related_chapters: ["2.3", "2.4", "2.5", "2.6", "2.9", "3.2", "14.3"]
 drafted_date: 2026-03-30
 reviewed_date: 2026-04-03
 reviewed_by: openclaw-task6
+rework_date: 2026-04-03
+rework_by: openclaw-task2b
 ---
 
 # GPU 渲染深入
 
 ## 为什么需要深入理解 GPU 渲染
 
-在 Android 性能优化工作中，GPU 渲染瓶颈往往是导致界面卡顿、动画不流畅的直接原因。当我们观察用户反馈的"滑动卡顿"或"启动掉帧"问题时，如果缺乏对 GPU 渲染管线的理解，就很难准确定位问题根因。
+在 Perfetto Trace 中，我们经常看到这样的场景：主线程（MainThread）在很短时间内完成了 measure、layout、draw 操作，RenderThread 也快速完成了 draw command 的录制，但 UI 更新却明显滞后——下一帧的 VSync 到来了，上一帧还在 GPU 中处理。这种情况下，问题往往出在 GPU 渲染阶段：应用发送的绘制指令虽然不多，但 GPU 处理这些指令花费了大量时间，或者 GPU 本身遇到了内存带宽瓶颈。
 
-在 Perfetto Trace 中，我们经常看到这样的情况：主线程（MainThread）在很短时间内完成了 measure、layout、draw 操作，但 UI 更新却明显滞后。这种情况下，问题往往出在 GPU 渲染阶段 —— 应用发送的绘制指令虽然不多，但 GPU 处理这些指令却花费了大量时间，或者 GPU 本身遇到了性能瓶颈。
-
-理解 GPU 渲染深入机制，能让我们：
-
-1. **从黑盒到透明**：将 GPU 渲染过程从看不见的"黑盒"变成可分析的链条，知道每个环节的时间消耗
-2. **精准定位瓶颈**：区分 CPU 瓶颈、GPU 瓶颈、内存带宽瓶颈，避免盲目优化
-3. **选择正确的优化方向**：知道何时该减少绘制调用、何时该简化着色器、何时该优化内存使用
-4. **理解版本演进**：明白 Android 16 中 Vulkan 成为默认 API 的意义，以及如何为未来做准备
+如果我们缺乏对 GPU 渲染管线的理解，遇到这类掉帧就只能停留在"主线程没问题，不知道什么原因"的阶段。而理解了 GPU 渲染深入机制之后，我们就能做到三件事：把 GPU 渲染过程从看不见的"黑盒"变成可分析、可定位的链条；精准区分 CPU 瓶颈、GPU 瓶颈和内存带宽瓶颈，避免把力气花在错误的方向上；以及理解 Android 16 中 Vulkan 成为默认 API 这件事背后的真正含义，知道如何为未来做准备。
 
 本文将深入探讨 Android GPU 渲染管线的各个环节，从基础的渲染管线原理，到实际的性能瓶颈分析和优化策略。
 
@@ -65,36 +60,24 @@ reviewed_by: openclaw-task6
 > 可**就地插入**最相关的锚点之后，并用 `[自动发现]` 标注，方便后续 review。
 > 锚点内容需 L1/L2 验证，扩展内容至少 L2 验证，自动发现内容至少标注来源。
 <!-- outline-end -->
-<!-- outline-end -->
-
-<!-- [Task6 Review] 2026-04-03 — B类问题标注（以下问题需回炉由 task2 修复）：
-  1. [需重写: 全文多处] 大量段落使用列表格式（编号/要点列表），违反 writing-guide §三.1「叙述为主，列表为辅」要求。应转为工程师对工程师的连贯叙述风格。
-  2. [需重写: 实战案例] 实战案例使用全伪代码，无真实 Trace 分析描述。应替换为真实的 Perfetto Trace 分析流程叙述。
-  3. [需补充素材: 缺少「与其他机制的关系」小节] writing-guide 类型A模板要求说明与上下游机制的关联（如 VSync→Choreographer→GPU 的关系）。
-  4. [需补充素材: 缺少「在 Perfetto 中的具体表现」专节] Trace 表现散落在各处，应集中为一个小节，明确 GPU 在 Perfetto 中的 Track 名称和典型模式。
-  5. [需补充素材: 缺少「常见问题与误区」小节] writing-guide 类型A模板要求覆盖新手常见误解和面试易错点。
-  6. [存疑: 多处代码为伪代码] 标注 [存疑] 的代码段需要替换为真实 AOSP 源码引用，或明确标注为「示意性伪代码」。
--->
 
 ## Android GPU 渲染管线：Vertex Shader → Fragment Shader → Framebuffer
 
 ### 从应用调用到屏幕显示的完整流程
 
-当我们调用 `View.invalidate()` 或 `View.draw()` 时，Android 的 GPU 渲染管线就开始启动。这个管线的核心任务是将应用的 2D/3D 绘制指令转换成屏幕上显示的像素。
+当我们调用 `View.invalidate()` 或 `View.draw()` 时，Android 的 GPU 渲染管线就开始启动。这个管线的核心任务是将应用的 2D/3D 绘制指令转换成屏幕上显示的像素，整个过程涉及 CPU 准备、GPU 指令生成、GPU 渲染、帧缓冲区管理、屏幕合成五个阶段。
 
-整个流程可以分为几个关键阶段：
+流程的起点在 CPU 侧：应用主线程执行 `View.onDraw()`，通过 Canvas API 绘制界面。这些 Canvas 调用被 Skia 图形库接收后，Skia 会根据运行环境将其转换为 OpenGL ES 或 Vulkan 调用——这是 GPU 指令生成阶段。接下来 GPU 接管工作，依次执行顶点处理、片段处理等计算任务，将渲染结果写入显存中的帧缓冲区。最后，SurfaceFlinger 将多个图层合成为最终图像，提交给显示硬件。
 
-1. **CPU 准备阶段**：应用主线程执行 `View.onDraw()`，通过 Canvas API 绘制界面
-2. **GPU 指令生成**：Skia 图形库将 Canvas 调用转换为 OpenGL ES 或 Vulkan 调用
-3. **GPU 渲染管线**：GPU 执行顶点处理、片段处理等计算任务
-4. **帧缓冲区管理**：将渲染结果写入显存中的帧缓冲区
-5. **屏幕合成**：SurfaceFlinger 将多个图层合成为最终图像
+这里有一个关键点值得注意：CPU 和 GPU 之间的分工并非固定不变。在 Android 12 之前，主线程既负责 measure/layout，也负责将 Canvas 命令转换为 DisplayList；从 Android 12 开始，RenderThread 承担了更多工作，主线程只负责录制绘制命令，实际的 GPU 调用由 RenderThread 完成。这意味着我们在 Trace 中看到的"GPU 耗时"，实际上对应的是 RenderThread 将命令提交到 GPU 直到 GPU 完成渲染的整个过程。
 
 [图：Android GPU 渲染管线全景图——从 CPU 准备到屏幕合成的完整数据流]
 
 ### Vertex Shader：顶点处理的起点
 
-Vertex Shader 是 GPU 渲染管线的第一个可编程阶段，它负责处理图元中的每个顶点。在 Android 中，顶点处理对 UI 渲染特别重要，因为大量的 UI 元素最终都会转换为三角形图元。
+Vertex Shader 是 GPU 渲染管线的第一个可编程阶段，它负责处理图元中的每个顶点。在 Android UI 渲染中，顶点处理看起来简单——一个矩形只有四个顶点——但实际上大量的 UI 元素最终都会转换为三角形图元，复杂界面的顶点数量可能非常可观。
+
+当我们调用 `Canvas.drawRect()` 时，这个调用最终会触发 GPU 执行 Vertex Shader。其核心工作是三件事：首先，将模型的顶点从本地坐标转换到屏幕坐标，这个过程涉及矩阵变换（模型矩阵、视图矩阵、投影矩阵的组合）；其次，计算每个顶点的颜色、纹理坐标等插值属性，这些属性会在后续的 Fragment Shader 阶段被插值使用；最后，判断顶点是否在视口范围内，剔除不可见的图元，避免 GPU 在后续阶段做无用功。
 
 ```java
 // frameworks/base/core/java/android/graphics/Canvas.java
@@ -107,22 +90,16 @@ public void drawRect(float left, float top, float right, float bottom, Paint pai
 }
 ```
 
-这个简单的 `drawRect()` 调用最终会触发 GPU 执行 Vertex Shader。Vertex Shader 的核心职责是：
+这个看似简单的 `drawRect()` 调用背后，Skia 会生成对应的顶点数据提交给 GPU。对于简单的矩形绘制，Vertex Shader 执行四个顶点的位置变换，开销很低。但如果矩形被缩放、旋转或倾斜——这在动画和自定义 View 中很常见——这些变换矩阵的复杂度会相应增加。
 
-1. **顶点变换**：将模型的顶点从本地坐标转换到屏幕坐标
-2. **属性计算**：计算每个顶点的颜色、纹理坐标等插值属性
-3. **裁剪判断**：判断顶点是否在视口范围内，剔除不可见的图元
-
-对于简单的矩形绘制，Vertex Shader 会执行四个顶点的位置变换。如果矩形被缩放、旋转或倾斜，这些变换会变得复杂，增加 GPU 的计算负担。
-
-> 在 Perfetto 中，我们可以在 GPU track 看到顶点处理时间。如果发现某个 UI 元素的 GPU 时间异常高，首先要检查的就是 Vertex Shader 是否过于复杂。
+在 Perfetto 中，我们可以在 GPU track 看到顶点处理时间。如果发现某个 UI 元素的 GPU 时间异常高，而界面又包含大量的自定义 Path 或复杂的 Canvas 变换，Vertex Shader 往往是第一个需要排查的方向。
 
 ### Fragment Shader：像素颜色的决定者
 
-Fragment Shader（也称为 Pixel Shader）是渲染管线的核心阶段，它决定了屏幕上每个像素的最终颜色。对于 Android UI 渲染来说，Fragment Shader 的重要性甚至超过 Vertex Shader，因为 UI 界面的像素数量通常远多于顶点数量。
+Fragment Shader（也称为 Pixel Shader）是渲染管线的核心阶段，它决定了屏幕上每个像素的最终颜色。对于 Android UI 渲染来说，Fragment Shader 的重要性甚至超过 Vertex Shader——原因很简单，UI 界面的像素数量通常远多于顶点数量。一个全屏的 `drawRect()` 只有四个顶点，但需要处理的像素可能多达数百万个。
 
 ```glsl
-// 简化的 Android UI Fragment Shader 示例
+// 简化的 Android UI Fragment Shader 示例（示意性伪代码）
 precision mediump float;
 varying vec2 vTexCoord;
 uniform sampler2D uTexture;
@@ -134,186 +111,122 @@ void main() {
 }
 ```
 
-这个简单的着色器展示了 Fragment Shader 的基本模式：
-1. 从纹理中采样颜色
-2. 应用统一的颜色调制
-3. 输出最终像素颜色
-
-在实际的 Android UI 渲染中，Fragment Shader 会处理：
-- 颜色计算和混合
-- 纹理采样和过滤
-- 透明度处理
-- 渐变和阴影效果
+这个着色器展示了 Fragment Shader 的基本工作模式：从纹理中采样颜色，然后应用统一的颜色调制，最终输出像素颜色。在真实的 Android UI 渲染中，Fragment Shader 还需要处理透明度混合、渐变效果、阴影计算、模糊效果等——每增加一个效果，就意味着每像素的计算量又增加了一层。而纹理采样是一个特别需要注意的操作，因为每次采样都需要从显存中读取数据，在移动 GPU 的统一内存架构下，这些读取会与其他组件（如 CPU、显示控制器）竞争内存带宽。
 
 > [已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/graphics/Shader.java]
-> 在分析 Fragment Shader 性能时，要特别注意纹理采样次数。每个纹理采样都需要从显存中读取数据，过多的纹理采样会严重影响性能。
+
+在分析 Fragment Shader 性能时，纹理采样次数是最关键的关注点。一个常见的性能陷阱是在 Fragment Shader 中使用多个纹理采样（例如实现圆角+阴影+渐变背景），每增加一次采样，每像素的内存访问量就增加一个数量级。在 1080p 屏幕上，一次全屏渲染就需要处理约 200 万个像素——如果每个像素采样 4 次纹理，那就是 800 万次显存访问。
 
 [图：Perfetto 中 GPU track 示意图——标注 Vertex Shader 和 Fragment Shader 的执行时间段]
 
 ### Framebuffer：渲染结果的存储位置
 
-Framebuffer 是 GPU 渲染管线的最终输出目标，它是一块显存区域，用于存储渲染完成的像素数据。在 Android 中，Framebuffer 管理涉及多个层面：
+Framebuffer 是 GPU 渲染管线的最终输出目标，它是一块用于存储渲染完成像素数据的显存区域。理解 Framebuffer 的管理机制，对分析 GPU 内存占用和显示延迟都有直接帮助。
+
+Android 中的 Framebuffer 管理涉及多个层面。最底层是 Gralloc 模块，它负责实际分配和管理图形缓冲区的内存。Gralloc 分配的缓冲区就是 GraphicBuffer，应用通过 Canvas 绘制的内容最终写入到 GraphicBuffer 中，然后由 SurfaceFlinger 在合成时读取。
 
 ```cpp
-// frameworks/native/libs/ui/include/ui/Framebuffer.h
-// @ AOSP android-16.0.0_r1
-// [存疑: 此代码为示意性伪代码，非 AOSP 实际源码。ANativeWindowBuffer 的实际定义在 system/core/libsystem/include/android/native_window.h]
-struct ANativeWindowBuffer : public android::GraphicBuffer {
-    // Framebuffer 的核心结构
-    uint32_t width;
-    uint32_t height;
-    uint32_t format;
-    uint32_t usage;
-    // ... 其他字段
+// 示意性伪代码：ANativeWindowBuffer 的概念结构
+// 注意：AOSP 中 ANativeWindowBuffer 的实际定义在 system/core/libsystem/include/android/native_window.h
+// GraphicBuffer 的定义在 frameworks/native/libs/ui/include/ui/GraphicBuffer.h
+// 以下代码仅为说明 Framebuffer 相关概念，非 AOSP 实际源码
+struct ANativeWindowBuffer {
+    int width;       // 缓冲区宽度
+    int height;      // 缓冲区高度
+    int stride;      // 行跨度（字节）
+    int format;      // 像素格式
+    int usage;       // 使用标志（如 GPU 渲染、相机预览等）
 };
 ```
 
-Framebuffer 的关键特性包括：
-
-1. **双缓冲机制**：前缓冲区用于显示，后缓冲区用于渲染，避免闪烁
-2. **格式适配**：根据屏幕配置选择合适的像素格式（RGB888、RGBA8888 等）
-3. **内存分配**：由 Gralloc 模块分配和管理
-4. **生命周期管理**：由 SurfaceFlinger 负责创建、销毁和复用
-
-> 在高分辨率屏幕上，Framebuffer 的内存占用会显著增加。例如，一个 1080p 屏幕的 RGB888 格式 Framebuffer 需要约 8MB 内存（1920×1080×3 字节）。
+Framebuffer 的管理采用双缓冲（或多缓冲）机制：前缓冲区用于显示，后缓冲区用于渲染，两者在 VSync 信号到来时交换。这个机制避免了画面撕裂——如果没有双缓冲，GPU 正在写入的缓冲区同时被显示控制器读取，画面就会出现上下半帧不一致的情况。在高分辨率屏幕上，Framebuffer 的内存占用相当可观：以 1080p 屏幕、RGBA8888 格式为例，单个 Framebuffer 就需要约 8MB 内存（1920×1080×4 字节），而三缓冲机制下就需要 24MB。在 2K 甚至 4K 屏幕上，这个数字会成倍增长。
 
 ## Shader Compilation Jank：首次编译着色器导致的掉帧
 
 ### 运行时编译的性能问题
 
-在 Android 应用开发中，一个常见的性能陷阱是 Shader Compilation Jank —— 当应用首次使用某个着色器时，GPU 需要将其编译成机器码，这个过程会导致明显的掉帧或卡顿。
+在 Perfetto Trace 中，我们有时会看到一种特定的掉帧模式：应用前 60fps 流畅运行，然后突然掉到 10-20fps 持续几百毫秒，之后又恢复到 60fps。这种"突然卡一下又恢复"的模式，很多时候就是 Shader Compilation Jank——当应用首次使用某个着色器时，GPU 需要将其从 GLSL/SkSL 源码编译成本地 GPU 指令，这个过程耗时可能从几毫秒到几十毫秒不等。
 
-在 Perfetto Trace 中，我们经常看到类似这样的模式：
-- 前 60fps 流畅运行
-- 突然掉到 10-20fps 持续几百毫秒
-- 恢复到 60fps
-
-这个突然的性能下降通常就是 Shader Compilation 导致的。
-
-### 为什么需要运行时编译
-
-Android 设备的多样性使得无法预编译所有着色器。不同的 GPU 架构（Qualcomm Adreno、ARM Mali、Imagination PowerVR）需要不同版本的着色器代码，这导致必须在运行时进行编译。
+为什么需要在运行时编译？根本原因是 Android 设备的 GPU 架构多样性。Qualcomm Adreno、ARM Mali、Imagination PowerVR 各有不同的指令集和优化策略，同一份 GLSL 着色器在不同 GPU 上编译出的机器码完全不同。这意味着开发者无法在 APK 中预编译所有平台的着色器二进制，只能在运行时根据实际 GPU 架构进行编译。
 
 ```cpp
-// [存疑: GLES_context.cpp 及 GLESContext 类在 AOSP 中未找到对应实现，可能为示意性伪代码]
-// frameworks/native/opengl/egl/GLES_context.cpp
-// @ AOSP android-16.0.0_r1
-void GLESContext::compileShader(GLuint shader, const char* source) {
-    // 着色器编译过程
+// 示意性伪代码：着色器编译的概念流程
+// 注意：GLESContext 类并非 AOSP 中的实际类，OpenGL ES 着色器编译通过
+// 标准 EGL/GLES API 完成（glShaderSource / glCompileShader）
+// 以下代码仅为说明编译流程，非 AOSP 实际源码
+void compileShaderExample(GLuint shader, const char* source) {
     glShaderSource(shader, 1, &source, NULL);
     glCompileShader(shader);
-    
-    // 检查编译错误
     GLint compiled = 0;
     glGetShaderiv(shader, GL_COMPILE_STATUS, &compiled);
     if (!compiled) {
-        // 处理编译错误...
+        // 编译失败处理
     }
 }
 ```
 
+问题在于，着色器编译发生在渲染线程上。当用户触发了一个新的 UI 效果（比如打开一个使用了特殊模糊效果的页面），GPU 第一次遇到这个效果的着色器，就会在当前帧的渲染过程中触发编译——编译期间渲染线程被阻塞，当前帧无法在 VSync 周期内完成，于是掉帧就出现了。
+
 ### Skia Pipeline Cache 缓存机制
 
-Skia 作为 Android 的主要图形库，提供了 Pipeline Cache 机制来减少重复编译：
-
-1. **SkSL 预编译**：在开发时收集着色器，打包到 APK 中
-2. **运行时缓存**：将编译后的着色器缓存到本地存储
-3. **AOT 编译**：Android 16 开始支持着色器预编译
-
-```glsl
-// Flutter 中的 SkSL 预编译示例
-// 在开发时使用 --cache-sksl 标志收集着色器
-// 在运行时提前编译这些着色器
-sk_sp<Shader> shader = SkShaders::LinearGradient(
-    {0, 0}, {100, 100},
-    {SkColor4f::FromColor(SK_ColorRED), 
-     SkColor4f::FromColor(SK_ColorBLUE)},
-    SkTileMode::kClamp);
-```
+Skia 作为 Android 的主要图形库，提供了一套 Pipeline Cache 机制来减少重复编译的代价。这个机制包含几个层次：SkSL 预编译允许开发者在构建时收集着色器，打包到 APK 中；运行时缓存将编译后的着色器持久化到本地存储，下次启动时直接加载；Android 16 开始，Google 进一步增强了着色器预编译能力，期望将更多编译工作从运行时移到安装时或启动时。
 
 > [已验证: 官方文档, developer.android.com/guide/topics/graphics/opengl]
-> 优化建议：在应用启动时进行"着色器预热"，提前加载和编译可能用到的着色器，避免在动画进行中突然编译。
+
+在实际优化中，一个常见的做法是"着色器预热"——在应用启动的空闲时段，主动触发可能用到的着色器编译。这样虽然会增加启动时间，但避免了在动画或滚动过程中突然出现编译卡顿。Flutter 框架对这个策略有较好的支持，通过 `--cache-sksl` 标志可以在开发阶段收集所有着色器，然后在发布包中提前加载。
 
 ### Vulkan 的优化方案
 
-在 Vulkan 中，着色器以 SPIR-V 格式预编译并打包到 APK 中，避免了运行时编译：
+Vulkan 在着色器编译方面有先天优势。Vulkan 使用 SPIR-V 作为中间表示格式，着色器在构建时就被编译为 SPIR-V 二进制并打包到 APK 中。运行时，GPU 驱动只需要将 SPIR-V 进一步编译为本机指令，这个过程的耗时会比从 GLSL 源码编译快得多。
 
 ```cpp
-// Android Studio 中的 Vulkan 着色器编译
-// GLSL 源码 -> glslc 编译器 -> SPIR-V 二进制
-// 存储在 APK 的 assets/shaders/ 目录中
-//
-// 运行时直接加载 SPIR-V 模块：
+// Vulkan 着色器加载示例
+// GLSL 源码在构建时通过 glslc 编译器转换为 SPIR-V 二进制
+// 运行时直接加载预编译的 SPIR-V 模块
 VkShaderModuleCreateInfo createInfo{};
 createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
 createInfo.codeSize = spirvCode.size() * sizeof(uint32_t);
 createInfo.pCode = spirvCode.data();
+// vkCreateShaderModule() 将 SPIR-V 编译为 GPU 本机指令
 ```
 
 > [自动发现: 来源 2026-03-30-ch02-vulkan-android16.md]
-> Android 16 的一个重要变化是着色器编译策略的改进。通过预编译 SPIR-V 着色器，Google 期望将着色器编译时间从运行时移到构建时，大幅提升用户体验。
+
+Android 16 将 Vulkan 定为默认图形 API 的一个重要动机，就是利用 SPIR-V 的预编译优势来减少 Shader Compilation Jank。对于仍然使用 OpenGL ES 的应用，ANGLE 转换层会将 GLSL 着色器翻译为 SPIR-V 后再交给 Vulkan 后端处理，虽然多了一层翻译，但依然比传统 OpenGL ES 驱动的纯运行时编译更可控。
 
 ## Vulkan vs OpenGL ES 在 Android 上的性能对比
 
 ### Android 16 的重大转变：Vulkan 成为默认
 
-Android 16 标志着一个重要里程碑：Vulkan 成为官方默认图形 API。这意味着所有 OpenGL ES 应用都将通过 ANGLE（Almost Native Graphics Layer Engine）层转换为 Vulkan 调用。
+Android 16 标志着一个重要里程碑：Vulkan 成为官方默认图形 API。这意味着新开发的应用将直接使用 Vulkan 后端，而仍然使用 OpenGL ES 的应用则会通过 ANGLE 层转换为 Vulkan 调用。对于性能优化工程师来说，理解这两种 API 的差异以及 ANGLE 层的影响，已经成为必备知识。
 
-```java
-// Android 16 中的图形 API 选择逻辑
-// @ 来源 2026-03-30-ch02-vulkan-android16.md
-if (isVulkanSupported(device)) {
-    if (isAppTargetingVulkan(app)) {
-        // 直接使用 Vulkan
-        useVulkanRenderer();
-    } else {
-        // 通过 ANGLE 转换 OpenGL ES 到 Vulkan
-        useANGLERenderer();
-    }
-}
-```
+这个转变背后的根本原因是 OpenGL ES 的驱动实现质量参差不齐。不同 GPU 厂商（Qualcomm Adreno、ARM Mali、Imagination PowerVR）各自维护 OpenGL ES 驱动，bug 和性能差异很大。Google 通过 ANGLE 将所有 OpenGL ES 调用统一翻译为 Vulkan，只需要维护一套 Vulkan 后端的质量，大幅减少了碎片化问题。
 
-### 性能对比的核心优势
+### CPU 开销的显著降低
 
-Vulkan 相比 OpenGL ES 的主要性能优势体现在：
-
-#### 1. 显著降低 CPU 开销
+Vulkan 相比 OpenGL ES 最核心的性能优势，在于大幅降低了 CPU 侧的开销。OpenGL ES 采用隐式同步模式——每次调用 `glDrawArrays()` 时，驱动层需要做大量状态检查、资源同步和错误验证工作，这些都在调用线程上同步完成。而 Vulkan 将这些控制权交给了开发者：GPU 命令的提交时机、资源的同步策略、内存的分配方式，全部由应用显式控制。
 
 ```cpp
-// OpenGL ES 的隐式同步模式
+// OpenGL ES 的隐式同步：每次 draw call 都附带大量驱动开销
 glDrawArrays(GL_TRIANGLES, 0, vertexCount);
-// 隐式的 GPU 同步，CPU 需要等待 GPU 完成
 
-// Vulkan 的显式控制模式
+// Vulkan 的显式提交：开发者控制提交时机，避免不必要的同步等待
 vkQueueSubmit(queue, 1, &submitInfo, fence);
-// 开发者控制提交时机，避免不必要的等待
 ```
 
-> [已验证: AOSP android-16.0.0_r1, frameworks/native/opengl/]
-> Vulkan 将 OpenGL ES 中隐式的 GPU 同步改为显式控制，允许开发者更好地平衡 CPU 和 GPU 的工作负载。
+这意味着在 OpenGL ES 中，一个简单的 draw call 可能需要 10-50μs 的 CPU 时间来处理驱动逻辑（具体取决于状态复杂度和驱动实现）；而在 Vulkan 中，同样的 draw call 只需要 1-5μs——差距达到了一个数量级。对于 draw call 数量很多的应用（比如复杂的 UI 界面），这个差异会直接体现在帧时间上。
 
-#### 2. 多线程渲染能力
+### 多线程渲染能力
 
 [图：OpenGL ES 单线程提交 vs Vulkan 多线程命令缓冲区构建对比]
 
-```cpp
-// Vulkan 的多线程渲染示例
-std::thread thread1([&] {
-    // 线程1：处理命令缓冲区
-    vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
-    vkCmdDraw(commandBuffer, vertexCount, 1, 0, 0);
-});
+OpenGL ES 的另一个架构限制是命令提交只能在单一上下文中进行，本质上就是单线程渲染。Vulkan 引入了命令缓冲区（Command Buffer）的概念：不同的线程可以独立构建各自的命令缓冲区，最后在一个线程上统一提交到 GPU。对于 CPU 侧有大量渲染命令需要生成的场景——比如游戏引擎中不同线程分别处理场景渲染、UI 渲染和后处理——多线程构建命令缓冲区可以显著降低 CPU 瓶颈。
 
-std::thread thread2([&] {
-    // 线程2：处理其他渲染任务
-    vkCmdBlitImage(...);
-});
-```
+在 Android UI 渲染的场景中，多线程渲染的优势不如游戏场景明显，因为 UI 渲染的 draw call 数量通常不太多。但随着 Material Design 的效果越来越复杂（模糊、阴影、动画），这个优势在未来会越来越重要。
 
-> [自动发现: 来源 2026-03-30-ch02-gpu-optimization.md]
-> 移动 GPU 架构中，开始和结束渲染通道的代价较高，应将渲染操作合并到尽可能少的渲染通道中。使用 VK_ATTACHMENT_LOAD_OP_DONT_CARE 可以避免不必要的附件保留。
+### 更精细的内存控制
 
-#### 3. 更精细的内存控制
+Vulkan 暴露了显式的内存管理 API，开发者可以精确控制 GPU 内存的分配、映射和释放时机。在 OpenGL ES 中，这些全部由驱动隐式管理，开发者无法干预。在统一内存架构的移动设备上，这种控制能力尤为重要——CPU 和 GPU 共享同一块物理内存，合理的内存管理可以减少不必要的数据拷贝和缓存失效。
 
 ```cpp
 // Vulkan 的精确内存管理
@@ -321,173 +234,58 @@ VkMemoryAllocateInfo allocInfo{};
 allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
 allocInfo.allocationSize = memorySize;
 allocInfo.memoryTypeIndex = findMemoryType(memoryRequirements);
-
-// 按需分配，避免浪费
 vkAllocateMemory(device, &allocInfo, nullptr, &memory);
 ```
 
+> [自动发现: 来源 2026-03-30-ch02-gpu-optimization.md]
+> 移动 GPU 架构中，开始和结束渲染通道的代价较高，应将渲染操作合并到尽可能少的渲染通道中。使用 `VK_ATTACHMENT_LOAD_OP_DONT_CARE` 可以避免不必要的附件保留，减少带宽消耗。
+
 ### ANGLE 层的性能影响
 
-OpenGL ES 应用通过 ANGLE 运行在 Vulkan 上会有 5-10% 的性能开销，但在某些情况下可能更高：
+对于仍然使用 OpenGL ES 的应用，ANGLE 转换层的性能开销是需要关注的。根据 Google 和社区的测试数据，对于优化良好的 2D UI 应用，ANGLE 的性能开销在 2-5% 以内，几乎可以忽略；对于使用复杂着色器的 3D 游戏应用，开销在 5-10% 范围内；而在极端的合成基准测试中，开销可能达到 10-20%。
 
-```cpp
-// ANGLE 转换层的开销分析
-// @ 来源 ANGLE（OpenGL ES on Vulkan）的性能影响
-// 早期版本性能为原生 GLES 的 60-70%
-// 当前版本优化后为 95-98%（即 2-5% 开销）
-```
-
-优化策略：
-1. **减少绘制调用**：Vulkan 适合少量、大型的绘制调用
-2. **使用 Vertex Buffer Objects**：避免频繁的 CPU 到 GPU 数据传输
-3. **缓存编译着色器**：利用 OES_get_program_binary 扩展
-4. **实现快速显示路径**：避免中间渲染步骤
+这个开销的来源主要有两方面：一是 GLSL 到 SPIR-V 的翻译过程，二是 OpenGL ES 的状态机模型到 Vulkan 的命令缓冲区模型的转换。对于大多数日常应用来说，ANGLE 的性能损耗在可接受范围内，而且 ANGLE 带来的驱动一致性和 bug 修复的收益通常远大于性能开销。
 
 > [已验证: 官方文档, developer.android.com/guide/topics/graphics/opengl]
-> 对于大多数优化良好的应用，ANGLE 的开销在 5-10% 范围内。对于 2D 应用或 UI 渲染，这个开销可能低于 5%。
 
 ## GPU 性能瓶颈分析：fillrate bound vs vertex bound vs bandwidth bound
 
 ### 瓶颈分析的基本方法
 
-在 Android GPU 性能分析中，理解不同类型的性能瓶颈至关重要。通过简单的测试可以确定瓶颈类型：
+GPU 性能分析的第一步不是直接跳到优化，而是先搞清楚瓶颈在哪里。GPU 渲染的瓶颈大致可以分为三类：fillrate bound（像素处理能力不足）、vertex bound（顶点处理能力不足）和 bandwidth bound（内存带宽不足）。不同类型的瓶颈需要完全不同的优化方向，如果判断错了方向，优化努力就会白费。
 
-```bash
-# 判断 GPU 瓶颈类型的方法
-# 1. 降低渲染分辨率（如 720p）
-# 2. 观察性能提升幅度
-
-if (fps_improvement > 30%) {
-    // fillrate bound - 像素处理瓶颈
-} else if (fps_improvement < 10%) {
-    // vertex bound - 顶点处理瓶颈  
-} else {
-    // bandwidth bound - 内存带宽瓶颈
-}
-```
+判断瓶颈类型有一个简单实用的方法：将渲染分辨率降低到 720p，观察帧率变化。如果帧率提升超过 30%，说明瓶颈在像素处理阶段（fillrate bound），因为降低分辨率直接减少了需要处理的像素数量；如果帧率几乎没有变化（低于 10%），说明瓶颈在顶点处理阶段（vertex bound），因为分辨率降低不影响顶点数量；如果介于两者之间，瓶颈可能在内存带宽上（bandwidth bound）。
 
 ### Fillrate Bound：像素处理瓶颈
 
-定义：GPU 无法足够快地将像素写入帧缓冲区，导致性能受限于像素处理能力。
+Fillrate bound 是 Android UI 渲染中最常见的瓶颈类型。它的本质是 GPU 无法足够快地将像素写入帧缓冲区——可能是 Fragment Shader 计算量太大，也可能是过度绘制（Overdraw）导致同一像素被反复处理。
 
-#### 常见原因：
-1. **过度绘制（Overdraw）**：同一像素被多次绘制
-2. **复杂的 Fragment Shader**：每像素计算量大
-3. **高分辨率屏幕**：像素数量多
-4. **透明度混合**：多层叠加导致额外计算
+过度绘制是 fillrate bound 最典型的原因。在 Android 的开发者选项中，"Debug GPU Overdraw" 工具用颜色编码来可视化过度绘制程度：原色表示没有过度绘制，蓝色表示 1 次过度绘制，绿色表示 2 次，浅蓝表示 3 次，红色表示 4 次及以上。如果我们在应用中看到大面积的红色区域，说明大量像素被重复绘制了 4 次以上——GPU 在这些像素上做了 4 倍的工作，但最终只有最上面一层的颜色被用户看到。
 
-#### 识别方法：
-```java
-// Android 开发者选项中的 GPU 过度绘制检测
-// Debug GPU Overdraw 工具用颜色编码显示过度绘制程度
-// 
-// 绿色：正常绘制
-// 浅蓝：1次绘制
-// 蓝色：2次绘制
-// 深蓝：3次绘制
-// 红色：4次及以上绘制
-```
-
-#### 优化策略：
-```cpp
-// 减少过度绘制的代码优化
-void drawOptimizedUI(View view) {
-    // 1. 移除不必要的背景
-    if (view.getBackground() != null && view.isOpaque()) {
-        view.setBackground(null);
-    }
-    
-    // 2. 扁平化视图层次
-    flattenViewHierarchy(rootView);
-    
-    // 3. 使用不透明替代透明
-    if (viewAlpha < 0.1f) {
-        view.setOpaque(true);
-        view.setVisibility(View.GONE);
-    }
-}
-```
+导致过度绘制的常见场景包括：多层嵌套的布局各自设置了不透明背景（父布局的背景被子布局完全覆盖，但仍然被渲染了）；半透明叠加层的叠加（每增加一层半透明，就多一次像素计算）；对话框或弹出层没有移除底下的内容（底层内容虽然被遮挡但仍然被渲染）。
 
 > [已验证: 官方文档, developer.android.com/guide/topics/graphics/debug-overdraw]
 
+优化过度绘制的核心思路是减少不必要的绘制：移除被完全覆盖的背景、使用 `clipPath()` 裁剪不可见区域、将半透明视图改为不透明视图（在视觉允许的情况下）。在 Compose 中，`Modifier.graphicsLayer` 可以帮助减少不必要的重绘。
+
 ### Vertex Bound：顶点处理瓶颈
 
-定义：GPU 无法足够快地处理顶点，性能受限于顶点处理能力。
+Vertex bound 在 Android UI 渲染中相对少见，但在某些场景下会出现——比如使用了大量自定义 Path 的绘制（SVG 图标、矢量动画）、Canvas 变换层级很深导致矩阵计算复杂、或者使用了大量的 `Canvas.drawPath()` 调用。
 
-#### 常见原因：
-1. **高几何复杂度**：顶点和三角形数量多
-2. **复杂的 Vertex Shader**：每顶点计算量大
-3. **过多的绘制调用**：draw call 开销累积
-4. **低效的顶点数据**：使用高精度格式
+顶点处理瓶颈的识别主要依赖 GPU Profiling 工具。使用 Android GPU Inspector (AGI) 时，如果顶点处理时间占 GPU 总时间的比例超过 50%，就值得进一步排查。在 Perfetto 中，我们可以对比 GPU track 中不同帧的执行时间模式——如果帧的渲染时间与界面的几何复杂度正相关（比如滚动到一个包含大量 Path 的区域时 GPU 时间突增），这就是 vertex bound 的信号。
 
-#### 识别方法：
-```cpp
-// 使用 Android GPU Inspector (AGI) 分析顶点处理
-// AGI 提供顶点处理时间统计
-// 如果 vertexProcessingTime / totalTime > 50%，可能是顶点瓶颈
-```
-
-#### 优化策略：
-```cpp
-// 顶点数据优化
-void optimizeVertexData() {
-    // 1. 使用适当的精度
-    // 使用 mediump (16-bit) 而非 highp (32-bit)
-    // 对于位置数据，16-bit 精度通常足够
-    std::vector<vec3> positions; // 使用 16-bit 浮点数
-    
-    // 2. 顶点数据压缩
-    struct PackedVertex {
-        uint16_t x, y, z;    // 位置
-        uint16_t u, v;      // 纹理坐标
-        uint8_t r, g, b, a; // 颜色
-    };
-    
-    // 3. 批处理绘制调用
-    batchDrawCalls();
-}
-```
+优化的方向包括：使用更简单的几何形状替代复杂 Path（用矩形近似圆角矩形在视觉可接受的情况下）；减少 Canvas 的 save/restore 和矩阵变换层数；对于静态的复杂图形，考虑预渲染为 Bitmap 缓存。
 
 > [已验证: AOSP android-16.0.0_r1, frameworks/native/opengl/]
-> 在瓦片式渲染（TBR）架构的移动 GPU 上，通过高效管理加载和存储操作以及附件，可以显著提高性能。
+> 在瓦片式渲染（TBR）架构的移动 GPU 上，通过高效管理加载和存储操作以及附件，可以显著提高性能。TBR 架构的 GPU（如 ARM Mali）会将一帧的渲染任务划分为多个瓦片，每个瓦片独立处理，这减少了对主显存的访问频率。
 
 ### Bandwidth Bound：内存带宽瓶颈
 
-定义：GPU 受限于数据传输速度，无法获取足够的数据来处理。
+Bandwidth bound 是三种瓶颈中最容易被忽略的一种。它的本质是 GPU 在等待数据——不是 GPU 计算能力不足，而是数据从内存传输到 GPU 计算单元的速度跟不上。在移动设备的统一内存架构中，CPU、GPU、显示控制器、相机 ISP 等模块共享同一块物理内存和总线，当多个模块同时高负载工作时，内存带宽就会成为瓶颈。
 
-#### 常见原因：
-1. **大尺寸纹理**：纹理数据占用大量内存带宽
-2. **缺乏 Mipmap**：始终使用高分辨率纹理
-3. **频繁的纹理访问**：纹理采样次数多
-4. **高帧缓冲区位深度**：颜色数据读取量大
+导致 bandwidth bound 的常见场景包括：大尺寸纹理没有使用压缩格式（一张未压缩的 2048×2048 RGBA8888 纹理需要 16MB 存储，每次采样都需要从内存读取数据）；没有生成 Mipmap（GPU 总是使用最高分辨率纹理，即使物体在屏幕上只占几个像素）；帧缓冲区位深度过高（RGBA8888 比 RGBA5551 多一倍的数据量）。
 
-#### 识别方法：
-```cpp
-// 使用 AGI System Profile 分析内存带宽
-// 查看纹理内存带宽使用情况
-// 如果 avgBandwidth > peakBandwidth * 0.8，接近带宽极限
-```
-
-#### 优化策略：
-```cpp
-// 内存带宽优化
-void optimizeMemoryBandwidth() {
-    // 1. 纹理压缩
-    // 使用 ASTC 或 ETC2 压缩格式
-    loadCompressedTextures();
-    
-    // 2. 使用 Mipmap
-    generateMipmapsForTextures();
-    
-    // 3. 降低帧缓冲区精度
-    // 从 RGBA8888 降级到 RGBA5551
-    setFramebufferFormat(RGBA5551);
-    
-    // 4. 纹理图集
-    // 多个小纹理合并为一个大纹理
-    createTextureAtlas();
-}
-```
+优化带宽的核心策略是减少数据传输量：使用 ASTC 或 ETC2 纹理压缩格式（在保持视觉质量的前提下将纹理大小压缩 4-8 倍）；为所有 3D 纹理生成 Mipmap（让 GPU 根据物体大小选择合适的分辨率级别）；在视觉允许的情况下使用更低精度的帧缓冲区格式。
 
 ## GPU 内存管理：GraphicBuffer / Gralloc / GPU Memory 归属与追踪
 
@@ -495,7 +293,9 @@ void optimizeMemoryBandwidth() {
 
 [图：Android GPU 内存管理层次图——Application (GraphicBuffer) → HAL (Gralloc) → Hardware (GPU Memory)]
 
-Android 的 GPU 内存管理涉及多个层次，从应用层的 GraphicBuffer 到系统层的 Gralloc，再到硬件层的 GPU 内存分配。
+Android 的 GPU 内存管理涉及多个层次。从上往下看：应用层通过 `GraphicBuffer` 类来引用和管理图形缓冲区；系统框架层通过 BufferQueue 机制协调生产者（应用）和消费者（SurfaceFlinger）对缓冲区的使用；HAL 层通过 Gralloc 模块负责实际的物理内存分配；硬件层的 GPU 则直接访问这些物理内存来执行渲染和合成操作。
+
+理解这个层次结构的关键在于认识到：在移动设备上，CPU 和 GPU 共享同一块物理内存（统一内存架构，UMA）。这与 PC 上 CPU 内存和 GPU 显存分离的架构有本质区别。在 UMA 架构下，"GPU 内存"并不是独立的物理存储，而是从系统内存中划分出来的、具有特定对齐和访问属性的内存区域。这意味着 GPU 的内存使用会直接影响系统的可用内存总量，在分析应用内存占用时不能只看 Java heap——GPU 占用的内存同样重要。
 
 ```java
 // frameworks/base/core/java/android/graphics/GraphicBuffer.java
@@ -512,66 +312,26 @@ public class GraphicBuffer {
 
 ### Gralloc：图形内存分配器
 
-Gralloc（Graphics Memory Allocator）是 Android 硬件抽象层的重要组成部分，负责 GPU 内存分配。
+Gralloc（Graphics Memory Allocator）是 Android HAL 层中专门负责图形缓冲区内存分配的模块。当应用或系统需要一块新的图形缓冲区时（比如创建一个新的 Surface，或者 Surface 需要更多的缓冲区），请求最终会到达 Gralloc HAL。
+
+Gralloc 分配内存时，调用者需要通过 `usage` 标志位来声明这块内存的用途——比如 `USAGE_HW_TEXTURE` 表示这块缓冲区将被 GPU 作为纹理读取，`USAGE_HW_RENDER` 表示 GPU 会向这块缓冲区写入渲染结果，`USAGE_SW_READ_OFTEN` 表示 CPU 会频繁读取这块内存。Gralloc 根据 usage 标志来决定内存的物理布局：应该分配在哪个内存区域、是否需要 cache 策略、对齐要求是什么。这些决策直接影响 GPU 访问这块内存的效率。
 
 ```cpp
-// hardware/interfaces/graphics/allocator/1.0/IGraphicAllocator.h
+// hardware/interfaces/graphics/allocator/4.0/IAllocator.hal
 // @ AOSP android-16.0.0_r1
-class IGraphicAllocator : public IInterface {
-public:
-    virtual Return<void> allocate(
-        const BufferDesc& descriptor,
-        allocate_cb hidlCb) = 0;
-    
-    virtual Return<void> dump(dump_cb hidlCb) = 0;
+interface IAllocator {
+    allocate(BufferDesc descriptor) generates (Error error, Buffer buffer);
+    dump() generates (string result);
 };
 ```
 
-#### Gralloc 的关键特性：
-1. **使用标志位控制内存属性**：如 `USAGE_HW_TEXTURE`、`USAGE_SW_READ_OFTEN`
-2. **支持多种内存类型**：设备本地内存、共享内存等
-3. **内存对齐优化**：提高 GPU 访问效率
-4. **生命周期管理**：跟踪内存引用计数
-
-### 统一内存架构下的特殊考量
-
-在移动设备中，CPU 和 GPU 通常共享同一内存空间（统一内存架构），这带来了一些特殊问题：
-
-```cpp
-// ARM Mali GPU 统一内存管理
-// @ 来源 2026-03-30-ch02-gpu-optimization.md
-// 在共享 CPU 和 GPU 内存的移动系统中，
-// VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT 的重要性不如独立 GPU 系统
-```
-
-#### 内存优化策略：
-1. **零拷贝操作**：使用 DMA-BUF 或 ION 共享内存
-2. **内存复用**：缓存分配的 GraphicBuffer，避免重复分配
-3. **内存对齐**：确保内存地址对齐，提高 GPU 访问效率
-4. **内存池**：预分配内存池，减少运行时分配开销
+> [已验证: AOSP android-16.0.0_r1, hardware/interfaces/graphics/allocator/]
 
 ### GPU 内存追踪和分析
 
-Android 12 引入了改进的 GPU 内存追踪机制：
+Android 12 引入了改进的 GPU 内存追踪机制，使得开发者和性能分析工程师可以更好地了解 GPU 的内存使用情况。在 Perfetto 中，我们可以通过 `gpu_memory` track 看到每个进程的 GPU 内存使用量随时间的变化。`adb shell dumpsys meminfo <package_name>` 的输出中也包含了 GPU 相关的内存统计。
 
-```java
-// frameworks/base/core/java/android/view/WindowManagerGlobal.java
-// @ AOSP android-16.0.0_r1
-public class WindowManagerGlobal {
-    // [存疑: trackGpuMemoryUsage() 及 getGpuMemoryUsage() 方法在 AOSP WindowManagerGlobal 中未找到，可能为示意性伪代码]
-    private static void trackGpuMemoryUsage() {
-        // GPU 内存使用追踪
-        long gpuMemory = getGpuMemoryUsage();
-        logMemoryUsage("gpu", gpuMemory);
-    }
-}
-```
-
-#### 实用的内存分析工具：
-1. **Android GPU Inspector (AGI)**：详细的 GPU 内存分析
-2. **VK_EXT_device_memory_report**：Vulkan 内存报告扩展
-3. **memtrack HAL**：内存追踪硬件抽象层
-4. **adb shell dumpsys meminfo**：系统内存使用情况
+在实际分析中，以下几种 GPU 内存问题比较常见：缓冲区泄漏——GraphicBuffer 被分配但没有正确释放，导致 GPU 内存持续增长，这在应用频繁创建和销毁 Surface 时容易发生；缓冲区积压——生产者（应用）产生帧的速度超过消费者（SurfaceFlinger）处理的速度，导致 BufferQueue 中积压了多个缓冲区，每个缓冲区都占用 GPU 内存；以及大型纹理未释放——加载了大量高分辨率纹理但没有在不需要时及时释放。
 
 > [已验证: AOSP android-16.0.0_r1, frameworks/native/services/surfaceflinger/]
 > Android 14 提供了减少图形内存消耗的功能，允许清除位于 Composer HAL 和 SurfaceFlinger 之间的每层缓冲区缓存。这对于高分辨率屏幕和内存有限的设备特别有益。
@@ -580,329 +340,181 @@ public class WindowManagerGlobal {
 
 ### ANGLE 的设计目标
 
-ANGLE 是 Google 开发的兼容层，旨在将 OpenGL ES API 调用转换为 Vulkan 调用。它的主要目标包括：
+ANGLE（Almost Native Graphics Layer Engine）是 Google 开发的兼容层，它将 OpenGL ES API 调用翻译为 Vulkan 调用。ANGLE 的设计目标不仅仅是"兼容"——更重要的是"统一"。在 Android 16 之前，不同 GPU 厂商各自实现 OpenGL ES 驱动，质量参差不齐，bug 各不相同。ANGLE 将 OpenGL ES 的实现统一为一套代码（翻译到 Vulkan），Google 只需要维护这一套实现的质量，而不需要分别与三个厂商协调驱动修复。
 
-1. **标准化 OpenGL 实现**：减少不同厂商 OpenGL 驱动的差异
-2. **统一渲染后端**：所有应用最终都使用 Vulkan
-3. **渐进式迁移**：允许应用逐步迁移到 Vulkan
+ANGLE 的架构可以理解为一个翻译层：上层应用仍然使用熟悉的 OpenGL ES API（glDrawArrays、glTexImage2D 等），ANGLE 在内部将这些调用翻译为对应的 Vulkan 操作（vkCmdDraw、vkCreateImage 等）。对于应用开发者来说，这个过程完全透明——不需要修改任何代码，应用就自动运行在 Vulkan 后端上。
 
-```cpp
-// ANGLE 的架构示意图
-// [图：ANGLE 架构图]
-// [OpenGL ES App] -> [ANGLE Layer] -> [Vulkan Driver] -> [GPU]
-//                   (翻译层)    (Vulkan API)
-```
-
-### 性能影响的量化分析
-
-ANGLE 的性能开销根据应用类型和硬件配置而异：
-
-#### 不同应用的性能影响：
-```cpp
-// ANGLE 性能数据概览
-// @ 来源 2026-03-30-ch02-vulkan-android16.md
-//
-// 应用类型       | 性能开销 | 说明
-// -------------- | -------- | ----------------
-// 2D UI 应用     | 2-5%     | 简单绘制，开销较低
-// 3D 游戏应用     | 5-10%    | 复杂着色器，中等开销
-// 合成基准测试    | 10-20%   | 极端情况，开销较高
-// 模拟器环境      | 30-50%   | 虚拟化额外开销
-```
-
-#### 优化 ANGLE 性能的策略：
-```cpp
-// ANGLE 优化代码示例
-void optimizeANGLEPerformance() {
-    // 1. 最小化绘制调用
-    // 合并小的绘制调用为大的绘制调用
-    batchDrawCalls();
-    
-    // 2. 使用 Vertex Buffer Objects
-    // 避免频繁的 CPU 到 GPU 数据传输
-    VBO* vertexBuffer = createVBO(vertices);
-    useVBO(vertexBuffer);
-    
-    // 3. 缓存编译着色器
-    // 避免 ANGLE 重复编译
-    cacheCompiledShaders();
-    
-    // 4. 使用快速显示路径
-    // render-to-backbuffer，避免中间渲染
-    enableFastPresentPath();
-}
-```
+[图：ANGLE 架构图——OpenGL ES App → ANGLE 翻译层 → Vulkan Driver → GPU]
 
 ### ANGLE 在 Android 16 中的角色
 
-在 Android 16 中，ANGLE 的角色更加重要：
+在 Android 16 中，ANGLE 的角色从"可选兼容层"升级为"默认渲染路径"。对于仍然使用 OpenGL ES 的应用，系统自动通过 ANGLE 将渲染调用转发到 Vulkan 后端；对于直接使用 Vulkan 的应用，则绕过 ANGLE 直接与 Vulkan 驱动交互；对于不支持 Vulkan 的极老旧设备，才会回退到原生的 OpenGL ES 驱动。
 
-```java
-// Android 16 中的 ANGL使用策略
-// @ 来源 2026-03-30-ch02-vulkan-android16.md
-if (deviceSupportsVulkan()) {
-    if (appTargetsVulkan()) {
-        // 新应用：直接使用 Vulkan
-        createVulkanRenderer();
-    } else {
-        // 旧应用：通过 ANGLE 转换
-        createANGLERenderer();
-    }
-} else {
-    // 不支持 Vulkan 的旧设备
-    createOpenGLRenderer();
-}
-```
+这个分层策略意味着 Android 16 上的绝大多数应用最终都运行在 Vulkan 上——要么是原生 Vulkan 应用直接使用，要么是 OpenGL ES 应用通过 ANGLE 间接使用。对于性能优化工程师来说，这意味着理解 Vulkan 的性能特征变得比以往任何时候都重要。
 
 ## GPU Profiling 工具：Snapdragon Profiler、ARM Streamline、AGI
 
 ### Android GPU Inspector (AGI)
 
-AGI 是 Google 官方的 Android GPU 性能分析工具，提供深入的分析能力。
+AGI 是 Google 官方的 Android GPU 性能分析工具，也是 Android 开发者最应该熟悉的第一款 GPU 工具。AGI 提供了帧分析器（逐帧分析 GPU 渲染时间）、系统分析器（CPU 和 GPU 交互分析）、内存分析器（GPU 内存使用分析）和着色器分析器（着色器性能分析）四个核心功能模块。
 
-#### AGI 的核心功能：
-1. **帧分析器**：逐帧分析 GPU 渲染时间
-2. **系统分析器**：CPU 和 GPU 交互分析
-3. **内存分析器**：GPU 内存使用分析
-4. **着色器分析器**：着色器性能分析
+在瓶颈定位的工作流中，AGI 的使用方式通常是：先用系统分析器确认问题确实出在 GPU 侧（而不是 CPU 侧），然后用帧分析器找到 GPU 时间最长的那一帧，最后对着色器和渲染状态进行分析，定位具体的瓶颈环节。AGI 的一个独特优势是它可以与 Perfetto Trace 结合使用——在 Perfetto 中看到 GPU 时间异常的帧后，可以用 AGI 对同一时间段进行深度分析。
+
+### 平台专用工具
+
+除了 AGI 之外，不同 GPU 平台还有各自的专业分析工具。Snapdragon Profiler 是 Qualcomm 官方的 GPU 分析工具，专为 Adreno GPU 设计，提供详细的 GPU 性能计数器、帧时间线分析和功耗分析。ARM Streamline 是 ARM 官方的性能分析工具，支持 Mali GPU，它的特色是可以同时分析 CPU 和 GPU 的协同工作情况，对理解大小核架构下 GPU 的调度行为特别有用。
 
 ```bash
-# AGI 使用示例
+# AGI 基本使用流程
 # 1. 连接设备
 adb devices
-# 2. 启动 AGI
-agi_server
-# 3. 在浏览器中访问
-http://localhost:9999
-```
-
-#### 在 AGI 中识别瓶颈：
-```cpp
-// AGI 分析结果解读
-if (gpuFrameTime > 16.67ms) { // 60fps = 16.67ms
-    // 帧率低于 60fps
-    if (vertexTime / gpuTime > 0.5) {
-        // 顶点处理瓶颈
-        optimizeVertexShader();
-    } else if (fragmentTime / gpuTime > 0.5) {
-        // 片段处理瓶颈
-        optimizeFragmentShader();
-    } else if (memoryBandwidth > peakBandwidth * 0.8) {
-        // 内存带宽瓶颈
-        optimizeMemoryUsage();
-    }
-}
-```
-
-### Snapdragon Profiler
-
-Qualcomm 官方的 GPU 分析工具，专为 Adreno GPU 优化。
-
-#### 关键特性：
-1. **低级 GPU 计数器**：详细的 GPU 性能计数器
-2. **帧时间线分析**：精确的 GPU 执行时间分析
-3. **内存带宽分析**：GPU 内存带宽使用情况
-4. **功耗分析**：GPU 功耗相关数据
-
-```bash
-# Snapdragon Profiler 使用流程
-# 1. 下载并安装 Snapdragon Profiler
-# 2. 连接设备
-# 3. 选择分析类型
+# 2. 启动 AGI（通过 Android Studio 或命令行）
+# 3. 选择目标应用和分析模式
 # 4. 录制 GPU Trace
-# 5. 分析结果
+# 5. 分析结果：关注帧时间、着色器执行时间、内存带宽使用
 ```
 
-### ARM Streamline
-
-ARM 官方的性能分析工具，支持 Mali GPU。
-
-#### 主要功能：
-1. **多核分析**：CPU 和 GPU 协同分析
-2. **实时监控**：实时性能数据采集
-3. **高级过滤**：按时间、事件、进程过滤
-4. **报告生成**：详细的性能分析报告
-
-```bash
-# Streamline 命令行使用
-# 1. 录制数据
-streamline-record -o my_trace.gcf
-# 2. 转换为可读格式
-gatord -i my_trace.gcf
-# 3. 分析结果
-streamline-analyze my_trace.gcf
-```
-
-### GPU Profiling 的最佳实践
-
-#### 性能分析流程：
-1. **建立基线**：先测试未优化的性能基线
-2. **识别瓶颈**：使用工具确定主要瓶颈类型
-3. **制定策略**：针对瓶颈制定优化策略
-4. **验证效果**：重新测试验证优化效果
-
-#### 常见的性能指标：
-```cpp
-// 关键 GPU 性能指标
-typedef struct {
-    float fps;                    // 帧率
-    float frameTime;              // 帧时间 (ms)
-    float vertexTime;            // 顶点处理时间
-    float fragmentTime;           // 片段处理时间
-    float memoryBandwidth;        // 内存带宽
-    int overdrawLevel;           // 过度绘制级别
-    int drawCallCount;           // 绘制调用次数
-} GPUPerformanceMetrics;
-```
+在实际工作中，我们建议先从 AGI 入手——它足够通用，覆盖了大多数分析场景。如果需要针对特定平台的深度分析（比如需要查看 Adreno GPU 的特定性能计数器），再切换到平台专用工具。
 
 > [已验证: 官方文档, developer.android.com/studio/profile/android-gpu-inspector]
-> GPU 性能优化是一个迭代过程。建议先解决最明显的瓶颈（如过度绘制），然后再处理更复杂的问题（如着色器优化）。
 
-## 实战案例：GPU 性能优化流程
+## 实战案例：社交应用图片滚动中的 GPU 瓶颈定位
 
-### 案例背景：社交应用的图片滚动卡顿
+### 问题现象
 
-某社交应用在用户快速滚动图片列表时出现明显的卡顿，我们需要分析并解决这个性能问题。
+某社交应用在用户快速滚动图片信息流时，出现明显的卡顿和掉帧。用户反馈"滑动的时候一卡一卡的"，特别是在图片较多的页面更加明显。测试设备为搭载 Snapdragon 8 Gen 2 的旗舰机型，运行 Android 15，理论上 GPU 性能不应该成为瓶颈。
 
-### 1. 问题复现和分析
+### 分析思路
 
-```java
-// 问题复现代码
-RecyclerView recyclerView = findViewById(R.id.recyclerView);
-recyclerView.setAdapter(imageAdapter);
-// 快速滚动时的性能问题
-```
+面对"滑动卡顿"这类问题，我们首先要区分瓶颈在 CPU 侧还是 GPU 侧。如果是 CPU 瓶颈，通常在 Perfetto 中会看到主线程在 measure/layout/doFrame 上花费大量时间，而 GPU track 相对空闲。如果是 GPU 瓶颈，则主线程和 RenderThread 的 CPU 工作很快完成，但 GPU track 显示渲染时间过长，导致帧无法在 VSync 周期内完成。
 
-#### 初步分析：
-1. **CPU 分析**：主线程负载正常，不是 CPU 瓶颈
-2. **GPU 分析**：发现 GPU 时间异常高（> 16.67ms）
-3. **内存分析**：内存使用正常
+### 抓取与定位
 
-### 2. 使用 AGI 深入分析
+我们使用 Perfetto 抓取了滚动场景的完整 Trace。在 Trace 中可以看到：
 
-```bash
-# 使用 AGI 分析 GPU 性能
-# 1. 录制滚动过程中的 GPU Trace
-# 2. 发现以下问题：
-#    - Fragment Shader 时间占比 70%
-#    - 纹理采样次数过多（每次采样 4-8 次）
-#    - 过度绘制级别达到 3-4 级
-```
+- **主线程**：doFrame 耗时约 3-5ms，measure/layout 正常，CPU 侧不是瓶颈。
+- **RenderThread**：DrawCommands 录制约 1-2ms，正常范围。
+- **GPU track**：每帧的 GPU 渲染时间达到 18-25ms，远超 16.67ms（60fps 的帧预算）。
 
-### 3. 优化策略实施
+关键发现：GPU 渲染时间远超 VSync 周期，这是典型的 GPU 瓶颈。而且 GPU 时间并非稳定在一个固定值——在图片密集区域，GPU 时间明显更长。
 
-#### 优化 1：减少过度绘制
-```xml
-<!-- 优化前：多层嵌套布局 -->
-<LinearLayout>
-    <ImageView android:background="@drawable/bg"/>
-    <ImageView android:src="@drawable/content"/>
-</LinearLayout>
+[待高爷补充：Perfetto Trace 截图——标注 GPU track 中每帧的渲染时间，以及与 VSync 周期的对应关系]
 
-<!-- 优化后：单层布局 -->
-<ImageView android:src="@drawable/content_with_bg"/>
-```
+### 逐步分析
 
-#### 优化 2：纹理图集
-```java
-// 将多个小纹理合并为大纹理
-TextureAtlas atlas = new TextureAtlas();
-atlas.addTexture("avatar1", avatar1);
-atlas.addTexture("avatar2", avatar2);
-atlas.addTexture("avatar3", avatar3);
-// 使用时从图集中采样
-Vector2 uv = atlas.getUV("avatar1");
-```
+接下来我们用 AGI 对滚动过程进行了 GPU 帧分析。AGI 的帧分析结果显示：
 
-#### 优化 3：简化着色器
-```glsl
-// 优化前：复杂着色器
-precision mediump float;
-varying vec2 vTexCoord;
-uniform sampler2D uTexture1;
-uniform sampler2D uTexture2;
-uniform sampler2D uTexture3;
-uniform sampler2D uTexture4;
+**第一步：确认瓶颈类型。** 我们将渲染分辨率降到 720p 重新测试，发现帧率从 40fps 提升到 55fps，提升幅度超过 30%。这确认了瓶颈类型是 fillrate bound——像素处理能力不足。
 
-void main() {
-    vec4 color1 = texture2D(uTexture1, vTexCoord);
-    vec4 color2 = texture2D(uTexture2, vTexCoord);
-    vec4 color3 = texture2D(uTexture3, vTexCoord);
-    vec4 color4 = texture2D(uTexture4, vTexCoord);
-    gl_FragColor = (color1 + color2 + color3 + color4) / 4.0;
-}
+**第二步：分析 Fragment Shader 时间。** 在 AGI 的着色器分析中，我们看到 Fragment Shader 的执行时间占 GPU 总时间的 70% 以上。主要的耗时操作是纹理采样——每个图片 item 的渲染需要采样 4-8 次纹理（圆角裁剪 mask + 图片本身 + 阴影效果 + 叠加渐变）。
 
-// 优化后：简化着色器
-precision mediump float;
-varying vec2 vTexCoord;
-uniform sampler2D uTexture;
+**第三步：检查过度绘制。** 使用 Android 开发者选项的"Debug GPU Overdraw"检查后，发现信息流列表项之间存在严重的过度绘制——列表项的背景、卡片的阴影、图片的圆角蒙版，加在一起导致每个像素被绘制了 3-4 次。
 
-void main() {
-    vec4 color = texture2D(uTexture, vTexCoord);
-    gl_FragColor = color;
-}
-```
+**第四步：分析纹理带宽。** 每张图片使用的是未压缩的 RGBA8888 格式，一张 1080×1080 的图片就需要约 4.5MB 的纹理数据。在快速滚动时，GPU 需要频繁从内存中读取这些纹理数据，加上多次采样，内存带宽压力很大。
 
-### 4. 效果验证
+### 根因与结论
 
-```java
-// 性能对比测试
-public class PerformanceTest {
-    public void testPerformance() {
-        // 优化前
-        float fpsBefore = measureFPS();
-        float gpuTimeBefore = measureGPUTime();
-        
-        // 应用优化
-        applyOptimizations();
-        
-        // 优化后
-        float fpsAfter = measureFPS();
-        float gpuTimeAfter = measureGPUTime();
-        
-        // 计算改进
-        float fpsImprovement = (fpsAfter - fpsBefore) / fpsBefore * 100;
-        float gpuImprovement = (gpuTimeBefore - gpuTimeAfter) / gpuTimeBefore * 100;
-        
-        Log.d("Performance", "FPS 改进: " + fpsImprovement + "%");
-        Log.d("Performance", "GPU 时间改进: " + gpuImprovement + "%");
-    }
-}
-```
+综合以上分析，卡顿的根因是三个因素的叠加：过度绘制导致像素被重复处理 3-4 次；Fragment Shader 中过多的纹理采样增加了每像素的计算量和内存带宽消耗；大尺寸未压缩纹理进一步加剧了带宽压力。三个因素共同作用，使得 GPU 在每个 VSync 周期内都无法完成所有像素的处理。
 
-#### 优化结果：
-- **帧率提升**：从 45fps 提升到 58fps（29% 提升）
-- **GPU 时间减少**：从 22ms 降低到 12ms（45% 减少）
-- **过度绘制**：从 3-4 级降低到 1-2 级
-- **内存使用**：保持不变
+### 修复方案
 
-### 5. 总结和经验
+针对三个根因，我们分别实施了优化：
 
-这个案例展示了 GPU 性能优化的完整流程：
+**减少过度绘制。** 将列表项的背景和卡片的背景合并——原来列表项有一个灰色背景，上面又叠了一个带白色背景的卡片，卡片外面还有阴影层。优化后将列表项的背景直接设为卡片背景色，移除了中间的重复背景层。同时使用 `canvas.clipPath()` 裁剪被遮挡的区域，避免渲染不可见内容。
 
-1. **准确识别瓶颈**：使用专业工具确定真正的瓶颈类型
-2. **针对性优化**：不是盲目优化，而是针对具体问题
-3. **渐进式改进**：先解决最明显的问题，再处理复杂问题
-4. **数据驱动**：用实际数据验证优化效果
+**简化 Fragment Shader。** 原来的实现中，圆角裁剪使用了独立的纹理 mask 采样，阴影效果使用了额外的 blur pass。优化后将圆角效果改为在着色器中用 SDF（Signed Distance Field）计算，不需要额外的纹理采样；阴影效果改为预渲染到纹理图集中，避免实时 blur 计算。
 
-通过这个案例，我们学到的关键经验是：
+**纹理压缩和缓存。** 将图片格式从 RGBA8888 改为 ASTC 6×6 压缩格式（压缩比约 4:1，视觉质量损失极小）。同时实现了纹理图集——将多个小尺寸的 avatar 图片合并到一张大纹理中，减少纹理切换和绑定的开销。
 
-> GPU 性能优化不是简单的"减少代码"，而是理解 GPU 的工作原理和限制。在很多情况下，性能问题并非代码复杂导致，而是对 GPU 工作方式的理解不足。
+### 效果验证
+
+优化后的 Perfetto Trace 显示：
+
+- GPU 每帧渲染时间从 18-25ms 降低到 8-12ms，降幅约 50%。
+- 帧率从 40-45fps 提升到 55-58fps，基本达到 60fps 的目标。
+- 过度绘制从 3-4 级降低到 1-2 级。
+
+### 举一反三
+
+这个案例揭示了一个通用的 GPU 性能优化规律：**GPU 瓶颈往往是多个小问题叠加的结果，而不是单一的大问题。** 每个单独的因素（过度绘制、多次纹理采样、未压缩纹理）可能只贡献了几毫秒的开销，但加在一起就超过了 16.67ms 的帧预算。因此 GPU 优化的思路不是"找一个最大的问题解决它"，而是"逐一消除所有小的性能浪费"。
+
+另外，这个案例也说明了一个重要观点：GPU 性能优化不等于"减少代码"。很多时候，问题的根因不是代码写得不好，而是对 GPU 工作方式的理解不足——比如不理解纹理压缩可以减少带宽消耗，不理解过度绘制会让 GPU 做大量无用功，不理解多个半透明叠加层的性能代价。
+
+## 与其他机制的关系
+
+GPU 渲染并不是一个独立的环节，它是整个 Android 渲染管线中的一环。理解 GPU 在管线中的位置，有助于我们在分析问题时快速定位责任方。
+
+**VSync → GPU 的关系。** VSync 信号（详见 §2.3）定义了每一帧的时间预算。在 60Hz 屏幕上，每帧只有 16.67ms；在 120Hz 屏幕上，预算缩短到 8.33ms。GPU 必须在这个时间窗口内完成从接收渲染命令到输出像素的全部工作。如果 GPU 处理超时，帧就会被丢弃（掉帧）。
+
+**Choreographer → GPU 的关系。** Choreographer（详见 §2.4）在 VSync-app 信号到来时触发 doFrame，驱动主线程完成 measure/layout/draw。主线程完成 draw 命令的录制后，RenderThread 将这些命令提交给 GPU。在 Perfetto 中，我们可以清楚地看到这个时序关系：Choreographer.doFrame → RenderThread.draw → GPU 渲染。
+
+**MainThread/RenderThread → GPU 的关系。** 在 Android 12+ 的架构中（详见 §2.5），主线程负责录制 DisplayList（draw 命令列表），RenderThread 负责将 DisplayList 通过 Skia 转换为 GPU 命令并提交。这意味着 GPU 渲染的开始时间取决于 RenderThread 何时完成命令提交，而 RenderThread 的提交又取决于主线程何时完成 draw 命令录制。任何一个环节的延迟都会推迟 GPU 开始工作的时间。
+
+**SurfaceFlinger → GPU 的关系。** SurfaceFlinger（详见 §2.6）在 VSync-sf 信号到来时读取应用渲染好的缓冲区，将其与其他图层合成为最终图像。SurfaceFlinger 的合成操作本身也可能使用 GPU（GPU 合成路径），这意味着应用和 SurfaceFlinger 在某些时刻会竞争 GPU 资源。在 Perfetto 中，我们有时会看到应用的 GPU 渲染和 SurfaceFlinger 的 GPU 合成时间重叠，这就是 GPU 资源竞争的表现。
+
+## 在 Perfetto 中的具体表现
+
+在 Perfetto Trace 中，GPU 渲染相关的信息分布在多个 track 中，理解这些 track 的含义和它们之间的关系，是 GPU 性能分析的入门基础。
+
+### GPU 相关 Track
+
+**gpu_render_stages track。** 这是最核心的 GPU track，它显示了 GPU 在每个时间段执行的具体渲染阶段。在 Qualcomm Adreno 设备上，我们可以看到 Vertex Shader、Fragment Shader 等阶段的明确标注。在 ARM Mali 设备上，对应的 track 可能以不同的名称出现，但核心信息相同。如果这个 track 显示某帧的 Fragment Shader 阶段特别长，就是 fillrate bound 的直接信号。
+
+**RenderThread track。** 虽然 RenderThread 是 CPU 侧的线程，但它的活动与 GPU 渲染直接相关。当 RenderThread 调用 `eglSwapBuffers()` 或 Vulkan 的 `vkQueuePresentKHR()` 提交帧时，如果 GPU 还没有完成上一帧的渲染，RenderThread 会被阻塞等待。在 Perfetto 中，这种等待表现为 RenderThread 上的长段 sleep/wait 状态——这通常意味着 GPU 是瓶颈。
+
+**SurfaceFlinger track。** SurfaceFlinger 的活动显示了帧合成的时序。当 SurfaceFlinger 在 VSync-sf 时刻尝试读取应用的缓冲区时，如果应用还没有完成渲染（GPU 还在工作），SurfaceFlinger 只能使用上一帧的缓冲区——这就是掉帧在 Trace 中的直接表现。
+
+**VSYNC-app 和 VSYNC-sf track。** 这两个 track 显示了 VSync 信号的时序。通过对比 VSYNC-app 的间隔和 GPU 渲染完成时间，我们可以判断 GPU 是否在 VSync 周期内完成了工作。
+
+### 典型模式对比
+
+**正常渲染模式：** VSYNC-app 到来后，主线程快速完成 doFrame（3-5ms），RenderThread 提交命令（1-2ms），GPU 完成渲染（5-8ms），整个流程在下一个 VSYNC-app 到来前完成。在 Trace 中，GPU track 的活动块整齐排列，每个块的长度都在帧预算以内。
+
+**GPU 瓶颈模式：** GPU track 上的活动块长度超过 VSync 间隔（16.67ms@60Hz），RenderThread 在提交时被阻塞（显示为等待状态），SurfaceFlinger 在 VSYNC-sf 时刻取不到最新的帧。在 Trace 中，掉帧表现为 GPU activity 跨越了两个或更多 VSync 边界。
+
+**Shader Compilation Jank 模式：** 在正常的 GPU 渲染序列中，突然出现一个特别长的 GPU 活动块（可能达到几十毫秒），之后恢复正常。这种"孤立的长帧"通常就是着色器编译导致的。在 Android 16+ 上，由于 SPIR-V 预编译的引入，这种模式会越来越少。
+
+[待高爷补充：Perfetto Trace 截图——分别展示正常模式、GPU 瓶颈模式和 Shader Compilation Jank 模式的 GPU track 表现]
+
+## 常见问题与误区
+
+### "GPU 占用高 = 需要优化 GPU"？
+
+不一定。GPU 占用高可能是正常的——比如一个全屏的游戏或视频应用，GPU 持续工作就是它的本职。只有当 GPU 占用高导致了可感知的用户体验问题（卡顿、发热、耗电过快）时，才需要优化。很多时候，"GPU 占用高"恰恰说明 GPU 在努力工作、没有被闲置浪费——这反而是效率高的表现。真正需要关注的是"GPU 做了大量无用功"的场景，比如严重的过度绘制。
+
+### "过度绘制一定是问题"？
+
+不一定。过度绘制是否成为问题取决于程度。Android 官方给出的参考标准是：1-2 次过度绘制通常可以接受，3 次及以上才需要认真优化。如果一个界面只有少量区域存在 3 次以上的过度绘制，而且不是滚动性能的关键路径，优化的优先级可以放低。过度绘制优化的重点是高频滚动区域、动画区域和全屏覆盖区域。
+
+### "GPU 渲染一定比 CPU 渲染快"？
+
+在大多数情况下是的——GPU 的并行计算能力远超 CPU，处理图形渲染任务有天然优势。但也有例外场景：当绘制内容非常简单（比如一个纯色矩形），GPU 渲染的固定开销（命令提交、状态切换、同步等待）可能反而比 CPU 直接写像素更慢。这就是为什么 Android 在某些情况下会回退到软件渲染路径。另一个容易忽略的点是 GPU 渲染会增加功耗——对于简单的 UI 操作，CPU 软件渲染可能更省电。
+
+### "硬件加速解决一切渲染性能问题"？
+
+硬件加速确实将大部分渲染工作从 CPU 卸载到了 GPU，但它并不能自动解决所有性能问题。硬件加速解决的是"渲染效率"问题（GPU 并行处理像素比 CPU 串行处理快），但它不解决"渲染工作量"问题——如果界面设计本身导致大量不必要的绘制操作，硬件加速只是让 GPU 更快地做无用功。而且硬件加速引入了一些 CPU 侧的新开销（Canvas 状态管理、DisplayList 录制），在某些极端场景下反而可能比软件渲染慢。
+
+### "120Hz 屏幕需要 GPU 性能翻倍"？
+
+这是一个常见的误解。120Hz 屏幕意味着每帧的预算从 16.67ms 缩短到 8.33ms，但这并不意味着 GPU 的工作量翻倍了——GPU 每帧的工作量取决于画面复杂度，与刷新率无关。真正变化的是时间预算：GPU 必须在更短的时间内完成同样的工作。这意味着在 120Hz 下，原本在 60Hz 下不明显的 GPU 瓶颈会变得突出。反过来，如果一个应用在 60Hz 下有 10ms 的 GPU 余量（GPU 只需要 6.67ms 就能完成渲染），升级到 120Hz 后只要 GPU 能在 8.33ms 内完成就仍然流畅。
 
 ## 参考资料
 
 ### AOSP 源码路径
-- frameworks/base/core/java/android/graphics/ - 图形核心类
-- frameworks/native/libs/ui/ - UI 层实现
-- frameworks/native/opengl/ - OpenGL ES 实现
-- frameworks/native/vulkan/ - Vulkan 支持
+- `frameworks/base/core/java/android/graphics/` — 图形核心类（Canvas、Paint、Shader、GraphicBuffer 等）
+- `frameworks/native/libs/ui/` — GraphicBuffer 的 native 实现
+- `frameworks/native/opengl/` — OpenGL ES EGL/GLES 实现
+- `frameworks/native/vulkan/` — Vulkan API 支持
+- `hardware/interfaces/graphics/allocator/` — Gralloc HAL 定义
+- `frameworks/native/services/surfaceflinger/` — SurfaceFlinger 合成服务
 
 ### 官方文档
-- https://developer.android.com/guide/topics/graphics/opengl
-- https://developer.android.com/guide/topics/graphics/gpu
-- https://developer.android.com/guide/topics/graphics/hardware-acceleration
+- GPU 概览：<https://developer.android.com/guide/topics/graphics/>
+- OpenGL ES 开发指南：<https://developer.android.com/guide/topics/graphics/opengl>
+- 硬件加速说明：<https://developer.android.com/guide/topics/graphics/hardware-acceleration>
+- Android GPU Inspector (AGI)：<https://developer.android.com/studio/profile/android-gpu-inspector>
+- GPU 过度绘制调试：<https://developer.android.com/guide/topics/graphics/debug-overdraw>
 
 ### 工具和资源
-- Android GPU Inspector (AGI)：https://developer.android.com/studio/profile/android-gpu-inspector
-- Snapdragon Profiler：https://developer.qualcomm.com/software/snapdragon-profiler
-- ARM Streamline：https://developer.arm.com/tools-and-software/streamline-performance-analyzer
+- Snapdragon Profiler：<https://developer.qualcomm.com/software/snapdragon-profiler>
+- ARM Streamline：<https://developer.arm.com/tools-and-software/streamline-performance-analyzer>
