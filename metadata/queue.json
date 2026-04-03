@@ -1,6 +1,6 @@
 {
-  "last_updated": "2026-04-04T05:25:00",
-  "total_items": 14,
+  "last_updated": "2026-04-04T06:34:26",
+  "total_items": 15,
   "priority_breakdown": {
     "high": 4,
     "medium": 3,
@@ -274,6 +274,39 @@
       "rework_fixes": [
         "B1 commitAllowingStateLoss 技术误导修正：移除误导性的 commitAllowingStateLoss() 替代 commit() 建议，替换为两条准确优化方向：(1) 将 Fragment 事务提交时机与动画帧解耦 + (2) 在非动画期间使用 commitNow() 同步执行，补充 AOSP 验证说明"
       ]
+    },
+    {
+      "section": "7.5",
+      "section_title": "优化策略",
+      "priority": 90,
+      "reason": "[review回炉] 4个段落使用纯列表格式需转为叙述风格；缺少Trace/Perfetto验证方法描述",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "需重写",
+          "location": "减少层级的其他手段 / Binder 调用优化 / 合理的线程池配置 / 预渲染与预计算策略",
+          "detail": "4个段落使用纯列表格式，违反 writing-guide.md 叙述优先规范",
+          "suggestion": "转为连贯叙述段落，解释每条策略为什么有效、什么场景适用、在Trace中怎么看"
+        },
+        {
+          "type": "需补充素材",
+          "location": "布局优化/RecyclerView优化/线程优化段落",
+          "detail": "开头承诺了Trace验证方法，但主要段落缺少Perfetto定位描述",
+          "suggestion": "补充布局层级过深/RecyclerView滑动卡顿/Binder调用耗时的Trace特征"
+        },
+        {
+          "type": "需确认",
+          "location": "常见误区第2条",
+          "detail": "Compose BOM 2025.12.00版本号和性能对等声明待确认",
+          "suggestion": "核实版本号和声明来源"
+        }
+      ],
+      "added_by": "task6-review",
+      "added_at": "2026-04-04T06:34:26",
+      "status": "pending",
+      "original_review_log": "logs/review/2026-04-04-0626-review.md"
     }
   ]
 }

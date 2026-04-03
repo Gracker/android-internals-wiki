@@ -1,7 +1,7 @@
 ---
 title: "优化策略"
 chapter: "7.5"
-status: ready-for-review
+status: reviewed
 applicable_versions: "Android 5.0 (API 21) - Android 16 (API 36)"
 last_verified: "2026-04-01"
 last_verified_against: "AOSP android-16.0.0_r1, Android 官方文档"
@@ -21,7 +21,9 @@ sources:
     path: "frameworks/base/core/java/android/view/View.java (LAYER_TYPE_HARDWARE)"
 tags: ['optimization', 'layout', 'RecyclerView', 'Compose', 'overdraw', 'hardware-layer', 'thread', 'Binder']
 related_chapters: ["7.1", "7.2", "7.3", "7.4", "2.4", "2.5", "2.7", "2.8", "1.4", "1.5"]
----
+
+reviewed_date: "2026-04-04"
+reviewed_by: "openclaw-task6"---
 
 # 优化策略
 
@@ -49,6 +51,8 @@ related_chapters: ["7.1", "7.2", "7.3", "7.4", "2.4", "2.5", "2.7", "2.8", "1.4"
 同样是"主线程耗时"，有的是布局层级太深导致 measure 反复执行，有的是 RecyclerView 的 onBindViewHolder 里做了不该做的事，有的是一个看似无害的 Binder 调用正好赶上了系统服务繁忙。每一种原因对应的优化策略都不同，用错方法不仅白费力气，还可能引入新问题。
 
 这一章按照优化的"作用域"来组织——从最底层的布局结构，到列表控件，再到渲染管线和线程模型，最后是 Compose。每一条策略都回答三个问题：**为什么有效**、**在 Trace 中怎么验证效果**、**容易踩什么坑**。
+
+[需补充素材: 开头承诺了"在Trace中怎么验证效果"，但布局优化、RecyclerView优化、线程优化三个主要段落均缺少具体的Perfetto track/counter定位方法。建议补充：布局层级过深在Trace中的表现（measure耗时突增）、RecyclerView滑动卡顿的Trace特征、Binder调用耗时的观察方法。]
 
 ## 布局优化：减少层级、ConstraintLayout、ViewStub 延迟加载
 
@@ -81,6 +85,8 @@ Google 官方基准测试表明，在同等布局效果下，ConstraintLayout �
 [来源: obsidian/Personal-Knowlodge/source/2026-03-07_wechat_Android深入卡顿分析与实践.md — 腾讯 WeSing 使用 ViewStub 对"游客模式"布局做按需加载，减少进房 inflate 耗时]
 
 ### 减少层级的其他手段
+
+[需重写: 此段落使用纯列表格式，违反 writing-guide.md 叙述优先规范。应将三条建议融入连贯段落，解释每条手段为什么有效、在什么场景适用。]
 
 - **`<merge>` 标签**：作为被 include 的子布局根元素时不生成额外的 ViewGroup
 - **动态添加 View**：对于数量不固定的子 View，用代码动态添加比预定义一堆 `GONE` 的 View 更高效
@@ -190,6 +196,8 @@ Android 12 的 `RenderEffect` API 模糊效果是性能敏感操作。建议：�
 
 ### Binder 调用优化
 
+[需重写: 此段落使用纯列表格式，违反叙述规范。应将各条优化策略以“为什么→怎么做→在Trace中怎么看”的叙述逻辑串联。]
+
 - **缓存系统服务查询结果**：`PackageManager.getPackageInfo()` 只需查一次
 - **避免在渲染路径上调用**：滑动、动画中不应触发 Binder 调用
 - **批量替代逐条**：使用 `ContentProviderOperation` 批量操作
@@ -199,16 +207,18 @@ Android 12 的 `RenderEffect` API 模糊效果是性能敏感操作。建议：�
 
 ### 合理的线程池配置
 
+[需重写: 纯列表格式，需转为叙述风格，补充每条建议的技术原理和实战经验。]
+
 - 控制并发数（核心线程数不超过 CPU 核心数）
 - 使用有意义的线程名方便 Perfetto 定位
 - Activity/Fragment 销毁时取消相关任务
 - 通过 `adb shell ps -T | grep <package>` 监控线程数
 
-[自动发现: obsidian/Personal-Knowlodge/source/2026-03-07_wechat_Android深入卡顿分析与实践.md — WeSing 发现 SDK 升级后新增 30 个未命名线程]
+[来源: obsidian/Personal-Knowlodge/source/2026-03-07_wechat_Android深入卡顿分析与实践.md — WeSing 发现 SDK 升级后新增 30 个未命名线程]
 
 ### 任务拆分与延迟初始化
 
-- **任务拆解**：将一个大 Message 拆成多个小 Message，用 `Handler.post()` 分发
+- **任务拆解**：将一个大任务拆成多个小 Message，用 `Handler.post()` 分发到不同帧处理
 - **优先级控制**：UI 更新任务用 `Handler.postAtFrontOfQueue()` 确保尽快执行
 - **延迟初始化**：`by lazy(LazyThreadSafetyMode.NONE)` 减少首帧负担
 
@@ -279,17 +289,19 @@ LazyColumn {
 
 ## 预渲染与预计算策略 🔸
 
+[需重写: 纯列表格式，需展开为叙述段落，解释每种预取策略的工作原理和适用场景。]
+
 - **RecyclerView Prefetch**：GapWorker 在主线程空闲时提前创建即将可见的 ViewHolder
 - **Compose LazyList Prefetch**：LazyColumn 内部同样实现了 Prefetch
 - **预加载图片**：Coil、Glide 都支持预加载
 - **预计算布局**：StaticLayout 等提前在后台线程计算好
 
-[自动发现: 预渲染和预计算在 RecyclerView 和 Compose 中都有系统级支持。来源: 官方文档 + web_search]
+[来源: 预渲染和预计算在 RecyclerView 和 Compose 中都有系统级支持。来源: 官方文档 + web_search]
 
 ## 常见误区
 
 1. **"优化就是减少代码量"**：更多时候是关于"在正确的时间做正确的事"
-2. **"Compose 天生比 View 快"**：BOM 2025.12.00 声明性能对等，但使用不当可以更慢
+2. **"Compose 天生比 View 快"**：BOM 2025.12.00 声明性能对等，但使用不当可以更慢 [需确认: BOM 2025.12.00 版本号是否准确，以及"性能对等"的具体声明来源]
 3. **"Hardware Layer 神器"**：只在属性动画场景有效，滥用反而增加开销
 4. **"onBindViewHolder 调用越少越好"**：应关注单次调用的耗时，不是次数
 5. **"子线程不影响主线程"**：大量子线程抢 CPU 时间片、增内存压力、导致更频繁 GC
