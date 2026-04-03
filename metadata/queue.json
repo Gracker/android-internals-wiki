@@ -1,5 +1,5 @@
 {
-  "last_updated": "2026-04-04T01:45:00",
+  "last_updated": "2026-04-04T03:39:20",
   "total_items": 12,
   "priority_breakdown": {
     "high": 4,
@@ -211,6 +211,38 @@
         "B1 FrameMetrics.DEADLINE 版本兼容性：添加 Build.VERSION.SDK_INT 分支（API 31+ 用 DEADLINE 常量，API 24-30 用 DisplayManager 刷新率计算 deadline），补充版本差异叙述说明，移除 [存疑] 标注改为 [已确认]",
         "B2 SQL 调度延迟查询语义：原查询标题改为「被抢占时间最长的 Runnable 片段」并明确注释 end_state=R 的含义（CPU 竞争指标）；新增基于 sched_wakeup 的调度延迟（wakeup latency）查询，补充两个查询的差异说明"
       ]
+    },
+    {
+      "id": "review-6.2-20260404",
+      "file": "ch06-storage/02-filesystem.md",
+      "section": "6.2",
+      "section_title": "文件系统",
+      "priority": 90,
+      "reason": "[review回炉] 缺少 writing-guide Type A 模板要求的版本演进、常见问题与误区、参考资料三个标准小节",
+      "review_issues": [
+        {
+          "type": "需补充素材",
+          "location": "末尾",
+          "detail": "缺少「版本演进」独立小节，Type A 模板必选结构",
+          "suggestion": "按时间线列出 ext4/f2fs/EROFS 在 Android 各版本中的变化"
+        },
+        {
+          "type": "需补充素材",
+          "location": "末尾",
+          "detail": "缺少「常见问题与误区」小节",
+          "suggestion": "补充 3-5 个新手常见误解"
+        },
+        {
+          "type": "需补充素材",
+          "location": "末尾",
+          "detail": "缺少「参考资料」小节",
+          "suggestion": "汇总 AOSP 路径、kernel.org、SQLite 官方文档等"
+        }
+      ],
+      "added_by": "task6-review",
+      "added_at": "2026-04-04T03:39:20",
+      "status": "pending",
+      "original_review_log": "logs/review/2026-04-04-0333-review.md"
     }
   ]
 }

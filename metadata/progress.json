@@ -1007,7 +1007,7 @@
     }
   ],
   "ready_for_review": 5,
-  "last_updated": "2026-04-04T01:42:37.152935",
+  "last_updated": "2026-04-04T03:40:38",
   "stats": {
     "total": 97,
     "completed": 48,
@@ -1813,6 +1813,13 @@
         "L2": 8,
         "pending": 1
       }
+    },
+    "6.2": {
+      "title": "文件系统",
+      "status": "reviewed",
+      "reviewed_date": "2026-04-04",
+      "reviewed_by": "openclaw-task6",
+      "file": "src/part1-fundamentals/ch06-storage/02-filesystem.md"
     }
   },
   "5.1": {

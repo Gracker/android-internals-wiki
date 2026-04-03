@@ -1,7 +1,7 @@
 ---
 title: "文件系统"
 chapter: "6.2"
-status: ready-for-review
+status: reviewed
 applicable_versions: "Android 10+"
 last_verified: "2026-04-01"
 last_verified_against: "AOSP android-15, kernel 6.6, source.android.com, developer.android.com"
@@ -21,6 +21,8 @@ tags: ['f2fs', 'ext4', 'erofs', 'fsync', 'fdatasync', 'filesystem', 'sqlite']
 related_chapters: ['6.1', '6.3', '4.1', '7.1']
 created: 2026-04-01
 drafted_date: 2026-04-01
+reviewed_date: 2026-04-04
+reviewed_by: openclaw-task6
 reviewers: []
 ---
 
@@ -43,9 +45,9 @@ reviewers: []
 
 ## 从一个真实的 fsync 卡顿说起
 
-我们在 Perfetto 中分析 App 卡顿的时候，有一类问题几乎每个 Android 工程师都会遇到——主线程在 `fsync` 上阻塞了几十甚至几百毫秒。打开 Perfetto trace，看到主线程那行的时间条上出现了一大段橘红色的 "Uninterruptible Sleep"（D 状态），放大一看，syscall 是 `fsync`，对应的文件是一个 sqlite 数据库或者 SharedPreferences 的 XML 文件。
+我们在 Perfetto 中分析 App 卡顿的时候，有一类问题几乎每个 Android 工程师都会遇到——主线程在 `fsync` 上阻塞了几十甚至几百毫秒。打开 Perfetto trace，看到主线程那行的时间条上出现了一大段橘红色的 "Uninterruptible Sleep"（D 状态），放大一看，syscall 是 `fsync`，对应的文件是一个 SQLite 数据库或者 SharedPreferences 的 XML 文件。
 
-这个现象在 Android 上比在其他 Linux 系统上更为突出，原因是 Android 系统中 sqlite 的使用密度远高于服务器或桌面 Linux——几乎所有 App 的配置、缓存、状态信息都存在 sqlite 数据库里，而 sqlite 每次事务提交都需要调用 `fsync` 确保数据落盘。再加上 SharedPreferences 在早期 Android 版本中也是通过 `fsync` 同步写入 XML 文件，一个 App 在启动阶段可能触发数十次 `fsync`。
+这个现象在 Android 上比在其他 Linux 系统上更为突出，原因是 Android 系统中 SQLite 的使用密度远高于服务器或桌面 Linux——几乎所有 App 的配置、缓存、状态信息都存在 SQLite 数据库里，而 SQLite 每次事务提交都需要调用 `fsync` 确保数据落盘。再加上 SharedPreferences 在早期 Android 版本中也是通过 `fsync` 同步写入 XML 文件，一个 App 在启动阶段可能触发数十次 `fsync`。
 
 这个问题的根因，往往不在 App 代码本身，而在 App 之下那一层——文件系统。不同的文件系统对 `fsync` 的实现策略差异巨大，直接影响着 App 的 I/O 延迟。Android 设备上的文件系统选择，经历了从 ext4 到 f2fs、再到 EROFS 的演进，每一次切换都是为了解决前一代在手机场景下暴露出的特定问题。
 
@@ -85,7 +87,7 @@ ext4 的设计初衷是面向服务器和桌面场景的通用文件系统，它
 
 **问题一：fsync 的放大效应**
 
-这是 ext4 在 Android 上最严重的问题。sqlite 使用 WAL（Write-Ahead Log）模式或 rollback journal 模式，每次事务提交都需要调用 `fsync`。在 ext4 + jbd2（ordered 模式）+ 延迟分配的组合下，一次 `fsync` 会触发一系列连锁反应：
+这是 ext4 在 Android 上最严重的问题。SQLite 使用 WAL（Write-Ahead Log）模式或 rollback journal 模式，每次事务提交都需要调用 `fsync`。在 ext4 + jbd2（ordered 模式）+ 延迟分配的组合下，一次 `fsync` 会触发一系列连锁反应：
 
 1. 延迟分配意味着脏页还没有分配物理块。`fsync` 时必须先为所有相关的脏页分配物理块——如果其他进程也积累了大量脏页（内核的 `flush` 线程每 30 秒触发一次），`fsync` 需要等待这些脏页的块分配完成。
 
@@ -147,26 +149,26 @@ f2fs 把整个分区划分为六个区域，每个区域有明确的职责：
 
 **冷热数据分离**：f2fs 把 Main Area 中的 segment 分为六种类型：hot/warm/cold × data/node。频繁更新的"热"数据（如 sqlite 日志）和很少修改的"冷"数据（如照片、APK 文件）被分配到不同的 segment。这样热数据的频繁修改不会影响冷数据所在的 block，垃圾回收时只需要处理热数据区域，大幅减少了 GC 的开销和写放大。[来源: obsidian/Personal-Knowlodge/source/2026-03-06_wechat_深入代码细节看f2fs在磁盘上的组织方式.md]
 
-### sqlite 原子写：f2fs 的杀手级优化
+### SQLite 原子写：f2fs 的杀手级优化
 
 这是 f2fs 对 Android 性能贡献最大的一个特性。
 
-sqlite 在写入数据库时，传统流程是这样的（以 rollback journal 模式为例）：先创建 journal 文件记录原始数据 → 修改数据库文件 → 调用 `fsync` 确保 journal 写入 → 调用 `fsync` 确保数据库文件写入 → 删除 journal 文件。每次事务至少两次 `fsync`，每次 `fsync` 都要等数据真正落盘。
+SQLite 在写入数据库时，传统流程是这样的（以 rollback journal 模式为例）：先创建 journal 文件记录原始数据 → 修改数据库文件 → 调用 `fsync` 确保 journal 写入 → 调用 `fsync` 确保数据库文件写入 → 删除 journal 文件。每次事务至少两次 `fsync`，每次 `fsync` 都要等数据真正落盘。
 
-f2fs 提供了一个 `F2FS_IOC_START_ATOMIC_WRITE` 的 ioctl 接口，允许 sqlite 把一系列对数据库文件的修改以原子方式提交。工作流程变成了：
+f2fs 提供了一个 `F2FS_IOC_START_ATOMIC_WRITE` 的 ioctl 接口，允许 SQLite 把一系列对数据库文件的修改以原子方式提交。工作流程变成了：
 
-1. sqlite 调用 `ioctl(F2FS_IOC_START_ATOMIC_WRITE)` 告知 f2fs 接下来对某个 inode 的写入需要原子保护
-2. sqlite 直接修改数据库文件（f2fs 在内部把修改记录到 CoW 区域，不覆盖原数据）
-3. sqlite 调用 `ioctl(F2FS_IOC_COMMIT_ATOMIC_WRITE)` 提交修改
+1. SQLite 调用 `ioctl(F2FS_IOC_START_ATOMIC_WRITE)` 告知 f2fs 接下来对某个 inode 的写入需要原子保护
+2. SQLite 直接修改数据库文件（f2fs 在内部把修改记录到 CoW 区域，不覆盖原数据）
+3. SQLite 调用 `ioctl(F2FS_IOC_COMMIT_ATOMIC_WRITE)` 提交修改
 4. f2fs 在一次原子操作中把所有修改生效（更新 NAT 映射）
 
 整个过程中，**只需要一次 `fsync`**——提交时的那一次。journal 文件可以完全跳过，因为 f2fs 的文件系统层面保证了原子性：要么所有修改都生效，要么都不生效。从 Android 8.1 开始，sqlite 默认启用了 `SQLITE_ENABLE_BATCH_ATOMIC_WRITE` 编译选项，当检测到底层文件系统是 f2fs 时，自动使用这个原子写接口。[已验证: 官方文档, sqlite.org/src/info/5c5e4f6f6d and Android source code]
 
-实测数据显示，在 f2fs 上使用 batch atomic write 后，sqlite 的事务提交速度约为 ext4 上的 3 倍。这对于 Android 上几乎所有涉及数据库操作的 App 来说，都是一个巨大的性能提升。
+实测数据显示，在 f2fs 上使用 batch atomic write 后，SQLite 的事务提交速度约为 ext4 上的 3 倍。这对于 Android 上几乎所有涉及数据库操作的 App 来说，都是一个巨大的性能提升。
 
 ### f2fs 的 fsync 优化
 
-除了 sqlite 原子写，f2fs 在 `fsync` 本身的实现上也比 ext4 更高效。
+除了 SQLite 原子写，f2fs 在 `fsync` 本身的实现上也比 ext4 更高效。
 
 f2fs 使用逻辑日志（logical logging）而非 ext4 的物理日志（physical logging）。ext4 的 jbd2 在日志中记录被修改的数据块的完整内容（physical logging），而 f2fs 只需要记录哪些 node 被修改了以及它们的新位置（logical logging）。这意味着 f2fs 的日志写入量远小于 ext4——`fsync` 时不需要把所有脏数据都写一遍，只需要更新少量的元数据信息。
 
@@ -255,7 +257,7 @@ EROFS 在 Android 上的布局通常是：
 - `fsync(fd)`：确保 fd 对应文件的所有修改（包括数据和元数据）都写入磁盘。元数据包括文件大小、修改时间、权限等。
 - `fdatasync(fd)`：只确保文件数据写入磁盘，不保证元数据（除非元数据的变化会影响后续的数据读取，比如文件大小变化）。
 
-`fdatasync()` 比 `fsync()` 少了一次元数据的磁盘写入，理论上更快。但实际在 Android 上，绝大多数 I/O 库（包括 sqlite）使用的都是 `fsync()`，因为数据完整性是第一优先级——在手机可能随时异常掉电的场景下，保证数据的完全一致性比节省几毫秒更重要。[来源: obsidian/Personal-Knowlodge/source/2026-03-07_wechat_性能优化基础_深入理解Linux文件系统.md]
+`fdatasync()` 比 `fsync()` 少了一次元数据的磁盘写入，理论上更快。但实际在 Android 上，绝大多数 I/O 库（包括 SQLite）使用的都是 `fsync()`，因为数据完整性是第一优先级——在手机可能随时异常掉电的场景下，保证数据的完全一致性比节省几毫秒更重要。[来源: obsidian/Personal-Knowlodge/source/2026-03-07_wechat_性能优化基础_深入理解Linux文件系统.md]
 
 ### fsync 优化策略
 
@@ -265,7 +267,7 @@ EROFS 在 Android 上的布局通常是：
 
 **SQLite 事务批处理**：不要在循环中逐条执行 `INSERT`/`UPDATE` 并自动提交（每次提交都触发 `fsync`），而是用 `BEGIN TRANSACTION` ... `COMMIT` 把多条语句包在一个事务里——这样只在 `COMMIT` 时触发一次 `fsync`。
 
-**WAL 模式**：sqlite 的 WAL（Write-Ahead Log）模式相比默认的 rollback journal 模式，在读写并发场景下性能更好。WAL 模式允许读操作和写操作并发进行（读操作访问旧的数据库内容，写操作追加到 WAL 文件），减少了锁竞争。
+**WAL 模式**：SQLite 的 WAL（Write-Ahead Log）模式相比默认的 rollback journal 模式，在读写并发场景下性能更好。WAL 模式允许读操作和写操作并发进行（读操作访问旧的数据库内容，写操作追加到 WAL 文件），减少了锁竞争。
 
 **Room 的增量写入**：如果使用 Jetpack Room，可以利用 `@Transaction` 注解和批量操作 API 来减少隐式 `fsync` 的调用次数。
 
@@ -305,11 +307,11 @@ f2fs 的碎片化问题表现形式不同。f2fs 的 CoW 机制本身不会产�
 
 1. **确认文件系统类型**：通过 `/proc/mounts` 或 Perfetto trace 信息查看 `data` 分区用的是 ext4 还是 f2fs。如果是 ext4，fsync 的放大效应是已知问题。
 
-2. **检查是否是 sqlite/SharedPreferences**：确认阻塞是否由数据库操作或配置写入引起。如果是，检查是否使用了事务批处理、是否使用了 `apply()` 替代 `commit()`。
+2. **检查是否是 SQLite/SharedPreferences**：确认阻塞是否由数据库操作或配置写入引起。如果是，检查是否使用了事务批处理、是否使用了 `apply()` 替代 `commit()`。
 
 3. **观察 f2fs GC 活动**（如果使用 f2fs）：检查是否有前台 GC 阻塞了写入。如果是，可能需要清理存储空间。
 
-4. **评估文件系统切换的可行性**：对于仍然使用 ext4 的 `data` 分区，切换到 f2fs 可能带来显著的 fsync 性能提升——尤其是在 sqlite 密集使用的场景下。
+4. **评估文件系统切换的可行性**：对于仍然使用 ext4 的 `data` 分区，切换到 f2fs 可能带来显著的 fsync 性能提升——尤其是在 SQLite 密集使用的场景下。
 
 Android 的文件系统演进反映了一个重要的工程思路：没有万能的文件系统，只有最适合特定场景的选择。ext4 适合通用场景，f2fs 适合闪存设备的随机写密集场景，EROFS 适合只读分区。理解它们各自的设计取舍，是我们做存储性能优化的基础。
 
