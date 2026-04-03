@@ -1,5 +1,5 @@
 {
-  "last_updated": "2026-04-04T01:20:00",
+  "last_updated": "2026-04-04T01:45:00",
   "total_items": 12,
   "priority_breakdown": {
     "high": 4,
@@ -204,8 +204,13 @@
       ],
       "added_by": "task6-review",
       "added_at": "2026-04-04T01:20:00",
-      "status": "pending",
-      "original_review_log": "logs/review/2026-04-04-0120-review.md"
+      "status": "completed",
+      "original_review_log": "logs/review/2026-04-04-0120-review.md",
+      "completed_at": "2026-04-04T01:45:00",
+      "rework_fixes": [
+        "B1 FrameMetrics.DEADLINE 版本兼容性：添加 Build.VERSION.SDK_INT 分支（API 31+ 用 DEADLINE 常量，API 24-30 用 DisplayManager 刷新率计算 deadline），补充版本差异叙述说明，移除 [存疑] 标注改为 [已确认]",
+        "B2 SQL 调度延迟查询语义：原查询标题改为「被抢占时间最长的 Runnable 片段」并明确注释 end_state=R 的含义（CPU 竞争指标）；新增基于 sched_wakeup 的调度延迟（wakeup latency）查询，补充两个查询的差异说明"
+      ]
     }
   ]
 }
