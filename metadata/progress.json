@@ -997,7 +997,7 @@
     }
   ],
   "ready_for_review": 5,
-  "last_updated": "2026-04-04T00:23:00",
+  "last_updated": "2026-04-04T01:42:37.152935",
   "stats": {
     "total": 97,
     "completed": 48,
@@ -1832,6 +1832,16 @@
       "last_updated": "2026-04-02T14:50:19.993678+08:00",
       "review_log": "logs/review/2026-04-02-1320-review.md",
       "verification": "L2 rework verified"
+    },
+    "7.3": {
+      "status": "ready-for-review",
+      "last_rework": "2026-04-04",
+      "rework_by": "openclaw-task2b",
+      "rework_issues": 2,
+      "rework_fixes": [
+        "B1: FrameMetrics.DEADLINE API 版本兼容性 — 添加版本分支代码 + 叙述说明",
+        "B2: SQL 调度延迟查询语义修正 — 拆分为两个查询（抢占片段 vs 调度延迟）"
+      ]
     }
   },
   "2.6": {

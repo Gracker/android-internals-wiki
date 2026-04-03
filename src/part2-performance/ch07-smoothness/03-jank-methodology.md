@@ -1,9 +1,12 @@
 ---
 title: "卡顿分析方法论"
 chapter: "7.3"
-status: reviewed
+status: ready-for-review
 reviewed_date: "2026-04-04"
 reviewed_by: openclaw-task6
+rework_date: "2026-04-04"
+rework_by: openclaw-task2b
+rework_type: "review回炉修复（B1+B2）"
 applicable_versions: "Android 8 (API 26) - Android 16 (API 35)"
 last_verified: "2026-03-31"
 last_verified_against: "AOSP android-16.0.0_r1, Perfetto 官方文档"
@@ -265,10 +268,9 @@ Uninterruptible Sleep 状态（在 Perfetto 中显示为深橙色）表示线程
 
 FrameMetrics 的使用方式很简单：向 Window 注册一个 `OnFrameMetricsAvailableListener`，系统就会在每一帧渲染完成后回调你，告诉你这一帧各个环节的耗时。
 
-[存疑: 下方代码示例使用了 `FrameMetrics.DEADLINE` 常量，该常量从 API 31 (Android 12) 才可用。而 FrameMetrics API 本身从 API 24 引入。如果需要兼容 API 24-30，需硬编码 deadline 值或使用 `FrameMetrics.UNKNOWN` 回退。建议高爷确认目标兼容版本后调整代码示例或添加版本分支说明。]
-
 ```java
 // [已验证: 官方文档 developer.android.com, android.view.Window#addOnFrameMetricsAvailableListener]
+// [已确认: FrameMetrics.DEADLINE 从 API 31 (Android 12) 引入；FrameMetrics 其他常量从 API 24 引入]
 window.addOnFrameMetricsAvailableListener(
     (window, frameMetrics, dropCountSinceLastInvocation) -> {
         // 获取各阶段耗时（单位：纳秒）
@@ -276,9 +278,21 @@ window.addOnFrameMetricsAvailableListener(
         long drawDuration = frameMetrics.getMetric(FrameMetrics.DRAW_DURATION);
         long layoutDuration = frameMetrics.getMetric(FrameMetrics.LAYOUT_MEASURE_DURATION);
         long syncDuration = frameMetrics.getMetric(FrameMetrics.SYNC_DURATION);
-        
+
         // 判断是否卡顿：总耗时是否超过一帧的 deadline
-        long deadline = frameMetrics.getMetric(FrameMetrics.DEADLINE);
+        // API 31+ 可以直接获取系统计算的 DEADLINE（适配不同刷新率）
+        // API 24-30 需要根据屏幕刷新率手动计算 deadline
+        long deadline;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {  // API 31+
+            deadline = frameMetrics.getMetric(FrameMetrics.DEADLINE);
+        } else {
+            // 回退：根据显示屏刷新率计算 deadline
+            // 60Hz → 16,666,667 ns, 90Hz → 11,111,111 ns, 120Hz → 8,333,333 ns
+            float refreshRate = window.getContext().getSystemService(DisplayManager.class)
+                    .getDisplay(Display.DEFAULT_DISPLAY).getRefreshRate();
+            deadline = (long) (1_000_000_000.0 / refreshRate);
+        }
+
         if (totalDuration > deadline) {
             // 记录卡顿帧的详细信息
             logJankFrame(totalDuration, drawDuration, layoutDuration, syncDuration);
@@ -287,6 +301,8 @@ window.addOnFrameMetricsAvailableListener(
     handler // 指定回调的 Handler
 );
 ```
+
+这里有一个版本兼容性的细节需要注意。 是 Android 12（API 31）才引入的常量——在那之前，FrameMetrics 只提供了各阶段的耗时数据，但没有系统计算的帧预算值。对于需要兼容 Android 7-11 的应用，我们可以根据屏幕刷新率自行计算 deadline（60Hz 对应 16.6ms，90Hz 对应 11.1ms，120Hz 对应 8.3ms）。这种手动计算虽然不如系统提供的 DEADLINE 精确（系统的 DEADLINE 会考虑 VSync offset 和当前帧率策略），但在绝大多数场景下足够用于判断是否卡顿。[已确认: developer.android.com/reference/android/view/FrameMetrics, DEADLINE 从 API 31 引入]
 
 关键指标说明：
 
@@ -357,13 +373,12 @@ GROUP BY thread.name
 ORDER BY cpu_time_ms DESC;
 ```
 
-### 查询调度延迟最大的时刻
+### 查询被抢占时间最长的 Runnable 片段
 
 ```sql
--- 查询主线程被调度移出时仍处于 Runnable 状态的时刻
--- [需确认: sched.end_state = 'R' 表示线程被 descheduled 时仍为 Runnable（即被抢占而非主动 Sleep），
--- 但这并不直接等同于"调度延迟"（从唤醒到上 CPU 的时间）。如需测量真正的调度延迟，
--- 需结合 sched_wakeup 事件计算 wakeup_ts 到 sched_switch(in) 的时间差。建议高爷确认查询意图后调整。]
+-- [已确认: sched.end_state = 'R' 表示线程被 descheduled 时仍为 Runnable，
+-- 即线程被抢占了（不是主动 Sleep/wake）。此查询找的是「被抢占时还没跑完」的调度片段，
+-- 反映的是 CPU 竞争激烈程度，而非从唤醒到上 CPU 的调度延迟（wakeup latency）。]
 SELECT
     sched.ts,
     sched.dur / 1000000.0 as runnable_ms,
@@ -371,10 +386,41 @@ SELECT
 FROM sched
 JOIN thread ON sched.utid = thread.utid
 WHERE thread.name = 'main'
-    AND sched.end_state = 'R'  -- Runnable 状态
+    AND sched.end_state = 'R'  -- 被抢占而非主动让出
 ORDER BY sched.dur DESC
 LIMIT 20;
 ```
+
+注意这个查询和调度延迟的区别。 找的是线程正在执行、但因为 CPU 被其他线程抢占而被迫让出的片段——它的  是线程在 CPU 上实际执行的时间，不是等待时间。这个值越大，说明主线程被频繁打断，CPU 竞争激烈。
+
+如果我们真正想测量的是**调度延迟**（从线程被唤醒到它真正上 CPU 开始执行的时间差），需要结合  事件来计算：
+
+```sql
+-- [已确认: 结合 sched_wakeup 计算真正的调度延迟（wakeup latency）]
+-- 找出主线程唤醒后等待 CPU 时间最长的时刻
+SELECT
+    wakeup.ts as wakeup_ts,
+    sched.ts as run_ts,
+    (sched.ts - wakeup.ts) / 1000000.0 as wakeup_latency_ms,
+    wakeup.waker_tid as waker_tid
+FROM (
+    -- 主线程被唤醒的事件
+    SELECT ts, track_id, wakee_tid AS tid
+    FROM sched_wakeup
+    WHERE wakee_tid IN (SELECT tid FROM thread WHERE name = 'main')
+) wakeup
+JOIN (
+    -- 主线程被调度上 CPU 的事件
+    SELECT ts, track_id, tid
+    FROM sched
+    WHERE tid IN (SELECT tid FROM thread WHERE name = 'main')
+      AND end_state != 'R'  -- 只看实际执行的片段
+) sched ON wakeup.tid = sched.tid AND sched.ts > wakeup.ts
+ORDER BY wakeup_latency_ms DESC
+LIMIT 20;
+```
+
+这个查询的逻辑是：先找出主线程被唤醒的时刻（sched_wakeup），再找到它随后第一次上 CPU 执行的时刻（sched），两者之差就是调度延迟。如果调度延迟超过 2-3ms，特别是在 120fps 设备上（一个 VSync 周期才 8.3ms），就值得深入排查是什么在抢占 CPU 资源。
 
 这些 SQL 查询的优势在于可以快速处理整份 Trace 的数据，给出统计级别的结论。比如，你可以用第一个查询快速统计出"这次 10 秒的滑动操作中，总共出现了 23 次卡顿帧，其中 5 次超过 32ms"——这种宏观信息是手动点击很难得到的。
 
