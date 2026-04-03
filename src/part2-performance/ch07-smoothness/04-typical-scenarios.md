@@ -1,7 +1,9 @@
 ---
 title: "典型场景分析"
 chapter: "7.4"
-status: ready-for-review
+status: reviewed
+reviewed_date: "2026-04-04"
+reviewed_by: openclaw-task6
 applicable_versions: "Android 8 (API 26) - Android 16 (API 35)"
 last_verified: "2026-04-01"
 last_verified_against: "AOSP android-16.0.0_r1, Perfetto 官方文档"
@@ -178,7 +180,7 @@ Fragment 切换比 Activity 切换轻量，因为都在同一个进程和同一�
 
 优化思路：
 - 将 Fragment 的布局拆分为多个阶段：先加载骨架布局，数据准备好后再填充内容
-- 使用 `commitAllowingStateLoss()` 替代 `commit()`（需谨慎），避免在动画期间因状态检查导致的额外开销
+- 使用 `commitAllowingStateLoss()` 替代 `commit()`（需谨慎），避免在动画期间因状态检查导致的额外开销 [存疑: commitAllowingStateLoss 的主要用途是避免 onSaveInstanceState 之后的 IllegalStateException，其与 commit() 的性能差异可忽略不计。此处建议的真正优化方向应改为「将 Fragment 事务提交与动画帧解耦」或「使用 commitNow() 在合适的时机同步执行」]
 - 预加载下一页 Fragment 的 View（`setMaxLifecycle` 配合 ViewPager2 的 `setOffscreenPageLimit`）
 
 ### 2.3 页面切换动画在 Perfetto 中的表现
@@ -204,6 +206,8 @@ Fragment 切换比 Activity 切换轻量，因为都在同一个进程和同一�
 ### 3.1 App 启动窗口
 
 从 Android 12 开始，系统为所有 App 提供了默认的 Splash Screen（通过 `SplashScreen` API）。在 App 进程完成初始化之前，系统会显示一个带有 App 图标和主题色的启动窗口。这个窗口由 SystemServer 管理，App 进程就绪后系统执行从启动窗口到 App 主界面的过渡动画。
+
+[图：SplashScreen 启动窗口到 App 主界面过渡动画的 Perfetto 截图，标注 SystemServer 动画线程和 App 进程的时间关系]
 
 启动窗口动画卡顿通常不是 App 的问题，而是系统侧的问题——SurfaceFlinger 在合成启动窗口和其他层时的性能不足，或者 CPU 调度没有给 SystemServer 的动画线程足够的优先级。但如果 App 的 `onCreate()` 耗时过长导致过渡动画延迟开始，那就是 App 的问题。
 
@@ -234,7 +238,7 @@ PopupWindow 的情况类似，但 PopupWindow 使用的是 App 进程自己的 W
 
 ## 四、Notification 展开/折叠的 Jank
 
-通知栏的展开和折叠由 SystemUI 进程负责。这个场景比较特殊，因为涉及的进程是 SystemUI 而非普通 App——但如果你在做系统性能优化，或者你的 App 自定义了 Notification 的 RemoteViews，这个场景就需要关注。
+通知栏的展开和折叠由 SystemUI 进程负责。这个场景比较特殊，因为涉及的进程是 SystemUI 而非普通 App——但如果在做系统性能优化，或者 App 自定义了 Notification 的 RemoteViews，这个场景就需要关注。
 
 ### 4.1 通知栏展开的渲染管线
 
@@ -298,6 +302,8 @@ PopupWindow 的情况类似，但 PopupWindow 使用的是 App 进程自己的 W
 4. **目标 App 放大动画**：选中的 App 卡片放大回全屏
 
 [已验证: AOSP android-16.0.0_r1, frameworks/base/packages/SystemUI/quickstep/ — QuickStep 的多阶段动画实现]
+
+[图：多任务切换 QuickStep 动画的 Perfetto 时序，标注四个动画阶段和 Launcher/SurfaceFlinger 的对应帧]
 
 这个动画涉及 Launcher 进程和目标 App 进程之间的协调（通过 `ActivityTaskManager` 和 `InputConsumer`）。卡顿可能出现在：
 

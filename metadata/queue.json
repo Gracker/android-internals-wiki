@@ -1,6 +1,6 @@
 {
-  "last_updated": "2026-04-03T19:44:39",
-  "total_items": 12,
+  "last_updated": "2026-04-04T05:25:00",
+  "total_items": 14,
   "priority_breakdown": {
     "high": 4,
     "medium": 3,
@@ -249,6 +249,27 @@
         "新增「常见问题与误区」小节：5个常见误解（f2fs全面碾压/EROFS可用于data/fsync无开销/卡顿=存储/出厂重置治本）",
         "新增「参考资料」小节：AOSP源码路径8条 + 官方文档链接8条 + 深入阅读6条"
       ]
+    },
+    {
+      "section": "7.4",
+      "section_title": "典型场景分析",
+      "priority": 90,
+      "reason": "[review回炉] section 2.2 中 commitAllowingStateLoss() 的优化建议存在技术误导，需修正为准确的优化方向",
+      "material_paths": [
+        "intake/suggestions.md（含 review 意见）"
+      ],
+      "review_issues": [
+        {
+          "type": "需修正",
+          "location": "section 2.2 Fragment 切换优化建议",
+          "detail": "commitAllowingStateLoss() 替代 commit() 的建议误导性较强：该 API 是为避免 IllegalStateException，而非减少状态检查开销；两者性能差异可忽略",
+          "suggestion": "修正为更准确的优化建议：如「将 Fragment 事务提交时机与动画帧解耦」「使用 commitNow() 在非动画期间同步执行」或「延迟 commit 到动画结束后」"
+        }
+      ],
+      "added_by": "task6-review",
+      "added_at": "2026-04-04T05:25:00",
+      "status": "pending",
+      "original_review_log": "logs/review/2026-04-04-0525-review.md"
     }
   ]
 }
