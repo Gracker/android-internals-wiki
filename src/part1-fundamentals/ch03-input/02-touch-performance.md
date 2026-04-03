@@ -1,9 +1,14 @@
 ---
 title: "触摸响应的性能分析"
 chapter: "3.2"
-status: ready-for-review
+section: "3.2"
+status: finalized
+drafted_date: "2026-03-30"
+drafted_by: "openclaw-task2"
 applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
 last_verified: "2026-03-31"
+reviewed_date: "2026-04-03"
+reviewed_by: "openclaw-task6"
 last_verified_against: "AOSP android-16.0.0_r1"
 confidence: medium
 sources:
@@ -50,11 +55,11 @@ related_chapters: ["3.1", "2.3", "2.4", "2.5", "8.1"]
 
 ## 为什么需要关注触摸响应
 
-在 Perfetto 中打开一段用户滑动列表的 Trace，你会看到这样的画面：InputReader 线程每隔几毫秒就读取一个触摸坐标，InputDispatcher 线程把这些坐标派发给应用，应用的主线程被唤醒，处理事件、执行 invalidate()、等 VSync、绘制一帧——然后用户的手指已经移动到了下一个位置，但屏幕上显示的还是上一帧的内容。
+在 Perfetto 中打开一段用户滑动列表的 Trace，我们会看到这样的画面：InputReader 线程每隔几毫秒就读取一个触摸坐标，InputDispatcher 线程把这些坐标派发给应用，应用的主线程被唤醒，处理事件、执行 invalidate()、等 VSync、绘制一帧——然后用户的手指已经移动到了下一个位置，但屏幕上显示的还是上一帧的内容。
 
-这就是触摸响应延迟。用户的手指已经离开了某个位置，但系统还没来得及把画面更新到屏幕上。在 60Hz 屏幕上，最坏情况下一帧从"触摸发生"到"画面更新"可能经历一个完整的 VSync 周期（16.6ms）的延迟；在 120Hz 屏幕上这个数字降到了约 8.3ms，但如果你在 Perfetto 中仔细看，从触摸硬件采样到画面最终上屏，实际的总延迟往往在 30-80ms 之间——这中间发生了什么，就是本节要讲清楚的内容。
+这就是触摸响应延迟。用户的手指已经离开了某个位置，但系统还没来得及把画面更新到屏幕上。在 60Hz 屏幕上，最坏情况下一帧从"触摸发生"到"画面更新"可能经历一个完整的 VSync 周期（16.6ms）的延迟；在 120Hz 屏幕上这个数字降到了约 8.3ms，但如果我们在 Perfetto 中仔细看，从触摸硬件采样到画面最终上屏，实际的总延迟往往在 30-80ms 之间——这中间发生了什么，就是本节要讲清楚的内容。
 
-理解触摸响应延迟的组成，是优化所有"跟手性"问题的前提。不管你在做滑动流畅度优化、启动速度优化还是 ANR 分析，Input 事件链路上的每一个环节都可能成为瓶颈。
+理解触摸响应延迟的组成，是优化所有"跟手性"问题的前提。不管我们在做滑动流畅度优化、启动速度优化还是 ANR 分析，Input 事件链路上的每一个环节都可能成为瓶颈。
 
 [来源: obsidian/Personal-Knowlodge/source/Android-Systrace-Input.md] [来源: obsidian/Personal-Knowlodge/source/android-systrace-Responsiveness-in-action-1.md]
 
