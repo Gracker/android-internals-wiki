@@ -372,3 +372,23 @@
 - **问题**：commitAllowingStateLoss() 的设计目的是避免 onSaveInstanceState() 后 commit 导致的 IllegalStateException，与"状态检查开销"无关。两者性能差异可忽略。使用不当可能导致 Fragment 状态不一致。
 - **建议**：修正为更准确的优化方向：① 将 Fragment 事务提交时机与动画帧解耦；② 使用 commitNow() 在非动画期间同步执行；③ 延迟 commit 到动画结束后。
 - **review 日志**：logs/review/2026-04-04-0525-review.md
+
+## [Task6 Review] 7.5 优化策略 — 2026-04-04
+
+- **类型**：需重写
+- **位置**：减少层级的其他手段 / Binder 调用优化 / 合理的线程池配置 / 预渲染与预计算策略
+- **问题**：4个段落使用纯列表格式，违反 writing-guide.md 叙述优先规范，应转为连贯叙述
+- **建议**：每条策略按"为什么有效 + 怎么做 + 在Trace中怎么看"展开叙述
+- **review 日志**：logs/review/2026-04-04-0626-review.md
+
+- **类型**：需补充素材
+- **位置**：布局优化/RecyclerView优化/线程优化段落
+- **问题**：开头承诺了Trace验证方法，但主要段落缺少Perfetto定位描述
+- **建议**：补充布局层级过深/RecyclerView滑动卡顿/Binder调用耗时的Trace特征描述
+- **review 日志**：logs/review/2026-04-04-0626-review.md
+
+- **类型**：需确认
+- **位置**：常见误区第2条
+- **问题**：Compose BOM 2025.12.00版本号和"性能对等"声明待确认
+- **建议**：核实版本号和声明来源
+- **review 日志**：logs/review/2026-04-04-0626-review.md
