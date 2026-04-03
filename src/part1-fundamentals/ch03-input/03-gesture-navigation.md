@@ -1,7 +1,12 @@
 ---
 title: "手势导航与系统交互"
+section: "3.3"
 chapter: "3.3"
-status: ready-for-review
+status: finalized
+drafted_date: "2026-03-31"
+drafted_by: "openclaw-task2a"
+reviewed_date: "2026-04-03"
+reviewed_by: "openclaw-task6"
 applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
 last_verified: "2026-03-31"
 last_verified_against: "AOSP android-16.0.0_r1"
@@ -29,13 +34,13 @@ related_chapters: ["3.1", "3.2", "2.3", "2.4", "1.5"]
 
 ## 为什么要了解手势导航
 
-如果你在 Perfetto 中看到用户的一次触摸操作从 InputDispatcher 发出后，App 端迟迟没有收到对应的 MotionEvent，或者收到了但在 MainThread 上处理时间特别长，你的第一反应可能是"App 卡了"或者"Input 管线出了问题"。但有一种可能你可能没想到：**那次触摸事件被系统手势截获了**。
+如果我们在 Perfetto 中看到用户的一次触摸操作从 InputDispatcher 发出后，App 端迟迟没有收到对应的 MotionEvent，或者收到了但在 MainThread 上处理时间特别长，我们的第一反应可能是"App 卡了"或者"Input 管线出了问题"。但有一种可能我们可能没想到：**那次触摸事件被系统手势截获了**。
 
-Android 10 引入的全屏手势导航（Gesture Navigation）彻底改变了用户与系统的交互方式。Home 键变成了底部上滑，最近任务变成了底部悬停，而返回键则变成了从屏幕两侧边缘向内滑动。这些手势不是由 App 处理的，而是由系统在 App 之前拦截的。理解这套机制，对性能分析有直接的影响：当你分析一次"卡顿"或"无响应"时，你需要知道事件是被系统拿走了还是真的没有送达 App。
+Android 10 引入的全屏手势导航（Gesture Navigation）彻底改变了用户与系统的交互方式。Home 键变成了底部上滑，最近任务变成了底部悬停，而返回键则变成了从屏幕两侧边缘向内滑动。这些手势不是由 App 处理的，而是由系统在 App 之前拦截的。理解这套机制，对性能分析有直接的影响：当我们分析一次"卡顿"或"无响应"时，我们需要知道事件是被系统拿走了还是真的没有送达 App。
 
 更重要的是，从 Android 13 开始引入、Android 15 正式默认启用的 **Predictive Back Animation（预测性返回手势）** 改变了返回事件的处理模型——从"按下了才知道去哪"变成了"滑着就能看到预览"。这个变化不仅仅是 UX 层面的，它改变了系统在返回手势期间的渲染管线行为，对性能分析有新的影响。
 
-读完这一节，你将理解：系统手势是怎么在 App 之前截获 Touch 事件的；App 怎么通过 `setSystemGestureExclusionRects()` 声明"这个区域不要触发系统手势"；Predictive Back 的架构如何影响返回事件的分发时序；以及在 Perfetto 中如何识别和排查手势导航相关的性能问题。
+读完这一节，我们将理解：系统手势是怎么在 App 之前截获 Touch 事件的；App 怎么通过 `setSystemGestureExclusionRects()` 声明"这个区域不要触发系统手势"；Predictive Back 的架构如何影响返回事件的分发时序；以及在 Perfetto 中如何识别和排查手势导航相关的性能问题。
 
 ## Android 10+ 手势导航的系统实现
 
@@ -140,7 +145,7 @@ override fun onLayout(changed: Boolean, l: Int, t: Int, r: Int, b: Int) {
 
 除了排除区域，App 还需要处理 `WindowInsets` 中的 `systemGestureInsets`。这个 Inset 告诉 App 系统手势区域的边界在哪里（包括左右边缘和底部 Home 指示条的区域）。App 在布局时应该避免在 `systemGestureInsets` 区域内放置需要精确触摸的控件，因为这个区域的 Touch 事件可能被系统截获。
 
-在 Perfetto 中，如果你看到某个 App 的 UI 响应在边缘区域特别差，可以检查该 App 是否正确处理了 `systemGestureInsets`——如果把按钮放在了系统手势区域内，用户的点击可能被系统"偷走"了。
+在 Perfetto 中，如果我们看到某个 App 的 UI 响应在边缘区域特别差，可以检查该 App 是否正确处理了 `systemGestureInsets`——如果把按钮放在了系统手势区域内，用户的点击可能被系统"偷走"了。
 
 [已验证: AOSP android-16.0.0_r1, frameworks/base/services/core/java/com/android/server/wm/DisplayContent.java]
 
@@ -150,7 +155,7 @@ override fun onLayout(changed: Boolean, l: Int, t: Int, r: Int, b: Int) {
 
 在 Android 10-12 的返回手势中，用户的体验是这样的：手指从边缘滑动，看到一个返回箭头，松开后，系统发出 Back 按键事件，App 执行返回操作，界面切换到上一个页面。用户在松手之前完全不知道会返回到哪里——可能是上一个 Activity，可能是桌面，也可能是前一个 App。
 
-这和 Home 键的体验形成了鲜明对比：Home 键（底部上滑）能让你在滑动过程中就看到桌面缩略图逐渐出现，你清楚地知道"我会回到桌面"。但返回手势完全没有这种预览能力。
+这和 Home 键的体验形成了鲜明对比：Home 键（底部上滑）能让我们在滑动过程中就看到桌面缩略图逐渐出现，我们清楚地知道"我会回到桌面"。但返回手势完全没有这种预览能力。
 
 ### Predictive Back 的架构（Android 13-15）
 
@@ -208,7 +213,7 @@ Predictive Back 在手势滑动期间会持续触发 `onBackProgressed()` 回调
 
 2. **跨 Activity 的预览动画涉及两个 Activity 的渲染**。系统需要同时渲染当前 Activity（缩小/淡出）和目标 Activity（放大/淡入），这增加了 GPU 的负担。在低端设备上，如果两个 Activity 都很复杂，可能出现掉帧。
 
-3. **系统侧的返回预览 Window 与 App 的渲染管线并行运行**。Predictive Back 的预览效果是由系统（WindowManager）控制的 Task/Activity 缩略图动画，和 App 自己的渲染是独立的。你可能在 Perfetto 中看到 RenderThread 在手势期间有额外的 GPU 工作——这部分是系统动画引起的。
+3. **系统侧的返回预览 Window 与 App 的渲染管线并行运行**。Predictive Back 的预览效果是由系统（WindowManager）控制的 Task/Activity 缩略图动画，和 App 自己的渲染是独立的。我们可能在 Perfetto 中看到 RenderThread 在手势期间有额外的 GPU 工作——这部分是系统动画引起的。
 
 [待验证: Android 16 中 Predictive Back 在低端设备上的掉帧率是否有优化]
 
@@ -220,7 +225,7 @@ Predictive Back 在手势滑动期间会持续触发 `onBackProgressed()` 回调
 
 EdgeBackGestureHandler 在收到 `ACTION_DOWN` 时需要做一系列判断：是否在边缘区域内、是否在排除区域内、是否有 Gesture Blocking Activity、系统标志是否允许。这些判断在 SystemUI 的 MainThread 上执行。如果 SystemUI 的 MainThread 在这个时间点比较忙（比如正在更新通知栏），从用户触控到返回手势开始响应之间会有一个小的延迟。
 
-这个延迟通常很小（几毫秒级别），但在极端情况下（SystemUI MainThread 被 Binder 调用阻塞），可能达到几十毫秒。在 Perfetto 中，如果你看到 SystemUI 进程的 MainThread 在用户触摸时刻附近有一段长时间的 Binder 调用或密集的 CPU 活动，返回手势的响应可能会受影响。
+这个延迟通常很小（几毫秒级别），但在极端情况下（SystemUI MainThread 被 Binder 调用阻塞），可能达到几十毫秒。在 Perfetto 中，如果我们看到 SystemUI 进程的 MainThread 在用户触摸时刻附近有一段长时间的 Binder 调用或密集的 CPU 活动，返回手势的响应可能会受影响。
 
 ### 长按超时的影响
 
@@ -232,7 +237,7 @@ EdgeBackGestureHandler 中有一个 `mLongPressTimeout` 参数，它限制了从
 
 ### 动画渲染的开销
 
-NavigationBarEdgePanel 的返回箭头动画使用了 Spring Animation 和 ValueAnimator，在滑动过程中会频繁调用 `invalidate()` 触发重绘。这个视图是一个独立的 Window（`TYPE_NAVIGATION_BAR_PANEL`），它的渲染走的是 SystemUI 进程的 RenderThread。在 Perfetto 中，你可以在 SystemUI 进程里看到这些渲染活动——如果 SystemUI 的 RenderThread 在手势期间有明显的 GPU 工作，这就是返回箭头动画的开销。
+NavigationBarEdgePanel 的返回箭头动画使用了 Spring Animation 和 ValueAnimator，在滑动过程中会频繁调用 `invalidate()` 触发重绘。这个视图是一个独立的 Window（`TYPE_NAVIGATION_BAR_PANEL`），它的渲染走的是 SystemUI 进程的 RenderThread。在 Perfetto 中，我们可以在 SystemUI 进程里看到这些渲染活动——如果 SystemUI 的 RenderThread 在手势期间有明显的 GPU 工作，这就是返回箭头动画的开销。
 
 [来源: obsidian/Personal-Knowlodge/source/2026-03-08_wechat_深入理解_Android_系统_Back_Gesture_的实现.md]
 
@@ -242,19 +247,19 @@ NavigationBarEdgePanel 的返回箭头动画使用了 Spring Animation 和 Value
 
 ### 1. InputDispatcher 中的 Gesture Monitor
 
-在 Perfetto 的 `InputDispatcher` track 中，当有 Touch 事件时，你会看到事件同时发送给了目标 App 和 Gesture Monitor。如果一个 Touch 事件被标记为 Gesture Monitor 的目标，意味着这次触摸同时被 SystemUI 监视了。在 `InputDispatcher` 的详细 slice 中可以看到 `edge-swipe` monitor 的分发记录。
+在 Perfetto 的 `InputDispatcher` track 中，当有 Touch 事件时，我们会看到事件同时发送给了目标 App 和 Gesture Monitor。如果一个 Touch 事件被标记为 Gesture Monitor 的目标，意味着这次触摸同时被 SystemUI 监视了。在 `InputDispatcher` 的详细 slice 中可以看到 `edge-swipe` monitor 的分发记录。
 
 ### 2. SystemUI 进程的活动
 
-在 SystemUI 进程中，返回手势的处理体现在 MainThread 上的 `onInputEvent` → `onMotionEvent` 调用链。如果返回手势被触发，你会看到 `triggerBack` → `sendEvent`（注入 Back 按键）的活动。之后在 RenderThread 上可以看到 NavigationBarEdgePanel 的渲染工作（箭头动画的绘制）。
+在 SystemUI 进程中，返回手势的处理体现在 MainThread 上的 `onInputEvent` → `onMotionEvent` 调用链。如果返回手势被触发，我们会看到 `triggerBack` → `sendEvent`（注入 Back 按键）的活动。之后在 RenderThread 上可以看到 NavigationBarEdgePanel 的渲染工作（箭头动画的绘制）。
 
 ### 3. Back 按键事件的注入
 
-当返回手势触发后，InputDispatcher 会收到一个注入的 `KEYCODE_BACK` KeyEvent。在 `InputDispatcher` track 中，这个事件会显示为从 `INJECT` 来源进入，经过 `interceptKeyBeforeQueueing` 预处理，然后分发给焦点 Window。你可以通过事件的时间戳和来源区分"物理按键返回"和"手势注入返回"。
+当返回手势触发后，InputDispatcher 会收到一个注入的 `KEYCODE_BACK` KeyEvent。在 `InputDispatcher` track 中，这个事件会显示为从 `INJECT` 来源进入，经过 `interceptKeyBeforeQueueing` 预处理，然后分发给焦点 Window。我们可以通过事件的时间戳和来源区分"物理按键返回"和"手势注入返回"。
 
 ### 4. Predictive Back 期间的多窗口渲染
 
-在 Android 15+ 上启用了 Predictive Back 的 App 中，当你从边缘滑动触发返回时，Perfetto 中会看到：
+在 Android 15+ 上启用了 Predictive Back 的 App 中，当我们从边缘滑动触发返回时，Perfetto 中会看到：
 - 当前 Activity 的渲染（缩小+淡出动画）
 - 目标 Activity 或 Launcher 的渲染（放大+淡入动画）
 - 系统侧的 Task 动画控制（WindowManager 中可以追踪到）
@@ -263,7 +268,7 @@ NavigationBarEdgePanel 的返回箭头动画使用了 Spring Animation 和 Value
 
 ### 5. 手势排除区域的变化
 
-虽然 Perfetto 默认不直接显示 SystemGestureExclusion 的变化，但你可以通过 atrace 的 `wm` category 来捕获 WMS 相关的活动。当 App 更新排除区域时，`WindowState.setSystemGestureExclusion()` 和 `DisplayContent.updateSystemGestureExclusion()` 会被调用，这些活动会以 trace event 的形式出现。
+虽然 Perfetto 默认不直接显示 SystemGestureExclusion 的变化，但我们可以通过 atrace 的 `wm` category 来捕获 WMS 相关的活动。当 App 更新排除区域时，`WindowState.setSystemGestureExclusion()` 和 `DisplayContent.updateSystemGestureExclusion()` 会被调用，这些活动会以 trace event 的形式出现。
 
 [待补充: Perfetto 中手势导航相关 Trace 的实际截图]
 [待补充: SystemUI MainThread 在手势处理期间的典型 CPU slice 示例]
@@ -272,7 +277,7 @@ NavigationBarEdgePanel 的返回箭头动画使用了 Spring Animation 和 Value
 
 ### 误区 1：手势导航的返回事件是 TouchEvent
 
-**错误**。手势导航的返回操作最终是通过注入 `KEYCODE_BACK` 的 KeyEvent 实现的，不是 TouchEvent。这意味着 App 在 `onTouchEvent()` 中是看不到返回操作的，它走的是 `dispatchKeyEvent()` → `onKeyDown()` / `onKeyUp()` 链路。如果你在 `onTouchEvent()` 中做了手势冲突的判断逻辑，返回手势不会触发这些逻辑。
+**错误**。手势导航的返回操作最终是通过注入 `KEYCODE_BACK` 的 KeyEvent 实现的，不是 TouchEvent。这意味着 App 在 `onTouchEvent()` 中是看不到返回操作的，它走的是 `dispatchKeyEvent()` → `onKeyDown()` / `onKeyUp()` 链路。如果我们在 `onTouchEvent()` 中做了手势冲突的判断逻辑，返回手势不会触发这些逻辑。
 
 ### 误区 2：设置了排除区域就一定不会被系统截获
 

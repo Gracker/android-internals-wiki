@@ -3,12 +3,12 @@
   "total_sections": 94,
   "metrics": {
     "total": 97,
-    "draft": 27,
+    "draft": 26,
     "ready-for-review": 46,
     "reviewed": 2,
-    "finalized": 25,
+    "finalized": 26,
     "staging_drafts": 0,
-    "last_updated": "2026-04-03T14:20:00+08:00"
+    "last_updated": "2026-04-03T15:49:00+08:00"
   },
   "reviewed_sections": {
     "8.1": {
@@ -242,11 +242,21 @@
         "frontmatter补全：section/drafted_date/drafted_by/reviewed_date/reviewed_by",
         "status ready-for-review → finalized"
       ]
+    },
+    "3.3": {
+      "reviewed_date": "2026-04-03",
+      "reviewed_by": "openclaw-task6",
+      "review_status": "finalized",
+      "fixes_applied": [
+        "18处'你'→'我们'替换（writing-guide §3.5合规）",
+        "frontmatter补充：section/drafted_date/drafted_by/reviewed_date/reviewed_by",
+        "status ready-for-review → finalized"
+      ]
     }
   },
   "review_stats": {
-    "total_reviewed": 23,
-    "reviewed_today": 8,
+    "total_reviewed": 24,
+    "reviewed_today": 9,
     "review_issues_total": 13
   },
   "completed": [
@@ -816,6 +826,21 @@
       "extensions_total": 2,
       "verification_level": "L2",
       "word_count": "~9500"
+    },
+    {
+      "chapter": "13.5",
+      "section": "13.5",
+      "title": "专题解读",
+      "status": "ready-for-review",
+      "drafted_date": "2026-04-03",
+      "drafted_by": "openclaw-task2a",
+      "anchors_covered": 5,
+      "anchors_total": 5,
+      "extensions_covered": 2,
+      "extensions_total": 2,
+      "verification_level": "L2",
+      "word_count": "~8200",
+      "completed_at": "2026-04-03T15:10:00+08:00"
     }
   ],
   "ready_for_review": 4,
@@ -930,9 +955,21 @@
           "Android 16 Predictive Back 默认启用 + finishAndRemoveTaskCallback/moveTaskToBackCallback/PRIORITY_SYSTEM_NAVIGATION_OBSERVER（目标 §3.1/§3.3）",
           "Android 16 Live Updates + Notification.ProgressStyle：segments/points/tracker + POST_PROMOTED_NOTIFICATIONS（目标 §8.1/§15）"
         ]
+      },
+      {
+        "time": "2026-04-03T15:00:00+08:00",
+        "focus": "F2FS Kernel 6.12/6.13 + Android 17 static final field 强制不可变",
+        "source": "strategic-gap",
+        "candidates": 8,
+        "passed": 2,
+        "delivered": 2,
+        "themes": [
+          "F2FS Folio 转换 + Zoned GC 调优 + Checkpoint 优化 + Device Aliasing（目标 §6.2/§6.4）",
+          "Android 17 static final field 反射/JNI 强制禁止 → ART 常量折叠 + 编译优化收益（目标 §4.3/§1.6）"
+        ]
       }
     ],
-    "last_updated": "2026-04-03T11:00:00+08:00"
+    "last_updated": "2026-04-03T15:00:00+08:00"
   },
   "history": [
     {
@@ -1426,6 +1463,13 @@
       "file": "src/part1-fundamentals/ch03-input/02-touch-performance.md",
       "status": "finalized",
       "drafted_date": "2026-03-30",
+      "reviewed_date": "2026-04-03",
+      "reviewed_by": "openclaw-task6"
+    },
+    "3.3": {
+      "title": "手势导航与系统交互",
+      "status": "finalized",
+      "drafted_date": "2026-03-31",
       "reviewed_date": "2026-04-03",
       "reviewed_by": "openclaw-task6"
     }
