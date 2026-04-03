@@ -211,7 +211,7 @@ Rhea 是字节跳动抖音团队开发的 Trace 工具，虽然它不是一个�
 
 **第二阶段是自研 Method Trace**。Rhea 2.0 摒弃了 Systrace，改为在 Java 层记录方法的首末时间戳，异步写入文件，然后转换为 Systrace 可视化格式。性能损耗从 11.5% 降到了约 3%。但它只能覆盖 Java 方法级信息，无法看到锁等待、I/O 耗时、Binder 调用等系统级行为。
 
-**第三阶段是动态一体化 Trace**。Rhea 3.0 重新设计了一套完整架构：不限层级插桩获取函数耗时 + Hook atrace_marker_fd 拦截用户态 Trace + Hook libc 的 open/read/write/fsync 收集 I/O 信息 + Hook libbinder.so 的 IPCThreadState.transact 收集 Binder 耗时 + 运行时动态打开 ART 虚拟机的轻锁日志。最终将用户态 atrace 和内核态 ftrace 合并为一个完整的 Trace 文件，兼容 Systrace/Perfetto 可视化格式。
+**第三阶段是动态一体化 Trace**。Rhea 3.0 宁弃了前面的方案，重新设计了一套完整架构：不限层级插桩获取函数耗时 + Hook atrace_marker_fd 拦截用户态 Trace + Hook libc 的 open/read/write/fsync 收集 I/O 信息 + Hook libbinder.so 的 IPCThreadState.transact 收集 Binder 耗时 + 运行时动态打开 ART 虚拟机的轻锁日志。最终将用户态 atrace 和内核态 ftrace 合并为一个完整的 Trace 文件，兼容 Systrace/Perfetto 可视化格式。
 
 Rhea 的一个关键优化是将直接写入内核态 trace_marker 文件的 Trace 在用户态拦截、缓存，再异步转储。这避免了大量线程同时向同一文件写入导致的 pos 锁竞争问题——这个问题在实际优化中非常容易误导方向，因为工具本身的性能开销表现为 I/O Wait，很容易误判为业务代码的 I/O 问题。
 
