@@ -1,5 +1,5 @@
 {
-  "last_updated": "2026-04-04T06:34:26",
+  "last_updated": "2026-04-04T06:55:15.663522",
   "total_items": 15,
   "priority_breakdown": {
     "high": 4,
@@ -305,8 +305,15 @@
       ],
       "added_by": "task6-review",
       "added_at": "2026-04-04T06:34:26",
-      "status": "pending",
-      "original_review_log": "logs/review/2026-04-04-0626-review.md"
+      "status": "completed",
+      "original_review_log": "logs/review/2026-04-04-0626-review.md",
+      "completed_at": "2026-04-04T06:55:15.663510",
+      "rework_fixes": [
+        "B1 叙述风格重写（4处）：减少层级其他手段/Binder调用优化/线程池配置/预渲染预计算 — 纯列表全部转为连贯叙述，解释每条策略的技术原理、适用场景和实战经验",
+        "B2 补充 Perfetto Trace 定位（4处）：布局层级过深→measure耗时突增/RecyclerView卡顿→onBindViewHolder调用栈/Binder耗时→binder_transaction事件/线程竞争→CPU Track多线程抢占",
+        "B3 Compose BOM 确认：BOM 2025.12.00 为 2025年12月稳定版（含 Compose 1.10 + Material 3 1.4），Google 官方声明性能对等（jank 降至 0.2%）[已确认]",
+        "frontmatter 更新：status → ready-for-review, 新增 rework_date/rework_by"
+      ]
     }
   ]
 }
