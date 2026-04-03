@@ -4,11 +4,11 @@
   "metrics": {
     "total": 97,
     "draft": 0,
-    "ready-for-review": 8,
+    "ready-for-review": 9,
     "reviewed": 3,
     "finalized": 22,
     "staging_drafts": 0,
-    "last_updated": "2026-04-04T01:20:24.788615+08:00"
+    "last_updated": "2026-04-04T02:16:34.289955"
   },
   "reviewed_sections": {
     "8.1": {
