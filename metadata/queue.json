@@ -1,5 +1,5 @@
 {
-  "last_updated": "2026-04-04T03:39:20",
+  "last_updated": "2026-04-03T19:44:39",
   "total_items": 12,
   "priority_breakdown": {
     "high": 4,
@@ -241,8 +241,14 @@
       ],
       "added_by": "task6-review",
       "added_at": "2026-04-04T03:39:20",
-      "status": "pending",
-      "original_review_log": "logs/review/2026-04-04-0333-review.md"
+      "status": "completed",
+      "original_review_log": "logs/review/2026-04-04-0333-review.md",
+      "completed_at": "2026-04-03T19:44:39",
+      "rework_fixes": [
+        "新增「版本演进」独立小节：按时间线梳理 ext4/f2fs/EROFS 在 Android 4.0-16 中的变迁，含速览表格",
+        "新增「常见问题与误区」小节：5个常见误解（f2fs全面碾压/EROFS可用于data/fsync无开销/卡顿=存储/出厂重置治本）",
+        "新增「参考资料」小节：AOSP源码路径8条 + 官方文档链接8条 + 深入阅读6条"
+      ]
     }
   ]
 }
