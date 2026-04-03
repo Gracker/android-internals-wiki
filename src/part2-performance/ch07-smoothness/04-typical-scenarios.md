@@ -1,9 +1,9 @@
 ---
 title: "典型场景分析"
 chapter: "7.4"
-status: reviewed
-reviewed_date: "2026-04-04"
-reviewed_by: openclaw-task6
+status: ready-for-review
+rework_date: "2026-04-04"
+rework_by: openclaw-task2b
 applicable_versions: "Android 8 (API 26) - Android 16 (API 35)"
 last_verified: "2026-04-01"
 last_verified_against: "AOSP android-16.0.0_r1, Perfetto 官方文档"
@@ -180,7 +180,8 @@ Fragment 切换比 Activity 切换轻量，因为都在同一个进程和同一�
 
 优化思路：
 - 将 Fragment 的布局拆分为多个阶段：先加载骨架布局，数据准备好后再填充内容
-- 使用 `commitAllowingStateLoss()` 替代 `commit()`（需谨慎），避免在动画期间因状态检查导致的额外开销 [存疑: commitAllowingStateLoss 的主要用途是避免 onSaveInstanceState 之后的 IllegalStateException，其与 commit() 的性能差异可忽略不计。此处建议的真正优化方向应改为「将 Fragment 事务提交与动画帧解耦」或「使用 commitNow() 在合适的时机同步执行」]
+- 将 Fragment 事务提交时机与动画帧解耦：如果 Fragment 切换发生在动画期间（如 SharedElement 转场），事务的 commit 会触发 View 层级的完整重建（remove + add + measure + layout），这些操作会挤占动画帧的渲染时间。更好的做法是将 commit 延迟到动画结束之后，或者先暂停动画、执行事务、再恢复动画。[已确认: FragmentTransaction.commit() 在主线程上同步入队，实际的 View 操作在下一个 Choreographer doFrame 中执行]
+- 在非动画期间使用 `commitNow()` 同步执行：`commitNow()` 会在调用时立即执行事务中的所有操作，而不是等到下一个 Choreographer 周期。这在不需要动画的场景下（如 ViewPager2 内部的页面切换）可以减少一帧的延迟。但注意 `commitNow()` 不能和 `addToBackStack()` 一起使用。[已验证: AOSP FragmentTransaction.java — commitNow 文档说明]
 - 预加载下一页 Fragment 的 View（`setMaxLifecycle` 配合 ViewPager2 的 `setOffscreenPageLimit`）
 
 ### 2.3 页面切换动画在 Perfetto 中的表现

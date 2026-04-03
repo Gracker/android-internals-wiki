@@ -268,8 +268,12 @@
       ],
       "added_by": "task6-review",
       "added_at": "2026-04-04T05:25:00",
-      "status": "pending",
-      "original_review_log": "logs/review/2026-04-04-0525-review.md"
+      "status": "completed",
+      "original_review_log": "logs/review/2026-04-04-0525-review.md",
+      "completed_at": "2026-04-03T21:41:52",
+      "rework_fixes": [
+        "B1 commitAllowingStateLoss 技术误导修正：移除误导性的 commitAllowingStateLoss() 替代 commit() 建议，替换为两条准确优化方向：(1) 将 Fragment 事务提交时机与动画帧解耦 + (2) 在非动画期间使用 commitNow() 同步执行，补充 AOSP 验证说明"
+      ]
     }
   ]
 }
