@@ -1,6 +1,6 @@
 {
-  "last_updated": "2026-04-03T09:20:00",
-  "total_items": 11,
+  "last_updated": "2026-04-04T01:20:00",
+  "total_items": 12,
   "priority_breakdown": {
     "high": 4,
     "medium": 3,
@@ -179,6 +179,33 @@
         "3处伪代码标注修正：ANativeWindowBuffer/GLESContext/WindowManagerGlobal 全部明确标注为示意性伪代码并说明 AOSP 实际位置",
         "frontmatter更新：status→ready-for-review, confidence→medium, rework_date/rework_by 补全, related_chapters 增加2.5/2.6"
       ]
+    },
+    {
+      "section": "7.3",
+      "section_title": "卡顿分析方法论",
+      "priority": 90,
+      "reason": "[review回炉] 2处B类问题：FrameMetrics.DEADLINE API版本标注不准；SQL调度延迟查询语义需确认",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "存疑",
+          "location": "FrameMetrics 代码示例（FrameMetrics API 小节）",
+          "detail": "FrameMetrics.DEADLINE 常量从 API 31 才可用，但上下文写 'Android 7.0+, API 24'，存在版本兼容性矛盾",
+          "suggestion": "确认目标兼容版本后：如需兼容 API 24-30，添加版本分支代码或说明；如仅面向 API 31+，更新版本描述"
+        },
+        {
+          "type": "需确认",
+          "location": "SQL 查询示例（调度延迟查询）",
+          "detail": "sched.end_state='R' 表示线程被抢占时仍为 Runnable，不等于从唤醒到上CPU的调度延迟（wakeup latency）",
+          "suggestion": "如需测量真正调度延迟，改为结合 sched_wakeup 事件计算 wakeup→sched_in 时间差；或明确注释当前查询的含义"
+        }
+      ],
+      "added_by": "task6-review",
+      "added_at": "2026-04-04T01:20:00",
+      "status": "pending",
+      "original_review_log": "logs/review/2026-04-04-0120-review.md"
     }
   ]
 }
