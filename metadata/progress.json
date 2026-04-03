@@ -4,11 +4,11 @@
   "metrics": {
     "total": 97,
     "draft": 27,
-    "ready-for-review": 47,
+    "ready-for-review": 46,
     "reviewed": 2,
-    "finalized": 24,
+    "finalized": 25,
     "staging_drafts": 0,
-    "last_updated": "2026-04-03T13:20:00+08:00"
+    "last_updated": "2026-04-03T14:20:00+08:00"
   },
   "reviewed_sections": {
     "8.1": {
@@ -232,11 +232,21 @@
         "frontmatter补充section字段",
         "status ready-for-review → finalized"
       ]
+    },
+    "3.2": {
+      "reviewed_date": "2026-04-03",
+      "reviewed_by": "openclaw-task6",
+      "review_status": "finalized",
+      "fixes_applied": [
+        "3处'你'→'我们'替换（writing-guide §3.5合规）",
+        "frontmatter补全：section/drafted_date/drafted_by/reviewed_date/reviewed_by",
+        "status ready-for-review → finalized"
+      ]
     }
   },
   "review_stats": {
-    "total_reviewed": 22,
-    "reviewed_today": 7,
+    "total_reviewed": 23,
+    "reviewed_today": 8,
     "review_issues_total": 13
   },
   "completed": [
@@ -809,7 +819,7 @@
     }
   ],
   "ready_for_review": 4,
-  "last_updated": "2026-04-03T11:00:00+08:00",
+  "last_updated": "2026-04-03T14:20:00+08:00",
   "stats": {
     "total": 97,
     "completed": 45,
@@ -1410,6 +1420,14 @@
       "reviewed_date": "2026-04-03",
       "reviewed_by": "openclaw-task6",
       "file": "src/part1-fundamentals/ch05-cpu-power/04-dvfs.md"
+    },
+    "3.2": {
+      "title": "触摸响应的性能分析",
+      "file": "src/part1-fundamentals/ch03-input/02-touch-performance.md",
+      "status": "finalized",
+      "drafted_date": "2026-03-30",
+      "reviewed_date": "2026-04-03",
+      "reviewed_by": "openclaw-task6"
     }
   },
   "5.1": {
