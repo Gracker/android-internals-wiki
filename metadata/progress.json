@@ -4,11 +4,11 @@
   "metrics": {
     "total": 97,
     "draft": 0,
-    "ready-for-review": 10,
+    "ready-for-review": 9,
     "reviewed": 3,
-    "finalized": 23,
+    "finalized": 24,
     "staging_drafts": 0,
-    "last_updated": "2026-04-04T04:19:45.354648"
+    "last_updated": "2026-04-04T04:20:00"
   },
   "reviewed_sections": {
     "8.1": {
@@ -325,10 +325,21 @@
         "frontmatter: status ready-for-review → finalized",
         "frontmatter: 补 reviewed_date/reviewed_by"
       ]
+    },
+    "6.4": {
+      "reviewed_date": "2026-04-04",
+      "reviewed_by": "openclaw-task6",
+      "review_status": "finalized",
+      "fixes_applied": [
+        "7处你→我们替换（writing-guide §3.5合规）",
+        "4处[来源]→[已验证: 来源见 ...]标注格式标准化",
+        "frontmatter补全：section/drafted_by/reviewed_date/reviewed_by",
+        "status ready-for-review → finalized"
+      ]
     }
   },
   "review_stats": {
-    "total_reviewed": 30,
+    "total_reviewed": 31,
     "reviewed_today": 17,
     "review_issues_total": 13
   },
@@ -1848,6 +1859,14 @@
       "status": "ready-for-review",
       "drafted_date": "2026-04-04",
       "drafted_by": "openclaw-task2a"
+    },
+    "6.4": {
+      "title": "存储相关的版本演进",
+      "status": "finalized",
+      "file": "src/part1-fundamentals/ch06-storage/04-storage-evolution.md",
+      "drafted_date": "2026-04-01",
+      "reviewed_date": "2026-04-04",
+      "reviewed_by": "openclaw-task6"
     }
   },
   "5.1": {
