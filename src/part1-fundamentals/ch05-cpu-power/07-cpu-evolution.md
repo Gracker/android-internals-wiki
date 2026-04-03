@@ -1,7 +1,7 @@
 ---
 title: "CPU 相关的版本演进"
 chapter: "5.7"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 5.0 - 16"
 last_verified: "2026-04-01"
 last_verified_against: "Android 15 developer docs, AOSP source code"
@@ -21,6 +21,8 @@ tags: ['doze', 'JobScheduler', 'adaptive-battery', 'app-standby-buckets', 'eas',
 related_chapters: ["5.1", "5.2", "5.3", "5.4", "5.5", "5.6"]
 drafted_date: "2026-04-01"
 drafted_by: "openclaw-task2"
+reviewed_date: "2026-04-04"
+reviewed_by: "openclaw-task6"
 ---
 
 # CPU 相关的版本演进
@@ -52,7 +54,7 @@ drafted_by: "openclaw-task2"
 
 ## 为什么要了解 CPU 相关的版本演进
 
-如果你做过 Android 性能优化，一定遇到过这种情况：你的 App 在 Android 10 上跑得很好，到了 Android 12 突然后台任务不执行了；或者你用 AlarmManager 设了一个精确闹钟，结果在 Android 13 上根本不响。这不是 Bug，是 Google 在每个版本中逐步收紧后台行为限制的结果。
+做过 Android 性能优化的工程师，很可能遇到过这种情况：App 在 Android 10 上跑得很好，到了 Android 12 突然后台任务不执行了；或者用 AlarmManager 设了一个精确闹钟，结果在 Android 13 上根本不响。这不是 Bug，是 Google 在每个版本中逐步收紧后台行为限制的结果。
 
 从 Android 5.0 到 Android 16，Google 围绕 CPU 和功耗管理做了一系列层层递进的改动。这些改动覆盖了三个层面：
 
@@ -60,7 +62,7 @@ drafted_by: "openclaw-task2"
 2. **系统策略层面**：Doze 模式、App Standby Buckets、Adaptive Battery——系统越来越"聪明"地决定哪些 App 可以用 CPU，哪些必须等着
 3. **应用约束层面**：JobScheduler 引入 → 后台服务限制 → 精确闹钟管控 → 前台服务类型化——App 能做的事情越来越受限
 
-理解这条演进线，你就能回答：为什么我的后台任务在某个版本突然不工作了？为什么同样的代码在不同设备上表现不一样？做功耗优化时，应该关注哪些系统机制的变化？
+理解这条演进线，我们就能回答：为什么我的后台任务在某个版本突然不工作了？为什么同样的代码在不同设备上表现不一样？做功耗优化时，应该关注哪些系统机制的变化？
 
 我们按时间线逐个版本看下来。
 
@@ -100,7 +102,7 @@ Android 6.0 引入了 Doze 模式，这是 Android 功耗管理的第一个里�
 
 [图：Doze 模式周期示意图——展示 Doze 进入→维护窗口→深度休眠的周期]
 
-从性能分析的角度，Doze 带来了一些值得关注的影响：如果你在 Perfetto 中看到某个时间段内 App 的 CPU 活动完全消失（连 Binder 调用都没有），而设备满足静止条件，很可能就是 Doze 在起作用。你可以通过 `adb shell dumpsys deviceidle` 查看 Doze 状态。
+从性能分析的角度，Doze 带来了一些值得关注的影响：如果在 Perfetto 中看到某个时间段内 App 的 CPU 活动完全消失（连 Binder 调用都没有），而设备满足静止条件，很可能就是 Doze 在起作用。你可以通过 `adb shell dumpsys deviceidle` 查看 Doze 状态。
 
 [已验证: 官方文档, developer.android.com/training/monitoring-device-state/doze-standby]
 
@@ -160,7 +162,7 @@ EAS 早在 2016 年就合入了 Android Common Kernel，但到 Android 10 才正
 
 EAS 成为默认的意义在于：
 
-- **对 App 开发者**：你的 App 的线程调度，从"哪个核心空闲去哪个"变成了"综合考虑性能和功耗的最优选择"。你会发现同样的代码在 Android 10 上可能比 Android 9 跑得慢一点点（因为系统优先省电），但整体功耗会下降。
+- **对 App 开发者**：你的 App 的线程调度，从"哪个核心空闲去哪个"变成了"综合考虑性能和功耗的最优选择"。同样的代码在 Android 10 上可能比 Android 9 跑得慢一点点（因为系统优先省电），但整体功耗会下降。
 - **对系统工程师**：在做性能分析时，不能只看 CPU 频率和利用率，还要结合 EAS 的调度决策来理解为什么任务被分配到了特定的核心。在 Perfetto 中，你可以通过 CPU 调度 Track 观察任务的迁移模式。
 
 [已验证: ARM 官方文档 - EAS, source.android.com/docs/core/power]

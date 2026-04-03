@@ -4,9 +4,9 @@
   "metrics": {
     "total": 97,
     "draft": 0,
-    "ready-for-review": 9,
+    "ready-for-review": 8,
     "reviewed": 3,
-    "finalized": 22,
+    "finalized": 23,
     "staging_drafts": 0,
     "last_updated": "2026-04-04T02:16:34.289955"
   },
@@ -314,6 +314,16 @@
         "2处[存疑]标注（绿盟标准/Adaptive Battery 2.0术语）",
         "frontmatter补 section/reviewed_date/reviewed_by",
         "status ready-for-review → finalized"
+      ]
+    },
+    "5.7": {
+      "reviewed_date": "2026-04-04",
+      "reviewed_by": "openclaw-task6",
+      "review_status": "finalized",
+      "fixes_applied": [
+        "4 处语言风格修正（你→我们/中性表述，符合 writing-guide）",
+        "frontmatter: status ready-for-review → finalized",
+        "frontmatter: 补 reviewed_date/reviewed_by"
       ]
     }
   },
