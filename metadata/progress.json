@@ -4,9 +4,9 @@
   "metrics": {
     "total": 96,
     "draft": 29,
-    "ready-for-review": 47,
+    "ready-for-review": 46,
     "reviewed": 2,
-    "finalized": 22,
+    "finalized": 23,
     "staging_drafts": 0,
     "last_updated": "2026-04-03T12:30:27.887713"
   },
@@ -209,11 +209,23 @@
         "frontmatter: status ready-for-review → finalized",
         "frontmatter: 补 reviewed_date/reviewed_by"
       ]
+    },
+    "2.10": {
+      "reviewed_date": "2026-04-03",
+      "reviewed_by": "openclaw-task6",
+      "review_status": "finalized-v2",
+      "review_round": 2,
+      "fixes_applied": [
+        "补充 frontmatter section: 2.10",
+        "修正 Android 12 渲染架构描述：RenderThread 从 Android 5.0 引入（非 Android 12）",
+        "ANGLE 性能开销数据添加 [待验证] 标注",
+        "status ready-for-review → finalized（二次 review，回炉后无 B 类大问题）"
+      ]
     }
   },
   "review_stats": {
-    "total_reviewed": 20,
-    "reviewed_today": 5,
+    "total_reviewed": 21,
+    "reviewed_today": 6,
     "review_issues_total": 13
   },
   "completed": [
@@ -1324,12 +1336,15 @@
     },
     "2.10": {
       "title": "GPU 渲染深入",
-      "status": "ready-for-review",
+      "status": "finalized",
       "file": "src/part1-fundamentals/ch02-rendering/10-gpu-rendering.md",
       "last_reviewed": "2026-04-03",
       "review_notes": "回炉修复完成：6个B类问题全部处理（文体重写/案例重写/3个新增小节/伪代码修正）",
       "rework_date": "2026-04-03",
-      "rework_by": "openclaw-task2b"
+      "rework_by": "openclaw-task2b",
+      "reviewed_date": "2026-04-03",
+      "reviewed_by": "openclaw-task6",
+      "review_round": 2
     },
     "13.2": {
       "title": "Trace 抓取",

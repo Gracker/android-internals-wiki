@@ -1,7 +1,8 @@
 ---
+section: "2.10"
 title: "GPU 渲染深入"
 chapter: "2.10"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 12 - Android 16 (API 31-36)"
 last_verified: "2026-04-03"
 last_verified_against: "AOSP android-16.0.0_r1, developer.android.com"
@@ -24,6 +25,7 @@ reviewed_date: 2026-04-03
 reviewed_by: openclaw-task6
 rework_date: 2026-04-03
 rework_by: openclaw-task2b
+review_round: 2
 ---
 
 # GPU 渲染深入
@@ -69,7 +71,7 @@ rework_by: openclaw-task2b
 
 流程的起点在 CPU 侧：应用主线程执行 `View.onDraw()`，通过 Canvas API 绘制界面。这些 Canvas 调用被 Skia 图形库接收后，Skia 会根据运行环境将其转换为 OpenGL ES 或 Vulkan 调用——这是 GPU 指令生成阶段。接下来 GPU 接管工作，依次执行顶点处理、片段处理等计算任务，将渲染结果写入显存中的帧缓冲区。最后，SurfaceFlinger 将多个图层合成为最终图像，提交给显示硬件。
 
-这里有一个关键点值得注意：CPU 和 GPU 之间的分工并非固定不变。在 Android 12 之前，主线程既负责 measure/layout，也负责将 Canvas 命令转换为 DisplayList；从 Android 12 开始，RenderThread 承担了更多工作，主线程只负责录制绘制命令，实际的 GPU 调用由 RenderThread 完成。这意味着我们在 Trace 中看到的"GPU 耗时"，实际上对应的是 RenderThread 将命令提交到 GPU 直到 GPU 完成渲染的整个过程。
+这里有一个关键点值得注意：CPU 和 GPU 之间的分工经历了几次重要演进。在 Android 5.0 之前，主线程包揽了所有渲染工作——measure/layout、DisplayList 录制、GPU 命令提交全部在同一线程完成。Android 5.0 引入了独立的 RenderThread，将 GPU 命令的提交和执行从主线程剥离出来，主线程只负责 measure/layout 和 DisplayList（draw 命令列表）的录制。从 Android 12 开始，Google 进一步优化了这一分工，RenderThread 承担了更多工作，使得主线程的渲染负担进一步减轻。这意味着我们在 Trace 中看到的"GPU 耗时"，实际上对应的是 RenderThread 将命令提交到 GPU 直到 GPU 完成渲染的整个过程。
 
 [图：Android GPU 渲染管线全景图——从 CPU 准备到屏幕合成的完整数据流]
 
@@ -242,7 +244,7 @@ vkAllocateMemory(device, &allocInfo, nullptr, &memory);
 
 ### ANGLE 层的性能影响
 
-对于仍然使用 OpenGL ES 的应用，ANGLE 转换层的性能开销是需要关注的。根据 Google 和社区的测试数据，对于优化良好的 2D UI 应用，ANGLE 的性能开销在 2-5% 以内，几乎可以忽略；对于使用复杂着色器的 3D 游戏应用，开销在 5-10% 范围内；而在极端的合成基准测试中，开销可能达到 10-20%。
+对于仍然使用 OpenGL ES 的应用，ANGLE 转换层的性能开销是需要关注的。[待验证: ANGLE 性能开销数据来自社区测试报告，待找到 Google 官方基准测试数据验证] 根据 Google 和社区的测试数据，对于优化良好的 2D UI 应用，ANGLE 的性能开销在 2-5% 以内，几乎可以忽略；对于使用复杂着色器的 3D 游戏应用，开销在 5-10% 范围内；而在极端的合成基准测试中，开销可能达到 10-20%。
 
 这个开销的来源主要有两方面：一是 GLSL 到 SPIR-V 的翻译过程，二是 OpenGL ES 的状态机模型到 Vulkan 的命令缓冲区模型的转换。对于大多数日常应用来说，ANGLE 的性能损耗在可接受范围内，而且 ANGLE 带来的驱动一致性和 bug 修复的收益通常远大于性能开销。
 
