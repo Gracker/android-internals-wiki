@@ -28,10 +28,15 @@
 
 ### Step 2：扫描待 review 章节
 扫描 src/ 下所有 .md 文件，按以下优先级筛选：
-1. **最高优先**：`status: ready-for-review` 的章节（task2 加工完成，等待 review）
-2. **次优先**：`status: reviewed` 的章节（task2 回炉修复后，需二次 review）
-3. **可选抽检**：`status: finalized` 的章节（每周抽检 1 个已定稿章节，防止质量退化）
+1. **最高优先**：`status: ready-for-review` 且有 `re-review-materials` 字段的章节（素材冲击重审，由 task7 触发）
+2. **次优先**：`status: ready-for-review` 的章节（task2 加工完成，等待 review）
+3. **第三优先**：`status: reviewed` 的章节（task2 回炉修复后，需二次 review）
+4. **可选抽检**：`status: finalized` 的章节（每周抽检 1 个已定稿章节，防止质量退化）
 如果没有任何待 review 章节，回复"当前无待 review 草稿"并结束。
+
+**区分首次 review 和重审**：
+- 选中章节的 frontmatter 含有 `re-review-materials` → 走 **Step 4a 重审模式**
+- 否则 → 走 **Step 4b 首次 review 模式**（即原有的 Step 4-8 流程不变）
 
 ### Step 3：内容充分性检查（前置过滤，最高优先级）
 
@@ -52,8 +57,70 @@
 - 不更新 frontmatter status（保持 draft，留给 task2 处理）
 - 不写入 queue.json（task2 已经会扫描 draft 状态的章节）
 
-### Step 4：选择本次 review 目标
-优先级排序：
+### Step 4a：重审模式（素材冲击重审）
+
+**前置条件**：选中章节的 frontmatter 含有 `re-review-materials` 字段。
+
+**执行步骤**：
+
+#### 4a-1. 读取触发素材
+- 从 `re-review-materials` 数组中读取所有素材路径
+- 逐个读取素材全文（或前 1000 字，取决于素材长度）
+- 理解每条素材的核心内容、技术断言、数据/示例
+
+#### 4a-2. 对比分析
+将新素材与章节现有内容逐项对比，判断以下三种情况：
+
+| 判断结果 | 含义 | 处理方式 |
+---------|------|--------|
+| **应纳入** | 素材包含章节中完全缺失的重要知识点/数据/案例 | 直接补充到章节中 |
+| **需修正** | 素材与现有内容矛盾，或提供了更准确的版本 | 修正现有内容 |
+| **无需修改** | 素材内容已被覆盖，或与章节主题相关度不够深 | 不修改 |
+
+#### 4a-3. 执行修改（仅对「应纳入」和「需修正」项）
+- 修改风格必须遵循 writing-guide.md
+- 新增内容必须融入现有叙述，不能生硬粘贴
+- 补充后检查前后文衔接是否自然
+- 使用 exec + python/pathlib + 绝对路径写回文件
+
+#### 4a-4. 更新 frontmatter
+- 如果有修改：
+  - `status: ready-for-review`（保持，让正常 review 流程再做一次检查）
+  - 保留 `re-review-materials`（供正常 review 参考）
+  - 追加 `re-review-result: "已纳入 {N} 条素材内容，修正 {M} 处"
+- 如果无需修改（所有素材都是「无需修改」）：
+  - `status: ready-for-review` → `status: finalized`（恢复定稿）
+  - 清空 `re-review-materials`、`re-review-reason`、`re-review-triggered-date`、`re-review-triggered-by`
+  - 追加 `re-review-result: "审查 {N} 条素材，无需修改"
+
+#### 4a-5. 重审日志
+在 review 日志中额外记录：
+```markdown
+## 重审信息（素材冲击）
+- 触发来源：task7-incremental-index
+- 触发日期：{re-review-triggered-date}
+- 审查素材数：{N}
+- 应纳入：{X} 条 | 需修正：{Y} 条 | 无需修改：{Z} 条
+- 素材列表：
+  1. {路径} — {判断结果} — {简述}
+  2. ...
+- 最终处理：{已纳入并保持ready-for-review / 无需修改已恢复finalized}
+```
+
+#### 4a-6. Git 提交
+```bash
+cd "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki"
+git add src/ metadata/ logs/review/
+git commit -m "[openclaw] re-review: {章节号} {小节名} — 素材冲击重审（{N}条素材，{结果}）"
+```
+
+重审完成后输出报告并结束（不继续执行 Step 4b）。
+
+### Step 4b：首次 review 模式
+
+**前置条件**：选中章节的 frontmatter **不含** `re-review-materials` 字段。
+
+选择本次 review 目标：
 1. **最早 drafted 的章节优先**（frontmatter 中的 drafted_date）
 2. **如果同日期，按章节号排序**（1.1 → 1.2 → 2.1 ...）
 3. **每次只 review 1 个章节**（深度 > 广度）
@@ -213,18 +280,30 @@
 - 锚点覆盖：已覆盖/总数
 ```
 
-### Step 9：Git 提交
+### Step 9：Git 提交（仅首次 review 模式）
 ```bash
 cd "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki"
 git add src/ metadata/ logs/review/
 git commit -m "[openclaw] review: {章节号} {小节名} — 草稿 review 完成"
 ```
 
+**注意**：重审模式（Step 4a）有自己的 Git 提交步骤（4a-6），commit message 格式不同。
+
 ## 投递格式（EBook 群）
 
 📖 草稿 Review | {日期} {时间}
 
+**Review 模式**：首次 review / 🔄 素材冲击重审
+
 Review 章节：{章节号} {小节名}
+
+**（如果是重审模式，额外显示）**
+重审素材：{N} 条
+- {素材1标题} — {应纳入/需修正/无需修改}
+- {素材2标题} — {应纳入/需修正/无需修改}
+重审结果：{已纳入X条+修正Y条，保持ready-for-review / 无需修改，已恢复finalized}
+
+**（首次 review 模式的原有字段）**
 writing-guide 合规：✅ 合规 / ⚠️ N 处不合规（已修复/已标注）
 评分：结构 {X}/5 · 措辞 {X}/5 · 一致性 {X}/5 · 验证 {X}/5
 修复：小修 {N} 处 · 大问题标注 {N} 处
