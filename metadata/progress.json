@@ -731,7 +731,7 @@
     }
   ],
   "ready_for_review": 3,
-  "last_updated": "2026-04-03T09:20:00",
+  "last_updated": "2026-04-03T09:51:05.280335",
   "stats": {
     "total": 97,
     "completed": 42,
@@ -1242,10 +1242,12 @@
     },
     "2.10": {
       "title": "GPU 渲染深入",
-      "status": "reviewed",
+      "status": "ready-for-review",
       "file": "src/part1-fundamentals/ch02-rendering/10-gpu-rendering.md",
       "last_reviewed": "2026-04-03",
-      "review_notes": "6个B类问题已标注，回炉等待task2修复"
+      "review_notes": "回炉修复完成：6个B类问题全部处理（文体重写/案例重写/3个新增小节/伪代码修正）",
+      "rework_date": "2026-04-03",
+      "rework_by": "openclaw-task2b"
     }
   },
   "5.1": {
@@ -1271,6 +1273,14 @@
       ],
       "action": "task2b-rework",
       "details": "2.9 渲染机制的版本演进: 4 fixes (AOSP路径验证, Android16年份确认, 图注增强, FrameMetrics叙述重写)"
+    },
+    {
+      "date": "2026-04-03T09:40:00+08:00",
+      "sections": [
+        "2.10"
+      ],
+      "action": "task2b-rework",
+      "details": "2.10 GPU 渲染深入: 7 fixes (全文文体重写8+处, 实战案例TypeB重写, 新增与其他机制关系小节, 新增Perfetto表现专节, 新增常见误区5条, 3处伪代码标注修正, frontmatter更新)"
     }
   ],
   "chapters": {

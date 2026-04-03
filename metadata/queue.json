@@ -166,9 +166,19 @@
       ],
       "added_by": "task6-review",
       "added_at": "2026-04-03T09:20:00",
-      "status": "pending",
+      "status": "completed",
       "category": "review-rework",
-      "original_review_log": "logs/review/2026-04-03-0920-review.md"
+      "original_review_log": "logs/review/2026-04-03-0920-review.md",
+      "completed_at": "2026-04-03T09:51:05.279589",
+      "rework_fixes": [
+        "全文文体重写：8+处列表段落改为连贯叙述（Vertex Shader/Fragment Shader/Framebuffer/Fillrate/Vertex/Bandwidth/Gralloc/ANGLE/实战案例）",
+        "实战案例重写：从全伪代码改为 Type B 模板真实 Trace 分析叙述（现象→思路→定位→分析→根因→修复→验证→举一反三）",
+        "新增「与其他机制的关系」小节：VSync→GPU、Choreographer→GPU、MainThread/RenderThread→GPU、SurfaceFlinger→GPU 四条关系链",
+        "新增「在 Perfetto 中的具体表现」专节：gpu_render_stages/RenderThread/SurfaceFlinger/VSYNC 四个 Track 说明 + 三种典型模式对比",
+        "新增「常见问题与误区」小节：5 个常见误解（GPU占用高=需优化/过度绘制一定是问题/GPU一定比CPU快/硬件加速解决一切/120Hz需GPU翻倍）",
+        "3处伪代码标注修正：ANativeWindowBuffer/GLESContext/WindowManagerGlobal 全部明确标注为示意性伪代码并说明 AOSP 实际位置",
+        "frontmatter更新：status→ready-for-review, confidence→medium, rework_date/rework_by 补全, related_chapters 增加2.5/2.6"
+      ]
     }
   ]
 }
