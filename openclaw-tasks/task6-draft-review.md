@@ -85,9 +85,9 @@
 
 #### 4a-4. 更新 frontmatter
 - 如果有修改：
-  - `status: ready-for-review`（保持，让正常 review 流程再做一次检查）
-  - 保留 `re-review-materials`（供正常 review 参考）
-  - 追加 `re-review-result: "已纳入 {N} 条素材内容，修正 {M} 处"
+  - `status: ready-for-review`（保持，交给后续 Step 4b 正常 review 做完整质检）
+  - **清空** `re-review-materials`、`re-review-reason`、`re-review-triggered-date`、`re-review-triggered-by`（防止下次又被 Step 4a 重复选中形成死循环）
+  - 追加 `re-review-result: "已纳入 {N} 条素材内容，修正 {M} 处，待正常review质检"
 - 如果无需修改（所有素材都是「无需修改」）：
   - `status: ready-for-review` → `status: finalized`（恢复定稿）
   - 清空 `re-review-materials`、`re-review-reason`、`re-review-triggered-date`、`re-review-triggered-by`
