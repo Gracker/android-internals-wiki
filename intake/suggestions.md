@@ -299,3 +299,26 @@
 - **问题**：详见 logs/review/2026-04-03-03-review.md
 - **建议**：task2 下一轮优先处理（priority: critical）
 - **review 日志**：logs/review/2026-04-03-03-review.md
+
+## 2026-04-03 07:00 前沿研究建议
+
+1. **§5.7 CPU 相关的版本演进 — 优先级提升建议**：EEVDF 取代 CFS 是 Linux 调度器 10 年来最大的架构变化，Android 16 已默认使用。建议将 §5.7 中调度器演进部分提升为高优先级内容，覆盖三条主线：
+   - EEVDF 取代 CFS（6.6→6.12）
+   - sched_ext BPF 可扩展调度器（6.12 合入，Android 实验中）
+   - PREEMPT_LAZY 懒抢占（6.13 引入）
+
+2. **§5.1 Linux 进程调度基础 — 内容补充建议**：当前 §5.1 已 finalized，但 EEVDF 作为新默认调度器，其核心概念（lag、eligibility、virtual deadline）应作为基础知识补充。考虑在版本演进或附录中增加 EEVDF vs CFS 对比内容。
+
+## [Task6 Review] 2.10 GPU 渲染深入 — 2026-04-03
+
+- **类型**：需重写 / 需补充素材 / 存疑
+- **位置**：全文
+- **问题**：
+  1. 大量段落使用列表格式（编号/要点列表），违反 writing-guide §三.1「叙述为主，列表为辅」要求，需转为连贯叙述
+  2. 实战案例使用全伪代码，无真实 Perfetto Trace 分析描述，需按类型B模板重写
+  3. 缺少「与其他机制的关系」小节（如 VSync→Choreographer→GPU 上下游关系）
+  4. 缺少「在 Perfetto 中的具体表现」专节（当前散落各处）
+  5. 缺少「常见问题与误区」小节
+  6. 3处伪代码标为 AOSP 源码（GLESContext::compileShader / ANativeWindowBuffer 继承关系 / WindowManagerGlobal.trackGpuMemoryUsage）
+- **建议**：参考 writing-guide.md 类型A模板和文体要求，重点修复叙述风格和结构缺失
+- **review 日志**：logs/review/2026-04-03-0920-review.md
