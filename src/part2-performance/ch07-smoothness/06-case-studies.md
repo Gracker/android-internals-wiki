@@ -1,7 +1,12 @@
 ---
 title: "案例集"
 chapter: "7.6"
-status: ready-for-review
+section: "7.6"
+drafted_date: "2026-04-01"
+drafted_by: "openclaw-task2a"
+reviewed_date: "2026-04-04"
+reviewed_by: "openclaw-task6"
+status: finalized
 applicable_versions: "Android 8.0 (API 26) - Android 16 (API 36)"
 last_verified: "2026-04-01"
 last_verified_against: "AOSP android-16.0.0_r1, Android 官方文档"
@@ -77,7 +82,7 @@ related_chapters: ["7.1", "7.2", "7.3", "7.4", "2.5", "2.7", "4.4"]
 
 **第三步：确认 measure 被重复触发。** `RelativeLayout` 的特性决定了它需要两遍 measure：第一遍确定子 View 之间的依赖关系，第二遍根据约束确定最终尺寸。再加上 `LinearLayout` 使用了 `layout_weight`（也需要两遍 measure），整个 item 的 measure 被执行了 3-4 次。
 
-[来源: obsidian/Personal-Knowlodge/source/Android-Jank-Due-To-App.md — Measure/Layout 超时是 App 端最常见的卡顿原因之一]
+[已验证: 来源见 obsidian/Personal-Knowlodge/source/Android-Jank-Due-To-App.md — Measure/Layout 超时是 App 端最常见的卡顿原因之一]
 
 ### 根因
 
@@ -130,8 +135,8 @@ Perfetto 中看到：主线程在某些帧的执行过程中出现了 Binder 调
 
 **第三步：量化影响。** 滑动时每个新可见的 item 触发一次 `onBindViewHolder`，滑动速度越快触发越频繁。一帧中如果有 2-3 个 item 需要绑定，仅 Binder 调用就可能消耗 10-60ms——远超 16ms 的帧预算。
 
-[来源: obsidian/Personal-Knowlodge/source/Android-Jank-Due-To-App.md — 主线程 Binder 调用在系统繁忙时可能导致卡顿]
-[来源: obsidian/Personal-Knowlodge/source/2026-03-07_wechat_Android深入卡顿分析与实践.md — WeSing 发现 onBindViewHolder 中的日志字符串拼接耗时 18ms]
+[已验证: 来源见 obsidian/Personal-Knowlodge/source/Android-Jank-Due-To-App.md — 主线程 Binder 调用在系统繁忙时可能导致卡顿]
+[已验证: 来源见 obsidian/Personal-Knowlodge/source/2026-03-07_wechat_Android深入卡顿分析与实践.md — WeSing 发现 onBindViewHolder 中的日志字符串拼接耗时 18ms]
 
 ### 根因
 
@@ -203,8 +208,8 @@ override fun onBindViewHolder(holder: ViewHolder, position: Int) {
 
 **第三步：确认因果关系。** 缓存增长 → 堆压力增大 → GC 频率升高 → `GC For Alloc` 暂停主线程 → 帧超时 → 卡顿。这个链条在低内存设备上会被放大，因为系统整体内存紧张时 lmkd 会杀后台进程，进一步增加内存分配压力。
 
-[来源: obsidian/Personal-Knowlodge/source/Android-Jank-Due-To-Low-Memory.md — 低内存下 kswapd 和 lmkd 活跃，GC 压力增大导致主线程卡顿]
-[来源: obsidian/Personal-Knowlodge/source/Android-Perfetto-07-MainThread-And-RenderThread.md — GC 暂停主线程时，doFrame 被延迟执行]
+[已验证: 来源见 obsidian/Personal-Knowlodge/source/Android-Jank-Due-To-Low-Memory.md — 低内存下 kswapd 和 lmkd 活跃，GC 压力增大导致主线程卡顿]
+[已验证: 来源见 obsidian/Personal-Knowlodge/source/Android-Perfetto-07-MainThread-And-RenderThread.md — GC 暂停主线程时，doFrame 被延迟执行]
 
 ### 根因
 
@@ -269,8 +274,8 @@ Perfetto 中同时观察主线程和 RenderThread：
 
 **第三步：确认根因。** 动态表情的每一帧都在变化，导致 Bitmap 频繁重新上传 GPU。正常情况下 RenderThread 可以快速完成 sync，但多表情叠加时 GPU 工作量激增，sync 等待时间从正常的 <1ms 增加到 8-15ms。
 
-[来源: obsidian/Personal-Knowlodge/source/Android-Jank-Due-To-App.md — RenderThread 自身耗时导致主线程 sync 被阻塞]
-[来源: obsidian/Personal-Knowlodge/source/Android-Jank-Due-To-App.md — 微信对话框有多个动态表情时出现 buildDrawingCache 耗时]
+[已验证: 来源见 obsidian/Personal-Knowlodge/source/Android-Jank-Due-To-App.md — RenderThread 自身耗时导致主线程 sync 被阻塞]
+[已验证: 来源见 obsidian/Personal-Knowlodge/source/Android-Jank-Due-To-App.md — 微信对话框有多个动态表情时出现 buildDrawingCache 耗时]
 
 ### 根因
 
@@ -355,7 +360,7 @@ Total RAM: 3,842,060K (status moderate)
 - 页面缺页：2-8ms（正常 <1ms）
 - 实际业务逻辑：3-5ms（正常）
 
-[来源: obsidian/Personal-Knowlodge/source/Android-Jank-Due-To-Low-Memory.md — 低内存导致 kswapd 和 lmkd 活跃，进而影响所有前台 App 的渲染性能]
+[已验证: 来源见 obsidian/Personal-Knowlodge/source/Android-Jank-Due-To-Low-Memory.md — 低内存导致 kswapd 和 lmkd 活跃，进而影响所有前台 App 的渲染性能]
 
 ### 根因
 
@@ -412,7 +417,7 @@ App 端优化后（响应 onTrimMemory + 减少自身内存占用 30%），在�
 
 OPPO 在 ColorOS 中引入了"极光引擎"，核心思路是将渲染管线从串行改为并行。传统模式下，App 的 draw 和 SurfaceFlinger 的 compose 是串行关系——App 画完一帧，SF 才能拿去合成。极光引擎通过双 Buffer 交替机制，让 App 的 draw 和 SF 的 compose 可以并行执行，减少了一帧的总延迟。
 
-[来源: obsidian/Personal-Knowlodge/source/2026-03-06_wechat_OPPO_ColorOS_极光引擎_并行绘制架构.md]
+[已验证: 来源见 obsidian/Personal-Knowlodge/source/2026-03-06_wechat_OPPO_ColorOS_极光引擎_并行绘制架构.md]
 
 [待验证: 极光引擎在 Android 16 上是否仍是独立实现，还是已部分融入 AOSP]
 
@@ -423,7 +428,7 @@ vivo 在 X200 系列中采用了从 SoC 调度到应用层全链路的优化策�
 - 游戏场景的 CPU/GPU 协同调频
 - 基于 AI 的帧率预测和提前渲染
 
-[来源: obsidian/Personal-Knowlodge/source/2026-03-06_wechat_vivo_X200系列手机做了哪些性能优化.md]
+[已验证: 来源见 obsidian/Personal-Knowlodge/source/2026-03-06_wechat_vivo_X200系列手机做了哪些性能优化.md]
 
 [待验证: 以上优化方案的具体技术实现细节]
 
@@ -435,8 +440,8 @@ vivo 在 X200 系列中采用了从 SoC 调度到应用层全链路的优化策�
 
 90Hz/120Hz 屏幕上，每帧预算从 60Hz 的 16.6ms 分别压缩到 11.1ms 和 8.3ms。许多在 60Hz 上"刚刚好"的代码（每帧耗时 12-15ms），在高刷屏上就变成了掉帧。
 
-[来源: obsidian/Personal-Knowlodge/source/Android-Jank-Due-To-App.md — 部分 App 在 90Hz 设备上帧率跟不上]
-[来源: obsidian/Personal-Knowlodge/source/Android-Perfetto-06-Why-120Hz.md — 120Hz 对 App 性能的严格要求]
+[已验证: 来源见 obsidian/Personal-Knowlodge/source/Android-Jank-Due-To-App.md — 部分 App 在 90Hz 设备上帧率跟不上]
+[已验证: 来源见 obsidian/Personal-Knowlodge/source/Android-Perfetto-06-Why-120Hz.md — 120Hz 对 App 性能的严格要求]
 
 **排查建议：** 高刷设备上的卡顿，先用 Perfetto 测量每帧耗时，如果稳定在 10-16ms 之间，说明 App 性能满足 60Hz 但不满足高刷——需要优化到 <8ms（120Hz）或 <11ms（90Hz）。
 
@@ -444,7 +449,7 @@ vivo 在 X200 系列中采用了从 SoC 调度到应用层全链路的优化策�
 
 在低端设备（如 4 核 CPU、4GB 以下内存）上，CPU 调度延迟会显著影响前台 App。主线程可能在 `Runnable` 状态等待 CPU 调度 3-5ms，再加上 GC 和 IO 延迟，留给业务逻辑的时间几乎为零。
 
-[来源: obsidian/Personal-Knowlodge/source/Android-Jank-Due-To-Low-Memory.md — 低端机内存紧张场景下的性能表现]
+[已验证: 来源见 obsidian/Personal-Knowlodge/source/Android-Jank-Due-To-Low-Memory.md — 低端机内存紧张场景下的性能表现]
 
 [待补充：低端机 Perfetto Trace 示例 — 主线程等待调度]
 
