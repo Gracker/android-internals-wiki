@@ -4,9 +4,9 @@
   "metrics": {
     "total": 97,
     "draft": 23,
-    "ready-for-review": 47,
+    "ready-for-review": 46,
     "reviewed": 2,
-    "finalized": 28,
+    "finalized": 29,
     "staging_drafts": 0,
     "last_updated": "2026-04-03T20:18:12.808259+08:00"
   },
@@ -272,11 +272,21 @@
         "frontmatter补 section/drafted_date 字段",
         "frontmatter更新：status→finalized, 添加reviewed_date/reviewed_by"
       ]
+    },
+    "4.4": {
+      "reviewed_date": "2026-04-03",
+      "reviewed_by": "openclaw-task6",
+      "review_status": "finalized",
+      "fixes_applied": [
+        "9处'你'→'我们'替换（writing-guide §3.5合规）",
+        "frontmatter补 section/drafted_date/reviewed_date/reviewed_by",
+        "status ready-for-review → finalized"
+      ]
     }
   },
   "review_stats": {
-    "total_reviewed": 26,
-    "reviewed_today": 11,
+    "total_reviewed": 27,
+    "reviewed_today": 12,
     "review_issues_total": 13
   },
   "completed": [
@@ -894,7 +904,7 @@
     }
   ],
   "ready_for_review": 4,
-  "last_updated": "2026-04-03T14:20:00+08:00",
+  "last_updated": "2026-04-03T20:25:00+08:00",
   "stats": {
     "total": 97,
     "completed": 46,
@@ -1597,6 +1607,14 @@
       "status": "ready-for-review",
       "drafted_date": "2026-04-03",
       "drafted_by": "openclaw-task2a"
+    },
+    "4.4": {
+      "title": "Low Memory Killer",
+      "file": "src/part1-fundamentals/ch04-memory/04-lmk.md",
+      "status": "finalized",
+      "drafted_date": "2026-03-31",
+      "reviewed_date": "2026-04-03",
+      "reviewed_by": "openclaw-task6"
     }
   },
   "5.1": {

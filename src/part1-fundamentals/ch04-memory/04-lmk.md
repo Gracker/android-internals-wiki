@@ -1,7 +1,11 @@
 ---
 title: "Low Memory Killer"
+section: "4.4"
 chapter: "4.4"
-status: ready-for-review
+status: finalized
+drafted_date: "2026-03-31"
+reviewed_date: "2026-04-03"
+reviewed_by: "openclaw-task6"
 applicable_versions: "Android 8 (API 26) - Android 16 (API 36)"
 last_verified: "2026-03-31"
 last_verified_against: "AOSP android-16.0.0_r1"
@@ -248,11 +252,11 @@ PSI 相比旧版 `vmpressure` 信号有本质区别。`vmpressure` 基于内存�
 4. 内存压力再次触发 LMK → 又杀掉其他后台 App
 5. 循环往复
 
-在 Perfetto 中，这种模式表现为：你会在 System Trace 中看到 `lmkd` 进程频繁活动（kill 事件密集出现），同时在 App 进程中看到大量的冷启动 pattern（Zygote fork → ActivityThread.main → Activity.onCreate）。
+在 Perfetto 中，这种模式表现为：我们会在 System Trace 中看到 `lmkd` 进程频繁活动（kill 事件密集出现），同时在 App 进程中看到大量的冷启动 pattern（Zygote fork → ActivityThread.main → Activity.onCreate）。
 
 ### 如何判断 LMK 是否在影响你的 App
 
-如果你怀疑 LMK 在杀死你的后台进程，可以通过以下方法确认：
+如果我们怀疑 LMK 在杀死后台进程，可以通过以下方法确认：
 
 **方法一：logcat 过滤**
 
@@ -272,7 +276,7 @@ adb shell dumpsys meminfo --checkin
 
 **方法三：Perfetto Trace**
 
-在 Perfetto 中抓取 trace 时，确保包含 `meminfo` 和 `lmkd` 相关的 ftrace 事件。在 Perfetto UI 中，你可以在 `lmkd` track 上看到每次杀进程的记录，鼠标悬停可以看到被杀进程的详细信息。
+在 Perfetto 中抓取 trace 时，确保包含 `meminfo` 和 `lmkd` 相关的 ftrace 事件。在 Perfetto UI 中，我们可以在 `lmkd` track 上看到每次杀进程的记录，鼠标悬停可以看到被杀进程的详细信息。
 
 [图：Perfetto 中 lmkd track 的示例，标注 kill 事件、被杀进程名、oom_score_adj 值]
 
@@ -303,7 +307,7 @@ TRIM_MEMORY_COMPLETE        = 80  // 进程即将被杀，释放一切可以释�
 
 **误区二："后台 Service 不会被杀。"**
 
-错误。普通后台 Service 的进程优先级是 `SERVICE_ADJ（500）`，远高于 CACHED 进程但仍是可杀的。如果你的 Service 需要长时间运行且不应该被杀，需要：
+错误。普通后台 Service 的进程优先级是 `SERVICE_ADJ（500）`，远高于 CACHED 进程但仍是可杀的。如果 Service 需要长时间运行且不应该被杀，需要：
 
 - 使用前台 Service（`startForeground()`），这会将进程提升到 `PERCEPTIBLE_ADJ（200）`
 - 或者使用 WorkManager，它会在被杀后自动重新调度
@@ -316,7 +320,7 @@ TRIM_MEMORY_COMPLETE        = 80  // 进程即将被杀，释放一切可以释�
 
 在 Perfetto 中观察 LMK 行为是一个高级但非常有用的分析方法。具体操作如下：
 
-**抓取配置：** 确保你的 Perfetto 配置包含以下数据源：
+**抓取配置：** 确保 Perfetto 配置包含以下数据源：
 
 ```
 # 在 trace config 中添加
@@ -338,15 +342,15 @@ data_sources: {
 
 **在 Perfetto UI 中的表现：**
 
-当你打开 trace 文件后，在进程列表中找到 `lmkd` 进程。它的 track 上会出现一些短暂的 CPU 活动尖峰——每次尖峰对应一次杀进程操作。
+当我们打开 trace 文件后，在进程列表中找到 `lmkd` 进程。它的 track 上会出现一些短暂的 CPU 活动尖峰——每次尖峰对应一次杀进程操作。
 
-你可以在 `lmkd` track 上看到具体的事件，包含被杀进程的 PID。将这个 PID 与同一 trace 中的进程对应，你就能知道是哪个 App 被杀了。
+我们可以在 `lmkd` track 上看到具体的事件，包含被杀进程的 PID。将这个 PID 与同一 trace 中的进程对应，我们就能知道是哪个 App 被杀了。
 
-同时观察 `meminfo` track（通常在 System Stats 下面），你可以看到 `MemFree` 和 `MemAvailable` 的变化趋势。如果这两个值持续走低然后突然上升（因为 LMK 杀了进程释放了内存），这就是典型的 LMK 干预模式。
+同时观察 `meminfo` track（通常在 System Stats 下面），我们可以看到 `MemFree` 和 `MemAvailable` 的变化趋势。如果这两个值持续走低然后突然上升（因为 LMK 杀了进程释放了内存），这就是典型的 LMK 干预模式。
 
 **关联分析技巧：**
 
-- 将 LMK kill 事件与前台 App 的冷启动时间关联：如果你看到 LMK kill 后紧接着某个 App 的 Activity.onCreate，说明用户切回了一个被杀的 App
+- 将 LMK kill 事件与前台 App 的冷启动时间关联：如果我们看到 LMK kill 后紧接着某个 App 的 Activity.onCreate，说明用户切回了一个被杀的 App
 - 将 LMK 活动频率与系统整体内存趋势关联：如果 `MemAvailable` 长期低于某个值（通常 500MB 以下），LMK 会非常活跃
 - 对比 kill 前后的 `Cached` 内存值：如果 kill 后 Cached 值大幅下降，说明系统确实需要这些内存
 
