@@ -4,11 +4,11 @@
   "metrics": {
     "total": 97,
     "draft": 27,
-    "ready-for-review": 48,
+    "ready-for-review": 47,
     "reviewed": 2,
-    "finalized": 23,
+    "finalized": 24,
     "staging_drafts": 0,
-    "last_updated": "2026-04-03T12:30:27.887713"
+    "last_updated": "2026-04-03T13:20:00+08:00"
   },
   "reviewed_sections": {
     "8.1": {
@@ -221,11 +221,22 @@
         "ANGLE 性能开销数据添加 [待验证] 标注",
         "status ready-for-review → finalized（二次 review，回炉后无 B 类大问题）"
       ]
+    },
+    "5.4": {
+      "reviewed_date": "2026-04-03",
+      "reviewed_by": "openclaw-task6",
+      "review_status": "finalized",
+      "fixes_applied": [
+        "9处'你'→'我们'替换（writing-guide §3.5合规）",
+        "5处[来源:]→[已验证: 来源见 ...]标注格式标准化",
+        "frontmatter补充section字段",
+        "status ready-for-review → finalized"
+      ]
     }
   },
   "review_stats": {
-    "total_reviewed": 21,
-    "reviewed_today": 6,
+    "total_reviewed": 22,
+    "reviewed_today": 7,
     "review_issues_total": 13
   },
   "completed": [
@@ -1392,6 +1403,13 @@
       "status": "ready-for-review",
       "drafted_date": "2026-04-03",
       "drafted_by": "openclaw-task2a"
+    },
+    "5.4": {
+      "title": "DVFS 与功耗管理",
+      "status": "finalized",
+      "reviewed_date": "2026-04-03",
+      "reviewed_by": "openclaw-task6",
+      "file": "src/part1-fundamentals/ch05-cpu-power/04-dvfs.md"
     }
   },
   "5.1": {

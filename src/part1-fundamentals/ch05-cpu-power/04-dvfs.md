@@ -1,7 +1,8 @@
 ---
 title: "DVFS 与功耗管理"
 chapter: "5.4"
-status: ready-for-review
+section: "5.4"
+status: finalized
 applicable_versions: "Android 7.0 (API 24) - Android 16 (API 36)"
 last_verified: "2026-04-01"
 last_verified_against: "Linux kernel 6.6 (android16-6.6)"
@@ -23,6 +24,8 @@ tags: ['dvfs', 'cpufreq', 'schedutil', 'opp', 'power', 'frequency-scaling', 'adp
 related_chapters: ["5.1", "5.2", "5.3", "5.5", "5.6", "7.3"]
 drafted_date: "2026-04-01"
 drafted_by: "openclaw-task2"
+reviewed_date: "2026-04-03"
+reviewed_by: "openclaw-task6"
 ---
 
 # DVFS 与功耗管理
@@ -55,11 +58,11 @@ drafted_by: "openclaw-task2"
 
 ## 为什么需要了解 DVFS
 
-在 Perfetto 中打开一段 Trace，你会看到每个 CPU 下方都有一条「CPU Frequency」轨迹——它像一条心电图，忽高忽低。这条线的每一次跳动，背后都是 DVFS 子系统在决定：此刻的 CPU 应该跑多快。
+在 Perfetto 中打开一段 Trace，我们会看到每个 CPU 下方都有一条「CPU Frequency」轨迹——它像一条心电图，忽高忽低。这条线的每一次跳动，背后都是 DVFS 子系统在决定：此刻的 CPU 应该跑多快。
 
-如果你做过性能优化，一定遇到过这样的场景：明明代码逻辑没问题，但第一帧就是卡了一下。或者列表滑动时偶尔掉帧，抓 Trace 一看，发现掉帧那个瞬间 CPU 频率很低——原来 CPU 还没来得及升频，帧就被渲染了。这就是 DVFS 调频延迟导致的性能问题，和我们之前在 [5.1 Linux 进程调度基础](./01-cpu-scheduling.md) 中讨论的调度问题不同：调度决定「哪个任务跑在哪个核上」，DVFS 决定「这个核跑多快」。
+如果我们做过性能优化，一定遇到过这样的场景：明明代码逻辑没问题，但第一帧就是卡了一下。或者列表滑动时偶尔掉帧，抓 Trace 一看，发现掉帧那个瞬间 CPU 频率很低——原来 CPU 还没来得及升频，帧就被渲染了。这就是 DVFS 调频延迟导致的性能问题，和我们之前在 [5.1 Linux 进程调度基础](./01-cpu-scheduling.md) 中讨论的调度问题不同：调度决定「哪个任务跑在哪个核上」，DVFS 决定「这个核跑多快」。
 
-理解 DVFS 机制，能让你在分析 Trace 时准确判断：一个掉帧是代码问题，还是 CPU 没跑起来？在 Perfetto 中看到的频率曲线，哪些变化是正常的，哪些意味着 governor 的参数需要调优？
+理解 DVFS 机制，能让我们在分析 Trace 时准确判断：一个掉帧是代码问题，还是 CPU 没跑起来？在 Perfetto 中看到的频率曲线，哪些变化是正常的，哪些意味着 governor 的参数需要调优？
 
 ## DVFS 的基本原理
 
@@ -146,7 +149,7 @@ OPP 框架为上层子系统（如 cpufreq、devfreq）提供了统一的接口�
 
 ### OPP 与 Perfetto
 
-在 Perfetto 中，CPU 频率的变化通过 `power/cpu_frequency` ftrace 事件记录。你可以在每个 CPU 下方的「CPU Frequency」track 中看到频率随时间的变化曲线。频率变化的阶梯状特征，正是因为 CPU 只能在 OPP 表定义的离散频率之间切换。
+在 Perfetto 中，CPU 频率的变化通过 `power/cpu_frequency` ftrace 事件记录。我们可以在每个 CPU 下方的「CPU Frequency」track 中看到频率随时间的变化曲线。频率变化的阶梯状特征，正是因为 CPU 只能在 OPP 表定义的离散频率之间切换。
 
 ## cpufreq 子系统与 Governor 机制
 
@@ -194,13 +197,13 @@ schedutil 有一个 `rate_limit_us` 参数（通过 sysfs 可配置），控制�
 
 在 Qualcomm 平台上，schedutil 不是孤立工作的。Qualcomm 在其内核中实现了更复杂的调频策略，通常统称为 DCVS（Dynamic Clock and Voltage Scaling）。其中 RTG（Related Thread Group）机制对我们的性能分析特别重要。
 
-[来源: obsidian/Personal-Knowlodge/source/2026-03-08_wechat_调度器分支之RTG.md]
+[已验证: 来源见 obsidian/Personal-Knowlodge/source/2026-03-08_wechat_调度器分支之RTG.md]
 
 我们在 [5.3 大小核架构](./03-big-little.md) 中提到过，Android 前台应用通常有多个线程协同工作（如 MainThread + RenderThread）。如果这些线程被分散到不同的 CPU 上运行，每个 CPU 的单独利用率可能都不高（比如只有 50%），schedutil 就不会积极升频。但实际上这些线程的**总负载**已经很高了。
 
 RTG 的「聚合调频」功能就是为了解决这个问题。当 Android 的 top-app cgroup 中的线程被标记为同一组后，RTG 会将这组线程在同一个 cluster 上的负载**累加计算**，再将累加后的负载反馈给 schedutil。这样即使线程分散在多个核上，调频决策也能反映真实的总需求。
 
-[来源: obsidian/Personal-Knowlodge/source/2026-03-08_wechat_调度器分支之RTG.md — RTG 聚合调频机制]
+[已验证: 来源见 obsidian/Personal-Knowlodge/source/2026-03-08_wechat_调度器分支之RTG.md — RTG 聚合调频机制]
 
 这是一个很好的例子，说明为什么我们在 Perfetto 中分析性能问题时，需要关注 CPU 频率和负载分布之间的关系：单核利用率低不代表 CPU 性能有余量，可能是调频策略没有识别到跨线程的负载聚合。
 
@@ -232,7 +235,7 @@ RTG 的「聚合调频」功能就是为了解决这个问题。当 Android 的 
 5. 频率切换完成，但已经错过了当前帧的 deadline
 6. 结果：掉帧
 
-在 Perfetto 中，这类掉帧的特征是：**帧处理时间较长的区间，对应 CPU 频率处于低位的区间**。你会在 CPU Frequency track 上看到频率在一个 doFrame 的前半段处于低位，后半段才升上去，但为时已晚。
+在 Perfetto 中，这类掉帧的特征是：**帧处理时间较长的区间，对应 CPU 频率处于低位的区间**。我们会在 CPU Frequency track 上看到频率在一个 doFrame 的前半段处于低位，后半段才升上去，但为时已晚。
 
 [待补充: Perfetto Trace 截图 — 升频延迟导致的掉帧示例]
 
@@ -240,7 +243,7 @@ RTG 的「聚合调频」功能就是为了解决这个问题。当 Android 的 
 
 Android 12 引入的 ADPF（Adaptive Performance Framework）通过 Performance Hint API 来缓解升频延迟问题。
 
-[来源: obsidian/Personal-Knowlodge/source/2026-03-05_wechat_谷歌官方性能文档2_Android_动态性能框架优化Performance_Hint_API.md]
+[已验证: 来源见 obsidian/Personal-Knowlodge/source/2026-03-05_wechat_谷歌官方性能文档2_Android_动态性能框架优化Performance_Hint_API.md]
 
 ADPF 的核心思路是：**让应用告诉系统自己需要多少算力，而不是等系统自己发现**。具体做法是：
 
@@ -274,9 +277,9 @@ APerformanceHint_reportActualWorkDuration(session, actual_duration_ns);
 
 观察频率变化时的几个要点：
 
-- **频率跳变的阶梯状**：由于 OPP 表是离散的，频率变化是跳跃式的，不是平滑渐变的。你可以数出 CPU 有几个频率档位。
-- **大小核的频率差异**：在 Perfetto 中同时展开 CPU 0-3（小核）和 CPU 4-7（大核）的频率 track，你会发现它们的频率范围完全不同。小核通常运行在 300MHz-1.8GHz，大核在 300MHz-3.0GHz（具体数值因 SoC 而异）。
-- **频率与任务的对应关系**：将 CPU Frequency track 和 CPU Scheduling track 对齐看，你会看到当一个重负载任务被调度到某个 CPU 时，该 CPU 的频率通常会随之升高。但如果升频延迟较大，频率升高会滞后于任务调度。
+- **频率跳变的阶梯状**：由于 OPP 表是离散的，频率变化是跳跃式的，不是平滑渐变的。我们可以数出 CPU 有几个频率档位。
+- **大小核的频率差异**：在 Perfetto 中同时展开 CPU 0-3（小核）和 CPU 4-7（大核）的频率 track，我们会发现它们的频率范围完全不同。小核通常运行在 300MHz-1.8GHz，大核在 300MHz-3.0GHz（具体数值因 SoC 而异）。
+- **频率与任务的对应关系**：将 CPU Frequency track 和 CPU Scheduling track 对齐看，我们会看到当一个重负载任务被调度到某个 CPU 时，该 CPU 的频率通常会随之升高。但如果升频延迟较大，频率升高会滞后于任务调度。
 
 ### CPU Idle State Track
 
@@ -284,7 +287,7 @@ APerformanceHint_reportActualWorkDuration(session, actual_duration_ns);
 
 一个常见的性能问题是 CPU 频繁进出深度睡眠。虽然深度睡眠能省电，但从深度睡眠唤醒需要时间（退出延迟可达数百微秒甚至超过 1ms）。如果一个任务需要频繁唤醒 CPU，而 CPU 每次都进入深度睡眠又被唤醒，这个反复的进出不仅浪费时间，而且进出低功耗模式本身也消耗能量。RTG 的 Busy Hysteresis 功能就是为了解决这个问题——当 RTG 组中的线程活跃时，即使 CPU 短暂空闲，也延迟进入深度睡眠。
 
-[来源: obsidian/Personal-Knowlodge/source/2026-03-08_wechat_调度器分支之RTG.md — Busy Hysteresis 机制]
+[已验证: 来源见 obsidian/Personal-Knowlodge/source/2026-03-08_wechat_调度器分支之RTG.md — Busy Hysteresis 机制]
 
 ### SQL 查询分析频率变化
 
@@ -323,11 +326,11 @@ GPU 的调频策略和 CPU 有几个重要差异：
 2. **带宽关联**：GPU 性能不仅取决于 GPU 自身的频率，还受内存带宽影响。GPU 的功耗中，带宽相关的功耗占比很高——这在移动设备上尤为突出
 3. **厂商定制化更深**：Adreno、Mali、PowerVR 各家 GPU 的调频策略差异很大，且大部分逻辑在闭源的用户态驱动中实现
 
-[来源: obsidian/Personal-Knowlodge/source/2026-03-06_wechat_GPU_性能原理拆解.md — 移动端 GPU 功耗特征]
+[已验证: 来源见 obsidian/Personal-Knowlodge/source/2026-03-06_wechat_GPU_性能原理拆解.md — 移动端 GPU 功耗特征]
 
 ### GPU DVFS 在 Perfetto 中的观察
 
-GPU 频率变化同样可以通过 Perfetto 观察。如果设备支持，你可以在 GPU track 中看到 GPU 频率的变化。不过 GPU 频率事件的可用性因平台而异——Qualcomm Adreno 和 ARM Mali 的暴露程度不同，有些设备需要在 Trace 配置中额外启用 devfreq 相关的数据源。
+GPU 频率变化同样可以通过 Perfetto 观察。如果设备支持，我们可以在 GPU track 中看到 GPU 频率的变化。不过 GPU 频率事件的可用性因平台而异——Qualcomm Adreno 和 ARM Mali 的暴露程度不同，有些设备需要在 Trace 配置中额外启用 devfreq 相关的数据源。
 
 ## 内存频率（DDR/LPDDR）调频
 
