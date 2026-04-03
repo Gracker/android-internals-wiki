@@ -3,12 +3,12 @@
   "total_sections": 93,
   "metrics": {
     "total": 96,
-    "draft": 32,
-    "ready-for-review": 44,
+    "draft": 30,
+    "ready-for-review": 46,
     "reviewed": 2,
     "finalized": 22,
     "staging_drafts": 0,
-    "last_updated": "2026-04-03T09:05:00"
+    "last_updated": "2026-04-03T11:06:00+08:00"
   },
   "reviewed_sections": {
     "8.1": {
@@ -728,15 +728,37 @@
       "extensions_total": 2,
       "verification_level": "L2",
       "word_count": "~8500"
+    },
+    {
+      "section": "13.2",
+      "title": "Trace 抓取",
+      "completed_at": "2026-04-03T11:06:00+08:00",
+      "anchors_covered": 6,
+      "anchors_total": 6,
+      "extensions_covered": 2,
+      "extensions_total": 2,
+      "verification_level": "L2",
+      "word_count": "~9500"
+    },
+    {
+      "section": "13.2",
+      "title": "Trace 抓取",
+      "completed_at": "2026-04-03T11:06:00+08:00",
+      "anchors_covered": 6,
+      "anchors_total": 6,
+      "extensions_covered": 2,
+      "extensions_total": 2,
+      "verification_level": "L2",
+      "word_count": "~9500"
     }
   ],
   "ready_for_review": 3,
-  "last_updated": "2026-04-03T09:51:05.280335",
+  "last_updated": "2026-04-03T11:00:00+08:00",
   "stats": {
     "total": 97,
-    "completed": 42,
-    "pending": 56,
-    "last_updated": "2026-04-03T08:29:38.707397"
+    "completed": 44,
+    "pending": 54,
+    "last_updated": "2026-04-03T11:06:00"
   },
   "research_stats": {
     "runs_today": [
@@ -829,11 +851,31 @@
           "sched_ext BPF 可扩展调度器 Linux 6.12：Meta/Google 投入 + scx_lavd 游戏优化 + Android 实验性移植（目标 §5.1/§5.7）",
           "PREEMPT_LAZY 懒抢占 Linux 6.13：双模式抢占 + 减少 lock holder preemption + ARM 支持待跟进（目标 §5.1/§5.7）"
         ]
+      },
+      {
+        "time": "2026-04-03T11:00:00+08:00",
+        "focus": "Android 16 Adaptive Apps + Predictive Back + Live Updates（queue freshness 联动：freshness-001~004）",
+        "source": "queue-freshness-priority",
+        "candidates": 5,
+        "passed": 3,
+        "delivered": 3,
+        "themes": [
+          "Android 16 API 36 大屏强制可调整：screenOrientation/resizableActivity/minAspectRatio/maxAspectRatio 全部忽略（目标 §3.1/§16）",
+          "Android 16 Predictive Back 默认启用 + finishAndRemoveTaskCallback/moveTaskToBackCallback/PRIORITY_SYSTEM_NAVIGATION_OBSERVER（目标 §3.1/§3.3）",
+          "Android 16 Live Updates + Notification.ProgressStyle：segments/points/tracker + POST_PROMOTED_NOTIFICATIONS（目标 §8.1/§15）"
+        ]
       }
     ],
-    "last_updated": "2026-04-03T07:02:00+08:00"
+    "last_updated": "2026-04-03T11:00:00+08:00"
   },
   "history": [
+    {
+      "date": "2026-04-03",
+      "section": "13.2",
+      "title": "Trace 抓取",
+      "action": "draft-completed",
+      "word_count": "~9500"
+    },
     {
       "date": "2026-04-03",
       "section": "12.2",
@@ -1158,6 +1200,28 @@
         "sched_ext BPF：scx_lavd + Android port",
         "PREEMPT_LAZY：双模式抢占 + lock holder preemption"
       ]
+    },
+    {
+      "date": "2026-04-03",
+      "section": "3.1/3.3/8.1/16",
+      "title": "Android 16 Adaptive Apps + Predictive Back + Live Updates",
+      "action": "research-completed",
+      "focus": "queue freshness-001~004: Adaptive Apps + Predictive Back + Live Updates",
+      "candidates": 5,
+      "passed": 3,
+      "delivered": 3,
+      "themes": [
+        "Android 16 API 36: screenOrientation/resizableActivity ignored on sw≥600dp",
+        "Android 16 Predictive Back default + new callback APIs",
+        "Android 16 Live Updates + Notification.ProgressStyle API"
+      ]
+    },
+    {
+      "date": "2026-04-03",
+      "section": "13.2",
+      "title": "Trace 抓取",
+      "action": "draft-completed",
+      "word_count": "~9500"
     }
   ],
   "sections": {
@@ -1248,6 +1312,12 @@
       "review_notes": "回炉修复完成：6个B类问题全部处理（文体重写/案例重写/3个新增小节/伪代码修正）",
       "rework_date": "2026-04-03",
       "rework_by": "openclaw-task2b"
+    },
+    "13.2": {
+      "title": "Trace 抓取",
+      "status": "ready-for-review",
+      "drafted_date": "2026-04-03",
+      "drafted_by": "openclaw-task2a"
     }
   },
   "5.1": {
