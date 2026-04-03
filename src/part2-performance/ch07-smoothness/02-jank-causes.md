@@ -1,10 +1,12 @@
 ---
 title: "卡顿原因体系"
 chapter: "7.2"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 5.0 (API 21) - Android 16 (API 36)"
 last_verified: "2026-03-31"
 last_verified_against: "AOSP android-15.0.0_r1"
+reviewed_date: "2026-04-04"
+reviewed_by: openclaw-task6
 confidence: high
 sources:
   - type: blog
@@ -97,7 +99,7 @@ Layout 和 Measure 是 View 树遍历的核心阶段。当 View 层级过深、�
 
 **View 层级过深。** Android 的 measure 和 layout 是从根节点开始递归遍历整棵 View 树的。如果层级超过 10 层，每次 requestLayout 都需要遍历所有节点，耗时累加起来相当可观。在实际项目中，嵌套过多的 LinearLayout 或 RelativeLayout 是最常见的深层级来源。
 
-**多 次 measure 的布局。** 某些布局容器（如 RelativeLayout、带 weight 的 LinearLayout）在单次布局过程中会触发多次 measure，因为子 View 的尺寸互相依赖，需要迭代才能确定最终值。这种「measure 两遍甚至三遍」的行为在某些复杂布局下尤其明显。
+**多次 measure 的布局。** 某些布局容器（如 RelativeLayout、带 weight 的 LinearLayout）在单次布局过程中会触发多次 measure，因为子 View 的尺寸互相依赖，需要迭代才能确定最终值。这种「measure 两遍甚至三遍」的行为在某些复杂布局下尤其明显。
 
 **动态布局频繁刷新。** 如果在列表滑动或动画过程中频繁调用 requestLayout（而不是 invalidate），会导致整棵 View 树反复执行完整的 measure → layout → draw 流程。requestLayout 比 invalidate 代价高得多——invalidate 只标记需要重绘的"脏区域"，而 requestLayout 要求从该 View 向上回溯到 ViewRootImpl，重新执行整棵树的 measure 和 layout。
 

@@ -982,7 +982,7 @@
     }
   ],
   "ready_for_review": 5,
-  "last_updated": "2026-04-03T23:15:00+08:00",
+  "last_updated": "2026-04-04T00:23:00",
   "stats": {
     "total": 97,
     "completed": 47,
@@ -1745,6 +1745,13 @@
       "drafted_date": "2026-04-04",
       "drafted_by": "openclaw-task2a",
       "file": "src/part3-tools/ch14-other-tools/06-automation-tools.md"
+    },
+    "7.2": {
+      "title": "卡顿原因体系",
+      "status": "finalized",
+      "reviewed_date": "2026-04-04",
+      "reviewed_by": "openclaw-task6",
+      "file": "src/part2-performance/ch07-smoothness/02-jank-causes.md"
     }
   },
   "5.1": {
