@@ -1,7 +1,12 @@
 ---
 title: "卡顿的定义与分类"
+section: "7.1"
 chapter: "7.1"
-status: ready-for-review
+status: finalized
+drafted_date: "2026-03-30"
+drafted_by: "openclaw-task2"
+reviewed_date: "2026-04-03"
+reviewed_by: "openclaw-task6"
 applicable_versions: "Android 4.1 (API 16) - Android 16 (API 36)"
 last_verified: "2026-03-31"
 last_verified_against: "AOSP android-16.0.0_r1"
@@ -56,9 +61,9 @@ related_chapters: ["2.1", "2.3", "2.4", "2.5", "7.2", "7.3"]
 
 ## 为什么要搞清楚"卡顿"的定义
 
-在 Perfetto 中打开一段 Trace，你会在 Expected Timeline 和 Actual Timeline 之间看到不对齐的帧——有些帧的实际渲染时间比预期的长，系统把这些帧标记成了红色或黄色。这些颜色不是装饰，而是系统在告诉你：这一帧出了问题。但"出了问题"具体是什么问题？是 App 渲染太慢？是 SurfaceFlinger 合成太慢？还是屏幕显示出了延迟？
+在 Perfetto 中打开一段 Trace，我们会在 Expected Timeline 和 Actual Timeline 之间看到不对齐的帧——有些帧的实际渲染时间比预期的长，系统把这些帧标记成了红色或黄色。这些颜色不是装饰，而是系统在告诉你：这一帧出了问题。但"出了问题"具体是什么问题？是 App 渲染太慢？是 SurfaceFlinger 合成太慢？还是屏幕显示出了延迟？
 
-如果我们对"卡顿"只有一个模糊的感觉——"滑动不够流畅"、"动画有卡顿感"——那优化就只能靠试。明确卡顿的定义和分类，是系统性优化流畅性的起点。它决定了我们用什么指标衡量问题、用什么工具定位问题、以及优化后怎么验证效果。读完本节，你应该能在 Perfetto 中准确识别每一帧的状态（正常/卡顿/掉帧），并知道该去哪个 Track 找原因。
+如果我们对"卡顿"只有一个模糊的感觉——"滑动不够流畅"、"动画有卡顿感"——那优化就只能靠试。明确卡顿的定义和分类，是系统性优化流畅性的起点。它决定了我们用什么指标衡量问题、用什么工具定位问题、以及优化后怎么验证效果。读完本节，我们应该能在 Perfetto 中准确识别每一帧的状态（正常/卡顿/掉帧），并知道该去哪个 Track 找原因。
 
 ## Jank 的标准定义：帧没有如期到达
 
@@ -83,7 +88,7 @@ Android 系统的渲染管线是围绕 VSync 信号构建的。在 60Hz 屏幕�
 刷新率越高，留给每一帧的时间窗口越窄。在 120Hz 设备上，一帧只有 8.33ms——这意味着 App 的主线程渲染（measure/layout/draw）加上 RenderThread 的 GPU 执行，再加上 SurfaceFlinger 的合成，全部加起来必须在 8.33ms 内完成。任何环节超时，都会导致 Jank。
 
 [已验证: 官方文档, developer.android.com/develop/ui/views/layout/swing-animations]
-[来源: obsidian/Personal-Knowlodge/source/Android-Perfetto-06-Why-120Hz.md]
+[已验证: 来源见 obsidian/Personal-Knowlodge/source/Android-Perfetto-06-Why-120Hz.md]
 
 ### 一个关键区分：FPS ≠ 流畅度
 
@@ -93,7 +98,7 @@ Android 系统的渲染管线是围绕 VSync 信号构建的。在 60Hz 屏幕�
 
 腾讯音乐技术团队在分析中特别指出了这个误区：**帧率不能直接反映是否卡顿**。稳定在 40fps 的体验比在 60fps 和 30fps 之间来回跳变的体验好得多。这就是为什么 Google 在 Jank 的定义中不是看"平均帧率"，而是看"每一帧有没有准时到达"——它关注的是节奏的稳定性，而不是总产量。
 
-[来源: obsidian/Personal-Knowlodge/source/2026-03-07_wechat_Android深入卡顿分析与实践.md]
+[已验证: 来源见 obsidian/Personal-Knowlodge/source/2026-03-07_wechat_Android深入卡顿分析与实践.md]
 
 ## Google 的 Jank 分类体系
 
@@ -105,7 +110,7 @@ Android 系统的渲染管线是围绕 VSync 信号构建的。在 60Hz 屏幕�
 
 这是最常见的 Jank 类型。当 App 侧的渲染工作（主线程的 measure/layout/draw + RenderThread 的 GPU 执行）超过了系统分配给这一帧的截止时间（deadline），就会产生 App Jank。
 
-在 Perfetto 中，你可以在 App 的 Expected Timeline 和 Actual Timeline 之间看到不对齐——Actual Timeline 的帧结束时间超出了 Expected Timeline 的截止线。FrameTimeline 会将这类 Jank 标记为 **AppDeadlineMissed**。
+在 Perfetto 中，我们可以在 App 的 Expected Timeline 和 Actual Timeline 之间看到不对齐——Actual Timeline 的帧结束时间超出了 Expected Timeline 的截止线。FrameTimeline 会将这类 Jank 标记为 **AppDeadlineMissed**。
 
 导致 App Jank 的典型原因：
 - 主线程在 draw 阶段做了耗时操作（复杂布局、大量自定义绘制）
@@ -193,7 +198,7 @@ FrameTimeline 的核心思路是"端到端追踪"：它给每一帧分配一个�
 
 在 Perfetto UI 中，FrameTimeline 的数据展示在以下位置：
 
-1. **App 进程下**：你会看到 `Expected Timeline` 和 `Actual Timeline` 两个 Track，分别对应系统预期和实际的帧时间线。点击某一个帧的 Slice，可以在详情面板中看到 `Jank Type` 字段。
+1. **App 进程下**：我们会看到 `Expected Timeline` 和 `Actual Timeline` 两个 Track，分别对应系统预期和实际的帧时间线。点击某一个帧的 Slice，可以在详情面板中看到 `Jank Type` 字段。
 2. **SurfaceFlinger 进程下**：同样有 Expected/Actual Timeline，展示 SurfaceFlinger 侧的帧处理情况。
 
 在 Android 12 之前的设备上，没有 FrameTimeline 数据。此时只能通过观察主线程的 `Choreographer#doFrame` Slice 和 RenderThread 的 `DrawFrame` Slice 来手动判断帧是否超时。
@@ -227,7 +232,7 @@ Google 对帧的严重程度有一个分级：
 
 Stutter 是性能测试工具 PerfDog 提出的一个指标，它不只是数有多少帧 Jank，而是把所有 Jank 帧的"延迟时间"加起来，除以测试总时长。Stutter = ∑JankTime / TotalTime。这个指标的优点是它能反映卡顿的"严重程度"——一次 50ms 的 Jank 和一次 200ms 的 Jank 在掉帧率中都算 1 帧，但对用户体验的影响完全不同，Stutter 会把它们区分开。
 
-[来源: obsidian/Personal-Knowlodge/source/2026-03-07_wechat_Android深入卡顿分析与实践.md]
+[已验证: 来源见 obsidian/Personal-Knowlodge/source/2026-03-07_wechat_Android深入卡顿分析与实践.md]
 
 ### Google Jank vs PerfDog Jank
 
@@ -245,7 +250,7 @@ PerfDog 的 BigJank 则要求：
 
 Google 的标准从系统底层出发，关注 VSync 对齐；PerfDog 的标准从用户感知出发，关注帧耗时突变。两者各有优势，在不同场景下选择合适的标准来衡量。
 
-[来源: obsidian/Personal-Knowlodge/source/2026-03-07_wechat_Android深入卡顿分析与实践.md]
+[已验证: 来源见 obsidian/Personal-Knowlodge/source/2026-03-07_wechat_Android深入卡顿分析与实践.md]
 
 ## 用户感知与技术指标的映射
 
