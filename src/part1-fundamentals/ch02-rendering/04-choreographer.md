@@ -26,6 +26,10 @@ sources:
     path: "obsidian/Personal-Knowlodge/source/Android-Choreographer.md"
 tags: ['choreographer', 'doframe', '渲染流水线', 'VSync', '帧调度', '性能优化']
 related_chapters: ["2.3", "2.5", "2.6", "3.1", "8.2"]
+
+re-review-triggered-date: 2026-04-03
+re-review-triggered-by: task7-incremental-index
+re-review-triggered-reason: 新高质量素材「Android耗时统计概述(19分)」— 直接涉及Choreographer/FrameMetrics耗时统计API
 ---
 
 # Choreographer 与渲染流水线

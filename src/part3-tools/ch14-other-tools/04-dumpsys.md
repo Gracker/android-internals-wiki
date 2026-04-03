@@ -130,7 +130,7 @@ meminfo 输出把进程的内存使用分为多个类别。在性能分析中，
 单次 dumpsys meminfo 只是一个快照。要发现内存泄漏，我们需要追踪趋势：
 
 ```bash
-# 抓取基线
+# 重置 gfxinfo 计数器（可选，同时重置 meminfo 的统计）
 adb shell dumpsys meminfo <package_name>
 
 # 执行一轮操作（如反复进出某个界面 20 次）
