@@ -4,11 +4,11 @@
   "metrics": {
     "total": 97,
     "draft": 22,
-    "ready-for-review": 46,
+    "ready-for-review": 45,
     "reviewed": 2,
-    "finalized": 30,
+    "finalized": 31,
     "staging_drafts": 0,
-    "last_updated": "2026-04-03T21:27:58"
+    "last_updated": "2026-04-03T22:20:00"
   },
   "reviewed_sections": {
     "8.1": {
@@ -292,11 +292,22 @@
         "frontmatter补 drafted_date/drafted_by/section 字段",
         "frontmatter: status ready-for-review → finalized"
       ]
+    },
+    "7.1": {
+      "reviewed_date": "2026-04-03",
+      "reviewed_by": "openclaw-task6",
+      "review_status": "finalized",
+      "fixes_applied": [
+        "4处'你'→'我们'替换（writing-guide §3.5合规）",
+        "4处[来源:]→[已验证: 来源见 ...]标注格式标准化",
+        "frontmatter补 section/drafted_date/drafted_by 字段",
+        "status ready-for-review → finalized"
+      ]
     }
   },
   "review_stats": {
-    "total_reviewed": 28,
-    "reviewed_today": 13,
+    "total_reviewed": 29,
+    "reviewed_today": 14,
     "review_issues_total": 13
   },
   "completed": [
@@ -1653,6 +1664,14 @@
       "status": "finalized",
       "file": "src/part1-fundamentals/ch06-storage/01-storage-architecture.md",
       "drafted_date": "2026-04-01",
+      "reviewed_date": "2026-04-03",
+      "reviewed_by": "openclaw-task6"
+    },
+    "7.1": {
+      "title": "卡顿的定义与分类",
+      "status": "finalized",
+      "file": "src/part2-performance/ch07-smoothness/01-jank-definition.md",
+      "drafted_date": "2026-03-30",
       "reviewed_date": "2026-04-03",
       "reviewed_by": "openclaw-task6"
     }
