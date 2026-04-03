@@ -1472,6 +1472,12 @@
       "drafted_date": "2026-03-31",
       "reviewed_date": "2026-04-03",
       "reviewed_by": "openclaw-task6"
+    },
+    "4.2": {
+      "title": "Linux 内核内存管理",
+      "status": "finalized",
+      "reviewed_date": "2026-04-03",
+      "reviewed_by": "openclaw-task6"
     }
   },
   "5.1": {
