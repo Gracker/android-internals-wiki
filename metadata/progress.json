@@ -3,12 +3,12 @@
   "total_sections": 93,
   "metrics": {
     "total": 96,
-    "draft": 30,
-    "ready-for-review": 46,
+    "draft": 29,
+    "ready-for-review": 47,
     "reviewed": 2,
     "finalized": 22,
     "staging_drafts": 0,
-    "last_updated": "2026-04-03T11:06:00+08:00"
+    "last_updated": "2026-04-03T12:30:27.887713"
   },
   "reviewed_sections": {
     "8.1": {
@@ -750,6 +750,17 @@
       "extensions_total": 2,
       "verification_level": "L2",
       "word_count": "~9500"
+    },
+    {
+      "section": "13.3",
+      "title": "Perfetto View 解读",
+      "completed_at": "2026-04-03T12:30:27.887707",
+      "anchors_covered": 5,
+      "anchors_total": 5,
+      "extensions_covered": 2,
+      "extensions_total": 2,
+      "verification_level": "L2",
+      "word_count": "~8000"
     }
   ],
   "ready_for_review": 3,
@@ -1222,6 +1233,13 @@
       "title": "Trace 抓取",
       "action": "draft-completed",
       "word_count": "~9500"
+    },
+    {
+      "date": "2026-04-03",
+      "section": "13.3",
+      "title": "Perfetto View 解读",
+      "action": "draft-completed",
+      "word_count": "~8000"
     }
   ],
   "sections": {
@@ -1315,6 +1333,12 @@
     },
     "13.2": {
       "title": "Trace 抓取",
+      "status": "ready-for-review",
+      "drafted_date": "2026-04-03",
+      "drafted_by": "openclaw-task2a"
+    },
+    "13.3": {
+      "title": "Perfetto View 解读",
       "status": "ready-for-review",
       "drafted_date": "2026-04-03",
       "drafted_by": "openclaw-task2a"
