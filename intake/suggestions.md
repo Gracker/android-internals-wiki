@@ -339,3 +339,28 @@
 - **问题**：`sched.end_state = 'R'` 查询的是线程被抢占时仍为 Runnable 的时刻，不等同于"从唤醒到上 CPU 的调度延迟（wakeup latency）"
 - **建议**：如需测量真正调度延迟，改用 `sched_wakeup` 事件计算 wakeup_ts → sched_switch(in) 的时间差；或明确注释当前查询的实际含义
 - **review 日志**：logs/review/2026-04-04-0120-review.md
+
+## [Task6 Review] 6.2 文件系统 — 2026-04-04
+
+- **类型**：需补充素材
+- **位置**：末尾（正文收尾后）
+- **问题**：缺少 writing-guide Type A 模板要求的「版本演进」独立小节。当前版本信息散布在正文中，缺少集中梳理 ext4/f2fs/EROFS 在各 Android 版本中的变化时间线。
+- **建议**：参考 writing-guide.md 类型 A 模板，新增"版本演进"小节，按时间线列出三个文件系统在 Android 各版本中的关键变化。
+- **review 日志**：logs/review/2026-04-04-0333-review.md
+
+## [Task6 Review] 6.2 文件系统 — 2026-04-04
+
+- **类型**：需补充素材
+- **位置**：末尾（正文收尾后）
+- **问题**：缺少 writing-guide Type A 模板要求的「常见问题与误区」小节。
+- **建议**：补充 3-5 个新手常见误解，如"f2fs 一定比 ext4 快"、"EROFS 可以用于 data 分区"、"fsync 在 f2fs 上完全没有开销"等。
+- **review 日志**：logs/review/2026-04-04-0333-review.md
+
+## [Task6 Review] 6.2 文件系统 — 2026-04-04
+
+- **类型**：需补充素材
+- **位置**：末尾（正文收尾后）
+- **问题**：缺少 writing-guide Type A 模板要求的「参考资料」小节。正文引用了多个 AOSP 路径和官方文档，但未在末尾汇总。
+- **建议**：汇总列出 AOSP 源码路径（Choreographer → f2fs/ioctl）、kernel.org 文档、SQLite 官方文档、esper.io 等外部参考。
+- **review 日志**：logs/review/2026-04-04-0333-review.md
+
