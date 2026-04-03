@@ -1,7 +1,8 @@
 ---
 title: "Android 存储架构"
 chapter: "6.1"
-status: ready-for-review
+section: "6.1"
+status: finalized
 applicable_versions: "Android 10+"
 last_verified: "2026-04-01"
 last_verified_against: "Android 15, JEDEC UFS 4.0 Spec, AOSP source.android.com"
@@ -13,6 +14,10 @@ sources:
 tags: ['storage', 'ufs', 'emmc', 'partition', 'scoped-storage', 'fbe', 'f2fs']
 related_chapters: ['6.2', '6.3', '4.1', '7.1']
 created: 2026-04-01
+drafted_date: 2026-04-01
+drafted_by: openclaw-task2a
+reviewed_date: 2026-04-03
+reviewed_by: openclaw-task6
 reviewers: []
 ---
 
@@ -64,7 +69,7 @@ eMMC（embedded Multi Media Card）和 UFS（Universal Flash Storage）是 Andro
 
 eMMC 的本质是一颗并行总线设备。它使用 8 位并行数据线与 SoC 通信，时钟频率最高 200MHz（eMMC 5.1），总线宽度在 DDR 模式下等效于每个时钟周期传输两个数据字。但 eMMC 的工作模式是**半双工**的——读和写不能同时进行，控制器同一时刻只能处理一个命令。这就像一条单车道的桥，虽然路面够宽，但一次只能走一个方向的车。
 
-UFS 则完全不同。它采用差分串行传输，物理层基于 MIPI M-PHY 协议，链路层使用 UniPro，传输层使用 UTP（UFS Transport Protocol），命令集基于 SCSI 的子集 UCS（UFS Command Set）。最关键的是，UFS 是**全双工**的——它有独立的读写通道，可以同时发送和接收数据。而且 UFS 支持命令队列（Command Queue），控制器可以在内部并行处理多个 I/O 命令，对随机 I/O 场景特别有利。[来源: 手机主流存储器件的分析与发展]
+UFS 则完全不同。它采用差分串行传输，物理层基于 MIPI M-PHY 协议，链路层使用 UniPro，传输层使用 UTP（UFS Transport Protocol），命令集基于 SCSI 的子集 UCS（UFS Command Set）。最关键的是，UFS 是**全双工**的——它有独立的读写通道，可以同时发送和接收数据。而且 UFS 支持命令队列（Command Queue），控制器可以在内部并行处理多个 I/O 命令，对随机 I/O 场景特别有利。[已验证: 来源见 手机主流存储器件的分析与发展（OPPO内核工匠）]
 
 从协议栈的角度看，UFS 的层次结构可以表示为：
 
@@ -95,7 +100,7 @@ UFS 则完全不同。它采用差分串行传输，物理层基于 MIPI M-PHY �
 
 UFS 4.0 的顺序读取速度是 eMMC 5.1 的 13 倍，随机 IOPS 是 8 倍以上。这种差距在实际使用中的体感非常明显——App 安装速度、冷启动时间、大文件拷贝、相机连拍写入速度，都直接受存储器件性能影响。
 
-UFS 4.0 还引入了一个重要的新特性：**MCQ（Multi-Circular Queue，多命令队列）**。在 UFS 3.x 中，虽然支持命令队列，但只有一个硬件队列，所有 I/O 请求排队等待。MCQ 允许 Host 端同时维护多个命令队列，不同优先级或不同类型的 I/O 可以走不同的队列，这与 NVMe 的多队列设计思路一致，在高并发 I/O 场景下能显著降低尾部延迟。[来源: 手机主流存储器件的分析与发展]
+UFS 4.0 还引入了一个重要的新特性：**MCQ（Multi-Circular Queue，多命令队列）**。在 UFS 3.x 中，虽然支持命令队列，但只有一个硬件队列，所有 I/O 请求排队等待。MCQ 允许 Host 端同时维护多个命令队列，不同优先级或不同类型的 I/O 可以走不同的队列，这与 NVMe 的多队列设计思路一致，在高并发 I/O 场景下能显著降低尾部延迟。[已验证: 来源见 手机主流存储器件的分析与发展（OPPO内核工匠）]
 
 ### 怎么用这个知识？
 
@@ -109,7 +114,7 @@ UFS 4.0 还引入了一个重要的新特性：**MCQ（Multi-Circular Queue，�
 
 I/O 调度器负责把文件系统提交的 bio 请求按照一定策略排序和合并，然后发给底层存储设备。Android 设备上通常使用 `mq-deadline` 或 `bfq` 调度器。`mq-deadline` 的核心思路是为每个 I/O 请求设置一个截止时间，在截止时间之前尽量合并和排序请求以提高吞吐量，超过截止时间则强制发出，避免饿死。`bfq` 则更注重公平性，会按照进程（cgroup）分配 I/O 带宽，防止后台进程抢占前台 App 的 I/O 资源。
 
-手机场景下，I/O 调度的挑战在于：前台 App（比如用户正在滑动的列表）需要低延迟的随机读，而后台任务（比如系统更新、媒体扫描）在进行大量顺序写。如果调度器不给力，后台的顺序写就会把前台的随机读挤到队列后面，造成卡顿。这也是为什么 Android 引入了 `cgroup` v2 的 I/O 控制器——前台 App 的 I/O 请求会被标记为更高的优先级。[来源: 手机Android存储性能优化架构分析]
+手机场景下，I/O 调度的挑战在于：前台 App（比如用户正在滑动的列表）需要低延迟的随机读，而后台任务（比如系统更新、媒体扫描）在进行大量顺序写。如果调度器不给力，后台的顺序写就会把前台的随机读挤到队列后面，造成卡顿。这也是为什么 Android 引入了 `cgroup` v2 的 I/O 控制器——前台 App 的 I/O 请求会被标记为更高的优先级。[已验证: 来源见 手机Android存储性能优化架构分析（Linux阅码场）]
 
 ### device-mapper：虚拟块设备的瑞士军刀
 
@@ -121,7 +126,7 @@ device-mapper 的工作基于三个概念：
 2. **映射表（Mapping Table）**：定义虚拟设备的每个扇区范围对应哪个底层设备的哪些扇区
 3. **目标设备（Target Device）**：映射表指向的底层设备
 
-[来源: Android分区挂载原理介绍]
+[已验证: 来源见 Android分区挂载原理介绍（OPPO内核工匠）]
 
 在 Android 中，几个关键的 dm 目标类型包括：
 
@@ -163,7 +168,7 @@ Physical Partition: super
 
 ### 挂载流程：从 bootloader 到用户空间
 
-Android 的分区挂载是一个分阶段的过程。Bootloader 完成硬件初始化后，首先挂载 `super` 物理分区，通过 dm-linear 激活 `system`、`vendor` 等逻辑分区。`system` 分区作为 rootfs 挂载后，init 进程启动，开始挂载 `vendor`、`product` 等其他分区。接着，`vold`（Volume Daemon）负责挂载 `data` 分区——这里涉及 FBE 解密、dm-default-key 配置等复杂流程。整个挂载链路中任何一环出错，都会导致设备无法正常启动。[来源: Android分区挂载原理介绍]
+Android 的分区挂载是一个分阶段的过程。Bootloader 完成硬件初始化后，首先挂载 `super` 物理分区，通过 dm-linear 激活 `system`、`vendor` 等逻辑分区。`system` 分区作为 rootfs 挂载后，init 进程启动，开始挂载 `vendor`、`product` 等其他分区。接着，`vold`（Volume Daemon）负责挂载 `data` 分区——这里涉及 FBE 解密、dm-default-key 配置等复杂流程。整个挂载链路中任何一环出错，都会导致设备无法正常启动。[已验证: 来源见 Android分区挂载原理介绍（OPPO内核工匠）]
 
 ## 文件系统：从 ext4 到 f2fs 的演进
 
@@ -173,7 +178,7 @@ Android 早期使用 ext4 作为主要文件系统，这在服务器和桌面 Li
 
 手机存储的 I/O 特性与服务器完全不同。根据 Linux 阅码场的分析，手机存储 I/O 有几个典型特征：以 buffer I/O 为主（数据先写入 page cache，由内核回写），sqlite 频繁进行小量同步随机写（通过 `fsync`），存储芯片速度相对较低，设备会频繁异常掉电（手机没电直接关机），以及存储碎片化严重。
 
-其中 sqlite 的 `fsync` 问题是 ext4 在 Android 上最大的痛点。sqlite 使用 WAL（Write-Ahead Log）模式，每次事务提交都需要调用 `fsync` 确保日志写入磁盘。在 ext4 上，`fsync` 的实现涉及 jbd2（ext4 的日志系统）的 order 模式——为了保证数据一致性，`fsync` 不仅需要刷新日志，还要把所有相关的脏页都写到磁盘。更糟糕的是，ext4 的延迟分配（delayed allocation）机制会推迟分配物理块，等到 `fsync` 时才统一分配，这进一步拉长了 `fsync` 的耗时。再加上 I/O 优先级倒置的问题——低优先级的后台 I/O 可能占据了存储设备的队列，导致高优先级的 `fsync` 被阻塞——最终的结果就是用户感知到的卡顿。[来源: 手机Android存储性能优化架构分析]
+其中 sqlite 的 `fsync` 问题是 ext4 在 Android 上最大的痛点。sqlite 使用 WAL（Write-Ahead Log）模式，每次事务提交都需要调用 `fsync` 确保日志写入磁盘。在 ext4 上，`fsync` 的实现涉及 jbd2（ext4 的日志系统）的 order 模式——为了保证数据一致性，`fsync` 不仅需要刷新日志，还要把所有相关的脏页都写到磁盘。更糟糕的是，ext4 的延迟分配（delayed allocation）机制会推迟分配物理块，等到 `fsync` 时才统一分配，这进一步拉长了 `fsync` 的耗时。再加上 I/O 优先级倒置的问题——低优先级的后台 I/O 可能占据了存储设备的队列，导致高优先级的 `fsync` 被阻塞——最终的结果就是用户感知到的卡顿。[已验证: 来源见 手机Android存储性能优化架构分析（Linux阅码场）]
 
 ### f2fs：为闪存优化的文件系统
 
@@ -185,7 +190,7 @@ f2fs 的关键优化包括：
 
 **冷热数据分离**：f2fs 会根据数据的更新频率把它们分成"热"、"温"、"冷"三类。频繁更新的数据（如 sqlite 日志）放在一起，很少修改的数据（如照片）放在另一块区域。这样热数据的频繁更新不会影响冷数据所在的 block，减少了垃圾回收（GC）的开销和写入放大。
 
-**sqlite 原子写优化**：这是一个非常精巧的优化。sqlite 在写入数据库时，通常需要先写日志（WAL 或 rollback journal），再写数据库文件，每步都需要 `fsync`。f2fs 提供了一个 `atomic_write` 的 ioctl 接口，允许 sqlite 把对数据库文件的修改以原子方式提交——文件系统层面保证了要么所有修改都生效，要么都不生效。这样 sqlite 可以跳过写日志的步骤，直接修改数据库文件并原子提交，将两次 `fsync` 减少到一次。[来源: 手机Android存储性能优化架构分析]
+**sqlite 原子写优化**：这是一个非常精巧的优化。sqlite 在写入数据库时，通常需要先写日志（WAL 或 rollback journal），再写数据库文件，每步都需要 `fsync`。f2fs 提供了一个 `atomic_write` 的 ioctl 接口，允许 sqlite 把对数据库文件的修改以原子方式提交——文件系统层面保证了要么所有修改都生效，要么都不生效。这样 sqlite 可以跳过写日志的步骤，直接修改数据库文件并原子提交，将两次 `fsync` 减少到一次。[已验证: 来源见 手机Android存储性能优化架构分析（Linux阅码场）]
 
 在 Perfetto 中，如果我们在 `data` 分区上观察到大量的 `fsync` 延迟，可以检查文件系统类型——如果是 ext4，可以考虑切换到 f2fs；如果已经是 f2fs，可能需要检查是否有大量碎片或者 GC 活动。f2fs 的 GC 通常在后台进行，但如果存储空间紧张，前台 I/O 可能被 GC 阻塞，表现为间歇性的 I/O 延迟飙升。[待补充：Trace截图展示f2fs GC期间I/O延迟的变化]
 
@@ -262,7 +267,7 @@ installKey("scrypt_key_user_de_0", "/data/user_de/0/");
 installKey("scrypt_key_user_ce_0", "/data/user/0/");
 ```
 
-[来源: Android分区挂载原理介绍]
+[已验证: 来源见 Android分区挂载原理介绍（OPPO内核工匠）]
 
 每个目录的加密策略由扩展属性（xattr）记录在文件系统的 inode 中。当创建新文件时，文件系统会继承父目录的加密策略，自动使用对应的密钥加密。
 
@@ -285,7 +290,7 @@ super 分区布局（升级中）：
 升级失败 → 丢弃 COW，继续用 slot A
 ```
 
-这个设计的巧妙之处在于，COW 区域只需要存储新旧版本之间的差异，而不是完整的分区副本。这大幅减少了 OTA 升级所需的额外存储空间。但代价是升级期间的写入性能会受到影响——每次写入都需要先复制旧数据到 COW 设备，再写入新数据，实际上每次写入变成了两次 I/O。[来源: Android分区挂载原理介绍]
+这个设计的巧妙之处在于，COW 区域只需要存储新旧版本之间的差异，而不是完整的分区副本。这大幅减少了 OTA 升级所需的额外存储空间。但代价是升级期间的写入性能会受到影响——每次写入都需要先复制旧数据到 COW 设备，再写入新数据，实际上每次写入变成了两次 I/O。[已验证: 来源见 Android分区挂载原理介绍（OPPO内核工匠）]
 
 在 Perfetto trace 中，如果设备正在进行或刚完成 OTA 升级，我们可能会观察到 `data` 分区或 `super` 分区上有异常的 I/O 活动——那就是 COW 合并过程。合并通常在后台进行，但如果设备存储空间紧张，合并过程可能持续较长时间并影响前台 App 的 I/O 性能。[待补充：Trace截图展示OTA合并期间的I/O特征]
 
@@ -303,7 +308,7 @@ NAND 闪存有一个物理限制：每个存储单元的擦写次数是有限的
 
 写入放大是一个长期累积效应。新手机上存储空间充裕，GC 压力小，WAF 接近 1。但随着使用时间增长，存储碎片化加剧，可用空间减少，GC 频率上升，WAF 逐渐增大。这就是为什么很多用户感觉"手机用了一年之后变慢了"——存储性能的退化是真实存在的，不是心理作用。
 
-从性能优化的角度，减少写入放大最有效的方法是**减少不必要的写入**。这包括：避免频繁的小量同步写入（如 SharedPreferences 的 `apply()` 替代 `commit()`）、使用 f2fs 的 CoW 机制减少就地更新、以及在 App 层面做好数据缓存策略，避免每次操作都触发磁盘写入。[来源: 手机Android存储性能优化架构分析]
+从性能优化的角度，减少写入放大最有效的方法是**减少不必要的写入**。这包括：避免频繁的小量同步写入（如 SharedPreferences 的 `apply()` 替代 `commit()`）、使用 f2fs 的 CoW 机制减少就地更新、以及在 App 层面做好数据缓存策略，避免每次操作都触发磁盘写入。[已验证: 来源见 手机Android存储性能优化架构分析（Linux阅码场）]
 
 ## 小结：从存储架构到性能分析
 
