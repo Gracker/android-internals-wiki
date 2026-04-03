@@ -4,11 +4,11 @@
   "metrics": {
     "total": 97,
     "draft": 23,
-    "ready-for-review": 46,
+    "ready-for-review": 45,
     "reviewed": 2,
-    "finalized": 29,
+    "finalized": 30,
     "staging_drafts": 0,
-    "last_updated": "2026-04-03T20:18:12.808259+08:00"
+    "last_updated": "2026-04-03T21:27:58"
   },
   "reviewed_sections": {
     "8.1": {
@@ -282,11 +282,21 @@
         "frontmatter补 section/drafted_date/reviewed_date/reviewed_by",
         "status ready-for-review → finalized"
       ]
+    },
+    "6.1": {
+      "reviewed_date": "2026-04-03",
+      "reviewed_by": "openclaw-task6",
+      "review_status": "finalized",
+      "fixes_applied": [
+        "标注标准化: 10处[来源:]→[已验证: 来源见 ...]（3种来源）",
+        "frontmatter补 drafted_date/drafted_by/section 字段",
+        "frontmatter: status ready-for-review → finalized"
+      ]
     }
   },
   "review_stats": {
-    "total_reviewed": 27,
-    "reviewed_today": 12,
+    "total_reviewed": 28,
+    "reviewed_today": 13,
     "review_issues_total": 13
   },
   "completed": [
@@ -1613,6 +1623,14 @@
       "file": "src/part1-fundamentals/ch04-memory/04-lmk.md",
       "status": "finalized",
       "drafted_date": "2026-03-31",
+      "reviewed_date": "2026-04-03",
+      "reviewed_by": "openclaw-task6"
+    },
+    "6.1": {
+      "title": "Android 存储架构",
+      "status": "finalized",
+      "file": "src/part1-fundamentals/ch06-storage/01-storage-architecture.md",
+      "drafted_date": "2026-04-01",
       "reviewed_date": "2026-04-03",
       "reviewed_by": "openclaw-task6"
     }
