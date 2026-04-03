@@ -731,7 +731,7 @@
     }
   ],
   "ready_for_review": 3,
-  "last_updated": "2026-04-03T08:29:38.707404",
+  "last_updated": "2026-04-03T09:20:00",
   "stats": {
     "total": 97,
     "completed": 42,
@@ -1239,6 +1239,13 @@
       "status": "finalized",
       "reviewed_date": "2026-04-03",
       "reviewed_by": "openclaw-task6"
+    },
+    "2.10": {
+      "title": "GPU 渲染深入",
+      "status": "reviewed",
+      "file": "src/part1-fundamentals/ch02-rendering/10-gpu-rendering.md",
+      "last_reviewed": "2026-04-03",
+      "review_notes": "6个B类问题已标注，回炉等待task2修复"
     }
   },
   "5.1": {

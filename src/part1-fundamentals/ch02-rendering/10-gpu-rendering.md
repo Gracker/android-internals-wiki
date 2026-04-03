@@ -1,8 +1,8 @@
 ---
 title: "GPU 渲染深入"
 chapter: "2.10"
-status: ready-for-review
-applicable_versions: "Android 12 - Android 16 (API 31-35)"
+status: reviewed
+applicable_versions: "Android 12 - Android 16 (API 31-36)"
 last_verified: "2026-03-30"
 last_verified_against: "AOSP android-16.0.0_r1, developer.android.com"
 confidence: high
@@ -19,6 +19,9 @@ sources:
     path: "2026-03-30-ch02-gpu-optimization.md"
 tags: ['gpu', 'rendering', 'shader', 'vulkan', 'opengl', 'performance', 'memory']
 related_chapters: ["2.3", "2.4", "2.9", "3.2", "14.3"]
+drafted_date: 2026-03-30
+reviewed_date: 2026-04-03
+reviewed_by: openclaw-task6
 ---
 
 # GPU 渲染深入
@@ -62,6 +65,16 @@ related_chapters: ["2.3", "2.4", "2.9", "3.2", "14.3"]
 > 可**就地插入**最相关的锚点之后，并用 `[自动发现]` 标注，方便后续 review。
 > 锚点内容需 L1/L2 验证，扩展内容至少 L2 验证，自动发现内容至少标注来源。
 <!-- outline-end -->
+<!-- outline-end -->
+
+<!-- [Task6 Review] 2026-04-03 — B类问题标注（以下问题需回炉由 task2 修复）：
+  1. [需重写: 全文多处] 大量段落使用列表格式（编号/要点列表），违反 writing-guide §三.1「叙述为主，列表为辅」要求。应转为工程师对工程师的连贯叙述风格。
+  2. [需重写: 实战案例] 实战案例使用全伪代码，无真实 Trace 分析描述。应替换为真实的 Perfetto Trace 分析流程叙述。
+  3. [需补充素材: 缺少「与其他机制的关系」小节] writing-guide 类型A模板要求说明与上下游机制的关联（如 VSync→Choreographer→GPU 的关系）。
+  4. [需补充素材: 缺少「在 Perfetto 中的具体表现」专节] Trace 表现散落在各处，应集中为一个小节，明确 GPU 在 Perfetto 中的 Track 名称和典型模式。
+  5. [需补充素材: 缺少「常见问题与误区」小节] writing-guide 类型A模板要求覆盖新手常见误解和面试易错点。
+  6. [存疑: 多处代码为伪代码] 标注 [存疑] 的代码段需要替换为真实 AOSP 源码引用，或明确标注为「示意性伪代码」。
+-->
 
 ## Android GPU 渲染管线：Vertex Shader → Fragment Shader → Framebuffer
 
@@ -76,6 +89,8 @@ related_chapters: ["2.3", "2.4", "2.9", "3.2", "14.3"]
 3. **GPU 渲染管线**：GPU 执行顶点处理、片段处理等计算任务
 4. **帧缓冲区管理**：将渲染结果写入显存中的帧缓冲区
 5. **屏幕合成**：SurfaceFlinger 将多个图层合成为最终图像
+
+[图：Android GPU 渲染管线全景图——从 CPU 准备到屏幕合成的完整数据流]
 
 ### Vertex Shader：顶点处理的起点
 
@@ -133,6 +148,8 @@ void main() {
 > [已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/graphics/Shader.java]
 > 在分析 Fragment Shader 性能时，要特别注意纹理采样次数。每个纹理采样都需要从显存中读取数据，过多的纹理采样会严重影响性能。
 
+[图：Perfetto 中 GPU track 示意图——标注 Vertex Shader 和 Fragment Shader 的执行时间段]
+
 ### Framebuffer：渲染结果的存储位置
 
 Framebuffer 是 GPU 渲染管线的最终输出目标，它是一块显存区域，用于存储渲染完成的像素数据。在 Android 中，Framebuffer 管理涉及多个层面：
@@ -140,6 +157,7 @@ Framebuffer 是 GPU 渲染管线的最终输出目标，它是一块显存区域
 ```cpp
 // frameworks/native/libs/ui/include/ui/Framebuffer.h
 // @ AOSP android-16.0.0_r1
+// [存疑: 此代码为示意性伪代码，非 AOSP 实际源码。ANativeWindowBuffer 的实际定义在 system/core/libsystem/include/android/native_window.h]
 struct ANativeWindowBuffer : public android::GraphicBuffer {
     // Framebuffer 的核心结构
     uint32_t width;
@@ -177,6 +195,7 @@ Framebuffer 的关键特性包括：
 Android 设备的多样性使得无法预编译所有着色器。不同的 GPU 架构（Qualcomm Adreno、ARM Mali、Imagination PowerVR）需要不同版本的着色器代码，这导致必须在运行时进行编译。
 
 ```cpp
+// [存疑: GLES_context.cpp 及 GLESContext 类在 AOSP 中未找到对应实现，可能为示意性伪代码]
 // frameworks/native/opengl/egl/GLES_context.cpp
 // @ AOSP android-16.0.0_r1
 void GLESContext::compileShader(GLuint shader, const char* source) {
@@ -274,6 +293,8 @@ vkQueueSubmit(queue, 1, &submitInfo, fence);
 > Vulkan 将 OpenGL ES 中隐式的 GPU 同步改为显式控制，允许开发者更好地平衡 CPU 和 GPU 的工作负载。
 
 #### 2. 多线程渲染能力
+
+[图：OpenGL ES 单线程提交 vs Vulkan 多线程命令缓冲区构建对比]
 
 ```cpp
 // Vulkan 的多线程渲染示例
@@ -472,6 +493,8 @@ void optimizeMemoryBandwidth() {
 
 ### Android GPU 内存管理架构
 
+[图：Android GPU 内存管理层次图——Application (GraphicBuffer) → HAL (Gralloc) → Hardware (GPU Memory)]
+
 Android 的 GPU 内存管理涉及多个层次，从应用层的 GraphicBuffer 到系统层的 Gralloc，再到硬件层的 GPU 内存分配。
 
 ```java
@@ -535,6 +558,7 @@ Android 12 引入了改进的 GPU 内存追踪机制：
 // frameworks/base/core/java/android/view/WindowManagerGlobal.java
 // @ AOSP android-16.0.0_r1
 public class WindowManagerGlobal {
+    // [存疑: trackGpuMemoryUsage() 及 getGpuMemoryUsage() 方法在 AOSP WindowManagerGlobal 中未找到，可能为示意性伪代码]
     private static void trackGpuMemoryUsage() {
         // GPU 内存使用追踪
         long gpuMemory = getGpuMemoryUsage();
@@ -564,6 +588,7 @@ ANGLE 是 Google 开发的兼容层，旨在将 OpenGL ES API 调用转换为 Vu
 
 ```cpp
 // ANGLE 的架构示意图
+// [图：ANGLE 架构图]
 // [OpenGL ES App] -> [ANGLE Layer] -> [Vulkan Driver] -> [GPU]
 //                   (翻译层)    (Vulkan API)
 ```
@@ -671,7 +696,7 @@ if (gpuFrameTime > 16.67ms) { // 60fps = 16.67ms
 
 ### Snapdragon Profiler
 
-Qualqualcomm 官方的 GPU 分析工具，专为 Adreno GPU 优化。
+Qualcomm 官方的 GPU 分析工具，专为 Adreno GPU 优化。
 
 #### 关键特性：
 1. **低级 GPU 计数器**：详细的 GPU 性能计数器

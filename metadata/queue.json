@@ -1,6 +1,6 @@
 {
-  "last_updated": "2026-04-03T03:44:45",
-  "total_items": 9,
+  "last_updated": "2026-04-03T09:20:00",
+  "total_items": 11,
   "priority_breakdown": {
     "high": 4,
     "medium": 3,
@@ -134,6 +134,41 @@
         "图注：4处[图：...]标注补充[待高爷补充]说明，明确需要实际Perfetto截图",
         "FrameMetrics段落：添加叙述式开头（量化每一帧的慢在哪里）+ 两层分析视角（单帧瓶颈/整体趋势）+ FrameTimeline对照说明"
       ]
+    },
+    {
+      "id": "rework-2.10-review-2026-04-03",
+      "section": "2.10",
+      "file": "ch02-rendering/10-gpu-rendering.md",
+      "section_title": "GPU 渲染深入",
+      "priority": 90,
+      "reason": "[review回炉] 文体需从列表转为叙述风格；实战案例为全伪代码需重写；缺少3个必备小节；3处伪代码标为 AOSP 源码",
+      "review_issues": [
+        {
+          "type": "需重写",
+          "location": "全文多处",
+          "detail": "列表格式违反叙述规范"
+        },
+        {
+          "type": "需重写",
+          "location": "实战案例",
+          "detail": "全伪代码无真实 Trace 分析"
+        },
+        {
+          "type": "需补充素材",
+          "location": "全文",
+          "detail": "缺少3个必备小节"
+        },
+        {
+          "type": "存疑",
+          "location": "3处代码",
+          "detail": "伪代码标为 AOSP 源码"
+        }
+      ],
+      "added_by": "task6-review",
+      "added_at": "2026-04-03T09:20:00",
+      "status": "pending",
+      "category": "review-rework",
+      "original_review_log": "logs/review/2026-04-03-0920-review.md"
     }
   ]
 }
