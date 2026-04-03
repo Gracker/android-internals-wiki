@@ -4,11 +4,11 @@
   "metrics": {
     "total": 97,
     "draft": 25,
-    "ready-for-review": 47,
+    "ready-for-review": 46,
     "reviewed": 2,
-    "finalized": 26,
+    "finalized": 27,
     "staging_drafts": 0,
-    "last_updated": "2026-04-03T17:05:00+08:00"
+    "last_updated": "2026-04-03T17:20:00+08:00"
   },
   "reviewed_sections": {
     "8.1": {
@@ -252,11 +252,21 @@
         "frontmatter补充：section/drafted_date/drafted_by/reviewed_date/reviewed_by",
         "status ready-for-review → finalized"
       ]
+    },
+    "4.3": {
+      "reviewed_date": "2026-04-03",
+      "reviewed_by": "openclaw-task6",
+      "review_status": "finalized",
+      "fixes_applied": [
+        "5处'你'→'我们'替换（writing-guide §3.5合规）",
+        "frontmatter补充section/drafted_date/drafted_by字段",
+        "frontmatter更新：status→finalized, 添加reviewed_date/reviewed_by"
+      ]
     }
   },
   "review_stats": {
-    "total_reviewed": 24,
-    "reviewed_today": 9,
+    "total_reviewed": 25,
+    "reviewed_today": 10,
     "review_issues_total": 13
   },
   "completed": [
@@ -1476,6 +1486,13 @@
     "4.2": {
       "title": "Linux 内核内存管理",
       "status": "finalized",
+      "reviewed_date": "2026-04-03",
+      "reviewed_by": "openclaw-task6"
+    },
+    "4.3": {
+      "title": "ART 虚拟机内存管理",
+      "status": "finalized",
+      "file": "src/part1-fundamentals/ch04-memory/03-art-memory.md",
       "reviewed_date": "2026-04-03",
       "reviewed_by": "openclaw-task6"
     }

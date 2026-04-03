@@ -1,9 +1,14 @@
 ---
 title: "ART 虚拟机内存管理"
 chapter: "4.3"
-status: ready-for-review
+section: "4.3"
+drafted_date: "2026-03-31"
+drafted_by: "openclaw-task2"
+status: finalized
 applicable_versions: "Android 8.0 (API 26) - Android 17 (API 36)"
 last_verified: "2026-03-31"
+reviewed_date: "2026-04-03"
+reviewed_by: "openclaw-task6"
 last_verified_against: "AOSP android-15.0.0_r1"
 confidence: medium
 sources:
@@ -53,7 +58,7 @@ related_chapters: ["4.1", "4.2", "4.4", "4.6", "7.1", "7.7"]
 
 我们在 Perfetto 中分析一个应用的卡顿问题时，经常会看到这样的现象：主线程突然被挂起几十毫秒，对应的时间片上标注着 `GC`。或者更隐蔽地，一个应用的帧率在持续滑动时逐渐下降，CPU 占用里 `HeapTaskDaemon` 线程的活跃时间越来越多。这些现象的背后，都是 ART 虚拟机的内存管理在工作。
 
-理解 ART 的堆结构、GC 策略和对象分配机制，并不是为了让你能写出一个更好的垃圾回收器——那是 Google 工程师的工作。真正的价值在于：当你拿到一份 Trace，看到 GC 暂停或 Allocation Stall 时，你能快速判断这是"正常的小波动"还是"应用存在内存抖动需要优化"，以及知道从哪些角度去排查和修复。读完这一节，你应该能在 Perfetto 中识别 ART GC 的各类活动，理解它们对帧率和响应速度的影响，并掌握减少 GC 压力的基本方法。
+理解 ART 的堆结构、GC 策略和对象分配机制，并不是为了能写出一个更好的垃圾回收器——那是 Google 工程师的工作。真正的价值在于：当我们拿到一份 Trace，看到 GC 暂停或 Allocation Stall 时，我们能快速判断这是"正常的小波动"还是"应用存在内存抖动需要优化"，以及知道从哪些角度去排查和修复。读完这一节，我们应该能在 Perfetto 中识别 ART GC 的各类活动，理解它们对帧率和响应速度的影响，并掌握减少 GC 压力的基本方法。
 
 [已验证: 官方文档, source.android.com/docs/core/perf/art-management]
 
@@ -390,7 +395,7 @@ Google 报告在部分工作负载上，16KB 页通过减少 TLB miss 带来了�
 
 ### 误区一：GC 导致了卡顿，应该手动调用 System.gc()
 
-恰恰相反。`System.gc()` 会强制触发一次 Full GC，暂停时间比正常的 Young GC 长得多。ART 的 GC 是自适应的，它知道什么时候该回收。如果你发现自己需要手动触发 GC 来"解决问题"，通常说明存在内存泄漏或对象抖动，应该从源头修复。
+恰恰相反。`System.gc()` 会强制触发一次 Full GC，暂停时间比正常的 Young GC 长得多。ART 的 GC 是自适应的，它知道什么时候该回收。如果发现自己需要手动触发 GC 来"解决问题"，通常说明存在内存泄漏或对象抖动，应该从源头修复。
 
 ### 误区二：对象池总是能减少 GC 压力
 
