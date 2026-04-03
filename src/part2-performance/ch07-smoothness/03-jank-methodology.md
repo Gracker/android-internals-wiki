@@ -1,7 +1,9 @@
 ---
 title: "卡顿分析方法论"
 chapter: "7.3"
-status: ready-for-review
+status: reviewed
+reviewed_date: "2026-04-04"
+reviewed_by: openclaw-task6
 applicable_versions: "Android 8 (API 26) - Android 16 (API 35)"
 last_verified: "2026-03-31"
 last_verified_against: "AOSP android-16.0.0_r1, Perfetto 官方文档"
@@ -263,6 +265,8 @@ Uninterruptible Sleep 状态（在 Perfetto 中显示为深橙色）表示线程
 
 FrameMetrics 的使用方式很简单：向 Window 注册一个 `OnFrameMetricsAvailableListener`，系统就会在每一帧渲染完成后回调你，告诉你这一帧各个环节的耗时。
 
+[存疑: 下方代码示例使用了 `FrameMetrics.DEADLINE` 常量，该常量从 API 31 (Android 12) 才可用。而 FrameMetrics API 本身从 API 24 引入。如果需要兼容 API 24-30，需硬编码 deadline 值或使用 `FrameMetrics.UNKNOWN` 回退。建议高爷确认目标兼容版本后调整代码示例或添加版本分支说明。]
+
 ```java
 // [已验证: 官方文档 developer.android.com, android.view.Window#addOnFrameMetricsAvailableListener]
 window.addOnFrameMetricsAvailableListener(
@@ -356,7 +360,10 @@ ORDER BY cpu_time_ms DESC;
 ### 查询调度延迟最大的时刻
 
 ```sql
--- 查询主线程调度延迟（Runnable 时间）最大的时刻
+-- 查询主线程被调度移出时仍处于 Runnable 状态的时刻
+-- [需确认: sched.end_state = 'R' 表示线程被 descheduled 时仍为 Runnable（即被抢占而非主动 Sleep），
+-- 但这并不直接等同于"调度延迟"（从唤醒到上 CPU 的时间）。如需测量真正的调度延迟，
+-- 需结合 sched_wakeup 事件计算 wakeup_ts 到 sched_switch(in) 的时间差。建议高爷确认查询意图后调整。]
 SELECT
     sched.ts,
     sched.dur / 1000000.0 as runnable_ms,

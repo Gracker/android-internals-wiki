@@ -3,12 +3,12 @@
   "total_sections": 94,
   "metrics": {
     "total": 97,
-    "draft": 20,
-    "ready-for-review": 46,
-    "reviewed": 2,
-    "finalized": 32,
+    "draft": 0,
+    "ready-for-review": 8,
+    "reviewed": 3,
+    "finalized": 22,
     "staging_drafts": 0,
-    "last_updated": "2026-04-04T00:02:00+08:00"
+    "last_updated": "2026-04-04T01:20:24.788615+08:00"
   },
   "reviewed_sections": {
     "8.1": {
@@ -979,15 +979,30 @@
       "verification_level": "L2",
       "word_count": "~8500",
       "completed_at": "2026-04-04T00:02:00+08:00"
+    },
+    {
+      "chapter": "15.1",
+      "section": "15.1",
+      "title": "性能优化的术、道、器",
+      "status": "ready-for-review",
+      "drafted_date": "2026-04-04",
+      "drafted_by": "openclaw-task2a",
+      "anchors_covered": 5,
+      "anchors_total": 5,
+      "extensions_covered": 2,
+      "extensions_total": 2,
+      "verification_level": "L2",
+      "word_count": "~8500",
+      "completed_at": "2026-04-04T01:20:24.788615+08:00"
     }
   ],
   "ready_for_review": 5,
   "last_updated": "2026-04-04T00:23:00",
   "stats": {
     "total": 97,
-    "completed": 47,
-    "pending": 51,
-    "last_updated": "2026-04-03T23:15:00+08:00"
+    "completed": 48,
+    "pending": 50,
+    "last_updated": "2026-04-04T01:20:24"
   },
   "research_stats": {
     "runs_today": [
@@ -1123,6 +1138,13 @@
     "last_updated": "2026-04-03T19:05:34+08:00"
   },
   "history": [
+    {
+      "date": "2026-04-04",
+      "section": "15.1",
+      "title": "性能优化的术、道、器",
+      "action": "draft-completed",
+      "word_count": "~8500"
+    },
     {
       "date": "2026-04-04",
       "section": "14.6",
@@ -1752,6 +1774,21 @@
       "reviewed_date": "2026-04-04",
       "reviewed_by": "openclaw-task6",
       "file": "src/part2-performance/ch07-smoothness/02-jank-causes.md"
+    },
+    "15.1": {
+      "title": "性能优化的术、道、器",
+      "status": "ready-for-review",
+      "drafted_date": "2026-04-04",
+      "drafted_by": "openclaw-task2a",
+      "file": "src/part3-tools/ch15-methodology/01-philosophy.md",
+      "word_count": "~8500"
+    },
+    "7.3": {
+      "chapter": "7.3",
+      "title": "卡顿分析方法论",
+      "status": "reviewed",
+      "reviewed_date": "2026-04-04",
+      "reviewed_by": "openclaw-task6"
     }
   },
   "5.1": {

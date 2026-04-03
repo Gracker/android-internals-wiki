@@ -322,3 +322,20 @@
   6. 3处伪代码标为 AOSP 源码（GLESContext::compileShader / ANativeWindowBuffer 继承关系 / WindowManagerGlobal.trackGpuMemoryUsage）
 - **建议**：参考 writing-guide.md 类型A模板和文体要求，重点修复叙述风格和结构缺失
 - **review 日志**：logs/review/2026-04-03-0920-review.md
+
+
+## [Task6 Review] 7.3 卡顿分析方法论 — 2026-04-04
+
+### Issue 1: FrameMetrics.DEADLINE API 版本兼容性
+- **类型**：存疑
+- **位置**：FrameMetrics 代码示例（FrameMetrics API 小节）
+- **问题**：代码使用 `FrameMetrics.DEADLINE` 常量（API 31+），但上下文描述为 "Android 7.0+, API 24"，存在版本兼容性矛盾
+- **建议**：确认目标兼容版本：如需兼容 API 24-30，添加 `Build.VERSION.SDK_INT` 分支或硬编码 deadline；如仅面向 API 31+，更新描述
+- **review 日志**：logs/review/2026-04-04-0120-review.md
+
+### Issue 2: SQL 调度延迟查询语义
+- **类型**：需确认
+- **位置**：SQL 查询示例（"调度延迟最大的时刻"）
+- **问题**：`sched.end_state = 'R'` 查询的是线程被抢占时仍为 Runnable 的时刻，不等同于"从唤醒到上 CPU 的调度延迟（wakeup latency）"
+- **建议**：如需测量真正调度延迟，改用 `sched_wakeup` 事件计算 wakeup_ts → sched_switch(in) 的时间差；或明确注释当前查询的实际含义
+- **review 日志**：logs/review/2026-04-04-0120-review.md
