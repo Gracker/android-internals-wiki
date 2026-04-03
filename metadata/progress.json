@@ -1867,6 +1867,13 @@
       "drafted_date": "2026-04-01",
       "reviewed_date": "2026-04-04",
       "reviewed_by": "openclaw-task6"
+    },
+    "7.4": {
+      "title": "典型场景分析",
+      "status": "reviewed",
+      "last_updated": "2026-04-04",
+      "updated_by": "task6-review",
+      "review_log": "logs/review/2026-04-04-0525-review.md"
     }
   },
   "5.1": {

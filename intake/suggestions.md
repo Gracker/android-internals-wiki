@@ -364,3 +364,11 @@
 - **建议**：汇总列出 AOSP 源码路径（Choreographer → f2fs/ioctl）、kernel.org 文档、SQLite 官方文档、esper.io 等外部参考。
 - **review 日志**：logs/review/2026-04-04-0333-review.md
 
+
+
+## [Task6 Review] 7.4 典型场景分析 — 2026-04-04
+- **类型**：需修正（技术建议误导）
+- **位置**：section 2.2 Fragment 切换优化建议（"使用 commitAllowingStateLoss() 替代 commit()"）
+- **问题**：commitAllowingStateLoss() 的设计目的是避免 onSaveInstanceState() 后 commit 导致的 IllegalStateException，与"状态检查开销"无关。两者性能差异可忽略。使用不当可能导致 Fragment 状态不一致。
+- **建议**：修正为更准确的优化方向：① 将 Fragment 事务提交时机与动画帧解耦；② 使用 commitNow() 在非动画期间同步执行；③ 延迟 commit 到动画结束后。
+- **review 日志**：logs/review/2026-04-04-0525-review.md
