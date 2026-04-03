@@ -4,11 +4,11 @@
   "metrics": {
     "total": 97,
     "draft": 0,
-    "ready-for-review": 10,
+    "ready-for-review": 9,
     "reviewed": 3,
-    "finalized": 24,
+    "finalized": 25,
     "staging_drafts": 0,
-    "last_updated": "2026-04-04T06:13:57"
+    "last_updated": "2026-04-04T07:20:00"
   },
   "reviewed_sections": {
     "8.1": {
@@ -336,11 +336,21 @@
         "frontmatter补全：section/drafted_by/reviewed_date/reviewed_by",
         "status ready-for-review → finalized"
       ]
+    },
+    "7.6": {
+      "reviewed_date": "2026-04-04",
+      "reviewed_by": "openclaw-task6",
+      "review_status": "finalized",
+      "fixes_applied": [
+        "frontmatter补全：section/drafted_date/drafted_by/reviewed_date/reviewed_by",
+        "12处[来源:]→[已验证: 来源见 ...]标注格式标准化",
+        "status ready-for-review → finalized"
+      ]
     }
   },
   "review_stats": {
-    "total_reviewed": 31,
-    "reviewed_today": 17,
+    "total_reviewed": 32,
+    "reviewed_today": 18,
     "review_issues_total": 13
   },
   "completed": [
@@ -1048,7 +1058,7 @@
     }
   ],
   "ready_for_review": 5,
-  "last_updated": "2026-04-04T06:13:57",
+  "last_updated": "2026-04-04T07:05:00+08:00",
   "stats": {
     "total": 97,
     "completed": 60,
@@ -1184,11 +1194,31 @@
           "Android 17 分代 GC：年轻代极短暂停 + static final 不可变协同优化（目标 §4.3/§4.6）",
           "Media3 1.10 动态调度 + Compose PlayerSurface + Player 池化预热（目标 §7.7）"
         ]
+      },
+      {
+        "time": "2026-04-04T07:05:00+08:00",
+        "focus": "启动优化（20260404%20=4, topic-rotation: Startup Profiles + DEX Layout + ApplicationStartInfo）",
+        "source": "topic-rotation",
+        "candidates": 7,
+        "passed": 2,
+        "delivered": 2,
+        "themes": [
+          "Startup Profiles + DEX Layout 优化：AGP 8.3 默认启用 + 冷启动 15-30% 提升 + R8/D8 编译器 DEX 重排（目标 §8.3/§16）",
+          "ApplicationStartInfo.getStartComponent()：Android 16 新增 5 个 START_COMPONENT_* 常量 + 精确识别启动触发组件（目标 §8.1/§8.3）"
+        ]
       }
     ],
-    "last_updated": "2026-04-03T19:05:34+08:00"
+    "last_updated": "2026-04-04T07:05:00+08:00"
   },
   "history": [
+    {
+      "date": "2026-04-04",
+      "section": "7.6",
+      "title": "案例集",
+      "action": "reviewed-finalized",
+      "review_by": "openclaw-task6",
+      "fixes": 3
+    },
     {
       "date": "2026-04-04",
       "section": "15.5",
@@ -1634,6 +1664,20 @@
       "title": "三方性能库",
       "action": "draft-completed",
       "word_count": "~9500"
+    },
+    {
+      "date": "2026-04-04",
+      "section": "8.3/8.1",
+      "title": "启动优化前沿研究",
+      "action": "research-completed",
+      "focus": "Startup Profiles + DEX Layout + ApplicationStartInfo.getStartComponent()",
+      "candidates": 7,
+      "passed": 2,
+      "delivered": 2,
+      "themes": [
+        "Startup Profiles + DEX Layout: AGP 8.3 default + 15-30% cold start improvement",
+        "ApplicationStartInfo.getStartComponent(): 5 START_COMPONENT_* constants"
+      ]
     }
   ],
   "sections": {
@@ -1910,6 +1954,15 @@
       "drafted_date": "2026-04-04",
       "drafted_by": "openclaw-task2a",
       "file": "src/part3-tools/ch15-methodology/05-online-monitoring.md"
+    },
+    "7.6": {
+      "title": "案例集",
+      "status": "finalized",
+      "file": "src/part2-performance/ch07-smoothness/06-case-studies.md",
+      "drafted_date": "2026-04-01",
+      "drafted_by": "openclaw-task2a",
+      "reviewed_date": "2026-04-04",
+      "reviewed_by": "openclaw-task6"
     }
   },
   "5.1": {
