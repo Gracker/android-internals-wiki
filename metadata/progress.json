@@ -4,11 +4,11 @@
   "metrics": {
     "total": 97,
     "draft": 0,
-    "ready-for-review": 8,
+    "ready-for-review": 9,
     "reviewed": 3,
     "finalized": 23,
     "staging_drafts": 0,
-    "last_updated": "2026-04-04T02:16:34.289955"
+    "last_updated": "2026-04-04T03:32:32.385865"
   },
   "reviewed_sections": {
     "8.1": {
@@ -1799,6 +1799,20 @@
       "status": "reviewed",
       "reviewed_date": "2026-04-04",
       "reviewed_by": "openclaw-task6"
+    },
+    "15.3": {
+      "drafted_date": "2026-04-04",
+      "drafted_by": "openclaw-task2a",
+      "status": "ready-for-review",
+      "content_lines": 360,
+      "anchors_covered": 6,
+      "anchors_total": 6,
+      "extensions_covered": 2,
+      "extensions_total": 2,
+      "verification": {
+        "L2": 8,
+        "pending": 1
+      }
     }
   },
   "5.1": {
