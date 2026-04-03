@@ -4,9 +4,9 @@
   "metrics": {
     "total": 96,
     "draft": 33,
-    "ready-for-review": 44,
+    "ready-for-review": 43,
     "reviewed": 2,
-    "finalized": 21,
+    "finalized": 22,
     "staging_drafts": 0,
     "last_updated": "2026-04-03T08:05:00"
   },
@@ -730,13 +730,13 @@
       "word_count": "~8500"
     }
   ],
-  "ready_for_review": 4,
-  "last_updated": "2026-04-03T05:21:00+08:00",
+  "ready_for_review": 3,
+  "last_updated": "2026-04-03T08:29:38.707404",
   "stats": {
     "total": 97,
-    "completed": 41,
+    "completed": 42,
     "pending": 56,
-    "last_updated": "2026-04-03T08:05:00+08:00"
+    "last_updated": "2026-04-03T08:29:38.707397"
   },
   "research_stats": {
     "runs_today": [
