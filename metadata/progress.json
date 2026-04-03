@@ -1,14 +1,14 @@
 {
-  "generated_at": "2026-04-03T04:25:57.937619+08:00",
+  "generated_at": "2026-04-03T19:10:00",
   "total_sections": 94,
   "metrics": {
     "total": 97,
     "draft": 24,
-    "ready-for-review": 47,
+    "ready-for-review": 46,
     "reviewed": 2,
-    "finalized": 27,
+    "finalized": 28,
     "staging_drafts": 0,
-    "last_updated": "2026-04-03T18:20:00+08:00"
+    "last_updated": "2026-04-03T19:25:00+08:00"
   },
   "reviewed_sections": {
     "8.1": {
@@ -262,11 +262,21 @@
         "frontmatter补充section/drafted_date/drafted_by字段",
         "frontmatter更新：status→finalized, 添加reviewed_date/reviewed_by"
       ]
+    },
+    "5.5": {
+      "reviewed_date": "2026-04-03",
+      "reviewed_by": "openclaw-task6",
+      "review_status": "finalized",
+      "fixes_applied": [
+        "8处'你'→'我们'替换（writing-guide §3.5合规）",
+        "frontmatter补 section/drafted_date 字段",
+        "frontmatter更新：status→finalized, 添加reviewed_date/reviewed_by"
+      ]
     }
   },
   "review_stats": {
-    "total_reviewed": 25,
-    "reviewed_today": 10,
+    "total_reviewed": 26,
+    "reviewed_today": 11,
     "review_issues_total": 13
   },
   "completed": [
@@ -992,9 +1002,22 @@
           "F2FS Folio 转换 + Zoned GC 调优 + Checkpoint 优化 + Device Aliasing（目标 §6.2/§6.4）",
           "Android 17 static final field 反射/JNI 强制禁止 → ART 常量折叠 + 编译优化收益（目标 §4.3/§1.6）"
         ]
+      },
+      {
+        "time": "2026-04-03T19:05:34+08:00",
+        "focus": "AutoFDO GKI kernel + Android 17 Generational GC + Media3 1.10（queue freshness-005~007 medium priority）",
+        "source": "queue-freshness-medium-priority",
+        "candidates": 5,
+        "passed": 3,
+        "delivered": 3,
+        "themes": [
+          "AutoFDO GKI android16-6.12：冷启动 4.3%/Binder-rpc 21.7%/binder-addints 37.7%/HwBinder 20%（目标 §5.1/§5.7/§1.6）",
+          "Android 17 分代 GC：年轻代极短暂停 + static final 不可变协同优化（目标 §4.3/§4.6）",
+          "Media3 1.10 动态调度 + Compose PlayerSurface + Player 池化预热（目标 §7.7）"
+        ]
       }
     ],
-    "last_updated": "2026-04-03T15:00:00+08:00"
+    "last_updated": "2026-04-03T19:05:34+08:00"
   },
   "history": [
     {
@@ -1371,6 +1394,21 @@
       "title": "Android Studio Profiler",
       "action": "draft-completed",
       "word_count": "~7500"
+    },
+    {
+      "date": "2026-04-03",
+      "section": "5.1/5.7/4.3/4.6/7.7",
+      "title": "AutoFDO GKI + Android 17 GC + Media3 1.10",
+      "action": "research-completed",
+      "focus": "queue freshness-005~007: AutoFDO GKI kernel + Android 17 Generational GC + Media3 1.10",
+      "candidates": 5,
+      "passed": 3,
+      "delivered": 3,
+      "themes": [
+        "AutoFDO GKI: cold launch 4.3%/Binder-rpc 21.7%/binder-addints 37.7%",
+        "Android 17 Generational GC + static final compilation optimization",
+        "Media3 1.10 dynamic scheduling + Compose PlayerSurface + player pooling"
+      ]
     }
   ],
   "sections": {
@@ -1523,6 +1561,14 @@
       "status": "ready-for-review",
       "drafted_date": "2026-04-03",
       "drafted_by": "openclaw-task2a"
+    },
+    "5.5": {
+      "title": "Thermal 管控",
+      "status": "finalized",
+      "file": "src/part1-fundamentals/ch05-cpu-power/05-thermal.md",
+      "drafted_date": "2026-04-01",
+      "reviewed_date": "2026-04-03",
+      "reviewed_by": "openclaw-task6"
     }
   },
   "5.1": {
@@ -1591,5 +1637,26 @@
     "drafted_date": "2026-04-03",
     "drafted_by": "openclaw-task2a",
     "word_count": "~8500"
+  },
+  "14.2": {
+    "status": "ready-for-review",
+    "drafted_date": "2026-04-03",
+    "drafted_by": "openclaw-task2a",
+    "confidence": "medium",
+    "anchors_covered": [
+      "Simpleperf是什么（基于Linux perf）",
+      "基本用法（stat/record/report）",
+      "采样类型（cpu-cycles/task-clock/PMU事件）",
+      "火焰图生成与解读（report_html/Speedscope）",
+      "与Perfetto callstack sampling对比"
+    ],
+    "extensions_covered": [
+      "Native代码性能分析（符号解析/off-CPU）",
+      "内核符号解析与kallsyms"
+    ],
+    "auto_discovered": [
+      "profileable vs debuggable区别",
+      "常见问题与误区（4条）"
+    ]
   }
 }
