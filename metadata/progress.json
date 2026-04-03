@@ -4,11 +4,11 @@
   "metrics": {
     "total": 97,
     "draft": 0,
-    "ready-for-review": 9,
+    "ready-for-review": 10,
     "reviewed": 3,
     "finalized": 23,
     "staging_drafts": 0,
-    "last_updated": "2026-04-04T03:32:32.385865"
+    "last_updated": "2026-04-04T04:19:45.354648"
   },
   "reviewed_sections": {
     "8.1": {
@@ -1004,15 +1004,30 @@
       "verification_level": "L2",
       "word_count": "~8500",
       "completed_at": "2026-04-04T01:20:24.788615+08:00"
+    },
+    {
+      "chapter": "15.4",
+      "section": "15.4",
+      "title": "竞品分析方法",
+      "status": "ready-for-review",
+      "drafted_date": "2026-04-04",
+      "drafted_by": "openclaw-task2a",
+      "anchors_covered": 5,
+      "anchors_total": 5,
+      "extensions_covered": 2,
+      "extensions_total": 2,
+      "verification_level": "L2",
+      "word_count": "~8500",
+      "completed_at": "2026-04-04T04:19:45.354654"
     }
   ],
   "ready_for_review": 5,
   "last_updated": "2026-04-04T03:40:38",
   "stats": {
     "total": 97,
-    "completed": 48,
-    "pending": 50,
-    "last_updated": "2026-04-04T01:20:24"
+    "completed": 49,
+    "pending": 48,
+    "last_updated": "2026-04-04T04:19:45.354672"
   },
   "research_stats": {
     "runs_today": [
@@ -1148,6 +1163,13 @@
     "last_updated": "2026-04-03T19:05:34+08:00"
   },
   "history": [
+    {
+      "date": "2026-04-04",
+      "section": "15.4",
+      "title": "竞品分析方法",
+      "action": "draft-completed",
+      "word_count": "~8500"
+    },
     {
       "date": "2026-04-04",
       "section": "15.1",
@@ -1820,6 +1842,12 @@
       "reviewed_date": "2026-04-04",
       "reviewed_by": "openclaw-task6",
       "file": "src/part1-fundamentals/ch06-storage/02-filesystem.md"
+    },
+    "15.4": {
+      "title": "竞品分析方法",
+      "status": "ready-for-review",
+      "drafted_date": "2026-04-04",
+      "drafted_by": "openclaw-task2a"
     }
   },
   "5.1": {
