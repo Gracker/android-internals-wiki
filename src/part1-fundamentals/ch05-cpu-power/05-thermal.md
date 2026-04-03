@@ -1,7 +1,8 @@
 ---
 title: "Thermal 管控"
+section: "5.5"
 chapter: "5.5"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 7.0 (API 24) - Android 16 (API 36)"
 last_verified: "2026-04-01"
 last_verified_against: "AOSP android-14.0.0_r1"
@@ -27,6 +28,8 @@ tags: ['thermal', 'throttling', 'power', 'temperature', 'cooling-device', 'susta
 related_chapters: ["5.1", "5.2", "5.3", "5.4", "5.6", "7.3"]
 drafted_date: "2026-04-01"
 drafted_by: "openclaw-task2"
+reviewed_date: "2026-04-03"
+reviewed_by: "openclaw-task6"
 ---
 
 # Thermal 管控
@@ -114,7 +117,7 @@ Linux 内核自带一套 thermal management 框架，位于 `drivers/thermal/`�
 
 Cooling Device 不一定是物理设备——更常见的"降温设备"就是 CPU 本身。内核通过限制 CPU 的最高运行频率来实现降温，这被称为 **cpufreq cooling**。在 `drivers/thermal/cpu_cooling.c` 中，cpufreq cooling 会动态调整 CPU 的最大允许频率：当温度升高时，逐步降低 `max_freq`；温度回落后，再逐步恢复。
 
-这就是为什么你在 Perfetto 中看到 CPU 频率下降时，往往伴随着温度的上升——这不是 governor（如 schedutil）主动降频，而是 thermal cooling 在强制压低频率上限。
+这就是为什么我们在 Perfetto 中看到 CPU 频率下降时，往往伴随着温度的上升——这不是 governor（如 schedutil）主动降频，而是 thermal cooling 在强制压低频率上限。
 
 [已验证: Linux kernel drivers/thermal/cpu_cooling.c, of-thermal.c]
 
@@ -280,7 +283,7 @@ float headroom5s = pm.getThermalHeadroom(5); // 预测5秒后的状态
 
 ### 如何在 Perfetto 中确认 Thermal Throttling
 
-如果你怀疑一次掉帧是温控导致的，可以在 Perfetto 中用以下方法验证：
+如果我们怀疑一次掉帧是温控导致的，可以在 Perfetto 中用以下方法验证：
 
 **1. 查看 CPU Frequency Track**
 
@@ -302,7 +305,7 @@ data_sources: {
 }
 ```
 
-这样 Perfetto 会记录每个 thermal zone 的温度变化，你可以在 Trace 中直接看到温度曲线，和 CPU 频率曲线叠加对比。
+这样 Perfetto 会记录每个 thermal zone 的温度变化，我们可以在 Trace 中直接看到温度曲线，和 CPU 频率曲线叠加对比。
 
 **3. 通过 ftrace 事件追踪**
 
@@ -321,7 +324,7 @@ data_sources: {
 }
 ```
 
-`thermal_zone_trip` 事件会告诉你哪个 thermal zone 跨越了哪个 trip point——这是确认温控介入的"实锤"。
+`thermal_zone_trip` 事件会告诉我们哪个 thermal zone 跨越了哪个 trip point——这是确认温控介入的"实锤"。
 
 [已验证: Perfetto 官方文档 ui.perfetto.dev, data source 配置参考]
 
@@ -336,7 +339,7 @@ Thermal 降频是另一种机制：它是 **强制性的频率上限约束**。�
 - **DVFS 降频**：CPU utilization 低 → 频率降低。这是正常的，频率和负载同步变化。
 - **Thermal 降频**：CPU utilization 高 → 频率反而降低。频率和负载"反着来"，这就是温度墙在起作用。
 
-如果你看到高负载期间频率反而比空闲时低，基本可以确认是 thermal throttling。
+如果我们看到高负载期间频率反而比空闲时低，基本可以确认是 thermal throttling。
 
 ## Thermal Mitigation 策略：系统如何降温
 
@@ -363,7 +366,7 @@ Thermal 降频是另一种机制：它是 **强制性的频率上限约束**。�
 
 ### 降低屏幕亮度
 
-屏幕是手机最大的发热源之一（尤其在高端 OLED 屏幕上）。当温度升高时，系统会降低屏幕亮度上限。你可能遇到过这种情况：在大太阳底下用手机，突然屏幕变暗了而且拉不上去——这就是 thermal mitigation 在限制亮度。
+屏幕是手机最大的发热源之一（尤其在高端 OLED 屏幕上）。当温度升高时，系统会降低屏幕亮度上限。我们可能遇到过这种情况：在大太阳底下用手机，突然屏幕变暗了而且拉不上去——这就是 thermal mitigation 在限制亮度。
 
 这个行为由 `DisplayManagerService` 配合 `ThermalManagerService` 实现。具体的亮度降低曲线因厂商而异。
 
@@ -428,7 +431,7 @@ Android Dynamic Performance Framework (ADPF) 提供了 Fixed Performance Mode，
 
 ### 策略 4：记录温控状态作为测试元数据
 
-如果你无法完全消除温控影响（比如在真实用户场景测试中），至少要把温控状态记录下来。在测试开始和结束时分别读取 thermal status：
+如果我们无法完全消除温控影响（比如在真实用户场景测试中），至少要把温控状态记录下来。在测试开始和结束时分别读取 thermal status：
 
 ```java
 PowerManager pm = getSystemService(PowerManager.class);
@@ -442,7 +445,7 @@ int statusAfter = pm.getCurrentThermalStatus();
 
 ### 策略 5：物理辅助散热
 
-在实验室环境下，可以用散热背夹、风扇直吹、或者把设备放在空调出风口等物理手段辅助散热。这不是"作弊"——只要你每次测试的条件一致，数据就有可比性。
+在实验室环境下，可以用散热背夹、风扇直吹、或者把设备放在空调出风口等物理手段辅助散热。这不是"作弊"——只要每次测试的条件一致，数据就有可比性。
 
 但要注意：不同的散热条件会影响 SoC 内部的温度分布。强制风冷可能让表面温度很低，但 SoC 内部某些热点并没有被有效冷却。所以物理散热只是减少温控触发的概率，并不能完全消除。
 
