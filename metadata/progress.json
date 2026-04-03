@@ -3,12 +3,12 @@
   "total_sections": 93,
   "metrics": {
     "total": 96,
-    "draft": 34,
-    "ready-for-review": 43,
+    "draft": 33,
+    "ready-for-review": 44,
     "reviewed": 2,
     "finalized": 21,
     "staging_drafts": 0,
-    "last_updated": "2026-04-03T07:25:44"
+    "last_updated": "2026-04-03T08:05:00"
   },
   "reviewed_sections": {
     "8.1": {
@@ -734,9 +734,9 @@
   "last_updated": "2026-04-03T05:21:00+08:00",
   "stats": {
     "total": 97,
-    "completed": 40,
-    "pending": 57,
-    "last_updated": "2026-04-02T19:24:11+08:00"
+    "completed": 41,
+    "pending": 56,
+    "last_updated": "2026-04-03T08:05:00+08:00"
   },
   "research_stats": {
     "runs_today": [
@@ -834,6 +834,13 @@
     "last_updated": "2026-04-03T07:02:00+08:00"
   },
   "history": [
+    {
+      "date": "2026-04-03",
+      "section": "12.2",
+      "title": "网络性能优化",
+      "action": "draft-completed",
+      "word_count": "~8500"
+    },
     {
       "date": "2026-04-01",
       "section": "5.5",
