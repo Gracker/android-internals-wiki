@@ -3,12 +3,12 @@
   "total_sections": 96,
   "metrics": {
     "total": 100,
-    "draft": 6,
-    "ready-for-review": 48,
+    "draft": 5,
+    "ready-for-review": 49,
     "reviewed": 3,
     "finalized": 40,
     "staging_drafts": 0,
-    "last_updated": "2026-04-04T23:02:00+08:00",
+    "last_updated": "2026-04-05T00:15:00+08:00",
     "processing": 0,
     "ready-to-publish": 1
   },
@@ -1187,6 +1187,21 @@
       "verification_level": "L2",
       "word_count": "~8500",
       "completed_at": "2026-04-04T22:12:10.384287"
+    },
+    {
+      "chapter": "1.7",
+      "section": "1.7",
+      "title": "ART 编译管线与 dex2oat 优化",
+      "status": "ready-for-review",
+      "drafted_date": "2026-04-05",
+      "drafted_by": "openclaw-task2a",
+      "anchors_covered": 7,
+      "anchors_total": 7,
+      "extensions_covered": 3,
+      "extensions_total": 3,
+      "verification_level": "L2",
+      "word_count": "~9500",
+      "completed_at": "2026-04-05T00:15:00+08:00"
     }
   ],
   "ready_for_review": 5,
@@ -1379,6 +1394,13 @@
     "last_updated": "2026-04-04T19:00:00+08:00"
   },
   "history": [
+    {
+      "date": "2026-04-05",
+      "section": "1.7",
+      "title": "ART 编译管线与 dex2oat 优化",
+      "action": "draft-completed",
+      "word_count": "~9500"
+    },
     {
       "date": "2026-04-04",
       "section": "1.8",
@@ -2341,11 +2363,20 @@
     },
     "1.7": {
       "title": "ART 编译管线与 dex2oat 优化",
-      "status": "draft",
+      "status": "ready-for-review",
       "file": "src/part1-fundamentals/ch01-architecture/07-art-compilation.md",
       "created_date": "2026-04-04",
       "created_by": "task2a-knowledge-gap",
-      "gap_source": "AOSP结构+官方文档+研究素材+读者需求"
+      "gap_source": "AOSP结构+官方文档+研究素材+读者需求",
+      "drafted_date": "2026-04-05",
+      "drafted_by": "openclaw-task2a",
+      "anchors_covered": 7,
+      "anchors_total": 7,
+      "extensions_covered": 3,
+      "extensions_total": 3,
+      "verification_level": "L2",
+      "word_count": "~9500",
+      "confidence": "medium"
     },
     "2.13": {
       "title": "图形缓冲区管理 (BufferQueue)",

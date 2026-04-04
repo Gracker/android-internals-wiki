@@ -1,5 +1,5 @@
 {
-  "last_updated": "2026-04-04T23:02:00+08:00",
+  "last_updated": "2026-04-05T00:15:00+08:00",
   "total_items": 18,
   "priority_breakdown": {
     "high": 4,
@@ -329,9 +329,10 @@
       "title": "ART 编译管线与 dex2oat 优化",
       "file": "src/part1-fundamentals/ch01-architecture/07-art-compilation.md",
       "priority": 80,
-      "status": "pending",
+      "status": "completed",
       "created_date": "2026-04-04",
-      "source": "task2a-knowledge-gap"
+      "source": "task2a-knowledge-gap",
+      "completed_at": "2026-04-05T00:15:00+08:00"
     },
     {
       "section": "1.8",
