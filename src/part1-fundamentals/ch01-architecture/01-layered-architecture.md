@@ -1,7 +1,7 @@
 ---
 title: "Android 分层架构"
 chapter: "1.1"
-status: finalized
+status: ready-for-review
 applicable_versions: "Android 8 (API 26) - Android 16 (API 36)"
 last_verified: "2026-03-30"
 last_verified_against: "AOSP android-16.0.0_r1, developer.android.com, source.android.com"
@@ -13,10 +13,13 @@ sources:
     path: "https://source.android.com/docs/core/architecture"
   - type: blog
     path: "https://androidperformance.com"
-tags: ['architecture', '分层架构', 'HAL', 'HIDL', 'AIDL', '性能优化', 'Perfetto']
-related_chapters: ["1.2", "2.1", "4.1"]
+tags: ['architecture', '分层架构', 'HAL', 'HIDL', 'AIDL', 'Binder', 'SystemServer', 'Zygote', 'SurfaceFlinger', '性能优化', 'Perfetto']
+related_chapters: ["1.2", "1.3", "2.1", "3.1", "4.1", "5.1", "7.1"]
 reviewed_date: "2026-03-31"
 reviewed_by: "openclaw-task6"
+polish_count: 1
+polish_date: "2026-04-05"
+polish_by: "task2b-polish"
 review_notes: "2026-03-31 二次review: 通过finalized。小修7处（标准化验证标注格式/补充4处待验证标注/补充来源标注）。无B类大问题。评分: 结构4/5·措辞4/5·一致性4/5·验证4/5·元数据4/5。| 历史记录: 2026-03-30 task6 review 回炉 v2：集成3篇新研究素材（Perfetto映射/误区/Treble演进），补充数据源三层映射、HAL追踪完整方法、hwbinder vs binder区别、新增3条误区（线程状态/Binder阻塞/全系统视角），所有锚点已覆盖"
 ---
 
@@ -50,7 +53,7 @@ review_notes: "2026-03-31 二次review: 通过finalized。小修7处（标准化
 
 ## 开头：为什么要了解 Android 分层架构
 
-打开 Perfetto，随便抓一条系统级 Trace，你会看到密密麻麻的进程、线程、彩色的 CPU 切片、Binder 调用箭头、VSync 信号线。这些可视化的信息背后，其实是 Android 分层架构的"解剖图"——每个进程对应架构中的一层或一个组件，每条 Binder 箭头就是一次跨层调用，每段 CPU 切片就是某个层次在干活。
+打开 Perfetto，随便抓一条系统级 Trace，我们会看到密密麻麻的进程、线程、彩色的 CPU 切片、Binder 调用箭头、VSync 信号线。这些可视化的信息背后，就是 Android 分层架构的"解剖图"——每个进程对应架构中的一层或一个组件，每条 Binder 箭头就是一次跨层调用，每段 CPU 切片就是某个层次在干活。
 
 当我们在分析一个渲染卡顿问题时，在 Trace 里看到的可能是：主线程在 `doFrame()` 里卡了 30ms，原因是某个 `measure()` 调用触发了 Binder 通信，等 SystemServer 那边返回结果就花掉了 20ms。这时候如果我们不知道主线程、SystemServer、Binder 分别属于架构的哪一层、为什么要跨层通信，就只能看到一堆彩色方块而无法定位根因。
 
@@ -166,7 +169,7 @@ HIDL（Hardware Interface Definition Language）是 Treble 初期引入的接口
 
 AIDL 的优势在于：它就是 Android Framework 开发者已经熟悉的语言，学习成本低；工具链（`aidl` 编译器）更成熟稳定；支持更复杂的数据类型。到 Android 16，几乎所有新 HAL 接口都使用 AIDL，HIDL 只保留向后兼容。
 
-有一个重要的底层差异值得一提：HIDL 使用的是 `hwbinder`（`/dev/hwbinder`），而 AIDL HAL 使用标准 `binder`（`/dev/binder`）。这个变化在 Perfetto Trace 中体现为：AIDL HAL 的 IPC 事件出现在标准的 Binder Track 中，与 App ↔ system_server 的通信混在一起，需要通过进程名来区分。如果你在分析 Binder 延迟时发现一个不认识的目标进程，它很可能就是一个 AIDL HAL 服务进程。
+有一个重要的底层差异值得一提：HIDL 使用的是 `hwbinder`（`/dev/hwbinder`），而 AIDL HAL 使用标准 `binder`（`/dev/binder`）。这个变化在 Perfetto Trace 中体现为：AIDL HAL 的 IPC 事件出现在标准的 Binder Track 中，与 App ↔ system_server 的通信混在一起，需要通过进程名来区分。如果我们在分析 Binder 延迟时发现一个不认识的目标进程，它很可能就是一个 AIDL HAL 服务进程。
 
 [已验证: 官方文档, https://source.android.com/docs/core/architecture/hal/aidl]
 [已验证: 来源见 research-feeds/2026-03-30-19-ch01-treble-aidl-evolution.md]
@@ -291,7 +294,7 @@ HAL 不仅仅是接口封装——在现代 Android（Treble 之后），HAL Ser
 - **渲染卡顿**：可能是因为 SurfaceFlinger 的 `doComposition` 耗时过长（GPU 合成负担重），而不是 App 端的绘制慢。
 - **ANR**：Input ANR 的根因可能不是 App 主线程阻塞，而是 SystemServer 端的 InputDispatcher 被其他工作拖慢了。
 
-在 Perfetto 中遇到性能问题时，**不要只看 App 进程**——把视线扩展到 `system_server`、`surfaceflinger`、相关 HAL 进程，往往能发现真正的根因。当你在 Perfetto 中看到 Main Thread 上有一个持续几十毫秒的 Binder slice 时，不要急着去优化 App 代码。先翻到 `system_server` 进程，找到处理这个 Binder 调用的线程——问题可能不在你的 App，而在系统服务那边排队等待。这就是为什么理解架构分层对性能分析至关重要：每一层都可能是瓶颈所在。
+在 Perfetto 中遇到性能问题时，**不要只看 App 进程**——把视线扩展到 `system_server`、`surfaceflinger`、相关 HAL 进程，往往能发现真正的根因。当我们在 Perfetto 中看到 Main Thread 上有一个持续几十毫秒的 Binder slice 时，不要急着去优化 App 代码。先翻到 `system_server` 进程，找到处理这个 Binder 调用的线程——问题可能不在 App 本身，而在系统服务那边排队等待。这就是为什么理解架构分层对性能分析至关重要：每一层都可能是瓶颈所在。
 
 [已验证: 来源见 research-feeds/2026-03-30-19-ch01-architecture-misconceptions.md]
 
@@ -319,33 +322,57 @@ Binder 相比 Socket/管道的核心优势在于：**一次拷贝**。传统 IPC
 
 [已验证: 官方文档, https://source.android.com/docs/core/architecture/kernel]
 
-## 自动发现：Vendor VNDK 隔离对 native 库加载的影响
+## Vendor VNDK 隔离对 native 库加载的影响
 
-在 Android 8.0 引入 Treble 之后，Vendor 和 Framework 使用的 Native 库需要隔离——这就是 VNDK（Vendor Native Development Kit）机制。
+分层架构的接口隔离不只发生在 HAL 层。在 Android 8.0 引入 Treble 之后，Vendor 和 Framework 使用的 Native 库同样需要隔离——这就是 VNDK（Vendor Native Development Kit）机制。
 
 [已验证: source.android.com/docs/core/architecture/vndk; 标记为自动发现]
 
-**为什么需要隔离：** Framework 和 Vendor 模块可能依赖同一个 C++ 库的不同版本。如果不隔离，链接器会随机加载其中一个版本，导致符号冲突或 ABI 不兼容的崩溃。
+为什么需要隔离？Framework 和 Vendor 模块可能依赖同一个 C++ 库的不同版本。如果不隔离，链接器会随机加载其中一个版本，导致符号冲突或 ABI 不兼容的崩溃。
 
-**对性能的影响：** VNDK 隔离要求 Vendor 进程只能使用白名单中的库。这意味着某些共享库需要被复制一份给 Vendor 使用，增加了存储空间和内存占用。[待验证: VNDK 隔离对库加载时间的具体影响数据] 但从系统稳定性的角度看，这个权衡是值得的——它消除了 Framework 更新导致 Vendor HAL 崩溃的风险。
+对性能的影响是双面的：VNDK 隔离要求 Vendor 进程只能使用白名单中的库，某些共享库需要被复制一份给 Vendor 使用，增加了存储空间和内存占用。[待验证: VNDK 隔离对库加载时间的具体影响数据] 但从系统稳定性的角度看，这个权衡是值得的——它消除了 Framework 更新导致 Vendor HAL 崩溃的风险。
 
 ---
 ## 参考资料
 
-1. Android Platform Architecture — developer.android.com
+### AOSP 源码路径
+
+1. SystemServer 启动流程
+   `frameworks/base/services/java/com/android/server/SystemServer.java`
+
+2. SurfaceFlinger 核心合成逻辑
+   `frameworks/native/services/surfaceflinger/SurfaceFlinger.cpp`
+
+3. Zygote 进程初始化
+   `frameworks/base/core/java/com/android/internal/os/ZygoteInit.java`
+
+4. Binder 驱动
+   `drivers/android/binder.c`（内核源码）
+
+### 官方文档
+
+5. Android Platform Architecture
    https://developer.android.com/guide/platform
 
-2. Android HAL Overview — source.android.com
+6. Android HAL Overview
    https://source.android.com/docs/core/architecture/hal
 
-3. Project Treble — source.android.com
+7. Project Treble 架构说明
    https://source.android.com/docs/core/architecture
 
-4. ART and Dalvik — source.android.com
+8. AIDL HAL 接口迁移指南
+   https://source.android.com/docs/core/architecture/hal/aidl
+
+9. ART and Dalvik 运行时
    https://source.android.com/docs/core/runtime
 
-5. Perfetto UI — ui.perfetto.dev
-   https://ui.perfetto.dev
+10. VNDK 概述
+    https://source.android.com/docs/core/architecture/vndk
 
-6. AOSP SystemServer — cs.android.com
-   frameworks/base/services/java/com/android/server/SystemServer.java
+### 工具与延伸阅读
+
+11. Perfetto 数据源文档
+    https://perfetto.dev/docs/data-sources/atrace
+
+12. Android 性能优化系列 — androidperformance.com
+    https://androidperformance.com/
