@@ -3,12 +3,12 @@
   "total_sections": 94,
   "metrics": {
     "total": 97,
-    "draft": 6,
-    "ready-for-review": 47,
+    "draft": 5,
+    "ready-for-review": 48,
     "reviewed": 2,
     "finalized": 40,
     "staging_drafts": 0,
-    "last_updated": "2026-04-04T13:12:46.313554",
+    "last_updated": "2026-04-04T07:06:00",
     "processing": 0
   },
   "reviewed_sections": {
@@ -1140,7 +1140,7 @@
     }
   ],
   "ready_for_review": 5,
-  "last_updated": "2026-04-04T14:20:00+08:00",
+  "last_updated": "2026-04-04T15:22:00",
   "stats": {
     "total": 97,
     "completed": 64,
@@ -1300,9 +1300,21 @@
           "Android 17 recreateOnConfigChanges：6 种配置变更不再重启 + 新 manifest opt-in 属性（目标 §8.4/§1.6/§3.3）",
           "Android 16/17 Desktop Windowing + Bubbles：外接显示器 GA + 浮动窗口模式对 SurfaceFlinger 多 Surface 合成的影响（目标 §2.6/§2.9）"
         ]
+      },
+      {
+        "time": "2026-04-04T15:05:00+08:00",
+        "focus": "Perfetto v54.0 + Android 17 Mandatory ANGLE/Vulkan 1.4（strategic gap: 工具链 + 渲染栈）",
+        "source": "strategic-gap",
+        "candidates": 5,
+        "passed": 2,
+        "delivered": 2,
+        "themes": [
+          "Perfetto v54.0 Data Explorer 可视化查询 + Collapsed Stack + 7x JSON + R8 Retracing + 加权 Jank（目标 §13.3/§13.5/§14.1）",
+          "Android 17 强制 ANGLE denylist + Vulkan 1.4 + OpenGL ES 维护模式（目标 §2.10/§2.9）"
+        ]
       }
     ],
-    "last_updated": "2026-04-04T11:00:00+08:00"
+    "last_updated": "2026-04-04T15:05:00+08:00"
   },
   "history": [
     {
@@ -1837,6 +1849,20 @@
         "Android 17 recreateOnConfigChanges: 6 config changes no longer restart + new manifest opt-in",
         "Android 16/17 Desktop Windowing + Bubbles: external display GA + floating window SurfaceFlinger impact"
       ]
+    },
+    {
+      "date": "2026-04-04",
+      "section": "13.3/13.5/2.10/2.9",
+      "title": "Perfetto v54.0 + Android 17 ANGLE/Vulkan 1.4",
+      "action": "research-completed",
+      "focus": "Perfetto v54 Data Explorer + Android 17 Mandatory ANGLE + Vulkan 1.4",
+      "candidates": 5,
+      "passed": 2,
+      "delivered": 2,
+      "themes": [
+        "Perfetto v54: Data Explorer + Collapsed Stack + 7x JSON + R8 Retracing + weighted jank",
+        "Android 17: ANGLE denylist mandatory + Vulkan 1.4 + OpenGL ES maintenance mode"
+      ]
     }
   ],
   "sections": {
@@ -2080,11 +2106,13 @@
       }
     },
     "6.2": {
+      "status": "finalized",
       "title": "文件系统",
-      "status": "reviewed",
+      "file": "src/part1-fundamentals/ch06-storage/02-filesystem.md",
       "reviewed_date": "2026-04-04",
       "reviewed_by": "openclaw-task6",
-      "file": "src/part1-fundamentals/ch06-storage/02-filesystem.md"
+      "review_round": 2,
+      "previous_review": "2026-04-04-0333-review.md"
     },
     "15.4": {
       "title": "竞品分析方法",

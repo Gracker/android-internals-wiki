@@ -1,7 +1,7 @@
 ---
 title: "文件系统"
 chapter: "6.2"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 10+"
 last_verified: "2026-04-01"
 last_verified_against: "AOSP android-15, kernel 6.6, source.android.com, developer.android.com"
@@ -147,7 +147,7 @@ f2fs 把整个分区划分为六个区域，每个区域有明确的职责：
 
 **SIT（Segment Information Table）**：记录每个 segment 的使用状态——有多少有效块、哪些块是空闲的。f2fs 的垃圾回收器依赖 SIT 来决定哪些 segment 可以回收。
 
-**冷热数据分离**：f2fs 把 Main Area 中的 segment 分为六种类型：hot/warm/cold × data/node。频繁更新的"热"数据（如 sqlite 日志）和很少修改的"冷"数据（如照片、APK 文件）被分配到不同的 segment。这样热数据的频繁修改不会影响冷数据所在的 block，垃圾回收时只需要处理热数据区域，大幅减少了 GC 的开销和写放大。[来源: obsidian/Personal-Knowlodge/source/2026-03-06_wechat_深入代码细节看f2fs在磁盘上的组织方式.md]
+**冷热数据分离**：f2fs 把 Main Area 中的 segment 分为六种类型：hot/warm/cold × data/node。频繁更新的"热"数据（如 SQLite 日志）和很少修改的"冷"数据（如照片、APK 文件）被分配到不同的 segment。这样热数据的频繁修改不会影响冷数据所在的 block，垃圾回收时只需要处理热数据区域，大幅减少了 GC 的开销和写放大。[来源: obsidian/Personal-Knowlodge/source/2026-03-06_wechat_深入代码细节看f2fs在磁盘上的组织方式.md]
 
 ### SQLite 原子写：f2fs 的杀手级优化
 
@@ -162,7 +162,7 @@ f2fs 提供了一个 `F2FS_IOC_START_ATOMIC_WRITE` 的 ioctl 接口，允许 SQL
 3. SQLite 调用 `ioctl(F2FS_IOC_COMMIT_ATOMIC_WRITE)` 提交修改
 4. f2fs 在一次原子操作中把所有修改生效（更新 NAT 映射）
 
-整个过程中，**只需要一次 `fsync`**——提交时的那一次。journal 文件可以完全跳过，因为 f2fs 的文件系统层面保证了原子性：要么所有修改都生效，要么都不生效。从 Android 8.1 开始，sqlite 默认启用了 `SQLITE_ENABLE_BATCH_ATOMIC_WRITE` 编译选项，当检测到底层文件系统是 f2fs 时，自动使用这个原子写接口。[已验证: 官方文档, sqlite.org/src/info/5c5e4f6f6d and Android source code]
+整个过程中，**只需要一次 `fsync`**——提交时的那一次。journal 文件可以完全跳过，因为 f2fs 的文件系统层面保证了原子性：要么所有修改都生效，要么都不生效。从 Android 8.1 开始，SQLite 默认启用了 `SQLITE_ENABLE_BATCH_ATOMIC_WRITE` 编译选项，当检测到底层文件系统是 f2fs 时，自动使用这个原子写接口。[已验证: 官方文档, sqlite.org/src/info/5c5e4f6f6d and Android source code]
 
 实测数据显示，在 f2fs 上使用 batch atomic write 后，SQLite 的事务提交速度约为 ext4 上的 3 倍。这对于 Android 上几乎所有涉及数据库操作的 App 来说，都是一个巨大的性能提升。
 
