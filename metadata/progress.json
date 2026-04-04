@@ -4,11 +4,11 @@
   "metrics": {
     "total": 99,
     "draft": 5,
-    "ready-for-review": 49,
+    "ready-for-review": 48,
     "reviewed": 3,
-    "finalized": 39,
+    "finalized": 40,
     "staging_drafts": 0,
-    "last_updated": "2026-04-04T22:12:10+08:00",
+    "last_updated": "2026-04-04T22:25:00+08:00",
     "processing": 0,
     "ready-to-publish": 1
   },
@@ -367,11 +367,21 @@
         "frontmatter补充：section/drafted_by/reviewed_date/reviewed_by",
         "status ready-for-review → finalized"
       ]
+    },
+    "11.2": {
+      "reviewed_date": "2026-04-04",
+      "reviewed_by": "openclaw-task6",
+      "review_status": "finalized",
+      "fixes_applied": [
+        "frontmatter: 补 section/drafted_by/reviewed_date/reviewed_by",
+        "Google Play 2026年3月生效日期：添加[待验证]标注",
+        "status ready-for-review → finalized"
+      ]
     }
   },
   "review_stats": {
-    "total_reviewed": 34,
-    "reviewed_today": 19,
+    "total_reviewed": 35,
+    "reviewed_today": 20,
     "review_issues_total": 13
   },
   "completed": [
@@ -1369,6 +1379,14 @@
     "last_updated": "2026-04-04T19:00:00+08:00"
   },
   "history": [
+    {
+      "date": "2026-04-04",
+      "section": "11.2",
+      "title": "App 耗电优化",
+      "action": "reviewed-finalized",
+      "review_by": "openclaw-task6",
+      "fixes": 2
+    },
     {
       "date": "2026-04-04",
       "section": "2.13",
@@ -2407,10 +2425,12 @@
   },
   "11.2": {
     "title": "App 耗电优化",
-    "status": "ready-for-review",
+    "status": "finalized",
     "drafted_date": "2026-04-03",
     "drafted_by": "openclaw-task2a",
-    "word_count": "~8500"
+    "word_count": "~8500",
+    "reviewed_date": "2026-04-04",
+    "reviewed_by": "openclaw-task6"
   },
   "14.2": {
     "status": "ready-for-review",
