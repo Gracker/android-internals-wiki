@@ -793,6 +793,222 @@
       ],
       "summary": "Android代理替换方式Hook方法的原理分析，静态/动态代理机制详解",
       "scan_date": "2026-04-03T21:18:47.073833"
+    },
+    {
+      "file_path": "Cubox/云音乐 Android Baseline Profiles 实践-2024-07-15.md",
+      "title": "云音乐 Android Baseline Profiles 实践-2024-07-15",
+      "scores": {
+        "relevance": 4,
+        "depth": 1,
+        "timeliness": 4,
+        "verifiability": 2
+      },
+      "total": 11,
+      "quality": "medium",
+      "chapters": [],
+      "indexed_date": "2026-04-04"
+    },
+    {
+      "file_path": "Cubox/为什么要建立性能工程团队？——来自 Brendan Gregg 的深度思考（2025·上篇）-2025-08-17.md",
+      "title": "为什么要建立性能工程团队？——来自 Brendan Gregg 的深度思考（2025·上篇）",
+      "scores": {
+        "relevance": 4,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "total": 11,
+      "quality": "medium",
+      "chapters": [],
+      "indexed_date": "2026-04-04"
+    },
+    {
+      "file_path": "Cubox/云音乐 Android Baseline Profiles 实践-2024-07-15.md",
+      "title": "云音乐 Android Baseline Profiles 实践-2024-07-15",
+      "scores": {
+        "relevance": 4,
+        "depth": 1,
+        "timeliness": 4,
+        "verifiability": 2
+      },
+      "total": 11,
+      "quality": "medium",
+      "chapters": [],
+      "indexed_date": "2026-04-04"
+    },
+    {
+      "file_path": "Cubox/为什么要建立性能工程团队？——来自 Brendan Gregg 的深度思考（2025·上篇）-2025-08-17.md",
+      "title": "为什么要建立性能工程团队？——来自 Brendan Gregg 的深度思考（2025·上篇）",
+      "scores": {
+        "relevance": 4,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "total": 11,
+      "quality": "medium",
+      "chapters": [],
+      "indexed_date": "2026-04-04"
+    },
+    {
+      "path": "什么是性能工程？-2023-10-10.md",
+      "title": "什么是性能工程？",
+      "scores": {
+        "relevance": 4,
+        "technical_depth": 2,
+        "timeliness": 3,
+        "verifiability": 2
+      },
+      "total": 11,
+      "chapters": [
+        {
+          "chapter": "ch14-工具",
+          "confidence": "medium"
+        }
+      ],
+      "quality": "medium",
+      "summary": "什么是性能工程？",
+      "scan_date": "2026-04-04T04:31:52.304228"
+    },
+    {
+      "path": "今日头条 ANR 优化实践系列 - 告别 SharedPreference 等待-2023-12-20.md",
+      "title": "今日头条 ANR 优化实践系列 - 告别 SharedPreference 等待",
+      "scores": {
+        "relevance": 3,
+        "technical_depth": 3,
+        "timeliness": 4,
+        "verifiability": 0
+      },
+      "total": 10,
+      "chapters": [
+        {
+          "chapter": "ch07-内存",
+          "confidence": "medium"
+        }
+      ],
+      "quality": "medium",
+      "summary": "今日头条 ANR 优化实践系列 - 告别 SharedPreference 等待",
+      "scan_date": "2026-04-04T04:31:52.304234"
+    },
+    {
+      "path": "从 ApplicationExitInfo 看 Android 应用的退出类型-2024-04-03.md",
+      "title": "从 ApplicationExitInfo 看 Android 应用的退出类型",
+      "scores": {
+        "relevance": 4,
+        "technical_depth": 3,
+        "timeliness": 5,
+        "verifiability": 0
+      },
+      "total": 12,
+      "chapters": [
+        {
+          "chapter": "ch02-进程",
+          "confidence": "medium"
+        }
+      ],
+      "quality": "medium",
+      "summary": "从 ApplicationExitInfo 看 Android 应用的退出类型",
+      "scan_date": "2026-04-04T04:31:52.304236"
+    },
+    {
+      "path": "从 B 站出发，用 Chrome devTools performance 分析页面如何渲染-2023-02-16.md",
+      "title": "从 B 站出发，用 Chrome devTools performance 分析页面如何渲染",
+      "scores": {
+        "relevance": 3,
+        "technical_depth": 3,
+        "timeliness": 5,
+        "verifiability": 0
+      },
+      "total": 11,
+      "chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "medium"
+        }
+      ],
+      "quality": "medium",
+      "summary": "从 B 站出发，用 Chrome devTools performance 分析页面如何渲染",
+      "scan_date": "2026-04-04T04:31:52.304237"
+    },
+    {
+      "path": "从 Hprof 源码初探虚拟机内存管理-2022-03-07.md",
+      "title": "从 Hprof 源码初探虚拟机内存管理",
+      "scores": {
+        "relevance": 3,
+        "technical_depth": 4,
+        "timeliness": 4,
+        "verifiability": 0
+      },
+      "total": 11,
+      "chapters": [
+        {
+          "chapter": "ch07-内存",
+          "confidence": "medium"
+        }
+      ],
+      "quality": "medium",
+      "summary": "从 Hprof 源码初探虚拟机内存管理",
+      "scan_date": "2026-04-04T04:31:52.304238"
+    },
+    {
+      "path": "从 Lambda 表达式到字节码插桩-2022-10-09.md",
+      "title": "从 Lambda 表达式到字节码插桩",
+      "scores": {
+        "relevance": 4,
+        "technical_depth": 1,
+        "timeliness": 5,
+        "verifiability": 0
+      },
+      "total": 10,
+      "chapters": [
+        {
+          "chapter": "ch16-构建",
+          "confidence": "medium"
+        }
+      ],
+      "quality": "medium",
+      "summary": "从 Lambda 表达式到字节码插桩",
+      "scan_date": "2026-04-04T04:31:52.304240"
+    },
+    {
+      "path": "从0到1学Binder-ServiceManager详解(1)-2024-07-01.md",
+      "title": "从0到1学Binder-ServiceManager详解(1)",
+      "scores": {
+        "relevance": 5,
+        "technical_depth": 1,
+        "timeliness": 4,
+        "verifiability": 0
+      },
+      "total": 10,
+      "chapters": [
+        {
+          "chapter": "ch01-架构",
+          "confidence": "medium"
+        }
+      ],
+      "quality": "medium",
+      "summary": "从0到1学Binder-ServiceManager详解(1)",
+      "scan_date": "2026-04-04T04:31:52.304241"
+    },
+    {
+      "path": "Android编译优化系列-kapt篇-2022-03-06.md",
+      "title": "Android编译优化系列-kapt篇",
+      "scores": {
+        "relevance": 5,
+        "technical_depth": 1,
+        "timeliness": 3,
+        "verifiability": 1
+      },
+      "total": 10,
+      "chapters": [
+        {
+          "chapter": "ch16-构建",
+          "confidence": "high"
+        }
+      ],
+      "quality": "medium",
+      "summary": "# Android编译优化系列-kapt篇  本文是编译优化系列文章之 kapt 优化篇，后续还会有 build cache, kotlin, dex 优化等文章，敬请期待。  [Read in Cu...",
+      "scan_date": "2026-04-04T08:22:37.184230"
     }
   ]
 }
