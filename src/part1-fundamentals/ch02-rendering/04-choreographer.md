@@ -14,6 +14,8 @@ rework_date: "2026-04-02"
 rework_by: "openclaw-task2b"
 review3_date: "2026-04-03"
 review3_by: "openclaw-task6"
+review4_date: "2026-04-04"
+review4_by: "openclaw-task6"
 rework_reason: "Task6 review 回炉修复：doFrame伪代码修正+总结重写+Compose节重写+补充3个Type A标准节+厂商优化标注"
 confidence: high
 sources:
@@ -26,13 +28,10 @@ sources:
 tags: ['choreographer', 'doframe', '渲染流水线', 'VSync', '帧调度', '性能优化', 'FrameMetrics', 'FrameCallback', '同步屏障']
 related_chapters: ["2.3", "2.5", "2.6", "2.9", "3.1", "8.2"]
 
-re-review-triggered-date: 2026-04-03
-re-review-triggered-by: task7-incremental-index
-re-review-triggered-reason: 新高质量素材「Android耗时统计概述(19分)」— 直接涉及Choreographer/FrameMetrics耗时统计API
 polish_count: 1
 polish_date: "2026-04-04"
 polish_by: "task2b-polish"
-status: ready-for-review
+status: ready-to-publish
 ---
 
 # Choreographer 与渲染流水线
