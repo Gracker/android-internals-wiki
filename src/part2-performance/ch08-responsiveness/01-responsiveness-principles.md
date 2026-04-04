@@ -1,11 +1,16 @@
 ---
 title: "响应速度原理"
 chapter: "8.1"
-status: ready-for-review
-applicable_versions: "Android 12 (API 31) - Android 16 (API B)"
+section: "8.1"
+status: finalized
+reviewed_date: "2026-04-04"
+reviewed_by: "openclaw-task6"
+applicable_versions: "Android 12 (API 31) - Android 16 (API 36)"
 last_verified: "2026-03-30"
 last_verified_against: "AOSP android-16.0.0_r1, 官方文档最新版本"
 confidence: medium
+drafted_date: "2026-04-01"
+drafted_by: "openclaw-task2a"
 sources:
   - type: official
     path: "https://developer.android.com/topic/performance/vitals"
@@ -52,13 +57,13 @@ related_chapters: ["2.3", "2.4", "3.1", "8.2", "9.1"]
 
 ## 为什么要了解响应速度
 
-你在 Perfetto 中看到的那些间隙——从 Input 事件到达 App，到画面最终显示在屏幕上——这段"空白"就是响应速度要解决的问题。
+我们在 Perfetto 中看到的那些间隙——从 Input 事件到达 App，到画面最终显示在屏幕上——这段"空白"就是响应速度要解决的问题。
 
 响应速度之所以重要，是因为它直接影响用户对设备质量的第一印象。Google 在 AOSP 官方文档的《Evaluating Performance》中明确指出：**Touch latency is immediately noticeable and significantly contributes to the perception of a device.** [已验证: 官方文档, source.android.google.cn/docs/core/tests/debug/eval_perf]
 
 用户也许无法区分 500ms 和 600ms 的启动时间，但对触摸响应的延迟极其敏感。一个设备启动再快，如果触摸之后画面纹丝不动，用户会觉得这台机器"卡"。这就是为什么 Google 认为，在性能优先级排序中，**UI 渲染管线的流畅性高于一切**——包括应用启动速度。
 
-了解响应速度的完整链路之后，你就能在 Perfetto 中精准定位：延迟到底发生在 Input 分发阶段、App 主线程处理阶段、还是渲染合成阶段。每一种瓶颈的优化方向完全不同，搞清楚"慢在哪里"是解决问题的第一步。
+了解响应速度的完整链路之后，我们就能在 Perfetto 中精准定位：延迟到底发生在 Input 分发阶段、App 主线程处理阶段、还是渲染合成阶段。每一种瓶颈的优化方向完全不同，搞清楚"慢在哪里"是解决问题的第一步。
 
 ## 响应速度的完整定义
 
@@ -133,7 +138,7 @@ App 主线程收到 Input 事件后，执行以下工作：
 
 这一步是开发者最能控制的部分，也是最常见的性能瓶颈来源。如果在 onClick() 中执行了数据库查询、网络请求、或者复杂的 JSON 解析，主线程就会被阻塞，导致后续的渲染流程无法按时启动。
 
-在 Perfetto 中，你可以在 App 主线程上看到这些工作的 trace slice。如果某个 slice 特别长（比如一个黄色的 "bindApplication" 或 "performTraversals" 延伸到了下一个 VSync 周期之后），那就是问题所在。
+在 Perfetto 中，我们可以在 App 主线程上看到这些工作的 trace slice。如果某个 slice 特别长（比如一个黄色的 "bindApplication" 或 "performTraversals" 延伸到了下一个 VSync 周期之后），那就是问题所在。
 
 ### 第三步：渲染与合成
 
@@ -146,7 +151,7 @@ VSync-app 信号到来后，Choreographer.doFrame() 被触发，主线程依次�
 
 最后，SurfaceFlinger 在 VSync-sf 信号到来时，将所有 Layer 的 GraphicBuffer 合成，通过 Hardware Composer（HWC）提交给显示控制器，最终显示在屏幕上。
 
-在 Perfetto 中，你可以在对应的 App 进程里看到主线程的 "Choreographer#doFrame" slice，以及 RenderThread 的 GPU 渲染工作。SurfaceFlinger 进程中可以看到 "Commit" 和各 Layer 的合成操作。
+在 Perfetto 中，我们可以在对应的 App 进程里看到主线程的 "Choreographer#doFrame" slice，以及 RenderThread 的 GPU 渲染工作。SurfaceFlinger 进程中可以看到 "Commit" 和各 Layer 的合成操作。
 
 [图：完整的响应链路时序图：触摸 → InputReader → InputDispatcher → Binder → App主线程 → Choreographer → RenderThread → SurfaceFlinger → 屏幕]
 
