@@ -6,11 +6,14 @@ drafted_date: "2026-04-01"
 drafted_by: "openclaw-task2a"
 reviewed_date: "2026-04-04"
 reviewed_by: "openclaw-task6"
-status: finalized
+status: ready-for-review
 applicable_versions: "Android 8.0 (API 26) - Android 16 (API 36)"
 last_verified: "2026-04-01"
 last_verified_against: "AOSP android-16.0.0_r1, Android 官方文档"
-confidence: medium
+polish_count: 1
+polish_date: "2026-04-04"
+polish_by: "task2b-polish"
+confidence: medium-high
 sources:
   - type: blog
     path: "obsidian/Personal-Knowlodge/source/Android-Jank-Due-To-App.md"
@@ -22,7 +25,11 @@ sources:
     path: "obsidian/Personal-Knowlodge/source/2026-03-07_wechat_Android深入卡顿分析与实践.md"
   - type: blog
     path: "obsidian/Personal-Knowlodge/source/Android-Perfetto-07-MainThread-And-RenderThread.md"
-tags: ['case-study', 'jank', 'smoothness', 'GC', 'layout', 'binder', 'render-thread', 'low-memory']
+  - type: official
+    path: "https://developer.android.com/topic/performance/recycler-view"
+  - type: official
+    path: "https://developer.android.com/reference/android/content/ComponentCallbacks2"
+tags: ['case-study', 'jank', 'smoothness', 'GC', 'layout', 'binder', 'render-thread', 'low-memory', 'perfetto', 'recycler-view', 'bitmap-cache', 'vendor-optimization']
 related_chapters: ["7.1", "7.2", "7.3", "7.4", "2.5", "2.7", "4.4"]
 ---
 
@@ -52,7 +59,9 @@ related_chapters: ["7.1", "7.2", "7.3", "7.4", "2.5", "2.7", "4.4"]
 
 前面四章讲了卡顿的定义、原因体系、分析方法论和典型场景。但"会分析"和"分析得准"之间隔着一道鸿沟——真实世界的问题从来不按教科书出牌。一个看似简单的列表滑动卡顿，根因可能是主线程里的 Binder 调用碰上了系统服务繁忙；一个偶发的掉帧，可能追踪到内存压力导致的 GC 暂停。
 
-这一节我们用五个真实案例来演示完整的分析链路。每个案例都从用户感知到的现象出发，走一遍"抓取 Trace → 定位异常 → 逐层分析 → 找到根因 → 验证修复"的全过程。重点是看分析思路，不是看结论——下次你遇到类似的 Trace 截图，脑子里应该能自动启动同样的推理链条。
+这一节我们用五个真实案例来演示完整的分析链路。每个案例都从用户感知到的现象出发，走一遍"抓取 Trace → 定位异常 → 逐层分析 → 找到根因 → 验证修复"的全过程。重点是看分析思路，不是看结论——下次遇到类似的 Trace 截图，脑子里应该能自动启动同样的推理链条。
+
+五个案例的难度递进排列：案例一和案例二是 App 端最常见的两类卡顿（布局与数据绑定）；案例三引入时间维度，展示"随使用劣化"的内存问题；案例四切换到渲染管线视角，看 RenderThread 如何反过来拖住主线程；案例五放大到系统级，分析低内存如何让所有 App 同时卡顿。建议按顺序阅读，因为后面的案例会引用前面讲过的分析方法。
 
 ---
 
@@ -113,6 +122,8 @@ related_chapters: ["7.1", "7.2", "7.3", "7.4", "2.5", "2.7", "4.4"]
 
 ## 案例二：onBindViewHolder 中的 Binder 调用导致列表卡顿
 
+案例一解决了布局层面的瓶颈，但列表滑动卡顿不只有布局一个来源。这个案例展示了另一种常见模式：业务逻辑本身很轻量，却在数据绑定阶段引入了不可控的延迟。
+
 ### 问题现象
 
 一个内容类 App 的首页 Feed 流在加载更多数据后，滑动时出现密集卡顿。测试发现该问题在系统负载高时（后台多任务）尤为明显，空闲时不易复现。
@@ -170,7 +181,7 @@ override fun onBindViewHolder(holder: ViewHolder, position: Int) {
 
 ### 举一反三
 
-**判断标准：onBindViewHolder 中不应该出现任何可能阻塞的操作。** 如果你看到以下任何一项出现在 onBind 的调用栈中，就是问题：
+**判断标准：onBindViewHolder 中不应该出现任何可能阻塞的操作。** 如果以下任何一项出现在 onBind 的调用栈中，就是问题：
 
 - `ContentResolver.query()` / `ContentResolver.insert()` 等
 - `PackageManager.getPackageInfo()` 等系统服务查询
@@ -182,6 +193,8 @@ override fun onBindViewHolder(holder: ViewHolder, position: Int) {
 ---
 
 ## 案例三：内存压力下 GC 频繁暂停主线程
+
+前两个案例的问题在打开 App 后就能复现——它们是"一直在那里"的卡顿。但有一类卡顿更隐蔽：刚打开 App 时完全正常，使用一段时间后越来越卡。这种"随时间劣化"的模式，根因往往指向内存管理。
 
 ### 问题现象
 
@@ -250,6 +263,8 @@ GC 导致卡顿的 Perfetto 特征：
 
 ## 案例四：RenderThread sync 阻塞主线程
 
+前面三个案例的根因都落在主线程自身的代码上——布局太深、Binder 调用、GC 暂停。但 Perfetto 里有一种卡顿经常让人困惑：主线程的调用栈中看不到任何业务代码耗时，帧却还是超时了。这种情况需要把视线从主线程挪开，看看 RenderThread 在干什么。
+
 ### 问题现象
 
 一个社交 App 在发送带多个动画表情的消息后，聊天界面出现明显掉帧。问题只在有动画表情时出现，纯文字消息时正常。
@@ -316,6 +331,8 @@ RenderThread 相关卡顿的 Perfetto 特征：
 ---
 
 ## 案例五：系统低内存导致全局性卡顿
+
+前四个案例都是单个 App 的性能问题——换了别的 App，同样的分析方法依然适用。但还有一类卡顿超出了单个 App 的范畴：设备整体变慢，所有 App 同时卡顿，连桌面滑动都不流畅。遇到这种情况，逐个排查 App 已经没有意义，需要站到系统层面来看。
 
 ### 问题现象
 
@@ -405,13 +422,13 @@ App 端优化后（响应 onTrimMemory + 减少自身内存占用 30%），在�
 - Perfetto 中 `kswapd0` 线程持续活跃
 - 多个 App 同时出现性能下降（不是单一 App 的问题）
 
-**关键认知：当你发现前台 App 性能差但代码层面找不到问题时，先看看是不是系统内存不足在拖全局后腿。**
+**关键认知：当发现前台 App 性能差但代码层面找不到问题时，先看看是不是系统内存不足在拖全局后腿。**
 
 ---
 
 ## 厂商级流畅性优化案例
 
-本节提供一个厂商视角的流畅性优化概览。详细的厂商级优化方法参见 [17.1 OEM 性能优化的通用思路](part4-system/ch17-oem/01-oem-overview.md)。
+以上五个案例都是从 App 开发者视角出发的——拿到一个卡顿问题，分析根因，修复代码。但 Android 生态中还有一群人从完全不同的角度优化流畅性：设备厂商。他们在系统框架层和硬件协同层做的优化，往往能带来 App 层无法企及的提升。本节提供一个厂商视角的流畅性优化概览。详细的厂商级优化方法参见 [17.1 OEM 性能优化的通用思路](part4-system/ch17-oem/01-oem-overview.md)。
 
 ### OPPO ColorOS 极光引擎：并行绘制架构
 
@@ -435,6 +452,8 @@ vivo 在 X200 系列中采用了从 SoC 调度到应用层全链路的优化策�
 ---
 
 ## 特殊硬件条件下的 Jank 案例
+
+前面的分析默认了一个前提：60Hz 屏幕、中等配置设备。但现实中 Android 生态的硬件差异极大——从 90Hz/120Hz 高刷屏到 4 核 4GB 的入门机，硬件条件本身就会制造独特的卡顿模式。了解这些模式，有助于在分析时快速排除或确认硬件因素。
 
 ### 高刷新率屏幕的"帧预算压缩"问题
 
