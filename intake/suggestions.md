@@ -410,3 +410,13 @@
   2. AMS 深入（Activity Manager Service）— 17/20 — 建议未来轮次创建
 - 其他候选（<14）：WebView 性能 13/20、SQLite 性能 11/20、PMS 12/20
 - 已检查方向已记录，下次运行可探索不同方向
+
+## [Task2A 知识缺口挖掘] 2026-04-04 23:02
+
+### 挖掘结果
+- 已检查方向：source-index（0 unmapped high-quality）、research-feeds（全部已映射）、AOSP AMS 结构、官方文档、现有章节扩展点、Web 搜索前沿
+- 创建了 §1.8 Activity Manager Service 与性能分析（评分 17/20）
+- 候选缺口评分 ≥14 共 1 个：
+  1. AMS — 17/20 — 已创建为 §1.8
+- 其他候选（<14）：WebView 性能 11/20、SQLite 性能 9/20、PMS 包管理 10/20
+- 已检查方向已记录，下次运行可探索不同方向（如 Camera/Media 管线、Privacy Sandbox 性能开销）
