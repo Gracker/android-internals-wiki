@@ -4,12 +4,13 @@
   "metrics": {
     "total": 97,
     "draft": 4,
-    "ready-for-review": 49,
+    "ready-for-review": 48,
     "reviewed": 2,
     "finalized": 40,
     "staging_drafts": 0,
-    "last_updated": "2026-04-04T08:05:00",
-    "processing": 0
+    "last_updated": "2026-04-04T18:20:00+08:00",
+    "processing": 0,
+    "ready-to-publish": 1
   },
   "reviewed_sections": {
     "8.1": {
@@ -213,15 +214,13 @@
       ]
     },
     "2.10": {
-      "reviewed_date": "2026-04-03",
+      "reviewed_date": "2026-04-04",
       "reviewed_by": "openclaw-task6",
-      "review_status": "finalized-v2",
-      "review_round": 2,
+      "review_status": "ready-to-publish",
+      "review_round": 3,
       "fixes_applied": [
-        "补充 frontmatter section: 2.10",
-        "修正 Android 12 渲染架构描述：RenderThread 从 Android 5.0 引入（非 Android 12）",
-        "ANGLE 性能开销数据添加 [待验证] 标注",
-        "status ready-for-review → finalized（二次 review，回炉后无 B 类大问题）"
+        "frontmatter: status ready-for-review → ready-to-publish（精修质检终审通过）",
+        "frontmatter: reviewed_date → 2026-04-04, review_round → 3"
       ]
     },
     "5.4": {
@@ -371,8 +370,8 @@
     }
   },
   "review_stats": {
-    "total_reviewed": 33,
-    "reviewed_today": 18,
+    "total_reviewed": 34,
+    "reviewed_today": 19,
     "review_issues_total": 13
   },
   "completed": [
@@ -1137,10 +1136,25 @@
       "verification_level": "L2",
       "word_count": "~4770",
       "completed_at": "2026-04-04T13:12:46.313535"
+    },
+    {
+      "chapter": "17.3",
+      "section": "17.3",
+      "title": "行业案例",
+      "status": "ready-for-review",
+      "drafted_date": "2026-04-04",
+      "drafted_by": "openclaw-task2a",
+      "anchors_covered": 4,
+      "anchors_total": 4,
+      "extensions_covered": 1,
+      "extensions_total": 2,
+      "verification_level": "L2",
+      "word_count": "~7000",
+      "completed_at": "2026-04-04T17:10:00+08:00"
     }
   ],
   "ready_for_review": 5,
-  "last_updated": "2026-04-04T15:22:00",
+  "last_updated": "2026-04-04T17:10:00",
   "stats": {
     "total": 97,
     "completed": 64,
@@ -1317,6 +1331,13 @@
     "last_updated": "2026-04-04T15:05:00+08:00"
   },
   "history": [
+    {
+      "date": "2026-04-04",
+      "section": "17.3",
+      "title": "行业案例",
+      "action": "draft-completed",
+      "word_count": "~7000"
+    },
     {
       "date": "2026-04-04",
       "section": "16.3",
@@ -1947,15 +1968,15 @@
     },
     "2.10": {
       "title": "GPU 渲染深入",
-      "status": "finalized",
+      "status": "ready-to-publish",
       "file": "src/part1-fundamentals/ch02-rendering/10-gpu-rendering.md",
       "last_reviewed": "2026-04-03",
       "review_notes": "回炉修复完成：6个B类问题全部处理（文体重写/案例重写/3个新增小节/伪代码修正）",
       "rework_date": "2026-04-03",
       "rework_by": "openclaw-task2b",
-      "reviewed_date": "2026-04-03",
+      "reviewed_date": "2026-04-04",
       "reviewed_by": "openclaw-task6",
-      "review_round": 2
+      "review_round": 3
     },
     "13.2": {
       "title": "Trace 抓取",
@@ -2197,6 +2218,20 @@
       "extensions_total": 2,
       "verification_level": "L2",
       "word_count": "~8500"
+    },
+    "17.3": {
+      "title": "行业案例",
+      "status": "ready-for-review",
+      "drafted_date": "2026-04-04",
+      "drafted_by": "openclaw-task2a",
+      "file": "src/part4-system/ch17-oem/03-industry-cases.md",
+      "anchors_covered": 4,
+      "anchors_total": 4,
+      "extensions_covered": 1,
+      "extensions_total": 2,
+      "verification_level": "L2",
+      "word_count": "~7000",
+      "confidence": "medium"
     }
   },
   "5.1": {
