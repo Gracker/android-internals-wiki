@@ -1,7 +1,7 @@
 ---
 title: "系统级功耗优化"
 chapter: "11.3"
-status: finalized
+status: ready-for-review
 section: "11.3"
 drafted_date: "2026-04-03"
 drafted_by: "openclaw-task2a"
@@ -10,6 +10,9 @@ reviewed_by: "openclaw-task6"
 applicable_versions: "Android 6.0 (API 23) - Android 16 (API 36)"
 last_verified: "2026-04-03"
 last_verified_against: "AOSP android-16.0.0_r1"
+polish_count: 1
+polish_date: "2026-04-05"
+polish_by: "task2b-polish"
 confidence: medium
 sources:
   - type: official
@@ -26,7 +29,7 @@ sources:
     path: "frameworks/base/core/java/android/os/PowerManager.java"
   - type: official
     path: "https://dontkillmyapp.com/"
-tags: ['doze', 'standby', 'battery-saver', 'background-restriction', 'oem-power']
+tags: ['doze', 'standby', 'battery-saver', 'background-restriction', 'oem-power', 'adaptive-battery', 'foreground-service']
 related_chapters: ["5.6", "11.1", "11.2", "1.3", "4.4"]
 ---
 
@@ -173,7 +176,7 @@ Android 9（API 28）引入了 App Standby Buckets 机制，根据用户对每�
 
 App 不会被固定在某个桶里。系统会根据用户行为持续调整。这个分配决策背后是 Android 9 引入的 **Adaptive Battery** 机制。
 
-Adaptive Battery 使用一个运行在本地的机器学习模型（基于 TensorFlow Lite，使用两层深度卷积神经网络加前馈网络）来预测用户在未来几小时内可能使用哪些 App。模型基于以下信号做预测：
+Adaptive Battery 使用一个运行在本地的机器学习模型来预测用户在未来几小时内可能使用哪些 App。[待验证：部分来源提及基于 TensorFlow Lite 的 CNN + 前馈网络架构，但具体网络结构未在 AOSP 源码或官方文档中确认] 模型基于以下信号做预测：
 
 - App 的历史启动频率和时间分布
 - App 在前台的使用时长
@@ -256,7 +259,7 @@ Android 14 对前台服务进一步增加了限制：某些类型的前台服务
 
 当省电模式激活时，系统层面会发生以下变化：
 
-**CPU 降频**——处理器的最大频率被限制，部分实现甚至会禁用大核。这直接降低了 CPU 的功耗，但也意味着计算密集型任务（如图片处理、列表渲染）会变慢，可能出现掉帧。
+**CPU 降频**——处理器的最大频率被限制，部分实现甚至会禁用大核。这直接降低了 CPU 功耗，但也意味着计算密集型任务（如图片处理、列表渲染）会变慢，可能出现掉帧。
 
 **后台活动收紧**——省电模式下，所有 App 都被当作"Rare"桶对待，即使它本来是 Active。JobScheduler 的配额被进一步压缩，闹钟被推迟，后台网络访问受限。
 
@@ -273,6 +276,8 @@ Android 14 对前台服务进一步增加了限制：某些类型的前台服务
 ### 自适应省电（Adaptive Battery Saver）
 
 Android 9 引入了自适应省电功能，系统会根据用户的充电习惯和电池消耗模式，在电量较低时自动启用省电模式，而不需要用户手动操作。这个功能在 Pixel 设备上默认开启，厂商可以自定义触发阈值。
+
+自适应省电与 Adaptive Battery 是互补关系：Adaptive Battery 通过预测 App 使用频率来分配 Standby Bucket（微观调度），自适应省电则根据整体电量状况决定是否启用全局省电模式（宏观调控）。两者共享用户行为数据作为输入，但作用层面不同——前者影响单个 App 的后台配额，后者影响所有 App 的运行环境。
 
 ### 在 Perfetto 中观察省电模式
 
@@ -356,7 +361,7 @@ OPPO 和 vivo 的策略类似：
 
 **与进程管理（§1.3）的关系**——LMK（Low Memory Killer）杀进程和厂商的后台杀进程策略是两套独立的机制，但它们会叠加影响。一个 App 可能先被厂商冻结，然后因为内存压力被 LMK 彻底回收。
 
-**与 Android 功耗管理（§5.6）的关系**——§5.6 讨论的是 CPU 调度层面的功耗优化（EAS、UClamp、Doze 底层的 Idle 状态管理）。本节讨论的是应用框架层的功耗策略，是 §5.6 底层机制的上层体现。
+**与 CPU 调度与功耗管理（§5.6）的关系**——§5.6 讨论的是 CPU 调度层面的功耗优化（EAS、UClamp、Doze 底层的 Idle 状态管理）。本节讨论的是应用框架层的功耗策略，是 §5.6 底层机制的上层体现。当本节提到的省电模式导致 CPU 降频时，实际的频率限制通过 §5.6 中讨论的 cpufreq 机制执行；Doze 模式下 CPU 进入深度 Idle 状态，对应的也是 §5.6 中介绍的 CPU Idle 状态管理。
 
 **与 App 耗电优化（§11.2）的关系**——§11.2 是"App 主动配合"，本节是"系统强制约束"。两者是互补关系：即便 App 做好了所有主动优化，系统策略仍然会限制它的后台行为。
 
