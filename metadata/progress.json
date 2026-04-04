@@ -4,11 +4,11 @@
   "metrics": {
     "total": 100,
     "draft": 2,
-    "ready-for-review": 51,
+    "ready-for-review": 50,
     "reviewed": 3,
-    "finalized": 41,
+    "finalized": 42,
     "staging_drafts": 0,
-    "last_updated": "2026-04-05T03:17:27.577287",
+    "last_updated": "2026-04-05T03:24:33.694451",
     "processing": 0,
     "ready-to-publish": 1
   },
@@ -386,10 +386,20 @@
         "frontmatter补全：section/drafted_by/reviewed_date/reviewed_by",
         "status: ready-for-review → finalized"
       ]
+    },
+    "13.2": {
+      "reviewed_date": "2026-04-05",
+      "reviewed_by": "openclaw-task6",
+      "review_status": "finalized",
+      "fixes_applied": [
+        "2处\"你\"→\"我们\"/中性表述（writing-guide §3.5合规）",
+        "frontmatter补全：drafted_by/reviewed_date/reviewed_by",
+        "status: ready-for-review → finalized"
+      ]
     }
   },
   "review_stats": {
-    "total_reviewed": 36,
+    "total_reviewed": 37,
     "reviewed_today": 21,
     "review_issues_total": 13
   },
@@ -1450,6 +1460,14 @@
   "history": [
     {
       "date": "2026-04-05",
+      "section": "13.2",
+      "title": "Trace 抓取",
+      "action": "reviewed-finalized",
+      "review_by": "openclaw-task6",
+      "fixes": 3
+    },
+    {
+      "date": "2026-04-05",
       "section": "2.12",
       "title": "Window Manager Service 与窗口管理",
       "action": "draft-completed",
@@ -2177,9 +2195,12 @@
     },
     "13.2": {
       "title": "Trace 抓取",
-      "status": "ready-for-review",
+      "status": "finalized",
+      "file": "src/part3-tools/ch13-perfetto/02-trace-capture.md",
       "drafted_date": "2026-04-03",
-      "drafted_by": "openclaw-task2a"
+      "drafted_by": "openclaw-task2a",
+      "reviewed_date": "2026-04-05",
+      "reviewed_by": "openclaw-task6"
     },
     "13.3": {
       "title": "Perfetto View 解读",

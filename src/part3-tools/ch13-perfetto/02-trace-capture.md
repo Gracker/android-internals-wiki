@@ -2,12 +2,15 @@
 title: "Trace 抓取"
 chapter: "13.2"
 section: "13.2"
-status: ready-for-review
+status: finalized
 drafted_date: "2026-04-03"
+drafted_by: "openclaw-task2a"
 applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
 last_verified: "2026-04-03"
 last_verified_against: "perfetto.dev docs, AOSP android-16.0.0_r1"
 confidence: high
+reviewed_date: "2026-04-05"
+reviewed_by: "openclaw-task6"
 sources:
   - type: blog
     path: "https://www.androidperformance.com/2024/05/21/Android-Perfetto-02-how-to-get-perfetto/"
@@ -369,7 +372,7 @@ Perfetto UI（<https://ui.perfetto.dev>）不仅是一个 Trace 分析工具，�
 
 ### 连接设备
 
-使用 USB 线连接设备和电脑后，Perfetto UI 会自动检测到连接的 Android 设备。在 "Target platform" 下拉框中选择你的设备。
+使用 USB 线连接设备和电脑后，Perfetto UI 会自动检测到连接的 Android 设备。在 "Target platform" 下拉框中选择对应设备。
 
 如果设备没有被检测到，需要确认 ADB 连接正常（`adb devices` 可以看到设备），并且浏览器支持 WebUSB。
 
@@ -696,7 +699,7 @@ duration_ms: 20000
 - §13.6（线程 CPU 状态）专门讲解如何通过 `sched` category 分析线程的运行状态
 - §14.1（Android Studio Profiler）提供了另一种可视化 Trace 的方式
 
-如果你已经抓到了一份 Trace 但不知道怎么看，直接跳到 §13.3 即可。
+如果已经抓到了一份 Trace 但不知道怎么看，直接跳到 §13.3 即可。
 
 ## 参考资料
 
