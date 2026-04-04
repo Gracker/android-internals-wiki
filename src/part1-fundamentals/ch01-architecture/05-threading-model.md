@@ -1,11 +1,14 @@
 ---
 title: "线程模型"
 chapter: "1.5"
-status: finalized
+status: ready-for-review
 applicable_versions: "Android 5.0 (API 21) - Android 16 (API 36)"
 last_verified: "2026-03-31"
 reviewed_date: "2026-04-01"
 reviewed_by: openclaw-task6
+polish_count: 1
+polish_date: "2026-04-05"
+polish_by: task2b-polish
 last_verified_against: "AOSP android-16.0.0_r1"
 drafted_date: "2026-03-31"
 confidence: medium
@@ -71,9 +74,9 @@ related_chapters: ["1.2", "1.4", "2.4", "2.5", "5.1"]
 
 ## 为什么要了解 Android 的线程模型
 
-打开 Perfetto，你会看到每个 App 进程下都有好几个线程在活动。其中最显眼的两条是 UI Thread（主线程）和 RenderThread（渲染线程）。在滑动列表的时候，UI Thread 上会出现一串整齐的 `doFrame` 方块，紧跟着 RenderThread 上出现对应的 `DrawFrame` 方块——两个线程像齿轮一样咬合，一帧一帧地把画面推到屏幕上。
+打开 Perfetto，我们会看到每个 App 进程下都有好几个线程在活动。其中最显眼的两条是 UI Thread（主线程）和 RenderThread（渲染线程）。在滑动列表的时候，UI Thread 上会出现一串整齐的 `doFrame` 方块，紧跟着 RenderThread 上出现对应的 `DrawFrame` 方块——两个线程像齿轮一样咬合，一帧一帧地把画面推到屏幕上。
 
-如果你在做卡顿分析、ANR 排查或者启动速度优化，你就必须理解这套线程模型。因为 Android 的主线程承担了几乎所有与用户交互相关的工作——处理 Input 事件、执行动画、measure/layout/draw、响应 Binder 调用。任何一项工作阻塞了主线程，用户就会感知到卡顿甚至 ANR。而理解主线程为什么会被阻塞、阻塞在哪里，首先要搞清楚主线程是怎么运转的——它的核心不是"一个线程在跑代码"，而是"一个线程在不断地从消息队列中取出消息并处理"。
+做卡顿分析、ANR 排查或启动速度优化，都必须理解这套线程模型。因为 Android 的主线程承担了几乎所有与用户交互相关的工作——处理 Input 事件、执行动画、measure/layout/draw、响应 Binder 调用。任何一项工作阻塞了主线程，用户就会感知到卡顿甚至 ANR。而理解主线程为什么会被阻塞、阻塞在哪里，首先要搞清楚主线程是怎么运转的——它的核心不是"一个线程在跑代码"，而是"一个线程在不断地从消息队列中取出消息并处理"。
 
 同时，从 Android 5.0 开始，渲染工作被分离到了独立的 RenderThread。理解主线程和 RenderThread 之间的分工和同步机制，是在 Perfetto 中正确解读渲染性能数据的前提。
 
@@ -120,7 +123,7 @@ Android 主线程的运行模型可以用一句话概括：**一个线程，一�
 
 **Looper** 是线程的消息循环引擎。它的核心工作就是一个无限循环：不断从 MessageQueue 中取出下一条 Message，分发给对应的 Handler 去处理。每个线程最多只能有一个 Looper，它通过 `ThreadLocal` 存储在线程本地（后面我们会展开讲 ThreadLocal 的妙用）。
 
-**MessageQueue** 是消息队列，严格来说是一个按时间排序的单链表。消息按照 `when` 字段（即期望执行的时间戳）排列，越早执行的排在越前面。当没有消息需要处理时，线程不会空转，而是通过 `nativePollOnce()` 进入 native 层的 `epoll_wait` 阻塞等待——这就是为什么你在 Perfetto 中看到主线程处于 Sleep 状态时 CPU 占用几乎为零。
+**MessageQueue** 是消息队列，严格来说是一个按时间排序的单链表。消息按照 `when` 字段（即期望执行的时间戳）排列，越早执行的排在越前面。当没有消息需要处理时，线程不会空转，而是通过 `nativePollOnce()` 进入 native 层的 `epoll_wait` 阻塞等待——这就是为什么我们在 Perfetto 中看到主线程处于 Sleep 状态时 CPU 占用几乎为零。
 
 **Handler** 是消息的发送者和处理者。任何一个 Handler 实例在创建时都会绑定到当前线程的 Looper（也可以指定 Looper）。调用 `handler.sendMessage()` 时，消息被插入到 Looper 的 MessageQueue 中；当 Looper 循环到这条消息时，回调到 `handler.dispatchMessage()` 进行处理。
 
@@ -188,9 +191,9 @@ IdleHandler 的典型用途包括：
 
 在 Android 4.4 及更早的版本中，所有的 UI 渲染工作都在主线程完成：measure、layout、draw，然后调用 OpenGL API 提交绘制命令，最后与 SurfaceFlinger 交互。这意味着 GPU 命令提交是同步阻塞主线程的——如果 GPU 处理慢了，主线程就跟着慢。
 
-Android 5.0（Lollipop）引入了 RenderThread，将渲染工作从主线程分离出去。这个改动的核心思想是：主线程只负责构建绘制指令（DisplayList），构建完成后通过 `syncAndDrawFrame()` 将 DisplayList 同步给 RenderThread，然后主线程就可以解放出来处理下一个 VSync 周期的消息。RenderThread 在自己的线程上独立执行 GPU 渲染命令、管理 Buffer、与 SurfaceFlinger 交互。
+Android 5.0（Lollipop）引入了 RenderThread，将渲染工作从主线程分离出去。这个改动的核心思想是：主线程只负责构建绘制指令（DisplayList），构建完成后通过 `syncAndDrawFrame()` 将 DisplayList（一组平台无关的绘制指令序列）同步给 RenderThread，然后主线程就可以解放出来处理下一个 VSync 周期的消息。RenderThread 在自己的线程上独立执行 GPU 渲染命令、管理 Buffer、与 SurfaceFlinger 交互。
 
-这种"生产者-消费者"模式让主线程和 GPU 可以并行工作：主线程在构建第 N+1 帧的 DisplayList 时，RenderThread 可能在渲染第 N 帧。这就是为什么在 Perfetto 中你会看到主线程和 RenderThread 的活动是交叠的，而非串行的。
+这种"生产者-消费者"模式让主线程和 GPU 可以并行工作：主线程在构建第 N+1 帧的 DisplayList 时，RenderThread 可能在渲染第 N 帧。这就是为什么在 Perfetto 中我们会看到主线程和 RenderThread 的活动是交叠的，而非串行的。
 
 [图：主线程与 RenderThread 的生产者-消费者模式示意图 — 展示 DisplayList 构建与 GPU 渲染的并行时间线]
 
@@ -230,13 +233,13 @@ int syncResult = syncAndDrawFrame(choreographer.mFrameInfo);
 4. 提交 Buffer 回 BlastBufferQueue（`queueBuffer`）
 5. 通过 Transaction 通知 SurfaceFlinger
 
-在 Perfetto 中，你可以清楚地看到这个分工：主线程上的 `syncAndDrawFrame` 通常非常短暂（大部分时间花在 Traversal 上），而 RenderThread 上的 `DrawFrame` 持续时间反映了 GPU 渲染的实际开销。
+在 Perfetto 中，我们可以清楚地看到这个分工：主线程上的 `syncAndDrawFrame` 通常非常短暂（大部分时间花在 Traversal 上），而 RenderThread 上的 `DrawFrame` 持续时间反映了 GPU 渲染的实际开销。
 
 [来源: obsidian/Personal-Knowlodge/source/Android-Perfetto-07-MainThread-And-RenderThread.md]
 
 ### 软件绘制：没有 RenderThread 的世界
 
-如果你在 AndroidManifest 中设置了 `android:hardwareAccelerated="false"`，系统就不会创建 RenderThread。所有的绘制工作都在主线程上通过 CPU 调用 libSkia 完成。
+如果在 AndroidManifest 中设置了 `android:hardwareAccelerated="false"`，系统就不会创建 RenderThread。所有的绘制工作都在主线程上通过 CPU 调用 libSkia 完成。
 
 在 Perfetto 中，这种模式的特征是：主线程的 `draw` 阶段会显著拉长，帧与帧之间的空闲间隔变短，其他 Message 的执行时间被压缩。这也是为什么 Android 从 4.4 之后默认开启硬件加速——把渲染工作交给 GPU 和独立线程，主线程才能保持响应。
 
@@ -270,7 +273,7 @@ Process.setThreadPriority(Process.THREAD_PRIORITY_BACKGROUND);
 
 前台 cgroup 和后台 cgroup 的 CPU 时间分配比例大约是 95:5。这意味着即使后台线程数量很多，它们能获得的 CPU 时间总和也非常有限。这个设计的目的是确保前台 App 的线程能获得充足的 CPU 资源，而后台 App 的工作不会干扰用户体验。
 
-在 Perfetto 的 CPU 视图中，你可以观察到这个效果：后台线程的 CPU slice 通常很短且稀疏，而前台线程的 CPU slice 更长且连续。如果你看到一个后台线程意外地占用了大量 CPU，首先要检查的是它的优先级设置是否正确。
+在 Perfetto 的 CPU 视图中，我们可以观察到这个效果：后台线程的 CPU slice 通常很短且稀疏，而前台线程的 CPU slice 更长且连续。如果看到一个后台线程意外地占用了大量 CPU，首先要检查的是它的优先级设置是否正确。
 
 ### SCHED_OTHER vs SCHED_FIFO
 
@@ -327,13 +330,15 @@ viewModelScope.launch {
 
 [已验证: 官方文档, developer.android.com/kotlin/coroutines]
 
-在 Perfetto 中，Coroutine 的线程模型体现为：`Dispatchers.IO` 的协程会在线程池中的某个线程上执行（如 `DefaultDispatcher-worker-1`），而 `Dispatchers.Main` 的协程会在主线程上通过 Handler 分发执行。如果你在 Perfetto 中看到主线程上有大量的 IO 操作，那很可能是有人在 `Dispatchers.Main` 上做了本应在 `Dispatchers.IO` 上做的工作。
+在 Perfetto 中，Coroutine 的线程模型体现为：`Dispatchers.IO` 的协程会在线程池中的某个线程上执行（如 `DefaultDispatcher-worker-1`），而 `Dispatchers.Main` 的协程会在主线程上通过 Handler 分发执行。如果在 Perfetto 中看到主线程上有大量的 IO 操作，那很可能是有人在 `Dispatchers.Main` 上做了本应在 `Dispatchers.IO` 上做的工作。
 
 ## HandlerThread、IntentService 与 WorkManager
 
+上一节梳理了从 AsyncTask 到 Coroutine 的演进——这些方案解决的是「在哪个线程上执行异步任务」的问题。但 Android 还提供了一些专门的后台执行机制，定位更偏「任务调度」而非「线程切换」。这一节我们快速过一遍它们的适用场景。
+
 ### HandlerThread：带 Looper 的后台线程
 
-HandlerThread 继承自 Thread，它在线程启动后自动创建 Looper 并进入消息循环。这意味着你可以像操作主线程一样，通过 Handler 向它发送消息。
+HandlerThread 继承自 Thread，它在线程启动后自动创建 Looper 并进入消息循环。这意味着我们可以像操作主线程一样，通过 Handler 向它发送消息。
 
 HandlerThread 的典型用途是创建一个串行执行的后台任务队列。比如图片处理、日志写入、传感器数据处理——这些任务需要按顺序执行，但不需要在主线程上做。
 
@@ -348,7 +353,7 @@ bgHandler.post(() -> processImage(bitmap));
 
 ### IntentService（API 30 deprecated）
 
-IntentService 内部使用 HandlerThread 来串行处理 Intent 请求。它已经废弃了，因为它的功能可以完全被 WorkManager 或 JobIntentService 替代。如果你在维护使用 IntentService 的老代码，建议迁移到 WorkManager。
+IntentService 内部使用 HandlerThread 来串行处理 Intent 请求。它已经废弃了，因为它的功能可以完全被 WorkManager 或 JobIntentService 替代。如果在维护使用 IntentService 的老代码，建议迁移到 WorkManager。
 
 ### WorkManager：可靠的后台任务调度
 
@@ -366,9 +371,9 @@ WorkManager 底层根据 Android 版本选择不同的执行引擎：API 23+ 使
 
 [已验证: 官方文档, developer.android.com/topic/libraries/architecture/workmanager]
 
-## [自动发现] ThreadLocal 在 Looper 和 Choreographer 中的应用
+## ThreadLocal 在 Looper 和 Choreographer 中的应用
 
-ThreadLocal 是 Java 中实现线程本地存储的机制——每个线程都有自己独立的变量副本，互不干扰。Android Framework 中，ThreadLocal 的两个最关键用途就是 Looper 和 Choreographer。
+在前面分析 Looper 的「一个线程一个 Looper」设计时，我们回避了一个底层问题：Looper 是怎么保证每个线程拿到的是属于自己的实例？答案是 ThreadLocal。它是 Java 中实现线程本地存储的机制——每个线程都有自己独立的变量副本，互不干扰。Android Framework 中，ThreadLocal 的两个最关键用途就是 Looper 和 Choreographer。
 
 ### Looper 中的 ThreadLocal
 
@@ -401,11 +406,11 @@ Choreographer 也使用了同样的模式：通过 `ThreadLocal` 为每个线程
 
 ### 识别关键线程
 
-在 App 进程下，你会看到以下几个重要的线程：
+在 App 进程下，我们会看到以下几个重要的线程：
 
 - **主线程（UI Thread）**：通常显示为进程包名或 `CrBrowserMain`（WebView 场景），处理 Input、Animation、Traversal 和所有 Handler 消息。
 - **RenderThread**：App 进程下的渲染线程，执行 GPU 渲染命令。它的活动紧跟在主线程的 `syncAndDrawFrame` 之后。
-- **Binder 线程**：名字类似 `Binder:12345_1`，处理来自其他进程的 Binder 调用。如果这些线程有长时间的 CPU 活动，说明你的 App 在响应跨进程调用。
+- **Binder 线程**：名字类似 `Binder:12345_1`，处理来自其他进程的 Binder 调用。如果这些线程有长时间的 CPU 活动，说明 App 在响应跨进程调用。
 - **FinalizerDaemon**：执行对象 finalize 方法的守护线程。如果这个线程频繁活动，说明有大量对象在被 GC 回收时需要执行 finalize，这可能导致 GC 暂停时间变长。
 - **DefaultDispatcher-worker-\***：Kotlin Coroutine 的默认线程池线程。
 
@@ -426,7 +431,7 @@ Choreographer 也使用了同样的模式：通过 `ThreadLocal` 为每个线程
 
 ## 线程数量对性能的影响
 
-了解了 Android 线程模型的各个组件之后，我们还需要关注一个容易被忽视的全局问题：线程数量本身对性能的影响。
+到目前为止，我们讨论的都是单个线程或两个线程之间的协作。如果把视角拉远，还有一个容易被忽视的全局问题：一个进程中同时活跃的线程数量本身，就会对性能产生影响。
 
 每个线程都有自己的栈空间（Android 上默认约 1MB）、寄存器上下文、以及内核调度开销。当线程数量过多时，会从多个维度拖慢系统：
 
@@ -434,7 +439,7 @@ Choreographer 也使用了同样的模式：通过 `ThreadLocal` 为每个线程
 
 2. **CPU 缓存失效**：线程在不同 CPU 核心间迁移时，L1/L2 缓存中的热点数据会失效。这也是为什么有些优化方案选择将关键线程绑定到特定核心——减少迁移，提高缓存命中率。
 
-3. **锁竞争加剧**：线程越多，对共享资源的竞争越激烈。在 Perfetto 中表现为线程频繁在"等待锁"（Sleep 状态，waking reason 显示 `futex_wait_queue_me`）和"持有锁"之间切换。
+3. **锁竞争加剧**：线程越多，对共享资源的竞争越激烈。在 Perfetto 中表现为线程频繁在"等待锁"（Sleep 状态，waking reason 显示 `futex_wait_queue_me`（Fast Userspace Mutex，Linux 内核提供的用户态互斥锁））和"持有锁"之间切换。
 
 4. **内存压力**：每个线程的栈空间加起来可能达到几十甚至上百 MB，在内存紧张的设备上会加速 LMK 回收。
 
@@ -458,7 +463,7 @@ Android Framework 对线程数量的控制体现在多个层面：Binder 线程�
 
 ### 误区 4：Handler 的无参构造函数在子线程上一定崩溃
 
-`new Handler()` 的无参构造函数要求当前线程有 Looper，否则抛出异常。但如果你在主线程上创建，它不会崩溃（因为主线程已经有 Looper）。在子线程上，你需要先调用 `Looper.prepare()`，然后才能创建 Handler。注意，Handler 的无参构造函数在 API 30 中已被废弃，推荐使用 `new Handler(Looper.myLooper())` 显式指定 Looper。
+`new Handler()` 的无参构造函数要求当前线程有 Looper，否则抛出异常。但在主线程上创建则不会（因为主线程已经有 Looper）。在子线程上，需要先调用 `Looper.prepare()`，然后才能创建 Handler。注意，Handler 的无参构造函数在 API 30 中已被废弃，推荐使用 `new Handler(Looper.myLooper())` 显式指定 Looper。
 
 ## 与其他章节的关系
 
