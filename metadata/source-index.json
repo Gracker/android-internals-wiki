@@ -819,5 +819,179 @@
     "scan_date": "2026-04-05T04:49:15.567141",
     "chapters": [],
     "quality": "medium"
+  },
+  {
+    "path": "Cubox/写给Android工程师的协程指南-2023-03-30.md",
+    "title": "写给Android工程师的协程指南",
+    "scores": {
+      "relevance": 4,
+      "technical_depth": 3,
+      "timeliness": 3,
+      "verifiability": 2
+    },
+    "total": 12,
+    "chapters": [
+      {
+        "chapter": "ch03-线程",
+        "confidence": "medium"
+      },
+      {
+        "chapter": "ch15-Kotlin",
+        "confidence": "medium"
+      }
+    ],
+    "quality": "medium",
+    "summary": "写给Android工程师的协程指南 — # 写给Android工程师的协程指南  本篇将由浅入深，系统且全面的聊一聊协程的那些事，理清协程的挂起与恢复，底层实现，与线程池的差异等等相关问题，从而帮助大",
+    "scan_date": "2026-04-05T06:55:07.090456+08:00"
+  },
+  {
+    "path": "Cubox/写给Android工程师的协程指南-2023-12-04.md",
+    "title": "写给Android工程师的协程指南",
+    "scores": {
+      "relevance": 4,
+      "technical_depth": 3,
+      "timeliness": 3,
+      "verifiability": 2
+    },
+    "total": 12,
+    "chapters": [
+      {
+        "chapter": "ch03-线程",
+        "confidence": "medium"
+      },
+      {
+        "chapter": "ch15-Kotlin",
+        "confidence": "medium"
+      }
+    ],
+    "quality": "medium",
+    "summary": "写给Android工程师的协程指南 — # 写给Android工程师的协程指南  本篇将由浅入深，系统且全面的聊一聊协程的那些事，理清协程的挂起与恢复，底层实现，与线程池的差异等等相关问题，从而帮助大",
+    "scan_date": "2026-04-05T06:55:07.090456+08:00"
+  },
+  {
+    "title": "分会场3-古钦辉_肖俊-基于eBPF用户态调度器的Android系统性能优化与应用实践-哔哩哔哩",
+    "path": "Cubox/分会场3-古钦辉_肖俊-基于eBPF用户态调度器的Android系统性能优化与应用实践-哔哩哔哩-2025-04-24.md",
+    "scores": {
+      "relevance": 1,
+      "technical_depth": 3,
+      "timeliness": 3,
+      "verifiability": 3
+    },
+    "total_score": 10,
+    "mappings": [],
+    "quality": "medium",
+    "scan_time": "2026-04-05T07:18:03.542361"
+  },
+  {
+    "title": "分析 Android 耗电原理后，飞书是这样做耗电治理的",
+    "path": "Cubox/分析 Android 耗电原理后，飞书是这样做耗电治理的-2022-04-29.md",
+    "scores": {
+      "relevance": 1,
+      "technical_depth": 3,
+      "timeliness": 3,
+      "verifiability": 3
+    },
+    "total_score": 10,
+    "mappings": [],
+    "quality": "medium",
+    "scan_time": "2026-04-05T07:18:03.543118"
+  },
+  {
+    "title": "分析应用性能  |  Android Studio  |  Android Developers",
+    "path": "Cubox/分析应用性能  -  Android Studio  -  Android Developers-2023-11-07.md",
+    "scores": {
+      "relevance": 1,
+      "technical_depth": 3,
+      "timeliness": 3,
+      "verifiability": 3
+    },
+    "total_score": 10,
+    "mappings": [],
+    "quality": "medium",
+    "scan_time": "2026-04-05T07:18:03.543521"
+  },
+  {
+    "title": "分析某手机性能优化 boost 方案有感",
+    "path": "Cubox/分析某手机性能优化 boost 方案有感-2025-04-21.md",
+    "scores": {
+      "relevance": 1,
+      "technical_depth": 3,
+      "timeliness": 3,
+      "verifiability": 3
+    },
+    "total_score": 10,
+    "mappings": [],
+    "quality": "medium",
+    "scan_time": "2026-04-05T07:18:03.543982"
+  },
+  {
+    "title": "创作者经济2.0, 我写 newsletter 以来收到多少钱, 以及正式告别竹白 -#44",
+    "path": "Cubox/创作者经济2.0, 我写 newsletter 以来收到多少钱, 以及正式告别竹白 -#44-2023-09-18.md",
+    "scores": {
+      "relevance": 1,
+      "technical_depth": 2,
+      "timeliness": 3,
+      "verifiability": 4
+    },
+    "total_score": 10,
+    "mappings": [],
+    "quality": "medium",
+    "scan_time": "2026-04-05T07:18:03.548677"
+  },
+  {
+    "title": "利用ADPF性能提示优化Android应用体验",
+    "path": "Cubox/利用ADPF性能提示优化Android应用体验-2024-10-25.md",
+    "scores": {
+      "relevance": 1,
+      "technical_depth": 3,
+      "timeliness": 3,
+      "verifiability": 3
+    },
+    "total_score": 10,
+    "mappings": [],
+    "quality": "medium",
+    "scan_time": "2026-04-05T07:18:03.552333"
+  },
+  {
+    "title": "利用ADPF性能提示优化Android应用体验",
+    "path": "Cubox/利用ADPF性能提示优化Android应用体验-2024-12-06.md",
+    "scores": {
+      "relevance": 1,
+      "technical_depth": 3,
+      "timeliness": 3,
+      "verifiability": 3
+    },
+    "total_score": 10,
+    "mappings": [],
+    "quality": "medium",
+    "scan_time": "2026-04-05T07:18:03.552756"
+  },
+  {
+    "title": "别再只写 CLAUDE.md 了：用 Rules 重构 Claude Code 的记忆系统",
+    "path": "Cubox/别再只写 CLAUDE.md 了：用 Rules 重构 Claude Code 的记忆系统-2025-12-11.md",
+    "scores": {
+      "relevance": 1,
+      "technical_depth": 3,
+      "timeliness": 3,
+      "verifiability": 3
+    },
+    "total_score": 10,
+    "mappings": [],
+    "quality": "medium",
+    "scan_time": "2026-04-05T07:18:03.553604"
+  },
+  {
+    "title": "刷新率也能浮动？各厂 LTPO 2.0 调度机制大揭秘",
+    "path": "Cubox/刷新率也能浮动？各厂 LTPO 2.0 调度机制大揭秘-2022-02-24.md",
+    "scores": {
+      "relevance": 1,
+      "technical_depth": 2,
+      "timeliness": 3,
+      "verifiability": 4
+    },
+    "total_score": 10,
+    "mappings": [],
+    "quality": "medium",
+    "scan_time": "2026-04-05T07:18:03.555184"
   }
 ]

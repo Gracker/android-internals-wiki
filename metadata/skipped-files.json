@@ -9421,5 +9421,271 @@
       "timeliness": 5,
       "verifiability": 2
     }
+  },
+  {
+    "path": "Cubox/再学安卓 - binder之驱动函数ioctl-2025-03-05.md",
+    "title": "再学安卓 - binder之驱动函数ioctl",
+    "total": 9,
+    "reason": "Score 9/20 < 10 threshold",
+    "scan_date": "2026-04-05T06:55:07.090456+08:00"
+  },
+  {
+    "path": "Cubox/再学安卓 - binder之驱动加载-2025-01-16.md",
+    "title": "再学安卓 - binder之驱动加载",
+    "total": 8,
+    "reason": "Score 8/20 < 10 threshold",
+    "scan_date": "2026-04-05T06:55:07.090456+08:00"
+  },
+  {
+    "path": "Cubox/再探Kotlin 跨平台——迁移Paging分页库至KMM-2022-11-25.md",
+    "title": "再探Kotlin 跨平台——迁移Paging分页库至KMM",
+    "total": 7,
+    "reason": "Score 7/20 < 10 threshold",
+    "scan_date": "2026-04-05T06:55:07.090456+08:00"
+  },
+  {
+    "path": "Cubox/再来谈谈GPU体系结构及互联-2025-04-21.md",
+    "title": "再来谈谈GPU体系结构及互联",
+    "total": 7,
+    "reason": "Score 7/20 < 10 threshold",
+    "scan_date": "2026-04-05T06:55:07.090456+08:00"
+  },
+  {
+    "path": "Cubox/再次勇闯稳定性岗位！vivo社招面经——linux系统工程师（底软稳定性与性能）-2025-03-20.md",
+    "title": "再次勇闯稳定性岗位！vivo社招面经——linux系统工程师（底软稳定性与性能）",
+    "total": 7,
+    "reason": "Score 7/20 < 10 threshold",
+    "scan_date": "2026-04-05T06:55:07.090456+08:00"
+  },
+  {
+    "path": "Cubox/再浅谈性能根因 - 知乎-2023-12-22.md",
+    "title": "再浅谈性能根因 - 知乎",
+    "total": 6,
+    "reason": "Score 6/20 < 10 threshold",
+    "scan_date": "2026-04-05T06:55:07.090456+08:00"
+  },
+  {
+    "path": "Cubox/再见，字节跳动！-2023-07-26.md",
+    "title": "再见，字节跳动！",
+    "total": 8,
+    "reason": "Score 8/20 < 10 threshold",
+    "scan_date": "2026-04-05T06:55:07.090456+08:00"
+  },
+  {
+    "path": "Cubox/再见，字节跳动！-2023-07-31.md",
+    "title": "再见，字节跳动！",
+    "total": 7,
+    "reason": "Score 7/20 < 10 threshold",
+    "scan_date": "2026-04-05T06:55:07.090456+08:00"
+  },
+  {
+    "path": "Cubox/再见，极客时间-2022-04-07.md",
+    "title": "再见，极客时间",
+    "total": 7,
+    "reason": "Score 7/20 < 10 threshold",
+    "scan_date": "2026-04-05T06:55:07.090456+08:00"
+  },
+  {
+    "path": "Cubox/再见，阿里 - 拾月的博客-2023-01-30.md",
+    "title": "再见，阿里 - 拾月的博客",
+    "total": 5,
+    "reason": "Score 5/20 < 10 threshold",
+    "scan_date": "2026-04-05T06:55:07.090456+08:00"
+  },
+  {
+    "path": "Cubox/冒雨堵车三小时，为什么还要主动选择去公司上班？-2023-01-31.md",
+    "title": "冒雨堵车三小时，为什么还要主动选择去公司上班？",
+    "total": 6,
+    "reason": "Score 6/20 < 10 threshold",
+    "scan_date": "2026-04-05T06:55:07.090456+08:00"
+  },
+  {
+    "path": "Cubox/写作即思考-2025-07-27.md",
+    "title": "写作即思考",
+    "total": 7,
+    "reason": "Score 7/20 < 10 threshold",
+    "scan_date": "2026-04-05T06:55:07.090456+08:00"
+  },
+  {
+    "path": "Cubox/写在 34 岁-2024-07-29.md",
+    "title": "写在 34 岁",
+    "total": 7,
+    "reason": "Score 7/20 < 10 threshold",
+    "scan_date": "2026-04-05T06:55:07.090456+08:00"
+  },
+  {
+    "path": "Cubox/写在 Kimi K2 发布之后：再也不仅仅是 ChatBot - K.I.S.S-2025-07-14.md",
+    "title": "写在 Kimi K2 发布之后：再也不仅仅是 ChatBot | K.I.S.S",
+    "total": 8,
+    "reason": "Score 8/20 < 10 threshold",
+    "scan_date": "2026-04-05T06:55:07.090456+08:00"
+  },
+  {
+    "path": "Cubox/写在我的 M1 Max 深度使用3个月后 - 少数派-2022-02-27.md",
+    "title": "写在我的 M1 Max 深度使用3个月后 - 少数派",
+    "total": 6,
+    "reason": "Score 6/20 < 10 threshold",
+    "scan_date": "2026-04-05T06:55:07.090456+08:00"
+  },
+  {
+    "path": "Cubox/写在第二十五万字 · 构建我的被动收入-2022-02-24.md",
+    "title": "写在第二十五万字 · 构建我的被动收入",
+    "total": 7,
+    "reason": "Score 7/20 < 10 threshold",
+    "scan_date": "2026-04-05T06:55:07.090456+08:00"
+  },
+  {
+    "path": "Cubox/写给20岁左右的读者朋友-2022-03-17.md",
+    "title": "写给20岁左右的读者朋友",
+    "total": 7,
+    "reason": "Score 7/20 < 10 threshold",
+    "scan_date": "2026-04-05T06:55:07.090456+08:00"
+  },
+  {
+    "path": "Cubox/写给35+的一线技术牛马们 - 汪大哥的文章 - 知乎-2026-03-05.md",
+    "title": "写给35+的一线技术牛马们 - 汪大哥的文章 - 知乎",
+    "total": 6,
+    "reason": "Score 6/20 < 10 threshold",
+    "scan_date": "2026-04-05T06:55:07.090456+08:00"
+  },
+  {
+    "path": "Cubox/写给Android工程师的 Github CI 快速指北-2023-12-04.md",
+    "title": "写给Android工程师的 Github CI 快速指北",
+    "total": 7,
+    "reason": "Score 7/20 < 10 threshold",
+    "scan_date": "2026-04-05T06:55:07.090456+08:00"
+  },
+  {
+    "path": "Cubox/农村独立开发记录3，鸟枪换炮-2024-02-21.md",
+    "title": "农村独立开发记录3，鸟枪换炮",
+    "total": 6,
+    "reason": "Score 6/20 < 10 threshold",
+    "scan_date": "2026-04-05T06:55:07.090456+08:00"
+  },
+  {
+    "path": "Cubox/冷知识：为什么Lambda不会导致内存泄漏-2024-01-02.md",
+    "title": "冷知识：为什么Lambda不会导致内存泄漏",
+    "total": 9,
+    "reason": "Score 9/20 < 10 threshold",
+    "scan_date": "2026-04-05T06:55:07.090456+08:00"
+  },
+  {
+    "path": "Cubox/准备开个新坑——系统性能分析（一）-2023-10-16.md",
+    "title": "准备开个新坑——系统性能分析（一）",
+    "total": 8,
+    "reason": "Score 8/20 < 10 threshold",
+    "scan_date": "2026-04-05T06:55:07.090456+08:00"
+  },
+  {
+    "path": "Cubox/几乎是当下最详细的 AOSP 编译与调试运行指南想要自己 debug 系统源码，或者有定制 Android 系统的需求可 - 掘金-2025-01-09.md",
+    "title": "几乎是当下最详细的 AOSP 编译与调试运行指南想要自己 debug 系统源码，或者有定制 Android 系统的需求可 - 掘金",
+    "total": 8,
+    "reason": "Score 8/20 < 10 threshold",
+    "scan_date": "2026-04-05T06:55:07.090456+08:00"
+  },
+  {
+    "path": "Cubox/几篇有洞察力的文章-2025-12-23.md",
+    "title": "几篇有洞察力的文章",
+    "total": 9,
+    "reason": "Score 9/20 < 10 threshold",
+    "scan_date": "2026-04-05T06:55:07.090456+08:00"
+  },
+  {
+    "path": "Cubox/凡是上层打招呼的案件：基本上全是冤案-2024-01-28.md",
+    "title": "凡是上层打招呼的案件：基本上全是冤案",
+    "total": 7,
+    "reason": "Score 7/20 < 10 threshold",
+    "scan_date": "2026-04-05T06:55:07.090456+08:00"
+  },
+  {
+    "path": "Cubox/凯哥  -  当ERP遇到ChatGPT，新世界的大门被打开-2023-02-11.md",
+    "title": "凯哥  |  当ERP遇到ChatGPT，新世界的大门被打开",
+    "total": 8,
+    "reason": "Score 8/20 < 10 threshold",
+    "scan_date": "2026-04-05T06:55:07.090456+08:00"
+  },
+  {
+    "path": "Cubox/出国求职的中年程序员：工作状态朝九晚五，37岁在日本还是年轻人-2022-06-27.md",
+    "title": "出国求职的中年程序员：工作状态朝九晚五，37岁在日本还是年轻人",
+    "total": 7,
+    "reason": "Score 7/20 < 10 threshold",
+    "scan_date": "2026-04-05T06:55:07.090456+08:00"
+  },
+  {
+    "path": "Cubox/出色的技术质量是什么样的  -  App quality  -  Android Developers-2024-11-18.md",
+    "title": "出色的技术质量是什么样的  |  App quality  |  Android Developers",
+    "total": 7,
+    "reason": "Score 7/20 < 10 threshold",
+    "scan_date": "2026-04-05T06:55:07.090456+08:00"
+  },
+  {
+    "path": "Cubox/函数式编程实践-2024-07-29.md",
+    "title": "函数式编程实践",
+    "total": 6,
+    "reason": "Score 6/20 < 10 threshold",
+    "scan_date": "2026-04-05T06:55:07.090456+08:00"
+  },
+  {
+    "path": "Cubox/分享 2023 年最大的收获-2023-12-31.md",
+    "title": "分享 2023 年最大的收获",
+    "total": 6,
+    "reason": "Score 6/20 < 10 threshold",
+    "scan_date": "2026-04-05T06:55:07.090456+08:00"
+  },
+  {
+    "path": "Cubox/分享10个你可能不知道的Claude Code隐藏命令。-2026-03-21.md",
+    "title": "分享10个你可能不知道的Claude Code隐藏命令。",
+    "total": 7,
+    "reason": "Score 7/20 < 10 threshold",
+    "scan_date": "2026-04-05T06:55:07.090456+08:00"
+  },
+  {
+    "path": "Cubox/分享Linux学习和工程实践的方法学-2025-06-15.md",
+    "title": "分享Linux学习和工程实践的方法学",
+    "total": 7,
+    "reason": "Score 7/20 < 10 threshold",
+    "scan_date": "2026-04-05T06:55:07.090456+08:00"
+  },
+  {
+    "path": "Cubox/分享一下关于成都的工作和工资情况。-2022-02-20.md",
+    "title": "分享一下关于成都的工作和工资情况。",
+    "total": 7,
+    "reason": "Score 7/20 < 10 threshold",
+    "scan_date": "2026-04-05T06:55:07.090456+08:00"
+  },
+  {
+    "path": "Cubox/分享一个 android app 启动出现 Uninterruptible Sleep (non-IO) 性能问题分析-2025-05-16.md",
+    "title": "分享一个 android app 启动出现 Uninterruptible Sleep (non-IO) 性能问题分析",
+    "total": 7,
+    "reason": "Score 7/20 < 10 threshold",
+    "scan_date": "2026-04-05T06:55:07.090456+08:00"
+  },
+  {
+    "path": "Cubox/分享不停，踏浪前行 - 开发者说·DTalk 年中鉴赏-2022-07-15.md",
+    "title": "分享不停，踏浪前行 | 开发者说·DTalk 年中鉴赏",
+    "total": 7,
+    "reason": "Score 7/20 < 10 threshold",
+    "scan_date": "2026-04-05T06:55:07.090456+08:00"
+  },
+  {
+    "path": "Cubox/分享不同，精彩纷呈 - 开发者说·DTalk 年中鉴赏-2022-07-15.md",
+    "title": "分享不同，精彩纷呈 | 开发者说·DTalk 年中鉴赏",
+    "total": 7,
+    "reason": "Score 7/20 < 10 threshold",
+    "scan_date": "2026-04-05T06:55:07.090456+08:00"
+  },
+  {
+    "path": "Cubox/分享我几年前写的内存屏障原理与实例的ppt-2025-05-13.md",
+    "title": "分享我几年前写的内存屏障原理与实例的ppt",
+    "total": 9,
+    "reason": "Score 9/20 < 10 threshold",
+    "scan_date": "2026-04-05T06:55:07.090456+08:00"
+  },
+  {
+    "path": "Cubox/分享系统开发小技巧-如何查看进程是否冻结freeze-2025-02-19.md",
+    "title": "分享系统开发小技巧-如何查看进程是否冻结freeze",
+    "total": 7,
+    "reason": "Score 7/20 < 10 threshold",
+    "scan_date": "2026-04-05T06:55:07.090456+08:00"
   }
 ]

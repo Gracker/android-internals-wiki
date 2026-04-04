@@ -41,7 +41,12 @@
     "section_title": "ContentProvider 性能与优化",
     "priority": 80,
     "reason": "知识缺口挖掘：ContentProvider 是四大组件中唯一无专门章节的，直接影响启动速度和 ANR",
-    "material_paths": [],
+    "material_paths": [
+      "intake/research-feeds/2026-04-05-07-cp-startup-sequence-aosp.md",
+      "intake/research-feeds/2026-04-05-07-jetpack-app-startup-cp-consolidation.md",
+      "intake/research-feeds/2026-04-05-07-cursorwindow-binder-performance.md",
+      "intake/research-feeds/2026-04-05-07-multiprocess-cp-deadlock-anr.md"
+    ],
     "added_by": "task2a-knowledge-gap",
     "added_at": "2026-04-05T06:02:00+08:00",
     "status": "pending"
