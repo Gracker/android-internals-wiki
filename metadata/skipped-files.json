@@ -8651,5 +8651,434 @@
       "verifiability": 1.5
     },
     "total": 1.5
+  },
+  {
+    "path": "Cubox/借助 Android Studio 中的功耗性能分析器进行 A-B 测试-2024-05-17.md",
+    "title": "借助 Android Studio 中的功耗性能分析器进行 A/B 测试",
+    "scores": {
+      "relevance": 0,
+      "technical_depth": 1,
+      "timeliness": 4,
+      "verifiability": 1
+    },
+    "chapters": [],
+    "skip_reason": "总分6<10(相关0+深度1+时效4+可验证1)",
+    "scan_date": "2026-04-05T01:53:04.615815+08:00"
+  },
+  {
+    "path": "Cubox/借助 Android WebView API 提升对嵌入式媒体的信任-2023-12-25.md",
+    "title": "借助 Android WebView API 提升对嵌入式媒体的信任",
+    "scores": {
+      "relevance": 0,
+      "technical_depth": 3,
+      "timeliness": 3,
+      "verifiability": 3
+    },
+    "chapters": [],
+    "skip_reason": "总分9<10(相关0+深度3+时效3+可验证3)",
+    "scan_date": "2026-04-05T01:53:04.615815+08:00"
+  },
+  {
+    "path": "Cubox/做AI产品两年，我得出的实操经验-2025-04-15.md",
+    "title": "做AI产品两年，我得出的实操经验",
+    "scores": {
+      "relevance": 0,
+      "technical_depth": 1,
+      "timeliness": 5,
+      "verifiability": 1
+    },
+    "chapters": [],
+    "skip_reason": "总分7<10(相关0+深度1+时效5+可验证1)",
+    "scan_date": "2026-04-05T01:53:04.615815+08:00"
+  },
+  {
+    "path": "Cubox/健身、拍照、感受力和记忆厚度 - hayami's blog-2022-02-26.md",
+    "title": "健身、拍照、感受力和记忆厚度 - hayami's blog",
+    "scores": {
+      "relevance": 0,
+      "technical_depth": 1,
+      "timeliness": 3,
+      "verifiability": 1
+    },
+    "chapters": [],
+    "skip_reason": "总分5<10(相关0+深度1+时效3+可验证1)",
+    "scan_date": "2026-04-05T01:53:04.615815+08:00"
+  },
+  {
+    "path": "Cubox/像火箭科学家一样思考-迭代思维-2024-08-12.md",
+    "title": "像火箭科学家一样思考-迭代思维",
+    "scores": {
+      "relevance": 0,
+      "technical_depth": 1,
+      "timeliness": 4,
+      "verifiability": 1
+    },
+    "chapters": [],
+    "skip_reason": "总分6<10(相关0+深度1+时效4+可验证1)",
+    "scan_date": "2026-04-05T01:53:04.615815+08:00"
+  },
+  {
+    "path": "Cubox/先做成一件事 - MacTalk-池建强的随想录-2022-04-23.md",
+    "title": "先做成一件事 | MacTalk-池建强的随想录",
+    "scores": {
+      "relevance": 0,
+      "technical_depth": 1,
+      "timeliness": 3,
+      "verifiability": 2
+    },
+    "chapters": [],
+    "skip_reason": "总分6<10(相关0+深度1+时效3+可验证2)",
+    "scan_date": "2026-04-05T01:53:04.615815+08:00"
+  },
+  {
+    "path": "Cubox/入门攻略 篇一：公路车套件知多少(建议收藏)_公路车_什么值得买-2023-01-31.md",
+    "title": "入门攻略 篇一：公路车套件知多少(建议收藏)_公路车_什么值得买",
+    "scores": {
+      "relevance": 0,
+      "technical_depth": 1,
+      "timeliness": 3,
+      "verifiability": 1
+    },
+    "chapters": [],
+    "skip_reason": "总分5<10(相关0+深度1+时效3+可验证1)",
+    "scan_date": "2026-04-05T01:53:04.615815+08:00"
+  },
+  {
+    "path": "Cubox/全局视角下的APP性能优化经验 - 掘金-2024-03-18.md",
+    "title": "全局视角下的APP性能优化经验 - 掘金",
+    "scores": {
+      "relevance": 0,
+      "technical_depth": 1,
+      "timeliness": 4,
+      "verifiability": 1
+    },
+    "chapters": [],
+    "skip_reason": "总分6<10(相关0+深度1+时效4+可验证1)",
+    "scan_date": "2026-04-05T01:53:04.615815+08:00"
+  },
+  {
+    "path": "Cubox/全文来了！任正非：全球经济长期衰退，华为要把活下来作为主要纲领-2022-08-23.md",
+    "title": "全文来了！任正非：全球经济长期衰退，华为要把活下来作为主要纲领",
+    "scores": {
+      "relevance": 0,
+      "technical_depth": 1,
+      "timeliness": 3,
+      "verifiability": 1
+    },
+    "chapters": [],
+    "skip_reason": "总分5<10(相关0+深度1+时效3+可验证1)",
+    "scan_date": "2026-04-05T01:53:04.615815+08:00"
+  },
+  {
+    "path": "Cubox/全新 DeepSeek V3 发布，代码能力大幅提升-2025-03-25.md",
+    "title": "全新 DeepSeek V3 发布，代码能力大幅提升",
+    "scores": {
+      "relevance": 0,
+      "technical_depth": 1,
+      "timeliness": 5,
+      "verifiability": 3
+    },
+    "chapters": [],
+    "skip_reason": "总分9<10(相关0+深度1+时效5+可验证3)",
+    "scan_date": "2026-04-05T01:53:04.615815+08:00"
+  },
+  {
+    "path": "Cubox/全方位剖析内核抢占机制-2024-05-24.md",
+    "title": "全方位剖析内核抢占机制",
+    "scores": {
+      "relevance": 0,
+      "technical_depth": 1,
+      "timeliness": 4,
+      "verifiability": 1
+    },
+    "chapters": [],
+    "skip_reason": "总分6<10(相关0+深度1+时效4+可验证1)",
+    "scan_date": "2026-04-05T01:53:04.615815+08:00"
+  },
+  {
+    "path": "Cubox/全方位带你彻底搞懂 Android 内存泄露 - 案例分析-2022-08-10.md",
+    "title": "全方位带你彻底搞懂 Android 内存泄露 | 案例分析",
+    "scores": {
+      "relevance": 3,
+      "technical_depth": 1,
+      "timeliness": 3,
+      "verifiability": 2
+    },
+    "chapters": [],
+    "skip_reason": "总分9<10(相关3+深度1+时效3+可验证2)",
+    "scan_date": "2026-04-05T01:53:04.615815+08:00"
+  },
+  {
+    "path": "Cubox/全网最深度解读：自研CPU，如何成为高通骁龙的最后一块拼图？-2024-12-03.md",
+    "title": "全网最深度解读：自研CPU，如何成为高通骁龙的最后一块拼图？",
+    "scores": {
+      "relevance": 0,
+      "technical_depth": 1,
+      "timeliness": 4,
+      "verifiability": 1
+    },
+    "chapters": [],
+    "skip_reason": "总分6<10(相关0+深度1+时效4+可验证1)",
+    "scan_date": "2026-04-05T01:53:04.615815+08:00"
+  },
+  {
+    "path": "Cubox/全职独立开发 2 年半，只专注做一件事情 · w2solo - 独立开发者社区-2024-08-08.md",
+    "title": "全职独立开发 2 年半，只专注做一件事情 · w2solo - 独立开发者社区",
+    "scores": {
+      "relevance": 0,
+      "technical_depth": 3,
+      "timeliness": 4,
+      "verifiability": 1
+    },
+    "chapters": [],
+    "skip_reason": "总分8<10(相关0+深度3+时效4+可验证1)",
+    "scan_date": "2026-04-05T01:53:04.615815+08:00"
+  },
+  {
+    "path": "Cubox/全职独立开发半年小记 - 阿小信的博客-2024-09-10.md",
+    "title": "全职独立开发半年小记 - 阿小信的博客",
+    "scores": {
+      "relevance": 0,
+      "technical_depth": 1,
+      "timeliness": 4,
+      "verifiability": 1
+    },
+    "chapters": [],
+    "skip_reason": "总分6<10(相关0+深度1+时效4+可验证1)",
+    "scan_date": "2026-04-05T01:53:04.615815+08:00"
+  },
+  {
+    "path": "Cubox/全面解析 Android 之 ANR 日志-2022-03-24.md",
+    "title": "全面解析 Android 之 ANR 日志",
+    "scores": {
+      "relevance": 0,
+      "technical_depth": 1,
+      "timeliness": 3,
+      "verifiability": 3
+    },
+    "chapters": [],
+    "skip_reason": "总分7<10(相关0+深度1+时效3+可验证3)",
+    "scan_date": "2026-04-05T01:53:04.615815+08:00"
+  },
+  {
+    "path": "Cubox/八年老程序员｜2023 年我输出的内容汇总（文章、直播、开源库）-2023-12-25.md",
+    "title": "八年老程序员｜2023 年我输出的内容汇总（文章、直播、开源库）",
+    "scores": {
+      "relevance": 0,
+      "technical_depth": 1,
+      "timeliness": 3,
+      "verifiability": 1
+    },
+    "chapters": [],
+    "skip_reason": "总分5<10(相关0+深度1+时效3+可验证1)",
+    "scan_date": "2026-04-05T01:53:04.615815+08:00"
+  },
+  {
+    "path": "Cubox/公众号爆款文章提示词：让AI写出有-人味-的深度长文（附完整提示词）-2026-02-22.md",
+    "title": "公众号爆款文章提示词：让AI写出有\"人味\"的深度长文（附完整提示词）",
+    "scores": {
+      "relevance": 0,
+      "technical_depth": 1,
+      "timeliness": 5,
+      "verifiability": 1
+    },
+    "chapters": [],
+    "skip_reason": "总分7<10(相关0+深度1+时效5+可验证1)",
+    "scan_date": "2026-04-05T01:53:04.615815+08:00"
+  },
+  {
+    "path": "Cubox/公路旅行：和旅行作家刘子超一起穿过大兴安岭-2022-01-14.md",
+    "title": "公路旅行：和旅行作家刘子超一起穿过大兴安岭",
+    "scores": {
+      "relevance": 0,
+      "technical_depth": 1,
+      "timeliness": 3,
+      "verifiability": 1
+    },
+    "chapters": [],
+    "skip_reason": "总分5<10(相关0+深度1+时效3+可验证1)",
+    "scan_date": "2026-04-05T01:53:04.615815+08:00"
+  },
+  {
+    "path": "Cubox/公链的原生稳定币之争｜响指研究所周报#36-2022-04-20.md",
+    "title": "公链的原生稳定币之争｜响指研究所周报#36",
+    "scores": {
+      "relevance": 0,
+      "technical_depth": 1,
+      "timeliness": 3,
+      "verifiability": 3
+    },
+    "chapters": [],
+    "skip_reason": "总分7<10(相关0+深度1+时效3+可验证3)",
+    "scan_date": "2026-04-05T01:53:04.615815+08:00"
+  },
+  {
+    "path": "Cubox/六万字 - 深入理解Linux进程调度-2022-08-09.md",
+    "title": "六万字 | 深入理解Linux进程调度",
+    "scores": {
+      "relevance": 4,
+      "technical_depth": 1,
+      "timeliness": 3,
+      "verifiability": 1
+    },
+    "chapters": [],
+    "skip_reason": "总分9<10(相关4+深度1+时效3+可验证1)",
+    "scan_date": "2026-04-05T01:53:04.615815+08:00"
+  },
+  {
+    "path": "Cubox/关于 Android15 GKI2407R40 导致梆梆加固软件崩溃-2024-11-13.md",
+    "title": "关于 Android15 GKI2407R40 导致梆梆加固软件崩溃",
+    "scores": {
+      "relevance": 0,
+      "technical_depth": 1,
+      "timeliness": 4,
+      "verifiability": 3
+    },
+    "chapters": [],
+    "skip_reason": "总分8<10(相关0+深度1+时效4+可验证3)",
+    "scan_date": "2026-04-05T01:53:04.615815+08:00"
+  },
+  {
+    "path": "Cubox/关于 GPT-5，你需要知道的一些事-2025-08-08.md",
+    "title": "关于 GPT-5，你需要知道的一些事",
+    "scores": {
+      "relevance": 0,
+      "technical_depth": 1,
+      "timeliness": 5,
+      "verifiability": 3
+    },
+    "chapters": [],
+    "skip_reason": "总分9<10(相关0+深度1+时效5+可验证3)",
+    "scan_date": "2026-04-05T01:53:04.615815+08:00"
+  },
+  {
+    "path": "Cubox/关于 GPT-5，你需要知道的一些事-2025-08-09.md",
+    "title": "关于 GPT-5，你需要知道的一些事",
+    "scores": {
+      "relevance": 0,
+      "technical_depth": 1,
+      "timeliness": 5,
+      "verifiability": 3
+    },
+    "chapters": [],
+    "skip_reason": "总分9<10(相关0+深度1+时效5+可验证3)",
+    "scan_date": "2026-04-05T01:53:04.615815+08:00"
+  },
+  {
+    "path": "Cubox/关于 Kotlin - Lazy ，你应该了解的这些事-2023-04-10.md",
+    "title": "关于 Kotlin | Lazy ，你应该了解的这些事",
+    "scores": {
+      "relevance": 0,
+      "technical_depth": 5,
+      "timeliness": 3,
+      "verifiability": 1
+    },
+    "chapters": [],
+    "skip_reason": "总分9<10(相关0+深度5+时效3+可验证1)",
+    "scan_date": "2026-04-05T01:53:04.615815+08:00"
+  },
+  {
+    "path": "Cubox/关于 MVI，我想聊的更明白些-2022-09-13.md",
+    "title": "关于 MVI，我想聊的更明白些",
+    "scores": {
+      "relevance": 0,
+      "technical_depth": 3,
+      "timeliness": 3,
+      "verifiability": 1
+    },
+    "chapters": [],
+    "skip_reason": "总分7<10(相关0+深度3+时效3+可验证1)",
+    "scan_date": "2026-04-05T01:53:04.615815+08:00"
+  },
+  {
+    "path": "Cubox/关于 Newsletter，我想和你分享这些 - 少数派-2022-02-14.md",
+    "title": "关于 Newsletter，我想和你分享这些 - 少数派",
+    "scores": {
+      "relevance": 0,
+      "technical_depth": 1,
+      "timeliness": 3,
+      "verifiability": 1
+    },
+    "chapters": [],
+    "skip_reason": "总分5<10(相关0+深度1+时效3+可验证1)",
+    "scan_date": "2026-04-05T01:53:04.615815+08:00"
+  },
+  {
+    "path": "Cubox/关于 TweetID-1658453862561501184 中典型诡辩论部分的拆解 - Kivinsae's Nest-2023-05-17.md",
+    "title": "关于 TweetID:1658453862561501184 中典型诡辩论部分的拆解 | Kivinsae's Nest",
+    "scores": {
+      "relevance": 0,
+      "technical_depth": 1,
+      "timeliness": 3,
+      "verifiability": 3
+    },
+    "chapters": [],
+    "skip_reason": "总分7<10(相关0+深度1+时效3+可验证3)",
+    "scan_date": "2026-04-05T01:53:04.615815+08:00"
+  },
+  {
+    "path": "Cubox/关于 Yak Shaving-2022-02-07.md",
+    "title": "关于 Yak Shaving",
+    "scores": {
+      "relevance": 0,
+      "technical_depth": 1,
+      "timeliness": 3,
+      "verifiability": 3
+    },
+    "chapters": [],
+    "skip_reason": "总分7<10(相关0+深度1+时效3+可验证3)",
+    "scan_date": "2026-04-05T01:53:04.615815+08:00"
+  },
+  {
+    "path": "Cubox/关于 eBPF 的一些粗浅理解-2022-03-06.md",
+    "title": "关于 eBPF 的一些粗浅理解",
+    "scores": {
+      "relevance": 0,
+      "technical_depth": 1,
+      "timeliness": 3,
+      "verifiability": 1
+    },
+    "chapters": [],
+    "skip_reason": "总分5<10(相关0+深度1+时效3+可验证1)",
+    "scan_date": "2026-04-05T01:53:04.615815+08:00"
+  },
+  {
+    "path": "Cubox/关于AI的一些实践和思考 - Rolen's Blog-2025-03-05.md",
+    "title": "关于AI的一些实践和思考 - Rolen's Blog",
+    "scores": {
+      "relevance": 0,
+      "technical_depth": 1,
+      "timeliness": 5,
+      "verifiability": 1
+    },
+    "chapters": [],
+    "skip_reason": "总分7<10(相关0+深度1+时效5+可验证1)",
+    "scan_date": "2026-04-05T01:53:04.615815+08:00"
+  },
+  {
+    "path": "Cubox/关于AI的思考：如何在AI时代看清楚自己的价值-2024-08-23.md",
+    "title": "关于AI的思考：如何在AI时代看清楚自己的价值",
+    "scores": {
+      "relevance": 0,
+      "technical_depth": 1,
+      "timeliness": 4,
+      "verifiability": 1
+    },
+    "chapters": [],
+    "skip_reason": "总分6<10(相关0+深度1+时效4+可验证1)",
+    "scan_date": "2026-04-05T01:53:04.615815+08:00"
+  },
+  {
+    "path": "Cubox/关于DeepSeek我是怎么研究的(1)-2025-02-10.md",
+    "title": "关于DeepSeek我是怎么研究的(1)",
+    "scores": {
+      "relevance": 0,
+      "technical_depth": 1,
+      "timeliness": 5,
+      "verifiability": 3
+    },
+    "chapters": [],
+    "skip_reason": "总分9<10(相关0+深度1+时效5+可验证3)",
+    "scan_date": "2026-04-05T01:53:04.615815+08:00"
   }
 ]

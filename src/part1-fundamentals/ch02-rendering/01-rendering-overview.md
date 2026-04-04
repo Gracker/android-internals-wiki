@@ -1,7 +1,7 @@
 ---
 title: "Android 渲染架构全景"
 chapter: "2.1"
-status: reviewed
+status: ready-for-review
 applicable_versions: "Android 12 (API 31) - Android 16 (API 36)"
 last_verified: "2026-03-30"
 last_verified_against: "AOSP android-16.0.0_r1, 官方文档最新版本"
@@ -607,13 +607,17 @@ vkBindImageMemory(device, image, memory, 0);
 
 ### RenderEngine 与 GPU Composition 的区别
 
-RenderEngine 和 GPU Composition 是两个容易混淆的概念，但它们的职责截然不同。
+RenderEngine 和 GPU Composition 是两个经常被混淆的概念。混淆的根源在于它们都涉及 GPU 和 Skia，但它们分属完全不同的进程，服务于渲染管线的不同阶段。
 
-[存疑: 以下关于 RenderEngine 的描述可能有误。在 AOSP 中，RenderEngine（frameworks/native/services/surfaceflinger/RenderEngine/）运行在 SurfaceFlinger 进程中，负责 GPU Composition 时的渲染，而非运行在 App 的 RenderThread 中。App 的 RenderThread 使用的是 HWUI 的 Skia Pipeline（SkiaOpenGLPipeline / SkiaVulkanPipeline）。建议高爷核实并修正。]
+**App 渲染管线（RenderThread + HWUI Skia Pipeline）** 是上面"硬件加速渲染"一节描述的路径：主线程把 View 树录制为 DisplayList 指令，RenderThread 通过 HWUI 的 Skia Pipeline（SkiaOpenGLPipeline 或 SkiaVulkanPipeline）将这些指令转换为 OpenGL/Vulkan API 调用，交给 GPU 执行。这条管线的产出是填充好像素的 GraphicBuffer，通过 queueBuffer() 提交给 BufferQueue。整个过程中 RenderThread 运行在 App 进程内，与 SurfaceFlinger 没有直接交互。
 
-RenderEngine 是 Skia 的渲染后端，运行在 RenderThread 中，负责把 App 的 DisplayList 指令转化为实际的 GPU 绘制调用——它处理的是单个 App 的 UI 渲染。GPU Composition 则是 SurfaceFlinger 的合成过程，运行在 SurfaceFlinger 进程中，负责把多个 App 的渲染结果叠加在一起——它处理的是多个 Layer 的最终合成。
+**SurfaceFlinger 合成管线（RenderEngine + GPU Composition）** 是 SurfaceFlinger 在 HWC 无法完成合成时的 GPU 回退路径。RenderEngine（`frameworks/native/services/surfaceflinger/RenderEngine/`）运行在 SurfaceFlinger 进程中，它同样基于 Skia 构建，但职责不是"画单个 App 的 UI"，而是"把多个 Layer 的缓冲区合成到一起"。当 Layer 数量超过 HWC 的处理能力、或者 Layer 使用了 HWC 不支持的混合模式时，SurfaceFlinger 会通过 RenderEngine 调用 GPU 来完成合成——这就是 GPU Composition。
 
-用更直观的方式来说，RenderEngine 画的是单个 App 的 UI（"画一个按钮"、"绘制一段文字"），GPU Composition 组的是多个 App 的画面（"把微信的界面叠在启动器上面，再加一层状态栏"）。在 Perfetto 中，RenderEngine 的耗时体现在 RenderThread track 上，GPU Composition 的耗时体现在 SurfaceFlinger 进程的 GPU 活动中。
+简单来说，App 的 RenderThread 画的是"一个 App 的一帧"（"画一个按钮"、"绘制一段文字"），SurfaceFlinger 的 RenderEngine 组的是"所有 App 的画面叠加"（"把微信的界面叠在启动器上面，再加一层状态栏"）。两者都用到 Skia 和 GPU，但前者服务于 App 进程内的 UI 渲染，后者服务于 SurfaceFlinger 进程内的多 Layer 合成。
+
+在 Perfetto 中，App 渲染管线的耗时体现在 App 进程的 RenderThread track 上（drawFrame slice），SurfaceFlinger 合成管线的耗时体现在 SurfaceFlinger 进程的 GPU 活动和 handleMessageRefresh 中。如果 SurfaceFlinger 的合成耗时异常增长，且伴随着 GPU 合成回退的迹象，就需要检查 Layer 数量和混合模式是否触发了 RenderEngine 的 GPU 合成路径。
+
+[已验证: AOSP android-16.0.0_r1, frameworks/native/services/surfaceflinger/RenderEngine/]
 
 [待验证: Vulkan 官方文档和性能基准测试]
 
