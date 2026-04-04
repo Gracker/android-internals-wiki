@@ -399,3 +399,14 @@
 - **问题**：原文写"ANGLE 强制采用"，已改为"ANGLE 推广加速"并加 [待验证] 标注。ANGLE 在 Android 15 中是否对所有 GPU 厂商（Qualcomm Adreno、ARM Mali、Imagination PowerVR）统一强制启用，需要进一步确认。根据已有信息，ANGLE 的启用策略因厂商和设备而异，并非全局一刀切。
 - **建议**：查阅 AOSP android-15 分支的 release notes 和 `com.android.graphics.libgui.flags` 中的 ANGLE 相关 flag，确认实际启用条件后补充说明。
 - **review 日志**：logs/review/2026-04-04-1920-review.md
+
+## [Task2A 知识缺口挖掘] 2026-04-04 20:09
+
+### 挖掘结果
+- 已检查方向：source-index（0 unmapped）、research-feeds（已映射）、AOSP WMS 结构、官方文档、现有章节扩展点
+- 创建了 §2.12 Window Manager Service 与窗口管理（评分 18/20）
+- 候选缺口评分 ≥14 共 2 个：
+  1. WMS 与窗口管理 — 18/20 — 已创建为 §2.12
+  2. AMS 深入（Activity Manager Service）— 17/20 — 建议未来轮次创建
+- 其他候选（<14）：WebView 性能 13/20、SQLite 性能 11/20、PMS 12/20
+- 已检查方向已记录，下次运行可探索不同方向

@@ -1,14 +1,14 @@
 {
   "generated_at": "2026-04-03T19:10:00",
-  "total_sections": 94,
+  "total_sections": 95,
   "metrics": {
-    "total": 97,
-    "draft": 4,
+    "total": 98,
+    "draft": 5,
     "ready-for-review": 48,
     "reviewed": 3,
     "finalized": 39,
     "staging_drafts": 0,
-    "last_updated": "2026-04-04T19:20:00+08:00",
+    "last_updated": "2026-04-04T20:10:00+08:00",
     "processing": 0,
     "ready-to-publish": 1
   },
@@ -1345,6 +1345,15 @@
   "history": [
     {
       "date": "2026-04-04",
+      "section": "2.12",
+      "title": "Window Manager Service 与窗口管理",
+      "action": "gap-created",
+      "created_by": "task2a-knowledge-gap",
+      "gap_source": "AOSP结构+官方文档+读者需求",
+      "score": "18/20"
+    },
+    {
+      "date": "2026-04-04",
       "section": "17.3",
       "title": "行业案例",
       "action": "draft-completed",
@@ -2252,6 +2261,14 @@
       "polish_by": "task2b-polish",
       "reviewed_date": "2026-04-02",
       "reviewed_by": "openclaw-task6"
+    },
+    "2.12": {
+      "title": "Window Manager Service 与窗口管理",
+      "status": "draft",
+      "file": "src/part1-fundamentals/ch02-rendering/12-window-manager.md",
+      "created_date": "2026-04-04",
+      "created_by": "task2a-knowledge-gap",
+      "gap_source": "AOSP结构+官方文档+读者需求"
     }
   },
   "5.1": {
