@@ -1,9 +1,9 @@
 {
   "generated_at": "2026-04-03T19:10:00",
-  "total_sections": 95,
+  "total_sections": 96,
   "metrics": {
-    "total": 98,
-    "draft": 5,
+    "total": 99,
+    "draft": 6,
     "ready-for-review": 48,
     "reviewed": 3,
     "finalized": 39,
@@ -1345,6 +1345,15 @@
   "history": [
     {
       "date": "2026-04-04",
+      "section": "1.7",
+      "title": "ART 编译管线与 dex2oat 优化",
+      "action": "gap-created",
+      "created_by": "task2a-knowledge-gap",
+      "gap_source": "AOSP结构+官方文档+研究素材+读者需求",
+      "score": "19/20"
+    },
+    {
+      "date": "2026-04-04",
       "section": "2.12",
       "title": "Window Manager Service 与窗口管理",
       "action": "gap-created",
@@ -2269,6 +2278,14 @@
       "created_date": "2026-04-04",
       "created_by": "task2a-knowledge-gap",
       "gap_source": "AOSP结构+官方文档+读者需求"
+    },
+    "1.7": {
+      "title": "ART 编译管线与 dex2oat 优化",
+      "status": "draft",
+      "file": "src/part1-fundamentals/ch01-architecture/07-art-compilation.md",
+      "created_date": "2026-04-04",
+      "created_by": "task2a-knowledge-gap",
+      "gap_source": "AOSP结构+官方文档+研究素材+读者需求"
     }
   },
   "5.1": {

@@ -18,6 +18,7 @@
   - [1.4 Binder IPC 机制与性能影响](part1-fundamentals/ch01-architecture/04-binder.md)
   - [1.5 线程模型](part1-fundamentals/ch01-architecture/05-threading-model.md)
   - [1.6 Android 版本演进中的架构变化](part1-fundamentals/ch01-architecture/06-version-evolution.md)
+  - [1.7 ART 编译管线与 dex2oat 优化](part1-fundamentals/ch01-architecture/07-art-compilation.md)
 
 - [第 2 章：渲染系统](part1-fundamentals/ch02-rendering/README.md)
   - [2.1 Android 渲染架构全景](part1-fundamentals/ch02-rendering/01-rendering-overview.md)

@@ -323,6 +323,15 @@
       "status": "pending",
       "created_date": "2026-04-04",
       "source": "task2a-knowledge-gap"
+    },
+    {
+      "section": "1.7",
+      "title": "ART 编译管线与 dex2oat 优化",
+      "file": "src/part1-fundamentals/ch01-architecture/07-art-compilation.md",
+      "priority": 80,
+      "status": "pending",
+      "created_date": "2026-04-04",
+      "source": "task2a-knowledge-gap"
     }
   ]
 }
