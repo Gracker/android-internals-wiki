@@ -1,8 +1,13 @@
 ---
 title: "MainThread 与 RenderThread 协作"
 chapter: "2.5"
-status: finalized
+status: ready-for-review
+section: "2.5"
 drafted_date: "2026-03-30"
+drafted_by: "openclaw-task2a"
+polish_count: 1
+polish_date: "2026-04-04"
+polish_by: "task2b-polish"
 applicable_versions: "Android 12 (API 31) - Android 16 (API 35)"
 last_verified: "2026-03-30"
 last_verified_against: "AOSP android-16.0.0_r1"
@@ -54,7 +59,7 @@ related_chapters: ["2.3", "2.4", "2.6", "3.1"]
 
 ## 开头：为什么要了解这两个线程的协作
 
-在 Perfetto 里打开一个滑动场景的 Trace，我们会看到主线程（UI Thread）和 RenderThread 两条 Track 交替出现密集的色块。如果一切正常，它们像齿轮一样精密咬合——主线程画完蓝图，RenderThread 拿去执行，一帧接一帧流畅运转。如果出了问题，你会看到一条 Track 延迟、另一条 Track 饥饿等待，最终帧超时掉帧。
+在 Perfetto 里打开一个滑动场景的 Trace，我们会看到主线程（UI Thread）和 RenderThread 两条 Track 交替出现密集的色块。如果一切正常，它们像齿轮一样精密咬合——主线程画完蓝图，RenderThread 拿去执行，一帧接一帧流畅运转。如果出了问题，我们会看到一条 Track 延迟、另一条 Track 饥饿等待，最终帧超时掉帧。
 
 Android 5.0（Lollipop）引入 RenderThread 的目的是把"构建绘制指令"和"执行 GPU 命令"拆分到两个线程上并行执行。在此之前，measure、layout、draw 和 GPU 渲染全部在主线程完成，意味着 App 的 UI 逻辑和 GPU 的渲染工作互相阻塞。引入 RenderThread 后，主线程只负责构建 DisplayList（一份绘制指令清单），真正的 GPU 渲染工作交给了 RenderThread，从而让 CPU 和 GPU 实现流水线式并行。
 
@@ -70,13 +75,14 @@ Android 5.0（Lollipop）引入 RenderThread 的目的是把"构建绘制指令"
 
 **Layout（布局）**——根据测量结果，父 View 为每个子 View 分配精确的位置和大小（left、top、right、bottom）。
 
-**Draw（绘制）**——这一步容易产生误解。开启硬件加速后，`View.onDraw(Canvas)` 被调用时传入的 Canvas 并不是一块真正的画布，而是 `RecordingCanvas`。它不会产生任何像素，而是将你的绘制调用（画圆、画文字、画图片）记录到一个叫 **DisplayList**（也叫 **RenderNode**）的数据结构中。
+**Draw（绘制）**——这一步容易产生误解。开启硬件加速后，`View.onDraw(Canvas)` 被调用时传入的 Canvas 并不是一块真正的画布，而是 `RecordingCanvas`。它不会产生任何像素，而是将绘制调用（画圆、画文字、画图片）记录到一个叫 **DisplayList**（也叫 **RenderNode**）的数据结构中。
 
 我们可以把 DisplayList 类比成一份"施工图纸"——它精确记录了"在什么位置画什么形状、什么颜色"，但还没有变成真正的像素。这份图纸将在稍后交给 RenderThread，由它来指挥 GPU 把图纸变成真正的画面。
 
 ```java
 // frameworks/base/core/java/android/view/View.java
 // @ AOSP android-16.0.0_r1
+// [简化示意：实际 draw() 逻辑更复杂，此处仅展示硬件加速路径]
 void draw(Canvas canvas) {
     // ...
     if (hardwareAccelerated && canvas instanceof RecordingCanvas) {
@@ -108,6 +114,7 @@ RenderThread 是一个 Looper 驱动的线程，但与普通 Handler 消息循�
 ```cpp
 // frameworks/base/libs/hwui/renderthread/RenderThread.cpp
 // @ AOSP android-16.0.0_r1
+// [简化示意：实际 threadLoop 包含更复杂的事件分发逻辑]
 void RenderThread::threadLoop() {
     setupThreadLocator();
     // 初始化 GPU 上下文（EGL / Vulkan）
@@ -149,7 +156,7 @@ void draw(View view, AttachInfo attachInfo, DrawCallbacks callbacks) {
 }
 ```
 
-同步过程中发生了什么？
+同步过程中，具体发生了以下几件事：
 
 1. **等待上一帧完成**：如果 RenderThread 还在渲染上一帧（GPU 工作尚未结束），主线程会在这里阻塞等待。这个等待时间在 Perfetto 中会显示为主线程上的 `syncFrameState` 切片。
 
@@ -291,7 +298,7 @@ LIMIT 20;
 
 ## 两个线程耗时分析的实操方法
 
-面对一个具体的卡顿问题，推荐的 Perfetto 分析步骤是：
+当我们面对一个具体的卡顿问题时，下面这套 Perfetto 分析流程可以帮助我们快速定位瓶颈所在：
 
 **第一步：看主线程的 doFrame 是否超时。** 如果 `Choreographer#doFrame` 整体超过 16.6ms（60Hz）或 11.1ms（90Hz），说明这一帧有问题。
 
@@ -307,35 +314,31 @@ LIMIT 20;
 
 ## 常见性能问题与排查
 
-### 问题一：布局嵌套过深，主线程耗时超标
+当主线程和 RenderThread 的协作出现问题时，在 Perfetto 中的表现往往很有规律。下面我们看三个最常见的场景，以及各自的排查思路。
 
-**现象**：`performTraversals` 中 measure/layout 阶段耗时过长。
+### 布局嵌套过深，主线程耗时超标
 
-**根因**：View 层级嵌套过深（比如超过 10 层 RelativeLayout 嵌套），或者某些自定义 View 的 `onMeasure` 实现低效（多次 `requestLayout`）。
+最典型的表现是 `performTraversals` 中 measure/layout 阶段占据了大部分帧时间。当 View 层级嵌套超过 10 层（尤其是多层 RelativeLayout 互相嵌套），或者自定义 View 的 `onMeasure` 实现中多次调用 `requestLayout`，measure 阶段的递归遍历开销会急剧上升。
 
-**排查**：在 Perfetto 中展开 `performTraversals` → `measure` / `layout`，确认具体耗时分布。使用 Layout Inspector 检查 View 层级深度。
+在 Perfetto 中展开 `performTraversals` 的 `measure` / `layout` 子切片，可以直接看到耗时分布。如果 measure 阶段出现明显的红色条带（超过 8ms），基本可以确认是布局复杂度的问题。Layout Inspector 是另一把利器——它可以可视化展示 View 树的深度，帮助我们快速定位嵌套过深的区域。
 
-**优化建议**：使用 ConstraintLayout 减少嵌套层级；避免在 `onMeasure` 中创建对象；对于复杂列表，使用 RecyclerView 的 `setHasFixedSize(true)` 等优化。
+优化方向很直接：用 ConstraintLayout 替代多层嵌套，减少 View 树深度；避免在 `onMeasure` 中创建对象（这个方法可能在一帧内被调用多次）；对于内容固定的列表，`RecyclerView.setHasFixedSize(true)` 可以跳过不必要的 measure 请求。
 
-### 问题二：DisplayList 过大，同步耗时增加
+### DisplayList 过大，同步耗时增加
 
-**现象**：`draw` 阶段耗时增加，或者 `syncFrameState` 变慢。
+有时候主线程的 draw 阶段本身不慢，但 `syncFrameState` 却耗时异常——这就需要怀疑 DisplayList 的体积是否过大。如果某个 View 的 `onDraw` 中存在循环调用（比如绘制大量重复图形），DisplayList 会记录大量绘制命令；又或者有大量 Bitmap 需要上传到 GPU，同步阶段的数据传输量就会膨胀。
 
-**根因**：单个 View 的 DisplayList 记录了过多的绘制命令（比如在 `onDraw` 中循环调用 `canvas.draw*`），或者有大量的 Bitmap 需要上传到 GPU。
+排查的第一步是 `adb shell dumpsys gfxinfo <package>`，其中会列出每个 View 的 DisplayList 大小和命令数量（command count）。如果某个 View 的 command count 远超其他 View，它就是优化目标。
 
-**排查**：使用 `adb shell dumpsys gfxinfo <package>` 查看 View 的 DisplayList 大小和数量。重点关注 DisplayList 的"command count"指标。
+优化的核心思路是减少 DisplayList 的命令数：简化 `onDraw` 中的绘制逻辑，善用 `Canvas.save()`/`restore()` 避免重复绘制，对于不常变化的复杂背景使用 9-patch 或 Hardware Layer 缓存（关于 Hardware Layer 的详细用法，我们在 [2.7 Hardware Layer](07-hardware-layer.md) 中有专门讨论）。
 
-**优化建议**：简化 `onDraw` 逻辑；使用 `Canvas.save()`/`restore()` 减少重复绘制；对于复杂背景，使用 9-patch 或硬件图层（Hardware Layer）缓存。
+### GPU 过载，帧渲染延迟
 
-### 问题三：GPU 过载，帧渲染延迟
+这类问题的信号很有特点：主线程的 `syncFrameState` 等待时间持续偏高，同时 RenderThread 的 `DrawFrame` 反复超时。根因通常在 GPU 端——画面复杂度过高，大量半透明叠加（Overdraw 严重）、复杂 Shader、大尺寸纹理，GPU 处理不过来，每一帧都在还上一帧的"债"。
 
-**现象**：主线程 `syncFrameState` 等待时间变长，RenderThread 的 `DrawFrame` 持续超时。
+在 Perfetto 中，我们需要切到 GPU Track 查看实际负载。如果 GPU utilization 持续接近 100%，且 RenderThread 上出现大量的 `flush` 操作，基本可以确认是 GPU 过载。另一个佐证是 Frame Timeline Track 中出现连续的"大红帧"。
 
-**根因**：画面复杂度过高——大量半透明叠加、复杂 Shader、大尺寸纹理等。GPU 处理不过来。
-
-**排查**：在 Perfetto 中查看 GPU Track 的负载情况。检查是否有大量的 `flush` 操作。使用 GPU 渲染分析工具（如 `adb shell dumpsys gfxinfo` 中的 GPU 指标）确认 GPU 帧耗时。
-
-**优化建议**：减少过度绘制（Overdraw）；使用简化的 Shader；对不常变化的 View 使用 Hardware Layer；降低图片分辨率。
+GPU 过载的优化方向是"减少 GPU 的工作量"：降低过度绘制（在开发者选项中打开"显示 GPU 过度绘制"可以直观看到每个区域的叠加层数），简化 Shader（避免在 Fragment Shader 中做复杂计算），对不常变化的 View 使用 Hardware Layer 缓存渲染结果，以及适当降低图片分辨率。
 
 ## [自动发现] 多窗口场景下的线程争抢
 
@@ -360,7 +363,7 @@ RenderThread 并不是收到一条 DisplayList 命令就立即翻译成一条 GP
 
 这种策略的好处是减少了 GPU 的状态切换开销。GPU 从"画矩形"切换到"画圆弧"需要重新配置渲染状态（Shader、Blend 模式等），这是一笔不小的开销。通过重排序，把同类型的绘制操作集中处理，可以显著减少状态切换次数。
 
-在 Perfetto 中，你可以通过 RenderThread 上的 `flushCommands` 切片观察到这个 flush 操作的时机和耗时。
+在 Perfetto 中，我们可以通过 RenderThread 上的 `flushCommands` 切片观察到这个 flush 操作的时机和耗时。
 
 [已验证: AOSP android-16.0.0_r1, frameworks/base/libs/hwui/]
 
@@ -373,7 +376,7 @@ RenderThread 并不是收到一条 DisplayList 命令就立即翻译成一条 GP
 
 RenderThread 动画的工作原理是：在 `syncFrameState` 阶段，主线程将动画的当前状态（起始值、目标值、时间插值器）同步给 RenderThread。之后的每一帧，RenderThread 自己根据 VSync 时间计算动画值，直接更新 RenderNode 的变换矩阵，不需要主线程重新执行 `performTraversals`。
 
-这意味着，即使主线程很忙（比如在做复杂的布局计算），这些动画依然可以流畅运行。在 Perfetto 中，你会看到 RenderThread 上的动画帧独立于主线程的 `doFrame` 执行。
+这意味着，即使主线程很忙（比如在做复杂的布局计算），这些动画依然可以流畅运行。在 Perfetto 中，我们会看到 RenderThread 上的动画帧独立于主线程的 `doFrame` 执行。
 
 ```java
 // 使用 RenderThread 动画的标准方式

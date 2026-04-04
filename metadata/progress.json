@@ -4,9 +4,9 @@
   "metrics": {
     "total": 97,
     "draft": 4,
-    "ready-for-review": 48,
+    "ready-for-review": 49,
     "reviewed": 2,
-    "finalized": 40,
+    "finalized": 39,
     "staging_drafts": 0,
     "last_updated": "2026-04-04T18:20:00+08:00",
     "processing": 0,
@@ -2232,6 +2232,14 @@
       "verification_level": "L2",
       "word_count": "~7000",
       "confidence": "medium"
+    },
+    "2.5": {
+      "status": "ready-for-review",
+      "polish_count": 1,
+      "polish_date": "2026-04-04",
+      "polish_by": "task2b-polish",
+      "reviewed_date": "2026-04-02",
+      "reviewed_by": "openclaw-task6"
     }
   },
   "5.1": {
@@ -2353,6 +2361,23 @@
         "info_density": 2,
         "cross_reference": 1,
         "metadata": 4
+      }
+    },
+    {
+      "file": "src/part1-fundamentals/ch02-rendering/05-main-render-thread.md",
+      "section": "2.5",
+      "section_title": "MainThread 与 RenderThread 协作",
+      "polish_round": 1,
+      "polish_date": "2026-04-04",
+      "polish_by": "task2b-polish",
+      "changes_count": 10,
+      "dimensions": {
+        "narrative_fluency": 3,
+        "code_examples": 2,
+        "readability": 4,
+        "info_density": 0,
+        "cross_reference": 0,
+        "metadata": 1
       }
     }
   ],
