@@ -4,11 +4,11 @@
   "metrics": {
     "total": 97,
     "draft": 0,
-    "ready-for-review": 9,
+    "ready-for-review": 10,
     "reviewed": 3,
     "finalized": 25,
     "staging_drafts": 0,
-    "last_updated": "2026-04-04T07:20:00"
+    "last_updated": "2026-04-04T08:15:11.619856"
   },
   "reviewed_sections": {
     "8.1": {
@@ -1055,15 +1055,30 @@
       "verification_level": "L2",
       "word_count": "~8500",
       "completed_at": "2026-04-04T06:13:57"
+    },
+    {
+      "chapter": "15.6",
+      "section": "15.6",
+      "title": "性能测试最佳实践",
+      "status": "ready-for-review",
+      "drafted_date": "2026-04-04",
+      "drafted_by": "openclaw-task2a",
+      "anchors_covered": 5,
+      "anchors_total": 5,
+      "extensions_covered": 2,
+      "extensions_total": 2,
+      "verification_level": "L2",
+      "word_count": "~8500",
+      "completed_at": "2026-04-04T08:15:11.619847"
     }
   ],
   "ready_for_review": 5,
   "last_updated": "2026-04-04T07:05:00+08:00",
   "stats": {
     "total": 97,
-    "completed": 60,
-    "pending": 37,
-    "last_updated": "2026-04-04T06:13:57"
+    "completed": 61,
+    "pending": 36,
+    "last_updated": "2026-04-04T08:15:11.619854"
   },
   "research_stats": {
     "runs_today": [
@@ -1211,6 +1226,13 @@
     "last_updated": "2026-04-04T07:05:00+08:00"
   },
   "history": [
+    {
+      "date": "2026-04-04",
+      "section": "15.6",
+      "title": "性能测试最佳实践",
+      "action": "draft-completed",
+      "word_count": "~8500"
+    },
     {
       "date": "2026-04-04",
       "section": "7.6",
@@ -1963,6 +1985,15 @@
       "drafted_by": "openclaw-task2a",
       "reviewed_date": "2026-04-04",
       "reviewed_by": "openclaw-task6"
+    },
+    "15.6": {
+      "title": "性能测试最佳实践",
+      "status": "ready-for-review",
+      "drafted_date": "2026-04-04",
+      "drafted_by": "openclaw-task2a",
+      "file": "src/part3-tools/ch15-methodology/06-testing-best-practices.md",
+      "anchors_covered": 5,
+      "extensions_covered": 2
     }
   },
   "5.1": {
