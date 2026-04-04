@@ -1,11 +1,11 @@
 ---
 title: "SurfaceFlinger 与合成"
 chapter: "2.6"
-status: ready-for-review
+status: ready-to-publish
 applicable_versions: "Android 12 (API S) - Android 16 (API 36)"
 last_verified: "2026-04-02"
 drafted_date: 2026-03-30
-reviewed_date: 2026-04-02
+reviewed_date: 2026-04-04
 reviewed_by: openclaw-task6
 rework_date: 2026-04-02
 last_verified_against: "AOSP android-16.0.0_r1, 官方文档最新版本"
@@ -115,7 +115,7 @@ HWC（Hardware Composer）是显示控制器中专门用于合成的硬件单元
 
 HWC 硬件合成的效率极高——它不经过 GPU，不需要渲染管线，只是把多个 Layer 的 Buffer 指针交给显示控制器，让硬件在扫描输出时直接从多个 Buffer 中读取像素并混合。这意味着合成过程几乎零 CPU/GPU 开销，功耗也更低。
 
-不过 HWC 也有其限制。每个设备的 HWC 支持的 Overlay 平面数量是有限的（Android 4.4+ 的设备通常支持 4 个叠加平面），超出数量限制的 Layer 必须退回 Client 合成。此外，某些复杂的变换（如圆角裁剪、模糊效果）HWC 可能不支持，也会退回 GPU。
+不过 HWC 也有其限制。每个设备的 HWC 支持的 Overlay 平面数量是有限的（不同设备从 4 个到 16 个不等，取决于 SoC 和显示控制器型号），超出数量限制的 Layer 必须退回 Client 合成。此外，某些复杂的变换（如圆角裁剪、模糊效果）HWC 可能不支持，也会退回 GPU。
 
 ### 合成方式的选择逻辑
 
@@ -297,7 +297,7 @@ SurfaceFlinger 的性能问题有一个特点：它不是"某个 App 卡了"，�
 
 我们在实际分析中，最常遇到的 SurfaceFlinger 卡顿原因有四类。
 
-第一类是**Layer 数量突增**。比如进入多窗口模式或弹出系统 Dialog，合成工作量瞬间翻倍。第二类是**Client 合成比例增大**——某些 Layer 的属性发生变化（如添加圆角裁剪、模糊效果），HWC 无法处理，被迫退回 GPU 合成，GPU 渲染耗时陡增。第三类是**GPU 争抢**：App 的渲染任务和 SurfaceFlinger 的 Client 合成任务共享 GPU，当 App 侧的 GPU 负载很高时，SurfaceFlinger 的合成也会被拖慢。第四类是**Transaction 风暴**——大量 Layer 状态更新（比如动画期间窗口属性频繁变化）涌向 SurfaceFlinger，`handleMessageTransaction` 的处理耗时增加。
+第一类是**Layer 数量突增**。比如进入多窗口模式或弹出系统 Dialog，合成工作量显著增加。第二类是**Client 合成比例增大**——某些 Layer 的属性发生变化（如添加圆角裁剪、模糊效果），HWC 无法处理，被迫退回 GPU 合成，GPU 渲染耗时陡增。第三类是**GPU 争抢**：App 的渲染任务和 SurfaceFlinger 的 Client 合成任务共享 GPU，当 App 侧的 GPU 负载很高时，SurfaceFlinger 的合成也会被拖慢。第四类是**Transaction 风暴**——大量 Layer 状态更新（比如动画期间窗口属性频繁变化）涌向 SurfaceFlinger，`handleMessageTransaction` 的处理耗时增加。
 
 应对思路也很直接：减少 Layer 数量、尽量让更多 Layer 走 HWC 合成、控制 Transaction 的频率和数据量。具体的排查方法论，我们在 §7.3（卡顿分析方法论）中会系统讲解。
 
@@ -313,7 +313,11 @@ Android 12 引入了 BlastBufferQueue（BBQ），这是 BufferQueue 机制的一
 
 BlastBufferQueue 将 Buffer 的状态管理移到了 App 进程内。App 不再需要每次都通过 Binder 与 SurfaceFlinger 协调 Buffer 的获取和释放，而是可以本地完成 dequeue → queue 的循环，只在必要时通知 SurfaceFlinger 有新帧可用。
 
-具体来说，BBQ 带来了三个层面的变化。首先是 Buffer 的 acquire/release 不再需要跨进程——App 自己在本地完成 Buffer 的获取和归还，只有真正需要通知 SurfaceFlinger "有新帧了" 的时候才走一次 Binder 调用，大幅减少了跨进程通信次数。其次是帧的提交方式改变了：App 渲染完一帧后，通过 SurfaceControl Transaction 将 Buffer 直接提交给 SurfaceFlinger，不再经过传统的 BufferQueue Consumer 中转。最后是时序上的解耦——App 可以在任意时刻提交帧，不必等待某个特定的信号，SurfaceFlinger 会在下一个合适的 VSYNC-sf 到来时拿去处理。这三层变化叠加在一起，让多 Layer 场景下的帧传递效率提升非常明显。
+具体来说，BBQ 带来了三个层面的变化。首先是 Buffer 的 acquire/release 不再需要跨进程——App 自己在本地完成 Buffer 的获取和归还，只有真正需要通知 SurfaceFlinger "有新帧了" 的时候才走一次 Binder 调用，大幅减少了跨进程通信次数。
+
+其次是帧的提交方式改变了：App 渲染完一帧后，通过 SurfaceControl Transaction 将 Buffer 直接提交给 SurfaceFlinger，不再经过传统的 BufferQueue Consumer 中转。
+
+最后是时序上的解耦——App 可以在任意时刻提交帧，不必等待某个特定的信号，SurfaceFlinger 会在下一个合适的 VSYNC-sf 到来时拿去处理。这三层变化叠加在一起，让多 Layer 场景下的帧传递效率提升非常明显。
 
 BBQ 目前仅在 C++ 层使用（实现在 `frameworks/native/libs/gui/BlastBufferQueue.cpp`），对应用开发者来说是透明的。应用仍然通过 Surface、Canvas 等标准 API 进行渲染，底层已自动切换为 BBQ，因此不存在所谓的"BlastBufferQueue Java API"。
 
