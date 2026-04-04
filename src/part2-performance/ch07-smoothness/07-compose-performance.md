@@ -1,13 +1,16 @@
 ---
 title: "Jetpack Compose 性能优化"
 chapter: "7.7"
-status: finalized
+status: ready-for-review
 applicable_versions: "Android 8.0 (API 26) - Android 16 (API 36)"
 last_verified: "2026-04-01"
 last_verified_against: "Android 16 Developer Preview"
 confidence: medium
 reviewed_date: "2026-04-04"
 reviewed_by: "openclaw-task6"
+polish_count: 1
+polish_date: "2026-04-04"
+polish_by: "task2b-polish"
 sources:
   - type: blog
     path: "Personal-Knowlodge/source/2026-03-08_wechat_沉思录_如何优化_Compose_的性能_通过_底层原理_寻找答案.md"
@@ -23,8 +26,8 @@ sources:
     path: "Personal-Knowlodge/source/2026-03-06_wechat_掌握_Android_Compose_从基础到性能优化全面指南.md"
   - type: official
     path: "developer.android.com/develop/ui/compose/performance"
-tags: [compose, jank, recomposition, stability, lazy-column, layout-inspector, compose-compiler]
-related_chapters: ["7.1", "7.2", "7.3", "2.4", "2.5"]
+tags: [compose, jank, recomposition, stability, lazy-column, layout-inspector, compose-compiler, animation, compose-interop]
+related_chapters: ["7.1", "7.2", "7.3", "2.4", "2.5", "2.11"]
 drafted_date: "2026-04-01"
 drafted_by: "openclaw-task2a"
 section: "7.7"
@@ -86,7 +89,7 @@ Composition 之后就是 **Layout** 阶段。这个阶段和传统 View 体系�
 [已验证: 官方文档, developer.android.com/develop/ui/compose/mental-model#recomposition]
 [来源: obsidian/Personal-Knowlodge/source/2026-03-08_wechat_沉思录_如何优化_Compose_的性能_通过_底层原理_寻找答案.md]
 
-说"重组"这个词听起来很高大上，但它的本质非常简单：**重新调用一次 @Composable 函数**。
+"重组"这个词听起来像是一个复杂的机制，但它的本质非常简单：**重新调用一次 @Composable 函数**。
 
 Compose 编译器插件在编译时会改造每个 @Composable 函数。以一个简单的 Greeting 组件为例：
 
@@ -109,7 +112,7 @@ fun Greeting(msg: String) {
 
 [来源: obsidian/Personal-Knowlodge/source/2026-03-08_wechat_Compose_渲染性能到底怎么样.md]
 
-有人做过一个直接对比测试：同一个列表页面，分别用 LazyColumn 和 RecyclerView 实现，然后在不同 Android 版本的设备上测量快速滑动时的 FPS。
+社区中有开发者做过直接对比：同一个列表页面，分别用 LazyColumn 和 RecyclerView 实现，然后在不同 Android 版本的设备上测量快速滑动时的 FPS。
 
 结果是这样的：在高端设备（Android 11+）上，两者都能稳定跑满 60fps。但在中低端设备上差距明显——Android 7.1 设备上 LazyColumn 只有约 43fps，而 RecyclerView 仍然能稳定在 60fps。不过有意思的是，同样的测试者在粒子动画场景中对比了 Compose 和 View 的 Canvas 绘制性能，两者几乎完全一致。
 
@@ -392,13 +395,13 @@ fun WebViewScreen(url: String) {
 
 - **减少边界跨越**：每次从 Compose 切换到 View 或者反过来，都有上下文切换的开销。尽量把 UI 元素集中在同一种体系中，而不是大量穿插使用。
 - **注意 View 的生命周期**：传统 View 有自己的生命周期（attach/detach），而 Compose 组件的生命周期由 Compose 管理。在混合布局中，要确保两者的生命周期同步——比如在 Compose 的 `DisposableEffect` 中清理 View 的监听器。
-- **性能测试要覆盖混合场景**：纯 Compose 页面和纯 View 页面的性能我们可能都测过了，但混合页面的性能往往是意想不到的瓶颈。特别是在低端设备上，Compose 和 View 之间的交互可能引入额外的帧延迟。
+- **性能测试要覆盖混合场景**：纯 Compose 页面和纯 View 页面的性能我们可能都测过了，但混合页面的性能往往是意想不到的瓶颈。在 Perfetto 中，混合布局的帧延迟通常表现为 RenderThread 和主线程之间的额外同步等待。特别是在低端设备上，Compose 和 View 之间的交互可能引入额外的帧延迟。
 
 ## Compose 动画性能
 
 [来源: obsidian/Personal-Knowlodge/source/2026-03-05_wechat_Android_鸿蒙_AI_技术刊_第14期_Compose动画深度解析_KMP多端实践落地_Android_16适配指.md]
 
-Compose 提供了三种层次的动画 API，性能特征各不相同：
+前几节讨论了 Compose 的重组机制和常见的性能陷阱，这些优化手段已经能覆盖大部分场景。但还有一个特殊的性能敏感区域：动画。动画的特点是状态变化极为频繁（每秒 60 甚至 120 次），如果每一帧都走完整的 Composition → Layout → Draw 流程，开销会迅速累积。Compose 提供了三种层次的动画 API，性能特征各不相同：
 
 **`animate*AsState`**（如 `animateColorAsState`、`animateDpAsState`）：最简单的声明式动画 API。它内部通过 State 变化驱动重组，意味着每一帧动画都会触发重组。对于简单的属性变化（颜色、透明度），这个开销通常可以接受；但如果动画作用在复杂的 Composable 上，重组开销可能就不划算了。
 
@@ -406,20 +409,23 @@ Compose 提供了三种层次的动画 API，性能特征各不相同：
 
 **`updateTransition`**：用于管理多个属性的联动动画。和 `animate*AsState` 一样，它也通过 State 变化驱动重组，但可以把多个动画的状态集中管理，避免创建多个独立的 State。
 
-从性能角度的推荐优先级：
+从性能角度，我们推荐的策略是：
 
-1. **优先用 Draw 阶段动画**：如果动画只影响绘制属性（颜色、透明度、位移），用 `Animatable` + `Modifier.graphicsLayer{}` 或 `drawBehind`，跳过 Composition 和 Layout。
-2. **布局动画注意缩小范围**：如果动画涉及布局变化（尺寸、位置），用 `animate*AsState` 或 `updateTransition`，但要确保重组范围尽可能小。
-3. **避免大范围动画重组**：不要在动画的每一帧都触发整个页面的重组。
+**优先使用 Draw 阶段动画。** 如果动画只影响绘制属性（颜色、透明度、位移），用 `Animatable` + `Modifier.graphicsLayer{}` 或 `drawBehind`，跳过 Composition 和 Layout。这种方式的开销最小，因为完全不涉及重组。
+
+**布局动画注意缩小重组范围。** 如果动画涉及布局变化（尺寸、位置），只能用 `animate*AsState` 或 `updateTransition`，此时要确保重组范围尽可能小——把动画状态的作用域限制在最小的 Composable 内。
+
+**避免大范围动画重组。** 不要在动画的每一帧都触发整个页面的重组，这在 Perfetto 中表现为连续的长帧，帧耗时随动画进行不收敛。
 
 [待补充：Compose 动画在 Perfetto 中的帧耗时对比——重组驱动动画 vs Draw 阶段动画的实际帧时间差异]
 
 ## 与其他章节的关系
 
-- **7.1 卡顿的定义与分类**：Compose 的卡顿在本质上仍然是"某帧耗时超限"，只是卡顿的来源从传统的 measure/layout/draw 变成了 Composition/Recomposition。
-- **7.3 卡顿分析方法论**：分析方法论同样适用于 Compose——先定位到掉帧的时间段，再分析是什么导致了长帧。只不过 Compose 场景下，我们需要额外检查重组次数。
-- **2.4 Choreographer 与渲染流水线**：Compose 的渲染同样由 Choreographer 驱动，VSync → doFrame → Composition/Layout/Draw 的链路和传统 View 一致。
-- **2.5 MainThread 与 RenderThread 协作**：Compose 的 Composition 和 Layout 在主线程执行，Draw 阶段可能涉及 RenderThread。
+我们在本章讨论的 Compose 性能问题，与本书其他章节有密切的关联。
+
+从卡顿的定义来看（7.1），Compose 的卡顿在本质上仍然是"某帧耗时超限"，只是卡顿的来源从传统的 measure/layout/draw 变成了 Composition/Recomposition。从分析方法论来看（7.3），通用的分析框架同样适用——先定位到掉帧的时间段，再分析是什么导致了长帧，只是在 Compose 场景下需要额外检查重组次数。
+
+在底层渲染链路上，Compose 的渲染同样由 Choreographer 驱动（2.4），VSync → doFrame → Composition/Layout/Draw 的链路和传统 View 一致。Composition 和 Layout 阶段在主线程执行，Draw 阶段可能涉及 RenderThread（2.5）。值得一提的是，Jetpack Compose 与 Flutter（2.11）的渲染模型有相似的思路——都采用了组合式的 UI 树和差异化的更新策略，但两者的运行时实现完全不同。
 
 ## 常见问题与误区
 

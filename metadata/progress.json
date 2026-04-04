@@ -3,12 +3,12 @@
   "total_sections": 94,
   "metrics": {
     "total": 97,
-    "draft": 5,
-    "ready-for-review": 48,
+    "draft": 4,
+    "ready-for-review": 49,
     "reviewed": 2,
     "finalized": 40,
     "staging_drafts": 0,
-    "last_updated": "2026-04-04T07:06:00",
+    "last_updated": "2026-04-04T08:05:00",
     "processing": 0
   },
   "reviewed_sections": {
@@ -2320,5 +2320,28 @@
         "metadata": 4
       }
     }
-  ]
+  ],
+  "17.2": {
+    "title": "SoC 平台差异",
+    "status": "ready-for-review",
+    "drafted_date": "2026-04-04",
+    "drafted_by": "openclaw-task2a",
+    "confidence": "medium",
+    "word_count": "~7200",
+    "anchors_covered": [
+      "主流 SoC 平台对比（高通/联发科/三星/Google）",
+      "CPU 核心架构差异与调度策略（Oryon/全大核/Perflock）",
+      "GPU 差异（Adreno/Mali/Immortalis/Xclipse）",
+      "NPU/DSP/ISP 性能相关差异",
+      "内存控制器与带宽差异（LPDDR5X）"
+    ],
+    "extensions_covered": [
+      "Snapdragon Profiler 工具详解",
+      "ARM Streamline Performance Analyzer",
+      "不同 SoC 上 Perfetto 数据的差异"
+    ],
+    "auto_discovered": [
+      "ISP 内存带宽竞争与渲染帧率波动关系"
+    ]
+  }
 }
