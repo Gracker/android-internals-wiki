@@ -1492,9 +1492,23 @@
           "Android 16 ARR API 生态：hasArrSupport/getSuggestedFrameRate/getSupportedRefreshRates + SurfaceFlinger VSync-刷新率解耦（目标 §2.2/§2.6/§2.9）",
           "RecyclerView 1.4 ARR 集成 + View.setRequestedFrameRate 投票机制：setFrameContentVelocity + OverScroller + 帧率投票聚合（目标 §7.4/§7.5/§2.2）"
         ]
+      },
+      {
+        "time": "2026-04-05T07:00:00+08:00",
+        "focus": "§1.10 ContentProvider 性能与优化（queue priority 80, pending）",
+        "source": "queue-priority-80",
+        "candidates": 5,
+        "passed": 4,
+        "delivered": 4,
+        "themes": [
+          "ContentProvider 启动时序：ActivityThread.installContentProviders → onCreate 在 Application.onCreate 之前主线程顺序执行",
+          "Jetpack App Startup 合并 CP：每 CP 省 ~2ms / 冷启动 35% 提升 / 2.8s→1.6s 实测",
+          "CursorWindow 2MB + Binder 1MB：SQLiteCursor 翻页重查机制 / 0.5MB 即可能 TransactionTooLargeException",
+          "多进程 CP 死锁：Binder 线程耗尽 + 跨进程死锁经典模式 + ANR traces 诊断标志"
+        ]
       }
     ],
-    "last_updated": "2026-04-04T19:00:00+08:00"
+    "last_updated": "2026-04-05T07:00:00+08:00"
   },
   "history": [
     {
@@ -2825,5 +2839,10 @@
     "auto_discovered": [
       "ISP 内存带宽竞争与渲染帧率波动关系"
     ]
+  },
+  "1.1": {
+    "title": "Android 分层架构",
+    "status": "ready-to-publish",
+    "reviewed_date": "2026-04-05"
   }
 }
