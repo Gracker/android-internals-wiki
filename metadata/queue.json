@@ -21,5 +21,17 @@
     "original_review_log": "logs/review/2026-04-05-0220-review.md",
     "completed_at": "2026-04-05T02:43:08",
     "completed_by": "task2b-rework"
+  },
+  {
+    "section": "1.9",
+    "section_title": "Package Manager Service 与应用安装性能",
+    "priority": 80,
+    "reason": "知识缺口挖掘：PMS 是 Ch1 系统架构中未覆盖的核心系统服务，Android 16 云端编译前沿素材支撑",
+    "material_paths": [
+      "intake/research-feeds/2026-04-04-07-ch08-startup-profiles-dex-layout-optimization.md"
+    ],
+    "added_by": "task2a-knowledge-gap",
+    "added_at": "2026-04-05T04:12:28+08:00",
+    "status": "pending"
   }
 ]

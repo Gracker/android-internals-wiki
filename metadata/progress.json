@@ -2,13 +2,13 @@
   "generated_at": "2026-04-03T19:10:00",
   "total_sections": 96,
   "metrics": {
-    "total": 100,
-    "draft": 2,
+    "total": 101,
+    "draft": 3,
     "ready-for-review": 50,
     "reviewed": 3,
     "finalized": 42,
     "staging_drafts": 0,
-    "last_updated": "2026-04-05T03:24:33.694451",
+    "last_updated": "2026-04-05T04:12:28+08:00",
     "processing": 0,
     "ready-to-publish": 1
   },
@@ -1271,10 +1271,10 @@
   "ready_for_review": 5,
   "last_updated": "2026-04-05T03:45:00",
   "stats": {
-    "total": 97,
+    "total": 98,
     "completed": 67,
-    "pending": 29,
-    "last_updated": "2026-04-05T03:17:27.577299"
+    "pending": 30,
+    "last_updated": "2026-04-05T04:12:28+08:00"
   },
   "research_stats": {
     "runs_today": [
@@ -1458,6 +1458,15 @@
     "last_updated": "2026-04-04T19:00:00+08:00"
   },
   "history": [
+    {
+      "date": "2026-04-05",
+      "section": "1.9",
+      "title": "Package Manager Service 与应用安装性能",
+      "action": "gap-created",
+      "created_by": "task2a-knowledge-gap",
+      "gap_source": "AOSP结构+官方文档+研究素材",
+      "score": "15/20"
+    },
     {
       "date": "2026-04-05",
       "section": "13.2",
@@ -2540,6 +2549,15 @@
       "verification_level": "L2",
       "word_count": "~9500",
       "confidence": "medium"
+    },
+    "1.9": {
+      "title": "Package Manager Service 与应用安装性能",
+      "status": "draft",
+      "file": "src/part1-fundamentals/ch01-architecture/09-package-manager.md",
+      "created_date": "2026-04-05",
+      "created_by": "task2a-knowledge-gap",
+      "gap_source": "AOSP结构+官方文档+研究素材",
+      "score": "15/20"
     }
   },
   "5.1": {
