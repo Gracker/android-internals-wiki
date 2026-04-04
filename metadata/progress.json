@@ -2,8 +2,8 @@
   "generated_at": "2026-04-03T19:10:00",
   "total_sections": 96,
   "metrics": {
-    "total": 101,
-    "draft": 2,
+    "total": 102,
+    "draft": 3,
     "ready-for-review": 49,
     "reviewed": 3,
     "finalized": 42,
@@ -1299,9 +1299,9 @@
   "ready_for_review": 5,
   "last_updated": "2026-04-05T04:20:00+08:00",
   "stats": {
-    "total": 98,
+    "total": 99,
     "completed": 67,
-    "pending": 30,
+    "pending": 31,
     "last_updated": "2026-04-05T04:12:28+08:00"
   },
   "research_stats": {
@@ -1486,6 +1486,15 @@
     "last_updated": "2026-04-04T19:00:00+08:00"
   },
   "history": [
+    {
+      "date": "2026-04-05",
+      "section": "1.10",
+      "title": "ContentProvider 性能与优化",
+      "action": "gap-created",
+      "created_by": "task2a-knowledge-gap",
+      "gap_source": "AOSP结构+官方文档+研究素材",
+      "score": "15/20"
+    },
     {
       "date": "2026-04-05",
       "section": "1.9",
@@ -2604,6 +2613,15 @@
       "verification_level": "L2",
       "word_count": "~9000",
       "confidence": "medium"
+    },
+    "1.10": {
+      "title": "ContentProvider 性能与优化",
+      "status": "draft",
+      "file": "src/part1-fundamentals/ch01-architecture/10-content-provider.md",
+      "created_date": "2026-04-05",
+      "created_by": "task2a-knowledge-gap",
+      "gap_source": "AOSP结构+官方文档+研究素材",
+      "score": "15/20"
     }
   },
   "5.1": {

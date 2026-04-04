@@ -21,6 +21,7 @@
   - [1.7 ART 编译管线与 dex2oat 优化](part1-fundamentals/ch01-architecture/07-art-compilation.md)
   - [1.8 Activity Manager Service 与性能分析](part1-fundamentals/ch01-architecture/08-activity-manager.md)
   - [1.9 Package Manager Service 与应用安装性能](part1-fundamentals/ch01-architecture/09-package-manager.md)
+  - [1.10 ContentProvider 性能与优化](part1-fundamentals/ch01-architecture/10-content-provider.md)
 
 
 - [第 2 章：渲染系统](part1-fundamentals/ch02-rendering/README.md)
