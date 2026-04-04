@@ -2273,5 +2273,24 @@
     "status": "finalized",
     "last_review": "2026-04-04",
     "reviewed_by": "openclaw-task6"
-  }
+  },
+  "polish_log": [
+    {
+      "file": "src/part1-fundamentals/ch02-rendering/04-choreographer.md",
+      "section": "2.4",
+      "section_title": "Choreographer 与渲染流水线",
+      "polish_round": 1,
+      "polish_date": "2026-04-04",
+      "polish_by": "task2b-polish",
+      "changes_count": 20,
+      "dimensions": {
+        "narrative_fluency": 4,
+        "code_examples": 2,
+        "readability": 10,
+        "info_density": 2,
+        "cross_reference": 1,
+        "metadata": 4
+      }
+    }
+  ]
 }
