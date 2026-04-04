@@ -2,7 +2,7 @@
 section: "2.10"
 title: "GPU 渲染深入"
 chapter: "2.10"
-status: finalized
+status: ready-for-review
 applicable_versions: "Android 12 - Android 16 (API 31-36)"
 last_verified: "2026-04-03"
 last_verified_against: "AOSP android-16.0.0_r1, developer.android.com"
@@ -26,6 +26,9 @@ reviewed_by: openclaw-task6
 rework_date: 2026-04-03
 rework_by: openclaw-task2b
 review_round: 2
+polish_count: 1
+polish_date: "2026-04-04"
+polish_by: "task2b-polish"
 ---
 
 # GPU 渲染深入
@@ -198,6 +201,8 @@ Android 16 将 Vulkan 定为默认图形 API 的一个重要动机，就是利�
 
 ## Vulkan vs OpenGL ES 在 Android 上的性能对比
 
+上面讨论的 Shader Compilation Jank 问题，其根源之一是 OpenGL ES 的运行时编译模型。Vulkan 使用 SPIR-V 预编译格式从根本上缓解了这个问题，但 Vulkan 相比 OpenGL ES 的优势远不止于此。理解两者的性能差异，是分析 Android 16 及以后版本 GPU 行为的基础。
+
 ### Android 16 的重大转变：Vulkan 成为默认
 
 Android 16 标志着一个重要里程碑：Vulkan 成为官方默认图形 API。这意味着新开发的应用将直接使用 Vulkan 后端，而仍然使用 OpenGL ES 的应用则会通过 ANGLE 层转换为 Vulkan 调用。对于性能优化工程师来说，理解这两种 API 的差异以及 ANGLE 层的影响，已经成为必备知识。
@@ -244,7 +249,7 @@ vkAllocateMemory(device, &allocInfo, nullptr, &memory);
 
 ### ANGLE 层的性能影响
 
-对于仍然使用 OpenGL ES 的应用，ANGLE 转换层的性能开销是需要关注的。[待验证: ANGLE 性能开销数据来自社区测试报告，待找到 Google 官方基准测试数据验证] 根据 Google 和社区的测试数据，对于优化良好的 2D UI 应用，ANGLE 的性能开销在 2-5% 以内，几乎可以忽略；对于使用复杂着色器的 3D 游戏应用，开销在 5-10% 范围内；而在极端的合成基准测试中，开销可能达到 10-20%。
+对于仍然使用 OpenGL ES 的应用，ANGLE 转换层引入的性能开销是需要关注的。[社区数据: ANGLE 性能开销数据来自 Google I/O 演讲与社区基准测试，非官方系统性基准数据] 根据 Google I/O 技术演讲及社区的测试数据，对于优化良好的 2D UI 应用，ANGLE 的性能开销在 2-5% 以内，几乎可以忽略；对于使用复杂着色器的 3D 游戏应用，开销在 5-10% 范围内；而在极端的合成基准测试中，开销可能达到 10-20%。
 
 这个开销的来源主要有两方面：一是 GLSL 到 SPIR-V 的翻译过程，二是 OpenGL ES 的状态机模型到 Vulkan 的命令缓冲区模型的转换。对于大多数日常应用来说，ANGLE 的性能损耗在可接受范围内，而且 ANGLE 带来的驱动一致性和 bug 修复的收益通常远大于性能开销。
 
@@ -340,6 +345,8 @@ Android 12 引入了改进的 GPU 内存追踪机制，使得开发者和性能�
 
 ## ANGLE（OpenGL ES on Vulkan）的性能影响
 
+既然 Vulkan 已经成为 Android 16 的默认图形 API，那么大量仍然使用 OpenGL ES 的应用会如何运行？答案是 ANGLE——Google 的 OpenGL ES 兼容层，它将所有 GL 调用翻译为 Vulkan 调用。对于性能分析工程师来说，理解 ANGLE 的性能特征，是评估现有应用在新系统上渲染表现的关键。
+
 ### ANGLE 的设计目标
 
 ANGLE（Almost Native Graphics Layer Engine）是 Google 开发的兼容层，它将 OpenGL ES API 调用翻译为 Vulkan 调用。ANGLE 的设计目标不仅仅是"兼容"——更重要的是"统一"。在 Android 16 之前，不同 GPU 厂商各自实现 OpenGL ES 驱动，质量参差不齐，bug 各不相同。ANGLE 将 OpenGL ES 的实现统一为一套代码（翻译到 Vulkan），Google 只需要维护这一套实现的质量，而不需要分别与三个厂商协调驱动修复。
@@ -355,6 +362,8 @@ ANGLE 的架构可以理解为一个翻译层：上层应用仍然使用熟悉�
 这个分层策略意味着 Android 16 上的绝大多数应用最终都运行在 Vulkan 上——要么是原生 Vulkan 应用直接使用，要么是 OpenGL ES 应用通过 ANGLE 间接使用。对于性能优化工程师来说，这意味着理解 Vulkan 的性能特征变得比以往任何时候都重要。
 
 ## GPU Profiling 工具：Snapdragon Profiler、ARM Streamline、AGI
+
+前面我们从理论和机制层面分析了 GPU 渲染的各个环节，也讨论了如何从 Trace 中识别 GPU 瓶颈的类型。但要进一步精确定位——比如区分 fillrate bound 和 bandwidth bound 的具体占比，或者找到某个 Fragment Shader 的耗时热点——还需要专门的 GPU 分析工具。这一节介绍三种最常用的 GPU 性能分析工具及其适用场景。
 
 ### Android GPU Inspector (AGI)
 
