@@ -2,7 +2,7 @@
 title: "卡顿的定义与分类"
 section: "7.1"
 chapter: "7.1"
-status: finalized
+status: ready-for-review
 drafted_date: "2026-03-30"
 drafted_by: "openclaw-task2"
 reviewed_date: "2026-04-03"
@@ -10,6 +10,9 @@ reviewed_by: "openclaw-task6"
 applicable_versions: "Android 4.1 (API 16) - Android 16 (API 36)"
 last_verified: "2026-03-31"
 last_verified_against: "AOSP android-16.0.0_r1"
+polish_count: 1
+polish_date: "2026-04-05"
+polish_by: "task2b-polish"
 confidence: medium
 sources:
   - type: aosp
@@ -96,7 +99,7 @@ Android 系统的渲染管线是围绕 VSync 信号构建的。在 60Hz 屏幕�
 
 举个极端的例子：一秒内渲染了 50 帧。如果这 50 帧是均匀分布的（每 20ms 一帧），用户看到的是稳定的 50fps 体验，虽然不是最流畅，但不会觉得"卡"。但如果前 200ms 只渲染了 1 帧，后 800ms 突然渲染了 49 帧，FPS 同样是 50，但用户会感受到明显的卡顿——因为那 200ms 的空白期打破了视觉惯性。
 
-腾讯音乐技术团队在分析中特别指出了这个误区：**帧率不能直接反映是否卡顿**。稳定在 40fps 的体验比在 60fps 和 30fps 之间来回跳变的体验好得多。这就是为什么 Google 在 Jank 的定义中不是看"平均帧率"，而是看"每一帧有没有准时到达"——它关注的是节奏的稳定性，而不是总产量。
+腾讯音乐技术团队在分析中特别指出了这个误区：**帧率不能直接反映是否卡顿**。这就是为什么 Google 在 Jank 的定义中不是看"平均帧率"，而是看"每一帧有没有准时到达"——节奏的稳定性远比总产量重要。后面「视觉惯性与帧率稳定性」一节会进一步解释为什么。
 
 [已验证: 来源见 obsidian/Personal-Knowlodge/source/2026-03-07_wechat_Android深入卡顿分析与实践.md]
 
@@ -138,7 +141,7 @@ SF Jank 的典型原因包括：
 
 这是比较少见但确实存在的一类 Jank。SurfaceFlinger 已经按时完成了合成工作，把帧交给了 Display HAL（显示硬件抽象层），但 Display HAL 没有在预期的 VSync 周期内完成上屏——帧被延迟到了下一个 VSync 才显示出来。
 
-这种情况通常与硬件驱动或 SoC 平台的显示子系统实现有关，App 开发者基本无法控制。在 Perfetto 中，这类 Jank 在 SurfaceFlinger 的 Actual Timeline 中表现为"SurfaceFlinger 侧的工作按时完成了，但帧的最终 present 时间比预期晚了一个 VSync"。
+这种情况通常与硬件驱动或 SoC 平台的显示子系统实现有关，App 开发者基本无法控制。遇到这类 Jank 时，排查方向应转向 Display HAL 驱动和 SoC 厂商的实现，而非 App 侧代码。在 Perfetto 中，这类 Jank 在 SurfaceFlinger 的 Actual Timeline 中表现为"SurfaceFlinger 侧的工作按时完成了，但帧的最终 present 时间比预期晚了一个 VSync"。
 
 ### Dropped Frame（掉帧）
 
@@ -152,7 +155,11 @@ SF Jank 的典型原因包括：
 
 ### Buffer Stuffing
 
-Buffer Stuffing 是一种特殊状态：App 持续不断地向 SurfaceFlinger 发送新帧，比屏幕能显示的还快。结果是缓冲区队列被"塞满"了——App 在不断地渲染新帧，但中间的帧可能永远不会被显示。这不会直接导致 Jank（帧率可能看起来很高），但会导致**输入延迟增加**——用户的操作要等好几帧之后才能在屏幕上看到反馈。这种情况在游戏等持续渲染场景中比较常见。
+Buffer Stuffing 是一种容易被忽略的状态：App 持续不断地向 SurfaceFlinger 发送新帧，速度比屏幕能显示的还快。结果是缓冲区队列被"塞满"了——App 在不断渲染新帧，但中间的很多帧永远不会被显示。
+
+这不会直接导致 Jank（帧率可能看起来很高甚至超过刷新率），但会导致**输入延迟（Input Latency）显著增加**——用户的触摸操作要等好几帧之后才能在屏幕上看到反馈。用户的主观感受是"画面很流畅但不跟手"，这在竞速类游戏等持续渲染场景中尤其明显。
+
+在 Perfetto 中，Buffer Stuffing 的典型特征是 BufferQueue 中有多个已入队（queued）但未被消费的 Buffer。在 `BufferQueue` Track 中可以看到 `|queued|` 计数持续大于 1。修复思路通常是使用 `Choreographer.postFrameCallback` 替代无节制的 `invalidate()` 循环，让渲染节奏回到 VSync 驱动。
 
 ### Jank 类型在 Perfetto 中的颜色编码
 
@@ -207,7 +214,7 @@ FrameTimeline 的核心思路是"端到端追踪"：它给每一帧分配一个�
 
 ## 掉帧率、连续掉帧与卡顿率
 
-在实际的性能优化工作中，我们不会只看某一帧是否 Jank，而是看一段时间的统计指标。以下是几个关键指标：
+前面我们了解了 FrameTimeline 如何标注每一帧的 Jank 类型，但在实际项目交付中，产品经理和测试团队需要的不是"第 137 帧是 AppDeadlineMissed"这样的逐帧数据，而是可量化的聚合指标：整体掉帧率是多少？有没有 Frozen Frame？卡顿严重程度如何？这一节梳理行业内常用的几类流畅性指标。以下是几个关键指标：
 
 ### 掉帧率（Janky Frame Rate）
 
@@ -302,6 +309,24 @@ JankStats 的工作原理：
 开发者可以自定义 Jank 的判定阈值，也可以通过 `PerformanceMetricsState` 在 Jank 发生时附加上下文信息（比如"用户正在滑动首页列表"），方便后续分析。
 
 [已验证: 官方文档, developer.android.com/develop/ui/views/performance/jankstats]
+
+## 常见问题与误区
+
+### 误区 1：「FPS 高就等于流畅」
+
+这是最常见的误解。FPS 衡量的是帧的产量，不是帧的节奏。一秒内 50 帧全部挤在后半段，FPS 数值依然好看，但用户感受到的是前半段的"冻住"。正确的做法是关注 Jank 率和帧时间标准差，而不是盯着 FPS 不放。
+
+### 误区 2：「Jank 都是 App 的问题」
+
+从本节的分类可以看出，Jank 可能来自 App（AppDeadlineMissed）、SurfaceFlinger（SurfaceFlingerCpuDeadlineMissed）、甚至 Display HAL。在着手优化之前，先在 Perfetto 的 FrameTimeline 中确认 JankType，避免在错误的方向上浪费时间。
+
+### 误区 3：「掉帧率必须做到 0%」
+
+实际上，追求 0% 的掉帧率既不现实也不经济。Google 的 Android Vitals 将"慢帧"阈值设在 16ms，但实际项目中的优化目标通常是将掉帧率控制在 5% 以下，并确保没有 Frozen Frame（>700ms）。极端场景（如复杂列表快速滑动）掉帧率 3-5% 是可接受的。优化的 ROI（投入产出比）比绝对数字更重要。
+
+### 误区 4：「120Hz 设备不需要优化，因为帧预算变小了」
+
+恰恰相反。120Hz 设备的帧预算只有 8.33ms，比 60Hz 的 16.67ms 紧了一半。原本在 60Hz 设备上刚好达标的渲染耗时，到了 120Hz 设备上可能就成了 Jank。高刷新率设备对渲染效率的要求更高，不是更低。
 
 ## 与其他章节的关系
 
