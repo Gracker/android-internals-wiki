@@ -9080,5 +9080,346 @@
     "chapters": [],
     "skip_reason": "总分9<10(相关0+深度1+时效5+可验证3)",
     "scan_date": "2026-04-05T01:53:04.615815+08:00"
+  },
+  {
+    "path": "移动端算法优化-CPU 优化技术-NEON 开发进阶-2022-03-14.md",
+    "title": "移动端算法优化|CPU 优化技术-NEON 开发进阶",
+    "reason": "总分不足: 6/20",
+    "scores": {
+      "relevance": 0,
+      "technical_depth": 1,
+      "timeliness": 3,
+      "verifiability": 2
+    }
+  },
+  {
+    "path": "Android 强推的 Baseline Profiles 国内能用吗？我找 Google 工程师求证了！ - 掘金-2022-07-17.md",
+    "title": "Android 强推的 Baseline Profiles 国内能用吗？我找 Google 工程师求证了！ - 掘金",
+    "reason": "总分不足: 9/20",
+    "scores": {
+      "relevance": 3,
+      "technical_depth": 1,
+      "timeliness": 3,
+      "verifiability": 2
+    }
+  },
+  {
+    "path": "如何正确地理解应用架构并开发-2024-01-09.md",
+    "title": "如何正确地理解应用架构并开发",
+    "reason": "总分不足: 7/20",
+    "scores": {
+      "relevance": 0,
+      "technical_depth": 1,
+      "timeliness": 4,
+      "verifiability": 2
+    }
+  },
+  {
+    "path": "对话《狂飙》编剧：如何挖掘官商勾结细节？-2023-02-06.md",
+    "title": "对话《狂飙》编剧：如何挖掘官商勾结细节？",
+    "reason": "总分不足: 6/20",
+    "scores": {
+      "relevance": 0,
+      "technical_depth": 1,
+      "timeliness": 3,
+      "verifiability": 2
+    }
+  },
+  {
+    "path": "How to Become the Best in the World at Something-2022-02-07.md",
+    "title": "How to Become the Best in the World at Something",
+    "reason": "总分不足: 6/20",
+    "scores": {
+      "relevance": 0,
+      "technical_depth": 1,
+      "timeliness": 3,
+      "verifiability": 2
+    }
+  },
+  {
+    "path": "【Shader篇】GPU架构与其逻辑管线-2023-08-10.md",
+    "title": "【Shader篇】GPU架构与其逻辑管线",
+    "reason": "总分不足: 9/20",
+    "scores": {
+      "relevance": 3,
+      "technical_depth": 1,
+      "timeliness": 3,
+      "verifiability": 2
+    }
+  },
+  {
+    "path": "[译]AI算力民主化 第五部分：CUDA C++替代方案（如OpenCL）现状如何？-2025-03-21.md",
+    "title": "[译]AI算力民主化 第五部分：CUDA C++替代方案（如OpenCL）现状如何？",
+    "reason": "总分不足: 8/20",
+    "scores": {
+      "relevance": 0,
+      "technical_depth": 1,
+      "timeliness": 5,
+      "verifiability": 2
+    }
+  },
+  {
+    "path": "内核是如何给容器中的进程分配CPU资源的？-2023-03-14.md",
+    "title": "内核是如何给容器中的进程分配CPU资源的？",
+    "reason": "总分不足: 9/20",
+    "scores": {
+      "relevance": 3,
+      "technical_depth": 1,
+      "timeliness": 3,
+      "verifiability": 2
+    }
+  },
+  {
+    "path": "新姿势绕过应用的ROOT检测-2022-02-03.md",
+    "title": "新姿势绕过应用的ROOT检测",
+    "reason": "总分不足: 6/20",
+    "scores": {
+      "relevance": 0,
+      "technical_depth": 1,
+      "timeliness": 3,
+      "verifiability": 2
+    }
+  },
+  {
+    "path": "所谓的“技术路线”到底是什么东西？-2025-09-30.md",
+    "title": "所谓的“技术路线”到底是什么东西？",
+    "reason": "总分不足: 9/20",
+    "scores": {
+      "relevance": 0,
+      "technical_depth": 2,
+      "timeliness": 5,
+      "verifiability": 2
+    }
+  },
+  {
+    "path": "Glue work considered harmful - sean goedecke-2025-01-04.md",
+    "title": "Glue work considered harmful | sean goedecke",
+    "reason": "总分不足: 8/20",
+    "scores": {
+      "relevance": 0,
+      "technical_depth": 1,
+      "timeliness": 5,
+      "verifiability": 2
+    }
+  },
+  {
+    "path": "淘宝小程序体验优化：数据分析和优化实践-2022-03-31.md",
+    "title": "淘宝小程序体验优化：数据分析和优化实践",
+    "reason": "总分不足: 6/20",
+    "scores": {
+      "relevance": 0,
+      "technical_depth": 1,
+      "timeliness": 3,
+      "verifiability": 2
+    }
+  },
+  {
+    "path": "微信业务开发方法与实践-2024-01-08.md",
+    "title": "微信业务开发方法与实践",
+    "reason": "总分不足: 7/20",
+    "scores": {
+      "relevance": 0,
+      "technical_depth": 1,
+      "timeliness": 4,
+      "verifiability": 2
+    }
+  },
+  {
+    "path": "Dropbox CEO Drew Houston：你只需要成功一次-2023-05-08.md",
+    "title": "Dropbox CEO Drew Houston：你只需要成功一次",
+    "reason": "总分不足: 6/20",
+    "scores": {
+      "relevance": 0,
+      "technical_depth": 1,
+      "timeliness": 3,
+      "verifiability": 2
+    }
+  },
+  {
+    "path": "What Is Camarts - Camarts Photography-2023-12-12.md",
+    "title": "What Is Camarts | Camarts Photography",
+    "reason": "总分不足: 6/20",
+    "scores": {
+      "relevance": 0,
+      "technical_depth": 1,
+      "timeliness": 3,
+      "verifiability": 2
+    }
+  },
+  {
+    "path": "手机能跑图生成和 LLM 大模型吗-2024-06-12.md",
+    "title": "手机能跑图生成和 LLM 大模型吗",
+    "reason": "总分不足: 7/20",
+    "scores": {
+      "relevance": 0,
+      "technical_depth": 1,
+      "timeliness": 4,
+      "verifiability": 2
+    }
+  },
+  {
+    "path": "Flutter性能优化实践之Timeline -2022-01-14.md",
+    "title": "Flutter性能优化实践之Timeline",
+    "reason": "总分不足: 6/20",
+    "scores": {
+      "relevance": 0,
+      "technical_depth": 1,
+      "timeliness": 3,
+      "verifiability": 2
+    }
+  },
+  {
+    "path": "GPT-4 重磅发布，有哪些升级和变化？-2023-03-16.md",
+    "title": "GPT-4 重磅发布，有哪些升级和变化？",
+    "reason": "总分不足: 6/20",
+    "scores": {
+      "relevance": 0,
+      "technical_depth": 1,
+      "timeliness": 3,
+      "verifiability": 2
+    }
+  },
+  {
+    "path": "“大梦”一场-2023-11-22.md",
+    "title": "“大梦”一场",
+    "reason": "总分不足: 6/20",
+    "scores": {
+      "relevance": 0,
+      "technical_depth": 1,
+      "timeliness": 3,
+      "verifiability": 2
+    }
+  },
+  {
+    "path": "居家健身入门指南 - 椒盐豆豉-2025-01-03.md",
+    "title": "居家健身入门指南 | 椒盐豆豉",
+    "reason": "总分不足: 8/20",
+    "scores": {
+      "relevance": 0,
+      "technical_depth": 1,
+      "timeliness": 5,
+      "verifiability": 2
+    }
+  },
+  {
+    "path": "基于 C++ 的 Android 协程设计 - 张涛-2022-03-30.md",
+    "title": "基于 C++ 的 Android 协程设计 - 张涛",
+    "reason": "总分不足: 9/20",
+    "scores": {
+      "relevance": 3,
+      "technical_depth": 1,
+      "timeliness": 3,
+      "verifiability": 2
+    }
+  },
+  {
+    "path": "[070]一文带你看懂Vsync Phase-2023-12-18.md",
+    "title": "[070]一文带你看懂Vsync Phase",
+    "reason": "总分不足: 6/20",
+    "scores": {
+      "relevance": 0,
+      "technical_depth": 1,
+      "timeliness": 3,
+      "verifiability": 2
+    }
+  },
+  {
+    "path": "Flutter 深入探索混合开发的技术演进 - 开发者说·DTalk-2022-08-26.md",
+    "title": "Flutter 深入探索混合开发的技术演进 | 开发者说·DTalk",
+    "reason": "总分不足: 6/20",
+    "scores": {
+      "relevance": 0,
+      "technical_depth": 1,
+      "timeliness": 3,
+      "verifiability": 2
+    }
+  },
+  {
+    "path": "流处理系统中状态的表示和存储 - Alex Chi-2022-01-15.md",
+    "title": "流处理系统中状态的表示和存储 - Alex Chi",
+    "reason": "总分不足: 5/20",
+    "scores": {
+      "relevance": 0,
+      "technical_depth": 1,
+      "timeliness": 3,
+      "verifiability": 1
+    }
+  },
+  {
+    "path": "抖音 Android 性能优化系列：新一代全能型性能分析工具 Rhea-2022-01-13.md",
+    "title": "抖音 Android 性能优化系列：新一代全能型性能分析工具 Rhea",
+    "reason": "总分不足: 9/20",
+    "scores": {
+      "relevance": 3,
+      "technical_depth": 1,
+      "timeliness": 3,
+      "verifiability": 2
+    }
+  },
+  {
+    "path": "移动 OS 设计之性能设计 1 - 应用程序与 OS 之间的边界思考-2025-03-03.md",
+    "title": "移动 OS 设计之性能设计 1 - 应用程序与 OS 之间的边界思考",
+    "reason": "总分不足: 8/20",
+    "scores": {
+      "relevance": 0,
+      "technical_depth": 1,
+      "timeliness": 5,
+      "verifiability": 2
+    }
+  },
+  {
+    "path": "Android：解决 MVI 架构实战痛点-2022-08-23.md",
+    "title": "Android：解决 MVI 架构实战痛点",
+    "reason": "总分不足: 9/20",
+    "scores": {
+      "relevance": 3,
+      "technical_depth": 1,
+      "timeliness": 3,
+      "verifiability": 2
+    }
+  },
+  {
+    "path": "使用AI自动优化网站PageSpeed性能-2025-12-11.md",
+    "title": "使用AI自动优化网站PageSpeed性能",
+    "reason": "总分不足: 8/20",
+    "scores": {
+      "relevance": 0,
+      "technical_depth": 1,
+      "timeliness": 5,
+      "verifiability": 2
+    }
+  },
+  {
+    "path": "网友投稿 - 如何集中注意力并进入心流状态？ – 书伴-2023-02-20.md",
+    "title": "网友投稿 | 如何集中注意力并进入心流状态？ – 书伴",
+    "reason": "总分不足: 6/20",
+    "scores": {
+      "relevance": 0,
+      "technical_depth": 1,
+      "timeliness": 3,
+      "verifiability": 2
+    }
+  },
+  {
+    "path": "一张新冠吃药顺序图，集合了中国人吃药的四大误区-2022-12-09.md",
+    "title": "一张新冠吃药顺序图，集合了中国人吃药的四大误区",
+    "reason": "总分不足: 6/20",
+    "scores": {
+      "relevance": 0,
+      "technical_depth": 1,
+      "timeliness": 3,
+      "verifiability": 2
+    }
+  },
+  {
+    "path": "GitHub - knemik97-Manifesto-against-the-Plagiarist-Yunhe-Wang- 讨贼王云鹤檄文-2025-07-08.md",
+    "title": "GitHub - knemik97/Manifesto-against-the-Plagiarist-Yunhe-Wang: 讨贼王云鹤檄文",
+    "reason": "总分不足: 9/20",
+    "scores": {
+      "relevance": 0,
+      "technical_depth": 2,
+      "timeliness": 5,
+      "verifiability": 2
+    }
   }
 ]

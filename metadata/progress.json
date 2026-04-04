@@ -3,12 +3,12 @@
   "total_sections": 96,
   "metrics": {
     "total": 101,
-    "draft": 3,
-    "ready-for-review": 49,
+    "draft": 2,
+    "ready-for-review": 50,
     "reviewed": 3,
     "finalized": 42,
     "staging_drafts": 0,
-    "last_updated": "2026-04-05T04:20:00+08:00",
+    "last_updated": "2026-04-05T05:11:31.397019",
     "processing": 0,
     "ready-to-publish": 2
   },
@@ -1272,6 +1272,21 @@
       "title": "Low Memory Killer",
       "status": "ready-to-publish",
       "reviewed_date": "2026-04-05"
+    },
+    {
+      "chapter": "1.9",
+      "section": "1.9",
+      "title": "Package Manager Service 与应用安装性能",
+      "status": "ready-for-review",
+      "drafted_date": "2026-04-05",
+      "drafted_by": "openclaw-task2a",
+      "anchors_covered": 8,
+      "anchors_total": 8,
+      "extensions_covered": 3,
+      "extensions_total": 3,
+      "verification_level": "L2",
+      "word_count": "~9000",
+      "completed_at": "2026-04-05T05:11:31.397024"
     }
   ],
   "ready_for_review": 5,
@@ -1464,6 +1479,15 @@
     "last_updated": "2026-04-04T19:00:00+08:00"
   },
   "history": [
+    {
+      "date": "2026-04-05",
+      "section": "1.9",
+      "title": "Package Manager Service 与应用安装性能",
+      "action": "draft-completed",
+      "word_count": "~9000",
+      "anchors_covered": 8,
+      "extensions_covered": 3
+    },
     {
       "date": "2026-04-05",
       "section": "1.9",
@@ -2558,12 +2582,21 @@
     },
     "1.9": {
       "title": "Package Manager Service 与应用安装性能",
-      "status": "draft",
+      "status": "ready-for-review",
       "file": "src/part1-fundamentals/ch01-architecture/09-package-manager.md",
       "created_date": "2026-04-05",
       "created_by": "task2a-knowledge-gap",
       "gap_source": "AOSP结构+官方文档+研究素材",
-      "score": "15/20"
+      "score": "15/20",
+      "drafted_date": "2026-04-05",
+      "drafted_by": "openclaw-task2a",
+      "anchors_covered": 8,
+      "anchors_total": 8,
+      "extensions_covered": 3,
+      "extensions_total": 3,
+      "verification_level": "L2",
+      "word_count": "~9000",
+      "confidence": "medium"
     }
   },
   "5.1": {

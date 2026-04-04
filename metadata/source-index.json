@@ -684,5 +684,140 @@
     "quality": "medium",
     "summary": "关于DeepSeek我是怎么研究的 5 文章详细介绍了DeepSeek-R1模型的研究背景、训练过程和性能评估。R1模型",
     "scan_date": "2026-04-05T01:53:04.615815+08:00"
+  },
+  {
+    "path": "Android bugreport 分析方法-2024-02-01.md",
+    "title": "Android bugreport 分析方法",
+    "scores": {
+      "relevance": 3,
+      "technical_depth": 1,
+      "timeliness": 4,
+      "verifiability": 2
+    },
+    "total": 10,
+    "summary": "# Android bugreport 分析方法    [Read in Cubox](https://cubox.pro/web/card/7152589943666116230)   [Read",
+    "scan_date": "2026-04-05T04:49:15.551538",
+    "chapters": [],
+    "quality": "medium"
+  },
+  {
+    "path": "Java Annotated Monthly – February 2022 - The IntelliJ IDEA Blog-2022-02-05.md",
+    "title": "Java Annotated Monthly – February 2022 | The IntelliJ IDEA Blog",
+    "scores": {
+      "relevance": 3,
+      "technical_depth": 2,
+      "timeliness": 3,
+      "verifiability": 2
+    },
+    "total": 10,
+    "summary": "# Java Annotated Monthly – February 2022 | The IntelliJ IDEA Blog  Welcome to the February edition o",
+    "scan_date": "2026-04-05T04:49:15.554544",
+    "chapters": [],
+    "quality": "medium"
+  },
+  {
+    "path": "这本书助你成为Android性能优化专家，送10本-2024-05-15.md",
+    "title": "这本书助你成为Android性能优化专家，送10本",
+    "scores": {
+      "relevance": 3,
+      "technical_depth": 1,
+      "timeliness": 4,
+      "verifiability": 2
+    },
+    "total": 10,
+    "summary": "# 这本书助你成为Android性能优化专家，送10本    [Read in Cubox](https://cubox.pro/web/card/7190385865099576049)   [Re",
+    "scan_date": "2026-04-05T04:49:15.555454",
+    "chapters": [],
+    "quality": "medium"
+  },
+  {
+    "path": "手把手教你uinput命令的使用方式-重学安卓input子系统-2025-05-07.md",
+    "title": "手把手教你uinput命令的使用方式-重学安卓input子系统",
+    "scores": {
+      "relevance": 3,
+      "technical_depth": 1,
+      "timeliness": 5,
+      "verifiability": 2
+    },
+    "total": 11,
+    "summary": "# 手把手教你uinput命令的使用方式-重学安卓input子系统  android系统中自带了一个uinput命令，但是这个命令其实对于使用者并不友好，因为本身命令的使用没有相关的help提示，命令",
+    "scan_date": "2026-04-05T04:49:15.555909",
+    "chapters": [],
+    "quality": "medium"
+  },
+  {
+    "path": "Android Weekly - Free weekly Android & Kotlin deve...-2024-01-08.md",
+    "title": "Android Weekly - Free weekly Android & Kotlin deve...",
+    "scores": {
+      "relevance": 4,
+      "technical_depth": 1,
+      "timeliness": 4,
+      "verifiability": 2
+    },
+    "total": 11,
+    "summary": "# Android Weekly - Free weekly Android & Kotlin deve...  Android Weekly is a free newsletter that he",
+    "scan_date": "2026-04-05T04:49:15.557120",
+    "chapters": [],
+    "quality": "medium"
+  },
+  {
+    "path": "2024年App从备案到上架（国内各大应用市场）全过程-2023-12-01.md",
+    "title": "2024年App从备案到上架（国内各大应用市场）全过程",
+    "scores": {
+      "relevance": 4,
+      "technical_depth": 1,
+      "timeliness": 4,
+      "verifiability": 2
+    },
+    "total": 11,
+    "summary": "# 2024年App从备案到上架（国内各大应用市场）全过程    [Read in Cubox](https://cubox.pro/web/card/7130076546462646592)   [",
+    "scan_date": "2026-04-05T04:49:15.557609",
+    "chapters": [],
+    "quality": "medium"
+  },
+  {
+    "path": "First steps with Jetpack Glance for App Widgets - by Igor Escodro - Jan, 2022 - ProAndroidDev-2022-0.md",
+    "title": "First steps with Jetpack Glance for App Widgets | by Igor Escodro | Jan, 2022 | ProAndroidDev",
+    "scores": {
+      "relevance": 4,
+      "technical_depth": 1,
+      "timeliness": 3,
+      "verifiability": 2
+    },
+    "total": 10,
+    "summary": "# First steps with Jetpack Glance for App Widgets | by Igor Escodro | Jan, 2022 | ProAndroidDev    [",
+    "scan_date": "2026-04-05T04:49:15.560133",
+    "chapters": [],
+    "quality": "medium"
+  },
+  {
+    "path": "perf- Linux profiling with performance counters-2025-01-03.md",
+    "title": "perf: Linux profiling with performance counters",
+    "scores": {
+      "relevance": 3,
+      "technical_depth": 4,
+      "timeliness": 5,
+      "verifiability": 2
+    },
+    "total": 14,
+    "summary": "# perf: Linux profiling with performance counters    [Read in Cubox](https://cubox.pro/web/card/7274",
+    "scan_date": "2026-04-05T04:49:15.560976",
+    "chapters": [],
+    "quality": "medium"
+  },
+  {
+    "path": "使用 AndroidX 增强 WebView 的能力 - 开发者说·DTalk-2024-01-12.md",
+    "title": "使用 AndroidX 增强 WebView 的能力 | 开发者说·DTalk",
+    "scores": {
+      "relevance": 3,
+      "technical_depth": 1,
+      "timeliness": 4,
+      "verifiability": 2
+    },
+    "total": 10,
+    "summary": "# 使用 AndroidX 增强 WebView 的能力 | 开发者说·DTalk  分享开发经验，有机会被推荐参选加入 \"谷歌开发技术专家\" 团队。  [Read in Cubox](https:/",
+    "scan_date": "2026-04-05T04:49:15.567141",
+    "chapters": [],
+    "quality": "medium"
   }
 ]
