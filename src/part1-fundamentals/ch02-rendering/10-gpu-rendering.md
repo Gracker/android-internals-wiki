@@ -2,7 +2,7 @@
 section: "2.10"
 title: "GPU 渲染深入"
 chapter: "2.10"
-status: ready-for-review
+status: ready-to-publish
 applicable_versions: "Android 12 - Android 16 (API 31-36)"
 last_verified: "2026-04-03"
 last_verified_against: "AOSP android-16.0.0_r1, developer.android.com"
@@ -21,11 +21,11 @@ sources:
 tags: ['gpu', 'rendering', 'shader', 'vulkan', 'opengl', 'performance', 'memory']
 related_chapters: ["2.3", "2.4", "2.5", "2.6", "2.9", "3.2", "14.3"]
 drafted_date: 2026-03-30
-reviewed_date: 2026-04-03
+reviewed_date: 2026-04-04
 reviewed_by: openclaw-task6
 rework_date: 2026-04-03
 rework_by: openclaw-task2b
-review_round: 2
+review_round: 3
 polish_count: 1
 polish_date: "2026-04-04"
 polish_by: "task2b-polish"
