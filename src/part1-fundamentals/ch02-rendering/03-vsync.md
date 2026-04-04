@@ -1,9 +1,12 @@
 ---
 title: "VSync 机制"
 chapter: "2.3"
-status: finalized
+status: ready-to-publish
 reviewed_date: 2026-04-02
 reviewed_by: openclaw-task6
+polish_count: 1
+polish_date: "2026-04-04"
+polish_by: "task2b-polish" 
 applicable_versions: "Android 4.1 (API 16) - Android 16 (API 36)"
 last_verified: "2026-03-30"
 last_verified_against: "AOSP android-16.0.0_r1"
@@ -54,7 +57,7 @@ related_chapters: ["2.1", "2.4", "2.5", "2.6", "2.9", "8.1"]
 
 ## 为什么要了解 VSync
 
-如果你在 Perfetto 中打开任何一个有 UI 渲染的 Trace，最先注意到的往往是那两条规律跳动的竖线——VSYNC-app 和 VSYNC-sf。它们就像整个渲染管线的节拍器：App 什么时候开始画、SurfaceFlinger 什么时候开始合成、屏幕什么时候开始刷新，全由这两个信号决定。
+如果在 Perfetto 中打开任何一个有 UI 渲染的 Trace，最先注意到的往往是那两条规律跳动的竖线——VSYNC-app 和 VSYNC-sf。它们就像整个渲染管线的节拍器：App 什么时候开始画、SurfaceFlinger 什么时候开始合成、屏幕什么时候开始刷新，全由这两个信号决定。
 
 不理解 VSync，你就无法理解为什么一帧从"App 开始绘制"到"显示在屏幕上"可能需要 1~3 个 VSync 周期；无法理解为什么调整一个纳秒级的偏移量就能影响跟手性；也无法理解 Android 从 4.1 到 16 这十几个版本中，渲染管线不断演进的核心脉络。
 
@@ -136,7 +139,7 @@ HW_VSYNC_0（硬件 VSync）
 
 ### 2.3 为什么不直接用硬件 VSync
 
-你可能会问：为什么不直接把 HW_VSYNC_0 广播给 App 和 SurfaceFlinger？
+一个自然的疑问是：为什么不直接把 HW_VSYNC_0 广播给 App 和 SurfaceFlinger？
 
 原因有三个：
 
@@ -197,7 +200,7 @@ DispSync 的工作流程可以概括为三步：
 // 当检测到模型偏差时，通过 addResyncSample 重建模型
 ```
 
-所以你在 Perfetto 的 SurfaceFlinger 进程中，有时候会看到短暂的 HW_VSYNC 开启——那就是系统在进行模型校正。正常稳定状态下，HW_VSYNC 应该是关闭的，由 DispSync 的软件模型独自驱动。
+所以在 Perfetto 的 SurfaceFlinger 进程中，有时候会看到短暂的 HW_VSYNC 开启——那就是系统在进行模型校正。正常稳定状态下，HW_VSYNC 应该是关闭的，由 DispSync 的软件模型独自驱动。
 
 `[已验证: 官方文档, source.android.com/docs/core/display/improve-performance + AOSP SurfaceFlinger.cpp]`
 
@@ -381,7 +384,7 @@ sf phase = 16666667 - 10500000 % 16666667 = 6166667 ns
 app phase = 16666667 - (20500000 + 10500000) % 16666667 = 2333334 ns
 ```
 
-可以通过 `adb shell dumpsys SurfaceFlinger | grep phase` 查看当前设备的实际 offset 值。
+在实际分析中，可以通过 `adb shell dumpsys SurfaceFlinger | grep phase` 查看当前设备的实际 offset 值，对比配置表中的理论值来判断 offset 是否被正确应用——如果两者偏差较大，可能是设备厂商覆写了默认配置或系统切换到了不同的 WorkDuration 配置集。
 
 系统会在不同场景下切换三组配置：
 
@@ -397,9 +400,7 @@ app phase = 16666667 - (20500000 + 10500000) % 16666667 = 2333334 ns
 
 Phase Offset 不是越大越好，也不是越小越好。它是一个需要精细平衡的参数：
 
-- **Offset 过短**：App 渲染还没完成，SurfaceFlinger 就开始合成了。SurfaceFlinger 拿不到最新的 buffer，这一帧白等，延迟反而增加。
-- **Offset 过长**：App 和 SF 的工作时间几乎不重叠，失去了流水线化的优势，延迟接近 3 帧。
-- **理想状态**：App 刚好在 SF 开始合成前完成渲染，SF 刚好在屏幕刷新前完成合成。
+如果 offset 过短，App 渲染还没完成 SurfaceFlinger 就开始合成了——SurfaceFlinger 拿不到最新的 buffer，这一帧白等，延迟反而增加。如果 offset 过长，App 和 SF 的工作时间几乎不重叠，失去了流水线化的优势，延迟接近 3 帧。理想状态下，App 刚好在 SF 开始合成前完成渲染，SF 刚好在屏幕刷新前完成合成——这也是 Phase Offset 调优的终极目标。
 
 `[来源: Cubox收藏, cloud.tencent.com/developer/article/1905184 — Vsync Phase 详解]`
 
@@ -421,7 +422,7 @@ Phase Offset 不是越大越好，也不是越小越好。它是一个需要精�
 
 **正常情况：**
 
-在 Perfetto 中，你会看到 VSYNC-app 和 VSYNC-sf 以稳定的间隔规律跳动。在 60Hz 设备上，间隔约 16.66ms；在 120Hz 设备上约 8.33ms。两者之间有一个固定的时间差（即 Phase Offset）。
+在 Perfetto 中，VSYNC-app 和 VSYNC-sf 以稳定的间隔规律跳动。在 60Hz 设备上，间隔约 16.66ms；在 120Hz 设备上约 8.33ms。两者之间有一个固定的时间差（即 Phase Offset）。
 
 [图：Perfetto 中正常的 VSYNC-app 和 VSYNC-sf Track——间隔均匀、相位稳定]
 
@@ -518,21 +519,23 @@ VSync 是整个渲染管线的起点：
 
 ## 九、版本演进
 
+VSync 架构从 Android 4.1 的 Project Butter 确立基本框架以来，经历了从手动配置纳秒值到自适应调优的持续演进。下面我们按时间线梳理关键节点，重点关注每个变化对实际性能分析和 Perfetto 观测的影响。
+
 ### 9.1 Android 4.1 (Project Butter)
 
 引入 VSync 同步、Choreographer、三缓冲。这是 Android VSync 架构的起点。
 
 ### 9.2 Android 7.0 ~ 10：DispSync 成熟期
 
-DispSync 的软件锁相环模型在这一时期逐渐稳定。Phase Offset 通过 `BoardConfig.mk` 中的纳秒值直接配置。
+DispSync 的软件锁相环模型在这一时期逐渐稳定，成为 Android VSync 虚拟化的标准实现。Phase Offset 通过 `BoardConfig.mk` 中的纳秒值直接配置，OEM 需要根据自己设备的渲染耗时手动调优。这一时期在 Perfetto 中可以看到稳定的 DispSync 模型行为——HW_VSYNC 仅在校正时短暂开启。
 
 ### 9.3 Android 11 ~ 12：VsyncConfiguration 引入
 
-开始引入 `VsyncConfiguration` 和 `WorkDuration` 抽象，Phase Offset 的配置方式从手动指定纳秒值演变为基于工作时长自动计算。
+开始引入 `VsyncConfiguration` 和 `WorkDuration` 抽象，Phase Offset 的配置方式从手动指定纳秒值演变为基于工作时长自动计算。这意味着 OEM 不再需要凭经验填写纳秒值，而是告诉系统「App 渲染一帧需要多久、SF 合成一帧需要多久」，系统自动计算最优 offset。这个转变为后续的自适应刷新率打下了基础。
 
 ### 9.4 Android 13 (T)：vsync-appSf 分离
 
-引入 vsync-appSf 信号，将 sf EventThread 的双重职责解耦。同时提供 NDK Choreographer API（API 33+），支持正确的帧节奏和未来帧选择。
+引入 vsync-appSf 信号，将 sf EventThread 的双重职责彻底解耦（详见本文「VSync 信号的传递路径」一节）。这一变化在 Perfetto 中表现为 VSync Track 的重组——原本单一的 sf EventThread 拆分为独立的 sf 和 appSf 两条路径。同时，Android 13 提供了 NDK Choreographer API（API 33+），支持正确的帧节奏（Frame Pacing）和未来帧选择，这对于游戏和视频类应用的帧率控制尤其重要。
 
 ### 9.5 Android 15 ~ 16：自适应刷新率（ARR）
 
@@ -578,9 +581,7 @@ Android 16 新增的 API：
 
 这要求 DispSync/VsyncTracker 具备快速重新校准的能力。在 Android 15/16 的实现中，刷新率切换时系统会：
 
-1. 通知 VsyncConfiguration 更新 VSync 周期参数
-2. 临时切换到 `early` 配置集（更保守的 offset，给予更多缓冲）
-3. 在新周期稳定后恢复正常的 Phase Offset
+首先通知 VsyncConfiguration 更新 VSync 周期参数，然后临时切换到 `early` 配置集（使用更保守的 offset，给予更多缓冲），等新周期稳定后再恢复正常的 Phase Offset。
 
 ### 10.2 VSync 偏移量对输入延迟的影响
 
