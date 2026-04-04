@@ -1,7 +1,10 @@
 ---
 title: "典型场景分析"
 chapter: "7.4"
-status: ready-for-review
+status: finalized
+drafted_date: "2026-04-01"
+reviewed_date: "2026-04-05"
+reviewed_by: "openclaw-task6"
 rework_date: "2026-04-04"
 rework_by: openclaw-task2b
 applicable_versions: "Android 8 (API 26) - Android 16 (API 35)"
