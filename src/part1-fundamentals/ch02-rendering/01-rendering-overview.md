@@ -1,14 +1,14 @@
 ---
 title: "Android 渲染架构全景"
 chapter: "2.1"
-status: ready-for-review
+status: reviewed
 applicable_versions: "Android 12 (API 31) - Android 16 (API 36)"
 last_verified: "2026-03-30"
 last_verified_against: "AOSP android-16.0.0_r1, 官方文档最新版本"
 confidence: high
 drafted_date: "2026-03-30"
-reviewed_date: "2026-04-02T01:20"
-reviewed_by: "openclaw-task6"
+reviewed_date: "2026-04-05T02:20"
+reviewed_by: "openclaw-task6-v2"
 polish_count: 1
 polish_date: "2026-04-05"
 polish_by: "task2b-polish"
@@ -63,7 +63,7 @@ related_chapters: ["2.2", "2.3", "2.4", "2.5", "2.6", "2.10"]
 
 ## 渲染管线全景：Measure → Layout → Draw → Sync → GPU Render → Composite → Display
 
-Android 渲染管线是一个精密的流水线系统，将 XML 布局文件和 View 组件最终转换为屏幕上的像素。让我们从宏观到微观，逐步拆解这个复杂的过程。[已验证: 官方文档, Android渲染管线概述]
+Android 渲染管线是一条从 View 树到屏幕像素的完整流水线——XML 布局经过 Measure、Layout、Draw 转化为绘制指令，再经 GPU 渲染为像素，最终由 SurfaceFlinger 合成并输出到屏幕。下面我们从这条流水线的起点开始，逐阶段拆解。[已验证: 官方文档, Android渲染管线概述]
 
 ### 第一阶段：UI 线程准备阶段
 
@@ -148,7 +148,9 @@ Choreographer.doFrame()
 └── Choreographer.callTraversalCallbacks() // 触发 performTraversals()
 ```
 
-VSync 信号是整条渲染管线的节拍器。它的源头是显示硬件——以 60Hz 屏幕为例，硬件每 16.67ms 发出一次 VSync 中断。Android 系统不会把这个原始信号直接交给 App 和 SurfaceFlinger，而是通过 DispSync 将其分发为两个独立的信号：VSYNC_APP 和 VSYNC_SF，它们之间有一个精心计算的时间差（offset）。VSYNC_APP 先到，通知 App 开始渲染这一帧；等 App 渲染完成、把缓冲区提交给 BufferQueue 之后，VSYNC_SF 到来，触发 SurfaceFlinger 开始合成。这个设计确保了 App 渲染和 SurfaceFlinger 合成在时间上能紧密衔接，既不互相阻塞，也不浪费 VSync 周期。
+VSync 信号是整条渲染管线的节拍器。它的源头是显示硬件——以 60Hz 屏幕为例，硬件每 16.67ms 发出一次 VSync 中断。Android 系统不会把这个原始信号直接交给 App 和 SurfaceFlinger，而是通过 DispSync 将其分发为两个独立的信号：VSYNC_APP 和 VSYNC_SF，它们之间有一个精心计算的时间差（offset）。
+
+VSYNC_APP 先到，通知 App 开始渲染这一帧；等 App 渲染完成、把缓冲区提交给 BufferQueue 之后，VSYNC_SF 到来，触发 SurfaceFlinger 开始合成。这个设计确保了 App 渲染和 SurfaceFlinger 合成在时间上能紧密衔接，既不互相阻塞，也不浪费 VSync 周期。
 
 关于 VSync 的详细机制（包括 offset 的计算、DispSync 模型、Android 16 的变化等），我们在 2.3 节会深入展开。
 
@@ -605,7 +607,11 @@ vkBindImageMemory(device, image, memory, 0);
 
 ### RenderEngine 与 GPU Composition 的区别
 
-RenderEngine 和 GPU Composition 是两个容易混淆的概念，但它们的职责截然不同。RenderEngine 是 Skia 的渲染后端，运行在 RenderThread 中，负责把 App 的 DisplayList 指令转化为实际的 GPU 绘制调用——它处理的是单个 App 的 UI 渲染。GPU Composition 则是 SurfaceFlinger 的合成过程，运行在 SurfaceFlinger 进程中，负责把多个 App 的渲染结果叠加在一起——它处理的是多个 Layer 的最终合成。
+RenderEngine 和 GPU Composition 是两个容易混淆的概念，但它们的职责截然不同。
+
+[存疑: 以下关于 RenderEngine 的描述可能有误。在 AOSP 中，RenderEngine（frameworks/native/services/surfaceflinger/RenderEngine/）运行在 SurfaceFlinger 进程中，负责 GPU Composition 时的渲染，而非运行在 App 的 RenderThread 中。App 的 RenderThread 使用的是 HWUI 的 Skia Pipeline（SkiaOpenGLPipeline / SkiaVulkanPipeline）。建议高爷核实并修正。]
+
+RenderEngine 是 Skia 的渲染后端，运行在 RenderThread 中，负责把 App 的 DisplayList 指令转化为实际的 GPU 绘制调用——它处理的是单个 App 的 UI 渲染。GPU Composition 则是 SurfaceFlinger 的合成过程，运行在 SurfaceFlinger 进程中，负责把多个 App 的渲染结果叠加在一起——它处理的是多个 Layer 的最终合成。
 
 用更直观的方式来说，RenderEngine 画的是单个 App 的 UI（"画一个按钮"、"绘制一段文字"），GPU Composition 组的是多个 App 的画面（"把微信的界面叠在启动器上面，再加一层状态栏"）。在 Perfetto 中，RenderEngine 的耗时体现在 RenderThread track 上，GPU Composition 的耗时体现在 SurfaceFlinger 进程的 GPU 活动中。
 

@@ -420,3 +420,11 @@
   1. AMS — 17/20 — 已创建为 §1.8
 - 其他候选（<14）：WebView 性能 11/20、SQLite 性能 9/20、PMS 包管理 10/20
 - 已检查方向已记录，下次运行可探索不同方向（如 Camera/Media 管线、Privacy Sandbox 性能开销）
+
+
+## [Task6 Review] 2.1 Android 渲染架构全景 — 2026-04-05
+- **类型**：存疑（技术准确性）
+- **位置**："RenderEngine 与 GPU Composition 的区别"小节
+- **问题**：文中描述 RenderEngine 运行在 RenderThread 中，负责 App 的 DisplayList 渲染。但在 AOSP 中 RenderEngine 运行在 SurfaceFlinger 进程中，App 的 RenderThread 使用 HWUI 的 Skia Pipeline。两者混淆。
+- **建议**：重新组织此节，区分（1）App RenderThread 的 Skia 渲染管线和（2）SurfaceFlinger 的 RenderEngine/GPU Composition 管线
+- **review 日志**：logs/review/2026-04-05-0220-review.md
