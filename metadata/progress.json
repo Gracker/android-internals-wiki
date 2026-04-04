@@ -3,12 +3,12 @@
   "total_sections": 96,
   "metrics": {
     "total": 100,
-    "draft": 4,
-    "ready-for-review": 49,
+    "draft": 3,
+    "ready-for-review": 50,
     "reviewed": 3,
     "finalized": 41,
     "staging_drafts": 0,
-    "last_updated": "2026-04-05T01:05:00+08:00",
+    "last_updated": "2026-04-05T02:16:15.644240",
     "processing": 0,
     "ready-to-publish": 1
   },
@@ -1226,6 +1226,21 @@
       "verification_level": "L2",
       "word_count": "~9500",
       "completed_at": "2026-04-05T01:05:00+08:00"
+    },
+    {
+      "chapter": "5.8",
+      "section": "5.8",
+      "title": "后台执行限制与优化",
+      "status": "ready-for-review",
+      "drafted_date": "2026-04-05",
+      "drafted_by": "openclaw-task2a",
+      "anchors_covered": 5,
+      "anchors_total": 5,
+      "extensions_covered": 2,
+      "extensions_total": 2,
+      "verification_level": "L2",
+      "word_count": "~9500",
+      "completed_at": "2026-04-05T02:16:15.644234"
     }
   ],
   "ready_for_review": 5,
@@ -1233,8 +1248,8 @@
   "stats": {
     "total": 97,
     "completed": 66,
-    "pending": 31,
-    "last_updated": "2026-04-05T01:28:06.091255"
+    "pending": 30,
+    "last_updated": "2026-04-05T02:16:15.644228"
   },
   "research_stats": {
     "runs_today": [
@@ -1418,6 +1433,13 @@
     "last_updated": "2026-04-04T19:00:00+08:00"
   },
   "history": [
+    {
+      "date": "2026-04-05",
+      "section": "5.8",
+      "title": "后台执行限制与优化",
+      "action": "draft-completed",
+      "word_count": "~9500"
+    },
     {
       "date": "2026-04-05",
       "section": "1.8",
@@ -2045,11 +2067,11 @@
       "reviewed_by": "openclaw-task6"
     },
     "2.1": {
+      "status": "reviewed",
       "title": "Android 渲染架构全景",
       "file": "src/part1-fundamentals/ch02-rendering/01-rendering-overview.md",
-      "status": "finalized",
-      "reviewed_date": "2026-04-02",
-      "reviewed_by": "openclaw-task6"
+      "last_review": "2026-04-05T02:20",
+      "review_issues": 1
     },
     "1.2": {
       "title": "系统启动全流程",
@@ -2446,6 +2468,20 @@
       "anchors_total": 7,
       "extensions_covered": 3,
       "extensions_total": 3,
+      "verification_level": "L2",
+      "word_count": "~9500",
+      "confidence": "medium"
+    },
+    "5.8": {
+      "title": "后台执行限制与优化",
+      "status": "ready-for-review",
+      "file": "src/part1-fundamentals/ch05-cpu-power/08-background-execution.md",
+      "drafted_date": "2026-04-05",
+      "drafted_by": "openclaw-task2a",
+      "anchors_covered": 5,
+      "anchors_total": 5,
+      "extensions_covered": 2,
+      "extensions_total": 2,
       "verification_level": "L2",
       "word_count": "~9500",
       "confidence": "medium"
