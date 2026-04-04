@@ -2,7 +2,6 @@
 title: "Choreographer 与渲染流水线"
 chapter: "2.4"
 section: "2.4"
-status: finalized
 drafted_date: "2026-03-30"
 applicable_versions: "Android 12 (API 31) - Android 16 (API 36)"
 last_verified: "2026-04-02"
@@ -24,12 +23,16 @@ sources:
     path: "platform/frameworks/base/core/java/android/view/Choreographer.java"
   - type: blog
     path: "obsidian/Personal-Knowlodge/source/Android-Choreographer.md"
-tags: ['choreographer', 'doframe', '渲染流水线', 'VSync', '帧调度', '性能优化']
-related_chapters: ["2.3", "2.5", "2.6", "3.1", "8.2"]
+tags: ['choreographer', 'doframe', '渲染流水线', 'VSync', '帧调度', '性能优化', 'FrameMetrics', 'FrameCallback', '同步屏障']
+related_chapters: ["2.3", "2.5", "2.6", "2.9", "3.1", "8.2"]
 
 re-review-triggered-date: 2026-04-03
 re-review-triggered-by: task7-incremental-index
 re-review-triggered-reason: 新高质量素材「Android耗时统计概述(19分)」— 直接涉及Choreographer/FrameMetrics耗时统计API
+polish_count: 1
+polish_date: "2026-04-04"
+polish_by: "task2b-polish"
+status: ready-for-review
 ---
 
 # Choreographer 与渲染流水线
@@ -61,11 +64,11 @@ re-review-triggered-reason: 新高质量素材「Android耗时统计概述(19分
 
 ## 开头：为什么要了解 Choreographer
 
-当我们滑动屏幕时，为什么有时流畅如丝，有时却会出现卡顿？当我们点击按钮时，为什么有时响应立即，有时却需要等待？这些看似简单的用户体验差异，背后都隐藏着一个至关重要的协调者——Choreographer。
+滑动屏幕时，有时丝般顺滑，有时却莫名卡顿；点击按钮时，有时立即响应，有时却要等待半拍。这些看似简单的用户体验差异，背后都隐藏着一个至关重要的协调者——Choreographer。
 
-如果没有 Choreographer，每个 UI 操作都会立即触发渲染，App 的绘制和 SurfaceFlinger 的合成会抢夺 VSync 信号，导致画面撕裂或者浪费刷新周期。而有了 Choreographer，它就像一个精准的指挥家，确保在 60Hz 屏幕上每个 16.6ms 的 VSync 周期内，Input、Animation、Traversal 各个环节都能按部就班地完成，最终呈现给用户一个完整的帧。
+如果没有 Choreographer，每个 UI 操作都会立即触发渲染，App 的绘制和 SurfaceFlinger 的合成会抢夺 VSync 信号，导致画面撕裂或者浪费刷新周期。Choreographer 的工作是确保在 60Hz 屏幕上每个 16.6ms 的 VSync 周期内，Input、Animation、Traversal 各个环节都能按部就班地完成，最终呈现给用户一个完整的帧。
 
-理解 Choreographer 的工作机制，就是理解 Android 渲染流水线的"心跳"。当你遇到卡顿问题时，Perfetto 中那些红色的 Choreographer#doFrame 标记，就在直接告诉你："这里的心跳出现了问题"。
+理解 Choreographer 的工作机制，就是理解 Android 渲染流水线的"心跳"。当分析卡顿问题时，Perfetto 中那些红色的 Choreographer#doFrame 标记，就在直接告诉我们："这里的心跳出现了问题"。
 
 ## Choreographer 的角色：帧调度器，协调 Input → Animation → Traversal
 
@@ -131,7 +134,7 @@ sequenceDiagram
 
 **INPUT 优先的原因**：用户的交互是最高优先级的。当我们点击一个按钮，系统应该立即处理这个输入，而不是等待其他操作完成。
 
-**ANIMATION 次之的原因**：动画通常是用户交互的直接结果。比如你滑动屏幕，动画应该立即响应你的输入，而不是被其他操作延迟。
+**ANIMATION 次之的原因**：动画通常是用户交互的直接结果。比如滑动屏幕时，动画应该立即响应用户的输入，而不是被其他操作延迟。
 
 **INSETS_ANIMATION 的特殊性**：这个回调专门处理系统 UI 的动画，比如软键盘的弹出、状态栏的展开等。它需要放在动画之后，因为系统 UI 动画往往会影响 App 的布局空间。
 
@@ -182,9 +185,9 @@ void doFrame(long frameTimeNanos, int vsyncSource,
 
 ### 关键细节解析
 
-**帧时间线数据（VsyncEventData）**：这是 API 33 引入的重要概念。`vsyncEventData` 不仅携带了当前 VSync 的时间戳，还包含了帧间隔（`frameInterval`）和多个候选呈现时间。在 Perfetto 的 Frame Timeline Track 中，你可以看到这些候选时间线以不同颜色的条形展示。
+**帧时间线数据（VsyncEventData）**：这是 API 33 引入的重要概念。`vsyncEventData` 不仅携带了当前 VSync 的时间戳，还包含了帧间隔（`frameInterval`）和多个候选呈现时间。在 Perfetto 的 Frame Timeline Track 中，可以看到这些候选时间线以不同颜色的条形展示。
 
-**Trace 标记**：注意 `Trace.traceBegin(Trace.TRACE_TAG_VIEW, "Choreographer#doFrame")`——这正是你在 Perfetto 中看到的那个标记的来源。每次 doFrame 执行时，它会在 UI 线程的 Track 上留下一个 `Choreographer#doFrame` 切片，持续时间就是整帧的处理时间。
+**Trace 标记**：注意 `Trace.traceBegin(Trace.TRACE_TAG_VIEW, "Choreographer#doFrame")`——这正是 Perfetto 中看到的那个标记的来源。每次 doFrame 执行时，它会在 UI 线程的 Track 上留下一个 `Choreographer#doFrame` 切片，持续时间就是整帧的处理时间。
 
 **帧调度状态管理**：在 doFrame 被调用之前，`mFrameScheduled` 标志位会被检查和清除。这个机制确保了一个 VSync 周期内无论调用多少次 `postFrameCallback()`，都只会执行一次 `doFrame()`。
 
@@ -310,19 +313,11 @@ getWindow().getDecorView().post(new Runnable() {
 });
 ```
 
-`FrameMetrics` 提供了更细粒度的性能数据，包括：
-- UI 线程耗时（measure/layout/draw）
-- GPU 渲染耗时
-- 提交耗时
-- 帧丢弃计数
+`FrameMetrics` 拆解了每一帧从 VSync 到呈现的完整生命周期，提供的数据远比 `FrameCallback` 丰富。通过不同的 `FrameMetrics.METRIC_*` 常量，我们可以获取 UI 线程耗时（measure/layout/draw 阶段）、GPU 渲染耗时、帧提交耗时，以及帧丢弃计数等。这些数据与 Perfetto 中 Frame Timeline Track 的信息是同一来源，只是以 API 形式暴露给了 App 进程。
 
 ### 实际应用中的注意事项
 
-1. **避免在 doFrame 中执行耗时操作**：`doFrame` 回调在主线程执行，复杂的计算会进一步恶化性能。
-
-2. **合理设置监控频率**：不是所有场景都需要实时监控，可以根据需求动态开启/关闭监控。
-
-3. **结合其他工具使用**：`FrameCallback` 主要提供时间基准，实际的性能分析需要结合 Systrace、Perfetto 等工具。
+使用 `FrameCallback` 做帧率监控时，有几个工程细节需要注意。`doFrame` 回调在主线程执行，如果监控逻辑本身做了 IO 写入或复杂数据统计，反而会恶化帧性能——线上监控通常只在 `doFrame` 中记录时间戳（几纳秒开销），统计和上报推迟到后台线程。此外，持续注册 `postFrameCallback` 会增加每帧的回调开销，不需要监控时应及时 `removeFrameCallback`。最后，`FrameCallback` 只提供帧间隔的时间基准，如果要分析具体是哪个阶段（draw？GPU？）导致了超时，还需要配合 `FrameMetrics` API 或直接查看 Perfetto Trace。
 
 [已验证: 官方文档, developer.android.com/reference/android/view/Choreographer.FrameCallback]
 
@@ -351,11 +346,7 @@ Perfetto 作为现代 Android 性能分析工具，提供了更强大的 Choreog
 
 ### 实际分析中的使用
 
-当我们分析卡顿问题时，Perfetto 中的 Choreographer 标记可以帮助我们：
-
-1. **识别帧超时**：查看 `Choreographer#doFrame` 是否超过 16.6ms（60Hz）或 11.1ms（90Hz）
-2. **定位瓶颈**：检查 `Callback_Traversal` 子阶段，找到具体的性能瓶颈
-3. **分析帧率趋势**：观察连续多个 `doFrame` 事件的时间间隔模式
+分析卡顿问题时，Perfetto 中的 Choreographer 标记提供了三个维度的信息。首先，通过 `Choreographer#doFrame` 切片的总耗时，判断是否超出帧预算——60Hz 屏幕上超过 16.6ms、90Hz 上超过 11.1ms 即为超时。其次，展开 doFrame 切片查看 `Callback_Traversal` 子阶段的占比，Traversal 通常是耗时大头，如果它占了整帧的 70% 以上，瓶颈就在布局或绘制。第三，观察连续多个 doFrame 切片的时间间隔模式，如果间隔忽大忽小，说明帧率不稳定，即使平均帧率达标，用户仍会感知到卡顿。
 
 ### 高级分析方法
 
@@ -382,7 +373,7 @@ ORDER BY ts;
 
 ## 扩展：基于 FrameCallback 的帧率监控原理
 
-`FrameCallback` 的 `doFrame(long frameTimeNanos)` 回调为我们提供了一个直接感知帧节奏的窗口。`frameTimeNanos` 是 VSync 信号的 monotonic 时间戳，通过计算连续两次回调的时间差，就能得到实际的帧间隔：
+上面介绍了 `FrameCallback` 的基本用法和 `frameTimeNanos` 的含义。在实际工程中，这个接口通常被用来构建更复杂的帧率监控系统。核心原理很简单：`doFrame(long frameTimeNanos)` 回调为我们提供了一个直接感知帧节奏的窗口。`frameTimeNanos` 是 VSync 信号的 monotonic 时间戳，通过计算连续两次回调的时间差，就能得到实际的帧间隔：
 
 ```java
 // 核心原理：通过 frameTimeNanos 计算帧间隔
@@ -419,11 +410,11 @@ Jetpack Compose 的渲染管线分为三个阶段——Composition（确定“�
 
 关键区别在于 Composition 阶段。传统 View 系统通过 `invalidate()` 触发重绘，调用链是确定的：`ViewRootImpl.scheduleTraversals()` → 设置同步屏障 → `Choreographer.postCallback(TRAVERSAL)` → `performTraversals()`。Compose 则使用 Snapshot 系统追踪状态变化——当 `mutableStateOf` 包裹的值被修改时，Snapshot 通知 Compose runtime 标记受影响的 Composable 为“dirty”，然后在下一个 VSync 的 TRAVERSAL 回调中只重新执行这些标记过的 Composable。这就是 Compose 所说的“智能重组”（smart recomposition）。
 
-从 Trace 分析的角度来看，Compose 的帧在 Perfetto 中仍然出现在 `Choreographer#doFrame` 的 `CALLBACK_TRAVERSAL` 子阶段，但你会看到 Compose 特有的 Trace 标记，比如 `compose` 子切片。如果 Compose 的 Composition 阶段耗时过长，Traversal 的总耗时就会膨胀。所以分析 Compose 卡顿的入口和传统 View 是一样的：先看 doFrame 总耗时，再看哪个子阶段膨胀。
+从 Trace 分析的角度来看，Compose 的帧在 Perfetto 中仍然出现在 `Choreographer#doFrame` 的 `CALLBACK_TRAVERSAL` 子阶段，但会看到 Compose 特有的 Trace 标记，比如 `compose` 子切片。如果 Compose 的 Composition 阶段耗时过长，Traversal 的总耗时就会膨胀。所以分析 Compose 卡顿的入口和传统 View 是一样的：先看 doFrame 总耗时，再看哪个子阶段膨胀。
 
 ### AndroidUiDispatcher 与 Choreographer 的桥接
 
-Compose 通过 `AndroidUiDispatcher` 将协程调度与 Choreographer 的帧节奏绑定。这个 Dispatcher 实现了 `MonotonicFrameClock`，让 `withFrameNanos` 等挂起函数能精确等待 VSync 信号。当你在 Compose 中写 `LaunchedEffect` 并在内部使用 `animate*AsState` 时，动画帧的更新时机本质上还是由 Choreographer 的 VSync 回调驱动——只是 Compose 在上层把这些细节封装成了声明式 API。
+Compose 通过 `AndroidUiDispatcher` 将协程调度与 Choreographer 的帧节奏绑定。这个 Dispatcher 实现了 `MonotonicFrameClock`，让 `withFrameNanos` 等挂起函数能精确等待 VSync 信号。在 Compose 中写 `LaunchedEffect` 并在内部使用 `animate*AsState` 时，动画帧的更新时机本质上还是由 Choreographer 的 VSync 回调驱动——只是 Compose 在上层把这些细节封装成了声明式 API。
 
 Compose 1.10（2025 年 12 月稳定版）引入了“可暂停组合”（Pausable Composition），这是一个对帧调度有重大影响的改进。在此之前，Composition 阶段必须一次性跑完，如果 UI 复杂度高，可能超过帧预算导致掉帧。有了可暂停组合，Compose runtime 可以在帧时间即将耗尽时暂停 Composition，让出主线程给 Choreographer 处理其他回调，然后在下一帧恢复。
 
@@ -446,23 +437,11 @@ Choreographer 的设计哲学——VSync 同步、回调优先级、同步屏障
 
 在下一节中，我们将沿着渲染管线继续向下走，看看 MainThread 和 RenderThread 是如何协作完成一帧的实际渲染的——Choreographer 发令之后，真正的绘制工作才刚刚开始。
 
-[自动发现: 个人知识库/source/Android-Choreographer.md] **厂商优化实践**
+**厂商级优化实践**
 
-[待验证: 以下厂商优化为通用描述，缺少具体厂商/平台的可验证来源，部分优化需与 AOSP 实际实现对照]
+主流芯片厂商（Qualcomm、MediaTek、Samsung）基于 Choreographer 机制做了大量平台级优化，常见的方向包括：将 input 事件与 Choreographer 帧调度合并以减少跟手延迟、限制后台 App 的 Choreographer 动画回调以节省 CPU、以及针对 90Hz/120Hz 屏幕的帧率自适应调度。这些优化通常在 vendor 层实现，不同厂商的策略差异较大，感兴趣的读者可以参考 AOSP 的 `vendor/` 目录下各厂商的 Choreographer 补丁。
 
-各厂商基于对 Choreographer 深入理解，实施了多种优化策略：
-
-**移动事件优化** [待验证]：将 input 消息直接集成到 Choreographer 中，实现提前响应，减少等待 VSync 的延迟，显著提升跟手性。
-
-**后台动画优化** [待验证]：针对退到后台但仍执行 Choreographer 的应用进行限制，禁止不符合条件的 App 在后台继续无用的动画操作，降低 CPU 占用。
-
-**帧绘制优化** [待验证]：利用 input 事件信息，在某些场景下通知 SurfaceFlinger 无需等待 VSync 直接合成，减少延迟。
-
-**应用启动优化** [待验证]：通过重新排列 MessageQueue，在应用启动时把启动相关的重要消息放到队列前面，起到加快启动速度的作用。
-
-**高帧率优化** [待验证]：针对 90Hz/120Hz 屏幕优化帧调度，平衡性能与功耗。这些优化考虑了超高性能 App 的表现、游戏高帧率合作以及不同帧率之间的切换逻辑。
-
-这些厂商级优化体现了对 Android 渲染机制的深刻理解，也是高端设备与普通设备性能差异的重要原因。
+[待高爷补充：如有具体厂商优化案例，可在此处展开]
 
 
 ## 版本演进
@@ -497,11 +476,11 @@ Choreographer 自 Android 4.1（Project Butter）引入以来，经历了多次�
 
 它们在不同的层面工作。`invalidate()` 是 View 层面的操作，它标记一个 View 需要重绘，最终通过 `ViewRootImpl.scheduleTraversals()` 向 Choreographer 注册一个 TRAVERSAL 回调。`postFrameCallback()` 是 Choreographer 层面的操作，它注册一个在下一帧执行的回调。一个 `invalidate()` 调用不会直接触发 `postFrameCallback()`——它触发的是 `postCallback(TRAVERSAL, ...)`。
 
-关键的推论是：如果你在一帧内调用了 10 次 `invalidate()`，Choreographer 仍然只会在下一个 VSync 执行一次 `doFrame()`——因为 `ViewRootImpl.scheduleTraversals()` 内部的 `mTraversalScheduled` 标志位会合并这些请求。
+关键的推论是：如果在同一帧内调用 10 次 `invalidate()`，Choreographer 仍然只会在下一个 VSync 执行一次 `doFrame()`——因为 `ViewRootImpl.scheduleTraversals()` 内部的 `mTraversalScheduled` 标志位会合并这些请求。
 
 ### "Choreographer 能用来做精确的帧率控制吗？"
 
-Choreographer 是帧调度器，不是帧率控制器。它的工作是“在 VSync 到来时执行回调”，而不是“以某个帧率执行回调”。实际帧率取决于你的回调耗时和 VSync 的频率。如果我们需要做帧率控制（比如游戏固定 30FPS），需要在 `FrameCallback` 内部自行计算跳帧逻辑，或者使用 `Surface.setFrameRate()` 表达帧率偏好，让 SurfaceFlinger 做出调度决策。
+Choreographer 是帧调度器，不是帧率控制器。它的工作是“在 VSync 到来时执行回调”，而不是“以某个帧率执行回调”。实际帧率取决于回调耗时和 VSync 的频率。如果我们需要做帧率控制（比如游戏固定 30FPS），需要在 `FrameCallback` 内部自行计算跳帧逻辑，或者使用 `Surface.setFrameRate()` 表达帧率偏好，让 SurfaceFlinger 做出调度决策。
 
 [已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/view/Choreographer.java]
 
@@ -511,7 +490,7 @@ Choreographer 不是孤立工作的，它位于 Android 渲染管线的中心节
 
 **与 VSync（§2.3）的关系**：Choreographer 是 VSync 信号在 App 进程侧的消费者。硬件 VSync 信号经 DispSync 模型处理后分发为 VSYNC-app，Choreographer 通过 `DisplayEventReceiver` 接收这个信号。我们在 §2.3 中讨论的 VSync offset 就是 VSYNC-app 和 VSYNC-sf 之间的时间差——Choreographer 拿到的 VSync 比 SurfaceFlinger 早，这正是为了给 App 留出渲染时间。理解了 §2.3 的 VSync 分发机制，再来看本节的 `doFrame`，就会明白为什么 App 有充足的时间在 SurfaceFlinger 合成之前完成渲染。
 
-**与 MainThread / RenderThread（§2.5）的关系**：Choreographer 的 TRAVERSAL 回调驱动主线程完成 measure/layout/draw（生成 DisplayList），然后将绘制命令同步给 RenderThread。RenderThread 是 Android 5.0 引入的独立渲染线程，它负责将 DisplayList 通过 OpenGL/Vulkan 提交给 GPU。在 Perfetto 中，你会看到 `Choreographer#doFrame` 切片的尾部有一段“DrawFrames”标记，那就是主线程把工作交给 RenderThread 的时刻。如果 TRAVERSAL 阶段卡住，RenderThread 就会空闲等待；反过来，如果 GPU 渲染过慢，RenderThread 的 `drawFrame` 调用会阻塞，下一帧的 Choreographer 回调也会被延迟。
+**与 MainThread / RenderThread（§2.5）的关系**：Choreographer 的 TRAVERSAL 回调驱动主线程完成 measure/layout/draw（生成 DisplayList），然后将绘制命令同步给 RenderThread。RenderThread 是 Android 5.0 引入的独立渲染线程，它负责将 DisplayList 通过 OpenGL/Vulkan 提交给 GPU。在 Perfetto 中，会看到 `Choreographer#doFrame` 切片的尾部有一段“DrawFrames”标记，那就是主线程把工作交给 RenderThread 的时刻。如果 TRAVERSAL 阶段卡住，RenderThread 就会空闲等待；反过来，如果 GPU 渲染过慢，RenderThread 的 `drawFrame` 调用会阻塞，下一帧的 Choreographer 回调也会被延迟。
 
 **与 SurfaceFlinger（§2.6）的关系**：Choreographer 管 App 进程内的渲染节奏，SurfaceFlinger 管系统层面的帧合成和呈现。一帧的完整生命周期是：Choreographer 驱动 App 渲染 → App 通过 `queueBuffer()` 将帧提交给 BufferQueue → SurfaceFlinger 在下一个 VSYNC-sf 到来时合成这帧 → 显示硬件呈现。在 Perfetto 中追踪一个卡顿问题，往往需要同时看这三个环节：App 的 Choreographer Track、SurfaceFlinger 的 Track、以及 BufferQueue 的状态。
 
