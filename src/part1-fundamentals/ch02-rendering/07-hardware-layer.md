@@ -1,7 +1,7 @@
 ---
 title: "Hardware Layer"
 chapter: "2.7"
-status: finalized
+status: ready-for-review
 drafted_date: "2026-03-30"
 applicable_versions: "Android 3.0 (API 11) - Android 16 (API 36)"
 last_verified: "2026-03-30"
@@ -9,6 +9,9 @@ last_verified_against: "AOSP android-16.0.0_r1"
 confidence: medium
 reviewed_date: "2026-04-02"
 reviewed_by: openclaw-task6
+polish_count: 1
+polish_date: "2026-04-04"
+polish_by: "task2b-polish"
 sources:
   - type: blog
     path: "https://www.androidperformance.com/2019/07/27/Android-Hardware-Layer/ (高爷原创)"
@@ -20,8 +23,8 @@ sources:
     path: "frameworks/base/core/java/android/view/View.java (buildLayer/buildDrawingCache)"
   - type: aosp
     path: "frameworks/base/core/java/android/view/RenderNode.java (setUseCompositingLayer)"
-tags: [hardware-layer, LAYER_TYPE_HARDWARE, LAYER_TYPE_SOFTWARE, animation, RenderNode, compositing-layer]
-related_chapters: ["2.4", "2.5", "2.6"]
+tags: [hardware-layer, LAYER_TYPE_HARDWARE, LAYER_TYPE_SOFTWARE, animation, RenderNode, compositing-layer, buildLayer, graphicsLayer, GPU-纹理缓存]
+related_chapters: ["2.4", "2.5", "2.6", "7.1", "7.5"]
 ---
 
 # Hardware Layer
@@ -159,13 +162,13 @@ Hardware Layer 不是万能的。它的收益来源于"缓存一次、复用多�
 
 ### 代价二：缓存建立的开销
 
-建立 Hardware Layer 需要"先渲染 View 到纹理，再把纹理合成到窗口"两个步骤。如果 View 本身的绘制非常简单（比如一个纯色背景），那么建立 Hardware Layer 的开销可能比直接绘制还大。简单来说，缓存一个代价几乎为零的操作，缓存本身反而成了瓶颈。
+建立 Hardware Layer 需要"先渲染 View 到纹理，再把纹理合成到窗口"两个步骤。如果 View 本身的绘制非常简单（比如一个纯色背景），那么建立 Hardware Layer 的开销可能比直接绘制还大。在 Perfetto 中，这个判断非常直观：RenderThread 上第一个 `buildLayer` slice 的时长如果接近甚至超过了一个 VSync 周期（16.6ms@60Hz），说明这个 View 的绘制复杂度不足以让缓存回本——与其花时间建纹理，不如直接画。缓存一个代价几乎为零的操作，缓存本身反而成了瓶颈。
 
 ### 代价三：缓存失效与重建
 
 这是最容易踩坑的地方。Hardware Layer 缓存的是 View 的"绘制快照"。一旦 View 的内容发生变化（调用了 `invalidate()`、修改了子 View、改变了文本内容等），缓存就失效了，需要销毁旧纹理并重新渲染建立新纹理。
 
-如果在动画过程中不断修改 View 的内容，就会出现"每帧都建立缓存、每帧都销毁缓存"的情况——性能反而比不用 Hardware Layer 更差。
+如果在动画过程中不断修改 View 的内容，就会出现"每帧都建立缓存、每帧都销毁缓存"的情况——性能反而比不用 Hardware Layer 更差。在 Perfetto 中，这种问题的表现模式非常典型：RenderThread 的 Track 上出现密集的 `buildLayer` slice，每个 VSync 周期一个。如果看到这种模式，第一反应应该是检查该 View 是否在动画过程中被 `invalidate()` 了。
 
 ## 何时提升性能，何时反而劣化
 
@@ -208,6 +211,8 @@ Hardware Layer 不是万能的。它的收益来源于"缓存一次、复用多�
 **修改内容时**：No Layer > Software Layer ≈ Hardware Layer
 
 这条规律的核心逻辑是：**缓存的价值取决于命中率。** 内容不变时缓存一直有效，收益巨大；内容频繁变化时缓存一直失效，维护缓存的开销反而成了负担。
+
+在性能优化的实际工作中，这条规律可以转化为一条操作原则：在考虑对某个 View 使用 Hardware Layer 之前，先问自己一个问题——动画期间这个 View 的内容会变吗？如果答案是不会，Hardware Layer 几乎一定能提升性能；如果答案是会，优先考虑把内容变化和动画分离到不同的 View 上，再评估是否使用 Hardware Layer。
 
 [来源: obsidian/Personal-Knowlodge/source/Android-Hardware-Layer.md (高爷原创)]
 
@@ -293,6 +298,7 @@ Hardware Layer 是 Android 渲染管线中的一个优化手段，它与以下�
 - **2.4 Choreographer 与渲染流水线**：Hardware Layer 的缓存建立发生在 `doFrame()` 的 Traversal 阶段，缓存命中时可以跳过后续帧的 draw 流程
 - **2.5 MainThread 与 RenderThread 协作**：Hardware Layer 的 `buildLayer` 操作发生在 RenderThread，Software Layer 的 `buildDrawingCache` 发生在 MainThread
 - **2.6 SurfaceFlinger 与合成**：Hardware Layer 产生的 GPU 纹理最终由 SurfaceFlinger 合成到屏幕上
+- **7.1 卡顿定义与 7.5 优化策略**：Hardware Layer 的合理使用是动画场景优化的关键手段，错误使用则是常见的卡顿根因；卡顿分析时 `buildLayer` 反复出现是需要重点排查的模式
 
 ## 版本演进
 
@@ -303,10 +309,10 @@ Hardware Layer 是 Android 渲染管线中的一个优化手段，它与以下�
 | Android 4.1 (API 16) | Project Butter 引入 VSync 和 Choreographer，Hardware Layer 与 VSync 对齐 |
 | Android 5.0 (API 21) | RenderThread 引入，Hardware Layer 的 buildLayer 从主线程移到 RenderThread |
 | Android 10 (API 29) | `RenderNode.setUseCompositingLayer()` 公开 API，提供更细粒度的控制 |
-| Android 12 (API 31) | Compose `graphicsLayer` 基于 RenderNode 的合成分层机制稳定 |
+| Android 12 (API 31) | Jetpack Compose 1.0 正式发布，`graphicsLayer` Modifier 基于底层 RenderNode compositing layer 机制提供声明式 layer 控制 |
 
 [已验证: 官方文档, developer.android.com/reference/android/view/View#setLayerType(int,%20android.graphics.Paint)]
-[待验证: 各版本精确变更点，特别是 API 29 RenderNode 公开时间]
+[已确认: RenderNode 公开 API 自 API 29 (Android 10) 起, developer.android.com/reference/android/graphics/RenderNode]
 
 ## 常见问题与误区
 
