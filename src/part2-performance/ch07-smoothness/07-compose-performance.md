@@ -1,11 +1,13 @@
 ---
 title: "Jetpack Compose 性能优化"
 chapter: "7.7"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 8.0 (API 26) - Android 16 (API 36)"
 last_verified: "2026-04-01"
 last_verified_against: "Android 16 Developer Preview"
 confidence: medium
+reviewed_date: "2026-04-04"
+reviewed_by: "openclaw-task6"
 sources:
   - type: blog
     path: "Personal-Knowlodge/source/2026-03-08_wechat_沉思录_如何优化_Compose_的性能_通过_底层原理_寻找答案.md"
@@ -24,6 +26,8 @@ sources:
 tags: [compose, jank, recomposition, stability, lazy-column, layout-inspector, compose-compiler]
 related_chapters: ["7.1", "7.2", "7.3", "2.4", "2.5"]
 drafted_date: "2026-04-01"
+drafted_by: "openclaw-task2a"
+section: "7.7"
 ---
 
 # Jetpack Compose 性能优化
@@ -55,11 +59,11 @@ drafted_date: "2026-04-01"
 
 ## 为什么要关注 Compose 的性能
 
-如果你在 Perfetto 中看到一个 Compose 应用的主线程出现了异常的长帧——比如一帧花了 30ms 而预期的 16.6ms——你打开那一帧的 slice，看到的不是传统 View 体系里熟悉的 measure/layout/draw，而是一堆以 "CM"（Compose Manager）开头的标记。这意味着什么？这一帧的开销来自 Compose 的重组（Recomposition），而不是传统的布局计算。
+如果我们在 Perfetto 中看到一个 Compose 应用的主线程出现了异常的长帧——比如一帧花了 30ms 而预期的 16.6ms——我们打开那一帧的 slice，看到的不是传统 View 体系里熟悉的 measure/layout/draw，而是一堆以 "CM"（Compose Manager）开头的标记。这意味着什么？这一帧的开销来自 Compose 的重组（Recomposition），而不是传统的布局计算。
 
-这就是我们需要理解 Compose 性能模型的原因。Compose 不是"换了种写 UI 的语法"那么简单，它的渲染管线、状态管理、重组机制都和传统 View 体系有着根本性的差异。如果你用分析传统 View 那套思路来分析 Compose，很容易走偏——比如看到掉帧就怀疑是布局层级太深，但实际原因可能是某个参数不稳定导致整个页面被无意义地重组了一遍。
+这就是我们需要理解 Compose 性能模型的原因。Compose 不是"换了种写 UI 的语法"那么简单，它的渲染管线、状态管理、重组机制都和传统 View 体系有着根本性的差异。如果我们用分析传统 View 那套思路来分析 Compose，很容易走偏——比如看到掉帧就怀疑是布局层级太深，但实际原因可能是某个参数不稳定导致整个页面被无意义地重组了一遍。
 
-了解 Compose 的性能模型之后，你能做之前做不到的事：在 Perfetto 中准确识别 Compose 相关的性能瓶颈，通过 Layout Inspector 定位过度重组的组件，利用 Compose Compiler Metrics 在编译阶段就发现潜在的性能问题。
+了解 Compose 的性能模型之后，我们能做之前做不到的事：在 Perfetto 中准确识别 Compose 相关的性能瓶颈，通过 Layout Inspector 定位过度重组的组件，利用 Compose Compiler Metrics 在编译阶段就发现潜在的性能问题。
 
 ## Compose 的渲染模型：Composition → Layout → Drawing
 
@@ -109,7 +113,7 @@ fun Greeting(msg: String) {
 
 结果是这样的：在高端设备（Android 11+）上，两者都能稳定跑满 60fps。但在中低端设备上差距明显——Android 7.1 设备上 LazyColumn 只有约 43fps，而 RecyclerView 仍然能稳定在 60fps。不过有意思的是，同样的测试者在粒子动画场景中对比了 Compose 和 View 的 Canvas 绘制性能，两者几乎完全一致。
 
-这说明什么？**Compose 本身的渲染性能（Layout + Drawing）已经和传统 View 持平，差距主要在 Composition 阶段——也就是重组的开销**。如果你的 Compose 页面掉帧，大概率不是"Compose 画得慢"，而是"Compose 重组了不该重组的东西"。
+这说明什么？**Compose 本身的渲染性能（Layout + Drawing）已经和传统 View 持平，差距主要在 Composition 阶段——也就是重组的开销**。如果我们的 Compose 页面掉帧，大概率不是"Compose 画得慢"，而是"Compose 重组了不该重组的东西"。
 
 这也解释了为什么 Compose 性能优化的核心策略就是：**减少不必要的重组、缩小重组的范围**。
 
@@ -158,7 +162,7 @@ class ProductListState(
 )
 ```
 
-需要特别注意的是：`@Immutable` 和 `@Stable` 是**契约**，不是提示。如果你标记了 @Immutable 但类实际上有可变状态，Compose 可能会跳过必要的重组，导致 UI 不更新。这是一种更难发现的 bug。
+需要特别注意的是：`@Immutable` 和 `@Stable` 是**契约**，不是提示。如果我们标记了 @Immutable 但类实际上有可变状态，Compose 可能会跳过必要的重组，导致 UI 不更新。这是一种更难发现的 bug。
 
 ### remember：跨重组保持数据
 
@@ -246,14 +250,14 @@ Title(snack) { scroll.value }  // scroll.value 被包装在 Lambda 中
 
 ### 陷阱一：不稳定参数导致整个页面被拖着重组
 
-这是 Compose 性能问题中最常见的一类。当你把一个包含 var 属性的类，或者一个 `List<T>` 传给 Composable 时，编译器无法确定这个参数是否稳定，只好在每次父组件重组时都重新执行这个 Composable。
+这是 Compose 性能问题中最常见的一类。当我们把一个包含 var 属性的类，或者一个 `List<T>` 传给 Composable 时，编译器无法确定这个参数是否稳定，只好在每次父组件重组时都重新执行这个 Composable。
 
-一个典型的案例：你的 ViewModel 暴露了一个 `StateFlow<List<Item>>`，在 Compose 中通过 `collectAsState()` 收集。问题在于 `List<Item>` 是不稳定的——即使列表内容完全没变，Compose 也无法确定这一点，每次都会重组所有消费这个列表的 Composable。
+一个典型的案例：我们的 ViewModel 暴露了一个 `StateFlow<List<Item>>`，在 Compose 中通过 `collectAsState()` 收集。问题在于 `List<Item>` 是不稳定的——即使列表内容完全没变，Compose 也无法确定这一点，每次都会重组所有消费这个列表的 Composable。
 
 解决方案：
 
 1. 用 `kotlinx.collections.immutable` 的不可变集合替代普通 List，让编译器能推断稳定性
-2. 用 `@Immutable` 注解标记你的数据类（前提是你真的保证它不可变）
+2. 用 `@Immutable` 注解标记我们的数据类（前提是我们真的保证它不可变）
 3. 在 Compose Compiler 1.5.5+ 中，可以通过 Stability Configuration File 声明外部类的稳定性
 
 [自动发现: Kotlin 2.0.20 引入的 Strong Skipping 模式可以在一定程度上缓解这个问题——即使参数类型不稳定，只要对象实例相同（引用相等），也可以跳过重组。来源: Android Developers Blog]
@@ -262,7 +266,7 @@ Title(snack) { scroll.value }  // scroll.value 被包装在 Lambda 中
 
 [来源: obsidian/Personal-Knowlodge/source/2026-03-07_wechat_提升Jetpack_Compose_性能.md]
 
-LazyColumn 默认用 item 在列表中的位置（index）作为标识。这意味着如果你在列表头部插入一个新 item，Compose 会认为所有 item 都变了（因为它们的 index 都变了），导致整列表重组。
+LazyColumn 默认用 item 在列表中的位置（index）作为标识。这意味着如果我们在列表头部插入一个新 item，Compose 会认为所有 item 都变了（因为它们的 index 都变了），导致整列表重组。
 
 解决方案是给每个 item 提供一个稳定的 key：
 
@@ -317,7 +321,7 @@ Android Studio 的 Layout Inspector 可以实时显示每个 Composable 的重�
 2. 连接正在运行的 debug 应用（需要 API 29+，Compose 1.2.0+）
 3. 在 Component Tree 中找到"Show Recomposition Counts"选项并启用
 
-启用后，每个 Composable 旁边会显示两个数字：**recomposition count**（实际重组的次数）和 **skip count**（被跳过的次数）。如果某个 Composable 的重组次数异常高——比如你在滑动列表时，一个不相关的头部组件被重组了几十次——那就是需要优化的信号。
+启用后，每个 Composable 旁边会显示两个数字：**recomposition count**（实际重组的次数）和 **skip count**（被跳过的次数）。如果某个 Composable 的重组次数异常高——比如我们在滑动列表时，一个不相关的头部组件被重组了几十次——那就是需要优化的信号。
 
 Layout Inspector 还会用颜色渐变来可视化重组热度：颜色越深表示重组越频繁。双击一个 Composable 可以直接跳转到源码。
 
@@ -339,7 +343,7 @@ composeCompiler {
 
 - **module.json**：模块级汇总，包括 skippable Composable 占比、restartable Composable 占比等。如果 skippable 比例很低，说明很多 Composable 因为参数不稳定无法被跳过。
 - **composables.txt**：每个 Composable 的详细信息——是否 restartable、是否 skippable、每个参数的稳定性。这个文件是定位问题的主力。
-- **classes.txt**：每个类的稳定性推断结果。你可以看到哪些类被判定为不稳定，以及原因。
+- **classes.txt**：每个类的稳定性推断结果。我们可以看到哪些类被判定为不稳定，以及原因。
 
 社区工具 `compose-report-to-html` 可以把这些文本报告转换成更直观的 HTML 页面，方便团队分享。
 
@@ -353,7 +357,7 @@ composeCompiler {
 
 ### ComposeView：在传统布局中嵌入 Compose
 
-`ComposeView` 是一个传统 View，你可以在 XML 或代码中创建它，然后通过 `setContent` 设置 Compose 内容：
+`ComposeView` 是一个传统 View，我们可以在 XML 或代码中创建它，然后通过 `setContent` 设置 Compose 内容：
 
 ```xml
 <androidx.compose.ui.platform.ComposeView
@@ -388,7 +392,7 @@ fun WebViewScreen(url: String) {
 
 - **减少边界跨越**：每次从 Compose 切换到 View 或者反过来，都有上下文切换的开销。尽量把 UI 元素集中在同一种体系中，而不是大量穿插使用。
 - **注意 View 的生命周期**：传统 View 有自己的生命周期（attach/detach），而 Compose 组件的生命周期由 Compose 管理。在混合布局中，要确保两者的生命周期同步——比如在 Compose 的 `DisposableEffect` 中清理 View 的监听器。
-- **性能测试要覆盖混合场景**：纯 Compose 页面和纯 View 页面的性能你可能都测过了，但混合页面的性能往往是意想不到的瓶颈。特别是在低端设备上，Compose 和 View 之间的交互可能引入额外的帧延迟。
+- **性能测试要覆盖混合场景**：纯 Compose 页面和纯 View 页面的性能我们可能都测过了，但混合页面的性能往往是意想不到的瓶颈。特别是在低端设备上，Compose 和 View 之间的交互可能引入额外的帧延迟。
 
 ## Compose 动画性能
 
@@ -413,7 +417,7 @@ Compose 提供了三种层次的动画 API，性能特征各不相同：
 ## 与其他章节的关系
 
 - **7.1 卡顿的定义与分类**：Compose 的卡顿在本质上仍然是"某帧耗时超限"，只是卡顿的来源从传统的 measure/layout/draw 变成了 Composition/Recomposition。
-- **7.3 卡顿分析方法论**：分析方法论同样适用于 Compose——先定位到掉帧的时间段，再分析是什么导致了长帧。只不过 Compose 场景下，你需要额外检查重组次数。
+- **7.3 卡顿分析方法论**：分析方法论同样适用于 Compose——先定位到掉帧的时间段，再分析是什么导致了长帧。只不过 Compose 场景下，我们需要额外检查重组次数。
 - **2.4 Choreographer 与渲染流水线**：Compose 的渲染同样由 Choreographer 驱动，VSync → doFrame → Composition/Layout/Draw 的链路和传统 View 一致。
 - **2.5 MainThread 与 RenderThread 协作**：Compose 的 Composition 和 Layout 在主线程执行，Draw 阶段可能涉及 RenderThread。
 
@@ -425,15 +429,15 @@ Compose 提供了三种层次的动画 API，性能特征各不相同：
 
 **误区二："给所有类加 @Stable 就能解决性能问题"**
 
-`@Stable` 是一个契约，不是魔法。如果你的类实际上不满足稳定性的要求（比如内部有不受 State 管理的可变状态），加注解不仅不能提升性能，还会导致 UI 不更新的 bug。正确做法是先用 Compiler Metrics 找到真正不稳定的类，然后根据实际情况选择修复方式。
+`@Stable` 是一个契约，不是魔法。如果我们的类实际上不满足稳定性的要求（比如内部有不受 State 管理的可变状态），加注解不仅不能提升性能，还会导致 UI 不更新的 bug。正确做法是先用 Compiler Metrics 找到真正不稳定的类，然后根据实际情况选择修复方式。
 
 **误区三："Compose 的 remember 就是缓存，什么都能往里塞"**
 
-`remember` 确实有缓存的效果，但它的语义是"跨重组保持状态"，不是通用缓存。`remember` 不关心内存压力，不会被自动回收。如果你用它缓存大量数据，可能导致内存问题。对于需要响应配置变更的场景，应该考虑 `rememberSaveable`。
+`remember` 确实有缓存的效果，但它的语义是"跨重组保持状态"，不是通用缓存。`remember` 不关心内存压力，不会被自动回收。如果我们用它缓存大量数据，可能导致内存问题。对于需要响应配置变更的场景，应该考虑 `rememberSaveable`。
 
 **误区四："Compose 就不需要关心过度绘制了"**
 
-过度绘制（Overdraw）的检测方式在 Compose 中完全适用。虽然 Compose 在理论上可以更精确地控制重绘区域，但如果你在 Compose 中堆叠了多层半透明组件，过度绘制的问题和传统 View 一样存在。可以用"Show GPU Overdraw"来检测。
+过度绘制（Overdraw）的检测方式在 Compose 中完全适用。虽然 Compose 在理论上可以更精确地控制重绘区域，但如果我们在 Compose 中堆叠了多层半透明组件，过度绘制的问题和传统 View 一样存在。可以用"Show GPU Overdraw"来检测。
 
 ## 参考资料
 
