@@ -1,8 +1,12 @@
 ---
 title: "系统级功耗优化"
 chapter: "11.3"
-status: ready-for-review
+status: finalized
+section: "11.3"
 drafted_date: "2026-04-03"
+drafted_by: "openclaw-task2a"
+reviewed_date: "2026-04-05"
+reviewed_by: "openclaw-task6"
 applicable_versions: "Android 6.0 (API 23) - Android 16 (API 36)"
 last_verified: "2026-04-03"
 last_verified_against: "AOSP android-16.0.0_r1"

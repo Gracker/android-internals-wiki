@@ -4,11 +4,11 @@
   "metrics": {
     "total": 100,
     "draft": 5,
-    "ready-for-review": 49,
+    "ready-for-review": 48,
     "reviewed": 3,
-    "finalized": 40,
+    "finalized": 41,
     "staging_drafts": 0,
-    "last_updated": "2026-04-05T00:15:00+08:00",
+    "last_updated": "2026-04-05T00:35:00+08:00",
     "processing": 0,
     "ready-to-publish": 1
   },
@@ -376,6 +376,15 @@
         "frontmatter: 补 section/drafted_by/reviewed_date/reviewed_by",
         "Google Play 2026年3月生效日期：添加[待验证]标注",
         "status ready-for-review → finalized"
+      ]
+    },
+    "11.3": {
+      "reviewed_date": "2026-04-05",
+      "reviewed_by": "openclaw-task6",
+      "review_status": "finalized",
+      "fixes_applied": [
+        "frontmatter补全：section/drafted_by/reviewed_date/reviewed_by",
+        "status: ready-for-review → finalized"
       ]
     }
   },
@@ -1396,6 +1405,14 @@
   "history": [
     {
       "date": "2026-04-05",
+      "section": "11.3",
+      "title": "系统级功耗优化",
+      "action": "reviewed-finalized",
+      "review_by": "openclaw-task6",
+      "fixes": 2
+    },
+    {
+      "date": "2026-04-05",
       "section": "1.7",
       "title": "ART 编译管线与 dex2oat 优化",
       "action": "draft-completed",
@@ -2062,9 +2079,11 @@
     },
     "11.3": {
       "title": "系统级功耗优化",
-      "status": "ready-for-review",
+      "status": "finalized",
       "drafted_date": "2026-04-03",
-      "drafted_by": "openclaw-task2a"
+      "drafted_by": "openclaw-task2a",
+      "reviewed_date": "2026-04-05",
+      "reviewed_by": "openclaw-task6"
     },
     "2.11": {
       "title": "Flutter 渲染管线与性能",
