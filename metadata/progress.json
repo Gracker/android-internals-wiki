@@ -1269,7 +1269,7 @@
     }
   ],
   "ready_for_review": 5,
-  "last_updated": "2026-04-05T01:28:06.091262",
+  "last_updated": "2026-04-05T03:45:00",
   "stats": {
     "total": 97,
     "completed": 67,
@@ -2275,7 +2275,10 @@
       "status": "finalized",
       "drafted_date": "2026-03-31",
       "reviewed_date": "2026-04-03",
-      "reviewed_by": "openclaw-task6"
+      "reviewed_by": "openclaw-task6",
+      "polish_count": 1,
+      "polish_date": "2026-04-05",
+      "polish_by": "task2b-polish"
     },
     "6.1": {
       "title": "Android 存储架构",
@@ -2675,6 +2678,23 @@
         "code_examples": 2,
         "readability": 4,
         "info_density": 0,
+        "cross_reference": 0,
+        "metadata": 1
+      }
+    },
+    {
+      "file": "src/part1-fundamentals/ch04-memory/04-lmk.md",
+      "section": "4.4",
+      "section_title": "Low Memory Killer",
+      "polish_round": 1,
+      "polish_date": "2026-04-05",
+      "polish_by": "task2b-polish",
+      "changes_count": 7,
+      "dimensions": {
+        "narrative_fluency": 3,
+        "code_examples": 0,
+        "readability": 2,
+        "info_density": 1,
         "cross_reference": 0,
         "metadata": 1
       }
