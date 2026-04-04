@@ -3,12 +3,12 @@
   "total_sections": 96,
   "metrics": {
     "total": 99,
-    "draft": 6,
-    "ready-for-review": 48,
+    "draft": 5,
+    "ready-for-review": 49,
     "reviewed": 3,
     "finalized": 39,
     "staging_drafts": 0,
-    "last_updated": "2026-04-04T20:10:00+08:00",
+    "last_updated": "2026-04-04T22:12:10+08:00",
     "processing": 0,
     "ready-to-publish": 1
   },
@@ -1162,14 +1162,29 @@
       "verification_level": "L2",
       "word_count": "~7000",
       "completed_at": "2026-04-04T17:10:00+08:00"
+    },
+    {
+      "chapter": "2.13",
+      "section": "2.13",
+      "title": "图形缓冲区管理 (BufferQueue)",
+      "status": "ready-for-review",
+      "drafted_date": "2026-04-04",
+      "drafted_by": "openclaw-task2a",
+      "anchors_covered": 5,
+      "anchors_total": 5,
+      "extensions_covered": 2,
+      "extensions_total": 2,
+      "verification_level": "L2",
+      "word_count": "~8500",
+      "completed_at": "2026-04-04T22:12:10.384287"
     }
   ],
   "ready_for_review": 5,
   "last_updated": "2026-04-04T17:10:00",
   "stats": {
     "total": 97,
-    "completed": 64,
-    "pending": 33,
+    "completed": 65,
+    "pending": 32,
     "last_updated": "2026-04-04T13:12:46.313560"
   },
   "research_stats": {
@@ -1354,6 +1369,13 @@
     "last_updated": "2026-04-04T19:00:00+08:00"
   },
   "history": [
+    {
+      "date": "2026-04-04",
+      "section": "2.13",
+      "title": "图形缓冲区管理 (BufferQueue)",
+      "action": "draft-completed",
+      "word_count": "~8500"
+    },
     {
       "date": "2026-04-04",
       "section": "1.7",
@@ -2297,6 +2319,20 @@
       "created_date": "2026-04-04",
       "created_by": "task2a-knowledge-gap",
       "gap_source": "AOSP结构+官方文档+研究素材+读者需求"
+    },
+    "2.13": {
+      "title": "图形缓冲区管理 (BufferQueue)",
+      "status": "ready-for-review",
+      "file": "src/part1-fundamentals/ch02-rendering/13-buffer-queue.md",
+      "drafted_date": "2026-04-04",
+      "drafted_by": "openclaw-task2a",
+      "anchors_covered": 5,
+      "anchors_total": 5,
+      "extensions_covered": 2,
+      "extensions_total": 2,
+      "verification_level": "L2",
+      "word_count": "~8500",
+      "confidence": "high"
     }
   },
   "5.1": {
