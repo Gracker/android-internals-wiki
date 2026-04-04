@@ -4,13 +4,13 @@
   "metrics": {
     "total": 101,
     "draft": 3,
-    "ready-for-review": 50,
+    "ready-for-review": 49,
     "reviewed": 3,
     "finalized": 42,
     "staging_drafts": 0,
-    "last_updated": "2026-04-05T04:12:28+08:00",
+    "last_updated": "2026-04-05T04:20:00+08:00",
     "processing": 0,
-    "ready-to-publish": 1
+    "ready-to-publish": 2
   },
   "reviewed_sections": {
     "8.1": {
@@ -1266,10 +1266,16 @@
       "verification_level": "L2",
       "word_count": "~9500",
       "completed_at": "2026-04-05T03:17:27.577296"
+    },
+    {
+      "section": "4.4",
+      "title": "Low Memory Killer",
+      "status": "ready-to-publish",
+      "reviewed_date": "2026-04-05"
     }
   ],
   "ready_for_review": 5,
-  "last_updated": "2026-04-05T03:45:00",
+  "last_updated": "2026-04-05T04:20:00+08:00",
   "stats": {
     "total": 98,
     "completed": 67,
