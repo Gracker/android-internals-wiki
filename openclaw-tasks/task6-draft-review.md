@@ -29,9 +29,10 @@
 ### Step 2：扫描待 review 章节
 扫描 src/ 下所有 .md 文件，按以下优先级筛选：
 1. **最高优先**：`status: ready-for-review` 且有 `re-review-materials` 字段的章节（素材冲击重审，由 task7 触发）
-2. **次优先**：`status: ready-for-review` 的章节（task2 加工完成，等待 review）
+2. **次优先**：`status: ready-for-review` 的章节（task2 加工完成或 task2b 精修后，等待 review）
 3. **第三优先**：`status: reviewed` 的章节（task2 回炉修复后，需二次 review）
 4. **可选抽检**：`status: finalized` 的章节（每周抽检 1 个已定稿章节，防止质量退化）
+5. **永不选中**：`status: ready-to-publish` 的章节（已通过精修+质检，出版终态）
 如果没有任何待 review 章节，回复"当前无待 review 草稿"并结束。
 
 **区分首次 review 和重审**：
@@ -186,7 +187,9 @@ git commit -m "[openclaw] re-review: {章节号} {小节名} — 素材冲击重
 ### Step 7：更新文件
 1. 将精修后的内容写回 src/ 对应文件（使用 exec + python/pathlib + 绝对路径）
 2. 更新 frontmatter：
-   - **如果无 B 类大问题**：`status: ready-for-review` → `status: finalized`（定稿，等待高爷最终确认或发布）
+   - **如果无 B 类大问题**：
+     - 如果 frontmatter 含 `polish_by: "task2b-polish"`（精修质检）→ `status: ready-for-review` → `status: ready-to-publish`（出版终态，不再被任何任务选中）
+     - 否则（普通首次 review）→ `status: ready-for-review` → `status: finalized`
    - **如果有 B 类大问题**：`status: ready-for-review` → `status: reviewed`（reviewed 但有问题待修，将回炉给 task2）
    - 添加 `reviewed_date: YYYY-MM-DD`
    - 添加 `reviewed_by: openclaw-task6`
