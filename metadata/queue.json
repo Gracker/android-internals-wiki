@@ -1,6 +1,6 @@
 {
-  "last_updated": "2026-04-04T16:46:52.285065",
-  "total_items": 15,
+  "last_updated": "2026-04-04T20:10:00+08:00",
+  "total_items": 16,
   "priority_breakdown": {
     "high": 4,
     "medium": 3,
@@ -314,6 +314,15 @@
         "B3 Compose BOM 确认：BOM 2025.12.00 为 2025年12月稳定版（含 Compose 1.10 + Material 3 1.4），Google 官方声明性能对等（jank 降至 0.2%）[已确认]",
         "frontmatter 更新：status → ready-for-review, 新增 rework_date/rework_by"
       ]
+    },
+    {
+      "section": "2.12",
+      "title": "Window Manager Service 与窗口管理",
+      "file": "src/part1-fundamentals/ch02-rendering/12-window-manager.md",
+      "priority": 80,
+      "status": "pending",
+      "created_date": "2026-04-04",
+      "source": "task2a-knowledge-gap"
     }
   ]
 }
