@@ -6937,5 +6937,1239 @@
       "可验证性": 1
     },
     "skip_reason": "总分7(<10):相关性2+深度2+时效2+可验证1"
+  },
+  {
+    "path": "七年老程序员的七八月总结-2023-09-05.md",
+    "title": "七年老程序员的七八月总结",
+    "reason": "Score < 10: 4/20",
+    "scores": {
+      "relevance": 0,
+      "technical_depth": 0,
+      "timeliness": 3,
+      "verifiability": 1
+    },
+    "preview": "# 七年老程序员的七八月总结\n\n双月总结如期而至\n\n[Read in Cubox](https://cubox.pro/web/card/7098542876535032696)  \n[Read Or...",
+    "scan_date": "2026-04-04T01:18:57.528767"
+  },
+  {
+    "path": "七年老程序员的九十月总结：上热榜、社区分享、重学后端-2023-11-06.md",
+    "title": "七年老程序员的九十月总结：上热榜、社区分享、重学后端",
+    "reason": "Score < 10: 4/20",
+    "scores": {
+      "relevance": 0,
+      "technical_depth": 0,
+      "timeliness": 3,
+      "verifiability": 1
+    },
+    "preview": "# 七年老程序员的九十月总结：上热榜、社区分享、重学后端\n\n一眨眼又过去两个月\n\n[Read in Cubox](https://cubox.pro/web/card/7121024551177161...",
+    "scan_date": "2026-04-04T01:18:57.529015"
+  },
+  {
+    "path": "万字剖析 Armv8 架构虚拟化-2022-07-13.md",
+    "title": "万字剖析 Armv8 架构虚拟化",
+    "reason": "Score < 10: 4/20",
+    "scores": {
+      "relevance": 0,
+      "technical_depth": 0,
+      "timeliness": 3,
+      "verifiability": 1
+    },
+    "preview": "# 万字剖析 Armv8 架构虚拟化\n\n\n\n[Read in Cubox](https://cubox.pro/web/card/6946734008885577842)  \n[Read Origin...",
+    "scan_date": "2026-04-04T01:18:57.529249"
+  },
+  {
+    "path": "万字深度好文 - 工作流的祛魅：从工具、阅读到写作-2023-07-07.md",
+    "title": "万字深度好文 | 工作流的祛魅：从工具、阅读到写作",
+    "reason": "Score < 10: 4/20",
+    "scores": {
+      "relevance": 0,
+      "technical_depth": 0,
+      "timeliness": 3,
+      "verifiability": 1
+    },
+    "preview": "# 万字深度好文 | 工作流的祛魅：从工具、阅读到写作\n\n如何让工作流变得行云流水？这里或许有你想要的答案！\n\n[Read in Cubox](https://cubox.pro/web/card/7...",
+    "scan_date": "2026-04-04T01:18:57.529468"
+  },
+  {
+    "path": "万字盘点 2023 年 Android 领域的重要技术：AI，14，Compose，鸿蒙...-2024-01-09.md",
+    "title": "万字盘点 2023 年 Android 领域的重要技术：AI，14，Compose，鸿蒙...",
+    "reason": "Score < 10: 7/20",
+    "scores": {
+      "relevance": 0,
+      "technical_depth": 0,
+      "timeliness": 4,
+      "verifiability": 3
+    },
+    "preview": "# 万字盘点 2023 年 Android 领域的重要技术：AI，14，Compose，鸿蒙...\n\nAICore2022 年底横空出世的 GPT-3.5 引发了全球的大模型 LLM 狂潮。作为在 A...",
+    "scan_date": "2026-04-04T01:18:57.529670"
+  },
+  {
+    "path": "万字解析Android Handler实现原理-2024-01-22.md",
+    "title": "万字解析Android Handler实现原理",
+    "reason": "Score < 10: 6/20",
+    "scores": {
+      "relevance": 0,
+      "technical_depth": 2,
+      "timeliness": 3,
+      "verifiability": 1
+    },
+    "preview": "# 万字解析Android Handler实现原理\n\n史上最全Android Handler源码实现原理解析\n\n[Read in Cubox](https://cubox.pro/web/card/7...",
+    "scan_date": "2026-04-04T01:18:57.529971"
+  },
+  {
+    "path": "万字详解智能体2.0：手机里的“互联互通”新战场-2026-04-01.md",
+    "title": "万字详解智能体2.0：手机里的“互联互通”新战场",
+    "reason": "Score < 10: 6/20",
+    "scores": {
+      "relevance": 0,
+      "technical_depth": 0,
+      "timeliness": 3,
+      "verifiability": 3
+    },
+    "preview": "# 万字详解智能体2.0：手机里的“互联互通”新战场\n\n\n\n[Read in Cubox](https://cubox.pro/web/card/7438847199590483027)  \n[Rea...",
+    "scan_date": "2026-04-04T01:18:57.530161"
+  },
+  {
+    "path": "万字赏析 DeepSeek 创造之美：DeepSeek R1 是怎样炼成的？-2025-02-17.md",
+    "title": "万字赏析 DeepSeek 创造之美：DeepSeek R1 是怎样炼成的？",
+    "reason": "Score < 10: 4/20",
+    "scores": {
+      "relevance": 0,
+      "technical_depth": 0,
+      "timeliness": 3,
+      "verifiability": 1
+    },
+    "preview": "# 万字赏析 DeepSeek 创造之美：DeepSeek R1 是怎样炼成的？\n\n今天 AI 的渗透率只有 5%。剩下 95% 的人，他们的第一款 AI 应用会是什么？\n\n[Read in Cubo...",
+    "scan_date": "2026-04-04T01:18:57.530460"
+  },
+  {
+    "path": "万字长文深度解析Sora的核心技术，解密OpenAI掌控时空的秘密武器-2024-03-03.md",
+    "title": "万字长文深度解析Sora的核心技术，解密OpenAI掌控时空的秘密武器",
+    "reason": "Score < 10: 4/20",
+    "scores": {
+      "relevance": 0,
+      "technical_depth": 0,
+      "timeliness": 3,
+      "verifiability": 1
+    },
+    "preview": "# 万字长文深度解析Sora的核心技术，解密OpenAI掌控时空的秘密武器\n\n\n\n[Read in Cubox](https://cubox.pro/web/card/7163883193525863...",
+    "scan_date": "2026-04-04T01:18:57.530648"
+  },
+  {
+    "path": "万字长文聊聊LLM Agents的现状，问题与未来-2024-02-01.md",
+    "title": "万字长文聊聊LLM Agents的现状，问题与未来",
+    "reason": "Score < 10: 4/20",
+    "scores": {
+      "relevance": 0,
+      "technical_depth": 0,
+      "timeliness": 3,
+      "verifiability": 1
+    },
+    "preview": "# 万字长文聊聊LLM Agents的现状，问题与未来\n\n跨年之前，想总结一下去年上半年以来关于LLM Agents的学习经历，同时记录一下我在其中过程的一些想法。\n\n[Read in Cubox](...",
+    "scan_date": "2026-04-04T01:18:57.530825"
+  },
+  {
+    "path": "万字长文，Android Bitmap相关的一切-2023-04-10.md",
+    "title": "万字长文，Android Bitmap相关的一切",
+    "reason": "Score < 10: 4/20",
+    "scores": {
+      "relevance": 0,
+      "technical_depth": 0,
+      "timeliness": 3,
+      "verifiability": 1
+    },
+    "preview": "# 万字长文，Android Bitmap相关的一切\n\n\n\n[Read in Cubox](https://cubox.pro/web/card/7044912417070909457)  \n[Rea...",
+    "scan_date": "2026-04-04T01:18:57.531075"
+  },
+  {
+    "path": "万字长文，GPU Render Engine 详细介绍-2023-05-15.md",
+    "title": "万字长文，GPU Render Engine 详细介绍",
+    "reason": "Score < 10: 6/20",
+    "scores": {
+      "relevance": 2,
+      "technical_depth": 0,
+      "timeliness": 3,
+      "verifiability": 1
+    },
+    "preview": "# 万字长文，GPU Render Engine 详细介绍\n\n本文主要介绍 render 引擎， 从 GPU 渲染的硬件单元，到用户态顶点，命令等数据下发给 GPU 硬件执行过程等方面进行详细介绍，帮...",
+    "scan_date": "2026-04-04T01:18:57.531396"
+  },
+  {
+    "path": "万字长文：内敛的黄峥和滚烫的拼多多-2023-07-17.md",
+    "title": "万字长文：内敛的黄峥和滚烫的拼多多",
+    "reason": "Score < 10: 4/20",
+    "scores": {
+      "relevance": 0,
+      "technical_depth": 0,
+      "timeliness": 3,
+      "verifiability": 1
+    },
+    "preview": "# 万字长文：内敛的黄峥和滚烫的拼多多\n\n虽然黄峥已不在江湖，但江湖上依旧流传着他的传说。\n\n[Read in Cubox](https://cubox.pro/web/card/7080591114...",
+    "scan_date": "2026-04-04T01:18:57.531561"
+  },
+  {
+    "path": "万维钢老师解读过的作者名单（第一季整理）-2023-09-09.md",
+    "title": "万维钢老师解读过的作者名单（第一季整理）",
+    "reason": "Score < 10: 4/20",
+    "scores": {
+      "relevance": 0,
+      "technical_depth": 0,
+      "timeliness": 3,
+      "verifiability": 1
+    },
+    "preview": "# 万维钢老师解读过的作者名单（第一季整理）\n\n记录：\n\n[Read in Cubox](https://cubox.pro/web/card/7100078793745763651)  \n[Read...",
+    "scan_date": "2026-04-04T01:18:57.531735"
+  },
+  {
+    "path": "三天内，第二家美国银行倒闭-2023-03-13.md",
+    "title": "三天内，第二家美国银行倒闭",
+    "reason": "Score < 10: 4/20",
+    "scores": {
+      "relevance": 0,
+      "technical_depth": 0,
+      "timeliness": 3,
+      "verifiability": 1
+    },
+    "preview": "# 三天内，第二家美国银行倒闭\n\n► 文 观察者网 赵挪亚三天内，第二家美国银行倒闭。\n\t当地时间12日下午，美国财政部、美国联邦储备委员会和\n\n[Read in Cubox](https://cub...",
+    "scan_date": "2026-04-04T01:18:57.531847"
+  },
+  {
+    "path": "三年磨一剑，高德地图体验优化实践总结-2022-01-14.md",
+    "title": "三年磨一剑，高德地图体验优化实践总结",
+    "reason": "Score < 10: 6/20",
+    "scores": {
+      "relevance": 0,
+      "technical_depth": 2,
+      "timeliness": 3,
+      "verifiability": 1
+    },
+    "preview": "# 三年磨一剑，高德地图体验优化实践总结\n\n高德地图从19年开始对全链路性能体验进行了持续三年的优化，过程中对性能优化的一些思考和实践经验，本文进行了总结，希望对大家有些助益。\n\n[Read in C...",
+    "scan_date": "2026-04-04T01:18:57.531994"
+  },
+  {
+    "path": "三张图看遍Linux 性能监控、测试、优化工具-2022-01-14.md",
+    "title": "三张图看遍Linux 性能监控、测试、优化工具",
+    "reason": "Score < 10: 6/20",
+    "scores": {
+      "relevance": 0,
+      "technical_depth": 2,
+      "timeliness": 3,
+      "verifiability": 1
+    },
+    "preview": "# 三张图看遍Linux 性能监控、测试、优化工具\n\nLinux 平台上的性能工具有很多，眼花缭乱，长期的摸索和经验发现最好用的还是那些久经考验的、简单的小工具。系统性能专家 Brendan D.Gr...",
+    "scan_date": "2026-04-04T01:18:57.532147"
+  },
+  {
+    "path": "上了微博热搜的微信图片搜索功能是怎么实现的？-2022-05-09.md",
+    "title": "上了微博热搜的微信图片搜索功能是怎么实现的？",
+    "reason": "Score < 10: 4/20",
+    "scores": {
+      "relevance": 0,
+      "technical_depth": 0,
+      "timeliness": 3,
+      "verifiability": 1
+    },
+    "preview": "# 上了微博热搜的微信图片搜索功能是怎么实现的？\n\n手把手带你进行原理剖析！\n\n[Read in Cubox](https://cubox.pro/web/card/69231362012642052...",
+    "scan_date": "2026-04-04T01:18:57.532346"
+  },
+  {
+    "path": "上海疫情笑话 2.0-2022-04-14.md",
+    "title": "上海疫情笑话 2.0",
+    "reason": "Score < 10: 6/20",
+    "scores": {
+      "relevance": 0,
+      "technical_depth": 0,
+      "timeliness": 3,
+      "verifiability": 3
+    },
+    "preview": "# 上海疫情笑话 2.0\n\n纯属虚构，仅供娱乐。\n\n[Read in Cubox](https://cubox.pro/web/card/6914126408465777077)  \n[Read Or...",
+    "scan_date": "2026-04-04T01:18:57.532590"
+  },
+  {
+    "path": "上班族近期小半年入门投资基金组合的学习与实践经历 - xiantang - 自律者自由-2022-01-17.md",
+    "title": "上班族近期小半年入门投资基金组合的学习与实践经历 - xiantang - 自律者自由",
+    "reason": "Score < 10: 4/20",
+    "scores": {
+      "relevance": 0,
+      "technical_depth": 0,
+      "timeliness": 3,
+      "verifiability": 1
+    },
+    "preview": "# 上班族近期小半年入门投资基金组合的学习与实践经历 - xiantang - 自律者自由\n\n近期小半年入门投资基金组合的学习与实践经历,采用价值投资的方式做定投，本文会推荐一些价值投资的书籍与简单的...",
+    "scan_date": "2026-04-04T01:18:57.532768"
+  },
+  {
+    "path": "下一个“X年思考”-2025-03-25.md",
+    "title": "下一个“X年思考”",
+    "reason": "Score < 10: 4/20",
+    "scores": {
+      "relevance": 0,
+      "technical_depth": 0,
+      "timeliness": 3,
+      "verifiability": 1
+    },
+    "preview": "# 下一个“X年思考”\n\n近期令人高兴的事情是我的技术任职七级(1-8级)过了，也是软件很少的几个人，代表着组织对我技术能力的认可。除了显摆一下自己之外，更多是感受到压力。未来做什么才能不辜负这个七级...",
+    "scan_date": "2026-04-04T01:18:57.532893"
+  },
+  {
+    "path": "下一代 IDE 来了？有请 「Fleet」登场！-2022-01-14.md",
+    "title": "下一代 IDE 来了？有请 「Fleet」登场！",
+    "reason": "Score < 10: 4/20",
+    "scores": {
+      "relevance": 0,
+      "technical_depth": 0,
+      "timeliness": 3,
+      "verifiability": 1
+    },
+    "preview": "# 下一代 IDE 来了？有请 「Fleet」登场！\n\n正式推出 Fleet —— JetBrains 出品的下一代 IDE\n\n[Read in Cubox](https://cubox.pro/we...",
+    "scan_date": "2026-04-04T01:18:57.533029"
+  },
+  {
+    "path": "不一样角度带您了解 Flutter 中的滑动列表实现 - 开发者说·DTalk-2022-02-18.md",
+    "title": "不一样角度带您了解 Flutter 中的滑动列表实现 | 开发者说·DTalk",
+    "reason": "Score < 10: 4/20",
+    "scores": {
+      "relevance": 0,
+      "technical_depth": 0,
+      "timeliness": 3,
+      "verifiability": 1
+    },
+    "preview": "# 不一样角度带您了解 Flutter 中的滑动列表实现 | 开发者说·DTalk\n\nhttps://mp.weixin.qq.com/s/RqZIcY6LIAKK2K_Lfll79Q\n\n[Read ...",
+    "scan_date": "2026-04-04T01:18:57.533186"
+  },
+  {
+    "path": "不上班的1000天，我的程序员自由职业 B 计划 - 做了什么-收入怎样-以及经验教训-2022-12-12.md",
+    "title": "不上班的1000天，我的程序员自由职业 B 计划 - 做了什么/收入怎样/以及经验教训",
+    "reason": "Score < 10: 4/20",
+    "scores": {
+      "relevance": 0,
+      "technical_depth": 0,
+      "timeliness": 3,
+      "verifiability": 1
+    },
+    "preview": "# 不上班的1000天，我的程序员自由职业 B 计划 - 做了什么/收入怎样/以及经验教训\n\n时间过的很快，我不上班已经 1000 多天了。这三年来整个计算机行业大环境是在走下坡路，996，内卷，人才...",
+    "scan_date": "2026-04-04T01:18:57.533320"
+  },
+  {
+    "path": "不上班的第五年，程序员的B计划——独立产品-2024-05-08.md",
+    "title": "不上班的第五年，程序员的B计划——独立产品",
+    "reason": "Score < 10: 4/20",
+    "scores": {
+      "relevance": 0,
+      "technical_depth": 0,
+      "timeliness": 3,
+      "verifiability": 1
+    },
+    "preview": "# 不上班的第五年，程序员的B计划——独立产品\n\n不想上班想gap一年，结果自由职业至今\n\n[Read in Cubox](https://cubox.pro/web/card/71878209266...",
+    "scan_date": "2026-04-04T01:18:57.533487"
+  },
+  {
+    "path": "不做Linux内核代码的复读机-2024-12-20.md",
+    "title": "不做Linux内核代码的复读机",
+    "reason": "Score < 10: 6/20",
+    "scores": {
+      "relevance": 0,
+      "technical_depth": 2,
+      "timeliness": 3,
+      "verifiability": 1
+    },
+    "preview": "# 不做Linux内核代码的复读机\n\n\n\n[Read in Cubox](https://cubox.pro/web/card/7269601826893205365)  \n[Read Origina...",
+    "scan_date": "2026-04-04T01:18:57.533588"
+  },
+  {
+    "path": "不利于经济发展的法案，一律别出了！-2023-12-22.md",
+    "title": "不利于经济发展的法案，一律别出了！",
+    "reason": "Score < 10: 4/20",
+    "scores": {
+      "relevance": 0,
+      "technical_depth": 0,
+      "timeliness": 3,
+      "verifiability": 1
+    },
+    "preview": "# 不利于经济发展的法案，一律别出了！\n\n希望各个部委，把锤子扔掉，坐在办公室喝喝茶玩玩游戏吧\n\n[Read in Cubox](https://cubox.pro/web/card/71378422...",
+    "scan_date": "2026-04-04T01:18:57.533696"
+  },
+  {
+    "path": "不同版本上 Bitmap 内存分配与回收原理对比-2023-01-24.md",
+    "title": "不同版本上 Bitmap 内存分配与回收原理对比",
+    "reason": "Score < 10: 4/20",
+    "scores": {
+      "relevance": 0,
+      "technical_depth": 0,
+      "timeliness": 3,
+      "verifiability": 1
+    },
+    "preview": "# 不同版本上 Bitmap 内存分配与回收原理对比\n\n一篇文章洞悉 Bitmap 内存分配与回收原理，推荐阅读~\n\n[Read in Cubox](https://cubox.pro/web/car...",
+    "scan_date": "2026-04-04T01:18:57.533965"
+  },
+  {
+    "path": "不因质疑而放弃对真理的追求：点赞Xavier Xia童鞋对contpte_ptep_get的优化-2025-06-08.md",
+    "title": "不因质疑而放弃对真理的追求：点赞Xavier Xia童鞋对contpte_ptep_get的优化",
+    "reason": "Score < 10: 6/20",
+    "scores": {
+      "relevance": 0,
+      "technical_depth": 2,
+      "timeliness": 3,
+      "verifiability": 1
+    },
+    "preview": "# 不因质疑而放弃对真理的追求：点赞Xavier Xia童鞋对contpte_ptep_get的优化\n\nXavier Xia写了一个惊悚的patch，来优化contpte_ptep_get()的性能。...",
+    "scan_date": "2026-04-04T01:18:57.534075"
+  },
+  {
+    "path": "不当暖宝宝，Android 耗电检测之路-2023-12-13.md",
+    "title": "不当暖宝宝，Android 耗电检测之路",
+    "reason": "Score < 10: 4/20",
+    "scores": {
+      "relevance": 0,
+      "technical_depth": 0,
+      "timeliness": 3,
+      "verifiability": 1
+    },
+    "preview": "# 不当暖宝宝，Android 耗电检测之路\n\n背景介绍耗电问题可能在市面上并不多见，因为大部分APP的使用时间是非常短暂的，即使有着强耗电行为，也不容易被\n\n[Read in Cubox](http...",
+    "scan_date": "2026-04-04T01:18:57.534290"
+  },
+  {
+    "path": "不惑之年想当初，致初入职场的我-2022-03-21.md",
+    "title": "不惑之年想当初，致初入职场的我",
+    "reason": "Score < 10: 4/20",
+    "scores": {
+      "relevance": 0,
+      "technical_depth": 0,
+      "timeliness": 3,
+      "verifiability": 1
+    },
+    "preview": "# 不惑之年想当初，致初入职场的我\n\n代表华为云开发者社区参加稀土掘金的2022掘金春招征文明星导师直播活动的分享\n\n[Read in Cubox](https://cubox.pro/web/car...",
+    "scan_date": "2026-04-04T01:18:57.534402"
+  },
+  {
+    "path": "不改一行业务代码，飞书 iOS 低端机启动优化实践-2022-08-24.md",
+    "title": "不改一行业务代码，飞书 iOS 低端机启动优化实践",
+    "reason": "Score < 10: 8/20",
+    "scores": {
+      "relevance": 2,
+      "technical_depth": 2,
+      "timeliness": 3,
+      "verifiability": 1
+    },
+    "preview": "# 不改一行业务代码，飞书 iOS 低端机启动优化实践\n\n增加并发是否是启动优化的良策？本文将结合飞书 iOS 端启动优化，探索 QoS 对线程调度的影响。\n\n[Read in Cubox](http...",
+    "scan_date": "2026-04-04T01:18:57.534536"
+  },
+  {
+    "path": "不整那些虚的Garmin FENIX7两月真实使用体验-2022-04-12.md",
+    "title": "不整那些虚的Garmin FENIX7两月真实使用体验",
+    "reason": "Score < 10: 4/20",
+    "scores": {
+      "relevance": 0,
+      "technical_depth": 0,
+      "timeliness": 3,
+      "verifiability": 1
+    },
+    "preview": "# 不整那些虚的Garmin FENIX7两月真实使用体验\n\n文章来自 什么值得买 社区\n\n[Read in Cubox](https://cubox.pro/web/card/69133536677...",
+    "scan_date": "2026-04-04T01:18:57.534694"
+  },
+  {
+    "path": "不用数学和代码，解释下ChatGPT算法原理-2023-03-09.md",
+    "title": "不用数学和代码，解释下ChatGPT算法原理",
+    "reason": "Score < 10: 6/20",
+    "scores": {
+      "relevance": 0,
+      "technical_depth": 2,
+      "timeliness": 3,
+      "verifiability": 1
+    },
+    "preview": "# 不用数学和代码，解释下ChatGPT算法原理\n\n这一段时间花了挺长的时间开始看ChatGPT的算法原理，有了一些新的认知，mark了一些算法书，对ChatGPT和OpenAI有了更多的尊重。\n\n[...",
+    "scan_date": "2026-04-04T01:18:57.534816"
+  },
+  {
+    "path": "不用等315晚会了，其实今年最恶劣侵害消费者行为已经曝光，更可怕的是媒体的沉默-2023-03-16.md",
+    "title": "不用等315晚会了，其实今年最恶劣侵害消费者行为已经曝光，更可怕的是媒体的沉默",
+    "reason": "Score < 10: 4/20",
+    "scores": {
+      "relevance": 0,
+      "technical_depth": 0,
+      "timeliness": 3,
+      "verifiability": 1
+    },
+    "preview": "# 不用等315晚会了，其实今年最恶劣侵害消费者行为已经曝光，更可怕的是媒体的沉默\n\n\n\n[Read in Cubox](https://cubox.pro/web/card/703587134335...",
+    "scan_date": "2026-04-04T01:18:57.534973"
+  },
+  {
+    "path": "不畏移山，手机QQ技术架构升级变迁史-2024-05-16.md",
+    "title": "不畏移山，手机QQ技术架构升级变迁史",
+    "reason": "Score < 10: 4/20",
+    "scores": {
+      "relevance": 0,
+      "technical_depth": 0,
+      "timeliness": 3,
+      "verifiability": 1
+    },
+    "preview": "# 不畏移山，手机QQ技术架构升级变迁史\n\n\n\n[Read in Cubox](https://cubox.pro/web/card/7190711523386327396)  \n[Read Orig...",
+    "scan_date": "2026-04-04T01:18:57.535125"
+  },
+  {
+    "path": "不知道这 5 个双屏显示技巧，你的外接显示器就白买了！ - 爱范儿-2023-03-10.md",
+    "title": "不知道这 5 个双屏显示技巧，你的外接显示器就白买了！ | 爱范儿",
+    "reason": "Score < 10: 4/20",
+    "scores": {
+      "relevance": 0,
+      "technical_depth": 0,
+      "timeliness": 3,
+      "verifiability": 1
+    },
+    "preview": "# 不知道这 5 个双屏显示技巧，你的外接显示器就白买了！ | 爱范儿\n\n该不该给 Mac 配显示器？先看看这 5 个神奇操作。\n\n[Read in Cubox](https://cubox.pro/...",
+    "scan_date": "2026-04-04T01:18:57.535235"
+  },
+  {
+    "path": "不秃也变强：让 AI 当大师傅，编程和写作效率提升两三倍 - 歌词经理-2023-08-09.md",
+    "title": "不秃也变强：让 AI 当大师傅，编程和写作效率提升两三倍 | 歌词经理",
+    "reason": "Score < 10: 4/20",
+    "scores": {
+      "relevance": 0,
+      "technical_depth": 0,
+      "timeliness": 3,
+      "verifiability": 1
+    },
+    "preview": "# 不秃也变强：让 AI 当大师傅，编程和写作效率提升两三倍 | 歌词经理\n\n最近半年感觉自己明显变强了（不是因为变秃了）。主要是因为 AI，效率提�\n\n[Read in Cubox](https:/...",
+    "scan_date": "2026-04-04T01:18:57.535343"
+  },
+  {
+    "path": "不给续签证就算了，但请不要这样羞辱我！-2022-09-06.md",
+    "title": "不给续签证就算了，但请不要这样羞辱我！",
+    "reason": "Score < 10: 4/20",
+    "scores": {
+      "relevance": 0,
+      "technical_depth": 0,
+      "timeliness": 3,
+      "verifiability": 1
+    },
+    "preview": "# 不给续签证就算了，但请不要这样羞辱我！\n\n我这个暴脾气，脸上一副不知所措的表情，但心里早已十万匹草泥马奔腾而过...\n\n[Read in Cubox](https://cubox.pro/web/...",
+    "scan_date": "2026-04-04T01:18:57.535443"
+  },
+  {
+    "path": "不要再碎片化笔记了 - 关于笔记的思考-2023-12-26.md",
+    "title": "不要再碎片化笔记了 - 关于笔记的思考",
+    "reason": "Score < 10: 4/20",
+    "scores": {
+      "relevance": 0,
+      "technical_depth": 0,
+      "timeliness": 3,
+      "verifiability": 1
+    },
+    "preview": "# 不要再碎片化笔记了 - 关于笔记的思考\n\nhttps://www.owenyoung.com/blog/about-notes/)\n\n[Read in Cubox](https://cubox.p...",
+    "scan_date": "2026-04-04T01:18:57.535540"
+  },
+  {
+    "path": "与老板One on One Meeting聊些什么 – Avoid Detours-2022-03-29.md",
+    "title": "与老板One on One Meeting聊些什么 – Avoid Detours",
+    "reason": "Score < 10: 4/20",
+    "scores": {
+      "relevance": 0,
+      "technical_depth": 0,
+      "timeliness": 3,
+      "verifiability": 1
+    },
+    "preview": "# 与老板One on One Meeting聊些什么 – Avoid Detours\n\nOne on One Meeting上和老板聊什么？职场达人；美国工作\n\n[Read in Cubox](ht...",
+    "scan_date": "2026-04-04T01:18:57.535643"
+  },
+  {
+    "path": "与陌生人一对一聊天 40 次之后的一些想法 #56-2024-01-10.md",
+    "title": "与陌生人一对一聊天 40 次之后的一些想法 #56",
+    "reason": "Score < 10: 4/20",
+    "scores": {
+      "relevance": 0,
+      "technical_depth": 0,
+      "timeliness": 3,
+      "verifiability": 1
+    },
+    "preview": "# 与陌生人一对一聊天 40 次之后的一些想法 #56\n\n最近两三个月，我几乎每周五都是有约的。时至今日，已经有超过 40 位朋友与我一对一视频聊天过，值此新年之际，我想谈一谈自己的感受。\n\n[Rea...",
+    "scan_date": "2026-04-04T01:18:57.535743"
+  },
+  {
+    "path": "专栏：管理不是派个活 - 小心陷阱，别轻易做管理。-2025-10-09.md",
+    "title": "专栏：管理不是派个活 - 小心陷阱，别轻易做管理。",
+    "reason": "Score < 10: 4/20",
+    "scores": {
+      "relevance": 0,
+      "technical_depth": 0,
+      "timeliness": 3,
+      "verifiability": 1
+    },
+    "preview": "# 专栏：管理不是派个活 - 小心陷阱，别轻易做管理。\n\n\n\n[Read in Cubox](https://cubox.pro/web/card/7375940418103411095)  \n[Re...",
+    "scan_date": "2026-04-04T01:18:57.535837"
+  },
+  {
+    "path": "专栏：管理不是派个活 - 管理和管理不一样。-2025-03-16.md",
+    "title": "专栏：管理不是派个活 - 管理和管理不一样。",
+    "reason": "Score < 10: 4/20",
+    "scores": {
+      "relevance": 0,
+      "technical_depth": 0,
+      "timeliness": 3,
+      "verifiability": 1
+    },
+    "preview": "# 专栏：管理不是派个活 - 管理和管理不一样。\n\n在企业里，我认为的管理工作大致上有两类：专业管理和组织管理。 虽然事实上企业往往对同一个管理岗位同时有这两类管理的要求，但本质上这两者需要完全不同的...",
+    "scan_date": "2026-04-04T01:18:57.535928"
+  },
+  {
+    "path": "专栏：职场不用喝咖啡 - 求职之前关心啥？-2024-12-21.md",
+    "title": "专栏：职场不用喝咖啡 - 求职之前关心啥？",
+    "reason": "Score < 10: 4/20",
+    "scores": {
+      "relevance": 0,
+      "technical_depth": 0,
+      "timeliness": 3,
+      "verifiability": 1
+    },
+    "preview": "# 专栏：职场不用喝咖啡 - 求职之前关心啥？\n\n\n\n[Read in Cubox](https://cubox.pro/web/card/7270153360764831910)  \n[Read O...",
+    "scan_date": "2026-04-04T01:18:57.536024"
+  },
+  {
+    "path": "业界治理内存问题调查-2024-01-23.md",
+    "title": "业界治理内存问题调查",
+    "reason": "Score < 10: 4/20",
+    "scores": {
+      "relevance": 0,
+      "technical_depth": 0,
+      "timeliness": 3,
+      "verifiability": 1
+    },
+    "preview": "# 业界治理内存问题调查\n\n\n\n[Read in Cubox](https://cubox.pro/web/card/7149310822542477582)  \n[Read Original](ht...",
+    "scan_date": "2026-04-04T01:18:57.536246"
+  },
+  {
+    "path": "两个 display driver 导致的问题-2025-01-22.md",
+    "title": "两个 display driver 导致的问题",
+    "reason": "Score < 10: 4/20",
+    "scores": {
+      "relevance": 0,
+      "technical_depth": 0,
+      "timeliness": 3,
+      "verifiability": 1
+    },
+    "preview": "# 两个 display driver 导致的问题\n\n\n\n[Read in Cubox](https://cubox.pro/web/card/7281568868399579308)  \n[Read...",
+    "scan_date": "2026-04-04T01:18:57.536453"
+  },
+  {
+    "path": "两个月 $12000 ARR 实践之路 – 硬地骇客-2024-07-09.md",
+    "title": "两个月 $12000 ARR 实践之路 – 硬地骇客",
+    "reason": "Score < 10: 4/20",
+    "scores": {
+      "relevance": 0,
+      "technical_depth": 0,
+      "timeliness": 3,
+      "verifiability": 1
+    },
+    "preview": "# 两个月 $12000 ARR 实践之路 – 硬地骇客\n\n\n\n[Read in Cubox](https://cubox.pro/web/card/7210370232337039391)  \n[R...",
+    "scan_date": "2026-04-04T01:18:57.536582"
+  },
+  {
+    "path": "个人信息获取与知识管理系统（Heptabase + Logseq + Readwise）-2023-09-05.md",
+    "title": "个人信息获取与知识管理系统（Heptabase + Logseq + Readwise）",
+    "reason": "Score < 10: 4/20",
+    "scores": {
+      "relevance": 0,
+      "technical_depth": 0,
+      "timeliness": 3,
+      "verifiability": 1
+    },
+    "preview": "# 个人信息获取与知识管理系统（Heptabase + Logseq + Readwise）\n\n前言 我似乎一直有一种把自己作为一个机器来看待的倾向，常常会以置身事外的视角来观察自己，集成各个模组，并...",
+    "scan_date": "2026-04-04T01:18:57.536758"
+  },
+  {
+    "path": "个人知识库搭建教程-2025-02-14.md",
+    "title": "个人知识库搭建教程",
+    "reason": "Score < 10: 4/20",
+    "scores": {
+      "relevance": 0,
+      "technical_depth": 0,
+      "timeliness": 3,
+      "verifiability": 1
+    },
+    "preview": "# 个人知识库搭建教程\n\n本文介绍如何基于DeepSeek V3模型+Obsidian搭建个人知识库，效果就是你可以对Obsidian工作区的笔记进行提问，让AI帮你梳理和总结。\n\n[Read in ...",
+    "scan_date": "2026-04-04T01:18:57.536889"
+  },
+  {
+    "path": "FlowSpeech：第一个书面语转口语的 TTS-2025-08-08.md",
+    "title": "FlowSpeech：第一个书面语转口语的 TTS",
+    "total": 8,
+    "reason": "总分不足10分 (相关性:1 技术深度:1 时效性:3 可验证性:3)",
+    "scores": {
+      "relevance": 1,
+      "technical_depth": 1,
+      "timeliness": 3,
+      "verifiability": 3
+    }
+  },
+  {
+    "path": "“这不是一篇阅读理解”，这是《最伟大的作品》（上）-2022-07-13.md",
+    "title": "“这不是一篇阅读理解”，这是《最伟大的作品》（上）",
+    "scores": {
+      "relevance": 0,
+      "technical_depth": 1,
+      "timeliness": 3,
+      "verifiability": 1
+    },
+    "total": 5,
+    "skip_reason": "总得分 5 < 10 (相关性:0, 深度:1, 时效:3, 可验证:1)",
+    "scan_date": "2026-04-04T08:22:37.184235"
+  },
+  {
+    "path": "分享系统开发小技巧-如何查看进程是否冻结freeze-2025-02-19.md",
+    "title": "分享系统开发小技巧-如何查看进程是否冻结freeze",
+    "scores": {
+      "relevance": 0,
+      "technical_depth": 1,
+      "timeliness": 3,
+      "verifiability": 1
+    },
+    "total": 5,
+    "skip_reason": "总得分 5 < 10 (相关性:0, 深度:1, 时效:3, 可验证:1)",
+    "scan_date": "2026-04-04T08:22:37.184236"
+  },
+  {
+    "path": "Google软件工程之工具篇 · 构建我的被动收入-2022-09-20.md",
+    "title": "Google软件工程之工具篇 · 构建我的被动收入",
+    "scores": {
+      "relevance": 3,
+      "technical_depth": 1,
+      "timeliness": 3,
+      "verifiability": 1
+    },
+    "total": 8,
+    "skip_reason": "总得分 8 < 10 (相关性:3, 深度:1, 时效:3, 可验证:1)",
+    "scan_date": "2026-04-04T08:22:37.184238"
+  },
+  {
+    "path": "Jeff Dean性能调优要点 11：批量操作-2025-12-25.md",
+    "title": "Jeff Dean性能调优要点 11：批量操作",
+    "scores": {
+      "relevance": 0,
+      "technical_depth": 1,
+      "timeliness": 3,
+      "verifiability": 1
+    },
+    "total": 5,
+    "skip_reason": "总得分 5 < 10 (相关性:0, 深度:1, 时效:3, 可验证:1)",
+    "scan_date": "2026-04-04T08:22:37.184239"
+  },
+  {
+    "path": "Android 性能优化：内存优化（理论篇）【本文正在参加金石计划附加挑战赛——第一（或二、三、四）期命题】   限于篇 - 掘金-2025-01-08.md",
+    "title": "Android 性能优化：内存优化（理论篇）【本文正在参加金石计划附加挑战赛——第一（或二、三、四）期命题】   限于篇 - 掘金",
+    "scores": {
+      "relevance": 0,
+      "technical_depth": 2,
+      "timeliness": 3,
+      "verifiability": 1
+    },
+    "total": 6,
+    "skip_reason": "总得分 6 < 10 (相关性:0, 深度:2, 时效:3, 可验证:1)",
+    "scan_date": "2026-04-04T08:22:37.184240"
+  },
+  {
+    "path": "Chrome 浏览器运行原理你了解多少？-2023-08-07.md",
+    "title": "Chrome 浏览器运行原理你了解多少？",
+    "scores": {
+      "relevance": 0,
+      "technical_depth": 1,
+      "timeliness": 3,
+      "verifiability": 1
+    },
+    "total": 5,
+    "skip_reason": "总得分 5 < 10 (相关性:0, 深度:1, 时效:3, 可验证:1)",
+    "scan_date": "2026-04-04T08:22:37.184241"
+  },
+  {
+    "path": "使用说明 应用性能监控全链路版-火山引擎-2022-11-10.md",
+    "title": "使用说明 应用性能监控全链路版-火山引擎",
+    "scores": {
+      "relevance": 0,
+      "technical_depth": 3,
+      "timeliness": 3,
+      "verifiability": 1
+    },
+    "total": 7,
+    "skip_reason": "总得分 7 < 10 (相关性:0, 深度:3, 时效:3, 可验证:1)",
+    "scan_date": "2026-04-04T08:22:37.184242"
+  },
+  {
+    "path": "Android渲染管线App端的性能优化-2025-04-03.md",
+    "title": "Android渲染管线App端的性能优化",
+    "scores": {
+      "relevance": 0,
+      "technical_depth": 2,
+      "timeliness": 3,
+      "verifiability": 1
+    },
+    "total": 6,
+    "skip_reason": "总得分 6 < 10 (相关性:0, 深度:2, 时效:3, 可验证:1)",
+    "scan_date": "2026-04-04T08:22:37.184243"
+  },
+  {
+    "path": "梁博谈一谈：为什么我不建议移民-2022-07-04.md",
+    "title": "梁博谈一谈：为什么我不建议移民",
+    "scores": {
+      "relevance": 0,
+      "technical_depth": 1,
+      "timeliness": 3,
+      "verifiability": 1
+    },
+    "total": 5,
+    "skip_reason": "总得分 5 < 10 (相关性:0, 深度:1, 时效:3, 可验证:1)",
+    "scan_date": "2026-04-04T08:22:37.184244"
+  },
+  {
+    "path": "体验碎周报第 233 期（2025.5.19） - 龙爪槐守望者-2025-05-18.md",
+    "title": "体验碎周报第 233 期（2025.5.19） - 龙爪槐守望者",
+    "scores": {
+      "relevance": 0,
+      "technical_depth": 1,
+      "timeliness": 5,
+      "verifiability": 1
+    },
+    "total": 7,
+    "skip_reason": "总得分 7 < 10 (相关性:0, 深度:1, 时效:5, 可验证:1)",
+    "scan_date": "2026-04-04T08:22:37.184246"
+  },
+  {
+    "path": "MCP 是何方神圣？——给AI世界装上“万能插头”的幕后大佬-2025-03-06.md",
+    "title": "MCP 是何方神圣？——给AI世界装上“万能插头”的幕后大佬",
+    "scores": {
+      "relevance": 0,
+      "technical_depth": 1,
+      "timeliness": 3,
+      "verifiability": 1
+    },
+    "total": 5,
+    "skip_reason": "总得分 5 < 10 (相关性:0, 深度:1, 时效:3, 可验证:1)",
+    "scan_date": "2026-04-04T08:22:37.184247"
+  },
+  {
+    "path": "科技爱好者周刊#341：低代码编程，恐怕不会成功-2025-03-14.md",
+    "title": "科技爱好者周刊#341：低代码编程，恐怕不会成功",
+    "scores": {
+      "relevance": 0,
+      "technical_depth": 1,
+      "timeliness": 3,
+      "verifiability": 1
+    },
+    "total": 5,
+    "skip_reason": "总得分 5 < 10 (相关性:0, 深度:1, 时效:3, 可验证:1)",
+    "scan_date": "2026-04-04T08:22:37.184248"
+  },
+  {
+    "path": "CPU眼里的：系统调用-2024-04-22.md",
+    "title": "CPU眼里的：系统调用",
+    "scores": {
+      "relevance": 0,
+      "technical_depth": 1,
+      "timeliness": 3,
+      "verifiability": 1
+    },
+    "total": 5,
+    "skip_reason": "总得分 5 < 10 (相关性:0, 深度:1, 时效:3, 可验证:1)",
+    "scan_date": "2026-04-04T08:22:37.184249"
+  },
+  {
+    "path": "Kotlin协程的取消机制-2022-11-11.md",
+    "title": "Kotlin协程的取消机制",
+    "scores": {
+      "relevance": 3,
+      "technical_depth": 1,
+      "timeliness": 3,
+      "verifiability": 1
+    },
+    "total": 8,
+    "skip_reason": "总得分 8 < 10 (相关性:3, 深度:1, 时效:3, 可验证:1)",
+    "scan_date": "2026-04-04T08:22:37.184250"
+  },
+  {
+    "path": "谈谈定购 M1 Pro 的 16 寸 MacBook Pro 后的一些想法 - I'm Tualat...-2023-11-03.md",
+    "title": "谈谈定购 M1 Pro 的 16 寸 MacBook Pro 后的一些想法 | I'm Tualat...",
+    "scores": {
+      "relevance": 0,
+      "technical_depth": 1,
+      "timeliness": 3,
+      "verifiability": 1
+    },
+    "total": 5,
+    "skip_reason": "总得分 5 < 10 (相关性:0, 深度:1, 时效:3, 可验证:1)",
+    "scan_date": "2026-04-04T08:22:37.184251"
+  },
+  {
+    "path": "周刊（第15期）：图解ARIES论文（上）-2022-05-23.md",
+    "title": "周刊（第15期）：图解ARIES论文（上）",
+    "scores": {
+      "relevance": 0,
+      "technical_depth": 1,
+      "timeliness": 3,
+      "verifiability": 1
+    },
+    "total": 5,
+    "skip_reason": "总得分 5 < 10 (相关性:0, 深度:1, 时效:3, 可验证:1)",
+    "scan_date": "2026-04-04T08:22:37.184251"
+  },
+  {
+    "path": "科技爱好者周刊（第203期）：英国的名校签证，伯克利的计算机教育-2022-04-15.md",
+    "title": "科技爱好者周刊（第203期）：英国的名校签证，伯克利的计算机教育",
+    "scores": {
+      "relevance": 0,
+      "technical_depth": 1,
+      "timeliness": 3,
+      "verifiability": 1
+    },
+    "total": 5,
+    "skip_reason": "总得分 5 < 10 (相关性:0, 深度:1, 时效:3, 可验证:1)",
+    "scan_date": "2026-04-04T08:22:37.184252"
+  },
+  {
+    "path": "使用 Jetpack Compose 提升 Play 商店的用户体验-2022-03-30.md",
+    "title": "使用 Jetpack Compose 提升 Play 商店的用户体验",
+    "scores": {
+      "relevance": 0,
+      "technical_depth": 2,
+      "timeliness": 3,
+      "verifiability": 1
+    },
+    "total": 6,
+    "skip_reason": "总得分 6 < 10 (相关性:0, 深度:2, 时效:3, 可验证:1)",
+    "scan_date": "2026-04-04T08:22:37.184253"
+  },
+  {
+    "path": "A Shining 闪亮的-2023-12-27.md",
+    "title": "A Shining 闪亮的",
+    "scores": {
+      "relevance": 0,
+      "technical_depth": 1,
+      "timeliness": 3,
+      "verifiability": 1
+    },
+    "total": 5,
+    "skip_reason": "总得分 5 < 10 (相关性:0, 深度:1, 时效:3, 可验证:1)",
+    "scan_date": "2026-04-04T08:22:37.184254"
+  },
+  {
+    "path": "第121期-偷懒爱好者周刊 25-02-19 - 偷懒爱好者周刊-2025-02-23.md",
+    "title": "第121期-偷懒爱好者周刊 25/02/19 | 偷懒爱好者周刊",
+    "scores": {
+      "relevance": 0,
+      "technical_depth": 1,
+      "timeliness": 3,
+      "verifiability": 1
+    },
+    "total": 5,
+    "skip_reason": "总得分 5 < 10 (相关性:0, 深度:1, 时效:3, 可验证:1)",
+    "scan_date": "2026-04-04T08:22:37.184255"
+  },
+  {
+    "path": "最新Chatgpt微信机器人搭建教程-2023-02-07.md",
+    "title": "最新Chatgpt微信机器人搭建教程",
+    "scores": {
+      "relevance": 0,
+      "technical_depth": 1,
+      "timeliness": 3,
+      "verifiability": 1
+    },
+    "total": 5,
+    "skip_reason": "总得分 5 < 10 (相关性:0, 深度:1, 时效:3, 可验证:1)",
+    "scan_date": "2026-04-04T08:22:37.184256"
+  },
+  {
+    "path": "全新 DeepSeek V3 发布，代码能力大幅提升-2025-03-25.md",
+    "title": "全新 DeepSeek V3 发布，代码能力大幅提升",
+    "scores": {
+      "relevance": 0,
+      "technical_depth": 1,
+      "timeliness": 3,
+      "verifiability": 1
+    },
+    "total": 5,
+    "skip_reason": "总得分 5 < 10 (相关性:0, 深度:1, 时效:3, 可验证:1)",
+    "scan_date": "2026-04-04T08:22:37.184257"
+  },
+  {
+    "path": "性能测试中的系统资源分析之 网络-2022-11-09.md",
+    "title": "性能测试中的系统资源分析之 网络",
+    "scores": {
+      "relevance": 3,
+      "technical_depth": 2,
+      "timeliness": 3,
+      "verifiability": 1
+    },
+    "total": 9,
+    "skip_reason": "总得分 9 < 10 (相关性:3, 深度:2, 时效:3, 可验证:1)",
+    "scan_date": "2026-04-04T08:22:37.184257"
+  },
+  {
+    "path": "快让Appium自动化测试你的App吧适用于移动端的UI自动化测试框架有很多，其中主要以Appium与Airtest最为 - 掘金-2025-01-22.md",
+    "title": "快让Appium自动化测试你的App吧适用于移动端的UI自动化测试框架有很多，其中主要以Appium与Airtest最为 - 掘金",
+    "scores": {
+      "relevance": 0,
+      "technical_depth": 1,
+      "timeliness": 3,
+      "verifiability": 1
+    },
+    "total": 5,
+    "skip_reason": "总得分 5 < 10 (相关性:0, 深度:1, 时效:3, 可验证:1)",
+    "scan_date": "2026-04-04T08:22:37.184258"
+  },
+  {
+    "path": "产品沉思录精选：人们为何要关心你的品牌-2022-05-13.md",
+    "title": "产品沉思录精选：人们为何要关心你的品牌",
+    "scores": {
+      "relevance": 0,
+      "technical_depth": 1,
+      "timeliness": 3,
+      "verifiability": 1
+    },
+    "total": 5,
+    "skip_reason": "总得分 5 < 10 (相关性:0, 深度:1, 时效:3, 可验证:1)",
+    "scan_date": "2026-04-04T08:22:37.184259"
+  },
+  {
+    "path": "Claude Code 之父自爆：Claude Code 的终极用法-2026-01-08.md",
+    "title": "Claude Code 之父自爆：Claude Code 的终极用法",
+    "scores": {
+      "relevance": 0,
+      "technical_depth": 1,
+      "timeliness": 3,
+      "verifiability": 1
+    },
+    "total": 5,
+    "skip_reason": "总得分 5 < 10 (相关性:0, 深度:1, 时效:3, 可验证:1)",
+    "scan_date": "2026-04-04T08:22:37.184260"
+  },
+  {
+    "path": "谈谈 eglMakeCurrent、eglSwapBuffers、glFlush 和 glFinish-2022-01-14.md",
+    "title": "谈谈 eglMakeCurrent、eglSwapBuffers、glFlush 和 glFinish",
+    "scores": {
+      "relevance": 0,
+      "technical_depth": 1,
+      "timeliness": 3,
+      "verifiability": 1
+    },
+    "total": 5,
+    "skip_reason": "总得分 5 < 10 (相关性:0, 深度:1, 时效:3, 可验证:1)",
+    "scan_date": "2026-04-04T08:22:37.184261"
+  },
+  {
+    "path": "完美父亲 - happy xiao-2022-01-13.md",
+    "title": "完美父亲 | happy xiao",
+    "scores": {
+      "relevance": 0,
+      "technical_depth": 1,
+      "timeliness": 3,
+      "verifiability": 1
+    },
+    "total": 5,
+    "skip_reason": "总得分 5 < 10 (相关性:0, 深度:1, 时效:3, 可验证:1)",
+    "scan_date": "2026-04-04T08:22:37.184262"
+  },
+  {
+    "path": "【从源码过反调试】给安卓 12 内核增加个 syscall-2023-01-09.md",
+    "title": "【从源码过反调试】给安卓 12 内核增加个 syscall",
+    "scores": {
+      "relevance": 0,
+      "technical_depth": 1,
+      "timeliness": 3,
+      "verifiability": 1
+    },
+    "total": 5,
+    "skip_reason": "总得分 5 < 10 (相关性:0, 深度:1, 时效:3, 可验证:1)",
+    "scan_date": "2026-04-04T08:22:37.184262"
+  },
+  {
+    "path": "我的2023：写了1本书，跑步6个月，读了62本书，我是如何做到的-2023-12-18.md",
+    "title": "我的2023：写了1本书，跑步6个月，读了62本书，我是如何做到的",
+    "scores": {
+      "relevance": 0,
+      "technical_depth": 1,
+      "timeliness": 4,
+      "verifiability": 1
+    },
+    "total": 6,
+    "skip_reason": "总得分 6 < 10 (相关性:0, 深度:1, 时效:4, 可验证:1)",
+    "scan_date": "2026-04-04T08:22:37.184263"
+  },
+  {
+    "path": "创作者手记 Vol.004：把自己作为优质信息的桥梁-2022-03-17.md",
+    "title": "创作者手记 Vol.004：把自己作为优质信息的桥梁",
+    "scores": {
+      "relevance": 0,
+      "technical_depth": 1,
+      "timeliness": 3,
+      "verifiability": 1
+    },
+    "total": 5,
+    "skip_reason": "总得分 5 < 10 (相关性:0, 深度:1, 时效:3, 可验证:1)",
+    "scan_date": "2026-04-04T08:22:37.184264"
+  },
+  {
+    "path": "Android 15 之如何快速适配 16K Page Size-2024-07-22.md",
+    "title": "Android 15 之如何快速适配 16K Page Size",
+    "scores": {
+      "relevance": 0,
+      "technical_depth": 1,
+      "timeliness": 3,
+      "verifiability": 1
+    },
+    "total": 5,
+    "skip_reason": "总得分 5 < 10 (相关性:0, 深度:1, 时效:3, 可验证:1)",
+    "scan_date": "2026-04-04T08:22:37.184265"
+  },
+  {
+    "path": "AIGC对程序员的影响 - Thoughtworks洞见-2023-12-04.md",
+    "title": "AIGC对程序员的影响 - Thoughtworks洞见",
+    "scores": {
+      "relevance": 0,
+      "technical_depth": 1,
+      "timeliness": 3,
+      "verifiability": 1
+    },
+    "total": 5,
+    "skip_reason": "总得分 5 < 10 (相关性:0, 深度:1, 时效:3, 可验证:1)",
+    "scan_date": "2026-04-04T08:22:37.184266"
+  },
+  {
+    "path": "Android.bp中添加条件判断编译方式-CSDN博客-2025-04-13.md",
+    "title": "Android.bp中添加条件判断编译方式-CSDN博客",
+    "scores": {
+      "relevance": 0,
+      "technical_depth": 1,
+      "timeliness": 3,
+      "verifiability": 1
+    },
+    "total": 5,
+    "skip_reason": "总得分 5 < 10 (相关性:0, 深度:1, 时效:3, 可验证:1)",
+    "scan_date": "2026-04-04T08:22:37.184267"
+  },
+  {
+    "path": "破壁者李克强-2023-10-27.md",
+    "title": "破壁者李克强",
+    "scores": {
+      "relevance": 0,
+      "technical_depth": 1,
+      "timeliness": 3,
+      "verifiability": 1
+    },
+    "total": 5,
+    "skip_reason": "总得分 5 < 10 (相关性:0, 深度:1, 时效:3, 可验证:1)",
+    "scan_date": "2026-04-04T08:22:37.184267"
+  },
+  {
+    "path": "鸿蒙、Harmony、OpenHarmony的区别-2024-04-13.md",
+    "title": "鸿蒙、Harmony、OpenHarmony的区别",
+    "scores": {
+      "relevance": 0,
+      "technical_depth": 1,
+      "timeliness": 3,
+      "verifiability": 1
+    },
+    "total": 5,
+    "skip_reason": "总得分 5 < 10 (相关性:0, 深度:1, 时效:3, 可验证:1)",
+    "scan_date": "2026-04-04T08:22:37.184268"
+  },
+  {
+    "path": "Youtube 官方给创作者提供了10种赚钱的方式 – Tinyfool的自媒体实验室-2022-02-16.md",
+    "title": "Youtube 官方给创作者提供了10种赚钱的方式 – Tinyfool的自媒体实验室",
+    "scores": {
+      "relevance": 0,
+      "technical_depth": 1,
+      "timeliness": 3,
+      "verifiability": 1
+    },
+    "total": 5,
+    "skip_reason": "总得分 5 < 10 (相关性:0, 深度:1, 时效:3, 可验证:1)",
+    "scan_date": "2026-04-04T08:22:37.184269"
+  },
+  {
+    "path": "我用 XMind 在 GitHub 上分享编程知识｜思维导图的 101 种用法-2022-01-17.md",
+    "title": "我用 XMind 在 GitHub 上分享编程知识｜思维导图的 101 种用法",
+    "scores": {
+      "relevance": 0,
+      "technical_depth": 1,
+      "timeliness": 3,
+      "verifiability": 1
+    },
+    "total": 5,
+    "skip_reason": "总得分 5 < 10 (相关性:0, 深度:1, 时效:3, 可验证:1)",
+    "scan_date": "2026-04-04T08:22:37.184270"
+  },
+  {
+    "path": "深入理解 RecyclerView 的绘制流程和滑动原理（匠心巨作-上）前言：做人如果没有梦想，那和咸鱼有什么区别。—— - 掘金-2025-06-05.md",
+    "title": "深入理解 RecyclerView 的绘制流程和滑动原理（匠心巨作-上）前言：做人如果没有梦想，那和咸鱼有什么区别。—— - 掘金",
+    "scores": {
+      "relevance": 0,
+      "technical_depth": 1,
+      "timeliness": 3,
+      "verifiability": 1
+    },
+    "total": 5,
+    "skip_reason": "总得分 5 < 10 (相关性:0, 深度:1, 时效:3, 可验证:1)",
+    "scan_date": "2026-04-04T08:22:37.184271"
+  },
+  {
+    "path": "Flutter 的真正价值是什么？深度解析再结合鸿蒙，告诉你 Flutter 的真正优势-2026-02-27.md",
+    "title": "Flutter 的真正价值是什么？深度解析再结合鸿蒙，告诉你 Flutter 的真正优势",
+    "scores": {
+      "relevance": 0,
+      "technical_depth": 1,
+      "timeliness": 3,
+      "verifiability": 1
+    },
+    "total": 5,
+    "skip_reason": "总得分 5 < 10 (相关性:0, 深度:1, 时效:3, 可验证:1)",
+    "scan_date": "2026-04-04T08:22:37.184272"
+  },
+  {
+    "path": "JVM｜翻越内存管理的墙 - 掘金-2022-07-05.md",
+    "title": "JVM｜翻越内存管理的墙 - 掘金",
+    "scores": {
+      "relevance": 3,
+      "technical_depth": 1,
+      "timeliness": 3,
+      "verifiability": 1
+    },
+    "total": 8,
+    "skip_reason": "总得分 8 < 10 (相关性:3, 深度:1, 时效:3, 可验证:1)",
+    "scan_date": "2026-04-04T08:22:37.184272"
+  },
+  {
+    "path": "致而立之年的自己-2023-08-13.md",
+    "title": "致而立之年的自己",
+    "scores": {
+      "relevance": 0,
+      "technical_depth": 1,
+      "timeliness": 3,
+      "verifiability": 1
+    },
+    "total": 5,
+    "skip_reason": "总得分 5 < 10 (相关性:0, 深度:1, 时效:3, 可验证:1)",
+    "scan_date": "2026-04-04T08:22:37.184273"
+  },
+  {
+    "path": "“View背景模糊”的四种写法-2022-09-15.md",
+    "title": "“View背景模糊”的四种写法",
+    "scores": {
+      "relevance": 0,
+      "technical_depth": 1,
+      "timeliness": 3,
+      "verifiability": 1
+    },
+    "total": 5,
+    "skip_reason": "总得分 5 < 10 (相关性:0, 深度:1, 时效:3, 可验证:1)",
+    "scan_date": "2026-04-04T08:22:37.184274"
+  },
+  {
+    "path": "把图文生成漂亮的分享卡片，哪个软件强？ - 少数派-2024-12-02.md",
+    "title": "把图文生成漂亮的分享卡片，哪个软件强？ - 少数派",
+    "scores": {
+      "relevance": 0,
+      "technical_depth": 1,
+      "timeliness": 3,
+      "verifiability": 1
+    },
+    "total": 5,
+    "skip_reason": "总得分 5 < 10 (相关性:0, 深度:1, 时效:3, 可验证:1)",
+    "scan_date": "2026-04-04T08:22:37.184275"
   }
 ]

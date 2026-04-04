@@ -143,7 +143,12 @@ TTFD 度量的是 App 从启动到"内容完全可用"的时间。和 TTID 的�
 public void onDataLoaded(List<Item> items) {
     recyclerView.setAdapter(new ItemAdapter(items));
     // 确保这帧渲染完成后标记 Fully Drawn
-    reportFullyDrawn();
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+        // API 31+ 可以传递更精确的时间戳
+        reportFullyDrawn();
+    } else {
+        reportFullyDrawn();
+    }
 }
 ```
 

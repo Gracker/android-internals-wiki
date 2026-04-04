@@ -4,11 +4,11 @@
   "metrics": {
     "total": 97,
     "draft": 0,
-    "ready-for-review": 9,
+    "ready-for-review": 10,
     "reviewed": 3,
     "finalized": 27,
     "staging_drafts": 0,
-    "last_updated": "2026-04-04T09:20:00"
+    "last_updated": "2026-04-04T11:20:11.651402"
   },
   "reviewed_sections": {
     "8.1": {
@@ -1105,15 +1105,30 @@
       "verification_level": "L2",
       "word_count": "~8500",
       "completed_at": "2026-04-04T09:15:52"
+    },
+    {
+      "chapter": "16.1",
+      "section": "16.1",
+      "title": "Google 官方的性能优化思路",
+      "status": "ready-for-review",
+      "drafted_date": "2026-04-04",
+      "drafted_by": "openclaw-task2a",
+      "anchors_covered": 5,
+      "anchors_total": 5,
+      "extensions_covered": 2,
+      "extensions_total": 2,
+      "verification_level": "L2",
+      "word_count": "~8500",
+      "completed_at": "2026-04-04T11:20:11.651393"
     }
   ],
   "ready_for_review": 5,
   "last_updated": "2026-04-04T07:05:00+08:00",
   "stats": {
     "total": 97,
-    "completed": 62,
-    "pending": 35,
-    "last_updated": "2026-04-04T09:20:00"
+    "completed": 63,
+    "pending": 34,
+    "last_updated": "2026-04-04T11:20:11.651400"
   },
   "research_stats": {
     "runs_today": [
@@ -1256,11 +1271,30 @@
           "Startup Profiles + DEX Layout 优化：AGP 8.3 默认启用 + 冷启动 15-30% 提升 + R8/D8 编译器 DEX 重排（目标 §8.3/§16）",
           "ApplicationStartInfo.getStartComponent()：Android 16 新增 5 个 START_COMPONENT_* 常量 + 精确识别启动触发组件（目标 §8.1/§8.3）"
         ]
+      },
+      {
+        "time": "2026-04-04T11:00:00+08:00",
+        "focus": "启动优化（topic-rotation #4 补充）+ SurfaceFlinger（queue freshness-003）",
+        "source": "topic-rotation-supplement + queue-freshness-003",
+        "candidates": 7,
+        "passed": 2,
+        "delivered": 2,
+        "themes": [
+          "Android 17 recreateOnConfigChanges：6 种配置变更不再重启 + 新 manifest opt-in 属性（目标 §8.4/§1.6/§3.3）",
+          "Android 16/17 Desktop Windowing + Bubbles：外接显示器 GA + 浮动窗口模式对 SurfaceFlinger 多 Surface 合成的影响（目标 §2.6/§2.9）"
+        ]
       }
     ],
-    "last_updated": "2026-04-04T07:05:00+08:00"
+    "last_updated": "2026-04-04T11:00:00+08:00"
   },
   "history": [
+    {
+      "date": "2026-04-04",
+      "section": "16.1",
+      "title": "Google 官方的性能优化思路",
+      "action": "draft-completed",
+      "word_count": "~8500"
+    },
     {
       "date": "2026-04-04",
       "section": "11.1",
@@ -1758,6 +1792,20 @@
       "title": "AOSP 代码阅读",
       "action": "draft-completed",
       "word_count": "~8500"
+    },
+    {
+      "date": "2026-04-04",
+      "section": "8.4/1.6/2.6",
+      "title": "Android 17 Activity 重启优化 + Desktop Windowing SurfaceFlinger",
+      "action": "research-completed",
+      "focus": "recreateOnConfigChanges + Desktop Windowing + Bubbles",
+      "candidates": 7,
+      "passed": 2,
+      "delivered": 2,
+      "themes": [
+        "Android 17 recreateOnConfigChanges: 6 config changes no longer restart + new manifest opt-in",
+        "Android 16/17 Desktop Windowing + Bubbles: external display GA + floating window SurfaceFlinger impact"
+      ]
     }
   ],
   "sections": {
@@ -2070,6 +2118,13 @@
       "file": "src/part3-tools/ch15-methodology/07-aosp-reading.md",
       "anchors_covered": 5,
       "extensions_covered": 2
+    },
+    "16.1": {
+      "title": "Google 官方的性能优化思路",
+      "status": "ready-for-review",
+      "drafted_date": "2026-04-04",
+      "drafted_by": "openclaw-task2a",
+      "file": "src/part4-system/ch16-aosp/01-google-optimization.md"
     }
   },
   "5.1": {
