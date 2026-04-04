@@ -1,14 +1,14 @@
 ---
 title: "Android 渲染架构全景"
 chapter: "2.1"
-status: ready-for-review
+status: ready-to-publish
 applicable_versions: "Android 12 (API 31) - Android 16 (API 36)"
 last_verified: "2026-03-30"
 last_verified_against: "AOSP android-16.0.0_r1, 官方文档最新版本"
 confidence: high
 drafted_date: "2026-03-30"
-reviewed_date: "2026-04-05T02:20"
-reviewed_by: "openclaw-task6-v2"
+reviewed_date: "2026-04-05"
+reviewed_by: "openclaw-task6"
 polish_count: 1
 polish_date: "2026-04-05"
 polish_by: "task2b-polish"

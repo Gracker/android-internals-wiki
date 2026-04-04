@@ -4,13 +4,13 @@
   "metrics": {
     "total": 101,
     "draft": 2,
-    "ready-for-review": 50,
+    "ready-for-review": 49,
     "reviewed": 3,
     "finalized": 42,
     "staging_drafts": 0,
-    "last_updated": "2026-04-05T05:11:31.397019",
+    "last_updated": "2026-04-05T05:25:00.421315",
     "processing": 0,
-    "ready-to-publish": 2
+    "ready-to-publish": 3
   },
   "reviewed_sections": {
     "8.1": {
@@ -76,15 +76,22 @@
       ]
     },
     "2.1": {
-      "reviewed_date": "2026-04-02",
+      "reviewed_date": "2026-04-05",
       "reviewed_by": "openclaw-task6",
-      "review_status": "reviewed",
+      "review_status": "ready-to-publish",
+      "review_type": "post-polish-quality-gate",
       "fixes_applied": [
-        "frontmatter: 补 drafted_date/reviewed_date/reviewed_by",
-        "frontmatter: applicable_versions API B → API 36",
-        "frontmatter: status ready-for-review → reviewed",
-        "措辞: UI 线程（主线程）→ 主线程（也称 UI 线程）"
-      ]
+        "无 A 类修复（task2b 精修后质量已达标）",
+        "无 B 类问题",
+        "status: ready-for-review → ready-to-publish（出版终态）"
+      ],
+      "scores": {
+        "structure": 5,
+        "expression": 5,
+        "consistency": 5,
+        "verification": 4,
+        "metadata": 5
+      }
     },
     "5.1": {
       "reviewed_date": "2026-04-03",
