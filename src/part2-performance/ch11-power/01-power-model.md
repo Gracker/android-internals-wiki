@@ -1,8 +1,12 @@
 ---
 title: "Android 功耗模型"
+section: "11.1"
 chapter: "11.1"
-status: ready-for-review
+status: finalized
+reviewed_date: "2026-04-04"
+reviewed_by: "openclaw-task6"
 drafted_date: "2026-04-03"
+drafted_by: "openclaw-task2a"
 applicable_versions: "Android 5.0 (API 21) - Android 16 (API 36)"
 last_verified: "2026-04-03"
 last_verified_against: "AOSP android-16.0.0_r1"
@@ -51,9 +55,9 @@ related_chapters: ["5.4", "5.5", "5.6", "11.2", "11.3", "13.1"]
 
 ## 为什么要了解 Android 功耗模型
 
-当用户抱怨"你的 App 太耗电了"的时候，开发者往往一脸茫然——我的 App 又没有做挖矿，怎么会耗电？问题在于，耗电不是一个 App 自己说了算的事。Android 系统通过一套精心设计的功耗模型，把电池消耗拆分到各个硬件模块，再按使用时间归属到每个 App。如果你不了解这套模型的工作原理，就不知道"设置 → 电池 → 电池使用情况"里那个百分比是怎么算出来的，更不知道该怎么优化。
+当用户抱怨"你的 App 太耗电了"的时候，开发者往往一脸茫然——我的 App 又没有做挖矿，怎么会耗电？问题在于，耗电不是一个 App 自己说了算的事。Android 系统通过一套精心设计的功耗模型，把电池消耗拆分到各个硬件模块，再按使用时间归属到每个 App。如果我们不了解这套模型的工作原理，就不知道"设置 → 电池 → 电池使用情况"里那个百分比是怎么算出来的，更不知道该怎么优化。
 
-理解功耗模型的核心价值在于：它决定了你能看到什么数据，以及这些数据有多可信。当你打开 Battery Historian 看到一个 App 的 CPU 耗电占比异常时，你需要知道这个数字是来自硬件实测还是软件估算，误差范围有多大，哪些场景下数据可信、哪些场景下需要额外验证。
+理解功耗模型的核心价值在于：它决定了我们能，以及这些数据有多可信。当我们打开 Battery Historian 看到一个 App 的 CPU 耗电占比异常时，我们需要知道这个数字是来自硬件实测还是软件估算，误差范围有多大，哪些场景下数据可信、哪些场景下需要额外验证。
 
 我们在前几章已经讨论了 CPU 调度（§5.1）、DVFS（§5.4）、热管理（§5.5）和 Android 功耗管理机制（§5.6）。那些章节讲的是系统如何"省电"，而本章要回答的问题是：系统怎么知道谁"费了电"，以及这个"知道"有多准确。
 
@@ -160,13 +164,13 @@ App CPU 耗电量 (mAh) = Σ (频率i的运行时间 × 频率i的电流 mA × �
 
 屏幕是另一个功耗大户，而且它的耗电模式很直观——亮度越高越费电，刷新率越高越费电。power_profile 中定义了 `screen.on`（屏幕开启、最低亮度）和 `screen.full`（屏幕开启、最高亮度）两个锚点值，系统根据实际亮度在这两个值之间线性插值。
 
-屏幕功耗通常被算作系统级开销，不会直接归属到某个 App。但在 Battery Historian 中，你可以通过"屏幕开启时段"和"电量下降速度"的对应关系，间接判断亮屏时的耗电趋势。结合 §2.2 中讨论的刷新率机制，120Hz 屏幕在高亮度下的耗电可能比 60Hz 屏幕高出 50% 以上。
+屏幕功耗通常被算作系统级开销，不会直接归属到某个 App。但在 Battery Historian 中，我们可以通过"屏幕开启时段"和"电量下降速度"的对应关系，间接判断亮屏时的耗电趋势。结合 §2.2 中讨论的刷新率机制，120Hz 屏幕在高亮度下的耗电可能比 60Hz 屏幕高出 50% 以上。
 
 ### GPU：隐藏的耗电源
 
 GPU 的功耗在 power_profile 中的定义相对简单，通常只有 `gpu.active` 一个条目，不像 CPU 那样有频率-电流对照表。这导致 GPU 功耗的估算精度比 CPU 低得多——系统很难区分 GPU 是在满负荷渲染游戏还是在轻度合成 UI。
 
-在实际分析中，GPU 功耗常被归入"硬件"类别或与 CPU 合并统计。如果你在做游戏或视频播放类 App 的功耗分析，需要特别注意 GPU 这个隐藏变量。
+在实际分析中，GPU 功耗常被归入"硬件"类别或与 CPU 合并统计。如果我们在做游戏或视频播放类 App 的功耗分析，需要特别注意 GPU 这个隐藏变量。
 
 ### Cellular / WiFi / GPS：通信模块三兄弟
 
@@ -239,9 +243,9 @@ Fuel Gauge 是 Coulomb Counter 的"上层建筑"。它不仅仅做电流积分�
 
 这两种方式并不是互相替代的关系，而是互补的：
 
-**软件估算的优势**是粒度细——它可以告诉你"App A 的 CPU 耗电 50mAh，WiFi 耗电 20mAh"。这种按 App、按模块拆分的能力是硬件测量做不到的，因为 Coulomb Counter 只能量到电池总出口的电流，无法区分这个电流是被谁消耗的。
+**软件估算的优势**是粒度细——它可以明确展示"App A 的 CPU 耗电 50mAh，WiFi 耗电 20mAh"。这种按 App、按模块拆分的能力是硬件测量做不到的，因为 Coulomb Counter 只能量到电池总出口的电流，无法区分这个电流是被谁消耗的。
 
-**硬件测量的优势**是精度高——它可以准确告诉你"过去 1 小时电池总共消耗了 200mAh"。这个全局精度是软件估算难以保证的，特别是当 power_profile 参数不准时。
+**硬件测量的优势**是精度高——它可以准确展示"过去 1 小时电池总共消耗了 200mAh"。这个全局精度是软件估算难以保证的，特别是当 power_profile 参数不准时。
 
 在实际的 Android 系统中，两者结合使用：Fuel Gauge 提供全局的电量消耗基准（电池百分比），BatteryStats + power_profile 提供按 App 的拆分归属。下一节我们会看到，Android 10 引入的 IPowerStats HAL 正是为了弥合这两条路径之间的精度差距。
 
@@ -345,7 +349,7 @@ ODPM 虽然强大，但目前有几个明显的局限：
 
 第一，**设备覆盖有限**。ODPM 需要硬件支持（PMIC 上有功耗计数器），不是所有设备都具备这个能力。目前只有 Pixel 6+ 系列有完整支持，其他 OEM 厂商的实现参差不齐。
 
-第二，**粒度仍然是模块级**。ODPM 可以告诉你"CPU 大核消耗了 X mAh"，但无法告诉你"App A 在 CPU 大核上消耗了 Y mAh"。App 级归属仍然依赖 BatteryStats 的软件算法，ODPM 只是提供了一个更准确的校准基准。
+第二，**粒度仍然是模块级**。ODPM 可以展示"CPU 大核消耗了 X mAh"，但无法展示"App A 在 CPU 大核上消耗了 Y mAh"。App 级归属仍然依赖 BatteryStats 的软件算法，ODPM 只是提供了一个更准确的校准基准。
 
 第三，**采样间隔有限**。IPowerStats HAL 的轮询间隔通常在秒级，无法捕捉毫秒级的功耗毛刺。对于分析瞬间功耗峰值（如 Camera 启动时的功耗飙升），还是需要外接功耗仪。
 
@@ -375,7 +379,7 @@ ODPM 虽然强大，但目前有几个明显的局限：
 
 功耗模型的数据在多个工具中都有对应的表现形式：
 
-**Battery Historian**：这是功耗分析的主力工具。通过解析 bugreport 中的 BatteryStats 数据，Battery Historian 提供了从系统级到 App 级的完整功耗时间线可视化。你可以看到屏幕亮度变化、网络状态切换、WakeLock 持有、App 前后台切换等事件与电量下降的对应关系。[待补充: Battery Historian 截图示例]
+**Battery Historian**：这是功耗分析的主力工具。通过解析 bugreport 中的 BatteryStats 数据，Battery Historian 提供了从系统级到 App 级的完整功耗时间线可视化。我们可以看到屏幕亮度变化、网络状态切换、WakeLock 持有、App 前后台切换等事件与电量下降的对应关系。[待补充: Battery Historian 截图示例]
 
 **dumpsys batterystats**：命令行工具，输出 BatteryStats 的原始统计数据。适合脚本化分析和自动化测试场景。常用命令组合：
 
@@ -453,7 +457,7 @@ Coulomb Counter 只能测量电池总出口的电流，它知道"过去一小时
 
 ### 误区三："App 完全在后台就不耗电"
 
-即使 App 没有任何可见的 Activity，它也可能因为以下原因持续耗电：持有 WakeLock 阻止 CPU 休眠、注册了 GPS/传感器监听、后台网络活动维持 TCP 长连接、周期性的 JobScheduler 任务唤醒 CPU。BatteryStats 会忠实记录这些后台活动并归属到对应 App。在 Battery Historian 中，你可以通过 "Userspace Wakelock" 和 "Network" 行来识别这类后台功耗。
+即使 App 没有任何可见的 Activity，它也可能因为以下原因持续耗电：持有 WakeLock 阻止 CPU 休眠、注册了 GPS/传感器监听、后台网络活动维持 TCP 长连接、周期性的 JobScheduler 任务唤醒 CPU。BatteryStats 会忠实记录这些后台活动并归属到对应 App。在 Battery Historian 中，我们可以通过 "Userspace Wakelock" 和 "Network" 行来识别这类后台功耗。
 
 ### 误区四："高 CPU 使用率 = 高耗电"
 

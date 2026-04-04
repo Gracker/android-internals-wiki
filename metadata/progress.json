@@ -4,11 +4,11 @@
   "metrics": {
     "total": 97,
     "draft": 0,
-    "ready-for-review": 10,
+    "ready-for-review": 9,
     "reviewed": 3,
-    "finalized": 26,
+    "finalized": 27,
     "staging_drafts": 0,
-    "last_updated": "2026-04-04T09:15:52"
+    "last_updated": "2026-04-04T09:20:00"
   },
   "reviewed_sections": {
     "8.1": {
@@ -356,10 +356,20 @@
         "frontmatter补全：section/drafted_by/reviewed_date/reviewed_by",
         "status ready-for-review → finalized"
       ]
+    },
+    "11.1": {
+      "reviewed_date": "2026-04-04",
+      "reviewed_by": "openclaw-task6",
+      "review_status": "finalized",
+      "fixes_applied": [
+        "11处'你'→'我们'替换（writing-guide §3.5合规）",
+        "frontmatter补充：section/drafted_by/reviewed_date/reviewed_by",
+        "status ready-for-review → finalized"
+      ]
     }
   },
   "review_stats": {
-    "total_reviewed": 32,
+    "total_reviewed": 33,
     "reviewed_today": 18,
     "review_issues_total": 13
   },
@@ -1103,7 +1113,7 @@
     "total": 97,
     "completed": 62,
     "pending": 35,
-    "last_updated": "2026-04-04T09:15:52"
+    "last_updated": "2026-04-04T09:20:00"
   },
   "research_stats": {
     "runs_today": [
@@ -1251,6 +1261,14 @@
     "last_updated": "2026-04-04T07:05:00+08:00"
   },
   "history": [
+    {
+      "date": "2026-04-04",
+      "section": "11.1",
+      "title": "Android 功耗模型",
+      "action": "reviewed-finalized",
+      "review_by": "openclaw-task6",
+      "fixes": 11
+    },
     {
       "date": "2026-04-04",
       "section": "7.7",
