@@ -2,12 +2,15 @@
 title: "Perfetto View 解读"
 chapter: "13.3"
 section: "13.3"
-status: ready-for-review
+status: finalized
 drafted_date: "2026-04-03"
+drafted_by: "openclaw-task2a"
 applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
 last_verified: "2026-04-03"
 last_verified_against: "perfetto.dev docs"
 confidence: medium
+reviewed_date: "2026-04-05"
+reviewed_by: "openclaw-task6"
 sources:
   - type: blog
     path: "https://www.androidperformance.com/2024/05/21/Android-Perfetto-03-how-to-analysis-perfetto/"
@@ -82,6 +85,8 @@ Trace 加载完成后，界面可以分为四个区域：
 
 最下方是详情面板，选中任何一个 Slice（Trace 中的一个事件块）后，这里会展示该事件的详细信息：耗时、CPU 时间、线程状态分布、唤醒源等。这个面板是我们做深入分析的核心工具。
 
+[图：Perfetto UI 四大区域标注——侧边栏、时间标尺、Trace 内容区、详情面板]
+
 [来源: https://www.androidperformance.com/2024/05/21/Android-Perfetto-03-how-to-analysis-perfetto/]
 
 ### 缩放与导航
@@ -136,6 +141,8 @@ CPU 相关的 Track 位于 Trace 内容区的最顶部，分为三组。
 [已验证: 官方文档, perfetto.dev/docs/data-sources/cpu]
 [来源: https://www.androidperformance.com/2024/05/21/Android-Perfetto-03-how-to-analysis-perfetto/]
 
+[图：CPU Frequency/Scheduling/Idle Track 示例，标注大核频率变化和线程摆核]
+
 ### 进程与线程 Track
 
 CPU Track 下面是以进程为单位组织的 Track 区域。每个进程有一个可折叠的分组，展开后可以看到该进程下的各个线程。
@@ -163,6 +170,8 @@ Actual Timeline 用不同颜色表示实际渲染结果：绿色表示按时完�
 
 通过 Expected 和 Actual 两行的对比，我们可以一眼看出哪些帧超时了、超了多少。这在分析流畅性问题时是最高效的入口：不需要逐个检查 `doFrame` 的耗时，直接看 FrameTimeline 的红色区域就行。
 
+[图：FrameTimeline Track 示例——Expected（灰色）与 Actual（绿色/红色）对比，标注 app_missed 掉帧]
+
 [已验证: 官方文档, source.android.com/docs/core/display/frame_timeline]
 [来源: https://www.androidperformance.com/2024/05/21/Android-Perfetto-03-how-to-analysis-perfetto/]
 
@@ -189,7 +198,7 @@ Counter Track 的数值点来自代码中的 `Trace.traceCounter()` / `ATRACE_IN
 
 ## Slice 详情面板的解读
 
-选中任何一个 Slice 后，底部面板会展示该 Slice 的详细信息。这个面板是 Perfetto 最强大的分析入口之一——它不仅告诉你"这个事件持续了多久"，还告诉你"这段时间里线程在干什么"。
+选中任何一个 Slice 后，底部面板会展示该 Slice 的详细信息。这个面板是 Perfetto 最强大的分析入口之一——它不仅展示"这个事件持续了多久"，还展示"这段时间里线程在干什么"。
 
 ### Wall Duration 与 CPU Duration
 
@@ -248,6 +257,8 @@ Flow Events（流事件）是 Perfetto 中连接跨线程、跨进程事件的�
 
 这种跨进程跳转能力是 Perfetto 相比传统日志分析的核心优势。在日志里分析 Binder 调用需要手动匹配两个进程的时间戳和调用 ID；在 Perfetto 里，点一下箭头就完成了。
 
+[图：Binder Flow Event 箭头——App 主线程到 system_server Binder 线程的跨进程跳转]
+
 需要注意，Flow Events 的箭头在默认视图中可能不会全部显示。如果箭头太密集，Perfetto 会自动省略一些。当我们选中某个 Slice 后，与它相关的 Flow 箭头会高亮显示。
 
 [已验证: 官方文档, perfetto.dev — Flow events documentation]
@@ -300,6 +311,8 @@ Uninterruptible Sleep 段过长通常指向 I/O 瓶颈。常见场景包括：Ap
 - **橙色长**：I/O 瓶颈，需要看具体在读什么。
 
 当然，实际情况往往比这个口诀复杂——可能一个 Slice 里同时有绿色、灰色和橙色。这时候就需要用前面介绍的 Thread States 标签来看精确的百分比分解。
+
+[图：线程状态条颜色编码对照——Running(绿)/Runnable(浅绿)/Sleep(灰)/Uninterruptible(橙)，附 Perfetto Trace 实际截图]
 
 ## 进阶操作与效率技巧
 
@@ -368,6 +381,8 @@ Android Studio Profiler 也提供了 CPU Trace 的可视化视图，很多开发
 **第六步：看 SurfaceFlinger**。如果 App 端没有明显超时，切换到 SurfaceFlinger 进程，检查对应时间段 `onMessageReceived` 的耗时是否正常。如果 SF 合成也超时了，可能是 HWC 合成失败回退到了 GPU 合成，或者是 Layer 数量过多。
 
 通过这个流程，大部分掉帧问题都能在 5-10 分钟内定位到根因层级。剩下的是深入代码层面的优化，那就需要结合 AS Profiler 的方法级 Trace 或者直接看源码了。
+
+[图：实战示例完整 Trace 片段——从 FrameTimeline 红色区域定位到 doFrame，展示各子 Slice drill-down 过程]
 
 ## 常见问题与误区
 

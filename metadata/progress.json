@@ -4,11 +4,11 @@
   "metrics": {
     "total": 102,
     "draft": 3,
-    "ready-for-review": 49,
+    "ready-for-review": 48,
     "reviewed": 3,
-    "finalized": 42,
+    "finalized": 43,
     "staging_drafts": 0,
-    "last_updated": "2026-04-05T05:25:00.421315",
+    "last_updated": "2026-04-05T06:20:00+08:00",
     "processing": 0,
     "ready-to-publish": 3
   },
@@ -403,10 +403,21 @@
         "frontmatter补全：drafted_by/reviewed_date/reviewed_by",
         "status: ready-for-review → finalized"
       ]
+    },
+    "13.3": {
+      "reviewed_date": "2026-04-05",
+      "reviewed_by": "openclaw-task6",
+      "review_status": "finalized",
+      "fixes_applied": [
+        "1处「告诉你」→「展示」（writing-guide §3.5 合规）",
+        "frontmatter 补 drafted_by/reviewed_date/reviewed_by",
+        "6 处 [图：...] 标注补充（Perfetto UI/CPU Track/FrameTimeline/线程状态色/Flow Events/实战示例）",
+        "status: ready-for-review → finalized"
+      ]
     }
   },
   "review_stats": {
-    "total_reviewed": 37,
+    "total_reviewed": 38,
     "reviewed_today": 21,
     "review_issues_total": 13
   },
@@ -1488,6 +1499,14 @@
   "history": [
     {
       "date": "2026-04-05",
+      "section": "13.3",
+      "title": "Perfetto View 解读",
+      "action": "reviewed-finalized",
+      "review_by": "openclaw-task6",
+      "fixes": 9
+    },
+    {
+      "date": "2026-04-05",
       "section": "1.10",
       "title": "ContentProvider 性能与优化",
       "action": "gap-created",
@@ -2259,9 +2278,11 @@
     },
     "13.3": {
       "title": "Perfetto View 解读",
-      "status": "ready-for-review",
+      "status": "finalized",
       "drafted_date": "2026-04-03",
-      "drafted_by": "openclaw-task2a"
+      "drafted_by": "openclaw-task2a",
+      "reviewed_date": "2026-04-05",
+      "reviewed_by": "openclaw-task6"
     },
     "13.4": {
       "title": "命令行打开超大 Trace",
