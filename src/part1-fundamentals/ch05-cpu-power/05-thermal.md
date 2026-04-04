@@ -30,6 +30,9 @@ drafted_date: "2026-04-01"
 drafted_by: "openclaw-task2"
 reviewed_date: "2026-04-03"
 reviewed_by: "openclaw-task6"
+polish_count: 1
+polish_date: "2026-04-04"
+polish_by: "task2b-polish"
 ---
 
 # Thermal 管控
@@ -62,9 +65,9 @@ reviewed_by: "openclaw-task6"
 
 ## 为什么需要了解 Thermal 管控
 
-如果你做过持续性能测试——比如跑一个 30 分钟的游戏场景或者反复滑动列表——大概率遇到过这种情况：前 5 分钟帧率稳稳的 120fps，第 10 分钟开始偶尔掉帧，到了第 20 分钟帧率直接腰斩，CPU 频率也莫名奇妙地降了下来。你以为代码有 bug，但换一台冷启动的设备，表现完全正常。
+做过持续性能测试的工程师大概率遇到过这种情况——比如跑一个 30 分钟的游戏场景或者反复滑动列表：前 5 分钟帧率稳稳的 120fps，第 10 分钟开始偶尔掉帧，到了第 20 分钟帧率直接腰斩，CPU 频率也莫名其妙地降了下来。第一反应往往是“代码有 bug”，但换一台冷启动的设备，表现完全正常。
 
-这不是你的代码出了问题，而是设备的温控系统开始介入了。
+这不是代码的问题，而是设备的温控系统开始介入了。
 
 在 Perfetto 中，这种场景的 Trace 非常有辨识度：CPU Frequency 轨迹线一开始在高频区间，随后逐步下探，像一只慢慢放气的气球。与此同时，帧渲染时间（Frame Timeline）从稳定的 8.33ms 一路飘升到 16ms、20ms 甚至更高。这就是 Thermal Throttling——温度墙——对性能最直接的影响。
 
@@ -125,7 +128,7 @@ Cooling Device 不一定是物理设备——更常见的"降温设备"就是 CP
 
 内核的 thermal core 够用了，但 Android 有自己的需求——Framework 需要统一管理温控策略，而不同厂商的硬件差异很大。Thermal HAL 就是这层抽象。
 
-**Thermal HAL 1.0（Android 9 及更低版本）** 采用轮询（polling）方式获取温度。Framework 定期调用 HAL 的 `getTemperatures()` 方法来读取各传感器数据。这种方式简单但效率低，而且延迟大——两次轮询之间可能错过了温度的快速上升。
+**Thermal HAL 1.0（Android 9 及更低版本）** 采用轮询（polling）方式获取温度，这是最早的标准化 Thermal HAL 版本。Framework 定期调用 HAL 的 `getTemperatures()` 方法来读取各传感器数据。这种方式简单但效率低，而且延迟大——两次轮询之间可能错过了温度的快速上升。
 
 **Thermal HAL 2.0（Android 10+）** 引入了事件驱动的接口。当温度跨越阈值时，HAL 主动向 Framework 上报 `ThrottlingSeverity` 变化，而不是等 Framework 来问。从 Android 14 开始，HAL 接口从 HIDL 迁移到 AIDL（`android.hardware.thermal.IThermal`），但核心模型不变。
 
@@ -403,7 +406,7 @@ watch -n 1 "cat /sys/class/thermal/thermal_zone*/temp"
 
 ### 策略 2：使用 Sustained Performance Mode
 
-Android 7.0（API 24）引入了 `Window.setSustainedPerformanceMode(boolean)` 方法。启用后，系统会为你的 Activity 提供一个可预测的、可持续的性能水平——它从一开始就把最高频率限制在一个"能持续 30 分钟不掉"的水平，而不是先让你跑满频率、等温度上来再强行降频。
+Android 7.0（API 24）引入了 `Window.setSustainedPerformanceMode(boolean)` 方法。启用后，系统会为当前 Activity 提供一个可预测的、可持续的性能水平——它从一开始就把最高频率限制在一个"能持续 30 分钟不掉"的水平，而不是先跑满频率、等温度上来再强行降频。
 
 ```java
 // 在 Activity 的 onCreate 中
@@ -412,7 +415,7 @@ if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
 }
 ```
 
-Sustained Performance Mode 的设计理念是"稳定的平庸好过短暂的卓越"。对于 benchmark 测试来说，这意味着你的 30 分钟测试数据不会因为温控介入而出现断崖式下跌。
+Sustained Performance Mode 的设计理念是"稳定的平庸好过短暂的卓越"。对于 benchmark 测试来说，这意味着 30 分钟测试数据不会因为温控介入而出现断崖式下跌。
 
 不过这个模式有前提条件：设备厂商必须在 Power HAL 中实现 `POWER_HINT_SUSTAINED_PERFORMANCE`，并且通过 `PowerManager.isSustainedPerformanceModeSupported()` 声明支持。很多中低端设备并不支持。
 
@@ -451,7 +454,7 @@ int statusAfter = pm.getCurrentThermalStatus();
 
 ## 各厂商 Thermal 策略差异
 
-温控策略是厂商差异化最严重的领域之一。同样是 Snapdragon 8 Gen 3，不同手机厂商的 thermal 配置可能截然不同——激进者允许更高的温度上限以换取持续高性能，保守者在较低温度就开始降频以保护用户体验和硬件安全。
+前面讨论的都是 Android 通用架构。但在实际工作中我们会发现，同样 SoC 的两台手机，性能表现可能天差地别——差异往往来自厂商各自的温控策略调校。温控策略是厂商差异化最严重的领域之一。同样是 Snapdragon 8 Gen 3，不同手机厂商的 thermal 配置可能截然不同——激进者允许更高的温度上限以换取持续高性能，保守者在较低温度就开始降频以保护用户体验和硬件安全。
 
 ### 策略风格的光谱
 
@@ -477,7 +480,7 @@ int statusAfter = pm.getCurrentThermalStatus();
 
 ## Sustained Performance Mode API
 
-前面在测试策略中提到过，这里深入看一下它的工作机制。
+在测试策略部分我们提到了 Sustained Performance Mode 作为排除温控干扰的手段之一。现在我们从 API 设计和实现层面深入拆解它的工作机制。
 
 Sustained Performance Mode 从 Android 7.0 开始引入，核心设计目标只有一个：让设备能够在一个固定的性能水平上持续运行至少 30 分钟。CTS 测试要求是：开启此模式后，30 分钟内帧率变化不超过 5%，且帧率不能低于未开启模式时的水平。
 
@@ -498,7 +501,7 @@ if (supported) {
 
 ## 散热方案对性能稳定性的影响
 
-温控策略是软件层面的事，但决定温控介入频率的根本因素是硬件散热能力。近年来手机散热技术的进步，直接影响了性能工程师的工作方式。
+温控策略解决的是“温度高了怎么办”，而散热方案决定的是“温度高到什么程度才需要管”。温控策略是软件层面的事，但决定温控介入频率的根本因素是硬件散热能力。近年来手机散热技术的进步，直接影响了性能工程师的工作方式。
 
 ### 石墨散热片
 
@@ -522,6 +525,20 @@ if (supported) {
 这不是软件能改变的因素，但性能工程师需要知道：**在评估"性能下降"问题时，先排除散热条件差异**。比如用户反馈"更新后游戏变卡了"，可能只是这次测试时环境温度比上次高，或者测试前设备没有充分冷却。
 
 [待验证：石墨烯和 VC 均热板的具体散热参数因厂商规格而异，此处为通用描述]
+
+## 版本演进速览
+
+Thermal 管控在 Android 各版本中有几项关键变化，这里做一个梳理：
+
+| Android 版本 | 变化 | 影响 |
+|-------------|------|------|
+| 7.0 (API 24) | 引入 Sustained Performance Mode | 首次提供可预测持续性能的 API |
+| 9 (API 28) | Thermal HAL 1.0（轮询模式） | 标准化温度读取接口 |
+| 10 (API 29) | Thermal HAL 2.0（事件驱动）+ PowerManager Thermal API | App 可感知温控状态 |
+| 12 (API 31) | `getThermalHeadroom()` API | 支持前瞻性热余量预测 |
+| 14 (API 34) | Thermal HAL 从 HIDL 迁移至 AIDL | 接口现代化，无功能变化 |
+
+这些版本节点的共同趋势是：从被动响应走向主动感知，从系统独占走向应用参与。Android 希望应用不只是温控的“被动承受者”，而是能主动配合降载的“合作方”。
 
 ## 常见问题与误区
 
