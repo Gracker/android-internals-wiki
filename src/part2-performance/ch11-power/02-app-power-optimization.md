@@ -1,8 +1,12 @@
 ---
 title: "App 耗电优化"
 chapter: "11.2"
-status: ready-for-review
+status: finalized
+section: "11.2"
 drafted_date: "2026-04-03"
+drafted_by: "openclaw-task2a"
+reviewed_date: "2026-04-04"
+reviewed_by: "openclaw-task6"
 applicable_versions: "Android 5.0 (API 21) - Android 16 (API 36)"
 last_verified: "2026-04-03"
 last_verified_against: "AOSP android-16.0.0_r1"
@@ -105,7 +109,7 @@ try {
 
 ### Android Vitals 对 WakeLock 的监控
 
-Google Play 从 2026 年 3 月起，会将 WakeLock 滥用纳入应用质量评估。具体标准是：如果一个 App 在 24 小时内后台持有的 PARTIAL_WAKE_LOCK 累计超过 2 小时，并且这种情况影响了超过 5% 的用户，App 在 Play Store 中的可见性会降低。
+Google Play 从 2026 年 3 月起，会将 WakeLock 滥用纳入应用质量评估。[待验证: 2026年3月生效日期需与最新 Android Vitals 文档交叉确认]具体标准是：如果一个 App 在 24 小时内后台持有的 PARTIAL_WAKE_LOCK 累计超过 2 小时，并且这种情况影响了超过 5% 的用户，App 在 Play Store 中的可见性会降低。
 
 [已验证: 官方文档, developer.android.com/topic/performance/vitals/wakelock]
 
