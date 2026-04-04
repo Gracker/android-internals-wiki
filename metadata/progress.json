@@ -2425,10 +2425,10 @@
   },
   "2.6": {
     "title": "SurfaceFlinger 与合成",
-    "status": "finalized",
+    "status": "ready-to-publish",
     "file": "src/part1-fundamentals/ch02-rendering/06-surfaceflinger.md",
     "drafted_date": "2026-03-30",
-    "reviewed_date": "2026-04-02",
+    "reviewed_date": "2026-04-04",
     "reviewed_by": "openclaw-task6",
     "review_round": 2,
     "score": {
