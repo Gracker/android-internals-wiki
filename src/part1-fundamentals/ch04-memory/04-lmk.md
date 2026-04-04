@@ -2,10 +2,13 @@
 title: "Low Memory Killer"
 section: "4.4"
 chapter: "4.4"
-status: finalized
+status: ready-for-review
 drafted_date: "2026-03-31"
 reviewed_date: "2026-04-03"
 reviewed_by: "openclaw-task6"
+polish_count: 1
+polish_date: "2026-04-05"
+polish_by: "task2b-polish"
 applicable_versions: "Android 8 (API 26) - Android 16 (API 36)"
 last_verified: "2026-03-31"
 last_verified_against: "AOSP android-16.0.0_r1"
@@ -210,19 +213,11 @@ PSI 相比旧版 `vmpressure` 信号有本质区别。`vmpressure` 基于内存�
 
 ### 杀进程的执行流程
 
-当 PSI 信号触发后，`lmkd` 按以下步骤执行：
+当 PSI 信号触发后，`lmkd` 首先判断当前的压力级别——是"中等"还是"严重"。压力级别直接决定了杀进程的门槛：中等压力下，使用 `ro.lmk.low`（默认 1001，即不杀任何进程）配置的最低 oom_adj；严重压力下，使用 `ro.lmk.critical`（默认 0），这意味着连前台 App 都可能成为候选。
 
-**第一步：确定压力级别。** 根据 PSI 信号区分"中等"和"严重"两个级别。
+确定了门槛之后，`lmkd` 从 `/proc` 读取所有进程的 `oom_score_adj`，按值从大到小排序，然后在满足阈值要求的进程中，选择 `oom_score_adj` 最大的（即优先级最低的）进程，调用 `kill(pid, SIGKILL)` 将其终止。
 
-**第二步：选择目标 oom_adj 阈值。**
-- 中等压力：使用 `ro.lmk.low`（默认 1001，即不杀任何进程）配置的最低 oom_adj
-- 严重压力：使用 `ro.lmk.critical`（默认 0）配置的最低 oom_adj
-
-**第三步：遍历进程列表。** `lmkd` 从 `/proc` 读取所有进程的 `oom_score_adj`，按值从大到小排序。
-
-**第四步：选择并杀死进程。** 在满足 oom_adj 阈值要求的进程中，选择 `oom_score_adj` 最大的（优先级最低的）进程，调用 `kill(pid, SIGKILL)`。
-
-**第五步：等待并评估。** 杀死一个进程后等待一小段时间，检查 PSI 信号是否缓解。如果仍然有压力，继续杀下一个优先级最低的进程。
+杀死一个进程后，`lmkd` 不会立刻继续——它会等待一小段时间，观察 PSI 信号是否缓解。如果压力依然存在，才会选择下一个优先级最低的进程继续杀。这种"杀一个、等一等、看效果"的策略，避免了过度杀进程造成的性能抖动。
 
 [已验证: 官方文档, source.android.com/docs/core/perf/lmkd]
 
@@ -244,45 +239,31 @@ PSI 相比旧版 `vmpressure` 信号有本质区别。`vmpressure` 基于内存�
 
 当一个缓存 App 被 LMK 杀死后，如果用户切回这个 App，系统必须重新走完整的冷启动流程：Zygote fork → 加载 APK → 初始化 Application → 创建 Activity → 布局渲染。这个过程可能需要数百毫秒甚至数秒，远比从缓存中恢复（通常 < 100ms）慢得多。
 
-连锁反应是这样的：
-
-1. 系统内存不足 → LMK 杀掉后台 App
-2. 用户切回被杀的 App → 冷启动，耗费大量 CPU 和 I/O
-3. 冷启动过程中大量内存分配 → 加剧内存压力
-4. 内存压力再次触发 LMK → 又杀掉其他后台 App
-5. 循环往复
+这个连锁反应是自我加剧的：LMK 杀掉后台 App 后，用户切回时触发冷启动，冷启动消耗大量 CPU 和 I/O，同时分配大量内存，这又加剧了内存压力，导致 LMK 再次行动。在重度使用场景下（比如用户频繁在多个 App 之间切换），这个循环会持续运转，系统整体性能螺旋式下降。
 
 在 Perfetto 中，这种模式表现为：我们会在 System Trace 中看到 `lmkd` 进程频繁活动（kill 事件密集出现），同时在 App 进程中看到大量的冷启动 pattern（Zygote fork → ActivityThread.main → Activity.onCreate）。
 
-### 如何判断 LMK 是否在影响你的 App
+### 如何判断 LMK 是否在影响 App
 
 如果我们怀疑 LMK 在杀死后台进程，可以通过以下方法确认：
 
-**方法一：logcat 过滤**
+最直接的确认方式是查看 logcat。`lmkd` 在杀死进程时会输出日志，包含被杀进程的 PID、oom_score_adj 值和释放的内存大小：
 
 ```bash
 adb logcat | grep "lmkd"
 ```
 
-`lmkd` 在杀死进程时会输出日志，包含被杀进程的 PID、oom_score_adj 值和释放的内存大小。
-
-**方法二：dumpsys meminfo**
+如果想了解系统整体的内存水位，可以用 `dumpsys meminfo` 查看详情。如果输出中 `Cached` 和 `Free` 的值持续很低，说明系统处于内存紧张状态：
 
 ```bash
 adb shell dumpsys meminfo --checkin
 ```
 
-查看系统整体内存使用情况。如果 `Cached` 和 `Free` 的值持续很低，说明系统处于内存紧张状态。
-
-**方法三：Perfetto Trace**
-
-在 Perfetto 中抓取 trace 时，确保包含 `meminfo` 和 `lmkd` 相关的 ftrace 事件。在 Perfetto UI 中，我们可以在 `lmkd` track 上看到每次杀进程的记录，鼠标悬停可以看到被杀进程的详细信息。
+更精确的分析需要 Perfetto。抓取 trace 时确保包含 `meminfo` 和 `lmkd` 相关的 ftrace 事件，然后在 Perfetto UI 中找到 `lmkd` track——每次杀进程都会显示为一条记录，鼠标悬停可以看到被杀进程的详细信息。
 
 [图：Perfetto 中 lmkd track 的示例，标注 kill 事件、被杀进程名、oom_score_adj 值]
 
-**方法四：Process Lifecycle 监控**
-
-在 App 中注册 `ActivityManager.OnTrimMemory` 回调。当系统回调 `TRIM_MEMORY_UI_HIDDEN` 或更低级别时，说明系统正在要求 App 释放内存——这通常是 LMK 即将行动的前兆。
+最后，在 App 内部也可以感知到 LMK 的"前兆"。注册 `ActivityManager.OnTrimMemory` 回调后，当系统回调 `TRIM_MEMORY_UI_HIDDEN` 或更低级别时，说明系统正在要求 App 释放内存——这通常是 LMK 即将行动的信号。
 
 ```java
 // ComponentCallbacks2 的 onTrimMemory 回调级别
@@ -292,6 +273,8 @@ TRIM_MEMORY_RUNNING_CRITICAL = 15 // 内存严重紧张
 TRIM_MEMORY_MODERATE        = 60  // 进程在 LRU 列表中间，可能被杀
 TRIM_MEMORY_COMPLETE        = 80  // 进程即将被杀，释放一切可以释放的
 ```
+
+这些回调级别的数值并不是 oom_score_adj——它们是独立的一套语义。`TRIM_MEMORY_COMPLETE`（80）出现时，进程大概率已经被列入 LMK 的杀进程候选名单，此时应该释放所有可重建的资源（Bitmap 缓存、数据库连接等），尽量降低自身的内存占用以"自救"。
 
 [已验证: 官方文档, developer.android.com/reference/android/content/ComponentCallbacks2]
 
@@ -307,7 +290,7 @@ TRIM_MEMORY_COMPLETE        = 80  // 进程即将被杀，释放一切可以释�
 
 **误区二："后台 Service 不会被杀。"**
 
-错误。普通后台 Service 的进程优先级是 `SERVICE_ADJ（500）`，远高于 CACHED 进程但仍是可杀的。如果 Service 需要长时间运行且不应该被杀，需要：
+这是一个常见的误解。普通后台 Service 的进程优先级是 `SERVICE_ADJ（500）`，远高于 CACHED 进程但仍是可杀的。如果 Service 需要长时间运行且不应该被杀，需要：
 
 - 使用前台 Service（`startForeground()`），这会将进程提升到 `PERCEPTIBLE_ADJ（200）`
 - 或者使用 WorkManager，它会在被杀后自动重新调度
