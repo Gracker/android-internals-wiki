@@ -1,13 +1,13 @@
 ---
 title: "Hardware Layer"
 chapter: "2.7"
-status: ready-for-review
+status: ready-to-publish
 drafted_date: "2026-03-30"
 applicable_versions: "Android 3.0 (API 11) - Android 16 (API 36)"
 last_verified: "2026-03-30"
 last_verified_against: "AOSP android-16.0.0_r1"
 confidence: medium
-reviewed_date: "2026-04-02"
+reviewed_date: "2026-04-04"
 reviewed_by: openclaw-task6
 polish_count: 1
 polish_date: "2026-04-04"

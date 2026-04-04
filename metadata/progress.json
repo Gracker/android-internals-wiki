@@ -450,7 +450,18 @@
       "extensions_covered": 1,
       "extensions_total": 2,
       "verification_level": "L2",
-      "word_count": "~8500"
+      "word_count": "~8500",
+      "status": "ready-to-publish",
+      "finalized_at": "2026-04-04T21:20:00+08:00",
+      "review_v2_date": "2026-04-04",
+      "review_v2_by": "openclaw-task6",
+      "review_v2_score": {
+        "structure": 5,
+        "expression": 5,
+        "consistency": 5,
+        "verification": 4,
+        "metadata": 5
+      }
     },
     {
       "section": "1.4",
