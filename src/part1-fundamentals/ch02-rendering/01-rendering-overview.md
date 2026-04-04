@@ -1,7 +1,7 @@
 ---
 title: "Android 渲染架构全景"
 chapter: "2.1"
-status: finalized
+status: ready-for-review
 applicable_versions: "Android 12 (API 31) - Android 16 (API 36)"
 last_verified: "2026-03-30"
 last_verified_against: "AOSP android-16.0.0_r1, 官方文档最新版本"
@@ -9,6 +9,9 @@ confidence: high
 drafted_date: "2026-03-30"
 reviewed_date: "2026-04-02T01:20"
 reviewed_by: "openclaw-task6"
+polish_count: 1
+polish_date: "2026-04-05"
+polish_by: "task2b-polish"
 sources:
   - type: official
     path: "https://developer.android.com/guide/topics/graphics/overview"
@@ -20,8 +23,8 @@ sources:
     path: "Cubox/Android GUI系统之SurfaceFlinger（15）服务端分析4-handleMessageRefresh处理_51CTO博客_Android surfaceflinger-2022-10.md"
   - type: research
     path: "AOSP 源码分析 frameworks/base/core/java/android/view"
-tags: ['rendering', 'hwui', 'skia', 'surfaceflinger', 'gpu', 'triple-buffering']
-related_chapters: ["2.3", "2.4", "2.6", "2.10"]
+tags: ['rendering', 'hwui', 'skia', 'surfaceflinger', 'gpu', 'triple-buffering', 'rendering-pipeline', 'bufferqueue', 'vsync', 'displaylist', 'rendernode']
+related_chapters: ["2.2", "2.3", "2.4", "2.5", "2.6", "2.10"]
 ---
 
 # Android 渲染架构全景
@@ -160,7 +163,7 @@ RenderThread.drawFrame()
 │   └── RenderNode.draw()
 ```
 
-GPU 渲染管线是一条高度并行的流水线。首先是顶点看色器处理顶点位置，把 View 的二维坐标转换为 GPU 可理解的归一化坐标；接着图元装配把顶点组装成三角形——因为 GPU 最擅长处理的基本图元就是三角形，一个矩形会被拆成两个三角形来渲染；光栅化阶段把这些几何图元转换为实际的像素片段（fragment），每个片段对应屏幕上的一个或多个像素；片段着色器为每个片段计算最终的颜色值，这里会应用纹理、混合模式、抗锯齿等效果；最后经过深度测试、模板测试和颜色混合，像素被写入帧缓冲区。
+GPU 渲染管线是一条高度并行的流水线。首先是顶点着色器处理顶点位置，把 View 的二维坐标转换为 GPU 可理解的归一化坐标；接着图元装配把顶点组装成三角形——因为 GPU 最擅长处理的基本图元就是三角形，一个矩形会被拆成两个三角形来渲染；光栅化阶段把这些几何图元转换为实际的像素片段（fragment），每个片段对应屏幕上的一个或多个像素；片段着色器为每个片段计算最终的颜色值，这里会应用纹理、混合模式、抗锯齿等效果；最后经过深度测试、模板测试和颜色混合，像素被写入帧缓冲区。
 
 在 Perfetto 中，我们可以通过 GPU Track 观察这条管线的执行时间。如果 GPU Track 上的忙碌区间持续超过了 VSync 周期（比如在 60Hz 设备上超过了 16.67ms），就意味着 GPU 成了瓶颈——下一帧的渲染会被延迟，用户感知到的就是掉帧。
 
@@ -294,9 +297,9 @@ T6: 生产者 dequeueBuffer() → 获得缓冲区 A（重用）
 
 ### 同步机制
 
-**Fence 机制**：
+**Fence 机制**（以下为示意性伪代码，展示 Fence 的使用模式）：
 ```cpp
-// 同步栅栏，确保正确的使用顺序
+// [示意性伪代码] Fence 的基本使用模式
 sp<Fence> producerAcquireFence; // 生产者完成绘制的栅栏
 sp<Fence> consumerReleaseFence; // 消费者完成使用的栅栏
 
@@ -492,8 +495,9 @@ canvas.drawRect(rect, paint);
 renderNode.endRecording();
 ```
 
-3. **准备阶段**：
+3. **准备阶段**（示意性伪代码，展示 staging 合并逻辑）：
 ```cpp
+// [示意性伪代码] staging → 主区的合并逻辑
 void RenderNode::prepareTreeImpl(TreeInfo info) {
     // 将 staging 区属性合并到主区
     mProperties = mStagingProperties;
@@ -506,8 +510,9 @@ void RenderNode::prepareTreeImpl(TreeInfo info) {
 }
 ```
 
-4. **渲染阶段**：
+4. **渲染阶段**（示意性伪代码，展示递归绘制逻辑）：
 ```cpp
+// [示意性伪代码] RenderNode 递归绘制
 void RenderNode::draw(RenderProperties& props, RenderThread& renderThread) {
     // 执行 DisplayList
     if (mDisplayList) {
@@ -552,8 +557,9 @@ RenderThread：
 3. 通过 GPU 进行实际渲染
 ```
 
-**同步机制**：
+**同步机制**（以下为示意性伪代码，展示两线程的协作模式）：
 ```cpp
+// [示意性伪代码] UI 线程与 RenderThread 的协作
 // UI 线程触发渲染
 void RenderThread::invokeDrawCallbacks() {
     // 等待 RenderThread 准备好
@@ -578,22 +584,6 @@ void OpenGLRenderer::draw(const Frame& frame) {
 
 [已验证: AOSP android-16.0.0_r1, frameworks/base/libs/hwui/]
 
-## 自动发现：Android 16 渲染新特性
-
-从 AOSP 源码分析发现，Android 16 在渲染方面引入了重要特性：
-
-### RuntimeColorFilter 和 RuntimeXfermode
-
-**新增特性**：
-- 开发者可以使用 AGSL（Android Graphics Shading Language）创建自定义图形效果
-- 支持阈值、褐色调、色相饱和度等实时滤镜效果
-
-**性能影响**：
-- 减少了自定义 View 的开发复杂度
-- 通过 GPU 着色器实现，性能优于 CPU 计算
-
-[自动发现: AOSP android-16.0.0_r1, frameworks/native/services/surfaceflinger/]
-
 ## Vulkan 渲染后端在 Android 上的现状与性能优势
 
 ### Vulkan 在 Android 中的采用
@@ -615,17 +605,15 @@ vkBindImageMemory(device, image, memory, 0);
 
 ### RenderEngine 与 GPU Composition 的区别
 
-RenderEngine 是 Skia 的渲染后端，运行在 RenderThread 中，负责把 App 的 DisplayList 指令转化为实际的 GPU 绘制调用——它处理的是单个 App 的 UI 渲染。GPU Composition 则是 SurfaceFlinger 的合成过程，运行在 SurfaceFlinger 进程中，负责把多个 App 的渲染结果叠加在一起——它处理的是多个 Layer 的最终合成。
-
 RenderEngine 和 GPU Composition 是两个容易混淆的概念，但它们的职责截然不同。RenderEngine 是 Skia 的渲染后端，运行在 RenderThread 中，负责把 App 的 DisplayList 指令转化为实际的 GPU 绘制调用——它处理的是单个 App 的 UI 渲染。GPU Composition 则是 SurfaceFlinger 的合成过程，运行在 SurfaceFlinger 进程中，负责把多个 App 的渲染结果叠加在一起——它处理的是多个 Layer 的最终合成。
 
-简单来说，RenderEngine 画的是单个 App 的 UI（"画一个按钮"、"绘制一段文字"），GPU Composition 组的是多个 App 的画面（"把微信的界面叠在启动器上面，再加一层状态栏"）。在 Perfetto 中，RenderEngine 的耗时体现在 RenderThread track 上，GPU Composition 的耗时体现在 SurfaceFlinger 进程的 GPU 活动中。
+用更直观的方式来说，RenderEngine 画的是单个 App 的 UI（"画一个按钮"、"绘制一段文字"），GPU Composition 组的是多个 App 的画面（"把微信的界面叠在启动器上面，再加一层状态栏"）。在 Perfetto 中，RenderEngine 的耗时体现在 RenderThread track 上，GPU Composition 的耗时体现在 SurfaceFlinger 进程的 GPU 活动中。
 
 [待验证: Vulkan 官方文档和性能基准测试]
 
 ## 在 Perfetto 中的表现
 
-渲染架构中的各个组件在 Perfetto Trace 中都有明确的 Track 对应，这是我们定位渲染问题的关键入口。
+了解了渲染架构的各环节之后，最实际的问题是：这些东西在 Perfetto Trace 中长什么样？渲染管线的每一个阶段在 Trace 中都有明确的 Track 对应，这是我们定位渲染问题的关键入口。
 
 **主线程 Track**（进程名下的主线程条）：Measure、Layout、Draw 三个阶段的执行时间在这里可见。正常情况下一次 performTraversals 应该在一个 VSync 周期内完成（60Hz 设备上不超过 16.67ms）。如果看到 performTraversals 的执行时间超过了 VSync 周期，或者 Measure 阶段出现了两次耗时尖峰，就需要关注 View 树的复杂度了。
 
@@ -653,7 +641,7 @@ RenderEngine 和 GPU Composition 是两个容易混淆的概念，但它们的�
 
 ## 版本演进
 
-Android 渲染架构经历了多次重大变革，每一次都深刻影响了性能优化的方式：
+上面的全景图是 Android 16 的渲染架构。但这个架构不是一天建成的——它经历了十多年的迭代，每一次重大变更都改变了性能优化的思路。以下是关键里程碑：
 
 **Android 3.0（Honeycomb，2011）** 引入了硬件加速渲染和 HWUI。在此之前，所有 UI 都通过 Skia CPU 渲染（即本节提到的软件渲染模式），RenderThread 不存在，所有绘制操作都在主线程上同步执行。硬件加速的引入带来了 DisplayList/RenderNode 架构——主线程只记录指令，实际渲染交给 GPU。
 
@@ -669,7 +657,7 @@ Android 渲染架构经历了多次重大变革，每一次都深刻影响了性
 
 **Android 13（T，2022）** 进一步优化了 Vulkan 后端的支持，更多设备默认使用 Vulkan 进行 UI 渲染。
 
-**Android 16（2025）** 在渲染架构上引入了进一步的优化，包括 BufferQueue 管理的改进和 HWUI 渲染管线的内部重构。
+**Android 16（2025）** 在渲染架构上引入了多项改进：AsyncBufferQueue 优化了缓冲区队列管理效率、HWUI 渲染管线进行了内部重构，同时面向开发者新增了基于 AGSL（Android Graphics Shading Language）的 RuntimeColorFilter 和 RuntimeXfermode，支持通过 GPU 着色器实现阈值、褐色调、色相饱和度等自定义图形效果，减少了自定义 View 的开发复杂度。
 
 ## 常见问题与误区
 

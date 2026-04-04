@@ -339,9 +339,10 @@
       "title": "Activity Manager Service 与性能分析",
       "file": "src/part1-fundamentals/ch01-architecture/08-activity-manager.md",
       "priority": 80,
-      "status": "pending",
+      "status": "completed",
       "created_date": "2026-04-04",
-      "source": "task2a-knowledge-gap"
+      "source": "task2a-knowledge-gap",
+      "completed_at": "2026-04-05T01:05:00+08:00"
     }
   ]
 }
