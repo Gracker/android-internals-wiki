@@ -1,7 +1,7 @@
 ---
 title: "卡顿分析方法论"
 chapter: "7.3"
-status: ready-for-review
+status: finalized
 reviewed_date: "2026-04-04"
 reviewed_by: openclaw-task6
 rework_date: "2026-04-04"
@@ -138,6 +138,8 @@ data_sources: {
 
 在 Perfetto 中，你可以把 App 的 MainThread、RenderThread 和 SurfaceFlinger 主线程 Pin 到一起（点击线程名左边的图钉按钮），这样就能在同一个视图中看到三者之间的时间关系 [来源: obsidian/Personal-Knowlodge/source/Android-Perfetto-03-how-to-analysis-perfetto.md]。高爷在文章中提到，这是他日常分析掉帧问题最常用的技巧——把从 App 到 SF 的关键线程放在一起，一眼就能看出是 App 画得慢还是 SF 合成慢。
 
+[待补充：Trace 截图 — 主线程、RenderThread、SurfaceFlinger 三线程 Pin 在一起的视图，标注掉帧处 BufferQueue 为空的时刻]
+
 ### 第五步：分析根因
 
 确认了掉帧之后，接下来的问题是：**这帧为什么画得慢？**
@@ -164,6 +166,8 @@ Actual Timeline 展示的是这一帧实际执行的过程。从 Choreographer �
 
 当 Actual 的某个 Slice 超过了对应的 Expected Slice，就意味着这个环节出现了延迟。在 Perfetto UI 中，超时的帧会被标记为红色，一目了然。
 
+[待补充：Trace 截图 — Perfetto 中 FrameTimeline 的 Expected vs Actual Track 对比图，标注红色超时帧]
+
 这个机制的精妙之处在于，它把"是否卡顿"的判断标准化了。不再需要人工去对比帧颜色和 BufferQueue 状态——FrameTimeline 直接告诉你每一帧有没有超时、在哪个环节超时、超了多少。它同时覆盖了 App 侧（doFrame + RenderThread）和 SurfaceFlinger 侧（合成），用同一个 token 关联起来，可以在 Perfetto 中通过点击 Slice 直接跳转到对应的 App 或 SF 帧 [已验证: perfetto.dev Trace Processor 文档]。
 
 ### 没有 FrameTimeline 怎么办
@@ -184,6 +188,8 @@ Actual Timeline 展示的是这一帧实际执行的过程。从 Choreographer �
 
 在 Perfetto 中，线程的状态用不同的颜色表示。Running（绿色）是正在执行，Sleep（灰色）是等待事件，Runnable（蓝色）是准备好执行但还没被调度上 CPU，Uninterruptible Sleep（深橙色）是在等待 I/O 且不可中断。对于流畅性分析，最值得关注的是 Runnable 和 Uninterruptible Sleep 这两种状态。
 
+[待补充：Trace 截图 — Perfetto 线程状态颜色图例，标注 Running（绿）、Runnable（蓝）、Sleep（灰）、Uninterruptible Sleep（深橙）]
+
 ### Runnable 过长：CPU 没空理你
 
 Runnable 状态表示线程已经准备好执行，正在排队等 CPU 分配时间片。如果一段任务前面有一段很长的蓝色（Runnable），意味着线程虽然被唤醒了，但 CPU 在忙别的事情，没顾上执行它。
@@ -191,6 +197,8 @@ Runnable 状态表示线程已经准备好执行，正在排队等 CPU 分配时
 在 Perfetto 中，你可以通过点击 Runnable 状态查看唤醒源（Waker），了解是谁唤醒了这个线程 [来源: obsidian/Personal-Knowlodge/source/Android-Perfetto-03-how-to-analysis-perfetto.md]。更强大的功能是 **Critical Path**——Perfetto 会自动追踪与当前任务有依赖关系的整条链路。点击一个 Running 状态，在下方信息区点击 "Critical path"，就能看到从最初唤醒到当前执行的全部依赖链。
 
 高爷在 Perfetto 系列第三篇中详细介绍了这个功能的用法 [来源: obsidian/Personal-Knowlodge/source/Android-Perfetto-03-how-to-analysis-perfetto.md]：比如你想看 RenderThread 是被谁唤醒的，点击 Running 前面的 Runnable 状态，在下方信息区的 Related thread states 中就能看到 Waker 信息。连续追踪，就能还原出完整的唤醒链路：SurfaceFlinger → MainThread → RenderThread。
+
+[待补充：Trace 截图 — Critical Path 功能演示，展示从 SF 唤醒到 RT 执行的完整依赖链]
 
 Runnable 过长的典型场景包括：整机高负载（所有核心都满了，你的线程排不上队）、CPU 频率过低（任务虽然被调度上去了但执行慢）、线程被调度到了小核（大核被其他高优先级任务占满）。
 
@@ -302,7 +310,7 @@ window.addOnFrameMetricsAvailableListener(
 );
 ```
 
-这里有一个版本兼容性的细节需要注意。 是 Android 12（API 31）才引入的常量——在那之前，FrameMetrics 只提供了各阶段的耗时数据，但没有系统计算的帧预算值。对于需要兼容 Android 7-11 的应用，我们可以根据屏幕刷新率自行计算 deadline（60Hz 对应 16.6ms，90Hz 对应 11.1ms，120Hz 对应 8.3ms）。这种手动计算虽然不如系统提供的 DEADLINE 精确（系统的 DEADLINE 会考虑 VSync offset 和当前帧率策略），但在绝大多数场景下足够用于判断是否卡顿。[已确认: developer.android.com/reference/android/view/FrameMetrics, DEADLINE 从 API 31 引入]
+这里有一个版本兼容性的细节需要注意。`FrameMetrics.DEADLINE` 是 Android 12（API 31）才引入的常量——在那之前，FrameMetrics 只提供了各阶段的耗时数据，但没有系统计算的帧预算值。对于需要兼容 Android 7-11 的应用，我们可以根据屏幕刷新率自行计算 deadline（60Hz 对应 16.6ms，90Hz 对应 11.1ms，120Hz 对应 8.3ms）。这种手动计算虽然不如系统提供的 DEADLINE 精确（系统的 DEADLINE 会考虑 VSync offset 和当前帧率策略），但在绝大多数场景下足够用于判断是否卡顿。[已确认: developer.android.com/reference/android/view/FrameMetrics, DEADLINE 从 API 31 引入]
 
 关键指标说明：
 
@@ -391,9 +399,9 @@ ORDER BY sched.dur DESC
 LIMIT 20;
 ```
 
-注意这个查询和调度延迟的区别。 找的是线程正在执行、但因为 CPU 被其他线程抢占而被迫让出的片段——它的  是线程在 CPU 上实际执行的时间，不是等待时间。这个值越大，说明主线程被频繁打断，CPU 竞争激烈。
+注意这个查询和调度延迟的区别。`sched.end_state = 'R'` 找的是线程正在执行、但因为 CPU 被其他线程抢占而被迫让出的片段——它的 `dur` 是线程在 CPU 上实际执行的时间，不是等待时间。这个值越大，说明主线程被频繁打断，CPU 竞争激烈。
 
-如果我们真正想测量的是**调度延迟**（从线程被唤醒到它真正上 CPU 开始执行的时间差），需要结合  事件来计算：
+如果我们真正想测量的是**调度延迟**（从线程被唤醒到它真正上 CPU 开始执行的时间差），需要结合 `sched_wakeup` 事件来计算：
 
 ```sql
 -- [已确认: 结合 sched_wakeup 计算真正的调度延迟（wakeup latency）]
