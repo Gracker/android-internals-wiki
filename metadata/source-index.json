@@ -1,1014 +1,1012 @@
-{
-  "files": [
-    {
-      "path": "Cubox/朱峰的阅读分享 (2025年3月22日17时)-2025-03-22.md",
-      "title": "朱峰的阅读分享 (2025年3月22日17时)",
-      "scores": {
-        "relevance": 0,
-        "technical_depth": 1,
-        "timeliness": 5,
-        "verifiability": 4
-      },
-      "total": 10,
-      "chapters": [],
-      "quality": "medium",
-      "scan_date": "2026-04-03T10:49:46.727154"
+[
+  {
+    "path": "Cubox/朱峰的阅读分享 (2025年3月22日17时)-2025-03-22.md",
+    "title": "朱峰的阅读分享 (2025年3月22日17时)",
+    "scores": {
+      "relevance": 0,
+      "technical_depth": 1,
+      "timeliness": 5,
+      "verifiability": 4
     },
-    {
-      "path": "Cubox/block io生命历程-2022-01-14.md",
-      "title": "block io生命历程",
-      "scores": {
-        "relevance": 0,
-        "technical_depth": 1,
-        "timeliness": 5,
-        "verifiability": 4
-      },
-      "total": 10,
-      "chapters": [],
-      "quality": "medium",
-      "scan_date": "2026-04-03T10:49:46.727402"
+    "total": 10,
+    "chapters": [],
+    "quality": "medium",
+    "scan_date": "2026-04-03T10:49:46.727154"
+  },
+  {
+    "path": "Cubox/block io生命历程-2022-01-14.md",
+    "title": "block io生命历程",
+    "scores": {
+      "relevance": 0,
+      "technical_depth": 1,
+      "timeliness": 5,
+      "verifiability": 4
     },
-    {
-      "path": "Cubox/谈设计决策（1）-2026-03-11.md",
-      "title": "谈设计决策（1）",
-      "scores": {
-        "relevance": 0,
-        "technical_depth": 1,
-        "timeliness": 5,
-        "verifiability": 4
-      },
-      "total": 10,
-      "chapters": [],
-      "quality": "medium",
-      "scan_date": "2026-04-03T10:49:46.731905"
+    "total": 10,
+    "chapters": [],
+    "quality": "medium",
+    "scan_date": "2026-04-03T10:49:46.727402"
+  },
+  {
+    "path": "Cubox/谈设计决策（1）-2026-03-11.md",
+    "title": "谈设计决策（1）",
+    "scores": {
+      "relevance": 0,
+      "technical_depth": 1,
+      "timeliness": 5,
+      "verifiability": 4
     },
-    {
-      "path": "Cubox/clk2025-2025-11-14.md",
-      "title": "clk2025",
-      "scores": {
-        "relevance": 0,
-        "technical_depth": 2,
-        "timeliness": 5,
-        "verifiability": 4
-      },
+    "total": 10,
+    "chapters": [],
+    "quality": "medium",
+    "scan_date": "2026-04-03T10:49:46.731905"
+  },
+  {
+    "path": "Cubox/clk2025-2025-11-14.md",
+    "title": "clk2025",
+    "scores": {
+      "relevance": 0,
+      "technical_depth": 2,
+      "timeliness": 5,
+      "verifiability": 4
+    },
+    "total": 11,
+    "chapters": [],
+    "quality": "medium",
+    "scan_date": "2026-04-03T10:49:46.732602"
+  },
+  {
+    "title": "【Android 13源码分析】应用启动动画-app_transition-1 - 掘金",
+    "path": "Cubox/【Android 13源码分析】应用启动动画-app_transition-1 - 掘金-2024-06-01.md",
+    "score": {
       "total": 11,
-      "chapters": [],
-      "quality": "medium",
-      "scan_date": "2026-04-03T10:49:46.732602"
+      "relevance": 0,
+      "technical_depth": 3,
+      "timeliness": 3,
+      "verifiability": 5,
+      "matched_chapters": []
     },
-    {
-      "title": "【Android 13源码分析】应用启动动画-app_transition-1 - 掘金",
-      "path": "Cubox/【Android 13源码分析】应用启动动画-app_transition-1 - 掘金-2024-06-01.md",
-      "score": {
-        "total": 11,
-        "relevance": 0,
-        "technical_depth": 3,
-        "timeliness": 3,
-        "verifiability": 5,
-        "matched_chapters": []
-      },
-      "quality": "medium",
-      "content_preview": "# 【Android 13源码分析】应用启动动画-app_transition-1 - 掘金\n\n根据之前的分析，首先执行的是 2个 app_transtion 动画和一个壁纸的 window_animation 动画。 这3个动画几乎是同时执行和结束，不过用户视觉干啥最明显的其实还是应用启动的 \n\n[Read in Cubox](https://cubox.pro/web/card/7196602"
+    "quality": "medium",
+    "content_preview": "# 【Android 13源码分析】应用启动动画-app_transition-1 - 掘金\n\n根据之前的分析，首先执行的是 2个 app_transtion 动画和一个壁纸的 window_animation 动画。 这3个动画几乎是同时执行和结束，不过用户视觉干啥最明显的其实还是应用启动的 \n\n[Read in Cubox](https://cubox.pro/web/card/7196602"
+  },
+  {
+    "title": "Hummer Flutter引擎 Flutter破坏Dart堆数据",
+    "path": "Cubox/【Hummer Flutter引擎】Flutter破坏Dart堆数据问题分析和解决-2022-04-30.md",
+    "scores": {
+      "relevance": 4,
+      "technical_depth": 4,
+      "timeliness": 3,
+      "verifiability": 4
     },
-    {
-      "title": "Hummer Flutter引擎 Flutter破坏Dart堆数据",
-      "path": "Cubox/【Hummer Flutter引擎】Flutter破坏Dart堆数据问题分析和解决-2022-04-30.md",
-      "scores": {
-        "relevance": 4,
-        "technical_depth": 4,
-        "timeliness": 3,
-        "verifiability": 4
+    "total": 15,
+    "quality": "medium",
+    "chapters": [
+      {
+        "chapter": "ch05-渲染",
+        "confidence": "high"
       },
-      "total": 15,
-      "quality": "medium",
-      "chapters": [
-        {
-          "chapter": "ch05-渲染",
-          "confidence": "high"
-        },
-        {
-          "chapter": "ch07-内存",
-          "confidence": "high"
-        }
-      ],
-      "summary": "Hummer Flutter引擎Dart堆数据异常，堆分代机制与新生代老年代定位",
-      "scan_date": "2026-04-03T20:51:01.457952"
+      {
+        "chapter": "ch07-内存",
+        "confidence": "high"
+      }
+    ],
+    "summary": "Hummer Flutter引擎Dart堆数据异常，堆分代机制与新生代老年代定位",
+    "scan_date": "2026-04-03T20:51:01.457952"
+  },
+  {
+    "title": "Hummer 引擎优化系列 究极GC难题定位记",
+    "path": "Cubox/【Hummer 引擎优化系列】究极GC难题定位记-2022-07-08.md",
+    "scores": {
+      "relevance": 4,
+      "technical_depth": 5,
+      "timeliness": 3,
+      "verifiability": 4
     },
-    {
-      "title": "Hummer 引擎优化系列 究极GC难题定位记",
-      "path": "Cubox/【Hummer 引擎优化系列】究极GC难题定位记-2022-07-08.md",
-      "scores": {
-        "relevance": 4,
-        "technical_depth": 5,
-        "timeliness": 3,
-        "verifiability": 4
+    "total": 16,
+    "quality": "high",
+    "chapters": [
+      {
+        "chapter": "ch05-渲染",
+        "confidence": "high"
       },
-      "total": 16,
-      "quality": "high",
-      "chapters": [
-        {
-          "chapter": "ch05-渲染",
-          "confidence": "high"
-        },
-        {
-          "chapter": "ch07-内存",
-          "confidence": "high"
-        }
-      ],
-      "summary": "Flutter 2.2.3 Expando崩溃GC问题定位，源码级_rehash分析",
-      "scan_date": "2026-04-03T20:51:01.457952"
+      {
+        "chapter": "ch07-内存",
+        "confidence": "high"
+      }
+    ],
+    "summary": "Flutter 2.2.3 Expando崩溃GC问题定位，源码级_rehash分析",
+    "scan_date": "2026-04-03T20:51:01.457952"
+  },
+  {
+    "title": "Shader篇 GPU架构与其逻辑管线",
+    "path": "Cubox/【Shader篇】GPU架构与其逻辑管线-2023-08-10.md",
+    "scores": {
+      "relevance": 4,
+      "technical_depth": 4,
+      "timeliness": 4,
+      "verifiability": 3
     },
-    {
-      "title": "Shader篇 GPU架构与其逻辑管线",
-      "path": "Cubox/【Shader篇】GPU架构与其逻辑管线-2023-08-10.md",
-      "scores": {
-        "relevance": 4,
-        "technical_depth": 4,
-        "timeliness": 4,
-        "verifiability": 3
-      },
-      "total": 15,
-      "quality": "medium",
-      "chapters": [
-        {
-          "chapter": "ch05-渲染",
-          "confidence": "high"
-        }
-      ],
-      "summary": "GPU架构详解：PCIe、GPC/TPC/SM、渲染管线与GPU关联",
-      "scan_date": "2026-04-03T20:51:01.457952"
+    "total": 15,
+    "quality": "medium",
+    "chapters": [
+      {
+        "chapter": "ch05-渲染",
+        "confidence": "high"
+      }
+    ],
+    "summary": "GPU架构详解：PCIe、GPC/TPC/SM、渲染管线与GPU关联",
+    "scan_date": "2026-04-03T20:51:01.457952"
+  },
+  {
+    "title": "Simpleperf Android的CPU分析性能优化利器",
+    "path": "Cubox/【Simpleperf】Android的CPU分析，性能优化利器_Yngz_Miao的博客-CSDN博客_simpleperf-2023-01-12.md",
+    "scores": {
+      "relevance": 5,
+      "technical_depth": 4,
+      "timeliness": 4,
+      "verifiability": 5
     },
-    {
-      "title": "Simpleperf Android的CPU分析性能优化利器",
-      "path": "Cubox/【Simpleperf】Android的CPU分析，性能优化利器_Yngz_Miao的博客-CSDN博客_simpleperf-2023-01-12.md",
-      "scores": {
-        "relevance": 5,
-        "technical_depth": 4,
-        "timeliness": 4,
-        "verifiability": 5
-      },
-      "total": 18,
-      "quality": "high",
-      "chapters": [
-        {
-          "chapter": "ch11-Profiling",
-          "confidence": "high"
-        }
-      ],
-      "summary": "Simpleperf工具完整介绍，NDK命令行CPU性能分析实战",
-      "scan_date": "2026-04-03T20:51:01.457952"
+    "total": 18,
+    "quality": "high",
+    "chapters": [
+      {
+        "chapter": "ch11-Profiling",
+        "confidence": "high"
+      }
+    ],
+    "summary": "Simpleperf工具完整介绍，NDK命令行CPU性能分析实战",
+    "scan_date": "2026-04-03T20:51:01.457952"
+  },
+  {
+    "title": "Surface的size分析",
+    "path": "Cubox/【V】Surface的size分析 - 掘金-2024-06-14.md",
+    "scores": {
+      "relevance": 4,
+      "technical_depth": 4,
+      "timeliness": 4,
+      "verifiability": 4
     },
-    {
-      "title": "Surface的size分析",
-      "path": "Cubox/【V】Surface的size分析 - 掘金-2024-06-14.md",
-      "scores": {
-        "relevance": 4,
-        "technical_depth": 4,
-        "timeliness": 4,
-        "verifiability": 4
-      },
-      "total": 16,
-      "quality": "high",
-      "chapters": [
-        {
-          "chapter": "ch05-渲染",
-          "confidence": "high"
-        }
-      ],
-      "summary": "Surface的render size与screen size分析，buffer与显示大小区别",
-      "scan_date": "2026-04-03T20:51:01.457952"
+    "total": 16,
+    "quality": "high",
+    "chapters": [
+      {
+        "chapter": "ch05-渲染",
+        "confidence": "high"
+      }
+    ],
+    "summary": "Surface的render size与screen size分析，buffer与显示大小区别",
+    "scan_date": "2026-04-03T20:51:01.457952"
+  },
+  {
+    "title": "native_window_set_buffers_timestamp介绍",
+    "path": "Cubox/【V】native_window_set_buffers_timestamp介绍 - 掘金-2024-06-16.md",
+    "scores": {
+      "relevance": 3,
+      "technical_depth": 4,
+      "timeliness": 4,
+      "verifiability": 5
     },
-    {
-      "title": "native_window_set_buffers_timestamp介绍",
-      "path": "Cubox/【V】native_window_set_buffers_timestamp介绍 - 掘金-2024-06-16.md",
-      "scores": {
-        "relevance": 3,
-        "technical_depth": 4,
-        "timeliness": 4,
-        "verifiability": 5
-      },
-      "total": 16,
-      "quality": "high",
-      "chapters": [
-        {
-          "chapter": "ch05-渲染",
-          "confidence": "high"
-        }
-      ],
-      "summary": "native_window_set_buffers_timestamp API详解，Surface buffer上屏时间控制",
-      "scan_date": "2026-04-03T20:51:01.457952"
+    "total": 16,
+    "quality": "high",
+    "chapters": [
+      {
+        "chapter": "ch05-渲染",
+        "confidence": "high"
+      }
+    ],
+    "summary": "native_window_set_buffers_timestamp API详解，Surface buffer上屏时间控制",
+    "scan_date": "2026-04-03T20:51:01.457952"
+  },
+  {
+    "title": "BPF性能之巅 如何快速分析系统IO瓶颈",
+    "path": "Cubox/【原理篇】《BPF性能之巅》如何快速分析系统的 I-O 瓶颈？-2024-01-30.md",
+    "scores": {
+      "relevance": 3,
+      "technical_depth": 4,
+      "timeliness": 4,
+      "verifiability": 4
     },
-    {
-      "title": "BPF性能之巅 如何快速分析系统IO瓶颈",
-      "path": "Cubox/【原理篇】《BPF性能之巅》如何快速分析系统的 I-O 瓶颈？-2024-01-30.md",
-      "scores": {
-        "relevance": 3,
-        "technical_depth": 4,
-        "timeliness": 4,
-        "verifiability": 4
-      },
-      "total": 15,
-      "quality": "medium",
-      "chapters": [
-        {
-          "chapter": "ch08-存储",
-          "confidence": "high"
-        }
-      ],
-      "summary": "BPF工具分析I/O瓶颈，存储硬件延迟与I/O性能优化方法论",
-      "scan_date": "2026-04-03T20:51:01.457952"
+    "total": 15,
+    "quality": "medium",
+    "chapters": [
+      {
+        "chapter": "ch08-存储",
+        "confidence": "high"
+      }
+    ],
+    "summary": "BPF工具分析I/O瓶颈，存储硬件延迟与I/O性能优化方法论",
+    "scan_date": "2026-04-03T20:51:01.457952"
+  },
+  {
+    "title": "CPU调度算法 让电脑流畅运行的核心原理",
+    "path": "Cubox/【双语视界】【硬核科普】CPU调度算法：让电脑流畅运行的核心原理-2025-05-28.md",
+    "scores": {
+      "relevance": 4,
+      "technical_depth": 3,
+      "timeliness": 5,
+      "verifiability": 3
     },
-    {
-      "title": "CPU调度算法 让电脑流畅运行的核心原理",
-      "path": "Cubox/【双语视界】【硬核科普】CPU调度算法：让电脑流畅运行的核心原理-2025-05-28.md",
-      "scores": {
-        "relevance": 4,
-        "technical_depth": 3,
-        "timeliness": 5,
-        "verifiability": 3
-      },
-      "total": 15,
-      "quality": "medium",
-      "chapters": [
-        {
-          "chapter": "ch13-调度",
-          "confidence": "high"
-        }
-      ],
-      "summary": "CPU调度算法科普，CFS/实时调度原理，与Android调度关联",
-      "scan_date": "2026-04-03T20:51:01.457952"
+    "total": 15,
+    "quality": "medium",
+    "chapters": [
+      {
+        "chapter": "ch13-调度",
+        "confidence": "high"
+      }
+    ],
+    "summary": "CPU调度算法科普，CFS/实时调度原理，与Android调度关联",
+    "scan_date": "2026-04-03T20:51:01.457952"
+  },
+  {
+    "title": "深挖Linux内核新功能特性",
+    "path": "Cubox/【开源分享】深挖 Linux 内核的新功能特性，以 io_uring, cgroup, ebpf, llvm 为代表，包含开源项目，代码案例，文章，视频，架构脑图等 - 知乎-2022-02-27.md",
+    "scores": {
+      "relevance": 3,
+      "technical_depth": 4,
+      "timeliness": 3,
+      "verifiability": 3
     },
-    {
-      "title": "深挖Linux内核新功能特性",
-      "path": "Cubox/【开源分享】深挖 Linux 内核的新功能特性，以 io_uring, cgroup, ebpf, llvm 为代表，包含开源项目，代码案例，文章，视频，架构脑图等 - 知乎-2022-02-27.md",
-      "scores": {
-        "relevance": 3,
-        "technical_depth": 4,
-        "timeliness": 3,
-        "verifiability": 3
-      },
-      "total": 13,
-      "quality": "medium",
-      "chapters": [
-        {
-          "chapter": "ch08-存储",
-          "confidence": "medium"
-        }
-      ],
-      "summary": "Linux内核io_uring/cgroup/ebpf新特性汇总，含开源项目",
-      "scan_date": "2026-04-03T20:51:01.457952"
+    "total": 13,
+    "quality": "medium",
+    "chapters": [
+      {
+        "chapter": "ch08-存储",
+        "confidence": "medium"
+      }
+    ],
+    "summary": "Linux内核io_uring/cgroup/ebpf新特性汇总，含开源项目",
+    "scan_date": "2026-04-03T20:51:01.457952"
+  },
+  {
+    "title": "快速入门 Perfetto",
+    "path": "Cubox/【快速入门】Perfetto - Android性能追踪、系统分析工具上手文档 - 知乎-2023-02-28.md",
+    "scores": {
+      "relevance": 5,
+      "technical_depth": 4,
+      "timeliness": 4,
+      "verifiability": 5
     },
-    {
-      "title": "快速入门 Perfetto",
-      "path": "Cubox/【快速入门】Perfetto - Android性能追踪、系统分析工具上手文档 - 知乎-2023-02-28.md",
-      "scores": {
-        "relevance": 5,
-        "technical_depth": 4,
-        "timeliness": 4,
-        "verifiability": 5
-      },
-      "total": 18,
-      "quality": "high",
-      "chapters": [
-        {
-          "chapter": "ch11-Profiling",
-          "confidence": "high"
-        }
-      ],
-      "summary": "Perfetto快速入门，系统级跟踪/Java堆分析/SQL查询",
-      "scan_date": "2026-04-03T20:51:01.457952"
+    "total": 18,
+    "quality": "high",
+    "chapters": [
+      {
+        "chapter": "ch11-Profiling",
+        "confidence": "high"
+      }
+    ],
+    "summary": "Perfetto快速入门，系统级跟踪/Java堆分析/SQL查询",
+    "scan_date": "2026-04-03T20:51:01.457952"
+  },
+  {
+    "title": "学习源码的三重境界",
+    "path": "Cubox/【思考】学习源码的三重境界-2024-05-10.md",
+    "scores": {
+      "relevance": 3,
+      "technical_depth": 3,
+      "timeliness": 4,
+      "verifiability": 2
     },
-    {
-      "title": "学习源码的三重境界",
-      "path": "Cubox/【思考】学习源码的三重境界-2024-05-10.md",
-      "scores": {
-        "relevance": 3,
-        "technical_depth": 3,
-        "timeliness": 4,
-        "verifiability": 2
-      },
-      "total": 12,
-      "quality": "medium",
-      "chapters": [
-        {
-          "chapter": "ch01-架构",
-          "confidence": "medium"
-        }
-      ],
-      "summary": "ART/Binder源码学习方法论，从入门到精通三重境界",
-      "scan_date": "2026-04-03T20:51:01.457952"
+    "total": 12,
+    "quality": "medium",
+    "chapters": [
+      {
+        "chapter": "ch01-架构",
+        "confidence": "medium"
+      }
+    ],
+    "summary": "ART/Binder源码学习方法论，从入门到精通三重境界",
+    "scan_date": "2026-04-03T20:51:01.457952"
+  },
+  {
+    "title": "使用Perfetto定位应用启动性能的瓶颈",
+    "path": "Cubox/【性能优化】使用Perfetto定位应用启动性能的瓶颈 - 掘金-2024-01-05.md",
+    "scores": {
+      "relevance": 5,
+      "technical_depth": 4,
+      "timeliness": 4,
+      "verifiability": 5
     },
-    {
-      "title": "使用Perfetto定位应用启动性能的瓶颈",
-      "path": "Cubox/【性能优化】使用Perfetto定位应用启动性能的瓶颈 - 掘金-2024-01-05.md",
-      "scores": {
-        "relevance": 5,
-        "technical_depth": 4,
-        "timeliness": 4,
-        "verifiability": 5
+    "total": 18,
+    "quality": "high",
+    "chapters": [
+      {
+        "chapter": "ch04-启动",
+        "confidence": "high"
       },
-      "total": 18,
-      "quality": "high",
-      "chapters": [
-        {
-          "chapter": "ch04-启动",
-          "confidence": "high"
-        },
-        {
-          "chapter": "ch11-Profiling",
-          "confidence": "high"
-        }
-      ],
-      "summary": "Perfetto分析车载应用启动时间，测量与瓶颈识别方法",
-      "scan_date": "2026-04-03T20:51:01.457952"
+      {
+        "chapter": "ch11-Profiling",
+        "confidence": "high"
+      }
+    ],
+    "summary": "Perfetto分析车载应用启动时间，测量与瓶颈识别方法",
+    "scan_date": "2026-04-03T20:51:01.457952"
+  },
+  {
+    "title": "使用Perfetto定位应用启动性能的瓶颈(2023版)",
+    "path": "Cubox/【性能优化】使用Perfetto定位应用启动性能的瓶颈-2023-08-03.md",
+    "scores": {
+      "relevance": 5,
+      "technical_depth": 4,
+      "timeliness": 4,
+      "verifiability": 5
     },
-    {
-      "title": "使用Perfetto定位应用启动性能的瓶颈(2023版)",
-      "path": "Cubox/【性能优化】使用Perfetto定位应用启动性能的瓶颈-2023-08-03.md",
-      "scores": {
-        "relevance": 5,
-        "technical_depth": 4,
-        "timeliness": 4,
-        "verifiability": 5
+    "total": 18,
+    "quality": "high",
+    "chapters": [
+      {
+        "chapter": "ch04-启动",
+        "confidence": "high"
       },
-      "total": 18,
-      "quality": "high",
-      "chapters": [
-        {
-          "chapter": "ch04-启动",
-          "confidence": "high"
-        },
-        {
-          "chapter": "ch11-Profiling",
-          "confidence": "high"
-        }
-      ],
-      "summary": "Perfetto分析启动性能瓶颈（2023版，重复采集）",
-      "scan_date": "2026-04-03T20:51:01.457952",
-      "duplicate_of": "Cubox/【性能优化】使用Perfetto定位应用启动性能的瓶颈 - 掘金-2024-01-05.md"
+      {
+        "chapter": "ch11-Profiling",
+        "confidence": "high"
+      }
+    ],
+    "summary": "Perfetto分析启动性能瓶颈（2023版，重复采集）",
+    "scan_date": "2026-04-03T20:51:01.457952",
+    "duplicate_of": "Cubox/【性能优化】使用Perfetto定位应用启动性能的瓶颈 - 掘金-2024-01-05.md"
+  },
+  {
+    "title": "使用Perfetto定位应用启动性能的瓶颈(2024版)",
+    "path": "Cubox/【性能优化】使用Perfetto定位应用启动性能的瓶颈-2024-10-21.md",
+    "scores": {
+      "relevance": 5,
+      "technical_depth": 4,
+      "timeliness": 5,
+      "verifiability": 5
     },
-    {
-      "title": "使用Perfetto定位应用启动性能的瓶颈(2024版)",
-      "path": "Cubox/【性能优化】使用Perfetto定位应用启动性能的瓶颈-2024-10-21.md",
-      "scores": {
-        "relevance": 5,
-        "technical_depth": 4,
-        "timeliness": 5,
-        "verifiability": 5
+    "total": 19,
+    "quality": "high",
+    "chapters": [
+      {
+        "chapter": "ch04-启动",
+        "confidence": "high"
       },
-      "total": 19,
-      "quality": "high",
-      "chapters": [
-        {
-          "chapter": "ch04-启动",
-          "confidence": "high"
-        },
-        {
-          "chapter": "ch11-Profiling",
-          "confidence": "high"
-        }
-      ],
-      "summary": "Perfetto分析启动性能瓶颈（最新保存版本）",
-      "scan_date": "2026-04-03T20:51:01.457952",
-      "duplicate_of": "Cubox/【性能优化】使用Perfetto定位应用启动性能的瓶颈 - 掘金-2024-01-05.md"
+      {
+        "chapter": "ch11-Profiling",
+        "confidence": "high"
+      }
+    ],
+    "summary": "Perfetto分析启动性能瓶颈（最新保存版本）",
+    "scan_date": "2026-04-03T20:51:01.457952",
+    "duplicate_of": "Cubox/【性能优化】使用Perfetto定位应用启动性能的瓶颈 - 掘金-2024-01-05.md"
+  },
+  {
+    "title": "Android 耗时统计概述",
+    "path": "Cubox/【笔记】Android 耗时统计概述 对于 Android 的耗时统计，在 Android 7.0, 增加了一个 Api - 掘金-2025-03-31.md",
+    "scores": {
+      "relevance": 5,
+      "technical_depth": 4,
+      "timeliness": 5,
+      "verifiability": 5
     },
-    {
-      "title": "Android 耗时统计概述",
-      "path": "Cubox/【笔记】Android 耗时统计概述 对于 Android 的耗时统计，在 Android 7.0, 增加了一个 Api - 掘金-2025-03-31.md",
-      "scores": {
-        "relevance": 5,
-        "technical_depth": 4,
-        "timeliness": 5,
-        "verifiability": 5
-      },
-      "total": 19,
-      "quality": "high",
-      "chapters": [
-        {
-          "chapter": "ch05-渲染",
-          "confidence": "high"
-        }
-      ],
-      "summary": "Android耗时统计API，Choreographer/FrameMetrics/View树绘制耗时",
-      "scan_date": "2026-04-03T20:51:01.457952"
+    "total": 19,
+    "quality": "high",
+    "chapters": [
+      {
+        "chapter": "ch05-渲染",
+        "confidence": "high"
+      }
+    ],
+    "summary": "Android耗时统计API，Choreographer/FrameMetrics/View树绘制耗时",
+    "scan_date": "2026-04-03T20:51:01.457952"
+  },
+  {
+    "title": "通过系统日志分析和定位线上故障",
+    "path": "Cubox/【线上故障】通过系统日志分析和定位-2022-02-07.md",
+    "scores": {
+      "relevance": 3,
+      "technical_depth": 3,
+      "timeliness": 3,
+      "verifiability": 3
     },
-    {
-      "title": "通过系统日志分析和定位线上故障",
-      "path": "Cubox/【线上故障】通过系统日志分析和定位-2022-02-07.md",
-      "scores": {
-        "relevance": 3,
-        "technical_depth": 3,
-        "timeliness": 3,
-        "verifiability": 3
-      },
-      "total": 12,
-      "quality": "medium",
-      "chapters": [
-        {
-          "chapter": "ch07-内存",
-          "confidence": "medium"
-        }
-      ],
-      "summary": "系统日志分析定位故障，内存泄漏/GDB调试实践",
-      "scan_date": "2026-04-03T20:51:01.457952"
+    "total": 12,
+    "quality": "medium",
+    "chapters": [
+      {
+        "chapter": "ch07-内存",
+        "confidence": "medium"
+      }
+    ],
+    "summary": "系统日志分析定位故障，内存泄漏/GDB调试实践",
+    "scan_date": "2026-04-03T20:51:01.457952"
+  },
+  {
+    "title": "奇怪为什么Hook不生效",
+    "path": "Cubox/【案例】奇怪，为什么Hook不生效？-2024-10-10.md",
+    "scores": {
+      "relevance": 4,
+      "technical_depth": 4,
+      "timeliness": 4,
+      "verifiability": 4
     },
-    {
-      "title": "奇怪为什么Hook不生效",
-      "path": "Cubox/【案例】奇怪，为什么Hook不生效？-2024-10-10.md",
-      "scores": {
-        "relevance": 4,
-        "technical_depth": 4,
-        "timeliness": 4,
-        "verifiability": 4
-      },
-      "total": 16,
-      "quality": "high",
-      "chapters": [
-        {
-          "chapter": "ch01-架构",
-          "confidence": "medium"
-        }
-      ],
-      "summary": "Android代理替换Hook原理分析，静态/动态代理机制详解",
-      "scan_date": "2026-04-03T20:51:01.457952"
+    "total": 16,
+    "quality": "high",
+    "chapters": [
+      {
+        "chapter": "ch01-架构",
+        "confidence": "medium"
+      }
+    ],
+    "summary": "Android代理替换Hook原理分析，静态/动态代理机制详解",
+    "scan_date": "2026-04-03T20:51:01.457952"
+  },
+  {
+    "title": "【Hummer Flutter引擎】Flutter破坏Dart堆数据问题分析和解决",
+    "path": "Cubox/【Hummer Flutter引擎】Flutter破坏Dart堆数据问题分析和解决-2022-04-30.md",
+    "scores": {
+      "relevance": 4,
+      "technical_depth": 4,
+      "timeliness": 3,
+      "verifiability": 4
     },
-    {
-      "title": "【Hummer Flutter引擎】Flutter破坏Dart堆数据问题分析和解决",
-      "path": "Cubox/【Hummer Flutter引擎】Flutter破坏Dart堆数据问题分析和解决-2022-04-30.md",
-      "scores": {
-        "relevance": 4,
-        "technical_depth": 4,
-        "timeliness": 3,
-        "verifiability": 4
+    "total": 15,
+    "quality": "medium",
+    "chapters": [
+      {
+        "chapter": "ch05-渲染",
+        "confidence": "high"
       },
-      "total": 15,
-      "quality": "medium",
-      "chapters": [
-        {
-          "chapter": "ch05-渲染",
-          "confidence": "high"
-        },
-        {
-          "chapter": "ch07-内存",
-          "confidence": "high"
-        }
-      ],
-      "summary": "Hummer Flutter引擎中Dart堆数据异常问题分析，涉及堆分代机制、新生代/老年代数据异常定位",
-      "scan_date": "2026-04-03T21:18:47.073833"
+      {
+        "chapter": "ch07-内存",
+        "confidence": "high"
+      }
+    ],
+    "summary": "Hummer Flutter引擎中Dart堆数据异常问题分析，涉及堆分代机制、新生代/老年代数据异常定位",
+    "scan_date": "2026-04-03T21:18:47.073833"
+  },
+  {
+    "title": "【Hummer 引擎优化系列】究极GC难题定位记",
+    "path": "Cubox/【Hummer 引擎优化系列】究极GC难题定位记-2022-07-08.md",
+    "scores": {
+      "relevance": 4,
+      "technical_depth": 5,
+      "timeliness": 3,
+      "verifiability": 4
     },
-    {
-      "title": "【Hummer 引擎优化系列】究极GC难题定位记",
-      "path": "Cubox/【Hummer 引擎优化系列】究极GC难题定位记-2022-07-08.md",
-      "scores": {
-        "relevance": 4,
-        "technical_depth": 5,
-        "timeliness": 3,
-        "verifiability": 4
+    "total": 16,
+    "quality": "high",
+    "chapters": [
+      {
+        "chapter": "ch05-渲染",
+        "confidence": "high"
       },
-      "total": 16,
-      "quality": "high",
-      "chapters": [
-        {
-          "chapter": "ch05-渲染",
-          "confidence": "high"
-        },
-        {
-          "chapter": "ch07-内存",
-          "confidence": "high"
-        }
-      ],
-      "summary": "Flutter 2.2.3升级后Expando崩溃的GC问题定位，源码级分析_rehash过程",
-      "scan_date": "2026-04-03T21:18:47.073833"
+      {
+        "chapter": "ch07-内存",
+        "confidence": "high"
+      }
+    ],
+    "summary": "Flutter 2.2.3升级后Expando崩溃的GC问题定位，源码级分析_rehash过程",
+    "scan_date": "2026-04-03T21:18:47.073833"
+  },
+  {
+    "title": "【Shader篇】GPU架构与其逻辑管线",
+    "path": "Cubox/【Shader篇】GPU架构与其逻辑管线-2023-08-10.md",
+    "scores": {
+      "relevance": 4,
+      "technical_depth": 4,
+      "timeliness": 4,
+      "verifiability": 3
     },
-    {
-      "title": "【Shader篇】GPU架构与其逻辑管线",
-      "path": "Cubox/【Shader篇】GPU架构与其逻辑管线-2023-08-10.md",
-      "scores": {
-        "relevance": 4,
-        "technical_depth": 4,
-        "timeliness": 4,
-        "verifiability": 3
-      },
-      "total": 15,
-      "quality": "medium",
-      "chapters": [
-        {
-          "chapter": "ch05-渲染",
-          "confidence": "high"
-        }
-      ],
-      "summary": "GPU架构详解，包括PCIe总线、GPC/TPC/SM结构、渲染管线与GPU架构关联",
-      "scan_date": "2026-04-03T21:18:47.073833"
+    "total": 15,
+    "quality": "medium",
+    "chapters": [
+      {
+        "chapter": "ch05-渲染",
+        "confidence": "high"
+      }
+    ],
+    "summary": "GPU架构详解，包括PCIe总线、GPC/TPC/SM结构、渲染管线与GPU架构关联",
+    "scan_date": "2026-04-03T21:18:47.073833"
+  },
+  {
+    "title": "【Simpleperf】Android的CPU分析，性能优化利器",
+    "path": "Cubox/【Simpleperf】Android的CPU分析，性能优化利器_Yngz_Miao的博客-CSDN博客_simpleperf-2023-01-12.md",
+    "scores": {
+      "relevance": 5,
+      "technical_depth": 4,
+      "timeliness": 4,
+      "verifiability": 5
     },
-    {
-      "title": "【Simpleperf】Android的CPU分析，性能优化利器",
-      "path": "Cubox/【Simpleperf】Android的CPU分析，性能优化利器_Yngz_Miao的博客-CSDN博客_simpleperf-2023-01-12.md",
-      "scores": {
-        "relevance": 5,
-        "technical_depth": 4,
-        "timeliness": 4,
-        "verifiability": 5
-      },
-      "total": 18,
-      "quality": "high",
-      "chapters": [
-        {
-          "chapter": "ch11-Profiling",
-          "confidence": "high"
-        }
-      ],
-      "summary": "Simpleperf工具完整介绍，NDK命令行工具使用方法，CPU性能分析实战",
-      "scan_date": "2026-04-03T21:18:47.073833"
+    "total": 18,
+    "quality": "high",
+    "chapters": [
+      {
+        "chapter": "ch11-Profiling",
+        "confidence": "high"
+      }
+    ],
+    "summary": "Simpleperf工具完整介绍，NDK命令行工具使用方法，CPU性能分析实战",
+    "scan_date": "2026-04-03T21:18:47.073833"
+  },
+  {
+    "title": "【V】Surface的size分析",
+    "path": "Cubox/【V】Surface的size分析 - 掘金-2024-06-14.md",
+    "scores": {
+      "relevance": 4,
+      "technical_depth": 4,
+      "timeliness": 4,
+      "verifiability": 4
     },
-    {
-      "title": "【V】Surface的size分析",
-      "path": "Cubox/【V】Surface的size分析 - 掘金-2024-06-14.md",
-      "scores": {
-        "relevance": 4,
-        "technical_depth": 4,
-        "timeliness": 4,
-        "verifiability": 4
-      },
-      "total": 16,
-      "quality": "high",
-      "chapters": [
-        {
-          "chapter": "ch05-渲染",
-          "confidence": "high"
-        }
-      ],
-      "summary": "Surface的render size与screen size分析，buffer大小与显示大小的区别",
-      "scan_date": "2026-04-03T21:18:47.073833"
+    "total": 16,
+    "quality": "high",
+    "chapters": [
+      {
+        "chapter": "ch05-渲染",
+        "confidence": "high"
+      }
+    ],
+    "summary": "Surface的render size与screen size分析，buffer大小与显示大小的区别",
+    "scan_date": "2026-04-03T21:18:47.073833"
+  },
+  {
+    "title": "【V】native_window_set_buffers_timestamp介绍",
+    "path": "Cubox/【V】native_window_set_buffers_timestamp介绍 - 掘金-2024-06-16.md",
+    "scores": {
+      "relevance": 3,
+      "technical_depth": 4,
+      "timeliness": 4,
+      "verifiability": 5
     },
-    {
-      "title": "【V】native_window_set_buffers_timestamp介绍",
-      "path": "Cubox/【V】native_window_set_buffers_timestamp介绍 - 掘金-2024-06-16.md",
-      "scores": {
-        "relevance": 3,
-        "technical_depth": 4,
-        "timeliness": 4,
-        "verifiability": 5
-      },
-      "total": 16,
-      "quality": "high",
-      "chapters": [
-        {
-          "chapter": "ch05-渲染",
-          "confidence": "high"
-        }
-      ],
-      "summary": "native_window_set_buffers_timestamp API详解，Surface buffer上屏时间控制",
-      "scan_date": "2026-04-03T21:18:47.073833"
+    "total": 16,
+    "quality": "high",
+    "chapters": [
+      {
+        "chapter": "ch05-渲染",
+        "confidence": "high"
+      }
+    ],
+    "summary": "native_window_set_buffers_timestamp API详解，Surface buffer上屏时间控制",
+    "scan_date": "2026-04-03T21:18:47.073833"
+  },
+  {
+    "title": "【原理篇】《BPF性能之巅》如何快速分析系统的 I/O 瓶颈？",
+    "path": "Cubox/【原理篇】《BPF性能之巅》如何快速分析系统的 I-O 瓶颈？-2024-01-30.md",
+    "scores": {
+      "relevance": 3,
+      "technical_depth": 4,
+      "timeliness": 4,
+      "verifiability": 4
     },
-    {
-      "title": "【原理篇】《BPF性能之巅》如何快速分析系统的 I/O 瓶颈？",
-      "path": "Cubox/【原理篇】《BPF性能之巅》如何快速分析系统的 I-O 瓶颈？-2024-01-30.md",
-      "scores": {
-        "relevance": 3,
-        "technical_depth": 4,
-        "timeliness": 4,
-        "verifiability": 4
-      },
-      "total": 15,
-      "quality": "medium",
-      "chapters": [
-        {
-          "chapter": "ch08-存储",
-          "confidence": "high"
-        }
-      ],
-      "summary": "BPF工具分析系统I/O瓶颈，存储硬件延迟分析，I/O性能优化方法论",
-      "scan_date": "2026-04-03T21:18:47.073833"
+    "total": 15,
+    "quality": "medium",
+    "chapters": [
+      {
+        "chapter": "ch08-存储",
+        "confidence": "high"
+      }
+    ],
+    "summary": "BPF工具分析系统I/O瓶颈，存储硬件延迟分析，I/O性能优化方法论",
+    "scan_date": "2026-04-03T21:18:47.073833"
+  },
+  {
+    "title": "【双语视界】【硬核科普】CPU调度算法：让电脑流畅运行的核心原理",
+    "path": "Cubox/【双语视界】【硬核科普】CPU调度算法：让电脑流畅运行的核心原理-2025-05-28.md",
+    "scores": {
+      "relevance": 4,
+      "technical_depth": 3,
+      "timeliness": 5,
+      "verifiability": 3
     },
-    {
-      "title": "【双语视界】【硬核科普】CPU调度算法：让电脑流畅运行的核心原理",
-      "path": "Cubox/【双语视界】【硬核科普】CPU调度算法：让电脑流畅运行的核心原理-2025-05-28.md",
-      "scores": {
-        "relevance": 4,
-        "technical_depth": 3,
-        "timeliness": 5,
-        "verifiability": 3
-      },
-      "total": 15,
-      "quality": "medium",
-      "chapters": [
-        {
-          "chapter": "ch13-调度",
-          "confidence": "high"
-        }
-      ],
-      "summary": "CPU调度算法科普，包括CFS、实时调度等核心原理，与Android调度相关",
-      "scan_date": "2026-04-03T21:18:47.073833"
+    "total": 15,
+    "quality": "medium",
+    "chapters": [
+      {
+        "chapter": "ch13-调度",
+        "confidence": "high"
+      }
+    ],
+    "summary": "CPU调度算法科普，包括CFS、实时调度等核心原理，与Android调度相关",
+    "scan_date": "2026-04-03T21:18:47.073833"
+  },
+  {
+    "title": "【开源分享】深挖 Linux 内核的新功能特性",
+    "path": "Cubox/【开源分享】深挖 Linux 内核的新功能特性，以 io_uring, cgroup, ebpf, llvm 为代表，包含开源项目，代码案例，文章，视频，架构脑图等 - 知乎-2022-02-27.md",
+    "scores": {
+      "relevance": 3,
+      "technical_depth": 4,
+      "timeliness": 3,
+      "verifiability": 3
     },
-    {
-      "title": "【开源分享】深挖 Linux 内核的新功能特性",
-      "path": "Cubox/【开源分享】深挖 Linux 内核的新功能特性，以 io_uring, cgroup, ebpf, llvm 为代表，包含开源项目，代码案例，文章，视频，架构脑图等 - 知乎-2022-02-27.md",
-      "scores": {
-        "relevance": 3,
-        "technical_depth": 4,
-        "timeliness": 3,
-        "verifiability": 3
-      },
-      "total": 13,
-      "quality": "medium",
-      "chapters": [
-        {
-          "chapter": "ch08-存储",
-          "confidence": "medium"
-        }
-      ],
-      "summary": "Linux内核io_uring、cgroup、ebpf等新特性汇总，含开源项目和代码案例",
-      "scan_date": "2026-04-03T21:18:47.073833"
+    "total": 13,
+    "quality": "medium",
+    "chapters": [
+      {
+        "chapter": "ch08-存储",
+        "confidence": "medium"
+      }
+    ],
+    "summary": "Linux内核io_uring、cgroup、ebpf等新特性汇总，含开源项目和代码案例",
+    "scan_date": "2026-04-03T21:18:47.073833"
+  },
+  {
+    "title": "【快速入门】Perfetto",
+    "path": "Cubox/【快速入门】Perfetto - Android性能追踪、系统分析工具上手文档 - 知乎-2023-02-28.md",
+    "scores": {
+      "relevance": 5,
+      "technical_depth": 4,
+      "timeliness": 4,
+      "verifiability": 5
     },
-    {
-      "title": "【快速入门】Perfetto",
-      "path": "Cubox/【快速入门】Perfetto - Android性能追踪、系统分析工具上手文档 - 知乎-2023-02-28.md",
-      "scores": {
-        "relevance": 5,
-        "technical_depth": 4,
-        "timeliness": 4,
-        "verifiability": 5
-      },
-      "total": 18,
-      "quality": "high",
-      "chapters": [
-        {
-          "chapter": "ch11-Profiling",
-          "confidence": "high"
-        }
-      ],
-      "summary": "Perfetto快速入门指南，系统级和应用级跟踪、Java/原生堆分析、SQL分析",
-      "scan_date": "2026-04-03T21:18:47.073833"
+    "total": 18,
+    "quality": "high",
+    "chapters": [
+      {
+        "chapter": "ch11-Profiling",
+        "confidence": "high"
+      }
+    ],
+    "summary": "Perfetto快速入门指南，系统级和应用级跟踪、Java/原生堆分析、SQL分析",
+    "scan_date": "2026-04-03T21:18:47.073833"
+  },
+  {
+    "title": "【思考】学习源码的三重境界",
+    "path": "Cubox/【思考】学习源码的三重境界-2024-05-10.md",
+    "scores": {
+      "relevance": 3,
+      "technical_depth": 3,
+      "timeliness": 4,
+      "verifiability": 2
     },
-    {
-      "title": "【思考】学习源码的三重境界",
-      "path": "Cubox/【思考】学习源码的三重境界-2024-05-10.md",
-      "scores": {
-        "relevance": 3,
-        "technical_depth": 3,
-        "timeliness": 4,
-        "verifiability": 2
-      },
-      "total": 12,
-      "quality": "medium",
-      "chapters": [
-        {
-          "chapter": "ch01-架构",
-          "confidence": "medium"
-        }
-      ],
-      "summary": "学习ART/Binder等Android源码的方法论，从入门到精通的三重境界",
-      "scan_date": "2026-04-03T21:18:47.073833"
+    "total": 12,
+    "quality": "medium",
+    "chapters": [
+      {
+        "chapter": "ch01-架构",
+        "confidence": "medium"
+      }
+    ],
+    "summary": "学习ART/Binder等Android源码的方法论，从入门到精通的三重境界",
+    "scan_date": "2026-04-03T21:18:47.073833"
+  },
+  {
+    "title": "【性能优化】使用Perfetto定位应用启动性能的瓶颈",
+    "path": "Cubox/【性能优化】使用Perfetto定位应用启动性能的瓶颈 - 掘金-2024-01-05.md",
+    "scores": {
+      "relevance": 5,
+      "technical_depth": 4,
+      "timeliness": 4,
+      "verifiability": 5
     },
-    {
-      "title": "【性能优化】使用Perfetto定位应用启动性能的瓶颈",
-      "path": "Cubox/【性能优化】使用Perfetto定位应用启动性能的瓶颈 - 掘金-2024-01-05.md",
-      "scores": {
-        "relevance": 5,
-        "technical_depth": 4,
-        "timeliness": 4,
-        "verifiability": 5
+    "total": 18,
+    "quality": "high",
+    "chapters": [
+      {
+        "chapter": "ch04-启动",
+        "confidence": "high"
       },
-      "total": 18,
-      "quality": "high",
-      "chapters": [
-        {
-          "chapter": "ch04-启动",
-          "confidence": "high"
-        },
-        {
-          "chapter": "ch11-Profiling",
-          "confidence": "high"
-        }
-      ],
-      "summary": "使用Perfetto分析车载应用启动时间，测量方法与性能瓶颈识别",
-      "scan_date": "2026-04-03T21:18:47.073833"
+      {
+        "chapter": "ch11-Profiling",
+        "confidence": "high"
+      }
+    ],
+    "summary": "使用Perfetto分析车载应用启动时间，测量方法与性能瓶颈识别",
+    "scan_date": "2026-04-03T21:18:47.073833"
+  },
+  {
+    "title": "【性能优化】使用Perfetto定位应用启动性能的瓶颈(2023版)",
+    "path": "Cubox/【性能优化】使用Perfetto定位应用启动性能的瓶颈-2023-08-03.md",
+    "scores": {
+      "relevance": 5,
+      "technical_depth": 4,
+      "timeliness": 4,
+      "verifiability": 5
     },
-    {
-      "title": "【性能优化】使用Perfetto定位应用启动性能的瓶颈(2023版)",
-      "path": "Cubox/【性能优化】使用Perfetto定位应用启动性能的瓶颈-2023-08-03.md",
-      "scores": {
-        "relevance": 5,
-        "technical_depth": 4,
-        "timeliness": 4,
-        "verifiability": 5
+    "total": 18,
+    "quality": "high",
+    "chapters": [
+      {
+        "chapter": "ch04-启动",
+        "confidence": "high"
       },
-      "total": 18,
-      "quality": "high",
-      "chapters": [
-        {
-          "chapter": "ch04-启动",
-          "confidence": "high"
-        },
-        {
-          "chapter": "ch11-Profiling",
-          "confidence": "high"
-        }
-      ],
-      "summary": "Perfetto分析应用启动性能瓶颈，启动时间测量与分析方法（2023年保存版本）",
-      "scan_date": "2026-04-03T21:18:47.073833",
-      "duplicate_of": "Cubox/【性能优化】使用Perfetto定位应用启动性能的瓶颈 - 掘金-2024-01-05.md"
+      {
+        "chapter": "ch11-Profiling",
+        "confidence": "high"
+      }
+    ],
+    "summary": "Perfetto分析应用启动性能瓶颈，启动时间测量与分析方法（2023年保存版本）",
+    "scan_date": "2026-04-03T21:18:47.073833",
+    "duplicate_of": "Cubox/【性能优化】使用Perfetto定位应用启动性能的瓶颈 - 掘金-2024-01-05.md"
+  },
+  {
+    "title": "【性能优化】使用Perfetto定位应用启动性能的瓶颈(2024版)",
+    "path": "Cubox/【性能优化】使用Perfetto定位应用启动性能的瓶颈-2024-10-21.md",
+    "scores": {
+      "relevance": 5,
+      "technical_depth": 4,
+      "timeliness": 5,
+      "verifiability": 5
     },
-    {
-      "title": "【性能优化】使用Perfetto定位应用启动性能的瓶颈(2024版)",
-      "path": "Cubox/【性能优化】使用Perfetto定位应用启动性能的瓶颈-2024-10-21.md",
-      "scores": {
-        "relevance": 5,
-        "technical_depth": 4,
-        "timeliness": 5,
-        "verifiability": 5
+    "total": 19,
+    "quality": "high",
+    "chapters": [
+      {
+        "chapter": "ch04-启动",
+        "confidence": "high"
       },
-      "total": 19,
-      "quality": "high",
-      "chapters": [
-        {
-          "chapter": "ch04-启动",
-          "confidence": "high"
-        },
-        {
-          "chapter": "ch11-Profiling",
-          "confidence": "high"
-        }
-      ],
-      "summary": "Perfetto分析应用启动性能瓶颈，启动时间测量与分析方法（最新保存版本）",
-      "scan_date": "2026-04-03T21:18:47.073833",
-      "duplicate_of": "Cubox/【性能优化】使用Perfetto定位应用启动性能的瓶颈 - 掘金-2024-01-05.md"
+      {
+        "chapter": "ch11-Profiling",
+        "confidence": "high"
+      }
+    ],
+    "summary": "Perfetto分析应用启动性能瓶颈，启动时间测量与分析方法（最新保存版本）",
+    "scan_date": "2026-04-03T21:18:47.073833",
+    "duplicate_of": "Cubox/【性能优化】使用Perfetto定位应用启动性能的瓶颈 - 掘金-2024-01-05.md"
+  },
+  {
+    "title": "【笔记】Android 耗时统计概述",
+    "path": "Cubox/【笔记】Android 耗时统计概述 对于 Android 的耗时统计，在 Android 7.0, 增加了一个 Api - 掘金-2025-03-31.md",
+    "scores": {
+      "relevance": 5,
+      "technical_depth": 4,
+      "timeliness": 5,
+      "verifiability": 5
     },
-    {
-      "title": "【笔记】Android 耗时统计概述",
-      "path": "Cubox/【笔记】Android 耗时统计概述 对于 Android 的耗时统计，在 Android 7.0, 增加了一个 Api - 掘金-2025-03-31.md",
-      "scores": {
-        "relevance": 5,
-        "technical_depth": 4,
-        "timeliness": 5,
-        "verifiability": 5
-      },
-      "total": 19,
-      "quality": "high",
-      "chapters": [
-        {
-          "chapter": "ch05-渲染",
-          "confidence": "high"
-        }
-      ],
-      "summary": "Android耗时统计API，Window View树绘制耗时，Choreographer vs FrameMetrics",
-      "scan_date": "2026-04-03T21:18:47.073833"
+    "total": 19,
+    "quality": "high",
+    "chapters": [
+      {
+        "chapter": "ch05-渲染",
+        "confidence": "high"
+      }
+    ],
+    "summary": "Android耗时统计API，Window View树绘制耗时，Choreographer vs FrameMetrics",
+    "scan_date": "2026-04-03T21:18:47.073833"
+  },
+  {
+    "title": "【线上故障】通过系统日志分析和定位",
+    "path": "Cubox/【线上故障】通过系统日志分析和定位-2022-02-07.md",
+    "scores": {
+      "relevance": 3,
+      "technical_depth": 3,
+      "timeliness": 3,
+      "verifiability": 3
     },
-    {
-      "title": "【线上故障】通过系统日志分析和定位",
-      "path": "Cubox/【线上故障】通过系统日志分析和定位-2022-02-07.md",
-      "scores": {
-        "relevance": 3,
-        "technical_depth": 3,
-        "timeliness": 3,
-        "verifiability": 3
-      },
-      "total": 12,
-      "quality": "medium",
-      "chapters": [
-        {
-          "chapter": "ch07-内存",
-          "confidence": "medium"
-        }
-      ],
-      "summary": "通过系统日志分析定位线上故障，涉及内存泄漏、GDB调试等",
-      "scan_date": "2026-04-03T21:18:47.073833"
+    "total": 12,
+    "quality": "medium",
+    "chapters": [
+      {
+        "chapter": "ch07-内存",
+        "confidence": "medium"
+      }
+    ],
+    "summary": "通过系统日志分析定位线上故障，涉及内存泄漏、GDB调试等",
+    "scan_date": "2026-04-03T21:18:47.073833"
+  },
+  {
+    "title": "【案例】奇怪，为什么Hook不生效？",
+    "path": "Cubox/【案例】奇怪，为什么Hook不生效？-2024-10-10.md",
+    "scores": {
+      "relevance": 4,
+      "technical_depth": 4,
+      "timeliness": 4,
+      "verifiability": 4
     },
-    {
-      "title": "【案例】奇怪，为什么Hook不生效？",
-      "path": "Cubox/【案例】奇怪，为什么Hook不生效？-2024-10-10.md",
-      "scores": {
-        "relevance": 4,
-        "technical_depth": 4,
-        "timeliness": 4,
-        "verifiability": 4
-      },
-      "total": 16,
-      "quality": "high",
-      "chapters": [
-        {
-          "chapter": "ch01-架构",
-          "confidence": "medium"
-        }
-      ],
-      "summary": "Android代理替换方式Hook方法的原理分析，静态/动态代理机制详解",
-      "scan_date": "2026-04-03T21:18:47.073833"
+    "total": 16,
+    "quality": "high",
+    "chapters": [
+      {
+        "chapter": "ch01-架构",
+        "confidence": "medium"
+      }
+    ],
+    "summary": "Android代理替换方式Hook方法的原理分析，静态/动态代理机制详解",
+    "scan_date": "2026-04-03T21:18:47.073833"
+  },
+  {
+    "file_path": "Cubox/云音乐 Android Baseline Profiles 实践-2024-07-15.md",
+    "title": "云音乐 Android Baseline Profiles 实践-2024-07-15",
+    "scores": {
+      "relevance": 4,
+      "depth": 1,
+      "timeliness": 4,
+      "verifiability": 2
     },
-    {
-      "file_path": "Cubox/云音乐 Android Baseline Profiles 实践-2024-07-15.md",
-      "title": "云音乐 Android Baseline Profiles 实践-2024-07-15",
-      "scores": {
-        "relevance": 4,
-        "depth": 1,
-        "timeliness": 4,
-        "verifiability": 2
-      },
-      "total": 11,
-      "quality": "medium",
-      "chapters": [],
-      "indexed_date": "2026-04-04"
+    "total": 11,
+    "quality": "medium",
+    "chapters": [],
+    "indexed_date": "2026-04-04"
+  },
+  {
+    "file_path": "Cubox/为什么要建立性能工程团队？——来自 Brendan Gregg 的深度思考（2025·上篇）-2025-08-17.md",
+    "title": "为什么要建立性能工程团队？——来自 Brendan Gregg 的深度思考（2025·上篇）",
+    "scores": {
+      "relevance": 4,
+      "depth": 1,
+      "timeliness": 5,
+      "verifiability": 1
     },
-    {
-      "file_path": "Cubox/为什么要建立性能工程团队？——来自 Brendan Gregg 的深度思考（2025·上篇）-2025-08-17.md",
-      "title": "为什么要建立性能工程团队？——来自 Brendan Gregg 的深度思考（2025·上篇）",
-      "scores": {
-        "relevance": 4,
-        "depth": 1,
-        "timeliness": 5,
-        "verifiability": 1
-      },
-      "total": 11,
-      "quality": "medium",
-      "chapters": [],
-      "indexed_date": "2026-04-04"
+    "total": 11,
+    "quality": "medium",
+    "chapters": [],
+    "indexed_date": "2026-04-04"
+  },
+  {
+    "file_path": "Cubox/云音乐 Android Baseline Profiles 实践-2024-07-15.md",
+    "title": "云音乐 Android Baseline Profiles 实践-2024-07-15",
+    "scores": {
+      "relevance": 4,
+      "depth": 1,
+      "timeliness": 4,
+      "verifiability": 2
     },
-    {
-      "file_path": "Cubox/云音乐 Android Baseline Profiles 实践-2024-07-15.md",
-      "title": "云音乐 Android Baseline Profiles 实践-2024-07-15",
-      "scores": {
-        "relevance": 4,
-        "depth": 1,
-        "timeliness": 4,
-        "verifiability": 2
-      },
-      "total": 11,
-      "quality": "medium",
-      "chapters": [],
-      "indexed_date": "2026-04-04"
+    "total": 11,
+    "quality": "medium",
+    "chapters": [],
+    "indexed_date": "2026-04-04"
+  },
+  {
+    "file_path": "Cubox/为什么要建立性能工程团队？——来自 Brendan Gregg 的深度思考（2025·上篇）-2025-08-17.md",
+    "title": "为什么要建立性能工程团队？——来自 Brendan Gregg 的深度思考（2025·上篇）",
+    "scores": {
+      "relevance": 4,
+      "depth": 1,
+      "timeliness": 5,
+      "verifiability": 1
     },
-    {
-      "file_path": "Cubox/为什么要建立性能工程团队？——来自 Brendan Gregg 的深度思考（2025·上篇）-2025-08-17.md",
-      "title": "为什么要建立性能工程团队？——来自 Brendan Gregg 的深度思考（2025·上篇）",
-      "scores": {
-        "relevance": 4,
-        "depth": 1,
-        "timeliness": 5,
-        "verifiability": 1
-      },
-      "total": 11,
-      "quality": "medium",
-      "chapters": [],
-      "indexed_date": "2026-04-04"
+    "total": 11,
+    "quality": "medium",
+    "chapters": [],
+    "indexed_date": "2026-04-04"
+  },
+  {
+    "path": "什么是性能工程？-2023-10-10.md",
+    "title": "什么是性能工程？",
+    "scores": {
+      "relevance": 4,
+      "technical_depth": 2,
+      "timeliness": 3,
+      "verifiability": 2
     },
-    {
-      "path": "什么是性能工程？-2023-10-10.md",
-      "title": "什么是性能工程？",
-      "scores": {
-        "relevance": 4,
-        "technical_depth": 2,
-        "timeliness": 3,
-        "verifiability": 2
-      },
-      "total": 11,
-      "chapters": [
-        {
-          "chapter": "ch14-工具",
-          "confidence": "medium"
-        }
-      ],
-      "quality": "medium",
-      "summary": "什么是性能工程？",
-      "scan_date": "2026-04-04T04:31:52.304228"
+    "total": 11,
+    "chapters": [
+      {
+        "chapter": "ch14-工具",
+        "confidence": "medium"
+      }
+    ],
+    "quality": "medium",
+    "summary": "什么是性能工程？",
+    "scan_date": "2026-04-04T04:31:52.304228"
+  },
+  {
+    "path": "今日头条 ANR 优化实践系列 - 告别 SharedPreference 等待-2023-12-20.md",
+    "title": "今日头条 ANR 优化实践系列 - 告别 SharedPreference 等待",
+    "scores": {
+      "relevance": 3,
+      "technical_depth": 3,
+      "timeliness": 4,
+      "verifiability": 0
     },
-    {
-      "path": "今日头条 ANR 优化实践系列 - 告别 SharedPreference 等待-2023-12-20.md",
-      "title": "今日头条 ANR 优化实践系列 - 告别 SharedPreference 等待",
-      "scores": {
-        "relevance": 3,
-        "technical_depth": 3,
-        "timeliness": 4,
-        "verifiability": 0
-      },
-      "total": 10,
-      "chapters": [
-        {
-          "chapter": "ch07-内存",
-          "confidence": "medium"
-        }
-      ],
-      "quality": "medium",
-      "summary": "今日头条 ANR 优化实践系列 - 告别 SharedPreference 等待",
-      "scan_date": "2026-04-04T04:31:52.304234"
+    "total": 10,
+    "chapters": [
+      {
+        "chapter": "ch07-内存",
+        "confidence": "medium"
+      }
+    ],
+    "quality": "medium",
+    "summary": "今日头条 ANR 优化实践系列 - 告别 SharedPreference 等待",
+    "scan_date": "2026-04-04T04:31:52.304234"
+  },
+  {
+    "path": "从 ApplicationExitInfo 看 Android 应用的退出类型-2024-04-03.md",
+    "title": "从 ApplicationExitInfo 看 Android 应用的退出类型",
+    "scores": {
+      "relevance": 4,
+      "technical_depth": 3,
+      "timeliness": 5,
+      "verifiability": 0
     },
-    {
-      "path": "从 ApplicationExitInfo 看 Android 应用的退出类型-2024-04-03.md",
-      "title": "从 ApplicationExitInfo 看 Android 应用的退出类型",
-      "scores": {
-        "relevance": 4,
-        "technical_depth": 3,
-        "timeliness": 5,
-        "verifiability": 0
-      },
-      "total": 12,
-      "chapters": [
-        {
-          "chapter": "ch02-进程",
-          "confidence": "medium"
-        }
-      ],
-      "quality": "medium",
-      "summary": "从 ApplicationExitInfo 看 Android 应用的退出类型",
-      "scan_date": "2026-04-04T04:31:52.304236"
+    "total": 12,
+    "chapters": [
+      {
+        "chapter": "ch02-进程",
+        "confidence": "medium"
+      }
+    ],
+    "quality": "medium",
+    "summary": "从 ApplicationExitInfo 看 Android 应用的退出类型",
+    "scan_date": "2026-04-04T04:31:52.304236"
+  },
+  {
+    "path": "从 B 站出发，用 Chrome devTools performance 分析页面如何渲染-2023-02-16.md",
+    "title": "从 B 站出发，用 Chrome devTools performance 分析页面如何渲染",
+    "scores": {
+      "relevance": 3,
+      "technical_depth": 3,
+      "timeliness": 5,
+      "verifiability": 0
     },
-    {
-      "path": "从 B 站出发，用 Chrome devTools performance 分析页面如何渲染-2023-02-16.md",
-      "title": "从 B 站出发，用 Chrome devTools performance 分析页面如何渲染",
-      "scores": {
-        "relevance": 3,
-        "technical_depth": 3,
-        "timeliness": 5,
-        "verifiability": 0
-      },
-      "total": 11,
-      "chapters": [
-        {
-          "chapter": "ch05-渲染",
-          "confidence": "medium"
-        }
-      ],
-      "quality": "medium",
-      "summary": "从 B 站出发，用 Chrome devTools performance 分析页面如何渲染",
-      "scan_date": "2026-04-04T04:31:52.304237"
+    "total": 11,
+    "chapters": [
+      {
+        "chapter": "ch05-渲染",
+        "confidence": "medium"
+      }
+    ],
+    "quality": "medium",
+    "summary": "从 B 站出发，用 Chrome devTools performance 分析页面如何渲染",
+    "scan_date": "2026-04-04T04:31:52.304237"
+  },
+  {
+    "path": "从 Hprof 源码初探虚拟机内存管理-2022-03-07.md",
+    "title": "从 Hprof 源码初探虚拟机内存管理",
+    "scores": {
+      "relevance": 3,
+      "technical_depth": 4,
+      "timeliness": 4,
+      "verifiability": 0
     },
-    {
-      "path": "从 Hprof 源码初探虚拟机内存管理-2022-03-07.md",
-      "title": "从 Hprof 源码初探虚拟机内存管理",
-      "scores": {
-        "relevance": 3,
-        "technical_depth": 4,
-        "timeliness": 4,
-        "verifiability": 0
-      },
-      "total": 11,
-      "chapters": [
-        {
-          "chapter": "ch07-内存",
-          "confidence": "medium"
-        }
-      ],
-      "quality": "medium",
-      "summary": "从 Hprof 源码初探虚拟机内存管理",
-      "scan_date": "2026-04-04T04:31:52.304238"
+    "total": 11,
+    "chapters": [
+      {
+        "chapter": "ch07-内存",
+        "confidence": "medium"
+      }
+    ],
+    "quality": "medium",
+    "summary": "从 Hprof 源码初探虚拟机内存管理",
+    "scan_date": "2026-04-04T04:31:52.304238"
+  },
+  {
+    "path": "从 Lambda 表达式到字节码插桩-2022-10-09.md",
+    "title": "从 Lambda 表达式到字节码插桩",
+    "scores": {
+      "relevance": 4,
+      "technical_depth": 1,
+      "timeliness": 5,
+      "verifiability": 0
     },
-    {
-      "path": "从 Lambda 表达式到字节码插桩-2022-10-09.md",
-      "title": "从 Lambda 表达式到字节码插桩",
-      "scores": {
-        "relevance": 4,
-        "technical_depth": 1,
-        "timeliness": 5,
-        "verifiability": 0
-      },
-      "total": 10,
-      "chapters": [
-        {
-          "chapter": "ch16-构建",
-          "confidence": "medium"
-        }
-      ],
-      "quality": "medium",
-      "summary": "从 Lambda 表达式到字节码插桩",
-      "scan_date": "2026-04-04T04:31:52.304240"
+    "total": 10,
+    "chapters": [
+      {
+        "chapter": "ch16-构建",
+        "confidence": "medium"
+      }
+    ],
+    "quality": "medium",
+    "summary": "从 Lambda 表达式到字节码插桩",
+    "scan_date": "2026-04-04T04:31:52.304240"
+  },
+  {
+    "path": "从0到1学Binder-ServiceManager详解(1)-2024-07-01.md",
+    "title": "从0到1学Binder-ServiceManager详解(1)",
+    "scores": {
+      "relevance": 5,
+      "technical_depth": 1,
+      "timeliness": 4,
+      "verifiability": 0
     },
-    {
-      "path": "从0到1学Binder-ServiceManager详解(1)-2024-07-01.md",
-      "title": "从0到1学Binder-ServiceManager详解(1)",
-      "scores": {
-        "relevance": 5,
-        "technical_depth": 1,
-        "timeliness": 4,
-        "verifiability": 0
-      },
-      "total": 10,
-      "chapters": [
-        {
-          "chapter": "ch01-架构",
-          "confidence": "medium"
-        }
-      ],
-      "quality": "medium",
-      "summary": "从0到1学Binder-ServiceManager详解(1)",
-      "scan_date": "2026-04-04T04:31:52.304241"
+    "total": 10,
+    "chapters": [
+      {
+        "chapter": "ch01-架构",
+        "confidence": "medium"
+      }
+    ],
+    "quality": "medium",
+    "summary": "从0到1学Binder-ServiceManager详解(1)",
+    "scan_date": "2026-04-04T04:31:52.304241"
+  },
+  {
+    "path": "Android编译优化系列-kapt篇-2022-03-06.md",
+    "title": "Android编译优化系列-kapt篇",
+    "scores": {
+      "relevance": 5,
+      "technical_depth": 1,
+      "timeliness": 3,
+      "verifiability": 1
     },
-    {
-      "path": "Android编译优化系列-kapt篇-2022-03-06.md",
-      "title": "Android编译优化系列-kapt篇",
-      "scores": {
-        "relevance": 5,
-        "technical_depth": 1,
-        "timeliness": 3,
-        "verifiability": 1
-      },
-      "total": 10,
-      "chapters": [
-        {
-          "chapter": "ch16-构建",
-          "confidence": "high"
-        }
-      ],
-      "quality": "medium",
-      "summary": "# Android编译优化系列-kapt篇  本文是编译优化系列文章之 kapt 优化篇，后续还会有 build cache, kotlin, dex 优化等文章，敬请期待。  [Read in Cu...",
-      "scan_date": "2026-04-04T08:22:37.184230"
-    }
-  ]
-}
+    "total": 10,
+    "chapters": [
+      {
+        "chapter": "ch16-构建",
+        "confidence": "high"
+      }
+    ],
+    "quality": "medium",
+    "summary": "# Android编译优化系列-kapt篇  本文是编译优化系列文章之 kapt 优化篇，后续还会有 build cache, kotlin, dex 优化等文章，敬请期待。  [Read in Cu...",
+    "scan_date": "2026-04-04T08:22:37.184230"
+  }
+]

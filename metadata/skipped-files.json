@@ -8171,5 +8171,485 @@
     "total": 5,
     "skip_reason": "总得分 5 < 10 (相关性:0, 深度:1, 时效:3, 可验证:1)",
     "scan_date": "2026-04-04T08:22:37.184275"
+  },
+  {
+    "path": "Cubox/你不知道的 Agent：原理、架构与工程实践 - Tw93-2026-03-21.md",
+    "title": "你不知道的 Agent：原理、架构与工程实践 - Tw93",
+    "reason": "Score < 10: 5.5/20",
+    "score": {
+      "relevance": 0,
+      "technical_depth": 4,
+      "timeliness": 0,
+      "verifiability": 1.5
+    },
+    "total": 5.5
+  },
+  {
+    "path": "Cubox/你不知道的 Claude Code：架构、治理与工程实践 - Tw93-2026-03-21.md",
+    "title": "你不知道的 Claude Code：架构、治理与工程实践 - Tw93",
+    "reason": "Score < 10: 2/20",
+    "score": {
+      "relevance": 0,
+      "technical_depth": 2,
+      "timeliness": 0,
+      "verifiability": 0
+    },
+    "total": 2
+  },
+  {
+    "path": "Cubox/你不知道的canvas性能优化-2022-01-14.md",
+    "title": "你不知道的canvas性能优化",
+    "reason": "Score < 10: 1.5/20",
+    "score": {
+      "relevance": 0,
+      "technical_depth": 0,
+      "timeliness": 0,
+      "verifiability": 1.5
+    },
+    "total": 1.5
+  },
+  {
+    "path": "Cubox/你会怎么回答这个面试题-2024-05-29.md",
+    "title": "你会怎么回答这个面试题",
+    "reason": "Score < 10: 1.5/20",
+    "score": {
+      "relevance": 0,
+      "technical_depth": 0,
+      "timeliness": 0,
+      "verifiability": 1.5
+    },
+    "total": 1.5
+  },
+  {
+    "path": "Cubox/你关注什么你的思想就在哪里，所以我会收集一些具有独特视角的人-2024-12-08.md",
+    "title": "你关注什么你的思想就在哪里，所以我会收集一些具有独特视角的人",
+    "reason": "Score < 10: 1.5/20",
+    "score": {
+      "relevance": 0,
+      "technical_depth": 0,
+      "timeliness": 0,
+      "verifiability": 1.5
+    },
+    "total": 1.5
+  },
+  {
+    "path": "Cubox/你在为AI工具付费？我只花了100美元就解锁了一大堆牛逼工具，详细教程在这里-2025-04-16.md",
+    "title": "你在为AI工具付费？我只花了100美元就解锁了一大堆牛逼工具，详细教程在这里",
+    "reason": "Score < 10: 1.5/20",
+    "score": {
+      "relevance": 0,
+      "technical_depth": 0,
+      "timeliness": 0,
+      "verifiability": 1.5
+    },
+    "total": 1.5
+  },
+  {
+    "path": "Cubox/你无法用 AI 建立护城河 [译] - 宝玉的分享-2025-02-23.md",
+    "title": "你无法用 AI 建立护城河 [译] | 宝玉的分享",
+    "reason": "Score < 10: 1.5/20",
+    "score": {
+      "relevance": 0,
+      "technical_depth": 0,
+      "timeliness": 0,
+      "verifiability": 1.5
+    },
+    "total": 1.5
+  },
+  {
+    "path": "Cubox/你的App是否有出现过幽灵调用？-2025-09-18.md",
+    "title": "你的App是否有出现过幽灵调用？",
+    "reason": "Score < 10: 1.5/20",
+    "score": {
+      "relevance": 0,
+      "technical_depth": 0,
+      "timeliness": 0,
+      "verifiability": 1.5
+    },
+    "total": 1.5
+  },
+  {
+    "path": "Cubox/你的debug包在Android 14变卡了吗 ｜ 得物技术-2024-04-15.md",
+    "title": "你的debug包在Android 14变卡了吗 ｜ 得物技术",
+    "reason": "Score < 10: 5.0/20",
+    "score": {
+      "relevance": 0,
+      "technical_depth": 2,
+      "timeliness": 0,
+      "verifiability": 3.0
+    },
+    "total": 5.0
+  },
+  {
+    "path": "Cubox/你的同事正在偷偷修炼！7 个程序员开挂习惯大公开-2025-05-08.md",
+    "title": "你的同事正在偷偷修炼！7 个程序员开挂习惯大公开",
+    "reason": "Score < 10: 1.5/20",
+    "score": {
+      "relevance": 0,
+      "technical_depth": 0,
+      "timeliness": 0,
+      "verifiability": 1.5
+    },
+    "total": 1.5
+  },
+  {
+    "path": "Cubox/你真的知道onCreate和onResume 耗时操作为什么不会ANR吗？-2025-02-17.md",
+    "title": "你真的知道onCreate和onResume 耗时操作为什么不会ANR吗？",
+    "reason": "Score < 10: 1.5/20",
+    "score": {
+      "relevance": 0,
+      "technical_depth": 0,
+      "timeliness": 0,
+      "verifiability": 1.5
+    },
+    "total": 1.5
+  },
+  {
+    "path": "Cubox/你管这破玩意叫文件系统-2024-04-13.md",
+    "title": "你管这破玩意叫文件系统",
+    "reason": "Score < 10: 1.5/20",
+    "score": {
+      "relevance": 0,
+      "technical_depth": 0,
+      "timeliness": 0,
+      "verifiability": 1.5
+    },
+    "total": 1.5
+  },
+  {
+    "path": "Cubox/使用 Android Vitals 监控应用的技术性能-2022-03-18.md",
+    "title": "使用 Android Vitals 监控应用的技术性能",
+    "reason": "Score < 10: 1.5/20",
+    "score": {
+      "relevance": 0,
+      "technical_depth": 0,
+      "timeliness": 0,
+      "verifiability": 1.5
+    },
+    "total": 1.5
+  },
+  {
+    "path": "Cubox/使用 AndroidX 增强 WebView 的能力 - 开发者说·DTalk-2024-01-12.md",
+    "title": "使用 AndroidX 增强 WebView 的能力 | 开发者说·DTalk",
+    "reason": "Score < 10: 1.5/20",
+    "score": {
+      "relevance": 0,
+      "technical_depth": 0,
+      "timeliness": 0,
+      "verifiability": 1.5
+    },
+    "total": 1.5
+  },
+  {
+    "path": "Cubox/使用 AutoSingleLayer 进行无信号缓冲区锁存  -  Android Open Source Project-2024-11-23.md",
+    "title": "使用 AutoSingleLayer 进行无信号缓冲区锁存  |  Android Open Source Project",
+    "reason": "Score < 10: 3.5/20",
+    "score": {
+      "relevance": 0,
+      "technical_depth": 2,
+      "timeliness": 0,
+      "verifiability": 1.5
+    },
+    "total": 3.5
+  },
+  {
+    "path": "Cubox/使用 Gemini Pro 高效开发应用-2024-02-05.md",
+    "title": "使用 Gemini Pro 高效开发应用",
+    "reason": "Score < 10: 1.5/20",
+    "score": {
+      "relevance": 0,
+      "technical_depth": 0,
+      "timeliness": 0,
+      "verifiability": 1.5
+    },
+    "total": 1.5
+  },
+  {
+    "path": "Cubox/使用 Jetpack Compose 提升 Play 商店的用户体验-2022-03-30.md",
+    "title": "使用 Jetpack Compose 提升 Play 商店的用户体验",
+    "reason": "Score < 10: 1.5/20",
+    "score": {
+      "relevance": 0,
+      "technical_depth": 0,
+      "timeliness": 0,
+      "verifiability": 1.5
+    },
+    "total": 1.5
+  },
+  {
+    "path": "Cubox/使用 Jetpack Compose 提升 Play 商店的用户体验-2022-03-31.md",
+    "title": "使用 Jetpack Compose 提升 Play 商店的用户体验",
+    "reason": "Score < 10: 1.5/20",
+    "score": {
+      "relevance": 0,
+      "technical_depth": 0,
+      "timeliness": 0,
+      "verifiability": 1.5
+    },
+    "total": 1.5
+  },
+  {
+    "path": "Cubox/使用 Kotlin Flow 的 flowOn 理解缓冲行为-2024-02-21.md",
+    "title": "使用 Kotlin Flow 的 flowOn 理解缓冲行为",
+    "reason": "Score < 10: 5.5/20",
+    "score": {
+      "relevance": 4,
+      "technical_depth": 0,
+      "timeliness": 0,
+      "verifiability": 1.5
+    },
+    "total": 5.5
+  },
+  {
+    "path": "Cubox/使用 PlantUML 绘图-2022-01-23.md",
+    "title": "使用 PlantUML 绘图",
+    "reason": "Score < 10: 1.5/20",
+    "score": {
+      "relevance": 0,
+      "technical_depth": 0,
+      "timeliness": 0,
+      "verifiability": 1.5
+    },
+    "total": 1.5
+  },
+  {
+    "path": "Cubox/使用 hexo-robots 来生成 robots.txt 文件 - 恋の歌-2025-02-13.md",
+    "title": "使用 hexo-robots 来生成 robots.txt 文件 | 恋の歌",
+    "reason": "Score < 10: 1.5/20",
+    "score": {
+      "relevance": 0,
+      "technical_depth": 0,
+      "timeliness": 0,
+      "verifiability": 1.5
+    },
+    "total": 1.5
+  },
+  {
+    "path": "Cubox/使用AI自动优化网站PageSpeed性能-2025-12-11.md",
+    "title": "使用AI自动优化网站PageSpeed性能",
+    "reason": "Score < 10: 1.5/20",
+    "score": {
+      "relevance": 0,
+      "technical_depth": 0,
+      "timeliness": 0,
+      "verifiability": 1.5
+    },
+    "total": 1.5
+  },
+  {
+    "path": "Cubox/使用Chat gpt提高Android开发效率-2023-06-19.md",
+    "title": "使用Chat gpt提高Android开发效率",
+    "reason": "Score < 10: 1.5/20",
+    "score": {
+      "relevance": 0,
+      "technical_depth": 0,
+      "timeliness": 0,
+      "verifiability": 1.5
+    },
+    "total": 1.5
+  },
+  {
+    "path": "Cubox/使用Coze(扣子)定制一个Android领域的专家 - 掘金-2024-02-21.md",
+    "title": "使用Coze(扣子)定制一个Android领域的专家 - 掘金",
+    "reason": "Score < 10: 1.5/20",
+    "score": {
+      "relevance": 0,
+      "technical_depth": 0,
+      "timeliness": 0,
+      "verifiability": 1.5
+    },
+    "total": 1.5
+  },
+  {
+    "path": "Cubox/使用Coze(扣子)定制一个Android领域的专家-2024-06-23.md",
+    "title": "使用Coze(扣子)定制一个Android领域的专家",
+    "reason": "Score < 10: 1.5/20",
+    "score": {
+      "relevance": 0,
+      "technical_depth": 0,
+      "timeliness": 0,
+      "verifiability": 1.5
+    },
+    "total": 1.5
+  },
+  {
+    "path": "Cubox/使用Perfetto进行流畅度分析-2026-01-13.md",
+    "title": "使用Perfetto进行流畅度分析",
+    "reason": "Score < 10: 7.5/20",
+    "score": {
+      "relevance": 4,
+      "technical_depth": 2,
+      "timeliness": 0,
+      "verifiability": 1.5
+    },
+    "total": 7.5
+  },
+  {
+    "path": "Cubox/使用Simpleperf+Timeline诊断游戏卡顿 - 知乎-2024-02-25.md",
+    "title": "使用Simpleperf+Timeline诊断游戏卡顿 - 知乎",
+    "reason": "Score < 10: 1.5/20",
+    "score": {
+      "relevance": 0,
+      "technical_depth": 0,
+      "timeliness": 0,
+      "verifiability": 1.5
+    },
+    "total": 1.5
+  },
+  {
+    "path": "Cubox/使用ftrace分析函数性能-2022-03-06.md",
+    "title": "使用ftrace分析函数性能",
+    "reason": "Score < 10: 7.5/20",
+    "score": {
+      "relevance": 4,
+      "technical_depth": 2,
+      "timeliness": 0,
+      "verifiability": 1.5
+    },
+    "total": 7.5
+  },
+  {
+    "path": "Cubox/使用perfetto分析Android native物理内存泄漏 - 简书-2022-03-08.md",
+    "title": "使用perfetto分析Android native物理内存泄漏 - 简书",
+    "reason": "Score < 10: 5.5/20",
+    "score": {
+      "relevance": 4,
+      "technical_depth": 0,
+      "timeliness": 0,
+      "verifiability": 1.5
+    },
+    "total": 5.5
+  },
+  {
+    "path": "Cubox/使用二八法则省力地学习 awk - 咸糖 - 自律者自由-2022-07-17.md",
+    "title": "使用二八法则省力地学习 awk - 咸糖 - 自律者自由",
+    "reason": "Score < 10: 1.5/20",
+    "score": {
+      "relevance": 0,
+      "technical_depth": 0,
+      "timeliness": 0,
+      "verifiability": 1.5
+    },
+    "total": 1.5
+  },
+  {
+    "path": "Cubox/使用内存回收技术对嵌入式系统进行性能优化-2022-07-14.md",
+    "title": "使用内存回收技术对嵌入式系统进行性能优化",
+    "reason": "Score < 10: 7.5/20",
+    "score": {
+      "relevance": 4,
+      "technical_depth": 2,
+      "timeliness": 0,
+      "verifiability": 1.5
+    },
+    "total": 7.5
+  },
+  {
+    "path": "Cubox/使用火山引擎 APMPlus 解决抖音Top 1 Java 崩溃的通用优化方案-2023-11-29.md",
+    "title": "使用火山引擎 APMPlus 解决抖音Top 1 Java 崩溃的通用优化方案",
+    "reason": "Score < 10: 1.5/20",
+    "score": {
+      "relevance": 0,
+      "technical_depth": 0,
+      "timeliness": 0,
+      "verifiability": 1.5
+    },
+    "total": 1.5
+  },
+  {
+    "path": "Cubox/使用自定义调度程序暴露并发错误 - 知乎-2025-02-09.md",
+    "title": "使用自定义调度程序暴露并发错误 - 知乎",
+    "reason": "Score < 10: 1.5/20",
+    "score": {
+      "relevance": 0,
+      "technical_depth": 0,
+      "timeliness": 0,
+      "verifiability": 1.5
+    },
+    "total": 1.5
+  },
+  {
+    "path": "Cubox/使用说明 应用性能监控全链路版-火山引擎-2022-11-10.md",
+    "title": "使用说明 应用性能监控全链路版-火山引擎",
+    "reason": "Score < 10: 3.5/20",
+    "score": {
+      "relevance": 0,
+      "technical_depth": 2,
+      "timeliness": 0,
+      "verifiability": 1.5
+    },
+    "total": 3.5
+  },
+  {
+    "path": "Cubox/保姆级教程：利用大模型与高德地图API，轻松实现查找附近咖啡店-2024-06-26.md",
+    "title": "保姆级教程：利用大模型与高德地图API，轻松实现查找附近咖啡店",
+    "reason": "Score < 10: 3.5/20",
+    "score": {
+      "relevance": 0,
+      "technical_depth": 2,
+      "timeliness": 0,
+      "verifiability": 1.5
+    },
+    "total": 3.5
+  },
+  {
+    "path": "Cubox/保持代码整洁： ViewModel 事件驱动-2024-09-11.md",
+    "title": "保持代码整洁： ViewModel 事件驱动",
+    "reason": "Score < 10: 1.5/20",
+    "score": {
+      "relevance": 0,
+      "technical_depth": 0,
+      "timeliness": 0,
+      "verifiability": 1.5
+    },
+    "total": 1.5
+  },
+  {
+    "path": "Cubox/信心是最大的资产-2022-10-09.md",
+    "title": "信心是最大的资产",
+    "reason": "Score < 10: 1.5/20",
+    "score": {
+      "relevance": 0,
+      "technical_depth": 0,
+      "timeliness": 0,
+      "verifiability": 1.5
+    },
+    "total": 1.5
+  },
+  {
+    "path": "Cubox/信息太少，无法判断。我做flu...-2024-01-17.md",
+    "title": "信息太少，无法判断。我做flu...",
+    "reason": "Score < 10: 1.5/20",
+    "score": {
+      "relevance": 0,
+      "technical_depth": 0,
+      "timeliness": 0,
+      "verifiability": 1.5
+    },
+    "total": 1.5
+  },
+  {
+    "path": "Cubox/信息设计先驱爱德华·塔夫特-2025-08-29.md",
+    "title": "信息设计先驱爱德华·塔夫特",
+    "reason": "Score < 10: 1.5/20",
+    "score": {
+      "relevance": 0,
+      "technical_depth": 0,
+      "timeliness": 0,
+      "verifiability": 1.5
+    },
+    "total": 1.5
+  },
+  {
+    "path": "Cubox/借助 AI Coding 快速打造 AI Agent 系统-2026-02-10.md",
+    "title": "借助 AI Coding 快速打造 AI Agent 系统",
+    "reason": "Score < 10: 1.5/20",
+    "score": {
+      "relevance": 0,
+      "technical_depth": 0,
+      "timeliness": 0,
+      "verifiability": 1.5
+    },
+    "total": 1.5
   }
 ]

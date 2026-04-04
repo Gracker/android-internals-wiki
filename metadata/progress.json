@@ -2,13 +2,13 @@
   "generated_at": "2026-04-03T19:10:00",
   "total_sections": 96,
   "metrics": {
-    "total": 99,
-    "draft": 5,
+    "total": 100,
+    "draft": 6,
     "ready-for-review": 48,
     "reviewed": 3,
     "finalized": 40,
     "staging_drafts": 0,
-    "last_updated": "2026-04-04T22:25:00+08:00",
+    "last_updated": "2026-04-04T23:02:00+08:00",
     "processing": 0,
     "ready-to-publish": 1
   },
@@ -1381,6 +1381,15 @@
   "history": [
     {
       "date": "2026-04-04",
+      "section": "1.8",
+      "title": "Activity Manager Service 与性能分析",
+      "action": "gap-created",
+      "created_by": "task2a-knowledge-gap",
+      "gap_source": "AOSP结构+官方文档+研究素材+读者需求",
+      "score": "17/20"
+    },
+    {
+      "date": "2026-04-04",
       "section": "11.2",
       "title": "App 耗电优化",
       "action": "reviewed-finalized",
@@ -2351,6 +2360,14 @@
       "verification_level": "L2",
       "word_count": "~8500",
       "confidence": "high"
+    },
+    "1.8": {
+      "title": "Activity Manager Service 与性能分析",
+      "status": "draft",
+      "file": "src/part1-fundamentals/ch01-architecture/08-activity-manager.md",
+      "created_date": "2026-04-04",
+      "created_by": "task2a-knowledge-gap",
+      "gap_source": "AOSP结构+官方文档+研究素材+读者需求"
     }
   },
   "5.1": {
