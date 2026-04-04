@@ -2,9 +2,9 @@
 title: "Low Memory Killer"
 section: "4.4"
 chapter: "4.4"
-status: ready-for-review
+status: ready-to-publish
 drafted_date: "2026-03-31"
-reviewed_date: "2026-04-03"
+reviewed_date: "2026-04-05"
 reviewed_by: "openclaw-task6"
 polish_count: 1
 polish_date: "2026-04-05"
