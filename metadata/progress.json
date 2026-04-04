@@ -1,2230 +1,2277 @@
 {
-    "generated_at": "2026-04-03T19:10:00",
-    "total_sections": 94,
-    "metrics": {
-        "total": 97,
-        "draft": 7,
-        "ready-for-review": 46,
-        "reviewed": 2,
-        "finalized": 40,
-        "staging_drafts": 0,
-        "last_updated": "2026-04-04T12:26:06",
-        "processing": 0
+  "generated_at": "2026-04-03T19:10:00",
+  "total_sections": 94,
+  "metrics": {
+    "total": 97,
+    "draft": 6,
+    "ready-for-review": 47,
+    "reviewed": 2,
+    "finalized": 40,
+    "staging_drafts": 0,
+    "last_updated": "2026-04-04T13:12:46.313554",
+    "processing": 0
+  },
+  "reviewed_sections": {
+    "8.1": {
+      "reviewed_date": "2026-04-04",
+      "reviewed_by": "openclaw-task6",
+      "review_status": "finalized",
+      "fixes_applied": [
+        "语言风格：4处「你」→「我们」（writing-guide §3.5）",
+        "元数据：修正 applicable_versions（API B → API 36）",
+        "元数据：补 section、drafted_date、drafted_by",
+        "状态：ready-for-review → finalized"
+      ]
     },
-    "reviewed_sections": {
-        "8.1": {
-            "reviewed_date": "2026-04-04",
-            "reviewed_by": "openclaw-task6",
-            "review_status": "finalized",
-            "fixes_applied": [
-                "语言风格：4处「你」→「我们」（writing-guide §3.5）",
-                "元数据：修正 applicable_versions（API B → API 36）",
-                "元数据：补 section、drafted_date、drafted_by",
-                "状态：ready-for-review → finalized"
-            ]
-        },
-        "1.1": {
-            "reviewed_date": "2026-03-31",
-            "reviewed_by": "openclaw-task6",
-            "review_status": "finalized-v2",
-            "fixes_applied": [
-                "标准化6处验证标注格式（[来源:]→[已验证:]）",
-                "补充4处待验证标注（Zygote fork时间/Binder延迟/JNI延迟/JNI优化比例）",
-                "补充1处来源标注（冷启动Binder调用次数）",
-                "更新frontmatter（status→finalized, 添加reviewed_date/reviewed_by）"
-            ]
-        },
-        "1.2": {
-            "reviewed_date": "2026-04-02",
-            "reviewed_by": "openclaw-task6",
-            "review_status": "finalized-v2",
-            "fixes_applied": [
-                "误区 section：修正 boot_completed 事件描述（'可能还处于锁屏状态'→'用户解锁后发出'）",
-                "误区 section：按时间排序 boot milestone 事件（locked_boot_completed → boot_completed → user_setup_complete）",
-                "frontmatter 更新：status ready-for-review → finalized, reviewed_date/reviewed_by 更新"
-            ]
-        },
-        "1.3": {
-            "reviewed_date": "2026-03-31",
-            "reviewed_by": "openclaw-task6",
-            "review_status": "finalized",
-            "fixes_applied": [
-                "标准化3处验证标注格式（[来源:]→[已验证: 来源见 ...]）",
-                "添加1处待验证标注（SERVICE_CUR=800）",
-                "添加2处[图：...]标记（五级优先级示意、LMK流程图）",
-                "补全frontmatter（drafted_date, reviewed_date, reviewed_by）",
-                "状态更新：ready-for-review → finalized"
-            ]
-        },
-        "4.5": {
-            "reviewed_date": "2026-04-02",
-            "reviewed_by": "openclaw-task6-v2",
-            "review_status": "reviewed-needs-fix",
-            "fixes_applied": [
-                "标注 onTrimMemory 前台回调数值存疑（B类）",
-                "标注 Perfetto Track 对照缺失（B类）",
-                "frontmatter status → reviewed, reviewed_date → 2026-04-02"
-            ],
-            "review_r2_date": "2026-04-01",
-            "review_r2_by": "openclaw-task2",
-            "review_r2_status": "rework-completed",
-            "r2_fixes_applied": [
-                "补充常见问题与误区：5 个典型误区（System.gc/Bitmap.recycle/onTrimMemory/largeHeap/内存抖动）",
-                "每个误区均使用连贯叙述风格（非列表罗列），符合 writing-guide 要求",
-                "全部 5 条误区已通过 L2 官方文档验证"
-            ]
-        },
-        "2.1": {
-            "reviewed_date": "2026-04-02",
-            "reviewed_by": "openclaw-task6",
-            "review_status": "reviewed",
-            "fixes_applied": [
-                "frontmatter: 补 drafted_date/reviewed_date/reviewed_by",
-                "frontmatter: applicable_versions API B → API 36",
-                "frontmatter: status ready-for-review → reviewed",
-                "措辞: UI 线程（主线程）→ 主线程（也称 UI 线程）"
-            ]
-        },
-        "5.1": {
-            "reviewed_date": "2026-04-03",
-            "reviewed_by": "openclaw-task6",
-            "review_status": "finalized",
-            "fixes_applied": [
-                "frontmatter: 补 section 字段",
-                "frontmatter: status ready-for-review → finalized",
-                "标注标准化: 3 处 [来源] → [已验证]",
-                "frontmatter: reviewed_date 更新为 2026-04-03"
-            ]
-        },
-        "4.6": {
-            "reviewed_date": "2026-04-03",
-            "reviewed_by": "openclaw-task6",
-            "review_status": "finalized-v2",
-            "fixes_applied": [
-                "补充3处[图：...]标注（Bitmap迁移/Scudo架构/MTE Tag比对）",
-                "frontmatter更新：status→finalized, reviewed_date→2026-04-03"
-            ],
-            "notes": "二次review（回炉后），无B类大问题，保留已有[存疑]标注待高爷决策"
-        },
-        "2.3": {
-            "reviewed_date": "2026-04-02",
-            "reviewed_by": "openclaw-task6",
-            "review_status": "finalized",
-            "file": "src/part1-fundamentals/ch02-rendering/03-vsync.md"
-        },
-        "2.4": {
-            "reviewed_date": "2026-04-03",
-            "reviewed_by": "openclaw-task6",
-            "review_status": "finalized",
-            "fixes_applied": [
-                "5处'你'→'我们'替换（writing-guide §3.5合规）",
-                "1处大小写修正（Choreographer#doframe→#doFrame）"
-            ]
-        },
-        "2.6": {
-            "reviewed_date": "2026-04-02",
-            "reviewed_by": "openclaw-task6",
-            "review_status": "reviewed",
-            "fixes_applied": [
-                "frontmatter: 补 drafted_date/reviewed_date/reviewed_by, status -> reviewed",
-                "frontmatter: applicable_versions API B -> API 36",
-                "frontmatter: sources 移除 androidcentral.com, skia.org -> source.android.com",
-                "confidence: high -> medium",
-                "添加 [待补充: Trace 截图] 标注",
-                "标记 6 处 [存疑] 代码",
-                "标记 1 处 [需重写] BlastBufferQueue Java 虚构 API",
-                "标记 1 处 [需验证] HWC 3.0 版本",
-                "添加全文 [需重写] 文体标注"
-            ],
-            "b_class_issues": 4
-        },
-        "2.7": {
-            "reviewed_date": "2026-04-02",
-            "reviewed_by": "openclaw-task6",
-            "review_status": "finalized",
-            "fixes_applied": [
-                "Software Layer 适用场景：从列表改为连贯叙述（writing-guide 合规）",
-                "规律总结过渡措辞优化",
-                "frontmatter：补 drafted_date/reviewed_date/reviewed_by，status → finalized"
-            ]
-        },
-        "2.8": {
-            "reviewed_date": "2026-04-02",
-            "reviewed_by": "openclaw-task6",
-            "review_status": "finalized",
-            "fixes_applied": [
-                "修正 you -> women (writing-guide compliance)",
-                "添加 GPU overdraw debug color figure marker",
-                "补充 frontmatter: drafted_date, reviewed_date, reviewed_by",
-                "status: ready-for-review -> finalized"
-            ]
-        },
-        "5.3": {
-            "reviewed_date": "2026-04-02",
-            "reviewed_by": "openclaw-task6",
-            "review_status": "finalized",
-            "fixes_applied": [
-                "措辞修正：集群迁移\"中断\"→\"迁移开销\"（更准确的术语）",
-                "frontmatter：补 reviewed_date/reviewed_by, status ready-for-review → finalized"
-            ]
-        },
-        "2.11": {
-            "reviewed_date": "2026-04-03",
-            "reviewed_by": "openclaw-task6",
-            "review_status": "finalized-v2",
-            "fixes_applied": [
-                "11处'你'→'我们'替换（writing-guide §3.5合规）",
-                "frontmatter补充section字段",
-                "3处[存疑]标注（Flutter 3.38版本号、450ms→11ms来源、HoldApp报告真实性）",
-                "status ready-for-review → finalized"
-            ],
-            "b_class_notes": "3处存疑均为数据来源验证，非结构性问题，不触发回炉"
-        },
-        "2.9": {
-            "reviewed_date": "2026-04-03",
-            "reviewed_by": "openclaw-task6",
-            "review_status": "finalized-v3",
-            "review_round": 2,
-            "fixes_applied": [
-                "8处'你'→'我们'替换（writing-guide §3.5合规）",
-                "合并冗余FrameMetrics过渡句",
-                "frontmatter补充section字段, status→finalized"
-            ]
-        },
-        "4.1": {
-            "reviewed_date": "2026-04-03",
-            "reviewed_by": "openclaw-task6",
-            "review_status": "finalized",
-            "fixes_applied": [
-                "frontmatter: 补 section/drafted_date, status → finalized",
-                "frontmatter: 添加 reviewed_date/reviewed_by",
-                "标准化 4 处 [来源:] → [已验证:] 标注格式",
-                "ZRAM 75% 声明添加 [待验证] 标注"
-            ]
-        },
-        "9.3": {
-            "reviewed_date": "2026-04-03",
-            "reviewed_by": "openclaw-task6",
-            "review_status": "finalized",
-            "fixes_applied": [
-                "8处'你'→'我们'替换（writing-guide §3.5合规）",
-                "frontmatter: status ready-for-review → finalized",
-                "frontmatter: 补 reviewed_date/reviewed_by"
-            ]
-        },
-        "2.10": {
-            "reviewed_date": "2026-04-03",
-            "reviewed_by": "openclaw-task6",
-            "review_status": "finalized-v2",
-            "review_round": 2,
-            "fixes_applied": [
-                "补充 frontmatter section: 2.10",
-                "修正 Android 12 渲染架构描述：RenderThread 从 Android 5.0 引入（非 Android 12）",
-                "ANGLE 性能开销数据添加 [待验证] 标注",
-                "status ready-for-review → finalized（二次 review，回炉后无 B 类大问题）"
-            ]
-        },
-        "5.4": {
-            "reviewed_date": "2026-04-03",
-            "reviewed_by": "openclaw-task6",
-            "review_status": "finalized",
-            "fixes_applied": [
-                "9处'你'→'我们'替换（writing-guide §3.5合规）",
-                "5处[来源:]→[已验证: 来源见 ...]标注格式标准化",
-                "frontmatter补充section字段",
-                "status ready-for-review → finalized"
-            ]
-        },
-        "3.2": {
-            "reviewed_date": "2026-04-03",
-            "reviewed_by": "openclaw-task6",
-            "review_status": "finalized",
-            "fixes_applied": [
-                "3处'你'→'我们'替换（writing-guide §3.5合规）",
-                "frontmatter补全：section/drafted_date/drafted_by/reviewed_date/reviewed_by",
-                "status ready-for-review → finalized"
-            ]
-        },
-        "3.3": {
-            "reviewed_date": "2026-04-03",
-            "reviewed_by": "openclaw-task6",
-            "review_status": "finalized",
-            "fixes_applied": [
-                "18处'你'→'我们'替换（writing-guide §3.5合规）",
-                "frontmatter补充：section/drafted_date/drafted_by/reviewed_date/reviewed_by",
-                "status ready-for-review → finalized"
-            ]
-        },
-        "4.3": {
-            "reviewed_date": "2026-04-03",
-            "reviewed_by": "openclaw-task6",
-            "review_status": "finalized",
-            "fixes_applied": [
-                "5处'你'→'我们'替换（writing-guide §3.5合规）",
-                "frontmatter补充section/drafted_date/drafted_by字段",
-                "frontmatter更新：status→finalized, 添加reviewed_date/reviewed_by"
-            ]
-        },
-        "5.5": {
-            "reviewed_date": "2026-04-03",
-            "reviewed_by": "openclaw-task6",
-            "review_status": "finalized",
-            "fixes_applied": [
-                "8处'你'→'我们'替换（writing-guide §3.5合规）",
-                "frontmatter补 section/drafted_date 字段",
-                "frontmatter更新：status→finalized, 添加reviewed_date/reviewed_by"
-            ]
-        },
-        "4.4": {
-            "reviewed_date": "2026-04-03",
-            "reviewed_by": "openclaw-task6",
-            "review_status": "finalized",
-            "fixes_applied": [
-                "9处'你'→'我们'替换（writing-guide §3.5合规）",
-                "frontmatter补 section/drafted_date/reviewed_date/reviewed_by",
-                "status ready-for-review → finalized"
-            ]
-        },
-        "6.1": {
-            "reviewed_date": "2026-04-03",
-            "reviewed_by": "openclaw-task6",
-            "review_status": "finalized",
-            "fixes_applied": [
-                "标注标准化: 10处[来源:]→[已验证: 来源见 ...]（3种来源）",
-                "frontmatter补 drafted_date/drafted_by/section 字段",
-                "frontmatter: status ready-for-review → finalized"
-            ]
-        },
-        "7.1": {
-            "reviewed_date": "2026-04-03",
-            "reviewed_by": "openclaw-task6",
-            "review_status": "finalized",
-            "fixes_applied": [
-                "4处'你'→'我们'替换（writing-guide §3.5合规）",
-                "4处[来源:]→[已验证: 来源见 ...]标注格式标准化",
-                "frontmatter补 section/drafted_date/drafted_by 字段",
-                "status ready-for-review → finalized"
-            ]
-        },
-        "5.6": {
-            "reviewed_date": "2026-04-03",
-            "reviewed_by": "openclaw-task6",
-            "review_status": "finalized",
-            "fixes_applied": [
-                "22处'你'→'我们'替换（writing-guide §3.5合规）",
-                "3处[来源:]→[已验证:]标注格式标准化",
-                "2处[存疑]标注（绿盟标准/Adaptive Battery 2.0术语）",
-                "frontmatter补 section/reviewed_date/reviewed_by",
-                "status ready-for-review → finalized"
-            ]
-        },
-        "5.7": {
-            "reviewed_date": "2026-04-04",
-            "reviewed_by": "openclaw-task6",
-            "review_status": "finalized",
-            "fixes_applied": [
-                "4 处语言风格修正（你→我们/中性表述，符合 writing-guide）",
-                "frontmatter: status ready-for-review → finalized",
-                "frontmatter: 补 reviewed_date/reviewed_by"
-            ]
-        },
-        "6.4": {
-            "reviewed_date": "2026-04-04",
-            "reviewed_by": "openclaw-task6",
-            "review_status": "finalized",
-            "fixes_applied": [
-                "7处你→我们替换（writing-guide §3.5合规）",
-                "4处[来源]→[已验证: 来源见 ...]标注格式标准化",
-                "frontmatter补全：section/drafted_by/reviewed_date/reviewed_by",
-                "status ready-for-review → finalized"
-            ]
-        },
-        "7.6": {
-            "reviewed_date": "2026-04-04",
-            "reviewed_by": "openclaw-task6",
-            "review_status": "finalized",
-            "fixes_applied": [
-                "frontmatter补全：section/drafted_date/drafted_by/reviewed_date/reviewed_by",
-                "12处[来源:]→[已验证: 来源见 ...]标注格式标准化",
-                "status ready-for-review → finalized"
-            ]
-        },
-        "7.7": {
-            "reviewed_date": "2026-04-04",
-            "reviewed_by": "openclaw-task6",
-            "review_status": "finalized",
-            "fixes_applied": [
-                "17处'你'→'我们'替换（writing-guide §3.5合规）",
-                "frontmatter补全：section/drafted_by/reviewed_date/reviewed_by",
-                "status ready-for-review → finalized"
-            ]
-        },
-        "11.1": {
-            "reviewed_date": "2026-04-04",
-            "reviewed_by": "openclaw-task6",
-            "review_status": "finalized",
-            "fixes_applied": [
-                "11处'你'→'我们'替换（writing-guide §3.5合规）",
-                "frontmatter补充：section/drafted_by/reviewed_date/reviewed_by",
-                "status ready-for-review → finalized"
-            ]
-        }
+    "1.1": {
+      "reviewed_date": "2026-03-31",
+      "reviewed_by": "openclaw-task6",
+      "review_status": "finalized-v2",
+      "fixes_applied": [
+        "标准化6处验证标注格式（[来源:]→[已验证:]）",
+        "补充4处待验证标注（Zygote fork时间/Binder延迟/JNI延迟/JNI优化比例）",
+        "补充1处来源标注（冷启动Binder调用次数）",
+        "更新frontmatter（status→finalized, 添加reviewed_date/reviewed_by）"
+      ]
     },
-    "review_stats": {
-        "total_reviewed": 33,
-        "reviewed_today": 18,
-        "review_issues_total": 13
+    "1.2": {
+      "reviewed_date": "2026-04-02",
+      "reviewed_by": "openclaw-task6",
+      "review_status": "finalized-v2",
+      "fixes_applied": [
+        "误区 section：修正 boot_completed 事件描述（'可能还处于锁屏状态'→'用户解锁后发出'）",
+        "误区 section：按时间排序 boot milestone 事件（locked_boot_completed → boot_completed → user_setup_complete）",
+        "frontmatter 更新：status ready-for-review → finalized, reviewed_date/reviewed_by 更新"
+      ]
     },
-    "completed": [
-        {
-            "section": "13.4",
-            "title": "命令行打开超大 Trace",
-            "completed_at": "2026-04-03T13:10:00+08:00",
-            "anchors_covered": 5,
-            "anchors_total": 5,
-            "extensions_covered": 2,
-            "extensions_total": 2,
-            "verification_level": "L2",
-            "word_count": "~9500"
-        },
-        {
-            "section": "2.9",
-            "title": "渲染机制的版本演进",
-            "completed_at": "2026-03-30T16:20:00+08:00",
-            "anchors_covered": 5,
-            "anchors_total": 5,
-            "extensions_covered": 2,
-            "extensions_total": 2,
-            "verification_level": "L2",
-            "word_count": "TBD"
-        },
-        {
-            "section": "3.1",
-            "title": "Input 事件分发全流程",
-            "completed_at": "2026-03-30T09:30:54.458831+00:00",
-            "anchors_covered": 5,
-            "anchors_total": 5,
-            "extensions_covered": 2,
-            "extensions_total": 3,
-            "verification_level": "L2",
-            "word_count": "~7500"
-        },
-        {
-            "section": "2.5",
-            "title": "MainThread 与 RenderThread 协作",
-            "completed_at": "2026-03-30T20:47:20.369317",
-            "anchors_covered": 6,
-            "anchors_total": 6,
-            "extensions_covered": 2,
-            "extensions_total": 2,
-            "verification_level": "L2",
-            "word_count": "~8500",
-            "status": "finalized",
-            "finalized_at": "2026-04-02T12:25:00+08:00",
-            "review_date": "2026-04-02",
-            "review_by": "openclaw-task6",
-            "review_score": {
-                "structure": 5,
-                "expression": 5,
-                "consistency": 5,
-                "verification": 4,
-                "metadata": 5
-            }
-        },
-        {
-            "section": "2.2",
-            "title": "帧率与刷新率",
-            "completed_at": "2026-03-30T21:35:05",
-            "anchors_covered": 5,
-            "anchors_total": 5,
-            "extensions_covered": 3,
-            "extensions_total": 3,
-            "verification_level": "L2",
-            "word_count": "~8500"
-        },
-        {
-            "section": "2.7",
-            "title": "Hardware Layer",
-            "completed_at": "2026-03-30T14:27:41.534Z",
-            "anchors_covered": 4,
-            "anchors_total": 4,
-            "extensions_covered": 1,
-            "extensions_total": 2,
-            "verification_level": "L2",
-            "word_count": "~8500"
-        },
-        {
-            "section": "1.4",
-            "title": "Binder IPC 机制与性能影响",
-            "completed_at": "2026-03-31T01:42:45.108799",
-            "anchors_covered": 6,
-            "anchors_total": 6,
-            "extensions_covered": 3,
-            "extensions_total": 3,
-            "verification_level": "L2",
-            "word_count": "~9500"
-        },
-        {
-            "section": "1.5",
-            "title": "线程模型",
-            "completed_at": "2026-03-30T18:37:58.288757+00:00",
-            "anchors_covered": 6,
-            "anchors_total": 6,
-            "extensions_covered": 3,
-            "extensions_total": 3,
-            "verification_level": "L2",
-            "word_count": "~8500"
-        },
-        {
-            "section": "3.2",
-            "title": "触摸响应的性能分析",
-            "completed_at": "2026-03-30T19:38:41.369144+00:00",
-            "anchors_covered": 5,
-            "anchors_total": 5,
-            "extensions_covered": 2,
-            "extensions_total": 2,
-            "verification_level": "L2",
-            "word_count": "~7500"
-        },
-        {
-            "section": "7.1",
-            "title": "卡顿的定义与分类",
-            "completed_at": "2026-03-30T20:33:03.150823+00:00",
-            "anchors_covered": 5,
-            "anchors_total": 5,
-            "extensions_covered": 1,
-            "extensions_total": 2,
-            "verification_level": "L2",
-            "word_count": "~8000"
-        },
-        {
-            "section": "1.6",
-            "title": "Android 版本演进中的架构变化",
-            "completed_at": "2026-03-30T21:28:51.853958+00:00",
-            "anchors_covered": 5,
-            "anchors_total": 5,
-            "extensions_covered": 2,
-            "extensions_total": 2,
-            "verification_level": "L2",
-            "word_count": "~8000"
-        },
-        {
-            "section": "3.3",
-            "title": "手势导航与系统交互",
-            "completed_at": "2026-03-31T06:28:54.824806",
-            "anchors_covered": 4,
-            "anchors_total": 4,
-            "extensions_covered": 0,
-            "extensions_total": 2,
-            "verification_level": "L2",
-            "word_count": "~7500"
-        },
-        {
-            "section": "7.2",
-            "title": "卡顿原因体系",
-            "completed_at": "2026-03-31T07:29:54.381093+08:00",
-            "anchors_covered": 6,
-            "anchors_total": 6,
-            "extensions_covered": 0,
-            "extensions_total": 3,
-            "verification_level": "L2",
-            "word_count": "~7500"
-        },
-        {
-            "section": "7.3",
-            "title": "卡顿分析方法论",
-            "completed_at": "2026-03-31T08:20:00+08:00",
-            "anchors_covered": 5,
-            "anchors_total": 5,
-            "extensions_covered": 2,
-            "extensions_total": 2,
-            "verification_level": "L2",
-            "word_count": "~7500"
-        },
-        {
-            "section": "4.1",
-            "title": "Android 内存模型全景",
-            "completed_at": "2026-03-31T09:56:38.219714",
-            "anchors_covered": 5,
-            "anchors_total": 5,
-            "extensions_covered": 2,
-            "extensions_total": 2,
-            "verification_level": "L2",
-            "word_count": "~7500"
-        },
-        {
-            "section": "1.1",
-            "title": "Android 分层架构",
-            "completed_at": "2026-03-30T19:28:13.921512+08:00",
-            "status": "finalized",
-            "finalized_at": "2026-03-31T10:05:00+08:00",
-            "review_v2_date": "2026-03-31"
-        },
-        {
-            "section": "4.2",
-            "title": "Linux 内核内存管理",
-            "completed_at": "2026-03-31T10:50:04.545995",
-            "anchors_covered": 5,
-            "anchors_total": 5,
-            "extensions_covered": 1,
-            "extensions_total": 3,
-            "verification_level": "L2",
-            "word_count": "~7500"
-        },
-        {
-            "section": "4.3",
-            "title": "ART 虚拟机内存管理",
-            "completed_at": "2026-03-31T17:00:26.518990",
-            "anchors_covered": 5,
-            "anchors_total": 5,
-            "verification_level": "L2",
-            "word_count": "~7500"
-        },
-        {
-            "section": "1.3",
-            "title": "进程模型与生命周期管理",
-            "completed_at": "2026-03-31T09:58:00+08:00",
-            "status": "finalized",
-            "finalized_at": "2026-03-31T17:58:00+08:00",
-            "review_date": "2026-03-31",
-            "review_by": "openclaw-task6"
-        },
-        {
-            "section": "4.4",
-            "title": "Low Memory Killer",
-            "completed_at": "2026-03-31T18:32:44.758186",
-            "anchors_covered": 5,
-            "anchors_total": 5,
-            "extensions_covered": 3,
-            "extensions_total": 3,
-            "verification_level": "L2",
-            "word_count": "~7500"
-        },
-        {
-            "section": "4.5",
-            "title": "App 内存优化",
-            "completed_at": "2026-03-31T19:33:29.484314",
-            "anchors_covered": 5,
-            "anchors_total": 5,
-            "extensions_covered": 1,
-            "extensions_total": 3,
-            "verification_level": "L2",
-            "word_count": "~9000",
-            "action": "review-rework-completed",
-            "review_r2_date": "2026-04-01"
-        },
-        {
-            "section": "5.1",
-            "title": "Linux 进程调度基础",
-            "completed_at": "2026-03-31T21:37:01.681846",
-            "anchors_covered": 5,
-            "anchors_total": 5,
-            "extensions_covered": 1,
-            "extensions_total": 3,
-            "verification_level": "L2",
-            "word_count": "~13000"
-        },
-        {
-            "section": "5.2",
-            "title": "EAS 能量感知调度",
-            "completed_at": "2026-03-31T22:30:39.620507",
-            "anchors_covered": 5,
-            "anchors_total": 5,
-            "extensions_covered": 0,
-            "extensions_total": 2,
-            "verification_level": "L2",
-            "word_count": "~9000"
-        },
-        {
-            "section": "5.3",
-            "title": "大小核架构",
-            "completed_at": "2026-03-31T23:32:41.856375",
-            "anchors_covered": 5,
-            "anchors_total": 5,
-            "extensions_covered": 1,
-            "extensions_total": 2,
-            "verification_level": "L2",
-            "word_count": "~9500"
-        },
-        {
-            "section": "5.4",
-            "title": "DVFS 与功耗管理",
-            "completed_at": "2026-04-01T00:30:01.030651",
-            "anchors_covered": 5,
-            "anchors_total": 5,
-            "extensions_covered": 3,
-            "extensions_total": 3,
-            "verification_level": "L2",
-            "word_count": "~8000"
-        },
-        {
-            "section": "5.6",
-            "title": "Android 功耗管理",
-            "completed_at": "2026-04-01T02:22:00+08:00",
-            "anchors_covered": 5,
-            "anchors_total": 5,
-            "extensions_covered": 3,
-            "extensions_total": 3,
-            "verification_level": "L2",
-            "word_count": "~9500"
-        },
-        {
-            "section": "6.3",
-            "title": "I/O 调度与性能",
-            "completed_at": "2026-04-01T06:46:53",
-            "anchors_covered": 5,
-            "anchors_total": 5,
-            "extensions_covered": 2,
-            "extensions_total": 2,
-            "verification_level": "L2",
-            "word_count": "~4338"
-        },
-        {
-            "section": "6.4",
-            "title": "存储相关的版本演进",
-            "completed_at": "2026-04-01T07:26:31",
-            "anchors_covered": 4,
-            "anchors_total": 4,
-            "extensions_covered": 2,
-            "extensions_total": 2,
-            "verification_level": "L2",
-            "word_count": "~7500"
-        },
-        {
-            "section": "8.3",
-            "title": "启动优化策略",
-            "completed_at": "2026-04-01T16:30:00+08:00",
-            "anchors_covered": 6,
-            "anchors_total": 6,
-            "extensions_covered": 2,
-            "extensions_total": 2,
-            "verification_level": "L2",
-            "word_count": "~12000"
-        },
-        {
-            "section": "2.11",
-            "title": "Flutter 渲染管线与性能",
-            "completed_at": "2026-04-01T20:20:00+08:00",
-            "anchors_covered": 5,
-            "anchors_total": 5,
-            "extensions_covered": 3,
-            "extensions_total": 3,
-            "verification_level": "L2",
-            "word_count": "~8500"
-        },
-        {
-            "section": "2.11",
-            "title": "Flutter 渲染管线与性能",
-            "completed_at": "2026-04-01T20:20:00+08:00",
-            "anchors_covered": 5,
-            "anchors_total": 5,
-            "extensions_covered": 2,
-            "extensions_total": 3,
-            "verification_level": "L2",
-            "word_count": "~8000"
-        },
-        {
-            "section": "2.11",
-            "title": "Flutter 渲染管线与性能",
-            "completed_at": "2026-04-01T20:20:00+08:00",
-            "anchors_covered": 5,
-            "anchors_total": 5,
-            "extensions_covered": 1,
-            "extensions_total": 2,
-            "verification_level": "L2",
-            "word_count": "~8500"
-        },
-        {
-            "section": "8.4",
-            "title": "其他响应速度场景",
-            "completed_at": "2026-04-02T01:42:00+08:00",
-            "anchors_covered": 4,
-            "anchors_total": 4,
-            "extensions_covered": 0,
-            "extensions_total": 2,
-            "verification_level": "L2",
-            "word_count": "~9500"
-        },
-        {
-            "section": "8.5",
-            "title": "案例集",
-            "completed_at": "2026-04-02T02:41:00+08:00",
-            "anchors_covered": 3,
-            "anchors_total": 3,
-            "extensions_covered": 2,
-            "extensions_total": 2,
-            "verification_level": "L2",
-            "word_count": "~9000"
-        },
-        {
-            "section": "8.6",
-            "title": "Kotlin Coroutine 性能实践",
-            "completed_at": "2026-04-02T04:18:00+08:00",
-            "anchors_covered": 5,
-            "anchors_total": 5,
-            "extensions_covered": 2,
-            "extensions_total": 2,
-            "verification_level": "L2",
-            "word_count": "~8500"
-        },
-        {
-            "section": "8.6",
-            "title": "Kotlin Coroutine 性能实践",
-            "completed_at": "2026-04-02T04:41:00+08:00",
-            "anchors_covered": 5,
-            "anchors_total": 5,
-            "extensions_covered": 2,
-            "extensions_total": 2,
-            "verification_level": "L2",
-            "word_count": "~9500"
-        },
-        {
-            "section": "9.1",
-            "title": "ANR 设计思想",
-            "completed_at": "2026-04-02T05:03:00+08:00",
-            "anchors_covered": 5,
-            "anchors_total": 5,
-            "extensions_covered": 2,
-            "extensions_total": 2,
-            "verification_level": "L2",
-            "word_count": "~9000"
-        },
-        {
-            "section": "9.1",
-            "title": "ANR 设计思想",
-            "completed_at": "2026-04-02T05:39:00+08:00",
-            "anchors_covered": 5,
-            "anchors_total": 5,
-            "extensions_covered": 2,
-            "extensions_total": 2,
-            "verification_level": "L2",
-            "word_count": "~8500"
-        },
-        {
-            "section": "9.2",
-            "title": "ANR 类型与触发条件",
-            "completed_at": "2026-04-02T09:39:00+08:00",
-            "anchors_covered": 5,
-            "anchors_total": 5,
-            "extensions_covered": 2,
-            "extensions_total": 2,
-            "verification_level": "L2",
-            "word_count": "~7500"
-        },
-        {
-            "section": "9.5",
-            "title": "案例集",
-            "completed_at": "2026-04-02T15:20:00+08:00",
-            "anchors_covered": 3,
-            "anchors_total": 3,
-            "extensions_covered": 2,
-            "extensions_total": 2,
-            "verification_level": "L2",
-            "word_count": "~9500"
-        },
-        {
-            "section": "10.1",
-            "title": "App 内存分析",
-            "completed_at": "2026-04-02T17:19:45.089499",
-            "anchors_covered": 5,
-            "anchors_total": 5,
-            "extensions_covered": 2,
-            "extensions_total": 2,
-            "verification_level": "L2",
-            "word_count": "~8500"
-        },
-        {
-            "section": "10.2",
-            "title": "内存泄漏",
-            "completed_at": "2026-04-02T19:23:57+08:00",
-            "anchors_covered": 5,
-            "anchors_total": 5,
-            "extensions_covered": 2,
-            "extensions_total": 2,
-            "verification_level": "L2",
-            "word_count": "~9500"
-        },
-        {
-            "section": "10.3",
-            "title": "内存持续增长",
-            "completed_at": "2026-04-02T20:21:58.911026",
-            "anchors_covered": 5,
-            "anchors_total": 5,
-            "extensions_covered": 2,
-            "extensions_total": 2,
-            "verification_level": "L2",
-            "word_count": "~8000"
-        },
-        {
-            "section": "10.5",
-            "title": "案例集",
-            "completed_at": "2026-04-02T22:02:00+08:00",
-            "anchors_covered": 3,
-            "anchors_total": 3,
-            "extensions_covered": 0,
-            "extensions_total": 2,
-            "verification_level": "L2",
-            "word_count": "~8500"
-        },
-        {
-            "section": "11.3",
-            "title": "系统级功耗优化",
-            "completed_at": "2026-04-03T04:10:00+08:00",
-            "anchors_covered": 5,
-            "anchors_total": 5,
-            "extensions_covered": 1,
-            "extensions_total": 2,
-            "verification_level": "L2",
-            "word_count": "~8500"
-        },
-        {
-            "section": "11.4",
-            "title": "案例集",
-            "completed_at": "2026-04-03T05:02:00+08:00",
-            "anchors_covered": 3,
-            "anchors_total": 3,
-            "extensions_covered": 1,
-            "extensions_total": 2,
-            "verification_level": "L2",
-            "word_count": "~10000"
-        },
-        {
-            "section": "12.1",
-            "title": "APK 体积优化",
-            "completed_at": "2026-04-03T06:02:00+08:00",
-            "anchors_covered": 6,
-            "anchors_total": 6,
-            "extensions_covered": 2,
-            "extensions_total": 2,
-            "verification_level": "L2",
-            "word_count": "~8500"
-        },
-        {
-            "section": "13.2",
-            "title": "Trace 抓取",
-            "completed_at": "2026-04-03T11:06:00+08:00",
-            "anchors_covered": 6,
-            "anchors_total": 6,
-            "extensions_covered": 2,
-            "extensions_total": 2,
-            "verification_level": "L2",
-            "word_count": "~9500"
-        },
-        {
-            "section": "13.2",
-            "title": "Trace 抓取",
-            "completed_at": "2026-04-03T11:06:00+08:00",
-            "anchors_covered": 6,
-            "anchors_total": 6,
-            "extensions_covered": 2,
-            "extensions_total": 2,
-            "verification_level": "L2",
-            "word_count": "~9500"
-        },
-        {
-            "section": "13.3",
-            "title": "Perfetto View 解读",
-            "completed_at": "2026-04-03T12:30:27.887707",
-            "anchors_covered": 5,
-            "anchors_total": 5,
-            "extensions_covered": 2,
-            "extensions_total": 2,
-            "verification_level": "L2",
-            "word_count": "~8000"
-        },
-        {
-            "section": "13.4",
-            "title": "命令行打开超大 Trace",
-            "completed_at": "2026-04-03T13:10:00+08:00",
-            "anchors_covered": 5,
-            "anchors_total": 5,
-            "extensions_covered": 2,
-            "extensions_total": 2,
-            "verification_level": "L2",
-            "word_count": "~9500"
-        },
-        {
-            "chapter": "13.5",
-            "section": "13.5",
-            "title": "专题解读",
-            "status": "ready-for-review",
-            "drafted_date": "2026-04-03",
-            "drafted_by": "openclaw-task2a",
-            "anchors_covered": 5,
-            "anchors_total": 5,
-            "extensions_covered": 2,
-            "extensions_total": 2,
-            "verification_level": "L2",
-            "word_count": "~8200",
-            "completed_at": "2026-04-03T15:10:00+08:00"
-        },
-        {
-            "chapter": "14.1",
-            "section": "14.1",
-            "title": "Android Studio Profiler",
-            "status": "ready-for-review",
-            "drafted_date": "2026-04-03",
-            "drafted_by": "openclaw-task2a",
-            "anchors_covered": 5,
-            "anchors_total": 5,
-            "extensions_covered": 2,
-            "extensions_total": 2,
-            "verification_level": "L2",
-            "word_count": "~7500",
-            "completed_at": "2026-04-03T18:20:00+08:00"
-        },
-        {
-            "chapter": "14.3",
-            "section": "14.3",
-            "title": "内存分析工具",
-            "status": "ready-for-review",
-            "drafted_date": "2026-04-03",
-            "drafted_by": "openclaw-task2a",
-            "anchors_covered": 5,
-            "anchors_total": 5,
-            "extensions_covered": 2,
-            "extensions_total": 2,
-            "verification_level": "L2",
-            "word_count": "~8500",
-            "completed_at": "2026-04-03T20:18:12.808259+08:00"
-        },
-        {
-            "chapter": "14.4",
-            "section": "14.4",
-            "title": "dumpsys 系列命令",
-            "status": "ready-for-review",
-            "drafted_date": "2026-04-03",
-            "drafted_by": "openclaw-task2a",
-            "anchors_covered": 6,
-            "anchors_total": 6,
-            "extensions_covered": 2,
-            "extensions_total": 2,
-            "verification_level": "L2",
-            "word_count": "~8500",
-            "completed_at": "2026-04-03T22:16:23.441556"
-        },
-        {
-            "chapter": "14.5",
-            "section": "14.5",
-            "title": "三方性能库",
-            "status": "ready-for-review",
-            "drafted_date": "2026-04-03",
-            "drafted_by": "openclaw-task2a",
-            "anchors_covered": 5,
-            "anchors_total": 5,
-            "extensions_covered": 2,
-            "extensions_total": 2,
-            "verification_level": "L2",
-            "word_count": "~9500",
-            "completed_at": "2026-04-03T23:15:00+08:00"
-        },
-        {
-            "chapter": "14.6",
-            "section": "14.6",
-            "title": "自动化测试工具",
-            "status": "ready-for-review",
-            "drafted_date": "2026-04-04",
-            "drafted_by": "openclaw-task2a",
-            "anchors_covered": 5,
-            "anchors_total": 5,
-            "extensions_covered": 2,
-            "extensions_total": 2,
-            "verification_level": "L2",
-            "word_count": "~8500",
-            "completed_at": "2026-04-04T00:02:00+08:00"
-        },
-        {
-            "chapter": "15.1",
-            "section": "15.1",
-            "title": "性能优化的术、道、器",
-            "status": "ready-for-review",
-            "drafted_date": "2026-04-04",
-            "drafted_by": "openclaw-task2a",
-            "anchors_covered": 5,
-            "anchors_total": 5,
-            "extensions_covered": 2,
-            "extensions_total": 2,
-            "verification_level": "L2",
-            "word_count": "~8500",
-            "completed_at": "2026-04-04T01:20:24.788615+08:00"
-        },
-        {
-            "chapter": "15.4",
-            "section": "15.4",
-            "title": "竞品分析方法",
-            "status": "ready-for-review",
-            "drafted_date": "2026-04-04",
-            "drafted_by": "openclaw-task2a",
-            "anchors_covered": 5,
-            "anchors_total": 5,
-            "extensions_covered": 2,
-            "extensions_total": 2,
-            "verification_level": "L2",
-            "word_count": "~8500",
-            "completed_at": "2026-04-04T04:19:45.354654"
-        },
-        {
-            "chapter": "15.5",
-            "section": "15.5",
-            "title": "线上性能监控",
-            "status": "ready-for-review",
-            "drafted_date": "2026-04-04",
-            "drafted_by": "openclaw-task2a",
-            "anchors_covered": 5,
-            "anchors_total": 5,
-            "extensions_covered": 2,
-            "extensions_total": 2,
-            "verification_level": "L2",
-            "word_count": "~8500",
-            "completed_at": "2026-04-04T06:13:57"
-        },
-        {
-            "chapter": "15.6",
-            "section": "15.6",
-            "title": "性能测试最佳实践",
-            "status": "ready-for-review",
-            "drafted_date": "2026-04-04",
-            "drafted_by": "openclaw-task2a",
-            "anchors_covered": 5,
-            "anchors_total": 5,
-            "extensions_covered": 2,
-            "extensions_total": 2,
-            "verification_level": "L2",
-            "word_count": "~8500",
-            "completed_at": "2026-04-04T08:15:11.619847"
-        },
-        {
-            "chapter": "15.7",
-            "section": "15.7",
-            "title": "AOSP 代码阅读",
-            "status": "ready-for-review",
-            "drafted_date": "2026-04-04",
-            "drafted_by": "openclaw-task2a",
-            "anchors_covered": 5,
-            "anchors_total": 5,
-            "extensions_covered": 2,
-            "extensions_total": 2,
-            "verification_level": "L2",
-            "word_count": "~8500",
-            "completed_at": "2026-04-04T09:15:52"
-        },
-        {
-            "chapter": "16.1",
-            "section": "16.1",
-            "title": "Google 官方的性能优化思路",
-            "status": "ready-for-review",
-            "drafted_date": "2026-04-04",
-            "drafted_by": "openclaw-task2a",
-            "anchors_covered": 5,
-            "anchors_total": 5,
-            "extensions_covered": 2,
-            "extensions_total": 2,
-            "verification_level": "L2",
-            "word_count": "~8500",
-            "completed_at": "2026-04-04T11:20:11.651393"
-        }
-    ],
-    "ready_for_review": 5,
-    "last_updated": "2026-04-04T07:05:00+08:00",
-    "stats": {
-        "total": 97,
-        "completed": 63,
-        "pending": 34,
-        "last_updated": "2026-04-04T11:20:11.651400"
+    "1.3": {
+      "reviewed_date": "2026-03-31",
+      "reviewed_by": "openclaw-task6",
+      "review_status": "finalized",
+      "fixes_applied": [
+        "标准化3处验证标注格式（[来源:]→[已验证: 来源见 ...]）",
+        "添加1处待验证标注（SERVICE_CUR=800）",
+        "添加2处[图：...]标记（五级优先级示意、LMK流程图）",
+        "补全frontmatter（drafted_date, reviewed_date, reviewed_by）",
+        "状态更新：ready-for-review → finalized"
+      ]
     },
-    "research_stats": {
-        "runs_today": [
-            {
-                "time": "2026-04-01T07:03:00+08:00",
-                "focus": "Binder IPC 机制 (20260401%20=1, topic-rotation)",
-                "source": "topic-rotation",
-                "candidates": 4,
-                "passed": 3,
-                "delivered": 3,
-                "themes": [
-                    "Binder Rust 后端（libbinder_rs）：±2% 性能持平 + 68% 内存漏洞减少",
-                    "Perfetto Binder 事务三维延迟指标（client_dur/server_dur/dispatch_dur）",
-                    "Android 15/16/17 服务超时策略演进对 Binder-ANR 链路的影响"
-                ]
-            },
-            {
-                "time": "2026-04-01T12:34:00+08:00",
-                "focus": "Compose 性能里程碑 2025 + Android 16/17 ProfilingManager（轮转主题 Binder 已在 07:00 覆盖，转向 pending 高价值章节）",
-                "source": "supplementary-research",
-                "candidates": 2,
-                "passed": 2,
-                "delivered": 2,
-                "themes": [
-                    "Compose 1.10 Pausable Composition 默认 + Strong Skipping Mode + Lazy prefetch + 性能对等 View 系统（目标 §7.7）",
-                    "Android 16/17 ProfilingManager 系统触发式追踪：TRIGGER_TYPE_COLD_START/ANR/OOM/EXCESSIVE_CPU（目标 §8.2/§9.1/§9.3/§14.7）"
-                ]
-            },
-            {
-                "time": "2026-04-02T07:05:59.176534",
-                "focus": "内存相关的版本演进（4.6 review 回炉 + 轮转主题2：内存管理）",
-                "source": "queue-priority-90 + topic-rotation-2",
-                "candidates": 5,
-                "passed": 3,
-                "delivered": 3,
-                "themes": [
-                    "16KB Page Size 全面性能影响：TLB 效率、量化数据（冷启动3.16%~30%/功耗-4.56%/系统启动-8%）、强制适配时间线（目标 §4.6）",
-                    "ART GC 暂停时间精确数据：CC 收集器 85% 降低、分代 GC 1-3ms（平均1.83ms）、标题亚毫秒准确性修正（目标 §4.6）",
-                    "AutoFDO 内核集成 + dex2oat 18% 编译优化：内核占 CPU 40%、PGO 生态、Mainline 推送 Android 12+（目标 §4.6/§1.6）"
-                ]
-            },
-            {
-                "time": "2026-04-02T11:00+08:00",
-                "focus": "§2.4 Choreographer 与渲染流水线（queue priority 90, pending）+ 主题 #2 内存管理（20260402 % 20 = 2）",
-                "source": "queue-priority-90 + topic-rotation-2",
-                "candidates": 6,
-                "passed": 3,
-                "delivered": 3,
-                "themes": [
-                    "Android 17 DeliQueue 无锁 MessageQueue：15% 主线程锁等待减少 + 4% 掉帧减少 + 9.1% 冷启动首帧 P95 改善（目标 §2.4/§1.5）",
-                    "Choreographer API 演进史 API 16→33→36→37：FrameCallback/VsyncCallback/FrameTimeline/ARR（目标 §2.4 版本演进节）",
-                    "zRAM 多算法重压缩（Kernel 6.12）+ MGLRU + AI 驱动 ART（目标 §4.2/4.4/4.6）"
-                ]
-            },
-            {
-                "time": "2026-04-02T19:00:00+08:00",
-                "focus": "§9.3/§9.4 ANR 分析方法 + 特殊场景（strategic: 第9章活跃管线）",
-                "source": "strategic-pipeline",
-                "candidates": 5,
-                "passed": 3,
-                "delivered": 3,
-                "themes": [
-                    "Android 16 ProfilingManager TRIGGER_TYPE_ANR 系统触发式 Profiling（目标 §9.3/§14.7）",
-                    "AOSP AnrHelper + ProcessErrorStateRecord ANR 异步处理管线源码分析（目标 §9.3/§9.1）",
-                    "Foreground Service ANR 超时机制演进 Android 12→16（目标 §9.2/§9.4）"
-                ]
-            },
-            {
-                "time": "2026-04-02T19:00:00+08:00",
-                "focus": "§9.3/§9.4 ANR 分析方法 + 特殊场景（strategic: 第9章活跃管线）",
-                "source": "strategic-pipeline",
-                "candidates": 5,
-                "passed": 3,
-                "delivered": 3,
-                "themes": [
-                    "Android 16 ProfilingManager TRIGGER_TYPE_ANR 系统触发式 Profiling（目标 §9.3/§14.7）",
-                    "AOSP AnrHelper + ProcessErrorStateRecord ANR 异步处理管线源码分析（目标 §9.3/§9.1）",
-                    "Foreground Service ANR 超时机制演进 Android 12→16（目标 §9.2/§9.4）"
-                ]
-            },
-            {
-                "time": "2026-04-03T07:02:00+08:00",
-                "focus": "调度器与 EAS（20260403%20=3, topic-rotation）",
-                "source": "topic-rotation",
-                "candidates": 6,
-                "passed": 3,
-                "delivered": 3,
-                "themes": [
-                    "EEVDF 取代 CFS 成为默认调度器：lag 追踪 + 虚拟截止时间 + sched_setattr() 时间片请求（目标 §5.1/§5.7）",
-                    "sched_ext BPF 可扩展调度器 Linux 6.12：Meta/Google 投入 + scx_lavd 游戏优化 + Android 实验性移植（目标 §5.1/§5.7）",
-                    "PREEMPT_LAZY 懒抢占 Linux 6.13：双模式抢占 + 减少 lock holder preemption + ARM 支持待跟进（目标 §5.1/§5.7）"
-                ]
-            },
-            {
-                "time": "2026-04-03T11:00:00+08:00",
-                "focus": "Android 16 Adaptive Apps + Predictive Back + Live Updates（queue freshness 联动：freshness-001~004）",
-                "source": "queue-freshness-priority",
-                "candidates": 5,
-                "passed": 3,
-                "delivered": 3,
-                "themes": [
-                    "Android 16 API 36 大屏强制可调整：screenOrientation/resizableActivity/minAspectRatio/maxAspectRatio 全部忽略（目标 §3.1/§16）",
-                    "Android 16 Predictive Back 默认启用 + finishAndRemoveTaskCallback/moveTaskToBackCallback/PRIORITY_SYSTEM_NAVIGATION_OBSERVER（目标 §3.1/§3.3）",
-                    "Android 16 Live Updates + Notification.ProgressStyle：segments/points/tracker + POST_PROMOTED_NOTIFICATIONS（目标 §8.1/§15）"
-                ]
-            },
-            {
-                "time": "2026-04-03T15:00:00+08:00",
-                "focus": "F2FS Kernel 6.12/6.13 + Android 17 static final field 强制不可变",
-                "source": "strategic-gap",
-                "candidates": 8,
-                "passed": 2,
-                "delivered": 2,
-                "themes": [
-                    "F2FS Folio 转换 + Zoned GC 调优 + Checkpoint 优化 + Device Aliasing（目标 §6.2/§6.4）",
-                    "Android 17 static final field 反射/JNI 强制禁止 → ART 常量折叠 + 编译优化收益（目标 §4.3/§1.6）"
-                ]
-            },
-            {
-                "time": "2026-04-03T19:05:34+08:00",
-                "focus": "AutoFDO GKI kernel + Android 17 Generational GC + Media3 1.10（queue freshness-005~007 medium priority）",
-                "source": "queue-freshness-medium-priority",
-                "candidates": 5,
-                "passed": 3,
-                "delivered": 3,
-                "themes": [
-                    "AutoFDO GKI android16-6.12：冷启动 4.3%/Binder-rpc 21.7%/binder-addints 37.7%/HwBinder 20%（目标 §5.1/§5.7/§1.6）",
-                    "Android 17 分代 GC：年轻代极短暂停 + static final 不可变协同优化（目标 §4.3/§4.6）",
-                    "Media3 1.10 动态调度 + Compose PlayerSurface + Player 池化预热（目标 §7.7）"
-                ]
-            },
-            {
-                "time": "2026-04-04T07:05:00+08:00",
-                "focus": "启动优化（20260404%20=4, topic-rotation: Startup Profiles + DEX Layout + ApplicationStartInfo）",
-                "source": "topic-rotation",
-                "candidates": 7,
-                "passed": 2,
-                "delivered": 2,
-                "themes": [
-                    "Startup Profiles + DEX Layout 优化：AGP 8.3 默认启用 + 冷启动 15-30% 提升 + R8/D8 编译器 DEX 重排（目标 §8.3/§16）",
-                    "ApplicationStartInfo.getStartComponent()：Android 16 新增 5 个 START_COMPONENT_* 常量 + 精确识别启动触发组件（目标 §8.1/§8.3）"
-                ]
-            },
-            {
-                "time": "2026-04-04T11:00:00+08:00",
-                "focus": "启动优化（topic-rotation #4 补充）+ SurfaceFlinger（queue freshness-003）",
-                "source": "topic-rotation-supplement + queue-freshness-003",
-                "candidates": 7,
-                "passed": 2,
-                "delivered": 2,
-                "themes": [
-                    "Android 17 recreateOnConfigChanges：6 种配置变更不再重启 + 新 manifest opt-in 属性（目标 §8.4/§1.6/§3.3）",
-                    "Android 16/17 Desktop Windowing + Bubbles：外接显示器 GA + 浮动窗口模式对 SurfaceFlinger 多 Surface 合成的影响（目标 §2.6/§2.9）"
-                ]
-            }
-        ],
-        "last_updated": "2026-04-04T11:00:00+08:00"
+    "4.5": {
+      "reviewed_date": "2026-04-02",
+      "reviewed_by": "openclaw-task6-v2",
+      "review_status": "reviewed-needs-fix",
+      "fixes_applied": [
+        "标注 onTrimMemory 前台回调数值存疑（B类）",
+        "标注 Perfetto Track 对照缺失（B类）",
+        "frontmatter status → reviewed, reviewed_date → 2026-04-02"
+      ],
+      "review_r2_date": "2026-04-01",
+      "review_r2_by": "openclaw-task2",
+      "review_r2_status": "rework-completed",
+      "r2_fixes_applied": [
+        "补充常见问题与误区：5 个典型误区（System.gc/Bitmap.recycle/onTrimMemory/largeHeap/内存抖动）",
+        "每个误区均使用连贯叙述风格（非列表罗列），符合 writing-guide 要求",
+        "全部 5 条误区已通过 L2 官方文档验证"
+      ]
     },
-    "history": [
-        {
-            "date": "2026-04-04",
-            "section": "16.1",
-            "title": "Google 官方的性能优化思路",
-            "action": "draft-completed",
-            "word_count": "~8500"
-        },
-        {
-            "date": "2026-04-04",
-            "section": "11.1",
-            "title": "Android 功耗模型",
-            "action": "reviewed-finalized",
-            "review_by": "openclaw-task6",
-            "fixes": 11
-        },
-        {
-            "date": "2026-04-04",
-            "section": "7.7",
-            "title": "Jetpack Compose 性能优化",
-            "action": "reviewed-finalized",
-            "review_by": "openclaw-task6",
-            "fixes": 17
-        },
-        {
-            "date": "2026-04-04",
-            "section": "15.6",
-            "title": "性能测试最佳实践",
-            "action": "draft-completed",
-            "word_count": "~8500"
-        },
-        {
-            "date": "2026-04-04",
-            "section": "7.6",
-            "title": "案例集",
-            "action": "reviewed-finalized",
-            "review_by": "openclaw-task6",
-            "fixes": 3
-        },
-        {
-            "date": "2026-04-04",
-            "section": "15.5",
-            "title": "线上性能监控",
-            "action": "draft-completed",
-            "word_count": "~9000"
-        },
-        {
-            "date": "2026-04-04",
-            "section": "15.5",
-            "title": "线上性能监控",
-            "action": "draft-completed",
-            "word_count": "~8500"
-        },
-        {
-            "date": "2026-04-04",
-            "section": "15.4",
-            "title": "竞品分析方法",
-            "action": "draft-completed",
-            "word_count": "~8500"
-        },
-        {
-            "date": "2026-04-04",
-            "section": "15.1",
-            "title": "性能优化的术、道、器",
-            "action": "draft-completed",
-            "word_count": "~8500"
-        },
-        {
-            "date": "2026-04-04",
-            "section": "14.6",
-            "title": "自动化测试工具",
-            "action": "draft-completed",
-            "word_count": "~8500"
-        },
-        {
-            "date": "2026-04-03",
-            "section": "13.2",
-            "title": "Trace 抓取",
-            "action": "draft-completed",
-            "word_count": "~9500"
-        },
-        {
-            "date": "2026-04-03",
-            "section": "12.2",
-            "title": "网络性能优化",
-            "action": "draft-completed",
-            "word_count": "~8500"
-        },
-        {
-            "date": "2026-04-01",
-            "section": "5.5",
-            "title": "Thermal 管控",
-            "action": "draft-completed",
-            "word_count": "~8000"
-        },
-        {
-            "date": "2026-04-01",
-            "section": "5.6",
-            "title": "Android 功耗管理",
-            "action": "draft-completed",
-            "word_count": "~9500"
-        },
-        {
-            "date": "2026-04-01",
-            "section": "5.7",
-            "title": "CPU 相关的版本演进",
-            "action": "draft-completed",
-            "word_count": "~9000"
-        },
-        {
-            "date": "2026-04-01",
-            "section": "6.1",
-            "title": "Android 存储架构",
-            "action": "queue-status-corrected",
-            "word_count": "~9500"
-        },
-        {
-            "date": "2026-04-01",
-            "section": "6.2",
-            "title": "文件系统",
-            "action": "draft-completed",
-            "word_count": "~9000"
-        },
-        {
-            "date": "2026-04-01",
-            "section": "6.3",
-            "title": "I/O 调度与性能",
-            "action": "draft-completed",
-            "word_count": "~4338"
-        },
-        {
-            "date": "2026-04-01",
-            "section": "6.4",
-            "title": "存储相关的版本演进",
-            "action": "draft-completed",
-            "word_count": "~7500"
-        },
-        {
-            "date": "2026-04-01",
-            "section": "7.4",
-            "title": "典型场景分析",
-            "action": "draft-completed",
-            "word_count": "~7500"
-        },
-        {
-            "date": "2026-04-01",
-            "section": "7.5",
-            "title": "优化策略",
-            "action": "queue-status-corrected-to-completed",
-            "word_count": "~7500"
-        },
-        {
-            "date": "2026-04-01",
-            "section": "7.6",
-            "title": "案例集",
-            "action": "draft-completed",
-            "word_count": "~8000"
-        },
-        {
-            "date": "2026-04-01",
-            "section": "",
-            "title": "research-discovery (12:34 run)",
-            "action": "research-completed",
-            "focus": "Compose 性能里程碑 2025 + Android 16/17 ProfilingManager 系统触发",
-            "candidates": 2,
-            "passed": 2,
-            "delivered": 2,
-            "themes": [
-                "Compose 1.10 Pausable Composition 默认启用 + Strong Skipping Mode (Kotlin 2.2) + 性能对等 View 系统",
-                "Android 16/17 ProfilingManager 系统触发式追踪：ANR trace / cold start trace / OOM heap dump / CPU kill stack sample"
-            ]
-        },
-        {
-            "date": "2026-04-01",
-            "section": "8.3",
-            "title": "启动优化策略",
-            "action": "draft-completed",
-            "word_count": "~12000"
-        },
-        {
-            "date": "2026-04-01",
-            "section": "4.5",
-            "title": "App 内存优化",
-            "action": "reviewed",
-            "review_by": "openclaw-task6",
-            "issues": 1,
-            "fixes": 3
-        },
-        {
-            "date": "2026-04-01",
-            "section": "4.5",
-            "title": "App 内存优化",
-            "action": "review-rework-completed",
-            "review_by": "openclaw-task2",
-            "issues": 1,
-            "fixes": "补充常见问题与误区（5个典型误区）"
-        },
-        {
-            "date": "2026-04-01",
-            "section": "2.11",
-            "title": "Flutter 渲染管线与性能",
-            "action": "draft-completed",
-            "word_count": "~8500"
-        },
-        {
-            "date": "2026-04-01",
-            "section": "2.11",
-            "title": "Flutter 渲染管线与性能",
-            "action": "draft-completed",
-            "word_count": "~8000"
-        },
-        {
-            "date": "2026-04-01",
-            "section": "2.11",
-            "title": "Flutter 渲染管线与性能",
-            "action": "draft-completed",
-            "word_count": "~8500"
-        },
-        {
-            "date": "2026-04-02",
-            "section": "8.4",
-            "title": "其他响应速度场景",
-            "action": "draft-completed",
-            "word_count": "~9500"
-        },
-        {
-            "date": "2026-04-02",
-            "section": "1.2",
-            "title": "系统启动全流程",
-            "action": "reviewed-v2-finalized",
-            "review_by": "openclaw-task6",
-            "fixes": "误区 boot_completed 修正 + frontmatter 更新"
-        },
-        {
-            "date": "2026-04-02",
-            "section": "8.5",
-            "title": "案例集",
-            "action": "draft-completed",
-            "word_count": "~9000"
-        },
-        {
-            "date": "2026-04-02",
-            "section": "8.6",
-            "title": "Kotlin Coroutine 性能实践",
-            "action": "draft-completed",
-            "word_count": "~9500"
-        },
-        {
-            "date": "2026-04-02",
-            "section": "9.1",
-            "title": "ANR 设计思想",
-            "action": "draft-completed",
-            "word_count": "~9000"
-        },
-        {
-            "date": "2026-04-02",
-            "section": "9.1",
-            "title": "ANR 设计思想",
-            "action": "draft-completed",
-            "word_count": "~8500"
-        },
-        {
-            "date": "2026-04-02",
-            "section": "4.6",
-            "title": "内存相关的版本演进",
-            "action": "research-completed",
-            "focus": "16KB Page Size + ART GC 暂停时间 + AutoFDO/dex2oat",
-            "candidates": 5,
-            "passed": 3,
-            "delivered": 3,
-            "themes": [
-                "16KB Page Size 全面性能影响：TLB 效率、量化数据（冷启动3.16%~30%/功耗-4.56%/系统启动-8%）、强制适配时间线（目标 §4.6",
-                "ART GC 暂停时间精确数据：CC 收集器 85% 降低、分代 GC 1-3ms（平均1.83ms）、标题亚毫秒准确性修正（目标 §4.6）",
-                "AutoFDO 内核集成 + dex2oat 18% 编译优化：内核占 CPU 40%、PGO 生态、Mainline 推送 Android 12+（目标 §4"
-            ]
-        },
-        {
-            "date": "2026-04-02",
-            "section": "2.4",
-            "title": "Choreographer 与渲染流水线",
-            "action": "reviewed",
-            "review_by": "openclaw-task6",
-            "issues": 5,
-            "fixes": 3
-        },
-        {
-            "date": "2026-04-02",
-            "section": "9.2",
-            "title": "ANR 类型与触发条件",
-            "action": "draft-completed",
-            "word_count": "~7500"
-        },
-        {
-            "date": "2026-04-02",
-            "section": "9.5",
-            "title": "案例集",
-            "action": "draft-completed",
-            "word_count": "~9500"
-        },
-        {
-            "date": "2026-04-02",
-            "section": "9.5",
-            "title": "案例集",
-            "action": "draft-completed",
-            "word_count": "~9500"
-        },
-        {
-            "date": "2026-04-02",
-            "section": "9.5",
-            "title": "案例集",
-            "action": "draft-completed",
-            "word_count": "~9500"
-        },
-        {
-            "date": "2026-04-02",
-            "section": "10.1",
-            "title": "App 内存分析",
-            "action": "draft-completed",
-            "word_count": "~8500"
-        },
-        {
-            "date": "2026-04-02",
-            "section": "10.2",
-            "title": "内存泄漏",
-            "action": "draft-completed",
-            "word_count": "~9500"
-        },
-        {
-            "date": "2026-04-02",
-            "section": "10.2",
-            "title": "内存泄漏",
-            "action": "draft-completed",
-            "word_count": "~9500"
-        },
-        {
-            "date": "2026-04-02",
-            "section": "10.3",
-            "title": "内存持续增长",
-            "action": "draft-completed",
-            "word_count": "~8000"
-        },
-        {
-            "date": "2026-04-03",
-            "section": "11.2",
-            "title": "App 耗电优化",
-            "action": "draft-completed",
-            "word_count": "~8500"
-        },
-        {
-            "date": "2026-04-03",
-            "section": "11.1",
-            "title": "Android 功耗模型",
-            "action": "draft-completed",
-            "word_count": "~9500"
-        },
-        {
-            "date": "2026-04-02",
-            "section": "10.5",
-            "title": "案例集",
-            "action": "draft-completed",
-            "word_count": "~8500"
-        },
-        {
-            "date": "2026-04-03",
-            "section": "2.9",
-            "title": "渲染机制的版本演进",
-            "action": "rework-completed",
-            "review_by": "openclaw-task2b",
-            "fixes": 4
-        },
-        {
-            "date": "2026-04-03",
-            "section": "11.3",
-            "title": "系统级功耗优化",
-            "action": "draft-completed",
-            "word_count": "~8500"
-        },
-        {
-            "date": "2026-04-03",
-            "section": "11.4",
-            "title": "案例集（功耗）",
-            "action": "draft-completed",
-            "word_count": "~10000"
-        },
-        {
-            "date": "2026-04-03",
-            "section": "12.1",
-            "title": "APK 体积优化",
-            "action": "draft-completed",
-            "word_count": "~8500"
-        },
-        {
-            "date": "2026-04-03",
-            "section": "5.1/5.7",
-            "title": "调度器与 EAS 前沿研究",
-            "action": "research-completed",
-            "focus": "EEVDF + sched_ext + PREEMPT_LAZY",
-            "candidates": 6,
-            "passed": 3,
-            "delivered": 3,
-            "themes": [
-                "EEVDF 取代 CFS：lag + virtual deadline + sched_setattr",
-                "sched_ext BPF：scx_lavd + Android port",
-                "PREEMPT_LAZY：双模式抢占 + lock holder preemption"
-            ]
-        },
-        {
-            "date": "2026-04-03",
-            "section": "3.1/3.3/8.1/16",
-            "title": "Android 16 Adaptive Apps + Predictive Back + Live Updates",
-            "action": "research-completed",
-            "focus": "queue freshness-001~004: Adaptive Apps + Predictive Back + Live Updates",
-            "candidates": 5,
-            "passed": 3,
-            "delivered": 3,
-            "themes": [
-                "Android 16 API 36: screenOrientation/resizableActivity ignored on sw≥600dp",
-                "Android 16 Predictive Back default + new callback APIs",
-                "Android 16 Live Updates + Notification.ProgressStyle API"
-            ]
-        },
-        {
-            "date": "2026-04-03",
-            "section": "13.2",
-            "title": "Trace 抓取",
-            "action": "draft-completed",
-            "word_count": "~9500"
-        },
-        {
-            "date": "2026-04-03",
-            "section": "13.3",
-            "title": "Perfetto View 解读",
-            "action": "draft-completed",
-            "word_count": "~8000"
-        },
-        {
-            "date": "2026-04-03",
-            "section": "13.4",
-            "title": "命令行打开超大 Trace",
-            "action": "draft-completed",
-            "word_count": "~9500"
-        },
-        {
-            "date": "2026-04-03",
-            "section": "14.1",
-            "title": "Android Studio Profiler",
-            "action": "draft-completed",
-            "word_count": "~7500"
-        },
-        {
-            "date": "2026-04-03",
-            "section": "5.1/5.7/4.3/4.6/7.7",
-            "title": "AutoFDO GKI + Android 17 GC + Media3 1.10",
-            "action": "research-completed",
-            "focus": "queue freshness-005~007: AutoFDO GKI kernel + Android 17 Generational GC + Media3 1.10",
-            "candidates": 5,
-            "passed": 3,
-            "delivered": 3,
-            "themes": [
-                "AutoFDO GKI: cold launch 4.3%/Binder-rpc 21.7%/binder-addints 37.7%",
-                "Android 17 Generational GC + static final compilation optimization",
-                "Media3 1.10 dynamic scheduling + Compose PlayerSurface + player pooling"
-            ]
-        },
-        {
-            "date": "2026-04-03",
-            "section": "14.3",
-            "title": "内存分析工具",
-            "action": "draft-completed",
-            "word_count": "~8500"
-        },
-        {
-            "date": "2026-04-03",
-            "section": "14.4",
-            "title": "dumpsys 系列命令",
-            "action": "draft-completed",
-            "word_count": "~8500"
-        },
-        {
-            "date": "2026-04-03",
-            "section": "14.5",
-            "title": "三方性能库",
-            "action": "draft-completed",
-            "word_count": "~9500"
-        },
-        {
-            "date": "2026-04-04",
-            "section": "8.3/8.1",
-            "title": "启动优化前沿研究",
-            "action": "research-completed",
-            "focus": "Startup Profiles + DEX Layout + ApplicationStartInfo.getStartComponent()",
-            "candidates": 7,
-            "passed": 2,
-            "delivered": 2,
-            "themes": [
-                "Startup Profiles + DEX Layout: AGP 8.3 default + 15-30% cold start improvement",
-                "ApplicationStartInfo.getStartComponent(): 5 START_COMPONENT_* constants"
-            ]
-        },
-        {
-            "date": "2026-04-04",
-            "section": "15.7",
-            "title": "AOSP 代码阅读",
-            "action": "draft-completed",
-            "word_count": "~8500"
-        },
-        {
-            "date": "2026-04-04",
-            "section": "8.4/1.6/2.6",
-            "title": "Android 17 Activity 重启优化 + Desktop Windowing SurfaceFlinger",
-            "action": "research-completed",
-            "focus": "recreateOnConfigChanges + Desktop Windowing + Bubbles",
-            "candidates": 7,
-            "passed": 2,
-            "delivered": 2,
-            "themes": [
-                "Android 17 recreateOnConfigChanges: 6 config changes no longer restart + new manifest opt-in",
-                "Android 16/17 Desktop Windowing + Bubbles: external display GA + floating window SurfaceFlinger impact"
-            ]
-        }
-    ],
-    "sections": {
-        "1.5": {
-            "title": "线程模型",
-            "status": "finalized",
-            "reviewed_date": "2026-04-01",
-            "reviewed_by": "openclaw-task6"
-        },
-        "2.1": {
-            "title": "Android 渲染架构全景",
-            "file": "src/part1-fundamentals/ch02-rendering/01-rendering-overview.md",
-            "status": "finalized",
-            "reviewed_date": "2026-04-02",
-            "reviewed_by": "openclaw-task6"
-        },
-        "1.2": {
-            "title": "系统启动全流程",
-            "status": "finalized",
-            "reviewed_date": "2026-04-02",
-            "reviewed_by": "openclaw-task6"
-        },
-        "1.6": {
-            "title": "Android 版本演进中的架构变化",
-            "status": "finalized",
-            "reviewed_date": "2026-04-02",
-            "reviewed_by": "openclaw-task6"
-        },
-        "2.2": {
-            "title": "帧率与刷新率",
-            "status": "reviewed",
-            "reviewed_date": "2026-04-02",
-            "reviewed_by": "openclaw-task6",
-            "review_issues": 4
-        },
-        "2.4": {
-            "title": "Choreographer 与渲染流水线",
-            "status": "reviewed",
-            "reviewed_date": "2026-04-02",
-            "reviewed_by": "openclaw-task6",
-            "file": "src/part1-fundamentals/ch02-rendering/04-choreographer.md"
-        },
-        "5.2": {
-            "title": "EAS 能量感知调度",
-            "status": "finalized",
-            "reviewed_date": "2026-04-02"
-        },
-        "5.3": {
-            "title": "大小核架构",
-            "status": "finalized",
-            "reviewed_date": "2026-04-02",
-            "reviewed_by": "openclaw-task6"
-        },
-        "3.1": {
-            "title": "Input 事件分发全流程",
-            "status": "finalized",
-            "reviewed_date": "2026-04-02"
-        },
-        "4.1": {
-            "title": "Android 内存模型全景",
-            "status": "finalized",
-            "reviewed_date": "2026-04-03",
-            "reviewed_by": "openclaw-task6"
-        },
-        "11.3": {
-            "title": "系统级功耗优化",
-            "status": "ready-for-review",
-            "drafted_date": "2026-04-03",
-            "drafted_by": "openclaw-task2a"
-        },
-        "2.11": {
-            "title": "Flutter 渲染管线与性能",
-            "status": "finalized",
-            "reviewed_date": "2026-04-03",
-            "reviewed_by": "openclaw-task6"
-        },
-        "9.3": {
-            "title": "ANR 分析方法",
-            "status": "finalized",
-            "reviewed_date": "2026-04-03",
-            "reviewed_by": "openclaw-task6"
-        },
-        "2.10": {
-            "title": "GPU 渲染深入",
-            "status": "finalized",
-            "file": "src/part1-fundamentals/ch02-rendering/10-gpu-rendering.md",
-            "last_reviewed": "2026-04-03",
-            "review_notes": "回炉修复完成：6个B类问题全部处理（文体重写/案例重写/3个新增小节/伪代码修正）",
-            "rework_date": "2026-04-03",
-            "rework_by": "openclaw-task2b",
-            "reviewed_date": "2026-04-03",
-            "reviewed_by": "openclaw-task6",
-            "review_round": 2
-        },
-        "13.2": {
-            "title": "Trace 抓取",
-            "status": "ready-for-review",
-            "drafted_date": "2026-04-03",
-            "drafted_by": "openclaw-task2a"
-        },
-        "13.3": {
-            "title": "Perfetto View 解读",
-            "status": "ready-for-review",
-            "drafted_date": "2026-04-03",
-            "drafted_by": "openclaw-task2a"
-        },
-        "13.4": {
-            "title": "命令行打开超大 Trace",
-            "status": "ready-for-review",
-            "drafted_date": "2026-04-03",
-            "drafted_by": "openclaw-task2a"
-        },
-        "5.4": {
-            "title": "DVFS 与功耗管理",
-            "status": "finalized",
-            "reviewed_date": "2026-04-03",
-            "reviewed_by": "openclaw-task6",
-            "file": "src/part1-fundamentals/ch05-cpu-power/04-dvfs.md"
-        },
-        "3.2": {
-            "title": "触摸响应的性能分析",
-            "file": "src/part1-fundamentals/ch03-input/02-touch-performance.md",
-            "status": "finalized",
-            "drafted_date": "2026-03-30",
-            "reviewed_date": "2026-04-03",
-            "reviewed_by": "openclaw-task6"
-        },
-        "3.3": {
-            "title": "手势导航与系统交互",
-            "status": "finalized",
-            "drafted_date": "2026-03-31",
-            "reviewed_date": "2026-04-03",
-            "reviewed_by": "openclaw-task6"
-        },
-        "4.2": {
-            "title": "Linux 内核内存管理",
-            "status": "finalized",
-            "reviewed_date": "2026-04-03",
-            "reviewed_by": "openclaw-task6"
-        },
-        "4.3": {
-            "title": "ART 虚拟机内存管理",
-            "status": "finalized",
-            "file": "src/part1-fundamentals/ch04-memory/03-art-memory.md",
-            "reviewed_date": "2026-04-03",
-            "reviewed_by": "openclaw-task6"
-        },
-        "14.1": {
-            "title": "Android Studio Profiler",
-            "status": "ready-for-review",
-            "drafted_date": "2026-04-03",
-            "drafted_by": "openclaw-task2a"
-        },
-        "5.5": {
-            "title": "Thermal 管控",
-            "status": "finalized",
-            "file": "src/part1-fundamentals/ch05-cpu-power/05-thermal.md",
-            "drafted_date": "2026-04-01",
-            "reviewed_date": "2026-04-03",
-            "reviewed_by": "openclaw-task6"
-        },
-        "14.3": {
-            "title": "内存分析工具",
-            "status": "ready-for-review",
-            "drafted_date": "2026-04-03",
-            "drafted_by": "openclaw-task2a"
-        },
-        "4.4": {
-            "title": "Low Memory Killer",
-            "file": "src/part1-fundamentals/ch04-memory/04-lmk.md",
-            "status": "finalized",
-            "drafted_date": "2026-03-31",
-            "reviewed_date": "2026-04-03",
-            "reviewed_by": "openclaw-task6"
-        },
-        "6.1": {
-            "title": "Android 存储架构",
-            "status": "finalized",
-            "file": "src/part1-fundamentals/ch06-storage/01-storage-architecture.md",
-            "drafted_date": "2026-04-01",
-            "reviewed_date": "2026-04-03",
-            "reviewed_by": "openclaw-task6"
-        },
-        "7.1": {
-            "title": "卡顿的定义与分类",
-            "status": "finalized",
-            "file": "src/part2-performance/ch07-smoothness/01-jank-definition.md",
-            "drafted_date": "2026-03-30",
-            "reviewed_date": "2026-04-03",
-            "reviewed_by": "openclaw-task6"
-        },
-        "5.6": {
-            "title": "Android 功耗管理",
-            "status": "finalized",
-            "file": "src/part1-fundamentals/ch05-cpu-power/06-android-power.md",
-            "drafted_date": "2026-04-01",
-            "reviewed_date": "2026-04-03",
-            "reviewed_by": "openclaw-task6"
-        },
-        "14.6": {
-            "title": "自动化测试工具",
-            "status": "ready-for-review",
-            "drafted_date": "2026-04-04",
-            "drafted_by": "openclaw-task2a",
-            "file": "src/part3-tools/ch14-other-tools/06-automation-tools.md"
-        },
-        "7.2": {
-            "title": "卡顿原因体系",
-            "status": "finalized",
-            "reviewed_date": "2026-04-04",
-            "reviewed_by": "openclaw-task6",
-            "file": "src/part2-performance/ch07-smoothness/02-jank-causes.md"
-        },
-        "15.1": {
-            "title": "性能优化的术、道、器",
-            "status": "ready-for-review",
-            "drafted_date": "2026-04-04",
-            "drafted_by": "openclaw-task2a",
-            "file": "src/part3-tools/ch15-methodology/01-philosophy.md",
-            "word_count": "~8500"
-        },
-        "7.3": {
-            "chapter": "7.3",
-            "title": "卡顿分析方法论",
-            "status": "reviewed",
-            "reviewed_date": "2026-04-04",
-            "reviewed_by": "openclaw-task6"
-        },
-        "15.3": {
-            "drafted_date": "2026-04-04",
-            "drafted_by": "openclaw-task2a",
-            "status": "ready-for-review",
-            "content_lines": 360,
-            "anchors_covered": 6,
-            "anchors_total": 6,
-            "extensions_covered": 2,
-            "extensions_total": 2,
-            "verification": {
-                "L2": 8,
-                "pending": 1
-            }
-        },
-        "6.2": {
-            "title": "文件系统",
-            "status": "reviewed",
-            "reviewed_date": "2026-04-04",
-            "reviewed_by": "openclaw-task6",
-            "file": "src/part1-fundamentals/ch06-storage/02-filesystem.md"
-        },
-        "15.4": {
-            "title": "竞品分析方法",
-            "status": "ready-for-review",
-            "drafted_date": "2026-04-04",
-            "drafted_by": "openclaw-task2a"
-        },
-        "6.4": {
-            "title": "存储相关的版本演进",
-            "status": "finalized",
-            "file": "src/part1-fundamentals/ch06-storage/04-storage-evolution.md",
-            "drafted_date": "2026-04-01",
-            "reviewed_date": "2026-04-04",
-            "reviewed_by": "openclaw-task6"
-        },
-        "7.4": {
-            "title": "典型场景分析",
-            "status": "reviewed",
-            "last_updated": "2026-04-04",
-            "updated_by": "task6-review",
-            "review_log": "logs/review/2026-04-04-0525-review.md"
-        },
-        "15.5": {
-            "title": "线上性能监控",
-            "status": "ready-for-review",
-            "drafted_date": "2026-04-04",
-            "drafted_by": "openclaw-task2a",
-            "file": "src/part3-tools/ch15-methodology/05-online-monitoring.md"
-        },
-        "7.6": {
-            "title": "案例集",
-            "status": "finalized",
-            "file": "src/part2-performance/ch07-smoothness/06-case-studies.md",
-            "drafted_date": "2026-04-01",
-            "drafted_by": "openclaw-task2a",
-            "reviewed_date": "2026-04-04",
-            "reviewed_by": "openclaw-task6"
-        },
-        "15.6": {
-            "title": "性能测试最佳实践",
-            "status": "ready-for-review",
-            "drafted_date": "2026-04-04",
-            "drafted_by": "openclaw-task2a",
-            "file": "src/part3-tools/ch15-methodology/06-testing-best-practices.md",
-            "anchors_covered": 5,
-            "extensions_covered": 2
-        },
-        "7.7": {
-            "title": "Jetpack Compose 性能优化",
-            "status": "finalized",
-            "file": "src/part2-performance/ch07-smoothness/07-compose-performance.md",
-            "drafted_date": "2026-04-01",
-            "drafted_by": "openclaw-task2a",
-            "reviewed_date": "2026-04-04",
-            "reviewed_by": "openclaw-task6"
-        },
-        "15.7": {
-            "title": "AOSP 代码阅读",
-            "status": "ready-for-review",
-            "drafted_date": "2026-04-04",
-            "drafted_by": "openclaw-task2a",
-            "file": "src/part3-tools/ch15-methodology/07-aosp-reading.md",
-            "anchors_covered": 5,
-            "extensions_covered": 2
-        },
-        "16.1": {
-            "title": "Google 官方的性能优化思路",
-            "status": "ready-for-review",
-            "drafted_date": "2026-04-04",
-            "drafted_by": "openclaw-task2a",
-            "file": "src/part4-system/ch16-aosp/01-google-optimization.md"
-        }
+    "2.1": {
+      "reviewed_date": "2026-04-02",
+      "reviewed_by": "openclaw-task6",
+      "review_status": "reviewed",
+      "fixes_applied": [
+        "frontmatter: 补 drafted_date/reviewed_date/reviewed_by",
+        "frontmatter: applicable_versions API B → API 36",
+        "frontmatter: status ready-for-review → reviewed",
+        "措辞: UI 线程（主线程）→ 主线程（也称 UI 线程）"
+      ]
     },
     "5.1": {
-        "title": "Linux 进程调度基础",
-        "status": "ready-for-review",
-        "rework_notes": "EEVDF + SchedTune/UClamp 回炉修复完成",
-        "last_updated": "2026-04-02T04:44:22.221424+08:00"
+      "reviewed_date": "2026-04-03",
+      "reviewed_by": "openclaw-task6",
+      "review_status": "finalized",
+      "fixes_applied": [
+        "frontmatter: 补 section 字段",
+        "frontmatter: status ready-for-review → finalized",
+        "标注标准化: 3 处 [来源] → [已验证]",
+        "frontmatter: reviewed_date 更新为 2026-04-03"
+      ]
     },
-    "rework_history": [
-        {
-            "date": "2026-04-02T07:47:00.583548+08:00",
-            "sections": [
-                "2.2",
-                "4.6"
-            ],
-            "action": "task2b-rework",
-            "details": "2.2: 4 fixes (doFrame API corrected, FrameRateOverride corrected, 常见问题与误区 added, Swappy confirmed). 4.6: 2 fixes (title corrected, 16KB Page Size body added)"
-        },
-        {
-            "date": "2026-04-03T03:44:45+08:00",
-            "sections": [
-                "2.9"
-            ],
-            "action": "task2b-rework",
-            "details": "2.9 渲染机制的版本演进: 4 fixes (AOSP路径验证, Android16年份确认, 图注增强, FrameMetrics叙述重写)"
-        },
-        {
-            "date": "2026-04-03T09:40:00+08:00",
-            "sections": [
-                "2.10"
-            ],
-            "action": "task2b-rework",
-            "details": "2.10 GPU 渲染深入: 7 fixes (全文文体重写8+处, 实战案例TypeB重写, 新增与其他机制关系小节, 新增Perfetto表现专节, 新增常见误区5条, 3处伪代码标注修正, frontmatter更新)"
-        }
-    ],
-    "chapters": {
-        "2.6": {
-            "title": "SurfaceFlinger 与合成",
-            "status": "ready-for-review",
-            "rework_round": 1,
-            "last_updated": "2026-04-02T14:50:19.993678+08:00",
-            "review_log": "logs/review/2026-04-02-1320-review.md",
-            "verification": "L2 rework verified"
-        },
-        "7.3": {
-            "status": "ready-for-review",
-            "last_rework": "2026-04-04",
-            "rework_by": "openclaw-task2b",
-            "rework_issues": 2,
-            "rework_fixes": [
-                "B1: FrameMetrics.DEADLINE API 版本兼容性 — 添加版本分支代码 + 叙述说明",
-                "B2: SQL 调度延迟查询语义修正 — 拆分为两个查询（抢占片段 vs 调度延迟）"
-            ]
-        }
+    "4.6": {
+      "reviewed_date": "2026-04-03",
+      "reviewed_by": "openclaw-task6",
+      "review_status": "finalized-v2",
+      "fixes_applied": [
+        "补充3处[图：...]标注（Bitmap迁移/Scudo架构/MTE Tag比对）",
+        "frontmatter更新：status→finalized, reviewed_date→2026-04-03"
+      ],
+      "notes": "二次review（回炉后），无B类大问题，保留已有[存疑]标注待高爷决策"
+    },
+    "2.3": {
+      "reviewed_date": "2026-04-02",
+      "reviewed_by": "openclaw-task6",
+      "review_status": "finalized",
+      "file": "src/part1-fundamentals/ch02-rendering/03-vsync.md"
+    },
+    "2.4": {
+      "reviewed_date": "2026-04-03",
+      "reviewed_by": "openclaw-task6",
+      "review_status": "finalized",
+      "fixes_applied": [
+        "5处'你'→'我们'替换（writing-guide §3.5合规）",
+        "1处大小写修正（Choreographer#doframe→#doFrame）"
+      ]
     },
     "2.6": {
-        "title": "SurfaceFlinger 与合成",
-        "status": "finalized",
-        "file": "src/part1-fundamentals/ch02-rendering/06-surfaceflinger.md",
-        "drafted_date": "2026-03-30",
-        "reviewed_date": "2026-04-02",
-        "reviewed_by": "openclaw-task6",
-        "review_round": 2,
-        "score": {
-            "structure": 5,
-            "wording": 4.5,
-            "consistency": 5,
-            "verification": 4,
-            "metadata": 5
-        },
-        "last_updated": "2026-04-02T22:29:32.067195"
+      "reviewed_date": "2026-04-02",
+      "reviewed_by": "openclaw-task6",
+      "review_status": "reviewed",
+      "fixes_applied": [
+        "frontmatter: 补 drafted_date/reviewed_date/reviewed_by, status -> reviewed",
+        "frontmatter: applicable_versions API B -> API 36",
+        "frontmatter: sources 移除 androidcentral.com, skia.org -> source.android.com",
+        "confidence: high -> medium",
+        "添加 [待补充: Trace 截图] 标注",
+        "标记 6 处 [存疑] 代码",
+        "标记 1 处 [需重写] BlastBufferQueue Java 虚构 API",
+        "标记 1 处 [需验证] HWC 3.0 版本",
+        "添加全文 [需重写] 文体标注"
+      ],
+      "b_class_issues": 4
     },
-    "11.2": {
-        "title": "App 耗电优化",
-        "status": "ready-for-review",
-        "drafted_date": "2026-04-03",
-        "drafted_by": "openclaw-task2a",
-        "word_count": "~8500"
+    "2.7": {
+      "reviewed_date": "2026-04-02",
+      "reviewed_by": "openclaw-task6",
+      "review_status": "finalized",
+      "fixes_applied": [
+        "Software Layer 适用场景：从列表改为连贯叙述（writing-guide 合规）",
+        "规律总结过渡措辞优化",
+        "frontmatter：补 drafted_date/reviewed_date/reviewed_by，status → finalized"
+      ]
     },
-    "14.2": {
-        "status": "ready-for-review",
-        "drafted_date": "2026-04-03",
-        "drafted_by": "openclaw-task2a",
-        "confidence": "medium",
-        "anchors_covered": [
-            "Simpleperf是什么（基于Linux perf）",
-            "基本用法（stat/record/report）",
-            "采样类型（cpu-cycles/task-clock/PMU事件）",
-            "火焰图生成与解读（report_html/Speedscope）",
-            "与Perfetto callstack sampling对比"
-        ],
-        "extensions_covered": [
-            "Native代码性能分析（符号解析/off-CPU）",
-            "内核符号解析与kallsyms"
-        ],
-        "auto_discovered": [
-            "profileable vs debuggable区别",
-            "常见问题与误区（4条）"
-        ]
+    "2.8": {
+      "reviewed_date": "2026-04-02",
+      "reviewed_by": "openclaw-task6",
+      "review_status": "finalized",
+      "fixes_applied": [
+        "修正 you -> women (writing-guide compliance)",
+        "添加 GPU overdraw debug color figure marker",
+        "补充 frontmatter: drafted_date, reviewed_date, reviewed_by",
+        "status: ready-for-review -> finalized"
+      ]
+    },
+    "5.3": {
+      "reviewed_date": "2026-04-02",
+      "reviewed_by": "openclaw-task6",
+      "review_status": "finalized",
+      "fixes_applied": [
+        "措辞修正：集群迁移\"中断\"→\"迁移开销\"（更准确的术语）",
+        "frontmatter：补 reviewed_date/reviewed_by, status ready-for-review → finalized"
+      ]
+    },
+    "2.11": {
+      "reviewed_date": "2026-04-03",
+      "reviewed_by": "openclaw-task6",
+      "review_status": "finalized-v2",
+      "fixes_applied": [
+        "11处'你'→'我们'替换（writing-guide §3.5合规）",
+        "frontmatter补充section字段",
+        "3处[存疑]标注（Flutter 3.38版本号、450ms→11ms来源、HoldApp报告真实性）",
+        "status ready-for-review → finalized"
+      ],
+      "b_class_notes": "3处存疑均为数据来源验证，非结构性问题，不触发回炉"
+    },
+    "2.9": {
+      "reviewed_date": "2026-04-03",
+      "reviewed_by": "openclaw-task6",
+      "review_status": "finalized-v3",
+      "review_round": 2,
+      "fixes_applied": [
+        "8处'你'→'我们'替换（writing-guide §3.5合规）",
+        "合并冗余FrameMetrics过渡句",
+        "frontmatter补充section字段, status→finalized"
+      ]
+    },
+    "4.1": {
+      "reviewed_date": "2026-04-03",
+      "reviewed_by": "openclaw-task6",
+      "review_status": "finalized",
+      "fixes_applied": [
+        "frontmatter: 补 section/drafted_date, status → finalized",
+        "frontmatter: 添加 reviewed_date/reviewed_by",
+        "标准化 4 处 [来源:] → [已验证:] 标注格式",
+        "ZRAM 75% 声明添加 [待验证] 标注"
+      ]
+    },
+    "9.3": {
+      "reviewed_date": "2026-04-03",
+      "reviewed_by": "openclaw-task6",
+      "review_status": "finalized",
+      "fixes_applied": [
+        "8处'你'→'我们'替换（writing-guide §3.5合规）",
+        "frontmatter: status ready-for-review → finalized",
+        "frontmatter: 补 reviewed_date/reviewed_by"
+      ]
+    },
+    "2.10": {
+      "reviewed_date": "2026-04-03",
+      "reviewed_by": "openclaw-task6",
+      "review_status": "finalized-v2",
+      "review_round": 2,
+      "fixes_applied": [
+        "补充 frontmatter section: 2.10",
+        "修正 Android 12 渲染架构描述：RenderThread 从 Android 5.0 引入（非 Android 12）",
+        "ANGLE 性能开销数据添加 [待验证] 标注",
+        "status ready-for-review → finalized（二次 review，回炉后无 B 类大问题）"
+      ]
+    },
+    "5.4": {
+      "reviewed_date": "2026-04-03",
+      "reviewed_by": "openclaw-task6",
+      "review_status": "finalized",
+      "fixes_applied": [
+        "9处'你'→'我们'替换（writing-guide §3.5合规）",
+        "5处[来源:]→[已验证: 来源见 ...]标注格式标准化",
+        "frontmatter补充section字段",
+        "status ready-for-review → finalized"
+      ]
+    },
+    "3.2": {
+      "reviewed_date": "2026-04-03",
+      "reviewed_by": "openclaw-task6",
+      "review_status": "finalized",
+      "fixes_applied": [
+        "3处'你'→'我们'替换（writing-guide §3.5合规）",
+        "frontmatter补全：section/drafted_date/drafted_by/reviewed_date/reviewed_by",
+        "status ready-for-review → finalized"
+      ]
+    },
+    "3.3": {
+      "reviewed_date": "2026-04-03",
+      "reviewed_by": "openclaw-task6",
+      "review_status": "finalized",
+      "fixes_applied": [
+        "18处'你'→'我们'替换（writing-guide §3.5合规）",
+        "frontmatter补充：section/drafted_date/drafted_by/reviewed_date/reviewed_by",
+        "status ready-for-review → finalized"
+      ]
+    },
+    "4.3": {
+      "reviewed_date": "2026-04-03",
+      "reviewed_by": "openclaw-task6",
+      "review_status": "finalized",
+      "fixes_applied": [
+        "5处'你'→'我们'替换（writing-guide §3.5合规）",
+        "frontmatter补充section/drafted_date/drafted_by字段",
+        "frontmatter更新：status→finalized, 添加reviewed_date/reviewed_by"
+      ]
+    },
+    "5.5": {
+      "reviewed_date": "2026-04-03",
+      "reviewed_by": "openclaw-task6",
+      "review_status": "finalized",
+      "fixes_applied": [
+        "8处'你'→'我们'替换（writing-guide §3.5合规）",
+        "frontmatter补 section/drafted_date 字段",
+        "frontmatter更新：status→finalized, 添加reviewed_date/reviewed_by"
+      ]
+    },
+    "4.4": {
+      "reviewed_date": "2026-04-03",
+      "reviewed_by": "openclaw-task6",
+      "review_status": "finalized",
+      "fixes_applied": [
+        "9处'你'→'我们'替换（writing-guide §3.5合规）",
+        "frontmatter补 section/drafted_date/reviewed_date/reviewed_by",
+        "status ready-for-review → finalized"
+      ]
+    },
+    "6.1": {
+      "reviewed_date": "2026-04-03",
+      "reviewed_by": "openclaw-task6",
+      "review_status": "finalized",
+      "fixes_applied": [
+        "标注标准化: 10处[来源:]→[已验证: 来源见 ...]（3种来源）",
+        "frontmatter补 drafted_date/drafted_by/section 字段",
+        "frontmatter: status ready-for-review → finalized"
+      ]
+    },
+    "7.1": {
+      "reviewed_date": "2026-04-03",
+      "reviewed_by": "openclaw-task6",
+      "review_status": "finalized",
+      "fixes_applied": [
+        "4处'你'→'我们'替换（writing-guide §3.5合规）",
+        "4处[来源:]→[已验证: 来源见 ...]标注格式标准化",
+        "frontmatter补 section/drafted_date/drafted_by 字段",
+        "status ready-for-review → finalized"
+      ]
+    },
+    "5.6": {
+      "reviewed_date": "2026-04-03",
+      "reviewed_by": "openclaw-task6",
+      "review_status": "finalized",
+      "fixes_applied": [
+        "22处'你'→'我们'替换（writing-guide §3.5合规）",
+        "3处[来源:]→[已验证:]标注格式标准化",
+        "2处[存疑]标注（绿盟标准/Adaptive Battery 2.0术语）",
+        "frontmatter补 section/reviewed_date/reviewed_by",
+        "status ready-for-review → finalized"
+      ]
+    },
+    "5.7": {
+      "reviewed_date": "2026-04-04",
+      "reviewed_by": "openclaw-task6",
+      "review_status": "finalized",
+      "fixes_applied": [
+        "4 处语言风格修正（你→我们/中性表述，符合 writing-guide）",
+        "frontmatter: status ready-for-review → finalized",
+        "frontmatter: 补 reviewed_date/reviewed_by"
+      ]
+    },
+    "6.4": {
+      "reviewed_date": "2026-04-04",
+      "reviewed_by": "openclaw-task6",
+      "review_status": "finalized",
+      "fixes_applied": [
+        "7处你→我们替换（writing-guide §3.5合规）",
+        "4处[来源]→[已验证: 来源见 ...]标注格式标准化",
+        "frontmatter补全：section/drafted_by/reviewed_date/reviewed_by",
+        "status ready-for-review → finalized"
+      ]
+    },
+    "7.6": {
+      "reviewed_date": "2026-04-04",
+      "reviewed_by": "openclaw-task6",
+      "review_status": "finalized",
+      "fixes_applied": [
+        "frontmatter补全：section/drafted_date/drafted_by/reviewed_date/reviewed_by",
+        "12处[来源:]→[已验证: 来源见 ...]标注格式标准化",
+        "status ready-for-review → finalized"
+      ]
+    },
+    "7.7": {
+      "reviewed_date": "2026-04-04",
+      "reviewed_by": "openclaw-task6",
+      "review_status": "finalized",
+      "fixes_applied": [
+        "17处'你'→'我们'替换（writing-guide §3.5合规）",
+        "frontmatter补全：section/drafted_by/reviewed_date/reviewed_by",
+        "status ready-for-review → finalized"
+      ]
+    },
+    "11.1": {
+      "reviewed_date": "2026-04-04",
+      "reviewed_by": "openclaw-task6",
+      "review_status": "finalized",
+      "fixes_applied": [
+        "11处'你'→'我们'替换（writing-guide §3.5合规）",
+        "frontmatter补充：section/drafted_by/reviewed_date/reviewed_by",
+        "status ready-for-review → finalized"
+      ]
     }
+  },
+  "review_stats": {
+    "total_reviewed": 33,
+    "reviewed_today": 18,
+    "review_issues_total": 13
+  },
+  "completed": [
+    {
+      "section": "13.4",
+      "title": "命令行打开超大 Trace",
+      "completed_at": "2026-04-03T13:10:00+08:00",
+      "anchors_covered": 5,
+      "anchors_total": 5,
+      "extensions_covered": 2,
+      "extensions_total": 2,
+      "verification_level": "L2",
+      "word_count": "~9500"
+    },
+    {
+      "section": "2.9",
+      "title": "渲染机制的版本演进",
+      "completed_at": "2026-03-30T16:20:00+08:00",
+      "anchors_covered": 5,
+      "anchors_total": 5,
+      "extensions_covered": 2,
+      "extensions_total": 2,
+      "verification_level": "L2",
+      "word_count": "TBD"
+    },
+    {
+      "section": "3.1",
+      "title": "Input 事件分发全流程",
+      "completed_at": "2026-03-30T09:30:54.458831+00:00",
+      "anchors_covered": 5,
+      "anchors_total": 5,
+      "extensions_covered": 2,
+      "extensions_total": 3,
+      "verification_level": "L2",
+      "word_count": "~7500"
+    },
+    {
+      "section": "2.5",
+      "title": "MainThread 与 RenderThread 协作",
+      "completed_at": "2026-03-30T20:47:20.369317",
+      "anchors_covered": 6,
+      "anchors_total": 6,
+      "extensions_covered": 2,
+      "extensions_total": 2,
+      "verification_level": "L2",
+      "word_count": "~8500",
+      "status": "finalized",
+      "finalized_at": "2026-04-02T12:25:00+08:00",
+      "review_date": "2026-04-02",
+      "review_by": "openclaw-task6",
+      "review_score": {
+        "structure": 5,
+        "expression": 5,
+        "consistency": 5,
+        "verification": 4,
+        "metadata": 5
+      }
+    },
+    {
+      "section": "2.2",
+      "title": "帧率与刷新率",
+      "completed_at": "2026-03-30T21:35:05",
+      "anchors_covered": 5,
+      "anchors_total": 5,
+      "extensions_covered": 3,
+      "extensions_total": 3,
+      "verification_level": "L2",
+      "word_count": "~8500"
+    },
+    {
+      "section": "2.7",
+      "title": "Hardware Layer",
+      "completed_at": "2026-03-30T14:27:41.534Z",
+      "anchors_covered": 4,
+      "anchors_total": 4,
+      "extensions_covered": 1,
+      "extensions_total": 2,
+      "verification_level": "L2",
+      "word_count": "~8500"
+    },
+    {
+      "section": "1.4",
+      "title": "Binder IPC 机制与性能影响",
+      "completed_at": "2026-03-31T01:42:45.108799",
+      "anchors_covered": 6,
+      "anchors_total": 6,
+      "extensions_covered": 3,
+      "extensions_total": 3,
+      "verification_level": "L2",
+      "word_count": "~9500"
+    },
+    {
+      "section": "1.5",
+      "title": "线程模型",
+      "completed_at": "2026-03-30T18:37:58.288757+00:00",
+      "anchors_covered": 6,
+      "anchors_total": 6,
+      "extensions_covered": 3,
+      "extensions_total": 3,
+      "verification_level": "L2",
+      "word_count": "~8500"
+    },
+    {
+      "section": "3.2",
+      "title": "触摸响应的性能分析",
+      "completed_at": "2026-03-30T19:38:41.369144+00:00",
+      "anchors_covered": 5,
+      "anchors_total": 5,
+      "extensions_covered": 2,
+      "extensions_total": 2,
+      "verification_level": "L2",
+      "word_count": "~7500"
+    },
+    {
+      "section": "7.1",
+      "title": "卡顿的定义与分类",
+      "completed_at": "2026-03-30T20:33:03.150823+00:00",
+      "anchors_covered": 5,
+      "anchors_total": 5,
+      "extensions_covered": 1,
+      "extensions_total": 2,
+      "verification_level": "L2",
+      "word_count": "~8000"
+    },
+    {
+      "section": "1.6",
+      "title": "Android 版本演进中的架构变化",
+      "completed_at": "2026-03-30T21:28:51.853958+00:00",
+      "anchors_covered": 5,
+      "anchors_total": 5,
+      "extensions_covered": 2,
+      "extensions_total": 2,
+      "verification_level": "L2",
+      "word_count": "~8000"
+    },
+    {
+      "section": "3.3",
+      "title": "手势导航与系统交互",
+      "completed_at": "2026-03-31T06:28:54.824806",
+      "anchors_covered": 4,
+      "anchors_total": 4,
+      "extensions_covered": 0,
+      "extensions_total": 2,
+      "verification_level": "L2",
+      "word_count": "~7500"
+    },
+    {
+      "section": "7.2",
+      "title": "卡顿原因体系",
+      "completed_at": "2026-03-31T07:29:54.381093+08:00",
+      "anchors_covered": 6,
+      "anchors_total": 6,
+      "extensions_covered": 0,
+      "extensions_total": 3,
+      "verification_level": "L2",
+      "word_count": "~7500"
+    },
+    {
+      "section": "7.3",
+      "title": "卡顿分析方法论",
+      "completed_at": "2026-03-31T08:20:00+08:00",
+      "anchors_covered": 5,
+      "anchors_total": 5,
+      "extensions_covered": 2,
+      "extensions_total": 2,
+      "verification_level": "L2",
+      "word_count": "~7500"
+    },
+    {
+      "section": "4.1",
+      "title": "Android 内存模型全景",
+      "completed_at": "2026-03-31T09:56:38.219714",
+      "anchors_covered": 5,
+      "anchors_total": 5,
+      "extensions_covered": 2,
+      "extensions_total": 2,
+      "verification_level": "L2",
+      "word_count": "~7500"
+    },
+    {
+      "section": "1.1",
+      "title": "Android 分层架构",
+      "completed_at": "2026-03-30T19:28:13.921512+08:00",
+      "status": "finalized",
+      "finalized_at": "2026-03-31T10:05:00+08:00",
+      "review_v2_date": "2026-03-31"
+    },
+    {
+      "section": "4.2",
+      "title": "Linux 内核内存管理",
+      "completed_at": "2026-03-31T10:50:04.545995",
+      "anchors_covered": 5,
+      "anchors_total": 5,
+      "extensions_covered": 1,
+      "extensions_total": 3,
+      "verification_level": "L2",
+      "word_count": "~7500"
+    },
+    {
+      "section": "4.3",
+      "title": "ART 虚拟机内存管理",
+      "completed_at": "2026-03-31T17:00:26.518990",
+      "anchors_covered": 5,
+      "anchors_total": 5,
+      "verification_level": "L2",
+      "word_count": "~7500"
+    },
+    {
+      "section": "1.3",
+      "title": "进程模型与生命周期管理",
+      "completed_at": "2026-03-31T09:58:00+08:00",
+      "status": "finalized",
+      "finalized_at": "2026-03-31T17:58:00+08:00",
+      "review_date": "2026-03-31",
+      "review_by": "openclaw-task6"
+    },
+    {
+      "section": "4.4",
+      "title": "Low Memory Killer",
+      "completed_at": "2026-03-31T18:32:44.758186",
+      "anchors_covered": 5,
+      "anchors_total": 5,
+      "extensions_covered": 3,
+      "extensions_total": 3,
+      "verification_level": "L2",
+      "word_count": "~7500"
+    },
+    {
+      "section": "4.5",
+      "title": "App 内存优化",
+      "completed_at": "2026-03-31T19:33:29.484314",
+      "anchors_covered": 5,
+      "anchors_total": 5,
+      "extensions_covered": 1,
+      "extensions_total": 3,
+      "verification_level": "L2",
+      "word_count": "~9000",
+      "action": "review-rework-completed",
+      "review_r2_date": "2026-04-01"
+    },
+    {
+      "section": "5.1",
+      "title": "Linux 进程调度基础",
+      "completed_at": "2026-03-31T21:37:01.681846",
+      "anchors_covered": 5,
+      "anchors_total": 5,
+      "extensions_covered": 1,
+      "extensions_total": 3,
+      "verification_level": "L2",
+      "word_count": "~13000"
+    },
+    {
+      "section": "5.2",
+      "title": "EAS 能量感知调度",
+      "completed_at": "2026-03-31T22:30:39.620507",
+      "anchors_covered": 5,
+      "anchors_total": 5,
+      "extensions_covered": 0,
+      "extensions_total": 2,
+      "verification_level": "L2",
+      "word_count": "~9000"
+    },
+    {
+      "section": "5.3",
+      "title": "大小核架构",
+      "completed_at": "2026-03-31T23:32:41.856375",
+      "anchors_covered": 5,
+      "anchors_total": 5,
+      "extensions_covered": 1,
+      "extensions_total": 2,
+      "verification_level": "L2",
+      "word_count": "~9500"
+    },
+    {
+      "section": "5.4",
+      "title": "DVFS 与功耗管理",
+      "completed_at": "2026-04-01T00:30:01.030651",
+      "anchors_covered": 5,
+      "anchors_total": 5,
+      "extensions_covered": 3,
+      "extensions_total": 3,
+      "verification_level": "L2",
+      "word_count": "~8000"
+    },
+    {
+      "section": "5.6",
+      "title": "Android 功耗管理",
+      "completed_at": "2026-04-01T02:22:00+08:00",
+      "anchors_covered": 5,
+      "anchors_total": 5,
+      "extensions_covered": 3,
+      "extensions_total": 3,
+      "verification_level": "L2",
+      "word_count": "~9500"
+    },
+    {
+      "section": "6.3",
+      "title": "I/O 调度与性能",
+      "completed_at": "2026-04-01T06:46:53",
+      "anchors_covered": 5,
+      "anchors_total": 5,
+      "extensions_covered": 2,
+      "extensions_total": 2,
+      "verification_level": "L2",
+      "word_count": "~4338"
+    },
+    {
+      "section": "6.4",
+      "title": "存储相关的版本演进",
+      "completed_at": "2026-04-01T07:26:31",
+      "anchors_covered": 4,
+      "anchors_total": 4,
+      "extensions_covered": 2,
+      "extensions_total": 2,
+      "verification_level": "L2",
+      "word_count": "~7500"
+    },
+    {
+      "section": "8.3",
+      "title": "启动优化策略",
+      "completed_at": "2026-04-01T16:30:00+08:00",
+      "anchors_covered": 6,
+      "anchors_total": 6,
+      "extensions_covered": 2,
+      "extensions_total": 2,
+      "verification_level": "L2",
+      "word_count": "~12000"
+    },
+    {
+      "section": "2.11",
+      "title": "Flutter 渲染管线与性能",
+      "completed_at": "2026-04-01T20:20:00+08:00",
+      "anchors_covered": 5,
+      "anchors_total": 5,
+      "extensions_covered": 3,
+      "extensions_total": 3,
+      "verification_level": "L2",
+      "word_count": "~8500"
+    },
+    {
+      "section": "2.11",
+      "title": "Flutter 渲染管线与性能",
+      "completed_at": "2026-04-01T20:20:00+08:00",
+      "anchors_covered": 5,
+      "anchors_total": 5,
+      "extensions_covered": 2,
+      "extensions_total": 3,
+      "verification_level": "L2",
+      "word_count": "~8000"
+    },
+    {
+      "section": "2.11",
+      "title": "Flutter 渲染管线与性能",
+      "completed_at": "2026-04-01T20:20:00+08:00",
+      "anchors_covered": 5,
+      "anchors_total": 5,
+      "extensions_covered": 1,
+      "extensions_total": 2,
+      "verification_level": "L2",
+      "word_count": "~8500"
+    },
+    {
+      "section": "8.4",
+      "title": "其他响应速度场景",
+      "completed_at": "2026-04-02T01:42:00+08:00",
+      "anchors_covered": 4,
+      "anchors_total": 4,
+      "extensions_covered": 0,
+      "extensions_total": 2,
+      "verification_level": "L2",
+      "word_count": "~9500"
+    },
+    {
+      "section": "8.5",
+      "title": "案例集",
+      "completed_at": "2026-04-02T02:41:00+08:00",
+      "anchors_covered": 3,
+      "anchors_total": 3,
+      "extensions_covered": 2,
+      "extensions_total": 2,
+      "verification_level": "L2",
+      "word_count": "~9000"
+    },
+    {
+      "section": "8.6",
+      "title": "Kotlin Coroutine 性能实践",
+      "completed_at": "2026-04-02T04:18:00+08:00",
+      "anchors_covered": 5,
+      "anchors_total": 5,
+      "extensions_covered": 2,
+      "extensions_total": 2,
+      "verification_level": "L2",
+      "word_count": "~8500"
+    },
+    {
+      "section": "8.6",
+      "title": "Kotlin Coroutine 性能实践",
+      "completed_at": "2026-04-02T04:41:00+08:00",
+      "anchors_covered": 5,
+      "anchors_total": 5,
+      "extensions_covered": 2,
+      "extensions_total": 2,
+      "verification_level": "L2",
+      "word_count": "~9500"
+    },
+    {
+      "section": "9.1",
+      "title": "ANR 设计思想",
+      "completed_at": "2026-04-02T05:03:00+08:00",
+      "anchors_covered": 5,
+      "anchors_total": 5,
+      "extensions_covered": 2,
+      "extensions_total": 2,
+      "verification_level": "L2",
+      "word_count": "~9000"
+    },
+    {
+      "section": "9.1",
+      "title": "ANR 设计思想",
+      "completed_at": "2026-04-02T05:39:00+08:00",
+      "anchors_covered": 5,
+      "anchors_total": 5,
+      "extensions_covered": 2,
+      "extensions_total": 2,
+      "verification_level": "L2",
+      "word_count": "~8500"
+    },
+    {
+      "section": "9.2",
+      "title": "ANR 类型与触发条件",
+      "completed_at": "2026-04-02T09:39:00+08:00",
+      "anchors_covered": 5,
+      "anchors_total": 5,
+      "extensions_covered": 2,
+      "extensions_total": 2,
+      "verification_level": "L2",
+      "word_count": "~7500"
+    },
+    {
+      "section": "9.5",
+      "title": "案例集",
+      "completed_at": "2026-04-02T15:20:00+08:00",
+      "anchors_covered": 3,
+      "anchors_total": 3,
+      "extensions_covered": 2,
+      "extensions_total": 2,
+      "verification_level": "L2",
+      "word_count": "~9500"
+    },
+    {
+      "section": "10.1",
+      "title": "App 内存分析",
+      "completed_at": "2026-04-02T17:19:45.089499",
+      "anchors_covered": 5,
+      "anchors_total": 5,
+      "extensions_covered": 2,
+      "extensions_total": 2,
+      "verification_level": "L2",
+      "word_count": "~8500"
+    },
+    {
+      "section": "10.2",
+      "title": "内存泄漏",
+      "completed_at": "2026-04-02T19:23:57+08:00",
+      "anchors_covered": 5,
+      "anchors_total": 5,
+      "extensions_covered": 2,
+      "extensions_total": 2,
+      "verification_level": "L2",
+      "word_count": "~9500"
+    },
+    {
+      "section": "10.3",
+      "title": "内存持续增长",
+      "completed_at": "2026-04-02T20:21:58.911026",
+      "anchors_covered": 5,
+      "anchors_total": 5,
+      "extensions_covered": 2,
+      "extensions_total": 2,
+      "verification_level": "L2",
+      "word_count": "~8000"
+    },
+    {
+      "section": "10.5",
+      "title": "案例集",
+      "completed_at": "2026-04-02T22:02:00+08:00",
+      "anchors_covered": 3,
+      "anchors_total": 3,
+      "extensions_covered": 0,
+      "extensions_total": 2,
+      "verification_level": "L2",
+      "word_count": "~8500"
+    },
+    {
+      "section": "11.3",
+      "title": "系统级功耗优化",
+      "completed_at": "2026-04-03T04:10:00+08:00",
+      "anchors_covered": 5,
+      "anchors_total": 5,
+      "extensions_covered": 1,
+      "extensions_total": 2,
+      "verification_level": "L2",
+      "word_count": "~8500"
+    },
+    {
+      "section": "11.4",
+      "title": "案例集",
+      "completed_at": "2026-04-03T05:02:00+08:00",
+      "anchors_covered": 3,
+      "anchors_total": 3,
+      "extensions_covered": 1,
+      "extensions_total": 2,
+      "verification_level": "L2",
+      "word_count": "~10000"
+    },
+    {
+      "section": "12.1",
+      "title": "APK 体积优化",
+      "completed_at": "2026-04-03T06:02:00+08:00",
+      "anchors_covered": 6,
+      "anchors_total": 6,
+      "extensions_covered": 2,
+      "extensions_total": 2,
+      "verification_level": "L2",
+      "word_count": "~8500"
+    },
+    {
+      "section": "13.2",
+      "title": "Trace 抓取",
+      "completed_at": "2026-04-03T11:06:00+08:00",
+      "anchors_covered": 6,
+      "anchors_total": 6,
+      "extensions_covered": 2,
+      "extensions_total": 2,
+      "verification_level": "L2",
+      "word_count": "~9500"
+    },
+    {
+      "section": "13.2",
+      "title": "Trace 抓取",
+      "completed_at": "2026-04-03T11:06:00+08:00",
+      "anchors_covered": 6,
+      "anchors_total": 6,
+      "extensions_covered": 2,
+      "extensions_total": 2,
+      "verification_level": "L2",
+      "word_count": "~9500"
+    },
+    {
+      "section": "13.3",
+      "title": "Perfetto View 解读",
+      "completed_at": "2026-04-03T12:30:27.887707",
+      "anchors_covered": 5,
+      "anchors_total": 5,
+      "extensions_covered": 2,
+      "extensions_total": 2,
+      "verification_level": "L2",
+      "word_count": "~8000"
+    },
+    {
+      "section": "13.4",
+      "title": "命令行打开超大 Trace",
+      "completed_at": "2026-04-03T13:10:00+08:00",
+      "anchors_covered": 5,
+      "anchors_total": 5,
+      "extensions_covered": 2,
+      "extensions_total": 2,
+      "verification_level": "L2",
+      "word_count": "~9500"
+    },
+    {
+      "chapter": "13.5",
+      "section": "13.5",
+      "title": "专题解读",
+      "status": "ready-for-review",
+      "drafted_date": "2026-04-03",
+      "drafted_by": "openclaw-task2a",
+      "anchors_covered": 5,
+      "anchors_total": 5,
+      "extensions_covered": 2,
+      "extensions_total": 2,
+      "verification_level": "L2",
+      "word_count": "~8200",
+      "completed_at": "2026-04-03T15:10:00+08:00"
+    },
+    {
+      "chapter": "14.1",
+      "section": "14.1",
+      "title": "Android Studio Profiler",
+      "status": "ready-for-review",
+      "drafted_date": "2026-04-03",
+      "drafted_by": "openclaw-task2a",
+      "anchors_covered": 5,
+      "anchors_total": 5,
+      "extensions_covered": 2,
+      "extensions_total": 2,
+      "verification_level": "L2",
+      "word_count": "~7500",
+      "completed_at": "2026-04-03T18:20:00+08:00"
+    },
+    {
+      "chapter": "14.3",
+      "section": "14.3",
+      "title": "内存分析工具",
+      "status": "ready-for-review",
+      "drafted_date": "2026-04-03",
+      "drafted_by": "openclaw-task2a",
+      "anchors_covered": 5,
+      "anchors_total": 5,
+      "extensions_covered": 2,
+      "extensions_total": 2,
+      "verification_level": "L2",
+      "word_count": "~8500",
+      "completed_at": "2026-04-03T20:18:12.808259+08:00"
+    },
+    {
+      "chapter": "14.4",
+      "section": "14.4",
+      "title": "dumpsys 系列命令",
+      "status": "ready-for-review",
+      "drafted_date": "2026-04-03",
+      "drafted_by": "openclaw-task2a",
+      "anchors_covered": 6,
+      "anchors_total": 6,
+      "extensions_covered": 2,
+      "extensions_total": 2,
+      "verification_level": "L2",
+      "word_count": "~8500",
+      "completed_at": "2026-04-03T22:16:23.441556"
+    },
+    {
+      "chapter": "14.5",
+      "section": "14.5",
+      "title": "三方性能库",
+      "status": "ready-for-review",
+      "drafted_date": "2026-04-03",
+      "drafted_by": "openclaw-task2a",
+      "anchors_covered": 5,
+      "anchors_total": 5,
+      "extensions_covered": 2,
+      "extensions_total": 2,
+      "verification_level": "L2",
+      "word_count": "~9500",
+      "completed_at": "2026-04-03T23:15:00+08:00"
+    },
+    {
+      "chapter": "14.6",
+      "section": "14.6",
+      "title": "自动化测试工具",
+      "status": "ready-for-review",
+      "drafted_date": "2026-04-04",
+      "drafted_by": "openclaw-task2a",
+      "anchors_covered": 5,
+      "anchors_total": 5,
+      "extensions_covered": 2,
+      "extensions_total": 2,
+      "verification_level": "L2",
+      "word_count": "~8500",
+      "completed_at": "2026-04-04T00:02:00+08:00"
+    },
+    {
+      "chapter": "15.1",
+      "section": "15.1",
+      "title": "性能优化的术、道、器",
+      "status": "ready-for-review",
+      "drafted_date": "2026-04-04",
+      "drafted_by": "openclaw-task2a",
+      "anchors_covered": 5,
+      "anchors_total": 5,
+      "extensions_covered": 2,
+      "extensions_total": 2,
+      "verification_level": "L2",
+      "word_count": "~8500",
+      "completed_at": "2026-04-04T01:20:24.788615+08:00"
+    },
+    {
+      "chapter": "15.4",
+      "section": "15.4",
+      "title": "竞品分析方法",
+      "status": "ready-for-review",
+      "drafted_date": "2026-04-04",
+      "drafted_by": "openclaw-task2a",
+      "anchors_covered": 5,
+      "anchors_total": 5,
+      "extensions_covered": 2,
+      "extensions_total": 2,
+      "verification_level": "L2",
+      "word_count": "~8500",
+      "completed_at": "2026-04-04T04:19:45.354654"
+    },
+    {
+      "chapter": "15.5",
+      "section": "15.5",
+      "title": "线上性能监控",
+      "status": "ready-for-review",
+      "drafted_date": "2026-04-04",
+      "drafted_by": "openclaw-task2a",
+      "anchors_covered": 5,
+      "anchors_total": 5,
+      "extensions_covered": 2,
+      "extensions_total": 2,
+      "verification_level": "L2",
+      "word_count": "~8500",
+      "completed_at": "2026-04-04T06:13:57"
+    },
+    {
+      "chapter": "15.6",
+      "section": "15.6",
+      "title": "性能测试最佳实践",
+      "status": "ready-for-review",
+      "drafted_date": "2026-04-04",
+      "drafted_by": "openclaw-task2a",
+      "anchors_covered": 5,
+      "anchors_total": 5,
+      "extensions_covered": 2,
+      "extensions_total": 2,
+      "verification_level": "L2",
+      "word_count": "~8500",
+      "completed_at": "2026-04-04T08:15:11.619847"
+    },
+    {
+      "chapter": "15.7",
+      "section": "15.7",
+      "title": "AOSP 代码阅读",
+      "status": "ready-for-review",
+      "drafted_date": "2026-04-04",
+      "drafted_by": "openclaw-task2a",
+      "anchors_covered": 5,
+      "anchors_total": 5,
+      "extensions_covered": 2,
+      "extensions_total": 2,
+      "verification_level": "L2",
+      "word_count": "~8500",
+      "completed_at": "2026-04-04T09:15:52"
+    },
+    {
+      "chapter": "16.1",
+      "section": "16.1",
+      "title": "Google 官方的性能优化思路",
+      "status": "ready-for-review",
+      "drafted_date": "2026-04-04",
+      "drafted_by": "openclaw-task2a",
+      "anchors_covered": 5,
+      "anchors_total": 5,
+      "extensions_covered": 2,
+      "extensions_total": 2,
+      "verification_level": "L2",
+      "word_count": "~8500",
+      "completed_at": "2026-04-04T11:20:11.651393"
+    },
+    {
+      "chapter": "16.3",
+      "section": "16.3",
+      "title": "AOSP 源码编译与调试环境",
+      "status": "ready-for-review",
+      "drafted_date": "2026-04-04",
+      "drafted_by": "openclaw-task2a",
+      "anchors_covered": 5,
+      "anchors_total": 5,
+      "extensions_covered": 2,
+      "extensions_total": 2,
+      "verification_level": "L2",
+      "word_count": "~4770",
+      "completed_at": "2026-04-04T13:12:46.313535"
+    }
+  ],
+  "ready_for_review": 5,
+  "last_updated": "2026-04-04T07:05:00+08:00",
+  "stats": {
+    "total": 97,
+    "completed": 64,
+    "pending": 33,
+    "last_updated": "2026-04-04T13:12:46.313560"
+  },
+  "research_stats": {
+    "runs_today": [
+      {
+        "time": "2026-04-01T07:03:00+08:00",
+        "focus": "Binder IPC 机制 (20260401%20=1, topic-rotation)",
+        "source": "topic-rotation",
+        "candidates": 4,
+        "passed": 3,
+        "delivered": 3,
+        "themes": [
+          "Binder Rust 后端（libbinder_rs）：±2% 性能持平 + 68% 内存漏洞减少",
+          "Perfetto Binder 事务三维延迟指标（client_dur/server_dur/dispatch_dur）",
+          "Android 15/16/17 服务超时策略演进对 Binder-ANR 链路的影响"
+        ]
+      },
+      {
+        "time": "2026-04-01T12:34:00+08:00",
+        "focus": "Compose 性能里程碑 2025 + Android 16/17 ProfilingManager（轮转主题 Binder 已在 07:00 覆盖，转向 pending 高价值章节）",
+        "source": "supplementary-research",
+        "candidates": 2,
+        "passed": 2,
+        "delivered": 2,
+        "themes": [
+          "Compose 1.10 Pausable Composition 默认 + Strong Skipping Mode + Lazy prefetch + 性能对等 View 系统（目标 §7.7）",
+          "Android 16/17 ProfilingManager 系统触发式追踪：TRIGGER_TYPE_COLD_START/ANR/OOM/EXCESSIVE_CPU（目标 §8.2/§9.1/§9.3/§14.7）"
+        ]
+      },
+      {
+        "time": "2026-04-02T07:05:59.176534",
+        "focus": "内存相关的版本演进（4.6 review 回炉 + 轮转主题2：内存管理）",
+        "source": "queue-priority-90 + topic-rotation-2",
+        "candidates": 5,
+        "passed": 3,
+        "delivered": 3,
+        "themes": [
+          "16KB Page Size 全面性能影响：TLB 效率、量化数据（冷启动3.16%~30%/功耗-4.56%/系统启动-8%）、强制适配时间线（目标 §4.6）",
+          "ART GC 暂停时间精确数据：CC 收集器 85% 降低、分代 GC 1-3ms（平均1.83ms）、标题亚毫秒准确性修正（目标 §4.6）",
+          "AutoFDO 内核集成 + dex2oat 18% 编译优化：内核占 CPU 40%、PGO 生态、Mainline 推送 Android 12+（目标 §4.6/§1.6）"
+        ]
+      },
+      {
+        "time": "2026-04-02T11:00+08:00",
+        "focus": "§2.4 Choreographer 与渲染流水线（queue priority 90, pending）+ 主题 #2 内存管理（20260402 % 20 = 2）",
+        "source": "queue-priority-90 + topic-rotation-2",
+        "candidates": 6,
+        "passed": 3,
+        "delivered": 3,
+        "themes": [
+          "Android 17 DeliQueue 无锁 MessageQueue：15% 主线程锁等待减少 + 4% 掉帧减少 + 9.1% 冷启动首帧 P95 改善（目标 §2.4/§1.5）",
+          "Choreographer API 演进史 API 16→33→36→37：FrameCallback/VsyncCallback/FrameTimeline/ARR（目标 §2.4 版本演进节）",
+          "zRAM 多算法重压缩（Kernel 6.12）+ MGLRU + AI 驱动 ART（目标 §4.2/4.4/4.6）"
+        ]
+      },
+      {
+        "time": "2026-04-02T19:00:00+08:00",
+        "focus": "§9.3/§9.4 ANR 分析方法 + 特殊场景（strategic: 第9章活跃管线）",
+        "source": "strategic-pipeline",
+        "candidates": 5,
+        "passed": 3,
+        "delivered": 3,
+        "themes": [
+          "Android 16 ProfilingManager TRIGGER_TYPE_ANR 系统触发式 Profiling（目标 §9.3/§14.7）",
+          "AOSP AnrHelper + ProcessErrorStateRecord ANR 异步处理管线源码分析（目标 §9.3/§9.1）",
+          "Foreground Service ANR 超时机制演进 Android 12→16（目标 §9.2/§9.4）"
+        ]
+      },
+      {
+        "time": "2026-04-02T19:00:00+08:00",
+        "focus": "§9.3/§9.4 ANR 分析方法 + 特殊场景（strategic: 第9章活跃管线）",
+        "source": "strategic-pipeline",
+        "candidates": 5,
+        "passed": 3,
+        "delivered": 3,
+        "themes": [
+          "Android 16 ProfilingManager TRIGGER_TYPE_ANR 系统触发式 Profiling（目标 §9.3/§14.7）",
+          "AOSP AnrHelper + ProcessErrorStateRecord ANR 异步处理管线源码分析（目标 §9.3/§9.1）",
+          "Foreground Service ANR 超时机制演进 Android 12→16（目标 §9.2/§9.4）"
+        ]
+      },
+      {
+        "time": "2026-04-03T07:02:00+08:00",
+        "focus": "调度器与 EAS（20260403%20=3, topic-rotation）",
+        "source": "topic-rotation",
+        "candidates": 6,
+        "passed": 3,
+        "delivered": 3,
+        "themes": [
+          "EEVDF 取代 CFS 成为默认调度器：lag 追踪 + 虚拟截止时间 + sched_setattr() 时间片请求（目标 §5.1/§5.7）",
+          "sched_ext BPF 可扩展调度器 Linux 6.12：Meta/Google 投入 + scx_lavd 游戏优化 + Android 实验性移植（目标 §5.1/§5.7）",
+          "PREEMPT_LAZY 懒抢占 Linux 6.13：双模式抢占 + 减少 lock holder preemption + ARM 支持待跟进（目标 §5.1/§5.7）"
+        ]
+      },
+      {
+        "time": "2026-04-03T11:00:00+08:00",
+        "focus": "Android 16 Adaptive Apps + Predictive Back + Live Updates（queue freshness 联动：freshness-001~004）",
+        "source": "queue-freshness-priority",
+        "candidates": 5,
+        "passed": 3,
+        "delivered": 3,
+        "themes": [
+          "Android 16 API 36 大屏强制可调整：screenOrientation/resizableActivity/minAspectRatio/maxAspectRatio 全部忽略（目标 §3.1/§16）",
+          "Android 16 Predictive Back 默认启用 + finishAndRemoveTaskCallback/moveTaskToBackCallback/PRIORITY_SYSTEM_NAVIGATION_OBSERVER（目标 §3.1/§3.3）",
+          "Android 16 Live Updates + Notification.ProgressStyle：segments/points/tracker + POST_PROMOTED_NOTIFICATIONS（目标 §8.1/§15）"
+        ]
+      },
+      {
+        "time": "2026-04-03T15:00:00+08:00",
+        "focus": "F2FS Kernel 6.12/6.13 + Android 17 static final field 强制不可变",
+        "source": "strategic-gap",
+        "candidates": 8,
+        "passed": 2,
+        "delivered": 2,
+        "themes": [
+          "F2FS Folio 转换 + Zoned GC 调优 + Checkpoint 优化 + Device Aliasing（目标 §6.2/§6.4）",
+          "Android 17 static final field 反射/JNI 强制禁止 → ART 常量折叠 + 编译优化收益（目标 §4.3/§1.6）"
+        ]
+      },
+      {
+        "time": "2026-04-03T19:05:34+08:00",
+        "focus": "AutoFDO GKI kernel + Android 17 Generational GC + Media3 1.10（queue freshness-005~007 medium priority）",
+        "source": "queue-freshness-medium-priority",
+        "candidates": 5,
+        "passed": 3,
+        "delivered": 3,
+        "themes": [
+          "AutoFDO GKI android16-6.12：冷启动 4.3%/Binder-rpc 21.7%/binder-addints 37.7%/HwBinder 20%（目标 §5.1/§5.7/§1.6）",
+          "Android 17 分代 GC：年轻代极短暂停 + static final 不可变协同优化（目标 §4.3/§4.6）",
+          "Media3 1.10 动态调度 + Compose PlayerSurface + Player 池化预热（目标 §7.7）"
+        ]
+      },
+      {
+        "time": "2026-04-04T07:05:00+08:00",
+        "focus": "启动优化（20260404%20=4, topic-rotation: Startup Profiles + DEX Layout + ApplicationStartInfo）",
+        "source": "topic-rotation",
+        "candidates": 7,
+        "passed": 2,
+        "delivered": 2,
+        "themes": [
+          "Startup Profiles + DEX Layout 优化：AGP 8.3 默认启用 + 冷启动 15-30% 提升 + R8/D8 编译器 DEX 重排（目标 §8.3/§16）",
+          "ApplicationStartInfo.getStartComponent()：Android 16 新增 5 个 START_COMPONENT_* 常量 + 精确识别启动触发组件（目标 §8.1/§8.3）"
+        ]
+      },
+      {
+        "time": "2026-04-04T11:00:00+08:00",
+        "focus": "启动优化（topic-rotation #4 补充）+ SurfaceFlinger（queue freshness-003）",
+        "source": "topic-rotation-supplement + queue-freshness-003",
+        "candidates": 7,
+        "passed": 2,
+        "delivered": 2,
+        "themes": [
+          "Android 17 recreateOnConfigChanges：6 种配置变更不再重启 + 新 manifest opt-in 属性（目标 §8.4/§1.6/§3.3）",
+          "Android 16/17 Desktop Windowing + Bubbles：外接显示器 GA + 浮动窗口模式对 SurfaceFlinger 多 Surface 合成的影响（目标 §2.6/§2.9）"
+        ]
+      }
+    ],
+    "last_updated": "2026-04-04T11:00:00+08:00"
+  },
+  "history": [
+    {
+      "date": "2026-04-04",
+      "section": "16.3",
+      "title": "AOSP 源码编译与调试环境",
+      "action": "draft-completed",
+      "word_count": "~8500"
+    },
+    {
+      "date": "2026-04-04",
+      "section": "16.3",
+      "title": "AOSP 源码编译与调试环境",
+      "action": "draft-completed",
+      "word_count": "~4770"
+    },
+    {
+      "date": "2026-04-04",
+      "section": "16.1",
+      "title": "Google 官方的性能优化思路",
+      "action": "draft-completed",
+      "word_count": "~8500"
+    },
+    {
+      "date": "2026-04-04",
+      "section": "11.1",
+      "title": "Android 功耗模型",
+      "action": "reviewed-finalized",
+      "review_by": "openclaw-task6",
+      "fixes": 11
+    },
+    {
+      "date": "2026-04-04",
+      "section": "7.7",
+      "title": "Jetpack Compose 性能优化",
+      "action": "reviewed-finalized",
+      "review_by": "openclaw-task6",
+      "fixes": 17
+    },
+    {
+      "date": "2026-04-04",
+      "section": "15.6",
+      "title": "性能测试最佳实践",
+      "action": "draft-completed",
+      "word_count": "~8500"
+    },
+    {
+      "date": "2026-04-04",
+      "section": "7.6",
+      "title": "案例集",
+      "action": "reviewed-finalized",
+      "review_by": "openclaw-task6",
+      "fixes": 3
+    },
+    {
+      "date": "2026-04-04",
+      "section": "15.5",
+      "title": "线上性能监控",
+      "action": "draft-completed",
+      "word_count": "~9000"
+    },
+    {
+      "date": "2026-04-04",
+      "section": "15.5",
+      "title": "线上性能监控",
+      "action": "draft-completed",
+      "word_count": "~8500"
+    },
+    {
+      "date": "2026-04-04",
+      "section": "15.4",
+      "title": "竞品分析方法",
+      "action": "draft-completed",
+      "word_count": "~8500"
+    },
+    {
+      "date": "2026-04-04",
+      "section": "15.1",
+      "title": "性能优化的术、道、器",
+      "action": "draft-completed",
+      "word_count": "~8500"
+    },
+    {
+      "date": "2026-04-04",
+      "section": "14.6",
+      "title": "自动化测试工具",
+      "action": "draft-completed",
+      "word_count": "~8500"
+    },
+    {
+      "date": "2026-04-03",
+      "section": "13.2",
+      "title": "Trace 抓取",
+      "action": "draft-completed",
+      "word_count": "~9500"
+    },
+    {
+      "date": "2026-04-03",
+      "section": "12.2",
+      "title": "网络性能优化",
+      "action": "draft-completed",
+      "word_count": "~8500"
+    },
+    {
+      "date": "2026-04-01",
+      "section": "5.5",
+      "title": "Thermal 管控",
+      "action": "draft-completed",
+      "word_count": "~8000"
+    },
+    {
+      "date": "2026-04-01",
+      "section": "5.6",
+      "title": "Android 功耗管理",
+      "action": "draft-completed",
+      "word_count": "~9500"
+    },
+    {
+      "date": "2026-04-01",
+      "section": "5.7",
+      "title": "CPU 相关的版本演进",
+      "action": "draft-completed",
+      "word_count": "~9000"
+    },
+    {
+      "date": "2026-04-01",
+      "section": "6.1",
+      "title": "Android 存储架构",
+      "action": "queue-status-corrected",
+      "word_count": "~9500"
+    },
+    {
+      "date": "2026-04-01",
+      "section": "6.2",
+      "title": "文件系统",
+      "action": "draft-completed",
+      "word_count": "~9000"
+    },
+    {
+      "date": "2026-04-01",
+      "section": "6.3",
+      "title": "I/O 调度与性能",
+      "action": "draft-completed",
+      "word_count": "~4338"
+    },
+    {
+      "date": "2026-04-01",
+      "section": "6.4",
+      "title": "存储相关的版本演进",
+      "action": "draft-completed",
+      "word_count": "~7500"
+    },
+    {
+      "date": "2026-04-01",
+      "section": "7.4",
+      "title": "典型场景分析",
+      "action": "draft-completed",
+      "word_count": "~7500"
+    },
+    {
+      "date": "2026-04-01",
+      "section": "7.5",
+      "title": "优化策略",
+      "action": "queue-status-corrected-to-completed",
+      "word_count": "~7500"
+    },
+    {
+      "date": "2026-04-01",
+      "section": "7.6",
+      "title": "案例集",
+      "action": "draft-completed",
+      "word_count": "~8000"
+    },
+    {
+      "date": "2026-04-01",
+      "section": "",
+      "title": "research-discovery (12:34 run)",
+      "action": "research-completed",
+      "focus": "Compose 性能里程碑 2025 + Android 16/17 ProfilingManager 系统触发",
+      "candidates": 2,
+      "passed": 2,
+      "delivered": 2,
+      "themes": [
+        "Compose 1.10 Pausable Composition 默认启用 + Strong Skipping Mode (Kotlin 2.2) + 性能对等 View 系统",
+        "Android 16/17 ProfilingManager 系统触发式追踪：ANR trace / cold start trace / OOM heap dump / CPU kill stack sample"
+      ]
+    },
+    {
+      "date": "2026-04-01",
+      "section": "8.3",
+      "title": "启动优化策略",
+      "action": "draft-completed",
+      "word_count": "~12000"
+    },
+    {
+      "date": "2026-04-01",
+      "section": "4.5",
+      "title": "App 内存优化",
+      "action": "reviewed",
+      "review_by": "openclaw-task6",
+      "issues": 1,
+      "fixes": 3
+    },
+    {
+      "date": "2026-04-01",
+      "section": "4.5",
+      "title": "App 内存优化",
+      "action": "review-rework-completed",
+      "review_by": "openclaw-task2",
+      "issues": 1,
+      "fixes": "补充常见问题与误区（5个典型误区）"
+    },
+    {
+      "date": "2026-04-01",
+      "section": "2.11",
+      "title": "Flutter 渲染管线与性能",
+      "action": "draft-completed",
+      "word_count": "~8500"
+    },
+    {
+      "date": "2026-04-01",
+      "section": "2.11",
+      "title": "Flutter 渲染管线与性能",
+      "action": "draft-completed",
+      "word_count": "~8000"
+    },
+    {
+      "date": "2026-04-01",
+      "section": "2.11",
+      "title": "Flutter 渲染管线与性能",
+      "action": "draft-completed",
+      "word_count": "~8500"
+    },
+    {
+      "date": "2026-04-02",
+      "section": "8.4",
+      "title": "其他响应速度场景",
+      "action": "draft-completed",
+      "word_count": "~9500"
+    },
+    {
+      "date": "2026-04-02",
+      "section": "1.2",
+      "title": "系统启动全流程",
+      "action": "reviewed-v2-finalized",
+      "review_by": "openclaw-task6",
+      "fixes": "误区 boot_completed 修正 + frontmatter 更新"
+    },
+    {
+      "date": "2026-04-02",
+      "section": "8.5",
+      "title": "案例集",
+      "action": "draft-completed",
+      "word_count": "~9000"
+    },
+    {
+      "date": "2026-04-02",
+      "section": "8.6",
+      "title": "Kotlin Coroutine 性能实践",
+      "action": "draft-completed",
+      "word_count": "~9500"
+    },
+    {
+      "date": "2026-04-02",
+      "section": "9.1",
+      "title": "ANR 设计思想",
+      "action": "draft-completed",
+      "word_count": "~9000"
+    },
+    {
+      "date": "2026-04-02",
+      "section": "9.1",
+      "title": "ANR 设计思想",
+      "action": "draft-completed",
+      "word_count": "~8500"
+    },
+    {
+      "date": "2026-04-02",
+      "section": "4.6",
+      "title": "内存相关的版本演进",
+      "action": "research-completed",
+      "focus": "16KB Page Size + ART GC 暂停时间 + AutoFDO/dex2oat",
+      "candidates": 5,
+      "passed": 3,
+      "delivered": 3,
+      "themes": [
+        "16KB Page Size 全面性能影响：TLB 效率、量化数据（冷启动3.16%~30%/功耗-4.56%/系统启动-8%）、强制适配时间线（目标 §4.6",
+        "ART GC 暂停时间精确数据：CC 收集器 85% 降低、分代 GC 1-3ms（平均1.83ms）、标题亚毫秒准确性修正（目标 §4.6）",
+        "AutoFDO 内核集成 + dex2oat 18% 编译优化：内核占 CPU 40%、PGO 生态、Mainline 推送 Android 12+（目标 §4"
+      ]
+    },
+    {
+      "date": "2026-04-02",
+      "section": "2.4",
+      "title": "Choreographer 与渲染流水线",
+      "action": "reviewed",
+      "review_by": "openclaw-task6",
+      "issues": 5,
+      "fixes": 3
+    },
+    {
+      "date": "2026-04-02",
+      "section": "9.2",
+      "title": "ANR 类型与触发条件",
+      "action": "draft-completed",
+      "word_count": "~7500"
+    },
+    {
+      "date": "2026-04-02",
+      "section": "9.5",
+      "title": "案例集",
+      "action": "draft-completed",
+      "word_count": "~9500"
+    },
+    {
+      "date": "2026-04-02",
+      "section": "9.5",
+      "title": "案例集",
+      "action": "draft-completed",
+      "word_count": "~9500"
+    },
+    {
+      "date": "2026-04-02",
+      "section": "9.5",
+      "title": "案例集",
+      "action": "draft-completed",
+      "word_count": "~9500"
+    },
+    {
+      "date": "2026-04-02",
+      "section": "10.1",
+      "title": "App 内存分析",
+      "action": "draft-completed",
+      "word_count": "~8500"
+    },
+    {
+      "date": "2026-04-02",
+      "section": "10.2",
+      "title": "内存泄漏",
+      "action": "draft-completed",
+      "word_count": "~9500"
+    },
+    {
+      "date": "2026-04-02",
+      "section": "10.2",
+      "title": "内存泄漏",
+      "action": "draft-completed",
+      "word_count": "~9500"
+    },
+    {
+      "date": "2026-04-02",
+      "section": "10.3",
+      "title": "内存持续增长",
+      "action": "draft-completed",
+      "word_count": "~8000"
+    },
+    {
+      "date": "2026-04-03",
+      "section": "11.2",
+      "title": "App 耗电优化",
+      "action": "draft-completed",
+      "word_count": "~8500"
+    },
+    {
+      "date": "2026-04-03",
+      "section": "11.1",
+      "title": "Android 功耗模型",
+      "action": "draft-completed",
+      "word_count": "~9500"
+    },
+    {
+      "date": "2026-04-02",
+      "section": "10.5",
+      "title": "案例集",
+      "action": "draft-completed",
+      "word_count": "~8500"
+    },
+    {
+      "date": "2026-04-03",
+      "section": "2.9",
+      "title": "渲染机制的版本演进",
+      "action": "rework-completed",
+      "review_by": "openclaw-task2b",
+      "fixes": 4
+    },
+    {
+      "date": "2026-04-03",
+      "section": "11.3",
+      "title": "系统级功耗优化",
+      "action": "draft-completed",
+      "word_count": "~8500"
+    },
+    {
+      "date": "2026-04-03",
+      "section": "11.4",
+      "title": "案例集（功耗）",
+      "action": "draft-completed",
+      "word_count": "~10000"
+    },
+    {
+      "date": "2026-04-03",
+      "section": "12.1",
+      "title": "APK 体积优化",
+      "action": "draft-completed",
+      "word_count": "~8500"
+    },
+    {
+      "date": "2026-04-03",
+      "section": "5.1/5.7",
+      "title": "调度器与 EAS 前沿研究",
+      "action": "research-completed",
+      "focus": "EEVDF + sched_ext + PREEMPT_LAZY",
+      "candidates": 6,
+      "passed": 3,
+      "delivered": 3,
+      "themes": [
+        "EEVDF 取代 CFS：lag + virtual deadline + sched_setattr",
+        "sched_ext BPF：scx_lavd + Android port",
+        "PREEMPT_LAZY：双模式抢占 + lock holder preemption"
+      ]
+    },
+    {
+      "date": "2026-04-03",
+      "section": "3.1/3.3/8.1/16",
+      "title": "Android 16 Adaptive Apps + Predictive Back + Live Updates",
+      "action": "research-completed",
+      "focus": "queue freshness-001~004: Adaptive Apps + Predictive Back + Live Updates",
+      "candidates": 5,
+      "passed": 3,
+      "delivered": 3,
+      "themes": [
+        "Android 16 API 36: screenOrientation/resizableActivity ignored on sw≥600dp",
+        "Android 16 Predictive Back default + new callback APIs",
+        "Android 16 Live Updates + Notification.ProgressStyle API"
+      ]
+    },
+    {
+      "date": "2026-04-03",
+      "section": "13.2",
+      "title": "Trace 抓取",
+      "action": "draft-completed",
+      "word_count": "~9500"
+    },
+    {
+      "date": "2026-04-03",
+      "section": "13.3",
+      "title": "Perfetto View 解读",
+      "action": "draft-completed",
+      "word_count": "~8000"
+    },
+    {
+      "date": "2026-04-03",
+      "section": "13.4",
+      "title": "命令行打开超大 Trace",
+      "action": "draft-completed",
+      "word_count": "~9500"
+    },
+    {
+      "date": "2026-04-03",
+      "section": "14.1",
+      "title": "Android Studio Profiler",
+      "action": "draft-completed",
+      "word_count": "~7500"
+    },
+    {
+      "date": "2026-04-03",
+      "section": "5.1/5.7/4.3/4.6/7.7",
+      "title": "AutoFDO GKI + Android 17 GC + Media3 1.10",
+      "action": "research-completed",
+      "focus": "queue freshness-005~007: AutoFDO GKI kernel + Android 17 Generational GC + Media3 1.10",
+      "candidates": 5,
+      "passed": 3,
+      "delivered": 3,
+      "themes": [
+        "AutoFDO GKI: cold launch 4.3%/Binder-rpc 21.7%/binder-addints 37.7%",
+        "Android 17 Generational GC + static final compilation optimization",
+        "Media3 1.10 dynamic scheduling + Compose PlayerSurface + player pooling"
+      ]
+    },
+    {
+      "date": "2026-04-03",
+      "section": "14.3",
+      "title": "内存分析工具",
+      "action": "draft-completed",
+      "word_count": "~8500"
+    },
+    {
+      "date": "2026-04-03",
+      "section": "14.4",
+      "title": "dumpsys 系列命令",
+      "action": "draft-completed",
+      "word_count": "~8500"
+    },
+    {
+      "date": "2026-04-03",
+      "section": "14.5",
+      "title": "三方性能库",
+      "action": "draft-completed",
+      "word_count": "~9500"
+    },
+    {
+      "date": "2026-04-04",
+      "section": "8.3/8.1",
+      "title": "启动优化前沿研究",
+      "action": "research-completed",
+      "focus": "Startup Profiles + DEX Layout + ApplicationStartInfo.getStartComponent()",
+      "candidates": 7,
+      "passed": 2,
+      "delivered": 2,
+      "themes": [
+        "Startup Profiles + DEX Layout: AGP 8.3 default + 15-30% cold start improvement",
+        "ApplicationStartInfo.getStartComponent(): 5 START_COMPONENT_* constants"
+      ]
+    },
+    {
+      "date": "2026-04-04",
+      "section": "15.7",
+      "title": "AOSP 代码阅读",
+      "action": "draft-completed",
+      "word_count": "~8500"
+    },
+    {
+      "date": "2026-04-04",
+      "section": "8.4/1.6/2.6",
+      "title": "Android 17 Activity 重启优化 + Desktop Windowing SurfaceFlinger",
+      "action": "research-completed",
+      "focus": "recreateOnConfigChanges + Desktop Windowing + Bubbles",
+      "candidates": 7,
+      "passed": 2,
+      "delivered": 2,
+      "themes": [
+        "Android 17 recreateOnConfigChanges: 6 config changes no longer restart + new manifest opt-in",
+        "Android 16/17 Desktop Windowing + Bubbles: external display GA + floating window SurfaceFlinger impact"
+      ]
+    }
+  ],
+  "sections": {
+    "1.5": {
+      "title": "线程模型",
+      "status": "finalized",
+      "reviewed_date": "2026-04-01",
+      "reviewed_by": "openclaw-task6"
+    },
+    "2.1": {
+      "title": "Android 渲染架构全景",
+      "file": "src/part1-fundamentals/ch02-rendering/01-rendering-overview.md",
+      "status": "finalized",
+      "reviewed_date": "2026-04-02",
+      "reviewed_by": "openclaw-task6"
+    },
+    "1.2": {
+      "title": "系统启动全流程",
+      "status": "finalized",
+      "reviewed_date": "2026-04-02",
+      "reviewed_by": "openclaw-task6"
+    },
+    "1.6": {
+      "title": "Android 版本演进中的架构变化",
+      "status": "finalized",
+      "reviewed_date": "2026-04-02",
+      "reviewed_by": "openclaw-task6"
+    },
+    "2.2": {
+      "title": "帧率与刷新率",
+      "status": "reviewed",
+      "reviewed_date": "2026-04-02",
+      "reviewed_by": "openclaw-task6",
+      "review_issues": 4
+    },
+    "2.4": {
+      "title": "Choreographer 与渲染流水线",
+      "status": "reviewed",
+      "reviewed_date": "2026-04-02",
+      "reviewed_by": "openclaw-task6",
+      "file": "src/part1-fundamentals/ch02-rendering/04-choreographer.md"
+    },
+    "5.2": {
+      "title": "EAS 能量感知调度",
+      "status": "finalized",
+      "reviewed_date": "2026-04-02"
+    },
+    "5.3": {
+      "title": "大小核架构",
+      "status": "finalized",
+      "reviewed_date": "2026-04-02",
+      "reviewed_by": "openclaw-task6"
+    },
+    "3.1": {
+      "title": "Input 事件分发全流程",
+      "status": "finalized",
+      "reviewed_date": "2026-04-02"
+    },
+    "4.1": {
+      "title": "Android 内存模型全景",
+      "status": "finalized",
+      "reviewed_date": "2026-04-03",
+      "reviewed_by": "openclaw-task6"
+    },
+    "11.3": {
+      "title": "系统级功耗优化",
+      "status": "ready-for-review",
+      "drafted_date": "2026-04-03",
+      "drafted_by": "openclaw-task2a"
+    },
+    "2.11": {
+      "title": "Flutter 渲染管线与性能",
+      "status": "finalized",
+      "reviewed_date": "2026-04-03",
+      "reviewed_by": "openclaw-task6"
+    },
+    "9.3": {
+      "title": "ANR 分析方法",
+      "status": "finalized",
+      "reviewed_date": "2026-04-03",
+      "reviewed_by": "openclaw-task6"
+    },
+    "2.10": {
+      "title": "GPU 渲染深入",
+      "status": "finalized",
+      "file": "src/part1-fundamentals/ch02-rendering/10-gpu-rendering.md",
+      "last_reviewed": "2026-04-03",
+      "review_notes": "回炉修复完成：6个B类问题全部处理（文体重写/案例重写/3个新增小节/伪代码修正）",
+      "rework_date": "2026-04-03",
+      "rework_by": "openclaw-task2b",
+      "reviewed_date": "2026-04-03",
+      "reviewed_by": "openclaw-task6",
+      "review_round": 2
+    },
+    "13.2": {
+      "title": "Trace 抓取",
+      "status": "ready-for-review",
+      "drafted_date": "2026-04-03",
+      "drafted_by": "openclaw-task2a"
+    },
+    "13.3": {
+      "title": "Perfetto View 解读",
+      "status": "ready-for-review",
+      "drafted_date": "2026-04-03",
+      "drafted_by": "openclaw-task2a"
+    },
+    "13.4": {
+      "title": "命令行打开超大 Trace",
+      "status": "ready-for-review",
+      "drafted_date": "2026-04-03",
+      "drafted_by": "openclaw-task2a"
+    },
+    "5.4": {
+      "title": "DVFS 与功耗管理",
+      "status": "finalized",
+      "reviewed_date": "2026-04-03",
+      "reviewed_by": "openclaw-task6",
+      "file": "src/part1-fundamentals/ch05-cpu-power/04-dvfs.md"
+    },
+    "3.2": {
+      "title": "触摸响应的性能分析",
+      "file": "src/part1-fundamentals/ch03-input/02-touch-performance.md",
+      "status": "finalized",
+      "drafted_date": "2026-03-30",
+      "reviewed_date": "2026-04-03",
+      "reviewed_by": "openclaw-task6"
+    },
+    "3.3": {
+      "title": "手势导航与系统交互",
+      "status": "finalized",
+      "drafted_date": "2026-03-31",
+      "reviewed_date": "2026-04-03",
+      "reviewed_by": "openclaw-task6"
+    },
+    "4.2": {
+      "title": "Linux 内核内存管理",
+      "status": "finalized",
+      "reviewed_date": "2026-04-03",
+      "reviewed_by": "openclaw-task6"
+    },
+    "4.3": {
+      "title": "ART 虚拟机内存管理",
+      "status": "finalized",
+      "file": "src/part1-fundamentals/ch04-memory/03-art-memory.md",
+      "reviewed_date": "2026-04-03",
+      "reviewed_by": "openclaw-task6"
+    },
+    "14.1": {
+      "title": "Android Studio Profiler",
+      "status": "ready-for-review",
+      "drafted_date": "2026-04-03",
+      "drafted_by": "openclaw-task2a"
+    },
+    "5.5": {
+      "title": "Thermal 管控",
+      "status": "finalized",
+      "file": "src/part1-fundamentals/ch05-cpu-power/05-thermal.md",
+      "drafted_date": "2026-04-01",
+      "reviewed_date": "2026-04-03",
+      "reviewed_by": "openclaw-task6"
+    },
+    "14.3": {
+      "title": "内存分析工具",
+      "status": "ready-for-review",
+      "drafted_date": "2026-04-03",
+      "drafted_by": "openclaw-task2a"
+    },
+    "4.4": {
+      "title": "Low Memory Killer",
+      "file": "src/part1-fundamentals/ch04-memory/04-lmk.md",
+      "status": "finalized",
+      "drafted_date": "2026-03-31",
+      "reviewed_date": "2026-04-03",
+      "reviewed_by": "openclaw-task6"
+    },
+    "6.1": {
+      "title": "Android 存储架构",
+      "status": "finalized",
+      "file": "src/part1-fundamentals/ch06-storage/01-storage-architecture.md",
+      "drafted_date": "2026-04-01",
+      "reviewed_date": "2026-04-03",
+      "reviewed_by": "openclaw-task6"
+    },
+    "7.1": {
+      "title": "卡顿的定义与分类",
+      "status": "finalized",
+      "file": "src/part2-performance/ch07-smoothness/01-jank-definition.md",
+      "drafted_date": "2026-03-30",
+      "reviewed_date": "2026-04-03",
+      "reviewed_by": "openclaw-task6"
+    },
+    "5.6": {
+      "title": "Android 功耗管理",
+      "status": "finalized",
+      "file": "src/part1-fundamentals/ch05-cpu-power/06-android-power.md",
+      "drafted_date": "2026-04-01",
+      "reviewed_date": "2026-04-03",
+      "reviewed_by": "openclaw-task6"
+    },
+    "14.6": {
+      "title": "自动化测试工具",
+      "status": "ready-for-review",
+      "drafted_date": "2026-04-04",
+      "drafted_by": "openclaw-task2a",
+      "file": "src/part3-tools/ch14-other-tools/06-automation-tools.md"
+    },
+    "7.2": {
+      "title": "卡顿原因体系",
+      "status": "finalized",
+      "reviewed_date": "2026-04-04",
+      "reviewed_by": "openclaw-task6",
+      "file": "src/part2-performance/ch07-smoothness/02-jank-causes.md"
+    },
+    "15.1": {
+      "title": "性能优化的术、道、器",
+      "status": "ready-for-review",
+      "drafted_date": "2026-04-04",
+      "drafted_by": "openclaw-task2a",
+      "file": "src/part3-tools/ch15-methodology/01-philosophy.md",
+      "word_count": "~8500"
+    },
+    "7.3": {
+      "chapter": "7.3",
+      "title": "卡顿分析方法论",
+      "status": "reviewed",
+      "reviewed_date": "2026-04-04",
+      "reviewed_by": "openclaw-task6"
+    },
+    "15.3": {
+      "drafted_date": "2026-04-04",
+      "drafted_by": "openclaw-task2a",
+      "status": "ready-for-review",
+      "content_lines": 360,
+      "anchors_covered": 6,
+      "anchors_total": 6,
+      "extensions_covered": 2,
+      "extensions_total": 2,
+      "verification": {
+        "L2": 8,
+        "pending": 1
+      }
+    },
+    "6.2": {
+      "title": "文件系统",
+      "status": "reviewed",
+      "reviewed_date": "2026-04-04",
+      "reviewed_by": "openclaw-task6",
+      "file": "src/part1-fundamentals/ch06-storage/02-filesystem.md"
+    },
+    "15.4": {
+      "title": "竞品分析方法",
+      "status": "ready-for-review",
+      "drafted_date": "2026-04-04",
+      "drafted_by": "openclaw-task2a"
+    },
+    "6.4": {
+      "title": "存储相关的版本演进",
+      "status": "finalized",
+      "file": "src/part1-fundamentals/ch06-storage/04-storage-evolution.md",
+      "drafted_date": "2026-04-01",
+      "reviewed_date": "2026-04-04",
+      "reviewed_by": "openclaw-task6"
+    },
+    "7.4": {
+      "title": "典型场景分析",
+      "status": "reviewed",
+      "last_updated": "2026-04-04",
+      "updated_by": "task6-review",
+      "review_log": "logs/review/2026-04-04-0525-review.md"
+    },
+    "15.5": {
+      "title": "线上性能监控",
+      "status": "ready-for-review",
+      "drafted_date": "2026-04-04",
+      "drafted_by": "openclaw-task2a",
+      "file": "src/part3-tools/ch15-methodology/05-online-monitoring.md"
+    },
+    "7.6": {
+      "title": "案例集",
+      "status": "finalized",
+      "file": "src/part2-performance/ch07-smoothness/06-case-studies.md",
+      "drafted_date": "2026-04-01",
+      "drafted_by": "openclaw-task2a",
+      "reviewed_date": "2026-04-04",
+      "reviewed_by": "openclaw-task6"
+    },
+    "15.6": {
+      "title": "性能测试最佳实践",
+      "status": "ready-for-review",
+      "drafted_date": "2026-04-04",
+      "drafted_by": "openclaw-task2a",
+      "file": "src/part3-tools/ch15-methodology/06-testing-best-practices.md",
+      "anchors_covered": 5,
+      "extensions_covered": 2
+    },
+    "7.7": {
+      "title": "Jetpack Compose 性能优化",
+      "status": "finalized",
+      "file": "src/part2-performance/ch07-smoothness/07-compose-performance.md",
+      "drafted_date": "2026-04-01",
+      "drafted_by": "openclaw-task2a",
+      "reviewed_date": "2026-04-04",
+      "reviewed_by": "openclaw-task6"
+    },
+    "15.7": {
+      "title": "AOSP 代码阅读",
+      "status": "ready-for-review",
+      "drafted_date": "2026-04-04",
+      "drafted_by": "openclaw-task2a",
+      "file": "src/part3-tools/ch15-methodology/07-aosp-reading.md",
+      "anchors_covered": 5,
+      "extensions_covered": 2
+    },
+    "16.1": {
+      "title": "Google 官方的性能优化思路",
+      "status": "ready-for-review",
+      "drafted_date": "2026-04-04",
+      "drafted_by": "openclaw-task2a",
+      "file": "src/part4-system/ch16-aosp/01-google-optimization.md"
+    },
+    "16.3": {
+      "title": "AOSP 源码编译与调试环境",
+      "status": "ready-for-review",
+      "drafted_date": "2026-04-04",
+      "drafted_by": "openclaw-task2a",
+      "file": "src/part4-system/ch16-aosp/03-aosp-build.md",
+      "anchors_covered": 5,
+      "anchors_total": 5,
+      "extensions_covered": 2,
+      "extensions_total": 2,
+      "verification_level": "L2",
+      "word_count": "~8500"
+    }
+  },
+  "5.1": {
+    "title": "Linux 进程调度基础",
+    "status": "ready-for-review",
+    "rework_notes": "EEVDF + SchedTune/UClamp 回炉修复完成",
+    "last_updated": "2026-04-02T04:44:22.221424+08:00"
+  },
+  "rework_history": [
+    {
+      "date": "2026-04-02T07:47:00.583548+08:00",
+      "sections": [
+        "2.2",
+        "4.6"
+      ],
+      "action": "task2b-rework",
+      "details": "2.2: 4 fixes (doFrame API corrected, FrameRateOverride corrected, 常见问题与误区 added, Swappy confirmed). 4.6: 2 fixes (title corrected, 16KB Page Size body added)"
+    },
+    {
+      "date": "2026-04-03T03:44:45+08:00",
+      "sections": [
+        "2.9"
+      ],
+      "action": "task2b-rework",
+      "details": "2.9 渲染机制的版本演进: 4 fixes (AOSP路径验证, Android16年份确认, 图注增强, FrameMetrics叙述重写)"
+    },
+    {
+      "date": "2026-04-03T09:40:00+08:00",
+      "sections": [
+        "2.10"
+      ],
+      "action": "task2b-rework",
+      "details": "2.10 GPU 渲染深入: 7 fixes (全文文体重写8+处, 实战案例TypeB重写, 新增与其他机制关系小节, 新增Perfetto表现专节, 新增常见误区5条, 3处伪代码标注修正, frontmatter更新)"
+    }
+  ],
+  "chapters": {
+    "2.6": {
+      "title": "SurfaceFlinger 与合成",
+      "status": "ready-for-review",
+      "rework_round": 1,
+      "last_updated": "2026-04-02T14:50:19.993678+08:00",
+      "review_log": "logs/review/2026-04-02-1320-review.md",
+      "verification": "L2 rework verified"
+    },
+    "7.3": {
+      "status": "ready-for-review",
+      "last_rework": "2026-04-04",
+      "rework_by": "openclaw-task2b",
+      "rework_issues": 2,
+      "rework_fixes": [
+        "B1: FrameMetrics.DEADLINE API 版本兼容性 — 添加版本分支代码 + 叙述说明",
+        "B2: SQL 调度延迟查询语义修正 — 拆分为两个查询（抢占片段 vs 调度延迟）"
+      ]
+    }
+  },
+  "2.6": {
+    "title": "SurfaceFlinger 与合成",
+    "status": "finalized",
+    "file": "src/part1-fundamentals/ch02-rendering/06-surfaceflinger.md",
+    "drafted_date": "2026-03-30",
+    "reviewed_date": "2026-04-02",
+    "reviewed_by": "openclaw-task6",
+    "review_round": 2,
+    "score": {
+      "structure": 5,
+      "wording": 4.5,
+      "consistency": 5,
+      "verification": 4,
+      "metadata": 5
+    },
+    "last_updated": "2026-04-02T22:29:32.067195"
+  },
+  "11.2": {
+    "title": "App 耗电优化",
+    "status": "ready-for-review",
+    "drafted_date": "2026-04-03",
+    "drafted_by": "openclaw-task2a",
+    "word_count": "~8500"
+  },
+  "14.2": {
+    "status": "ready-for-review",
+    "drafted_date": "2026-04-03",
+    "drafted_by": "openclaw-task2a",
+    "confidence": "medium",
+    "anchors_covered": [
+      "Simpleperf是什么（基于Linux perf）",
+      "基本用法（stat/record/report）",
+      "采样类型（cpu-cycles/task-clock/PMU事件）",
+      "火焰图生成与解读（report_html/Speedscope）",
+      "与Perfetto callstack sampling对比"
+    ],
+    "extensions_covered": [
+      "Native代码性能分析（符号解析/off-CPU）",
+      "内核符号解析与kallsyms"
+    ],
+    "auto_discovered": [
+      "profileable vs debuggable区别",
+      "常见问题与误区（4条）"
+    ]
+  },
+  "7.3": {
+    "status": "finalized",
+    "last_review": "2026-04-04",
+    "reviewed_by": "openclaw-task6"
+  }
 }
