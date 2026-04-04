@@ -4,11 +4,11 @@
   "metrics": {
     "total": 97,
     "draft": 0,
-    "ready-for-review": 10,
+    "ready-for-review": 9,
     "reviewed": 3,
-    "finalized": 25,
+    "finalized": 26,
     "staging_drafts": 0,
-    "last_updated": "2026-04-04T08:15:11.619856"
+    "last_updated": "2026-04-04T08:23:00+08:00"
   },
   "reviewed_sections": {
     "8.1": {
@@ -344,6 +344,16 @@
       "fixes_applied": [
         "frontmatter补全：section/drafted_date/drafted_by/reviewed_date/reviewed_by",
         "12处[来源:]→[已验证: 来源见 ...]标注格式标准化",
+        "status ready-for-review → finalized"
+      ]
+    },
+    "7.7": {
+      "reviewed_date": "2026-04-04",
+      "reviewed_by": "openclaw-task6",
+      "review_status": "finalized",
+      "fixes_applied": [
+        "17处'你'→'我们'替换（writing-guide §3.5合规）",
+        "frontmatter补全：section/drafted_by/reviewed_date/reviewed_by",
         "status ready-for-review → finalized"
       ]
     }
@@ -1228,6 +1238,14 @@
   "history": [
     {
       "date": "2026-04-04",
+      "section": "7.7",
+      "title": "Jetpack Compose 性能优化",
+      "action": "reviewed-finalized",
+      "review_by": "openclaw-task6",
+      "fixes": 17
+    },
+    {
+      "date": "2026-04-04",
       "section": "15.6",
       "title": "性能测试最佳实践",
       "action": "draft-completed",
@@ -1994,6 +2012,15 @@
       "file": "src/part3-tools/ch15-methodology/06-testing-best-practices.md",
       "anchors_covered": 5,
       "extensions_covered": 2
+    },
+    "7.7": {
+      "title": "Jetpack Compose 性能优化",
+      "status": "finalized",
+      "file": "src/part2-performance/ch07-smoothness/07-compose-performance.md",
+      "drafted_date": "2026-04-01",
+      "drafted_by": "openclaw-task2a",
+      "reviewed_date": "2026-04-04",
+      "reviewed_by": "openclaw-task6"
     }
   },
   "5.1": {
