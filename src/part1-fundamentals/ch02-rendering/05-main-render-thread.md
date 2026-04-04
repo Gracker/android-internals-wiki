@@ -1,7 +1,7 @@
 ---
 title: "MainThread 与 RenderThread 协作"
 chapter: "2.5"
-status: ready-for-review
+status: reviewed
 section: "2.5"
 drafted_date: "2026-03-30"
 drafted_by: "openclaw-task2a"
@@ -12,8 +12,9 @@ applicable_versions: "Android 12 (API 31) - Android 16 (API 35)"
 last_verified: "2026-03-30"
 last_verified_against: "AOSP android-16.0.0_r1"
 confidence: high
-reviewed_date: "2026-04-02"
+reviewed_date: "2026-04-04"
 reviewed_by: openclaw-task6
+review_note: "二次review（task2b精修后）：1个B类问题（ANGLE待验证），3处A类小修"
 sources:
   - type: aosp
     path: "platform/frameworks/base/libs/hwui/renderthread/RenderThread.cpp"
@@ -162,13 +163,15 @@ void draw(View view, AttachInfo attachInfo, DrawCallbacks callbacks) {
 
 2. **DisplayList 数据同步**：将 View 树中所有标记为 dirty 的 RenderNode 的 DisplayList 数据从主线程"移交"给 RenderThread。这里不是简单的复制，而是通过引用计数和资源所有权转移来实现的。
 
-3. **Bitmap 上传**：如果有新的 Bitmap 需要被 GPU 使用，它们会被上传到 GPU 内存。从 Android 8.0（Oreo）开始，Bitmap 的像素数据直接在 Native 堆分配（通过 `HardwareRenderer`），这减少了上传开销。
+3. **Bitmap 上传**：如果有新的 Bitmap 需要被 GPU 使用，它们会被上传到 GPU 内存。从 Android 8.0（Oreo）开始，Bitmap 的像素数据直接在 Native 堆分配（而非 Java 堆），减少了 GC 压力和 GPU 上传开销。
 
 4. **释放主线程**：同步完成后，主线程被释放，可以继续处理下一个 VSync 周期的 Input、Animation 等回调。而 RenderThread 开始独立的 GPU 渲染工作。
 
 这个同步设计有一个重要的含义：**主线程的 draw 越重（DisplayList 越复杂），同步的数据量越大，SyncFrameState 耗时越长。**在极端情况下（比如 View 层级非常深且有大量 invalidate），同步本身就能成为性能瓶颈。
 
 ## RenderThread 的 GPU 渲染与 Fence 等待
+
+[图：MainThread 与 RenderThread 协作的整体架构图，展示 DisplayList 构建→SyncFrameState→GPU 渲染→QueueBuffer 的数据流]
 
 同步完成后，RenderThread 开始独立的渲染工作。这个阶段在 Perfetto 中表现为 RenderThread Track 上的 `DrawFrame` 切片。
 
@@ -420,7 +423,7 @@ SF:        ...    [Latch F0] [Latch F1] [Latch F2] ...
 | **Android 8.0 (API 26)** | Bitmap Native 分配 | Bitmap 像素直接在 Native 堆分配，减少 GPU 上传开销 |
 | **Android 10 (API 29)** | BLAST 模式引入 | Buffer 提交从同步 Binder 改为异步 Transaction |
 | **Android 12 (API 31)** | Frame Timeline | 系统级的帧预期/实际时间对比，精确的 Jank 检测 |
-| **Android 15 (API 35)** | ANGLE 强制采用 | GLES 调用统一翻译为 Vulkan，RenderThread 底层变化 |
+| **Android 15 (API 35)** | ANGLE 推广加速 | ANGLE（将 GLES 翻译为 Vulkan）的采用范围进一步扩大，RenderThread 底层渲染路径发生变化 [待验证：ANGLE 在 Android 15 中是否对所有 GPU 厂商强制启用] |
 
 ## 常见误区
 

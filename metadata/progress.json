@@ -4,11 +4,11 @@
   "metrics": {
     "total": 97,
     "draft": 4,
-    "ready-for-review": 49,
-    "reviewed": 2,
+    "ready-for-review": 48,
+    "reviewed": 3,
     "finalized": 39,
     "staging_drafts": 0,
-    "last_updated": "2026-04-04T18:20:00+08:00",
+    "last_updated": "2026-04-04T19:20:00+08:00",
     "processing": 0,
     "ready-to-publish": 1
   },
@@ -1326,9 +1326,21 @@
           "Perfetto v54.0 Data Explorer 可视化查询 + Collapsed Stack + 7x JSON + R8 Retracing + 加权 Jank（目标 §13.3/§13.5/§14.1）",
           "Android 17 强制 ANGLE denylist + Vulkan 1.4 + OpenGL ES 维护模式（目标 §2.10/§2.9）"
         ]
+      },
+      {
+        "time": "2026-04-04T19:00:00+08:00",
+        "focus": "渲染管线 ARR API + RecyclerView 1.4 ARR（topic-rotation #4→#5 adjacent）",
+        "source": "topic-rotation-adjacent-5",
+        "candidates": 5,
+        "passed": 2,
+        "delivered": 2,
+        "themes": [
+          "Android 16 ARR API 生态：hasArrSupport/getSuggestedFrameRate/getSupportedRefreshRates + SurfaceFlinger VSync-刷新率解耦（目标 §2.2/§2.6/§2.9）",
+          "RecyclerView 1.4 ARR 集成 + View.setRequestedFrameRate 投票机制：setFrameContentVelocity + OverScroller + 帧率投票聚合（目标 §7.4/§7.5/§2.2）"
+        ]
       }
     ],
-    "last_updated": "2026-04-04T15:05:00+08:00"
+    "last_updated": "2026-04-04T19:00:00+08:00"
   },
   "history": [
     {

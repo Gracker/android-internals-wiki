@@ -392,3 +392,10 @@
 - **问题**：Compose BOM 2025.12.00版本号和"性能对等"声明待确认
 - **建议**：核实版本号和声明来源
 - **review 日志**：logs/review/2026-04-04-0626-review.md
+
+## [Task6 Review] 2.5 MainThread 与 RenderThread 协作 — 2026-04-04
+- **类型**：需验证
+- **位置**：版本演进表 — Android 15 (API 35) 行
+- **问题**：原文写"ANGLE 强制采用"，已改为"ANGLE 推广加速"并加 [待验证] 标注。ANGLE 在 Android 15 中是否对所有 GPU 厂商（Qualcomm Adreno、ARM Mali、Imagination PowerVR）统一强制启用，需要进一步确认。根据已有信息，ANGLE 的启用策略因厂商和设备而异，并非全局一刀切。
+- **建议**：查阅 AOSP android-15 分支的 release notes 和 `com.android.graphics.libgui.flags` 中的 ANGLE 相关 flag，确认实际启用条件后补充说明。
+- **review 日志**：logs/review/2026-04-04-1920-review.md
