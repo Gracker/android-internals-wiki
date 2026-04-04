@@ -82,8 +82,9 @@
 
 - 直接修改文件（使用 exec + python/pathlib + 绝对路径）
 - 每处修改记录：位置｜修改类型｜修改前（摘要）｜修改后（摘要）｜理由
+- **精修不是终态**：精修完成后必须经过 task6 质检，通过后才能标记为 `ready-to-publish`
 - 精修完成后更新 frontmatter：
-  - `status: finalized` → `status: ready-to-publish`
+  - `status: finalized` → `status: ready-for-review`（等待 task6 最终质检）
   - `polish_count`：+1（如果不存在则设为 1）
   - `polish_date: "YYYY-MM-DD"`
   - `polish_by: "task2b-polish"`
@@ -115,7 +116,7 @@ git commit -m "[openclaw] polish: {章节号} {小节名} — 出版级精修（
 - **元数据**：{修改数}处（如：sources 补全、tags 更新）
 
 总计修改：{总修改数}处
-产出：src/{path}（status → ready-to-publish）
+产出：src/{path}（status → ready-for-review，等待 task6 质检后 → ready-to-publish）
 
 ---
 
