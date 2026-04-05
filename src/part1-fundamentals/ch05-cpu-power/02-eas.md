@@ -1,7 +1,7 @@
 ---
 title: "EAS 能量感知调度"
 chapter: "5.2"
-status: finalized
+status: ready-for-review
 applicable_versions: "Android 9 (API 28) - Android 16 (API 36)"
 last_verified: "2026-03-31"
 last_verified_against: "Linux kernel 6.6, Documentation/scheduler/sched-energy.rst"
@@ -22,6 +22,9 @@ related_chapters: ["5.1", "5.3", "5.4", "2.5"]
 drafted_date: "2026-03-31"
 reviewed_date: "2026-04-02"
 reviewed_by: openclaw-task6
+polish_count: 1
+polish_date: "2026-04-06"
+polish_by: "task2b-polish"
 ---
 
 # EAS 能量感知调度
@@ -54,11 +57,11 @@ reviewed_by: openclaw-task6
 
 在上一节中，我们讲了 CFS 的基本原理：它通过 vruntime 保证所有进程公平地获得 CPU 时间。但公平只是调度器的一个目标——在手机这样的移动设备上，还有一个同样重要的目标：**省电**。
 
-现代手机 SoC 普遍采用大小核架构（我们会在 5.3 节详细展开），一个四小核加四大核的八核处理器，在安排任务时面临一个核心问题：**一个任务应该放在小核还是大核？** 放小核省电但可能不够快，放大核够快但功耗高。如果每个任务都由调度器盲目地"找最空闲的核"来放，系统的总功耗往往会比最优安排高出 20%~40%。
+现代手机 SoC（System on Chip，片上系统）普遍采用大小核架构（我们会在 5.3 节详细展开），一个四小核加四大核的八核处理器，在安排任务时面临一个核心问题：**一个任务应该放在小核还是大核？** 放小核省电但可能不够快，放大核够快但功耗高。如果每个任务都由调度器盲目地"找最空闲的核"来放，系统的总功耗往往会比最优安排高出 20%~40%。
 
 EAS（Energy Aware Scheduling）就是为了解决这个问题而生的。它在 Linux 5.0 中被合入主线内核，是 Android 设备上最重要的调度增强之一。EAS 的核心能力是：**在任务唤醒时，预测把任务放在不同 CPU 核心上分别需要消耗多少能量，然后选择一个既满足性能需求又最省电的核**。
 
-理解 EAS 的意义在于：当你打开一份 Perfetto Trace，看到主线程被分配到了小核上运行缓慢，或者在大小核之间频繁迁移时，你需要知道这不是"随机"的行为——背后有 EAS 的决策逻辑，而理解这个逻辑，是判断调度行为是否正常的关键。
+理解 EAS 的意义在于：打开一份 Perfetto Trace 时，看到主线程被分配到了小核上运行缓慢，或者在大小核之间频繁迁移，需要知道这不是"随机"的行为——背后有 EAS 的决策逻辑，而理解这个逻辑，是判断调度行为是否正常的关键。
 
 [已验证: 官方文档, https://docs.kernel.org/scheduler/sched-energy.html]
 
@@ -110,7 +113,7 @@ EAS 并非在所有设备上都生效。它需要满足以下条件：
 | 4   | 1500      | 950       | 200       |
 | 5   | 1800      | 1100      | 380       |
 
-注意功耗不是线性增长的——从 OPP 4 到 OPP 5，频率只增加了 20%，但功耗几乎翻倍。这是因为更高的频率需要更高的电压，而功耗与电压的平方成正比。这就是为什么 EAS 要尽量让任务在低频运行——省下的不只是"一点电"，而是指数级的功耗节省。
+注意功耗不是线性增长的——从 OPP 4 到 OPP 5，频率只增加了 20%，但功耗几乎翻倍。这是因为更高的频率需要更高的电压，而功耗与电压的平方成正比（动态功耗公式：P ∝ CV²f）。这也是 EAS 要尽量让任务在低频运行的原因——省下的不只是"一点电"，而是指数级的功耗节省。
 
 [已验证: 官方文档, Documentation/power/energy-model.rst — EM provides power cost tables for performance domains]
 
@@ -177,7 +180,7 @@ PELT 的 util 信号要能在大小核之间准确比较，需要满足两个"�
 
 1. **频率不变性（Frequency Invariance）**：同一个任务在大核 1GHz 上跑 10ms 和大核 2GHz 上跑 5ms，utilization 信号应该相同。PELT 通过 `arch_scale_freq_capacity()` 回调实现频率归一化——将实际运行时间按当前频率与最大频率的比值进行缩放。
 
-2. **CPU 不变性（CPU Invariance）**：同一个任务在大核上跑 5ms 和小核上跑 5ms，由于大核 IPC 更高，实际完成的计算量不同。PELT 通过 `arch_scale_cpu_capacity()` 回调实现 CPU 归一化——将 utilization 信号按目标 CPU 的 capacity 进行缩放。
+2. **CPU 不变性（CPU Invariance）**：同一个任务在大核上跑 5ms 和小核上跑 5ms，由于大核 IPC（Instructions Per Cycle，每周期指令数）更高，实际完成的计算量不同。PELT 通过 `arch_scale_cpu_capacity()` 回调实现 CPU 归一化——将 utilization 信号按目标 CPU 的 capacity 进行缩放。
 
 没有这两个不变性，EAS 的选核决策就会出错。例如，如果一个任务在小核上跑了很长时间积累了较高的 raw utilization，不做 CPU 不变性归一化的话，EAS 会误以为这个任务很重而不敢放在小核上。实际上归一化后它的 util 可能并不高。
 
@@ -187,9 +190,11 @@ PELT 的 util 信号要能在大小核之间准确比较，需要满足两个"�
 
 在早期 Android 设备上，Google 曾尝试过另一种负载追踪机制——WALT（Window Assisted Load Tracking），在部分 Pixel 设备上使用。WALT 基于固定时间窗口（而非 PELT 的指数衰减）来计算负载，对突发负载的响应更快。
 
-但从 Android 12 / Linux 5.10 开始，WALT 已被弃用，统一回归 PELT。PELT 的内核主线支持更完善，与 EAS 的集成也更紧密。如果你在分析老设备的 Trace 数据时遇到了与负载追踪相关的问题，可能需要考虑设备当时用的是 WALT 还是 PELT。
+但从 Android 12 / Linux 5.10 开始，WALT 已被弃用，统一回归 PELT。PELT 的内核主线支持更完善，与 EAS 的集成也更紧密。在分析老设备的 Trace 数据时遇到与负载追踪相关的问题，可能需要考虑设备当时用的是 WALT 还是 PELT。
 
 [待验证: WALT 的弃用时间线在所有厂商设备上是否一致]
+
+无论设备使用哪种负载追踪机制，PELT 还是 WALT，EAS 的核心决策逻辑不变：基于 utilization 信号做能耗最优的选核。下文讨论的 Task Placement 策略，均以 PELT 作为输入信号。
 
 ## Task Placement：EAS 的选核策略
 
@@ -226,7 +231,7 @@ EAS 对轻任务和重任务有不同的处理方式：
 
 在 EAS 的场景下，负载均衡有一个特殊行为：**overutilized 标志**。当系统中任何一个 CPU 的 utilization 超过其 capacity 的 80%（默认阈值），系统会被标记为 "overutilized"，此时 EAS 的节能策略会被暂时关闭，调度器回到传统的性能优先模式。原因是：在系统负载很高的情况下，节能优化的空间已经很小，强行节能反而会导致严重的性能问题。
 
-这个机制意味着，在 Perfetto 中如果你发现 EAS 似乎"不工作了"——任务被随意分配，不再考虑能耗——很可能是因为系统处于 overutilized 状态。
+这个机制意味着，如果发现 EAS 似乎"不工作了"——任务被随意分配，不再考虑能耗——很可能是因为系统处于 overutilized 状态。
 
 [已验证: 官方文档, Documentation/scheduler/sched-energy.rst — overutilized flag disables EAS energy-awareness]
 
@@ -234,7 +239,7 @@ EAS 对轻任务和重任务有不同的处理方式：
 
 ### uclamp 的作用
 
-PELT 提供了任务的实际 utilization 信号，但有时候用户空间需要告诉调度器："这个任务虽然 util 不高，但它很重要，请给它更多资源"或者"这个后台任务不重要，不要让它浪费太多电"。
+到目前为止，EAS 的选核决策完全依赖 PELT 提供的 utilization 信号——调度器根据任务的历史行为来预测未来需求。但有时候，用户空间比调度器更清楚一个任务的重要程度：主线程需要低延迟响应，而后台同步任务可以慢慢跑。PELT 提供了任务的实际 utilization 信号，但用户空间还需要一种机制来告诉调度器："这个任务虽然 util 不高，但它很重要，请给它更多资源"或者"这个后台任务不重要，不要让它浪费太多电"。
 
 这就是 uclamp（Utilization Clamping）的作用——它允许用户空间为每个任务设置 utilization 的上下限：
 
@@ -258,6 +263,8 @@ uclamp 的效果可以直接在 Perfetto 中观察到：同样是 util=200 的�
 
 [自动发现: 来源 obsidian/Personal-Knowlodge/source/Android-Perfetto-09-CPU.md — SchedTune/cgroup 对调度策略的影响]
 
+> **注意**: 在 Linux 6.6+ / Android 15+ 中，部分设备开始使用 `schedutil` 的替代方案（如基于 EAS+EM 的混合调频），核心逻辑不变，但 governor 名称可能不同。
+
 ## EAS 在 Perfetto 中的观察
 
 ### 三条关键 Track
@@ -266,7 +273,7 @@ uclamp 的效果可以直接在 Perfetto 中观察到：同样是 util=200 的�
 
 **1. CPU Frequency Track**
 
-在 Perfetto 界面最上方，每个 CPU 核心都有对应的频率条。鼠标悬停在频率区域上，可以看到当前的运行频率（MHz）。这是 EAS 与 schedutil 协作的结果——当你看到小核频率在 300MHz~600MHz 之间波动、大核在 800MHz~1.8GHz 之间波动，这就是 schedutil 根据 PELT utilization 信号在做 DVFS 决策。
+在 Perfetto 界面最上方，每个 CPU 核心都有对应的频率条。鼠标悬停在频率区域上，可以看到当前的运行频率（MHz）。这是 EAS 与 schedutil 协作的结果——看到小核频率在 300MHz~600MHz 之间波动、大核在 800MHz~1.8GHz 之间波动，这就是 schedutil 根据 PELT utilization 信号在做 DVFS 决策。
 
 重点关注：
 - 频率是否有突然的上限限制（scaling_max_freq 被压低）——这通常意味着温控介入了（详见 5.5 节）
@@ -290,7 +297,7 @@ CPU Scheduling Track 显示每个时刻哪个线程在哪个 CPU 核心上运行
 
 这条 Track 显示 CPU 的 C-State 变化。EAS 的一个重要优化目标就是让空闲的 CPU 尽快进入深睡眠状态（C3/C4），因为 CPU 在空闲状态下的功耗远低于最低频运行状态。
 
-如果 EAS 工作正常，你会看到：小核在无负载时快速进入深度 idle，大核在不需要时大部分时间处于 deep idle。如果大核频繁在浅 idle 和运行之间切换，说明有后台任务不恰当地唤醒了大核。
+如果 EAS 工作正常，小核在无负载时会快速进入深度 idle，大核在不需要时大部分时间处于 deep idle。如果大核频繁在浅 idle 和运行之间切换，说明有后台任务不恰当地唤醒了大核。
 
 ### 使用 SQL 分析 EAS 行为
 
@@ -356,7 +363,7 @@ EAS 的能耗预测依赖于 schedutil governor 的 DVFS 行为。5.4 节会详�
 
 ### "EAS 是为了让系统变慢来省电"
 
-不是。EAS 的核心目标是"在满足性能需求的前提下省电"。对于轻任务，放在小核上既省电又不影响性能；对于重任务，EAS 仍然会分配到大核。只有当系统过载时 EAS 才会被暂时关闭。你不会因为 EAS 而感受到明显的性能下降——但如果 EAS 被错误配置或禁用，你可能会发现耗电明显增加。
+不是。EAS 的核心目标是"在满足性能需求的前提下省电"。对于轻任务，放在小核上既省电又不影响性能；对于重任务，EAS 仍然会分配到大核。只有当系统过载时 EAS 才会被暂时关闭。正常情况下不会因为 EAS 而感受到明显的性能下降——但如果 EAS 被错误配置或禁用，可能会发现耗电明显增加。
 
 ### "任务应该尽量放在大核上以保证性能"
 
@@ -368,9 +375,21 @@ EAS 的能耗预测依赖于 schedutil governor 的 DVFS 行为。5.4 节会详�
 
 ### "厂商的定制调度器比原版 EAS 好"
 
-不一定，但也不一定差。厂商的定制调度器通常在原版 EAS 的基础上增加了更多场景感知（如游戏模式、性能模式）和更精细的绑核策略。有些厂商的定制确实带来了更好的用户体验，但也有厂商的定制引入了新的问题（如过度激进的上核策略导致功耗飙升）。分析 Perfetto Trace 时，需要了解你测试设备的厂商调度策略，才能准确判断行为是否正常。
+不一定，但也不一定差。厂商的定制调度器通常在原版 EAS 的基础上增加了更多场景感知（如游戏模式、性能模式）和更精细的绑核策略。有些厂商的定制确实带来了更好的用户体验，但也有厂商的定制引入了新的问题（如过度激进的上核策略导致功耗飙升）。分析 Perfetto Trace 时，需要了解测试设备的厂商调度策略，才能准确判断行为是否正常。
 
 [来源: obsidian/Personal-Knowlodge/source/Android-Perfetto-09-CPU.md — 选核与迁移逻辑、厂商定制化部分]
+
+## 版本演进
+
+| 时间节点 | 变化 | 影响 |
+|---------|------|------|
+| Linux 3.8 | PELT 引入 | 为后续 EAS 提供 per-entity utilization 信号基础 |
+| Linux 5.0 | EAS 合入主线 | `find_energy_efficient_cpu()` 成为大小核系统的默认唤醒选核路径 |
+| Linux 5.3 | uclamp 合入主线 | 取代 Android 特有的 SchedTune，提供标准化的 util clamping 接口 |
+| Android 12 | WALT 弃用 | 统一回归主线 PELT，EAS 行为在所有设备上趋于一致 |
+| Android 14+ | 厂商定制收敛 | Google 通过 GKI 限制内核定制空间，EAS 核心逻辑趋于统一 |
+
+[待验证: Android 14 GKI 对厂商 EAS 定制的具体限制范围]
 
 ## 参考资料
 
