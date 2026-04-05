@@ -1,13 +1,14 @@
 ---
 title: "进程模型与生命周期管理"
 chapter: "1.3"
-status: finalized
+status: ready-for-review
 applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
 last_verified: "2026-03-31"
 last_verified_against: "AOSP android-16.0.0_r1"
 drafted_date: "2026-03-31"
 reviewed_date: "2026-03-31"
 reviewed_by: openclaw-task6
+re-review-result: "已纳入 1 条素材内容（Socket vs Binder 线程效率论证），修正 0 处，待正常review质检"
 confidence: medium
 sources:
   - type: aosp
@@ -226,7 +227,9 @@ Binder 是 Android IPC 的核心机制，承担了系统中 90% 以上的跨进�
 
 ### LocalSocket / Network Socket
 
-LocalSocket 基于 Linux 的 Unix Domain Socket，用于同设备上的进程间通信。相比于 Binder，Socket 更适合流式数据传输场景。例如 Zygote 接收 fork 请求时用的就是 LocalSocket。
+LocalSocket 基于 Linux 的 Unix Domain Socket，用于同设备上的进程间通信。相比于 Binder，Socket 更适合流式数据传输场景。例如 Zygote 接收 fork 请求时用的是 LocalSocket。
+
+输入系统也选择了 Socket（SocketPair）而非 Binder 来完成 InputDispatcher 与应用进程之间的通信。这个选择不是随意的：Socket 可以实现异步通知，且只需要两端各一个线程参与。假设系统有 N 个应用进程，输入相关的线程数是 N+1（1 是 InputDispatcher 线程）。但如果用 Binder 实现异步接收，每个应用需要两个线程（一个 Binder 线程、一个处理线程），发送端也需要两个线程（一个发送、一个接收完成通知），N 个应用就需要 2(N+1) 个线程。Socket 在这个场景下明显更高效。
 
 ### 共享内存（ashmem / memfd）
 
