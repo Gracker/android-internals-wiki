@@ -25,12 +25,10 @@ sources:
     path: "developer.android.com/topic/performance/vitals/render"
 tags: ['jank', 'rendering', 'main-thread', 'render-thread', 'surfaceflinger', 'binder', 'gc', 'cpu-scheduling']
 related_chapters: ["7.1", "2.3", "2.4", "2.5", "1.4", "1.5", "3.1"]
-re-review-reason: "新素材: 华为-交互流畅体验设计; 华为手机系统 vsync 调度问题研究和解决"
-re-review-materials:
-  - "Cubox/华为-交互流畅体验设计-2025-02-18.md"
-  - "Cubox/华为手机系统 vsync 调度问题研究和解决 - 知乎-2024-03-08.md"
-re-review-triggered-date: "2026-04-05"
-re-review-triggered-by: "task7-incremental-index"
+re-review-reason: ""
+re-review-materials: []
+re-review-triggered-date: ""
+re-review-triggered-by: ""
 ---
 
 # 卡顿原因体系
@@ -293,6 +291,27 @@ SELECT * FROM slice WHERE name LIKE '%GC%' AND track_id IN (
 **在 Perfetto 中的表现：** 在 CPU Info 区域，查看 CPU Frequency Track，可以看到各核心的运行频率随时间的变化。如果频率在测试过程中持续下降，且同时出现帧率下降，基本可以确认是温控限频导致的。
 
 [已验证: 官方文档, source.android.com/devices/tech/power — thermal management]
+
+### OEM 框架修改导致的 VSync 时序异常
+
+在分析系统级卡顿原因时，还有一个容易被忽略的来源：OEM 厂商对 Android 框架的自定义修改。不同厂商会根据自己的硬件和用户体验策略，对 AOSP 原生的渲染调度逻辑进行不同程度的修改。这些修改大多数情况下是透明的，但在某些场景下会引入与 AOSP 行为不一致的问题，导致 App 出现难以解释的卡顿。
+
+一个典型的案例是华为手机上的 VSync 调度异常。有开发者在实际项目中[发现]((https://zhuanlan.zhihu.com/p/450899407))，华为较新的系统版本中，`Choreographer.postFrameCallback` 和 `View.postOnAnimation` 的回调时机存在严重问题：在一个 VSync 周期内，系统会额外注入一个伪造的 VSync 信号，单独处理 `CALLBACK_ANIMATION` 类型的回调。
+
+这造成了三个问题：
+
+1. **回调时序错乱。** 通过 `postFrameCallback` 提交的回调可能在真实 VSync 信号时触发，也可能在伪造信号时触发，且与 Input 处理和 View measure/layout/draw 之间的执行顺序不再保证——这与 AOSP 的设计承诺矛盾。
+
+2. **VSync 周期不均匀。** 由于伪造信号的存在，相邻两次回调的时间间隔会出现"短—长—短—长"的交替现象，导致依赖均匀 VSync 周期的动画或调度逻辑产生抖动。
+
+3. **时间戳偏差。** 回调中获得的 `frameTimeNanos` 在伪造信号触发时不准确，依赖该时间戳进行帧预测或物理模拟的代码会出现混乱。
+
+**规避方案。** 研究 Choreographer 源码后发现，系统额外注入的伪造 VSync 信号只处理 `CALLBACK_ANIMATION` 类型的回调。因此可以通过反射调用 `Choreographer.postCallback` 并指定为 `CALLBACK_TRAVERSAL` 类型来替代 `postFrameCallback` 和 `View.postOnAnimation`。测试表明，`CALLBACK_TRAVERSAL` 类型的回调在真实 VSync 信号时触发，且顺序始终在 View 的 Layout&Draw 之前——与原生系统的行为一致。
+
+这个案例带来的启示是：**当你在 Perfetto 中看到主线程的 doFrame 时序异常，但 App 代码和 AOSP 源码都找不到合理解释时，需要考虑 OEM 框架修改的可能性。** 不同厂商对 Choreographer、SurfaceFlinger、InputDispatcher 等关键组件的修改程度不同，有些修改不会体现在官方文档中，只能通过实际抓 Trace 对比 AOSP 行为来发现。
+
+[来源: Cubox/华为手机系统 vsync 调度问题研究和解决 - 知乎-2024-03-08.md]
+[待验证: 该问题在 HarmonyOS NEXT（纯鸿蒙系统）中是否仍然存在]
 
 ## Binder 调用导致的主线程阻塞
 
