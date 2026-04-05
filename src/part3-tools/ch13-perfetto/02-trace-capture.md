@@ -2,7 +2,7 @@
 title: "Trace 抓取"
 chapter: "13.2"
 section: "13.2"
-status: finalized
+status: ready-for-review
 drafted_date: "2026-04-03"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
@@ -11,6 +11,9 @@ last_verified_against: "perfetto.dev docs, AOSP android-16.0.0_r1"
 confidence: high
 reviewed_date: "2026-04-05"
 reviewed_by: "openclaw-task6"
+polish_count: 1
+polish_date: "2026-04-06"
+polish_by: "task2b-polish"
 sources:
   - type: blog
     path: "https://www.androidperformance.com/2024/05/21/Android-Perfetto-02-how-to-get-perfetto/"
@@ -23,7 +26,7 @@ sources:
   - type: official
     path: "https://perfetto.dev/docs/data-sources/native-heap-profiler"
 tags: ['perfetto', 'trace', 'atrace', 'trace-capture', 'heapprofd']
-related_chapters: ["13.1", "13.3", "14.1", "15.1"]
+related_chapters: ["13.1", "13.3", "13.4", "14.1", "15.1"]
 
 re-review-reason: ""
 re-review-materials: []
@@ -319,7 +322,7 @@ atrace categories 是 Android 系统预定义的事件分类，每一个 categor
 | 内存问题 | sched dalvik memory gfx |
 | 功耗分析 | sched freq idle power |
 
-这张表只是起点。实际分析中，我们通常会在推荐组合的基础上额外加上 `hal`（硬件抽象层事件）和 `res`（资源加载），以获得更完整的上下文信息。
+这张表是入门的快捷方式。随着分析经验积累，我们会根据具体问题调整 category 组合——比如在分析 HAL 层音频延迟时加上 `audio`，在追踪 Camera 管线时加上 `camera`。不过，`sched` + `freq` + `gfx` + `view` 这个核心组合几乎在所有场景下都不会错。
 
 ## 用 record_android_trace 快速抓取
 
@@ -334,7 +337,7 @@ curl -O https://raw.githubusercontent.com/google/perfetto/main/tools/record_andr
 chmod u+x record_android_trace
 ```
 
-[待验证: 某些网络环境下可能需要代理访问 GitHub raw 域名]
+> ⚠️ 在中国大陆网络环境下，访问 GitHub raw 域名可能需要代理。也可以从 Perfetto 发布页（<https://github.com/google/perfetto/releases>）下载对应版本的脚本。
 
 ### 基本用法
 
@@ -355,15 +358,9 @@ python3 record_android_trace -o trace.perfetto-trace -t 20s -b 64mb \
 
 ### 为什么推荐这个脚本
 
-相比直接在设备上运行 `perfetto` 命令，`record_android_trace` 脚本有几个明显优势：
+相比直接在设备上运行 `perfetto` 命令，`record_android_trace` 把最繁琐的几个步骤自动化了。脚本会自动从设备 pull Trace 文件到本地当前目录，省去了手动 `adb pull`。抓取完成后还会自动在浏览器中打开 Perfetto UI 并加载 Trace，不需要手动拖文件。ADB 连接和权限问题也由脚本处理——对于需要频繁抓取 Trace 的日常分析，这些自动化能省下不少时间。
 
-第一，**自动处理文件传输**。脚本会自动把 Trace 从设备上 pull 到本地当前目录，不需要我们手动执行 `adb pull`。
-
-第二，**自动打开 Trace**。抓取完成后，脚本会自动在浏览器中打开 Perfetto UI 并加载 Trace 文件，省去了手动拖拽文件到浏览器的步骤。
-
-第三，**自动配置 ADB 连接**。脚本会检测连接的设备，处理 ADB 权限问题，确保 Trace 能正常抓取。
-
-第四，**支持配置文件**。如果需要更精细的配置，可以通过 `-c` 参数传入 `.pbtxt` 配置文件：
+如果需要更精细的配置，可以通过 `-c` 参数传入 `.pbtxt` 配置文件：
 
 ```bash
 python3 record_android_trace -c config.pbtxt -o trace.perfetto-trace -t 30s
@@ -444,13 +441,13 @@ try {
 
 ### 使用约束
 
-有几个关键约束需要注意：
+使用这套 API 时有几个关键约束。
 
-第一，`beginSection` 和 `endSection` 必须**严格配对、嵌套调用**。不能交叉嵌套，也不能在一个线程中 `beginSection` 然后在另一个线程中 `endSection`。实际上，`Trace.endSection()` 不需要传入标签名——它自动关闭最近一次 `beginSection` 对应的区域，这和栈的 push/pop 机制一样。
+最基本的要求是 `beginSection` 和 `endSection` 必须**严格配对、嵌套调用**——不能交叉嵌套，也不能在一个线程中 `beginSection` 然后在另一个线程中 `endSection`。`Trace.endSection()` 不需要传入标签名，它自动关闭最近一次 `beginSection` 对应的区域，和栈的 push/pop 机制一样。正因为这个栈式设计，如果 `endSection` 调用次数和 `beginSection` 不匹配，后续所有标记都会错位。
 
-第二，标签名会被 Perfetto 截断到 127 个字符。建议使用简洁但足够描述性的标签名，比如 `"HomeFragment.loadData"` 而不是 `"Load the home page data from the remote server"`。
+标签名会被 Perfetto 截断到 127 个字符。建议使用简洁但足够描述性的标签名，比如 `"HomeFragment.loadData"` 而不是 `"Load the home page data from the remote server"`。在实际项目中，推荐用 `类名.方法名` 或 `模块.操作` 的命名规则。
 
-第三，`beginSection`/`endSection` 只能在同一线程中使用。如果要标记多线程操作，每个线程需要独立的 `beginSection`/`endSection` 对。
+另外，`beginSection`/`endSection` 只能在同一线程中使用。如果要标记跨线程操作，需要用下面介绍的异步 API。
 
 ### 异步标记（API 29+）
 
@@ -483,7 +480,7 @@ ATRACE_BEGIN("nativeInit");
 ATRACE_END();
 ```
 
-或者使用更现代的 Perfetto Trace SDK（C++17）来定义自定义数据源，这需要集成 Perfetto SDK 到项目中。[待补充: Perfetto C++ SDK 集成示例]
+或者使用更现代的 Perfetto Trace SDK（C++17）来定义自定义数据源。Perfetto SDK 通过头文件注入的方式集成，需要在项目的 `CMakeLists.txt` 或 `Android.bp` 中添加 SDK 源码依赖，然后使用 `TRACE_EVENT` 宏来标记自定义事件。集成方式详见 Perfetto 官方文档的 [Instrumentation SDK](https://perfetto.dev/docs/instrumentation/tracing-sdk) 章节。[待补充: 完整的 CMake 集成示例]
 
 ### 在 Perfetto 中的表现
 
@@ -544,13 +541,13 @@ data_sources {
 
 ### Long Trace 的注意事项
 
-Long Trace 在降低内存要求的同时引入了新的 trade-off：
+Long Trace 在降低内存要求的同时引入了新的 trade-off。
 
-第一，**磁盘 I/O 开销**。每次刷盘都会产生磁盘写入，在 I/O 敏感的场景（如 Benchmark）中可能影响测量结果的准确性。
+**磁盘 I/O 开销**是一个需要关注的因素。每次刷盘都会产生磁盘写入，在 I/O 敏感的场景（如 Benchmark）中可能影响测量结果的准确性。如果对 I/O 干扰敏感，可以适当增大 `file_write_period_ms` 来降低刷盘频率，代价是内存 buffer 需要更大来缓存中间数据。
 
-第二，**数据源需要精简**。长时间追踪时，如果开启了太多 atrace category，生成的数据量可能非常大。建议只保留分析目标相关的核心 category，通常 `sched` + `freq` + `gfx` + `view` 就够了。
+数据源也需要精简。长时间追踪时，如果开启了太多 atrace category，生成的数据量可能非常大。建议只保留分析目标相关的核心 category，通常 `sched` + `freq` + `gfx` + `view` 就够了。
 
-第三，**大文件分析**。长时间追踪可能产生几百 MB 甚至几 GB 的 Trace 文件。这种大文件在浏览器中通过 ui.perfetto.dev 打开会非常慢甚至崩溃。解决方案是使用 `trace_processor_shell` 命令行工具在本地解析，然后在 Perfetto UI 中通过本地 HTTP 服务查看。具体操作参见本系列第 4 篇（§13.4 大 Trace 文件处理）。
+最实际的挑战是**大文件分析**。长时间追踪可能产生几百 MB 甚至几 GB 的 Trace 文件，这种大文件在浏览器中通过 ui.perfetto.dev 打开会非常慢甚至崩溃。解决方案是使用 `trace_processor_shell` 命令行工具在本地解析，然后在 Perfetto UI 中通过本地 HTTP 服务查看。具体操作参见 §13.4（大 Trace 文件处理）。
 
 ## Heap Profiling 与 Callstack Sampling
 
@@ -560,7 +557,7 @@ Perfetto 不只能做时间线追踪。它还集成了内存剖析（Heap Profil
 
 ### Native Heap Profiling（heapprofd）
 
-`heapprofd` 是 Android 10+ 内置的采样式堆内存分析器。它通过 hook `malloc`/`free`（以及 C++ 的 `operator new`/`delete`）来追踪 Native 堆分配，生成按调用栈聚合的分配统计。
+`heapprofd`（Heap Profiling Daemon）是 Android 10+ 内置的采样式堆内存分析器，运行在目标进程中。它通过 hook `malloc`/`free`（以及 C++ 的 `operator new`/`delete`）来追踪 Native 堆分配，生成按调用栈聚合的分配统计。
 
 在 TraceConfig 中启用 heapprofd：
 
@@ -604,7 +601,7 @@ data_sources {
 }
 ```
 
-注意 Java Heap Sampling 和传统的 Java Heap Dump（如通过 `android.app.ActivityManager.getProcessMemoryDump` 获取的）不同——Sampling 提供的是分配时的调用栈，而非某一时刻的对象存留图。两种方式互补，前者适合定位"谁在频繁分配"，后者适合定位"谁持有大量对象不释放"。
+需要注意，Java Heap Sampling 和传统的 Java Heap Dump（如通过 `android.app.ActivityManager.getProcessMemoryDump` 获取的，或者 Android Studio Profiler 的 Dump Java Heap）是两种不同的分析手段。Sampling 记录的是每次分配发生时的调用栈，能看到"谁在频繁分配内存"；而 Heap Dump 是某一时刻的对象存留快照，能看到"谁持有大量对象不释放"。两者互补，前者适合定位分配热点，后者适合定位泄漏源头。
 
 ### CPU Callstack Sampling
 
@@ -689,7 +686,7 @@ duration_ms: 20000
 
 ## 常见问题与误区
 
-**"atrace categories 选得越多越好"**——这是一个常见的误区。每个 category 都会产生一定量的 Trace 数据，选太多会导致 buffer 快速填满，反而丢失了真正需要的数据。正确的做法是根据分析目标选择针对性的 category 组合，参考前面「按分析场景选择 Categories」的推荐表。
+**"atrace categories 选得越多越好"**——实际上，每个 category 都会产生一定量的 Trace 数据。选太多会导致 buffer 快速填满，真正需要的数据反而被覆盖丢失。一份只包含 `sched freq gfx view` 的 10 秒 Trace（约 20-30MB），如果加上所有 category，数据量可能膨胀到 200MB 以上，buffer 很快就会溢出。正确的做法是根据分析目标选择针对性的 category 组合，参考前面「按分析场景选择 Categories」的推荐表。
 
 **"Trace 文件越大，信息越丰富"**——也不对。信息丰富度取决于数据源的选择和配置是否精准，而不是文件大小。一份 20MB 的精准 Trace 通常比一份 200MB 的冗余 Trace 更容易定位问题。
 
