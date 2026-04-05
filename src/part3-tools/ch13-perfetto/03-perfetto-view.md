@@ -22,6 +22,13 @@ sources:
     path: "https://mp.weixin.qq.com/s?__biz=MzAxMDM0NjExNA==&mid=2247487984&idx=1&sn=713bdccc885ef503b2f691fbd6e8f93"
 tags: ['perfetto', 'trace-analysis', 'ui', 'tooling']
 related_chapters: ["13.1", "13.2", "2.1", "5.1", "7.1"]
+
+re-review-reason: ""
+re-review-materials: []
+re-review-triggered-date: ""
+re-review-triggered-by: ""
+
+re-review-result: "审查 2 条素材，无需修改（素材内容为 Trace Processor SQL 分析 Camera 性能，§13.3 主题为 Perfetto UI 视觉解读，内容不匹配，更适合 §13.5 专题解读）"
 ---
 
 # Perfetto View 解读
