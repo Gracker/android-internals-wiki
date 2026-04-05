@@ -23,6 +23,11 @@ sources:
     path: "source.android.com/docs/core/memory"
 tags: [process, ams, oom_adj, lmkd, zygote, process-lifecycle, binder]
 related_chapters: ["1.1", "1.2", "1.4", "1.5"]
+re-review-reason: "新素材: 反思｜Android 输入系统 & ANR机制的设计与实现"
+re-review-materials:
+  - "Cubox/反思｜Android 输入系统 & ANR机制的设计与实现对于Android开发者而言，ANR是一个老生常谈的问题，站在 - 掘金-2024-11-18.md"
+re-review-triggered-date: "2026-04-05"
+re-review-triggered-by: "task7-incremental-index"
 ---
 
 # 进程模型与生命周期管理
