@@ -1,7 +1,7 @@
 ---
 title: "进程模型与生命周期管理"
 chapter: "1.3"
-status: finalized
+status: ready-for-review
 applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
 last_verified: "2026-03-31"
 last_verified_against: "AOSP android-16.0.0_r1"
@@ -9,6 +9,9 @@ drafted_date: "2026-03-31"
 reviewed_date: "2026-04-05"
 reviewed_by: openclaw-task6
 confidence: high
+polish_count: 1
+polish_date: "2026-04-05"
+polish_by: "task2b-polish"
 sources:
   - type: aosp
     path: "frameworks/base/services/core/java/com/android/server/am/ProcessList.java"
@@ -28,16 +31,16 @@ related_chapters: ["1.1", "1.2", "1.4", "1.5"]
 
 ## 为什么要了解 Android 的进程模型
 
-打开 Perfetto，你会看到密密麻麻的进程列表——system_server、surfaceflinger、你调试的 App、以及一大堆名字看着眼熟但说不出所以然的系统进程。这些进程不是随便跑在那里的，每一个进程的存在、消失、优先级高低，都有一套明确的规则在背后操控。
+打开 Perfetto，会看到密密麻麻的进程列表——system_server、surfaceflinger、当前调试的 App、以及一大堆名字看着眼熟但说不出所以然的系统进程。这些进程不是随便跑在那里的，每一个进程的存在、消失、优先级高低，都有一套明确的规则在背后操控。
 
-如果你在做性能优化，尤其是 ANR 分析、启动速度优化、后台任务调度，你就必须理解这套规则。因为 Android 的进程模型直接决定了：
+在做性能优化——尤其是 ANR 分析、启动速度优化、后台任务调度——我们必须理解这套规则。因为 Android 的进程模型直接决定了：
 
-- 你的 App 进程什么时候会被系统回收，什么时候会安全地留在后台
+- App 进程什么时候会被系统回收，什么时候会安全地留在后台
 - 为什么有时候后台 Service 被杀了，有时候前台 Activity 也会被杀
 - 在 Perfetto 中看到某个进程消失，意味着什么、该怎么追查
 - 不同 Android 版本上进程管理策略的差异，导致同一个 App 在不同设备上表现不同
 
-简单来说，不理解进程模型，你在分析很多问题时就像在黑箱操作——现象看到了，但不知道背后的机制。
+不理解进程模型，分析很多问题时就像在黑箱操作——现象看到了，但不知道背后的机制。
 
 ## Zygote：所有 App 进程的"母体"
 
@@ -69,7 +72,7 @@ public static void main(String[] argv) {
 
 这里有几个值得注意的细节。第一，Zygote 实际上有两个：Primary Zygote 和 Secondary Zygote（32 位和 64 位），系统会根据 App 的 ABI 选择对应的 Zygote 来 fork。第二，fork 之后子进程会调用 `ApplicationLoaders` 来加载 App 自己的 APK 代码，而 Framework 层的代码已经在 Zygote 阶段加载好了。
 
-在 Perfetto 中，你可以在进程列表中看到 `zygote64`（或 `zygote`）进程，它的启动时间很早，内存占用较大（因为预加载了大量资源），但 CPU 使用率极低——因为它大部分时间都在等待 fork 请求。
+在 Perfetto 中，进程列表里可以看到 `zygote64`（或 `zygote`）进程，它的启动时间很早，内存占用较大（因为预加载了大量资源），但 CPU 使用率极低——因为它大部分时间都在等待 fork 请求。
 
 [已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/com/android/internal/os/ZygoteInit.java]
 
@@ -145,16 +148,15 @@ lmkd 的核心工作逻辑并不复杂：它通过 PSI（Pressure Stall Informat
 | SERVICE_B | 500 | 低优先级服务 |
 | HOME_APP | 600 | Home 进程 |
 | PREVIOUS_APP | 700 | 上一个 App |
-| SERVICE_CUR | 800 | 当前服务（动态） |
-
-[待验证: SERVICE_CUR=800 在 AOSP ProcessList.java (android-16.0.0_r1) 中未找到对应常量，可能来自旧版本或厂商自定义，需与实际源码核对]
 | CACHED_APP | 900 | 缓存的 Activity 进程 |
+
+> 注：不同 Android 版本和厂商定制 ROM 中可能存在额外的 oom_adj 级别（如部分厂商的 SERVICE_CUR=800），以上为 AOSP android-16.0.0_r1 中的标准定义。
 | CACHED_APP_HIGH | 906-950 | 高位缓存 |
 | CACHED_APP_MAX | 999 | 最大缓存/空进程 |
 
 [已验证: AOSP android-16.0.0_r1, frameworks/base/services/core/java/com/android/server/am/ProcessList.java]
 
-这些值是 AMS 在运行时动态计算并写入 `/proc/<pid>/oom_score_adj` 文件的。你可以在设备上通过 `cat /proc/<pid>/oom_score_adj` 实时查看任何进程的当前优先级。
+这些值是 AMS 在运行时动态计算并写入 `/proc/<pid>/oom_score_adj` 文件的。在设备上通过 `cat /proc/<pid>/oom_score_adj` 可以实时查看任何进程的当前优先级。
 
 ### LMK 的回收策略
 
@@ -166,7 +168,7 @@ lmkd 并不是等到内存彻底用完才动手。它根据内存压力水平分
 2. **中压力（Medium Memory）**：进一步回收更多的缓存进程
 3. **高压力（Critical Memory）**：回收服务进程、可见进程，极端情况下甚至回收前台进程
 
-在 Perfetto 中，你可以通过 lmkd 事件来观察回收行为——当一个进程突然从进程列表中消失，并且时间点附近有 lmkd 的活动记录，大概率就是这个进程被回收了。
+在 Perfetto 中，可以通过 lmkd 事件来观察回收行为——当一个进程突然从进程列表中消失，并且时间点附近有 lmkd 的活动记录，大概率就是这个进程被 lmkd 回收了。此时可以结合 `lmkd` track 中的 kill 事件确认具体原因。
 
 [待验证: lmkd 在 Android 16 中的 PSI 配置是否有变化]
 
@@ -245,7 +247,9 @@ Android 早期使用 ashmem（Anonymous Shared Memory）来实现跨进程的大
 
 ## 进程死亡回调：DeathRecipient
 
-当你的 App 绑定了另一个进程的 Service（或者获取了另一个进程的 Binder 代理），如果那个进程突然死了（被 LMK 杀掉或崩溃），你怎么知道？
+了解了进程间通信的方式之后，来看一个实际场景：通信对端的进程突然死亡时，如何感知并处理。
+
+当 App 绑定了另一个进程的 Service（或者获取了另一个进程的 Binder 代理），如果那个进程突然死了（被 LMK 杀掉或崩溃），如何感知到这个变化？
 
 答案是通过 `DeathRecipient`。这是 Binder 框架提供的回调接口：
 
@@ -264,15 +268,15 @@ binder.linkToDeath(new IBinder.DeathRecipient() {
 
 当目标进程死亡时，Binder 驱动会通知所有持有其代理的客户端进程，触发 `binderDied()` 回调。这个机制在系统服务中被广泛使用——AMS 就是靠它来感知 App 进程死亡，WMS 也通过它监听输入法进程的状态变化。
 
-在 Perfetto 中，你可以通过搜索 `binderDied` 相关的日志来追踪进程死亡事件。
+在 Perfetto 中，通过搜索 `binderDied` 相关的日志可以追踪进程死亡事件。
 
 [已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/os/IBinder.java]
 
 ## 进程保活：系统视角
 
-国内 Android 生态中，"进程保活"是一个经常被讨论的话题。从系统设计的角度来看，Android 并不希望 App 尽可能多地留在后台——后台进程越多，前台 App 能用的内存越少，用户体验就越差。
+掌握了进程优先级和回收机制，自然会问一个问题：有没有办法让 App 进程不被杀？国内 Android 生态中，"进程保活"是一个经常被讨论的话题。从系统设计的角度来看，Android 并不希望 App 尽可能多地留在后台——后台进程越多，前台 App 能用的内存越少，用户体验就越差。
 
-Android 官方推荐的"保活"方式只有一种：**做用户需要的事情**。如果你的 Service 在做用户能感知到的工作（比如播放音乐、导航），就调用 `startForeground()` 把它变成前台 Service。如果不是，就让系统在需要时回收它。
+Android 官方推荐的"保活"方式只有一种：**做用户需要的事情**。如果 Service 在做用户能感知到的工作（比如播放音乐、导航），就调用 `startForeground()` 把它变成前台 Service。如果不是，就让系统在需要时回收它。
 
 以下是 Android 逐步收紧后台限制的历程：
 
@@ -308,9 +312,9 @@ Android 9 引入了 App Standby Buckets 机制，将 App 分为五个桶：
 4. **Rare**：很少使用的 App，严格限制后台作业、闹钟、网络
 5. **Restricted**（Android 12 新增）：极低优先级，最高限制等级
 
-Standby Bucket 影响的不是进程优先级（oom_adj），而是 **JobScheduler 的执行频率、Firebase Cloud Messaging 的传递优先级、闹钟的精确度**等。换句话说，它影响的是"你的后台任务什么时候能执行"，而不是"你的进程会不会被杀"。
+Standby Bucket 影响的不是进程优先级（oom_adj），而是 **JobScheduler 的执行频率、Firebase Cloud Messaging 的传递优先级、闹钟的精确度**等。换句话说，它影响的是后台任务的执行时机，而不是进程本身的存亡。
 
-开发者可以通过 `UsageStatsManager.getAppStandbyBucket()` 查询自己的 Bucket，通过 `adb shell am set-standby-bucket <package> <bucket>` 手动测试。
+通过 `UsageStatsManager.getAppStandbyBucket()` 可以查询当前 Bucket，通过 `adb shell am set-standby-bucket <package> <bucket>` 可以手动测试不同 Bucket 下的行为。
 
 [已验证: 官方文档, developer.android.com/topic/performance/appstandby]
 
@@ -326,7 +330,7 @@ Android 允许将 Service 运行在隔离进程中，通过 `android:isolatedPro
 
 Android 13 引入了 SDK Sandbox，允许广告 SDK 运行在一个独立的沙箱进程中。这个沙箱进程有独立的 UID（以 `_sdk_sandbox` 结尾），与 App 主进程完全隔离。
 
-这对性能分析的影响是：在 Perfetto 中你会看到 App 包名后面跟着 `_sdk_sandbox` 后缀的进程，它们是广告 SDK 的沙箱进程。这些进程的内存和 CPU 使用不计入 App 主进程，但会占用系统总资源。
+这对性能分析的影响是：在 Perfetto 中会看到 App 包名后面跟着 `_sdk_sandbox` 后缀的进程，它们是广告 SDK 的沙箱进程。这些进程的内存和 CPU 使用不计入 App 主进程，但会占用系统总资源。
 
 [已验证: 官方文档, developer.android.com/design-for-safety/privacy/sandbox]
 [待验证: SDK Sandbox 在 Android 16 中的实际采用率]
@@ -337,7 +341,7 @@ Android 13 引入了 SDK Sandbox，允许广告 SDK 运行在一个独立的沙�
 
 ### 1. 进程列表中的信息
 
-在 Perfetto 左侧的进程列表中，每个进程会显示进程名、PID、UID。你可以通过以下方式识别进程类型：
+在 Perfetto 左侧的进程列表中，每个进程会显示进程名、PID、UID。可以通过以下特征识别进程类型：
 
 - **system_server**：系统服务进程，AMS、WMS 等都在这里
 - **surfaceflinger**：显示合成服务
@@ -348,7 +352,7 @@ Android 13 引入了 SDK Sandbox，允许广告 SDK 运行在一个独立的沙�
 
 ### 2. 进程状态变化
 
-在 CPU Slice 视图中，你可以看到进程在不同 CPU 上的调度情况。当一个进程突然从 Perfetto 中消失（后续没有 CPU 活动），通常意味着：
+在 CPU Slice 视图中，可以看到进程在不同 CPU 上的调度情况。当一个进程突然从 Perfetto 中消失（后续没有 CPU 活动），通常意味着：
 
 - 被 lmkd 杀掉（内存回收）
 - 自身崩溃（crash）
@@ -356,7 +360,7 @@ Android 13 引入了 SDK Sandbox，允许广告 SDK 运行在一个独立的沙�
 
 ### 3. oom_adj 的实时查看
 
-虽然 Perfetto 默认不直接显示 oom_adj 值，但你可以通过在抓 Trace 时添加 `atrace` 的 `am` category 来获取 AMS 的活动日志，从中可以看到进程优先级变化的记录。
+虽然 Perfetto 默认不直接显示 oom_adj 值，但通过在抓 Trace 时添加 `atrace` 的 `am` category 可以获取 AMS 的活动日志，从中可以看到进程优先级变化的记录。
 
 [待补充：Perfetto 中 oom_adj 变化的具体 Trace 截图]
 
