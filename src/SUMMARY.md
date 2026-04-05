@@ -24,6 +24,7 @@
   - [1.10 ContentProvider 性能与优化](part1-fundamentals/ch01-architecture/10-content-provider.md)
   - [1.11 Zygote 机制与启动性能优化](part1-fundamentals/ch01-architecture/11-zygote-startup.md)
   - [1.12 AutoFDO 反馈导向编译优化](part1-fundamentals/ch01-architecture/12-autofdo-optimization.md)
+  - [1.13 MessageQueue 机制与 DeliQueue 无锁优化](part1-fundamentals/ch01-architecture/13-messagequeue-deliqueue.md)
 
 
 - [第 2 章：渲染系统](part1-fundamentals/ch02-rendering/README.md)
@@ -43,6 +44,7 @@
   - [2.14 图形 API 演进与选择策略](part1-fundamentals/ch02-rendering/14-graphics-api-evolution.md)
   - [2.15 DMA-BUF、Gralloc 与跨进程图形内存共享](part1-fundamentals/ch02-rendering/15-dmabuf-gralloc.md)
   - [2.16 Sync Fence 框架与帧同步机制](part1-fundamentals/ch02-rendering/16-sync-fence.md)
+  - [2.17 Frame Pacing Library 与帧节奏控制](part1-fundamentals/ch02-rendering/17-frame-pacing.md)
 
 - [第 3 章：输入系统](part1-fundamentals/ch03-input/README.md)
   - [3.1 Input 事件分发全流程](part1-fundamentals/ch03-input/01-input-dispatch.md)
@@ -96,6 +98,7 @@
   - [8.4 其他响应速度场景](part2-performance/ch08-responsiveness/04-other-scenarios.md)
   - [8.5 案例集](part2-performance/ch08-responsiveness/05-case-studies.md)
   - [8.6 Kotlin Coroutine 性能实践](part2-performance/ch08-responsiveness/06-coroutine-performance.md)
+  - [8.7 Baseline Profiles 与编译优化实践](part2-performance/ch08-responsiveness/07-baseline-profiles.md)
 
 - [第 9 章：ANR](part2-performance/ch09-anr/README.md)
   - [9.1 ANR 设计思想](part2-performance/ch09-anr/01-anr-design.md)
