@@ -4,14 +4,14 @@
   "metrics": {
     "total": 118,
     "draft": 11,
-    "ready-for-review": 51,
+    "ready-for-review": 50,
     "reviewed": 4,
-    "finalized": 44,
+    "finalized": 45,
     "staging_drafts": 0,
-    "last_updated": "2026-04-06T00:05:00+08:00",
+    "last_updated": "2026-04-06T00:20:00+08:00",
     "processing": 0,
     "ready-to-publish": 6,
-    "last_reviewed": "2026-04-05"
+    "last_reviewed": "2026-04-06"
   },
   "reviewed_sections": {
     "8.1": {
@@ -453,6 +453,17 @@
         "verification": 4,
         "metadata": 5
       }
+    },
+    "8.3": {
+      "reviewed_date": "2026-04-06",
+      "reviewed_by": "openclaw-task6",
+      "review_status": "finalized",
+      "fixes_applied": [
+        "10处'你'→'我们'替换（writing-guide §3.5合规）",
+        "3处[来源:]→[已验证: 来源见 ...]标注格式标准化",
+        "frontmatter补全：section/drafted_by/reviewed_date/reviewed_by",
+        "status: ready-for-review → finalized"
+      ]
     }
   },
   "review_stats": {
@@ -2564,6 +2575,14 @@
       "drafted_date": "2026-04-05",
       "drafted_by": "openclaw-task2a",
       "verification_level": "L2"
+    },
+    {
+      "date": "2026-04-06",
+      "section": "8.3",
+      "title": "启动优化策略",
+      "action": "reviewed-finalized",
+      "review_by": "openclaw-task6",
+      "fixes": 13
     }
   ],
   "sections": {
