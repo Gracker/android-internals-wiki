@@ -1914,6 +1914,71 @@
       "content_preview": "# 捕获设备上的系统跟踪记录  |  App quality  |  Android Developer...    [Read in Cubox](https://cubox.pro/web/car",
       "scan_time": "2026-04-05T14:49:58.787438",
       "quality": "medium"
+    },
+    {
+      "path": "Cubox/推荐一本关于linux内核内存管理的书-2025-03-27.md",
+      "title": "推荐一本关于linux内核内存管理的书",
+      "score": 11,
+      "quality": "medium",
+      "relevance": 4,
+      "depth": 0,
+      "date": 5,
+      "verify": 2,
+      "chapters": [
+        "ch07-内存"
+      ]
+    },
+    {
+      "path": "Cubox/插件化、热补丁中绕不开的Proguard的坑 - 美团技术团队-2022-01-14.md",
+      "title": "插件化、热补丁中绕不开的Proguard的坑 - 美团技术团队",
+      "score": 10,
+      "quality": "medium",
+      "relevance": 4,
+      "depth": 0,
+      "date": 4,
+      "verify": 2,
+      "chapters": [
+        "ch10-包体积"
+      ]
+    },
+    {
+      "path": "Cubox/插件化、热补丁中绕不开的Proguard的坑 - 美团技术团队-2022-01-14.md",
+      "title": "插件化、热补丁中绕不开的Proguard的坑 - 美团技术团队",
+      "score": 10,
+      "quality": "medium",
+      "relevance": 4,
+      "depth": 0,
+      "date": 4,
+      "verify": 2,
+      "chapters": [
+        "ch10-包体积"
+      ]
+    },
+    {
+      "path": "Cubox/推荐一本关于linux内核内存管理的书-2025-03-27.md",
+      "title": "推荐一本关于linux内核内存管理的书",
+      "score": 11,
+      "quality": "medium",
+      "relevance": 4,
+      "depth": 0,
+      "date": 5,
+      "verify": 2,
+      "chapters": [
+        "ch07-内存"
+      ]
+    },
+    {
+      "path": "Cubox/插件化、热补丁中绕不开的Proguard的坑 - 美团技术团队-2022-01-14.md",
+      "title": "插件化、热补丁中绕不开的Proguard的坑 - 美团技术团队",
+      "score": 10,
+      "quality": "medium",
+      "relevance": 4,
+      "depth": 0,
+      "date": 4,
+      "verify": 2,
+      "chapters": [
+        "ch10-包体积"
+      ]
     }
   ]
 }

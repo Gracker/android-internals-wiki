@@ -63,9 +63,9 @@ Android 的 Fence 机制建立在 Linux 内核的 `dma-buf fence` 框架之上�
 sync_timeline (GPU timeline):  0 ---- 1 ---- 2 ---- 3 ---- 4 ---->
                                 ^                    ^
                            sync_pt A            sync_pt B
-                           (frame N done)       (frame N+1 done)
+                           (frame N 完成)       (frame N+1 完成)
 
-sync_fence = {sync_pt B}  -> signal when GPU advances to value 4
+sync_fence = {sync_pt B}  → 当 GPU 推进到值 4 时 signal
 ```
 
 ### sw_sync：软件模拟的 timeline
@@ -92,16 +92,21 @@ sync_fence = {sync_pt B}  -> signal when GPU advances to value 4
 
 内核提供了底层的 fence 机制，AOSP 在此之上做了 C++ 封装：
 
-```cpp
+```
 // frameworks/native/libs/ui/Fence.cpp
 // frameworks/native/include/ui/Fence.h
 class Fence {
-    int mFenceFd;  // 核心：包装一个 fence fd
+    // 核心就是包装一个 fence fd
+    int mFenceFd;
     
-    status_t wait(int timeoutMs);          // 等待 signal，支持超时
-    static sp<Fence> merge(               // 合并两个 fence
-        const sp<Fence>& f1, const sp<Fence>& f2);
-    nsecs_t getSignalTime() const;         // 获取 signal 时间戳
+    // 等待 fence signal，支持超时
+    status_t wait(int timeoutMs);
+    
+    // 合并两个 fence
+    static sp<Fence> merge(const sp<Fence>& f1, const sp<Fence>& f2);
+    
+    // 获取 signal 时间戳
+    nsecs_t getSignalTime() const;
 };
 ```
 
@@ -123,18 +128,19 @@ class Fence {
 
 在代码层面，`BufferQueueProducer::queueBuffer()` 会把 fence fd 传给 BufferQueue 的消费者侧。SurfaceFlinger 在 `Layer::onFrameAvailable()` 中收到这个 fence，在合成前调用 `fence->wait()` 或把它传给 HWC 让硬件等。
 
-```cpp
+```
 // 简化的 SurfaceFlinger 合成流程
 void SurfaceFlinger::compose() {
     for (auto& layer : layers) {
-        auto buffer = layer->acquireBuffer();  // buffer + acquire fence
+        // 从 BufferQueue 拿 buffer + acquire fence
+        auto buffer = layer->acquireBuffer();
         
         if (useHWC) {
             // 传给 HWC，让硬件等 fence
             hwc->setLayerBuffer(layer, buffer, buffer->acquireFence);
         } else {
             // GPU 合成，需要自己等
-            buffer->acquireFence->wait(100);  // 最多等 100ms
+            buffer->acquireFence->wait(100); // 最多等 100ms
             // 开始 GPU 合成...
         }
     }
@@ -145,7 +151,7 @@ void SurfaceFlinger::compose() {
 
 **产生者**：HWC / SurfaceFlinger（GPU 合成时）
 
-**消费者**：BufferQueue -> App
+**消费者**：BufferQueue → App
 
 SurfaceFlinger 合成完一帧后，会得到一个 release fence（从 HWC 的 `getReleaseFences()` 或 GPU 合成完成时产生）。这个 fence 告诉 App：「之前你用来渲染的那个 buffer，HWC/GPU 不再使用了」。App 在下次 `dequeueBuffer()` 时如果拿到这个 buffer，需要等 release fence signal 之后才能写入。
 
@@ -165,29 +171,29 @@ Retire fence（也叫 present fence）在 `presentDisplay()` 调用后由 HWC �
 
 在 Perfetto 中，SurfaceFlinger 的 `onFramePresented()` 回调就是等 retire fence signal 之后触发的。
 
-[图：三种 fence 在 BufferQueue 状态流转中的位置——FREE->DEQUEUED（App dequeue）->QUEUED（App queue + acquire fence）->ACQUIRED（SF acquire）->FREE（SF release + release fence）。标注每种 fence 对应的状态转换]
+[图：三种 fence 在 BufferQueue 状态流转中的位置——FREE→DEQUEUED（App dequeue）→QUEUED（App queue + acquire fence）→ACQUIRED（SF acquire）→FREE（SF release + release fence）。标注每种 fence 对应的状态转换]
 
 ## Fence 与掉帧：性能分析的关键
 
 Fence 本身不是性能问题，但 fence 等待时间的异常增长是掉帧的重要信号。我们在分析 Perfetto Trace 时，Fence wait 是定位渲染管线瓶颈的关键线索。
 
-### Acquire fence 延迟 -> App 渲染瓶颈
+### Acquire fence 延迟 → App 渲染瓶颈
 
 如果 acquire fence 迟迟不 signal，说明 GPU 渲染慢。这会导致：
 
-- SurfaceFlinger 在合成时等不到 buffer -> `latchBuffer` 超时 -> 使用旧 buffer 合成 -> 用户看到重复帧
-- 下一帧 App 调用 `dequeueBuffer()` 时 buffer 全被占着 -> 阻塞等 release fence -> App 主线程被卡
+- SurfaceFlinger 在合成时等不到 buffer → `latchBuffer` 超时 → 使用旧 buffer 合成 → 用户看到重复帧
+- 下一帧 App 调用 `dequeueBuffer()` 时 buffer 全被占着 → 阻塞等 release fence → App 主线程被卡
 
 在 Perfetto 中的表现：
 - SurfaceFlinger 的 `latchBuffer` 切片中出现大段 `fence wait`
-- App 的 `dequeueBuffer` 切片中出现耗时异常
+- App 的 `dequeueBuffer` 切片中出现 `dequeueBuffer` 耗时异常
 
-### Release fence 延迟 -> SurfaceFlinger/HWC 瓶颈
+### Release fence 延迟 → SurfaceFlinger/HWC 瓶颈
 
 如果 release fence 迟迟不 signal，说明 HWC 合成慢或 Display Controller 处理不过来。这会导致：
 
-- BufferQueue 中可用的 buffer 减少 -> 三缓冲退化为双缓冲甚至单缓冲
-- App `dequeueBuffer` 阻塞等待 -> 帧渲染被推迟
+- BufferQueue 中可用的 buffer 减少 → 三缓冲退化为双缓冲甚至单缓冲
+- App `dequeueBuffer` 阻塞等待 → 帧渲染被推迟
 
 ### Fence merge 的放大效应
 
@@ -199,6 +205,7 @@ Fence merge 的代码路径：
 // frameworks/native/services/surfaceflinger/
 // SurfaceFlinger::computeWorkingSet()
 for (auto& layer : layers) {
+    // 合并所有 layer 的 acquire fence
     auto fence = layer->acquireFence;
     if (readyFence) {
         readyFence = Fence::merge(readyFence, fence);
@@ -206,6 +213,7 @@ for (auto& layer : layers) {
         readyFence = fence;
     }
 }
+// 等待合并后的 fence
 readyFence->wait(kAcquireTimeoutMs);
 ```
 

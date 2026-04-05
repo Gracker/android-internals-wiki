@@ -114,7 +114,9 @@
     ],
     "added_by": "task2a-knowledge-gap",
     "added_at": "2026-04-05T19:10:00+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-06T04:10:00+08:00",
+    "completed_by": "openclaw-task2a"
   },
   {
     "section": "2.17",
@@ -180,5 +182,798 @@
     "priority": 80,
     "reason": "知识缺口挖掘：2 篇高质量素材未映射，Camera 是未被覆盖的主要 Android 子系统，14/20",
     "created_date": "2026-04-05"
+  },
+  {
+    "section": "1.14",
+    "section_title": "锁竞争与同步性能分析",
+    "priority": 85,
+    "reason": "知识缺口挖掘：锁竞争是 jank/ANR/启动延迟的核心根因之一，DeliQueue(1.13)仅覆盖 MQ 特例，general lock contention analysis 是全书缺失的基础分析维度",
+    "material_paths": [
+      "intake/research-feeds/2026-04-05-19-android17-deliqueue-lockfree-messagequeue.md",
+      "intake/daily-info/2026-04-05.md (Mutex/Futex 优先级继承条目)"
+    ],
+    "added_by": "task2a-knowledge-gap",
+    "added_at": "2026-04-06T01:02:00+08:00",
+    "gap_score": "17/20",
+    "status": "pending"
+  },
+  {
+    "section": "FRESHNESS-part1-fundamentals-ch02-rendering-03-vsync",
+    "section_title": "时效性更新 - 03-vsync.md",
+    "priority": 95,
+    "reason": "[时效性巡检] Content may need Android 17 updates (Beta 3 stable, APIs locked)",
+    "material_paths": [
+      "metadata/freshness-check-2026-04-06.json"
+    ],
+    "freshness_details": {
+      "issue_type": "missing_android17_coverage",
+      "location": "metadata",
+      "file": "part1-fundamentals/ch02-rendering/03-vsync.md",
+      "file_name": "03-vsync.md"
+    },
+    "added_by": "task3-freshness-check",
+    "added_at": "2026-04-06T02:03:42.052283",
+    "status": "pending",
+    "freshness_check_date": "2026-04-06"
+  },
+  {
+    "section": "FRESHNESS-part1-fundamentals-ch02-rendering-04-choreographer",
+    "section_title": "时效性更新 - 04-choreographer.md",
+    "priority": 95,
+    "reason": "[时效性巡检] Content may need Android 17 updates (Beta 3 stable, APIs locked)",
+    "material_paths": [
+      "metadata/freshness-check-2026-04-06.json"
+    ],
+    "freshness_details": {
+      "issue_type": "missing_android17_coverage",
+      "location": "metadata",
+      "file": "part1-fundamentals/ch02-rendering/04-choreographer.md",
+      "file_name": "04-choreographer.md"
+    },
+    "added_by": "task3-freshness-check",
+    "added_at": "2026-04-06T02:03:42.052300",
+    "status": "pending",
+    "freshness_check_date": "2026-04-06"
+  },
+  {
+    "section": "FRESHNESS-part1-fundamentals-ch02-rendering-07-hardware-layer",
+    "section_title": "时效性更新 - 07-hardware-layer.md",
+    "priority": 95,
+    "reason": "[时效性巡检] Content may need Android 17 updates (Beta 3 stable, APIs locked)",
+    "material_paths": [
+      "metadata/freshness-check-2026-04-06.json"
+    ],
+    "freshness_details": {
+      "issue_type": "missing_android17_coverage",
+      "location": "metadata",
+      "file": "part1-fundamentals/ch02-rendering/07-hardware-layer.md",
+      "file_name": "07-hardware-layer.md"
+    },
+    "added_by": "task3-freshness-check",
+    "added_at": "2026-04-06T02:03:42.052307",
+    "status": "pending",
+    "freshness_check_date": "2026-04-06"
+  },
+  {
+    "section": "FRESHNESS-part1-fundamentals-ch02-rendering-11-flutter-rendering",
+    "section_title": "时效性更新 - 11-flutter-rendering.md",
+    "priority": 95,
+    "reason": "[时效性巡检] Content may need Android 17 updates (Beta 3 stable, APIs locked)",
+    "material_paths": [
+      "metadata/freshness-check-2026-04-06.json"
+    ],
+    "freshness_details": {
+      "issue_type": "missing_android17_coverage",
+      "location": "metadata",
+      "file": "part1-fundamentals/ch02-rendering/11-flutter-rendering.md",
+      "file_name": "11-flutter-rendering.md"
+    },
+    "added_by": "task3-freshness-check",
+    "added_at": "2026-04-06T02:03:42.052313",
+    "status": "pending",
+    "freshness_check_date": "2026-04-06"
+  },
+  {
+    "section": "FRESHNESS-part1-fundamentals-ch02-rendering-05-main-render-thread",
+    "section_title": "时效性更新 - 05-main-render-thread.md",
+    "priority": 95,
+    "reason": "[时效性巡检] Content may need Android 17 updates (Beta 3 stable, APIs locked)",
+    "material_paths": [
+      "metadata/freshness-check-2026-04-06.json"
+    ],
+    "freshness_details": {
+      "issue_type": "missing_android17_coverage",
+      "location": "metadata",
+      "file": "part1-fundamentals/ch02-rendering/05-main-render-thread.md",
+      "file_name": "05-main-render-thread.md"
+    },
+    "added_by": "task3-freshness-check",
+    "added_at": "2026-04-06T02:03:42.052318",
+    "status": "pending",
+    "freshness_check_date": "2026-04-06"
+  },
+  {
+    "section": "FRESHNESS-part1-fundamentals-ch02-rendering-10-gpu-rendering",
+    "section_title": "时效性更新 - 10-gpu-rendering.md",
+    "priority": 95,
+    "reason": "[时效性巡检] Content may need Android 17 updates (Beta 3 stable, APIs locked)",
+    "material_paths": [
+      "metadata/freshness-check-2026-04-06.json"
+    ],
+    "freshness_details": {
+      "issue_type": "missing_android17_coverage",
+      "location": "metadata",
+      "file": "part1-fundamentals/ch02-rendering/10-gpu-rendering.md",
+      "file_name": "10-gpu-rendering.md"
+    },
+    "added_by": "task3-freshness-check",
+    "added_at": "2026-04-06T02:03:42.052323",
+    "status": "pending",
+    "freshness_check_date": "2026-04-06"
+  },
+  {
+    "section": "FRESHNESS-part1-fundamentals-ch02-rendering-09-rendering-evolution",
+    "section_title": "时效性更新 - 09-rendering-evolution.md",
+    "priority": 95,
+    "reason": "[时效性巡检] Content may need Android 17 updates (Beta 3 stable, APIs locked)",
+    "material_paths": [
+      "metadata/freshness-check-2026-04-06.json"
+    ],
+    "freshness_details": {
+      "issue_type": "missing_android17_coverage",
+      "location": "metadata",
+      "file": "part1-fundamentals/ch02-rendering/09-rendering-evolution.md",
+      "file_name": "09-rendering-evolution.md"
+    },
+    "added_by": "task3-freshness-check",
+    "added_at": "2026-04-06T02:03:42.052328",
+    "status": "pending",
+    "freshness_check_date": "2026-04-06"
+  },
+  {
+    "section": "FRESHNESS-part1-fundamentals-ch02-rendering-01-rendering-overview",
+    "section_title": "时效性更新 - 01-rendering-overview.md",
+    "priority": 95,
+    "reason": "[时效性巡检] Content may need Android 17 updates (Beta 3 stable, APIs locked)",
+    "material_paths": [
+      "metadata/freshness-check-2026-04-06.json"
+    ],
+    "freshness_details": {
+      "issue_type": "missing_android17_coverage",
+      "location": "metadata",
+      "file": "part1-fundamentals/ch02-rendering/01-rendering-overview.md",
+      "file_name": "01-rendering-overview.md"
+    },
+    "added_by": "task3-freshness-check",
+    "added_at": "2026-04-06T02:03:42.052333",
+    "status": "pending",
+    "freshness_check_date": "2026-04-06"
+  },
+  {
+    "section": "FRESHNESS-part1-fundamentals-ch02-rendering-06-surfaceflinger",
+    "section_title": "时效性更新 - 06-surfaceflinger.md",
+    "priority": 95,
+    "reason": "[时效性巡检] Content may need Android 17 updates (Beta 3 stable, APIs locked)",
+    "material_paths": [
+      "metadata/freshness-check-2026-04-06.json"
+    ],
+    "freshness_details": {
+      "issue_type": "missing_android17_coverage",
+      "location": "metadata",
+      "file": "part1-fundamentals/ch02-rendering/06-surfaceflinger.md",
+      "file_name": "06-surfaceflinger.md"
+    },
+    "added_by": "task3-freshness-check",
+    "added_at": "2026-04-06T02:03:42.052338",
+    "status": "pending",
+    "freshness_check_date": "2026-04-06"
+  },
+  {
+    "section": "FRESHNESS-part1-fundamentals-ch02-rendering-08-overdraw",
+    "section_title": "时效性更新 - 08-overdraw.md",
+    "priority": 95,
+    "reason": "[时效性巡检] Content may need Android 17 updates (Beta 3 stable, APIs locked)",
+    "material_paths": [
+      "metadata/freshness-check-2026-04-06.json"
+    ],
+    "freshness_details": {
+      "issue_type": "missing_android17_coverage",
+      "location": "metadata",
+      "file": "part1-fundamentals/ch02-rendering/08-overdraw.md",
+      "file_name": "08-overdraw.md"
+    },
+    "added_by": "task3-freshness-check",
+    "added_at": "2026-04-06T02:03:42.052344",
+    "status": "pending",
+    "freshness_check_date": "2026-04-06"
+  },
+  {
+    "section": "FRESHNESS-part1-fundamentals-ch02-rendering-02-framerate",
+    "section_title": "时效性更新 - 02-framerate.md",
+    "priority": 95,
+    "reason": "[时效性巡检] Content may need Android 17 updates (Beta 3 stable, APIs locked)",
+    "material_paths": [
+      "metadata/freshness-check-2026-04-06.json"
+    ],
+    "freshness_details": {
+      "issue_type": "missing_android17_coverage",
+      "location": "metadata",
+      "file": "part1-fundamentals/ch02-rendering/02-framerate.md",
+      "file_name": "02-framerate.md"
+    },
+    "added_by": "task3-freshness-check",
+    "added_at": "2026-04-06T02:03:42.052349",
+    "status": "pending",
+    "freshness_check_date": "2026-04-06"
+  },
+  {
+    "section": "FRESHNESS-part1-fundamentals-ch01-architecture-05-threading-model",
+    "section_title": "时效性更新 - 05-threading-model.md",
+    "priority": 95,
+    "reason": "[时效性巡检] Content may need Android 17 updates (Beta 3 stable, APIs locked)",
+    "material_paths": [
+      "metadata/freshness-check-2026-04-06.json"
+    ],
+    "freshness_details": {
+      "issue_type": "missing_android17_coverage",
+      "location": "metadata",
+      "file": "part1-fundamentals/ch01-architecture/05-threading-model.md",
+      "file_name": "05-threading-model.md"
+    },
+    "added_by": "task3-freshness-check",
+    "added_at": "2026-04-06T02:03:42.052354",
+    "status": "pending",
+    "freshness_check_date": "2026-04-06"
+  },
+  {
+    "section": "FRESHNESS-part1-fundamentals-ch03-input-02-touch-performance",
+    "section_title": "时效性更新 - 02-touch-performance.md",
+    "priority": 95,
+    "reason": "[时效性巡检] Content may need Android 17 updates (Beta 3 stable, APIs locked)",
+    "material_paths": [
+      "metadata/freshness-check-2026-04-06.json"
+    ],
+    "freshness_details": {
+      "issue_type": "missing_android17_coverage",
+      "location": "metadata",
+      "file": "part1-fundamentals/ch03-input/02-touch-performance.md",
+      "file_name": "02-touch-performance.md"
+    },
+    "added_by": "task3-freshness-check",
+    "added_at": "2026-04-06T02:03:42.052360",
+    "status": "pending",
+    "freshness_check_date": "2026-04-06"
+  },
+  {
+    "section": "FRESHNESS-part2-performance-ch12-apk-network-02-network-performance",
+    "section_title": "时效性更新 - 02-network-performance.md",
+    "priority": 95,
+    "reason": "[时效性巡检] Content may need Android 17 updates (Beta 3 stable, APIs locked)",
+    "material_paths": [
+      "metadata/freshness-check-2026-04-06.json"
+    ],
+    "freshness_details": {
+      "issue_type": "missing_android17_coverage",
+      "location": "metadata",
+      "file": "part2-performance/ch12-apk-network/02-network-performance.md",
+      "file_name": "02-network-performance.md"
+    },
+    "added_by": "task3-freshness-check",
+    "added_at": "2026-04-06T02:03:42.052365",
+    "status": "pending",
+    "freshness_check_date": "2026-04-06"
+  },
+  {
+    "section": "FRESHNESS-part2-performance-ch12-apk-network-01-apk-size",
+    "section_title": "时效性更新 - 01-apk-size.md",
+    "priority": 95,
+    "reason": "[时效性巡检] Content may need Android 17 updates (Beta 3 stable, APIs locked)",
+    "material_paths": [
+      "metadata/freshness-check-2026-04-06.json"
+    ],
+    "freshness_details": {
+      "issue_type": "missing_android17_coverage",
+      "location": "metadata",
+      "file": "part2-performance/ch12-apk-network/01-apk-size.md",
+      "file_name": "01-apk-size.md"
+    },
+    "added_by": "task3-freshness-check",
+    "added_at": "2026-04-06T02:03:42.052370",
+    "status": "pending",
+    "freshness_check_date": "2026-04-06"
+  },
+  {
+    "section": "FRESHNESS-part2-performance-ch11-power-01-power-model",
+    "section_title": "时效性更新 - 01-power-model.md",
+    "priority": 95,
+    "reason": "[时效性巡检] Content may need Android 17 updates (Beta 3 stable, APIs locked)",
+    "material_paths": [
+      "metadata/freshness-check-2026-04-06.json"
+    ],
+    "freshness_details": {
+      "issue_type": "missing_android17_coverage",
+      "location": "metadata",
+      "file": "part2-performance/ch11-power/01-power-model.md",
+      "file_name": "01-power-model.md"
+    },
+    "added_by": "task3-freshness-check",
+    "added_at": "2026-04-06T02:03:42.052376",
+    "status": "pending",
+    "freshness_check_date": "2026-04-06"
+  },
+  {
+    "section": "FRESHNESS-part2-performance-ch11-power-02-app-power-optimization",
+    "section_title": "时效性更新 - 02-app-power-optimization.md",
+    "priority": 95,
+    "reason": "[时效性巡检] Content may need Android 17 updates (Beta 3 stable, APIs locked)",
+    "material_paths": [
+      "metadata/freshness-check-2026-04-06.json"
+    ],
+    "freshness_details": {
+      "issue_type": "missing_android17_coverage",
+      "location": "metadata",
+      "file": "part2-performance/ch11-power/02-app-power-optimization.md",
+      "file_name": "02-app-power-optimization.md"
+    },
+    "added_by": "task3-freshness-check",
+    "added_at": "2026-04-06T02:03:42.052382",
+    "status": "pending",
+    "freshness_check_date": "2026-04-06"
+  },
+  {
+    "section": "FRESHNESS-part2-performance-ch11-power-03-system-power-optimization",
+    "section_title": "时效性更新 - 03-system-power-optimization.md",
+    "priority": 95,
+    "reason": "[时效性巡检] Content may need Android 17 updates (Beta 3 stable, APIs locked)",
+    "material_paths": [
+      "metadata/freshness-check-2026-04-06.json"
+    ],
+    "freshness_details": {
+      "issue_type": "missing_android17_coverage",
+      "location": "metadata",
+      "file": "part2-performance/ch11-power/03-system-power-optimization.md",
+      "file_name": "03-system-power-optimization.md"
+    },
+    "added_by": "task3-freshness-check",
+    "added_at": "2026-04-06T02:03:42.052388",
+    "status": "pending",
+    "freshness_check_date": "2026-04-06"
+  },
+  {
+    "section": "FRESHNESS-part2-performance-ch11-power-04-case-studies",
+    "section_title": "时效性更新 - 04-case-studies.md",
+    "priority": 95,
+    "reason": "[时效性巡检] Content may need Android 17 updates (Beta 3 stable, APIs locked)",
+    "material_paths": [
+      "metadata/freshness-check-2026-04-06.json"
+    ],
+    "freshness_details": {
+      "issue_type": "missing_android17_coverage",
+      "location": "metadata",
+      "file": "part2-performance/ch11-power/04-case-studies.md",
+      "file_name": "04-case-studies.md"
+    },
+    "added_by": "task3-freshness-check",
+    "added_at": "2026-04-06T02:03:42.052393",
+    "status": "pending",
+    "freshness_check_date": "2026-04-06"
+  },
+  {
+    "section": "FRESHNESS-part2-performance-ch08-responsiveness-05-case-studies",
+    "section_title": "时效性更新 - 05-case-studies.md",
+    "priority": 95,
+    "reason": "[时效性巡检] Content may need Android 17 updates (Beta 3 stable, APIs locked)",
+    "material_paths": [
+      "metadata/freshness-check-2026-04-06.json"
+    ],
+    "freshness_details": {
+      "issue_type": "missing_android17_coverage",
+      "location": "metadata",
+      "file": "part2-performance/ch08-responsiveness/05-case-studies.md",
+      "file_name": "05-case-studies.md"
+    },
+    "added_by": "task3-freshness-check",
+    "added_at": "2026-04-06T02:03:42.052399",
+    "status": "pending",
+    "freshness_check_date": "2026-04-06"
+  },
+  {
+    "section": "FRESHNESS-part2-performance-ch08-responsiveness-01-responsiveness-principles",
+    "section_title": "时效性更新 - 01-responsiveness-principles.md",
+    "priority": 95,
+    "reason": "[时效性巡检] Content may need Android 17 updates (Beta 3 stable, APIs locked)",
+    "material_paths": [
+      "metadata/freshness-check-2026-04-06.json"
+    ],
+    "freshness_details": {
+      "issue_type": "missing_android17_coverage",
+      "location": "metadata",
+      "file": "part2-performance/ch08-responsiveness/01-responsiveness-principles.md",
+      "file_name": "01-responsiveness-principles.md"
+    },
+    "added_by": "task3-freshness-check",
+    "added_at": "2026-04-06T02:03:42.052405",
+    "status": "pending",
+    "freshness_check_date": "2026-04-06"
+  },
+  {
+    "section": "FRESHNESS-part2-performance-ch08-responsiveness-06-coroutine-performance",
+    "section_title": "时效性更新 - 06-coroutine-performance.md",
+    "priority": 95,
+    "reason": "[时效性巡检] Content may need Android 17 updates (Beta 3 stable, APIs locked)",
+    "material_paths": [
+      "metadata/freshness-check-2026-04-06.json"
+    ],
+    "freshness_details": {
+      "issue_type": "missing_android17_coverage",
+      "location": "metadata",
+      "file": "part2-performance/ch08-responsiveness/06-coroutine-performance.md",
+      "file_name": "06-coroutine-performance.md"
+    },
+    "added_by": "task3-freshness-check",
+    "added_at": "2026-04-06T02:03:42.052411",
+    "status": "pending",
+    "freshness_check_date": "2026-04-06"
+  },
+  {
+    "section": "FRESHNESS-part2-performance-ch08-responsiveness-03-launch-optimization",
+    "section_title": "时效性更新 - 03-launch-optimization.md",
+    "priority": 95,
+    "reason": "[时效性巡检] Content may need Android 17 updates (Beta 3 stable, APIs locked)",
+    "material_paths": [
+      "metadata/freshness-check-2026-04-06.json"
+    ],
+    "freshness_details": {
+      "issue_type": "missing_android17_coverage",
+      "location": "metadata",
+      "file": "part2-performance/ch08-responsiveness/03-launch-optimization.md",
+      "file_name": "03-launch-optimization.md"
+    },
+    "added_by": "task3-freshness-check",
+    "added_at": "2026-04-06T02:03:42.052417",
+    "status": "pending",
+    "freshness_check_date": "2026-04-06"
+  },
+  {
+    "section": "FRESHNESS-part2-performance-ch08-responsiveness-04-other-scenarios",
+    "section_title": "时效性更新 - 04-other-scenarios.md",
+    "priority": 95,
+    "reason": "[时效性巡检] Content may need Android 17 updates (Beta 3 stable, APIs locked)",
+    "material_paths": [
+      "metadata/freshness-check-2026-04-06.json"
+    ],
+    "freshness_details": {
+      "issue_type": "missing_android17_coverage",
+      "location": "metadata",
+      "file": "part2-performance/ch08-responsiveness/04-other-scenarios.md",
+      "file_name": "04-other-scenarios.md"
+    },
+    "added_by": "task3-freshness-check",
+    "added_at": "2026-04-06T02:03:42.052423",
+    "status": "pending",
+    "freshness_check_date": "2026-04-06"
+  },
+  {
+    "section": "FRESHNESS-part2-performance-ch08-responsiveness-02-app-launch",
+    "section_title": "时效性更新 - 02-app-launch.md",
+    "priority": 95,
+    "reason": "[时效性巡检] Content may need Android 17 updates (Beta 3 stable, APIs locked)",
+    "material_paths": [
+      "metadata/freshness-check-2026-04-06.json"
+    ],
+    "freshness_details": {
+      "issue_type": "missing_android17_coverage",
+      "location": "metadata",
+      "file": "part2-performance/ch08-responsiveness/02-app-launch.md",
+      "file_name": "02-app-launch.md"
+    },
+    "added_by": "task3-freshness-check",
+    "added_at": "2026-04-06T02:03:42.052440",
+    "status": "pending",
+    "freshness_check_date": "2026-04-06"
+  },
+  {
+    "section": "FRESHNESS-part2-performance-ch10-memory-perf-05-case-studies",
+    "section_title": "时效性更新 - 05-case-studies.md",
+    "priority": 95,
+    "reason": "[时效性巡检] Content may need Android 17 updates (Beta 3 stable, APIs locked)",
+    "material_paths": [
+      "metadata/freshness-check-2026-04-06.json"
+    ],
+    "freshness_details": {
+      "issue_type": "missing_android17_coverage",
+      "location": "metadata",
+      "file": "part2-performance/ch10-memory-perf/05-case-studies.md",
+      "file_name": "05-case-studies.md"
+    },
+    "added_by": "task3-freshness-check",
+    "added_at": "2026-04-06T02:03:42.052447",
+    "status": "pending",
+    "freshness_check_date": "2026-04-06"
+  },
+  {
+    "section": "FRESHNESS-part2-performance-ch10-memory-perf-02-memory-leak",
+    "section_title": "时效性更新 - 02-memory-leak.md",
+    "priority": 95,
+    "reason": "[时效性巡检] Content may need Android 17 updates (Beta 3 stable, APIs locked)",
+    "material_paths": [
+      "metadata/freshness-check-2026-04-06.json"
+    ],
+    "freshness_details": {
+      "issue_type": "missing_android17_coverage",
+      "location": "metadata",
+      "file": "part2-performance/ch10-memory-perf/02-memory-leak.md",
+      "file_name": "02-memory-leak.md"
+    },
+    "added_by": "task3-freshness-check",
+    "added_at": "2026-04-06T02:03:42.052455",
+    "status": "pending",
+    "freshness_check_date": "2026-04-06"
+  },
+  {
+    "section": "FRESHNESS-part2-performance-ch10-memory-perf-04-low-memory-impact",
+    "section_title": "时效性更新 - 04-low-memory-impact.md",
+    "priority": 95,
+    "reason": "[时效性巡检] Content may need Android 17 updates (Beta 3 stable, APIs locked)",
+    "material_paths": [
+      "metadata/freshness-check-2026-04-06.json"
+    ],
+    "freshness_details": {
+      "issue_type": "missing_android17_coverage",
+      "location": "metadata",
+      "file": "part2-performance/ch10-memory-perf/04-low-memory-impact.md",
+      "file_name": "04-low-memory-impact.md"
+    },
+    "added_by": "task3-freshness-check",
+    "added_at": "2026-04-06T02:03:42.052462",
+    "status": "pending",
+    "freshness_check_date": "2026-04-06"
+  },
+  {
+    "section": "FRESHNESS-part2-performance-ch10-memory-perf-06-memory-churn",
+    "section_title": "时效性更新 - 06-memory-churn.md",
+    "priority": 95,
+    "reason": "[时效性巡检] Content may need Android 17 updates (Beta 3 stable, APIs locked)",
+    "material_paths": [
+      "metadata/freshness-check-2026-04-06.json"
+    ],
+    "freshness_details": {
+      "issue_type": "missing_android17_coverage",
+      "location": "metadata",
+      "file": "part2-performance/ch10-memory-perf/06-memory-churn.md",
+      "file_name": "06-memory-churn.md"
+    },
+    "added_by": "task3-freshness-check",
+    "added_at": "2026-04-06T02:03:42.052469",
+    "status": "pending",
+    "freshness_check_date": "2026-04-06"
+  },
+  {
+    "section": "FRESHNESS-part2-performance-ch10-memory-perf-03-memory-growth",
+    "section_title": "时效性更新 - 03-memory-growth.md",
+    "priority": 95,
+    "reason": "[时效性巡检] Content may need Android 17 updates (Beta 3 stable, APIs locked)",
+    "material_paths": [
+      "metadata/freshness-check-2026-04-06.json"
+    ],
+    "freshness_details": {
+      "issue_type": "missing_android17_coverage",
+      "location": "metadata",
+      "file": "part2-performance/ch10-memory-perf/03-memory-growth.md",
+      "file_name": "03-memory-growth.md"
+    },
+    "added_by": "task3-freshness-check",
+    "added_at": "2026-04-06T02:03:42.052475",
+    "status": "pending",
+    "freshness_check_date": "2026-04-06"
+  },
+  {
+    "section": "FRESHNESS-part2-performance-ch10-memory-perf-01-app-memory-analysis",
+    "section_title": "时效性更新 - 01-app-memory-analysis.md",
+    "priority": 95,
+    "reason": "[时效性巡检] Content may need Android 17 updates (Beta 3 stable, APIs locked)",
+    "material_paths": [
+      "metadata/freshness-check-2026-04-06.json"
+    ],
+    "freshness_details": {
+      "issue_type": "missing_android17_coverage",
+      "location": "metadata",
+      "file": "part2-performance/ch10-memory-perf/01-app-memory-analysis.md",
+      "file_name": "01-app-memory-analysis.md"
+    },
+    "added_by": "task3-freshness-check",
+    "added_at": "2026-04-06T02:03:42.052482",
+    "status": "pending",
+    "freshness_check_date": "2026-04-06"
+  },
+  {
+    "section": "FRESHNESS-part2-performance-ch07-smoothness-01-jank-definition",
+    "section_title": "时效性更新 - 01-jank-definition.md",
+    "priority": 95,
+    "reason": "[时效性巡检] Content may need Android 17 updates (Beta 3 stable, APIs locked)",
+    "material_paths": [
+      "metadata/freshness-check-2026-04-06.json"
+    ],
+    "freshness_details": {
+      "issue_type": "missing_android17_coverage",
+      "location": "metadata",
+      "file": "part2-performance/ch07-smoothness/01-jank-definition.md",
+      "file_name": "01-jank-definition.md"
+    },
+    "added_by": "task3-freshness-check",
+    "added_at": "2026-04-06T02:03:42.052488",
+    "status": "pending",
+    "freshness_check_date": "2026-04-06"
+  },
+  {
+    "section": "FRESHNESS-part2-performance-ch07-smoothness-07-compose-performance",
+    "section_title": "时效性更新 - 07-compose-performance.md",
+    "priority": 95,
+    "reason": "[时效性巡检] Content may need Android 17 updates (Beta 3 stable, APIs locked)",
+    "material_paths": [
+      "metadata/freshness-check-2026-04-06.json"
+    ],
+    "freshness_details": {
+      "issue_type": "missing_android17_coverage",
+      "location": "metadata",
+      "file": "part2-performance/ch07-smoothness/07-compose-performance.md",
+      "file_name": "07-compose-performance.md"
+    },
+    "added_by": "task3-freshness-check",
+    "added_at": "2026-04-06T02:03:42.052495",
+    "status": "pending",
+    "freshness_check_date": "2026-04-06"
+  },
+  {
+    "section": "FRESHNESS-part2-performance-ch07-smoothness-06-case-studies",
+    "section_title": "时效性更新 - 06-case-studies.md",
+    "priority": 95,
+    "reason": "[时效性巡检] Content may need Android 17 updates (Beta 3 stable, APIs locked)",
+    "material_paths": [
+      "metadata/freshness-check-2026-04-06.json"
+    ],
+    "freshness_details": {
+      "issue_type": "missing_android17_coverage",
+      "location": "metadata",
+      "file": "part2-performance/ch07-smoothness/06-case-studies.md",
+      "file_name": "06-case-studies.md"
+    },
+    "added_by": "task3-freshness-check",
+    "added_at": "2026-04-06T02:03:42.052502",
+    "status": "pending",
+    "freshness_check_date": "2026-04-06"
+  },
+  {
+    "section": "FRESHNESS-part2-performance-ch07-smoothness-04-typical-scenarios",
+    "section_title": "时效性更新 - 04-typical-scenarios.md",
+    "priority": 95,
+    "reason": "[时效性巡检] Content may need Android 17 updates (Beta 3 stable, APIs locked)",
+    "material_paths": [
+      "metadata/freshness-check-2026-04-06.json"
+    ],
+    "freshness_details": {
+      "issue_type": "missing_android17_coverage",
+      "location": "metadata",
+      "file": "part2-performance/ch07-smoothness/04-typical-scenarios.md",
+      "file_name": "04-typical-scenarios.md"
+    },
+    "added_by": "task3-freshness-check",
+    "added_at": "2026-04-06T02:03:42.052509",
+    "status": "pending",
+    "freshness_check_date": "2026-04-06"
+  },
+  {
+    "section": "FRESHNESS-part2-performance-ch07-smoothness-03-jank-methodology",
+    "section_title": "时效性更新 - 03-jank-methodology.md",
+    "priority": 95,
+    "reason": "[时效性巡检] Content may need Android 17 updates (Beta 3 stable, APIs locked)",
+    "material_paths": [
+      "metadata/freshness-check-2026-04-06.json"
+    ],
+    "freshness_details": {
+      "issue_type": "missing_android17_coverage",
+      "location": "metadata",
+      "file": "part2-performance/ch07-smoothness/03-jank-methodology.md",
+      "file_name": "03-jank-methodology.md"
+    },
+    "added_by": "task3-freshness-check",
+    "added_at": "2026-04-06T02:03:42.052516",
+    "status": "pending",
+    "freshness_check_date": "2026-04-06"
+  },
+  {
+    "section": "FRESHNESS-part2-performance-ch07-smoothness-02-jank-causes",
+    "section_title": "时效性更新 - 02-jank-causes.md",
+    "priority": 95,
+    "reason": "[时效性巡检] Content may need Android 17 updates (Beta 3 stable, APIs locked)",
+    "material_paths": [
+      "metadata/freshness-check-2026-04-06.json"
+    ],
+    "freshness_details": {
+      "issue_type": "missing_android17_coverage",
+      "location": "metadata",
+      "file": "part2-performance/ch07-smoothness/02-jank-causes.md",
+      "file_name": "02-jank-causes.md"
+    },
+    "added_by": "task3-freshness-check",
+    "added_at": "2026-04-06T02:03:42.052523",
+    "status": "pending",
+    "freshness_check_date": "2026-04-06"
+  },
+  {
+    "section": "FRESHNESS-part2-performance-ch09-anr-05-case-studies",
+    "section_title": "时效性更新 - 05-case-studies.md",
+    "priority": 95,
+    "reason": "[时效性巡检] Content may need Android 17 updates (Beta 3 stable, APIs locked)",
+    "material_paths": [
+      "metadata/freshness-check-2026-04-06.json"
+    ],
+    "freshness_details": {
+      "issue_type": "missing_android17_coverage",
+      "location": "metadata",
+      "file": "part2-performance/ch09-anr/05-case-studies.md",
+      "file_name": "05-case-studies.md"
+    },
+    "added_by": "task3-freshness-check",
+    "added_at": "2026-04-06T02:03:42.052530",
+    "status": "pending",
+    "freshness_check_date": "2026-04-06"
+  },
+  {
+    "section": "FRESHNESS-part2-performance-ch09-anr-02-anr-types",
+    "section_title": "时效性更新 - 02-anr-types.md",
+    "priority": 95,
+    "reason": "[时效性巡检] Content may need Android 17 updates (Beta 3 stable, APIs locked)",
+    "material_paths": [
+      "metadata/freshness-check-2026-04-06.json"
+    ],
+    "freshness_details": {
+      "issue_type": "missing_android17_coverage",
+      "location": "metadata",
+      "file": "part2-performance/ch09-anr/02-anr-types.md",
+      "file_name": "02-anr-types.md"
+    },
+    "added_by": "task3-freshness-check",
+    "added_at": "2026-04-06T02:03:42.052537",
+    "status": "pending",
+    "freshness_check_date": "2026-04-06"
+  },
+  {
+    "section": "FRESHNESS-part2-performance-ch09-anr-01-anr-design",
+    "section_title": "时效性更新 - 01-anr-design.md",
+    "priority": 95,
+    "reason": "[时效性巡检] Content may need Android 17 updates (Beta 3 stable, APIs locked)",
+    "material_paths": [
+      "metadata/freshness-check-2026-04-06.json"
+    ],
+    "freshness_details": {
+      "issue_type": "missing_android17_coverage",
+      "location": "metadata",
+      "file": "part2-performance/ch09-anr/01-anr-design.md",
+      "file_name": "01-anr-design.md"
+    },
+    "added_by": "task3-freshness-check",
+    "added_at": "2026-04-06T02:03:42.052545",
+    "status": "pending",
+    "freshness_check_date": "2026-04-06"
+  },
+  {
+    "section": "FRESHNESS-part2-performance-ch09-anr-04-special-anr",
+    "section_title": "时效性更新 - 04-special-anr.md",
+    "priority": 95,
+    "reason": "[时效性巡检] Content may need Android 17 updates (Beta 3 stable, APIs locked)",
+    "material_paths": [
+      "metadata/freshness-check-2026-04-06.json"
+    ],
+    "freshness_details": {
+      "issue_type": "missing_android17_coverage",
+      "location": "metadata",
+      "file": "part2-performance/ch09-anr/04-special-anr.md",
+      "file_name": "04-special-anr.md"
+    },
+    "added_by": "task3-freshness-check",
+    "added_at": "2026-04-06T02:03:42.052552",
+    "status": "pending",
+    "freshness_check_date": "2026-04-06"
   }
 ]
