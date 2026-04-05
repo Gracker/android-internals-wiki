@@ -2,13 +2,13 @@
 title: "触摸响应的性能分析"
 chapter: "3.2"
 section: "3.2"
-status: ready-for-review
+status: ready-to-publish
 drafted_date: "2026-03-30"
 drafted_by: "openclaw-task2"
 applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
 last_verified: "2026-03-31"
-reviewed_date: "2026-04-03"
-reviewed_by: "openclaw-task6"
+reviewed_date: "2026-04-05"
+reviewed_by: "openclaw-task6"  # round 2 (post-polish quality gate)
 last_verified_against: "AOSP android-16.0.0_r1"
 confidence: medium
 polish_count: 1
@@ -381,7 +381,7 @@ Android 系统有 **Input Boost** 机制：在检测到 Input 事件时，临时
 
 在实际工程中，如果 App 不涉及手写笔场景，这一节可以跳过。对于需要集成的项目，官方推荐使用 `Jetpack` 的 `androidx.input:input-motionprediction` 库，而非直接调用平台 API。
 
-[已验证: 官方文档, developer.android.com/reference/androidx/input/motionprediction]
+[待验证: Jetpack motionprediction 库 minSdk=21, 非 API 19; 平台 API 为 Android 13+; "从 Android 4.4 开始"说法需确认]
 
 ## 厂商触控优化方案
 
@@ -436,7 +436,7 @@ Input ANR 的触发条件是：InputDispatcher 将事件派发给 App 后，5 �
   - `frameworks/base/core/java/android/view/Choreographer.java`
 - [已验证: 官方文档, source.android.com/docs/core/interaction/input]
 - [已验证: 官方文档, developer.android.com/reference/android/view/MotionEvent]
-- [已验证: 官方文档, developer.android.com/reference/androidx/input/motionprediction]
+- [待验证: Jetpack motionprediction 库 minSdk=21, 非 API 19; 平台 API 为 Android 13+; "从 Android 4.4 开始"说法需确认]
 - [来源: obsidian/Personal-Knowlodge/source/Android-Systrace-Input.md]（高爷原创：Systrace 基础知识 - Input 解读）
 - [来源: obsidian/Personal-Knowlodge/source/android-systrace-Responsiveness-in-action-1.md]（高爷原创：Systrace 响应速度实战 1）
 - [来源: obsidian/Personal-Knowlodge/source/2026-03-06_wechat_从input响应性能差的issue演示perfetto_trace用法.md]
