@@ -4,13 +4,13 @@
   "metrics": {
     "total": 106,
     "draft": 2,
-    "ready-for-review": 53,
+    "ready-for-review": 52,
     "reviewed": 3,
     "finalized": 43,
     "staging_drafts": 0,
-    "last_updated": "2026-04-05T16:16:46.599586",
+    "last_updated": "2026-04-05T16:30:13.031714",
     "processing": 0,
-    "ready-to-publish": 3
+    "ready-to-publish": 4
   },
   "reviewed_sections": {
     "8.1": {
@@ -36,14 +36,23 @@
       ]
     },
     "1.2": {
-      "reviewed_date": "2026-04-02",
+      "reviewed_date": "2026-04-05",
       "reviewed_by": "openclaw-task6",
-      "review_status": "finalized-v2",
+      "review_status": "ready-to-publish",
+      "review_type": "post-polish-quality-gate",
+      "review_round": 2,
       "fixes_applied": [
-        "误区 section：修正 boot_completed 事件描述（'可能还处于锁屏状态'→'用户解锁后发出'）",
-        "误区 section：按时间排序 boot milestone 事件（locked_boot_completed → boot_completed → user_setup_complete）",
-        "frontmatter 更新：status ready-for-review → finalized, reviewed_date/reviewed_by 更新"
-      ]
+        "版本命名：Android 24+ → Android 7.0+（Nougat，API 24+）",
+        "版本标注：startApexServices 添加 [待验证] 标注",
+        "frontmatter: status ready-for-review → ready-to-publish（出版终态）"
+      ],
+      "scores": {
+        "structure": 5,
+        "expression": 5,
+        "consistency": 4,
+        "verification": 4,
+        "metadata": 5
+      }
     },
     "1.3": {
       "reviewed_date": "2026-03-31",
@@ -2424,9 +2433,11 @@
     },
     "1.2": {
       "title": "系统启动全流程",
-      "status": "finalized",
-      "reviewed_date": "2026-04-02",
-      "reviewed_by": "openclaw-task6"
+      "status": "ready-to-publish",
+      "reviewed_date": "2026-04-05",
+      "reviewed_by": "openclaw-task6",
+      "review_round": 2,
+      "polish_count": 1
     },
     "1.6": {
       "title": "Android 版本演进中的架构变化",
