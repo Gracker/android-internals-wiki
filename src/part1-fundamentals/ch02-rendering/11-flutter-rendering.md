@@ -2,12 +2,15 @@
 title: "2.11 Flutter 渲染管线与性能"
 section: "2.11"
 chapter: "2.11"
-status: finalized
+status: ready-for-review
 drafted_date: "2026-04-01"
 reviewed_date: "2026-04-03"
 reviewed_by: "openclaw-task6"
+polish_count: 1
+polish_date: "2026-04-05"
+polish_by: "task2b-polish"
 applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
-last_verified: "2026-04-01"
+last_verified: "2026-04-05"
 last_verified_against: "Flutter 3.27 / Impeller default on Android API 29+"
 confidence: medium
 sources:
@@ -130,7 +133,7 @@ Hybrid Composition 模式是当前的推荐方案。它不再通过 Texture 中�
 
 ## 性能分析方法
 
-分析 Flutter 应用的性能，需要结合 Flutter 自带的工具和 Android 系统级的工具。不能只用一套，因为 Flutter 层面的性能数据和系统层面的性能数据讲述的是同一个故事的不同侧面。
+分析 Flutter 应用的性能，最大的挑战在于它横跨了两个世界：Flutter Engine 内部的 Dart/C++ 世界，和 Android 系统的内核/GPU 世界。问题可能藏在任何一层。所以我们需要两套工具配合使用——Flutter DevTools 看 Engine 内部的执行细节，Perfetto 看系统层面的调度和合成状态。
 
 ### Flutter DevTools
 
@@ -153,7 +156,29 @@ Flutter DevTools 是 Flutter 官方的性能分析套件。它提供了几个关
 
 当 Flutter 应用出现性能问题，但 DevTools 中找不到明显的 Dart 层面瓶颈时，问题可能出在系统层面。这时就需要用 Perfetto 抓取系统级 Trace。
 
-抓取 Flutter 应用的 Perfetto Trace 和抓取原生应用的没有本质区别，使用 `adb shell perfetto` 命令即可。但在 Perfetto UI 中查看时，我们需要关注不同的 Track：
+抓取 Flutter 应用的 Perfetto Trace 和抓取原生应用的没有本质区别。一个推荐的抓取配置：
+
+```bash
+# 抓取包含 Flutter 线程和 SurfaceFlinger 的 Trace（持续 10 秒）
+adb shell perfetto -c - --txt <<EOF
+buffers: { size_kb: 63488 }
+data_sources: {
+  config {
+    name: "linux.ftrace"
+    ftrace_config {
+      ftrace_events: "sched/sched_switch"
+      ftrace_events: "power/cpu_frequency"
+      atrace_categories: "view"
+      atrace_categories: "gfx"
+      atrace_categories: "input"
+    }
+  }
+}
+duration_ms: 10000
+EOF
+```
+
+在 Perfetto UI 中查看时，我们需要关注不同的 Track：
 
 - `1.platform`（Platform 线程）：看是否有长时间的 Platform Channel 调用、PlatformView 合成开销
 - `1.ui`（UI 线程）：看 Dart 代码的执行耗时，是否有频繁的 GC（Dart VM 的 GC 也会在这个线程上标记）
@@ -172,7 +197,7 @@ import 'dart:developer' as developer;
 
 // 在需要追踪的代码块前后添加
 developer.Timeline.startSync('my_custom_operation');
-// ... 你的代码
+// ... 我们要追踪的代码
 developer.Timeline.finishSync();
 ```
 
@@ -180,7 +205,7 @@ developer.Timeline.finishSync();
 
 ## 常见性能问题
 
-了解了工具之后，我们来看 Flutter 应用在 Android 上最常见的几类性能问题。
+有了上面的工具基础，我们可以开始分析 Flutter 在 Android 上最常见的几类性能问题了。这些问题在 Perfetto 和 DevTools 中各有不同的表现特征，识别这些特征是定位问题的关键。
 
 ### Shader 编译卡顿（Skia 时代）
 
@@ -250,15 +275,35 @@ Impeller 在 Android 上优先使用 Vulkan 后端。对于不支持 Vulkan 的�
 
 **帧率稳定性提升**：因为消除了 shader 编译卡顿，帧率的波动大幅减小。Impeller 的可预测性能架构（predictable performance）——所有 shader 和 Pipeline State Object 在构建时预编译——使得复杂动画场景下的 jank 帧数量降低约 30-50%。在 120Hz 设备上，Impeller 能够更稳定地在 8ms 帧预算内完成渲染。
 
-**内存效率改善**：Impeller 通过优化的局部重绘（partial repaint）和更紧凑的资源管理减少了 GC 压力和内存占用。Flutter 3.38 的改进报告中指出 [存疑: 前端 frontmatter last_verified_against 为 Flutter 3.27，3.38 版本号待确认]，动画场景的内存使用降低约 30%。`[已验证: 数据来源包括 Flutter 官方 release notes、dcm.dev Flutter 性能分析]` 不需要运行时 shader 缓存也是内存节省的重要原因之一。
+**内存效率改善**：Impeller 通过优化的局部重绘（partial repaint）和更紧凑的资源管理减少了 GC 压力和内存占用。Flutter 3.27 的改进报告中指出 `[待验证：具体内存降低百分比需查阅 Flutter 3.27 release notes 确认]`，Impeller 在动画场景下的内存占用相比 Skia 有明显改善，主要得益于 AOT shader 机制消除了运行时 shader 缓存的内存开销。 不需要运行时 shader 缓存也是内存节省的重要原因之一。
 
 `[已验证: Impeller 默认状态基于 Flutter 3.27 release notes, flutter.dev]`
 
 不过，Impeller 在 Android 上的成熟度不如 iOS。在 Flutter 3.27 刚发布时，一些开发者报告了 Impeller 在 Android 上的兼容性问题，包括某些 ListView 场景下的性能退化、首次启动时的视觉质量问题等。Flutter 团队在持续修复这些问题，如果在使用中遇到问题，可以通过 `--no-enable-impeller` 参数回退到 Skia 来验证是否是 Impeller 导致的。
 
+## 常见误区
+
+在分析 Flutter 应用性能时，有几个常见的认知陷阱值得注意：
+
+**误区一："Flutter 不卡，因为渲染不走主线程"**
+
+确实，Flutter 的 UI 计算在 Dart 线程上执行，不占用 Android 主线程。但这不意味着不会卡顿——如果 UI 线程的 Build/Layout/Paint 超出帧预算，或者 Raster 线程被 shader 编译阻塞，用户感知到的仍然是卡顿。帧预算是固定的（120Hz 下 8ms），哪个线程超了都一样。在 Perfetto 中看到 `1.ui` 或 `1.raster` 上的长 slice，就是卡顿的信号。
+
+**误区二："DevTools 够用了，不需要 Perfetto"**
+
+DevTools 能看到 Dart 层面的性能数据，但看不到系统层面的问题。如果 Flutter 应用因为内存压力被系统杀掉、因为 CPU 调度被限频、或者因为 SurfaceFlinger 合成延迟导致掉帧，DevTools 完全看不到这些信息。两者结合使用才能拼出完整的性能图景。
+
+**误区三："换成 Impeller 就不需要优化了"**
+
+Impeller 解决的是 shader 编译卡顿这一类特定问题，它不是性能的万能药。Widget 过度重建、PlatformView 线程合并、列表 item builder 过慢——这些问题 Impeller 都帮不上忙。Impeller 让渲染管线的性能更可预测，但不代表不需要关注每帧的工作量。
+
+**误区四："Flutter 的帧率和原生应用用同一套方法分析"**
+
+虽然最终都是 SurfaceFlinger 合成，但 Flutter 的线程模型和原生完全不同。在原生应用中我们盯着 MainThread 和 RenderThread 看；在 Flutter 中我们需要看 `1.ui` 和 `1.raster`。工具和分析思路都需要切换。
+
 ## 优化策略
 
-最后，我们把 Flutter 渲染性能优化的要点整理成一个系统性的框架。
+经过前面的分析，我们把 Flutter 渲染性能优化的要点整理成一个系统性的框架。
 
 ### 必须做的事
 
@@ -292,6 +337,8 @@ Flutter 的渲染虽然自成体系，但它仍然运行在 Android 系统之上
 - **§2.5 MainThread 与 RenderThread 协作**：当 PlatformView 导致线程合并时，Flutter 退回到类似原生 Android 的渲染模式，此时 MainThread 的性能特征就和原生一样了
 - **§4.4 Low Memory Killer**：Flutter 应用占用内存通常比原生应用高（Dart VM 堆 + Skia/Impeller 资源），在低内存场景下更容易被 LMK 杀掉
 - **§5.4 DVFS**：Flutter 的多线程模型（UI + Raster 同时运行）对 CPU 频率调度有影响，可能导致 DVFS 策略不如预期
+- **§7.1 卡顿的定义与分类**：Flutter 应用的掉帧表现和原生应用在 Perfetto 中的 Track 不同，但卡顿的分类框架同样适用——理解 jank 的分类有助于在 DevTools 中快速判断是 UI 线程 jank 还是 Raster 线程 jank
+- **§7.7 Jetpack Compose 性能**：Compose 和 Flutter 都是"自绘引擎"路线（不依赖原生 View 体系），两者在 PlatformView/互操作场景下遇到类似的线程合并和合成性能问题，优化思路可以互相参考
 
 ## 参考资料
 
