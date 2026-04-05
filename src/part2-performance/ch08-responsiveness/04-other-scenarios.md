@@ -1,8 +1,12 @@
 ---
 title: "其他响应速度场景"
 chapter: "8.4"
-status: ready-for-review
+section: "8.4"
+status: finalized
 drafted_date: "2026-04-02"
+drafted_by: "openclaw-task2a"
+reviewed_date: "2026-04-06"
+reviewed_by: "openclaw-task6"
 applicable_versions: "Android 8.0 (API 26) - Android 16 (API 36)"
 last_verified: "2026-04-02"
 last_verified_against: "AOSP android-16.0.0_r1, developer.android.com"
@@ -33,7 +37,7 @@ related_chapters: ["8.1", "8.2", "8.3", "3.1", "3.2", "7.4"]
 
 - 🔹 页面跳转速度：Activity/Fragment 切换的耗时分析
 - 🔹 Tab 切换速度：ViewPager2 的懒加载策略
-- 🔹 点击响应速度：从 onClick 到视觉反馈的完整链路
+- 🔹 点击响应速度：从 onClick 到视觉反馈的完整路径
 - 🔹 搜索响应速度：实时搜索的防抖与预加载
 
 ### 扩展（可选深入）
@@ -54,7 +58,7 @@ related_chapters: ["8.1", "8.2", "8.3", "3.1", "3.2", "7.4"]
 
 我们在 §8.1 中建立了响应速度的基本框架——从用户感知出发，将响应定义为 TTID（Time To Initial Display）和 TTFD（Time To Fully Drawn）。§8.2 和 §8.3 分别从 App 启动全流程和启动优化策略角度做了深入分析。
 
-但启动只是用户与 App 交互的第一步。在日常使用中，用户花时间最多的是**页面跳转、Tab 切换、按钮点击、搜索输入**这些高频操作。每一个场景都有自己独特的性能瓶颈和分析方法。如果你只优化了冷启动，却忽略了页面切换时那个几百毫秒的白屏、搜索时每次按键都触发的卡顿，用户的体验感知仍然很差。
+但启动只是用户与 App 交互的第一步。在日常使用中，用户花时间最多的是**页面跳转、Tab 切换、按钮点击、搜索输入**这些高频操作。每一个场景都有自己独特的性能瓶颈和分析方法。如果我们只优化了冷启动，却忽略了页面切换时那个几百毫秒的白屏、搜索时每次按键都触发的卡顿，用户的体验感知仍然很差。
 
 本节要做的，就是把启动之外最常见的四个响应速度场景逐一拆解：它为什么慢、在 Trace 中怎么看、怎么优化。
 
@@ -64,13 +68,13 @@ related_chapters: ["8.1", "8.2", "8.3", "3.1", "3.2", "7.4"]
 
 页面跳转是用户感知最直接的响应速度场景之一。点击一个按钮跳到新页面，从手指离开屏幕到新页面内容呈现——这段时间越短，用户越觉得「流畅」。
 
-### Activity 跳转的完整链路
+### Activity 跳转的完整路径
 
-当我们调用 `startActivity()` 启动一个新的 Activity 时，系统要完成一系列工作。这不是一个简单的函数调用，而是跨进程的 Binder IPC 通信链路：
+当我们调用 `startActivity()` 启动一个新的 Activity 时，系统要完成一系列工作。这不是一个简单的函数调用，而是跨进程的 Binder IPC 通信路径：
 
 **调用方进程**通过 `Activity.startActivity()` → `Instrumentation.execStartActivity()` → `ActivityTaskManager.getService().startActivity()` 向 **system_server** 发起 Binder 请求。system_server 中的 `ActivityStarter` 经过权限检查、Intent 解析、Task 栈计算后，通过 Binder 向 **目标进程** 发送 `scheduleLaunchActivity()`。目标进程的 `ActivityThread.handleLaunchActivity()` 收到消息后，执行 `performLaunchActivity()`，依次完成：创建 Activity 实例 → 调用 `attach()` → 调用 `onCreate()` → `onStart()` → `onResume()` → 首帧渲染。
 
-整个链路涉及的耗时环节包括：
+整个流程涉及的耗时环节包括：
 
 - **Binder IPC 往返**：两次跨进程调用（调用方→system_server→目标进程），每次约 1-5ms，在 system_server 负载高时会显著增加。[待验证：Android 16 中 Binder 线程池默认大小是否有变化]
 - **Activity 对象创建**：涉及类加载、构造函数、`attach()` 中创建 Window/PhoneWindow 等，通常 5-15ms。
@@ -96,11 +100,11 @@ Fragment 的切换比 Activity 轻量得多——它不需要跨进程通信，�
 
 **布局膨胀仍然是最大开销。** 即使 Fragment 不需要跨进程，`onCreateView()` 中 inflate 一个复杂布局的开销可能高达几十毫秒。尤其是使用 `replace()` 操作时，旧 Fragment 的 View 被销毁，新 Fragment 的 View 需要完全重新创建。
 
-**转场动画会放大感知延迟。** Fragment 支持通过 `setCustomAnimations()` 设置转场动画。如果动画时长设为 300ms，但 Fragment 的布局膨胀只需要 50ms，总感知时间就是 300ms。更危险的是，如果你在转场动画期间做了太多 View 操作（如 RecyclerView 数据加载），动画可能掉帧，造成视觉上的卡顿。
+**转场动画会放大感知延迟。** Fragment 支持通过 `setCustomAnimations()` 设置转场动画。如果动画时长设为 300ms，但 Fragment 的布局膨胀只需要 50ms，总感知时间就是 300ms。更危险的是，如果在转场动画期间做了太多 View 操作（如 RecyclerView 数据加载），动画可能掉帧，造成视觉上的卡顿。
 
 **回退栈（Back Stack）的生命周期开销。** 当使用 `addToBackStack()` 并执行 `replace()` 时，旧 Fragment 会走到 `onDestroyView()`（View 被销毁但 Fragment 实例保留）。用户按返回键时，旧 Fragment 需要重新走 `onCreateView()` → `onDestroyView()` 之间的所有回调，这意味着布局要重新 inflate。
 
-在 Perfetto 中，Fragment 的切换可以通过 `FragmentManager` 相关的 trace tag 观察到，但需要注意的是 Fragment 事务的 trace 点不如 Activity 那么完整，你可能需要在代码中手动添加 `Trace.beginSection("FragmentTransaction")` 来获得更精确的度量。
+在 Perfetto 中，Fragment 的切换可以通过 `FragmentManager` 相关的 trace tag 观察到，但需要注意的是 Fragment 事务的 trace 点不如 Activity 那么完整，我们可能需要在代码中手动添加 `Trace.beginSection("FragmentTransaction")` 来获得更精确的度量。
 
 ### 页面跳转优化策略
 
@@ -180,7 +184,7 @@ class MyFragment : Fragment() {
 
 ### ViewPager2 切换的性能优化
 
-**预加载（Prefetch）。** RecyclerView 内置了 prefetch 机制。当用户快速滑动到下一页时，RecyclerView 会在布局过程中预测下一个将要出现的 Item，并提前创建 ViewHolder。ViewPager2 继承了这个能力。你可以通过 `setOffscreenPageLimit()` 控制预加载范围，也可以通过自定义 `RecyclerView.LayoutManager` 微调 prefetch 策略。
+**预加载（Prefetch）。** RecyclerView 内置了 prefetch 机制。当用户快速滑动到下一页时，RecyclerView 会在布局过程中预测下一个将要出现的 Item，并提前创建 ViewHolder。ViewPager2 继承了这个能力。我们可以通过 `setOffscreenPageLimit()` 控制预加载范围，也可以通过自定义 `RecyclerView.LayoutManager` 微调 prefetch 策略。
 
 **布局简化。** 每个 Tab 页的 Fragment 布局越简单，切换越快。关键优化手段包括：
 - 用 `ConstraintLayout` 替代多层嵌套的 `LinearLayout` + `RelativeLayout`
@@ -201,11 +205,11 @@ viewPager2.registerOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback
 })
 ```
 
-**避免在 FragmentPagerAdapter 中使用 BEHAVIOR_RESUME_ONLY_CURRENT_FRAGMENT 的误用。** 这个 flag 是 ViewPager2 的默认行为（当前页 RESUMED，其余 STARTED），但如果你在 `onResume()` 之外的地方做了大量初始化工作（比如 `onViewCreated()`），那些工作会在 Fragment 还不可见时就已经执行了——这和懒加载的目标相悖。
+**避免在 FragmentPagerAdapter 中使用 BEHAVIOR_RESUME_ONLY_CURRENT_FRAGMENT 的误用。** 这个 flag 是 ViewPager2 的默认行为（当前页 RESUMED，其余 STARTED），但如果在 `onResume()` 之外的地方做了大量初始化工作（比如 `onViewCreated()`），那些工作会在 Fragment 还不可见时就已经执行了——这和懒加载的目标相悖。
 
 [已验证: AOSP android-16.0.0_r1, androidx.viewpager2]
 
-在 Perfetto 中，Tab 切换的性能问题通常表现为：主线程上的 `inflate` 操作耗时过长、或者 Fragment 生命周期回调中的同步 IO 操作。你可以搜索 `FragmentManager` 相关的 trace slice，或者通过自定义 `Trace.beginSection("TabSwitch_" + position)` 来精确度量每个 Tab 的切换耗时。
+在 Perfetto 中，Tab 切换的性能问题通常表现为：主线程上的 `inflate` 操作耗时过长、或者 Fragment 生命周期回调中的同步 IO 操作。我们可以搜索 `FragmentManager` 相关的 trace slice，或者通过自定义 `Trace.beginSection("TabSwitch_" + position)` 来精确度量每个 Tab 的切换耗时。
 
 ```
 [图：Perfetto 中 ViewPager2 Tab 切换的典型 Trace]
@@ -218,7 +222,7 @@ viewPager2.registerOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback
 
 ---
 
-## 点击响应速度：从 onClick 到视觉反馈的完整链路
+## 点击响应速度：从 onClick 到视觉反馈的完整路径
 
 点击响应可能是所有响应速度场景中被感知最频繁的。用户每次点击按钮、切换开关、选择列表项——手指触碰屏幕到看到视觉反馈的这段时间，直接决定了用户对 App「流畅度」的印象。
 
@@ -234,7 +238,7 @@ viewPager2.registerOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback
 
 **3. 主线程事件处理（变化最大）**：事件到达 App 进程后，进入主线程 Looper 的消息队列。如果此时主线程正在执行上一帧的 `doFrame()`、或者被某个同步 Binder 调用阻塞、或者在做密集的 GC，事件就必须排队等待。这是点击响应优化最核心的战场。
 
-**4. View 层级的事件分发（~1-5ms）**：从 DecorView 开始，经过 `dispatchTouchEvent()` → `onInterceptTouchEvent()` → `onTouchEvent()` 的分发链路，最终到达目标 View 的 `onClickListener`。View 层级越深，分发路径越长。
+**4. View 层级的事件分发（~1-5ms）**：从 DecorView 开始，经过 `dispatchTouchEvent()` → `onInterceptTouchEvent()` → `onTouchEvent()` 的分发路径，最终到达目标 View 的 `onClickListener`。View 层级越深，分发路径越长。
 
 **5. 视觉反馈（1-2 个 VSync 周期）**：onClick 回调中通常会修改 UI 状态（文字、颜色、位置），这需要等下一个 VSync 信号触发 `doFrame()` 才能渲染。如果 onClick 回调末尾调用了 `invalidate()`，从回调返回到实际像素出现在屏幕上，通常需要 16-33ms（1-2 帧 @60Hz）。
 
@@ -242,11 +246,11 @@ viewPager2.registerOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback
 
 ### Ripple 效果与感知优化
 
-Android 的 Material Design 引入了 Ripple Drawable 作为点击的视觉反馈。Ripple 的一个关键设计优势是：**它不需要等 onClick 回调执行完就能显示。** 当 `onTouchEvent()` 收到 `ACTION_DOWN` 时，Ripple 动画就会立即开始，给用户一个「系统已经收到你的点击」的即时信号。
+Android 的 Material Design 引入了 Ripple Drawable 作为点击的视觉反馈。Ripple 的一个关键设计优势是：**它不需要等 onClick 回调执行完就能显示。** 当 `onTouchEvent()` 收到 `ACTION_DOWN` 时，Ripple 动画就会立即开始，给用户一个「系统已经收到点击」的即时信号。
 
-这意味着即使你的 onClick 回调里做了 50ms 的数据操作，用户感知到的「响应」仍然是即时的——因为 Ripple 在 16ms 内就已经开始扩散了。
+这意味着即使 onClick 回调里做了 50ms 的数据操作，用户感知到的「响应」仍然是即时的——因为 Ripple 在 16ms 内就已经开始扩散了。
 
-但 Ripple 也不是万能的。如果你的自定义 View 没有正确设置 `android:clickable="true"` 和 `android:background="?attr/selectableItemBackground"`，或者父 ViewGroup 拦截了触摸事件，Ripple 可能不会显示。这种情况下，用户点击后看不到任何视觉反馈，就会觉得「没有响应」——即使 onClick 回调实际上已经执行了。
+但 Ripple 也不是万能的。如果自定义 View 没有正确设置 `android:clickable="true"` 和 `android:background="?attr/selectableItemBackground"`，或者父 ViewGroup 拦截了触摸事件，Ripple 可能不会显示。这种情况下，用户点击后看不到任何视觉反馈，就会觉得「没有响应」——即使 onClick 回调实际上已经执行了。
 
 ### 点击响应优化的实战策略
 
@@ -254,7 +258,7 @@ Android 的 Material Design 引入了 Ripple Drawable 作为点击的视觉反�
 
 **2. 用 preload 减少首次点击延迟。** 如果点击后会跳转到一个新页面，而这个页面的数据可以提前准备，就在用户还在浏览当前页面时预加载。常见场景：首页的推荐列表预加载详情页数据、设置页预加载配置项。
 
-**3. 避免过度绘制拖慢视觉反馈。** 如果点击区域被多层 View 叠加覆盖，Ripple 效果可能需要重绘多层内容，增加首帧耗时。开启「开发者选项 → 显示过度绘制」检查你的布局。
+**3. 避免过度绘制拖慢视觉反馈。** 如果点击区域被多层 View 叠加覆盖，Ripple 效果可能需要重绘多层内容，增加首帧耗时。开启「开发者选项 → 显示过度绘制」检查布局。
 
 **4. 利用 `performClick()` 的无障碍兼容。** 在自定义 View 中重写 `onTouchEvent()` 时，务必在处理 `ACTION_UP` 时调用 `performClick()`，这不仅是无障碍的要求，也能确保 OnClickListener 正确触发。
 
@@ -273,7 +277,7 @@ override fun onTouchEvent(event: MotionEvent): Boolean {
 
 [已验证: 官方文档, developer.android.com/reference/android/view/View#performClick()]
 
-在 Perfetto 中分析点击响应时，可以在 Trace 中搜索 `input_event` 相关的 slice，追踪从事件注入到 App 处理的完整链路。更精确的做法是在代码中埋点：
+在 Perfetto 中分析点击响应时，可以在 Trace 中搜索 `input_event` 相关的 slice，追踪从事件注入到 App 处理的完整路径。更精确的做法是在代码中埋点：
 
 ```java
 // 在 onClick 回调开始处
