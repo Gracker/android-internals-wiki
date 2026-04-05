@@ -1,10 +1,16 @@
 ---
 title: "系统启动全流程"
 chapter: "1.2"
-status: finalized
+status: ready-for-review
+section: "1.2"
 reviewed_date: "2026-04-02"
 reviewed_by: openclaw-task6
+drafted_date: "2026-03-30"
+drafted_by: openclaw-task2a
 review_v2_fix: "误区 section boot_completed 事件描述修正 + 事件排序对齐"
+polish_count: 1
+polish_date: "2026-04-05"
+polish_by: task2b-polish
 applicable_versions: "Android 8 (API 26) - Android 16 (API 36)"
 last_verified: "2026-03-31"
 last_verified_against: "AOSP android-16.0.0_r1, 官方文档"
@@ -30,8 +36,8 @@ sources:
     path: "frameworks/base/core/java/android/os/TimingsTraceAndSlog.java @ android-16.0.0_r1"
   - type: blog
     path: "Android 16 Parallel Module Loading + AutoFDO (AOSP Gerrit/9to5Google)"
-tags: ['boot', 'init', 'zygote', 'SystemServer', '启动优化', 'bootchart']
-related_chapters: ["1.1", "1.3", "1.4", "8.2"]
+tags: ['boot', 'init', 'zygote', 'SystemServer', '启动优化', 'bootchart', 'bootloader', 'preloaded-classes', 'boot-timings']
+related_chapters: ["1.1", "1.3", "1.4", "1.5", "1.7", "8.2", "8.3"]
 ---
 
 # 系统启动全流程
@@ -73,7 +79,7 @@ related_chapters: ["1.1", "1.3", "1.4", "8.2"]
 - 冷启动 App 慢——这和 Zygote 的预加载机制直接相关。了解预加载了什么、没预加载什么，才能判断 App 启动时哪些类需要重新加载。
 - OTA 升级后首次开机特别慢——这与 dm-verity 校验和 AB 分区切换有关。
 
-在 Perfetto 中，我们可以抓取开机阶段的 Trace，看到 init、Zygote、SystemServer 各自消耗了多少时间。但如果你不了解这条链路的来龙去脉，面对 Trace 中的那些色块，只会一头雾水。读完本节后，你应该能打开一份开机 Trace，准确地找到每个阶段对应的区间，并定位到耗时异常的环节。
+在 Perfetto 中，我们可以抓取开机阶段的 Trace，看到 init、Zygote、SystemServer 各自消耗了多少时间。但如果不了解这条链路的来龙去脉，面对 Trace 中的那些色块，只会一头雾水。读完本节后，我们就能打开一份开机 Trace，准确地找到每个阶段对应的区间，并定位到耗时异常的环节。
 
 ## 完整启动链：从按下电源到桌面可见
 
@@ -187,7 +193,7 @@ init 启动的 native 服务中，最重要的几个及其作用：
 
 ### Zygote：Java 世界的"孵化器"
 
-init 进程通过 init.rc 中的配置启动 Zygote。Zygote 是 Android 中最巧妙的进程设计之一，它解决了一个核心问题：**如何让 App 启动既快又省内存？**
+init 完成用户空间的搭建后，接下来的工作交给 Zygote。init 进程通过 init.rc 中的配置启动 Zygote。Zygote 是 Android 中最巧妙的进程设计之一，它解决了一个核心问题：**如何让 App 启动既快又省内存？**
 
 如果没有 Zygote，每次启动一个 App 都需要：
 1. fork 一个新进程
@@ -218,7 +224,7 @@ fork 的妙处在于 **Copy-on-Write（CoW）** 机制。新 fork 出来的子�
 这意味着：
 - 所有 App 进程共享 Zygote 预加载的那几千个类和资源，内存开销极小
 - App 进程启动时不需要重新加载这些类，启动速度大幅提升
-- 在 Perfetto 中，你可以看到 App 进程启动后很快就开始执行 Application.onCreate()，不需要再花时间加载基础类
+- 在 Perfetto 中，可以看到 App 进程启动后很快就开始执行 Application.onCreate()，不需要再花时间加载基础类
 
 但这也带来了一个限制：**Zygote 预加载之后，不能再加载新的 class 或资源到共享区域**。这就是为什么 Zygote 启动后的类加载都只影响当前进程。
 
@@ -259,7 +265,7 @@ SystemServer 启动后，会在自己的进程中按顺序启动 Android Framewo
 - **DisplayManagerService**：显示管理
 - **SensorService**：传感器服务
 
-其中 AMS 尤为关键——它不仅管 Activity，还负责整个进程级别的调度。在 Perfetto 中，如果你看到某个 App 进程被创建或被杀，那背后都是 AMS 在操作。
+其中 AMS 尤为关键——它不仅管 Activity，还负责整个进程级别的调度。在 Perfetto 中，如果看到某个 App 进程被创建或被杀，那背后都是 AMS 在操作。
 
 #### 第二阶段：Core Services
 
@@ -271,7 +277,7 @@ SystemServer 启动后，会在自己的进程中按顺序启动 Android Framewo
 - **StorageManagerService**：存储管理
 - **NetworkManagementService**：网络管理
 
-WMS 是性能分析中的"老朋友"。在 Perfetto 中，当你分析 ANR 或者界面切换卡顿时，经常需要看 WMS 的状态——它决定了 Input 事件的分发和窗口的可见性。
+WMS 是性能分析中的"老朋友"。在 Perfetto 中，当分析 ANR 或者界面切换卡顿时，经常需要看 WMS 的状态——它决定了 Input 事件的分发和窗口的可见性。
 
 #### 第三阶段：Other Services
 
@@ -291,11 +297,13 @@ WMS 是性能分析中的"老朋友"。在 Perfetto 中，当你分析 ANR 或�
 
 SystemServer 启动完成后，AMS 会发送 `ACTION_BOOT_COMPLETED` 广播（实际流程更复杂，先发送 `ACTION_LOCKED_BOOT_COMPLETED`，用户解锁后再发送 `ACTION_BOOT_COMPLETED`）。同时，SystemServer 启动 Launcher App，桌面显示出来，整个开机过程完成。
 
-在 Perfetto 中，你可以追踪到这条完整的时间线：从 Kernel 启动，到 init 执行各阶段脚本，到 Zygote 预加载，到 SystemServer 启动各类服务，最后 Launcher 渲染出第一帧——这就是从按下电源键到看到桌面的完整旅程。
+在 Perfetto 中，我们可以追踪到这条完整的时间线：从 Kernel 启动，到 init 执行各阶段脚本，到 Zygote 预加载，到 SystemServer 启动各类服务，最后 Launcher 渲染出第一帧——这就是从按下电源键到看到桌面的完整旅程。
 
 ## 启动时间的度量
 
-"你不能优化你无法度量的东西。"Android 提供了多种工具来度量启动时间。
+上面完整梳理了从按下电源键到桌面可见的全链路。接下来的问题是：每个阶段到底花了多长时间？瓶颈在哪里？
+
+"不能优化无法度量的东西。"Android 提供了多种工具来度量启动时间。
 
 ### boot_completed 广播
 
@@ -343,13 +351,13 @@ BootTimingsTraceLog 是一个轻量级的追踪工具，主要在 ZygoteInit 中
 - **PreloadSharedLibraries**：共享库预加载
 - **PreloadTextResources**：文本资源预加载
 
-在 Perfetto 中，这些事件显示在 Zygote 进程（zygote64 或 zygote）的 track 上，每个预加载阶段呈现为一个独立的 slice。如果你发现 Zygote 预加载阶段异常耗时，可以通过这些 slice 精确定位是哪个环节拖了后腿。
+在 Perfetto 中，这些事件显示在 Zygote 进程（zygote64 或 zygote）的 track 上，每个预加载阶段呈现为一个独立的 slice。如果发现 Zygote 预加载阶段异常耗时，可以通过这些 slice 精确定位是哪个环节拖了后腿。
 
 [待补充：Perfetto 中 Zygote 预加载各阶段的 Trace 截图]
 
 #### TimingsTraceAndSlog：SystemServer 启动阶段的"审计员"
 
-SystemServer 使用的是另一个追踪工具——TimingsTraceAndSlog。它和 BootTimingsTraceLog 的区别在于：TimingsTraceAndSlog 不仅通过 `Trace.traceBegin()/traceEnd()` 写入 Perfetto 追踪，还会同步通过 `Slog` 输出日志。这意味着你既可以在 Perfetto 中可视化地查看各阶段耗时，也可以通过 logcat 快速检索。
+SystemServer 使用的是另一个追踪工具——TimingsTraceAndSlog。它和 BootTimingsTraceLog 的区别在于：TimingsTraceAndSlog 不仅通过 `Trace.traceBegin()/traceEnd()` 写入 Perfetto 追踪，还会同步通过 `Slog` 输出日志。这意味着既可以可视化地查看各阶段耗时，也可以通过 logcat 快速检索。
 
 [已验证: AOSP frameworks/base/core/java/android/os/TimingsTraceAndSlog.java @ android-16.0.0_r1]
 
@@ -360,7 +368,7 @@ TimingsTraceAndSlog 覆盖 SystemServer 的四个核心启动阶段：
 3. **startOtherServices()**：启动其余系统服务（AMS、WMS 等），这是最耗时的阶段，因为服务数量最多
 4. **startApexServices()**：[Android 16+] 启动 APEX 模块中包含的服务，这是 Android 模块化架构演进的产物
 
-在 Perfetto 的 system_server 进程 track 中，这四个阶段呈现为嵌套的 slice，每个 slice 内部又能看到各服务自身的初始化耗时。当你需要分析 SystemServer 启动慢的问题时，先看这四个 slice 中哪个最宽，再钻进去看具体哪个服务拖了后腿——这是一套非常高效的分析路径。
+在 Perfetto 的 system_server 进程 track 中，这四个阶段呈现为嵌套的 slice，每个 slice 内部又能看到各服务自身的初始化耗时。当分析 SystemServer 启动慢的问题时，先看这四个 slice 中哪个最宽，再钻进去看具体哪个服务拖了后腿——这是一套非常高效的分析路径。
 
 #### boot_progress 里程碑事件
 
@@ -380,7 +388,7 @@ adb logcat | grep boot_progress
 
 [已验证: 官方文档 source.android.com/docs/core/perf/boot-times]
 
-这些里程碑的价值在于"快速排查"。如果你只需要知道"开机慢在哪里"，不需要抓 Perfetto Trace，只需一条 logcat 命令就能看到各阶段的时间分布。如果发现某个阶段耗时异常（比如 PMS 启动超过 2 秒），再配合 Perfetto Trace 深入分析——是 CPU 调度延迟、I/O 等待、还是锁竞争。
+这些里程碑的价值在于"快速排查"。如果只需要知道"开机慢在哪里"，不需要抓 Perfetto Trace，只需一条 logcat 命令就能看到各阶段的时间分布。如果发现某个阶段耗时异常（比如 PMS 启动超过 2 秒），再配合 Perfetto Trace 深入分析——是 CPU 调度延迟、I/O 等待、还是锁竞争。
 
 [来源: intake/research-feeds/2026-03-31-15-ch01-boot-timings-tracelog.md]
 
@@ -436,7 +444,7 @@ duration_ms: 30000
 EOF
 ```
 
-在 Perfetto UI 中，你可以清晰地看到：
+在 Perfetto UI 中，我们可以清晰地看到：
 - **init 进程**的各阶段（early-init → init → boot）
 - **Zygote 进程**的预加载区间，其中 BootTimingsTraceLog 标记的 PreloadClasses、PreloadResources 等 slice 清晰可见
 - **SystemServer 进程**的服务启动时间线，TimingsTraceAndSlog 标记的 startBootstrapServices、startCoreServices、startOtherServices 三个 slice 层层嵌套
@@ -505,7 +513,7 @@ Android 16 在系统启动方面引入了两项值得关注的优化，分别从
 
 实测效果 [待验证: 仅基于 Pixel 设备数据]：Pixel 10 上模块加载时间减少约 30%，2023 Pixel Fold 上减少约 25%。这个优化预期惠及所有 Android 设备，不限于 Pixel 系列。
 
-在 Perfetto 中，你可以观察到变化：内核模块加载阶段，原本一条串行的 slice 变为多条并行的 slice，整体宽度（时间）明显缩短。
+在 Perfetto 中，可以观察到变化：内核模块加载阶段，原本一条串行的 slice 变为多条并行的 slice，整体宽度（时间）明显缩短。
 
 #### AutoFDO：基于真实数据的内核编译优化
 
@@ -529,6 +537,8 @@ AutoFDO（Automatic Feedback-Directed Optimization）是 Google 将编译器优�
 
 ### dm-verity 与 AVB
 
+[图：dm-verity 在启动链中的位置——Bootloader AVB 验证 → Kernel dm-verity 块级校验 → 用户空间]
+
 dm-verity（Device Mapper Verity）是 Android 用于验证系统分区完整性的机制。AVB（Android Verified Boot）是更高层的验证框架。
 
 在启动链中：
@@ -545,7 +555,7 @@ dm-verity（Device Mapper Verity）是 Android 用于验证系统分区完整性
 
 ## 在 Perfetto 中识别启动各阶段
 
-当你拿到一份开机阶段的 Perfetto Trace 时，以下是快速定位各阶段的指南：
+当拿到一份开机阶段的 Perfetto Trace 时，以下是快速定位各阶段的指南：
 
 | 阶段 | 在 Perfetto 中的表现 | 关键 Track |
 |------|---------------------|-----------|
