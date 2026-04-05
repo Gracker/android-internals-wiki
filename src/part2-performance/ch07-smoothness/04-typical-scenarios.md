@@ -1,7 +1,10 @@
 ---
 title: "典型场景分析"
 chapter: "7.4"
-status: finalized
+status: ready-for-review
+polish_count: 1
+polish_date: "2026-04-06"
+polish_by: "task2b-polish"
 drafted_date: "2026-04-01"
 reviewed_date: "2026-04-05"
 reviewed_by: "openclaw-task6"
@@ -75,7 +78,7 @@ related_chapters: ["7.1", "7.2", "7.3", "2.4", "2.5"]
 
 ### 1.1 滑动场景在 Perfetto 中的基本形态
 
-一个健康的列表滑动在 Perfetto 中有一个非常清晰的节奏：每个 VSync 周期内，主线程依次执行 Input → Traversal（measure/layout/draw），然后同步 DisplayList 给 RenderThread，RenderThread 完成绘制后提交 Buffer。如果这些步骤都能在一个 VSync 周期内完成（120Hz 设备是 8.33ms，60Hz 设备是 16.67ms），帧就是绿色的，滑动就是流畅的。
+一个健康的列表滑动在 Perfetto 中有一个非常清晰的节奏：每个 VSync 周期内，主线程依次执行 Input → Traversal（measure/layout/draw），然后同步 DisplayList 给 RenderThread，RenderThread 完成绘制后提交 Buffer。如果这些步骤都能在一个 VSync 周期内完成（120Hz 设备是 8.33ms，60Hz 设备是 16.67ms），帧就是绿色的，滑动就是流畅的。（关于 VSync 周期和 Choreographer 的回调调度，详见 2.3 和 2.4 节。）
 
 [图：Perfetto 中正常的列表滑动帧序列，展示 Input → Traversal → RenderThread 的节奏]
 
@@ -103,7 +106,23 @@ RecyclerView 是列表场景的核心组件。它的设计目标是"回收复用
 
 [已验证: 官方文档, developer.android.com/reference/androidx/recyclerview/widget/RecyclerView.Adapter — onBindViewHolder 文档明确说明应保持轻量]
 
-在 Perfetto 中的表现：如果 bind 耗时过长，我们会在主线程的 Traversal 阶段看到 measure 或 layout 的 slice 明显变长。如果怀疑是 bind 问题，可以在 `onBindViewHolder` 中添加自定义 Trace event（`Trace.beginSection("bind:" + position)`），这样在 Perfetto 中就能看到每一帧中 bind 操作的具体耗时。
+在 Perfetto 中的表现：如果 bind 耗时过长，我们会在主线程的 Traversal 阶段看到 measure 或 layout 的 slice 明显变长。如果怀疑是 bind 问题，可以在 `onBindViewHolder` 中添加自定义 Trace event：
+
+```java
+// 在 Adapter.onBindViewHolder 中插桩
+@Override
+public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
+    Trace.beginSection("bind:" + position);
+    try {
+        // bind 逻辑
+        holder.bind(items.get(position));
+    } finally {
+        Trace.endSection();
+    }
+}
+```
+
+插桩后重新抓 Trace，Perfetto 主线程 track 上每一帧的 Traversal 阶段中就能看到每个 item 的 bind 耗时。如果某个 position 的 bind slice 特别长，直接定位到对应的数据项排查即可。
 
 **ViewHolder 创建（onCreateViewHolder）耗时**
 
@@ -209,7 +228,7 @@ Fragment 切换比 Activity 切换轻量，因为都在同一个进程和同一�
 
 ### 3.1 App 启动窗口
 
-从 Android 12 开始，系统为所有 App 提供了默认的 Splash Screen（通过 `SplashScreen` API）。在 App 进程完成初始化之前，系统会显示一个带有 App 图标和主题色的启动窗口。这个窗口由 SystemServer 管理，App 进程就绪后系统执行从启动窗口到 App 主界面的过渡动画。
+从 Android 12 开始，系统为所有 App 提供了默认的 Splash Screen（通过 `SplashScreen` API）。在 App 进程完成初始化之前，系统会显示一个带有 App 图标和主题色的启动窗口。这个窗口由 SystemServer 管理，App 进程就绪后系统执行从启动窗口到 App 主界面的过渡动画。（启动窗口与 App 启动流程的完整分析见 8.2 节。）
 
 [图：SplashScreen 启动窗口到 App 主界面过渡动画的 Perfetto 截图，标注 SystemServer 动画线程和 App 进程的时间关系]
 
@@ -242,7 +261,7 @@ PopupWindow 的情况类似，但 PopupWindow 使用的是 App 进程自己的 W
 
 ## 四、Notification 展开/折叠的 Jank
 
-通知栏的展开和折叠由 SystemUI 进程负责。这个场景比较特殊，因为涉及的进程是 SystemUI 而非普通 App——但如果在做系统性能优化，或者 App 自定义了 Notification 的 RemoteViews，这个场景就需要关注。
+前面三个场景（列表滑动、页面切换、窗口动画）都发生在 App 进程内部或 App 之间的协调中。接下来这个场景有点不同：通知栏的展开和折叠由 SystemUI 进程负责，普通 App 开发者通常不会直接碰到。但在系统性能优化场景下，尤其是 App 自定义了 Notification 的 RemoteViews 时，这个场景就需要关注——因为 App 的 Notification 布局最终是在 SystemUI 的主线程上渲染的。
 
 ### 4.1 通知栏展开的渲染管线
 
@@ -273,7 +292,7 @@ PopupWindow 的情况类似，但 PopupWindow 使用的是 App 进程自己的 W
 
 ## 五、桌面滑动 / 多任务切换的 Jank
 
-桌面滑动和多任务切换（Recents）是用户每天操作频率极高的场景。这两个场景的共同特点是：涉及 Launcher 进程（可能是系统 Launcher 也可能是第三方 Launcher）、SystemUI 进程、以及 SystemServer 进程的协调。
+从 Notification 继续往外看，系统 Launcher 和 Recents 界面是用户操作频率最高的两个系统级 UI 场景。它们涉及 Launcher 进程（系统 Launcher 或第三方 Launcher）、SystemUI 进程、以及 SystemServer 进程的三方协调，分析复杂度比前几个场景更高。
 
 ### 5.1 桌面滑动
 
@@ -331,7 +350,7 @@ PopupWindow 的情况类似，但 PopupWindow 使用的是 App 进程自己的 W
 
 ### 6.1 三步定位法
 
-**第一步：确认是否真的掉帧。** 不要只看 App 主线程的帧颜色（绿/黄/红），要看 SurfaceFlinger 的 BufferQueue 和合成情况。黄帧不一定掉帧（Triple Buffer 可能吸收了延迟），绿帧也不一定没问题（如果帧是在 Buffer 充裕时产生的，实际延迟可能已经被掩盖了）。[来源: obsidian/Personal-Knowlodge/source/android-systrace-smooth-in-action-3.md — 高爷对帧颜色与实际掉帧关系的分析]
+**第一步：确认是否真的掉帧。** 不要只看 App 主线程的帧颜色（绿/黄/红），要看 SurfaceFlinger 的 BufferQueue 和合成情况。帧颜色的含义和 Buffer 状态的判断方法在 7.1 节中有详细说明。黄帧不一定掉帧（Triple Buffer 可能吸收了延迟），绿帧也不一定没问题（如果帧是在 Buffer 充裕时产生的，实际延迟可能已经被掩盖了）。[来源: obsidian/Personal-Knowlodge/source/android-systrace-smooth-in-action-3.md — 高爷对帧颜色与实际掉帧关系的分析]
 
 **第二步：定位瓶颈在哪个线程。** 是主线程耗时（Traversal 阶段的 measure/layout/draw 过长）？还是 RenderThread 耗时（GPU 渲染超时）？还是线程本身没被及时调度（Runnable 状态时间长，等 CPU）？
 
@@ -371,6 +390,30 @@ PopupWindow 的情况类似，但 PopupWindow 使用的是 App 进程自己的 W
 **WebView 场景**：WebView 的渲染由 Chromium 的渲染管线完成（Browser 进程 → Renderer 进程 → GPU 进程）。Android 的 WebView 在系统层面是一个独立的渲染体系，它的卡顿分析需要使用 Chrome DevTools 的 Performance 面板而非 Perfetto。
 
 [待补充：地图和 WebView 场景的具体分析方法]
+
+---
+
+## 常见问题与误区
+
+**"我的列表滑动掉帧了，肯定是 RecyclerView 的锅"**
+
+不一定。我们在 1.3 节中分析过一个案例：RenderThread 被调度到了小核 CPU，App 代码完全没问题。正确的做法是先在 Perfetto 中确认瓶颈在哪个线程——主线程、RenderThread、还是调度问题——再针对性优化。先看 Trace 再动手，而不是先改代码再看效果。
+
+**"用了 Glide/Coil 加载图片，图片就不会导致卡顿了"**
+
+图片库解决的是"异步加载"问题，但加载完成后的回调仍然在主线程上执行。如果 ImageView 没有固定尺寸，每一张图片回调都会触发 `requestLayout()`，导致整棵 View 树重新 measure/layout。在快速滑动中，多个图片回调叠加，每一帧可能都有 layout 计算。解决方案是设置 `setHasFixedSize(true)` 或给 ImageView 固定宽高。
+
+**"黄帧就是掉帧"**
+
+不一定。黄帧表示这一帧的渲染时间超过了 VSync 周期但被 Triple Buffer 吸收了——用户可能感知不到。真正需要关注的是 SurfaceFlinger 侧的 `SFDeadlineMissed`（SurfaceFlinger 合成超时导致的那帧确实没有被显示出来）。分析时以 FrameTimeline track 的 jank type 为准，而不是 App 侧的帧颜色。
+
+**"卡顿一定是主线程的问题"**
+
+RenderThread 卡顿同样会导致掉帧。在 GPU 密集型场景（复杂自定义 View 的 `onDraw`、大量图片渲染、App Widget 渲染）中，RenderThread 的 GPU 渲染耗时可能成为瓶颈。在 Perfetto 中，RenderThread 的 slice 如果出现了长时间 `drawFrames`，说明 GPU 渲染是瓶颈。此时优化主线程的 layout 不会有效果，需要减少 GPU 绘制指令或简化渲染路径。
+
+**"页面切换卡顿只要优化新页面的布局就行了"**
+
+Activity 转场动画涉及源 Activity 和目标 Activity 两个进程的帧同步。即使目标页面的布局优化得再好，如果源 Activity 的退出动画帧没按时渲染，动画仍然会掉帧。在分析时需要同时查看两个进程的帧序列，不能只看目标 Activity。
 
 ---
 
