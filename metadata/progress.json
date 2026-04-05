@@ -3114,6 +3114,11 @@
       "created_by": "task2a-knowledge-gap",
       "gap_source": "官方文档+研究素材+AOSP结构",
       "gap_score": "15/20"
+    },
+    "2.9": {
+      "title": "渲染机制的版本演进",
+      "status": "ready-to-publish",
+      "reviewed_date": "2026-04-05"
     }
   },
   "5.1": {
