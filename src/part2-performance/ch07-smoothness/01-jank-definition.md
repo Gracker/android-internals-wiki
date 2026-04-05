@@ -2,15 +2,16 @@
 title: "卡顿的定义与分类"
 section: "7.1"
 chapter: "7.1"
-status: ready-for-review
+status: ready-to-publish
 drafted_date: "2026-03-30"
 drafted_by: "openclaw-task2"
-reviewed_date: "2026-04-03"
+reviewed_date: "2026-04-05"
 reviewed_by: "openclaw-task6"
 applicable_versions: "Android 4.1 (API 16) - Android 16 (API 36)"
 last_verified: "2026-03-31"
 last_verified_against: "AOSP android-16.0.0_r1"
-polish_count: 1
+polish_count: 2
+review_type: "post-polish-quality-gate"
 polish_date: "2026-04-05"
 polish_by: "task2b-polish"
 confidence: medium
@@ -214,7 +215,7 @@ FrameTimeline 的核心思路是"端到端追踪"：它给每一帧分配一个�
 
 ## 掉帧率、连续掉帧与卡顿率
 
-前面我们了解了 FrameTimeline 如何标注每一帧的 Jank 类型，但在实际项目交付中，产品经理和测试团队需要的不是"第 137 帧是 AppDeadlineMissed"这样的逐帧数据，而是可量化的聚合指标：整体掉帧率是多少？有没有 Frozen Frame？卡顿严重程度如何？这一节梳理行业内常用的几类流畅性指标。以下是几个关键指标：
+前面我们了解了 FrameTimeline 如何标注每一帧的 Jank 类型，但在实际项目交付中，产品经理和测试团队需要的不是"第 137 帧是 AppDeadlineMissed"这样的逐帧数据，而是可量化的聚合指标：整体掉帧率是多少？有没有 Frozen Frame？卡顿严重程度如何？这一节梳理行业内常用的几类流畅性指标。
 
 ### 掉帧率（Janky Frame Rate）
 
