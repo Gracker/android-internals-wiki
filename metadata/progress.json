@@ -4,11 +4,11 @@
   "metrics": {
     "total": 119,
     "draft": 12,
-    "ready-for-review": 26,
+    "ready-for-review": 25,
     "reviewed": 4,
-    "finalized": 26,
+    "finalized": 27,
     "staging_drafts": 0,
-    "last_updated": "2026-04-06T04:10:00+08:00",
+    "last_updated": "2026-04-06T04:20:00+08:00",
     "processing": 0,
     "ready-to-publish": 5,
     "last_reviewed": "2026-04-06"
@@ -476,11 +476,22 @@
         "验证标注：Systrace platform-tools 移除添加 [待验证]",
         "status: ready-for-review → finalized"
       ]
+    },
+    "8.4": {
+      "reviewed_date": "2026-04-06",
+      "reviewed_by": "openclaw-task6",
+      "review_status": "finalized",
+      "fixes_applied": [
+        "10处'你'→'我们'/中性化替换（writing-guide §3.5合规）",
+        "7处'链路'→'路径/流程'（writing-guide §9禁用词替换）",
+        "frontmatter补全：section/drafted_by/reviewed_date/reviewed_by",
+        "status: ready-for-review → finalized"
+      ]
     }
   },
   "review_stats": {
-    "total_reviewed": 41,
-    "reviewed_today": 22,
+    "total_reviewed": 42,
+    "reviewed_today": 23,
     "review_issues_total": 13
   },
   "completed": [
@@ -1720,6 +1731,14 @@
     "last_updated": "2026-04-05T15:07:41+08:00"
   },
   "history": [
+    {
+      "date": "2026-04-06",
+      "section": "8.4",
+      "title": "其他响应速度场景",
+      "action": "reviewed-finalized",
+      "review_by": "openclaw-task6",
+      "fixes": 17
+    },
     {
       "date": "2026-04-06",
       "section": "1.13",
@@ -3279,6 +3298,15 @@
       "confidence": "medium",
       "created_date": "2026-04-05",
       "created_by": "task2a-knowledge-gap"
+    },
+    "8.4": {
+      "title": "其他响应速度场景",
+      "status": "finalized",
+      "file": "src/part2-performance/ch08-responsiveness/04-other-scenarios.md",
+      "drafted_date": "2026-04-02",
+      "drafted_by": "openclaw-task2a",
+      "reviewed_date": "2026-04-06",
+      "reviewed_by": "openclaw-task6"
     }
   },
   "5.1": {
