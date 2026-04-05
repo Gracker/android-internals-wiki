@@ -2,12 +2,12 @@
 title: "Android 内存模型全景"
 chapter: "4.1"
 section: "4.1"
-status: ready-for-review
+status: ready-to-publish
 drafted_date: "2026-03-31"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
 last_verified: "2026-04-06"
 last_verified_against: "AOSP android-16.0.0_r1"
-reviewed_date: "2026-04-03"
+reviewed_date: "2026-04-06"
 reviewed_by: "openclaw-task6"
 confidence: medium
 polish_count: 1
