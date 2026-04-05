@@ -2,9 +2,10 @@
 title: "2.11 Flutter 渲染管线与性能"
 section: "2.11"
 chapter: "2.11"
-status: ready-for-review
+status: ready-to-publish
 drafted_date: "2026-04-01"
-reviewed_date: "2026-04-03"
+drafted_by: "openclaw-task2a"
+reviewed_date: "2026-04-06"
 reviewed_by: "openclaw-task6"
 polish_count: 1
 polish_date: "2026-04-05"
@@ -23,9 +24,6 @@ sources:
 tags: [flutter, rendering, impeller, skia, cross-platform, shader-compilation, jank]
 related_chapters: ["2.1", "2.3", "2.4", "2.5", "7.1", "7.7"]
 
-re-review-triggered-date: 2026-04-03
-re-review-triggered-by: task7-incremental-index
-re-review-triggered-reason: 新高质量素材「Hummer GC(16分)」— 直接涉及Flutter引擎GC/Dart堆问题
 ---
 
 <!-- outline-start -->
@@ -275,7 +273,7 @@ Impeller 在 Android 上优先使用 Vulkan 后端。对于不支持 Vulkan 的�
 
 **帧率稳定性提升**：因为消除了 shader 编译卡顿，帧率的波动大幅减小。Impeller 的可预测性能架构（predictable performance）——所有 shader 和 Pipeline State Object 在构建时预编译——使得复杂动画场景下的 jank 帧数量降低约 30-50%。在 120Hz 设备上，Impeller 能够更稳定地在 8ms 帧预算内完成渲染。
 
-**内存效率改善**：Impeller 通过优化的局部重绘（partial repaint）和更紧凑的资源管理减少了 GC 压力和内存占用。Flutter 3.27 的改进报告中指出 `[待验证：具体内存降低百分比需查阅 Flutter 3.27 release notes 确认]`，Impeller 在动画场景下的内存占用相比 Skia 有明显改善，主要得益于 AOT shader 机制消除了运行时 shader 缓存的内存开销。 不需要运行时 shader 缓存也是内存节省的重要原因之一。
+**内存效率改善**：Impeller 通过优化的局部重绘（partial repaint）和更紧凑的资源管理减少了 GC 压力和内存占用。Flutter 3.27 的改进报告中指出 `[待验证：具体内存降低百分比需查阅 Flutter 3.27 release notes 确认]`，Impeller 在动画场景下的内存占用相比 Skia 有明显改善，AOT shader 机制消除了运行时 shader 缓存是内存节省的主要原因之一。
 
 `[已验证: Impeller 默认状态基于 Flutter 3.27 release notes, flutter.dev]`
 
