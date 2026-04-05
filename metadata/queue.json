@@ -101,5 +101,40 @@
     "original_review_log": "logs/review/2026-04-05-1720-review.md",
     "completed_at": "2026-04-05T17:41:59",
     "completed_by": "task2b-rework"
+  },
+  {
+    "section": "1.13",
+    "section_title": "MessageQueue 机制与 DeliQueue 无锁优化",
+    "priority": 80,
+    "reason": "知识缺口挖掘：Android 17 DeliQueue 是主线程性能的重大变更，研究素材 Q:20/20，锁竞争是掉帧根因之一",
+    "material_paths": [
+      "intake/research-feeds/2026-04-05-19-android17-deliqueue-lockfree-messagequeue.md"
+    ],
+    "added_by": "task2a-knowledge-gap",
+    "added_at": "2026-04-05T19:10:00+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "2.17",
+    "section_title": "Frame Pacing Library 与帧节奏控制",
+    "priority": 80,
+    "reason": "知识缺口挖掘：游戏渲染是全书未覆盖的重要场景，Swappy 是 AGDK 核心组件，与 VSync/ARR/Choreographer 关联紧密",
+    "material_paths": [
+      "intake/research-feeds/2026-04-05-19-android16-arr-surfaceflinger-choreographer-frame-pacing.md",
+      "intake/research-feeds/2026-04-05-19-angle-vulkan-rendering-pipeline-transition.md"
+    ],
+    "added_by": "task2a-knowledge-gap",
+    "added_at": "2026-04-05T19:10:00+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "8.7",
+    "section_title": "Baseline Profiles 与编译优化实践",
+    "priority": 80,
+    "reason": "知识缺口挖掘：Baseline Profiles 是启动优化最有效的单点手段，Google 官方量化 30% 提升，与 1.7 ART 编译/1.12 AutoFDO 构成完整编译优化链",
+    "material_paths": [],
+    "added_by": "task2a-knowledge-gap",
+    "added_at": "2026-04-05T19:10:00+08:00",
+    "status": "pending"
   }
 ]
