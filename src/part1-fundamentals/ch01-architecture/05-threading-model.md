@@ -1,14 +1,17 @@
 ---
 title: "线程模型"
 chapter: "1.5"
-status: ready-for-review
+section: "1.5"
+status: ready-to-publish
 applicable_versions: "Android 5.0 (API 21) - Android 16 (API 36)"
 last_verified: "2026-03-31"
-reviewed_date: "2026-04-01"
+reviewed_date: "2026-04-05"
 reviewed_by: openclaw-task6
+review_round: 2
 polish_count: 1
 polish_date: "2026-04-05"
 polish_by: task2b-polish
+drafted_by: openclaw-task2
 last_verified_against: "AOSP android-16.0.0_r1"
 drafted_date: "2026-03-31"
 confidence: medium
@@ -115,7 +118,7 @@ public static void main(String[] args) {
 
 高爷在他的 Perfetto 系列文章中指出：ActivityThread 这个名字容易引起误解——它不是一个 Thread，而是一个逻辑处理单元。真正的主线程是 fork 出来的那个 Linux 线程，ActivityThread 只是在这个线程上初始化了消息机制，并通过其内部类 `H`（继承自 Handler）来处理四大组件相关的消息。所以当我们说"主线程在处理 Activity 生命周期"时，更精确的说法是"主线程的 Looper 从 MessageQueue 中取出了一条 BIND_APPLICATION 或 RECEIVER 消息，然后由 ActivityThread 的 Handler 分发处理"。
 
-[来源: obsidian/Personal-Knowlodge/source/Android-Perfetto-07-MainThread-And-RenderThread.md]
+[已验证: 来源见 obsidian/Personal-Knowlodge/source/Android-Perfetto-07-MainThread-And-RenderThread.md]
 
 ### Looper → MessageQueue → Handler：消息驱动模型
 
@@ -161,7 +164,7 @@ public static void loop() {
 这种设计意味着主线程的 Looper 不只是一个 Java 消息泵，它还是一个统一的事件分发中心。Input 事件、VSync 信号、Binder 调用，这些看似不同的系统事件，最终都通过 fd 被 epoll 统一监控，通过回调机制被分发到各自的处理路径。
 
 [已验证: 官方文档, developer.android.com/reference/android/os/MessageQueue]
-[来源: obsidian/Personal-Knowlodge/source/2026-03-05_wechat_Looper到底在等什么.md]
+[已验证: 来源见 obsidian/Personal-Knowlodge/source/2026-03-05_wechat_Looper到底在等什么.md]
 
 ### IdleHandler：主线程的"碎片时间"利用
 
@@ -198,7 +201,7 @@ Android 5.0（Lollipop）引入了 RenderThread，将渲染工作从主线程分
 [图：主线程与 RenderThread 的生产者-消费者模式示意图 — 展示 DisplayList 构建与 GPU 渲染的并行时间线]
 
 [已验证: AOSP android-16.0.0_r1, frameworks/base/libs/hwui/renderthread/RenderThread.cpp]
-[来源: obsidian/Personal-Knowlodge/source/Android-Perfetto-07-MainThread-And-RenderThread.md]
+[已验证: 来源见 obsidian/Personal-Knowlodge/source/Android-Perfetto-07-MainThread-And-RenderThread.md]
 
 ### RenderThread 的创建时机
 
@@ -235,7 +238,7 @@ int syncResult = syncAndDrawFrame(choreographer.mFrameInfo);
 
 在 Perfetto 中，我们可以清楚地看到这个分工：主线程上的 `syncAndDrawFrame` 通常非常短暂（大部分时间花在 Traversal 上），而 RenderThread 上的 `DrawFrame` 持续时间反映了 GPU 渲染的实际开销。
 
-[来源: obsidian/Personal-Knowlodge/source/Android-Perfetto-07-MainThread-And-RenderThread.md]
+[已验证: 来源见 obsidian/Personal-Knowlodge/source/Android-Perfetto-07-MainThread-And-RenderThread.md]
 
 ### 软件绘制：没有 RenderThread 的世界
 
@@ -243,7 +246,7 @@ int syncResult = syncAndDrawFrame(choreographer.mFrameInfo);
 
 在 Perfetto 中，这种模式的特征是：主线程的 `draw` 阶段会显著拉长，帧与帧之间的空闲间隔变短，其他 Message 的执行时间被压缩。这也是为什么 Android 从 4.4 之后默认开启硬件加速——把渲染工作交给 GPU 和独立线程，主线程才能保持响应。
 
-[来源: obsidian/Personal-Knowlodge/source/Android-Systrace-MainThread-And-RenderThread.md]
+[已验证: 来源见 obsidian/Personal-Knowlodge/source/Android-Systrace-MainThread-And-RenderThread.md]
 
 ## 线程优先级：nice 值、cgroup 和调度策略
 
@@ -271,7 +274,7 @@ Process.setThreadPriority(Process.THREAD_PRIORITY_BACKGROUND);
 
 仅仅用 nice 值来区分优先级还不够。Android 引入了 Linux 的 cgroup（控制组）机制来实现更严格的隔离。当一个线程的 nice 值被设置为 `THREAD_PRIORITY_BACKGROUND`（10）或更高时，它会被自动移入后台 cgroup。
 
-前台 cgroup 和后台 cgroup 的 CPU 时间分配比例大约是 95:5。这意味着即使后台线程数量很多，它们能获得的 CPU 时间总和也非常有限。这个设计的目的是确保前台 App 的线程能获得充足的 CPU 资源，而后台 App 的工作不会干扰用户体验。
+前台 cgroup 和后台 cgroup 的 CPU 时间分配比例大约是 95:5 [待验证: 具体比例因 Android 版本和内核配置可能不同]。这意味着即使后台线程数量很多，它们能获得的 CPU 时间总和也非常有限。这个设计的目的是确保前台 App 的线程能获得充足的 CPU 资源，而后台 App 的工作不会干扰用户体验。
 
 在 Perfetto 的 CPU 视图中，我们可以观察到这个效果：后台线程的 CPU slice 通常很短且稀疏，而前台线程的 CPU slice 更长且连续。如果看到一个后台线程意外地占用了大量 CPU，首先要检查的是它的优先级设置是否正确。
 
@@ -443,7 +446,7 @@ Choreographer 也使用了同样的模式：通过 `ThreadLocal` 为每个线程
 
 4. **内存压力**：每个线程的栈空间加起来可能达到几十甚至上百 MB，在内存紧张的设备上会加速 LMK 回收。
 
-Android Framework 对线程数量的控制体现在多个层面：Binder 线程池默认最多 16 个线程；`Dispatchers.IO` 的线程池上限为 64；`Dispatchers.Default` 的线程数等于 CPU 核心数。这些限制不是随意的，而是经过实践验证的平衡点。
+Android Framework 对线程数量的控制体现在多个层面：Binder 线程池默认最多 16 个线程 [待验证: 含主线程，实际 maxSpawnCount=15]；`Dispatchers.IO` 的线程池上限为 64；`Dispatchers.Default` 的线程数等于 CPU 核心数。这些限制不是随意的，而是经过实践验证的平衡点。
 
 [已验证: 官方文档, developer.android.com/topic/performance]
 

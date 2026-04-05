@@ -435,3 +435,13 @@
 - **问题**：示例使用 `name = '低内存杀死'` 作为 slice name，但实际 Perfetto Trace 中 LMK 相关事件的 slice name 为英文（如 `lmk`、`kill_one_process`）。中文 slice name 不反映真实数据，可能误导读者认为 Perfetto 中有中文字段名。
 - **建议**：将示例改为真实 slice name（如 `name = 'lmk'`），或改用其他更通用的 EXTRACT_ARG 使用场景。
 - **review 日志**：logs/review/2026-04-05-1720-review.md
+
+## [2026-04-05 19:00] task5 研究建议
+
+1. **建议将 2.5 Choreographer 与渲染流水线的 priority 提升到 85**
+   - 原因：Android 17 DeliQueue 无锁 MessageQueue 是重大架构变更，有具体性能数据支撑（掉帧减少 4-9.1%）
+   - 素材：intake/research-feeds/2026-04-05-19-android17-deliqueue-lockfree-messagequeue.md
+
+2. **建议为 2.2 BufferQueue 章节增加 Android 14 buffer cache purge 内容**
+   - 原因：Android 14 引入的 per-layer buffer cache 强制清除直接影响 BufferQueue 内存管理
+   - 素材：intake/research-feeds/2026-04-05-19-android14-buffer-cache-purge-graphics-memory.md
