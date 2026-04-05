@@ -1,7 +1,7 @@
 ---
 title: "过度绘制"
 chapter: "2.8"
-status: ready-for-review
+status: ready-to-publish
 polish_count: 1
 polish_date: "2026-04-05"
 polish_by: "task2b-polish"
@@ -10,7 +10,7 @@ last_verified: "2026-03-30"
 last_verified_against: "AOSP android-16.0.0_r1"
 drafted_date: "2026-03-30"
 confidence: high
-reviewed_date: "2026-04-02"
+reviewed_date: "2026-04-05"
 reviewed_by: openclaw-task6
 sources:
   - type: blog
@@ -106,7 +106,7 @@ GPU 的渲染能力有一个上限——fillrate（填充率），即每秒能�
 
 **Android Studio Layout Inspector** 可以检查 View 层级，帮我们理解哪些 View 叠加在一起导致过度绘制。**Profile GPU Rendering**（开发者选项中的"显示 GPU 渲染分析"）会在屏幕上显示一个柱状图，每一根柱子代表一帧的渲染耗时——如果柱子经常超过绿线（16.6ms），结合过度绘制颜色图就可以判断 GPU 是否因为过度绘制而成为瓶颈。
 
-高爷在实战文章中还使用了 **Tracer for OpenGL ES** 工具（位于 Android Device Monitor 中），它可以逐帧记录 OpenGL ES 的绘制命令，让我们看到哪些 draw call 是在绘制被完全遮挡的内容。优化前后对比 Tracer 输出，能清晰看到减少的无效绘制命令。
+在实战分析中还可以使用 **Tracer for OpenGL ES** 工具（位于 Android Device Monitor 中），它可以逐帧记录 OpenGL ES 的绘制命令，让我们看到哪些 draw call 是在绘制被完全遮挡的内容。优化前后对比 Tracer 输出，能清晰看到减少的无效绘制命令。
 
 [来源: obsidian/Personal-Knowlodge/source/android-performance-optimization-overdraw-2.md]
 
@@ -118,7 +118,7 @@ GPU 的渲染能力有一个上限——fillrate（填充率），即每秒能�
 
 每个 Activity 的 Window 都有一个默认背景。这个背景由 Activity 的主题（Theme）决定，通常是一个不透明的颜色或 drawable。当我们在 Activity 的布局根节点又设置了自己的背景时，Window 的默认背景就被完全遮挡了——但它仍然被绘制了一次。
 
-高爷在实战优化中发现了一个典型案例：文件管理器应用的 ActionBar 和内容区域整体呈现蓝色（1x 过度绘制），追踪后发现是整个 Window 的主题背景导致的。这个背景在所有内容之下，被完全覆盖，没有任何视觉贡献。
+在实际优化案例中发现了一个典型案例：文件管理器应用的 ActionBar 和内容区域整体呈现蓝色（1x 过度绘制），追踪后发现是整个 Window 的主题背景导致的。这个背景在所有内容之下，被完全覆盖，没有任何视觉贡献。
 
 解决方法是透明化 Window 背景：
 
@@ -145,7 +145,7 @@ getWindow().setBackgroundDrawableResource(android.R.color.transparent);
 
 这种层层叠加的背景在复杂布局中非常普遍。排查方法是打开 GPU 过度绘制调试工具，然后用 Hierarchy Viewer（或 Layout Inspector）对照查看每个 View 的区域和背景设置。
 
-高爷的实战案例中展示了完整的排查流程：通过 Hierarchy Viewer 定位到 CustomViewBehind 这个 View 设置了不必要的背景色（`R.color.mz_slidingmenu_background_light`），而这个 View 的内容在运行时会被上层完全覆盖。去掉这行代码后，中间区域的过度绘制从绿色（2x）降到蓝色（1x）。
+实战排查流程如下：通过 Hierarchy Viewer 定位到 CustomViewBehind 这个 View 设置了不必要的背景色（`R.color.mz_slidingmenu_background_light`），而这个 View 的内容在运行时会被上层完全覆盖。去掉这行代码后，中间区域的过度绘制从绿色（2x）降到蓝色（1x）。
 
 [来源: obsidian/Personal-Knowlodge/source/android-performance-optimization-overdraw-2.md]
 
