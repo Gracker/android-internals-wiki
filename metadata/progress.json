@@ -3,14 +3,15 @@
   "total_sections": 101,
   "metrics": {
     "total": 114,
-    "draft": 10,
+    "draft": 9,
     "ready-for-review": 49,
     "reviewed": 4,
     "finalized": 44,
     "staging_drafts": 0,
-    "last_updated": "2026-04-05T19:20:00",
+    "last_updated": "2026-04-05T20:06:00+08:00",
     "processing": 0,
-    "ready-to-publish": 5
+    "ready-to-publish": 6,
+    "last_reviewed": "2026-04-05"
   },
   "reviewed_sections": {
     "8.1": {
@@ -1418,15 +1419,30 @@
       "verification_level": "L2",
       "word_count": "~9000",
       "completed_at": "2026-04-05T16:16:46.598685"
+    },
+    {
+      "chapter": "2.15",
+      "section": "2.15",
+      "title": "DMA-BUF、Gralloc 与跨进程图形内存共享",
+      "status": "ready-for-review",
+      "drafted_date": "2026-04-05",
+      "drafted_by": "openclaw-task2a",
+      "anchors_covered": 6,
+      "anchors_total": 6,
+      "extensions_covered": 2,
+      "extensions_total": 3,
+      "verification_level": "L2",
+      "word_count": "~8500",
+      "completed_at": "2026-04-05T20:06:00+08:00"
     }
   ],
   "ready_for_review": 5,
-  "last_updated": "2026-04-05T18:02:00+08:00",
+  "last_updated": "2026-04-05T20:31:00",
   "stats": {
     "total": 106,
-    "completed": 76,
-    "pending": 30,
-    "last_updated": "2026-04-05T16:16:46.598690"
+    "completed": 77,
+    "pending": 29,
+    "last_updated": "2026-04-05T20:06:00+08:00"
   },
   "research_stats": {
     "runs_today": [
@@ -1650,6 +1666,15 @@
     "last_updated": "2026-04-05T15:07:41+08:00"
   },
   "history": [
+    {
+      "date": "2026-04-05",
+      "section": "2.15",
+      "title": "DMA-BUF、Gralloc 与跨进程图形内存共享",
+      "action": "draft-completed",
+      "word_count": "~8500",
+      "anchors_covered": 6,
+      "extensions_covered": 2
+    },
     {
       "date": "2026-04-05",
       "section": "8.2",
@@ -3327,12 +3352,14 @@
       "chapter": "2.15",
       "section": "2.15",
       "title": "DMA-BUF、Gralloc 与跨进程图形内存共享",
-      "status": "pending",
+      "status": "completed",
       "priority": 80,
       "source": "task2a-knowledge-gap",
       "created_date": "2026-04-05",
       "score": "17/20",
-      "file": "src/part1-fundamentals/ch02-rendering/15-dmabuf-gralloc.md"
+      "file": "src/part1-fundamentals/ch02-rendering/15-dmabuf-gralloc.md",
+      "completed_at": "2026-04-05T20:06:00+08:00",
+      "completed_by": "openclaw-task2a"
     },
     {
       "chapter": "2.16",
