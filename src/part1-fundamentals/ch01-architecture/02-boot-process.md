@@ -1,15 +1,16 @@
 ---
 title: "系统启动全流程"
 chapter: "1.2"
-status: ready-for-review
+status: ready-to-publish
 section: "1.2"
-reviewed_date: "2026-04-02"
+reviewed_date: "2026-04-05"
 reviewed_by: openclaw-task6
 drafted_date: "2026-03-30"
 drafted_by: openclaw-task2a
 review_v2_fix: "误区 section boot_completed 事件描述修正 + 事件排序对齐"
 polish_count: 1
 polish_date: "2026-04-05"
+review_round: 2
 polish_by: task2b-polish
 applicable_versions: "Android 8 (API 26) - Android 16 (API 36)"
 last_verified: "2026-03-31"
@@ -311,7 +312,7 @@ SystemServer 启动完成后，AMS 会发送 `ACTION_BOOT_COMPLETED` 广播（�
 
 但要注意两个细节：
 
-1. 在 Android 24+（Nougat），先发送 `ACTION_LOCKED_BOOT_COMPLETED`（设备启动完成但处于锁屏状态），用户解锁后再发送 `ACTION_BOOT_COMPLETED`。
+1. 在 Android 7.0+（Nougat，API 24+），先发送 `ACTION_LOCKED_BOOT_COMPLETED`（设备启动完成但处于锁屏状态），用户解锁后再发送 `ACTION_BOOT_COMPLETED`。
 2. 现代 Android 版本对 `BOOT_COMPLETED` 广播做了限流——如果 App 从未被用户打开过，可能收不到这个广播。
 
 ### bootstat 工具
@@ -366,7 +367,7 @@ TimingsTraceAndSlog 覆盖 SystemServer 的四个核心启动阶段：
 1. **startBootstrapServices()**：启动相互依赖的关键服务（ATMS、PMS 等），这些服务是后续一切的基石
 2. **startCoreServices()**：启动无直接依赖的核心服务（BatteryService、UsageStatsService 等）
 3. **startOtherServices()**：启动其余系统服务（AMS、WMS 等），这是最耗时的阶段，因为服务数量最多
-4. **startApexServices()**：[Android 16+] 启动 APEX 模块中包含的服务，这是 Android 模块化架构演进的产物
+4. **startApexServices()**：启动 APEX 模块中包含的服务，这是 Android 模块化架构演进的产物 [待验证: startApexServices 从 Android 10 引入，此处作为 TimingsTraceAndSlog 追踪阶段列出，确认为 Android 16 新增追踪还是此前已有]
 
 在 Perfetto 的 system_server 进程 track 中，这四个阶段呈现为嵌套的 slice，每个 slice 内部又能看到各服务自身的初始化耗时。当分析 SystemServer 启动慢的问题时，先看这四个 slice 中哪个最宽，再钻进去看具体哪个服务拖了后腿——这是一套非常高效的分析路径。
 
