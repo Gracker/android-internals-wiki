@@ -4,11 +4,14 @@ chapter: "4.3"
 section: "4.3"
 drafted_date: "2026-03-31"
 drafted_by: "openclaw-task2"
-status: finalized
+status: ready-for-review
 applicable_versions: "Android 8.0 (API 26) - Android 17 (API 36)"
 last_verified: "2026-03-31"
 reviewed_date: "2026-04-03"
 reviewed_by: "openclaw-task6"
+polish_count: 1
+polish_date: "2026-04-06"
+polish_by: "task2b-polish"
 last_verified_against: "AOSP android-15.0.0_r1"
 confidence: medium
 sources:
@@ -22,8 +25,8 @@ sources:
     path: "【Android ART】Heap的内存布局 (微信技术文章)"
   - type: official
     path: "https://developer.android.com/topic/performance/baselineprofiles"
-tags: ['art', 'gc', 'heap', 'tlab', 'aot', 'jit', 'cc-gc', 'cmc-gc']
-related_chapters: ["4.1", "4.2", "4.4", "4.6", "7.1", "7.7"]
+tags: ['art', 'gc', 'heap', 'tlab', 'aot', 'jit', 'cc-gc', 'cmc-gc', 'uffd', 'read-barrier', 'memory-allocation', 'generational-gc']
+related_chapters: ["4.1", "4.2", "4.4", "4.6", "4.7", "4.8", "7.1", "7.7"]
 
 re-review-triggered-date: 2026-04-03
 re-review-triggered-by: task7-incremental-index
@@ -375,9 +378,49 @@ Google 报告在部分工作负载上，16KB 页通过减少 TLB miss 带来了�
 
 ### 关键 Track 和事件
 
-- **`art_gc` counter**：显示 GC 的整体活动，可以看到 Young GC 和 Full GC 的频率和持续时间
-- **`HeapTaskDaemon` 线程**：ART 的后台 GC 线程，Concurrent GC 的主要执行者
-- **`AllocObject` trace point**：当应用线程在分配对象时被阻塞（Allocation Stall），在对应线程的 track 上可以看到
+在 Perfetto 的 UI 中，ART GC 的活动分布在几个关键位置：
+
+- **`art_gc` counter track**：显示 GC 的整体活动。Young GC 在这个 track 上表现为短促的脉冲，Full GC 则是持续更长的波峰
+- **`HeapTaskDaemon` 线程**：ART 的后台 GC 线程，Concurrent GC 的主要执行者。这个线程的活跃区间对应并发标记和拷贝/压缩的时间
+- **`AllocObject` trace point**：当应用线程在分配对象时被阻塞（Allocation Stall），在对应线程的 track 上可以看到这个 slice
+
+对于需要量化分析的场景，可以使用 Perfetto 的 SQL 视图。以下查询统计一段时间内各类型 GC 的次数和平均耗时：
+
+```sql
+-- 统计 GC 事件类型、次数和平均耗时
+SELECT
+  slice.name AS gc_type,
+  COUNT(*) AS count,
+  ROUND(AVG(dur / 1e6), 2) AS avg_duration_ms
+FROM slice
+JOIN track ON slice.track_id = track.id
+WHERE track.name LIKE '%art_gc%'
+  AND slice.name LIKE '%GC%'
+GROUP BY gc_type
+ORDER BY avg_duration_ms DESC;
+```
+
+另一个实用的查询是检查 Allocation Stall——找出哪些线程在对象分配上等待了多久：
+
+```sql
+-- 查找 Allocation Stall 事件
+SELECT
+  process.name AS process_name,
+  thread.name AS thread_name,
+  slice.name,
+  ROUND(slice.dur / 1e6, 2) AS stall_duration_ms
+FROM slice
+JOIN track ON slice.track_id = track.id
+JOIN thread_track ON thread_track.id = track.id
+JOIN thread USING (utid)
+JOIN process USING (upid)
+WHERE slice.name LIKE '%AllocObject%'
+  AND slice.dur > 1e6  -- 只看超过 1ms 的 stall
+ORDER BY slice.dur DESC
+LIMIT 20;
+```
+
+这些 SQL 查询的结果可以直接指导优化方向：如果 Young GC 平均耗时超过 5ms，需要排查对象抖动；如果 Allocation Stall 频繁出现，说明堆空间需要优化或增大。
 
 ### 正常 vs 异常的 GC 模式
 
@@ -387,11 +430,7 @@ Google 报告在部分工作负载上，16KB 页通过减少 TLB miss 带来了�
 - GC 吞吐量：> 98%
 - Allocation Stall：几乎不可见
 
-异常情况下需要关注的信号：
-- Young GC 频繁（每秒多次）→ 对象抖动，检查是否有大量临时对象被频繁创建
-- Full GC 频繁（每十几秒一次）→ 堆压力大，可能有内存泄漏或数据结构选择不当
-- Allocation Stall 明显 → 堆接近上限，需要减少峰值内存使用
-- GC 线程 CPU 占用持续较高 → GC 压力大，需要从源头减少对象分配
+需要警惕的异常信号有几类。如果 Young GC 频繁到每秒多次，通常是对象抖动——大量临时对象被快速创建又快速丢弃，需要检查循环内的对象分配。Full GC 每十几秒触发一次，则说明堆压力持续偏高，可能存在内存泄漏或数据结构选择不当（比如用 ArrayList 存储海量数据而不是按需分页）。Allocation Stall 明显出现在 Trace 中，意味着堆已经接近上限，需要减少峰值内存使用。如果 GC 线程的 CPU 占用持续较高，说明整体 GC 压力大，需要从源头减少对象分配，而不是寄希望于 GC 策略的优化。
 
 [待补充：Trace 截图展示正常和异常 GC 模式的对比]
 
@@ -399,11 +438,11 @@ Google 报告在部分工作负载上，16KB 页通过减少 TLB miss 带来了�
 
 ### 误区一：GC 导致了卡顿，应该手动调用 System.gc()
 
-恰恰相反。`System.gc()` 会强制触发一次 Full GC，暂停时间比正常的 Young GC 长得多。ART 的 GC 是自适应的，它知道什么时候该回收。如果发现自己需要手动触发 GC 来"解决问题"，通常说明存在内存泄漏或对象抖动，应该从源头修复。
+恰恰相反。`System.gc()` 会强制触发一次 Full GC，暂停时间比正常的 Young GC 长得多。ART 的 GC 是自适应的，它知道什么时候该回收。如果发现需要手动触发 GC 来"解决问题"，通常说明存在内存泄漏或对象抖动，应该从源头修复。
 
 ### 误区二：对象池总是能减少 GC 压力
 
-对象池在特定场景（如游戏中的子弹对象、消息队列的 Message）下确实有效。但不加区分地使用对象池反而会增加 Old Generation 中的常驻对象，导致 Full GC 时需要扫描更多的存活对象。正确的做法是先用 Trace 分析确认 GC 压力来源，再针对性地优化。
+对象池在特定场景（如游戏中的子弹对象、消息队列的 Message）下确实有效。但不加区分地使用对象池反而会增加 Old Generation 中的常驻对象，导致 Full GC 时需要扫描更多的存活对象。正确做法是先用 Trace 分析确认 GC 压力来源，再针对性地优化。
 
 ### 误区三：Android 的 GC 已经足够快了，不需要关注
 
