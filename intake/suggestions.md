@@ -428,3 +428,10 @@
 - **问题**：文中描述 RenderEngine 运行在 RenderThread 中，负责 App 的 DisplayList 渲染。但在 AOSP 中 RenderEngine 运行在 SurfaceFlinger 进程中，App 的 RenderThread 使用 HWUI 的 Skia Pipeline。两者混淆。
 - **建议**：重新组织此节，区分（1）App RenderThread 的 Skia 渲染管线和（2）SurfaceFlinger 的 RenderEngine/GPU Composition 管线
 - **review 日志**：logs/review/2026-04-05-0220-review.md
+
+## [Task6 Review] 13.4 命令行打开超大 Trace — 2026-04-05
+- **类型**：存疑
+- **位置**：EXTRACT_ARG 示例代码（「Perfetto SQL 查询基础」小节）
+- **问题**：示例使用 `name = '低内存杀死'` 作为 slice name，但实际 Perfetto Trace 中 LMK 相关事件的 slice name 为英文（如 `lmk`、`kill_one_process`）。中文 slice name 不反映真实数据，可能误导读者认为 Perfetto 中有中文字段名。
+- **建议**：将示例改为真实 slice name（如 `name = 'lmk'`），或改用其他更通用的 EXTRACT_ARG 使用场景。
+- **review 日志**：logs/review/2026-04-05-1720-review.md
