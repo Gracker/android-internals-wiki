@@ -1,7 +1,7 @@
 ---
 title: "App 启动全流程"
 chapter: "8.2"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 8.0 (API 26) - Android 16 (API 36)"
 last_verified: "2026-04-01"
 last_verified_against: "AOSP android-15.0.0_r1"
@@ -19,7 +19,11 @@ sources:
     path: "developer.android.com/topic/performance/vitals/launch-time"
 tags: [cold-start, warm-start, hot-start, TTID, TTFD, launch, startup, reportFullyDrawn, baseline-profiles, app-startup]
 related_chapters: ["8.1", "1.2", "2.4", "2.5", "7.1"]
+section: "8.2"
 drafted_date: "2026-04-01"
+drafted_by: "openclaw-task2a"
+reviewed_date: "2026-04-05"
+reviewed_by: "openclaw-task6"
 ---
 
 # App 启动全流程
@@ -53,11 +57,11 @@ drafted_date: "2026-04-01"
 
 ## 为什么要了解 App 启动流程
 
-你在 Perfetto 中打开一个冷启动的 Trace，看到的是一段横跨 system_server、SurfaceFlinger 和目标 App 三个进程的长长的时间线。从用户点击桌面图标到界面显示出来，中间经历了进程创建、Binder 通信、Application 初始化、Activity 生命周期、View 树构建、第一帧绘制、SurfaceFlinger 合成——整个过程可能超过 2 秒，而你真正能优化的部分只占其中一段。
+我们在 Perfetto 中打开一个冷启动的 Trace，看到的是一段横跨 system_server、SurfaceFlinger 和目标 App 三个进程的长长的时间线。从用户点击桌面图标到界面显示出来，中间经历了进程创建、Binder 通信、Application 初始化、Activity 生命周期、View 树构建、第一帧绘制、SurfaceFlinger 合成——整个过程可能超过 2 秒，而我们真正能优化的部分只占其中一段。
 
-这就是我们需要完整理解启动流程的原因。如果你只知道 Application.onCreate 里不能做太多事，那你能优化的范围就很有限。但如果你知道从点击到首帧的完整路径，就能找到所有可能的优化切入点：哪些是系统开销你无法改变的，哪些是应用侧可以加速的，哪些是可以通过缓存机制绕过的。
+这就是我们需要完整理解启动流程的原因。如果我们只知道 Application.onCreate 里不能做太多事，那我们能优化的范围就很有限。但如果我们知道从点击到首帧的完整路径，就能找到所有可能的优化切入点：哪些是系统开销我们无法改变的，哪些是应用侧可以加速的，哪些是可以通过缓存机制绕过的。
 
-了解完整流程之后，你能做之前做不到的事：在 Perfetto 中精确定位启动耗时的瓶颈环节，区分系统耗时和应用耗时，有针对性地制定优化策略，而不是盲目地在 Application.onCreate 里删几行代码。
+了解完整流程之后，我们能做之前做不到的事：在 Perfetto 中精确定位启动耗时的瓶颈环节，区分系统耗时和应用耗时，有针对性地制定优化策略，而不是盲目地在 Application.onCreate 里删几行代码。
 
 ## 冷启动、温启动、热启动：三种启动状态
 
@@ -94,7 +98,7 @@ Android 把应用的启动分为三种状态：冷启动（Cold Start）、温�
 
 判断条件从代码层面看：system_server 中有目标进程的 ProcessRecord（`hasThread()` 返回 true，表示 ActivityThread 已绑定），但没有目标 Activity 的 ActivityRecord（或者 ActivityRecord 不可复用）。
 
-温启动的路径从上面的第 7 步开始，省去了 fork 进程、创建 Application 的开销。在 Perfetto 中你会看到没有 "BindApplication" 这段，对于一个中等复杂度的应用，温启动通常比冷启动快 30%-50%。
+温启动的路径从上面的第 7 步开始，省去了 fork 进程、创建 Application 的开销。在 Perfetto 中我们会看到没有 "BindApplication" 这段，对于一个中等复杂度的应用，温启动通常比冷启动快 30%-50%。
 
 ### 热启动：进程和 Activity 都在
 
@@ -106,7 +110,7 @@ Android 把应用的启动分为三种状态：冷启动（Cold Start）、温�
 
 ### 在 Perfetto 中区分三种启动
 
-在 Perfetto 中，你可以通过以下方式判断启动类型：
+在 Perfetto 中，我们可以通过以下方式判断启动类型：
 
 - **冷启动**：存在 "BindApplication" slice，且能看到新进程的创建
 - **温启动**：没有 "BindApplication"，但有 "activityStart" 或 "launching" 标记
@@ -130,7 +134,7 @@ Launcher 调用 startActivity()，经过几层封装后通过 Binder IPC 发送�
 
 ATMS 确认 Pause 完成后，检查目标进程是否存在。冷启动场景下，目标进程不存在，于是通过 Local Socket 向 Zygote 发送 fork 请求。Zygote fork 出子进程后，将 PID 返回给 system_server。
 
-这一阶段的开销主要是：Binder IPC（2 次跨进程调用）、Zygote fork（创建新进程）、以及 system_server 内部的调度逻辑。在 Perfetto 中，你可以在 system_server 进程中看到 "launching: xxx" 的 slice，在 app 进程中看到 "BindApplication" 的开始。
+这一阶段的开销主要是：Binder IPC（2 次跨进程调用）、Zygote fork（创建新进程）、以及 system_server 内部的调度逻辑。在 Perfetto 中，我们可以在 system_server 进程中看到 "launching: xxx" 的 slice，在 app 进程中看到 "BindApplication" 的开始。
 
 ### 第二阶段：进程初始化与 Application 创建
 
@@ -140,9 +144,9 @@ fork 出来的子进程从 ActivityThread.main() 开始执行。这个 main() �
 
 **通知 system_server 进程已就绪**。通过 Binder 调用 ATMS 的 attachApplication() 和 AMS 的 attachApplication()。ATMS 收到通知后，会继续后续的 Activity 启动流程。注意，这个时候主线程的 Looper.loop() 还没真正开始循环（或者刚开始），因为 attachApplication 的调用是在 main() 函数中同步完成的，而后续的消息处理要等 loop() 跑起来才行。
 
-AMS 的 attachApplication 会触发 bindApplication，这会向主线程发送一个 BIND_APPLICATION 消息。当 Looper 开始循环后，处理这个消息时，会创建 Application 对象。如果你在 AndroidManifest.xml 中声明了自定义的 Application 类，系统会通过反射创建你的 Application 实例，然后依次调用：
+AMS 的 attachApplication 会触发 bindApplication，这会向主线程发送一个 BIND_APPLICATION 消息。当 Looper 开始循环后，处理这个消息时，会创建 Application 对象。如果我们在 AndroidManifest.xml 中声明了自定义的 Application 类，系统会通过反射创建 Application 实例，然后依次调用：
 
-1. Application.attachBaseContext()——这是你能最早介入的回调
+1. Application.attachBaseContext()——这是我们能最早介入的回调
 2. Application.onCreate()——大多数 SDK 初始化代码放在这里
 
 [已验证: AOSP android-15.0.0_r1, frameworks/base/core/java/android/app/ActivityThread.java: handleBindApplication]
@@ -155,7 +159,7 @@ Application 初始化完成后，system_server 通过 ClientLifecycleManager 向
 
 App 的 ActivityThread 在主线程处理 EXECUTE_TRANSACTION 消息。TransactionExecutor 按顺序执行：
 
-**先执行 callback**：LaunchActivityItem.execute() → 调用 handleLaunchActivity() → performLaunchActivity()。这一步创建 Activity 对象（通过反射），调用 Activity.attach() 初始化（创建 PhoneWindow），然后调用 Activity.onCreate()。在 onCreate 中你必须调用 setContentView()，否则后续绘制会报错。setContentView 的本质是创建 DecorView（根 View），并将你的布局文件 inflate 后挂载到 DecorView 下面的 mContentParent 中。
+**先执行 callback**：LaunchActivityItem.execute() → 调用 handleLaunchActivity() → performLaunchActivity()。这一步创建 Activity 对象（通过反射），调用 Activity.attach() 初始化（创建 PhoneWindow），然后调用 Activity.onCreate()。在 onCreate 中我们必须调用 setContentView()，否则后续绘制会报错。setContentView 的本质是创建 DecorView（根 View），并将布局文件 inflate 后挂载到 DecorView 下面的 mContentParent 中。
 
 **然后执行生命周期路径补全**：从 ON_CREATE 到 ON_RESUME，中间需要补 ON_START。依次调用 Activity.onStart()、Activity.onResume()。
 
@@ -197,7 +201,7 @@ RenderThread 完成绘制后，通过 IGraphicBufferProducer.queueBuffer() 将�
 
 ### TTID（Time To Initial Display）
 
-TTID 是从用户触发启动（点击图标）到应用首帧绘制完成的时间。它涵盖了冷启动的完整路径：进程创建、Application 初始化、Activity 创建和首帧绘制。系统通过 ActivityMetricsLogger 自动统计这个时间，你可以在 logcat 中通过过滤 "Displayed" 关键字看到：
+TTID 是从用户触发启动（点击图标）到应用首帧绘制完成的时间。它涵盖了冷启动的完整路径：进程创建、Application 初始化、Activity 创建和首帧绘制。系统通过 ActivityMetricsLogger 自动统计这个时间，我们可以在 logcat 中通过过滤 "Displayed" 关键字看到：
 
 ```
 ActivityTaskManager: Displayed com.example.app/.MainActivity: +1s234ms
@@ -211,7 +215,7 @@ TTID 是 Android Vitals 等平台监控的核心指标。Google 建议 TTID 不�
 
 TTID 只统计到首帧绘制，但很多应用的界面在首帧绘制时并没有显示完整内容——数据还在从网络加载，或者数据库还在查询。用户看到的是一个加载骨架或者空白区域。为了让度量更贴近用户实际感知，Android 提供了 TTFD（Time To Full Display）指标。
 
-TTFD 需要你在代码中主动调用 `Activity.reportFullyDrawn()` 来告诉系统"我的界面完全准备好了"。调用后 logcat 中会出现：
+TTFD 需要开发者在代码中主动调用 `Activity.reportFullyDrawn()` 来告诉系统"我的界面完全准备好了"。调用后 logcat 中会出现：
 
 ```
 ActivityTaskManager: Fully drawn com.example.app/.MainActivity: +2s156ms
@@ -221,7 +225,7 @@ ActivityTaskManager: Fully drawn com.example.app/.MainActivity: +2s156ms
 
 ### FullyDrawnReporter：多条件 TTFD 统计
 
-如果你的界面需要等待多个异步任务（比如同时发起 A、B、C 三个网络请求，全部完成后才算界面完整），AndroidX Activity 1.8.0 引入了 FullyDrawnReporter 工具来简化这种场景：
+如果应用的界面需要等待多个异步任务（比如同时发起 A、B、C 三个网络请求，全部完成后才算界面完整），AndroidX Activity 1.8.0 引入了 FullyDrawnReporter 工具来简化这种场景：
 
 ```kotlin
 // 在每个异步任务开始前注册 reporter
@@ -270,7 +274,7 @@ Complete
 
 这里有几个关键信息：
 
-- **LaunchState**：启动类型（COLD/WARM/HOT），帮助你确认当前测试的是哪种启动场景
+- **LaunchState**：启动类型（COLD/WARM/HOT），帮助确认当前测试的是哪种启动场景
 - **TotalTime**：从 startActivity 发起（ActivityMetricsLogger 记录的起始时间）到首帧绘制完成的时间，等于 TTID
 - **WaitTime**：从命令调用到命令返回的总等待时间，比 TotalTime 略多，因为包含了命令本身的调度开销
 
@@ -295,7 +299,7 @@ adb logcat | grep -E "Displayed|Fully drawn"
 
 ### Perfetto：精确定位每个阶段
 
-Perfetto 是分析启动性能最重要的工具，因为它能让你看到启动过程中每个阶段的精确耗时。
+Perfetto 是分析启动性能最重要的工具，因为它能让我们看到启动过程中每个阶段的精确耗时。
 
 抓取启动 Perfetto 的推荐配置：
 
@@ -325,7 +329,7 @@ duration_ms: 10000
 EOF
 ```
 
-在 Perfetto 中，你应该关注这些关键 slice：
+在 Perfetto 中，我们应该关注这些关键 slice：
 
 | Slice 名称 | 所在进程 | 含义 |
 |---|---|---|
@@ -346,7 +350,7 @@ EOF
 - **Perfetto "launching: xxx"**：从 notifyActivityLaunched()（在 startActivity() 返回之后）到首帧绘制完成。比 Displayed 少了 startActivity() 内部的处理时间
 - **reportFullyDrawn()**：起始时间同 TTID，但结束时间由应用决定
 
-所以你会发现 Perfetto 中的 "launching" 时间总是比 logcat 中的 "Displayed" 时间少一些。这不是 Bug，是统计口径的差异。
+所以我们发现 Perfetto 中的 "launching" 时间总是比 logcat 中的 "Displayed" 时间少一些。这不是 Bug，是统计口径的差异。
 
 [来源: obsidian/Cubox/Activity 启动速度分析方法（启动流程分析） - Light.Moon-2022-04-11.md]
 
@@ -384,7 +388,7 @@ Android 5.0+ 使用 ART 运行时，原生支持多 DEX，这个问题基本消�
 
 ### ContentProvider 初始化的隐藏陷阱
 
-[自动发现: 许多第三方 SDK 通过 ContentProvider 实现自动初始化，而 ContentProvider 的初始化发生在 Application.onCreate 之前（在 installContentProviders 中）。这意味着即使你没在 Application.onCreate 中显式初始化某个 SDK，它可能已经通过 ContentProvider 悄悄初始化了。来源: Android Developers Blog]
+[自动发现: 许多第三方 SDK 通过 ContentProvider 实现自动初始化，而 ContentProvider 的初始化发生在 Application.onCreate 之前（在 installContentProviders 中）。这意味着即使我们没有在 Application.onCreate 中显式初始化某个 SDK，它可能已经通过 ContentProvider 悄悄初始化了。来源: Android Developers Blog]
 
 这个问题在 Android 11（API 30）开始可以通过声明工具 androidx.startup 来统一管理（见扩展小节），但在之前的版本上需要手动排查 Manifest 中声明的 ContentProvider。
 
@@ -432,7 +436,7 @@ Baseline Profile 的核心思想是：与其等系统自动收集 Profile，不�
 
 ### Cloud Profile：不依赖应用更新的 Profile 下发
 
-Baseline Profile 需要打包在 APK 中（或通过 AndroidX BaselineProfile Gradle 插件生成），这意味着你需要在应用更新中才能更新 Profile。Android 15 引入了 Cloud Profile 机制：Google Play 可以下发由平台收集的聚合 Profile（基于大量用户的使用数据），不需要应用更新。这意味着即使你没有在自己的 APK 中打包 Baseline Profile，Google Play 也能为你提供一份。
+Baseline Profile 需要打包在 APK 中（或通过 AndroidX BaselineProfile Gradle 插件生成），这意味着开发者需要在应用更新中才能更新 Profile。Android 15 引入了 Cloud Profile 机制：Google Play 可以下发由平台收集的聚合 Profile（基于大量用户的使用数据），不需要应用更新。这意味着即使没有在自己的 APK 中打包 Baseline Profile，Google Play 也能提供一份。
 
 但需要注意的是，Cloud Profile 在国内的 Google Play 服务不可用的环境下无法使用。
 
@@ -476,7 +480,7 @@ class MySdkInitializer : Initializer<MySdk> {
 </provider>
 ```
 
-对于已经通过 ContentProvider 初始化的第三方 SDK，你可以通过 App Startup 的手动初始化模式来接管它们的初始化时机，从而将初始化推迟到你需要的时候。
+对于已经通过 ContentProvider 初始化的第三方 SDK，我们可以通过 App Startup 的手动初始化模式来接管它们的初始化时机，从而将初始化推迟到需要的时候。
 
 ## Zygote Preload 的贡献
 
@@ -486,7 +490,7 @@ Android 系统启动时，Zygote 进程会预加载一批常用的类和资源�
 
 这意味着应用在冷启动时不需要重新加载 Java 基础类、Android Framework 核心类、常用的 Drawable 资源等。对于大多数应用来说，Zygote preload 覆盖了 80% 以上的类加载需求。这也是为什么冷启动的进程创建阶段（fork + init）通常只需要几十到一百多毫秒——如果每次都从零加载所有类，这个时间会翻好几倍。
 
-Zygote preload 的局限性在于：它只预加载系统级的类和资源，不会预加载你的应用代码。你的 Application 类、Activity 类、第三方 SDK 的类，都需要在 fork 后由子进程自己加载。这就是 Baseline Profile 的优化空间所在——通过提前编译应用侧的热点代码，减少类加载和 JIT 编译的开销。
+Zygote preload 的局限性在于：它只预加载系统级的类和资源，不会预加载应用自身的代码。Application 类、Activity 类、第三方 SDK 的类，都需要在 fork 后由子进程自己加载。这就是 Baseline Profile 的优化空间所在——通过提前编译应用侧的热点代码，减少类加载和 JIT 编译的开销。
 
 ## 与其他章节的关系
 
@@ -500,7 +504,7 @@ Zygote preload 的局限性在于：它只预加载系统级的类和资源，�
 
 **误区一："冷启动优化就是优化 Application.onCreate"**
 
-Application.onCreate 只是冷启动的一个环节。完整路径包括系统侧的进程调度、Binder 通信、Activity 生命周期，以及首帧绘制。如果你的 Application.onCreate 只花了 200ms，但冷启动仍然超过 2 秒，问题可能在布局复杂度（inflate 慢）、View 树层级过深（measure/layout 慢）或者首帧绘制等待了太多 VSync 周期。
+Application.onCreate 只是冷启动的一个环节。完整路径包括系统侧的进程调度、Binder 通信、Activity 生命周期，以及首帧绘制。如果 Application.onCreate 只花了 200ms，但冷启动仍然超过 2 秒，问题可能在布局复杂度（inflate 慢）、View 树层级过深（measure/layout 慢）或者首帧绘制等待了太多 VSync 周期。
 
 **误区二："am start -W 测出来的时间就是用户感知的时间"**
 
