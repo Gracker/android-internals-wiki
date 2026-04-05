@@ -3,12 +3,12 @@
   "total_sections": 96,
   "metrics": {
     "total": 106,
-    "draft": 3,
-    "ready-for-review": 52,
+    "draft": 2,
+    "ready-for-review": 53,
     "reviewed": 3,
     "finalized": 43,
     "staging_drafts": 0,
-    "last_updated": "2026-04-05T15:30:27.820771",
+    "last_updated": "2026-04-05T16:16:46.599586",
     "processing": 0,
     "ready-to-publish": 3
   },
@@ -1358,15 +1358,30 @@
       "verification_level": "L2",
       "word_count": "~9500",
       "completed_at": "2026-04-05T15:24:12.698357"
+    },
+    {
+      "chapter": "14.8",
+      "section": "14.8",
+      "title": "GPU 图形调试与分析工具",
+      "status": "ready-for-review",
+      "drafted_date": "2026-04-05",
+      "drafted_by": "openclaw-task2a",
+      "anchors_covered": 6,
+      "anchors_total": 6,
+      "extensions_covered": 2,
+      "extensions_total": 2,
+      "verification_level": "L2",
+      "word_count": "~9000",
+      "completed_at": "2026-04-05T16:16:46.598685"
     }
   ],
   "ready_for_review": 5,
   "last_updated": "2026-04-05 15:07",
   "stats": {
     "total": 103,
-    "completed": 75,
-    "pending": 28,
-    "last_updated": "2026-04-05T12:17:28+08:00"
+    "completed": 76,
+    "pending": 27,
+    "last_updated": "2026-04-05T16:16:46.598690"
   },
   "research_stats": {
     "runs_today": [
@@ -1590,6 +1605,15 @@
     "last_updated": "2026-04-05T15:07:41+08:00"
   },
   "history": [
+    {
+      "date": "2026-04-05",
+      "section": "14.8",
+      "title": "GPU 图形调试与分析工具",
+      "action": "draft-completed",
+      "word_count": "~9000",
+      "anchors_covered": 6,
+      "extensions_covered": 2
+    },
     {
       "date": "2026-04-05",
       "section": "13.2",
@@ -2912,6 +2936,20 @@
       "verification_level": "L2",
       "word_count": "~9500",
       "confidence": "medium"
+    },
+    "14.8": {
+      "title": "GPU 图形调试与分析工具",
+      "status": "ready-for-review",
+      "file": "src/part3-tools/ch14-other-tools/08-gpu-debug-tools.md",
+      "drafted_date": "2026-04-05",
+      "drafted_by": "openclaw-task2a",
+      "anchors_covered": 6,
+      "anchors_total": 6,
+      "extensions_covered": 2,
+      "extensions_total": 2,
+      "verification_level": "L2",
+      "word_count": "~9000",
+      "confidence": "medium"
     }
   },
   "5.1": {
@@ -3157,12 +3195,13 @@
       "chapter": "14.8",
       "section": "14.8",
       "title": "GPU 图形调试与分析工具",
-      "status": "pending",
+      "status": "completed",
       "priority": 80,
       "source": "task2a-knowledge-gap",
       "created_date": "2026-04-05",
       "score": "16/20",
-      "file": "src/part3-tools/ch14-other-tools/08-gpu-debug-tools.md"
+      "file": "src/part3-tools/ch14-other-tools/08-gpu-debug-tools.md",
+      "completed_at": "2026-04-05T16:16:46.598679"
     }
   ],
   "polish_stats": {
