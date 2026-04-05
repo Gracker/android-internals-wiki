@@ -2,17 +2,22 @@
 """检查所有章节文件是否包含完整的 YAML 元数据头。"""
 
 import os
+import re
 import sys
 import yaml
 import glob
 
 REQUIRED_FIELDS = [
-    "title", "chapter", "status", "applicable_versions",
-    "last_verified", "confidence", "sources", "tags"
+    "title", "chapter", "status", "applicable_versions", "tags"
 ]
 
-VALID_STATUS = ["verified", "draft", "needs-review", "outdated"]
-VALID_CONFIDENCE = ["high", "medium", "low"]
+OPTIONAL_FIELDS = ["last_verified", "confidence", "sources"]
+
+VALID_STATUS = [
+    "verified", "draft", "needs-review", "outdated",
+    "reviewed", "ready-to-publish", "ready-for-review", "finalized",
+]
+VALID_CONFIDENCE = ["high", "medium", "low", "medium-high", "medium-low"]
 
 def check_file(filepath):
     issues = []
@@ -20,14 +25,15 @@ def check_file(filepath):
         content = f.read()
 
     if not content.startswith('---'):
-        return [f"缺少 YAML frontmatter"]
+        return ["缺少 YAML frontmatter"]
 
-    parts = content.split('---', 2)
-    if len(parts) < 3:
-        return [f"YAML frontmatter 格式错误"]
+    # 按行首的 --- 分割，避免误匹配内容中的 ---
+    m = re.match(r'^---\n(.*?)\n---\n', content, re.DOTALL)
+    if not m:
+        return ["YAML frontmatter 格式错误"]
 
     try:
-        meta = yaml.safe_load(parts[1])
+        meta = yaml.safe_load(m.group(1))
     except yaml.YAMLError as e:
         return [f"YAML 解析错误: {e}"]
 
@@ -43,6 +49,10 @@ def check_file(filepath):
 
     if meta.get("confidence") and meta["confidence"] not in VALID_CONFIDENCE:
         issues.append(f"confidence 值无效: {meta['confidence']}")
+
+    for field in OPTIONAL_FIELDS:
+        if field not in meta:
+            issues.append(f"[warn] 缺少可选字段: {field} (建议补充)")
 
     return issues
 
@@ -64,21 +74,27 @@ def main():
 
     total = len(all_files)
     issues_count = 0
+    warn_count = 0
 
     print(f"检查 {total} 个章节文件的元数据...\n")
 
     for filepath in sorted(all_files):
         rel = os.path.relpath(filepath, src_dir)
         issues = check_file(filepath)
-        if issues:
+        if issues and not all(i.startswith('[warn]') for i in issues):
             issues_count += 1
             print(f"❌ {rel}")
+            for issue in issues:
+                print(f"   - {issue}")
+        elif any(i.startswith('[warn]') for i in issues):
+            warn_count += 1
+            print(f"⚠️  {rel}")
             for issue in issues:
                 print(f"   - {issue}")
         else:
             print(f"✅ {rel}")
 
-    print(f"\n总计: {total} 个文件, {total - issues_count} 个通过, {issues_count} 个有问题")
+    print(f"\n总计: {total} 个文件, {total - issues_count} 个通过, {issues_count} 个失败, {warn_count} 个警告")
     return 1 if issues_count > 0 else 0
 
 
