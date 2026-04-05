@@ -4,13 +4,13 @@
   "metrics": {
     "total": 114,
     "draft": 10,
-    "ready-for-review": 50,
+    "ready-for-review": 49,
     "reviewed": 4,
     "finalized": 44,
     "staging_drafts": 0,
-    "last_updated": "2026-04-05T19:10:00",
+    "last_updated": "2026-04-05T19:20:00",
     "processing": 0,
-    "ready-to-publish": 4
+    "ready-to-publish": 5
   },
   "reviewed_sections": {
     "8.1": {
@@ -251,14 +251,22 @@
       ]
     },
     "3.2": {
-      "reviewed_date": "2026-04-03",
+      "reviewed_date": "2026-04-05",
       "reviewed_by": "openclaw-task6",
-      "review_status": "finalized",
+      "review_status": "ready-to-publish",
+      "review_type": "post-polish-quality-gate",
+      "review_round": 2,
       "fixes_applied": [
-        "3处'你'→'我们'替换（writing-guide §3.5合规）",
-        "frontmatter补全：section/drafted_date/drafted_by/reviewed_date/reviewed_by",
-        "status ready-for-review → finalized"
-      ]
+        "验证标注降级：Motion Prediction API 19 [已验证] → [待验证]（Jetpack minSdk=21）",
+        "status: ready-for-review → ready-to-publish（出版终态）"
+      ],
+      "scores": {
+        "structure": 5,
+        "expression": 5,
+        "consistency": 5,
+        "verification": 4,
+        "metadata": 5
+      }
     },
     "3.3": {
       "reviewed_date": "2026-04-03",
