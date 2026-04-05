@@ -535,3 +535,8 @@ ContentProvider 的初始化发生在 Application.onCreate 之前，是启动流
 - [Jetpack App Startup | Android Developers](https://developer.android.com/topic/libraries/app-startup) [已验证: 官方文档]
 - [AOSP ActivityThread.java](https://cs.android.com/android/platform/superproject/+/android-15.0.0_r1:frameworks/base/core/java/android/app/ActivityThread.java) [已验证: AOSP android-15.0.0_r1]
 - [AOSP TransactionExecutor.java](https://cs.android.com/android/platform/superproject/+/android-15.0.0_r1:frameworks/base/core/java/android/app/servertransaction/TransactionExecutor.java) [已验证: AOSP android-15.0.0_r1]
+### Android 12 SplashScreen 另类适配方案
+- 来源：https://juejin.cn/post/7591348605867343907
+- 类型：技术文章
+- 摘要：SplashScreen API另类适配：自定义Theme覆盖系统默认行为，ActivityLifecycleCallbacks全局闪屏管理。
+- 入库时间：2026-04-06

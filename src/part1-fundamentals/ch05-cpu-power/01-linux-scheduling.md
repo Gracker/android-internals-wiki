@@ -2,8 +2,8 @@
 title: "Linux 进程调度基础"
 chapter: "5.1"
 section: "5.1"
-status: finalized
-applicable_versions: "Android 6.0 (API 23) - Android 16 (API 36)"
+status: ready-for-review
+applicable_versions: "Android 6.0 (API 23) - Android 17 (API 37, EEVDF 部分需 6.6+ 内核)"
 last_verified: "2026-04-02"
 last_verified_against: "AOSP android-16.0.0_r1, Linux kernel 6.6"
 confidence: high
@@ -25,6 +25,9 @@ related_chapters: ["5.2", "5.3", "2.5", "7.3"]
 drafted_date: "2026-03-31"
 reviewed_date: "2026-04-03"
 reviewed_by: "openclaw-task6"
+polish_count: 1
+polish_date: "2026-04-06"
+polish_by: "task2b-polish"
 ---
 
 <!-- outline-start -->
@@ -77,7 +80,7 @@ delta_vruntime = delta_exec × (NICE_0_LOAD / weight)
 其中 `NICE_0_LOAD` 是 nice 值为 0 时对应的权重（1024），`weight` 是当前进程的权重。这意味着：
 
 - **权重越高的进程**（nice 值越低），vruntime 增长越慢，越容易被再次选中运行——它获得了更多的 CPU 份额
-- **权重越低的进程**（nice 值越高），vruntime 增长越快，更容易被"赶下"CPU
+- **权重越低的进程**（nice 值越高），vruntime 增长越快，更容易被调度器换下 CPU
 
 [已验证: AOSP android-16.0.0_r1, kernel/sched/fair.c, __update_curr()]
 
@@ -111,7 +114,7 @@ target_slice = sched_period × (weight / total_weight)
 
 ## 调度类优先级体系
 
-Linux 内核不是一个调度器打天下，而是把调度策略分成了多个"调度类"（scheduling class），每个类有自己的优先级和调度逻辑。它们之间的优先级关系是：
+Linux 内核的调度并非由单一策略覆盖所有场景，而是按需求划分为多个"调度类"（scheduling class），每个类有自己的优先级和调度逻辑。它们之间的优先级关系是：
 
 **SCHED_FIFO > SCHED_RR > SCHED_NORMAL（CFS）> SCHED_IDLE**
 
@@ -197,7 +200,7 @@ Process.setThreadPriority(Process.THREAD_PRIORITY_URGENT_DISPLAY)// nice -8
 
 [已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/os/Process.java]
 
-当应用切换到后台时，系统会将其线程的 nice 值提升（优先级降低），减少对前台应用的影响。这个机制叫做"oom_adj 调整"的一部分——后续章节（1.3 进程模型与生命周期管理）中有详细讨论。
+当应用切换到后台时，系统会将其线程的 nice 值提升（优先级降低），减少对前台应用的影响。这是 oom_adj 调整机制的一部分——第 1.3 节（进程模型与生命周期管理）中有详细讨论。
 
 在 Perfetto 中，点击一个 CPU 调度切片，详情面板会显示该线程的 `priority` 值。这个值是内核内部优先级（100-139），换算关系是 `priority = 120 + nice`。所以看到 priority=122 就对应 nice=2，priority=116 就对应 nice=-4。
 
@@ -337,7 +340,7 @@ ORDER BY cpu;
 
 Perfetto 提供了线程唤醒关系的可视化：点击一个 Running 的线程切片，UI 会显示一条箭头，指向唤醒它的源线程。这个功能基于内核的 `sched_wakeup` ftrace 事件。
 
-常见的唤醒链路：
+常见的唤醒路径（谁唤醒了谁）：
 - InputReader → InputDispatcher → 应用主线程（触摸事件传递）
 - Binder 线程 → 应用主线程（跨进程回调）
 - RenderThread → 主线程（渲染完成通知）
@@ -346,11 +349,13 @@ Perfetto 提供了线程唤醒关系的可视化：点击一个 Running 的线�
 
 需要注意 `wakeup from` 信息有时不够准确，需要结合代码和上下文综合判断。
 
+在实际分析中，调度延迟是否值得关注的判断标准是：**关键路径上的 Runnable 时间是否超过了帧周期的 10%**。以 120Hz 屏幕为例，一帧周期为 8.33ms，如果主线程在 `doFrame` 期间有超过 0.8ms 的 Runnable 等待，就需要深入分析调度原因。60Hz 屏幕的阈值则约为 1.6ms。
+
 [已验证: 高爷博客素材, Personal-Knowlodge/source/android-systrace-cpu-state-sleep.md]
 
 ## EEVDF：CFS 的下一代演进（Linux 6.6+）
 
-2023 年，Linux 6.6 合入了一个重量级的调度器替换：EEVDF（Earliest Eligible Virtual Deadline First）正式取代 CFS 成为默认调度策略。这项工作由 Peter Zijlstra 主导，理论基础来自 1995 年发表的同名调度算法论文。对于做 Android 性能分析的工程师来说，理解 EEVDF 的意义不在于"立刻去分析 EEVDF 行为"——当前 Android 设备的大多数内核还停留在 5.x 或 6.1——而在于：当未来设备升级到 6.6+ 内核时，我们在 Perfetto 中观察到的调度行为会发生一些变化，需要知道原因。
+在深入调度延迟的分析方法之后，我们需要前瞻一个即将影响 Android 生态的调度器变革。2023 年，Linux 6.6 合入了一个重量级的调度器替换：EEVDF（Earliest Eligible Virtual Deadline First）正式取代 CFS 成为默认调度策略。这项工作由 Peter Zijlstra 主导，理论基础来自 1995 年发表的同名调度算法论文。对于做 Android 性能分析的工程师来说，理解 EEVDF 的意义不在于"立刻去分析 EEVDF 行为"——当前 Android 设备的大多数内核还停留在 5.x 或 6.1——而在于：当未来设备升级到 6.6+ 内核时，我们在 Perfetto 中观察到的调度行为会发生一些变化，需要知道原因。
 
 ### CFS 的局限性：为什么需要替换
 
@@ -364,11 +369,11 @@ EEVDF 的调度决策分两步走：先判断"谁有资格运行"，再在有资
 
 **第一步：资格判定（Eligibility）。** 每个进程维护一个"lag"值，表示它"欠"了多少 CPU 时间或"透支"了多少。lag 的计算方式是：一个进程按权重应该获得的理想运行时间，减去它实际获得的运行时间。lag ≥ 0 表示这个进程还没有用完它的公平份额，有资格参与调度；lag < 0 表示它已经超支了，需要等一等，让其他进程先跑。
 
-这个机制解决了一个 CFS 的实际痛点：在 CFS 中，一个刚从睡眠中醒来的进程，其 vruntime 可能远小于其他进程，导致它在唤醒后立刻"霸占"CPU 很长时间来追平 vruntime。EEVDF 的资格判定机制能更精确地控制这种行为——如果进程已经超支了，即使刚醒来也要排队等资格恢复。
+这个机制解决了一个 CFS 的实际问题：在 CFS 中，一个刚从睡眠中醒来的进程，其 vruntime 可能远小于其他进程，导致它在唤醒后立刻"霸占"CPU 很长时间来追平 vruntime。EEVDF 的资格判定机制能更精确地控制这种行为——如果进程已经超支了，即使刚醒来也要排队等资格恢复。
 
 **第二步：虚拟截止时间（Virtual Deadline）。** 对于有资格运行的进程，EEVDF 为每个进程计算一个虚拟截止时间。调度器选择虚拟截止时间最早的进程来执行。虚拟截止时间的计算考虑了进程申请的时间片长度——申请短时间片的进程（通常是延迟敏感型任务）会得到更早的截止时间，从而被优先调度。
 
-这和 CFS 形成鲜明对比：CFS 只看 vruntime 谁最小，不考虑任务对延迟的需求。EEVDF 通过引入"截止时间"概念，让延迟敏感型任务天然地排在前面，而不需要额外的启发式规则。
+CFS 的调度标准只有一个维度——vruntime 谁最小，不区分任务对延迟的敏感程度。EEVDF 通过引入"截止时间"概念，让延迟敏感型任务天然地排在前面，而不需要额外的启发式规则。
 
 ### 关键差异总结
 
@@ -398,6 +403,7 @@ EEVDF 的调度决策分两步走：先判断"谁有资格运行"，再在有资
 
 ```sql
 -- 观察特定线程的调度延迟分布
+-- 用于对比 CFS 和 EEVDF 内核下主线程的 Runnable 等待时间分布
 SELECT
   CASE
     WHEN dur / 1e6 < 1 THEN '< 1ms'
@@ -420,6 +426,8 @@ ORDER BY latency_bucket;
 [待验证: Android 17 (2026 Q3) 是否默认启用 EEVDF —— 需关注 AOSP GKI 内核版本公告]
 
 ## Real-time 线程在 Android 中的使用
+
+[图：Perfetto 中 SCHED_FIFO 线程的 CPU 调度切片示意，标注 AudioFlinger/FastMixer 线程与普通 SCHED_NORMAL 线程的优先级差异]
 
 Android 中使用 SCHED_FIFO 实时调度的场景主要集中在两个系统服务：
 
@@ -456,11 +464,11 @@ cat /dev/stune/top-app/schedtune.boost
 
 [已验证: AOSP android-16.0.0_r1, kernel/sched/tune.c（厂商内核可能路径不同）]
 
-boost 的影响体现在两个层面：
+boost 的效果体现在两个层面：
 
 **CPU 频率提升**：`schedutil` 调频器使用 PELT（Per-Entity Load Tracking）信号来决定 CPU 频率。boost 放大了这个信号，导致调频器为当前 CPU 选择更高的频率。当用户触摸屏幕时，Android Framework 会临时提高前台应用的 boost 值（所谓的"touch boost"），让 CPU 频率迅速拉高以应对即将到来的 UI 更新。
 
-**选核偏好**：在 EAS 启用的系统上，调度器在选核时会估算"把任务放到某个核心上的能耗"。boost 值高的任务会被更倾向于放在大核上，因为大核虽然单位时间能耗高，但能在更短时间内完成任务，总能耗反而可能更低。
+**选核偏好**：在 EAS（Energy Aware Scheduling）启用的系统上，调度器在选核时会估算将任务放到不同核心上的能耗差异。boost 值高的任务会被优先放在大核上——大核虽然单位时间能耗高，但能在更短时间内完成任务，总能耗反而可能更低。这个策略也解释了为什么绑核（第 5.3 节详述）在配合 boost 时效果最好。
 
 ### UClamp：上游化的通用方案
 
@@ -484,7 +492,7 @@ echo 50 > /proc/<pid>/task/<tid>/util_clamp_max
 [已验证: Linux kernel 5.10+, kernel/sched/core.c, uclamp_eff_value()]
 [来源: source.android.com/docs/core/perf/uclamp]
 
-在 Android 中的实际使用模式是这样的：当应用切换到前台时，ActivityManagerService 通过 `Process.setThreadPriority()` 和底层的 cgroup 操作将该进程的 UClamp_MIN 提升到一定值（比如 20%），让 CPU 频率在应用启动和 UI 更新时保持较高水平。当应用退到后台时，UClamp_MIN 回到 0，同时 UCLAMP_MAX 可能被限制，确保后台任务不会拖慢前台。
+在 Android 中的实际使用模式是这样的：当应用切换到前台时，ActivityManagerService 通过 `Process.setThreadPriority()` 和底层的 cgroup 操作将该进程的 UCLAMP_MIN 提升到一定值（比如 20%），让 CPU 频率在应用启动和 UI 更新时保持较高水平。当应用退到后台时，UClamp_MIN 回到 0，同时 UCLAMP_MAX 可能被限制，确保后台任务不会拖慢前台。
 
 ### SchedTune vs UClamp：演进路线
 
@@ -508,7 +516,8 @@ UClamp/SchedTune 的效果在 Perfetto 中不是以独立 Track 呈现的，而�
 **CPU Scheduling Track（选核观察）**：通过观察线程在不同 CPU 核心之间的迁移，可以判断 boost/UClamp 是否影响了选核。被 boost 的线程应该更频繁地出现在大核（通常是编号较大的核心，如 CPU 4-7 或 CPU 6-7）上。可以使用以下 SQL 查询验证：
 
 ```sql
--- 对比线程 boost 前后的选核分布
+-- 对比线程在大核（big）与小核（LITTLE）上的运行时间分布
+-- 注意：cpu >= 4 的阈值因设备而异，需根据实际 CPU 拓扑调整
 SELECT
   cpu,
   CASE WHEN cpu >= 4 THEN 'big' ELSE 'LITTLE' END AS core_type,

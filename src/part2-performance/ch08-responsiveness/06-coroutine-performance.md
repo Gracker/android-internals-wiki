@@ -487,3 +487,8 @@ Coroutine 的性能与本书其他章节有紧密联系：
 - [kotlinx-coroutines-debug GitHub](https://github.com/Kotlin/kotlinx.coroutines/tree/master/kotlinx-coroutines-debug)
 - [Flow — Backpressure and Buffering](https://kotlinlang.org/docs/flow.html#buffering)
 - [Testing Coroutines on Android](https://developer.android.com/kotlin/coroutines/test)
+### 聊聊协程里的 Semaphore：别让协程挤爆门口
+- 来源：https://juejin.cn/post/7582016579858169890
+- 类型：技术文章
+- 摘要：Kotlin协程Semaphore原理与实战：Mutex与Semaphore区别、AtomicReference无锁实现、并发控制最佳实践。
+- 入库时间：2026-04-06
