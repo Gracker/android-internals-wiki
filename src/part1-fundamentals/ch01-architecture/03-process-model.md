@@ -1,12 +1,12 @@
 ---
 title: "进程模型与生命周期管理"
 chapter: "1.3"
-status: ready-for-review
+status: ready-to-publish
 applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
 last_verified: "2026-03-31"
 last_verified_against: "AOSP android-16.0.0_r1"
 drafted_date: "2026-03-31"
-reviewed_date: "2026-04-05"
+reviewed_date: "2026-04-06"
 reviewed_by: openclaw-task6
 confidence: high
 polish_count: 1
@@ -93,7 +93,7 @@ public static void main(String[] argv) {
 - 托管一个调用了 `startForeground()` 的前台 Service
 - 托管一个正在执行 `onReceive()` 的 BroadcastReceiver
 
-前台进程的 `oom_adj` 值通常为 **0**（在某些版本中，通过 startForeground() 提升的 Service 进程 oom_adj 为 100，对应 PERCEPTIBLE_APP 级别），系统几乎不会杀掉前台进程——除非内存极端紧张，连杀掉所有后台进程都还不够。
+前台进程的 `oom_adj` 值通常为 **0**。需要区分的是，通过 `startForeground()` 提升的前台 Service 进程，如果没有可见的 Activity，其 oom_adj 通常为 PERCEPTIBLE_APP（200）而非 0——系统几乎不会杀掉前台进程——除非内存极端紧张，连杀掉所有后台进程都还不够。
 
 [已验证: AOSP android-16.0.0_r1, frameworks/base/services/core/java/com/android/server/am/ProcessList.java]
 
@@ -149,10 +149,10 @@ lmkd 的核心工作逻辑并不复杂：它通过 PSI（Pressure Stall Informat
 | HOME_APP | 600 | Home 进程 |
 | PREVIOUS_APP | 700 | 上一个 App |
 | CACHED_APP | 900 | 缓存的 Activity 进程 |
-
-> 注：不同 Android 版本和厂商定制 ROM 中可能存在额外的 oom_adj 级别（如部分厂商的 SERVICE_CUR=800），以上为 AOSP android-16.0.0_r1 中的标准定义。
 | CACHED_APP_HIGH | 906-950 | 高位缓存 |
 | CACHED_APP_MAX | 999 | 最大缓存/空进程 |
+
+> 注：不同 Android 版本和厂商定制 ROM 中可能存在额外的 oom_adj 级别（如部分厂商的 SERVICE_CUR=800），以上为 AOSP android-16.0.0_r1 中的标准定义。
 
 [已验证: AOSP android-16.0.0_r1, frameworks/base/services/core/java/com/android/server/am/ProcessList.java]
 
