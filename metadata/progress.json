@@ -3,12 +3,12 @@
   "total_sections": 96,
   "metrics": {
     "total": 106,
-    "draft": 5,
-    "ready-for-review": 50,
+    "draft": 4,
+    "ready-for-review": 51,
     "reviewed": 3,
     "finalized": 43,
     "staging_drafts": 0,
-    "last_updated": "2026-04-05T11:10:00+08:00",
+    "last_updated": "2026-04-05T12:17:28+08:00",
     "processing": 0,
     "ready-to-publish": 3
   },
@@ -1335,15 +1335,30 @@
       "verification_level": "L2",
       "word_count": "~9500",
       "completed_at": "2026-04-05T11:10:00+08:00"
+    },
+    {
+      "chapter": "2.14",
+      "section": "2.14",
+      "title": "图形 API 演进与选择策略",
+      "status": "ready-for-review",
+      "drafted_date": "2026-04-05",
+      "drafted_by": "openclaw-task2a",
+      "anchors_covered": 6,
+      "anchors_total": 6,
+      "extensions_covered": 2,
+      "extensions_total": 2,
+      "verification_level": "L2",
+      "word_count": "~9000",
+      "completed_at": "2026-04-05T12:17:28+08:00"
     }
   ],
   "ready_for_review": 5,
   "last_updated": "2026-04-05T11:05:00+08:00",
   "stats": {
     "total": 103,
-    "completed": 67,
-    "pending": 35,
-    "last_updated": "2026-04-05T09:02:00+08:00"
+    "completed": 75,
+    "pending": 28,
+    "last_updated": "2026-04-05T12:17:28+08:00"
   },
   "research_stats": {
     "runs_today": [
@@ -1554,6 +1569,15 @@
     "last_updated": "2026-04-05T11:00:00+08:00"
   },
   "history": [
+    {
+      "date": "2026-04-05",
+      "section": "2.14",
+      "title": "图形 API 演进与选择策略",
+      "action": "draft-completed",
+      "word_count": "~9000",
+      "anchors_covered": 6,
+      "extensions_covered": 2
+    },
     {
       "date": "2026-04-05",
       "section": "1.11",
@@ -2790,6 +2814,23 @@
       "verification_level": "L2",
       "word_count": "~9500",
       "confidence": "medium"
+    },
+    "2.14": {
+      "title": "图形 API 演进与选择策略",
+      "status": "ready-for-review",
+      "file": "src/part1-fundamentals/ch02-rendering/14-graphics-api-evolution.md",
+      "drafted_date": "2026-04-05",
+      "drafted_by": "openclaw-task2a",
+      "anchors_covered": 6,
+      "anchors_total": 6,
+      "extensions_covered": 2,
+      "extensions_total": 2,
+      "verification_level": "L2",
+      "word_count": "~9000",
+      "confidence": "medium",
+      "created_date": "2026-04-05",
+      "created_by": "task2a-knowledge-gap",
+      "gap_source": "AOSP结构+官方文档+研究素材"
     }
   },
   "5.1": {
