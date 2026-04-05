@@ -2,7 +2,7 @@
 title: "触摸响应的性能分析"
 chapter: "3.2"
 section: "3.2"
-status: finalized
+status: ready-for-review
 drafted_date: "2026-03-30"
 drafted_by: "openclaw-task2"
 applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
@@ -11,6 +11,9 @@ reviewed_date: "2026-04-03"
 reviewed_by: "openclaw-task6"
 last_verified_against: "AOSP android-16.0.0_r1"
 confidence: medium
+polish_count: 1
+polish_date: "2026-04-05"
+polish_by: "task2b-polish"
 sources:
   - type: blog
     path: "Personal-Knowlodge/source/Android-Systrace-Input.md"
@@ -59,13 +62,13 @@ related_chapters: ["3.1", "2.3", "2.4", "2.5", "8.1"]
 
 这就是触摸响应延迟。用户的手指已经离开了某个位置，但系统还没来得及把画面更新到屏幕上。在 60Hz 屏幕上，最坏情况下一帧从"触摸发生"到"画面更新"可能经历一个完整的 VSync 周期（16.6ms）的延迟；在 120Hz 屏幕上这个数字降到了约 8.3ms，但如果我们在 Perfetto 中仔细看，从触摸硬件采样到画面最终上屏，实际的总延迟往往在 30-80ms 之间——这中间发生了什么，就是本节要讲清楚的内容。
 
-理解触摸响应延迟的组成，是优化所有"跟手性"问题的前提。不管我们在做滑动流畅度优化、启动速度优化还是 ANR 分析，Input 事件链路上的每一个环节都可能成为瓶颈。
+理解触摸响应延迟的组成，是优化所有"跟手性"问题的前提。不管我们在做滑动流畅度优化、启动速度优化还是 ANR 分析，Input 事件传递路径上的每一个环节都可能成为瓶颈。
 
 [来源: obsidian/Personal-Knowlodge/source/Android-Systrace-Input.md] [来源: obsidian/Personal-Knowlodge/source/android-systrace-Responsiveness-in-action-1.md]
 
 ## 触摸响应延迟的组成
 
-一个触摸事件从手指触碰屏幕到画面更新显示，要经过一条相当长的链路。我们用时间顺序来拆解，看看每一阶段发生了什么、耗时在哪里。
+一个触摸事件从手指触碰屏幕到画面更新显示，要经过一条相当长的路径。我们用时间顺序来拆解，看看每一阶段发生了什么、耗时在哪里。
 
 ### 1. 硬件采样（触摸屏 → 驱动）
 
@@ -139,7 +142,7 @@ App 主线程被 Input 事件唤醒后，执行 `ViewRootImpl.deliverInputEvent(
 
 ### 7. 渲染上屏
 
-从 `doFrame()` 开始，经过 measure → layout → draw（构建 DisplayList）→ syncFrameState → GPU 执行 → SurfaceFlinger 合成 → 显示输出，最终画面出现在屏幕上。这条渲染管线的详细分析在 2.4 和 2.5 节已经讲过，这里只强调一点：**从 Input 事件的视角看，渲染上屏是延迟链路上耗时最长、也最不确定的一环**。如果 GPU 繁忙、SurfaceFlinger 合成耗时、或者 Surface 的 Buffer 被占满（dequeueBuffer 等待），渲染延迟可能从正常的 8-16ms 飙升到 30-50ms 以上。
+从 `doFrame()` 开始，经过 measure → layout → draw（构建 DisplayList）→ syncFrameState → GPU 执行 → SurfaceFlinger 合成 → 显示输出，最终画面出现在屏幕上。这条渲染管线的详细分析在 2.4 和 2.5 节已经讲过，这里只强调一点：**从 Input 事件的视角看，渲染上屏是延迟路径上耗时最长、也最不确定的一环**。如果 GPU 繁忙、SurfaceFlinger 合成耗时、或者 Surface 的 Buffer 被占满（dequeueBuffer 等待），渲染延迟可能从正常的 8-16ms 飙升到 30-50ms 以上。
 
 ### 延迟全景图
 
@@ -156,9 +159,11 @@ App 主线程被 Input 事件唤醒后，执行 `ViewRootImpl.deliverInputEvent(
 | 渲染上屏 | 8-50ms | GPU 负载、Buffer 状态、帧率 |
 | **总计** | **~15-75ms** | 诸多因素 |
 
-这也解释了为什么用户对"拖动跟手性"特别敏感——学术论文的研究结果表明，直接触摸拖动的可感知平均最小时延（PAMTD）仅为 11ms，而点击的可接受时延约为 263ms。也就是说，拖动场景对延迟的容忍度远低于点击场景，优化拖动跟手性是触摸响应优化的重中之重。
+这也解释了为什么用户对"拖动跟手性"特别敏感——学术论文的研究结果表明，直接触摸拖动的可感知平均最小时延（Perceivable Average Minimum Time to Display, PAMTD）仅为 11ms，而点击的可接受时延约为 263ms。也就是说，拖动场景对延迟的容忍度远低于点击场景，优化拖动跟手性是触摸响应优化的重中之重。
 
-[来源: obsidian/Personal-Knowlodge/source/2026-03-06_wechat_响应时延的科学研究.md]
+[来源: obsidian/Personal-Knowlodge/source/2026-03-06_wechat_响应时延的科学研究.md] [待补充: PAMTD 11ms 数据的学术论文出处]
+
+搞清楚了延迟的组成，一个自然的问题就是：在硬件层面，采样率对这 15-75ms 的总延迟有多大影响？是不是采样率越高就越好？
 
 ## 触摸采样率与跟手性
 
@@ -229,7 +234,7 @@ Input 被安排在第一位，这意味着在一个 VSync 周期内，系统优�
 
 ### 方法论：从 Input 事件链路定位瓶颈
 
-分析触摸响应问题，最有效的方法是沿着事件链路从源头到终点逐步排查。基本思路是：
+分析触摸响应问题，最有效的方法是沿着事件传递路径从源头到终点逐步排查。基本思路是：
 
 1. **看 InputDispatcher 的队列状态**：InboundQueue、OutboundQueue、WaitQueue 是否有堆积？
 2. **看 App 主线程的状态**：被 Input 唤醒后，是 Running 还是 Sleep/Runnable？
@@ -275,6 +280,22 @@ Input 被安排在第一位，这意味着在一个 VSync 周期内，系统优�
 - **RecentQueue**：最近处理的 10 个事件及其 age（年龄），可以看出事件处理的延迟
 
 当 WaitQueue 中事件的 `age` 超过几百毫秒时，说明 App 端处理严重滞后，离 ANR（5 秒超时）不远了。
+
+一个典型的 `dumpsys input` 输出片段如下：
+
+```
+Input Dispatcher State:
+  FocusedWindow: Window{abc1234 com.example.app/com.example.MainActivity}
+  InboundQueue: <empty>
+  Connections:
+    - Window{abc1234}: status=NORMAL, outboundQueue=<empty>, waitQueue=3
+      WaitQueue:
+        MotionEvent(action=MOVE, age=42ms)
+        MotionEvent(action=MOVE, age=38ms)
+        MotionEvent(action=MOVE, age=35ms)
+```
+
+`waitQueue=3` 且 age 在 35-42ms 之间，说明 App 正在消费事件但速度稍慢（正常情况下 age 应该 < 16ms）。如果 age 持续增长超过几百毫秒，就要警惕主线程阻塞。
 
 [来源: obsidian/Personal-Knowlodge/source/Android-Systrace-Input.md]
 
@@ -332,9 +353,12 @@ Android 系统有 **Input Boost** 机制：在检测到 Input 事件时，临时
 如果 Input 处理和 View 树分发都很快，但渲染管线跟不上（GPU 执行 DisplayList 耗时过长、SurfaceFlinger 合成延迟、Buffer 状态异常），画面更新就会延迟。用户感知到的是"手指动了但画面跟不上"。
 
 这种情况在 Perfetto 中表现为：
-- RenderThread 的 `DrawFrame` 耗时过长
-- `dequeueBuffer` 或 `queueBuffer` 处于 Binder 等待状态（说明 SurfaceFlinger 繁忙）
+- RenderThread 的 `DrawFrame` 耗时过长（正常 < 8ms，超过 VSync 周期即为异常）
+- `dequeueBuffer` 或 `queueBuffer` 处于 Binder 等待状态（说明 SurfaceFlinger 繁忙或 Buffer 被占满）
 - GPU Track 显示某帧渲染接近或超过 VSync 周期
+- SurfaceFlinger 进程的合成耗时异常升高
+
+一个快速的判断方法：在 Perfetto 中选择从 `deliverInputEvent` 开始到下一帧 `GPU Completion` 结束的时间区间，如果超过 32ms（两个 VSync 周期），说明渲染管线是瓶颈。
 
 ### 6. 系统低内存
 
@@ -353,7 +377,9 @@ Android 系统有 **Input Boost** 机制：在检测到 Input 事件时，临时
 
 对于手写笔和绘图场景，Android 提供了 Motion Prediction 库（`androidx.input:input-motionprediction`）来降低感知延迟。它的原理是：基于已有的 MotionEvent 轨迹数据，使用卡尔曼滤波等算法预测用户接下来的手势路径，生成预测的 MotionEvent 并提前渲染。当真实的 MotionEvent 到达后，用真实数据替换预测数据。
 
-这套方案不适用于普通的触摸交互（手指点击和滑动），因为预测不准确时会导致画面跳动。它主要针对连续的、可预测的运动轨迹，如手写笔绘图。从 Android 4.4（API 19）开始支持，Android 13+ 的 `WindowManager` 也提供了系统级别的预测渲染支持。
+这套方案不适用于普通的触摸交互（手指点击和滑动），因为预测不准确时会导致画面跳动——在拖动列表时预测错一个方向，用户会立即察觉。它主要针对连续的、可预测的运动轨迹，如手写笔绘图。从 Android 4.4（API 19）开始支持，Android 13+ 的 `WindowManager` 也提供了系统级别的预测渲染支持。
+
+在实际工程中，如果 App 不涉及手写笔场景，这一节可以跳过。对于需要集成的项目，官方推荐使用 `Jetpack` 的 `androidx.input:input-motionprediction` 库，而非直接调用平台 API。
 
 [已验证: 官方文档, developer.android.com/reference/androidx/input/motionprediction]
 
@@ -361,7 +387,7 @@ Android 系统有 **Input Boost** 机制：在检测到 Input 事件时，临时
 
 [自动发现: 来源 web research]
 
-主流手机厂商在触控延迟优化上做了大量工程工作，这些优化通常不在 AOSP 标准代码中，而是各厂商在 HAL 层和内核层的定制：
+除了 AOSP 标准的 Input 系统实现，主流手机厂商在 HAL 层和内核层做了大量定制优化。这些方案直接影响实际的触摸响应体验，但在 Perfetto 中很难直接观察到：
 
 ### 高刷新率屏幕
 
@@ -382,10 +408,10 @@ Android 系统有 **Input Boost** 机制：在检测到 Input 事件时，临时
 触摸响应不是一个孤立的系统，它和多个章节的内容交叉关联：
 
 - **3.1 Input 事件分发全流程**：本章聚焦于触摸事件的性能分析，3.1 章节则详细讲解了 Input 事件从硬件到 App 的完整分发机制，是理解本章内容的前置知识。
-- **2.3 VSync 机制**：触摸事件的 Batching 和渲染时机都受 VSync 控制，理解 VSync 才能理解为什么会有"等一帧"的延迟。
-- **2.4 Choreographer 与渲染流水线**：Input Callback 是 Choreographer 处理顺序中的第一个，它决定了后续动画和绘制基于什么状态来执行。
-- **2.5 MainThread 与 RenderThread 协作**：触摸事件在 MainThread 处理，渲染在 RenderThread 执行，两者之间的协作效率直接影响触摸响应。
-- **8.1 响应速度原理**：触摸响应是"响应速度"的一个子集，8.1 章节从更宏观的角度讨论了所有类型的响应延迟。
+- **2.3 VSync 机制**：触摸事件的 Batching 和渲染时机都受 VSync 控制——理解 VSync 周期和 offset，才能理解为什么 MOVE 事件要"等一个 VSync"才被消费。本章的"延迟全景图"中渲染上屏的耗时，本质上就是等待 VSync + 渲染执行的时间。
+- **2.4 Choreographer 与渲染流水线**：本章提到的 CALLBACK_INPUT 优先级和 doFrame() 的执行顺序，在 2.4 节有完整的机制讲解。如果想深入理解 Batching 的代码实现，建议先读 2.4。
+- **2.5 MainThread 与 RenderThread 协作**：触摸事件在 MainThread 处理，渲染在 RenderThread 执行。GPU 渲染瓶颈的排查（本章"常见卡顿原因"第 5 点）需要理解这两个线程的 syncAndDrawFrame 流程，详见 2.5 节。
+- **8.1 响应速度原理**：触摸响应是"响应速度"的一个子集，8.1 节从更宏观的角度讨论了"输入延迟 → 处理延迟 → 输出延迟"的通用模型，并给出了量化的优化目标。
 
 ## 常见问题与误区
 
