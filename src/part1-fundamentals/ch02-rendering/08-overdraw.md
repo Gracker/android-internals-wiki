@@ -1,12 +1,15 @@
 ---
 title: "过度绘制"
 chapter: "2.8"
-status: finalized
+status: ready-for-review
+polish_count: 1
+polish_date: "2026-04-05"
+polish_by: "task2b-polish"
 applicable_versions: "Android 4.2 (API 17) - Android 16 (API 36)"
 last_verified: "2026-03-30"
 last_verified_against: "AOSP android-16.0.0_r1"
 drafted_date: "2026-03-30"
-confidence: medium
+confidence: high
 reviewed_date: "2026-04-02"
 reviewed_by: openclaw-task6
 sources:
@@ -18,7 +21,7 @@ sources:
     path: "developer.android.com/topic/performance/rendering/overdraw"
   - type: official
     path: "developer.android.com/reference/android/graphics/Canvas#clipRect"
-tags: [overdraw, GPU, rendering, clipRect, quickReject, 性能优化]
+tags: [overdraw, GPU, rendering, clipRect, quickReject, 性能优化, Compose, DisplayList]
 related_chapters: ["2.1", "2.4", "2.5", "7.2"]
 ---
 
@@ -51,7 +54,7 @@ related_chapters: ["2.1", "2.4", "2.5", "7.2"]
 
 ## 为什么需要关注过度绘制
 
-打开 Android 设备的开发者选项，启用"调试 GPU 过度绘制"，我们会看到屏幕上覆盖了一层彩色滤镜——蓝色、绿色、粉色、红色交织在一起。这些颜色不是 UI 的一部分，而是系统在告诉你：有些像素被画了不止一次。红色越多的区域，说明 GPU 在做更多无用功。如果一个像素被绘制了四次、五次，而用户最终只能看到最上面那一层的结果，那么前面几次绘制就是纯粹的浪费。
+打开 Android 设备的开发者选项，启用"调试 GPU 过度绘制"，我们会看到屏幕上覆盖了一层彩色滤镜——蓝色、绿色、粉色、红色交织在一起。这些颜色不是 UI 的一部分，而是系统在标记每个像素被绘制的次数。红色越多的区域，说明 GPU 在做更多无用功。如果一个像素被绘制了四次、五次，而用户最终只能看到最上面那一层的结果，那么前面几次绘制就是纯粹的浪费。
 
 过度绘制（Overdraw）指的是屏幕上同一像素在一帧内被绘制了多次。在一个典型的 Android 应用中，界面由多层 View 叠加组成——Window 背景层、Activity 布局层、Fragment 层、各种 ViewGroup 和 View 依次叠加。如果每一层都绘制了背景，那么最底层那个被完全遮挡的背景就是在做无用功。
 
@@ -59,7 +62,7 @@ related_chapters: ["2.1", "2.4", "2.5", "7.2"]
 
 ## 过度绘制怎么影响性能
 
-GPU 的渲染能力有一个上限，叫做 fillrate（填充率），即每秒能填充多少像素。当过度绘制严重时，GPU 需要填充的像素总量远大于屏幕实际像素数。以一台 1080×2400 分辨率的手机为例，一帧需要填充约 260 万个像素。如果整屏平均 3x 过度绘制，GPU 实际要处理 780 万个像素——其中 520 万个是画完就被覆盖的。
+GPU 的渲染能力有一个上限——fillrate（填充率），即每秒能填充多少像素。当过度绘制严重时，GPU 需要填充的像素总量远大于屏幕实际像素数。以一台 1080×2400 分辨率的手机为例，一帧需要填充约 260 万个像素。如果整屏平均 3x 过度绘制，GPU 实际要处理 780 万个像素——其中 520 万个是画完就被覆盖的。
 
 但过度绘制的性能影响并不是线性的。关键因素是"GPU 有没有空闲时间"。如果 GPU 本来就很快，渲染一帧只用了 5ms，那即使有 3x 的过度绘制，总耗时可能也就 8ms，仍然在 16.6ms 的 VSync 周期内，用户感知不到卡顿。真正的危险出现在 GPU 已经接近满负载的场景——比如在低端设备上、或者界面本身就很复杂（大量透明度混合、自定义绘制、复杂阴影）的时候。这时过度绘制会成为压垮骆驼的最后一根稻草，让一帧从 15ms 涨到 20ms 以上，产生肉眼可见的掉帧。
 
@@ -163,9 +166,11 @@ ListView、RecyclerView 的 Item 经常使用 Selector 作为背景，用于显�
 
 半透明的 View（alpha < 1.0）天然会导致过度绘制，因为 GPU 必须先绘制底层的所有内容，再将半透明层混合上去。这个混合过程是不可避免的——我们不能简单地"跳过"底层绘制，因为最终用户要看到两层内容的混合效果。
 
-对于透明区域，能做的优化是：如果某个 View 的部分区域是完全透明的（比如一个不规则形状的 Drawable），可以用 `clipRect` 限制绘制区域，避免在透明区域浪费 GPU 算力。
+对于透明区域，可以做的是：如果某个 View 的部分区域完全透明（比如一个不规则形状的 Drawable），可以用 `clipRect` 限制绘制区域，避免在透明区域浪费 GPU 算力。
 
 ## 优化手段
+
+上一节我们梳理了过度绘制的几种常见来源，接下来逐个击破。优化的核心思路只有一条：**减少 GPU 对同一像素的重复填充**。不同来源有不同的应对手段，我们按投入产出比从高到低排列。
 
 ### 移除多余背景
 
@@ -198,7 +203,7 @@ ListView、RecyclerView 的 Item 经常使用 Selector 作为背景，用于显�
 ```java
 @Override
 protected void onDraw(Canvas canvas) {
-    // 只在 Item 的可见区域内绘制文本
+    // 限定绘制区域，避免文本溢出到 Item 边界之外
     canvas.clipRect(left, top, right, bottom);
     canvas.drawText(text, x, y, paint);
 }
@@ -234,7 +239,7 @@ protected void onDraw(Canvas canvas) {
 
 过度绘制并不是孤立的性能问题，它和渲染管线的多个环节都有交集：
 
-- **2.1 渲染架构全景**：过度绘制发生在 GPU 渲染阶段，是"App 绘制 → GPU 执行 → 合成"流水线中 GPU 执行环节的效率问题。
+- **2.1 渲染架构全景**：过度绘制发生在 GPU 渲染阶段，是渲染管线中 GPU 执行环节的效率问题。2.1 节对 App 渲染管线和 SurfaceFlinger 合成管线的区分有助于理解过度绘制的定位。
 - **2.4 Choreographer 与渲染流水线**：如果过度绘制导致 GPU 执行超时，帧就无法在当前 VSync 周期内完成，产生掉帧。
 - **2.5 MainThread 与 RenderThread 协作**：在硬件加速渲染路径下，过度绘制不直接影响 MainThread，但会增加 RenderThread → GPU 的执行时间。
 - **7.2 卡顿原因体系**：过度绘制是 GPU 侧导致卡顿的常见原因之一。
@@ -256,7 +261,7 @@ protected void onDraw(Canvas canvas) {
 
 [自动发现: 来源 developer.android.com/develop/ui/compose/performance]
 
-Jetpack Compose 的声明式 UI 模型在过度绘制方面有一些独特特点。
+前面讨论的检测和优化手段主要基于传统 View 系统。Jetpack Compose 采用声明式 UI 模型，渲染管线和组合机制与传统 View 不同，过度绘制的来源和优化手段也有差异。
 
 ### 检测方式
 
@@ -264,7 +269,7 @@ Compose 应用同样使用"调试 GPU 过度绘制"开发者选项来检测。�
 
 ### Compose 特有的过度绘制来源
 
-Compose 的默认行为比传统 View 系统更"激进"地渲染——每个 Composable 默认都可能参与绘制。常见的过度绘制来源包括：
+Compose 的默认行为比传统 View 系统更激进地渲染——每个 Composable 默认都可能参与绘制，不会像 View 那样根据硬件加速层自动跳过不可见区域。常见的过度绘制来源包括：
 
 1. **Modifier.background() 的叠加**：多个嵌套的 `Box` 或 `Column` 各自设置了 `background` 修饰符，会导致同一像素被绘制多次。优化方式是只在外层设置背景。
 2. **Elevation 和阴影**：带有 `elevation` 的 Composable 会绘制阴影，增加过度绘制。
@@ -288,9 +293,9 @@ Compose 的默认行为比传统 View 系统更"激进"地渲染——每个 Com
 
 蓝色（1x 过度绘制）在大多数应用中是不可避免的——文字绘制在背景上就是 1x。优化的优先级应该是：红色 > 粉色 > 绿色 > 蓝色。全屏蓝色是一个可以接受的状态，不需要追求零过度绘制。
 
-### 误区：compose 的 recomposition 等于过度绘制
+### 误区：Compose 的 Recomposition 等于过度绘制
 
-Recomposition（重组）是 Compose 在组合阶段重新执行 Composable 函数的过程，而过度绘制是 GPU 在绘制阶段对同一像素的重复填充。它们是不同的性能问题，只是症状有时相似（都表现为帧率下降）。用 Layout Inspector 检查重组次数，用 GPU 过度绘制工具检查像素填充——两者需要分开优化。
+Recomposition（重组）是 Compose 在组合阶段重新执行 Composable 函数的过程，过度绘制则是 GPU 在绘制阶段对同一像素的重复填充。两者都可能导致帧率下降，但发生在完全不同的阶段，排查工具也不同：Layout Inspector 显示重组次数，GPU 过度绘制调试工具显示像素填充次数。一个实用的判断方法是——关闭 GPU 过度绘制调试后帧率恢复正常，说明瓶颈在 GPU 填充（过度绘制）；如果在 Layout Inspector 中看到某个 Composable 每帧都在重组，但 GPU 负载不高，瓶颈在 CPU 侧的重组开销。
 
 ## 参考资料
 
