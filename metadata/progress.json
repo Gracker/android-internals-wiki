@@ -2,8 +2,8 @@
   "generated_at": "2026-04-03T19:10:00",
   "total_sections": 98,
   "metrics": {
-    "total": 108,
-    "draft": 4,
+    "total": 111,
+    "draft": 7,
     "ready-for-review": 51,
     "reviewed": 4,
     "finalized": 43,
@@ -1396,11 +1396,11 @@
     }
   ],
   "ready_for_review": 5,
-  "last_updated": "2026-04-05 15:07",
+  "last_updated": "2026-04-05T18:02:00+08:00",
   "stats": {
-    "total": 103,
+    "total": 106,
     "completed": 76,
-    "pending": 27,
+    "pending": 30,
     "last_updated": "2026-04-05T16:16:46.598690"
   },
   "research_stats": {
@@ -1625,6 +1625,33 @@
     "last_updated": "2026-04-05T15:07:41+08:00"
   },
   "history": [
+    {
+      "date": "2026-04-05",
+      "section": "2.15",
+      "title": "DMA-BUF、Gralloc 与跨进程图形内存共享",
+      "action": "gap-created",
+      "created_by": "task2a-knowledge-gap",
+      "gap_source": "素材驱动+AOSP结构+每日信息",
+      "score": "17/20"
+    },
+    {
+      "date": "2026-04-05",
+      "section": "2.16",
+      "title": "Sync Fence 框架与帧同步机制",
+      "action": "gap-created",
+      "created_by": "task2a-knowledge-gap",
+      "gap_source": "章节深挖+读者需求+AOSP结构",
+      "score": "15/20"
+    },
+    {
+      "date": "2026-04-05",
+      "section": "5.9",
+      "title": "ADPF 自适应性能框架",
+      "action": "gap-created",
+      "created_by": "task2a-knowledge-gap",
+      "gap_source": "官方文档+研究素材+AOSP结构",
+      "score": "15/20"
+    },
     {
       "date": "2026-04-05",
       "section": "13.4",
@@ -2983,6 +3010,33 @@
       "verification_level": "L2",
       "word_count": "~9000",
       "confidence": "medium"
+    },
+    "2.15": {
+      "title": "DMA-BUF、Gralloc 与跨进程图形内存共享",
+      "status": "draft",
+      "file": "src/part1-fundamentals/ch02-rendering/15-dmabuf-gralloc.md",
+      "created_date": "2026-04-05",
+      "created_by": "task2a-knowledge-gap",
+      "gap_source": "素材驱动+AOSP结构+每日信息",
+      "gap_score": "17/20"
+    },
+    "2.16": {
+      "title": "Sync Fence 框架与帧同步机制",
+      "status": "draft",
+      "file": "src/part1-fundamentals/ch02-rendering/16-sync-fence.md",
+      "created_date": "2026-04-05",
+      "created_by": "task2a-knowledge-gap",
+      "gap_source": "章节深挖+读者需求+AOSP结构",
+      "gap_score": "15/20"
+    },
+    "5.9": {
+      "title": "ADPF 自适应性能框架",
+      "status": "draft",
+      "file": "src/part1-fundamentals/ch05-cpu-power/09-adpf.md",
+      "created_date": "2026-04-05",
+      "created_by": "task2a-knowledge-gap",
+      "gap_source": "官方文档+研究素材+AOSP结构",
+      "gap_score": "15/20"
     }
   },
   "5.1": {
@@ -3235,6 +3289,39 @@
       "score": "16/20",
       "file": "src/part3-tools/ch14-other-tools/08-gpu-debug-tools.md",
       "completed_at": "2026-04-05T16:16:46.598679"
+    },
+    {
+      "chapter": "2.15",
+      "section": "2.15",
+      "title": "DMA-BUF、Gralloc 与跨进程图形内存共享",
+      "status": "pending",
+      "priority": 80,
+      "source": "task2a-knowledge-gap",
+      "created_date": "2026-04-05",
+      "score": "17/20",
+      "file": "src/part1-fundamentals/ch02-rendering/15-dmabuf-gralloc.md"
+    },
+    {
+      "chapter": "2.16",
+      "section": "2.16",
+      "title": "Sync Fence 框架与帧同步机制",
+      "status": "pending",
+      "priority": 80,
+      "source": "task2a-knowledge-gap",
+      "created_date": "2026-04-05",
+      "score": "15/20",
+      "file": "src/part1-fundamentals/ch02-rendering/16-sync-fence.md"
+    },
+    {
+      "chapter": "5.9",
+      "section": "5.9",
+      "title": "ADPF 自适应性能框架",
+      "status": "pending",
+      "priority": 80,
+      "source": "task2a-knowledge-gap",
+      "created_date": "2026-04-05",
+      "score": "15/20",
+      "file": "src/part1-fundamentals/ch05-cpu-power/09-adpf.md"
     }
   ],
   "polish_stats": {
