@@ -8,7 +8,7 @@ last_verified_against: "AOSP android-16.0.0_r1"
 drafted_date: "2026-03-31"
 reviewed_date: "2026-03-31"
 reviewed_by: openclaw-task6
-re-review-result: "已纳入 1 条素材内容（Socket vs Binder 线程效率论证），修正 0 处，待正常review质检"
+re-review-result: "前轮已纳入 Socket vs Binder 线程效率论证，本轮清理 frontmatter 残留字段，待 Step 4b 正常 review"
 confidence: medium
 sources:
   - type: aosp
@@ -23,11 +23,6 @@ sources:
     path: "source.android.com/docs/core/memory"
 tags: [process, ams, oom_adj, lmkd, zygote, process-lifecycle, binder]
 related_chapters: ["1.1", "1.2", "1.4", "1.5"]
-re-review-reason: "新素材: 反思｜Android 输入系统 & ANR机制的设计与实现"
-re-review-materials:
-  - "Cubox/反思｜Android 输入系统 & ANR机制的设计与实现对于Android开发者而言，ANR是一个老生常谈的问题，站在 - 掘金-2024-11-18.md"
-re-review-triggered-date: "2026-04-05"
-re-review-triggered-by: "task7-incremental-index"
 ---
 
 # 进程模型与生命周期管理
