@@ -2,13 +2,13 @@
   "generated_at": "2026-04-03T19:10:00",
   "total_sections": 96,
   "metrics": {
-    "total": 102,
-    "draft": 2,
+    "total": 106,
+    "draft": 6,
     "ready-for-review": 49,
     "reviewed": 3,
     "finalized": 43,
     "staging_drafts": 0,
-    "last_updated": "2026-04-05T08:13:19.395018",
+    "last_updated": "2026-04-05T09:02:00",
     "processing": 0,
     "ready-to-publish": 3
   },
@@ -1325,10 +1325,10 @@
   "ready_for_review": 5,
   "last_updated": "2026-04-05T08:20:00+08:00",
   "stats": {
-    "total": 99,
+    "total": 103,
     "completed": 67,
-    "pending": 31,
-    "last_updated": "2026-04-05T04:12:28+08:00"
+    "pending": 35,
+    "last_updated": "2026-04-05T09:02:00+08:00"
   },
   "research_stats": {
     "runs_today": [
@@ -2207,6 +2207,42 @@
         "Perfetto v54: Data Explorer + Collapsed Stack + 7x JSON + R8 Retracing + weighted jank",
         "Android 17: ANGLE denylist mandatory + Vulkan 1.4 + OpenGL ES maintenance mode"
       ]
+    },
+    {
+      "date": "2026-04-05",
+      "section": "1.11",
+      "title": "Zygote 机制与启动性能优化",
+      "action": "gap-created",
+      "created_by": "task2a-knowledge-gap",
+      "gap_source": "AOSP结构+读者需求+研究素材",
+      "score": "15/20"
+    },
+    {
+      "date": "2026-04-05",
+      "section": "2.14",
+      "title": "图形 API 演进与选择策略",
+      "action": "gap-created",
+      "created_by": "task2a-knowledge-gap",
+      "gap_source": "AOSP结构+官方文档+研究素材",
+      "score": "15/20"
+    },
+    {
+      "date": "2026-04-05",
+      "section": "3.4",
+      "title": "输入延迟与预测输入技术",
+      "action": "gap-created",
+      "created_by": "task2a-knowledge-gap",
+      "gap_source": "章节深挖+读者需求",
+      "score": "14/20"
+    },
+    {
+      "date": "2026-04-05",
+      "section": "14.8",
+      "title": "GPU 图形调试与分析工具",
+      "action": "gap-created",
+      "created_by": "task2a-knowledge-gap",
+      "gap_source": "AOSP结构+官方文档+研究素材",
+      "score": "16/20"
     }
   ],
   "sections": {
@@ -2875,5 +2911,51 @@
     "title": "Android 分层架构",
     "status": "ready-to-publish",
     "reviewed_date": "2026-04-05"
-  }
+  },
+  "queue": [
+    {
+      "chapter": "1.11",
+      "section": "1.11",
+      "title": "Zygote 机制与启动性能优化",
+      "status": "pending",
+      "priority": 80,
+      "source": "task2a-knowledge-gap",
+      "created_date": "2026-04-05",
+      "score": "15/20",
+      "file": "src/part1-fundamentals/ch01-architecture/11-zygote-startup.md"
+    },
+    {
+      "chapter": "2.14",
+      "section": "2.14",
+      "title": "图形 API 演进与选择策略",
+      "status": "pending",
+      "priority": 80,
+      "source": "task2a-knowledge-gap",
+      "created_date": "2026-04-05",
+      "score": "15/20",
+      "file": "src/part1-fundamentals/ch02-rendering/14-graphics-api-evolution.md"
+    },
+    {
+      "chapter": "3.4",
+      "section": "3.4",
+      "title": "输入延迟与预测输入技术",
+      "status": "pending",
+      "priority": 80,
+      "source": "task2a-knowledge-gap",
+      "created_date": "2026-04-05",
+      "score": "14/20",
+      "file": "src/part1-fundamentals/ch03-input/04-input-latency-prediction.md"
+    },
+    {
+      "chapter": "14.8",
+      "section": "14.8",
+      "title": "GPU 图形调试与分析工具",
+      "status": "pending",
+      "priority": 80,
+      "source": "task2a-knowledge-gap",
+      "created_date": "2026-04-05",
+      "score": "16/20",
+      "file": "src/part3-tools/ch14-other-tools/08-gpu-debug-tools.md"
+    }
+  ]
 }
