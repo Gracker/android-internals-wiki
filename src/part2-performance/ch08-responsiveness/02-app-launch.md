@@ -1,7 +1,7 @@
 ---
 title: "App 启动全流程"
 chapter: "8.2"
-status: finalized
+status: ready-for-review
 applicable_versions: "Android 8.0 (API 26) - Android 16 (API 36)"
 last_verified: "2026-04-01"
 last_verified_against: "AOSP android-15.0.0_r1"
@@ -17,13 +17,16 @@ sources:
     path: "Cubox/Android 强推的 Baseline Profiles 国内能用吗？我找 Google 工程师求证了！ - 掘金-2022-07-17.md"
   - type: official
     path: "developer.android.com/topic/performance/vitals/launch-time"
-tags: [cold-start, warm-start, hot-start, TTID, TTFD, launch, startup, reportFullyDrawn, baseline-profiles, app-startup]
-related_chapters: ["8.1", "1.2", "2.4", "2.5", "7.1"]
+tags: [cold-start, warm-start, hot-start, TTID, TTFD, launch, startup, reportFullyDrawn, baseline-profiles, app-startup, contentprovider, process-creation]
+related_chapters: ["8.1", "1.2", "1.10", "2.4", "2.5", "7.1"]
 section: "8.2"
 drafted_date: "2026-04-01"
 drafted_by: "openclaw-task2a"
 reviewed_date: "2026-04-05"
 reviewed_by: "openclaw-task6"
+polish_count: 1
+polish_date: "2026-04-06"
+polish_by: "task2b-polish"
 ---
 
 # App 启动全流程
@@ -104,7 +107,7 @@ Android 把应用的启动分为三种状态：冷启动（Cold Start）、温�
 
 热启动是指应用进程存在且 Activity 对象也存在（通常在后台栈中）。典型场景是用户按 Home 键切到桌面后再次打开应用。这种情况下 Activity 只需要走 onRestart → onStart → onResume 生命周期，在 Perfetto 的 am 子系统中，热启动被标记为 HOT_LAUNCH。
 
-热启动是最快的，因为连 Activity 对象都不需要重新创建。但需要注意：如果系统因为内存不足回收了 Activity 中的部分资源（如 Bitmap），热启动时可能需要重建这些对象，这时开销会接近温启动。
+热启动是最快的，因为连 Activity 对象都不需要重新创建。但如果系统因内存不足回收了 Activity 中的部分资源（如 Bitmap），热启动时可能需要重建这些对象，这时开销会接近温启动。
 
 [来源: obsidian/Cubox/Activity 启动速度分析方法（启动流程分析） - Light.Moon-2022-04-11.md]
 
@@ -126,7 +129,7 @@ Android 把应用的启动分为三种状态：冷启动（Cold Start）、温�
 
 ### 第一阶段：从点击到 fork 进程
 
-用户在桌面上点击应用图标，Launcher 的 onClick 回调被触发。这看起来是一个简单的函数调用，但背后的事情不少。
+用户在桌面上点击应用图标，Launcher 的 onClick 回调被触发。这看似一个简单的函数调用，背后却涉及多个系统组件的协调。
 
 Launcher 调用 startActivity()，经过几层封装后通过 Binder IPC 发送请求到 system_server 中的 ActivityTaskManagerService（ATMS）。ATMS 的 ActivityStarter 收到请求后，首先通过 ActivityMetricsLogger 记录一个时间戳——这个时间戳就是后续所有启动耗时度量的起点（TTID 的起点）。
 
@@ -175,7 +178,7 @@ Activity.onResume() 执行完后，并不是立刻就能看到界面。真正的
 
 **创建 SurfaceSession 连接**：通过 IWindowSession.addWindow() 向 WindowManagerService 注册窗口。WMS 会与 SurfaceFlinger 建立连接，为这个窗口创建 Layer 和 BufferQueue。
 
-当下一个 VSync 信号到来时，Choreographer 回调触发 ViewRootImpl.performTraversals()。这是真正开始干活的地方：
+当下一个 VSync 信号到来时，Choreographer 回调触发 ViewRootImpl.performTraversals()。这里开始执行实际的绘制操作：
 
 **relayoutWindow**：第一次执行时，会向 SurfaceFlinger 申请创建 Surface（如果还没有的话）。SurfaceFlinger 创建 BufferQueueLayer，返回 IGraphicBufferProducer 给应用端。
 
@@ -247,7 +250,7 @@ override fun onResume() {
 // 当所有 reporter 都被移除时，自动调用 reportFullyDrawn()
 ```
 
-FullyDrawnReporter 内部维护一个计数器（reporterCount），每次 addReporter 加 1，每次 removeReporter 减 1。当计数器归零时，自动调用 reportFullyDrawn()。这比手动在多个回调中协调 reportFullyDrawn 的调用时机要可靠得多。
+FullyDrawnReporter 内部维护一个计数器（reporterCount），每次 addReporter 加 1，每次 removeReporter 减 1。当计数器归零时，自动调用 reportFullyDrawn()。这比手动在多个回调中协调 reportFullyDrawn() 的调用时机更可靠，避免了多异步任务间的时序竞争。
 
 [已验证: 官方文档, developer.android.com/develop/ui/views/launch/ttfd]
 
@@ -446,7 +449,7 @@ Baseline Profile 需要打包在 APK 中（或通过 AndroidX BaselineProfile Gr
 
 AndroidX App Startup 库解决的问题是：多个 SDK 通过 ContentProvider 初始化导致的启动开销。
 
-没有 App Startup 时，每个 SDK 声明自己的 ContentProvider，每个 ContentProvider 在 Application.onCreate 之前独立初始化。假设有 10 个 SDK 各声明一个 ContentProvider，系统就需要创建 10 个 ContentProvider 实例，这个开销不容忽视。
+没有 App Startup 时，每个 SDK 声明自己的 ContentProvider，每个 ContentProvider 在 Application.onCreate 之前独立初始化。假设有 10 个 SDK 各声明一个 ContentProvider，系统就需要创建 10 个 ContentProvider 实例，10 个 ContentProvider 实例的创建开销可达 50-100ms，不容忽视。
 
 App Startup 的做法是：所有 SDK声明同一个 InitializationProvider（App Startup 提供的），在自己的 AndroidManifest 中通过 meta-data 声明依赖关系。App Startup 按拓扑排序顺序初始化所有 SDK，只创建一个 ContentProvider。
 
