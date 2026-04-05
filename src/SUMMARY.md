@@ -41,6 +41,8 @@
   - [2.12 Window Manager Service 与窗口管理](part1-fundamentals/ch02-rendering/12-window-manager.md)
   - [2.13 图形缓冲区管理 (BufferQueue)](part1-fundamentals/ch02-rendering/13-buffer-queue.md)
   - [2.14 图形 API 演进与选择策略](part1-fundamentals/ch02-rendering/14-graphics-api-evolution.md)
+  - [2.15 DMA-BUF、Gralloc 与跨进程图形内存共享](part1-fundamentals/ch02-rendering/15-dmabuf-gralloc.md)
+  - [2.16 Sync Fence 框架与帧同步机制](part1-fundamentals/ch02-rendering/16-sync-fence.md)
 
 - [第 3 章：输入系统](part1-fundamentals/ch03-input/README.md)
   - [3.1 Input 事件分发全流程](part1-fundamentals/ch03-input/01-input-dispatch.md)
@@ -65,6 +67,8 @@
   - [5.5 Thermal 管控](part1-fundamentals/ch05-cpu-power/05-thermal.md)
   - [5.6 Android 功耗管理](part1-fundamentals/ch05-cpu-power/06-android-power.md)
   - [5.7 CPU 相关的版本演进](part1-fundamentals/ch05-cpu-power/07-cpu-evolution.md)
+  - [5.8 后台执行限制与优化](part1-fundamentals/ch05-cpu-power/08-background-execution.md)
+  - [5.9 ADPF 自适应性能框架](part1-fundamentals/ch05-cpu-power/09-adpf.md)
 
 - [第 6 章：存储与 I/O](part1-fundamentals/ch06-storage/README.md)
   - [6.1 Android 存储架构](part1-fundamentals/ch06-storage/01-storage-architecture.md)
