@@ -52,5 +52,31 @@
     "status": "completed",
     "completed_at": "2026-04-05T08:13:19.394040",
     "completed_by": "openclaw-task2a"
+  },
+  {
+    "section": "4.7",
+    "section_title": "16KB Page Size 与 Android 性能",
+    "priority": 80,
+    "reason": "知识缺口挖掘：Android 15/16 强制 16KB page size，影响内存、启动、功耗全链路，Google 官方量化数据支撑",
+    "material_paths": [
+      "https://developer.android.com/guide/practices/page-sizes",
+      "https://android-developers.googleblog.com/ (16KB page size announcements)"
+    ],
+    "added_by": "task2a-knowledge-gap",
+    "added_at": "2026-04-05T17:05:00+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "1.12",
+    "section_title": "AutoFDO 反馈导向编译优化",
+    "priority": 80,
+    "reason": "知识缺口挖掘：Android 16 新编译优化，Google 官方博客素材，与 ART 编译/启动优化直接关联",
+    "material_paths": [
+      "intake/daily-info/2026-04-05.md (AutoFDO 条目)",
+      "https://android-developers.googleblog.com/2026/03/BoostingAndroidPerformanceIntroducingAutoFDO.html"
+    ],
+    "added_by": "task2a-knowledge-gap",
+    "added_at": "2026-04-05T17:05:00+08:00",
+    "status": "pending"
   }
 ]

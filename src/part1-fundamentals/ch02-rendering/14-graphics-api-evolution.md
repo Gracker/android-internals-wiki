@@ -14,7 +14,7 @@ sources:
   - type: official
     path: "https://source.android.com/docs/core/graphics/angle"
   - type: blog
-    path: "https://android-developers.googleblog.com/"
+    path: "https://android-developers.googleblog.com/ (Vulkan as official Android graphics API)"
   - type: aosp
     path: "platform/external/angle"
 tags: [opengl-es, vulkan, angle, gpu, graphics-api, rendering]
@@ -134,6 +134,7 @@ VkGraphicsPipelineCreateInfo pipelineInfo = {
     .pVertexInputState = &vertexInputState,  // 顶点输入
     .pRasterizationState = &rasterState,     // 光栅化
     .pColorBlendState = &blendState,         // 混合状态
+    // ... 所有状态在创建时一次性确定
 };
 vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineInfo, NULL, &pipeline);
 
@@ -304,13 +305,15 @@ Frame Timeline（帧时间线）在 Android 10+ 可用，它展示了每帧从 A
 
 ### 何时选择 Vulkan，何时保持 GLES
 
-**决策路径**：
-
-- 新项目 → 直接使用 Vulkan（推荐）
-- 已有 GLES 代码 + 性能关键型（游戏/AR/VR）→ 评估迁移到 Vulkan
-- 已有 GLES 代码 + 普通 UI 应用 → 不需要改动，ANGLE 会自动处理
-- 已有 GLES 代码 + WebView/WebGL → 保持 GLES，不受 ANGLE 策略影响
-- 使用游戏引擎 → 跟随引擎默认设置
+```
+新项目？
+  ├─ 是 → 直接使用 Vulkan（推荐）
+  ├─ 否（已有 GLES 代码）
+  │   ├─ 性能关键型（游戏/AR/VR）→ 评估迁移到 Vulkan
+  │   ├─ 普通 UI 应用 → 不需要改动，ANGLE 会自动处理
+  │   └─ WebView/WebGL → 保持 GLES，不受 ANGLE 策略影响
+  └─ 使用游戏引擎 → 跟随引擎默认设置
+```
 
 **直接使用 Vulkan 的场景**：
 - 新开发的 3D 游戏或 AR/VR 应用

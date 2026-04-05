@@ -408,7 +408,7 @@ Shader 太复杂会吃满 GPU 的 ALU（算术逻辑单元）。判断 Shader �
 GPU 分析工具的使用建立在几个前置章节的知识上：
 
 - **§2.10 GPU 渲染深入**：理解 GPU 渲染管线是使用 GPU 分析工具的前提。不知道 Vertex Shader → Rasterizer → Fragment Shader 的流程，就看不懂 AGI Frame Profiler 的输出
-- **§2.14 图形 API 演进与选择策略**：Android 17 的 ANGLE denylist 意味着 GLES 应用实际通过 Vulkan 运行，这影响 GPU 分析工具的选择和结果解读
+- **§§2.14 图形 API 演进与选择策略**：Android 17 的 ANGLE denylist 意味着 GLES 应用实际通过 Vulkan 运行，这影响 GPU 分析工具的选择和结果解读
 - **§13.3 Perfetto View 解读**：Perfetto GPU counter track 是 GPU 分析的起点，在深入帧级分析之前先用 Perfetto 确认瓶颈
 - **§14.1 Android Studio Profiler**：AS Profiler 也有 GPU 分析能力（虽然不如 AGI 专业），适合快速检查
 

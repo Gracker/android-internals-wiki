@@ -23,6 +23,7 @@
   - [1.9 Package Manager Service 与应用安装性能](part1-fundamentals/ch01-architecture/09-package-manager.md)
   - [1.10 ContentProvider 性能与优化](part1-fundamentals/ch01-architecture/10-content-provider.md)
   - [1.11 Zygote 机制与启动性能优化](part1-fundamentals/ch01-architecture/11-zygote-startup.md)
+  - [1.12 AutoFDO 反馈导向编译优化](part1-fundamentals/ch01-architecture/12-autofdo-optimization.md)
 
 
 - [第 2 章：渲染系统](part1-fundamentals/ch02-rendering/README.md)
@@ -54,6 +55,7 @@
   - [4.4 Low Memory Killer](part1-fundamentals/ch04-memory/04-lmk.md)
   - [4.5 App 内存优化](part1-fundamentals/ch04-memory/05-app-memory-optimization.md)
   - [4.6 内存相关的版本演进](part1-fundamentals/ch04-memory/06-memory-evolution.md)
+  - [4.7 16KB Page Size 与 Android 性能](part1-fundamentals/ch04-memory/07-16kb-page-size.md)
 
 - [第 5 章：CPU 调度与能耗管理](part1-fundamentals/ch05-cpu-power/README.md)
   - [5.1 Linux 进程调度基础](part1-fundamentals/ch05-cpu-power/01-linux-scheduling.md)

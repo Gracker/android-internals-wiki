@@ -1,14 +1,14 @@
 {
   "generated_at": "2026-04-03T19:10:00",
-  "total_sections": 96,
+  "total_sections": 98,
   "metrics": {
-    "total": 106,
-    "draft": 2,
+    "total": 108,
+    "draft": 4,
     "ready-for-review": 52,
     "reviewed": 3,
     "finalized": 43,
     "staging_drafts": 0,
-    "last_updated": "2026-04-05T16:30:13.031714",
+    "last_updated": "2026-04-05T17:05:00",
     "processing": 0,
     "ready-to-publish": 4
   },
