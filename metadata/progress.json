@@ -1,14 +1,14 @@
 {
   "generated_at": "2026-04-03T19:10:00",
-  "total_sections": 101,
+  "total_sections": 105,
   "metrics": {
-    "total": 114,
-    "draft": 9,
-    "ready-for-review": 49,
+    "total": 118,
+    "draft": 12,
+    "ready-for-review": 50,
     "reviewed": 4,
     "finalized": 44,
     "staging_drafts": 0,
-    "last_updated": "2026-04-05T20:06:00+08:00",
+    "last_updated": "2026-04-05T21:02:00+08:00",
     "processing": 0,
     "ready-to-publish": 6,
     "last_reviewed": "2026-04-05"
@@ -2520,6 +2520,25 @@
       "created_by": "task2a-knowledge-gap",
       "gap_source": "AOSP结构+官方文档+研究素材",
       "score": "16/20"
+    },
+    {
+      "date": "2026-04-05",
+      "section": "2.15",
+      "title": "DMA-BUF、Gralloc 与跨进程图形内存共享",
+      "action": "gap-created",
+      "created_by": "task2a-knowledge-gap",
+      "gap_source": "素材驱动+AOSP结构+每日信息",
+      "gap_score": "17/20"
+    },
+    {
+      "date": "2026-04-05",
+      "section": "2.15",
+      "title": "DMA-BUF、Gralloc 与跨进程图形内存共享",
+      "action": "draft-completed",
+      "word_count": "~8500",
+      "drafted_date": "2026-04-05",
+      "drafted_by": "openclaw-task2a",
+      "verification_level": "L2"
     }
   ],
   "sections": {

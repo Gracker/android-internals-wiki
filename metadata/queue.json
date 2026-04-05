@@ -136,5 +136,47 @@
     "added_by": "task2a-knowledge-gap",
     "added_at": "2026-04-05T19:10:00+08:00",
     "status": "pending"
+  },
+  {
+    "section": "2.15",
+    "section_title": "DMA-BUF、Gralloc 与跨进程图形内存共享",
+    "priority": 85,
+    "reason": "知识缺口挖掘：渲染管线物理层基础设施，BufferQueue零拷贝底层机制，与2.13/2.16/4.2直接关联",
+    "material_paths": [
+      "intake/research-feeds/素材驱动+AOSP结构+每日信息"
+    ],
+    "added_by": "task2a-knowledge-gap",
+    "added_at": "2026-04-05T20:00:00+08:00",
+    "status": "completed",
+    "completed_at": "2026-04-05T20:43:00+08:00",
+    "completed_by": "openclaw-task2a"
+  },
+  {
+    "section": "2.18",
+    "section_title": "Adaptive Refresh Rate 与动态帧率控制",
+    "priority": 80,
+    "reason": "知识缺口挖掘：Android 16 ARR 是渲染管线重大新特性，19/20 研究素材支撑，涉及 SF/Choreographer/DisplayManager 三方协调",
+    "created_date": "2026-04-05"
+  },
+  {
+    "section": "13.8",
+    "section_title": "Perfetto 输入延迟 SQL 深度分析",
+    "priority": 80,
+    "reason": "知识缺口挖掘：Perfetto android.input SQL 模块研究（17/20），输入链路精确量化分析的 SQL 方法论",
+    "created_date": "2026-04-05"
+  },
+  {
+    "section": "4.8",
+    "section_title": "ART 分代垃圾回收与 GC 暂停优化",
+    "priority": 80,
+    "reason": "知识缺口挖掘：Android 17 Generational GC 新特性，GC 暂停是 jank 主要来源之一，16/20",
+    "created_date": "2026-04-05"
+  },
+  {
+    "section": "14.9",
+    "section_title": "Android Camera 性能与 Perfetto 分析",
+    "priority": 80,
+    "reason": "知识缺口挖掘：2 篇高质量素材未映射，Camera 是未被覆盖的主要 Android 子系统，14/20",
+    "created_date": "2026-04-05"
   }
 ]

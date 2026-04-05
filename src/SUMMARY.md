@@ -45,6 +45,7 @@
   - [2.15 DMA-BUF、Gralloc 与跨进程图形内存共享](part1-fundamentals/ch02-rendering/15-dmabuf-gralloc.md)
   - [2.16 Sync Fence 框架与帧同步机制](part1-fundamentals/ch02-rendering/16-sync-fence.md)
   - [2.17 Frame Pacing Library 与帧节奏控制](part1-fundamentals/ch02-rendering/17-frame-pacing.md)
+  - [2.18 Adaptive Refresh Rate 与动态帧率控制](part1-fundamentals/ch02-rendering/18-adaptive-refresh-rate.md)
 
 - [第 3 章：输入系统](part1-fundamentals/ch03-input/README.md)
   - [3.1 Input 事件分发全流程](part1-fundamentals/ch03-input/01-input-dispatch.md)
@@ -60,6 +61,7 @@
   - [4.5 App 内存优化](part1-fundamentals/ch04-memory/05-app-memory-optimization.md)
   - [4.6 内存相关的版本演进](part1-fundamentals/ch04-memory/06-memory-evolution.md)
   - [4.7 16KB Page Size 与 Android 性能](part1-fundamentals/ch04-memory/07-16kb-page-size.md)
+  - [4.8 ART 分代垃圾回收与 GC 暂停优化](part1-fundamentals/ch04-memory/08-art-generational-gc.md)
 
 - [第 5 章：CPU 调度与能耗管理](part1-fundamentals/ch05-cpu-power/README.md)
   - [5.1 Linux 进程调度基础](part1-fundamentals/ch05-cpu-power/01-linux-scheduling.md)
@@ -137,6 +139,7 @@
   - [13.5 专题解读](part3-tools/ch13-perfetto/05-topic-analysis.md)
   - [13.6 线程 CPU 状态分析](part3-tools/ch13-perfetto/06-thread-cpu-states.md)
   - [13.7 Perfetto 的高级用法](part3-tools/ch13-perfetto/07-advanced-usage.md)
+  - [13.8 Perfetto 输入延迟 SQL 深度分析](part3-tools/ch13-perfetto/08-input-latency-sql.md)
 
 - [第 14 章：其他分析工具](part3-tools/ch14-other-tools/README.md)
   - [14.1 Android Studio Profiler](part3-tools/ch14-other-tools/01-as-profiler.md)
@@ -147,6 +150,7 @@
   - [14.6 自动化测试工具](part3-tools/ch14-other-tools/06-automation-tools.md)
   - [14.7 ProfilingManager](part3-tools/ch14-other-tools/07-profiling-manager.md)
   - [14.8 GPU 图形调试与分析工具](part3-tools/ch14-other-tools/08-gpu-debug-tools.md)
+  - [14.9 Android Camera 性能与 Perfetto 分析](part3-tools/ch14-other-tools/09-camera-performance-analysis.md)
 
 - [第 15 章：方法论](part3-tools/ch15-methodology/README.md)
   - [15.1 性能优化的术、道、器](part3-tools/ch15-methodology/01-philosophy.md)
