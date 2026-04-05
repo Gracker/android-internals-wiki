@@ -4,11 +4,11 @@
   "metrics": {
     "total": 119,
     "draft": 10,
-    "ready-for-review": 27,
+    "ready-for-review": 26,
     "reviewed": 4,
-    "finalized": 27,
+    "finalized": 28,
     "staging_drafts": 0,
-    "last_updated": "2026-04-06T06:15:26+08:00",
+    "last_updated": "2026-04-06T07:20:00+08:00",
     "processing": 0,
     "ready-to-publish": 5,
     "last_reviewed": "2026-04-06"
@@ -486,6 +486,17 @@
         "7处'链路'→'路径/流程'（writing-guide §9禁用词替换）",
         "frontmatter补全：section/drafted_by/reviewed_date/reviewed_by",
         "status: ready-for-review → finalized"
+      ]
+    },
+    "8.5": {
+      "reviewed_date": "2026-04-06",
+      "reviewed_by": "openclaw-task6",
+      "review_status": "finalized",
+      "fixes_applied": [
+        "措辞：5处「你」→「我们」（writing-guide §3.5）",
+        "禁用词：「全链路」→「完整流程」「闭环」→「反馈循环/体系」「落地」→「应用」",
+        "元数据：补充 section 字段",
+        "状态：ready-for-review → finalized"
       ]
     }
   },
@@ -1758,8 +1769,22 @@
         ]
       }
     ],
-    "last_updated": "2026-04-05T15:07:41+08:00"
+    "last_updated": "2026-04-06T07:01:00+08:00"
   },
+  "research_runs_today": [
+    {
+      "time": "2026-04-06T07:01:00+08:00",
+      "focus": "功耗优化（topic rotation #6）+ Android 17 功耗管理新特性",
+      "source": "topic-rotation-6",
+      "candidates": 6,
+      "passed": 2,
+      "delivered": 2,
+      "themes": [
+        "Android 17 AlarmManager OnAlarmListener 回调变体 + Play Store wakelock 惩罚政策（2h/24h 阈值 + 5% session + 28d 窗口 + Samsung 联合制定）",
+        "Android 17 AOD Min Mode 全屏低功耗交互界面 + Extreme Battery Saver 增强 + Samsung One UI 9 Maximum mode"
+      ]
+    }
+  ],
   "history": [
     {
       "date": "2026-04-06",
@@ -1901,6 +1926,21 @@
       "word_count": "~9500",
       "anchors_covered": 6,
       "extensions_covered": 0
+    },
+    {
+      "date": "2026-04-06",
+      "section": "5.6/5.8/11.2",
+      "title": "Android 17 功耗管理新特性前沿研究",
+      "action": "research-completed",
+      "focus": "AlarmManager OnAlarmListener + Play Store wakelock 政策 + AOD Min Mode",
+      "candidates": 6,
+      "passed": 2,
+      "delivered": 2,
+      "themes": [
+        "Android 17 AlarmManager OnAlarmListener: 进程内回调 + wakelock 时长缩短 + 单实例规则",
+        "Play Store wakelock 惩罚: 2h/24h + 5% sessions + Samsung 联合 + UIDT API 替代",
+        "AOD Min Mode: 全屏低功耗 monochrome UI + Google Maps 首批适配"
+      ]
     },
     {
       "date": "2026-04-05",

@@ -1,8 +1,11 @@
 ---
 title: "案例集"
 chapter: "8.5"
-status: ready-for-review
+section: "8.5"
+status: finalized
 drafted_date: "2026-04-02"
+reviewed_date: "2026-04-06"
+reviewed_by: openclaw-task6
 applicable_versions: "Android 8.0 (API 26) - Android 16 (API 36)"
 last_verified: "2026-04-02"
 last_verified_against: "AOSP android-16.0.0_r1, developer.android.com"
@@ -59,7 +62,7 @@ related_chapters: ["8.1", "8.2", "8.3", "8.4", "3.2"]
 
 ### 问题背景
 
-Reddit 在 Google Play 上的安装量超过一亿。作为一个内容型社区应用，它的冷启动路径涵盖了从进程创建、Application 初始化、首页数据加载到渲染的全链路。用户打开 App 后最先看到的是首页 Feed 流，这个"从点击图标到可交互 Feed"的时间直接影响了用户的留存和参与度。
+Reddit 在 Google Play 上的安装量超过一亿。作为一个内容型社区应用，它的冷启动路径涵盖了从进程创建、Application 初始化、首页数据加载到渲染的完整流程。用户打开 App 后最先看到的是首页 Feed 流，这个"从点击图标到可交互 Feed"的时间直接影响了用户的留存和参与度。
 
 Reddit 技术团队在 2025 年 Google Performance Spotlight Week 上分享了他们的优化经历 [已验证: developer.android.com, Google Performance Spotlight Week 2025]。优化前，Reddit 的冷启动在 P50 级别约为 2.8 秒，在低端设备上 P95 甚至超过 5 秒。用户投诉中"打开慢"是高频反馈之一。
 
@@ -128,7 +131,7 @@ Reddit 在 Google Play 上线后的 A/B 测试结果 [已验证: developer.andro
 
 ### 本案例的关键启示
 
-这个案例最大的价值不是"用了什么技术"，而是展示了一个高 ROI 的优化路径：当你的 App 还没有做过 Baseline Profiles 和 R8 full mode 时，这两项工作应该是最先做的——改动小、风险低、收益确定。它们本质上是在帮 ART 做它"想做但还没来得及做的事"。
+这个案例最大的价值不是"用了什么技术"，而是展示了一个高 ROI 的优化路径：当我们的 App 还没有做过 Baseline Profiles 和 R8 full mode 时，这两项工作应该是最先做的——改动小、风险低、收益确定。它们本质上是在帮 ART 做它"想做但还没来得及做的事"。
 
 ---
 
@@ -191,7 +194,7 @@ class StartupScheduler {
 
 - 主线程线性执行时间显著缩短，P50 冷启动控制在 2 秒以内
 - 低端设备上的改善尤为明显——通过 Rhea 识别出的锁等待和 IO 等待被大幅消除
-- 建立了可持续优化的闭环：理论分析 → 现状测量 → 优化实施 → A/B 验证 → 防劣化监控
+- 建立了可持续优化的反馈循环：理论分析 → 现状测量 → 优化实施 → A/B 验证 → 防劣化监控
 
 抖音还建立了防劣化机制：每次发版前自动运行启动性能回归测试，如果冷启动 P50 回退超过 100ms，会自动拦截发版。这确保了优化成果不会因为新功能的加入而逐渐退化。
 
@@ -199,7 +202,7 @@ class StartupScheduler {
 
 抖音案例的核心价值在于"系统化"三个字。很多团队做启动优化是头痛医头、脚痛医脚——今天优化了这个 SDK 的初始化，明天又加了一个新的同步初始化。抖音通过任务调度框架将启动过程工程化，使得优化成果可积累、可维护。
 
-另外，Rhea 工具的投入也很值得参考。当 App 规模大到一定程度，通用的性能分析工具（Systrace/Perfetto）在"差异对比"上不够精准——你需要知道"这次启动比上次慢了 200ms，慢在哪里"。毫秒级差异分析能力是大型 App 性能团队的刚需。
+另外，Rhea 工具的投入也很值得参考。当 App 规模大到一定程度，通用的性能分析工具（Systrace/Perfetto）在"差异对比"上不够精准——我们需要知道"这次启动比上次慢了 200ms，慢在哪里"。毫秒级差异分析能力是大型 App 性能团队的刚需。
 
 ---
 
@@ -232,13 +235,13 @@ ANR 率降低 25% 是一个附带收益。分析原因，R8 的代码缩减移�
 
 ### 本案例的关键启示
 
-这个案例证明了一个重要事实：如果你的项目还在使用 ProGuard 而非 R8 full mode，这是一个几乎零成本的高收益优化点。R8 从 Android Gradle Plugin 3.4 开始已成为默认的编译器，但很多项目由于历史原因仍在使用 ProGuard 兼容模式。迁移的工作量主要在于验证 keep 规则，而不是重写代码。
+这个案例证明了一个重要事实：如果我们的项目还在使用 ProGuard 而非 R8 full mode，这是一个几乎零成本的高收益优化点。R8 从 Android Gradle Plugin 3.4 开始已成为默认的编译器，但很多项目由于历史原因仍在使用 ProGuard 兼容模式。迁移的工作量主要在于验证 keep 规则，而不是重写代码。
 
 ---
 
 ## 案例四：页面切换优化——从 500ms 到 150ms 的 Activity 跳转
 
-这个案例是一个综合性的页面切换优化场景，结合了前面章节（8.4）讨论的 Activity/Fragment 切换原理，展示实际项目中如何落地。
+这个案例是一个综合性的页面切换优化场景，结合了前面章节（8.4）讨论的 Activity/Fragment 切换原理，展示实际项目中如何应用。
 
 ### 问题背景
 
@@ -361,7 +364,7 @@ Google 的内部基准测试显示 [已验证: developer.android.com, Google Blo
 
 ### 本案例的关键启示
 
-这个案例的意义在于：性能优化不总是"App 端能做的事"。Google 正在构建数据驱动的系统级自动优化闭环——从 AutoFDO 到 ART 编译优化通过 Mainline 推送。作为 App 开发者，理解这些平台级优化能帮你在性能分析时正确归因（"启动慢不一定是我的代码问题"），也能帮你利用新平台特性获得额外收益。
+这个案例的意义在于：性能优化不总是"App 端能做的事"。Google 正在构建数据驱动的系统级自动优化体系——从 AutoFDO 到 ART 编译优化通过 Mainline 推送。作为 App 开发者，理解这些平台级优化能帮我们在性能分析时正确归因（"启动慢不一定是我的代码问题"），也能帮我们利用新平台特性获得额外收益。
 
 ---
 
@@ -369,7 +372,7 @@ Google 的内部基准测试显示 [已验证: developer.android.com, Google Blo
 
 综合以上案例，我们可以提炼出响应速度优化的通用方法论：
 
-**第一，先度量，再优化。** Reddit 用 Macrobenchmark 建基线，抖音用 Rhea 做毫秒级差异分析，电商案例用 Perfetto 精确定位瓶颈。没有一个团队是凭直觉做优化的。度量工具的选择取决于你的规模——小型 App 用 Macrobenchmark + Perfetto 就够了，大型 App 可能需要自建分析平台。
+**第一，先度量，再优化。** Reddit 用 Macrobenchmark 建基线，抖音用 Rhea 做毫秒级差异分析，电商案例用 Perfetto 精确定位瓶颈。没有一个团队是凭直觉做优化的。度量工具的选择取决于我们的规模——小型 App 用 Macrobenchmark + Perfetto 就够了，大型 App 可能需要自建分析平台。
 
 **第二，区分"平台红利"和"应用优化"。** Baseline Profiles、R8 full mode、AutoFDO、16KB 页面——这些是平台提供的能力，接入成本极低。应该优先利用这些红利，然后再投入人力做应用层的深度优化。
 
