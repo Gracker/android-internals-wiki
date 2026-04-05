@@ -2698,8 +2698,8 @@
     },
     "2.11": {
       "title": "Flutter 渲染管线与性能",
-      "status": "finalized",
-      "reviewed_date": "2026-04-03",
+      "status": "ready-to-publish",
+      "reviewed_date": "2026-04-06",
       "reviewed_by": "openclaw-task6"
     },
     "9.3": {
