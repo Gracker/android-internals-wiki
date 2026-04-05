@@ -515,3 +515,18 @@ Predictive Back 要求 App 在手势阶段就准备好目标 UI。如果你的�
 - [来源: intake/research-feeds/2026-04-02-19-ch09-profiling-manager-anr-trigger.md]
 - [来源: intake/research-feeds/2026-04-04-07-ch08-application-startinfo-getstartcomponent.md]
 - [来源: intake/research-feeds/2026-04-03-11-android16-predictive-back-enhancement.md]
+### Android15适配之targetSdkVersion升到35后全是坑
+- 来源：https://juejin.cn/post/7584295332340858943
+- 类型：技术文章
+- 摘要：详尽记录将targetSdkVersion升级到35（Android 15）过程中遇到的所有适配问题。涵盖隐私变更、前台服务类型强制分类、16KB页面大小对native库的影响。
+- 入库时间：2026-04-06
+### Android 17 有什么需要适配的？
+- 来源：https://juejin.cn/post/7610233341305389099
+- 类型：技术文章
+- 摘要：Android 17官方适配文档解读：隐私沙箱要求、更严格的后台限制、Predictive Back强制适配、禁止侧载政策详解。
+- 入库时间：2026-04-06
+### 了解一下Android16更新事项
+- 来源：https://juejin.cn/post/7595053284915822632
+- 类型：技术文章
+- 摘要：Android 16主要更新事项：照片权限细分、Notification权限、后台服务限制、预测性返回手势。
+- 入库时间：2026-04-06

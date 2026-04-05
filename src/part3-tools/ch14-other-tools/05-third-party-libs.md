@@ -291,3 +291,8 @@ Booster 使用的 Transform 不是运行时 Hook，而是编译期方案。它�
 - 抖音 Android 性能优化系列：Rhea Trace 工具: https://mp.weixin.qq.com/s/vkBeZ6hmVn_RaXS5Xv_L2g
 - Android PLT Hook 概述（xHook 文档）: https://github.com/iqiyi/xHook/blob/master/docs/overview/android_plt_hook_overview.zh-CN.md
 - Alpha 启动调度框架: https://github.com/alibaba/alpha
+### Luban 2：简洁高效的Android图片压缩库
+- 来源：https://juejin.cn/post/7592241336290033715
+- 类型：工具/库
+- 摘要：Luban 2图片压缩库：Kotlin协程重构，流式处理避免OOM，压缩速度提升3倍，内存占用降低60%。
+- 入库时间：2026-04-06

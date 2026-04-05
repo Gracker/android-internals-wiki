@@ -235,3 +235,8 @@ Power Profiler 的设备要求比较严格：目前只有 Pixel 6 及以后的 P
 - ProfilingManager (Android 16): [developer.android.com/reference/android/os/ProfilingManager](https://developer.android.com/reference/android/os/ProfilingManager)
 - 高爷博客 - CPU Profiler 系统性能分析工具的使用: [androidperformance.com](https://www.androidperformance.com/)
 - Paulina Sadowska, "Can you trust time measurements in Profiler?": [proandroiddev.com](https://proandroiddev.com/can-you-trust-time-measurements-in-profiler-5b3566a55e0c)
+### 2026年了，Android开发该如何调试布局
+- 来源：https://juejin.cn/post/7596710680897863686
+- 类型：技术文章
+- 摘要：布局调试工具全景：Layout Inspector使用技巧、AYA工具、新版Android Studio布局分析器。
+- 入库时间：2026-04-06

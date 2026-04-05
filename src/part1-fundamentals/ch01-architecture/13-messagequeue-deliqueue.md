@@ -168,7 +168,7 @@ Message next() {
 
 **nativePollOnce 和 epoll。** 当没有消息可处理时，Looper 线程不会忙等待，而是通过 native 层的 epoll 机制进入休眠。当有新消息通过 enqueueMessage 插入时，nativeWake() 会唤醒 epoll。这个设计确保了空闲时主线程不消耗 CPU。
 
-**同步屏障（SyncBarrier）。** 注意 msg.target == null 的判断——target 为 null 的消息就是同步屏障。当队列中有同步屏障时，next() 会跳过所有同步消息，只处理异步消息。Choreographer 的 VSync 回调就是通过异步消息投递的，这样即使主线程有大量待处理的同步消息，VSync 回调也不会被延迟。
+**同步屏障（SyncBarrier）。** 注意 `msg.target == null` 的判断——target 为 null 的消息就是同步屏障。当队列中有同步屏障时，next() 会跳过所有同步消息，只处理异步消息。Choreographer 的 VSync 回调就是通过异步消息投递的，这样即使主线程有大量待处理的同步消息，VSync 回调也不会被延迟。
 
 [已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/os/MessageQueue.java — next() 和 enqueueMessage() 的 synchronized 块]
 
@@ -292,7 +292,6 @@ DeliQueue 的 API 完全兼容——Handler.sendMessage()、post()、postDelayed
 **1. 主线程锁竞争 slice 的减少**
 
 在 Android 16 及之前的 Trace 中，主线程频繁出现名为 "locked" 或 "Monitor Contention" 的 slice，对应调用栈包含：
-
 ```
 java.lang.Object.wait()
 android.os.MessageQueue.enqueueMessage()
@@ -303,7 +302,6 @@ android.os.MessageQueue.enqueueMessage()
 **2. FrameTimeline 中掉帧的减少**
 
 在 FrameTimeline track 中，对比 Android 16 和 17 上同一 App 的掉帧模式。DeliQueue 的效果在以下场景最明显：
-
 - 有大量后台线程活跃时（如列表滚动 + 网络加载同时进行）
 - 冷启动阶段（初始化任务频繁 post 消息）
 - SystemUI 交互（通知栏下拉、最近任务切换）
@@ -315,11 +313,8 @@ android.os.MessageQueue.enqueueMessage()
 SELECT
     SUM(dur) / 1e6 as total_lock_ms
 FROM slice
-WHERE track_id = (
-    SELECT id FROM thread_track WHERE utid = (
-        SELECT utid FROM thread WHERE name = 'main'
-    )
-)
+WHERE track_id = (SELECT id FROM thread_track WHERE utid = (
+    SELECT utid FROM thread WHERE name = 'main'))
 AND name LIKE '%Monitor%'
 AND ts BETWEEN {start} AND {end};
 ```
@@ -372,3 +367,8 @@ DeliQueue 只解决了 MessageQueue 自身的锁竞争问题。主线程上还�
 - AOSP: frameworks/base/core/java/android/os/MessageQueue.java（android-16.0.0_r1 对比 android-17-preview）
 - AOSP: frameworks/base/core/java/android/os/Looper.java
 - [Treiber Stack - Wikipedia](https://en.wikipedia.org/wiki/Treiber_Stack)
+### Android17 为什么重写 MessageQueue
+- 来源：https://juejin.cn/post/7612812060795093002
+- 类型：技术文章
+- 摘要：Android 17对MessageQueue的重写：synchronized+单链表→无锁数据结构（CLH队列变体）+epoll优化native层消息分发。
+- 入库时间：2026-04-06

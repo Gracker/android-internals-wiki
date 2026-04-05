@@ -292,3 +292,8 @@ Samsung 的折叠屏设备支持 LTPO 技术的 VRR，刷新率可以在 1Hz-120
 
 - ByteDance BoostMultiDex: https://github.com/bytedance/BoostMultiDex
 - ByteDance Rhea (内部工具，部分功能已开源)
+### 什么 AI 写 Android 最好用？官方基准测试排名
+- 来源：https://juejin.cn/post/7614897667961143347
+- 类型：技术文章
+- 摘要：谷歌Android Bench基准测试：LLM在Android开发中的表现，Gemini 3.1 Pro领先。
+- 入库时间：2026-04-06
