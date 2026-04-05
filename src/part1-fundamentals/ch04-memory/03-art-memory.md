@@ -4,10 +4,10 @@ chapter: "4.3"
 section: "4.3"
 drafted_date: "2026-03-31"
 drafted_by: "openclaw-task2"
-status: ready-for-review
+status: ready-to-publish
 applicable_versions: "Android 8.0 (API 26) - Android 17 (API 36)"
 last_verified: "2026-03-31"
-reviewed_date: "2026-04-03"
+reviewed_date: "2026-04-06"
 reviewed_by: "openclaw-task6"
 polish_count: 1
 polish_date: "2026-04-06"
@@ -28,9 +28,6 @@ sources:
 tags: ['art', 'gc', 'heap', 'tlab', 'aot', 'jit', 'cc-gc', 'cmc-gc', 'uffd', 'read-barrier', 'memory-allocation', 'generational-gc']
 related_chapters: ["4.1", "4.2", "4.4", "4.6", "4.7", "4.8", "7.1", "7.7"]
 
-re-review-triggered-date: 2026-04-03
-re-review-triggered-by: task7-incremental-index
-re-review-triggered-reason: 新高质量素材「Hummer GC(16分)」— 涉及ART GC算法/堆内存管理
 ---
 
 # ART 虚拟机内存管理
@@ -205,7 +202,7 @@ AOSP 源码路径：`art/runtime/gc/collector/concurrent_copying.cc`
 
 ### Android 15：CMC GC 与 UFFD 的巧妙结合
 
-CC GC 虽然解决了碎片问题，但引入了两个新的痛点：第一，GC 过程中 FromSpace 和 ToSpace 同时存在，物理内存需求会短暂翻倍；第二，Read Barrier 对所有引用读取都有额外开销，即使没有 GC 在运行。
+CC GC 虽然解决了碎片问题，但引入了两个新问题：第一，GC 过程中 FromSpace 和 ToSpace 同时存在，物理内存需求会短暂翻倍；第二，Read Barrier 对所有引用读取都有额外开销，即使没有 GC 在运行。
 
 Android 15 引入的 Concurrent Mark-Compact（CMC）GC 解决了这两个问题。CMC 的核心创新是利用 Linux 的 **UFFD（User Fault FD）** 特性：
 
