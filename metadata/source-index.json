@@ -993,5 +993,978 @@
     "mappings": [],
     "quality": "medium",
     "scan_time": "2026-04-05T07:18:03.555184"
+  },
+  {
+    "path": "Cubox/功能和 API 概览  -  Android 开发者  -  Android Developers-2022-08-16.md",
+    "title": "功能和 API 概览 - Android Developers",
+    "scores": {
+      "relevance": 3,
+      "technical_depth": 2,
+      "timeliness": 4,
+      "verifiability": 4
+    },
+    "total": 13,
+    "quality": "medium",
+    "chapters": [
+      {
+        "id": "ch17",
+        "name": "新版本",
+        "confidence": "medium"
+      }
+    ],
+    "scan_date": "2026-04-05T09:32:04.423019"
+  },
+  {
+    "path": "Cubox/动态化引擎原理解析与开发实践-2022-02-28.md",
+    "title": "动态化引擎原理解析与开发实践",
+    "scores": {
+      "relevance": 3,
+      "technical_depth": 3,
+      "timeliness": 3,
+      "verifiability": 3
+    },
+    "total": 12,
+    "quality": "medium",
+    "chapters": [
+      {
+        "id": "ch05",
+        "name": "渲染",
+        "confidence": "medium"
+      }
+    ],
+    "scan_date": "2026-04-05T09:32:04.423019"
+  },
+  {
+    "path": "Cubox/动态链接，动态在哪？-2023-08-20.md",
+    "title": "动态链接，动态在哪？",
+    "scores": {
+      "relevance": 3,
+      "technical_depth": 4,
+      "timeliness": 4,
+      "verifiability": 4
+    },
+    "total": 15,
+    "quality": "medium",
+    "chapters": [
+      {
+        "id": "ch01",
+        "name": "架构",
+        "confidence": "medium"
+      },
+      {
+        "id": "ch16",
+        "name": "构建",
+        "confidence": "low"
+      }
+    ],
+    "scan_date": "2026-04-05T09:32:04.423019"
+  },
+  {
+    "path": "Cubox/动画图解- 这个值取对了，ViewPager2 才能纵享丝滑 - 开发者说·DTalk-2023-08-04.md",
+    "title": "动画图解: ViewPager2 才能纵享丝滑",
+    "scores": {
+      "relevance": 4,
+      "technical_depth": 3,
+      "timeliness": 4,
+      "verifiability": 3
+    },
+    "total": 14,
+    "quality": "medium",
+    "chapters": [
+      {
+        "id": "ch05",
+        "name": "渲染",
+        "confidence": "medium"
+      }
+    ],
+    "scan_date": "2026-04-05T09:32:04.423019"
+  },
+  {
+    "path": "Cubox/包体积：Layout 二进制文件裁剪优化｜得物技术-2023-09-18.md",
+    "title": "包体积：Layout 二进制文件裁剪优化",
+    "scores": {
+      "relevance": 5,
+      "technical_depth": 4,
+      "timeliness": 4,
+      "verifiability": 5
+    },
+    "total": 18,
+    "quality": "high",
+    "chapters": [
+      {
+        "id": "ch10",
+        "name": "包体积",
+        "confidence": "high"
+      }
+    ],
+    "scan_date": "2026-04-05T09:32:04.423019"
+  },
+  {
+    "path": "Cubox/华为-交互流畅体验设计-2025-02-18.md",
+    "title": "华为-交互流畅体验设计",
+    "scores": {
+      "relevance": 5,
+      "technical_depth": 4,
+      "timeliness": 5,
+      "verifiability": 5
+    },
+    "total": 19,
+    "quality": "high",
+    "chapters": [
+      {
+        "id": "ch05",
+        "name": "渲染",
+        "confidence": "high"
+      }
+    ],
+    "scan_date": "2026-04-05T09:32:04.423019"
+  },
+  {
+    "path": "Cubox/华为-性能最佳实践导读-2025-02-18.md",
+    "title": "华为-性能最佳实践导读",
+    "scores": {
+      "relevance": 5,
+      "technical_depth": 3,
+      "timeliness": 5,
+      "verifiability": 5
+    },
+    "total": 18,
+    "quality": "high",
+    "chapters": [
+      {
+        "id": "ch05",
+        "name": "渲染",
+        "confidence": "high"
+      },
+      {
+        "id": "ch11",
+        "name": "Profiling",
+        "confidence": "medium"
+      }
+    ],
+    "scan_date": "2026-04-05T09:32:04.423019"
+  },
+  {
+    "path": "Cubox/华为手机系统 vsync 调度问题研究和解决 - 知乎-2024-03-08.md",
+    "title": "华为手机系统 vsync 调度问题研究和解决",
+    "scores": {
+      "relevance": 5,
+      "technical_depth": 5,
+      "timeliness": 5,
+      "verifiability": 5
+    },
+    "total": 20,
+    "quality": "high",
+    "chapters": [
+      {
+        "id": "ch05",
+        "name": "渲染",
+        "confidence": "high"
+      }
+    ],
+    "scan_date": "2026-04-05T09:32:04.423019"
+  },
+  {
+    "path": "Cubox/华为自研鸿蒙内核的相关论文已经发布，有什么信息值得关注？-2024-07-12.md",
+    "title": "华为自研鸿蒙内核的相关论文",
+    "scores": {
+      "relevance": 3,
+      "technical_depth": 4,
+      "timeliness": 5,
+      "verifiability": 4
+    },
+    "total": 16,
+    "quality": "high",
+    "chapters": [
+      {
+        "id": "ch01",
+        "name": "架构",
+        "confidence": "medium"
+      }
+    ],
+    "scan_date": "2026-04-05T09:32:04.423019"
+  },
+  {
+    "path": "Cubox/华为鸿蒙系统还在套壳？鸿蒙通用微内核技术实现-2024-11-11.md",
+    "title": "鸿蒙通用微内核技术实现",
+    "scores": {
+      "relevance": 3,
+      "technical_depth": 4,
+      "timeliness": 5,
+      "verifiability": 3
+    },
+    "total": 15,
+    "quality": "medium",
+    "chapters": [
+      {
+        "id": "ch01",
+        "name": "架构",
+        "confidence": "medium"
+      }
+    ],
+    "scan_date": "2026-04-05T09:32:04.423019"
+  },
+  {
+    "path": "Cubox/协程崩溃5招教你优雅处理-2025-08-12.md",
+    "title": "协程崩溃5招教你优雅处理",
+    "scores": {
+      "relevance": 4,
+      "technical_depth": 3,
+      "timeliness": 5,
+      "verifiability": 3
+    },
+    "total": 15,
+    "quality": "medium",
+    "chapters": [
+      {
+        "id": "ch15",
+        "name": "Kotlin",
+        "confidence": "high"
+      }
+    ],
+    "scan_date": "2026-04-05T09:32:04.423019"
+  },
+  {
+    "path": "Cubox/协程，协程-2023-05-20.md",
+    "title": "协程，协程",
+    "scores": {
+      "relevance": 4,
+      "technical_depth": 3,
+      "timeliness": 4,
+      "verifiability": 3
+    },
+    "total": 14,
+    "quality": "medium",
+    "chapters": [
+      {
+        "id": "ch15",
+        "name": "Kotlin",
+        "confidence": "medium"
+      }
+    ],
+    "scan_date": "2026-04-05T09:32:04.423019"
+  },
+  {
+    "path": "Cubox/原创：写给初学者的Jetpack Compose教程，用derivedStateOf提升性能-2024-05-21.md",
+    "title": "Compose教程：derivedStateOf提升性能",
+    "scores": {
+      "relevance": 5,
+      "technical_depth": 4,
+      "timeliness": 5,
+      "verifiability": 4
+    },
+    "total": 18,
+    "quality": "high",
+    "chapters": [
+      {
+        "id": "ch15",
+        "name": "Kotlin",
+        "confidence": "high"
+      }
+    ],
+    "scan_date": "2026-04-05T09:32:04.423019"
+  },
+  {
+    "path": "Cubox/反射技巧让你的性能提升 N 倍-2022-07-18.md",
+    "title": "反射技巧让你的性能提升 N 倍",
+    "scores": {
+      "relevance": 3,
+      "technical_depth": 3,
+      "timeliness": 4,
+      "verifiability": 3
+    },
+    "total": 13,
+    "quality": "medium",
+    "chapters": [
+      {
+        "id": "ch14",
+        "name": "工具",
+        "confidence": "low"
+      }
+    ],
+    "scan_date": "2026-04-05T09:32:04.423019"
+  },
+  {
+    "path": "Cubox/反思：Google 为何把 SurfaceView 设计的这么难用？ - 掘金-2023-10-09.md",
+    "title": "反思：SurfaceView 为何设计难用",
+    "scores": {
+      "relevance": 5,
+      "technical_depth": 4,
+      "timeliness": 4,
+      "verifiability": 4
+    },
+    "total": 17,
+    "quality": "high",
+    "chapters": [
+      {
+        "id": "ch05",
+        "name": "渲染",
+        "confidence": "high"
+      }
+    ],
+    "scan_date": "2026-04-05T09:32:04.423019"
+  },
+  {
+    "path": "Cubox/反思｜Android 输入系统 & ANR机制的设计与实现对于Android开发者而言，ANR是一个老生常谈的问题，站在 - 掘金-2024-11-18.md",
+    "title": "Android 输入系统 & ANR机制设计与实现",
+    "scores": {
+      "relevance": 5,
+      "technical_depth": 5,
+      "timeliness": 5,
+      "verifiability": 5
+    },
+    "total": 20,
+    "quality": "high",
+    "chapters": [
+      {
+        "id": "ch01",
+        "name": "架构",
+        "confidence": "high"
+      },
+      {
+        "id": "ch02",
+        "name": "进程",
+        "confidence": "high"
+      }
+    ],
+    "scan_date": "2026-04-05T09:32:04.423019"
+  },
+  {
+    "path": "Cubox/功能和 API 概览  -  Android 开发者  -  Android Developers-2022-08-16.md",
+    "title": "功能和 API 概览 - Android 开发者 - Android Developers",
+    "scores": {
+      "relevance": 3,
+      "technical_depth": 2,
+      "timeliness": 4,
+      "verifiability": 4
+    },
+    "total": 13,
+    "quality": "medium",
+    "chapters": [
+      {
+        "id": "ch17",
+        "name": "新版本",
+        "confidence": "medium"
+      }
+    ],
+    "scan_date": "2026-04-05T10:03:08.047138"
+  },
+  {
+    "path": "Cubox/动态化引擎原理解析与开发实践-2022-02-28.md",
+    "title": "动态化引擎原理解析与开发实践",
+    "scores": {
+      "relevance": 3,
+      "technical_depth": 3,
+      "timeliness": 3,
+      "verifiability": 3
+    },
+    "total": 12,
+    "quality": "medium",
+    "chapters": [
+      {
+        "id": "ch05",
+        "name": "渲染",
+        "confidence": "medium"
+      }
+    ],
+    "scan_date": "2026-04-05T10:03:08.047138"
+  },
+  {
+    "path": "Cubox/动态链接，动态在哪？-2023-08-20.md",
+    "title": "动态链接，动态在哪？",
+    "scores": {
+      "relevance": 3,
+      "technical_depth": 4,
+      "timeliness": 4,
+      "verifiability": 4
+    },
+    "total": 15,
+    "quality": "medium",
+    "chapters": [
+      {
+        "id": "ch01",
+        "name": "架构",
+        "confidence": "medium"
+      },
+      {
+        "id": "ch16",
+        "name": "构建",
+        "confidence": "low"
+      }
+    ],
+    "scan_date": "2026-04-05T10:03:08.047138"
+  },
+  {
+    "path": "Cubox/动画图解- 这个值取对了，ViewPager2 才能纵享丝滑 - 开发者说·DTalk-2023-08-04.md",
+    "title": "动画图解: ViewPager2 才能纵享丝滑",
+    "scores": {
+      "relevance": 4,
+      "technical_depth": 3,
+      "timeliness": 4,
+      "verifiability": 3
+    },
+    "total": 14,
+    "quality": "medium",
+    "chapters": [
+      {
+        "id": "ch05",
+        "name": "渲染",
+        "confidence": "medium"
+      }
+    ],
+    "scan_date": "2026-04-05T10:03:08.047138"
+  },
+  {
+    "path": "Cubox/包体积：Layout 二进制文件裁剪优化｜得物技术-2023-09-18.md",
+    "title": "包体积：Layout 二进制文件裁剪优化｜得物技术",
+    "scores": {
+      "relevance": 5,
+      "technical_depth": 4,
+      "timeliness": 4,
+      "verifiability": 5
+    },
+    "total": 18,
+    "quality": "high",
+    "chapters": [
+      {
+        "id": "ch10",
+        "name": "包体积",
+        "confidence": "high"
+      }
+    ],
+    "scan_date": "2026-04-05T10:03:08.047138"
+  },
+  {
+    "path": "Cubox/华为-交互流畅体验设计-2025-02-18.md",
+    "title": "华为-交互流畅体验设计",
+    "scores": {
+      "relevance": 5,
+      "technical_depth": 4,
+      "timeliness": 5,
+      "verifiability": 5
+    },
+    "total": 19,
+    "quality": "high",
+    "chapters": [
+      {
+        "id": "ch05",
+        "name": "渲染",
+        "confidence": "high"
+      }
+    ],
+    "scan_date": "2026-04-05T10:03:08.047138"
+  },
+  {
+    "path": "Cubox/华为-性能最佳实践导读-2025-02-18.md",
+    "title": "华为-性能最佳实践导读",
+    "scores": {
+      "relevance": 5,
+      "technical_depth": 3,
+      "timeliness": 5,
+      "verifiability": 5
+    },
+    "total": 18,
+    "quality": "high",
+    "chapters": [
+      {
+        "id": "ch05",
+        "name": "渲染",
+        "confidence": "high"
+      },
+      {
+        "id": "ch11",
+        "name": "Profiling",
+        "confidence": "medium"
+      }
+    ],
+    "scan_date": "2026-04-05T10:03:08.047138"
+  },
+  {
+    "path": "Cubox/华为手机系统 vsync 调度问题研究和解决 - 知乎-2024-03-08.md",
+    "title": "华为手机系统 vsync 调度问题研究和解决",
+    "scores": {
+      "relevance": 5,
+      "technical_depth": 5,
+      "timeliness": 5,
+      "verifiability": 5
+    },
+    "total": 20,
+    "quality": "high",
+    "chapters": [
+      {
+        "id": "ch05",
+        "name": "渲染",
+        "confidence": "high"
+      }
+    ],
+    "scan_date": "2026-04-05T10:03:08.047138"
+  },
+  {
+    "path": "Cubox/华为自研鸿蒙内核的相关论文已经发布，有什么信息值得关注？-2024-07-12.md",
+    "title": "华为自研鸿蒙内核的相关论文已经发布",
+    "scores": {
+      "relevance": 3,
+      "technical_depth": 4,
+      "timeliness": 5,
+      "verifiability": 4
+    },
+    "total": 16,
+    "quality": "high",
+    "chapters": [
+      {
+        "id": "ch01",
+        "name": "架构",
+        "confidence": "medium"
+      }
+    ],
+    "scan_date": "2026-04-05T10:03:08.047138"
+  },
+  {
+    "path": "Cubox/华为鸿蒙系统还在套壳？鸿蒙通用微内核技术实现-2024-11-11.md",
+    "title": "华为鸿蒙系统还在套壳？鸿蒙通用微内核技术实现",
+    "scores": {
+      "relevance": 3,
+      "technical_depth": 4,
+      "timeliness": 5,
+      "verifiability": 3
+    },
+    "total": 15,
+    "quality": "medium",
+    "chapters": [
+      {
+        "id": "ch01",
+        "name": "架构",
+        "confidence": "medium"
+      }
+    ],
+    "scan_date": "2026-04-05T10:03:08.047138"
+  },
+  {
+    "path": "Cubox/协程崩溃5招教你优雅处理-2025-08-12.md",
+    "title": "协程崩溃5招教你优雅处理",
+    "scores": {
+      "relevance": 4,
+      "technical_depth": 3,
+      "timeliness": 5,
+      "verifiability": 3
+    },
+    "total": 15,
+    "quality": "medium",
+    "chapters": [
+      {
+        "id": "ch15",
+        "name": "Kotlin",
+        "confidence": "high"
+      }
+    ],
+    "scan_date": "2026-04-05T10:03:08.047138"
+  },
+  {
+    "path": "Cubox/协程，协程-2023-05-20.md",
+    "title": "协程，协程",
+    "scores": {
+      "relevance": 4,
+      "technical_depth": 3,
+      "timeliness": 4,
+      "verifiability": 3
+    },
+    "total": 14,
+    "quality": "medium",
+    "chapters": [
+      {
+        "id": "ch15",
+        "name": "Kotlin",
+        "confidence": "medium"
+      }
+    ],
+    "scan_date": "2026-04-05T10:03:08.047138"
+  },
+  {
+    "path": "Cubox/原创：写给初学者的Jetpack Compose教程，用derivedStateOf提升性能-2024-05-21.md",
+    "title": "Jetpack Compose教程：derivedStateOf提升性能",
+    "scores": {
+      "relevance": 5,
+      "technical_depth": 4,
+      "timeliness": 5,
+      "verifiability": 4
+    },
+    "total": 18,
+    "quality": "high",
+    "chapters": [
+      {
+        "id": "ch15",
+        "name": "Kotlin",
+        "confidence": "high"
+      }
+    ],
+    "scan_date": "2026-04-05T10:03:08.047138"
+  },
+  {
+    "path": "Cubox/反射技巧让你的性能提升 N 倍-2022-07-18.md",
+    "title": "反射技巧让你的性能提升 N 倍",
+    "scores": {
+      "relevance": 3,
+      "technical_depth": 3,
+      "timeliness": 4,
+      "verifiability": 3
+    },
+    "total": 13,
+    "quality": "medium",
+    "chapters": [
+      {
+        "id": "ch14",
+        "name": "工具",
+        "confidence": "low"
+      }
+    ],
+    "scan_date": "2026-04-05T10:03:08.047138"
+  },
+  {
+    "path": "Cubox/反思：Google 为何把 SurfaceView 设计的这么难用？ - 掘金-2023-10-09.md",
+    "title": "反思：Google 为何把 SurfaceView 设计的这么难用？",
+    "scores": {
+      "relevance": 5,
+      "technical_depth": 4,
+      "timeliness": 4,
+      "verifiability": 4
+    },
+    "total": 17,
+    "quality": "high",
+    "chapters": [
+      {
+        "id": "ch05",
+        "name": "渲染",
+        "confidence": "high"
+      }
+    ],
+    "scan_date": "2026-04-05T10:03:08.047138"
+  },
+  {
+    "path": "Cubox/反思｜Android 输入系统 & ANR机制的设计与实现对于Android开发者而言，ANR是一个老生常谈的问题，站在 - 掘金-2024-11-18.md",
+    "title": "反思｜Android 输入系统 & ANR机制的设计与实现",
+    "scores": {
+      "relevance": 5,
+      "technical_depth": 5,
+      "timeliness": 5,
+      "verifiability": 5
+    },
+    "total": 20,
+    "quality": "high",
+    "chapters": [
+      {
+        "id": "ch01",
+        "name": "架构",
+        "confidence": "high"
+      },
+      {
+        "id": "ch02",
+        "name": "进程",
+        "confidence": "high"
+      }
+    ],
+    "scan_date": "2026-04-05T10:03:08.047138"
+  },
+  {
+    "path": "Cubox/响应时延的科学研究-2025-04-17.md",
+    "title": "响应时延的科学研究",
+    "scores": {
+      "relevance": 4,
+      "technical_depth": 4,
+      "timeliness": 5,
+      "verifiability": 3
+    },
+    "total": 16,
+    "quality": "high",
+    "chapters": [
+      {
+        "id": "ch04",
+        "name": "启动",
+        "confidence": "high"
+      },
+      {
+        "id": "ch05",
+        "name": "渲染",
+        "confidence": "high"
+      }
+    ],
+    "summary": "响应时延科学研究，用户感知延迟与系统响应时间关系",
+    "scan_date": "2026-04-05T10:45:00"
+  },
+  {
+    "path": "Cubox/哔哩哔哩APP的 AGP8 升级之旅-2024-07-24.md",
+    "title": "哔哩哔哩APP的AGP8升级之旅",
+    "scores": {
+      "relevance": 3,
+      "technical_depth": 4,
+      "timeliness": 4,
+      "verifiability": 4
+    },
+    "total": 15,
+    "quality": "medium",
+    "chapters": [
+      {
+        "id": "ch16",
+        "name": "构建",
+        "confidence": "high"
+      }
+    ],
+    "summary": "B站APP升级AGP8实战，构建系统迁移与兼容问题解决",
+    "scan_date": "2026-04-05T10:45:00"
+  },
+  {
+    "path": "Cubox/哔哩哔哩Android编译优化-2022-05-07.md",
+    "title": "哔哩哔哩Android编译优化",
+    "scores": {
+      "relevance": 3,
+      "technical_depth": 4,
+      "timeliness": 3,
+      "verifiability": 4
+    },
+    "total": 14,
+    "quality": "medium",
+    "chapters": [
+      {
+        "id": "ch16",
+        "name": "构建",
+        "confidence": "high"
+      }
+    ],
+    "summary": "B站Android编译优化实战，构建速度提升方案",
+    "scan_date": "2026-04-05T10:45:00"
+  },
+  {
+    "path": "Cubox/四层负载均衡漫谈 - 卡瓦邦噶！-2023-12-04.md",
+    "title": "四层负载均衡漫谈",
+    "scores": {
+      "relevance": 2,
+      "technical_depth": 3,
+      "timeliness": 4,
+      "verifiability": 3
+    },
+    "total": 12,
+    "quality": "medium",
+    "chapters": [
+      {
+        "id": "ch09",
+        "name": "网络",
+        "confidence": "medium"
+      }
+    ],
+    "summary": "四层负载均衡原理，TCP层反向代理与网络优化",
+    "scan_date": "2026-04-05T10:45:00"
+  },
+  {
+    "path": "Cubox/四年之后，重新审视 MTE：从硬件架构到工程落地-2025-12-18.md",
+    "title": "四年之后重新审视MTE",
+    "scores": {
+      "relevance": 4,
+      "technical_depth": 4,
+      "timeliness": 5,
+      "verifiability": 4
+    },
+    "total": 17,
+    "quality": "high",
+    "chapters": [
+      {
+        "id": "ch07",
+        "name": "内存",
+        "confidence": "high"
+      },
+      {
+        "id": "ch12",
+        "name": "安全",
+        "confidence": "high"
+      }
+    ],
+    "summary": "MTE(Memory Tagging Extension)四年进展，硬件架构到工程落地全链路分析",
+    "scan_date": "2026-04-05T10:45:00"
+  },
+  {
+    "path": "Cubox/回望我在谷歌的 18 年：屠龙少年终成恶龙 – 云原生实验室 - Kubernetes-Docker...-2023-11-24.md",
+    "title": "回望谷歌18年",
+    "scores": {
+      "relevance": 2,
+      "technical_depth": 2,
+      "timeliness": 4,
+      "verifiability": 2
+    },
+    "total": 10,
+    "quality": "medium",
+    "chapters": [
+      {
+        "id": "ch05",
+        "name": "渲染",
+        "confidence": "low"
+      }
+    ],
+    "summary": "谷歌18年职业生涯回顾，见证Flutter/HTML发展",
+    "scan_date": "2026-04-05T10:45:00"
+  },
+  {
+    "path": "Cubox/回顾 Kotlin 的 2021：「无限生长」又一年-2022-01-26.md",
+    "title": "回顾Kotlin的2021",
+    "scores": {
+      "relevance": 3,
+      "technical_depth": 2,
+      "timeliness": 3,
+      "verifiability": 2
+    },
+    "total": 10,
+    "quality": "medium",
+    "chapters": [
+      {
+        "id": "ch15",
+        "name": "Kotlin",
+        "confidence": "medium"
+      }
+    ],
+    "summary": "Kotlin 2021年度回顾，语言发展与生态增长",
+    "scan_date": "2026-04-05T10:45:00"
+  },
+  {
+    "path": "Cubox/团队框架终极选型：Flutter 还是 React Native-2023-11-07.md",
+    "title": "Flutter还是React Native",
+    "scores": {
+      "relevance": 2,
+      "technical_depth": 2,
+      "timeliness": 4,
+      "verifiability": 2
+    },
+    "total": 10,
+    "quality": "medium",
+    "chapters": [
+      {
+        "id": "ch05",
+        "name": "渲染",
+        "confidence": "low"
+      }
+    ],
+    "summary": "跨端框架选型对比，Flutter与RN的渲染架构差异",
+    "scan_date": "2026-04-05T10:45:00"
+  },
+  {
+    "path": "Cubox/在 Android Studio 中使用 CPU 性能分析器锁定界面卡顿-2022-07-19.md",
+    "title": "CPU Profiler锁定界面卡顿",
+    "scores": {
+      "relevance": 5,
+      "technical_depth": 3,
+      "timeliness": 3,
+      "verifiability": 4
+    },
+    "total": 15,
+    "quality": "medium",
+    "chapters": [
+      {
+        "id": "ch05",
+        "name": "渲染",
+        "confidence": "high"
+      },
+      {
+        "id": "ch11",
+        "name": "Profiling",
+        "confidence": "high"
+      },
+      {
+        "id": "ch14",
+        "name": "工具",
+        "confidence": "medium"
+      }
+    ],
+    "summary": "Android Studio CPU Profiler锁定UI卡顿，性能分析方法",
+    "scan_date": "2026-04-05T10:45:00"
+  },
+  {
+    "path": "Cubox/在 Android 中使用 eBPF：开篇-2022-06-12.md",
+    "title": "Android eBPF开篇",
+    "scores": {
+      "relevance": 4,
+      "technical_depth": 3,
+      "timeliness": 3,
+      "verifiability": 3
+    },
+    "total": 13,
+    "quality": "medium",
+    "chapters": [
+      {
+        "id": "ch11",
+        "name": "Profiling",
+        "confidence": "high"
+      },
+      {
+        "id": "ch14",
+        "name": "工具",
+        "confidence": "medium"
+      }
+    ],
+    "summary": "eBPF在Android上的应用简介，内核级性能追踪技术",
+    "scan_date": "2026-04-05T10:45:00"
+  },
+  {
+    "path": "Cubox/在 Android 中使用 eBPF：环境搭建-2022-06-17.md",
+    "title": "Android eBPF环境搭建",
+    "scores": {
+      "relevance": 4,
+      "technical_depth": 3,
+      "timeliness": 3,
+      "verifiability": 3
+    },
+    "total": 13,
+    "quality": "medium",
+    "chapters": [
+      {
+        "id": "ch11",
+        "name": "Profiling",
+        "confidence": "high"
+      },
+      {
+        "id": "ch14",
+        "name": "工具",
+        "confidence": "medium"
+      }
+    ],
+    "summary": "使用eadb搭建Android eBPF开发环境，工具链配置",
+    "scan_date": "2026-04-05T10:45:00"
+  },
+  {
+    "path": "Cubox/图形学数字信号处理基础 · 语雀-2022-04-10.md",
+    "title": "图形学数字信号处理基础",
+    "scores": {
+      "relevance": 3,
+      "technical_depth": 3,
+      "timeliness": 3,
+      "verifiability": 3
+    },
+    "total": 12,
+    "quality": "medium",
+    "chapters": [
+      {
+        "id": "ch05",
+        "name": "渲染",
+        "confidence": "medium"
+      }
+    ],
+    "summary": "图形学DSP基础，卷积/傅里叶变换与图形渲染信号处理",
+    "scan_date": "2026-04-05T10:45:00"
+  },
+  {
+    "path": "Cubox/在 Jetpack Compose 中解锁 CameraX 的强大功能-2025-02-23.md",
+    "title": "Jetpack Compose中解锁CameraX",
+    "scores": {
+      "relevance": 3,
+      "technical_depth": 3,
+      "timeliness": 5,
+      "verifiability": 4
+    },
+    "total": 15,
+    "quality": "medium",
+    "chapters": [
+      {
+        "id": "ch15",
+        "name": "Kotlin",
+        "confidence": "high"
+      }
+    ],
+    "summary": "Jetpack Compose集成CameraX，camera-compose组件构建相机预览",
+    "scan_date": "2026-04-05T10:45:00"
   }
 ]

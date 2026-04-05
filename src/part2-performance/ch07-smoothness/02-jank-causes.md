@@ -1,7 +1,7 @@
 ---
 title: "卡顿原因体系"
 chapter: "7.2"
-status: finalized
+status: ready-for-review
 applicable_versions: "Android 5.0 (API 21) - Android 16 (API 36)"
 last_verified: "2026-03-31"
 last_verified_against: "AOSP android-15.0.0_r1"
@@ -25,6 +25,12 @@ sources:
     path: "developer.android.com/topic/performance/vitals/render"
 tags: ['jank', 'rendering', 'main-thread', 'render-thread', 'surfaceflinger', 'binder', 'gc', 'cpu-scheduling']
 related_chapters: ["7.1", "2.3", "2.4", "2.5", "1.4", "1.5", "3.1"]
+re-review-reason: "新素材: 华为-交互流畅体验设计; 华为手机系统 vsync 调度问题研究和解决"
+re-review-materials:
+  - "Cubox/华为-交互流畅体验设计-2025-02-18.md"
+  - "Cubox/华为手机系统 vsync 调度问题研究和解决 - 知乎-2024-03-08.md"
+re-review-triggered-date: "2026-04-05"
+re-review-triggered-by: "task7-incremental-index"
 ---
 
 # 卡顿原因体系

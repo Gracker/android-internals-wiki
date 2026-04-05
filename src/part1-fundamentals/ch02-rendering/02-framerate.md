@@ -1,7 +1,7 @@
 ---
 title: "帧率与刷新率"
 chapter: "2.2"
-status: finalized
+status: ready-for-review
 reviewed_date: 2026-04-03
 reviewed_by: openclaw-task6
 rework_date: 2026-04-02
@@ -27,6 +27,11 @@ sources:
     path: "frameworks/native/services/surfaceflinger/SurfaceFlinger.cpp"
 tags: ['framerate', 'refresh-rate', 'frame-time', 'jank', 'frame-pacing', 'LTPO', 'VRR', 'ARR', 'SurfaceFlinger']
 related_chapters: ["2.1", "2.3", "2.4", "2.6", "2.9"]
+re-review-reason: "新素材: 华为手机系统 vsync 调度问题研究和解决"
+re-review-materials:
+  - "Cubox/华为手机系统 vsync 调度问题研究和解决 - 知乎-2024-03-08.md"
+re-review-triggered-date: "2026-04-05"
+re-review-triggered-by: "task7-incremental-index"
 ---
 
 # 帧率与刷新率
