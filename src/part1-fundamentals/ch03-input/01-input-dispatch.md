@@ -1,22 +1,27 @@
 ---
 title: "Input 事件分发全流程"
 chapter: "3.1"
-status: finalized
+status: ready-for-review
 applicable_versions: "Android 12 (API 31) - Android 16 (API 36)"
 last_verified: "2026-03-30"
 last_verified_against: "AOSP android-14.0.0_r1"
 confidence: high
 reviewed_date: "2026-04-02"
 reviewed_by: openclaw-task6
+polish_count: 1
+polish_date: "2026-04-05"
+polish_by: "task2b-polish"
 sources:
   - type: blog
     path: "https://utzcoz.github.io/2020/05/06/Analyze-AOSP-input-architecture.html"
   - type: blog
     path: "https://kernel.meizu.com/2023/10/27/Android-inputTuning-and-Optimizing/"
+  - type: official
+    path: "https://source.android.com/docs/core/interaction/input"
   - type: blog
     path: "https://mp.weixin.qq.com/s/Analyze-AOSP-input-architecture"
-tags: ['input', 'inputdispatcher', 'inputreader', 'eventhub', 'inputchannel', 'anr']
-related_chapters: ["3.2", "3.3", "9.2"]
+tags: ['input', 'inputdispatcher', 'inputreader', 'eventhub', 'inputchannel', 'anr', 'inputflinger', 'socketpair', 'touch', 'view-hierarchy']
+related_chapters: ["3.2", "3.3", "2.5", "9.1", "9.2"]
 ---
 
 # Input 事件分发全流程
@@ -217,6 +222,8 @@ nsecs_t delay = mPolicy->interceptKeyBeforeDispatching(
 
 `InputChannel` 在窗口创建时建立，整个流程如下：
 
+[图：InputChannel 创建时序图——ViewRootImpl -> WMS -> InputDispatcher 的 socketpair 建立过程]
+
 ```
 ViewRootImpl.setView()
   → Session.addToDisplay()
@@ -243,7 +250,7 @@ mInputEventReceiver = new WindowInputEventReceiver(inputChannel, Looper.myLooper
 
 ## App 侧的事件分发：从 ViewRootImpl 到 View 树
 
-事件通过 `socketpair` 到达 App 进程后，进入了我们最熟悉的部分——View 树的事件分发。但在此之前，还有几个不那么熟悉的环节值得了解。
+到这里，事件已经从 `system_server` 通过 `socketpair` 到达了 App 进程。接下来的旅程，是从 `ViewRootImpl` 的 native 层回调开始，经过一条精心设计的 `InputStage` 责任链，最终分发到 View 树中的具体控件。很多开发者对 View 树的 `dispatchTouchEvent` / `onInterceptTouchEvent` / `onTouchEvent` 三件套很熟悉，但在这之前的 `InputStage` 处理、IME 优先级、native 层拦截等环节，往往是知识盲区。我们把整条链路完整走一遍。
 
 ### InputStage 责任链
 
@@ -271,6 +278,8 @@ InputStage nativePreImeStage = new NativePreImeInputStage(viewPreImeStage, ...);
 6. **ViewPostImeInputStage** — **主要的 View 树分发入口**
 7. **SyntheticInputStage** — 合成事件处理（如从未处理的触摸事件合成滚动）
 
+[图：InputStage 责任链处理顺序——从 NativePreIme 到 SyntheticInput 的七阶段流水线，标注每阶段的主要职责]
+
 每个 Stage 可以选择自己处理（返回 `FINISH_HANDLED`）、传递给下一个 Stage（返回 `FORWARD`）或丢弃。真正把事件分发到 View 树的是第 6 个 Stage：`ViewPostImeInputStage`。
 
 > [已验证: AOSP android-14.0.0_r1, frameworks/base/core/java/android/view/ViewRootImpl.java]
@@ -294,7 +303,7 @@ ViewPostImeInputStage.processPointerEvent()
 
 ### ViewGroup 的分发、拦截与消费
 
-`ViewGroup.dispatchTouchEvent()` 是 View 树事件分发的核心。它的逻辑可以概括为三个步骤：
+`ViewGroup.dispatchTouchEvent()` 是 View 树事件分发的核心。下面我们聚焦 `MotionEvent` 在 ViewGroup 与子 View 之间的分发逻辑（完整的 `onInterceptTouchEvent` / `onTouchEvent` 交互细节可参考官方文档和第 3.2 节「触摸响应的性能分析」）。它的逻辑可以概括为三个步骤：
 
 **第一步：检查是否拦截。** 如果事件是 `ACTION_DOWN` 或者有子 View 消费了之前的事件（`mFirstTouchTarget != null`），就进入拦截判断：
 
@@ -330,7 +339,7 @@ Input ANR 的触发机制可以类比为一个"定时炸弹"：发送事件时�
 
 Input 系统有两种不同类型的 ANR：
 
-**No Focus Window ANR**：当 `InputDispatcher` 处理按键事件时，调用 `findFocusedWindowTargetsLocked()` 查找焦点窗口，如果当前有焦点 App 但没有焦点窗口（窗口还没准备好），就设置一个 5 秒超时。如果 5 秒内窗口准备好了，超时取消；否则触发 ANR。
+**No Focus Window ANR**：当 `InputDispatcher` 处理按键事件时，调用 `findFocusedWindowTargetsLocked()` 查找焦点窗口，如果当前有焦点 App 但没有焦点窗口（窗口还没准备好），就设置一个 5 秒超时。如果 5 秒内窗口准备好了，超时取消；否则触发 ANR。（关于 ANR 的完整设计思想，参见第 9.1 节「ANR 设计思想」。）
 
 这种情况常见于 Activity 在 `onResume()` 中执行耗时操作导致窗口没有及时显示。比如：
 
@@ -372,7 +381,7 @@ static final long DEFAULT_INPUT_DISPATCHING_TIMEOUT_NANOS = 5000 * 1000000L; // 
 
 ## 在 Perfetto 中的完整表现
 
-了解了机制之后，我们来看整个 Input 事件分发在 Perfetto 中是什么样的。
+前面我们拆解了 Input 事件从硬件到 View 树的每一个环节。现在把这些环节放回到 Perfetto Trace 中，看看它们各自对应哪些 Track、什么形态，以及在出问题时应该如何定位。
 
 ### system_server 进程中的 Track
 
@@ -401,7 +410,7 @@ static final long DEFAULT_INPUT_DISPATCHING_TIMEOUT_NANOS = 5000 * 1000000L; // 
 
 在 Android 12 之前，`InputReader` 和 `InputDispatcher` 直接运行在 `system_server` 进程中。从 Android 12 开始，Google 将它们抽取到独立的 `InputFlinger` 服务中（虽然仍然运行在 `system_server` 进程），代码路径也重新组织为 `frameworks/native/services/inputflinger/`。
 
-这个重构的主要目的是将 Input 系统的代码与 `system_server` 的其他模块解耦，使得 Input 系统可以独立演进和测试。在 Android 12+ 的代码中，`InputFlinger` 的目录结构为：
+这个重构的主要目的是将 Input 系统的代码与 `system_server` 的其他模块解耦，使得 Input 系统可以独立演进和测试。[待验证：Android 15+ 中 InputFlinger 是否已支持独立进程隔离模式]在 Android 12+ 的代码中，`InputFlinger` 的目录结构为：
 
 ```
 frameworks/native/services/inputflinger/
@@ -425,7 +434,7 @@ frameworks/native/services/inputflinger/
 
 ### 误区三：Input ANR 是 App 主线程卡了 5 秒
 
-不完全准确。Input ANR 的触发条件是：**某个 Input 事件发送给 App 后，5 秒内没有收到 `FINISHED` 回调**。这 5 秒包括了事件在 App 消息队列中排队等待的时间。如果 App 主线程正在处理其他消息（比如上一帧的绘制），新的 Input 事件可能在队列中排队很久才被处理——这段时间也计入 5 秒超时。
+不完全准确。Input ANR 的触发条件是：**某个 Input 事件通过 `socketpair` 发送给 App 后，5 秒内没有收到 `FINISHED` 回调**。这 5 秒不仅包括 App 主线程执行 `deliverInputEvent` 的时间，还包括事件在 App 主线程 `MessageQueue` 中排队等待的时间。如果 App 主线程正在执行上一帧的 `doFrame`（Choreographer 回调，参见第 2.4 节），新的 Input 事件会排在消息队列后面等待——这段排队时间同样计入 5 秒超时。在 Perfetto 中，这种情况表现为 `wq` 持续堆积，但 `deliverInputEvent` 本身并不长。
 
 ### 误区四：ViewGroup 的 onInterceptTouchEvent 一定会被调用
 
@@ -440,13 +449,16 @@ frameworks/native/services/inputflinger/
 | Android 12 (API 31) | Input ANR 增加 "no focused window" 类型 |
 | Android 13 (API 33) | InputDispatcher 使用 `mAnrTracker` 替代之前的超时检测方式 |
 | Android 14+ | InputFlinger 进一步模块化，增加对折叠屏、多显示器的支持 |
+| Android 15 (API 35) | 输入法与 Input 系统交互优化，改善 IME 切换时的输入延迟 |
+| Android 16 (API 36) | [待验证：预测性返回手势（Predictive Back）对 Input 分发链路的影响] |
 
 ## 调试技巧
 
-1. **`adb shell getevent`**：查看内核上报的原始 Input 事件数据，确认底层是否正常报点。
-2. **`adb shell dumpsys input`**：查看 Input 系统运行时信息，包括 `RecentQueue`（最近 10 条事件）、`InboundQueue`、窗口列表、连接状态等。
-3. **`adb shell input keyevent`**：模拟按键事件，直接注入到 `InputDispatcher`，绕过底层。
-4. **Perfetto Trace**：这是分析复杂 Input 问题最强大的工具。关注 `iq/oq/wq` 三个 Track 和 `deliverInputEvent`，基本可以定位到问题出在哪一段。
+1. **`adb shell getevent`**：查看内核上报的原始 Input 事件数据，确认底层是否正常报点。输出格式为 `[device] type code value`，其中 type=3 (EV_ABS) 对应触摸坐标。如果这里看不到事件，问题在硬件或内核驱动层。
+2. **`adb shell dumpsys input`**：查看 Input 系统运行时信息。重点关注 `RecentQueue`（最近分发的事件）、`InboundQueue`（待处理事件）、`PendingEvent`（等待 App 反馈的事件）、以及每个窗口 `Connection` 的 `status`。如果 `status` 显示 `NOT_RESPONDING`，说明 App 已经触发 Input ANR。
+3. **`adb shell input keyevent / motionevent`**：模拟按键或触摸事件，直接注入到 `InputDispatcher`，绕过底层硬件。用于验证分发逻辑是否正常（排除硬件问题）。
+4. **Perfetto Trace**：分析复杂 Input 问题最强大的工具。关键 Track：`iq/oq/wq` 三个队列计数器、`deliverInputEvent`（App 处理耗时）、`InputReader` 和 `InputDispatcher` 线程活动。定位思路：`iq` 堆积 -> InputDispatcher 处理慢；`oq` 堆积 -> 连接繁忙；`wq` 堆积 -> App 处理不及时（ANR 前兆）。
+5. **`adb shell dumpsys window windows | grep -E 'mCurrentFocus|mFocusedApp'`**：快速确认当前焦点窗口和焦点 App，排查焦点相关的按键事件丢失问题。
 
 > [来源: obsidian/Cubox/Android Input 调试与优化 - 魅族内核团队-2025-08-05.md]
 
