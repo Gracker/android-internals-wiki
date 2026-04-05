@@ -78,5 +78,26 @@
     "added_by": "task2a-knowledge-gap",
     "added_at": "2026-04-05T17:05:00+08:00",
     "status": "pending"
+  },
+  {
+    "section": "13.4",
+    "section_title": "命令行打开超大 Trace",
+    "priority": 90,
+    "reason": "[review回炉] EXTRACT_ARG 示例中 slice name 为中文虚构值，需替换为真实英文 slice name",
+    "material_paths": [
+      "intake/suggestions.md（含 review 意见）"
+    ],
+    "review_issues": [
+      {
+        "type": "存疑",
+        "location": "EXTRACT_ARG 示例代码",
+        "detail": "name = '低内存杀死' 不符合实际 Perfetto Trace 中的 LMK slice name，真实值应为英文（如 lmk/kill_one_process）",
+        "suggestion": "将示例 slice name 替换为真实的 Perfetto slice name，或改用其他场景的 EXTRACT_ARG 示例"
+      }
+    ],
+    "added_by": "task6-review",
+    "added_at": "2026-04-05T17:20:00",
+    "status": "pending",
+    "original_review_log": "logs/review/2026-04-05-1720-review.md"
   }
 ]

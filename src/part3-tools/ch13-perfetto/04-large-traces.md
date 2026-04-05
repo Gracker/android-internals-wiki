@@ -1,8 +1,12 @@
 ---
 title: "命令行打开超大 Trace"
 chapter: "13.4"
-status: ready-for-review
+section: "13.4"
+status: reviewed
 drafted_date: "2026-04-03"
+drafted_by: "openclaw-task2a"
+reviewed_date: "2026-04-05"
+reviewed_by: "openclaw-task6"
 applicable_versions: "Android 8.0 (API 26) - Android 16 (API 36)"
 last_verified: "2026-04-03"
 last_verified_against: "perfetto.dev docs (v48.x)"
@@ -51,7 +55,7 @@ related_chapters: ["13.1", "13.2", "13.3", "13.5"]
 
 我们在上一节里用 Perfetto UI 打开 Trace、看 Track、看 Slice，体验很流畅。但当我们遇到一个 500MB 甚至 2GB 的 Trace 文件时，情况就不一样了——浏览器标签页开始疯狂吃内存，UI 变得卡顿甚至直接崩溃。这不是 Perfetto UI 本身的问题，而是浏览器的 WebAssembly（WASM）引擎在处理如此大的数据集时力不从心。
 
-更常见的一个场景是：我们需要对一批 Trace 做批量分析，比如每天自动抓取 50 个冷启动 Trace，统计 P95 启动时间。手动一个个打开 UI 显然不现实，我们需要一个可以用脚本驱动、不依赖浏览器的分析工具。
+更常见的一个场景是：我们需要对一批 Trace 做批量分析，比如每天自动抓取 50 个冷启动 Trace，统计 P95 启动时间。手动一个个打开 UI 不现实，我们需要一个可以用脚本驱动、不依赖浏览器的分析工具。
 
 Perfetto 官方为我们准备的就是 `trace_processor`——一个 C++ 实现的命令行工具，它能把 Trace 文件当作数据库来查询。我们写 SQL，它返回结果。更准确地说，它把 Trace 中的每一类事件都解析成结构化的表（`slice`、`sched`、`counter`……），然后我们用标准 SQL 查这些表就行了。
 
@@ -239,7 +243,7 @@ SELECT
   name,
   EXTRACT_ARG(arg_set_id, 'reason') AS reason
 FROM slice
-WHERE name = '低内存杀死'
+WHERE name = '低内存杀死'  -- [存疑: 实际 Perfetto Trace 中 LMK slice name 为英文（如 lmk/kill_one_process），此处中文仅为示例]
 LIMIT 10;
 ```
 
@@ -332,7 +336,7 @@ done
 
 `-D` 或 `--debug` 开启调试模式，输出更多内部日志。当我们遇到查询结果与预期不符时，可以用这个模式排查。
 
-`--W` 或 `--wait` 在 HTTP 模式下等待客户端连接后才开始解析 Trace。这样可以避免在 UI 连接之前就完成了大量计算。
+`-W` 或 `--wait` 在 HTTP 模式下等待客户端连接后才开始解析 Trace。这样可以避免在 UI 连接之前就完成了大量计算。
 
 [待验证: --W 参数在最新版本中是否仍然支持]
 
