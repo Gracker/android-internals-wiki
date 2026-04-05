@@ -27,11 +27,11 @@ sources:
     path: "frameworks/native/services/surfaceflinger/SurfaceFlinger.cpp"
 tags: ['framerate', 'refresh-rate', 'frame-time', 'jank', 'frame-pacing', 'LTPO', 'VRR', 'ARR', 'SurfaceFlinger']
 related_chapters: ["2.1", "2.3", "2.4", "2.6", "2.9"]
-re-review-reason: "新素材: 华为手机系统 vsync 调度问题研究和解决"
-re-review-materials:
-  - "Cubox/华为手机系统 vsync 调度问题研究和解决 - 知乎-2024-03-08.md"
-re-review-triggered-date: "2026-04-05"
-re-review-triggered-by: "task7-incremental-index"
+re-review-reason: ""
+re-review-materials: []
+re-review-triggered-date: ""
+re-review-triggered-by: ""
+re-review-result: "已纳入1条素材(部分纳入:OEM VSync修改误区+交叉引用),0处修正,待正常review质检"
 ---
 
 # 帧率与刷新率
@@ -646,6 +646,17 @@ FPS 是一个统计指标，60 FPS 只说明"一秒钟内渲染了 60 帧"，但
 
 `Surface.setFrameRate()` 告诉 SurfaceFlinger "我希望以这个帧率渲染"，但最终刷新率由 SurfaceFlinger 综合所有活跃 Layer 的需求、功耗策略、温度状态和省电模式来决定。如果一个视频播放器设置了 24 FPS，但屏幕上同时有一个 60 FPS 的 UI Layer，SurfaceFlinger 会选择 120Hz（因为 120 同时是 24 和 60 的公倍数），而不是切换到 24Hz。
 
+### "VSync 回调时序在所有设备上都可靠"——OEM 修改可能打破这个假设
+
+原版 AOSP 中，Choreographer 的四类回调（INPUT → ANIMATION → TRAVERSAL → COMMIT）在每个 VSync 周期内严格按序执行一次。但部分 OEM 厂商会修改 VSync 调度逻辑。一个实际案例：华为在某些系统版本中，在一个 VSync 周期内额外注入了伪造的 VSync 信号，只触发 CALLBACK_ANIMATION 类型的回调，导致 Animation 回调的时序与 Input/Traversal 回调脱节。
+
+这类修改会造成三个问题：回调时序与真实 VSync 不对齐、VSync 周期出现长短交替、时间戳偏差。对于依赖 Choreographer 回调做帧调度（如游戏引擎、自定义动画框架）的 App，这些 OEM 定制行为可能导致帧间隔抖动和掉帧。
+
+在 Perfetto 中，这类问题的特征是 `Choreographer#doFrame` 的间隔出现规律性的长短交替（比如 8ms / 24ms / 8ms / 24ms），而不是正常的均匀 16.6ms。
+
+[待验证: 华为 VSync 修改是否在最新系统版本（HarmonyOS 4+）中已修复]
+[交叉引用: OEM 对 VSync 的定制行为在第 17 章（OEM 定制与差异化）中详细讨论。规避方案详见来源素材]
+
 [已补充: writing-guide.md Type A 模板要求的"常见问题与误区"独立小节]
 
 ## 总结
@@ -682,6 +693,9 @@ FPS 是一个统计指标，60 FPS 只说明"一秒钟内渲染了 60 帧"，但
    - [2.6 SurfaceFlinger 与合成](06-surfaceflinger.md)
    - [2.9 渲染机制的版本演进](09-rendering-evolution.md)
 
-4. **工具文档**：
+4. **研究素材**：
+   - [华为手机系统 VSync 调度问题研究](https://zhuanlan.zhihu.com/p/450899407) — OEM VSync 定制行为案例分析
+
+5. **工具文档**：
    - [Perfetto Frame Timeline](https://perfetto.dev/docs/reference/track-events#android)
    - [dumpsys gfxinfo](https://developer.android.com/studio/profile/dumpsys)
