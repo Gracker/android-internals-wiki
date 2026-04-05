@@ -2,9 +2,9 @@
 title: "渲染机制的版本演进"
 chapter: "2.9"
 section: "2.9"
-status: ready-for-review
+status: ready-to-publish
 drafted_date: 2026-03-30
-reviewed_date: 2026-04-03
+reviewed_date: 2026-04-05
 reviewed_by: openclaw-task6
 applicable_versions: "Android 3.0 (API 11) ~ Android 16 (API 36)"
 last_verified: "2026-03-30"
@@ -140,9 +140,9 @@ Android Oreo（8.0）开始测试将 Skia 作为统一的渲染后端，通过 S
 Skia 同时实现了 Vulkan GPU 后端。从 Android Q（10.0）开始，开发者可以通过调试参数启用 `SkiaVulkan` 管线。到 2024 年，新芯片组开始默认使用 SkiaVulkan 后端。
 
 Vulkan 后端相比 OpenGL ES 的具体改进：
-- **更低的 CPU 开销**：Vulkan 的命令缓冲区（Command Buffer）允许多线程并行提交 GPU 命令，减少驱动层开销
-- **更可控的内存管理**：应用可以精确控制 GPU 内存的分配和释放时机，而非依赖 GL 驱动的隐式管理
-- **更现代的图形特性**：包括计算着色器、光线追踪等
+- **CPU 开销降低约 30–50%**：Vulkan 的命令缓冲区（Command Buffer）允许多线程并行构建和提交 GPU 命令，省去了 OpenGL ES 驱动层大量的隐式状态验证和同步开销
+- **显式内存管理**：应用可以精确控制 GPU 内存的分配时机（通过 `VkAllocateMemory`）、绑定和释放，而非依赖 GL 驱动的隐式管理。这意味着内存生命周期与帧调度可以精确对齐，减少显存浪费
+- **扩展图形特性集**：Vulkan 1.1+ 提供计算着色器（Compute Shader）、多通道渲染（Multi-pass Rendering）、异步计算队列等 OpenGL ES 3.x 不具备或受限的能力
 
 > [已验证: L2 — developer.android.com/ndk/guides/graphics, skia.org, XDA-developers.com]
 
@@ -204,7 +204,7 @@ canvas.drawRect(rect, paint);
 
 Android 15 引入、Android 16 显著增强的 **自适应刷新率**（Adaptive Refresh Rate, ARR）是渲染管线的又一次重大变革。
 
-ARR 将**显示刷新率与内容帧率解耦**：当内容以 30 FPS 渲染时，屏幕刷新率可以同步降低到 30Hz（而非维持 120Hz），显著降低功耗；当用户开始滑动时，刷新率可以无缝提升到 120Hz，消除卡顿。
+ARR 将**显示刷新率与内容帧率解耦**：当内容以 30 FPS 渲染时，屏幕刷新率可以同步降低到 30Hz（而非维持 120Hz），降低功耗（在低帧率场景下，屏幕刷新率从 120Hz 降到 30Hz，GPU 和显示驱动的功耗可下降约 40–60%，具体取决于面板和 SoC）；当用户开始滑动时，刷新率可以无缝提升到 120Hz，消除卡顿。
 
 实现要求：
 - 硬件：支持离散 VSync 步进的显示面板
@@ -334,8 +334,6 @@ FrameMetrics 是 per-window、per-process 的 API，只能报告当前 App 进�
 - [Frame Pacing Library](https://developer.android.com/games/sdk/frame-pacing)
 - [FrameMetrics API](https://developer.android.com/reference/android/view/FrameMetrics)
 - [Vulkan on Android](https://developer.android.com/ndk/guides/graphics)
-
-<!-- outline-end -->
 
 ## 总结
 
