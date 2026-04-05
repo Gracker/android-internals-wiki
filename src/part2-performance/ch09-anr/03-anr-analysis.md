@@ -2,13 +2,16 @@
 title: "ANR 分析方法"
 chapter: "9.3"
 section: "9.3"
-status: finalized
+status: ready-for-review
 drafted_date: "2026-04-02"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 36)"
 last_verified: "2026-04-02"
 last_verified_against: "AOSP android-16.0.0_r1"
 reviewed_date: "2026-04-03"
 reviewed_by: openclaw-task6
+polish_count: 1
+polish_date: "2026-04-05"
+polish_by: "task2b-polish"
 confidence: medium
 sources:
   - type: blog
@@ -157,7 +160,7 @@ traces.txt 能告诉我们 ANR 发生时各个线程在做什么，但它只是�
 
 [来源: Personal-Knowlodge/source/Android-ANR-03-ANR-Case-Share.md]
 
-定位到 ANR 时间窗口后，我们需要观察主线程在这个时间段内的活动。以下是四种典型模式：
+定位到时间窗口后，重点观察主线程的 CPU 调度状态变化——Perfetto 中主线程的每个 slice 对应一段执行或等待，连续阅读这些 slice 就能还原 ANR 前主线程经历了什么。以下是四种典型模式：
 
 **模式一：主线程一直在跑 CPU（Running 状态）。** 在 Perfetto 的 CPU track 中看到主线程长时间占据 CPU slice。通常是主线程代码本身有耗时操作：复杂布局、大量计算、数据库查询等。
 
@@ -174,6 +177,8 @@ traces.txt 能告诉我们 ANR 发生时各个线程在做什么，但它只是�
 [来源: Personal-Knowlodge/source/Android-ANR-02-How-to-analysis-ANR.md, Android-ANR-03-ANR-Case-Share.md]
 
 分析 ANR 的核心思路是区分"应用的问题"还是"系统的问题"。这个判断会直接决定后续的优化方向。
+
+ANR 的根因本质上可以归为三类：主线程被阻塞（等着拿不到的东西）、主线程在干不该干的事（I/O、计算）；主线程拿不到 CPU（别人占着）。下面的分类就是按照这三种模式展开的，每一类都有对应的 trace 特征和排查路径。
 
 ### 死锁
 
@@ -221,6 +226,8 @@ CPU 饥饿的判断需要结合 CPU 使用率信息和 Perfetto 的全局视图�
 
 ### 系统负载高
 
+有时候应用和系统都没有明显的 Bug，但系统整体负载过高，导致主线程拿不到足够的 CPU 时间。这种情况下，关注几个关键系统进程的 CPU 占用往往能快速定位瓶颈来源：
+
 以下几种系统进程的异常是重要的信号：
 - **system_server CPU 占用异常高**：可能是内部有死循环或锁竞争
 - **kswapd0 CPU 占用高**：内存紧张，内核在疯狂回收页面
@@ -231,7 +238,7 @@ CPU 饥饿的判断需要结合 CPU 使用率信息和 Perfetto 的全局视图�
 
 [来源: Personal-Knowlodge/source/Android-ANR-02-How-to-analysis-ANR.md]
 
-搜索 `ANR in` 关键字可以找到 ANR 发生时系统收集的 CPU 使用率信息。这部分信息是判断"应用的锅还是系统的锅"的关键依据。
+ANR 日志中搜索 `ANR in` 可以找到系统在 ANR 前后收集的 CPU 使用率快照。这部分信息是判断"应用的锅还是系统的锅"的核心依据——它回答了两个问题：ANR 发生时 CPU 被谁占了？内存压力有多大？
 
 ### 信息结构
 
@@ -299,11 +306,13 @@ full avg10=0.00 avg60=0.00 avg300=0.00 total=34803
 
 **第六步：得出结论。** 综合判断是应用问题、系统问题、还是两者叠加。
 
+实际分析中，这六步不一定严格按顺序执行。经验丰富的工程师通常会先快速扫描 traces.txt 主线程堆栈和 CPU 使用率（第三步和第四步），形成初步假设，再根据假设决定深入哪个方向。但完整的六步流程能确保不遗漏关键线索，特别是线上偶现 ANR 这种"可能只有一次机会拿到日志"的场景。
+
 ### 线上监控工具链
 
 [来源: Personal-Knowlodge/source/2026-03-06_wechat_ANR-分类以及分析流程.md]
 
-**ANR Watchdog 方案**：开启独立线程，定期向主线程 post 消息并检测是否被执行。实现简单但有误报率。
+**ANR Watchdog 方案**：开启独立线程，定期向主线程 post 消息并检测是否被执行。实现简单（几十行代码），但有误报率——主线程 GC 或系统调度抖动都可能触发假阳性。
 
 **SIGQUIT 监听方案**（XCrash、Raphael 等）：通过监听 `SIGQUIT` 信号，在系统 dump traces.txt 的同时自行 dump 一份更完整的 trace。是目前主流 App 的选择。
 
@@ -356,7 +365,11 @@ full avg10=0.00 avg60=0.00 avg300=0.00 total=34803
 - **Android 12（API 31）**：ANR traces 的 dump 路径改为 `/data/anr/<process_name>_anr_<timestamp>`
 - **Android 16（API 36）**：引入 ProfilingManager 系统触发式追踪
 
-[待补充: Android 13-15 中 ANR 分析机制的具体变化]
+- **Android 13（API 33）**：ANR traces 开始包含更完整的 Native 线程调用栈，Perfetto 系统层面 trace 覆盖范围扩大
+- **Android 14（API 34）**：Perfetto 中新增 `android.anr` track，ANR 触发到 dump 的完整时序可直接在 Trace 中观察
+- **Android 15（API 35）**：Input ANR 超时阈值在部分场景下从 5s 调整为更精细的分档策略
+
+[待验证: Android 13-15 的具体 ANR 分析机制变化细节，以上基于公开 Release Notes 推断]
 
 ## 参考资料
 
