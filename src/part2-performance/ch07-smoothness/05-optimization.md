@@ -21,6 +21,7 @@ sources:
     path: "frameworks/base/core/java/android/view/View.java (LAYER_TYPE_HARDWARE)"
 tags: ['optimization', 'layout', 'RecyclerView', 'Compose', 'overdraw', 'hardware-layer', 'thread', 'Binder']
 related_chapters: ["7.1", "7.2", "7.3", "7.4", "2.4", "2.5", "2.7", "2.8", "1.4", "1.5"]
+---
 
 reviewed_date: "2026-04-04"
 reviewed_by: "openclaw-task6"
