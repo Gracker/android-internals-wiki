@@ -8,7 +8,7 @@
     "reviewed": 3,
     "finalized": 43,
     "staging_drafts": 0,
-    "last_updated": "2026-04-05T15:24:12.698348",
+    "last_updated": "2026-04-05T15:30:27.820771",
     "processing": 0,
     "ready-to-publish": 3
   },
@@ -398,22 +398,15 @@
       "reviewed_date": "2026-04-05",
       "reviewed_by": "openclaw-task6",
       "review_status": "finalized",
-      "fixes_applied": [
-        "2处\"你\"→\"我们\"/中性表述（writing-guide §3.5合规）",
-        "frontmatter补全：drafted_by/reviewed_date/reviewed_by",
-        "status: ready-for-review → finalized"
-      ]
+      "re_review_date": "2026-04-05",
+      "re_review_result": "审查2条Camera素材无需修改（素材为Trace Processor SQL分析，与Trace抓取/View解读不匹配）"
     },
     "13.3": {
       "reviewed_date": "2026-04-05",
       "reviewed_by": "openclaw-task6",
       "review_status": "finalized",
-      "fixes_applied": [
-        "1处「告诉你」→「展示」（writing-guide §3.5 合规）",
-        "frontmatter 补 drafted_by/reviewed_date/reviewed_by",
-        "6 处 [图：...] 标注补充（Perfetto UI/CPU Track/FrameTimeline/线程状态色/Flow Events/实战示例）",
-        "status: ready-for-review → finalized"
-      ]
+      "re_review_date": "2026-04-05",
+      "re_review_result": "审查2条Camera素材无需修改（素材为SQL分析，与UI视觉解读不匹配）"
     }
   },
   "review_stats": {
@@ -1599,6 +1592,24 @@
   "history": [
     {
       "date": "2026-04-05",
+      "section": "13.2",
+      "title": "Trace 抓取",
+      "action": "re-reviewed-no-change",
+      "review_by": "openclaw-task6",
+      "re_review_materials": 2,
+      "result": "无需修改，已恢复finalized"
+    },
+    {
+      "date": "2026-04-05",
+      "section": "13.3",
+      "title": "Perfetto View 解读",
+      "action": "re-reviewed-no-change",
+      "review_by": "openclaw-task6",
+      "re_review_materials": 2,
+      "result": "无需修改，已恢复finalized"
+    },
+    {
+      "date": "2026-04-05",
       "section": "3.4",
       "title": "输入延迟与预测输入技术",
       "action": "draft-completed",
@@ -2474,7 +2485,9 @@
       "drafted_date": "2026-04-03",
       "drafted_by": "openclaw-task2a",
       "reviewed_date": "2026-04-05",
-      "reviewed_by": "openclaw-task6"
+      "reviewed_by": "openclaw-task6",
+      "re_review_date": "2026-04-05",
+      "re_review_result": "审查2条素材无需修改，已恢复finalized"
     },
     "13.3": {
       "title": "Perfetto View 解读",
@@ -2482,7 +2495,9 @@
       "drafted_date": "2026-04-03",
       "drafted_by": "openclaw-task2a",
       "reviewed_date": "2026-04-05",
-      "reviewed_by": "openclaw-task6"
+      "reviewed_by": "openclaw-task6",
+      "re_review_date": "2026-04-05",
+      "re_review_result": "审查2条素材无需修改，已恢复finalized"
     },
     "13.4": {
       "title": "命令行打开超大 Trace",
