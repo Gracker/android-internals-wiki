@@ -3,12 +3,12 @@
   "total_sections": 105,
   "metrics": {
     "total": 119,
-    "draft": 11,
-    "ready-for-review": 26,
+    "draft": 10,
+    "ready-for-review": 27,
     "reviewed": 4,
     "finalized": 27,
     "staging_drafts": 0,
-    "last_updated": "2026-04-06T05:30:00+08:00",
+    "last_updated": "2026-04-06T06:15:26+08:00",
     "processing": 0,
     "ready-to-publish": 5,
     "last_reviewed": "2026-04-06"
@@ -1514,15 +1514,30 @@
       "verification_level": "L2",
       "word_count": "~9500",
       "completed_at": "2026-04-06T05:10:00+08:00"
+    },
+    {
+      "chapter": "2.17",
+      "section": "2.17",
+      "title": "Frame Pacing Library 与帧节奏控制",
+      "status": "ready-for-review",
+      "drafted_date": "2026-04-06",
+      "drafted_by": "openclaw-task2a",
+      "anchors_covered": 6,
+      "anchors_total": 6,
+      "extensions_covered": 2,
+      "extensions_total": 2,
+      "verification_level": "L2",
+      "word_count": "~8500",
+      "completed_at": "2026-04-06T06:15:26+08:00"
     }
   ],
   "ready_for_review": 5,
   "last_updated": "2026-04-06T05:25:29+08:00",
   "stats": {
     "total": 106,
-    "completed": 80,
-    "pending": 27,
-    "last_updated": "2026-04-06T05:10:00+08:00"
+    "completed": 81,
+    "pending": 26,
+    "last_updated": "2026-04-06T06:15:26+08:00"
   },
   "research_stats": {
     "runs_today": [
@@ -1746,6 +1761,15 @@
     "last_updated": "2026-04-05T15:07:41+08:00"
   },
   "history": [
+    {
+      "date": "2026-04-06",
+      "section": "2.17",
+      "title": "Frame Pacing Library 与帧节奏控制",
+      "action": "draft-completed",
+      "word_count": "~8500",
+      "anchors_covered": 6,
+      "extensions_covered": 2
+    },
     {
       "date": "2026-04-06",
       "section": "5.9",
@@ -3340,6 +3364,23 @@
       "drafted_by": "openclaw-task2a",
       "reviewed_date": "2026-04-06",
       "reviewed_by": "openclaw-task6"
+    },
+    "2.17": {
+      "title": "Frame Pacing Library 与帧节奏控制",
+      "status": "ready-for-review",
+      "file": "src/part1-fundamentals/ch02-rendering/17-frame-pacing.md",
+      "created_date": "2026-04-05",
+      "created_by": "task2a-knowledge-gap",
+      "gap_source": "官方文档 + 研究素材",
+      "drafted_date": "2026-04-06",
+      "drafted_by": "openclaw-task2a",
+      "anchors_covered": 6,
+      "anchors_total": 6,
+      "extensions_covered": 2,
+      "extensions_total": 2,
+      "verification_level": "L2",
+      "word_count": "~8500",
+      "confidence": "medium"
     }
   },
   "5.1": {
@@ -3691,5 +3732,10 @@
       "date": "2026-04-06",
       "new_refs": 1
     }
-  ]
+  ],
+  "4.3": {
+    "status": "ready-to-publish",
+    "last_reviewed": "2026-04-06",
+    "reviewed_by": "openclaw-task6"
+  }
 }
