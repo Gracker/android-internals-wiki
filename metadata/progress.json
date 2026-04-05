@@ -3065,5 +3065,13 @@
       "score": "16/20",
       "file": "src/part3-tools/ch14-other-tools/08-gpu-debug-tools.md"
     }
-  ]
+  ],
+  "polish_stats": {
+    "3.1": {
+      "polish_count": 1,
+      "last_polish_date": "2026-04-05",
+      "last_polish_by": "task2b-polish",
+      "status": "ready-for-review"
+    }
+  }
 }
