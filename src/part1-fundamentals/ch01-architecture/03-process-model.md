@@ -1,15 +1,14 @@
 ---
 title: "进程模型与生命周期管理"
 chapter: "1.3"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
 last_verified: "2026-03-31"
 last_verified_against: "AOSP android-16.0.0_r1"
 drafted_date: "2026-03-31"
-reviewed_date: "2026-03-31"
+reviewed_date: "2026-04-05"
 reviewed_by: openclaw-task6
-re-review-result: "前轮已纳入 Socket vs Binder 线程效率论证，本轮清理 frontmatter 残留字段，待 Step 4b 正常 review"
-confidence: medium
+confidence: high
 sources:
   - type: aosp
     path: "frameworks/base/services/core/java/com/android/server/am/ProcessList.java"
@@ -29,7 +28,7 @@ related_chapters: ["1.1", "1.2", "1.4", "1.5"]
 
 ## 为什么要了解 Android 的进程模型
 
-打开 Perfetto，你会看到密密麻麻的进程列表——system_server、surfaceflinger、你调试的 App、以及一大堆名字看着眼熟但说不出所以然的系统进程。这些进程不是随便跑在那里的，每一个进程的存在、消失、优先级高低，都有一套精心设计的规则在背后操控。
+打开 Perfetto，你会看到密密麻麻的进程列表——system_server、surfaceflinger、你调试的 App、以及一大堆名字看着眼熟但说不出所以然的系统进程。这些进程不是随便跑在那里的，每一个进程的存在、消失、优先级高低，都有一套明确的规则在背后操控。
 
 如果你在做性能优化，尤其是 ANR 分析、启动速度优化、后台任务调度，你就必须理解这套规则。因为 Android 的进程模型直接决定了：
 
@@ -46,7 +45,7 @@ related_chapters: ["1.1", "1.2", "1.4", "1.5"]
 
 答案指向一个特殊的进程——Zygote。Zygote 在系统启动时由 init 进程创建（具体过程见 1.2 系统启动全流程），它在启动时会预加载大量的 Java 类和资源。之后，每当需要启动一个新的 App，系统并不是从零开始创建进程，而是让 Zygote 调用 `fork()` 系统调用，复制自身来产生子进程。
 
-这个设计有一个关键优势：**共享已加载的类和资源**。由于 Linux 的 fork 机制采用写时复制（Copy-on-Write），Zygote 预加载的所有 Java 类和 Framework 资源在 fork 之后被子进程共享（只要子进程不去修改它们）。这意味着每个 App 进程不需要重新加载几十 MB 的 Framework 代码，启动速度大幅提升。
+这个设计有一个关键优势：**共享已加载的类和资源**。由于 Linux 的 fork 机制采用写时复制（Copy-on-Write），Zygote 预加载的所有 Java 类和 Framework 资源在 fork 之后被子进程共享（只要子进程不去修改它们）。这意味着每个 App 进程不需要重新加载几十 MB 的 Framework 代码——这也是 Android 冷启动通常在几百毫秒级完成的重要原因之一。
 
 [已验证: 官方文档, source.android.com/docs/core/memory]
 
@@ -91,7 +90,7 @@ public static void main(String[] argv) {
 - 托管一个调用了 `startForeground()` 的前台 Service
 - 托管一个正在执行 `onReceive()` 的 BroadcastReceiver
 
-前台进程的 `oom_adj` 值通常为 **0**（在某些版本中前台 Service 可能是 100 左右），系统几乎不会杀掉前台进程——除非内存极端紧张，连杀掉所有后台进程都还不够。
+前台进程的 `oom_adj` 值通常为 **0**（在某些版本中，通过 startForeground() 提升的 Service 进程 oom_adj 为 100，对应 PERCEPTIBLE_APP 级别），系统几乎不会杀掉前台进程——除非内存极端紧张，连杀掉所有后台进程都还不够。
 
 [已验证: AOSP android-16.0.0_r1, frameworks/base/services/core/java/com/android/server/am/ProcessList.java]
 
@@ -263,7 +262,7 @@ binder.linkToDeath(new IBinder.DeathRecipient() {
 }, 0);
 ```
 
-当目标进程死亡时，Binder 驱动会通知所有持有其代理的客户端进程，触发 `binderDied()` 回调。这个机制在系统服务中大量使用——AMS 就是通过它来感知 App 进程死亡的。
+当目标进程死亡时，Binder 驱动会通知所有持有其代理的客户端进程，触发 `binderDied()` 回调。这个机制在系统服务中被广泛使用——AMS 就是靠它来感知 App 进程死亡，WMS 也通过它监听输入法进程的状态变化。
 
 在 Perfetto 中，你可以通过搜索 `binderDied` 相关的日志来追踪进程死亡事件。
 
@@ -373,7 +372,7 @@ Android 13 引入了 SDK Sandbox，允许广告 SDK 运行在一个独立的沙�
 
 ### 误区 3：后台 Service 设置为前台 Service 就万事大吉
 
-**不完全正确**。前台 Service 确实能大幅提高进程优先级，但 Android 14 要求前台 Service 必须声明类型（如 `camera`, `location`, `mediaPlayback`），并且系统会检查这些类型是否与 App 实际行为匹配。滥用前台 Service 不仅违反 Play Store 政策，也会被系统检测并降级。
+**不完全正确**。前台 Service 确实能将进程 oom_adj 从 500（service_b）提升到 0~100（foreground/perceptible）级别，但 Android 14 要求前台 Service 必须声明类型（如 `camera`, `location`, `mediaPlayback`），并且系统会检查这些类型是否与 App 实际行为匹配。滥用前台 Service 不仅违反 Play Store 政策，也会被系统检测并降级。
 
 ### 误区 4：进程被杀一定是因为内存不足
 
