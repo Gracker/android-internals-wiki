@@ -24,6 +24,13 @@ sources:
     path: "https://perfetto.dev/docs/data-sources/native-heap-profiler"
 tags: ['perfetto', 'trace', 'atrace', 'trace-capture', 'heapprofd']
 related_chapters: ["13.1", "13.3", "14.1", "15.1"]
+
+re-review-reason: ""
+re-review-materials: []
+re-review-triggered-date: ""
+re-review-triggered-by: ""
+
+re-review-result: "审查 2 条素材，无需修改（素材内容为 Trace Processor SQL 分析，与 Trace 抓取阶段不匹配，更适合 §13.3/§13.5）"
 ---
 
 # Trace 抓取
