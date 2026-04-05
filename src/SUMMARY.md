@@ -25,6 +25,7 @@
   - [1.11 Zygote 机制与启动性能优化](part1-fundamentals/ch01-architecture/11-zygote-startup.md)
   - [1.12 AutoFDO 反馈导向编译优化](part1-fundamentals/ch01-architecture/12-autofdo-optimization.md)
   - [1.13 MessageQueue 机制与 DeliQueue 无锁优化](part1-fundamentals/ch01-architecture/13-messagequeue-deliqueue.md)
+  - [1.14 锁竞争与同步性能分析](part1-fundamentals/ch01-architecture/14-lock-contention.md)
 
 
 - [第 2 章：渲染系统](part1-fundamentals/ch02-rendering/README.md)

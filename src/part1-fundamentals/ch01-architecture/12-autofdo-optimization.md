@@ -20,7 +20,7 @@ sources:
     path: "drivers/hwtracing/coresight/"
   - type: official
     path: "https://source.android.com/docs/core/architecture/kernel/generic-kernel-image"
-tags: [autofdo, pgo, profile-guided-optimization, kernel, dex2oat, compilation, llvm, simpleperf, coresight, etm]
+tags: [autofdo, pgo, profile-guided-optimization, kernel, dex2oat, compilation, llv, simpleperf, coresight, etm]
 related_chapters: ["1.7", "8.3", "8.7", "5.9", "16.2"]
 ---
 
@@ -282,7 +282,7 @@ Google 的官方说法是：AutoFDO 主要影响编译器的启发式决策（�
 
 **"自研内核的 OEM 怎么用 AutoFDO？"**
 
-参考 AOSP 中 simpleperf 的文档（`system/extras/simpleperf/doc/collect_etm_data_for_autofdo.md`）和 AutoFDO 项目的 [GitHub 仓库](https://github.com/google/autofdo)，自行搭建采集-转换-构建的管线。
+参考 AOSP 中 simpleperf 的文档（`system/extras/simpleperf/doc/collect_etm_data_for_autofdo.md`）和 AutoFDO 项目的 [GitHub 仓库](https://github.com/google/autofdo)，自行搭建采集→转换→构建的管线。
 
 ## 参考资料
 
