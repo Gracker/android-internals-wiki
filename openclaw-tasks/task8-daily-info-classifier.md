@@ -40,10 +40,11 @@
 | Gracker 的 Rss 订阅 | `OpenClaw定时任务/Gracker的Rss订阅/` | `YYYY-MM-DD-Gracker*.md` |
 | AI × 手机行业日报 | `OpenClaw定时任务/AI手机行业日报/` | `YYYY-MM-DD-AI手机行业日报.md` |
 | Perfetto 提交监控 | `OpenClaw定时任务/Perfetto每日提交监控/` | `YYYY-MM-DD-Perfetto*.md` |
-| X 收藏文章抓取 | `OpenClaw定时任务/X收藏文章抓取/` | `YYYY-MM-DD-X收藏*.md` |
-| AutoResearchClaw | `OpenClaw定时任务/前沿研究/` | 当天文件 |
+| X 收藏文章抓取（旧路径） | `OpenClaw定时任务/X收藏文章抓取/` | `YYYY-MM-DD-X收藏*.md` |
+| X 收藏文章抓取（新路径） | `X 文章/` | `YYYY-MM-DD-x-bookmarks*.md` |
+| AutoResearchClaw | `OpenClaw定时任务/前沿研究/` | `YYYY-MM-DD-*` |
 | Last 30 Days 研究 | `OpenClaw定时任务/Last30Days研究/` | `YYYY-MM-DD-Last30Days*.md` |
-| Android/Linux 性能优化周报 | `OpenClaw定时任务/AndroidLinux性能优化周报/` | 当周文件（仅周一扫描） |
+| ~~Android/Linux 性能优化周报~~ | `（目录不存在，暂时禁用）` | ~~当周文件（仅周一扫描）~~ |
 
 **扫描路径前缀**：`/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/`
 

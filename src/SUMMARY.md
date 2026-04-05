@@ -22,6 +22,7 @@
   - [1.8 Activity Manager Service 与性能分析](part1-fundamentals/ch01-architecture/08-activity-manager.md)
   - [1.9 Package Manager Service 与应用安装性能](part1-fundamentals/ch01-architecture/09-package-manager.md)
   - [1.10 ContentProvider 性能与优化](part1-fundamentals/ch01-architecture/10-content-provider.md)
+  - [1.11 Zygote 机制与启动性能优化](part1-fundamentals/ch01-architecture/11-zygote-startup.md)
 
 
 - [第 2 章：渲染系统](part1-fundamentals/ch02-rendering/README.md)
@@ -37,11 +38,14 @@
   - [2.10 GPU 渲染深入](part1-fundamentals/ch02-rendering/10-gpu-rendering.md)
   - [2.11 Flutter 渲染管线与性能](part1-fundamentals/ch02-rendering/11-flutter-rendering.md)
   - [2.12 Window Manager Service 与窗口管理](part1-fundamentals/ch02-rendering/12-window-manager.md)
+  - [2.13 图形缓冲区管理 (BufferQueue)](part1-fundamentals/ch02-rendering/13-buffer-queue.md)
+  - [2.14 图形 API 演进与选择策略](part1-fundamentals/ch02-rendering/14-graphics-api-evolution.md)
 
 - [第 3 章：输入系统](part1-fundamentals/ch03-input/README.md)
   - [3.1 Input 事件分发全流程](part1-fundamentals/ch03-input/01-input-dispatch.md)
   - [3.2 触摸响应的性能分析](part1-fundamentals/ch03-input/02-touch-performance.md)
   - [3.3 手势导航与系统交互](part1-fundamentals/ch03-input/03-gesture-navigation.md)
+  - [3.4 输入延迟与预测输入技术](part1-fundamentals/ch03-input/04-input-latency-prediction.md)
 
 - [第 4 章：内存管理](part1-fundamentals/ch04-memory/README.md)
   - [4.1 Android 内存模型全景](part1-fundamentals/ch04-memory/01-memory-overview.md)
@@ -133,6 +137,7 @@
   - [14.5 三方性能库](part3-tools/ch14-other-tools/05-third-party-libs.md)
   - [14.6 自动化测试工具](part3-tools/ch14-other-tools/06-automation-tools.md)
   - [14.7 ProfilingManager](part3-tools/ch14-other-tools/07-profiling-manager.md)
+  - [14.8 GPU 图形调试与分析工具](part3-tools/ch14-other-tools/08-gpu-debug-tools.md)
 
 - [第 15 章：方法论](part3-tools/ch15-methodology/README.md)
   - [15.1 性能优化的术、道、器](part3-tools/ch15-methodology/01-philosophy.md)
