@@ -4,13 +4,13 @@
   "metrics": {
     "total": 119,
     "draft": 13,
-    "ready-for-review": 50,
+    "ready-for-review": 25,
     "reviewed": 4,
-    "finalized": 45,
+    "finalized": 26,
     "staging_drafts": 0,
-    "last_updated": "2026-04-06T01:02:00+08:00",
+    "last_updated": "2026-04-06T02:20:00+08:00",
     "processing": 0,
-    "ready-to-publish": 6,
+    "ready-to-publish": 5,
     "last_reviewed": "2026-04-06"
   },
   "reviewed_sections": {
@@ -464,10 +464,22 @@
         "frontmatter补全：section/drafted_by/reviewed_date/reviewed_by",
         "status: ready-for-review → finalized"
       ]
+    },
+    "13.1": {
+      "reviewed_date": "2026-04-06",
+      "reviewed_by": "openclaw-task6",
+      "review_status": "finalized",
+      "fixes_applied": [
+        "42处「你」→「我们」/中性化替换（writing-guide §3.5）",
+        "禁用词修正：「对齐」→「统一」、「串联」→「关联」（writing-guide §9）",
+        "frontmatter：补 drafted_by/reviewed_date/reviewed_by",
+        "验证标注：Systrace platform-tools 移除添加 [待验证]",
+        "status: ready-for-review → finalized"
+      ]
     }
   },
   "review_stats": {
-    "total_reviewed": 40,
+    "total_reviewed": 41,
     "reviewed_today": 22,
     "review_issues_total": 13
   },
@@ -1693,6 +1705,14 @@
     "last_updated": "2026-04-05T15:07:41+08:00"
   },
   "history": [
+    {
+      "date": "2026-04-06",
+      "section": "13.1",
+      "title": "Perfetto 简介与演进",
+      "action": "reviewed-finalized",
+      "review_by": "openclaw-task6",
+      "fixes": 43
+    },
     {
       "date": "2026-04-05",
       "section": "2.16",
@@ -3209,6 +3229,16 @@
       "title": "进程模型与生命周期管理",
       "status": "ready-to-publish",
       "reviewed_date": "2026-04-06"
+    },
+    "13.1": {
+      "title": "Perfetto 简介与演进",
+      "status": "finalized",
+      "file": "src/part3-tools/ch13-perfetto/01-perfetto-intro.md",
+      "drafted_date": "2026-04-03",
+      "drafted_by": "openclaw-task2a",
+      "reviewed_date": "2026-04-06",
+      "reviewed_by": "openclaw-task6",
+      "confidence": "medium"
     }
   },
   "5.1": {
