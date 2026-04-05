@@ -2,7 +2,7 @@
 title: "命令行打开超大 Trace"
 chapter: "13.4"
 section: "13.4"
-status: reviewed
+status: ready-for-review
 drafted_date: "2026-04-03"
 drafted_by: "openclaw-task2a"
 reviewed_date: "2026-04-05"
@@ -236,14 +236,14 @@ PerfettoSQL 查询中最容易出错的部分是表之间的 JOIN 路径。一�
 
 记住这条路径就够了：`slice → thread_track → thread → process`。绝大多数分析查询都是这条路径的变体。
 
-[自动发现] Perfetto 还提供了一组辅助函数来简化 JOIN 操作。`EXTRACT_ARG(arg_set_id, key)` 可以直接从 `args` 表中提取某个 Slice 的自定义属性，而不需要显式 JOIN `args` 表。比如获取一个 Slice 的 `reason` 属性：
+[自动发现] Perfetto 还提供了一组辅助函数来简化 JOIN 操作。`EXTRACT_ARG(arg_set_id, key)` 可以直接从 `args` 表中提取某个 Slice 的自定义属性，而不需要显式 JOIN `args` 表。比如获取 `inflate` 操作使用的布局资源名：
 
 ```sql
 SELECT
   name,
-  EXTRACT_ARG(arg_set_id, 'reason') AS reason
+  EXTRACT_ARG(arg_set_id, 'layout') AS layout_name
 FROM slice
-WHERE name = '低内存杀死'  -- [存疑: 实际 Perfetto Trace 中 LMK slice name 为英文（如 lmk/kill_one_process），此处中文仅为示例]
+WHERE name = 'inflate'
 LIMIT 10;
 ```
 
