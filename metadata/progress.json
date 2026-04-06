@@ -1671,16 +1671,18 @@
       "verification_level": "L2",
       "word_count": "~9000",
       "completed_at": "2026-04-06T20:14:41.389325"
-    }
+    },
+    "5.10"
   ],
-  "ready_for_review": 5,
-  "last_updated": "2026-04-06T20:14:41.389335",
+  "ready_for_review": 6,
+  "last_updated": "2026-04-06T22:13:58.553710",
   "stats": {
     "total": 109,
     "completed": 85,
     "pending": 25,
     "last_updated": "2026-04-06T20:14:41.389333",
-    "reviewed": 1
+    "reviewed": 1,
+    "ready-for-review": 1
   },
   "research_stats": {
     "runs_today": [
@@ -3063,6 +3065,13 @@
         "Android 16 Cloud Compilation：SDM 预编译产物/消除设备端 dex2oat/安装加速/更新冻结毫秒级",
         "编译优化全链路：Baseline Profiles → Cloud Profiles → Cloud Compilation → AutoFDO → dex2oat 18% 编译优化"
       ]
+    },
+    {
+      "date": "2026-04-06",
+      "action": "draft",
+      "section": "5.10",
+      "title": "JobScheduler/WorkManager 调度与后台任务性能",
+      "by": "openclaw-task2a"
     }
   ],
   "sections": {
@@ -3791,6 +3800,13 @@
       "status": "ready-for-review",
       "drafted_date": "2026-04-06",
       "drafted_by": "openclaw-task2a"
+    },
+    "5.10": {
+      "title": "JobScheduler/WorkManager 调度与后台任务性能",
+      "status": "ready-for-review",
+      "file": "src/part1-fundamentals/ch05-cpu-power/10-jobscheduler-workmanager-performance.md",
+      "drafted_date": "2026-04-06",
+      "drafted_by": "openclaw-task2a"
     }
   },
   "5.1": {
@@ -4161,5 +4177,6 @@
     "anchors_total": 5,
     "verification_level": "L2",
     "confidence": "medium"
-  }
+  },
+  "ready-for-review": 1
 }
