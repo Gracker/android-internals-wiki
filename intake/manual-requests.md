@@ -39,7 +39,22 @@
 
 ## 未处理指令（写在这里）
 
-（在此添加你的指令）
+
+- 补充 14.8 Mali Graphics Debugger（原因：高爷博客工具对比表提及，MTK 芯片使用 Mali GPU，与实际工作直接相关）
+- 新增 Ch14 eBPF 章节（原因：高爷博客工具对比表提及，内核级性能分析重要性递增，AIW 目前缺失）
+- 新增 Ch14 FTrace 章节（原因：Perfetto 底层依赖 FTrace，AIW 目前无独立讲解）
+- 融入 15.1 可观测性框架（原因：高爷博客 The Performance 1 文章提出的 Log/Metric/Trace 三维度 + 数据获取三方法，是非常好的理论框架，15.1 器术道已有但缺少可观测性体系）
+
+- 融入 13.3 Perfetto SQL 分析（原因：官方 docs/analysis/ 有完整 SQL 语法/表/函数/标准库文档，是目前 13.3 的重要素材来源）
+- 补充 附录A Android 版本变更（原因：官方 reference/android-version-notes 持续更新，是目前版本变更速查的最佳来源）
+- 融入 15.5 线上监控（原因：Android Vitals 11 篇官方文档是线上监控最权威素材，目前覆盖最薄）
+- 融入 15.6 性能测试（原因：Benchmark Tools 14 篇完整覆盖 Micro/Macro benchmark + JankStats + Baseline Profiles）
+- 补充 11.1 Energy Profiler（原因：功耗分析覆盖较浅）
+- 补充 14.1 AS Profiler 完整工具链（原因：官方 7 篇文档覆盖 CPU/Memory/Energy/Jank/APK Profiler）
+
+- 融入 7.2 帧率切换卡顿（原因：高爷补充——相机60Hz切换到多任务120Hz导致可感知卡顿，素材见 intake/research-feeds/2026-04-06-gracker-jank-insights.md 素材1）
+- 融入 7.1 步幅波动卡顿（原因：高爷补充——Trace无掉帧但感官卡顿，步幅不均匀问题，素材见 intake/research-feeds/2026-04-06-gracker-jank-insights.md 素材2）
+- 融入 7.2 列表滑动VSync时间计算（原因：高爷补充——VSync时间取ms导致帧间隔波动，素材见 intake/research-feeds/2026-04-06-gracker-jank-insights.md 素材3）
 
 ---
 
