@@ -1,14 +1,14 @@
 {
   "generated_at": "2026-04-03T19:10:00",
-  "total_sections": 105,
+  "total_sections": 107,
   "metrics": {
-    "total": 121,
-    "draft": 9,
+    "total": 123,
+    "draft": 11,
     "ready-for-review": 24,
     "reviewed": 4,
     "finalized": 28,
     "staging_drafts": 0,
-    "last_updated": "2026-04-06T16:10:00+08:00",
+    "last_updated": "2026-04-06T17:05:00+08:00",
     "processing": 0,
     "ready-to-publish": 10,
     "last_reviewed": "2026-04-06",
@@ -1625,10 +1625,10 @@
   "ready_for_review": 5,
   "last_updated": "2026-04-06T12:17:33.003706",
   "stats": {
-    "total": 107,
+    "total": 109,
     "completed": 84,
-    "pending": 24,
-    "last_updated": "2026-04-06T15:10:00+08:00"
+    "pending": 26,
+    "last_updated": "2026-04-06T17:05:00+08:00"
   },
   "research_stats": {
     "runs_today": [
@@ -1892,6 +1892,24 @@
     }
   ],
   "history": [
+    {
+      "date": "2026-04-06",
+      "section": "1.15",
+      "title": "JNI/NDK 性能优化",
+      "action": "gap-created",
+      "created_by": "task2a-knowledge-gap",
+      "gap_source": "AOSP结构+官方文档+研究素材+读者需求",
+      "gap_score": "17/20"
+    },
+    {
+      "date": "2026-04-06",
+      "section": "10.7",
+      "title": "SQLite/Room 数据库性能优化",
+      "action": "gap-created",
+      "created_by": "task2a-knowledge-gap",
+      "gap_source": "AOSP结构+官方文档+读者需求",
+      "gap_score": "14/20"
+    },
     {
       "date": "2026-04-06",
       "section": "8.8",
