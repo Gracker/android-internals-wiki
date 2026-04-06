@@ -1,16 +1,16 @@
 ---
 title: "典型场景分析"
 chapter: "7.4"
-status: ready-for-review
+status: ready-to-publish
 polish_count: 1
 polish_date: "2026-04-06"
 polish_by: "task2b-polish"
 drafted_date: "2026-04-01"
-reviewed_date: "2026-04-05"
+reviewed_date: "2026-04-06"
 reviewed_by: "openclaw-task6"
 rework_date: "2026-04-04"
 rework_by: openclaw-task2b
-applicable_versions: "Android 8 (API 26) - Android 16 (API 35)"
+applicable_versions: "Android 8 (API 26) - Android 16 (API 36)"
 last_verified: "2026-04-01"
 last_verified_against: "AOSP android-16.0.0_r1, Perfetto 官方文档"
 confidence: high
@@ -239,7 +239,7 @@ Fragment 切换比 Activity 切换轻量，因为都在同一个进程和同一�
 在 Perfetto 中分析启动窗口卡顿：
 - 关注 `SplashScreen` 进程（或 SystemUI 中对应的 Window Token）
 - 查看 SurfaceFlinger 在过渡动画期间的合成耗时
-- 检查 App 主进程的 `ActivityThread.handleBindApplication` → `Activity.onCreate` 链路是否过长
+- 检查 App 主进程的 `ActivityThread.handleBindApplication` → `Activity.onCreate` 调用路径是否过长
 
 ### 3.2 Dialog / PopupWindow 弹出动画
 
