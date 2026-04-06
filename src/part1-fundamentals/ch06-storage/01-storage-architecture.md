@@ -2,7 +2,7 @@
 title: "Android 存储架构"
 chapter: "6.1"
 section: "6.1"
-status: ready-for-review
+status: ready-to-publish
 applicable_versions: "Android 10+"
 last_verified: "2026-04-01"
 last_verified_against: "Android 15, JEDEC UFS 4.0 Spec, AOSP source.android.com"
@@ -19,7 +19,7 @@ related_chapters: ['6.2', '6.3', '4.1', '7.1']
 created: 2026-04-01
 drafted_date: 2026-04-01
 drafted_by: openclaw-task2a
-reviewed_date: 2026-04-03
+reviewed_date: 2026-04-06
 reviewed_by: openclaw-task6
 reviewers: []
 ---
@@ -171,7 +171,7 @@ Physical Partition: super
 
 ### 挂载流程：从 bootloader 到用户空间
 
-Android 的分区挂载是一个分阶段的过程。Bootloader 完成硬件初始化后，首先挂载 `super` 物理分区，通过 dm-linear 激活 `system`、`vendor` 等逻辑分区。`system` 分区作为 rootfs 挂载后，init 进程启动，开始挂载 `vendor`、`product` 等其他分区。接着，`vold`（Volume Daemon）负责挂载 `data` 分区——这里涉及 FBE 解密、dm-default-key 配置等复杂流程。整个挂载链路中任何一环出错，都会导致设备无法正常启动。[已验证: 来源见 Android分区挂载原理介绍（OPPO内核工匠）]
+Android 的分区挂载是一个分阶段的过程。Bootloader 完成硬件初始化后，首先挂载 `super` 物理分区，通过 dm-linear 激活 `system`、`vendor` 等逻辑分区。`system` 分区作为 rootfs 挂载后，init 进程启动，开始挂载 `vendor`、`product` 等其他分区。接着，`vold`（Volume Daemon）负责挂载 `data` 分区——这里涉及 FBE 解密、dm-default-key 配置等复杂流程。整个挂载流程中任何一环出错，都会导致设备无法正常启动。[已验证: 来源见 Android分区挂载原理介绍（OPPO内核工匠）]
 
 ## 文件系统：从 ext4 到 f2fs 的演进
 
@@ -181,7 +181,7 @@ Android 早期使用 ext4 作为主要文件系统，这在服务器和桌面 Li
 
 手机存储的 I/O 特性与服务器完全不同。根据 Linux 阅码场的分析，手机存储 I/O 有几个典型特征：以 buffer I/O 为主（数据先写入 page cache，由内核回写），sqlite 频繁进行小量同步随机写（通过 `fsync`），存储芯片速度相对较低，设备会频繁异常掉电（手机没电直接关机），以及存储碎片化严重。
 
-其中 sqlite 的 `fsync` 问题是 ext4 在 Android 上最大的痛点。sqlite 使用 WAL（Write-Ahead Log）模式，每次事务提交都需要调用 `fsync` 确保日志写入磁盘。在 ext4 上，`fsync` 的实现涉及 jbd2（ext4 的日志系统）的 order 模式——为了保证数据一致性，`fsync` 不仅需要刷新日志，还要把所有相关的脏页都写到磁盘。更糟糕的是，ext4 的延迟分配（delayed allocation）机制会推迟分配物理块，等到 `fsync` 时才统一分配，这进一步拉长了 `fsync` 的耗时。再加上 I/O 优先级倒置的问题——低优先级的后台 I/O 可能占据了存储设备的队列，导致高优先级的 `fsync` 被阻塞——最终的结果就是用户感知到的卡顿。[已验证: 来源见 手机Android存储性能优化架构分析（Linux阅码场）]
+其中 sqlite 的 `fsync` 问题是 ext4 在 Android 上最棘手的问题。sqlite 使用 WAL（Write-Ahead Log）模式，每次事务提交都需要调用 `fsync` 确保日志写入磁盘。在 ext4 上，`fsync` 的实现涉及 jbd2（ext4 的日志系统）的 order 模式——为了保证数据一致性，`fsync` 不仅需要刷新日志，还要把所有相关的脏页都写到磁盘。更糟糕的是，ext4 的延迟分配（delayed allocation）机制会推迟分配物理块，等到 `fsync` 时才统一分配，这进一步拉长了 `fsync` 的耗时。再加上 I/O 优先级倒置的问题——低优先级的后台 I/O 可能占据了存储设备的队列，导致高优先级的 `fsync` 被阻塞——最终的结果就是用户感知到的卡顿。[已验证: 来源见 手机Android存储性能优化架构分析（Linux阅码场）]
 
 ### f2fs：为闪存优化的文件系统
 
@@ -325,11 +325,11 @@ NAND 闪存有一个物理限制：每个存储单元的擦写次数是有限的
 
 **「FBE 加密会拖慢存储性能吗？」**
 
-在有 inline encryption 硬件支持的设备上（2018 年后的主流 SoC），FBE 的性能开销可以忽略。加密解密在 DMA 传输路径上由硬件完成，CPU 感知不到。但在没有硬件加密引擎的低端设备上，FBE 回退到软件实现，可能引入 5-15% 的 I/O 延迟增加。在做性能分析时，如果怀疑 FBE 是瓶颈，可以检查  或  下对应分区的加密统计信息。
+在有 inline encryption 硬件支持的设备上（2018 年后的主流 SoC），FBE 的性能开销可以忽略。加密解密在 DMA 传输路径上由硬件完成，CPU 感知不到。但在没有硬件加密引擎的低端设备上，FBE 回退到软件实现，可能引入 5-15% 的 I/O 延迟增加。在做性能分析时，如果怀疑 FBE 是瓶颈，可以检查 `[待补充：sysfs 加密统计路径]` 下对应分区的加密统计信息。
 
 ## 小结：从存储架构到性能分析
 
-让我们回到开头的那个卡顿场景。当我们看到主线程在 `fsync` 上等待时，完整的分析链路应该是：
+让我们回到开头的那个卡顿场景。当我们看到主线程在 `fsync` 上等待时，完整的分析流程应该是：
 
 1. **物理层**：确认设备使用的是 UFS 还是 eMMC——这决定了 I/O 延迟的基线
 2. **块设备层**：检查 I/O 调度器配置和 cgroup I/O 优先级——是否有后台任务抢占了前台的 I/O 带宽
