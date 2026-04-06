@@ -4,15 +4,15 @@
   "metrics": {
     "total": 124,
     "draft": 10,
-    "ready-for-review": 24,
+    "ready-for-review": 23,
     "reviewed": 4,
-    "finalized": 29,
+    "finalized": 30,
     "staging_drafts": 0,
-    "last_updated": "2026-04-06T21:10:00",
+    "last_updated": "2026-04-06T21:25:00",
     "processing": 0,
     "ready-to-publish": 11,
     "last_reviewed": "2026-04-06",
-    "last_reviewed_section": "13.5 专题解读"
+    "last_reviewed_section": "2.2 帧率与刷新率"
   },
   "reviewed_sections": {
     "8.1": {
@@ -569,10 +569,25 @@
         "frontmatter: status ready-for-review -> finalized",
         "frontmatter: 补充 confidence/word_count/reviewed_date/reviewed_by"
       ]
+    },
+    "2.2": {
+      "reviewed_date": "2026-04-06",
+      "reviewed_by": "openclaw-task6",
+      "review_status": "finalized",
+      "fixes_applied": [
+        "元数据：清理空 re-review 残留字段",
+        "状态：ready-for-review → finalized",
+        "措辞：60Hz 描述从指代模糊改为直接陈述"
+      ],
+      "issues_remaining": [
+        "[待补充] LTPO Perfetto 截图",
+        "[待补充] Frame Timeline 截图",
+        "[待验证] 华为 VSync 问题在 HarmonyOS 4+ 的状态"
+      ]
     }
   },
   "review_stats": {
-    "total_reviewed": 44,
+    "total_reviewed": 45,
     "reviewed_today": 24,
     "review_issues_total": 13
   },

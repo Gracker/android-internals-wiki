@@ -1,8 +1,8 @@
 ---
 title: "帧率与刷新率"
 chapter: "2.2"
-status: ready-for-review
-reviewed_date: 2026-04-03
+status: finalized
+reviewed_date: 2026-04-06
 reviewed_by: openclaw-task6
 rework_date: 2026-04-02
 rework_by: openclaw-task2b
@@ -27,10 +27,6 @@ sources:
     path: "frameworks/native/services/surfaceflinger/SurfaceFlinger.cpp"
 tags: ['framerate', 'refresh-rate', 'frame-time', 'jank', 'frame-pacing', 'LTPO', 'VRR', 'ARR', 'SurfaceFlinger']
 related_chapters: ["2.1", "2.3", "2.4", "2.6", "2.9"]
-re-review-reason: ""
-re-review-materials: []
-re-review-triggered-date: ""
-re-review-triggered-by: ""
 re-review-result: "已纳入1条素材(部分纳入:OEM VSync修改误区+交叉引用),0处修正,待正常review质检"
 ---
 
@@ -132,7 +128,7 @@ LIMIT 100;
 
 ### 60Hz 时代：一个标准统治了十年
 
-从第一代 Android 到 2019 年前后，几乎所有的 Android 手机都运行在 60Hz 刷新率。这个数字来自一个工程上的平衡：60Hz 足够让 UI 动画看起来流畅（每帧 16.6ms 的预算），同时对 CPU/GPU 和电池的压力在可接受范围内。
+从第一代 Android 到 2019 年前后，几乎所有的 Android 手机都运行在 60Hz 刷新率。60Hz 是流畅度与功耗之间的工程平衡点：每帧 16.6ms 的预算足以让 UI 动画看起来流畅，同时对 CPU/GPU 和电池的压力在可接受范围内。
 
 在 60Hz 时代，整个渲染管线都是围绕这个固定值设计的：Choreographer 每收到一个 VSync-app 信号就触发一次 `doFrame()`，SurfaceFlinger 每收到一个 VSync-sf 信号就合成一次。帧率目标和刷新率目标是同一个值——60，一切都很简单。
 
