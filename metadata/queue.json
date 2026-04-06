@@ -1033,5 +1033,26 @@
     "added_by": "task2a-knowledge-gap",
     "added_at": "2026-04-06T17:05:00+08:00",
     "status": "pending"
+  },
+  {
+    "section": "8.6",
+    "section_title": "Kotlin Coroutine 性能实践",
+    "priority": 90,
+    "reason": "[review回炉] RxJava 对比数据来源模糊，需补充可追溯 benchmark 链接",
+    "material_paths": [
+      "intake/suggestions.md（含 review 意见）"
+    ],
+    "review_issues": [
+      {
+        "type": "需确认",
+        "location": "Coroutine 与 RxJava 的性能对比 [扩展]",
+        "detail": "RxJava 对比的具体百分比数据（23%/40%/15-20%）来源为「社区 benchmark 综合数据，2024-2025 多源交叉验证」，过于模糊",
+        "suggestion": "补充可追溯的 benchmark 链接，或改标注为「近似参考值」"
+      }
+    ],
+    "added_by": "task6-review",
+    "added_at": "2026-04-06T17:30:00+08:00",
+    "status": "pending",
+    "original_review_log": "logs/review/2026-04-06-1730-review.md"
   }
 ]

@@ -445,3 +445,65 @@
 2. **建议为 2.2 BufferQueue 章节增加 Android 14 buffer cache purge 内容**
    - 原因：Android 14 引入的 per-layer buffer cache 强制清除直接影响 BufferQueue 内存管理
    - 素材：intake/research-feeds/2026-04-05-19-android14-buffer-cache-purge-graphics-memory.md
+
+
+---
+
+## Task8 归类 · 2026-04-06
+
+### 聊聊2026年Android开发会是什么样
+- 链接：https://juejin.cn/post/7589903499599347766
+- 摘要：2026年初Android开发现状综述：Kotlin Multiplatform逐渐成熟、Compose稳定普及、AI辅助编码成为主流。
+- 类型：技术文章
+- 推荐章节：1.6（版本演进）
+- 备注：finalized章节，新参考记录到suggestions.md
+- 入库时间：2026-04-06
+
+### Android全局悬浮拖拽视图
+- 链接：https://juejin.cn/post/7582246395987148834
+- 摘要：ViewDragHelper源码分析，全局拖拽悬浮窗实现，触摸事件拦截机制、WindowManager.LayoutParams配置。
+- 类型：技术文章
+- 推荐章节：3.2（触摸响应）
+- 备注：ready-to-publish章节，记录到suggestions.md
+- 入库时间：2026-04-06
+
+### Android 嵌入式照片选择器
+- 链接：https://juejin.cn/post/7599963665039081522
+- 摘要：Android嵌入式Photo Picker API：无需存储权限、支持多选和视频、嵌入式Fragment集成。
+- 类型：技术文章
+- 备注：Photo Picker使用指南，非性能主题，无匹配章节
+- 入库时间：2026-04-06
+
+### Android 开发中准确判断应用前后台
+- 链接：https://juejin.cn/post/7595108457496346639
+- 摘要：前后台状态判断方案对比：ProcessLifecycleOwner、RunningAppProcessInfo、Activity回调计数。多进程场景分析。
+- 类型：技术文章
+- 推荐章节：1.3（进程模型）
+- 备注：ready-to-publish章节，记录到suggestions.md
+- 入库时间：2026-04-06
+
+
+
+## 2026-04-06 素材索引化指令（高爷）
+
+以下 4 个文件是新增的外部资源索引，需要被 task1 索引化后供 task2/2a/2b 加工使用：
+
+1. `intake/external-resources/blog-gracker-series.md` — 高爷博客 42 篇（Perfetto/Systrace/ANR/Memory/CPU/独立文章）
+2. `intake/external-resources/perfetto-official-docs-index.md` — Perfetto 官方文档 90 篇（全量纳入加工）
+3. `intake/external-resources/google-official-docs-index.md` — Google 官方文档 70 篇（开发者指南/工具/Benchmark/Vitals）
+4. `intake/external-resources/android-perf-optimization-resource-map.md` — 高爷精选资源 255 条（15 个分类）
+
+**执行要求**：
+- task1 下次盘点时，扫描这 4 个文件，将每条资源提取到 `metadata/source-index.json`
+- 每条资源的 `mapped_chapters` 使用索引中已有的映射关系
+- 质量评估：高爷原创 → 100 分，官方文档 → 80 分，大厂实践 → 60 分，一般参考 → 30 分
+- task2/2a 加工时优先从 source-index 中匹配对应章节的素材
+- task2b 精修时，为已有章节补充 sources 引用（frontmatter sources 字段）
+
+
+## [Task6 Review] 8.6 Kotlin Coroutine 性能实践 — 2026-04-06
+- **类型**：需确认
+- **位置**：Coroutine 与 RxJava 的性能对比 [扩展] 小节
+- **问题**：RxJava 对比的具体百分比数据（内存占用低 23%、冷启动快 40%、简单操作延迟低 15-20%）来源为「社区 benchmark 综合数据，2024-2025 多源交叉验证」，过于模糊。这些具体数字应该有可追溯的 benchmark 出处。
+- **建议**：补充可追溯的 benchmark 链接（如 Kotlin benchmarks repo、Xamarin benchmark 套件等），或改为更审慎的表述（如「约 20-30%」配合「近似参考值」标注）
+- **review 日志**：logs/review/2026-04-06-1730-review.md

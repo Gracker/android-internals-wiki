@@ -1,8 +1,11 @@
 ---
 title: "Kotlin Coroutine 性能实践"
 chapter: "8.6"
-status: ready-for-review
+status: reviewed
 drafted_date: "2026-04-02"
+drafted_by: "openclaw-task2a"
+reviewed_date: "2026-04-06"
+reviewed_by: "openclaw-task6"
 applicable_versions: "Android 8 (API 26) - Android 16 (API 36)"
 last_verified: "2026-04-02"
 last_verified_against: "kotlinx.coroutines 1.9.x / Kotlin 2.1.x"
@@ -353,7 +356,7 @@ scope.launch {
 
 实际选型时，性能差异通常不是决定性因素。Coroutine 在 Android 上的优势更多体现在代码可读性、与 Kotlin 的深度集成、以及 Google 官方推荐。性能方面的差异只在极端场景下才有感知。
 
-[已验证: 社区 benchmark 综合数据, 2024-2025 多源交叉验证]
+[已验证: 社区 benchmark 综合数据, 2024-2025 多源交叉验证] [需确认: RxJava 对比具体百分比数据（23%/40%/15-20%）来源为社区综合数据，建议补充可追溯 benchmark 链接或标注为近似参考值]
 
 ## 自定义 Dispatcher 的场景与实践 [扩展]
 
@@ -487,8 +490,3 @@ Coroutine 的性能与本书其他章节有紧密联系：
 - [kotlinx-coroutines-debug GitHub](https://github.com/Kotlin/kotlinx.coroutines/tree/master/kotlinx-coroutines-debug)
 - [Flow — Backpressure and Buffering](https://kotlinlang.org/docs/flow.html#buffering)
 - [Testing Coroutines on Android](https://developer.android.com/kotlin/coroutines/test)
-### 聊聊协程里的 Semaphore：别让协程挤爆门口
-- 来源：https://juejin.cn/post/7582016579858169890
-- 类型：技术文章
-- 摘要：Kotlin协程Semaphore原理与实战：Mutex与Semaphore区别、AtomicReference无锁实现、并发控制最佳实践。
-- 入库时间：2026-04-06
