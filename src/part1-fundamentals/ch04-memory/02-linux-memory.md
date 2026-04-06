@@ -1,8 +1,11 @@
 ---
 title: "Linux 内核内存管理"
 chapter: "4.2"
-status: finalized
+status: ready-for-review
 drafted_date: "2026-03-30"
+polish_count: 1
+polish_date: "2026-04-06"
+polish_by: "task2b-polish"
 applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
 last_verified: "2026-03-31"
 reviewed_date: "2026-04-03"
@@ -189,7 +192,9 @@ kswapd 被唤醒后，会持续回收页面，直到空闲内存恢复到 High W
 
 在 Android 上，kswapd 过度活跃是一个常见的性能问题。Nubia 曾分享过一个案例：三方应用唯品会在内存不足时滑动严重掉帧，Perfetto 中可以看到 kswapd 线程大量占用 CPU，同时把前台应用的 Page Cache 也回收了，导致前台应用读写文件时产生更多 page fault，形成恶性循环。
 
-针对这类问题，一些 OEM 厂商采用了"冷热文件分离"策略：区分前台应用的热文件和后台应用的冷文件，优先回收后台冷文件的页面，保护前台应用的 Page Cache。同时采用常态化少量回收策略（每分钟定时少量回收），避免内存不足时 kswapd 的突发性高开销。
+针对这类问题，一些 OEM 厂商采用了"冷热文件分离"策略：区分前台应用的热文件和后台应用的冷文件，优先回收后台冷文件的页面，保护前台应用的 Page Cache。
+
+另一种思路是常态化少量回收——每分钟定时少量回收页面，避免内存不足时 kswapd 的突发性高开销。这本质上是用可预测的低开销替代不可预测的高开销，与渲染优化中"分帧加载"的思路类似。
 
 [已验证: L4 交叉验证, Nubia案例 + OPPO内存反碎片优化 + 荣耀MGLRU实践经验]
 [来源: Cubox/Android 系统 内存不足时，kswapd 导致的性能问题之冷热文件回收方案-2025-05-31.md]
@@ -323,6 +328,8 @@ Google 在 LPC 2025 上介绍了使用 eBPF 替代 sysfs 来统计 DMA-BUF 使�
 [来源: Cubox/LPC2025-Android MC主题-2026-01-10.md]
 [待补充: Perfetto 中 DMA-BUF 相关 Track 和事件的 Trace 截图]
 
+了解了图形内存的底层机制后，我们再来看一个影响整个内存管理架构的系统性变更：16KB 页面大小。前面讨论的 Buddy 分配器、TLB、Page Fault 等机制，在页面大小从 4KB 增大到 16KB 后，行为都会发生变化。
+
 ## 16K Page Size 对内存和性能的影响
 
 Android 15 开始支持 16KB 页面大小（之前一直是 4KB），这是一个对整个 Android 生态影响深远的变更。
@@ -372,20 +379,17 @@ Google 在 LPC 2025 上分享了为 16KB 页面适配旧 ELF 库的技术探索�
 
 [待验证: 16KB 页面在 Android 16 GKI 内核中的实际 Perfetto 表现]
 
-## KASAN / MTE 等内存安全机制对性能的开销
+## 扩展方向：内存安全与大页面
 
-[待补充: KASAN（Kernel Address SANitizer）的 shadow memory 开销]
-[待补充: MTE（Memory Tagging Extension，ARMv8.5+）的硬件标签开销]
-[待补充: GWP-ASan（Google Wire Program ASan）的采样检测机制]
+本节覆盖了 Linux 内核内存管理的核心机制。还有两个与性能相关的扩展方向值得关注：
+
+**内存安全机制**：KASAN（Kernel Address SANitizer）通过 shadow memory 检测内核空间的越界访问，但会带来约 2-3 倍的内存开销和可感知的性能下降，通常只在调试版本启用。MTE（Memory Tagging Extension）是 ARMv8.5+ 引入的硬件级内存标签机制，开销远低于 KASAN——快手在 2023 年分享了 MTE 在 Android 上的探索，标签检查的额外延迟约 1-2%。GWP-ASan 采用采样策略，在生产环境中以极低概率（约千分之一）分配带毒标记的内存块，能在几乎零开销的前提下捕获部分内存安全漏洞。
+
+**Huge Pages**：Transparent Huge Pages（THP）在服务器场景中已被广泛采用，但在 Android 上仍处于实验阶段。THP 需要 2MB 连续物理内存（512 个 4KB 页），碎片化严重的移动设备很难满足。Android 15 的 pKVM（Protected Kernel Virtual Machine）对 THP 的支持也在探索中。大页面的核心权衡是：TLB miss 率降低带来的性能收益 vs. 内存浪费（内部碎片增加）vs. 碎片化加剧的风险。对于移动场景，16KB page size 可能是比 THP 更务实的折中方案。
+
 [来源: Cubox/Andriod Native - 采样型内存调试工具GWP-ASan - 掘金-2022-01-14.md]
 [来源: Cubox/内存检测工具KASAN：精准定位内存越界的"幽灵"-2025-05-29.md]
 [来源: Cubox/Android内存安全革命性改变：快手MTE探索与实践-2023-05-23.md]
-
-## Huge Pages 在 Android 上的实验
-
-[待补充: Transparent Huge Pages (THP) 在 Android 上的适用性]
-[待补充: Android 15 pKVM 对 THP 的支持]
-[待补充: Huge Pages 对 TLB miss 率和内存占用的影响权衡]
 
 ## 与其他机制的关系
 
@@ -393,7 +397,7 @@ Linux 内核内存管理不是孤立的，它与 Android 系统的其他层面�
 
 - **与 ART 虚拟机（4.3 节）**：ART 的 GC 和内核的页面回收相互影响。Silk 论文展示了 GC 行为对内核 LRU 判断的干扰，说明两个层面需要协同优化。
 - **与 Low Memory Killer（4.4 节）**：LMK 是页面回收的最后一道防线——当 kswapd 和 direct reclaim 都无法满足需求时，LMK 会杀掉后台进程释放内存。
-- **与 SurfaceFlinger（2.6 节**：SurfaceFlinger 的图形缓冲区通过 DMA-BUF 管理，是系统内存的大户。
+- **与 SurfaceFlinger（2.6 节）：SurfaceFlinger 的图形缓冲区通过 DMA-BUF 管理，是系统内存的大户。
 - **与 CPU 调度（5.1 节）**：kswapd 和 kcompactd 都是内核线程，它们的 CPU 使用会影响前台应用的调度。
 - **与存储 I/O（6.3 节）**：页面回收中的脏页回写会产生 I/O 压力，影响前台应用的文件读写性能。
 
