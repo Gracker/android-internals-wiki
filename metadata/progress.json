@@ -4,15 +4,15 @@
   "metrics": {
     "total": 120,
     "draft": 9,
-    "ready-for-review": 26,
+    "ready-for-review": 25,
     "reviewed": 4,
     "finalized": 28,
     "staging_drafts": 0,
-    "last_updated": "2026-04-06T09:27:29.215586+08:00",
+    "last_updated": "2026-04-06T13:20:00",
     "processing": 0,
-    "ready-to-publish": 7,
+    "ready-to-publish": 8,
     "last_reviewed": "2026-04-06",
-    "last_reviewed_section": "1.6 Android 版本演进中的架构变化"
+    "last_reviewed_section": "6.1 Android 存储架构"
   },
   "reviewed_sections": {
     "8.1": {
@@ -3083,10 +3083,10 @@
     },
     "6.1": {
       "title": "Android 存储架构",
-      "status": "finalized",
+      "status": "ready-to-publish",
       "file": "src/part1-fundamentals/ch06-storage/01-storage-architecture.md",
       "drafted_date": "2026-04-01",
-      "reviewed_date": "2026-04-03",
+      "reviewed_date": "2026-04-06",
       "reviewed_by": "openclaw-task6"
     },
     "7.1": {
