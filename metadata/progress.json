@@ -1595,11 +1595,11 @@
     }
   ],
   "ready_for_review": 5,
-  "last_updated": "2026-04-06T08:20:00+08:00",
+  "last_updated": "2026-04-06T12:17:33.003706",
   "stats": {
-    "total": 106,
+    "total": 107,
     "completed": 83,
-    "pending": 24,
+    "pending": 25,
     "last_updated": "2026-04-06T09:10:00+08:00"
   },
   "research_stats": {
@@ -1835,9 +1835,31 @@
         "Android 17 AlarmManager OnAlarmListener 回调变体 + Play Store wakelock 惩罚政策（2h/24h 阈值 + 5% session + 28d 窗口 + Samsung 联合制定）",
         "Android 17 AOD Min Mode 全屏低功耗交互界面 + Extreme Battery Saver 增强 + Samsung One UI 9 Maximum mode"
       ]
+    },
+    {
+      "time": "2026-04-06T11:03:09+08:00",
+      "focus": "§8.7 Baseline Profiles 与编译优化实践（queue priority 80, pending）+ 编译优化全链路",
+      "source": "queue-priority-80",
+      "candidates": 3,
+      "passed": 3,
+      "delivered": 3,
+      "themes": [
+        "Baseline Profiles 量化数据：Reddit 51%/Duolingo 25-40%/通用 15-30%/AGP 8.0 默认启用/Play Store 政策绑定",
+        "Android 16 Cloud Compilation：SDM 预编译产物/消除设备端 dex2oat/安装加速/更新冻结毫秒级",
+        "编译优化全链路：Baseline Profiles → Cloud Profiles → Cloud Compilation → AutoFDO → dex2oat 18% 编译优化"
+      ]
     }
   ],
   "history": [
+    {
+      "date": "2026-04-06",
+      "section": "8.8",
+      "title": "Android 多媒体管线性能",
+      "action": "gap-created",
+      "created_by": "task2a-knowledge-gap",
+      "gap_source": "AOSP结构+官方文档+读者需求",
+      "gap_score": "16/20"
+    },
     {
       "date": "2026-04-06",
       "section": "14.9",
@@ -2840,6 +2862,21 @@
       "gap_source": "研究素材+AOSP结构+每日信息+读者需求",
       "gap_score": "17/20",
       "notes": "锁竞争是jank/ANR/启动延迟的核心根因之一，DeliQueue(1.13)仅覆盖MQ特例，general lock contention analysis是全书缺失的基础分析维度"
+    },
+    {
+      "date": "2026-04-06",
+      "section": "8.7/1.7/8.2/16.2",
+      "title": "Baseline Profiles 与编译优化实践前沿研究",
+      "action": "research-completed",
+      "focus": "Baseline Profiles 量化数据 + Cloud Compilation + 编译优化全链路",
+      "candidates": 3,
+      "passed": 3,
+      "delivered": 3,
+      "themes": [
+        "Baseline Profiles 量化数据：Reddit 51%/Duolingo 25-40%/通用 15-30%/AGP 8.0 默认启用/Play Store 政策绑定",
+        "Android 16 Cloud Compilation：SDM 预编译产物/消除设备端 dex2oat/安装加速/更新冻结毫秒级",
+        "编译优化全链路：Baseline Profiles → Cloud Profiles → Cloud Compilation → AutoFDO → dex2oat 18% 编译优化"
+      ]
     }
   ],
   "sections": {
@@ -2886,8 +2923,10 @@
     },
     "5.2": {
       "title": "EAS 能量感知调度",
-      "status": "finalized",
-      "reviewed_date": "2026-04-02"
+      "status": "ready-to-publish",
+      "file": "src/part1-fundamentals/ch05-cpu-power/02-eas.md",
+      "last_updated": "2026-04-06",
+      "reviewed_by": "openclaw-task6"
     },
     "5.3": {
       "title": "大小核架构",
@@ -3544,6 +3583,16 @@
       "extensions_total": 2,
       "verification_level": "L2",
       "word_count": "~9500",
+      "confidence": "medium"
+    },
+    "8.8": {
+      "title": "Android 多媒体管线性能",
+      "status": "draft",
+      "file": "src/part2-performance/ch08-responsiveness/08-media-pipeline.md",
+      "created_date": "2026-04-06",
+      "created_by": "task2a-knowledge-gap",
+      "gap_source": "AOSP结构+官方文档+读者需求",
+      "gap_score": "16/20",
       "confidence": "medium"
     }
   },

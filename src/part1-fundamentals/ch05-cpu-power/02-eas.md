@@ -1,7 +1,7 @@
 ---
 title: "EAS 能量感知调度"
 chapter: "5.2"
-status: ready-for-review
+status: ready-to-publish
 applicable_versions: "Android 9 (API 28) - Android 16 (API 36)"
 last_verified: "2026-03-31"
 last_verified_against: "Linux kernel 6.6, Documentation/scheduler/sched-energy.rst"
@@ -20,8 +20,10 @@ sources:
 tags: ['EAS', 'energy-aware-scheduling', 'PELT', 'energy-model', 'OPP', 'task-placement', 'uclamp', 'schedutil']
 related_chapters: ["5.1", "5.3", "5.4", "2.5"]
 drafted_date: "2026-03-31"
-reviewed_date: "2026-04-02"
+reviewed_date: "2026-04-06"
 reviewed_by: openclaw-task6
+review2_date: "2026-04-06"
+review2_by: openclaw-task6
 polish_count: 1
 polish_date: "2026-04-06"
 polish_by: "task2b-polish"
@@ -82,6 +84,8 @@ EAS 覆盖了 CFS 的默认唤醒逻辑。当 EAS 启用时，`select_task_rq_fa
 
 传统 CFS 会发现大核更空闲，选择大核。但 EAS 会计算：这个任务放在小核上刚好能"装下"（util 200 ≤ capacity 200），不需要拉高大核的频率，整体能耗更低。于是 EAS 选择小核。这就是 EAS 的核心逻辑——**不是"找最空闲的核"，而是"找最省电且够用的核"**。
 
+[图：EAS 选核对比示意 — 传统 CFS 选最空闲大核 vs EAS 选最省电小核，标注 util/capacity/energy delta]
+
 [已验证: 官方文档, https://docs.kernel.org/scheduler/sched-energy.html — EAS uses capacity and utilization to estimate "busyness" for performance-vs-energy trade-offs]
 
 ### EAS 的前提条件
@@ -116,6 +120,8 @@ EAS 并非在所有设备上都生效。它需要满足以下条件：
 注意功耗不是线性增长的——从 OPP 4 到 OPP 5，频率只增加了 20%，但功耗几乎翻倍。这是因为更高的频率需要更高的电压，而功耗与电压的平方成正比（动态功耗公式：P ∝ CV²f）。这也是 EAS 要尽量让任务在低频运行的原因——省下的不只是"一点电"，而是指数级的功耗节省。
 
 [已验证: 官方文档, Documentation/power/energy-model.rst — EM provides power cost tables for performance domains]
+
+[图：OPP 功耗曲线示例 — 频率-功耗非线性关系可视化，标注动态功耗公式 P ∝ CV²f]
 
 OPP 数据通常定义在 Device Tree（设备树）中，使用 `operating-points-v2` 属性。内核启动时解析这些数据，构建出每个"性能域"（Performance Domain）的功耗曲线。一个性能域通常对应一个 CPU 簇——同簇内的核心共享频率和电压调节，因此它们的 OPP 表相同。
 
@@ -169,6 +175,8 @@ PELT 使用指数加权移动平均（EWMA）来平滑 utilization 信号。它�
 - 如果一个任务突然变忙，它的 `util_avg` 会在约 32ms 内快速上升
 - 如果一个任务突然空闲，它的 `util_avg` 会在约 32ms 内缓慢下降
 - 这个设计让调度器既能快速响应负载变化，又不会被瞬时波动干扰
+
+[图：PELT 信号衰减示意 — 32ms 窗口指数加权移动平均，展示信号上升/下降的响应速度]
 
 PELT 的 `util_avg` 被归一化到 0~1024 的范围。其中 1024 代表"一个最大 capacity 的 CPU 满负荷运行"。这个归一化非常关键——它让 `util_avg` 可以直接与 CPU 的 `capacity` 比较：如果任务的 `util_avg` 是 300，而小核的 `capacity` 是 400，EAS 就知道这个任务放在小核上"装得下"。
 
@@ -268,6 +276,8 @@ uclamp 的效果可以直接在 Perfetto 中观察到：同样是 util=200 的�
 ## EAS 在 Perfetto 中的观察
 
 ### 三条关键 Track
+
+[图：Perfetto 全局视图 — CPU Frequency + CPU Scheduling + CPU Idle 三条 Track 同时可见，标注大小核分布]
 
 在 Perfetto 中观察 EAS 的行为，主要关注以下三条 Track：
 
