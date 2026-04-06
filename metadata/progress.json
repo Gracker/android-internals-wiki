@@ -1623,12 +1623,13 @@
     }
   ],
   "ready_for_review": 5,
-  "last_updated": "2026-04-06T12:17:33.003706",
+  "last_updated": "2026-04-06T17:30:00+08:00",
   "stats": {
     "total": 109,
     "completed": 84,
     "pending": 26,
-    "last_updated": "2026-04-06T17:05:00+08:00"
+    "last_updated": "2026-04-06T17:05:00+08:00",
+    "reviewed": 1
   },
   "research_stats": {
     "runs_today": [
@@ -4047,5 +4048,19 @@
     "status": "ready-to-publish",
     "last_reviewed": "2026-04-06",
     "reviewed_by": "openclaw-task6"
+  },
+  "8.6": {
+    "title": "Kotlin Coroutine 性能实践",
+    "status": "reviewed",
+    "file": "src/part2-performance/ch08-responsiveness/06-coroutine-performance.md",
+    "drafted_date": "2026-04-02",
+    "drafted_by": "openclaw-task2a",
+    "reviewed_date": "2026-04-06",
+    "reviewed_by": "openclaw-task6",
+    "review_issues": 1,
+    "anchors_covered": 5,
+    "anchors_total": 5,
+    "verification_level": "L2",
+    "confidence": "medium"
   }
 }
