@@ -2,7 +2,7 @@
 title: "存储相关的版本演进"
 chapter: "6.4"
 section: "6.4"
-status: ready-for-review
+status: ready-to-publish
 applicable_versions: "Android 4.4 (API 19) - Android 15 (API 35)"
 last_verified: "2026-04-01"
 last_verified_against: "Android 15 / UFS 4.0 spec / AOSP android-15.0.0_r1"
@@ -27,7 +27,7 @@ tags: [storage, FUSE, SDCardFS, Scoped-Storage, EROFS, UFS, f2fs, MediaStore]
 related_chapters: ["6.1", "6.2", "6.3", "1.6"]
 drafted_date: "2026-04-01"
 drafted_by: "openclaw-task2a"
-reviewed_date: "2026-04-04"
+reviewed_date: "2026-04-06"
 reviewed_by: "openclaw-task6"
 ---
 
@@ -85,7 +85,7 @@ Android 的外部存储（/sdcard 或 /storage/emulated/0）本质上是一个�
 
 为了解决 FUSE 的性能问题，Android 8.0（Oreo）引入了 SDCardFS。SDCardFS 最初由三星开发，是一个内核态的可堆叠文件系统（in-kernel stackable filesystem）。与 FUSE 不同，SDCardFS 直接在内核中完成 FAT32 语义的模拟，不需要切换到用户空间。
 
-这个变化带来了显著的性能提升：
+这个变化在多个维度带来了可量化的改善：
 
 - 文件操作不再有内核态 ↔ 用户态切换的开销
 - 消除了双重缓存问题，内存利用率更高
@@ -119,7 +119,7 @@ SDCardFS 虽然性能好，但它有两个致命的局限性：它工作在内�
 
 在 Android 10 之前，App 只要获得了 `READ_EXTERNAL_STORAGE` 或 `WRITE_EXTERNAL_STORAGE` 权限，就能读取外部存储上的所有文件。这意味着一个手电筒 App 拿到存储权限后，可以访问用户的照片、文档、下载的所有内容。这种全有或全无的权限模型在隐私保护上存在严重缺陷。
 
-App 卸载后在外部存储留下的文件碎片也是一个长期痛点。打开文件管理器，看到一堆不知道属于哪个 App 的文件夹，不知道能不能删——这是全量权限模型的副作用。
+App 卸载后在外部存储留下的文件碎片也是一个长期困扰。打开文件管理器，看到一堆不知道属于哪个 App 的文件夹，不知道能不能删——这是全量权限模型的副作用。
 
 ### 分阶段实施：从 10 到 15
 
@@ -285,9 +285,7 @@ adb shell dd if=/dev/block/by-name/userdata of=/dev/null bs=1M count=100 conv=fs
 
 ## 文件系统迁移：从 ext4 到 f2fs
 
-在梳理完外部存储模拟层（FUSE/SDCardFS）和只读分区（EROFS）的演进之后，我们还需要关注 data 分区（用户数据分区）的文件系统变化。ext4 到 f2fs 的迁移与前面的讨论共同构成了 Android 存储栈的完整演进图——每一层都在针对闪存存储的特性做专项优化。
-
-在讨论存储版本演进时，不能忽略文件系统层面从 ext4 到 f2fs 的迁移。这个变化主要影响 data 分区（用户数据分区），与前面讨论的 EROFS（只读 system 分区）和 FUSE/SDCardFS（外部存储模拟）形成了完整的存储栈演进图。
+在梳理完外部存储模拟层（FUSE/SDCardFS）和只读分区（EROFS）的演进之后，我们还需要关注 data 分区（用户数据分区）的文件系统变化。ext4 到 f2fs 的迁移与前面讨论的 EROFS（只读 system 分区）和 FUSE/SDCardFS（外部存储模拟）共同构成了 Android 存储栈的完整演进图——每一层都在针对闪存存储的特性做专项优化。
 
 ext4 是为机械硬盘时代设计的文件系统，采用原地更新（in-place update）策略和 jbd2 日志机制。在闪存存储上，原地更新会加剧写放大（Write Amplification），而 jbd2 的 physical logging 在 fsync 频繁的场景下容易导致性能退化——这正是 Android 的典型场景（SQLite 频繁 fsync）。
 
@@ -301,7 +299,7 @@ f2fs 的核心优化点与 Android 的 I/O 特征高度匹配：
 
 [已验证: 来源见 obsidian/Personal-Knowlodge/source/2026-03-08_wechat_手机Android存储性能优化架构分析_1.md]
 [已验证: 来源见 obsidian/Personal-Knowlodge/source/2026-03-06_wechat_深入代码细节看f2fs在磁盘上的组织方式.md]
-[来源: obsidian/Personal-Knowlodge/source/2026-03-08_wechat_手机Android存储性能优化架构分析_1.md]
+[已验证: 来源见 obsidian/Personal-Knowlodge/source/2026-03-08_wechat_手机Android存储性能优化架构分析_1.md]
 
 ## Scoped Storage 之前的权限演变
 
@@ -311,7 +309,7 @@ f2fs 的核心优化点与 Android 的 I/O 特征高度匹配：
 
 **Android 6.0**：运行时权限模型上线。存储权限从安装时自动授予变为运行时请求用户确认。App 必须在获得权限后才能执行文件 I/O，否则直接失败——这改变了 App 的文件操作时序设计。
 
-这两步为 Scoped Storage 的分阶段落地打下了基础。对性能分析而言，如果 App 在不同 Android 版本上 I/O 性能差异明显，权限模型的变化往往是首要排查方向。一个在 Android 9 上通过直接路径访问外部存储所有文件的 App，在 Android 11 上被迫改用 MediaStore 或 SAF，访问路径变长，性能自然下降。这是设计使然，不是 bug。
+这两步为 Scoped Storage 的分阶段推进打下了基础。对性能分析而言，如果 App 在不同 Android 版本上 I/O 性能差异明显，权限模型的变化往往是首要排查方向。一个在 Android 9 上通过直接路径访问外部存储所有文件的 App，在 Android 11 上被迫改用 MediaStore 或 SAF，访问路径变长，性能自然下降。这是设计使然，不是 bug。
 
 ## 扩展：Incremental FS 与大型应用的按需加载
 
