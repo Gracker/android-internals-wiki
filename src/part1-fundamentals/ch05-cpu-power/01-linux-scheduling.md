@@ -2,7 +2,7 @@
 title: "Linux 进程调度基础"
 chapter: "5.1"
 section: "5.1"
-status: ready-for-review
+status: ready-to-publish
 applicable_versions: "Android 6.0 (API 23) - Android 17 (API 37, EEVDF 部分需 6.6+ 内核)"
 last_verified: "2026-04-02"
 last_verified_against: "AOSP android-16.0.0_r1, Linux kernel 6.6"
@@ -23,11 +23,13 @@ sources:
 tags: ['scheduler', 'CFS', 'vruntime', 'nice', 'sched_setaffinity', 'cpuset', 'Perfetto']
 related_chapters: ["5.2", "5.3", "2.5", "7.3"]
 drafted_date: "2026-03-31"
-reviewed_date: "2026-04-03"
-reviewed_by: "openclaw-task6"
+reviewed_date: "2026-04-06"
+reviewed_by: openclaw-task6
 polish_count: 1
 polish_date: "2026-04-06"
 polish_by: "task2b-polish"
+review_type: post-polish-quality-gate
+review_round: 2
 ---
 
 <!-- outline-start -->

@@ -4,13 +4,13 @@
   "metrics": {
     "total": 119,
     "draft": 9,
-    "ready-for-review": 27,
+    "ready-for-review": 26,
     "reviewed": 4,
     "finalized": 28,
     "staging_drafts": 0,
     "last_updated": "2026-04-06T08:15:00+08:00",
     "processing": 0,
-    "ready-to-publish": 5,
+    "ready-to-publish": 6,
     "last_reviewed": "2026-04-06"
   },
   "reviewed_sections": {
@@ -104,15 +104,23 @@
       }
     },
     "5.1": {
-      "reviewed_date": "2026-04-03",
+      "reviewed_date": "2026-04-06",
       "reviewed_by": "openclaw-task6",
-      "review_status": "finalized",
+      "review_status": "ready-to-publish",
+      "review_type": "post-polish-quality-gate",
+      "review_round": 2,
       "fixes_applied": [
-        "frontmatter: 补 section 字段",
-        "frontmatter: status ready-for-review → finalized",
-        "标注标准化: 3 处 [来源] → [已验证]",
-        "frontmatter: reviewed_date 更新为 2026-04-03"
-      ]
+        "frontmatter: status ready-for-review → ready-to-publish（出版终态）",
+        "frontmatter: reviewed_date → 2026-04-06",
+        "frontmatter: 添加 review_type + review_round"
+      ],
+      "scores": {
+        "structure": 5,
+        "expression": 5,
+        "consistency": 5,
+        "verification": 5,
+        "metadata": 5
+      }
     },
     "4.6": {
       "reviewed_date": "2026-04-03",
@@ -1558,7 +1566,7 @@
     }
   ],
   "ready_for_review": 5,
-  "last_updated": "2026-04-06T05:25:29+08:00",
+  "last_updated": "2026-04-06T08:20:00+08:00",
   "stats": {
     "total": 106,
     "completed": 82,
@@ -1801,6 +1809,23 @@
     }
   ],
   "history": [
+    {
+      "date": "2026-04-06",
+      "section": "5.1",
+      "title": "Linux 进程调度基础",
+      "action": "reviewed-ready-to-publish",
+      "review_by": "openclaw-task6",
+      "review_type": "post-polish-quality-gate",
+      "review_round": 2,
+      "fixes": 0,
+      "scores": {
+        "structure": 5,
+        "expression": 5,
+        "consistency": 5,
+        "verification": 5,
+        "metadata": 5
+      }
+    },
     {
       "date": "2026-04-06",
       "section": "4.7",
@@ -3462,6 +3487,12 @@
       "verification_level": "L2",
       "word_count": "~7500",
       "confidence": "medium"
+    },
+    "5.1": {
+      "status": "ready-to-publish",
+      "reviewed_date": "2026-04-06",
+      "reviewed_by": "openclaw-task6",
+      "review_round": 2
     }
   },
   "5.1": {
