@@ -2,7 +2,7 @@
 title: "案例集"
 chapter: "8.5"
 section: "8.5"
-status: finalized
+status: ready-for-review
 drafted_date: "2026-04-02"
 reviewed_date: "2026-04-06"
 reviewed_by: openclaw-task6
@@ -10,6 +10,9 @@ applicable_versions: "Android 8.0 (API 26) - Android 16 (API 36)"
 last_verified: "2026-04-02"
 last_verified_against: "AOSP android-16.0.0_r1, developer.android.com"
 confidence: medium
+polish_count: 1
+polish_date: "2026-04-06"
+polish_by: "task2b-polish"
 sources:
   - type: blog
     path: "性能优化日报/2026-03-31-性能优化日报.md (Reddit R8 full mode)"
@@ -23,7 +26,7 @@ sources:
     path: "android-developers.googleblog.com (Google AutoFDO)"
   - type: blog
     path: "性能优化日报/2026-03-15-Baseline-Profiles-启动优化标配.md"
-tags: ['case-study', 'cold-start', 'response-optimization', 'baseline-profile', 'r8', 'page-switch']
+tags: ['case-study', 'cold-start', 'response-optimization', 'baseline-profile', 'r8-full-mode', 'page-switch', 'macrobenchmark', 'auto-fdo', '16kb-page', 'dag-scheduler', 'aot-compilation']
 related_chapters: ["8.1", "8.2", "8.3", "8.4", "3.2"]
 ---
 
@@ -98,7 +101,7 @@ dependencies {
 }
 ```
 
-上面的配置不是摆设——关键在于 `BaselineProfileRule` 中定义的 CUJ 必须准确覆盖启动路径。Reddit 团队发现，如果 CUJ 定义得不够精确（比如包含了用户不常走的分支），profile 的命中率会下降，优化效果大打折扣。
+这段配置的关键在于 `BaselineProfileRule` 中定义的 CUJ 必须准确覆盖启动路径——定义得越精确，Profile 的命中率越高。Reddit 团队发现，如果 CUJ 包含了用户不常走的分支，profile 的命中率会下降，优化效果大打折扣。
 
 **R8 Full Mode 方面**，他们将 ProGuard 配置从传统的 `proguard-android-optimize.txt` 升级为 `proguard-android.txt`（R8 full mode），并在 `build.gradle` 中启用了完整的代码缩减和优化：
 
@@ -241,7 +244,7 @@ ANR 率降低 25% 是一个附带收益。分析原因，R8 的代码缩减移�
 
 ## 案例四：页面切换优化——从 500ms 到 150ms 的 Activity 跳转
 
-这个案例是一个综合性的页面切换优化场景，结合了前面章节（8.4）讨论的 Activity/Fragment 切换原理，展示实际项目中如何应用。
+前面三个案例都聚焦在冷启动优化。但在实际项目中，用户感知最频繁的“慢”往往不是冷启动——而是页面跳转。点击一个商品、打开一个详情、切换一个 Tab，这些操作的频率远高于冷启动，对应的响应时间要求也更苛刻。这个案例展示如何将 8.4 节讨论的 Activity/Fragment 切换原理落地到具体项目中。
 
 ### 问题背景
 
@@ -343,7 +346,7 @@ AutoFDO 目前已部署到 android16-6.12 和 android15-6.6 内核分支，计�
 
 ### 16KB 页面大小：减少 TLB Miss 的架构级优化
 
-从 Android 15 开始，系统支持 16KB 内存页面大小（传统为 4KB）。这是一项底层的内存管理架构变更。
+从 Android 15 开始，系统支持 16KB 内存页面大小（传统为 4KB）。我们在第 4 章内存管理部分详细讨论了页表和 TLB 的工作机制，这里聚焦它对启动速度的影响。
 
 原理并不复杂：页表项数量变为原来的 1/4，TLB（Translation Lookaside Buffer，页表缓存）的命中率显著提升。TLB miss 的代价是一次页表遍历，可能需要数十到数百个 CPU 周期。在启动阶段，大量的内存映射和代码加载操作都会触发 TLB 查询，减少 miss 直接减少了等待时间。
 
@@ -370,7 +373,7 @@ Google 的内部基准测试显示 [已验证: developer.android.com, Google Blo
 
 ## 举一反三：响应速度优化的通用方法论
 
-综合以上案例，我们可以提炼出响应速度优化的通用方法论：
+五个案例覆盖了从 App 端到系统端、从工具配置到架构改造的不同维度。把它们放在一起看，可以提炼出一套通用的优化方法论：
 
 **第一，先度量，再优化。** Reddit 用 Macrobenchmark 建基线，抖音用 Rhea 做毫秒级差异分析，电商案例用 Perfetto 精确定位瓶颈。没有一个团队是凭直觉做优化的。度量工具的选择取决于我们的规模——小型 App 用 Macrobenchmark + Perfetto 就够了，大型 App 可能需要自建分析平台。
 
@@ -381,6 +384,26 @@ Google 的内部基准测试显示 [已验证: developer.android.com, Google Blo
 **第四，防劣化比优化更重要。** 抖音建立了 100ms 回退拦截机制，这说明他们最清楚一件事：优化成果的保持比取得优化更难。每次新功能迭代都可能引入新的启动耗时——没有防劣化机制，优化成果会在几个月内被逐渐蚕食。
 
 [自动发现] **ProfilingManager（Android 16/17）** 对响应速度案例分析的辅助价值：Android 16 引入的系统触发式 Profiling 能力，可以在 App 冷启动时自动捕获 Perfetto trace（`reportFullyDrawn` trace），无需在代码中手动 `Debug.startMethodTracing()`。Android 17 进一步扩展了触发类型（OOM、CPU 过高被杀等）。这意味着线上用户遇到启动慢时，开发者可以获取当时的完整 trace 做回溯分析——这在以前是做不到的。[来源: intake/research-feeds/2026-04-01-12-android16-17-profilingmanager-system-triggered.md]
+
+---
+
+## 常见问题与误区
+
+**误区一：“启动优化就是减少 Application.onCreate() 的耗时。”**
+
+这是一个过于狭隘的认知。从本章的案例可以看到，启动耗时分布在多个阶段——Reddit 的瓶颈是 JIT 编译，抖音的瓶颈是 MultiDex 和主线程同步消息，电商案例的瓶颈是 View 层级的 measure/layout。`Application.onCreate()` 只是一个环节。正确的做法是先用 Perfetto/Macrobenchmark 建立完整的耗时分布图，找到真正的瓶颈再针对性优化，而不是一上来就砍 `onCreate()`。
+
+**误区二：“Baseline Profiles 只对首次启动有效，之后就失效了。”**
+
+不准确。Baseline Profiles 在每次 App 更新后重新生效——因为更新会清空之前 JIT 编译的缓存。对于高频更新的 App（社交、电商类通常每 1-2 周更新一次），Baseline Profiles 的实际生效频率比想象中高。此外，Android 13+ 引入了 ART Mainline 模块，系统可以通过 Google Play 更新编译策略，进一步提升了 Profile 的命中率。
+
+**误区三：“R8 full mode 风险太高，不敢开。”**
+
+R8 full mode 从 Android Gradle Plugin 3.4 开始已是默认编译器。真正需要注意的是 keep 规则的迁移——特别是涉及反射调用和 JNI 的部分。迁移的推荐路径是：先在 CI 环境中开启 full mode + 严格的混淆规则检查，跑完整测试套件，确认无运行时 ClassNotFoundException 后再发布。Disney+ 的案例证明，迁移的工作量主要在于验证规则，而非重写代码。
+
+**误区四：“页面切换慢就是网络请求慢。”**
+
+在电商案例中，团队最初的直觉也是网络请求慢。但 Perfetto trace 显示网络请求是异步的，真正阻塞首帧的是 View 层级的 measure/layout 和自定义 View 的 onDraw。凭直觉猜测瓶颈是性能优化中最大的时间浪费——先用工具定位，再动手。
 
 ---
 
