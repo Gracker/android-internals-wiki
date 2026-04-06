@@ -1,7 +1,10 @@
 ---
 title: "Android 版本演进中的架构变化"
 chapter: "1.6"
-status: finalized
+status: ready-for-review
+polish_count: 1
+polish_date: "2026-04-06"
+polish_by: "task2b-polish"
 applicable_versions: "Android 4.4 (API 19) - Android 16 (API 36)"
 last_verified: "2026-03-31"
 last_verified_against: "AOSP android-16.0.0_r1, 官方文档"
@@ -11,6 +14,8 @@ sources:
     path: "https://source.android.com/docs/core/architecture"
   - type: official
     path: "https://source.android.com/docs/core/runtime"
+  - type: official
+    path: "https://developer.android.com/topic/performance/baselineprofiles"
   - type: blog
     path: "https://android-developers.googleblog.com (ART Mainline Updates)"
   - type: blog
@@ -21,8 +26,8 @@ sources:
     path: "obsidian/Personal-Knowlodge/source/2026-03-06_wechat_后AOSP时代还能贡献代码吗.md"
   - type: official
     path: "https://developer.android.com/about/versions"
-tags: ['treble', 'mainline', 'apex', 'gki', 'art', 'dalvik', 'privacy', 'background-restrictions', '16k-page']
-related_chapters: ["1.1", "1.4", "2.9", "4.4", "5.6"]
+tags: ['treble', 'mainline', 'apex', 'gki', 'art', 'dalvik', 'privacy', 'background-restrictions', '16k-page', 'compilation', 'profile-guided', 'background-execution']
+related_chapters: ["1.1", "1.4", "1.7", "2.9", "4.4", "4.6", "5.6", "8.7"]
 reviewed_date: "2026-04-02"
 reviewed_by: "openclaw-task6"
 ---
@@ -56,7 +61,7 @@ reviewed_by: "openclaw-task6"
 
 ## 为什么要了解 Android 版本演进
 
-打开 Perfetto 抓一份 Trace，你看到的那些进程、线程、Binder 调用、渲染管线——它们的形态并非一成不变。Android 从 2008 年的 1.0 到今天的 16，每一次大版本的架构变更都在重塑这些行为。如果你不了解这些变化，就会在分析问题时犯经验主义的错误：用 Android 8 的经验去解释 Android 15 的 Trace，得出错误的结论。
+打开 Perfetto 抓一份 Trace，那些进程、线程、Binder 调用、渲染管线的形态并非一成不变。Android 从 2008 年的 1.0 到今天的 16，每一次大版本的架构变更都在重塑这些行为。不了解这些变化，分析问题时容易犯经验主义的错误：用 Android 8 的经验去解释 Android 15 的 Trace，得出错误结论。
 
 更重要的是，Android 的版本演进不是随意的功能堆叠——它有一条清晰的主线：**模块化**。从 Project Treble 到 Project Mainline，从 GKI 到 APEX，Google 一直在把 Android 从一个"铁板一块"的操作系统拆解为可独立升级的模块。理解这条主线，不仅能帮你看懂系统架构的设计意图，还能帮你在实际工作中判断"这个问题是系统层面的还是厂商层面的"——这在 OEM 和 App 开发者的日常工作中至关重要。
 
@@ -84,9 +89,9 @@ Android 5.0（2014 年）是 Android 历史上架构变动最大的版本之一�
 
 Android 8.0（2017 年）引入了 **Project Treble**，这是 Android 架构演进中最重要的一次重构。[已验证: 官方文档 source.android.com/docs/core/architecture]
 
-在 Treble 之前，每次升级 Android 版本，芯片厂商（高通、MTK、三星LSI）都需要先更新他们底层驱动代码以适配新的 Framework API，然后设备厂商再基于芯片厂商的适配做整机集成。这条链路动辄需要半年以上，这也是 Android 设备系统更新缓慢的根本原因。
+在 Treble 之前，每次升级 Android 版本，芯片厂商（高通、MTK、三星LSI）都需要先更新他们底层驱动代码以适配新的 Framework API，然后设备厂商再基于芯片厂商的适配做整机集成。整个升级链动辄需要半年以上，这也是 Android 设备系统更新缓慢的根本原因。
 
-Treble 的解决方案简洁而彻底：在 Android Framework 和厂商实现（HAL）之间插入一层稳定的接口（HIDL/AIDL），将系统分为 **System 分区**（Google 控制）和 **Vendor 分区**（芯片/设备厂商控制）。这样，Framework 可以独立于 Vendor 进行升级。
+Treble 的解决方案简洁而彻底：在 Android Framework 和厂商实现（HAL）之间插入一层稳定的接口（HIDL（HAL Interface Definition Language）/AIDL（Android Interface Definition Language）），将系统分为 **System 分区**（Google 控制）和 **Vendor 分区**（芯片/设备厂商控制）。这样，Framework 可以独立于 Vendor 进行升级。
 
 ```
 [图：Project Treble 前后的架构对比]
@@ -227,11 +232,11 @@ Android 7.0 引入了**混合编译策略**，这是 ART 编译策略的最终�
 - **Cloud Profiles（Android 9+）**：Google Play 收集大量用户的 Profile 数据，在 App 安装时就提供聚合后的 Profile，让首次启动就有 AOT 编译的热点代码
 - **Baseline Profiles（Android 7+，库开发者可提供）**：开发者可以在 APK 中内置 Profile 文件，定义自己 App 的关键代码路径。Jetpack 库（如 Compose）已经内置了 Baseline Profiles。这对 Compose 的首次启动性能至关重要——没有 Baseline Profile 的 Compose App 在首次启动时会有明显的卡顿。
 
-从 Perfetto 的角度看，编译策略直接影响你在 Trace 中看到的模式：如果一个 App 首次安装后启动很慢但后续变快，那就是 Profile-Guided 编译在起作用。你可以在 Trace 中观察到首次启动时更多的 JIT 编译活动（对应 CPU 使用率高峰），以及后续启动时这些活动消失。
+从 Perfetto 的角度看，编译策略直接影响你在 Trace 中看到的模式：如果一个 App 首次安装后启动很慢但后续变快，那就是 Profile-Guided 编译在起作用。我们可以在 Trace 中观察到首次启动时更多的 JIT 编译活动（对应 CPU 使用率高峰），以及后续启动时这些活动消失。
 
 ## Privacy 变更对性能监控工具的影响
 
-Android 的隐私保护在不断加强，这对性能监控工具的开发和使用产生了深远影响。这不是一个"锦上添花"的话题——如果你在做性能监控 SDK 或内部工具，不了解这些限制，你的工具可能在新版本上直接失效。
+模块化解决了系统更新的碎片化问题，但 Android 的另一条演进主线——隐私保护——对性能分析工具的影响同样深远。自 Android 10 起，隐私限制逐步收紧，这对性能监控工具的开发和使用产生了深远影响。这不是一个"锦上添花"的话题——负责维护性能监控 SDK 或内部工具的工程师如果不了解这些限制，工具可能在新版本上直接失效。
 
 ### 包可见性限制（Android 11+）
 
@@ -246,6 +251,8 @@ Android 11（API 30）引入了**包可见性（Package Visibility）限制**。
 - **SDK** 如果需要检测宿主 App 的依赖库版本，需要在 AAR 的 Manifest 中声明 queries
 
 ### 其他关键隐私限制
+
+除了包可见性，Android 还在多个版本中逐步收紧了其他隐私相关限制：
 
 - **Android 10**：后台位置权限需要单独授权（`ACCESS_BACKGROUND_LOCATION`）
 - **Android 11**：一次性权限授权、权限自动撤销（长期未使用的 App 的权限被自动回收）
@@ -287,7 +294,7 @@ Android 对后台执行的管制经历了从"放任"到"严管"的渐进过程�
 
 ## 扩展：16K Page Size 对性能和兼容性的影响
 
-这是 Android 15 引入的底层架构变化，对性能和 App 兼容性都有直接影响。
+模块化的边界已经从 Framework 推进到了内核和 Bootloader，而内存管理层面也在经历类似的基础设施升级，对性能和 App 兼容性都有直接影响。
 
 ### 为什么需要更大的页面
 
@@ -321,7 +328,7 @@ Android 16 增加了兼容模式，让部分为 4KB 页面构建的 App 能在 1
 
 ## 在 Perfetto 中的版本差异观察
 
-了解版本演进后，你可以在 Perfetto 中观察到一些具体的版本差异：
+了解版本演进后，我们可以在 Perfetto 中观察到一些具体的版本差异：
 
 | 特征 | Android 8 之前 | Android 8-10 | Android 11+ |
 |------|----------------|-------------|-------------|
@@ -342,7 +349,7 @@ Android 16 增加了兼容模式，让部分为 4KB 页面构建的 App 能在 1
 
 ### 误区："Treble 只影响系统开发者，App 开发者不需要了解"
 
-Treble 改变了 HAL 层的通信方式，间接影响了硬件相关操作（相机、传感器、音频）的延迟特征。如果你在分析涉及硬件的延迟问题（如相机启动慢），了解 Treble 架构有助于判断问题出在 Framework 层还是 HAL 层。
+Treble 改变了 HAL 层的通信方式，间接影响了硬件相关操作（相机、传感器、音频）的延迟特征。分析涉及硬件的延迟问题（如相机启动慢）时，了解 Treble 架构有助于判断问题出在 Framework 层还是 HAL 层。
 
 ### 误区："Profile-Guided 编译意味着 App 安装后第一次都很慢"
 
