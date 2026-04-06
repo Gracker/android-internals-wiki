@@ -2,7 +2,10 @@
 title: "手势导航与系统交互"
 section: "3.3"
 chapter: "3.3"
-status: finalized
+status: ready-for-review
+polish_count: 1
+polish_date: "2026-04-06"
+polish_by: "task2b-polish"
 drafted_date: "2026-03-31"
 drafted_by: "openclaw-task2a"
 reviewed_date: "2026-04-03"
@@ -34,7 +37,7 @@ related_chapters: ["3.1", "3.2", "2.3", "2.4", "1.5"]
 
 ## 为什么要了解手势导航
 
-如果我们在 Perfetto 中看到用户的一次触摸操作从 InputDispatcher 发出后，App 端迟迟没有收到对应的 MotionEvent，或者收到了但在 MainThread 上处理时间特别长，我们的第一反应可能是"App 卡了"或者"Input 管线出了问题"。但有一种可能我们可能没想到：**那次触摸事件被系统手势截获了**。
+如果我们在 Perfetto 中看到用户的一次触摸操作从 InputDispatcher 发出后，App 端迟迟没有收到对应的 MotionEvent，或者收到了但在 MainThread 上处理时间特别长，我们的第一反应可能是"App 卡了"或者"Input 管线出了问题"。但有一个可能性经常被忽略：**那次触摸事件被系统手势截获了**。
 
 Android 10 引入的全屏手势导航（Gesture Navigation）彻底改变了用户与系统的交互方式。Home 键变成了底部上滑，最近任务变成了底部悬停，而返回键则变成了从屏幕两侧边缘向内滑动。这些手势不是由 App 处理的，而是由系统在 App 之前拦截的。理解这套机制，对性能分析有直接的影响：当我们分析一次"卡顿"或"无响应"时，我们需要知道事件是被系统拿走了还是真的没有送达 App。
 
@@ -63,7 +66,7 @@ Android 10 的手势导航中，返回手势（Back Gesture）的实现集中在
 
 ### InputMonitor 的工作原理
 
-InputMonitor 的机制值得深入看看，因为它是理解"系统手势为什么能截获 App 的 Touch 事件"的关键。
+InputMonitor 的机制是理解"系统手势为什么能截获 App 的 Touch 事件"的关键。
 
 当 SystemUI 调用 `InputManager.monitorGestureInput()` 时，这个调用经过 InputManagerService 的 JNI 层，最终到达 InputDispatcher 的 `createInputMonitor()` 方法。在这里，InputDispatcher 会创建一对 InputChannel（Server 端和 Client 端），和普通的 Window InputChannel 不同的是，Server 端的 Channel 会被额外存放在 `mGestureMonitorsByDisplay` 这个 Map 中。
 
@@ -89,7 +92,7 @@ for (const TouchedMonitor& touchedMonitor : tempTouchState.gestureMonitors) {
 
 ### 从边缘滑动到返回事件的完整链路
 
-让我们把整个流程串起来：
+把上面的环节串成一条完整的链路：
 
 1. **用户从屏幕左侧边缘开始滑动**。InputReader 读取到 Touch 事件，交给 InputDispatcher。
 
@@ -105,7 +108,7 @@ for (const TouchedMonitor& touchedMonitor : tempTouchState.gestureMonitors) {
 
 7. **App 的 View 树处理 Back 按键**。如果没人拦截，最终到达 `Activity.onBackPressed()`。
 
-注意一个关键的性能影响：**这个过程中，从用户开始滑到系统注入 Back 按键，Touch 事件一直是同时发给 App 的**。这意味着在返回手势判定完成之前，App 已经在处理这些 Touch 事件了——如果 App 在 `onTouchEvent()` 中做了昂贵的操作（比如触发网络请求），这些操作是"浪费"的，因为最终这次触摸会被系统手势截获。
+注意一个关键的性能影响：**在整个判定过程中，从用户开始滑动到系统注入 Back 按键，Touch 事件始终同时发送给 App**。这意味着返回手势判定完成之前，App 已经在处理这些 Touch 事件。如果 App 在 `onTouchEvent()` 中做了昂贵的操作（比如触发网络请求），这些操作实际上是浪费的——最终这次触摸会被系统手势截获。
 
 [来源: obsidian/Personal-Knowlodge/source/2026-03-08_wechat_深入理解_Android_系统_Back_Gesture_的实现.md]
 
@@ -145,7 +148,7 @@ override fun onLayout(changed: Boolean, l: Int, t: Int, r: Int, b: Int) {
 
 除了排除区域，App 还需要处理 `WindowInsets` 中的 `systemGestureInsets`。这个 Inset 告诉 App 系统手势区域的边界在哪里（包括左右边缘和底部 Home 指示条的区域）。App 在布局时应该避免在 `systemGestureInsets` 区域内放置需要精确触摸的控件，因为这个区域的 Touch 事件可能被系统截获。
 
-在 Perfetto 中，如果我们看到某个 App 的 UI 响应在边缘区域特别差，可以检查该 App 是否正确处理了 `systemGestureInsets`——如果把按钮放在了系统手势区域内，用户的点击可能被系统"偷走"了。
+在 Perfetto 中，如果发现某个 App 的边缘区域触摸响应特别差，可以检查该 App 是否正确处理了 `systemGestureInsets`——如果关键控件放在了系统手势区域内，用户的点击可能被系统"偷走"了。
 
 [已验证: AOSP android-16.0.0_r1, frameworks/base/services/core/java/com/android/server/wm/DisplayContent.java]
 
@@ -159,7 +162,7 @@ override fun onLayout(changed: Boolean, l: Int, t: Int, r: Int, b: Int) {
 
 ### Predictive Back 的架构（Android 13-15）
 
-Google 从 Android 13 开始引入了 Predictive Back Animation 来解决这个问题。这个功能的技术实现需要一个根本性的架构变化：**系统需要在动画开始之前就知道 App 会不会拦截这次返回操作**。
+Android 13 引入的 Predictive Back Animation 就是为了解决这个问题。这个功能的技术实现需要一个根本性的架构变化：**系统需要在动画开始之前就知道 App 会不会拦截这次返回操作**。
 
 传统的返回模型是"即时"（just-in-time）的：系统发 Back 按键 → App 决定怎么处理 → 处理完系统才知道结果。Predictive Back 需要变成"提前"（ahead-of-time）的：App 提前告诉系统"我会拦截这次返回" → 系统根据这个信息决定显示什么动画。
 
@@ -219,7 +222,7 @@ Predictive Back 在手势滑动期间会持续触发 `onBackProgressed()` 回调
 
 ## 边缘滑动检测的性能敏感点
 
-返回手势的边缘滑动检测虽然不复杂，但有几个性能敏感的细节值得注意。
+返回手势的边缘滑动检测逻辑本身不复杂，但在实际运行中有几个性能敏感的细节。
 
 ### 判定延迟与手感
 
@@ -289,7 +292,7 @@ NavigationBarEdgePanel 的返回箭头动画使用了 Spring Animation 和 Value
 
 ### 误区 4：返回手势只在边缘触发，不会影响 App 的中部操作
 
-**基本正确但有例外**。返回手势的触发区域确实只在屏幕左右边缘（宽度由 `mEdgeWidthLeft/Right` 控制），但有一种情况例外：**如果 App 是全屏且沉浸式的**（比如游戏、视频播放器），系统可能扩大手势检测区域或者降低手势灵敏度，以防止误触。此外，底部 Home 指示条区域的 Touch 事件也可能被系统截获（用于 Home 和最近任务手势）。
+**基本正确，但有例外**。返回手势的触发区域确实只在屏幕左右边缘（宽度由 `mEdgeWidthLeft/Right` 控制），但有一种情况例外：**如果 App 是全屏且沉浸式的**（比如游戏、视频播放器），系统可能扩大手势检测区域或者降低手势灵敏度，以防止误触。此外，底部 Home 指示条区域的 Touch 事件也可能被系统截获（用于 Home 和最近任务手势）。
 
 ### 误区 5：Gesture Monitor 可以截获所有输入事件
 
