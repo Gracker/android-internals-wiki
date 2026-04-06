@@ -3,15 +3,16 @@
   "total_sections": 105,
   "metrics": {
     "total": 119,
-    "draft": 9,
+    "draft": 8,
     "ready-for-review": 26,
     "reviewed": 4,
     "finalized": 28,
     "staging_drafts": 0,
-    "last_updated": "2026-04-06T08:15:00+08:00",
+    "last_updated": "2026-04-06T09:27:29.215586+08:00",
     "processing": 0,
-    "ready-to-publish": 6,
-    "last_reviewed": "2026-04-06"
+    "ready-to-publish": 7,
+    "last_reviewed": "2026-04-06",
+    "last_reviewed_section": "1.6 Android 版本演进中的架构变化"
   },
   "reviewed_sections": {
     "8.1": {
@@ -506,11 +507,24 @@
         "元数据：补充 section 字段",
         "状态：ready-for-review → finalized"
       ]
+    },
+    "1.6": {
+      "title": "Android 版本演进中的架构变化",
+      "status": "ready-to-publish",
+      "reviewed_date": "2026-04-06",
+      "reviewed_by": "openclaw-task6",
+      "scores": {
+        "structure": 5,
+        "wording": 4.5,
+        "consistency": 5,
+        "verification": 4,
+        "metadata": 5
+      }
     }
   },
   "review_stats": {
-    "total_reviewed": 43,
-    "reviewed_today": 23,
+    "total_reviewed": 44,
+    "reviewed_today": 24,
     "review_issues_total": 13
   },
   "completed": [
@@ -1563,15 +1577,30 @@
       "verification_level": "L2",
       "word_count": "~7500",
       "completed_at": "2026-04-06T08:15:00+08:00"
+    },
+    {
+      "chapter": "14.9",
+      "section": "14.9",
+      "title": "Android Camera 性能与 Perfetto 分析",
+      "status": "ready-for-review",
+      "drafted_date": "2026-04-06",
+      "drafted_by": "openclaw-task2a",
+      "anchors_covered": 5,
+      "anchors_total": 5,
+      "extensions_covered": 2,
+      "extensions_total": 2,
+      "verification_level": "L2",
+      "word_count": "~9500",
+      "completed_at": "2026-04-06T09:07:00+08:00"
     }
   ],
   "ready_for_review": 5,
   "last_updated": "2026-04-06T08:20:00+08:00",
   "stats": {
     "total": 106,
-    "completed": 82,
-    "pending": 25,
-    "last_updated": "2026-04-06T08:15:00+08:00"
+    "completed": 83,
+    "pending": 24,
+    "last_updated": "2026-04-06T09:10:00+08:00"
   },
   "research_stats": {
     "runs_today": [
@@ -1809,6 +1838,15 @@
     }
   ],
   "history": [
+    {
+      "date": "2026-04-06",
+      "section": "14.9",
+      "title": "Android Camera 性能与 Perfetto 分析",
+      "action": "draft-completed",
+      "word_count": "~9500",
+      "anchors_covered": 5,
+      "extensions_covered": 2
+    },
     {
       "date": "2026-04-06",
       "section": "5.1",
@@ -3493,6 +3531,20 @@
       "reviewed_date": "2026-04-06",
       "reviewed_by": "openclaw-task6",
       "review_round": 2
+    },
+    "14.9": {
+      "title": "Android Camera 性能与 Perfetto 分析",
+      "status": "ready-for-review",
+      "file": "src/part3-tools/ch14-other-tools/09-camera-performance-analysis.md",
+      "drafted_date": "2026-04-06",
+      "drafted_by": "openclaw-task2a",
+      "anchors_covered": 5,
+      "anchors_total": 5,
+      "extensions_covered": 2,
+      "extensions_total": 2,
+      "verification_level": "L2",
+      "word_count": "~9500",
+      "confidence": "medium"
     }
   },
   "5.1": {

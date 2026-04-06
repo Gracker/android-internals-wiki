@@ -1,7 +1,7 @@
 ---
 title: "Android 版本演进中的架构变化"
 chapter: "1.6"
-status: ready-for-review
+status: ready-to-publish
 polish_count: 1
 polish_date: "2026-04-06"
 polish_by: "task2b-polish"
@@ -28,7 +28,7 @@ sources:
     path: "https://developer.android.com/about/versions"
 tags: ['treble', 'mainline', 'apex', 'gki', 'art', 'dalvik', 'privacy', 'background-restrictions', '16k-page', 'compilation', 'profile-guided', 'background-execution']
 related_chapters: ["1.1", "1.4", "1.7", "2.9", "4.4", "4.6", "5.6", "8.7"]
-reviewed_date: "2026-04-02"
+reviewed_date: "2026-04-06"
 reviewed_by: "openclaw-task6"
 ---
 
