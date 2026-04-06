@@ -1,11 +1,14 @@
 ---
 title: "帧率与刷新率"
 chapter: "2.2"
-status: finalized
+status: ready-for-review
 reviewed_date: 2026-04-06
 reviewed_by: openclaw-task6
 rework_date: 2026-04-02
 rework_by: openclaw-task2b
+polish_count: 1
+polish_date: "2026-04-06"
+polish_by: "task2b-polish"
 applicable_versions: "Android 4.1 (API 16) - Android 16 (API 36)"
 last_verified: "2026-03-30"
 last_verified_against: "AOSP android-16.0.0_r1, 官方文档最新版本"
@@ -26,7 +29,7 @@ sources:
   - type: aosp
     path: "frameworks/native/services/surfaceflinger/SurfaceFlinger.cpp"
 tags: ['framerate', 'refresh-rate', 'frame-time', 'jank', 'frame-pacing', 'LTPO', 'VRR', 'ARR', 'SurfaceFlinger']
-related_chapters: ["2.1", "2.3", "2.4", "2.6", "2.9"]
+related_chapters: ["2.1", "2.3", "2.4", "2.6", "2.9", "7.1"]
 re-review-result: "已纳入1条素材(部分纳入:OEM VSync修改误区+交叉引用),0处修正,待正常review质检"
 ---
 
@@ -225,7 +228,7 @@ Android 11 引入了 Config Group 的概念。厂商可以将"分辨率相同、
 在 Perfetto 中，刷新率变化可以通过以下方式观察：
 
 1. **Display Refresh Rate Track**：直接显示当前刷新率的变化。当刷新率切换时，这个 Track 上会出现阶梯状的变化。
-2. **SurfaceFlinger 的 VSync-sf 间隔**：VSync-sf 信号之间的间距会随刷新率变化。120Hz 时间距约 8.3ms，60Hz 时约 16.6ms。
+2. **SurfaceFlinger 的 VSync-sf 间隔**：VSync-sf 信号之间的间距会随刷新率变化。120Hz 间距约 8.3ms，60Hz 时约 16.6ms。
 3. **Frame Timeline**：Expected Timeline 的宽度会随刷新率变化，反映每帧预算时间的变化。
 
 ```sql
@@ -481,6 +484,8 @@ Janky frames: 423 (2.78%)
 
 ## 扩展：Game Mode / Frame Rate 策略对渲染的影响
 
+前面的内容主要围绕 UI 渲染场景展开。对于游戏这类使用自建渲染循环的应用，Android 提供了额外的系统级控制手段来协调帧率与刷新率。
+
 ### Game Mode API（Android 12+）
 
 Android 12 引入了 Game Mode API，允许用户通过系统设置选择游戏的性能模式：
@@ -523,7 +528,7 @@ displayManager.registerDisplayListener(new DisplayManager.DisplayListener() {
     public void onDisplayChanged(int displayId) {
         Display display = displayManager.getDisplay(displayId);
         float refreshRate = display.getRefreshRate(); // 当前实际刷新率
-        // 如果刷新率与你通过 setFrameRate() 请求的不一致，
+        // 如果刷新率与通过 setFrameRate() 请求的不一致，
         // 说明可能被系统 Override 了（省电模式、热管理等）
     }
     @Override public void onDisplayAdded(int displayId) {}
@@ -609,8 +614,8 @@ SurfaceFlinger 会根据前台 App 的类型自动决定是否使用高刷新率
 
 ### 对 App 开发者的建议
 
-1. **不要盲目追求 120Hz**：如果你的 App 的 `doFrame` 耗时在 10-15ms，在 120Hz 下会频繁掉帧。不如稳定运行在 60Hz。
-2. **使用 `setFrameRate()` 告知系统你的需求**：如果你是视频播放器，明确设置 24/30/60 FPS，让系统选择最佳刷新率。
+1. **不要盲目追求 120Hz**：如果 App 的 `doFrame` 耗时在 10-15ms，在 120Hz 下会频繁掉帧。不如稳定运行在 60Hz。
+2. **使用 `setFrameRate()` 告知系统渲染需求**：如果是视频播放器，明确设置 24/30/60 FPS，让系统选择最佳刷新率。
 3. **关注帧间隔一致性**：在 120Hz 设备上，即使 FPS 显示 120，如果帧间隔波动大（比如 6ms、8ms、10ms、5ms 交替），用户感知到的流畅度可能还不如稳定的 60Hz。
 
 [自动发现: 来源 web research on SurfaceFlinger refresh rate selection]
@@ -626,7 +631,7 @@ SurfaceFlinger 会根据前台 App 的类型自动决定是否使用高刷新率
 
 ### "FPS 达到 60 就够了"——忽略了帧间隔
 
-FPS 是一个统计指标，60 FPS 只说明"一秒钟内渲染了 60 帧"，但不告诉你这 60 帧是怎么分布的。如果 59 帧都在前 100ms 内完成，最后一帧拖了 900ms，FPS 仍然是 60，但用户体验是灾难性的。
+FPS 是一个统计指标，60 FPS 只说明"一秒钟内渲染了 60 帧"，但不反映这 60 帧是怎么分布的。如果 59 帧都在前 100ms 内完成，最后一帧拖了 900ms，FPS 仍然是 60，但用户体验是灾难性的。
 
 真正决定流畅度的是帧间隔的一致性。在 Perfetto 中，我们关注的不只是 `Choreographer#doFrame` 的数量，更是它们之间的间距是否均匀。帧间隔从 16ms 突然跳到 33ms 或 50ms，即使平均 FPS 看起来还行，用户也能感知到卡顿。
 
