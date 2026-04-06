@@ -93,6 +93,7 @@
   - [7.5 优化策略](part2-performance/ch07-smoothness/05-optimization.md)
   - [7.6 案例集](part2-performance/ch07-smoothness/06-case-studies.md)
   - [7.7 Jetpack Compose 性能优化](part2-performance/ch07-smoothness/07-compose-performance.md)
+  - [7.8 RecyclerView 列表滑动性能深度优化](part2-performance/ch07-smoothness/08-recyclerview-performance.md)
 
 - [第 8 章：响应速度](part2-performance/ch08-responsiveness/README.md)
   - [8.1 响应速度原理](part2-performance/ch08-responsiveness/01-responsiveness-principles.md)
