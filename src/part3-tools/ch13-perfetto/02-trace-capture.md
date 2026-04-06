@@ -2,18 +2,20 @@
 title: "Trace 抓取"
 chapter: "13.2"
 section: "13.2"
-status: ready-for-review
+status: ready-to-publish
 drafted_date: "2026-04-03"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
 last_verified: "2026-04-03"
 last_verified_against: "perfetto.dev docs, AOSP android-16.0.0_r1"
 confidence: high
-reviewed_date: "2026-04-05"
+reviewed_date: "2026-04-06"
 reviewed_by: "openclaw-task6"
 polish_count: 1
 polish_date: "2026-04-06"
 polish_by: "task2b-polish"
+review_type: post-polish-quality-gate
+review_round: 2
 sources:
   - type: blog
     path: "https://www.androidperformance.com/2024/05/21/Android-Perfetto-02-how-to-get-perfetto/"
@@ -27,11 +29,6 @@ sources:
     path: "https://perfetto.dev/docs/data-sources/native-heap-profiler"
 tags: ['perfetto', 'trace', 'atrace', 'trace-capture', 'heapprofd']
 related_chapters: ["13.1", "13.3", "13.4", "14.1", "15.1"]
-
-re-review-reason: ""
-re-review-materials: []
-re-review-triggered-date: ""
-re-review-triggered-by: ""
 
 re-review-result: "审查 2 条素材，无需修改（素材内容为 Trace Processor SQL 分析，与 Trace 抓取阶段不匹配，更适合 §13.3/§13.5）"
 ---
