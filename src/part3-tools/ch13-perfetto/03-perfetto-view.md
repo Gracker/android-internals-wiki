@@ -2,13 +2,13 @@
 title: "Perfetto View 解读"
 chapter: "13.3"
 section: "13.3"
-status: finalized
+status: ready-for-review
 drafted_date: "2026-04-03"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
 last_verified: "2026-04-03"
 last_verified_against: "perfetto.dev docs"
-confidence: medium
+confidence: medium-high
 reviewed_date: "2026-04-05"
 reviewed_by: "openclaw-task6"
 sources:
@@ -21,12 +21,16 @@ sources:
   - type: blog
     path: "https://mp.weixin.qq.com/s?__biz=MzAxMDM0NjExNA==&mid=2247487984&idx=1&sn=713bdccc885ef503b2f691fbd6e8f93"
 tags: ['perfetto', 'trace-analysis', 'ui', 'tooling']
-related_chapters: ["13.1", "13.2", "2.1", "5.1", "7.1"]
+related_chapters: ["13.1", "13.2", "13.4", "13.5", "2.1", "2.6", "5.1", "7.1"]
 
 re-review-reason: ""
 re-review-materials: []
 re-review-triggered-date: ""
 re-review-triggered-by: ""
+
+polish_count: 1
+polish_date: "2026-04-06"
+polish_by: "task2b-polish"
 
 re-review-result: "审查 2 条素材，无需修改（素材内容为 Trace Processor SQL 分析 Camera 性能，§13.3 主题为 Perfetto UI 视觉解读，内容不匹配，更适合 §13.5 专题解读）"
 ---
@@ -77,6 +81,8 @@ re-review-result: "审查 2 条素材，无需修改（素材内容为 Trace Pro
 Perfetto Trace 文件在 [ui.perfetto.dev](https://ui.perfetto.dev/) 中打开。打开后我们可以看到一个白色的上传区域，可以点击 "Open trace file" 选择文件，也可以直接把 Trace 文件拖拽到这个区域。
 
 如果使用的是 13.2 节介绍的官方脚本抓取，脚本会在抓取结束后自动在浏览器中打开这个页面并加载 Trace。
+
+需要注意，Perfetto UI 对浏览器内存有要求。如果 Trace 文件超过 500 MB，浏览器加载可能会很慢甚至失败。这种情况下可以参考 13.4 节介绍的命令行方案，用 Trace Processor Shell 直接做 SQL 分析，或者通过 `trace_to_text` 工具将 Trace 转换为文本格式后再处理。
 
 [已验证: 官方文档, perfetto.dev/docs/visualization/lifecycle]
 
@@ -143,7 +149,7 @@ CPU 相关的 Track 位于 Trace 内容区的最顶部，分为三组。
 
 **CPU Scheduling Track** 展示每个核心上正在执行哪个线程。每个色块代表一个线程在某个时间段内占用了这个核心。鼠标悬停在色块上时，同一线程的其他执行段也会高亮——这个功能可以快速了解某个线程的"摆核"情况，即它在大核和小核之间迁移的规律。对于性能敏感的线程（如主线程、RenderThread），理想情况是稳定跑在大核上；如果频繁被迁移到小核，可能意味着调度策略需要优化。
 
-**CPU Idle Track** 展示每个核心的低功耗状态（C-State）。核心进入深度休眠意味着它完全空闲，这对功耗分析有意义，但在性能分析中我们更关心的是：为什么一个本该运行的关键线程，它所在的 CPU 核心处于空闲状态——是不是该线程被错误地挂起了？
+**CPU Idle Track** 展示每个核心的低功耗状态（C-State）。核心进入深度休眠说明它完全空闲，这对功耗分析很有价值。但在性能分析中，我们更关注的是反常情况：如果某个关键线程本该运行，但它被分配到的 CPU 核心却处于空闲状态，说明线程可能在等锁、等 I/O、或者根本没有被调度到。
 
 [已验证: 官方文档, perfetto.dev/docs/data-sources/cpu]
 [来源: https://www.androidperformance.com/2024/05/21/Android-Perfetto-03-how-to-analysis-perfetto/]
@@ -198,7 +204,7 @@ SurfaceFlinger 是 Android 系统的合成服务（详见 2.6 节），它在 Tr
 - **CPU Counter**：在 CPU 分组下展示各核心的频率曲线、系统 CPU 使用率。
 - **GPU Counter**：如果抓 Trace 时启用了 GPU 数据源，可以看到 GPU 各单元的利用率和带宽。
 
-Counter Track 的数值点来自代码中的 `Trace.traceCounter()` / `ATRACE_INT` 调用，以及内核的 ftrace 事件。它们以离散点的方式呈现，鼠标悬停可以看到每个点的精确值。
+Counter Track 的数值点来自代码中的 `Trace.traceCounter()` / `ATRACE_INT` 调用，以及内核的 ftrace 事件。它们以面积图（Area Chart）的形式呈现——底色填充的区域表示数值的变化范围，鼠标悬停可以看到每个点的精确值。在内存分析场景中，面积图的"持续上升"形态比表格数据更直观。
 
 [来源: Perfetto分析进阶, https://mp.weixin.qq.com/s?__biz=MzAxMDM0NjExNA==&mid=2247487984]
 [已验证: 官方文档, perfetto.dev/docs/data-sources]
@@ -287,7 +293,7 @@ Perfetto 中最直观也最常用的视觉信息就是线程状态条的颜色�
 
 绿色表示线程正在 CPU 上执行指令。一段连续的绿色说明线程在"干活"。但这并不意味着绿色越长越好——如果主线程上有一段很长的绿色，对应的 Slice 是 `measure` 或 `layout`，说明布局计算太复杂了，需要优化布局层级或减少不必要的 measure。
 
-### Runnable（浅绿色 / 白色）
+### Runnable（浅绿色）
 
 浅绿色表示线程已经准备好执行（在 CPU 的运行队列中），但 CPU 还没有调度到它。Runnable 段出现在 Running 段前面——线程先进入 Runnable 状态等 CPU 分配，然后进入 Running 状态执行。
 
@@ -299,9 +305,9 @@ Runnable 段过长是"调度延迟"的信号。常见原因包括：系统负载
 
 点击 Sleeping 段，底部面板会显示线程的阻塞原因。比如 `futex_wait_queue_me` 表示在等一个 futex（Fast Userspace Mutex），这通常对应 Java 层的 `synchronized` 锁或 `ReentrantLock`。如果看到 `binder_write_read`，说明在等 Binder 调用返回。
 
-### Uninterruptible Sleep（橙色 / 深红色）
+### Uninterruptible Sleep（深橙色）
 
-橙色是性能分析中需要特别关注的颜色——它表示线程在等待磁盘 I/O 或其他不可中断的内核操作。Uninterruptible 意味着即使发送信号（如 `kill`）也无法唤醒这个线程，只能等 I/O 操作完成。
+深橙色是性能分析中需要特别关注的颜色——它表示线程在等待磁盘 I/O 或其他不可中断的内核操作。Uninterruptible 意味着即使发送信号（如 `kill`）也无法唤醒这个线程，只能等 I/O 操作完成。
 
 Uninterruptible Sleep 段过长通常指向 I/O 瓶颈。常见场景包括：App 启动时读取大量 dex 文件、加载大图、读取 SharedPreferences（虽然 SP 在内存中但初次加载涉及磁盘 I/O）。在低端设备或 I/O 负载高的场景下，这个问题尤其明显。
 
@@ -317,9 +323,11 @@ Uninterruptible Sleep 段过长通常指向 I/O 瓶颈。常见场景包括：Ap
 - **灰色长**：锁或 IPC 瓶颈，需要看具体在等什么。
 - **橙色长**：I/O 瓶颈，需要看具体在读什么。
 
-当然，实际情况往往比这个口诀复杂——可能一个 Slice 里同时有绿色、灰色和橙色。这时候就需要用前面介绍的 Thread States 标签来看精确的百分比分解。
+当然，实际情况往往比这个口诀复杂——可能一个 Slice 里同时有绿色、灰色和深橙色。这时候就需要用前面介绍的 Thread States 标签来看精确的百分比分解。
 
-[图：线程状态条颜色编码对照——Running(绿)/Runnable(浅绿)/Sleep(灰)/Uninterruptible(橙)，附 Perfetto Trace 实际截图]
+需要注意的是，Perfetto UI 提供了亮色和暗色两种主题（通过命令面板 `Ctrl/Cmd+Shift+P` 切换），同一种状态在两种主题下的视觉表现略有差异。但颜色编码的对应关系不变：绿色=Running、浅绿=Runnable、灰色=Sleep、深橙色=Uninterruptible。
+
+[图：线程状态条颜色编码对照——Running(绿)/Runnable(浅绿)/Sleep(灰)/Uninterruptible(深橙)，附 Perfetto Trace 实际截图]
 
 ## 进阶操作与效率技巧
 
@@ -406,6 +414,7 @@ Android Studio Profiler 也提供了 CPU Trace 的可视化视图，很多开发
 ## 参考资料
 
 - Perfetto UI 官方文档：[https://perfetto.dev/docs/visualization/lifecycle](https://perfetto.dev/docs/visualization/lifecycle)
+- Perfetto 键盘快捷键：[https://perfetto.dev/docs/visualization/keyboard-shortcuts](https://perfetto.dev/docs/visualization/keyboard-shortcuts)
 - Perfetto 键盘快捷键：[https://perfetto.dev/docs/visualization/keyboard-shortcuts](https://perfetto.dev/docs/visualization/keyboard-shortcuts)
 - FrameTimeline 官方文档：[https://source.android.com/docs/core/display/frame_timeline](https://source.android.com/docs/core/display/frame_timeline)
 - Android Performance — Perfetto 系列 3：[https://www.androidperformance.com/2024/05/21/Android-Perfetto-03-how-to-analysis-perfetto/](https://www.androidperformance.com/2024/05/21/Android-Perfetto-03-how-to-analysis-perfetto/)
