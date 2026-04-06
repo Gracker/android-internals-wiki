@@ -2,12 +2,15 @@
 title: "Perfetto 简介与演进"
 chapter: "13.1"
 section: "13.1"
-status: finalized
+status: ready-for-review
 drafted_date: "2026-04-03"
 drafted_by: "openclaw-task2a"
 reviewed_date: "2026-04-06"
 reviewed_by: "openclaw-task6"
-applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
+polish_count: 1
+polish_date: "2026-04-06"
+polish_by: "task2b-polish"
+applicable_versions: "Android 10 (API 29) - Android 17 (API 37, Beta)"
 last_verified: "2026-04-03"
 last_verified_against: "perfetto.dev docs"
 confidence: medium
@@ -154,6 +157,7 @@ Trace Processor 是 Perfetto 的分析核心。它把二进制的 trace 文件�
 例如，想统计某个 trace 中所有帧的耗时分布，一条 SQL 就能搞定：
 
 ```sql
+-- Perfetto 内部时间单位为纳秒（ns），除以 1e6 转为毫秒
 SELECT
   name,
   COUNT(*) as frame_count,
@@ -236,7 +240,7 @@ Counter 和 Slice 通常配合使用。比如发现某帧的 `doFrame` Slice 特
 
 ## 为什么性能分析离不开 Perfetto
 
-如果还在用 log + 断点的方式做性能分析，可能觉得 Perfetto 的学习曲线有点陡。但一旦掌握了它，我们会发现几乎所有性能问题都能在 trace 中找到答案。原因很简单：**性能问题的本质是"时间花在了不该花的地方"，而 Perfetto 提供的是系统中所有维度的精确时间记录。**
+对于还在用 log + 断点做性能分析的读者，Perfetto 的学习曲线可能稍陡。但一旦掌握了它，我们会发现几乎所有性能问题都能在 trace 中找到答案。原因很简单：**性能问题的本质是"时间花在了不该花的地方"，而 Perfetto 提供的是系统中所有维度的精确时间记录。**
 
 具体来说，Perfetto 在以下场景中不可替代：
 
@@ -286,10 +290,25 @@ Perfetto 的引入和演进与 Android 版本紧密相关：
 - **Android 11 (API 30, 2020)**：`traced` 守护进程默认启用，不再需要手动启动。Java 堆 Profiling（`java_hprof`）数据源引入。
 - **Android 12 (API 31, 2021)**：Perfetto 的配置和采集能力进一步增强，与 Android Studio Profiler 的集成更加紧密。
 - **Android 13-16**：持续优化数据源和性能，Perfetto 保持活跃开发。Systrace 命令行工具已从最新的 platform-tools 中移除。[待验证: platform-tools 移除的具体版本和时间]
+- **Android 17 (API 37, Beta)**：Perfetto 继续作为默认 tracing 系统，数据源和分析能力持续扩展。Beta 3 起 API 已锁定。
 
 如果在使用低于 Android 10 的设备，仍然可以使用 Systrace；但强烈建议在 Android 10 及以上设备上使用 Perfetto，以获得完整的数据源覆盖和分析能力。
 
 [已验证: 官方文档, source.android.com/docs/core/debug/perfetto; 适用版本: Android 4.1 - Android 16]
+
+## 下一步
+
+到这里，我们对 Perfetto 的定位、架构、核心概念有了完整的认识。接下来的章节会逐步深入实操层面：13.2 节讲解如何在设备上抓取 trace，13.3 节讲解 Perfetto UI 的使用方法。如果对渲染管线还不熟悉，可以先回顾 2.1 节的渲染架构全景，那里介绍的每个组件在 Perfetto 中都有对应的 Track。
+
+## 常见问题与误区
+
+**"Perfetto 需要 root 权限才能用。"** 不需要。通过开发者选项中的"系统追踪"抓取 trace 不需要 root，采集到的数据包含 CPU 调度、图形管线、内存轮询等常用数据源。只有 heapprofd（Native 内存 Profiling）和部分 ftrace 事件需要 root 或 adb shell 特权。
+
+**"Perfetto 和 Android Studio Profiler 是什么关系？"** Android Studio Profiler 底层使用的就是 Perfetto 的采集和解析基础设施。在 Android Studio 中看到的 CPU Profiler 时间线，本质上就是 Perfetto trace 的一种可视化呈现。两者不冲突——用 Perfetto UI 可以做更深度的分析，用 Android Studio 则更方便在日常开发中快速查看。
+
+**"Systrace 还能用吗？"** 技术上，Android 9 及以下设备仍然只能用 Systrace。但从 Android 10 开始，Perfetto 是官方推荐的替代方案，而且 Perfetto UI 可以直接打开 Systrace 格式的文件。新项目不应该再依赖 Systrace。
+
+**"抓 trace 会影响性能吗？"** 空闲状态下 Perfetto 几乎没有开销——`traced` 守护进程只在做采集时激活。采集期间的开销取决于开启的数据源数量和缓冲区大小。通常只开 CPU + gfx + view + input 这几个 tag，对性能的影响在 1-3% 以内。如果开启 heapprofd 或 java_hprof，则会产生额外开销，需要根据分析目标权衡。
 
 ## 参考资料
 
