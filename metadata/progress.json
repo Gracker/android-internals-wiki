@@ -4229,5 +4229,11 @@
     "verification_level": "L2",
     "confidence": "medium"
   },
-  "ready-for-review": 1
+  "ready-for-review": 1,
+  "2.2": {
+    "title": "帧率与刷新率",
+    "status": "ready-to-publish",
+    "last_reviewed": "2026-04-07",
+    "reviewed_by": "openclaw-task6"
+  }
 }
