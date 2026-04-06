@@ -3160,8 +3160,8 @@
     },
     "4.2": {
       "title": "Linux 内核内存管理",
-      "status": "finalized",
-      "reviewed_date": "2026-04-03",
+      "status": "ready-to-publish",
+      "reviewed_date": "2026-04-06",
       "reviewed_by": "openclaw-task6"
     },
     "4.3": {
