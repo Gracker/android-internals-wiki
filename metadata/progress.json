@@ -3,12 +3,12 @@
   "total_sections": 105,
   "metrics": {
     "total": 120,
-    "draft": 9,
-    "ready-for-review": 24,
+    "draft": 8,
+    "ready-for-review": 25,
     "reviewed": 4,
     "finalized": 28,
     "staging_drafts": 0,
-    "last_updated": "2026-04-06T14:20:00",
+    "last_updated": "2026-04-06T15:10:00+08:00",
     "processing": 0,
     "ready-to-publish": 9,
     "last_reviewed": "2026-04-06",
@@ -1617,9 +1617,9 @@
   "last_updated": "2026-04-06T12:17:33.003706",
   "stats": {
     "total": 107,
-    "completed": 83,
-    "pending": 25,
-    "last_updated": "2026-04-06T09:10:00+08:00"
+    "completed": 84,
+    "pending": 24,
+    "last_updated": "2026-04-06T15:10:00+08:00"
   },
   "research_stats": {
     "runs_today": [
@@ -1867,9 +1867,51 @@
         "Android 16 Cloud Compilation：SDM 预编译产物/消除设备端 dex2oat/安装加速/更新冻结毫秒级",
         "编译优化全链路：Baseline Profiles → Cloud Profiles → Cloud Compilation → AutoFDO → dex2oat 18% 编译优化"
       ]
+    },
+    {
+      "time": "2026-04-06T15:00:00+08:00",
+      "focus": "§1.14 锁竞争与同步性能分析（queue priority 85, pending）",
+      "source": "queue-priority-85",
+      "candidates": 6,
+      "passed": 3,
+      "delivered": 3,
+      "themes": [
+        "Perfetto android.monitor_contention SQL 模块 + ART monitor.cc thin/fat lock 膨胀 + kLongWaitMs=100ms（目标 §1.14）",
+        "ART Lock Word 三级状态 (Unlocked/Thin/Fat) + fat monitor 内部结构 (monitor_contenders_ 条件变量)（目标 §1.14）",
+        "优先级反转 216ms jank + Audio 不使用 PI futex + DeliQueue MPSC 无锁队列替代（目标 §1.14/§1.13）"
+      ]
     }
   ],
   "history": [
+    {
+      "date": "2026-04-06",
+      "section": "8.8",
+      "title": "Android 多媒体管线性能",
+      "action": "draft-completed",
+      "word_count": "~9500",
+      "anchors_covered": 6,
+      "anchors_total": 6,
+      "extensions_covered": 0,
+      "extensions_total": 2,
+      "verification_level": "L2",
+      "drafted_date": "2026-04-06",
+      "drafted_by": "openclaw-task2a"
+    },
+    {
+      "date": "2026-04-06",
+      "section": "1.14",
+      "title": "锁竞争与同步性能分析",
+      "action": "research-completed",
+      "focus": "Perfetto monitor_contention + ART thin/fat lock + 优先级反转 + PI futex",
+      "candidates": 6,
+      "passed": 3,
+      "delivered": 3,
+      "themes": [
+        "Perfetto android.monitor_contention SQL + ART kLongWaitMs=100ms + atrace dalvik",
+        "ART Lock Word Unlocked/Thin/Fat 三级膨胀 + monitor_contenders_ 条件变量",
+        "优先级反转 216ms + Audio 不用 PI futex + DeliQueue MPSC 无锁替代"
+      ]
+    },
     {
       "date": "2026-04-06",
       "section": "11.5",
