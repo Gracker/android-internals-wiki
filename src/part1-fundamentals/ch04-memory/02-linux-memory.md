@@ -1,14 +1,14 @@
 ---
 title: "Linux 内核内存管理"
 chapter: "4.2"
-status: ready-for-review
+status: ready-to-publish
 drafted_date: "2026-03-30"
 polish_count: 1
 polish_date: "2026-04-06"
 polish_by: "task2b-polish"
 applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
 last_verified: "2026-03-31"
-reviewed_date: "2026-04-03"
+reviewed_date: "2026-04-06"
 reviewed_by: "openclaw-task6"
 last_verified_against: "Linux kernel 6.6 (android14-6.6-lts)"
 confidence: medium
@@ -397,7 +397,7 @@ Linux 内核内存管理不是孤立的，它与 Android 系统的其他层面�
 
 - **与 ART 虚拟机（4.3 节）**：ART 的 GC 和内核的页面回收相互影响。Silk 论文展示了 GC 行为对内核 LRU 判断的干扰，说明两个层面需要协同优化。
 - **与 Low Memory Killer（4.4 节）**：LMK 是页面回收的最后一道防线——当 kswapd 和 direct reclaim 都无法满足需求时，LMK 会杀掉后台进程释放内存。
-- **与 SurfaceFlinger（2.6 节）：SurfaceFlinger 的图形缓冲区通过 DMA-BUF 管理，是系统内存的大户。
+- **与 SurfaceFlinger（2.6 节）**：SurfaceFlinger 的图形缓冲区通过 DMA-BUF 管理，是系统内存的大户。
 - **与 CPU 调度（5.1 节）**：kswapd 和 kcompactd 都是内核线程，它们的 CPU 使用会影响前台应用的调度。
 - **与存储 I/O（6.3 节）**：页面回收中的脏页回写会产生 I/O 压力，影响前台应用的文件读写性能。
 
