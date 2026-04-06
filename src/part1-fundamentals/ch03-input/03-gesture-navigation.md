@@ -2,13 +2,15 @@
 title: "手势导航与系统交互"
 section: "3.3"
 chapter: "3.3"
-status: ready-for-review
+status: ready-to-publish
 polish_count: 1
 polish_date: "2026-04-06"
 polish_by: "task2b-polish"
+review_type: "post-polish-quality-gate"
+review_round: 2
 drafted_date: "2026-03-31"
 drafted_by: "openclaw-task2a"
-reviewed_date: "2026-04-03"
+reviewed_date: "2026-04-06"
 reviewed_by: "openclaw-task6"
 applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
 last_verified: "2026-03-31"
@@ -90,9 +92,9 @@ for (const TouchedMonitor& touchedMonitor : tempTouchState.gestureMonitors) {
 
 [已验证: AOSP android-16.0.0_r1, frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp]
 
-### 从边缘滑动到返回事件的完整链路
+### 从边缘滑动到返回事件的完整流程
 
-把上面的环节串成一条完整的链路：
+把上面的环节串成一条完整的流程：
 
 1. **用户从屏幕左侧边缘开始滑动**。InputReader 读取到 Touch 事件，交给 InputDispatcher。
 
@@ -118,7 +120,7 @@ for (const TouchedMonitor& touchedMonitor : tempTouchState.gestureMonitors) {
 
 ### 系统手势排除区域（System Gesture Exclusion Rects）
 
-Android 提供了 `View.setSystemGestureExclusionRects()` API，让 App 告诉系统"这个区域内不要触发返回手势"。这个 API 的工作链路是：
+Android 提供了 `View.setSystemGestureExclusionRects()` API，让 App 告诉系统"这个区域内不要触发返回手势"。这个 API 的工作流程是：
 
 1. App 在自定义 View 中调用 `setSystemGestureExclusionRects(List<Rect>)`
 2. View 通过 `postUpdateSystemGestureExclusionRects()` 向 ViewRootImpl 发送一个插队 Message
@@ -280,7 +282,7 @@ NavigationBarEdgePanel 的返回箭头动画使用了 Spring Animation 和 Value
 
 ### 误区 1：手势导航的返回事件是 TouchEvent
 
-**错误**。手势导航的返回操作最终是通过注入 `KEYCODE_BACK` 的 KeyEvent 实现的，不是 TouchEvent。这意味着 App 在 `onTouchEvent()` 中是看不到返回操作的，它走的是 `dispatchKeyEvent()` → `onKeyDown()` / `onKeyUp()` 链路。如果我们在 `onTouchEvent()` 中做了手势冲突的判断逻辑，返回手势不会触发这些逻辑。
+**错误**。手势导航的返回操作最终是通过注入 `KEYCODE_BACK` 的 KeyEvent 实现的，不是 TouchEvent。这意味着 App 在 `onTouchEvent()` 中是看不到返回操作的，它走的是 `dispatchKeyEvent()` → `onKeyDown()` / `onKeyUp()` 分发路径。如果我们在 `onTouchEvent()` 中做了手势冲突的判断逻辑，返回手势不会触发这些逻辑。
 
 ### 误区 2：设置了排除区域就一定不会被系统截获
 
@@ -302,7 +304,7 @@ NavigationBarEdgePanel 的返回箭头动画使用了 Spring Animation 和 Value
 
 ## 与其他章节的关系
 
-- **3.1 Input 事件分发全流程**：手势导航是 Input 分发链路的一个特殊分支——Gesture Monitor 的引入改变了 InputDispatcher 的目标选择逻辑。理解 3.1 是理解本节的前置条件。
+- **3.1 Input 事件分发全流程**：手势导航是 Input 分发路径的一个特殊分支——Gesture Monitor 的引入改变了 InputDispatcher 的目标选择逻辑。理解 3.1 是理解本节的前置条件。
 - **3.2 触摸响应的性能分析**：手势导航的边缘滑动检测会同时消耗 SystemUI MainThread 的 CPU 时间，如果 SystemUI 响应慢，会间接影响用户的触摸体验。
 - **2.3 VSync 机制** / **2.4 Choreographer 与渲染流水线**：Predictive Back 的手势跟踪动画需要紧跟 VSync 节拍，如果 App 的 `onBackProgressed()` 回调中做了耗时操作，可能导致 doFrame 超时。
 - **1.5 线程模型**：手势导航涉及多个进程的 MainThread 协作——SystemUI 的 MainThread 做手势判断，App 的 MainThread 处理 Back 按键，RenderThread 处理动画渲染。
