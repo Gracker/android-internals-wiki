@@ -977,5 +977,24 @@
     "added_at": "2026-04-06T02:03:42.052552",
     "status": "pending",
     "freshness_check_date": "2026-04-06"
+  },
+  {
+    "chapter": "8.8",
+    "section": "8.8",
+    "title": "Android 多媒体管线性能",
+    "status": "pending",
+    "priority": 80,
+    "source": "task2a-knowledge-gap",
+    "created_date": "2026-04-06",
+    "score": "16/20",
+    "file": "src/part2-performance/ch08-responsiveness/08-media-pipeline.md"
+  },
+  {
+    "section": "11.5",
+    "title": "Wakelock 机制与功耗分析",
+    "priority": 80,
+    "status": "pending",
+    "created_date": "2026-04-06",
+    "created_by": "task2a-knowledge-gap"
   }
 ]
