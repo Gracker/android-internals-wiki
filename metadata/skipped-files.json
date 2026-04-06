@@ -3198,6 +3198,300 @@
       "date": 5,
       "verify": 2,
       "reason": "Total score < 10: 7"
+    },
+    {
+      "file_index": 3340,
+      "relative_path": "Cubox/捷克悲剧（二）：被共产的自由-2023-11-29.md",
+      "title": "捷克悲剧（二）：被共产的自由",
+      "total_score": 8,
+      "score_breakdown": {
+        "relevance": 2,
+        "technical_depth": 1,
+        "timeliness": 4,
+        "verifiability": 1
+      },
+      "skipped_at": "2026-04-06T13:50:02.489398",
+      "reason": "Total score < 10: 8/20"
+    },
+    {
+      "file_index": 3341,
+      "relative_path": "Cubox/捷克悲剧（二）：被共产的自由-2024-03-02.md",
+      "title": "捷克悲剧（二）：被共产的自由",
+      "total_score": 9,
+      "score_breakdown": {
+        "relevance": 2,
+        "technical_depth": 1,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "skipped_at": "2026-04-06T13:50:02.490158",
+      "reason": "Total score < 10: 9/20"
+    },
+    {
+      "file_index": 3342,
+      "relative_path": "Cubox/捷克悲剧（尾声）：天鹅绒革命-2024-03-02.md",
+      "title": "捷克悲剧（尾声）：天鹅绒革命",
+      "total_score": 9,
+      "score_breakdown": {
+        "relevance": 2,
+        "technical_depth": 1,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "skipped_at": "2026-04-06T13:50:02.504356",
+      "reason": "Total score < 10: 9/20"
+    },
+    {
+      "file_index": 3344,
+      "relative_path": "Cubox/掌握这些DeepSeek提问技巧，开发效率翻倍！-2025-02-24.md",
+      "title": "掌握这些DeepSeek提问技巧，开发效率翻倍！",
+      "total_score": 9,
+      "score_breakdown": {
+        "relevance": 2,
+        "technical_depth": 1,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "skipped_at": "2026-04-06T13:50:02.508304",
+      "reason": "Total score < 10: 9/20"
+    },
+    {
+      "file_index": 3347,
+      "relative_path": "Cubox/探秘React Native：从视图创建到布局渲染的流程解析大家好，许多同学都知道React Native中的组件会转换 - 掘金-2025-02-23.md",
+      "title": "探秘React Native：从视图创建到布局渲染的流程解析大家好，许多同学都知道React Native中的组件会转换 - 掘金",
+      "total_score": 9,
+      "score_breakdown": {
+        "relevance": 2,
+        "technical_depth": 1,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "skipped_at": "2026-04-06T13:50:02.510336",
+      "reason": "Total score < 10: 9/20"
+    },
+    {
+      "file_index": 3351,
+      "relative_path": "Cubox/探究LLVM的基础理论和原理-2022-04-18.md",
+      "title": "探究LLVM的基础理论和原理",
+      "total_score": 8,
+      "score_breakdown": {
+        "relevance": 2,
+        "technical_depth": 1,
+        "timeliness": 4,
+        "verifiability": 1
+      },
+      "skipped_at": "2026-04-06T13:50:02.513024",
+      "reason": "Total score < 10: 8/20"
+    },
+    {
+      "file_index": 3353,
+      "relative_path": "Cubox/探索 Flutter 模拟事件触发 - 开发者说·DTalk-2022-04-07.md",
+      "title": "探索 Flutter 模拟事件触发 | 开发者说·DTalk",
+      "total_score": 8,
+      "score_breakdown": {
+        "relevance": 2,
+        "technical_depth": 1,
+        "timeliness": 4,
+        "verifiability": 1
+      },
+      "skipped_at": "2026-04-06T13:50:02.514649",
+      "reason": "Total score < 10: 8/20"
+    },
+    {
+      "file_index": 3355,
+      "relative_path": "Cubox/探索 Jetpack Glance 的魔法 - 开发者说·DTalk-2023-12-15.md",
+      "title": "探索 Jetpack Glance 的魔法 | 开发者说·DTalk",
+      "total_score": 8,
+      "score_breakdown": {
+        "relevance": 2,
+        "technical_depth": 1,
+        "timeliness": 4,
+        "verifiability": 1
+      },
+      "skipped_at": "2026-04-06T13:50:02.516104",
+      "reason": "Total score < 10: 8/20"
+    },
+    {
+      "file_index": 3358,
+      "relative_path": "Cubox/探索CPU的调度原理-2022-01-14.md",
+      "title": "探索CPU的调度原理",
+      "total_score": 9,
+      "score_breakdown": {
+        "relevance": 3,
+        "technical_depth": 1,
+        "timeliness": 4,
+        "verifiability": 1
+      },
+      "skipped_at": "2026-04-06T13:50:02.518233",
+      "reason": "Total score < 10: 9/20"
+    },
+    {
+      "file_index": 3359,
+      "relative_path": "Cubox/探索OS的内存管理原理-2022-01-14.md",
+      "title": "探索OS的内存管理原理",
+      "total_score": 8,
+      "score_breakdown": {
+        "relevance": 2,
+        "technical_depth": 1,
+        "timeliness": 4,
+        "verifiability": 1
+      },
+      "skipped_at": "2026-04-06T13:50:02.518789",
+      "reason": "Total score < 10: 8/20"
+    },
+    {
+      "file_index": 3360,
+      "relative_path": "Cubox/探索“流畅感” - 手势动画那些事儿 - 知乎-2022-12-29.md",
+      "title": "探索“流畅感” - 手势动画那些事儿 - 知乎",
+      "total_score": 8,
+      "score_breakdown": {
+        "relevance": 2,
+        "technical_depth": 1,
+        "timeliness": 4,
+        "verifiability": 1
+      },
+      "skipped_at": "2026-04-06T13:50:02.519575",
+      "reason": "Total score < 10: 8/20"
+    },
+    {
+      "file_index": 3361,
+      "relative_path": "Cubox/探索更强中文Embedding模型：Conan-Embedding-2024-09-27.md",
+      "title": "探索更强中文Embedding模型：Conan-Embedding",
+      "total_score": 9,
+      "score_breakdown": {
+        "relevance": 2,
+        "technical_depth": 1,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "skipped_at": "2026-04-06T13:50:02.520136",
+      "reason": "Total score < 10: 9/20"
+    },
+    {
+      "file_index": 3364,
+      "relative_path": "Cubox/控糖革命-为什么吃了红薯之后会犯困-2025-01-11.md",
+      "title": "控糖革命-为什么吃了红薯之后会犯困",
+      "total_score": 8,
+      "score_breakdown": {
+        "relevance": 1,
+        "technical_depth": 1,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "skipped_at": "2026-04-06T13:50:02.521683",
+      "reason": "Total score < 10: 8/20"
+    },
+    {
+      "file_index": 3365,
+      "relative_path": "Cubox/推播助栏︱2021年10-11月 – 推播助栏The Podcast Pick-2022-01-14.md",
+      "title": "推播助栏︱2021年10-11月 – 推播助栏The Podcast Pick",
+      "total_score": 7,
+      "score_breakdown": {
+        "relevance": 2,
+        "technical_depth": 1,
+        "timeliness": 3,
+        "verifiability": 1
+      },
+      "skipped_at": "2026-04-06T13:50:02.522242",
+      "reason": "Total score < 10: 7/20"
+    },
+    {
+      "file_index": 3366,
+      "relative_path": "Cubox/推荐一本关于linux内核内存管理的书-2025-03-27.md",
+      "title": "推荐一本关于linux内核内存管理的书",
+      "total_score": 9,
+      "score_breakdown": {
+        "relevance": 2,
+        "technical_depth": 1,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "skipped_at": "2026-04-06T13:50:02.522614",
+      "reason": "Total score < 10: 9/20"
+    },
+    {
+      "file_index": 3369,
+      "relative_path": "Cubox/提升VO2max 3.5ml-kg-min：相当于给大脑增加2.8年的认知储备-2025-04-21.md",
+      "title": "提升VO2max 3.5ml/kg/min：相当于给大脑增加2.8年的认知储备",
+      "total_score": 9,
+      "score_breakdown": {
+        "relevance": 2,
+        "technical_depth": 1,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "skipped_at": "2026-04-06T13:50:02.524644",
+      "reason": "Total score < 10: 9/20"
+    },
+    {
+      "file_index": 3372,
+      "relative_path": "Cubox/提升软件工程效率的小技巧：留点悬念，让工作更流畅 [译] - 宝玉的分享-2023-12-28.md",
+      "title": "提升软件工程效率的小技巧：留点悬念，让工作更流畅 [译] | 宝玉的分享",
+      "total_score": 8,
+      "score_breakdown": {
+        "relevance": 2,
+        "technical_depth": 1,
+        "timeliness": 4,
+        "verifiability": 1
+      },
+      "skipped_at": "2026-04-06T13:50:02.526336",
+      "reason": "Total score < 10: 8/20"
+    },
+    {
+      "file_index": 3373,
+      "relative_path": "Cubox/提升软件工程效率的小技巧：留点悬念，让工作更流畅-2023-12-17.md",
+      "title": "提升软件工程效率的小技巧：留点悬念，让工作更流畅",
+      "total_score": 8,
+      "score_breakdown": {
+        "relevance": 2,
+        "technical_depth": 1,
+        "timeliness": 4,
+        "verifiability": 1
+      },
+      "skipped_at": "2026-04-06T13:50:02.526730",
+      "reason": "Total score < 10: 8/20"
+    },
+    {
+      "file_index": 3375,
+      "relative_path": "Cubox/提速 30%！腾讯TQUIC 网络传输协议-2022-01-14.md",
+      "title": "提速 30%！腾讯TQUIC 网络传输协议",
+      "total_score": 9,
+      "score_breakdown": {
+        "relevance": 3,
+        "technical_depth": 1,
+        "timeliness": 4,
+        "verifiability": 1
+      },
+      "skipped_at": "2026-04-06T13:50:02.528114",
+      "reason": "Total score < 10: 9/20"
+    },
+    {
+      "file_index": 3377,
+      "relative_path": "Cubox/插件化、热补丁中绕不开的Proguard的坑 - 美团技术团队-2022-01-14.md",
+      "title": "插件化、热补丁中绕不开的Proguard的坑 - 美团技术团队",
+      "total_score": 8,
+      "score_breakdown": {
+        "relevance": 2,
+        "technical_depth": 1,
+        "timeliness": 4,
+        "verifiability": 1
+      },
+      "skipped_at": "2026-04-06T13:50:02.529464",
+      "reason": "Total score < 10: 8/20"
+    },
+    {
+      "file_index": 3379,
+      "relative_path": "Cubox/揭开Flutter Slider中Shapes的神秘面纱-2025-03-04.md",
+      "title": "揭开Flutter Slider中Shapes的神秘面纱",
+      "total_score": 9,
+      "score_breakdown": {
+        "relevance": 2,
+        "technical_depth": 1,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "skipped_at": "2026-04-06T13:50:02.530779",
+      "reason": "Total score < 10: 9/20"
     }
   ]
 }

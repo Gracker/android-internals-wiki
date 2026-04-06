@@ -1001,5 +1001,15 @@
     "status": "pending",
     "created_date": "2026-04-06",
     "created_by": "task2a-knowledge-gap"
+  },
+  {
+    "section": "7.8",
+    "section_title": "RecyclerView 列表滑动性能深度优化",
+    "priority": 80,
+    "reason": "知识缺口挖掘: 列表滑动是流畅性优化第一高频场景，RecyclerView 四级缓存+prefetch+DiffUtil+nestedScrolling+ARR 机制复杂度足以独立成节",
+    "material_paths": [
+      "intake/research-feeds/2026-04-06-gracker-jank-insights.md",
+      "intake/research-feeds/2026-04-05-19-android16-arr-surfaceflinger-choreographer-frame-pacing.md"
+    ]
   }
 ]
