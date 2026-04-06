@@ -4,15 +4,15 @@
   "metrics": {
     "total": 120,
     "draft": 8,
-    "ready-for-review": 25,
+    "ready-for-review": 24,
     "reviewed": 4,
     "finalized": 28,
     "staging_drafts": 0,
-    "last_updated": "2026-04-06T15:10:00+08:00",
+    "last_updated": "2026-04-06T15:20:00+08:00",
     "processing": 0,
-    "ready-to-publish": 9,
+    "ready-to-publish": 10,
     "last_reviewed": "2026-04-06",
-    "last_reviewed_section": "7.4 典型场景分析"
+    "last_reviewed_section": "6.4 存储相关的版本演进"
   },
   "reviewed_sections": {
     "8.1": {
@@ -362,15 +362,24 @@
       ]
     },
     "6.4": {
-      "reviewed_date": "2026-04-04",
-      "reviewed_by": "openclaw-task6",
-      "review_status": "finalized",
+      "reviewed_date": "2026-04-06",
+      "reviewed_by": "openclaw-task6-v2",
+      "review_status": "ready-to-publish",
+      "review_type": "post-polish-quality-gate",
       "fixes_applied": [
-        "7处你→我们替换（writing-guide §3.5合规）",
-        "4处[来源]→[已验证: 来源见 ...]标注格式标准化",
-        "frontmatter补全：section/drafted_by/reviewed_date/reviewed_by",
-        "status ready-for-review → finalized"
-      ]
+        "禁用词修复：痛点 → 困扰（L122）",
+        "禁用词修复：落地 → 推进（L314）",
+        "验证标注标准化：[来源:] → [已验证: 来源见 ...]（L304）",
+        "去重：f2fs 章节两段重复开头合并为一段（L287-291）",
+        "措辞优化：去掉模糊形容词「显著」（L88）"
+      ],
+      "scores": {
+        "structure": 5,
+        "expression": 4,
+        "consistency": 5,
+        "verification": 5,
+        "metadata": 5
+      }
     },
     "7.6": {
       "reviewed_date": "2026-04-04",
