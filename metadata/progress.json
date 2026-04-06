@@ -4,15 +4,15 @@
   "metrics": {
     "total": 123,
     "draft": 10,
-    "ready-for-review": 25,
+    "ready-for-review": 24,
     "reviewed": 4,
     "finalized": 28,
     "staging_drafts": 0,
-    "last_updated": "2026-04-06T18:05:00+08:00",
+    "last_updated": "2026-04-06T18:20:00+08:00",
     "processing": 0,
-    "ready-to-publish": 10,
+    "ready-to-publish": 11,
     "last_reviewed": "2026-04-06",
-    "last_reviewed_section": "6.4 存储相关的版本演进"
+    "last_reviewed_section": "3.3 手势导航与系统交互"
   },
   "reviewed_sections": {
     "8.1": {
@@ -279,14 +279,24 @@
       }
     },
     "3.3": {
-      "reviewed_date": "2026-04-03",
+      "reviewed_date": "2026-04-06",
       "reviewed_by": "openclaw-task6",
-      "review_status": "finalized",
+      "review_status": "ready-to-publish",
+      "review_type": "post-polish-quality-gate",
+      "review_round": 2,
       "fixes_applied": [
-        "18处'你'→'我们'替换（writing-guide §3.5合规）",
-        "frontmatter补充：section/drafted_date/drafted_by/reviewed_date/reviewed_by",
-        "status ready-for-review → finalized"
-      ]
+        "禁用词：5处「链路」→「流程/路径/分发路径」（writing-guide §九）",
+        "frontmatter: status ready-for-review → ready-to-publish（精修质检终审通过）",
+        "frontmatter: reviewed_date → 2026-04-06",
+        "frontmatter: 添加 review_type + review_round"
+      ],
+      "scores": {
+        "structure": 5,
+        "expression": 5,
+        "consistency": 5,
+        "verification": 4,
+        "metadata": 5
+      }
     },
     "4.3": {
       "reviewed_date": "2026-04-03",
@@ -1895,6 +1905,23 @@
   "history": [
     {
       "date": "2026-04-06",
+      "section": "3.3",
+      "title": "手势导航与系统交互",
+      "action": "reviewed-ready-to-publish",
+      "review_by": "openclaw-task6",
+      "review_type": "post-polish-quality-gate",
+      "review_round": 2,
+      "fixes": 8,
+      "scores": {
+        "structure": 5,
+        "expression": 5,
+        "consistency": 5,
+        "verification": 4,
+        "metadata": 5
+      }
+    },
+    {
+      "date": "2026-04-06",
       "section": "1.15",
       "title": "JNI/NDK 性能优化",
       "action": "gap-created",
@@ -3121,10 +3148,15 @@
     },
     "3.3": {
       "title": "手势导航与系统交互",
-      "status": "finalized",
+      "status": "ready-to-publish",
       "drafted_date": "2026-03-31",
-      "reviewed_date": "2026-04-03",
-      "reviewed_by": "openclaw-task6"
+      "reviewed_date": "2026-04-06",
+      "reviewed_by": "openclaw-task6",
+      "review_type": "post-polish-quality-gate",
+      "review_round": 2,
+      "polish_count": 1,
+      "polish_date": "2026-04-06",
+      "polish_by": "task2b-polish"
     },
     "4.2": {
       "title": "Linux 内核内存管理",
