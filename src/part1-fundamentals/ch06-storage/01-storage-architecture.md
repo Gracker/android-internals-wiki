@@ -2,11 +2,14 @@
 title: "Android 存储架构"
 chapter: "6.1"
 section: "6.1"
-status: finalized
+status: ready-for-review
 applicable_versions: "Android 10+"
 last_verified: "2026-04-01"
 last_verified_against: "Android 15, JEDEC UFS 4.0 Spec, AOSP source.android.com"
 confidence: medium
+polish_count: 1
+polish_date: "2026-04-06"
+polish_by: task2b-polish
 sources:
   - "手机Android存储性能优化架构分析（Linux阅码场）"
   - "手机主流存储器件的分析与发展（OPPO内核工匠）"
@@ -135,7 +138,7 @@ device-mapper 的工作基于三个概念：
 - **dm-snapshot**：快照设备，用于 Virtual A/B 升级，在升级过程中通过 Copy-on-Write（COW）设备记录变更。
 - **dm-default-key**：元数据加密，对 `data` 分区进行块级加密。
 
-这些 dm 目标层层叠加，最终形成了我们看到的分区布局。下面我们就来看看 Android 的分区是怎么组织的。
+这些 dm 目标层层叠加，最终形成了 Android 的分区布局——我们接下来要拆解的，就是这些分区各自承担什么职责、怎么挂载、对性能有什么影响。
 
 ## 分区布局：system、vendor、data 与 metadata
 
@@ -198,7 +201,7 @@ f2fs 的关键优化包括：
 
 ### 为什么需要 Scoped Storage
 
-Android 10 之前，App 只要获得了 `READ_EXTERNAL_STORAGE` 或 `WRITE_EXTERNAL_STORAGE` 权限，就可以读写共享存储（`/sdcard`）上的所有文件。这意味着一个手电筒 App 理论上可以读取你的照片、文档、下载的所有内容。这种粗粒度的权限模型在隐私安全上存在明显隐患。
+Android 10 之前，App 只要获得了 `READ_EXTERNAL_STORAGE` 或 `WRITE_EXTERNAL_STORAGE` 权限，就可以读写共享存储（`/sdcard`）上的所有文件。这意味着一个手电筒 App 理论上可以读取用户的照片、文档、下载的所有内容。这种粗粒度的权限模型在隐私安全上存在明显隐患。
 
 从 Android 10 开始引入的 Scoped Storage（分区存储），从根本上改变了 App 访问共享存储的方式。Android 11 起强制执行。核心变化包括：
 
@@ -271,9 +274,9 @@ installKey("scrypt_key_user_ce_0", "/data/user/0/");
 
 每个目录的加密策略由扩展属性（xattr）记录在文件系统的 inode 中。当创建新文件时，文件系统会继承父目录的加密策略，自动使用对应的密钥加密。
 
-## 扩展：Dynamic Partition 与 Virtual A/B 的存储布局
+## Dynamic Partition 与 Virtual A/B 的存储布局
 
-我们在前面提到 Dynamic Partition 通过 `super` 物理分区和 dm-linear 实现了灵活的逻辑分区布局。但 Dynamic Partition 只是存储布局演进的一半，另一半是 **Virtual A/B（VABC）**——它解决了 OTA 升级时如何安全地更新这些分区的问题。
+前面提到 Dynamic Partition 通过 `super` 物理分区和 dm-linear 实现了灵活的逻辑分区布局。但 Dynamic Partition 只是存储布局演进的一半，另一半是 **Virtual A/B（VABC）**——它解决了 OTA 升级时如何安全地更新这些分区的问题。
 
 传统的 A/B 分区方案为每个分区维护两套完整的副本（slot A 和 slot B），占用双倍的存储空间。Virtual A/B 在此基础上做了优化：它不再为每个只读分区维护完整副本，而是利用 dm-snapshot（COW 设备）只记录升级过程中的变更。具体来说，升级时系统会创建一个 COW 设备，在 `super` 分区中分配空间。新版本的分区数据写入 COW 区域，旧版本的数据保持不变。如果升级成功，COW 中的数据被合并为正式数据；如果升级失败，系统可以回退到旧版本——只需要丢弃 COW 设备即可。
 
@@ -294,7 +297,7 @@ super 分区布局（升级中）：
 
 在 Perfetto trace 中，如果设备正在进行或刚完成 OTA 升级，我们可能会观察到 `data` 分区或 `super` 分区上有异常的 I/O 活动——那就是 COW 合并过程。合并通常在后台进行，但如果设备存储空间紧张，合并过程可能持续较长时间并影响前台 App 的 I/O 性能。[待补充：Trace截图展示OTA合并期间的I/O特征]
 
-## 扩展：存储寿命与写入放大
+## 存储寿命与写入放大
 
 NAND 闪存有一个物理限制：每个存储单元的擦写次数是有限的。SLC（单层单元）可以承受约 10 万次擦写，MLC（多层单元）约 3000-10000 次，TLC（三层单元）约 1000-3000 次，而现代高密度 QLC（四层单元）只有几百次。手机上使用的主要是 TLC 或混合 SLC/TLC 方案。
 
@@ -310,6 +313,20 @@ NAND 闪存有一个物理限制：每个存储单元的擦写次数是有限的
 
 从性能优化的角度，减少写入放大最有效的方法是**减少不必要的写入**。这包括：避免频繁的小量同步写入（如 SharedPreferences 的 `apply()` 替代 `commit()`）、使用 f2fs 的 CoW 机制减少就地更新、以及在 App 层面做好数据缓存策略，避免每次操作都触发磁盘写入。[已验证: 来源见 手机Android存储性能优化架构分析（Linux阅码场）]
 
+## 常见问题与误区
+
+**「手机变慢是因为闪存老化了吗？」**
+
+不完全是。闪存确实有擦写寿命，但正常使用条件下（每天写入 10-20GB），TLC 闪存的寿命在 3-5 年内不太可能耗尽。手机长期使用后变慢，更主要的原因是存储碎片化导致的 GC 频率上升、App 数据量增长导致的 I/O 增多、以及系统更新后新版本对存储性能的更高要求。存储器件本身的性能退化只贡献了一小部分。
+
+**「f2fs 一定比 ext4 快吗？」**
+
+不一定。f2fs 在随机写密集的场景（如大量 sqlite 操作）下有明显优势，但在大文件顺序读写的场景下，两者的差距不大。而且 f2fs 的 GC 机制在存储空间紧张时可能引入不可预测的延迟抖动。如果设备存储空间长期保持在 80% 以下，f2fs 的优势比较稳定；但如果经常接近满载，f2fs 的性能退化反而可能比 ext4 更剧烈。
+
+**「FBE 加密会拖慢存储性能吗？」**
+
+在有 inline encryption 硬件支持的设备上（2018 年后的主流 SoC），FBE 的性能开销可以忽略。加密解密在 DMA 传输路径上由硬件完成，CPU 感知不到。但在没有硬件加密引擎的低端设备上，FBE 回退到软件实现，可能引入 5-15% 的 I/O 延迟增加。在做性能分析时，如果怀疑 FBE 是瓶颈，可以检查  或  下对应分区的加密统计信息。
+
 ## 小结：从存储架构到性能分析
 
 让我们回到开头的那个卡顿场景。当我们看到主线程在 `fsync` 上等待时，完整的分析链路应该是：
@@ -323,3 +340,13 @@ NAND 闪存有一个物理限制：每个存储单元的擦写次数是有限的
 理解了存储栈的每一层，我们就能从 Perfetto trace 中的 I/O 等待信号，逐层追踪到根因，而不是停留在"主线程被 I/O 阻塞了"这个表面结论上。
 
 存储架构的知识还将在后续章节中持续用到——第 6.2 节我们会深入文件系统的选择与调优，第 6.3 节会讨论 I/O 调度的具体策略，而存储性能的长期退化问题则与第 7 章流畅性优化中的"老设备卡顿"现象直接相关。
+
+## 参考资料
+
+- **手机 Android 存储性能优化架构分析** — Linux 阅码场，系统梳理了 Android 存储 I/O 路径和 ext4/f2fs 的性能差异
+- **手机主流存储器件的分析与发展** — OPPO 内核工匠，eMMC/UFS 架构对比与 UFS 4.0 MCQ 特性详解
+- **Android 分区挂载原理介绍** — OPPO 内核工匠，Dynamic Partition、dm-linear、FBE 密钥层次
+- **Android Storage | Android Open Source Project** — source.android.com/docs/core/storage，官方分区与加密文档
+- **Scoped Storage | Android Developers** — developer.android.com/about/versions/11/privacy/storage，分区存储 API 与权限模型
+- **JEDEC UFS 4.0 Standard (JESD220E)** — UFS 4.0 规范，MCQ 多命令队列定义
+
