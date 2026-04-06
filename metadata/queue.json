@@ -1035,7 +1035,9 @@
     "material_paths": [],
     "added_by": "task2a-knowledge-gap",
     "added_at": "2026-04-06T17:05:00+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-06T23:21:05.002528",
+    "completed_by": "openclaw-task2a"
   },
   {
     "section": "8.6",
