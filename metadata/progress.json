@@ -4,15 +4,15 @@
   "metrics": {
     "total": 120,
     "draft": 9,
-    "ready-for-review": 25,
+    "ready-for-review": 24,
     "reviewed": 4,
     "finalized": 28,
     "staging_drafts": 0,
-    "last_updated": "2026-04-06T13:20:00",
+    "last_updated": "2026-04-06T14:20:00",
     "processing": 0,
-    "ready-to-publish": 8,
+    "ready-to-publish": 9,
     "last_reviewed": "2026-04-06",
-    "last_reviewed_section": "6.1 Android 存储架构"
+    "last_reviewed_section": "7.4 典型场景分析"
   },
   "reviewed_sections": {
     "8.1": {
@@ -516,6 +516,25 @@
       "scores": {
         "structure": 5,
         "wording": 4.5,
+        "consistency": 5,
+        "verification": 4,
+        "metadata": 5
+      }
+    },
+    "7.4": {
+      "reviewed_date": "2026-04-06",
+      "reviewed_by": "openclaw-task6",
+      "review_status": "ready-to-publish",
+      "review_type": "post-polish-quality-gate",
+      "review_round": 2,
+      "fixes_applied": [
+        "禁用词：「链路」→「调用路径」（writing-guide §九）",
+        "版本修正：applicable_versions API 35 → API 36",
+        "状态：ready-for-review → ready-to-publish（精修质检通过）"
+      ],
+      "scores": {
+        "structure": 5,
+        "expression": 5,
         "consistency": 5,
         "verification": 4,
         "metadata": 5
