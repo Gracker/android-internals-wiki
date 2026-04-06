@@ -102,6 +102,7 @@
   - [8.5 案例集](part2-performance/ch08-responsiveness/05-case-studies.md)
   - [8.6 Kotlin Coroutine 性能实践](part2-performance/ch08-responsiveness/06-coroutine-performance.md)
   - [8.7 Baseline Profiles 与编译优化实践](part2-performance/ch08-responsiveness/07-baseline-profiles.md)
+  - [8.8 Android 多媒体管线性能](part2-performance/ch08-responsiveness/08-media-pipeline.md)
 
 - [第 9 章：ANR](part2-performance/ch09-anr/README.md)
   - [9.1 ANR 设计思想](part2-performance/ch09-anr/01-anr-design.md)
@@ -123,6 +124,7 @@
   - [11.2 App 耗电优化](part2-performance/ch11-power/02-app-power-optimization.md)
   - [11.3 系统级功耗优化](part2-performance/ch11-power/03-system-power-optimization.md)
   - [11.4 案例集](part2-performance/ch11-power/04-case-studies.md)
+  - [11.5 Wakelock 机制与功耗分析](part2-performance/ch11-power/05-wakelock.md)
 
 - [第 12 章：包体积与其他](part2-performance/ch12-apk-network/README.md)
   - [12.1 APK 体积优化](part2-performance/ch12-apk-network/01-apk-size.md)
