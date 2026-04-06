@@ -26,6 +26,7 @@
   - [1.12 AutoFDO 反馈导向编译优化](part1-fundamentals/ch01-architecture/12-autofdo-optimization.md)
   - [1.13 MessageQueue 机制与 DeliQueue 无锁优化](part1-fundamentals/ch01-architecture/13-messagequeue-deliqueue.md)
   - [1.14 锁竞争与同步性能分析](part1-fundamentals/ch01-architecture/14-lock-contention.md)
+  - [1.15 JNI/NDK 性能优化](part1-fundamentals/ch01-architecture/15-jni-ndk-performance.md)
 
 
 - [第 2 章：渲染系统](part1-fundamentals/ch02-rendering/README.md)
@@ -119,6 +120,7 @@
   - [10.4 低内存对系统性能的影响](part2-performance/ch10-memory-perf/04-low-memory-impact.md)
   - [10.5 案例集](part2-performance/ch10-memory-perf/05-case-studies.md)
   - [10.6 内存抖动与频繁 GC](part2-performance/ch10-memory-perf/06-memory-churn.md)
+  - [10.7 SQLite/Room 数据库性能优化](part2-performance/ch10-memory-perf/07-sqlite-room-performance.md)
 
 - [第 11 章：功耗](part2-performance/ch11-power/README.md)
   - [11.1 Android 功耗模型](part2-performance/ch11-power/01-power-model.md)

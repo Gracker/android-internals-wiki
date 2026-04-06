@@ -1011,5 +1011,27 @@
       "intake/research-feeds/2026-04-06-gracker-jank-insights.md",
       "intake/research-feeds/2026-04-05-19-android16-arr-surfaceflinger-choreographer-frame-pacing.md"
     ]
+  },
+  {
+    "section": "1.15",
+    "section_title": "JNI/NDK 性能优化",
+    "priority": 80,
+    "reason": "知识缺口挖掘：JNI/NDK 性能是全书缺失的基础维度——Android 系统服务大量使用 JNI，@FastNative/@CriticalNative 是 Android 独有优化，16KB page size 直接影响 native 库",
+    "material_paths": [
+      "intake/research-feeds/2026-04-06-15-priority-inversion-futex-pi-android-lock-performance.md"
+    ],
+    "added_by": "task2a-knowledge-gap",
+    "added_at": "2026-04-06T17:05:00+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "10.7",
+    "section_title": "SQLite/Room 数据库性能优化",
+    "priority": 80,
+    "reason": "知识缺口挖掘：DB 操作是 ANR/jank 的主要来源之一，CursorWindow Binder 限制是系统级约束，Room Paging 影响滑动性能",
+    "material_paths": [],
+    "added_by": "task2a-knowledge-gap",
+    "added_at": "2026-04-06T17:05:00+08:00",
+    "status": "pending"
   }
 ]
