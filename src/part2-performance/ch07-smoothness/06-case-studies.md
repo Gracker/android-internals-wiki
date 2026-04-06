@@ -4,9 +4,9 @@ chapter: "7.6"
 section: "7.6"
 drafted_date: "2026-04-01"
 drafted_by: "openclaw-task2a"
-reviewed_date: "2026-04-04"
+reviewed_date: "2026-04-06"
 reviewed_by: "openclaw-task6"
-status: ready-for-review
+status: ready-to-publish
 applicable_versions: "Android 8.0 (API 26) - Android 16 (API 36)"
 last_verified: "2026-04-01"
 last_verified_against: "AOSP android-16.0.0_r1, Android 官方文档"
@@ -69,7 +69,7 @@ related_chapters: ["7.1", "7.2", "7.3", "7.4", "2.5", "2.7", "4.4"]
 
 ### 问题现象
 
-用户在某个社交 App 的联系人列表中快速滑动时，能感受到明显的"一顿一顿"的卡顿。60Hz 设备上，滑动体验评分（通过 JankStats 采集）显示 jank 率约 12%，远超 5% 的可接受阈值。
+用户在某个社交 App 的联系人列表中快速滑动时，能感受到明显的"一顿一顿"的卡顿。60Hz 设备上，滑动体验评分（通过 JankStats 采集）显示 Jank 率约 12%，远超 5% 的可接受阈值。
 
 ### 分析思路
 
@@ -107,7 +107,7 @@ related_chapters: ["7.1", "7.2", "7.3", "7.4", "2.5", "2.7", "4.4"]
 
 ### 效果对比
 
-修复后 Perfetto 中 measure 阶段从 8-12ms 降到 2-3ms。滑动 jank 率从 12% 降到 3%。
+修复后 Perfetto 中 measure 阶段从 8-12ms 降到 2-3ms。滑动 Jank 率从 12% 降到 3%。
 
 ### 举一反三
 
@@ -177,7 +177,7 @@ override fun onBindViewHolder(holder: ViewHolder, position: Int) {
 
 ### 效果对比
 
-修复后 Perfetto 中 onBindViewHolder 的单次耗时从 5-20ms 降到 0.5ms 以内（纯赋值）。滑动 jank 率在系统高负载场景下从约 15% 降到 2%。
+修复后 Perfetto 中 onBindViewHolder 的单次耗时从 5-20ms 降到 0.5ms 以内（纯赋值）。滑动 Jank 率在系统高负载场景下从约 15% 降到 2%。
 
 ### 举一反三
 
@@ -198,7 +198,7 @@ override fun onBindViewHolder(holder: ViewHolder, position: Int) {
 
 ### 问题现象
 
-一个音乐 App 在连续使用 30 分钟后，滑动体验逐渐劣化。初始时 jank 率约 3%，使用 30 分钟后 jank 率上升到 15%+。杀掉 App 重新打开后恢复正常。
+一个音乐 App 在连续使用 30 分钟后，滑动体验逐渐劣化。初始时 Jank 率约 3%，使用 30 分钟后 Jank 率上升到 15%+。杀掉 App 重新打开后恢复正常。
 
 ### 分析思路
 
@@ -248,7 +248,7 @@ val imageCache = LruCache<String, Bitmap>(
 
 ### 效果对比
 
-修复后 Heap 使用稳定在 100MB 以内，GC 频率恢复到正常水平（每 5-10 秒一次），滑动 jank 率从 15% 降到 4%，且不再随时间劣化。
+修复后 Heap 使用稳定在 100MB 以内，GC 频率恢复到正常水平（每 5-10 秒一次），滑动 Jank 率从 15% 降到 4%，且不再随时间劣化。
 
 ### 举一反三
 
@@ -317,7 +317,7 @@ fun onViewHolderDetached(holder: EmojiViewHolder) {
 
 ### 效果对比
 
-限制同时播放的动画数量（最多 3 个）后，RenderThread 的 sync 等待时间从 8-15ms 降到 2-3ms，聊天界面 jank 率从约 20% 降到 5%。
+限制同时播放的动画数量（最多 3 个）后，RenderThread 的 sync 等待时间从 8-15ms 降到 2-3ms，聊天界面 Jank 率从约 20% 降到 5%。
 
 ### 举一反三
 
@@ -412,7 +412,7 @@ override fun onTrimMemory(level: Int) {
 
 ### 效果对比
 
-App 端优化后（响应 onTrimMemory + 减少自身内存占用 30%），在同样的低内存场景下 jank 率从 25% 降到 12%。系统端优化后（调整 lmkd 参数），全局 jank 率进一步降到 8%。
+App 端优化后（响应 onTrimMemory + 减少自身内存占用 30%），在同样的低内存场景下 Jank 率从 25% 降到 12%。系统端优化后（调整 lmkd 参数），全局 Jank 率进一步降到 8%。
 
 ### 举一反三
 
