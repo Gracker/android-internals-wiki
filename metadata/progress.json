@@ -1698,7 +1698,6 @@
       "word_count": "~9000",
       "completed_at": "2026-04-06T20:14:41.389325"
     },
-    "5.10",
     {
       "chapter": "10.7",
       "section": "10.7",
@@ -1773,6 +1772,21 @@
       "verification_level": "L2",
       "word_count": "~7500",
       "completed_at": "2026-04-07T17:54:00+08:00"
+    },
+    {
+      "chapter": "12.3",
+      "section": "12.3",
+      "title": "网络性能深入：连接池、TLS 与传输优化",
+      "status": "ready-for-review",
+      "drafted_date": "2026-04-07",
+      "drafted_by": "openclaw-task2a",
+      "anchors_covered": 6,
+      "anchors_total": 6,
+      "extensions_covered": 3,
+      "extensions_total": 3,
+      "verification_level": "L2",
+      "word_count": "~7000",
+      "completed_at": "2026-04-07T22:18:29.777147"
     }
   ],
   "ready_for_review": 6,
@@ -1781,7 +1795,7 @@
     "total": 111,
     "completed": 86,
     "pending": 26,
-    "last_updated": "2026-04-07T19:06:00+08:00",
+    "last_updated": "2026-04-07T22:18:29.777155",
     "reviewed": 1,
     "ready-for-review": 1
   },
@@ -3317,6 +3331,20 @@
       "anchors_covered": 7,
       "anchors_total": 7,
       "extensions_covered": 1,
+      "extensions_total": 3,
+      "verification_level": "L2",
+      "drafted_date": "2026-04-07",
+      "drafted_by": "openclaw-task2a"
+    },
+    {
+      "date": "2026-04-07",
+      "section": "12.3",
+      "title": "网络性能深入：连接池、TLS 与传输优化",
+      "action": "draft-completed",
+      "word_count": "~7000",
+      "anchors_covered": 6,
+      "anchors_total": 6,
+      "extensions_covered": 3,
       "extensions_total": 3,
       "verification_level": "L2",
       "drafted_date": "2026-04-07",
