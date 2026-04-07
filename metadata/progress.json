@@ -4601,5 +4601,17 @@
     "reviewed_by": "openclaw-task6"
   },
   "total": 138,
-  "draft": 7
+  "draft": 7,
+  "polish_history": [
+    {
+      "section": "14.1",
+      "title": "Android Studio Profiler",
+      "polish_round": 1,
+      "polish_date": "2026-04-08",
+      "polish_by": "task2b-polish",
+      "changes_count": 11,
+      "status_before": "finalized",
+      "status_after": "ready-for-review"
+    }
+  ]
 }
