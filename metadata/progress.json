@@ -1705,7 +1705,7 @@
     }
   ],
   "ready_for_review": 6,
-  "last_updated": "2026-04-07T10:06:23.578826",
+  "last_updated": "2026-04-07T12:17:00+08:00",
   "stats": {
     "total": 109,
     "completed": 85,
@@ -3168,6 +3168,13 @@
       "reference_title": "A Comparative Study of Android Performance Issues",
       "reference_url": "https://arxiv.org/abs/2407.05090",
       "injected_by": "openclaw-task8"
+    },
+    {
+      "date": "2026-04-07",
+      "section": "9.1",
+      "title": "ANR 设计思想",
+      "action": "reviewed-and-finalized",
+      "reviewed_by": "openclaw-task6"
     }
   ],
   "sections": {
@@ -3908,6 +3915,13 @@
       "file": "src/part1-fundamentals/ch05-cpu-power/10-jobscheduler-workmanager-performance.md",
       "drafted_date": "2026-04-06",
       "drafted_by": "openclaw-task2a"
+    },
+    "9.1": {
+      "title": "ANR 设计思想",
+      "status": "finalized",
+      "reviewed_date": "2026-04-07",
+      "reviewed_by": "openclaw-task6",
+      "file": "src/part2-performance/ch09-anr/01-anr-design.md"
     }
   },
   "5.1": {
@@ -4209,7 +4223,26 @@
       "status": "ready-for-review"
     }
   },
-  "research_runs": 1,
+  "research_runs": {
+    "2026-04-07-11": {
+      "timestamp": "2026-04-07T11:43:35.974403",
+      "materials_found": 6,
+      "materials_passed": 4,
+      "materials_delivered": 4,
+      "sections_covered": [
+        "8.7",
+        "4.7",
+        "1.15",
+        "4.8"
+      ],
+      "files": [
+        "intake/research-feeds/2026-04-07-11-android16-cloud-compilation-baseline-startup-profiles.md",
+        "intake/research-feeds/2026-04-07-11-android-16kb-page-size-jni-native-library-quantification.md",
+        "intake/research-feeds/2026-04-07-11-fastnative-criticalnative-jni-art-optimization.md",
+        "intake/research-feeds/2026-04-07-11-android17-art-generational-gc-concurrent-mark-compact.md"
+      ]
+    }
+  },
   "total_materials": 4,
   "last_run": "2026-04-05T19:05:50.155014",
   "chapters_covered": [
