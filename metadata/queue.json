@@ -1191,7 +1191,9 @@
     ],
     "added_by": "task2a-knowledge-gap",
     "added_at": "2026-04-07T19:06:00+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-07T22:18:29.780941",
+    "completed_by": "openclaw-task2a"
   },
   {
     "section": "5.7",
