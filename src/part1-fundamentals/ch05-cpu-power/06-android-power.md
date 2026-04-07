@@ -2,10 +2,10 @@
 title: "Android 功耗管理"
 chapter: "5.6"
 section: "5.6"
-status: finalized
+status: ready-for-review
 applicable_versions: "Android 6.0 (API 23) - Android 17 (API 37)"
 last_verified: "2026-04-01"
-last_verified_against: "AOSP android-16.0.0_r1"
+last_verified_against: "AOSP android-16.0.0_r1, android-17-beta3"
 confidence: medium
 sources:
   - type: blog
@@ -23,13 +23,13 @@ sources:
   - type: official
     path: "https://source.android.com/docs/core/power"
 tags: [doze, wakelock, standby, battery, power, jobscheduler, workmanager, alarm, foreground-service, adaptive-battery, suspend, battery-historian]
-related_chapters: ["5.4", "5.5", "5.10", "11.1", "11.2", "14.1"]
+related_chapters: ["5.4", "5.5", "5.10", "11.1", "11.2", "11.5", "14.1"]
 drafted_date: "2026-04-01"
 drafted_by: "openclaw-task2"
 reviewed_date: "2026-04-03"
 reviewed_by: "openclaw-task6"
-polish_count: 1
-polish_date: "2026-04-07"
+polish_count: 2
+polish_date: "2026-04-08"
 polish_by: "task2b-polish"
 ---
 
@@ -303,7 +303,7 @@ try {
 
 ### 如何检测 WakeLock 滥用
 
-**Battery Historian 是最直接的工具。** 在 App Stats 视图中选中目标 App，查看 "Userspace Wakelock" 行——如果看到某个 WakeLock 覆盖了很大比例的时间段，特别是在灭屏期间，那就是问题的信号。
+**Battery Historian 是最直接的工具。** 在 App Stats 视图中选中目标 App，查看 "Userspace Wakelock" 行——如果看到某个 WakeLock 覆盖了很大比例的时间段，特别是在灭屏期间，那就是问题的信号。关于 WakeLock 在 Perfetto 中的更详细分析，参见 §11.5 Wakelock 机制与功耗分析。
 
 **adb 命令快速排查：**
 
@@ -414,7 +414,7 @@ Adaptive Battery 从系统侧智能调整资源分配，而 Android 同时也为
 
 ## RESTRICTED Bucket 与 Exemption 机制
 
-Restricted Bucket 是 Android 12 引入的最严格的 Standby 等级。进入这个 Bucket 的 App 面临的限制包括：
+上面提到的自动限制机制，最终会把 App 推入一个最严格的 Standby 等级——Restricted Bucket（Android 12 引入）。它和普通的 Rare Bucket 不同，后者只是"少给资源"，而 Restricted Bucket 是"几乎不给资源"。进入这个 Bucket 的 App 面临的限制包括：
 
 - 每天只能在 10 分钟的批量会话中运行 Job
 - 每天只能触发一次 Alarm
@@ -435,6 +435,26 @@ Restricted Bucket 是 Android 12 引入的最严格的 Standby 等级。进入�
 - 用户手动设置为"不受优化"的 App
 
 对于开发者来说，关键是确保 App 在后台行为良好，避免触发系统的自动限制。一旦 App 被放入 Restricted Bucket，它的后台功能基本就瘫痪了。
+
+## 版本演进
+
+Android 功耗管理框架经历了一个从"粗粒度管控"到"精细化、智能化管控"的演进过程：
+
+| Android 版本 | 关键变更 | 影响 |
+|:---|:---|:---|
+| 5.0 (API 21) | JobScheduler 引入 | 首次提供系统级后台任务调度 |
+| 6.0 (API 23) | Doze 模式 + App Standby | 灭屏后台活动首次被系统性限制 |
+| 7.0 (API 24) | Light Doze | 不要求静止，灭屏即可触发轻度限制 |
+| 8.0 (API 26) | 后台服务限制 + WakeLock 回收 | 后台 cached 进程的 WakeLock 可被系统回收 |
+| 9.0 (API 28) | App Standby Buckets + Adaptive Battery | 五级分桶 + ML 预测资源分配 |
+| 12 (API 31) | Restricted Bucket + 自动限制通知 | 最严格 Standby 等级 + 用户参与共治 |
+| 14 (API 34) | 前台服务类型强制化 | 后台启动前台服务需声明具体类型 |
+| 16 (API 36) | JobScheduler 配额优化 | Active Bucket 更宽裕配额 |
+| 17 (API 37) | DeliQueue 无锁优化（关联 §1.13） | 主线程消息队列锁竞争减少 |
+
+[待验证：Android 17 中 PowerManagerService 是否有额外的功耗管理变更]
+
+从这张表可以看出，Android 的功耗管理策略越来越依赖系统侧的主动管控，而非依赖 App 开发者的自觉行为。对于 App 开发者来说，趋势很明确：尽量少用直接 WakeLock，更多依赖 JobScheduler / WorkManager 的系统调度。对于系统开发者来说，理解 PMS 的决策逻辑和各版本的行为差异，是分析功耗问题的关键基础。
 
 ## 常见问题与误区
 
