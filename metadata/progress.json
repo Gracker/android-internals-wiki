@@ -4,15 +4,15 @@
   "metrics": {
     "total": 129,
     "draft": 10,
-    "ready-for-review": 26,
+    "ready-for-review": 34,
     "reviewed": 5,
     "finalized": 30,
     "staging_drafts": 0,
-    "last_updated": "2026-04-07T20:10:00+08:00",
+    "last_updated": "2026-04-07T21:26:13+08:00",
     "processing": 0,
     "ready-to-publish": 12,
     "last_reviewed": "2026-04-07",
-    "last_reviewed_section": "7.7 Jetpack Compose 性能优化"
+    "last_reviewed_section": "9.2 ANR 类型与触发条件"
   },
   "reviewed_sections": {
     "8.1": {
@@ -597,6 +597,18 @@
         "[待补充] LTPO Perfetto 截图",
         "[待补充] Frame Timeline 截图",
         "[待验证] 华为 VSync 问题在 HarmonyOS 4+ 的状态"
+      ]
+    },
+    "9.2": {
+      "reviewed_date": "2026-04-07",
+      "reviewed_by": "openclaw-task6",
+      "review_status": "finalized",
+      "fixes_applied": [
+        "2处「你」→中性/「我们」（writing-guide §3.5）",
+        "1处「链路」→「分发路径」（writing-guide §9 一致性）",
+        "1处 shortService 超时补充 [待验证] 标注",
+        "frontmatter: 补 section/drafted_by/reviewed_date/reviewed_by",
+        "status: ready-for-review → finalized"
       ]
     }
   },
