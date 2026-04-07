@@ -4743,5 +4743,10 @@
       "status_before": "finalized",
       "status_after": "ready-for-review"
     }
-  ]
+  ],
+  "5.7": {
+    "title": "CPU 相关的版本演进",
+    "status": "ready-to-publish",
+    "review3_date": "2026-04-08"
+  }
 }
