@@ -1,7 +1,7 @@
 ---
 title: "ProfilingManager"
 chapter: "14.7"
-status: ready-for-review
+status: reviewed
 applicable_versions: "Android 15 (API 35) - Android 17 (API 37)"
 last_verified: "2026-03-29"
 last_verified_against: "AOSP android-16.0.0_r1, developer.android.com"
@@ -17,6 +17,10 @@ sources:
     path: "Android Developers Blog - ProfilingManager"
 tags: [profilingmanager, android-15, profiling, perfetto, debugging]
 related_chapters: ["14.1 Perfetto基础", "14.2 线上性能分析", "15.2 性能调优实战"]
+drafted_date: "2026-03-29"
+drafted_by: "openclaw-task2a"
+reviewed_date: "2026-04-08"
+reviewed_by: "openclaw-task6"
 ---
 
 # ProfilingManager
@@ -43,9 +47,11 @@ ProfilingManager 是 Android 15 引入的系统级 profiling API，它让应用�
 - 🎮 **低侵入**：系统内置的 rate limiter 限制了数据采集的频率和大小
 - 📊 **Perfetto 集成**：直接生成符合行业标准的数据格式，便于分析
 
-简单来说，ProfilingManager 让开发者能够**在量产设备上"悄悄"收集真实的性能数据**，这在应用性能优化、内存泄漏检测、响应速度分析等方面具有革命性的意义。
+简单来说，ProfilingManager 让开发者能够**在量产设备上"悄悄"收集真实的性能数据**，这意味着开发者终于能在用户真实使用场景中获取系统级性能数据，而这在 Android 15 之前需要 OEM 配合或 root 权限才能做到。
 
 ## 基本使用：从零开始，能跑通的完整步骤
+
+[需重写: 以下代码示例中的类名、方法签名与 AOSP 实际 API 不一致。实际 API 使用 SystemTraceRequestBuilder/JavaHeapDumpRequestBuilder/HeapProfileRequestBuilder/StackSamplingRequestBuilder 等 Builder 类构建请求，通过 Consumer<ProfilingResult> 回调接收结果。ProfilingConfig、ProfilingStatus、ProfilingListener 等类在 AOSP 中不存在。需对照 AOSP packages/modules/Profiling/ 和 developer.android.com 重新编写全部代码示例]
 
 ### 第一步：权限声明
 
@@ -205,6 +211,8 @@ ProfilingConfig systemTraceConfig = new ProfilingConfig.Builder()
 
 ### 精确控制数据采集
 
+[需重写: TriggerCondition 和条件触发机制在 AOSP 中不存在，需移除或替换为实际 API 支持的功能]
+
 ```java
 // 按条件触发采集
 ProfilingConfig conditionalConfig = new ProfilingConfig.Builder()
@@ -220,6 +228,8 @@ ProfilingConfig conditionalConfig = new ProfilingConfig.Builder()
 ```
 
 ### System Triggered Profiling（Android 16+）
+
+[需重写: 实际 API 使用 addProfilingTriggers() + ProfilingTrigger.Builder 注册系统触发器，而非文中的 registerProfilingListener() + ProfilingListener。触发器类型名称正确（COLD_START/ANR/OOM/KILL_EXCESSIVE_CPU_USAGE），但使用方式需对照 AOSP 重写]
 
 在 Android 16 中，ProfilingManager 支持了系统触发的 profiling，让应用可以**被动响应系统事件**：
 
@@ -253,6 +263,8 @@ profilingManager.registerProfilingListener(systemTriggerConfig, new ProfilingLis
 
 ### Android 17 增强功能
 
+[需重写: 文中 TRIGGER_TYPE_WAKEUP_LATENCY、TRIGGER_TYPE_LAUNCHER_TRANSITION、TRIGGER_TYPE_RENDERER_CRASH 在 AOSP 中不存在。实际 Android 17 新增触发器包括 TRIGGER_TYPE_ANOMALY、TRIGGER_TYPE_APP_COMPAT、TRIGGER_TYPE_APP_REQUEST_RUNNING_TRACE 等。setEnableDebugMode() 也需验证。需对照 AOSP android-17 分支重新编写]
+
 Android 17 进一步扩展了触发类型和功能：
 
 ```java
@@ -274,6 +286,8 @@ ProfilingConfig android17Config = new ProfilingConfig.Builder()
 ```
 
 ## 实战示例：完整的使用案例
+
+[需重写: 以下三个案例（滑动手势、内存泄漏、冷启动）的代码均基于不存在的 API 类，需基于实际 AOSP API（SystemTraceRequestBuilder、Consumer<ProfilingResult> 回调模式等）重新编写。案例的业务场景描述可保留，代码部分需全部替换]
 
 ### 案例1：滑动手势性能分析
 
@@ -346,6 +360,8 @@ gestureProfiler.startGestureProfiling(context);
 ```
 
 **在 Perfetto 中的表现**：
+
+[图：ProfilingManager 生成的 System Trace 在 Perfetto UI 中的典型视图，标注 input/sched/view/gfx 各 track]
 
 生成的 trace 会在 Perfetto 中显示为：
 - `input` track：触摸输入事件的时间戳
@@ -470,6 +486,8 @@ public class ColdStartProfiler {
 
 **在 Perfetto 中的表现**：
 
+[图：冷启动 System Triggered Profiling 在 Perfetto 中捕获的 trace，标注 Activity 启动、View 创建、首次绘制等关键时间节点]
+
 冷启动的 trace 会在 `am` track 中显示：
 - Activity 启动的时间戳
 - Service 创建的时机
@@ -483,6 +501,8 @@ public class ColdStartProfiler {
 - 首次绘制完成的时间
 
 ## 与其他工具的对比优势
+
+[需验证: 以下对比表格中的具体特性描述基于初步调研，部分细节（如 ProfilingManager 在量产设备上的实际性能开销、与 Systrace 的数据格式差异）需补充实际测试数据]
 
 ### vs Android Studio Profiler
 
@@ -569,6 +589,8 @@ adb shell setprop debug.profiler.rate_limiter 0
 
 // 恢复 rate limiter
 adb shell setprop debug.profiler.rate_limiter 1
+
+[待验证: 此 setprop 属性名需确认，可能为 persist.debug.profiler.* 或其他命名]
 ```
 
 ### 技巧2：数据压缩

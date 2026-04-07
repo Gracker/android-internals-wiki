@@ -4317,6 +4317,13 @@
       "polish_count": 1,
       "polish_date": "2026-04-07",
       "polish_by": "task2b-polish"
+    },
+    "14.7": {
+      "title": "ProfilingManager",
+      "status": "reviewed",
+      "reviewed_date": "2026-04-08",
+      "review_issues": 7,
+      "back_to_queue": true
     }
   },
   "5.1": {
