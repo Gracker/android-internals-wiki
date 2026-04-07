@@ -4417,6 +4417,12 @@
         "B1: FrameMetrics.DEADLINE API 版本兼容性 — 添加版本分支代码 + 叙述说明",
         "B2: SQL 调度延迟查询语义修正 — 拆分为两个查询（抢占片段 vs 调度延迟）"
       ]
+    },
+    "1.13": {
+      "title": "MessageQueue 机制与 DeliQueue 无锁优化",
+      "status": "ready-for-review",
+      "last_updated": "2026-04-08",
+      "last_action": "task2b-rework: review回炉修复"
     }
   },
   "2.6": {
