@@ -1,10 +1,10 @@
 {
-  "last_scan_time": "2026-04-07T16:59:49.643827",
-  "scanned_files": 3490,
+  "last_scan_time": "2026-04-07T18:55:46.833796",
+  "scanned_files": 3550,
   "total_files": 4341,
-  "indexed_files": 161,
+  "indexed_files": 163,
   "current_directory": "Cubox",
-  "current_offset": 3490,
+  "current_offset": 3550,
   "priority_queue": [
     "Cubox",
     "Personal-Knowlledge",
@@ -16,6 +16,6 @@
     "OpenClaw定时任务"
   ],
   "completed_directories": [],
-  "last_scan_batch": 30,
+  "last_scan_batch": 50,
   "status": "in_progress"
 }
