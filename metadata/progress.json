@@ -3,12 +3,12 @@
   "total_sections": 107,
   "metrics": {
     "total": 124,
-    "draft": 9,
-    "ready-for-review": 24,
+    "draft": 8,
+    "ready-for-review": 25,
     "reviewed": 4,
     "finalized": 30,
     "staging_drafts": 0,
-    "last_updated": "2026-04-06T23:21:04.999146",
+    "last_updated": "2026-04-07T08:12:35.619073",
     "processing": 0,
     "ready-to-publish": 11,
     "last_reviewed": "2026-04-06",
@@ -1687,6 +1687,21 @@
       "verification_level": "L2",
       "word_count": "~8500",
       "completed_at": "2026-04-06T23:21:04.999156"
+    },
+    {
+      "chapter": "11.5",
+      "section": "11.5",
+      "title": "Wakelock 机制与功耗分析",
+      "status": "ready-for-review",
+      "drafted_date": "2026-04-07",
+      "drafted_by": "openclaw-task2a",
+      "anchors_covered": 7,
+      "anchors_total": 7,
+      "extensions_covered": 2,
+      "extensions_total": 2,
+      "verification_level": "L2",
+      "word_count": "~5400",
+      "completed_at": "2026-04-07T08:12:35.619080"
     }
   ],
   "ready_for_review": 6,
@@ -1961,6 +1976,20 @@
     }
   ],
   "history": [
+    {
+      "date": "2026-04-07",
+      "section": "11.5",
+      "title": "Wakelock 机制与功耗分析",
+      "action": "draft-completed",
+      "word_count": "~5400",
+      "anchors_covered": 7,
+      "anchors_total": 7,
+      "extensions_covered": 2,
+      "extensions_total": 2,
+      "verification_level": "L2",
+      "drafted_date": "2026-04-07",
+      "drafted_by": "openclaw-task2a"
+    },
     {
       "date": "2026-04-06",
       "section": "10.7",
