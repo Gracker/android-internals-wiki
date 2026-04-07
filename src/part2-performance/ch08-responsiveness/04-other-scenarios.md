@@ -2,7 +2,7 @@
 title: "其他响应速度场景"
 chapter: "8.4"
 section: "8.4"
-status: finalized
+status: ready-for-review
 drafted_date: "2026-04-02"
 drafted_by: "openclaw-task2a"
 reviewed_date: "2026-04-06"
@@ -11,6 +11,9 @@ applicable_versions: "Android 8.0 (API 26) - Android 16 (API 36)"
 last_verified: "2026-04-02"
 last_verified_against: "AOSP android-16.0.0_r1, developer.android.com"
 confidence: medium
+polish_count: 1
+polish_date: "2026-04-07"
+polish_by: "task2b-polish"
 sources:
   - type: aosp
     path: "frameworks/base/core/java/android/app/Activity.java"
@@ -112,11 +115,24 @@ Fragment 的切换比 Activity 轻量得多——它不需要跨进程通信，�
 
 对于 Fragment 切换的具体优化手段：
 
-**1. 布局预加载。** 利用 `FragmentFactory` 在需要之前提前创建 Fragment 实例，或者在 `setFragmentResultListener` 注册后提前 inflate 布局。更直接的做法是在 `onCreate()` 阶段就 `commit()` 一个 `setReorderingAllowed(true)` 的事务，让系统有机会并行处理。
+**1. 利用 FragmentFactory 注入预加载数据。** `FragmentFactory` 的核心能力不是「提前创建 Fragment」，而是在系统创建 Fragment 实例时注入依赖。如果某个 Fragment 需要初始化数据（配置参数、预查询结果），可以在 `FragmentFactory.instantiate()` 中通过 `setArguments()` 注入，避免 Fragment 在 `onCreate()` 中再做同步数据获取。另外，在 `onCreate()` 阶段就 `commit()` 一个 `setReorderingAllowed(true)` 的事务，可以让系统并行处理多个 Fragment 操作，减少事务串行化带来的等待。
 
 ```java
-// 利用 FragmentFactory 提前准备 Fragment
-fragmentManager.fragmentFactory = new MyFragmentFactory(/* pre-loaded data */);
+// 自定义 FragmentFactory：在系统创建 Fragment 时注入预加载数据
+public class PreloadFragmentFactory extends FragmentFactory {
+    @NonNull
+    @Override
+    public Fragment instantiate(@NonNull ClassLoader loader, @NonNull String className) {
+        Fragment fragment = super.instantiate(loader, className);
+        // 根据 Fragment 类型注入预加载数据，避免 onCreate 中的同步获取
+        if (fragment instanceof DetailFragment) {
+            Bundle args = new Bundle();
+            args.putParcelable("preload_data", fetchPreloadData());
+            fragment.setArguments(args);
+        }
+        return fragment;
+    }
+}
 ```
 
 **2. 使用 postponeEnterTransition()。** 当 Fragment 包含异步加载内容（如网络图片、RecyclerView 数据）时，先调用 `postponeEnterTransition()` 延迟转场动画，等数据加载完成后再调用 `startPostponedEnterTransition()`。这样用户看到的转场动画背后是已经准备好的内容，而不是加载中的空白。
@@ -292,7 +308,7 @@ Trace.endSection();
 
 ## 搜索响应速度：实时搜索的防抖与预加载
 
-「边输入边搜索」（Search-as-you-type）是现代 App 的标配功能。但它也是最容易做错的响应速度场景之一：如果每次按键都触发一次搜索请求，轻则浪费流量、重则把服务器打挂，更不要说在弱网环境下大量请求排队导致的卡顿。
+「边输入边搜索」（Search-as-you-type）是现代 App 的标配功能。但它也是最容易做错的响应速度场景之一：如果每次按键都触发一次搜索请求，轻则浪费流量，重则压垮服务端，更不要说在弱网环境下大量请求排队导致的卡顿。
 
 ### 防抖（Debounce）：搜索响应的基石
 
@@ -373,9 +389,8 @@ fun View.setOnSingleClickListener(delay: Long = 500L, onClick: (View) -> Unit) {
 
 ```
 [图：四种响应速度场景在 Perfetto 中的典型模式对比]
+[待补充：Perfetto Trace 截图——同一 Trace 文件中四种场景的对照视图]
 ```
-
-[待补充：Perfetto Trace 截图对比展示四种场景]
 
 ---
 
@@ -428,6 +443,6 @@ debounce 的目的是减少无效搜索，不是加快搜索速度。设太短�
   - [Fragment 生命周期](https://developer.android.com/guide/fragments/lifecycle)
   - [RAIL 性能模型](https://developer.android.com/topic/performance/vitals)
   - [Kotlin Flow](https://developer.android.com/kotlin/flow)
-- [来源: obsidian/Personal-Knowlodge/source/2026-03-09_wechat_一文读懂_Fragment_的方方面面.md]
-- [来源: obsidian/Personal-Knowlodge/source/2026-03-06_wechat_从input响应性能差的issue演示perfetto_trace用法.md]
-- [来源: obsidian/Personal-Knowlodge/source/2026-03-05_wechat_Android_针对app的view_input优化.md]
+- 微信技术文章：「一文读懂 Fragment 的方方面面」（2026-03，Obsidian 素材库）
+- 微信技术文章：「从 input 响应性能差的 issue 演示 Perfetto trace 用法」（2026-03，Obsidian 素材库）
+- 微信技术文章：「Android 针对 App 的 View Input 优化」（2026-03，Obsidian 素材库）
