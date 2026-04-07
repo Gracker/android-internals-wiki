@@ -1,16 +1,19 @@
 ---
 title: "App 耗电优化"
 chapter: "11.2"
-status: finalized
+status: ready-for-review
 section: "11.2"
 drafted_date: "2026-04-03"
 drafted_by: "openclaw-task2a"
 reviewed_date: "2026-04-04"
 reviewed_by: "openclaw-task6"
+polish_count: 1
+polish_date: "2026-04-07"
+polish_by: "task2b-polish"
 applicable_versions: "Android 5.0 (API 21) - Android 16 (API 36)"
 last_verified: "2026-04-03"
 last_verified_against: "AOSP android-16.0.0_r1"
-confidence: medium
+confidence: medium-high
 sources:
   - type: official
     path: "https://developer.android.com/topic/performance/power"
@@ -22,8 +25,24 @@ sources:
     path: "frameworks/base/core/java/android/os/PowerManager.java"
   - type: aosp
     path: "frameworks/base/services/core/java/com/android/server/power/PowerManagerService.java"
-tags: ['wakelock', 'jobscheduler', 'workmanager', 'doze', 'location', 'alarm', 'power']
-related_chapters: ["11.1", "11.3", "5.6", "5.4"]
+  - type: blog
+    path: "Obsidian Cubox - 借助 Android Studio 中的功耗性能分析器进行 A-B 测试"
+  - type: blog
+    path: "Obsidian Cubox - SoC 低功耗问题定位及优化的 10 个思路"
+  - type: blog
+    path: "Obsidian Cubox - 抖音功耗优化实践"
+  - type: blog
+    path: "Obsidian Cubox - BatteryHistorian Android 手机耗电分析神器"
+  - type: official
+    path: "https://developer.android.com/reference/android/os/PowerManager.WakeLock"
+  - type: official
+    path: "https://firebase.google.com/docs/cloud-messaging"
+  - type: official
+    path: "https://developer.android.com/about/versions/14/changes/fgs-types"
+  - type: official
+    path: "https://developer.android.com/about/versions/15/changes"
+tags: ['wakelock', 'jobscheduler', 'workmanager', 'doze', 'location', 'alarm', 'power', 'fgs', 'foreground-service', 'fcm', 'alarmmanager', 'geofencing', 'battery-historian', 'camera']
+related_chapters: ["11.1", "11.3", "5.6", "5.4", "5.10", "11.5"]
 ---
 
 # App 耗电优化
@@ -204,7 +223,7 @@ val locationRequest = LocationRequest.Builder(
 
 这段代码有两个省电要点。第一，`setMaxUpdateDelayMillis()` 启用了批量交付模式：FLP 内部按 60 秒间隔计算位置，但不是每次都唤醒 App，而是积累最多 5 分钟后一次性交付一批位置更新。这用延迟换取了功耗——App 唤醒次数从每分钟一次降低到每 5 分钟一次。
 
-第二，`setDurationMillis()` 设置了自动超时。即使忘记移除位置请求，1 小时后 FLP 会自动停止更新，防止因代码 bug 导致无限定位。
+第二，`setDurationMillis()` 设置了自动超时。即使忘记移除位置请求，1 小时后 FLP 会自动停止更新，防止因代码缺陷导致无限定位。
 
 ### Geofencing 的省电优势
 
@@ -318,7 +337,9 @@ AlarmManager 的使用情况在 Battery Historian 的 "Alarm" 行中显示。如
 
 ## 前台服务的功耗考量与 Android 14+ 的限制
 
-前台服务（Foreground Service，FGS）在 Android 14（API 34）经历了重大变革，系统从"信任开发者声明"转向"强制类型分类 + 运行时权限验证"。
+前面讨论的后台任务调度和 Alarm 优化，核心思路都是"尽量让系统决定什么时候执行"。但有些场景 App 确实需要持续在后台运行——音乐播放、导航、位置追踪。前台服务就是为这些场景设计的，它通过通知栏告知用户"这个 App 正在后台工作"，换取系统不会因为后台限制而杀死它。问题在于，FGS 一旦启动就不受 Doze 限制，如果滥用，功耗影响比 WakeLock 更严重——WakeLock 至少还会在 Doze 中被延迟，FGS 则完全不受约束。
+
+Android 14（API 34）对 FGS 的治理经历了重大变革，系统从"信任开发者声明"转向"强制类型分类 + 运行时权限验证"。
 
 ### FGS 类型与权限
 
@@ -342,7 +363,7 @@ Android 15（API 35）对 `dataSync` 和新增的 `mediaProcessing` 类型引入
 
 ### FGS 的功耗分析方法
 
-在分析 App 的 FGS 功耗时，我们关注两点：
+在分析 App 的 FGS 功耗时，我们关注两个层面。
 
 第一，**FGS 是否真的需要**。很多 App 启动 FGS 只是为了避免后台执行限制，但实际工作用 WorkManager 就能完成。在 Perfetto 中，可以通过 `Svc` track 观察前台服务的生命周期。如果 FGS 长时间运行但没有对应的 CPU 活动，说明 FGS 可能只是为了保活。
 
@@ -352,7 +373,7 @@ Android 15（API 35）对 `dataSync` 和新增的 `mediaProcessing` 类型引入
 
 ## Camera/Audio 等硬件资源的功耗优化
 
-Camera 和 Audio 是 App 中功耗较高的硬件资源。它们不像 GPS 那样有明确的"高精度/低精度"选择，但使用方式仍然对功耗有显著影响。
+除了 CPU、网络、GPS 这些"大头"，Camera 和 Audio 也是不少 App 的功耗盲区。视频通话类 App 的 Camera 传感器持续运行、音乐类 App 的 Audio 后台播放，都属于"用户能感知到但开发者很少主动优化"的功耗来源。它们的优化空间不如 WakeLock 或网络请求那么大，但在特定场景下（比如直播、视频会议），Camera 的功耗可以占到整机的 30% 以上。
 
 ### Camera
 
@@ -374,12 +395,11 @@ Audio 的功耗优化主要关注两个方面：
 
 ## 与其他章节的关系
 
-本章讨论的 App 耗电优化，与前面几个章节紧密关联：
+App 耗电优化不是孤立的话题，它与全书的多个章节形成上下游关系。
 
-- **11.1 功耗模型**：理解了功耗模型中各硬件模块的功耗参数，才能理解为什么 WakeLock、GPS、网络是重点优化对象。
-- **5.4 DVFS 与功耗管理**：CPU 频率动态调节是系统层面的省电机制，App 层面的优化（减少 CPU 使用时间、使用约束条件）配合 DVFS 才能达到最佳效果。
-- **5.6 Android 功耗管理**：Doze 和 App Standby 是系统对 App 后台行为的管控，理解这些机制才能写出"系统友好"的 App。
-- **9.2 ANR 类型与触发条件**：一些 App 为了避免 ANR 而过度使用前台服务和 WakeLock，反而导致功耗问题。两者需要平衡。
+从系统层面看，§11.1 拆解了各硬件模块的功耗参数，是我们判断"优化哪个模块收益最大"的依据。§5.4 DVFS 机制在 CPU 层面动态调节频率和电压，App 减少不必要的 CPU 使用时间，就是在配合 DVFS 让设备更快进入低频低功耗状态。§5.6 Doze 和 App Standby 是系统对后台行为的全局管控，理解了这些机制的设计意图，才能写出不会与系统优化"打架"的 App。
+
+从关联问题看，§9.2 ANR 分析中经常遇到一个矛盾：一些 App 为了避免主线程阻塞导致 ANR，把本该在主线程的工作推到后台 Service 中持续执行，结果 ANR 是少了，功耗却上去了。§5.10 对 JobScheduler 和 WorkManager 的底层调度机制做了更深入的分析，可以帮助理解 WorkManager 的约束条件在 JobScheduler 层面是怎么实现的。§11.5 对 WakeLock 的系统级机制（PowerManagerService 的 wakelocks 管理）有更详细的源码分析。
 
 ## 常见问题与误区
 
@@ -413,5 +433,11 @@ WorkManager 确实比手动调度更省电，但它不是银弹。如果 App 注
 - [Android 官方：前台服务类型（Android 14）](https://developer.android.com/about/versions/14/changes/fgs-types)
 - [AOSP PowerManager.java](https://cs.android.com/android/platform/superproject/+/master:frameworks/base/core/java/android/os/PowerManager.java)
 - [AOSP PowerManagerService.java](https://cs.android.com/android/platform/superproject/+/master:frameworks/base/services/core/java/com/android/server/power/PowerManagerService.java)
+- [Android 官方：位置服务 Geofencing](https://developer.android.com/training/location/geofencing)
+- [Android 官方：Firebase Cloud Messaging](https://firebase.google.com/docs/cloud-messaging)
+- [Android 官方：Battery Historian 使用指南](https://developer.android.com/topic/performance/power/setup-battery-historian)
 - [来源: Obsidian Cubox - 借助 Android Studio 中的功耗性能分析器进行 A-B 测试]
 - [来源: Obsidian Cubox - 谈功耗是什么]
+- [来源: Obsidian Cubox - SoC 低功耗问题定位及优化的 10 个思路]
+- [来源: Obsidian Cubox - BatteryHistorian Android 手机耗电分析神器]
+- [来源: Obsidian Cubox - 抖音功耗优化实践]
