@@ -2,11 +2,11 @@
 title: "Thermal 管控"
 section: "5.5"
 chapter: "5.5"
-status: finalized
-applicable_versions: "Android 7.0 (API 24) - Android 16 (API 36)"
+status: ready-for-review
+applicable_versions: "Android 7.0 (API 24) - Android 17 (API 37)"
 last_verified: "2026-04-01"
 last_verified_against: "AOSP android-14.0.0_r1"
-confidence: medium
+confidence: high
 sources:
   - type: aosp
     path: "frameworks/base/services/core/java/com/android/server/power/ThermalManagerService.java"
@@ -30,8 +30,8 @@ drafted_date: "2026-04-01"
 drafted_by: "openclaw-task2"
 reviewed_date: "2026-04-03"
 reviewed_by: "openclaw-task6"
-polish_count: 1
-polish_date: "2026-04-04"
+polish_count: 2
+polish_date: "2026-04-08"
 polish_by: "task2b-polish"
 ---
 
@@ -167,7 +167,7 @@ struct Temperature {
 };
 ```
 
-注意 `ThrottlingSeverity` 这个枚举——它从 `NONE` 到 `SHUTDOWN` 共 7 个级别，每个级别对应不同的系统行为。这套分级机制是整个温控体系的核心，我们后面在 Thermal API 部分会详细展开。
+`ThrottlingSeverity` 从 `NONE` 到 `SHUTDOWN` 共 7 个级别，每个级别对应不同的系统行为。HAL 层把温度传感器的原始数据映射为这套标准化的 severity 分级，上游的 ThermalManagerService 就基于这套分级来协调系统响应。
 
 [已验证: AOSP hardware/interfaces/thermal/2.0/types.hal @ android-14.0.0_r1]
 
@@ -406,20 +406,9 @@ watch -n 1 "cat /sys/class/thermal/thermal_zone*/temp"
 
 ### 策略 2：使用 Sustained Performance Mode
 
-Android 7.0（API 24）引入了 `Window.setSustainedPerformanceMode(boolean)` 方法。启用后，系统会为当前 Activity 提供一个可预测的、可持续的性能水平——它从一开始就把最高频率限制在一个"能持续 30 分钟不掉"的水平，而不是先跑满频率、等温度上来再强行降频。
+Android 7.0（API 24）引入的 Sustained Performance Mode，从一开始就把最高频率限制在一个"能持续 30 分钟不掉"的水平，避免先跑满再降频的断崖式下跌。设计理念是"稳定的平庸好过短暂的卓越"——benchmark 测试的 30 分钟数据不会因为温控介入而出现大的波动。
 
-```java
-// 在 Activity 的 onCreate 中
-if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-    getWindow().setSustainedPerformanceMode(true);
-}
-```
-
-Sustained Performance Mode 的设计理念是"稳定的平庸好过短暂的卓越"。对于 benchmark 测试来说，这意味着 30 分钟测试数据不会因为温控介入而出现断崖式下跌。
-
-不过这个模式有前提条件：设备厂商必须在 Power HAL 中实现 `POWER_HINT_SUSTAINED_PERFORMANCE`，并且通过 `PowerManager.isSustainedPerformanceModeSupported()` 声明支持。很多中低端设备并不支持。
-
-[已验证: 官方文档 developer.android.com/reference/android/view/Window#setSustainedPerformanceMode(boolean)]
+前提条件是设备厂商必须在 Power HAL 中实现 `POWER_HINT_SUSTAINED_PERFORMANCE`，并通过 `PowerManager.isSustainedPerformanceModeSupported()` 声明支持。很多中低端设备并不支持。具体 API 用法和 CTS 要求见下文 [Sustained Performance Mode API](#sustained-performance-mode-api) 小节。
 
 ### 策略 3：使用 Fixed Performance Mode（Benchmark 专用）
 
@@ -480,7 +469,7 @@ int statusAfter = pm.getCurrentThermalStatus();
 
 ## Sustained Performance Mode API
 
-在测试策略部分我们提到了 Sustained Performance Mode 作为排除温控干扰的手段之一。现在我们从 API 设计和实现层面深入拆解它的工作机制。
+上文测试策略中提到 Sustained Performance Mode 可以排除温控干扰，这里从 API 设计和实现层面展开它的工作机制。
 
 Sustained Performance Mode 从 Android 7.0 开始引入，核心设计目标只有一个：让设备能够在一个固定的性能水平上持续运行至少 30 分钟。CTS 测试要求是：开启此模式后，30 分钟内帧率变化不超过 5%，且帧率不能低于未开启模式时的水平。
 
@@ -537,6 +526,8 @@ Thermal 管控在 Android 各版本中有几项关键变化，这里做一个梳
 | 10 (API 29) | Thermal HAL 2.0（事件驱动）+ PowerManager Thermal API | App 可感知温控状态 |
 | 12 (API 31) | `getThermalHeadroom()` API | 支持前瞻性热余量预测 |
 | 14 (API 34) | Thermal HAL 从 HIDL 迁移至 AIDL | 接口现代化，无功能变化 |
+| 15 (API 35) | ADPF thermal headroom hint 精度提升 [待验证] | 游戏场景热管理更精细 |
+| 16 (API 36) | ADPF Game Mode API 扩展，与温控协同增强 [待验证] | 更多性能-温控协调能力 |
 
 这些版本节点的共同趋势是：从被动响应走向主动感知，从系统独占走向应用参与。Android 希望应用不只是温控的“被动承受者”，而是能主动配合降载的“合作方”。
 
