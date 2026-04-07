@@ -108,16 +108,35 @@
   {
     "section": "1.13",
     "section_title": "MessageQueue 机制与 DeliQueue 无锁优化",
-    "priority": 80,
-    "reason": "知识缺口挖掘：Android 17 DeliQueue 是主线程性能的重大变更，研究素材 Q:20/20，锁竞争是掉帧根因之一",
+    "priority": 90,
+    "reason": "[review回炉] 3个需确认问题：CLH vs Treiber描述矛盾、任务重排机制可能遗漏、applicable_versions范围过大",
     "material_paths": [
-      "intake/research-feeds/2026-04-05-19-android17-deliqueue-lockfree-messagequeue.md"
+      "intake/suggestions.md（含 review 意见）"
     ],
-    "added_by": "task2a-knowledge-gap",
-    "added_at": "2026-04-05T19:10:00+08:00",
-    "status": "completed",
-    "completed_at": "2026-04-06T04:10:00+08:00",
-    "completed_by": "openclaw-task2a"
+    "review_issues": [
+      {
+        "type": "需确认",
+        "location": "DeliQueue 架构描述",
+        "detail": "掘金素材称 CLH 队列变体，正文称 Treiber 栈 + 最小堆——数据结构矛盾",
+        "suggestion": "核实掘金来源，确认实际使用的无锁结构"
+      },
+      {
+        "type": "需确认",
+        "location": "DeliQueue 功能范围",
+        "detail": "素材摘要提及'重排任务等待队列'，正文仅描述无锁替换，可能遗漏任务优先级重排机制",
+        "suggestion": "确认 DeliQueue 是否包含任务重排功能"
+      },
+      {
+        "type": "需确认",
+        "location": "frontmatter applicable_versions",
+        "detail": "API 1-37 范围过大，核心内容为 Android 17 DeliQueue",
+        "suggestion": "缩小范围或增加说明"
+      }
+    ],
+    "added_by": "task6-review",
+    "added_at": "2026-04-08T06:59:53",
+    "status": "pending",
+    "original_review_log": "logs/review/2026-04-08-0654-review.md"
   },
   {
     "section": "2.17",

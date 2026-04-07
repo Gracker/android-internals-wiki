@@ -638,3 +638,17 @@ tags:
   4. Android 17 新增触发器：ANOMALY/APP_COMPAT/APP_REQUEST_RUNNING_TRACE（非文中的 WAKEUP_LATENCY 等）
   5. 保留业务场景描述，只替换代码部分
 - **review 日志**：logs/review/2026-04-08-04-review.md
+
+## [Task6 Review] 1.13 MessageQueue 机制与 DeliQueue 无锁优化 — 2026-04-08
+- **类型**：需确认
+- **位置**：全文 DeliQueue 架构描述 vs 掘金素材
+- **问题**：掘金素材称 DeliQueue 使用"CLH 队列变体"，本章基于 Google 官方博客描述为 Treiber 栈 + 最小堆。两者是完全不同的数据结构，需确认哪个准确。另外素材摘要提及"重排任务等待队列"，与正文描述的无锁替换机制有概念差异，可能遗漏了任务优先级重排层面。
+- **建议**：核实掘金文章原始来源；如果 DeliQueue 确实同时包含任务重排机制，需在正文中补充描述
+- **review 日志**：logs/review/2026-04-08-0654-review.md
+
+## [Task6 Review] 1.13 MessageQueue 机制与 DeliQueue 无锁优化 — 2026-04-08
+- **类型**：需确认
+- **位置**：frontmatter applicable_versions
+- **问题**：标注为 API 1 - API 37，但章节核心是 Android 17 的 DeliQueue 变化，范围可能误导读者
+- **建议**：考虑缩小范围或增加说明文字
+- **review 日志**：logs/review/2026-04-08-0654-review.md

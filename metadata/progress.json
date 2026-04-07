@@ -4206,7 +4206,7 @@
     },
     "1.13": {
       "title": "MessageQueue 机制与 DeliQueue 无锁优化",
-      "status": "ready-for-review",
+      "status": "reviewed",
       "file": "src/part1-fundamentals/ch01-architecture/13-messagequeue-deliqueue.md",
       "drafted_date": "2026-04-06",
       "drafted_by": "openclaw-task2a",
@@ -4218,7 +4218,9 @@
       "word_count": "~9500",
       "confidence": "medium",
       "created_date": "2026-04-05",
-      "created_by": "task2a-knowledge-gap"
+      "created_by": "task2a-knowledge-gap",
+      "reviewed_date": "2026-04-08",
+      "reviewed_by": "openclaw-task6"
     },
     "8.4": {
       "title": "其他响应速度场景",
