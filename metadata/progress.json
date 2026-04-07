@@ -12,8 +12,8 @@
     "processing": 0,
     "ready-to-publish": 12,
     "last_reviewed": "2026-04-08",
-    "last_reviewed_section": "9.4 特殊场景的 ANR",
-    "reviewed_today": 5
+    "last_reviewed_section": "10.2 内存泄漏",
+    "reviewed_today": 6
   },
   "reviewed_sections": {
     "8.1": {
@@ -649,6 +649,23 @@
         "consistency": 5,
         "verification": 4,
         "metadata": 5
+      }
+    },
+    "10.2": {
+      "reviewed_date": "2026-04-08",
+      "reviewed_by": "openclaw-task6",
+      "review_status": "finalized",
+      "fixes_applied": [
+        "验证标注标准化: 3处[来源:]→[已验证: 来源见 ...]（writing-guide §4）",
+        "frontmatter补全: drafted_by/reviewed_date/reviewed_by",
+        "status: ready-for-review → finalized"
+      ],
+      "scores": {
+        "structure": 4,
+        "expression": 4,
+        "consistency": 5,
+        "verification": 4,
+        "metadata": 4
       }
     }
   },
