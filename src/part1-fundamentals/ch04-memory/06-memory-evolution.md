@@ -1,10 +1,13 @@
 ---
 title: "内存相关的版本演进"
 chapter: "4.6"
-status: finalized
+status: ready-for-review
 section: "4.6"
 reviewed_date: "2026-04-03"
 reviewed_by: "openclaw-task6"  # second review after rework
+polish_count: 1
+polish_date: "2026-04-07"
+polish_by: "task2b-polish"
 rework_date: "2026-04-02"
 rework_by: "openclaw-task2b"
 applicable_versions: "Android 5.0 (API 21) - Android 16 (API 36)"
@@ -67,11 +70,11 @@ drafted_by: "openclaw-subagent"
 
 ## 为什么要了解内存相关的版本演进
 
-如果你在日常工作中需要分析来自不同 Android 版本设备的 Trace，你会发现一个让人困惑的现象：同样的内存分配模式，在 Android 8.0 的设备上 GC 暂停可能只有 2ms，但在 Android 6.0 的设备上却高达 30ms。同样是加载一张大图，在 Android 7.1 上 Java 堆直接爆了，在 Android 8.0 上却风平浪静。
+如果我们在日常工作中需要分析来自不同 Android 版本设备的 Trace，我们会发现一个让人困惑的现象：同样的内存分配模式，在 Android 8.0 的设备上 GC 暂停可能只有 2ms，但在 Android 6.0 的设备上却高达 30ms。同样是加载一张大图，在 Android 7.1 上 Java 堆直接爆了，在 Android 8.0 上却风平浪静。
 
 这不是魔法，是 Android 在每个大版本中都对内存管理做了或多或少的改动。有些改动是底层架构级的（比如 ART 替代 Dalvik），有些是分配策略级的（比如 Bitmap 像素数据搬家），有些是安全增强型的（比如 Scudo 和 MTE）。如果你不了解这些变化的脉络，拿到一份旧设备的 Trace 时可能会做出错误的判断——把系统行为误认为是应用问题，或者反过来。
 
-本节的目标是把这些散落在各版本中的内存相关变更串成一条清晰的演进线。读完之后，你应该能回答：给定一个 Android 版本和一种内存现象，这是该版本的正常行为还是异常？这个版本的内存子系统与更新版本相比有什么本质区别？以及，升级到新版本后，你的 App 需要做哪些适配？
+本节的目标是把这些散落在各版本中的内存相关变更串成一条清晰的演进线。读完之后，你应该能回答：给定一个 Android 版本和一种内存现象，这是该版本的正常行为还是异常？这个版本的内存子系统与更新版本相比有什么本质区别？以及，升级到新版本后，App 需要做哪些适配？
 
 [已验证: 官方文档 source.android.com/docs/core/perf/art-management]
 
@@ -127,7 +130,7 @@ AOSP 源码路径：
 
 **Java 堆的"天花板"变了。** 之前 Bitmap 像素数据计入 `dalvikHeapSize`，受 `Runtime.getRuntime().maxMemory()` 限制。迁移后，Bitmap 不再占用 Java 堆配额。这意味着同样大小的 Java 堆，可以容纳更多的 Java 对象（或者说，不容易因为 Bitmap 而触发 Java OOM）。
 
-**内存统计的"作弊"问题。** 虽然 Bitmap 不在 Java 堆了，但它仍然占用进程的 PSS（Proportional Set Size）。通过 `dumpsys meminfo` 查看，你会发现 `Native Heap` 部分增大了。一个常见的错误是：开发者通过 `Runtime.getRuntime().freeMemory()` 判断内存是否紧张，但在 Android 8.0+ 上，这个方法只反映 Java 堆的情况，完全不包含 Bitmap 占用的 Native 内存。如果你的 App 有大量图片，可能 Java 堆看起来还很充裕，但进程整体内存已经接近系统限制。
+**内存统计的"作弊"问题。** 虽然 Bitmap 不在 Java 堆了，但它仍然占用进程的 PSS（Proportional Set Size）。通过 `dumpsys meminfo` 查看，你会发现 `Native Heap` 部分增大了。一个常见的错误是：开发者通过 `Runtime.getRuntime().freeMemory()` 判断内存是否紧张，但在 Android 8.0+ 上，这个方法只反映 Java 堆的情况，完全不包含 Bitmap 占用的 Native 内存。如果App 有大量图片，可能 Java 堆看起来还很充裕，但进程整体内存已经接近系统限制。
 
 **回收机制的变更。** Native 堆的 Bitmap 不再由 Java GC 直接回收。Android 8.0 引入了 `NativeAllocationRegistry` 机制：创建 Bitmap 时，将一个 Native 回收函数注册到 Java 层的 Cleaner（基于虚引用）。当 Java Bitmap 对象被 GC 回收时，Cleaner 触发 Native 回收函数，最终通过 `free()` 释放像素数据。这比 Android 7.0 之前使用的 Finalizer 机制更稳定、更可预测。
 
@@ -154,9 +157,7 @@ AOSP 源码路径：
 
 [已验证: Cubox/不同版本上 Bitmap 内存分配与回收原理对比-2023-01-24.md — 表格总结]
 
-## Android 8.0–10：GC 演进为 Concurrent Copying，暂停时间降至亚毫秒
-
-[存疑: 标题称“降至亚毫秒”，但正文数据显示 Young GC 暂停 1-3ms、CC 暂停减少 85%（从 ~10-20ms 基线），均非严格亚毫秒（<1ms）。需确认是否有 Google 官方数据支持亚毫秒级暂停的说法。如无，建议标题改为“暂停时间大幅降低”或“降至毫秒级”]
+## Android 8.0–10：GC 演进为 Concurrent Copying，暂停时间降至毫秒级
 
 我们在 4.3 节中详细解析了 ART 的 CC GC 机制，这里聚焦于"版本差异"这个维度——从 CMS 到 CC 的跨越，以及在 Android 10 上的进一步优化。
 
@@ -186,7 +187,7 @@ Android 10 在 CC GC 的基础上进一步完善了分代垃圾回收。ART 将 
 
 分代策略大幅减少了 Full GC 的频率。在 120Hz 设备上，帧间隔只有 8.3ms，1-3ms 的 Young GC 暂停通常不会导致丢帧。即使偶尔发生，也只是丢一帧，用户几乎感知不到。但 Android 7.0 时代的 CMS GC 在同样的场景下，Full GC 可能暂停 10-50ms，在 120Hz 设备上意味着连续丢 6 帧以上。
 
-在 Perfetto 中，我们可以通过 `art_gc` counter 观察这些变化。Android 10+ 的设备上，你会看到大量短暂的、频率稳定的 Young GC 活动（每 2-5 秒一次），而 Full GC 非常罕见。如果你在 Android 10+ 的设备上仍然看到频繁的 Full GC，那几乎可以确定是应用存在内存问题（泄漏或过度分配）。
+在 Perfetto 中，我们可以通过 `art_gc` counter 观察这些变化。Android 10+ 的设备上，你会看到大量短暂的、频率稳定的 Young GC 活动（每 2-5 秒一次），而 Full GC 非常罕见。如果我们在 Android 10+ 的设备上仍然看到频繁的 Full GC，那几乎可以确定是应用存在内存问题（泄漏或过度分配）。
 
 [已验证: AOSP android-15.0.0_r1, art/runtime/gc/collector/concurrent_copying.cc]
 [来源: research-feed 2026-03-31-11-ch04-art-generational-gc.md]
@@ -385,7 +386,7 @@ Scudo 作为 Android 的默认 Native 内存分配器，是 MTE 在堆上检测�
 
 ### 对 App 开发者的影响
 
-如果你的 App 包含 Native 代码（JNI 库、C/C++ SDK），MTE 的启用意味着之前"碰巧没出问题"的内存错误可能在新设备上被检测到并导致 crash。这是好事——它帮你提前发现了安全漏洞。但需要确保：
+如果 App 包含 Native 代码（JNI 库、C/C++ SDK），MTE 的启用意味着之前"碰巧没出问题"的内存错误可能在新设备上被检测到并导致 crash。这是好事——它帮你提前发现了安全漏洞。但需要确保：
 
 1. **使用最新 NDK 编译**（r25+），确保生成的代码与 MTE 兼容。
 2. **避免硬编码页大小**（`#define PAGE_SIZE 4096`），改为 `sysconf(_SC_PAGESIZE)`。
@@ -431,23 +432,7 @@ Glide 和 Coil 等图片加载库默认在 API 26+ 上使用硬件 Bitmap。这�
 
 关于 Hardware Bitmap 的使用建议，详见 4.5 节「App 内存优化」。
 
-## 版本演进速查表
-
-为了方便日常查阅，我们把本节覆盖的所有内存相关版本变化汇总成一张表：
-
-| 版本 | 变更 | 影响 |
-|---|---|---|
-| Android 5.0 | ART 替代 Dalvik，CMS GC + RosAlloc | GC 暂停从 50-100ms 降到 10-20ms；多线程分配性能提升 |
-| Android 8.0 | CC GC 成为默认；Read Barrier | GC 暂停减少 85%，堆大小减少 32%，分配速度提升 70% |
-| Android 8.0 | Bitmap 像素数据迁移到 Native 堆 | Java 堆 OOM 大幅减少；回收机制改为 NativeAllocationRegistry |
-| Android 8.0 | 引入 Hardware Bitmap | GPU 侧存储，不计入 PSS |
-| Android 10 | 分代 CC GC 成熟 | Young GC 暂停 1-3ms，Full GC 频率大幅降低 |
-| Android 11 | Scudo 替代 jemalloc（64 位大内存设备） | Native 内存安全检测增强，double-free/UAF 可检测 |
-| Android 14+ | MTE 支持开始落地（Pixel 8 首发硬件） | 硬件级内存安全检测，Async 模式开销 1-2% |
-| Android 15 | CMC GC（基于 UFFD）替代 CC GC | 去掉 Read Barrier，GC 不运行时零额外开销 |
-| Android 15 | 16KB Page Size 支持 | TLB 命中率提升；冷启动快 3-16%；App 需适配 NDK r28+ |
-
-### 16KB Page Size：从 4KB 到 16KB 的跨越
+## Android 15+：16KB Page Size 的全面启用
 
 传统 Android 设备使用 4KB 的内存页面大小，这是 Linux 内核在大多数架构上的默认值。Android 15 引入了 16KB 页面大小的支持，Android 16 开始在高端设备（8GB+ RAM）上默认启用。Google Play 自 2025 年 11 月起强制要求所有新 App 和更新支持 16KB 页面对齐。
 
@@ -467,17 +452,34 @@ Google 官方测试的量化数据相当可观：
 [已验证: 官方文档 source.android.com/docs/architecture/16kb-page-size]
 [来源: intake/research-feeds/2026-04-02-07-ch04-16kb-page-size-impact.md]
 
+
+## 版本演进速查表
+
+为了方便日常查阅，我们把本节覆盖的所有内存相关版本变化汇总成一张表：
+
+| 版本 | 变更 | 影响 |
+|---|---|---|
+| Android 5.0 | ART 替代 Dalvik，CMS GC + RosAlloc | GC 暂停从 50-100ms 降到 10-20ms；多线程分配性能提升 |
+| Android 8.0 | CC GC 成为默认；Read Barrier | GC 暂停减少 85%，堆大小减少 32%，分配速度提升 70% |
+| Android 8.0 | Bitmap 像素数据迁移到 Native 堆 | Java 堆 OOM 大幅减少；回收机制改为 NativeAllocationRegistry |
+| Android 8.0 | 引入 Hardware Bitmap | GPU 侧存储，不计入 PSS |
+| Android 10 | 分代 CC GC 成熟 | Young GC 暂停 1-3ms，Full GC 频率大幅降低 |
+| Android 11 | Scudo 替代 jemalloc（64 位大内存设备） | Native 内存安全检测增强，double-free/UAF 可检测 |
+| Android 14+ | MTE 支持开始落地（Pixel 8 首发硬件） | 硬件级内存安全检测，Async 模式开销 1-2% |
+| Android 15 | CMC GC（基于 UFFD）替代 CC GC | 去掉 Read Barrier，GC 不运行时零额外开销 |
+| Android 15 | 16KB Page Size 支持 | TLB 命中率提升；冷启动快 3-16%；App 需适配 NDK r28+ |
+
 [来源: 综合本节各锚点的验证结果汇总]
 
 ## 常见问题与误区
 
 ### 误区一：Android 8.0 后 Bitmap 不用管了
 
-Bitmap 像素数据迁移到 Native 堆后，确实不占用 Java 堆配额了。但它仍然占用进程的 Native 堆和 PSS。如果你的 App 有大量图片（如信息流、图片浏览器），Native 内存同样可能被撑爆。系统通过 lmkd 杀进程时看的是 PSS 总量，不会区分 Java 还是 Native。
+Bitmap 像素数据迁移到 Native 堆后，确实不占用 Java 堆配额了。但它仍然占用进程的 Native 堆和 PSS。如果 App 有大量图片（如信息流、图片浏览器），Native 内存同样可能被撑爆。系统通过 lmkd 杀进程时看的是 PSS 总量，不会区分 Java 还是 Native。
 
 ### 误区二：largeHeap 能解决所有内存问题
 
-largeHeap 只是提高了 Java 堆的上限，它不能增加 Native 堆或进程整体内存的配额。如果你的问题是 Bitmap 过多（Android 8.0+ 占的是 Native 堆）或 Native 内存泄漏，largeHeap 完全帮不上忙。更糟糕的是，更大的 Java 堆意味着 GC 需要扫描更多对象，可能导致更长的暂停时间。
+largeHeap 只是提高了 Java 堆的上限，它不能增加 Native 堆或进程整体内存的配额。如果问题是 Bitmap 过多（Android 8.0+ 占的是 Native 堆）或 Native 内存泄漏，largeHeap 完全帮不上忙。更糟糕的是，更大的 Java 堆意味着 GC 需要扫描更多对象，可能导致更长的暂停时间。
 
 ### 误区三：Scudo 让 Native 内存更安全了，不用再关心内存问题
 
