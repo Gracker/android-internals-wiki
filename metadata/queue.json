@@ -998,9 +998,11 @@
     "section": "11.5",
     "title": "Wakelock 机制与功耗分析",
     "priority": 80,
-    "status": "pending",
+    "status": "completed",
     "created_date": "2026-04-06",
-    "created_by": "task2a-knowledge-gap"
+    "created_by": "task2a-knowledge-gap",
+    "completed_at": "2026-04-07T08:12:35.622539",
+    "completed_by": "openclaw-task2a"
   },
   {
     "section": "7.8",
