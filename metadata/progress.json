@@ -2010,6 +2010,23 @@
   "history": [
     {
       "date": "2026-04-07",
+      "section": "5.6",
+      "title": "Android 功耗管理",
+      "action": "polished",
+      "polish_round": 1,
+      "polish_by": "task2b-polish",
+      "changes": 12,
+      "dimensions": {
+        "A_narrative": 2,
+        "B_code": 0,
+        "C_readability": 1,
+        "D_density": 3,
+        "E_crossref": 1,
+        "F_metadata": 5
+      }
+    },
+    {
+      "date": "2026-04-07",
       "section": "2.19",
       "title": "刷新率切换与帧率适配性能",
       "action": "draft-completed",
@@ -3427,11 +3444,14 @@
     },
     "5.6": {
       "title": "Android 功耗管理",
-      "status": "finalized",
+      "status": "ready-for-review",
       "file": "src/part1-fundamentals/ch05-cpu-power/06-android-power.md",
       "drafted_date": "2026-04-01",
       "reviewed_date": "2026-04-03",
-      "reviewed_by": "openclaw-task6"
+      "reviewed_by": "openclaw-task6",
+      "polish_count": 1,
+      "polish_date": "2026-04-07",
+      "polish_by": "task2b-polish"
     },
     "14.6": {
       "title": "自动化测试工具",

@@ -3,7 +3,7 @@ title: "Android 功耗管理"
 chapter: "5.6"
 section: "5.6"
 status: finalized
-applicable_versions: "Android 6.0 (API 23) - Android 16 (API 36)"
+applicable_versions: "Android 6.0 (API 23) - Android 17 (API 37)"
 last_verified: "2026-04-01"
 last_verified_against: "AOSP android-16.0.0_r1"
 confidence: medium
@@ -22,12 +22,15 @@ sources:
     path: "https://developer.android.com/reference/android/os/PowerManager"
   - type: official
     path: "https://source.android.com/docs/core/power"
-tags: [doze, wakelock, standby, battery, power, jobscheduler, workmanager]
-related_chapters: ["5.4", "5.5", "11.1", "11.2", "14.1"]
+tags: [doze, wakelock, standby, battery, power, jobscheduler, workmanager, alarm, foreground-service, adaptive-battery, suspend, battery-historian]
+related_chapters: ["5.4", "5.5", "5.10", "11.1", "11.2", "14.1"]
 drafted_date: "2026-04-01"
 drafted_by: "openclaw-task2"
 reviewed_date: "2026-04-03"
 reviewed_by: "openclaw-task6"
+polish_count: 1
+polish_date: "2026-04-07"
+polish_by: "task2b-polish"
 ---
 
 # Android 功耗管理
@@ -140,7 +143,7 @@ Wake Locks: size=2
 
 ### Doze：让灭屏后的系统"逐渐安静下来"
 
-Doze 模式在 Android 6.0（Marshmallow）引入，是 Google 解决"灭屏后 App 仍然疯狂活动"问题的方案。它的核心思想很简单：设备灭屏静止一段时间后，逐步限制 App 的后台活动，直到系统几乎完全安静下来。
+Doze 模式在 Android 6.0（Marshmallow）引入，是 Google 解决"灭屏后 App 仍然在后台频繁活动"问题的方案。它的核心思想很简单：设备灭屏静止一段时间后，逐步限制 App 的后台活动，直到系统几乎完全安静下来。
 
 Doze 分为两个级别：
 
@@ -270,7 +273,7 @@ Battery Historian 中的常见场景案例也很有参考价值：充电慢可�
 
 **后台下载/上传**：长时间的后台数据传输需要 WakeLock 保持网络连接。更好的做法是使用 WorkManager 替代手动管理 WakeLock。
 
-**即时通讯长连接**：维持 TCP 长连接需要 CPU 定期处理心跳包。但更推荐使用 FCM（Firebase Cloud Messaging）等推送服务，由系统统一管理唤醒。
+**即时通讯长连接**：维持 TCP 长连接需要 CPU 定期处理心跳包。推荐使用 FCM（Firebase Cloud Messaging）等推送服务，由系统统一管理唤醒。
 
 获取和释放 WakeLock 的标准写法：
 
@@ -401,13 +404,13 @@ Adaptive Battery 工作在设备端（on-device ML），不依赖云端。它观
 
 ## Background Restriction 对后台功耗的控制
 
-Android 为用户提供了多种手动限制 App 后台行为的机制：
+Adaptive Battery 从系统侧智能调整资源分配，而 Android 同时也为用户提供了手动限制 App 后台行为的机制。这两种方式互为补充：ML 预测处理大部分常见情况，用户手动干预则覆盖边缘场景。
 
 **电池优化白名单**：在 Settings > Battery > Battery optimization 中，用户可以指定哪些 App 不受 Doze 限制。但进入白名单并不意味着完全不受限制——Deep Doze 状态下，白名单 App 仍然会失去网络访问权限。
 
 **后台限制开关**：Android 提供了 "Background restricted" 开关，用户可以为特定 App 禁止所有后台活动。这比 Doze 更严格——被限制的 App 不能运行 Job、不能触发 Alarm、不能访问网络（除非在前台）。
 
-**自动限制**：从 Android 12 开始，如果系统检测到某个 App 在后台消耗了过多资源（如频繁唤醒、长时间持锁），会自动弹出通知提醒用户。如果用户确认，该 App 会被移入 Restricted Bucket。
+**自动限制**：从 Android 12 开始，如果系统检测到某个 App 在后台消耗了过多资源（如频繁唤醒、长时间持锁），会自动弹出通知提醒用户。如果用户确认，该 App 会被移入 Restricted Bucket。这标志着 Android 功耗管理从单纯的框架层策略转向了用户参与的"共治"模式。
 
 ## RESTRICTED Bucket 与 Exemption 机制
 
@@ -460,6 +463,7 @@ CPU 空闲（idle）和系统休眠（suspend）是完全不同的状态。CPU i
 - **5.3 大小核架构**：大小核的硬件设计为功耗优化提供了物理基础
 - **5.4 DVFS 与功耗管理**：DVFS 根据负载动态调整频率和电压，是运行时功耗优化的核心
 - **5.5 Thermal 管控**：高温时限制频率和任务，从另一个维度控制系统功耗
+- **5.10 JobScheduler/WorkManager 调度与后台任务性能**：本节涉及的调度框架在 §5.10 有更深入的性能分析，包括 Android 17 新增的 JobDebugInfo API 和 Play Store wakelock 惩罚政策
 - **11.1 Android 功耗模型** / **11.2 App 耗电优化**：从 App 视角更深入地讨论功耗优化策略
 
 本章的脉络是：从底层的 CPU 硬件架构和调度策略（5.1-5.3），到运行时的频率电压控制（5.4），再到热管理（5.5），最后到 Android 框架层的功耗管理（本节）——这是一个从硬件到软件、从微观到宏观的完整功耗管理技术栈。
@@ -474,6 +478,8 @@ CPU 空闲（idle）和系统休眠（suspend）是完全不同的状态。CPU i
 - [Android 官方文档: WorkManager](https://developer.android.com/topic/libraries/architecture/workmanager)
 - [Android 官方文档: Power Profiler](https://developer.android.com/studio/profile/power-profiler)
 - [Android 官方文档: Power values configuration](https://source.android.com/docs/core/power)
+- [Android 16 Behavior Changes: JobScheduler](https://developer.android.com/about/versions/16/behavior-changes-16)
+- [Android 官方文档: PowerManager API reference](https://developer.android.com/reference/android/os/PowerManager)
 - [抖音功耗优化实践](https://mp.weixin.qq.com/s/抖音功耗优化实践)
 - [BatteryHistorian Android手机耗电分析神器](https://mp.weixin.qq.com/s/BatteryHistorian)
 - [SoC低功耗问题定位及优化的10个思路](https://mp.weixin.qq.com/s/SoC低功耗问题定位)
