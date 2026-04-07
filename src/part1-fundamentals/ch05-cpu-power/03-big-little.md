@@ -1,7 +1,7 @@
 ---
 title: "大小核架构"
 chapter: "5.3"
-status: ready-for-review
+status: ready-to-publish
 applicable_versions: "Android 5.0 (API 21) - Android 17 (API 37)"
 last_verified: "2026-03-31"
 last_verified_against: "ARM official documentation, Linux kernel 6.6"
@@ -22,7 +22,7 @@ sources:
 tags: ['big.LITTLE', 'DynamIQ', 'schedutil', 'cpufreq', 'capacity', 'cluster', 'DVFS', 'PELT', 'RTG', 'core-migration', 'EAS', 'HMP']
 related_chapters: ["5.1", "5.2", "5.4", "5.5", "5.6", "2.5"]
 drafted_date: "2026-03-31"
-reviewed_date: "2026-04-02"
+reviewed_date: "2026-04-07"
 reviewed_by: openclaw-task6
 polish_count: 1
 polish_date: "2026-04-07"
@@ -34,7 +34,7 @@ polish_by: "task2b-polish"
 
 ## 为什么要了解大小核架构
 
-打开 Perfetto 的 CPU 视图，你会看到 8 个（或更多）CPU 核心，编号从 0 开始。点击某个线程的 Running 切片，详情面板里有一个 `cpu` 字段，告诉你这个线程此刻跑在几号核心上。仔细观察会发现，同一线程在不同时间段跑在不同的核心上——有时候在 CPU 0，有时候在 CPU 7，而且在这两个核心上的执行速度差异巨大。
+打开 Perfetto 的 CPU 视图，我们会看到 8 个（或更多）CPU 核心，编号从 0 开始。点击某个线程的 Running 切片，详情面板里有一个 `cpu` 字段，告诉你这个线程此刻跑在几号核心上。仔细观察会发现，同一线程在不同时间段跑在不同的核心上——有时候在 CPU 0，有时候在 CPU 7，而且在这两个核心上的执行速度差异巨大。
 
 这不是调度器在"随机分配"。现代手机 SoC 普遍采用大小核（big.LITTLE）异构多核架构，不同类型的核心在性能和功耗之间存在巨大的设计权衡。理解这种架构，是读懂 CPU Scheduling 轨道、判断调度器行为是否合理的基础。一个计算密集型任务如果长时间运行在小核上，它的耗时可能比在大核上慢 2-3 倍；反过来，一个后台同步任务如果被错误地调度到大核上，会白白浪费电量。
 
@@ -83,7 +83,7 @@ DynamIQ 带来了几个关键优势：
 
 在 Perfetto 的 CPU 视图中，核心从 0 开始编号。不同设备的编号规则不同，但通常有一个规律：**小核编号靠前，大核编号靠后**。
 
-不过不能完全依赖编号来判断核心类型——最可靠的方式是查看每个核心的 `cpuinfo_max_freq`。在 Perfetto 中，你可以通过 SQL 查询获取：
+不过不能完全依赖编号来判断核心类型——最可靠的方式是查看每个核心的 `cpuinfo_max_freq`。在 Perfetto 中，我们可以通过 SQL 查询获取：
 
 ```sql
 -- 查看每个 CPU 的最大频率
@@ -317,7 +317,7 @@ schedutil 的决策并不是最终频率，还有几个约束会叠加在 schedu
 - 短时间的突发负载：4 个小核 + 3 个大核 + 1 个超大核全部出动，总并发能力是 8 线程。
 - 持续负载：受限于热设计功耗（TDP），通常不可能所有核心都以最高频率同时运行。调度器会根据温度和功耗预算动态调整每个核心的频率上限。
 
-这也解释了为什么在持续重负载场景（如长时间游戏），即使有 8 个核心，你可能也只能看到 3-4 个核心在高频运行，其余核心被降频甚至离线。
+这也解释了为什么在持续重负载场景（如长时间游戏），即使有 8 个核心，我们可能也只能看到 3-4 个核心在高频运行，其余核心被降频甚至离线。
 
 [已验证: ARM 官方文档 — Cortex-X925 技术规格, developer.arm.com]
 [来源: Personal-Knowlodge/source/Android-Perfetto-09-CPU.md]
