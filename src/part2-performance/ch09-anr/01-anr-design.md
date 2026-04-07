@@ -1,11 +1,13 @@
 ---
 title: "ANR 设计思想"
 chapter: "9.1"
-status: ready-for-review
+status: finalized
 drafted_date: "2026-04-02"
 applicable_versions: "Android 8.0 (API 26) - Android 16 (API 36)"
 last_verified: "2026-04-02"
 last_verified_against: "AOSP android-14.0.0_r1"
+reviewed_date: "2026-04-07"
+reviewed_by: openclaw-task6
 confidence: medium
 sources:
   - type: aosp
@@ -178,7 +180,7 @@ class AppNotResponding {
         }
 
         // 3. 收集系统状态信息（CPU 负载等）
-        mApp.mErrorState.vmInstructionSet);
+        updateCpuStats();
         
         // 4. 生成 traces.txt（通过 SIGQUIT 信号）
         // 向目标进程发送 Signal 3 (SIGQUIT)
@@ -214,7 +216,7 @@ class AppNotResponding {
 
 ## ANR 与 Watchdog 的区别
 
-很多开发者容易混淆 ANR 和 Watchdog 这两个机制，因为它们都涉及"超时检测"。但它们的设计目标、作用范围和处理方式完全不同，理解这个区别对性能分析非常重要。
+不少开发者容易混淆 ANR 和 Watchdog 这两个机制，因为它们都涉及"超时检测"。但它们的设计目标、作用范围和处理方式完全不同，理解这个区别对性能分析非常重要。
 
 ### 作用范围不同
 
