@@ -3,12 +3,12 @@
   "total_sections": 110,
   "metrics": {
     "total": 134,
-    "draft": 12,
-    "ready-for-review": 36,
+    "draft": 11,
+    "ready-for-review": 37,
     "reviewed": 5,
     "finalized": 31,
     "staging_drafts": 0,
-    "last_updated": "2026-04-08T05:08:26+08:00",
+    "last_updated": "2026-04-08T06:02:00+08:00",
     "processing": 0,
     "ready-to-publish": 12,
     "last_reviewed": "2026-04-08",
@@ -1880,15 +1880,30 @@
       "verification_level": "L2",
       "word_count": "~6000",
       "completed_at": "2026-04-08T04:23:26.788041"
+    },
+    {
+      "chapter": "15.8",
+      "section": "15.8",
+      "title": "Android 性能问题实证：真实世界的分类与代码模式",
+      "status": "ready-for-review",
+      "drafted_date": "2026-04-08",
+      "drafted_by": "openclaw-task2a",
+      "anchors_covered": 6,
+      "anchors_total": 6,
+      "extensions_covered": 1,
+      "extensions_total": 2,
+      "verification_level": "L2",
+      "word_count": "~6500",
+      "completed_at": "2026-04-08T06:02:00+08:00"
     }
   ],
   "ready_for_review": 6,
-  "last_updated": "2026-04-07T19:36:26.433313",
+  "last_updated": "2026-04-08T05:36:11.676375",
   "stats": {
     "total": 116,
-    "completed": 94,
+    "completed": 95,
     "pending": 30,
-    "last_updated": "2026-04-08T04:23:26.788055",
+    "last_updated": "2026-04-08T06:02:00+08:00",
     "reviewed": 1,
     "ready-for-review": 1
   },
@@ -2178,6 +2193,20 @@
     }
   ],
   "history": [
+    {
+      "date": "2026-04-08",
+      "section": "15.8",
+      "title": "Android 性能问题实证：真实世界的分类与代码模式",
+      "action": "draft-completed",
+      "word_count": "~6500",
+      "anchors_covered": 6,
+      "anchors_total": 6,
+      "extensions_covered": 1,
+      "extensions_total": 2,
+      "verification_level": "L2",
+      "drafted_date": "2026-04-08",
+      "drafted_by": "openclaw-task2a"
+    },
     {
       "date": "2026-04-08",
       "section": "12.4",
@@ -4748,5 +4777,35 @@
     "title": "CPU 相关的版本演进",
     "status": "ready-to-publish",
     "review3_date": "2026-04-08"
+  },
+  "task8_history": {
+    "2026-04-08": {
+      "items_processed": 15,
+      "chapters_injected": [
+        "ch14-other-tools/01-as-profiler.md",
+        "ch16-aosp/01-google-optimization.md",
+        "ch16-aosp/04-android17-kernel612-performance.md",
+        "ch01-architecture/12-autofdo-optimization.md",
+        "ch06-storage/02-filesystem.md",
+        "ch06-storage/03-io-scheduling.md",
+        "ch08-responsiveness/07-baseline-profiles.md",
+        "ch01-architecture/09-package-manager.md",
+        "ch04-memory/07-16kb-page-size.md",
+        "ch01-architecture/15-jni-ndk-performance.md",
+        "ch04-memory/08-art-generational-gc.md",
+        "ch07-smoothness/09-perceived-smoothness.md",
+        "ch14-other-tools/05-third-party-libs.md",
+        "ch01-architecture/13-messagequeue-deliqueue.md",
+        "ch07-smoothness/05-optimization.md",
+        "ch13-perfetto/03-perfetto-view.md",
+        "ch13-perfetto/07-advanced-usage.md",
+        "ch15-methodology/03-metrics.md",
+        "ch15-methodology/06-testing-best-practices.md",
+        "ch01-architecture/10-content-provider.md"
+      ],
+      "finalized_skipped": 0,
+      "not_found_skipped": 0,
+      "total_refs_injected": 23
+    }
   }
 }
