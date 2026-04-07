@@ -1,9 +1,9 @@
 ---
 title: "内存相关的版本演进"
 chapter: "4.6"
-status: ready-for-review
+status: reviewed
 section: "4.6"
-reviewed_date: "2026-04-03"
+reviewed_date: "2026-04-07"
 reviewed_by: "openclaw-task6"  # second review after rework
 polish_count: 1
 polish_date: "2026-04-07"
@@ -92,7 +92,7 @@ Dalvik 虚拟机使用的是基于 `dlmalloc` 的标记-清除（Mark-Sweep）�
 
 ### ART 带来了什么
 
-ART 的 GC 设计从一开始就瞄准了 Dalvik 的两个核心痛点：暂停时间长和全局锁争用。
+ART 的 GC 设计从一开始就瞄准了 Dalvik 的两个核心问题：暂停时间长和全局锁争用。
 
 在分配器层面，ART 引入了 RosAlloc（Runs-of-Slots Allocator）替代 `dlmalloc`。RosAlloc 将内存组织为由相同大小 slot 组成的 run，这些 run 以 page 为单位聚集。不同线程可以在不同的 run 上并行分配，通过分片锁定（sharded locking）策略显著减少了全局锁争用。这个改进让多核设备终于能真正发挥并行优势。
 
@@ -118,7 +118,7 @@ AOSP 源码路径：
 
 在 Android 3.0 到 Android 7.1 的时代，Bitmap 的像素数据存储在 Java 堆中，用一个 `byte[]` 数组持有。这意味着什么？一张 1080×1920 的 ARGB_8888 图片占 `1080 × 1920 × 4 ≈ 8MB` 的 Java 堆空间。一个信息流 App 的列表页同时缓存十几张图片，仅图片就占了上百 MB 的 Java 堆——而 Java 堆的上限通常只有 128-512MB。
 
-这导致了一个非常常见的问题：App 的 Java 堆被 Bitmap 填满，抛出 `OutOfMemoryError`，但此时 Native 内存和系统整体内存明明还有大量空闲。Bitmap 占了 Java 堆的最大头，但它只是一个"数据搬运工"——像素数据本身不需要 GC 管理，它们只是放在那里等待 GPU 读取。把像素数据放在 Java 堆里，让 GC 每次都要扫描这些不需要 GC 管理的大块数据，既浪费了 GC 的时间，又挤占了真正需要 GC 管理的 Java 对象的空间。
+这导致了一个常见的问题：App 的 Java 堆被 Bitmap 填满，抛出 `OutOfMemoryError`，但此时 Native 内存和系统整体内存明明还有大量空闲。Bitmap 占了 Java 堆的最大头，但它只是一个"数据搬运工"——像素数据本身不需要 GC 管理，它们只是放在那里等待 GPU 读取。把像素数据放在 Java 堆里，让 GC 每次都要扫描这些不需要 GC 管理的大块数据，既浪费了 GC 的时间，又挤占了真正需要 GC 管理的 Java 对象的空间。
 
 [图：Bitmap 像素数据从 Java Heap 迁移到 Native Heap 的内存布局对比（Android 7.1 vs 8.0）]
 
@@ -155,19 +155,24 @@ AOSP 源码路径：
 | 8.0 以后 | Native 堆（calloc） | 引用机制（NativeAllocationRegistry） |
 | 8.0+ (Hardware Bitmap) | GPU 内存 | GraphicBuffer 引用计数 |
 
+
+> [需确认: 表格中 Android 7.0/7.1 行标注回收策略为"引用机制（NativeAllocationRegistry）"，但文中明确说 NativeAllocationRegistry 是 Android 8.0 正式采用的。7.0/7.1 的 Bitmap 回收实际使用何种引用机制？需核对 AOSP frameworks/base/graphics/java/android/graphics/Bitmap.java (API 24-25 vs 26)]
+
+
+
 [已验证: Cubox/不同版本上 Bitmap 内存分配与回收原理对比-2023-01-24.md — 表格总结]
 
-## Android 8.0–10：GC 演进为 Concurrent Copying，暂停时间降至毫秒级
+## Android 8.0–15：GC 从 Concurrent Copying 演进到 Concurrent Mark-Compact
 
 我们在 4.3 节中详细解析了 ART 的 CC GC 机制，这里聚焦于"版本差异"这个维度——从 CMS 到 CC 的跨越，以及在 Android 10 上的进一步优化。
 
-### Android 8.0：CC GC 的革命性突破
+### Android 8.0：CC GC 的核心改进
 
 Android 8.0 Oreo 将 Concurrent Copying（CC）GC 设为默认策略。CC GC 的核心是用两个 Space 交替使用，GC 时将存活对象拷贝并紧凑排列，天然解决了碎片问题。
 
 CC GC 引入了一个关键技术——Read Barrier（读屏障）。当 GC 正在移动一个对象时，如果应用线程试图读取该对象的引用，Read Barrier 会拦截这次读取，确保线程拿到的是移动后的正确地址。这让大部分 GC 工作可以真正与应用线程并发执行。
 
-CC GC 带来的性能数据非常亮眼：
+CC GC 在关键指标上的具体改善：
 
 | 指标 | Android 7.0 (CMS) | Android 8.0 (CC) | 改善幅度 |
 |---|---|---|---|
@@ -316,7 +321,7 @@ Google 在不同版本中对 largeHeap 的策略做了一些调整：
 
 除了 Java 堆限制外，Android 还对进程的整体内存使用有软性约束。系统通过 `lmkd`（Low Memory Killer Daemon）监控所有进程的内存使用，当系统内存紧张时按优先级杀进程。关于 lmkd 的详细机制，见 4.4 节「Low Memory Killer」。
 
-值得注意的是，Android 8.0 Bitmap 迁移到 Native 堆后，进程整体内存的构成发生了变化。之前 Bitmap 占 Java 堆，现在占 Native 堆。这意味着即使 Java 堆还有空闲，如果 Native 堆（包含 Bitmap 像素数据、JNI 分配、Scudo 管理的内存等）过大，进程仍然可能被 lmkd 选中杀掉。开发者在做内存优化时，需要同时关注 Java 堆和 Native 堆的使用情况。
+Android 8.0 Bitmap 迁移到 Native 堆后，进程整体内存的构成发生了变化。之前 Bitmap 占 Java 堆，现在占 Native 堆。这意味着即使 Java 堆还有空闲，如果 Native 堆（包含 Bitmap 像素数据、JNI 分配、Scudo 管理的内存等）过大，进程仍然可能被 lmkd 选中杀掉。开发者在做内存优化时，需要同时关注 Java 堆和 Native 堆的使用情况。
 
 ### 如何查看设备的内存配置
 
@@ -465,7 +470,7 @@ Google 官方测试的量化数据相当可观：
 | Android 8.0 | 引入 Hardware Bitmap | GPU 侧存储，不计入 PSS |
 | Android 10 | 分代 CC GC 成熟 | Young GC 暂停 1-3ms，Full GC 频率大幅降低 |
 | Android 11 | Scudo 替代 jemalloc（64 位大内存设备） | Native 内存安全检测增强，double-free/UAF 可检测 |
-| Android 14+ | MTE 支持开始落地（Pixel 8 首发硬件） | 硬件级内存安全检测，Async 模式开销 1-2% |
+| Android 14+ | MTE 开始在消费级硬件上启用（Pixel 8 首发） | 硬件级内存安全检测，Async 模式开销 1-2% |
 | Android 15 | CMC GC（基于 UFFD）替代 CC GC | 去掉 Read Barrier，GC 不运行时零额外开销 |
 | Android 15 | 16KB Page Size 支持 | TLB 命中率提升；冷启动快 3-16%；App 需适配 NDK r28+ |
 
