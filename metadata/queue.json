@@ -1031,7 +1031,8 @@
     "material_paths": [
       "intake/research-feeds/2026-04-06-15-priority-inversion-futex-pi-android-lock-performance.md",
       "intake/research-feeds/2026-04-07-11-android-16kb-page-size-jni-native-library-quantification.md",
-      "intake/research-feeds/2026-04-07-11-fastnative-criticalnative-jni-art-optimization.md"
+      "intake/research-feeds/2026-04-07-11-fastnative-criticalnative-jni-art-optimization.md",
+      "intake/research-feeds/2026-04-07-19-art-fastnative-criticalnative-jni-optimization.md"
     ],
     "added_by": "task2a-knowledge-gap",
     "added_at": "2026-04-06T17:05:00+08:00",
@@ -1097,7 +1098,8 @@
       "Cubox/基于eBPF的CPU利用率精准计算小工具开发-2022-03-13.md",
       "Cubox/探索Android动态埋点的新视界：UprobeStats深度解析-2025-02-21.md",
       "Cubox/基于eBPF的sched-ext会在产品成功的底层逻辑是什么-2025-10-18.md",
-      "Cubox/如何在产品中引入eBPF以增加可观察性-2022-01-29.md"
+      "Cubox/如何在产品中引入eBPF以增加可观察性-2022-01-29.md",
+      "intake/research-feeds/2026-04-07-19-android17-ebpf-sched-ext-uprobestats-observability.md"
     ],
     "added_by": "task2a-knowledge-gap",
     "added_at": "2026-04-07T11:09:00+08:00",
@@ -1162,5 +1164,33 @@
     "original_review_log": "logs/review/2026-04-07-15-review.md",
     "completed_at": "2026-04-07T16:03:32.330156",
     "completed_by": "task2b-rework"
+  },
+  {
+    "section": "7.10",
+    "section_title": "图片加载与 Bitmap 性能优化",
+    "priority": 80,
+    "reason": "知识缺口挖掘：图片解码是列表滑动卡顿的第一大来源，BitmapFactory/Glide/Coil 管线分析是全书缺失的核心性能维度",
+    "material_paths": [
+      "https://developer.android.com/reference/android/graphics/ImageDecoder",
+      "https://developer.android.com/topic/performance/graphics/manage-memory",
+      "https://bumptech.github.io/glide/"
+    ],
+    "added_by": "task2a-knowledge-gap",
+    "added_at": "2026-04-07T19:06:00+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "12.3",
+    "section_title": "网络性能深入：连接池、TLS 与传输优化",
+    "priority": 80,
+    "reason": "知识缺口挖掘：全书网络性能仅12.2一节且偏概述，缺少连接池/TLS/DNS/Radio State Machine等底层机制的深度分析",
+    "material_paths": [
+      "https://developer.android.com/training/basics/network-ops/managing",
+      "https://square.github.io/okhttp/",
+      "https://developer.android.com/reference/android/net/TrafficStats"
+    ],
+    "added_by": "task2a-knowledge-gap",
+    "added_at": "2026-04-07T19:06:00+08:00",
+    "status": "pending"
   }
 ]

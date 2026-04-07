@@ -98,6 +98,7 @@
   - [7.7 Jetpack Compose 性能优化](part2-performance/ch07-smoothness/07-compose-performance.md)
   - [7.8 RecyclerView 列表滑动性能深度优化](part2-performance/ch07-smoothness/08-recyclerview-performance.md)
   - [7.9 感知流畅性：步幅波动与无掉帧卡顿](part2-performance/ch07-smoothness/09-perceived-smoothness.md)
+  - [7.10 图片加载与 Bitmap 性能优化](part2-performance/ch07-smoothness/10-image-bitmap-performance.md)
 
 - [第 8 章：响应速度](part2-performance/ch08-responsiveness/README.md)
   - [8.1 响应速度原理](part2-performance/ch08-responsiveness/01-responsiveness-principles.md)
@@ -135,6 +136,7 @@
 - [第 12 章：包体积与其他](part2-performance/ch12-apk-network/README.md)
   - [12.1 APK 体积优化](part2-performance/ch12-apk-network/01-apk-size.md)
   - [12.2 网络性能优化](part2-performance/ch12-apk-network/02-network-performance.md)
+  - [12.3 网络性能深入：连接池、TLS 与传输优化](part2-performance/ch12-apk-network/03-network-performance-deep.md)
 
 ---
 

@@ -3127,6 +3127,41 @@
       ],
       "content_preview": " 深入理解 Gradle Tooling API Read in Cuboxhttps://cubox.pro/web/card/6896551340101602322 Read Originalht",
       "indexed_at": "2026-04-07T16:59:49.633956"
+    },
+    {
+      "path": "/Cubox/Compose 纪元下的 Android 生命周期感知-2023-09-25.md",
+      "title": "Compose 纪元下的 Android 生命周期感知",
+      "score": 12,
+      "detail_scores": {
+        "relevance": 3,
+        "depth": 1,
+        "timeliness": 3,
+        "verifiability": 5
+      },
+      "timestamp": "2026-04-07T18:55:46.817796",
+      "quality": "medium",
+      "chapters": [
+        "ch15-Kotlin"
+      ],
+      "confidence": "medium"
+    },
+    {
+      "path": "/Cubox/Linux存储IO栈梳理（三） -- eBPF和ftrace跟踪IO写流程-2026-04-06.md",
+      "title": "Linux存储IO栈梳理（三） -- eBPF和ftrace跟踪IO写流程",
+      "score": 11,
+      "detail_scores": {
+        "relevance": 5,
+        "depth": 2,
+        "timeliness": 3,
+        "verifiability": 1
+      },
+      "timestamp": "2026-04-07T18:55:46.825035",
+      "quality": "medium",
+      "chapters": [
+        "ch08-存储",
+        "ch11-Profiling"
+      ],
+      "confidence": "high"
     }
   ],
   "sources": [

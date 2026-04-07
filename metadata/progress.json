@@ -2,13 +2,13 @@
   "generated_at": "2026-04-03T19:10:00",
   "total_sections": 110,
   "metrics": {
-    "total": 127,
-    "draft": 9,
+    "total": 129,
+    "draft": 11,
     "ready-for-review": 25,
     "reviewed": 5,
     "finalized": 30,
     "staging_drafts": 0,
-    "last_updated": "2026-04-07T18:18:00+08:00",
+    "last_updated": "2026-04-07T19:06:00+08:00",
     "processing": 0,
     "ready-to-publish": 12,
     "last_reviewed": "2026-04-07",
@@ -1764,12 +1764,12 @@
     }
   ],
   "ready_for_review": 6,
-  "last_updated": "2026-04-07T12:17:00+08:00",
+  "last_updated": "2026-04-07T19:00:00+08:00",
   "stats": {
-    "total": 109,
+    "total": 111,
     "completed": 86,
-    "pending": 24,
-    "last_updated": "2026-04-07T17:00:00+08:00",
+    "pending": 26,
+    "last_updated": "2026-04-07T19:06:00+08:00",
     "reviewed": 1,
     "ready-for-review": 1
   },
@@ -2044,9 +2044,39 @@
         "Android 17 GKI Kernel 6.12 综合性能量化：启动 2.1%/syscall 9.3%/冷启动 4.3%/dm-verity 35%（目标 §1.6/§5.7/§8.2/§16.1，覆盖 FRESHNESS 40+ 章节）",
         "Kernel 6.12 存储三重优化：F2FS Checkpoint Merge -40% 写放大 + io_uring multishot 零拷贝 + dm-verity 多缓冲哈希 35%，随机 I/O 延迟 -12%（目标 §6.1-6.4）"
       ]
+    },
+    {
+      "time": "2026-04-07T19:00:00+08:00",
+      "focus": "§1.15 JNI/NDK 性能优化 + §14.10 eBPF/BPF（queue priority 80, pending）",
+      "source": "queue-priority-80",
+      "candidates": 4,
+      "passed": 2,
+      "delivered": 2,
+      "themes": [
+        "ART @FastNative/@CriticalNative: Regular JNI 115ns→@FastNative 35ns(3x)→@CriticalNative 25ns(5x) + CTS Android 14 + RegisterNatives 协同（目标 §1.15）",
+        "sched_ext BPF 可扩展调度器 Linux 6.12 + UprobeStats Android 16 动态埋点 + eBPF futex 跟踪点穿透 native 锁分析（目标 §14.10/§1.14）"
+      ]
     }
   ],
   "history": [
+    {
+      "date": "2026-04-07",
+      "section": "12.3",
+      "title": "网络性能深入：连接池、TLS 与传输优化",
+      "action": "gap-created",
+      "created_by": "task2a-knowledge-gap",
+      "gap_source": "AOSP结构+官方文档+读者需求",
+      "gap_score": "14/20"
+    },
+    {
+      "date": "2026-04-07",
+      "section": "7.10",
+      "title": "图片加载与 Bitmap 性能优化",
+      "action": "gap-created",
+      "created_by": "task2a-knowledge-gap",
+      "gap_source": "AOSP结构+官方文档+读者需求",
+      "gap_score": "17/20"
+    },
     {
       "date": "2026-04-07",
       "section": "5.6",

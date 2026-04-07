@@ -4351,6 +4351,156 @@
       "skip_reason": "total_score < 10",
       "chapters": [],
       "skipped_at": "2026-04-07T16:59:49.634016"
+    },
+    {
+      "path": "/Cubox/2小时入门 Jetpack Compose（上）-2022-07-17.md",
+      "title": "2小时入门 Jetpack Compose（上）",
+      "reason": "总分不足10分（6/20）",
+      "score": 6,
+      "detail_scores": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 3,
+        "verifiability": 1,
+        "chapters": [],
+        "confidence": "low"
+      },
+      "timestamp": "2026-04-07T18:52:26.482036"
+    },
+    {
+      "path": "/Cubox/4 段超神提示词解锁 Claude 3.7 能力上限-2025-03-17.md",
+      "title": "4 段超神提示词解锁 Claude 3.7 能力上限",
+      "reason": "总分不足10分（7/20）",
+      "score": 7,
+      "detail_scores": {
+        "relevance": 1,
+        "depth": 2,
+        "timeliness": 3,
+        "verifiability": 1,
+        "chapters": [],
+        "confidence": "low"
+      },
+      "timestamp": "2026-04-07T18:52:26.482314"
+    },
+    {
+      "path": "/Cubox/My 2024-2025-02-03.md",
+      "title": "My 2024",
+      "reason": "总分不足10分（8/20）",
+      "score": 8,
+      "detail_scores": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 1,
+        "chapters": [],
+        "confidence": "low"
+      },
+      "timestamp": "2026-04-07T18:52:26.482480"
+    },
+    {
+      "path": "/Cubox/Android 系统低内存性能优化的一种实现-2023-06-13.md",
+      "title": "Android 系统低内存性能优化的一种实现",
+      "reason": "总分不足10分（9/20）",
+      "score": 9,
+      "detail_scores": {
+        "relevance": 1,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 2,
+        "chapters": [],
+        "confidence": "low"
+      },
+      "timestamp": "2026-04-07T18:52:26.483837"
+    },
+    {
+      "path": "/Cubox/科技爱好者周刊#351：GitHub Issues（几乎）是最好的笔记应用-2025-06-06.md",
+      "title": "科技爱好者周刊#351：GitHub Issues（几乎）是最好的笔记应用",
+      "reason": "总分不足10分（8/20）",
+      "score": 8,
+      "detail_scores": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 3,
+        "verifiability": 3,
+        "chapters": [],
+        "confidence": "low"
+      },
+      "timestamp": "2026-04-07T18:52:26.487962"
+    },
+    {
+      "path": "/Cubox/2小时入门 Jetpack Compose（上）-2022-07-17.md",
+      "title": "2小时入门 Jetpack Compose（上）",
+      "reason": "总分不足10分（6/20）",
+      "score": 6,
+      "detail_scores": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 3,
+        "verifiability": 1,
+        "chapters": [],
+        "confidence": "low"
+      },
+      "timestamp": "2026-04-07T18:52:30.842165"
+    },
+    {
+      "path": "/Cubox/4 段超神提示词解锁 Claude 3.7 能力上限-2025-03-17.md",
+      "title": "4 段超神提示词解锁 Claude 3.7 能力上限",
+      "reason": "总分不足10分（7/20）",
+      "score": 7,
+      "detail_scores": {
+        "relevance": 1,
+        "depth": 2,
+        "timeliness": 3,
+        "verifiability": 1,
+        "chapters": [],
+        "confidence": "low"
+      },
+      "timestamp": "2026-04-07T18:52:30.842356"
+    },
+    {
+      "path": "/Cubox/My 2024-2025-02-03.md",
+      "title": "My 2024",
+      "reason": "总分不足10分（8/20）",
+      "score": 8,
+      "detail_scores": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 1,
+        "chapters": [],
+        "confidence": "low"
+      },
+      "timestamp": "2026-04-07T18:52:30.842471"
+    },
+    {
+      "path": "/Cubox/Android 系统低内存性能优化的一种实现-2023-06-13.md",
+      "title": "Android 系统低内存性能优化的一种实现",
+      "reason": "总分不足10分（9/20）",
+      "score": 9,
+      "detail_scores": {
+        "relevance": 1,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 2,
+        "chapters": [],
+        "confidence": "low"
+      },
+      "timestamp": "2026-04-07T18:52:30.842669"
+    },
+    {
+      "path": "/Cubox/科技爱好者周刊#351：GitHub Issues（几乎）是最好的笔记应用-2025-06-06.md",
+      "title": "科技爱好者周刊#351：GitHub Issues（几乎）是最好的笔记应用",
+      "reason": "总分不足10分（8/20）",
+      "score": 8,
+      "detail_scores": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 3,
+        "verifiability": 3,
+        "chapters": [],
+        "confidence": "low"
+      },
+      "timestamp": "2026-04-07T18:52:30.842875"
     }
   ],
   "last_updated": "2026-04-07T16:59:49.639289"
