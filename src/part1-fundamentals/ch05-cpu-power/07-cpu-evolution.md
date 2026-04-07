@@ -1,7 +1,7 @@
 ---
 title: "CPU 相关的版本演进"
 chapter: "5.7"
-status: ready-for-review
+status: ready-to-publish
 applicable_versions: "Android 5.0 - 16"
 last_verified: "2026-04-01"
 last_verified_against: "Android 15 developer docs, AOSP source code"
@@ -28,6 +28,8 @@ review2_by: "openclaw-task6"
 polish_count: 1
 polish_date: "2026-04-07"
 polish_by: "task2b-polish"
+review3_date: "2026-04-08"
+review3_by: "openclaw-task6"
 ---
 
 # CPU 相关的版本演进
@@ -241,7 +243,7 @@ Android 16 继续对 JobScheduler 进行精细化管控。核心变化是 Job �
 ## GKI 对内核调度模块定制化的影响
 
 
-GKI（Generic Kernel Image）从 Android 11 开始成为新设备的强制要求。Android 11 使用 GKI 1.0（Linux kernel 5.4），Android 12 升级到 GKI 2.0（kernel 5.10+，OEM 不得修改内核核心代码，且设备必须使用 Google 签名的 boot image）。到 Android 15，GKI 内核版本已迭代至 6.6，同时新增了 16KB page size 支持——16KB page size 在 Android 15 中默认未启用，但从 2025 年 11 月起，Google Play 要求所有 targetSdk >= 35 的 App 必须兼容 16KB page size。[已验证: source.android.com/docs/core/architecture/kernel/gki, developer.android.com/guide/practices/page-sizes] 它对 CPU 调度的影响是一个容易被忽视但很重要的变化。
+GKI（Generic Kernel Image）在 Android 11 以 GKI 1.0（Linux kernel 5.4）的形式首次引入，当时是可选的。Android 12 升级到 GKI 2.0（kernel 5.10+），从这一版开始成为新设备的强制要求——OEM 不得修改内核核心代码，且设备必须使用 Google 签名的 boot image。到 Android 15，GKI 内核版本已迭代至 6.6，同时新增了 16KB page size 支持——16KB page size 在 Android 15 中默认未启用，但从 2025 年 11 月起，Google Play 要求所有 targetSdk >= 35 的 App 必须兼容 16KB page size。[已验证: source.android.com/docs/core/architecture/kernel/gki, developer.android.com/guide/practices/page-sizes] 它对 CPU 调度的影响是一个容易被忽视但很重要的变化。
 
 在 GKI 之前，SoC 厂商（高通、联发科等）可以直接修改内核调度器代码来适配自己的硬件。比如联发科可以在 CFS 中加入针对天玑芯片大小核架构的特殊优化，高通可以为骁龙的调度策略写定制代码。这种做法的代价是内核碎片化——每家厂商的内核都是"自己的版本"，安全补丁和调度器改进很难统一推送。
 
