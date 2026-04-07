@@ -4,16 +4,16 @@
   "metrics": {
     "total": 134,
     "draft": 13,
-    "ready-for-review": 36,
+    "ready-for-review": 35,
     "reviewed": 5,
-    "finalized": 30,
+    "finalized": 31,
     "staging_drafts": 0,
-    "last_updated": "2026-04-08T03:10:00+08:00",
+    "last_updated": "2026-04-08T03:20:00+08:00",
     "processing": 0,
     "ready-to-publish": 12,
     "last_reviewed": "2026-04-08",
-    "last_reviewed_section": "10.2 内存泄漏",
-    "reviewed_today": 6
+    "last_reviewed_section": "9.4 特殊场景的 ANR",
+    "reviewed_today": 7
   },
   "reviewed_sections": {
     "8.1": {
@@ -633,23 +633,14 @@
     "9.4": {
       "reviewed_date": "2026-04-08",
       "reviewed_by": "openclaw-task6",
-      "review_status": "reviewed",
-      "has_b_class_issues": true,
+      "review_status": "finalized",
+      "review_type": "post-rework-first-review",
       "fixes_applied": [
-        "Remove [自动发现] prefix: 低内存 GC section header",
-        "Remove [自动发现] prefix: 文件锁竞争 section header",
-        "Add cross-reference to §1.10 ContentProvider chapter",
-        "Expand Binder 解决方案 from shorthand to narrative style",
-        "Expand 文件锁解决方案 from shorthand to narrative style",
-        "Add [待补充] marker for ContentProvider cross-process Trace description"
-      ],
-      "scores": {
-        "structure": 4,
-        "expression": 4,
-        "consistency": 5,
-        "verification": 4,
-        "metadata": 5
-      }
+        "元数据：补 section/drafted_by 字段",
+        "验证标注：4处 [来源:] → [已验证: 来源见 ...]",
+        "文体：锁竞争防御段落列表式→叙述式",
+        "状态：ready-for-review → finalized"
+      ]
     },
     "10.2": {
       "reviewed_date": "2026-04-08",
