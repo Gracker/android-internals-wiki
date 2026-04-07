@@ -3,12 +3,12 @@
   "total_sections": 110,
   "metrics": {
     "total": 134,
-    "draft": 14,
-    "ready-for-review": 35,
+    "draft": 13,
+    "ready-for-review": 36,
     "reviewed": 5,
     "finalized": 30,
     "staging_drafts": 0,
-    "last_updated": "2026-04-08T02:02:00+08:00",
+    "last_updated": "2026-04-08T03:10:00+08:00",
     "processing": 0,
     "ready-to-publish": 12,
     "last_reviewed": "2026-04-08",
@@ -1859,15 +1859,30 @@
       "verification_level": "L2",
       "word_count": "~8500",
       "completed_at": "2026-04-08T00:02:00+08:00"
+    },
+    {
+      "chapter": "2.20",
+      "section": "2.20",
+      "title": "多窗口与桌面模式渲染性能",
+      "status": "ready-for-review",
+      "drafted_date": "2026-04-08",
+      "drafted_by": "openclaw-task2a",
+      "anchors_covered": 6,
+      "anchors_total": 6,
+      "extensions_covered": 0,
+      "extensions_total": 2,
+      "verification_level": "L2",
+      "word_count": "~7500",
+      "completed_at": "2026-04-08T03:10:00+08:00"
     }
   ],
   "ready_for_review": 6,
   "last_updated": "2026-04-07T19:36:26.433313",
   "stats": {
     "total": 116,
-    "completed": 87,
+    "completed": 88,
     "pending": 30,
-    "last_updated": "2026-04-08T02:02:00+08:00",
+    "last_updated": "2026-04-08T03:10:00+08:00",
     "reviewed": 1,
     "ready-for-review": 1
   },
@@ -2157,6 +2172,20 @@
     }
   ],
   "history": [
+    {
+      "date": "2026-04-08",
+      "section": "2.20",
+      "title": "多窗口与桌面模式渲染性能",
+      "action": "draft-completed",
+      "word_count": "~7500",
+      "anchors_covered": 6,
+      "anchors_total": 6,
+      "extensions_covered": 0,
+      "extensions_total": 2,
+      "verification_level": "L2",
+      "drafted_date": "2026-04-08",
+      "drafted_by": "openclaw-task2a"
+    },
     {
       "date": "2026-04-08",
       "section": "12.4",
