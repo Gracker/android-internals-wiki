@@ -1223,5 +1223,18 @@
     "original_review_log": "logs/review/2026-04-07-2048-review.md",
     "completed_at": "2026-04-07T21:18:01.124520",
     "completed_by": "task2b-rework"
+  },
+  {
+    "section": "6.5",
+    "section_title": "SharedPreferences/DataStore 性能与 ANR 优化",
+    "priority": 80,
+    "reason": "知识缺口挖掘：SharedPreferences ANR 是最常见的 Android 性能问题之一，source-index 有 score=18 未映射素材，官方已推荐 DataStore 替代方案",
+    "material_paths": [
+      "Cubox/有时候你APP发生的ANR不是你的错",
+      "intake/suggestions.md"
+    ],
+    "added_by": "task2a-knowledge-gap",
+    "added_at": "2026-04-07T23:02:00+08:00",
+    "status": "pending"
   }
 ]

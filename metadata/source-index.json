@@ -2111,8 +2111,6 @@
       "action_taken": "inject"
     },
     {
-      "file_index": 3343,
-      "relative_path": "Cubox/掌握 Android Compose：从基础到性能优化全面指南-2024-09-23.md",
       "title": "掌握 Android Compose：从基础到性能优化全面指南",
       "content_preview": "# 掌握 Android Compose：从基础到性能优化全面指南\n\n本文详细介绍了 Android Compose，一个现代化的 UI 框架，强调其声明式、简洁和可组合性的优势。文章探讨了状态管理、列表处理和性能优化，旨在帮助开发者有效利用 Compose 构建应用。\n\n[Read in Cubox](https://cubox.pro/web/card/7237689150386735442",
       "score_breakdown": {
@@ -2124,11 +2122,10 @@
       "total_score": 13,
       "relevant_chapters": [],
       "quality": "medium",
-      "indexed_at": "2026-04-06T13:50:02.507172"
+      "indexed_at": "2026-04-06T13:50:02.507172",
+      "path": "Cubox/掌握 Android Compose：从基础到性能优化全面指南-2024-09-23.md"
     },
     {
-      "file_index": 3345,
-      "relative_path": "Cubox/探寻Liquid Glass的实现原理-2025-07-31.md",
       "title": "探寻Liquid Glass的实现原理",
       "content_preview": "# 探寻Liquid Glass的实现原理\n\n首先，苹果对开发者开放的API十分的简单，只需要一行代码就能让你的按钮拥有LiquidGlass效果。但是开发者无法对其做更多的调整。接下来（来自 @少数派sspai）全文：https://sspai.com/post/100983\n\n[Read in Cubox](https://cubox.pro/web/card/735051971113150",
       "score_breakdown": {
@@ -2140,11 +2137,10 @@
       "total_score": 13,
       "relevant_chapters": [],
       "quality": "medium",
-      "indexed_at": "2026-04-06T13:50:02.509097"
+      "indexed_at": "2026-04-06T13:50:02.509097",
+      "path": "Cubox/探寻Liquid Glass的实现原理-2025-07-31.md"
     },
     {
-      "file_index": 3346,
-      "relative_path": "Cubox/探秘 React Native：线程探索及桥优化-2025-06-19.md",
       "title": "探秘 React Native：线程探索及桥优化",
       "content_preview": "# 探秘 React Native：线程探索及桥优化\n\n\n\n[Read in Cubox](https://cubox.pro/web/card/7335220761163990054)  \n[Read Original](https://juejin.cn/post/7515391516786884642?share_token=0887d900-11f2-40be-bdc8-527ddbef",
       "score_breakdown": {
@@ -2156,11 +2152,10 @@
       "total_score": 11,
       "relevant_chapters": [],
       "quality": "medium",
-      "indexed_at": "2026-04-06T13:50:02.509724"
+      "indexed_at": "2026-04-06T13:50:02.509724",
+      "path": "Cubox/探秘 React Native：线程探索及桥优化-2025-06-19.md"
     },
     {
-      "file_index": 3348,
-      "relative_path": "Cubox/探秘智能调度线程池-方案总览-2025-05-25.md",
       "title": "探秘智能调度线程池-方案总览",
       "content_preview": "# 探秘智能调度线程池-方案总览\n\n在电商行业竞争白热化的今天，每一个细微的性能短板都可能让用户流失到竞争对手的怀抱。许多电商 App 在后台线程池的配置上，仍采用固定参数的模式，这种 “一劳永逸” 的设置，正成为制约应用性能提升的瓶颈\n\n[Read in Cubox](https://cubox.pro/web/card/7326138407845889092)  \n[Read Origina",
       "score_breakdown": {
@@ -2172,11 +2167,10 @@
       "total_score": 11,
       "relevant_chapters": [],
       "quality": "medium",
-      "indexed_at": "2026-04-06T13:50:02.511135"
+      "indexed_at": "2026-04-06T13:50:02.511135",
+      "path": "Cubox/探秘智能调度线程池-方案总览-2025-05-25.md"
     },
     {
-      "file_index": 3349,
-      "relative_path": "Cubox/探究 Kotlin 的隐藏性能开销与避坑指南-2022-04-08.md",
       "title": "探究 Kotlin 的隐藏性能开销与避坑指南",
       "content_preview": "# 探究 Kotlin 的隐藏性能开销与避坑指南\n\nKotlin 在设计理念上有很多和 Java 不同的地方，开发者能够直观感受到的是语法层面上的差异性，背后也包含有一系列隐藏的性能开销以及一些隐藏得很深的“坑”，本篇文章就来介绍在使用 Kotlin 过程中存在的隐藏性能开销，帮助读者避坑\n\n[Read in Cubox](https://cubox.pro/web/card/691194991",
       "score_breakdown": {
@@ -2188,11 +2182,10 @@
       "total_score": 13,
       "relevant_chapters": [],
       "quality": "medium",
-      "indexed_at": "2026-04-06T13:50:02.511842"
+      "indexed_at": "2026-04-06T13:50:02.511842",
+      "path": "Cubox/探究 Kotlin 的隐藏性能开销与避坑指南-2022-04-08.md"
     },
     {
-      "file_index": 3350,
-      "relative_path": "Cubox/探究ANR原理-是谁控制了ANR的触发时间 - 掘金-2022-07-17.md",
       "title": "探究ANR原理-是谁控制了ANR的触发时间 - 掘金",
       "content_preview": "# 探究ANR原理-是谁控制了ANR的触发时间 - 掘金\n\n一、ANR概述 ANR(Application Not responding)是指应用程序未响应，Android系统对于一些事件需要在一定的时间范围内完成，如果超过预定时间能未能得到有效响应或者响应时\n\n[Read in Cubox](https://cubox.pro/web/card/6948361984458885329)  \n[",
       "score_breakdown": {
@@ -2204,11 +2197,10 @@
       "total_score": 10,
       "relevant_chapters": [],
       "quality": "medium",
-      "indexed_at": "2026-04-06T13:50:02.512478"
+      "indexed_at": "2026-04-06T13:50:02.512478",
+      "path": "Cubox/探究ANR原理-是谁控制了ANR的触发时间 - 掘金-2022-07-17.md"
     },
     {
-      "file_index": 3352,
-      "relative_path": "Cubox/探索 AI 编程智能体-2025-02-03.md",
       "title": "探索 AI 编程智能体",
       "content_preview": "# 探索 AI 编程智能体\n\n本文探讨AI编程智能体在软件开发中的应用，重点分析Cursor和Cline。二者通过自然语言处理和代码生成辅助编程，提升效率。Cursor 成熟但成本高，Cline 开源免费但可靠性待提升。\n\n[Read in Cubox](https://cubox.pro/web/card/7285917061987961472)  \n[Read Original](https",
       "score_breakdown": {
@@ -2220,11 +2212,10 @@
       "total_score": 11,
       "relevant_chapters": [],
       "quality": "medium",
-      "indexed_at": "2026-04-06T13:50:02.513827"
+      "indexed_at": "2026-04-06T13:50:02.513827",
+      "path": "Cubox/探索 AI 编程智能体-2025-02-03.md"
     },
     {
-      "file_index": 3354,
-      "relative_path": "Cubox/探索 Java Native Interface（四）：JNI中引用类型-2025-02-17.md",
       "title": "探索 Java Native Interface（四）：JNI中引用类型",
       "content_preview": "# 探索 Java Native Interface（四）：JNI中引用类型\n\n\n\n[Read in Cubox](https://cubox.pro/web/card/7291154192050163072)  \n[Read Original](https://juejin.cn/post/7472233713416290313)  \n\n---\n\n本文同步发布于公众号：移动开发那些事: [探索",
       "score_breakdown": {
@@ -2236,11 +2227,10 @@
       "total_score": 11,
       "relevant_chapters": [],
       "quality": "medium",
-      "indexed_at": "2026-04-06T13:50:02.515259"
+      "indexed_at": "2026-04-06T13:50:02.515259",
+      "path": "Cubox/探索 Java Native Interface（四）：JNI中引用类型-2025-02-17.md"
     },
     {
-      "file_index": 3356,
-      "relative_path": "Cubox/探索Android动态埋点的新视界：UprobeStats深度解析-2025-02-21.md",
       "title": "探索Android动态埋点的新视界：UprobeStats深度解析",
       "content_preview": "# 探索Android动态埋点的新视界：UprobeStats深度解析\n\n\n\n[Read in Cubox](https://cubox.pro/web/card/7292565514830744699)  \n[Read Original](https://mp.weixin.qq.com/s?__biz=MzAxMDM0NjExNA==&mid=2247495889&idx=1&sn=932e",
       "score_breakdown": {
@@ -2252,11 +2242,10 @@
       "total_score": 11,
       "relevant_chapters": [],
       "quality": "medium",
-      "indexed_at": "2026-04-06T13:50:02.516696"
+      "indexed_at": "2026-04-06T13:50:02.516696",
+      "path": "Cubox/探索Android动态埋点的新视界：UprobeStats深度解析-2025-02-21.md"
     },
     {
-      "file_index": 3357,
-      "relative_path": "Cubox/探索Android平台ARM unwind技术-5异步Unwind-2025-02-19.md",
       "title": "探索Android平台ARM unwind技术-5异步Unwind",
       "content_preview": "# 探索Android平台ARM unwind技术-5异步Unwind\n\n\n\n[Read in Cubox](https://cubox.pro/web/card/7291875840516689499)  \n[Read Original](https://zhuanlan.zhihu.com/p/700781104)  \n\n---\n\n## 1 背景\n\n近期有一些工作涉及到eBPF和simple",
       "score_breakdown": {
@@ -2268,11 +2257,10 @@
       "total_score": 11,
       "relevant_chapters": [],
       "quality": "medium",
-      "indexed_at": "2026-04-06T13:50:02.517358"
+      "indexed_at": "2026-04-06T13:50:02.517358",
+      "path": "Cubox/探索Android平台ARM unwind技术-5异步Unwind-2025-02-19.md"
     },
     {
-      "file_index": 3362,
-      "relative_path": "Cubox/探讨xCrash 和 Matrix 对于非耗时操作ANR的处理 - 掘金-2024-03-30.md",
       "title": "探讨xCrash 和 Matrix 对于非耗时操作ANR的处理 - 掘金",
       "content_preview": "# 探讨xCrash 和 Matrix 对于非耗时操作ANR的处理 - 掘金\n\n基于Android 13 进行测试 这个anr 产生的原因以及例子 , 之前的文章有写过 , 可以查看之前写的文章 , 此文只做xcrash 和 matrix 对于此类anr的监控和排查. anr 发\n\n[Read in Cubox](https://cubox.pro/web/card/71736341419115",
       "score_breakdown": {
@@ -2284,11 +2272,10 @@
       "total_score": 11,
       "relevant_chapters": [],
       "quality": "medium",
-      "indexed_at": "2026-04-06T13:50:02.520591"
+      "indexed_at": "2026-04-06T13:50:02.520591",
+      "path": "Cubox/探讨xCrash 和 Matrix 对于非耗时操作ANR的处理 - 掘金-2024-03-30.md"
     },
     {
-      "file_index": 3363,
-      "relative_path": "Cubox/探讨跨平台技术与跨平台UI框架及Kotlin Multiplatform在bilibili的实践-2024-05-27.md",
       "title": "探讨跨平台技术与跨平台UI框架及Kotlin Multiplatform在bilibili的实践",
       "content_preview": "# 探讨跨平台技术与跨平台UI框架及Kotlin Multiplatform在bilibili的实践\n\n我们对几种主要的跨平台语言进行了比较，主要从执行效率、引入testcase前后app体积变化、运行内存峰值和运行内存的overhead这几个方面进行考察。\n\n[Read in Cubox](https://cubox.pro/web/card/7194707616646301393)  \n[R",
       "score_breakdown": {
@@ -2300,11 +2287,10 @@
       "total_score": 11,
       "relevant_chapters": [],
       "quality": "medium",
-      "indexed_at": "2026-04-06T13:50:02.521169"
+      "indexed_at": "2026-04-06T13:50:02.521169",
+      "path": "Cubox/探讨跨平台技术与跨平台UI框架及Kotlin Multiplatform在bilibili的实践-2024-05-27.md"
     },
     {
-      "file_index": 3367,
-      "relative_path": "Cubox/推荐两个我觉得很棒的工具-2024-04-15.md",
       "title": "推荐两个我觉得很棒的工具",
       "content_preview": "# 推荐两个我觉得很棒的工具\n\n平常除了写代码，最多的就是画图，一般有架构图，流程图，我今天推荐两个很棒的工具。\n\n[Read in Cubox](https://cubox.pro/web/card/7179333002751639703)  \n[Read Original](https://mp.weixin.qq.com/s?__biz=MzA4MDAxMzQxNw==&mid=24476",
       "score_breakdown": {
@@ -2316,11 +2302,10 @@
       "total_score": 11,
       "relevant_chapters": [],
       "quality": "medium",
-      "indexed_at": "2026-04-06T13:50:02.523124"
+      "indexed_at": "2026-04-06T13:50:02.523124",
+      "path": "Cubox/推荐两个我觉得很棒的工具-2024-04-15.md"
     },
     {
-      "file_index": 3368,
-      "relative_path": "Cubox/提升Jetpack Compose 性能-2024-02-01.md",
       "title": "提升Jetpack Compose 性能",
       "content_preview": "# 提升Jetpack Compose 性能\n\n如果你正在深入研究Jetpack Compose这个现代化的Android UI工具包，在本文中，将探讨一些增\n\n[Read in Cubox](https://cubox.pro/web/card/7152621703305102117)  \n[Read Original](https://mp.weixin.qq.com/s?__biz=MzI",
       "score_breakdown": {
@@ -2332,11 +2317,10 @@
       "total_score": 13,
       "relevant_chapters": [],
       "quality": "medium",
-      "indexed_at": "2026-04-06T13:50:02.523957"
+      "indexed_at": "2026-04-06T13:50:02.523957",
+      "path": "Cubox/提升Jetpack Compose 性能-2024-02-01.md"
     },
     {
-      "file_index": 3370,
-      "relative_path": "Cubox/提升效率，减少错误 - Twitter 采用 Jetpack Compose 进行功能开发-2022-08-29.md",
       "title": "提升效率，减少错误 | Twitter 采用 Jetpack Compose 进行功能开发",
       "content_preview": "# 提升效率，减少错误 | Twitter 采用 Jetpack Compose 进行功能开发\n\nJetpack Compose 助力开发者以更少的代码构建更多内容，更好地连接用户。\n\n[Read in Cubox](https://cubox.pro/web/card/6963756958339825715)  \n[Read Original](https://mp.weixin.qq.com",
       "score_breakdown": {
@@ -2348,11 +2332,10 @@
       "total_score": 10,
       "relevant_chapters": [],
       "quality": "medium",
-      "indexed_at": "2026-04-06T13:50:02.525238"
+      "indexed_at": "2026-04-06T13:50:02.525238",
+      "path": "Cubox/提升效率，减少错误 - Twitter 采用 Jetpack Compose 进行功能开发-2022-08-29.md"
     },
     {
-      "file_index": 3371,
-      "relative_path": "Cubox/提升移动游戏体验：性能和功耗的双重优化策略-2025-02-28.md",
       "title": "提升移动游戏体验：性能和功耗的双重优化策略",
       "content_preview": "# 提升移动游戏体验：性能和功耗的双重优化策略\n\n探讨如何通过优化性能和功耗这两个关键因素来提升移动游戏体验\n\n[Read in Cubox](https://cubox.pro/web/card/7295084468862191054)  \n[Read Original](https://mp.weixin.qq.com/s?__biz=MzAxMDM0NjExNA==&mid=2247495",
       "score_breakdown": {
@@ -2364,11 +2347,10 @@
       "total_score": 11,
       "relevant_chapters": [],
       "quality": "medium",
-      "indexed_at": "2026-04-06T13:50:02.525754"
+      "indexed_at": "2026-04-06T13:50:02.525754",
+      "path": "Cubox/提升移动游戏体验：性能和功耗的双重优化策略-2025-02-28.md"
     },
     {
-      "file_index": 3374,
-      "relative_path": "Cubox/提示艺术：PromptPerfect 提示优化器测试体验（一）-2023-03-09.md",
       "title": "提示艺术：PromptPerfect 提示优化器测试体验（一）",
       "content_preview": "# 提示艺术：PromptPerfect 提示优化器测试体验（一）\n\n看到jina发布了PromptPerfect，专为大型语言模型 (...\n\n[Read in Cubox](https://cubox.pro/web/card/7033333710518749572)  \n[Read Original](https://zhuanlan.zhihu.com/p/611970732?utm_m",
       "score_breakdown": {
@@ -2380,11 +2362,10 @@
       "total_score": 10,
       "relevant_chapters": [],
       "quality": "medium",
-      "indexed_at": "2026-04-06T13:50:02.527513"
+      "indexed_at": "2026-04-06T13:50:02.527513",
+      "path": "Cubox/提示艺术：PromptPerfect 提示优化器测试体验（一）-2023-03-09.md"
     },
     {
-      "file_index": 3376,
-      "relative_path": "Cubox/插件 - 适用于 AppCode 的 KMM 插件更新：Android 集成和多平台项目支持-2022-04-22.md",
       "title": "插件 | 适用于 AppCode 的 KMM 插件更新：Android 集成和多平台项目支持",
       "content_preview": "# 插件 | 适用于 AppCode 的 KMM 插件更新：Android 集成和多平台项目支持\n\n适用于 AppCode 的 Kotlin Multiplatform Mobile 插件迎来重大更新，带你一探究竟！\n\n[Read in Cubox](https://cubox.pro/web/card/6917194965877525288)  \n[Read Original](https:/",
       "score_breakdown": {
@@ -2396,11 +2377,10 @@
       "total_score": 13,
       "relevant_chapters": [],
       "quality": "medium",
-      "indexed_at": "2026-04-06T13:50:02.528548"
+      "indexed_at": "2026-04-06T13:50:02.528548",
+      "path": "Cubox/插件 - 适用于 AppCode 的 KMM 插件更新：Android 集成和多平台项目支持-2022-04-22.md"
     },
     {
-      "file_index": 3378,
-      "relative_path": "Cubox/揭开Android View的神秘面纱：深入探索工作原理引言：View 在 Android 世界的角色 在 Androi - 掘金-2025-03-03.md",
       "title": "揭开Android View的神秘面纱：深入探索工作原理引言：View 在 Android 世界的角色 在 Androi - 掘金",
       "content_preview": "# 揭开Android View的神秘面纱：深入探索工作原理引言：View 在 Android 世界的角色 在 Androi - 掘金\n\n引言：View 在 Android 世界的角色 在 Android 开发的广袤天地中，View 无疑是构建用户界面的基石，发挥着举足轻重的作用。从简单的文本显示、按钮点击，到复杂的动画效果、交互设计，\n\n[Read in Cubox](https://cubo",
       "score_breakdown": {
@@ -2412,7 +2392,8 @@
       "total_score": 11,
       "relevant_chapters": [],
       "quality": "medium",
-      "indexed_at": "2026-04-06T13:50:02.530134"
+      "indexed_at": "2026-04-06T13:50:02.530134",
+      "path": "Cubox/揭开Android View的神秘面纱：深入探索工作原理引言：View 在 Android 世界的角色 在 Androi - 掘金-2025-03-03.md"
     },
     {
       "path": "intake/daily-info/2026-04-07.md",
@@ -2947,7 +2928,6 @@
       "title": "最新版发布 - Android 14 现已正式发布至 AOSP",
       "file": "最新版发布 - Android 14 现已正式发布至 AOSP！-2023-10-10.md",
       "source_directory": "Cubox",
-      "relative_path": "Cubox/最新版发布 - Android 14 现已正式发布至 AOSP！-2023-10-10.md",
       "scores": {
         "relevance": 4,
         "depth": 4,
@@ -2965,13 +2945,13 @@
         "ch01-架构": "high"
       },
       "summary": "Google官方Android 14 AOSP正式发布通知，包含API变更说明和兼容性测试要求",
-      "indexed_at": "2026-04-07T14:18:00"
+      "indexed_at": "2026-04-07T14:18:00",
+      "path": "Cubox/最新版发布 - Android 14 现已正式发布至 AOSP！-2023-10-10.md"
     },
     {
       "title": "有时候你APP发生的ANR不是你的错",
       "file": "有时候你APP发生的ANR不是你的错-分享 1个 Google 工程师没 bug 改出 bug 的一个案例-2025-04-21.md",
       "source_directory": "Cubox",
-      "relative_path": "Cubox/有时候你APP发生的ANR不是你的错-分享 1个 Google 工程师没 bug 改出 bug 的一个案例-2025-04-21.md",
       "scores": {
         "relevance": 5,
         "depth": 4,
@@ -2991,13 +2971,13 @@
         "ch02-进程": "high"
       },
       "summary": "Google工程师修复ANR的真实案例，展示了无bug修改反而引入bug的平台层问题",
-      "indexed_at": "2026-04-07T14:18:00"
+      "indexed_at": "2026-04-07T14:18:00",
+      "path": "Cubox/有时候你APP发生的ANR不是你的错-分享 1个 Google 工程师没 bug 改出 bug 的一个案例-2025-04-21.md"
     },
     {
       "title": "未缓存的缓冲 I-O 旨在在 Linux 6.14 中准备就绪并带来巨大性能提升",
       "file": "未缓存的缓冲 I-O 旨在在 Linux 6.14 中准备就绪，并带来巨大的性能提升-2024-12-26.md",
       "source_directory": "Cubox",
-      "relative_path": "Cubox/未缓存的缓冲 I-O 旨在在 Linux 6.14 中准备就绪，并带来巨大的性能提升-2024-12-26.md",
       "scores": {
         "relevance": 4,
         "depth": 4,
@@ -3015,13 +2995,13 @@
         "ch13-调度": "medium"
       },
       "summary": "Linux 6.14内核引入Uncached Buffered I/O特性，由Meta工程师Jens Axboe推动",
-      "indexed_at": "2026-04-07T14:18:00"
+      "indexed_at": "2026-04-07T14:18:00",
+      "path": "Cubox/未缓存的缓冲 I-O 旨在在 Linux 6.14 中准备就绪，并带来巨大的性能提升-2024-12-26.md"
     },
     {
       "title": "有趣的知识 - CPU利用率、延迟、吞吐量之间的关系",
       "file": "有趣的知识 -- CPU利用率，延迟，吞吐量之间的关系 - 知乎-2023-12-26.md",
       "source_directory": "Cubox",
-      "relative_path": "Cubox/有趣的知识 -- CPU利用率，延迟，吞吐量之间的关系 - 知乎-2023-12-26.md",
       "scores": {
         "relevance": 4,
         "depth": 4,
@@ -3037,13 +3017,13 @@
         "ch13-调度": "medium"
       },
       "summary": "从排队论角度分析CPU利用率、延迟和吞吐量之间关系的技术文章",
-      "indexed_at": "2026-04-07T14:18:00"
+      "indexed_at": "2026-04-07T14:18:00",
+      "path": "Cubox/有趣的知识 -- CPU利用率，延迟，吞吐量之间的关系 - 知乎-2023-12-26.md"
     },
     {
       "title": "条件编译不一致引发的内存布局问题及崩溃复盘",
       "file": "条件编译不一致引发的内存布局问题及崩溃复盘-2024-11-20.md",
       "source_directory": "Cubox",
-      "relative_path": "Cubox/条件编译不一致引发的内存布局问题及崩溃复盘-2024-11-20.md",
       "scores": {
         "relevance": 4,
         "depth": 4,
@@ -3061,13 +3041,13 @@
         "ch16-构建": "medium"
       },
       "summary": "条件编译不一致导致内存布局变化和崩溃的技术复盘，涉及C/C++编译期和内存对齐问题",
-      "indexed_at": "2026-04-07T14:18:00"
+      "indexed_at": "2026-04-07T14:18:00",
+      "path": "Cubox/条件编译不一致引发的内存布局问题及崩溃复盘-2024-11-20.md"
     },
     {
       "title": "最新版发布 - Android 13 现已正式发布至 AOSP",
       "file": "最新版发布 - Android 13 现已正式发布至 AOSP！-2022-08-17.md",
       "source_directory": "Cubox",
-      "relative_path": "Cubox/最新版发布 - Android 13 现已正式发布至 AOSP！-2022-08-17.md",
       "scores": {
         "relevance": 4,
         "depth": 3,
@@ -3085,7 +3065,8 @@
         "ch01-架构": "high"
       },
       "summary": "Google官方Android 13 AOSP发布通知，包含兼容性测试要求和开发者迁移指引",
-      "indexed_at": "2026-04-07T14:18:00"
+      "indexed_at": "2026-04-07T14:18:00",
+      "path": "Cubox/最新版发布 - Android 13 现已正式发布至 AOSP！-2022-08-17.md"
     },
     {
       "title": "分享一个 android app 启动出现 Uninterruptible Sleep (non-IO) 性能问题分析",
@@ -3162,6 +3143,21 @@
         "ch11-Profiling"
       ],
       "confidence": "high"
+    },
+    {
+      "path": "Cubox/深入探讨 Room 2.4.0 的最新进展-2022-01-19.md",
+      "title": "深入探讨 Room 2.4.0 的最新进展",
+      "scores": {
+        "relevance": 1,
+        "depth": 4,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "total_score": 11,
+      "quality": "medium",
+      "chapters": [],
+      "confidence": "medium",
+      "indexed_at": "2026-04-07T21:57:56.733757"
     }
   ],
   "sources": [
