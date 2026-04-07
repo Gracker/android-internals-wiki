@@ -12,7 +12,8 @@
     "processing": 0,
     "ready-to-publish": 12,
     "last_reviewed": "2026-04-07",
-    "last_reviewed_section": "9.2 ANR 类型与触发条件"
+    "last_reviewed_section": "14.1 Android Studio Profiler",
+    "reviewed_today": 4
   },
   "reviewed_sections": {
     "8.1": {
@@ -610,6 +611,24 @@
         "frontmatter: 补 section/drafted_by/reviewed_date/reviewed_by",
         "status: ready-for-review → finalized"
       ]
+    },
+    "14.1": {
+      "reviewed_date": "2026-04-07",
+      "reviewed_by": "openclaw-task6",
+      "review_status": "finalized",
+      "fixes_applied": [
+        "禁用词修正：显著提升→大幅提升（writing-guide §九 模糊形容词）",
+        "清理底部原始 intake 条目（布局调试文章，与本节无关）",
+        "frontmatter: 补 reviewed_date/reviewed_by",
+        "status: ready-for-review → finalized"
+      ],
+      "scores": {
+        "structure": 5,
+        "expression": 5,
+        "consistency": 5,
+        "verification": 4,
+        "metadata": 5
+      }
     }
   },
   "review_stats": {
