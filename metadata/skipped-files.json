@@ -5279,5 +5279,1265 @@
       "indexed_at": "2026-04-07T23:47:34.559667"
     }
   ],
-  "last_updated": "2026-04-07T16:59:49.639289"
+  "last_updated": "2026-04-07T16:59:49.639289",
+  "skipped": [
+    {
+      "path": "Cubox/Java Hook的实践之路-2024-05-24.md",
+      "title": "Java Hook的实践之路",
+      "scores": {
+        "相关性": 0,
+        "技术深度": 1,
+        "时效性": 0,
+        "可验证性": 1
+      },
+      "total_score": 2,
+      "reason": "总评分 2 < 10",
+      "date": "2026-04-08T02:22:09.433806"
+    },
+    {
+      "path": "Cubox/Android 16 显示系统 - 从View 到屏幕系列 - 3 - BLASTBufferQueue写在前面 BLa - 掘金-2025-07-27.md",
+      "title": "Android 16 显示系统 | 从View 到屏幕系列 - 3 | BLASTBufferQueue写在前面 BLa - 掘金",
+      "scores": {
+        "相关性": 0,
+        "技术深度": 1,
+        "时效性": 0,
+        "可验证性": 2
+      },
+      "total_score": 3,
+      "reason": "总评分 3 < 10",
+      "date": "2026-04-08T02:22:09.434741"
+    },
+    {
+      "path": "Cubox/Google I-O 2024 ：新的 Gem)ini AI 升级、Android 15 和 Pixel 预告-2024-05-15.md",
+      "title": "Google I/O 2024 ：新的 Gem)ini AI 升级、Android 15 和 Pixel 预告",
+      "scores": {
+        "相关性": 0,
+        "技术深度": 1,
+        "时效性": 3,
+        "可验证性": 3
+      },
+      "total_score": 7,
+      "reason": "总评分 7 < 10",
+      "date": "2026-04-08T02:22:09.435320"
+    },
+    {
+      "path": "Cubox/CMA技术原理分析-2023-03-10.md",
+      "title": "CMA技术原理分析",
+      "scores": {
+        "相关性": 0,
+        "技术深度": 3,
+        "时效性": 0,
+        "可验证性": 1
+      },
+      "total_score": 4,
+      "reason": "总评分 4 < 10",
+      "date": "2026-04-08T02:22:09.435744"
+    },
+    {
+      "path": "Cubox/【第2722期】腾讯医药微信小程序性能优化：从0.9秒到0.5秒-2022-09-04.md",
+      "title": "【第2722期】腾讯医药微信小程序性能优化：从0.9秒到0.5秒",
+      "scores": {
+        "相关性": 0,
+        "技术深度": 3,
+        "时效性": 0,
+        "可验证性": 1
+      },
+      "total_score": 4,
+      "reason": "总评分 4 < 10",
+      "date": "2026-04-08T02:22:09.436315"
+    },
+    {
+      "path": "Cubox/十年创业者 万字长文分享 我是怎么招人的-2022-03-24.md",
+      "title": "十年创业者 万字长文分享 我是怎么招人的",
+      "scores": {
+        "相关性": 0,
+        "技术深度": 1,
+        "时效性": 0,
+        "可验证性": 1
+      },
+      "total_score": 2,
+      "reason": "总评分 2 < 10",
+      "date": "2026-04-08T02:22:09.437244"
+    },
+    {
+      "path": "Cubox/2026 AI First 系列（四）：connecting the dots——你的独特人生路径-2026-01-05.md",
+      "title": "2026 AI First 系列（四）：connecting the dots——你的独特人生路径",
+      "scores": {
+        "相关性": 0,
+        "技术深度": 1,
+        "时效性": 3,
+        "可验证性": 1
+      },
+      "total_score": 5,
+      "reason": "总评分 5 < 10",
+      "date": "2026-04-08T02:22:09.437820"
+    },
+    {
+      "path": "Cubox/认真聊一下全球经济的恶化程度-2022-09-08.md",
+      "title": "认真聊一下全球经济的恶化程度",
+      "scores": {
+        "相关性": 0,
+        "技术深度": 1,
+        "时效性": 0,
+        "可验证性": 1
+      },
+      "total_score": 2,
+      "reason": "总评分 2 < 10",
+      "date": "2026-04-08T02:22:09.438603"
+    },
+    {
+      "path": "Cubox/Bitmap 解码优化 - 掘金-2022-07-17.md",
+      "title": "Bitmap 解码优化 - 掘金",
+      "scores": {
+        "相关性": 0,
+        "技术深度": 2,
+        "时效性": 0,
+        "可验证性": 1
+      },
+      "total_score": 3,
+      "reason": "总评分 3 < 10",
+      "date": "2026-04-08T02:22:09.438946"
+    },
+    {
+      "path": "Cubox/告别 2023 、迎接 2024 的 37 个答案-2024-01-02.md",
+      "title": "告别 2023 、迎接 2024 的 37 个答案",
+      "scores": {
+        "相关性": 0,
+        "技术深度": 1,
+        "时效性": 3,
+        "可验证性": 1
+      },
+      "total_score": 5,
+      "reason": "总评分 5 < 10",
+      "date": "2026-04-08T02:22:09.440139"
+    },
+    {
+      "path": "Cubox/Dart 2.17 现已发布-2022-05-16.md",
+      "title": "Dart 2.17 现已发布",
+      "scores": {
+        "相关性": 0,
+        "技术深度": 1,
+        "时效性": 0,
+        "可验证性": 1
+      },
+      "total_score": 2,
+      "reason": "总评分 2 < 10",
+      "date": "2026-04-08T02:22:09.440309"
+    },
+    {
+      "path": "Cubox/产品功能设计三问：知不知、会不会、愿不愿-2024-01-26.md",
+      "title": "产品功能设计三问：知不知、会不会、愿不愿",
+      "scores": {
+        "相关性": 0,
+        "技术深度": 1,
+        "时效性": 0,
+        "可验证性": 1
+      },
+      "total_score": 2,
+      "reason": "总评分 2 < 10",
+      "date": "2026-04-08T02:22:09.440419"
+    },
+    {
+      "path": "Cubox/2025 年 Linux 内核十大技术创新｜年终盘点-2026-02-16.md",
+      "title": "2025 年 Linux 内核十大技术创新｜年终盘点",
+      "scores": {
+        "相关性": 0,
+        "技术深度": 1,
+        "时效性": 3,
+        "可验证性": 1
+      },
+      "total_score": 5,
+      "reason": "总评分 5 < 10",
+      "date": "2026-04-08T02:22:09.440929"
+    },
+    {
+      "path": "Cubox/基于 Core 文件的 Android 调试与分析套件-2024-09-13.md",
+      "title": "基于 Core 文件的 Android 调试与分析套件",
+      "scores": {
+        "相关性": 0,
+        "技术深度": 2,
+        "时效性": 0,
+        "可验证性": 2
+      },
+      "total_score": 4,
+      "reason": "总评分 4 < 10",
+      "date": "2026-04-08T02:22:09.441537"
+    },
+    {
+      "path": "Cubox/2024年的CES国际消费电子展上有哪些黑科技国货？ - 知乎-2024-01-15.md",
+      "title": "2024年的CES国际消费电子展上有哪些黑科技国货？ - 知乎",
+      "scores": {
+        "相关性": 0,
+        "技术深度": 1,
+        "时效性": 3,
+        "可验证性": 1
+      },
+      "total_score": 5,
+      "reason": "总评分 5 < 10",
+      "date": "2026-04-08T02:22:09.442188"
+    },
+    {
+      "path": "Cubox/20221110，FTX与币安事件的来龙去脉（上）-2022-11-11.md",
+      "title": "20221110，FTX与币安事件的来龙去脉（上）",
+      "scores": {
+        "相关性": 0,
+        "技术深度": 1,
+        "时效性": 3,
+        "可验证性": 1
+      },
+      "total_score": 5,
+      "reason": "总评分 5 < 10",
+      "date": "2026-04-08T02:22:09.442534"
+    },
+    {
+      "path": "Cubox/2025 年不同程序员如何用好 AI 模型： 1：经济实力 - 即刻App-2025-02-23.md",
+      "title": "2025 年不同程序员如何用好 AI 模型： 1：经济实力 - 即刻App",
+      "scores": {
+        "相关性": 0,
+        "技术深度": 1,
+        "时效性": 3,
+        "可验证性": 1
+      },
+      "total_score": 5,
+      "reason": "总评分 5 < 10",
+      "date": "2026-04-08T02:22:09.442650"
+    },
+    {
+      "path": "Cubox/Kotlin Weekly #288-2022-02-07.md",
+      "title": "Kotlin Weekly #288",
+      "scores": {
+        "相关性": 0,
+        "技术深度": 1,
+        "时效性": 0,
+        "可验证性": 1
+      },
+      "total_score": 2,
+      "reason": "总评分 2 < 10",
+      "date": "2026-04-08T02:22:09.442763"
+    },
+    {
+      "path": "Cubox/“重新设计” Android View 体系？-2022-03-13.md",
+      "title": "“重新设计” Android View 体系？",
+      "scores": {
+        "相关性": 0,
+        "技术深度": 1,
+        "时效性": 0,
+        "可验证性": 2
+      },
+      "total_score": 3,
+      "reason": "总评分 3 < 10",
+      "date": "2026-04-08T02:22:09.443098"
+    },
+    {
+      "path": "Cubox/Let's Build A Simple Interpreter. Part 11. - Ruslan's Blog-2022-01-14.md",
+      "title": "No title found",
+      "reason": "无法提取标题",
+      "date": "2026-04-08T02:22:09.444073"
+    },
+    {
+      "path": "Cubox/TextureView 的血与泪（完整修订版） - 知乎-2022-06-30.md",
+      "title": "TextureView 的血与泪（完整修订版） - 知乎",
+      "scores": {
+        "相关性": 0,
+        "技术深度": 1,
+        "时效性": 0,
+        "可验证性": 1
+      },
+      "total_score": 2,
+      "reason": "总评分 2 < 10",
+      "date": "2026-04-08T02:22:09.444245"
+    },
+    {
+      "path": "Cubox/如何配置Clion编写aosp的c++程序使用aidegen工具编译生成cmake文件，该方法适用于无法使用asfp I - 掘金-2025-03-18.md",
+      "title": "如何配置Clion编写aosp的c++程序使用aidegen工具编译生成cmake文件，该方法适用于无法使用asfp I - 掘金",
+      "scores": {
+        "相关性": 0,
+        "技术深度": 1,
+        "时效性": 0,
+        "可验证性": 1
+      },
+      "total_score": 2,
+      "reason": "总评分 2 < 10",
+      "date": "2026-04-08T02:22:09.444363"
+    },
+    {
+      "path": "Cubox/Webpage- pnbharat.medium.com-2023-12-29.md",
+      "title": "Webpage: pnbharat.medium.com",
+      "scores": {
+        "相关性": 0,
+        "技术深度": 1,
+        "时效性": 0,
+        "可验证性": 1
+      },
+      "total_score": 2,
+      "reason": "总评分 2 < 10",
+      "date": "2026-04-08T02:22:09.444468"
+    },
+    {
+      "path": "Cubox/计算创意学系列（完结篇）：科学家阻止不了工程师们举起魔杖-2022-01-26.md",
+      "title": "计算创意学系列（完结篇）：科学家阻止不了工程师们举起魔杖",
+      "scores": {
+        "相关性": 0,
+        "技术深度": 1,
+        "时效性": 0,
+        "可验证性": 1
+      },
+      "total_score": 2,
+      "reason": "总评分 2 < 10",
+      "date": "2026-04-08T02:22:09.444639"
+    },
+    {
+      "path": "Cubox/关于 TweetID-1658453862561501184 中典型诡辩论部分的拆解 - Kivinsae's Nest-2023-05-17.md",
+      "title": "关于 TweetID:1658453862561501184 中典型诡辩论部分的拆解 | Kivinsae's Nest",
+      "scores": {
+        "相关性": 0,
+        "技术深度": 1,
+        "时效性": 0,
+        "可验证性": 1
+      },
+      "total_score": 2,
+      "reason": "总评分 2 < 10",
+      "date": "2026-04-08T02:22:09.444750"
+    },
+    {
+      "path": "Cubox/多模态人物视频驱动技术回顾与业务应用-2025-02-24.md",
+      "title": "多模态人物视频驱动技术回顾与业务应用",
+      "scores": {
+        "相关性": 0,
+        "技术深度": 1,
+        "时效性": 0,
+        "可验证性": 1
+      },
+      "total_score": 2,
+      "reason": "总评分 2 < 10",
+      "date": "2026-04-08T02:22:09.444963"
+    },
+    {
+      "path": "Cubox/系统的可观察性是指什么？-2024-01-19.md",
+      "title": "系统的可观察性是指什么？",
+      "scores": {
+        "相关性": 0,
+        "技术深度": 1,
+        "时效性": 0,
+        "可验证性": 1
+      },
+      "total_score": 2,
+      "reason": "总评分 2 < 10",
+      "date": "2026-04-08T02:22:09.445054"
+    },
+    {
+      "path": "Cubox/Android图形系统（四）应用篇：自定义View-ViewGroup详解-2022-12-06.md",
+      "title": "Android图形系统（四）应用篇：自定义View/ViewGroup详解",
+      "scores": {
+        "相关性": 0,
+        "技术深度": 1,
+        "时效性": 0,
+        "可验证性": 2
+      },
+      "total_score": 3,
+      "reason": "总评分 3 < 10",
+      "date": "2026-04-08T02:22:09.445766"
+    },
+    {
+      "path": "Cubox/Android APP系统渲染管线主流程优化-2025-05-13.md",
+      "title": "Android APP系统渲染管线主流程优化",
+      "scores": {
+        "相关性": 0,
+        "技术深度": 2,
+        "时效性": 0,
+        "可验证性": 2
+      },
+      "total_score": 4,
+      "reason": "总评分 4 < 10",
+      "date": "2026-04-08T02:22:09.446144"
+    },
+    {
+      "path": "Cubox/The Return of the Frame Pointers-2024-03-18.md",
+      "title": "The Return of the Frame Pointers",
+      "scores": {
+        "相关性": 0,
+        "技术深度": 1,
+        "时效性": 0,
+        "可验证性": 1
+      },
+      "total_score": 2,
+      "reason": "总评分 2 < 10",
+      "date": "2026-04-08T02:22:09.446263"
+    },
+    {
+      "path": "Cubox/Android深入卡顿分析与实践-2023-12-19.md",
+      "title": "Android深入卡顿分析与实践",
+      "scores": {
+        "相关性": 0,
+        "技术深度": 2,
+        "时效性": 0,
+        "可验证性": 2
+      },
+      "total_score": 4,
+      "reason": "总评分 4 < 10",
+      "date": "2026-04-08T02:22:09.446632"
+    },
+    {
+      "path": "Cubox/Jetpack Compose 到底优秀在哪里？- 开发者说·DTalk-2022-07-29.md",
+      "title": "Jetpack Compose 到底优秀在哪里？| 开发者说·DTalk",
+      "scores": {
+        "相关性": 0,
+        "技术深度": 1,
+        "时效性": 0,
+        "可验证性": 1
+      },
+      "total_score": 2,
+      "reason": "总评分 2 < 10",
+      "date": "2026-04-08T02:22:09.446912"
+    },
+    {
+      "path": "Cubox/ColorOS 动画曲线粗浅分析：为何有的地方怪，怪在哪里？ - 少派-2025-03-03.md",
+      "title": "No title found",
+      "reason": "无法提取标题",
+      "date": "2026-04-08T02:22:09.447248"
+    },
+    {
+      "path": "Cubox/360度无死角，Android Jetpack面试技巧大揭秘-2024-01-25.md",
+      "title": "360度无死角，Android Jetpack面试技巧大揭秘",
+      "scores": {
+        "相关性": 0,
+        "技术深度": 1,
+        "时效性": 0,
+        "可验证性": 2
+      },
+      "total_score": 3,
+      "reason": "总评分 3 < 10",
+      "date": "2026-04-08T02:22:09.447766"
+    },
+    {
+      "path": "Cubox/现在房价进行到哪一步了？-2023-09-10.md",
+      "title": "现在房价进行到哪一步了？",
+      "scores": {
+        "相关性": 0,
+        "技术深度": 1,
+        "时效性": 0,
+        "可验证性": 1
+      },
+      "total_score": 2,
+      "reason": "总评分 2 < 10",
+      "date": "2026-04-08T02:22:09.448237"
+    },
+    {
+      "path": "Cubox/What's new in the Jetpack Compose January '24 release-2024-01-25.md",
+      "title": "No title found",
+      "reason": "无法提取标题",
+      "date": "2026-04-08T02:22:09.448737"
+    },
+    {
+      "path": "Cubox/GitHub - divamgupta-diffusionbee-stable-diffusion-ui- Diffusion Bee is the easiest way to run Stable.md",
+      "title": "GitHub - divamgupta/diffusionbee-stable-diffusion-ui: Diffusion Bee is the easiest way to run Stable Diffusion locally on your M1 Mac. Comes with a one-click installer. No dependencies or technical knowledge needed.",
+      "scores": {
+        "相关性": 0,
+        "技术深度": 1,
+        "时效性": 0,
+        "可验证性": 1
+      },
+      "total_score": 2,
+      "reason": "总评分 2 < 10",
+      "date": "2026-04-08T02:22:09.449220"
+    },
+    {
+      "path": "Cubox/成都市 2024 年城乡居民医疗保险费开始缴费啦！个人缴费标准分为两档…-2023-11-30.md",
+      "title": "成都市 2024 年城乡居民医疗保险费开始缴费啦！个人缴费标准分为两档…",
+      "scores": {
+        "相关性": 0,
+        "技术深度": 1,
+        "时效性": 3,
+        "可验证性": 1
+      },
+      "total_score": 5,
+      "reason": "总评分 5 < 10",
+      "date": "2026-04-08T02:22:09.449692"
+    },
+    {
+      "path": "Cubox/生活、技巧和信念-2023-04-19.md",
+      "title": "生活、技巧和信念",
+      "scores": {
+        "相关性": 0,
+        "技术深度": 1,
+        "时效性": 0,
+        "可验证性": 1
+      },
+      "total_score": 2,
+      "reason": "总评分 2 < 10",
+      "date": "2026-04-08T02:22:09.450004"
+    },
+    {
+      "path": "Cubox/Android S原生系统内存泄露问题案例-2022-06-20.md",
+      "title": "Android S原生系统内存泄露问题案例",
+      "scores": {
+        "相关性": 0,
+        "技术深度": 1,
+        "时效性": 0,
+        "可验证性": 2
+      },
+      "total_score": 3,
+      "reason": "总评分 3 < 10",
+      "date": "2026-04-08T02:22:09.450164"
+    },
+    {
+      "path": "Cubox/字节跳动开源 Android PLT hook 方案 bhook - 知乎-2023-12-04.md",
+      "title": "字节跳动开源 Android PLT hook 方案 bhook - 知乎",
+      "scores": {
+        "相关性": 0,
+        "技术深度": 1,
+        "时效性": 0,
+        "可验证性": 2
+      },
+      "total_score": 3,
+      "reason": "总评分 3 < 10",
+      "date": "2026-04-08T02:22:09.450763"
+    },
+    {
+      "path": "Cubox/浅析高通 mvp 进程优先调度 - 魅族内核团队-2025-08-05.md",
+      "title": "浅析高通 mvp 进程优先调度 - 魅族内核团队",
+      "scores": {
+        "相关性": 0,
+        "技术深度": 1,
+        "时效性": 0,
+        "可验证性": 1
+      },
+      "total_score": 2,
+      "reason": "总评分 2 < 10",
+      "date": "2026-04-08T02:22:09.451591"
+    },
+    {
+      "path": "Cubox/Compose Multiplatform iOS 稳定版发布：可用于生产环境，并支持 hotload-2025-05-08.md",
+      "title": "No title found",
+      "reason": "无法提取标题",
+      "date": "2026-04-08T02:22:09.452425"
+    },
+    {
+      "path": "Cubox/Android编译解析 - Java是如何编译的-2022-04-14.md",
+      "title": "Android编译解析 - Java是如何编译的",
+      "scores": {
+        "相关性": 0,
+        "技术深度": 1,
+        "时效性": 0,
+        "可验证性": 2
+      },
+      "total_score": 3,
+      "reason": "总评分 3 < 10",
+      "date": "2026-04-08T02:22:09.452960"
+    },
+    {
+      "path": "Cubox/Double Mapped Circular Buffer-2025-08-13.md",
+      "title": "Double Mapped Circular Buffer",
+      "scores": {
+        "相关性": 0,
+        "技术深度": 1,
+        "时效性": 0,
+        "可验证性": 1
+      },
+      "total_score": 2,
+      "reason": "总评分 2 < 10",
+      "date": "2026-04-08T02:22:09.453248"
+    },
+    {
+      "path": "Cubox/The Trump Administration Drove Him Back to China, Where He Invented a Fast Coronavirus Test-2022-03-.md",
+      "title": "The Trump Administration Drove Him Back to China, Where He Invented a Fast Coronavirus Test",
+      "scores": {
+        "相关性": 0,
+        "技术深度": 1,
+        "时效性": 0,
+        "可验证性": 1
+      },
+      "total_score": 2,
+      "reason": "总评分 2 < 10",
+      "date": "2026-04-08T02:22:09.453429"
+    },
+    {
+      "path": "Cubox/核心交互场景优化黑科技，GC抑制从入门到精通-2024-07-29.md",
+      "title": "核心交互场景优化黑科技，GC抑制从入门到精通",
+      "scores": {
+        "相关性": 0,
+        "技术深度": 2,
+        "时效性": 0,
+        "可验证性": 1
+      },
+      "total_score": 3,
+      "reason": "总评分 3 < 10",
+      "date": "2026-04-08T02:22:09.453979"
+    },
+    {
+      "path": "Cubox/产品沉思录精选：交易平台的金字塔进阶-2022-01-25.md",
+      "title": "产品沉思录精选：交易平台的金字塔进阶",
+      "scores": {
+        "相关性": 0,
+        "技术深度": 1,
+        "时效性": 0,
+        "可验证性": 1
+      },
+      "total_score": 2,
+      "reason": "总评分 2 < 10",
+      "date": "2026-04-08T02:22:09.454198"
+    },
+    {
+      "path": "Cubox/晚上锻炼影响睡眠？Nature子刊揭示最佳运动时间窗口-2025-05-05.md",
+      "title": "晚上锻炼影响睡眠？Nature子刊揭示最佳运动时间窗口",
+      "scores": {
+        "相关性": 0,
+        "技术深度": 1,
+        "时效性": 0,
+        "可验证性": 1
+      },
+      "total_score": 2,
+      "reason": "总评分 2 < 10",
+      "date": "2026-04-08T02:22:09.454319"
+    },
+    {
+      "path": "Cubox/对Android游戏画面抖动现象的研究-2025-05-26.md",
+      "title": "对Android游戏画面抖动现象的研究",
+      "scores": {
+        "相关性": 0,
+        "技术深度": 1,
+        "时效性": 0,
+        "可验证性": 2
+      },
+      "total_score": 3,
+      "reason": "总评分 3 < 10",
+      "date": "2026-04-08T02:22:09.454433"
+    },
+    {
+      "path": "Cubox/Java Hook的实践之路-2024-05-24.md",
+      "title": "Java Hook的实践之路",
+      "scores": {
+        "相关性": 0,
+        "技术深度": 1,
+        "时效性": 0,
+        "可验证性": 1
+      },
+      "total_score": 2,
+      "reason": "总评分 2 < 10",
+      "date": "2026-04-08T02:24:30.984538"
+    },
+    {
+      "path": "Cubox/Android 16 显示系统 - 从View 到屏幕系列 - 3 - BLASTBufferQueue写在前面 BLa - 掘金-2025-07-27.md",
+      "title": "Android 16 显示系统 | 从View 到屏幕系列 - 3 | BLASTBufferQueue写在前面 BLa - 掘金",
+      "scores": {
+        "相关性": 0,
+        "技术深度": 1,
+        "时效性": 0,
+        "可验证性": 2
+      },
+      "total_score": 3,
+      "reason": "总评分 3 < 10",
+      "date": "2026-04-08T02:24:30.985038"
+    },
+    {
+      "path": "Cubox/Google I-O 2024 ：新的 Gem)ini AI 升级、Android 15 和 Pixel 预告-2024-05-15.md",
+      "title": "Google I/O 2024 ：新的 Gem)ini AI 升级、Android 15 和 Pixel 预告",
+      "scores": {
+        "相关性": 0,
+        "技术深度": 1,
+        "时效性": 3,
+        "可验证性": 3
+      },
+      "total_score": 7,
+      "reason": "总评分 7 < 10",
+      "date": "2026-04-08T02:24:30.985451"
+    },
+    {
+      "path": "Cubox/CMA技术原理分析-2023-03-10.md",
+      "title": "CMA技术原理分析",
+      "scores": {
+        "相关性": 0,
+        "技术深度": 3,
+        "时效性": 0,
+        "可验证性": 1
+      },
+      "total_score": 4,
+      "reason": "总评分 4 < 10",
+      "date": "2026-04-08T02:24:30.985832"
+    },
+    {
+      "path": "Cubox/【第2722期】腾讯医药微信小程序性能优化：从0.9秒到0.5秒-2022-09-04.md",
+      "title": "【第2722期】腾讯医药微信小程序性能优化：从0.9秒到0.5秒",
+      "scores": {
+        "相关性": 0,
+        "技术深度": 3,
+        "时效性": 0,
+        "可验证性": 1
+      },
+      "total_score": 4,
+      "reason": "总评分 4 < 10",
+      "date": "2026-04-08T02:24:30.986329"
+    },
+    {
+      "path": "Cubox/十年创业者 万字长文分享 我是怎么招人的-2022-03-24.md",
+      "title": "十年创业者 万字长文分享 我是怎么招人的",
+      "scores": {
+        "相关性": 0,
+        "技术深度": 1,
+        "时效性": 0,
+        "可验证性": 1
+      },
+      "total_score": 2,
+      "reason": "总评分 2 < 10",
+      "date": "2026-04-08T02:24:30.987197"
+    },
+    {
+      "path": "Cubox/2026 AI First 系列（四）：connecting the dots——你的独特人生路径-2026-01-05.md",
+      "title": "2026 AI First 系列（四）：connecting the dots——你的独特人生路径",
+      "scores": {
+        "相关性": 0,
+        "技术深度": 1,
+        "时效性": 3,
+        "可验证性": 1
+      },
+      "total_score": 5,
+      "reason": "总评分 5 < 10",
+      "date": "2026-04-08T02:24:30.987734"
+    },
+    {
+      "path": "Cubox/认真聊一下全球经济的恶化程度-2022-09-08.md",
+      "title": "认真聊一下全球经济的恶化程度",
+      "scores": {
+        "相关性": 0,
+        "技术深度": 1,
+        "时效性": 0,
+        "可验证性": 1
+      },
+      "total_score": 2,
+      "reason": "总评分 2 < 10",
+      "date": "2026-04-08T02:24:30.988444"
+    },
+    {
+      "path": "Cubox/Bitmap 解码优化 - 掘金-2022-07-17.md",
+      "title": "Bitmap 解码优化 - 掘金",
+      "scores": {
+        "相关性": 0,
+        "技术深度": 2,
+        "时效性": 0,
+        "可验证性": 1
+      },
+      "total_score": 3,
+      "reason": "总评分 3 < 10",
+      "date": "2026-04-08T02:24:30.988722"
+    },
+    {
+      "path": "Cubox/告别 2023 、迎接 2024 的 37 个答案-2024-01-02.md",
+      "title": "告别 2023 、迎接 2024 的 37 个答案",
+      "scores": {
+        "相关性": 0,
+        "技术深度": 1,
+        "时效性": 3,
+        "可验证性": 1
+      },
+      "total_score": 5,
+      "reason": "总评分 5 < 10",
+      "date": "2026-04-08T02:24:30.989180"
+    },
+    {
+      "path": "Cubox/Dart 2.17 现已发布-2022-05-16.md",
+      "title": "Dart 2.17 现已发布",
+      "scores": {
+        "相关性": 0,
+        "技术深度": 1,
+        "时效性": 0,
+        "可验证性": 1
+      },
+      "total_score": 2,
+      "reason": "总评分 2 < 10",
+      "date": "2026-04-08T02:24:30.989336"
+    },
+    {
+      "path": "Cubox/产品功能设计三问：知不知、会不会、愿不愿-2024-01-26.md",
+      "title": "产品功能设计三问：知不知、会不会、愿不愿",
+      "scores": {
+        "相关性": 0,
+        "技术深度": 1,
+        "时效性": 0,
+        "可验证性": 1
+      },
+      "total_score": 2,
+      "reason": "总评分 2 < 10",
+      "date": "2026-04-08T02:24:30.989442"
+    },
+    {
+      "path": "Cubox/2025 年 Linux 内核十大技术创新｜年终盘点-2026-02-16.md",
+      "title": "2025 年 Linux 内核十大技术创新｜年终盘点",
+      "scores": {
+        "相关性": 0,
+        "技术深度": 1,
+        "时效性": 3,
+        "可验证性": 1
+      },
+      "total_score": 5,
+      "reason": "总评分 5 < 10",
+      "date": "2026-04-08T02:24:30.989832"
+    },
+    {
+      "path": "Cubox/基于 Core 文件的 Android 调试与分析套件-2024-09-13.md",
+      "title": "基于 Core 文件的 Android 调试与分析套件",
+      "scores": {
+        "相关性": 0,
+        "技术深度": 2,
+        "时效性": 0,
+        "可验证性": 2
+      },
+      "total_score": 4,
+      "reason": "总评分 4 < 10",
+      "date": "2026-04-08T02:24:30.990320"
+    },
+    {
+      "path": "Cubox/2024年的CES国际消费电子展上有哪些黑科技国货？ - 知乎-2024-01-15.md",
+      "title": "2024年的CES国际消费电子展上有哪些黑科技国货？ - 知乎",
+      "scores": {
+        "相关性": 0,
+        "技术深度": 1,
+        "时效性": 3,
+        "可验证性": 1
+      },
+      "total_score": 5,
+      "reason": "总评分 5 < 10",
+      "date": "2026-04-08T02:24:30.990767"
+    },
+    {
+      "path": "Cubox/20221110，FTX与币安事件的来龙去脉（上）-2022-11-11.md",
+      "title": "20221110，FTX与币安事件的来龙去脉（上）",
+      "scores": {
+        "相关性": 0,
+        "技术深度": 1,
+        "时效性": 3,
+        "可验证性": 1
+      },
+      "total_score": 5,
+      "reason": "总评分 5 < 10",
+      "date": "2026-04-08T02:24:30.991044"
+    },
+    {
+      "path": "Cubox/2025 年不同程序员如何用好 AI 模型： 1：经济实力 - 即刻App-2025-02-23.md",
+      "title": "2025 年不同程序员如何用好 AI 模型： 1：经济实力 - 即刻App",
+      "scores": {
+        "相关性": 0,
+        "技术深度": 1,
+        "时效性": 3,
+        "可验证性": 1
+      },
+      "total_score": 5,
+      "reason": "总评分 5 < 10",
+      "date": "2026-04-08T02:24:30.991145"
+    },
+    {
+      "path": "Cubox/Kotlin Weekly #288-2022-02-07.md",
+      "title": "Kotlin Weekly #288",
+      "scores": {
+        "相关性": 0,
+        "技术深度": 1,
+        "时效性": 0,
+        "可验证性": 1
+      },
+      "total_score": 2,
+      "reason": "总评分 2 < 10",
+      "date": "2026-04-08T02:24:30.991247"
+    },
+    {
+      "path": "Cubox/“重新设计” Android View 体系？-2022-03-13.md",
+      "title": "“重新设计” Android View 体系？",
+      "scores": {
+        "相关性": 0,
+        "技术深度": 1,
+        "时效性": 0,
+        "可验证性": 2
+      },
+      "total_score": 3,
+      "reason": "总评分 3 < 10",
+      "date": "2026-04-08T02:24:30.991560"
+    },
+    {
+      "path": "Cubox/Let's Build A Simple Interpreter. Part 11. - Ruslan's Blog-2022-01-14.md",
+      "title": "File not found",
+      "reason": "文件不存在",
+      "date": "2026-04-08T02:24:30.991577"
+    },
+    {
+      "path": "Cubox/TextureView 的血与泪（完整修订版） - 知乎-2022-06-30.md",
+      "title": "TextureView 的血与泪（完整修订版） - 知乎",
+      "scores": {
+        "相关性": 0,
+        "技术深度": 1,
+        "时效性": 0,
+        "可验证性": 1
+      },
+      "total_score": 2,
+      "reason": "总评分 2 < 10",
+      "date": "2026-04-08T02:24:30.991734"
+    },
+    {
+      "path": "Cubox/如何配置Clion编写aosp的c++程序使用aidegen工具编译生成cmake文件，该方法适用于无法使用asfp I - 掘金-2025-03-18.md",
+      "title": "如何配置Clion编写aosp的c++程序使用aidegen工具编译生成cmake文件，该方法适用于无法使用asfp I - 掘金",
+      "scores": {
+        "相关性": 0,
+        "技术深度": 1,
+        "时效性": 0,
+        "可验证性": 1
+      },
+      "total_score": 2,
+      "reason": "总评分 2 < 10",
+      "date": "2026-04-08T02:24:30.991851"
+    },
+    {
+      "path": "Cubox/Webpage- pnbharat.medium.com-2023-12-29.md",
+      "title": "Webpage: pnbharat.medium.com",
+      "scores": {
+        "相关性": 0,
+        "技术深度": 1,
+        "时效性": 0,
+        "可验证性": 1
+      },
+      "total_score": 2,
+      "reason": "总评分 2 < 10",
+      "date": "2026-04-08T02:24:30.991950"
+    },
+    {
+      "path": "Cubox/计算创意学系列（完结篇）：科学家阻止不了工程师们举起魔杖-2022-01-26.md",
+      "title": "计算创意学系列（完结篇）：科学家阻止不了工程师们举起魔杖",
+      "scores": {
+        "相关性": 0,
+        "技术深度": 1,
+        "时效性": 0,
+        "可验证性": 1
+      },
+      "total_score": 2,
+      "reason": "总评分 2 < 10",
+      "date": "2026-04-08T02:24:30.992109"
+    },
+    {
+      "path": "Cubox/关于 TweetID-1658453862561501184 中典型诡辩论部分的拆解 - Kivinsae's Nest-2023-05-17.md",
+      "title": "关于 TweetID:1658453862561501184 中典型诡辩论部分的拆解 | Kivinsae's Nest",
+      "scores": {
+        "相关性": 0,
+        "技术深度": 1,
+        "时效性": 0,
+        "可验证性": 1
+      },
+      "total_score": 2,
+      "reason": "总评分 2 < 10",
+      "date": "2026-04-08T02:24:30.992218"
+    },
+    {
+      "path": "Cubox/多模态人物视频驱动技术回顾与业务应用-2025-02-24.md",
+      "title": "多模态人物视频驱动技术回顾与业务应用",
+      "scores": {
+        "相关性": 0,
+        "技术深度": 1,
+        "时效性": 0,
+        "可验证性": 1
+      },
+      "total_score": 2,
+      "reason": "总评分 2 < 10",
+      "date": "2026-04-08T02:24:30.992420"
+    },
+    {
+      "path": "Cubox/系统的可观察性是指什么？-2024-01-19.md",
+      "title": "系统的可观察性是指什么？",
+      "scores": {
+        "相关性": 0,
+        "技术深度": 1,
+        "时效性": 0,
+        "可验证性": 1
+      },
+      "total_score": 2,
+      "reason": "总评分 2 < 10",
+      "date": "2026-04-08T02:24:30.992513"
+    },
+    {
+      "path": "Cubox/Android图形系统（四）应用篇：自定义View-ViewGroup详解-2022-12-06.md",
+      "title": "Android图形系统（四）应用篇：自定义View/ViewGroup详解",
+      "scores": {
+        "相关性": 0,
+        "技术深度": 1,
+        "时效性": 0,
+        "可验证性": 2
+      },
+      "total_score": 3,
+      "reason": "总评分 3 < 10",
+      "date": "2026-04-08T02:24:30.993157"
+    },
+    {
+      "path": "Cubox/Android APP系统渲染管线主流程优化-2025-05-13.md",
+      "title": "Android APP系统渲染管线主流程优化",
+      "scores": {
+        "相关性": 0,
+        "技术深度": 2,
+        "时效性": 0,
+        "可验证性": 2
+      },
+      "total_score": 4,
+      "reason": "总评分 4 < 10",
+      "date": "2026-04-08T02:24:30.993475"
+    },
+    {
+      "path": "Cubox/The Return of the Frame Pointers-2024-03-18.md",
+      "title": "The Return of the Frame Pointers",
+      "scores": {
+        "相关性": 0,
+        "技术深度": 1,
+        "时效性": 0,
+        "可验证性": 1
+      },
+      "total_score": 2,
+      "reason": "总评分 2 < 10",
+      "date": "2026-04-08T02:24:30.993589"
+    },
+    {
+      "path": "Cubox/Android深入卡顿分析与实践-2023-12-19.md",
+      "title": "Android深入卡顿分析与实践",
+      "scores": {
+        "相关性": 0,
+        "技术深度": 2,
+        "时效性": 0,
+        "可验证性": 2
+      },
+      "total_score": 4,
+      "reason": "总评分 4 < 10",
+      "date": "2026-04-08T02:24:30.993962"
+    },
+    {
+      "path": "Cubox/Jetpack Compose 到底优秀在哪里？- 开发者说·DTalk-2022-07-29.md",
+      "title": "Jetpack Compose 到底优秀在哪里？| 开发者说·DTalk",
+      "scores": {
+        "相关性": 0,
+        "技术深度": 1,
+        "时效性": 0,
+        "可验证性": 1
+      },
+      "total_score": 2,
+      "reason": "总评分 2 < 10",
+      "date": "2026-04-08T02:24:30.994226"
+    },
+    {
+      "path": "Cubox/ColorOS 动画曲线粗浅分析：为何有的地方怪，怪在哪里？ - 少数派-2025-03-03.md",
+      "title": "ColorOS 动画曲线粗浅分析：为何有的地方怪，怪在哪里？ - 少数派",
+      "scores": {
+        "相关性": 0,
+        "技术深度": 2,
+        "时效性": 0,
+        "可验证性": 1
+      },
+      "total_score": 3,
+      "reason": "总评分 3 < 10",
+      "date": "2026-04-08T02:24:30.994385"
+    },
+    {
+      "path": "Cubox/360度无死角，Android Jetpack面试技巧大揭秘-2024-01-25.md",
+      "title": "360度无死角，Android Jetpack面试技巧大揭秘",
+      "scores": {
+        "相关性": 0,
+        "技术深度": 1,
+        "时效性": 0,
+        "可验证性": 2
+      },
+      "total_score": 3,
+      "reason": "总评分 3 < 10",
+      "date": "2026-04-08T02:24:30.994829"
+    },
+    {
+      "path": "Cubox/现在房价进行到哪一步了？-2023-09-10.md",
+      "title": "现在房价进行到哪一步了？",
+      "scores": {
+        "相关性": 0,
+        "技术深度": 1,
+        "时效性": 0,
+        "可验证性": 1
+      },
+      "total_score": 2,
+      "reason": "总评分 2 < 10",
+      "date": "2026-04-08T02:24:30.995235"
+    },
+    {
+      "path": "Cubox/What's new in the Jetpack Compose January '24 release-2024-01-25.md",
+      "title": "File not found",
+      "reason": "文件不存在",
+      "date": "2026-04-08T02:24:30.995250"
+    },
+    {
+      "path": "Cubox/GitHub - divamgupta-diffusionbee-stable-diffusion-ui- Diffusion Bee is the easiest way to run Stable.md",
+      "title": "GitHub - divamgupta/diffusionbee-stable-diffusion-ui: Diffusion Bee is the easiest way to run Stable Diffusion locally on your M1 Mac. Comes with a one-click installer. No dependencies or technical knowledge needed.",
+      "scores": {
+        "相关性": 0,
+        "技术深度": 1,
+        "时效性": 0,
+        "可验证性": 1
+      },
+      "total_score": 2,
+      "reason": "总评分 2 < 10",
+      "date": "2026-04-08T02:24:30.995668"
+    },
+    {
+      "path": "Cubox/成都市 2024 年城乡居民医疗保险费开始缴费啦！个人缴费标准分为两档…-2023-11-30.md",
+      "title": "成都市 2024 年城乡居民医疗保险费开始缴费啦！个人缴费标准分为两档…",
+      "scores": {
+        "相关性": 0,
+        "技术深度": 1,
+        "时效性": 3,
+        "可验证性": 1
+      },
+      "total_score": 5,
+      "reason": "总评分 5 < 10",
+      "date": "2026-04-08T02:24:30.996123"
+    },
+    {
+      "path": "Cubox/生活、技巧和信念-2023-04-19.md",
+      "title": "生活、技巧和信念",
+      "scores": {
+        "相关性": 0,
+        "技术深度": 1,
+        "时效性": 0,
+        "可验证性": 1
+      },
+      "total_score": 2,
+      "reason": "总评分 2 < 10",
+      "date": "2026-04-08T02:24:30.996436"
+    },
+    {
+      "path": "Cubox/Android S原生系统内存泄露问题案例-2022-06-20.md",
+      "title": "Android S原生系统内存泄露问题案例",
+      "scores": {
+        "相关性": 0,
+        "技术深度": 1,
+        "时效性": 0,
+        "可验证性": 2
+      },
+      "total_score": 3,
+      "reason": "总评分 3 < 10",
+      "date": "2026-04-08T02:24:30.996603"
+    },
+    {
+      "path": "Cubox/字节跳动开源 Android PLT hook 方案 bhook - 知乎-2023-12-04.md",
+      "title": "字节跳动开源 Android PLT hook 方案 bhook - 知乎",
+      "scores": {
+        "相关性": 0,
+        "技术深度": 1,
+        "时效性": 0,
+        "可验证性": 2
+      },
+      "total_score": 3,
+      "reason": "总评分 3 < 10",
+      "date": "2026-04-08T02:24:30.997116"
+    },
+    {
+      "path": "Cubox/浅析高通 mvp 进程优先调度 - 魅族内核团队-2025-08-05.md",
+      "title": "浅析高通 mvp 进程优先调度 - 魅族内核团队",
+      "scores": {
+        "相关性": 0,
+        "技术深度": 1,
+        "时效性": 0,
+        "可验证性": 1
+      },
+      "total_score": 2,
+      "reason": "总评分 2 < 10",
+      "date": "2026-04-08T02:24:30.997568"
+    },
+    {
+      "path": "Cubox/Compose Multiplatform  iOS 稳定版发布：可用于生产环境，并支持 hotload-2025-05-08.md",
+      "title": "Compose Multiplatform  iOS 稳定版发布：可用于生产环境，并支持 hotload",
+      "scores": {
+        "相关性": 0,
+        "技术深度": 1,
+        "时效性": 0,
+        "可验证性": 1
+      },
+      "total_score": 2,
+      "reason": "总评分 2 < 10",
+      "date": "2026-04-08T02:24:30.997689"
+    },
+    {
+      "path": "Cubox/Android编译解析 - Java是如何编译的-2022-04-14.md",
+      "title": "Android编译解析 - Java是如何编译的",
+      "scores": {
+        "相关性": 0,
+        "技术深度": 1,
+        "时效性": 0,
+        "可验证性": 2
+      },
+      "total_score": 3,
+      "reason": "总评分 3 < 10",
+      "date": "2026-04-08T02:24:30.998136"
+    },
+    {
+      "path": "Cubox/Double Mapped Circular Buffer-2025-08-13.md",
+      "title": "Double Mapped Circular Buffer",
+      "scores": {
+        "相关性": 0,
+        "技术深度": 1,
+        "时效性": 0,
+        "可验证性": 1
+      },
+      "total_score": 2,
+      "reason": "总评分 2 < 10",
+      "date": "2026-04-08T02:24:30.998351"
+    },
+    {
+      "path": "Cubox/The Trump Administration Drove Him Back to China, Where He Invented a Fast Coronavirus Test-2022-03-.md",
+      "title": "The Trump Administration Drove Him Back to China, Where He Invented a Fast Coronavirus Test",
+      "scores": {
+        "相关性": 0,
+        "技术深度": 1,
+        "时效性": 0,
+        "可验证性": 1
+      },
+      "total_score": 2,
+      "reason": "总评分 2 < 10",
+      "date": "2026-04-08T02:24:30.998501"
+    },
+    {
+      "path": "Cubox/核心交互场景优化黑科技，GC抑制从入门到精通-2024-07-29.md",
+      "title": "核心交互场景优化黑科技，GC抑制从入门到精通",
+      "scores": {
+        "相关性": 0,
+        "技术深度": 2,
+        "时效性": 0,
+        "可验证性": 1
+      },
+      "total_score": 3,
+      "reason": "总评分 3 < 10",
+      "date": "2026-04-08T02:24:30.998962"
+    },
+    {
+      "path": "Cubox/产品沉思录精选：交易平台的金字塔进阶-2022-01-25.md",
+      "title": "产品沉思录精选：交易平台的金字塔进阶",
+      "scores": {
+        "相关性": 0,
+        "技术深度": 1,
+        "时效性": 0,
+        "可验证性": 1
+      },
+      "total_score": 2,
+      "reason": "总评分 2 < 10",
+      "date": "2026-04-08T02:24:30.999157"
+    },
+    {
+      "path": "Cubox/晚上锻炼影响睡眠？Nature子刊揭示最佳运动时间窗口-2025-05-05.md",
+      "title": "晚上锻炼影响睡眠？Nature子刊揭示最佳运动时间窗口",
+      "scores": {
+        "相关性": 0,
+        "技术深度": 1,
+        "时效性": 0,
+        "可验证性": 1
+      },
+      "total_score": 2,
+      "reason": "总评分 2 < 10",
+      "date": "2026-04-08T02:24:30.999267"
+    },
+    {
+      "path": "Cubox/对Android游戏画面抖动现象的研究-2025-05-26.md",
+      "title": "对Android游戏画面抖动现象的研究",
+      "scores": {
+        "相关性": 0,
+        "技术深度": 1,
+        "时效性": 0,
+        "可验证性": 2
+      },
+      "total_score": 3,
+      "reason": "总评分 3 < 10",
+      "date": "2026-04-08T02:24:30.999372"
+    }
+  ]
 }
