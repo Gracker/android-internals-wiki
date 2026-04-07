@@ -3,12 +3,12 @@
   "total_sections": 110,
   "metrics": {
     "total": 127,
-    "draft": 10,
-    "ready-for-review": 25,
+    "draft": 9,
+    "ready-for-review": 26,
     "reviewed": 5,
     "finalized": 30,
     "staging_drafts": 0,
-    "last_updated": "2026-04-07T15:39:00+08:00",
+    "last_updated": "2026-04-07T17:54:00+08:00",
     "processing": 0,
     "ready-to-publish": 11,
     "last_reviewed": "2026-04-07",
@@ -1737,6 +1737,21 @@
       "verification_level": "L2",
       "word_count": "~7500",
       "completed_at": "2026-04-07T17:00:00+08:00"
+    },
+    {
+      "chapter": "16.4",
+      "section": "16.4",
+      "title": "Android 17 + Kernel 6.12 系统级性能优化",
+      "status": "ready-for-review",
+      "drafted_date": "2026-04-07",
+      "drafted_by": "openclaw-task2a",
+      "anchors_covered": 7,
+      "anchors_total": 7,
+      "extensions_covered": 1,
+      "extensions_total": 3,
+      "verification_level": "L2",
+      "word_count": "~7500",
+      "completed_at": "2026-04-07T17:54:00+08:00"
     }
   ],
   "ready_for_review": 6,
@@ -3241,6 +3256,20 @@
       "title": "ANR 设计思想",
       "action": "reviewed-and-finalized",
       "reviewed_by": "openclaw-task6"
+    },
+    {
+      "date": "2026-04-07",
+      "section": "16.4",
+      "title": "Android 17 + Kernel 6.12 系统级性能优化",
+      "action": "draft-completed",
+      "word_count": "~7500",
+      "anchors_covered": 7,
+      "anchors_total": 7,
+      "extensions_covered": 1,
+      "extensions_total": 3,
+      "verification_level": "L2",
+      "drafted_date": "2026-04-07",
+      "drafted_by": "openclaw-task2a"
     }
   ],
   "sections": {

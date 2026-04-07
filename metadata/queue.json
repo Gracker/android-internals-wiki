@@ -1107,11 +1107,12 @@
     "section": "16.4",
     "title": "Android 17 + Kernel 6.12 系统级性能优化",
     "priority": 80,
-    "status": "pending",
+    "status": "completed",
     "source": "task2a-gap-mining",
     "created_date": "2026-04-07",
     "gap_score": 18,
-    "notes": "3篇高质量研究素材(18-20分)，Android 17核心内容"
+    "notes": "3篇高质量研究素材(18-20分)，Android 17核心内容",
+    "completed_at": "2026-04-07T17:54:00+08:00"
   },
   {
     "section": "2.19",
