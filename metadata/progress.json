@@ -3995,6 +3995,15 @@
       ],
       "action": "task2b-rework",
       "details": "2.10 GPU 渲染深入: 7 fixes (全文文体重写8+处, 实战案例TypeB重写, 新增与其他机制关系小节, 新增Perfetto表现专节, 新增常见误区5条, 3处伪代码标注修正, frontmatter更新)"
+    },
+    {
+      "section": "4.6",
+      "type": "task2b-rework",
+      "date": "2026-04-07T16:03:32.333855",
+      "issues_fixed": [
+        "Bitmap回收兜底策略表格中7.0/7.1行描述修正"
+      ],
+      "status": "completed"
     }
   ],
   "chapters": {

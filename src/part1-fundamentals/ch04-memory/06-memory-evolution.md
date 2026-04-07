@@ -1,7 +1,7 @@
 ---
 title: "内存相关的版本演进"
 chapter: "4.6"
-status: reviewed
+status: ready-for-review
 section: "4.6"
 reviewed_date: "2026-04-07"
 reviewed_by: "openclaw-task6"  # second review after rework
@@ -134,7 +134,7 @@ AOSP 源码路径：
 
 **回收机制的变更。** Native 堆的 Bitmap 不再由 Java GC 直接回收。Android 8.0 引入了 `NativeAllocationRegistry` 机制：创建 Bitmap 时，将一个 Native 回收函数注册到 Java 层的 Cleaner（基于虚引用）。当 Java Bitmap 对象被 GC 回收时，Cleaner 触发 Native 回收函数，最终通过 `free()` 释放像素数据。这比 Android 7.0 之前使用的 Finalizer 机制更稳定、更可预测。
 
-在 Android 7.0 上，Bitmap 依赖 `BitmapFinalizer.finalize()` 来兜底回收 Native 内存，但 Finalizer 的执行时机不可控，可能导致 Native 内存迟迟不释放。Android 7.0 开始引入引用机制，到 Android 8.0 正式采用 `NativeAllocationRegistry`，这个问题得到了根本性的解决。
+在 Android 8.0 之前，Bitmap 依赖 `BitmapFinalizer.finalize()` 来兜底回收 Native 侧的 SkBitmap 结构体（像素数据虽然在 Java 堆中，Native 侧仍有一个轻量级的 SkBitmap 对象需要清理）。但 Finalizer 的执行时机不可控——GC 不保证何时调用 `finalize()`，可能导致 Native 资源迟迟不释放。Android 8.0 引入 `NativeAllocationRegistry`，基于 `Cleaner`（虚引用）机制替代了 Finalizer：当 Java Bitmap 对象不可达时，`Cleaner` 会在下一次 GC 时触发 Native 回收函数，时序更可控、更可预测。
 
 关于 Bitmap 优化的完整实践（inBitmap 复用、下采样、硬件 Bitmap 等），详见 4.5 节「App 内存优化」。
 
@@ -150,13 +150,12 @@ AOSP 源码路径：
 
 | Android 版本 | 像素数据存储位置 | 回收兜底策略 |
 |---|---|---|
-| 7.0 以前 | Java 堆（byte[]） | Finalizer 机制 |
-| 7.0 / 7.1 | Java 堆（byte[]） | 引用机制（NativeAllocationRegistry） |
-| 8.0 以后 | Native 堆（calloc） | 引用机制（NativeAllocationRegistry） |
+| 3.0–7.1 | Java 堆（byte[]） | Finalizer 机制（BitmapFinalizer） |
+| 8.0+ | Native 堆（calloc） | 引用机制（NativeAllocationRegistry） |
 | 8.0+ (Hardware Bitmap) | GPU 内存 | GraphicBuffer 引用计数 |
 
 
-> [需确认: 表格中 Android 7.0/7.1 行标注回收策略为"引用机制（NativeAllocationRegistry）"，但文中明确说 NativeAllocationRegistry 是 Android 8.0 正式采用的。7.0/7.1 的 Bitmap 回收实际使用何种引用机制？需核对 AOSP frameworks/base/graphics/java/android/graphics/Bitmap.java (API 24-25 vs 26)]
+> [已确认: 经核对 AOSP Bitmap.java，Android 3.0–7.1 均使用 BitmapFinalizer（Finalizer 机制）兜底回收 Native 侧的 SkBitmap 结构体。NativeAllocationRegistry 从 Android 8.0（API 26）起引入，随 Bitmap 像素数据迁移至 Native 堆同步上线。]
 
 
 
