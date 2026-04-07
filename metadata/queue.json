@@ -1307,5 +1307,58 @@
     "notes": "gap-mining 2026-04-08, score 14/20",
     "completed_at": "2026-04-08T04:23:26.785301",
     "completed_by": "openclaw-task2a"
+  },
+  {
+    "section": "14.7",
+    "section_title": "ProfilingManager",
+    "priority": 90,
+    "reason": "[review回炉] 代码示例与 AOSP 实际 API 严重不一致，全部代码需基于真实 API 重写",
+    "material_paths": [
+      "intake/suggestions.md（含 review 意见）",
+      "https://developer.android.com/guide/topics/profiling",
+      "AOSP: packages/modules/Profiling/"
+    ],
+    "review_issues": [
+      {
+        "type": "需重写",
+        "location": "基本使用（全节）",
+        "detail": "ProfilingConfig/ProfilingStatus/ProfilingListener 等类在 AOSP 中不存在。实际 API 使用 SystemTraceRequestBuilder/JavaHeapDumpRequestBuilder/HeapProfileRequestBuilder/StackSamplingRequestBuilder 构建，Consumer<ProfilingResult> 回调返回",
+        "suggestion": "对照 AOSP packages/modules/Profiling/ 重写所有代码示例"
+      },
+      {
+        "type": "需重写",
+        "location": "System Triggered Profiling",
+        "detail": "registerProfilingListener()/ProfilingListener 不存在，实际用 addProfilingTriggers()+ProfilingTrigger.Builder",
+        "suggestion": "对照 Android 16 AOSP 重写"
+      },
+      {
+        "type": "需重写",
+        "location": "Android 17 增强",
+        "detail": "TRIGGER_TYPE_WAKEUP_LATENCY/LAUNCHER_TRANSITION/RENDERER_CRASH 虚构。实际新增: ANOMALY/APP_COMPAT/APP_REQUEST_RUNNING_TRACE",
+        "suggestion": "对照 AOSP android-17 分支重写"
+      },
+      {
+        "type": "需重写",
+        "location": "实战案例 x3",
+        "detail": "全部基于虚构 API，业务场景可保留",
+        "suggestion": "用真实 API 重写代码部分"
+      },
+      {
+        "type": "需重写",
+        "location": "精确控制数据采集",
+        "detail": "TriggerCondition 虚构",
+        "suggestion": "移除或替换"
+      },
+      {
+        "type": "需验证",
+        "location": "对比表格",
+        "detail": "特性对比缺乏实测数据",
+        "suggestion": "补充实际测试对比"
+      }
+    ],
+    "added_by": "task6-review",
+    "added_at": "2026-04-08T04:38:35",
+    "status": "pending",
+    "original_review_log": "logs/review/2026-04-08-04-review.md"
   }
 ]

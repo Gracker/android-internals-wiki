@@ -625,3 +625,16 @@ tags:
 - **问题**：仅覆盖 3/7 场景的 Trace 描述。缺失：Broadcast 风暴、ContentProvider 冷启动、低内存/GC、文件锁竞争。
 - **建议**：为每个缺失场景补充 2-3 句 Trace 表现描述。
 - **review 日志**：logs/review/2026-04-08-01-review.md
+
+
+## [Task6 Review] 14.7 ProfilingManager — 2026-04-08
+- **类型**：需重写（代码示例虚构）+ 需验证（对比表格）
+- **位置**：基本使用全节 / System Triggered Profiling / Android 17 增强 / 精确控制数据采集 / 实战案例 x3 / 对比表格
+- **问题**：经联网搜索验证 AOSP 实际 API 后确认，本章代码示例使用的类名（ProfilingConfig/ProfilingStatus/ProfilingListener/TriggerCondition）和方法签名（registerProfilingListener()等）在 AOSP 中均不存在。实际 API 使用 RequestBuilder 子类 + Consumer<ProfilingResult> 回调模式。Android 17 新增触发器也与文中不同。
+- **建议**：
+  1. 对照 AOSP `packages/modules/Profiling/` 源码重写全部代码示例
+  2. 参照 developer.android.com/guide/topics/profiling 官方文档
+  3. Android 16 系统触发使用 `addProfilingTriggers()` + `ProfilingTrigger.Builder`
+  4. Android 17 新增触发器：ANOMALY/APP_COMPAT/APP_REQUEST_RUNNING_TRACE（非文中的 WAKEUP_LATENCY 等）
+  5. 保留业务场景描述，只替换代码部分
+- **review 日志**：logs/review/2026-04-08-04-review.md
