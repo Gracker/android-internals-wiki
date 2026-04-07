@@ -652,3 +652,55 @@ tags:
 - **问题**：标注为 API 1 - API 37，但章节核心是 Android 17 的 DeliQueue 变化，范围可能误导读者
 - **建议**：考虑缩小范围或增加说明文字
 - **review 日志**：logs/review/2026-04-08-0654-review.md
+
+
+## [Task2A 缺口挖掘] 已检查方向 — 2026-04-08 07:02
+
+### 挖掘结果：本轮未发现评分 ≥ 14 的知识缺口
+
+全书 134 节已覆盖所有主要 Android 性能子系统。以下方向已检查并排除：
+
+1. **AudioFlinger/音频延迟性能** — 评分 12/20
+   - AOSP 源码和官方文档丰富，但 source-index 无音频专项素材
+   - 音频性能读者面较窄（主要面向音频 App 开发和 OEM 音频调优）
+   - 非 2025-2026 热点话题
+   - 建议：如有音频专项素材输入可重新评估
+
+2. **AI/ML 推理性能 (NNAPI/TFLite/LiteRT)** — 评分 13/20
+   - NNAPI 已在 Android 15 废弃，LiteRT 刚起步
+   - 与本书"系统内部机制"定位略有偏差，更偏应用层
+   - 16.5 已涵盖 Android 17 行为变更中的 AI 相关内容
+
+3. **SystemUI 性能 (Launcher/通知栏)** — 评分 11/20
+   - AOSP SystemUI 源码复杂但非性能架构核心
+   - 主要是 App 级优化技巧，非系统内部机制
+   - 不足以独立成节
+
+4. **Android HAL 性能抽象层** — 评分 10/20
+   - HAL 贯穿全书多处提及，但作为独立性能主题偏窄
+   - 无 source-index 素材支撑
+
+5. **Android 虚拟化框架 (AVF)** — 评分 9/20
+   - AVF 性能影响尚在早期阶段
+   - 读者需求不明确
+
+6. **显示硬件管线 (MIPI DSI/Panel/Display Controller)** — 评分 10/20
+   - 过于硬件底层，超出本书"系统级性能分析"范围
+   - 无 source-index 素材
+
+7. **source-index 未映射高分素材复查** — 9 项 ≥ 14 分但全部为现有章节的补充素材
+   - ANR 素材 → 已映射 ch09
+   - Android 13/14 发布 → 已映射 ch16 版本演进
+   - GPU counters/预测模型 → 已映射 ch02 渲染
+   - Linux 6.14 I/O → 已映射 ch06
+   - CPU 利用率 → 已映射 ch05
+
+8. **研究素材复查** — 2026-04-05~07 全部 20 篇研究素材均已映射到现有章节
+9. **AOSP 源码结构对照** — frameworks/base 核心服务、system/ 核心守护进程已全覆盖
+10. **官方文档对照** — developer.android.com 性能相关 topic 页面已全覆盖
+
+### 结论
+全书知识覆盖度已趋于完备。建议后续关注：
+- 新 Android 版本 Preview/Beta 带来的新知识点（由 Task5 研究管线驱动）
+- 高爷读者反馈中的新需求（由 intake/suggestions.md 收集）
+- OEM 厂商优化实践中的新案例（由 ch17 扩展驱动）
