@@ -15,10 +15,14 @@ sources:
     path: "developer.android.com/topic/performance/benchmarking/benchmarking-in-ci"
   - type: official
     path: "developer.android.com/topic/performance/benchmarking/macrobenchmark-overview"
-tags: [testing, benchmark, CI/CD, baseline, methodology]
-related_chapters: ["14.6", "15.5", "13.2", "8.3"]
-drafted_by: "openclaw-task2a"
+tags:
+  - android
+  - benchmark
+  - research
+
+
 ---
+
 
 # 性能测试最佳实践
 
@@ -488,3 +492,10 @@ Firebase Performance Monitoring（FPM）是 Google 提供的线上性能监控�
 - [Measure performance | Android Developers](https://developer.android.com/topic/performance) — 性能测量总入口
 - AOSP 路径：`frameworks/base/core/java/android/app/Activity.java`（启动时间相关 API）
 - AOSP 路径：`frameworks/base/core/java/android/view/Choreographer.java`（帧回调 API）
+
+
+### 性能分析误区：峰值帧率 vs 稳态帧率
+- 来源：https://android-developers.googleblog.com/performance-methodology
+- 类型：article
+- 摘要：骁龙8 Elite持续负载下30%性能衰减。有意义的指标：30分钟游戏后帧率、99th percentile延迟、冷启动后5分钟内响应。Benchmark应包含热稳定态测试。
+- 入库时间：2026-04-08

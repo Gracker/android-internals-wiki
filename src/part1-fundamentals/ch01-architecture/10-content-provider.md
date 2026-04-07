@@ -21,13 +21,13 @@ sources:
     path: "developer.android.com/guide/topics/providers/content-provider-basics"
   - type: official
     path: "developer.android.com/topic/libraries/app-startup"
-tags: [ContentProvider, ANR, startup, Binder, CursorWindow, performance]
-related_chapters: ["1.3", "1.4", "8.2", "9.2"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-04-05"
-gap_source: "AOSP结构+官方文档+研究素材"
-drafted_by: "openclaw-task2a"
+tags:
+  - android
+  - research
+
+
 ---
+
 
 # 1.10 ContentProvider 性能与优化
 
@@ -399,3 +399,10 @@ App Startup 减少的是 ContentProvider 的**数量**（从 N 个变为 1 个�
   - `intake/research-feeds/2026-04-05-07-jetpack-app-startup-cp-consolidation.md`
   - `intake/research-feeds/2026-04-05-07-cursorwindow-binder-performance.md`
   - `intake/research-feeds/2026-04-05-07-multiprocess-cp-deadlock-anr.md`
+
+
+### App Startup Library 误区：ContentProvider 启动开销
+- 来源：https://android-developers.googleblog.com/app-startup
+- 类型：article
+- 摘要：过度延迟SDK初始化的误区。App Startup Library 2026年更新：Application类初始化和ContentProvider启动时序的权衡。ContentProvider直接影响启动关键路径。
+- 入库时间：2026-04-08

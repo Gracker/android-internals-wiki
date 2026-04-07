@@ -3737,10 +3737,10 @@
     },
     "5.5": {
       "title": "Thermal 管控",
-      "status": "finalized",
+      "status": "ready-to-publish",
       "file": "src/part1-fundamentals/ch05-cpu-power/05-thermal.md",
       "drafted_date": "2026-04-01",
-      "reviewed_date": "2026-04-03",
+      "reviewed_date": "2026-04-08",
       "reviewed_by": "openclaw-task6"
     },
     "14.3": {

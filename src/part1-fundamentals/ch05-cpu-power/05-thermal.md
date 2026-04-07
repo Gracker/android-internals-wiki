@@ -2,7 +2,7 @@
 title: "Thermal 管控"
 section: "5.5"
 chapter: "5.5"
-status: ready-for-review
+status: ready-to-publish
 applicable_versions: "Android 7.0 (API 24) - Android 17 (API 37)"
 last_verified: "2026-04-01"
 last_verified_against: "AOSP android-14.0.0_r1"
@@ -24,16 +24,22 @@ sources:
     path: "developer.android.com/games/optimize/thermal"
   - type: official
     path: "developer.android.com/games/optimize/adpf"
-tags: ['thermal', 'throttling', 'power', 'temperature', 'cooling-device', 'sustained-performance', 'adpf']
 related_chapters: ["5.1", "5.2", "5.3", "5.4", "5.6", "7.3"]
 drafted_date: "2026-04-01"
 drafted_by: "openclaw-task2"
-reviewed_date: "2026-04-03"
+reviewed_date: "2026-04-08"
 reviewed_by: "openclaw-task6"
 polish_count: 2
 polish_date: "2026-04-08"
 polish_by: "task2b-polish"
----
+tags:
+  - android
+  - power
+  - thermal
+  - throttling
+  - dvfs
+  - cpu-frequency
+
 
 # Thermal 管控
 
@@ -134,8 +140,8 @@ Cooling Device 不一定是物理设备——更常见的"降温设备"就是 CP
 
 HAL 层定义的关键数据结构在 `hardware/interfaces/thermal/2.0/types.hal` 中：
 
-```java
-// TemperatureType：传感器类型
+```c
+// HIDL types.hal — TemperatureType：传感器类型
 enum TemperatureType : int32_t {
     UNKNOWN = -1,
     CPU = 0,

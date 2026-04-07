@@ -22,16 +22,14 @@ sources:
     path: "https://developer.android.com/reference/android/os/PowerManager"
   - type: official
     path: "https://source.android.com/docs/core/power"
-tags: [doze, wakelock, standby, battery, power, jobscheduler, workmanager, alarm, foreground-service, adaptive-battery, suspend, battery-historian]
-related_chapters: ["5.4", "5.5", "5.10", "11.1", "11.2", "11.5", "14.1"]
-drafted_date: "2026-04-01"
-drafted_by: "openclaw-task2"
-reviewed_date: "2026-04-03"
-reviewed_by: "openclaw-task6"
-polish_count: 2
-polish_date: "2026-04-08"
-polish_by: "task2b-polish"
+tags:
+  - android
+  - power
+  - research
+
+
 ---
+
 
 # Android 功耗管理
 

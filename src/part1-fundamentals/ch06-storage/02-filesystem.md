@@ -21,16 +21,16 @@ sources:
     path: "source.android.com/docs/core/storage"
   - type: official
     path: "developer.android.com/training/data-storage"
-tags: ['f2fs', 'ext4', 'erofs', 'fsync', 'fdatasync', 'filesystem', 'sqlite']
-related_chapters: ['6.1', '6.3', '4.1', '7.1']
-created: 2026-04-01
-drafted_date: 2026-04-01
-reviewed_date: 2026-04-04
-reviewed_by: openclaw-task6
-reviewers: []
----
+tags:
+  - linux
+  - android
+  - research
+
 
 <!-- outline-start -->
+---
+
+
 ## 本节要点大纲
 
 ### 锚点（必须覆盖）
@@ -437,3 +437,10 @@ f2fs 通过逻辑日志和 CoW 机制大幅降低了 fsync 的开销，但"大�
 Android 文件系统的演进路线清晰：ext4 负责通用场景，f2fs 负责闪存设备的随机写密集场景，EROFS 负责只读分区。没有万能的文件系统，理解它们各自的设计取舍，是存储性能优化的基础。
 
 下一节（6.3）我们将深入 I/O 调度层，看看在文件系统之下、存储器件之上，Linux 内核是如何管理和调度 I/O 请求的。
+
+
+### Kernel 6.12 存储三重优化
+- 来源：https://lore.kernel.org/linux-f2fs-devel/
+- 类型：research
+- 摘要：F2FS Checkpoint Merge: -40%写放大(SQLite WAL commit性能提升)。io_uring multishot + zero-copy: -50%系统调用开销。dm-verity multi-buffer hashing: +35% ARM64吞吐。协同效果：随机I/O延迟-12%(fio randread 4k, UFS 4.0)。
+- 入库时间：2026-04-08

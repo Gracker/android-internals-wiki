@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-07",
+  "generated_at": "2026-04-08",
   "documents": [
     {
       "path": "Cubox/#01 创始人解密 Discord-2023-02-20.md",
@@ -43998,8 +43998,9 @@
       ],
       "total_score": 45,
       "size": 1448,
-      "status": "outline",
-      "mtime": "2026-03-28 18:02"
+      "status": "ready-for-review",
+      "mtime": "2026-03-28 18:02",
+      "last_scanned": "2026-04-08"
     },
     {
       "path": "src/part4-system/ch16-aosp/README.md",
@@ -44337,8 +44338,9 @@
       ],
       "total_score": 45,
       "size": 1379,
-      "status": "outline",
-      "mtime": "2026-03-28 18:02"
+      "status": "ready-to-publish",
+      "mtime": "2026-03-28 18:02",
+      "last_scanned": "2026-04-08"
     },
     {
       "path": "src/part1-fundamentals/ch05-cpu-power/03-big-little.md",
@@ -44348,8 +44350,9 @@
       ],
       "total_score": 45,
       "size": 1258,
-      "status": "outline",
-      "mtime": "2026-03-28 18:02"
+      "status": "ready-to-publish",
+      "mtime": "2026-03-28 18:02",
+      "last_scanned": "2026-04-08"
     },
     {
       "path": "src/part1-fundamentals/ch05-cpu-power/README.md",
@@ -44402,8 +44405,9 @@
       ],
       "total_score": 45,
       "size": 1259,
-      "status": "outline",
-      "mtime": "2026-03-28 18:02"
+      "status": "ready-to-publish",
+      "mtime": "2026-03-28 18:02",
+      "last_scanned": "2026-04-08"
     },
     {
       "path": "src/part1-fundamentals/ch05-cpu-power/02-eas.md",
@@ -44424,8 +44428,9 @@
       ],
       "total_score": 45,
       "size": 1314,
-      "status": "outline",
-      "mtime": "2026-03-28 18:02"
+      "status": "ready-for-review",
+      "mtime": "2026-03-28 18:02",
+      "last_scanned": "2026-04-08"
     },
     {
       "path": "src/part1-fundamentals/ch05-cpu-power/05-thermal.md",
@@ -44614,8 +44619,9 @@
       ],
       "total_score": 45,
       "size": 1266,
-      "status": "outline",
-      "mtime": "2026-03-28 18:02"
+      "status": "draft",
+      "mtime": "2026-03-28 18:02",
+      "last_scanned": "2026-04-08"
     },
     {
       "path": "src/part1-fundamentals/ch06-storage/README.md",
@@ -44658,8 +44664,9 @@
       ],
       "total_score": 45,
       "size": 1294,
-      "status": "outline",
-      "mtime": "2026-03-28 18:02"
+      "status": "ready-for-review",
+      "mtime": "2026-03-28 18:02",
+      "last_scanned": "2026-04-08"
     },
     {
       "path": "src/part1-fundamentals/ch04-memory/03-art-memory.md",
@@ -44702,7 +44709,7 @@
       ],
       "total_score": 45,
       "size": 1350,
-      "status": "ready-for-review",
+      "status": "ready-to-publish",
       "mtime": "2026-03-28 18:02",
       "chapter": "4.6",
       "word_count": 37455,
@@ -44724,7 +44731,8 @@
         "mte",
         "evolution"
       ],
-      "scanned_at": "2026-03-31T22:10:00"
+      "scanned_at": "2026-03-31T22:10:00",
+      "last_scanned": "2026-04-08"
     },
     {
       "path": "src/part1-fundamentals/ch04-memory/02-linux-memory.md",
@@ -44845,13 +44853,14 @@
       ],
       "total_score": 83,
       "size": 1550,
-      "status": "outline",
+      "status": "ready-to-publish",
       "mtime": "2026-03-28 18:02",
       "source_type": "高爷原创",
       "breakdown": "篇幅25|新鲜度25|准确性15|可用度18(原创)",
       "last_modified": "2026-03-30",
       "scanned_at": "2026-03-30T22:00",
-      "chars": 28817
+      "chars": 28817,
+      "last_scanned": "2026-04-08"
     },
     {
       "path": "src/part1-fundamentals/ch03-input/README.md",
@@ -44970,8 +44979,9 @@
       ],
       "total_score": 45,
       "size": 1394,
-      "status": "outline",
-      "mtime": "2026-03-28 18:02"
+      "status": "ready-for-review",
+      "mtime": "2026-03-28 18:02",
+      "last_scanned": "2026-04-08"
     },
     {
       "path": "src/part2-performance/ch11-power/03-system-power-optimization.md",
@@ -45063,8 +45073,9 @@
       ],
       "total_score": 45,
       "size": 1240,
-      "status": "outline",
-      "mtime": "2026-03-28 18:02"
+      "status": "ready-for-review",
+      "mtime": "2026-03-28 18:02",
+      "last_scanned": "2026-04-08"
     },
     {
       "path": "src/part2-performance/ch08-responsiveness/README.md",
@@ -45107,8 +45118,9 @@
       ],
       "total_score": 45,
       "size": 1354,
-      "status": "outline",
-      "mtime": "2026-03-28 18:02"
+      "status": "ready-for-review",
+      "mtime": "2026-03-28 18:02",
+      "last_scanned": "2026-04-08"
     },
     {
       "path": "src/part2-performance/ch10-memory-perf/04-low-memory-impact.md",
@@ -45162,8 +45174,9 @@
       ],
       "total_score": 45,
       "size": 1323,
-      "status": "outline",
-      "mtime": "2026-03-28 18:02"
+      "status": "ready-for-review",
+      "mtime": "2026-03-28 18:02",
+      "last_scanned": "2026-04-08"
     },
     {
       "path": "src/part2-performance/ch07-smoothness/01-jank-definition.md",
@@ -45199,8 +45212,9 @@
       ],
       "total_score": 45,
       "size": 1529,
-      "status": "outline",
-      "mtime": "2026-03-29 18:03"
+      "status": "ready-to-publish",
+      "mtime": "2026-03-29 18:03",
+      "last_scanned": "2026-04-08"
     },
     {
       "path": "src/part2-performance/ch07-smoothness/README.md",
@@ -45243,8 +45257,9 @@
       ],
       "total_score": 45,
       "size": 1434,
-      "status": "outline",
-      "mtime": "2026-03-29 18:03"
+      "status": "ready-for-review",
+      "mtime": "2026-03-29 18:03",
+      "last_scanned": "2026-04-08"
     },
     {
       "path": "src/part2-performance/ch07-smoothness/03-jank-methodology.md",
@@ -45287,8 +45302,9 @@
       ],
       "total_score": 45,
       "size": 1268,
-      "status": "outline",
-      "mtime": "2026-03-28 18:02"
+      "status": "ready-for-review",
+      "mtime": "2026-03-28 18:02",
+      "last_scanned": "2026-04-08"
     },
     {
       "path": "src/part2-performance/ch09-anr/03-anr-analysis.md",
@@ -45320,8 +45336,9 @@
       ],
       "total_score": 45,
       "size": 1293,
-      "status": "outline",
-      "mtime": "2026-03-28 18:02"
+      "status": "ready-for-review",
+      "mtime": "2026-03-28 18:02",
+      "last_scanned": "2026-04-08"
     },
     {
       "path": "src/part2-performance/ch09-anr/04-special-anr.md",
@@ -45331,8 +45348,9 @@
       ],
       "total_score": 45,
       "size": 1252,
-      "status": "outline",
-      "mtime": "2026-03-28 18:02"
+      "status": "ready-for-review",
+      "mtime": "2026-03-28 18:02",
+      "last_scanned": "2026-04-08"
     },
     {
       "path": "src/part3-tools/ch14-other-tools/07-profiling-manager.md",
@@ -45342,8 +45360,9 @@
       ],
       "total_score": 50,
       "size": 23585,
-      "status": "substantial",
-      "mtime": "2026-03-29 21:40"
+      "status": "ready-for-review",
+      "mtime": "2026-03-29 21:40",
+      "last_scanned": "2026-04-08"
     },
     {
       "path": "src/part3-tools/ch14-other-tools/02-simpleperf.md",
@@ -45364,8 +45383,9 @@
       ],
       "total_score": 45,
       "size": 1316,
-      "status": "outline",
-      "mtime": "2026-03-28 18:02"
+      "status": "ready-for-review",
+      "mtime": "2026-03-28 18:02",
+      "last_scanned": "2026-04-08"
     },
     {
       "path": "src/part3-tools/ch14-other-tools/03-memory-tools.md",
@@ -45408,8 +45428,9 @@
       ],
       "total_score": 45,
       "size": 1269,
-      "status": "outline",
-      "mtime": "2026-03-28 18:02"
+      "status": "ready-for-review",
+      "mtime": "2026-03-28 18:02",
+      "last_scanned": "2026-04-08"
     },
     {
       "path": "src/part3-tools/ch14-other-tools/06-automation-tools.md",
@@ -45430,8 +45451,9 @@
       ],
       "total_score": 45,
       "size": 1367,
-      "status": "outline",
-      "mtime": "2026-03-28 18:02"
+      "status": "ready-for-review",
+      "mtime": "2026-03-28 18:02",
+      "last_scanned": "2026-04-08"
     },
     {
       "path": "src/part3-tools/ch15-methodology/05-online-monitoring.md",
@@ -45474,8 +45496,9 @@
       ],
       "total_score": 45,
       "size": 1371,
-      "status": "outline",
-      "mtime": "2026-03-28 18:02"
+      "status": "ready-for-review",
+      "mtime": "2026-03-28 18:02",
+      "last_scanned": "2026-04-08"
     },
     {
       "path": "src/part3-tools/ch15-methodology/04-competitive-analysis.md",
@@ -45496,8 +45519,9 @@
       ],
       "total_score": 45,
       "size": 1298,
-      "status": "outline",
-      "mtime": "2026-03-28 18:02"
+      "status": "ready-for-review",
+      "mtime": "2026-03-28 18:02",
+      "last_scanned": "2026-04-08"
     },
     {
       "path": "src/part3-tools/ch15-methodology/07-aosp-reading.md",
@@ -45529,8 +45553,9 @@
       ],
       "total_score": 45,
       "size": 1291,
-      "status": "outline",
-      "mtime": "2026-03-28 18:02"
+      "status": "draft",
+      "mtime": "2026-03-28 18:02",
+      "last_scanned": "2026-04-08"
     },
     {
       "path": "src/part3-tools/ch13-perfetto/05-topic-analysis.md",
@@ -45584,8 +45609,9 @@
       ],
       "total_score": 45,
       "size": 1377,
-      "status": "outline",
-      "mtime": "2026-03-28 18:02"
+      "status": "ready-for-review",
+      "mtime": "2026-03-28 18:02",
+      "last_scanned": "2026-04-08"
     },
     {
       "path": "src/part3-tools/ch13-perfetto/02-trace-capture.md",
@@ -45986,6 +46012,158 @@
       ],
       "total_score": 100,
       "source_type": "研究素材"
+    },
+    {
+      "path": "src/part4-system/ch16-aosp/05-android17-api37-performance-changes.md",
+      "title": "05-android17-api37-performance-changes",
+      "status": "ready-for-review",
+      "last_scanned": "2026-04-08",
+      "mapped_chapters": [],
+      "total_score": 0
+    },
+    {
+      "path": "src/part4-system/ch16-aosp/04-android17-kernel612-performance.md",
+      "title": "04-android17-kernel612-performance",
+      "status": "ready-for-review",
+      "last_scanned": "2026-04-08",
+      "mapped_chapters": [],
+      "total_score": 0
+    },
+    {
+      "path": "src/part1-fundamentals/ch02-rendering/20-multiwindow-desktop-rendering.md",
+      "title": "20-multiwindow-desktop-rendering",
+      "status": "ready-for-review",
+      "last_scanned": "2026-04-08",
+      "mapped_chapters": [],
+      "total_score": 0
+    },
+    {
+      "path": "src/part1-fundamentals/ch02-rendering/19-refresh-rate-switching.md",
+      "title": "19-refresh-rate-switching",
+      "status": "ready-for-review",
+      "last_scanned": "2026-04-08",
+      "mapped_chapters": [],
+      "total_score": 0
+    },
+    {
+      "path": "src/part1-fundamentals/ch01-architecture/13-messagequeue-deliqueue.md",
+      "title": "13-messagequeue-deliqueue",
+      "status": "ready-for-review",
+      "last_scanned": "2026-04-08",
+      "mapped_chapters": [],
+      "total_score": 0
+    },
+    {
+      "path": "src/part1-fundamentals/ch01-architecture/12-autofdo-optimization.md",
+      "title": "12-autofdo-optimization",
+      "status": "ready-for-review",
+      "last_scanned": "2026-04-08",
+      "mapped_chapters": [],
+      "total_score": 0
+    },
+    {
+      "path": "src/part1-fundamentals/ch01-architecture/10-content-provider.md",
+      "title": "10-content-provider",
+      "status": "ready-for-review",
+      "last_scanned": "2026-04-08",
+      "mapped_chapters": [],
+      "total_score": 0
+    },
+    {
+      "path": "src/part1-fundamentals/ch01-architecture/15-jni-ndk-performance.md",
+      "title": "15-jni-ndk-performance",
+      "status": "ready-for-review",
+      "last_scanned": "2026-04-08",
+      "mapped_chapters": [],
+      "total_score": 0
+    },
+    {
+      "path": "src/part1-fundamentals/ch01-architecture/09-package-manager.md",
+      "title": "09-package-manager",
+      "status": "ready-for-review",
+      "last_scanned": "2026-04-08",
+      "mapped_chapters": [],
+      "total_score": 0
+    },
+    {
+      "path": "src/part1-fundamentals/ch06-storage/05-sharedpreferences-datastore.md",
+      "title": "05-sharedpreferences-datastore",
+      "status": "ready-for-review",
+      "last_scanned": "2026-04-08",
+      "mapped_chapters": [],
+      "total_score": 0
+    },
+    {
+      "path": "src/part1-fundamentals/ch04-memory/08-art-generational-gc.md",
+      "title": "08-art-generational-gc",
+      "status": "ready-for-review",
+      "last_scanned": "2026-04-08",
+      "mapped_chapters": [],
+      "total_score": 0
+    },
+    {
+      "path": "src/part1-fundamentals/ch04-memory/07-16kb-page-size.md",
+      "title": "07-16kb-page-size",
+      "status": "ready-for-review",
+      "last_scanned": "2026-04-08",
+      "mapped_chapters": [],
+      "total_score": 0
+    },
+    {
+      "path": "src/part2-performance/ch12-apk-network/03-network-performance-deep.md",
+      "title": "03-network-performance-deep",
+      "status": "ready-for-review",
+      "last_scanned": "2026-04-08",
+      "mapped_chapters": [],
+      "total_score": 0
+    },
+    {
+      "path": "src/part2-performance/ch12-apk-network/04-network-security-tls-performance.md",
+      "title": "04-network-security-tls-performance",
+      "status": "ready-for-review",
+      "last_scanned": "2026-04-08",
+      "mapped_chapters": [],
+      "total_score": 0
+    },
+    {
+      "path": "src/part2-performance/ch08-responsiveness/07-baseline-profiles.md",
+      "title": "07-baseline-profiles",
+      "status": "ready-for-review",
+      "last_scanned": "2026-04-08",
+      "mapped_chapters": [],
+      "total_score": 0
+    },
+    {
+      "path": "src/part2-performance/ch07-smoothness/09-perceived-smoothness.md",
+      "title": "09-perceived-smoothness",
+      "status": "ready-for-review",
+      "last_scanned": "2026-04-08",
+      "mapped_chapters": [],
+      "total_score": 0
+    },
+    {
+      "path": "src/part2-performance/ch07-smoothness/10-image-bitmap-performance.md",
+      "title": "10-image-bitmap-performance",
+      "status": "ready-for-review",
+      "last_scanned": "2026-04-08",
+      "mapped_chapters": [],
+      "total_score": 0
+    },
+    {
+      "path": "src/part3-tools/ch14-other-tools/10-ebpf-performance-analysis.md",
+      "title": "10-ebpf-performance-analysis",
+      "status": "ready-for-review",
+      "last_scanned": "2026-04-08",
+      "mapped_chapters": [],
+      "total_score": 0
+    },
+    {
+      "path": "src/part3-tools/ch15-methodology/08-empirical-performance-issues.md",
+      "title": "08-empirical-performance-issues",
+      "status": "draft",
+      "last_scanned": "2026-04-08",
+      "mapped_chapters": [],
+      "total_score": 0
     }
   ],
   "stats": {
@@ -46004,11 +46182,11 @@
   },
   "last_scan_time": "2026-04-01T06:07:00",
   "scan_summary": {
-    "new_research_feeds": 3,
-    "new_src_stubs": 1,
-    "total_documents": 7474,
-    "chapters_with_content": 8,
-    "chapters_total": 17
+    "previous_count": 7486,
+    "added": 19,
+    "updated": 26,
+    "scan_time": "2026-04-08T06:01:45.145910"
   },
-  "last_scan": "2026-04-07T22:09:00+08:00"
+  "last_scan": "2026-04-07T22:09:00+08:00",
+  "total_documents": 7505
 }

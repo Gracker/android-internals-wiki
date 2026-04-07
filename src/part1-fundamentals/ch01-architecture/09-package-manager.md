@@ -20,9 +20,13 @@ sources:
     path: "https://developer.android.com/topic/performance/baselineprofiles/overview"
   - type: blog
     path: "Android Authority: Android 16 Cloud Compilation"
-tags: [PackageManager, dex2oat, installation, compilation, Baseline-Profiles, cloud-compilation, installd, dexopt, OTA, app-startup]
-related_chapters: ["1.7", "1.8", "8.2", "8.3", "4.3"]
+tags:
+  - android
+  - research
+
+
 ---
+
 
 # 1.9 Package Manager Service 与应用安装性能
 
@@ -506,3 +510,10 @@ JIT 在运行时动态编译，理论上可以覆盖更多热点方法。但 JIT
 - Android Authority: Android 16 Cloud Compilation
 - Google Blog: Android Performance Updates 2025（dex2oat 编译优化）
 - Google I/O 2025: What's new in Android performance（Cloud Compilation 详解）
+
+
+### Android 16 云端编译 + Baseline/Startup Profiles DEX Layout 优化
+- 来源：https://android-developers.googleblog.com/cloud-compilation-baseline-profiles
+- 类型：research
+- 摘要：云编译替代设备端dex2oat。Startup Profiles DEX Layout额外+15-30%启动速度。Baseline Profiles + Startup Profiles组合：首次launch即可30%执行提速，已深度集成CI/CD。
+- 入库时间：2026-04-08

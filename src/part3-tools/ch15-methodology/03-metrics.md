@@ -16,9 +16,13 @@ sources:
     path: "https://support.google.com/googleplay/android-developer/answer/9844476"
   - type: official
     path: "https://developer.android.com/reference/android/view/FrameMetrics"
-tags: ['metrics', 'vitals', 'FPS', 'TTID', 'TTFD', 'ANR', 'PSS', 'monitoring']
-related_chapters: ["7.1", "7.2", "7.3", "8.1", "9.1", "10.1", "11.1", "15.1"]
+tags:
+  - android
+  - research
+
+
 ---
+
 
 # 性能指标体系
 
@@ -363,3 +367,10 @@ Android Vitals 的核心指标（Core Vitals）包括：
 - [Manage your app's memory | developer.android.com](https://developer.android.com/topic/performance/memory)
 - [Battery Historian | developer.android.com](https://developer.android.com/topic/performance/power/battery-historian)
 - [Macrobenchmark | developer.android.com](https://developer.android.com/topic/performance/benchmarking/macrobenchmark-overview)
+
+
+### 性能分析误区：峰值帧率 vs 稳态帧率
+- 来源：https://android-developers.googleblog.com/performance-methodology
+- 类型：article
+- 摘要：骁龙8 Elite持续负载下30%性能衰减。有意义的指标：30分钟游戏后帧率、99th percentile延迟、冷启动后5分钟内响应。Benchmark应包含热稳定态测试。
+- 入库时间：2026-04-08

@@ -17,10 +17,14 @@ sources:
     path: "frameworks/base/core/java/android/view/Choreographer.java"
   - type: aosp
     path: "frameworks/base/core/java/android/view/animation/AnimationUtils.java"
-tags: [smoothness, step-jitter, perceived-performance, no-jank-stutter, animation, OverScroller, FrameTimeline, AppJankStats]
-related_chapters: ["7.1", "7.2", "2.4", "3.2", "2.17"]
-section: "7.9"
+tags:
+  - android
+  - jank
+  - research
+
+
 ---
+
 
 # 7.9 感知流畅性：步幅波动与无掉帧卡顿
 
@@ -314,3 +318,16 @@ FrameTimeline 只检测帧是否在 VSync 预算内完成。步幅波动不会�
 - 研究素材：
   - `intake/research-feeds/2026-04-07-16-perfetto-frame-timeline-perceived-smoothness-analysis.md`
   - `intake/research-feeds/2026-04-07-16-android16-appjankstats-relative-frame-time-histogram.md`
+
+
+### 感知流畅性：Perfetto Frame Timeline 分析方法
+- 来源：https://perfetto.dev/docs/analysis/frame-timeline
+- 类型：research
+- 摘要：Frame Timeline Expected vs Actual双轨对比。P50/P90/P99帧时长百分位分析。JankStats可配置jank阈值。步幅波动+VSync时间精度作为感知流畅性量化方法。
+- 入库时间：2026-04-08
+
+### Android 16 AppJankStats + RelativeFrameTimeHistogram API
+- 来源：https://developer.android.com/reference/android/os/AppJankStats
+- 类型：research
+- 摘要：平台级零侵入jank统计API，无需集成第三方库。帧时间分布直方图(RelativeFrameTimeHistogram)。与JankStats库互补，适合无法修改代码的场景。
+- 入库时间：2026-04-08

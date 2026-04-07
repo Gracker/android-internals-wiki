@@ -17,20 +17,14 @@ sources:
     path: "source.android.com/docs/core/power"
   - type: blog
     path: "ARM documentation - Energy Aware Scheduling"
-tags: ['doze', 'JobScheduler', 'adaptive-battery', 'wakelock', 'app-standby-buckets', 'eas', 'background-restrictions', 'gki', 'power-management', 'version-evolution']
-related_chapters: ["5.1", "5.2", "5.3", "5.4", "5.5", "5.6", "11.5"]
-drafted_date: "2026-04-01"
-drafted_by: "openclaw-task2"
-reviewed_date: "2026-04-07"
-reviewed_by: "openclaw-task6"  # second review
-review2_date: "2026-04-07"
-review2_by: "openclaw-task6"
-polish_count: 1
-polish_date: "2026-04-07"
-polish_by: "task2b-polish"
-review3_date: "2026-04-08"
-review3_by: "openclaw-task6"
+tags:
+  - android
+  - power
+  - research
+
+
 ---
+
 
 # CPU 相关的版本演进
 

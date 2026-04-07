@@ -15,9 +15,13 @@ sources:
     path: "IEEE/ResearchGate - Android Performance Issues Taxonomy"
   - type: official
     path: "developer.android.com/topic/performance"
-tags: [performance-issues, empirical-study, code-patterns, methodology, classification]
-related_chapters: ["7.2", "9.1", "10.1", "15.3", "15.5"]
+tags:
+  - android
+  - research
+
+
 ---
+
 
 # 15.8 Android 性能问题实证：真实世界的分类与代码模式
 

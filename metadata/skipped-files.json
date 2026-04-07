@@ -5277,6 +5277,800 @@
       "score": 2,
       "reason": "总分不足10分(2/20)",
       "indexed_at": "2026-04-07T23:47:34.559667"
+    },
+    {
+      "path": "Cubox/中美签署审计监管合作协议（香帅解读版）-2022-08-27.md",
+      "title": "中美签署审计监管合作协议（香帅解读版）",
+      "content_preview": "# 中美签署审计监管合作协议（香帅解读版）\n\n8月26日，中国与美国签署审计监管合作协议。\n\n[Read in Cubox](https://cubox.pro/web/card/6963094391...",
+      "score": 9,
+      "relevance": 1,
+      "depth": 3,
+      "timeliness": 3,
+      "verifiability": 2,
+      "scan_timestamp": "2026-04-08T06:49:59.012386",
+      "skip_reason": "Total score 9 < 10 (相关性1+深度3+时效3+可验证2)"
+    },
+    {
+      "path": "Cubox/【转】今日头条 ANR 优化实践系列（2）- 监控工具与分析思路 - Cyrus Blog-2023-12-06.md",
+      "title": "【转】今日头条 ANR 优化实践系列（2）- 监控工具与分析思路 - Cyrus Blog",
+      "content_preview": "# 【转】今日头条 ANR 优化实践系列（2）- 监控工具与分析思路 - Cyrus Blog\n\n前言：在前文，我们对 ANR 设计原理及影响因素 进行了介绍，并对影响 ANR 的不同场景进行归类。但...",
+      "score": 9,
+      "relevance": 1,
+      "depth": 3,
+      "timeliness": 3,
+      "verifiability": 2,
+      "scan_timestamp": "2026-04-08T06:49:59.012670",
+      "skip_reason": "Total score 9 < 10 (相关性1+深度3+时效3+可验证2)"
+    },
+    {
+      "path": "Cubox/Flutter帧率监控  - 由浅入深，详解获取帧率的那些事 - 掘金-2023-01-14.md",
+      "title": "Flutter帧率监控  | 由浅入深，详解获取帧率的那些事 - 掘金",
+      "content_preview": "# Flutter帧率监控  | 由浅入深，详解获取帧率的那些事 - 掘金\n\n从List<FrameTiming>入手，通过FrameTiming字段和帧率图了解其中含义，并结合图解的方式让你更加浅显...",
+      "score": 8,
+      "relevance": 2,
+      "depth": 1,
+      "timeliness": 3,
+      "verifiability": 2,
+      "scan_timestamp": "2026-04-08T06:49:59.013624",
+      "skip_reason": "Total score 8 < 10 (相关性2+深度1+时效3+可验证2)"
+    },
+    {
+      "path": "Cubox/“Hello World”程序的工作原理：从编译到执行-2026-01-15.md",
+      "title": "“Hello World”程序的工作原理：从编译到执行",
+      "content_preview": "# “Hello World”程序的工作原理：从编译到执行\n\n当我们运⾏ hello world程序时到底发⽣了些什么?\n\n[Read in Cubox](https://cubox.pro/web/...",
+      "score": 9,
+      "relevance": 1,
+      "depth": 3,
+      "timeliness": 3,
+      "verifiability": 2,
+      "scan_timestamp": "2026-04-08T06:49:59.014595",
+      "skip_reason": "Total score 9 < 10 (相关性1+深度3+时效3+可验证2)"
+    },
+    {
+      "path": "Cubox/公众号爆款文章提示词：让AI写出有-人味-的深度长文（附完整提示词）-2026-02-22.md",
+      "title": "公众号爆款文章提示词：让AI写出有\"人味\"的深度长文（附完整提示词）",
+      "content_preview": "# 公众号爆款文章提示词：让AI写出有\"人味\"的深度长文（附完整提示词）\n\n这是「写作提示词全家桶」系列第2篇，共7篇。上一篇讲了底层逻辑，这一篇直接给你两套拿走就能用的公众号写作提示词。\n\n[Rea...",
+      "score": 9,
+      "relevance": 1,
+      "depth": 3,
+      "timeliness": 3,
+      "verifiability": 2,
+      "scan_timestamp": "2026-04-08T06:49:59.015416",
+      "skip_reason": "Total score 9 < 10 (相关性1+深度3+时效3+可验证2)"
+    },
+    {
+      "path": "Cubox/ChatGPT背后的语言模型简史-2023-05-07.md",
+      "title": "ChatGPT背后的语言模型简史",
+      "content_preview": "# ChatGPT背后的语言模型简史\n\nChatGPT的火爆出圈，让大家对NLP语言模型的发展历程产生了浓厚的兴趣。本文将从深度学习在NLP领域的发展历程，到大语言模型的发展历程，再到大语言模型的未来...",
+      "score": 8,
+      "relevance": 2,
+      "depth": 1,
+      "timeliness": 3,
+      "verifiability": 2,
+      "scan_timestamp": "2026-04-08T06:49:59.015682",
+      "skip_reason": "Total score 8 < 10 (相关性2+深度1+时效3+可验证2)"
+    },
+    {
+      "path": "Cubox/技术和人生感悟集锦（完结）-2025-08-03.md",
+      "title": "技术和人生感悟集锦（完结）",
+      "content_preview": "# 技术和人生感悟集锦（完结）\n\n\n\n[Read in Cubox](https://cubox.pro/web/card/7351498136608574301)  \n[Read Original]...",
+      "score": 9,
+      "relevance": 1,
+      "depth": 3,
+      "timeliness": 3,
+      "verifiability": 2,
+      "scan_timestamp": "2026-04-08T06:49:59.016748",
+      "skip_reason": "Total score 9 < 10 (相关性1+深度3+时效3+可验证2)"
+    },
+    {
+      "path": "Cubox/四问vivo-2023-02-21.md",
+      "title": "四问vivo",
+      "content_preview": "# 四问vivo\n\n\n\n[Read in Cubox](https://cubox.pro/web/card/7027657096036353599)  \n[Read Original](https:...",
+      "score": 9,
+      "relevance": 1,
+      "depth": 3,
+      "timeliness": 3,
+      "verifiability": 2,
+      "scan_timestamp": "2026-04-08T06:49:59.016986",
+      "skip_reason": "Total score 9 < 10 (相关性1+深度3+时效3+可验证2)"
+    },
+    {
+      "path": "Cubox/从头梳理，看看中国的 ICP 备案制度 - 少数派-2022-03-06.md",
+      "title": "从头梳理，看看中国的 ICP 备案制度 - 少数派",
+      "content_preview": "# 从头梳理，看看中国的 ICP 备案制度 - 少数派\n\n对于生活在中国互联网环境中的开发者来说，ICP备案（后称「备案」）是一个很难绕过去的话题，但凡你需要正经的建设一个网站，那么备案就是一个必须要...",
+      "score": 7,
+      "relevance": 1,
+      "depth": 1,
+      "timeliness": 3,
+      "verifiability": 2,
+      "scan_timestamp": "2026-04-08T06:49:59.018713",
+      "skip_reason": "Total score 7 < 10 (相关性1+深度1+时效3+可验证2)"
+    },
+    {
+      "path": "Cubox/创作者经济-实例篇 -#8-2022-02-25.md",
+      "title": "创作者经济-实例篇 -#8",
+      "content_preview": "# 创作者经济-实例篇 -#8\n\n这是 GeekPlux Lab 第九期，每期都会同步发布在我博客的周刊页面。目前已经有 1325 个同学订阅了本周刊，也欢迎你邮箱订阅，可以第一时间收到更新推送。这周...",
+      "score": 8,
+      "relevance": 0,
+      "depth": 3,
+      "timeliness": 3,
+      "verifiability": 2,
+      "scan_timestamp": "2026-04-08T06:49:59.019527",
+      "skip_reason": "Total score 8 < 10 (相关性0+深度3+时效3+可验证2)"
+    },
+    {
+      "path": "Cubox/对开发人员有用的定律、理论、原则和模式。(Laws, Theories, Principles and Patterns that developers will find useful.)-2022.md",
+      "title": "对开发人员有用的定律、理论、原则和模式。(Laws, Theories, Principles and Patterns that developers will find useful.)",
+      "content_preview": "# 对开发人员有用的定律、理论、原则和模式。(Laws, Theories, Principles and Patterns that developers will find useful.)\n\nh...",
+      "score": 6,
+      "relevance": 0,
+      "depth": 1,
+      "timeliness": 3,
+      "verifiability": 2,
+      "scan_timestamp": "2026-04-08T06:49:59.020244",
+      "skip_reason": "Total score 6 < 10 (相关性0+深度1+时效3+可验证2)"
+    },
+    {
+      "path": "Cubox/群晖 篇一：群晖Docker下搭建ubuntu开发环境_NAS存储_什么值得买-2022-01-23.md",
+      "title": "群晖 篇一：群晖Docker下搭建ubuntu开发环境_NAS存储_什么值得买",
+      "content_preview": "# 群晖 篇一：群晖Docker下搭建ubuntu开发环境_NAS存储_什么值得买\n\n创作立场声明：转载请附出处，不然割小JJ！一、NAS内通过Docker安装ubuntu容器在套件中心搜索 Dock...",
+      "score": 9,
+      "relevance": 2,
+      "depth": 2,
+      "timeliness": 3,
+      "verifiability": 2,
+      "scan_timestamp": "2026-04-08T06:49:59.021395",
+      "skip_reason": "Total score 9 < 10 (相关性2+深度2+时效3+可验证2)"
+    },
+    {
+      "title": "科技爱好者周刊#301：OpenAI 的图书馆工位",
+      "path": "科技爱好者周刊#301：OpenAI 的图书馆工位-2024-05-24.md",
+      "scores": {
+        "relevance": 0,
+        "technical_depth": 0,
+        "timeliness": 2,
+        "verifiability": 3
+      },
+      "total_score": 5,
+      "reason": "Total score 5 < 10",
+      "scan_time": "2026-04-08T06:53:29.842701"
+    },
+    {
+      "title": "科技爱好者周刊#304：最受欢迎的颜色",
+      "path": "科技爱好者周刊#304：最受欢迎的颜色-2024-06-14.md",
+      "scores": {
+        "relevance": 0,
+        "technical_depth": 0,
+        "timeliness": 2,
+        "verifiability": 3
+      },
+      "total_score": 5,
+      "reason": "Total score 5 < 10",
+      "scan_time": "2026-04-08T06:53:29.844141"
+    },
+    {
+      "title": "科技爱好者周刊#306：信息就像糖一样上瘾",
+      "path": "科技爱好者周刊#306：信息就像糖一样上瘾-2024-06-28.md",
+      "scores": {
+        "relevance": 0,
+        "technical_depth": 0,
+        "timeliness": 2,
+        "verifiability": 3
+      },
+      "total_score": 5,
+      "reason": "Total score 5 < 10",
+      "scan_time": "2026-04-08T06:53:29.845216"
+    },
+    {
+      "title": "科技爱好者周刊#308：工作找不到，博士能读吗？",
+      "path": "科技爱好者周刊#308：工作找不到，博士能读吗？-2024-07-12.md",
+      "scores": {
+        "relevance": 0,
+        "technical_depth": 0,
+        "timeliness": 2,
+        "verifiability": 3
+      },
+      "total_score": 5,
+      "reason": "Total score 5 < 10",
+      "scan_time": "2026-04-08T06:53:29.846387"
+    },
+    {
+      "title": "科技爱好者周刊#309：无人驾驶出租车的双面刃",
+      "path": "科技爱好者周刊#309：无人驾驶出租车的双面刃-2024-07-19.md",
+      "scores": {
+        "relevance": 0,
+        "technical_depth": 0,
+        "timeliness": 2,
+        "verifiability": 3
+      },
+      "total_score": 5,
+      "reason": "Total score 5 < 10",
+      "scan_time": "2026-04-08T06:53:29.847403"
+    },
+    {
+      "title": "科技爱好者周刊#314：《黑神话：悟空》可以产业化吗？",
+      "path": "科技爱好者周刊#314：《黑神话：悟空》可以产业化吗？-2024-08-23.md",
+      "scores": {
+        "relevance": 0,
+        "technical_depth": 0,
+        "timeliness": 2,
+        "verifiability": 3
+      },
+      "total_score": 5,
+      "reason": "Total score 5 < 10",
+      "scan_time": "2026-04-08T06:53:29.848837"
+    },
+    {
+      "title": "科技爱好者周刊#315：一份谷歌离职报告",
+      "path": "科技爱好者周刊#315：一份谷歌离职报告-2024-08-30.md",
+      "scores": {
+        "relevance": 0,
+        "technical_depth": 0,
+        "timeliness": 2,
+        "verifiability": 3
+      },
+      "total_score": 5,
+      "reason": "Total score 5 < 10",
+      "scan_time": "2026-04-08T06:53:29.849890"
+    },
+    {
+      "title": "科技爱好者周刊#322：内容行业的内幕",
+      "path": "科技爱好者周刊#322：内容行业的内幕-2024-10-25.md",
+      "scores": {
+        "relevance": 0,
+        "technical_depth": 0,
+        "timeliness": 2,
+        "verifiability": 3
+      },
+      "total_score": 5,
+      "reason": "Total score 5 < 10",
+      "scan_time": "2026-04-08T06:53:29.850829"
+    },
+    {
+      "title": "科技爱好者周刊#324：人类已知的最大质数",
+      "path": "科技爱好者周刊#324：人类已知的最大质数-2024-11-08.md",
+      "scores": {
+        "relevance": 0,
+        "technical_depth": 0,
+        "timeliness": 2,
+        "verifiability": 3
+      },
+      "total_score": 5,
+      "reason": "Total score 5 < 10",
+      "scan_time": "2026-04-08T06:53:29.851780"
+    },
+    {
+      "title": "科技爱好者周刊#327：没有链接的互联网",
+      "path": "科技爱好者周刊#327：没有链接的互联网-2024-11-29.md",
+      "scores": {
+        "relevance": 0,
+        "technical_depth": 0,
+        "timeliness": 2,
+        "verifiability": 3
+      },
+      "total_score": 5,
+      "reason": "Total score 5 < 10",
+      "scan_time": "2026-04-08T06:53:29.852745"
+    },
+    {
+      "title": "科技爱好者周刊#336：面对 AI，互联网正在衰落",
+      "path": "科技爱好者周刊#336：面对 AI，互联网正在衰落-2025-02-07.md",
+      "scores": {
+        "relevance": 0,
+        "technical_depth": 0,
+        "timeliness": 2,
+        "verifiability": 3
+      },
+      "total_score": 5,
+      "reason": "Total score 5 < 10",
+      "scan_time": "2026-04-08T06:53:29.854183"
+    },
+    {
+      "title": "科技爱好者周刊#339：代币是什么",
+      "path": "科技爱好者周刊#339：代币是什么-2025-02-28.md",
+      "scores": {
+        "relevance": 0,
+        "technical_depth": 0,
+        "timeliness": 2,
+        "verifiability": 3
+      },
+      "total_score": 5,
+      "reason": "Total score 5 < 10",
+      "scan_time": "2026-04-08T06:53:29.855160"
+    },
+    {
+      "title": "科技爱好者周刊#341：低代码编程，恐怕不会成功",
+      "path": "科技爱好者周刊#341：低代码编程，恐怕不会成功-2025-03-14.md",
+      "scores": {
+        "relevance": 0,
+        "technical_depth": 3,
+        "timeliness": 2,
+        "verifiability": 3
+      },
+      "total_score": 8,
+      "reason": "Total score 8 < 10",
+      "scan_time": "2026-04-08T06:53:29.856339"
+    },
+    {
+      "title": "科技爱好者周刊#342：面试的 AI 作弊——用数字人去面试",
+      "path": "科技爱好者周刊#342：面试的 AI 作弊——用数字人去面试-2025-03-21.md",
+      "scores": {
+        "relevance": 0,
+        "technical_depth": 0,
+        "timeliness": 2,
+        "verifiability": 3
+      },
+      "total_score": 5,
+      "reason": "Total score 5 < 10",
+      "scan_time": "2026-04-08T06:53:29.857480"
+    },
+    {
+      "title": "科技爱好者周刊#344：制造业正在“零工化”",
+      "path": "科技爱好者周刊#344：制造业正在“零工化”-2025-04-11.md",
+      "scores": {
+        "relevance": 0,
+        "technical_depth": 0,
+        "timeliness": 2,
+        "verifiability": 3
+      },
+      "total_score": 5,
+      "reason": "Total score 5 < 10",
+      "scan_time": "2026-04-08T06:53:29.858690"
+    },
+    {
+      "title": "科技爱好者周刊#350：Java 三十周年",
+      "path": "科技爱好者周刊#350：Java 三十周年-2025-05-30.md",
+      "scores": {
+        "relevance": 0,
+        "technical_depth": 0,
+        "timeliness": 2,
+        "verifiability": 4
+      },
+      "total_score": 6,
+      "reason": "Total score 6 < 10",
+      "scan_time": "2026-04-08T06:53:29.859779"
+    },
+    {
+      "title": "科技爱好者周刊#351：GitHub Issues（几乎）是最好的笔记应用",
+      "path": "科技爱好者周刊#351：GitHub Issues（几乎）是最好的笔记应用-2025-06-06.md",
+      "scores": {
+        "relevance": 0,
+        "technical_depth": 0,
+        "timeliness": 2,
+        "verifiability": 4
+      },
+      "total_score": 6,
+      "reason": "Total score 6 < 10",
+      "scan_time": "2026-04-08T06:53:29.860675"
+    },
+    {
+      "title": "科技爱好者周刊#353：苹果的“液态玻璃”是为了 AR",
+      "path": "科技爱好者周刊#353：苹果的“液态玻璃”是为了 AR-2025-06-20.md",
+      "scores": {
+        "relevance": 0,
+        "technical_depth": 0,
+        "timeliness": 2,
+        "verifiability": 3
+      },
+      "total_score": 5,
+      "reason": "Total score 5 < 10",
+      "scan_time": "2026-04-08T06:53:29.861717"
+    },
+    {
+      "title": "科技爱好者周刊#354：8000mAh 手机电池，说明了什么？",
+      "path": "科技爱好者周刊#354：8000mAh 手机电池，说明了什么？-2025-06-27.md",
+      "scores": {
+        "relevance": 0,
+        "technical_depth": 0,
+        "timeliness": 5,
+        "verifiability": 3
+      },
+      "total_score": 8,
+      "reason": "Total score 8 < 10",
+      "scan_time": "2026-04-08T06:53:29.862612"
+    },
+    {
+      "title": "科技爱好者周刊#355：两本《芯片战争》",
+      "path": "科技爱好者周刊#355：两本《芯片战争》-2025-07-04.md",
+      "scores": {
+        "relevance": 0,
+        "technical_depth": 0,
+        "timeliness": 2,
+        "verifiability": 3
+      },
+      "total_score": 5,
+      "reason": "Total score 5 < 10",
+      "scan_time": "2026-04-08T06:53:29.863419"
+    },
+    {
+      "title": "科技爱好者周刊#357：稳定币的博弈",
+      "path": "科技爱好者周刊#357：稳定币的博弈-2025-07-18.md",
+      "scores": {
+        "relevance": 0,
+        "technical_depth": 0,
+        "timeliness": 2,
+        "verifiability": 3
+      },
+      "total_score": 5,
+      "reason": "Total score 5 < 10",
+      "scan_time": "2026-04-08T06:53:29.864247"
+    },
+    {
+      "title": "科技爱好者周刊#360：Dan Wang 的新书",
+      "path": "科技爱好者周刊#360：Dan Wang 的新书-2025-08-08.md",
+      "scores": {
+        "relevance": 0,
+        "technical_depth": 0,
+        "timeliness": 2,
+        "verifiability": 3
+      },
+      "total_score": 5,
+      "reason": "Total score 5 < 10",
+      "scan_time": "2026-04-08T06:53:29.865133"
+    },
+    {
+      "title": "科技爱好者周刊#361：暗网 Tor 安全吗？",
+      "path": "科技爱好者周刊#361：暗网 Tor 安全吗？-2025-08-15.md",
+      "scores": {
+        "relevance": 0,
+        "technical_depth": 0,
+        "timeliness": 2,
+        "verifiability": 3
+      },
+      "total_score": 5,
+      "reason": "Total score 5 < 10",
+      "scan_time": "2026-04-08T06:53:29.866068"
+    },
+    {
+      "title": "科技爱好者周刊#363：最好懂的神经网络解释",
+      "path": "科技爱好者周刊#363：最好懂的神经网络解释-2025-08-29.md",
+      "scores": {
+        "relevance": 3,
+        "technical_depth": 0,
+        "timeliness": 2,
+        "verifiability": 3
+      },
+      "total_score": 8,
+      "reason": "Total score 8 < 10",
+      "scan_time": "2026-04-08T06:53:29.866824"
+    },
+    {
+      "title": "科技爱好者周刊（第 213 期）：知识孤岛，知识软件",
+      "path": "科技爱好者周刊（第 213 期）：知识孤岛，知识软件-2022-07-08.md",
+      "scores": {
+        "relevance": 0,
+        "technical_depth": 0,
+        "timeliness": 2,
+        "verifiability": 4
+      },
+      "total_score": 6,
+      "reason": "Total score 6 < 10",
+      "scan_time": "2026-04-08T06:53:29.867757"
+    },
+    {
+      "title": "科技爱好者周刊（第 334 期）：年终笔记四则 - 阮一峰的网络日志",
+      "path": "科技爱好者周刊（第 334 期）：年终笔记四则 - 阮一峰的网络日志-2025-01-17.md",
+      "scores": {
+        "relevance": 3,
+        "technical_depth": 0,
+        "timeliness": 2,
+        "verifiability": 3
+      },
+      "total_score": 8,
+      "reason": "Total score 8 < 10",
+      "scan_time": "2026-04-08T06:53:29.868643"
+    },
+    {
+      "title": "科技爱好者周刊（第 338 期）：重新思考 6G - 阮一峰的网络日志",
+      "path": "科技爱好者周刊（第 338 期）：重新思考 6G - 阮一峰的网络日志-2025-02-23.md",
+      "scores": {
+        "relevance": 3,
+        "technical_depth": 0,
+        "timeliness": 2,
+        "verifiability": 3
+      },
+      "total_score": 8,
+      "reason": "Total score 8 < 10",
+      "scan_time": "2026-04-08T06:53:29.869565"
+    },
+    {
+      "title": "科技爱好者周刊（第 338 期）：重新思考 6G",
+      "path": "科技爱好者周刊（第 338 期）：重新思考 6G-2025-02-21.md",
+      "scores": {
+        "relevance": 0,
+        "technical_depth": 0,
+        "timeliness": 2,
+        "verifiability": 3
+      },
+      "total_score": 5,
+      "reason": "Total score 5 < 10",
+      "scan_time": "2026-04-08T06:53:29.870429"
+    },
+    {
+      "title": "科技爱好者周刊（第203期）：英国的名校签证，伯克利的计算机教育",
+      "path": "科技爱好者周刊（第203期）：英国的名校签证，伯克利的计算机教育-2022-04-15.md",
+      "scores": {
+        "relevance": 0,
+        "technical_depth": 0,
+        "timeliness": 2,
+        "verifiability": 4
+      },
+      "total_score": 6,
+      "reason": "Total score 6 < 10",
+      "scan_time": "2026-04-08T06:53:29.871290"
+    },
+    {
+      "title": "科技爱好者周刊（第204期）：如何度过疫情、裁员、还有战争",
+      "path": "科技爱好者周刊（第204期）：如何度过疫情、裁员、还有战争-2022-04-22.md",
+      "scores": {
+        "relevance": 0,
+        "technical_depth": 0,
+        "timeliness": 2,
+        "verifiability": 4
+      },
+      "total_score": 6,
+      "reason": "Total score 6 < 10",
+      "scan_time": "2026-04-08T06:53:29.872301"
+    },
+    {
+      "title": "科技爱好者周刊（第206期）：如何走出失望和怀疑",
+      "path": "科技爱好者周刊（第206期）：如何走出失望和怀疑-2022-05-13.md",
+      "scores": {
+        "relevance": 0,
+        "technical_depth": 0,
+        "timeliness": 2,
+        "verifiability": 4
+      },
+      "total_score": 6,
+      "reason": "Total score 6 < 10",
+      "scan_time": "2026-04-08T06:53:29.873189"
+    },
+    {
+      "title": "科技爱好者周刊（第209期）：程序员是怎样的人",
+      "path": "科技爱好者周刊（第209期）：程序员是怎样的人-2022-06-10.md",
+      "scores": {
+        "relevance": 0,
+        "technical_depth": 0,
+        "timeliness": 2,
+        "verifiability": 4
+      },
+      "total_score": 6,
+      "reason": "Total score 6 < 10",
+      "scan_time": "2026-04-08T06:53:29.874029"
+    },
+    {
+      "title": "科技爱好者周刊（第210期）：为什么软件变得复杂",
+      "path": "科技爱好者周刊（第210期）：为什么软件变得复杂-2022-06-17.md",
+      "scores": {
+        "relevance": 0,
+        "technical_depth": 0,
+        "timeliness": 2,
+        "verifiability": 4
+      },
+      "total_score": 6,
+      "reason": "Total score 6 < 10",
+      "scan_time": "2026-04-08T06:53:29.874812"
+    },
+    {
+      "title": "科技爱好者周刊（第212期）：人生不短",
+      "path": "科技爱好者周刊（第212期）：人生不短-2022-07-01.md",
+      "scores": {
+        "relevance": 0,
+        "technical_depth": 0,
+        "timeliness": 2,
+        "verifiability": 4
+      },
+      "total_score": 6,
+      "reason": "Total score 6 < 10",
+      "scan_time": "2026-04-08T06:53:29.875646"
+    },
+    {
+      "title": "科技爱好者周刊（第214期）：你的地图是错的",
+      "path": "科技爱好者周刊（第214期）：你的地图是错的-2022-07-15.md",
+      "scores": {
+        "relevance": 0,
+        "technical_depth": 0,
+        "timeliness": 2,
+        "verifiability": 4
+      },
+      "total_score": 6,
+      "reason": "Total score 6 < 10",
+      "scan_time": "2026-04-08T06:53:29.876636"
+    },
+    {
+      "title": "科技爱好者周刊（第216期）：极简主义的胜利",
+      "path": "科技爱好者周刊（第216期）：极简主义的胜利-2022-07-29.md",
+      "scores": {
+        "relevance": 0,
+        "technical_depth": 0,
+        "timeliness": 2,
+        "verifiability": 4
+      },
+      "total_score": 6,
+      "reason": "Total score 6 < 10",
+      "scan_time": "2026-04-08T06:53:29.877503"
+    },
+    {
+      "title": "科技爱好者周刊（第217期）：沙特的新未来城",
+      "path": "科技爱好者周刊（第217期）：沙特的新未来城-2022-08-05.md",
+      "scores": {
+        "relevance": 0,
+        "technical_depth": 0,
+        "timeliness": 2,
+        "verifiability": 4
+      },
+      "total_score": 6,
+      "reason": "Total score 6 < 10",
+      "scan_time": "2026-04-08T06:53:29.878171"
+    },
+    {
+      "title": "科技爱好者周刊（第218期）：葡萄酒，樱花，全球变暖",
+      "path": "科技爱好者周刊（第218期）：葡萄酒，樱花，全球变暖-2022-08-12.md",
+      "scores": {
+        "relevance": 0,
+        "technical_depth": 0,
+        "timeliness": 2,
+        "verifiability": 4
+      },
+      "total_score": 6,
+      "reason": "Total score 6 < 10",
+      "scan_time": "2026-04-08T06:53:29.878828"
+    },
+    {
+      "title": "科技爱好者周刊（第219期）：如何防止帐号被黑",
+      "path": "科技爱好者周刊（第219期）：如何防止帐号被黑-2022-08-19.md",
+      "scores": {
+        "relevance": 0,
+        "technical_depth": 0,
+        "timeliness": 2,
+        "verifiability": 4
+      },
+      "total_score": 6,
+      "reason": "Total score 6 < 10",
+      "scan_time": "2026-04-08T06:53:29.879485"
+    },
+    {
+      "title": "科技爱好者周刊（第220期）：人工智能的机会在哪里",
+      "path": "科技爱好者周刊（第220期）：人工智能的机会在哪里-2022-08-26.md",
+      "scores": {
+        "relevance": 0,
+        "technical_depth": 0,
+        "timeliness": 2,
+        "verifiability": 4
+      },
+      "total_score": 6,
+      "reason": "Total score 6 < 10",
+      "scan_time": "2026-04-08T06:53:29.880335"
+    },
+    {
+      "title": "科技爱好者周刊（第222期）：四十年编程感想",
+      "path": "科技爱好者周刊（第222期）：四十年编程感想-2022-09-09.md",
+      "scores": {
+        "relevance": 0,
+        "technical_depth": 0,
+        "timeliness": 2,
+        "verifiability": 4
+      },
+      "total_score": 6,
+      "reason": "Total score 6 < 10",
+      "scan_time": "2026-04-08T06:53:29.881242"
+    },
+    {
+      "title": "科技爱好者周刊（第223期）：程序员需要担心裁员吗？",
+      "path": "科技爱好者周刊（第223期）：程序员需要担心裁员吗？-2022-09-16.md",
+      "scores": {
+        "relevance": 0,
+        "technical_depth": 0,
+        "timeliness": 2,
+        "verifiability": 4
+      },
+      "total_score": 6,
+      "reason": "Total score 6 < 10",
+      "scan_time": "2026-04-08T06:53:29.882093"
+    },
+    {
+      "title": "科技爱好者周刊（第226期）：谷歌出了什么问题？",
+      "path": "科技爱好者周刊（第226期）：谷歌出了什么问题？-2022-10-14.md",
+      "scores": {
+        "relevance": 0,
+        "technical_depth": 0,
+        "timeliness": 2,
+        "verifiability": 4
+      },
+      "total_score": 6,
+      "reason": "Total score 6 < 10",
+      "scan_time": "2026-04-08T06:53:29.882931"
+    },
+    {
+      "title": "科技爱好者周刊（第231期）：互联网公司需要多少员工？",
+      "path": "科技爱好者周刊（第231期）：互联网公司需要多少员工？-2022-11-21.md",
+      "scores": {
+        "relevance": 0,
+        "technical_depth": 0,
+        "timeliness": 2,
+        "verifiability": 3
+      },
+      "total_score": 5,
+      "reason": "Total score 5 < 10",
+      "scan_time": "2026-04-08T06:53:29.883768"
+    },
+    {
+      "title": "科技爱好者周刊（第232期）：好用的平面设计软件",
+      "path": "科技爱好者周刊（第232期）：好用的平面设计软件-2022-11-25.md",
+      "scores": {
+        "relevance": 0,
+        "technical_depth": 0,
+        "timeliness": 2,
+        "verifiability": 3
+      },
+      "total_score": 5,
+      "reason": "Total score 5 < 10",
+      "scan_time": "2026-04-08T06:53:29.884552"
+    },
+    {
+      "title": "科技爱好者周刊（第234期）：AI 聊天有多强？",
+      "path": "科技爱好者周刊（第234期）：AI 聊天有多强？-2022-12-09.md",
+      "scores": {
+        "relevance": 0,
+        "technical_depth": 0,
+        "timeliness": 2,
+        "verifiability": 3
+      },
+      "total_score": 5,
+      "reason": "Total score 5 < 10",
+      "scan_time": "2026-04-08T06:53:29.885245"
+    },
+    {
+      "title": "秒开率从18%到64%，我们对小程序模拟器做了什么？",
+      "path": "秒开率从18%到64%，我们对小程序模拟器做了什么？-2025-02-25.md",
+      "scores": {
+        "relevance": 0,
+        "technical_depth": 0,
+        "timeliness": 2,
+        "verifiability": 3
+      },
+      "total_score": 5,
+      "reason": "Total score 5 < 10",
+      "scan_time": "2026-04-08T06:53:29.886067"
+    },
+    {
+      "title": "秒开率破90%-交易后台渲染性能优化 ｜ 得物技术",
+      "path": "秒开率破90%-交易后台渲染性能优化 ｜ 得物技术-2024-04-11.md",
+      "scores": {
+        "relevance": 0,
+        "technical_depth": 0,
+        "timeliness": 2,
+        "verifiability": 3
+      },
+      "total_score": 5,
+      "reason": "Total score 5 < 10",
+      "scan_time": "2026-04-08T06:53:29.886858"
+    },
+    {
+      "title": "租房还是买房，公寓还是 house | 椒盐豆豉",
+      "path": "租房还是买房，公寓还是 house - 椒盐豆豉-2024-04-03.md",
+      "scores": {
+        "relevance": 0,
+        "technical_depth": 0,
+        "timeliness": 2,
+        "verifiability": 0
+      },
+      "total_score": 2,
+      "reason": "Total score 2 < 10",
+      "scan_time": "2026-04-08T06:53:29.887534"
+    },
+    {
+      "title": "移动 OS 设计之性能设计 1 - 应用程序与 OS 之间的边界思考",
+      "path": "移动 OS 设计之性能设计 1 - 应用程序与 OS 之间的边界思考-2025-03-03.md",
+      "scores": {
+        "relevance": 0,
+        "technical_depth": 0,
+        "timeliness": 2,
+        "verifiability": 3
+      },
+      "total_score": 5,
+      "reason": "Total score 5 < 10",
+      "scan_time": "2026-04-08T06:53:29.888383"
     }
   ],
   "last_updated": "2026-04-07T16:59:49.639289",

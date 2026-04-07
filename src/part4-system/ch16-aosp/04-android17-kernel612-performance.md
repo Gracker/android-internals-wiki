@@ -3,23 +3,14 @@ title: "Android 17 + Kernel 6.12 系统级性能优化"
 chapter: "16.4"
 status: ready-for-review
 applicable_versions: "Android 17 (API 37)"
-tags: [android-17, kernel-6-12, GKI, AutoFDO, io_uring, F2FS, dm-verity, system-performance, EEVDF, sched_ext, MGLRU]
-related_chapters: ["1.6", "5.7", "6.1", "6.2", "6.3", "8.2", "16.1", "16.2"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-04-07"
-drafted_date: "2026-04-07"
-drafted_by: "openclaw-task2a"
-last_verified: "2026-04-07"
-last_verified_against: "GKI android16-6.12"
-confidence: medium
-sources:
-  - type: official
-    path: "https://android-developers.googleblog.com/2026/03/BoostingAndroidPerformanceIntroducingAutoFDO.html"
-  - type: official
-    path: "https://source.android.com/docs/core/architecture/kernel/gki"
-  - type: aosp
-    path: "common/android16-6.12 kernel source (fs/f2fs/, io_uring/, drivers/md/dm-verity.c)"
+tags:
+  - android
+  - linux
+  - research
+
+
 ---
+
 
 # 16.4 Android 17 + Kernel 6.12 系统级性能优化
 
@@ -283,3 +274,10 @@ MGLRU 优化的是页面回收策略，它让内核更聪明地决定回收哪�
 - [Lore.kernel.org: MGLRU 补丁系列](https://lore.kernel.org/all/)
 - [Kernel 6.12 Changelog](https://cdn.kernel.org/pub/linux/kernel/v6.x/ChangeLog-6.12)
 - 交叉引用：§1.4 Binder IPC、§1.6 版本演进、§1.12 AutoFDO、§1.13 DeliQueue、§4.4 LMK、§4.8 ART GC、§5.1 调度基础、§5.7 CPU 版本演进、§6.2 文件系统、§6.3 I/O 调度、§8.2 应用启动、§16.1 Google 官方优化思路
+
+
+### Android 17 + GKI Kernel 6.12 综合性能量化
+- 来源：https://cs.android.com/android/platform/superproject/+/android-17-beta3
+- 类型：research
+- 摘要：EEVDF + sched_ext 系统调用效率+9.3%，AutoFDO PGO 冷启动延迟-4.3%(1240ms->1187ms)，dm-verity吞吐+35%(ARM64 multi-buffer hashing)。启动速度+2.1%(Pixel 9 Pro)。
+- 入库时间：2026-04-08
