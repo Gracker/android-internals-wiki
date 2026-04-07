@@ -4183,6 +4183,17 @@
         "需确认",
         "需确认"
       ]
+    },
+    "4.6": {
+      "title": "内存相关的版本演进",
+      "status": "ready-to-publish",
+      "file": "src/part1-fundamentals/ch04-memory/06-memory-evolution.md",
+      "drafted_date": "2026-03-31",
+      "reviewed_date": "2026-04-08",
+      "reviewed_by": "openclaw-task6",
+      "polish_count": 1,
+      "polish_date": "2026-04-07",
+      "polish_by": "task2b-polish"
     }
   },
   "5.1": {

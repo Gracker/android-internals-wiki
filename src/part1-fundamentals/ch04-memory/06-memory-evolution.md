@@ -1,10 +1,10 @@
 ---
 title: "内存相关的版本演进"
 chapter: "4.6"
-status: ready-for-review
+status: ready-to-publish
 section: "4.6"
-reviewed_date: "2026-04-07"
-reviewed_by: "openclaw-task6"  # second review after rework
+reviewed_date: "2026-04-08"
+reviewed_by: "openclaw-task6"
 polish_count: 1
 polish_date: "2026-04-07"
 polish_by: "task2b-polish"
@@ -39,6 +39,7 @@ tags: ['memory-evolution', 'art', 'dalvik', 'gc', 'bitmap', 'scudo', 'mte', 'lar
 related_chapters: ["4.1", "4.2", "4.3", "4.4", "4.5", "2.9"]
 drafted_date: "2026-03-31"
 drafted_by: "openclaw-subagent"
+review_count: 2
 ---
 
 # 内存相关的版本演进
@@ -74,7 +75,7 @@ drafted_by: "openclaw-subagent"
 
 这不是魔法，是 Android 在每个大版本中都对内存管理做了或多或少的改动。有些改动是底层架构级的（比如 ART 替代 Dalvik），有些是分配策略级的（比如 Bitmap 像素数据搬家），有些是安全增强型的（比如 Scudo 和 MTE）。如果你不了解这些变化的脉络，拿到一份旧设备的 Trace 时可能会做出错误的判断——把系统行为误认为是应用问题，或者反过来。
 
-本节的目标是把这些散落在各版本中的内存相关变更串成一条清晰的演进线。读完之后，你应该能回答：给定一个 Android 版本和一种内存现象，这是该版本的正常行为还是异常？这个版本的内存子系统与更新版本相比有什么本质区别？以及，升级到新版本后，App 需要做哪些适配？
+本节的目标是把这些散落在各版本中的内存相关变更串成一条清晰的演进线。读完之后，我们应该能回答：给定一个 Android 版本和一种内存现象，这是该版本的正常行为还是异常？这个版本的内存子系统与更新版本相比有什么本质区别？以及，升级到新版本后，App 需要做哪些适配？
 
 [已验证: 官方文档 source.android.com/docs/core/perf/art-management]
 
@@ -130,7 +131,7 @@ AOSP 源码路径：
 
 **Java 堆的"天花板"变了。** 之前 Bitmap 像素数据计入 `dalvikHeapSize`，受 `Runtime.getRuntime().maxMemory()` 限制。迁移后，Bitmap 不再占用 Java 堆配额。这意味着同样大小的 Java 堆，可以容纳更多的 Java 对象（或者说，不容易因为 Bitmap 而触发 Java OOM）。
 
-**内存统计的"作弊"问题。** 虽然 Bitmap 不在 Java 堆了，但它仍然占用进程的 PSS（Proportional Set Size）。通过 `dumpsys meminfo` 查看，你会发现 `Native Heap` 部分增大了。一个常见的错误是：开发者通过 `Runtime.getRuntime().freeMemory()` 判断内存是否紧张，但在 Android 8.0+ 上，这个方法只反映 Java 堆的情况，完全不包含 Bitmap 占用的 Native 内存。如果App 有大量图片，可能 Java 堆看起来还很充裕，但进程整体内存已经接近系统限制。
+**内存统计的"作弊"问题。** 虽然 Bitmap 不在 Java 堆了，但它仍然占用进程的 PSS（Proportional Set Size）。通过 `dumpsys meminfo` 查看，我们会发现 `Native Heap` 部分增大了。一个常见的错误是：开发者通过 `Runtime.getRuntime().freeMemory()` 判断内存是否紧张，但在 Android 8.0+ 上，这个方法只反映 Java 堆的情况，完全不包含 Bitmap 占用的 Native 内存。如果 App 有大量图片，可能 Java 堆看起来还很充裕，但进程整体内存已经接近系统限制。
 
 **回收机制的变更。** Native 堆的 Bitmap 不再由 Java GC 直接回收。Android 8.0 引入了 `NativeAllocationRegistry` 机制：创建 Bitmap 时，将一个 Native 回收函数注册到 Java 层的 Cleaner（基于虚引用）。当 Java Bitmap 对象被 GC 回收时，Cleaner 触发 Native 回收函数，最终通过 `free()` 释放像素数据。这比 Android 7.0 之前使用的 Finalizer 机制更稳定、更可预测。
 
@@ -191,7 +192,7 @@ Android 10 在 CC GC 的基础上进一步完善了分代垃圾回收。ART 将 
 
 分代策略大幅减少了 Full GC 的频率。在 120Hz 设备上，帧间隔只有 8.3ms，1-3ms 的 Young GC 暂停通常不会导致丢帧。即使偶尔发生，也只是丢一帧，用户几乎感知不到。但 Android 7.0 时代的 CMS GC 在同样的场景下，Full GC 可能暂停 10-50ms，在 120Hz 设备上意味着连续丢 6 帧以上。
 
-在 Perfetto 中，我们可以通过 `art_gc` counter 观察这些变化。Android 10+ 的设备上，你会看到大量短暂的、频率稳定的 Young GC 活动（每 2-5 秒一次），而 Full GC 非常罕见。如果我们在 Android 10+ 的设备上仍然看到频繁的 Full GC，那几乎可以确定是应用存在内存问题（泄漏或过度分配）。
+在 Perfetto 中，我们可以通过 `art_gc` counter 观察这些变化。Android 10+ 的设备上，我们会看到大量短暂的、频率稳定的 Young GC 活动（每 2-5 秒一次），而 Full GC 非常罕见。如果我们在 Android 10+ 的设备上仍然看到频繁的 Full GC，那几乎可以确定是应用存在内存问题（泄漏或过度分配）。
 
 [已验证: AOSP android-15.0.0_r1, art/runtime/gc/collector/concurrent_copying.cc]
 [来源: research-feed 2026-03-31-11-ch04-art-generational-gc.md]
@@ -326,7 +327,7 @@ Android 8.0 Bitmap 迁移到 Native 堆后，进程整体内存的构成发生�
 
 ```bash
 # 查看堆大小配置
-adb shell getprop dalvik.vm.heapsize
+adb shell getprop dalvik.vm.heapstartsize
 adb shell getprop dalvik.vm.heapgrowthlimit
 adb shell getprop dalvik.vm.heapsize
 
@@ -376,7 +377,7 @@ MTE 提供三种检测模式，在安全性和性能之间提供不同的权衡�
 
 **Synchronous（同步模式）**：每次内存访问都立即检测 Tag，如果不匹配立即触发 SIGSEGV(MTESERR) 信号，精确报告出错指令的位置。安全性最高，但性能开销也最大（3%-30%，取决于工作负载），主要用于调试阶段。
 
-**Asynchronous（异步模式）**：Tag 检测与正常执行并行，不阻断流水线。错误被记录但不立即报告，等到下一次进入内核（如系统调用）时才结算。性能开销只有 1-2%，适合生产环境使用。代价是报错不精确——你只知道"某个时间段内发生了错误"，但不知道是哪条指令。
+**Asynchronous（异步模式）**：Tag 检测与正常执行并行，不阻断流水线。错误被记录但不立即报告，等到下一次进入内核（如系统调用）时才结算。性能开销只有 1-2%，适合生产环境使用。代价是报错不精确——我们只知道"某个时间段内发生了错误"，但不知道是哪条指令。
 
 **Asymmetric（非对称模式）**（FEAT_MTE3 引入）：读操作使用同步检测（开销几乎为零），写操作使用异步检测。这是一种"性价比"最高的模式，在性能接近异步模式的前提下，对读操作的越界检测更加精确。
 
@@ -390,7 +391,7 @@ Scudo 作为 Android 的默认 Native 内存分配器，是 MTE 在堆上检测�
 
 ### 对 App 开发者的影响
 
-如果 App 包含 Native 代码（JNI 库、C/C++ SDK），MTE 的启用意味着之前"碰巧没出问题"的内存错误可能在新设备上被检测到并导致 crash。这是好事——它帮你提前发现了安全漏洞。但需要确保：
+如果 App 包含 Native 代码（JNI 库、C/C++ SDK），MTE 的启用意味着之前"碰巧没出问题"的内存错误可能在新设备上被检测到并导致 crash。这是好事——它帮助提前发现了安全漏洞。但需要确保：
 
 1. **使用最新 NDK 编译**（r25+），确保生成的代码与 MTE 兼容。
 2. **避免硬编码页大小**（`#define PAGE_SIZE 4096`），改为 `sysconf(_SC_PAGESIZE)`。
@@ -406,7 +407,7 @@ Scudo 作为 Android 的默认 Native 内存分配器，是 MTE 在堆上检测�
 
 ## 扩展：Graphics 内存的计量方式变化
 
-Android 在不同版本中对 Graphics 内存的计量和归属做了几次调整，这会影响你在 `dumpsys meminfo` 中看到的 `Graphics` 和 `GL` 行的数值。
+Android 在不同版本中对 Graphics 内存的计量和归属做了几次调整，这会影响我们在 `dumpsys meminfo` 中看到的 `Graphics` 和 `GL` 行的数值。
 
 ### Hardware Bitmap 与 GPU 内存
 
@@ -432,7 +433,7 @@ Glide 和 Coil 等图片加载库默认在 API 26+ 上使用硬件 Bitmap。这�
 
 ### 对性能分析的影响
 
-在 Perfetto 中分析内存问题时，需要注意 GPU 内存的"隐藏"占用。如果你的 App 大量使用 Hardware Bitmap 或 Surface（如视频播放、相机预览），GPU 内存可能是内存大户，但在常规的 `dumpsys meminfo` 中可能不够显眼。建议结合 `dumpsys gpu` 和 Perfetto 的 GPU track 一起分析。
+在 Perfetto 中分析内存问题时，需要注意 GPU 内存的"隐藏"占用。如果 App 大量使用 Hardware Bitmap 或 Surface（如视频播放、相机预览），GPU 内存可能是内存大户，但在常规的 `dumpsys meminfo` 中可能不够显眼。建议结合 `dumpsys gpu` 和 Perfetto 的 GPU track 一起分析。
 
 关于 Hardware Bitmap 的使用建议，详见 4.5 节「App 内存优化」。
 
