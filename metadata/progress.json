@@ -1973,6 +1973,18 @@
         "ART Lock Word 三级状态 (Unlocked/Thin/Fat) + fat monitor 内部结构 (monitor_contenders_ 条件变量)（目标 §1.14）",
         "优先级反转 216ms jank + Audio 不使用 PI futex + DeliQueue MPSC 无锁队列替代（目标 §1.14/§1.13）"
       ]
+    },
+    {
+      "time": "2026-04-07T09:46:06.852210",
+      "focus": "Android 17 + GKI Kernel 6.12 性能量化 + 存储与 I/O 三重优化（topic rotation #7: 存储与 I/O + FRESHNESS priority 95 联动）",
+      "source": "topic-rotation-7 + queue-freshness-priority-95",
+      "candidates": 8,
+      "passed": 2,
+      "delivered": 2,
+      "themes": [
+        "Android 17 GKI Kernel 6.12 综合性能量化：启动 2.1%/syscall 9.3%/冷启动 4.3%/dm-verity 35%（目标 §1.6/§5.7/§8.2/§16.1，覆盖 FRESHNESS 40+ 章节）",
+        "Kernel 6.12 存储三重优化：F2FS Checkpoint Merge -40% 写放大 + io_uring multishot 零拷贝 + dm-verity 多缓冲哈希 35%，随机 I/O 延迟 -12%（目标 §6.1-6.4）"
+      ]
     }
   ],
   "history": [
@@ -3200,8 +3212,8 @@
     },
     "5.3": {
       "title": "大小核架构",
-      "status": "finalized",
-      "reviewed_date": "2026-04-02",
+      "status": "ready-to-publish",
+      "reviewed_date": "2026-04-07",
       "reviewed_by": "openclaw-task6"
     },
     "3.1": {
