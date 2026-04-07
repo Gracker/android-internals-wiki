@@ -2,10 +2,10 @@
 title: "ANR 类型与触发条件"
 section: "9.2"
 chapter: "9.2"
-status: finalized
+status: ready-for-review
 drafted_date: "2026-04-02"
 drafted_by: "openclaw-task2a"
-applicable_versions: "Android 8.0 (API 26) - Android 16 (API 36)"
+applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37)"
 last_verified: "2026-04-02"
 last_verified_against: "AOSP android-14.0.0_r1"
 confidence: high
@@ -23,9 +23,12 @@ sources:
   - type: blog
     path: "intake/research-feeds/2026-04-01-07-ch09-binder-anr-android15-16-17.md"
 tags: [anr, input-dispatching, broadcast, service, contentprovider, timeout]
-related_chapters: ["9.1", "9.3", "9.4", "1.4", "1.5"]
+related_chapters: ["9.1", "9.3", "9.4", "1.4", "1.5", "1.10"]
 reviewed_date: "2026-04-07"
 reviewed_by: openclaw-task6
+polish_count: 1
+polish_date: "2026-04-07"
+polish_by: "task2b-polish"
 ---
 
 # ANR 类型与触发条件
@@ -110,6 +113,8 @@ Reason: Input dispatching timed out (Waiting to send non-key event because the
 
 ## BroadcastReceiver Timeout（广播超时）
 
+与 Input ANR 不同，Broadcast ANR 的触发并不依赖用户交互——它可能在一个完全没有用户操作的静默时段发生。理解它的超时机制，有助于排查那些“明明没有用户操作却发生了 ANR”的问题。
+
 ### 超时阈值：前台 10 秒 / 后台 60 秒
 
 当系统通过 BroadcastQueue 将一个有序广播（ordered broadcast）分发给 BroadcastReceiver 时，会在分发的同时启动一个超时计时器。如果 Receiver 的 `onReceive()` 方法在超时时间内没有执行完毕（对于使用了 `goAsync()` 的情况，是 `PendingResult.finish()` 没有被调用），就会触发 ANR。
@@ -129,7 +134,7 @@ static final int BROADCAST_BG_TIMEOUT = 60 * 1000;  // 60 seconds
 
 Broadcast ANR 的检测逻辑在 `BroadcastQueue.broadcastTimeoutLocked()` 方法中。**只有有序广播（ordered broadcast）才会触发超时检测。** 普通的无序广播是并行分发给所有 Receiver 的，不会等待单个 Receiver 完成，因此不会产生 ANR。
 
-`goAsync()` 的引入让这个问题更复杂了。当你调用 `goAsync()` 将广播处理移到后台线程时，超时计时器并不会停止——你仍然需要在原始超时时间内调用 `PendingResult.finish()`。如果后台线程执行时间超过 10 秒（前台广播）或 60 秒（后台广播），仍然会触发 ANR，即使主线程完全空闲。
+`goAsync()` 的引入让这个问题更复杂了。调用 `goAsync()` 将广播处理移到后台线程时，超时计时器并不会停止——仍然需要在原始超时时间内调用 `PendingResult.finish()`。如果后台线程执行时间超过 10 秒（前台广播）或 60 秒（后台广播），仍然会触发 ANR，即使主线程完全空闲。
 
 ### 在 Logcat 中的特征
 
@@ -196,6 +201,8 @@ Reason: executing service com.example.app/com.example.app.MyService
 
 ## ContentProvider Timeout（内容提供者超时）
 
+前三种 ANR 类型都围绕主线程的“执行超时”，ContentProvider ANR 的触发逻辑有所不同——它的超时发生在“发布”阶段，也就是 App 还没来得及执行任何业务代码的时候。
+
 ### 超时阈值：10 秒（publish timeout）
 
 系统在两种场景下检测 ContentProvider 的超时：
@@ -237,6 +244,8 @@ Reason: ContentProvider com.example.app/.provider.MyProvider not responding
 
 ## 版本演进中的变化
 
+> 本节追踪 Android 8.0 到 Android 17 中与 ANR 触发条件和超时阈值相关的关键变更。未提及的版本意味着对应版本没有重大变化。
+
 **Android 8.0（API 26）：** 引入 `startForegroundService()` / `startForeground()` 的 5 秒超时要求。
 
 **Android 12（API 31）：** `startForeground()` 超时不再触发 ANR 对话框，而是直接抛出 `ForegroundServiceDidNotStartInTimeException` 导致崩溃。
@@ -267,6 +276,18 @@ JobService 本身不直接触发 ANR，它有自己的超时机制。当 JobSche
 | startForeground (12+) | `startForegroundService() did not then call Service.startForeground()` |
 
 掌握这些模式后，我们可以在拿到 ANR 报告的几秒钟内判断类型，进而选择正确的分析路径。
+
+快速提取 ANR 类型的命令行方式：
+
+```bash
+# 从 logcat 中提取最近一条 ANR 的类型
+adb logcat -d -s ActivityManager:E | grep "ANR in" | tail -1
+
+# 从 ANR trace 文件中查看详细信息（Android 11+ 路径）
+adb shell cat /data/anr/anr_* | tail -200
+```
+
+第一条命令可以直接看到 Reason 行，从而判断 ANR 类型。第二条命令可以获取完整的 ANR trace，包含当时所有线程的调用栈。
 
 ## 常见问题与误区
 
