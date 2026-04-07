@@ -2463,6 +2463,485 @@
       "source_task": "掘金Android",
       "indexed_at": "2026-04-07T10:06:23.576193",
       "action_taken": "dedup_skip"
+    },
+    {
+      "path": "Cubox/插件化、热补丁中绕不开的Proguard的坑 - 美团技术团队-2022-01-14.md",
+      "title": "插件化、热补丁中绕不开的Proguard的坑 - 美团技术团队",
+      "scores": {
+        "relevance": 5,
+        "depth": 4,
+        "timeliness": 4,
+        "verifiability": 3
+      },
+      "total_score": 16,
+      "matched_chapters": [
+        "ch07-内存",
+        "ch09-网络",
+        "ch10-包体积"
+      ],
+      "first_chars": "# 插件化、热补丁中绕不开的Proguard的坑 - 美团技术团队\n\n本文主要介绍ProGuard applymapping的Bug和修复\n\n[Read in Cubox](https://cubox.pro/web/card/6881671129442812486)  \n[Read Original](https://tech.meituan.com/2018/04/27/mt-proguar",
+      "quality": "high",
+      "indexed_at": "2026-04-07T13:20:48.019639"
+    },
+    {
+      "path": "Cubox/揭开Android View的神秘面纱：深入探索工作原理引言：View 在 Android 世界的角色 在 Androi - 掘金-2025-03-03.md",
+      "title": "揭开Android View的神秘面纱：深入探索工作原理引言：View 在 Android 世界的角色 在 Androi - 掘金",
+      "scores": {
+        "relevance": 5,
+        "depth": 0,
+        "timeliness": 5,
+        "verifiability": 0
+      },
+      "total_score": 10,
+      "matched_chapters": [
+        "ch05-渲染",
+        "ch15-Kotlin"
+      ],
+      "first_chars": "# 揭开Android View的神秘面纱：深入探索工作原理引言：View 在 Android 世界的角色 在 Androi - 掘金\n\n引言：View 在 Android 世界的角色 在 Android 开发的广袤天地中，View 无疑是构建用户界面的基石，发挥着举足轻重的作用。从简单的文本显示、按钮点击，到复杂的动画效果、交互设计，\n\n[Read in Cubox](https://cubo",
+      "quality": "medium",
+      "indexed_at": "2026-04-07T13:20:48.029578"
+    },
+    {
+      "path": "Cubox/揭开Flutter Slider中Shapes的神秘面纱-2025-03-04.md",
+      "title": "揭开Flutter Slider中Shapes的神秘面纱",
+      "scores": {
+        "relevance": 5,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 0
+      },
+      "total_score": 11,
+      "matched_chapters": [
+        "ch05-渲染",
+        "ch09-网络",
+        "ch15-Kotlin"
+      ],
+      "first_chars": "# 揭开Flutter Slider中Shapes的神秘面纱\n\n\n\n[Read in Cubox](https://cubox.pro/web/card/7296399466104360675)  \n[Read Original](https://mp.weixin.qq.com/s?__biz=MzAxNzMxNzk5OQ==&mid=2649495110&idx=1&sn=a8431d5cd",
+      "quality": "medium",
+      "indexed_at": "2026-04-07T13:20:48.038068"
+    },
+    {
+      "path": "Cubox/揭秘Activity“重生”的面纱---Activity管理系列-2024-12-20.md",
+      "title": "揭秘Activity“重生”的面纱---Activity管理系列",
+      "scores": {
+        "relevance": 5,
+        "depth": 3,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "total_score": 14,
+      "matched_chapters": [
+        "ch01-架构",
+        "ch07-内存",
+        "ch08-存储"
+      ],
+      "first_chars": "# 揭秘Activity“重生”的面纱---Activity管理系列\n\n本文是Android四大组件系统系列的第六篇文章，通过本文您将了解到Activity“重生”是啥，它的作用是啥，Activity“重生”的原理是啥。\n\n[Read in Cubox](https://cubox.pro/web/card/7269600925277227101)  \n[Read Original](https",
+      "quality": "medium",
+      "indexed_at": "2026-04-07T13:20:48.048299"
+    },
+    {
+      "path": "Cubox/揭秘Android Framework幕后英雄：输入与显示系统的精密协作-2026-04-05.md",
+      "title": "揭秘Android Framework幕后英雄：输入与显示系统的精密协作",
+      "scores": {
+        "relevance": 5,
+        "depth": 4,
+        "timeliness": 5,
+        "verifiability": 0
+      },
+      "total_score": 14,
+      "matched_chapters": [
+        "ch05-渲染",
+        "ch07-内存",
+        "ch09-网络"
+      ],
+      "first_chars": "# 揭秘Android Framework幕后英雄：输入与显示系统的精密协作\n\n引言：看似简单的触摸背后隐藏着什么？当你轻触手机屏幕，一个简单的动作背后实际上发生着一系列复杂而精密的系统级协作。\n\n[Read in Cubox](https://cubox.pro/web/card/7440254836576092385)  \n[Read Original](https://mp.weixin.",
+      "quality": "medium",
+      "indexed_at": "2026-04-07T13:20:48.052838"
+    },
+    {
+      "path": "Cubox/搜索历史 清空-2024-08-30.md",
+      "title": "搜索历史 清空",
+      "scores": {
+        "relevance": 5,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "total_score": 12,
+      "matched_chapters": [
+        "ch07-内存",
+        "ch13-调度"
+      ],
+      "first_chars": "# 搜索历史 清空\n\n\n\n[Read in Cubox](https://cubox.pro/web/card/7229137443084045137)  \n[Read Original](https://juejin.cn/post/7302740437529853963?share_token=95f808ef-750d-4fec-9392-b1bdd2f1a085)  \n\n---\n\n做客户",
+      "quality": "medium",
+      "indexed_at": "2026-04-07T13:20:48.065817"
+    },
+    {
+      "path": "Cubox/搞懂协程的异常处理，看这篇就可以啦-2023-12-04.md",
+      "title": "搞懂协程的异常处理，看这篇就可以啦",
+      "scores": {
+        "relevance": 5,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 0
+      },
+      "total_score": 11,
+      "matched_chapters": [
+        "ch03-线程",
+        "ch09-网络",
+        "ch15-Kotlin"
+      ],
+      "first_chars": "# 搞懂协程的异常处理，看这篇就可以啦\n\n轻松学，聊聊 Kotlin协程 的异常处理方式 :)\n\n[Read in Cubox](https://cubox.pro/web/card/7131225732079943811)  \n[Read Original](https://mp.weixin.qq.com/s?__biz=Mzg5NTc1MDkzNA==&mid=2247484162&idx",
+      "quality": "medium",
+      "indexed_at": "2026-04-07T13:20:48.071202"
+    },
+    {
+      "path": "Cubox/播放器系列1——总概述-2025-03-03.md",
+      "title": "播放器系列1——总概述",
+      "scores": {
+        "relevance": 5,
+        "depth": 0,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "total_score": 11,
+      "matched_chapters": [
+        "ch05-渲染",
+        "ch09-网络"
+      ],
+      "first_chars": "# 播放器系列1——总概述\n\n\n\n[Read in Cubox](https://cubox.pro/web/card/7296058063952284709)  \n[Read Original](https://blog.csdn.net/weixin_40317531/article/details/145787079)  \n\n---\n\n## {#t0}播放器核心架构\n\n![](https:",
+      "quality": "medium",
+      "indexed_at": "2026-04-07T13:20:48.076657"
+    },
+    {
+      "path": "Cubox/支付宝客户端体验度量与诊断-2022-12-01.md",
+      "title": "支付宝客户端体验度量与诊断",
+      "scores": {
+        "relevance": 5,
+        "depth": 5,
+        "timeliness": 4,
+        "verifiability": 3
+      },
+      "total_score": 17,
+      "matched_chapters": [
+        "ch03-线程",
+        "ch04-启动",
+        "ch05-渲染"
+      ],
+      "first_chars": "# 支付宝客户端体验度量与诊断\n\n支付宝是如何监测、治理耗时类体验问题？\n\n[Read in Cubox](https://cubox.pro/web/card/6997869640105853759)  \n[Read Original](https://mp.weixin.qq.com/s?__biz=Mzg4MjE5OTI4Mw==&mid=2247498514&idx=1&sn=e4de0",
+      "quality": "high",
+      "indexed_at": "2026-04-07T13:20:48.082021"
+    },
+    {
+      "path": "Cubox/故事和真实无关｜预言家周报#179-2022-07-15.md",
+      "title": "故事和真实无关｜预言家周报#179",
+      "scores": {
+        "relevance": 5,
+        "depth": 1,
+        "timeliness": 4,
+        "verifiability": 0
+      },
+      "total_score": 10,
+      "matched_chapters": [
+        "ch09-网络",
+        "ch12-安全"
+      ],
+      "first_chars": "# 故事和真实无关｜预言家周报#179\n\n故事是强大的，但是并不真实。从一开始，讲故事的人就不以真实为目标，而是以故事的效果最大化为目标。\n\n[Read in Cubox](https://cubox.pro/web/card/6947644449149157766)  \n[Read Original](https://orangexyz.mirror.xyz/y058p-JfrQliuPBmP",
+      "quality": "medium",
+      "indexed_at": "2026-04-07T13:20:48.086389"
+    },
+    {
+      "path": "Cubox/教你写好技术文章-2022-01-14.md",
+      "title": "教你写好技术文章",
+      "scores": {
+        "relevance": 5,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 0
+      },
+      "total_score": 11,
+      "matched_chapters": [
+        "ch07-内存",
+        "ch10-包体积"
+      ],
+      "first_chars": "# 教你写好技术文章\n\n技术写作的目的是让读者能够顺利地使用一个软件或理解一项技术或弄懂业务流程。它与创作型写作的最大区别在于，技术写作并非为了取悦读者，而是追求以简洁和精确的文字去阐明事实。\n\n[Read in Cubox](https://cubox.pro/web/card/6881532034464877165)  \n[Read Original](https://mp.weixin.q",
+      "quality": "medium",
+      "indexed_at": "2026-04-07T13:20:48.089756"
+    },
+    {
+      "path": "Cubox/敲敲打打：一系列云端输入法漏洞使网络攻击者得以监看个人用户的输入内容（摘要） - The Citizen Lab-2024-04-30.md",
+      "title": "敲敲打打：一系列云端输入法漏洞使网络攻击者得以监看个人用户的输入内容（摘要） - The Citizen Lab",
+      "scores": {
+        "relevance": 5,
+        "depth": 0,
+        "timeliness": 5,
+        "verifiability": 0
+      },
+      "total_score": 10,
+      "matched_chapters": [
+        "ch09-网络",
+        "ch12-安全"
+      ],
+      "first_chars": "# 敲敲打打：一系列云端输入法漏洞使网络攻击者得以监看个人用户的输入内容（摘要） - The Citizen Lab\n\n在我们测试的九家厂商的应用程序中，仅有华为的产品未发现任何上传用户输入内容至云端相关的安全问题，其余每一家厂商都至少有一个应用程序含有漏洞，使得被动型网络攻击者得以监看用户输入的完整内容。\n\n[Read in Cubox](https://cubox.pro/web/card/",
+      "quality": "medium",
+      "indexed_at": "2026-04-07T13:20:48.092790"
+    },
+    {
+      "path": "Cubox/文本和概念分析专家 prompt-2025-09-26.md",
+      "title": "文本和概念分析专家 prompt",
+      "scores": {
+        "relevance": 5,
+        "depth": 3,
+        "timeliness": 5,
+        "verifiability": 3
+      },
+      "total_score": 16,
+      "matched_chapters": [
+        "ch05-渲染",
+        "ch07-内存",
+        "ch09-网络"
+      ],
+      "first_chars": "# 文本和概念分析专家 prompt\n\nGitHub Gist: instantly share code, notes, and snippets.\n\n[Read in Cubox](https://cubox.pro/web/card/7371229132425792382)  \n[Read Original](https://gist.github.com/kevinz/a191dfd75",
+      "quality": "high",
+      "indexed_at": "2026-04-07T13:20:48.103062"
+    },
+    {
+      "path": "Cubox/文档中心-2024-10-23.md",
+      "title": "文档中心",
+      "scores": {
+        "relevance": 5,
+        "depth": 0,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "total_score": 11,
+      "matched_chapters": [
+        "ch04-启动"
+      ],
+      "first_chars": "# 文档中心\n\n\n\n[Read in Cubox](https://cubox.pro/web/card/7248674763416012170)  \n[Read Original](https://developer.huawei.com/consumer/cn/doc/best-practices-V5/bpta-smooth-application-design-V5)  \n\n---\n\n#",
+      "quality": "medium",
+      "indexed_at": "2026-04-07T13:20:48.108160"
+    },
+    {
+      "path": "Cubox/文润 - The Best Programmers I Know - Matthias Endler-2025-04-10.md",
+      "title": "文润 - The Best Programmers I Know | Matthias Endler",
+      "scores": {
+        "relevance": 5,
+        "depth": 0,
+        "timeliness": 5,
+        "verifiability": 2
+      },
+      "total_score": 12,
+      "matched_chapters": [],
+      "first_chars": "# 文润 - The Best Programmers I Know | Matthias Endler\n\n查看由文润转译的内容: The Best Programmers I Know | Matthias Endler\n\n[Read in Cubox](https://cubox.pro/web/card/7310026976260001028)  \n[Read Original](http",
+      "quality": "medium",
+      "indexed_at": "2026-04-07T13:20:48.110957"
+    },
+    {
+      "path": "Cubox/新 M3 系列 MacBook Pro 骨灰级对比评测：不加钱上 M3 Max 还不如买 M2 Pr...-2024-01-11.md",
+      "title": "新 M3 系列 MacBook Pro 骨灰级对比评测：不加钱上 M3 Max 还不如买 M2 Pr...",
+      "scores": {
+        "relevance": 5,
+        "depth": 0,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "total_score": 11,
+      "matched_chapters": [
+        "ch09-网络",
+        "ch13-调度"
+      ],
+      "first_chars": "# 新 M3 系列 MacBook Pro 骨灰级对比评测：不加钱上 M3 Max 还不如买 M2 Pr...\n\n新 M3 系列 MacBook Pro 骨灰级对比评测：不加钱上 M3 Max 还不如买 M2 Pro？,midifan：我们关注电脑音乐\n\n[Read in Cubox](https://cubox.pro/web/card/7144933669604426075)  \n[Read",
+      "quality": "medium",
+      "indexed_at": "2026-04-07T13:20:48.132918"
+    },
+    {
+      "path": "Cubox/新一代 Agentic AI 智能体，助力 Android 开发 - Google I-O你好，我是朱涛。今天我们来聊聊 - 掘金-2025-07-27.md",
+      "title": "新一代 Agentic AI 智能体，助力 Android 开发 | Google I/O你好，我是朱涛。今天我们来聊聊 - 掘金",
+      "scores": {
+        "relevance": 5,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "total_score": 12,
+      "matched_chapters": [],
+      "first_chars": "# 新一代 Agentic AI 智能体，助力 Android 开发 | Google I/O你好，我是朱涛。今天我们来聊聊 - 掘金\n\n你好，我是朱涛。今天我们来聊聊 AI 和 Android 开发的话题。 往年的 Google I/O 大会，Android 几乎每年都是主角。但是，从近两年开始，AI 在 I/O 大会的重要性逐渐提升\n\n[Read in Cubox](https://cubo",
+      "quality": "medium",
+      "indexed_at": "2026-04-07T13:20:48.138663"
+    },
+    {
+      "path": "Cubox/新一代深度学习编译技术变革和展望-2022-04-21.md",
+      "title": "新一代深度学习编译技术变革和展望",
+      "scores": {
+        "relevance": 5,
+        "depth": 3,
+        "timeliness": 4,
+        "verifiability": 0
+      },
+      "total_score": 12,
+      "matched_chapters": [
+        "ch09-网络",
+        "ch14-工具"
+      ],
+      "first_chars": "# 新一代深度学习编译技术变革和展望\n\n本文总结对于深度学习编译领域过去两年的思考和未来展望。新一代架构一直是我们核心关注的主题，这里提到的各个特性也都已重构完成或者进行中。TVM FFI去年逐渐成熟，TensorIR本身刚被合并到主干，后续metaschedule陆续进入主干。\n\n[Read in Cubox](https://cubox.pro/web/card/69168408826289",
+      "quality": "medium",
+      "indexed_at": "2026-04-07T13:20:48.145275"
+    },
+    {
+      "path": "Cubox/新书上架！《Android 构建与架构实战》系统学习 Gradle 与 AGP。-2023-05-29.md",
+      "title": "新书上架！《Android 构建与架构实战》系统学习 Gradle 与 AGP。",
+      "scores": {
+        "relevance": 5,
+        "depth": 3,
+        "timeliness": 4,
+        "verifiability": 1
+      },
+      "total_score": 13,
+      "matched_chapters": [
+        "ch10-包体积",
+        "ch14-工具",
+        "ch16-构建"
+      ],
+      "first_chars": "# 新书上架！《Android 构建与架构实战》系统学习 Gradle 与 AGP。\n\n\n\n[Read in Cubox](https://cubox.pro/web/card/7062669911054616149)  \n[Read Original](https://2bab.me/zh/blog/2023-05-14-extend-android-build-zh-unevils/)",
+      "quality": "medium",
+      "indexed_at": "2026-04-07T13:20:48.148620"
+    },
+    {
+      "path": "Cubox/新可来®（美泊利珠单抗注射液）在中国获批用于治疗重度嗜酸粒细胞性哮喘 - 葛兰素史克公司网站-2024-02-26.md",
+      "title": "新可来®（美泊利珠单抗注射液）在中国获批用于治疗重度嗜酸粒细胞性哮喘 | 葛兰素史克公司网站",
+      "scores": {
+        "relevance": 4,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "total_score": 11,
+      "matched_chapters": [],
+      "first_chars": "# 新可来®（美泊利珠单抗注射液）在中国获批用于治疗重度嗜酸粒细胞性哮喘 | 葛兰素史克公司网站\n\n新可来®（美泊利珠单抗注射液）在中国获批用于治疗重度嗜酸粒细胞性哮喘\n\n[Read in Cubox](https://cubox.pro/web/card/7161812591247888178)  \n[Read Original](https://www.gsk-china.com/zh-cn",
+      "quality": "medium",
+      "indexed_at": "2026-04-07T13:20:48.152766"
+    },
+    {
+      "path": "Cubox/新姿势绕过应用的ROOT检测-2022-02-03.md",
+      "title": "新姿势绕过应用的ROOT检测",
+      "scores": {
+        "relevance": 5,
+        "depth": 3,
+        "timeliness": 4,
+        "verifiability": 0
+      },
+      "total_score": 12,
+      "matched_chapters": [
+        "ch08-存储",
+        "ch10-包体积",
+        "ch12-安全"
+      ],
+      "first_chars": "# 新姿势绕过应用的ROOT检测\n\n看雪论坛作者ID：镜中人24\n\n[Read in Cubox](https://cubox.pro/web/card/6888912455238418452)  \n[Read Original](https://mp.weixin.qq.com/s?__biz=MjM5NTc2MDYxMw==&mid=2458428135&idx=1&sn=365b37f4a",
+      "quality": "medium",
+      "indexed_at": "2026-04-07T13:20:48.157884"
+    },
+    {
+      "path": "Cubox/新版本系统适配- Android 12 中的兼容性变更-2022-01-14.md",
+      "title": "新版本系统适配: Android 12 中的兼容性变更",
+      "scores": {
+        "relevance": 5,
+        "depth": 3,
+        "timeliness": 4,
+        "verifiability": 2
+      },
+      "total_score": 14,
+      "matched_chapters": [
+        "ch04-启动",
+        "ch06-功耗",
+        "ch07-内存"
+      ],
+      "first_chars": "# 新版本系统适配: Android 12 中的兼容性变更\n\n本文介绍了 Android 12 为开发者和用户带来的最重要的几项变更，并展示了适配 Android 12 的案例以帮助开发者更好地处理兼容性变更。\n\n[Read in Cubox](https://cubox.pro/web/card/6881532051141430405)  \n[Read Original](https://mp",
+      "quality": "medium",
+      "indexed_at": "2026-04-07T13:20:48.163138"
+    },
+    {
+      "path": "Cubox/无何有境 #1 - Revue-2022-03-18.md",
+      "title": "无何有境 #1 | Revue",
+      "scores": {
+        "relevance": 5,
+        "depth": 3,
+        "timeliness": 4,
+        "verifiability": 1
+      },
+      "total_score": 13,
+      "matched_chapters": [
+        "ch08-存储",
+        "ch09-网络"
+      ],
+      "first_chars": "# 无何有境 #1 | Revue\n\n无何有境 - 来自无何有境的第一封信。\n\n[Read in Cubox](https://cubox.pro/web/card/6904496821167458516)  \n[Read Original](https://www.getrevue.co/profile/tison1096/issues/1-1086352)  \n\n---\n\n[View onl",
+      "quality": "medium",
+      "indexed_at": "2026-04-07T13:20:48.192533"
+    },
+    {
+      "path": "Cubox/无法忍受不做单元测试和内卷，我离开了这家在美中国企业-2022-02-24.md",
+      "title": "无法忍受不做单元测试和内卷，我离开了这家在美中国企业",
+      "scores": {
+        "relevance": 4,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 0
+      },
+      "total_score": 10,
+      "matched_chapters": [],
+      "first_chars": "# 无法忍受不做单元测试和内卷，我离开了这家在美中国企业\n\n在一个十万人的企业里，没有单元测试也没有代码审查，仅依赖于 QA，但这却是“有效”的方式！\n\n[Read in Cubox](https://cubox.pro/web/card/6896552616273117342)  \n[Read Original](https://mp.weixin.qq.com/s/EFMhFazZGVAoK",
+      "quality": "medium",
+      "indexed_at": "2026-04-07T13:20:48.195097"
+    },
+    {
+      "path": "Cubox/无需申请，自由写作-2023-09-29.md",
+      "title": "无需申请，自由写作",
+      "scores": {
+        "relevance": 5,
+        "depth": 1,
+        "timeliness": 4,
+        "verifiability": 0
+      },
+      "total_score": 10,
+      "matched_chapters": [],
+      "first_chars": "# 无需申请，自由写作\n\n\n\n[Read in Cubox](https://cubox.pro/web/card/7107212464042806566)  \n[Read Original](https://t.co/EsTLeI0Ov2)  \n\n---\n\n**Matrix 首页推荐**\n\n[Matrix](https://sspai.com/matrix) 是少数派的写作社区，我们主张分享真",
+      "quality": "medium",
+      "indexed_at": "2026-04-07T13:20:48.206818"
+    },
+    {
+      "path": "Cubox/日本 Web3 创业迈入战国时代 — Mirror-2022-01-27.md",
+      "title": "日本 Web3 创业迈入战国时代 — Mirror",
+      "scores": {
+        "relevance": 5,
+        "depth": 1,
+        "timeliness": 4,
+        "verifiability": 1
+      },
+      "total_score": 11,
+      "matched_chapters": [
+        "ch09-网络",
+        "ch16-构建"
+      ],
+      "first_chars": "# 日本 Web3 创业迈入战国时代 — Mirror\n\n随着市场对美联储加息政策的普遍担忧，以纳斯达克为主的美股科技成长股与全球加密货币市场，在过去的三周内都经历了较大幅度的回落，一些分析师认为我们进入了「技术性熊市」。在我宣布将今年设为「创业间隔年」这篇文章中，我提到我们正在经历一个周期的结束，但一些变化可能深藏在时间跨度更大的某个周期之中。\n\n\n[Read in Cubox](https:",
+      "quality": "medium",
+      "indexed_at": "2026-04-07T13:20:48.211547"
+    },
+    {
+      "path": "Cubox/时光痕迹：2021 年总结 - Reimu's blog-2022-01-13.md",
+      "title": "时光痕迹：2021 年总结 | Reimu's blog",
+      "scores": {
+        "relevance": 5,
+        "depth": 0,
+        "timeliness": 4,
+        "verifiability": 1
+      },
+      "total_score": 10,
+      "matched_chapters": [
+        "ch08-存储"
+      ],
+      "first_chars": "# 时光痕迹：2021 年总结 | Reimu's blog\n\n2021 依旧是人类社会倒车和加速灭亡的一年，全球范围内新冠病毒依旧在肆虐，新的变异又接踵而来，疫情并没有多少消退的迹象。而现在国内西安疫情又爆发开来，无法预想未来究竟能变成什么样子。 阅读2021 年 9 月份的时候将书单从原来的 Markdown 文本迁移到了 Notion上，体验十分棒。Notion 的表格数据库功能十分强大，",
+      "quality": "medium",
+      "indexed_at": "2026-04-07T13:20:48.222508"
     }
   ],
   "sources": [
@@ -2615,5 +3094,5 @@
       "notes": "高爷精选资源库，15个分类"
     }
   ],
-  "last_updated": "2026-04-07T10:06:23.576194"
+  "last_updated": "2026-04-07T13:20:48.226063"
 }
