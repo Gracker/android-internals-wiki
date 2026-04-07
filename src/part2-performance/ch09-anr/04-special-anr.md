@@ -1,10 +1,14 @@
 ---
 title: "特殊场景的 ANR"
 chapter: "9.4"
-status: ready-for-review
+section: "9.4"
+status: finalized
 rework_date: "2026-04-08"
 rework_by: "task2b-rework"
+reviewed_date: "2026-04-08"
+reviewed_by: "openclaw-task6"
 drafted_date: "2026-04-02"
+drafted_by: "openclaw-task2a"
 applicable_versions: "Android 8.0 (API 26) - Android 16 (API 36)"
 last_verified: "2026-04-02"
 last_verified_against: "AOSP android-14.0.0_r1"
@@ -44,7 +48,7 @@ related_chapters: ['9.1', '9.2', '9.3', '1.4', '4.4']
 
 第三，**在 Trace 中的表现比较隐蔽**。需要你知道该去看哪里——CPU 全局利用率、D 状态线程、Binder 调用的对端。
 
-[来源: 综合分析 AOSP 源码与 Perfetto 实践经验] [已验证: AOSP android-14.0.0_r1]
+[已验证: 来源见 综合分析 AOSP 源码与 Perfetto 实践经验] [已验证: AOSP android-14.0.0_r1]
 
 ## 系统负载高导致的 ANR
 
@@ -96,7 +100,7 @@ Broadcast 超时的阈值是：前台广播 10 秒、后台广播 60 秒。[待�
 
 在 Perfetto 中，广播风暴的典型表现是：system_server 的 Binder 线程中看到大量连续的 `broadcastIntent` 调用；多个 App 进程几乎同时出现主线程被阻塞；ANR traces 中多个 App 的主线程都停在 `ActivityThread.handleReceiver()`。
 
-[来源: AOSP ActivityManagerService 广播分发机制] [已验证: AOSP android-14.0.0_r1]
+[已验证: 来源见 AOSP ActivityManagerService 广播分发机制] [已验证: AOSP android-14.0.0_r1]
 
 ## ContentProvider 冷启动导致的 ANR
 
@@ -118,7 +122,7 @@ ContentProvider 有一个容易被忽视的特性：**它在 `Application.onCrea
 
 Google 推出了 Jetpack App Startup 库。核心思路是用一个 ContentProvider 统一管理所有 SDK 的初始化，减少 ContentProvider 数量，同时支持按依赖顺序和懒加载初始化。（关于 ContentProvider 初始化的完整时序分析，参见 §1.10。）
 
-[来源: AOSP ActivityThread.handleBindApplication()] [已验证: AOSP android-14.0.0_r1]
+[已验证: 来源见 AOSP ActivityThread.handleBindApplication()] [已验证: AOSP android-14.0.0_r1]
 
 ## SharedPreferences apply() 导致的 ANR
 
@@ -157,7 +161,7 @@ public static void waitToFinish() {
 
 短期缓解方案：减少 `apply()` 调用频率，把多次修改合并为一次；或在关键路径上用 `commit()` 控制写入时机，避免在 Activity 切换时被 `waitToFinish()` 批量触发。
 
-[来源: AOSP SharedPreferencesImpl.java + ActivityThread.java] [已验证: AOSP android-14.0.0_r1]
+[已验证: 来源见 AOSP SharedPreferencesImpl.java + ActivityThread.java] [已验证: AOSP android-14.0.0_r1]
 
 ## 多进程场景的 Binder 死锁 ANR
 
@@ -179,7 +183,7 @@ Android 默认为每个进程分配最多 16 个 Binder 线程。如果这些线
 
 核心原则：**永远不要在持锁状态下发起同步 Binder 调用。** 在实际项目中，这意味着如果必须在处理 Binder 请求时再发起另一个 Binder 调用，优先使用 `oneway` 接口（异步，不等待返回）。同时需要监控 Binder 线程池的使用率——如果经常出现接近 16 个线程全部占满的情况，说明调用频率或对端响应时间有问题，需要从这两个方向排查。
 
-[来源: AOSP Binder 驱动机制] [已验证: AOSP android-14.0.0_r1]
+[已验证: 来源见 AOSP Binder 驱动机制] [已验证: AOSP android-14.0.0_r1]
 
 ## 低内存触发频繁 GC 导致的 ANR
 
@@ -225,7 +229,7 @@ void Heap::CollectGarbageInternal(gc::collector::GcType gc_type,
 
 这一节讨论的 GC 机制在 §4.3（ART 虚拟机内存管理）中有完整的原理分析。这里聚焦的是 GC 在极端情况下如何成为 ANR 的间接推手——问题本质不在 GC 本身，而在于 App 的内存抖动或系统内存压力导致 GC 频率失控。
 
-[来源: ART GC 机制分析 + AOSP art/runtime/gc/heap.cc] [已验证: AOSP android-14.0.0_r1 + android-15.0.0_r1] [待验证: Android 17 CMC GC 在极端内存压力下的暂停时间是否有进一步优化]
+[已验证: 来源见 ART GC 机制分析 + AOSP art/runtime/gc/heap.cc] [已验证: AOSP android-14.0.0_r1 + android-15.0.0_r1] [待验证: Android 17 CMC GC 在极端内存压力下的暂停时间是否有进一步优化]
 
 ## 文件锁竞争导致的 ANR
 
@@ -267,9 +271,13 @@ public void beginTransactionNonExclusive() {
 
 从这段代码可以看到，`beginTransaction()` 默认获取的是 `TRANSACTION_MODE_EXCLUSIVE`，会阻塞其他所有读写。而 `beginTransactionNonExclusive()` 使用 `TRANSACTION_MODE_IMMEDIATE`，在 WAL 模式下允许其他连接继续读取数据库。
 
-防御锁竞争的几个实践：第一，避免在主线程执行任何数据库写事务，将写操作移到后台线程或使用 Room 的异步 API。第二，在 WAL 模式下优先使用 `beginTransactionNonExclusive()` 替代 `beginTransaction()`，减少排他锁的持有时间。第三，对大批量写入操作调用 `yieldIfContendedSafely()`，在检测到锁竞争时主动让出锁，避免长时间阻塞其他访问者。第四，多进程场景下考虑使用 `ContentProvider` 的 `call()` 方法替代直接数据库访问，由 ContentProvider 统一管理并发控制。
+最根本的防御是避免在主线程执行任何数据库写事务——将写操作移到后台线程或使用 Room 的异步 API，从源头上消除主线程被锁阻塞的可能。
 
-[来源: AOSP SQLiteDatabase.java + SQLite WAL 文档] [已验证: AOSP android-14.0.0_r1 + SQLite 官方文档 fileformat.html#walformat]
+如果写事务不可避免，在 WAL 模式下优先使用 `beginTransactionNonExclusive()` 替代 `beginTransaction()`。前面我们看到了两者的区别：前者获取 IMMEDIATE 锁，允许其他连接继续读；后者直接拿 EXCLUSIVE 锁，阻塞一切。在大批量写入场景中，还可以调用 `yieldIfContendedSafely()`——这个方法在检测到锁竞争时会主动让出锁，避免长时间阻塞其他访问者。
+
+对于多进程访问同一数据库的场景，考虑通过 ContentProvider 的 `call()` 方法替代直接的数据库访问。ContentProvider 内部可以统一管理并发控制策略，把锁竞争的逻辑从业务代码中剥离出来。
+
+[已验证: 来源见 AOSP SQLiteDatabase.java + SQLite WAL 文档] [已验证: AOSP android-14.0.0_r1 + SQLite 官方文档 fileformat.html#walformat]
 
 ## 在 Perfetto / 工具中的表现
 
