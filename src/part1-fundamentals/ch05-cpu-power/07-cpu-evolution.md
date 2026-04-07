@@ -1,7 +1,7 @@
 ---
 title: "CPU 相关的版本演进"
 chapter: "5.7"
-status: ready-for-review
+status: reviewed
 applicable_versions: "Android 5.0 - 16"
 last_verified: "2026-04-01"
 last_verified_against: "Android 15 developer docs, AOSP source code"
@@ -21,8 +21,10 @@ tags: ['doze', 'JobScheduler', 'adaptive-battery', 'wakelock', 'app-standby-buck
 related_chapters: ["5.1", "5.2", "5.3", "5.4", "5.5", "5.6", "11.5"]
 drafted_date: "2026-04-01"
 drafted_by: "openclaw-task2"
-reviewed_date: "2026-04-04"
-reviewed_by: "openclaw-task6"
+reviewed_date: "2026-04-07"
+reviewed_by: "openclaw-task6"  # second review
+review2_date: "2026-04-07"
+review2_by: "openclaw-task6"
 polish_count: 1
 polish_date: "2026-04-07"
 polish_by: "task2b-polish"
@@ -93,7 +95,7 @@ JobScheduler 并没有强制禁止旧的后台工作方式，它只是一个"更
 
 Android 6.0 引入了 Doze 模式，这是 Android 功耗管理的第一个里程碑。它的触发条件很明确：设备拔掉电源、屏幕关闭、保持静止（通过加速度传感器判断）、没有持有长时间 WakeLock。当这些条件同时满足一段时间后，设备进入 Doze 状态。
 
-在 Doze 状态下，系统做的事情核心做法是：**尽可能让 CPU 保持休眠**。具体来说：
+在 Doze 状态下，系统的做法是：**尽可能让 CPU 保持休眠**。具体来说：
 
 - 网络访问被完全禁止
 - WakeLock 被忽略
@@ -208,7 +210,7 @@ Android 13 把精确闹钟的管控又推进了一步：对于 `targetSdkVersion
 
 Android 14 要求前台服务必须声明**至少一个类型**（foreground service type），比如 `camera`、`location`、`mediaPlayback` 等。每种类型对应不同的权限要求和系统行为。这让系统可以更精准地管理不同类型的前台服务——比如一个声称在做媒体播放的前台服务，如果实际上没有在播放音频，系统可以检测到并终止它。
 
-Android 14 还引入了后台 Activity 启动的显式 opt-in 机制：当 App 通过 `PendingIntent` 启动 Activity 时，必须显式声明 `PendingIntent.FLAG_MUTABLE` 或在发送方 opt-in 授予后台启动权限。这是为了防止 App 利用 PendingIntent 链绕过后台启动限制。
+Android 14 还引入了后台 Activity 启动的显式 opt-in 机制：当 App 通过 `PendingIntent` 启动 Activity 时，必须显式声明 `PendingIntent.FLAG_MUTABLE` 或在发送方 opt-in 授予后台启动权限。这是为了防止 App 利用 PendingIntent 链绕过后台启动限制。[需确认: FLAG_MUTABLE 与后台 Activity 启动限制无直接关系，Android 14 实际机制是发送方需通过 ActivityOptions.setPendingIntentCreatorBackgroundActivityStartAllowed(true) opt-in]
 
 此外，`mlock()` 的上限从 64MB 降到了 64KB，这对某些使用内存锁定来优化性能的 App 是一个需要注意的变化。
 
@@ -238,9 +240,8 @@ Android 16 继续对 JobScheduler 进行精细化管控。核心变化是 Job �
 
 ## GKI 对内核调度模块定制化的影响
 
-[扩展素材]
 
-GKI（Generic Kernel Image）从 Android 11 开始引入，到 Android 15 成为强制要求。它对 CPU 调度的影响是一个容易被忽视但很重要的变化。
+GKI（Generic Kernel Image）从 Android 11 开始引入，到 Android 15 成为强制要求。[需确认: GKI 从 Android 11 起已对新设备要求，"Android 15 成为强制要求"的具体含义需明确——是指 16KB page size、还是 GKI 2.0 内核版本升级？] 它对 CPU 调度的影响是一个容易被忽视但很重要的变化。
 
 在 GKI 之前，SoC 厂商（高通、联发科等）可以直接修改内核调度器代码来适配自己的硬件。比如联发科可以在 CFS 中加入针对天玑芯片大小核架构的特殊优化，高通可以为骁龙的调度策略写定制代码。这种做法的代价是内核碎片化——每家厂商的内核都是"自己的版本"，安全补丁和调度器改进很难统一推送。
 

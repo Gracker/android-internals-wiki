@@ -562,3 +562,16 @@
 - **问题**：表格标注回收策略为「引用机制（NativeAllocationRegistry）」，但 NativeAllocationRegistry 在 Android 8.0 (API 26) 才正式引入。文中也说"Android 8.0 正式采用 NativeAllocationRegistry"。7.0/7.1 的 Bitmap 像素数据仍在 Java 堆（byte[]），其实际回收机制是否是 NAR 的前身（如其他 Reference 类型），需核对源码确认。
 - **建议**：比对 AOSP `frameworks/base/graphics/java/android/graphics/Bitmap.java` 在 API 24 (7.0)、API 25 (7.1)、API 26 (8.0) 三个版本的差异，确认 7.0/7.1 的回收策略具体实现。如确实不是 NAR，修正表格为准确的机制名称。
 - **review 日志**：logs/review/2026-04-07-15-review.md
+## [Task6 Review] 5.7 CPU 相关的版本演进 — 2026-04-07
+- **类型**：需确认
+- **位置**：Android 14 前台服务类型化段落（L211 附近）
+- **问题**：文中称 Android 14 后台 Activity 启动需"显式声明 PendingIntent.FLAG_MUTABLE"，但 FLAG_MUTABLE 与此无关。实际机制是发送方需通过 `ActivityOptions.setPendingIntentCreatorBackgroundActivityStartAllowed(true)` opt-in 授予后台启动权限。
+- **建议**：核对 Android 14 行为变更文档，修正 PendingIntent 相关描述为准确的 opt-in 机制说明
+- **review 日志**：logs/review/2026-04-07-2048-review.md
+
+## [Task6 Review] 5.7 CPU 相关的版本演进 — 2026-04-07
+- **类型**：需确认
+- **位置**：GKI 段落（L243 附近）
+- **问题**：文中称"GKI 从 Android 11 开始引入，到 Android 15 成为强制要求"。GKI 自 Android 11 起已对新设备有要求，"Android 15 成为强制要求"的具体含义不明确。
+- **建议**：明确区分 GKI 基础要求（Android 11+）与 Android 15 的增量变化（可能指 16KB page size 强制、GKI 2.0 内核版本升级等）
+- **review 日志**：logs/review/2026-04-07-2048-review.md
