@@ -2,8 +2,10 @@
 title: "Android Studio Profiler"
 chapter: "14.1"
 section: "14.1"
-status: ready-for-review
+status: finalized
 drafted_date: "2026-04-03"
+reviewed_date: "2026-04-07"
+reviewed_by: "openclaw-task6"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 8.0 (API 26) - Android 16 (API 36)"
 last_verified: "2026-04-03"
@@ -139,7 +141,7 @@ Memory Profiler 是排查内存问题的主力工具。它的界面顶部是一�
 
 实时曲线是"第一眼"——它告诉我们内存的大趋势。曲线上每个突然的跳升对应着一次大的内存分配，每个突然的下降对应着一次 GC。如果 GC 之后内存并没有回到之前的水平，那说明有对象无法被回收——这就是内存泄漏的典型信号。
 
-在 Android 8.0（API 26）之后，Memory Profiler 的数据精度有了显著提升。这得益于 Android 8.0 引入的 JVMTI（JVM Tool Interface）机制，Profiler 通过 JVMTI 获取的内存数据比之前通过 DDMS 协议获取的数据更加准确和详细。[已验证: 官方文档, developer.android.com/studio/profile/memory-profiler]
+在 Android 8.0（API 26）之后，Memory Profiler 的数据精度大幅提升。这得益于 Android 8.0 引入的 JVMTI（JVM Tool Interface）机制，Profiler 通过 JVMTI 获取的内存数据比之前通过 DDMS 协议获取的数据更加准确和详细。[已验证: 官方文档, developer.android.com/studio/profile/memory-profiler]
 
 ### Heap Dump（堆快照）
 
@@ -235,8 +237,3 @@ Power Profiler 的设备要求比较严格：目前只有 Pixel 6 及以后的 P
 - ProfilingManager (Android 16): [developer.android.com/reference/android/os/ProfilingManager](https://developer.android.com/reference/android/os/ProfilingManager)
 - 高爷博客 - CPU Profiler 系统性能分析工具的使用: [androidperformance.com](https://www.androidperformance.com/)
 - Paulina Sadowska, "Can you trust time measurements in Profiler?": [proandroiddev.com](https://proandroiddev.com/can-you-trust-time-measurements-in-profiler-5b3566a55e0c)
-### 2026年了，Android开发该如何调试布局
-- 来源：https://juejin.cn/post/7596710680897863686
-- 类型：技术文章
-- 摘要：布局调试工具全景：Layout Inspector使用技巧、AYA工具、新版Android Studio布局分析器。
-- 入库时间：2026-04-06
