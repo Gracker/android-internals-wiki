@@ -60,7 +60,8 @@
     "reason": "知识缺口挖掘：Android 15/16 强制 16KB page size，影响内存、启动、功耗全链路，Google 官方量化数据支撑",
     "material_paths": [
       "https://developer.android.com/guide/practices/page-sizes",
-      "https://android-developers.googleblog.com/ (16KB page size announcements)"
+      "https://android-developers.googleblog.com/ (16KB page size announcements)",
+      "intake/research-feeds/2026-04-07-11-android-16kb-page-size-jni-native-library-quantification.md"
     ],
     "added_by": "task2a-knowledge-gap",
     "added_at": "2026-04-05T17:05:00+08:00",
@@ -138,7 +139,9 @@
     "section_title": "Baseline Profiles 与编译优化实践",
     "priority": 80,
     "reason": "知识缺口挖掘：Baseline Profiles 是启动优化最有效的单点手段，Google 官方量化 30% 提升，与 1.7 ART 编译/1.12 AutoFDO 构成完整编译优化链",
-    "material_paths": [],
+    "material_paths": [
+      "intake/research-feeds/2026-04-07-11-android16-cloud-compilation-baseline-startup-profiles.md"
+    ],
     "added_by": "task2a-knowledge-gap",
     "added_at": "2026-04-05T19:10:00+08:00",
     "status": "pending"
@@ -176,7 +179,10 @@
     "section_title": "ART 分代垃圾回收与 GC 暂停优化",
     "priority": 80,
     "reason": "知识缺口挖掘：Android 17 Generational GC 新特性，GC 暂停是 jank 主要来源之一，16/20",
-    "created_date": "2026-04-05"
+    "created_date": "2026-04-05",
+    "material_paths": [
+      "intake/research-feeds/2026-04-07-11-android17-art-generational-gc-concurrent-mark-compact.md"
+    ]
   },
   {
     "section": "14.9",
@@ -1023,7 +1029,9 @@
     "priority": 80,
     "reason": "知识缺口挖掘：JNI/NDK 性能是全书缺失的基础维度——Android 系统服务大量使用 JNI，@FastNative/@CriticalNative 是 Android 独有优化，16KB page size 直接影响 native 库",
     "material_paths": [
-      "intake/research-feeds/2026-04-06-15-priority-inversion-futex-pi-android-lock-performance.md"
+      "intake/research-feeds/2026-04-06-15-priority-inversion-futex-pi-android-lock-performance.md",
+      "intake/research-feeds/2026-04-07-11-android-16kb-page-size-jni-native-library-quantification.md",
+      "intake/research-feeds/2026-04-07-11-fastnative-criticalnative-jni-art-optimization.md"
     ],
     "added_by": "task2a-knowledge-gap",
     "added_at": "2026-04-06T17:05:00+08:00",

@@ -1,9 +1,12 @@
 ---
 title: "ANR 设计思想"
 chapter: "9.1"
-status: finalized
+status: ready-for-review
 drafted_date: "2026-04-02"
-applicable_versions: "Android 8.0 (API 26) - Android 16 (API 36)"
+polish_count: 1
+polish_date: "2026-04-07"
+polish_by: "task2b-polish"
+applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37)"
 last_verified: "2026-04-02"
 last_verified_against: "AOSP android-14.0.0_r1"
 reviewed_date: "2026-04-07"
@@ -22,7 +25,7 @@ sources:
     path: "Personal-Knowlodge/source/2026-03-07_wechat_钉钉_ANR_治理最佳实践_定位_ANR_不再雾里看花.md"
   - type: official
     path: "https://developer.android.com/topic/performance/vitals/anr"
-tags: [anr, watchdog, traces, dropbox, activitymanagerservice]
+tags: [anr, watchdog, traces, dropbox, activitymanagerservice, input-dispatcher, anrhelper, sigquit]
 related_chapters: ["9.2", "9.3", "1.5", "8.1"]
 ---
 
@@ -59,7 +62,7 @@ related_chapters: ["9.2", "9.3", "1.5", "8.1"]
 
 ANR（Application Not Responding）机制就是 Android 对这个问题的系统性回答。它不是事后诊断工具，而是一道运行时的防线：在应用失去响应能力的瞬间介入，给用户选择权——继续等待，或者杀掉它。
 
-理解 ANR 的设计思想之所以重要，不仅因为它是 Android 性能优化的核心课题之一，更因为它直接决定了我们分析 ANR 问题时的思路。如果你不了解系统"为什么这样设计"，拿到一份 traces.txt 时很容易陷入"看堆栈猜原因"的盲人摸象——而事实上，ANR trace 的堆栈经常是"替罪羊"，真正导致超时的代码可能早已执行完毕。
+理解 ANR 的设计思想之所以重要，不仅因为它是 Android 性能优化的核心课题之一，更因为它直接决定了我们分析 ANR 问题时的思路。如果不了解系统"为什么这样设计"，拿到一份 traces.txt 时很容易陷入"看堆栈猜原因"的盲人摸象——而事实上，ANR trace 的堆栈经常是"替罪羊"，真正导致超时的代码可能早已执行完毕。
 
 [来源: Personal-Knowlodge/source/2026-03-07_wechat_钉钉_ANR_治理最佳实践_定位_ANR_不再雾里看花.md]
 
@@ -331,17 +334,17 @@ Dropbox 是 Android 系统的持久化日志存储机制，用于保存系统级
 
 ## 各版本 ANR 机制的微调与改进 [扩展]
 
-ANR 机制自 Android 2.3 引入以来，基本框架没有大的变化，但每个版本都在细节上有所调整。
+ANR 机制自 Android 2.3 引入以来，基本框架没有大的变化，但几乎每个大版本都在细节上有所调整。我们梳理其中影响较大的几次变化。
 
-**Android 8.0（Oreo）**：引入了后台执行限制，后台 Service 的超时阈值从 20 秒调整为 200 秒。这个变化看似放松了限制，实际上是配合后台 Service 限制策略的一部分——系统更倾向于直接杀掉后台应用而不是弹 ANR 对话框。
+Android 8.0 引入了后台执行限制，后台 Service 的超时阈值从 20 秒调整到 200 秒。这个变化表面上看是"放松"了限制，实际意图是配合后台 Service 限制策略——系统更倾向于直接杀掉后台应用而不是弹 ANR 对话框。200 秒的超时更多是一个"保底"，绝大多数后台 Service 会在远早于 200 秒时被系统的后台限制策略回收。
 
-**Android 10**：ANR trace 文件从单一的 `traces.txt` 改为按时间和进程分别存储在 `/data/anr/` 目录下。这个改进解决了多个 ANR 相互覆盖的问题——之前如果一个 App 连续触发多次 ANR，后面的 traces 会覆盖前面的，导致丢失重要的诊断信息。
+Android 10 解决了一个长期困扰开发者的诊断难题：ANR trace 文件从单一的 `traces.txt` 改为按时间和进程分别存储在 `/data/anr/` 目录下。在此之前，如果一个 App 连续触发多次 ANR，后面的 traces 会覆盖前面的，导致丢失重要的诊断信息。按进程和时间分开存储后，每次 ANR 都有独立的 trace 文件，历史信息不再被覆盖。
 
-**Android 12**：引入了 ANR 延迟报告机制。当后台 ANR 导致应用被杀时，系统会在应用下次启动时通知它，让开发者有机会收集崩溃报告。
+Android 12 引入了 ANR 延迟报告机制。当后台 ANR 导致应用被杀时，系统会在应用下次启动时通知它，让开发者有机会收集崩溃报告。这个改进填补了后台 ANR 不可见的盲区——在此之前，后台 ANR 直接杀进程，开发者可能完全不知道 ANR 发生过。
 
-**Android 14**：将 ANR 处理逻辑从 AMS 中解耦到独立的 `AnrHelper` 和 `AppNotResponding` 类中。这个重构的主要目的是提高 ANR 处理的可靠性——之前 ANR 处理代码散布在 AMS 的各个角落，容易与正常的 AMS 业务逻辑相互干扰。
+Android 14 对 ANR 处理代码做了一次重要的架构重构：将处理逻辑从 AMS 中解耦到独立的 `AnrHelper` 和 `AppNotResponding` 类中。在此之前，ANR 处理代码散布在 AMS 的各个角落，与正常的 AMS 业务逻辑相互干扰。重构后，ANR 处理在一个独立的线程中执行，不再影响 AMS 主线程的调度。
 
-**Android 16**：引入了系统触发式 ProfilingManager 追踪。当 ANR 发生时，系统可以自动捕获 ANR 时刻的 Perfetto trace，提供比传统 traces.txt 更丰富的信息。这个改进有望解决 traces.txt "刻舟求剑"的问题——系统触发式 trace 可以捕获 ANR 发生前一段时间的主线程行为。
+Android 16 引入的系统触发式 ProfilingManager 追踪可能是迄今最有价值的 ANR 诊断改进。当 ANR 发生时，系统可以自动捕获 ANR 时刻的 Perfetto trace，提供比传统 traces.txt 远为丰富的信息。这个改进有望从根本上解决 traces.txt "刻舟求剑"的问题——系统触发式 trace 可以捕获 ANR 发生前一段时间的主线程完整行为，而不仅仅是一个堆栈快照。
 
 [已验证: AOSP android-14.0.0_r1, AnrHelper/AppNotResponding 类在 Android 14 引入]
 [已验证: Android 16 ProfilingManager ANR 触发, intake/research-feeds/2026-04-01-12-android16-17-profilingmanager-system-triggered.md]
@@ -369,9 +372,9 @@ Play Console 中可以看到的 ANR 信息包括：
 
 ## [自动发现] ANR trace 堆栈的"替罪羊"现象
 
-这个知识点虽然在 9.3（ANR 分析方法）中会更深入讨论，但在理解 ANR 设计思想时就值得建立正确的认知：**ANR trace 中主线程的堆栈，往往不是导致 ANR 的真正原因。**
+我们在前面分析 `AppNotResponding` 类时已经提到过堆栈捕获的滞后性。这里把这个问题的完整机制展开，因为它直接决定了我们后续分析 ANR 的方法论。
 
-这个现象的根本原因在于 ANR 机制的时序设计：超时检测发生在 system_server 中，而堆栈 dump 发生在超时检测之后。从"真正导致超时的代码开始执行"到"堆栈被 dump 下来"，中间经历了至少三个阶段：
+**ANR trace 中主线程的堆栈，往往不是导致 ANR 的真正原因。** 这个现象的根本原因在于 ANR 机制的时序设计：超时检测发生在 system_server 中，而堆栈 dump 发生在超时检测之后。从"真正导致超时的代码开始执行"到"堆栈被 dump 下来"，中间经历了至少三个阶段：
 
 1. 超时计时器到期 → system_server 检测到超时
 2. system_server 的 AnrHelper 开始处理 → 创建 AppNotResponding 对象
@@ -385,6 +388,24 @@ Play Console 中可以看到的 ANR 信息包括：
 
 [来源: Personal-Knowlodge/source/2026-03-07_wechat_钉钉_ANR_治理最佳实践_定位_ANR_不再雾里看花.md]
 [自动发现]
+
+## 常见问题与误区
+
+### 误区一："主线程堆栈就是 ANR 的根因"
+
+这是最常见的误区。拿到一份 traces.txt，看到主线程堆栈在某个方法上，就认定这个方法是 ANR 的罪魁祸首。但实际上，traces.txt 中的堆栈是超时检测之后才 dump 的，真正导致超时的代码很可能已经执行完毕。我们在前面的"替罪羊"现象中已经详细解释了这个时序问题。正确的做法是：traces.txt 是线索之一，但必须结合 event log 中的时间戳、systrace/perfetto 中的主线程时间线来交叉验证。
+
+### 误区二："ANR = CPU 高负载"
+
+ANR 的触发条件是"主线程在超时时间内没有响应"，而不是"CPU 占用率高"。一个 CPU 占用率极低的线程，如果被锁阻塞（BLOCKED 状态），同样会触发 ANR。反过来，CPU 占用率高但及时返回了结果的代码，不会触发 ANR。ANR 的本质是"响应超时"，不是"资源消耗过大"。
+
+### 误区三："后台 Service 超时 200 秒，所以不用担心"
+
+200 秒的后台 Service 超时只是 ANR 触发的阈值，不意味着系统会给后台 Service 200 秒的执行时间。Android 8.0 之后，系统对后台 Service 有严格的限制策略，大多数后台 Service 会在远早于 200 秒时被系统回收。如果后台 Service 触发了 200 秒超时，说明它已经违反了后台执行限制，即使不触发 ANR 也会被系统杀掉。
+
+### 误区四："ANR 率低就不需要关注"
+
+Google Play Console 的 ANR 率阈值（0.38% 标记为"差"）是全局统计值。对于一个日活 100 万的应用，0.38% 意味着每天有 3800 个用户遇到 ANR。更重要的是，ANR 率是按会话计算的，一个用户可能在同一天遇到多次 ANR，但只计算一次。所以即使 ANR 率在"可接受"范围内，频繁 ANR 的用户很可能已经流失了。
 
 ## 参考资料
 
