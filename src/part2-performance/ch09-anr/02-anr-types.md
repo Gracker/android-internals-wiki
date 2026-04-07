@@ -1,8 +1,10 @@
 ---
 title: "ANR 类型与触发条件"
+section: "9.2"
 chapter: "9.2"
-status: ready-for-review
+status: finalized
 drafted_date: "2026-04-02"
+drafted_by: "openclaw-task2a"
 applicable_versions: "Android 8.0 (API 26) - Android 16 (API 36)"
 last_verified: "2026-04-02"
 last_verified_against: "AOSP android-14.0.0_r1"
@@ -22,6 +24,8 @@ sources:
     path: "intake/research-feeds/2026-04-01-07-ch09-binder-anr-android15-16-17.md"
 tags: [anr, input-dispatching, broadcast, service, contentprovider, timeout]
 related_chapters: ["9.1", "9.3", "9.4", "1.4", "1.5"]
+reviewed_date: "2026-04-07"
+reviewed_by: openclaw-task6
 ---
 
 # ANR 类型与触发条件
@@ -53,7 +57,7 @@ related_chapters: ["9.1", "9.3", "9.4", "1.4", "1.5"]
 
 ## 为什么要了解 ANR 的类型分类
 
-在上一节中，我们了解了 ANR 机制的设计思想——系统通过超时计时器在应用失去响应能力时介入。但"超时"不是一个统一的概念，不同类型的 ANR 有不同的触发条件、超时阈值和检测机制。如果你拿到一份 ANR trace，第一步就是判断它属于哪种类型——因为不同类型的 ANR，分析方法完全不同。
+在上一节中，我们了解了 ANR 机制的设计思想——系统通过超时计时器在应用失去响应能力时介入。但"超时"不是一个统一的概念，不同类型的 ANR 有不同的触发条件、超时阈值和检测机制。如果拿到一份 ANR trace，第一步就是判断它属于哪种类型——因为不同类型的 ANR，分析方法完全不同。
 
 举例来说，一个 Input ANR 意味着主线程在用户点击后 5 秒内没有处理完输入事件，问题通常出在主线程被阻塞。而一个 Broadcast ANR 可能在后台静默发生，超时时间长达 60 秒，根因可能完全不在主线程——而是 `goAsync()` 的后台任务没有及时调用 `finish()`。
 
@@ -143,7 +147,7 @@ Reason: Broadcast of Intent { act=android.intent.action.BOOT_COMPLETED
 
 **`goAsync()` 忘记 finish。** 开发者使用 `goAsync()` 将处理移到后台线程，但忘记在完成后调用 `PendingResult.finish()`，或者后台任务执行时间超过了超时阈值。
 
-**有序广播链路中的慢 Receiver。** 有序广播按优先级依次分发给各个 Receiver，一个 Receiver 的延迟会阻塞整个链路。
+**有序广播分发路径中的慢 Receiver。** 有序广播按优先级依次分发给各个 Receiver，一个 Receiver 的延迟会阻塞整个链路。
 
 ## Service Timeout（服务超时）
 
@@ -239,7 +243,7 @@ Reason: ContentProvider com.example.app/.provider.MyProvider not responding
 
 **Android 14（API 34）：** 对前台 Service 限制进一步收紧，引入更多前台 Service 类型和对应的超时策略。
 
-**Android 15（API 35）：** 新增 `dataSync` 和 `mediaProcessing` 前台 Service 的累计运行时间限制（后台 24 小时内 6 小时），以及 `shortService` 类型约 3 分钟的超时直接触发机制。
+**Android 15（API 35）：** 新增 `dataSync` 和 `mediaProcessing` 前台 Service 的累计运行时间限制（后台 24 小时内 6 小时），以及 `shortService` 类型约 3 分钟的超时直接触发机制 [待验证: shortService 具体超时阈值因 OEM 实现可能不同]。
 
 [来源: intake/research-feeds/2026-04-01-07-ch09-binder-anr-android15-16-17.md]
 
@@ -262,7 +266,7 @@ JobService 本身不直接触发 ANR，它有自己的超时机制。当 JobSche
 | ContentProvider | `ContentProvider` + `not responding` |
 | startForeground (12+) | `startForegroundService() did not then call Service.startForeground()` |
 
-掌握这些模式后，你可以在拿到 ANR 报告的几秒钟内判断类型，进而选择正确的分析路径。
+掌握这些模式后，我们可以在拿到 ANR 报告的几秒钟内判断类型，进而选择正确的分析路径。
 
 ## 常见问题与误区
 
