@@ -2,13 +2,13 @@
   "generated_at": "2026-04-03T19:10:00",
   "total_sections": 110,
   "metrics": {
-    "total": 129,
-    "draft": 10,
+    "total": 130,
+    "draft": 11,
     "ready-for-review": 34,
     "reviewed": 5,
     "finalized": 30,
     "staging_drafts": 0,
-    "last_updated": "2026-04-07T21:26:13+08:00",
+    "last_updated": "2026-04-07T23:02:00+08:00",
     "processing": 0,
     "ready-to-publish": 12,
     "last_reviewed": "2026-04-07",
@@ -1792,10 +1792,10 @@
   "ready_for_review": 6,
   "last_updated": "2026-04-07T19:36:26.433313",
   "stats": {
-    "total": 111,
+    "total": 112,
     "completed": 86,
-    "pending": 26,
-    "last_updated": "2026-04-07T22:18:29.777155",
+    "pending": 27,
+    "last_updated": "2026-04-07T23:02:00+08:00",
     "reviewed": 1,
     "ready-for-review": 1
   },
@@ -2085,6 +2085,15 @@
     }
   ],
   "history": [
+    {
+      "date": "2026-04-07",
+      "section": "6.5",
+      "title": "SharedPreferences/DataStore 性能与 ANR 优化",
+      "action": "gap-created",
+      "created_by": "task2a-knowledge-gap",
+      "gap_source": "AOSP结构+官方文档+读者需求+素材驱动",
+      "gap_score": "18/20"
+    },
     {
       "date": "2026-04-07",
       "section": "12.3",
