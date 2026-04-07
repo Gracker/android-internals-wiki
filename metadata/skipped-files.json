@@ -3492,6 +3492,176 @@
       },
       "skipped_at": "2026-04-06T13:50:02.530779",
       "reason": "Total score < 10: 9/20"
+    },
+    {
+      "path": "Cubox/揭秘拼多多：市值超越阿里，它是怎么做到的？-2023-11-30.md",
+      "title": "揭秘拼多多：市值超越阿里，它是怎么做到的？",
+      "scores": {
+        "relevance": 2,
+        "depth": 0,
+        "timeliness": 4,
+        "verifiability": 0
+      },
+      "total_score": 6,
+      "skip_reason": "total_score < 10",
+      "indexed_at": "2026-04-07T13:20:48.061556"
+    },
+    {
+      "path": "Cubox/摄影集 #02 - Moment In Peking (The Autumn)・Pseudoyu-2023-01-02.md",
+      "title": "摄影集 #02 - Moment In Peking (The Autumn)・Pseudoyu",
+      "scores": {
+        "relevance": 2,
+        "depth": 0,
+        "timeliness": 4,
+        "verifiability": 0
+      },
+      "total_score": 6,
+      "skip_reason": "total_score < 10",
+      "indexed_at": "2026-04-07T13:20:48.072709"
+    },
+    {
+      "path": "Cubox/摩耶夫人｜上海人的忍耐已经到了极限 - 中国数字时代-2022-04-15.md",
+      "title": "摩耶夫人｜上海人的忍耐已经到了极限 - 中国数字时代",
+      "scores": {
+        "relevance": 2,
+        "depth": 0,
+        "timeliness": 4,
+        "verifiability": 0
+      },
+      "total_score": 6,
+      "skip_reason": "total_score < 10",
+      "indexed_at": "2026-04-07T13:20:48.075511"
+    },
+    {
+      "path": "Cubox/政策数据库-2022-11-15.md",
+      "title": "政策数据库",
+      "scores": {
+        "relevance": 4,
+        "depth": 0,
+        "timeliness": 4,
+        "verifiability": 0
+      },
+      "total_score": 8,
+      "skip_reason": "total_score < 10",
+      "indexed_at": "2026-04-07T13:20:48.083557"
+    },
+    {
+      "path": "Cubox/斯图尔特·布兰德（Stewart Brand）谈开始和保持好奇心-2022-02-01.md",
+      "title": "斯图尔特·布兰德（Stewart Brand）谈开始和保持好奇心",
+      "scores": {
+        "relevance": 5,
+        "depth": 0,
+        "timeliness": 4,
+        "verifiability": 0
+      },
+      "total_score": 9,
+      "skip_reason": "total_score < 10",
+      "indexed_at": "2026-04-07T13:20:48.122455"
+    },
+    {
+      "path": "Cubox/新疆二十日（上）：雪域沙海，我的北疆探索之旅-2025-01-16.md",
+      "title": "新疆二十日（上）：雪域沙海，我的北疆探索之旅",
+      "scores": {
+        "relevance": 4,
+        "depth": 0,
+        "timeliness": 5,
+        "verifiability": 0
+      },
+      "total_score": 9,
+      "skip_reason": "total_score < 10",
+      "indexed_at": "2026-04-07T13:20:48.173723"
+    },
+    {
+      "path": "Cubox/新疆二十日（下）：古道高原，南疆的冰与火之歌-2025-01-16.md",
+      "title": "新疆二十日（下）：古道高原，南疆的冰与火之歌",
+      "scores": {
+        "relevance": 4,
+        "depth": 0,
+        "timeliness": 5,
+        "verifiability": 0
+      },
+      "total_score": 9,
+      "skip_reason": "total_score < 10",
+      "indexed_at": "2026-04-07T13:20:48.184963"
+    },
+    {
+      "path": "Cubox/新的阶段 - 默默小屋-2022-03-18.md",
+      "title": "新的阶段 | 默默小屋",
+      "scores": {
+        "relevance": 5,
+        "depth": 0,
+        "timeliness": 4,
+        "verifiability": 0
+      },
+      "total_score": 9,
+      "skip_reason": "total_score < 10",
+      "indexed_at": "2026-04-07T13:20:48.187482"
+    },
+    {
+      "path": "Cubox/无聊的价值 - 歌词经理-2023-10-14.md",
+      "title": "无聊的价值 | 歌词经理",
+      "scores": {
+        "relevance": 4,
+        "depth": 0,
+        "timeliness": 4,
+        "verifiability": 0
+      },
+      "total_score": 8,
+      "skip_reason": "total_score < 10",
+      "indexed_at": "2026-04-07T13:20:48.197538"
+    },
+    {
+      "path": "Cubox/无限加密货币：加密金融的狂野西部-2022-04-26.md",
+      "title": "无限加密货币：加密金融的狂野西部",
+      "scores": {
+        "relevance": 5,
+        "depth": 0,
+        "timeliness": 4,
+        "verifiability": 0
+      },
+      "total_score": 9,
+      "skip_reason": "total_score < 10",
+      "indexed_at": "2026-04-07T13:20:48.201664"
+    },
+    {
+      "path": "Cubox/日本东京&大阪游记 - Tw93-2024-01-08.md",
+      "title": "日本东京&大阪游记 - Tw93",
+      "scores": {
+        "relevance": 2,
+        "depth": 0,
+        "timeliness": 5,
+        "verifiability": 0
+      },
+      "total_score": 7,
+      "skip_reason": "total_score < 10",
+      "indexed_at": "2026-04-07T13:20:48.216397"
+    },
+    {
+      "path": "Cubox/日本经济学家判断中国楼市正进入泡沫破裂的早期阶段。-2023-10-03.md",
+      "title": "日本经济学家判断中国楼市正进入泡沫破裂的早期阶段。",
+      "scores": {
+        "relevance": 2,
+        "depth": 0,
+        "timeliness": 4,
+        "verifiability": 0
+      },
+      "total_score": 6,
+      "skip_reason": "total_score < 10",
+      "indexed_at": "2026-04-07T13:20:48.219751"
+    },
+    {
+      "path": "Cubox/时隔六年　经典重现——《平面设计中的网格系统》（经典版）出版及试读-2022-03-24.md",
+      "title": "时隔六年　经典重现——《平面设计中的网格系统》（经典版）出版及试读",
+      "scores": {
+        "relevance": 2,
+        "depth": 0,
+        "timeliness": 4,
+        "verifiability": 0
+      },
+      "total_score": 6,
+      "skip_reason": "total_score < 10",
+      "indexed_at": "2026-04-07T13:20:48.226055"
     }
-  ]
+  ],
+  "last_updated": "2026-04-07T13:20:48.226064"
 }

@@ -1102,5 +1102,35 @@
     "added_by": "task2a-knowledge-gap",
     "added_at": "2026-04-07T11:09:00+08:00",
     "status": "pending"
+  },
+  {
+    "section": "16.4",
+    "title": "Android 17 + Kernel 6.12 系统级性能优化",
+    "priority": 80,
+    "status": "pending",
+    "source": "task2a-gap-mining",
+    "created_date": "2026-04-07",
+    "gap_score": 18,
+    "notes": "3篇高质量研究素材(18-20分)，Android 17核心内容"
+  },
+  {
+    "section": "2.19",
+    "title": "刷新率切换与帧率适配性能",
+    "priority": 80,
+    "status": "pending",
+    "source": "task2a-gap-mining",
+    "created_date": "2026-04-07",
+    "gap_score": 17,
+    "notes": "高爷专家洞察(帧率切换卡顿)+ARR研究素材"
+  },
+  {
+    "section": "7.9",
+    "title": "感知流畅性：步幅波动与无掉帧卡顿",
+    "priority": 80,
+    "status": "pending",
+    "source": "task2a-gap-mining",
+    "created_date": "2026-04-07",
+    "gap_score": 16,
+    "notes": "高爷专家洞察(步幅波动+VSync时间精度)+全新概念"
   }
 ]

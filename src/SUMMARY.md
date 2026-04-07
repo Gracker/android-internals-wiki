@@ -48,6 +48,7 @@
   - [2.16 Sync Fence 框架与帧同步机制](part1-fundamentals/ch02-rendering/16-sync-fence.md)
   - [2.17 Frame Pacing Library 与帧节奏控制](part1-fundamentals/ch02-rendering/17-frame-pacing.md)
   - [2.18 Adaptive Refresh Rate 与动态帧率控制](part1-fundamentals/ch02-rendering/18-adaptive-refresh-rate.md)
+  - [2.19 刷新率切换与帧率适配性能](part1-fundamentals/ch02-rendering/19-refresh-rate-switching.md)
 
 - [第 3 章：输入系统](part1-fundamentals/ch03-input/README.md)
   - [3.1 Input 事件分发全流程](part1-fundamentals/ch03-input/01-input-dispatch.md)
@@ -96,6 +97,7 @@
   - [7.6 案例集](part2-performance/ch07-smoothness/06-case-studies.md)
   - [7.7 Jetpack Compose 性能优化](part2-performance/ch07-smoothness/07-compose-performance.md)
   - [7.8 RecyclerView 列表滑动性能深度优化](part2-performance/ch07-smoothness/08-recyclerview-performance.md)
+  - [7.9 感知流畅性：步幅波动与无掉帧卡顿](part2-performance/ch07-smoothness/09-perceived-smoothness.md)
 
 - [第 8 章：响应速度](part2-performance/ch08-responsiveness/README.md)
   - [8.1 响应速度原理](part2-performance/ch08-responsiveness/01-responsiveness-principles.md)
@@ -177,6 +179,7 @@
   - [16.1 Google 官方的性能优化思路](part4-system/ch16-aosp/01-google-optimization.md)
   - [16.2 各 Android 版本性能变更追踪](part4-system/ch16-aosp/02-version-changes.md)
   - [16.3 AOSP 源码编译与调试环境](part4-system/ch16-aosp/03-aosp-build.md)
+  - [16.4 Android 17 + Kernel 6.12 系统级性能优化](part4-system/ch16-aosp/04-android17-kernel612-performance.md)
 
 - [第 17 章：厂商优化实践](part4-system/ch17-oem/README.md)
   - [17.1 OEM 性能优化的通用思路](part4-system/ch17-oem/01-oem-overview.md)
