@@ -158,6 +158,7 @@
   - [14.7 ProfilingManager](part3-tools/ch14-other-tools/07-profiling-manager.md)
   - [14.8 GPU 图形调试与分析工具](part3-tools/ch14-other-tools/08-gpu-debug-tools.md)
   - [14.9 Android Camera 性能与 Perfetto 分析](part3-tools/ch14-other-tools/09-camera-performance-analysis.md)
+  - [14.10 eBPF/BPF 在 Android 性能分析中的应用](part3-tools/ch14-other-tools/10-ebpf-performance-analysis.md)
 
 - [第 15 章：方法论](part3-tools/ch15-methodology/README.md)
   - [15.1 性能优化的术、道、器](part3-tools/ch15-methodology/01-philosophy.md)
