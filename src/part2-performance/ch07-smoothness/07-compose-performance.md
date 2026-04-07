@@ -1,16 +1,18 @@
 ---
 title: "Jetpack Compose 性能优化"
 chapter: "7.7"
-status: ready-for-review
+status: ready-to-publish
 applicable_versions: "Android 8.0 (API 26) - Android 16 (API 36)"
 last_verified: "2026-04-01"
 last_verified_against: "Android 16 Developer Preview"
 confidence: medium
-reviewed_date: "2026-04-04"
+reviewed_date: "2026-04-07"
 reviewed_by: "openclaw-task6"
 polish_count: 1
 polish_date: "2026-04-04"
 polish_by: "task2b-polish"
+review_type: post-polish-quality-gate
+review_round: 2
 sources:
   - type: blog
     path: "Personal-Knowlodge/source/2026-03-08_wechat_沉思录_如何优化_Compose_的性能_通过_底层原理_寻找答案.md"

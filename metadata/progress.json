@@ -4,15 +4,15 @@
   "metrics": {
     "total": 127,
     "draft": 9,
-    "ready-for-review": 26,
+    "ready-for-review": 25,
     "reviewed": 5,
     "finalized": 30,
     "staging_drafts": 0,
-    "last_updated": "2026-04-07T17:54:00+08:00",
+    "last_updated": "2026-04-07T18:18:00+08:00",
     "processing": 0,
-    "ready-to-publish": 11,
+    "ready-to-publish": 12,
     "last_reviewed": "2026-04-07",
-    "last_reviewed_section": "4.6 内存相关的版本演进"
+    "last_reviewed_section": "7.7 Jetpack Compose 性能优化"
   },
   "reviewed_sections": {
     "8.1": {
@@ -407,14 +407,23 @@
       ]
     },
     "7.7": {
-      "reviewed_date": "2026-04-04",
+      "reviewed_date": "2026-04-07",
       "reviewed_by": "openclaw-task6",
-      "review_status": "finalized",
+      "review_status": "ready-to-publish",
+      "review_type": "post-polish-quality-gate",
+      "review_round": 2,
       "fixes_applied": [
-        "17处'你'→'我们'替换（writing-guide §3.5合规）",
-        "frontmatter补全：section/drafted_by/reviewed_date/reviewed_by",
-        "status ready-for-review → finalized"
-      ]
+        "无 A 类修复（task2b 精修后质量已达标）",
+        "无 B 类问题",
+        "status: ready-for-review → ready-to-publish（出版终态）"
+      ],
+      "scores": {
+        "structure": 5,
+        "expression": 5,
+        "consistency": 5,
+        "verification": 4,
+        "metadata": 5
+      }
     },
     "11.1": {
       "reviewed_date": "2026-04-04",
@@ -3604,12 +3613,14 @@
     },
     "7.7": {
       "title": "Jetpack Compose 性能优化",
-      "status": "finalized",
+      "status": "ready-to-publish",
       "file": "src/part2-performance/ch07-smoothness/07-compose-performance.md",
       "drafted_date": "2026-04-01",
       "drafted_by": "openclaw-task2a",
-      "reviewed_date": "2026-04-04",
-      "reviewed_by": "openclaw-task6"
+      "reviewed_date": "2026-04-07",
+      "reviewed_by": "openclaw-task6",
+      "review_type": "post-polish-quality-gate",
+      "review_round": 2
     },
     "15.7": {
       "title": "AOSP 代码阅读",
