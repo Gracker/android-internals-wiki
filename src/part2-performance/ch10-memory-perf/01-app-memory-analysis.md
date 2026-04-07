@@ -2,7 +2,7 @@
 title: "App 内存分析"
 chapter: "10.1"
 section: "10.1"
-status: finalized
+status: ready-for-review
 drafted_date: "2026-04-02"
 drafted_by: "openclaw-task2"
 applicable_versions: "Android 8.0 (API 26) - Android 16 (API 36)"
@@ -10,6 +10,9 @@ last_verified: "2026-04-02"
 reviewed_date: "2026-04-07"
 reviewed_by: "openclaw-task6"
 last_verified_against: "AOSP android-16.0.0_r1"
+polish_count: 1
+polish_date: "2026-04-07"
+polish_by: "task2b-polish"
 confidence: medium
 sources:
   - type: blog
@@ -115,7 +118,7 @@ RSS 则更粗粒度，它统计进程占用的所有物理内存，不做共享�
 
 分析 `dumpsys meminfo` 输出的关键是看**哪一行的 PSS 异常偏高**。如果 Native Heap 很高，说明 Native 代码有分配泄漏或大对象；如果 Java Heap 很高，说明 Java 层有泄漏或对象未释放；如果 Graphics 很高，可能存在 Bitmap 未回收或 Surface 管理问题。
 
-一个实用技巧是在操作 App 前后各抓一次 `dumpsys meminfo`，对比差异。比如打开一个页面、返回、触发 GC 后再抓一次，如果 PSS 没有回到操作前的水平，说明有内存没有被正确释放。
+实际操作中，可以在操作 App 前后各抓一次 `dumpsys meminfo` 对比差异。比如打开一个页面、返回、触发 GC 后再抓一次，如果 PSS 没有回到操作前的水平，说明有内存没有被正确释放。
 
 ### Android Studio Memory Profiler：实时观测与分配追踪
 
@@ -131,7 +134,7 @@ Memory Profiler 是 Android Studio 内置的内存分析工具，它提供三种
 
 **Heap Dump**：捕获当前 Java Heap 的完整快照，可以看到所有存活对象及其引用关系。Memory Profiler 会自动标记出可能的 Activity/Fragment 泄漏（已 destroyed 但仍被引用的实例）。但 Memory Profiler 的 Heap Dump 分析能力相对有限，对于复杂的引用链分析，我们通常将 `.hprof` 文件导出后用 MAT 做更深入的分析。
 
-一个重要细节：在抓取 Heap Dump 之前，一定要先手动触发一次 GC（点击 Memory Profiler 中的垃圾桶图标），这样抓到的 Heap 中不会包含 Unreachable 对象（可以被 GC 回收但还没来得及回收的对象），减少干扰信息。
+在抓取 Heap Dump 之前，先手动触发一次 GC（点击 Memory Profiler 中的垃圾桶图标）。这样可以排除 Unreachable 对象——可以被 GC 回收但还没来得及回收的对象，它们会干扰真正的泄漏分析。
 
 [来源: obsidian/Personal-Knowlodge/source/AndroidMemory-Usage-Of-MAT-Pro.md]
 
@@ -153,7 +156,7 @@ Memory Profiler 是 Android Studio 内置的内存分析工具，它提供三种
 
 Dominator Tree 是 MAT 中最重要的分析视图。它的核心思想是：如果一个对象 A 是另一个对象 B 到 GC Root 的必经之路（即所有从 GC Root 到 B 的路径都必须经过 A），那么 A 就是 B 的 Dominator。在 Dominator Tree 中，每个对象的 Retained Size 就是它作为 Dominator 持有的所有内存。
 
-这听起来抽象，但在实际分析中非常直觉化。Dominator Tree 按内存占用从大到小排列，排在最前面的就是"如果被回收能释放最多内存"的对象。我们通常的做法是：
+在实际分析中这个概念非常直觉化。Dominator Tree 按内存占用从大到小排列，排在最前面的就是"如果被回收能释放最多内存"的对象。我们通常的做法是：
 
 1. 打开 Dominator Tree 视图，按 Retained Size 降序排列
 2. 找到 Retained Size 异常大的对象（通常是 Activity、Fragment、View 或大数组）
@@ -176,7 +179,7 @@ MAT 提供了几个对内存泄漏排查至关重要的操作，每个工程师�
 
 [来源: obsidian/Personal-Knowlodge/source/AndroidMemory-Usage-Of-MAT-Pro.md]
 
-一个实战中的经验：在用 MAT 分析之前，一定要确保先触发过 GC 再抓 Heap Dump。否则 Heap 中会包含大量 Unreachable 对象——它们虽然可以回收但还没回收，干扰真正的泄漏分析。Unreachable 对象的 Retained Size 为 0，这也是一种快速区分它们的方法。
+MAT 分析前同样需要先触发 GC（参见上文 Memory Profiler 的说明）。Heap 中未被 GC 的 Unreachable 对象会干扰分析，一个快速识别方法是看 Retained Size——Unreachable 对象的 Retained Size 为 0。
 
 ## Native Heap 分析：malloc debug、ASan、heapprofd
 
@@ -247,7 +250,7 @@ Android 12 引入了一个重要的改进：通过 Memtrack HAL 的 `getGpuDevic
 
 ### Bitmap 内存管理的关键变化
 
-在 Android 8.0（API 26）之前，Bitmap 的像素数据存储在 Java Heap 中，可以直接通过 MAT 看到每个 Bitmap 的大小和内容。从 Android 8.0 开始，Bitmap 像素数据移到了 Native Heap，Java 层只保留一个小的 Bitmap 对象（包含宽高、配置等元信息）。
+在 Android 8.0（API 26）之前，Bitmap 的像素数据存储在 Java Heap 中，可以直接通过 MAT 看到每个 Bitmap 的大小和内容。从 Android 8.0 开始，Bitmap 像素数据移到了 Native Heap，Java 层只保留一个小的 Bitmap 对象（包含宽高、配置等元信息）。这一变化的背景和各版本 Bitmap 回收策略的演进，详见 §4.6 内存相关的版本演进。
 
 这个变化对内存分析有两个影响：第一，`dumpsys meminfo` 中的 Java Heap 可能看起来不大，但 Native Heap 很高，因为 Bitmap 像素数据在那里；第二，MAT 中看到 Bitmap 对象的 Shallow Size 很小（只有几十字节），但通过 Bitmap 的 `mBuffer` 字段可以间接看到像素数据的 Native 内存占用。
 
@@ -277,7 +280,7 @@ Android 14 引入了一项有意义的改进：当 `GraphicBufferProducer` 断�
 
 ## 内存基线建立与回归检测方法
 
-分析工具帮你定位和修复问题，但如何防止问题再次出现？答案是一套系统化的内存基线和回归检测机制。
+上面的工具组合覆盖了 Java Heap、Native Heap、Graphics 内存的分析场景。但定位和修复只是第一步——没有回归检测，下次发版可能引入新的内存问题。本节讨论如何建立系统化的内存基线，把内存防护变成自动化流程。
 
 ### 建立内存基线
 
