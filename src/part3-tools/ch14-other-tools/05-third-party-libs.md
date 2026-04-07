@@ -20,9 +20,13 @@ sources:
     path: "https://github.com/didi/Booster (滴滴 Booster)"
   - type: blog
     path: "https://github.com/iqiyi/xHook (爱奇艺 xHook)"
-tags: ["matrix", "leakcanary", "koom", "booster", "rhea", "第三方工具"]
-related_chapters: ["14.1", "14.2", "14.3", "14.4"]
+tags:
+  - android
+  - research
+
+
 ---
+
 
 # 三方性能库
 
@@ -296,3 +300,10 @@ Booster 使用的 Transform 不是运行时 Hook，而是编译期方案。它�
 - 类型：工具/库
 - 摘要：Luban 2图片压缩库：Kotlin协程重构，流式处理避免OOM，压缩速度提升3倍，内存占用降低60%。
 - 入库时间：2026-04-06
+
+
+### Android 16 AppJankStats + RelativeFrameTimeHistogram API
+- 来源：https://developer.android.com/reference/android/os/AppJankStats
+- 类型：research
+- 摘要：平台级零侵入jank统计API，无需集成第三方库。帧时间分布直方图(RelativeFrameTimeHistogram)。与JankStats库互补，适合无法修改代码的场景。
+- 入库时间：2026-04-08

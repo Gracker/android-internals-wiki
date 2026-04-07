@@ -3,23 +3,14 @@ title: "16KB Page Size 与 Android 性能"
 chapter: "4.7"
 status: ready-for-review
 applicable_versions: "Android 15 (API 35) - Android 17 (API 37)"
-tags: [memory, page-size, 16kb, tlb, kernel, migration, native-code]
-related_chapters: ["4.1", "4.2", "1.7", "8.2"]
-section: "4.7"
-created_by: "task2a-knowledge-gap"
-created_date: "2026-04-05"
-gap_source: "官方文档/版本演进"
-drafted_date: "2026-04-06"
-drafted_by: "openclaw-task2a"
-confidence: "medium"
-sources:
-  - type: official
-    path: "https://developer.android.com/guide/practices/page-sizes"
-  - type: official
-    path: "https://source.android.com/docs/architecture/16kb-page-size"
-  - type: blog
-    path: "https://android-developers.googleblog.com/ 16KB page size 相关公告"
+tags:
+  - android
+  - memory
+  - research
+
+
 ---
+
 
 # 4.7 16KB Page Size 与 Android 性能
 
@@ -269,3 +260,10 @@ adb shell getconf PAGE_SIZE
 - [已验证: ARM Architecture Reference Manual — TLB 结构与页大小]
 - [待验证: Google 官方 16KB 测试数据的精确测试条件（设备型号 / Android 版本 / App 样本）]
 - [待验证: 16KB 基础页 + THP 在 Android 16 设备上的默认启用状态]
+
+
+### 16KB Page Size 强制落地：启动+20-40%，功耗-4.56%
+- 来源：https://android-developers.googleblog.com/16kb-page-size
+- 类型：research
+- 摘要：2025.11.1后新App必须支持16KB页。前沿研究量化：启动+3.16%(内存压力+30%)，功耗-4.56%。Last30Days数据：冷启动+20-40%(内存密集型)，内存开销-25%，电池+10-15%。未对齐native库会crash。
+- 入库时间：2026-04-08

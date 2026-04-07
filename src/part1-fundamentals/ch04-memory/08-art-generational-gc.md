@@ -24,12 +24,14 @@ sources:
     path: "intake/research-feeds/2026-04-02-07-ch04-art-gc-pause-time-data.md"
   - type: research
     path: "intake/research-feeds/2026-03-31-19-ch04-app-memory-churn-gc-objectpool.md"
-tags: ['art', 'gc', 'generational-gc', 'write-barrier', 'card-table', 'android-17', 'jank', 'perfetto-sql']
-related_chapters: ["4.3", "4.6", "7.2"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-04-05"
-gap_source: "官方文档（Android 17 行为变更）+ AOSP 源码分析"
+tags:
+  - android
+  - memory
+  - research
+
+
 ---
+
 
 # 4.8 ART 分代垃圾回收与 GC 暂停优化
 
@@ -458,3 +460,10 @@ GC 暂停如果恰好发生在 VSYNC-app 信号到来之后、`doFrame()` 执行
 - intake/research-feeds/2026-03-31-11-ch04-art-generational-gc.md
 - intake/research-feeds/2026-04-02-07-ch04-art-gc-pause-time-data.md
 - intake/research-feeds/2026-03-31-19-ch04-app-memory-churn-gc-objectpool.md
+
+
+### Android 17 ART 分代 GC：Concurrent Mark-Compact
+- 来源：https://cs.android.com/android/platform/superproject/+/master/art/runtime/gc/
+- 类型：research
+- 摘要：Android 17引入Concurrent Mark-Compact + Generational GC，专门优化年轻代对象快速回收。目标消除RecyclerView GC jank。与DeliQueue协同减少UI停顿。
+- 入库时间：2026-04-08

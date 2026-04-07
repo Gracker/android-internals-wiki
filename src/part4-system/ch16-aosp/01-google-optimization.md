@@ -18,9 +18,14 @@ sources:
     path: "source.android.com/docs/core/runtime"
   - type: blog
     path: "android-developers.googleblog.com (Project Mainline / ART Mainline Updates)"
-tags: ['google', 'performance-philosophy', 'project-butter', 'art', 'baseline-profiles', 'mainline']
-related_chapters: ["1.6", "2.9", "4.6", "5.7", "8.3", "15.1"]
+tags:
+  - android
+  - linux
+  - research
+
+
 ---
+
 
 # Google 官方的性能优化思路
 
@@ -287,3 +292,22 @@ Google 的最佳实践——延迟初始化、避免主线程阻塞、减少内�
 - [已验证: Google Blog, android-developers.googleblog.com]
 - [已验证: Perfetto 文档, perfetto.dev/docs/data-sources/android-binder]
 - [引用: https://www.androidperformance.com/（高爷博客）]
+
+
+### Android Studio supports Gemma 4：本地代理编程模型
+- 来源：http://android-developers.googleblog.com/2026/04/android-studio-supports-gemma-4-local.html
+- 类型：article
+- 摘要：Google宣布Android Studio正式支持Gemma 4，为Android平台设计的本地代理编程模型，支持设备上高级推理和代码生成，无需云端连接。
+- 入库时间：2026-04-08
+
+### Google Gemma 4 开源模型系列：专为代理工作流设计
+- 来源：http://www.techmeme.com/260402/p18
+- 类型：article
+- 摘要：Google发布Gemma 4开源模型系列(Apache 2.0)，专为高级推理和代理工作流设计，涵盖手机到工作站多种规格。
+- 入库时间：2026-04-08
+
+### Gemini Nano 4：端侧 AI 多模态 + 链式推理
+- 来源：https://developer.android.com/ai/gemini-nano
+- 类型：article
+- 摘要：基于Gemma 4，Fast(E2B)和Full(E4B)两个变体。比上代快4倍、省电60%。已通过AICore Developer Preview开放。支持多模态(文本+图像+音频)、链式推理。Nano系列已覆盖1.4亿台设备。
+- 入库时间：2026-04-08

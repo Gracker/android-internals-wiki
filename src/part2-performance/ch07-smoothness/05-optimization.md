@@ -19,14 +19,18 @@ sources:
     path: "frameworks/base/core/java/android/view/ViewStub.java"
   - type: aosp
     path: "frameworks/base/core/java/android/view/View.java (LAYER_TYPE_HARDWARE)"
-tags: ['optimization', 'layout', 'RecyclerView', 'Compose', 'overdraw', 'hardware-layer', 'thread', 'Binder']
-related_chapters: ["7.1", "7.2", "7.3", "7.4", "2.4", "2.5", "2.7", "2.8", "1.4", "1.5"]
----
+tags:
+  - android
+  - research
+
 
 reviewed_date: "2026-04-04"
 reviewed_by: "openclaw-task6"
 rework_date: "2026-04-04"
 rework_by: "openclaw-task2b"
+
+---
+
 
 # 优化策略
 
@@ -341,3 +345,10 @@ Compose 的 LazyColumn 内部也实现了类似的预取机制——当用户在
 - [Compose Strong Skipping](https://medium.com/androiddevelopers/strong-skipping-in-compose-984c37e8e8be)
 - [FrameMetrics API](https://developer.android.com/reference/android/view/FrameMetrics)
 - [Compose 性能 Codelab](https://developer.android.com/codelabs/compose-performance)
+
+
+### Android 17 DeliQueue：后台任务调度重排，丢帧降低 4-7.7%
+- 来源：https://android-developers.googleblog.com/deliqueue
+- 类型：article
+- 摘要：DeliQueue解决后台任务依赖链导致渲染线程阻塞的问题。通过重排任务等待队列减少渲染阻塞。应用丢帧-4%，Android主界面丢帧-7.7%。
+- 入库时间：2026-04-08

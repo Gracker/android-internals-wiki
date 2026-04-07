@@ -23,9 +23,14 @@ sources:
     path: "developer.android.com/studio/profile"
   - type: blog
     path: "androidperformance.com (高爷博客)"
-tags: ['profiler', 'cpu-profiler', 'memory-profiler', 'android-studio', 'tools']
-related_chapters: ["13.1", "13.2", "14.2", "14.3"]
+tags:
+  - android
+  - profiling
+  - research
+
+
 ---
+
 
 # Android Studio Profiler
 
@@ -240,3 +245,10 @@ Power Profiler 的设备要求比较严格：目前只有 Pixel 6 及以后的 P
 - ProfilingManager (Android 16): [developer.android.com/reference/android/os/ProfilingManager](https://developer.android.com/reference/android/os/ProfilingManager)
 - 高爷博客 - CPU Profiler 系统性能分析工具的使用: [androidperformance.com](https://www.androidperformance.com/)
 - Paulina Sadowska, "Can you trust time measurements in Profiler?": [proandroiddev.com](https://proandroiddev.com/can-you-trust-time-measurements-in-profiler-5b3566a55e0c)
+
+
+### Android Studio supports Gemma 4：本地代理编程模型
+- 来源：http://android-developers.googleblog.com/2026/04/android-studio-supports-gemma-4-local.html
+- 类型：article
+- 摘要：Google宣布Android Studio正式支持Gemma 4，为Android平台设计的本地代理编程模型，支持设备上高级推理和代码生成，无需云端连接。
+- 入库时间：2026-04-08

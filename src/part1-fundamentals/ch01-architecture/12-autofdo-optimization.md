@@ -20,9 +20,13 @@ sources:
     path: "drivers/hwtracing/coresight/"
   - type: official
     path: "https://source.android.com/docs/core/architecture/kernel/generic-kernel-image"
-tags: [autofdo, pgo, profile-guided-optimization, kernel, dex2oat, compilation, llv, simpleperf, coresight, etm]
-related_chapters: ["1.7", "8.3", "8.7", "5.9", "16.2"]
+tags:
+  - android
+  - research
+
+
 ---
+
 
 # 1.12 AutoFDO 反馈导向编译优化
 
@@ -294,3 +298,10 @@ Google 的官方说法是：AutoFDO 主要影响编译器的启发式决策（�
 - [AutoFDO GitHub 项目](https://github.com/google/autofdo)
 - [GKI（Generic Kernel Image）文档](https://source.android.com/docs/core/architecture/kernel/generic-kernel-image)
 - [Coresight 内核驱动](https://android.googlesource.com/kernel/common/+/refs/heads/android16-6.12/drivers/hwtracing/coresight)
+
+
+### Android 17 + GKI Kernel 6.12 综合性能量化
+- 来源：https://cs.android.com/android/platform/superproject/+/android-17-beta3
+- 类型：research
+- 摘要：EEVDF + sched_ext 系统调用效率+9.3%，AutoFDO PGO 冷启动延迟-4.3%(1240ms->1187ms)，dm-verity吞吐+35%(ARM64 multi-buffer hashing)。启动速度+2.1%(Pixel 9 Pro)。
+- 入库时间：2026-04-08

@@ -10,11 +10,14 @@ sources:
   - "Cubox/IO调度器详解-2024-03-08.md"
   - "Personal-Knowlodge/source/2026-03-08_wechat_手机Android存储性能优化架构分析_1.md"
   - "Personal-Knowlodge/source/2026-03-07_wechat_性能优化基础_深入理解Linux文件系统.md"
-tags: ['io', 'bfq', 'cfq', 'mq-deadline', 'page-cache', 'iowait', 'blkio', 'ufs']
-related_chapters: ['6.1', '6.2', '7.2', '4.2']
-drafted_date: "2026-04-01"
-drafted_by: "openclaw-task2"
+tags:
+  - linux
+  - android
+  - research
+
+
 ---
+
 
 # I/O 调度与性能
 
@@ -349,3 +352,12 @@ I/O 调度在 Android 性能优化中是一个容易被忽视但影响深远的�
 > - 手机Android存储性能优化架构分析（Linux阅码场，2022-07-18）
 > - 深入理解Linux文件系统（微信技术文章，2026-03-07）
 > - Perfetto 官方文档（perfetto.dev）
+
+## 参考资料
+
+### Kernel 6.12 存储三重优化
+- 来源：https://lore.kernel.org/linux-f2fs-devel/
+- 类型：research
+- 摘要：F2FS Checkpoint Merge: -40%写放大(SQLite WAL commit性能提升)。io_uring multishot + zero-copy: -50%系统调用开销。dm-verity multi-buffer hashing: +35% ARM64吞吐。协同效果：随机I/O延迟-12%(fio randread 4k, UFS 4.0)。
+- 入库时间：2026-04-08
+

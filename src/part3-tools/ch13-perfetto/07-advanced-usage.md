@@ -20,9 +20,14 @@ sources:
     path: "https://mp.weixin.qq.com/s/v6fGXbEZcTfxhfaKcMNhEQ"
   - type: official
     path: "https://perfetto.dev/docs/analysis/trace-summarization"
-tags: ['perfetto', 'metrics', 'sql', 'python-api', 'ci-cd', 'custom-trace', 'atrace', 'TRACE_EVENT', 'macros', 'dashboard']
-related_chapters: ["13.1", "13.2", "13.3", "13.4", "13.5", "13.6"]
+tags:
+  - android
+  - perfetto
+  - research
+
+
 ---
+
 
 # Perfetto 的高级用法
 
@@ -518,3 +523,12 @@ try {
 ```
 
 注意 `beginSection` 和 `endSection` 必须在同一
+
+## 参考资料
+
+### Perfetto v52/v54 大改版：Dark Mode + ANR 分类 + 位图时序
+- 来源：https://github.com/google/perfetto/releases
+- 类型：article
+- 摘要：UI层：Dark Mode、触摸支持、多Track批量操作。分析层：android_anrs新增anr_type字段、android.bitmaps位图时序数据、slice_self_dur自持续时间计算、regexp_extract函数、JSON trace解析性能提升。
+- 入库时间：2026-04-08
+

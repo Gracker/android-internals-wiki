@@ -3294,6 +3294,678 @@
       "quality": "medium",
       "confidence": "medium",
       "indexed_at": "2026-04-08T02:27:35.409876"
+    },
+    {
+      "path": "task8-daily/2026-04-08/Android Studio supports Gemma 4：本地代理编程模型",
+      "title": "Android Studio supports Gemma 4：本地代理编程模型",
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 5,
+        "verifiability": 3
+      },
+      "total_score": 15,
+      "matched_chapters": [
+        "14.1",
+        "16.1"
+      ],
+      "first_chars": "# Android Studio supports Gemma 4：本地代理编程模型\n\nhttp://android-developers.googleblog.com/2026/04/android-studio-supports-gemma-4-local.html\nGoogle宣布Android Studio正式支持Gemma 4，为Android平台设计的本地代理编程模型，支持设备上高级推理和代码生成，无需云端连接。",
+      "quality": "medium-high",
+      "indexed_at": "2026-04-08T05:36:11.672734",
+      "source_task": "RSS 04-08",
+      "url": "http://android-developers.googleblog.com/2026/04/android-studio-supports-gemma-4-local.html"
+    },
+    {
+      "path": "task8-daily/2026-04-08/Google Gemma 4 开源模型系列：专为代理工作流设计",
+      "title": "Google Gemma 4 开源模型系列：专为代理工作流设计",
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 5,
+        "verifiability": 3
+      },
+      "total_score": 15,
+      "matched_chapters": [
+        "16.1"
+      ],
+      "first_chars": "# Google Gemma 4 开源模型系列：专为代理工作流设计\n\nhttp://www.techmeme.com/260402/p18\nGoogle发布Gemma 4开源模型系列(Apache 2.0)，专为高级推理和代理工作流设计，涵盖手机到工作站多种规格。",
+      "quality": "medium-high",
+      "indexed_at": "2026-04-08T05:36:11.672743",
+      "source_task": "RSS 04-08",
+      "url": "http://www.techmeme.com/260402/p18"
+    },
+    {
+      "path": "task8-daily/2026-04-08/Android 17 + GKI Kernel 6.12 综合性能量化",
+      "title": "Android 17 + GKI Kernel 6.12 综合性能量化",
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 5,
+        "verifiability": 3
+      },
+      "total_score": 15,
+      "matched_chapters": [
+        "16.4",
+        "1.12"
+      ],
+      "first_chars": "# Android 17 + GKI Kernel 6.12 综合性能量化\n\nhttps://cs.android.com/android/platform/superproject/+/android-17-beta3\nEEVDF + sched_ext 系统调用效率+9.3%，AutoFDO PGO 冷启动延迟-4.3%(1240ms->1187ms)，dm-verity吞吐+35%(ARM64 multi-buffer hashing)。启动速度+2.1%(Pixel 9 Pro)。",
+      "quality": "medium-high",
+      "indexed_at": "2026-04-08T05:36:11.672746",
+      "source_task": "前沿研究 04-07",
+      "url": "https://cs.android.com/android/platform/superproject/+/android-17-beta3"
+    },
+    {
+      "path": "task8-daily/2026-04-08/Kernel 6.12 存储三重优化",
+      "title": "Kernel 6.12 存储三重优化",
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 5,
+        "verifiability": 3
+      },
+      "total_score": 15,
+      "matched_chapters": [
+        "6.2",
+        "6.3"
+      ],
+      "first_chars": "# Kernel 6.12 存储三重优化\n\nhttps://lore.kernel.org/linux-f2fs-devel/\nF2FS Checkpoint Merge: -40%写放大(SQLite WAL commit性能提升)。io_uring multishot + zero-copy: -50%系统调用开销。dm-verity multi-buffer hashing: +35% ARM64吞吐。协同效果：随机I/O延迟-12%(fio randread 4k, UFS 4.0)。",
+      "quality": "medium-high",
+      "indexed_at": "2026-04-08T05:36:11.672748",
+      "source_task": "前沿研究 04-07",
+      "url": "https://lore.kernel.org/linux-f2fs-devel/"
+    },
+    {
+      "path": "task8-daily/2026-04-08/Android 16 云端编译 + Baseline/Startup Profi",
+      "title": "Android 16 云端编译 + Baseline/Startup Profiles DEX Layout 优化",
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 5,
+        "verifiability": 3
+      },
+      "total_score": 15,
+      "matched_chapters": [
+        "8.7",
+        "1.9"
+      ],
+      "first_chars": "# Android 16 云端编译 + Baseline/Startup Profiles DEX Layout 优化\n\nhttps://android-developers.googleblog.com/cloud-compilation-baseline-profiles\n云编译替代设备端dex2oat。Startup Profiles DEX Layout额外+15-30%启动速度。Baseline Profiles + Startup Profiles组合：首次launch即可30%执行提速，已深度集成CI/CD。",
+      "quality": "medium-high",
+      "indexed_at": "2026-04-08T05:36:11.672750",
+      "source_task": "前沿研究 04-07 + Last30Days 04-07",
+      "url": "https://android-developers.googleblog.com/cloud-compilation-baseline-profiles"
+    },
+    {
+      "path": "task8-daily/2026-04-08/16KB Page Size 强制落地：启动+20-40%，功耗-4.56%",
+      "title": "16KB Page Size 强制落地：启动+20-40%，功耗-4.56%",
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 5,
+        "verifiability": 3
+      },
+      "total_score": 15,
+      "matched_chapters": [
+        "4.7"
+      ],
+      "first_chars": "# 16KB Page Size 强制落地：启动+20-40%，功耗-4.56%\n\nhttps://android-developers.googleblog.com/16kb-page-size\n2025.11.1后新App必须支持16KB页。前沿研究量化：启动+3.16%(内存压力+30%)，功耗-4.56%。Last30Days数据：冷启动+20-40%(内存密集型)，内存开销-25%，电池+10-15%。未对齐native库会crash。",
+      "quality": "medium-high",
+      "indexed_at": "2026-04-08T05:36:11.672752",
+      "source_task": "前沿研究 04-07 + Last30Days 04-07",
+      "url": "https://android-developers.googleblog.com/16kb-page-size"
+    },
+    {
+      "path": "task8-daily/2026-04-08/@FastNative/@CriticalNative ART 优化：JNI 开",
+      "title": "@FastNative/@CriticalNative ART 优化：JNI 开销从 115ns 降至 25ns",
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 5,
+        "verifiability": 3
+      },
+      "total_score": 15,
+      "matched_chapters": [
+        "1.15"
+      ],
+      "first_chars": "# @FastNative/@CriticalNative ART 优化：JNI 开销从 115ns 降至 25ns\n\nhttps://cs.android.com/android/platform/superproject/+/master/art/\nART runtime中@FastNative将JNI开销从115ns降至25ns，@CriticalNative进一步优化。注意：会阻塞GC，需谨慎在高频调用路径使用。",
+      "quality": "medium-high",
+      "indexed_at": "2026-04-08T05:36:11.672754",
+      "source_task": "前沿研究 04-07",
+      "url": "https://cs.android.com/android/platform/superproject/+/master/art/"
+    },
+    {
+      "path": "task8-daily/2026-04-08/Android 17 ART 分代 GC：Concurrent Mark-Com",
+      "title": "Android 17 ART 分代 GC：Concurrent Mark-Compact",
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 5,
+        "verifiability": 3
+      },
+      "total_score": 15,
+      "matched_chapters": [
+        "4.8"
+      ],
+      "first_chars": "# Android 17 ART 分代 GC：Concurrent Mark-Compact\n\nhttps://cs.android.com/android/platform/superproject/+/master/art/runtime/gc/\nAndroid 17引入Concurrent Mark-Compact + Generational GC，专门优化年轻代对象快速回收。目标消除RecyclerView GC jank。与DeliQueue协同减少UI停顿。",
+      "quality": "medium-high",
+      "indexed_at": "2026-04-08T05:36:11.672756",
+      "source_task": "前沿研究 04-07",
+      "url": "https://cs.android.com/android/platform/superproject/+/master/art/runtime/gc/"
+    },
+    {
+      "path": "task8-daily/2026-04-08/感知流畅性：Perfetto Frame Timeline 分析方法",
+      "title": "感知流畅性：Perfetto Frame Timeline 分析方法",
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 5,
+        "verifiability": 3
+      },
+      "total_score": 15,
+      "matched_chapters": [
+        "7.9"
+      ],
+      "first_chars": "# 感知流畅性：Perfetto Frame Timeline 分析方法\n\nhttps://perfetto.dev/docs/analysis/frame-timeline\nFrame Timeline Expected vs Actual双轨对比。P50/P90/P99帧时长百分位分析。JankStats可配置jank阈值。步幅波动+VSync时间精度作为感知流畅性量化方法。",
+      "quality": "medium-high",
+      "indexed_at": "2026-04-08T05:36:11.672758",
+      "source_task": "前沿研究 04-07",
+      "url": "https://perfetto.dev/docs/analysis/frame-timeline"
+    },
+    {
+      "path": "task8-daily/2026-04-08/Android 16 AppJankStats + RelativeFrameT",
+      "title": "Android 16 AppJankStats + RelativeFrameTimeHistogram API",
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 5,
+        "verifiability": 3
+      },
+      "total_score": 15,
+      "matched_chapters": [
+        "7.9",
+        "14.5"
+      ],
+      "first_chars": "# Android 16 AppJankStats + RelativeFrameTimeHistogram API\n\nhttps://developer.android.com/reference/android/os/AppJankStats\n平台级零侵入jank统计API，无需集成第三方库。帧时间分布直方图(RelativeFrameTimeHistogram)。与JankStats库互补，适合无法修改代码的场景。",
+      "quality": "medium-high",
+      "indexed_at": "2026-04-08T05:36:11.672759",
+      "source_task": "前沿研究 04-07",
+      "url": "https://developer.android.com/reference/android/os/AppJankStats"
+    },
+    {
+      "path": "task8-daily/2026-04-08/Android 17 DeliQueue：后台任务调度重排，丢帧降低 4-7.7",
+      "title": "Android 17 DeliQueue：后台任务调度重排，丢帧降低 4-7.7%",
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 5,
+        "verifiability": 3
+      },
+      "total_score": 15,
+      "matched_chapters": [
+        "1.13",
+        "7.5"
+      ],
+      "first_chars": "# Android 17 DeliQueue：后台任务调度重排，丢帧降低 4-7.7%\n\nhttps://android-developers.googleblog.com/deliqueue\nDeliQueue解决后台任务依赖链导致渲染线程阻塞的问题。通过重排任务等待队列减少渲染阻塞。应用丢帧-4%，Android主界面丢帧-7.7%。",
+      "quality": "medium-high",
+      "indexed_at": "2026-04-08T05:36:11.672761",
+      "source_task": "Last30Days 04-07 + AI手机行业日报 04-07",
+      "url": "https://android-developers.googleblog.com/deliqueue"
+    },
+    {
+      "path": "task8-daily/2026-04-08/Perfetto v52/v54 大改版：Dark Mode + ANR 分类 ",
+      "title": "Perfetto v52/v54 大改版：Dark Mode + ANR 分类 + 位图时序",
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 5,
+        "verifiability": 3
+      },
+      "total_score": 15,
+      "matched_chapters": [
+        "13.3",
+        "13.7"
+      ],
+      "first_chars": "# Perfetto v52/v54 大改版：Dark Mode + ANR 分类 + 位图时序\n\nhttps://github.com/google/perfetto/releases\nUI层：Dark Mode、触摸支持、多Track批量操作。分析层：android_anrs新增anr_type字段、android.bitmaps位图时序数据、slice_self_dur自持续时间计算、regexp_extract函数、JSON trace解析性能提升。",
+      "quality": "medium-high",
+      "indexed_at": "2026-04-08T05:36:11.672763",
+      "source_task": "Last30Days 04-07",
+      "url": "https://github.com/google/perfetto/releases"
+    },
+    {
+      "path": "task8-daily/2026-04-08/性能分析误区：峰值帧率 vs 稳态帧率",
+      "title": "性能分析误区：峰值帧率 vs 稳态帧率",
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 5,
+        "verifiability": 3
+      },
+      "total_score": 15,
+      "matched_chapters": [
+        "15.3",
+        "15.6"
+      ],
+      "first_chars": "# 性能分析误区：峰值帧率 vs 稳态帧率\n\nhttps://android-developers.googleblog.com/performance-methodology\n骁龙8 Elite持续负载下30%性能衰减。有意义的指标：30分钟游戏后帧率、99th percentile延迟、冷启动后5分钟内响应。Benchmark应包含热稳定态测试。",
+      "quality": "medium-high",
+      "indexed_at": "2026-04-08T05:36:11.672765",
+      "source_task": "Last30Days 04-07",
+      "url": "https://android-developers.googleblog.com/performance-methodology"
+    },
+    {
+      "path": "task8-daily/2026-04-08/App Startup Library 误区：ContentProvider 启",
+      "title": "App Startup Library 误区：ContentProvider 启动开销",
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 5,
+        "verifiability": 3
+      },
+      "total_score": 15,
+      "matched_chapters": [
+        "1.10"
+      ],
+      "first_chars": "# App Startup Library 误区：ContentProvider 启动开销\n\nhttps://android-developers.googleblog.com/app-startup\n过度延迟SDK初始化的误区。App Startup Library 2026年更新：Application类初始化和ContentProvider启动时序的权衡。ContentProvider直接影响启动关键路径。",
+      "quality": "medium-high",
+      "indexed_at": "2026-04-08T05:36:11.672766",
+      "source_task": "Last30Days 04-07",
+      "url": "https://android-developers.googleblog.com/app-startup"
+    },
+    {
+      "path": "task8-daily/2026-04-08/Gemini Nano 4：端侧 AI 多模态 + 链式推理",
+      "title": "Gemini Nano 4：端侧 AI 多模态 + 链式推理",
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 5,
+        "verifiability": 3
+      },
+      "total_score": 15,
+      "matched_chapters": [
+        "16.1"
+      ],
+      "first_chars": "# Gemini Nano 4：端侧 AI 多模态 + 链式推理\n\nhttps://developer.android.com/ai/gemini-nano\n基于Gemma 4，Fast(E2B)和Full(E4B)两个变体。比上代快4倍、省电60%。已通过AICore Developer Preview开放。支持多模态(文本+图像+音频)、链式推理。Nano系列已覆盖1.4亿台设备。",
+      "quality": "medium-high",
+      "indexed_at": "2026-04-08T05:36:11.672768",
+      "source_task": "AI手机行业日报 04-07",
+      "url": "https://developer.android.com/ai/gemini-nano"
+    },
+    {
+      "path": "Cubox/Jeff Dean 和 Noam Shazeer — 谷歌25年：从PageRank到AGI-2026-03-10.md",
+      "title": "Jeff Dean 和 Noam Shazeer — 谷歌25年：从PageRank到AGI",
+      "content_preview": "# Jeff Dean 和 Noam Shazeer — 谷歌25年：从PageRank到AGI\n\n\n\n[Read in Cubox](https://cubox.pro/web/card/74309...",
+      "score": 10,
+      "relevance": 1,
+      "depth": 3,
+      "timeliness": 3,
+      "verifiability": 3,
+      "scan_timestamp": "2026-04-08T06:49:59.009083",
+      "chapters": [],
+      "quality": "medium"
+    },
+    {
+      "path": "Cubox/Android GPU硬件加速渲染流程（上） - 知乎-2023-02-02.md",
+      "title": "Android GPU硬件加速渲染流程（上） - 知乎",
+      "content_preview": "# Android GPU硬件加速渲染流程（上） - 知乎\n\n本文希望通过两篇文章，详细介绍Android上层的硬件加速渲染流程，大约2万字，此为上篇。1、基本概念1.1 Window（窗口）：And...",
+      "score": 11,
+      "relevance": 2,
+      "depth": 2,
+      "timeliness": 3,
+      "verifiability": 4,
+      "scan_timestamp": "2026-04-08T06:49:59.009540",
+      "chapters": [],
+      "quality": "medium"
+    },
+    {
+      "path": "Cubox/ART虚拟机内存分配原理浅析-2024-08-06.md",
+      "title": "ART虚拟机内存分配原理浅析",
+      "content_preview": "# ART虚拟机内存分配原理浅析\n\n浅析AndroidART虚拟机内存分配原理\n\n[Read in Cubox](https://cubox.pro/web/card/7220305588524156...",
+      "score": 12,
+      "relevance": 2,
+      "depth": 3,
+      "timeliness": 3,
+      "verifiability": 4,
+      "scan_timestamp": "2026-04-08T06:49:59.009915",
+      "chapters": [],
+      "quality": "medium"
+    },
+    {
+      "path": "Cubox/Android图形系统（五）番外篇：触摸事件详解-2022-12-06.md",
+      "title": "Android图形系统（五）番外篇：触摸事件详解",
+      "content_preview": "# Android图形系统（五）番外篇：触摸事件详解\n\n当我们按下屏幕后，事件是怎么传递到应用的？\n\n[Read in Cubox](https://cubox.pro/web/card/699961...",
+      "score": 11,
+      "relevance": 1,
+      "depth": 3,
+      "timeliness": 3,
+      "verifiability": 4,
+      "scan_timestamp": "2026-04-08T06:49:59.010479",
+      "chapters": [],
+      "quality": "medium"
+    },
+    {
+      "path": "Cubox/Android 进程与线程模型深度剖析（2）：Android 主线程（UI 线程）：心脏与瓶颈-2026-04-06.md",
+      "title": "Android 进程与线程模型深度剖析（2）：Android 主线程（UI 线程）：心脏与瓶颈",
+      "content_preview": "# Android 进程与线程模型深度剖析（2）：Android 主线程（UI 线程）：心脏与瓶颈\n\nAndroid 进程与线程模型深度剖析（2）：Android 主线程（UI 线程）：心脏与瓶颈本文...",
+      "score": 14,
+      "relevance": 3,
+      "depth": 3,
+      "timeliness": 3,
+      "verifiability": 5,
+      "scan_timestamp": "2026-04-08T06:49:59.010864",
+      "chapters": [],
+      "quality": "medium"
+    },
+    {
+      "path": "Cubox/[093]SurfaceSyncer的致命缺陷 - 简书-2023-12-08.md",
+      "title": "[093]SurfaceSyncer的致命缺陷 - 简书",
+      "content_preview": "# [093]SurfaceSyncer的致命缺陷 - 简书\n\n背景 我遇到一个很有意思的ANR问题，从trace分析来看，Launcher应用在不断地queuebuffer，但是SurfaceFli...",
+      "score": 10,
+      "relevance": 3,
+      "depth": 1,
+      "timeliness": 3,
+      "verifiability": 3,
+      "scan_timestamp": "2026-04-08T06:49:59.011276",
+      "chapters": [],
+      "quality": "medium"
+    },
+    {
+      "path": "Cubox/Flutter鸿蒙终端一体化-混沌初开-2024-01-24.md",
+      "title": "Flutter鸿蒙终端一体化-混沌初开",
+      "content_preview": "# Flutter鸿蒙终端一体化-混沌初开\n\nFlutter的一小步，鸿蒙的一大步\n\n[Read in Cubox](https://cubox.pro/web/card/71497017637784...",
+      "score": 10,
+      "relevance": 2,
+      "depth": 3,
+      "timeliness": 3,
+      "verifiability": 2,
+      "scan_timestamp": "2026-04-08T06:49:59.011651",
+      "chapters": [],
+      "quality": "medium"
+    },
+    {
+      "path": "Cubox/独立开发变现周刊（第81期）：开发一个应用来减少屏幕使用时间，月收入2万美元-2022-11-25.md",
+      "title": "独立开发变现周刊（第81期）：开发一个应用来减少屏幕使用时间，月收入2万美元",
+      "content_preview": "# 独立开发变现周刊（第81期）：开发一个应用来减少屏幕使用时间，月收入2万美元\n\n分享独立开发、产品变现相关内容，每周五发布。\n(合集：ezindie.com/weekly )\n\n[Read in ...",
+      "score": 10,
+      "relevance": 1,
+      "depth": 3,
+      "timeliness": 3,
+      "verifiability": 3,
+      "scan_timestamp": "2026-04-08T06:49:59.012023",
+      "chapters": [],
+      "quality": "medium"
+    },
+    {
+      "path": "Cubox/​Android 性能优化机制 - 优先级反转问题 - 知乎-2023-12-12.md",
+      "title": "​Android 性能优化机制 - 优先级反转问题 - 知乎",
+      "content_preview": "# ​Android 性能优化机制 - 优先级反转问题 - 知乎\n\n1 问题描述Android系统是一个非常复杂的系统，往往完成一个业务流需要跨多个线程多个进程。横跨多个运行实体，UI thread会...",
+      "score": 13,
+      "relevance": 3,
+      "depth": 3,
+      "timeliness": 3,
+      "verifiability": 4,
+      "scan_timestamp": "2026-04-08T06:49:59.012885",
+      "chapters": [],
+      "quality": "medium"
+    },
+    {
+      "path": "Cubox/Jeff Dean性能调优要点 1：重要性、估算和衡量-2025-12-22.md",
+      "title": "Jeff Dean性能调优要点 1：重要性、估算和衡量",
+      "content_preview": "# Jeff Dean性能调优要点 1：重要性、估算和衡量\n\n\n\n[Read in Cubox](https://cubox.pro/web/card/7402650686845878507)  \n[...",
+      "score": 12,
+      "relevance": 1,
+      "depth": 5,
+      "timeliness": 3,
+      "verifiability": 3,
+      "scan_timestamp": "2026-04-08T06:49:59.013253",
+      "chapters": [],
+      "quality": "medium"
+    },
+    {
+      "path": "Cubox/没有二十年功力，写不出Thread.sleep(0)这一行“看似无用”的代码！ - why技术 - 博客园-2022-09-19.md",
+      "title": "没有二十年功力，写不出Thread.sleep(0)这一行“看似无用”的代码！ - why技术 - 博客园",
+      "content_preview": "# 没有二十年功力，写不出Thread.sleep(0)这一行“看似无用”的代码！ - why技术 - 博客园\n\n你好呀，我是喜提七天居家隔离的歪歪。 这篇文章要从一个奇怪的注释说起，就是下面这张图：...",
+      "score": 10,
+      "relevance": 1,
+      "depth": 3,
+      "timeliness": 3,
+      "verifiability": 3,
+      "scan_timestamp": "2026-04-08T06:49:59.013876",
+      "chapters": [],
+      "quality": "medium"
+    },
+    {
+      "path": "Cubox/Documentation – Arm Developer-2025-03-05.md",
+      "title": "Documentation – Arm Developer",
+      "content_preview": "# Documentation – Arm Developer\n\n\n\n[Read in Cubox](https://cubox.pro/web/card/7296784389025826762)  ...",
+      "score": 11,
+      "relevance": 3,
+      "depth": 3,
+      "timeliness": 3,
+      "verifiability": 2,
+      "scan_timestamp": "2026-04-08T06:49:59.014238",
+      "chapters": [],
+      "quality": "medium"
+    },
+    {
+      "path": "Cubox/创造我所热爱的生活 – Justin’s 2023 - 枫言枫语-2024-01-04.md",
+      "title": "创造我所热爱的生活 – Justin’s 2023 | 枫言枫语",
+      "content_preview": "# 创造我所热爱的生活 – Justin’s 2023 | 枫言枫语\n\n\n\n[Read in Cubox](https://cubox.pro/web/card/7142385593664668184...",
+      "score": 11,
+      "relevance": 1,
+      "depth": 3,
+      "timeliness": 4,
+      "verifiability": 3,
+      "scan_timestamp": "2026-04-08T06:49:59.014840",
+      "chapters": [],
+      "quality": "medium"
+    },
+    {
+      "path": "Cubox/Fundamental Software Architectural Patterns - by Williams O - Jun, 2022 - Medium-2022-07-19.md",
+      "title": "Fundamental Software Architectural Patterns | by Williams O | Jun, 2022 | Medium",
+      "content_preview": "# Fundamental Software Architectural Patterns | by Williams O | Jun, 2022 | Medium\n\n\n\n[Read in Cubox...",
+      "score": 10,
+      "relevance": 1,
+      "depth": 3,
+      "timeliness": 3,
+      "verifiability": 3,
+      "scan_timestamp": "2026-04-08T06:49:59.015117",
+      "chapters": [],
+      "quality": "medium"
+    },
+    {
+      "path": "Cubox/使用 Android Vitals 监控应用的技术性能-2022-03-18.md",
+      "title": "使用 Android Vitals 监控应用的技术性能",
+      "content_preview": "# 使用 Android Vitals 监控应用的技术性能\n\n\n\n[Read in Cubox](https://cubox.pro/web/card/6904422702614840865)  \n[...",
+      "score": 13,
+      "relevance": 1,
+      "depth": 5,
+      "timeliness": 3,
+      "verifiability": 4,
+      "scan_timestamp": "2026-04-08T06:49:59.015888",
+      "chapters": [],
+      "quality": "medium"
+    },
+    {
+      "path": "Cubox/Android本地服务漏洞挖掘技术 - 上篇-2023-12-04.md",
+      "title": "Android本地服务漏洞挖掘技术 - 上篇",
+      "content_preview": "# Android本地服务漏洞挖掘技术 - 上篇\n\n\n\n[Read in Cubox](https://cubox.pro/web/card/7131271106001896407)  \n[Read ...",
+      "score": 11,
+      "relevance": 1,
+      "depth": 3,
+      "timeliness": 3,
+      "verifiability": 4,
+      "scan_timestamp": "2026-04-08T06:49:59.016245",
+      "chapters": [],
+      "quality": "medium"
+    },
+    {
+      "path": "Cubox/The Bitter Lesson-2023-11-24.md",
+      "title": "The Bitter Lesson",
+      "content_preview": "# The Bitter Lesson\n\n\n\n[Read in Cubox](https://cubox.pro/web/card/7127528659467897449)  \n[Read Origi...",
+      "score": 10,
+      "relevance": 2,
+      "depth": 3,
+      "timeliness": 3,
+      "verifiability": 2,
+      "scan_timestamp": "2026-04-08T06:49:59.016491",
+      "chapters": [],
+      "quality": "medium"
+    },
+    {
+      "path": "Cubox/Android 转场动画的前世今生 - 开发者说·DTalk-2022-01-14.md",
+      "title": "Android 转场动画的前世今生 | 开发者说·DTalk",
+      "content_preview": "# Android 转场动画的前世今生 | 开发者说·DTalk\n\n分享开发经验，有机会被推荐参选加入 \"谷歌开发技术专家\" 团队！\n\n[Read in Cubox](https://cubox.pr...",
+      "score": 11,
+      "relevance": 1,
+      "depth": 3,
+      "timeliness": 3,
+      "verifiability": 4,
+      "scan_timestamp": "2026-04-08T06:49:59.017241",
+      "chapters": [],
+      "quality": "medium"
+    },
+    {
+      "path": "Cubox/Flutter 3.27 发布啦，快来看有什么更新吧-2024-12-13.md",
+      "title": "Flutter 3.27 发布啦，快来看有什么更新吧",
+      "content_preview": "# Flutter 3.27 发布啦，快来看有什么更新吧\n\n\n\n[Read in Cubox](https://cubox.pro/web/card/7267052403235489078)  \n[R...",
+      "score": 11,
+      "relevance": 2,
+      "depth": 3,
+      "timeliness": 3,
+      "verifiability": 3,
+      "scan_timestamp": "2026-04-08T06:49:59.017636",
+      "chapters": [],
+      "quality": "medium"
+    },
+    {
+      "path": "Cubox/Repository files navigation-2023-09-15.md",
+      "title": "Repository files navigation",
+      "content_preview": "# Repository files navigation\n\n\n\n[Read in Cubox](https://cubox.pro/web/card/7102178632365246310)  \n[...",
+      "score": 10,
+      "relevance": 2,
+      "depth": 3,
+      "timeliness": 3,
+      "verifiability": 2,
+      "scan_timestamp": "2026-04-08T06:49:59.017976",
+      "chapters": [],
+      "quality": "medium"
+    },
+    {
+      "path": "Cubox/Micro-optimizations in Kotlin — 1 · Romain Guy-2024-01-16.md",
+      "title": "Micro-optimizations in Kotlin — 1 · Romain Guy",
+      "content_preview": "# Micro-optimizations in Kotlin — 1 · Romain Guy\n\nWhile my work responsibilities do not leave me muc...",
+      "score": 11,
+      "relevance": 4,
+      "depth": 2,
+      "timeliness": 3,
+      "verifiability": 2,
+      "scan_timestamp": "2026-04-08T06:49:59.018330",
+      "chapters": [
+        {
+          "chapter": "ch15-Kotlin",
+          "confidence": "medium"
+        }
+      ],
+      "quality": "medium"
+    },
+    {
+      "path": "Cubox/关于如何在 Slack 上免费使用 GPT4 和 GPT3.5 的一个简单教程： 0、全程不需要科学上网； 1、注册一个 Slack 帐号 https---slack.com-intl-zh-cn-.md",
+      "title": "关于如何在 Slack 上免费使用 GPT4 和 GPT3.5 的一个简单教程： 0、全程不需要科学上网； 1、注册一个 Slack 帐号 https://slack.com/intl/zh-cn/ ； 2、创建一个工作区，随便起一个名字，如果你已经有工作区了，跳过此步； 3、点开 https://www.springworks.in/albus/ 这个页面，安装 AIbus 到 Slack； 4、在 Slack 直接点开 AIbus 与它对话； 5、也可以在频道里把 AIbus 拉进来，之后就...",
+      "content_preview": "# 关于如何在 Slack 上免费使用 GPT4 和 GPT3.5 的一个简单教程： 0、全程不需要科学上网； 1、注册一个 Slack 帐号 https://slack.com/intl/zh-cn...",
+      "score": 10,
+      "relevance": 1,
+      "depth": 3,
+      "timeliness": 3,
+      "verifiability": 3,
+      "scan_timestamp": "2026-04-08T06:49:59.019039",
+      "chapters": [],
+      "quality": "medium"
+    },
+    {
+      "path": "Cubox/谷歌决定闭源Android？Fake News！-2025-03-27.md",
+      "title": "谷歌决定闭源Android？Fake News！",
+      "content_preview": "# 谷歌决定闭源Android？Fake News！\n\n今天下午，各种Android技术群都在讨论一条新闻：Google要终止Android开源。\n\n[Read in Cubox](https://c...",
+      "score": 11,
+      "relevance": 1,
+      "depth": 3,
+      "timeliness": 3,
+      "verifiability": 4,
+      "scan_timestamp": "2026-04-08T06:49:59.019739",
+      "chapters": [],
+      "quality": "medium"
+    },
+    {
+      "path": "Cubox/抖音 iOS-Android 基础技术大揭秘』技术沙龙又来了-2024-01-04.md",
+      "title": "抖音 iOS/Android 基础技术大揭秘』技术沙龙又来了",
+      "content_preview": "# 抖音 iOS/Android 基础技术大揭秘』技术沙龙又来了\n\n2024 年 1 月 13 ～ 14 日两天，新年最新一期『抖音客户端基础技术大揭秘』技术沙龙活动重磅来袭，基于抖音客户端实践驱动的...",
+      "score": 12,
+      "relevance": 2,
+      "depth": 2,
+      "timeliness": 4,
+      "verifiability": 4,
+      "scan_timestamp": "2026-04-08T06:49:59.020472",
+      "chapters": [],
+      "quality": "medium"
+    },
+    {
+      "path": "Cubox/Guide to Foreground Services on Android 14-2024-02-16.md",
+      "title": "Guide to Foreground Services on Android 14",
+      "content_preview": "# Guide to Foreground Services on Android 14\n\nLearn how to work with Foreground Services on Android ...",
+      "score": 12,
+      "relevance": 1,
+      "depth": 3,
+      "timeliness": 3,
+      "verifiability": 5,
+      "scan_timestamp": "2026-04-08T06:49:59.020739",
+      "chapters": [],
+      "quality": "medium"
+    },
+    {
+      "path": "Cubox/Android Performance — Capture a system trace — Perfetto-2024-09-03.md",
+      "title": "Android Performance — Capture a system trace — Perfetto",
+      "content_preview": "# Android Performance — Capture a system trace — Perfetto\n\n\n\n[Read in Cubox](https://cubox.pro/web/c...",
+      "score": 14,
+      "relevance": 4,
+      "depth": 3,
+      "timeliness": 3,
+      "verifiability": 4,
+      "scan_timestamp": "2026-04-08T06:49:59.021014",
+      "chapters": [
+        {
+          "chapter": "ch11-Profiling",
+          "confidence": "medium"
+        }
+      ],
+      "quality": "medium"
+    },
+    {
+      "path": "Cubox/Android 开发者博客：工具而非规则：通过 Compiler Explorer 成为更好的 Android 开发者 --- Android Developers Blog- Tools, not.md",
+      "title": "Android 开发者博客：工具而非规则：通过 Compiler Explorer 成为更好的 Android 开发者 --- Android Developers Blog: Tools, not ...",
+      "content_preview": "# Android 开发者博客：工具而非规则：通过 Compiler Explorer 成为更好的 Android 开发者 --- Android Developers Blog: Tools, no...",
+      "score": 12,
+      "relevance": 3,
+      "depth": 2,
+      "timeliness": 3,
+      "verifiability": 4,
+      "scan_timestamp": "2026-04-08T06:49:59.021655",
+      "chapters": [
+        {
+          "chapter": "ch14-工具",
+          "confidence": "medium"
+        }
+      ],
+      "quality": "medium"
+    },
+    {
+      "path": "Cubox/系统开发专用版 Android Studio 上手指南-2023-09-12.md",
+      "title": "系统开发专用版 Android Studio 上手指南",
+      "content_preview": "# 系统开发专用版 Android Studio 上手指南\n\n系统开发专用版 Android Studio 上手指南\n\n[Read in Cubox](https://cubox.pro/web/ca...",
+      "score": 12,
+      "relevance": 2,
+      "depth": 3,
+      "timeliness": 3,
+      "verifiability": 4,
+      "scan_timestamp": "2026-04-08T06:49:59.022044",
+      "chapters": [],
+      "quality": "medium"
     }
   ],
   "sources": [
@@ -3446,5 +4118,5 @@
       "notes": "高爷精选资源库，15个分类"
     }
   ],
-  "last_updated": "2026-04-07T16:59:49.634018"
+  "last_updated": "2026-04-08T05:36:11.672769"
 }

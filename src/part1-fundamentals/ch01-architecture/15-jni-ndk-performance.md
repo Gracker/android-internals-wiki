@@ -18,12 +18,13 @@ sources:
     path: "art/runtime/jni/jni_internal.cc"
   - type: aosp
     path: "libnativehelper/include/nativehelper/JNIHelp.h"
-tags: [JNI, NDK, native-code, performance, FastNative, CriticalNative, 16KB-page-size, Simpleperf]
-related_chapters: ["1.4", "1.5", "1.7", "4.7", "8.3"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-04-06"
-gap_source: "AOSP结构+官方文档+研究素材+读者需求"
+tags:
+  - android
+  - research
+
+
 ---
+
 
 # 1.15 JNI/NDK 性能优化
 
@@ -424,3 +425,10 @@ SurfaceFlinger 是 Android 图形合成的核心服务。它完全用 C++ 编写
 - 社区资源：
   - Simpleperf 实践篇（知乎）[来源: Cubox 索引]
   - JNI 引用类型详解（掘金）[来源: Cubox 索引]
+
+
+### @FastNative/@CriticalNative ART 优化：JNI 开销从 115ns 降至 25ns
+- 来源：https://cs.android.com/android/platform/superproject/+/master/art/
+- 类型：research
+- 摘要：ART runtime中@FastNative将JNI开销从115ns降至25ns，@CriticalNative进一步优化。注意：会阻塞GC，需谨慎在高频调用路径使用。
+- 入库时间：2026-04-08

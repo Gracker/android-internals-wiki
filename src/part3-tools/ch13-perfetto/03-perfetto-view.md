@@ -20,20 +20,14 @@ sources:
     path: "https://perfetto.dev/docs/analysis/trace-protractor"
   - type: blog
     path: "https://mp.weixin.qq.com/s?__biz=MzAxMDM0NjExNA==&mid=2247487984&idx=1&sn=713bdccc885ef503b2f691fbd6e8f93"
-tags: ['perfetto', 'trace-analysis', 'ui', 'tooling']
-related_chapters: ["13.1", "13.2", "13.4", "13.5", "2.1", "2.6", "5.1", "7.1"]
+tags:
+  - android
+  - perfetto
+  - research
 
-re-review-reason: ""
-re-review-materials: []
-re-review-triggered-date: ""
-re-review-triggered-by: ""
 
-polish_count: 1
-polish_date: "2026-04-06"
-polish_by: "task2b-polish"
-
-re-review-result: "审查 2 条素材，无需修改（素材内容为 Trace Processor SQL 分析 Camera 性能，§13.3 主题为 Perfetto UI 视觉解读，内容不匹配，更适合 §13.5 专题解读）"
 ---
+
 
 # Perfetto View 解读
 
@@ -420,3 +414,10 @@ Android Studio Profiler 也提供了 CPU Trace 的可视化视图，很多开发
 - Android Performance — Perfetto 系列 3：[https://www.androidperformance.com/2024/05/21/Android-Perfetto-03-how-to-analysis-perfetto/](https://www.androidperformance.com/2024/05/21/Android-Perfetto-03-how-to-analysis-perfetto/)
 - Perfetto 分析进阶（内核工匠）：[https://mp.weixin.qq.com/s?__biz=MzAxMDM0NjExNA==&mid=2247487984](https://mp.weixin.qq.com/s?__biz=MzAxMDM0NjExNA==&mid=2247487984)
 - AOSP Trace API：`frameworks/base/core/java/android/os/Trace.java`
+
+
+### Perfetto v52/v54 大改版：Dark Mode + ANR 分类 + 位图时序
+- 来源：https://github.com/google/perfetto/releases
+- 类型：article
+- 摘要：UI层：Dark Mode、触摸支持、多Track批量操作。分析层：android_anrs新增anr_type字段、android.bitmaps位图时序数据、slice_self_dur自持续时间计算、regexp_extract函数、JSON trace解析性能提升。
+- 入库时间：2026-04-08

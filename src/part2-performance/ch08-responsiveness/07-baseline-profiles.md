@@ -15,9 +15,13 @@ sources:
     path: "intake/research-feeds/2026-04-06-11-baseline-profiles-compilation-optimization.md"
   - type: blog
     path: "intake/research-feeds/2026-04-04-07-ch08-startup-profiles-dex-layout-optimization.md"
-tags: [Baseline Profiles, Profile-Guided Optimization, dex2oat, 启动优化, AGP, app-speed-index, Cloud Compilation]
-related_chapters: ["1.7", "1.12", "8.2", "8.3"]
+tags:
+  - android
+  - research
+
+
 ---
+
 
 # 8.7 Baseline Profiles 与编译优化实践
 
@@ -393,3 +397,12 @@ Baseline Profiles 不只适用于第三方应用。在系统镜像中，预装�
 在 AOSP 构建流程中，可以通过 `WITH_DEXPREOPT=true` 和 `WITH_DEXPREOPT_BOOT_IMG_AND_SYSTEM_SERVER_ONLY=true` 来控制预编译的范围。
 
 [待补充: 具体的系统构建配置示例和 profile 文件格式]
+
+## 参考资料
+
+### Android 16 云端编译 + Baseline/Startup Profiles DEX Layout 优化
+- 来源：https://android-developers.googleblog.com/cloud-compilation-baseline-profiles
+- 类型：research
+- 摘要：云编译替代设备端dex2oat。Startup Profiles DEX Layout额外+15-30%启动速度。Baseline Profiles + Startup Profiles组合：首次launch即可30%执行提速，已深度集成CI/CD。
+- 入库时间：2026-04-08
+
