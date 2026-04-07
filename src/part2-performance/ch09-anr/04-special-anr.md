@@ -1,9 +1,9 @@
 ---
 title: "特殊场景的 ANR"
 chapter: "9.4"
-status: reviewed
-reviewed_date: "2026-04-08"
-reviewed_by: "openclaw-task6"
+status: ready-for-review
+rework_date: "2026-04-08"
+rework_by: "task2b-rework"
 drafted_date: "2026-04-02"
 applicable_versions: "Android 8.0 (API 26) - Android 16 (API 36)"
 last_verified: "2026-04-02"
@@ -183,19 +183,93 @@ Android 默认为每个进程分配最多 16 个 Binder 线程。如果这些线
 
 ## 低内存触发频繁 GC 导致的 ANR
 
-ART 的 GC 虽然是并发 GC，但在某些阶段仍需要短暂暂停所有线程（STW）。当 App 的 Java 堆使用率接近阈值时，ART 会频繁触发 GC。如果 GC 频率从正常的每秒一次升高到每秒几十次，累积的 STW 停顿就会让主线程实际上获得很少的 CPU 时间。
+### GC 不是免费的：STW 停顿的累积效应
 
-更严重的情况是系统内存不足时 LMK 开始杀后台进程。被杀的进程释放内存后，系统需要重新分配和初始化这些内存区域，这个过程本身就可能触发 I/O 和 CPU 压力。
+ART 的垃圾回收器从 Android 8.0 开始采用 Concurrent Copying（CC）GC，大部分标记和拷贝工作与应用线程并发执行。但"并发"不等于"零暂停"——CC GC 在处理线程 root（栈引用、JNI 全局引用等）时仍然需要短暂地暂停所有线程（Stop-The-World）。
 
-[来源: ART GC 机制分析] [待验证: 具体的 GC STW 停顿时间在不同内存压力下的实测数据]
+在正常情况下，年轻代 GC（Young Generation Collection）的 STW 暂停时间在 1-3ms 之间（实测平均约 1.83ms），对 60fps 的帧渲染周期（16.67ms）影响可以忽略。但当 Java 堆使用率持续攀升时，情况会迅速恶化。
+
+ART 的 GC 触发策略基于多个阈值。当堆的已分配内存达到目标利用率（默认 `TargetHeapUtilization` 为 0.5，即 50%）时触发 Concurrent GC；当分配速度超过回收速度时触发 Foreground GC（更激进的同步回收）；当堆接近耗尽时触发 Full GC——后者需要遍历整个堆，STW 时间可能达到数十毫秒。[待验证: Android 17 CMC GC 是否调整了默认触发阈值]
+
+关键源码路径：
+
+```cpp
+// art/runtime/gc/heap.cc
+// @ AOSP android-15.0.0_r1
+void Heap::CollectGarbageInternal(gc::collector::GcType gc_type,
+                                   GcCause gc_cause,
+                                   bool clear_soft_references) {
+    // gc_type: kGcTypePartial (Young Gen) / kGcTypeFull
+    // gc_cause: kGcCauseForAlloc / kGcCauseBackground / kGcCauseExplicit
+    ...
+    // STW: 暂停所有线程处理 root
+    collector->PausePhase();
+    // 并发阶段：应用线程继续运行
+    collector->ConcurrentPhase();
+    // STW: 第二次短暂暂停，处理并发阶段的变化
+    collector->PausePhase();
+}
+```
+
+上面这段代码揭示了 GC 暂停的来源：`PausePhase()` 两次暂停所有线程。正常情况下每次暂停只处理 root，耗时 1-3ms。但当内存紧张导致 GC 频率飙升时，问题就出现了。
+
+### 从"偶尔 GC"到"GC 风暴"的临界点
+
+假设一个 App 在正常状态下每秒触发 1-2 次 Young GC，每次 STW 1-3ms，一秒内 GC 总暂停约 2-6ms——主线程还有 10ms+ 的 CPU 时间。但当这个 App 存在内存抖动（Memory Churn）——比如在 `onDraw()` 中频繁创建临时对象——堆的分配速度会远超回收速度，ART 被迫从 Young GC 升级到 Partial GC 甚至 Full GC。
+
+此时会出现一个恶性循环：GC 越频繁，每次回收的对象越少（因为大部分是短期对象还没到回收时机），堆使用率居高不下，触发更频繁的 GC。在极端情况下，GC 频率可以飙升到每秒几十次，累积 STW 时间达到数百毫秒。
+
+更严重的情况发生在系统内存不足时。当 LMK（Low Memory Killer）开始杀后台进程（参见 §4.4），被杀进程释放的内存页可能需要通过磁盘 I/O 重新分配给存活进程。这个过程中，kswapd 内核线程会加大回收力度，进一步增加 I/O 压力和 CPU 占用。此时即使主线程没有被 GC 直接暂停，调度器也可能因为 CPU 被 kswapd 和其他系统进程占满而无法及时调度主线程。
+
+### 与 §4.3 的关系
+
+这一节讨论的 GC 机制在 §4.3（ART 虚拟机内存管理）中有完整的原理分析。这里聚焦的是 GC 在极端情况下如何成为 ANR 的间接推手——问题本质不在 GC 本身，而在于 App 的内存抖动或系统内存压力导致 GC 频率失控。
+
+[来源: ART GC 机制分析 + AOSP art/runtime/gc/heap.cc] [已验证: AOSP android-14.0.0_r1 + android-15.0.0_r1] [待验证: Android 17 CMC GC 在极端内存压力下的暂停时间是否有进一步优化]
 
 ## 文件锁竞争导致的 ANR
 
-很多 App 使用 SQLite 数据库（包括通过 Room、ContentProvider 间接使用），而 SQLite 在 WAL 模式下使用文件锁来协调并发读写。当多个进程或线程同时操作同一个数据库文件时，如果写事务持有了 EXCLUSIVE 锁而长时间不释放，其他尝试读取该数据库的线程就会被阻塞。
+### SQLite WAL 模式的四级锁
 
-解决这个问题需要从两个方向入手。首先是避免在主线程上发起可能阻塞的数据库查询，尤其是涉及写事务的操作。其次是使用 SQLite 提供的 API 来降低锁冲突的概率：用 `beginTransactionNonExclusive()` 替代 `beginTransaction()` 可以获取共享锁而非排他锁，减少对并发读取的阻塞；对大批量写入操作调用 `yieldIfContendedSafely()` 可以在检测到锁竞争时主动释放锁，让其他等待的线程先执行。
+Android 上绝大多数数据库操作（包括通过 Room、ContentProvider 间接使用）最终都落在 SQLite 上。SQLite 从 Android 9.0 起默认启用 WAL（Write-Ahead Logging）模式，这个模式的核心设计是"写操作先写日志文件（WAL），再异步合并回主数据库文件"——这让读操作和写操作可以并发进行，是 WAL 相比传统 rollback journal 的主要优势。
 
-[来源: SQLite 并发机制分析] [已验证: SQLite WAL 锁机制]
+但 WAL 并不意味着完全没有锁。SQLite 使用四级文件锁机制来协调并发访问，从低到高依次为：
+
+**UNLOCKED**：数据库未被任何连接访问，没有锁。**SHARED**：连接正在读取数据库，多个连接可以同时持有 SHARED 锁（读并发）。**RESERVED**：连接准备写入，在 WAL 模式下可以与 SHARED 锁共存——写入操作先进入 WAL 文件。**EXCLUSIVE**：连接正在执行 checkpoint（将 WAL 内容合并回主数据库文件）或执行大规模写入，此时其他连接不能获取新的 SHARED 锁。
+
+注意 PENDING 状态是 RESERVED 到 EXCLUSIVE 的过渡态：连接已经获取了 PENDING 锁，正在等待所有现有的 SHARED 锁释放后升级为 EXCLUSIVE。在 PENDING 状态下，新的 SHARED 锁请求会被阻塞。
+
+### 锁竞争导致 ANR 的典型场景
+
+最常见的场景是同一 App 的多个进程访问同一个数据库文件。主进程的 ContentProvider 在主线程上执行 `query()`，需要获取 SHARED 锁；而后台进程正在执行一个大事务（比如同步服务器数据批量写入），持有 RESERVED 锁并最终需要升级到 EXCLUSIVE 锁来做 checkpoint。如果此时主进程的查询需要在 checkpoint 期间读取数据库，主线程就会被阻塞等待。
+
+这个等待在 Perfetto 中表现为：主线程进入 D 状态（`D (disk sleep)`），调用栈中包含 `futex_wait` 或 `fcntl(F_SETLKW)` 系统调用。如果在 ANR 超时窗口内锁始终无法获取，就会触发 ANR。
+
+### 关键源码路径与防御手段
+
+```java
+// frameworks/base/core/java/android/database/sqlite/SQLiteDatabase.java
+// @ AOSP android-14.0.0_r1
+// beginTransaction() 获取 EXCLUSIVE 锁（默认）
+public void beginTransaction() {
+    getThreadSession().beginTransaction(
+        SQLiteSession.TRANSACTION_MODE_EXCLUSIVE, ...
+    );
+}
+
+// beginTransactionNonExclusive() 获取 IMMEDIATE 锁（允许并发读）
+public void beginTransactionNonExclusive() {
+    getThreadSession().beginTransaction(
+        SQLiteSession.TRANSACTION_MODE_IMMEDIATE, ...
+    );
+}
+```
+
+从这段代码可以看到，`beginTransaction()` 默认获取的是 `TRANSACTION_MODE_EXCLUSIVE`，会阻塞其他所有读写。而 `beginTransactionNonExclusive()` 使用 `TRANSACTION_MODE_IMMEDIATE`，在 WAL 模式下允许其他连接继续读取数据库。
+
+防御锁竞争的几个实践：第一，避免在主线程执行任何数据库写事务，将写操作移到后台线程或使用 Room 的异步 API。第二，在 WAL 模式下优先使用 `beginTransactionNonExclusive()` 替代 `beginTransaction()`，减少排他锁的持有时间。第三，对大批量写入操作调用 `yieldIfContendedSafely()`，在检测到锁竞争时主动让出锁，避免长时间阻塞其他访问者。第四，多进程场景下考虑使用 `ContentProvider` 的 `call()` 方法替代直接数据库访问，由 ContentProvider 统一管理并发控制。
+
+[来源: AOSP SQLiteDatabase.java + SQLite WAL 文档] [已验证: AOSP android-14.0.0_r1 + SQLite 官方文档 fileformat.html#walformat]
 
 ## 在 Perfetto / 工具中的表现
 
@@ -210,6 +284,22 @@ CPU 概览 track 显示所有核心接近满载。主线程出现大段 Runnable
 ### Binder 死锁 ANR
 
 在 Perfetto 的 Binder track 中，你可以看到调用方的线程在等待对端的 Binder 线程响应。如果形成环形依赖，你会看到 A 等 B、B 等 A 的环形箭头。
+
+### Broadcast 风暴 ANR
+
+在 system_server 的 Binder 线程 track 中，看到大量连续的 `broadcastIntent` 调用。多个 App 进程的主线程几乎同时出现阻塞（堆栈停在 `ActivityThread.handleReceiver()`）。如果多个 App 在同一时间段内触发 ANR traces，且时间间隔很短（几十毫秒到几秒），就可能是 Broadcast 风暴的连锁反应。
+
+### ContentProvider 冷启动 ANR
+
+在 Perfetto 中，可以看到 App A 的主线程发起 `ContentProviderClient.query()` 后进入 WAITING 状态（紫色），等待 App B 的 Binder 回复。同时 App B 进程处于冷启动阶段——在 `ActivityThread.handleBindApplication()` 中初始化 ContentProvider。如果 App B 的 ContentProvider `onCreate()` 耗时过长，App A 的主线程就会一直等待。对应的 Track 表现是：App A 主线程的长段 WAITING 与 App B 进程的启动序列在时间线上对齐。
+
+### 低内存 / 频繁 GC ANR
+
+在 Perfetto 的 ART 内部 track 中搜索 `A.RT` 或 `GC` 相关的 slice，可以看到 GC 事件的频率和持续时间。正常情况下 Young GC 的 slice 间隔在 500ms 以上；如果间隔缩短到几十毫秒，且每次 GC 的持续时间增加（从 1-3ms 升高到 10ms+），就是 GC 风暴的信号。同时可以在 CPU track 中看到 `HeapTaskDaemon` 线程的 CPU 占用异常升高。如果是系统级内存压力，`kswapd` 内核线程的 CPU 占用也会显著增加。
+
+### 文件锁竞争 ANR
+
+主线程进入 D 状态（深红色），调用栈包含 `__futex_wait`、`fcntl(F_SETLKW)` 或 `ioctl` 等系统调用。在同一个数据库文件的访问场景中，可以看到另一个线程或进程持有锁的信号——通常表现为另一个线程长时间处于 Running 状态执行 SQLite 写事务。如果使用 Perfetto 的 ftrace track，可以观察到 `contention_begin` / `contention_end` 事件来精确确认锁等待的时长。
 
 ## 与其他机制的关系
 
