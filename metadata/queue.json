@@ -1273,5 +1273,37 @@
     "original_review_log": "logs/review/2026-04-08-01-review.md",
     "completed_at": "2026-04-08T01:43:56",
     "completed_by": "task2b-rework"
+  },
+  {
+    "section": "16.5",
+    "title": "Android 17 (API 37) 性能行为变更与适配指南",
+    "priority": 80,
+    "status": "pending",
+    "file": "src/part4-system/ch16-aosp/05-android17-api37-performance-changes.md",
+    "notes": "gap-mining 2026-04-08, score 20/20"
+  },
+  {
+    "section": "2.20",
+    "title": "多窗口与桌面模式渲染性能",
+    "priority": 80,
+    "status": "pending",
+    "file": "src/part1-fundamentals/ch02-rendering/20-multiwindow-desktop-rendering.md",
+    "notes": "gap-mining 2026-04-08, score 16/20"
+  },
+  {
+    "section": "15.8",
+    "title": "Android 性能问题实证：真实世界的分类与代码模式",
+    "priority": 80,
+    "status": "pending",
+    "file": "src/part3-tools/ch15-methodology/08-empirical-performance-issues.md",
+    "notes": "gap-mining 2026-04-08, score 15/20"
+  },
+  {
+    "section": "12.4",
+    "title": "Android 网络安全与 TLS 性能优化",
+    "priority": 80,
+    "status": "pending",
+    "file": "src/part2-performance/ch12-apk-network/04-network-security-tls-performance.md",
+    "notes": "gap-mining 2026-04-08, score 14/20"
   }
 ]

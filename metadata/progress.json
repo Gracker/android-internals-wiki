@@ -2,13 +2,13 @@
   "generated_at": "2026-04-03T19:10:00",
   "total_sections": 110,
   "metrics": {
-    "total": 130,
-    "draft": 10,
+    "total": 134,
+    "draft": 14,
     "ready-for-review": 35,
     "reviewed": 5,
     "finalized": 30,
     "staging_drafts": 0,
-    "last_updated": "2026-04-08T01:20:00+08:00",
+    "last_updated": "2026-04-08T02:02:00+08:00",
     "processing": 0,
     "ready-to-publish": 12,
     "last_reviewed": "2026-04-08",
@@ -1847,10 +1847,10 @@
   "ready_for_review": 6,
   "last_updated": "2026-04-07T19:36:26.433313",
   "stats": {
-    "total": 112,
+    "total": 116,
     "completed": 87,
-    "pending": 26,
-    "last_updated": "2026-04-08T00:02:00+08:00",
+    "pending": 30,
+    "last_updated": "2026-04-08T02:02:00+08:00",
     "reviewed": 1,
     "ready-for-review": 1
   },
@@ -2140,6 +2140,42 @@
     }
   ],
   "history": [
+    {
+      "date": "2026-04-08",
+      "section": "12.4",
+      "title": "Android 网络安全与 TLS 性能优化",
+      "action": "gap-created",
+      "created_by": "task2a-knowledge-gap",
+      "gap_source": "官方文档+AOSP结构",
+      "gap_score": "14/20"
+    },
+    {
+      "date": "2026-04-08",
+      "section": "15.8",
+      "title": "Android 性能问题实证：真实世界的分类与代码模式",
+      "action": "gap-created",
+      "created_by": "task2a-knowledge-gap",
+      "gap_source": "研究素材+读者需求",
+      "gap_score": "15/20"
+    },
+    {
+      "date": "2026-04-08",
+      "section": "2.20",
+      "title": "多窗口与桌面模式渲染性能",
+      "action": "gap-created",
+      "created_by": "task2a-knowledge-gap",
+      "gap_source": "AOSP结构+官方文档+读者需求",
+      "gap_score": "16/20"
+    },
+    {
+      "date": "2026-04-08",
+      "section": "16.5",
+      "title": "Android 17 (API 37) 性能行为变更与适配指南",
+      "action": "gap-created",
+      "created_by": "task2a-knowledge-gap",
+      "gap_source": "官方文档+研究素材+AOSP结构+读者需求",
+      "gap_score": "20/20"
+    },
     {
       "date": "2026-04-08",
       "section": "6.5",

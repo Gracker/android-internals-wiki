@@ -55,6 +55,7 @@ tags:
   - [2.17 Frame Pacing Library 与帧节奏控制](part1-fundamentals/ch02-rendering/17-frame-pacing.md)
   - [2.18 Adaptive Refresh Rate 与动态帧率控制](part1-fundamentals/ch02-rendering/18-adaptive-refresh-rate.md)
   - [2.19 刷新率切换与帧率适配性能](part1-fundamentals/ch02-rendering/19-refresh-rate-switching.md)
+  - [2.20 多窗口与桌面模式渲染性能](part1-fundamentals/ch02-rendering/20-multiwindow-desktop-rendering.md)
 
 - [第 3 章：输入系统](part1-fundamentals/ch03-input/README.md)
   - [3.1 Input 事件分发全流程](part1-fundamentals/ch03-input/01-input-dispatch.md)
@@ -144,6 +145,7 @@ tags:
   - [12.1 APK 体积优化](part2-performance/ch12-apk-network/01-apk-size.md)
   - [12.2 网络性能优化](part2-performance/ch12-apk-network/02-network-performance.md)
   - [12.3 网络性能深入：连接池、TLS 与传输优化](part2-performance/ch12-apk-network/03-network-performance-deep.md)
+  - [12.4 Android 网络安全与 TLS 性能优化](part2-performance/ch12-apk-network/04-network-security-tls-performance.md)
 
 ---
 
@@ -179,6 +181,7 @@ tags:
   - [15.5 线上性能监控](part3-tools/ch15-methodology/05-online-monitoring.md)
   - [15.6 性能测试最佳实践](part3-tools/ch15-methodology/06-testing-best-practices.md)
   - [15.7 AOSP 代码阅读](part3-tools/ch15-methodology/07-aosp-reading.md)
+  - [15.8 Android 性能问题实证：真实世界的分类与代码模式](part3-tools/ch15-methodology/08-empirical-performance-issues.md)
 
 ---
 
@@ -189,6 +192,7 @@ tags:
   - [16.2 各 Android 版本性能变更追踪](part4-system/ch16-aosp/02-version-changes.md)
   - [16.3 AOSP 源码编译与调试环境](part4-system/ch16-aosp/03-aosp-build.md)
   - [16.4 Android 17 + Kernel 6.12 系统级性能优化](part4-system/ch16-aosp/04-android17-kernel612-performance.md)
+  - [16.5 Android 17 (API 37) 性能行为变更与适配指南](part4-system/ch16-aosp/05-android17-api37-performance-changes.md)
 
 - [第 17 章：厂商优化实践](part4-system/ch17-oem/README.md)
   - [17.1 OEM 性能优化的通用思路](part4-system/ch17-oem/01-oem-overview.md)
