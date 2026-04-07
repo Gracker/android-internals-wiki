@@ -2,11 +2,14 @@
 title: "Android 功耗模型"
 section: "11.1"
 chapter: "11.1"
-status: finalized
+status: ready-for-review
 reviewed_date: "2026-04-04"
 reviewed_by: "openclaw-task6"
 drafted_date: "2026-04-03"
 drafted_by: "openclaw-task2a"
+polish_count: 1
+polish_date: "2026-04-07"
+polish_by: "task2b-polish"
 applicable_versions: "Android 5.0 (API 21) - Android 16 (API 36)"
 last_verified: "2026-04-03"
 last_verified_against: "AOSP android-16.0.0_r1"
@@ -22,7 +25,7 @@ sources:
     path: "https://source.android.com/docs/core/power"
   - type: official
     path: "https://developer.android.com/topic/performance/power"
-tags: ['power', 'battery', 'power_profile', 'BatteryStats', 'ODPM']
+tags: ['power', 'battery', 'power_profile', 'BatteryStats', 'ODPM', 'Coulomb Counter', 'Fuel Gauge', 'IPowerStats', '功耗归属']
 related_chapters: ["5.4", "5.5", "5.6", "11.2", "11.3", "13.1"]
 ---
 
@@ -57,7 +60,7 @@ related_chapters: ["5.4", "5.5", "5.6", "11.2", "11.3", "13.1"]
 
 当用户抱怨"你的 App 太耗电了"的时候，开发者往往一脸茫然——我的 App 又没有做挖矿，怎么会耗电？问题在于，耗电不是一个 App 自己说了算的事。Android 系统通过一套精心设计的功耗模型，把电池消耗拆分到各个硬件模块，再按使用时间归属到每个 App。如果我们不了解这套模型的工作原理，就不知道"设置 → 电池 → 电池使用情况"里那个百分比是怎么算出来的，更不知道该怎么优化。
 
-理解功耗模型的核心价值在于：它决定了我们能，以及这些数据有多可信。当我们打开 Battery Historian 看到一个 App 的 CPU 耗电占比异常时，我们需要知道这个数字是来自硬件实测还是软件估算，误差范围有多大，哪些场景下数据可信、哪些场景下需要额外验证。
+理解功耗模型的核心价值在于：它决定了我们能获取到哪些功耗数据，以及这些数据有多可信。当我们打开 Battery Historian 看到一个 App 的 CPU 耗电占比异常时，我们需要知道这个数字是来自硬件实测还是软件估算，误差范围有多大，哪些场景下数据可信、哪些场景下需要额外验证。
 
 我们在前几章已经讨论了 CPU 调度（§5.1）、DVFS（§5.4）、热管理（§5.5）和 Android 功耗管理机制（§5.6）。那些章节讲的是系统如何"省电"，而本章要回答的问题是：系统怎么知道谁"费了电"，以及这个"知道"有多准确。
 
@@ -132,11 +135,11 @@ Android 功耗模型的核心是一个叫 `power_profile.xml` 的 XML 文件。�
 
 [待验证: 以上数值为示意性占位，非真实设备数据。AOSP 默认文件中的值为 0.1mA 占位值]
 
-这里有几个关键细节值得注意。
+这个结构中有几个关键细节。
 
 第一，CPU 的功耗被拆分为"各频率点对应电流"和"空闲电流"两部分。这是因为现代 SoC 的 CPU 功耗随频率呈非线性增长——1.5GHz 时的电流可能是 300MHz 时的四倍。对于异构 CPU（大小核架构），文件中会有 `cpu.speeds.cluster0`、`cpu.speeds.cluster1` 这样的独立数组，分别对应小核和大核集群。这和我们在 §5.3 中讨论的大小核架构直接对应。
 
-第二，蜂窝网络 Radio 的功耗按信号强度区分了多个等级。信号弱时，Radio 需要更大的发射功率来维持连接，电流消耗可能比信号强时高出两三倍。这也是为什么在地铁里刷手机特别费电的原因之一。
+第二，蜂窝网络 Radio 的功耗按信号强度区分了多个等级。信号弱时，Radio 需要更大的发射功率来维持连接，电流消耗可能比信号强时高出两三倍。这就是在地铁里刷手机特别费电的原因之一。
 
 第三，AOSP 中默认的 `power_profile.xml` 包含的都是占位值（通常是 0.1mA）。OEM 厂商必须在出货前用实际硬件测量填充真实数据。如果厂商偷懒填了不准的值（或者直接用了默认值），那么整个功耗归属系统的准确性都会大打折扣。
 
@@ -148,13 +151,13 @@ Android 功耗模型的核心是一个叫 `power_profile.xml` 的 XML 文件。�
 
 CPU 几乎永远是功耗清单上的第一项。它的工作模式简单直接：频率越高越费电，核心越多越费电，持续运行越久越费电。我们在 §5.4 中讨论过 DVFS 机制，系统会根据负载动态调整 CPU 频率来平衡性能和功耗。从功耗模型的角度看，BatteryStats 会记录每个 App 在各个 CPU 频率上的运行时间，然后乘以 power_profile 中对应频率的电流值，得到该 App 的 CPU 耗电量。
 
-计算公式大致是：
+计算公式如下：
 
 ```
-App CPU 耗电量 (mAh) = Σ (频率i的运行时间 × 频率i的电流 mA × 标称电压) / 1000
+App CPU 耗电量 (mAh) = Σ (频率i的运行时间 (秒) / 3600 × 频率i的电流 (mA))
 ```
 
-其中标称电压（nominal voltage）也是 power_profile.xml 中的一个参数。
+对于需要计算能量消耗（mWh）的场景，还需要乘以对应频率下的标称电压（`cpu.voltage` 数组中的值）。但在 BatteryStats 的 App 归属统计中，计算单位是电荷量 mAh，不涉及电压。
 
 这里有一个容易忽略的细节：CPU 空闲时的功耗（cpu.idle）被算作系统级开销，不会归属到任何 App。只有 CPU active 状态的时间才会被分配给对应的进程。
 
@@ -306,7 +309,7 @@ GPS 部分：(120/3600) × 50  = 1.67 mAh
 
 ## ODPM：从估算到实测的跨越
 
-Android 10 引入了一个重要的硬件抽象层接口——IPowerStats HAL（`hardware/interfaces/power/stats/`），配合 Google Pixel 6 及后续 Pixel 设备上的 ODPM（On-Device Power Monitor）子系统，标志着 Android 功耗模型从"纯估算"向"估算 + 实测"混合模式的重要演进。
+Android 10 引入了一个重要的硬件抽象层接口——IPowerStats HAL（`hardware/interfaces/power/stats/`），配合 Google Pixel 6 及后续 Pixel 设备上的 ODPM（On-Device Power Monitor）子系统，意味着 Android 功耗模型开始从纯估算向估算与实测混合模式演进。
 
 [已验证: AOSP android-16.0.0_r1, hardware/interfaces/power/stats/aidl/android/hardware/power/stats/IPowerStats.aidl]
 
@@ -359,7 +362,7 @@ ODPM 虽然强大，但目前有几个明显的局限：
 
 ### 影响准确性的因素
 
-**power_profile.xml 的参数质量**是最关键的因素。如果 OEM 厂商没有认真测量就填了近似值（或者直接用了参考设计的值），那么基于这些参数的所有估算都会有系统性偏差。一个常见的例子是：厂商测量 CPU 功耗时使用的是工程样机，而量产机更换了不同批次的 SoC，实际功耗可能偏差 10-20%。
+**power_profile.xml 的参数质量**是最关键的因素。如果 OEM 厂商没有认真测量就填了近似值（或者直接用了参考设计的值），那么基于这些参数的所有估算都会有系统性偏差。一个常见的例子是：厂商测量 CPU 功耗时使用的是工程样机，而量产机更换了不同批次的 SoC（System on Chip，即手机主芯片），实际功耗可能偏差 10-20%。
 
 **温度和老化**是另外两个被忽略的因素。电池的内阻会随温度变化（低温时内阻增大，可用容量下降），也会随充放电循环次数增加而增大。power_profile.xml 中的参数是在特定测试条件下的快照，没有考虑这些动态因素。
 
