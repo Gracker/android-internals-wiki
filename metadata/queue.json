@@ -135,8 +135,10 @@
     ],
     "added_by": "task6-review",
     "added_at": "2026-04-08T06:59:53",
-    "status": "pending",
-    "original_review_log": "logs/review/2026-04-08-0654-review.md"
+    "status": "completed",
+    "original_review_log": "logs/review/2026-04-08-0654-review.md",
+    "completed_at": "2026-04-07T23:42:30",
+    "completed_by": "task2b-rework"
   },
   {
     "section": "2.17",

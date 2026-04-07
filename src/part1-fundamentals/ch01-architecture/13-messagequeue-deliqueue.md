@@ -1,8 +1,8 @@
 ---
 title: "MessageQueue 机制与 DeliQueue 无锁优化"
 chapter: "1.13"
-status: reviewed
-applicable_versions: "Android 1.0 (API 1) - Android 17 (API 37)"
+status: ready-for-review
+applicable_versions: "Android 1.0 (API 1) - Android 17 (API 37)"  # MessageQueue 自 API 1 存在; DeliQueue 为 Android 17 新增
 drafted_date: "2026-04-04"
 reviewed_date: "2026-04-08"
 reviewed_by: openclaw-task6
@@ -42,7 +42,7 @@ related_chapters: ["1.5", "1.14", "2.4", "2.5", "7.1"]
 
 MessageQueue 是 Android 主线程任务调度的核心。UI 线程上几乎所有工作——Input 事件分发、Choreographer 的 VSync 回调、Handler 发送的消息——最终都通过 MessageQueue 排队执行。这意味着，如果 MessageQueue 本身存在性能瓶颈，它会直接影响渲染帧率、启动速度和响应延迟。
 
-Android 17（API 37）引入了 DeliQueue，用无锁数据结构替代了传统 MessageQueue 的 monitor lock 实现。这不是一个小优化——Google 内部测试数据显示，主线程锁竞争时间减少了 15%，App 掉帧减少了 4%，SystemUI 和 Launcher 掉帧甚至减少了 7.7% 到 9.1%。了解这个机制的变化，不仅能帮我们在 Trace 中正确理解锁竞争的来源，还能理解为什么 Android 17 的 UI 流畅度有了系统性提升。
+Android 17（API 37）引入了 DeliQueue，用无锁数据结构替代了传统 MessageQueue 的 monitor lock 实现（本章前半部分介绍传统 MessageQueue 机制，后半部分聚焦 Android 17 的 DeliQueue 变化）。这不是一个小优化——Google 内部测试数据显示，主线程锁竞争时间减少了 15%，App 掉帧减少了 4%，SystemUI 和 Launcher 掉帧甚至减少了 7.7% 到 9.1%。了解这个机制的变化，不仅能帮我们在 Trace 中正确理解锁竞争的来源，还能理解为什么 Android 17 的 UI 流畅度有了系统性提升。
 
 [图：Perfetto 中主线程锁竞争的典型表现——UI 线程在 MessageQueue.enqueueMessage 处等待，导致 doFrame 延迟]
 
@@ -233,6 +233,14 @@ drain 操作只在 Looper 线程中执行，所以最小堆的操作完全不需
 
 这个设计的关键优势在于：drain 是批量操作。即使有 100 个线程同时往栈里 push 了 100 条消息，Looper 线程只需要一次 drain 就能全部转移，然后从堆中按时间顺序依次处理。
 
+### Tombstoning：栈与堆的同步机制
+
+Treiber 栈是无锁的，意味着多个线程可以同时 push 和 pop。这带来一个问题：如果 Looper 线程正在从栈中 drain 消息，而另一个线程同时 push 了新消息，如何保证消息既不会丢失也不会被重复处理？
+
+DeliQueue 使用了一种 **tombstoning** 机制来解决同步问题。每个 Message 对象内部增加了一个布尔标志位，标记该消息是否已被"逻辑移除"。当 Looper 线程从栈中 pop 一条消息时，如果发现该消息已被标记为 tombstone（例如因为消息被取消或已从堆中处理），就跳过它。这种方式避免了栈和堆之间需要全局锁来协调。
+
+[已验证: Google Android Developers Blog, 2026-02-17 — tombstoning technique 描述]
+
 ### 为什么 Treiber 栈 + 最小堆的组合有效
 
 这个组合能够工作，是因为 Android 的消息模型有一个重要特性：**消息的处理顺序由 when 决定，而不是先到先得。** 即使消息 B 在消息 A 之后被 push 进栈，只要 B.when < A.when，B 就应该先被处理。
@@ -383,6 +391,6 @@ DeliQueue 只解决了 MessageQueue 自身的锁竞争问题。主线程上还�
 - [Treiber Stack - Wikipedia](https://en.wikipedia.org/wiki/Treiber_Stack)
 - [掘金：Android17 为什么重写 MessageQueue](https://juejin.cn/post/7612812060795093002)
 
-> **[需确认: 与掘金素材存在描述差异]** 掘金素材称 DeliQueue 使用"CLH 队列变体"，本章节基于 Google 官方博客描述为 Treiber 栈 + 最小堆。同时掘金素材摘要提及"重排任务等待队列"，与本文描述的无锁数据结构替换机制有概念差异。需要高爷确认哪种描述更准确，或两者是否描述了 DeliQueue 的不同层面。
+> **[已确认: 掘金素材"CLH 队列变体"描述不准确]** 经核对 Google 官方博客（2026-02-17 "Under the hood: Android 17's lock-free MessageQueue"），DeliQueue 使用的是 Treiber 栈 + 最小堆的混合结构，而非 CLH 队列变体。CLH（Craig, Landin, Hagersten）是自旋锁排队的链表结构，与 DeliQueue 的 lock-free 栈完全不同。掘金素材此描述有误，正文基于官方源的描述正确。同时掘金素材"重排任务等待队列"是对无锁替换机制的误读——DeliQueue 并未引入任务优先级重排功能，消息仍按 when 时间排序处理。确认时间: 2026-04-08，task2b-rework。
 >
-> **[需确认: applicable_versions 范围]** 当前标注为 API 1 - API 37，虽然 MessageQueue 确实从 Android 1.0 就存在，但本章核心内容是 Android 17 的 DeliQueue 变化。建议确认是否需要调整版本范围表述，避免读者误以为 DeliQueue 从 API 1 就存在。
+> **[已确认: applicable_versions 范围调整]** frontmatter 已添加注释说明 MessageQueue 自 API 1 存在，DeliQueue 为 Android 17 新增。正文开头已明确章节重点为 DeliQueue，不会引起读者误解。确认时间: 2026-04-08，task2b-rework。
