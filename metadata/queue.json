@@ -1238,5 +1238,38 @@
     "status": "completed",
     "completed_at": "2026-04-08T00:02:00+08:00",
     "completed_by": "openclaw-task2a"
+  },
+  {
+    "section": "9.4",
+    "section_title": "特殊场景的 ANR",
+    "priority": 90,
+    "reason": "[review回炉] 两个小节内容深度不足，Perfetto工具表现章节不完整",
+    "material_paths": [
+      "intake/suggestions.md（含 review 意见）"
+    ],
+    "review_issues": [
+      {
+        "type": "需补充内容",
+        "location": "低内存触发频繁 GC 导致的 ANR（全文）",
+        "detail": "该小节仅约150字，缺少源码引用、具体GC触发阈值的数值说明、不同内存压力下STW停顿的实测数据、Trace中的Track表现描述。其他小节（如SP apply ANR）普遍500-800字并含源码引用",
+        "suggestion": "参考其他小节的深度，补充：1) ART GC触发阈值的具体数值（如 concurrent partial / full GC 的 heap 阈值）；2) GC STW 在 Perfetto 中的 Track 名称和表现形式；3) 与§4.3内存管理章节的交叉引用；4) 至少一个真实案例或Trace片段描述"
+      },
+      {
+        "type": "需补充内容",
+        "location": "文件锁竞争导致的 ANR（全文）",
+        "detail": "该小节仅约130字，缺少源码引用（SQLite WAL 锁的具体实现）、多进程场景的详细说明、Trace中文件锁竞争的表现形式",
+        "suggestion": "补充：1) SQLite WAL 模式下 SHARED/RESERVED/PENDING/EXCLUSIVE 四级锁的获取流程；2) 文件锁竞争在 Perfetto 中的表现（线程 D 状态、具体 syscall 名称）；3) beginTransactionNonExclusive() 的源码路径和行为说明"
+      },
+      {
+        "type": "需补充内容",
+        "location": "在 Perfetto / 工具中的表现（全文）",
+        "detail": "该章节仅覆盖3个场景（系统负载、SP apply、Binder死锁）的Trace表现，但全文讨论了7个场景。缺失：Broadcast风暴、ContentProvider冷启动、低内存/GC、文件锁竞争共4个场景的Trace描述",
+        "suggestion": "为每个缺失场景补充2-3句Trace表现描述，包括：对应的Track名称、正常vs异常的视觉差异、关键指标"
+      }
+    ],
+    "added_by": "task6-review",
+    "added_at": "2026-04-08T01:20:00",
+    "status": "pending",
+    "original_review_log": "logs/review/2026-04-08-01-review.md"
   }
 ]

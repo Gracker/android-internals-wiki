@@ -1,7 +1,9 @@
 ---
 title: "特殊场景的 ANR"
 chapter: "9.4"
-status: ready-for-review
+status: reviewed
+reviewed_date: "2026-04-08"
+reviewed_by: "openclaw-task6"
 drafted_date: "2026-04-02"
 applicable_versions: "Android 8.0 (API 26) - Android 16 (API 36)"
 last_verified: "2026-04-02"
@@ -108,11 +110,13 @@ ContentProvider 有一个容易被忽视的特性：**它在 `Application.onCrea
 
 ### 跨进程 ContentProvider 查询的超时
 
+[待补充：跨进程 ContentProvider 冷启动在 Perfetto 中的 Track 表现]
+
 另一个常见场景是 App A 通过 ContentResolver 查询 App B 的 ContentProvider。如果 App B 的进程还没有启动（冷启动），系统需要先启动 App B 的进程，初始化它的 ContentProvider，然后才能响应查询。这个冷启动的全过程对 App A 来说就是一个 Binder 同步调用等待。
 
 ### Jetpack App Startup 的解决方案
 
-Google 推出了 Jetpack App Startup 库。核心思路是用一个 ContentProvider 统一管理所有 SDK 的初始化，减少 ContentProvider 数量，同时支持按依赖顺序和懒加载初始化。
+Google 推出了 Jetpack App Startup 库。核心思路是用一个 ContentProvider 统一管理所有 SDK 的初始化，减少 ContentProvider 数量，同时支持按依赖顺序和懒加载初始化。（关于 ContentProvider 初始化的完整时序分析，参见 §1.10。）
 
 [来源: AOSP ActivityThread.handleBindApplication()] [已验证: AOSP android-14.0.0_r1]
 
@@ -173,11 +177,11 @@ Android 默认为每个进程分配最多 16 个 Binder 线程。如果这些线
 
 ### 预防和解决方案
 
-核心原则：**永远不要在持锁状态下发起同步 Binder 调用。** 实用做法：尽量使用 `oneway` 接口；控制 Binder 调用频率；监控 Binder 线程池使用率。
+核心原则：**永远不要在持锁状态下发起同步 Binder 调用。** 在实际项目中，这意味着如果必须在处理 Binder 请求时再发起另一个 Binder 调用，优先使用 `oneway` 接口（异步，不等待返回）。同时需要监控 Binder 线程池的使用率——如果经常出现接近 16 个线程全部占满的情况，说明调用频率或对端响应时间有问题，需要从这两个方向排查。
 
 [来源: AOSP Binder 驱动机制] [已验证: AOSP android-14.0.0_r1]
 
-## [自动发现] 低内存触发频繁 GC 导致的 ANR
+## 低内存触发频繁 GC 导致的 ANR
 
 ART 的 GC 虽然是并发 GC，但在某些阶段仍需要短暂暂停所有线程（STW）。当 App 的 Java 堆使用率接近阈值时，ART 会频繁触发 GC。如果 GC 频率从正常的每秒一次升高到每秒几十次，累积的 STW 停顿就会让主线程实际上获得很少的 CPU 时间。
 
@@ -185,11 +189,11 @@ ART 的 GC 虽然是并发 GC，但在某些阶段仍需要短暂暂停所有线
 
 [来源: ART GC 机制分析] [待验证: 具体的 GC STW 停顿时间在不同内存压力下的实测数据]
 
-## [自动发现] 文件锁竞争导致的 ANR
+## 文件锁竞争导致的 ANR
 
 很多 App 使用 SQLite 数据库（包括通过 Room、ContentProvider 间接使用），而 SQLite 在 WAL 模式下使用文件锁来协调并发读写。当多个进程或线程同时操作同一个数据库文件时，如果写事务持有了 EXCLUSIVE 锁而长时间不释放，其他尝试读取该数据库的线程就会被阻塞。
 
-解决方案包括：避免在主线程上发起可能阻塞的数据库查询；使用 `beginTransactionNonExclusive()` 替代 `beginTransaction()`；对大批量写入操作使用 `yieldIfContendedSafely()` 定期释放锁。
+解决这个问题需要从两个方向入手。首先是避免在主线程上发起可能阻塞的数据库查询，尤其是涉及写事务的操作。其次是使用 SQLite 提供的 API 来降低锁冲突的概率：用 `beginTransactionNonExclusive()` 替代 `beginTransaction()` 可以获取共享锁而非排他锁，减少对并发读取的阻塞；对大批量写入操作调用 `yieldIfContendedSafely()` 可以在检测到锁竞争时主动释放锁，让其他等待的线程先执行。
 
 [来源: SQLite 并发机制分析] [已验证: SQLite WAL 锁机制]
 

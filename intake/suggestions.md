@@ -582,3 +582,46 @@ tags:
 - **问题**：文中称"GKI 从 Android 11 开始引入，到 Android 15 成为强制要求"。GKI 自 Android 11 起已对新设备有要求，"Android 15 成为强制要求"的具体含义不明确。
 - **建议**：明确区分 GKI 基础要求（Android 11+）与 Android 15 的增量变化（可能指 16KB page size 强制、GKI 2.0 内核版本升级等）
 - **review 日志**：logs/review/2026-04-07-2048-review.md
+
+
+## [Task2A 知识缺口挖掘] 2026-04-08 01:02 — 本轮无新合格缺口
+
+**已检查方向**：
+1. source-index.json: 4 篇 high quality 无映射素材已评估（Android 14 发布→已在版本章；ANR 不是你的错→已映射 6.5；未缓存缓冲 I/O→Linux 6.14 新特性，与 ch06 重叠度低；CPU 利用率/延迟/吞吐→与 ch05 重叠）
+2. research-feeds 最近 10 篇：全部已映射到现有或 pending 章节
+3. daily-info 最近 3 天：DeliQueue→1.13、Android 17 适配→16.2、AppJankStats→7.9、性能问题实证研究→参考素材非独立章节
+4. AOSP frameworks/base 核心服务：AMS/PMS/WMS/SF/Choreographer/DisplayManager/InputDispatcher 全覆盖
+5. system/ 级守护进程：lmkd→4.4；vold/netd/installd 评分均 <10（素材不足+读者需求低）
+6. 官方文档 Android 16/17 新 API：ProfilingManager triggers→14.7、getCpuHeadroom/getGpuHeadroom→5.5 扩展、AppJankStats→7.9
+7. 之前已评估且低于阈值的：WebView 10/20、Notification 10/20、Audio 8/20、Text/Font 11/20
+
+**候选缺口评分（均 < 14）**：
+- Android 端侧 AI/NPU 性能：素材 2 / 相关 3 / 需求 4 / 时效 5 = 14（但 AI 性能偏离全书系统机制+性能优化主线，且素材不足以支撑独立章节）→ **不录入**
+- io_uring 在 Android 中的应用：素材 3 / 相关 3 / 需求 3 / 时效 5 = 14（但更适合作为 6.3 I/O 调度的更新而非独立章节）→ **不录入**
+- HAL 性能分析：素材 2 / 相关 4 / 需求 3 / 时效 3 = 12 → 不录入
+
+**结论**：全书 112 个小节已覆盖 Android 性能领域主要维度，queue 中仍有 5 个 pending 章节（1.14/1.15/8.7/14.10/7.10）待加工。下一轮挖掘可在新研究素材入库后重新评估。
+
+
+## [Task6 Review] 9.4 特殊场景的 ANR — 2026-04-08
+
+### 问题 1：低内存触发频繁 GC 导致的 ANR — 内容深度不足
+- **类型**：需补充内容
+- **位置**：「低内存触发频繁 GC 导致的 ANR」全文
+- **问题**：仅约 150 字，缺少源码引用、具体 GC 触发阈值、STW 停顿数据、Trace 表现描述。其他小节普遍 500-800 字并含源码。
+- **建议**：补充 ART GC 触发阈值数值、Perfetto 中 GC Track 的名称和表现形式、与 §4.3 的交叉引用、至少一个真实案例。目标篇幅 500+ 字。
+- **review 日志**：logs/review/2026-04-08-01-review.md
+
+### 问题 2：文件锁竞争导致的 ANR — 内容深度不足
+- **类型**：需补充内容
+- **位置**：「文件锁竞争导致的 ANR」全文
+- **问题**：仅约 130 字，缺少 SQLite WAL 四级锁的详细说明、源码引用、多进程场景示例、Trace 表现。
+- **建议**：补充 SQLite WAL 锁机制（SHARED/RESERVED/PENDING/EXCLUSIVE）、Perfetto 中的表现形式（D 状态 syscall）、beginTransactionNonExclusive() 源码路径。目标篇幅 500+ 字。
+- **review 日志**：logs/review/2026-04-08-01-review.md
+
+### 问题 3：Perfetto/工具表现章节 — 场景覆盖不全
+- **类型**：需补充内容
+- **位置**：「在 Perfetto / 工具中的表现」全文
+- **问题**：仅覆盖 3/7 场景的 Trace 描述。缺失：Broadcast 风暴、ContentProvider 冷启动、低内存/GC、文件锁竞争。
+- **建议**：为每个缺失场景补充 2-3 句 Trace 表现描述。
+- **review 日志**：logs/review/2026-04-08-01-review.md
