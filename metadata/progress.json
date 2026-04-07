@@ -4075,6 +4075,17 @@
       "status": "finalized",
       "reviewed_date": "2026-04-07",
       "reviewed_by": "openclaw-task6"
+    },
+    "5.7": {
+      "title": "CPU 相关的版本演进",
+      "status": "reviewed",
+      "reviewed_date": "2026-04-07",
+      "reviewed_by": "openclaw-task6",
+      "issues": 2,
+      "issue_types": [
+        "需确认",
+        "需确认"
+      ]
     }
   },
   "5.1": {

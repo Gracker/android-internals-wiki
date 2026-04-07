@@ -1192,5 +1192,32 @@
     "added_by": "task2a-knowledge-gap",
     "added_at": "2026-04-07T19:06:00+08:00",
     "status": "pending"
+  },
+  {
+    "section": "5.7",
+    "section_title": "CPU 相关的版本演进",
+    "priority": 90,
+    "reason": "[review回炉] 2处技术准确性需高爷确认：PendingIntent.FLAG_MUTABLE描述、GKI版本要求表述",
+    "material_paths": [
+      "intake/suggestions.md（含 review 意见）"
+    ],
+    "review_issues": [
+      {
+        "type": "需确认",
+        "location": "Android 14 前台服务类型化段落 (L211)",
+        "detail": "PendingIntent.FLAG_MUTABLE 与后台 Activity 启动限制无关，Android 14 实际 opt-in 机制是 ActivityOptions.setPendingIntentCreatorBackgroundActivityStartAllowed(true)",
+        "suggestion": "核对 Android 14 行为变更文档，修正 PendingIntent 相关描述"
+      },
+      {
+        "type": "需确认",
+        "location": "GKI 段落 (L243)",
+        "detail": "GKI 自 Android 11 起已对新设备要求，\"Android 15 成为强制要求\"表述含糊",
+        "suggestion": "明确 Android 15 的具体变化（16KB page size / GKI 2.0 内核版本升级）"
+      }
+    ],
+    "added_by": "task6-review",
+    "added_at": "2026-04-07T20:48:00",
+    "status": "pending",
+    "original_review_log": "logs/review/2026-04-07-2048-review.md"
   }
 ]
