@@ -1705,7 +1705,7 @@
     }
   ],
   "ready_for_review": 6,
-  "last_updated": "2026-04-06T22:13:58.553710",
+  "last_updated": "2026-04-07T10:06:23.578826",
   "stats": {
     "total": 109,
     "completed": 85,
@@ -3159,6 +3159,15 @@
       "section": "5.10",
       "title": "JobScheduler/WorkManager 调度与后台任务性能",
       "by": "openclaw-task2a"
+    },
+    {
+      "date": "2026-04-07",
+      "section": "15.1",
+      "title": "性能优化的术、道、器",
+      "action": "new-reference-injected",
+      "reference_title": "A Comparative Study of Android Performance Issues",
+      "reference_url": "https://arxiv.org/abs/2407.05090",
+      "injected_by": "openclaw-task8"
     }
   ],
   "sections": {
@@ -4276,5 +4285,7 @@
     "status": "ready-to-publish",
     "last_reviewed": "2026-04-07",
     "reviewed_by": "openclaw-task6"
-  }
+  },
+  "total": 138,
+  "draft": 7
 }

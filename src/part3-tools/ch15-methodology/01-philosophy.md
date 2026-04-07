@@ -319,3 +319,9 @@ Brendan Gregg 在讨论性能工程团队的价值时，特别强调了性能工
 - Google, "Benchmark your app", developer.android.com/topic/performance/benchmarking
 - Google, "Android Vitals", developer.android.com/topic/performance/vitals
 - Knuth, "Structured Programming with go to Statements", Computing Surveys, 1974
+
+### A Comparative Study of Android Performance Issues in Real-world Applications and Literature
+- 来源：https://arxiv.org/abs/2407.05090
+- 类型：论文（ACM 期刊，2025-10）
+- 摘要：对 Google Play（60,684 条负面评论）、Stack Overflow（749,067 帖子）、GitHub（16,977 issue + 344,922 commit）的大规模实证研究，构建了 7 类 Android 性能问题 + 82 个贡献因子分类体系。核心发现：研究者过度关注能耗（81.18%），用户最关心响应性（62.3%），开发者最头疼内存消耗（80.6%）。识别出 6 类代码模式：API 误用、未释放引用、冗余对象、大规模数据、UI 操作、其他。
+- 入库时间：2026-04-07
