@@ -1,7 +1,7 @@
 ---
 title: "卡顿原因体系"
 chapter: "7.2"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 5.0 (API 21) - Android 16 (API 36)"
 last_verified: "2026-03-31"
 last_verified_against: "AOSP android-15.0.0_r1"
@@ -25,10 +25,7 @@ sources:
     path: "developer.android.com/topic/performance/vitals/render"
 tags: ['jank', 'rendering', 'main-thread', 'render-thread', 'surfaceflinger', 'binder', 'gc', 'cpu-scheduling']
 related_chapters: ["7.1", "2.3", "2.4", "2.5", "1.4", "1.5", "3.1"]
-re-review-reason: ""
-re-review-materials: []
-re-review-triggered-date: ""
-re-review-triggered-by: ""
+re-review-result: "审查 0 条素材，无需修改"
 ---
 
 # 卡顿原因体系
