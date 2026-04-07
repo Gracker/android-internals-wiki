@@ -2,9 +2,12 @@
 title: "特殊场景的 ANR"
 chapter: "9.4"
 section: "9.4"
-status: finalized
+status: ready-for-review
 rework_date: "2026-04-08"
 rework_by: "task2b-rework"
+polish_count: 1
+polish_date: "2026-04-08"
+polish_by: "task2b-polish"
 reviewed_date: "2026-04-08"
 reviewed_by: "openclaw-task6"
 drafted_date: "2026-04-02"
@@ -26,7 +29,7 @@ sources:
     url: "https://androidperformance.com/"
     note: "高爷原创 ANR 分析系列"
 tags: ['anr', 'sharedpreferences', 'contentprovider', 'binder', 'broadcast', 'io-blocking', 'system-load']
-related_chapters: ['9.1', '9.2', '9.3', '1.4', '4.4']
+related_chapters: ['9.1', '9.2', '9.3', '1.4', '4.3', '4.4', '6.3']
 ---
 
 # 特殊场景的 ANR
@@ -38,15 +41,15 @@ related_chapters: ['9.1', '9.2', '9.3', '1.4', '4.4']
 
 在 §9.2 中，我们梳理了 ANR 的标准触发条件——Input 事件 5 秒超时、Service 20 秒超时、Broadcast 10 秒（前台）/60 秒（后台）超时。这些都是框架明确定义的规则，对应的 ANR traces 文件通常能给出清晰的线索。
 
-但在实际分析工作中，有一类 ANR 让人头疼：**traces 文件里主线程的堆栈看起来"没干什么坏事"**——可能只是在等一个 Binder 回复、在等一个 SharedPreferences 写入完成、或者干脆处在 RUNNABLE 状态但 CPU 已经被其他进程占满。这类 ANR 的根因不在你的 App 代码本身，而在系统层面的资源竞争、跨进程依赖或者一些容易被忽视的框架行为。
+但在实际分析工作中，有一类 ANR 让人头疼：**traces 文件里主线程的堆栈看起来"没干什么坏事"**——可能只是在等一个 Binder 回复、在等一个 SharedPreferences 写入完成、或者干脆处在 RUNNABLE 状态但 CPU 已经被其他进程占满。这类 ANR 的根因不在App 代码本身，而在系统层面的资源竞争、跨进程依赖或者一些容易被忽视的框架行为。
 
 我们把这些情况称为"特殊场景的 ANR"。它们的共同特点：
 
-第一，**不容易从 App 代码直接定位**。你在 traces 里看到主线程在等 Binder 调用返回，但问题可能发生在对端进程。
+第一，**不容易从 App 代码直接定位**。在 traces 里看到主线程在等 Binder 调用返回，但问题可能发生在对端进程。
 
 第二，**往往涉及多个因素叠加**。一个 SharedPreferences apply() 引起的 ANR，背后可能是磁盘 I/O 慢、系统负载高、加上 Activity 切换时机三者的综合作用。
 
-第三，**在 Trace 中的表现比较隐蔽**。需要你知道该去看哪里——CPU 全局利用率、D 状态线程、Binder 调用的对端。
+第三，**在 Trace 中的表现比较隐蔽**。需要知道该看哪里——CPU 全局利用率、D 状态线程、Binder 调用的对端。
 
 [已验证: 来源见 综合分析 AOSP 源码与 Perfetto 实践经验] [已验证: AOSP android-14.0.0_r1]
 
@@ -54,9 +57,9 @@ related_chapters: ['9.1', '9.2', '9.3', '1.4', '4.4']
 
 ### 现象：主线程看起来没做错什么，但还是 ANR 了
 
-Bug report 里的 ANR traces 显示主线程要么在 `nativePollOnce()`（idle 等待），要么在做很轻量的操作，但 input event 还是超时了。这时候你去看 CPU 使用率，会发现整机负载极高。
+Bug report 里的 ANR traces 显示主线程要么在 `nativePollOnce()`（idle 等待），要么在做很轻量的操作，但 input event 还是超时了。这时候查看 CPU 使用率，会发现整机负载极高。
 
-这种情况的本质是：**你的 App 没做错什么，但它被系统环境拖累了。** 当 CPU 饱和时，即使主线程只需要几毫秒就能处理完 input event，调度器也可能等了几秒才把 CPU 时间片分给它。
+这种情况的本质是：**App 本身没做错什么，但它被系统环境拖累了。** 当 CPU 饱和时，即使主线程只需要几毫秒就能处理完 input event，调度器也可能等了几秒才把 CPU 时间片分给它。
 
 ### CPU 饱和：调度器来不及调度
 
@@ -64,11 +67,11 @@ Bug report 里的 ANR traces 显示主线程要么在 `nativePollOnce()`（idle 
 
 CPU 饱和通常由以下因素造成：后台有大量进程同时运行（比如刚开机、批量安装应用）、某个进程的 worker 线程池全部跑满、系统服务的 Binder 线程池被打满导致请求排队。
 
-在 Perfetto 中，你可以通过 CPU Scheduling track 直接看到这个状态：所有 CPU 核心都被占满，主线程长时间处于 Runnable 状态（青色条）但无法被调度执行。
+在 Perfetto 中，通过 CPU Scheduling track 可以直接看到这个状态：所有 CPU 核心都被占满，主线程长时间处于 Runnable 状态（青色条）但无法被调度执行。
 
 ### I/O 阻塞：D 状态与磁盘带宽竞争
 
-在 Perfetto 的线程状态 track 中，你会看到线程进入 D 状态（Uninterruptible Sleep），通常标注为 `D (disk sleep)` 或 `D (iowait)`。这意味着线程在等待磁盘 I/O 完成，而且这个等待不可中断。
+在 Perfetto 的线程状态 track 中，会看到线程进入 D 状态（Uninterruptible Sleep），通常标注为 `D (disk sleep)` 或 `D (iowait)`。这意味着线程在等待磁盘 I/O 完成，而且这个等待不可中断。
 
 当整机 I/O 压力大时，以下看似无害的操作都可能变成 ANR 的导火索：主线程读取一个 SharedPreferences 文件；主线程通过 `open()` 打开一个文件；ContentResolver 执行一次 `query()`；甚至主线程执行一次 Binder 调用，而对端进程正好在做 I/O 无法响应。
 
@@ -76,7 +79,7 @@ CPU 饱和通常由以下因素造成：后台有大量进程同时运行（比�
 
 首先看 CPU 概览 track。确认在 ANR 发生的时间段，所有 CPU 核心的占用率是否接近 100%。
 
-然后看主线程的线程状态 track。如果主线程长时间是 Runnable（青色）而不是 Running（蓝色），说明它"想跑但跑不了"——CPU 被别人占了。
+然后看主线程的线程状态 track。如果主线程长时间是 Runnable（青色）而不是 Running（蓝色），说明它"想跑但跑不了"——CPU 被其他线程占了。
 
 如果主线程长时间是 `D (iowait)`（深红色），说明它在等磁盘。需要去看是哪个进程在做密集 I/O。
 
@@ -132,7 +135,7 @@ Google 推出了 Jetpack App Startup 库。核心思路是用一个 ContentProvi
 
 ### 从 apply() 到 ANR 的完整链路
 
-你的 App 在一个页面里频繁调用了 `apply()` 保存用户操作状态。这些写入任务被排到了 `QueuedWork` 的队列里。
+一个页面里频繁调用了 `apply()` 保存用户操作状态。这些写入任务被排到了 `QueuedWork` 的队列里。
 
 然后用户按了返回键。系统调用 `Activity.onPause()` → `handlePauseActivity()` → `QueuedWork.waitToFinish()`。这时主线程开始等待那十几个 `apply()` 的磁盘写入全部完成。
 
@@ -291,7 +294,7 @@ CPU 概览 track 显示所有核心接近满载。主线程出现大段 Runnable
 
 ### Binder 死锁 ANR
 
-在 Perfetto 的 Binder track 中，你可以看到调用方的线程在等待对端的 Binder 线程响应。如果形成环形依赖，你会看到 A 等 B、B 等 A 的环形箭头。
+在 Perfetto 的 Binder track 中，可以看到调用方的线程在等待对端的 Binder 线程响应。如果形成环形依赖，会看到 A 等 B、B 等 A 的环形箭头。
 
 ### Broadcast 风暴 ANR
 

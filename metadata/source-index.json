@@ -3158,6 +3158,142 @@
       "chapters": [],
       "confidence": "medium",
       "indexed_at": "2026-04-07T21:57:56.733757"
+    },
+    {
+      "title": "Android 16 显示系统 | 从View 到屏幕系列 - 3 | BLASTBufferQueue写在前面 BLa - 掘金",
+      "path": "Cubox/Android 16 显示系统 - 从View 到屏幕系列 - 3 - BLASTBufferQueue写在前面 BLa - 掘金-2025-07-27.md",
+      "scores": {
+        "relevance": 3,
+        "tech_depth": 1,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "total_score": 10,
+      "chapters": [
+        "ch05-渲染"
+      ],
+      "quality": "medium",
+      "confidence": "medium",
+      "indexed_at": "2026-04-08T02:27:35.396813"
+    },
+    {
+      "title": "CMA技术原理分析",
+      "path": "Cubox/CMA技术原理分析-2023-03-10.md",
+      "scores": {
+        "relevance": 3,
+        "tech_depth": 4,
+        "timeliness": 3,
+        "verifiability": 1
+      },
+      "total_score": 11,
+      "chapters": [
+        "ch07-内存",
+        "ch13-调度"
+      ],
+      "quality": "medium",
+      "confidence": "high",
+      "indexed_at": "2026-04-08T02:27:35.397562"
+    },
+    {
+      "title": "Bitmap 解码优化 - 掘金",
+      "path": "Cubox/Bitmap 解码优化 - 掘金-2022-07-17.md",
+      "scores": {
+        "relevance": 0,
+        "tech_depth": 4,
+        "timeliness": 3,
+        "verifiability": 4
+      },
+      "total_score": 11,
+      "chapters": [],
+      "quality": "medium",
+      "confidence": "medium",
+      "indexed_at": "2026-04-08T02:27:35.399986"
+    },
+    {
+      "title": "Android APP系统渲染管线主流程优化",
+      "path": "Cubox/Android APP系统渲染管线主流程优化-2025-05-13.md",
+      "scores": {
+        "relevance": 5,
+        "tech_depth": 2,
+        "timeliness": 3,
+        "verifiability": 2
+      },
+      "total_score": 12,
+      "chapters": [
+        "ch05-渲染"
+      ],
+      "quality": "medium",
+      "confidence": "medium",
+      "indexed_at": "2026-04-08T02:27:35.404445"
+    },
+    {
+      "title": "Android S原生系统内存泄露问题案例",
+      "path": "Cubox/Android S原生系统内存泄露问题案例-2022-06-20.md",
+      "scores": {
+        "relevance": 3,
+        "tech_depth": 3,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "total_score": 12,
+      "chapters": [
+        "ch07-内存"
+      ],
+      "quality": "medium",
+      "confidence": "medium",
+      "indexed_at": "2026-04-08T02:27:35.407200"
+    },
+    {
+      "title": "浅析高通 mvp 进程优先调度 - 魅族内核团队",
+      "path": "Cubox/浅析高通 mvp 进程优先调度 - 魅族内核团队-2025-08-05.md",
+      "scores": {
+        "relevance": 4,
+        "tech_depth": 1,
+        "timeliness": 3,
+        "verifiability": 2
+      },
+      "total_score": 10,
+      "chapters": [
+        "ch13-调度"
+      ],
+      "quality": "medium",
+      "confidence": "medium",
+      "indexed_at": "2026-04-08T02:27:35.408511"
+    },
+    {
+      "title": "Double Mapped Circular Buffer",
+      "path": "Cubox/Double Mapped Circular Buffer-2025-08-13.md",
+      "scores": {
+        "relevance": 3,
+        "tech_depth": 3,
+        "timeliness": 3,
+        "verifiability": 1
+      },
+      "total_score": 10,
+      "chapters": [
+        "ch07-内存",
+        "ch11-Profiling"
+      ],
+      "quality": "medium",
+      "confidence": "high",
+      "indexed_at": "2026-04-08T02:27:35.409324"
+    },
+    {
+      "title": "核心交互场景优化黑科技，GC抑制从入门到精通",
+      "path": "Cubox/核心交互场景优化黑科技，GC抑制从入门到精通-2024-07-29.md",
+      "scores": {
+        "relevance": 3,
+        "tech_depth": 4,
+        "timeliness": 3,
+        "verifiability": 2
+      },
+      "total_score": 12,
+      "chapters": [
+        "ch07-内存"
+      ],
+      "quality": "medium",
+      "confidence": "medium",
+      "indexed_at": "2026-04-08T02:27:35.409876"
     }
   ],
   "sources": [
