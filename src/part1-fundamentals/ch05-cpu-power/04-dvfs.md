@@ -2,7 +2,7 @@
 title: "DVFS 与功耗管理"
 chapter: "5.4"
 section: "5.4"
-status: ready-for-review
+status: ready-to-publish
 applicable_versions: "Android 7.0 (API 24) - Android 16 (API 36)"
 last_verified: "2026-04-01"
 last_verified_against: "Linux kernel 6.6 (android16-6.6)"
@@ -24,7 +24,7 @@ tags: ['dvfs', 'cpufreq', 'schedutil', 'opp', 'power', 'frequency-scaling', 'adp
 related_chapters: ["5.1", "5.2", "5.3", "5.5", "5.6", "7.3"]
 drafted_date: "2026-04-01"
 drafted_by: "openclaw-task2"
-reviewed_date: "2026-04-03"
+reviewed_date: "2026-04-07"
 reviewed_by: "openclaw-task6"
 polish_count: 1
 polish_date: "2026-04-07"
@@ -63,7 +63,7 @@ polish_by: "task2b-polish"
 
 在 Perfetto 中打开一段 Trace，我们会看到每个 CPU 下方都有一条「CPU Frequency」轨迹——它像一条心电图，忽高忽低。这条线的每一次跳动，背后都是 DVFS 子系统在决定：此刻的 CPU 应该跑多快。
 
-如果我们做过性能优化，一定遇到过这样的场景：明明代码逻辑没问题，但第一帧就是卡了一下。或者列表滑动时偶尔掉帧，抓 Trace 一看，发现掉帧那个瞬间 CPU 频率很低——原来 CPU 还没来得及升频，帧就被渲染了。这就是 DVFS 调频延迟导致的性能问题，和我们之前在 [5.1 Linux 进程调度基础](./01-cpu-scheduling.md) 中讨论的调度问题不同：调度决定「哪个任务跑在哪个核上」，DVFS 决定「这个核跑多快」。
+如果我们做过性能优化，一定遇到过这样的场景：明明代码逻辑没问题，但第一帧就是卡了一下。或者列表滑动时偶尔掉帧，抓 Trace 一看，发现掉帧那个瞬间 CPU 频率很低——原来 CPU 还没来得及升频，帧就被渲染了。这就是 DVFS 调频延迟导致的性能问题，和我们之前在 [5.1 Linux 进程调度基础](./01-linux-scheduling.md) 中讨论的调度问题不同：调度决定「哪个任务跑在哪个核上」，DVFS 决定「这个核跑多快」。
 
 理解 DVFS 机制，能让我们在分析 Trace 时准确判断：一个掉帧是代码问题，还是 CPU 没跑起来？在 Perfetto 中看到的频率曲线，哪些变化是正常的，哪些意味着 governor 的参数需要调优？
 
@@ -176,7 +176,7 @@ schedutil 从 Linux 4.7 开始引入，它的核心思路是：**既然调度器
 
 在 schedutil 出现之前，主流的 governor 是 ondemand。ondemand 的工作方式是定时采样（默认每 100ms 一次）CPU 的 idle 时间，如果发现利用率超过阈值（默认 80%），就提高频率。这种方式的缺点很明显：**采样有延迟**。在采样间隔内，CPU 可能已经在高负载运行了，但 governor 还不知道。
 
-schedutil 解决这个问题的方法是直接挂钩到调度器的负载追踪机制——PELT（Per-Entity Load Tracking）。PELT 我们在 [5.1 Linux 进程调度基础](./01-cpu-scheduling.md) 中介绍过，它为每个调度实体（task、task group、CPU runqueue）维护一个指数加权移动平均（EWMA）的利用率值。schedutil 直接读取这个值来决定频率，无需额外的采样开销。
+schedutil 解决这个问题的方法是直接挂钩到调度器的负载追踪机制——PELT（Per-Entity Load Tracking）。PELT 我们在 [5.1 Linux 进程调度基础](./01-linux-scheduling.md) 中介绍过，它为每个调度实体（task、task group、CPU runqueue）维护一个指数加权移动平均（EWMA）的利用率值。schedutil 直接读取这个值来决定频率，无需额外的采样开销。
 
 #### schedutil 的频率计算
 
@@ -355,11 +355,11 @@ GPU 频率变化同样可以通过 Perfetto 观察。如果设备支持，我们
 
 DVFS 不是独立运行的，它和本书中讨论的多个机制密切相关：
 
-- **[5.1 进程调度基础](./01-cpu-scheduling.md)**：schedutil 直接依赖 PELT 的利用率数据，调度器的负载追踪精度决定了调频的质量
+- **[5.1 进程调度基础](./01-linux-scheduling.md)**：schedutil 直接依赖 PELT 的利用率数据，调度器的负载追踪精度决定了调频的质量
 - **[5.2 EAS 能量感知调度](./02-eas.md)**：EAS 在选核时需要考虑不同 CPU 的能效比，而能效比本身取决于当前的频率/电压（即 DVFS 状态）
 - **[5.3 大小核架构](./03-big-little.md)**：大小核的迁移策略和 DVFS 互相影响——迁核后频率可能需要重新调整，频率变化又可能影响迁核决策
 - **[5.5 Thermal 管控](./05-thermal.md)**：当温度过高时，thermal 机制会限制 DVFS 的最高频率（即降频限频），这是功耗管理与热管理的交汇点
-- **[7.3 卡顿分析方法论](../../part2-performance/ch07-smoothness/03-analysis-methodology.md)**：在分析卡顿时，CPU 频率是需要首先排查的因素之一
+- **[7.3 卡顿分析方法论](../../part2-performance/ch07-smoothness/03-jank-methodology.md)**：在分析卡顿时，CPU 频率是需要首先排查的因素之一
 
 ## 常见问题与误区
 

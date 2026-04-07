@@ -3372,10 +3372,12 @@
     },
     "5.4": {
       "title": "DVFS 与功耗管理",
-      "status": "finalized",
+      "status": "ready-to-publish",
       "reviewed_date": "2026-04-03",
       "reviewed_by": "openclaw-task6",
-      "file": "src/part1-fundamentals/ch05-cpu-power/04-dvfs.md"
+      "file": "src/part1-fundamentals/ch05-cpu-power/04-dvfs.md",
+      "last_reviewed": "2026-04-07",
+      "review_count": 1
     },
     "3.2": {
       "title": "触摸响应的性能分析",
