@@ -1764,7 +1764,7 @@
     }
   ],
   "ready_for_review": 6,
-  "last_updated": "2026-04-07T19:00:00+08:00",
+  "last_updated": "2026-04-07T19:36:26.433313",
   "stats": {
     "total": 111,
     "completed": 86,
@@ -4069,6 +4069,12 @@
       "status": "ready-for-review",
       "drafted_date": "2026-04-07",
       "drafted_by": "openclaw-task2a"
+    },
+    "10.1": {
+      "title": "App 内存分析",
+      "status": "finalized",
+      "reviewed_date": "2026-04-07",
+      "reviewed_by": "openclaw-task6"
     }
   },
   "5.1": {
