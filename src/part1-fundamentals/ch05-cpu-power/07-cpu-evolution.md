@@ -1,7 +1,7 @@
 ---
 title: "CPU 相关的版本演进"
 chapter: "5.7"
-status: reviewed
+status: ready-for-review
 applicable_versions: "Android 5.0 - 16"
 last_verified: "2026-04-01"
 last_verified_against: "Android 15 developer docs, AOSP source code"
@@ -210,7 +210,7 @@ Android 13 把精确闹钟的管控又推进了一步：对于 `targetSdkVersion
 
 Android 14 要求前台服务必须声明**至少一个类型**（foreground service type），比如 `camera`、`location`、`mediaPlayback` 等。每种类型对应不同的权限要求和系统行为。这让系统可以更精准地管理不同类型的前台服务——比如一个声称在做媒体播放的前台服务，如果实际上没有在播放音频，系统可以检测到并终止它。
 
-Android 14 还引入了后台 Activity 启动的显式 opt-in 机制：当 App 通过 `PendingIntent` 启动 Activity 时，必须显式声明 `PendingIntent.FLAG_MUTABLE` 或在发送方 opt-in 授予后台启动权限。这是为了防止 App 利用 PendingIntent 链绕过后台启动限制。[需确认: FLAG_MUTABLE 与后台 Activity 启动限制无直接关系，Android 14 实际机制是发送方需通过 ActivityOptions.setPendingIntentCreatorBackgroundActivityStartAllowed(true) opt-in]
+Android 14 还引入了后台 Activity 启动的显式 opt-in 机制。在此之前的版本中，App 发送 `PendingIntent` 时会隐式地将自己的后台 Activity 启动权限传递给接收方——恶意 App 可以通过 PendingIntent 链绕过后台启动限制。从 Android 14 开始，发送方必须通过 `ActivityOptions.setPendingIntentBackgroundActivityStartMode(MODE_BACKGROUND_ACTIVITY_START_ALLOWED)` 显式授权，接收方才能在后台启动 Activity。同样，通过 `bindService()` 绑定后台 App 的服务时，也需要添加 `Context.BIND_ALLOW_ACTIVITY_STARTS` 标志。[已验证: developer.android.com/about/versions/14/behavior-changes-14]
 
 此外，`mlock()` 的上限从 64MB 降到了 64KB，这对某些使用内存锁定来优化性能的 App 是一个需要注意的变化。
 
@@ -241,7 +241,7 @@ Android 16 继续对 JobScheduler 进行精细化管控。核心变化是 Job �
 ## GKI 对内核调度模块定制化的影响
 
 
-GKI（Generic Kernel Image）从 Android 11 开始引入，到 Android 15 成为强制要求。[需确认: GKI 从 Android 11 起已对新设备要求，"Android 15 成为强制要求"的具体含义需明确——是指 16KB page size、还是 GKI 2.0 内核版本升级？] 它对 CPU 调度的影响是一个容易被忽视但很重要的变化。
+GKI（Generic Kernel Image）从 Android 11 开始成为新设备的强制要求。Android 11 使用 GKI 1.0（Linux kernel 5.4），Android 12 升级到 GKI 2.0（kernel 5.10+，OEM 不得修改内核核心代码，且设备必须使用 Google 签名的 boot image）。到 Android 15，GKI 内核版本已迭代至 6.6，同时新增了 16KB page size 支持——16KB page size 在 Android 15 中默认未启用，但从 2025 年 11 月起，Google Play 要求所有 targetSdk >= 35 的 App 必须兼容 16KB page size。[已验证: source.android.com/docs/core/architecture/kernel/gki, developer.android.com/guide/practices/page-sizes] 它对 CPU 调度的影响是一个容易被忽视但很重要的变化。
 
 在 GKI 之前，SoC 厂商（高通、联发科等）可以直接修改内核调度器代码来适配自己的硬件。比如联发科可以在 CFS 中加入针对天玑芯片大小核架构的特殊优化，高通可以为骁龙的调度策略写定制代码。这种做法的代价是内核碎片化——每家厂商的内核都是"自己的版本"，安全补丁和调度器改进很难统一推送。
 
