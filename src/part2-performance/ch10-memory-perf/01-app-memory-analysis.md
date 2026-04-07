@@ -2,10 +2,13 @@
 title: "App 内存分析"
 chapter: "10.1"
 section: "10.1"
-status: ready-for-review
+status: finalized
 drafted_date: "2026-04-02"
+drafted_by: "openclaw-task2"
 applicable_versions: "Android 8.0 (API 26) - Android 16 (API 36)"
 last_verified: "2026-04-02"
+reviewed_date: "2026-04-07"
+reviewed_by: "openclaw-task6"
 last_verified_against: "AOSP android-16.0.0_r1"
 confidence: medium
 sources:
@@ -50,11 +53,11 @@ related_chapters: ["4.1", "4.3", "4.5", "13.1", "14.3"]
 
 ## 为什么要了解 App 内存分析
 
-当你在 Perfetto 中看到应用的 Java Heap Track 一路攀升不回落，或者在 `dumpsys meminfo` 里发现 PSS 已经逼近 `largeHeap` 上限时，你需要的就是这一章的知识。
+当我们在 Perfetto 中看到应用的 Java Heap Track 一路攀升不回落，或者在 `dumpsys meminfo` 里发现 PSS 已经逼近 `largeHeap` 上限时，需要的就是这一章的知识。
 
-内存分析不是一件"拿到 dump 文件然后翻翻看"就能解决的事。真实的场景是：你拿到一个线上 OOM 崩溃的堆栈，但崩溃现场的信息有限——你可能只知道崩溃时 Heap 使用量很高，却不知道是什么对象在增长、为什么增长、从哪条代码路径分配的。你需要一套系统性的分析方法：先用宏观工具定位问题类型（Java 泄漏？Native 增长？Graphics 占用？），再用微观工具精确定位到具体的代码路径。
+内存分析不是一件"拿到 dump 文件然后翻翻看"就能解决的事。真实的场景是：我们拿到一个线上 OOM 崩溃的堆栈，但崩溃现场的信息有限——可能只知道崩溃时 Heap 使用量很高，却不知道是什么对象在增长、为什么增长、从哪条代码路径分配的。我们需要一套系统性的分析方法：先用宏观工具定位问题类型（Java 泄漏？Native 增长？Graphics 占用？），再用微观工具精确定位到具体的代码路径。
 
-本章的目标是让你掌握这套方法。读完之后，面对任何 App 内存问题，你都能快速选择合适的工具组合，按照正确的分析路径定位根因。
+本章的目标是帮助我们掌握这套方法。读完之后，面对任何 App 内存问题，我们都能快速选择合适的工具组合，按照正确的分析路径定位根因。
 
 ## App 内存分析的核心工具
 
@@ -122,7 +125,7 @@ Memory Profiler 是 Android Studio 内置的内存分析工具，它提供三种
 
 [已验证: 官方文档, developer.android.com/studio/profile/memory-profiler]
 
-**分配追踪（Allocation Tracking）**：记录一段时间内所有 Java/Kotlin 对象的分配事件，包括分配的对象类型、大小、分配线程和调用栈。这对于定位"内存抖动"（短时间内大量创建和销毁对象）特别有用。你可以看到哪些方法在频繁分配临时对象，然后针对性地优化——比如用对象池替换频繁 new 出的临时对象，或者将不必要的对象分配移到初始化阶段。
+**分配追踪（Allocation Tracking）**：记录一段时间内所有 Java/Kotlin 对象的分配事件，包括分配的对象类型、大小、分配线程和调用栈。这对于定位"内存抖动"（短时间内大量创建和销毁对象）特别有用。我们可以看到哪些方法在频繁分配临时对象，然后针对性地优化——比如用对象池替换频繁 new 出的临时对象，或者将不必要的对象分配移到初始化阶段。
 
 [已验证: 官方文档, developer.android.com/studio/profile/memory-profiler]
 
@@ -224,7 +227,7 @@ ASan 的工作原理是在每次内存分配前后插入"红区"（poison bytes�
 
 [已验证: 官方文档, source.android.com/docs/core/debug/asan]
 
-实际工作中的选择策略：如果你怀疑 Native 内存泄漏（内存持续增长但不释放），用 heapprofd 做采样分析；如果你需要完整的分配记录来精确定位泄漏点，用 malloc debug；如果你遇到的是 Native 崩溃（use-after-free、buffer overflow 等），用 ASan/HWASan。
+实际工作中的选择策略：如果怀疑 Native 内存泄漏（内存持续增长但不释放），用 heapprofd 做采样分析；如果需要完整的分配记录来精确定位泄漏点，用 malloc debug；如果遇到的是 Native 崩溃（use-after-free、buffer overflow 等），用 ASan/HWASan。
 
 ## Graphics 内存的归属与计量
 
