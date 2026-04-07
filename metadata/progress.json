@@ -3,12 +3,12 @@
   "total_sections": 110,
   "metrics": {
     "total": 127,
-    "draft": 11,
-    "ready-for-review": 25,
+    "draft": 10,
+    "ready-for-review": 26,
     "reviewed": 4,
     "finalized": 30,
     "staging_drafts": 0,
-    "last_updated": "2026-04-07T13:24:00",
+    "last_updated": "2026-04-07T15:19:00+08:00",
     "processing": 0,
     "ready-to-publish": 11,
     "last_reviewed": "2026-04-06",
@@ -1702,15 +1702,30 @@
       "verification_level": "L2",
       "word_count": "~5400",
       "completed_at": "2026-04-07T08:12:35.619080"
+    },
+    {
+      "chapter": "2.19",
+      "section": "2.19",
+      "title": "刷新率切换与帧率适配性能",
+      "status": "ready-for-review",
+      "drafted_date": "2026-04-07",
+      "drafted_by": "openclaw-task2a",
+      "anchors_covered": 6,
+      "anchors_total": 6,
+      "extensions_covered": 3,
+      "extensions_total": 3,
+      "verification_level": "L2",
+      "word_count": "~6000",
+      "completed_at": "2026-04-07T15:19:00+08:00"
     }
   ],
   "ready_for_review": 6,
   "last_updated": "2026-04-07T12:17:00+08:00",
   "stats": {
     "total": 109,
-    "completed": 85,
-    "pending": 25,
-    "last_updated": "2026-04-06T20:14:41.389333",
+    "completed": 86,
+    "pending": 24,
+    "last_updated": "2026-04-07T15:19:00+08:00",
     "reviewed": 1,
     "ready-for-review": 1
   },
@@ -1988,6 +2003,20 @@
     }
   ],
   "history": [
+    {
+      "date": "2026-04-07",
+      "section": "2.19",
+      "title": "刷新率切换与帧率适配性能",
+      "action": "draft-completed",
+      "word_count": "~6000",
+      "anchors_covered": 6,
+      "anchors_total": 6,
+      "extensions_covered": 3,
+      "extensions_total": 3,
+      "verification_level": "L2",
+      "drafted_date": "2026-04-07",
+      "drafted_by": "openclaw-task2a"
+    },
     {
       "date": "2026-04-07",
       "section": "11.5",
@@ -3922,6 +3951,12 @@
       "reviewed_date": "2026-04-07",
       "reviewed_by": "openclaw-task6",
       "file": "src/part2-performance/ch09-anr/01-anr-design.md"
+    },
+    "2.19": {
+      "title": "刷新率切换与帧率适配性能",
+      "status": "ready-for-review",
+      "drafted_date": "2026-04-07",
+      "drafted_by": "openclaw-task2a"
     }
   },
   "5.1": {
