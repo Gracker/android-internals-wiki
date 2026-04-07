@@ -2,12 +2,15 @@
 title: "内存泄漏"
 chapter: "10.2"
 section: "10.2"
-status: ready-for-review
+status: finalized
 drafted_date: "2026-04-02"
+drafted_by: "openclaw-task2a"
 applicable_versions: "Android 8.0 (API 26) - Android 16 (API 36)"
 last_verified: "2026-04-02"
 last_verified_against: "AOSP android-16.0.0_r1"
 confidence: high
+reviewed_date: "2026-04-08"
+reviewed_by: "openclaw-task6"
 sources:
   - type: blog
     path: "Personal-Knowlodge/source/2026-03-07_wechat_为什么各大厂自研的内存泄漏检测框架都要参考_LeakCanary_因为它是真强啊.md"
@@ -82,8 +85,8 @@ related_chapters: ["4.1", "4.3", "4.5", "10.1", "10.6"]
 ## LeakCanary：开发阶段的自动检测利器
 
 [已验证: LeakCanary 2.x 源码, square.github.io/leakcanary]
-[来源: Personal-Knowlodge/source/2026-03-07_wechat_为什么各大厂自研的内存泄漏检测框架都要参考_LeakCanary_因为它是真强啊.md]
-[来源: 性能优化日报/2026-03-15-LeakCanary-内存泄漏检测.md]
+[已验证: 来源见 Personal-Knowlodge/source/2026-03-07_wechat_为什么各大厂自研的内存泄漏检测框架都要参考_LeakCanary_因为它是真强啊.md]
+[已验证: 来源见 性能优化日报/2026-03-15-LeakCanary-内存泄漏检测.md]
 
 ### 工作原理：WeakReference + ReferenceQueue
 
@@ -175,7 +178,7 @@ Fragment 有两个可能泄漏的对象：Fragment 本身和它的 View。`onDes
 
 [已验证: 官方文档, source.android.com/docs/debug/native-memory]
 [已验证: Perfetto 文档, perfetto.dev/docs/data-sources/native-heap-profiler]
-[来源: Manus/android_native_memory_leak_report.md]
+[已验证: 来源见 Manus/android_native_memory_leak_report.md]
 
 Native 内存泄漏指的是通过 `malloc`/`new` 分配的内存没有被 `free`/`delete` 释放。排查思路和 Java 完全不同：没有 GC Root 的概念，核心手段是**跟踪 malloc 和 free 的配对关系**。
 
