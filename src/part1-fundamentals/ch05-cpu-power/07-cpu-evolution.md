@@ -1,7 +1,7 @@
 ---
 title: "CPU 相关的版本演进"
 chapter: "5.7"
-status: finalized
+status: ready-for-review
 applicable_versions: "Android 5.0 - 16"
 last_verified: "2026-04-01"
 last_verified_against: "Android 15 developer docs, AOSP source code"
@@ -17,12 +17,15 @@ sources:
     path: "source.android.com/docs/core/power"
   - type: blog
     path: "ARM documentation - Energy Aware Scheduling"
-tags: ['doze', 'JobScheduler', 'adaptive-battery', 'app-standby-buckets', 'eas', 'background-restrictions', 'gki', 'power-management', 'version-evolution']
-related_chapters: ["5.1", "5.2", "5.3", "5.4", "5.5", "5.6"]
+tags: ['doze', 'JobScheduler', 'adaptive-battery', 'wakelock', 'app-standby-buckets', 'eas', 'background-restrictions', 'gki', 'power-management', 'version-evolution']
+related_chapters: ["5.1", "5.2", "5.3", "5.4", "5.5", "5.6", "11.5"]
 drafted_date: "2026-04-01"
 drafted_by: "openclaw-task2"
 reviewed_date: "2026-04-04"
 reviewed_by: "openclaw-task6"
+polish_count: 1
+polish_date: "2026-04-07"
+polish_by: "task2b-polish"
 ---
 
 # CPU 相关的版本演进
@@ -70,7 +73,7 @@ reviewed_by: "openclaw-task6"
 
 在 Android 5.0 之前，开发者要做后台工作，主要有两个选择：用 `AlarmManager` 定时唤醒，或者直接起一个 `Service` 在后台跑。这两种方式有个共同的问题：每个 App 各自为政，系统无法协调。结果就是十个 App 可能在同一时刻被闹钟唤醒，CPU 从深度休眠中醒来，一起抢 CPU 时间片，忙完之后各自又进入空闲，CPU 再次休眠。这种"集体醒来又集体睡觉"的模式，对电池的消耗远大于把这些任务合并处理。
 
-Android 5.0 引入了 `JobScheduler`（API 21），它的核心思路是让系统来决定你的后台任务什么时候跑。开发者只需要告诉系统："我有个任务，需要在充电时、网络连接时执行"，系统就会在合适的时机把多个 App 的任务打包在一起执行。
+Android 5.0 引入了 `JobScheduler`（API 21），它的核心思路是让系统来决定后台任务什么时候跑。开发者只需要告诉系统："我有个任务，需要在充电时、网络连接时执行"，系统就会在合适的时机把多个 App 的任务打包在一起执行。
 
 ```java
 // 示例：通过 JobScheduler 注册一个后台任务
@@ -90,7 +93,7 @@ JobScheduler 并没有强制禁止旧的后台工作方式，它只是一个"更
 
 Android 6.0 引入了 Doze 模式，这是 Android 功耗管理的第一个里程碑。它的触发条件很明确：设备拔掉电源、屏幕关闭、保持静止（通过加速度传感器判断）、没有持有长时间 WakeLock。当这些条件同时满足一段时间后，设备进入 Doze 状态。
 
-在 Doze 状态下，系统做的事情用一句话概括就是：**尽可能让 CPU 保持休眠**。具体来说：
+在 Doze 状态下，系统做的事情核心做法是：**尽可能让 CPU 保持休眠**。具体来说：
 
 - 网络访问被完全禁止
 - WakeLock 被忽略
@@ -102,7 +105,7 @@ Android 6.0 引入了 Doze 模式，这是 Android 功耗管理的第一个里�
 
 [图：Doze 模式周期示意图——展示 Doze 进入→维护窗口→深度休眠的周期]
 
-从性能分析的角度，Doze 带来了一些值得关注的影响：如果在 Perfetto 中看到某个时间段内 App 的 CPU 活动完全消失（连 Binder 调用都没有），而设备满足静止条件，很可能就是 Doze 在起作用。你可以通过 `adb shell dumpsys deviceidle` 查看 Doze 状态。
+从 Perfetto 分析的角度，Doze 带来了几个值得关注的现象：如果在 Perfetto 中看到某个时间段内 App 的 CPU 活动完全消失（连 Binder 调用都没有），而设备满足静止条件，很可能就是 Doze 在起作用。通过 `adb shell dumpsys deviceidle` 可以查看 Doze 状态。
 
 [已验证: 官方文档, developer.android.com/training/monitoring-device-state/doze-standby]
 
@@ -110,7 +113,7 @@ Android 6.0 引入了 Doze 模式，这是 Android 功耗管理的第一个里�
 
 Android 7.0 对 Doze 做了一个重要改进：不再要求设备静止。只要设备拔掉电源、屏幕关闭，就会进入一种较轻的 Doze 状态（通常称为 "Light Doze" 或 "Doze on the Go"）。完整版 Doze（Level 2）仍然需要设备静止才能触发。
 
-这个改动直接扩大了 Doze 的覆盖范围。在你把手机放进口袋走路的时候，系统也能进行一定程度的功耗优化了。
+这个改动直接扩大了 Doze 的覆盖范围。当设备在用户口袋中移动时，系统也能进行一定程度的功耗优化了。
 
 同时，Android 7.0 还启动了 "Project Svelte" 计划的一部分：移除了 `CONNECTIVITY_ACTION`、`ACTION_NEW_PICTURE`、`ACTION_NEW_VIDEO` 等隐式广播。之前每发一个这样的广播，系统中所有注册了接收器的 App 都会被唤醒——哪怕它什么都不需要做。移除这些广播，减少了不必要的 CPU 唤醒。
 
@@ -122,9 +125,9 @@ Android 8.0 对后台行为的管控上了一个台阶。它引入了"后台执�
 
 第一，**后台 App 不能再随意创建后台服务**。如果一个 App 处于后台（没有可见的 Activity、没有前台服务），调用 `startService()` 会直接抛出 `IllegalStateException`。唯一的出路是使用 `startForegroundService()` 启动一个前台服务——但前台服务必须显示一个持续通知，用户能清楚地知道"有个 App 在后台跑"。
 
-第二，**隐式广播接收器被大幅限制**。除了少数例外，App 无法再在 Manifest 中静态注册大部分隐式广播。这意味着像"网络变化"、"拍照完成"这类事件，不再能唤醒你的 App。你需要在 App 正在运行时动态注册，或者使用 JobScheduler 来响应。
+第二，**隐式广播接收器被大幅限制**。除了少数例外，App 无法再在 Manifest 中静态注册大部分隐式广播。这意味着像"网络变化"、"拍照完成"这类事件，不再能唤醒 App。需要在 App 正在运行时动态注册，或者使用 JobScheduler 来响应。
 
-这两个变化让 JobScheduler 从"推荐使用"变成了"事实上的必选项"。如果你要做后台工作，JobScheduler（以及后来基于它的 WorkManager）成了最可靠的途径。
+这两个变化让 JobScheduler 从"推荐使用"变成了"事实上的必选项"。如果要做后台工作，JobScheduler（以及后来基于它的 WorkManager）成了最可靠的途径。
 
 [已验证: 官方文档, developer.android.com/about/versions/oreo/background]
 
@@ -142,13 +145,13 @@ Android 8.0 对后台行为的管控上了一个台阶。它引入了"后台执�
 | Rare | 很少使用 | Jobs 和闹钟严格限制，网络访问严重受限 |
 | Restricted | 从未运行或被系统限制 | 几乎所有后台活动被禁止 |
 
-关键在于：**桶的分配不是固定不变的**。系统会根据你的使用习惯实时调整。一个你上周天天用的 App，如果这周没碰过，会逐步从 Active 降级到 Rare。反过来，一个长期在 Rare 桶的 App，如果你突然开始使用，会迅速升回 Active。
+关键在于：**桶的分配不是固定不变的**。系统会根据用户的使用习惯实时调整。一个上周天天用的 App，如果这周没碰过，会逐步从 Active 降级到 Rare。反过来，一个长期在 Rare 桶的 App，如果用户突然开始使用，会迅速升回 Active。
 
-从性能分析的角度，你可以通过 `adb shell am get-standby-bucket <package_name>` 查看某个 App 当前的桶分配。如果你在 Perfetto 中发现某个 App 的 JobScheduler 任务长时间不执行，先检查它的 Standby Bucket——很可能被放到了 Rare 或 Restricted。
+从性能分析的角度，通过 `adb shell am get-standby-bucket <package_name>` 可以查看某个 App 当前的桶分配。如果在 Perfetto 中发现某个 App 的 JobScheduler 任务长时间不执行，先检查它的 Standby Bucket——很可能被放到了 Rare 或 Restricted。
 
 [已验证: 官方文档, developer.android.com/topic/performance/appstandby]
 
-这个机制对性能优化的启示是：你的 App 的后台行为频率，不是由你的代码决定的，而是由用户的习惯和系统的 ML 模型共同决定的。同一个 App，在重度用户的手机上和在偶尔打开的用户的手机上，后台任务的执行频率可能相差数倍。
+这个机制的实际影响：App 的后台行为频率不完全由开发者代码决定，而是由用户习惯和系统的 ML 模型共同决定。同一个 App，在重度用户的手机上和在偶尔打开的用户的手机上，后台任务的执行频率可能相差数倍。
 
 ## Android 10：EAS 成为默认调度策略
 
@@ -162,8 +165,8 @@ EAS 早在 2016 年就合入了 Android Common Kernel，但到 Android 10 才正
 
 EAS 成为默认的意义在于：
 
-- **对 App 开发者**：你的 App 的线程调度，从"哪个核心空闲去哪个"变成了"综合考虑性能和功耗的最优选择"。同样的代码在 Android 10 上可能比 Android 9 跑得慢一点点（因为系统优先省电），但整体功耗会下降。
-- **对系统工程师**：在做性能分析时，不能只看 CPU 频率和利用率，还要结合 EAS 的调度决策来理解为什么任务被分配到了特定的核心。在 Perfetto 中，你可以通过 CPU 调度 Track 观察任务的迁移模式。
+- **对 App 开发者**：App 的线程调度，从"哪个核心空闲去哪个"变成了"综合考虑性能和功耗的最优选择"。同样的代码在 Android 10 上可能比 Android 9 跑得慢一点点（因为系统优先省电），但整体功耗会下降。
+- **对系统工程师**：在做性能分析时，不能只看 CPU 频率和利用率，还要结合 EAS 的调度决策来理解为什么任务被分配到了特定的核心。在 Perfetto 中，可以通过 CPU 调度 Track 观察任务的迁移模式。
 
 [已验证: ARM 官方文档 - EAS, source.android.com/docs/core/power]
 
@@ -185,7 +188,7 @@ Android 10 还做了两件值得注意的事：
 
 Android 12 引入了 `SCHEDULE_EXACT_ALARM` 权限。在此之前，任何 App 都可以通过 `AlarmManager.setExact()` 或 `setExactAndAllowWhileIdle()` 设置精确闹钟，这个闹钟会绕过 Doze 模式精确触发——换句话说，它可以在任何时间唤醒 CPU。
 
-从 Android 12 开始，如果你想使用精确闹钟 API（`setExact()`、`setExactAndAllowWhileIdle()`、`setAlarmClock()`），必须在 Manifest 中声明这个权限。不声明的话，调用会直接抛出 `SecurityException`。
+从 Android 12 开始，如果要使用精确闹钟 API（`setExact()`、`setExactAndAllowWhileIdle()`、`setAlarmClock()`），必须在 Manifest 中声明这个权限。不声明的话，调用会直接抛出 `SecurityException`。
 
 对于闹钟类 App 和日历类 App，Google Play 提供了一个更宽松的替代权限 `USE_EXACT_ALARM`（Android 13 引入），这是一个普通权限，安装时自动授予。但 Google Play 会对声明了这个权限的 App 进行政策审查。
 
@@ -217,7 +220,7 @@ Android 15 在两个方面做了重要改进：
 
 **后台网络访问被限制**：如果一个 App 在 `Activity.onStop()` 之后不久发起网络请求（即 App 进入了缓存或后台状态），系统会返回 `UnknownHostException`。这意味着从 Android 15 开始，后台网络操作必须通过 `WorkManager` 或前台服务来执行。直接在后台线程中做网络请求变得不可靠了。
 
-**Doze 激活速度提升 50%**：设备进入 Doze 模式的速度比 Android 14 快了一倍。根据 Google 的数据，这可以带来最多 3 小时的额外待机时间。这个变化不需要开发者做任何适配，但对后台任务的时间窗口有影响——你的 App 可能比以前更早被 Doze "冻住"。
+**Doze 激活速度提升 50%**：设备进入 Doze 模式的速度比 Android 14 快了一倍。根据 Google 的数据，这可以带来最多 3 小时的额外待机时间。这个变化不需要开发者做任何适配，但对后台任务的时间窗口有影响——App 可能比以前更早被 Doze "冻住"。
 
 [已验证: 官方文档, developer.android.com/about/versions/15/behavior-changes-15]
 
@@ -229,7 +232,7 @@ Android 16 继续对 JobScheduler 进行精细化管控。核心变化是 Job �
 - Job 是否与前台服务并发执行
 - App 当前的 Standby Bucket 的具体分数
 
-简单来说：一个在前台启动、用户正在交互时发起的 Job，会获得更多的执行时间；而一个在后台静默启动的 Job，执行时间会更短。同时，Android 16 提供了更好的诊断工具，开发者可以通过 API 查询 Job 为什么没执行或被停止。
+具体来说：一个在前台启动、用户正在交互时发起的 Job，会获得更多的执行时间；而一个在后台静默启动的 Job，执行时间会更短。同时，Android 16 提供了更好的诊断工具，开发者可以通过 API 查询 Job 为什么没执行或被停止。
 
 [待验证: Android 16 仍处于 beta 阶段，最终行为可能变化]
 
@@ -253,7 +256,7 @@ GKI 的核心思路是：**内核是统一的标准版本，厂商的定制化�
 
 3. **eBPF 和 sched_ext 提供了新的扩展路径**。Linux 6.6+ 引入的 `sched_ext` 机制允许通过 eBPF 程序实现自定义调度策略。这意味着厂商可以在不修改内核代码的情况下，用 eBPF 写出"游戏模式"或"省电模式"的调度策略。
 
-对性能分析的影响：你在分析不同厂商设备的调度行为差异时，需要意识到这些差异不是来自内核版本的不同，而是来自 Vendor Hook 注入的定制逻辑。同样运行 Android 15 的骁龙和天玑设备，同一个 App 的任务可能被分配到不同的核心上。
+对性能分析的影响：在分析不同厂商设备的调度行为差异时需要注意这些差异不是来自内核版本的不同，而是来自 Vendor Hook 注入的定制逻辑。同样运行 Android 15 的骁龙和天玑设备，同一个 App 的任务可能被分配到不同的核心上。
 
 [已验证: source.android.com/docs/core/architecture/kernel/gki]
 
@@ -284,28 +287,28 @@ GKI 的核心思路是：**内核是统一的标准版本，厂商的定制化�
 
 ## 在 Perfetto 中的观察
 
-当你在 Perfetto 中分析 CPU 相关行为时，可以通过以下维度观察版本演进带来的差异：
+当在 Perfetto 中分析 CPU 相关行为时，可以通过以下维度观察版本演进带来的差异：
 
 1. **Doze 状态**：在设备空闲时段，检查 CPU 是否有长时间的无活动期（对应 Doze 深度休眠）。Android 15 的 Doze 加速意味着这个无活动期开始得更早。
 
-2. **任务迁移模式**：对比不同 Android 版本上同一 App 的 CPU 调度 Track。在 EAS 启用前（Android 9 及更早），任务迁移更"随机"；EAS 启用后（Android 10+），你会看到更多"把轻量任务集中到小核"的规律性模式。
+2. **任务迁移模式**：对比不同 Android 版本上同一 App 的 CPU 调度 Track。在 EAS 启用前（Android 9 及更早），任务迁移更"随机"；EAS 启用后（Android 10+），可以看到更多"把轻量任务集中到小核"的规律性模式。
 
-3. **JobScheduler 执行**：在 Android 12+ 上，Job 的执行间隔明显更不规律，特别是 Rare 桶的 App。你可以通过 System Server 进程中的 JobScheduler track 观察任务的调度和执行情况。
+3. **JobScheduler 执行**：在 Android 12+ 上，Job 的执行间隔明显更不规律，特别是 Rare 桶的 App。可以通过 System Server 进程中的 JobScheduler track 观察任务的调度和执行情况。
 
-4. **WakeLock 持有时间**：Doze 模式下 WakeLock 被忽略，所以在 Perfetto 中你可能会看到 WakeLock 被 acquire 后很久才被 release，但这期间 CPU 并没有实际活动——因为 Doze 覆盖了 WakeLock 的效果。
+4. **WakeLock 持有时间**：Doze 模式下 WakeLock 被忽略，所以在 Perfetto 中可能会看到 WakeLock 被 acquire 后很久才被 release，但这期间 CPU 并没有实际活动——因为 Doze 覆盖了 WakeLock 的效果。
 
 [待补充：不同版本 Perfetto Trace 截图对比]
 
 ## 常见问题与误区
 
 ### "我的后台任务在 Android 12 上突然不工作了"
-最大可能：你用了精确闹钟但没有声明 `SCHEDULE_EXACT_ALARM` 权限，或者 App 被放到了 Restricted 桶。检查 `adb shell am get-standby-bucket` 和 `adb shell dumpsys alarm`。
+最大可能：使用了精确闹钟但没有声明 `SCHEDULE_EXACT_ALARM` 权限，或者 App 被放到了 Restricted 桶。检查 `adb shell am get-standby-bucket` 和 `adb shell dumpsys alarm`。
 
 ### "EAS 让我的 App 变慢了"
-不完全是。EAS 可能会让某些场景下的单次执行时间变长（因为任务被放到了小核），但整体功耗下降。如果你的 App 对延迟敏感，可以通过设置线程的 uclamp 值来告诉调度器"这个线程需要高性能"，EAS 会尊重这个提示。
+不完全是。EAS 可能会让某些场景下的单次执行时间变长（因为任务被放到了小核），但整体功耗下降。如果 App 对延迟敏感，可以通过设置线程的 uclamp 值来告诉调度器"这个线程需要高性能"，EAS 会尊重这个提示。
 
 ### "Doze 模式下我的推送收不到"
-FCM（Firebase Cloud Messaging）高优先级消息可以绕过 Doze。如果你的推送走的是自己的长连接，在 Doze 下确实会被延迟。建议将关键推送迁移到 FCM 高优先级通道。
+FCM（Firebase Cloud Messaging）高优先级消息可以绕过 Doze。如果推送走的是自有长连接，在 Doze 下确实会被延迟。建议将关键推送迁移到 FCM 高优先级通道。
 
 ### "不同厂商的设备，后台限制不一样"
 确实如此。虽然 AOSP 定义了基础规则，但很多厂商（尤其是中国市场的厂商）会在 AOSP 基础上叠加自己的省电策略。这就是为什么同一个 App 在 Pixel 上表现正常，在某些国产设备上后台被杀。可以参考 [dontkillmyapp.com](https://dontkillmyapp.com/) 了解各厂商的差异。

@@ -3661,7 +3661,697 @@
       "total_score": 6,
       "skip_reason": "total_score < 10",
       "indexed_at": "2026-04-07T13:20:48.226055"
+    },
+    {
+      "file": "昆明城投专家交流会议纪要0523-2023-05-24.md",
+      "source": "Cubox",
+      "score": 7,
+      "reason": "财经分析",
+      "scanned_at": "2026-04-07T14:18:00"
+    },
+    {
+      "file": "是的，我快断粮了-2022-04-08.md",
+      "source": "Cubox",
+      "score": 7,
+      "reason": "个人随笔",
+      "scanned_at": "2026-04-07T14:18:00"
+    },
+    {
+      "file": "是这份热爱一直在发烫-2023-02-28.md",
+      "source": "Cubox",
+      "score": 7,
+      "reason": "健身内容",
+      "scanned_at": "2026-04-07T14:18:00"
+    },
+    {
+      "file": "晚上锻炼影响睡眠？Nature子刊揭示最佳运动时间窗口-2025-05-05.md",
+      "source": "Cubox",
+      "score": 8,
+      "reason": "健康科普",
+      "scanned_at": "2026-04-07T14:18:00"
+    },
+    {
+      "file": "晨读丨美国 12 月就业数据远超预期-2024-01-08.md",
+      "source": "Cubox",
+      "score": 7,
+      "reason": "经济分析",
+      "scanned_at": "2026-04-07T14:18:00"
+    },
+    {
+      "file": "智商税？4000+的 编程专用 显示器评测-2025-07-28.md",
+      "source": "Cubox",
+      "score": 8,
+      "reason": "个人随笔",
+      "scanned_at": "2026-04-07T14:18:00"
+    },
+    {
+      "file": "智能座舱HMI设计为什么需要关注人因学？-2022-08-15.md",
+      "source": "Cubox",
+      "score": 7,
+      "reason": "非Android技术",
+      "scanned_at": "2026-04-07T14:18:00"
+    },
+    {
+      "file": "暴论-互联网公司 2023 年破局之路-2023-02-23.md",
+      "source": "Cubox",
+      "score": 6,
+      "reason": "商业评论",
+      "scanned_at": "2026-04-07T14:18:00"
+    },
+    {
+      "file": "更换博客评论系统 Reorx Forge-2022-06-02.md",
+      "source": "Cubox",
+      "score": 8,
+      "reason": "非Android技术",
+      "scanned_at": "2026-04-07T14:18:00"
+    },
+    {
+      "file": "最新Chatgpt微信机器人搭建教程-2023-02-07.md",
+      "source": "Cubox",
+      "score": 8,
+      "reason": "非Android技术",
+      "scanned_at": "2026-04-07T14:18:00"
+    },
+    {
+      "file": "最新封面报道怎样消化地方债-2023-08-21.md",
+      "source": "Cubox",
+      "score": 6,
+      "reason": "政经",
+      "scanned_at": "2026-04-07T14:18:00"
+    },
+    {
+      "file": "最新研究显示 App Store 助力中国小型开发团队-2022-05-27.md",
+      "source": "Cubox",
+      "score": 6,
+      "reason": "商业新闻",
+      "scanned_at": "2026-04-07T14:18:00"
+    },
+    {
+      "file": "最新访谈乔姆斯基谈ChatGPT与教育-2023-01-27.md",
+      "source": "Cubox",
+      "score": 8,
+      "reason": "非Android技术",
+      "scanned_at": "2026-04-07T14:18:00"
+    },
+    {
+      "file": "最近在各个媒体平台做内容-2022-01-16.md",
+      "source": "Cubox",
+      "score": 7,
+      "reason": "个人运营",
+      "scanned_at": "2026-04-07T14:18:00"
+    },
+    {
+      "file": "最近感觉AI真是特别好的学习工具-2025-09-17.md",
+      "source": "Cubox",
+      "score": 7,
+      "reason": "非Android技术",
+      "scanned_at": "2026-04-07T14:18:00"
+    },
+    {
+      "file": "最近爆火的MCP究竟有多大魅力-2025-05-07.md",
+      "source": "Cubox",
+      "score": 9,
+      "reason": "非Android技术",
+      "scanned_at": "2026-04-07T14:18:00"
+    },
+    {
+      "file": "月刊第28期：AI 没有体验世界的能力-2025-01-20.md",
+      "source": "Cubox",
+      "score": 6,
+      "reason": "个人博客",
+      "scanned_at": "2026-04-07T14:18:00"
+    },
+    {
+      "file": "有关 TLS-SSL 证书的一切-2023-09-05.md",
+      "source": "Cubox",
+      "score": 9,
+      "reason": "非Android技术(网络基础)",
+      "scanned_at": "2026-04-07T14:18:00"
+    },
+    {
+      "file": "有关 TLS-SSL 证书的一切-2024-09-11.md",
+      "source": "Cubox",
+      "score": 9,
+      "reason": "非Android技术(网络基础)",
+      "scanned_at": "2026-04-07T14:18:00"
+    },
+    {
+      "file": "有序退网-2025-01-01.md",
+      "source": "Cubox",
+      "score": 6,
+      "reason": "个人随笔",
+      "scanned_at": "2026-04-07T14:18:00"
+    },
+    {
+      "file": "有网友预测到了以后的事情-2023-11-08.md",
+      "source": "Cubox",
+      "score": 6,
+      "reason": "社会评论",
+      "scanned_at": "2026-04-07T14:18:00"
+    },
+    {
+      "file": "朝夕四年丨触乐-2023-11-29.md",
+      "source": "Cubox",
+      "score": 6,
+      "reason": "游戏行业",
+      "scanned_at": "2026-04-07T14:18:00"
+    },
+    {
+      "file": "本届政府对中国的方针-2022-05-27.md",
+      "source": "Cubox",
+      "score": 6,
+      "reason": "政治",
+      "scanned_at": "2026-04-07T14:18:00"
+    },
+    {
+      "file": "本文不提供职业建议-2023-12-26.md",
+      "source": "Cubox",
+      "score": 7,
+      "reason": "人生建议",
+      "scanned_at": "2026-04-07T14:18:00"
+    },
+    {
+      "file": "朱令铊中毒案-2023-12-24.md",
+      "source": "Cubox",
+      "score": 6,
+      "reason": "案件",
+      "scanned_at": "2026-04-07T14:18:00"
+    },
+    {
+      "file": "朱令铊中毒案（四）分析篇-2023-12-24.md",
+      "source": "Cubox",
+      "score": 6,
+      "reason": "案件",
+      "scanned_at": "2026-04-07T14:18:00"
+    },
+    {
+      "file": "朱令铊中毒案（破案篇）-2023-12-24.md",
+      "source": "Cubox",
+      "score": 6,
+      "reason": "案件",
+      "scanned_at": "2026-04-07T14:18:00"
+    },
+    {
+      "file": "朱峰的阅读分享-2025-03-22.md",
+      "source": "Cubox",
+      "score": 6,
+      "reason": "个人随笔",
+      "scanned_at": "2026-04-07T14:18:00"
+    },
+    {
+      "file": "杀死那个APP：豆包手机的野心-2025-12-04.md",
+      "source": "Cubox",
+      "score": 9,
+      "reason": "商业分析",
+      "scanned_at": "2026-04-07T14:18:00"
+    },
+    {
+      "file": "李承鹏致 2022 一封信-2023-01-02.md",
+      "source": "Cubox",
+      "score": 7,
+      "reason": "个人随笔",
+      "scanned_at": "2026-04-07T14:18:00"
+    },
+    {
+      "file": "李承鹏：理想爆雷时-2022-07-28.md",
+      "source": "Cubox",
+      "score": 7,
+      "reason": "个人随笔",
+      "scanned_at": "2026-04-07T14:18:00"
+    },
+    {
+      "file": "来美国的两年后-2025-04-14.md",
+      "source": "Cubox",
+      "score": 7,
+      "reason": "个人随笔",
+      "scanned_at": "2026-04-07T14:18:00"
+    },
+    {
+      "file": "来自 OpenAI 离职员工的爆料-2025-07-27.md",
+      "source": "Cubox",
+      "score": 8,
+      "reason": "AI行业",
+      "scanned_at": "2026-04-07T14:18:00"
+    },
+    {
+      "file": "昨天说安卓下的生态问题-2023-03-09.md",
+      "source": "Cubox",
+      "score": 8,
+      "reason": "非Android技术",
+      "scanned_at": "2026-04-07T14:18:00"
+    },
+    {
+      "file": "不过是字节调整姑娘-2025-04-23.md",
+      "source": "Cubox",
+      "score": 6,
+      "reason": "科技行业",
+      "scanned_at": "2026-04-07T14:18:00"
+    },
+    {
+      "file": "个人观察一周-2024-12-09.md",
+      "source": "Cubox",
+      "score": 6,
+      "reason": "个人随笔",
+      "scanned_at": "2026-04-07T14:18:00"
+    },
+    {
+      "file": "中国思想史与“灵魂的征服”-2026-01-21.md",
+      "source": "Cubox",
+      "score": 6,
+      "reason": "人文",
+      "scanned_at": "2026-04-07T14:18:00"
+    },
+    {
+      "file": "中国开发者的每日工作-2023-06-15.md",
+      "source": "Cubox",
+      "score": 7,
+      "reason": "个人随笔",
+      "scanned_at": "2026-04-07T14:18:00"
+    },
+    {
+      "file": "中国科技公司地缘政治讨论-2023-08-20.md",
+      "source": "Cubox",
+      "score": 6,
+      "reason": "政经",
+      "scanned_at": "2026-04-07T14:18:00"
+    },
+    {
+      "file": "丹麦政治家观点-2023-11-10.md",
+      "source": "Cubox",
+      "score": 6,
+      "reason": "政治",
+      "scanned_at": "2026-04-07T14:18:00"
+    },
+    {
+      "title": "Performance with Jetpack Compose — Part 2",
+      "path": "Cubox/Performance with Jetpack Compose — Part 2-2023-07-03.md",
+      "scores": {
+        "relevance": 3,
+        "depth": 1,
+        "timeliness": 4,
+        "verifiability": 1
+      },
+      "total_score": 9,
+      "skip_reason": "total_score < 10",
+      "chapters": [],
+      "skipped_at": "2026-04-07T16:59:49.633960"
+    },
+    {
+      "title": "近期测试的几个软件",
+      "path": "Cubox/近期测试的几个软件-2025-01-31.md",
+      "scores": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "total_score": 8,
+      "skip_reason": "total_score < 10",
+      "chapters": [],
+      "skipped_at": "2026-04-07T16:59:49.633963"
+    },
+    {
+      "title": "探索 Java Native Interface（四）：JNI中引用类型",
+      "path": "Cubox/探索 Java Native Interface（四）：JNI中引用类型-2025-02-17.md",
+      "scores": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "total_score": 8,
+      "skip_reason": "total_score < 10",
+      "chapters": [],
+      "skipped_at": "2026-04-07T16:59:49.633967"
+    },
+    {
+      "title": "GPU 渲染管线和硬件架构浅谈",
+      "path": "Cubox/GPU 渲染管线和硬件架构浅谈-2022-06-06.md",
+      "scores": {
+        "relevance": 2,
+        "depth": 1,
+        "timeliness": 4,
+        "verifiability": 1
+      },
+      "total_score": 8,
+      "skip_reason": "total_score < 10",
+      "chapters": [],
+      "skipped_at": "2026-04-07T16:59:49.633969"
+    },
+    {
+      "title": "性能周刊 2025-02-23 第7期",
+      "path": "Cubox/性能周刊 2025-02-23 第7期-2025-02-23.md",
+      "scores": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "total_score": 8,
+      "skip_reason": "total_score < 10",
+      "chapters": [],
+      "skipped_at": "2026-04-07T16:59:49.633972"
+    },
+    {
+      "title": "初识操作系统",
+      "path": "Cubox/初识操作系统-2025-07-27.md",
+      "scores": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "total_score": 8,
+      "skip_reason": "total_score < 10",
+      "chapters": [],
+      "skipped_at": "2026-04-07T16:59:49.633974"
+    },
+    {
+      "title": "Velocity Based Animation with Compose - DEV Community",
+      "path": "Cubox/Velocity Based Animation with Compose - DEV Community-2022-08-09.md",
+      "scores": {
+        "relevance": 2,
+        "depth": 1,
+        "timeliness": 4,
+        "verifiability": 1
+      },
+      "total_score": 8,
+      "skip_reason": "total_score < 10",
+      "chapters": [],
+      "skipped_at": "2026-04-07T16:59:49.633976"
+    },
+    {
+      "title": "系统级bug解决分享：腾讯开发工程师刨根问底安卓端滑动异常",
+      "path": "Cubox/系统级bug解决分享：腾讯开发工程师刨根问底安卓端滑动异常-2022-07-23.md",
+      "scores": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 4,
+        "verifiability": 1
+      },
+      "total_score": 7,
+      "skip_reason": "total_score < 10",
+      "chapters": [],
+      "skipped_at": "2026-04-07T16:59:49.633978"
+    },
+    {
+      "title": "M1 Pro 的 MacBook Pro 之一年体验记 | I'm TualatriX",
+      "path": "Cubox/M1 Pro 的 MacBook Pro 之一年体验记 - I'm TualatriX-2023-11-03.md",
+      "scores": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 4,
+        "verifiability": 1
+      },
+      "total_score": 7,
+      "skip_reason": "total_score < 10",
+      "chapters": [],
+      "skipped_at": "2026-04-07T16:59:49.633980"
+    },
+    {
+      "title": "Learn In Public",
+      "path": "Cubox/Learn In Public-2023-12-23.md",
+      "scores": {
+        "relevance": 3,
+        "depth": 1,
+        "timeliness": 4,
+        "verifiability": 1
+      },
+      "total_score": 9,
+      "skip_reason": "total_score < 10",
+      "chapters": [
+        [
+          "ch09-网络",
+          "medium",
+          2
+        ]
+      ],
+      "skipped_at": "2026-04-07T16:59:49.633982"
+    },
+    {
+      "title": "为什么韩国明明是发达国家却总是一副吃不起肉的样子？",
+      "path": "Cubox/为什么韩国明明是发达国家却总是一副吃不起肉的样子？-2025-01-14.md",
+      "scores": {
+        "relevance": 2,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "total_score": 9,
+      "skip_reason": "total_score < 10",
+      "chapters": [],
+      "skipped_at": "2026-04-07T16:59:49.633984"
+    },
+    {
+      "title": "学不会Android显示系统？那是因为你还没有看过这篇文章",
+      "path": "Cubox/学不会Android显示系统？那是因为你还没有看过这篇文章-2024-05-11.md",
+      "scores": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "total_score": 8,
+      "skip_reason": "total_score < 10",
+      "chapters": [],
+      "skipped_at": "2026-04-07T16:59:49.633986"
+    },
+    {
+      "title": "头条文章",
+      "path": "Cubox/头条文章-2022-01-17.md",
+      "scores": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 4,
+        "verifiability": 1
+      },
+      "total_score": 7,
+      "skip_reason": "total_score < 10",
+      "chapters": [],
+      "skipped_at": "2026-04-07T16:59:49.633988"
+    },
+    {
+      "title": "【地心之战前夕】一人成团：战团介绍 来自小心心资讯站 - 大神",
+      "path": "Cubox/【地心之战前夕】一人成团：战团介绍 来自小心心资讯站 - 大神-2024-08-03.md",
+      "scores": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "total_score": 8,
+      "skip_reason": "total_score < 10",
+      "chapters": [],
+      "skipped_at": "2026-04-07T16:59:49.633990"
+    },
+    {
+      "title": "独立开发周记 114：第一次参加独立开发者线下聚会",
+      "path": "Cubox/独立开发周记 114：第一次参加独立开发者线下聚会-2025-04-21.md",
+      "scores": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "total_score": 8,
+      "skip_reason": "total_score < 10",
+      "chapters": [],
+      "skipped_at": "2026-04-07T16:59:49.633992"
+    },
+    {
+      "title": "How we improved our Android app startup time by ov...",
+      "path": "Cubox/How we improved our Android app startup time by ov...-2023-11-29.md",
+      "scores": {
+        "relevance": 2,
+        "depth": 1,
+        "timeliness": 4,
+        "verifiability": 1
+      },
+      "total_score": 8,
+      "skip_reason": "total_score < 10",
+      "chapters": [
+        [
+          "ch04-启动",
+          "medium",
+          2
+        ]
+      ],
+      "skipped_at": "2026-04-07T16:59:49.633993"
+    },
+    {
+      "title": "软件测试周刊（第79期）：陷在自己给自己定的框里，即使永远走直线，也是曲折的。",
+      "path": "Cubox/软件测试周刊（第79期）：陷在自己给自己定的框里，即使永远走直线，也是曲折的。-2022-07-08.md",
+      "scores": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 4,
+        "verifiability": 1
+      },
+      "total_score": 7,
+      "skip_reason": "total_score < 10",
+      "chapters": [],
+      "skipped_at": "2026-04-07T16:59:49.633996"
+    },
+    {
+      "title": "Android图形系统（四）应用篇：自定义View/ViewGroup详解",
+      "path": "Cubox/Android图形系统（四）应用篇：自定义View-ViewGroup详解-2025-06-20.md",
+      "scores": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "total_score": 8,
+      "skip_reason": "total_score < 10",
+      "chapters": [],
+      "skipped_at": "2026-04-07T16:59:49.633998"
+    },
+    {
+      "title": "Anthropic 官方分享：为 AI 智能体打造高效工具——让 AI 智能体来帮忙",
+      "path": "Cubox/Anthropic 官方分享：为 AI 智能体打造高效工具——让 AI 智能体来帮忙-2025-09-12.md",
+      "scores": {
+        "relevance": 2,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "total_score": 9,
+      "skip_reason": "total_score < 10",
+      "chapters": [],
+      "skipped_at": "2026-04-07T16:59:49.634000"
+    },
+    {
+      "title": "软件测试周刊（第82期）：其实所有纠结做选择的人心里早就有了答案，咨询只是想得到内心所倾向的选择。",
+      "path": "Cubox/软件测试周刊（第82期）：其实所有纠结做选择的人心里早就有了答案，咨询只是想得到内心所倾向的选择。-2022-07-29.md",
+      "scores": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 4,
+        "verifiability": 1
+      },
+      "total_score": 7,
+      "skip_reason": "total_score < 10",
+      "chapters": [],
+      "skipped_at": "2026-04-07T16:59:49.634001"
+    },
+    {
+      "title": "理解VSync-3-应用添加链接1. 前言 本篇为 VSync 系列的第三篇，主要介绍应用添加链接的流程。 本系列为之前 - 掘金",
+      "path": "Cubox/理解VSync-3-应用添加链接1. 前言 本篇为 VSync 系列的第三篇，主要介绍应用添加链接的流程。 本系列为之前 - 掘金-2025-04-13.md",
+      "scores": {
+        "relevance": 2,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "total_score": 9,
+      "skip_reason": "total_score < 10",
+      "chapters": [
+        [
+          "ch05-渲染",
+          "medium",
+          2
+        ]
+      ],
+      "skipped_at": "2026-04-07T16:59:49.634003"
+    },
+    {
+      "title": "钉钉 ANR 治理最佳实践 | 定位 ANR 不再雾里看花",
+      "path": "Cubox/钉钉 ANR 治理最佳实践 - 定位 ANR 不再雾里看花-2023-02-15.md",
+      "scores": {
+        "relevance": 2,
+        "depth": 1,
+        "timeliness": 4,
+        "verifiability": 1
+      },
+      "total_score": 8,
+      "skip_reason": "total_score < 10",
+      "chapters": [],
+      "skipped_at": "2026-04-07T16:59:49.634005"
+    },
+    {
+      "title": "Kotlin Weekly #448",
+      "path": "Cubox/Kotlin Weekly #448-2025-03-02.md",
+      "scores": {
+        "relevance": 2,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "total_score": 9,
+      "skip_reason": "total_score < 10",
+      "chapters": [],
+      "skipped_at": "2026-04-07T16:59:49.634007"
+    },
+    {
+      "title": "解密Java Class文件不为人知的秘密",
+      "path": "Cubox/解密Java Class文件不为人知的秘密-2024-08-02.md",
+      "scores": {
+        "relevance": 1,
+        "depth": 2,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "total_score": 9,
+      "skip_reason": "total_score < 10",
+      "chapters": [],
+      "skipped_at": "2026-04-07T16:59:49.634009"
+    },
+    {
+      "title": "我用Coze来掘金 | AI Agent 创意征文大赛来啦！ - 掘金",
+      "path": "Cubox/我用Coze来掘金 - AI Agent 创意征文大赛来啦！ - 掘金-2024-02-01.md",
+      "scores": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "total_score": 8,
+      "skip_reason": "total_score < 10",
+      "chapters": [],
+      "skipped_at": "2026-04-07T16:59:49.634011"
+    },
+    {
+      "title": "从显示 Tap 原理一探 Android 12 的 Input 系统",
+      "path": "Cubox/从显示 Tap 原理一探 Android 12 的 Input 系统-2022-03-21.md",
+      "scores": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 4,
+        "verifiability": 1
+      },
+      "total_score": 7,
+      "skip_reason": "total_score < 10",
+      "chapters": [],
+      "skipped_at": "2026-04-07T16:59:49.634013"
+    },
+    {
+      "title": "2023・年度回顾 | 印记",
+      "path": "Cubox/2023・年度回顾 - 印记-2023-12-16.md",
+      "scores": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 4,
+        "verifiability": 1
+      },
+      "total_score": 7,
+      "skip_reason": "total_score < 10",
+      "chapters": [],
+      "skipped_at": "2026-04-07T16:59:49.634015"
+    },
+    {
+      "title": "构建终身学习体系进行自我提升",
+      "path": "Cubox/构建终身学习体系进行自我提升-2022-01-14.md",
+      "scores": {
+        "relevance": 2,
+        "depth": 1,
+        "timeliness": 4,
+        "verifiability": 1
+      },
+      "total_score": 8,
+      "skip_reason": "total_score < 10",
+      "chapters": [],
+      "skipped_at": "2026-04-07T16:59:49.634016"
     }
   ],
-  "last_updated": "2026-04-07T13:20:48.226064"
+  "last_updated": "2026-04-07T16:59:49.639289"
 }

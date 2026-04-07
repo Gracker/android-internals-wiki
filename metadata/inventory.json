@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-03-31",
+  "generated_at": "2026-04-07",
   "documents": [
     {
       "path": "Cubox/#01 创始人解密 Discord-2023-02-20.md",
@@ -45863,6 +45863,129 @@
       "source_type": "高爷原创",
       "last_modified": "2026-03-30",
       "scanned_at": "2026-04-01T06:07:00"
+    },
+    {
+      "path": "intake/research-feeds/2026-04-06-07-android17-power-management-wakelock-policy-aod-minmode.md",
+      "title": "Android 17 功耗管理 + Play Store Wake Lock 政策",
+      "mapped_chapters": [
+        "1.2",
+        "5.6"
+      ],
+      "total_score": 80,
+      "source_type": "研究素材"
+    },
+    {
+      "path": "intake/research-feeds/2026-04-06-11-baseline-profiles-compilation-optimization.md",
+      "title": "Baseline Profiles 与编译优化实践",
+      "mapped_chapters": [
+        "4.7",
+        "8.2"
+      ],
+      "total_score": 95,
+      "source_type": "高质量收藏"
+    },
+    {
+      "path": "intake/research-feeds/2026-04-06-15-art-thin-fat-lock-inflation-long-wait.md",
+      "title": "ART Thin/Fat Lock 膨胀与长等待竞争日志",
+      "mapped_chapters": [
+        "1.5"
+      ],
+      "total_score": 100,
+      "source_type": "研究素材"
+    },
+    {
+      "path": "intake/research-feeds/2026-04-06-15-perfetto-monitor-contention-art-lock-analysis.md",
+      "title": "Perfetto Monitor Contention SQL 与 ART 锁机制",
+      "mapped_chapters": [
+        "1.3",
+        "1.5"
+      ],
+      "total_score": 100,
+      "source_type": "研究素材"
+    },
+    {
+      "path": "intake/research-feeds/2026-04-06-15-priority-inversion-futex-pi-android-lock-performance.md",
+      "title": "优先级反转与 Futex PI 在 Android 中的实践",
+      "mapped_chapters": [
+        "1.5",
+        "7.1"
+      ],
+      "total_score": 100,
+      "source_type": "研究素材"
+    },
+    {
+      "path": "intake/research-feeds/2026-04-06-gracker-jank-insights.md",
+      "title": "高爷卡顿知识补充（帧率切换/刷新率）",
+      "mapped_chapters": [
+        "2.2",
+        "2.3",
+        "2.6",
+        "7.1"
+      ],
+      "total_score": 100,
+      "source_type": "高爷原创"
+    },
+    {
+      "path": "intake/research-feeds/2026-04-07-09-android17-gki-kernel-6-12-performance-quantification.md",
+      "title": "Android 17 + GKI Kernel 6.12 性能量化",
+      "mapped_chapters": [
+        "1.6",
+        "5.1",
+        "8.2"
+      ],
+      "total_score": 95,
+      "source_type": "研究素材"
+    },
+    {
+      "path": "intake/research-feeds/2026-04-07-09-kernel-6-12-io-uring-f2fs-dm-verity-optimization.md",
+      "title": "Kernel 6.12 存储 I/O 优化（io_uring/F2FS/dm-verity）",
+      "mapped_chapters": [
+        "1.6",
+        "6.1",
+        "6.2"
+      ],
+      "total_score": 90,
+      "source_type": "研究素材"
+    },
+    {
+      "path": "intake/research-feeds/2026-04-07-11-android-16kb-page-size-jni-native-library-quantification.md",
+      "title": "16KB Page Size 对 JNI/Native 库量化影响",
+      "mapped_chapters": [
+        "1.6",
+        "4.7"
+      ],
+      "total_score": 85,
+      "source_type": "研究素材"
+    },
+    {
+      "path": "intake/research-feeds/2026-04-07-11-android16-cloud-compilation-baseline-startup-profiles.md",
+      "title": "Android 16 云端编译 Baseline+Startup Profiles",
+      "mapped_chapters": [
+        "1.2",
+        "8.2"
+      ],
+      "total_score": 90,
+      "source_type": "研究素材"
+    },
+    {
+      "path": "intake/research-feeds/2026-04-07-11-android17-art-generational-gc-concurrent-mark-compact.md",
+      "title": "Android 17 ART 分代 GC Concurrent Mark-Compact",
+      "mapped_chapters": [
+        "4.1",
+        "4.6"
+      ],
+      "total_score": 98,
+      "source_type": "研究素材"
+    },
+    {
+      "path": "intake/research-feeds/2026-04-07-11-fastnative-criticalnative-jni-art-optimization.md",
+      "title": "@FastNative/@CriticalNative JNI 快速转换",
+      "mapped_chapters": [
+        "1.4",
+        "1.5"
+      ],
+      "total_score": 100,
+      "source_type": "研究素材"
     }
   ],
   "stats": {
