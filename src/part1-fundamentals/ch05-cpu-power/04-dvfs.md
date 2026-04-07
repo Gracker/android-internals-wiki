@@ -2,7 +2,7 @@
 title: "DVFS 与功耗管理"
 chapter: "5.4"
 section: "5.4"
-status: finalized
+status: ready-for-review
 applicable_versions: "Android 7.0 (API 24) - Android 16 (API 36)"
 last_verified: "2026-04-01"
 last_verified_against: "Linux kernel 6.6 (android16-6.6)"
@@ -26,6 +26,9 @@ drafted_date: "2026-04-01"
 drafted_by: "openclaw-task2"
 reviewed_date: "2026-04-03"
 reviewed_by: "openclaw-task6"
+polish_count: 1
+polish_date: "2026-04-07"
+polish_by: "task2b-polish"
 ---
 
 # DVFS 与功耗管理
@@ -122,7 +125,7 @@ CPU 并不能以任意频率运行。每个 SoC 在设计时，会为 CPU 定义
 Linux 内核通过 OPP 框架（`drivers/opp/`）管理这些档位信息。OPP 数据通常定义在设备树（Device Tree）中，以 `operating-points-v2` 属性描述：
 
 ```
-// 典型的设备树 OPP 定义
+// 典型的设备树 OPP 定义（简化示例）
 cpu0: cpu@0 {
     operating-points-v2 = <&cpu0_opp_table>;
 };
@@ -195,7 +198,7 @@ schedutil 有一个 `rate_limit_us` 参数（通过 sysfs 可配置），控制�
 
 ### Qualcomm 平台的扩展：DCVS 与 RTG
 
-在 Qualcomm 平台上，schedutil 不是孤立工作的。Qualcomm 在其内核中实现了更复杂的调频策略，通常统称为 DCVS（Dynamic Clock and Voltage Scaling）。其中 RTG（Related Thread Group）机制对我们的性能分析特别重要。
+在 Qualcomm 平台上，schedutil 不是孤立工作的。Qualcomm 在其内核中实现了更复杂的调频策略，通常统称为 DCVS（Dynamic Clock and Voltage Scaling）。其他 SoC 厂商（如 MediaTek、Samsung）也有各自的调频增强机制，原理类似但实现不同，本节以 Qualcomm 为例。其中 RTG（Related Thread Group）机制对性能分析特别重要。
 
 [已验证: 来源见 obsidian/Personal-Knowlodge/source/2026-03-08_wechat_调度器分支之RTG.md]
 
@@ -205,7 +208,7 @@ RTG 的「聚合调频」功能就是为了解决这个问题。当 Android 的 
 
 [已验证: 来源见 obsidian/Personal-Knowlodge/source/2026-03-08_wechat_调度器分支之RTG.md — RTG 聚合调频机制]
 
-这是一个很好的例子，说明为什么我们在 Perfetto 中分析性能问题时，需要关注 CPU 频率和负载分布之间的关系：单核利用率低不代表 CPU 性能有余量，可能是调频策略没有识别到跨线程的负载聚合。
+这也解释了为什么在 Perfetto 中分析性能问题时，我们需要关注 CPU 频率和负载分布之间的关系——单核利用率低不代表 CPU 性能有余量，可能是调频策略没有识别到跨线程的负载聚合。
 
 ## 调频延迟对性能的影响
 
@@ -245,7 +248,7 @@ Android 12 引入的 ADPF（Adaptive Performance Framework）通过 Performance 
 
 [已验证: 来源见 obsidian/Personal-Knowlodge/source/2026-03-05_wechat_谷歌官方性能文档2_Android_动态性能框架优化Performance_Hint_API.md]
 
-ADPF 的核心思路是：**让应用告诉系统自己需要多少算力，而不是等系统自己发现**。具体做法是：
+ADPF 的做法是让应用主动告知系统自己需要多少算力，而不是被动等待 governor 检测到负载变化。具体做法是：
 
 1. 应用创建一个 Hint Session，将关键线程（如渲染线程）注册进去
 2. 应用设定一个目标工作时长（target work duration），通常等于帧间隔（如 16.6ms）
@@ -265,7 +268,7 @@ APerformanceHint_reportActualWorkDuration(session, actual_duration_ns);
 
 [已验证: 官方文档, developer.android.com/ndk/guides/performance-hint — ADPF API 自 Android 12 引入]
 
-值得注意的是，Google 在官方文档中特别强调：**不要通过忙循环（busy loop）来人为拉高 CPU 频率**。这是一种在游戏开发中曾经流行的 hack 手段——在后台线程中跑一个死循环，让 governor 以为 CPU 负载很高从而持续高频运行。这种做法浪费电量、加剧发热，而且不同 SoC 平台效果不可控。ADPF 正是为了提供一种规范的替代方案。
+Google 在官方文档中还特别强调了一点：**不要通过忙循环（busy loop）来人为拉高 CPU 频率**。这是一种在游戏开发中曾经流行的 hack 手段——在后台线程中跑一个死循环，让 governor 以为 CPU 负载很高从而持续高频运行。这种做法浪费电量、加剧发热，而且不同 SoC 平台效果不可控。ADPF 正是为了提供一种规范的替代方案。
 
 ## 在 Perfetto 中观察 DVFS 行为
 
@@ -285,7 +288,7 @@ APerformanceHint_reportActualWorkDuration(session, actual_duration_ns);
 
 与频率 track 配合观察的还有 CPU Idle State track（来自 `power/cpu_idle` 事件）。Idle state 0 表示 CPU 在运行任务，数值越大表示睡眠越深。
 
-一个常见的性能问题是 CPU 频繁进出深度睡眠。虽然深度睡眠能省电，但从深度睡眠唤醒需要时间（退出延迟可达数百微秒甚至超过 1ms）。如果一个任务需要频繁唤醒 CPU，而 CPU 每次都进入深度睡眠又被唤醒，这个反复的进出不仅浪费时间，而且进出低功耗模式本身也消耗能量。RTG 的 Busy Hysteresis 功能就是为了解决这个问题——当 RTG 组中的线程活跃时，即使 CPU 短暂空闲，也延迟进入深度睡眠。
+一个常见的性能问题是 CPU 频繁进出深度睡眠。虽然深度睡眠能省电，但从深度睡眠唤醒需要时间——退出延迟可达数百微秒甚至超过 1ms。如果某个线程组需要频繁唤醒 CPU，而 CPU 每次短暂空闲都进入深度睡眠又被唤醒，反复的进出不仅浪费时间，进出低功耗模式本身也消耗能量。RTG 的 Busy Hysteresis 功能就是为了解决这个问题——当 RTG 组中的线程活跃时，即使 CPU 短暂空闲，也延迟进入深度睡眠。
 
 [已验证: 来源见 obsidian/Personal-Knowlodge/source/2026-03-08_wechat_调度器分支之RTG.md — Busy Hysteresis 机制]
 
