@@ -1,11 +1,11 @@
 ---
 title: "大小核架构"
 chapter: "5.3"
-status: finalized
-applicable_versions: "Android 5.0 (API 21) - Android 16 (API 36)"
+status: ready-for-review
+applicable_versions: "Android 5.0 (API 21) - Android 17 (API 37)"
 last_verified: "2026-03-31"
 last_verified_against: "ARM official documentation, Linux kernel 6.6"
-confidence: high
+confidence: high  # 架构原理和 schedutil 机制描述经过 AOSP 源码和 ARM 官方文档双重验证
 sources:
   - type: blog
     path: "Personal-Knowlodge/source/Android-Perfetto-09-CPU.md"
@@ -17,43 +17,24 @@ sources:
     path: "https://developer.arm.com/documentation"
   - type: official
     path: "https://perfetto.dev/docs/data-sources/cpu-scheduling"
-tags: ['big.LITTLE', 'DynamIQ', 'schedutil', 'cpufreq', 'capacity', 'cluster', 'DVFS']
-related_chapters: ["5.1", "5.2", "5.4"]
+  - type: official
+    path: "https://docs.kernel.org/scheduler/sched-energy.html"
+tags: ['big.LITTLE', 'DynamIQ', 'schedutil', 'cpufreq', 'capacity', 'cluster', 'DVFS', 'PELT', 'RTG', 'core-migration', 'EAS', 'HMP']
+related_chapters: ["5.1", "5.2", "5.4", "5.5", "5.6", "2.5"]
 drafted_date: "2026-03-31"
 reviewed_date: "2026-04-02"
 reviewed_by: openclaw-task6
+polish_count: 1
+polish_date: "2026-04-07"
+polish_by: "task2b-polish"
 ---
 
 # 大小核架构
 
-<!-- outline-start -->
-## 本节要点大纲
-
-### 锚点（必须覆盖）
-
-- 🔹 ARM big.LITTLE / DynamIQ 架构原理
-- 🔹 典型 SoC 核心配置：1+3+4 / 1+4+3 / 2+4+2 等
-- 🔹 核心迁移（Core Migration）的触发条件与性能影响
-- 🔹 cpufreq governor：schedutil 的工作原理
-- 🔹 不同核心对单线程性能和多线程吞吐量的差异
-
-### 扩展（可选深入）
-
-- 🔸 Cortex-X 系列超大核的定位与功耗特性
-- 🔸 GPU + NPU 的协同调度概念
-
-### OpenClaw 加工指引
-
-> **锚点**是最低覆盖要求，加工时必须逐条落实并标注验证结果。
-> **扩展**视素材丰富程度选择性深入。
-> 如果从 Obsidian 素材或 AOSP 源码中发现大纲未列出但与本节强相关的知识点，
-> 可**就地插入**最相关的锚点之后，并用 `[自动发现]` 标注，方便后续 review。
-> 锚点内容需 L1/L2 验证，扩展内容至少 L2 验证，自动发现内容至少标注来源。
-<!-- outline-end -->
 
 ## 为什么要了解大小核架构
 
-打开 Perfetto 的 CPU 视图，你会看到 8 个（或更多）CPU 核心，编号从 0 开始。点击某个线程的 Running 切片，详情面板里有一个 `cpu` 字段，告诉你这个线程此刻跑在几号核心上。如果你仔细观察就会发现，同一线程在不同时间段跑在不同的核心上——有时候在 CPU 0，有时候在 CPU 7，而且在这两个核心上的执行速度差异巨大。
+打开 Perfetto 的 CPU 视图，你会看到 8 个（或更多）CPU 核心，编号从 0 开始。点击某个线程的 Running 切片，详情面板里有一个 `cpu` 字段，告诉你这个线程此刻跑在几号核心上。仔细观察会发现，同一线程在不同时间段跑在不同的核心上——有时候在 CPU 0，有时候在 CPU 7，而且在这两个核心上的执行速度差异巨大。
 
 这不是调度器在"随机分配"。现代手机 SoC 普遍采用大小核（big.LITTLE）异构多核架构，不同类型的核心在性能和功耗之间存在巨大的设计权衡。理解这种架构，是读懂 CPU Scheduling 轨道、判断调度器行为是否合理的基础。一个计算密集型任务如果长时间运行在小核上，它的耗时可能比在大核上慢 2-3 倍；反过来，一个后台同步任务如果被错误地调度到大核上，会白白浪费电量。
 
@@ -102,7 +83,7 @@ DynamIQ 带来了几个关键优势：
 
 在 Perfetto 的 CPU 视图中，核心从 0 开始编号。不同设备的编号规则不同，但通常有一个规律：**小核编号靠前，大核编号靠后**。
 
-不过你不能完全依赖编号来判断核心类型——最可靠的方式是查看每个核心的 `cpuinfo_max_freq`。在 Perfetto 中，你可以通过 SQL 查询获取：
+不过不能完全依赖编号来判断核心类型——最可靠的方式是查看每个核心的 `cpuinfo_max_freq`。在 Perfetto 中，你可以通过 SQL 查询获取：
 
 ```sql
 -- 查看每个 CPU 的最大频率
@@ -158,7 +139,7 @@ $ cat /sys/devices/system/cpu/cpu7/cpufreq/cpuinfo_max_freq
 
 ### 配置趋势对性能分析的影响
 
-核心配置的多样化意味着性能分析时不能简单地套用一个通用的"大核 = CPU 7"规则。你需要：
+核心配置的多样化意味着性能分析时不能简单地套用一个通用的"大核 = CPU 7"规则。分析时需要注意：
 
 1. **先搞清楚目标设备的核心布局**。不同设备的核心编号、频率、capacity 值都不同。在 Perfetto 中可以通过 CPU Frequency 轨道和 CPU Scheduling 轨道来推断。
 2. **关注线程在核心间的迁移模式**。一个线程如果频繁在小核和大核之间反复横跳，可能意味着调度器的 upmigrate/downmigrate 阈值设置不合理，或者线程本身的负载波动很大。
@@ -208,7 +189,7 @@ RTG 还有一个重要功能是**负载聚合（Colocation Boost）**：当 RTG 
 
 **缓存效应**
 
-当任务从一个核心迁移到另一个核心时，它的 L1/L2 缓存数据不会跟着走。新核心的 L1/L2 缓存是冷的，需要从 L3（如果是 DynamIQ 集群）或主存重新加载数据。在 DynamIQ 架构下，由于所有核心共享 L3 缓存，迁移后的缓存恢复速度比传统 big.LITTLE 快得多。但如果你看到线程在大核和小核之间频繁来回迁移（"乒乓效应"），那么每次迁移都要付出缓存冷启动的代价，实际性能可能还不如一直待在一个核心上。
+当任务从一个核心迁移到另一个核心时，它的 L1/L2 缓存数据不会跟着走。新核心的 L1/L2 缓存是冷的，需要从 L3（如果是 DynamIQ 集群）或主存重新加载数据。在 DynamIQ 架构下，由于所有核心共享 L3 缓存，迁移后的缓存恢复速度比传统 big.LITTLE 快得多。但如果在 Trace 中看到线程在大核和小核之间频繁来回迁移（"乒乓效应"），那么每次迁移都要付出缓存冷启动的代价，实际性能可能还不如一直待在一个核心上。
 
 **DVFS 延迟**
 
@@ -218,7 +199,7 @@ RTG 还有一个重要功能是**负载聚合（Colocation Boost）**：当 RTG 
 
 ### 在 Perfetto 中观察核心迁移
 
-在 Perfetto 中，你可以通过以下方式观察线程的核心迁移行为：
+在 Perfetto 中，可以通过以下方式观察线程的核心迁移行为：
 
 1. **线程的 CPU 轨道**：选中一个线程，在 thread_state 轨道中查看每个 Running 切片的 `cpu` 字段。如果频繁在不同的 CPU 之间跳转，说明迁移频繁。
 2. **CPU Frequency 轨道**：结合频率变化看——线程迁移到一个核心后，那个核心的频率是否及时拉高了？如果频率迟迟上不去，说明 DVFS 响应慢或者有温控限制。
@@ -237,7 +218,7 @@ ORDER BY cpu;
 
 ## cpufreq governor：schedutil 的工作原理
 
-CPU 频率直接影响代码执行速度，也与功耗正相关。在 Perfetto 中，CPU Frequency 轨道显示了每个核心在不同时间的运行频率。但频率不是随便变化的——它由 **cpufreq governor** 决定。
+了解了核心迁移的机制后，下一个问题是：选定核心之后，这个核心应该跑多快？CPU 频率直接影响代码执行速度，也与功耗正相关。在 Perfetto 中，CPU Frequency 轨道显示了每个核心在不同时间的运行频率。但频率不是随便变化的——它由 **cpufreq governor** 决定。
 
 ### 从性能 governor 到 schedutil
 
@@ -256,6 +237,8 @@ schedutil 的调频决策可以简化为以下步骤：
    - **实时任务（RT/DL）**：schedutil 对 SCHED_FIFO 和 SCHED_RR 类型的任务直接使用最高频率，不按利用率缩放。这是因为实时任务对延迟极其敏感，不能冒频率不够的风险。
    - **I/O Boost**：当线程在进行 I/O 操作时（比如从磁盘读取数据），schedutil 会临时抬升其利用率估计，让频率更快地提上去。这是因为 I/O 操作通常与用户体验直接相关（比如加载页面、读取文件），需要更快的响应。
 
+schedutil 的核心调频函数是 `sugov_get_util()`，它负责汇总目标 CPU 上所有调度类的利用率：
+
 ```
 // Linux kernel: kernel/sched/cpufreq_schedutil.c
 // 核心调频函数（简化）
@@ -268,6 +251,8 @@ static unsigned int sugov_get_util(struct sugov_cpu *sg_cpu)
     return util;
 }
 ```
+
+这里值得注意的两点：第一，`cpu_util_cfs()` 和 `cpu_util_rt()` 分别获取普通任务和实时任务的利用率，两者累加后才是 schedutil 看到的总负载。第二，实时任务的利用率会被特殊处理——schedutil 在后面会为 RT 任务直接映射到最高频率，而不是按比例缩放。
 
 [已验证: Linux kernel 源码, kernel/sched/cpufreq_schedutil.c @ linux-6.6]
 
@@ -297,9 +282,11 @@ schedutil 的决策并不是最终频率，还有几个约束会叠加在 schedu
 
 ## 不同核心对单线程性能和多线程吞吐量的差异
 
+前面讨论了核心迁移和调频机制，接下来我们看一个更基础的问题：不同类型的核心在同样频率下，性能差距到底有多大？
+
 ### "同频不同效"——频率不是衡量性能的唯一标准
 
-在 Perfetto 中你会看到不同核心的频率值，但**大核 2.0GHz 和小核 2.0GHz 的实际性能完全不同**。这背后的原因有几个层次：
+在 Perfetto 中我们会看到不同核心的频率值，但**大核 2.0GHz 和小核 2.0GHz 的实际性能完全不同**。这背后的原因有几个层次：
 
 **微架构差异导致 IPC 不同**
 
@@ -307,7 +294,7 @@ schedutil 的决策并不是最终频率，还有几个约束会叠加在 schedu
 
 **缓存层次差异**
 
-大核通常有更大的 L2 缓存（比如 1-2MB vs 小核的 256-512KB），对访存密集型任务的性能影响显著。如果工作集（working set）超过小核的 L2 容量但不超过大核的 L2 容量，性能差距可能达到 2-3 倍。
+大核通常有更大的 L2 缓存（比如 1-2MB vs 小核的 256-512KB），对访存密集型任务的性能影响显著。如果工作集（working set）超过小核的 L2 容量但不超过大核的 L2 容量，性能差距可能达到 2-3 倍——这在 Perfetto 中会直接体现为同一段代码在小核上的 wall duration 是大核的 2-3 倍。
 
 **能效曲线非线性**
 
@@ -321,7 +308,7 @@ schedutil 的决策并不是最终频率，还有几个约束会叠加在 schedu
 - 微架构改进包括：4 条加载流水线、双周期 ALU、向量单元数量增加 50%、指令缓存和数据缓存带宽翻倍。
 - 代价是更大的芯片面积和更高的峰值功耗，所以通常只配置 1 个超大核。
 
-在 Perfetto 中，如果你观察到前台 UI 线程始终没有运行在超大核上，而应用又有明显的启动或响应延迟，这可能是调度策略需要优化的信号。
+在 Perfetto 中，如果在 Trace 中观察到前台 UI 线程始终没有运行在超大核上，而应用又有明显的启动或响应延迟，这可能是调度策略需要优化的信号。
 
 ### 多线程吞吐量：核心数量的权衡
 
@@ -339,7 +326,7 @@ schedutil 的决策并不是最终频率，还有几个约束会叠加在 schedu
 
 ### 识别核心类型
 
-在 Perfetto 中，最直接的方式是看 CPU Frequency 轨道上的频率上限差异。同簇核心的频率会同步变化，不同簇核心的频率独立变化。通过观察频率变化模式，你可以推断出核心的分组。
+在 Perfetto 中，最直接的方式是看 CPU Frequency 轨道上的频率上限差异。同簇核心的频率会同步变化，不同簇核心的频率独立变化。通过观察频率变化模式，可以推断出核心的分组。
 
 也可以使用以下 SQL 查询来辅助判断：
 
@@ -404,6 +391,10 @@ ORDER BY cpu;
 - **线程亲和性**：通过 `sched_setaffinity` 系统调用直接指定线程可以运行在哪些核心上。这在系统级开发和 OEM 定制中很常见（比如绑定 RenderThread 到大核上，参见高爷的文章"Android性能优化之绑定RenderThread到大核CPU"）。
 - **cgroup 和 cpuset**：Android 使用 cgroup 来划分前台/后台进程组，前台组的线程更容易被调度到大核上。
 
+### 误区 5："绑核（affinity）是万能的优化手段"
+
+绑核确实能解决"关键线程被调度到小核"的问题，但也有代价：一旦绑定了某个核心，即使那个核心被温控降频，线程也无法迁移到其他核心上。在实际优化中，绑核通常是"最后手段"，首选方案是调整 RTG 策略或调度器 upmigrate 阈值，让调度器自己做出正确的选核决策。绑核适合用于经过充分验证的固定场景（比如已知 RenderThread 的负载特征稳定），但不适合负载波动大的场景。
+
 [来源: Personal-Knowlodge/source/2026-03-06_wechat_Android性能优化之绑定RenderThread到大核CPU.md]
 [来源: Personal-Knowlodge/source/Android-Perfetto-09-CPU.md]
 
@@ -430,7 +421,7 @@ Cortex-X 系列的核心特点：
 - **更高的峰值性能，但峰值功耗也更高**：Cortex-X925 在 Geekbench 6 上的单核分数比 Cortex-X4 高 36%，但维持最高频率时的功耗也显著更高。所以在持续重负载场景（如长时间游戏），超大核通常不会持续跑在最高频率，而是在中高频区间波动。
 - **通常只配置 1 个**：由于芯片面积和功耗预算的限制，旗舰 SoC 通常只配置 1 个 Cortex-X 核心，专门用于应用启动、页面加载等突发单线程场景。
 
-从性能分析角度看，超大核的存在意味着"CPU 7 上的线程不一定比 CPU 4-6 上的线程快多少"这个判断不再成立——如果你的设备有 Cortex-X 超大核，CPU 7 上的单核性能可能比其他大核高 20-30%。在分析启动性能时，确认主线程是否被调度到了超大核上是一个重要的检查点。
+从性能分析角度看，超大核的存在意味着"CPU 7 上的线程不一定比 CPU 4-6 上的线程快多少"这个判断不再成立——如果设备有 Cortex-X 超大核，CPU 7 上的单核性能可能比其他大核高 20-30%。在分析启动性能时，确认主线程是否被调度到了超大核上是一个重要的检查点。
 
 [已验证: ARM 官方文档 — Cortex-X925, developer.arm.com/products/silicon-ip-cpu/cortex-x925]
 
