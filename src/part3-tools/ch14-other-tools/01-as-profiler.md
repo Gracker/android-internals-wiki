@@ -2,10 +2,13 @@
 title: "Android Studio Profiler"
 chapter: "14.1"
 section: "14.1"
-status: finalized
+status: ready-for-review
+polish_count: 1
 drafted_date: "2026-04-03"
 reviewed_date: "2026-04-07"
 reviewed_by: "openclaw-task6"
+polish_date: "2026-04-08"
+polish_by: "task2b-polish"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 8.0 (API 26) - Android 16 (API 36)"
 last_verified: "2026-04-03"
@@ -73,7 +76,7 @@ Memory Profiler 解决"App 的内存怎么了"的问题。它可以实时展示 
 
 Network Profiler 展示 App 的网络活动——请求的时间、大小、响应状态。虽然它的深度不如专业的网络抓包工具（如 Charles、mitmproxy），但对于快速确认"是不是网络请求太慢导致了卡顿"这类问题非常方便。
 
-Energy Profiler（在 Android Studio Hedgehog 之后升级为 Power Profiler）展示 App 的功耗来源。它能告诉我们 CPU、网络、GPS 等子系统各自消耗了多少电量，帮助定位高耗电的行为。
+Energy Profiler（在 Android Studio Hedgehog 之后升级为 Power Profiler）展示 App 的功耗来源。它分别展示 CPU、网络、GPS 等子系统的电量消耗，帮助定位高耗电的行为。
 
 这四个模块共享同一个时间轴。当在 CPU 时间轴上看到一段异常的 CPU 高占用时，可以同步查看同一时间段内存是否有激增、网络是否有大量请求——这种多维度的交叉视角是 Profiler 最大的优势之一。
 
@@ -95,7 +98,7 @@ System Trace 的局限是：它只能看到系统预埋的和手动标记的 Tra
 
 ### Java Method Trace（方法追踪）
 
-Java Method Trace 是最"精确"但也最"重"的模式。它通过在虚拟机层面插桩（instrumentation），记录每一个 Java/Kotlin 方法的进入和退出时间戳。理论上，它能告诉我们每一个方法执行了多久。
+Java Method Trace 是最"精确"但也最"重"的模式。它通过在虚拟机层面插桩（instrumentation），记录每一个 Java/Kotlin 方法的进入和退出时间戳。理论上，它能揭示每一个方法的精确执行时间。
 
 但精确的代价是巨大的运行时开销。插桩会在每个方法的入口和出口添加额外的记录逻辑，这不仅拖慢了方法本身的执行速度，还改变了 CPU 缓存的行为和 JIT 的优化决策。一个在正常执行时只需 5ms 的方法，在 Method Trace 模式下可能显示为 50ms 甚至 130ms——10 倍以上的膨胀是很常见的。
 
@@ -139,7 +142,7 @@ Memory Profiler 是排查内存问题的主力工具。它的界面顶部是一�
 
 ### 实时内存曲线
 
-实时曲线是"第一眼"——它告诉我们内存的大趋势。曲线上每个突然的跳升对应着一次大的内存分配，每个突然的下降对应着一次 GC。如果 GC 之后内存并没有回到之前的水平，那说明有对象无法被回收——这就是内存泄漏的典型信号。
+实时曲线是内存状态的"第一眼"概览。曲线上每个突然的跳升对应着一次大的内存分配，每个突然的下降对应着一次 GC。如果 GC 之后内存并没有回到之前的水平，那说明有对象无法被回收——这就是内存泄漏的典型信号。
 
 在 Android 8.0（API 26）之后，Memory Profiler 的数据精度大幅提升。这得益于 Android 8.0 引入的 JVMTI（JVM Tool Interface）机制，Profiler 通过 JVMTI 获取的内存数据比之前通过 DDMS 协议获取的数据更加准确和详细。[已验证: 官方文档, developer.android.com/studio/profile/memory-profiler]
 
@@ -147,7 +150,7 @@ Memory Profiler 是排查内存问题的主力工具。它的界面顶部是一�
 
 当实时曲线暗示有泄漏时，下一步就是抓 Heap Dump。点击 Memory Profiler 中的 "Capture Heap Dump" 按钮（或者选择 "Analyze Memory Usage" 任务），Profiler 会冻结当前时刻的 Java 堆，记录下所有存活对象的信息：类名、实例数量、Shallow Size（对象自身占用的内存）、Retained Size（对象及其引用链持有的总内存）。
 
-Heap Dump 的分析有两个关键视角。第一个是按类名查看：找到实例数量异常多的类，比如 `MainActivity` 在堆中出现了 5 个实例——正常情况应该只有 1 个。第二个是按引用链查看：选中一个可疑对象，Profiler 会展示它的 GC Root 引用链，告诉我们"谁持有了这个对象的引用导致它无法被回收"——这是定位泄漏根因的关键信息。
+Heap Dump 的分析有两个关键视角。第一个是按类名查看：找到实例数量异常多的类，比如 `MainActivity` 在堆中出现了 5 个实例——正常情况应该只有 1 个。第二个是按引用链查看：选中一个可疑对象，Profiler 会展示它的 GC Root 引用链，指明是哪条引用阻止了对象被回收——这是定位泄漏根因的关键信息。
 
 Profiler 还提供了自动检测 Activity 和 Fragment 泄漏的功能。它会标记出那些已经调用了 `onDestroy()` 但仍然在堆中存活的 Activity/Fragment 实例，帮我们快速定位最常见的一类泄漏。
 
@@ -167,7 +170,7 @@ Allocation Tracking 有两种模式：Full 和 Sampled。Full 模式记录所有
 
 理解每种分析模式的开销，是正确使用 Profiler 的核心前提。一个引入了 10 倍开销的工具，它给出的数据本身就是失真的——如果不知道这一点，就会在错误的方向上浪费时间。
 
-CPU 方面的开销对比在前文已经详细分析过。总结来说：System Trace 的开销最低，约 5μs/事件，适合长时间录制；Callstack Sample 开销中等，适合找 CPU 热点；Method Trace 开销最大，只适合短时间的调用链分析。
+CPU 方面的开销对比前文已有详细分析，此处不再重复。
 
 Memory 方面的开销也需要注意。实时内存曲线的监控开销很低，可以长期开启。Heap Dump 会触发一次 stop-the-world 暂停，时间取决于堆的大小——对于几百 MB 的堆，暂停可能达到几百毫秒。Allocation Tracking 的 Full 模式在对象分配密集的场景下会有明显的性能影响，建议优先使用 Sampled 模式。
 
@@ -179,7 +182,7 @@ Memory 方面的开销也需要注意。实时内存曲线的监控开销很低�
 
 ## Profiler 与 Perfetto 的互补关系
 
-在全书的工具篇中，Perfetto（第 13 章）占据了最大的篇幅，这反映了它在 Android 性能分析中的核心地位。但 Android Studio Profiler 和 Perfetto 之间是互补关系，各有各的优势场景。
+Perfetto（第 13 章）在全书工具篇中篇幅最大，但 Android Studio Profiler 与它并非替代关系——两者覆盖不同的分析场景。
 
 Profiler 的优势在于"App 开发者的日常工具"。它集成在 IDE 中，不需要额外安装，不需要命令行操作，点击几下就能开始分析。它的时间轴和源码编辑器在同一个窗口中，发现一个耗时方法后可以直接跳转到对应的代码文件。对于 App 开发者来说，这种"在开发流程中随时可以用的工具"才是最高频使用的。
 
@@ -187,15 +190,15 @@ Perfetto 的优势在于"系统级全局视野"。它能同时展示多个进程
 
 [图：Profiler 与 Perfetto 的定位对比——Profiler 关注单个 App 的 CPU/内存/网络/功耗，Perfetto 关注整个系统的全局状态]
 
-实际上，Profiler 的 System Trace 模式底层就是 Perfetto。在 Profiler 中抓取的 System Trace 可以导出为 `.perfetto-trace` 文件，直接在 Perfetto UI 中打开。这意味着可以在 Profiler 中做快速的第一轮分析，定位到大致的问题范围后，导出 Trace 到 Perfetto UI 做更深入的系统级分析——这是一个非常高效的工作流。
+实际上，Profiler 的 System Trace 模式底层就是 Perfetto。在 Profiler 中抓取的 System Trace 可以导出为 `.perfetto-trace` 文件，直接在 Perfetto UI 中打开。在 Profiler 中完成第一轮快速分析、定位大致问题范围后，导出 Trace 到 Perfetto UI 做系统级深入分析——这个工作流在实践中非常高效。
 
-一种推荐的实践是：先用 Profiler 的 System Trace 做快速扫描，如果发现问题的线索在 App 内部（某个方法特别慢、内存持续增长），直接在 Profiler 中切换到对应的模式（Callstack Sample、Memory Profiler）做精细分析。如果发现问题的线索在 App 外部（CPU 被其他进程抢占、VSync 信号延迟、SurfaceFlinger 合成慢），导出 Trace 到 Perfetto UI 做系统级分析。
+推荐的分析工作流：先用 Profiler 的 System Trace 做快速扫描，判断问题在 App 内部还是外部。内部问题（某个方法慢、内存持续增长）直接在 Profiler 中切换到 Callstack Sample 或 Memory Profiler 做精细分析；外部问题（CPU 被其他进程抢占、VSync 信号延迟、SurfaceFlinger 合成慢）导出 Trace 到 Perfetto UI 做系统级分析。
 
 ## Power Profiler（Android Studio Hedgehog+）
 
 从 Android Studio Hedgehog（2023.1）开始，原来的 Energy Profiler 升级为 Power Profiler。两者的核心区别是：Energy Profiler 只能估算功耗（基于 CPU 使用率、网络活动等的模型推算），而 Power Profiler 能直接测量设备各子系统的实际功耗。
 
-Power Profiler 的数据来源是设备上的 ODPM（On-Device Power Rails Monitor），它把设备的功耗按子系统分割成多条 Power Rail：CPU 大核、中核、小核、GPU、Display、Camera、Cellular、WLAN、GPS、UFS（存储）、Memory 等。这使得不仅能看到 App 的总功耗，还能精确知道功耗花在了哪个子系统上。
+Power Profiler 的数据来源是设备上的 ODPM（On-Device Power Rails Monitor），它把设备的功耗按子系统分割成多条 Power Rail：CPU 大核、中核、小核、GPU、Display、Camera、Cellular、WLAN、GPS、UFS（存储）、Memory 等。这使得不仅能看到 App 的总功耗，还能精确知道功耗花在了哪个子系统上（与 §5.4 DVFS 中 CPU 频率调控的功耗数据可以交叉印证）。
 
 举个例子：如果在 Power Profiler 中看到 Cellular 的 Power Rail 在 App 启动后持续高消耗，就可以推断出启动期间的网络请求过于密集，可能需要延迟或者合并请求。
 
