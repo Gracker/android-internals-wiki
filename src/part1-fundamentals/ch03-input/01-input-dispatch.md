@@ -1,12 +1,12 @@
 ---
 title: "Input 事件分发全流程"
 chapter: "3.1"
-status: ready-for-review
+status: ready-to-publish
 applicable_versions: "Android 12 (API 31) - Android 16 (API 36)"
 last_verified: "2026-03-30"
 last_verified_against: "AOSP android-14.0.0_r1"
 confidence: high
-reviewed_date: "2026-04-02"
+reviewed_date: "2026-04-07"
 reviewed_by: openclaw-task6
 polish_count: 1
 polish_date: "2026-04-05"
@@ -56,13 +56,13 @@ related_chapters: ["3.2", "3.3", "2.5", "9.1", "9.2"]
 
 当我们在 Perfetto 中追踪一次点击卡顿或滑动不跟手的问题时，最常看到的线索之一就是 `deliverInputEvent` 这个 Trace tag——它对应的就是 App 侧 UI 线程被 Input 事件唤醒并开始处理的那段时间。如果我们不理解 Input 事件是怎么从硬件一路走到这个 tag 的，就无法判断问题出在哪个环节：是底层报点延迟？是 InputDispatcher 分发不及时？还是 App 主线程本身卡住了？
 
-理解 Input 事件分发的完整链路，就是为了在分析这类问题时，能够在 Perfetto 的每一个关键 Track 上精确定位：事件在哪个环节被延迟了，延迟了多少，以及为什么。
+理解 Input 事件分发的完整路径，就是为了在分析这类问题时，能够在 Perfetto 的每一个关键 Track 上精确定位：事件在哪个环节被延迟了，延迟了多少，以及为什么。
 
-## 从硬件到 App：一条完整的事件链路
+## 从硬件到 App：一条完整的事件传递路径
 
-一次触摸事件从手指触碰屏幕到 App 开始处理，要经历一条很长的链路。我们可以把这条链路分成四段来看：
+一次触摸事件从手指触碰屏幕到 App 开始处理，要经历一条很长的路径。我们可以把这条路径分成四段来看：
 
-[图：Input 事件分发全链路架构图——从触控 IC 到 App View 树]
+[图：Input 事件分发全路径架构图——从触控 IC 到 App View 树]
 
 **第一段：硬件 → Linux 内核**。触摸屏的触控 IC 芯片捕获电压/电流变化，计算出触摸坐标，通过 I²C 总线通知 CPU。Linux 内核的 Input 子系统按照统一的协议规范，将原始事件写入 `/dev/input/eventX` 设备文件。这一段对 Android Framework 来说是透明的，我们用 `adb shell getevent` 命令看到的就是这一层的原始数据。
 
@@ -137,7 +137,7 @@ void InputReader::loopOnce() {
 
 ## InputDispatcher 的分发策略
 
-`InputDispatcher` 是整个事件分发链路中策略最复杂的组件。它要解决的核心问题是：**给定一个输入事件，应该把它发送给哪个窗口？**
+`InputDispatcher` 是整个事件分发流程中策略最复杂的组件。它要解决的核心问题是：**给定一个输入事件，应该把它发送给哪个窗口？**
 
 ### 焦点窗口 vs 触摸窗口
 
@@ -250,7 +250,7 @@ mInputEventReceiver = new WindowInputEventReceiver(inputChannel, Looper.myLooper
 
 ## App 侧的事件分发：从 ViewRootImpl 到 View 树
 
-到这里，事件已经从 `system_server` 通过 `socketpair` 到达了 App 进程。接下来的旅程，是从 `ViewRootImpl` 的 native 层回调开始，经过一条精心设计的 `InputStage` 责任链，最终分发到 View 树中的具体控件。很多开发者对 View 树的 `dispatchTouchEvent` / `onInterceptTouchEvent` / `onTouchEvent` 三件套很熟悉，但在这之前的 `InputStage` 处理、IME 优先级、native 层拦截等环节，往往是知识盲区。我们把整条链路完整走一遍。
+到这里，事件已经从 `system_server` 通过 `socketpair` 到达了 App 进程。接下来的旅程，是从 `ViewRootImpl` 的 native 层回调开始，经过一条精心设计的 `InputStage` 责任链，最终分发到 View 树中的具体控件。不少开发者对 View 树的 `dispatchTouchEvent` / `onInterceptTouchEvent` / `onTouchEvent` 三件套很熟悉，但在这之前的 `InputStage` 处理、IME 优先级、native 层拦截等环节，往往是知识盲区。我们把整条路径完整走一遍。
 
 ### InputStage 责任链
 
@@ -430,7 +430,7 @@ frameworks/native/services/inputflinger/
 
 ### 误区二：事件分发是从 Activity 开始的
 
-很多文章把 `Activity.dispatchTouchEvent()` 作为事件分发的起点，但实际上在这之前，事件已经经历了 `ViewRootImpl` 的 `InputStage` 责任链处理。`Activity` 只是 DecorView 通过 `Window.Callback` 给到的一个拦截机会。
+不少文章把 `Activity.dispatchTouchEvent()` 作为事件分发的起点，但实际上在这之前，事件已经经历了 `ViewRootImpl` 的 `InputStage` 责任链处理。`Activity` 只是 DecorView 通过 `Window.Callback` 给到的一个拦截机会。
 
 ### 误区三：Input ANR 是 App 主线程卡了 5 秒
 
@@ -450,7 +450,7 @@ frameworks/native/services/inputflinger/
 | Android 13 (API 33) | InputDispatcher 使用 `mAnrTracker` 替代之前的超时检测方式 |
 | Android 14+ | InputFlinger 进一步模块化，增加对折叠屏、多显示器的支持 |
 | Android 15 (API 35) | 输入法与 Input 系统交互优化，改善 IME 切换时的输入延迟 |
-| Android 16 (API 36) | [待验证：预测性返回手势（Predictive Back）对 Input 分发链路的影响] |
+| Android 16 (API 36) | [待验证：预测性返回手势（Predictive Back）对 Input 分发路径的影响] |
 
 ## 调试技巧
 
