@@ -1,21 +1,21 @@
 {
-  "last_scan_time": "2026-04-07T13:20:48.226060",
-  "scanned_files": 3420,
+  "last_scan_time": "2026-04-07T16:59:49.643827",
+  "scanned_files": 3490,
   "total_files": 4341,
-  "indexed_files": 153,
+  "indexed_files": 161,
   "current_directory": "Cubox",
-  "current_offset": 3420,
+  "current_offset": 3490,
   "priority_queue": [
     "Cubox",
     "Personal-Knowlledge",
-    "\u516c\u4f17\u53f7\u6587\u7ae0",
-    "X \u6587\u7ae0",
-    "\u8c03\u7814",
-    "\u8bba\u6587",
-    "\u77e5\u8bc6\u5e93",
-    "OpenClaw\u5b9a\u65f6\u4efb\u52a1"
+    "公众号文章",
+    "X 文章",
+    "调研",
+    "论文",
+    "知识库",
+    "OpenClaw定时任务"
   ],
   "completed_directories": [],
-  "last_scan_batch": 40,
+  "last_scan_batch": 30,
   "status": "in_progress"
 }

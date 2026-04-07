@@ -2942,6 +2942,191 @@
       "first_chars": "# 时光痕迹：2021 年总结 | Reimu's blog\n\n2021 依旧是人类社会倒车和加速灭亡的一年，全球范围内新冠病毒依旧在肆虐，新的变异又接踵而来，疫情并没有多少消退的迹象。而现在国内西安疫情又爆发开来，无法预想未来究竟能变成什么样子。 阅读2021 年 9 月份的时候将书单从原来的 Markdown 文本迁移到了 Notion上，体验十分棒。Notion 的表格数据库功能十分强大，",
       "quality": "medium",
       "indexed_at": "2026-04-07T13:20:48.222508"
+    },
+    {
+      "title": "最新版发布 - Android 14 现已正式发布至 AOSP",
+      "file": "最新版发布 - Android 14 现已正式发布至 AOSP！-2023-10-10.md",
+      "source_directory": "Cubox",
+      "relative_path": "Cubox/最新版发布 - Android 14 现已正式发布至 AOSP！-2023-10-10.md",
+      "scores": {
+        "relevance": 4,
+        "depth": 4,
+        "timeliness": 4,
+        "verifiability": 5
+      },
+      "total_score": 17,
+      "quality": "high",
+      "chapters": [
+        "ch17-新版本",
+        "ch01-架构"
+      ],
+      "chapter_confidence": {
+        "ch17-新版本": "high",
+        "ch01-架构": "high"
+      },
+      "summary": "Google官方Android 14 AOSP正式发布通知，包含API变更说明和兼容性测试要求",
+      "indexed_at": "2026-04-07T14:18:00"
+    },
+    {
+      "title": "有时候你APP发生的ANR不是你的错",
+      "file": "有时候你APP发生的ANR不是你的错-分享 1个 Google 工程师没 bug 改出 bug 的一个案例-2025-04-21.md",
+      "source_directory": "Cubox",
+      "relative_path": "Cubox/有时候你APP发生的ANR不是你的错-分享 1个 Google 工程师没 bug 改出 bug 的一个案例-2025-04-21.md",
+      "scores": {
+        "relevance": 5,
+        "depth": 4,
+        "timeliness": 5,
+        "verifiability": 4
+      },
+      "total_score": 18,
+      "quality": "high",
+      "chapters": [
+        "ch03-线程",
+        "ch11-Profiling",
+        "ch02-进程"
+      ],
+      "chapter_confidence": {
+        "ch03-线程": "high",
+        "ch11-Profiling": "high",
+        "ch02-进程": "high"
+      },
+      "summary": "Google工程师修复ANR的真实案例，展示了无bug修改反而引入bug的平台层问题",
+      "indexed_at": "2026-04-07T14:18:00"
+    },
+    {
+      "title": "未缓存的缓冲 I-O 旨在在 Linux 6.14 中准备就绪并带来巨大性能提升",
+      "file": "未缓存的缓冲 I-O 旨在在 Linux 6.14 中准备就绪，并带来巨大的性能提升-2024-12-26.md",
+      "source_directory": "Cubox",
+      "relative_path": "Cubox/未缓存的缓冲 I-O 旨在在 Linux 6.14 中准备就绪，并带来巨大的性能提升-2024-12-26.md",
+      "scores": {
+        "relevance": 4,
+        "depth": 4,
+        "timeliness": 5,
+        "verifiability": 4
+      },
+      "total_score": 17,
+      "quality": "high",
+      "chapters": [
+        "ch08-存储",
+        "ch13-调度"
+      ],
+      "chapter_confidence": {
+        "ch08-存储": "medium",
+        "ch13-调度": "medium"
+      },
+      "summary": "Linux 6.14内核引入Uncached Buffered I/O特性，由Meta工程师Jens Axboe推动",
+      "indexed_at": "2026-04-07T14:18:00"
+    },
+    {
+      "title": "有趣的知识 - CPU利用率、延迟、吞吐量之间的关系",
+      "file": "有趣的知识 -- CPU利用率，延迟，吞吐量之间的关系 - 知乎-2023-12-26.md",
+      "source_directory": "Cubox",
+      "relative_path": "Cubox/有趣的知识 -- CPU利用率，延迟，吞吐量之间的关系 - 知乎-2023-12-26.md",
+      "scores": {
+        "relevance": 4,
+        "depth": 4,
+        "timeliness": 4,
+        "verifiability": 4
+      },
+      "total_score": 16,
+      "quality": "high",
+      "chapters": [
+        "ch13-调度"
+      ],
+      "chapter_confidence": {
+        "ch13-调度": "medium"
+      },
+      "summary": "从排队论角度分析CPU利用率、延迟和吞吐量之间关系的技术文章",
+      "indexed_at": "2026-04-07T14:18:00"
+    },
+    {
+      "title": "条件编译不一致引发的内存布局问题及崩溃复盘",
+      "file": "条件编译不一致引发的内存布局问题及崩溃复盘-2024-11-20.md",
+      "source_directory": "Cubox",
+      "relative_path": "Cubox/条件编译不一致引发的内存布局问题及崩溃复盘-2024-11-20.md",
+      "scores": {
+        "relevance": 4,
+        "depth": 4,
+        "timeliness": 4,
+        "verifiability": 3
+      },
+      "total_score": 15,
+      "quality": "medium",
+      "chapters": [
+        "ch07-内存",
+        "ch16-构建"
+      ],
+      "chapter_confidence": {
+        "ch07-内存": "medium",
+        "ch16-构建": "medium"
+      },
+      "summary": "条件编译不一致导致内存布局变化和崩溃的技术复盘，涉及C/C++编译期和内存对齐问题",
+      "indexed_at": "2026-04-07T14:18:00"
+    },
+    {
+      "title": "最新版发布 - Android 13 现已正式发布至 AOSP",
+      "file": "最新版发布 - Android 13 现已正式发布至 AOSP！-2022-08-17.md",
+      "source_directory": "Cubox",
+      "relative_path": "Cubox/最新版发布 - Android 13 现已正式发布至 AOSP！-2022-08-17.md",
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 4
+      },
+      "total_score": 14,
+      "quality": "medium",
+      "chapters": [
+        "ch17-新版本",
+        "ch01-架构"
+      ],
+      "chapter_confidence": {
+        "ch17-新版本": "high",
+        "ch01-架构": "high"
+      },
+      "summary": "Google官方Android 13 AOSP发布通知，包含兼容性测试要求和开发者迁移指引",
+      "indexed_at": "2026-04-07T14:18:00"
+    },
+    {
+      "title": "分享一个 android app 启动出现 Uninterruptible Sleep (non-IO) 性能问题分析",
+      "path": "Cubox/分享一个 android app 启动出现 Uninterruptible Sleep (non-IO) 性能问题分析-2025-05-16.md",
+      "scores": {
+        "relevance": 4,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "total_score": 11,
+      "quality": "medium",
+      "chapters": [],
+      "content_preview": " 分享一个 android app 启动出现 Uninterruptible Sleep non-IO 性能问题分析 发现问题app 启动过程中，主线程 出现了很多 不可中断睡眠（IO）本身和 apk",
+      "indexed_at": "2026-04-07T16:59:49.633946"
+    },
+    {
+      "title": "深入理解 Gradle Tooling API",
+      "path": "Cubox/深入理解 Gradle Tooling API-2022-02-24.md",
+      "scores": {
+        "relevance": 3,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 1
+      },
+      "total_score": 10,
+      "quality": "medium",
+      "chapters": [
+        [
+          "ch14-工具",
+          "medium",
+          2
+        ],
+        [
+          "ch16-构建",
+          "medium",
+          2
+        ]
+      ],
+      "content_preview": " 深入理解 Gradle Tooling API Read in Cuboxhttps://cubox.pro/web/card/6896551340101602322 Read Originalht",
+      "indexed_at": "2026-04-07T16:59:49.633956"
     }
   ],
   "sources": [
@@ -3094,5 +3279,5 @@
       "notes": "高爷精选资源库，15个分类"
     }
   ],
-  "last_updated": "2026-04-07T13:20:48.226063"
+  "last_updated": "2026-04-07T16:59:49.634018"
 }
