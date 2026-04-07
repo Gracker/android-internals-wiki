@@ -8,12 +8,12 @@
     "reviewed": 5,
     "finalized": 30,
     "staging_drafts": 0,
-    "last_updated": "2026-04-08T00:02:00+08:00",
+    "last_updated": "2026-04-08T01:20:00+08:00",
     "processing": 0,
     "ready-to-publish": 12,
-    "last_reviewed": "2026-04-07",
-    "last_reviewed_section": "14.1 Android Studio Profiler",
-    "reviewed_today": 4
+    "last_reviewed": "2026-04-08",
+    "last_reviewed_section": "9.4 特殊场景的 ANR",
+    "reviewed_today": 5
   },
   "reviewed_sections": {
     "8.1": {
@@ -625,6 +625,27 @@
       "scores": {
         "structure": 5,
         "expression": 5,
+        "consistency": 5,
+        "verification": 4,
+        "metadata": 5
+      }
+    },
+    "9.4": {
+      "reviewed_date": "2026-04-08",
+      "reviewed_by": "openclaw-task6",
+      "review_status": "reviewed",
+      "has_b_class_issues": true,
+      "fixes_applied": [
+        "Remove [自动发现] prefix: 低内存 GC section header",
+        "Remove [自动发现] prefix: 文件锁竞争 section header",
+        "Add cross-reference to §1.10 ContentProvider chapter",
+        "Expand Binder 解决方案 from shorthand to narrative style",
+        "Expand 文件锁解决方案 from shorthand to narrative style",
+        "Add [待补充] marker for ContentProvider cross-process Trace description"
+      ],
+      "scores": {
+        "structure": 4,
+        "expression": 4,
         "consistency": 5,
         "verification": 4,
         "metadata": 5
