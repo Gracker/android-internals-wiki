@@ -2,7 +2,7 @@
 title: "内存泄漏"
 chapter: "10.2"
 section: "10.2"
-status: finalized
+status: ready-for-review
 drafted_date: "2026-04-02"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 8.0 (API 26) - Android 16 (API 36)"
@@ -11,6 +11,9 @@ last_verified_against: "AOSP android-16.0.0_r1"
 confidence: high
 reviewed_date: "2026-04-08"
 reviewed_by: "openclaw-task6"
+polish_count: 1
+polish_date: "2026-04-08"
+polish_by: "task2b-polish"
 sources:
   - type: blog
     path: "Personal-Knowlodge/source/2026-03-07_wechat_为什么各大厂自研的内存泄漏检测框架都要参考_LeakCanary_因为它是真强啊.md"
@@ -53,9 +56,9 @@ related_chapters: ["4.1", "4.3", "4.5", "10.1", "10.6"]
 
 ## 为什么要了解内存泄漏
 
-如果你做过 Android 性能优化，大概率遇到过这样的场景：应用用着用着就越来越卡，最终 OOM 崩溃；打开 Android Studio 的 Memory Profiler，看到内存曲线像台阶一样只升不降。当你试图分析 OOM 时的堆栈日志，发现堆栈指向的可能只是一次普通的字符串分配——真正"吃掉"内存的那些泄漏对象，早已在之前无数次的页面跳转和配置变更中悄悄积累。
+做过 Android 性能优化的工程师，大概率遇到过这样的场景：应用用着用着就越来越卡，最终 OOM 崩溃；打开 Android Studio 的 Memory Profiler，看到内存曲线像台阶一样只升不降。尝试分析 OOM 时的堆栈日志，却发现堆栈指向的可能只是一次普通的字符串分配——真正"吃掉"内存的那些泄漏对象，早已在之前无数次的页面跳转和配置变更中悄悄积累。
 
-内存泄漏的可怕之处在于：它不是"轰"的一声炸掉你的应用，而是像水龙头漏水一样，一滴一滴地耗尽可用内存。等到问题暴露时，你面对的是一堆积累了几十分钟的泄漏，要从中找出第一个"凶手"极其困难。
+内存泄漏的可怕之处在于：它不是"轰"的一声炸掉应用，而是像水龙头漏水一样，一滴一滴地耗尽可用内存。等到问题暴露时，面前是一堆积累了几十分钟的泄漏，从中找出第一个"凶手"极其困难。
 
 了解内存泄漏的核心目的只有一个：**在泄漏发生的瞬间就捕获它，而不是等到 OOM 时再回头找。**
 
@@ -81,6 +84,8 @@ related_chapters: ["4.1", "4.3", "4.5", "10.1", "10.6"]
 [图：GC Root → 引用链 → 泄漏对象 的示意图]
 
 需要注意的是，内存泄漏有两种不同的语境。开发者常说的"内存泄漏"一般是指 Java 堆上的泄漏。而在 Native 层，内存泄漏指的是通过 `malloc`/`new` 分配的内存没有被 `free`/`delete` 释放——这和 GC 无关，纯粹是开发者的手动管理失误。两种泄漏的症状相似（内存持续增长），但排查方法完全不同。
+
+理解了泄漏的成因，下一个问题自然就是：怎么发现它？在 Java 堆上，答案几乎是唯一的——LeakCanary。这个库在开发阶段的内存泄漏检测方面几乎是行业标准，后续各大厂自研的线上检测方案，底层思路也都脱胎于此。
 
 ## LeakCanary：开发阶段的自动检测利器
 
@@ -168,11 +173,15 @@ public class MainActivity extends Activity {
 
 ### Listener / Callback 未解注册
 
-注册了回调但没有在合适的时机解注册。回调对象会一直被系统服务或库的内部数据结构持有。注意在 `onStop()` 而非 `onDestroy()` 中解注册。
+注册了回调但没有在合适的时机解注册。回调对象会一直被系统服务或库的内部数据结构持有。建议在 `onStop()` 而非 `onDestroy()` 中解注册——原因是多页面场景下，`onDestroy()` 的调用时机不确定，而 `onStop()` 在 Activity 不可见时必定触发，能更及时地释放引用。
 
 ### Fragment 泄漏：FragmentTransaction 和 View 的纠葛
 
-Fragment 有两个可能泄漏的对象：Fragment 本身和它的 View。`onDestroyView()` 销毁 View 但保留 Fragment，`onDestroy()` 才销毁 Fragment。如果在 View 销毁后仍然引用它，就会泄漏。
+Fragment 有两个可能泄漏的对象：Fragment 本身和它的 View。`onDestroyView()` 销毁 View 但保留 Fragment，`onDestroy()` 才销毁 Fragment。如果在 View 销毁后仍然引用它（比如在 ViewModel 或静态变量中缓存了 `fragment.view`），就会导致 View 层的泄漏——Fragment 还在，但 View 已经应该被回收了。
+
+在 ViewPager + Fragment 的场景中，这种泄漏尤为常见：Fragment 被 FragmentPagerAdapter 缓存（`BEHAVIOR_RESUME_ONLY_CURRENT_FRAGMENT`），其 View 在页面切换时经历 destroy → recreate 循环，任何跨这个周期的引用都可能成为泄漏源。
+
+上面讨论的都是 Java 堆上的泄漏——GC Root 引用链没断干净。但在 Android 中，还有另一类泄漏完全不受 GC 管控：Native 层通过 `malloc`/`new` 分配的内存，如果忘记 `free`/`delete`，同样会造成内存持续增长。两种泄漏的外在表现相似，排查思路却完全不同。
 
 ## Native 内存泄漏的排查
 
@@ -190,7 +199,7 @@ Android 10 引入的低开销 Native 堆分析器，集成在 Perfetto 中。通
 tools/heap_profile -n com.example.myapp
 ```
 
-在 Perfetto UI 中，数据以火焰图和表格展示。默认采样间隔 4096 字节，足以发现大的泄漏。如果"Total allocated"持续增长而"Total freed"几乎不变，就是 Native 泄漏的信号。
+在 Perfetto UI 中，数据以火焰图和表格展示。默认采样间隔 4096 字节（可通过 `-s` 参数调整），这意味着小于 4KB 的单次分配可能被跳过，但对于持续增长的大型泄漏，这个精度足够定位问题。如果"Total allocated"持续增长而"Total freed"几乎不变，就是 Native 泄漏的信号。
 
 ### Malloc Debug：全量的 Native 内存调试
 
@@ -212,6 +221,8 @@ adb shell setprop libc.debug.malloc.program com.example.myapp
 AddressSanitizer 和 Hardware ASan 不仅能检测泄漏，还能检测越界读写、Use-After-Free 等内存安全问题。通过编译器插桩实现，需要重新编译且增加内存占用和运行开销。
 
 [适用版本: ASan 支持 Android 8.0+, HWASan 需要 Android 10+ 和硬件支持]
+
+Native 泄漏排查依赖系统工具（heapprofd、Malloc Debug），而 Java 泄漏的终极分析手段是 Heap Dump——拿到进程某一时刻的完整堆快照，然后逐层追踪引用链。LeakCanary 在检测到泄漏后会自动触发 Heap Dump，但当需要在生产环境或手动排查时，我们需要独立完成这个过程。
 
 ## Heap Dump 深度分析
 
@@ -239,10 +250,21 @@ Shark 可以独立使用，优势在于内存占用低、解析速度快。对�
 
 ## 在 Perfetto / 工具中的表现
 
-- **Memory Profiler**：内存曲线阶梯状上升，每次页面跳转后不回落
-- **LeakCanary**：系统通知弹出，Logcat 搜索 "LeakCanary" 查看分析日志
-- **heapprofd**：Native Heap Track 中 "Total allocated" 持续增长
-- **dumpsys meminfo**：Java Heap 和 Native Heap 的 Total 持续增长，关注 "Views" 和 "Activities" 数量
+### Java 内存泄漏的 Trace 信号
+
+在 Android Studio Memory Profiler 中，泄漏的典型表现是内存曲线呈阶梯状上升——每次打开一个 Activity 后，内存跳上一个台阶，返回后不回落。如果连续进出同一个页面 5 次，Java Heap 增长了 5 个"台阶"且长时间不降，几乎可以确定该页面存在泄漏。
+
+在命令行中，`dumpsys meminfo <package_name>` 是最快的确认手段。重点关注两个数字：**Views** 和 **Activities**。如果 Activities 数量大于当前屏幕上实际可见的 Activity 数（通常应为 1），说明有 Activity 实例未被释放。同理，Views 数量持续增长也暗示 View 层存在泄漏。
+
+LeakCanary 检测到泄漏后，会在系统通知栏弹出提示，同时在 Logcat 中以 `LeakCanary` tag 输出完整的引用链分析日志。开发阶段建议保持 LeakCanary 开启，每个 leak 都不应被忽略。
+
+### Native 内存泄漏的 Trace 信号
+
+Native 泄漏在 Perfetto 中通过 heapprofd 采集的数据来观察。在 Perfetto UI 中打开 Native Heap Track，重点看两个指标：**Total allocated**（累计分配）和 **Total freed**（累计释放）。如果 Total allocated 持续增长而 Total freed 几乎不变，两者的差值（即"当前在用"）不断扩大，就是 Native 泄漏的信号。
+
+火焰图视图能直观展示哪些调用栈贡献了最多的未释放分配。点击火焰图中最大的色块，可以看到具体的调用栈和对应的源码位置。
+
+[图：Perfetto heapprofd 火焰图示例——Total allocated vs Total freed 的差距持续扩大]
 
 ## 与其他机制的关系
 
