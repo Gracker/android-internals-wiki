@@ -1,11 +1,15 @@
 ---
 title: "文件系统"
 chapter: "6.2"
-status: finalized
+section: "6.2"
+status: ready-for-review
 applicable_versions: "Android 10+"
 last_verified: "2026-04-01"
 last_verified_against: "AOSP android-15, kernel 6.6, source.android.com, developer.android.com"
 confidence: medium
+polish_count: 1
+polish_date: "2026-04-07"
+polish_by: "task2b-polish"
 sources:
   - type: blog
     path: "Personal-Knowlodge/source/2026-03-08_wechat_手机Android存储性能优化架构分析_1.md"
@@ -45,7 +49,7 @@ reviewers: []
 
 ## 从一个真实的 fsync 卡顿说起
 
-我们在 Perfetto 中分析 App 卡顿的时候，有一类问题几乎每个 Android 工程师都会遇到——主线程在 `fsync` 上阻塞了几十甚至几百毫秒。打开 Perfetto trace，看到主线程那行的时间条上出现了一大段橘红色的 "Uninterruptible Sleep"（D 状态），放大一看，syscall 是 `fsync`，对应的文件是一个 SQLite 数据库或者 SharedPreferences 的 XML 文件。
+在 Perfetto 中分析 App 卡顿时，有一类问题几乎每个 Android 工程师都会遇到——主线程在 `fsync` 上阻塞了几十甚至几百毫秒。Trace 中主线程时间条上出现一大段橘红色的 "Uninterruptible Sleep"（D 状态），放大后 syscall 是 `fsync`，对应的是一个 SQLite 数据库或 SharedPreferences 的 XML 文件。
 
 这个现象在 Android 上比在其他 Linux 系统上更为突出，原因是 Android 系统中 SQLite 的使用密度远高于服务器或桌面 Linux——几乎所有 App 的配置、缓存、状态信息都存在 SQLite 数据库里，而 SQLite 每次事务提交都需要调用 `fsync` 确保数据落盘。再加上 SharedPreferences 在早期 Android 版本中也是通过 `fsync` 同步写入 XML 文件，一个 App 在启动阶段可能触发数十次 `fsync`。
 
@@ -63,7 +67,7 @@ Linux 内核在用户进程和具体文件系统之间引入了 VFS 抽象层。
 
 这意味着，从 App 开发者的角度看，不需要关心底层用的是哪种文件系统；但从性能分析的角度，我们必须清楚——同一个 `fsync()` 调用，在 ext4 和 f2fs 上的行为完全不同。这也是为什么我们在 Perfetto 中看到 I/O 延迟异常时，需要先确认文件系统类型。
 
-VFS 层还管理着 Page Cache（页缓存）。当我们通过 `read()` 读取文件时，内核首先检查 Page Cache 中是否已有对应的数据——如果有，直接从内存返回，不触发任何磁盘 I/O；如果没有，才会向文件系统发起实际的读请求。`write()` 也是类似，数据先写入 Page Cache，标记为"脏页"（dirty page），由内核的 `flush` 线程在后台异步写回磁盘。这种机制对读性能有巨大的提升——被频繁访问的文件数据几乎全部缓存在内存中，这也是为什么手机在内存充足时读操作通常很快，而写操作（尤其是同步写）更容易成为瓶颈。[来源: obsidian/Personal-Knowlodge/source/2026-03-07_wechat_性能优化基础_深入理解Linux文件系统.md]
+VFS 层管理的另一个关键组件是 Page Cache（页缓存）。通过 `read()` 读取文件时，内核先检查 Page Cache 中是否已有对应数据——如果有，直接从内存返回，不触发磁盘 I/O；如果没有，才向文件系统发起实际的读请求。`write()` 也是类似，数据先写入 Page Cache，标记为"脏页"（dirty page），由内核的 `flush` 线程在后台异步写回磁盘。这种机制对读性能有巨大的提升——被频繁访问的文件数据几乎全部缓存在内存中，这也是为什么手机在内存充足时读操作通常很快，而写操作（尤其是同步写）更容易成为瓶颈。[来源: obsidian/Personal-Knowlodge/source/2026-03-07_wechat_性能优化基础_深入理解Linux文件系统.md]
 
 ## ext4：成熟但不适合手机场景
 
@@ -83,7 +87,7 @@ ext4 是 Linux 生态中最成熟、最广泛使用的文件系统。它是 ext3
 
 ### ext4 在 Android 上的痛点
 
-ext4 的设计初衷是面向服务器和桌面场景的通用文件系统，它的很多优化策略在 HDD（机械硬盘）时代是合理的。但 Android 设备有几个独特的 I/O 特征，让 ext4 暴露出了明显的性能问题。[来源: obsidian/Personal-Knowlodge/source/2026-03-08_wechat_手机Android存储性能优化架构分析_1.md]
+ext4 面向服务器和桌面场景设计，它的优化策略在 HDD 时代是合理的。但 Android 设备的 I/O 特征与服务器截然不同，导致 ext4 暴露了明显的性能问题。[来源: obsidian/Personal-Knowlodge/source/2026-03-08_wechat_手机Android存储性能优化架构分析_1.md]
 
 **问题一：fsync 的放大效应**
 
@@ -196,7 +200,7 @@ f2fs 的 GC 分为前台和后台两种。后台 GC 由内核线程在存储负�
 
 ### 从 ext4 到 EROFS 的切换
 
-在前面的 6.1 节中，我们提到 `system`、`vendor` 等分区是只读的，受 dm-verity 保护。既然是只读分区，使用 ext4 这种支持读写的文件系统就显得有些"浪费"了——ext4 的日志系统、块分配器、空闲空间管理等模块在只读场景下全部是多余的运行时开销。
+在 6.1 节中我们讨论过，`system`、`vendor` 等分区是只读的，受 dm-verity 保护。既然只读，使用 ext4 这种读写文件系统就存在开销浪费——日志系统、块分配器、空闲空间管理等模块在只读场景下全部多余。
 
 EROFS（Enhanced Read-Only File System）就是为解决这个问题而生的。它由华为工程师高翔（Xiang Gao）开发，2019 年合并入 Linux 5.4 主线。华为在 EMUI 9.0.1 中首次大规模部署 EROFS，随后 Samsung、OPPO、小米等厂商也陆续跟进。从 Android 13 开始，对于搭载 GMS 的设备，EROFS 成为只读分区的强制要求。[已验证: 官方文档, source.android.com/docs/core/storage and kernel.org]
 
@@ -430,6 +434,6 @@ f2fs 通过逻辑日志和 CoW 机制大幅降低了 fsync 的开销，但"大�
 
 4. **评估文件系统切换的可行性**：对于仍然使用 ext4 的 `data` 分区，切换到 f2fs 可能带来显著的 fsync 性能提升——尤其是在 SQLite 密集使用的场景下。
 
-Android 的文件系统演进反映了一个重要的工程思路：没有万能的文件系统，只有最适合特定场景的选择。ext4 适合通用场景，f2fs 适合闪存设备的随机写密集场景，EROFS 适合只读分区。理解它们各自的设计取舍，是我们做存储性能优化的基础。
+Android 文件系统的演进路线清晰：ext4 负责通用场景，f2fs 负责闪存设备的随机写密集场景，EROFS 负责只读分区。没有万能的文件系统，理解它们各自的设计取舍，是存储性能优化的基础。
 
 下一节（6.3）我们将深入 I/O 调度层，看看在文件系统之下、存储器件之上，Linux 内核是如何管理和调度 I/O 请求的。
