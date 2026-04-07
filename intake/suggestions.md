@@ -507,3 +507,58 @@
 - **问题**：RxJava 对比的具体百分比数据（内存占用低 23%、冷启动快 40%、简单操作延迟低 15-20%）来源为「社区 benchmark 综合数据，2024-2025 多源交叉验证」，过于模糊。这些具体数字应该有可追溯的 benchmark 出处。
 - **建议**：补充可追溯的 benchmark 链接（如 Kotlin benchmarks repo、Xamarin benchmark 套件等），或改为更审慎的表述（如「约 20-30%」配合「近似参考值」标注）
 - **review 日志**：logs/review/2026-04-06-1730-review.md
+
+
+### UI-Voyager: 4B 参数移动 GUI Agent 在 AndroidWorld 上超越人类水平
+- 来源：https://arxiv.org/abs/2603.24533
+- 类型：论文
+- 摘要：腾讯混元团队提出两阶段自进化移动 GUI Agent（RFT + GRSD），4B 模型在 AndroidWorld 达到 81.0% 成功率，超越人类水平。核心技术包括种子任务参数扰动生成器、SSIM 截图比对管线、基于分叉点的自蒸馏训练范式。
+- 推荐映射：ch01-architecture（Android 架构与自动化）或 AI×手机（不在当前 AIW 范围内）
+- 入库时间：2026-04-07
+- 归类原因：AI GUI Agent 测试工具，不直接涉及 Android 系统内部机制或性能优化，待高爷决策是否纳入
+
+
+## [Task2A 知识缺口挖掘] 2026-04-07 11:44
+
+### 挖掘结果：本轮未发现评分 ≥ 14 的知识缺口
+
+已检查方向：
+1. **source-index.json**：0 未映射高质量素材（163 条全部已映射或 <16 分）
+2. **research-feeds**（最近 5 篇）：全部映射到已有章节（4.8/1.15/4.7/8.7/ch6/ch16.1）
+3. **daily-info**（最近 3 天）：无未被覆盖的性能主题（DeliQueue→1.13/Android 17 适配非性能）
+4. **AOSP 对照**（frameworks/base/system/packages_modules/）：核心服务已全部覆盖（AMS/PMS/WMS/SF/Choreographer/Input/Display）
+5. **官方文档对照**（developer.android.com）：Android 17 性能新特性（Generational GC/DeliQueue/ADPF/ProfilingManager）均已映射
+6. **现有章节扩展点**：ch2/ch6/ch12 等薄章节的扩展方向在先前轮次已创建（2.12-2.18/3.4/14.8-14.10）
+
+低于 14 分的候选（本轮跳过）：
+- WebView/Chrome Custom Tabs 性能：素材 2/读者需求 3/相关性 3/时效 2 = 10/20
+- Notification 性能/ANR 关联：素材 2/读者需求 3/相关性 3/时效 2 = 10/20
+- Audio 管线延迟：素材 2/读者需求 2/相关性 2/时效 2 = 8/20
+- Text/Font 渲染性能：素材 2/读者需求 3/相关性 4/时效 2 = 11/20（与 ch2 高度重叠）
+
+### 全书状态
+- 总章节：109 | 已完成：85（78%）| 待加工：~6（1.14/14.10 等 draft 状态）
+- queue.json pending（非 FRESHNESS）：1.14（锁竞争）、8.7（Baseline Profiles）、4.7（16KB page size queue 标记 pending 但文件已 ready-for-review）
+- FRESHNESS 条目：40+ 条 priority 95，由 Task 2B 处理
+
+
+## [Task2A Gap Mining] 2026-04-07 12:57 已检查方向
+
+本轮已完成全面缺口挖掘，以下方向已检查但候选评分均 < 14，下次可跳过：
+
+1. **Android WebView 渲染性能** → 11/20（非核心系统内部性能，现有 Ch2 覆盖原生渲染管线）
+2. **Android 网络协议栈深度** → 12/20（HTTP/3/QUIC/Cronet 素材丰富，但与全书系统内部定位匹配度一般，§12.2 已有基础覆盖）
+3. **Android AI/ML 推理性能** → 11/20（NNAPI/TFLite 素材可用，但读者需求度偏低，非传统性能优化核心）
+4. **Android Audio 延迟性能** → 11/20（Oboe/AAudio 素材丰富，但受众窄，非通用性能主题）
+5. **Android Shader 性能** → 10/20（与 §2.10 GPU 渲染深入、§2.14 图形 API 演进重叠）
+6. **AOSP 未覆盖组件**（NotificationManager/ConnectivityManager/BiometricService）→ 评分均 < 12（非性能核心组件）
+7. **Part4 Ch16/Ch17 扩展** → 无独立高分候选（现有 3+3 节已覆盖主要方向）
+
+**结论**：全书 124 个小节已覆盖 Android 性能优化的核心知识域，剩余候选均为边缘或重叠方向。建议后续优先处理 queue 中 46 个 pending 条目（含 41 个 FRESHNESS 时效性更新）。
+
+## [Task6 Review] 4.6 内存相关的版本演进 — 2026-04-07
+- **类型**：需确认
+- **位置**：回收兜底策略的版本对照表格 → Android 7.0 / 7.1 行
+- **问题**：表格标注回收策略为「引用机制（NativeAllocationRegistry）」，但 NativeAllocationRegistry 在 Android 8.0 (API 26) 才正式引入。文中也说"Android 8.0 正式采用 NativeAllocationRegistry"。7.0/7.1 的 Bitmap 像素数据仍在 Java 堆（byte[]），其实际回收机制是否是 NAR 的前身（如其他 Reference 类型），需核对源码确认。
+- **建议**：比对 AOSP `frameworks/base/graphics/java/android/graphics/Bitmap.java` 在 API 24 (7.0)、API 25 (7.1)、API 26 (8.0) 三个版本的差异，确认 7.0/7.1 的回收策略具体实现。如确实不是 NAR，修正表格为准确的机制名称。
+- **review 日志**：logs/review/2026-04-07-15-review.md

@@ -1132,5 +1132,26 @@
     "created_date": "2026-04-07",
     "gap_score": 16,
     "notes": "高爷专家洞察(步幅波动+VSync时间精度)+全新概念"
+  },
+  {
+    "section": "4.6",
+    "section_title": "内存相关的版本演进",
+    "priority": 90,
+    "reason": "[review回炉] Bitmap回收兜底策略表格中7.0/7.1行的回收策略描述可能有误",
+    "material_paths": [
+      "intake/suggestions.md（含 review 意见）"
+    ],
+    "review_issues": [
+      {
+        "type": "需确认",
+        "location": "回收兜底策略的版本对照表格 + Android 7.0/7.1 行",
+        "detail": "表格标注回收策略为「引用机制（NativeAllocationRegistry）」，但 NativeAllocationRegistry 在 Android 8.0 才引入。7.0/7.1 实际使用何种引用机制需核对源码",
+        "suggestion": "核对 AOSP Bitmap.java (API 24-25 vs 26)，确认7.0/7.1的回收机制后修正表格"
+      }
+    ],
+    "added_by": "task6-review",
+    "added_at": "2026-04-07T15:39:00",
+    "status": "pending",
+    "original_review_log": "logs/review/2026-04-07-15-review.md"
   }
 ]

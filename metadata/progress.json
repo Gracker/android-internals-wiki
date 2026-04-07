@@ -4,15 +4,15 @@
   "metrics": {
     "total": 127,
     "draft": 10,
-    "ready-for-review": 26,
-    "reviewed": 4,
+    "ready-for-review": 25,
+    "reviewed": 5,
     "finalized": 30,
     "staging_drafts": 0,
-    "last_updated": "2026-04-07T15:19:00+08:00",
+    "last_updated": "2026-04-07T15:39:00+08:00",
     "processing": 0,
     "ready-to-publish": 11,
-    "last_reviewed": "2026-04-06",
-    "last_reviewed_section": "2.2 帧率与刷新率"
+    "last_reviewed": "2026-04-07",
+    "last_reviewed_section": "4.6 内存相关的版本演进"
   },
   "reviewed_sections": {
     "8.1": {
@@ -124,14 +124,19 @@
       }
     },
     "4.6": {
-      "reviewed_date": "2026-04-03",
+      "reviewed_date": "2026-04-07",
       "reviewed_by": "openclaw-task6",
-      "review_status": "finalized-v2",
+      "review_status": "reviewed",
       "fixes_applied": [
-        "补充3处[图：...]标注（Bitmap迁移/Scudo架构/MTE Tag比对）",
-        "frontmatter更新：status→finalized, reviewed_date→2026-04-03"
-      ],
-      "notes": "二次review（回炉后），无B类大问题，保留已有[存疑]标注待高爷决策"
+        "禁用词修正：痛点→问题、落地→启用（writing-guide §9）",
+        "汇报腔修正：革命性突破→核心改进（writing-guide §9）",
+        "AI味清除：删除「值得注意的是」（writing-guide §9）",
+        "先结论后证据修正：性能数据非常亮眼→具体改善（writing-guide §9）",
+        "section标题版本范围修正：8.0-10→8.0-15（覆盖 CMC GC）",
+        "冗余修饰精简：非常常见→常见",
+        "B类标注：Bitmap回收策略表格7.0/7.1行需确认",
+        "状态：ready-for-review → reviewed"
+      ]
     },
     "2.3": {
       "reviewed_date": "2026-04-02",
