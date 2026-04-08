@@ -3,12 +3,12 @@
   "total_sections": 111,
   "metrics": {
     "total": 140,
-    "draft": 16,
-    "ready-for-review": 32,
+    "draft": 15,
+    "ready-for-review": 33,
     "reviewed": 5,
     "finalized": 32,
     "staging_drafts": 0,
-    "last_updated": "2026-04-08T20:32:18.340488",
+    "last_updated": "2026-04-08T21:25:38.727403",
     "processing": 0,
     "ready-to-publish": 17,
     "last_reviewed": "2026-04-08",
@@ -1991,6 +1991,21 @@
       "verification_level": "L2",
       "word_count": "~8500",
       "completed_at": "2026-04-08T19:14:31.502566+08:00"
+    },
+    {
+      "chapter": "8.9",
+      "section": "8.9",
+      "title": "Android 游戏性能与 Game Mode/State API",
+      "status": "ready-for-review",
+      "drafted_date": "2026-04-08",
+      "drafted_by": "openclaw-task2a",
+      "anchors_covered": 8,
+      "anchors_total": 8,
+      "extensions_covered": 0,
+      "extensions_total": 2,
+      "verification_level": "L2",
+      "word_count": "~8500",
+      "completed_at": "2026-04-08T21:25:38.727403"
     }
   ],
   "ready_for_review": 6,
@@ -2316,6 +2331,20 @@
     }
   ],
   "history": [
+    {
+      "date": "2026-04-08",
+      "section": "8.9",
+      "title": "Android 游戏性能与 Game Mode/State API",
+      "action": "draft-completed",
+      "word_count": "~8500",
+      "anchors_covered": 8,
+      "anchors_total": 8,
+      "extensions_covered": 0,
+      "extensions_total": 2,
+      "verification_level": "L2",
+      "drafted_date": "2026-04-08",
+      "drafted_by": "openclaw-task2a"
+    },
     {
       "date": "2026-04-08",
       "section": "4.5",
