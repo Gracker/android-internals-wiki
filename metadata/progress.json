@@ -2150,15 +2150,15 @@
     }
   ],
   "ready_for_review": 5,
-  "last_updated": "2026-04-08T20:32:18.340488",
+  "last_updated": "2026-04-09T07:03:04.895533",
   "stats": {
-    "total": 118,
-    "completed": 97,
-    "pending": 32,
-    "last_updated": "2026-04-09T05:02:00+08:00",
-    "reviewed": 1,
-    "ready-for-review": 0,
-    "ready_to_publish": 2
+    "total": 159,
+    "completed": 138,
+    "pending": 8,
+    "last_updated": "2026-04-09T07:03:00+08:00",
+    "reviewed": 0,
+    "ready-for-review": 89,
+    "ready_to_publish": 49
   },
   "research_stats": {
     "runs_today": [
@@ -2469,6 +2469,16 @@
         "ACCESS_LOCAL_NETWORK 权限：显式本地网络访问管控 + mDNS/局域网通信需声明（目标 §12.2/§16.5）",
         "OpenJDK 21/25 TLS 命名组增强：后量子密码学混合密钥交换 + 握手性能改善（目标 §12.3/§12.4）"
       ]
+    },
+    {
+      "time": "2026-04-09T07:00:00+08:00",
+      "focus": "图形与 GPU（20260409 % 20 = 9, topic-rotation）",
+      "source": "topic-rotation-9",
+      "candidates": 0,
+      "passed": 0,
+      "delivered": 0,
+      "themes": [],
+      "note": "搜索工具持续返回空结果，cs.android.com/developer.android.com 被封，无合格素材"
     }
   ],
   "history": [
