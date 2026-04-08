@@ -1,14 +1,28 @@
 ---
 title: "16KB Page Size 与 Android 性能"
 chapter: "4.7"
-status: ready-for-review
+section: "4.7"
+status: finalized
+drafted_date: "2026-04-06"
+reviewed_date: "2026-04-08"
+reviewed_by: openclaw-task6
 applicable_versions: "Android 15 (API 35) - Android 17 (API 37)"
+last_verified: "2026-04-06"
+last_verified_against: "developer.android.com, source.android.com, ARM Architecture Reference Manual"
+confidence: medium
+sources:
+  - type: official
+    path: "developer.android.com/guide/practices/page-sizes"
+  - type: official
+    path: "source.android.com/docs/architecture/16kb-page-size"
+  - type: official
+    path: "android-developers.googleblog.com/16kb-page-size"
+  - type: research
+    path: "ARM Architecture Reference Manual — TLB 结构与页大小"
 tags:
   - android
   - memory
   - research
-
-
 ---
 
 
@@ -170,17 +184,17 @@ Perfetto 的 `mem.mm.min_flt` 计数器（部分 Pixel 设备支持）可以追�
 使用 Trace Processor SQL 查询：
 
 ```sql
--- 查询启动阶段的 page fault 速率
+-- 查询指定进程的 page fault 总量
+-- 替换 '目标进程名' 为实际进程名即可运行
 SELECT
   process.name,
-  SUM(counter.value) AS total_page_faults,
-  CAST((trace_end - trace_start) / 1e9 AS FLOAT) AS duration_s
+  SUM(counter.value) AS total_page_faults
 FROM counter
 JOIN counter_track ON counter.track_id = counter_track.id
 JOIN process_counter_track ON counter_track.id = process_counter_track.id
 JOIN process USING (upid)
 WHERE counter_track.name LIKE '%min_flt%'
-  AND counter.ts > trace_start
+  AND process.name = '目标进程名'
 GROUP BY process.name
 ORDER BY total_page_faults DESC;
 ```
@@ -260,10 +274,3 @@ adb shell getconf PAGE_SIZE
 - [已验证: ARM Architecture Reference Manual — TLB 结构与页大小]
 - [待验证: Google 官方 16KB 测试数据的精确测试条件（设备型号 / Android 版本 / App 样本）]
 - [待验证: 16KB 基础页 + THP 在 Android 16 设备上的默认启用状态]
-
-
-### 16KB Page Size 强制落地：启动+20-40%，功耗-4.56%
-- 来源：https://android-developers.googleblog.com/16kb-page-size
-- 类型：research
-- 摘要：2025.11.1后新App必须支持16KB页。前沿研究量化：启动+3.16%(内存压力+30%)，功耗-4.56%。Last30Days数据：冷启动+20-40%(内存密集型)，内存开销-25%，电池+10-15%。未对齐native库会crash。
-- 入库时间：2026-04-08
