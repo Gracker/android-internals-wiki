@@ -4839,9 +4839,10 @@
     ]
   },
   "7.3": {
-    "status": "finalized",
+    "status": "ready-to-publish",
     "last_review": "2026-04-04",
-    "reviewed_by": "openclaw-task6"
+    "reviewed_by": "openclaw-task6",
+    "reviewed_date": "2026-04-08"
   },
   "polish_log": [
     {

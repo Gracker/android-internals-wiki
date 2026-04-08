@@ -1,8 +1,8 @@
 ---
 title: "卡顿分析方法论"
 chapter: "7.3"
-status: ready-for-review
-reviewed_date: "2026-04-04"
+status: ready-to-publish
+reviewed_date: "2026-04-08"
 reviewed_by: openclaw-task6
 rework_date: "2026-04-04"
 rework_by: openclaw-task2b
@@ -171,7 +171,7 @@ Actual Timeline 展示的是这一帧实际执行的过程。从 Choreographer �
 
 [待补充：Trace 截图 — Perfetto 中 FrameTimeline 的 Expected vs Actual Track 对比图，标注红色超时帧]
 
-这个机制的精妙之处在于，它把"是否卡顿"的判断标准化了。不再需要人工去对比帧颜色和 BufferQueue 状态——FrameTimeline 直接展示每一帧有没有超时、在哪个环节超时、超了多少。它同时覆盖了 App 侧（doFrame + RenderThread）和 SurfaceFlinger 侧（合成），用同一个 token 关联起来，可以在 Perfetto 中通过点击 Slice 直接跳转到对应的 App 或 SF 帧 [已验证: perfetto.dev Trace Processor 文档]。
+FrameTimeline 的核心价值是：它把"是否卡顿"的判断标准化了。不再需要人工去对比帧颜色和 BufferQueue 状态——FrameTimeline 直接展示每一帧有没有超时、在哪个环节超时、超了多少。它同时覆盖了 App 侧（doFrame + RenderThread）和 SurfaceFlinger 侧（合成），用同一个 token 关联起来，可以在 Perfetto 中通过点击 Slice 直接跳转到对应的 App 或 SF 帧 [已验证: perfetto.dev Trace Processor 文档]。
 
 ### 没有 FrameTimeline 怎么办
 
@@ -271,7 +271,7 @@ Uninterruptible Sleep 状态（在 Perfetto 中显示为深橙色）表示线程
 
 回到开头的问题——"拿到 Trace 后从哪里下手"——经过这五个阶段，答案应该已经清晰了。
 
-[自动发现: 来源 obsidian/Personal-Knowlodge/source/2026-03-07_wechat_Android深入卡顿分析与实践.md] 腾讯音乐技术团队在 Wesing（全民 K 歌国际版）的卡顿治理实践中，总结了一套"横纵结合"的分析方法：横向看一个阶段内所有方法调用的时序分布（用 CPU Profiler），纵向看单个方法在不同条件下的耗时变化。这种"先定位帧，再定位方法，再定位场景"的三级下钻思路，和我们的 Checklist 框架是一致的。
+[自动发现: 来源 obsidian/Personal-Knowlodge/source/2026-03-07_wechat_Android深入卡顿分析与实践.md] 腾讯音乐技术团队在 Wesing（全民 K 歌国际版）的卡顿治理实践中，总结了一套"横纵结合"的分析方法：横向看一个阶段内所有方法调用的时序分布（用 CPU Profiler），纵向看单个方法在不同条件下的耗时变化。这种"先定位帧，再定位方法，再定位场景"的三级逐层深入思路，和我们的 Checklist 框架是一致的。
 
 ## FrameMetrics API：线上卡顿监控的基石
 
@@ -435,7 +435,7 @@ LIMIT 20;
 
 这个查询的逻辑是：先找出主线程被唤醒的时刻（sched_wakeup），再找到它随后第一次上 CPU 执行的时刻（sched），两者之差就是调度延迟。如果调度延迟超过 2-3ms，特别是在 120fps 设备上（一个 VSync 周期才 8.3ms），就值得深入排查是什么在抢占 CPU 资源。
 
-这些 SQL 查询的优势在于可以快速处理整份 Trace 的数据，给出统计级别的结论。比如，可以用第一个查询快速统计出"这次 10 秒的滑动操作中，总共出现了 23 次卡顿帧，其中 5 次超过 32ms"——这种宏观信息是手动点击很难得到的。
+SQL 分析的好处是能快速处理整份 Trace 的数据，给出统计级别的结论。比如，可以用第一个查询快速统计出"这次 10 秒的滑动操作中，总共出现了 23 次卡顿帧，其中 5 次超过 32ms"——这种宏观信息是手动点击很难得到的。
 
 高爷在 Perfetto 系列 CPU 篇中也提到了 SQL 分析的重要性 [来源: obsidian/Personal-Knowlodge/source/Android-Perfetto-09-CPU.md]：通过 SQL 查询各线程的 CPU 时间占用，可以发现一些在 UI 中不容易注意到的异常——比如某个后台线程的 CPU 占用竟然超过了主线程，那它很可能在抢主线程的时间片。
 
