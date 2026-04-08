@@ -6066,6 +6066,96 @@
       "first_chars": "# 重磅！Google Gemma-4-31B 模型被彻底破解\n\n重磅！Google Gemma-4-31B 模型被彻底破解...",
       "quality": "medium",
       "indexed_at": "2026-04-09T02:48:20.649152"
+    },
+    {
+      "path": "论文/2026-03-29-周索引.md",
+      "title": "论文周索引 · 2026-03-29",
+      "scores": {
+        "relevance": 2,
+        "depth": 2,
+        "timeliness": 5,
+        "verifiability": 2
+      },
+      "total_score": 11,
+      "matched_chapters": [],
+      "first_chars": "论文周索引 · 2026-03-29...",
+      "quality": "medium",
+      "indexed_at": "2026-04-09T03:49:32.904924"
+    },
+    {
+      "path": "论文/Android-2025-04-05-XTrace/02-翻译.md",
+      "title": "XTrace：一种面向生产环境的非侵入式 Android 动态追踪框架",
+      "scores": {
+        "relevance": 3,
+        "depth": 3,
+        "timeliness": 4,
+        "verifiability": 0
+      },
+      "total_score": 10,
+      "matched_chapters": [],
+      "first_chars": "XTrace：一种面向生产环境的非侵入式 Android 动态追踪框架...",
+      "quality": "medium",
+      "indexed_at": "2026-04-09T03:49:32.904931"
+    },
+    {
+      "path": "论文/Android-2025-04-05-XTrace/03-精读.md",
+      "title": "XTrace 精读笔记",
+      "scores": {
+        "relevance": 3,
+        "depth": 3,
+        "timeliness": 4,
+        "verifiability": 0
+      },
+      "total_score": 10,
+      "matched_chapters": [],
+      "first_chars": "XTrace 精读笔记...",
+      "quality": "medium",
+      "indexed_at": "2026-04-09T03:49:32.904933"
+    },
+    {
+      "path": "论文/Android-2026-04-01-Android硬件优化AI推理/02-翻译.md",
+      "title": "Hardware optimization on Android for inference of",
+      "scores": {
+        "relevance": 3,
+        "depth": 2,
+        "timeliness": 5,
+        "verifiability": 0
+      },
+      "total_score": 10,
+      "matched_chapters": [],
+      "first_chars": "Hardware optimization on Android for inference of...",
+      "quality": "medium",
+      "indexed_at": "2026-04-09T03:49:32.904935"
+    },
+    {
+      "path": "论文/Android-2026-04-01-Android硬件优化AI推理/03-精读.md",
+      "title": "Hardware optimization on Android for inference of",
+      "scores": {
+        "relevance": 4,
+        "depth": 2,
+        "timeliness": 5,
+        "verifiability": 0
+      },
+      "total_score": 11,
+      "matched_chapters": [],
+      "first_chars": "Hardware optimization on Android for inference of...",
+      "quality": "medium",
+      "indexed_at": "2026-04-09T03:49:32.904936"
+    },
+    {
+      "path": "论文/AI-2026-04-02-LLM-Agent综述/02-翻译.md",
+      "title": "Large Language Model Agent: A Survey on Methodolog",
+      "scores": {
+        "relevance": 2,
+        "depth": 2,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "total_score": 10,
+      "matched_chapters": [],
+      "first_chars": "Large Language Model Agent: A Survey on Methodolog...",
+      "quality": "medium",
+      "indexed_at": "2026-04-09T03:49:32.904938"
     }
   ],
   "sources": [

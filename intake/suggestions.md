@@ -1047,3 +1047,38 @@ tags:
   3. ANGLE 数据补充具体来源（建议 Google I/O 2022/2023 对应 session）
   4. 案例截图作为优先补充项（建议高爷提供 Trace 文件或截图）
   5. 在 fillrate/bandwidth bound 段落增加"主流移动 GPU 性能参考表"
+
+## [Task9 Deep Review] 2.6 SurfaceFlinger 与合成 — 2026-04-09
+- **类型**：数据缺失
+- **位置**：Line 100, Line 263
+- **问题**：2 处 [待补充：Trace 截图] 占位符未替换为实际 Perfetto 截图（BufferQueue 四步操作 Perfetto 截图 + 正常/异常 SF Perfetto 对比截图）
+- **建议**：补充 2 张实际 Perfetto Trace 截图，一张展示 dequeue→queue→acquire→release 在 App 和 SF 双进程的完整流转，另一张对比正常 SF REFRESH（约 3-5ms）和异常 SF REFRESH（>10ms）的实际 Trace 片段
+
+## [Task9 Deep Review] 2.6 SurfaceFlinger 与合成 — 2026-04-09
+- **类型**：版本差异
+- **位置**：版本演进章节 + 主循环章节
+- **问题**：Vulkan RenderEngine 后端引入版本标注 [待验证]；Android 15/16 零覆盖；Android 14 架构重构仅一句带过
+- **建议**：
+  1. 验证 Vulkan RenderEngine 后端具体引入版本（Android 12L 为初始引入，Android 13 为默认后端切换）
+  2. 补充 Android 15/16 SurfaceFlinger 相关变化（如有）
+  3. Android 14 ICompositor 重构需在主循环节给出 Android 12-13 vs Android 14+ 流程对比
+
+## [Task9 Deep Review] 2.6 SurfaceFlinger 与合成 — 2026-04-09
+- **类型**：知识盲区
+- **位置**：VSync 分发一节
+- **问题**：DispSync（Android 12 前）和 VsyncModulator（Android 12+）的内部机制未展开，仅一句话带过
+- **建议**：补充 DispSync 的 refresh period 计算逻辑，以及 VsyncModulator 如何在 Android 12 后动态调整 offset 的机制
+
+## [Task9 Deep Review] 2.6 SurfaceFlinger 与合成 — 2026-04-09
+- **类型**：知识盲区
+- **位置**：Jank 与 SurfaceFlinger 关系章节 + 合成方式章节
+- **问题**：FrameTimeline 深度不足（仅在版本演进和 Jank 节各一句话带过）；HWC Overlay Plane 数量"4-16"范围过宽
+- **建议**：
+  1. FrameTimeline：补充数据结构（FrameTimelineThread, VsyncId, FrameEvents）、VsyncSource 关系、在 Perfetto gfx/frame timeline track 中的实际体现
+  2. HWC Overlay：补充具体范围说明（骁龙 8 Gen 1+ 可达 16-32 个，麒麟 9XXX 可达 8-16 个），并说明与中低端设备差异
+
+## [Task9 Deep Review] 2.6 SurfaceFlinger 与合成 — 2026-04-09
+- **类型**：交叉引用
+- **位置**：§7.3 引用
+- **问题**：Jank 节引用§7.3（卡顿分析方法论）来引用 SurfaceFlinger 排查方法，但 7.3 章节较大（13 个子章节），未明确 SF 排查在 7.3 中的具体位置
+- **建议**：明确引用§7.3 中的具体小节（如"详见 §7.3（卡顿分析方法论 → SF 卡顿排查）"），或在 7.3 的 03-jank-methodology.md 中增加对 2.6 的反向引用

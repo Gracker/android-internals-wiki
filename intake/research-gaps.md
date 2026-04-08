@@ -102,3 +102,20 @@ HWUI Android 16 重构细节缺失。章节明确提到"Android 16 HWUI 渲染�
 
 ### 关联章节
 2.3（VSync），2.6（SurfaceFlinger），2.9（渲染机制版本演进），2.5（MainThread/RenderThread 协作）
+
+## [{date}] 2.6 SurfaceFlinger 与合成 — Jank 场景下的 BufferQueue Backpressure 机制
+
+### 盲区描述
+章节 Jank 与 SurfaceFlinger 关系一节描述了 SurfaceFlinger 合成延迟对 App 端的影响："SurfaceFlinger 持有 Buffer 的时间变长，releaseBuffer 延迟，导致 App 端 dequeueBuffer 被阻塞"。但该描述不够精确：BufferQueue 的 dequeueBuffer 在 Buffer 全部被占用时会阻塞（当所有 Buffer 都在"已出队但未归队"状态时），但这与 SurfaceFlinger "持有 Buffer 没 release"之间的时序关系、以及实际 Jank 场景下的真实影响路径（如 SurfaceFlinger 合成慢→HWC 持有 Buffer 时间延长→release fence 延迟→App 被 unblock 的时序）需要更精确的建模。
+
+### 重要程度
+高
+
+### 建议研究方向
+- BufferQueue dequeueBuffer 的阻塞条件（numBuffers、in_use 计数）
+- SurfaceFlinger 合成慢时 HWC release fence 的时序延迟路径
+- Jank 发生时 App 端 RenderThread 是否实际被阻塞，还是"渲染正常但无法呈现"
+- Perfetto 中如何通过 BufferQueue track + release fence track 联合分析 backpressure
+
+### 关联章节
+2.6（SurfaceFlinger 与合成）、7.3（卡顿分析方法论）
