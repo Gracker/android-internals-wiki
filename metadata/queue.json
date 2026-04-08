@@ -1440,5 +1440,33 @@
     "status": "completed",
     "completed_at": "2026-04-08T08:02:00",
     "completed_by": "openclaw-task2a"
+  },
+  {
+    "section": "7.12",
+    "section_title": "View 体系性能优化：布局层级、inflate 与 measure/layout 开销",
+    "priority": 80,
+    "reason": "知识缺口挖掘：布局层级/inflate/measure-layout 是 jank 和启动速度的核心根因之一，ViewStub/Merge/ConstraintLayout/AsyncLayoutInflater 是每个 Android 开发者必学的优化手段，全书缺少对 View 体系性能的系统性深度分析",
+    "material_paths": [
+      "https://developer.android.com/topic/performance/rendering/optimizing-view-hierarchies",
+      "https://developer.android.com/topic/performance/vitals/measure-layout",
+      "https://android-developers.googleblog.com/2017/08/understanding-benefits-of-android.html"
+    ],
+    "added_by": "task2a-knowledge-gap",
+    "added_at": "2026-04-08T17:05:00+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "8.9",
+    "section_title": "Android 游戏性能与 Game Mode/State API",
+    "priority": 80,
+    "reason": "知识缺口挖掘：移动游戏是 Android 性能优化的主要场景之一，Game Mode API (Android 12) / Game State API (Android 13) / AGDK 工具链是系统级游戏性能优化的官方方案，全书缺少游戏性能专题",
+    "material_paths": [
+      "https://developer.android.com/games/gamemode/gamemode-api",
+      "https://developer.android.com/games/agdk",
+      "https://developer.android.com/games/optimize/performance"
+    ],
+    "added_by": "task2a-knowledge-gap",
+    "added_at": "2026-04-08T17:05:00+08:00",
+    "status": "pending"
   }
 ]
