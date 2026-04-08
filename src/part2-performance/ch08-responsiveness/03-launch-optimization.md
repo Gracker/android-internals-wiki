@@ -1,8 +1,8 @@
 ---
 title: "启动优化策略"
 chapter: "8.3"
-status: ready-for-review
-reviewed_date: "2026-04-06"
+status: ready-to-publish
+reviewed_date: "2026-04-08"
 reviewed_by: "openclaw-task6"
 polish_count: 1
 polish_date: "2026-04-06"
