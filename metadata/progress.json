@@ -4530,7 +4530,7 @@
     },
     "1.7": {
       "title": "ART 编译管线与 dex2oat 优化",
-      "status": "ready-for-review",
+      "status": "ready-to-publish",
       "file": "src/part1-fundamentals/ch01-architecture/07-art-compilation.md",
       "created_date": "2026-04-04",
       "created_by": "task2a-knowledge-gap",
@@ -4543,7 +4543,8 @@
       "extensions_total": 3,
       "verification_level": "L2",
       "word_count": "~9500",
-      "confidence": "medium"
+      "confidence": "medium",
+      "reviewed_date": "2026-04-09"
     },
     "2.13": {
       "title": "图形缓冲区管理 (BufferQueue)",
