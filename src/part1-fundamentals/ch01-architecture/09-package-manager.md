@@ -4,6 +4,9 @@ chapter: "1.9"
 section: "1.9"
 status: ready-for-review
 drafted_date: "2026-04-05"
+polish_count: 1
+polish_date: "2026-04-09"
+polish_by: "task2b-polish"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-04-05"
@@ -20,9 +23,20 @@ sources:
     path: "https://developer.android.com/topic/performance/baselineprofiles/overview"
   - type: blog
     path: "Android Authority: Android 16 Cloud Compilation"
+  - type: official
+    path: "https://source.android.com/docs/core/ota/apex"
+  - type: blog
+    path: "Google I/O 2025: What's new in Android performance"
 tags:
   - android
-  - research
+  - pms
+  - package-manager
+  - dex2oat
+  - dexopt
+  - baseline-profiles
+  - cloud-compilation
+  - app-installation
+  - compilation
 
 
 ---
@@ -87,7 +101,7 @@ PMS 负责高层逻辑（解析包、管理权限、维护状态），但涉及�
 - 调用 dex2oat 进行 DEX 编译
 - 管理 OAT/VDEX 编译产物文件
 
-PMS 与 installd 之间通过 `/dev/socket/installd` 这个 Unix 域套接字通信，只有系统 UID 的进程才能访问这个 socket。在 Android 14+ 中，installd 还通过 Binder 与 `artd`（ART 守护进程）通信来执行编译任务。
+PMS 与 installd 之间通过 `/dev/socket/installd` 这个 Unix 域套接字通信，只有系统 UID 的进程才能访问这个 socket。在 Android 14+ 中，installd 还通过 Binder 与 `artd`（ART 守护进程）通信来执行编译任务。理解了 PMS 和 installd 的分工后，下面我们来看安装的完整流水线——每个阶段分别由谁负责、耗时在哪里。
 
 [已验证: AOSP frameworks/base/services/core/java/com/android/server/pm/PackageManagerService.java, 系统服务初始化; system/installd/ 目录结构]
 
@@ -351,7 +365,7 @@ adb shell cmd package compile -m speed -f -a
 
 ## 在 Perfetto 中的表现与调试方法
 
-了解了安装流程和编译策略后，我们来看看这些过程在 Perfetto Trace 中长什么样、怎么定位问题。
+前面讲了安装流程、编译策略、OTA 更新，这些理论知识在实际分析中需要对应到 Trace 中的具体位置。接下来，我们来看看这些过程在 Perfetto Trace 中长什么样、怎么定位问题。
 
 ### 安装过程的 Trace 特征
 
@@ -511,9 +525,3 @@ JIT 在运行时动态编译，理论上可以覆盖更多热点方法。但 JIT
 - Google Blog: Android Performance Updates 2025（dex2oat 编译优化）
 - Google I/O 2025: What's new in Android performance（Cloud Compilation 详解）
 
-
-### Android 16 云端编译 + Baseline/Startup Profiles DEX Layout 优化
-- 来源：https://android-developers.googleblog.com/cloud-compilation-baseline-profiles
-- 类型：research
-- 摘要：云编译替代设备端dex2oat。Startup Profiles DEX Layout额外+15-30%启动速度。Baseline Profiles + Startup Profiles组合：首次launch即可30%执行提速，已深度集成CI/CD。
-- 入库时间：2026-04-08
