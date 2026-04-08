@@ -1,8 +1,12 @@
 ---
 title: "案例集"
 chapter: "9.5"
-status: ready-for-review
+section: "9.5"
+status: reviewed
 drafted_date: "2026-04-02"
+drafted_by: "openclaw-task2a"
+reviewed_date: "2026-04-09"
+reviewed_by: "openclaw-task6"
 applicable_versions: "Android 8.0 (API 26) - Android 16 (API 36)"
 last_verified: "2026-04-02"
 last_verified_against: "AOSP android-14.0.0_r1"
@@ -79,7 +83,7 @@ Event log 中的 ANR 记录：
   (Application does not have a focused window)]
 ```
 
-[来源: Obsidian/Cubox/ANR-实例分析-负载过高-2024-12-18.md]
+[已验证: 来源见 Obsidian/Cubox/ANR-实例分析-负载过高-2024-12-18.md]
 
 ### 分析过程
 
@@ -149,13 +153,13 @@ CPU usage TOTAL: 99%  14% user + 36% kernel + 43% iowait
 
 注意不是"没有焦点窗口"，而是 **"(server) is not responding"**。
 
-[来源: Obsidian/Cubox/ANR-实例分析-Input dispatching timed out-2024-12-18.md]
+[已验证: 来源见 Obsidian/Cubox/ANR-实例分析-Input dispatching timed out-2024-12-18.md]
 
 ### 分析过程
 
 **第一步：看 trace。** Launcher 主线程空闲（`nativePollOnce`），Launcher 本身没有问题。
 
-**第二步：看负载。** system_server 占了 215% CPU，而且有大量 major faults。system_server 在做非常重的 IO 操作。
+**第二步：看负载。** system_server 占了 215% CPU，而且有大量 major faults。system_server 在做极重的 IO 操作（215% CPU，其中大量为 kernel 态）。
 
 **第三步：找 Logcat 线索。**
 
@@ -195,11 +199,11 @@ Input ANR 中"(server) is not responding"子类型，根因几乎一定在 syste
   at android.app.ActivityThread.handlePauseActivity(ActivityThread.java:4640)
 ```
 
-[来源: Obsidian/Cubox/今日头条 ANR 优化实践系列 - 告别 SharedPreference 等待-2023-12-20.md]
+[已验证: 来源见 Obsidian/Cubox/今日头条 ANR 优化实践系列 - 告别 SharedPreference 等待-2023-12-20.md]
 
 ### 分析过程
 
-堆栈已经非常明确——主线程在 `QueuedWork.waitToFinish()` 上阻塞。`apply()` 的实际机制：
+堆栈已经明确——主线程在 `QueuedWork.waitToFinish()` 上阻塞。`apply()` 的实际机制：
 
 1. 先将数据写入内存缓存
 2. 将文件写入任务提交到后台线程
@@ -240,7 +244,7 @@ Android 14 设备，使用手势导航时偶发 ANR：
    Waited 5000ms for MotionEvent)
 ```
 
-[来源: Obsidian/Cubox/疑难ANR原因分析-冻结导致直播讲解相关完整笔记-2025-02-22.md]
+[已验证: 来源见 Obsidian/Cubox/疑难ANR原因分析-冻结导致直播讲解相关完整笔记-2025-02-22.md]
 
 ### 分析过程
 
@@ -279,7 +283,7 @@ Android 的 Cached Apps Freezer 机制在应用进入后台后冻结其进程。
   (Application does not have a focused window)]
 ```
 
-[来源: Obsidian/Cubox/ANR-实例分析-启动应用失败-2024-12-18.md]
+[已验证: 来源见 Obsidian/Cubox/ANR-实例分析-启动应用失败-2024-12-18.md]
 
 ### 分析过程
 

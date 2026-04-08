@@ -8,11 +8,11 @@
     "reviewed": 5,
     "finalized": 34,
     "staging_drafts": 0,
-    "last_updated": "2026-04-09T01:12:15.521494",
+    "last_updated": "2026-04-09T01:25:43.556818",
     "processing": 0,
     "ready-to-publish": 17,
-    "last_reviewed": "2026-04-08",
-    "last_reviewed_section": "10.3 内存持续增长",
+    "last_reviewed": "2026-04-09",
+    "last_reviewed_section": "9.5 ANR 案例集",
     "reviewed_today": 10
   },
   "reviewed_sections": {
@@ -745,6 +745,19 @@
     "8.6": {
       "reviewed_at": "2026-04-08",
       "status": "finalized"
+    },
+    "9.5": {
+      "reviewed_date": "2026-04-09",
+      "reviewed_by": "openclaw-task6",
+      "review_status": "reviewed",
+      "fixes_applied": [
+        "元数据：补 section/drafted_by 字段",
+        "验证标注标准化：5处[来源:]→[已验证: 来源见 ...]",
+        "措辞：「非常明确」→「明确」（writing-guide §九）",
+        "措辞：「非常重的 IO 操作」→ 补充具体数据（writing-guide §九）",
+        "B类标注：缺少死锁案例（outline 要求覆盖）"
+      ],
+      "b_class_issues": 1
     }
   },
   "review_stats": {
