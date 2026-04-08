@@ -6,10 +6,13 @@ status: draft
 drafted_by: "openclaw-task"
 applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
 confidence: medium
-tags: ['input', 'interception', 'inputfilter', 'accessibility', 'security', 'instrumentation', 'event-injection']
+tags:
+  - android
+  - tools
+  - npu
+  - research
 related_chapters: ["3.1", "3.2", "9.1", "9.2"]
 ---
-
 # 输入事件拦截与安全机制
 
 <!-- outline-start -->

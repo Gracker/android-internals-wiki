@@ -1,9 +1,10 @@
 ---
 tags:
   - android
-  - blog
+  - ai
+  - binder
+  - research
 ---
-
 # 目录
 
 [写在前面](preface/intro.md)
@@ -33,6 +34,7 @@ tags:
   - [1.13 MessageQueue 机制与 DeliQueue 无锁优化](part1-fundamentals/ch01-architecture/13-messagequeue-deliqueue.md)
   - [1.14 锁竞争与同步性能分析](part1-fundamentals/ch01-architecture/14-lock-contention.md)
   - [1.15 JNI/NDK 性能优化](part1-fundamentals/ch01-architecture/15-jni-ndk-performance.md)
+  - [1.16 Audio Pipeline 延迟与性能](part1-fundamentals/ch01-architecture/16-audio-pipeline-performance.md)
 
 
 - [第 2 章：渲染系统](part1-fundamentals/ch02-rendering/README.md)

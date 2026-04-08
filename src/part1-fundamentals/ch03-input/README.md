@@ -1,3 +1,10 @@
+---
+tags:
+  - performance
+  - npu
+  - research
+---
+
 # 第 3 章：输入系统
 
 > 本章节正在建设中。
