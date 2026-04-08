@@ -4,16 +4,16 @@
   "metrics": {
     "total": 137,
     "draft": 14,
-    "ready-for-review": 35,
+    "ready-for-review": 34,
     "reviewed": 5,
     "finalized": 32,
     "staging_drafts": 0,
-    "last_updated": "2026-04-08T13:35:00+08:00",
+    "last_updated": "2026-04-08T13:40:00+08:00",
     "processing": 0,
-    "ready-to-publish": 13,
+    "ready-to-publish": 14,
     "last_reviewed": "2026-04-08",
-    "last_reviewed_section": "6.2 文件系统",
-    "reviewed_today": 5
+    "last_reviewed_section": "10.1 App 内存分析",
+    "reviewed_today": 6
   },
   "reviewed_sections": {
     "8.1": {
@@ -696,6 +696,26 @@
         "清除文末残留研究素材（Kernel 6.12 存储三重优化原始笔记）",
         "frontmatter补全：drafted_date/drafted_by/reviewed_date/reviewed_by",
         "status: ready-for-review → ready-to-publish（精修质检终审通过）"
+      ],
+      "scores": {
+        "structure": 5,
+        "expression": 5,
+        "consistency": 5,
+        "verification": 4,
+        "metadata": 5
+      }
+    },
+    "10.1": {
+      "reviewed_date": "2026-04-08",
+      "reviewed_by": "openclaw-task6",
+      "review_status": "ready-to-publish",
+      "review_type": "post-polish-quality-gate",
+      "review_round": 2,
+      "fixes_applied": [
+        "验证标注标准化: 12处[来源:]→[已验证: 来源见 ...]（writing-guide §4）",
+        "frontmatter: status ready-for-review → ready-to-publish（精修质检终审通过）",
+        "frontmatter: reviewed_date → 2026-04-08",
+        "frontmatter: 添加 review_type + review_round"
       ],
       "scores": {
         "structure": 5,
@@ -2280,6 +2300,23 @@
     }
   ],
   "history": [
+    {
+      "date": "2026-04-08",
+      "section": "10.1",
+      "title": "App 内存分析",
+      "action": "reviewed-ready-to-publish",
+      "review_by": "openclaw-task6",
+      "review_type": "post-polish-quality-gate",
+      "review_round": 2,
+      "fixes": 16,
+      "scores": {
+        "structure": 5,
+        "expression": 5,
+        "consistency": 5,
+        "verification": 4,
+        "metadata": 5
+      }
+    },
     {
       "date": "2026-04-08",
       "section": "6.2",
