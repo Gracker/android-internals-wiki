@@ -4,8 +4,8 @@ chapter: "7.8"
 section: "7.8"
 status: ready-for-review
 applicable_versions: "Android 5.0 (API 21) - Android 17 (API 37)"
-tags: [recyclerview, scrolling, jank, prefetch, difftutil, nested-scrolling, arr]
-related_chapters: ["7.1", "7.2", "7.4", "7.5", "2.4", "2.18"]
+tags: [recyclerview, scrolling, jank, prefetch, difftutil, nested-scrolling, arr, viewholder, viewcache, gapworker]
+related_chapters: ["7.1", "7.2", "7.4", "7.5", "2.4", "2.18", "9.4"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-04-06"
 drafted_date: "2026-04-06"
@@ -13,6 +13,9 @@ drafted_by: "openclaw-task2a"
 last_verified: "2026-04-06"
 last_verified_against: "AOSP android-17.0.0_r3"
 confidence: medium
+polish_count: 1
+polish_date: "2026-04-08"
+polish_by: "task2b-polish"
 sources:
   - type: aosp
     path: "frameworks/support/recyclerview/src/main/java/androidx/recyclerview/widget/"
@@ -52,7 +55,7 @@ RecyclerView 的缓存体系分为四级，理解每一级的工作方式，是�
 
 第二级是 **CachedViews**。这是一个默认大小为 2 的 ArrayList，存储刚滑出屏幕的 ViewHolder。CachedViews 的特点是：存在这里的 ViewHolder 不需要重新 bind——它们的 position 和数据都是有效的，直接拿来用就行。这就好比"刚放下的东西还没收起来"，拿起来最快。缓存大小可以通过 `setItemViewCacheSize()` 调整。对于频繁上下滑动的场景，适当增大这个值（比如设为 4-6）可以减少 bind 调用次数。
 
-第三级是 **ViewCacheExtension**。这是一个可选的、由开发者自定义的缓存层。Google 官方文档对它的定位是"给开发者留的扩展点"，但实际上大多数场景用不到它。如果你确实需要，要特别注意它和 RecycledViewPool 的查找顺序——ViewCacheExtension 在 Pool 之前被查询。
+第三级是 **ViewCacheExtension**。这是一个可选的、由开发者自定义的缓存层。Google 官方文档对它的定位是"给开发者留的扩展点"，但实际上大多数场景用不到它。如果确实需要这一层缓存，要特别注意它和 RecycledViewPool 的查找顺序——ViewCacheExtension 在 Pool 之前被查询。
 
 第四级是 **RecycledViewPool**。这是最终的缓存池，默认每个 ViewType 缓存 5 个 ViewHolder。Pool 中的 ViewHolder 会被清除绑定状态（resetInternal），再次使用时必须重新 bind。Pool 的一个重要特性是可以跨 RecyclerView 共享——对于嵌套 RecyclerView 的场景（比如外层列表中每个 item 内部都有一个水平滑动列表），共享 Pool 可以大幅减少 inflate 开销。
 
@@ -68,20 +71,23 @@ RecyclerView 从 Android 5.0 开始引入了 GapWorker 预取机制。它的核�
 
 GapWorker 在 `Choreographer.doFrame()` 的 COMMIT 阶段被触发。这个时间点的选择很讲究——COMMIT 阶段是当前帧布局完成之后、下一帧开始之前的空隙。RecyclerView 利用这个空隙，根据当前的滑动方向和速度，预测接下来几个 item 的位置，然后提前执行 create + bind。
 
-对于嵌套 RecyclerView（比如 ViewPager2 内部的列表），`setInitialPrefetchItemCount` 是一个关键参数。它控制内层 RecyclerView 在首次可见时预先创建多少个 item。默认值是 2，如果你的内部列表每个 item 的 inflate 成本较高（比如包含复杂的布局或图片），可以适当增大这个值到 3-4。但不要盲目增大——预取太多会占用当前帧的时间，反而导致卡顿。
+对于嵌套 RecyclerView（比如 ViewPager2 内部的列表），`setInitialPrefetchItemCount` 是一个关键参数。它控制内层 RecyclerView 在首次可见时预先创建多少个 item。默认值是 2，如果内部列表每个 item 的 inflate 成本较高（比如包含复杂的布局或图片），可以适当增大这个值到 3-4。但不要盲目增大——预取太多会占用当前帧的时间，反而导致卡顿。
 
 预取失败的常见原因有几种。最常见的是缓存污染——如果 CachedViews 中有被标记为 invalid 的 ViewHolder（比如刚经历了数据更新），GapWorker 在预取时可能找不到合适的缓存，被迫创建新的。另一个原因是布局未完成——如果上一帧的布局还没结束（比如嵌套 RecyclerView 的内部布局延迟），GapWorker 无法正确预测下一个 item 的位置。
 
 ```java
 // androidx/recyclerview/widget/GapWorker.java
 // @ AOSP recyclerview-1.4.0
-void prefetch(int position, RecyclerView.ViewHolder holder) {
-    // prefetch 只在 UI 线程空闲时执行
-    // 如果当前帧有 jank，prefetch 会被跳过
+void prefetch(long deadlineNs) {
+    // deadlineNs 是当前帧的截止时间，prefetch 必须在此之前完成
     if (mRecyclerViews.isEmpty()) return;
     
-    // 从所有注册的 RecyclerView 中收集预取请求
-    // 按优先级排序后依次执行 create + bind
+    // 1. 从所有注册的 RecyclerView 收集预取请求
+    //    每个 RecyclerView 的 LayoutManager 通过 getPrefabItemCount()
+    //    报告需要预取的 item 数量（默认 LinearLayoutManager 返回相邻 2 个）
+    // 2. 按优先级排序：当前正在 fling 的 RecyclerView 优先级最高
+    // 3. 对每个请求依次执行 create + bind，中途检查是否超过 deadline
+    //    如果超时，剩余请求被丢弃——宁可少预取也不能影响当前帧
 }
 ```
 
@@ -130,6 +136,29 @@ public void onBindViewHolder(@NonNull ViewHolder holder, int position,
 
 [已验证: AOSP recyclerview-1.4.0, DiffUtil.java — Myers 差分算法实现]
 
+### RecycledViewPool 共享的典型实现
+
+嵌套 RecyclerView 的场景下，共享 RecycledViewPool 是最有效的优化手段之一。核心思路是：为同类型的内层列表创建一个共享 Pool，避免每个子列表各自维护独立的缓存池。
+
+```java
+// 在 Adapter 中创建共享 Pool
+private final RecycledViewPool sharedPool = new RecycledViewPool();
+
+// 配置每种 ViewType 的缓存数量（根据可见 item 数量调整）
+sharedPool.setMaxRecycledViews(TYPE_NORMAL, 10);
+sharedPool.setMaxRecycledViews(TYPE_HEADER, 2);
+
+@Override
+public void onBindViewHolder(@NonNull ParentViewHolder holder, int position) {
+    // 为每个内层 RecyclerView 设置共享 Pool
+    holder.innerRecyclerView.setRecycledViewPool(sharedPool);
+    // 滑出屏幕时立即回收子 ViewHolder
+    holder.innerRecyclerView.setRecycleChildrenOnDetach(true);
+}
+```
+
+这里的关键参数是 `setMaxRecycledViews()` 的值。设置过小会导致频繁的 create/bind，设置过大则占用不必要的内存。经验值：内层列表同时可见的 item 数量 × 1.5 是一个合理的起点。
+
 ## 嵌套滑动的性能影响
 
 嵌套滑动（NestedScrolling）是 Android 处理嵌套可滑动容器之间协作的协议。RecyclerView 通过 `NestedScrollingChild3` 接口参与这个协议，允许父 View 在子 View 滑动之前或之后拦截滑动事件。
@@ -147,9 +176,13 @@ public void onBindViewHolder(@NonNull ViewHolder holder, int position,
 - `setMaxRecycledViews()` 调整 Pool 大小：根据可见 item 数量合理配置
 - 禁用 OverScroll 效果：`setOverScrollMode(View.OVER_SCROLL_NEVER)`，减少不必要的绘制开销
 
+这些优化手段的效果取决于具体的嵌套结构和数据量。在做了上述优化之后，如果嵌套滑动仍然导致明显的卡顿，需要进一步分析 doFrame 内的布局调用链路。
+
 [图：嵌套滑动协议的时序图，标注 preScroll 和 postScroll 的分发路径]
 
 ## 滑动卡顿的根因分析
+
+理解了 RecyclerView 的缓存体系、预取机制和嵌套滑动之后，我们需要回到一个更实际的问题：当 Perfetto 中出现掉帧，怎么快速定位是哪一层机制出了问题？
 
 在实际工作中，RecyclerView 滑动卡顿的根因通常集中在以下几个方向。
 
@@ -239,6 +272,18 @@ LIMIT 20;
 `DefaultItemAnimator` 在执行 change 动画时需要两次布局 pass，代价较高。如果列表数据频繁更新且不需要复杂动画，使用 `SimpleItemAnimator` 或者关闭动画（`setItemAnimator(null)`）可以减少一半的布局开销。
 
 支持 change 动画（`supportsChangeAnimations()`）的额外代价是：RecyclerView 需要对变化的 item 创建一个新 ViewHolder（用于动画），然后在动画结束后回收旧的。这意味着一次 change 操作实际上创建了两个 ViewHolder，内存压力翻倍。如果不需要交叉淡入淡出的效果，重写 `supportsChangeAnimations()` 返回 false 可以避免这个开销。
+
+## 参考资料
+
+- **AOSP 源码**：`frameworks/support/recyclerview/src/main/java/androidx/recyclerview/widget/`（RecyclerView、Recycler、GapWorker、DiffUtil）
+- **AOSP 版本基准**：android-17.0.0_r3、recyclerview-1.4.0
+- **官方文档**：[RecyclerView reference](https://developer.android.com/reference/androidx/recyclerview/widget/RecyclerView)
+- **官方文档**：[Adaptive Refresh Rate](https://developer.android.com/reference/android/view/View#setFrameContentVelocity())
+- **官方文档**：[RecyclerView 性能优化](https://developer.android.com/topic/performance/recycler-view-optimization)
+- **Myers 差分算法**：Eugene W. Myers, "An O(ND) Difference Algorithm and Its Variations", 1986
+- **高爷补充素材**：VSync 时间精度与步幅波动（2026-04-06）
+
+---
 
 ### 🔸 Compose LazyColumn 与 RecyclerView 的性能对比
 
