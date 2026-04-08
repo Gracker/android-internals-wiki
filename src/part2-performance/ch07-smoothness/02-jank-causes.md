@@ -1,12 +1,15 @@
 ---
 title: "卡顿原因体系"
 chapter: "7.2"
-status: finalized
-applicable_versions: "Android 5.0 (API 21) - Android 16 (API 36)"
-last_verified: "2026-03-31"
+status: ready-for-review
+applicable_versions: "Android 5.0 (API 21) - Android 17 (API 37)"
+last_verified: "2026-04-08"
 last_verified_against: "AOSP android-15.0.0_r1"
 reviewed_date: "2026-04-04"
 reviewed_by: openclaw-task6
+polish_count: 1
+polish_date: "2026-04-08"
+polish_by: "task2b-polish"
 confidence: high
 sources:
   - type: blog
@@ -27,7 +30,11 @@ tags:
   - android
   - jank
   - research
-related_chapters: ["7.1", "2.3", "2.4", "2.5", "1.4", "1.5", "3.1"]
+  - rendering
+  - perfetto
+  - performance
+  - smoothness
+related_chapters: ["7.1", "2.3", "2.4", "2.5", "1.4", "1.5", "3.1", "4.3"]
 re-review-result: "审查 0 条素材，无需修改"
 ---
 
@@ -260,7 +267,7 @@ Linux 的 Completely Fair Scheduler（CFS）按照虚拟运行时间（vruntime�
 
 当系统内存紧张或 App 自身存在内存泄漏时，ART 虚拟机会更频繁地触发垃圾回收（GC）。GC 期间，应用的所有线程（包括主线程）都会被暂停（Stop-The-World），这直接导致正在执行的帧被延迟。
 
-**GC 对卡顿的影响机制。** ART 的 GC 虽然大部分是并发的（Concurrent GC），但在某些阶段仍然需要暂停应用线程。特别是当堆内存接近上限、内存碎片严重、或存在大量短期对象（内存抖动）时，GC 的频率和单次耗时都会增加。
+**GC 对卡顿的影响机制。** ART 的 GC 虽然大部分是并发的（Concurrent GC），但在某些阶段仍然需要暂停应用线程（即 Stop-The-World 暂停）。特别是当堆内存接近上限、内存碎片严重、或存在大量短期对象（内存抖动）时，GC 的频率和单次耗时都会增加。关于 ART GC 的具体机制和 Android 17 Generational GC 的变化，详见 4.3 节。
 
 **内存抖动（Memory Churn）。** 在 onDraw、onBindViewHolder 等高频调用的方法中创建临时对象（如 in 循环中创建的 String、新的 Bitmap、ArrayList 等），会导致内存分配频繁、GC 被频繁触发。这种"微观卡顿"在 Perfetto 中可能不会表现为一个超长的帧，但会导致一系列帧都略超预算，用户感受到的是持续的"不流畅"。
 
@@ -308,7 +315,7 @@ SELECT * FROM slice WHERE name LIKE '%GC%' AND track_id IN (
 
 **规避方案。** 研究 Choreographer 源码后发现，系统额外注入的伪造 VSync 信号只处理 `CALLBACK_ANIMATION` 类型的回调。因此可以通过反射调用 `Choreographer.postCallback` 并指定为 `CALLBACK_TRAVERSAL` 类型来替代 `postFrameCallback` 和 `View.postOnAnimation`。测试表明，`CALLBACK_TRAVERSAL` 类型的回调在真实 VSync 信号时触发，且顺序始终在 View 的 Layout&Draw 之前——与原生系统的行为一致。
 
-这个案例带来的启示是：**当你在 Perfetto 中看到主线程的 doFrame 时序异常，但 App 代码和 AOSP 源码都找不到合理解释时，需要考虑 OEM 框架修改的可能性。** 不同厂商对 Choreographer、SurfaceFlinger、InputDispatcher 等关键组件的修改程度不同，有些修改不会体现在官方文档中，只能通过实际抓 Trace 对比 AOSP 行为来发现。
+这个案例带来的启示是：**当我们在 Perfetto 中看到主线程的 doFrame 时序异常，但 App 代码和 AOSP 源码都找不到合理解释时，需要考虑 OEM 框架修改的可能性。** 不同厂商对 Choreographer、SurfaceFlinger、InputDispatcher 等关键组件的修改程度不同，有些修改不会体现在官方文档中，只能通过实际抓 Trace 对比 AOSP 行为来发现。
 
 [来源: Cubox/华为手机系统 vsync 调度问题研究和解决 - 知乎-2024-03-08.md]
 [待验证: 该问题在 HarmonyOS NEXT（纯鸿蒙系统）中是否仍然存在]
@@ -338,7 +345,7 @@ Binder 是 Android 进程间通信（IPC）的核心机制（详见 1.4 节）�
 
 ## 分析树：从现象到根因的分析决策路径
 
-了解了所有可能的卡顿原因后，我们还需要一套系统化的分析方法——拿到一个掉帧的 Trace，应该从哪里开始看、按什么顺序排查、每一步看什么。这就是本节要建立的"分析树"。
+前面按渲染管线的阶段，逐一梳理了主线程、RenderThread、SurfaceFlinger、系统级因素和 Binder 调用这五类卡顿原因。但在实际分析中，我们面对的不是「某个已知的原因」，而是一个掉帧的 Trace——需要从现象出发，逐步缩小范围，最终定位到具体的根因。这就需要一套系统化的分析决策路径——拿到一个掉帧的 Trace，应该从哪里开始看、按什么顺序排查、每一步看什么。这就是本节要建立的"分析树"。
 
 ### 第一步：确认掉帧位置
 
