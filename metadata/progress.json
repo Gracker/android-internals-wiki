@@ -12,8 +12,8 @@
     "processing": 0,
     "ready-to-publish": 12,
     "last_reviewed": "2026-04-08",
-    "last_reviewed_section": "9.4 特殊场景的 ANR",
-    "reviewed_today": 7
+    "last_reviewed_section": "14.7 ProfilingManager",
+    "reviewed_today": 3
   },
   "reviewed_sections": {
     "8.1": {
@@ -657,6 +657,25 @@
         "consistency": 5,
         "verification": 4,
         "metadata": 4
+      }
+    },
+    "14.7": {
+      "reviewed_date": "2026-04-08",
+      "reviewed_by": "openclaw-task6",
+      "review_status": "finalized",
+      "review_type": "post-rework-second-review",
+      "review_round": 2,
+      "fixes_applied": [
+        "交叉引用修正：4处 frontmatter + 4处正文（章节号/名/拼写）",
+        "元数据：补 review_round: 2",
+        "状态：ready-for-review → finalized"
+      ],
+      "scores": {
+        "structure": 5,
+        "expression": 5,
+        "consistency": 5,
+        "verification": 4,
+        "metadata": 5
       }
     }
   },
@@ -2221,6 +2240,23 @@
     }
   ],
   "history": [
+    {
+      "date": "2026-04-08",
+      "section": "14.7",
+      "title": "ProfilingManager",
+      "action": "reviewed-finalized",
+      "review_by": "openclaw-task6",
+      "review_type": "post-rework-second-review",
+      "review_round": 2,
+      "fixes": 7,
+      "scores": {
+        "structure": 5,
+        "expression": 5,
+        "consistency": 5,
+        "verification": 4,
+        "metadata": 5
+      }
+    },
     {
       "date": "2026-04-08",
       "section": "15.8",
