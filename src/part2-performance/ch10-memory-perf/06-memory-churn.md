@@ -2,7 +2,10 @@
 title: "内存抖动与频繁 GC"
 chapter: "10.6"
 section: "10.6"
-status: finalized
+status: ready-for-review
+polish_count: 1
+polish_date: "2026-04-09"
+polish_by: "task2b-polish"
 drafted_date: "2026-04-03"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 8.0 (API 26) - Android 16 (API 36)"
@@ -56,9 +59,9 @@ reviewed_by: "openclaw-task6"
 
 ## 为什么要了解内存抖动
 
-在 Perfetto 中打开一段有明显卡顿的 Trace，你可能会看到这样的画面：主线程的帧渲染时间一会儿 8ms、一会儿 25ms，毫无规律地波动。如果你仔细观察 CPU 行程，会注意到在这些帧耗时的尖峰附近，`HeapTaskDaemon` 线程正忙着执行 GC。与此同时，Java Heap 的使用曲线像锯齿一样忽上忽下——这就是典型的内存抖动（Memory Churn）。
+在 Perfetto 中打开一段有明显卡顿的 Trace，我们可能会看到这样的画面：主线程的帧渲染时间一会儿 8ms、一会儿 25ms，毫无规律地波动。如果仔细观察 CPU 行程，会注意到在这些帧耗时的尖峰附近，`HeapTaskDaemon` 线程正忙着执行 GC。与此同时，Java Heap 的使用曲线像锯齿一样忽上忽下——这就是典型的内存抖动（Memory Churn）。
 
-内存抖动不是一种独立的" bug"，而是一种性能反模式。它的可怕之处在于：分配本身几乎不花时间，但后续的 GC 代价会在你最不希望被打断的时刻兑现。在 120Hz 设备上，一帧的预算只有 8.3ms，而一次 Young GC 暂停可能就要 1-3ms [已验证: 官方文档, developer.android.com/topic/performance/memory]。看似"没啥问题"的代码，在帧渲染路径上高频分配对象，就可能在关键时刻累积出一次 GC 暂停，导致掉帧。
+内存抖动不是一种独立的" bug"，而是一种性能反模式。它的可怕之处在于：分配本身几乎不花时间，但后续的 GC 代价会在最不希望被打断的时刻兑现。在 120Hz 设备上，一帧的预算只有 8.3ms，而一次 Young GC 暂停可能就要 1-3ms [已验证: 官方文档, developer.android.com/topic/performance/memory]。看似正常的代码，在帧渲染路径上高频分配对象，就可能在关键时刻累积出一次 GC 暂停，导致掉帧。
 
 了解内存抖动，就是学会从"分配源头"来预防 GC 干扰帧渲染的问题。
 
@@ -76,7 +79,7 @@ GC 本身并不一定是问题。ART 的 CC 收集器是并发的（concurrent�
 
 问题出在"频繁"二字。如果 GC 被触发得太频繁——比如每秒触发十几次甚至几十次——这些暂停就会累积成可感知的卡顿。更严重的是，GC 线程（HeapTaskDaemon）与主线程和 RenderThread 争抢 CPU 时间，进一步加剧帧耗时波动。
 
-用一个类比来理解：内存分配就像信用卡消费，每次消费都很轻松，但到了还款日（GC），你必须一次性付出代价。正常消费没问题，但如果你天天刷爆卡再还款，你的生活节奏就会被打乱。
+用一个类比来理解：内存分配就像信用卡消费，每次消费都很轻松，但到了还款日（GC），代价必须一次性偿还。正常消费没问题，但如果天天刷爆卡再还款，生活节奏就会被打乱。
 
 ## 内存抖动对性能的影响
 
@@ -86,9 +89,9 @@ GC 本身并不一定是问题。ART 的 CC 收集器是并发的（concurrent�
 
 **GC 暂停直接抢占帧时间。** 在 60Hz 设备上，一帧的预算是 16.6ms；在 120Hz 设备上，这个预算缩减到 8.3ms。一次 Young GC 暂停 1-3ms，如果恰好发生在帧渲染期间，就意味着这一帧被 GC 吃掉了 12%-36% 的时间预算（120Hz 场景）。如果主线程的渲染工作本身就需要 6-7ms，加上 GC 暂停，帧总耗时轻松突破 8.3ms 的上限。
 
-**Allocation Stall：分配线程被阻塞。** 当 Eden 区已满、GC 正在进行时，试图分配新对象的线程会被阻塞（称为 Allocation Stall），直到 GC 完成回收。这意味着即使 GC 是"并发"的，在特定时刻分配线程仍然可能被卡住。在 Perfetto 中，你可以观察到主线程突然出现一段"无法解释"的等待时间，实际原因就是 Allocation Stall。
+**Allocation Stall：分配线程被阻塞。** 当 Eden 区已满、GC 正在进行时，试图分配新对象的线程会被阻塞（称为 Allocation Stall），直到 GC 完成回收。这意味着即使 GC 是"并发"的，在特定时刻分配线程仍然可能被卡住。在 Perfetto 中，我们可以观察到主线程突然出现一段"无法解释"的等待时间，实际原因就是 Allocation Stall。
 
-**CPU 竞争导致间接影响。** GC 线程执行标记、拷贝等工作需要消耗 CPU。在 Perfetto 的 CPU 视图中，你会看到 `HeapTaskDaemon` 线程在某些时段占据了显著的 CPU 时间片。这些 CPU 时间本可以用来执行主线程或 RenderThread 的工作——也就是说，即使 GC 暂停没有直接发生在主线程上，CPU 竞争也会导致主线程的执行变慢。
+**CPU 竞争导致间接影响。** GC 线程执行标记、拷贝等工作需要消耗 CPU。在 Perfetto 的 CPU 视图中， `HeapTaskDaemon` 线程在某些时段占据了显著的 CPU 时间片。这些 CPU 时间本可以用来执行主线程或 RenderThread 的工作——也就是说，即使 GC 暂停没有直接发生在主线程上，CPU 竞争也会导致主线程的执行变慢。
 
 ```
 Memory Churn 在 Perfetto 中的表现:
@@ -233,13 +236,13 @@ adb shell heapprofd --pid=<PID> --java
 
 ### Perfetto Trace 中的 GC 观察
 
-在 Perfetto Trace 中，你可以从以下 Track 观察内存抖动的痕迹：
+在 Perfetto Trace 中，从以下 Track 观察内存抖动的痕迹：
 
 - **Java Heap Track**：堆使用量的锯齿波动是最直观的信号
 - **GC Event Track / art::gc::heap**：GC 事件的频率直接反映抖动程度
 - **CPU 视图中的 HeapTaskDaemon**：观察 GC 线程的 CPU 占用
 
-如果你看到 HeapTaskDaemon 频繁活跃，同时帧耗时出现不规则波动，基本可以确认是内存抖动导致的性能问题。
+如果看到 HeapTaskDaemon 频繁活跃，同时帧耗时出现不规则波动，基本可以确认是内存抖动导致的性能问题。
 
 [待补充: Trace 截图 — GC Event Track 和 HeapTrack 的对照]
 
