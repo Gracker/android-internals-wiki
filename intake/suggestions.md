@@ -997,3 +997,21 @@ tags:
 - **位置**：oom_adj 表格 HOME_APP=600 行
 - **问题**：该值需在 AOSP android-16.0.0_r1 ProcessList.java 中验证准确性
 - **建议**：grep AOSP ProcessList.java 确认 HOME_APP 对应的 oom_adj 值
+
+## [Task9 Deep Review] 2.1 Android 渲染架构全景 — 2026-04-09
+- **类型**：源码准确性
+- **位置**：maxBufferCount 参数描述
+- **问题**：三缓冲实现中，maxBufferCount=3 不是直接控制三缓冲的参数；更准确地说 maxDequeuedBuffers=1（生产者端）间接决定了三缓冲行为，两者需区分
+- **建议**：修正参数描述，说明 maxBufferCount 是总 slot 数，maxDequeuedBuffers 控制生产者端可持有缓冲区数，两者共同决定缓冲效果
+- **类型**：原理断裂
+- **位置**：三缓冲机制 → 为什么是 3
+- **问题**：只解释了"有缓冲可用"的优势，但未解释为什么选择 3 而不是 4 或 adaptive buffer；读者可能认为 3 是 magic number
+- **建议**：补充说明"3 是系统延迟与内存占用的平衡点"的工程考量，或补充 Android 13/14 中是否可配置的说明
+- **类型**：版本差异
+- **位置**：AsyncBufferQueue 描述
+- **问题**：文中介入"Android 16 中引入了 AsyncBufferQueue"，但 BlastBufferQueue 是 Android 12 引入的；AsyncBufferQueue 与 BlastBufferQueue 的关系（同一机制的新名字 vs 不同机制）未说明
+- **建议**：补充说明 AsyncBufferQueue 是 BlastBufferQueue 的演进还是新机制，引用 AOSP 相关 change
+- **类型**：数据缺失
+- **位置**：GPU 渲染管线各阶段 / 三缓冲延迟优势 / Vulkan vs OpenGL ES 开销
+- **问题**：多处关键断言缺少量化数据（GPU 各阶段典型耗时、三缓冲延迟具体值、Vulkan vs OpenGL 性能差异百分比）
+- **建议**：补充 benchmark 数据或 Perfetto Trace 片段；如暂无数据，将模糊断言改为定性描述并标注 [待验证: 量化数据待补充]

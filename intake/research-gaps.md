@@ -65,3 +65,22 @@ tombstoning 机制是 DeliQueue 数据一致性的核心，但正文描述不够
 ### 关联章节
 1.5（线程模型）、1.14（锁竞争与同步性能分析）、2.4（Choreographer）
 
+
+
+## [2026-04-09] 2.1 Android 渲染架构全景 — 知识盲区
+
+### 盲区描述
+HWUI Android 16 重构细节缺失。章节明确提到"Android 16 HWUI 渲染管线进行了内部重构"，但未展开说明具体重构内容。与此同时，章节多处引用 Android 16 之前的 HWUI 内部结构（OpenGLCanvas 类名、RenderNode 详细字段、DisplayListData 结构）均标注了 [待验证]，这些代码片段在 Android 16 中是否仍然有效无法确认。这是章节的核心知识盲区。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 调研 AOSP android-16.0.0_r1 中 frameworks/base/libs/hwui/ 目录结构，确认 OpenGLCanvas/RenderNode/DisplayList 的实际状态
+- 确认 SkiaOpenGLPipeline/SkiaVulkanPipeline 在 Android 16 中的实际类名和调用路径
+- 补充"Android 16 HWUI 变化"专节，说明重构前后的架构差异
+- 对比 frameworks/base/libs/hwui/ 在 Android 14 vs Android 16 中的文件变化
+
+### 关联章节
+2.5（MainThread 与 RenderThread 协作）、2.10（GPU 渲染深入，涉及 Vulkan 后端）、2.6（SurfaceFlinger）
+
