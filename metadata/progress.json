@@ -5311,5 +5311,10 @@
     "status": "ready-to-publish",
     "reviewed_date": "2026-04-08",
     "title": "响应速度原理"
+  },
+  "10.5": {
+    "status": "finalized",
+    "reviewed_date": "2026-04-09",
+    "reviewed_by": "openclaw-task6"
   }
 }
