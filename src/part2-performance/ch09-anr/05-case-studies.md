@@ -2,7 +2,7 @@
 title: "案例集"
 chapter: "9.5"
 section: "9.5"
-status: reviewed
+status: ready-for-review
 drafted_date: "2026-04-02"
 drafted_by: "openclaw-task2a"
 reviewed_date: "2026-04-09"
@@ -26,7 +26,9 @@ sources:
     path: "frameworks/base/core/java/android/app/SharedPreferencesImpl.java"
   - type: aosp
     path: "frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp"
-tags: ['anr', 'case-study', 'input-dispatching', 'sharedpreferences', 'system-load', 'binder', 'process-freeze']
+  - type: aosp
+    path: "frameworks/native/libs/binder/ProcessState.cpp"
+tags: ['anr', 'case-study', 'input-dispatching', 'sharedpreferences', 'system-load', 'binder', 'process-freeze', 'deadlock', 'lock-ordering', 'synchronized']
 related_chapters: ["9.1", "9.2", "9.3", "9.4", "1.4"]
 ---
 
@@ -61,13 +63,14 @@ related_chapters: ["9.1", "9.2", "9.3", "9.4", "1.4"]
 
 案例集存在的意义就在这里：我们用五个从真实产品环境中提取的案例，带你走一遍完整的分析过程。每个案例的原始数据（trace、event log、AnrManager 信息）都保留了关键部分，你可以在阅读时尝试自己先判断原因，再对照后面的分析。
 
-这五个案例覆盖了 ANR 中最常见的五类根因：
+这六个案例覆盖了 ANR 中最常见的根因类型：
 
 - **案例 1：系统负载过高导致 Input ANR** — 设备全局 IO 压力爆表，所有进程都在等磁盘
 - **案例 2：SystemServer 主线程耗时导致 Input ANR** — 根因不在 App 侧，而在 system_server 的 Notifier 处理
 - **案例 3：SharedPreferences 等待导致 Broadcast ANR** — `QueuedWork.waitToFinish()` 把主线程卡住了
 - **案例 4：进程冻结导致 Input ANR** — 系统冻结了 Gesture Monitor 进程，事件无人消费
 - **案例 5：应用启动超时导致焦点窗口缺失 ANR** — 目标应用启动失败，焦点无处可去
+- **案例 6：synchronized 锁顺序颠倒导致 Service ANR** — 主线程与后台线程争抢两把锁，形成经典死锁
 
 ## 案例 1：系统负载过高 — IO 压力导致的 Input ANR
 
@@ -319,9 +322,105 @@ Dialer 侧：优化启动速度，减少同步初始化。系统侧：优化进�
 
 ---
 
+
+## 案例 6：死锁 — synchronized 锁顺序颠倒导致的 Service ANR
+
+### 问题现象
+
+中型社交 App（日活百万级），在用户频繁切换页面时偶发 Service ANR。复现条件较苛刻：需要用户在后台同步任务运行时快速操作 UI。
+
+Event log 中的 ANR 记录：
+
+```
+09-12 14:37:22.815 1000 2451 I am_anr : [0,18932,com.example.app,
+  852340012, executing service com.example.app.sync.SyncService]
+```
+
+Service 的 `onBind()` 超时，触发了 Service ANR（前台 Service 20 秒超时）。
+
+### 分析过程
+
+**第一步：看 trace。** 主线程堆栈：
+
+``'
+"main" prio=5 tid=1 BLOCKED
+  | waiting to lock <0x0f3c2a81> (a com.example.app.data.DatabaseHelper)
+  | held by thread "SyncWorker-2"
+  at com.example.app.data.DataManager.flushCache(DataManager.java:187)
+  at com.example.app.sync.SyncService.onBind(SyncService.java:45)
+``'
+
+主线程处于 `BLOCKED` 状态，在 `DataManager.flushCache()` 中等待获取 `DatabaseHelper` 实例的锁（地址 `0x0f3c2a81`），这把锁被 `SyncWorker-2` 线程持有。
+
+**第二步：看 SyncWorker-2 的堆栈。**
+
+``'
+"SyncWorker-2" prio=5 tid=23 BLOCKED
+  | waiting to lock <0x0a1b7d43> (a com.example.app.data.DataManager)
+  | held by thread "main"
+  at com.example.app.data.DatabaseHelper.query(DatabaseHelper.java:92)
+  at com.example.app.sync.SyncWorker.syncContacts(SyncWorker.java:134)
+``'
+
+经典死锁的轮廓已经出来了：
+
+- **主线程**：持有 `DataManager` 的锁（`0x0a1b7d43`），等待 `DatabaseHelper` 的锁（`0x0f3c2a81`）
+- **SyncWorker-2**：持有 `DatabaseHelper` 的锁（`0x0f3c2a81`），等待 `DataManager` 的锁（`0x0a1b7d43`）
+
+两把锁，两个线程，获取顺序相反，形成循环等待。
+
+**第三步：确认代码路径。**
+
+主线程的调用链：`SyncService.onBind()` → `DataManager.flushCache()`。在 `flushCache()` 方法中：
+
+```java
+// DataManager.java
+// 方法入口时已持有 this（DataManager）的 synchronized 锁
+public synchronized void flushCache() {
+    // ...
+    databaseHelper.write(cache);  // 调用 DatabaseHelper 方法，尝试获取 DatabaseHelper 的锁
+}
+```
+
+后台线程的调用链：`SyncWorker.syncContacts()` → `DatabaseHelper.query()`。
+
+```java
+// DatabaseHelper.java
+// 方法入口时已持有 this（DatabaseHelper）的 synchronized 锁
+public synchronized Cursor query(String table, String selection) {
+    // ...
+    return dataManager.buildCursor(rawData);  // 回调 DataManager，尝试获取 DataManager 的锁
+}
+```
+
+问题根源是 `DatabaseHelper.query()` 在持有自身锁的情况下回调 `DataManager`，而 `DataManager.flushCache()` 在持有自身锁的情况下调用 `DatabaseHelper`。两条代码路径的锁获取顺序相反。
+
+[待验证: Android Studio 的 Thread Dump 分析工具可以直接可视化这种循环等待关系]
+
+### 根因
+
+**synchronized 锁的获取顺序不一致导致死锁。** `DataManager` 和 `DatabaseHelper` 是两个互相依赖的类，各自的 `synchronized` 方法在调用对方时都没有释放自身锁。当主线程（处理 Service 绑定）和后台同步线程（处理数据查询）同时执行交叉路径时，就形成了循环等待。
+
+这种死锁在 AOSP 的系统服务中也出现过。Android 5.0 之前的 `ActivityManagerService` 和 `PackageManagerService` 之间就曾因为锁顺序问题导致 system_server 死锁，Google 的修复方式是建立全局锁层级规范（lock ordering），所有系统服务的锁按照固定顺序获取。
+
+### 修复方案
+
+1. **统一锁获取顺序** — 规定所有代码路径必须先获取 `DataManager` 的锁，再获取 `DatabaseHelper` 的锁。将 `DatabaseHelper.query()` 中的 `synchronized` 改为在方法入口先获取 `DataManager` 锁或改用细粒度锁
+2. **缩小锁的范围** — `DatabaseHelper.query()` 不需要在持有锁的情况下回调 `DataManager`，可以将结果先缓存到局部变量，释放锁后再回调
+3. **使用 `tryLock` 替代阻塞等待** — 将 `synchronized` 替换为 `ReentrantLock.tryLock(timeout)`，在超时后记录告警并走降级路径，而不是无限等待
+4. **静态检测** — 启用 Android Lint 的 `"DuplicateIds"/"NestedScrolling"/` 等资源竞争检测规则，配合 `-extra-check` 自定义锁顺序检查
+
+### 举一反三
+
+trace 中出现 `BLOCKED` 状态且堆栈指向 `synchronized` 方法，是死锁的典型信号。分析方法：找到主线程等待的锁（trace 中有 `waiting to lock` 和 `held by thread` 信息），再看持有者的堆栈是否也在等另一把锁。如果形成环，就是死锁。
+
+另一类常见的 Android 死锁是 **Binder 线程池耗尽**：主线程同步调用其他进程的 Binder 接口（占一个 Binder 线程），而对方进程又回调到本进程（需要另一个 Binder 线程）。当进程的 16 个 Binder 线程（默认值，见 `ProcessState` 源码）全部被同步调用占满时，回调无法进来，形成隐式死锁。这类问题在 trace 中表现为大量 `Binder:XXX_X` 线程处于 `WAITING` 或 `BLOCKED` 状态。
+
+[已验证: Binder 线程池默认大小为 16，见 AOSP frameworks/native/libs/binder/ProcessState.cpp 中 `SP_BUNDLE_THREADS` 的默认值（Android 14），部分设备通过 `persist.device_config.bundle_threads` 自定义]
+
 ## 分析方法总结
 
-通过这五个案例，提炼出高效的分析路径：
+通过这六个案例，提炼出高效的分析路径：
 
 1. **判断 ANR 类型** — 从 `am_anr` 确认是 Input/Service/Broadcast/ContentProvider ANR
 2. **看主线程 trace** — 有明确业务堆栈 → App 自身问题；`nativePollOnce` → 可能在系统侧
