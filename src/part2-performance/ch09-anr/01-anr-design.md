@@ -1,7 +1,7 @@
 ---
 title: "ANR 设计思想"
 chapter: "9.1"
-status: ready-for-review
+status: ready-to-publish
 drafted_date: "2026-04-02"
 polish_count: 1
 polish_date: "2026-04-07"
@@ -9,7 +9,7 @@ polish_by: "task2b-polish"
 applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37)"
 last_verified: "2026-04-02"
 last_verified_against: "AOSP android-14.0.0_r1"
-reviewed_date: "2026-04-07"
+reviewed_date: "2026-04-09"
 reviewed_by: openclaw-task6
 confidence: medium
 sources:
@@ -384,7 +384,7 @@ Play Console 中可以看到的 ANR 信息包括：
 
 钉钉团队在分析一个 ANR 问题时发现：BugReport 中的 traces.txt 显示主线程在处理传感器事件，而实际上真正导致 ANR 的是硬件渲染阶段的锁等待（耗时 68 秒）。传感器事件处理只用了 12 毫秒，但因为发生在超时检测之后，成了 traces.txt 中的"替罪羊"。
 
-这个认知对于 ANR 分析方法的影响是深远的——它意味着我们不能简单地"看 traces.txt 堆栈就能定位 ANR"，而需要更系统的方法论。这正是 9.3 节要讨论的核心主题。
+这个认知直接决定了我们分析 ANR 的方式——不能简单地把 traces.txt 堆栈当作根因，而需要结合时间线和多种信息源交叉验证。这正是 9.3 节要讨论的核心主题。
 
 [来源: Personal-Knowlodge/source/2026-03-07_wechat_钉钉_ANR_治理最佳实践_定位_ANR_不再雾里看花.md]
 [自动发现]

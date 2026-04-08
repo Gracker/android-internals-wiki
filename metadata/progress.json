@@ -776,11 +776,20 @@
         "verification": 4,
         "metadata": 5
       }
+    },
+    "9.1": {
+      "reviewed_date": "2026-04-09",
+      "reviewed_by": "openclaw-task6",
+      "review_status": "ready-to-publish",
+      "fixes_applied": [
+        "措辞优化：1处表述具体化（「深远的影响」→ 具体说明影响方式）"
+      ],
+      "issues_found": 0
     }
   },
   "review_stats": {
-    "total_reviewed": 47,
-    "reviewed_today": 25,
+    "total_reviewed": 48,
+    "reviewed_today": 26,
     "review_issues_total": 13
   },
   "completed": [
@@ -2112,10 +2121,10 @@
     "total": 118,
     "completed": 97,
     "pending": 32,
-    "last_updated": "2026-04-08T17:05:00+08:00",
+    "last_updated": "2026-04-09T04:25:12.496322",
     "reviewed": 1,
-    "ready-for-review": 1,
-    "ready_to_publish": 1
+    "ready-for-review": 0,
+    "ready_to_publish": 2
   },
   "research_stats": {
     "runs_today": [
