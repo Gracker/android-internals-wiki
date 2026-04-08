@@ -1,7 +1,7 @@
 ---
 title: "ProfilingManager"
 chapter: "14.7"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 15 (API 35) - Android 17 (API 37)"
 last_verified: "2026-04-08"
 last_verified_against: "AOSP android-17-beta3, developer.android.com/guide/topics/profiling"
@@ -18,13 +18,14 @@ sources:
   - type: blog
     path: "android-developers.googleblog.com — System Triggered Profiling (Android 16), What's new in Android 17 Profiling"
 tags: [profilingmanager, android-15, android-16, android-17, profiling, perfetto, system-trace, heap-dump, heap-profile, stack-sampling, jetpack]
-related_chapters: ["14.1 Perfitto基础", "14.2 线上性能分析", "15.2 性能调优实战", "9.1 ANR 设计哲学"]
+related_chapters: ["13.1 Perfetto 简介与演进", "15.5 线上性能监控", "15.2 如何区分系统问题和 App 问题", "9.1 ANR 设计思想"]
 drafted_date: "2026-03-29"
 drafted_by: "openclaw-task2a"
 reviewed_date: "2026-04-08"
 reviewed_by: "openclaw-task6"
 reworked_date: "2026-04-08"
 reworked_by: "openclaw-task2b"
+review_round: 2
 ---
 
 # ProfilingManager
@@ -540,9 +541,9 @@ Jetpack 封装（`androidx.tracing.perfetto`）在平台 API（`android.os.Profi
 
 ### 相关章节
 
-- **14.1 Perfetto 基础** — Trace 文件格式和基础分析概念
-- **14.2 线上性能分析** — 生产环境的性能监控方法论
-- **9.1 ANR 设计哲学** — ANR 触发机制与 ProfilingManager ANR 触发器的配合使用
+- **13.1 Perfetto 简介与演进** — Trace 文件格式和基础分析概念
+- **15.5 线上性能监控** — 生产环境的性能监控方法论
+- **9.1 ANR 设计思想** — ANR 触发机制与 ProfilingManager ANR 触发器的配合使用
 - **8.2 应用启动过程** — 冷启动 trace 中的关键时间节点分析
 
 <!-- outline-start -->
