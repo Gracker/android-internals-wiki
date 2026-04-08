@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-08",
+  "generated_at": "2026-04-08 22:00",
   "documents": [
     {
       "path": "Cubox/#01 创始人解密 Discord-2023-02-20.md",
@@ -46164,6 +46164,22 @@
       "last_scanned": "2026-04-08",
       "mapped_chapters": [],
       "total_score": 0
+    },
+    {
+      "path": "intake/research-feeds/2026-04-08-19-view-hierarchy-measure-layout-perfetto-jank-optimization.md",
+      "title": "[研究] Android View 层级性能：measure/layout 开销与 Perfetto 诊断方法",
+      "mapped_chapters": [
+        "7.12"
+      ],
+      "total_score": 56
+    },
+    {
+      "path": "intake/research-feeds/2026-04-08-19-android-adpf-agdk-game-mode-thermal-performance.md",
+      "title": "[研究] Android Dynamic Performance Framework (ADPF) 与游戏性能优化体系",
+      "mapped_chapters": [
+        "8.9"
+      ],
+      "total_score": 68
     }
   ],
   "stats": {

@@ -853,3 +853,44 @@ tags:
 
 ### 结论
 全书 158 节已覆盖 Android 性能领域绝大部分知识点。剩余候选缺口要么素材不足以支撑 3000-8000 字独立章节，要么与现有章节重叠严重。建议下一轮将重点转向：现有章节精修(Task 2B/6)、前沿研究素材持续积累(Task 5)、以及已有章节的深度扩展。
+
+## [Task9 Deep Review] 1.1 Android 分层架构 — 2026-04-08
+- **类型**：源码准确性
+- **位置**：各层职责边界节 → SurfaceFlinger 部分
+- **问题**：SurfaceFlinger 的 `handleMessageRefresh` → `doComposition` 调用链缺少中间步骤（`prepareFrame`/`postFrame`/`advanceFrame`），正文描述为"两个关键 CPU 切片"但实际 SurfaceFlinger 的内部处理有多个阶段，影响读者理解其合成管线的完整性
+- **建议**：补充 SurfaceFlinger 合成管线的完整方法调用链，并说明每个阶段在 Perfetto 中的 Track 表现
+
+- **类型**：版本差异
+- **位置**：Ashmem 描述段落（"Linux 内核层"中的 Ashmem 说明）
+- **问题**：Ashmem 在 Android 11 已废弃（被 ION/MemoryHeapAllocator 替代），正文描述未注明版本状态，可能让读者误以为当前系统仍在使用 Ashmem
+- **建议**：补充"Ashmem 在 Android 11 已废弃"的版本说明，或补充 Ashmem → ION 的演进关系
+
+- **类型**：版本差异
+- **位置**：`applicable_versions: "Android 8 (API 26) - Android 16 (API 36)"`
+- **问题**：正文声称覆盖 API 26-36，但 Android 16 架构变化仅有两个子节（Mainline + 16KB page size），16KB page size 实为 Android 15 引入。Android 8/9/10/11 等版本的重大架构变化（Treble、Android 9 Mainline、Android 10-12 GKI）在正文中仅有零散描述，缺乏系统梳理
+- **建议**：为 `applicable_versions` 给出更准确的版本范围说明（如 API 26-35），或在正文补充各版本架构里程碑的系统对照表
+
+- **类型**：数据缺失
+- **位置**：Zygote fork 耗时 "20-50ms" 段落
+- **问题**：该数据标注 `[待验证]` 但位于 ready-to-publish 章节，是正文唯一的量化性能数据，未经核实存在出版风险
+- **建议**：移除具体数值区间，改为量级描述"通常在几十毫秒量级（取决于预加载资源量）"，附注"需多设备实测"
+
+- **类型**：数据缺失
+- **位置**：Binder 单次调用延迟 "约 10-100μs" 段落
+- **问题**：同样标注 `[待验证]`，且 10-100μs 跨度达 10 倍，缺乏设备/数据大小条件
+- **建议**：补充具体测量条件（如"无数据传输、Snapdragon 8 Gen 2 Android 14"），或标注为"量级估算"
+
+- **类型**：数据缺失
+- **位置**：Activity 冷启动 "可能包含 20-50 次 Binder 调用" 段落
+- **问题**：来源标注"社区测量"，20-50 次跨度大，无版本/设备/场景说明
+- **建议**：拆分为具体场景（zygote fork / AMS attach / Activity onCreate）分别估算，或补充来源链接
+
+- **类型**：交叉引用
+- **位置**：全文 related_chapters 元数据 vs 正文引用
+- **问题**：`related_chapters: ["1.2", "1.3", "2.1", "3.1", "4.1", "5.1", "7.1"]` 在正文中一次都没有出现，读者不知道这些章节存在
+- **建议**：在正文涉及相关章节的内容处插入交叉引用（如 SurfaceFlinger 处链接到 2.1，LMK 处链接到 4.4，Zygote 处链接到 1.11）
+
+- **类型**：交叉引用
+- **位置**：HAL 层零拷贝共享内存通道段落
+- **问题**：提到"关键 HAL 设计了零拷贝的共享内存通道"，但未引向第 2.15 节（DMA-BUF/Gralloc）
+- **建议**：添加"详见 2.15 节 DMA-BUF 与跨进程图形内存共享"的内联引用

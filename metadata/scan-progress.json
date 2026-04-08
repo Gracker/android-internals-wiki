@@ -4404,12 +4404,11 @@
   "current_offset": 85,
   "priority_queue": [
     "Cubox",
-    "Personal-Knowlledge",
-    "公众号文章",
-    "X 文章",
     "调研",
     "论文",
     "知识库",
+    "公众号文章",
+    "X 文章",
     "OpenClaw定时任务"
   ],
   "completed_directories": [
