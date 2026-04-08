@@ -1695,5 +1695,31 @@
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-09T02:33:16",
     "status": "pending"
+  },
+  {
+    "section": "2.10",
+    "section_title": "GPU 渲染深入",
+    "priority": 95,
+    "reason": "[Deep Tech Review] 存在 2 处 P0 源码路径错误",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "GPU 内存管理章节 - GraphicBuffer.java 源码块",
+        "detail": "引用路径 frameworks/base/core/java/android/graphics/GraphicBuffer.java 在 AOSP android-16.0.0_r1 中不存在。GraphicBuffer 是 C++ 类（frameworks/native/libs/ui/GraphicBuffer.h），Java 层仅为 JNI 包装器，无独立公开 Java 源码文件。",
+        "suggestion": "修正为 C++ 源码路径 frameworks/native/libs/ui/GraphicBuffer.h，或移除该 Java 代码示例改用 C++ 版本"
+      },
+      {
+        "type": "源码错误",
+        "location": "Vertex Bound 章节 - TBR 架构验证标注",
+        "detail": "已验证标注引用 frameworks/native/opengl/，但该目录在 AOSP android-16 中不存在。OpenGL ES 系统头文件实际位于 system/core/libsystem/include/ 或 frameworks/native/libs_private/ 相关目录。",
+        "suggestion": "修正引用路径，并确认 TBR 架构信息实际来源于何处的 AOSP 源码或官方文档"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-09T03:30:00",
+    "status": "pending"
   }
 ]

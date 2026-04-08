@@ -13295,6 +13295,84 @@
       "first_chars": "# 3分钟读懂OKR | 不和绩效挂钩的OKR到底有什么用？\n\n你的公司适合推行OKR吗？\n\n[Read in Cubox](https://cubox.pro/web/card/6908446233820400244)  \n[Read Original](https://mp.weixin.qq.com/s/W3SN66aTFBSFmxW6zlUQFw)  \n\n---\n\n翻开任何一本OKR书籍，",
       "indexed_at": "2026-04-09T00:47:47.754017",
       "skip_reason": "Total score 8 < 10 (相关性:1+深度:1+时效:3+可验证:3)"
+    },
+    {
+      "path": "X 文章/2026-04-06-1259-HiTw93-Waza技能发布.md",
+      "title": "Waza：AI时代工程师的8个核心技能",
+      "scores": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "total_score": 8,
+      "reason": "Score < 10 (relevance and depth too low)",
+      "indexed_at": "2026-04-09T02:48:20.649164"
+    },
+    {
+      "path": "X 文章/2026-04-06-1300-blackanger-修复Codex行为模式.md",
+      "title": "修复Codex的过度询问：从用户偏好到任务完成的重新定位",
+      "scores": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "total_score": 8,
+      "reason": "Score < 10 (relevance and depth too low)",
+      "indexed_at": "2026-04-09T02:48:20.649166"
+    },
+    {
+      "path": "X 文章/2026-04-06-1302-yanhua1010-Obsidian+Claude架构.md",
+      "title": "用 Obsidian + Claude 搭个人知识库：核心架构实践",
+      "scores": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "total_score": 8,
+      "reason": "Score < 10 (relevance and depth too low)",
+      "indexed_at": "2026-04-09T02:48:20.649167"
+    },
+    {
+      "path": "X 文章/2026-04-06-1303-sitinme-ClaudeCode高级功能.md",
+      "title": "Claude Code 这些功能，用了就回不去了",
+      "scores": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "total_score": 8,
+      "reason": "Score < 10 (relevance and depth too low)",
+      "indexed_at": "2026-04-09T02:48:20.649170"
+    },
+    {
+      "path": "X 文章/2026-04-07-1352-AlexZ-Prompt工程之道-不是抽卡是质量阀门.md",
+      "title": "Prompt工程之道-不是抽卡是质量阀门",
+      "scores": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "total_score": 8,
+      "reason": "Score < 10 (relevance and depth too low)",
+      "indexed_at": "2026-04-09T02:48:20.649171"
+    },
+    {
+      "path": "X 文章/2026-04-07-1352-AndrejKarpathy-LLMKnowledgeBases.md",
+      "title": "LLM Knowledge Bases",
+      "scores": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "total_score": 8,
+      "reason": "Score < 10 (relevance and depth too low)",
+      "indexed_at": "2026-04-09T02:48:20.649172"
     }
   ],
   "last_updated": "2026-04-08T08:51:05.767544",

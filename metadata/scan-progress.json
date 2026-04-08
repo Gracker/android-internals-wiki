@@ -1,6 +1,6 @@
 {
-  "last_scan_time": "2026-04-09T00:47:47.754425",
-  "scanned_files": 160,
+  "last_scan_time": "2026-04-09T02:48:20.649174",
+  "scanned_files": 167,
   "total_files": 167,
   "indexed_files": [
     {
@@ -4401,7 +4401,7 @@
     }
   ],
   "current_directory": "X 文章",
-  "current_offset": 160,
+  "current_offset": 167,
   "priority_queue": [
     "Cubox",
     "调研",
@@ -4415,7 +4415,8 @@
     "Cubox",
     "Personal-Knowlledge",
     "Personal-Knowlodge",
-    "公众号文章"
+    "公众号文章",
+    "X 文章"
   ],
   "last_scan_batch": 1,
   "status": "in_progress"
