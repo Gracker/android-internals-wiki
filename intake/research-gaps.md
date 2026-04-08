@@ -84,3 +84,21 @@ HWUI Android 16 重构细节缺失。章节明确提到"Android 16 HWUI 渲染�
 ### 关联章节
 2.5（MainThread 与 RenderThread 协作）、2.10（GPU 渲染深入，涉及 Vulkan 后端）、2.6（SurfaceFlinger）
 
+
+
+## [2026-04-09] 2.10 GPU 渲染深入 — 知识盲区
+
+### 盲区描述
+1. TBR（Tiled-Based Rendering）机制未展开：章节提及 ARM Mali GPU 使用 TBR 架构，但未解释 TBR 的分块策略、On-Chip Tile Memory 与主存访问权衡、TBDR（Tile-Based Deferred Rendering）与 immediate mode rendering 的区别及各自对移动设备功耗/性能的影响。
+2. Android 12/13 过渡阶段的 GPU 渲染变化覆盖不足：applicable_versions 标注为 Android 12-16，但 Android 12（FramePacing/双缓冲改进）和 Android 13（渲染 pipeline 微调）的具体 GPU 相关变化几乎没有展开。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 调研 ARM Mali GPU TBR/TBDR 架构原理及与 Qualcomm Adreno 的架构差异（Adreno 为 tile-based deferred rendering，架构选择不同）
+- 梳理 Android 12/13/14 中 GPU 相关的 changelog（从 AOSP change log 或 Android Release Notes 提取）
+- 对比主流移动 GPU（Adreno 740/750/760，Mali G710/G720/G720）的 fillrate/带宽/算力典型值，建立性能参考表
+
+### 关联章节
+2.3（VSync），2.6（SurfaceFlinger），2.9（渲染机制版本演进），2.5（MainThread/RenderThread 协作）

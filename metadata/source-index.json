@@ -6051,6 +6051,21 @@
       "indexed_at": "2026-04-09T00:47:47.754389",
       "matched_chapters": [],
       "quality": "medium"
+    },
+    {
+      "path": "X 文章/2026-04-06-1301-Lonely__MH-Gemma-4-31B破解.md",
+      "title": "重磅！Google Gemma-4-31B 模型被彻底破解",
+      "scores": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 3
+      },
+      "total_score": 10,
+      "matched_chapters": [],
+      "first_chars": "# 重磅！Google Gemma-4-31B 模型被彻底破解\n\n重磅！Google Gemma-4-31B 模型被彻底破解...",
+      "quality": "medium",
+      "indexed_at": "2026-04-09T02:48:20.649152"
     }
   ],
   "sources": [

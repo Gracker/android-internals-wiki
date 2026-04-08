@@ -1015,3 +1015,35 @@ tags:
 - **位置**：GPU 渲染管线各阶段 / 三缓冲延迟优势 / Vulkan vs OpenGL ES 开销
 - **问题**：多处关键断言缺少量化数据（GPU 各阶段典型耗时、三缓冲延迟具体值、Vulkan vs OpenGL 性能差异百分比）
 - **建议**：补充 benchmark 数据或 Perfetto Trace 片段；如暂无数据，将模糊断言改为定性描述并标注 [待验证: 量化数据待补充]
+
+---
+
+## [2026-04-09 03:00] 缺口挖掘已检查方向（Task 2A）
+
+以下方向已在本轮评估中检查并排除（评分 < 14），下一轮挖掘请跳过：
+
+1. **素材索引未映射条目**：11 条 score≥14 的未映射文件已逐一评估，均为已有章节的补充素材（ANR案例、CPU理论、GPU counters）或泛主题（Android版本通稿、LLM书籍）
+2. **研究素材**：5 篇最新（4/8）全部已映射到现有章节（8.9/7.12/1.16/16.5）
+3. **每日信息**：4/5-4/7 三天内容无未覆盖热点
+4. **AOSP 核心服务**：AMS/PMS/WMS/AudioFlinger/lmkd/installd/vold/NNAPI 全部已有章节覆盖
+5. **候选方向排除**：HAL性能(10分)、安全性能(10分)、日志系统(9分)、OTA(7分)
+6. **章节扩展点**：12 个章节的扩展锚点均为深入方向，不足以独立成节
+
+结论：全书 144 节，覆盖率已达高饱和状态。新缺口需等待新版本/新技术出现。
+
+
+## [Task9 Deep Review] 2.10 GPU 渲染深入 — 2026-04-09
+- **类型**：源码准确性 + 原理断裂 + 数据缺失
+- **位置**：GPU 内存管理章节 / Vertex Bound 章节 / ANGLE 性能章节 / 案例截图
+- **问题**：
+  1. VkShaderModuleCreateInfo Vulkan 示例代码无来源说明（可能是示意性代码而非 AOSP 源码）
+  2. Skia Canvas → GPU 命令转换的中间层（DisplayList/SkSL 生成）未展开，RenderThread 行为的关键一环缺失
+  3. ANGLE 性能数据"2-5%/5-10%/10-20%"未标注具体来源（哪一届 Google I/O 演讲）
+  4. 案例中 4 处 `[待高爷补充：Perfetto Trace 截图]` 影响案例说服力
+  5. GPU fillrate/带宽 bound 段落缺少典型移动 GPU 性能量化指标参考表
+- **建议**：
+  1. 为 Vulkan 示例补充标注（"以下为标准 Vulkan API 示意代码，非 AOSP 源码"）
+  2. 在 Skia → GPU 转换段落补充 DisplayList/SkSL 生成机制简述（100-200 字）
+  3. ANGLE 数据补充具体来源（建议 Google I/O 2022/2023 对应 session）
+  4. 案例截图作为优先补充项（建议高爷提供 Trace 文件或截图）
+  5. 在 fillrate/bandwidth bound 段落增加"主流移动 GPU 性能参考表"
