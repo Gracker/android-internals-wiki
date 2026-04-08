@@ -8,6 +8,9 @@ applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-04-07"
 last_verified_against: "AOSP android-17-beta3"
 confidence: medium
+polish_count: 1
+polish_date: "2026-04-08"
+polish_by: "task2b-polish"
 sources:
   - type: official
     path: "https://developer.android.com/develop/ui/performance/jankstats"
@@ -20,6 +23,10 @@ sources:
 tags:
   - android
   - jank
+  - perceived-smoothness
+  - step-jitter
+  - frame-pacing
+  - overScroller
   - research
 
 
@@ -53,6 +60,8 @@ tags:
 另一个典型场景是 RecyclerView 的 fling 滚动。手指快速划过后，列表惯性滚动的前几帧位移量往往波动较大，后几帧又趋于平稳。这种"开头猛后面缓"的非线性减速如果不够平滑，就会产生顿挫感。
 
 ## 步幅波动的技术成因
+
+上面描述的现象在 Trace 中不会标红，在 FrameTimeline 里也不会有 jank 标记——但它确确实实影响了用户体验。我们来看导致步幅波动的底层机制。
 
 步幅波动有三个主要的技术来源：动画插值算法、VSync 时间精度损失、以及物理模拟的时间步长不稳定。我们逐一分析。
 
@@ -124,9 +133,9 @@ OverScroller 内部的 fling 物理模型可以简化为：`position = start + v
 
 这意味着即使 Choreographer 提供了精确的纳秒时间，动画引擎也没有用到它。
 
-### Chrome 的经验
+### Chrome 的经验：时间精度优化的工程实践
 
-Chrome 团队在优化 Android 滚动流畅性时发现了类似的问题。他们发现使用 `MotionEvent.getEventTime()`（毫秒精度）做速度预测，比使用 native 层的纳秒时间戳产生了更大的误差。切换到纳秒时间源后，滚动流畅性有可感知的改善。
+不止 Android 框架面临这个问题。Chrome 团队在优化 Android 滚动流畅性时发现了类似的问题。他们发现使用 `MotionEvent.getEventTime()`（毫秒精度）做速度预测，比使用 native 层的纳秒时间戳产生了更大的误差。切换到纳秒时间源后，滚动流畅性有可感知的改善。
 
 [待验证: Chrome Android 滚动时间精度优化具体 commit]
 
@@ -216,7 +225,8 @@ Android 16 引入了两个平台级 API 来量化感知流畅性：
 最直接的修复方案是在动画回调中直接使用 `Choreographer.getFrameTimeNanos()` 提供的纳秒时间戳，而不是让 OverScroller 自己去获取毫秒时间。
 
 ```java
-// 自定义纳秒精度的 fling 实现
+// [伪代码] 自定义纳秒精度的 fling 实现示意
+// 实际实现需处理边界条件、多指触控、嵌套滚动等场景
 Choreographer.getInstance().postFrameCallback(new Choreographer.FrameCallback() {
     @Override
     public void doFrame(long frameTimeNanos) {
@@ -258,9 +268,9 @@ smoothed_dt = alpha * raw_dt + (1 - alpha) * prev_smoothed_dt
 3. 更新速度：`velocity *= friction_factor`
 4. 累加位移
 
-这种方式不依赖绝对时间戳，只依赖上一帧的速度，因此不受 ms 取整的影响。
+这种方式不依赖绝对时间戳，只依赖上一帧的速度，因此不受 ms 取整的影响。本质上，它把"时间驱动"变成了"速度衰减驱动"，时间步长的波动被封装在每帧的速度更新中，不会直接反映到位移量上。
 
-[自动发现] 这是 Android RecyclerView 内部 `LinearSmoothScroller` 的部分实现思路，但标准 `OverScroller` 仍然是基于时间的。
+[自动发现] 这是 Android RecyclerView 内部 `LinearSmoothScroller` 的部分实现思路，但标准 `OverScroller` 仍然是基于时间的。实际使用时需要注意：速度衰减因子（friction_factor）的选择直接影响减速曲线的形状，过大会导致"急停"、过小会导致"滑太远"。
 
 ### 策略四：动画插值器的选择
 
@@ -277,6 +287,7 @@ smoothed_dt = alpha * raw_dt + (1 - alpha) * prev_smoothed_dt
 步幅波动和以下章节的内容直接相关：
 
 - **7.1 卡顿的定义与分类**：传统卡顿定义关注帧率，本章扩展了卡顿的定义维度
+- **7.8 RecyclerView 列表滑动性能深度优化**：RecyclerView 的 fling 行为直接受步幅波动影响
 - **2.4 Choreographer 与渲染流水线**：Choreographer 提供纳秒时间，但动画框架没有完全利用
 - **2.17 Frame Pacing Library**：Frame Pacing 解决帧率稳定性，但不解决步幅均匀性
 - **3.2 触摸响应的性能分析**：触摸事件的时间精度（MotionEvent.getEventTime() 也是毫秒级）有类似的问题
@@ -303,7 +314,7 @@ FrameTimeline 只检测帧是否在 VSync 预算内完成。步幅波动不会�
 
 **误区三："把动画时间调短就能解决卡顿"**
 
-缩短动画时间只改变了动画的总时长，不改变步幅的均匀性。一个 200ms 的动画和 300ms 的动画，如果每帧的位移分布都是不均匀的，用户感知到的不流畅程度是相似的。关键在于帧间位移的差异，而不是动画速度。
+缩短动画时间只改变了动画的总时长，不改变步幅的均匀性。一个 200ms 的动画和一个 300ms 的动画，如果每帧的位移分布都不均匀，用户感知到的不流畅程度是相似的。问题不在动画跑多快，而在相邻两帧的位移差了多少。
 
 ## 参考资料
 
@@ -318,16 +329,3 @@ FrameTimeline 只检测帧是否在 VSync 预算内完成。步幅波动不会�
 - 研究素材：
   - `intake/research-feeds/2026-04-07-16-perfetto-frame-timeline-perceived-smoothness-analysis.md`
   - `intake/research-feeds/2026-04-07-16-android16-appjankstats-relative-frame-time-histogram.md`
-
-
-### 感知流畅性：Perfetto Frame Timeline 分析方法
-- 来源：https://perfetto.dev/docs/analysis/frame-timeline
-- 类型：research
-- 摘要：Frame Timeline Expected vs Actual双轨对比。P50/P90/P99帧时长百分位分析。JankStats可配置jank阈值。步幅波动+VSync时间精度作为感知流畅性量化方法。
-- 入库时间：2026-04-08
-
-### Android 16 AppJankStats + RelativeFrameTimeHistogram API
-- 来源：https://developer.android.com/reference/android/os/AppJankStats
-- 类型：research
-- 摘要：平台级零侵入jank统计API，无需集成第三方库。帧时间分布直方图(RelativeFrameTimeHistogram)。与JankStats库互补，适合无法修改代码的场景。
-- 入库时间：2026-04-08
