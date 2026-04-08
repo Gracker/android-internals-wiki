@@ -1,6 +1,8 @@
 ---
+
 title: "CPU 相关的版本演进"
 chapter: "5.7"
+section: "5.7"
 status: ready-to-publish
 applicable_versions: "Android 5.0 - 16"
 last_verified: "2026-04-01"
@@ -20,10 +22,23 @@ sources:
 tags:
   - android
   - power
-  - research
+  - cpu-scheduling
+  - doze
+  - eas
+  - job-scheduler
+  - gki
 
 
+
+polish_count: 1
+drafted_date: "2026-04-01"
+reviewed_date: "2026-04-04"
+related_chapters:
+  - "5.2 EAS 能量感知调度"
+  - "5.6 Android 功耗管理"
+  - "5.8 后台执行限制与优化"
 ---
+
 
 
 # CPU 相关的版本演进
@@ -66,6 +81,8 @@ tags:
 理解这条演进线，我们就能回答：为什么我的后台任务在某个版本突然不工作了？为什么同样的代码在不同设备上表现不一样？做功耗优化时，应该关注哪些系统机制的变化？
 
 我们按时间线逐个版本看下来。
+
+> **交叉引用**：本节聚焦版本间的变化脉络。EAS 的调度原理详见 §5.2，Android 整体功耗管理框架详见 §5.6，后台执行限制的实战分析详见 §5.8。
 
 ## Android 5.0：JobScheduler——后台任务批处理的开端
 
@@ -145,7 +162,16 @@ Android 8.0 对后台行为的管控上了一个台阶。它引入了"后台执�
 
 关键在于：**桶的分配不是固定不变的**。系统会根据用户的使用习惯实时调整。一个上周天天用的 App，如果这周没碰过，会逐步从 Active 降级到 Rare。反过来，一个长期在 Rare 桶的 App，如果用户突然开始使用，会迅速升回 Active。
 
-从性能分析的角度，通过 `adb shell am get-standby-bucket <package_name>` 可以查看某个 App 当前的桶分配。如果在 Perfetto 中发现某个 App 的 JobScheduler 任务长时间不执行，先检查它的 Standby Bucket——很可能被放到了 Rare 或 Restricted。
+从性能分析的角度，通过 `adb shell am get-standby-bucket <package_name>` 可以查看某个 App 当前的桶分配。App 内也可以通过 API 查询自己的桶状态：
+
+```java
+// 查询当前 App 的 Standby Bucket
+UsageStatsManager usm = getSystemService(UsageStatsManager.class);
+int bucket = usm.getAppStandbyBucket();
+// STANDBY_BUCKET_ACTIVE = 10, WORKING_SET = 20, FREQUENT = 30, RARE = 40, RESTRICTED = 45
+```
+
+如果在 Perfetto 中发现某个 App 的 JobScheduler 任务长时间不执行，先检查它的 Standby Bucket——很可能被放到了 Rare 或 Restricted。
 
 [已验证: 官方文档, developer.android.com/topic/performance/appstandby]
 
@@ -155,7 +181,7 @@ Android 8.0 对后台行为的管控上了一个台阶。它引入了"后台执�
 
 前面几个版本我们讲的都是系统层面对 App 后台行为的约束。Android 10 在更底层做了一件重要的事：**EAS（Energy Aware Scheduling）成为内核调度的默认策略**。
 
-我们在 5.2 节详细讲了 EAS 的工作原理，这里重点说它从"可选"变成"默认"意味着什么。
+我们在 §5.2 详细讲了 EAS 的工作原理（包括能量模型、OPP 表、负载预测等核心机制），这里重点说它从"可选"变成"默认"意味着什么。
 
 EAS 的核心是在 CFS（Completely Fair Scheduler）的基础上加入能量模型。当调度器需要决定把一个任务放在大核还是小核上时，它不再只看哪个核心有空闲，而是计算"这个任务在大核上跑 2ms 和小核上跑 5ms，哪个更省电"。在大.LITTLE 架构的 SoC 上（也就是几乎所有现代手机芯片），这个决策每时每刻都在发生。
 
@@ -206,7 +232,9 @@ Android 13 把精确闹钟的管控又推进了一步：对于 `targetSdkVersion
 
 Android 14 要求前台服务必须声明**至少一个类型**（foreground service type），比如 `camera`、`location`、`mediaPlayback` 等。每种类型对应不同的权限要求和系统行为。这让系统可以更精准地管理不同类型的前台服务——比如一个声称在做媒体播放的前台服务，如果实际上没有在播放音频，系统可以检测到并终止它。
 
-Android 14 还引入了后台 Activity 启动的显式 opt-in 机制。在此之前的版本中，App 发送 `PendingIntent` 时会隐式地将自己的后台 Activity 启动权限传递给接收方——恶意 App 可以通过 PendingIntent 链绕过后台启动限制。从 Android 14 开始，发送方必须通过 `ActivityOptions.setPendingIntentBackgroundActivityStartMode(MODE_BACKGROUND_ACTIVITY_START_ALLOWED)` 显式授权，接收方才能在后台启动 Activity。同样，通过 `bindService()` 绑定后台 App 的服务时，也需要添加 `Context.BIND_ALLOW_ACTIVITY_STARTS` 标志。[已验证: developer.android.com/about/versions/14/behavior-changes-14]
+Android 14 还引入了后台 Activity 启动的显式 opt-in 机制。在此之前的版本中，App 发送 `PendingIntent` 时会隐式地将自己的后台 Activity 启动权限传递给接收方——恶意 App 可以通过 PendingIntent 链绕过后台启动限制。
+
+从 Android 14 开始，发送方必须通过 `ActivityOptions.setPendingIntentBackgroundActivityStartMode(MODE_BACKGROUND_ACTIVITY_START_ALLOWED)` 显式授权，接收方才能在后台启动 Activity。同样，通过 `bindService()` 绑定后台 App 的服务时，也需要添加 `Context.BIND_ALLOW_ACTIVITY_STARTS` 标志。[已验证: developer.android.com/about/versions/14/behavior-changes-14]
 
 此外，`mlock()` 的上限从 64MB 降到了 64KB，这对某些使用内存锁定来优化性能的 App 是一个需要注意的变化。
 
@@ -237,7 +265,9 @@ Android 16 继续对 JobScheduler 进行精细化管控。核心变化是 Job �
 ## GKI 对内核调度模块定制化的影响
 
 
-GKI（Generic Kernel Image）在 Android 11 以 GKI 1.0（Linux kernel 5.4）的形式首次引入，当时是可选的。Android 12 升级到 GKI 2.0（kernel 5.10+），从这一版开始成为新设备的强制要求——OEM 不得修改内核核心代码，且设备必须使用 Google 签名的 boot image。到 Android 15，GKI 内核版本已迭代至 6.6，同时新增了 16KB page size 支持——16KB page size 在 Android 15 中默认未启用，但从 2025 年 11 月起，Google Play 要求所有 targetSdk >= 35 的 App 必须兼容 16KB page size。[已验证: source.android.com/docs/core/architecture/kernel/gki, developer.android.com/guide/practices/page-sizes] 它对 CPU 调度的影响是一个容易被忽视但很重要的变化。
+GKI（Generic Kernel Image）的引入是 Android 内核架构的一个重大转变。Android 11 以 GKI 1.0（Linux kernel 5.4）的形式首次引入，当时是可选的。到了 Android 12，GKI 2.0（kernel 5.10+）成为新设备的强制要求——OEM 不得修改内核核心代码，且设备必须使用 Google 签名的 boot image。Android 15 的 GKI 内核版本已迭代至 6.6，同时新增了 16KB page size 支持——在 Android 15 中默认未启用，但从 2025 年 11 月起，Google Play 要求所有 targetSdk >= 35 的 App 必须兼容。[已验证: source.android.com/docs/core/architecture/kernel/gki, developer.android.com/guide/practices/page-sizes]
+
+GKI 对 CPU 调度的影响是一个容易被忽视但很重要的变化。
 
 在 GKI 之前，SoC 厂商（高通、联发科等）可以直接修改内核调度器代码来适配自己的硬件。比如联发科可以在 CFS 中加入针对天玑芯片大小核架构的特殊优化，高通可以为骁龙的调度策略写定制代码。这种做法的代价是内核碎片化——每家厂商的内核都是"自己的版本"，安全补丁和调度器改进很难统一推送。
 
@@ -292,7 +322,9 @@ GKI 的核心思路是：**内核是统一的标准版本，厂商的定制化�
 
 3. **JobScheduler 执行**：在 Android 12+ 上，Job 的执行间隔明显更不规律，特别是 Rare 桶的 App。可以通过 System Server 进程中的 JobScheduler track 观察任务的调度和执行情况。
 
-4. **WakeLock 持有时间**：Doze 模式下 WakeLock 被忽略，所以在 Perfetto 中可能会看到 WakeLock 被 acquire 后很久才被 release，但这期间 CPU 并没有实际活动——因为 Doze 覆盖了 WakeLock 的效果。
+4. **Standby Bucket 变化**：在长时间 Trace 中，可以观察到同一个 App 的 Job 执行频率随时间推移而降低——这正是 Adaptive Battery 在起作用。通过 System Server 进程中的 `JobScheduler` track，可以看到任务调度间隔逐渐拉长。
+
+5. **WakeLock 持有时间**：Doze 模式下 WakeLock 被忽略，所以在 Perfetto 中可能会看到 WakeLock 被 acquire 后很久才被 release，但这期间 CPU 并没有实际活动——因为 Doze 覆盖了 WakeLock 的效果。
 
 [待补充：不同版本 Perfetto Trace 截图对比]
 
