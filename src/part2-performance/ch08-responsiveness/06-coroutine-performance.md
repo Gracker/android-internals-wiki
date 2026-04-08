@@ -1,10 +1,10 @@
 ---
 title: "Kotlin Coroutine 性能实践"
 chapter: "8.6"
-status: ready-for-review
+status: finalized
 drafted_date: "2026-04-02"
 drafted_by: "openclaw-task2a"
-reviewed_date: "2026-04-06"
+reviewed_date: "2026-04-08"
 reviewed_by: "openclaw-task6"
 reworked_date: "2026-04-06"
 reworked_by: "openclaw-task2b"
@@ -56,7 +56,7 @@ related_chapters: ["1.5", "8.1", "8.2"]
 
 这些问题不是理论性的——我们在 Perfetto 中分析卡顿的时候，经常看到主线程在 `Choreographer#doFrame` 和业务代码之间出现大段的不明耗时，追进去发现是大量 coroutine dispatching 造成的调度开销。理解 coroutine 的性能模型，是为了在写代码的时候做出正确的选择，以及在分析 Trace 的时候能够识别 coroutine 相关的模式。
 
-这一节我们从 Dispatcher 的底层机制开始，逐步展开 coroutine 的性能特征，最终回到 Perfetto 中——告诉你在 Trace 里该怎么看 coroutine。
+这一节我们从 Dispatcher 的底层机制开始，逐步展开 coroutine 的性能特征，最终回到 Perfetto 中——告诉我们在 Trace 里该怎么看 coroutine。
 
 ## Dispatcher 选择对性能的影响
 
@@ -64,21 +64,21 @@ Coroutine 不自己运行代码，它需要 Dispatcher 来决定"这段代码在
 
 ### Dispatchers.Main：主线程的"排队窗口"
 
-在 Android 上，`Dispatchers.Main` 并不是一个线程池，而是对主线程 Looper 的一层封装。当你用 `launch(Dispatchers.Main)` 启动一个 coroutine 时，它做的事情和 `Handler.postMessage()` 本质上相同——把一个 Runnable 投递到主线程的消息队列里，等 Looper 轮到它时执行。
+在 Android 上，`Dispatchers.Main` 并不是一个线程池，而是对主线程 Looper 的一层封装。用 `launch(Dispatchers.Main)` 启动一个 coroutine 时，它做的事情和 `Handler.postMessage()` 本质上相同——把一个 Runnable 投递到主线程的消息队列里，等 Looper 轮到它时执行。
 
 这意味着两件事：第一，所有在 `Dispatchers.Main` 上的 coroutine 都是串行执行的，因为主线程只有一个；第二，每个 coroutine 的 dispatch 都要排队等主线程 MessageQueue 中前面的消息处理完。
 
-在 Perfetto 中，`Dispatchers.Main` 上的 coroutine 执行表现为 MainThread track 上的普通 CPU slice。你无法直接区分"这是 coroutine 在执行"还是"这是普通 Handler 消息在执行"——除非你开启了 coroutine debug 追踪（后面会讲）。
+在 Perfetto 中，`Dispatchers.Main` 上的 coroutine 执行表现为 MainThread track 上的普通 CPU slice。我们无法直接区分"这是 coroutine 在执行"还是"这是普通 Handler 消息在执行"——除非开启了 coroutine debug 追踪（后面会讲）。
 
 [已验证: 官方文档, developer.android.com/kotlin/coroutines/coroutines-contexts]
 
-`Dispatchers.Main.immediate` 是一个值得注意的变体。如果你已经在主线程上，调用 `withContext(Dispatchers.Main.immediate)` 不会重新 dispatch，而是立即在当前线程继续执行。这在某些"可能从主线程调用，也可能从后台线程调用"的函数中很有用，可以省掉一次不必要的 dispatch 开销。
+`Dispatchers.Main.immediate` 是一个值得注意的变体。如果已经在主线程上，调用 `withContext(Dispatchers.Main.immediate)` 不会重新 dispatch，而是立即在当前线程继续执行。这在某些"可能从主线程调用，也可能从后台线程调用"的函数中很有用，可以省掉一次不必要的 dispatch 开销。
 
 ### Dispatchers.Default：CPU 密集型任务的工作窃取线程池
 
 `Dispatchers.Default` 背后是一个基于 `ScheduledThreadPoolExecutor` 的工作窃取（work-stealing）线程池。线程数量等于 CPU 核心数（最少 2 个），可通过系统属性 `kotlinx.coroutines.default.parallelism` 调整。
 
-这个线程池的设计目标是 CPU 密集型任务——排序、JSON 解析、图片解码、加密计算等。如果你在这里做 I/O 阻塞操作（比如 `Thread.sleep` 或阻塞式文件读写），就会占用一个本该用来做计算的线程，导致其他 CPU 任务排队等待。
+这个线程池的设计目标是 CPU 密集型任务——排序、JSON 解析、图片解码、加密计算等。如果在这里做 I/O 阻塞操作（比如 `Thread.sleep` 或阻塞式文件读写），就会占用一个本该用来做计算的线程，导致其他 CPU 任务排队等待。
 
 一个常见的性能陷阱是这样的代码：
 
@@ -119,11 +119,11 @@ suspend fun processAndSave() {
 
 ### Dispatchers.Unconfined：没有调度的"裸跑"
 
-`Dispatchers.Unconfined` 是最特殊的一个。它在调用者所在的线程上启动 coroutine，但在第一个挂起点之后恢复时，会在" whoever resumed it"的线程上继续执行——不做任何 dispatch。
+`Dispatchers.Unconfined` 是最特殊的一个。它在调用者所在的线程上启动 coroutine，但在第一个挂起点之后恢复时，会在"whoever resumed it"的线程上继续执行——不做任何 dispatch。
 
 这听起来很"快"（因为没有 dispatch 开销），但实际上 `Unconfined` 在生产代码中几乎不应该使用。原因有两个：第一，它让代码"跑在哪个线程上"变得不可预测，很难推理；第二，它破坏了结构化并发的线程安全保障。Kotlin 官方文档也明确说它只适用于某些测试场景或特殊的性能关键路径。
 
-### 怎么选：一张决策图
+### 怎么选：快速选择指南
 
 简单来说，选择 Dispatcher 的逻辑是这样的：
 
@@ -154,11 +154,11 @@ suspend fun processAndSave() {
 2. **大量短生命周期 coroutine**：在循环中反复 `launch` 只执行几行代码的 coroutine。创建和调度一个 coroutine 的开销（约几微秒）远大于它执行的实际工作。
 3. **Dispatcher 饱和**：在 `Dispatchers.Default` 上启动了超过 CPU 核心数个 CPU 密集型任务，导致后续任务排队。
 
-在 Perfetto 中，如果你看到某个线程（比如 DefaultDispatcher-worker-1）在短时间内频繁出现很多非常短的 CPU slice，每个 slice 之间有小间隙，那很可能就是大量 coroutine 调度造成的。此时应该考虑：是否可以合并这些 coroutine？是否可以用更合适的粒度来切分任务？
+在 Perfetto 中，如果看到某个线程（比如 DefaultDispatcher-worker-1）在短时间内频繁出现很多非常短的 CPU slice，每个 slice 之间有小间隙，那很可能就是大量 coroutine 调度造成的。此时应该考虑：是否可以合并这些 coroutine？是否可以用更合适的粒度来切分任务？
 
 ### withContext 的实际开销
 
-一个好消息是，`withContext` 在 Kotlin 协程库中被高度优化了。特别是当你在 `Dispatchers.Default` 和 `Dispatchers.IO` 之间切换时，由于底层共享线程池，很多情况下不会发生真正的线程切换。Kotlin 2.2 进一步优化了 coroutine 调度，减少了上下文切换的额外成本。根据社区的基准测试，在多个并发网络请求场景（5-10 个），Kotlin 2.2 的改进可以将响应聚合时间缩短约 15%。
+一个好消息是，`withContext` 在 Kotlin 协程库中被高度优化了。在 `Dispatchers.Default` 和 `Dispatchers.IO` 之间切换时，由于底层共享线程池，很多情况下不会发生真正的线程切换。Kotlin 2.2 进一步优化了 coroutine 调度，减少了上下文切换的额外成本。根据社区的基准测试，在多个并发网络请求场景（5-10 个），Kotlin 2.2 的改进可以将响应聚合时间缩短约 15%。
 
 [已验证: 官方博客, Kotlin 2.2 release notes / kotlinx.coroutines changelog]
 
@@ -168,13 +168,13 @@ suspend fun processAndSave() {
 
 ### 机制：父子关系的级联取消
 
-在结构化并发模型中，每个 coroutine 都有一个父级。当你在 `viewModelScope.launch` 里启动一个 coroutine 时，它自动成为 ViewModel scope 的子 coroutine。核心规则是：
+在结构化并发模型中，每个 coroutine 都有一个父级。在 `viewModelScope.launch` 里启动一个 coroutine 时，它自动成为 ViewModel scope 的子 coroutine。核心规则是：
 
 1. **父等待子**：父 coroutine 会等待所有子 coroutine 完成才结束。
 2. **父取消子**：如果父 coroutine 被取消，所有子 coroutine 自动被取消。
 3. **子失败通知父**：如果一个子 coroutine 抛出未捕获的异常，父 coroutine 和所有兄弟 coroutine 都会被取消。
 
-这三个规则确保了一件事：在任何时刻，你都能清楚地知道系统中有多少 coroutine 在运行、它们的生命周期是什么。
+这三个规则确保了一件事：在任何时刻，我们都能清楚地知道系统中有多少 coroutine 在运行、它们的生命周期是什么。
 
 ### 从性能角度：不使用结构化并发的后果
 
@@ -211,7 +211,7 @@ viewModelScope.launch {
 }
 ```
 
-等等——这其实不会泄漏。因为结构化并发的"父等待子"规则，父 coroutine 会等待 `launch` 创建的子 coroutine 完成。但如果你用 `async` 并忘记 `await`：
+等等——这其实不会泄漏。因为结构化并发的"父等待子"规则，父 coroutine 会等待 `launch` 创建的子 coroutine 完成。但如果用 `async` 并忘记 `await`：
 
 ```kotlin
 viewModelScope.launch {
@@ -225,7 +225,7 @@ viewModelScope.launch {
 
 在结构化并发的框架下，即使是"忘记 await"也不会泄漏，因为父 scope 仍然持有子 Job 的引用。真正的泄漏发生在打破结构化并发的时候——比如用 `GlobalScope.async` 或者手动管理 Job。
 
-[自动发现] 结构化并发的另一个性能好处是：它天然限制了并发度。因为父 coroutine 等待子 coroutine，你不可能无意识地"扇出"上千个并发任务。这在不限制并发度的 `CoroutineScope` 中可能发生，但在 `viewModelScope` 这种受生命周期的 scope 中自然被约束了。
+[自动发现] 结构化并发的另一个性能好处是：它天然限制了并发度。因为父 coroutine 等待子 coroutine，不可能无意识地"扇出"上千个并发任务。这在不限制并发度的 `CoroutineScope` 中可能发生，但在 `viewModelScope` 这种受生命周期的 scope 中自然被约束了。
 
 ## Flow 的背压与性能
 
@@ -237,11 +237,11 @@ Flow 是冷流（cold stream）——它不会自己开始发射数据，只有�
 
 这意味着 Flow 天然就有背压能力：生产者每次调用 `emit()` 时，如果消费者还没处理完上一个值，`emit()` 就会挂起（suspend），等待消费者处理完毕。这和 RxJava 中 `Observable` 的"无限缓冲"行为不同——Flow 不会默默地堆积数据，而是通过 suspend 机制让生产者和消费者保持同步。
 
-这种默认行为对性能的影响是：如果消费者慢，生产者就会被拖慢。这在某些场景下不是你想要的。
+这种默认行为对性能的影响是：如果消费者慢，生产者就会被拖慢。这不一定是期望的行为。
 
 ### conflate：只关心最新值
 
-当你用 `conflate()` 修饰一个 Flow 时，生产者不会被消费者拖慢。它的行为是：如果消费者还在处理上一个值时生产者又发了新值，旧值就被丢弃，消费者最终只处理最新的那个值。
+用 `conflate()` 修饰一个 Flow 时，生产者不会被消费者拖慢。它的行为是：如果消费者还在处理上一个值时生产者又发了新值，旧值就被丢弃，消费者最终只处理最新的那个值。
 
 ```kotlin
 sensorFlow
@@ -283,7 +283,7 @@ searchQueryFlow
     }
 ```
 
-**性能影响**：`collectLatest` 的开销在于取消和重启。取消一个 coroutine 本身的开销很小（设置状态位 + 抛出 CancellationException），但如果你的处理函数申请了资源（数据库连接、网络请求等），需要确保正确处理取消。
+**性能影响**：`collectLatest` 的开销在于取消和重启。取消一个 coroutine 本身的开销很小（设置状态位 + 抛出 CancellationException），但如果处理函数申请了资源（数据库连接、网络请求等），需要确保正确处理取消。
 
 **取舍总结**：选择背压策略的核心是回答一个问题——"中间值重要吗？"如果重要，用 `buffer`；如果不重要，用 `conflate` 或 `collectLatest`。
 
@@ -291,7 +291,7 @@ searchQueryFlow
 
 ## Coroutine 在 Perfetto 中的追踪
 
-这是很多开发者头疼的问题：在 Perfetto 中，coroutine 的执行看起来就像普通的线程执行——你看到的是线程在跑、CPU 在用，但无法区分"这段执行是哪个 coroutine 触发的"。
+这是很多开发者头疼的问题：在 Perfetto 中，coroutine 的执行看起来就像普通的线程执行——我们看到的是线程在跑、CPU 在用，但无法区分"这段执行是哪个 coroutine 触发的"。
 
 ### kotlinx-coroutines-debug：DebugProbes
 
@@ -318,11 +318,11 @@ searchQueryFlow
 
 ### 在 Perfetto 中识别 Coroutine 行为
 
-虽然 Perfetto 不能直接标记 coroutine，但你可以通过以下模式来间接识别：
+虽然 Perfetto 不能直接标记 coroutine，但我们可以通过以下模式来间接识别：
 
-1. **Dispatcher 线程名称**：`DefaultDispatcher-worker-N` 是 `Dispatchers.Default` 和 `Dispatchers.IO` 的线程。如果你看到这些线程有大量非常短的 CPU slice（< 1ms），说明有大量小 coroutine 在调度。
+1. **Dispatcher 线程名称**：`DefaultDispatcher-worker-N` 是 `Dispatchers.Default` 和 `Dispatchers.IO` 的线程。如果看到这些线程有大量非常短的 CPU slice（< 1ms），说明有大量小 coroutine 在调度。
 
-2. **主线程的 dispatch 模式**：在主线程 track 上，如果你看到很多微小的"锯齿"——一小段执行后挂起，再一小段执行——这可能是 coroutine 在主线程上反复 resume/suspend 的模式。
+2. **主线程的 dispatch 模式**：在主线程 track 上，如果看到很多微小的"锯齿"——一小段执行后挂起，再一小段执行——这可能是 coroutine 在主线程上反复 resume/suspend 的模式。
 
 3. **结合 coroutine name**：可以使用 `CoroutineName("MyCoroutine")` 上下文元素给 coroutine 命名，配合自定义 trace event，在 Perfetto 中创建可识别的标记：
 
@@ -373,7 +373,7 @@ scope.launch {
 
 ### 场景 1：低延迟传感器处理
 
-如果你需要以 120Hz 处理传感器数据（每 8.33ms 一次），默认 Dispatcher 的共享线程池可能引入不可接受的抖动。这时可以创建一个专用单线程 Dispatcher：
+如果需要以 120Hz 处理传感器数据（每 8.33ms 一次），默认 Dispatcher 的共享线程池可能引入不可接受的抖动。这时可以创建一个专用单线程 Dispatcher：
 
 ```kotlin
 val sensorDispatcher = Executors.newSingleThreadExecutor { r ->
@@ -387,7 +387,7 @@ val sensorDispatcher = Executors.newSingleThreadExecutor { r ->
 
 ### 场景 2：限制特定操作的并发度
 
-如果你有一个第三方 SDK 的阻塞 API，它不支持超过 4 个并发调用，可以用信号量限制：
+如果有一个第三方 SDK 的阻塞 API，它不支持超过 4 个并发调用，可以用信号量限制：
 
 ```kotlin
 val sdkSemaphore = Semaphore(4)
@@ -443,9 +443,9 @@ fun testDataLoad() = runTest {
 
 **正常模式**：DefaultDispatcher worker 线程上有规律的计算任务，执行时间在毫秒级，线程利用率均匀。
 
-**异常模式一：线程饥饿**。如果你看到 DefaultDispatcher worker 线程长时间被占用（几百毫秒以上的长 slice），很可能是在 Default 上做了阻塞操作。在 Perfetto 中的表现是 worker 线程的 CPU slice 持续不释放，同时主线程或其他等待 Default 线程的 coroutine 出现排队延迟。
+**异常模式一：线程饥饿**。如果看到 DefaultDispatcher worker 线程长时间被占用（几百毫秒以上的长 slice），很可能是在 Default 上做了阻塞操作。在 Perfetto 中的表现是 worker 线程的 CPU slice 持续不释放，同时主线程或其他等待 Default 线程的 coroutine 出现排队延迟。
 
-**异常模式二：调度风暴**。如果你在很短的时间内（比如一个 VSync 周期）看到大量极短的 CPU slice（几十微秒级别）在 DefaultDispatcher worker 线程上密集出现，可能是大量小 coroutine 被反复创建和调度。在 Trace 中表现为线程 track 上密集的"碎锯齿"。
+**异常模式二：调度风暴**。如果在很短的时间内（比如一个 VSync 周期）看到大量极短的 CPU slice（几十微秒级别）在 DefaultDispatcher worker 线程上密集出现，可能是大量小 coroutine 被反复创建和调度。在 Trace 中表现为线程 track 上密集的"碎锯齿"。
 
 [图：Perfetto 中 DefaultDispatcher 线程的正常 vs 异常模式对比]
 
@@ -462,11 +462,11 @@ Coroutine 的性能与本书其他章节有紧密联系：
 
 ### 误区 1："suspend 函数就是异步的，不会阻塞"
 
-`suspend` 只是表示"这个函数可以挂起"，并不意味着它不阻塞线程。如果你在 `suspend` 函数内部调用了阻塞 API（如 `Thread.sleep`、阻塞 I/O），它仍然会阻塞当前线程。`suspend` 函数只有在正确使用 `withContext` 切换到合适的 Dispatcher 时才能实现真正的非阻塞。
+`suspend` 只是表示"这个函数可以挂起"，并不意味着它不阻塞线程。如果在 `suspend` 函数内部调用了阻塞 API（如 `Thread.sleep`、阻塞 I/O），它仍然会阻塞当前线程。`suspend` 函数只有在正确使用 `withContext` 切换到合适的 Dispatcher 时才能实现真正的非阻塞。
 
 ### 误区 2："Dispatchers.IO 可以处理任何后台任务"
 
-`Dispatchers.IO` 的线程池上限是 64 个线程。如果你的应用同时发起大量 I/O 操作（比如同时下载几百个文件），IO 线程池会被耗尽，后续任务排队等待。这时应该考虑使用自定义 Dispatcher 或分批处理。
+`Dispatchers.IO` 的线程池上限是 64 个线程。如果应用同时发起大量 I/O 操作（比如同时下载几百个文件），IO 线程池会被耗尽，后续任务排队等待。这时应该考虑使用自定义 Dispatcher 或分批处理。
 
 ### 误区 3："withContext 的切换开销很大，应该尽量少用"
 
