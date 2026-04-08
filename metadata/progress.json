@@ -2089,6 +2089,21 @@
       "verification_level": "L2",
       "word_count": "~7000",
       "completed_at": "2026-04-09T01:12:15.521501"
+    },
+    {
+      "chapter": "1.16",
+      "section": "1.16",
+      "title": "Audio Pipeline 延迟与性能",
+      "status": "ready-for-review",
+      "drafted_date": "2026-04-09",
+      "drafted_by": "openclaw-task2a",
+      "anchors_covered": 7,
+      "anchors_total": 7,
+      "extensions_covered": 2,
+      "extensions_total": 2,
+      "verification_level": "L2",
+      "word_count": "~8000",
+      "completed_at": "2026-04-09T04:10:00+08:00"
     }
   ],
   "ready_for_review": 5,
@@ -2414,6 +2429,20 @@
     }
   ],
   "history": [
+    {
+      "date": "2026-04-09",
+      "section": "1.16",
+      "title": "Audio Pipeline 延迟与性能",
+      "action": "draft-completed",
+      "word_count": "~8000",
+      "anchors_covered": 7,
+      "anchors_total": 7,
+      "extensions_covered": 2,
+      "extensions_total": 2,
+      "verification_level": "L2",
+      "drafted_date": "2026-04-09",
+      "drafted_by": "openclaw-task2a"
+    },
     {
       "date": "2026-04-09",
       "section": "2.5",
@@ -5264,6 +5293,15 @@
       "polish_date": "2026-04-09",
       "polish_by": "task2b-polish",
       "changes_count": 14
+    },
+    {
+      "section": "10.5",
+      "title": "案例集",
+      "polish_round": 1,
+      "polish_date": "2026-04-09",
+      "polish_by": "task2b-polish",
+      "changes": 10,
+      "status": "ready-for-review"
     }
   ],
   "5.7": {
