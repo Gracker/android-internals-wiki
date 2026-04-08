@@ -1,17 +1,20 @@
 ---
 title: "Kotlin Coroutine 性能实践"
 chapter: "8.6"
-status: finalized
+status: ready-for-review
 drafted_date: "2026-04-02"
 drafted_by: "openclaw-task2a"
 reviewed_date: "2026-04-08"
 reviewed_by: "openclaw-task6"
 reworked_date: "2026-04-06"
 reworked_by: "openclaw-task2b"
+polish_count: 1
+polish_date: "2026-04-08"
+polish_by: "task2b-polish"
 applicable_versions: "Android 8 (API 26) - Android 16 (API 36)"
 last_verified: "2026-04-02"
 last_verified_against: "kotlinx.coroutines 1.9.x / Kotlin 2.1.x"
-confidence: medium
+confidence: medium-high
 sources:
   - type: official
     path: "https://kotlinlang.org/docs/coroutines-guide.html"
@@ -20,7 +23,7 @@ sources:
   - type: blog
     path: "https://kotlinlang.org/docs/coroutines-context-and-dispatchers.html"
 tags: ['coroutine', 'performance', 'dispatcher', 'structured-concurrency', 'flow', 'backpressure']
-related_chapters: ["1.5", "8.1", "8.2"]
+related_chapters: ["1.5", "7.7", "8.1", "8.2"]
 ---
 
 # Kotlin Coroutine 性能实践
@@ -34,7 +37,7 @@ related_chapters: ["1.5", "8.1", "8.2"]
 - 🔹 Coroutine 上下文切换开销 vs 线程切换开销的量化对比
 - 🔹 结构化并发（Structured Concurrency）对资源泄漏的防护
 - 🔹 Flow 的背压与性能：conflate、buffer、collectLatest 的取舍
-- 🔹 Coroutine 在 Perfetto/Systrace 中的追踪：kotlinx-coroutines-debug
+- 🔹 Coroutine 在 Perfetto 中的追踪：kotlinx-coroutines-debug
 
 ### 扩展（可选深入）
 
@@ -125,7 +128,7 @@ suspend fun processAndSave() {
 
 ### 怎么选：快速选择指南
 
-简单来说，选择 Dispatcher 的逻辑是这样的：
+Dispatcher 的选择逻辑如下：
 
 - **UI 操作** → `Dispatchers.Main`
 - **CPU 密集型计算** → `Dispatchers.Default`
@@ -163,6 +166,8 @@ suspend fun processAndSave() {
 [已验证: 官方博客, Kotlin 2.2 release notes / kotlinx.coroutines changelog]
 
 ## 结构化并发对资源泄漏的防护
+
+理解了 coroutine 调度与切换的开销之后，还需要关注另一个维度：资源生命周期。一个调度开销为零的 coroutine，如果在不该运行的时候还在运行，对性能的损害远大于几十次多余的 context switch。
 
 结构化并发（Structured Concurrency）不是一个性能优化技巧，它是 Kotlin coroutine 设计的基础原则。但从性能角度看，它是最重要的"防止性能劣化"机制——因为一个泄漏的 coroutine 不仅浪费 CPU，还可能持有对 Activity/Fragment 的引用，导致整个对象图无法被 GC 回收。
 
@@ -211,7 +216,7 @@ viewModelScope.launch {
 }
 ```
 
-等等——这其实不会泄漏。因为结构化并发的"父等待子"规则，父 coroutine 会等待 `launch` 创建的子 coroutine 完成。但如果用 `async` 并忘记 `await`：
+等等——这不会泄漏。因为结构化并发的"父等待子"规则，父 coroutine 会等待 `launch` 创建的子 coroutine 完成。但如果用 `async` 并忘记 `await`：
 
 ```kotlin
 viewModelScope.launch {
@@ -219,7 +224,7 @@ viewModelScope.launch {
         expensiveComputation()
     }
     // 忘记调用 deferred.await()
-    // 但这里其实也没问题——launch 仍然会等 async 的子 coroutine 完成
+    // 但这里也没问题——launch 仍然会等 async 的子 coroutine 完成
 }
 ```
 
@@ -228,6 +233,8 @@ viewModelScope.launch {
 [自动发现] 结构化并发的另一个性能好处是：它天然限制了并发度。因为父 coroutine 等待子 coroutine，不可能无意识地"扇出"上千个并发任务。这在不限制并发度的 `CoroutineScope` 中可能发生，但在 `viewModelScope` 这种受生命周期的 scope 中自然被约束了。
 
 ## Flow 的背压与性能
+
+结构化并发解决了"coroutine 什么时候结束"的问题，但在数据流场景中还有一个更细粒度的性能问题：生产者比消费者快的时候怎么办？这就是 Flow 面临的背压问题。
 
 Flow 是 Kotlin 协程的响应式流 API。和 RxJava 的 Observable 类似，Flow 也面临"生产者比消费者快"的问题——也就是背压（backpressure）。Flow 的背压处理方式与 RxJava 不同，因为它基于 suspend 函数而非回调。
 
@@ -428,7 +435,7 @@ fun testDataLoad() = runTest {
 
 [已验证: 官方文档, developer.android.com/kotlin/coroutines/test]
 
-## 在 Perfetto/工具中的表现
+## 在 Perfetto 中的表现
 
 ### 各 Dispatcher 在 Trace 中的对应
 
@@ -456,7 +463,7 @@ Coroutine 的性能与本书其他章节有紧密联系：
 - **1.5 线程模型**：Coroutine 的 Dispatcher 本质上是对线程的调度封装。理解 Android 的线程模型是理解 coroutine 性能的前提。
 - **8.1 响应速度原理**：Coroutine 是实现"主线程不阻塞"的核心手段，但错误的 Dispatcher 选择或过度调度也会成为响应慢的原因。
 - **8.2 App 启动全流程**：启动阶段大量使用 coroutine 做初始化任务。Dispatcher 选择不当会导致启动时的线程竞争。
-- **7.7 Jetpack Compose 性能**：Compose 的副作用 API（`LaunchedEffect`、`rememberCoroutineScope`）底层都是 coroutine，选错 Dispatcher 会影响 Compose 重组性能。
+- **7.7 Jetpack Compose 性能**：Compose 的副作用 API（`LaunchedEffect`、`rememberCoroutineScope`）底层都是 coroutine。选错 Dispatcher 会影响 Compose 重组性能，在高频重组场景中尤为明显。
 
 ## 常见问题与误区
 
