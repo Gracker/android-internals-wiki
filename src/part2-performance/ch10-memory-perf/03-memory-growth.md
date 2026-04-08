@@ -2,7 +2,7 @@
 title: "内存持续增长"
 chapter: "10.3"
 section: "10.3"
-status: finalized
+status: ready-for-review
 drafted_date: "2026-04-02"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 8.0 (API 26) - Android 16 (API 36)"
@@ -10,6 +10,9 @@ last_verified: "2026-04-02"
 last_verified_against: "AOSP android-16.0.0_r1"
 reviewed_date: "2026-04-08"
 reviewed_by: "openclaw-task6"
+polish_count: 1
+polish_date: "2026-04-08"
+polish_by: "task2b-polish"
 confidence: medium
 word_count: "~8000"
 sources:
@@ -122,7 +125,7 @@ Bitmap 累积的典型路径有两条：一是前面说的缓存无淘汰，图�
 
 内存泄漏的核心特征是：即使触发 GC，增长的那部分内存也不会被回收。因为泄漏的对象仍然有可达引用链，GC 认为它们是"活的"。
 
-而非泄漏性增长的情况是：如果你手动清除缓存（比如调用 `cache.evictAll()`）或释放相关资源，内存会立刻回落。换言之，这些对象在技术上是可以被 GC 回收的，只是业务逻辑上一直没有触发回收条件。
+而非泄漏性增长的情况是：如果手动清除缓存（比如调用 `cache.evictAll()`）或释放相关资源，内存会立刻回落。换言之，这些对象在技术上是可以被 GC 回收的，只是业务逻辑上一直没有触发回收条件。
 
 在 Android Studio Memory Profiler 中，可以通过以下方式验证：触发一次 GC（点击垃圾桶图标），观察 Heap 的大小变化。如果 GC 后 Heap 明显缩小但随后又快速增长回来，大概率是非泄漏性的缓存增长；如果 GC 后 Heap 几乎不变，更可能是泄漏。
 
@@ -228,7 +231,7 @@ public void onTrimMemory(int level) {
 
 ### entryRemoved 的资源释放
 
-当条目从 `LruCache` 中被淘汰时，`entryRemoved()` 方法会被回调。如果你的缓存值持有需要显式释放的资源（比如 Bitmap），可以在这里做清理：
+当条目从 `LruCache` 中被淘汰时，`entryRemoved()` 方法会被回调。如果缓存值持有需要显式释放的资源（比如 Bitmap），可以在这里做清理：
 
 ```java
 @Override
@@ -345,7 +348,7 @@ Native Heap 的碎片化在应用层面很难直接量化，但可以通过以�
 
 ## WebView 内存增长问题与多进程 WebView
 
-WebView 是内存增长的重灾区。Chromium 渲染引擎本身就非常消耗内存——每个 WebView 实例背后都有一个 Renderer 进程的内存开销，包括 V8 JavaScript 引擎的堆、Blink 渲染引擎的 DOM 树、GPU 进程的纹理缓存等。
+前面讨论的增长类型主要发生在应用自身的代码中。但有一类组件，它带来的内存增长往往超出开发者的预期——WebView。Chromium 渲染引擎本身就非常消耗内存——每个 WebView 实例背后都有一个 Renderer 进程的内存开销，包括 V8 JavaScript 引擎的堆、Blink 渲染引擎的 DOM 树、GPU 进程的纹理缓存等。
 
 在一个典型的混合应用中（原生 + WebView），如果用户在 WebView 中连续浏览多个页面，WebView 内部的缓存（HTTP 缓存、图片缓存、JS Heap）会持续增长。更严重的是，WebView 的一些内部数据结构（如 Visited Links 表、Service Worker 缓存）的生命周期与 WebView 进程绑定，即使销毁 WebView 实例也可能无法完全释放。
 
@@ -361,7 +364,7 @@ WebView 是内存增长的重灾区。Chromium 渲染引擎本身就非常消耗
 
 ## 长时间运行 App 的内存管理策略
 
-某些类型的应用天然需要长时间运行：音乐播放器、导航应用、运动追踪器、IM 应用。这类应用的内存管理需要一套不同于普通应用的策略。
+前面讨论的治理手段适用于大多数应用的日常使用场景。但某些类型的应用天然需要长时间运行：音乐播放器、导航应用、运动追踪器、IM 应用。这类应用的内存管理需要一套不同于普通应用的策略。
 
 **设定全局内存预算**：根据目标设备的典型内存配置，为应用设定一个总的内存预算（比如 200 MB），然后将预算分配到各个模块：图片缓存 50 MB、音视频缓冲区 40 MB、数据缓存 30 MB、其他 80 MB。每个模块需要在预算内自行管理分配和释放。
 
