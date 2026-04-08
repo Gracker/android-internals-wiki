@@ -58,6 +58,7 @@ tags:
   - [2.18 Adaptive Refresh Rate 与动态帧率控制](part1-fundamentals/ch02-rendering/18-adaptive-refresh-rate.md)
   - [2.19 刷新率切换与帧率适配性能](part1-fundamentals/ch02-rendering/19-refresh-rate-switching.md)
   - [2.20 多窗口与桌面模式渲染性能](part1-fundamentals/ch02-rendering/20-multiwindow-desktop-rendering.md)
+  - [2.21 文字渲染性能](part1-fundamentals/ch02-rendering/21-text-rendering-performance.md)
 
 - [第 3 章：输入系统](part1-fundamentals/ch03-input/README.md)
   - [3.1 Input 事件分发全流程](part1-fundamentals/ch03-input/01-input-dispatch.md)
@@ -112,6 +113,7 @@ tags:
   - [7.10 图片加载与 Bitmap 性能优化](part2-performance/ch07-smoothness/10-image-bitmap-performance.md)
   - [7.11 WebView 渲染性能与优化](part2-performance/ch07-smoothness/11-webview-performance.md)
   - [7.12 View 体系性能优化：布局层级、inflate 与 measure/layout 开销](part2-performance/ch07-smoothness/12-view-layout-performance.md)
+  - [7.13 SystemUI 性能分析](part2-performance/ch07-smoothness/13-systemui-performance.md)
 
 - [第 8 章：响应速度](part2-performance/ch08-responsiveness/README.md)
   - [8.1 响应速度原理](part2-performance/ch08-responsiveness/01-responsiveness-principles.md)
@@ -130,6 +132,7 @@ tags:
   - [9.3 ANR 分析方法](part2-performance/ch09-anr/03-anr-analysis.md)
   - [9.4 特殊场景的 ANR](part2-performance/ch09-anr/04-special-anr.md)
   - [9.5 案例集](part2-performance/ch09-anr/05-case-studies.md)
+  - [9.6 Notification 性能与 ANR](part2-performance/ch09-anr/06-notification-performance-anr.md)
 
 - [第 10 章：内存性能](part2-performance/ch10-memory-perf/README.md)
   - [10.1 App 内存分析](part2-performance/ch10-memory-perf/01-app-memory-analysis.md)
