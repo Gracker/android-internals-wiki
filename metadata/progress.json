@@ -4616,6 +4616,11 @@
       "reviewed_by": "openclaw-task6",
       "polish_date": "2026-04-06",
       "polish_by": "task2b-polish"
+    },
+    "8.5": {
+      "title": "案例集",
+      "status": "reviewed",
+      "reviewed_date": "2026-04-08"
     }
   },
   "5.1": {

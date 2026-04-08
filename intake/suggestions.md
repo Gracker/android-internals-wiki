@@ -1,9 +1,8 @@
 ---
 tags:
   - android
-  - npu
-  - blog
----
+  - log
+
 
 ## 2026-03-30 15:00 前沿研究建议
 
@@ -704,3 +703,87 @@ tags:
 - 新 Android 版本 Preview/Beta 带来的新知识点（由 Task5 研究管线驱动）
 - 高爷读者反馈中的新需求（由 intake/suggestions.md 收集）
 - OEM 厂商优化实践中的新案例（由 ch17 扩展驱动）
+
+
+### 2026-04-08 08:00 知识缺口挖掘（Task 2A）
+
+**检查方向**：
+1. source-index.json 高质量未映射素材：9 项 ≥16 分，全部已映射现有章节（Camera Perfetto×2/Proguard/支付宝体验/Android14发布/ANR非App错/IO优化/CPU利用率）
+2. 研究素材（2026-04-07 10篇）：全部映射到现有章节（§16.4/§6.x/§4.7/§8.7/§4.8/§1.15/§7.9/§14.10）
+3. 每日信息（2026-04-07）：UI-Voyager(GUI Agent)/DeliQueue/Android17适配/Android15适配/性能问题实证论文 — 全部映射
+4. AOSP 源码结构：frameworks/base 核心服务已全覆盖，system/ 守护进程已全覆盖
+5. 官方文档：developer.android.com 性能 topic 页面已全覆盖
+6. 已有章节扩展锚点：仅 1 个空扩展（§7.8 Compose LazyColumn vs RecyclerView），不足以独立成节
+7. 候选缺口「Android On-Device AI/ML 推理性能 (NNAPI/LiteRT/NPU)」：评分 16/20（素材4+相关性3+需求4+时效5），但与全书 Perfetto/系统分析核心范式偏离较大（ML 推理在 Perfetto 中缺乏可视化追踪点），暂不录入
+8. 候选缺口「Android 游戏性能综合优化」：评分 15/20，但核心内容已分散覆盖于 §5.9 ADPF/§2.17 Frame Pacing/§7.4 典型场景，独立成节价值有限
+
+**结论**：本轮未发现评分 ≥ 14 且与全书定位高度匹配的新知识缺口。全书 148 个源文件、125 个已有实质内容，知识覆盖趋于完备。
+**建议**：后续关注 Android 17 Beta/RC 阶段新披露的性能变更（由 Task5 研究管线驱动），以及高爷读者反馈中的新需求。
+
+
+## 2026-04-08 15:00 Task2A 知识缺口挖掘报告 — 全覆盖确认
+
+> 本轮检查方向：素材索引、研究素材、每日信息、AOSP 结构、官方文档、已有章节扩展
+> 结论：无评分 >= 14 的知识缺口，项目已达到全面覆盖状态
+
+### 已检查的候选缺口（均未达阈值）
+
+| 候选 | 素材 | 相关性 | 需求度 | 时效性 | 总分 | 不创建原因 |
+|------|------|--------|--------|--------|------|------------|
+| Font/Text Rendering | 2 | 4 | 3 | 2 | 11 | 素材不足，无 source-index 条目 |
+| Analytics/SDK Performance | 2 | 3 | 4 | 2 | 11 | 话题过于广泛，非系统级机制 |
+| Gradle Build Performance | 3 | 2 | 4 | 2 | 11 | 与全书"系统运行机制+性能优化"定位不匹配 |
+| Notification Dispatch | 2 | 3 | 2 | 2 | 9 | 性能影响有限，非核心性能维度 |
+| Process Death & SavedState | 2 | 3 | 2 | 2 | 9 | 素材不足，可归入现有章节扩展 |
+| System UI Rendering | 2 | 3 | 2 | 2 | 9 | OEM 专属话题，受众窄 |
+| Automotive/Wear | 1 | 2 | 2 | 3 | 8 | 超出全书范围 |
+| Sensor Pipeline | 1 | 3 | 2 | 2 | 8 | 素材极度匮乏 |
+| Accessibility Performance | 1 | 2 | 1 | 2 | 6 | 话题过窄 |
+| OTA/Update Engine | 1 | 2 | 1 | 2 | 6 | 非应用/系统开发者关注焦点 |
+
+### queue.json 状态漂移备注
+以下 queue 条目标记为 pending 但实际已 ready-for-review（建议 Task2B 或 metadata 清理任务修正）：
+- 4.7 16KB Page Size
+- 8.7 Baseline Profiles
+- 1.15 JNI/NDK
+- 14.10 eBPF/BPF
+- 2.19 刷新率切换
+- 7.10 Bitmap
+- 16.5 Android 17 变更
+- 2.20 多窗口桌面
+- 15.8 性能问题实证
+
+### 下一步建议
+- 聚焦现有 pending 章节的内容加工（1.14 锁竞争、7.11 WebView）
+- 修正 queue.json 状态漂移
+- 转向 task2b 精修 + task6 审校管线
+
+## 2026-04-08 18:00 知识缺口挖掘记录（Task 2A）
+
+### 检查范围
+- source-index.json: 271 篇素材，9 篇高分无映射（均已有对应章节）
+- 研究素材: 2026-04-08 最新 9 篇（Audio×3、Network×1、Image×3、Kernel×2）
+- 每日信息: 2026-04-05~07 共 3 天
+- AOSP 结构: frameworks/base/services（AMS/PMS/WMS/CP 已覆盖）
+- 官方文档: Android 17 API 37 性能变更（DeliQueue/GenGC/static final/ProfilingManager 均已覆盖）
+- 已有章节扩展: Ch3 Input 较薄但已有 3.5/3.6 待加工 draft
+
+### 候选缺口评估（均未达 ≥14 分）
+1. **Notification 性能与 ANR** — 素材 2/5 · 相关 3/5 · 需求 3/5 · 时效 2/5 = 10/20
+2. **DisplayManagerService 性能** — 素材 2/5 · 相关 4/5 · 需求 3/5 · 时效 4/5 = 13/20
+3. **SELinux 性能影响** — 素材 1/5 · 相关 2/5 · 需求 2/5 · 时效 1/5 = 6/20
+4. **ConnectivityService 性能** — 素材 1/5 · 相关 2/5 · 需求 2/5 · 时效 2/5 = 7/20
+5. **Kernel ftrace/perf_events** — 素材 2/5 · 相关 3/5 · 需求 2/5 · 时效 2/5 = 9/20
+
+### 结论
+全书 118+ 小节已覆盖 Android 性能分析核心知识体系。剩余工作集中在：
+1. 已有 draft 章节的加工完善（10 个 draft）
+2. FRESHNESS 时效性更新（54 条 pending）
+3. 审校精修推进（Task 2B + Task 6）
+
+## [Task6 Review] 8.5 案例集 — 2026-04-08
+- **类型**：需确认
+- **位置**：误区二段落（"Baseline Profiles 只对首次启动有效"的纠正段落末尾）
+- **问题**："Android 13+ 引入了 ART Mainline 模块" — ART 作为 APEX Mainline 模块从 Android 12 (API 31) 起已存在。此处写 Android 13+ 可能不准确。如果是指特定的 Profile 命中率增强，需补充说明。
+- **建议**：确认版本号后修正。若准确为 Android 12，改为 "Android 12+"；若 Android 13 确有相关增强，补充具体说明。
+- **review 日志**：logs/review/2026-04-08-1920-review.md

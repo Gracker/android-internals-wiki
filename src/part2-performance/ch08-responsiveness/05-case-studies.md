@@ -2,9 +2,9 @@
 title: "案例集"
 chapter: "8.5"
 section: "8.5"
-status: ready-for-review
+status: reviewed
 drafted_date: "2026-04-02"
-reviewed_date: "2026-04-06"
+reviewed_date: "2026-04-08"
 reviewed_by: openclaw-task6
 applicable_versions: "Android 8.0 (API 26) - Android 16 (API 36)"
 last_verified: "2026-04-02"
@@ -61,7 +61,7 @@ related_chapters: ["8.1", "8.2", "8.3", "8.4", "3.2"]
 
 ---
 
-## 案例一：Reddit 冷启动优化——Baseline Profiles + R8 Full Mode 组合拳
+## 案例一：Reddit 冷启动优化——Baseline Profiles + R8 Full Mode
 
 ### 问题背景
 
@@ -244,7 +244,7 @@ ANR 率降低 25% 是一个附带收益。分析原因，R8 的代码缩减移�
 
 ## 案例四：页面切换优化——从 500ms 到 150ms 的 Activity 跳转
 
-前面三个案例都聚焦在冷启动优化。但在实际项目中，用户感知最频繁的“慢”往往不是冷启动——而是页面跳转。点击一个商品、打开一个详情、切换一个 Tab，这些操作的频率远高于冷启动，对应的响应时间要求也更苛刻。这个案例展示如何将 8.4 节讨论的 Activity/Fragment 切换原理落地到具体项目中。
+前面三个案例都聚焦在冷启动优化。但在实际项目中，用户感知最频繁的“慢”往往不是冷启动——而是页面跳转。点击一个商品、打开一个详情、切换一个 Tab，这些操作的频率远高于冷启动，对应的响应时间要求也更苛刻。这个案例展示如何将 8.4 节讨论的 Activity/Fragment 切换原理应用到具体项目中。
 
 ### 问题背景
 
@@ -395,7 +395,7 @@ Google 的内部基准测试显示 [已验证: developer.android.com, Google Blo
 
 **误区二：“Baseline Profiles 只对首次启动有效，之后就失效了。”**
 
-不准确。Baseline Profiles 在每次 App 更新后重新生效——因为更新会清空之前 JIT 编译的缓存。对于高频更新的 App（社交、电商类通常每 1-2 周更新一次），Baseline Profiles 的实际生效频率比想象中高。此外，Android 13+ 引入了 ART Mainline 模块，系统可以通过 Google Play 更新编译策略，进一步提升了 Profile 的命中率。
+不准确。Baseline Profiles 在每次 App 更新后重新生效——因为更新会清空之前 JIT 编译的缓存。对于高频更新的 App（社交、电商类通常每 1-2 周更新一次），Baseline Profiles 的实际生效频率比想象中高。此外，Android 13+ 引入了 ART Mainline 模块，系统可以通过 Google Play 更新编译策略，进一步提升了 Profile 的命中率。[存疑: ART 作为 Mainline 模块在 Android 12 (API 31) 已引入，此处写 Android 13+ 可能不准确，待确认具体的 Profile 命中率提升是否为 Android 13 新增]
 
 **误区三：“R8 full mode 风险太高，不敢开。”**
 
