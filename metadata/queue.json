@@ -1657,5 +1657,43 @@
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-09T01:30:00",
     "status": "pending"
+  },
+  {
+    "section": "2.1",
+    "section_title": "Android 渲染架构全景",
+    "priority": 95,
+    "reason": "[Deep Tech Review] 4处源码错误：OpenGLCanvas/VulkanRenderer/RenderNode/DisplayListData 代码引用在 Android 16 中可能不存在或不准确",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "HWUI 架构 → OpenGLCanvas：RenderThread 的画布",
+        "detail": "OpenGLCanvas.drawRect 代码示例指向 frameworks/base/libs/hwui/renderthread/OpenGLCanvas.cpp，标注为 [待验证]。Android 16 中 HWUI 已统一走 Skia 后端，OpenGLCanvas 类已被移除或重构，代码路径不真实。",
+        "suggestion": "移除或标注 [待验证: Android 16 中 OpenGLCanvas 已重构，SkiaOpenGLPipeline 替代了原有路径]。需通过 AOSP android-16.0.0_r1 实际调研确认实际渲染路径。"
+      },
+      {
+        "type": "源码错误",
+        "location": "Skia Vulkan 后端章节",
+        "detail": "VulkanRenderer::drawRect 代码标注 [待验证]，实为无效源码引用。Android 16 中 Vulkan 渲染路径已整合到 Skia 后端，该 drawRect 路径可能不存在。",
+        "suggestion": "补充 [待验证] 标注；调研 AOSP android-16.0.0_r1 的 Skia Vulkan Pipeline 实际类名和方法签名。"
+      },
+      {
+        "type": "源码错误",
+        "location": "RenderNode 架构章节",
+        "detail": "RenderNode.cpp 结构描述标注 [待验证]。Android 16 HWUI 重构后 RenderNode 内部结构可能已大幅简化，当前的代码示例不具备真实性。",
+        "suggestion": "通过 AOSP frameworks/base/libs/hwui/ 目录实际调研 RenderNode 现状后再提供代码片段。"
+      },
+      {
+        "type": "源码错误",
+        "location": "DisplayList 结构章节",
+        "detail": "DisplayListData.cpp 代码示例标注 [待验证]。DisplayList 在 Android 16 中可能已重构，当前的代码示例不具备真实性。",
+        "suggestion": "通过 AOSP frameworks/base/libs/hwui/ 目录实际调研 DisplayList 现状后再提供代码片段。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-09T02:33:16",
+    "status": "pending"
   }
 ]
