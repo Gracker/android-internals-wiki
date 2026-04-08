@@ -2,7 +2,7 @@
 title: "Android 功耗管理"
 chapter: "5.6"
 section: "5.6"
-status: ready-for-review
+status: ready-to-publish
 applicable_versions: "Android 6.0 (API 23) - Android 17 (API 37)"
 last_verified: "2026-04-01"
 last_verified_against: "AOSP android-16.0.0_r1, android-17-beta3"
@@ -122,7 +122,7 @@ public static final int SCREEN_BRIGHT_WAKE_LOCK   = 0x0000000a; // [已废弃] �
 public static final int FULL_WAKE_LOCK            = 0x0000001a; // [已废弃] 屏幕+键盘全亮
 ```
 
-从 API level 26（Android 8.0）开始，后台服务持有 PARTIAL_WAKE_LOCK 的行为受到了限制——如果 App 进入了缓存状态（cached），其持有的 WakeLock 可能会被系统回收。这是 Android 逐步收紧后台功耗控制的一部分。
+从 Android 8.0（API 26）开始，后台服务持有 PARTIAL_WAKE_LOCK 的行为受到了限制——如果 App 进入了缓存状态（cached），其持有的 WakeLock 可能会被系统回收。这是 Android 逐步收紧后台功耗控制的一部分。
 
 ### 从 WakeLock 到 Suspend：系统休眠的触发条件
 
@@ -375,7 +375,7 @@ WorkManager 是 Jetpack 组件库中的后台任务调度方案，在底层根�
 
 **约束条件组合**：可以灵活组合网络、充电、存储、电池状态等多种约束条件。
 
-**链式任务**：可以把多个任务串联起来，按顺序执行。
+**链式任务**：可以把多个任务按先后顺序编排，依次执行。
 
 ** Expedited Job（加急任务）**：WorkManager 2.7+ 引入的机制，允许 App 在前台时请求系统尽快执行一个任务，不受 App Standby Bucket 限制。
 

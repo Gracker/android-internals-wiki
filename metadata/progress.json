@@ -4,16 +4,16 @@
   "metrics": {
     "total": 137,
     "draft": 14,
-    "ready-for-review": 34,
+    "ready-for-review": 33,
     "reviewed": 5,
     "finalized": 32,
     "staging_drafts": 0,
-    "last_updated": "2026-04-08T13:40:00+08:00",
+    "last_updated": "2026-04-08T14:14:07+08:00",
     "processing": 0,
-    "ready-to-publish": 14,
+    "ready-to-publish": 15,
     "last_reviewed": "2026-04-08",
-    "last_reviewed_section": "10.1 App 内存分析",
-    "reviewed_today": 6
+    "last_reviewed_section": "5.6 Android 功耗管理",
+    "reviewed_today": 7
   },
   "reviewed_sections": {
     "8.1": {
@@ -358,20 +358,13 @@
     "5.6": {
       "reviewed_date": "2026-04-08",
       "reviewed_by": "openclaw-task6",
-      "review_status": "finalized",
+      "review_status": "ready-to-publish",
       "fixes_applied": [
-        "验证标注标准化: 2处[来源:]→[已验证: 来源见 ...]",
-        "frontmatter补全: drafted_date/drafted_by/reviewed_date/reviewed_by",
-        "措辞优化: \"核心思想很简单\"→\"思路\"",
-        "status: ready-for-review → finalized"
+        "禁用词修正：'串联' → '按先后顺序编排'（writing-guide §9）",
+        "版本引用统一：'API level 26（Android 8.0）' → 'Android 8.0（API 26）'"
       ],
-      "scores": {
-        "structure": 5,
-        "expression": 5,
-        "consistency": 5,
-        "verification": 4,
-        "metadata": 4
-      }
+      "polish_review": true,
+      "note": "task2b 精修后质检，无B类大问题，直接晋升 ready-to-publish"
     },
     "5.7": {
       "reviewed_date": "2026-04-04",
@@ -727,7 +720,7 @@
     }
   },
   "review_stats": {
-    "total_reviewed": 45,
+    "total_reviewed": 46,
     "reviewed_today": 24,
     "review_issues_total": 13
   },
@@ -3980,13 +3973,13 @@
     },
     "5.6": {
       "title": "Android 功耗管理",
-      "status": "ready-for-review",
+      "status": "ready-to-publish",
       "file": "src/part1-fundamentals/ch05-cpu-power/06-android-power.md",
       "drafted_date": "2026-04-01",
-      "reviewed_date": "2026-04-03",
+      "reviewed_date": "2026-04-08",
       "reviewed_by": "openclaw-task6",
       "polish_count": 1,
-      "polish_date": "2026-04-07",
+      "polish_date": "2026-04-08",
       "polish_by": "task2b-polish"
     },
     "14.6": {
