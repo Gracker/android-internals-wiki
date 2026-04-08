@@ -894,3 +894,45 @@ tags:
 - **位置**：HAL 层零拷贝共享内存通道段落
 - **问题**：提到"关键 HAL 设计了零拷贝的共享内存通道"，但未引向第 2.15 节（DMA-BUF/Gralloc）
 - **建议**：添加"详见 2.15 节 DMA-BUF 与跨进程图形内存共享"的内联引用
+
+## [Task9 Deep Review] 1.2 系统启动全流程 — 2026-04-08
+- **类型**：源码准确性
+- **位置**：ZygoteInit.java 的 startSystemServer() 引用
+- **问题**：正文引用 `ZygoteInit.java` 中定义 `startSystemServer()` 方法，但该方法实际在 `Zygote.java` 中；ZygoteInit.java 仅包含入口和调用方。preloadClasses()/preloadResources() 方法同样位于 Zygote.java 而非 ZygoteInit.java
+- **建议**：将所有预加载方法引用更正为 `Zygote.java`；ZygoteInit.java 的作用是入口（main 方法），不包含具体预加载实现
+
+## [Task9 Deep Review] 1.2 系统启动全流程 — 2026-04-08
+- **类型**：源码准确性
+- **位置**：preloaded-classes 文件路径
+- **问题**：`/apex/com.android.art/etc/preloaded-classes` 路径表述不够精确，实际 build 时该文件位于 `apex/com.android.art/etc/`（或经过裁剪），具体路径因 ART 模块实现而异
+- **建议**：核实 AOSP android-16.0.0_r1 中 preloaded-classes 的精确 APEX 内路径
+
+## [Task9 Deep Review] 1.2 系统启动全流程 — 2026-04-08
+- **类型**：版本差异
+- **位置**：Android 16 启动优化章节（并行内核模块加载、AutoFDO）
+- **问题**：声称的 30%/25%/2.1% 性能数据均标注 `[待验证]`，applicable_versions 包含 API 36 但核心数据未经验证，作为 ready-to-publish 章节风险较高
+- **建议**：找到 AOSP Gerrit commit 或 9to5Google/Android Police 原文，补充具体来源链接；或将百分比改为"实测减少约 X%"
+
+## [Task9 Deep Review] 1.2 系统启动全流程 — 2026-04-08
+- **类型**：数据缺失
+- **位置**：cgroup CPU 核心分配示例
+- **问题**：`write /dev/cpuset/foreground/cpus 4-7` 假设 8 核设备且配置固定，但不同 SoC（高通/MTK/Exynos）cpuset 配置差异很大，该示例可能误导读者
+- **建议**：添加 `[设备相关]` 标注，说明这是高通平台的常见配置示例，或改为更通用的描述"通过 cgroup 设置系统服务 CPU 亲和性"
+
+## [Task9 Deep Review] 1.2 系统启动全流程 — 2026-04-08
+- **类型**：交叉引用
+- **位置**：全文 related_chapters 声明但无正文引用
+- **问题**：frontmatter related_chapters 列出 7 个章节，但正文一次也没有使用交叉引用语法（如 `[[1.1 Android 分层架构]]`），读者无法直接跳转
+- **建议**：在 SurfaceFlinger（native 服务表格）、Zygote 预加载（可引用 1.3）等位置补充至少 3-5 处交叉引用
+
+## [Task9 Deep Review] 1.2 系统启动全流程 — 2026-04-08
+- **类型**：版本差异
+- **位置**：startApexServices 引入版本标注
+- **问题**：`[待验证: startApexServices 从 Android 10 引入]` 标注说明引入版本有争议，需确认 startApexServices 作为 TimingsTraceAndSlog 追踪阶段的添加版本
+- **建议**：在 AOSP frameworks/base/services/java/com/android/server/SystemServer.java 中搜索 startApexServices 的 git log，确认该追踪阶段首次出现的版本
+
+## [Task9 Deep Review] 1.2 系统启动全流程 — 2026-04-08
+- **类型**：知识盲区
+- **位置**：Direct Boot 机制
+- **问题**：正文提到 `ACTION_LOCKED_BOOT_COMPLETED` 但没有解释 Direct Boot 机制（Android 7.0 引入，允许锁屏状态下特定组件启动），是重要知识空白
+- **建议**：在"启动时间度量"或"误区"节补充 Direct Boot 说明（为什么需要、哪些组件支持、如何在 manifest 中声明）
