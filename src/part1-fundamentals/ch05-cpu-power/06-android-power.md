@@ -2,7 +2,7 @@
 title: "Android 功耗管理"
 chapter: "5.6"
 section: "5.6"
-status: finalized
+status: ready-for-review
 applicable_versions: "Android 6.0 (API 23) - Android 17 (API 37)"
 last_verified: "2026-04-01"
 last_verified_against: "AOSP android-16.0.0_r1, android-17-beta3"
@@ -11,6 +11,15 @@ drafted_date: "2026-04-01"
 drafted_by: openclaw-task2a
 reviewed_date: "2026-04-08"
 reviewed_by: openclaw-task6
+related_chapters:
+  - "5.1"
+  - "5.2"
+  - "5.4"
+  - "5.5"
+  - "11.5"
+polish_count: 1
+polish_date: "2026-04-08"
+polish_by: task2b-polish
 sources:
   - type: blog
     path: "https://mp.weixin.qq.com/s/抖音功耗优化实践"
@@ -29,7 +38,12 @@ sources:
 tags:
   - android
   - power
-  - research
+  - wakelock
+  - doze
+  - battery
+  - suspend
+  - jobscheduler
+  - powermanager
 
 
 ---
@@ -228,7 +242,7 @@ adb bugreport > bugreport.txt
 
 Battery Historian 提供了两个主要视图：
 
-**System Stats（系统统计）**：展示整个设备的状态，包括信号强度、屏幕亮度、充电状态等。这个视图帮我们排除环境因素——如果系统统计显示在问题时段网络信号极差（会导致射频模块功率增大），那高耗电可能不是 App 的问题。
+**System Stats（系统统计）**：展示整个设备的状态，包括信号强度、屏幕亮度、充电状态等。这个视图用于排除环境因素——如果系统统计显示在问题时段网络信号极差（射频模块会增大发射功率来维持连接），那高耗电可能并非 App 自身的问题。
 
 **App Stats（应用统计）**：选中某个 App 后，可以看到它在这个时间段内的详细行为：WakeLock 持有时长、网络访问频率、Job 执行情况、前台/后台进程状态、SyncManager 活动等。
 
@@ -238,7 +252,7 @@ Battery Historian 提供了两个主要视图：
 
 **1. 检查亮灭屏耗电速率。** 通过 System Stats 中的 screen on/off rate 和电量消耗曲线，判断是亮屏还是灭屏阶段的耗电异常。亮屏耗电大通常和显示、GPU、网络相关；灭屏耗电大通常和 WakeLock、后台 Job、频繁唤醒相关。
 
-**2. 定位异常时间段。** 选取电量值，观察每格电量的消耗速度，找到耗电最快的时间段。结合该时段的前台应用、网络状态、后台 Job 等信息，判断是什么导致了高耗电。
+**2. 定位异常时间段。** 观察 Battery Historian 时间轴上的电量百分比刻度，找到电量下降最快的区间。结合该时段的前台应用、网络状态、后台 Job 等信息，判断是什么导致了高耗电。
 
 **3. 逐项排查。** 综合查看亮度状态、网络类型（5G > 4G > WiFi 的功耗递减）、后台 Job、前台应用，判断耗电是否符合预期。
 
@@ -291,7 +305,7 @@ try {
 }
 ```
 
-关键点：**一定要设置超时时间**。如果不设置超时，一旦忘记释放（比如异常路径没走到 release），这个锁就会一直持有，直到 App 进程被杀掉。
+这段代码中最容易被忽略的是 `acquire()` 中传入的超时参数。如果不设置超时，一旦异常路径没走到 `release()`——比如抛出了未捕获的异常——这个锁就会一直持有到 App 进程被杀掉。在这段时间内，系统无法进入 Suspend。
 
 ### WakeLock 滥用的常见模式
 
@@ -317,7 +331,7 @@ adb shell dumpsys power | grep "Wake Locks" -A 20
 adb shell dumpsys batterystats | grep -A 5 "Wake lock"
 ```
 
-按照绿盟（Unified Android Alliance）[存疑: 该组织名称及标准出处待确认] 的功耗标准，灭屏下每小时累计持锁不应超过 5 分钟。从实际经验上看，持 PARTIAL_WAKE_LOCK 超过 1 分钟就会被标记为 Long Wakelock，如果 App 在后台无可感知业务并且频繁持锁导致系统无法休眠，系统会触发 force-stop 清理。[已验证: 来源见 obsidian/Personal-Knowlodge/source/2026-03-08_wechat_抖音功耗优化实践.md]
+行业通行的功耗标准要求灭屏下每小时累计持锁不超过 5 分钟。[存疑: 原素材引述'绿盟（Unified Android Alliance）'，该组织名称及标准出处待确认] 从实际经验上看，持 PARTIAL_WAKE_LOCK 超过 1 分钟就会被系统标记为 Long Wakelock；如果 App 在后台无可感知业务且频繁持锁导致系统无法休眠，系统会触发 force-stop 清理。[已验证: 来源见 obsidian/Personal-Knowlodge/source/2026-03-08_wechat_抖音功耗优化实践.md]
 
 [图：Battery Historian 中 WakeLock 持有时长的可视化示例]
 
@@ -327,7 +341,7 @@ adb shell dumpsys batterystats | grep -A 5 "Wake lock"
 
 前面讲了 WakeLock 的滥用风险，那后台任务到底应该怎么做？答案是：不要直接操作 WakeLock，而是通过 JobScheduler 或 WorkManager 让系统代为调度。
 
-这样做的好处是系统可以**批量执行**多个 App 的后台任务，而不是每个 App 各自唤醒系统。想象一下，如果 10 个 App 各自设置 Alarm 在不同时间唤醒系统，系统要被唤醒 10 次；而如果这 10 个 App 都使用 JobScheduler，系统可以在一个维护窗口内把它们的所有任务都执行完，只需要唤醒一次。
+这样做的好处是系统可以**批量执行**多个 App 的后台任务，而不是每个 App 各自唤醒系统——后者的代价是系统在 Suspend 和 Resume 之间反复切换，每次切换都需要重新初始化硬件外设。以 10 个 App 各自设置 Alarm 唤醒系统为例：系统要被唤醒 10 次，每次都要从 Suspend 恢复、执行任务、再回到 Suspend。而如果这 10 个 App 都通过 JobScheduler 调度，系统可以在一个维护窗口内批量执行所有任务，只经历一次唤醒-休眠周期。
 
 ### JobScheduler：系统级的任务调度
 
@@ -396,6 +410,8 @@ Android 16 对 JobScheduler 的配额管理做了进一步优化：Active Bucket
 
 ## Adaptive Battery 与 ML 预测
 
+前面讨论的 Doze、App Standby、Background Restriction 都是基于规则的静态策略——系统根据设备状态和 App 行为套用预设的限制等级。但从 Android 9 开始，Google 引入了一种不同的思路：让系统学会预测用户行为，再据此分配资源。这就是 Adaptive Battery。
+
 Adaptive Battery 在 Android 9（Pie）引入，是 Google 与 DeepMind 合作开发的智能功耗管理功能。它的核心思想是：用机器学习来预测用户接下来会使用哪些 App，然后据此分配系统资源。
 
 Adaptive Battery 工作在设备端（on-device ML），不依赖云端。它观察用户的 App 使用模式——什么时候用、用多久、用完之后下一个是什么——然后把这些信息传递给 App Standby Buckets 系统，动态调整各 App 的 Bucket 分配。
@@ -406,7 +422,9 @@ Adaptive Battery 工作在设备端（on-device ML），不依赖云端。它观
 
 ## Background Restriction 对后台功耗的控制
 
-Adaptive Battery 从系统侧智能调整资源分配，而 Android 同时也为用户提供了手动限制 App 后台行为的机制。这两种方式互为补充：ML 预测处理大部分常见情况，用户手动干预则覆盖边缘场景。
+Adaptive Battery 从系统侧智能调整资源分配，而 Android 也为用户提供了手动限制 App 后台行为的机制。这两种方式互为补充：ML 预测处理大部分常见情况，用户手动干预则覆盖边缘场景。
+
+用户侧的限制手段有三个层级，严格程度递增：
 
 **电池优化白名单**：在 Settings > Battery > Battery optimization 中，用户可以指定哪些 App 不受 Doze 限制。但进入白名单并不意味着完全不受限制——Deep Doze 状态下，白名单 App 仍然会失去网络访问权限。
 
@@ -452,7 +470,7 @@ Android 功耗管理框架经历了一个从"粗粒度管控"到"精细化、智
 | 12 (API 31) | Restricted Bucket + 自动限制通知 | 最严格 Standby 等级 + 用户参与共治 |
 | 14 (API 34) | 前台服务类型强制化 | 后台启动前台服务需声明具体类型 |
 | 16 (API 36) | JobScheduler 配额优化 | Active Bucket 更宽裕配额 |
-| 17 (API 37) | DeliQueue 无锁优化（关联 §1.13） | 主线程消息队列锁竞争减少 |
+| 17 (API 37) | DeliQueue 无锁优化（关联 §1.13） | 主线程消息队列锁竞争减少，间接降低持锁期间的 CPU 尾迹功耗 |
 
 [待验证：Android 17 中 PowerManagerService 是否有额外的功耗管理变更]
 
@@ -486,6 +504,7 @@ CPU 空闲（idle）和系统休眠（suspend）是完全不同的状态。CPU i
 - **5.4 DVFS 与功耗管理**：DVFS 根据负载动态调整频率和电压，是运行时功耗优化的核心
 - **5.5 Thermal 管控**：高温时限制频率和任务，从另一个维度控制系统功耗
 - **5.10 JobScheduler/WorkManager 调度与后台任务性能**：本节涉及的调度框架在 §5.10 有更深入的性能分析，包括 Android 17 新增的 JobDebugInfo API 和 Play Store wakelock 惩罚政策
+- **11.5 Wakelock 机制与功耗分析**：从 Perfetto 视角详细分析 WakeLock 的持有时长、滥用检测与系统限制机制
 - **11.1 Android 功耗模型** / **11.2 App 耗电优化**：从 App 视角更深入地讨论功耗优化策略
 
 本章的脉络是：从底层的 CPU 硬件架构和调度策略（5.1-5.3），到运行时的频率电压控制（5.4），再到热管理（5.5），最后到 Android 框架层的功耗管理（本节）——这是一个从硬件到软件、从微观到宏观的完整功耗管理技术栈。
