@@ -1,11 +1,14 @@
 ---
 title: "ProfilingManager"
 chapter: "14.7"
-status: finalized
+status: ready-for-review
 applicable_versions: "Android 15 (API 35) - Android 17 (API 37)"
 last_verified: "2026-04-08"
 last_verified_against: "AOSP android-17-beta3, developer.android.com/guide/topics/profiling"
 confidence: medium
+polish_count: 1
+polish_date: "2026-04-08"
+polish_by: "task2b-polish"
 sources:
   - type: official
     path: "https://developer.android.com/guide/topics/profiling"
@@ -36,15 +39,13 @@ review_round: 2
 
 Android 15 引入的 ProfilingManager 从系统层面解决了这个问题。它让 App 可以**在量产设备上以最小侵入的方式收集性能数据**，系统自动处理脱敏、频率限制和存储管理。从 Android 16 开始，还支持系统事件触发的自动采集——ANR 发生时、冷启动时、OOM 时，系统会自动抓取对应的 profiling 数据，开发者只需要注册一个触发器就能收到结果。
 
-对于做性能优化的工程师来说，这意味着 ProfilingManager 填补了"开发环境容易分析，生产环境无法抓数据"这个长期存在的空白。
+换一种说法：ProfilingManager 把"开发环境容易分析，生产环境无法抓数据"这个长期矛盾，从系统层面解决了。
 
-### 核心能力
+### 从 API 到实战：这一节覆盖什么
 
-- **4 种 profiling 类型**：System Trace、Java Heap Dump、Heap Profile、Stack Sampling
-- **系统事件触发**（Android 16+）：ANR、冷启动、OOM、CPU 过高被杀等事件自动触发采集
-- **Android 17 扩展触发器**：ANOMALY（兼容性行为异常）、APP_REQUEST_RUNNING_TRACE（获取正在运行的系统 trace 快照）
-- **隐私保护**：自动脱敏其他 App 的数据，只保留调用方 App 的信息
-- **Perfetto 格式输出**：采集结果直接可在 Perfetto UI 中分析
+我们接下来分三个层面讲 ProfilingManager。首先是四种 profiling 类型的 API 调用方式——System Trace、Java Heap Dump、Heap Profile、Stack Sampling，每种都有对应的 RequestBuilder，用法大同小异但参数各有侧重。然后是 Android 16 引入的系统事件触发机制，这是 ProfilingManager 最有价值的部分：注册触发器后，ANR、冷启动、OOM 等事件发生时系统自动采集，开发者不需要提前埋点。最后是 Android 17 新增的能力扩展。
+
+所有采集结果都以 Perfetto 格式输出，直接在 Perfetto UI 中分析，不需要额外的格式转换工具。
 
 ## 基本使用：从零到跑通
 
@@ -205,7 +206,7 @@ public void requestStackSampling(Context context) {
 
 ## System Triggered Profiling（Android 16+）
 
-手动触发 profiling 的局限在于：ANR、OOM 这类问题发生的时间不可预测，开发者不可能提前开始采集。Android 16 引入的 System Triggered Profiling 解决了这个问题——注册一个触发器，当对应系统事件发生时，系统自动采集并回调结果。
+前面讲的四种 RequestBuilder 都需要手动调用 `requestProfiling()`——这意味着开发者必须提前知道"什么时候该采集"。但 ANR、OOM、冷启动慢这些问题恰恰是不可预测的，发生时开发者往往不在场。Android 16 引入的 System Triggered Profiling 从根本上改变了这个局面：注册一个触发器，当对应系统事件发生时，系统自动采集并回调结果，整个过程不需要 App 代码参与。
 
 ### 注册 ANR 触发器
 
@@ -447,7 +448,7 @@ public class OOMMonitor {
 
 ## 与其他工具的对比
 
-### ProfilingManager vs 其他 profiling 方案
+用 ProfilingManager 之前，性能数据采集主要依赖三种方式：Android Studio Profiler（开发机专用）、`atrace`/Systrace（命令行，需要物理连接或 root）、第三方 APM SDK（侵入性强，增加包体积）。
 
 | 维度 | ProfilingManager | Android Studio Profiler | Systrace/`atrace` | 第三方 SDK |
 |------|-----------------|------------------------|---------------------|------------|
