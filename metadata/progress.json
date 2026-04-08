@@ -4550,6 +4550,12 @@
       "reviewed_date": "2026-04-08",
       "review_issues": 7,
       "back_to_queue": true
+    },
+    "8.2": {
+      "title": "App 启动全流程",
+      "status": "ready-to-publish",
+      "last_review": "2026-04-08",
+      "review_count": 1
     }
   },
   "5.1": {
