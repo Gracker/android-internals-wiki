@@ -4,9 +4,9 @@
   "metrics": {
     "total": 140,
     "draft": 15,
-    "ready-for-review": 32,
+    "ready-for-review": 31,
     "reviewed": 5,
-    "finalized": 33,
+    "finalized": 34,
     "staging_drafts": 0,
     "last_updated": "2026-04-08T21:34:32.168631",
     "processing": 0,
@@ -741,6 +741,10 @@
         "verification": 4,
         "metadata": 4
       }
+    },
+    "8.6": {
+      "reviewed_at": "2026-04-08",
+      "status": "finalized"
     }
   },
   "review_stats": {
@@ -1150,7 +1154,8 @@
       "extensions_covered": 2,
       "extensions_total": 2,
       "verification_level": "L2",
-      "word_count": "~8500"
+      "word_count": "~8500",
+      "status": "finalized"
     },
     {
       "section": "8.6",
@@ -2025,11 +2030,11 @@
       "completed_at": "2026-04-08T21:25:38.727403"
     }
   ],
-  "ready_for_review": 6,
+  "ready_for_review": 5,
   "last_updated": "2026-04-08T20:32:18.340488",
   "stats": {
     "total": 118,
-    "completed": 96,
+    "completed": 97,
     "pending": 32,
     "last_updated": "2026-04-08T17:05:00+08:00",
     "reviewed": 1,
