@@ -2,12 +2,14 @@
 title: "案例集"
 chapter: "8.5"
 section: "8.5"
-status: reviewed
+status: ready-for-review
 drafted_date: "2026-04-02"
 reviewed_date: "2026-04-08"
+rework_date: "2026-04-08"
+rework_by: "task2b-rework"
 reviewed_by: openclaw-task6
 applicable_versions: "Android 8.0 (API 26) - Android 16 (API 36)"
-last_verified: "2026-04-02"
+last_verified: "2026-04-08"
 last_verified_against: "AOSP android-16.0.0_r1, developer.android.com"
 confidence: medium
 polish_count: 1
@@ -395,7 +397,7 @@ Google 的内部基准测试显示 [已验证: developer.android.com, Google Blo
 
 **误区二：“Baseline Profiles 只对首次启动有效，之后就失效了。”**
 
-不准确。Baseline Profiles 在每次 App 更新后重新生效——因为更新会清空之前 JIT 编译的缓存。对于高频更新的 App（社交、电商类通常每 1-2 周更新一次），Baseline Profiles 的实际生效频率比想象中高。此外，Android 13+ 引入了 ART Mainline 模块，系统可以通过 Google Play 更新编译策略，进一步提升了 Profile 的命中率。[存疑: ART 作为 Mainline 模块在 Android 12 (API 31) 已引入，此处写 Android 13+ 可能不准确，待确认具体的 Profile 命中率提升是否为 Android 13 新增]
+不准确。Baseline Profiles 在每次 App 更新后重新生效——因为更新会清空之前 JIT 编译的缓存。对于高频更新的 App（社交、电商类通常每 1-2 周更新一次），Baseline Profiles 的实际生效频率比想象中高。此外，Android 12 起将 ART 作为 Mainline 模块（`com.android.art`），系统可以通过 Google Play System Updates 更新编译策略（包括 dex2oat 优化、Profile 引导编译等），进一步提升 Baseline Profiles 的命中率和编译效果。[已确认: ART Mainline 模块自 Android 12 (API 31) 引入，验证来源 AOSP android-12.0.0_r1]
 
 **误区三：“R8 full mode 风险太高，不敢开。”**
 
