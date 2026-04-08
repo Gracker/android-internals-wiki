@@ -4748,6 +4748,12 @@
       "title": "案例集",
       "status": "reviewed",
       "reviewed_date": "2026-04-08"
+    },
+    "10.4": {
+      "title": "低内存对系统性能的影响",
+      "status": "finalized",
+      "reviewed_date": "2026-04-09",
+      "reviewed_by": "openclaw-task6"
     }
   },
   "5.1": {

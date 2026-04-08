@@ -1,7 +1,7 @@
 ---
 title: "低内存对系统性能的影响"
 chapter: "10.4"
-status: ready-for-review
+status: finalized
 drafted_date: "2026-04-02"
 applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
 last_verified: "2026-04-02"
@@ -20,6 +20,8 @@ sources:
     path: "source.android.com - mm_events, PSI, lmkd"
 tags: ['low-memory', 'kswapd', 'direct-reclaim', 'lmkd', 'GC', 'memory-pressure', 'PSI', 'ZRAM', 'Perfetto']
 related_chapters: ["4.4", "4.1", "4.2", "4.5", "10.1", "10.6"]
+reviewed_date: "2026-04-09"
+reviewed_by: openclaw-task6
 ---
 
 # 低内存对系统性能的影响
@@ -121,7 +123,7 @@ lmkd 收到内存压力信号后，会根据进程的 `oom_score_adj` 来选择�
 
 ### ART GC 在低内存下的触发策略
 
-ART 虚拟机的垃圾回收策略会受到系统内存压力的直接影响。在 Android 8.0（Oreo）之后，ART 默认使用 Concurrent Copying（CC）垃圾收集器，这是一个分代、并发的收集器。在正常情况下，CC 收集器的 Young GC 暂停时间在 1ms 以下，对应用帧率几乎没有影响。
+ART 虚拟机的垃圾回收策略会受到系统内存压力的直接影响。在 Android 8.0（Oreo）之后，ART 默认使用 Concurrent Copying（CC）垃圾收集器，这是一个分代、并发的收集器。在正常情况下，CC 收集器的 Young GC 暂停时间通常在 1ms 以下 [待验证: 具体数值因设备、堆大小和 GC 策略而异]，对应用帧率几乎没有影响。
 
 但当系统进入低内存状态时，ART 的 GC 行为会发生几个明显的变化。
 
@@ -142,7 +144,7 @@ ART 虚拟机的垃圾回收策略会受到系统内存压力的直接影响。�
 
 在 Perfetto 中，这个恶性循环表现为：GC Event（橙色的块）密度明显增加，帧渲染时间变长，帧之间的间隔中 GC 占比显著升高。如果你在 120Hz 设备上（每帧只有 8.33ms）看到频繁的 GC 块占据了 2-3ms，那低内存导致 GC 频繁触发很可能是根因之一。
 
-与 §4.5（App 内存优化）和 §10.6（内存抖动与频繁 GC）的交叉要点：低内存放大了 App 自身的内存管理问题。一个在 8GB 设备上可以容忍的内存抖动模式，在 4GB 设备上可能导致频繁 GC 和严重卡顿。
+与 [4.5 App 内存优化](../ch04-memory/05-app-memory-optimization.md) 和 [10.6 内存抖动与频繁 GC](06-memory-churn.md) 的交叉要点：低内存放大了 App 自身的内存管理问题。一个在 8GB 设备上可以容忍的内存抖动模式，在 4GB 设备上可能导致频繁 GC 和严重卡顿。
 
 ## 在 Perfetto 中识别内存压力的信号
 
@@ -188,7 +190,7 @@ PSI 数据在 Perfetto 的 `sys_stats` 数据源中可以找到。PSI 为每种�
 
 如果 1-3 出现但还没有 5-6，说明系统在低内存但还在努力维持。如果 5-6 也出现了，说明系统已经无法仅靠内存回收来维持运转了。
 
-`[图：Perfetto 中低内存场景的典型 Trace 片段，标注 kswapd 活跃区域、Direct Reclaim 的 D 状态、GC 密集区域和 lmk 事件]`
+[图：Perfetto 中低内存场景的典型 Trace 片段，标注 kswapd 活跃区域、Direct Reclaim 的 D 状态、GC 密集区域和 lmk 事件]
 
 ## 系统级内存优化手段
 
@@ -226,7 +228,7 @@ MGLRU 已在 Android Common Kernel 中启用。它的实际效果是减少"误�
 
 ### 内存分配策略调整
 
-低端机通常会调低各种内存阈值。比如将 ActivityManager 的后台进程上限从标准设备的 32 个降到 8-12 个；降低 cache_blind 的阈值让 lmkd 更早开始杀后台进程；减小 ZRAM 的最大容量（因为物理 RAM 本身就少，需要留更多给前台应用使用）。这些调整的目标是：宁可牺牲后台保活能力，也要保证前台应用的流畅性。
+低端机通常会调低各种内存阈值。比如将 ActivityManager 的后台进程上限从标准设备的 32 个降到 8-12 个；降低缓存进程阈值（如 lmkd 的 min_free_level 配置）让 lmkd 更早开始杀后台进程 [存疑: 原文 cache_blind 非标准 Android 参数名，已替换为更准确的描述]；减小 ZRAM 的最大容量（因为物理 RAM 本身就少，需要留更多给前台应用使用）。这些调整的目标是：宁可牺牲后台保活能力，也要保证前台应用的流畅性。
 
 ### App 层面的适配
 
