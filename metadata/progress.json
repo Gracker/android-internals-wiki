@@ -4,16 +4,16 @@
   "metrics": {
     "total": 140,
     "draft": 16,
-    "ready-for-review": 33,
+    "ready-for-review": 32,
     "reviewed": 5,
     "finalized": 32,
     "staging_drafts": 0,
-    "last_updated": "2026-04-08T20:15:40.330667",
+    "last_updated": "2026-04-08T20:32:18.340488",
     "processing": 0,
-    "ready-to-publish": 16,
+    "ready-to-publish": 17,
     "last_reviewed": "2026-04-08",
-    "last_reviewed_section": "4.5 App 内存优化",
-    "reviewed_today": 8
+    "last_reviewed_section": "7.2 卡顿原因体系",
+    "reviewed_today": 9
   },
   "reviewed_sections": {
     "8.1": {
@@ -719,11 +719,16 @@
         "verification": 4,
         "metadata": 5
       }
+    },
+    "7.2": {
+      "title": "卡顿原因体系",
+      "status": "ready-to-publish",
+      "last_reviewed": "2026-04-08"
     }
   },
   "review_stats": {
-    "total_reviewed": 46,
-    "reviewed_today": 24,
+    "total_reviewed": 47,
+    "reviewed_today": 25,
     "review_issues_total": 13
   },
   "completed": [
@@ -1989,7 +1994,7 @@
     }
   ],
   "ready_for_review": 6,
-  "last_updated": "2026-04-08T18:21:00",
+  "last_updated": "2026-04-08T20:32:18.340488",
   "stats": {
     "total": 118,
     "completed": 96,

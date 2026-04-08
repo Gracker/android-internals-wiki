@@ -1,11 +1,11 @@
 ---
 title: "卡顿原因体系"
 chapter: "7.2"
-status: ready-for-review
+status: ready-to-publish
 applicable_versions: "Android 5.0 (API 21) - Android 17 (API 37)"
 last_verified: "2026-04-08"
 last_verified_against: "AOSP android-15.0.0_r1"
-reviewed_date: "2026-04-04"
+reviewed_date: "2026-04-08"
 reviewed_by: openclaw-task6
 polish_count: 1
 polish_date: "2026-04-08"
