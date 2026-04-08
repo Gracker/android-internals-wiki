@@ -4,16 +4,16 @@
   "metrics": {
     "total": 140,
     "draft": 15,
-    "ready-for-review": 33,
+    "ready-for-review": 32,
     "reviewed": 5,
-    "finalized": 32,
+    "finalized": 33,
     "staging_drafts": 0,
-    "last_updated": "2026-04-08T21:25:38.727403",
+    "last_updated": "2026-04-08T21:34:32.168631",
     "processing": 0,
     "ready-to-publish": 17,
     "last_reviewed": "2026-04-08",
-    "last_reviewed_section": "7.2 卡顿原因体系",
-    "reviewed_today": 9
+    "last_reviewed_section": "10.3 内存持续增长",
+    "reviewed_today": 10
   },
   "reviewed_sections": {
     "8.1": {
@@ -724,6 +724,23 @@
       "title": "卡顿原因体系",
       "status": "ready-to-publish",
       "last_reviewed": "2026-04-08"
+    },
+    "10.3": {
+      "reviewed_date": "2026-04-08",
+      "reviewed_by": "openclaw-task6",
+      "review_status": "finalized",
+      "fixes_applied": [
+        "标注标准化: 3处[来源:]→[已验证: 来源见 ...]（Cubox素材来源）",
+        "frontmatter补全: drafted_by/word_count/reviewed_date/reviewed_by",
+        "status: ready-for-review → finalized"
+      ],
+      "scores": {
+        "structure": 5,
+        "expression": 5,
+        "consistency": 5,
+        "verification": 4,
+        "metadata": 4
+      }
     }
   },
   "review_stats": {
@@ -2331,6 +2348,21 @@
     }
   ],
   "history": [
+    {
+      "date": "2026-04-08",
+      "section": "10.3",
+      "title": "内存持续增长",
+      "action": "reviewed-finalized",
+      "review_by": "openclaw-task6",
+      "fixes": 5,
+      "scores": {
+        "structure": 5,
+        "expression": 5,
+        "consistency": 5,
+        "verification": 4,
+        "metadata": 4
+      }
+    },
     {
       "date": "2026-04-08",
       "section": "8.9",

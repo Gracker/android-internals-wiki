@@ -2,12 +2,16 @@
 title: "内存持续增长"
 chapter: "10.3"
 section: "10.3"
-status: ready-for-review
+status: finalized
 drafted_date: "2026-04-02"
+drafted_by: "openclaw-task2a"
 applicable_versions: "Android 8.0 (API 26) - Android 16 (API 36)"
 last_verified: "2026-04-02"
 last_verified_against: "AOSP android-16.0.0_r1"
+reviewed_date: "2026-04-08"
+reviewed_by: "openclaw-task6"
 confidence: medium
+word_count: "~8000"
 sources:
   - type: blog
     path: "OPPO内存反碎片优化原理"
@@ -90,7 +94,7 @@ Bitmap 累积的典型路径有两条：一是前面说的缓存无淘汰，图�
 
 在 Android 上，Native 碎片化主要发生在 Native Heap 层面。应用使用的 C/C++ 库（音视频解码器、图形引擎、JNI 调用的 Native 代码）通过 malloc/free 或 new/delete 管理内存。当频繁分配和释放不同大小的内存块时，空闲内存会被切割成不连续的片段。这就是为什么有时候 Native Heap 的 Alloc 值看起来不大，但 PSS 却居高不下——碎片化的内存虽然已经被释放回 malloc 的空闲链表，但由于碎片化，无法归还给操作系统。
 
-[来源: Cubox/OPPO内存反碎片优化原理-2022-10-26.md]
+[已验证: 来源见 Cubox/OPPO内存反碎片优化原理-2022-10-26.md]
 
 碎片化问题在长时间运行的应用中尤为明显。比如音乐播放器 App 使用音频解码的 Native 库，每首歌解码时分配和释放不同大小的 PCM 缓冲区，运行几小时后 Native Heap 就会出现严重的碎片化。在 `dumpsys meminfo` 中表现为 Native Heap 的 Pss 和 Private Dirty 值远高于 Alloc 值。
 
@@ -305,7 +309,7 @@ Graphics 内存（GPU 纹理、Buffer）的监控可以通过 `dumpsys gpu` 或 
 
 **虚拟内存碎片化**是指进程的虚拟地址空间被大量小尺寸的映射分割，导致没有足够大的连续虚拟地址范围来满足新的 mmap 请求。对于 32 位进程（虚拟地址空间只有 4 GB），这个问题尤其严重。
 
-[来源: Cubox/OPPO内存反碎片优化原理-2022-10-26.md]
+[已验证: 来源见 Cubox/OPPO内存反碎片优化原理-2022-10-26.md]
 
 ### Native Heap 碎片化的检测
 
@@ -336,7 +340,7 @@ Native Heap 的碎片化在应用层面很难直接量化，但可以通过以�
 
 这些优化属于 OEM/系统层面的工作，App 开发者无法直接使用，但了解其原理有助于理解碎片化的底层机制，以及在 Perfetto 中观察到的系统级行为。
 
-[来源: Cubox/OPPO内存反碎片优化原理-2022-10-26.md]
+[已验证: 来源见 Cubox/OPPO内存反碎片优化原理-2022-10-26.md]
 [待验证: OPPO MF/CSVM 在其他厂商平台上的类似实现]
 
 ## WebView 内存增长问题与多进程 WebView
