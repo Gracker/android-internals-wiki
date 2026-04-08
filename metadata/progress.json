@@ -10,9 +10,9 @@
     "staging_drafts": 0,
     "last_updated": "2026-04-09T01:25:43.556818",
     "processing": 0,
-    "ready-to-publish": 17,
+    "ready-to-publish": 14,
     "last_reviewed": "2026-04-09",
-    "last_reviewed_section": "9.5 ANR 案例集",
+    "last_reviewed_section": "2.5 MainThread 与 RenderThread 协作",
     "reviewed_today": 10
   },
   "reviewed_sections": {
@@ -758,6 +758,24 @@
         "B类标注：缺少死锁案例（outline 要求覆盖）"
       ],
       "b_class_issues": 1
+    },
+    "2.5": {
+      "reviewed_date": "2026-04-09",
+      "reviewed_by": "openclaw-task6",
+      "review_status": "ready-to-publish",
+      "review_type": "post-polish-quality-gate",
+      "review_round": 3,
+      "fixes_applied": [
+        "交叉引用：2.16 DMA-BUF → 2.16 Sync Fence 框架与帧同步机制",
+        "模糊形容词：急剧上升 → 呈指数增长（writing-guide §九）"
+      ],
+      "scores": {
+        "structure": 5,
+        "expression": 5,
+        "consistency": 4,
+        "verification": 4,
+        "metadata": 5
+      }
     }
   },
   "review_stats": {
@@ -2396,6 +2414,23 @@
     }
   ],
   "history": [
+    {
+      "date": "2026-04-09",
+      "section": "2.5",
+      "title": "MainThread 与 RenderThread 协作",
+      "action": "reviewed-ready-to-publish",
+      "review_by": "openclaw-task6",
+      "review_type": "post-polish-quality-gate",
+      "review_round": 3,
+      "fixes": 2,
+      "scores": {
+        "structure": 5,
+        "expression": 5,
+        "consistency": 4,
+        "verification": 4,
+        "metadata": 5
+      }
+    },
     {
       "date": "2026-04-08",
       "section": "10.3",

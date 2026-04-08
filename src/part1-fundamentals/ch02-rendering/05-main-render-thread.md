@@ -1,20 +1,21 @@
 ---
 title: "MainThread 与 RenderThread 协作"
 chapter: "2.5"
-status: ready-for-review
+status: ready-to-publish
 section: "2.5"
 drafted_date: "2026-03-30"
 drafted_by: "openclaw-task2a"
 polish_count: 2
 polish_date: "2026-04-08"
 polish_by: "task2b-polish"
+review_round: 3
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 last_verified: "2026-04-08"
 last_verified_against: "AOSP android-16.0.0_r1"
 confidence: high
-reviewed_date: "2026-04-04"
+reviewed_date: "2026-04-09"
 reviewed_by: openclaw-task6
-review_note: "二次review（task2b精修后）：1个B类问题（ANGLE待验证），3处A类小修"
+review_note: "精修质检终审（task2b polish 后）：0个B类问题，2处A类修复（交叉引用+模糊形容词），晋升 ready-to-publish"
 sources:
   - type: aosp
     path: "platform/frameworks/base/libs/hwui/renderthread/RenderThread.cpp"
@@ -201,7 +202,7 @@ GPU 命令的提交是**异步的**。CPU（RenderThread）把命令扔给 GPU �
 
 ### Fence 机制
 
-Fence 是 Android 图形系统中的核心同步原语，它本质上是一个文件描述符（file descriptor），可以跨进程、跨 CPU/GPU 传递。（关于 Fence 的底层实现与 DMA-BUF 的关系，我们在 [2.16 DMA-BUF、Gralloc 与跨进程图形内存共享](16-sync-fence.md) 中有详细讨论。）在渲染流程中有两个关键的 Fence：
+Fence 是 Android 图形系统中的核心同步原语，它本质上是一个文件描述符（file descriptor），可以跨进程、跨 CPU/GPU 传递。（关于 Fence 的底层实现与 DMA-BUF 的关系，我们在 [2.16 Sync Fence 框架与帧同步机制](16-sync-fence.md) 中有详细讨论。）在渲染流程中有两个关键的 Fence：
 
 **acquireFence**：当 RenderThread 调用 `dequeueBuffer()` 从 BufferQueue 获取一个 Buffer 时，这个 Buffer 可能还在被 SurfaceFlinger 使用（上一帧还没有完全显示完）。acquireFence 表示"这个 Buffer 何时可以被安全写入"。如果 SurfaceFlinger 还没释放这个 Buffer，RenderThread 会等待这个 Fence signal。
 
@@ -321,7 +322,7 @@ LIMIT 20;
 
 ### 布局嵌套过深，主线程耗时超标
 
-最典型的表现是 `performTraversals` 中 measure/layout 阶段占据了大部分帧时间。当 View 层级嵌套超过 10 层（尤其是多层 RelativeLayout 互相嵌套），或者自定义 View 的 `onMeasure` 实现中多次调用 `requestLayout`，measure 阶段的递归遍历开销会急剧上升。
+最典型的表现是 `performTraversals` 中 measure/layout 阶段占据了大部分帧时间。当 View 层级嵌套超过 10 层（尤其是多层 RelativeLayout 互相嵌套），或者自定义 View 的 `onMeasure` 实现中多次调用 `requestLayout`，measure 阶段的递归遍历开销会呈指数增长——每多一层嵌套，measure 的调用次数就可能翻倍。
 
 在 Perfetto 中展开 `performTraversals` 的 `measure` / `layout` 子切片，可以直接看到耗时分布。如果 measure 阶段出现明显的红色条带（超过 8ms），基本可以确认是布局复杂度的问题。Layout Inspector 是另一把利器——它可以可视化展示 View 树的深度，帮助我们快速定位嵌套过深的区域。
 
