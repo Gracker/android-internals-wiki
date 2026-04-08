@@ -1,7 +1,7 @@
 ---
 title: "低内存对系统性能的影响"
 chapter: "10.4"
-status: finalized
+status: ready-for-review
 drafted_date: "2026-04-02"
 applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
 last_verified: "2026-04-02"
@@ -22,7 +22,7 @@ tags: ['low-memory', 'kswapd', 'direct-reclaim', 'lmkd', 'GC', 'memory-pressure'
 related_chapters: ["4.1", "4.2", "4.4", "4.5", "4.8", "10.1", "10.6"]
 reviewed_date: "2026-04-09"
 reviewed_by: openclaw-task6
-polish_count: 1
+polish_count: 2
 polish_date: "2026-04-09"
 polish_by: "task2b-polish"
 ---
@@ -112,7 +112,7 @@ lmkd 收到内存压力信号后，会根据进程的 `oom_score_adj` 来选择�
 
 被杀进程的选择顺序大致是：缓存进程（900+）→ 后台服务（500+）→ 上一个应用（200）→ 后台可见进程（100）→ 前台进程（0）。分数越高的进程越先被杀。
 
-在 Perfetto 中，lmkd 的杀进程事件会以 `ProcessKilled` 或 `lmk` 相关的 trace event 出现。你可以在 Trace 中搜索 `lmk` 关键字，或者查看 `lowmemorykiller` 的日志来定位杀进程的时间点。
+在 Perfetto 中，lmkd 的杀进程事件会以 `ProcessKilled` 或 `lmk` 相关的 trace event 出现。我们可以在 Trace 中搜索 `lmk` 关键字，或者查看 `lowmemorykiller` 的日志来定位杀进程的时间点。
 
 ### 被杀后的冷启动代价
 
@@ -130,11 +130,11 @@ ART 虚拟机的垃圾回收策略会受到系统内存压力的直接影响。�
 
 但当系统进入低内存状态时，ART 的 GC 行为会发生几个明显的变化。
 
-首先是 GC 触发更频繁。ART 在分配对象时会检查当前堆的使用量是否接近上限。在低内存环境下，系统给 App 分配的堆空间可能被压缩（通过 `setSoftLimit` 等 API），导致堆更容易"满"，GC 更频繁地被触发。表现为 Perfetto 中 GC Event 的密度显著增加。
+最直接的影响是 GC 触发更频繁。ART 在分配对象时会检查当前堆的使用量是否接近上限。在低内存环境下，系统给 App 分配的堆空间可能被压缩（通过 `setSoftLimit` 等 API），导致堆更容易"满"，GC 更频繁地被触发。表现为 Perfetto 中 GC Event 的密度显著增加。
 
-其次是 GC 类型可能升级。ART 会根据内存压力情况在几种收集器之间切换。轻度压力下使用 Concurrent Copying（并发复制），只需要短暂暂停应用线程。但如果 `onTrimMemory` 回调没有被正确响应，或者系统内存极其紧张，ART 可能会触发 Homogeneous Space Compaction（同构空间压缩）或 Collector Transition（收集器切换），这些操作的暂停时间远高于普通 Young GC，可能导致明显的帧卡顿。[已验证: 官方文档, developer.android.com]
+当内存压力持续增加时，GC 类型也会升级。ART 会根据内存压力情况在几种收集器之间切换。轻度压力下使用 Concurrent Copying（并发复制），只需要短暂暂停应用线程。但如果 `onTrimMemory` 回调没有被正确响应，或者系统内存极其紧张，ART 可能会触发 Homogeneous Space Compaction（同构空间压缩）或 Collector Transition（收集器切换），这些操作的暂停时间远高于普通 Young GC，可能导致明显的帧卡顿。[已验证: 官方文档, developer.android.com]
 
-第三是后台 App 的压缩 GC。当 App 进入后台后，在低内存环境下 ART 会主动触发压缩 GC 来减少内存占用。这个操作虽然是后台执行的，但会消耗 CPU 资源，可能影响前台 App 的性能。
+此外，后台 App 也会遭遇压缩 GC。当 App 进入后台后，在低内存环境下 ART 会主动触发压缩 GC 来减少内存占用。这个操作虽然是后台执行的，但会消耗 CPU 资源，可能影响前台 App 的性能。
 
 ### 内存抖动与 GC 的恶性循环
 
@@ -157,7 +157,7 @@ ART 虚拟机的垃圾回收策略会受到系统内存压力的直接影响。�
 
 mm_events 是 Android 12+ 引入的内存压力追踪机制。它的工作方式比较特别——不是持续记录，而是在检测到内存压力时自动启动一段时间的追踪。具体来说，当 kswapd 被唤醒、Direct Reclaim 被触发或内存规整（compaction）开始时，mm_events 会开始收集内存统计数据，包括 vmstat 字段（如 `nr_free_pages`、`pgpgin`、`pgsteal`）和 ftrace 内存事件。
 
-mm_events 的配置文件通常位于 `/vendor/etc/mm_events.cfg`。在 Perfetto 中，你可以在 `linux.ftrace` 或 `mem.mm_events` 相关的 track 中找到这些数据。[已验证: 官方文档, source.android.com]
+mm_events 的配置文件通常位于 `/vendor/etc/mm_events.cfg`。在 Perfetto 中，我们可以在 `linux.ftrace` 或 `mem.mm_events` 相关的 track 中找到这些数据。[已验证: 官方文档, source.android.com]
 
 ### vmscan ftrace 事件
 
@@ -168,17 +168,17 @@ vmscan 是内核虚拟内存扫描子系统的 ftrace 事件。关键的 vmscan 
 - `mm_vmscan_direct_reclaim_begin` / `mm_vmscan_direct_reclaim_end`：Direct Reclaim 的开始和结束
 - `mm_vmscan_lru_shrink_inactive`：正在扫描 Inactive LRU 回收页面
 
-在 Perfetto 中，这些事件可以帮助你精确判断内存压力开始的时间点、持续多久、触发了哪种级别的回收。[已验证: 官方文档, source.android.com]
+在 Perfetto 中，这些事件可以帮助我们精确判断内存压力开始的时间点、持续多久、触发了哪种级别的回收。[已验证: 官方文档, source.android.com]
 
 ### lmk 事件
 
-lmkd 的杀进程事件在 Perfetto 中通常以 `lowmemorykiller` 标签出现。你可以在 logcat 中搜索 `lowmemorykiller` 或 `lmk` 关键字，在 Perfetto 中搜索 `ProcessKilled` slice。每条 lmk 事件包含了被杀进程的 PID、UID、`oom_score_adj`、释放的内存大小以及触发原因（如 `device is low on swap`、`thrashing`）。
+lmkd 的杀进程事件在 Perfetto 中通常以 `lowmemorykiller` 标签出现。我们可以在 logcat 中搜索 `lowmemorykiller` 或 `lmk` 关键字，在 Perfetto 中搜索 `ProcessKilled` slice。每条 lmk 事件包含了被杀进程的 PID、UID、`oom_score_adj`、释放的内存大小以及触发原因（如 `device is low on swap`、`thrashing`）。
 
 ### PSI 数据
 
 PSI 数据在 Perfetto 的 `sys_stats` 数据源中可以找到。PSI 为每种资源（memory、cpu、io）提供 `some` 和 `full` 两种级别的统计，分别在 10 秒、60 秒和 300 秒的时间窗口内取平均值。
 
-关注 PSI 的 `memory full` 指标最为关键——当这个值持续大于 0 时，说明系统中有时间所有非空闲任务都在等待内存，这是严重的内存压力信号。PSI monitor（lmkd 使用的那种）可以检测到短时间内的压力突增，比平均值更敏感。[已验证: 官方文档, kernel.org]
+关注 PSI 的 `memory full` 指标最为关键——当这个值持续大于 0 时，说明系统中有时间所有非空闲任务都在等待内存，这是严重的内存压力信号。PSI monitor（lmkd 使用的那种）可以检测到短时间内的压力突增，比平均值更敏感。通过 `cat /proc/pressure/memory` 可以查看当前系统的内存 PSI 实时数值。[已验证: 官方文档, kernel.org]
 
 ### 综合判断模式
 
@@ -203,7 +203,7 @@ ZRAM 是 Android 内存管理的核心组件之一。它在 RAM 中创建一个�
 
 ZRAM 的调优涉及几个参数：
 
-**ZRAM 大小**。设备厂商通常在设备初始化时设置 ZRAM 的最大容量。对于 Android Go 设备，Qualcomm 的调优指南建议设为物理 RAM 的 75%。更大的 ZRAM 意味着更多后台应用可以保持在内存中（以压缩形式），但也会增加压缩/解压缩的 CPU 开销。
+**ZRAM 大小**。设备厂商通常在设备初始化时设置 ZRAM 的最大容量。对于 Android Go 设备，Qualcomm 的调优指南建议设为物理 RAM 的 75%。更大的 ZRAM 意味着更多后台应用可以保持在内存中（以压缩形式），但也会增加压缩/解压缩的 CPU 开销。在设备上可以通过 `cat /proc/swaps` 查看 swap 设备和容量，通过 `cat /sys/block/zram0/mm_stat` 查看原始数据大小、压缩后大小等详细统计。
 
 **Swappiness**。这个内核参数控制内核回收匿名页（swap out）和回收文件页（drop page cache）的倾向比例。取值范围 0-200，默认值 60。在 Android 设备上，较低值（10-30）通常更适合，因为移动设备优先保证前台 UI 响应，而不是积极地 swap 后台进程。但某些厂商会设置为 100 甚至更高来更积极地利用 ZRAM。[已验证: 官方文档, developer.android.com]
 
@@ -231,7 +231,7 @@ MGLRU 已在 Android Common Kernel 中启用。它的实际效果是减少"误�
 
 ### 内存分配策略调整
 
-低端机通常会调低各种内存阈值。比如将 ActivityManager 的后台进程上限从标准设备的 32 个降到 8-12 个；降低缓存进程阈值（如 lmkd 的 min_free_level 配置）让 lmkd 更早开始杀后台进程 [存疑: 原文 cache_blind 非标准 Android 参数名，已替换为更准确的描述]；减小 ZRAM 的最大容量（因为物理 RAM 本身就少，需要留更多给前台应用使用）。这些调整的目标是：宁可牺牲后台保活能力，也要保证前台应用的流畅性。
+低端机通常会调低各种内存阈值。比如将 ActivityManager 的后台进程上限从标准设备的 32 个降到 8-12 个；降低缓存进程阈值（如 lmkd 的 min_free_level 配置）让 lmkd 更早开始杀后台进程；减小 ZRAM 的最大容量（因为物理 RAM 本身就少，需要留更多给前台应用使用）。这些调整的目标是：宁可牺牲后台保活能力，也要保证前台应用的流畅性。
 
 ### App 层面的适配
 
