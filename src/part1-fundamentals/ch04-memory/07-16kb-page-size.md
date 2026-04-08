@@ -2,10 +2,13 @@
 title: "16KB Page Size 与 Android 性能"
 chapter: "4.7"
 section: "4.7"
-status: finalized
+status: ready-for-review
 drafted_date: "2026-04-06"
 reviewed_date: "2026-04-08"
 reviewed_by: openclaw-task6
+polish_count: 1
+polish_date: "2026-04-08"
+polish_by: "task2b-polish"
 applicable_versions: "Android 15 (API 35) - Android 17 (API 37)"
 last_verified: "2026-04-06"
 last_verified_against: "developer.android.com, source.android.com, ARM Architecture Reference Manual"
@@ -22,15 +25,16 @@ sources:
 tags:
   - android
   - memory
+  - page-size
+  - tlb
+  - compatibility
   - research
 ---
-
-
 # 4.7 16KB Page Size 与 Android 性能
 
 ## 为什么要了解 16KB Page Size
 
-如果你在 Perfetto 中对比过同一台设备上 4KB 和 16KB page size 的启动 trace，你会发现一个明显的差异：冷启动阶段主线程的 page fault 次数大幅减少，CPU 在内核态的时间占比明显下降。这不是魔法——是内存管理粒度变化带来的直接效果。
+当我们在 Perfetto 中对比同一台设备上 4KB 和 16KB page size 的启动 trace 时，会发现一个明显的差异：冷启动阶段主线程的 page fault 次数大幅减少，CPU 在内核态的时间占比明显下降。这不是魔法——是内存管理粒度变化带来的直接效果。
 
 从 Android 15 开始，Google 正式支持 16KB 内存页大小，并在 Android 16 中将其作为新设备的硬性要求。对于 Android 性能工程师来说，理解这个变化的机制和影响，不仅有助于解释 Trace 中的性能差异，更直接关系到 App 在新设备上的兼容性和性能表现。
 
@@ -51,6 +55,8 @@ TLB 是 CPU 内部的一个小型缓存，专门存储最近使用的虚拟地�
 ARM Cortex-X 系列处理器的 L1 TLB 通常有几十到上百个 entry，L2 TLB（Unified TLB）有几百到上千个。对于一个活跃的 App 来说，64MB 的工作集完全可能超出 L1 TLB 的覆盖范围。页大小从 4KB 变为 16KB 后，同样的 TLB entry 数量能覆盖 4 倍的内存，TLB Miss 率显著下降。
 
 [已验证: 来源见 ARM Architecture Reference Manual, TLB 结构描述]
+
+> 本节讨论的内存管理基础机制，与 §4.1「Android 内存管理架构」中的进程内存布局、§4.3「ART 内存管理」中的堆管理策略直接相关。
 
 ### Page Fault 的减少
 
@@ -79,7 +85,7 @@ Google 在 Pixel 设备上的测试给出了以下具体数据：
 
 功耗降低 4.56% 来自 CPU 减少了 TLB refill 和 Page Table Walk 的次数。这些操作需要访问内存中的页表，相比直接命中 TLB，功耗要高出数倍。减少这类"管理开销"，CPU 可以把更多时间用在有意义的计算上。
 
-系统启动时间缩短 8%（约 950ms）的影响尤为明显——这个阶段的 page fault 特别密集，因为 system_server 和核心服务需要加载大量框架代码。16KB 页让每次 page fault 覆盖更多代码，总的 fault 次数减少。
+系统启动时间缩短 8%（约 950ms）的影响尤为明显——这个阶段的 page fault 特别密集，因为 system_server 和核心服务需要加载大量框架代码。更多启动优化的系统性方法见 §8.1「响应速度优化原则」和 §8.3「启动优化实战」。16KB 页让每次 page fault 覆盖更多代码，总的 fault 次数减少。
 
 ## 对内存使用的影响
 
@@ -93,7 +99,7 @@ Google 的测试表明，16KB 页大小下系统平均内存使用量增加约 5
 
 **实际浪费取决于分配模式。** 连续分配大块内存（如 Bitmap、buffer）时，浪费可以忽略。小对象分配（如 Java 对象）由 ART 的堆管理器处理，堆管理器向内核申请 16KB 页后，内部做精细分配，浪费有限。
 
-**LMK 交互。** 内存使用量增加意味着 lmkd 可能更早触发回收。但 16KB 页下 Page Fault 减少带来的性能收益是否足以抵消 LMK 的额外开销？这取决于具体的内存压力水平。在 6GB 以下的设备上需要关注这个权衡；8GB+ 的设备上，5-10% 的内存增长（约 400-800MB）在可用 RAM 的占比中不太敏感。
+**LMK 交互。** 内存使用量增加意味着 lmkd 可能更早触发回收（§4.5「低内存影响与 lmkd」详细分析了 LMK 的触发策略）。16KB 页下 Page Fault 减少带来的性能收益是否足以抵消 LMK 的额外开销，取决于具体的内存压力水平。6GB 以下的设备需要特别关注这个权衡；8GB+ 的设备上，5-10% 的内存增长（约 400-800MB）在可用 RAM 的占比中不太敏感。
 
 ## 对 App 开发者的影响
 
@@ -101,11 +107,11 @@ Google 的测试表明，16KB 页大小下系统平均内存使用量增加约 5
 
 ### 纯 Java/Kotlin App
 
-如果你的 App 没有任何 Native 代码（C/C++），好消息是——通常不需要修改。ART 运行时和 Android 框架已经适配了 16KB 页，Java/Kotlin 层的内存分配由 ART 堆管理器处理，不需要关心底层页大小。
+如果App 没有任何 Native 代码（C/C++），好消息是：通常不需要修改。ART 运行时和 Android 框架已经适配了 16KB 页，Java/Kotlin 层的内存分配由 ART 堆管理器处理，不需要关心底层页大小。
 
 ### Native 代码（NDK）
 
-如果你的 App 包含 `.so` 文件——无论是自己写的还是通过第三方 SDK 引入的——就需要确保这些 `.so` 文件的 ELF 段（segment）按 16KB 边界对齐。
+如果App 包含 `.so` 文件——无论是自己写的还是通过第三方 SDK 引入的——就需要确保这些 `.so` 文件的 ELF 段（segment）按 16KB 边界对齐。
 
 为什么？Linux 加载 ELF 共享库时，通过 `mmap()` 将文件映射到内存。`mmap()` 按页大小对齐映射区域。如果 `.so` 文件的 ELF 段只按 4KB 对齐，在 16KB 页系统上，一个段可能跨越两个页——加载器需要额外处理跨页对齐，甚至可能导致段内容被部分截断或错误映射，引发 SIGBUS 或 SIGSEGV 崩溃。
 
@@ -131,7 +137,7 @@ long page_size = sysconf(_SC_PAGESIZE);
 - **2025 年 11 月 1 日**：新 App 和现有 App 更新，targetSdk ≥ 35（Android 15），必须支持 16KB
 - **2026 年 5 月 1 日**：所有现有 App 的更新必须支持 16KB
 
-这意味着 2026 年 5 月之后，如果你的 App 还有 4KB 对齐的 `.so` 文件，将无法在 Google Play 上发布更新。
+这意味着 2026 年 5 月之后，如果App 还有 4KB 对齐的 `.so` 文件，将无法在 Google Play 上发布更新。
 
 [已验证: 来源见 Google Play Console 公告及 developer.android.com]
 
@@ -169,7 +175,7 @@ Play Console 的 App Bundle Explorer 也提供了自动化的对齐检查。上�
 
 ### 常见迁移问题
 
-**第三方 SDK 的 `.so` 文件**：这是最常见的阻塞点。如果你的 App 依赖的第三方 SDK 还没有适配 16KB，你需要联系 SDK 提供方获取更新版本。在此期间，可以用 NDK r28+ 的 `llvm-objcopy` 工具手动重新对齐（但这不能修复代码中的硬编码 PAGE_SIZE 问题）。
+**第三方 SDK 的 `.so` 文件**：这是最常见的阻塞点。如果App 依赖的第三方 SDK 还没有适配 16KB，你需要联系 SDK 提供方获取更新版本。在此期间，可以用 NDK r28+ 的 `llvm-objcopy` 工具手动重新对齐（但这不能修复代码中的硬编码 PAGE_SIZE 问题）。
 
 **构建缓存问题**：升级 AGP/NDK 后，记得 clean build。Gradle 的增量编译缓存可能保留旧的 4KB 对齐产物。
 
@@ -215,7 +221,7 @@ TLB Miss 减少后，CPU 在内核态处理 Page Table Walk 的时间也相应�
 
 两者**可以叠加使用**：16KB 基础页 + THP 合并为 2MB 大页。这意味着 TLB entry 可以覆盖 16KB（普通页）或 2MB（大页），TLB Reach 进一步扩大。不过在实际的 Android 设备上，THP 默认配置通常是 `madvise` 模式（只对显式请求的内存区域启用），对大多数 App 的实际影响有限。
 
-对于性能分析来说，16KB 基础页的收益比 THP 更直接、更稳定。如果你在分析 App 的 TLB 相关性能问题，优先确认设备是否启用了 16KB 页。
+对于性能分析来说，16KB 基础页的收益比 THP 更直接、更稳定。在分析 App 的 TLB 相关性能问题时，优先确认设备是否启用了 16KB 页。
 
 ## 版本演进与 OEM 适配
 
@@ -261,7 +267,7 @@ adb shell getconf PAGE_SIZE
 
 ### "16KB 页大小只影响启动速度"
 
-不对。16KB 页影响所有涉及内存访问的场景——不只是启动。滑动时的大量 Bitmap 解码、WebView 的页面渲染、视频解码的 buffer 管理都会受益。只是启动阶段的收益最容易量化（因为 page fault 最密集），所以 Google 在官方文档中重点展示了启动数据。
+不对。16KB 页影响所有涉及内存访问的场景——不只是启动。滑动时的大量 Bitmap 解码、WebView 的页面渲染、视频解码的 buffer 管理都会受益。只是启动阶段的收益最容易量化（因为 page fault 最密集），所以 Google 在官方文档中重点展示了启动数据。从 Perfetto 分析的实际案例来看，列表滑动场景中 Bitmap 频繁 mmap/unmmap 导致的 Minor Page Fault 也是一个可观测的改善点（参见 §7.8「RecyclerView 列表滑动性能深度优化」中的内存访问模式分析）。
 
 ### "我需要在代码中硬编码 16384"
 
