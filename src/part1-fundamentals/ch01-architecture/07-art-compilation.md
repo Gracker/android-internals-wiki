@@ -9,6 +9,9 @@ applicable_versions: "Android 7.0 (API 24) - Android 17 (API 37)"
 last_verified: "2026-04-05"
 last_verified_against: "AOSP android-17-beta3"
 confidence: medium
+polish_count: 1
+polish_date: "2026-04-08"
+polish_by: "task2b-polish"
 sources:
   - type: official
     path: "https://developer.android.com/topic/performance/baselineprofiles/overview"
@@ -142,7 +145,7 @@ JIT 运行时收集的 Profile 信息被持久化到 `/data/misc/profiles/cur/0/
 
 ## dex2oat 编译器深入
 
-dex2oat 是 ART 的 AOT 编译器，负责将 DEX 字节码编译为 OAT 格式的机器码。理解它的编译流程和编译级别，是优化应用安装时间和运行时性能的基础。
+JIT 解决了“没有 AOT 编译时怎么办”的问题，但有两个本质限制：每次启动都要重新热身，编译优化深度受限于运行时时间预算。dex2oat 的 AOT 编译正好互补——它有充足的时间做深度优化，编译结果持久化到磁盘，下次启动直接使用。理解 dex2oat 的编译流程和编译级别，是优化应用安装时间和运行时性能的基础。
 
 ### 编译流程：DEX → OAT
 
@@ -230,9 +233,11 @@ Cloud Profiles 的优势是覆盖面广——它反映的是真实用户的普�
 
 ### Startup Profiles：DEX 布局优化
 
-Startup Profiles 是 Baseline Profiles 的**启动子集**，但它影响的不是编译策略，而是**DEX 文件的物理布局**。
+上面三层 Profile 优化的都是“编译哪些方法”，但编译覆盖率只是冷启动性能的一个维度。另一个容易被忽视的维度是 **DEX 文件的物理布局**——即使所有启动方法都已 AOT 编译，如果这些方法散落在不同的 DEX 文件中，类加载器的 I/O 开销仍然不可忽视。Startup Profiles 解决的就是这个问题。
 
-原理很简单：类加载器按顺序从 classes.dex 开始加载类。如果启动路径上的类散落在 DEX 文件的不同位置（甚至不同的 DEX 文件中），类加载器需要更多的 I/O 操作和内存映射。Startup Profiles 的作用是告诉 R8/D8 编译器：**把这些启动类排列到 classes.dex 的前部**。
+Startup Profiles 是 Baseline Profiles 的**启动子集**，但它影响的不是编译策略，而是 DEX 文件的物理布局。
+
+这里的关键在于类加载器的加载顺序：它按顺序从 classes.dex 开始加载类。如果启动路径上的类散落在 DEX 文件的不同位置（甚至不同的 DEX 文件中），类加载器需要更多的 I/O 操作和内存映射。Startup Profiles 的作用是告诉 R8/D8 编译器：**把这些启动类排列到 classes.dex 的前部**。
 
 ```
 没有 Startup Profiles：
@@ -262,7 +267,7 @@ AutoFDO 在 Pixel 设备上的量化效果：
 - HwBinder 提升 11.7%-20%
 - 开机时间缩短 2%
 
-目前已覆盖 `android16-6.12` 和 `android15-6.6` 两个 GKI 内核分支。
+目前 AutoFDO 优化已合入 `android16-6.12` 和 `android15-6.6` 两个 GKI 内核分支，覆盖 Pixel 6 及更新设备。非 Pixel 设备需要 OEM 自行集成（依赖 perf 事件采集和 LLVM AutoFDO 工具链）。
 
 [已验证: Google Blog, AutoFDO GKI 内核级优化, Pixel 8 量化数据]
 
@@ -310,6 +315,7 @@ dex2oat 编译在以下场景可见：
   ```bash
   profman --dump-profile-file=/data/misc/profiles/cur/0/com.example/primary.prof
   ```
+  输出中关注 `methods` 条目数——如果为 0，说明 Profile 尚未积累数据或未生效。也可以用 `--dump-only` 快速查看 Profile 中标记的方法数量，判断覆盖率。
 
 ### 如何通过 Trace 判断编译瓶颈
 
@@ -422,7 +428,7 @@ Baseline Profiles 只对其中标记的代码路径生效。如果冷启动路�
 
 **误区三："dex2oat 编译越快越好"**
 
-编译速度和编译质量是 trade-off。如果编译速度提升导致优化 pass 被跳过（如方法内联、常量折叠），运行时性能会下降。ART 团队在 2025 年的 18% 编译提速是**在不降低编译质量的前提下**实现的。
+编译速度和编译质量是 trade-off。如果编译速度提升导致优化 pass 被跳过（如方法内联、常量折叠），运行时性能会下降。ART 团队在 2025 年的 18% 编译提速是在**不降低编译质量、不增加峰值内存**的前提下实现的——优化的对象是编译器内部的数据结构和调度策略，而非砍掉优化 pass。
 
 **误区四："安装时不需要优化，后台慢慢编就行"**
 
