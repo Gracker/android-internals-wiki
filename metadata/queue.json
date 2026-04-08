@@ -1520,13 +1520,15 @@
     "section": "7.13",
     "title": "SystemUI 性能分析",
     "priority": 80,
-    "status": "pending",
+    "status": "completed",
     "material_paths": [
       "intake/research-feeds/2026-04-08-19-view-hierarchy-measure-layout-perfetto-jank-optimization.md"
     ],
     "created_date": "2026-04-09",
     "created_by": "task2a-knowledge-gap",
-    "gap_score": 18
+    "gap_score": 18,
+    "completed_at": "2026-04-09T05:02:00+08:00",
+    "completed_by": "openclaw-task2a"
   },
   {
     "section": "9.6",
