@@ -936,3 +936,30 @@ tags:
 - **位置**：Direct Boot 机制
 - **问题**：正文提到 `ACTION_LOCKED_BOOT_COMPLETED` 但没有解释 Direct Boot 机制（Android 7.0 引入，允许锁屏状态下特定组件启动），是重要知识空白
 - **建议**：在"启动时间度量"或"误区"节补充 Direct Boot 说明（为什么需要、哪些组件支持、如何在 manifest 中声明）
+
+## [Task9 Deep Review] 1.13 MessageQueue 机制与 DeliQueue 无锁优化 — 2026-04-09
+- **类型**：版本差异
+- **位置**：版本演进表 — sync barrier 引入版本
+- **问题**：表格称'Android 4.1 (API 16) — 同步屏障用于 Choreographer VSync 优先级'。VSync 机制和 Choreographer 是在 Android 4.1（API 16）随 Project Butter 一起引入的，这个时间点基本正确。但同步屏障（target==null）本身在更早版本就存在（用于 MessageQueue 内部管理），正文没有区分这个细节
+- **建议**：区分'同步屏障机制本身（API 1 就存在）'和'Choreographer 利用同步屏障实现 VSync 优先级（API 16）'
+
+- **类型**：版本差异
+- **位置**：Choreographer 协作章节
+- **问题**：正文描述 VSync-app → doFrame 路径，但没有说明在 Android 17 之前，Choreographer 的 FrameDisplayEventReceiver.onVsync 是如何与 MessageQueue 交互的（即 enqueueMessage 的具体路径）。对比说明会让读者理解 DeliQueue 带来的具体改善
+- **建议**：补充 Android 16 中 VSync 回调消息入队的具体路径（从 onVsync 到 enqueueMessage 到 next()），再与 Android 17 对比
+
+- **类型**：知识盲区
+- **位置**：Message 回收与对象池
+- **问题**：DeliQueue 中消息从栈 drain 到堆后，原来的 Message 对象会被回收（Message.obtain() 从对象池获取）。但 DeliQueue 的无锁入队（push）意味着多个线程同时 obtain/push，回收池的并发访问是否也是 lock-free 的？这是理解 DeliQueue 完整性的关键一环
+- **建议**：补充 Message.obtain() 对象池在多线程下的实现（是否 lock-free，或是否存在池竞争）
+
+- **类型**：知识盲区
+- **位置**：removeCallbacks / removeMessages 与 tombstoning 的交互
+- **问题**：如果一个消息已经被 push 到 Treiber 栈，但还没被 drain 到堆，此时调用 removeCallbacks/removeMessages 能否正确移除？ tombstone 机制如何与消息取消操作协调？
+- **建议**：补充消息取消（removeCallbacks/removeMessages）在 DeliQueue 中的具体行为
+
+- **类型**：数据与案例支撑
+- **位置**：drain 操作 — 批量转移的量化
+- **问题**：正文称'drain 是批量操作，即使有 100 个线程同时 push 了 100 条消息，Looper 线程只需要一次 drain 就能全部转移'，但没有说明 drain 操作本身在 next() 中占用的时间量级。如果 drain 本身耗时较长（比如 1000 条消息的排序），是否会影响 next() 的响应延迟？
+- **建议**：补充 drain 操作的预期时间复杂度（O(n) + 堆插入 O(log n)），并说明在最坏情况下（大量消息同时入队）的行为
+

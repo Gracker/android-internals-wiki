@@ -50,3 +50,18 @@ init 阶段的安全初始化流程（SELinux 策略加载、restorecon）完全
 ### 关联章节
 1.1（Linux Kernel 启动）、14.1（Android 16 架构变化中可能有安全部分）
 
+
+## [2026-04-09] 1.13 MessageQueue 机制与 DeliQueue 无锁优化 — 知识盲区
+
+### 盲区描述
+tombstoning 机制是 DeliQueue 数据一致性的核心，但正文描述不够清晰：具体是什么操作会触发 tombstone 标记？是消息被主动移除（removeCallbacks/removeMessages）时标记，还是 Looper 从栈中 pop 时标记？tombstone 消息最终在哪里被跳过？这个机制如果不讲清楚，读者无法理解为何栈和堆的数据迁移是安全的
+
+### 重要程度
+高
+
+### 建议研究方向
+- 补充 tombstoning 的具体触发时机和处理流程（可标注 [待验证 AOSP 源码]）
+
+### 关联章节
+1.5（线程模型）、1.14（锁竞争与同步性能分析）、2.4（Choreographer）
+

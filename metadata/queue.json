@@ -1545,5 +1545,68 @@
     "created_date": "2026-04-09",
     "created_by": "task2a-knowledge-gap",
     "gap_score": 14
+  },
+  {
+    "section": "1.13",
+    "section_title": "MessageQueue 机制与 DeliQueue 无锁优化",
+    "priority": 95,
+    "reason": "[Deep Tech Review] 源码错误 + 原理断裂 + 版本差异",
+    "material_paths": [
+      "intake/research-gaps.md",
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码准确性",
+        "severity": "P0",
+        "location": "版本演进表",
+        "detail": "android-17-preview 不是有效 AOSP tag。Google 的 AOSP 分支使用 android-$(API)-$(VERSION)_r$(RELEASE) 命名规范（如 android-16.0.0_r1），不存在 android-17-preview 这个 tag。如果需要引用 Android 17 的源码，应使用具体版本号或 android-17.0.0_r1（待确认）",
+        "suggestion": "将 android-17-preview 替换为实际 tag 或注明 [待验证]",
+        "dimension": "源码准确性"
+      },
+      {
+        "type": "原理描述",
+        "severity": "P1",
+        "location": "Treiber 栈选择理由",
+        "detail": "正文称 Treiber 栈让 CAS 更简单，因为'在 ARMv8.1 及以上处理器上，Java 的 AtomicInteger/VarHandle 操作会被编译为高效的 LSE（Large System Extensions）指令'。此表述有误：ARMv8 LSE 提供的是 CAS（CASP/LDADD 等指令），但 VarHandle 的 CAS 在 ARM 上实际被编译为 LDREX/STREX（LL/SC）序列，而非 LSE CAS 指令。LSE CAS 指令（如 CASPE）在 ARMv8.1 才引入，且需要JVM显式使用，并非默认行为",
+        "suggestion": "删除 LSE 指令相关描述；改为'栈的单端操作（只需原子更新栈顶一个指针）比队列（需维护头尾两个指针）更适合 lock-free CAS 实现，且完全避免 ABA 问题'",
+        "dimension": "源码准确性"
+      },
+      {
+        "type": "版本差异",
+        "severity": "P1",
+        "location": "版本演进表",
+        "detail": "表格中'Android 2.3 (API 9) — IdleHandler 支持'，正文自己也标注了 [待验证: IdleHandler 引入的具体版本号（API 9 可能不准确）]。IdleHandler 实际上是在 API 21（Android 5.0）才被引入到 AOSP MessageQueue 中的，早期版本的 MessageQueue 没有 IdleHandler。API 9 这个说法明显偏早",
+        "suggestion": "将 IdleHandler 引入版本更正为 Android 5.0 (API 21)",
+        "dimension": "版本差异"
+      },
+      {
+        "type": "源码准确性",
+        "severity": "P1",
+        "location": "兼容性与迁移影响 — mMessages 字段",
+        "detail": "正文称'DeliQueue 中，mMessages 始终为 null（为了保持二进制兼容）'。这个解释不合逻辑：如果 mMessages 为 null，那么旧代码 'if (mMessages != null)' 将全部改变行为，恰恰是二进制不兼容。正确解释应是：DeliQueue 保留了 mMessages 字段的可见性但不再使用它作为主存储，或该字段在 DeliQueue 模式下语义改变——具体机制需要 AOSP android-17-preview 源码确认",
+        "suggestion": "补充说明：mMessages 在 DeliQueue 中具体如何处理，或标注 [待验证 DeliQueue 内部实现]",
+        "dimension": "源码准确性"
+      },
+      {
+        "type": "原理断裂",
+        "severity": "P1",
+        "location": "锁竞争根源 → DeliQueue 过渡",
+        "detail": "从传统 MessageQueue 的 synchronized 锁竞争跳到 DeliQueue 的 Treiber 栈，中间缺少关键推理：为什么 monitor lock 在高并发写入时成为瓶颈？应该补充：monitor lock 在线程被阻塞时会从用户态进入内核态（操作系统调度），这个上下文切换在高频场景下（1000次/秒的 enqueueMessage）成本累积显著。CAS 失败是用户态重试，无需系统调用",
+        "suggestion": "在 DeliQueue 架构设计前补充一段：'synchronized 阻塞 → OS 调度器介入 → 用户态/内核态上下文切换 → 延迟累积' 的量化说明（即使几百纳秒的 lock 持有时间，在高并发下也会累积）",
+        "dimension": "原理链完整性"
+      },
+      {
+        "type": "知识盲区",
+        "severity": "P1",
+        "location": "drain 过程与生产者并发",
+        "detail": "tombstoning 机制是 DeliQueue 数据一致性的核心，但正文描述不够清晰：具体是什么操作会触发 tombstone 标记？是消息被主动移除（removeCallbacks/removeMessages）时标记，还是 Looper 从栈中 pop 时标记？tombstone 消息最终在哪里被跳过？这个机制如果不讲清楚，读者无法理解为何栈和堆的数据迁移是安全的",
+        "suggestion": "补充 tombstoning 的具体触发时机和处理流程（可标注 [待验证 AOSP 源码]）",
+        "dimension": "知识盲区"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-09T00:35:29",
+    "status": "pending"
   }
 ]
