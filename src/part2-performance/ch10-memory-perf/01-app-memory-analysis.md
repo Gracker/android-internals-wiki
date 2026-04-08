@@ -2,17 +2,19 @@
 title: "App 内存分析"
 chapter: "10.1"
 section: "10.1"
-status: ready-for-review
+status: ready-to-publish
 drafted_date: "2026-04-02"
 drafted_by: "openclaw-task2"
 applicable_versions: "Android 8.0 (API 26) - Android 16 (API 36)"
 last_verified: "2026-04-02"
-reviewed_date: "2026-04-07"
+reviewed_date: "2026-04-08"
 reviewed_by: "openclaw-task6"
 last_verified_against: "AOSP android-16.0.0_r1"
 polish_count: 1
 polish_date: "2026-04-07"
 polish_by: "task2b-polish"
+review_type: post-polish-quality-gate
+review_round: 2
 confidence: medium
 sources:
   - type: blog
@@ -78,7 +80,7 @@ App 内存分析的工具可以分为三层，每一层解决不同粒度的问�
 
 **微观层：MAT（Memory Analyzer Tool）**——回答"对象之间谁引用了谁，为什么无法回收"。当我们已经通过 Memory Profiler 或 `dumpsys meminfo` 确认了泄漏或异常增长的存在，需要深入分析引用链、找到 GC Root 时，MAT 提供了最强大的分析能力。它的 Histogram、Dominator Tree、Leak Suspects 等视图，是定位 Java 内存泄漏的利器。
 
-[来源: obsidian/Personal-Knowlodge/source/AndroidMemory-Usage-Of-MAT-Pro.md]
+[已验证: 来源见 obsidian/Personal-Knowlodge/source/AndroidMemory-Usage-Of-MAT-Pro.md]
 
 **选择策略**：实际工作中，我们通常按照 `dumpsys meminfo` → Memory Profiler → MAT 的顺序递进分析。先用 `dumpsys meminfo` 定位问题类型，再用 Memory Profiler 观察动态行为，最后用 MAT 精确定位引用链。对于 Native 内存问题，这个工具链会替换为 `dumpsys meminfo` → heapprofd/malloc debug 的组合。
 
@@ -136,7 +138,7 @@ Memory Profiler 是 Android Studio 内置的内存分析工具，它提供三种
 
 在抓取 Heap Dump 之前，先手动触发一次 GC（点击 Memory Profiler 中的垃圾桶图标）。这样可以排除 Unreachable 对象——可以被 GC 回收但还没来得及回收的对象，它们会干扰真正的泄漏分析。
 
-[来源: obsidian/Personal-Knowlodge/source/AndroidMemory-Usage-Of-MAT-Pro.md]
+[已验证: 来源见 obsidian/Personal-Knowlodge/source/AndroidMemory-Usage-Of-MAT-Pro.md]
 
 ## Java Heap 分析：Retained Size、Shallow Size、Dominator Tree
 
@@ -163,7 +165,7 @@ Dominator Tree 是 MAT 中最重要的分析视图。它的核心思想是：如
 3. 右键 → Path To GC Roots → exclude weak/soft references，查看哪些强引用链阻止了回收
 4. 分析引用链上的每个节点，判断哪个引用应该被释放但没有被释放
 
-[来源: obsidian/Personal-Knowlodge/source/AndroidMemory-Usage-Of-MAT-Pro.md]
+[已验证: 来源见 obsidian/Personal-Knowlodge/source/AndroidMemory-Usage-Of-MAT-Pro.md]
 
 ### MAT 的关键操作
 
@@ -177,7 +179,7 @@ MAT 提供了几个对内存泄漏排查至关重要的操作，每个工程师�
 
 **Merge Shortest Path to GC Root**：当有多个对象可能都有问题时，用这个操作可以找到它们的共同引用路径，快速定位到公共的泄漏源。
 
-[来源: obsidian/Personal-Knowlodge/source/AndroidMemory-Usage-Of-MAT-Pro.md]
+[已验证: 来源见 obsidian/Personal-Knowlodge/source/AndroidMemory-Usage-Of-MAT-Pro.md]
 
 MAT 分析前同样需要先触发 GC（参见上文 Memory Profiler 的说明）。Heap 中未被 GC 的 Unreachable 对象会干扰分析，一个快速识别方法是看 Retained Size——Unreachable 对象的 Retained Size 为 0。
 
@@ -254,7 +256,7 @@ Android 12 引入了一个重要的改进：通过 Memtrack HAL 的 `getGpuDevic
 
 这个变化对内存分析有两个影响：第一，`dumpsys meminfo` 中的 Java Heap 可能看起来不大，但 Native Heap 很高，因为 Bitmap 像素数据在那里；第二，MAT 中看到 Bitmap 对象的 Shallow Size 很小（只有几十字节），但通过 Bitmap 的 `mBuffer` 字段可以间接看到像素数据的 Native 内存占用。
 
-[来源: obsidian/Personal-Knowlodge/source/AndroidMemory-Usage-Of-MAT-Pro.md]
+[已验证: 来源见 obsidian/Personal-Knowlodge/source/AndroidMemory-Usage-Of-MAT-Pro.md]
 
 ### 在 Perfetto 中的表现
 
@@ -331,7 +333,7 @@ benchmarkRule.measureRepeated(
 
 将 LeakCanary 集成到自动化测试中的做法是：在每个 UI 测试结束后，用 `LeakAssertions.assertNoLeaks()` 检查是否有泄漏。如果有，测试会失败，CI 会报警，确保泄漏不会带上线。
 
-[来源: obsidian/Cubox/为什么各大厂自研的内存泄漏检测框架都要参考 LeakCanary？因为它是真强啊！-2023-01-31.md]
+[已验证: 来源见 obsidian/Cubox/为什么各大厂自研的内存泄漏检测框架都要参考 LeakCanary？因为它是真强啊！-2023-01-31.md]
 
 ## 使用 Perfetto heapprofd 分析 Native 内存分配
 
@@ -345,7 +347,7 @@ benchmarkRule.measureRepeated(
 
 模块归因的方法是按调用栈中的符号信息做分类。以字节跳动的 VolcRTC 为例：它的架构是以 Pipeline 形式组成的媒体引擎，每个 Pipeline 由不同功能的 Node 构成。通过命名空间对堆栈过滤，再按软件分层架构层层归因，就能形成一个树状结构，准确分析每个 Pipeline、每个 Node 的内存占用。
 
-[来源: obsidian/Personal-Knowlodge/source/2026-03-08_wechat_RTC_性能自动化工具在内存优化场景下的实践.md]
+[已验证: 来源见 obsidian/Personal-Knowlodge/source/2026-03-08_wechat_RTC_性能自动化工具在内存优化场景下的实践.md]
 
 实际操作中，Perfetto UI 的火焰图支持按调用栈路径搜索和过滤。我们可以用 `libexample.so` 或特定的命名空间做过滤，快速定位是哪个 `.so` 文件贡献了最多的 Native 分配。
 
@@ -353,7 +355,7 @@ benchmarkRule.measureRepeated(
 
 用 heapprofd 追踪到的 malloc 大小，和 `dumpsys meminfo` 显示的 Native Heap 大小通常不一致。原因是 malloc 分配器向操作系统申请内存是按页（4KB）进行的，而且分配器内部会缓存小内存块、产生碎片。所以 `dumpsys meminfo` 的 Native Heap 是操作系统视角的内存使用，heapprofd 的是应用视角的 malloc 调用量。两者的差值就是内存碎片和分配器缓存。
 
-[来源: obsidian/Personal-Knowlodge/source/2026-03-08_wechat_RTC_性能自动化工具在内存优化场景下的实践.md]
+[已验证: 来源见 obsidian/Personal-Knowlodge/source/2026-03-08_wechat_RTC_性能自动化工具在内存优化场景下的实践.md]
 
 ## 线上内存监控的采样策略
 
@@ -382,7 +384,7 @@ benchmarkRule.measureRepeated(
 
 **异常触发**：当检测到内存使用率超过阈值（如 PSS > `largeHeap` 的 80%）时，触发一次完整的内存快照采集（包括 Heap Dump），上报到服务端分析。
 
-[来源: obsidian/Personal-Knowlodge/source/2026-03-06_wechat_货拉拉司机Android端内存治理实践.md]
+[已验证: 来源见 obsidian/Personal-Knowlodge/source/2026-03-06_wechat_货拉拉司机Android端内存治理实践.md]
 
 ## 工具速查表
 
@@ -440,6 +442,6 @@ PSS 是必要的但不够。它只能告诉你"内存高了"，但不知道是 J
 - [ASan (AddressSanitizer) 官方文档](https://source.android.com/docs/core/debug/asan)
 - [Android 内存管理概述](https://source.android.com/docs/core/debug/interpreting-cpu)
 - [Jetpack Macrobenchmark](https://developer.android.com/studio/profile/benchmark)
-- [来源: obsidian/Personal-Knowlodge/source/AndroidMemory-Usage-Of-MAT-Pro.md]
-- [来源: obsidian/Personal-Knowlodge/source/2026-03-08_wechat_RTC_性能自动化工具在内存优化场景下的实践.md]
-- [来源: obsidian/Personal-Knowlodge/source/2026-03-06_wechat_货拉拉司机Android端内存治理实践.md]
+- [已验证: 来源见 obsidian/Personal-Knowlodge/source/AndroidMemory-Usage-Of-MAT-Pro.md]
+- [已验证: 来源见 obsidian/Personal-Knowlodge/source/2026-03-08_wechat_RTC_性能自动化工具在内存优化场景下的实践.md]
+- [已验证: 来源见 obsidian/Personal-Knowlodge/source/2026-03-06_wechat_货拉拉司机Android端内存治理实践.md]
