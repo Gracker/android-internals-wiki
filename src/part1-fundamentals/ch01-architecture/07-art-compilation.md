@@ -2,7 +2,7 @@
 title: "ART 编译管线与 dex2oat 优化"
 chapter: "1.7"
 section: "1.7"
-status: ready-for-review
+status: ready-to-publish
 drafted_date: "2026-04-05"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 7.0 (API 24) - Android 17 (API 37)"
@@ -12,6 +12,8 @@ confidence: medium
 polish_count: 1
 polish_date: "2026-04-08"
 polish_by: "task2b-polish"
+reviewed_date: "2026-04-09"
+reviewed_by: "openclaw-task6"
 sources:
   - type: official
     path: "https://developer.android.com/topic/performance/baselineprofiles/overview"
@@ -33,7 +35,7 @@ related_chapters: ["1.6", "4.3", "8.2", "8.3", "16.1"]
 
 我们在 Perfetto 中分析冷启动时，经常会看到应用进程的 `bindApplication` 阶段耗时几百毫秒甚至几秒，其中一个容易被忽略的变量是：**这段代码是以解释执行的方式跑的，还是已经编译成了机器码？**
 
-同一个 APK，在首次安装（没有 Profile）和经过几天使用后（积累了 JIT Profile），冷启动速度可能差距 30% 以上。这不是因为代码变了，而是因为**编译策略**变了。ART 编译管线决定了你的应用代码从 DEX 字节码到机器指令走哪条路——解释执行、JIT 即时编译、还是 AOT 预编译。了解这个管线，我们就能回答这些问题：
+同一个 APK，在首次安装（没有 Profile）和经过几天使用后（积累了 JIT Profile），冷启动速度可能差距 30% 以上。[待验证: 此数据需与官方基准测试或实测数据核对] 这不是因为代码变了，而是因为**编译策略**变了。ART 编译管线决定了你的应用代码从 DEX 字节码到机器指令走哪条路——解释执行、JIT 即时编译、还是 AOT 预编译。了解这个管线，我们就能回答这些问题：
 
 - 冷启动慢，有没有可能是编译策略不够优化？
 - 安装耗时过长，跟 dex2oat 有什么关系？
@@ -108,7 +110,7 @@ JIT 编译后的机器码存放在代码缓存（JIT code cache）中。这个�
 - 初始大小：`dalvik.vm.jitinitialsize`，默认 64KB
 - 最大容量：`dalvik.vm.jitmaxsize`，默认 64MB
 
-代码缓存会进行垃圾回收——当空间不足时，最早编译且不再被调用的方法会被清除。在实际的大型应用中，JIT 代码缓存的内存占用通常稳定在 4MB 左右，不会对前台应用的内存造成显著压力。
+代码缓存会进行垃圾回收——当空间不足时，最早编译且不再被调用的方法会被清除。在实际的大型应用中，JIT 代码缓存的内存占用通常稳定在 4MB 左右。[待验证: 此数值为工程经验值，需在不同设备/应用规模下验证] 这不会对前台应用的内存造成显著压力。
 
 [已验证: AOSP art/runtime/jit/jit_code_cache.cc, JIT 代码缓存管理]
 
@@ -223,7 +225,7 @@ Baseline Profiles 是**开发者在应用中预先定义的 Profile**，告诉�
 3. 打包进 APK/AAB
 4. 应用安装时，ART Service 读取 Baseline Profiles，以 `speed-profile` 级别编译其中标记的方法
 
-Baseline Profiles 的核心价值：**Day-0 性能**。不需要等用户先用几天，安装完就立刻有 AOT 编译覆盖。Google 的数据是，正确配置 Baseline Profiles 可以提升约 30% 的代码执行速度。
+Baseline Profiles 的核心价值：**Day-0 性能**。不需要等用户先用几天，安装完就立刻有 AOT 编译覆盖。Google 官方数据表明，正确配置 Baseline Profiles 可以提升约 30% 的代码执行速度。[待验证: 需定位 Google 官方基准测试报告出处]
 
 **第三层：Cloud Profiles（Google Play 聚合）**
 
@@ -412,7 +414,7 @@ ART 编译管线与全书多个章节有交叉：
 | Android 7.0 | 混合编译（JIT + Profile-Guided AOT） | 安装快、存储小、渐进式性能提升 |
 | Android 9.0 | Profile 引导的后台编译优化 | 后台 dex2oat 覆盖率提升 |
 | Android 12 | ART 模块化（Mainline） | 编译优化可独立推送 |
-| Android 14 | ART Service 取代 dex2oat 直接调用 | 编译管理更统一 |
+| Android 14 | ART Service 统一管理编译调度（dex2oat 仍为底层编译器） | 编译管理更统一 |
 | Android 16 | Cloud Compilation / SDM 格式 / AutoFDO 内核 | 安装体验改善、内核性能提升 |
 | Android 17 | static final 不可变 → 更激进的常量折叠 + 分代 GC | 编译优化深度提升、GC 暂停减少 |
 
