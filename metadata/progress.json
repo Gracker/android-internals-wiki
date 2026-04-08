@@ -2,8 +2,8 @@
   "generated_at": "2026-04-03T19:10:00",
   "total_sections": 111,
   "metrics": {
-    "total": 135,
-    "draft": 12,
+    "total": 136,
+    "draft": 13,
     "ready-for-review": 37,
     "reviewed": 5,
     "finalized": 31,
@@ -1932,7 +1932,7 @@
     }
   ],
   "ready_for_review": 6,
-  "last_updated": "2026-04-08T05:36:11.676375",
+  "last_updated": "2026-04-08T11:00:00+08:00",
   "stats": {
     "total": 116,
     "completed": 96,
@@ -2236,6 +2236,19 @@
         "Coil 3 移除 Bitmap Pooling + Compose 集成 25-40% 运行时提升（目标 §7.10）",
         "Hardware Bitmap + GPU texture upload jank 机制 + prepareToDraw 异步预上传 + Perfetto 表现（目标 §7.10/§2.5/§7.2）",
         "ImageDecoder vs BitmapFactory + AVIF/HEIF 硬件解码 + NDK AImageDecoder（目标 §7.10）"
+      ]
+    },
+    {
+      "time": "2026-04-08T11:00:00+08:00",
+      "focus": "网络优化（topic rotation #8）+ §16.5 Android 17 性能行为变更联动",
+      "source": "topic-rotation-8 + queue-freshness",
+      "candidates": 4,
+      "passed": 1,
+      "delivered": 1,
+      "themes": [
+        "Android 17 Data Plan Streaming API：getStreamingAppMaxDownlinkKbps/getStreamingAppMaxUplinkKbps 运营商速率查询（目标 §12.2/§16.5）",
+        "ACCESS_LOCAL_NETWORK 权限：显式本地网络访问管控 + mDNS/局域网通信需声明（目标 §12.2/§16.5）",
+        "OpenJDK 21/25 TLS 命名组增强：后量子密码学混合密钥交换 + 握手性能改善（目标 §12.3/§12.4）"
       ]
     }
   ],

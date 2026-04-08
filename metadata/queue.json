@@ -1304,7 +1304,10 @@
     "priority": 80,
     "status": "pending",
     "file": "src/part4-system/ch16-aosp/05-android17-api37-performance-changes.md",
-    "notes": "gap-mining 2026-04-08, score 20/20"
+    "notes": "gap-mining 2026-04-08, score 20/20",
+    "material_paths": [
+      "intake/research-feeds/2026-04-08-11-android17-network-data-plan-streaming-access-local-network-tls.md"
+    ]
   },
   {
     "section": "2.20",
@@ -1401,5 +1404,20 @@
     "added_at": "2026-04-08T09:05:00+08:00",
     "status": "completed",
     "completed_at": "2026-04-08T10:30:00+08:00"
+  },
+  {
+    "section": "1.16",
+    "section_title": "Audio Pipeline 延迟与性能",
+    "priority": 80,
+    "reason": "知识缺口挖掘：AudioFlinger 是与 SurfaceFlinger 同等重要的核心系统服务，音频延迟影响游戏/音乐/VoIP 体验，全书零覆盖",
+    "material_paths": [
+      "https://source.android.com/docs/core/audio/latency",
+      "https://source.android.com/docs/core/audio/architecture",
+      "https://developer.android.com/ndk/guides/audio",
+      "intake/daily-info/2026-04-07.md (Android 17 Background Audio Hardening)"
+    ],
+    "added_by": "task2a-knowledge-gap",
+    "added_at": "2026-04-08T11:08:00+08:00",
+    "status": "pending"
   }
 ]

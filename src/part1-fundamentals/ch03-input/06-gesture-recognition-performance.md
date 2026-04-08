@@ -19,10 +19,13 @@ sources:
     path: "frameworks/base/core/java/android/view/ViewGroup.java"
   - type: aosp
     path: "frameworks/base/core/java/androidx/core/widget/NestedScrollView.java"
-tags: ['input', 'gesture', 'velocitytracker', 'gesturedetector', 'touch-slop', 'gesture-conflict', 'performance', 'custom-gesture']
+tags:
+  - android
+  - performance
+  - rendering
+  - research
 related_chapters: ["3.1", "3.2", "3.3", "3.4", "2.4"]
 ---
-
 # 手势识别算法与性能优化
 
 <!-- outline-start -->
