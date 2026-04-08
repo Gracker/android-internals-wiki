@@ -1,15 +1,15 @@
 ---
 title: "MainThread 与 RenderThread 协作"
 chapter: "2.5"
-status: reviewed
+status: ready-for-review
 section: "2.5"
 drafted_date: "2026-03-30"
 drafted_by: "openclaw-task2a"
-polish_count: 1
-polish_date: "2026-04-04"
+polish_count: 2
+polish_date: "2026-04-08"
 polish_by: "task2b-polish"
-applicable_versions: "Android 12 (API 31) - Android 16 (API 35)"
-last_verified: "2026-03-30"
+applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
+last_verified: "2026-04-08"
 last_verified_against: "AOSP android-16.0.0_r1"
 confidence: high
 reviewed_date: "2026-04-04"
@@ -27,7 +27,7 @@ sources:
   - type: obsidian
     path: "Cubox/结合源码和Perfetto分析Android渲染机制-2024-12-13.md"
 tags: ['renderthread', 'mainthread', 'displaylist', 'rendernode', 'syncframestate', 'hwui', '渲染流水线', 'GPU绘制']
-related_chapters: ["2.3", "2.4", "2.6", "3.1"]
+related_chapters: ["2.3", "2.4", "2.6", "2.15", "2.16", "3.1"]
 ---
 
 # MainThread 与 RenderThread 协作
@@ -98,7 +98,7 @@ void draw(Canvas canvas) {
 
 每个 View 内部持有一个 `RenderNode` 对象。当 View 的内容发生变化（调用了 `invalidate()`），RenderNode 会被标记为 dirty，其内部的 DisplayList 会在下一次 draw 阶段被重新构建。如果 View 只是位置变了而没有内容变化（调用了 `requestLayout()`），RenderNode 只需要更新变换矩阵，不需要重新构建 DisplayList——这是一个常见的优化点。
 
-到这里，主线程的工作就完成了。它产出了最新的 DisplayList 树（对应 View 树的渲染指令），接下来需要把这些数据安全地移交给 RenderThread。
+measure、layout、draw 三步走完，主线程的产出是一棵最新的 DisplayList 树（对应 View 树的渲染指令）。接下来要把这些数据安全地移交给 RenderThread。
 
 ## RenderThread 的职责：同步、GPU 绘制、提交
 
@@ -128,7 +128,7 @@ void RenderThread::threadLoop() {
 }
 ```
 
-关键在于：RenderThread 不主动轮询。它的大部分时间都在等待主线程发来的"帧数据已准备好"信号。一旦收到信号，它会立即开始工作，形成 CPU（主线程构建下一帧）和 GPU（RenderThread 渲染当前帧）的流水线并行。
+RenderThread 不主动轮询。它的大部分时间都在等待主线程发来的"帧数据已准备好"信号。一旦收到信号，它会立即开始工作，形成 CPU（主线程构建下一帧）和 GPU（RenderThread 渲染当前帧）的流水线并行。
 
 ## 同步栅栏：SyncFrameState
 
@@ -163,7 +163,7 @@ void draw(View view, AttachInfo attachInfo, DrawCallbacks callbacks) {
 
 2. **DisplayList 数据同步**：将 View 树中所有标记为 dirty 的 RenderNode 的 DisplayList 数据从主线程"移交"给 RenderThread。这里不是简单的复制，而是通过引用计数和资源所有权转移来实现的。
 
-3. **Bitmap 上传**：如果有新的 Bitmap 需要被 GPU 使用，它们会被上传到 GPU 内存。从 Android 8.0（Oreo）开始，Bitmap 的像素数据直接在 Native 堆分配（而非 Java 堆），减少了 GC 压力和 GPU 上传开销。
+3. **Bitmap 上传到 GPU 纹理内存**：如果有新的 Bitmap 需要被 GPU 使用，这一步会把它们上传为 GPU 纹理。从 Android 8.0 开始，Bitmap 的像素数据直接在 Native 堆分配（而非 Java 堆），减少了 GC 压力和 GPU 上传开销。
 
 4. **释放主线程**：同步完成后，主线程被释放，可以继续处理下一个 VSync 周期的 Input、Animation 等回调。而 RenderThread 开始独立的 GPU 渲染工作。
 
@@ -197,11 +197,11 @@ void CanvasContext::draw() {
 }
 ```
 
-值得注意的是，GPU 命令的提交是**异步的**。CPU（RenderThread）把命令扔给 GPU 后，GPU 在后台执行渲染，两者可以并行。RenderThread 通过 **Fence** 机制来跟踪 GPU 的工作状态。
+GPU 命令的提交是**异步的**。CPU（RenderThread）把命令扔给 GPU 后，GPU 在后台执行渲染，两者可以并行。RenderThread 通过 **Fence** 机制来跟踪 GPU 的工作状态。
 
 ### Fence 机制
 
-Fence 是 Android 图形系统中的核心同步原语，它本质上是一个文件描述符（file descriptor），可以跨进程、跨 CPU/GPU 传递。在渲染流程中有两个关键的 Fence：
+Fence 是 Android 图形系统中的核心同步原语，它本质上是一个文件描述符（file descriptor），可以跨进程、跨 CPU/GPU 传递。（关于 Fence 的底层实现与 DMA-BUF 的关系，我们在 [2.16 DMA-BUF、Gralloc 与跨进程图形内存共享](16-sync-fence.md) 中有详细讨论。）在渲染流程中有两个关键的 Fence：
 
 **acquireFence**：当 RenderThread 调用 `dequeueBuffer()` 从 BufferQueue 获取一个 Buffer 时，这个 Buffer 可能还在被 SurfaceFlinger 使用（上一帧还没有完全显示完）。acquireFence 表示"这个 Buffer 何时可以被安全写入"。如果 SurfaceFlinger 还没释放这个 Buffer，RenderThread 会等待这个 Fence signal。
 
@@ -299,9 +299,9 @@ ORDER BY dur DESC
 LIMIT 20;
 ```
 
-## 两个线程耗时分析的实操方法
+## 分析实操：从 Trace 定位瓶颈
 
-当我们面对一个具体的卡顿问题时，下面这套 Perfetto 分析流程可以帮助我们快速定位瓶颈所在：
+上面讨论了正常帧的时序和三种常见异常模式。面对一个具体的卡顿问题时，下面这套 Perfetto 分析流程可以将定位过程系统化：
 
 **第一步：看主线程的 doFrame 是否超时。** 如果 `Choreographer#doFrame` 整体超过 16.6ms（60Hz）或 11.1ms（90Hz），说明这一帧有问题。
 
@@ -396,7 +396,7 @@ view.animate()
 
 ## [自动发现] BLAST 模式下的提交流程
 
-从 Android 10 开始，Buffer 的提交通过了 **BLAST（Buffer Layer State Transition）** 模式，这在之前的 Legacy BufferQueue 模式基础上做了根本性改变。
+从 Android 10 开始，Buffer 的提交通过了 **BLAST（Buffer Layer State Transition）** 模式，取代了之前的 Legacy BufferQueue 模式。（关于 BufferQueue 的完整机制，参见 [2.15 DMA-BUF、Gralloc 与跨进程图形内存共享](15-dmabuf-gralloc.md)。）
 
 在 BLAST 模式下，RenderThread 的 `queueBuffer` 不再直接通过 Binder 通知 SurfaceFlinger，而是将 Buffer 封装进一个 `SurfaceControl.Transaction`，通过异步 Binder 调用提交给 SurfaceFlinger。这个 Transaction 可以原子性地同时包含 Buffer 更新和窗口属性变更（如位置、大小变化），彻底解决了旧架构中画面撕裂和尺寸不同步的问题。
 
@@ -423,7 +423,7 @@ SF:        ...    [Latch F0] [Latch F1] [Latch F2] ...
 | **Android 8.0 (API 26)** | Bitmap Native 分配 | Bitmap 像素直接在 Native 堆分配，减少 GPU 上传开销 |
 | **Android 10 (API 29)** | BLAST 模式引入 | Buffer 提交从同步 Binder 改为异步 Transaction |
 | **Android 12 (API 31)** | Frame Timeline | 系统级的帧预期/实际时间对比，精确的 Jank 检测 |
-| **Android 15 (API 35)** | ANGLE 推广加速 | ANGLE（将 GLES 翻译为 Vulkan）的采用范围进一步扩大，RenderThread 底层渲染路径发生变化 [待验证：ANGLE 在 Android 15 中是否对所有 GPU 厂商强制启用] |
+| **Android 15 (API 35)** | ANGLE 推广加速 | ANGLE（将 GLES 翻译为 Vulkan）的采用范围进一步扩大，RenderThread 底层渲染路径逐步向 Vulkan 迁移 [待验证：ANGLE 在 Android 15 中是否对所有 GPU 厂商强制启用] |
 
 ## 常见误区
 
