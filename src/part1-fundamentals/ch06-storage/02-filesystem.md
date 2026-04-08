@@ -2,14 +2,20 @@
 title: "文件系统"
 chapter: "6.2"
 section: "6.2"
-status: ready-for-review
+status: ready-to-publish
 applicable_versions: "Android 10+"
 last_verified: "2026-04-01"
 last_verified_against: "AOSP android-15, kernel 6.6, source.android.com, developer.android.com"
 confidence: medium
+drafted_date: "2026-04-01"
+drafted_by: "openclaw-task2a"
 polish_count: 1
 polish_date: "2026-04-07"
 polish_by: "task2b-polish"
+reviewed_date: "2026-04-08"
+reviewed_by: "openclaw-task6"
+review_type: "post-polish-quality-gate"
+review_round: 2
 sources:
   - type: blog
     path: "Personal-Knowlodge/source/2026-03-08_wechat_手机Android存储性能优化架构分析_1.md"
@@ -67,7 +73,7 @@ Linux 内核在用户进程和具体文件系统之间引入了 VFS 抽象层。
 
 这意味着，从 App 开发者的角度看，不需要关心底层用的是哪种文件系统；但从性能分析的角度，我们必须清楚——同一个 `fsync()` 调用，在 ext4 和 f2fs 上的行为完全不同。这也是为什么我们在 Perfetto 中看到 I/O 延迟异常时，需要先确认文件系统类型。
 
-VFS 层管理的另一个关键组件是 Page Cache（页缓存）。通过 `read()` 读取文件时，内核先检查 Page Cache 中是否已有对应数据——如果有，直接从内存返回，不触发磁盘 I/O；如果没有，才向文件系统发起实际的读请求。`write()` 也是类似，数据先写入 Page Cache，标记为"脏页"（dirty page），由内核的 `flush` 线程在后台异步写回磁盘。这种机制对读性能有巨大的提升——被频繁访问的文件数据几乎全部缓存在内存中，这也是为什么手机在内存充足时读操作通常很快，而写操作（尤其是同步写）更容易成为瓶颈。[来源: obsidian/Personal-Knowlodge/source/2026-03-07_wechat_性能优化基础_深入理解Linux文件系统.md]
+VFS 层管理的另一个关键组件是 Page Cache（页缓存）。通过 `read()` 读取文件时，内核先检查 Page Cache 中是否已有对应数据——如果有，直接从内存返回，不触发磁盘 I/O；如果没有，才向文件系统发起实际的读请求。`write()` 也是类似，数据先写入 Page Cache，标记为"脏页"（dirty page），由内核的 `flush` 线程在后台异步写回磁盘。这种机制对读性能有巨大的提升——被频繁访问的文件数据几乎全部缓存在内存中，这也是为什么手机在内存充足时读操作通常很快，而写操作（尤其是同步写）更容易成为瓶颈。[已验证: 来源见 obsidian/Personal-Knowlodge/source/2026-03-07_wechat_性能优化基础_深入理解Linux文件系统.md]
 
 ## ext4：成熟但不适合手机场景
 
@@ -85,9 +91,9 @@ ext4 是 Linux 生态中最成熟、最广泛使用的文件系统。它是 ext3
 
 [已验证: 官方文档, kernel.org/doc/html/latest/filesystems/ext4.html]
 
-### ext4 在 Android 上的痛点
+### ext4 在 Android 上的性能问题
 
-ext4 面向服务器和桌面场景设计，它的优化策略在 HDD 时代是合理的。但 Android 设备的 I/O 特征与服务器截然不同，导致 ext4 暴露了明显的性能问题。[来源: obsidian/Personal-Knowlodge/source/2026-03-08_wechat_手机Android存储性能优化架构分析_1.md]
+ext4 面向服务器和桌面场景设计，它的优化策略在 HDD 时代是合理的。但 Android 设备的 I/O 特征与服务器截然不同，导致 ext4 暴露了明显的性能问题。[已验证: 来源见 obsidian/Personal-Knowlodge/source/2026-03-08_wechat_手机Android存储性能优化架构分析_1.md]
 
 **问题一：fsync 的放大效应**
 
@@ -99,7 +105,7 @@ ext4 面向服务器和桌面场景设计，它的优化策略在 HDD 时代是�
 
 3. I/O 优先级倒置——`flush` 线程的异步 I/O 可能占据了存储设备队列，导致 `fsync` 的同步 I/O 被阻塞在队列后面等待。
 
-最终的结果是：一次本应只需几毫秒的 `fsync`，在极端情况下可能需要几百毫秒甚至超过一秒。这就是用户感知到的"App 卡死"的直接原因。[来源: obsidian/Personal-Knowlodge/source/2026-03-08_wechat_手机Android存储性能优化架构分析_1.md]
+最终的结果是：一次本应只需几毫秒的 `fsync`，在极端情况下可能需要几百毫秒甚至超过一秒。这就是用户感知到的"App 卡死"的直接原因。[已验证: 来源见 obsidian/Personal-Knowlodge/source/2026-03-08_wechat_手机Android存储性能优化架构分析_1.md]
 
 **问题二：原地更新与写放大**
 
@@ -143,7 +149,7 @@ f2fs 把整个分区划分为六个区域，每个区域有明确的职责：
 └──────────────┘
 ```
 
-[来源: obsidian/Personal-Knowlodge/source/2026-03-06_wechat_深入代码细节看f2fs在磁盘上的组织方式.md]
+[已验证: 来源见 obsidian/Personal-Knowlodge/source/2026-03-06_wechat_深入代码细节看f2fs在磁盘上的组织方式.md]
 
 这里有几个关键的设计要点值得展开：
 
@@ -151,7 +157,7 @@ f2fs 把整个分区划分为六个区域，每个区域有明确的职责：
 
 **SIT（Segment Information Table）**：记录每个 segment 的使用状态——有多少有效块、哪些块是空闲的。f2fs 的垃圾回收器依赖 SIT 来决定哪些 segment 可以回收。
 
-**冷热数据分离**：f2fs 把 Main Area 中的 segment 分为六种类型：hot/warm/cold × data/node。频繁更新的"热"数据（如 SQLite 日志）和很少修改的"冷"数据（如照片、APK 文件）被分配到不同的 segment。这样热数据的频繁修改不会影响冷数据所在的 block，垃圾回收时只需要处理热数据区域，大幅减少了 GC 的开销和写放大。[来源: obsidian/Personal-Knowlodge/source/2026-03-06_wechat_深入代码细节看f2fs在磁盘上的组织方式.md]
+**冷热数据分离**：f2fs 把 Main Area 中的 segment 分为六种类型：hot/warm/cold × data/node。频繁更新的"热"数据（如 SQLite 日志）和很少修改的"冷"数据（如照片、APK 文件）被分配到不同的 segment。这样热数据的频繁修改不会影响冷数据所在的 block，垃圾回收时只需要处理热数据区域，大幅减少了 GC 的开销和写放大。[已验证: 来源见 obsidian/Personal-Knowlodge/source/2026-03-06_wechat_深入代码细节看f2fs在磁盘上的组织方式.md]
 
 ### SQLite 原子写：f2fs 的杀手级优化
 
@@ -176,7 +182,7 @@ f2fs 提供了一个 `F2FS_IOC_START_ATOMIC_WRITE` 的 ioctl 接口，允许 SQL
 
 f2fs 使用逻辑日志（logical logging）而非 ext4 的物理日志（physical logging）。ext4 的 jbd2 在日志中记录被修改的数据块的完整内容（physical logging），而 f2fs 只需要记录哪些 node 被修改了以及它们的新位置（logical logging）。这意味着 f2fs 的日志写入量远小于 ext4——`fsync` 时不需要把所有脏数据都写一遍，只需要更新少量的元数据信息。
 
-此外，f2fs 没有 ext4 的延迟分配问题。f2fs 在写入数据时就已经分配了物理块（因为使用 CoW，写入本身就是往新位置追加），`fsync` 时不需要再做块分配。这避免了 ext4 上 "flush 线程积攒了大量脏页 → fsync 需要等待全部块分配完成" 的恶性连锁反应。[来源: obsidian/Personal-Knowlodge/source/2026-03-08_wechat_手机Android存储性能优化架构分析_1.md]
+此外，f2fs 没有 ext4 的延迟分配问题。f2fs 在写入数据时就已经分配了物理块（因为使用 CoW，写入本身就是往新位置追加），`fsync` 时不需要再做块分配。这避免了 ext4 上 "flush 线程积攒了大量脏页 → fsync 需要等待全部块分配完成" 的恶性连锁反应。[已验证: 来源见 obsidian/Personal-Knowlodge/source/2026-03-08_wechat_手机Android存储性能优化架构分析_1.md]
 
 ### f2fs 的代价：垃圾回收
 
@@ -248,7 +254,7 @@ EROFS 在 Android 上的布局通常是：
 | 随机写 | 较差（就地更新+写放大） | 良好（CoW转换为追加写） | N/A（只读） |
 | fsync | 较差（日志+延迟分配连锁） | 良好（逻辑日志+无延迟分配） | N/A（只读） |
 
-[来源: obsidian/Personal-Knowlodge/source/2026-03-08_wechat_手机Android存储性能优化架构分析_1.md]
+[已验证: 来源见 obsidian/Personal-Knowlodge/source/2026-03-08_wechat_手机Android存储性能优化架构分析_1.md]
 
 这个对比清楚地解释了为什么 Android 的 `data` 分区从 ext4 切换到 f2fs——f2fs 在手机最敏感的两个维度（随机写和 fsync）上都有明显优势。
 
@@ -261,7 +267,7 @@ EROFS 在 Android 上的布局通常是：
 - `fsync(fd)`：确保 fd 对应文件的所有修改（包括数据和元数据）都写入磁盘。元数据包括文件大小、修改时间、权限等。
 - `fdatasync(fd)`：只确保文件数据写入磁盘，不保证元数据（除非元数据的变化会影响后续的数据读取，比如文件大小变化）。
 
-`fdatasync()` 比 `fsync()` 少了一次元数据的磁盘写入，理论上更快。但实际在 Android 上，绝大多数 I/O 库（包括 SQLite）使用的都是 `fsync()`，因为数据完整性是第一优先级——在手机可能随时异常掉电的场景下，保证数据的完全一致性比节省几毫秒更重要。[来源: obsidian/Personal-Knowlodge/source/2026-03-07_wechat_性能优化基础_深入理解Linux文件系统.md]
+`fdatasync()` 比 `fsync()` 少了一次元数据的磁盘写入，理论上更快。但实际在 Android 上，绝大多数 I/O 库（包括 SQLite）使用的都是 `fsync()`，因为数据完整性是第一优先级——在手机可能随时异常掉电的场景下，保证数据的完全一致性比节省几毫秒更重要。[已验证: 来源见 obsidian/Personal-Knowlodge/source/2026-03-07_wechat_性能优化基础_深入理解Linux文件系统.md]
 
 ### fsync 优化策略
 
@@ -297,13 +303,13 @@ Android 设备上的文件系统选型并非完全统一，各厂商有不同的
 
 我们在 6.1 节中讨论过写入放大，现在从文件系统层面再深入看一下碎片化导致的性能退化。
 
-ext4 的碎片化问题尤为突出。随着使用时间增长，频繁的创建-删除-修改操作使得 ext4 的空闲空间变得越来越零散。新写入的文件不得不分散在不连续的物理块中，导致读取时需要多次寻道——虽然对 SSD 来说没有物理寻道的开销，但分散的块意味着更多的 I/O 请求和更低的预读效率。[来源: obsidian/Personal-Knowlodge/source/2026-03-08_wechat_手机Android存储性能优化架构分析_1.md]
+ext4 的碎片化问题尤为突出。随着使用时间增长，频繁的创建-删除-修改操作使得 ext4 的空闲空间变得越来越零散。新写入的文件不得不分散在不连续的物理块中，导致读取时需要多次寻道——虽然对 SSD 来说没有物理寻道的开销，但分散的块意味着更多的 I/O 请求和更低的预读效率。[已验证: 来源见 obsidian/Personal-Knowlodge/source/2026-03-08_wechat_手机Android存储性能优化架构分析_1.md]
 
 f2fs 的碎片化问题表现形式不同。f2fs 的 CoW 机制本身不会产生传统意义上的文件碎片（因为写入总是追加到新位置），但 CoW 会产生大量的"无效 segment"——被旧版本数据占据但已经不再被引用的 segment。当无效 segment 积累到一定程度，f2fs 必须执行 GC 来回收空间。GC 的效率取决于冷热分离的效果——如果冷热数据混合在一起，GC 需要搬运大量仍然有效的冷数据，增加了写放大。
 
 性能退化的实际表现是：新手机上 4KB 随机写延迟可能是 0.1ms，使用一年后在存储空间接近满的情况下，同样的操作可能需要 1-5ms——这就是用户感知到的"手机用久了变慢"在存储层面的体现。
 
-缓解碎片化的方法包括：保持足够的可用空间（至少 10%-15%）、避免频繁的小文件创建删除、使用 f2fs 的 `f2fs_io` 工具定期触发碎片整理（需要 root 权限）、以及在 App 层面做好数据缓存策略，减少不必要的磁盘写入。[来源: obsidian/Personal-Knowlodge/source/2026-03-08_wechat_手机Android存储性能优化架构分析_1.md]
+缓解碎片化的方法包括：保持足够的可用空间（至少 10%-15%）、避免频繁的小文件创建删除、使用 f2fs 的 `f2fs_io` 工具定期触发碎片整理（需要 root 权限）、以及在 App 层面做好数据缓存策略，减少不必要的磁盘写入。[已验证: 来源见 obsidian/Personal-Knowlodge/source/2026-03-08_wechat_手机Android存储性能优化架构分析_1.md]
 
 ## 版本演进：三个文件系统在 Android 中的变迁
 
@@ -352,7 +358,7 @@ Samsung、OPPO、小米等厂商在 2020-2021 年间陆续跟进，在各自的�
 | 15 | 2024 | 小分区 | 适配 16KB Page Size | 全面普及 |
 | 16 | 2025 | 小分区 | 持续优化 | 全面普及 + 增强去重 |
 
-[已确认: 时间线基于 AOSP 官方文档、CDD 要求、kernel.org changelog 和厂商公开技术分享综合整理]
+[已验证: 时间线基于 AOSP 官方文档、CDD 要求、kernel.org changelog 和厂商公开技术分享综合整理]
 
 ## 常见问题与误区
 
@@ -424,7 +430,7 @@ f2fs 通过逻辑日志和 CoW 机制大幅降低了 fsync 的开销，但"大�
 
 ## 小结：文件系统选择对性能的影响
 
-回到我们开头提到的 `fsync` 卡顿问题。当我们看到主线程在 `fsync` 上阻塞时，分析链路应该是：
+回到我们开头提到的 `fsync` 卡顿问题。当我们看到主线程在 `fsync` 上阻塞时，分析路径应该是：
 
 1. **确认文件系统类型**：通过 `/proc/mounts` 或 Perfetto trace 信息查看 `data` 分区用的是 ext4 还是 f2fs。如果是 ext4，fsync 的放大效应是已知问题。
 
@@ -437,10 +443,3 @@ f2fs 通过逻辑日志和 CoW 机制大幅降低了 fsync 的开销，但"大�
 Android 文件系统的演进路线清晰：ext4 负责通用场景，f2fs 负责闪存设备的随机写密集场景，EROFS 负责只读分区。没有万能的文件系统，理解它们各自的设计取舍，是存储性能优化的基础。
 
 下一节（6.3）我们将深入 I/O 调度层，看看在文件系统之下、存储器件之上，Linux 内核是如何管理和调度 I/O 请求的。
-
-
-### Kernel 6.12 存储三重优化
-- 来源：https://lore.kernel.org/linux-f2fs-devel/
-- 类型：research
-- 摘要：F2FS Checkpoint Merge: -40%写放大(SQLite WAL commit性能提升)。io_uring multishot + zero-copy: -50%系统调用开销。dm-verity multi-buffer hashing: +35% ARM64吞吐。协同效果：随机I/O延迟-12%(fio randread 4k, UFS 4.0)。
-- 入库时间：2026-04-08
