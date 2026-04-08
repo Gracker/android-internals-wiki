@@ -1082,3 +1082,51 @@ tags:
 - **位置**：§7.3 引用
 - **问题**：Jank 节引用§7.3（卡顿分析方法论）来引用 SurfaceFlinger 排查方法，但 7.3 章节较大（13 个子章节），未明确 SF 排查在 7.3 中的具体位置
 - **建议**：明确引用§7.3 中的具体小节（如"详见 §7.3（卡顿分析方法论 → SF 卡顿排查）"），或在 7.3 的 03-jank-methodology.md 中增加对 2.6 的反向引用
+
+## 2026-04-09 待分类/暂存
+
+### Android 开发中，准确判断应用处于前台（Foreground）还是后台（Background）
+- 链接：https://juejin.cn/post/7595108457496346639
+- 类型：技术文章
+- 摘要：详细解析Android应用前后台状态判断的多种方法，包括ActivityLifecycleCallbacks、ComponentCallbacks、ProcessLifecycleOwner等技术方案的优缺点分析。
+- 推荐章节：ch04-activity
+- 原因：无法匹配章节
+
+### 什么 AI 写 Android 最好用？官方做了一个基准测试排名
+- 链接：https://juejin.cn/post/7614897667961143347
+- 类型：技术文章
+- 摘要：解读谷歌Android Bench基准测试，对比主流AI编程助手在Android开发场景下的性能表现。
+- 推荐章节：ch16-ai-mobile
+- 原因：无法匹配章节
+
+
+
+## [Task9 Deep Review] 2.9 渲染机制的版本演进 — 2026-04-09
+- **类型**：源码准确性
+- **位置**：RenderThread 章节（"主线程阻塞在 eglSwapBuffers 或 glFinish 上"）
+- **问题**：eglSwapBuffers 本身不阻塞主线程——它将待显示帧入队后立即返回；真正阻塞主线程的是 glFinish（强制等待 GPU 完成所有 pending 命令）。错误地将 eglSwapBuffers 列为阻塞原因，会误导读者在实际分析中定位错误方向。
+- **建议**：修正为"glFinish 强制等待 GPU 完成命令，阻塞主线程"。补充说明：Android 5.0 之前 GPU 命令提交在主线程，glFinish 是主线程卡顿的根因；Android 5.0 引入 RenderThread 后，GPU 命令提交与主线程分离，glFinish 的阻塞影响才被消除。
+
+## [Task9 Deep Review] 2.9 渲染机制的版本演进 — 2026-04-09
+- **类型**：数据缺失
+- **位置**：SkiaVulkan 章节（"CPU 开销降低约 30–50%"）
+- **问题**：具体数值没有来源标注，也无测试条件说明。读者无法判断数据的可信度和适用范围。
+- **建议**：标注数据来源（skia.org benchmark 或 Khronos Vulkan performance paper），或降低表述精确度为"显著降低"。如无可靠来源，建议改为"Vulkan 的多线程命令构建减少了驱动层 overhead，实际 benchmark 因场景差异较大"。
+
+## [Task9 Deep Review] 2.9 渲染机制的版本演进 — 2026-04-09
+- **类型**：版本差异
+- **位置**：Android 16 章节（"OpenGL ES 不再接受新特性开发，进入维护模式"）
+- **问题**：ANGLE 在所有 Android 16 设备上默认启用，OpenGL ES App 实际上仍然完整可用。"进入维护模式"是战略层面，不是实际功能层面。读者可能误解为 OpenGL ES 在 Android 16 上已不可用。
+- **建议**：修正表述为"Vulkan 成为官方推荐图形 API；ANGLE 层自动将 OpenGL ES 翻译为 Vulkan"；补充说明 ANGLE 翻译本身并非零成本，部分场景下 Vulkan 原生 API 仍有明显优势。
+
+## [Task9 Deep Review] 2.9 渲染机制的版本演进 — 2026-04-09
+- **类型**：数据缺失
+- **位置**：Frame Pacing Library 章节（"Unreal Engine 已集成 Swappy"）
+- **问题**：没有版本引用，也没有说具体是哪个版本的 Unreal Engine 集成了。读者无法核实。
+- **建议**：补充具体版本引用（如 Unreal Engine 5.x 或具体发行版本），或改为"部分游戏引擎（如 Unreal Engine 5.x）已集成 Frame Pacing Library"，并给出官方文档链接。
+
+## [Task9 Deep Review] 2.9 渲染机制的版本演进 — 2026-04-09
+- **类型**：原理断裂
+- **位置**：SkiaGL → SkiaVulkan 演进原因
+- **问题**：SkiaVulkan 的优势描述中提到了"多线程并行构建和提交 GPU 命令"，但没有解释"为什么多线程构建命令缓冲区能提升帧率"——缺少从 GL ES 单线程提交到 Vulkan 多线程提交的因果链。
+- **建议**：补充完整因果链：GL ES 驱动要求所有 GPU 命令从单一线程同步提交（驱动内部有隐式同步）→ Vulkan 允许多线程并行构建 command buffer → 主线程不再等待 GPU → 帧率更稳定，CPU 开销降低约 30–50%。

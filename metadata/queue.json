@@ -1745,5 +1745,49 @@
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-09T04:33:48",
     "status": "pending"
+  },
+  {
+    "section": "2.9",
+    "section_title": "渲染机制的版本演进",
+    "priority": 95,
+    "reason": "[Deep Tech Review] P0 源码错误：eglSwapBuffers 不阻塞主线程（glFinish 才阻塞）；多处 P1 源码错误和版本差异",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "RenderThread 章节（\"主线程阻塞在 eglSwapBuffers 或 glFinish 上\"）",
+        "detail": "eglSwapBuffers 本身不阻塞主线程，它只是将待显示帧入队并立即返回；真正阻塞的是 glFinish（强制等待 GPU 完成所有pending命令）。将 eglSwapBuffers 列为阻塞原因是原理性错误。",
+        "suggestion": "修正为\"glFinish 或 GPU 驱动层的命令 flush 阻塞主线程\"；补充说明：在 Android 5.0 之前，GPU 命令提交在主线程，glFinish 是主线程卡顿的根因。"
+      },
+      {
+        "type": "原理断裂",
+        "location": "FrameMetrics 表格 SWAP_BUFFERS_DURATION",
+        "detail": "FrameMetrics 的 SWAP_BUFFERS_DURATION 指的是 EGL swap 耗时，在 Vulkan 后端中不适用。SkiaVulkan 后端下该指标的实际含义未说明。",
+        "suggestion": "补充 [待验证]：Android 16 SkiaVulkan 后端下 SWAP_BUFFERS_DURATION 的实际含义和是否仍有意义。"
+      },
+      {
+        "type": "版本差异",
+        "location": "Android 3.0 章节（DisplayList → RenderNode 更名）",
+        "detail": "DisplayList 在 Android 3.0 引入时的名字就是 DisplayList，\"后更名为 RenderNode\"发生在后续版本（大约 Android 5.0），不是 3.0 当年。",
+        "suggestion": "修正 DisplayList → RenderNode 重命名的版本，标注 [待验证] 确认准确版本。"
+      },
+      {
+        "type": "版本差异",
+        "location": "Android 16 章节（\"OpenGL ES 不再接受新特性开发\"）",
+        "detail": "Android 16 中 OpenGL ES 并未\"退出\"——ANGLE 仍然在所有设备上默认启用，OpenGL ES 是绝大多数 App 仍在使用的 API。Vulkan 是推荐方向但非强制替代。\"进入维护模式\"表述过于激进。",
+        "suggestion": "修正为\"Vulkan 成为官方推荐图形 API，ANGLE 层将 OpenGL ES 翻译为 Vulkan\"，并说明 ANGLE 本身也有 overhead。"
+      },
+      {
+        "type": "知识盲区",
+        "location": "整体章节",
+        "detail": "Android 5.0 Dalvik → ART 的切换对渲染性能的影响未被提及。ART 的 AOT 编译使得渲染时 Java 方法调用 overhead 大幅降低，这是主线程性能提升的另一重要原因。",
+        "suggestion": "在 RenderThread 章节补充 ART 对渲染性能的影响，说明 Java 方法调用 overhead 降低对 measure/layout/draw 的加速作用。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-09T05:37:18",
+    "status": "pending"
   }
 ]

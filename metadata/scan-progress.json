@@ -1,6 +1,6 @@
 {
-  "last_scan_time": "2026-04-09T03:49:17.109930",
-  "scanned_files": 173,
+  "last_scan_time": "2026-04-09T05:19:33.857476",
+  "scanned_files": 140,
   "total_files": 173,
   "indexed_files": [
     {
@@ -4398,10 +4398,229 @@
       "chapters": [],
       "confidence": "medium",
       "content_preview": "# Android 17 MessageQueue 无锁化深度解析：从源码到性能实战  > 本文是对《Android 17 把 MessageQueue 改成无锁了》的深度补全版本，新增：源码级实现分..."
+    },
+    {
+      "path": "OpenClaw定时任务/知识库进化/2026-03-31-每日知识进化.md",
+      "title": "每日进化 · 2026-03-31",
+      "scores": {
+        "relevance": 2,
+        "depth": 2,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "total_score": 10,
+      "matched_chapters": [
+        "ch11-Profiling"
+      ],
+      "first_chars": "# 每日进化 · 2026-03-31\n\n📊 最近更新：413 个文件（3天内）\n\n💡 今日进化动作（按优先级）\n\n- 🔴 高优先级：\n  - **Binder IPC 初稿收尾（1.4）**（20分钟）→ 04-binder.md 是唯一 draft 状态的 src/ 文件，素材已充足（高爷原创博客 3 篇 + AOSP 源码 + 官方文档），需补充 Perfetto trace 映射段和常见误",
+      "quality": "medium",
+      "indexed_at": "2026-04-09T04:47:39.996761"
+    },
+    {
+      "path": "OpenClaw定时任务/AI手机行业日报/2026-03-26-AI手机行业日报.md",
+      "title": "📅 AI × 手机行业日报 | 2026-03-26",
+      "scores": {
+        "relevance": 2,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "total_score": 9,
+      "matched_chapters": [
+        "ch17-新版本"
+      ],
+      "first_chars": "# 📅 AI × 手机行业日报 | 2026-03-26\n\n## 🔥 今日头条\n\n1. **OpenClaw 重大更新引发生态震荡**：3月22-23日的更新将技能安装主源从 npm 迁移至 ClawHub 市场，引入新 SDK 并废弃旧插件系统，导致大量现有插件失效、系统崩溃。创始人承认发布流程缺失关键步骤，建议用户升级 beta 版或等待修复版。这一事件暴露了开源 AI Agent 框架在快速",
+      "quality": "medium",
+      "indexed_at": "2026-04-09T04:49:02.573068"
+    },
+    {
+      "path": "OpenClaw定时任务/AI手机行业日报/2026-04-01-AI手机行业日报.md",
+      "title": "AI x 手机行业日报 | 2026-04-01",
+      "scores": {
+        "relevance": 2,
+        "depth": 2,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "total_score": 10,
+      "matched_chapters": [
+        "ch10-包体积"
+      ],
+      "first_chars": "# AI x 手机行业日报 | 2026-04-01\n\n### 🔥 今日头条\n\n1. **企业微信 CLI 开源：超级 App 正式拥抱 Agent 时代**\n> 3月30日，企业微信在 GitHub 开源 CLI 项目（WecomTeam/wecom-cli），开放消息、日程、文档等七大核心能力，直接支持 Claude Code、Codex 等主流 Agent 调用。这是超级 App 从\"封杀 ",
+      "quality": "medium",
+      "indexed_at": "2026-04-09T04:49:02.573328"
+    },
+    {
+      "path": "OpenClaw定时任务/AI手机行业日报/2026-04-08-AI手机行业日报.md",
+      "title": "## 🔥 今日头条",
+      "scores": {
+        "relevance": 3,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "total_score": 10,
+      "matched_chapters": [
+        "ch09-网络",
+        "ch14-工具"
+      ],
+      "first_chars": "📅 AI × 手机行业日报 | 2026-04-08\n\n### 🔥 今日头条\n\n**1. 今日搜索服务不可用，无法获取 48 小时内增量新闻**\n本日执行信息采集时，web_search 与 web_fetch 工具均返回异常（DNS 解析受阻），无法完成常规 5 层关键词扫描。今日信息板块维持昨日基线判断不变，深度思考板块以专题深潜替代。\n\n### 📱 手机 AI Agent 产品动态\n\n今日无",
+      "quality": "medium",
+      "indexed_at": "2026-04-09T04:49:02.573536"
+    },
+    {
+      "path": "OpenClaw定时任务/AI手机行业日报/2026-04-04-AI手机行业日报.md",
+      "title": "📅 AI × 手机行业日报 | 2026-04-04",
+      "scores": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "total_score": 8,
+      "matched_chapters": [],
+      "first_chars": "# 📅 AI × 手机行业日报 | 2026-04-04\n\n## 🔥 今日头条\n\n1. **MCP Dev Summit 北美站落幕（4月2-3日，纽约），下一代 MCP 规范确认走向无状态架构**：Google、Microsoft、Anthropic 联合推动 MCP 协议支持 Stateless Server，解决超大规模部署难题。新版规范预计 2026 年 6 月发布，将引入原生流式传输、重",
+      "quality": "medium",
+      "indexed_at": "2026-04-09T04:49:02.573754"
+    },
+    {
+      "path": "OpenClaw定时任务/AI手机行业日报/2026-04-07-AI手机行业日报.md",
+      "title": "## 🔥 今日头条",
+      "scores": {
+        "relevance": 1,
+        "depth": 2,
+        "timeliness": 5,
+        "verifiability": 2
+      },
+      "total_score": 10,
+      "matched_chapters": [],
+      "first_chars": "📅 AI × 手机行业日报 | 2026-04-07\n\n### 🔥 今日头条\n\n**1. Anthropic 封杀 OpenClaw 接入 Claude 订阅，强制转向按量付费**\n4 月 4 日起，Anthropic 以违反订阅条款为由，禁止 OpenClaw 框架通过 Claude 订阅账户调用 API。用户需改为 pay-as-you-go 计费。这直接导致 OpenClaw 在 4 月 5",
+      "quality": "medium",
+      "indexed_at": "2026-04-09T04:49:02.573976"
+    },
+    {
+      "path": "OpenClaw定时任务/AI手机行业日报/2026-04-02-AI手机行业日报.md",
+      "title": "AI × 手机行业日报 | 2026-04-02",
+      "scores": {
+        "relevance": 2,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "total_score": 9,
+      "matched_chapters": [
+        "ch16-构建"
+      ],
+      "first_chars": "# AI × 手机行业日报 | 2026-04-02\n\n### 🔥 今日头条\n\n1. **京东发布 ClawTip：Agent 经济的基础设施——A2A 微支付**\n> 3月31日京东科技推出面向 AI Agent 生态的 A2A 微支付基础设施 ClawTip，基于 X402 协议构建，支持智能体专属钱包、AI 自主决策支付、链路行为存证。Agent 可自主完成询价→决策→支付→获取服务全流程，",
+      "quality": "medium",
+      "indexed_at": "2026-04-09T04:49:02.574185"
+    },
+    {
+      "path": "OpenClaw定时任务/AI手机行业日报/2026-04-05-AI手机行业日报.md",
+      "title": "📅 AI × 手机行业日报 | 2026-04-05（周六）",
+      "scores": {
+        "relevance": 2,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "total_score": 9,
+      "matched_chapters": [
+        "ch07-内存"
+      ],
+      "first_chars": "tags:\n  - ai\n  - memory\n  - agent\n  - openclaw\n  - blog\ntags:\n  - ai\n  - memory\n  - agent\n  - openclaw\n  - blog\n\n# 📅 AI × 手机行业日报 | 2026-04-05（周六）\n\n## 🔥 今日头条\n\n**1. 企业微信 CLI 开源，七大核心能力正式向 AI Agent 开放**\n3",
+      "quality": "medium",
+      "indexed_at": "2026-04-09T04:49:02.574415"
+    },
+    {
+      "path": "OpenClaw定时任务/AI手机行业日报/2026-03-27-AI手机行业日报.md",
+      "title": "## 🔥 今日头条（1-3 条最重要的事）",
+      "scores": {
+        "relevance": 2,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 2
+      },
+      "total_score": 10,
+      "matched_chapters": [
+        "ch08-存储"
+      ],
+      "first_chars": "📅 AI × 手机行业日报 | 2026-03-27\n\n### 🔥 今日头条（1-3 条最重要的事）\n> 三星 Galaxy S26 正式推送 Gemini AI Agent，采用 AppFunctions + UI Automation 双轨架构，标志着 Android 平台 AI Agent 从概念走向大规模商用；小米发布 MiMo 大模型系列及 miclaw AI Agent，投入 160 ",
+      "quality": "medium",
+      "indexed_at": "2026-04-09T04:49:02.574613"
+    },
+    {
+      "path": "OpenClaw定时任务/AI手机行业日报/2026-04-03-AI手机行业日报.md",
+      "title": "📅 AI × 手机行业日报 | 2026-04-03（周五）",
+      "scores": {
+        "relevance": 2,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "total_score": 9,
+      "matched_chapters": [
+        "ch06-功耗"
+      ],
+      "first_chars": "tags:\n  - ai\n  - power\n  - npu\n  - agent\n  - blog\ntags:\n  - ai\n  - power\n  - npu\n  - agent\n  - blog\n\n# 📅 AI × 手机行业日报 | 2026-04-03（周五）\n\n### 🔥 今日头条\n\n1. **Google 发布 Gemma 4（4月2日）**：专为端侧 Agentic 工作流设计的开源模",
+      "quality": "medium",
+      "indexed_at": "2026-04-09T04:49:02.574807"
+    },
+    {
+      "path": "OpenClaw定时任务/AI手机行业日报/2026-03-31-AI手机行业日报.md",
+      "title": "## 🔥 今日头条",
+      "scores": {
+        "relevance": 2,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "total_score": 9,
+      "matched_chapters": [
+        "ch13-调度"
+      ],
+      "first_chars": "📅 AI × 手机行业日报 | 2026-03-31\n\n### 🔥 今日头条\n\n> **vivo 在博鳌论坛发布\"Agent Phone\"战略**（3月24日），成为首个明确以\"AI Agent 为手机核心交互范式\"定位的主流 OEM，标志着二线厂商从\"观望\"正式转向\"下场\"。\n> \n> **A2A 协议达到 1.0 Release Candidate**（3月），引入 Protobuf 规范定义",
+      "quality": "medium",
+      "indexed_at": "2026-04-09T04:49:02.575007"
+    },
+    {
+      "path": "OpenClaw定时任务/AI手机行业日报/2026-03-28-AI手机行业日报.md",
+      "title": "## 🔥 今日头条（1-3 条最重要的事）",
+      "scores": {
+        "relevance": 3,
+        "depth": 2,
+        "timeliness": 5,
+        "verifiability": 3
+      },
+      "total_score": 13,
+      "matched_chapters": [
+        "ch08-存储",
+        "ch17-新版本"
+      ],
+      "first_chars": "📅 AI × 手机行业日报 | 2026-03-28\n\n### 🔥 今日头条（1-3 条最重要的事）\n> Google AppFunctions 与 Android 16 正式集成，Samsung Galaxy S26 系列首发支持，标志着 API 协议路线进入实质落地阶段。\n> \n> 字节跳动豆包手机第二代计划 Q2-Q3 发布，首次面临微信/支付宝等超级 App 的受控开放博弈。\n\n### 📱",
+      "quality": "medium",
+      "indexed_at": "2026-04-09T04:49:02.575193"
+    },
+    {
+      "path": "OpenClaw定时任务/AI手机行业日报/2026-04-06-AI手机行业日报.md",
+      "title": "## 🔥 今日头条",
+      "scores": {
+        "relevance": 2,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "total_score": 9,
+      "matched_chapters": [
+        "ch08-存储"
+      ],
+      "first_chars": "📅 AI × 手机行业日报 | 2026-04-06\n\n### 🔥 今日头条\n\n1. **Microsoft Copilot Studio 正式 GA 支持 A2A 协议**：2026 年 4 月，Microsoft Copilot Studio 多 Agent 协调功能全面可用，内建 A2A 支持，允许 Copilot Agent 跨产品边界与第三方 Agent 直接通信和委派任务。这是 A2A",
+      "quality": "medium",
+      "indexed_at": "2026-04-09T04:49:02.575380"
     }
   ],
-  "current_directory": "论文",
-  "current_offset": 6,
+  "current_directory": "OpenClaw定时任务",
+  "current_offset": 140,
   "priority_queue": [
     "论文",
     "OpenClaw定时任务"
@@ -4412,7 +4631,8 @@
     "Personal-Knowlodge",
     "公众号文章",
     "X 文章",
-    "论文"
+    "论文",
+    "OpenClaw定时任务"
   ],
   "last_scan_batch": 1,
   "status": "in_progress"

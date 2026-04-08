@@ -119,3 +119,22 @@ HWUI Android 16 重构细节缺失。章节明确提到"Android 16 HWUI 渲染�
 
 ### 关联章节
 2.6（SurfaceFlinger 与合成）、7.3（卡顿分析方法论）
+
+
+## [2026-04-09] 2.9 渲染机制的版本演进 — 知识盲区
+
+### 盲区描述
+Android 5.0 Dalvik → ART 的切换对渲染性能的影响未被现有章节覆盖。ART 的 AOT 编译使得应用安装时已完成 dex 到本地码的编译，Java 方法调用的 overhead 大幅降低，这是 Android 5.0 后主线程 `performTraversals` 更快的重要原因（不仅是 RenderThread 的功劳）。
+
+### 重要程度
+高
+
+### 建议研究方向
+- Android 5.0 ART 对 UI 线程性能的具体 benchmark 数据（与 Dalvik 对比）
+- ART 编译器（dex2oat）对渲染路径关键类（如 View、Canvas、Drawable）的 AOT 编译策略
+- ART 对 DisplayList 录制和提交的性能影响
+
+### 关联章节
+- 1.7 ART 编译管线与 dex2oat 优化（已有章节）
+- 2.9 渲染机制的版本演进（当前章节）
+- 4.3 ART 虚拟机内存管理（已有章节）
