@@ -1723,5 +1723,25 @@
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-09T03:30:00",
     "status": "pending"
+  },
+  {
+    "section": "2.6",
+    "section_title": "SurfaceFlinger 与合成",
+    "priority": 95,
+    "reason": "[Deep Tech Review] Android 14 SurfaceFlinger 重构为 ICompositor 架构，章节仅一句带过，INVALIDATE/REFRESH 代码仅适用于 Android 12-13，版本差异未充分覆盖",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "版本差异",
+        "location": "主循环章节（INVALIDATE/REFRESH 代码块附近）",
+        "detail": "Android 14 SurfaceFlinger 重构为 ICompositor/SurfaceFlinger::commit()+composite() 架构，但章节仅一句带过。INVALIDATE/REFRESH 代码示例只适用于 Android 12-13，Android 14+ 的实际流程和代码路径缺失。",
+        "suggestion": "在主循环一节增加 Android 14+ 流程对比（commit() vs handleMessageRefresh()），可给出 Android 14 的新代码片段或 at android-14.0.0_r1 的路径说明。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-09T04:33:48",
+    "status": "pending"
   }
 ]

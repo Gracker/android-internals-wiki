@@ -1,7 +1,7 @@
 {
-  "last_scan_time": "2026-04-09T02:48:20.649174",
-  "scanned_files": 167,
-  "total_files": 167,
+  "last_scan_time": "2026-04-09T03:49:17.109930",
+  "scanned_files": 173,
+  "total_files": 173,
   "indexed_files": [
     {
       "path": "Cubox/在Android上实现一个丝滑流畅的页面展开和关闭的效果动画-2024-01-26.md",
@@ -4400,15 +4400,10 @@
       "content_preview": "# Android 17 MessageQueue 无锁化深度解析：从源码到性能实战  > 本文是对《Android 17 把 MessageQueue 改成无锁了》的深度补全版本，新增：源码级实现分..."
     }
   ],
-  "current_directory": "X 文章",
-  "current_offset": 167,
+  "current_directory": "论文",
+  "current_offset": 6,
   "priority_queue": [
-    "Cubox",
-    "调研",
     "论文",
-    "知识库",
-    "公众号文章",
-    "X 文章",
     "OpenClaw定时任务"
   ],
   "completed_directories": [
@@ -4416,7 +4411,8 @@
     "Personal-Knowlledge",
     "Personal-Knowlodge",
     "公众号文章",
-    "X 文章"
+    "X 文章",
+    "论文"
   ],
   "last_scan_batch": 1,
   "status": "in_progress"

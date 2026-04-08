@@ -13373,6 +13373,58 @@
       "total_score": 8,
       "reason": "Score < 10 (relevance and depth too low)",
       "indexed_at": "2026-04-09T02:48:20.649172"
+    },
+    {
+      "path": "论文/AI-2026-03-08-Agentic-Reasoning-Framework/02-翻译.md",
+      "title": "Agentic Reasoning：通过智能体工具增强大语言模型推理的精简框架",
+      "scores": {
+        "relevance": 2,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 0
+      },
+      "total_score": 8,
+      "skip_reason": "Score < 10 (relevance:2, depth:1, timeliness:5, verifiability:0)",
+      "skipped_at": "2026-04-09T03:49:44.544355"
+    },
+    {
+      "path": "论文/AI-2026-03-08-Agentic-Reasoning-Framework/03-精读.md",
+      "title": "Agentic Reasoning 精读笔记",
+      "scores": {
+        "relevance": 2,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "total_score": 9,
+      "skip_reason": "Score < 10 (relevance:2, depth:1, timeliness:5, verifiability:1)",
+      "skipped_at": "2026-04-09T03:49:44.544363"
+    },
+    {
+      "path": "论文/AI-2026-04-02-LLM-Agent综述/03-精读.md",
+      "title": "LLM Agent 综述精读",
+      "scores": {
+        "relevance": 3,
+        "depth": 1,
+        "timeliness": 4,
+        "verifiability": 0
+      },
+      "total_score": 8,
+      "skip_reason": "Score < 10 (relevance:3, depth:1, timeliness:4, verifiability:0)",
+      "skipped_at": "2026-04-09T03:49:44.544365"
+    },
+    {
+      "path": "论文/AI-2026-04-07-Trace2Skill/02-翻译.md",
+      "title": "Trace2Skill：将轨迹局部经验蒸馏为可迁移的 Agent 技能",
+      "scores": {
+        "relevance": 2,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 0
+      },
+      "total_score": 8,
+      "skip_reason": "Score < 10 (relevance:2, depth:1, timeliness:5, verifiability:0)",
+      "skipped_at": "2026-04-09T03:49:44.544367"
     }
   ],
   "last_updated": "2026-04-08T08:51:05.767544",
