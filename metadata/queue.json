@@ -1608,5 +1608,26 @@
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-09T00:35:29",
     "status": "pending"
+  },
+  {
+    "section": "9.5",
+    "section_title": "ANR 案例集",
+    "priority": 90,
+    "reason": "[review回炉] outline锚点要求覆盖死锁案例，当前5个案例未包含",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "需补充素材",
+        "location": "案例覆盖范围",
+        "detail": "outline要求案例覆盖：死锁、主线程I/O、Binder超时、系统负载、SharedPreferences。当前缺少明确的死锁案例",
+        "suggestion": "补充一个主线程死锁ANR案例（synchronized锁顺序/Binder线程池耗尽），按现有5个案例的格式编写"
+      }
+    ],
+    "added_by": "task6-review",
+    "added_at": "2026-04-09T01:26:54.271469",
+    "status": "pending",
+    "original_review_log": "logs/review/2026-04-09-01-review.md"
   }
 ]
