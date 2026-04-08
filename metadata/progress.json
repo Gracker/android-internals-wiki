@@ -1,9 +1,9 @@
 {
   "generated_at": "2026-04-03T19:10:00",
-  "total_sections": 110,
+  "total_sections": 111,
   "metrics": {
-    "total": 134,
-    "draft": 11,
+    "total": 135,
+    "draft": 12,
     "ready-for-review": 37,
     "reviewed": 5,
     "finalized": 31,
@@ -2190,6 +2190,19 @@
         "ART @FastNative/@CriticalNative: Regular JNI 115ns→@FastNative 35ns(3x)→@CriticalNative 25ns(5x) + CTS Android 14 + RegisterNatives 协同（目标 §1.15）",
         "sched_ext BPF 可扩展调度器 Linux 6.12 + UprobeStats Android 16 动态埋点 + eBPF futex 跟踪点穿透 native 锁分析（目标 §14.10/§1.14）"
       ]
+    },
+    {
+      "time": "2026-04-08T08:38:00+08:00",
+      "focus": "§7.10 图片加载与 Bitmap 性能优化（queue priority 80, pending, 零素材）",
+      "source": "queue-priority-80",
+      "candidates": 6,
+      "passed": 3,
+      "delivered": 3,
+      "themes": [
+        "Coil 3 移除 Bitmap Pooling + Compose 集成 25-40% 运行时提升（目标 §7.10）",
+        "Hardware Bitmap + GPU texture upload jank 机制 + prepareToDraw 异步预上传 + Perfetto 表现（目标 §7.10/§2.5/§7.2）",
+        "ImageDecoder vs BitmapFactory + AVIF/HEIF 硬件解码 + NDK AImageDecoder（目标 §7.10）"
+      ]
     }
   ],
   "history": [
@@ -3558,6 +3571,21 @@
       "verification_level": "L2",
       "drafted_date": "2026-04-07",
       "drafted_by": "openclaw-task2a"
+    },
+    {
+      "date": "2026-04-08",
+      "section": "7.10",
+      "title": "图片加载与 Bitmap 性能优化",
+      "action": "research-completed",
+      "focus": "Coil 3 bitmap pooling + Hardware Bitmap GPU upload + ImageDecoder AVIF",
+      "candidates": 6,
+      "passed": 3,
+      "delivered": 3,
+      "themes": [
+        "Coil 3 移除 Bitmap Pooling + Compose 25-40% 提升",
+        "Hardware Bitmap texture upload jank + prepareToDraw + Perfetto",
+        "ImageDecoder vs BitmapFactory + AVIF 硬件解码"
+      ]
     }
   ],
   "sections": {

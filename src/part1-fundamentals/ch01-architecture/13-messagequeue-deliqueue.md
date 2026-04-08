@@ -22,14 +22,8 @@ sources:
     path: "https://en.wikipedia.org/wiki/Treiber_Stack"
 tags:
   - android
-  - messagequeue
-  - handler
-  - looper
-  - lock-free
-  - deliqueue
-  - treiber-stack
-  - jank
-  - main-thread
+  - binder
+  - research
 related_chapters: ["1.5", "1.14", "2.4", "2.5", "7.1"]
 ---
 

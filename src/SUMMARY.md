@@ -84,6 +84,7 @@ tags:
   - [5.8 后台执行限制与优化](part1-fundamentals/ch05-cpu-power/08-background-execution.md)
   - [5.9 ADPF 自适应性能框架](part1-fundamentals/ch05-cpu-power/09-adpf.md)
   - [5.10 JobScheduler/WorkManager 调度与后台任务性能](part1-fundamentals/ch05-cpu-power/10-jobscheduler-workmanager-performance.md)
+  - [5.11 端侧 AI 推理性能：NPU/GPU 加速与 TFLite 管线](part1-fundamentals/ch05-cpu-power/11-ondevice-ml-inference-performance.md)
 
 - [第 6 章：存储与 I/O](part1-fundamentals/ch06-storage/README.md)
   - [6.1 Android 存储架构](part1-fundamentals/ch06-storage/01-storage-architecture.md)

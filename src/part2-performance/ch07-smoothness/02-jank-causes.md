@@ -23,7 +23,10 @@ sources:
     path: "frameworks/native/services/surfaceflinger/SurfaceFlinger.cpp"
   - type: official
     path: "developer.android.com/topic/performance/vitals/render"
-tags: ['jank', 'rendering', 'main-thread', 'render-thread', 'surfaceflinger', 'binder', 'gc', 'cpu-scheduling']
+tags:
+  - android
+  - jank
+  - research
 related_chapters: ["7.1", "2.3", "2.4", "2.5", "1.4", "1.5", "3.1"]
 re-review-result: "审查 0 条素材，无需修改"
 ---
