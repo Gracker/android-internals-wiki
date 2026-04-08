@@ -8281,6 +8281,4782 @@
       "first_chars": "id: \"7255606420186335721\"\ncubox_url: https://cubox.pro/web/card/7255606420186335721\nurl: https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649786528&idx=1&sn=d24919a0d1659903c56c40d2bd212b3e&chks",
       "skipped_reason": "Insufficient score (<10)",
       "indexed_at": "2026-04-08T16:19:47.151668"
+    },
+    {
+      "path": "Cubox/记录我曾经面试 Facebook（Meta） 的经历 --2022-07-31.md",
+      "title": "记录我曾经面试 Facebook（Meta） 的经历 -",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/记录笔者修复的userfaultfd_move的一个内核bug-2025-03-11.md",
+      "title": "记录笔者修复的userfaultfd_move的一个内核bug",
+      "score": 5,
+      "reason": "总分5<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 1,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/讲讲 iOS 中不为人知的-预热启动--2023-10-27.md",
+      "title": "讲讲 iOS 中不为人知的\"预热启动\"",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/许倬云 我跟大家共同努力的时间不会太长久了-2022-03-01.md",
+      "title": "许倬云 我跟大家共同努力的时间不会太长久了",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/许倬云｜台湾的幸运在于，大陆教育者改变了日本殖民模式-2024-06-11.md",
+      "title": "许倬云｜台湾的幸运在于，大陆教育者改变了日本殖民模式",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/论学习的广度与深度-2024-03-18.md",
+      "title": "论学习的广度与深度",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/设计 Wear OS App-2024-05-01.md",
+      "title": "设计 Wear OS App",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/设计师必看 - 你绝对没注意的灵动岛的动画设计细节-2023-02-20.md",
+      "title": "设计师必看 | 你绝对没注意的灵动岛的动画设计细节",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/设计思维研究综述-2022-03-28.md",
+      "title": "设计思维研究综述",
+      "score": 5,
+      "reason": "总分5<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 2
+      }
+    },
+    {
+      "path": "Cubox/设计模式二三事-2022-03-10.md",
+      "title": "设计模式二三事",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/设计欣赏｜多巴胺配色UI-2025-02-17.md",
+      "title": "设计欣赏｜多巴胺配色UI",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/评估性能 - Android 开源项目 --- Evaluating Performance  - ...-2024-01-10.md",
+      "title": "评估性能 | Android 开源项目 --- Evaluating Performance  | ...",
+      "score": 7,
+      "reason": "总分7<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 2,
+        "timeliness": 3,
+        "verifiable": 2
+      }
+    },
+    {
+      "path": "Cubox/译 - 个体经验的局限性和统计数据的价值 - Another Dayu-2024-01-08.md",
+      "title": "译 | 个体经验的局限性和统计数据的价值 - Another Dayu",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 1,
+        "timeliness": 3,
+        "verifiable": 0
+      }
+    },
+    {
+      "path": "Cubox/译：AI 正在创造一代文盲程序员 – 云谦的博客-2025-02-09.md",
+      "title": "译：AI 正在创造一代文盲程序员 – 云谦的博客",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/译：我是如何利用 LLM 进行编程的 – 云谦的博客-2025-01-08.md",
+      "title": "译：我是如何利用 LLM 进行编程的 – 云谦的博客",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/译：本地优先软件 Local-first software - Zxch3n-2023-05-23.md",
+      "title": "译：本地优先软件 Local-first software | Zxch3n",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/诚实-2022-03-01.md",
+      "title": "诚实",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/详解 RecyclerView 中的局部刷新机制 - 开发者说·DTalk-2023-11-24.md",
+      "title": "详解 RecyclerView 中的局部刷新机制 | 开发者说·DTalk",
+      "score": 5,
+      "reason": "总分5<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 1,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/详解DiffUtils、Myers算法和 Jetpack Compose详细地介绍Android中基于Mayers算法的 - 掘金-2025-02-05.md",
+      "title": "详解DiffUtils、Myers算法和 Jetpack Compose详细地介绍Android中基于Mayers算法的 - 掘金",
+      "score": 7,
+      "reason": "总分7<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 2,
+        "timeliness": 3,
+        "verifiable": 2
+      }
+    },
+    {
+      "path": "Cubox/说说海外的教育观-2023-01-27.md",
+      "title": "说说海外的教育观",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/请相信你的感觉和判断，给自己一条活路 – Telegraph-2022-03-15.md",
+      "title": "请相信你的感觉和判断，给自己一条活路 – Telegraph",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/读 Linux 像读小说「GitHub 热点速览 v.22.03」-2022-01-20.md",
+      "title": "读 Linux 像读小说「GitHub 热点速览 v.22.03」",
+      "score": 5,
+      "reason": "总分5<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 1,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/读《System Design Interview Volume 2》 - 椒盐豆豉-2025-01-03.md",
+      "title": "读《System Design Interview Volume 2》 | 椒盐豆豉",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/读《https---perfetto.dev-docs》-2025-08-19.md",
+      "title": "读《https://perfetto.dev/docs》",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/读《元智慧》和《深度思考》-2023-12-11.md",
+      "title": "读《元智慧》和《深度思考》",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/读《吸引力法则：如何利用心理暗示实现愿望》的记录与思考-2025-01-20.md",
+      "title": "读《吸引力法则：如何利用心理暗示实现愿望》的记录与思考",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 1,
+        "timeliness": 3,
+        "verifiable": 0
+      }
+    },
+    {
+      "path": "Cubox/读《快人一步_系统性能提高之道》-2025-10-20.md",
+      "title": "读《快人一步_系统性能提高之道》",
+      "score": 5,
+      "reason": "总分5<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 1,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/读《物理定律的本性》 - 知乎-2025-02-23.md",
+      "title": "读《物理定律的本性》 - 知乎",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/读《领导力：如何在组织中成就卓越》 - 知乎-2025-02-23.md",
+      "title": "读《领导力：如何在组织中成就卓越》 - 知乎",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/读《黑客与画家（10万册纪念版）》-2025-02-26.md",
+      "title": "读《黑客与画家（10万册纪念版）》",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/读书笔记-超越百岁-2024-07-07.md",
+      "title": "读书笔记-超越百岁",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/读写信号量-2022-08-22.md",
+      "title": "读写信号量",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/谁动了我的内存，揭秘 OOM 崩溃下降 90% 的秘密-2022-07-25.md",
+      "title": "谁动了我的内存，揭秘 OOM 崩溃下降 90% 的秘密",
+      "score": 6,
+      "reason": "总分6<10分",
+      "scores": {
+        "relevance": 2,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/谁能加入Elon Musk的朋友圈？答案在他Twitter关注的82个账号里。（全）-2023-01-21.md",
+      "title": "谁能加入Elon Musk的朋友圈？答案在他Twitter关注的82个账号里。（全）",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/调度器分支之RTG-2022-04-29.md",
+      "title": "调度器分支之RTG",
+      "score": 5,
+      "reason": "总分5<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 1,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/调试AOSP源码的官方神器-Android Studio for Platform（ASfP）-2024-02-02.md",
+      "title": "调试AOSP源码的官方神器-Android Studio for Platform（ASfP）",
+      "score": 6,
+      "reason": "总分6<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 1,
+        "timeliness": 3,
+        "verifiable": 2
+      }
+    },
+    {
+      "path": "Cubox/谈Android架构创新性-2022-04-02.md",
+      "title": "谈Android架构创新性",
+      "score": 9,
+      "reason": "总分9<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiable": 3
+      }
+    },
+    {
+      "path": "Cubox/谈“一切皆文件”的哲学 - 知乎-2025-03-16.md",
+      "title": "谈“一切皆文件”的哲学 - 知乎",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/谈一下宏大叙事能力-2026-01-05.md",
+      "title": "谈一下宏大叙事能力",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/谈一谈在两个商业项目中使用MVI架构后的感悟-2022-10-21.md",
+      "title": "谈一谈在两个商业项目中使用MVI架构后的感悟",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/谈一谈服务器CPU拓扑架构与Linux调度的问题-2026-03-11.md",
+      "title": "谈一谈服务器CPU拓扑架构与Linux调度的问题",
+      "score": 7,
+      "reason": "总分7<10分",
+      "scores": {
+        "relevance": 2,
+        "depth": 1,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/谈到社区，我会想到这三个问题：定义、做法、氛围 - 没想明白的50个问题之No.7-2022-01-20.md",
+      "title": "谈到社区，我会想到这三个问题：定义、做法、氛围 | 没想明白的50个问题之No.7",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/谈功耗是什么-2025-01-08.md",
+      "title": "谈功耗是什么",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/谈国产手机谁能活下来？-2025-05-24.md",
+      "title": "谈国产手机谁能活下来？",
+      "score": 3,
+      "reason": "总分3<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 0
+      }
+    },
+    {
+      "path": "Cubox/谈研发人员怎么专注-2023-05-10.md",
+      "title": "谈研发人员怎么专注",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/谈设计决策（1）-2026-03-11.md",
+      "title": "谈设计决策（1）",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/谈谈 Android 渲染机制：如何绘制并显示一帧图像？ - 知乎-2022-07-17.md",
+      "title": "谈谈 Android 渲染机制：如何绘制并显示一帧图像？ - 知乎",
+      "score": 6,
+      "reason": "总分6<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 1,
+        "timeliness": 3,
+        "verifiable": 2
+      }
+    },
+    {
+      "path": "Cubox/谈谈 T 型人才 · 唐巧的博客-2024-10-04.md",
+      "title": "谈谈 T 型人才 · 唐巧的博客",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/谈谈 eglMakeCurrent、eglSwapBuffers、glFlush 和 glFinish-2022-01-14.md",
+      "title": "谈谈 eglMakeCurrent、eglSwapBuffers、glFlush 和 glFinish",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/记录我曾经面试 Facebook（Meta） 的经历 --2022-07-31.md",
+      "title": "记录我曾经面试 Facebook（Meta） 的经历 -",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/记录笔者修复的userfaultfd_move的一个内核bug-2025-03-11.md",
+      "title": "记录笔者修复的userfaultfd_move的一个内核bug",
+      "score": 5,
+      "reason": "总分5<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 1,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/讲讲 iOS 中不为人知的-预热启动--2023-10-27.md",
+      "title": "讲讲 iOS 中不为人知的\"预热启动\"",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/许倬云 我跟大家共同努力的时间不会太长久了-2022-03-01.md",
+      "title": "许倬云 我跟大家共同努力的时间不会太长久了",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/许倬云｜台湾的幸运在于，大陆教育者改变了日本殖民模式-2024-06-11.md",
+      "title": "许倬云｜台湾的幸运在于，大陆教育者改变了日本殖民模式",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/论学习的广度与深度-2024-03-18.md",
+      "title": "论学习的广度与深度",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/设计 Wear OS App-2024-05-01.md",
+      "title": "设计 Wear OS App",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/设计师必看 - 你绝对没注意的灵动岛的动画设计细节-2023-02-20.md",
+      "title": "设计师必看 | 你绝对没注意的灵动岛的动画设计细节",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/设计思维研究综述-2022-03-28.md",
+      "title": "设计思维研究综述",
+      "score": 5,
+      "reason": "总分5<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 2
+      }
+    },
+    {
+      "path": "Cubox/设计模式二三事-2022-03-10.md",
+      "title": "设计模式二三事",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/设计欣赏｜多巴胺配色UI-2025-02-17.md",
+      "title": "设计欣赏｜多巴胺配色UI",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/评估性能 - Android 开源项目 --- Evaluating Performance  - ...-2024-01-10.md",
+      "title": "评估性能 | Android 开源项目 --- Evaluating Performance  | ...",
+      "score": 7,
+      "reason": "总分7<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 2,
+        "timeliness": 3,
+        "verifiable": 2
+      }
+    },
+    {
+      "path": "Cubox/译 - 个体经验的局限性和统计数据的价值 - Another Dayu-2024-01-08.md",
+      "title": "译 | 个体经验的局限性和统计数据的价值 - Another Dayu",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 1,
+        "timeliness": 3,
+        "verifiable": 0
+      }
+    },
+    {
+      "path": "Cubox/译：AI 正在创造一代文盲程序员 – 云谦的博客-2025-02-09.md",
+      "title": "译：AI 正在创造一代文盲程序员 – 云谦的博客",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/译：我是如何利用 LLM 进行编程的 – 云谦的博客-2025-01-08.md",
+      "title": "译：我是如何利用 LLM 进行编程的 – 云谦的博客",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/译：本地优先软件 Local-first software - Zxch3n-2023-05-23.md",
+      "title": "译：本地优先软件 Local-first software | Zxch3n",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/诚实-2022-03-01.md",
+      "title": "诚实",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/详解 RecyclerView 中的局部刷新机制 - 开发者说·DTalk-2023-11-24.md",
+      "title": "详解 RecyclerView 中的局部刷新机制 | 开发者说·DTalk",
+      "score": 5,
+      "reason": "总分5<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 1,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/详解DiffUtils、Myers算法和 Jetpack Compose详细地介绍Android中基于Mayers算法的 - 掘金-2025-02-05.md",
+      "title": "详解DiffUtils、Myers算法和 Jetpack Compose详细地介绍Android中基于Mayers算法的 - 掘金",
+      "score": 7,
+      "reason": "总分7<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 2,
+        "timeliness": 3,
+        "verifiable": 2
+      }
+    },
+    {
+      "path": "Cubox/说说海外的教育观-2023-01-27.md",
+      "title": "说说海外的教育观",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/请相信你的感觉和判断，给自己一条活路 – Telegraph-2022-03-15.md",
+      "title": "请相信你的感觉和判断，给自己一条活路 – Telegraph",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/读 Linux 像读小说「GitHub 热点速览 v.22.03」-2022-01-20.md",
+      "title": "读 Linux 像读小说「GitHub 热点速览 v.22.03」",
+      "score": 5,
+      "reason": "总分5<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 1,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/读《System Design Interview Volume 2》 - 椒盐豆豉-2025-01-03.md",
+      "title": "读《System Design Interview Volume 2》 | 椒盐豆豉",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/读《https---perfetto.dev-docs》-2025-08-19.md",
+      "title": "读《https://perfetto.dev/docs》",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/读《元智慧》和《深度思考》-2023-12-11.md",
+      "title": "读《元智慧》和《深度思考》",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/读《吸引力法则：如何利用心理暗示实现愿望》的记录与思考-2025-01-20.md",
+      "title": "读《吸引力法则：如何利用心理暗示实现愿望》的记录与思考",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 1,
+        "timeliness": 3,
+        "verifiable": 0
+      }
+    },
+    {
+      "path": "Cubox/读《快人一步_系统性能提高之道》-2025-10-20.md",
+      "title": "读《快人一步_系统性能提高之道》",
+      "score": 5,
+      "reason": "总分5<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 1,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/读《物理定律的本性》 - 知乎-2025-02-23.md",
+      "title": "读《物理定律的本性》 - 知乎",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/读《领导力：如何在组织中成就卓越》 - 知乎-2025-02-23.md",
+      "title": "读《领导力：如何在组织中成就卓越》 - 知乎",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/读《黑客与画家（10万册纪念版）》-2025-02-26.md",
+      "title": "读《黑客与画家（10万册纪念版）》",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/读书笔记-超越百岁-2024-07-07.md",
+      "title": "读书笔记-超越百岁",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/读写信号量-2022-08-22.md",
+      "title": "读写信号量",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/谁动了我的内存，揭秘 OOM 崩溃下降 90% 的秘密-2022-07-25.md",
+      "title": "谁动了我的内存，揭秘 OOM 崩溃下降 90% 的秘密",
+      "score": 6,
+      "reason": "总分6<10分",
+      "scores": {
+        "relevance": 2,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/谁能加入Elon Musk的朋友圈？答案在他Twitter关注的82个账号里。（全）-2023-01-21.md",
+      "title": "谁能加入Elon Musk的朋友圈？答案在他Twitter关注的82个账号里。（全）",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/调度器分支之RTG-2022-04-29.md",
+      "title": "调度器分支之RTG",
+      "score": 5,
+      "reason": "总分5<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 1,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/调试AOSP源码的官方神器-Android Studio for Platform（ASfP）-2024-02-02.md",
+      "title": "调试AOSP源码的官方神器-Android Studio for Platform（ASfP）",
+      "score": 6,
+      "reason": "总分6<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 1,
+        "timeliness": 3,
+        "verifiable": 2
+      }
+    },
+    {
+      "path": "Cubox/谈Android架构创新性-2022-04-02.md",
+      "title": "谈Android架构创新性",
+      "score": 9,
+      "reason": "总分9<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiable": 3
+      }
+    },
+    {
+      "path": "Cubox/谈“一切皆文件”的哲学 - 知乎-2025-03-16.md",
+      "title": "谈“一切皆文件”的哲学 - 知乎",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/谈一下宏大叙事能力-2026-01-05.md",
+      "title": "谈一下宏大叙事能力",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/谈一谈在两个商业项目中使用MVI架构后的感悟-2022-10-21.md",
+      "title": "谈一谈在两个商业项目中使用MVI架构后的感悟",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/谈一谈服务器CPU拓扑架构与Linux调度的问题-2026-03-11.md",
+      "title": "谈一谈服务器CPU拓扑架构与Linux调度的问题",
+      "score": 7,
+      "reason": "总分7<10分",
+      "scores": {
+        "relevance": 2,
+        "depth": 1,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/谈到社区，我会想到这三个问题：定义、做法、氛围 - 没想明白的50个问题之No.7-2022-01-20.md",
+      "title": "谈到社区，我会想到这三个问题：定义、做法、氛围 | 没想明白的50个问题之No.7",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/谈功耗是什么-2025-01-08.md",
+      "title": "谈功耗是什么",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/谈国产手机谁能活下来？-2025-05-24.md",
+      "title": "谈国产手机谁能活下来？",
+      "score": 3,
+      "reason": "总分3<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 0
+      }
+    },
+    {
+      "path": "Cubox/谈研发人员怎么专注-2023-05-10.md",
+      "title": "谈研发人员怎么专注",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/谈设计决策（1）-2026-03-11.md",
+      "title": "谈设计决策（1）",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/谈谈 Android 渲染机制：如何绘制并显示一帧图像？ - 知乎-2022-07-17.md",
+      "title": "谈谈 Android 渲染机制：如何绘制并显示一帧图像？ - 知乎",
+      "score": 6,
+      "reason": "总分6<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 1,
+        "timeliness": 3,
+        "verifiable": 2
+      }
+    },
+    {
+      "path": "Cubox/谈谈 T 型人才 · 唐巧的博客-2024-10-04.md",
+      "title": "谈谈 T 型人才 · 唐巧的博客",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/谈谈 eglMakeCurrent、eglSwapBuffers、glFlush 和 glFinish-2022-01-14.md",
+      "title": "谈谈 eglMakeCurrent、eglSwapBuffers、glFlush 和 glFinish",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/记录我曾经面试 Facebook（Meta） 的经历 --2022-07-31.md",
+      "title": "记录我曾经面试 Facebook（Meta） 的经历 -",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/记录笔者修复的userfaultfd_move的一个内核bug-2025-03-11.md",
+      "title": "记录笔者修复的userfaultfd_move的一个内核bug",
+      "score": 5,
+      "reason": "总分5<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 1,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/讲讲 iOS 中不为人知的-预热启动--2023-10-27.md",
+      "title": "讲讲 iOS 中不为人知的\"预热启动\"",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/许倬云 我跟大家共同努力的时间不会太长久了-2022-03-01.md",
+      "title": "许倬云 我跟大家共同努力的时间不会太长久了",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/许倬云｜台湾的幸运在于，大陆教育者改变了日本殖民模式-2024-06-11.md",
+      "title": "许倬云｜台湾的幸运在于，大陆教育者改变了日本殖民模式",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/论学习的广度与深度-2024-03-18.md",
+      "title": "论学习的广度与深度",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/设计 Wear OS App-2024-05-01.md",
+      "title": "设计 Wear OS App",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/设计师必看 - 你绝对没注意的灵动岛的动画设计细节-2023-02-20.md",
+      "title": "设计师必看 | 你绝对没注意的灵动岛的动画设计细节",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/设计思维研究综述-2022-03-28.md",
+      "title": "设计思维研究综述",
+      "score": 5,
+      "reason": "总分5<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 2
+      }
+    },
+    {
+      "path": "Cubox/设计模式二三事-2022-03-10.md",
+      "title": "设计模式二三事",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/设计欣赏｜多巴胺配色UI-2025-02-17.md",
+      "title": "设计欣赏｜多巴胺配色UI",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/评估性能 - Android 开源项目 --- Evaluating Performance  - ...-2024-01-10.md",
+      "title": "评估性能 | Android 开源项目 --- Evaluating Performance  | ...",
+      "score": 7,
+      "reason": "总分7<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 2,
+        "timeliness": 3,
+        "verifiable": 2
+      }
+    },
+    {
+      "path": "Cubox/译 - 个体经验的局限性和统计数据的价值 - Another Dayu-2024-01-08.md",
+      "title": "译 | 个体经验的局限性和统计数据的价值 - Another Dayu",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 1,
+        "timeliness": 3,
+        "verifiable": 0
+      }
+    },
+    {
+      "path": "Cubox/译：AI 正在创造一代文盲程序员 – 云谦的博客-2025-02-09.md",
+      "title": "译：AI 正在创造一代文盲程序员 – 云谦的博客",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/译：我是如何利用 LLM 进行编程的 – 云谦的博客-2025-01-08.md",
+      "title": "译：我是如何利用 LLM 进行编程的 – 云谦的博客",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/译：本地优先软件 Local-first software - Zxch3n-2023-05-23.md",
+      "title": "译：本地优先软件 Local-first software | Zxch3n",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/诚实-2022-03-01.md",
+      "title": "诚实",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/详解 RecyclerView 中的局部刷新机制 - 开发者说·DTalk-2023-11-24.md",
+      "title": "详解 RecyclerView 中的局部刷新机制 | 开发者说·DTalk",
+      "score": 5,
+      "reason": "总分5<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 1,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/详解DiffUtils、Myers算法和 Jetpack Compose详细地介绍Android中基于Mayers算法的 - 掘金-2025-02-05.md",
+      "title": "详解DiffUtils、Myers算法和 Jetpack Compose详细地介绍Android中基于Mayers算法的 - 掘金",
+      "score": 7,
+      "reason": "总分7<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 2,
+        "timeliness": 3,
+        "verifiable": 2
+      }
+    },
+    {
+      "path": "Cubox/说说海外的教育观-2023-01-27.md",
+      "title": "说说海外的教育观",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/请相信你的感觉和判断，给自己一条活路 – Telegraph-2022-03-15.md",
+      "title": "请相信你的感觉和判断，给自己一条活路 – Telegraph",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/读 Linux 像读小说「GitHub 热点速览 v.22.03」-2022-01-20.md",
+      "title": "读 Linux 像读小说「GitHub 热点速览 v.22.03」",
+      "score": 5,
+      "reason": "总分5<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 1,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/读《System Design Interview Volume 2》 - 椒盐豆豉-2025-01-03.md",
+      "title": "读《System Design Interview Volume 2》 | 椒盐豆豉",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/读《https---perfetto.dev-docs》-2025-08-19.md",
+      "title": "读《https://perfetto.dev/docs》",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/读《元智慧》和《深度思考》-2023-12-11.md",
+      "title": "读《元智慧》和《深度思考》",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/读《吸引力法则：如何利用心理暗示实现愿望》的记录与思考-2025-01-20.md",
+      "title": "读《吸引力法则：如何利用心理暗示实现愿望》的记录与思考",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 1,
+        "timeliness": 3,
+        "verifiable": 0
+      }
+    },
+    {
+      "path": "Cubox/读《快人一步_系统性能提高之道》-2025-10-20.md",
+      "title": "读《快人一步_系统性能提高之道》",
+      "score": 5,
+      "reason": "总分5<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 1,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/读《物理定律的本性》 - 知乎-2025-02-23.md",
+      "title": "读《物理定律的本性》 - 知乎",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/读《领导力：如何在组织中成就卓越》 - 知乎-2025-02-23.md",
+      "title": "读《领导力：如何在组织中成就卓越》 - 知乎",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/读《黑客与画家（10万册纪念版）》-2025-02-26.md",
+      "title": "读《黑客与画家（10万册纪念版）》",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/读书笔记-超越百岁-2024-07-07.md",
+      "title": "读书笔记-超越百岁",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/读写信号量-2022-08-22.md",
+      "title": "读写信号量",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/谁动了我的内存，揭秘 OOM 崩溃下降 90% 的秘密-2022-07-25.md",
+      "title": "谁动了我的内存，揭秘 OOM 崩溃下降 90% 的秘密",
+      "score": 6,
+      "reason": "总分6<10分",
+      "scores": {
+        "relevance": 2,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/谁能加入Elon Musk的朋友圈？答案在他Twitter关注的82个账号里。（全）-2023-01-21.md",
+      "title": "谁能加入Elon Musk的朋友圈？答案在他Twitter关注的82个账号里。（全）",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/调度器分支之RTG-2022-04-29.md",
+      "title": "调度器分支之RTG",
+      "score": 5,
+      "reason": "总分5<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 1,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/调试AOSP源码的官方神器-Android Studio for Platform（ASfP）-2024-02-02.md",
+      "title": "调试AOSP源码的官方神器-Android Studio for Platform（ASfP）",
+      "score": 6,
+      "reason": "总分6<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 1,
+        "timeliness": 3,
+        "verifiable": 2
+      }
+    },
+    {
+      "path": "Cubox/谈Android架构创新性-2022-04-02.md",
+      "title": "谈Android架构创新性",
+      "score": 9,
+      "reason": "总分9<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiable": 3
+      }
+    },
+    {
+      "path": "Cubox/谈“一切皆文件”的哲学 - 知乎-2025-03-16.md",
+      "title": "谈“一切皆文件”的哲学 - 知乎",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/谈一下宏大叙事能力-2026-01-05.md",
+      "title": "谈一下宏大叙事能力",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/谈一谈在两个商业项目中使用MVI架构后的感悟-2022-10-21.md",
+      "title": "谈一谈在两个商业项目中使用MVI架构后的感悟",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/谈一谈服务器CPU拓扑架构与Linux调度的问题-2026-03-11.md",
+      "title": "谈一谈服务器CPU拓扑架构与Linux调度的问题",
+      "score": 7,
+      "reason": "总分7<10分",
+      "scores": {
+        "relevance": 2,
+        "depth": 1,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/谈到社区，我会想到这三个问题：定义、做法、氛围 - 没想明白的50个问题之No.7-2022-01-20.md",
+      "title": "谈到社区，我会想到这三个问题：定义、做法、氛围 | 没想明白的50个问题之No.7",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/谈功耗是什么-2025-01-08.md",
+      "title": "谈功耗是什么",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/谈国产手机谁能活下来？-2025-05-24.md",
+      "title": "谈国产手机谁能活下来？",
+      "score": 3,
+      "reason": "总分3<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 0
+      }
+    },
+    {
+      "path": "Cubox/谈研发人员怎么专注-2023-05-10.md",
+      "title": "谈研发人员怎么专注",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/谈设计决策（1）-2026-03-11.md",
+      "title": "谈设计决策（1）",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/谈谈 Android 渲染机制：如何绘制并显示一帧图像？ - 知乎-2022-07-17.md",
+      "title": "谈谈 Android 渲染机制：如何绘制并显示一帧图像？ - 知乎",
+      "score": 6,
+      "reason": "总分6<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 1,
+        "timeliness": 3,
+        "verifiable": 2
+      }
+    },
+    {
+      "path": "Cubox/谈谈 T 型人才 · 唐巧的博客-2024-10-04.md",
+      "title": "谈谈 T 型人才 · 唐巧的博客",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/谈谈 eglMakeCurrent、eglSwapBuffers、glFlush 和 glFinish-2022-01-14.md",
+      "title": "谈谈 eglMakeCurrent、eglSwapBuffers、glFlush 和 glFinish",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/谈谈AI领域的认知误区、机会点与面临的挑战-2024-11-10.md",
+      "title": "谈谈AI领域的认知误区、机会点与面临的挑战",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/谈谈ChatGPT 背后的核心技术论文-2023-02-06.md",
+      "title": "谈谈ChatGPT 背后的核心技术论文",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/谈谈写技术文章的一些感想-2024-07-08.md",
+      "title": "谈谈写技术文章的一些感想",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/谈谈定购 M1 Pro 的 16 寸 MacBook Pro 后的一些想法 - I'm Tualat...-2023-11-03.md",
+      "title": "谈谈定购 M1 Pro 的 16 寸 MacBook Pro 后的一些想法 | I'm Tualat...",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/谈谈定购 M3 Max 的 16 寸 MacBook Pro 后的一些想法 - I'm Tualat...-2023-11-03.md",
+      "title": "谈谈定购 M3 Max 的 16 寸 MacBook Pro 后的一些想法 | I'm Tualat...",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/谈谈微信的小团队文化-2024-02-03.md",
+      "title": "谈谈微信的小团队文化",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/谈谈我的看法-2023-08-24.md",
+      "title": "谈谈我的看法",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/谈谈最近玩 AI 的体悟-2024-09-01.md",
+      "title": "谈谈最近玩 AI 的体悟",
+      "score": 5,
+      "reason": "总分5<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 1,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/谈谈架构设计-2023-03-21.md",
+      "title": "谈谈架构设计",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/谈谈架构设计-2023-12-02.md",
+      "title": "谈谈架构设计",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/谷歌决定闭源Android？Fake News！-2025-03-27.md",
+      "title": "谷歌决定闭源Android？Fake News！",
+      "score": 5,
+      "reason": "总分5<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 2
+      }
+    },
+    {
+      "path": "Cubox/谷歌如何简化代码审查流程，实现 97% 开发者满意度 [译]-2023-12-18.md",
+      "title": "谷歌如何简化代码审查流程，实现 97% 开发者满意度 [译]",
+      "score": 7,
+      "reason": "总分7<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/谷歌官方性能文档2：Android 动态性能框架优化Performance Hint API-2025-08-09.md",
+      "title": "谷歌官方性能文档2：Android 动态性能框架优化Performance Hint API",
+      "score": 8,
+      "reason": "总分8<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 2,
+        "timeliness": 3,
+        "verifiable": 3
+      }
+    },
+    {
+      "path": "Cubox/谷歌官方性能文档：Android 动态性能框架优化散热和 CPU 性能-Thermal API部分-2025-08-09.md",
+      "title": "谷歌官方性能文档：Android 动态性能框架优化散热和 CPU 性能-Thermal API部分",
+      "score": 8,
+      "reason": "总分8<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 2,
+        "timeliness": 3,
+        "verifiable": 3
+      }
+    },
+    {
+      "path": "Cubox/豆包手机的工作原理是什么？-2025-12-15.md",
+      "title": "豆包手机的工作原理是什么？",
+      "score": 6,
+      "reason": "总分6<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 2,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/豆包算是踢到钢板了-2025-12-05.md",
+      "title": "豆包算是踢到钢板了",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/贝塞尔曲线 (Bézier Curve) - Leo Van - 范叶亮-2022-03-04.md",
+      "title": "贝塞尔曲线 (Bézier Curve) - Leo Van | 范叶亮",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/财政局长这半年：巧妇难为无米之炊-经济观察网-2023-08-12.md",
+      "title": "财政局长这半年：巧妇难为无米之炊-经济观察网",
+      "score": 5,
+      "reason": "总分5<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 2
+      }
+    },
+    {
+      "path": "Cubox/货拉拉 Android H5离线包原理与实践-2022-07-25.md",
+      "title": "货拉拉 Android H5离线包原理与实践",
+      "score": 6,
+      "reason": "总分6<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 1,
+        "timeliness": 3,
+        "verifiable": 2
+      }
+    },
+    {
+      "path": "Cubox/货拉拉 Android 动态资源管理系统原理与实践（上）-2022-07-12.md",
+      "title": "货拉拉 Android 动态资源管理系统原理与实践（上）",
+      "score": 6,
+      "reason": "总分6<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 1,
+        "timeliness": 3,
+        "verifiable": 2
+      }
+    },
+    {
+      "path": "Cubox/货拉拉 Android 动态资源管理系统原理与实践（下）-2022-07-18.md",
+      "title": "货拉拉 Android 动态资源管理系统原理与实践（下）",
+      "score": 6,
+      "reason": "总分6<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 1,
+        "timeliness": 3,
+        "verifiable": 2
+      }
+    },
+    {
+      "path": "Cubox/货拉拉 Android 模块化路由框架：TheRouter - 掘金-2022-09-05.md",
+      "title": "货拉拉 Android 模块化路由框架：TheRouter - 掘金",
+      "score": 7,
+      "reason": "总分7<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 4
+      }
+    },
+    {
+      "path": "Cubox/货拉拉Android稳定性治理分享-2022-06-13.md",
+      "title": "货拉拉Android稳定性治理分享",
+      "score": 5,
+      "reason": "总分5<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 2
+      }
+    },
+    {
+      "path": "Cubox/货拉拉iOS司机端线程治理总结-2022-08-09.md",
+      "title": "货拉拉iOS司机端线程治理总结",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/货拉拉司机Android端内存治理实践-2024-10-08.md",
+      "title": "货拉拉司机Android端内存治理实践",
+      "score": 6,
+      "reason": "总分6<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 1,
+        "timeliness": 3,
+        "verifiable": 2
+      }
+    },
+    {
+      "path": "Cubox/货拉拉客户端通用日志组件 - Glog - 掘金-2022-11-23.md",
+      "title": "货拉拉客户端通用日志组件 - Glog - 掘金",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/费曼学习法实践 - INDIGO 的信息获取与知识输出方法论-2023-01-19.md",
+      "title": "费曼学习法实践 / INDIGO 的信息获取与知识输出方法论",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/资产配置决定 90% 的投资收益，是真的吗？-2022-01-17.md",
+      "title": "资产配置决定 90% 的投资收益，是真的吗？",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/资阳半马启动、世遗马赛事大巴预订 -  川内2025赛事日历（马拉松&越野赛）-2025-03-14.md",
+      "title": "资阳半马启动、世遗马赛事大巴预订 |  川内2025赛事日历（马拉松&越野赛）",
+      "score": 6,
+      "reason": "总分6<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 5,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/走出大厂，All in WEB3-2022-04-07.md",
+      "title": "走出大厂，All in WEB3",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/走进 Web3・构建我的被动收入-2022-01-15.md",
+      "title": "走进 Web3・构建我的被动收入",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/赶鸭子上架，计划开始-2022-09-16.md",
+      "title": "赶鸭子上架，计划开始",
+      "score": 5,
+      "reason": "总分5<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 2
+      }
+    },
+    {
+      "path": "Cubox/超干干货：解读 Linux 内核追踪机制-2023-07-03.md",
+      "title": "超干干货：解读 Linux 内核追踪机制",
+      "score": 8,
+      "reason": "总分8<10分",
+      "scores": {
+        "relevance": 2,
+        "depth": 2,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/超标量处理器-2022-08-22.md",
+      "title": "超标量处理器",
+      "score": 5,
+      "reason": "总分5<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 1,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/超级实用！这6大-Skills- 可把 Anthropic Claude Code生产力拉升 50%-2025-12-29.md",
+      "title": "超级实用！这6大\"Skills\" 可把 Anthropic Claude Code生产力拉升 50%",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/超越苹果iOS系统4倍性能，OPPO内存基因重组之瞬时带宽技术-2024-12-18.md",
+      "title": "超越苹果iOS系统4倍性能，OPPO内存基因重组之瞬时带宽技术",
+      "score": 5,
+      "reason": "总分5<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 1,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/超跑笔记 - 跑姿-2022-04-13.md",
+      "title": "超跑笔记 | 跑姿",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/趋同or博弈？如何定义手机与智能座舱的角色关系？-2022-08-15.md",
+      "title": "趋同or博弈？如何定义手机与智能座舱的角色关系？",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/跟大家聊聊当下卖课的现状 – 山维空间-2023-07-10.md",
+      "title": "跟大家聊聊当下卖课的现状 – 山维空间",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/跟着「YaoYao 跳绳」创造者汪家浩，深入了解独立开发者的「打怪升级」全流程-2022-09-29.md",
+      "title": "跟着「YaoYao 跳绳」创造者汪家浩，深入了解独立开发者的「打怪升级」全流程",
+      "score": 5,
+      "reason": "总分5<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 1,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/跨Android、iOS、鸿蒙多平台框架ArkUI-X-2023-11-06.md",
+      "title": "跨Android、iOS、鸿蒙多平台框架ArkUI-X",
+      "score": 5,
+      "reason": "总分5<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 2
+      }
+    },
+    {
+      "path": "Cubox/跨平台框架技术视角看 GapBuffer-2025-04-07.md",
+      "title": "跨平台框架技术视角看 GapBuffer",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/路径规划-基础 API 文档-开发指南-Web服务 API - 高德地图API-2024-06-26.md",
+      "title": "路径规划-基础 API 文档-开发指南-Web服务 API | 高德地图API",
+      "score": 5,
+      "reason": "总分5<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 2
+      }
+    },
+    {
+      "path": "Cubox/转转QA期刊-第二期-2022-05-09.md",
+      "title": "转转QA期刊-第二期",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/转转的Flutter实践之路 - 掘金-2024-01-30.md",
+      "title": "转转的Flutter实践之路 - 掘金",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/软件效率工程-2025-07-28.md",
+      "title": "软件效率工程",
+      "score": 3,
+      "reason": "总分3<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 0
+      }
+    },
+    {
+      "path": "Cubox/软件测试周刊（第100期）： 只有好点子足够多，你才能从中选择出更好的。-2022-12-09.md",
+      "title": "软件测试周刊（第100期）： 只有好点子足够多，你才能从中选择出更好的。",
+      "score": 5,
+      "reason": "总分5<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 1,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/软件测试周刊（第101期）：答案在路上，自由在风里。​找不到答案的时候找自己。 ​​​-2023-04-09.md",
+      "title": "软件测试周刊（第101期）：答案在路上，自由在风里。​找不到答案的时候找自己。 ​​​",
+      "score": 5,
+      "reason": "总分5<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 1,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/软件测试周刊（第48期）：无聊是非常有必要的，一个人在空白时间所做的事，决定了这个人和其他人根本的不同。-2022-01-14.md",
+      "title": "软件测试周刊（第48期）：无聊是非常有必要的，一个人在空白时间所做的事，决定了这个人和其他人根本的不同。",
+      "score": 9,
+      "reason": "总分9<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 4,
+        "timeliness": 3,
+        "verifiable": 2
+      }
+    },
+    {
+      "path": "Cubox/软件测试周刊（第49期）：什么是大众？大众就是那些一年读书不超过五本的人。-2022-01-14.md",
+      "title": "软件测试周刊（第49期）：什么是大众？大众就是那些一年读书不超过五本的人。",
+      "score": 5,
+      "reason": "总分5<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 1,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/软件测试周刊（第51期）：漂漂亮亮、从从容容地出现在大家面前，不仅是虚荣的事，更是庄重与自信的事。 ​​​-2022-01-14.md",
+      "title": "软件测试周刊（第51期）：漂漂亮亮、从从容容地出现在大家面前，不仅是虚荣的事，更是庄重与自信的事。 ​​​",
+      "score": 6,
+      "reason": "总分6<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 2,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/软件测试周刊（第55期）：梦想养活不起你的时候，你得养着梦想啊。 ​​​-2022-01-21.md",
+      "title": "软件测试周刊（第55期）：梦想养活不起你的时候，你得养着梦想啊。 ​​​",
+      "score": 7,
+      "reason": "总分7<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/软件测试周刊（第56期）：新年的目的并非是拥有新的一年，而是拥有一个新的灵魂。 ​​​-2022-01-28.md",
+      "title": "软件测试周刊（第56期）：新年的目的并非是拥有新的一年，而是拥有一个新的灵魂。 ​​​",
+      "score": 7,
+      "reason": "总分7<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 2,
+        "timeliness": 3,
+        "verifiable": 2
+      }
+    },
+    {
+      "path": "Cubox/软件测试周刊（第60期）：有事可做，是一个人保持最佳状态的唯一途径。-2022-02-28.md",
+      "title": "软件测试周刊（第60期）：有事可做，是一个人保持最佳状态的唯一途径。",
+      "score": 6,
+      "reason": "总分6<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 2,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/软件测试周刊（第62期）：无论你处于什么状态，你都要明白，生活的目标是健康和快乐。-2022-03-11.md",
+      "title": "软件测试周刊（第62期）：无论你处于什么状态，你都要明白，生活的目标是健康和快乐。",
+      "score": 6,
+      "reason": "总分6<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 2,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/软件测试周刊（第63期）：凡是持久的，必是温和的与可持续的。-2022-03-18.md",
+      "title": "软件测试周刊（第63期）：凡是持久的，必是温和的与可持续的。",
+      "score": 5,
+      "reason": "总分5<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 1,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/软件测试周刊（第64期）：要和能让你快乐的一切，定期联系。-2022-03-25.md",
+      "title": "软件测试周刊（第64期）：要和能让你快乐的一切，定期联系。",
+      "score": 6,
+      "reason": "总分6<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 1,
+        "timeliness": 3,
+        "verifiable": 2
+      }
+    },
+    {
+      "path": "Cubox/软件测试周刊（第66期）：成熟有一个最大的标志，就是能承受委屈。-2022-04-08.md",
+      "title": "软件测试周刊（第66期）：成熟有一个最大的标志，就是能承受委屈。",
+      "score": 7,
+      "reason": "总分7<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/软件测试周刊（第67期）：用一颗浏览的心，去看待人生，一切的得与失、隐与显，都是风景与风情。-2022-04-15.md",
+      "title": "软件测试周刊（第67期）：用一颗浏览的心，去看待人生，一切的得与失、隐与显，都是风景与风情。",
+      "score": 5,
+      "reason": "总分5<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 1,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/软件测试周刊（第71期）：大悲时不发言，大怒时不争辩，大喜时不许诺。-2022-05-13.md",
+      "title": "软件测试周刊（第71期）：大悲时不发言，大怒时不争辩，大喜时不许诺。",
+      "score": 5,
+      "reason": "总分5<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 1,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/软件测试周刊（第72期）：所谓学问，学学问问，就学会了嘛。最怕你不愿去学，不肯去问。-2022-05-20.md",
+      "title": "软件测试周刊（第72期）：所谓学问，学学问问，就学会了嘛。最怕你不愿去学，不肯去问。",
+      "score": 6,
+      "reason": "总分6<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 2,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/软件测试周刊（第75期）：唯有平视，才能看见真实的自己。-2022-06-10.md",
+      "title": "软件测试周刊（第75期）：唯有平视，才能看见真实的自己。",
+      "score": 6,
+      "reason": "总分6<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 2,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/软件测试周刊（第78期）：你对未来越有信心，你对现在越有耐心。-2022-07-01.md",
+      "title": "软件测试周刊（第78期）：你对未来越有信心，你对现在越有耐心。",
+      "score": 6,
+      "reason": "总分6<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 1,
+        "timeliness": 3,
+        "verifiable": 2
+      }
+    },
+    {
+      "path": "Cubox/软件测试周刊（第79期）：陷在自己给自己定的框里，即使永远走直线，也是曲折的。-2022-07-08.md",
+      "title": "软件测试周刊（第79期）：陷在自己给自己定的框里，即使永远走直线，也是曲折的。",
+      "score": 7,
+      "reason": "总分7<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 2,
+        "timeliness": 3,
+        "verifiable": 2
+      }
+    },
+    {
+      "path": "Cubox/软件测试周刊（第80期）：当你想倾诉的话语已经涌到了舌尖，但是把那些话憋回去的瞬间，从那个瞬间起，你就成为了大人。 ​​​-2022-07-15.md",
+      "title": "软件测试周刊（第80期）：当你想倾诉的话语已经涌到了舌尖，但是把那些话憋回去的瞬间，从那个瞬间起，你就成为了大人。 ​​​",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 1,
+        "timeliness": 3,
+        "verifiable": 0
+      }
+    },
+    {
+      "path": "Cubox/软件测试周刊（第82期）：其实所有纠结做选择的人心里早就有了答案，咨询只是想得到内心所倾向的选择。-2022-07-29.md",
+      "title": "软件测试周刊（第82期）：其实所有纠结做选择的人心里早就有了答案，咨询只是想得到内心所倾向的选择。",
+      "score": 8,
+      "reason": "总分8<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 4,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/软件测试周刊（第83期）：当你感觉忙得没时间休息，就是你最需要找时间休息的时候。 ​-2022-08-05.md",
+      "title": "软件测试周刊（第83期）：当你感觉忙得没时间休息，就是你最需要找时间休息的时候。 ​",
+      "score": 5,
+      "reason": "总分5<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 1,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/软件测试周刊（第84期）：这个世界根本不存在不会做、不能做，只有不想做和不敢做，当你失去所有依靠的时候，你自然就什么都会了。-2022-08-12.md",
+      "title": "软件测试周刊（第84期）：这个世界根本不存在不会做、不能做，只有不想做和不敢做，当你失去所有依靠的时候，你自然就什么都会了。",
+      "score": 6,
+      "reason": "总分6<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiable": 0
+      }
+    },
+    {
+      "path": "Cubox/软件测试周刊（第85期）：不要透支明天的烦恼，今天有今天的快乐。-2022-08-19.md",
+      "title": "软件测试周刊（第85期）：不要透支明天的烦恼，今天有今天的快乐。",
+      "score": 7,
+      "reason": "总分7<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/软件测试周刊（第86期）：一个人为寻求他所需要的东西，走遍了全世界。回到家里，找到了。-2022-08-26.md",
+      "title": "软件测试周刊（第86期）：一个人为寻求他所需要的东西，走遍了全世界。回到家里，找到了。",
+      "score": 8,
+      "reason": "总分8<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 4,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/软件测试周刊（第87期）：天下就没有偶然，那不过是化了妆的、戴了面具的必然。-2022-09-02.md",
+      "title": "软件测试周刊（第87期）：天下就没有偶然，那不过是化了妆的、戴了面具的必然。",
+      "score": 9,
+      "reason": "总分9<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 5,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/软件测试周刊（第88期）：所谓见过世面，就是会讲究，能将就。-2022-09-09.md",
+      "title": "软件测试周刊（第88期）：所谓见过世面，就是会讲究，能将就。",
+      "score": 6,
+      "reason": "总分6<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 2,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/软件测试周刊（第89期）：编程是思考，而不是打字。-2022-09-16.md",
+      "title": "软件测试周刊（第89期）：编程是思考，而不是打字。",
+      "score": 8,
+      "reason": "总分8<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 4,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/软件测试周刊（第92期）：想起来全是问题，做起来才有答案。-2022-10-14.md",
+      "title": "软件测试周刊（第92期）：想起来全是问题，做起来才有答案。",
+      "score": 5,
+      "reason": "总分5<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 1,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/软件测试周刊（第98期）：定义我们的，是我们有想法、追随想法、实现想法的能力。-2022-11-25.md",
+      "title": "软件测试周刊（第98期）：定义我们的，是我们有想法、追随想法、实现想法的能力。",
+      "score": 6,
+      "reason": "总分6<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 2,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/软技能---代码之外的生存指南 读书笔记-2025-02-15.md",
+      "title": "软技能---代码之外的生存指南 读书笔记",
+      "score": 5,
+      "reason": "总分5<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 1,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/软技能：大厂底层员工打工指南 - xiantang - 自律者自由-2022-01-17.md",
+      "title": "软技能：大厂底层员工打工指南 - xiantang - 自律者自由",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/软技能：我是如何获取知识与信息的？ - xiantang - 自律者自由-2022-01-17.md",
+      "title": "软技能：我是如何获取知识与信息的？ - xiantang - 自律者自由",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/轻松阅读英文内容-终极翻译工具和插件推荐-2023-12-25.md",
+      "title": "轻松阅读英文内容-终极翻译工具和插件推荐",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/辅助阅读长文章的学习工具-2024-05-18.md",
+      "title": "辅助阅读长文章的学习工具",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/边缘创新：破圈于主流之外-2022-01-17.md",
+      "title": "边缘创新：破圈于主流之外",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/过去10年美国人的生活为何如此愚蠢？-2022-06-28.md",
+      "title": "过去10年美国人的生活为何如此愚蠢？",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/过去10年美国人的生活为何如此愚蠢？-2024-07-18.md",
+      "title": "过去10年美国人的生活为何如此愚蠢？",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/过去一年我看了一千多小时的英文视频，有这些频道想要分享给你 - 少数派-2023-02-03.md",
+      "title": "过去一年我看了一千多小时的英文视频，有这些频道想要分享给你 - 少数派",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/近期动态：Android 这些新变化你知道吗？-2023-09-18.md",
+      "title": "近期动态：Android 这些新变化你知道吗？",
+      "score": 5,
+      "reason": "总分5<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 2
+      }
+    },
+    {
+      "path": "Cubox/近期测试的几个软件-2025-01-31.md",
+      "title": "近期测试的几个软件",
+      "score": 5,
+      "reason": "总分5<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 1,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/这 些 剧 真 可 笑  2 0 2 1-2022-01-14.md",
+      "title": "这 些 剧 真 可 笑  2 0 2 1",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/这两天重度使用 opencode 后引发的一些关于 agent 的感想-2026-01-05.md",
+      "title": "这两天重度使用 opencode 后引发的一些关于 agent 的感想",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/这个手机系统，已经牢牢掌握“流畅密码”了-2023-01-29.md",
+      "title": "这个手机系统，已经牢牢掌握“流畅密码”了",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/这么深入浅出的免疫学为什么不在课本里——读《Immune》 - 椒盐豆豉-2025-01-03.md",
+      "title": "这么深入浅出的免疫学为什么不在课本里——读《Immune》 | 椒盐豆豉",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/这些感想都太特么有价值了！-2022-04-19.md",
+      "title": "这些感想都太特么有价值了！",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/这些比公路车还要昂贵的轮组，让我傻了眼-2025-05-14.md",
+      "title": "这些比公路车还要昂贵的轮组，让我傻了眼",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/这几年，这些电影消失了-2022-08-17.md",
+      "title": "这几年，这些电影消失了",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/这就是知识带给人的气质吗？诺贝尔奖得主告诉你：理工女能有多酷-2022-10-12.md",
+      "title": "这就是知识带给人的气质吗？诺贝尔奖得主告诉你：理工女能有多酷",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/这是可以做一辈子的事么-2022-03-16.md",
+      "title": "这是可以做一辈子的事么",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/这本书助你成为Android性能优化专家，送10本-2024-05-15.md",
+      "title": "这本书助你成为Android性能优化专家，送10本",
+      "score": 7,
+      "reason": "总分7<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 2,
+        "timeliness": 3,
+        "verifiable": 2
+      }
+    },
+    {
+      "path": "Cubox/这样代码命名，总不会被同事蛐蛐了吧-2025-01-17.md",
+      "title": "这样代码命名，总不会被同事蛐蛐了吧",
+      "score": 5,
+      "reason": "总分5<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 1,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/这道 Kotlin 专家出的题，帮你彻底理解 lambda！-2022-12-05.md",
+      "title": "这道 Kotlin 专家出的题，帮你彻底理解 lambda！",
+      "score": 6,
+      "reason": "总分6<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 1,
+        "timeliness": 3,
+        "verifiable": 2
+      }
+    },
+    {
+      "path": "Cubox/这部成人限制级黑马，一上线就炸出年度最强口碑-2024-02-03.md",
+      "title": "这部成人限制级黑马，一上线就炸出年度最强口碑",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/这难道是替渔村背的锅？-2022-03-31.md",
+      "title": "这难道是替渔村背的锅？",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/远程工作半年复盘：爽是真的，代价也是真的-2026-01-15.md",
+      "title": "远程工作半年复盘：爽是真的，代价也是真的",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/逃离“Vibe幻觉”：为什么90%的AI用户，最终会沦为认知“寄生者”？-2025-08-28.md",
+      "title": "逃离“Vibe幻觉”：为什么90%的AI用户，最终会沦为认知“寄生者”？",
+      "score": 5,
+      "reason": "总分5<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 1,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/逃离新加坡-2025-05-07.md",
+      "title": "逃离新加坡",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/选型分析：深入分析App主流各大跨平台框架-2024-05-06.md",
+      "title": "选型分析：深入分析App主流各大跨平台框架",
+      "score": 5,
+      "reason": "总分5<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 1,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/选择的维度 - codedump的网络日志-2022-03-15.md",
+      "title": "选择的维度 - codedump的网络日志",
+      "score": 6,
+      "reason": "总分6<10分",
+      "scores": {
+        "relevance": 2,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/逐条解读最新《网络游戏管理办法》-2023-12-24.md",
+      "title": "逐条解读最新《网络游戏管理办法》",
+      "score": 6,
+      "reason": "总分6<10分",
+      "scores": {
+        "relevance": 2,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/逐步解析 - 如何使用 LangChain、NestJS 和 Gemma 2 构建一个 Agentic RAG 应用-2024-10-10.md",
+      "title": "逐步解析 | 如何使用 LangChain、NestJS 和 Gemma 2 构建一个 Agentic RAG 应用",
+      "score": 5,
+      "reason": "总分5<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 1,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/通知媒体极速开屏广告展示失败-2025-02-17.md",
+      "title": "通知媒体极速开屏广告展示失败",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/通过 Layer 和 Feature ？为何不能两者兼得-2022-10-31.md",
+      "title": "通过 Layer 和 Feature ？为何不能两者兼得",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/通过基准配置文件改善应用性能-2022-03-08.md",
+      "title": "通过基准配置文件改善应用性能",
+      "score": 5,
+      "reason": "总分5<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 1,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/通过性能指标学习Linux Kernel - （上）-2022-07-24.md",
+      "title": "通过性能指标学习Linux Kernel - （上）",
+      "score": 5,
+      "reason": "总分5<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 1,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/通过性能指标学习Linux Kernel - （下）-2022-07-24.md",
+      "title": "通过性能指标学习Linux Kernel - （下）",
+      "score": 6,
+      "reason": "总分6<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 2,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/通过硬件计数器，将性能提升3倍之旅-2023-03-13.md",
+      "title": "通过硬件计数器，将性能提升3倍之旅",
+      "score": 6,
+      "reason": "总分6<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 2,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/速学Android 16新功能-带有进度的通知类型而对Android开发者来说，这一重大更新让我们距离送外卖又近了一步！ - 掘金-2025-04-13.md",
+      "title": "速学Android 16新功能:带有进度的通知类型而对Android开发者来说，这一重大更新让我们距离送外卖又近了一步！ - 掘金",
+      "score": 5,
+      "reason": "总分5<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 2
+      }
+    },
+    {
+      "path": "Cubox/速度优化：CPU 优化（上） - 掘金-2024-02-02.md",
+      "title": "速度优化：CPU 优化（上） - 掘金",
+      "score": 5,
+      "reason": "总分5<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 1,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/速度优化：CPU 优化（下） - 掘金-2024-02-02.md",
+      "title": "速度优化：CPU 优化（下） - 掘金",
+      "score": 5,
+      "reason": "总分5<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 1,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/速度优化：GC抑制 - 掘金-2024-01-05.md",
+      "title": "速度优化：GC抑制 - 掘金",
+      "score": 6,
+      "reason": "总分6<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 2,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/速度优化：任务调度优化 - 掘金-2024-02-02.md",
+      "title": "速度优化：任务调度优化 - 掘金",
+      "score": 5,
+      "reason": "总分5<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 1,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/速度优化：充分利用 CPU 闲置时刻 - 掘金-2024-07-12.md",
+      "title": "速度优化：充分利用 CPU 闲置时刻 - 掘金",
+      "score": 5,
+      "reason": "总分5<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 1,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/速度优化：绑定 CPU 大核 - 掘金-2024-07-15.md",
+      "title": "速度优化：绑定 CPU 大核 - 掘金",
+      "score": 6,
+      "reason": "总分6<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 2,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/速度优化：绑定 CPU 大核 - 掘金-2024-07-17.md",
+      "title": "速度优化：绑定 CPU 大核 - 掘金",
+      "score": 6,
+      "reason": "总分6<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 2,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/速度优化：绑定 CPU 大核目前手机的 CPU 都是多核的，比如骁龙 8gen3 这款 CPU 就有 8 个核心，其中大 - 掘金-2024-08-20.md",
+      "title": "速度优化：绑定 CPU 大核目前手机的 CPU 都是多核的，比如骁龙 8gen3 这款 CPU 就有 8 个核心，其中大 - 掘金",
+      "score": 6,
+      "reason": "总分6<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 2,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/逻辑课的消亡-2023-01-29.md",
+      "title": "逻辑课的消亡",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/邀你见证一本 flomo 小册的诞生 ——《知识资产：从一张卡片开始积累》-2022-08-25.md",
+      "title": "邀你见证一本 flomo 小册的诞生 ——《知识资产：从一张卡片开始积累》",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/邓小平 - 党和国家领导制度的改革-2022-10-16.md",
+      "title": "邓小平 | 党和国家领导制度的改革",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/都2025了，【跨平台框架】到底该怎么选？前言 在跨平台开发领域，目前的主流选择是： Flutter React Nat - 掘金-2025-07-21.md",
+      "title": "都2025了，【跨平台框架】到底该怎么选？前言 在跨平台开发领域，目前的主流选择是： Flutter React Nat - 掘金",
+      "score": 6,
+      "reason": "总分6<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 5,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/采纳率从 7.9%到 54%：快手智能 Code Review 的三阶进化-2026-03-10.md",
+      "title": "采纳率从 7.9%到 54%：快手智能 Code Review 的三阶进化",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/释放 Android 的潜力：Work Manager 的优势-2024-02-04.md",
+      "title": "释放 Android 的潜力：Work Manager 的优势",
+      "score": 5,
+      "reason": "总分5<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 2
+      }
+    },
+    {
+      "path": "Cubox/里斯本日记（二）：邂逅塞图巴尔-2024-12-29.md",
+      "title": "里斯本日记（二）：邂逅塞图巴尔",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/重学 Kotlin —— inline，包治百病的性能良药？ - 掘金-2022-01-20.md",
+      "title": "重学 Kotlin —— inline，包治百病的性能良药？ - 掘金",
+      "score": 6,
+      "reason": "总分6<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 1,
+        "timeliness": 3,
+        "verifiable": 2
+      }
+    },
+    {
+      "path": "Cubox/重学binder部分之线程处理嵌套死锁等-2025-08-18.md",
+      "title": "重学binder部分之线程处理嵌套死锁等",
+      "score": 5,
+      "reason": "总分5<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 2
+      }
+    },
+    {
+      "path": "Cubox/重学input：为什么要进行二次拦截？interceptKeyBeforeQueueing和interceptKeyBeforeDispatching 区别-CSDN博客-2025-05-25.md",
+      "title": "重学input：为什么要进行二次拦截？interceptKeyBeforeQueueing和interceptKeyBeforeDispatching 区别-CSDN博客",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/重学安卓：项目重构 “自助攻略” 温柔救急版 － 小专栏-2022-01-14.md",
+      "title": "重学安卓：项目重构 “自助攻略” 温柔救急版 － 小专栏",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/重新学习英语语法 - xiantang - 自律者自由-2022-01-16.md",
+      "title": "重新学习英语语法 - xiantang - 自律者自由",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/重新拿回计算机硬件的红利-2023-11-17.md",
+      "title": "重新拿回计算机硬件的红利",
+      "score": 6,
+      "reason": "总分6<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 2,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/重磅更新｜Android Studio Otter 3：LLM架构全面升级，AI开发效率直接翻倍-2026-01-28.md",
+      "title": "重磅更新｜Android Studio Otter 3：LLM架构全面升级，AI开发效率直接翻倍",
+      "score": 5,
+      "reason": "总分5<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 2
+      }
+    },
+    {
+      "path": "Cubox/重磅首发-字节Android Native Memory Corruption工具原理与实践-2022-01-16.md",
+      "title": "重磅首发|字节Android Native Memory Corruption工具原理与实践",
+      "score": 8,
+      "reason": "总分8<10分",
+      "scores": {
+        "relevance": 2,
+        "depth": 1,
+        "timeliness": 3,
+        "verifiable": 2
+      }
+    },
+    {
+      "path": "Cubox/重磅！2024年政府工作报告（完整版）-2024-03-05.md",
+      "title": "重磅！2024年政府工作报告（完整版）",
+      "score": 5,
+      "reason": "总分5<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 4,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/重要伏笔？布局多年？iPhone 14 系列深度解析-2022-09-27.md",
+      "title": "重要伏笔？布局多年？iPhone 14 系列深度解析",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/重读《暗时间》：如何写「更健康更长久」的文字（1） - Revue-2022-05-23.md",
+      "title": "重读《暗时间》：如何写「更健康更长久」的文字（1） | Revue",
+      "score": 6,
+      "reason": "总分6<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 1,
+        "timeliness": 3,
+        "verifiable": 2
+      }
+    },
+    {
+      "path": "Cubox/重读《暗时间》：如何写「更健康更长久」的文字（2） - Revue-2022-05-23.md",
+      "title": "重读《暗时间》：如何写「更健康更长久」的文字（2） | Revue",
+      "score": 6,
+      "reason": "总分6<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 1,
+        "timeliness": 3,
+        "verifiable": 2
+      }
+    },
+    {
+      "path": "Cubox/重读《暗时间》：如何写「更健康更长久」的文字（3） - Revue-2022-05-23.md",
+      "title": "重读《暗时间》：如何写「更健康更长久」的文字（3） | Revue",
+      "score": 6,
+      "reason": "总分6<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 1,
+        "timeliness": 3,
+        "verifiable": 2
+      }
+    },
+    {
+      "path": "Cubox/重读《暗时间》：如何写「更健康更长久」的文字（4） - Revue-2022-05-23.md",
+      "title": "重读《暗时间》：如何写「更健康更长久」的文字（4） | Revue",
+      "score": 6,
+      "reason": "总分6<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 1,
+        "timeliness": 3,
+        "verifiable": 2
+      }
+    },
+    {
+      "path": "Cubox/重读任老的华为终端战略文章-2024-12-21.md",
+      "title": "重读任老的华为终端战略文章",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/重读经典《操作系统：设计与实现》-2024-03-18.md",
+      "title": "重读经典《操作系统：设计与实现》",
+      "score": 5,
+      "reason": "总分5<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 1,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/量子共读直播《钱：7步创造终身收入》 能量摘录-2022-01-29.md",
+      "title": "量子共读直播《钱：7步创造终身收入》 能量摘录",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/量子读书直播《如何阅读一本书》能量摘录-2022-01-29.md",
+      "title": "量子读书直播《如何阅读一本书》能量摘录",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/钉钉 ANR 实战踩坑与经验总结 - 钉钉 ANR 治理最佳实践-2023-02-15.md",
+      "title": "钉钉 ANR 实战踩坑与经验总结 | 钉钉 ANR 治理最佳实践",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/钉钉 ANR 治理最佳实践 - 定位 ANR 不再雾里看花-2022-12-14.md",
+      "title": "钉钉 ANR 治理最佳实践 | 定位 ANR 不再雾里看花",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/钉钉 ANR 治理最佳实践 - 定位 ANR 不再雾里看花-2022-12-26.md",
+      "title": "钉钉 ANR 治理最佳实践 | 定位 ANR 不再雾里看花",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/钉钉 ANR 治理最佳实践 - 定位 ANR 不再雾里看花-2023-02-15.md",
+      "title": "钉钉 ANR 治理最佳实践 | 定位 ANR 不再雾里看花",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/钉钉 ANR 治理最佳实践 - 定位 ANR 不再雾里看花本文为《钉钉 ANR 治理最佳实践》系列文章首篇《定位 ANR - 掘金-2024-11-18.md",
+      "title": "钉钉 ANR 治理最佳实践 | 定位 ANR 不再雾里看花本文为《钉钉 ANR 治理最佳实践》系列文章首篇《定位 ANR - 掘金",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/锤子手机崩塌始末-2023-01-14.md",
+      "title": "锤子手机崩塌始末",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/长久危机下的个人抉择 - 2022 年度 newsletter①-2023-01-02.md",
+      "title": "长久危机下的个人抉择 | 2022 年度 newsletter①",
+      "score": 5,
+      "reason": "总分5<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 2
+      }
+    },
+    {
+      "path": "Cubox/长峰医院火灾致29人死亡，发布会没告诉你的5条真相-2023-04-19.md",
+      "title": "长峰医院火灾致29人死亡，发布会没告诉你的5条真相",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/闲篇：个人职业选择的三种逻辑-2022-07-24.md",
+      "title": "闲篇：个人职业选择的三种逻辑",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/闲聊Android APP 在图形栈方面的内存优化-2025-10-03.md",
+      "title": "闲聊Android APP 在图形栈方面的内存优化",
+      "score": 6,
+      "reason": "总分6<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 1,
+        "timeliness": 3,
+        "verifiable": 2
+      }
+    },
+    {
+      "path": "Cubox/闲谈 0004｜体验 Vibe Coding之Augment-2025-08-04.md",
+      "title": "闲谈 0004｜体验 Vibe Coding之Augment",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/闲谈 0005｜AI编程只会淘汰初级工程师？-2025-08-08.md",
+      "title": "闲谈 0005｜AI编程只会淘汰初级工程师？",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/闲谈丨一名AI体验者的自述当年ChatGPT 3横空出世的时候，我对它不屑一顾，心想这不就是超大知识库的复读机么。如今， - 掘金-2025-03-31.md",
+      "title": "闲谈丨一名AI体验者的自述当年ChatGPT 3横空出世的时候，我对它不屑一顾，心想这不就是超大知识库的复读机么。如今， - 掘金",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/闲谈丨像福尔摩斯一样去解Bug-2025-01-08.md",
+      "title": "闲谈丨像福尔摩斯一样去解Bug",
+      "score": 5,
+      "reason": "总分5<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 1,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/闲谈丨技术思维的桎梏-2024-12-17.md",
+      "title": "闲谈丨技术思维的桎梏",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/闲鱼消息稳定性治理的背后-2023-02-16.md",
+      "title": "闲鱼消息稳定性治理的背后",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/阅读 How to Pick a Career - Zhiheng's Blog-2023-12-26.md",
+      "title": "阅读 How to Pick a Career | Zhiheng's Blog",
+      "score": 3,
+      "reason": "总分3<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 0
+      }
+    },
+    {
+      "path": "Cubox/阅读《Google 软件工程》有感（1）-2022-03-30.md",
+      "title": "阅读《Google 软件工程》有感（1）",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/陆奇最新演讲实录：我的大模型世界观-2023-04-24.md",
+      "title": "陆奇最新演讲实录：我的大模型世界观",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/降本增效的本到底是什么？-2024-05-27.md",
+      "title": "降本增效的本到底是什么？",
+      "score": 5,
+      "reason": "总分5<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 1,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/除了出国，我们学习 GRE 还有什么用？ - 少数派-2024-02-08.md",
+      "title": "除了出国，我们学习 GRE 还有什么用？ - 少数派",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/随便聊聊：Product Hunt金猫奖名单翻译与简单评价-2022-02-02.md",
+      "title": "随便聊聊：Product Hunt金猫奖名单翻译与简单评价",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/随心所动，厂商的CPU核管理策略介绍-腾讯云开发者社区-腾讯云-2025-03-06.md",
+      "title": "随心所动，厂商的CPU核管理策略介绍-腾讯云开发者社区-腾讯云",
+      "score": 6,
+      "reason": "总分6<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 2,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/需求子任务的数据管理提效实践-2022-04-30.md",
+      "title": "需求子任务的数据管理提效实践",
+      "score": 5,
+      "reason": "总分5<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 1,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/震惊Kotlin单例翻车实录-2025-07-27.md",
+      "title": "震惊Kotlin单例翻车实录",
+      "score": 5,
+      "reason": "总分5<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 2
+      }
+    },
+    {
+      "path": "Cubox/非常有用的 UI 设计指南-2022-09-13.md",
+      "title": "非常有用的 UI 设计指南",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/面Android 架构岗-4小时4面的持续体验（小累） - 掘金-2023-12-13.md",
+      "title": "面Android 架构岗-4小时4面的持续体验（小累） - 掘金",
+      "score": 5,
+      "reason": "总分5<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 2
+      }
+    },
+    {
+      "path": "Cubox/面向 AI 的编程：是时候该坐下来应对不确定性了-2023-06-13.md",
+      "title": "面向 AI 的编程：是时候该坐下来应对不确定性了",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 1,
+        "timeliness": 3,
+        "verifiable": 0
+      }
+    },
+    {
+      "path": "Cubox/面向 ChatGPT 开发 ，我是如何被 AI 从 “逼疯” 到 “觉悟” ，未来又如何落地-2023-03-15.md",
+      "title": "面向 ChatGPT 开发 ，我是如何被 AI 从 “逼疯” 到 “觉悟” ，未来又如何落地",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/面向开发者的最佳 Android 库列表 - 知乎-2024-02-21.md",
+      "title": "面向开发者的最佳 Android 库列表 - 知乎",
+      "score": 6,
+      "reason": "总分6<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 3
+      }
+    },
+    {
+      "path": "Cubox/面试必备：为什么onCreate时机没法获取View的宽、高？-2024-07-08.md",
+      "title": "面试必备：为什么onCreate时机没法获取View的宽、高？",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/面试福利2：安卓系统framework开发面试题目汇总（不断更新）-CSDN博客-2025-05-25.md",
+      "title": "面试福利2：安卓系统framework开发面试题目汇总（不断更新）-CSDN博客",
+      "score": 3,
+      "reason": "总分3<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 0
+      }
+    },
+    {
+      "path": "Cubox/面试算法，面试官都在考察些什么？ - Sicheng's blog-2022-02-14.md",
+      "title": "面试算法，面试官都在考察些什么？ - Sicheng's blog",
+      "score": 5,
+      "reason": "总分5<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 1,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/面试随想 - tsaiggo's blog-2022-06-19.md",
+      "title": "面试随想 | tsaiggo's blog",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/音乐研发必备：理解 MIDI 协议与标准 MIDI 文件格式-2022-04-22.md",
+      "title": "音乐研发必备：理解 MIDI 协议与标准 MIDI 文件格式",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/音乐磁场-2023-02-02.md",
+      "title": "音乐磁场",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/音视频基础能力之 Android 音频篇 （五）：史上最全的音频渲染总结涉及硬件的音视频能力，比如采集、渲染、硬件编码、 - 掘金-2025-01-19.md",
+      "title": "音视频基础能力之 Android 音频篇 （五）：史上最全的音频渲染总结涉及硬件的音视频能力，比如采集、渲染、硬件编码、 - 掘金",
+      "score": 5,
+      "reason": "总分5<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 2
+      }
+    },
+    {
+      "path": "Cubox/音视频技术原理及应用-2024-10-14.md",
+      "title": "音视频技术原理及应用",
+      "score": 5,
+      "reason": "总分5<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 1,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/页表、MMU、TLB：彻底讲透虚拟内存那些事-2026-04-06.md",
+      "title": "页表、MMU、TLB：彻底讲透虚拟内存那些事",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/项飙- 三年“大摇摆”后",
+      "title": "未知标题",
+      "score": 0,
+      "reason": "文件读取失败",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 0,
+        "verifiable": 0
+      }
+    },
+    {
+      "path": " 中国社会的机会主义为何愈演愈烈- - 文化纵横-2023-02-06.md",
+      "title": "未知标题",
+      "score": 0,
+      "reason": "文件读取失败",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 0,
+        "verifiable": 0
+      }
+    },
+    {
+      "path": "Cubox/飞书工作体验谈 - V2EX-2024-04-02.md",
+      "title": "飞书工作体验谈 - V2EX",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/食之无味？App Startup 可能比你想象中要简单-2022-09-05.md",
+      "title": "食之无味？App Startup 可能比你想象中要简单",
+      "score": 6,
+      "reason": "总分6<10分",
+      "scores": {
+        "relevance": 2,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/饿了么双十一 PHA 会场实践-2022-03-18.md",
+      "title": "饿了么双十一 PHA 会场实践",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/首批68款ChatGPT Plugins开放！我体验后推荐这4款实用插件！-2023-05-16.md",
+      "title": "首批68款ChatGPT Plugins开放！我体验后推荐这4款实用插件！",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/马斯克宣布Grok 3免费，用户气晕了……-36氪-2025-02-23.md",
+      "title": "马斯克宣布Grok 3免费，用户气晕了……-36氪",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/驱动页面性能优化的3个有效策略-2022-07-21.md",
+      "title": "驱动页面性能优化的3个有效策略",
+      "score": 6,
+      "reason": "总分6<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 2,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/骑行日记 - 仁寿 黑龙滩 - 140KM-2024-04-18.md",
+      "title": "骑行日记 | 仁寿 黑龙滩 | 140KM",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/高少量子读书首场直播：吐槽《如何阅读一本书》以及分享相关经验-2022-01-29.md",
+      "title": "高少量子读书首场直播：吐槽《如何阅读一本书》以及分享相关经验",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/高效阅读英语信息的方法-2023-02-03.md",
+      "title": "高效阅读英语信息的方法",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/高效阅读英语信息的方法-2023-04-06.md",
+      "title": "高效阅读英语信息的方法",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/高盛的 2024 宏观经济预测 #55-2023-12-27.md",
+      "title": "高盛的 2024 宏观经济预测 #55",
+      "score": 5,
+      "reason": "总分5<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 4,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/高通 bwmon L3 总线性能优化方案-2025-06-06.md",
+      "title": "高通 bwmon L3 总线性能优化方案",
+      "score": 6,
+      "reason": "总分6<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 2,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/高通2025财年Q1财报深度分析：汽车业务增长60%-2025-02-10.md",
+      "title": "高通2025财年Q1财报深度分析：汽车业务增长60%",
+      "score": 7,
+      "reason": "总分7<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/高通GPU功耗管理-2024-03-02.md",
+      "title": "高通GPU功耗管理",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/高通Oryon处理器微架构分析-2025-03-25.md",
+      "title": "高通Oryon处理器微架构分析",
+      "score": 5,
+      "reason": "总分5<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 1,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/高通Perflock - yooooooo - 博客园-2024-11-11.md",
+      "title": "高通Perflock - yooooooo - 博客园",
+      "score": 6,
+      "reason": "总分6<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiable": 0
+      }
+    },
+    {
+      "path": "Cubox/高通Perflock - yooooooo - 博客园-2024-11-18.md",
+      "title": "高通Perflock - yooooooo - 博客园",
+      "score": 6,
+      "reason": "总分6<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiable": 0
+      }
+    },
+    {
+      "path": "Cubox/高通和三星为Galaxy S25系列带来强大的移动平台，重新定义顶级性能-2025-01-23.md",
+      "title": "高通和三星为Galaxy S25系列带来强大的移动平台，重新定义顶级性能",
+      "score": 5,
+      "reason": "总分5<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 1,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/高通骁龙CPU的滑铁卢-2024-10-19.md",
+      "title": "高通骁龙CPU的滑铁卢",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/鸿蒙HarmonyOS应用开发者基础认证 - 掘金-2023-12-01.md",
+      "title": "鸿蒙HarmonyOS应用开发者基础认证 - 掘金",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/鸿蒙HarmonyOS应用开发者高级认证 - 掘金-2023-12-01.md",
+      "title": "鸿蒙HarmonyOS应用开发者高级认证 - 掘金",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/鸿蒙、Harmony、OpenHarmony的区别-2024-04-13.md",
+      "title": "鸿蒙、Harmony、OpenHarmony的区别",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/鸿蒙不是套壳Android吗，支持Kotlin不过分吧-2023-11-29.md",
+      "title": "鸿蒙不是套壳Android吗，支持Kotlin不过分吧",
+      "score": 6,
+      "reason": "总分6<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 3
+      }
+    },
+    {
+      "path": "Cubox/鸿蒙内核论文阅读 - 知乎-2025-02-09.md",
+      "title": "鸿蒙内核论文阅读 - 知乎",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/鸿蒙原生应用，全面启动，开发者需要抓住风口的浪尖 - 掘金-2023-10-09.md",
+      "title": "鸿蒙原生应用，全面启动，开发者需要抓住风口的浪尖 - 掘金",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/鸿蒙应用开发 管理组件状态-2023-12-11.md",
+      "title": "鸿蒙应用开发 管理组件状态",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/鸿蒙应用签名实操及机制探究-2025-01-06.md",
+      "title": "鸿蒙应用签名实操及机制探究",
+      "score": 6,
+      "reason": "总分6<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 2,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/鸿蒙应用签名实操及机制探究-2025-01-08.md",
+      "title": "鸿蒙应用签名实操及机制探究",
+      "score": 9,
+      "reason": "总分9<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 5,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/鸿蒙的 UI 框架是如何渲染的？-2023-12-21.md",
+      "title": "鸿蒙的 UI 框架是如何渲染的？",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/鸿蒙的持久战，将决胜于生态之巅-2024-05-12.md",
+      "title": "鸿蒙的持久战，将决胜于生态之巅",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/鸿蒙终于不套壳了？纯血  HarmonyOS NEXT  即将到来 - 掘金-2023-09-14.md",
+      "title": "鸿蒙终于不套壳了？纯血  HarmonyOS NEXT  即将到来 - 掘金",
+      "score": 6,
+      "reason": "总分6<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 3
+      }
+    },
+    {
+      "path": "Cubox/黄仁勋领导的 Nvidia 如何推动 AI 革命 [译]-2023-11-29.md",
+      "title": "黄仁勋领导的 Nvidia 如何推动 AI 革命 [译]",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/黑咖啡与减肥-2022-02-21.md",
+      "title": "黑咖啡与减肥",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/黑屏定屏那些事 - 系统机制，分析套路和实战（系统篇）-2022-04-01.md",
+      "title": "黑屏定屏那些事 - 系统机制，分析套路和实战（系统篇）",
+      "score": 7,
+      "reason": "总分7<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/黑神话悟空-妖怪平生录-2024-09-02.md",
+      "title": "黑神话悟空-妖怪平生录",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/黑科技！让Native Crash 与ANR无处发泄！ - 掘金-2022-12-05.md",
+      "title": "黑科技！让Native Crash 与ANR无处发泄！ - 掘金",
+      "score": 5,
+      "reason": "总分5<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 1,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/黑科技！让Native Crash 与ANR无处发泄！-2022-09-28.md",
+      "title": "黑科技！让Native Crash 与ANR无处发泄！",
+      "score": 5,
+      "reason": "总分5<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 1,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/（上篇）从Linux 进程调度到 Android 线程管理-2022-01-14.md",
+      "title": "（上篇）从Linux 进程调度到 Android 线程管理",
+      "score": 7,
+      "reason": "总分7<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 2,
+        "timeliness": 3,
+        "verifiable": 2
+      }
+    },
+    {
+      "path": "Cubox/（下篇）从Linux 进程调度到 Android 线程管理-2022-01-14.md",
+      "title": "（下篇）从Linux 进程调度到 Android 线程管理",
+      "score": 5,
+      "reason": "总分5<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 2
+      }
+    },
+    {
+      "path": "Cubox/𝕃𝕖𝕠𝕏 ▪︎ 🐈 ▪︎ 山丘的故事-2023-12-18.md",
+      "title": "𝕃𝕖𝕠𝕏 ▪︎ 🐈 ▪︎ 山丘的故事",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/𝕏-Twitter 算法的工作原理 · Issue #3 · cholf5-random · GitHub-2024-07-06.md",
+      "title": "𝕏/Twitter 算法的工作原理 · Issue #3 · cholf5/random · GitHub",
+      "score": 7,
+      "reason": "总分7<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 4,
+        "timeliness": 3,
+        "verifiable": 0
+      }
+    },
+    {
+      "path": "Cubox/𝙸𝚊𝚗 𝚆. (@0xIanW)-13 likes · 8 replies-2026-03-03.md",
+      "title": "𝙸𝚊𝚗 𝚆. (@0xIanW)",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/🌟 ​​拯救你的日志系统！Android 日志打印实战指南​-2025-05-25.md",
+      "title": "🌟 ​​拯救你的日志系统！Android 日志打印实战指南​",
+      "score": 5,
+      "reason": "总分5<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 2
+      }
+    },
+    {
+      "path": "Cubox/👋 Welcome - Learning Prompt-2023-03-09.md",
+      "title": "👋 Welcome | Learning Prompt",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/👋 Welcome-2023-03-24.md",
+      "title": "👋 Welcome",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/👨‍💻 独立开发者故事 #49 - “锤子粉丝开发的iOS版闪念胶囊，纪念你一闪而过的灵感！”-2023-12-27.md",
+      "title": "👨‍💻 独立开发者故事 #49 - “锤子粉丝开发的iOS版闪念胶囊，纪念你一闪而过的灵感！”",
+      "score": 3,
+      "reason": "总分3<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 0
+      }
+    },
+    {
+      "path": "Cubox/👨‍💻 独立开发者故事 #53 - “成为野生“艺术家”，从代码开始”-2024-01-24.md",
+      "title": "👨‍💻 独立开发者故事 #53 - “成为野生“艺术家”，从代码开始”",
+      "score": 5,
+      "reason": "总分5<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 1,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/👨‍💻 独立开发者故事 #54 - “健身教练开发的健身 App，多年健身经验全都融入进 APP 里！” - 有趣产品咖啡馆-2024-01-31.md",
+      "title": "👨‍💻 独立开发者故事 #54 - “健身教练开发的健身 App，多年健身经验全都融入进 APP 里！” | 有趣产品咖啡馆",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/👨‍💻 独立开发者故事 #55 - “从买花到看日落，生活中的每个小事都值得被记住！” - 有趣产品咖啡馆-2024-02-05.md",
+      "title": "👨‍💻 独立开发者故事 #55 - “从买花到看日落，生活中的每个小事都值得被记住！” | 有趣产品咖啡馆",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/📙 OpenClaw橙皮书：从入门到精通-2026-03-10.md",
+      "title": "📙 OpenClaw橙皮书：从入门到精通",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Cubox/🧭 Midjourney 学习导航 - Learning Prompt-2023-04-09.md",
+      "title": "🧭 Midjourney 学习导航 | Learning Prompt",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Personal-Knowlodge/CLAUDE.md",
+      "title": "CLAUDE.md",
+      "score": 3,
+      "reason": "总分3<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 0
+      }
+    },
+    {
+      "path": "Personal-Knowlodge/KNOWLEDGE_BASE_REBUILD_PLAN_2026-03-05.md",
+      "title": "Personal-Knowlodge 完善方案（v1）",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 1,
+        "timeliness": 3,
+        "verifiable": 0
+      }
+    },
+    {
+      "path": "Personal-Knowlodge/KNOWLEDGE_GRAPH_SUMMARY.md",
+      "title": "Android 快稳省专家知识图谱 - 完整汇总",
+      "score": 9,
+      "reason": "总分9<10分",
+      "scores": {
+        "relevance": 3,
+        "depth": 1,
+        "timeliness": 3,
+        "verifiable": 2
+      }
+    },
+    {
+      "path": "Personal-Knowlodge/RALPH_ITERATION_PROGRESS.md",
+      "title": "Ralph Loop 迭代进度报告",
+      "score": 8,
+      "reason": "总分8<10分",
+      "scores": {
+        "relevance": 3,
+        "depth": 2,
+        "timeliness": 3,
+        "verifiable": 0
+      }
+    },
+    {
+      "path": "Personal-Knowlodge/REPORT.md",
+      "title": "Android 快稳省专家知识图谱构建报告",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Personal-Knowlodge/TODO.md",
+      "title": "Android 快稳省专家知识图谱构建 - 任务清单",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Personal-Knowlodge/TODO_links.md",
+      "title": "未知标题",
+      "score": 0,
+      "reason": "文件读取失败",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 0,
+        "verifiable": 0
+      }
+    },
+    {
+      "path": "Personal-Knowlodge/article_categories.md",
+      "title": "# 文章分类统计",
+      "score": 4,
+      "reason": "总分4<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "Personal-Knowlodge/ralph-prompt.md",
+      "title": "Android 快稳省专家知识图谱构建任务",
+      "score": 7,
+      "reason": "总分7<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "公众号文章/2026-02-18-Android17-lock-free-MessageQueue-公众号首稿.md",
+      "title": "Android 17 把 MessageQueue 改成无锁了：主线程卡顿治理进入新阶段",
+      "score": 7,
+      "reason": "总分7<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiable": 1
+      }
+    },
+    {
+      "path": "公众号文章/2026-02-23-极客湾媒体机争议-最终合并版.md",
+      "title": "同一台手机，媒体机 59 帧零售机 53 帧——一条下架视频掀开的评测真问题",
+      "score": 5,
+      "reason": "总分5<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 2,
+        "timeliness": 3,
+        "verifiable": 0
+      }
+    },
+    {
+      "path": "公众号文章/技术简报第三期.md",
+      "title": "技术简报第三期",
+      "score": 5,
+      "reason": "总分5<10分",
+      "scores": {
+        "relevance": 0,
+        "depth": 1,
+        "timeliness": 3,
+        "verifiable": 1
+      }
     }
   ],
   "last_updated": "2026-04-08T08:51:05.767544",
