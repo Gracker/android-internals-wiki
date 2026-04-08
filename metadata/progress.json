@@ -1895,15 +1895,30 @@
       "verification_level": "L2",
       "word_count": "~6500",
       "completed_at": "2026-04-08T06:02:00+08:00"
+    },
+    {
+      "chapter": "5.11",
+      "section": "5.11",
+      "title": "端侧 AI 推理性能：NPU/GPU 加速与 TFLite 管线",
+      "status": "ready-for-review",
+      "drafted_date": "2026-04-08",
+      "drafted_by": "openclaw-task2a",
+      "anchors_covered": 7,
+      "anchors_total": 7,
+      "extensions_covered": 0,
+      "extensions_total": 2,
+      "verification_level": "L2",
+      "word_count": "~7500",
+      "completed_at": "2026-04-08T10:30:00+08:00"
     }
   ],
   "ready_for_review": 6,
   "last_updated": "2026-04-08T05:36:11.676375",
   "stats": {
     "total": 116,
-    "completed": 95,
+    "completed": 96,
     "pending": 30,
-    "last_updated": "2026-04-08T06:02:00+08:00",
+    "last_updated": "2026-04-08T10:30:00+08:00",
     "reviewed": 1,
     "ready-for-review": 1
   },
@@ -3586,6 +3601,20 @@
         "Hardware Bitmap texture upload jank + prepareToDraw + Perfetto",
         "ImageDecoder vs BitmapFactory + AVIF 硬件解码"
       ]
+    },
+    {
+      "date": "2026-04-08",
+      "section": "5.11",
+      "title": "端侧 AI 推理性能：NPU/GPU 加速与 TFLite 管线",
+      "action": "draft-completed",
+      "word_count": "~7500",
+      "anchors_covered": 7,
+      "anchors_total": 7,
+      "extensions_covered": 0,
+      "extensions_total": 2,
+      "verification_level": "L2",
+      "drafted_date": "2026-04-08",
+      "drafted_by": "openclaw-task2a"
     }
   ],
   "sections": {
