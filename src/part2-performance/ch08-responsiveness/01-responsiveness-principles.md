@@ -2,11 +2,11 @@
 title: "响应速度原理"
 chapter: "8.1"
 section: "8.1"
-status: ready-for-review
+status: ready-to-publish
 polish_count: 1
 polish_date: "2026-04-05"
 polish_by: "task2b-polish"
-reviewed_date: "2026-04-04"
+reviewed_date: "2026-04-08"
 reviewed_by: "openclaw-task6"
 applicable_versions: "Android 12 (API 31) - Android 16 (API 36)"
 last_verified: "2026-03-30"

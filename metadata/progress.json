@@ -4849,5 +4849,10 @@
     "status": "finalized",
     "reviewed_date": "2026-04-08",
     "reviewed_by": "openclaw-task6"
+  },
+  "8.1": {
+    "status": "ready-to-publish",
+    "reviewed_date": "2026-04-08",
+    "title": "响应速度原理"
   }
 }
