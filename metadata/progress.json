@@ -2,13 +2,13 @@
   "generated_at": "2026-04-03T19:10:00",
   "total_sections": 111,
   "metrics": {
-    "total": 140,
-    "draft": 15,
+    "total": 143,
+    "draft": 18,
     "ready-for-review": 31,
     "reviewed": 5,
     "finalized": 34,
     "staging_drafts": 0,
-    "last_updated": "2026-04-08T21:34:32.168631",
+    "last_updated": "2026-04-09T00:13:28.017175",
     "processing": 0,
     "ready-to-publish": 17,
     "last_reviewed": "2026-04-08",
@@ -3902,6 +3902,33 @@
       "verification_level": "L2",
       "drafted_date": "2026-04-08",
       "drafted_by": "openclaw-task2a"
+    },
+    {
+      "date": "2026-04-09",
+      "section": "7.13",
+      "title": "SystemUI 性能分析",
+      "action": "gap-created",
+      "created_by": "task2a-knowledge-gap",
+      "gap_source": "AOSP结构+读者需求+素材驱动",
+      "gap_score": "18/20"
+    },
+    {
+      "date": "2026-04-09",
+      "section": "9.6",
+      "title": "Notification 性能与 ANR",
+      "action": "gap-created",
+      "created_by": "task2a-knowledge-gap",
+      "gap_source": "AOSP结构+读者需求+素材驱动",
+      "gap_score": "16/20"
+    },
+    {
+      "date": "2026-04-09",
+      "section": "2.21",
+      "title": "文字渲染性能",
+      "action": "gap-created",
+      "created_by": "task2a-knowledge-gap",
+      "gap_source": "AOSP结构+读者需求",
+      "gap_score": "14/20"
     }
   ],
   "sections": {

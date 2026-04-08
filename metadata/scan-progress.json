@@ -1,6 +1,6 @@
 {
-  "last_scan_time": "2026-04-08T19:22:14.350442",
-  "scanned_files": 85,
+  "last_scan_time": "2026-04-08T23:57:52.664228",
+  "scanned_files": 115,
   "total_files": 167,
   "indexed_files": [
     {
@@ -4401,7 +4401,7 @@
     }
   ],
   "current_directory": "X 文章",
-  "current_offset": 85,
+  "current_offset": 115,
   "priority_queue": [
     "Cubox",
     "调研",

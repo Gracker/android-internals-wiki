@@ -5175,6 +5175,458 @@
       "first_chars": "--- # Flutter 深入探索混合开发的技术演进 | 开发者说·DTalk  分享开发经验，有机会被推荐参选加入 \"谷歌开发技术专家\" 团队。  [Read in Cubox](https://cubox.pro/web/card/6962755913341995776)   [Read Original](https://mp.weixin.qq.com/s?__biz=MzAwODY4O",
       "quality": "medium",
       "indexed_at": "2026-04-08T19:22:14.349973"
+    },
+    {
+      "path": "X 文章/2026-03-03-1210-jakevin7-CrabClaw-OpenClaw-Dev-Notes-2028499952973099363.md",
+      "title": "如何从零开始写一个 OpenClaw（CrabClaw 开发手记）",
+      "scores": {
+        "relevance": 3,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 2
+      },
+      "total_score": 11,
+      "first_chars": "# 如何从零开始写一个 OpenClaw -- 关于我用 Rust 写一只🦀🦞(CrabClaw)的开发手记 \n\n**By @jakevin7** (卡比卡比) · Mon Mar 02 15:57:31 +0000 2026\n\n📊 ❤️ 74 🔁 4 🔖 92 👁️ 14,471 💬 1\n\n📐 735 words\n\n---\n\n从 0 到 1，用 AI 辅助开发一个 OpenClaw 类似的",
+      "indexed_at": "2026-04-08T23:56:11.186162",
+      "matched_chapters": [],
+      "quality": "medium"
+    },
+    {
+      "path": "X 文章/2026-03-03-1210-yibie-Shipping-at-Inference-Speed-Notes-2028650995153314299.md",
+      "title": "重读《Shipping at Inference-Speed》后的工作流启发",
+      "scores": {
+        "relevance": 3,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 2
+      },
+      "total_score": 11,
+      "first_chars": "**@yibie** (yibie)\n\n🕐 Tue Mar 03 01:57:42 +0000 2026\n\n📊 ❤️ 2 🔁 0 🔖 5 👁️ 153 💬 0\n\n---\n\n重读 OpenClaw 缔造者 Perter Steinberger 的这篇雄文《Shipping at Inference-Speed》，还有很深的启发，这篇文章是 Perter 说明自己 AI 辅助编程时，他自己工作流、",
+      "indexed_at": "2026-04-08T23:56:11.186786",
+      "matched_chapters": [],
+      "quality": "medium"
+    },
+    {
+      "path": "X 文章/2026-03-03-1612-tonykipkemboi-Agent-Frameworks-Are-Getting-Squeezed-2028564120338063859.md",
+      "title": "Agent Frameworks Are Getting Squeezed",
+      "scores": {
+        "relevance": 3,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 2
+      },
+      "total_score": 11,
+      "first_chars": "# Agent Frameworks Are Getting Squeezed\n\n**By @tonykipkemboi (Tony Kipkemboi)**\n\n🕐 Mon Mar 02 20:12:29 +0000 2026  \n📊 ❤️ 255 🔁 20 🔖 565 👁️ 91,128 💬 19  \n📐 1,407 words\n\n---\n\n## Paragraph 1\nWhen you l",
+      "indexed_at": "2026-04-08T23:56:11.188270",
+      "matched_chapters": [],
+      "quality": "medium"
+    },
+    {
+      "path": "X 文章/2026-03-03-1613-kingluffywang-伊朗的困局-革命-制裁与帝国的阴影对话-2024587900264783967.md",
+      "title": "伊朗的困局：革命、制裁与帝国的阴影对话",
+      "scores": {
+        "relevance": 3,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 2
+      },
+      "total_score": 11,
+      "first_chars": "# 伊朗的困局：革命、制裁与帝国的阴影对话 Ervand Abrahamian：一位伊朗历史研究权威的深度解读 \n\n**By @kingluffywang** (北美王路飞) · Thu Feb 19 20:52:25 +0000 2026\n\n📊 ❤️ 125 🔁 37 🔖 96 👁️ 113,644 💬 17\n\n📐 140 words\n\n---\n\n编者按：当伊朗街头的抗议浪潮再度席卷全国，当",
+      "indexed_at": "2026-04-08T23:56:11.189600",
+      "matched_chapters": [],
+      "quality": "medium"
+    },
+    {
+      "path": "X 文章/2026-03-03-2022-0xIanW-[-个人经验及避坑-]-从-0M-5M-快速通过创作者收益门槛！-2027996447032152295.md",
+      "title": "[ 个人经验及避坑 ] 从 0M -> 5M 快速通过创作者收益门槛！",
+      "scores": {
+        "relevance": 3,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 2
+      },
+      "total_score": 11,
+      "first_chars": "# [ 个人经验及避坑 ] 从 0M -> 5M 快速通过创作者收益门槛！\n\n**By @0xIanW** (𝙸𝚊𝚗 𝚆.) · Sun Mar 01 06:36:45 +0000 2026\n\n📊 ❤️ 16 🔁 0 🔖 8 👁️ 840 💬 11\n\n📐 73 words\n\n---\n\n声明\n\n此为个人踩坑后总结出来的经验，仅作参考！\n\n文章内容纯手戳，无AI生成内容，无广告，放心食用！\n\n文章",
+      "indexed_at": "2026-04-08T23:56:11.190285",
+      "matched_chapters": [],
+      "quality": "medium"
+    },
+    {
+      "path": "X 文章/2026-03-03-2022-yanhua1010-从-Vibe-Coding-到-Agentic-Engineering：开发者角色正在重写-2028737821855580662.md",
+      "title": "从 Vibe Coding 到 Agentic Engineering：开发者角色正在重写",
+      "scores": {
+        "relevance": 3,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 2
+      },
+      "total_score": 11,
+      "first_chars": "# 从 Vibe Coding 到 Agentic Engineering：开发者角色正在重写\n\n**By @yanhua1010** (Yanhua) · Tue Mar 03 07:42:43 +0000 2026\n\n📊 ❤️ 54 🔁 8 🔖 55 👁️ 4,683 💬 1\n\n📐 228 words\n\n---\n\n说实话，读完 Anthropic Claude Code 团队最近分享的这篇",
+      "indexed_at": "2026-04-08T23:56:11.190725",
+      "matched_chapters": [],
+      "quality": "medium"
+    },
+    {
+      "path": "X 文章/2026-03-04-0813-brucexu_eth-Deep-Research-盲测-ChatGPT-5.2-Pro-vs-Clau-2028796588039262505.md",
+      "title": "Deep Research 盲测：ChatGPT 5.2 Pro vs Claude Opus 4.6 vs Gemini 3.1 Pro",
+      "scores": {
+        "relevance": 3,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 2
+      },
+      "total_score": 11,
+      "first_chars": "**@brucexu_eth** (brucexu.eth ❤️🐼🦇🔊)\n\n🕐 Tue Mar 03 11:36:14 +0000 2026\n\n📊 ❤️ 91 🔁 10 🔖 74 👁️ 20,264 💬 7\n\n---\n\n我这两天用真实且有深度的实际问题（一个行业市场调研）深度盲测了 ChatGPT 5.2 Thinking、Gemini 3.1 Pro、Claude Opus 4.6 的普通付",
+      "indexed_at": "2026-04-08T23:56:11.191426",
+      "matched_chapters": [],
+      "quality": "medium"
+    },
+    {
+      "path": "X 文章/2026-03-04-0813-haoshanhong-从说英语蛋疼-到雅思8.5-到清华苏世民-如何英语逆袭-2028680739726995866.md",
+      "title": "从说英语蛋疼，到雅思8.5，到清华苏世民——如何英语逆袭",
+      "scores": {
+        "relevance": 3,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 2
+      },
+      "total_score": 11,
+      "first_chars": "# 从说英语蛋疼，到雅思8.5，到清华苏世民——如何英语逆袭\n\n**By @haoshanhong** (Haoshan Hong) · Tue Mar 03 03:55:54 +0000 2026\n\n📊 ❤️ 583 🔁 143 🔖 897 👁️ 281,604 💬 22\n\n📐 47 words\n\n---\n\n8年前，我初二，班级的英语配音比赛，我扮演《史努比》里的查理·布朗，和当时喜欢的女生",
+      "indexed_at": "2026-04-08T23:56:11.192062",
+      "matched_chapters": [],
+      "quality": "medium"
+    },
+    {
+      "path": "X 文章/2026-03-04-0813-wangray-同一场-AI-革命-中美创业者却走向了两条路-2028817237411610964.md",
+      "title": "同一场 AI 革命，中美创业者却走向了两条路",
+      "scores": {
+        "relevance": 3,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 2
+      },
+      "total_score": 11,
+      "first_chars": "# 同一场 AI 革命，中美创业者却走向了两条路\n\n**By @wangray** (Ray Wang) · Tue Mar 03 12:58:17 +0000 2026\n\n📊 ❤️ 102 🔁 28 🔖 180 👁️ 35,261 💬 1\n\n📐 253 words\n\n---\n\n2026 年初，美国软件股经历了一场近乎恐慌式的下跌。\n\n导火索并不复杂。ServiceNow 在财报电话会上提到，",
+      "indexed_at": "2026-04-08T23:56:11.192480",
+      "matched_chapters": [],
+      "quality": "medium"
+    },
+    {
+      "path": "X 文章/2026-03-04-1213-Kangwook_Lee-Investigating-how-Codex-context-compaction-works-2028955292025962534.md",
+      "title": "Investigating how Codex context compaction works",
+      "scores": {
+        "relevance": 3,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 2
+      },
+      "total_score": 11,
+      "first_chars": "# Investigating how Codex context compaction works\n\n# 研究 Codex 上下文压缩的工作原理\n\n**By @Kangwook_Lee** (Kangwook Lee) · Tue Mar 03 22:06:52 +0000 2026\n\n**@Kangwook_Lee**（Kangwook Lee）· 3 月 3 日星期二 22:06:52",
+      "indexed_at": "2026-04-08T23:56:11.193253",
+      "matched_chapters": [],
+      "quality": "medium"
+    },
+    {
+      "path": "X 文章/2026-03-04-1214-rwayne-AI-矿产与澳洲经济-2026-澳洲能迎来-新国运-吗-2027720734211248573.md",
+      "title": "AI、矿产与澳洲经济：2026，澳洲能迎来“新国运”吗？",
+      "scores": {
+        "relevance": 3,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 2
+      },
+      "total_score": 11,
+      "first_chars": "# AI、矿产与澳洲经济：2026，澳洲能迎来“新国运”吗？\n\n**By @rwayne** (Roland的思考日记) · Sat Feb 28 12:21:10 +0000 2026\n\n📊 ❤️ 1,991 🔁 668 🔖 3,535 👁️ 1,234,504 💬 172\n\n📐 438 words\n\n---\n\n这是一篇约8000字的深度分析。说三件事：第一，AI正在改写全球价值链的利润分配",
+      "indexed_at": "2026-04-08T23:56:11.194063",
+      "matched_chapters": [],
+      "quality": "medium"
+    },
+    {
+      "path": "X 文章/2026-03-04-1609-ponyodong-喜剧爆款视频教程-复古画面-离谱道具-极致反转-2028419925195342118.md",
+      "title": "喜剧爆款视频教程：复古画面 × 离谱道具 × 极致反转",
+      "scores": {
+        "relevance": 3,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 2
+      },
+      "total_score": 11,
+      "first_chars": "**@ponyodong** (ponyo波妞)\n\n🕐 Mon Mar 02 10:39:31 +0000 2026\n\n📊 ❤️ 2,618 🔁 435 🔖 1,334 👁️ 376,403 💬 108\n\n---\n\n🚀【喜剧爆款视频教程】投稿得红包🧧\n最近刷到一类视频，绝了。\n画面看着像 90 年代武侠片，画质糊得一批，配音还是那种译制腔。书生救了一只受伤的白狐，结果美女来报恩的时候说：「公子",
+      "indexed_at": "2026-04-08T23:56:11.194652",
+      "matched_chapters": [],
+      "quality": "medium"
+    },
+    {
+      "path": "X 文章/2026-03-04-1609-vista8-苹果2026年新品-M5-Max-MacBook-Pro来了-AI性能提升很多啊-2029044686133051414.md",
+      "title": "苹果2026年新品：M5 Max MacBook Pro来了，AI性能提升很多啊！",
+      "scores": {
+        "relevance": 3,
+        "depth": 2,
+        "timeliness": 5,
+        "verifiability": 2
+      },
+      "total_score": 12,
+      "first_chars": "# 苹果2026年新品：M5 Max MacBook Pro来了，AI性能提升很多啊！\n\n**By @vista8** (向阳乔木) · Wed Mar 04 04:02:05 +0000 2026\n\n📊 ❤️ 16 🔁 2 🔖 18 👁️ 8,257 💬 5\n\n📐 308 words\n\n---\n\n昨天苹果发了新 MacBook Pro，搭载 M5 Pro 和 M5 Max 芯片。\n\n看起来很",
+      "indexed_at": "2026-04-08T23:56:11.194980",
+      "matched_chapters": [],
+      "quality": "medium"
+    },
+    {
+      "path": "X 文章/2026-03-04-1609-xin_pai88825-Vibe-Coding-高效工具清单-Codex-Paper-21st-Unicorn-Agentation-Axion-Apple-Docs-2029027642616496194.md",
+      "title": "Vibe Coding 高效工具清单：Codex、Paper、21st、Unicorn、Agentation、Axion、Apple Docs MCP",
+      "scores": {
+        "relevance": 3,
+        "depth": 2,
+        "timeliness": 5,
+        "verifiability": 2
+      },
+      "total_score": 12,
+      "first_chars": "**@xin_pai88825** (Paidax)\n\n🕐 Wed Mar 04 02:54:22 +0000 2026\n\n📊 ❤️ 187 🔁 30 🔖 231 👁️ 21,822 💬 7\n\n---\n\n分享下我在 Vibe Coding 中，使用率最高，且最高效的几个工具，覆盖到设计稿生成，到代码交付，网页动效等👇\n\n1、Codex\n你只要输入一个需求，它就会调动多个AI智能体并行工作，无论",
+      "indexed_at": "2026-04-08T23:56:11.195345",
+      "matched_chapters": [],
+      "quality": "medium"
+    },
+    {
+      "path": "X 文章/2026-03-04-2010-centurybbx-Writing-about-Agentic-Engineering-Patterns-2028322864798331292.md",
+      "title": "Writing about Agentic Engineering Patterns",
+      "scores": {
+        "relevance": 3,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "total_score": 10,
+      "first_chars": "I’ve started a new project to collect and document Agentic Engineering Patterns—coding practices and patterns to help get the best results out of this new era of coding agent development we find our",
+      "indexed_at": "2026-04-08T23:56:11.195832",
+      "matched_chapters": [],
+      "quality": "medium"
+    },
+    {
+      "path": "X 文章/2026-03-05-0817-vista8-CC-Switch-Jason-Story-2027765124828905529.md",
+      "title": "130万次下载，2万Star开源项目CC Switch，36岁转行程序员Jason的第一个作品",
+      "scores": {
+        "relevance": 3,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 2
+      },
+      "total_score": 11,
+      "first_chars": "如果你用Claude Code，大概率用过CC Switch这个软件。\n**今天邀请作者直播，了解工具背后的故事（以下内容由AI生成）**\n2026年1月，一个叫 CC Switch 的开源项目在 GitHub 上突破了 20,000 stars。\n这个数字背后，是一个大龄转行者用六个月时间写就的故事。\n项目作者 Jason 之前做进出口贸易，去年才开始自学编程。\n他花三个月学完了从 Type",
+      "indexed_at": "2026-04-08T23:56:11.196435",
+      "matched_chapters": [],
+      "quality": "medium"
+    },
+    {
+      "path": "X 文章/2026-03-05-1629-ForexTrader-2026-Government-Work-Report-2029389616214884521.md",
+      "title": "2026年政府工作报告（全文+要点）",
+      "scores": {
+        "relevance": 3,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 2
+      },
+      "total_score": 11,
+      "first_chars": "# 2026年政府工作报告（全文+要点）\n\n## 内容要点\n\n### 一、投资方向：从\"新质生产力探索\"到\"全领域落地+未来产业布局\"，赛道更细分、力度更集中\n\n- **传统产业升级**：从\"数字化转型\"到\"大规模设备更新+智能建造\"，资金明确倾斜。\n  2025年侧重推进制造业数字化转型和\"人工智能+\"行动；2026年直接安排**2000亿元超长期特别国债**支持大规模设备更新，新增\"智能建",
+      "indexed_at": "2026-04-08T23:56:11.196964",
+      "matched_chapters": [],
+      "quality": "medium"
+    },
+    {
+      "path": "X 文章/2026-03-05-1629-JasonZhu-Claude-101-Complete-Guide-2029427735807050002.md",
+      "title": "Anthropic 官方出品 Claude 101：一份从入门到上手的完整学习指南",
+      "scores": {
+        "relevance": 3,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 2
+      },
+      "total_score": 11,
+      "first_chars": "# Anthropic 官方出品 Claude 101：一份从入门到上手的完整学习指南\n\nAnthropic 最近在自家的教育平台 Anthropic Academy 上线了一门免费课程叫 Claude 101，总共 13 节课，从最基础的\"Claude 是什么\"一路讲到企业搜索、深度研究、自定义技能，覆盖了一个普通用户上手 Claude 需要知道的几乎所有东西。\n\n这篇文章把 13 节课的核",
+      "indexed_at": "2026-04-08T23:56:11.197815",
+      "matched_chapters": [],
+      "quality": "medium"
+    },
+    {
+      "path": "X 文章/2026-03-05-1629-MasterPa-AI-Guide-for-Humanities-Workers-2029362155607474359.md",
+      "title": "给人文工作者的 AI 使用指南",
+      "scores": {
+        "relevance": 3,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "total_score": 10,
+      "first_chars": "# 给人文工作者的 AI 使用指南\n\n人文工作者没有创造世界变化，但他们却在承受世界变化。\n\n有的时候我感觉，那些卖人工智能教程的号总是把 AI 当成一种魔法：给你一个神奇的 prompt，你就能做任何事儿。现实当然不是这样。过去的一段时间里，因为创立了 [FUNES](https://funes.world/), 我们必须每天大量的通过 AI 进行生产。加之还有\"[《蜉蝣天地》](https",
+      "indexed_at": "2026-04-08T23:56:11.198190",
+      "matched_chapters": [],
+      "quality": "medium"
+    },
+    {
+      "path": "X 文章/2026-03-06-1221-凡人小北-AI编程工具SystemPrompt大合集-2029561950322168284.md",
+      "title": "AI编程工具 System Prompt 大合集",
+      "scores": {
+        "relevance": 3,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 2
+      },
+      "total_score": 11,
+      "first_chars": "# AI编程工具 System Prompt 大合集\n\n> 来源：[@frxiaobei](https://x.com/frxiaobei) | [GitHub 仓库](https://github.com/x1xhlol/system-prompts-and-models-of-ai-tools)\n\n## 概述\n\n这个仓库值一个亿。Cursor、Claude Code、Devin、Winds",
+      "indexed_at": "2026-04-08T23:56:11.199122",
+      "matched_chapters": [
+        "ch14-工具"
+      ],
+      "quality": "medium"
+    },
+    {
+      "path": "X 文章/2026-03-06-1222-AIEdge-Claude初学者完整指南-2029233676111008061.md",
+      "title": "The Ultimate Beginner's Guide to Claude (March 2026)",
+      "scores": {
+        "relevance": 3,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 2
+      },
+      "total_score": 11,
+      "first_chars": "# The Ultimate Beginner's Guide to Claude (March 2026)\n\n> Source: [@aiedge_](https://x.com/aiedge_)\n\nThe only guide you need to master Claude from zero.\n\n---\n\n## Introduction\n\n> 介绍\n\nThe only guide y",
+      "indexed_at": "2026-04-08T23:56:11.199929",
+      "matched_chapters": [],
+      "quality": "medium"
+    },
+    {
+      "path": "X 文章/2026-03-06-1628-AI Edge-The Ultimate Beginner's Guide to Claude (March 202-2029233676111008061.md",
+      "title": "📝 The Ultimate Beginner’s Guide to Claude (March 2026)",
+      "scores": {
+        "relevance": 3,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 2
+      },
+      "total_score": 11,
+      "first_chars": "# The Ultimate Beginner’s Guide to Claude (March 2026) \n\n**By @aiedge_** (AI Edge) · Wed Mar 04 16:33:04 +0000 2026\n\n📊 ❤️ 3,286 🔁 579 🔖 12,274 👁️ 2,189,117 💬 64\n\n📐 1,527 words\n\n---\n\nThe only guide y",
+      "indexed_at": "2026-04-08T23:56:11.200944",
+      "matched_chapters": [],
+      "quality": "medium"
+    },
+    {
+      "path": "X 文章/2026-03-06-1628-GeekPlux-拥抱黑盒：一个研究者 All in AI 的实录与反思-2029761486671712745.md",
+      "title": "拥抱黑盒：一个研究者 All in AI 的实录与反思",
+      "scores": {
+        "relevance": 3,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 2
+      },
+      "total_score": 11,
+      "first_chars": "---\ntitle: \"Tweet by @geekplux (Fri Mar 06 03:30:24 +0000 2026)\"\nauthor: \"@geekplux\"\nsource_tweet_url: \"https://x.com/geekplux/status/2029761486671712745\"\nsource_article_url: \"https://x.com/geekplux",
+      "indexed_at": "2026-04-08T23:56:11.201826",
+      "matched_chapters": [],
+      "quality": "medium"
+    },
+    {
+      "path": "X 文章/2026-03-06-1628-Yanhua-Claude 终极入门指南：100 小时实测，一篇讲透-2029748928091148665.md",
+      "title": "📝 Claude 终极入门指南：100 小时实测，一篇讲透",
+      "scores": {
+        "relevance": 3,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 2
+      },
+      "total_score": 11,
+      "first_chars": "# Claude 终极入门指南：100 小时实测，一篇讲透\n\n**By @yanhua1010** (Yanhua) · Fri Mar 06 02:40:30 +0000 2026\n\n📊 ❤️ 145 🔁 43 🔖 259 👁️ 10,204 💬 1\n\n📐 400 words\n\n---\n\n本文受 @aiedge 的 Claude 终极初学者指南 启发创作，结合个人一年多的实战经验。\n\n202",
+      "indexed_at": "2026-04-08T23:56:11.202522",
+      "matched_chapters": [],
+      "quality": "medium"
+    },
+    {
+      "path": "X 文章/2026-03-06-1628-gemchanger-How I'd Become a Quant If I Had to Start Over Tomo-2028904166895112617.md",
+      "title": "📝 How I'd Become a Quant If I Had to Start Over Tomorrow",
+      "scores": {
+        "relevance": 3,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 2
+      },
+      "total_score": 11,
+      "first_chars": "# How I'd Become a Quant If I Had to Start Over Tomorrow\n\n**By @gemchange_ltd** (gemchanger) · Tue Mar 03 18:43:43 +0000 2026\n\n📊 ❤️ 11,346 🔁 1,198 🔖 42,679 👁️ 6,361,106 💬 159\n\n📐 2,585 words\n\n---\n\nIn",
+      "indexed_at": "2026-04-08T23:56:11.202945",
+      "matched_chapters": [],
+      "quality": "medium"
+    },
+    {
+      "path": "X 文章/2026-03-06-1628-凡人小北-AI 编程工具 System Prompt 仓库-2029561950322168284.md",
+      "title": "GitHub - x1xhlol/system-prompts-and-models-of-ai-tools: FULL Augment Code, Claude Code, Cluely, CodeBuddy, Comet, Cursor, Devin AI, Junie, Kiro, Leap.new, Lovable, Manus, NotionAI, Orchids.app, Perplexity, Poke, Qoder, Replit, Same.dev, Trae, Traycer AI, VSCode Agent, Warp.dev, Windsurf, Xcode, Z.ai Code, Dia & v0. (And other Open Sourced) System Prompts, Internal Tools & AI Models",
+      "scores": {
+        "relevance": 3,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 2
+      },
+      "total_score": 11,
+      "first_chars": "---\ntitle: \"Tweet by @frxiaobei (Thu Mar 05 14:17:31 +0000 2026)\"\nauthor: \"@frxiaobei\"\nsource_tweet_url: \"https://x.com/frxiaobei/status/2029561950322168284\"\nsource_article_url: \"https://x.com/frxia",
+      "indexed_at": "2026-04-08T23:56:11.203528",
+      "matched_chapters": [],
+      "quality": "medium"
+    },
+    {
+      "path": "X 文章/2026-03-06-2024-AeliaCapitolina-海湾秩序终结-2029618540140273741.md",
+      "title": "旧海湾秩序的终结，一场远隔四十年的利益再分配",
+      "scores": {
+        "relevance": 3,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 2
+      },
+      "total_score": 11,
+      "first_chars": "# 旧海湾秩序的终结，一场远隔四十年的利益再分配\n\n几乎没有人在讨论一个更根本的问题：伊朗战争摧毁的，远远超过一个最高领袖的生命或一支海军。它摧毁的是一个维持了将近四十年的利益均衡结构，而这个结构的瓦解将重塑全球能源格局、金融市场和地缘政治秩序。\n\n## 旧秩序是怎么建立的\n\n要理解今天发生了什么，需要回到1979年。\n\n伊斯兰革命之前，伊朗是美国在中东最重要的盟友之一。巴列维国王统治下的伊朗",
+      "indexed_at": "2026-04-08T23:56:11.204225",
+      "matched_chapters": [],
+      "quality": "medium"
+    },
+    {
+      "path": "X 文章/2026-03-06-2024-ginobefun-BestBlogs85期-驾驭工程-2029843882037715433.md",
+      "title": "BestBlogs.dev 第 85 期：驾驭工程",
+      "scores": {
+        "relevance": 3,
+        "depth": 2,
+        "timeliness": 5,
+        "verifiability": 2
+      },
+      "total_score": 12,
+      "first_chars": "# BestBlogs.dev 第 85 期：驾驭工程\n\n本周有一个关键词贯穿了多篇文章：**驾驭**。\n\n[martinfowler.com](https://martinfowler.com/) 上发表的文章提出，开发者的核心工作正在从写代码转向构建 Agent 运行所依赖的驾驭工程。AI 炼金术播客的标题更直白：别干活了，给 AI 布置办公室去吧。OpenAI 团队用 Codex 生成了",
+      "indexed_at": "2026-04-08T23:56:11.204653",
+      "matched_chapters": [],
+      "quality": "medium"
+    },
+    {
+      "path": "X 文章/2026-03-07-1222-Hōrōshi-バガボンド-Your-LLM-Doesnt-Write-Correct-Code-It-Writes-Plaus-2029928471632224486.md",
+      "title": "Your LLM Doesn't Write Correct Code. It Writes Plausible Code.",
+      "scores": {
+        "relevance": 3,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 2
+      },
+      "total_score": 11,
+      "first_chars": "# Your LLM Doesn't Write Correct Code. It Writes Plausible Code.\n\n**作者**: Hōrōshi バガボンド  \n**来源**: https://x.com/KatanaLarp/status/2029928471632224486  \n**原文**: https://blog.katanaquant.com/p/your-ll",
+      "indexed_at": "2026-04-08T23:56:11.205392",
+      "matched_chapters": [],
+      "quality": "medium"
+    },
+    {
+      "path": "X 文章/2026-03-08-0800-JimProsser-My-Chief-of-Staff-Claude-Code-2029699731539255640.md",
+      "title": "My chief of staff, Claude Code",
+      "scores": {
+        "relevance": 3,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "total_score": 10,
+      "first_chars": "# My chief of staff, Claude Code\n\nThe dream of modern personalized technology has always been some kind of perfect digital assistant—a chief of staff that triages your inbox, organizes your day, and",
+      "indexed_at": "2026-04-08T23:56:11.205816",
+      "matched_chapters": [],
+      "quality": "medium"
     }
   ],
   "sources": [

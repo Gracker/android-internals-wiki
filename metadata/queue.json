@@ -1513,5 +1513,37 @@
     "status": "completed",
     "completed_at": "2026-04-08T23:10:32+08:00",
     "completed_by": "openclaw-task2a"
+  },
+  {
+    "section": "7.13",
+    "title": "SystemUI 性能分析",
+    "priority": 80,
+    "status": "pending",
+    "material_paths": [
+      "intake/research-feeds/2026-04-08-19-view-hierarchy-measure-layout-perfetto-jank-optimization.md"
+    ],
+    "created_date": "2026-04-09",
+    "created_by": "task2a-knowledge-gap",
+    "gap_score": 18
+  },
+  {
+    "section": "9.6",
+    "title": "Notification 性能与 ANR",
+    "priority": 80,
+    "status": "pending",
+    "material_paths": [],
+    "created_date": "2026-04-09",
+    "created_by": "task2a-knowledge-gap",
+    "gap_score": 16
+  },
+  {
+    "section": "2.21",
+    "title": "文字渲染性能",
+    "priority": 80,
+    "status": "pending",
+    "material_paths": [],
+    "created_date": "2026-04-09",
+    "created_by": "task2a-knowledge-gap",
+    "gap_score": 14
   }
 ]
