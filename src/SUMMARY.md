@@ -166,6 +166,7 @@ tags:
   - [13.6 线程 CPU 状态分析](part3-tools/ch13-perfetto/06-thread-cpu-states.md)
   - [13.7 Perfetto 的高级用法](part3-tools/ch13-perfetto/07-advanced-usage.md)
   - [13.8 Perfetto 输入延迟 SQL 深度分析](part3-tools/ch13-perfetto/08-input-latency-sql.md)
+  - [13.9 Android Tracing 基础设施：atrace、ftrace 与 Perfetto 数据采集原理](part3-tools/ch13-perfetto/09-tracing-infrastructure.md)
 
 - [第 14 章：其他分析工具](part3-tools/ch14-other-tools/README.md)
   - [14.1 Android Studio Profiler](part3-tools/ch14-other-tools/01-as-profiler.md)

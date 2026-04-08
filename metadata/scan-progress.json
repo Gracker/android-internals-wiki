@@ -1,10 +1,4407 @@
 {
-  "last_scan_time": "2026-04-08T16:20:52.331820",
-  "scanned_files": 4070,
-  "total_files": 4400,
-  "indexed_files": 271,
-  "current_directory": "Cubox",
-  "current_offset": 4070,
+  "last_scan_time": "2026-04-08T19:22:14.350442",
+  "scanned_files": 85,
+  "total_files": 167,
+  "indexed_files": [
+    {
+      "path": "Cubox/在Android上实现一个丝滑流畅的页面展开和关闭的效果动画-2024-01-26.md",
+      "title": "在Android上实现一个丝滑流畅的页面展开和关闭的效果动画",
+      "scores": {
+        "relevance": 3,
+        "depth": 1,
+        "timeliness": 4,
+        "verifiability": 3
+      },
+      "total_score": 11,
+      "matched_chapters": [],
+      "first_chars": "# 在Android上实现一个丝滑流畅的页面展开和关闭的效果动画\n\nCompose写的动画，这叫一个丝滑~\n\n[Read in Cubox](https://cubox.pro/web/card/7150379012982837004)  \n[Read Original](https://mp.weixin.qq.com/s?__biz=MzA5MzI3NjE2MA==&mid=265028152",
+      "quality": "medium",
+      "indexed_at": "2026-04-05T11:30:59.947071"
+    },
+    {
+      "path": "Cubox/在下一波重复感染潮前做好充足准备-2022-12-30.md",
+      "title": "在下一波重复感染潮前做好充足准备",
+      "scores": {
+        "relevance": 3,
+        "depth": 1,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "total_score": 10,
+      "matched_chapters": [],
+      "first_chars": "# 在下一波重复感染潮前做好充足准备\n\n\n\n[Read in Cubox](https://cubox.pro/web/card/7008369110882979333)  \n[Read Original](https://mp.weixin.qq.com/s?__biz=MzU1MTExMTE2NQ==&mid=2247486809&idx=1&sn=deefc3351b55caf0fb904b",
+      "quality": "medium",
+      "indexed_at": "2026-04-05T11:30:59.948321"
+    },
+    {
+      "path": "Cubox/在北美科技公司如何做好 One on One？-2022-03-29.md",
+      "title": "在北美科技公司如何做好 One on One？",
+      "scores": {
+        "relevance": 3,
+        "depth": 1,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "total_score": 10,
+      "matched_chapters": [],
+      "first_chars": "# 在北美科技公司如何做好 One on One？\n\n\n\n[Read in Cubox](https://cubox.pro/web/card/6908412638158389613)  \n[Read Original](https://posts.careerengine.us/p/5a39b6516bb58f6fbbda1448)  \n\n---\n\n![](https://cubox.pro/c",
+      "quality": "medium",
+      "indexed_at": "2026-04-05T11:30:59.948531"
+    },
+    {
+      "path": "Cubox/在国内，做技术的人为啥很难坐稳领导岗位？-2026-01-04.md",
+      "title": "在国内，做技术的人为啥很难坐稳领导岗位？",
+      "scores": {
+        "relevance": 3,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 3
+      },
+      "total_score": 12,
+      "matched_chapters": [],
+      "first_chars": "# 在国内，做技术的人为啥很难坐稳领导岗位？\n\n\n\n[Read in Cubox](https://cubox.pro/web/card/7407313779446253210)  \n[Read Original](https://mp.weixin.qq.com/s?__biz=MzI3NDYwMDM4MQ==&mid=2247484539&idx=1&sn=b64dba08f19d4b8585",
+      "quality": "medium",
+      "indexed_at": "2026-04-05T11:30:59.948922"
+    },
+    {
+      "path": "Cubox/在微信小程序里运行完整的 Flutter，我们是怎么做到的？ - 掘金-2024-01-24.md",
+      "title": "在微信小程序里运行完整的 Flutter，我们是怎么做到的？ - 掘金",
+      "scores": {
+        "relevance": 4,
+        "depth": 1,
+        "timeliness": 4,
+        "verifiability": 3
+      },
+      "total_score": 12,
+      "matched_chapters": [
+        "ch05-渲染"
+      ],
+      "first_chars": "# 在微信小程序里运行完整的 Flutter，我们是怎么做到的？ - 掘金\n\n本文要介绍的是使用 Flutter Framework 开发小程序背后的技术原理，其主要应用的技术是 Skia CanvasKit。\n\n[Read in Cubox](https://cubox.pro/web/card/7149681896631305883)  \n[Read Original](https://jue",
+      "quality": "medium",
+      "indexed_at": "2026-04-05T11:30:59.949090"
+    },
+    {
+      "path": "Cubox/城市漫步指南：遇见三亚就是最美的故事-2022-03-21.md",
+      "title": "城市漫步指南：遇见三亚就是最美的故事",
+      "scores": {
+        "relevance": 3,
+        "depth": 1,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "total_score": 10,
+      "matched_chapters": [],
+      "first_chars": "# 城市漫步指南：遇见三亚就是最美的故事\n\n每年造访三亚的，除了络绎不绝的游客之外，自然是一年四季都充沛的阳光。无论在大陆省份多么横行霸道的寒潮，经过南岭、海峡和五指山的层层阻挡，到三亚的时候已经彻底失去了初心，无力再与这里的温暖抗衡，只能胆怯地给她带来一些夜晚的凉风习习。\n\n[Read in Cubox](https://cubox.pro/web/card/690525336685982583",
+      "quality": "medium",
+      "indexed_at": "2026-04-05T11:30:59.949353"
+    },
+    {
+      "path": "Cubox/培养自己的taste和intuition-2025-11-06.md",
+      "title": "培养自己的taste和intuition",
+      "scores": {
+        "relevance": 3,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 3
+      },
+      "total_score": 12,
+      "matched_chapters": [],
+      "first_chars": "# 培养自己的taste和intuition\n\n\n\n[Read in Cubox](https://cubox.pro/web/card/7386008869861852201)  \n[Read Original](https://mp.weixin.qq.com/s?__biz=MzI3NDYwMDM4MQ==&mid=2247484097&idx=1&sn=322a4905cd6887fe33",
+      "quality": "medium",
+      "indexed_at": "2026-04-05T11:30:59.949530"
+    },
+    {
+      "path": "Cubox/基于 C++ 的 Android 协程设计 - 张涛-2022-03-30.md",
+      "title": "基于 C++ 的 Android 协程设计 - 张涛",
+      "scores": {
+        "relevance": 3,
+        "depth": 1,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "total_score": 10,
+      "matched_chapters": [],
+      "first_chars": "# 基于 C++ 的 Android 协程设计 - 张涛\n\n点击「阅读原文」，获取 PPT！\n\n[Read in Cubox](https://cubox.pro/web/card/6908648300103075886)  \n[Read Original](https://mp.weixin.qq.com/s?__biz=MzI2NTAxMzg2MA==&mid=2247493840&idx=1",
+      "quality": "medium",
+      "indexed_at": "2026-04-05T11:30:59.949749"
+    },
+    {
+      "path": "Cubox/基于 Core 文件的 Android 调试与分析套件 - 掘金-2024-07-01.md",
+      "title": "基于 Core 文件的 Android 调试与分析套件 - 掘金",
+      "scores": {
+        "relevance": 3,
+        "depth": 1,
+        "timeliness": 4,
+        "verifiability": 4
+      },
+      "total_score": 12,
+      "matched_chapters": [],
+      "first_chars": "# 基于 Core 文件的 Android 调试与分析套件 - 掘金\n\n开源的离线内存分析项目，兼容了 Android 8 ~ Android 15 的解析，支持 arm64、arm、x86_64、x86 等体系架构。\n\n[Read in Cubox](https://cubox.pro/web/card/7207257424812575917)  \n[Read Original](https:/",
+      "quality": "medium",
+      "indexed_at": "2026-04-05T11:30:59.950229"
+    },
+    {
+      "path": "Cubox/基于 Core 文件的 Android 调试与分析套件-2024-09-13.md",
+      "title": "基于 Core 文件的 Android 调试与分析套件",
+      "scores": {
+        "relevance": 3,
+        "depth": 1,
+        "timeliness": 4,
+        "verifiability": 4
+      },
+      "total_score": 12,
+      "matched_chapters": [],
+      "first_chars": "# 基于 Core 文件的 Android 调试与分析套件\n\n开源的离线内存分析项目，兼容了 Android 8 ~ Android 15 的解析，支持 arm64、arm、x86_64、x86 等体系架构。\n\n[Read in Cubox](https://cubox.pro/web/card/7234114391392651998)  \n[Read Original](https://juej",
+      "quality": "medium",
+      "indexed_at": "2026-04-05T11:30:59.950459"
+    },
+    {
+      "path": "Cubox/基于 MCP 的 AI Agent 应用开发实践-2025-05-08.md",
+      "title": "基于 MCP 的 AI Agent 应用开发实践",
+      "scores": {
+        "relevance": 3,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 3
+      },
+      "total_score": 12,
+      "matched_chapters": [],
+      "first_chars": "# 基于 MCP 的 AI Agent 应用开发实践\n\n最近大家都在聊 MCP，发现有个最重要的点被忽略了： 通过标准化协议，将工具提供方与应用研发者解耦，这一点带\n\n[Read in Cubox](https://cubox.pro/web/card/7320010169952243219)  \n[Read Original](https://mp.weixin.qq.com/s?__biz=M",
+      "quality": "medium",
+      "indexed_at": "2026-04-05T11:30:59.950731"
+    },
+    {
+      "path": "Cubox/基于eBPF的CPU利用率精准计算小工具开发-2022-03-13.md",
+      "title": "基于eBPF的CPU利用率精准计算小工具开发",
+      "scores": {
+        "relevance": 3,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "total_score": 12,
+      "matched_chapters": [],
+      "first_chars": "# 基于eBPF的CPU利用率精准计算小工具开发\n\n\n\n[Read in Cubox](https://cubox.pro/web/card/6902509449999552396)  \n[Read Original](https://mp.weixin.qq.com/s?__biz=MzI3NzA5MzUxNA==&mid=2664611731&idx=1&sn=f0649e0f9c69af0d",
+      "quality": "medium",
+      "indexed_at": "2026-04-05T11:30:59.951182"
+    },
+    {
+      "path": "Cubox/基于eBPF的sched-ext会在产品成功的底层逻辑是什么-2025-10-18.md",
+      "title": "基于eBPF的sched-ext会在产品成功的底层逻辑是什么",
+      "scores": {
+        "relevance": 3,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 3
+      },
+      "total_score": 12,
+      "matched_chapters": [],
+      "first_chars": "# 基于eBPF的sched-ext会在产品成功的底层逻辑是什么\n\n公元 2009 年，无与伦比的北京奥运余音未散，世界仍沉醉在那场盛典的激情与荣耀之中。\n\n[Read in Cubox](https://cubox.pro/web/card/7379127755406837129)  \n[Read Original](https://mp.weixin.qq.com/s?__biz=Mzk0Nz",
+      "quality": "medium",
+      "indexed_at": "2026-04-05T11:30:59.951363"
+    },
+    {
+      "path": "Cubox/基于gpu counters数据的性能优化-2025-02-27.md",
+      "title": "基于gpu counters数据的性能优化",
+      "scores": {
+        "relevance": 3,
+        "depth": 3,
+        "timeliness": 5,
+        "verifiability": 3
+      },
+      "total_score": 14,
+      "matched_chapters": [],
+      "first_chars": "# 基于gpu counters数据的性能优化\n\n\n\n[Read in Cubox](https://cubox.pro/web/card/7294737893065492040)  \n[Read Original](https://mp.weixin.qq.com/s?__biz=MzA3MjMwMDIzNg==&mid=2649080968&idx=1&sn=bdc6446a5bd8af9dd",
+      "quality": "medium",
+      "indexed_at": "2026-04-05T11:30:59.951775"
+    },
+    {
+      "path": "Cubox/基于安卓墓碑文件制作 FakeCore 原理 - 掘金-2023-12-06.md",
+      "title": "基于安卓墓碑文件制作 FakeCore 原理 - 掘金",
+      "scores": {
+        "relevance": 3,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "total_score": 12,
+      "matched_chapters": [],
+      "first_chars": "# 基于安卓墓碑文件制作 FakeCore 原理 - 掘金\n\n将 tombstone 文件内容重新整合成一个 FakeCore 文件，实现在主流调试下分析 tombstone 问题。\n\n[Read in Cubox](https://cubox.pro/web/card/7132020707533259522)  \n[Read Original](https://juejin.cn/post/73",
+      "quality": "medium",
+      "indexed_at": "2026-04-05T11:30:59.951975"
+    },
+    {
+      "path": "Cubox/基于滑动场景解析RecyclerView的回收复用机制原理最近在研究 RecyclerView 的回收复用机制，顺便记录 - 掘金-2025-06-05.md",
+      "title": "基于滑动场景解析RecyclerView的回收复用机制原理最近在研究 RecyclerView 的回收复用机制，顺便记录 - 掘金",
+      "scores": {
+        "relevance": 3,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "total_score": 10,
+      "matched_chapters": [],
+      "first_chars": "# 基于滑动场景解析RecyclerView的回收复用机制原理最近在研究 RecyclerView 的回收复用机制，顺便记录 - 掘金\n\n最近在研究 RecyclerView 的回收复用机制，顺便记录一下。我们知道，RecyclerView 在 layout 子 View 时，都通过回收复用机制来管理。网上关于回收复用机制的分析讲解的文章也有一大堆了，分析得也都很详细，什么四级缓存啊，先去 mCh",
+      "quality": "medium",
+      "indexed_at": "2026-04-05T11:30:59.952414"
+    },
+    {
+      "path": "Cubox/基于预测模型的 GPU 绘制效率优化方法-2025-04-16.md",
+      "title": "基于预测模型的 GPU 绘制效率优化方法",
+      "scores": {
+        "relevance": 3,
+        "depth": 3,
+        "timeliness": 5,
+        "verifiability": 3
+      },
+      "total_score": 14,
+      "matched_chapters": [],
+      "first_chars": "# 基于预测模型的 GPU 绘制效率优化方法\n\n\n\n[Read in Cubox](https://cubox.pro/web/card/7312090839834954554)  \n[Read Original](https://mp.weixin.qq.com/s?__biz=MzA3MjMwMDIzNg==&mid=2649081014&idx=1&sn=06f77647a60bd8db31",
+      "quality": "medium",
+      "indexed_at": "2026-04-05T11:30:59.952781"
+    },
+    {
+      "path": "Cubox/基本功 - 一文讲清多线程和多线程同步 - 美团技术团队-2024-07-22.md",
+      "title": "基本功 | 一文讲清多线程和多线程同步 - 美团技术团队",
+      "scores": {
+        "relevance": 3,
+        "depth": 1,
+        "timeliness": 4,
+        "verifiability": 3
+      },
+      "total_score": 11,
+      "matched_chapters": [],
+      "first_chars": "# 基本功 | 一文讲清多线程和多线程同步 - 美团技术团队\n\n本篇文章将深入探讨多线程编程的基本概念（原子操作、CAS、Lock-free、内存屏障、伪共享、乱序执行等）、常见模式和最佳实践。通过具体的代码示例，希望能够帮助大家掌握多线程编程的核心技术，并在实际开发中应用这些知识，提升软件的性能和稳定性。\n\n[Read in Cubox](https://cubox.pro/web/card/7",
+      "quality": "medium",
+      "indexed_at": "2026-04-05T11:30:59.953261"
+    },
+    {
+      "path": "Cubox/增加内存会让计算机变快吗？-2022-10-31.md",
+      "title": "增加内存会让计算机变快吗？",
+      "scores": {
+        "relevance": 3,
+        "depth": 1,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "total_score": 10,
+      "matched_chapters": [],
+      "first_chars": "# 增加内存会让计算机变快吗？\n\n\n\n[Read in Cubox](https://cubox.pro/web/card/6986591396975085809)  \n[Read Original](https://mp.weixin.qq.com/s?__biz=Mzg4OTYzODM4Mw==&mid=2247487590&idx=1&sn=0dd8abbcbcfb37ab153e14b84",
+      "quality": "medium",
+      "indexed_at": "2026-04-05T11:30:59.953435"
+    },
+    {
+      "path": "Cubox/复盘接手 Flutter 生态中顶级热门的 dio 库的几个月，我们做了什么？-2023-08-14.md",
+      "title": "复盘接手 Flutter 生态中顶级热门的 dio 库的几个月，我们做了什么？",
+      "scores": {
+        "relevance": 3,
+        "depth": 1,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "total_score": 10,
+      "matched_chapters": [],
+      "first_chars": "# 复盘接手 Flutter 生态中顶级热门的 dio 库的几个月，我们做了什么？\n\n写在 100+ PR 合并之际，结构性复盘，总结经验和错误。\n\n[Read in Cubox](https://cubox.pro/web/card/7090608558084981967)  \n[Read Original](https://mp.weixin.qq.com/s?__biz=MzU5MTc3MT",
+      "quality": "medium",
+      "indexed_at": "2026-04-05T11:30:59.953681"
+    },
+    {
+      "path": "Cubox/外刊精读96期：阿根廷疯子总统，还没上任就光速打脸-2023-12-13.md",
+      "title": "外刊精读96期：阿根廷疯子总统，还没上任就光速打脸",
+      "scores": {
+        "relevance": 3,
+        "depth": 1,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "total_score": 10,
+      "matched_chapters": [],
+      "first_chars": "# 外刊精读96期：阿根廷疯子总统，还没上任就光速打脸\n\n何老师外刊朗读\n\n[Read in Cubox](https://cubox.pro/web/card/7134403196293743318)  \n[Read Original](https://www.xiaoyuzhoufm.com/episode/65734aa2c1a8b2b47997c4bb?s=eyJ1IjogIjVmMzM1",
+      "quality": "medium",
+      "indexed_at": "2026-04-05T11:30:59.953842"
+    },
+    {
+      "path": "Cubox/外语学习简明指南 - by wuyagege - 不如读书-2023-01-02.md",
+      "title": "外语学习简明指南 - by wuyagege - 不如读书",
+      "scores": {
+        "relevance": 3,
+        "depth": 1,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "total_score": 10,
+      "matched_chapters": [],
+      "first_chars": "# 外语学习简明指南 - by wuyagege - 不如读书\n\n\n\n[Read in Cubox](https://cubox.pro/web/card/7009261669025057490)  \n[Read Original](https://wuyagege.substack.com/p/c51)  \n\n---\n\n各位朋友大家好，\n\n上周的文章《重估邮箱的价值》共有100位订阅者收到，邮件",
+      "quality": "medium",
+      "indexed_at": "2026-04-05T11:30:59.954049"
+    },
+    {
+      "path": "Cubox/多图文教你看懂单个图层的绘制流程-2023-11-27.md",
+      "title": "多图文教你看懂单个图层的绘制流程",
+      "scores": {
+        "relevance": 3,
+        "depth": 1,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "total_score": 10,
+      "matched_chapters": [],
+      "first_chars": "# 多图文教你看懂单个图层的绘制流程\n\n本文通过三个章节分别介绍了HWUI基础知识以及HWUI与Skia之间的关系\n\n[Read in Cubox](https://cubox.pro/web/card/7128657899349347518)  \n[Read Original](https://mp.weixin.qq.com/s?__biz=MzAxMDM0NjExNA==&mid=22474",
+      "quality": "medium",
+      "indexed_at": "2026-04-05T11:30:59.954251"
+    },
+    {
+      "path": "Cubox/多模态人物视频驱动技术回顾与业务应用-2025-02-24.md",
+      "title": "多模态人物视频驱动技术回顾与业务应用",
+      "scores": {
+        "relevance": 3,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 3
+      },
+      "total_score": 12,
+      "matched_chapters": [],
+      "first_chars": "# 多模态人物视频驱动技术回顾与业务应用\n\n本文是《淘宝的AIGC内容生成技术总结》专题第一篇，全面探讨了多模态人物视频生成技术的发展现状及其在商业场景中的应用实践，重点分析了口唇驱动、头部驱动和肢体驱动三大关键技术，并结合具体案例展示了其在淘天平台视频生产业务中的落地效果。\n\n[Read in Cubox](https://cubox.pro/web/card/72936599985743490",
+      "quality": "medium",
+      "indexed_at": "2026-04-05T11:30:59.954481"
+    },
+    {
+      "path": "Cubox/多线程的性能杀手 - 知乎-2024-01-27.md",
+      "title": "多线程的性能杀手 - 知乎",
+      "scores": {
+        "relevance": 3,
+        "depth": 3,
+        "timeliness": 4,
+        "verifiability": 3
+      },
+      "total_score": 13,
+      "matched_chapters": [],
+      "first_chars": "# 多线程的性能杀手 - 知乎\n\n假设CPU需要访问一个4字节的整数，但并没有命中cache，接下来该怎么办呢？ 你可能会想，这还不简单，把内存中这4字节整数加载到cache中就好了，如图1所示。 然而，事实并非如此。 01 cache与内存交互的基本单位：c…\n\n[Read in Cubox](https://cubox.pro/web/card/7150841712963749542)  \n[",
+      "quality": "medium",
+      "indexed_at": "2026-04-05T11:30:59.954661"
+    },
+    {
+      "path": "Cubox/夜天之书 #76 远程工作、开源协同与饱和沟通-2023-03-20.md",
+      "title": "夜天之书 #76 远程工作、开源协同与饱和沟通",
+      "scores": {
+        "relevance": 3,
+        "depth": 1,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "total_score": 10,
+      "matched_chapters": [],
+      "first_chars": "# 夜天之书 #76 远程工作、开源协同与饱和沟通\n\n如何在分布式协同中实现集中办公的沟通效率\n\n[Read in Cubox](https://cubox.pro/web/card/7037416247729850690)  \n[Read Original](https://mp.weixin.qq.com/s?__biz=MzIzMDEwODM5OQ==&mid=2647852309&idx=",
+      "quality": "medium",
+      "indexed_at": "2026-04-05T11:30:59.955072"
+    },
+    {
+      "path": "Cubox/大公司如何做 APP：背后的开发流程和技术 - 掘金-2024-01-23.md",
+      "title": "大公司如何做 APP：背后的开发流程和技术 - 掘金",
+      "scores": {
+        "relevance": 3,
+        "depth": 1,
+        "timeliness": 4,
+        "verifiability": 3
+      },
+      "total_score": 11,
+      "matched_chapters": [],
+      "first_chars": "# 大公司如何做 APP：背后的开发流程和技术 - 掘金\n\n本文梳理了我之前在公司做研发过程中开发的流程和技术。我选择了其中几个我印象比较深刻的点，包括研发流程、技术等。\n\n[Read in Cubox](https://cubox.pro/web/card/7149312817202465516)  \n[Read Original](https://juejin.cn/post/73262689",
+      "quality": "medium",
+      "indexed_at": "2026-04-05T11:30:59.955264"
+    },
+    {
+      "path": "Cubox/大厂失业后，我被迫用cursor开发出了第一款海外产品谋生-2025-05-06.md",
+      "title": "大厂失业后，我被迫用cursor开发出了第一款海外产品谋生",
+      "scores": {
+        "relevance": 3,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 3
+      },
+      "total_score": 12,
+      "matched_chapters": [],
+      "first_chars": "# 大厂失业后，我被迫用cursor开发出了第一款海外产品谋生\n\n没错，大白话就是，我现在失业了。\n\n[Read in Cubox](https://cubox.pro/web/card/7319244516723003047)  \n[Read Original](https://mp.weixin.qq.com/s?__biz=MzkxMzMyMzgyMw==&mid=2247508235&id",
+      "quality": "medium",
+      "indexed_at": "2026-04-05T11:30:59.955450"
+    },
+    {
+      "path": "Cubox/大厂实战：TikTok跨平台框架Lynx终于开源-2025-04-27.md",
+      "title": "大厂实战：TikTok跨平台框架Lynx终于开源",
+      "scores": {
+        "relevance": 3,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 3
+      },
+      "total_score": 12,
+      "matched_chapters": [],
+      "first_chars": "# 大厂实战：TikTok跨平台框架Lynx终于开源\n\n又一个开源跨平台框架！\n\n[Read in Cubox](https://cubox.pro/web/card/7315975470749584240)  \n[Read Original](https://mp.weixin.qq.com/s?__biz=Mzg2MjE0MTE2MQ==&mid=2247496202&idx=1&sn=f2b",
+      "quality": "medium",
+      "indexed_at": "2026-04-05T11:30:59.955625"
+    },
+    {
+      "path": "Cubox/大型 APP 的性能优化思路 - 掘金-2024-01-05.md",
+      "title": "大型 APP 的性能优化思路 - 掘金",
+      "scores": {
+        "relevance": 3,
+        "depth": 1,
+        "timeliness": 4,
+        "verifiability": 3
+      },
+      "total_score": 11,
+      "matched_chapters": [],
+      "first_chars": "# 大型 APP 的性能优化思路 - 掘金\n\n做客户端开发都基本都做过性能优化，比如提升自己所负责的业务的速度活流畅性，优化内存占用等等。但是大部分开发者所做的性能优化可能都是都对中小型 APP 的，大型 APP 的性能优化经验可能不太多，毕竟大\n\n[Read in Cubox](https://cubox.pro/web/card/7142902933363887365)  \n[Read Ori",
+      "quality": "medium",
+      "indexed_at": "2026-04-05T11:30:59.955807"
+    },
+    {
+      "path": "Cubox/大模型时代手机的杀手锏功能思考-2025-03-08.md",
+      "title": "大模型时代手机的杀手锏功能思考",
+      "scores": {
+        "relevance": 3,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 3
+      },
+      "total_score": 12,
+      "matched_chapters": [],
+      "first_chars": "# 大模型时代手机的杀手锏功能思考\n\n\n\n[Read in Cubox](https://cubox.pro/web/card/7298046233241718561)  \n[Read Original](https://mp.weixin.qq.com/s?__biz=Mzk3NTA0NjcyMw==&mid=2247483694&idx=1&sn=9c2b5677cf0bbcf67f1712c",
+      "quality": "medium",
+      "indexed_at": "2026-04-05T11:30:59.956225"
+    },
+    {
+      "path": "Cubox/大汉王朝之：我们为什么迟迟不救经济？-2023-06-10.md",
+      "title": "大汉王朝之：我们为什么迟迟不救经济？",
+      "scores": {
+        "relevance": 3,
+        "depth": 1,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "total_score": 10,
+      "matched_chapters": [],
+      "first_chars": "# 大汉王朝之：我们为什么迟迟不救经济？\n\n丞相，你为什么迟迟不救大汉经济？\n\n[Read in Cubox](https://cubox.pro/web/card/7067092315839399871)  \n[Read Original](https://mp.weixin.qq.com/s?__biz=MzkxNDMzODEyMw==&mid=2247486397&idx=1&sn=8c57",
+      "quality": "medium",
+      "indexed_at": "2026-04-05T11:30:59.956399"
+    },
+    {
+      "path": "Cubox/大语言模型 - LLMBook-zh-2025-01-08.md",
+      "title": "大语言模型 | LLMBook-zh",
+      "scores": {
+        "relevance": 3,
+        "depth": 3,
+        "timeliness": 5,
+        "verifiability": 3
+      },
+      "total_score": 14,
+      "matched_chapters": [],
+      "first_chars": "# 大语言模型 | LLMBook-zh\n\n《大语言模型》作者：赵鑫，李军毅，周昆，唐天一，文继荣\n\n[Read in Cubox](https://cubox.pro/web/card/7276544522648030121)  \n[Read Original](https://llmbook-zh.github.io/)  \n\n---\n\n## 大语言模型\n\n作者：[赵鑫](http://aib",
+      "quality": "medium",
+      "indexed_at": "2026-04-05T11:30:59.956765"
+    },
+    {
+      "path": "Cubox/大陆KYC最佳出金姿势 — a10.eth-2022-04-05.md",
+      "title": "大陆KYC最佳出金姿势 — a10.eth",
+      "scores": {
+        "relevance": 3,
+        "depth": 1,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "total_score": 10,
+      "matched_chapters": [],
+      "first_chars": "# 大陆KYC最佳出金姿势 — a10.eth\n\n\n\n[Read in Cubox](https://cubox.pro/web/card/6911019516570896974)  \n[Read Original](https://mirror.xyz/a10.eth/D7eeECqu5I-21lWYvV191SLneZmyu3OG9FejmiO6tNY)  \n\n---\n\n1、OTC是币圈老生常",
+      "quality": "medium",
+      "indexed_at": "2026-04-05T11:30:59.957094"
+    },
+    {
+      "path": "Cubox/大麦 Android 选座场景性能优化全解析-2022-11-03.md",
+      "title": "大麦 Android 选座场景性能优化全解析",
+      "scores": {
+        "relevance": 3,
+        "depth": 1,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "total_score": 10,
+      "matched_chapters": [],
+      "first_chars": "# 大麦 Android 选座场景性能优化全解析\n\n本文总结了一些提升选座场景用户体验，以及支撑超大场馆实时在线选座的核心方案和策略。\n\n[Read in Cubox](https://cubox.pro/web/card/6987704568494687738)  \n[Read Original](https://mp.weixin.qq.com/s?__biz=Mzg4MjE5OTI4Mw==",
+      "quality": "medium",
+      "indexed_at": "2026-04-05T11:30:59.957294"
+    },
+    {
+      "path": "Cubox/天府绿道国际自行车赛终于结束了-2024-07-02.md",
+      "title": "天府绿道国际自行车赛终于结束了",
+      "scores": {
+        "relevance": 3,
+        "depth": 1,
+        "timeliness": 4,
+        "verifiability": 3
+      },
+      "total_score": 11,
+      "matched_chapters": [],
+      "first_chars": "# 天府绿道国际自行车赛终于结束了\n\n第五名，心满意足.. 高温，爬坡，男女一起发车。都让我骑得很痛苦。 太煎熬了，比赛途中也事故频发，亲眼看见有人恶意别车\n\n[Read in Cubox](https://cubox.pro/web/card/7207770606417219540)  \n[Read Original](https://www.xiaohongshu.com/discovery/",
+      "quality": "medium",
+      "indexed_at": "2026-04-05T11:30:59.957453"
+    },
+    {
+      "path": "Cubox/失业和降薪的影响，也会刻在后代的DNA上-2023-01-29.md",
+      "title": "失业和降薪的影响，也会刻在后代的DNA上",
+      "scores": {
+        "relevance": 3,
+        "depth": 1,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "total_score": 10,
+      "matched_chapters": [],
+      "first_chars": "# 失业和降薪的影响，也会刻在后代的DNA上\n\n创伤能够遗传吗？\n\n[Read in Cubox](https://cubox.pro/web/card/7019397824781487629)  \n[Read Original](https://mp.weixin.qq.com/s/3IxLMNYiDm3sBOXsCQxKog)  \n\n---\n\n[![图片](https://image.cubo",
+      "quality": "medium",
+      "indexed_at": "2026-04-05T11:30:59.957632"
+    },
+    {
+      "path": "Cubox/失業半年，我用 AI 打造每日輸出系統，結果 AI 公司主動找上門-2025-08-21.md",
+      "title": "失業半年，我用 AI 打造每日輸出系統，結果 AI 公司主動找上門",
+      "scores": {
+        "relevance": 3,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 3
+      },
+      "total_score": 12,
+      "matched_chapters": [],
+      "first_chars": "# 失業半年，我用 AI 打造每日輸出系統，結果 AI 公司主動找上門\n\n\n\n[Read in Cubox](https://cubox.pro/web/card/7358052975698249172)  \n[Read Original](https://calpa.me/blog/ai-daily-output-jobless-to-opportunity/)  \n\n---\n\n又一次失業，這次",
+      "quality": "medium",
+      "indexed_at": "2026-04-05T11:30:59.958011"
+    },
+    {
+      "path": "Cubox/头条文章-2022-01-14.md",
+      "title": "头条文章",
+      "scores": {
+        "relevance": 3,
+        "depth": 1,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "total_score": 10,
+      "matched_chapters": [],
+      "first_chars": "# 头条文章\n\n\n\n[Read in Cubox](https://cubox.pro/web/card/6881549054522690124)  \n[Read Original](https://weibo.com/ttarticle/x/m/show/id/2309404724478998610280?_wb_client_=1)  \n\n---\n\n【这篇文章本来想做付费阅读的，但是想想现在经",
+      "quality": "medium",
+      "indexed_at": "2026-04-05T11:30:59.958196"
+    },
+    {
+      "path": "Cubox/头条稳定性治理：ARC 环境中对 Objective-C  对象赋值的 Crash 隐患-2022-12-28.md",
+      "title": "头条稳定性治理：ARC环境中对Objective-C对象赋值的Crash隐患",
+      "scores": {
+        "relevance": 3,
+        "depth": 4,
+        "timeliness": 3,
+        "verifiability": 4
+      },
+      "total_score": 14,
+      "matched_chapters": [
+        "ch03-线程"
+      ],
+      "quality": "medium",
+      "indexed_at": "2026-04-05T11:53:36"
+    },
+    {
+      "path": "Cubox/如何从Wall-CPU time理解多线程程序的并行效率 - 知乎-2024-02-25.md",
+      "title": "如何从Wall/CPU time理解多线程程序的并行效率",
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 4,
+        "verifiability": 4
+      },
+      "total_score": 15,
+      "matched_chapters": [
+        "ch03-线程"
+      ],
+      "quality": "medium",
+      "indexed_at": "2026-04-05T11:53:36"
+    },
+    {
+      "path": "Cubox/如何使用 Relay 构建 Compose 应用 - 开发者说·DTalk-2024-01-05.md",
+      "title": "如何使用Relay构建Compose应用",
+      "scores": {
+        "relevance": 3,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 3
+      },
+      "total_score": 12,
+      "matched_chapters": [
+        "ch15-Kotlin"
+      ],
+      "quality": "medium",
+      "indexed_at": "2026-04-05T11:53:36"
+    },
+    {
+      "path": "Cubox/如何利用 Perfetto 自动化分析 Android Camera 性能-2023-12-15.md",
+      "title": "如何利用Perfetto自动化分析Android Camera性能",
+      "scores": {
+        "relevance": 5,
+        "depth": 4,
+        "timeliness": 3,
+        "verifiability": 5
+      },
+      "total_score": 17,
+      "matched_chapters": [
+        "ch11-Profiling"
+      ],
+      "quality": "high",
+      "indexed_at": "2026-04-05T11:53:36"
+    },
+    {
+      "path": "Cubox/如何利用Perfetto自动化分析Android Camera性能-2023-08-24.md",
+      "title": "如何利用Perfetto自动化分析Android Camera性能",
+      "scores": {
+        "relevance": 5,
+        "depth": 4,
+        "timeliness": 3,
+        "verifiability": 5
+      },
+      "total_score": 17,
+      "matched_chapters": [
+        "ch11-Profiling"
+      ],
+      "quality": "high",
+      "indexed_at": "2026-04-05T11:53:36"
+    },
+    {
+      "path": "Cubox/如何利用线程堆栈定位问题 - 掘金-2024-07-04.md",
+      "title": "如何利用线程堆栈定位问题",
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 4,
+        "verifiability": 4
+      },
+      "total_score": 15,
+      "matched_chapters": [
+        "ch03-线程"
+      ],
+      "quality": "medium",
+      "indexed_at": "2026-04-05T11:53:36"
+    },
+    {
+      "path": "Cubox/如何合理使用 CPU 管理策略，提升容器性能？-2022-02-15.md",
+      "title": "如何合理使用CPU管理策略提升容器性能",
+      "scores": {
+        "relevance": 3,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "total_score": 12,
+      "matched_chapters": [
+        "ch13-调度"
+      ],
+      "quality": "medium",
+      "indexed_at": "2026-04-05T11:53:36"
+    },
+    {
+      "path": "Cubox/如何在产品中引入 eBPF 以增加可观察性-2022-01-29.md",
+      "title": "如何在产品中引入eBPF以增加可观察性",
+      "scores": {
+        "relevance": 3,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "total_score": 12,
+      "matched_chapters": [
+        "ch11-Profiling",
+        "ch14-工具"
+      ],
+      "quality": "medium",
+      "indexed_at": "2026-04-05T11:53:36"
+    },
+    {
+      "path": "Cubox/如何学习Android Framework-2023-11-06.md",
+      "title": "如何学习Android Framework",
+      "scores": {
+        "relevance": 4,
+        "depth": 2,
+        "timeliness": 3,
+        "verifiability": 2
+      },
+      "total_score": 11,
+      "matched_chapters": [
+        "ch01-架构"
+      ],
+      "quality": "medium",
+      "indexed_at": "2026-04-05T11:53:36"
+    },
+    {
+      "path": "Cubox/如何实现 Android 短视频跨页面的流畅续播？-2022-04-06.md",
+      "title": "如何实现Android短视频跨页面的流畅续播",
+      "scores": {
+        "relevance": 3,
+        "depth": 2,
+        "timeliness": 3,
+        "verifiability": 2
+      },
+      "total_score": 10,
+      "matched_chapters": [
+        "ch05-渲染"
+      ],
+      "quality": "medium",
+      "indexed_at": "2026-04-05T11:53:36"
+    },
+    {
+      "path": "Cubox/如何对Android系统进行性能分析？-2025-07-10.md",
+      "title": "如何对Android系统进行性能分析",
+      "scores": {
+        "relevance": 5,
+        "depth": 2,
+        "timeliness": 5,
+        "verifiability": 2
+      },
+      "total_score": 14,
+      "matched_chapters": [
+        "ch11-Profiling",
+        "ch14-工具"
+      ],
+      "quality": "medium",
+      "indexed_at": "2026-04-05T11:53:36"
+    },
+    {
+      "path": "Cubox/周刊（第23期）：图解Blink-Tree：B+Tree的一种并发优化结构和算法-2022-08-08.md",
+      "title": "id: \"6956142793735537994\"",
+      "scores": {
+        "relevance": 4,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "total_score": 11,
+      "matched_chapters": [
+        "ch03-线程"
+      ],
+      "first_chars": "# 周刊（第23期）：图解Blink-Tree：B+Tree的一种并发优化结构和算法\n\n《Efficient Locking for Concurrent Operations on B-Trees 》论文中提出了一种称为“Blink-Tree”的数据结构，本文对这篇论文进行解读。\n\n[Read in Cubox](https://cubox.pro/web/card/6956142793735",
+      "indexed_at": "2026-04-05T12:19:39.809153",
+      "quality": "medium"
+    },
+    {
+      "path": "Cubox/最新版发布 - Android 13 现已正式发布至 AOSP！-2022-08-17.md",
+      "title": "id: \"6959261932264097570\"",
+      "scores": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 5
+      },
+      "total_score": 12,
+      "matched_chapters": [],
+      "first_chars": "# 最新版发布 | Android 13 现已正式发布至 AOSP！\n\n随着今天 Android 13 正式发布至 AOSP，我们要求所有的 Android 开发者完成兼容性测试，并尽快发布更新，从而让您的用户能顺利过渡至 Android 13。\n\n[Read in Cubox](https://cubox.pro/web/card/6959261932264097570)  \n[Read Or",
+      "indexed_at": "2026-04-05T12:19:39.809986",
+      "quality": "medium"
+    },
+    {
+      "path": "Cubox/Android V app 冷启动(12) 真窗显示-2025-05-25.md",
+      "title": "id: \"7326137839760966787\"",
+      "scores": {
+        "relevance": 4,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 3
+      },
+      "total_score": 13,
+      "matched_chapters": [
+        "ch04-启动"
+      ],
+      "first_chars": "# Android V app 冷启动(12) 真窗显示\n\n上一篇文章分析了启动窗口的移除，它主要是做了一个 View 动画，但是，并没有从真正意义上移除启动窗口 surface，这就导致真窗还无法显示出来。 另外，WMShell-Core 在移除启动窗口时，\n\n[Read in Cubox](https://cubox.pro/web/card/7326137839760966787)  \n[",
+      "indexed_at": "2026-04-05T12:19:39.810905",
+      "quality": "medium"
+    },
+    {
+      "path": "Cubox/彻底掌握 Android14 Vsync 原理-2025-01-13.md",
+      "title": "id: \"7278403720302299611\"",
+      "scores": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 3
+      },
+      "total_score": 10,
+      "matched_chapters": [],
+      "first_chars": "# 彻底掌握 Android14 Vsync 原理\n\nAndroid14 Vsync 部分变化较大，本文梳理了其主要要点。 核心要点： Vsync 是什么，有什么作用 硬件 Vsync 计算模型的建立与校准 软件 Vsync 信号的计算过程 软件 Vsy\n\n[Read in Cubox](https://cubox.pro/web/card/7278403720302299611)  \n[Rea",
+      "indexed_at": "2026-04-05T12:19:39.811329",
+      "quality": "medium"
+    },
+    {
+      "path": "Cubox/Kotlin Flow- Best Practices. Since few months, @Geev, we used Kotlin… - by Florent Blot - Aug, 2022.md",
+      "title": "id: \"6956471051018569706\"",
+      "scores": {
+        "relevance": 4,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "total_score": 11,
+      "matched_chapters": [
+        "ch15-Kotlin"
+      ],
+      "first_chars": "# Kotlin Flow: Best Practices. Since few months, @Geev, we used Kotlin… | by Florent Blot | Aug, 2022 | Medium\n\n\n\n[Read in Cubox](https://cubox.pro/web/card/6956471051018569706)  \n[Read Original](htt",
+      "indexed_at": "2026-04-05T12:19:39.811506",
+      "quality": "medium"
+    },
+    {
+      "path": "Cubox/货拉拉司机Android端内存治理实践-2024-10-08.md",
+      "title": "id: \"7243148750653230377\"",
+      "scores": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 3
+      },
+      "total_score": 10,
+      "matched_chapters": [],
+      "first_chars": "# 货拉拉司机Android端内存治理实践\n\n一、前言当我们谈论Android应用程序的性能时，内存管理是一个至关重要的方面。\n\n[Read in Cubox](https://cubox.pro/web/card/7243148750653230377)  \n[Read Original](https://mp.weixin.qq.com/s?__biz=MzI0MjIxNjE0OQ==&mi",
+      "indexed_at": "2026-04-05T12:19:39.811735",
+      "quality": "medium"
+    },
+    {
+      "path": "Cubox/内核空间内存profiler： memprofiling-2025-01-21.md",
+      "title": "id: \"7281180307523373961\"",
+      "scores": {
+        "relevance": 4,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "total_score": 11,
+      "matched_chapters": [
+        "ch11-Profiling"
+      ],
+      "first_chars": "# 内核空间内存profiler： memprofiling\n\n\n\n[Read in Cubox](https://cubox.pro/web/card/7281180307523373961)  \n[Read Original](https://mp.weixin.qq.com/s?__biz=Mzk0NzcwMTUwNQ==&mid=2247483830&idx=1&sn=4fedf49aa",
+      "indexed_at": "2026-04-05T12:19:39.812306",
+      "quality": "medium"
+    },
+    {
+      "path": "Cubox/Android渲染系列之如何渲染UI-2023-12-27.md",
+      "title": "id: \"7139672894161815094\"",
+      "scores": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 3
+      },
+      "total_score": 10,
+      "matched_chapters": [],
+      "first_chars": "# Android渲染系列之如何渲染UI\n\n\n\n[Read in Cubox](https://cubox.pro/web/card/7139672894161815094)  \n[Read Original](https://mp.weixin.qq.com/s?__biz=MzAxMTI4MTkwNQ==&mid=2650851770&idx=1&sn=a3c454bb826c45d76a3",
+      "indexed_at": "2026-04-05T12:19:39.812659",
+      "quality": "medium"
+    },
+    {
+      "path": "Cubox/CriticalNative  -  Android Developers-2024-01-08.md",
+      "title": "id: \"7143857111401761517\"",
+      "scores": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 3
+      },
+      "total_score": 10,
+      "matched_chapters": [],
+      "first_chars": "# CriticalNative  |  Android Developers\n\n\n\n[Read in Cubox](https://cubox.pro/web/card/7143857111401761517)  \n[Read Original](https://developer.android.google.cn/reference/dalvik/annotation/optimizati",
+      "indexed_at": "2026-04-05T12:19:39.813383",
+      "quality": "medium"
+    },
+    {
+      "path": "Cubox/我对Android Looper 的重新设计-2025-03-30.md",
+      "title": "id: \"7305958850266399875\"",
+      "scores": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 3
+      },
+      "total_score": 10,
+      "matched_chapters": [],
+      "first_chars": "# 我对Android Looper 的重新设计\n\n\n\n[Read in Cubox](https://cubox.pro/web/card/7305958850266399875)  \n[Read Original](https://mp.weixin.qq.com/s?__biz=MzA3MjMwMDIzNg==&mid=2649080973&idx=1&sn=133679b9d82a4ef",
+      "indexed_at": "2026-04-05T12:19:39.813784",
+      "quality": "medium"
+    },
+    {
+      "path": "Cubox/Android App Startup and Performance Optimisation — The right way !!-2022-01-17.md",
+      "title": "id: \"6882583583303665192\"",
+      "scores": {
+        "relevance": 4,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 3
+      },
+      "total_score": 13,
+      "matched_chapters": [
+        "ch04-启动"
+      ],
+      "first_chars": "# Android App Startup and Performance Optimisation — The right way !!\n\nThis blog series will be a 2 part series as below:\n\n[Read in Cubox](https://cubox.pro/web/card/6882583583303665192)  \n[Read Orig",
+      "indexed_at": "2026-04-05T12:19:39.814482",
+      "quality": "medium"
+    },
+    {
+      "path": "Cubox/wiseflow-README_CN.md at master · TeamWiseFlow-wiseflow · GitHub-2024-08-07.md",
+      "title": "id: \"7220694636296145613\"",
+      "scores": {
+        "relevance": 1,
+        "depth": 3,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "total_score": 10,
+      "matched_chapters": [],
+      "first_chars": "# wiseflow/README_CN.md at master · TeamWiseFlow/wiseflow · GitHub\n\nWiseflow is an agile information mining tool that extracts concise messages from various sources such as websites, WeChat official",
+      "indexed_at": "2026-04-05T12:19:39.815152",
+      "quality": "medium"
+    },
+    {
+      "path": "Cubox/[Flutter 渲染优化系列] Flutter Android 线程优先级问题和优化方案 - 知乎-2023-07-17.md",
+      "title": "id: \"7080439493685150140\"",
+      "scores": {
+        "relevance": 4,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 3
+      },
+      "total_score": 13,
+      "matched_chapters": [
+        "ch05-渲染"
+      ],
+      "first_chars": "# [Flutter 渲染优化系列] Flutter Android 线程优先级问题和优化方案 - 知乎\n\n写作费时，敬请点赞，关注，收藏三连。Flutter 在 Android 上的线程优先级问题是我们在 Flutter 性能问题分析过程中发现的一个对渲染性能会造成负面影响的一个问题，在多图的信息流页面，很容易在惯性滚动中造成前…\n\n[Read in Cubox](https://cubox.",
+      "indexed_at": "2026-04-05T12:19:39.816117",
+      "quality": "medium"
+    },
+    {
+      "path": "Cubox/Android 15 内存追踪利器：ProfilingManager！-2025-01-21.md",
+      "title": "id: \"7281380006872222377\"",
+      "scores": {
+        "relevance": 4,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 5
+      },
+      "total_score": 15,
+      "matched_chapters": [
+        "ch07-内存",
+        "ch09-网络",
+        "ch11-Profiling"
+      ],
+      "first_chars": "# Android 15 内存追踪利器：ProfilingManager！\n\n本文禁止转载！❞前言我们都知道 Android Studio 里内置了 Profiler tool 供大家对 App 在 Memory、CPU、Network、Power 等角度进行 dump 和分析。\n\n[Read in Cubox](https://cubox.pro/web/card/72813800068722",
+      "indexed_at": "2026-04-05T12:19:39.816306",
+      "quality": "medium"
+    },
+    {
+      "path": "Cubox/Android11外部存储权限适配指南及方案-2022-02-04.md",
+      "title": "id: \"6888947259589791674\"",
+      "scores": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 3
+      },
+      "total_score": 10,
+      "matched_chapters": [],
+      "first_chars": "# Android11外部存储权限适配指南及方案\n\n\n\n[Read in Cubox](https://cubox.pro/web/card/6888947259589791674)  \n[Read Original](https://mp.weixin.qq.com/s?__biz=Mzg2NzUzNzk1Mw==&mid=2247490317&idx=1&sn=df5355542d14472",
+      "indexed_at": "2026-04-05T12:19:39.817097",
+      "quality": "medium"
+    },
+    {
+      "path": "Cubox/Simplepref 操作实践篇 - 知乎-2024-02-25.md",
+      "title": "id: \"7161451418841254847\"",
+      "scores": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 3
+      },
+      "total_score": 10,
+      "matched_chapters": [],
+      "first_chars": "# Simplepref 操作实践篇 - 知乎\n\n1. 前言 Simpleperf 是一个很强 Android 端性能分析工具。在 Android 性能分析过程中，会使用 Simpleperf 抓取原始数据（使用 .data文件后缀表示它们），然后通过 Simpleperf 工具中的 Python 脚本进行分析，比如…\n\n[Read in Cubox](https://cubox.pro/web",
+      "indexed_at": "2026-04-05T12:19:39.817304",
+      "quality": "medium"
+    },
+    {
+      "path": "Cubox/谈研发人员怎么专注-2023-05-10.md",
+      "title": "id: \"7055863112477445709\"",
+      "scores": {
+        "relevance": 1,
+        "depth": 3,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "total_score": 10,
+      "matched_chapters": [],
+      "first_chars": "# 谈研发人员怎么专注\n\n\n\n[Read in Cubox](https://cubox.pro/web/card/7055863112477445709)  \n[Read Original](https://manateelazycat.github.io/think/2023/05/10/developer-focus.html)  \n\n---\n\n1. 系统环境的专注： 研发人员的系统除了能",
+      "indexed_at": "2026-04-05T12:19:39.817459",
+      "quality": "medium"
+    },
+    {
+      "path": "Cubox/Android Vitals - Is this a cold start- 🦋 - DEV Community-2022-01-17.md",
+      "title": "id: \"6882775204062300386\"",
+      "scores": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 3
+      },
+      "total_score": 10,
+      "matched_chapters": [],
+      "first_chars": "# Android Vitals - Is this a cold start? 🦋 - DEV Community\n\nHeader image: Follow the Light by Romain Guy.   This blog series is focused on stability and perform... Tagged with android, vitals, perfor",
+      "indexed_at": "2026-04-05T12:19:39.818296",
+      "quality": "medium"
+    },
+    {
+      "path": "Cubox/深入学习Cache系列 2- Cache是如何工作的？概念以及工作过程-2022-04-11.md",
+      "title": "id: \"6913018912636404991\"",
+      "scores": {
+        "relevance": 1,
+        "depth": 3,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "total_score": 10,
+      "matched_chapters": [],
+      "first_chars": "# 深入学习Cache系列 2: Cache是如何工作的？概念以及工作过程\n\n作者简介baron (网名:代码改变世界ctw)，九年手机安全/SOC底层安全开发经验。擅长trustzon\n\n[Read in Cubox](https://cubox.pro/web/card/6913018912636404991)  \n[Read Original](https://mp.weixin.qq.c",
+      "indexed_at": "2026-04-05T12:19:39.820261",
+      "quality": "medium"
+    },
+    {
+      "path": "Cubox/实践 - Jetpack Compose 中的状态管理-2022-04-20.md",
+      "title": "实践 | Jetpack Compose 中的状态管理",
+      "scores": {
+        "relevance": 3,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 1
+      },
+      "total_score": 10,
+      "matched_chapters": [
+        "ch09-网络",
+        "ch15-Kotlin"
+      ],
+      "first_chars": "# 实践 | Jetpack Compose 中的状态管理\n\n在 Compose 中使用 State API 实现响应式界面的最佳实践。\n\n[Read in Cubox](https://cubox.pro/web/card/6916455760373222582)  \n[Read Original](https://mp.weixin.qq.com/s?__biz=Mzk0NDIwMTExNw=",
+      "indexed_at": "2026-04-05T12:49:03.596607",
+      "quality": "medium"
+    },
+    {
+      "path": "Cubox/审读专家邀请《现代CPU性能分析与优化 第二版》-2025-02-17.md",
+      "title": "审读专家邀请《现代CPU性能分析与优化 第二版》",
+      "scores": {
+        "relevance": 3,
+        "depth": 4,
+        "timeliness": 3,
+        "verifiability": 1
+      },
+      "total_score": 11,
+      "matched_chapters": [
+        "ch08-存储",
+        "ch09-网络",
+        "ch13-调度"
+      ],
+      "first_chars": "# 审读专家邀请《现代CPU性能分析与优化 第二版》\n\n我们很高兴地宣布，Intel性能专家Denis Bakhvalov的新作Performance Analysis and Tuning on Modern CPUs-Second Edition的中文版翻译工作已接近尾声。\n\n[Read in Cubox](https://cubox.pro/web/card/7290946451104862",
+      "indexed_at": "2026-04-05T12:49:03.596939",
+      "quality": "medium"
+    },
+    {
+      "path": "Cubox/小册上新｜掌握高手思路，一起做好 Android 性能优化！-2022-11-10.md",
+      "title": "小册上新｜掌握高手思路，一起做好 Android 性能优化！",
+      "scores": {
+        "relevance": 3,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 1
+      },
+      "total_score": 10,
+      "matched_chapters": [
+        "ch09-网络"
+      ],
+      "first_chars": "# 小册上新｜掌握高手思路，一起做好 Android 性能优化！\n\n和字节跳动资深 Android 开发工程师一起深入底层，建立性能优化知识体系，轻松应对面试、晋升！\n\n[Read in Cubox](https://cubox.pro/web/card/6990263688066237021)  \n[Read Original](https://mp.weixin.qq.com/s?__biz=",
+      "indexed_at": "2026-04-05T12:49:03.610946",
+      "quality": "medium"
+    },
+    {
+      "path": "Cubox/小册上新｜掌握高手思路，一起做好 Android 性能优化！-2022-11-19.md",
+      "title": "小册上新｜掌握高手思路，一起做好 Android 性能优化！",
+      "scores": {
+        "relevance": 3,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 1
+      },
+      "total_score": 10,
+      "matched_chapters": [
+        "ch09-网络"
+      ],
+      "first_chars": "# 小册上新｜掌握高手思路，一起做好 Android 性能优化！\n\n和字节跳动资深 Android 开发工程师一起深入底层，建立性能优化知识体系，轻松应对面试、晋升！\n\n[Read in Cubox](https://cubox.pro/web/card/6993571856968056943)  \n[Read Original](https://mp.weixin.qq.com/s?__biz=",
+      "indexed_at": "2026-04-05T12:49:03.611242",
+      "quality": "medium"
+    },
+    {
+      "path": "Cubox/小米澎湃OS3的优化性能优化-2025-09-02.md",
+      "title": "小米澎湃OS3的优化性能优化",
+      "scores": {
+        "relevance": 3,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 1
+      },
+      "total_score": 10,
+      "matched_chapters": [
+        "ch09-网络"
+      ],
+      "first_chars": "# 小米澎湃OS3的优化性能优化\n\n\n\n[Read in Cubox](https://cubox.pro/web/card/7362375127389966086)  \n[Read Original](https://mp.weixin.qq.com/s?__biz=MzA3MjMwMDIzNg==&mid=2649081395&idx=1&sn=f47bb6161ee80a63818e7ad4",
+      "indexed_at": "2026-04-05T12:49:03.614600",
+      "quality": "medium"
+    },
+    {
+      "path": "Cubox/巧用[]byte与ASCII值加减实现56%性能加速以及83%内存消耗下降-2025-06-13.md",
+      "title": "巧用[]byte与ASCII值加减实现56%性能加速以及83%内存消耗下降",
+      "scores": {
+        "relevance": 3,
+        "depth": 2,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "total_score": 11,
+      "matched_chapters": [],
+      "first_chars": "巧用[]byte与ASCII值加减实现56%性能加速以及83%内存消耗下降\n\n[Read in Cubox](https://cubox.pro/web/card/7333195166758471151)  \n[R",
+      "quality": "medium",
+      "indexed_at": "2026-04-05T13:21:21.306540+08:00"
+    },
+    {
+      "path": "Cubox/干货 - Dart 并发机制详解-2022-01-18.md",
+      "title": "干货 | Dart 并发机制详解",
+      "scores": {
+        "relevance": 2,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 3
+      },
+      "total_score": 11,
+      "matched_chapters": [
+        "ch03-线程"
+      ],
+      "first_chars": "Dart 性能提升 100 倍的秘密是？\n\n[Read in Cubox](https://cubox.pro/web/card/6882961643739810251)  \n[Read Original](https://mp.weixin.qq.com/s?__biz=MzUyMjg5NTI3NQ==&m",
+      "quality": "medium",
+      "indexed_at": "2026-04-05T13:21:21.308750+08:00"
+    },
+    {
+      "path": "Cubox/干货 - Trip.com QUIC 高可用及性能提升-2024-11-29.md",
+      "title": "干货 | Trip.com QUIC 高可用及性能提升",
+      "scores": {
+        "relevance": 4,
+        "depth": 2,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "total_score": 12,
+      "matched_chapters": [
+        "ch09-网络"
+      ],
+      "first_chars": "QUIC网络架构优化，全链路埋点监控，拥塞控制算法探索\n\n[Read in Cubox](https://cubox.pro/web/card/7261982957441649242)  \n[Read Original](https:",
+      "quality": "medium",
+      "indexed_at": "2026-04-05T13:21:21.308946+08:00"
+    },
+    {
+      "path": "Cubox/应用性能测量概览  -  Android 开发者  -  Android Developers-2022-02-02.md",
+      "title": "应用性能测量概览  |  Android 开发者  |  Android Developers",
+      "scores": {
+        "relevance": 4,
+        "depth": 1,
+        "timeliness": 4,
+        "verifiability": 1
+      },
+      "total_score": 10,
+      "matched_chapters": [
+        "ch11-Profiling",
+        "ch14-工具"
+      ],
+      "first_chars": "[Read in Cubox](https://cubox.pro/web/card/6888390675243469600)  \n[Read Original](https://developer.android.com/studio/profile/measuring-performance)  \n\n---\n\n* auto_signin: True\n\n* access_type: online",
+      "quality": "medium",
+      "indexed_at": "2026-04-05T13:21:21.311639+08:00"
+    },
+    {
+      "path": "Cubox/应用架构指南  -  Android 开发者  -  Android Developers-2022-01-23.md",
+      "title": "应用架构指南  |  Android 开发者  |  Android Developers",
+      "scores": {
+        "relevance": 4,
+        "depth": 1,
+        "timeliness": 4,
+        "verifiability": 1
+      },
+      "total_score": 10,
+      "matched_chapters": [
+        "ch01-架构"
+      ],
+      "first_chars": "[Read in Cubox](https://cubox.pro/web/card/6884602385742694504)  \n[Read Original](https://developer.android.google.cn/jetpack/guide#/)  \n\n---\n\n本指南包含一些最佳做法和推荐架构，有助于构建强大而优质的应用。\n\n## 移动应用用户体验\n\n典型的 Android",
+      "quality": "medium",
+      "indexed_at": "2026-04-05T13:21:21.311843+08:00"
+    },
+    {
+      "path": "Cubox/应用预测框架-基于Android S-2025-04-09.md",
+      "title": "应用预测框架-基于Android S",
+      "scores": {
+        "relevance": 3,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "total_score": 10,
+      "matched_chapters": [
+        "ch04-启动",
+        "ch01-架构"
+      ],
+      "first_chars": "[Read in Cubox](https://cubox.pro/web/card/7309614227038144429)  \n[Read Original](https://juejin.cn/post/7491154248562966578?share_token=78047f28-9b42-4ae0-93ff-812eb1d72b4e)  \n\n---\n\n## 总括\n\n本文基于Androi",
+      "quality": "medium",
+      "indexed_at": "2026-04-05T13:21:21.312490+08:00"
+    },
+    {
+      "path": "Cubox/底层揭秘：你知道这些Kotlin的内存陷阱吗？-2023-04-10.md",
+      "title": "底层揭秘：你知道这些Kotlin的内存陷阱吗？",
+      "scores": {
+        "relevance": 3,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 1
+      },
+      "total_score": 10,
+      "matched_chapters": [],
+      "first_chars": "希望你能在 「性能」 与 「优雅」 之间找到平衡点\n\n[Read in Cubox](https://cubox.pro/web/card/7044920230828575653)  \n[Read Original](https://mp.weixin.qq.com/s?__biz=Mzg2Mj",
+      "quality": "medium",
+      "indexed_at": "2026-04-05T13:21:21.312807+08:00"
+    },
+    {
+      "path": "Cubox/底层：Flutter的代码静态检查原理与应用-2024-04-17.md",
+      "title": "底层：Flutter的代码静态检查原理与应用",
+      "scores": {
+        "relevance": 2,
+        "depth": 3,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "total_score": 11,
+      "matched_chapters": [],
+      "first_chars": "代码静态检查，你学会了吗\n\n[Read in Cubox](https://cubox.pro/web/card/7180087447710076927)  \n[Read Original](https://mp.weixin.qq.com/s",
+      "quality": "medium",
+      "indexed_at": "2026-04-05T13:21:21.312979+08:00"
+    },
+    {
+      "path": "Cubox/开发一款 SDK 需要注意哪些问题-2024-02-02.md",
+      "title": "开发一款 SDK 需要注意哪些问题",
+      "scores": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 3
+      },
+      "total_score": 10,
+      "matched_chapters": [],
+      "first_chars": "[Read in Cubox](https://cubox.pro/web/card/7152923631213874634)  \n[Read Original](https://mp.weixin.qq.com/s?__biz=MzA4NTM2Nj",
+      "quality": "medium",
+      "indexed_at": "2026-04-05T13:21:21.314498+08:00"
+    },
+    {
+      "path": "Cubox/开发者体验、桌面和 Web 端支持、Dart 语言新特性等 - Flutter 2022 产品路线图发布-2022-01-14.md",
+      "title": "开发者体验、桌面和 Web 端支持、Dart 语言新特性等 | Flutter 2022 产品路线图发布",
+      "scores": {
+        "relevance": 2,
+        "depth": 1,
+        "timeliness": 4,
+        "verifiability": 3
+      },
+      "total_score": 10,
+      "matched_chapters": [],
+      "first_chars": "提升开发者体验、桌面端推向稳定版、Web 端性能提升、改进框架和引擎以及 Dart 编程语言等。\n\n[Read in Cubox](https://cubox.pro/web/card/6881532057856510563)  \n[Re",
+      "quality": "medium",
+      "indexed_at": "2026-04-05T13:21:21.314684+08:00"
+    },
+    {
+      "path": "性能优化必学基础：input流程与systrace结合剖析-2025-07-12.md",
+      "title": "性能优化必学基础：input流程与systrace结合剖析",
+      "scores": {
+        "relevance": 4,
+        "depth": 2,
+        "timeliness": 3,
+        "verifiability": 1
+      },
+      "total_score": 10,
+      "indexed_at": "2026-04-05T13:49:32.697307",
+      "chapters": [
+        {
+          "chapter": "ch09-网络",
+          "confidence": "medium",
+          "keyword_matches": 2
+        },
+        {
+          "chapter": "ch11-Profiling",
+          "confidence": "medium",
+          "keyword_matches": 2
+        }
+      ],
+      "quality": "medium"
+    },
+    {
+      "path": "性能优化：官方文档抓取开机trace给perfetto分析--Recording traces on Android boot-2025-04-17.md",
+      "title": "性能优化：官方文档抓取开机trace给perfetto分析--Recording traces on Android boot",
+      "scores": {
+        "relevance": 2,
+        "depth": 4,
+        "timeliness": 3,
+        "verifiability": 1
+      },
+      "total_score": 10,
+      "indexed_at": "2026-04-05T13:49:32.701634",
+      "chapters": [
+        {
+          "chapter": "ch11-Profiling",
+          "confidence": "medium",
+          "keyword_matches": 2
+        }
+      ],
+      "quality": "medium"
+    },
+    {
+      "path": "性能深度分析之SystemTrace_黄文臣的博客-CSDN博客_systemtrace分析-2022-05-25.md",
+      "title": "性能深度分析之SystemTrace_黄文臣的博客-CSDN博客_systemtrace分析",
+      "scores": {
+        "relevance": 4,
+        "depth": 5,
+        "timeliness": 3,
+        "verifiability": 1
+      },
+      "total_score": 13,
+      "indexed_at": "2026-04-05T13:49:32.709928",
+      "chapters": [
+        {
+          "chapter": "ch04-启动",
+          "confidence": "medium",
+          "keyword_matches": 2
+        },
+        {
+          "chapter": "ch11-Profiling",
+          "confidence": "medium",
+          "keyword_matches": 2
+        }
+      ],
+      "quality": "medium"
+    },
+    {
+      "path": "手机Android存储性能优化架构分析-2022-07-18.md",
+      "title": "手机Android存储性能优化架构分析",
+      "scores": {
+        "relevance": 2,
+        "depth": 4,
+        "timeliness": 3,
+        "verifiability": 1
+      },
+      "total_score": 10,
+      "indexed_at": "2026-04-05T13:53:00.723363",
+      "chapters": [
+        {
+          "chapter": "ch11-Profiling",
+          "confidence": "medium",
+          "keyword_matches": 2
+        }
+      ],
+      "quality": "medium"
+    },
+    {
+      "title": "抖音 Android 性能优化系列：Java OOM 优化之 NativeBitmap 方案",
+      "path": "Cubox/抖音 Android 性能优化系列：Java OOM 优化之 NativeBitmap 方案-2022-04-28.md",
+      "scores": {
+        "relevance": 2,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 2
+      },
+      "total_score": 10,
+      "mapped_chapters": [],
+      "content_preview": "# 抖音 Android 性能优化系列：Java OOM 优化之 NativeBitmap 方案    [Read in Cubox](https://cubox.pro/web/card/69193",
+      "scan_time": "2026-04-05T14:49:58.771097",
+      "quality": "medium"
+    },
+    {
+      "title": "抖音 Android 性能优化系列：Java 锁优化",
+      "path": "Cubox/抖音 Android 性能优化系列：Java 锁优化-2022-07-18.md",
+      "scores": {
+        "relevance": 2,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 2
+      },
+      "total_score": 10,
+      "mapped_chapters": [],
+      "content_preview": "# 抖音 Android 性能优化系列：Java 锁优化    [Read in Cubox](https://cubox.pro/web/card/6948581943432708793)   [R",
+      "scan_time": "2026-04-05T14:49:58.771341",
+      "quality": "medium"
+    },
+    {
+      "title": "抖音 Android 性能优化系列：启动优化之理论和工具篇",
+      "path": "Cubox/抖音 Android 性能优化系列：启动优化之理论和工具篇-2022-01-27.md",
+      "scores": {
+        "relevance": 2,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 2
+      },
+      "total_score": 10,
+      "mapped_chapters": [],
+      "content_preview": "# 抖音 Android 性能优化系列：启动优化之理论和工具篇    [Read in Cubox](https://cubox.pro/web/card/6886237680993045584)  ",
+      "scan_time": "2026-04-05T14:49:58.771616",
+      "quality": "medium"
+    },
+    {
+      "title": "抖音 Android 性能优化系列：启动优化之理论和工具篇",
+      "path": "Cubox/抖音 Android 性能优化系列：启动优化之理论和工具篇-2022-02-07.md",
+      "scores": {
+        "relevance": 2,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 2
+      },
+      "total_score": 10,
+      "mapped_chapters": [],
+      "content_preview": "# 抖音 Android 性能优化系列：启动优化之理论和工具篇    [Read in Cubox](https://cubox.pro/web/card/6890323905886555951)  ",
+      "scan_time": "2026-04-05T14:49:58.771876",
+      "quality": "medium"
+    },
+    {
+      "title": "抖音 Android 性能优化系列：启动优化之理论和工具篇",
+      "path": "Cubox/抖音 Android 性能优化系列：启动优化之理论和工具篇-2022-03-29.md",
+      "scores": {
+        "relevance": 2,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 2
+      },
+      "total_score": 10,
+      "mapped_chapters": [],
+      "content_preview": "# 抖音 Android 性能优化系列：启动优化之理论和工具篇    [Read in Cubox](https://cubox.pro/web/card/6908420449340753887)  ",
+      "scan_time": "2026-04-05T14:49:58.772123",
+      "quality": "medium"
+    },
+    {
+      "title": "抖音 Android 性能优化系列：启动优化实践 - 掘金",
+      "path": "Cubox/抖音 Android 性能优化系列：启动优化实践 - 掘金-2024-01-15.md",
+      "scores": {
+        "relevance": 2,
+        "depth": 4,
+        "timeliness": 3,
+        "verifiability": 2
+      },
+      "total_score": 11,
+      "mapped_chapters": [],
+      "content_preview": "# 抖音 Android 性能优化系列：启动优化实践 - 掘金  本文将按照主线程直接优化、后台线程间接优化、全局优化的逻辑，介绍抖音Android基础技术团队在启动优化的实践中遇到的一些比较典型的案",
+      "scan_time": "2026-04-05T14:49:58.772710",
+      "quality": "medium"
+    },
+    {
+      "title": "抖音 Android 性能优化系列：启动优化实践",
+      "path": "Cubox/抖音 Android 性能优化系列：启动优化实践-2022-03-25.md",
+      "scores": {
+        "relevance": 2,
+        "depth": 4,
+        "timeliness": 3,
+        "verifiability": 2
+      },
+      "total_score": 11,
+      "mapped_chapters": [],
+      "content_preview": "# 抖音 Android 性能优化系列：启动优化实践    [Read in Cubox](https://cubox.pro/web/card/6906983029332247866)   [Rea",
+      "scan_time": "2026-04-05T14:49:58.773349",
+      "quality": "medium"
+    },
+    {
+      "title": "抖音 Android 性能优化系列：启动优化实践",
+      "path": "Cubox/抖音 Android 性能优化系列：启动优化实践-2022-03-29.md",
+      "scores": {
+        "relevance": 2,
+        "depth": 4,
+        "timeliness": 3,
+        "verifiability": 2
+      },
+      "total_score": 11,
+      "mapped_chapters": [],
+      "content_preview": "# 抖音 Android 性能优化系列：启动优化实践    [Read in Cubox](https://cubox.pro/web/card/6908413192804763466)   [Rea",
+      "scan_time": "2026-04-05T14:49:58.773952",
+      "quality": "medium"
+    },
+    {
+      "title": "抖音 Android 性能优化系列：新一代全能型性能分析工具 Rhea",
+      "path": "Cubox/抖音 Android 性能优化系列：新一代全能型性能分析工具 Rhea-2022-01-13.md",
+      "scores": {
+        "relevance": 2,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 2
+      },
+      "total_score": 10,
+      "mapped_chapters": [],
+      "content_preview": "# 抖音 Android 性能优化系列：新一代全能型性能分析工具 Rhea  极致的耗时检测工具，极致的交互响应体验。  [Read in Cubox](https://cubox.pro/web/c",
+      "scan_time": "2026-04-05T14:49:58.774426",
+      "quality": "medium"
+    },
+    {
+      "title": "抖音 Android 性能优化系列：新一代全能型性能分析工具 Rhea",
+      "path": "Cubox/抖音 Android 性能优化系列：新一代全能型性能分析工具 Rhea-2022-01-14.md",
+      "scores": {
+        "relevance": 2,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 2
+      },
+      "total_score": 10,
+      "mapped_chapters": [],
+      "content_preview": "# 抖音 Android 性能优化系列：新一代全能型性能分析工具 Rhea  极致的耗时检测工具，极致的交互响应体验。  [Read in Cubox](https://cubox.pro/web/c",
+      "scan_time": "2026-04-05T14:49:58.774902",
+      "quality": "medium"
+    },
+    {
+      "title": "抖音 Android 性能优化系列：新一代全能型性能分析工具 Rhea",
+      "path": "Cubox/抖音 Android 性能优化系列：新一代全能型性能分析工具 Rhea-2022-03-29.md",
+      "scores": {
+        "relevance": 2,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 2
+      },
+      "total_score": 10,
+      "mapped_chapters": [],
+      "content_preview": "# 抖音 Android 性能优化系列：新一代全能型性能分析工具 Rhea  极致的耗时检测工具，极致的交互响应体验。  [Read in Cubox](https://cubox.pro/web/c",
+      "scan_time": "2026-04-05T14:49:58.775369",
+      "quality": "medium"
+    },
+    {
+      "title": "抖音 Android 端图片优化实践",
+      "path": "Cubox/抖音 Android 端图片优化实践-2024-06-11.md",
+      "scores": {
+        "relevance": 2,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 2
+      },
+      "total_score": 10,
+      "mapped_chapters": [],
+      "content_preview": "# 抖音 Android 端图片优化实践    [Read in Cubox](https://cubox.pro/web/card/7200057154005369188)   [Read Orig",
+      "scan_time": "2026-04-05T14:49:58.775815",
+      "quality": "medium"
+    },
+    {
+      "title": "抖音 Android 端图片优化最佳实践",
+      "path": "Cubox/抖音 Android 端图片优化最佳实践-2024-12-19.md",
+      "scores": {
+        "relevance": 2,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 2
+      },
+      "total_score": 10,
+      "mapped_chapters": [],
+      "content_preview": "# 抖音 Android 端图片优化最佳实践    [Read in Cubox](https://cubox.pro/web/card/7269237425958817023)   [Read Or",
+      "scan_time": "2026-04-05T14:49:58.775997",
+      "quality": "medium"
+    },
+    {
+      "title": "抖音 iOS/Android 基础技术大揭秘』技术沙龙又来了",
+      "path": "Cubox/抖音 iOS-Android 基础技术大揭秘』技术沙龙又来了-2024-01-04.md",
+      "scores": {
+        "relevance": 2,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 2
+      },
+      "total_score": 10,
+      "mapped_chapters": [],
+      "content_preview": "# 抖音 iOS/Android 基础技术大揭秘』技术沙龙又来了  2024 年 1 月 13 ～ 14 日两天，新年最新一期『抖音客户端基础技术大揭秘』技术沙龙活动重磅来袭，基于抖音客户端实践驱动的",
+      "scan_time": "2026-04-05T14:49:58.776368",
+      "quality": "medium"
+    },
+    {
+      "title": "抖音Android包体积优化探索：从Class字节码入手精简DEX体积",
+      "path": "Cubox/抖音Android包体积优化探索：从Class字节码入手精简DEX体积-2022-01-14.md",
+      "scores": {
+        "relevance": 3,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 2
+      },
+      "total_score": 11,
+      "mapped_chapters": [
+        "ch10-包体积"
+      ],
+      "content_preview": "# 抖音Android包体积优化探索：从Class字节码入手精简DEX体积    [Read in Cubox](https://cubox.pro/web/card/6881532025103188",
+      "scan_time": "2026-04-05T14:49:58.776826",
+      "quality": "medium"
+    },
+    {
+      "title": "抖音Android包体积优化探索：从Class字节码入手精简DEX体积",
+      "path": "Cubox/抖音Android包体积优化探索：从Class字节码入手精简DEX体积-2023-06-06.md",
+      "scores": {
+        "relevance": 3,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 2
+      },
+      "total_score": 11,
+      "mapped_chapters": [
+        "ch10-包体积"
+      ],
+      "content_preview": "# 抖音Android包体积优化探索：从Class字节码入手精简DEX体积  抖音Android包体积优化系列文章，共三篇，干货满满。  [Read in Cubox](https://cubox.p",
+      "scan_time": "2026-04-05T14:49:58.777303",
+      "quality": "medium"
+    },
+    {
+      "title": "抖音主线程消息调度优化 实现 - 掘金",
+      "path": "Cubox/抖音主线程消息调度优化 实现 - 掘金-2024-01-15.md",
+      "scores": {
+        "relevance": 2,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 2
+      },
+      "total_score": 10,
+      "mapped_chapters": [],
+      "content_preview": "# 抖音主线程消息调度优化 实现 - 掘金  抖音优化的思路 抖音原文 我们着重看 这一部分 虽然没有代码，但是文字描述的也够清楚了，我们可以总结归纳一下，抖音的优化思路 ，然后就可以尝试去实现它了 ",
+      "scan_time": "2026-04-05T14:49:58.778364",
+      "quality": "medium"
+    },
+    {
+      "title": "抖音功耗优化实践",
+      "path": "Cubox/抖音功耗优化实践-2022-06-04.md",
+      "scores": {
+        "relevance": 2,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 2
+      },
+      "total_score": 10,
+      "mapped_chapters": [],
+      "content_preview": "# 抖音功耗优化实践    [Read in Cubox](https://cubox.pro/web/card/6932721762421444057)   [Read Original](http",
+      "scan_time": "2026-04-05T14:49:58.778803",
+      "quality": "medium"
+    },
+    {
+      "title": "抖音大型直播的画质优化实践",
+      "path": "Cubox/抖音大型直播的画质优化实践-2023-11-03.md",
+      "scores": {
+        "relevance": 2,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 2
+      },
+      "total_score": 10,
+      "mapped_chapters": [],
+      "content_preview": "# 抖音大型直播的画质优化实践  春晚/世界杯/亚运会等大型赛事节目在抖音平台进行直播，而不同赛事节目涉及链路众多，本文讲解析如何保障各链路的画质稳定提升？  [Read in Cubox](http",
+      "scan_time": "2026-04-05T14:49:58.778970",
+      "quality": "medium"
+    },
+    {
+      "title": "抖音性能分析利器 btrace 探索和实践 | QCon北京202309",
+      "path": "Cubox/抖音性能分析利器 btrace 探索和实践 - QCon北京202309-2023-09-05.md",
+      "scores": {
+        "relevance": 2,
+        "depth": 4,
+        "timeliness": 3,
+        "verifiability": 2
+      },
+      "total_score": 11,
+      "mapped_chapters": [],
+      "content_preview": "# 抖音性能分析利器 btrace 探索和实践 | QCon北京202309  100+海内外先驱实践，20+领域的关键落地经验。尽在 QCon 全球软件开发大会！  [Read in Cubox](",
+      "scan_time": "2026-04-05T14:49:58.779461",
+      "quality": "medium"
+    },
+    {
+      "title": "抖音消息调度优化启动速度方案实践 - 掘金",
+      "path": "Cubox/抖音消息调度优化启动速度方案实践 - 掘金-2023-04-04.md",
+      "scores": {
+        "relevance": 3,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 2
+      },
+      "total_score": 11,
+      "mapped_chapters": [
+        "ch04-启动"
+      ],
+      "content_preview": "# 抖音消息调度优化启动速度方案实践 - 掘金  本文介绍了 页面启动、首帧渲染相关的消息，并基于消息调度机制，通过调整消息顺序 实现页面启动速度及首帧渲染时间的优化。  [Read in Cubox",
+      "scan_time": "2026-04-05T14:49:58.779832",
+      "quality": "medium"
+    },
+    {
+      "title": "抛开代码细节看f2fs文件系统组织方式",
+      "path": "Cubox/抛开代码细节看f2fs文件系统组织方式-2024-06-14.md",
+      "scores": {
+        "relevance": 3,
+        "depth": 4,
+        "timeliness": 3,
+        "verifiability": 2
+      },
+      "total_score": 12,
+      "mapped_chapters": [
+        "ch08-存储"
+      ],
+      "content_preview": "# 抛开代码细节看f2fs文件系统组织方式  主要从UFS上数据入手，通过对比大小不同的两个文件系统  [Read in Cubox](https://cubox.pro/web/card/72012",
+      "scan_time": "2026-04-05T14:49:58.780308",
+      "quality": "medium"
+    },
+    {
+      "title": "报名 | 美团技术沙龙第86期：多业务场景下，美团如何做性能优化",
+      "path": "Cubox/报名 - 美团技术沙龙第86期：多业务场景下，美团如何做性能优化-2025-07-04.md",
+      "scores": {
+        "relevance": 2,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 2
+      },
+      "total_score": 10,
+      "mapped_chapters": [],
+      "content_preview": "# 报名 | 美团技术沙龙第86期：多业务场景下，美团如何做性能优化    [Read in Cubox](https://cubox.pro/web/card/7340641971838387840",
+      "scan_time": "2026-04-05T14:49:58.781295",
+      "quality": "medium"
+    },
+    {
+      "title": "抽丝剥茧 Jetpack ｜Lifecycle 源码解析篇",
+      "path": "Cubox/抽丝剥茧 Jetpack ｜Lifecycle 源码解析篇-2022-04-14.md",
+      "scores": {
+        "relevance": 2,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 2
+      },
+      "total_score": 10,
+      "mapped_chapters": [],
+      "content_preview": "# 抽丝剥茧 Jetpack ｜Lifecycle 源码解析篇  源码解析篇。  [Read in Cubox](https://cubox.pro/web/card/6914094211801286",
+      "scan_time": "2026-04-05T14:49:58.782114",
+      "quality": "medium"
+    },
+    {
+      "title": "拆掉知识的墙",
+      "path": "Cubox/拆掉知识的墙-2022-02-07.md",
+      "scores": {
+        "relevance": 2,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 2
+      },
+      "total_score": 10,
+      "mapped_chapters": [],
+      "content_preview": "# 拆掉知识的墙  世界所有科学数据的研究，应该全部公之于众，能够被每一位个体研究者所利用。它不仅应该是免费的，而且应该是没有任何偏见和负担的。  [Read in Cubox](https://cu",
+      "scan_time": "2026-04-05T14:49:58.783704",
+      "quality": "medium"
+    },
+    {
+      "title": "拥抱鸿蒙 - 在展讯T606平台上的探索与实践",
+      "path": "Cubox/拥抱鸿蒙 - 在展讯T606平台上的探索与实践-2023-11-10.md",
+      "scores": {
+        "relevance": 2,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 2
+      },
+      "total_score": 10,
+      "mapped_chapters": [],
+      "content_preview": "# 拥抱鸿蒙 - 在展讯T606平台上的探索与实践  展讯T606 Mali-G57 GPU 适配方案  [Read in Cubox](https://cubox.pro/web/card/7122",
+      "scan_time": "2026-04-05T14:49:58.784847",
+      "quality": "medium"
+    },
+    {
+      "title": "拯救OOM！字节自研 Android 虚拟机内存管理优化黑科技 mSponge",
+      "path": "Cubox/拯救OOM！字节自研 Android 虚拟机内存管理优化黑科技 mSponge-2022-01-14.md",
+      "scores": {
+        "relevance": 3,
+        "depth": 2,
+        "timeliness": 3,
+        "verifiability": 2
+      },
+      "total_score": 10,
+      "mapped_chapters": [
+        "ch07-内存"
+      ],
+      "content_preview": "# 拯救OOM！字节自研 Android 虚拟机内存管理优化黑科技 mSponge    [Read in Cubox](https://cubox.pro/web/card/688153207106",
+      "scan_time": "2026-04-05T14:49:58.785079",
+      "quality": "medium"
+    },
+    {
+      "title": "拼多多专家会议纪要202402-TEMU目标600亿美金",
+      "path": "Cubox/拼多多专家会议纪要202402-TEMU目标600亿美金-2024-04-28.md",
+      "scores": {
+        "relevance": 2,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 2
+      },
+      "total_score": 10,
+      "mapped_chapters": [],
+      "content_preview": "# 拼多多专家会议纪要202402-TEMU目标600亿美金    [Read in Cubox](https://cubox.pro/web/card/7184141757070707511)   ",
+      "scan_time": "2026-04-05T14:49:58.785601",
+      "quality": "medium"
+    },
+    {
+      "title": "指尖上的科技：智能手机触摸屏技术与功耗优化",
+      "path": "Cubox/指尖上的科技：智能手机触摸屏技术与功耗优化-2024-05-15.md",
+      "scores": {
+        "relevance": 3,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 2
+      },
+      "total_score": 11,
+      "mapped_chapters": [
+        "ch06-功耗"
+      ],
+      "content_preview": "# 指尖上的科技：智能手机触摸屏技术与功耗优化  本文档全面解析智能手机触摸屏技术，涵盖电容式与电阻式触摸屏工作原理、单点与多点触控模式、手势识别技术。深入探讨功耗问题，提供省电策略与调试技巧，旨在优",
+      "scan_time": "2026-04-05T14:49:58.786032",
+      "quality": "medium"
+    },
+    {
+      "title": "指纹驱动初始化引发的思考",
+      "path": "Cubox/指纹驱动初始化引发的思考-2024-01-12.md",
+      "scores": {
+        "relevance": 2,
+        "depth": 2,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "total_score": 10,
+      "mapped_chapters": [],
+      "content_preview": "# 指纹驱动初始化引发的思考  从Android上指纹驱动初始化为切入点，然后详细分析从开机到初始化整个过程的详细流程  [Read in Cubox](https://cubox.pro/web/c",
+      "scan_time": "2026-04-05T14:49:58.786207",
+      "quality": "medium"
+    },
+    {
+      "title": "挖掘群晖NAS实用工具 篇十五：【长文，建议收藏慢看】快过年了，我来盘一盘这50个一直留在NAS上的好工具_网络存储_什么值得买",
+      "path": "Cubox/挖掘群晖NAS实用工具 篇十五：【长文，建议收藏慢看】快过年了，我来盘一盘这50个一直留在NAS上的好工具_网络存储_什么值得买-2024-01-23.md",
+      "scores": {
+        "relevance": 3,
+        "depth": 2,
+        "timeliness": 3,
+        "verifiability": 2
+      },
+      "total_score": 10,
+      "mapped_chapters": [
+        "ch09-网络"
+      ],
+      "content_preview": "# 挖掘群晖NAS实用工具 篇十五：【长文，建议收藏慢看】快过年了，我来盘一盘这50个一直留在NAS上的好工具_网络存储_什么值得买  前言Hello~~大家好，这里依旧是可爱的Cherry💛💛最近一",
+      "scan_time": "2026-04-05T14:49:58.786889",
+      "quality": "medium"
+    },
+    {
+      "title": "捕获设备上的系统跟踪记录  |  Android 开发者  |  Android Developers",
+      "path": "Cubox/捕获设备上的系统跟踪记录  -  Android 开发者  -  Android Developers-2022-03-18.md",
+      "scores": {
+        "relevance": 2,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 2
+      },
+      "total_score": 10,
+      "mapped_chapters": [],
+      "content_preview": "# 捕获设备上的系统跟踪记录  |  Android 开发者  |  Android Developers    [Read in Cubox](https://cubox.pro/web/card/",
+      "scan_time": "2026-04-05T14:49:58.787068",
+      "quality": "medium"
+    },
+    {
+      "title": "捕获设备上的系统跟踪记录  |  App quality  |  Android Developer...",
+      "path": "Cubox/捕获设备上的系统跟踪记录  -  App quality  -  Android Developer...-2023-11-07.md",
+      "scores": {
+        "relevance": 2,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 2
+      },
+      "total_score": 10,
+      "mapped_chapters": [],
+      "content_preview": "# 捕获设备上的系统跟踪记录  |  App quality  |  Android Developer...    [Read in Cubox](https://cubox.pro/web/car",
+      "scan_time": "2026-04-05T14:49:58.787438",
+      "quality": "medium"
+    },
+    {
+      "path": "Cubox/推荐一本关于linux内核内存管理的书-2025-03-27.md",
+      "title": "推荐一本关于linux内核内存管理的书",
+      "score": 11,
+      "quality": "medium",
+      "relevance": 4,
+      "depth": 0,
+      "date": 5,
+      "verify": 2,
+      "chapters": [
+        "ch07-内存"
+      ]
+    },
+    {
+      "path": "Cubox/插件化、热补丁中绕不开的Proguard的坑 - 美团技术团队-2022-01-14.md",
+      "title": "插件化、热补丁中绕不开的Proguard的坑 - 美团技术团队",
+      "score": 10,
+      "quality": "medium",
+      "relevance": 4,
+      "depth": 0,
+      "date": 4,
+      "verify": 2,
+      "chapters": [
+        "ch10-包体积"
+      ]
+    },
+    {
+      "path": "Cubox/插件化、热补丁中绕不开的Proguard的坑 - 美团技术团队-2022-01-14.md",
+      "title": "插件化、热补丁中绕不开的Proguard的坑 - 美团技术团队",
+      "score": 10,
+      "quality": "medium",
+      "relevance": 4,
+      "depth": 0,
+      "date": 4,
+      "verify": 2,
+      "chapters": [
+        "ch10-包体积"
+      ]
+    },
+    {
+      "path": "Cubox/推荐一本关于linux内核内存管理的书-2025-03-27.md",
+      "title": "推荐一本关于linux内核内存管理的书",
+      "score": 11,
+      "quality": "medium",
+      "relevance": 4,
+      "depth": 0,
+      "date": 5,
+      "verify": 2,
+      "chapters": [
+        "ch07-内存"
+      ]
+    },
+    {
+      "path": "Cubox/插件化、热补丁中绕不开的Proguard的坑 - 美团技术团队-2022-01-14.md",
+      "title": "插件化、热补丁中绕不开的Proguard的坑 - 美团技术团队",
+      "score": 10,
+      "quality": "medium",
+      "relevance": 4,
+      "depth": 0,
+      "date": 4,
+      "verify": 2,
+      "chapters": [
+        "ch10-包体积"
+      ]
+    },
+    {
+      "path": "intake/daily-info/2026-04-06.md",
+      "title": "聊聊2026年Android开发会是什么样",
+      "url": "https://juejin.cn/post/7589903499599347766",
+      "matched_chapter": "1.6",
+      "chapter_name": "版本演进",
+      "source_task": "掘金Android",
+      "indexed_at": "2026-04-06T05:37:28.209160",
+      "action_taken": "finalized_skip"
+    },
+    {
+      "path": "intake/daily-info/2026-04-06.md",
+      "title": "Android15适配之targetSdkVersion升到35后全是坑",
+      "url": "https://juejin.cn/post/7584295332340858943",
+      "matched_chapter": "16.2",
+      "chapter_name": "版本变更",
+      "source_task": "掘金Android",
+      "indexed_at": "2026-04-06T05:37:28.209169",
+      "action_taken": "inject"
+    },
+    {
+      "path": "intake/daily-info/2026-04-06.md",
+      "title": "Android 17 有什么需要适配的？",
+      "url": "https://juejin.cn/post/7610233341305389099",
+      "matched_chapter": "16.2",
+      "chapter_name": "版本变更",
+      "source_task": "掘金Android",
+      "indexed_at": "2026-04-06T05:37:28.209172",
+      "action_taken": "inject"
+    },
+    {
+      "path": "intake/daily-info/2026-04-06.md",
+      "title": "Android17 为什么重写 MessageQueue",
+      "url": "https://juejin.cn/post/7612812060795093002",
+      "matched_chapter": "1.13",
+      "chapter_name": "MessageQueue",
+      "source_task": "掘金Android",
+      "indexed_at": "2026-04-06T05:37:28.209174",
+      "action_taken": "inject"
+    },
+    {
+      "path": "intake/daily-info/2026-04-06.md",
+      "title": "Android全局悬浮拖拽视图",
+      "url": "https://juejin.cn/post/7582246395987148834",
+      "matched_chapter": "3.2",
+      "chapter_name": "触摸响应",
+      "source_task": "掘金Android",
+      "indexed_at": "2026-04-06T05:37:28.209176",
+      "action_taken": "finalized_skip"
+    },
+    {
+      "path": "intake/daily-info/2026-04-06.md",
+      "title": "2026年了，Android开发该如何调试布局",
+      "url": "https://juejin.cn/post/7596710680897863686",
+      "matched_chapter": "14.1",
+      "chapter_name": "AS Profiler与调试工具",
+      "source_task": "掘金Android",
+      "indexed_at": "2026-04-06T05:37:28.209178",
+      "action_taken": "inject"
+    },
+    {
+      "path": "intake/daily-info/2026-04-06.md",
+      "title": "Luban 2：简洁高效的Android图片压缩库",
+      "url": "https://juejin.cn/post/7592241336290033715",
+      "matched_chapter": "14.5",
+      "chapter_name": "第三方性能库",
+      "source_task": "掘金Android",
+      "indexed_at": "2026-04-06T05:37:28.209179",
+      "action_taken": "inject"
+    },
+    {
+      "path": "intake/daily-info/2026-04-06.md",
+      "title": "聊聊协程里的 Semaphore：别让协程挤爆门口",
+      "url": "https://juejin.cn/post/7582016579858169890",
+      "matched_chapter": "8.6",
+      "chapter_name": "协程性能",
+      "source_task": "掘金Android",
+      "indexed_at": "2026-04-06T05:37:28.209181",
+      "action_taken": "inject"
+    },
+    {
+      "path": "intake/daily-info/2026-04-06.md",
+      "title": "Android 嵌入式照片选择器",
+      "url": "https://juejin.cn/post/7599963665039081522",
+      "matched_chapter": null,
+      "chapter_name": "待分类",
+      "source_task": "掘金Android",
+      "indexed_at": "2026-04-06T05:37:28.209182",
+      "action_taken": "suggestions"
+    },
+    {
+      "path": "intake/daily-info/2026-04-06.md",
+      "title": "了解一下Android16更新事项",
+      "url": "https://juejin.cn/post/7595053284915822632",
+      "matched_chapter": "16.2",
+      "chapter_name": "版本变更",
+      "source_task": "掘金Android",
+      "indexed_at": "2026-04-06T05:37:28.209184",
+      "action_taken": "inject"
+    },
+    {
+      "path": "intake/daily-info/2026-04-06.md",
+      "title": "Android 开发中准确判断应用前后台",
+      "url": "https://juejin.cn/post/7595108457496346639",
+      "matched_chapter": "1.3",
+      "chapter_name": "进程模型",
+      "source_task": "掘金Android",
+      "indexed_at": "2026-04-06T05:37:28.209186",
+      "action_taken": "finalized_skip"
+    },
+    {
+      "path": "intake/daily-info/2026-04-06.md",
+      "title": "什么 AI 写 Android 最好用？官方基准测试排名",
+      "url": "https://juejin.cn/post/7614897667961143347",
+      "matched_chapter": "17.3",
+      "chapter_name": "行业案例",
+      "source_task": "掘金Android",
+      "indexed_at": "2026-04-06T05:37:28.209187",
+      "action_taken": "inject"
+    },
+    {
+      "path": "intake/daily-info/2026-04-06.md",
+      "title": "Android 12 SplashScreen 另类适配方案",
+      "url": "https://juejin.cn/post/7591348605867343907",
+      "matched_chapter": "8.2",
+      "chapter_name": "应用启动",
+      "source_task": "掘金Android",
+      "indexed_at": "2026-04-06T05:37:28.209189",
+      "action_taken": "inject"
+    },
+    {
+      "title": "掌握 Android Compose：从基础到性能优化全面指南",
+      "content_preview": "# 掌握 Android Compose：从基础到性能优化全面指南\n\n本文详细介绍了 Android Compose，一个现代化的 UI 框架，强调其声明式、简洁和可组合性的优势。文章探讨了状态管理、列表处理和性能优化，旨在帮助开发者有效利用 Compose 构建应用。\n\n[Read in Cubox](https://cubox.pro/web/card/7237689150386735442",
+      "score_breakdown": {
+        "relevance": 2,
+        "technical_depth": 3,
+        "timeliness": 5,
+        "verifiability": 3
+      },
+      "total_score": 13,
+      "relevant_chapters": [],
+      "quality": "medium",
+      "indexed_at": "2026-04-06T13:50:02.507172",
+      "path": "Cubox/掌握 Android Compose：从基础到性能优化全面指南-2024-09-23.md"
+    },
+    {
+      "title": "探寻Liquid Glass的实现原理",
+      "content_preview": "# 探寻Liquid Glass的实现原理\n\n首先，苹果对开发者开放的API十分的简单，只需要一行代码就能让你的按钮拥有LiquidGlass效果。但是开发者无法对其做更多的调整。接下来（来自 @少数派sspai）全文：https://sspai.com/post/100983\n\n[Read in Cubox](https://cubox.pro/web/card/735051971113150",
+      "score_breakdown": {
+        "relevance": 2,
+        "technical_depth": 3,
+        "timeliness": 5,
+        "verifiability": 3
+      },
+      "total_score": 13,
+      "relevant_chapters": [],
+      "quality": "medium",
+      "indexed_at": "2026-04-06T13:50:02.509097",
+      "path": "Cubox/探寻Liquid Glass的实现原理-2025-07-31.md"
+    },
+    {
+      "title": "探秘 React Native：线程探索及桥优化",
+      "content_preview": "# 探秘 React Native：线程探索及桥优化\n\n\n\n[Read in Cubox](https://cubox.pro/web/card/7335220761163990054)  \n[Read Original](https://juejin.cn/post/7515391516786884642?share_token=0887d900-11f2-40be-bdc8-527ddbef",
+      "score_breakdown": {
+        "relevance": 2,
+        "technical_depth": 3,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "total_score": 11,
+      "relevant_chapters": [],
+      "quality": "medium",
+      "indexed_at": "2026-04-06T13:50:02.509724",
+      "path": "Cubox/探秘 React Native：线程探索及桥优化-2025-06-19.md"
+    },
+    {
+      "title": "探秘智能调度线程池-方案总览",
+      "content_preview": "# 探秘智能调度线程池-方案总览\n\n在电商行业竞争白热化的今天，每一个细微的性能短板都可能让用户流失到竞争对手的怀抱。许多电商 App 在后台线程池的配置上，仍采用固定参数的模式，这种 “一劳永逸” 的设置，正成为制约应用性能提升的瓶颈\n\n[Read in Cubox](https://cubox.pro/web/card/7326138407845889092)  \n[Read Origina",
+      "score_breakdown": {
+        "relevance": 2,
+        "technical_depth": 3,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "total_score": 11,
+      "relevant_chapters": [],
+      "quality": "medium",
+      "indexed_at": "2026-04-06T13:50:02.511135",
+      "path": "Cubox/探秘智能调度线程池-方案总览-2025-05-25.md"
+    },
+    {
+      "title": "探究 Kotlin 的隐藏性能开销与避坑指南",
+      "content_preview": "# 探究 Kotlin 的隐藏性能开销与避坑指南\n\nKotlin 在设计理念上有很多和 Java 不同的地方，开发者能够直观感受到的是语法层面上的差异性，背后也包含有一系列隐藏的性能开销以及一些隐藏得很深的“坑”，本篇文章就来介绍在使用 Kotlin 过程中存在的隐藏性能开销，帮助读者避坑\n\n[Read in Cubox](https://cubox.pro/web/card/691194991",
+      "score_breakdown": {
+        "relevance": 2,
+        "technical_depth": 3,
+        "timeliness": 4,
+        "verifiability": 4
+      },
+      "total_score": 13,
+      "relevant_chapters": [],
+      "quality": "medium",
+      "indexed_at": "2026-04-06T13:50:02.511842",
+      "path": "Cubox/探究 Kotlin 的隐藏性能开销与避坑指南-2022-04-08.md"
+    },
+    {
+      "title": "探究ANR原理-是谁控制了ANR的触发时间 - 掘金",
+      "content_preview": "# 探究ANR原理-是谁控制了ANR的触发时间 - 掘金\n\n一、ANR概述 ANR(Application Not responding)是指应用程序未响应，Android系统对于一些事件需要在一定的时间范围内完成，如果超过预定时间能未能得到有效响应或者响应时\n\n[Read in Cubox](https://cubox.pro/web/card/6948361984458885329)  \n[",
+      "score_breakdown": {
+        "relevance": 2,
+        "technical_depth": 1,
+        "timeliness": 4,
+        "verifiability": 3
+      },
+      "total_score": 10,
+      "relevant_chapters": [],
+      "quality": "medium",
+      "indexed_at": "2026-04-06T13:50:02.512478",
+      "path": "Cubox/探究ANR原理-是谁控制了ANR的触发时间 - 掘金-2022-07-17.md"
+    },
+    {
+      "title": "探索 AI 编程智能体",
+      "content_preview": "# 探索 AI 编程智能体\n\n本文探讨AI编程智能体在软件开发中的应用，重点分析Cursor和Cline。二者通过自然语言处理和代码生成辅助编程，提升效率。Cursor 成熟但成本高，Cline 开源免费但可靠性待提升。\n\n[Read in Cubox](https://cubox.pro/web/card/7285917061987961472)  \n[Read Original](https",
+      "score_breakdown": {
+        "relevance": 2,
+        "technical_depth": 3,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "total_score": 11,
+      "relevant_chapters": [],
+      "quality": "medium",
+      "indexed_at": "2026-04-06T13:50:02.513827",
+      "path": "Cubox/探索 AI 编程智能体-2025-02-03.md"
+    },
+    {
+      "title": "探索 Java Native Interface（四）：JNI中引用类型",
+      "content_preview": "# 探索 Java Native Interface（四）：JNI中引用类型\n\n\n\n[Read in Cubox](https://cubox.pro/web/card/7291154192050163072)  \n[Read Original](https://juejin.cn/post/7472233713416290313)  \n\n---\n\n本文同步发布于公众号：移动开发那些事: [探索",
+      "score_breakdown": {
+        "relevance": 2,
+        "technical_depth": 1,
+        "timeliness": 5,
+        "verifiability": 3
+      },
+      "total_score": 11,
+      "relevant_chapters": [],
+      "quality": "medium",
+      "indexed_at": "2026-04-06T13:50:02.515259",
+      "path": "Cubox/探索 Java Native Interface（四）：JNI中引用类型-2025-02-17.md"
+    },
+    {
+      "title": "探索Android动态埋点的新视界：UprobeStats深度解析",
+      "content_preview": "# 探索Android动态埋点的新视界：UprobeStats深度解析\n\n\n\n[Read in Cubox](https://cubox.pro/web/card/7292565514830744699)  \n[Read Original](https://mp.weixin.qq.com/s?__biz=MzAxMDM0NjExNA==&mid=2247495889&idx=1&sn=932e",
+      "score_breakdown": {
+        "relevance": 2,
+        "technical_depth": 1,
+        "timeliness": 5,
+        "verifiability": 3
+      },
+      "total_score": 11,
+      "relevant_chapters": [],
+      "quality": "medium",
+      "indexed_at": "2026-04-06T13:50:02.516696",
+      "path": "Cubox/探索Android动态埋点的新视界：UprobeStats深度解析-2025-02-21.md"
+    },
+    {
+      "title": "探索Android平台ARM unwind技术-5异步Unwind",
+      "content_preview": "# 探索Android平台ARM unwind技术-5异步Unwind\n\n\n\n[Read in Cubox](https://cubox.pro/web/card/7291875840516689499)  \n[Read Original](https://zhuanlan.zhihu.com/p/700781104)  \n\n---\n\n## 1 背景\n\n近期有一些工作涉及到eBPF和simple",
+      "score_breakdown": {
+        "relevance": 2,
+        "technical_depth": 1,
+        "timeliness": 5,
+        "verifiability": 3
+      },
+      "total_score": 11,
+      "relevant_chapters": [],
+      "quality": "medium",
+      "indexed_at": "2026-04-06T13:50:02.517358",
+      "path": "Cubox/探索Android平台ARM unwind技术-5异步Unwind-2025-02-19.md"
+    },
+    {
+      "title": "探讨xCrash 和 Matrix 对于非耗时操作ANR的处理 - 掘金",
+      "content_preview": "# 探讨xCrash 和 Matrix 对于非耗时操作ANR的处理 - 掘金\n\n基于Android 13 进行测试 这个anr 产生的原因以及例子 , 之前的文章有写过 , 可以查看之前写的文章 , 此文只做xcrash 和 matrix 对于此类anr的监控和排查. anr 发\n\n[Read in Cubox](https://cubox.pro/web/card/71736341419115",
+      "score_breakdown": {
+        "relevance": 2,
+        "technical_depth": 1,
+        "timeliness": 5,
+        "verifiability": 3
+      },
+      "total_score": 11,
+      "relevant_chapters": [],
+      "quality": "medium",
+      "indexed_at": "2026-04-06T13:50:02.520591",
+      "path": "Cubox/探讨xCrash 和 Matrix 对于非耗时操作ANR的处理 - 掘金-2024-03-30.md"
+    },
+    {
+      "title": "探讨跨平台技术与跨平台UI框架及Kotlin Multiplatform在bilibili的实践",
+      "content_preview": "# 探讨跨平台技术与跨平台UI框架及Kotlin Multiplatform在bilibili的实践\n\n我们对几种主要的跨平台语言进行了比较，主要从执行效率、引入testcase前后app体积变化、运行内存峰值和运行内存的overhead这几个方面进行考察。\n\n[Read in Cubox](https://cubox.pro/web/card/7194707616646301393)  \n[R",
+      "score_breakdown": {
+        "relevance": 2,
+        "technical_depth": 1,
+        "timeliness": 5,
+        "verifiability": 3
+      },
+      "total_score": 11,
+      "relevant_chapters": [],
+      "quality": "medium",
+      "indexed_at": "2026-04-06T13:50:02.521169",
+      "path": "Cubox/探讨跨平台技术与跨平台UI框架及Kotlin Multiplatform在bilibili的实践-2024-05-27.md"
+    },
+    {
+      "title": "推荐两个我觉得很棒的工具",
+      "content_preview": "# 推荐两个我觉得很棒的工具\n\n平常除了写代码，最多的就是画图，一般有架构图，流程图，我今天推荐两个很棒的工具。\n\n[Read in Cubox](https://cubox.pro/web/card/7179333002751639703)  \n[Read Original](https://mp.weixin.qq.com/s?__biz=MzA4MDAxMzQxNw==&mid=24476",
+      "score_breakdown": {
+        "relevance": 2,
+        "technical_depth": 3,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "total_score": 11,
+      "relevant_chapters": [],
+      "quality": "medium",
+      "indexed_at": "2026-04-06T13:50:02.523124",
+      "path": "Cubox/推荐两个我觉得很棒的工具-2024-04-15.md"
+    },
+    {
+      "title": "提升Jetpack Compose 性能",
+      "content_preview": "# 提升Jetpack Compose 性能\n\n如果你正在深入研究Jetpack Compose这个现代化的Android UI工具包，在本文中，将探讨一些增\n\n[Read in Cubox](https://cubox.pro/web/card/7152621703305102117)  \n[Read Original](https://mp.weixin.qq.com/s?__biz=MzI",
+      "score_breakdown": {
+        "relevance": 2,
+        "technical_depth": 3,
+        "timeliness": 5,
+        "verifiability": 3
+      },
+      "total_score": 13,
+      "relevant_chapters": [],
+      "quality": "medium",
+      "indexed_at": "2026-04-06T13:50:02.523957",
+      "path": "Cubox/提升Jetpack Compose 性能-2024-02-01.md"
+    },
+    {
+      "title": "提升效率，减少错误 | Twitter 采用 Jetpack Compose 进行功能开发",
+      "content_preview": "# 提升效率，减少错误 | Twitter 采用 Jetpack Compose 进行功能开发\n\nJetpack Compose 助力开发者以更少的代码构建更多内容，更好地连接用户。\n\n[Read in Cubox](https://cubox.pro/web/card/6963756958339825715)  \n[Read Original](https://mp.weixin.qq.com",
+      "score_breakdown": {
+        "relevance": 2,
+        "technical_depth": 3,
+        "timeliness": 4,
+        "verifiability": 1
+      },
+      "total_score": 10,
+      "relevant_chapters": [],
+      "quality": "medium",
+      "indexed_at": "2026-04-06T13:50:02.525238",
+      "path": "Cubox/提升效率，减少错误 - Twitter 采用 Jetpack Compose 进行功能开发-2022-08-29.md"
+    },
+    {
+      "title": "提升移动游戏体验：性能和功耗的双重优化策略",
+      "content_preview": "# 提升移动游戏体验：性能和功耗的双重优化策略\n\n探讨如何通过优化性能和功耗这两个关键因素来提升移动游戏体验\n\n[Read in Cubox](https://cubox.pro/web/card/7295084468862191054)  \n[Read Original](https://mp.weixin.qq.com/s?__biz=MzAxMDM0NjExNA==&mid=2247495",
+      "score_breakdown": {
+        "relevance": 2,
+        "technical_depth": 3,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "total_score": 11,
+      "relevant_chapters": [],
+      "quality": "medium",
+      "indexed_at": "2026-04-06T13:50:02.525754",
+      "path": "Cubox/提升移动游戏体验：性能和功耗的双重优化策略-2025-02-28.md"
+    },
+    {
+      "title": "提示艺术：PromptPerfect 提示优化器测试体验（一）",
+      "content_preview": "# 提示艺术：PromptPerfect 提示优化器测试体验（一）\n\n看到jina发布了PromptPerfect，专为大型语言模型 (...\n\n[Read in Cubox](https://cubox.pro/web/card/7033333710518749572)  \n[Read Original](https://zhuanlan.zhihu.com/p/611970732?utm_m",
+      "score_breakdown": {
+        "relevance": 2,
+        "technical_depth": 3,
+        "timeliness": 4,
+        "verifiability": 1
+      },
+      "total_score": 10,
+      "relevant_chapters": [],
+      "quality": "medium",
+      "indexed_at": "2026-04-06T13:50:02.527513",
+      "path": "Cubox/提示艺术：PromptPerfect 提示优化器测试体验（一）-2023-03-09.md"
+    },
+    {
+      "title": "插件 | 适用于 AppCode 的 KMM 插件更新：Android 集成和多平台项目支持",
+      "content_preview": "# 插件 | 适用于 AppCode 的 KMM 插件更新：Android 集成和多平台项目支持\n\n适用于 AppCode 的 Kotlin Multiplatform Mobile 插件迎来重大更新，带你一探究竟！\n\n[Read in Cubox](https://cubox.pro/web/card/6917194965877525288)  \n[Read Original](https:/",
+      "score_breakdown": {
+        "relevance": 2,
+        "technical_depth": 3,
+        "timeliness": 4,
+        "verifiability": 4
+      },
+      "total_score": 13,
+      "relevant_chapters": [],
+      "quality": "medium",
+      "indexed_at": "2026-04-06T13:50:02.528548",
+      "path": "Cubox/插件 - 适用于 AppCode 的 KMM 插件更新：Android 集成和多平台项目支持-2022-04-22.md"
+    },
+    {
+      "title": "揭开Android View的神秘面纱：深入探索工作原理引言：View 在 Android 世界的角色 在 Androi - 掘金",
+      "content_preview": "# 揭开Android View的神秘面纱：深入探索工作原理引言：View 在 Android 世界的角色 在 Androi - 掘金\n\n引言：View 在 Android 世界的角色 在 Android 开发的广袤天地中，View 无疑是构建用户界面的基石，发挥着举足轻重的作用。从简单的文本显示、按钮点击，到复杂的动画效果、交互设计，\n\n[Read in Cubox](https://cubo",
+      "score_breakdown": {
+        "relevance": 2,
+        "technical_depth": 1,
+        "timeliness": 5,
+        "verifiability": 3
+      },
+      "total_score": 11,
+      "relevant_chapters": [],
+      "quality": "medium",
+      "indexed_at": "2026-04-06T13:50:02.530134",
+      "path": "Cubox/揭开Android View的神秘面纱：深入探索工作原理引言：View 在 Android 世界的角色 在 Androi - 掘金-2025-03-03.md"
+    },
+    {
+      "path": "intake/daily-info/2026-04-07.md",
+      "title": "A Comparative Study of Android Performance Issues in Real-world Applications and Literature",
+      "url": "https://arxiv.org/abs/2407.05090",
+      "matched_chapter": "15.1",
+      "chapter_name": "性能优化的术、道、器",
+      "source_task": "每日论文精读",
+      "indexed_at": "2026-04-07T10:06:23.576180",
+      "action_taken": "inject"
+    },
+    {
+      "path": "intake/daily-info/2026-04-07.md",
+      "title": "UI-Voyager: 4B 参数移动 GUI Agent 在 AndroidWorld 上超越人类水平",
+      "url": "https://arxiv.org/abs/2603.24533",
+      "matched_chapter": null,
+      "chapter_name": "待分类",
+      "source_task": "每日论文精读（Android+AI）",
+      "indexed_at": "2026-04-07T10:06:23.576186",
+      "action_taken": "suggestions"
+    },
+    {
+      "path": "intake/daily-info/2026-04-07.md",
+      "title": "Android 17 为什么重写 MessageQueue",
+      "url": "https://juejin.cn/post/7612812060795093002",
+      "matched_chapter": "1.13",
+      "chapter_name": "已分类",
+      "source_task": "掘金Android",
+      "indexed_at": "2026-04-07T10:06:23.576188",
+      "action_taken": "dedup_skip"
+    },
+    {
+      "path": "intake/daily-info/2026-04-07.md",
+      "title": "Android 17 有什么需要适配的？",
+      "url": "https://juejin.cn/post/7610233341305389099",
+      "matched_chapter": "16.2",
+      "chapter_name": "已分类",
+      "source_task": "掘金Android",
+      "indexed_at": "2026-04-07T10:06:23.576191",
+      "action_taken": "dedup_skip"
+    },
+    {
+      "path": "intake/daily-info/2026-04-07.md",
+      "title": "Android15适配之targetSdkVersion升到35后全是坑",
+      "url": "https://juejin.cn/post/7584295332340858943",
+      "matched_chapter": "16.2",
+      "chapter_name": "已分类",
+      "source_task": "掘金Android",
+      "indexed_at": "2026-04-07T10:06:23.576193",
+      "action_taken": "dedup_skip"
+    },
+    {
+      "path": "Cubox/插件化、热补丁中绕不开的Proguard的坑 - 美团技术团队-2022-01-14.md",
+      "title": "插件化、热补丁中绕不开的Proguard的坑 - 美团技术团队",
+      "scores": {
+        "relevance": 5,
+        "depth": 4,
+        "timeliness": 4,
+        "verifiability": 3
+      },
+      "total_score": 16,
+      "matched_chapters": [
+        "ch07-内存",
+        "ch09-网络",
+        "ch10-包体积"
+      ],
+      "first_chars": "# 插件化、热补丁中绕不开的Proguard的坑 - 美团技术团队\n\n本文主要介绍ProGuard applymapping的Bug和修复\n\n[Read in Cubox](https://cubox.pro/web/card/6881671129442812486)  \n[Read Original](https://tech.meituan.com/2018/04/27/mt-proguar",
+      "quality": "high",
+      "indexed_at": "2026-04-07T13:20:48.019639"
+    },
+    {
+      "path": "Cubox/揭开Android View的神秘面纱：深入探索工作原理引言：View 在 Android 世界的角色 在 Androi - 掘金-2025-03-03.md",
+      "title": "揭开Android View的神秘面纱：深入探索工作原理引言：View 在 Android 世界的角色 在 Androi - 掘金",
+      "scores": {
+        "relevance": 5,
+        "depth": 0,
+        "timeliness": 5,
+        "verifiability": 0
+      },
+      "total_score": 10,
+      "matched_chapters": [
+        "ch05-渲染",
+        "ch15-Kotlin"
+      ],
+      "first_chars": "# 揭开Android View的神秘面纱：深入探索工作原理引言：View 在 Android 世界的角色 在 Androi - 掘金\n\n引言：View 在 Android 世界的角色 在 Android 开发的广袤天地中，View 无疑是构建用户界面的基石，发挥着举足轻重的作用。从简单的文本显示、按钮点击，到复杂的动画效果、交互设计，\n\n[Read in Cubox](https://cubo",
+      "quality": "medium",
+      "indexed_at": "2026-04-07T13:20:48.029578"
+    },
+    {
+      "path": "Cubox/揭开Flutter Slider中Shapes的神秘面纱-2025-03-04.md",
+      "title": "揭开Flutter Slider中Shapes的神秘面纱",
+      "scores": {
+        "relevance": 5,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 0
+      },
+      "total_score": 11,
+      "matched_chapters": [
+        "ch05-渲染",
+        "ch09-网络",
+        "ch15-Kotlin"
+      ],
+      "first_chars": "# 揭开Flutter Slider中Shapes的神秘面纱\n\n\n\n[Read in Cubox](https://cubox.pro/web/card/7296399466104360675)  \n[Read Original](https://mp.weixin.qq.com/s?__biz=MzAxNzMxNzk5OQ==&mid=2649495110&idx=1&sn=a8431d5cd",
+      "quality": "medium",
+      "indexed_at": "2026-04-07T13:20:48.038068"
+    },
+    {
+      "path": "Cubox/揭秘Activity“重生”的面纱---Activity管理系列-2024-12-20.md",
+      "title": "揭秘Activity“重生”的面纱---Activity管理系列",
+      "scores": {
+        "relevance": 5,
+        "depth": 3,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "total_score": 14,
+      "matched_chapters": [
+        "ch01-架构",
+        "ch07-内存",
+        "ch08-存储"
+      ],
+      "first_chars": "# 揭秘Activity“重生”的面纱---Activity管理系列\n\n本文是Android四大组件系统系列的第六篇文章，通过本文您将了解到Activity“重生”是啥，它的作用是啥，Activity“重生”的原理是啥。\n\n[Read in Cubox](https://cubox.pro/web/card/7269600925277227101)  \n[Read Original](https",
+      "quality": "medium",
+      "indexed_at": "2026-04-07T13:20:48.048299"
+    },
+    {
+      "path": "Cubox/揭秘Android Framework幕后英雄：输入与显示系统的精密协作-2026-04-05.md",
+      "title": "揭秘Android Framework幕后英雄：输入与显示系统的精密协作",
+      "scores": {
+        "relevance": 5,
+        "depth": 4,
+        "timeliness": 5,
+        "verifiability": 0
+      },
+      "total_score": 14,
+      "matched_chapters": [
+        "ch05-渲染",
+        "ch07-内存",
+        "ch09-网络"
+      ],
+      "first_chars": "# 揭秘Android Framework幕后英雄：输入与显示系统的精密协作\n\n引言：看似简单的触摸背后隐藏着什么？当你轻触手机屏幕，一个简单的动作背后实际上发生着一系列复杂而精密的系统级协作。\n\n[Read in Cubox](https://cubox.pro/web/card/7440254836576092385)  \n[Read Original](https://mp.weixin.",
+      "quality": "medium",
+      "indexed_at": "2026-04-07T13:20:48.052838"
+    },
+    {
+      "path": "Cubox/搜索历史 清空-2024-08-30.md",
+      "title": "搜索历史 清空",
+      "scores": {
+        "relevance": 5,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "total_score": 12,
+      "matched_chapters": [
+        "ch07-内存",
+        "ch13-调度"
+      ],
+      "first_chars": "# 搜索历史 清空\n\n\n\n[Read in Cubox](https://cubox.pro/web/card/7229137443084045137)  \n[Read Original](https://juejin.cn/post/7302740437529853963?share_token=95f808ef-750d-4fec-9392-b1bdd2f1a085)  \n\n---\n\n做客户",
+      "quality": "medium",
+      "indexed_at": "2026-04-07T13:20:48.065817"
+    },
+    {
+      "path": "Cubox/搞懂协程的异常处理，看这篇就可以啦-2023-12-04.md",
+      "title": "搞懂协程的异常处理，看这篇就可以啦",
+      "scores": {
+        "relevance": 5,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 0
+      },
+      "total_score": 11,
+      "matched_chapters": [
+        "ch03-线程",
+        "ch09-网络",
+        "ch15-Kotlin"
+      ],
+      "first_chars": "# 搞懂协程的异常处理，看这篇就可以啦\n\n轻松学，聊聊 Kotlin协程 的异常处理方式 :)\n\n[Read in Cubox](https://cubox.pro/web/card/7131225732079943811)  \n[Read Original](https://mp.weixin.qq.com/s?__biz=Mzg5NTc1MDkzNA==&mid=2247484162&idx",
+      "quality": "medium",
+      "indexed_at": "2026-04-07T13:20:48.071202"
+    },
+    {
+      "path": "Cubox/播放器系列1——总概述-2025-03-03.md",
+      "title": "播放器系列1——总概述",
+      "scores": {
+        "relevance": 5,
+        "depth": 0,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "total_score": 11,
+      "matched_chapters": [
+        "ch05-渲染",
+        "ch09-网络"
+      ],
+      "first_chars": "# 播放器系列1——总概述\n\n\n\n[Read in Cubox](https://cubox.pro/web/card/7296058063952284709)  \n[Read Original](https://blog.csdn.net/weixin_40317531/article/details/145787079)  \n\n---\n\n## {#t0}播放器核心架构\n\n![](https:",
+      "quality": "medium",
+      "indexed_at": "2026-04-07T13:20:48.076657"
+    },
+    {
+      "path": "Cubox/支付宝客户端体验度量与诊断-2022-12-01.md",
+      "title": "支付宝客户端体验度量与诊断",
+      "scores": {
+        "relevance": 5,
+        "depth": 5,
+        "timeliness": 4,
+        "verifiability": 3
+      },
+      "total_score": 17,
+      "matched_chapters": [
+        "ch03-线程",
+        "ch04-启动",
+        "ch05-渲染"
+      ],
+      "first_chars": "# 支付宝客户端体验度量与诊断\n\n支付宝是如何监测、治理耗时类体验问题？\n\n[Read in Cubox](https://cubox.pro/web/card/6997869640105853759)  \n[Read Original](https://mp.weixin.qq.com/s?__biz=Mzg4MjE5OTI4Mw==&mid=2247498514&idx=1&sn=e4de0",
+      "quality": "high",
+      "indexed_at": "2026-04-07T13:20:48.082021"
+    },
+    {
+      "path": "Cubox/故事和真实无关｜预言家周报#179-2022-07-15.md",
+      "title": "故事和真实无关｜预言家周报#179",
+      "scores": {
+        "relevance": 5,
+        "depth": 1,
+        "timeliness": 4,
+        "verifiability": 0
+      },
+      "total_score": 10,
+      "matched_chapters": [
+        "ch09-网络",
+        "ch12-安全"
+      ],
+      "first_chars": "# 故事和真实无关｜预言家周报#179\n\n故事是强大的，但是并不真实。从一开始，讲故事的人就不以真实为目标，而是以故事的效果最大化为目标。\n\n[Read in Cubox](https://cubox.pro/web/card/6947644449149157766)  \n[Read Original](https://orangexyz.mirror.xyz/y058p-JfrQliuPBmP",
+      "quality": "medium",
+      "indexed_at": "2026-04-07T13:20:48.086389"
+    },
+    {
+      "path": "Cubox/教你写好技术文章-2022-01-14.md",
+      "title": "教你写好技术文章",
+      "scores": {
+        "relevance": 5,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 0
+      },
+      "total_score": 11,
+      "matched_chapters": [
+        "ch07-内存",
+        "ch10-包体积"
+      ],
+      "first_chars": "# 教你写好技术文章\n\n技术写作的目的是让读者能够顺利地使用一个软件或理解一项技术或弄懂业务流程。它与创作型写作的最大区别在于，技术写作并非为了取悦读者，而是追求以简洁和精确的文字去阐明事实。\n\n[Read in Cubox](https://cubox.pro/web/card/6881532034464877165)  \n[Read Original](https://mp.weixin.q",
+      "quality": "medium",
+      "indexed_at": "2026-04-07T13:20:48.089756"
+    },
+    {
+      "path": "Cubox/敲敲打打：一系列云端输入法漏洞使网络攻击者得以监看个人用户的输入内容（摘要） - The Citizen Lab-2024-04-30.md",
+      "title": "敲敲打打：一系列云端输入法漏洞使网络攻击者得以监看个人用户的输入内容（摘要） - The Citizen Lab",
+      "scores": {
+        "relevance": 5,
+        "depth": 0,
+        "timeliness": 5,
+        "verifiability": 0
+      },
+      "total_score": 10,
+      "matched_chapters": [
+        "ch09-网络",
+        "ch12-安全"
+      ],
+      "first_chars": "# 敲敲打打：一系列云端输入法漏洞使网络攻击者得以监看个人用户的输入内容（摘要） - The Citizen Lab\n\n在我们测试的九家厂商的应用程序中，仅有华为的产品未发现任何上传用户输入内容至云端相关的安全问题，其余每一家厂商都至少有一个应用程序含有漏洞，使得被动型网络攻击者得以监看用户输入的完整内容。\n\n[Read in Cubox](https://cubox.pro/web/card/",
+      "quality": "medium",
+      "indexed_at": "2026-04-07T13:20:48.092790"
+    },
+    {
+      "path": "Cubox/文本和概念分析专家 prompt-2025-09-26.md",
+      "title": "文本和概念分析专家 prompt",
+      "scores": {
+        "relevance": 5,
+        "depth": 3,
+        "timeliness": 5,
+        "verifiability": 3
+      },
+      "total_score": 16,
+      "matched_chapters": [
+        "ch05-渲染",
+        "ch07-内存",
+        "ch09-网络"
+      ],
+      "first_chars": "# 文本和概念分析专家 prompt\n\nGitHub Gist: instantly share code, notes, and snippets.\n\n[Read in Cubox](https://cubox.pro/web/card/7371229132425792382)  \n[Read Original](https://gist.github.com/kevinz/a191dfd75",
+      "quality": "high",
+      "indexed_at": "2026-04-07T13:20:48.103062"
+    },
+    {
+      "path": "Cubox/文档中心-2024-10-23.md",
+      "title": "文档中心",
+      "scores": {
+        "relevance": 5,
+        "depth": 0,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "total_score": 11,
+      "matched_chapters": [
+        "ch04-启动"
+      ],
+      "first_chars": "# 文档中心\n\n\n\n[Read in Cubox](https://cubox.pro/web/card/7248674763416012170)  \n[Read Original](https://developer.huawei.com/consumer/cn/doc/best-practices-V5/bpta-smooth-application-design-V5)  \n\n---\n\n#",
+      "quality": "medium",
+      "indexed_at": "2026-04-07T13:20:48.108160"
+    },
+    {
+      "path": "Cubox/文润 - The Best Programmers I Know - Matthias Endler-2025-04-10.md",
+      "title": "文润 - The Best Programmers I Know | Matthias Endler",
+      "scores": {
+        "relevance": 5,
+        "depth": 0,
+        "timeliness": 5,
+        "verifiability": 2
+      },
+      "total_score": 12,
+      "matched_chapters": [],
+      "first_chars": "# 文润 - The Best Programmers I Know | Matthias Endler\n\n查看由文润转译的内容: The Best Programmers I Know | Matthias Endler\n\n[Read in Cubox](https://cubox.pro/web/card/7310026976260001028)  \n[Read Original](http",
+      "quality": "medium",
+      "indexed_at": "2026-04-07T13:20:48.110957"
+    },
+    {
+      "path": "Cubox/新 M3 系列 MacBook Pro 骨灰级对比评测：不加钱上 M3 Max 还不如买 M2 Pr...-2024-01-11.md",
+      "title": "新 M3 系列 MacBook Pro 骨灰级对比评测：不加钱上 M3 Max 还不如买 M2 Pr...",
+      "scores": {
+        "relevance": 5,
+        "depth": 0,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "total_score": 11,
+      "matched_chapters": [
+        "ch09-网络",
+        "ch13-调度"
+      ],
+      "first_chars": "# 新 M3 系列 MacBook Pro 骨灰级对比评测：不加钱上 M3 Max 还不如买 M2 Pr...\n\n新 M3 系列 MacBook Pro 骨灰级对比评测：不加钱上 M3 Max 还不如买 M2 Pro？,midifan：我们关注电脑音乐\n\n[Read in Cubox](https://cubox.pro/web/card/7144933669604426075)  \n[Read",
+      "quality": "medium",
+      "indexed_at": "2026-04-07T13:20:48.132918"
+    },
+    {
+      "path": "Cubox/新一代 Agentic AI 智能体，助力 Android 开发 - Google I-O你好，我是朱涛。今天我们来聊聊 - 掘金-2025-07-27.md",
+      "title": "新一代 Agentic AI 智能体，助力 Android 开发 | Google I/O你好，我是朱涛。今天我们来聊聊 - 掘金",
+      "scores": {
+        "relevance": 5,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "total_score": 12,
+      "matched_chapters": [],
+      "first_chars": "# 新一代 Agentic AI 智能体，助力 Android 开发 | Google I/O你好，我是朱涛。今天我们来聊聊 - 掘金\n\n你好，我是朱涛。今天我们来聊聊 AI 和 Android 开发的话题。 往年的 Google I/O 大会，Android 几乎每年都是主角。但是，从近两年开始，AI 在 I/O 大会的重要性逐渐提升\n\n[Read in Cubox](https://cubo",
+      "quality": "medium",
+      "indexed_at": "2026-04-07T13:20:48.138663"
+    },
+    {
+      "path": "Cubox/新一代深度学习编译技术变革和展望-2022-04-21.md",
+      "title": "新一代深度学习编译技术变革和展望",
+      "scores": {
+        "relevance": 5,
+        "depth": 3,
+        "timeliness": 4,
+        "verifiability": 0
+      },
+      "total_score": 12,
+      "matched_chapters": [
+        "ch09-网络",
+        "ch14-工具"
+      ],
+      "first_chars": "# 新一代深度学习编译技术变革和展望\n\n本文总结对于深度学习编译领域过去两年的思考和未来展望。新一代架构一直是我们核心关注的主题，这里提到的各个特性也都已重构完成或者进行中。TVM FFI去年逐渐成熟，TensorIR本身刚被合并到主干，后续metaschedule陆续进入主干。\n\n[Read in Cubox](https://cubox.pro/web/card/69168408826289",
+      "quality": "medium",
+      "indexed_at": "2026-04-07T13:20:48.145275"
+    },
+    {
+      "path": "Cubox/新书上架！《Android 构建与架构实战》系统学习 Gradle 与 AGP。-2023-05-29.md",
+      "title": "新书上架！《Android 构建与架构实战》系统学习 Gradle 与 AGP。",
+      "scores": {
+        "relevance": 5,
+        "depth": 3,
+        "timeliness": 4,
+        "verifiability": 1
+      },
+      "total_score": 13,
+      "matched_chapters": [
+        "ch10-包体积",
+        "ch14-工具",
+        "ch16-构建"
+      ],
+      "first_chars": "# 新书上架！《Android 构建与架构实战》系统学习 Gradle 与 AGP。\n\n\n\n[Read in Cubox](https://cubox.pro/web/card/7062669911054616149)  \n[Read Original](https://2bab.me/zh/blog/2023-05-14-extend-android-build-zh-unevils/)",
+      "quality": "medium",
+      "indexed_at": "2026-04-07T13:20:48.148620"
+    },
+    {
+      "path": "Cubox/新可来®（美泊利珠单抗注射液）在中国获批用于治疗重度嗜酸粒细胞性哮喘 - 葛兰素史克公司网站-2024-02-26.md",
+      "title": "新可来®（美泊利珠单抗注射液）在中国获批用于治疗重度嗜酸粒细胞性哮喘 | 葛兰素史克公司网站",
+      "scores": {
+        "relevance": 4,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "total_score": 11,
+      "matched_chapters": [],
+      "first_chars": "# 新可来®（美泊利珠单抗注射液）在中国获批用于治疗重度嗜酸粒细胞性哮喘 | 葛兰素史克公司网站\n\n新可来®（美泊利珠单抗注射液）在中国获批用于治疗重度嗜酸粒细胞性哮喘\n\n[Read in Cubox](https://cubox.pro/web/card/7161812591247888178)  \n[Read Original](https://www.gsk-china.com/zh-cn",
+      "quality": "medium",
+      "indexed_at": "2026-04-07T13:20:48.152766"
+    },
+    {
+      "path": "Cubox/新姿势绕过应用的ROOT检测-2022-02-03.md",
+      "title": "新姿势绕过应用的ROOT检测",
+      "scores": {
+        "relevance": 5,
+        "depth": 3,
+        "timeliness": 4,
+        "verifiability": 0
+      },
+      "total_score": 12,
+      "matched_chapters": [
+        "ch08-存储",
+        "ch10-包体积",
+        "ch12-安全"
+      ],
+      "first_chars": "# 新姿势绕过应用的ROOT检测\n\n看雪论坛作者ID：镜中人24\n\n[Read in Cubox](https://cubox.pro/web/card/6888912455238418452)  \n[Read Original](https://mp.weixin.qq.com/s?__biz=MjM5NTc2MDYxMw==&mid=2458428135&idx=1&sn=365b37f4a",
+      "quality": "medium",
+      "indexed_at": "2026-04-07T13:20:48.157884"
+    },
+    {
+      "path": "Cubox/新版本系统适配- Android 12 中的兼容性变更-2022-01-14.md",
+      "title": "新版本系统适配: Android 12 中的兼容性变更",
+      "scores": {
+        "relevance": 5,
+        "depth": 3,
+        "timeliness": 4,
+        "verifiability": 2
+      },
+      "total_score": 14,
+      "matched_chapters": [
+        "ch04-启动",
+        "ch06-功耗",
+        "ch07-内存"
+      ],
+      "first_chars": "# 新版本系统适配: Android 12 中的兼容性变更\n\n本文介绍了 Android 12 为开发者和用户带来的最重要的几项变更，并展示了适配 Android 12 的案例以帮助开发者更好地处理兼容性变更。\n\n[Read in Cubox](https://cubox.pro/web/card/6881532051141430405)  \n[Read Original](https://mp",
+      "quality": "medium",
+      "indexed_at": "2026-04-07T13:20:48.163138"
+    },
+    {
+      "path": "Cubox/无何有境 #1 - Revue-2022-03-18.md",
+      "title": "无何有境 #1 | Revue",
+      "scores": {
+        "relevance": 5,
+        "depth": 3,
+        "timeliness": 4,
+        "verifiability": 1
+      },
+      "total_score": 13,
+      "matched_chapters": [
+        "ch08-存储",
+        "ch09-网络"
+      ],
+      "first_chars": "# 无何有境 #1 | Revue\n\n无何有境 - 来自无何有境的第一封信。\n\n[Read in Cubox](https://cubox.pro/web/card/6904496821167458516)  \n[Read Original](https://www.getrevue.co/profile/tison1096/issues/1-1086352)  \n\n---\n\n[View onl",
+      "quality": "medium",
+      "indexed_at": "2026-04-07T13:20:48.192533"
+    },
+    {
+      "path": "Cubox/无法忍受不做单元测试和内卷，我离开了这家在美中国企业-2022-02-24.md",
+      "title": "无法忍受不做单元测试和内卷，我离开了这家在美中国企业",
+      "scores": {
+        "relevance": 4,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 0
+      },
+      "total_score": 10,
+      "matched_chapters": [],
+      "first_chars": "# 无法忍受不做单元测试和内卷，我离开了这家在美中国企业\n\n在一个十万人的企业里，没有单元测试也没有代码审查，仅依赖于 QA，但这却是“有效”的方式！\n\n[Read in Cubox](https://cubox.pro/web/card/6896552616273117342)  \n[Read Original](https://mp.weixin.qq.com/s/EFMhFazZGVAoK",
+      "quality": "medium",
+      "indexed_at": "2026-04-07T13:20:48.195097"
+    },
+    {
+      "path": "Cubox/无需申请，自由写作-2023-09-29.md",
+      "title": "无需申请，自由写作",
+      "scores": {
+        "relevance": 5,
+        "depth": 1,
+        "timeliness": 4,
+        "verifiability": 0
+      },
+      "total_score": 10,
+      "matched_chapters": [],
+      "first_chars": "# 无需申请，自由写作\n\n\n\n[Read in Cubox](https://cubox.pro/web/card/7107212464042806566)  \n[Read Original](https://t.co/EsTLeI0Ov2)  \n\n---\n\n**Matrix 首页推荐**\n\n[Matrix](https://sspai.com/matrix) 是少数派的写作社区，我们主张分享真",
+      "quality": "medium",
+      "indexed_at": "2026-04-07T13:20:48.206818"
+    },
+    {
+      "path": "Cubox/日本 Web3 创业迈入战国时代 — Mirror-2022-01-27.md",
+      "title": "日本 Web3 创业迈入战国时代 — Mirror",
+      "scores": {
+        "relevance": 5,
+        "depth": 1,
+        "timeliness": 4,
+        "verifiability": 1
+      },
+      "total_score": 11,
+      "matched_chapters": [
+        "ch09-网络",
+        "ch16-构建"
+      ],
+      "first_chars": "# 日本 Web3 创业迈入战国时代 — Mirror\n\n随着市场对美联储加息政策的普遍担忧，以纳斯达克为主的美股科技成长股与全球加密货币市场，在过去的三周内都经历了较大幅度的回落，一些分析师认为我们进入了「技术性熊市」。在我宣布将今年设为「创业间隔年」这篇文章中，我提到我们正在经历一个周期的结束，但一些变化可能深藏在时间跨度更大的某个周期之中。\n\n\n[Read in Cubox](https:",
+      "quality": "medium",
+      "indexed_at": "2026-04-07T13:20:48.211547"
+    },
+    {
+      "path": "Cubox/时光痕迹：2021 年总结 - Reimu's blog-2022-01-13.md",
+      "title": "时光痕迹：2021 年总结 | Reimu's blog",
+      "scores": {
+        "relevance": 5,
+        "depth": 0,
+        "timeliness": 4,
+        "verifiability": 1
+      },
+      "total_score": 10,
+      "matched_chapters": [
+        "ch08-存储"
+      ],
+      "first_chars": "# 时光痕迹：2021 年总结 | Reimu's blog\n\n2021 依旧是人类社会倒车和加速灭亡的一年，全球范围内新冠病毒依旧在肆虐，新的变异又接踵而来，疫情并没有多少消退的迹象。而现在国内西安疫情又爆发开来，无法预想未来究竟能变成什么样子。 阅读2021 年 9 月份的时候将书单从原来的 Markdown 文本迁移到了 Notion上，体验十分棒。Notion 的表格数据库功能十分强大，",
+      "quality": "medium",
+      "indexed_at": "2026-04-07T13:20:48.222508"
+    },
+    {
+      "title": "最新版发布 - Android 14 现已正式发布至 AOSP",
+      "file": "最新版发布 - Android 14 现已正式发布至 AOSP！-2023-10-10.md",
+      "source_directory": "Cubox",
+      "scores": {
+        "relevance": 4,
+        "depth": 4,
+        "timeliness": 4,
+        "verifiability": 5
+      },
+      "total_score": 17,
+      "quality": "high",
+      "chapters": [
+        "ch17-新版本",
+        "ch01-架构"
+      ],
+      "chapter_confidence": {
+        "ch17-新版本": "high",
+        "ch01-架构": "high"
+      },
+      "summary": "Google官方Android 14 AOSP正式发布通知，包含API变更说明和兼容性测试要求",
+      "indexed_at": "2026-04-07T14:18:00",
+      "path": "Cubox/最新版发布 - Android 14 现已正式发布至 AOSP！-2023-10-10.md"
+    },
+    {
+      "title": "有时候你APP发生的ANR不是你的错",
+      "file": "有时候你APP发生的ANR不是你的错-分享 1个 Google 工程师没 bug 改出 bug 的一个案例-2025-04-21.md",
+      "source_directory": "Cubox",
+      "scores": {
+        "relevance": 5,
+        "depth": 4,
+        "timeliness": 5,
+        "verifiability": 4
+      },
+      "total_score": 18,
+      "quality": "high",
+      "chapters": [
+        "ch03-线程",
+        "ch11-Profiling",
+        "ch02-进程"
+      ],
+      "chapter_confidence": {
+        "ch03-线程": "high",
+        "ch11-Profiling": "high",
+        "ch02-进程": "high"
+      },
+      "summary": "Google工程师修复ANR的真实案例，展示了无bug修改反而引入bug的平台层问题",
+      "indexed_at": "2026-04-07T14:18:00",
+      "path": "Cubox/有时候你APP发生的ANR不是你的错-分享 1个 Google 工程师没 bug 改出 bug 的一个案例-2025-04-21.md"
+    },
+    {
+      "title": "未缓存的缓冲 I-O 旨在在 Linux 6.14 中准备就绪并带来巨大性能提升",
+      "file": "未缓存的缓冲 I-O 旨在在 Linux 6.14 中准备就绪，并带来巨大的性能提升-2024-12-26.md",
+      "source_directory": "Cubox",
+      "scores": {
+        "relevance": 4,
+        "depth": 4,
+        "timeliness": 5,
+        "verifiability": 4
+      },
+      "total_score": 17,
+      "quality": "high",
+      "chapters": [
+        "ch08-存储",
+        "ch13-调度"
+      ],
+      "chapter_confidence": {
+        "ch08-存储": "medium",
+        "ch13-调度": "medium"
+      },
+      "summary": "Linux 6.14内核引入Uncached Buffered I/O特性，由Meta工程师Jens Axboe推动",
+      "indexed_at": "2026-04-07T14:18:00",
+      "path": "Cubox/未缓存的缓冲 I-O 旨在在 Linux 6.14 中准备就绪，并带来巨大的性能提升-2024-12-26.md"
+    },
+    {
+      "title": "有趣的知识 - CPU利用率、延迟、吞吐量之间的关系",
+      "file": "有趣的知识 -- CPU利用率，延迟，吞吐量之间的关系 - 知乎-2023-12-26.md",
+      "source_directory": "Cubox",
+      "scores": {
+        "relevance": 4,
+        "depth": 4,
+        "timeliness": 4,
+        "verifiability": 4
+      },
+      "total_score": 16,
+      "quality": "high",
+      "chapters": [
+        "ch13-调度"
+      ],
+      "chapter_confidence": {
+        "ch13-调度": "medium"
+      },
+      "summary": "从排队论角度分析CPU利用率、延迟和吞吐量之间关系的技术文章",
+      "indexed_at": "2026-04-07T14:18:00",
+      "path": "Cubox/有趣的知识 -- CPU利用率，延迟，吞吐量之间的关系 - 知乎-2023-12-26.md"
+    },
+    {
+      "title": "条件编译不一致引发的内存布局问题及崩溃复盘",
+      "file": "条件编译不一致引发的内存布局问题及崩溃复盘-2024-11-20.md",
+      "source_directory": "Cubox",
+      "scores": {
+        "relevance": 4,
+        "depth": 4,
+        "timeliness": 4,
+        "verifiability": 3
+      },
+      "total_score": 15,
+      "quality": "medium",
+      "chapters": [
+        "ch07-内存",
+        "ch16-构建"
+      ],
+      "chapter_confidence": {
+        "ch07-内存": "medium",
+        "ch16-构建": "medium"
+      },
+      "summary": "条件编译不一致导致内存布局变化和崩溃的技术复盘，涉及C/C++编译期和内存对齐问题",
+      "indexed_at": "2026-04-07T14:18:00",
+      "path": "Cubox/条件编译不一致引发的内存布局问题及崩溃复盘-2024-11-20.md"
+    },
+    {
+      "title": "最新版发布 - Android 13 现已正式发布至 AOSP",
+      "file": "最新版发布 - Android 13 现已正式发布至 AOSP！-2022-08-17.md",
+      "source_directory": "Cubox",
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 4
+      },
+      "total_score": 14,
+      "quality": "medium",
+      "chapters": [
+        "ch17-新版本",
+        "ch01-架构"
+      ],
+      "chapter_confidence": {
+        "ch17-新版本": "high",
+        "ch01-架构": "high"
+      },
+      "summary": "Google官方Android 13 AOSP发布通知，包含兼容性测试要求和开发者迁移指引",
+      "indexed_at": "2026-04-07T14:18:00",
+      "path": "Cubox/最新版发布 - Android 13 现已正式发布至 AOSP！-2022-08-17.md"
+    },
+    {
+      "title": "分享一个 android app 启动出现 Uninterruptible Sleep (non-IO) 性能问题分析",
+      "path": "Cubox/分享一个 android app 启动出现 Uninterruptible Sleep (non-IO) 性能问题分析-2025-05-16.md",
+      "scores": {
+        "relevance": 4,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "total_score": 11,
+      "quality": "medium",
+      "chapters": [],
+      "content_preview": " 分享一个 android app 启动出现 Uninterruptible Sleep non-IO 性能问题分析 发现问题app 启动过程中，主线程 出现了很多 不可中断睡眠（IO）本身和 apk",
+      "indexed_at": "2026-04-07T16:59:49.633946"
+    },
+    {
+      "title": "深入理解 Gradle Tooling API",
+      "path": "Cubox/深入理解 Gradle Tooling API-2022-02-24.md",
+      "scores": {
+        "relevance": 3,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 1
+      },
+      "total_score": 10,
+      "quality": "medium",
+      "chapters": [
+        [
+          "ch14-工具",
+          "medium",
+          2
+        ],
+        [
+          "ch16-构建",
+          "medium",
+          2
+        ]
+      ],
+      "content_preview": " 深入理解 Gradle Tooling API Read in Cuboxhttps://cubox.pro/web/card/6896551340101602322 Read Originalht",
+      "indexed_at": "2026-04-07T16:59:49.633956"
+    },
+    {
+      "path": "/Cubox/Compose 纪元下的 Android 生命周期感知-2023-09-25.md",
+      "title": "Compose 纪元下的 Android 生命周期感知",
+      "score": 12,
+      "detail_scores": {
+        "relevance": 3,
+        "depth": 1,
+        "timeliness": 3,
+        "verifiability": 5
+      },
+      "timestamp": "2026-04-07T18:55:46.817796",
+      "quality": "medium",
+      "chapters": [
+        "ch15-Kotlin"
+      ],
+      "confidence": "medium"
+    },
+    {
+      "path": "/Cubox/Linux存储IO栈梳理（三） -- eBPF和ftrace跟踪IO写流程-2026-04-06.md",
+      "title": "Linux存储IO栈梳理（三） -- eBPF和ftrace跟踪IO写流程",
+      "score": 11,
+      "detail_scores": {
+        "relevance": 5,
+        "depth": 2,
+        "timeliness": 3,
+        "verifiability": 1
+      },
+      "timestamp": "2026-04-07T18:55:46.825035",
+      "quality": "medium",
+      "chapters": [
+        "ch08-存储",
+        "ch11-Profiling"
+      ],
+      "confidence": "high"
+    },
+    {
+      "path": "Cubox/深入探讨 Room 2.4.0 的最新进展-2022-01-19.md",
+      "title": "深入探讨 Room 2.4.0 的最新进展",
+      "scores": {
+        "relevance": 1,
+        "depth": 4,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "total_score": 11,
+      "quality": "medium",
+      "chapters": [],
+      "confidence": "medium",
+      "indexed_at": "2026-04-07T21:57:56.733757"
+    },
+    {
+      "title": "Android 16 显示系统 | 从View 到屏幕系列 - 3 | BLASTBufferQueue写在前面 BLa - 掘金",
+      "path": "Cubox/Android 16 显示系统 - 从View 到屏幕系列 - 3 - BLASTBufferQueue写在前面 BLa - 掘金-2025-07-27.md",
+      "scores": {
+        "relevance": 3,
+        "tech_depth": 1,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "total_score": 10,
+      "chapters": [
+        "ch05-渲染"
+      ],
+      "quality": "medium",
+      "confidence": "medium",
+      "indexed_at": "2026-04-08T02:27:35.396813"
+    },
+    {
+      "title": "CMA技术原理分析",
+      "path": "Cubox/CMA技术原理分析-2023-03-10.md",
+      "scores": {
+        "relevance": 3,
+        "tech_depth": 4,
+        "timeliness": 3,
+        "verifiability": 1
+      },
+      "total_score": 11,
+      "chapters": [
+        "ch07-内存",
+        "ch13-调度"
+      ],
+      "quality": "medium",
+      "confidence": "high",
+      "indexed_at": "2026-04-08T02:27:35.397562"
+    },
+    {
+      "title": "Bitmap 解码优化 - 掘金",
+      "path": "Cubox/Bitmap 解码优化 - 掘金-2022-07-17.md",
+      "scores": {
+        "relevance": 0,
+        "tech_depth": 4,
+        "timeliness": 3,
+        "verifiability": 4
+      },
+      "total_score": 11,
+      "chapters": [],
+      "quality": "medium",
+      "confidence": "medium",
+      "indexed_at": "2026-04-08T02:27:35.399986"
+    },
+    {
+      "title": "Android APP系统渲染管线主流程优化",
+      "path": "Cubox/Android APP系统渲染管线主流程优化-2025-05-13.md",
+      "scores": {
+        "relevance": 5,
+        "tech_depth": 2,
+        "timeliness": 3,
+        "verifiability": 2
+      },
+      "total_score": 12,
+      "chapters": [
+        "ch05-渲染"
+      ],
+      "quality": "medium",
+      "confidence": "medium",
+      "indexed_at": "2026-04-08T02:27:35.404445"
+    },
+    {
+      "title": "Android S原生系统内存泄露问题案例",
+      "path": "Cubox/Android S原生系统内存泄露问题案例-2022-06-20.md",
+      "scores": {
+        "relevance": 3,
+        "tech_depth": 3,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "total_score": 12,
+      "chapters": [
+        "ch07-内存"
+      ],
+      "quality": "medium",
+      "confidence": "medium",
+      "indexed_at": "2026-04-08T02:27:35.407200"
+    },
+    {
+      "title": "浅析高通 mvp 进程优先调度 - 魅族内核团队",
+      "path": "Cubox/浅析高通 mvp 进程优先调度 - 魅族内核团队-2025-08-05.md",
+      "scores": {
+        "relevance": 4,
+        "tech_depth": 1,
+        "timeliness": 3,
+        "verifiability": 2
+      },
+      "total_score": 10,
+      "chapters": [
+        "ch13-调度"
+      ],
+      "quality": "medium",
+      "confidence": "medium",
+      "indexed_at": "2026-04-08T02:27:35.408511"
+    },
+    {
+      "title": "Double Mapped Circular Buffer",
+      "path": "Cubox/Double Mapped Circular Buffer-2025-08-13.md",
+      "scores": {
+        "relevance": 3,
+        "tech_depth": 3,
+        "timeliness": 3,
+        "verifiability": 1
+      },
+      "total_score": 10,
+      "chapters": [
+        "ch07-内存",
+        "ch11-Profiling"
+      ],
+      "quality": "medium",
+      "confidence": "high",
+      "indexed_at": "2026-04-08T02:27:35.409324"
+    },
+    {
+      "title": "核心交互场景优化黑科技，GC抑制从入门到精通",
+      "path": "Cubox/核心交互场景优化黑科技，GC抑制从入门到精通-2024-07-29.md",
+      "scores": {
+        "relevance": 3,
+        "tech_depth": 4,
+        "timeliness": 3,
+        "verifiability": 2
+      },
+      "total_score": 12,
+      "chapters": [
+        "ch07-内存"
+      ],
+      "quality": "medium",
+      "confidence": "medium",
+      "indexed_at": "2026-04-08T02:27:35.409876"
+    },
+    {
+      "path": "task8-daily/2026-04-08/Android Studio supports Gemma 4：本地代理编程模型",
+      "title": "Android Studio supports Gemma 4：本地代理编程模型",
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 5,
+        "verifiability": 3
+      },
+      "total_score": 15,
+      "matched_chapters": [
+        "14.1",
+        "16.1"
+      ],
+      "first_chars": "# Android Studio supports Gemma 4：本地代理编程模型\n\nhttp://android-developers.googleblog.com/2026/04/android-studio-supports-gemma-4-local.html\nGoogle宣布Android Studio正式支持Gemma 4，为Android平台设计的本地代理编程模型，支持设备上高级推理和代码生成，无需云端连接。",
+      "quality": "medium-high",
+      "indexed_at": "2026-04-08T05:36:11.672734",
+      "source_task": "RSS 04-08",
+      "url": "http://android-developers.googleblog.com/2026/04/android-studio-supports-gemma-4-local.html"
+    },
+    {
+      "path": "task8-daily/2026-04-08/Google Gemma 4 开源模型系列：专为代理工作流设计",
+      "title": "Google Gemma 4 开源模型系列：专为代理工作流设计",
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 5,
+        "verifiability": 3
+      },
+      "total_score": 15,
+      "matched_chapters": [
+        "16.1"
+      ],
+      "first_chars": "# Google Gemma 4 开源模型系列：专为代理工作流设计\n\nhttp://www.techmeme.com/260402/p18\nGoogle发布Gemma 4开源模型系列(Apache 2.0)，专为高级推理和代理工作流设计，涵盖手机到工作站多种规格。",
+      "quality": "medium-high",
+      "indexed_at": "2026-04-08T05:36:11.672743",
+      "source_task": "RSS 04-08",
+      "url": "http://www.techmeme.com/260402/p18"
+    },
+    {
+      "path": "task8-daily/2026-04-08/Android 17 + GKI Kernel 6.12 综合性能量化",
+      "title": "Android 17 + GKI Kernel 6.12 综合性能量化",
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 5,
+        "verifiability": 3
+      },
+      "total_score": 15,
+      "matched_chapters": [
+        "16.4",
+        "1.12"
+      ],
+      "first_chars": "# Android 17 + GKI Kernel 6.12 综合性能量化\n\nhttps://cs.android.com/android/platform/superproject/+/android-17-beta3\nEEVDF + sched_ext 系统调用效率+9.3%，AutoFDO PGO 冷启动延迟-4.3%(1240ms->1187ms)，dm-verity吞吐+35%(ARM64 multi-buffer hashing)。启动速度+2.1%(Pixel 9 Pro)。",
+      "quality": "medium-high",
+      "indexed_at": "2026-04-08T05:36:11.672746",
+      "source_task": "前沿研究 04-07",
+      "url": "https://cs.android.com/android/platform/superproject/+/android-17-beta3"
+    },
+    {
+      "path": "task8-daily/2026-04-08/Kernel 6.12 存储三重优化",
+      "title": "Kernel 6.12 存储三重优化",
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 5,
+        "verifiability": 3
+      },
+      "total_score": 15,
+      "matched_chapters": [
+        "6.2",
+        "6.3"
+      ],
+      "first_chars": "# Kernel 6.12 存储三重优化\n\nhttps://lore.kernel.org/linux-f2fs-devel/\nF2FS Checkpoint Merge: -40%写放大(SQLite WAL commit性能提升)。io_uring multishot + zero-copy: -50%系统调用开销。dm-verity multi-buffer hashing: +35% ARM64吞吐。协同效果：随机I/O延迟-12%(fio randread 4k, UFS 4.0)。",
+      "quality": "medium-high",
+      "indexed_at": "2026-04-08T05:36:11.672748",
+      "source_task": "前沿研究 04-07",
+      "url": "https://lore.kernel.org/linux-f2fs-devel/"
+    },
+    {
+      "path": "task8-daily/2026-04-08/Android 16 云端编译 + Baseline/Startup Profi",
+      "title": "Android 16 云端编译 + Baseline/Startup Profiles DEX Layout 优化",
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 5,
+        "verifiability": 3
+      },
+      "total_score": 15,
+      "matched_chapters": [
+        "8.7",
+        "1.9"
+      ],
+      "first_chars": "# Android 16 云端编译 + Baseline/Startup Profiles DEX Layout 优化\n\nhttps://android-developers.googleblog.com/cloud-compilation-baseline-profiles\n云编译替代设备端dex2oat。Startup Profiles DEX Layout额外+15-30%启动速度。Baseline Profiles + Startup Profiles组合：首次launch即可30%执行提速，已深度集成CI/CD。",
+      "quality": "medium-high",
+      "indexed_at": "2026-04-08T05:36:11.672750",
+      "source_task": "前沿研究 04-07 + Last30Days 04-07",
+      "url": "https://android-developers.googleblog.com/cloud-compilation-baseline-profiles"
+    },
+    {
+      "path": "task8-daily/2026-04-08/16KB Page Size 强制落地：启动+20-40%，功耗-4.56%",
+      "title": "16KB Page Size 强制落地：启动+20-40%，功耗-4.56%",
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 5,
+        "verifiability": 3
+      },
+      "total_score": 15,
+      "matched_chapters": [
+        "4.7"
+      ],
+      "first_chars": "# 16KB Page Size 强制落地：启动+20-40%，功耗-4.56%\n\nhttps://android-developers.googleblog.com/16kb-page-size\n2025.11.1后新App必须支持16KB页。前沿研究量化：启动+3.16%(内存压力+30%)，功耗-4.56%。Last30Days数据：冷启动+20-40%(内存密集型)，内存开销-25%，电池+10-15%。未对齐native库会crash。",
+      "quality": "medium-high",
+      "indexed_at": "2026-04-08T05:36:11.672752",
+      "source_task": "前沿研究 04-07 + Last30Days 04-07",
+      "url": "https://android-developers.googleblog.com/16kb-page-size"
+    },
+    {
+      "path": "task8-daily/2026-04-08/@FastNative/@CriticalNative ART 优化：JNI 开",
+      "title": "@FastNative/@CriticalNative ART 优化：JNI 开销从 115ns 降至 25ns",
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 5,
+        "verifiability": 3
+      },
+      "total_score": 15,
+      "matched_chapters": [
+        "1.15"
+      ],
+      "first_chars": "# @FastNative/@CriticalNative ART 优化：JNI 开销从 115ns 降至 25ns\n\nhttps://cs.android.com/android/platform/superproject/+/master/art/\nART runtime中@FastNative将JNI开销从115ns降至25ns，@CriticalNative进一步优化。注意：会阻塞GC，需谨慎在高频调用路径使用。",
+      "quality": "medium-high",
+      "indexed_at": "2026-04-08T05:36:11.672754",
+      "source_task": "前沿研究 04-07",
+      "url": "https://cs.android.com/android/platform/superproject/+/master/art/"
+    },
+    {
+      "path": "task8-daily/2026-04-08/Android 17 ART 分代 GC：Concurrent Mark-Com",
+      "title": "Android 17 ART 分代 GC：Concurrent Mark-Compact",
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 5,
+        "verifiability": 3
+      },
+      "total_score": 15,
+      "matched_chapters": [
+        "4.8"
+      ],
+      "first_chars": "# Android 17 ART 分代 GC：Concurrent Mark-Compact\n\nhttps://cs.android.com/android/platform/superproject/+/master/art/runtime/gc/\nAndroid 17引入Concurrent Mark-Compact + Generational GC，专门优化年轻代对象快速回收。目标消除RecyclerView GC jank。与DeliQueue协同减少UI停顿。",
+      "quality": "medium-high",
+      "indexed_at": "2026-04-08T05:36:11.672756",
+      "source_task": "前沿研究 04-07",
+      "url": "https://cs.android.com/android/platform/superproject/+/master/art/runtime/gc/"
+    },
+    {
+      "path": "task8-daily/2026-04-08/感知流畅性：Perfetto Frame Timeline 分析方法",
+      "title": "感知流畅性：Perfetto Frame Timeline 分析方法",
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 5,
+        "verifiability": 3
+      },
+      "total_score": 15,
+      "matched_chapters": [
+        "7.9"
+      ],
+      "first_chars": "# 感知流畅性：Perfetto Frame Timeline 分析方法\n\nhttps://perfetto.dev/docs/analysis/frame-timeline\nFrame Timeline Expected vs Actual双轨对比。P50/P90/P99帧时长百分位分析。JankStats可配置jank阈值。步幅波动+VSync时间精度作为感知流畅性量化方法。",
+      "quality": "medium-high",
+      "indexed_at": "2026-04-08T05:36:11.672758",
+      "source_task": "前沿研究 04-07",
+      "url": "https://perfetto.dev/docs/analysis/frame-timeline"
+    },
+    {
+      "path": "task8-daily/2026-04-08/Android 16 AppJankStats + RelativeFrameT",
+      "title": "Android 16 AppJankStats + RelativeFrameTimeHistogram API",
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 5,
+        "verifiability": 3
+      },
+      "total_score": 15,
+      "matched_chapters": [
+        "7.9",
+        "14.5"
+      ],
+      "first_chars": "# Android 16 AppJankStats + RelativeFrameTimeHistogram API\n\nhttps://developer.android.com/reference/android/os/AppJankStats\n平台级零侵入jank统计API，无需集成第三方库。帧时间分布直方图(RelativeFrameTimeHistogram)。与JankStats库互补，适合无法修改代码的场景。",
+      "quality": "medium-high",
+      "indexed_at": "2026-04-08T05:36:11.672759",
+      "source_task": "前沿研究 04-07",
+      "url": "https://developer.android.com/reference/android/os/AppJankStats"
+    },
+    {
+      "path": "task8-daily/2026-04-08/Android 17 DeliQueue：后台任务调度重排，丢帧降低 4-7.7",
+      "title": "Android 17 DeliQueue：后台任务调度重排，丢帧降低 4-7.7%",
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 5,
+        "verifiability": 3
+      },
+      "total_score": 15,
+      "matched_chapters": [
+        "1.13",
+        "7.5"
+      ],
+      "first_chars": "# Android 17 DeliQueue：后台任务调度重排，丢帧降低 4-7.7%\n\nhttps://android-developers.googleblog.com/deliqueue\nDeliQueue解决后台任务依赖链导致渲染线程阻塞的问题。通过重排任务等待队列减少渲染阻塞。应用丢帧-4%，Android主界面丢帧-7.7%。",
+      "quality": "medium-high",
+      "indexed_at": "2026-04-08T05:36:11.672761",
+      "source_task": "Last30Days 04-07 + AI手机行业日报 04-07",
+      "url": "https://android-developers.googleblog.com/deliqueue"
+    },
+    {
+      "path": "task8-daily/2026-04-08/Perfetto v52/v54 大改版：Dark Mode + ANR 分类 ",
+      "title": "Perfetto v52/v54 大改版：Dark Mode + ANR 分类 + 位图时序",
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 5,
+        "verifiability": 3
+      },
+      "total_score": 15,
+      "matched_chapters": [
+        "13.3",
+        "13.7"
+      ],
+      "first_chars": "# Perfetto v52/v54 大改版：Dark Mode + ANR 分类 + 位图时序\n\nhttps://github.com/google/perfetto/releases\nUI层：Dark Mode、触摸支持、多Track批量操作。分析层：android_anrs新增anr_type字段、android.bitmaps位图时序数据、slice_self_dur自持续时间计算、regexp_extract函数、JSON trace解析性能提升。",
+      "quality": "medium-high",
+      "indexed_at": "2026-04-08T05:36:11.672763",
+      "source_task": "Last30Days 04-07",
+      "url": "https://github.com/google/perfetto/releases"
+    },
+    {
+      "path": "task8-daily/2026-04-08/性能分析误区：峰值帧率 vs 稳态帧率",
+      "title": "性能分析误区：峰值帧率 vs 稳态帧率",
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 5,
+        "verifiability": 3
+      },
+      "total_score": 15,
+      "matched_chapters": [
+        "15.3",
+        "15.6"
+      ],
+      "first_chars": "# 性能分析误区：峰值帧率 vs 稳态帧率\n\nhttps://android-developers.googleblog.com/performance-methodology\n骁龙8 Elite持续负载下30%性能衰减。有意义的指标：30分钟游戏后帧率、99th percentile延迟、冷启动后5分钟内响应。Benchmark应包含热稳定态测试。",
+      "quality": "medium-high",
+      "indexed_at": "2026-04-08T05:36:11.672765",
+      "source_task": "Last30Days 04-07",
+      "url": "https://android-developers.googleblog.com/performance-methodology"
+    },
+    {
+      "path": "task8-daily/2026-04-08/App Startup Library 误区：ContentProvider 启",
+      "title": "App Startup Library 误区：ContentProvider 启动开销",
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 5,
+        "verifiability": 3
+      },
+      "total_score": 15,
+      "matched_chapters": [
+        "1.10"
+      ],
+      "first_chars": "# App Startup Library 误区：ContentProvider 启动开销\n\nhttps://android-developers.googleblog.com/app-startup\n过度延迟SDK初始化的误区。App Startup Library 2026年更新：Application类初始化和ContentProvider启动时序的权衡。ContentProvider直接影响启动关键路径。",
+      "quality": "medium-high",
+      "indexed_at": "2026-04-08T05:36:11.672766",
+      "source_task": "Last30Days 04-07",
+      "url": "https://android-developers.googleblog.com/app-startup"
+    },
+    {
+      "path": "task8-daily/2026-04-08/Gemini Nano 4：端侧 AI 多模态 + 链式推理",
+      "title": "Gemini Nano 4：端侧 AI 多模态 + 链式推理",
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 5,
+        "verifiability": 3
+      },
+      "total_score": 15,
+      "matched_chapters": [
+        "16.1"
+      ],
+      "first_chars": "# Gemini Nano 4：端侧 AI 多模态 + 链式推理\n\nhttps://developer.android.com/ai/gemini-nano\n基于Gemma 4，Fast(E2B)和Full(E4B)两个变体。比上代快4倍、省电60%。已通过AICore Developer Preview开放。支持多模态(文本+图像+音频)、链式推理。Nano系列已覆盖1.4亿台设备。",
+      "quality": "medium-high",
+      "indexed_at": "2026-04-08T05:36:11.672768",
+      "source_task": "AI手机行业日报 04-07",
+      "url": "https://developer.android.com/ai/gemini-nano"
+    },
+    {
+      "path": "Cubox/Jeff Dean 和 Noam Shazeer — 谷歌25年：从PageRank到AGI-2026-03-10.md",
+      "title": "Jeff Dean 和 Noam Shazeer — 谷歌25年：从PageRank到AGI",
+      "content_preview": "# Jeff Dean 和 Noam Shazeer — 谷歌25年：从PageRank到AGI\n\n\n\n[Read in Cubox](https://cubox.pro/web/card/74309...",
+      "score": 10,
+      "relevance": 1,
+      "depth": 3,
+      "timeliness": 3,
+      "verifiability": 3,
+      "scan_timestamp": "2026-04-08T06:49:59.009083",
+      "chapters": [],
+      "quality": "medium"
+    },
+    {
+      "path": "Cubox/Android GPU硬件加速渲染流程（上） - 知乎-2023-02-02.md",
+      "title": "Android GPU硬件加速渲染流程（上） - 知乎",
+      "content_preview": "# Android GPU硬件加速渲染流程（上） - 知乎\n\n本文希望通过两篇文章，详细介绍Android上层的硬件加速渲染流程，大约2万字，此为上篇。1、基本概念1.1 Window（窗口）：And...",
+      "score": 11,
+      "relevance": 2,
+      "depth": 2,
+      "timeliness": 3,
+      "verifiability": 4,
+      "scan_timestamp": "2026-04-08T06:49:59.009540",
+      "chapters": [],
+      "quality": "medium"
+    },
+    {
+      "path": "Cubox/ART虚拟机内存分配原理浅析-2024-08-06.md",
+      "title": "ART虚拟机内存分配原理浅析",
+      "content_preview": "# ART虚拟机内存分配原理浅析\n\n浅析AndroidART虚拟机内存分配原理\n\n[Read in Cubox](https://cubox.pro/web/card/7220305588524156...",
+      "score": 12,
+      "relevance": 2,
+      "depth": 3,
+      "timeliness": 3,
+      "verifiability": 4,
+      "scan_timestamp": "2026-04-08T06:49:59.009915",
+      "chapters": [],
+      "quality": "medium"
+    },
+    {
+      "path": "Cubox/Android图形系统（五）番外篇：触摸事件详解-2022-12-06.md",
+      "title": "Android图形系统（五）番外篇：触摸事件详解",
+      "content_preview": "# Android图形系统（五）番外篇：触摸事件详解\n\n当我们按下屏幕后，事件是怎么传递到应用的？\n\n[Read in Cubox](https://cubox.pro/web/card/699961...",
+      "score": 11,
+      "relevance": 1,
+      "depth": 3,
+      "timeliness": 3,
+      "verifiability": 4,
+      "scan_timestamp": "2026-04-08T06:49:59.010479",
+      "chapters": [],
+      "quality": "medium"
+    },
+    {
+      "path": "Cubox/Android 进程与线程模型深度剖析（2）：Android 主线程（UI 线程）：心脏与瓶颈-2026-04-06.md",
+      "title": "Android 进程与线程模型深度剖析（2）：Android 主线程（UI 线程）：心脏与瓶颈",
+      "content_preview": "# Android 进程与线程模型深度剖析（2）：Android 主线程（UI 线程）：心脏与瓶颈\n\nAndroid 进程与线程模型深度剖析（2）：Android 主线程（UI 线程）：心脏与瓶颈本文...",
+      "score": 14,
+      "relevance": 3,
+      "depth": 3,
+      "timeliness": 3,
+      "verifiability": 5,
+      "scan_timestamp": "2026-04-08T06:49:59.010864",
+      "chapters": [],
+      "quality": "medium"
+    },
+    {
+      "path": "Cubox/[093]SurfaceSyncer的致命缺陷 - 简书-2023-12-08.md",
+      "title": "[093]SurfaceSyncer的致命缺陷 - 简书",
+      "content_preview": "# [093]SurfaceSyncer的致命缺陷 - 简书\n\n背景 我遇到一个很有意思的ANR问题，从trace分析来看，Launcher应用在不断地queuebuffer，但是SurfaceFli...",
+      "score": 10,
+      "relevance": 3,
+      "depth": 1,
+      "timeliness": 3,
+      "verifiability": 3,
+      "scan_timestamp": "2026-04-08T06:49:59.011276",
+      "chapters": [],
+      "quality": "medium"
+    },
+    {
+      "path": "Cubox/Flutter鸿蒙终端一体化-混沌初开-2024-01-24.md",
+      "title": "Flutter鸿蒙终端一体化-混沌初开",
+      "content_preview": "# Flutter鸿蒙终端一体化-混沌初开\n\nFlutter的一小步，鸿蒙的一大步\n\n[Read in Cubox](https://cubox.pro/web/card/71497017637784...",
+      "score": 10,
+      "relevance": 2,
+      "depth": 3,
+      "timeliness": 3,
+      "verifiability": 2,
+      "scan_timestamp": "2026-04-08T06:49:59.011651",
+      "chapters": [],
+      "quality": "medium"
+    },
+    {
+      "path": "Cubox/独立开发变现周刊（第81期）：开发一个应用来减少屏幕使用时间，月收入2万美元-2022-11-25.md",
+      "title": "独立开发变现周刊（第81期）：开发一个应用来减少屏幕使用时间，月收入2万美元",
+      "content_preview": "# 独立开发变现周刊（第81期）：开发一个应用来减少屏幕使用时间，月收入2万美元\n\n分享独立开发、产品变现相关内容，每周五发布。\n(合集：ezindie.com/weekly )\n\n[Read in ...",
+      "score": 10,
+      "relevance": 1,
+      "depth": 3,
+      "timeliness": 3,
+      "verifiability": 3,
+      "scan_timestamp": "2026-04-08T06:49:59.012023",
+      "chapters": [],
+      "quality": "medium"
+    },
+    {
+      "path": "Cubox/​Android 性能优化机制 - 优先级反转问题 - 知乎-2023-12-12.md",
+      "title": "​Android 性能优化机制 - 优先级反转问题 - 知乎",
+      "content_preview": "# ​Android 性能优化机制 - 优先级反转问题 - 知乎\n\n1 问题描述Android系统是一个非常复杂的系统，往往完成一个业务流需要跨多个线程多个进程。横跨多个运行实体，UI thread会...",
+      "score": 13,
+      "relevance": 3,
+      "depth": 3,
+      "timeliness": 3,
+      "verifiability": 4,
+      "scan_timestamp": "2026-04-08T06:49:59.012885",
+      "chapters": [],
+      "quality": "medium"
+    },
+    {
+      "path": "Cubox/Jeff Dean性能调优要点 1：重要性、估算和衡量-2025-12-22.md",
+      "title": "Jeff Dean性能调优要点 1：重要性、估算和衡量",
+      "content_preview": "# Jeff Dean性能调优要点 1：重要性、估算和衡量\n\n\n\n[Read in Cubox](https://cubox.pro/web/card/7402650686845878507)  \n[...",
+      "score": 12,
+      "relevance": 1,
+      "depth": 5,
+      "timeliness": 3,
+      "verifiability": 3,
+      "scan_timestamp": "2026-04-08T06:49:59.013253",
+      "chapters": [],
+      "quality": "medium"
+    },
+    {
+      "path": "Cubox/没有二十年功力，写不出Thread.sleep(0)这一行“看似无用”的代码！ - why技术 - 博客园-2022-09-19.md",
+      "title": "没有二十年功力，写不出Thread.sleep(0)这一行“看似无用”的代码！ - why技术 - 博客园",
+      "content_preview": "# 没有二十年功力，写不出Thread.sleep(0)这一行“看似无用”的代码！ - why技术 - 博客园\n\n你好呀，我是喜提七天居家隔离的歪歪。 这篇文章要从一个奇怪的注释说起，就是下面这张图：...",
+      "score": 10,
+      "relevance": 1,
+      "depth": 3,
+      "timeliness": 3,
+      "verifiability": 3,
+      "scan_timestamp": "2026-04-08T06:49:59.013876",
+      "chapters": [],
+      "quality": "medium"
+    },
+    {
+      "path": "Cubox/Documentation – Arm Developer-2025-03-05.md",
+      "title": "Documentation – Arm Developer",
+      "content_preview": "# Documentation – Arm Developer\n\n\n\n[Read in Cubox](https://cubox.pro/web/card/7296784389025826762)  ...",
+      "score": 11,
+      "relevance": 3,
+      "depth": 3,
+      "timeliness": 3,
+      "verifiability": 2,
+      "scan_timestamp": "2026-04-08T06:49:59.014238",
+      "chapters": [],
+      "quality": "medium"
+    },
+    {
+      "path": "Cubox/创造我所热爱的生活 – Justin’s 2023 - 枫言枫语-2024-01-04.md",
+      "title": "创造我所热爱的生活 – Justin’s 2023 | 枫言枫语",
+      "content_preview": "# 创造我所热爱的生活 – Justin’s 2023 | 枫言枫语\n\n\n\n[Read in Cubox](https://cubox.pro/web/card/7142385593664668184...",
+      "score": 11,
+      "relevance": 1,
+      "depth": 3,
+      "timeliness": 4,
+      "verifiability": 3,
+      "scan_timestamp": "2026-04-08T06:49:59.014840",
+      "chapters": [],
+      "quality": "medium"
+    },
+    {
+      "path": "Cubox/Fundamental Software Architectural Patterns - by Williams O - Jun, 2022 - Medium-2022-07-19.md",
+      "title": "Fundamental Software Architectural Patterns | by Williams O | Jun, 2022 | Medium",
+      "content_preview": "# Fundamental Software Architectural Patterns | by Williams O | Jun, 2022 | Medium\n\n\n\n[Read in Cubox...",
+      "score": 10,
+      "relevance": 1,
+      "depth": 3,
+      "timeliness": 3,
+      "verifiability": 3,
+      "scan_timestamp": "2026-04-08T06:49:59.015117",
+      "chapters": [],
+      "quality": "medium"
+    },
+    {
+      "path": "Cubox/使用 Android Vitals 监控应用的技术性能-2022-03-18.md",
+      "title": "使用 Android Vitals 监控应用的技术性能",
+      "content_preview": "# 使用 Android Vitals 监控应用的技术性能\n\n\n\n[Read in Cubox](https://cubox.pro/web/card/6904422702614840865)  \n[...",
+      "score": 13,
+      "relevance": 1,
+      "depth": 5,
+      "timeliness": 3,
+      "verifiability": 4,
+      "scan_timestamp": "2026-04-08T06:49:59.015888",
+      "chapters": [],
+      "quality": "medium"
+    },
+    {
+      "path": "Cubox/Android本地服务漏洞挖掘技术 - 上篇-2023-12-04.md",
+      "title": "Android本地服务漏洞挖掘技术 - 上篇",
+      "content_preview": "# Android本地服务漏洞挖掘技术 - 上篇\n\n\n\n[Read in Cubox](https://cubox.pro/web/card/7131271106001896407)  \n[Read ...",
+      "score": 11,
+      "relevance": 1,
+      "depth": 3,
+      "timeliness": 3,
+      "verifiability": 4,
+      "scan_timestamp": "2026-04-08T06:49:59.016245",
+      "chapters": [],
+      "quality": "medium"
+    },
+    {
+      "path": "Cubox/The Bitter Lesson-2023-11-24.md",
+      "title": "The Bitter Lesson",
+      "content_preview": "# The Bitter Lesson\n\n\n\n[Read in Cubox](https://cubox.pro/web/card/7127528659467897449)  \n[Read Origi...",
+      "score": 10,
+      "relevance": 2,
+      "depth": 3,
+      "timeliness": 3,
+      "verifiability": 2,
+      "scan_timestamp": "2026-04-08T06:49:59.016491",
+      "chapters": [],
+      "quality": "medium"
+    },
+    {
+      "path": "Cubox/Android 转场动画的前世今生 - 开发者说·DTalk-2022-01-14.md",
+      "title": "Android 转场动画的前世今生 | 开发者说·DTalk",
+      "content_preview": "# Android 转场动画的前世今生 | 开发者说·DTalk\n\n分享开发经验，有机会被推荐参选加入 \"谷歌开发技术专家\" 团队！\n\n[Read in Cubox](https://cubox.pr...",
+      "score": 11,
+      "relevance": 1,
+      "depth": 3,
+      "timeliness": 3,
+      "verifiability": 4,
+      "scan_timestamp": "2026-04-08T06:49:59.017241",
+      "chapters": [],
+      "quality": "medium"
+    },
+    {
+      "path": "Cubox/Flutter 3.27 发布啦，快来看有什么更新吧-2024-12-13.md",
+      "title": "Flutter 3.27 发布啦，快来看有什么更新吧",
+      "content_preview": "# Flutter 3.27 发布啦，快来看有什么更新吧\n\n\n\n[Read in Cubox](https://cubox.pro/web/card/7267052403235489078)  \n[R...",
+      "score": 11,
+      "relevance": 2,
+      "depth": 3,
+      "timeliness": 3,
+      "verifiability": 3,
+      "scan_timestamp": "2026-04-08T06:49:59.017636",
+      "chapters": [],
+      "quality": "medium"
+    },
+    {
+      "path": "Cubox/Repository files navigation-2023-09-15.md",
+      "title": "Repository files navigation",
+      "content_preview": "# Repository files navigation\n\n\n\n[Read in Cubox](https://cubox.pro/web/card/7102178632365246310)  \n[...",
+      "score": 10,
+      "relevance": 2,
+      "depth": 3,
+      "timeliness": 3,
+      "verifiability": 2,
+      "scan_timestamp": "2026-04-08T06:49:59.017976",
+      "chapters": [],
+      "quality": "medium"
+    },
+    {
+      "path": "Cubox/Micro-optimizations in Kotlin — 1 · Romain Guy-2024-01-16.md",
+      "title": "Micro-optimizations in Kotlin — 1 · Romain Guy",
+      "content_preview": "# Micro-optimizations in Kotlin — 1 · Romain Guy\n\nWhile my work responsibilities do not leave me muc...",
+      "score": 11,
+      "relevance": 4,
+      "depth": 2,
+      "timeliness": 3,
+      "verifiability": 2,
+      "scan_timestamp": "2026-04-08T06:49:59.018330",
+      "chapters": [
+        {
+          "chapter": "ch15-Kotlin",
+          "confidence": "medium"
+        }
+      ],
+      "quality": "medium"
+    },
+    {
+      "path": "Cubox/关于如何在 Slack 上免费使用 GPT4 和 GPT3.5 的一个简单教程： 0、全程不需要科学上网； 1、注册一个 Slack 帐号 https---slack.com-intl-zh-cn-.md",
+      "title": "关于如何在 Slack 上免费使用 GPT4 和 GPT3.5 的一个简单教程： 0、全程不需要科学上网； 1、注册一个 Slack 帐号 https://slack.com/intl/zh-cn/ ； 2、创建一个工作区，随便起一个名字，如果你已经有工作区了，跳过此步； 3、点开 https://www.springworks.in/albus/ 这个页面，安装 AIbus 到 Slack； 4、在 Slack 直接点开 AIbus 与它对话； 5、也可以在频道里把 AIbus 拉进来，之后就...",
+      "content_preview": "# 关于如何在 Slack 上免费使用 GPT4 和 GPT3.5 的一个简单教程： 0、全程不需要科学上网； 1、注册一个 Slack 帐号 https://slack.com/intl/zh-cn...",
+      "score": 10,
+      "relevance": 1,
+      "depth": 3,
+      "timeliness": 3,
+      "verifiability": 3,
+      "scan_timestamp": "2026-04-08T06:49:59.019039",
+      "chapters": [],
+      "quality": "medium"
+    },
+    {
+      "path": "Cubox/谷歌决定闭源Android？Fake News！-2025-03-27.md",
+      "title": "谷歌决定闭源Android？Fake News！",
+      "content_preview": "# 谷歌决定闭源Android？Fake News！\n\n今天下午，各种Android技术群都在讨论一条新闻：Google要终止Android开源。\n\n[Read in Cubox](https://c...",
+      "score": 11,
+      "relevance": 1,
+      "depth": 3,
+      "timeliness": 3,
+      "verifiability": 4,
+      "scan_timestamp": "2026-04-08T06:49:59.019739",
+      "chapters": [],
+      "quality": "medium"
+    },
+    {
+      "path": "Cubox/抖音 iOS-Android 基础技术大揭秘』技术沙龙又来了-2024-01-04.md",
+      "title": "抖音 iOS/Android 基础技术大揭秘』技术沙龙又来了",
+      "content_preview": "# 抖音 iOS/Android 基础技术大揭秘』技术沙龙又来了\n\n2024 年 1 月 13 ～ 14 日两天，新年最新一期『抖音客户端基础技术大揭秘』技术沙龙活动重磅来袭，基于抖音客户端实践驱动的...",
+      "score": 12,
+      "relevance": 2,
+      "depth": 2,
+      "timeliness": 4,
+      "verifiability": 4,
+      "scan_timestamp": "2026-04-08T06:49:59.020472",
+      "chapters": [],
+      "quality": "medium"
+    },
+    {
+      "path": "Cubox/Guide to Foreground Services on Android 14-2024-02-16.md",
+      "title": "Guide to Foreground Services on Android 14",
+      "content_preview": "# Guide to Foreground Services on Android 14\n\nLearn how to work with Foreground Services on Android ...",
+      "score": 12,
+      "relevance": 1,
+      "depth": 3,
+      "timeliness": 3,
+      "verifiability": 5,
+      "scan_timestamp": "2026-04-08T06:49:59.020739",
+      "chapters": [],
+      "quality": "medium"
+    },
+    {
+      "path": "Cubox/Android Performance — Capture a system trace — Perfetto-2024-09-03.md",
+      "title": "Android Performance — Capture a system trace — Perfetto",
+      "content_preview": "# Android Performance — Capture a system trace — Perfetto\n\n\n\n[Read in Cubox](https://cubox.pro/web/c...",
+      "score": 14,
+      "relevance": 4,
+      "depth": 3,
+      "timeliness": 3,
+      "verifiability": 4,
+      "scan_timestamp": "2026-04-08T06:49:59.021014",
+      "chapters": [
+        {
+          "chapter": "ch11-Profiling",
+          "confidence": "medium"
+        }
+      ],
+      "quality": "medium"
+    },
+    {
+      "path": "Cubox/Android 开发者博客：工具而非规则：通过 Compiler Explorer 成为更好的 Android 开发者 --- Android Developers Blog- Tools, not.md",
+      "title": "Android 开发者博客：工具而非规则：通过 Compiler Explorer 成为更好的 Android 开发者 --- Android Developers Blog: Tools, not ...",
+      "content_preview": "# Android 开发者博客：工具而非规则：通过 Compiler Explorer 成为更好的 Android 开发者 --- Android Developers Blog: Tools, no...",
+      "score": 12,
+      "relevance": 3,
+      "depth": 2,
+      "timeliness": 3,
+      "verifiability": 4,
+      "scan_timestamp": "2026-04-08T06:49:59.021655",
+      "chapters": [
+        {
+          "chapter": "ch14-工具",
+          "confidence": "medium"
+        }
+      ],
+      "quality": "medium"
+    },
+    {
+      "path": "Cubox/系统开发专用版 Android Studio 上手指南-2023-09-12.md",
+      "title": "系统开发专用版 Android Studio 上手指南",
+      "content_preview": "# 系统开发专用版 Android Studio 上手指南\n\n系统开发专用版 Android Studio 上手指南\n\n[Read in Cubox](https://cubox.pro/web/ca...",
+      "score": 12,
+      "relevance": 2,
+      "depth": 3,
+      "timeliness": 3,
+      "verifiability": 4,
+      "scan_timestamp": "2026-04-08T06:49:59.022044",
+      "chapters": [],
+      "quality": "medium"
+    },
+    {
+      "title": "移动 OS 设计之性能设计 2 - 为什么 Android 跟 iOS 设计上有巨大差异？",
+      "path": "Cubox/移动 OS 设计之性能设计 2 - 为什么 Android 跟 iOS 设计上有巨大差异？-2025-03-10.md",
+      "score": {
+        "total": 10,
+        "relevance": 2,
+        "depth": 2,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "mapped_chapters": [],
+      "date": "2025-03-10",
+      "indexed_at": "2026-04-08T08:23:47.748025",
+      "quality": "medium"
+    },
+    {
+      "title": "移动 OS 设计之性能设计 3 - 专制型资源管理策略至关重要",
+      "path": "Cubox/移动 OS 设计之性能设计 3 - 专制型资源管理策略至关重要-2025-03-18.md",
+      "score": {
+        "total": 10,
+        "relevance": 2,
+        "depth": 2,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "mapped_chapters": [],
+      "date": "2025-03-18",
+      "indexed_at": "2026-04-08T08:23:47.749406",
+      "quality": "medium"
+    },
+    {
+      "title": "移动 OS 设计之性能设计 5 - OS 质量提升- 技术指标优化",
+      "path": "Cubox/移动 OS 设计之性能设计 5 - OS 质量提升- 技术指标优化-2025-03-31.md",
+      "score": {
+        "total": 10,
+        "relevance": 2,
+        "depth": 2,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "mapped_chapters": [],
+      "date": "2025-03-31",
+      "indexed_at": "2026-04-08T08:23:47.751120",
+      "quality": "medium"
+    },
+    {
+      "title": "移动平台的GPU性能分析",
+      "path": "Cubox/移动平台的GPU性能分析-2024-12-07.md",
+      "score": {
+        "total": 10,
+        "relevance": 2,
+        "depth": 2,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "mapped_chapters": [],
+      "date": "2024-12-07",
+      "indexed_at": "2026-04-08T08:23:47.753920",
+      "quality": "medium"
+    },
+    {
+      "title": "移动端长文本处理新算法！vivo与联发科提出EdgeInfinite-Instruct，分段监督微调实现NPU高效部署",
+      "path": "Cubox/移动端长文本处理新算法！vivo与联发科提出EdgeInfinite-Instruct，分段监督微调实现NPU高效部署-2025-08-28.md",
+      "score": {
+        "total": 10,
+        "relevance": 2,
+        "depth": 2,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "mapped_chapters": [],
+      "date": "2025-08-28",
+      "indexed_at": "2026-04-08T08:23:47.765476",
+      "quality": "medium"
+    },
+    {
+      "title": "程序员如何学习和构建网络知识体系 | plantegg",
+      "path": "Cubox/程序员如何学习和构建网络知识体系 - plantegg-2023-01-02.md",
+      "score": {
+        "total": 10,
+        "relevance": 4,
+        "depth": 1,
+        "timeliness": 4,
+        "verifiability": 1
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch09-网络",
+          "confidence": "medium",
+          "hits": 2
+        }
+      ],
+      "date": "2023-01-02",
+      "indexed_at": "2026-04-08T08:23:47.768464",
+      "quality": "medium"
+    },
+    {
+      "title": "程序员阅读清单：我喜欢的 100 篇技术文章（1-20）  | Piglei",
+      "path": "Cubox/程序员阅读清单：我喜欢的 100 篇技术文章（1-20）  - Piglei-2024-08-26.md",
+      "score": {
+        "total": 10,
+        "relevance": 2,
+        "depth": 2,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "mapped_chapters": [],
+      "date": "2024-08-26",
+      "indexed_at": "2026-04-08T08:23:47.775386",
+      "quality": "medium"
+    },
+    {
+      "title": "程序员阅读清单：我喜欢的 100 篇技术文章（21-40） | Piglei",
+      "path": "Cubox/程序员阅读清单：我喜欢的 100 篇技术文章（21-40） - Piglei-2024-10-24.md",
+      "score": {
+        "total": 10,
+        "relevance": 2,
+        "depth": 2,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "mapped_chapters": [],
+      "date": "2024-10-24",
+      "indexed_at": "2026-04-08T08:23:47.776283",
+      "quality": "medium"
+    },
+    {
+      "title": "程序员阅读清单：我喜欢的 100 篇技术文章（41-50）",
+      "path": "Cubox/程序员阅读清单：我喜欢的 100 篇技术文章（41-50）-2025-03-06.md",
+      "score": {
+        "total": 10,
+        "relevance": 2,
+        "depth": 2,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "mapped_chapters": [],
+      "date": "2025-03-06",
+      "indexed_at": "2026-04-08T08:23:47.776873",
+      "quality": "medium"
+    },
+    {
+      "title": "稳定性优化：ANR产生原理 - 掘金",
+      "path": "Cubox/稳定性优化：ANR产生原理 - 掘金-2024-07-29.md",
+      "score": {
+        "total": 10,
+        "relevance": 2,
+        "depth": 2,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "mapped_chapters": [],
+      "date": "2024-07-29",
+      "indexed_at": "2026-04-08T08:23:47.778018",
+      "quality": "medium"
+    },
+    {
+      "title": "穿越二十年：Android Native内存泄漏检测的进化之路",
+      "path": "Cubox/穿越二十年：Android Native内存泄漏检测的进化之路-2025-10-14.md",
+      "score": {
+        "total": 11,
+        "relevance": 4,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch07-内存",
+          "confidence": "high",
+          "hits": 3
+        }
+      ],
+      "date": "2025-10-14",
+      "indexed_at": "2026-04-08T08:23:47.781507",
+      "quality": "medium"
+    },
+    {
+      "title": "站在Framework看Android界面绘制流程：从setContentView到屏幕亮起的最后一公里",
+      "path": "Cubox/站在Framework看Android界面绘制流程：从setContentView到屏幕亮起的最后一公里-2026-04-06.md",
+      "score": {
+        "total": 10,
+        "relevance": 2,
+        "depth": 2,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "mapped_chapters": [],
+      "date": "2026-04-06",
+      "indexed_at": "2026-04-08T08:23:47.783697",
+      "quality": "medium"
+    },
+    {
+      "title": "站在Google角度看渲染机制，从Android渲染体系设计到Flutter渲染体系设计",
+      "path": "Cubox/站在Google角度看渲染机制，从Android渲染体系设计到Flutter渲染体系设计-2022-08-01.md",
+      "score": {
+        "total": 11,
+        "relevance": 4,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 1
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "high",
+          "hits": 3
+        }
+      ],
+      "date": "2022-08-01",
+      "indexed_at": "2026-04-08T08:23:47.784531",
+      "quality": "medium"
+    },
+    {
+      "title": "站在Google角度看渲染机制，从Android渲染体系设计到Flutter渲染体系设计",
+      "path": "Cubox/站在Google角度看渲染机制，从Android渲染体系设计到Flutter渲染体系设计-2024-05-21.md",
+      "score": {
+        "total": 12,
+        "relevance": 4,
+        "depth": 2,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "high",
+          "hits": 3
+        }
+      ],
+      "date": "2024-05-21",
+      "indexed_at": "2026-04-08T08:23:47.785432",
+      "quality": "medium"
+    },
+    {
+      "title": "站在Google角度看渲染机制，从Android渲染体系设计到Flutter渲染体系设计_android渲染引擎-CSDN博客",
+      "path": "Cubox/站在Google角度看渲染机制，从Android渲染体系设计到Flutter渲染体系设计_android渲染引擎-CSDN博客-2024-06-01.md",
+      "score": {
+        "total": 12,
+        "relevance": 4,
+        "depth": 2,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "high",
+          "hits": 3
+        }
+      ],
+      "date": "2024-06-01",
+      "indexed_at": "2026-04-08T08:23:47.786090",
+      "quality": "medium"
+    },
+    {
+      "title": "端侧 AI",
+      "path": "Cubox/端侧 AI-2024-06-20.md",
+      "score": {
+        "total": 10,
+        "relevance": 2,
+        "depth": 2,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "mapped_chapters": [],
+      "date": "2024-06-20",
+      "indexed_at": "2026-04-08T08:23:47.787719",
+      "quality": "medium"
+    },
+    {
+      "path": "Cubox/PGO 新玩法- 优化移动端 APP 性能和体积-2023-05-05.md",
+      "title": "PGO 新玩法: 优化移动端 APP 性能和体积",
+      "scores": {
+        "relevance": 1,
+        "depth": 5,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total_score": 10,
+        "matched_chapters": [
+          "ch04-启动"
+        ]
+      },
+      "first_chars": "# PGO 新玩法: 优化移动端 APP 性能和体积\n\n之前很多研究是针对大型应用而言，很少有关注移动端应用的影响，这里会同时关注两个主要的目标， 安装包体积和冷启动耗时。 1、代码布局优化函数布局(function layout) 优化，即函数重排(function reordering)，把频繁执行(hot) 或连续执行的函数放到一起，让内存页更加紧凑，减少缺页中断的次数。当然还有代码块重排，",
+      "quality": "medium"
+    },
+    {
+      "path": "Cubox/Jeff Dean性能调优要点 2：API 考量因素-2025-12-22.md",
+      "title": "Jeff Dean性能调优要点 2：API 考量因素",
+      "scores": {
+        "relevance": 0,
+        "depth": 5,
+        "timeliness": 3,
+        "verifiability": 3,
+        "total_score": 11,
+        "matched_chapters": []
+      },
+      "first_chars": "# Jeff Dean性能调优要点 2：API 考量因素\n\n\n\n[Read in Cubox](https://cubox.pro/web/card/7402652245201780832)  \n[Read Original](https://mp.weixin.qq.com/s?__biz=MzI4MTQyNzkxNw==&mid=2247485061&idx=1&sn=49b23d68e2c0",
+      "quality": "medium"
+    },
+    {
+      "path": "Cubox/perfetto高阶使用：编译浏览器UI核心步骤简述： 1. 搞到 perfetto 工程的源码 2. 执行 tools - 掘金-2025-01-16.md",
+      "title": "perfetto高阶使用：编译浏览器UI核心步骤简述： 1. 搞到 perfetto 工程的源码 2. 执行 tools - 掘金",
+      "scores": {
+        "relevance": 0,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 5,
+        "total_score": 11,
+        "matched_chapters": []
+      },
+      "first_chars": "# perfetto高阶使用：编译浏览器UI核心步骤简述： 1. 搞到 perfetto 工程的源码 2. 执行 tools - 掘金\n\n核心步骤简述： 1. 搞到 perfetto 工程的源码 2. 执行 tools/install-build-deps --ui 3. 执行 ui/run-dev-server\n\n[Read in Cubox](https://cubox.pro/web/car",
+      "quality": "medium"
+    },
+    {
+      "path": "Cubox/谈性能，没有什么可以干了？-2025-06-22.md",
+      "title": "谈性能，没有什么可以干了？",
+      "score": 11,
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiable": 1
+      },
+      "quality": "medium",
+      "chapters": [
+        "ch08-存储"
+      ],
+      "confidence": "medium",
+      "content_preview": "# 谈性能，没有什么可以干了？  性能是一个永恒的话题，软件/系统健康（System Health）也是一个谈了很多年话题。早期是软件老化，如何克服Android系统长期使用老化问题，在华为时候起了多..."
+    },
+    {
+      "path": "Cubox/谈性能，没有什么可以干了？-2025-06-22.md",
+      "title": "谈性能，没有什么可以干了？",
+      "score": 11,
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiable": 1
+      },
+      "quality": "medium",
+      "chapters": [
+        "ch08-存储"
+      ],
+      "confidence": "medium",
+      "content_preview": "# 谈性能，没有什么可以干了？  性能是一个永恒的话题，软件/系统健康（System Health）也是一个谈了很多年话题。早期是软件老化，如何克服Android系统长期使用老化问题，在华为时候起了多..."
+    },
+    {
+      "path": "Cubox/谈性能，没有什么可以干了？-2025-06-22.md",
+      "title": "谈性能，没有什么可以干了？",
+      "score": 11,
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiable": 1
+      },
+      "quality": "medium",
+      "chapters": [
+        "ch08-存储"
+      ],
+      "confidence": "medium",
+      "content_preview": "# 谈性能，没有什么可以干了？  性能是一个永恒的话题，软件/系统健康（System Health）也是一个谈了很多年话题。早期是软件老化，如何克服Android系统长期使用老化问题，在华为时候起了多..."
+    },
+    {
+      "path": "Cubox/重学Perfetto-如何让Perfetto像日志瞬时打印事件ATRACE相关API-2025-10-14.md",
+      "title": "重学Perfetto:如何让Perfetto像日志瞬时打印事件ATRACE相关API",
+      "score": 10,
+      "scores": {
+        "relevance": 3,
+        "depth": 2,
+        "timeliness": 3,
+        "verifiable": 2
+      },
+      "quality": "medium",
+      "chapters": [
+        "ch11-Profiling"
+      ],
+      "confidence": "medium",
+      "content_preview": "# 重学Perfetto:如何让Perfetto像日志瞬时打印事件ATRACE相关API  常见使用perfetto进行看方法调用时候，每个方法执行都是有一个个片段，因为代码中加入atrace时候都有..."
+    },
+    {
+      "path": "Cubox/重要升级！btrace 2.0 技术原理大揭秘-2023-06-26.md",
+      "title": "重要升级！btrace 2.0 技术原理大揭秘",
+      "score": 10,
+      "scores": {
+        "relevance": 2,
+        "depth": 4,
+        "timeliness": 3,
+        "verifiable": 1
+      },
+      "quality": "medium",
+      "chapters": [
+        "ch11-Profiling"
+      ],
+      "confidence": "medium",
+      "content_preview": "# 重要升级！btrace 2.0 技术原理大揭秘  btrace 2.0 正式发布并带来多项提升！基于 Perfetto 全新打造，产物体积减小 70%、网页打开提速 7 倍，百万插桩性能损耗降至 ..."
+    },
+    {
+      "path": "公众号文章/2026-03-12-Android17-lock-free-MessageQueue-深度补全-v2.md",
+      "title": "Android 17 MessageQueue 无锁化深度解析：从源码到性能实战",
+      "score": 11,
+      "scores": {
+        "relevance": 0,
+        "depth": 5,
+        "timeliness": 3,
+        "verifiable": 3
+      },
+      "quality": "medium",
+      "chapters": [],
+      "confidence": "medium",
+      "content_preview": "# Android 17 MessageQueue 无锁化深度解析：从源码到性能实战  > 本文是对《Android 17 把 MessageQueue 改成无锁了》的深度补全版本（v2），新增：AR..."
+    },
+    {
+      "path": "公众号文章/2026-03-12-Android17-lock-free-MessageQueue-深度补全.md",
+      "title": "Android 17 MessageQueue 无锁化深度解析：从源码到性能实战",
+      "score": 10,
+      "scores": {
+        "relevance": 0,
+        "depth": 5,
+        "timeliness": 3,
+        "verifiable": 2
+      },
+      "quality": "medium",
+      "chapters": [],
+      "confidence": "medium",
+      "content_preview": "# Android 17 MessageQueue 无锁化深度解析：从源码到性能实战  > 本文是对《Android 17 把 MessageQueue 改成无锁了》的深度补全版本，新增：源码级实现分..."
+    }
+  ],
+  "current_directory": "X 文章",
+  "current_offset": 85,
   "priority_queue": [
     "Cubox",
     "Personal-Knowlledge",
@@ -15,7 +4412,12 @@
     "知识库",
     "OpenClaw定时任务"
   ],
-  "completed_directories": [],
-  "last_scan_batch": 50,
+  "completed_directories": [
+    "Cubox",
+    "Personal-Knowlledge",
+    "Personal-Knowlodge",
+    "公众号文章"
+  ],
+  "last_scan_batch": 1,
   "status": "in_progress"
 }

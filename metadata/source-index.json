@@ -4280,6 +4280,901 @@
       },
       "first_chars": "# perfetto高阶使用：编译浏览器UI核心步骤简述： 1. 搞到 perfetto 工程的源码 2. 执行 tools - 掘金\n\n核心步骤简述： 1. 搞到 perfetto 工程的源码 2. 执行 tools/install-build-deps --ui 3. 执行 ui/run-dev-server\n\n[Read in Cubox](https://cubox.pro/web/car",
       "quality": "medium"
+    },
+    {
+      "path": "Cubox/谈性能，没有什么可以干了？-2025-06-22.md",
+      "title": "谈性能，没有什么可以干了？",
+      "score": 11,
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiable": 1
+      },
+      "quality": "medium",
+      "chapters": [
+        "ch08-存储"
+      ],
+      "confidence": "medium",
+      "content_preview": "# 谈性能，没有什么可以干了？  性能是一个永恒的话题，软件/系统健康（System Health）也是一个谈了很多年话题。早期是软件老化，如何克服Android系统长期使用老化问题，在华为时候起了多..."
+    },
+    {
+      "path": "Cubox/谈性能，没有什么可以干了？-2025-06-22.md",
+      "title": "谈性能，没有什么可以干了？",
+      "score": 11,
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiable": 1
+      },
+      "quality": "medium",
+      "chapters": [
+        "ch08-存储"
+      ],
+      "confidence": "medium",
+      "content_preview": "# 谈性能，没有什么可以干了？  性能是一个永恒的话题，软件/系统健康（System Health）也是一个谈了很多年话题。早期是软件老化，如何克服Android系统长期使用老化问题，在华为时候起了多..."
+    },
+    {
+      "path": "Cubox/谈性能，没有什么可以干了？-2025-06-22.md",
+      "title": "谈性能，没有什么可以干了？",
+      "score": 11,
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiable": 1
+      },
+      "quality": "medium",
+      "chapters": [
+        "ch08-存储"
+      ],
+      "confidence": "medium",
+      "content_preview": "# 谈性能，没有什么可以干了？  性能是一个永恒的话题，软件/系统健康（System Health）也是一个谈了很多年话题。早期是软件老化，如何克服Android系统长期使用老化问题，在华为时候起了多..."
+    },
+    {
+      "path": "Cubox/重学Perfetto-如何让Perfetto像日志瞬时打印事件ATRACE相关API-2025-10-14.md",
+      "title": "重学Perfetto:如何让Perfetto像日志瞬时打印事件ATRACE相关API",
+      "score": 10,
+      "scores": {
+        "relevance": 3,
+        "depth": 2,
+        "timeliness": 3,
+        "verifiable": 2
+      },
+      "quality": "medium",
+      "chapters": [
+        "ch11-Profiling"
+      ],
+      "confidence": "medium",
+      "content_preview": "# 重学Perfetto:如何让Perfetto像日志瞬时打印事件ATRACE相关API  常见使用perfetto进行看方法调用时候，每个方法执行都是有一个个片段，因为代码中加入atrace时候都有..."
+    },
+    {
+      "path": "Cubox/重要升级！btrace 2.0 技术原理大揭秘-2023-06-26.md",
+      "title": "重要升级！btrace 2.0 技术原理大揭秘",
+      "score": 10,
+      "scores": {
+        "relevance": 2,
+        "depth": 4,
+        "timeliness": 3,
+        "verifiable": 1
+      },
+      "quality": "medium",
+      "chapters": [
+        "ch11-Profiling"
+      ],
+      "confidence": "medium",
+      "content_preview": "# 重要升级！btrace 2.0 技术原理大揭秘  btrace 2.0 正式发布并带来多项提升！基于 Perfetto 全新打造，产物体积减小 70%、网页打开提速 7 倍，百万插桩性能损耗降至 ..."
+    },
+    {
+      "path": "公众号文章/2026-03-12-Android17-lock-free-MessageQueue-深度补全-v2.md",
+      "title": "Android 17 MessageQueue 无锁化深度解析：从源码到性能实战",
+      "score": 11,
+      "scores": {
+        "relevance": 0,
+        "depth": 5,
+        "timeliness": 3,
+        "verifiable": 3
+      },
+      "quality": "medium",
+      "chapters": [],
+      "confidence": "medium",
+      "content_preview": "# Android 17 MessageQueue 无锁化深度解析：从源码到性能实战  > 本文是对《Android 17 把 MessageQueue 改成无锁了》的深度补全版本（v2），新增：AR..."
+    },
+    {
+      "path": "公众号文章/2026-03-12-Android17-lock-free-MessageQueue-深度补全.md",
+      "title": "Android 17 MessageQueue 无锁化深度解析：从源码到性能实战",
+      "score": 10,
+      "scores": {
+        "relevance": 0,
+        "depth": 5,
+        "timeliness": 3,
+        "verifiable": 2
+      },
+      "quality": "medium",
+      "chapters": [],
+      "confidence": "medium",
+      "content_preview": "# Android 17 MessageQueue 无锁化深度解析：从源码到性能实战  > 本文是对《Android 17 把 MessageQueue 改成无锁了》的深度补全版本，新增：源码级实现分..."
+    },
+    {
+      "path": "Cubox/ChatGPT 算法原理-2023-02-14.md",
+      "title": "ChatGPT 算法原理",
+      "scores": {
+        "relevance": 3,
+        "depth": 3,
+        "timeliness": 4,
+        "verifiability": 1
+      },
+      "total_score": 11,
+      "matched_chapters": [],
+      "first_chars": "--- # ChatGPT 算法原理  每一代GPT模型的参数量都爆炸式增长，堪称“越大越好”。2019年2月发布的GPT-2参数量为15亿，而2020年5月的GPT-3，参数量达到了1750亿。 还是有很多读者对于ChatGPT充满期待（幻想？梦想），今天给大家分享技术层…  [Read in Cubox](https://cubox.pro/web/card/70250467374881856",
+      "quality": "medium",
+      "indexed_at": "2026-04-08T19:20:46.857319"
+    },
+    {
+      "path": "Cubox/播放器系列1——总概述-2025-03-03.md",
+      "title": "播放器系列1——总概述",
+      "scores": {
+        "relevance": 3,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "total_score": 10,
+      "matched_chapters": [],
+      "first_chars": "--- # 播放器系列1——总概述    [Read in Cubox](https://cubox.pro/web/card/7296058063952284709)   [Read Original](https://blog.csdn.net/weixin_40317531/article/details/145787079)    ---  ## {#t0}播放器核心架构  ![](htt",
+      "quality": "medium",
+      "indexed_at": "2026-04-08T19:20:46.858220"
+    },
+    {
+      "path": "Cubox/提示艺术：PromptPerfect 提示优化器测试体验（一）-2023-03-09.md",
+      "title": "提示艺术：PromptPerfect 提示优化器测试体验（一）",
+      "scores": {
+        "relevance": 3,
+        "depth": 3,
+        "timeliness": 4,
+        "verifiability": 2
+      },
+      "total_score": 12,
+      "matched_chapters": [],
+      "first_chars": "--- # 提示艺术：PromptPerfect 提示优化器测试体验（一）  看到jina发布了PromptPerfect，专为大型语言模型 (...  [Read in Cubox](https://cubox.pro/web/card/7033333710518749572)   [Read Original](https://zhuanlan.zhihu.com/p/611970732?ut",
+      "quality": "medium",
+      "indexed_at": "2026-04-08T19:20:46.859056"
+    },
+    {
+      "path": "Cubox/2026 AI First 系列（三）：在被替代之前变得有价值——新经济下的生存法则-2026-01-05.md",
+      "title": "2026 AI First 系列（三）：在被替代之前变得有价值——新经济下的生存法则",
+      "scores": {
+        "relevance": 3,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "total_score": 10,
+      "matched_chapters": [],
+      "first_chars": "--- # 2026 AI First 系列（三）：在被替代之前变得有价值——新经济下的生存法则  ## 你正在训练自己的替代者  每一次你使用AI，都在发生三件事：  **第一件事**：你在做reinforcement learning from human feedback（RLHF）。每次你  [Read in Cubox](https://cubox.pro/web/card/740770",
+      "quality": "medium",
+      "indexed_at": "2026-04-08T19:20:46.859988"
+    },
+    {
+      "path": "Cubox/自己动手制作电子书的最佳方式（支持PDF、ePub、mobi等格式）-2024-05-10.md",
+      "title": "自己动手制作电子书的最佳方式（支持PDF、ePub、mobi等格式）",
+      "scores": {
+        "relevance": 3,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "total_score": 10,
+      "matched_chapters": [],
+      "first_chars": "--- # 自己动手制作电子书的最佳方式（支持PDF、ePub、mobi等格式）  对于经常阅读的人来说，制作本地电子书是刚需。  [Read in Cubox](https://cubox.pro/web/card/7188535548275851566)   [Read Original](https://mp.weixin.qq.com/s?__biz=MzI4NzIxOTQyMA==&mi",
+      "quality": "medium",
+      "indexed_at": "2026-04-08T19:20:46.861735"
+    },
+    {
+      "path": "Cubox/抖音 Android 端图片优化实践-2024-06-11.md",
+      "title": "抖音 Android 端图片优化实践",
+      "scores": {
+        "relevance": 3,
+        "depth": 2,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "total_score": 11,
+      "matched_chapters": [],
+      "first_chars": "--- # 抖音 Android 端图片优化实践    [Read in Cubox](https://cubox.pro/web/card/7200057154005369188)   [Read Original](https://mp.weixin.qq.com/s?__biz=MzI1MzYzMjE0MQ==&mid=2247507704&idx=1&sn=6a52e952b8ad823b",
+      "quality": "medium",
+      "indexed_at": "2026-04-08T19:20:46.862760"
+    },
+    {
+      "path": "Cubox/谈Android架构创新性-2022-04-02.md",
+      "title": "谈Android架构创新性",
+      "scores": {
+        "relevance": 3,
+        "depth": 5,
+        "timeliness": 4,
+        "verifiability": 2
+      },
+      "total_score": 14,
+      "matched_chapters": [],
+      "first_chars": "--- # 谈Android架构创新性  最近整理了一下跟新员工的培训材料，总结了Android架构核心要点： 1）CTS/VTS接口测试套件，实现生态兼容性，及其作为Google TA的准入工具，实现自己商业模式 2) AOSP开源实现机制，闭源GMS实现有价值功能。体现在架构上，就是通过在系统中做一管理服务的服…  [Read in Cubox](https://cubox.pro/web/c",
+      "quality": "medium",
+      "indexed_at": "2026-04-08T19:20:46.863214"
+    },
+    {
+      "path": "Cubox/移动端算法优化-CPU 优化技术-NEON 开发进阶-2022-03-14.md",
+      "title": "移动端算法优化|CPU 优化技术-NEON 开发进阶",
+      "scores": {
+        "relevance": 3,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 1
+      },
+      "total_score": 10,
+      "matched_chapters": [],
+      "first_chars": "--- # 移动端算法优化|CPU 优化技术-NEON 开发进阶  移动端，高性能计算，异构计算，NEON，SIMD  [Read in Cubox](https://cubox.pro/web/card/6902956923419626662)   [Read Original](https://mp.weixin.qq.com/s?__biz=Mzg3ODcwNDE2OA==&mid=2247",
+      "quality": "medium",
+      "indexed_at": "2026-04-08T19:20:46.866043"
+    },
+    {
+      "path": "Cubox/Android 强推的 Baseline Profiles 国内能用吗？我找 Google 工程师求证了！ - 掘金-2022-07-17.md",
+      "title": "Android 强推的 Baseline Profiles 国内能用吗？我找 Google 工程师求证了！ - 掘金",
+      "scores": {
+        "relevance": 3,
+        "depth": 5,
+        "timeliness": 4,
+        "verifiability": 1
+      },
+      "total_score": 13,
+      "matched_chapters": [],
+      "first_chars": "--- # Android 强推的 Baseline Profiles 国内能用吗？我找 Google 工程师求证了！ - 掘金  你好，我是朱涛。这是「沉思录」的第三篇文章。 今天我们来扒一下 Baseline Profiles 的底层原理。  [Read in Cubox](https://cubox.pro/web/card/6948362753996227823)   [Read Orig",
+      "quality": "medium",
+      "indexed_at": "2026-04-08T19:20:46.866801"
+    },
+    {
+      "path": "Cubox/如何正确地理解应用架构并开发-2024-01-09.md",
+      "title": "如何正确地理解应用架构并开发",
+      "scores": {
+        "relevance": 3,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "total_score": 10,
+      "matched_chapters": [],
+      "first_chars": "--- # 如何正确地理解应用架构并开发  本文归纳总结了应用架构的混乱问题，并给出了一些重点需要理解的内容，希望能对大家的日常开发有一些帮助。  [Read in Cubox](https://cubox.pro/web/card/7144272097722762922)   [Read Original](https://mp.weixin.qq.com/s?__biz=MzAxNDEwNjk",
+      "quality": "medium",
+      "indexed_at": "2026-04-08T19:20:46.867833"
+    },
+    {
+      "path": "Cubox/Android bugreport 分析方法-2024-02-01.md",
+      "title": "Android bugreport 分析方法",
+      "scores": {
+        "relevance": 3,
+        "depth": 3,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "total_score": 12,
+      "matched_chapters": [],
+      "first_chars": "--- # Android bugreport 分析方法    [Read in Cubox](https://cubox.pro/web/card/7152589943666116230)   [Read Original](https://mp.weixin.qq.com/s?__biz=MzA3ODMzMTM1NA==&mid=2247488613&idx=1&sn=5190a1860fe3",
+      "quality": "medium",
+      "indexed_at": "2026-04-08T19:20:46.868496"
+    },
+    {
+      "path": "Cubox/图文解释IOMMU的工作原理-2026-04-06.md",
+      "title": "图文解释IOMMU的工作原理",
+      "scores": {
+        "relevance": 3,
+        "depth": 3,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "total_score": 12,
+      "matched_chapters": [],
+      "first_chars": "--- # 图文解释IOMMU的工作原理  MMU 管的是 CPU 访问内存，IOMMU 管的是 外设访问内存。  [Read in Cubox](https://cubox.pro/web/card/7440700085693843015)   [Read Original](https://mp.weixin.qq.com/s?__biz=MzkzODIxNjk5Mg==&mid=224748",
+      "quality": "medium",
+      "indexed_at": "2026-04-08T19:20:46.870709"
+    },
+    {
+      "path": "Cubox/【Shader篇】GPU架构与其逻辑管线-2023-08-10.md",
+      "title": "【Shader篇】GPU架构与其逻辑管线",
+      "scores": {
+        "relevance": 3,
+        "depth": 3,
+        "timeliness": 4,
+        "verifiability": 1
+      },
+      "total_score": 11,
+      "matched_chapters": [],
+      "first_chars": "--- # 【Shader篇】GPU架构与其逻辑管线  前言：本篇文章作为Shader系列的第一篇，我觉得还是从GPU架构开始，重新认识Shader是如何被解析执行的，然后把渲染管线与GPU架构关联起来，做到知其所以然。 1、引言通过分析GPU架构，我们可以学习到Shader是如何在GPU这个黑盒子里运行处理的，然后运用相关…  [Read in Cubox](https://cubox.pro/",
+      "quality": "medium",
+      "indexed_at": "2026-04-08T19:20:46.871285"
+    },
+    {
+      "path": "Cubox/[译]AI算力民主化 第五部分：CUDA C++替代方案（如OpenCL）现状如何？-2025-03-21.md",
+      "title": "[译]AI算力民主化 第五部分：CUDA C++替代方案（如OpenCL）现状如何？",
+      "scores": {
+        "relevance": 3,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "total_score": 10,
+      "matched_chapters": [],
+      "first_chars": "--- # [译]AI算力民主化 第五部分：CUDA C++替代方案（如OpenCL）现状如何？    [Read in Cubox](https://cubox.pro/web/card/7302618758504255301)   [Read Original](https://mp.weixin.qq.com/s?__biz=MzI4MTQyNzkxNw==&mid=2247484057&i",
+      "quality": "medium",
+      "indexed_at": "2026-04-08T19:20:46.871938"
+    },
+    {
+      "path": "Cubox/这本书助你成为Android性能优化专家，送10本-2024-05-15.md",
+      "title": "这本书助你成为Android性能优化专家，送10本",
+      "scores": {
+        "relevance": 3,
+        "depth": 2,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "total_score": 11,
+      "matched_chapters": [],
+      "first_chars": "--- # 这本书助你成为Android性能优化专家，送10本    [Read in Cubox](https://cubox.pro/web/card/7190385865099576049)   [Read Original](https://mp.weixin.qq.com/s?__biz=MzA5MzI3NjE2MA==&mid=2650283949&idx=1&sn=ba58c50a3",
+      "quality": "medium",
+      "indexed_at": "2026-04-08T19:20:46.876598"
+    },
+    {
+      "path": "Cubox/手把手教你uinput命令的使用方式-重学安卓input子系统-2025-05-07.md",
+      "title": "手把手教你uinput命令的使用方式-重学安卓input子系统",
+      "scores": {
+        "relevance": 3,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "total_score": 10,
+      "matched_chapters": [],
+      "first_chars": "--- # 手把手教你uinput命令的使用方式-重学安卓input子系统  android系统中自带了一个uinput命令，但是这个命令其实对于使用者并不友好，因为本身命令的使用没有相关的help提示，命令的使用方式基本上整个互联网上都没有相关的文章，那马哥只能为vip学员们开荒啦  [Read in Cubox](https://cubox.pro/web/card/7319612616656",
+      "quality": "medium",
+      "indexed_at": "2026-04-08T19:20:46.877379"
+    },
+    {
+      "path": "Cubox/Glue work considered harmful - sean goedecke-2025-01-04.md",
+      "title": "Glue work considered harmful | sean goedecke",
+      "scores": {
+        "relevance": 3,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "total_score": 10,
+      "matched_chapters": [],
+      "first_chars": "--- # Glue work considered harmful | sean goedecke  Why companies don't reward glue work and why you shouldn't do it all the time  [Read in Cubox](https://cubox.pro/web/card/7275164231689832353)   [Re",
+      "quality": "medium",
+      "indexed_at": "2026-04-08T19:20:46.877755"
+    },
+    {
+      "path": "Cubox/淘宝小程序体验优化：数据分析和优化实践-2022-03-31.md",
+      "title": "淘宝小程序体验优化：数据分析和优化实践",
+      "scores": {
+        "relevance": 3,
+        "depth": 3,
+        "timeliness": 4,
+        "verifiability": 1
+      },
+      "total_score": 11,
+      "matched_chapters": [],
+      "first_chars": "--- # 淘宝小程序体验优化：数据分析和优化实践  体验优化是个老生常谈的话题，如何让小程序跑得又稳又快，成了我们最大的挑战之一。  [Read in Cubox](https://cubox.pro/web/card/6909064932415767572)   [Read Original](https://mp.weixin.qq.com/s?__biz=Mzg4MDY0ODk0Ng==&",
+      "quality": "medium",
+      "indexed_at": "2026-04-08T19:20:46.878375"
+    },
+    {
+      "path": "Cubox/Android Weekly - Free weekly Android & Kotlin deve...-2024-01-08.md",
+      "title": "Android Weekly - Free weekly Android & Kotlin deve...",
+      "scores": {
+        "relevance": 3,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "total_score": 10,
+      "matched_chapters": [],
+      "first_chars": "--- # Android Weekly - Free weekly Android & Kotlin deve...  Android Weekly is a free newsletter that helps you to stay cutting-edge with your Android Development  [Read in Cubox](https://cubox.pro/we",
+      "quality": "medium",
+      "indexed_at": "2026-04-08T19:20:46.879049"
+    },
+    {
+      "path": "Cubox/2024年App从备案到上架（国内各大应用市场）全过程-2023-12-01.md",
+      "title": "2024年App从备案到上架（国内各大应用市场）全过程",
+      "scores": {
+        "relevance": 3,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "total_score": 10,
+      "matched_chapters": [],
+      "first_chars": "--- # 2024年App从备案到上架（国内各大应用市场）全过程    [Read in Cubox](https://cubox.pro/web/card/7130076546462646592)   [Read Original](https://juejin.cn/post/7304533060548247603)    ---  ## Android应用上架国内应用市场踩坑  ## 前言",
+      "quality": "medium",
+      "indexed_at": "2026-04-08T19:20:46.879856"
+    },
+    {
+      "path": "Cubox/微信业务开发方法与实践-2024-01-08.md",
+      "title": "微信业务开发方法与实践",
+      "scores": {
+        "relevance": 3,
+        "depth": 2,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "total_score": 11,
+      "matched_chapters": [],
+      "first_chars": "--- # 微信业务开发方法与实践  万字长文带你搞透业务开发  [Read in Cubox](https://cubox.pro/web/card/7143933132461313063)   [Read Original](https://mp.weixin.qq.com/s/we4LCGAwDC6bS7rQNztWMQ)    ---  ![图片](https://image.cubox.",
+      "quality": "medium",
+      "indexed_at": "2026-04-08T19:20:46.880584"
+    },
+    {
+      "path": "Cubox/手机能跑图生成和 LLM 大模型吗-2024-06-12.md",
+      "title": "手机能跑图生成和 LLM 大模型吗",
+      "scores": {
+        "relevance": 3,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "total_score": 10,
+      "matched_chapters": [],
+      "first_chars": "--- # 手机能跑图生成和 LLM 大模型吗    [Read in Cubox](https://cubox.pro/web/card/7200469066870427371)   [Read Original](https://blog.cnbang.net/tech/3890/)    ---  💡 能，但还比较勉强。  在客户端上跑大模型，一定是未来的趋势。  1. 上个时代 AI 的核",
+      "quality": "medium",
+      "indexed_at": "2026-04-08T19:20:46.882819"
+    },
+    {
+      "path": "Cubox/Flutter性能优化实践之Timeline -2022-01-14.md",
+      "title": "Flutter性能优化实践之Timeline",
+      "scores": {
+        "relevance": 3,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 1
+      },
+      "total_score": 10,
+      "matched_chapters": [],
+      "first_chars": "--- # Flutter性能优化实践之Timeline   https://juejin.cn/post/6990231632091299848  [Read in Cubox](https://cubox.pro/web/card/6881531808513524810)   [Read Original](https://juejin.cn/post/6990231632091299848)",
+      "quality": "medium",
+      "indexed_at": "2026-04-08T19:20:46.883420"
+    },
+    {
+      "path": "Cubox/perf- Linux profiling with performance counters-2025-01-03.md",
+      "title": "perf: Linux profiling with performance counters",
+      "scores": {
+        "relevance": 3,
+        "depth": 3,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "total_score": 12,
+      "matched_chapters": [],
+      "first_chars": "--- # perf: Linux profiling with performance counters    [Read in Cubox](https://cubox.pro/web/card/7274700526137116345)   [Read Original](https://perfwiki.github.io/main/)    ---  [](https://github.c",
+      "quality": "medium",
+      "indexed_at": "2026-04-08T19:20:46.885377"
+    },
+    {
+      "path": "Cubox/居家健身入门指南 - 椒盐豆豉-2025-01-03.md",
+      "title": "居家健身入门指南 | 椒盐豆豉",
+      "scores": {
+        "relevance": 3,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "total_score": 10,
+      "matched_chapters": [],
+      "first_chars": "--- # 居家健身入门指南 | 椒盐豆豉    [Read in Cubox](https://cubox.pro/web/card/7274759972771069952)   [Read Original](https://blog.douchi.space/workout-from-home/)    ---  ## 居家健身入门指南  ##### September 22, 2024  ",
+      "quality": "medium",
+      "indexed_at": "2026-04-08T19:20:46.887512"
+    },
+    {
+      "path": "Cubox/Flutter 深入探索混合开发的技术演进 - 开发者说·DTalk-2022-08-26.md",
+      "title": "Flutter 深入探索混合开发的技术演进 | 开发者说·DTalk",
+      "scores": {
+        "relevance": 3,
+        "depth": 4,
+        "timeliness": 4,
+        "verifiability": 1
+      },
+      "total_score": 12,
+      "matched_chapters": [],
+      "first_chars": "--- # Flutter 深入探索混合开发的技术演进 | 开发者说·DTalk  分享开发经验，有机会被推荐参选加入 \"谷歌开发技术专家\" 团队。  [Read in Cubox](https://cubox.pro/web/card/6962755913341995776)   [Read Original](https://mp.weixin.qq.com/s?__biz=MzAwODY4O",
+      "quality": "medium",
+      "indexed_at": "2026-04-08T19:20:46.889979"
+    },
+    {
+      "path": "Cubox/ChatGPT 算法原理-2023-02-14.md",
+      "title": "ChatGPT 算法原理",
+      "scores": {
+        "relevance": 3,
+        "depth": 3,
+        "timeliness": 4,
+        "verifiability": 1
+      },
+      "total_score": 11,
+      "matched_chapters": [],
+      "first_chars": "--- # ChatGPT 算法原理  每一代GPT模型的参数量都爆炸式增长，堪称“越大越好”。2019年2月发布的GPT-2参数量为15亿，而2020年5月的GPT-3，参数量达到了1750亿。 还是有很多读者对于ChatGPT充满期待（幻想？梦想），今天给大家分享技术层…  [Read in Cubox](https://cubox.pro/web/card/70250467374881856",
+      "quality": "medium",
+      "indexed_at": "2026-04-08T19:22:14.322998"
+    },
+    {
+      "path": "Cubox/播放器系列1——总概述-2025-03-03.md",
+      "title": "播放器系列1——总概述",
+      "scores": {
+        "relevance": 3,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "total_score": 10,
+      "matched_chapters": [],
+      "first_chars": "--- # 播放器系列1——总概述    [Read in Cubox](https://cubox.pro/web/card/7296058063952284709)   [Read Original](https://blog.csdn.net/weixin_40317531/article/details/145787079)    ---  ## {#t0}播放器核心架构  ![](htt",
+      "quality": "medium",
+      "indexed_at": "2026-04-08T19:22:14.323906"
+    },
+    {
+      "path": "Cubox/提示艺术：PromptPerfect 提示优化器测试体验（一）-2023-03-09.md",
+      "title": "提示艺术：PromptPerfect 提示优化器测试体验（一）",
+      "scores": {
+        "relevance": 3,
+        "depth": 3,
+        "timeliness": 4,
+        "verifiability": 2
+      },
+      "total_score": 12,
+      "matched_chapters": [],
+      "first_chars": "--- # 提示艺术：PromptPerfect 提示优化器测试体验（一）  看到jina发布了PromptPerfect，专为大型语言模型 (...  [Read in Cubox](https://cubox.pro/web/card/7033333710518749572)   [Read Original](https://zhuanlan.zhihu.com/p/611970732?ut",
+      "quality": "medium",
+      "indexed_at": "2026-04-08T19:22:14.324688"
+    },
+    {
+      "path": "Cubox/2026 AI First 系列（三）：在被替代之前变得有价值——新经济下的生存法则-2026-01-05.md",
+      "title": "2026 AI First 系列（三）：在被替代之前变得有价值——新经济下的生存法则",
+      "scores": {
+        "relevance": 3,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "total_score": 10,
+      "matched_chapters": [],
+      "first_chars": "--- # 2026 AI First 系列（三）：在被替代之前变得有价值——新经济下的生存法则  ## 你正在训练自己的替代者  每一次你使用AI，都在发生三件事：  **第一件事**：你在做reinforcement learning from human feedback（RLHF）。每次你  [Read in Cubox](https://cubox.pro/web/card/740770",
+      "quality": "medium",
+      "indexed_at": "2026-04-08T19:22:14.325517"
+    },
+    {
+      "path": "Cubox/自己动手制作电子书的最佳方式（支持PDF、ePub、mobi等格式）-2024-05-10.md",
+      "title": "自己动手制作电子书的最佳方式（支持PDF、ePub、mobi等格式）",
+      "scores": {
+        "relevance": 3,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "total_score": 10,
+      "matched_chapters": [],
+      "first_chars": "--- # 自己动手制作电子书的最佳方式（支持PDF、ePub、mobi等格式）  对于经常阅读的人来说，制作本地电子书是刚需。  [Read in Cubox](https://cubox.pro/web/card/7188535548275851566)   [Read Original](https://mp.weixin.qq.com/s?__biz=MzI4NzIxOTQyMA==&mi",
+      "quality": "medium",
+      "indexed_at": "2026-04-08T19:22:14.327139"
+    },
+    {
+      "path": "Cubox/抖音 Android 端图片优化实践-2024-06-11.md",
+      "title": "抖音 Android 端图片优化实践",
+      "scores": {
+        "relevance": 3,
+        "depth": 2,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "total_score": 11,
+      "matched_chapters": [],
+      "first_chars": "--- # 抖音 Android 端图片优化实践    [Read in Cubox](https://cubox.pro/web/card/7200057154005369188)   [Read Original](https://mp.weixin.qq.com/s?__biz=MzI1MzYzMjE0MQ==&mid=2247507704&idx=1&sn=6a52e952b8ad823b",
+      "quality": "medium",
+      "indexed_at": "2026-04-08T19:22:14.328117"
+    },
+    {
+      "path": "Cubox/谈Android架构创新性-2022-04-02.md",
+      "title": "谈Android架构创新性",
+      "scores": {
+        "relevance": 3,
+        "depth": 5,
+        "timeliness": 4,
+        "verifiability": 2
+      },
+      "total_score": 14,
+      "matched_chapters": [],
+      "first_chars": "--- # 谈Android架构创新性  最近整理了一下跟新员工的培训材料，总结了Android架构核心要点： 1）CTS/VTS接口测试套件，实现生态兼容性，及其作为Google TA的准入工具，实现自己商业模式 2) AOSP开源实现机制，闭源GMS实现有价值功能。体现在架构上，就是通过在系统中做一管理服务的服…  [Read in Cubox](https://cubox.pro/web/c",
+      "quality": "medium",
+      "indexed_at": "2026-04-08T19:22:14.328613"
+    },
+    {
+      "path": "Cubox/移动端算法优化-CPU 优化技术-NEON 开发进阶-2022-03-14.md",
+      "title": "移动端算法优化|CPU 优化技术-NEON 开发进阶",
+      "scores": {
+        "relevance": 3,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 1
+      },
+      "total_score": 10,
+      "matched_chapters": [],
+      "first_chars": "--- # 移动端算法优化|CPU 优化技术-NEON 开发进阶  移动端，高性能计算，异构计算，NEON，SIMD  [Read in Cubox](https://cubox.pro/web/card/6902956923419626662)   [Read Original](https://mp.weixin.qq.com/s?__biz=Mzg3ODcwNDE2OA==&mid=2247",
+      "quality": "medium",
+      "indexed_at": "2026-04-08T19:22:14.331081"
+    },
+    {
+      "path": "Cubox/Android 强推的 Baseline Profiles 国内能用吗？我找 Google 工程师求证了！ - 掘金-2022-07-17.md",
+      "title": "Android 强推的 Baseline Profiles 国内能用吗？我找 Google 工程师求证了！ - 掘金",
+      "scores": {
+        "relevance": 3,
+        "depth": 5,
+        "timeliness": 4,
+        "verifiability": 1
+      },
+      "total_score": 13,
+      "matched_chapters": [],
+      "first_chars": "--- # Android 强推的 Baseline Profiles 国内能用吗？我找 Google 工程师求证了！ - 掘金  你好，我是朱涛。这是「沉思录」的第三篇文章。 今天我们来扒一下 Baseline Profiles 的底层原理。  [Read in Cubox](https://cubox.pro/web/card/6948362753996227823)   [Read Orig",
+      "quality": "medium",
+      "indexed_at": "2026-04-08T19:22:14.331712"
+    },
+    {
+      "path": "Cubox/如何正确地理解应用架构并开发-2024-01-09.md",
+      "title": "如何正确地理解应用架构并开发",
+      "scores": {
+        "relevance": 3,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "total_score": 10,
+      "matched_chapters": [],
+      "first_chars": "--- # 如何正确地理解应用架构并开发  本文归纳总结了应用架构的混乱问题，并给出了一些重点需要理解的内容，希望能对大家的日常开发有一些帮助。  [Read in Cubox](https://cubox.pro/web/card/7144272097722762922)   [Read Original](https://mp.weixin.qq.com/s?__biz=MzAxNDEwNjk",
+      "quality": "medium",
+      "indexed_at": "2026-04-08T19:22:14.332668"
+    },
+    {
+      "path": "Cubox/Android bugreport 分析方法-2024-02-01.md",
+      "title": "Android bugreport 分析方法",
+      "scores": {
+        "relevance": 3,
+        "depth": 3,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "total_score": 12,
+      "matched_chapters": [],
+      "first_chars": "--- # Android bugreport 分析方法    [Read in Cubox](https://cubox.pro/web/card/7152589943666116230)   [Read Original](https://mp.weixin.qq.com/s?__biz=MzA3ODMzMTM1NA==&mid=2247488613&idx=1&sn=5190a1860fe3",
+      "quality": "medium",
+      "indexed_at": "2026-04-08T19:22:14.333212"
+    },
+    {
+      "path": "Cubox/图文解释IOMMU的工作原理-2026-04-06.md",
+      "title": "图文解释IOMMU的工作原理",
+      "scores": {
+        "relevance": 3,
+        "depth": 3,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "total_score": 12,
+      "matched_chapters": [],
+      "first_chars": "--- # 图文解释IOMMU的工作原理  MMU 管的是 CPU 访问内存，IOMMU 管的是 外设访问内存。  [Read in Cubox](https://cubox.pro/web/card/7440700085693843015)   [Read Original](https://mp.weixin.qq.com/s?__biz=MzkzODIxNjk5Mg==&mid=224748",
+      "quality": "medium",
+      "indexed_at": "2026-04-08T19:22:14.335283"
+    },
+    {
+      "path": "Cubox/【Shader篇】GPU架构与其逻辑管线-2023-08-10.md",
+      "title": "【Shader篇】GPU架构与其逻辑管线",
+      "scores": {
+        "relevance": 3,
+        "depth": 3,
+        "timeliness": 4,
+        "verifiability": 1
+      },
+      "total_score": 11,
+      "matched_chapters": [],
+      "first_chars": "--- # 【Shader篇】GPU架构与其逻辑管线  前言：本篇文章作为Shader系列的第一篇，我觉得还是从GPU架构开始，重新认识Shader是如何被解析执行的，然后把渲染管线与GPU架构关联起来，做到知其所以然。 1、引言通过分析GPU架构，我们可以学习到Shader是如何在GPU这个黑盒子里运行处理的，然后运用相关…  [Read in Cubox](https://cubox.pro/",
+      "quality": "medium",
+      "indexed_at": "2026-04-08T19:22:14.335800"
+    },
+    {
+      "path": "Cubox/[译]AI算力民主化 第五部分：CUDA C++替代方案（如OpenCL）现状如何？-2025-03-21.md",
+      "title": "[译]AI算力民主化 第五部分：CUDA C++替代方案（如OpenCL）现状如何？",
+      "scores": {
+        "relevance": 3,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "total_score": 10,
+      "matched_chapters": [],
+      "first_chars": "--- # [译]AI算力民主化 第五部分：CUDA C++替代方案（如OpenCL）现状如何？    [Read in Cubox](https://cubox.pro/web/card/7302618758504255301)   [Read Original](https://mp.weixin.qq.com/s?__biz=MzI4MTQyNzkxNw==&mid=2247484057&i",
+      "quality": "medium",
+      "indexed_at": "2026-04-08T19:22:14.336381"
+    },
+    {
+      "path": "Cubox/这本书助你成为Android性能优化专家，送10本-2024-05-15.md",
+      "title": "这本书助你成为Android性能优化专家，送10本",
+      "scores": {
+        "relevance": 3,
+        "depth": 2,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "total_score": 11,
+      "matched_chapters": [],
+      "first_chars": "--- # 这本书助你成为Android性能优化专家，送10本    [Read in Cubox](https://cubox.pro/web/card/7190385865099576049)   [Read Original](https://mp.weixin.qq.com/s?__biz=MzA5MzI3NjE2MA==&mid=2650283949&idx=1&sn=ba58c50a3",
+      "quality": "medium",
+      "indexed_at": "2026-04-08T19:22:14.340206"
+    },
+    {
+      "path": "Cubox/手把手教你uinput命令的使用方式-重学安卓input子系统-2025-05-07.md",
+      "title": "手把手教你uinput命令的使用方式-重学安卓input子系统",
+      "scores": {
+        "relevance": 3,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "total_score": 10,
+      "matched_chapters": [],
+      "first_chars": "--- # 手把手教你uinput命令的使用方式-重学安卓input子系统  android系统中自带了一个uinput命令，但是这个命令其实对于使用者并不友好，因为本身命令的使用没有相关的help提示，命令的使用方式基本上整个互联网上都没有相关的文章，那马哥只能为vip学员们开荒啦  [Read in Cubox](https://cubox.pro/web/card/7319612616656",
+      "quality": "medium",
+      "indexed_at": "2026-04-08T19:22:14.340898"
+    },
+    {
+      "path": "Cubox/Glue work considered harmful - sean goedecke-2025-01-04.md",
+      "title": "Glue work considered harmful | sean goedecke",
+      "scores": {
+        "relevance": 3,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "total_score": 10,
+      "matched_chapters": [],
+      "first_chars": "--- # Glue work considered harmful | sean goedecke  Why companies don't reward glue work and why you shouldn't do it all the time  [Read in Cubox](https://cubox.pro/web/card/7275164231689832353)   [Re",
+      "quality": "medium",
+      "indexed_at": "2026-04-08T19:22:14.341122"
+    },
+    {
+      "path": "Cubox/淘宝小程序体验优化：数据分析和优化实践-2022-03-31.md",
+      "title": "淘宝小程序体验优化：数据分析和优化实践",
+      "scores": {
+        "relevance": 3,
+        "depth": 3,
+        "timeliness": 4,
+        "verifiability": 1
+      },
+      "total_score": 11,
+      "matched_chapters": [],
+      "first_chars": "--- # 淘宝小程序体验优化：数据分析和优化实践  体验优化是个老生常谈的话题，如何让小程序跑得又稳又快，成了我们最大的挑战之一。  [Read in Cubox](https://cubox.pro/web/card/6909064932415767572)   [Read Original](https://mp.weixin.qq.com/s?__biz=Mzg4MDY0ODk0Ng==&",
+      "quality": "medium",
+      "indexed_at": "2026-04-08T19:22:14.341613"
+    },
+    {
+      "path": "Cubox/Android Weekly - Free weekly Android & Kotlin deve...-2024-01-08.md",
+      "title": "Android Weekly - Free weekly Android & Kotlin deve...",
+      "scores": {
+        "relevance": 3,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "total_score": 10,
+      "matched_chapters": [],
+      "first_chars": "--- # Android Weekly - Free weekly Android & Kotlin deve...  Android Weekly is a free newsletter that helps you to stay cutting-edge with your Android Development  [Read in Cubox](https://cubox.pro/we",
+      "quality": "medium",
+      "indexed_at": "2026-04-08T19:22:14.342136"
+    },
+    {
+      "path": "Cubox/2024年App从备案到上架（国内各大应用市场）全过程-2023-12-01.md",
+      "title": "2024年App从备案到上架（国内各大应用市场）全过程",
+      "scores": {
+        "relevance": 3,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "total_score": 10,
+      "matched_chapters": [],
+      "first_chars": "--- # 2024年App从备案到上架（国内各大应用市场）全过程    [Read in Cubox](https://cubox.pro/web/card/7130076546462646592)   [Read Original](https://juejin.cn/post/7304533060548247603)    ---  ## Android应用上架国内应用市场踩坑  ## 前言",
+      "quality": "medium",
+      "indexed_at": "2026-04-08T19:22:14.342830"
+    },
+    {
+      "path": "Cubox/微信业务开发方法与实践-2024-01-08.md",
+      "title": "微信业务开发方法与实践",
+      "scores": {
+        "relevance": 3,
+        "depth": 2,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "total_score": 11,
+      "matched_chapters": [],
+      "first_chars": "--- # 微信业务开发方法与实践  万字长文带你搞透业务开发  [Read in Cubox](https://cubox.pro/web/card/7143933132461313063)   [Read Original](https://mp.weixin.qq.com/s/we4LCGAwDC6bS7rQNztWMQ)    ---  ![图片](https://image.cubox.",
+      "quality": "medium",
+      "indexed_at": "2026-04-08T19:22:14.343389"
+    },
+    {
+      "path": "Cubox/手机能跑图生成和 LLM 大模型吗-2024-06-12.md",
+      "title": "手机能跑图生成和 LLM 大模型吗",
+      "scores": {
+        "relevance": 3,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "total_score": 10,
+      "matched_chapters": [],
+      "first_chars": "--- # 手机能跑图生成和 LLM 大模型吗    [Read in Cubox](https://cubox.pro/web/card/7200469066870427371)   [Read Original](https://blog.cnbang.net/tech/3890/)    ---  💡 能，但还比较勉强。  在客户端上跑大模型，一定是未来的趋势。  1. 上个时代 AI 的核",
+      "quality": "medium",
+      "indexed_at": "2026-04-08T19:22:14.345302"
+    },
+    {
+      "path": "Cubox/Flutter性能优化实践之Timeline -2022-01-14.md",
+      "title": "Flutter性能优化实践之Timeline",
+      "scores": {
+        "relevance": 3,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 1
+      },
+      "total_score": 10,
+      "matched_chapters": [],
+      "first_chars": "--- # Flutter性能优化实践之Timeline   https://juejin.cn/post/6990231632091299848  [Read in Cubox](https://cubox.pro/web/card/6881531808513524810)   [Read Original](https://juejin.cn/post/6990231632091299848)",
+      "quality": "medium",
+      "indexed_at": "2026-04-08T19:22:14.345757"
+    },
+    {
+      "path": "Cubox/perf- Linux profiling with performance counters-2025-01-03.md",
+      "title": "perf: Linux profiling with performance counters",
+      "scores": {
+        "relevance": 3,
+        "depth": 3,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "total_score": 12,
+      "matched_chapters": [],
+      "first_chars": "--- # perf: Linux profiling with performance counters    [Read in Cubox](https://cubox.pro/web/card/7274700526137116345)   [Read Original](https://perfwiki.github.io/main/)    ---  [](https://github.c",
+      "quality": "medium",
+      "indexed_at": "2026-04-08T19:22:14.347133"
+    },
+    {
+      "path": "Cubox/居家健身入门指南 - 椒盐豆豉-2025-01-03.md",
+      "title": "居家健身入门指南 | 椒盐豆豉",
+      "scores": {
+        "relevance": 3,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "total_score": 10,
+      "matched_chapters": [],
+      "first_chars": "--- # 居家健身入门指南 | 椒盐豆豉    [Read in Cubox](https://cubox.pro/web/card/7274759972771069952)   [Read Original](https://blog.douchi.space/workout-from-home/)    ---  ## 居家健身入门指南  ##### September 22, 2024  ",
+      "quality": "medium",
+      "indexed_at": "2026-04-08T19:22:14.347908"
+    },
+    {
+      "path": "Cubox/Flutter 深入探索混合开发的技术演进 - 开发者说·DTalk-2022-08-26.md",
+      "title": "Flutter 深入探索混合开发的技术演进 | 开发者说·DTalk",
+      "scores": {
+        "relevance": 3,
+        "depth": 4,
+        "timeliness": 4,
+        "verifiability": 1
+      },
+      "total_score": 12,
+      "matched_chapters": [],
+      "first_chars": "--- # Flutter 深入探索混合开发的技术演进 | 开发者说·DTalk  分享开发经验，有机会被推荐参选加入 \"谷歌开发技术专家\" 团队。  [Read in Cubox](https://cubox.pro/web/card/6962755913341995776)   [Read Original](https://mp.weixin.qq.com/s?__biz=MzAwODY4O",
+      "quality": "medium",
+      "indexed_at": "2026-04-08T19:22:14.349973"
     }
   ],
   "sources": [

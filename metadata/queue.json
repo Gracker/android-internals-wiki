@@ -1493,5 +1493,21 @@
     "original_review_log": "logs/review/2026-04-08-1920-review.md",
     "completed_at": "2026-04-08T11:43:33",
     "completed_by": "task2b-rework"
+  },
+  {
+    "section": "13.9",
+    "section_title": "Android Tracing 基础设施：atrace、ftrace 与 Perfetto 数据采集原理",
+    "priority": 80,
+    "reason": "知识缺口挖掘：全书使用 Perfetto 分析性能但从未解释追踪数据的底层采集机制。atrace/ftrace/tracepoint 是系统开发者和 OEM 的日常基础设施，缺少此节意味着读者只能\"会用\"而不能\"理解和扩展\"",
+    "material_paths": [
+      "https://source.android.com/docs/core/debug/atrace",
+      "https://source.android.com/docs/core/debug/trace",
+      "intake/research-feeds/2026-04-07-19-android17-ebpf-sched-ext-uprobestats-observability.md"
+    ],
+    "added_by": "task2a-knowledge-gap",
+    "added_at": "2026-04-08T20:15:40.334326",
+    "gap_score": "16/20",
+    "gap_source": "AOSP结构+章节深挖",
+    "status": "pending"
   }
 ]
