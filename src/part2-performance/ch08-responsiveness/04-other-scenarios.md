@@ -2,11 +2,11 @@
 title: "其他响应速度场景"
 chapter: "8.4"
 section: "8.4"
-status: ready-for-review
+status: ready-to-publish
 drafted_date: "2026-04-02"
 drafted_by: "openclaw-task2a"
-reviewed_date: "2026-04-06"
-reviewed_by: "openclaw-task6"
+reviewed_date: "2026-04-08"
+reviewed_by: "openclaw-task6 (post-polish)"
 applicable_versions: "Android 8.0 (API 26) - Android 16 (API 36)"
 last_verified: "2026-04-02"
 last_verified_against: "AOSP android-16.0.0_r1, developer.android.com"

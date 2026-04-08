@@ -1974,14 +1974,15 @@
     }
   ],
   "ready_for_review": 6,
-  "last_updated": "2026-04-08T11:00:00+08:00",
+  "last_updated": "2026-04-08T18:21:00",
   "stats": {
     "total": 118,
     "completed": 96,
     "pending": 32,
     "last_updated": "2026-04-08T17:05:00+08:00",
     "reviewed": 1,
-    "ready-for-review": 1
+    "ready-for-review": 1,
+    "ready_to_publish": 1
   },
   "research_stats": {
     "runs_today": [
