@@ -6,7 +6,7 @@ drafted_date: "2026-04-02"
 applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
 last_verified: "2026-04-02"
 last_verified_against: "AOSP android-16.0.0_r1"
-confidence: medium
+confidence: medium-high
 sources:
   - type: blog
     path: "Personal-Knowlodge/source/2026-03-08_wechat_kswapd介绍.md"
@@ -18,10 +18,13 @@ sources:
     path: "intake/research-feeds/2026-04-02-11-ch04-zram-multialgo-mglru-2025.md"
   - type: official
     path: "source.android.com - mm_events, PSI, lmkd"
-tags: ['low-memory', 'kswapd', 'direct-reclaim', 'lmkd', 'GC', 'memory-pressure', 'PSI', 'ZRAM', 'Perfetto']
-related_chapters: ["4.4", "4.1", "4.2", "4.5", "10.1", "10.6"]
+tags: ['low-memory', 'kswapd', 'direct-reclaim', 'lmkd', 'GC', 'memory-pressure', 'PSI', 'ZRAM', 'Perfetto', 'MGLRU', 'cgroup', 'mm-events', 'vmscan', 'oom-score-adj']
+related_chapters: ["4.1", "4.2", "4.4", "4.5", "4.8", "10.1", "10.6"]
 reviewed_date: "2026-04-09"
 reviewed_by: openclaw-task6
+polish_count: 1
+polish_date: "2026-04-09"
+polish_by: "task2b-polish"
 ---
 
 # 低内存对系统性能的影响
@@ -53,7 +56,7 @@ reviewed_by: openclaw-task6
 
 ## 为什么要了解低内存对性能的影响
 
-如果你在 Perfetto 里看到主线程长时间处于 D 状态（Uninterruptible Sleep），或者发现一个前台 App 突然被杀掉、用户重新打开后走了完整的冷启动流程，很可能不是因为 App 自身的问题，而是系统整体进入了低内存状态。低内存不会只影响某一个进程，它会像一场连锁反应——从内核的内存回收机制被激活开始，到 I/O 被打满、GC 频繁触发、进程被杀、用户感知到系统卡顿——整个过程环环相扣。
+当我们在 Perfetto 里看到主线程长时间处于 D 状态（Uninterruptible Sleep），或者一个前台 App 突然被杀掉、用户重新打开后走了完整的冷启动流程，根因往往不是 App 自身的问题，而是系统整体进入了低内存状态。低内存不会只影响某一个进程，它会像一场连锁反应——从内核的内存回收机制被激活开始，到 I/O 被打满、GC 频繁触发、进程被杀、用户感知到系统卡顿——整个过程环环相扣。
 
 理解这条因果链，是我们在 Perfetto 中准确判断"这个卡顿到底是 App 问题还是系统问题"的关键。本节会从内核的内存回收机制出发，逐步展开低内存是如何一步步拖慢整个系统的，以及我们如何通过工具识别和定位这些问题。
 
@@ -63,17 +66,17 @@ reviewed_by: openclaw-task6
 
 Linux 内核用三条水位线来管理每个内存 zone 的空闲内存状态：MIN、LOW 和 HIGH。它们的关系是 MIN < LOW < HIGH。内核在分配内存时会先检查 zone 的空闲页面是否满足水位线要求，这个机制决定了系统在什么时候开始回收内存、用什么方式回收。
 
-当空闲页面高于 LOW 水位线时，一切正常，直接从 Buddy System 分配。当空闲页面降到 LOW 水位线以下但还在 MIN 水位线之上时，内核会唤醒 kswapd 内核线程来异步回收内存。kswapd 是一个专用的后台回收线程——它的存在是为了在系统还没真正"断粮"的时候就开始准备，把不活跃的页面回收掉，让空闲内存回升到 HIGH 水位线。
+当空闲页面高于 LOW 水位线时，一切正常，直接从 Buddy System 分配。当空闲页面降到 LOW 水位线以下但还在 MIN 水位线之上时，内核会唤醒 kswapd 内核线程来异步回收内存。kswapd 是一个专用的后台回收线程——它的职责是在系统还有一定空闲内存时就预先回收，避免等到内存耗尽才开始清理，把不活跃的页面回收掉，让空闲内存回升到 HIGH 水位线。
 
 kswapd 的核心工作函数是 `balance_pgdat()`。它会根据 `scan_control` 结构中的 priority 参数（初始值为 12，逐次递减）来决定每次扫描多少页面。priority 越小，扫描范围越大。如果经过一轮回收后某个 zone 已经 balance（空闲页面达到 HIGH 水位线），就可以停止回收；否则继续降低 priority 扫描更多页面，直到 priority 降到 0 时扫描所有页面。[已验证: 官方文档, source.android.com; 来源: Personal-Knowlodge/source/2026-03-08_wechat_kswapd介绍.md]
 
-在 Perfetto 中，kswapd 作为一个内核线程会出现在进程列表中。正常情况下它是 sleeping 状态，只有在内存压力下才会活跃。如果你在 Trace 中发现 `kswapd0` 长时间处于 Running 状态，说明系统在持续回收内存，这是内存紧张的早期信号。
+在 Perfetto 中，kswapd 作为一个内核线程会出现在进程列表中。正常情况下它是 sleeping 状态，只有在内存压力下才会活跃。在 Trace 中如果发现 `kswapd0` 长时间处于 Running 状态，说明系统在持续回收内存，这是内存紧张的早期信号。
 
 ### Direct Reclaim：进程亲自下场回收
 
 当内存进一步紧张，空闲页面降到 MIN 水位线以下时，异步的 kswapd 已经来不及了。此时，发起内存分配的那个进程会被迫亲自执行内存回收——这就是 Direct Reclaim。
 
-Direct Reclaim 和 kswapd 走的是同一条回收路径（最终都调用 `shrink_node()`），但有一个关键区别：Direct Reclaim 是同步的。发起分配的进程会被阻塞，直到回收完成。这意味着如果你的 App 在主线程上分配内存时触发了 Direct Reclaim，主线程就被卡住了——在 Perfetto 中你会看到主线程进入 D 状态（Uninterruptible Sleep），调用栈中能看到 `__alloc_pages_slowpath` → `__perform_reclaim` 这样的路径。
+Direct Reclaim 和 kswapd 走的是同一条回收路径（最终都调用 `shrink_node()`），但有一个关键区别：Direct Reclaim 是同步的。发起分配的进程会被阻塞，直到回收完成。这意味着当 App 在主线程上分配内存时触发 Direct Reclaim，主线程就被阻塞了——在 Perfetto 中表现为进入 D 状态（Uninterruptible Sleep），调用栈中可见 `__alloc_pages_slowpath` → `__perform_reclaim` 路径。
 
 Direct Reclaim 的执行过程是：扫描 LRU 链表 → 根据 swappiness 参数决定回收匿名页还是文件页 → 对脏文件页执行回写 → 释放页面。其中脏页回写会触发磁盘 I/O，而这个 I/O 是同步等待的。
 
@@ -81,17 +84,17 @@ Direct Reclaim 的执行过程是：扫描 LRU 链表 → 根据 swappiness 参�
 
 低内存引发全局卡顿的完整链条是这样的：
 
-第一环：内存不足 → kswapd 持续活跃。kswapd 在后台回收内存会消耗 CPU，如果回收的是匿名页（需要压缩写入 ZRAM），还会额外消耗 CPU 做压缩计算。
+内存不足触发 kswapd 持续活跃。kswapd 在后台回收内存会消耗 CPU，如果回收的是匿名页（需要压缩写入 ZRAM），还会额外消耗 CPU 做压缩计算。
 
-第二环：kswapd 来不及回收 → Direct Reclaim 被触发。进程在分配内存时被同步阻塞，等待回收完成。
+当 kswapd 的回收速度跟不上分配速度时，Direct Reclaim 被触发。此时发起内存分配的进程被同步阻塞，必须等待回收完成才能继续执行。
 
-第三环：Direct Reclaim 回收脏文件页 → 磁盘 I/O 飙升。如果系统中有大量脏页需要回写，I/O 带宽会被打满。而且不是个别进程在做 Direct Reclaim——当内存紧张到一定程度，几乎同时在分配内存的多个进程都会进入 Direct Reclaim，大家一起争抢 I/O 带宽。
+Direct Reclaim 在回收脏文件页时会触发磁盘回写，I/O 带宽可能被打满。更要命的是，当内存紧张到一定程度，几乎所有正在分配内存的进程都会同时进入 Direct Reclaim，争抢同一块 I/O 带宽。[来源: Personal-Knowlodge/source/2026-03-06_wechat_Linux内存变低会发生什么问题.md]
 
-第四环：I/O 阻塞 → 多个进程同时进入 D 状态。这些进程等待 I/O 完成时持有各种内核锁（mutex、rwsem 等），其他等待这些锁的进程也会被阻塞。这就是所谓的"堵车连锁反应"——即使某些进程本身不做内存分配，也会因为等待被 I/O 阻塞的进程持有的锁而卡住。[来源: Personal-Knowlodge/source/2026-03-06_wechat_Linux内存变低会发生什么问题.md]
+I/O 阻塞进一步蔓延。等待 I/O 完成的进程持有各种内核锁（mutex、rwsem 等），其他等待这些锁的进程也会被连带阻塞——即使某些进程本身不做内存分配，也会因为等待被 I/O 阻塞的进程持有的锁而卡住。
 
-第五环：系统卡顿被用户感知。UI 线程被阻塞 → 帧渲染超时 → 掉帧。如果阻塞超过 120 秒，甚至可能触发 hungtask 检测。在极端情况下，整个系统可能变得无响应。
+最终传导到用户可感知的层面：UI 线程被阻塞 → 帧渲染超时 → 掉帧。如果阻塞超过 120 秒，甚至可能触发 hungtask 检测，极端情况下整个系统无响应。
 
-在实际分析中，我们经常在 Perfetto 中看到的模式是：多个进程同时出现长时间的 D 状态 → CPU 使用率不高（因为都在等 I/O）→ I/O 等待时间很长。这个组合是低内存导致全局卡顿的典型特征。
+在实际分析中，这个连锁反应在 Perfetto 中的典型模式是：多个进程同时出现长时间 D 状态，CPU 使用率反而不高（因为都在等 I/O），I/O 等待时间很长。这个组合是低内存导致全局卡顿的判断依据。
 
 ## lmkd 频繁杀进程：冷启动增加与用户感知
 
@@ -142,7 +145,7 @@ ART 虚拟机的垃圾回收策略会受到系统内存压力的直接影响。�
 3. 应用变慢导致对象在堆中存活时间更长 → GC 需要扫描更多对象
 4. CPU 被 GC 占用 → 应用的主线程得到的时间片更少
 
-在 Perfetto 中，这个恶性循环表现为：GC Event（橙色的块）密度明显增加，帧渲染时间变长，帧之间的间隔中 GC 占比显著升高。如果你在 120Hz 设备上（每帧只有 8.33ms）看到频繁的 GC 块占据了 2-3ms，那低内存导致 GC 频繁触发很可能是根因之一。
+在 Perfetto 中，这个恶性循环表现为：GC Event（橙色的块）密度明显增加，帧渲染时间变长，帧之间的间隔中 GC 占比显著升高。在 120Hz 设备上（每帧只有 8.33ms），频繁的 GC 块占据 2-3ms 就足以造成卡顿，低内存导致的 GC 频繁触发很可能是根因。
 
 与 [4.5 App 内存优化](../ch04-memory/05-app-memory-optimization.md) 和 [10.6 内存抖动与频繁 GC](06-memory-churn.md) 的交叉要点：低内存放大了 App 自身的内存管理问题。一个在 8GB 设备上可以容忍的内存抖动模式，在 4GB 设备上可能导致频繁 GC 和严重卡顿。
 
@@ -240,7 +243,7 @@ Android Go Edition（Android 16 Go 版本扩展到了 4GB RAM 设备）是一系
 
 ## 常见问题与误区
 
-**"低内存只是低端机的问题"** — 不对。即使是 8GB 或 12GB 的设备，如果用户打开了大量 App（尤其是 Chrome 这种吃内存的应用），或者某个 App 存在内存泄漏，系统同样会进入低内存状态。在 Perfetto 中分析性能问题时，不管设备 RAM 多大，都应该检查是否有内存压力的信号。
+**"低内存只是低端机的问题"** — 不对。即使是 8GB 或 12GB 的设备，如果用户打开了大量 App（尤其是 Chrome 这种吃内存的应用），或者某个 App 存在内存泄漏，系统同样会进入低内存状态。无论设备 RAM 多大，在 Perfetto 中分析性能问题时都应检查是否存在内存压力信号。
 
 **"kswapd 活跃就说明有问题"** — 不准确。kswapd 周期性地被唤醒和休眠是正常的内存管理行为。只有当 kswapd 持续活跃（长时间 Running 状态无法进入 Sleep），或者伴随大量 Direct Reclaim 事件时，才说明内存压力真正严重。
 
@@ -259,6 +262,7 @@ Android Go Edition（Android 16 Go 版本扩展到了 4GB RAM 设备）是一系
 - **§4.4 Low Memory Killer**：lmkd 的完整工作流程和配置
 - **§4.5 App 内存优化**：App 层面如何减少内存占用，降低被 lmkd 杀的概率
 - **§10.1 App 内存分析**：使用工具分析 App 内存使用
+- **§4.8 ART 分代垃圾回收**：ART GC 策略在不同内存压力下的行为变化
 - **§10.6 内存抖动与频繁 GC**：GC 频繁触发与低内存的关系
 
 ## 参考资料
@@ -270,3 +274,5 @@ Android Go Edition（Android 16 Go 版本扩展到了 4GB RAM 设备）是一系
 - [kswapd 详解 — OPPO 内核工匠](https://mp.weixin.qq.com/s?__biz=MzAxMDM0NjExNA==&mid=2247487168) — kswapd 工作流程深度解析
 - [Linux 内存变低会发生什么 — 腾讯技术工程](https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649785631) — 低内存的连锁反应分析
 - [ZRAM Multi-Comp — kernel.org](https://kernel.org/doc/html/latest/admin-guide/blockdev/zram.html) — ZRAM 多算法重压缩
+- [MGLRU — kernel.org](https://kernel.org/doc/html/latest/admin-guide/mm/multigen_lru.html) — Multi-Generational LRU 页面回收
+- [Android cgroups — source.android.com](https://source.android.com/docs/core/perf/cgroups) — Android cgroup 抽象层与 Task Profiles

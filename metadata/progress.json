@@ -5179,6 +5179,14 @@
       "changes_count": 11,
       "status_before": "finalized",
       "status_after": "ready-for-review"
+    },
+    {
+      "section": "10.4",
+      "title": "低内存对系统性能的影响",
+      "polish_round": 1,
+      "polish_date": "2026-04-09",
+      "polish_by": "task2b-polish",
+      "changes_count": 14
     }
   ],
   "5.7": {
