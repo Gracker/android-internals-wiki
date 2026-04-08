@@ -65,7 +65,9 @@
     ],
     "added_by": "task2a-knowledge-gap",
     "added_at": "2026-04-05T17:05:00+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-09T07:03:00+08:00",
+    "completed_by": "task2a-stale-cleanup"
   },
   {
     "section": "1.12",
@@ -165,7 +167,9 @@
     ],
     "added_by": "task2a-knowledge-gap",
     "added_at": "2026-04-05T19:10:00+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-09T07:03:00+08:00",
+    "completed_by": "task2a-stale-cleanup"
   },
   {
     "section": "2.15",
@@ -1057,7 +1061,9 @@
     ],
     "added_by": "task2a-knowledge-gap",
     "added_at": "2026-04-06T17:05:00+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-09T07:03:00+08:00",
+    "completed_by": "task2a-stale-cleanup"
   },
   {
     "section": "10.7",
@@ -1124,7 +1130,9 @@
     ],
     "added_by": "task2a-knowledge-gap",
     "added_at": "2026-04-07T11:09:00+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-09T07:03:00+08:00",
+    "completed_by": "task2a-stale-cleanup"
   },
   {
     "section": "16.4",
@@ -1141,11 +1149,13 @@
     "section": "2.19",
     "title": "刷新率切换与帧率适配性能",
     "priority": 80,
-    "status": "pending",
+    "status": "completed",
     "source": "task2a-gap-mining",
     "created_date": "2026-04-07",
     "gap_score": 17,
-    "notes": "高爷专家洞察(帧率切换卡顿)+ARR研究素材"
+    "notes": "高爷专家洞察(帧率切换卡顿)+ARR研究素材",
+    "completed_at": "2026-04-09T07:03:00+08:00",
+    "completed_by": "task2a-stale-cleanup"
   },
   {
     "section": "7.9",
@@ -1201,7 +1211,9 @@
     ],
     "added_by": "task2a-knowledge-gap",
     "added_at": "2026-04-07T19:06:00+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-09T07:03:00+08:00",
+    "completed_by": "task2a-stale-cleanup"
   },
   {
     "section": "12.3",
@@ -1302,30 +1314,36 @@
     "section": "16.5",
     "title": "Android 17 (API 37) 性能行为变更与适配指南",
     "priority": 80,
-    "status": "pending",
+    "status": "completed",
     "file": "src/part4-system/ch16-aosp/05-android17-api37-performance-changes.md",
     "notes": "gap-mining 2026-04-08, score 20/20",
     "material_paths": [
       "intake/research-feeds/2026-04-08-11-android17-network-data-plan-streaming-access-local-network-tls.md",
       "intake/research-feeds/2026-04-08-15-android17-background-audio-hardening-audio-focus.md",
       "intake/research-feeds/2026-04-08-15-android17-audiotrack-api-assistant-volume-stream.md"
-    ]
+    ],
+    "completed_at": "2026-04-09T07:03:00+08:00",
+    "completed_by": "task2a-stale-cleanup"
   },
   {
     "section": "2.20",
     "title": "多窗口与桌面模式渲染性能",
     "priority": 80,
-    "status": "pending",
+    "status": "completed",
     "file": "src/part1-fundamentals/ch02-rendering/20-multiwindow-desktop-rendering.md",
-    "notes": "gap-mining 2026-04-08, score 16/20"
+    "notes": "gap-mining 2026-04-08, score 16/20",
+    "completed_at": "2026-04-09T07:03:00+08:00",
+    "completed_by": "task2a-stale-cleanup"
   },
   {
     "section": "15.8",
     "title": "Android 性能问题实证：真实世界的分类与代码模式",
     "priority": 80,
-    "status": "pending",
+    "status": "completed",
     "file": "src/part3-tools/ch15-methodology/08-empirical-performance-issues.md",
-    "notes": "gap-mining 2026-04-08, score 15/20"
+    "notes": "gap-mining 2026-04-08, score 15/20",
+    "completed_at": "2026-04-09T07:03:00+08:00",
+    "completed_by": "task2a-stale-cleanup"
   },
   {
     "section": "12.4",
@@ -1456,7 +1474,9 @@
     ],
     "added_by": "task2a-knowledge-gap",
     "added_at": "2026-04-08T17:05:00+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-09T07:03:00+08:00",
+    "completed_by": "task2a-stale-cleanup"
   },
   {
     "section": "8.9",
@@ -1546,11 +1566,13 @@
     "section": "2.21",
     "title": "文字渲染性能",
     "priority": 80,
-    "status": "pending",
+    "status": "completed",
     "material_paths": [],
     "created_date": "2026-04-09",
     "created_by": "task2a-knowledge-gap",
-    "gap_score": 14
+    "gap_score": 14,
+    "completed_at": "2026-04-09T07:03:00+08:00",
+    "completed_by": "task2a-stale-cleanup"
   },
   {
     "section": "1.13",
