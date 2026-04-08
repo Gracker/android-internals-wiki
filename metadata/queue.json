@@ -1791,5 +1791,31 @@
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-09T05:37:18",
     "status": "pending"
+  },
+  {
+    "section": "1.5",
+    "section_title": "线程模型",
+    "priority": 95,
+    "reason": "[Deep Tech Review] P0源码错误：HardwareRenderer API在API29被移除，android-16应引用ThreadedRenderer.syncAndDrawFrame；P1源码错误：RenderThread创建时机描述不准确",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "syncAndDrawFrame 源码引用段落",
+        "detail": "引用路径 frameworks/base/core/java/android/graphics/HardwareRenderer.java（标注 @ AOSP android-16.0.0_r1），但 HardwareRenderer 类在 Android 10（API 29）已被移除。android-16 中 syncAndDrawFrame 实现在 frameworks/base/core/java/android/view/ThreadedRenderer.java",
+        "suggestion": "将引用路径修正为 frameworks/base/core/java/android/view/ThreadedRenderer.java，并更新源码片段引用"
+      },
+      {
+        "type": "源码错误",
+        "location": "RenderThread 创建时机段落",
+        "detail": "文本称'在 App 第一次真正需要绘制内容时（Activity 第一次执行 draw 操作时）创建 RenderThread'，在 android-16 中，ViewRootImpl 构造函数即初始化 ThreadedRenderer（硬件加速时），早于任何 draw 调用。此描述反映的是早期版本（8.x 以前）行为",
+        "suggestion": "修正 RenderThread 初始化时机描述为：ViewRootImpl 构造时（hardwareAccelerated=true 条件下）即初始化，而非延迟到首次 draw"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-09T06:44:29",
+    "status": "pending"
   }
 ]
