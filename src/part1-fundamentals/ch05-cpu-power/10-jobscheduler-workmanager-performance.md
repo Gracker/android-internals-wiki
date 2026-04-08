@@ -3,6 +3,9 @@ title: "JobScheduler/WorkManager 调度与后台任务性能"
 chapter: "5.10"
 status: ready-for-review
 drafted_date: "2026-04-06"
+polish_count: 1
+polish_date: "2026-04-09"
+polish_by: "task2b-polish"
 applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37)"
 last_verified: "2026-04-06"
 last_verified_against: "AOSP android-17-beta3"
@@ -152,7 +155,7 @@ Android 12 引入了 Expedited Job（紧急任务），通过 `JobInfo.Builder.s
 
 Expedited Job 的典型场景是用户触发的重要操作（比如用户在 IM 中发送一条带图片的消息，需要先压缩再上传）。它不是 Foreground Service 的替代品，但在不需要持续前台存在的场景下，比 Foreground Service 更轻量。
 
-WorkManager 的 `enqueueUniqueWork()` 使用 `ExistingWorkPolicy.APPEND` 时，底层会尝试使用 Expedited Job。如果 Expedited 配额用尽，系统会降级为普通 Job。
+WorkManager 的 `setExpedited(ExistingWorkPolicy.APPEND)` 会尝试将任务标记为 Expedited Job。如果 Expedited 配额用尽，系统自动降级为普通 Job，不会丢失任务。
 
 ## WorkManager 的架构与性能特征
 
@@ -165,7 +168,7 @@ JobScheduler 是系统 API，从 Android 5.0 开始可用。但实际开发中�
 3. **链式任务**：JobScheduler 不原生支持任务依赖关系
 4. **约束组合**：低版本 Android 上部分约束不支持
 
-WorkManager 作为 Jetpack 库，在 JobScheduler 之上增加了一层抽象，解决了这些问题。
+WorkManager 作为 Jetpack 库，在 JobScheduler 之上增加了一层抽象来解决这些问题。其中任务持久化方面，WorkManager 使用 Room 数据库（而非 JobStore 的 XML）存储任务状态，App 被强制停止后重新安装或清除数据前，任务记录仍然存在；重启后 WorkManager 会自动重新入队未完成的任务。
 
 ### WorkManager 的调度器选择策略
 
@@ -175,7 +178,7 @@ WorkManager 内部使用 `Schedulers` 类来选择底层的调度实现。选择
 2. **API 14-22**：回退到 `SystemAlarmScheduler`，使用 `AlarmManager` + `BroadcastReceiver` 实现
 3. **进程内调度**：当 App 进程存活时，WorkManager 还可以使用 `GreedyScheduler` 立即执行满足约束的任务，无需等待系统调度
 
-这个选择过程对开发者透明。但理解底层机制对性能分析很重要——当我们在 Perfetto 中看到 AlarmManager 相关的唤醒而不是 JobScheduler 时，可能是因为 App target 的是低 API 版本，或者设备厂商定制了调度行为。
+这个过程对开发者透明，但理解底层机制对性能分析很重要——当我们在 Perfetto 中看到 AlarmManager 相关的唤醒而不是 JobScheduler 时，可能是因为 App target 的是低 API 版本，或者设备厂商定制了调度行为。
 
 ```java
 // androidx/work/impl/WorkManagerImpl.java
@@ -225,6 +228,8 @@ WorkManager.getInstance(context)
 
 [自动发现] 建议：轻量级的连续操作（如多步数据处理）优先考虑在单个 Worker 中顺序完成，而不是拆成链式 WorkRequest。
 
+以上内容覆盖了 JobScheduler 和 WorkManager 的核心调度机制。在实际开发中，还有一个痛点贯穿始终：任务提交后，怎么知道它为什么没执行？Android 17 在这方面补上了重要的一块拼图。
+
 ## Android 17 新增调试能力
 
 ### JobDebugInfo API
@@ -259,6 +264,8 @@ Android 17 的 ProfilingManager 增加了三个新的系统触发器：
 
 [已验证: 官方文档, developer.android.com/about/versions/17/features]
 [待验证: TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE 的触发阈值]
+
+理解了调度机制和调试 API 后，下一个问题是：在 Perfetto 和其他工具中，我们怎么观察这些后台任务的实际行为？本节从工具实践角度展开。
 
 ## 后台任务的性能分析实践
 
@@ -350,6 +357,8 @@ Android Studio 提供了 **WorkManager Inspector**（View → Tool Windows → A
 **重复调度**：每次 App 启动都调用 `WorkManager.enqueue()` 而不检查是否已有相同 tag 的任务在队列中。使用 `enqueueUniquePeriodicWork()` 和 `enqueueUniqueWork()` 来保证同一个任务的唯一性。
 
 [来源: 实战经验总结]
+
+技术层面的优化之外，还有一个现实维度需要考虑：Google Play Store 从 2026 年开始对后台行为实施惩罚性政策。如果 App 的后台 WakeLock 使用超标，不只是系统会限制执行——应用市场的分发也会受到影响。
 
 ## Play Store 后台行为政策
 
@@ -475,7 +484,7 @@ WorkManager 保证的是"任务最终会被执行"，不是"任务立即执行"�
 
 **误区 3："JobScheduler 的 WakeLock 需要自己管理"**
 
-JobScheduler 在 `onStartJob()` 到 `jobFinished()` 之间自动持有 WakeLock。如果在 `onStartJob()` 中启动了异步操作并在主线程返回 `true`，需要确保异步操作完成后调用 `jobFinished()`，否则 WakeLock 会一直持有直到超时。
+JobScheduler 在 `onStartJob()` 到 `jobFinished()` 之间自动持有 WakeLock，开发者不需要手动 acquire/release。但有一个细节容易出错：`onStartJob()` 在主线程执行，如果任务需要异步处理（比如网络请求），`onStartJob()` 应返回 `true` 表示"任务还在进行中"，然后在异步回调里调用 `jobFinished()`。如果忘记调用 `jobFinished()`，WakeLock 会一直持有直到系统超时强制释放——这正是导致后台功耗问题的常见原因之一。
 
 **误区 4："设置所有约束可以省电"**
 
