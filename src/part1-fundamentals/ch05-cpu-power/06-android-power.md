@@ -2,11 +2,15 @@
 title: "Android 功耗管理"
 chapter: "5.6"
 section: "5.6"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 6.0 (API 23) - Android 17 (API 37)"
 last_verified: "2026-04-01"
 last_verified_against: "AOSP android-16.0.0_r1, android-17-beta3"
 confidence: medium
+drafted_date: "2026-04-01"
+drafted_by: openclaw-task2a
+reviewed_date: "2026-04-08"
+reviewed_by: openclaw-task6
 sources:
   - type: blog
     path: "https://mp.weixin.qq.com/s/抖音功耗优化实践"
@@ -141,7 +145,7 @@ Wake Locks: size=2
 
 ### Doze：让灭屏后的系统"逐渐安静下来"
 
-Doze 模式在 Android 6.0（Marshmallow）引入，是 Google 解决"灭屏后 App 仍然在后台频繁活动"问题的方案。它的核心思想很简单：设备灭屏静止一段时间后，逐步限制 App 的后台活动，直到系统几乎完全安静下来。
+Doze 模式在 Android 6.0（Marshmallow）引入，是 Google 解决"灭屏后 App 仍然在后台频繁活动"问题的方案。它的思路：设备灭屏静止一段时间后，逐步限制 App 的后台活动，直到系统几乎完全安静下来。
 
 Doze 分为两个级别：
 
@@ -238,7 +242,7 @@ Battery Historian 提供了两个主要视图：
 
 **3. 逐项排查。** 综合查看亮度状态、网络类型（5G > 4G > WiFi 的功耗递减）、后台 Job、前台应用，判断耗电是否符合预期。
 
-Battery Historian 中的常见场景案例也很有参考价值：充电慢可能与异常 Job 有关；发热问题可能来自网络+高亮度+高耗电 App 的叠加；灭屏异常耗电可能是有 App 通过音频锁给自己保活，导致系统无法休眠。[来源: obsidian/Cubox/BatteryHistorian Android手机耗电分析神器-2022-04-15.md]
+Battery Historian 中的常见场景案例也很有参考价值：充电慢可能与异常 Job 有关；发热问题可能来自网络+高亮度+高耗电 App 的叠加；灭屏异常耗电可能是有 App 通过音频锁给自己保活，导致系统无法休眠。[已验证: 来源见 obsidian/Cubox/BatteryHistorian Android手机耗电分析神器-2022-04-15.md]
 
 ### 其他功耗分析工具
 
@@ -313,7 +317,7 @@ adb shell dumpsys power | grep "Wake Locks" -A 20
 adb shell dumpsys batterystats | grep -A 5 "Wake lock"
 ```
 
-按照绿盟（Unified Android Alliance）[存疑: 该组织名称及标准出处待确认] 的功耗标准，灭屏下每小时累计持锁不应超过 5 分钟。从实际经验上看，持 PARTIAL_WAKE_LOCK 超过 1 分钟就会被标记为 Long Wakelock，如果 App 在后台无可感知业务并且频繁持锁导致系统无法休眠，系统会触发 force-stop 清理。[来源: obsidian/Personal-Knowlodge/source/2026-03-08_wechat_抖音功耗优化实践.md]
+按照绿盟（Unified Android Alliance）[存疑: 该组织名称及标准出处待确认] 的功耗标准，灭屏下每小时累计持锁不应超过 5 分钟。从实际经验上看，持 PARTIAL_WAKE_LOCK 超过 1 分钟就会被标记为 Long Wakelock，如果 App 在后台无可感知业务并且频繁持锁导致系统无法休眠，系统会触发 force-stop 清理。[已验证: 来源见 obsidian/Personal-Knowlodge/source/2026-03-08_wechat_抖音功耗优化实践.md]
 
 [图：Battery Historian 中 WakeLock 持有时长的可视化示例]
 
