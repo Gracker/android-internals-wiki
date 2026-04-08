@@ -787,3 +787,69 @@ tags:
 - **问题**："Android 13+ 引入了 ART Mainline 模块" — ART 作为 APEX Mainline 模块从 Android 12 (API 31) 起已存在。此处写 Android 13+ 可能不准确。如果是指特定的 Profile 命中率增强，需补充说明。
 - **建议**：确认版本号后修正。若准确为 Android 12，改为 "Android 12+"；若 Android 13 确有相关增强，补充具体说明。
 - **review 日志**：logs/review/2026-04-08-1920-review.md
+
+
+## [Task2A Gap Mining] 2026-04-08 20:04 知识缺口挖掘记录
+
+本轮挖掘已检查以下方向：
+1. **AOSP 结构比对**：frameworks/base/ 核心服务 → AMS(1.8)/PMS(1.9)/CP(1.10)/WMS(2.12)/SF(2.6) 均已覆盖
+2. **官方文档比对**：developer.android.com/performance 主要 topic 均已有对应章节
+3. **source-index.json 未映射素材**：35 篇 Android 相关高质量未映射素材中，大部分实际已有对应章节（索引未更新），仅「支付宝 APM(17)」「GPU counter 优化(14)」等少数有延伸价值但不足以独立成节
+4. **研究素材**：最近 5 个 research feed 均已映射到现有章节（8.9/7.12/1.16）
+5. **每日信息**：2026-04-07/06 daily info 中 Android 相关话题均已有对应章节
+6. **已有章节深挖**：现有章节扩展点素材不足，不建议拆分
+
+创建新章节：
+- ✅ 13.9 Android Tracing 基础设施（16/20）
+
+已排除的候选（< 14 分）：
+- Android GPU Hardware Counter 分析（12/20）→ 素材不足
+- Android 网络栈系统服务（11/20）→ 与 12.2-12.4 重叠
+- Android Display 管线内部（12/20）→ 与 2.18/2.19 重叠
+- Android 信号处理与 Crash 性能（12/20）→ 过于狭窄
+- Android Font/Text 渲染性能（11/20）→ 素材不足
+
+## [Task2A 知识缺口挖掘] 2026-04-08 22:03 — 无合格候选
+
+本轮已检查方向（避免重复挖掘）：
+
+### 素材索引扫描
+- source-index.json 中 high-quality unmapped (>=16分) 仅 4 条：ANR案例(18)、Android14发布(17)、Linux I/O(17)、CPU利用率(16)
+- 4条均已映射到现有章节（Ch9 ANR / Ch16 版本 / Ch6 存储 / Ch5 调度）
+
+### 研究素材扫描
+- 最近 10 个 research-feeds 均已映射到现有章节：
+  - Audio → 1.16 Audio Pipeline
+  - ADPF/Game → 8.9 / 5.9
+  - View hierarchy → 7.12
+  - JNI optimization → 1.15
+  - Network → 12.2 / 16.5
+
+### 每日信息扫描
+- 2026-04-06/07 daily-info 主题：
+  - DeliQueue/MessageQueue → 已有 1.13
+  - Android 17 适配/侧载 → 已有 16.5
+  - Compose 性能 → 已有 7.7
+  - 布局调试 → 已有 7.12 / 14.1
+  - 协程 Semaphore → 已有 8.6
+  - 前后台判断 → 已有 1.3 / 8.4
+
+### AOSP 结构对比
+- frameworks/base/services/ 核心服务覆盖：AMS(1.8)✓ PMS(1.9)✓ WMS(2.12)✓ SF(2.6)✓ IMS(Ch3)✓ PMS-Power(Ch5/11)✓
+- 未覆盖但有性能相关的服务：NotificationManagerService、SensorService、ClipboardService
+- 评估：均不足以独立成节（素材稀薄，读者需求低，总分 < 10）
+
+### 已有章节扩展点
+- 扫描 src/ 全部 158 个章节：无 [待补充] 扩展点残留
+
+### 候选缺口评估（均未达标）
+1. Android 构建与编译性能优化 → 素材1/5 + 相关性3 + 需求4 + 时效4 = 12/20
+2. Notification 管线性能 → 素材2 + 相关性3 + 需求3 + 时效3 = 11/20
+3. Android 权限/SELinux 性能 → 素材1 + 相关性2 + 需求2 + 时效3 = 8/20
+4. OTA/A/B Partition 性能 → 素材1 + 相关性2 + 需求1 + 时效2 = 6/20
+5. Accessibility 性能 → 素材2 + 相关性2 + 需求3 + 时效3 = 10/20
+6. CI/CD 性能回归测试 → 素材3 + 相关性4 + 需求4 + 时效4 = 15/20（但与 15.6/14.6 重叠度高，实质是扩展而非新章节）
+7. Sensor 管线性能 → 素材1 + 相关性2 + 需求1 + 时效2 = 6/20
+
+### 结论
+全书 158 节已覆盖 Android 性能领域绝大部分知识点。剩余候选缺口要么素材不足以支撑 3000-8000 字独立章节，要么与现有章节重叠严重。建议下一轮将重点转向：现有章节精修(Task 2B/6)、前沿研究素材持续积累(Task 5)、以及已有章节的深度扩展。
