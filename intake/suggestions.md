@@ -971,3 +971,29 @@ tags:
 - **问题**：outline 锚点要求覆盖「死锁」类 ANR 案例，当前 5 个案例（系统负载/SystemServer/SharedPreferences/进程冻结/启动超时）未包含明确的死锁场景
 - **建议**：补充一个主线程死锁 ANR 案例（如 synchronized 锁顺序不当导致的死锁，或 Binder 线程池耗尽导致的隐式死锁），按现有案例格式（问题现象→分析过程→根因→修复→举一反三）编写
 - **review 日志**：logs/review/2026-04-09-01-review.md
+
+## [Task9 Deep Review] 1.3 进程模型与生命周期管理 — 2026-04-09
+- **类型**：源码准确性
+- **位置**：ZygoteInit 代码块
+- **问题**：代码为伪代码而非真实 AOSP 源码片段，与 ZygoteInit.java 实际结构不符
+- **建议**：移除代码块或改为正确引用实际代码路径/行号；或明确标注为示意代码
+## [Task9 Deep Review] 1.3 进程模型与生命周期管理 — 2026-04-09
+- **类型**：版本差异
+- **位置**：Phantom Process Killer 章节
+- **问题**：32 子进程上限描述过于简化；AOSP 实际限制涉及 per-UID 和 per-app-per-boot 配置
+- **建议**：补充说明为 AOSP 默认值，受厂商配置影响；更新[待验证]标注
+## [Task9 Deep Review] 1.3 进程模型与生命周期管理 — 2026-04-09
+- **类型**：知识盲区
+- **位置**：AMS 动态调整优先级章节
+- **问题**：只列了触发因素，未说明 updateOomAdjLocked() 的具体调用路径
+- **建议**：补充 startActivity/bindService/finishActivity 等场景对应的 oom_adj 变化链
+## [Task9 Deep Review] 1.3 进程模型与生命周期管理 — 2026-04-09
+- **类型**：数据缺失
+- **位置**：Binder IPC 章节
+- **问题**：90% 是具体数据断言，无来源引用
+- **建议**：补充数据来源或改为定性描述主力 IPC 机制
+## [Task9 Deep Review] 1.3 进程模型与生命周期管理 — 2026-04-09
+- **类型**：源码准确性
+- **位置**：oom_adj 表格 HOME_APP=600 行
+- **问题**：该值需在 AOSP android-16.0.0_r1 ProcessList.java 中验证准确性
+- **建议**：grep AOSP ProcessList.java 确认 HOME_APP 对应的 oom_adj 值

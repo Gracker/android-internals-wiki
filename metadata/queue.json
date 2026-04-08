@@ -1629,5 +1629,31 @@
     "added_at": "2026-04-09T01:26:54.271469",
     "status": "pending",
     "original_review_log": "logs/review/2026-04-09-01-review.md"
+  },
+  {
+    "section": "1.3",
+    "section_title": "进程模型与生命周期管理",
+    "priority": 95,
+    "reason": "[Deep Tech Review] 源码错误（ZygoteInit伪代码）+ 原理断裂（lmkd三阶段描述不准确）",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "ZygoteInit 代码块（标注 @ AOSP android-16.0.0_r1）",
+        "detail": "代码片段为示意性伪代码，而非 ZygoteInit.java 的真实实现。实际 AOSP 中 ZygoteInit.main() 的结构不同：getServerSocket().accept() 和 fork 调用实际在 ZygoteServer 的独立线程/方法中执行。",
+        "suggestion": "移除代码块或改为正确引用 AOSP 实际代码路径/行号，或明确标注为示意代码（而非实际源码）。"
+      },
+      {
+        "type": "原理断裂",
+        "location": "LMK 的回收策略 章节",
+        "detail": "描述 lmkd 按低/中/高压力三个阶段回收，这是早期版本策略描述。Android 16 的 lmkd 使用基于 minfree 配置文件的阈值判断机制，并非简单的三阶段模型。",
+        "suggestion": "修正描述为基于内存压力阈值和 minfree 配置的策略。保留[待验证]标注，确认 Android 16 lmkd 行为是否有重大变化。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-09T01:30:00",
+    "status": "pending"
   }
 ]
