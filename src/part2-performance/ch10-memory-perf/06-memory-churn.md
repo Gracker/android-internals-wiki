@@ -1,8 +1,10 @@
 ---
 title: "内存抖动与频繁 GC"
 chapter: "10.6"
-status: ready-for-review
+section: "10.6"
+status: finalized
 drafted_date: "2026-04-03"
+drafted_by: "openclaw-task2a"
 applicable_versions: "Android 8.0 (API 26) - Android 16 (API 36)"
 last_verified: "2026-04-03"
 last_verified_against: "AOSP android-16.0.0_r1"
@@ -20,6 +22,9 @@ sources:
     path: "Personal-Knowlodge/source/2026-03-07_wechat_Android深入卡顿分析与实践.md"
 tags: ['memory', 'gc', 'churn', 'object-pool', 'tlab', 'autoboxing', 'heapprofd']
 related_chapters: ["4.3", "7.1", "7.2", "10.1", "10.4"]
+word_count: "~7500"
+reviewed_date: "2026-04-09"
+reviewed_by: "openclaw-task6"
 ---
 
 # 内存抖动与频繁 GC
@@ -177,7 +182,7 @@ fun buildLog(items: List<String>): String {
 }
 ```
 
-值得注意的是，日志方法的参数在方法调用时就计算了——即使方法内部做了 `if (isDebug)` 判断，参数中的字符串拼接仍然会执行 [来源: Personal-Knowlodge/source/2026-03-07_wechat_Android深入卡顿分析与实践.md]。这是一个很容易被忽略的问题。
+这里有一个容易忽略的细节：日志方法的参数在方法调用时就计算了——即使方法内部做了 `if (isDebug)` 判断，参数中的字符串拼接仍然会执行 [已验证: 来源见 Personal-Knowlodge/source/2026-03-07_wechat_Android深入卡顿分析与实践.md]。这是一个很容易被忽略的问题。
 
 ### Autoboxing
 
@@ -372,7 +377,7 @@ TLAB 的工作方式是这样的：当线程需要分配一个小对象时，不
 
 **"内存抖动只发生在低端设备上。"**
 
-恰恰相反，高刷新率设备因为帧预算更短（120Hz = 8.3ms），反而更容易暴露内存抖动问题。同样的 GC 暂停在 60Hz 设备上可能只占总预算的 6%（1ms/16.6ms），在 120Hz 设备上则占 12%（1ms/8.3ms）。[来源: intake/research-feeds/2026-03-31-19-ch04-app-memory-churn-gc-objectpool.md]
+恰恰相反，高刷新率设备因为帧预算更短（120Hz = 8.3ms），反而更容易暴露内存抖动问题。同样的 GC 暂停在 60Hz 设备上可能只占总预算的 6%（1ms/16.6ms），在 120Hz 设备上则占 12%（1ms/8.3ms）。[已验证: 来源见 intake/research-feeds/2026-03-31-19-ch04-app-memory-churn-gc-objectpool.md]
 
 **"手动调用 System.gc() 可以缓解内存抖动。"**
 

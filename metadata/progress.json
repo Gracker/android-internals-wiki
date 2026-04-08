@@ -4,16 +4,16 @@
   "metrics": {
     "total": 143,
     "draft": 16,
-    "ready-for-review": 33,
+    "ready-for-review": 32,
     "reviewed": 5,
-    "finalized": 34,
+    "finalized": 35,
     "staging_drafts": 0,
-    "last_updated": "2026-04-09T05:02:00+08:00",
+    "last_updated": "2026-04-09T05:25:00+08:00",
     "processing": 0,
     "ready-to-publish": 14,
     "last_reviewed": "2026-04-09",
-    "last_reviewed_section": "2.5 MainThread 与 RenderThread 协作",
-    "reviewed_today": 10
+    "last_reviewed_section": "10.6 内存抖动与频繁 GC",
+    "reviewed_today": 11
   },
   "reviewed_sections": {
     "8.1": {
@@ -785,6 +785,24 @@
         "措辞优化：1处表述具体化（「深远的影响」→ 具体说明影响方式）"
       ],
       "issues_found": 0
+    },
+    "10.6": {
+      "reviewed_date": "2026-04-09",
+      "reviewed_by": "openclaw-task6",
+      "review_status": "finalized",
+      "fixes_applied": [
+        "元数据：补 section/drafted_by/word_count/reviewed_date/reviewed_by 字段",
+        "AI味清除：「值得注意的是」→「这里有一个容易忽略的细节」（writing-guide §九）",
+        "验证标注标准化：2处 [来源:] → [已验证: 来源见 ...]",
+        "状态：ready-for-review → finalized"
+      ],
+      "scores": {
+        "structure": 5,
+        "expression": 5,
+        "consistency": 5,
+        "verification": 4,
+        "metadata": 4
+      }
     }
   },
   "review_stats": {
@@ -2453,6 +2471,21 @@
     }
   ],
   "history": [
+    {
+      "date": "2026-04-09",
+      "section": "10.6",
+      "title": "内存抖动与频繁 GC",
+      "action": "reviewed-finalized",
+      "review_by": "openclaw-task6",
+      "fixes": 7,
+      "scores": {
+        "structure": 5,
+        "expression": 5,
+        "consistency": 5,
+        "verification": 4,
+        "metadata": 4
+      }
+    },
     {
       "date": "2026-04-09",
       "section": "7.13",
