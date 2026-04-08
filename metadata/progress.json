@@ -3,12 +3,12 @@
   "total_sections": 111,
   "metrics": {
     "total": 143,
-    "draft": 17,
-    "ready-for-review": 32,
+    "draft": 16,
+    "ready-for-review": 33,
     "reviewed": 5,
     "finalized": 34,
     "staging_drafts": 0,
-    "last_updated": "2026-04-09T01:25:43.556818",
+    "last_updated": "2026-04-09T05:02:00+08:00",
     "processing": 0,
     "ready-to-publish": 14,
     "last_reviewed": "2026-04-09",
@@ -2113,6 +2113,21 @@
       "verification_level": "L2",
       "word_count": "~8000",
       "completed_at": "2026-04-09T04:10:00+08:00"
+    },
+    {
+      "chapter": "7.13",
+      "section": "7.13",
+      "title": "SystemUI 性能分析",
+      "status": "ready-for-review",
+      "drafted_date": "2026-04-09",
+      "drafted_by": "openclaw-task2a",
+      "anchors_covered": 7,
+      "anchors_total": 7,
+      "extensions_covered": 0,
+      "extensions_total": 3,
+      "verification_level": "L2",
+      "word_count": "~7500",
+      "completed_at": "2026-04-09T05:02:00+08:00"
     }
   ],
   "ready_for_review": 5,
@@ -2121,7 +2136,7 @@
     "total": 118,
     "completed": 97,
     "pending": 32,
-    "last_updated": "2026-04-09T04:25:12.496322",
+    "last_updated": "2026-04-09T05:02:00+08:00",
     "reviewed": 1,
     "ready-for-review": 0,
     "ready_to_publish": 2
@@ -2438,6 +2453,20 @@
     }
   ],
   "history": [
+    {
+      "date": "2026-04-09",
+      "section": "7.13",
+      "title": "SystemUI 性能分析",
+      "action": "draft-completed",
+      "word_count": "~7500",
+      "anchors_covered": 7,
+      "anchors_total": 7,
+      "extensions_covered": 0,
+      "extensions_total": 3,
+      "verification_level": "L2",
+      "drafted_date": "2026-04-09",
+      "drafted_by": "openclaw-task2a"
+    },
     {
       "date": "2026-04-09",
       "section": "1.16",
