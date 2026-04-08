@@ -1839,5 +1839,31 @@
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-09T06:44:29",
     "status": "pending"
+  },
+  {
+    "section": "1.1",
+    "section_title": "Android 分层架构",
+    "priority": 95,
+    "reason": "[Deep Tech Review] 版本差异错误 + 表述需修正",
+    "material_paths": [
+      "intake/research-gaps.md"
+    ],
+    "review_issues": [
+      {
+        "type": "版本差异",
+        "location": "## Android 16 架构层面的最新变化 > 16Kb Page Size 的影响",
+        "detail": "\"Android 15 引入了 16KB 页大小支持\" —— 正确。但该段落在 Android 16 章节下，读者容易误以为 16KB Page Size 是 Android 16 的新特性。Android 15 才是引入版本，Android 16 继续完善。",
+        "suggestion": "在该段落开头加一句\"Android 15 首次引入 16KB 页大小支持，Android 16 继续完善\"，或在章节副标题中明确标注 15+。"
+      },
+      {
+        "type": "源码错误/表述偏差",
+        "location": "## Binder 跨层调用 > Binder 线程池管理描述",
+        "detail": "\"Binder 在内核层面实现了线程池管理\" —— 这个描述过于简化和不准确。Binder 驱动的内核部分负责在请求到达时唤醒等待线程，但线程池大小、线程优先级等由 Android Framework（通过系统属性如 android.thread_interactive、Binder 驱动参数）控制，不是纯内核行为。读者可能因此高估内核的自动化程度。",
+        "suggestion": "修正表述为：\"Binder 驱动的内核部分负责在请求到达时唤醒等待线程（ Binder 线程池的懒唤醒机制），但线程池大小由 Android Framework 配置（系统属性 android.thread_*/Binder 驱动参数）\"。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-09T07:34:00",
+    "status": "pending"
   }
 ]

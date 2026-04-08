@@ -1,4 +1,3 @@
-
 ## [2026-04-08] 1.1 Android 分层架构 — Zygote 预加载机制源码路径缺失
 
 ### 盲区描述
@@ -174,3 +173,71 @@ Android 14 引入了 VirtualThread（虚拟线程，JDK 21 移植），是 Andro
 
 ### 关联章节
 2.5、7.7（Compose Performance，涉及协程使用）
+
+## [2026-04-09] 1.1 Android 分层架构 — 知识盲区
+
+### 盲区描述
+Stable AIDL 与 Unstable AIDL 的区别在当前章节未覆盖。Framework→HAL 通信使用 Stable AIDL（有版本保证），而 Framework 内部组件间使用 Unstable AIDL（无稳定性保证）。这个区别对理解 Mainline 模块隔离机制至关重要。
+
+### 重要程度
+高
+
+### 建议研究方向
+- Stable AIDL 的版本管理和向后兼容机制
+- Mainline 模块如何利用 Stable AIDL 实现独立更新
+- AIDL 的序列化/反序列化开销（Binder Performance 的一部分）
+
+### 关联章节
+1.1, 1.2, 16.3（AOSP 编译）, 17.1（OEM 优化）
+
+---
+
+## [2026-04-09] 1.1 Android 分层架构 — 知识盲区
+
+### 盲区描述
+hwbinder vs 标准 binder 的底层差异描述不够深入。两者使用不同的设备节点（/dev/hwbinder vs /dev/binder），不同的 IPC 通道，对 Perfetto 追踪事件的可见性也不同（AIDL HAL 使用标准 binder，HIDL HAL 使用 hwbinder）。这个差异直接影响 HAL 问题追踪的难度。
+
+### 重要程度
+中
+
+### 建议研究方向
+- hwbinder 与 binder 的内核实现差异
+- 在 Perfetto 中如何区分 hwbinder 和标准 binder 事件
+- HIDL HAL 仍保留的场景（向后兼容）
+
+### 关联章节
+1.1, 2.6（SurfaceFlinger）, 13.9（tracing 基础设施）
+
+---
+
+## [2026-04-09] 1.1 Android 分层架构 — 知识盲区
+
+### 盲区描述
+Android 12/13 中 AIDL 对 HAL 架构的重要变化未覆盖。Android 12 开始强制要求更多 HAL 使用 AIDL（camera.provider、audio.core 等），这是 Treble 架构真正成熟的关键节点。
+
+### 重要程度
+中
+
+### 建议研究方向
+- Android 12/13 AIDL HAL 强制迁移清单
+- 从 HIDL 到 AIDL 迁移对性能分析的方法论影响
+
+### 关联章节
+1.1, 9.3（ANR 分析）, 13.9（tracing 基础设施）
+
+---
+
+## [2026-04-09] 1.1 Android 分层架构 — 知识盲区
+
+### 盲区描述
+Android 16 模块数量的具体数字未给出。章节提到"超过 50 个模块"，但没有具体数字（截至 Android 16，Mainline 模块总数约为 57 个，此数据需验证）。
+
+### 重要程度
+低
+
+### 建议研究方向
+- 验证 Android 16 Mainline 模块确切数量
+- 确认哪些模块与性能分析直接相关
+
+### 关联章节
+1.1

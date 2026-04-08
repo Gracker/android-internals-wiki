@@ -1149,3 +1149,51 @@ tags:
 - **位置**：章节正文引用"1.3 进程模型"；相关章节列表包含 1.4、5.1
 - **问题**：正文引用"1.3 进程模型"，但 AIW 中 1.3 是"Zygote 与应用进程创建"；相关章节 1.4 对应章节名与线程模型关联度需确认；5.1 章节是否真实存在
 - **建议**：核对 AIW 实际章节结构，修正交叉引用目标，确保引用的章节号与实际内容匹配
+
+## [Task9 Deep Review] 1.1 Android 分层架构 — 2026-04-09
+- **类型**：版本差异
+- **位置**：## Android 16 架构层面的最新变化 > 16KB Page Size 的影响
+- **问题**：该段落位于 Android 16 小节下，但 16KB Page Size 首次引入是 Android 15，Android 16 是继续完善。读者容易误读为 Android 16 的新功能。
+- **建议**：在段落开头加"Android 15 首次引入，Android 16 继续完善"，或在 applicable_versions 明确标为 15-16。
+
+## [Task9 Deep Review] 1.1 Android 分层架构 — 2026-04-09
+- **类型**：表述偏差
+- **位置**：## Binder 跨层调用 > "Binder 在内核层面实现了线程池管理"
+- **问题**：Binder 驱动的内核部分只负责懒唤醒等待线程，线程池大小由 Framework（系统属性 android.thread_*）配置，不是纯内核行为。
+- **建议**：修正为"Binder 驱动内核部分负责请求到达时唤醒线程，但线程池参数由 Framework 配置"。
+
+## [Task9 Deep Review] 1.1 Android 分层架构 — 2026-04-09
+- **类型**：表述完整性
+- **位置**：## Treble 架构 > HIDL 到 AIDL 迁移
+- **问题**："HIDL 已逐步退役"表述过于绝对。HIDL 仍在部分场景（依赖 HIDL 实现的老 HAL）维护向后兼容，未完全退役。
+- **建议**：改为"新 HAL 接口全面使用 AIDL，HIDL 仅保留对存量实现的向后兼容"。
+
+## [Task9 Deep Review] 1.1 Android 分层架构 — 2026-04-09
+- **类型**：数据缺失
+- **位置**：## Android 16 架构 > Project Mainline
+- **问题**："超过 50 个模块"缺少具体数字，可信度不足。
+- **建议**：补充 Android 16 Mainline 模块确切数量（约 57 个，需验证最新数据）。
+
+## [Task9 Deep Review] 1.1 Android 分层架构 — 2026-04-09
+- **类型**：数据缺失
+- **位置**：## Android 16 架构 > Project Mainline
+- **问题**：Mainline 模块独立更新后系统行为可能变化这一特性，缺少具体的 Trace/验证案例说明。
+- **建议**：可补充一个 Perfetto 案例，展示如何通过 ` dex2oat ` 或 ` module ` track 确认设备上的 Mainline 模块版本。
+
+## [Task9 Deep Review] 1.1 Android 分层架构 — 2026-04-09
+- **类型**：知识盲区
+- **位置**：## Treble 架构全文
+- **问题**：Stable AIDL 与 Unstable AIDL 的区别（AIDL HAL 用 Stable，Framework 内部用 Unstable）完全未覆盖，这是理解 Mainline 模块隔离机制的关键概念。
+- **建议**：在 AIDL 部分补充 Stable/Unstable 区别，或在相关章节（16.3 或 17.1）中补充。
+
+## [Task9 Deep Review] 1.1 Android 分层架构 — 2026-04-09
+- **类型**：知识盲区
+- **位置**：## 性能视角看分层全文
+- **问题**：AIDL 相比 HIDL 的性能优势描述缺少序列化/反序列化开销这一负面因素。AIDL HAL 调用比 HIDL 有更大的序列化开销，因为 AIDL 支持更复杂数据类型。
+- **建议**：补充"AIDL 支持更复杂数据类型，但序列化/反序列化开销也相应增加，需评估数据量大小"。
+
+## [Task9 Deep Review] 1.1 Android 分层架构 — 2026-04-09
+- **类型**：Trace 截图缺失
+- **位置**：## 在 Perfetto 中的表现 > 各层对应的 Track 和事件
+- **问题**：章节描述了各层在 Perfetto 中的表现，但缺少实际 Trace 截图（"[图：Perfetto Trace 截图示意...]" 是占位符）。"
+- **建议**：补充实际 Trace 标注截图，或在相关 Perfetto 章节（13.1-13.5）建立链接互相引用。
