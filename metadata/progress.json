@@ -4815,5 +4815,11 @@
       "not_found_skipped": 0,
       "total_refs_injected": 23
     }
+  },
+  "4.7": {
+    "title": "16KB Page Size 与 Android 性能",
+    "status": "finalized",
+    "reviewed_date": "2026-04-08",
+    "reviewed_by": "openclaw-task6"
   }
 }
