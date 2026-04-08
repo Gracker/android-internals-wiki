@@ -1,4 +1,10 @@
 ---
+tags:
+  - android
+  - power
+  - research
+---
+---
 title: "Thermal 管控"
 section: "5.5"
 chapter: "5.5"

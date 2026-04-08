@@ -1194,7 +1194,10 @@
     "material_paths": [
       "https://developer.android.com/reference/android/graphics/ImageDecoder",
       "https://developer.android.com/topic/performance/graphics/manage-memory",
-      "https://bumptech.github.io/glide/"
+      "https://bumptech.github.io/glide/",
+      "intake/research-feeds/2026-04-08-08-coil3-bitmap-pooling-removal-compose-performance.md",
+      "intake/research-feeds/2026-04-08-08-hardware-bitmap-gpu-texture-upload-jank.md",
+      "intake/research-feeds/2026-04-08-08-imagedecoder-avif-hardware-decoding-modern-api.md"
     ],
     "added_by": "task2a-knowledge-gap",
     "added_at": "2026-04-07T19:06:00+08:00",
@@ -1383,5 +1386,19 @@
     "original_review_log": "logs/review/2026-04-08-04-review.md",
     "completed_at": "2026-04-07T20:48:33.119825",
     "completed_by": "task2b-rework"
+  },
+  {
+    "section": "5.11",
+    "section_title": "端侧 AI 推理性能：NPU/GPU 加速与 TFLite 管线",
+    "priority": 80,
+    "reason": "知识缺口挖掘：NNAPI Android 15 废弃，TFLite/AICore 取代，NPU/GPU 调度影响 CPU/功耗/内存，15/20",
+    "material_paths": [
+      "https://developer.android.com/ndk/guides/neuralnetworks",
+      "https://www.tensorflow.org/lite/android",
+      "https://developer.android.com/ai/aicore"
+    ],
+    "added_by": "task2a-knowledge-gap",
+    "added_at": "2026-04-08T09:05:00+08:00",
+    "status": "pending"
   }
 ]

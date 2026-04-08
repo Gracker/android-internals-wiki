@@ -3966,6 +3966,320 @@
       "scan_timestamp": "2026-04-08T06:49:59.022044",
       "chapters": [],
       "quality": "medium"
+    },
+    {
+      "title": "移动 OS 设计之性能设计 2 - 为什么 Android 跟 iOS 设计上有巨大差异？",
+      "path": "Cubox/移动 OS 设计之性能设计 2 - 为什么 Android 跟 iOS 设计上有巨大差异？-2025-03-10.md",
+      "score": {
+        "total": 10,
+        "relevance": 2,
+        "depth": 2,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "mapped_chapters": [],
+      "date": "2025-03-10",
+      "indexed_at": "2026-04-08T08:23:47.748025",
+      "quality": "medium"
+    },
+    {
+      "title": "移动 OS 设计之性能设计 3 - 专制型资源管理策略至关重要",
+      "path": "Cubox/移动 OS 设计之性能设计 3 - 专制型资源管理策略至关重要-2025-03-18.md",
+      "score": {
+        "total": 10,
+        "relevance": 2,
+        "depth": 2,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "mapped_chapters": [],
+      "date": "2025-03-18",
+      "indexed_at": "2026-04-08T08:23:47.749406",
+      "quality": "medium"
+    },
+    {
+      "title": "移动 OS 设计之性能设计 5 - OS 质量提升- 技术指标优化",
+      "path": "Cubox/移动 OS 设计之性能设计 5 - OS 质量提升- 技术指标优化-2025-03-31.md",
+      "score": {
+        "total": 10,
+        "relevance": 2,
+        "depth": 2,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "mapped_chapters": [],
+      "date": "2025-03-31",
+      "indexed_at": "2026-04-08T08:23:47.751120",
+      "quality": "medium"
+    },
+    {
+      "title": "移动平台的GPU性能分析",
+      "path": "Cubox/移动平台的GPU性能分析-2024-12-07.md",
+      "score": {
+        "total": 10,
+        "relevance": 2,
+        "depth": 2,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "mapped_chapters": [],
+      "date": "2024-12-07",
+      "indexed_at": "2026-04-08T08:23:47.753920",
+      "quality": "medium"
+    },
+    {
+      "title": "移动端长文本处理新算法！vivo与联发科提出EdgeInfinite-Instruct，分段监督微调实现NPU高效部署",
+      "path": "Cubox/移动端长文本处理新算法！vivo与联发科提出EdgeInfinite-Instruct，分段监督微调实现NPU高效部署-2025-08-28.md",
+      "score": {
+        "total": 10,
+        "relevance": 2,
+        "depth": 2,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "mapped_chapters": [],
+      "date": "2025-08-28",
+      "indexed_at": "2026-04-08T08:23:47.765476",
+      "quality": "medium"
+    },
+    {
+      "title": "程序员如何学习和构建网络知识体系 | plantegg",
+      "path": "Cubox/程序员如何学习和构建网络知识体系 - plantegg-2023-01-02.md",
+      "score": {
+        "total": 10,
+        "relevance": 4,
+        "depth": 1,
+        "timeliness": 4,
+        "verifiability": 1
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch09-网络",
+          "confidence": "medium",
+          "hits": 2
+        }
+      ],
+      "date": "2023-01-02",
+      "indexed_at": "2026-04-08T08:23:47.768464",
+      "quality": "medium"
+    },
+    {
+      "title": "程序员阅读清单：我喜欢的 100 篇技术文章（1-20）  | Piglei",
+      "path": "Cubox/程序员阅读清单：我喜欢的 100 篇技术文章（1-20）  - Piglei-2024-08-26.md",
+      "score": {
+        "total": 10,
+        "relevance": 2,
+        "depth": 2,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "mapped_chapters": [],
+      "date": "2024-08-26",
+      "indexed_at": "2026-04-08T08:23:47.775386",
+      "quality": "medium"
+    },
+    {
+      "title": "程序员阅读清单：我喜欢的 100 篇技术文章（21-40） | Piglei",
+      "path": "Cubox/程序员阅读清单：我喜欢的 100 篇技术文章（21-40） - Piglei-2024-10-24.md",
+      "score": {
+        "total": 10,
+        "relevance": 2,
+        "depth": 2,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "mapped_chapters": [],
+      "date": "2024-10-24",
+      "indexed_at": "2026-04-08T08:23:47.776283",
+      "quality": "medium"
+    },
+    {
+      "title": "程序员阅读清单：我喜欢的 100 篇技术文章（41-50）",
+      "path": "Cubox/程序员阅读清单：我喜欢的 100 篇技术文章（41-50）-2025-03-06.md",
+      "score": {
+        "total": 10,
+        "relevance": 2,
+        "depth": 2,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "mapped_chapters": [],
+      "date": "2025-03-06",
+      "indexed_at": "2026-04-08T08:23:47.776873",
+      "quality": "medium"
+    },
+    {
+      "title": "稳定性优化：ANR产生原理 - 掘金",
+      "path": "Cubox/稳定性优化：ANR产生原理 - 掘金-2024-07-29.md",
+      "score": {
+        "total": 10,
+        "relevance": 2,
+        "depth": 2,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "mapped_chapters": [],
+      "date": "2024-07-29",
+      "indexed_at": "2026-04-08T08:23:47.778018",
+      "quality": "medium"
+    },
+    {
+      "title": "穿越二十年：Android Native内存泄漏检测的进化之路",
+      "path": "Cubox/穿越二十年：Android Native内存泄漏检测的进化之路-2025-10-14.md",
+      "score": {
+        "total": 11,
+        "relevance": 4,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch07-内存",
+          "confidence": "high",
+          "hits": 3
+        }
+      ],
+      "date": "2025-10-14",
+      "indexed_at": "2026-04-08T08:23:47.781507",
+      "quality": "medium"
+    },
+    {
+      "title": "站在Framework看Android界面绘制流程：从setContentView到屏幕亮起的最后一公里",
+      "path": "Cubox/站在Framework看Android界面绘制流程：从setContentView到屏幕亮起的最后一公里-2026-04-06.md",
+      "score": {
+        "total": 10,
+        "relevance": 2,
+        "depth": 2,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "mapped_chapters": [],
+      "date": "2026-04-06",
+      "indexed_at": "2026-04-08T08:23:47.783697",
+      "quality": "medium"
+    },
+    {
+      "title": "站在Google角度看渲染机制，从Android渲染体系设计到Flutter渲染体系设计",
+      "path": "Cubox/站在Google角度看渲染机制，从Android渲染体系设计到Flutter渲染体系设计-2022-08-01.md",
+      "score": {
+        "total": 11,
+        "relevance": 4,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 1
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "high",
+          "hits": 3
+        }
+      ],
+      "date": "2022-08-01",
+      "indexed_at": "2026-04-08T08:23:47.784531",
+      "quality": "medium"
+    },
+    {
+      "title": "站在Google角度看渲染机制，从Android渲染体系设计到Flutter渲染体系设计",
+      "path": "Cubox/站在Google角度看渲染机制，从Android渲染体系设计到Flutter渲染体系设计-2024-05-21.md",
+      "score": {
+        "total": 12,
+        "relevance": 4,
+        "depth": 2,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "high",
+          "hits": 3
+        }
+      ],
+      "date": "2024-05-21",
+      "indexed_at": "2026-04-08T08:23:47.785432",
+      "quality": "medium"
+    },
+    {
+      "title": "站在Google角度看渲染机制，从Android渲染体系设计到Flutter渲染体系设计_android渲染引擎-CSDN博客",
+      "path": "Cubox/站在Google角度看渲染机制，从Android渲染体系设计到Flutter渲染体系设计_android渲染引擎-CSDN博客-2024-06-01.md",
+      "score": {
+        "total": 12,
+        "relevance": 4,
+        "depth": 2,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "high",
+          "hits": 3
+        }
+      ],
+      "date": "2024-06-01",
+      "indexed_at": "2026-04-08T08:23:47.786090",
+      "quality": "medium"
+    },
+    {
+      "title": "端侧 AI",
+      "path": "Cubox/端侧 AI-2024-06-20.md",
+      "score": {
+        "total": 10,
+        "relevance": 2,
+        "depth": 2,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "mapped_chapters": [],
+      "date": "2024-06-20",
+      "indexed_at": "2026-04-08T08:23:47.787719",
+      "quality": "medium"
+    },
+    {
+      "path": "Cubox/PGO 新玩法- 优化移动端 APP 性能和体积-2023-05-05.md",
+      "title": "PGO 新玩法: 优化移动端 APP 性能和体积",
+      "scores": {
+        "relevance": 1,
+        "depth": 5,
+        "timeliness": 3,
+        "verifiability": 1,
+        "total_score": 10,
+        "matched_chapters": [
+          "ch04-启动"
+        ]
+      },
+      "first_chars": "# PGO 新玩法: 优化移动端 APP 性能和体积\n\n之前很多研究是针对大型应用而言，很少有关注移动端应用的影响，这里会同时关注两个主要的目标， 安装包体积和冷启动耗时。 1、代码布局优化函数布局(function layout) 优化，即函数重排(function reordering)，把频繁执行(hot) 或连续执行的函数放到一起，让内存页更加紧凑，减少缺页中断的次数。当然还有代码块重排，",
+      "quality": "medium"
+    },
+    {
+      "path": "Cubox/Jeff Dean性能调优要点 2：API 考量因素-2025-12-22.md",
+      "title": "Jeff Dean性能调优要点 2：API 考量因素",
+      "scores": {
+        "relevance": 0,
+        "depth": 5,
+        "timeliness": 3,
+        "verifiability": 3,
+        "total_score": 11,
+        "matched_chapters": []
+      },
+      "first_chars": "# Jeff Dean性能调优要点 2：API 考量因素\n\n\n\n[Read in Cubox](https://cubox.pro/web/card/7402652245201780832)  \n[Read Original](https://mp.weixin.qq.com/s?__biz=MzI4MTQyNzkxNw==&mid=2247485061&idx=1&sn=49b23d68e2c0",
+      "quality": "medium"
+    },
+    {
+      "path": "Cubox/perfetto高阶使用：编译浏览器UI核心步骤简述： 1. 搞到 perfetto 工程的源码 2. 执行 tools - 掘金-2025-01-16.md",
+      "title": "perfetto高阶使用：编译浏览器UI核心步骤简述： 1. 搞到 perfetto 工程的源码 2. 执行 tools - 掘金",
+      "scores": {
+        "relevance": 0,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 5,
+        "total_score": 11,
+        "matched_chapters": []
+      },
+      "first_chars": "# perfetto高阶使用：编译浏览器UI核心步骤简述： 1. 搞到 perfetto 工程的源码 2. 执行 tools - 掘金\n\n核心步骤简述： 1. 搞到 perfetto 工程的源码 2. 执行 tools/install-build-deps --ui 3. 执行 ui/run-dev-server\n\n[Read in Cubox](https://cubox.pro/web/car",
+      "quality": "medium"
     }
   ],
   "sources": [
