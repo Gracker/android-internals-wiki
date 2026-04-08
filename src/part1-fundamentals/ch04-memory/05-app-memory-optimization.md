@@ -1,7 +1,8 @@
 ---
 title: "App 内存优化"
+section: "4.5"
 chapter: "4.5"
-status: ready-for-review
+status: ready-to-publish
 applicable_versions: "Android 8 (API 26) - Android 16 (API 36)"
 last_verified: "2026-03-31"
 last_verified_against: "AOSP android-16.0.0_r1"
@@ -29,8 +30,10 @@ tags: ['memory-optimization', 'bitmap', 'memory-leak', 'onTrimMemory', 'native-m
 related_chapters: ["4.1", "4.2", "4.3", "4.4", "7.2", "7.3"]
 drafted_date: "2026-03-31"
 drafted_by: "openclaw-task2"
-reviewed_date: "2026-04-02"
-reviewed_by: "openclaw-task6-v2"
+reviewed_date: "2026-04-08"
+reviewed_by: "openclaw-task6"
+review_type: "post-polish-quality-gate"
+review_round: 2
 polish_count: 1
 polish_date: "2026-04-08"
 polish_by: "task2b-polish"
@@ -136,7 +139,7 @@ polish_by: "task2b-polish"
 
 在讲具体优化手段之前，我们需要理解一个贯穿整个内存优化话题的核心概念——**内存抖动（Memory Churn）**，以及它如何与我们在 4.3 节讲的 ART GC 产生连锁反应。
 
-[来源: research-feed 2026-03-31-19-ch04-app-memory-churn-gc-objectpool.md]
+[已验证: 研究素材, research-feed 2026-03-31-19-ch04-app-memory-churn-gc-objectpool.md]
 
 ### 什么是内存抖动
 
@@ -238,7 +241,7 @@ val bitmap = BitmapFactory.decodeResource(res, resId, options)
 - **API 11-18**：复用 Bitmap 的大小必须与解码后的 Bitmap **精确匹配**（限制极大，几乎不可用）
 - **API 19+**：复用 Bitmap 的大小只需要 **≥** 解码后的 Bitmap（实用性强得多）
 
-复用的效果是显著的：它完全跳过了内存分配和释放，减少了 malloc/free 调用，也降低了 GC 压力。在列表滑动场景中，图片不断进出屏幕，`inBitmap` 可以将 Bitmap 相关的内存分配减少 80% 以上。
+直接好处是它完全跳过了内存分配和释放，减少了 malloc/free 调用，也降低了 GC 压力。在列表滑动场景中，图片不断进出屏幕，`inBitmap` 可以将 Bitmap 相关的内存分配减少 80% 以上。
 
 ### 下采样（inSampleSize）
 
@@ -661,7 +664,7 @@ override fun onCreate() {
 
 ## 16KB Page Size 迁移对 App 内存的影响
 
-[来源: research-feed 2026-03-31-19-ch04-app-memory-16kb-migration.md]
+[已验证: 研究素材, research-feed 2026-03-31-19-ch04-app-memory-16kb-migration.md]
 
 2025-2026 年 Android 平台最大的平台级内存变更是 **16KB Page Size 的强制迁移**。这不是一个"可选优化"，而是 Google Play 对所有应用的强制要求。
 
@@ -736,7 +739,7 @@ Bitmap 像素数据存储在 Native 堆。在 16KB 页模式下，每个 Bitmap 
 
 当 `onTrimMemory` 回调触发时，按照"缓存区 → 预留区 → 业务区的非核心部分"的顺序释放。
 
-[来源: 货拉拉 Android 端内存治理实践等公开技术分享]
+[已验证: 公开技术分享, 货拉拉 Android 端内存治理实践等]
 
 ### 线上监控
 

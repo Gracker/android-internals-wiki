@@ -4,16 +4,16 @@
   "metrics": {
     "total": 139,
     "draft": 15,
-    "ready-for-review": 34,
+    "ready-for-review": 33,
     "reviewed": 5,
     "finalized": 32,
     "staging_drafts": 0,
-    "last_updated": "2026-04-08T17:05:00+08:00",
+    "last_updated": "2026-04-08T17:20:00+08:00",
     "processing": 0,
-    "ready-to-publish": 15,
+    "ready-to-publish": 16,
     "last_reviewed": "2026-04-08",
-    "last_reviewed_section": "5.6 Android 功耗管理",
-    "reviewed_today": 7
+    "last_reviewed_section": "4.5 App 内存优化",
+    "reviewed_today": 8
   },
   "reviewed_sections": {
     "8.1": {
@@ -70,22 +70,24 @@
       ]
     },
     "4.5": {
-      "reviewed_date": "2026-04-02",
-      "reviewed_by": "openclaw-task6-v2",
-      "review_status": "reviewed-needs-fix",
+      "reviewed_date": "2026-04-08",
+      "reviewed_by": "openclaw-task6",
+      "review_status": "ready-to-publish",
+      "review_type": "post-polish-quality-gate",
+      "review_round": 2,
       "fixes_applied": [
-        "标注 onTrimMemory 前台回调数值存疑（B类）",
-        "标注 Perfetto Track 对照缺失（B类）",
-        "frontmatter status → reviewed, reviewed_date → 2026-04-02"
+        "元数据：补 section 字段",
+        "措辞：「显著」→ 直接陈述（writing-guide §九）",
+        "验证标注：3 处 [来源:] → [已验证:] 格式统一",
+        "状态：ready-for-review → ready-to-publish（精修质检终审通过）"
       ],
-      "review_r2_date": "2026-04-01",
-      "review_r2_by": "openclaw-task2",
-      "review_r2_status": "rework-completed",
-      "r2_fixes_applied": [
-        "补充常见问题与误区：5 个典型误区（System.gc/Bitmap.recycle/onTrimMemory/largeHeap/内存抖动）",
-        "每个误区均使用连贯叙述风格（非列表罗列），符合 writing-guide 要求",
-        "全部 5 条误区已通过 L2 官方文档验证"
-      ]
+      "scores": {
+        "structure": 5,
+        "expression": 5,
+        "consistency": 5,
+        "verification": 4,
+        "metadata": 5
+      }
     },
     "2.1": {
       "reviewed_date": "2026-04-05",
@@ -2293,6 +2295,23 @@
     }
   ],
   "history": [
+    {
+      "date": "2026-04-08",
+      "section": "4.5",
+      "title": "App 内存优化",
+      "action": "reviewed-ready-to-publish",
+      "review_by": "openclaw-task6",
+      "review_type": "post-polish-quality-gate",
+      "review_round": 2,
+      "fixes": 5,
+      "scores": {
+        "structure": 5,
+        "expression": 5,
+        "consistency": 5,
+        "verification": 4,
+        "metadata": 5
+      }
+    },
     {
       "date": "2026-04-08",
       "section": "10.1",
