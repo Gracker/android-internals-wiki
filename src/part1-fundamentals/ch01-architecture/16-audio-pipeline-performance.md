@@ -1,13 +1,10 @@
 ---
-title: "Audio Pipeline 延迟与性能"
-chapter: "1.16"
-status: draft
-applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37)"
-tags: [audio, latency, AudioFlinger, AAudio, real-time, performance]
-related_chapters: ["1.4", "2.6", "5.6", "8.8"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-04-08"
-gap_source: "AOSP结构+官方文档+研究素材"
+tags:
+  - android
+  - performance
+  - paper
+  - rendering
+  - audio
 ---
 
 # 1.16 Audio Pipeline 延迟与性能

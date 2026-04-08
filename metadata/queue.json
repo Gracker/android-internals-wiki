@@ -1419,5 +1419,19 @@
     "added_by": "task2a-knowledge-gap",
     "added_at": "2026-04-08T11:08:00+08:00",
     "status": "pending"
+  },
+  {
+    "section": "7.11",
+    "section_title": "WebView 渲染性能与优化",
+    "priority": 80,
+    "reason": "知识缺口挖掘：WebView 存在于 70%+ 的 Android 应用中，JS Bridge 阻塞是 ANR 常见来源，Chromium 双层渲染架构全书零覆盖，16/20",
+    "material_paths": [
+      "https://developer.android.com/develop/ui/views/layout/webapps/webview",
+      "https://developer.android.com/develop/ui/views/layout/webapps/rendering-performance",
+      "https://chromium.googlesource.com/chromium/src/+/HEAD/android_webview/docs/quick-start.md"
+    ],
+    "added_by": "task2a-knowledge-gap",
+    "added_at": "2026-04-08T13:05:00+08:00",
+    "status": "pending"
   }
 ]
