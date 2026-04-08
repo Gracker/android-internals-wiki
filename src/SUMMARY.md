@@ -3,7 +3,7 @@ tags:
   - android
   - ai
   - binder
-  - research
+  - summary
 ---
 # 目录
 
@@ -110,6 +110,7 @@ tags:
   - [7.8 RecyclerView 列表滑动性能深度优化](part2-performance/ch07-smoothness/08-recyclerview-performance.md)
   - [7.9 感知流畅性：步幅波动与无掉帧卡顿](part2-performance/ch07-smoothness/09-perceived-smoothness.md)
   - [7.10 图片加载与 Bitmap 性能优化](part2-performance/ch07-smoothness/10-image-bitmap-performance.md)
+  - [7.11 WebView 渲染性能与优化](part2-performance/ch07-smoothness/11-webview-performance.md)
 
 - [第 8 章：响应速度](part2-performance/ch08-responsiveness/README.md)
   - [8.1 响应速度原理](part2-performance/ch08-responsiveness/01-responsiveness-principles.md)

@@ -1,34 +1,8 @@
 ---
-title: "ProfilingManager"
-chapter: "14.7"
-status: ready-for-review
-applicable_versions: "Android 15 (API 35) - Android 17 (API 37)"
-last_verified: "2026-04-08"
-last_verified_against: "AOSP android-17-beta3, developer.android.com/guide/topics/profiling"
-confidence: medium
-polish_count: 1
-polish_date: "2026-04-08"
-polish_by: "task2b-polish"
-sources:
-  - type: official
-    path: "https://developer.android.com/guide/topics/profiling"
-  - type: aosp
-    path: "packages/modules/Profiling/framework/java/android/os/ProfilingManager.java"
-  - type: aosp
-    path: "packages/modules/Profiling/service/java/android/profiling/ProfilingService.java"
-  - type: jetpack
-    path: "androidx.tracing:tracing:1.3.0"
-  - type: blog
-    path: "android-developers.googleblog.com — System Triggered Profiling (Android 16), What's new in Android 17 Profiling"
-tags: [profilingmanager, android-15, android-16, android-17, profiling, perfetto, system-trace, heap-dump, heap-profile, stack-sampling, jetpack]
-related_chapters: ["13.1 Perfetto 简介与演进", "15.5 线上性能监控", "15.2 如何区分系统问题和 App 问题", "9.1 ANR 设计思想"]
-drafted_date: "2026-03-29"
-drafted_by: "openclaw-task2a"
-reviewed_date: "2026-04-08"
-reviewed_by: "openclaw-task6"
-reworked_date: "2026-04-08"
-reworked_by: "openclaw-task2b"
-review_round: 2
+tags:
+  - android
+  - paper
+  - profiling
 ---
 
 # ProfilingManager
