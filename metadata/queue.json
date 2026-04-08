@@ -1306,7 +1306,9 @@
     "file": "src/part4-system/ch16-aosp/05-android17-api37-performance-changes.md",
     "notes": "gap-mining 2026-04-08, score 20/20",
     "material_paths": [
-      "intake/research-feeds/2026-04-08-11-android17-network-data-plan-streaming-access-local-network-tls.md"
+      "intake/research-feeds/2026-04-08-11-android17-network-data-plan-streaming-access-local-network-tls.md",
+      "intake/research-feeds/2026-04-08-15-android17-background-audio-hardening-audio-focus.md",
+      "intake/research-feeds/2026-04-08-15-android17-audiotrack-api-assistant-volume-stream.md"
     ]
   },
   {
@@ -1414,7 +1416,10 @@
       "https://source.android.com/docs/core/audio/latency",
       "https://source.android.com/docs/core/audio/architecture",
       "https://developer.android.com/ndk/guides/audio",
-      "intake/daily-info/2026-04-07.md (Android 17 Background Audio Hardening)"
+      "intake/daily-info/2026-04-07.md (Android 17 Background Audio Hardening)",
+      "intake/research-feeds/2026-04-08-15-android17-background-audio-hardening-audio-focus.md",
+      "intake/research-feeds/2026-04-08-15-audioflinger-fast-mixer-aaudio-mmap-pipeline-architecture.md",
+      "intake/research-feeds/2026-04-08-15-android17-audiotrack-api-assistant-volume-stream.md"
     ],
     "added_by": "task2a-knowledge-gap",
     "added_at": "2026-04-08T11:08:00+08:00",
@@ -1432,6 +1437,8 @@
     ],
     "added_by": "task2a-knowledge-gap",
     "added_at": "2026-04-08T13:05:00+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-08T08:02:00",
+    "completed_by": "openclaw-task2a"
   }
 ]
