@@ -1130,3 +1130,22 @@ tags:
 - **位置**：SkiaGL → SkiaVulkan 演进原因
 - **问题**：SkiaVulkan 的优势描述中提到了"多线程并行构建和提交 GPU 命令"，但没有解释"为什么多线程构建命令缓冲区能提升帧率"——缺少从 GL ES 单线程提交到 Vulkan 多线程提交的因果链。
 - **建议**：补充完整因果链：GL ES 驱动要求所有 GPU 命令从单一线程同步提交（驱动内部有隐式同步）→ Vulkan 允许多线程并行构建 command buffer → 主线程不再等待 GPU → 帧率更稳定，CPU 开销降低约 30–50%。
+
+
+## [Task9 Deep Review] 1.5 线程模型 — 2026-04-09
+- **类型**：源码准确性
+- **位置**：RenderThread 创建时机描述（"当 Activity 第一次执行 draw 操作时"）
+- **问题**：RenderThread 初始化时机描述不准确。android-16 中 ViewRootImpl 构造时即初始化 ThreadedRenderer（硬件加速时），并非延迟到首次 draw 调用。此描述反映的是 Android 8.x 以前的行为
+- **建议**：修正为"在 ViewRootImpl 构造时（hardwareAccelerated=true 条件下）即初始化 ThreadedRenderer 和 RenderThread"
+
+## [Task9 Deep Review] 1.5 线程模型 — 2026-04-09
+- **类型**：数据缺失
+- **位置**：cgroup CPU 分配比例（"前台 cgroup 和后台 cgroup 的 CPU 时间分配比例大约是 95:5"）
+- **问题**：95:5 比例缺乏具体版本依据。Android 12+ 使用 cgroup v2，其 cpu.max 默认 enforcement 与 cgroup v1 的 cpu.shares 机制不同，实际比例在不同版本/设备上有差异
+- **建议**：改为更精确的描述，例如"Android 12+ cgroup v2 下，后台 cgroup 的最大 CPU 占用受 cpu.max 配置限制，典型值为 1:1 或 2:1"，并补充 cgroup v1 和 v2 的差异对比
+
+## [Task9 Deep Review] 1.5 线程模型 — 2026-04-09
+- **类型**：交叉引用
+- **位置**：章节正文引用"1.3 进程模型"；相关章节列表包含 1.4、5.1
+- **问题**：正文引用"1.3 进程模型"，但 AIW 中 1.3 是"Zygote 与应用进程创建"；相关章节 1.4 对应章节名与线程模型关联度需确认；5.1 章节是否真实存在
+- **建议**：核对 AIW 实际章节结构，修正交叉引用目标，确保引用的章节号与实际内容匹配

@@ -138,3 +138,39 @@ Android 5.0 Dalvik → ART 的切换对渲染性能的影响未被现有章节�
 - 1.7 ART 编译管线与 dex2oat 优化（已有章节）
 - 2.9 渲染机制的版本演进（当前章节）
 - 4.3 ART 虚拟机内存管理（已有章节）
+
+
+## [2026-04-09] 1.5 线程模型 — RenderThread Freeze 机制（Android 11+）
+
+### 盲区描述
+Android 11 引入了 RenderThread Freeze 机制：当主线程发生 Long Frame（帧耗时 > 16ms）时，RenderThread 可选择丢弃当前帧的渲染（freeze），避免主线程阻塞导致的渲染级联延迟传播到后续帧。此机制直接影响 Android 11+ 设备的掉帧分析结论，但 1.5 章节完全未覆盖。
+
+### 重要程度
+高
+
+### 建议研究方向
+- RenderThread Freeze 的触发条件与 threshold（如何判断主线程是否"长时间"阻塞）
+- freeze 决策的源码位置（renderthread/RenderThread.cpp 中的 freeze 逻辑）
+- 对 Perfetto 分析的影响：freeze 时 RenderThread CPU slice 会中断或变短，易误判为"GPU 空闲"
+- Android 11-16 中 freeze 机制的变化
+
+### 关联章节
+2.5（MainThread 与 RenderThread 协作）、2.4（Choreographer 与渲染流水线）
+
+
+## [2026-04-09] 1.5 线程模型 — Android 14 VirtualThread 与线程模型演进
+
+### 盲区描述
+Android 14 引入了 VirtualThread（虚拟线程，JDK 21 移植），是 Android 线程模型的重大变化。VirtualThread 由平台线程（PlatformThread）虚拟化实现，与 Kotlin Coroutine 的协程模型有本质区别。VirtualThread 对 Perfetto 线程可见性的影响、VirtualThread 与 SCHED_FIFO/SCHED_OTHER 的交互、以及对主线程 Binder 调用的影响，在 1.5 章节中完全缺失。
+
+### 重要程度
+高
+
+### 建议研究方向
+- Android 14 VirtualThread 的实现原理（与 JDK 21 VirtualThread 的差异）
+- VirtualThread 在 Perfetto 中的可见性（是否作为独立线程可见，还是透明虚拟化）
+- VirtualThread 对线程优先级（nice 值/cgroup）继承规则的影响
+- Kotlin Coroutine Dispatcher 与 VirtualThread 的结合使用（Dispatchers.VirtualThread）
+
+### 关联章节
+2.5、7.7（Compose Performance，涉及协程使用）

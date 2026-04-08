@@ -46180,6 +46180,790 @@
         "8.9"
       ],
       "total_score": 68
+    },
+    {
+      "path": "part2-performance/ch10-memory-perf/06-memory-churn.md",
+      "mtime": "2026-04-09T05:42:35",
+      "word_count": 1156,
+      "title": "内存抖动与频繁 GC",
+      "source": "quote",
+      "mapped_chapters": [
+        "ch04",
+        "ch07",
+        "ch13"
+      ],
+      "quality_score": 58
+    },
+    {
+      "path": "part4-system/ch17-oem/03-industry-cases.md",
+      "mtime": "2026-04-09T05:32:41",
+      "word_count": 1051,
+      "title": "行业案例",
+      "source": "quote",
+      "mapped_chapters": [
+        "ch01",
+        "ch02",
+        "ch05",
+        "ch08",
+        "ch16"
+      ],
+      "quality_score": 58
+    },
+    {
+      "path": "part3-tools/ch14-other-tools/01-as-profiler.md",
+      "mtime": "2026-04-09T05:32:41",
+      "word_count": 1026,
+      "title": "Android Studio Profiler",
+      "source": "quote",
+      "mapped_chapters": [
+        "ch04",
+        "ch05",
+        "ch07",
+        "ch08",
+        "ch13",
+        "ch16"
+      ],
+      "quality_score": 58
+    },
+    {
+      "path": "part2-performance/ch07-smoothness/13-systemui-performance.md",
+      "mtime": "2026-04-09T05:08:01",
+      "word_count": 1186,
+      "title": "SystemUI 性能分析",
+      "source": "mixed",
+      "mapped_chapters": [
+        "ch02",
+        "ch07",
+        "ch13"
+      ],
+      "quality_score": 68
+    },
+    {
+      "path": "part2-performance/ch09-anr/01-anr-design.md",
+      "mtime": "2026-04-09T04:24:22",
+      "word_count": 1274,
+      "title": "ANR 设计思想",
+      "source": "quote",
+      "mapped_chapters": [
+        "ch09"
+      ],
+      "quality_score": 58
+    },
+    {
+      "path": "part1-fundamentals/ch01-architecture/16-audio-pipeline-performance.md",
+      "mtime": "2026-04-09T04:19:02",
+      "word_count": 1319,
+      "title": "Audio Pipeline 延迟与性能",
+      "source": "quote",
+      "mapped_chapters": [
+        "ch01",
+        "ch02",
+        "ch07",
+        "ch16"
+      ],
+      "quality_score": 58
+    },
+    {
+      "path": "part2-performance/ch10-memory-perf/05-case-studies.md",
+      "mtime": "2026-04-09T03:42:18",
+      "word_count": 949,
+      "title": "案例集",
+      "source": "quote",
+      "mapped_chapters": [
+        "ch04",
+        "ch05",
+        "ch07",
+        "ch08",
+        "ch10",
+        "ch13",
+        "ch15"
+      ],
+      "quality_score": 53
+    },
+    {
+      "path": "part2-performance/ch10-memory-perf/04-low-memory-impact.md",
+      "mtime": "2026-04-09T02:43:48",
+      "word_count": 1171,
+      "title": "低内存对系统性能的影响",
+      "source": "quote",
+      "mapped_chapters": [
+        "ch04",
+        "ch08",
+        "ch13"
+      ],
+      "quality_score": 58
+    },
+    {
+      "path": "part1-fundamentals/ch02-rendering/05-main-render-thread.md",
+      "mtime": "2026-04-09T02:24:32",
+      "word_count": 1724,
+      "title": "MainThread 与 RenderThread 协作",
+      "source": "quote",
+      "mapped_chapters": [
+        "ch02",
+        "ch07",
+        "ch09",
+        "ch13"
+      ],
+      "quality_score": 58
+    },
+    {
+      "path": "part2-performance/ch09-anr/05-case-studies.md",
+      "mtime": "2026-04-09T01:42:08",
+      "word_count": 1414,
+      "title": "案例集",
+      "source": "quote",
+      "mapped_chapters": [
+        "ch01",
+        "ch08",
+        "ch09"
+      ],
+      "quality_score": 58
+    },
+    {
+      "path": "part1-fundamentals/ch02-rendering/21-text-rendering-performance.md",
+      "mtime": "2026-04-09T01:11:46",
+      "word_count": 1228,
+      "title": "文字渲染性能",
+      "source": "mixed",
+      "mapped_chapters": [
+        "ch02",
+        "ch07"
+      ],
+      "quality_score": 68
+    },
+    {
+      "path": "SUMMARY.md",
+      "mtime": "2026-04-09T00:13:07",
+      "word_count": 722,
+      "title": "SUMMARY",
+      "source": "mixed",
+      "mapped_chapters": [
+        "ch01",
+        "ch02",
+        "ch16"
+      ],
+      "quality_score": 55
+    },
+    {
+      "path": "part2-performance/ch09-anr/06-notification-performance-anr.md",
+      "mtime": "2026-04-09T00:13:07",
+      "word_count": 246,
+      "title": "Notification 性能与 ANR",
+      "source": "mixed",
+      "mapped_chapters": [
+        "ch05",
+        "ch08",
+        "ch09",
+        "ch13",
+        "ch16"
+      ],
+      "quality_score": 35
+    },
+    {
+      "path": "part2-performance/ch07-smoothness/03-jank-methodology.md",
+      "mtime": "2026-04-08T23:30:12",
+      "word_count": 1679,
+      "title": "卡顿分析方法论",
+      "source": "quote",
+      "mapped_chapters": [
+        "ch02",
+        "ch05",
+        "ch07",
+        "ch09",
+        "ch13",
+        "ch16"
+      ],
+      "quality_score": 58
+    },
+    {
+      "path": "part3-tools/ch13-perfetto/09-tracing-infrastructure.md",
+      "mtime": "2026-04-08T23:09:52",
+      "word_count": 1072,
+      "title": "Android Tracing 基础设施",
+      "source": "quote",
+      "mapped_chapters": [
+        "ch04",
+        "ch05",
+        "ch13"
+      ],
+      "quality_score": 50
+    },
+    {
+      "path": "part2-performance/ch08-responsiveness/06-coroutine-performance.md",
+      "mtime": "2026-04-08T22:50:28",
+      "word_count": 1517,
+      "title": "Kotlin Coroutine 性能实践",
+      "source": "quote",
+      "mapped_chapters": [
+        "ch02",
+        "ch05",
+        "ch13"
+      ],
+      "quality_score": 58
+    },
+    {
+      "path": "part2-performance/ch10-memory-perf/03-memory-growth.md",
+      "mtime": "2026-04-08T21:54:06",
+      "word_count": 1291,
+      "title": "内存持续增长",
+      "source": "quote",
+      "mapped_chapters": [
+        "ch04",
+        "ch10",
+        "ch16"
+      ],
+      "quality_score": 58
+    },
+    {
+      "path": "part2-performance/ch08-responsiveness/09-game-performance.md",
+      "mtime": "2026-04-08T21:24:40",
+      "word_count": 1535,
+      "title": "Android 游戏性能与 Game Mode/State API",
+      "source": "quote",
+      "mapped_chapters": [
+        "ch02",
+        "ch05",
+        "ch07",
+        "ch08",
+        "ch09",
+        "ch16"
+      ],
+      "quality_score": 58
+    },
+    {
+      "path": "part1-fundamentals/ch01-architecture/07-art-compilation.md",
+      "mtime": "2026-04-08T20:52:22",
+      "word_count": 1472,
+      "title": "ART 编译管线与 dex2oat 优化",
+      "source": "quote",
+      "mapped_chapters": [
+        "ch08",
+        "ch13"
+      ],
+      "quality_score": 58
+    },
+    {
+      "path": "part2-performance/ch07-smoothness/02-jank-causes.md",
+      "mtime": "2026-04-08T20:29:52",
+      "word_count": 1792,
+      "title": "卡顿原因体系",
+      "source": "quote",
+      "mapped_chapters": [
+        "ch02",
+        "ch03",
+        "ch04",
+        "ch05",
+        "ch07",
+        "ch09",
+        "ch13"
+      ],
+      "quality_score": 58
+    },
+    {
+      "path": "part2-performance/ch07-smoothness/09-perceived-smoothness.md",
+      "mtime": "2026-04-08T18:44:21",
+      "word_count": 908,
+      "title": "感知流畅性",
+      "source": "quote",
+      "mapped_chapters": [
+        "ch02",
+        "ch07",
+        "ch13"
+      ],
+      "quality_score": 53
+    },
+    {
+      "path": "part2-performance/ch08-responsiveness/04-other-scenarios.md",
+      "mtime": "2026-04-08T18:27:01",
+      "word_count": 1389,
+      "title": "其他响应速度场景",
+      "source": "quote",
+      "mapped_chapters": [
+        "ch02",
+        "ch07",
+        "ch08",
+        "ch13"
+      ],
+      "quality_score": 58
+    },
+    {
+      "path": "part1-fundamentals/ch04-memory/05-app-memory-optimization.md",
+      "mtime": "2026-04-08T17:27:15",
+      "word_count": 2604,
+      "title": "App 内存优化",
+      "source": "quote",
+      "mapped_chapters": [
+        "ch01",
+        "ch04",
+        "ch07",
+        "ch08",
+        "ch10"
+      ],
+      "quality_score": 63
+    },
+    {
+      "path": "part2-performance/ch08-responsiveness/03-launch-optimization.md",
+      "mtime": "2026-04-08T16:29:53",
+      "word_count": 1866,
+      "title": "启动优化策略",
+      "source": "quote",
+      "mapped_chapters": [
+        "ch08",
+        "ch13",
+        "ch16"
+      ],
+      "quality_score": 58
+    },
+    {
+      "path": "part2-performance/ch07-smoothness/11-webview-performance.md",
+      "mtime": "2026-04-08T16:12:29",
+      "word_count": 1717,
+      "title": "WebView 渲染性能与优化",
+      "source": "quote",
+      "mapped_chapters": [
+        "ch02",
+        "ch04",
+        "ch07",
+        "ch08",
+        "ch10",
+        "ch16"
+      ],
+      "quality_score": 58
+    },
+    {
+      "path": "part3-tools/ch14-other-tools/10-ebpf-performance-analysis.md",
+      "mtime": "2026-04-08T15:59:39",
+      "word_count": 1311,
+      "title": "eBPF/BPF 在 Android 性能分析中的应用",
+      "source": "quote",
+      "mapped_chapters": [
+        "ch05"
+      ],
+      "quality_score": 50
+    },
+    {
+      "path": "part2-performance/ch08-responsiveness/02-app-launch.md",
+      "mtime": "2026-04-08T15:25:26",
+      "word_count": 1795,
+      "title": "App 启动全流程",
+      "source": "quote",
+      "mapped_chapters": [
+        "ch01",
+        "ch08",
+        "ch13"
+      ],
+      "quality_score": 58
+    },
+    {
+      "path": "part1-fundamentals/ch05-cpu-power/07-cpu-evolution.md",
+      "mtime": "2026-04-08T14:47:02",
+      "word_count": 1415,
+      "title": "CPU 相关的版本演进",
+      "source": "quote",
+      "mapped_chapters": [
+        "ch05",
+        "ch16"
+      ],
+      "quality_score": 58
+    },
+    {
+      "path": "part1-fundamentals/ch05-cpu-power/06-android-power.md",
+      "mtime": "2026-04-08T14:11:47",
+      "word_count": 1759,
+      "title": "Android 功耗管理",
+      "source": "quote",
+      "mapped_chapters": [
+        "ch01",
+        "ch05",
+        "ch16"
+      ],
+      "quality_score": 58
+    },
+    {
+      "path": "part2-performance/ch07-smoothness/08-recyclerview-performance.md",
+      "mtime": "2026-04-08T14:01:52",
+      "word_count": 1123,
+      "title": "RecyclerView 列表滑动性能深度优化",
+      "source": "quote",
+      "mapped_chapters": [
+        "ch02",
+        "ch07",
+        "ch13"
+      ],
+      "quality_score": 58
+    },
+    {
+      "path": "part2-performance/ch10-memory-perf/01-app-memory-analysis.md",
+      "mtime": "2026-04-08T13:46:55",
+      "word_count": 1653,
+      "title": "App 内存分析",
+      "source": "quote",
+      "mapped_chapters": [
+        "ch04",
+        "ch10",
+        "ch14",
+        "ch15"
+      ],
+      "quality_score": 58
+    },
+    {
+      "path": "part1-fundamentals/ch06-storage/02-filesystem.md",
+      "mtime": "2026-04-08T13:36:50",
+      "word_count": 1919,
+      "title": "文件系统",
+      "source": "quote",
+      "mapped_chapters": [
+        "ch06",
+        "ch13"
+      ],
+      "quality_score": 58
+    },
+    {
+      "path": "part3-tools/ch14-other-tools/07-profiling-manager.md",
+      "mtime": "2026-04-08T11:22:41",
+      "word_count": 1703,
+      "title": "ProfilingManager",
+      "source": "quote",
+      "mapped_chapters": [
+        "ch05",
+        "ch06",
+        "ch08",
+        "ch13",
+        "ch16"
+      ],
+      "quality_score": 58
+    },
+    {
+      "path": "part1-fundamentals/ch05-cpu-power/11-ondevice-ml-inference-performance.md",
+      "mtime": "2026-04-08T10:18:16",
+      "word_count": 861,
+      "title": "端侧 AI 推理性能",
+      "source": "mixed",
+      "mapped_chapters": [
+        "ch05",
+        "ch07",
+        "ch16",
+        "ch17"
+      ],
+      "quality_score": 53
+    },
+    {
+      "path": "part1-fundamentals/ch04-memory/07-16kb-page-size.md",
+      "mtime": "2026-04-08T09:32:12",
+      "word_count": 1097,
+      "title": "16KB Page Size 与 Android 性能",
+      "source": "quote",
+      "mapped_chapters": [
+        "ch05",
+        "ch08",
+        "ch13"
+      ],
+      "quality_score": 58
+    },
+    {
+      "path": "part2-performance/ch08-responsiveness/01-responsiveness-principles.md",
+      "mtime": "2026-04-08T09:26:54",
+      "word_count": 894,
+      "title": "响应速度原理",
+      "source": "quote",
+      "mapped_chapters": [
+        "ch03",
+        "ch08"
+      ],
+      "quality_score": 53
+    },
+    {
+      "path": "part1-fundamentals/ch03-input/06-gesture-recognition-performance.md",
+      "mtime": "2026-04-08T09:19:41",
+      "word_count": 1463,
+      "title": "手势识别算法与性能优化",
+      "source": "quote",
+      "mapped_chapters": [
+        "ch03",
+        "ch04",
+        "ch07",
+        "ch13",
+        "ch16"
+      ],
+      "quality_score": 50
+    },
+    {
+      "path": "part1-fundamentals/ch03-input/05-input-interception-security.md",
+      "mtime": "2026-04-08T09:19:41",
+      "word_count": 1419,
+      "title": "输入事件拦截与安全机制",
+      "source": "quote",
+      "mapped_chapters": [
+        "ch03",
+        "ch16"
+      ],
+      "quality_score": 58
+    },
+    {
+      "path": "part1-fundamentals/ch03-input/README.md",
+      "mtime": "2026-04-08T09:19:41",
+      "word_count": 19,
+      "title": "README",
+      "source": "mixed",
+      "mapped_chapters": [
+        "ch03"
+      ],
+      "quality_score": 30
+    },
+    {
+      "path": "part1-fundamentals/ch05-cpu-power/05-thermal.md",
+      "mtime": "2026-04-08T08:11:50",
+      "word_count": 1864,
+      "title": "Thermal",
+      "source": "quote",
+      "mapped_chapters": [
+        "ch05",
+        "ch07",
+        "ch16"
+      ],
+      "quality_score": 58
+    },
+    {
+      "path": "part1-fundamentals/ch01-architecture/13-messagequeue-deliqueue.md",
+      "mtime": "2026-04-08T08:11:50",
+      "word_count": 1331,
+      "title": "MessageQueue 机制与 DeliQueue 无锁优化",
+      "source": "quote",
+      "mapped_chapters": [
+        "ch02",
+        "ch07",
+        "ch08",
+        "ch13",
+        "ch16"
+      ],
+      "quality_score": 50
+    },
+    {
+      "path": "part3-tools/ch13-perfetto/03-perfetto-view.md",
+      "mtime": "2026-04-08T06:15:58",
+      "word_count": 1615,
+      "title": "Perfetto View 解读",
+      "source": "quote",
+      "mapped_chapters": [
+        "ch01",
+        "ch02",
+        "ch05",
+        "ch07",
+        "ch13"
+      ],
+      "quality_score": 58
+    },
+    {
+      "path": "part3-tools/ch13-perfetto/07-advanced-usage.md",
+      "mtime": "2026-04-08T06:15:58",
+      "word_count": 1459,
+      "title": "Perfetto 的高级用法",
+      "source": "quote",
+      "mapped_chapters": [
+        "ch05",
+        "ch08",
+        "ch13",
+        "ch15"
+      ],
+      "quality_score": 45
+    },
+    {
+      "path": "part3-tools/ch15-methodology/06-testing-best-practices.md",
+      "mtime": "2026-04-08T06:15:58",
+      "word_count": 1292,
+      "title": "性能测试最佳实践",
+      "source": "quote",
+      "mapped_chapters": [
+        "ch02",
+        "ch04",
+        "ch05",
+        "ch06",
+        "ch08",
+        "ch13",
+        "ch14",
+        "ch15"
+      ],
+      "quality_score": 58
+    },
+    {
+      "path": "part3-tools/ch15-methodology/08-empirical-performance-issues.md",
+      "mtime": "2026-04-08T06:15:58",
+      "word_count": 703,
+      "title": "Android 性能问题实证",
+      "source": "mixed",
+      "mapped_chapters": [
+        "ch04",
+        "ch07",
+        "ch08",
+        "ch09"
+      ],
+      "quality_score": 53
+    },
+    {
+      "path": "part3-tools/ch15-methodology/03-metrics.md",
+      "mtime": "2026-04-08T06:15:58",
+      "word_count": 1204,
+      "title": "性能指标体系",
+      "source": "quote",
+      "mapped_chapters": [
+        "ch02",
+        "ch04",
+        "ch05",
+        "ch07",
+        "ch16"
+      ],
+      "quality_score": 58
+    },
+    {
+      "path": "part3-tools/ch14-other-tools/05-third-party-libs.md",
+      "mtime": "2026-04-08T06:15:58",
+      "word_count": 1038,
+      "title": "三方性能库",
+      "source": "quote",
+      "mapped_chapters": [
+        "ch02",
+        "ch04",
+        "ch07",
+        "ch09",
+        "ch13"
+      ],
+      "quality_score": 58
+    },
+    {
+      "path": "part2-performance/ch07-smoothness/05-optimization.md",
+      "mtime": "2026-04-08T06:15:58",
+      "word_count": 1203,
+      "title": "优化策略",
+      "source": "quote",
+      "mapped_chapters": [
+        "ch02",
+        "ch07",
+        "ch15"
+      ],
+      "quality_score": 58
+    },
+    {
+      "path": "part2-performance/ch08-responsiveness/07-baseline-profiles.md",
+      "mtime": "2026-04-08T06:15:57",
+      "word_count": 1302,
+      "title": "Baseline Profiles 与编译优化实践",
+      "source": "quote",
+      "mapped_chapters": [
+        "ch08"
+      ],
+      "quality_score": 58
+    },
+    {
+      "path": "part1-fundamentals/ch04-memory/08-art-generational-gc.md",
+      "mtime": "2026-04-08T06:15:57",
+      "word_count": 1648,
+      "title": "ART 分代垃圾回收与 GC 暂停优化",
+      "source": "quote",
+      "mapped_chapters": [
+        "ch02",
+        "ch05",
+        "ch07",
+        "ch13"
+      ],
+      "quality_score": 58
+    },
+    {
+      "path": "part1-fundamentals/ch06-storage/03-io-scheduling.md",
+      "mtime": "2026-04-08T06:15:57",
+      "word_count": 1335,
+      "title": "I/O 调度与性能",
+      "source": "quote",
+      "mapped_chapters": [
+        "ch05",
+        "ch06",
+        "ch07",
+        "ch13"
+      ],
+      "quality_score": 50
+    },
+    {
+      "path": "part1-fundamentals/ch01-architecture/09-package-manager.md",
+      "mtime": "2026-04-08T06:15:57",
+      "word_count": 1685,
+      "title": "Package Manager Service 与应用安装性能",
+      "source": "quote",
+      "mapped_chapters": [
+        "ch01",
+        "ch06",
+        "ch08"
+      ],
+      "quality_score": 58
+    },
+    {
+      "path": "part1-fundamentals/ch01-architecture/15-jni-ndk-performance.md",
+      "mtime": "2026-04-08T06:15:57",
+      "word_count": 1623,
+      "title": "JNI/NDK 性能优化",
+      "source": "quote",
+      "mapped_chapters": [
+        "ch01",
+        "ch02",
+        "ch08",
+        "ch13"
+      ],
+      "quality_score": 58
+    },
+    {
+      "path": "part1-fundamentals/ch01-architecture/10-content-provider.md",
+      "mtime": "2026-04-08T06:15:57",
+      "word_count": 1445,
+      "title": "ContentProvider 性能与优化",
+      "source": "quote",
+      "mapped_chapters": [
+        "ch01",
+        "ch08",
+        "ch09"
+      ],
+      "quality_score": 58
+    },
+    {
+      "path": "part1-fundamentals/ch01-architecture/12-autofdo-optimization.md",
+      "mtime": "2026-04-08T06:15:57",
+      "word_count": 1001,
+      "title": "AutoFDO 反馈导向编译优化",
+      "source": "quote",
+      "mapped_chapters": [
+        "ch01",
+        "ch04",
+        "ch05",
+        "ch13"
+      ],
+      "quality_score": 50
+    },
+    {
+      "path": "part4-system/ch16-aosp/04-android17-kernel612-performance.md",
+      "mtime": "2026-04-08T06:15:57",
+      "word_count": 1230,
+      "title": "Android 17 + Kernel 6.12 系统级性能优化",
+      "source": "quote",
+      "mapped_chapters": [
+        "ch05",
+        "ch06",
+        "ch08"
+      ],
+      "quality_score": 50
+    },
+    {
+      "path": "part4-system/ch16-aosp/01-google-optimization.md",
+      "mtime": "2026-04-08T06:15:57",
+      "word_count": 1160,
+      "title": "Google 官方的性能优化思路",
+      "source": "quote",
+      "mapped_chapters": [
+        "ch01",
+        "ch02",
+        "ch04",
+        "ch05",
+        "ch07",
+        "ch08"
+      ],
+      "quality_score": 58
     }
   ],
   "stats": {
@@ -46198,11 +46982,11 @@
   },
   "last_scan_time": "2026-04-01T06:07:00",
   "scan_summary": {
-    "previous_count": 7486,
-    "added": 19,
-    "updated": 26,
-    "scan_time": "2026-04-08T06:01:45.145910"
+    "previous_count": 7507,
+    "added": 57,
+    "updated": 0,
+    "scan_time": "2026-04-09T06:03:26.499671"
   },
-  "last_scan": "2026-04-07T22:09:00+08:00",
-  "total_documents": 7505
+  "last_scan": "2026-04-09T06:03:26.499662",
+  "total_documents": 7564
 }
