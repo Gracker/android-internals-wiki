@@ -1,7 +1,7 @@
 ---
 title: "App 启动全流程"
 chapter: "8.2"
-status: ready-for-review
+status: ready-to-publish
 applicable_versions: "Android 8.0 (API 26) - Android 16 (API 36)"
 last_verified: "2026-04-01"
 last_verified_against: "AOSP android-15.0.0_r1"
@@ -22,7 +22,7 @@ related_chapters: ["8.1", "1.2", "1.10", "2.4", "2.5", "7.1"]
 section: "8.2"
 drafted_date: "2026-04-01"
 drafted_by: "openclaw-task2a"
-reviewed_date: "2026-04-05"
+reviewed_date: "2026-04-08"
 reviewed_by: "openclaw-task6"
 polish_count: 1
 polish_date: "2026-04-06"
@@ -535,8 +535,3 @@ ContentProvider 的初始化发生在 Application.onCreate 之前，是启动流
 - [Jetpack App Startup | Android Developers](https://developer.android.com/topic/libraries/app-startup) [已验证: 官方文档]
 - [AOSP ActivityThread.java](https://cs.android.com/android/platform/superproject/+/android-15.0.0_r1:frameworks/base/core/java/android/app/ActivityThread.java) [已验证: AOSP android-15.0.0_r1]
 - [AOSP TransactionExecutor.java](https://cs.android.com/android/platform/superproject/+/android-15.0.0_r1:frameworks/base/core/java/android/app/servertransaction/TransactionExecutor.java) [已验证: AOSP android-15.0.0_r1]
-### Android 12 SplashScreen 另类适配方案
-- 来源：https://juejin.cn/post/7591348605867343907
-- 类型：技术文章
-- 摘要：SplashScreen API另类适配：自定义Theme覆盖系统默认行为，ActivityLifecycleCallbacks全局闪屏管理。
-- 入库时间：2026-04-06
