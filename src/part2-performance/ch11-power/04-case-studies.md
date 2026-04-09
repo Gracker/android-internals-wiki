@@ -2,13 +2,16 @@
 title: "案例集"
 chapter: "11.4"
 section: "11.4"
-status: finalized
+status: ready-for-review
 drafted_date: "2026-04-03"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 8.0 (API 26) - Android 16 (API 36)"
 last_verified: "2026-04-03"
 last_verified_against: "AOSP android-16.0.0_r1"
-confidence: medium
+confidence: medium-high
+polish_count: 1
+polish_date: "2026-04-09"
+polish_by: "task2b-polish"
 reviewed_date: "2026-04-09"
 reviewed_by: "openclaw-task6"
 sources:
@@ -26,8 +29,8 @@ sources:
     path: "https://zhuanlan.zhihu.com/p/309703698"
   - type: official
     path: "https://developer.android.com/topic/performance/battery/battery-historian"
-tags: ['power', 'case-study', 'wakelock', 'location', 'network-polling', 'cpu-wakeup', 'battery-historian']
-related_chapters: ["11.1", "11.2", "11.3", "5.6", "13.1"]
+tags: ['power', 'case-study', 'wakelock', 'location', 'network-polling', 'cpu-wakeup', 'battery-historian', 'workmanager']
+related_chapters: ["11.1", "11.2", "11.3", "5.6", "5.10", "13.1"]
 ---
 
 # 案例集
@@ -216,7 +219,7 @@ public class SyncService extends Service {
 
 某运动健康类 App 在用户反馈中被频繁吐槽"开着这个 App，一天要充两次电"。问题出现在"户外跑步"功能中——用户结束跑步后，App 的后台 GPS 定位仍在持续工作。
 
-这个问题的特征是：**不是某个瞬间的高耗电，而是长时间的持续消耗**。GPS 芯片是设备上功耗最高的传感器之一，持续使用 GPS 的功耗约为 50-100mA，而待机状态只有 5-8mA——差了十倍以上。
+这个问题的特征是：**不是某个瞬间的高耗电，而是长时间的持续消耗**。GPS 芯片是设备上功耗最高的传感器之一，持续使用 GPS 的功耗约为 50-100mA，而待机状态只有 5-8mA——差了一个数量级以上。
 
 [已验证: 官方文档, developer.android.com/guide/topics/location]
 
@@ -502,7 +505,7 @@ CPU 频繁唤醒的排查和 WakeLock 不同。WakeLock 是"持续持有"导致 
 
 ### 抓取与定位
 
-Battery Historian 报告中，"Wake Lock" 行不是一条长线，而是密密麻麻的短线段——大约每 60 秒一段。同时 "Kernel Wakeup Reasons" 行显示了大量的 `alarm` 类型唤醒源。
+Battery Historian 报告中，"Wake Lock" 行不是一条长线，而是密集的短线段——大约每 60 秒一段。同时 "Kernel Wakeup Reasons" 行显示了大量的 `alarm` 类型唤醒源。
 
 [图：Battery Historian — 密集的短 WakeLock 条带，间距约 60 秒]
 
@@ -692,11 +695,11 @@ public class CleanupJobService extends JobService {
 
 ### 举一反三
 
-这个案例的教训是：**使用任何 API 时，都要理解它在底层获取了什么系统资源，以及什么时候释放**。JobScheduler 表面上"帮你管理了 WakeLock"，但它帮的是"持有"，释放的责任在使用者。类似的模式还有：
+这个案例的教训是：**使用任何 API 时，都要理解它在底层获取了什么系统资源，以及什么时候释放**。JobScheduler 表面上"帮我们管理了 WakeLock"，但它负责的是"持有"，释放的责任在使用者。类似的模式还有：
 
 - `GcmTaskService`（已废弃）：同样需要 `onFinishTask()`
 - `ForegroundService`：需要在任务完成后调用 `stopForeground()` + `stopSelf()`
-- WorkManager 的 `Worker`：自动管理，不需要手动处理（这是 WorkManager 优于直接使用 JobScheduler 的一个原因）
+- WorkManager 的 `Worker`：自动管理 WakeLock 的获取和释放（通过 `ForegroundInfo` 支持前台服务），不需要手动调用 `jobFinished()` 的等价操作（这是 WorkManager 优于直接使用 JobScheduler 的一个原因，详见 5.10）
 
 如果在项目中直接使用 JobScheduler，全局搜索所有 `onStartJob` 返回 `true` 的地方，确认每一个都有对应的 `jobFinished()` 调用。
 
@@ -711,8 +714,8 @@ public class CleanupJobService extends JobService {
 | WakeLock 泄漏 | PowerManager.WakeLock | 11.2 WakeLock 最佳实践 |
 | 后台位置泄漏 | FusedLocationProvider | 11.2 位置服务功耗优化 |
 | 网络轮询 | Radio 状态机 | 11.2 网络请求功耗优化 |
-| AlarmManager 滥用 | AlarmManager vs WorkManager | 11.2 Alarm 使用规范 |
-| JobScheduler 超时 | JobService 生命周期 | 11.2 后台任务省电策略 |
+| AlarmManager 滥用 | AlarmManager vs WorkManager | 11.2 Alarm 使用规范、5.10 JobScheduler/WorkManager |
+| JobScheduler 超时 | JobService 生命周期 | 11.2 后台任务省电策略、5.10 JobScheduler/WorkManager |
 
 如果在分析具体问题时需要了解底层机制，可以回到对应章节查看详细的技术原理。如果需要了解 Battery Historian 的使用方法，参考 11.1 的功耗度量部分。
 
@@ -724,7 +727,7 @@ public class CleanupJobService extends JobService {
 
 ### 误区一："用了 WorkManager 就不用关心功耗了"
 
-WorkManager 帮你管理了 WakeLock 的获取和释放、任务的批处理和约束条件，但它不能代替开发者决定"这个任务是否真的需要在后台运行"。如果用 WorkManager 每分钟同步一次数据，效果和 AlarmManager 滥用差不多——只是 WakeLock 不会泄漏了，但 CPU 还是频繁唤醒。
+WorkManager 帮我们管理了 WakeLock 的获取和释放、任务的批处理和约束条件，但它不能代替开发者决定"这个任务是否真的需要在后台运行"。WorkManager 的 PeriodicWorkRequest 最小间隔是 15 分钟（无法设得更短），这在一定程度上限制了滥用。但如果用 OneTimeWorkRequest 链式调度、或者设置不合理的约束条件导致任务频繁重试，仍然会带来不必要的 CPU 唤醒和 Radio 活跃。
 
 ### 误区二："Battery Historian 已经过时了，不需要学"
 

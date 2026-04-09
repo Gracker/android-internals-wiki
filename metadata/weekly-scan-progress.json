@@ -1,7 +1,7 @@
 {
-  "current_issue": 0,
+  "current_issue": 1,
   "total_issues": 58,
-  "completed_issues": [],
+  "completed_issues": [0],
   "issue_list": [
     "2020-08-18_Android_Weekly_#0.md",
     "2020-08-25_Android_Weekly_#1.md",
@@ -62,6 +62,6 @@
     "2025-07-28_Android_Weekly_#56.md",
     "2025-08-03_Android_Weekly_#57.md"
   ],
-  "indexed_links": 0,
-  "skipped_links": 0
+  "indexed_links": 2,
+  "skipped_links": 17
 }

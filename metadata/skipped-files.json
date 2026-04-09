@@ -3797,5 +3797,170 @@
     "path": "调研/三大AI编程框架对比/",
     "reason": "AI编程框架对比，非Android内部机制",
     "score": 3
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-17-后台任务调度与电池/stage-01/goal.md",
+    "reason": "AutoResearchClaw 流水线初始化文件，仅定义主题无实质内容",
+    "score": 4
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-17-后台任务调度与电池/stage-02/problem_tree.md",
+    "reason": "流水线问题分解模板，AI生成结构无原创内容",
+    "score": 5
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-17-后台任务调度与电池/stage-06/cards/1.md",
+    "reason": "文献卡片：Android恶意软件检测静态分析综述，与功耗主题偏离",
+    "score": 4
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-17-后台任务调度与电池/stage-06/cards/2.md",
+    "reason": "文献卡片：深度学习恶意软件防御综述，与功耗主题偏离",
+    "score": 4
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-17-后台任务调度与电池/stage-06/cards/3.md",
+    "reason": "文献卡片：DNN恶意软件检测综述，与功耗主题偏离",
+    "score": 4
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-17-后台任务调度与电池/stage-08/hypotheses.md",
+    "reason": "流水线未解决分歧注释，无实质假设内容",
+    "score": 3
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-17-后台任务调度与电池/stage-08/perspectives/contrarian.md",
+    "reason": "AI生成的反传统视角假设，模板化低深度",
+    "score": 6
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-17-后台任务调度与电池/stage-08/perspectives/innovator.md",
+    "reason": "AI生成的创新者视角假设，模板化",
+    "score": 6
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-17-后台任务调度与电池/stage-08/perspectives/pragmatist.md",
+    "reason": "AI生成的实用主义者视角假设，模板化",
+    "score": 6
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-17-后台任务调度与电池/stage-10/experiment_spec.md",
+    "reason": "实验规格模板，含项目结构但无实质实验数据",
+    "score": 5
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-17-后台任务调度与电池/stage-14/perspectives/methodologist.md",
+    "reason": "方法学审计流水线产物，模板化评论",
+    "score": 5
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-17-后台任务调度与电池/stage-14/perspectives/optimist.md",
+    "reason": "乐观分析流水线产物，模板化",
+    "score": 5
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-17-后台任务调度与电池/stage-14/perspectives/skeptic.md",
+    "reason": "怀疑论分析流水线产物，模板化",
+    "score": 5
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-17-后台任务调度与电池/stage-14_v1/analysis.md",
+    "reason": "stage-14分析迭代v1，与主版本重复",
+    "score": 4
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-17-后台任务调度与电池/stage-14_v1/perspectives/methodologist.md",
+    "reason": "迭代重复的方法学审计",
+    "score": 3
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-17-后台任务调度与电池/stage-14_v1/perspectives/optimist.md",
+    "reason": "迭代重复的乐观分析",
+    "score": 3
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-17-后台任务调度与电池/stage-14_v1/perspectives/skeptic.md",
+    "reason": "迭代重复的怀疑论分析",
+    "score": 3
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-17-后台任务调度与电池/stage-14_v2/analysis.md",
+    "reason": "stage-14分析迭代v2，与主版本重复",
+    "score": 4
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-17-后台任务调度与电池/stage-14_v2/perspectives/methodologist.md",
+    "reason": "迭代重复的方法学审计v2",
+    "score": 3
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-17-后台任务调度与电池/stage-14_v2/perspectives/optimist.md",
+    "reason": "迭代重复的乐观分析v2",
+    "score": 3
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-17-后台任务调度与电池/stage-14_v2/perspectives/skeptic.md",
+    "reason": "迭代重复的怀疑论分析v2",
+    "score": 3
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-17-后台任务调度与电池/stage-15/decision.md",
+    "reason": "REFINE决策，流水线否决结果无实质内容",
+    "score": 2
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-17-后台任务调度与电池/stage-15_v1/decision.md",
+    "reason": "REFINE决策迭代v1",
+    "score": 2
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-17-后台任务调度与电池/stage-15_v2/decision.md",
+    "reason": "REFINE决策迭代v2",
+    "score": 2
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-18-02-性能功耗热优化/stage-01/goal.md",
+    "reason": "流水线初始化文件，仅定义主题",
+    "score": 4
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-18-02-性能功耗热优化/stage-02/problem_tree.md",
+    "reason": "流水线问题分解模板",
+    "score": 5
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-18-02-性能功耗热优化/stage-06/cards/1.md",
+    "reason": "文献卡片：ML恶意软件检测综述，与功耗主题偏离",
+    "score": 4
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-18-02-性能功耗热优化/stage-06/cards/2.md",
+    "reason": "文献卡片：DNN恶意软件检测综述，与功耗主题偏离",
+    "score": 4
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-18-02-性能功耗热优化/stage-06/cards/3.md",
+    "reason": "文献卡片：静态分析恶意软件综述，与功耗主题偏离",
+    "score": 4
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-18-02-性能功耗热优化/stage-08/perspectives/contrarian.md",
+    "reason": "AI生成反传统视角假设，模板化",
+    "score": 6
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-18-02-性能功耗热优化/stage-08/perspectives/innovator.md",
+    "reason": "AI生成创新者视角假设，模板化",
+    "score": 6
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-18-02-性能功耗热优化/stage-08/perspectives/pragmatist.md",
+    "reason": "AI生成实用主义者视角假设，模板化",
+    "score": 6
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-18-02-性能功耗热优化/stage-10/experiment_spec.md",
+    "reason": "实验规格模板，无实质数据",
+    "score": 5
   }
 ]
