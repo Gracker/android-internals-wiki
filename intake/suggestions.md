@@ -50,3 +50,33 @@
 - **位置**：Profile-Guided Optimization 体系
 - **问题**：未覆盖 Compact DEX（cdex）格式对编译行为的影响。
 - **建议**：在 PGO 体系中补充一段：cdex 格式下安装时必须有 AOT 编译，与 raw DEX 的行为差异。
+
+## [Task9 Deep Review] 4.6 内存相关的版本演进 — 2026-04-09
+- **类型**：源码准确性
+- **位置**：AOSP 源码路径 — Scudo
+- **问题**：Scudo AOSP 路径为 `system/memory/libmemunreachable/scudo/`，正确路径为 `external/scudo/standalone/`（Android 集成）和 `compiler-rt/lib/scudo/`（LLVM 上游）
+- **建议**：修正为 `external/scudo/standalone/`
+
+## [Task9 Deep Review] 4.6 内存相关的版本演进 — 2026-04-09
+- **类型**：源码准确性
+- **位置**：AOSP 源码路径 — CMC GC
+- **问题**：CMC GC 路径 `art/runtime/gc/collector/concurrent_mark_compact.cc` 需核实；AOSP 实际文件名可能为 `mark_compact.cc`
+- **建议**：核实 AOSP android-16 源码 `art/runtime/gc/collector/` 目录下的实际文件名
+
+## [Task9 Deep Review] 4.6 内存相关的版本演进 — 2026-04-09
+- **类型**：知识盲区
+- **位置**：扩展 — MTE 在 Android 14+ 的推进
+- **问题**：MTE 需要 ARMv8.5-A 硬件支持，并非所有 Android 14+ 设备都支持；章节未说明硬件依赖性
+- **建议**：补充"MTE 需要 ARMv8.5-A 指令集，各芯片平台支持情况不一，建议 App 通过 `android.os.fea` API 检测"
+
+## [Task9 Deep Review] 4.6 内存相关的版本演进 — 2026-04-09
+- **类型**：版本差异覆盖
+- **位置**：版本演进速查表 / 正文
+- **问题**：Android 12/13 的内存管理变化（内存 reclaim 策略、background 进程内存限制强化）未覆盖
+- **建议**：在速查表中补充 Android 12（内存 reclaim 优化）和 Android 13（更严格的 background 进程内存限制）相关变化
+
+## [Task9 Deep Review] 4.6 内存相关的版本演进 — 2026-04-09
+- **类型**：数据缺失
+- **位置**：进程内存限制与 largeHeap 策略的版本演进 — largeHeap 表格
+- **问题**：largeHeap 表格的具体数值（128-512MB 等）标注为"待验证"经验值，缺少权威来源
+- **建议**：补充 `adb shell getprop dalvik.vm.heapsize` 在各版本实际设备的输出，或引用官方文档

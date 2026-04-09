@@ -3417,5 +3417,385 @@
     "technical_depth": 0,
     "timeliness": 1,
     "verifiability": 0
+  },
+  {
+    "path": "X 文章/2026-03-05-1629-JasonZhu-Claude-101-Complete-Guide-2029427735807050002.md",
+    "reason": "非Android: Claude 101入门指南，AI工具教程",
+    "score": 6
+  },
+  {
+    "path": "X 文章/2026-03-05-1629-MasterPa-AI-Guide-for-Humanities-Workers-2029362155607474359.md",
+    "reason": "非Android: 人文工作者AI使用指南",
+    "score": 5
+  },
+  {
+    "path": "X 文章/2026-03-06-1221-凡人小北-AI编程工具SystemPrompt大合集-2029561950322168284.md",
+    "reason": "非Android: AI编程工具System Prompt合集",
+    "score": 7
+  },
+  {
+    "path": "X 文章/2026-03-06-1222-AIEdge-Claude初学者完整指南-2029233676111008061.md",
+    "reason": "非Android: Claude初学者指南",
+    "score": 5
+  },
+  {
+    "path": "X 文章/2026-03-06-1628-AI Edge-The Ultimate Beginner's Guide to Claude (March 202-2029233676111008061.md",
+    "reason": "重复: 同2029233676111008061的另一版本",
+    "score": 5
+  },
+  {
+    "path": "X 文章/2026-03-06-1628-GeekPlux-拥抱黑盒：一个研究者 All in AI 的实录与反思-2029761486671712745.md",
+    "reason": "非Android: AI研究反思",
+    "score": 5
+  },
+  {
+    "path": "X 文章/2026-03-06-1628-Yanhua-Claude 终极入门指南：100 小时实测，一篇讲透-2029748928091148665.md",
+    "reason": "非Android: Claude入门指南",
+    "score": 5
+  },
+  {
+    "path": "X 文章/2026-03-06-1628-gemchanger-How I'd Become a Quant If I Had to Start Over Tomo-2028904166895112617.md",
+    "reason": "非Android: 量化金融职业规划",
+    "score": 4
+  },
+  {
+    "path": "X 文章/2026-03-06-1628-凡人小北-AI 编程工具 System Prompt 仓库-2029561950322168284.md",
+    "reason": "重复: 同2029561950322168284的另一版本",
+    "score": 5
+  },
+  {
+    "path": "X 文章/2026-03-06-2024-AeliaCapitolina-海湾秩序终结-2029618540140273741.md",
+    "reason": "非Android: 地缘政治分析",
+    "score": 4
+  },
+  {
+    "path": "X 文章/2026-03-06-2024-ginobefun-BestBlogs85期-驾驭工程-2029843882037715433.md",
+    "reason": "非Android: 工程实践博客汇总，偏AI Agent",
+    "score": 6
+  },
+  {
+    "path": "X 文章/2026-03-07-1222-Hōrōshi-バガボンド-Your-LLM-Doesnt-Write-Correct-Code-It-Writes-Plaus-2029928471632224486.md",
+    "reason": "非Android: LLM代码生成可靠性分析",
+    "score": 6
+  },
+  {
+    "path": "X 文章/2026-03-08-0800-JimProsser-My-Chief-of-Staff-Claude-Code-2029699731539255640.md",
+    "reason": "非Android: Claude Code作为AI助手",
+    "score": 5
+  },
+  {
+    "path": "X 文章/2026-03-09-0807-Kevin-S-Xu-Chinese-Open-Source-A-Definitive-History-2029961571296743585.md",
+    "reason": "非Android: 中国开源历史综述",
+    "score": 5
+  },
+  {
+    "path": "X 文章/2026-03-09-0807-hoeem-I-want-to-become-an-AI-engineer-full-course-2029660075774574660.md",
+    "reason": "非Android: AI工程师学习路线",
+    "score": 5
+  },
+  {
+    "path": "X 文章/2026-03-09-0807-东铭-Insight-战争油价与你的钱包中东炮声如何引爆全球市场-2029869964715336007.md",
+    "reason": "非Android: 地缘政治/油价分析",
+    "score": 4
+  },
+  {
+    "path": "X 文章/2026-03-09-0807-青年小哲-在没有海外信用卡的情况下如何稳定付费-ChatGPT-和-Claude-会员-2029920937651622199.md",
+    "reason": "非Android: AI工具付费教程",
+    "score": 4
+  },
+  {
+    "path": "X 文章/2026-03-09-0807-鱼总聊AI-2026最值得关注的AI出海创业独立开发副业博主大合集-2030166779096658161.md",
+    "reason": "非Android: AI博主推荐合集",
+    "score": 4
+  },
+  {
+    "path": "X 文章/2026-03-11-0805-AI进化论-花生-98页的-OpenClaw橙皮书-2031212769694068775.md",
+    "reason": "非Android: OpenClaw橙皮书介绍",
+    "score": 5
+  },
+  {
+    "path": "X 文章/2026-03-11-0805-Aelia-Capitolina-没有退路的赌桌TACO交易的终结-2030781217600049185.md",
+    "reason": "非Android: 金融交易分析",
+    "score": 4
+  },
+  {
+    "path": "X 文章/2026-03-11-0805-Fang知识分享-Lex-Fridman-采访-Sam-Altman-AI播客深度对话-2031175084296253588.md",
+    "reason": "非Android: AI播客访谈",
+    "score": 4
+  },
+  {
+    "path": "X 文章/2026-03-11-0805-Harrison-Chase-How-Coding-Agents-Are-Reshaping-Engineering-Produc-2031051115169808685.md",
+    "reason": "非Android: AI编程Agent对工程的影响",
+    "score": 6
+  },
+  {
+    "path": "X 文章/2026-03-11-0805-QingYue-搜索外脑接入龙虾生态-SearxNG-方案-2030996280051462609.md",
+    "reason": "非Android: SearxNG搜索引擎方案",
+    "score": 5
+  },
+  {
+    "path": "X 文章/2026-03-11-0805-余温-去-AI-味的方法-Agent-Skills-写作风格-2023173476702728479.md",
+    "reason": "非Android: AI写作风格优化",
+    "score": 5
+  },
+  {
+    "path": "X 文章/2026-03-12-0804-AI进化论-花生-98页的 OpenClaw橙皮书-2031212769694068775.md",
+    "reason": "重复: 同2031212769694068775",
+    "score": 5
+  },
+  {
+    "path": "X 文章/2026-03-12-0804-Aelia Capitolina-没有退路的赌桌，TACO交易的终结-2030781217600049185.md",
+    "reason": "重复: 同2030781217600049185",
+    "score": 4
+  },
+  {
+    "path": "X 文章/2026-03-12-0804-Fang知识分享-Lex Fridman 采访 Sam Altman - AI播客深度对话-2031175084296253588.md",
+    "reason": "重复: 同2031175084296253588",
+    "score": 4
+  },
+  {
+    "path": "X 文章/2026-03-12-0804-Harrison Chase-How Coding Agents Are Reshaping Engineering, Product and Design-2031051115169808685.md",
+    "reason": "重复: 同2031051115169808685",
+    "score": 6
+  },
+  {
+    "path": "X 文章/2026-03-12-0804-Kevin S. Xu-Chinese Open Source- A Definitive History-2029961571296743585.md",
+    "reason": "重复: 同2029961571296743585",
+    "score": 5
+  },
+  {
+    "path": "X 文章/2026-03-12-0804-QingYue-搜索外脑接入龙虾生态 - SearxNG 方案-2030996280051462609.md",
+    "reason": "重复: 同2030996280051462609",
+    "score": 5
+  },
+  {
+    "path": "X 文章/2026-03-12-0804-hoeem-I want to become an AI engineer (full course)-2029660075774574660.md",
+    "reason": "重复: 同2029660075774574660",
+    "score": 5
+  },
+  {
+    "path": "X 文章/2026-03-12-0804-东铭 Insight-战争、油价与你的钱包：中东炮声如何引爆全球市场-2029869964715336007.md",
+    "reason": "重复: 同2029869964715336007",
+    "score": 4
+  },
+  {
+    "path": "X 文章/2026-03-12-0804-余温-去 AI 味的方法 - Agent Skills 写作风格-2023173476702728479.md",
+    "reason": "重复: 同2023173476702728479",
+    "score": 5
+  },
+  {
+    "path": "X 文章/2026-03-12-0804-青年小哲-在没有海外信用卡的情况下，如何稳定付费 ChatGPT 和 Claude 会员-2029920937651622199.md",
+    "reason": "重复: 同2029920937651622199",
+    "score": 4
+  },
+  {
+    "path": "X 文章/2026-03-12-0804-鱼总聊AI-2026最值得关注的AI-出海-创业-独立开发-副业博主大合集-2030166779096658161.md",
+    "reason": "重复: 同2030166779096658161",
+    "score": 4
+  },
+  {
+    "path": "X 文章/2026-03-23-1055-Claude-Code-claude文件夹完全指南-2035341800739877091.md",
+    "reason": "非Android: Claude Code配置指南",
+    "score": 5
+  },
+  {
+    "path": "X 文章/2026-04-03-x-bookmarks.md",
+    "reason": "索引文件: X收藏抓取汇总，非素材",
+    "score": 3
+  },
+  {
+    "path": "X 文章/2026-04-05-1215-AndrejKarpathy-LLM-Knowledge-Bases.md",
+    "reason": "非Android: Karpathy谈LLM知识库",
+    "score": 6
+  },
+  {
+    "path": "X 文章/2026-04-05-1215-Tw93-你不知道的大模型训练原理路径与新实践.md",
+    "reason": "非Android: 大模型训练原理",
+    "score": 5
+  },
+  {
+    "path": "X 文章/2026-04-05-1215-XiaoTan-ClaudeCode源码深度研究报告.md",
+    "reason": "非Android: ClaudeCode源码分析",
+    "score": 6
+  },
+  {
+    "path": "X 文章/2026-04-05-1215-idoubi-open-agent-sdk替代claude-agent-sdk.md",
+    "reason": "非Android: Agent SDK替代方案",
+    "score": 5
+  },
+  {
+    "path": "X 文章/2026-04-06-1205-AlchainHust-CLAUDE-CODE橙皮书开源.md",
+    "reason": "非Android: OpenClaw橙皮书开源",
+    "score": 4
+  },
+  {
+    "path": "X 文章/2026-04-06-1205-Hawks0x-One-Claude-prompt-to.md",
+    "reason": "非Android: Claude营养提示词",
+    "score": 3
+  },
+  {
+    "path": "X 文章/2026-04-06-1205-HiTw93-你不知道的大模型训练原理路径与新实践.md",
+    "reason": "重复: 同2040047268221608281",
+    "score": 5
+  },
+  {
+    "path": "X 文章/2026-04-06-1205-Lonely__MH-Google-Gemma-4-31B-模.md",
+    "reason": "非Android: Gemma模型新闻",
+    "score": 4
+  },
+  {
+    "path": "X 文章/2026-04-06-1205-andy88988696-口交跟性交的快感对比分析.md",
+    "reason": "垃圾内容: 与技术无关",
+    "score": 2
+  },
+  {
+    "path": "X 文章/2026-04-06-1205-karpathy-LLM-Knowledge-Bases.md",
+    "reason": "重复: 同2039805659525644595",
+    "score": 6
+  },
+  {
+    "path": "X 文章/2026-04-06-1240-AlexZ 🦀-解决Codex过度询问.md",
+    "reason": "非Android: Codex使用技巧",
+    "score": 4
+  },
+  {
+    "path": "X 文章/2026-04-06-1240-Geek Lite-graphify图谱skill.md",
+    "reason": "非Android: Claude Code图谱skill",
+    "score": 4
+  },
+  {
+    "path": "X 文章/2026-04-06-1240-Lonely-Gemma-4-31B破解版.md",
+    "reason": "重复: 同2040832951206961413",
+    "score": 4
+  },
+  {
+    "path": "X 文章/2026-04-06-1240-Tw93-Waza AI工程师技能.md",
+    "reason": "AI工具/Skill发布，非Android内部机制",
+    "score": 6
+  },
+  {
+    "path": "X 文章/2026-04-06-1240-yanhua1010-LLMObsidian知识库.md",
+    "reason": "LLM+Obsidian知识库，非Android内部机制",
+    "score": 5
+  },
+  {
+    "path": "X 文章/2026-04-06-1240-yanhua1010-Obsidian+Claude知识库架构.md",
+    "reason": "Obsidian+Claude架构，非Android内部机制",
+    "score": 5
+  },
+  {
+    "path": "X 文章/2026-04-06-1240-实践哥MinLi-Gemma4到Claude Code缓存机制.md",
+    "reason": "Claude Code缓存机制，非Android内部机制",
+    "score": 6
+  },
+  {
+    "path": "X 文章/2026-04-06-1240-花叔-乔布斯.skill开源.md",
+    "reason": "Skill开源项目，非Android内部机制",
+    "score": 4
+  },
+  {
+    "path": "X 文章/2026-04-06-1240-雪踏乌云-Hermes从0到1教程.md",
+    "reason": "Hermes教程(AI工具)，非Android内部机制",
+    "score": 4
+  },
+  {
+    "path": "X 文章/2026-04-06-1240-马天翼-V神本地LLM环境配置.md",
+    "reason": "本地LLM环境配置，非Android内部机制",
+    "score": 5
+  },
+  {
+    "path": "X 文章/2026-04-06-1257-yanhua1010-用LLM + Obsidian构建个人知识库.md",
+    "reason": "LLM+Obsidian知识库(重复)，非Android内部机制",
+    "score": 5
+  },
+  {
+    "path": "X 文章/2026-04-06-1259-HiTw93-Waza技能发布.md",
+    "reason": "Waza技能发布(重复)，非Android内部机制",
+    "score": 5
+  },
+  {
+    "path": "X 文章/2026-04-06-1300-blackanger-修复Codex行为模式.md",
+    "reason": "修复Codex过度询问，非Android内部机制",
+    "score": 5
+  },
+  {
+    "path": "X 文章/2026-04-06-1301-Lonely__MH-Gemma-4-31B破解.md",
+    "reason": "Gemma模型破解，非Android内部机制",
+    "score": 4
+  },
+  {
+    "path": "X 文章/2026-04-06-1302-yanhua1010-Obsidian+Claude架构.md",
+    "reason": "Obsidian+Claude架构(重复)，非Android内部机制",
+    "score": 5
+  },
+  {
+    "path": "X 文章/2026-04-06-1303-sitinme-ClaudeCode高级功能.md",
+    "reason": "Claude Code高级功能，非Android内部机制",
+    "score": 6
+  },
+  {
+    "path": "X 文章/2026-04-07-1352-AlexZ-Prompt工程之道-不是抽卡是质量阀门.md",
+    "reason": "Prompt工程方法，非Android内部机制",
+    "score": 5
+  },
+  {
+    "path": "X 文章/2026-04-07-1352-AndrejKarpathy-LLMKnowledgeBases.md",
+    "reason": "Karpathy LLM知识库，非Android内部机制",
+    "score": 5
+  },
+  {
+    "path": "调研/AI-Agent-落地案例库/",
+    "reason": "AI Agent案例库，非Android内部机制",
+    "score": 4
+  },
+  {
+    "path": "调研/Anthropic-81K访谈/",
+    "reason": "AI公司访谈，非Android内部机制",
+    "score": 3
+  },
+  {
+    "path": "调研/Browser-Use-CLI/",
+    "reason": "浏览器CLI工具，非Android内部机制",
+    "score": 3
+  },
+  {
+    "path": "调研/Claude Code架构治理与工程实践/",
+    "reason": "Claude Code工程实践，非Android内部机制",
+    "score": 3
+  },
+  {
+    "path": "调研/Claude-Code-入门资源/",
+    "reason": "Claude Code入门，非Android内部机制",
+    "score": 3
+  },
+  {
+    "path": "调研/M5-MacBook-Pro深度对比评测/",
+    "reason": "MacBook评测，非Android内部机制",
+    "score": 3
+  },
+  {
+    "path": "调研/Skill和 SOP 区别/",
+    "reason": "AI Skill相关，非Android内部机制",
+    "score": 3
+  },
+  {
+    "path": "调研/X内容创作系统/",
+    "reason": "X内容创作，非Android内部机制",
+    "score": 3
+  },
+  {
+    "path": "调研/X文章与收藏抓取工具/",
+    "reason": "抓取工具，非Android内部机制",
+    "score": 3
+  },
+  {
+    "path": "调研/graphify-out/",
+    "reason": "graphify输出，非Android内部机制",
+    "score": 3
+  },
+  {
+    "path": "调研/三大AI编程框架对比/",
+    "reason": "AI编程框架对比，非Android内部机制",
+    "score": 3
   }
 ]

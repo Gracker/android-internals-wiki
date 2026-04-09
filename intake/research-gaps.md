@@ -345,3 +345,20 @@ Compact DEX（cdex）格式与 raw DEX 格式在 ART 编译行为上的差异。
 
 ### 关联章节
 §1.7（本章）、§8.2（App 启动全流程）、§8.3（启动优化策略）
+
+
+## [2026-04-09] 4.6 内存相关的版本演进 — 知识盲区
+
+### 盲区描述
+MTE（Memory Tagging Extension）的硬件依赖性未被明确说明。MTE 需要 ARMv8.5-A 指令集支持，并非所有 Android 14+ 设备都具备此硬件能力。Pixel 8 搭载的 Tensor G3 确认支持，但 MediaTek、Qualcomm 不同芯片型号的支持情况各异。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 各芯片平台（Dimensity、Snapdragon）的 MTE 支持情况
+- Android 14/15 不同 SKU（play services, GMS）中 MTE 的实际启用条件
+- 如何在 App 层面检测设备是否支持 MTE（android.os.fea)
+
+### 关联章节
+4.6（内存相关的版本演进）、4.3（ART 虚拟机内存管理）
