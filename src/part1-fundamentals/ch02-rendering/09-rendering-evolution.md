@@ -2,7 +2,7 @@
 title: "渲染机制的版本演进"
 chapter: "2.9"
 section: "2.9"
-status: ready-to-publish
+status: ready-for-review
 drafted_date: 2026-03-30
 reviewed_date: 2026-04-05
 reviewed_by: openclaw-task6
@@ -98,7 +98,7 @@ Android 4.1 Jelly Bean（API 16，2012 年）的 **Project Butter** 是渲染流
 
 ### 为什么需要 RenderThread
 
-在 Android 4.x 中，虽然硬件加速已经默认开启，但 GPU 命令的提交仍然在主线程上执行。`draw` 阶段不仅要构建 DisplayList，还要将 GL 命令 flush 给 GPU。这意味着如果 GPU 很忙，主线程就会阻塞在 `eglSwapBuffers` 或 `glFinish` 上——主线程卡住了，Input 事件也无法及时处理。
+在 Android 4.x 中，虽然硬件加速已经默认开启，但 GPU 命令的提交仍然在主线程上执行。`draw` 阶段不仅要构建 DisplayList，还要将 GL 命令 flush 给 GPU。这里有一个关键的 API 行为差异：`eglSwapBuffers()` 本身是**非阻塞**的——它只是将待显示帧入队到 GPU 的命令队列，然后立即返回，主线程继续执行后续代码；真正会阻塞主线程的是 `glFinish()`——它强制等待 GPU 完成所有已提交的命令才会返回。在 Android 5.0 之前，`glFinish()` 是主线程卡顿的常见根因，而 Android 5.0 引入 RenderThread 之后，GL 命令的提交和等待都移到了独立线程，主线程得以解放。
 
 ### RenderThread 的工作方式
 
