@@ -1,8 +1,8 @@
 ---
 section: "2.10"
 title: "GPU 渲染深入"
-chapter: "2.10"
-status: ready-for-review
+chapter: "2"
+status: finalized
 applicable_versions: "Android 12 - Android 16 (API 31-36)"
 last_verified: "2026-04-09"
 last_verified_against: "AOSP android-16.0.0_r1, developer.android.com"
@@ -21,11 +21,13 @@ sources:
 tags: ['gpu', 'rendering', 'shader', 'vulkan', 'opengl', 'performance', 'memory']
 related_chapters: ["2.3", "2.4", "2.5", "2.6", "2.9", "3.2", "14.3"]
 drafted_date: 2026-03-30
+drafted_by: openclaw-task2a
 reviewed_date: 2026-04-04
 reviewed_by: openclaw-task6
+reviewed_date: 2026-04-10
 rework_date: 2026-04-03
 rework_by: openclaw-task2b
-review_round: 3
+review_round: 4
 polish_count: 1
 polish_date: "2026-04-04"
 polish_by: "task2b-polish"
@@ -144,7 +146,7 @@ struct ANativeWindowBuffer {
 };
 ```
 
-Framebuffer 的管理采用双缓冲（或多缓冲）机制：前缓冲区用于显示，后缓冲区用于渲染，两者在 VSync 信号到来时交换。这个机制避免了画面撕裂——如果没有双缓冲，GPU 正在写入的缓冲区同时被显示控制器读取，画面就会出现上下半帧不一致的情况。在高分辨率屏幕上，Framebuffer 的内存占用相当可观：以 1080p 屏幕、RGBA8888 格式为例，单个 Framebuffer 就需要约 8MB 内存（1920×1080×4 字节），而三缓冲机制下就需要 24MB。在 2K 甚至 4K 屏幕上，这个数字会成倍增长。
+Framebuffer 的管理采用双缓冲（或多缓冲）机制：前缓冲区用于显示，后缓冲区用于渲染，两者在 VSync 信号到来时交换。这个机制避免了画面撕裂——如果没有双缓冲，GPU 正在写入的缓冲区同时被显示控制器读取，画面就会出现上下半帧不一致的情况。在高分辨率屏幕上，Framebuffer 的内存占用不容忽视：以 1080p 屏幕、RGBA8888 格式为例，单个 Framebuffer 就需要约 8MB 内存（1920×1080×4 字节），而三缓冲机制下就需要 24MB。在 2K 甚至 4K 屏幕上，这个数字会成倍增长。
 
 ## Shader Compilation Jank：首次编译着色器导致的掉帧
 
@@ -207,9 +209,9 @@ Android 16 将 Vulkan 定为默认图形 API 的一个重要动机，就是利�
 
 Android 16 标志着一个重要里程碑：Vulkan 成为官方默认图形 API。这意味着新开发的应用将直接使用 Vulkan 后端，而仍然使用 OpenGL ES 的应用则会通过 ANGLE 层转换为 Vulkan 调用。对于性能优化工程师来说，理解这两种 API 的差异以及 ANGLE 层的影响，已经成为必备知识。
 
-这个转变背后的根本原因是 OpenGL ES 的驱动实现质量参差不齐。不同 GPU 厂商（Qualcomm Adreno、ARM Mali、Imagination PowerVR）各自维护 OpenGL ES 驱动，bug 和性能差异很大。Google 通过 ANGLE 将所有 OpenGL ES 调用统一翻译为 Vulkan，只需要维护一套 Vulkan 后端的质量，大幅减少了碎片化问题。
+这个转变背后的根本原因是 OpenGL ES 的驱动实现质量参差不齐。不同 GPU 厂商（Qualcomm Adreno、ARM Mali、Imagination PowerVR）各自维护 OpenGL ES 驱动，bug 和性能差异很大。Google 通过 ANGLE 将所有 OpenGL ES 调用统一翻译为 Vulkan，只需要维护一套 Vulkan 后端的质量，减少了碎片化问题。
 
-### CPU 开销的显著降低
+### CPU 开销：一个数量级的差距
 
 Vulkan 相比 OpenGL ES 最核心的性能优势，在于大幅降低了 CPU 侧的开销。OpenGL ES 采用隐式同步模式——每次调用 `glDrawArrays()` 时，驱动层需要做大量状态检查、资源同步和错误验证工作，这些都在调用线程上同步完成。而 Vulkan 将这些控制权交给了开发者：GPU 命令的提交时机、资源的同步策略、内存的分配方式，全部由应用显式控制。
 
