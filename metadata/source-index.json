@@ -6173,76 +6173,755 @@
       "first_chars": "---\ntags:\n  - ai\n  - performance\n  - memory\n  - blog\n\n# Agent实践知识图谱 · 2026-03-29\n\n## 四大核心主题\n\n### 1. 记忆系统优化\n#### 1.1 长期记忆架构\n- **状态管理**：三层记忆架构（日记层→核心记忆层→向量层抽检）\n- **维护策略**：每日心跳检查，定期MEMORY.md更新，避免\"mental notes\"\n- **存储优化**：文本>Brain，文件是记忆唯一可靠载体\n- **跨场景适用**：主session专属MEMORY.md，子agent使用SUBAGENT_SOUL_GLM5.md",
       "quality": "medium",
       "indexed_at": "2026-04-09T08:15:00"
+    },
+    {
+      "path": "OKB编译/2026-04-07-Android-13-changelog-deep-dive.md",
+      "title": "Android 13 Changelog: A Deep Dive by Mishaal Rahman",
+      "scores": {
+        "relevance": 3,
+        "depth": 2,
+        "timeliness": 5,
+        "verifiability": 3
+      },
+      "total_score": 13,
+      "matched_chapters": [
+        "ch12-安全"
+      ],
+      "first_chars": "# Android 13 Changelog: A Deep Dive by Mishaal Rahman\n\n> 原始来源：Esper Blog (via Cubox) | 编译日期：2026-04-07\n\n## 核心要点（3-5 条）\n- Android 13 (Tiramisu, API 33) 引入大量隐私和安全改进：通知权限运行时授权、剪贴板自动清除、照片选择器、 nearby device 权限",
+      "quality": "medium",
+      "indexed_at": "2026-04-09T09:47:34.185109"
+    },
+    {
+      "path": "OKB编译/2026-04-07-SurfaceFlinger图层合成过程分析上-PK.md",
+      "title": "SurfaceFlinger 图层合成过程分析（上）",
+      "scores": {
+        "relevance": 3,
+        "depth": 2,
+        "timeliness": 5,
+        "verifiability": 3
+      },
+      "total_score": 13,
+      "matched_chapters": [
+        "ch05-渲染"
+      ],
+      "first_chars": "# SurfaceFlinger 图层合成过程分析（上）\n\n> 原始来源：阿豪讲Framework 微信公众号 (via Personal-Knowlodge) | 编译日期：2026-04-07\n\n## 核心要点（3-5 条）\n- 图层概念：每个图层如一张透明纸，独立编辑，最终叠加合成显示；Android Launcher 场景下有状态栏、导航栏、壁纸、图标四个图层\n- 合成两类方式：Client 合成（GPU/SkiaGL 软件图形库，能力强但耗资源）和 Device 合成（HWC 硬件，效率高但能力有限）",
+      "quality": "medium",
+      "indexed_at": "2026-04-09T09:47:34.185109"
+    },
+    {
+      "path": "OKB编译/2026-04-08-GPU渲染管线和硬件架构浅谈.md",
+      "title": "GPU 渲染管线和硬件架构浅谈",
+      "scores": {
+        "relevance": 4,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 2
+      },
+      "total_score": 12,
+      "matched_chapters": [
+        "ch05-渲染"
+      ],
+      "first_chars": "---\ndate: 2026-04-08\nsource: Personal-Knowlodge/source/2026-03-08_wechat_GPU_渲染管线和硬件架构浅谈.md\nsource_url: https://mp.weixin.qq.com/s/GPU渲染管线\ncompiled_by: OKB-知识编译\ntags:\n  - android\n  - rendering\n  - research",
+      "quality": "medium",
+      "indexed_at": "2026-04-09T09:47:34.185109"
+    },
+    {
+      "path": "OKB编译/2026-04-07-Android-ANR系列3-ANR案例分享.md",
+      "title": "Android ANR 系列 3：ANR 案例分享",
+      "scores": {
+        "relevance": 4,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 2
+      },
+      "total_score": 12,
+      "matched_chapters": [],
+      "first_chars": "# Android ANR 系列 3：ANR 案例分享\n\n> 原始来源：androidperformance.com（Gracker 博客） | 编译日期：2026-04-07\n\n## 核心要点（5 条）\n- ANR 常见原因包括：主线程等锁超时、Binder 通信超时、Window 错乱导致 Input 超时、整机 CPU/IO 负载高、SurfaceFlinger 超时、系统冻结 Bug 等",
+      "quality": "medium",
+      "indexed_at": "2026-04-09T09:47:34.185109"
+    },
+    {
+      "path": "OKB编译/2026-04-08-性能优化第一原则-先搞清瓶颈类型.md",
+      "title": "性能优化的第一原则：先搞清瓶颈类型（CPU / IO / 内存）",
+      "scores": {
+        "relevance": 3,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "total_score": 10,
+      "matched_chapters": [],
+      "first_chars": "# 性能优化的第一原则：先搞清瓶颈类型（CPU / IO / 内存）\n\n> 原始来源：微信公众号 | 编译日期：2026-04-08\n\n## 核心要点（5 条）\n- CPU密集型：程序大部分时间在计算，CPU使用率接近100%，升级CPU和多核并行是有效手段，监控指标为CPU使用率和每秒执行指令数。\n- 内存密集型：数据量超过物理内存时触发交换（swap），速度从内存级跌至硬盘级；优化方向是大容量+高带宽+连续访问模式，监控内存使用量、缓存命中率和缺页错误数。",
+      "quality": "medium",
+      "indexed_at": "2026-04-09T09:47:34.185109"
+    },
+    {
+      "path": "OKB编译/2026-04-08-Android启动优化常规优化与系统级方案完整调研.md",
+      "title": "Android启动优化：常规优化与系统级方案完整调研",
+      "scores": {
+        "relevance": 5,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 2
+      },
+      "total_score": 13,
+      "matched_chapters": [
+        "ch14-工具"
+      ],
+      "first_chars": "# Android启动优化：常规优化与系统级方案完整调研\n\n> 原始来源：掘金 | 编译日期：2026-04-08\n\n## 核心要点（4 条）\n- 启动优化四大路径：常规优化 → 有向无环图（DAG）并发调度 → 系统级 Baseline Profile → 空间转换优化\n- Cold Start 耗时 = 创建进程 + Application 初始化 + Activity 初始化；ADB `adb shell am start -W` 的 TotalTime 即为启动耗时",
+      "quality": "medium",
+      "indexed_at": "2026-04-09T09:47:34.185109"
+    },
+    {
+      "path": "OKB编译/2026-04-08-CPU缓存架构与多线程伪共享避坑指南.md",
+      "title": "CPU 缓存架构博弈：L1/L2/L3 Cache Line 与多线程伪共享避坑指南",
+      "scores": {
+        "relevance": 3,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "total_score": 10,
+      "matched_chapters": [],
+      "first_chars": "# CPU 缓存架构博弈：L1/L2/L3 Cache Line 与多线程伪共享避坑指南\n\n> 原始来源：Cubox 微信公众号 | 编译日期：2026-04-08\n\n## 核心要点（3-5 条）\n- CPU 按 **Cache Line（通常 64B）** 为单位搬运数据，修改 1 个 int（4B）会触发整条缓存行参与一致性协议\n- **伪共享（False Sharing）**：两个线程修改不同变量，但变量落在同一 Cache Line，触发 MESI/MOESI 一致性流量，缓存行在核心间\"乒乓\"迁移",
+      "quality": "medium",
+      "indexed_at": "2026-04-09T09:47:34.185109"
+    },
+    {
+      "path": "OKB编译/2026-04-08-抖音Android包体积优化探索-Class字节码DEX精简.md",
+      "title": "抖音Android包体积优化探索：从Class字节码入手精简DEX体积",
+      "scores": {
+        "relevance": 3,
+        "depth": 2,
+        "timeliness": 5,
+        "verifiability": 3
+      },
+      "total_score": 13,
+      "matched_chapters": [
+        "ch10-包体积"
+      ],
+      "first_chars": "# 抖音Android包体积优化探索：从Class字节码入手精简DEX体积\n\n> 原始来源：微信公众号 安卓尖端技术研究 | 编译日期：2026-04-08\n\n## 核心要点（3-5 条）\n\n- **APK体积影响下载转化率**：GooglePlay数据显示包体积越大，安装转化率越低；抖音两年内DEX个数从8个增至21个，总大小从26M增至48M，包体积优化是必须攻克的课题。\n- **优化三阶段切入**：源文件阶段（侵入性强、局限大）→ Class字节码阶段（无感知、可完成大多数优化）→ DEX文件阶段（最理想，可优化格式本身）。",
+      "quality": "medium",
+      "indexed_at": "2026-04-09T09:47:34.185109"
+    },
+    {
+      "path": "OKB编译/2026-04-07-Perfetto-5-Choreographer渲染流程.md",
+      "title": "Android Perfetto 系列 5：基于 Choreographer 的渲染流程",
+      "scores": {
+        "relevance": 4,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 2
+      },
+      "total_score": 12,
+      "matched_chapters": [
+        "ch05-渲染"
+      ],
+      "first_chars": "# Android Perfetto 系列 5：基于 Choreographer 的渲染流程\n\n> 原始来源：Personal-Knowlodge/source/Android-Perfetto-05-Chorergrapher.md | 编译日期：2026-04-07\n\n## 核心要点（3-5 条）\n- Choreographer 核心作用：配合 Vsync 信号，为上层应用的渲染提供稳定的 Message 处理时机，控制每帧绘制操作的时序",
+      "quality": "medium",
+      "indexed_at": "2026-04-09T09:47:34.185109"
+    },
+    {
+      "path": "OKB编译/2026-04-08-Android14-VSync机制深入解读.md",
+      "title": "Android14 VSync 机制深入解读",
+      "scores": {
+        "relevance": 4,
+        "depth": 2,
+        "timeliness": 5,
+        "verifiability": 2
+      },
+      "total_score": 13,
+      "matched_chapters": [
+        "ch05-渲染"
+      ],
+      "first_chars": "# Android14 VSync 机制深入解读\n\n## 核心要点\n\n- **VSync 信号的本质与分层架构**：硬件 VSync 是显示器驱动板上的 GPIO 电平信号，经内核 DRM → HWComposer HAL → SurfaceFlinger 层层传递。Android 未直接使用硬件信号，而是通过 VsyncSchedule 生成三类软件 VSync（app-vsync、appsf-vsync、sf-vsync），分别控制 App 绘制、App+SF 协同绘制和 SF 合成时机。",
+      "quality": "medium",
+      "indexed_at": "2026-04-09T09:47:34.185109"
+    },
+    {
+      "path": "OKB编译/2026-04-08-Android14-VSync-机制深入解读.md",
+      "title": "Android14 VSync 机制深入解读",
+      "scores": {
+        "relevance": 3,
+        "depth": 2,
+        "timeliness": 5,
+        "verifiability": 3
+      },
+      "total_score": 13,
+      "matched_chapters": [],
+      "first_chars": "# Android14 VSync 机制深入解读\n\n> 原始来源：<wechat> | 编译日期：2026-04-08\n\n## 核心要点（3-5 条）\n- ---\n- title: Android14 VSync 机制深入解读\n- author: 阿豪讲Framework\n- date: \"2024-07-31 08:31:03\"\n- source: \"https://mp.weixin.qq.com/s?__biz=MzIyMDg5MzEyMA==&mid=2247488353&idx=1&sn=e59ad8e05cfdc18cbf2164066693dc26&chksm=97c449cea0b3c0d8c1a448df055767fb7a6ea7ad56e3d01fea81f0a547804dc0a6da8229f33e&mpshare=1&scene=1&srcid=0731WFU9dPPS1FqBgFBjYJFD&sharer_shareinfo=49fbc91b22379aef9580e0d92ac8ae0e&sharer_shareinfo_first=2e512fac3b...",
+      "quality": "medium",
+      "indexed_at": "2026-04-09T09:47:34.185109"
+    },
+    {
+      "path": "OKB编译/2026-04-08-Android动画类型对比与选型指南.md",
+      "title": "Android 动画深度解析（三）：主流动画类型对比与选型",
+      "scores": {
+        "relevance": 2,
+        "depth": 2,
+        "timeliness": 5,
+        "verifiability": 3
+      },
+      "total_score": 12,
+      "matched_chapters": [],
+      "first_chars": "# Android 动画深度解析（三）：主流动画类型对比与选型\n\n> 原始来源：Cubox 微信公众号 | 编译日期：2026-04-08\n\n## 核心要点（3-5 条）\n- **View Animation（补间动画）**：仅改变 View 视觉呈现，属性不变（位置/宽高/事件响应区均不变），致命缺陷是点击区域错位；强烈不推荐新项目使用\n- **Property Animation（属性动画）**：真实修改对象属性值，API 11+ 引入；ObjectAnimator 配合 PropertyValuesHolder 可同时动画多属性；ViewPropertyAnimator 是现代 View 标准动画首选 API",
+      "quality": "medium",
+      "indexed_at": "2026-04-09T09:47:34.185109"
+    },
+    {
+      "path": "OKB编译/2026-04-07-btrace-2.0技术原理大揭秘.md",
+      "title": "重要升级！btrace 2.0 技术原理大揭秘",
+      "scores": {
+        "relevance": 3,
+        "depth": 2,
+        "timeliness": 5,
+        "verifiability": 2
+      },
+      "total_score": 12,
+      "matched_chapters": [],
+      "first_chars": "# 重要升级！btrace 2.0 技术原理大揭秘\n\n> 原始来源：Personal-Knowlodge/source/2026-03-07_wechat_重要升级_btrace_2_0_技术原理大揭秘.md | 编译日期：2026-04-07\n\n## 核心要点（3-5 条）\n- btrace 是字节跳动开源的 Android 性能分析工具，2.0 版本基于 EBPF 技术实现极低开销的线上性能监控",
+      "quality": "medium",
+      "indexed_at": "2026-04-09T09:47:34.185109"
+    },
+    {
+      "path": "OKB编译/2026-04-08-MediaCodec在Android硬解码的路线.md",
+      "title": "MediaCodec 在 Android 硬解码的路线",
+      "scores": {
+        "relevance": 3,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 2
+      },
+      "total_score": 11,
+      "matched_chapters": [],
+      "first_chars": "---\ndate: 2026-04-08\nsource: Personal-Knowlodge/source/2026-03-08_wechat_MediaCodec_在_Android_硬解码的路线.md\nsource_url: https://mp.weixin.qq.com/s/MediaCodec硬解码\ncompiled_by: OKB-知识编译\ntags:\n  - android\n  - power",
+      "quality": "medium",
+      "indexed_at": "2026-04-09T09:47:34.185109"
+    },
+    {
+      "path": "OKB编译/2026-04-07-Systrace响应速度实战3-延伸知识.md",
+      "title": "Android Systrace 响应速度实战 3：响应速度延伸知识",
+      "scores": {
+        "relevance": 4,
+        "depth": 2,
+        "timeliness": 5,
+        "verifiability": 2
+      },
+      "total_score": 13,
+      "matched_chapters": [
+        "ch11-Profiling"
+      ],
+      "first_chars": "# Android Systrace 响应速度实战 3：响应速度延伸知识\n\n> 原始来源：Personal-Knowlodge/source/android-systrace-Responsiveness-in-action-3.md | 编译日期：2026-04-07\n\n## 核心要点（3-5 条）\n- 广义卡顿包含三类：Jank(动画/滑动卡顿)、Slow(启动/场景切换慢)、ANR(应用无响应)，分析方法和优化策略各不相同",
+      "quality": "medium",
+      "indexed_at": "2026-04-09T09:47:34.185109"
+    },
+    {
+      "path": "OKB编译/2026-04-08-深入理解LeakCanary内存泄漏检测.md",
+      "title": "深入理解 LeakCanary 内存泄漏检测",
+      "scores": {
+        "relevance": 4,
+        "depth": 2,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "total_score": 12,
+      "matched_chapters": [
+        "ch07-内存"
+      ],
+      "first_chars": "# 深入理解 LeakCanary 内存泄漏检测\n\n> **编译日期**: 2026-04-08 | **来源**: 微信公众号文章 | **原始链接**: [原文](https://mp.weixin.qq.com/s?__biz=Mzk3NTIyNTczOA==&mid=2247484030&idx=1&sn=87ae5bb460be57cb43416569c1c000e9)\n\n## 核心要点",
+      "quality": "medium",
+      "indexed_at": "2026-04-09T09:47:34.185109"
+    },
+    {
+      "path": "OKB编译/2026-04-08-Android图形系统三-从点击到屏幕显示的完整渲染链路.md",
+      "title": "Android 图形系统（三）：从点击图标到屏幕显示的完整渲染链路",
+      "scores": {
+        "relevance": 3,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 2
+      },
+      "total_score": 11,
+      "matched_chapters": [],
+      "first_chars": "---\ndate: 2026-04-08\nsource: Personal-Knowlodge/source/2026-03-05_wechat_Android图形系统_三_系统篇_当我们点击_微信_这个应用后_它是怎么在屏幕上显示出来的.md\nsource_url: https://mp.weixin.qq.com/s/Android图形系统三系统篇\ncompiled_by: OKB-知识编译",
+      "quality": "medium",
+      "indexed_at": "2026-04-09T09:47:34.185109"
+    },
+    {
+      "path": "OKB编译/2026-04-08-CFS完全公平调度器深度解析.md",
+      "title": "Linux 调度器深度解析：CFS 完全公平调度，原来如此简单",
+      "scores": {
+        "relevance": 4,
+        "depth": 2,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "total_score": 12,
+      "matched_chapters": [
+        "ch13-调度"
+      ],
+      "first_chars": "# Linux 调度器深度解析：CFS 完全公平调度，原来如此简单\n\n> 原始来源：Cubox 微信公众号（小康，C/C++编程博主） | 编译日期：2026-04-08\n\n## 核心要点（3-5 条）\n- CFS（Completely Fair Scheduler）用 **vruntime（虚拟运行时间）** 替代时间片，每次选 vruntime 最小的进程运行，实现\"谁跑最少谁下一个跑\"\n- **nice 值通过权重影响 vruntime 增速**：nice=-5 的进程同样跑 10ms，vruntime 只增加 3.3ms；nice=+5 增加 30.5ms——增速越慢，被选频率越高",
+      "quality": "medium",
+      "indexed_at": "2026-04-09T09:47:34.185109"
+    },
+    {
+      "path": "OKB编译/2026-04-08-系统级性能分析与调优Systrace-Perfetto.md",
+      "title": "系统级性能分析与调优 (Systrace/Perfetto)",
+      "scores": {
+        "relevance": 5,
+        "depth": 2,
+        "timeliness": 5,
+        "verifiability": 2
+      },
+      "total_score": 14,
+      "matched_chapters": [
+        "ch11-Profiling"
+      ],
+      "first_chars": "# 系统级性能分析与调优 (Systrace/Perfetto)\n\n## 核心要点\n\n- **Perfetto 是 Android 现代标准追踪框架**：基于 traced 守护进程 + Trace Processor + Web UI 三层架构，整合内核 ftrace、用户空间 atrace、heapprofd 等多源数据，提供从硬件到应用的全栈可见性。\n- **线程状态分析是诊断核心**：Running（执行中）、Runnable（等 CPU，是争抢信号）、Sleeping（等锁/IO/Binder）、Uninterruptible Sleep（内核态等 IO）——关键线程长时间处于非 Running 状态直接暴露瓶颈。",
+      "quality": "medium",
+      "indexed_at": "2026-04-09T09:47:34.185109"
+    },
+    {
+      "path": "OKB编译/2026-04-07-Systrace-CPU-Info解读.md",
+      "title": "Systrace 基础知识 - CPU Info 解读",
+      "scores": {
+        "relevance": 4,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 2
+      },
+      "total_score": 12,
+      "matched_chapters": [
+        "ch11-Profiling",
+        "ch13-调度"
+      ],
+      "first_chars": "# Systrace 基础知识 - CPU Info 解读\n\n> 原始来源：androidperformance.com（Gracker 博客） | 编译日期：2026-04-07\n\n## 核心要点（5 条）\n- CPU 架构三类：非大小核（已淘汰）、大小核（4 小核+4 大核，如骁龙 845）、大中小核（1 超大核+3 中核+4 小核，如骁龙 855/865）\n- 绑核三种方法：CPUset 子系统（Android 默认划分 top-app/foreground/background 等组）、taskset 命令（设置 CPU 亲和力）、调度算法内修改",
+      "quality": "medium",
+      "indexed_at": "2026-04-09T09:47:34.185109"
+    },
+    {
+      "path": "OKB编译/2026-04-07-Android-Weekly-202518-技术周刊.md",
+      "title": "Android Weekly #202518 技术周刊摘要",
+      "scores": {
+        "relevance": 4,
+        "depth": 2,
+        "timeliness": 5,
+        "verifiability": 2
+      },
+      "total_score": 13,
+      "matched_chapters": [
+        "ch13-调度"
+      ],
+      "first_chars": "# Android Weekly #202518 技术周刊摘要\n\n> 原始来源：微信公众号 Android Performance | 编译日期：2026-04-07\n\n## 核心要点（5 条）\n- Android 游戏画面抖动研究：30fps 运行时因生产者-消费者模型消耗周期不均匀导致抖动，提出 Swappy 和渲染线程同步两种方案\n- 任务调度器系列（1-4）：从 CFS 调度原理到 EAS 能耗感知调度，深入分析 big-little 架构下的负载量化模型（PELT/WALT）和各厂商优化策略",
+      "quality": "medium",
+      "indexed_at": "2026-04-09T09:47:34.185109"
+    },
+    {
+      "path": "OKB编译/2026-04-07-SurfaceFlinger图层合成过程分析下-PK.md",
+      "title": "SurfaceFlinger 图层合成过程分析（下）",
+      "scores": {
+        "relevance": 4,
+        "depth": 2,
+        "timeliness": 5,
+        "verifiability": 2
+      },
+      "total_score": 13,
+      "matched_chapters": [],
+      "first_chars": "# SurfaceFlinger 图层合成过程分析（下）\n\n> 原始来源：阿豪讲Framework 微信公众号 (via Personal-Knowlodge) | 编译日期：2026-04-07\n\n## 核心要点（3-5 条）\n- CompositionEngine::present 是合成实施入口：preComposition → Output::prepare（构建 OutputLayer）→ Output::present（执行合成）",
+      "quality": "medium",
+      "indexed_at": "2026-04-09T09:47:34.185109"
+    },
+    {
+      "path": "OKB编译/2026-04-07-Android-Weekly-55.md",
+      "title": "Android Weekly #55",
+      "scores": {
+        "relevance": 5,
+        "depth": 2,
+        "timeliness": 5,
+        "verifiability": 3
+      },
+      "total_score": 15,
+      "matched_chapters": [
+        "ch05-渲染"
+      ],
+      "first_chars": "# Android Weekly #55\n\n> 原始来源：Personal-Knowlodge/source/2025-07-20_Android_Weekly_#55.md | 编译日期：2026-04-07\n\n## 核心要点（3-5 条）\n- 本期亮点：游戏 30fps 画面抖动的 Perfetto 分析与 Swappy/渲染线程同步两种解决方案\n- SurfaceFlinger 硬件 VSync 深入分析，从 Framework 层到硬件层完整链路解读",
+      "quality": "medium",
+      "indexed_at": "2026-04-09T09:47:34.185109"
+    },
+    {
+      "path": "OKB编译/2026-04-07-The-Cook-and-the-Chef-Musk-Secret-Sauce.md",
+      "title": "The Cook and the Chef: Musk's Secret Sauce",
+      "scores": {
+        "relevance": 2,
+        "depth": 2,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "total_score": 10,
+      "matched_chapters": [],
+      "first_chars": "# The Cook and the Chef: Musk's Secret Sauce\n\n> 原始来源：Wait But Why (via Cubox) | 编译日期：2026-04-07\n\n## 核心要点（3-5 条）\n- 核心类比：Cook（厨师）按菜谱做菜——照搬现有规则和惯例；Chef（主厨）理解食材本质——从第一性原理出发创造新可能\n- Musk 的思维软件与常人的关键区别：他从第一性原理（first principles）构建每个决策组件——Want Box、Reality Box、Goal Pool、Strategy",
+      "quality": "medium",
+      "indexed_at": "2026-04-09T09:47:34.185109"
+    },
+    {
+      "path": "OKB编译/2026-04-07-SurfaceFlinger图层合成过程分析上-Cubox.md",
+      "title": "SurfaceFlinger 图层合成过程分析（上）[Cubox]",
+      "scores": {
+        "relevance": 3,
+        "depth": 2,
+        "timeliness": 5,
+        "verifiability": 3
+      },
+      "total_score": 13,
+      "matched_chapters": [
+        "ch05-渲染"
+      ],
+      "first_chars": "# SurfaceFlinger 图层合成过程分析（上）[Cubox]\n\n> 原始来源：阿豪讲Framework 微信公众号 (via Cubox) | 编译日期：2026-04-07\n\n## 核心要点（3-5 条）\n- 图层概念：每个图层如一张透明纸，独立编辑后叠加显示；Android Launcher 场景有状态栏、导航栏、壁纸、图标四个图层\n- 两类合成方式：Client 合成（GPU/SkiaGL，能力强但耗资源）和 Device 合成（HWC 硬件，效率高但能力有限）",
+      "quality": "medium",
+      "indexed_at": "2026-04-09T09:47:34.185109"
+    },
+    {
+      "path": "OKB编译/2026-04-07-SurfaceFlinger图层合成过程分析下-Cubox.md",
+      "title": "SurfaceFlinger 图层合成过程分析（下）[Cubox]",
+      "scores": {
+        "relevance": 4,
+        "depth": 2,
+        "timeliness": 5,
+        "verifiability": 2
+      },
+      "total_score": 13,
+      "matched_chapters": [],
+      "first_chars": "# SurfaceFlinger 图层合成过程分析（下）[Cubox]\n\n> 原始来源：阿豪讲Framework 微信公众号 (via Cubox) | 编译日期：2026-04-07\n\n## 核心要点（3-5 条）\n- CompositionEngine::present 入口：preComposition → Output::prepare → Output::present，分准备和执行两阶段",
+      "quality": "medium",
+      "indexed_at": "2026-04-09T09:47:34.185109"
+    },
+    {
+      "path": "OKB编译/2026-04-07-Android-ANR案例分享.md",
+      "title": "Android ANR 系列 3：ANR 案例分享",
+      "scores": {
+        "relevance": 5,
+        "depth": 2,
+        "timeliness": 5,
+        "verifiability": 2
+      },
+      "total_score": 14,
+      "matched_chapters": [
+        "ch07-内存",
+        "ch11-Profiling"
+      ],
+      "first_chars": "# Android ANR 系列 3：ANR 案例分享\n\n> 原始来源：Personal-Knowlodge/source/Android-ANR-03-ANR-Case-Share.md | 编译日期：2026-04-07\n\n## 核心要点（3-5 条）\n- ANR 根因分类：主线程 Binder 调用超时、主线程锁等待(被其他线程持有)、GC 暂停(内存压力)、系统服务响应慢、I/O 阻塞\n- 案例分析流程：先看 ANR traces.txt 确定主线程卡在哪里，再结合 Systrace/Perfetto 分析线程状态和上下文",
+      "quality": "medium",
+      "indexed_at": "2026-04-09T09:47:34.185109"
+    },
+    {
+      "path": "调研/OKB编译/2026-04-08-Flutter120hz高刷在Android和iOS的适配差异与LTPO原理.md",
+      "title": "Flutter 120hz高刷在Android和iOS的适配差异与LTPO原理",
+      "scores": {
+        "relevance": 0,
+        "depth": 4,
+        "timeliness": 4,
+        "verifiability": 3
+      },
+      "total_score": 11,
+      "matched_chapters": [],
+      "first_chars": "# Flutter 120hz高刷在Android和iOS的适配差异与LTPO原理  > 原始来源：CSDN·恋猫 de 小郭 | 编译日期：2026-04-08  ## 核心要点（3 条） - iOS ProMotion 是基于系统实现的统一方案，Android LTPO 是 OEM 厂商自主调教的实现，两者在帧率控制策略上存在根本差异 - Flutter 在 Android 上的高刷新率表现依",
+      "quality": "medium",
+      "indexed_at": "2026-04-09T10:21:31.700960"
+    },
+    {
+      "path": "调研/OKB编译/2026-04-08-从点击桌面APP图标到APP界面显示的全流程二-基于Android-13Android-T-2023.md",
+      "title": "从点击桌面APP图标，到APP界面显示的全流程（二）-基于Android 13(Android T)...-2023-11-06",
+      "scores": {
+        "relevance": 0,
+        "depth": 3,
+        "timeliness": 4,
+        "verifiability": 3
+      },
+      "total_score": 10,
+      "matched_chapters": [],
+      "first_chars": "# 从点击桌面APP图标，到APP界面显示的全流程（二）-基于Android 13(Android T)...-2023-11-06  > 原始来源：<unknown> | 编译日期：2026-04-08  ## 核心要点（3-5 条） - --- - id: \"7121030741793705222\" - cubox_url: https://cubox.pro/web/card/7121030",
+      "quality": "medium",
+      "indexed_at": "2026-04-09T10:21:31.701156"
+    },
+    {
+      "path": "调研/OKB编译/2026-04-07-百度App-Android启动性能优化-工具篇.md",
+      "title": "百度App Android 启动性能优化——工具篇",
+      "scores": {
+        "relevance": 0,
+        "depth": 3,
+        "timeliness": 4,
+        "verifiability": 3
+      },
+      "total_score": 10,
+      "matched_chapters": [],
+      "first_chars": "# 百度App Android 启动性能优化——工具篇  > 原始来源：Cubox/百度App Android启动性能优化-工具篇-2022-09-30.md | 编译日期：2026-04-07  ## 核心要点（3-5 条） - 基于 Perfetto 二次开发，丰富监控维度（CPU/内存/IO/网络/线程状态等），实现全自动性能问题归因 - 启动性能测试标准化：定义冷/温/热启动测试方案，建立",
+      "quality": "medium",
+      "indexed_at": "2026-04-09T10:21:31.701317"
+    },
+    {
+      "path": "调研/OKB编译/2026-04-07-Android-Weekly-55-技术周刊Obsidian版.md",
+      "title": "Android Weekly #55 技术周刊（Obsidian 版）",
+      "scores": {
+        "relevance": 3,
+        "depth": 1,
+        "timeliness": 4,
+        "verifiability": 3
+      },
+      "total_score": 11,
+      "matched_chapters": [
+        "ch13-调度"
+      ],
+      "first_chars": "# Android Weekly #55 技术周刊（Obsidian 版）  > 原始来源：androidperformance.com（Gracker 博客 Obsidian 版） | 编译日期：2026-04-07  ## 核心要点（4 条） - 本期内容与 Android Weekly #202518 基本一致，涵盖 45 篇技术文章，包括游戏画面抖动、任务调度器系列、CPU 专题等 - A",
+      "quality": "medium",
+      "indexed_at": "2026-04-09T10:21:31.701468"
+    },
+    {
+      "path": "调研/OKB编译/2026-04-07-Systrace响应速度实战2-冷启动全流程.md",
+      "title": "Systrace 响应速度实战 2：冷启动全流程分析",
+      "scores": {
+        "relevance": 3,
+        "depth": 4,
+        "timeliness": 4,
+        "verifiability": 4
+      },
+      "total_score": 15,
+      "matched_chapters": [
+        "ch04-启动",
+        "ch11-Profiling"
+      ],
+      "first_chars": "# Systrace 响应速度实战 2：冷启动全流程分析  > 原始来源：androidperformance.com（Gracker 博客） | 编译日期：2026-04-07  ## 核心要点（5 条） - 应用冷启动完整流程：触摸中断 → InputReader/InputDispatcher → Launcher 处理 → SystemServer startActivity → fork",
+      "quality": "medium",
+      "indexed_at": "2026-04-09T10:21:31.701924"
+    },
+    {
+      "path": "调研/OKB编译/2026-04-07-百度App启动性能优化-工具篇.md",
+      "title": "百度 App Android 启动性能优化 - 工具篇",
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 4,
+        "verifiability": 3
+      },
+      "total_score": 14,
+      "matched_chapters": [
+        "ch11-Profiling"
+      ],
+      "first_chars": "# 百度 App Android 启动性能优化 - 工具篇  > 原始来源：百度 App 技术团队（微信公众号） | 编译日期：2026-04-07  ## 核心要点（5 条） - 工具选型：对比 TraceView/CPU Profiler/Systrace/Perfetto 后选择 Perfetto（低性能损耗+丰富监控维度+SQL 分析能力），初期结合 Systrace 兼容低版本 - 自动",
+      "quality": "medium",
+      "indexed_at": "2026-04-09T10:21:31.702206"
+    },
+    {
+      "path": "调研/OKB编译/2026-04-08-BPF与CPU调度器结合可行性调研与ghOSt框架解读.md",
+      "title": "BPF与CPU调度器结合：可行性调研与ghOSt框架解读",
+      "scores": {
+        "relevance": 4,
+        "depth": 1,
+        "timeliness": 4,
+        "verifiability": 1
+      },
+      "total_score": 10,
+      "matched_chapters": [
+        "ch13-调度"
+      ],
+      "first_chars": "# BPF与CPU调度器结合：可行性调研与ghOSt框架解读  > 原始来源：个人博客·李海洲 | 编译日期：2026-04-08  ## 核心要点（4 条） - Facebook Roman Gushchin 提出在内核调度器中增加 BPF 钩子（enqueue/dequeue/put_prev/set_next），实测 CFS 场景下延迟改善、RPS ~1% 收益 - BPF 灵活性优于内核模",
+      "quality": "medium",
+      "indexed_at": "2026-04-09T10:21:31.702345"
+    },
+    {
+      "path": "调研/OKB编译/2026-04-08-LinuxCFS完全公平调度器原理深度解析与实战调优.md",
+      "title": "Linux CFS完全公平调度器：原理深度解析与实战调优",
+      "scores": {
+        "relevance": 3,
+        "depth": 4,
+        "timeliness": 4,
+        "verifiability": 1
+      },
+      "total_score": 12,
+      "matched_chapters": [
+        "ch13-调度"
+      ],
+      "first_chars": "# Linux CFS完全公平调度器：原理深度解析与实战调优  > 原始来源：微信公众号·小康C/C++编程 | 编译日期：2026-04-08  ## 核心要点（4 条） - CFS 核心思想：每次选 vruntime（虚拟运行时间）最小的进程运行——谁运行最少，谁下一个跑；所有进程 vruntime 趋于相等即\"完全公平\" - nice 值通过权重控制 vruntime 增速：vruntime",
+      "quality": "medium",
+      "indexed_at": "2026-04-09T10:21:31.702629"
+    },
+    {
+      "path": "调研/OKB编译/2026-04-07-Android-Systrace-CPU-Info解读.md",
+      "title": "Android Systrace 基础知识 - CPU Info 解读",
+      "scores": {
+        "relevance": 3,
+        "depth": 1,
+        "timeliness": 4,
+        "verifiability": 3
+      },
+      "total_score": 11,
+      "matched_chapters": [
+        "ch11-Profiling",
+        "ch13-调度"
+      ],
+      "first_chars": "# Android Systrace 基础知识 - CPU Info 解读  > 原始来源：Personal-Knowlodge/source/Android-Systrace-CPU.md | 编译日期：2026-04-07  ## 核心要点（3-5 条） - Systrace CPU 区域展示内核层输出的 CPU 信息：频率变化、核心使用、调度事件 - 大小核(big.LITTLE)架构：大核",
+      "quality": "medium",
+      "indexed_at": "2026-04-09T10:21:31.702767"
+    },
+    {
+      "path": "调研/OKB编译/2026-04-07-Perfetto系列5-Choreographer渲染流程.md",
+      "title": "Perfetto 系列 5：基于 Choreographer 的渲染流程",
+      "scores": {
+        "relevance": 3,
+        "depth": 3,
+        "timeliness": 4,
+        "verifiability": 3
+      },
+      "total_score": 13,
+      "matched_chapters": [
+        "ch05-渲染"
+      ],
+      "first_chars": "# Perfetto 系列 5：基于 Choreographer 的渲染流程  > 原始来源：androidperformance.com（Gracker 博客） | 编译日期：2026-04-07  ## 核心要点（5 条） - Choreographer 是 Android 渲染链路的协调者：承上接收 App 更新消息（Input/Animation/Traversal），启下请求和接收 Vs",
+      "quality": "medium",
+      "indexed_at": "2026-04-09T10:21:31.702905"
+    },
+    {
+      "path": "调研/OKB编译/2026-04-08-从0到1吃透MMU与分页-内存管理底层原理.md",
+      "title": "从0到1吃透MMU与分页：内存管理的底层原理",
+      "scores": {
+        "relevance": 0,
+        "depth": 5,
+        "timeliness": 4,
+        "verifiability": 1
+      },
+      "total_score": 10,
+      "matched_chapters": [],
+      "first_chars": "# 从0到1吃透MMU与分页：内存管理的底层原理  > 原始来源：微信公众号 | 编译日期：2026-04-08  ## 核心要点（5 条） - MMU两大核心功能：虚拟地址到物理地址的转换（实现进程隔离和超物理内存运行）；内存访问权限管理（只读/可读写/可执行权限，阻止非法内存访问）。 - 分页机制：虚拟内存和物理内存都划分为固定大小的页（通常4KB）；页表存储虚拟页到物理页框的映射关系；缺页异",
+      "quality": "medium",
+      "indexed_at": "2026-04-09T10:21:31.703187"
+    },
+    {
+      "path": "调研/OKB编译/2026-04-07-Physically-Based-Rendering-in-Filament.md",
+      "title": "Physically Based Rendering in Filament",
+      "scores": {
+        "relevance": 3,
+        "depth": 1,
+        "timeliness": 4,
+        "verifiability": 3
+      },
+      "total_score": 11,
+      "matched_chapters": [
+        "ch05-渲染"
+      ],
+      "first_chars": "# Physically Based Rendering in Filament  > 原始来源：Google Filament 官方文档 (via Cubox) | 编译日期：2026-04-07  ## 核心要点（3-5 条） - Filament 是 Google 开发的面向 Android 的物理渲染（PBR）引擎，目标是移动端实时高质量渲染，支持 OpenGL ES 3.x 级别 GPU",
+      "quality": "medium",
+      "indexed_at": "2026-04-09T10:21:31.703741"
+    },
+    {
+      "path": "调研/OKB编译/2026-04-08-Android应用启动全流程分析源码深度剖析.md",
+      "title": "Android 应用启动全流程分析（源码深度剖析）",
+      "scores": {
+        "relevance": 0,
+        "depth": 5,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "total_score": 11,
+      "matched_chapters": [],
+      "first_chars": "# Android 应用启动全流程分析（源码深度剖析）  ## 核心要点  - **Input 触控事件驱动启动**：用户点击图标后，InputReader 从 EventHub 读取触控事件，经 InputDispatcher 分发到桌面应用（InboundQueue → OutboundQueue → WaitQueue），桌面处理 ACTION_UP 后通过 Binder 调用 AMS 的 ",
+      "quality": "medium",
+      "indexed_at": "2026-04-09T10:21:31.704666"
+    },
+    {
+      "path": "调研/OKB编译/2026-04-07-Systrace响应速度实战2-启动速度分析.md",
+      "title": "Android Systrace 响应速度实战 2：响应速度实战分析——以启动速度为例",
+      "scores": {
+        "relevance": 3,
+        "depth": 3,
+        "timeliness": 4,
+        "verifiability": 3
+      },
+      "total_score": 13,
+      "matched_chapters": [
+        "ch04-启动",
+        "ch11-Profiling"
+      ],
+      "first_chars": "# Android Systrace 响应速度实战 2：响应速度实战分析——以启动速度为例  > 原始来源：Personal-Knowlodge/source/android-systrace-Responsiveness-in-action-2.md | 编译日期：2026-04-07  ## 核心要点（3-5 条） - 冷启动完整链路：Zygote fork → bindApplication",
+      "quality": "medium",
+      "indexed_at": "2026-04-09T10:21:31.705025"
+    },
+    {
+      "path": "调研/OKB编译/2026-04-07-系统级性能分析与调优-Systrace-Perfetto.md",
+      "title": "系统级性能分析与调优 (Systrace/Perfetto)",
+      "scores": {
+        "relevance": 5,
+        "depth": 3,
+        "timeliness": 4,
+        "verifiability": 3
+      },
+      "total_score": 15,
+      "matched_chapters": [
+        "ch11-Profiling"
+      ],
+      "first_chars": "# 系统级性能分析与调优 (Systrace/Perfetto)  > 原始来源：Cubox/系统级性能分析与调优 (Systrace-Perfetto)-2026-04-06.md | 编译日期：2026-04-07  ## 核心要点（3-5 条） - Perfetto 是 Android 现代标准追踪框架，架构包含探针(ftrace/atrace/heapprofd)、守护进程(traced)",
+      "quality": "medium",
+      "indexed_at": "2026-04-09T10:21:31.705854"
+    },
+    {
+      "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-18-热管理与CPU频率/stage-06/cards/2.md",
+      "title": "Evolution of Android's Permission-based Security Model and Challenges",
+      "scores": {
+        "relevance": 3,
+        "depth": 2,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "total_score": 11,
+      "mapped_chapters": [
+        {
+          "chapter": "ch12-安全",
+          "confidence": "medium",
+          "keyword_hits": 2
+        }
+      ],
+      "quality": "medium",
+      "indexed_date": "2026-04-09T11:26:20.628955"
+    },
+    {
+      "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-18-热管理与CPU频率/stage-06/cards/4.md",
+      "title": "On Benchmarking Code LLMs for Android Malware Analysis",
+      "scores": {
+        "relevance": 1,
+        "depth": 3,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "total_score": 10,
+      "mapped_chapters": [],
+      "quality": "medium",
+      "indexed_date": "2026-04-09T11:26:20.628961"
+    },
+    {
+      "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-18-热管理与CPU频率/stage-06/cards/5.md",
+      "title": "GDPR-Bench-Android: A Benchmark for Evaluating Automated GDPR Compliance Detection in Android",
+      "scores": {
+        "relevance": 1,
+        "depth": 3,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "total_score": 10,
+      "mapped_chapters": [],
+      "quality": "medium",
+      "indexed_date": "2026-04-09T11:26:20.628963"
+    },
+    {
+      "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-18-热管理与CPU频率/stage-06/cards/6.md",
+      "title": "LAMDA: A Longitudinal Android Malware Benchmark for Concept Drift Analysis",
+      "scores": {
+        "relevance": 1,
+        "depth": 3,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "total_score": 10,
+      "mapped_chapters": [],
+      "quality": "medium",
+      "indexed_date": "2026-04-09T11:26:20.628964"
     }
-  ],
-  "task8-daily/2026-04-09/聊聊2026年Android开发会是什么样": {
-    "path": "intake/daily-info/2026-04-09.md",
-    "title": "聊聊2026年Android开发会是什么样",
-    "url": "https://juejin.cn/post/7589903499599347766",
-    "matched_chapter": "17.3",
-    "chapter_name": "行业案例",
-    "source_task": "掘金Android",
-    "indexed_at": "2026-04-09T05:32:41.341912",
-    "action_taken": "inject"
-  },
-  "task8-daily/2026-04-09/Android15适配之targetSdkVersion升到35后全是坑": {
-    "path": "intake/daily-info/2026-04-09.md",
-    "title": "Android15适配之targetSdkVersion升到35后全是坑",
-    "url": "https://juejin.cn/post/7584295332340858943",
-    "matched_chapter": "17.3",
-    "chapter_name": "行业案例",
-    "source_task": "掘金Android",
-    "indexed_at": "2026-04-09T05:32:41.341921",
-    "action_taken": "inject"
-  },
-  "task8-daily/2026-04-09/Android Studio Panda 1 正式版来了：JDK 终于不用手动配了，内存泄漏也有原生方案了": {
-    "path": "intake/daily-info/2026-04-09.md",
-    "title": "Android Studio Panda 1 正式版来了：JDK 终于不用手动配了，内存泄漏也有原生方案了",
-    "url": "https://juejin.cn/post/7605097326727266350",
-    "matched_chapter": "14.1",
-    "chapter_name": "AS Profiler与调试工具",
-    "source_task": "掘金Android",
-    "indexed_at": "2026-04-09T05:32:41.341924",
-    "action_taken": "inject"
-  },
-  "task8-daily/2026-04-09/已有Flutter项目适配鸿蒙6": {
-    "path": "intake/daily-info/2026-04-09.md",
-    "title": "已有Flutter项目适配鸿蒙6",
-    "url": "https://juejin.cn/post/7582149417768812594",
-    "matched_chapter": "17.3",
-    "chapter_name": "行业案例",
-    "source_task": "掘金Android",
-    "indexed_at": "2026-04-09T05:32:41.341926",
-    "action_taken": "inject"
-  },
-  "task8-daily/2026-04-09/豆包手机为什么会被其他厂商抵制？它的工作原理是什么？": {
-    "path": "intake/daily-info/2026-04-09.md",
-    "title": "豆包手机为什么会被其他厂商抵制？它的工作原理是什么？",
-    "url": "https://juejin.cn/post/7582469532326920228",
-    "matched_chapter": "17.3",
-    "chapter_name": "行业案例",
-    "source_task": "掘金Android",
-    "indexed_at": "2026-04-09T05:32:41.341928",
-    "action_taken": "inject"
-  },
-  "task8-daily/2026-04-09/Android 开发中，准确判断应用处于前台（Foreground）还是后台（Background）": {
-    "path": "intake/daily-info/2026-04-09.md",
-    "title": "Android 开发中，准确判断应用处于前台（Foreground）还是后台（Background）",
-    "url": "https://juejin.cn/post/7595108457496346639",
-    "matched_chapter": null,
-    "chapter_name": "待分类",
-    "source_task": "掘金Android",
-    "indexed_at": "2026-04-09T05:32:41.341931",
-    "action_taken": "suggestions"
-  },
-  "task8-daily/2026-04-09/什么 AI 写 Android 最好用？官方做了一个基准测试排名": {
-    "path": "intake/daily-info/2026-04-09.md",
-    "title": "什么 AI 写 Android 最好用？官方做了一个基准测试排名",
-    "url": "https://juejin.cn/post/7614897667961143347",
-    "matched_chapter": null,
-    "chapter_name": "待分类",
-    "source_task": "掘金Android",
-    "indexed_at": "2026-04-09T05:32:41.341933",
-    "action_taken": "suggestions"
-  }
+  ]
 }

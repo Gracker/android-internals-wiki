@@ -238,6 +238,13 @@ Power Profiler 的设备要求比较严格：目前只有 Pixel 6 及以后的 P
 
 ## 参考资料
 
+### Android Studio Panda 1 正式版来了：JDK 终于不用手动配了，内存泄漏也有原生方案了
+- 来源：https://juejin.cn/post/7605097326727266350
+- 类型：技术文章
+- 摘要：介绍Android Studio Panda 1正式版更新：内置JDK管理功能和新的内存泄漏检测工具，提升开发效率和问题排查能力。
+- 入库时间：2026-04-09
+
+
 - Android Studio Profiler 官方文档: [developer.android.com/studio/profile](https://developer.android.com/studio/profile)
 - CPU Profiler 使用指南: [developer.android.com/studio/profile/cpu-profiler](https://developer.android.com/studio/profile/cpu-profiler)
 - Memory Profiler 使用指南: [developer.android.com/studio/profile/memory-profiler](https://developer.android.com/studio/profile/memory-profiler)

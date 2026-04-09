@@ -1925,5 +1925,58 @@
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-09T09:34:14",
     "status": "pending"
+  },
+  {
+    "section": "1.6",
+    "section_title": "Android 版本演进中的架构变化",
+    "priority": 95,
+    "reason": "[Deep Tech Review] applicable_versions声明与正文版本范围不一致",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "frontmatter applicable_versions字段",
+        "detail": "声明\"Android 4.4 (API 19) - Android 16 (API 36)\"，但正文未明确标注版本与API的对应关系，可能造成读者混淆",
+        "suggestion": "在正文中明确标注版本号与API Level的对应关系，或在frontmatter中补充说明"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-09T11:41:00",
+    "status": "pending"
+  },
+  {
+    "section": "13.10",
+    "section_title": "Perfetto SQL 性能分析实战手册",
+    "priority": 80,
+    "reason": "知识缺口挖掘：Perfetto SQL 是性能工程师最核心的分析技能，13.8 仅覆盖输入延迟 SQL，缺少通用 SQL 手册。全书多次引用 SQL 查询但无统一的 SQL 参考章节。",
+    "added_by": "task2a-knowledge-gap",
+    "added_at": "2026-04-09T12:10:00+08:00",
+    "gap_score": "19/20",
+    "status": "pending"
+  },
+  {
+    "section": "5.12",
+    "section_title": "Thermal 管控深度：从内核子系统到 ADPF 主动降频",
+    "priority": 80,
+    "reason": "知识缺口挖掘：thermal throttling 是游戏/相机/导航等场景的核心性能瓶颈。5.5 仅为概述，缺少内核 thermal 子系统、Thermal HAL、ADPF Thermal API 的深度分析。",
+    "material_paths": [
+      "intake/research-feeds/2026-04-08-19-android-adpf-agdk-game-mode-thermal-performance.md"
+    ],
+    "added_by": "task2a-knowledge-gap",
+    "added_at": "2026-04-09T12:10:00+08:00",
+    "gap_score": "18/20",
+    "status": "pending"
+  },
+  {
+    "section": "14.11",
+    "section_title": "Battery Historian 与功耗分析工具",
+    "priority": 80,
+    "reason": "知识缺口挖掘：Battery Historian 是 Android 功耗分析的主力工具，目前全书无专门章节覆盖。11.x 功耗章节缺少工具使用指南。",
+    "added_by": "task2a-knowledge-gap",
+    "added_at": "2026-04-09T12:10:00+08:00",
+    "gap_score": "15/20",
+    "status": "pending"
   }
 ]

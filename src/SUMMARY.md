@@ -89,6 +89,7 @@ tags:
   - [5.9 ADPF 自适应性能框架](part1-fundamentals/ch05-cpu-power/09-adpf.md)
   - [5.10 JobScheduler/WorkManager 调度与后台任务性能](part1-fundamentals/ch05-cpu-power/10-jobscheduler-workmanager-performance.md)
   - [5.11 端侧 AI 推理性能：NPU/GPU 加速与 TFLite 管线](part1-fundamentals/ch05-cpu-power/11-ondevice-ml-inference-performance.md)
+  - [5.12 Thermal 管控深度：从内核子系统到 ADPF 主动降频](part1-fundamentals/ch05-cpu-power/12-thermal-management-deep-dive.md)
 
 - [第 6 章：存储与 I/O](part1-fundamentals/ch06-storage/README.md)
   - [6.1 Android 存储架构](part1-fundamentals/ch06-storage/01-storage-architecture.md)
@@ -171,6 +172,7 @@ tags:
   - [13.7 Perfetto 的高级用法](part3-tools/ch13-perfetto/07-advanced-usage.md)
   - [13.8 Perfetto 输入延迟 SQL 深度分析](part3-tools/ch13-perfetto/08-input-latency-sql.md)
   - [13.9 Android Tracing 基础设施：atrace、ftrace 与 Perfetto 数据采集原理](part3-tools/ch13-perfetto/09-tracing-infrastructure.md)
+  - [13.10 Perfetto SQL 性能分析实战手册](part3-tools/ch13-perfetto/10-perfetto-sql-cookbook.md)
 
 - [第 14 章：其他分析工具](part3-tools/ch14-other-tools/README.md)
   - [14.1 Android Studio Profiler](part3-tools/ch14-other-tools/01-as-profiler.md)
@@ -183,6 +185,7 @@ tags:
   - [14.8 GPU 图形调试与分析工具](part3-tools/ch14-other-tools/08-gpu-debug-tools.md)
   - [14.9 Android Camera 性能与 Perfetto 分析](part3-tools/ch14-other-tools/09-camera-performance-analysis.md)
   - [14.10 eBPF/BPF 在 Android 性能分析中的应用](part3-tools/ch14-other-tools/10-ebpf-performance-analysis.md)
+  - [14.11 Battery Historian 与功耗分析工具](part3-tools/ch14-other-tools/11-battery-historian.md)
 
 - [第 15 章：方法论](part3-tools/ch15-methodology/README.md)
   - [15.1 性能优化的术、道、器](part3-tools/ch15-methodology/01-philosophy.md)
