@@ -4,16 +4,16 @@
   "metrics": {
     "total": 143,
     "draft": 16,
-    "ready-for-review": 31,
+    "ready-for-review": 30,
     "reviewed": 5,
     "finalized": 35,
     "staging_drafts": 0,
-    "last_updated": "2026-04-09T06:24:37+08:00",
+    "last_updated": "2026-04-10T00:20:00+08:00",
     "processing": 0,
-    "ready-to-publish": 15,
-    "last_reviewed": "2026-04-09",
-    "last_reviewed_section": "1.7 ART 编译管线与 dex2oat 优化",
-    "reviewed_today": 13
+    "ready-to-publish": 16,
+    "last_reviewed": "2026-04-10",
+    "last_reviewed_section": "2.9 渲染机制的版本演进",
+    "reviewed_today": 14
   },
   "reviewed_sections": {
     "8.1": {
@@ -216,15 +216,25 @@
       "b_class_notes": "3处存疑均为数据来源验证，非结构性问题，不触发回炉"
     },
     "2.9": {
-      "reviewed_date": "2026-04-03",
+      "reviewed_date": "2026-04-10",
       "reviewed_by": "openclaw-task6",
-      "review_status": "finalized-v3",
+      "review_status": "ready-to-publish",
+      "review_type": "post-polish-quality-gate",
       "review_round": 2,
       "fixes_applied": [
-        "8处'你'→'我们'替换（writing-guide §3.5合规）",
-        "合并冗余FrameMetrics过渡句",
-        "frontmatter补充section字段, status→finalized"
-      ]
+        "验证标注：[已确认:] → [已验证:]（2处，L292/L327）",
+        "模糊形容词：显著缩短 → 具体描述（L53）",
+        "模糊形容词：显著增强 → 进一步完善（L205）",
+        "元数据：补 drafted_by 字段",
+        "状态：ready-for-review → ready-to-publish（精修质检终审通过）"
+      ],
+      "scores": {
+        "structure": 5,
+        "expression": 5,
+        "consistency": 5,
+        "verification": 4,
+        "metadata": 5
+      }
     },
     "4.1": {
       "reviewed_date": "2026-04-03",
@@ -2193,8 +2203,9 @@
     "completed": 139,
     "pending": 10,
     "ready-for-review": 89,
-    "ready_to_publish": 49,
-    "reviewed": 1
+    "ready_to_publish": 50,
+    "reviewed": 1,
+    "ready_for_review": 0
   },
   "research_stats": {
     "runs_today": [
@@ -2518,6 +2529,23 @@
     }
   ],
   "history": [
+    {
+      "date": "2026-04-10",
+      "section": "2.9",
+      "title": "渲染机制的版本演进",
+      "action": "reviewed-ready-to-publish",
+      "review_by": "openclaw-task6",
+      "review_type": "post-polish-quality-gate",
+      "review_round": 2,
+      "fixes": 6,
+      "scores": {
+        "structure": 5,
+        "expression": 5,
+        "consistency": 5,
+        "verification": 4,
+        "metadata": 5
+      }
+    },
     {
       "date": "2026-04-09",
       "section": "13.10",
