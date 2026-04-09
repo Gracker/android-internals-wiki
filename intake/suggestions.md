@@ -1240,3 +1240,37 @@ tags:
 - **位置**：JankStats 阈值"默认阈值是帧时间的 2 倍（即 60Hz 下 33.2ms 以上算 Jank）"
 - **问题**：文字"帧时间的 2 倍"有歧义。JankStats 的默认阈值是"帧预算 × 2.0"，即 60Hz 下 16.6ms × 2 = 33.2ms。但"2 倍帧时间"可能被误解为"帧时间超过 2×16.6=33.2ms"
 - **建议**：改为"JankStats 默认以帧预算的 2.0 倍为阈值（60Hz 下即超过 33.2ms 判定为 Jank）"
+
+
+## [Task2A Gap Mining] 2026-04-09 09:02 — 无新合格缺口
+
+**分析范围**：
+- SUMMARY.md 全书 17 Chapter / ~159 sections（含 3.5 输入安全、3.6 手势识别未列 SUMMARY）
+- source-index.json 全部 quality=high 条目（0 篇未映射）
+- research-feeds/ 最近 8 个研究素材（全部已映射到现有章节：1.16/2.10/5.9/7.10/7.12/8.9/12.2/16.5）
+- daily-info/ 最近 3 天信息（2026-04-07~09，无性能相关新主题）
+- AOSP frameworks/base/services 核心服务覆盖检查
+- 官方文档 Android 17 性能变更搜索
+
+**候选方向评估**：
+1. **Benchmark 方法论与性能基线** → §14.6 已覆盖 Macrobenchmark/Microbenchmark/CI/CD 集成，§15.6 已覆盖基线管理与回归检测 → 与现有章节严重重叠 → 素材丰富度 2（独立素材不足），评分 12
+2. **Android 进程间通信全景 (IPC Landscape)** → §1.4 Binder 已详尽覆盖主要 IPC，Socket/SharedMemory 等次要 IPC 素材 0 篇 → 素材丰富度 1，评分 8
+3. **DisplayManagerService 与 HDR 管线** → 刷新率管理已在 §2.18/2.19 覆盖，HDR 性能素材 0 篇 → 素材丰富度 1，评分 6
+4. **Sensor 管线性能与功耗** → 偏嵌入式/底层，Android 工程师关注度低，高质量素材 0 篇 → 评分 7
+5. **APEX 模块化与启动性能** → §1.2/1.6 已覆盖启动流程中的 APEX 加载，独立成节素材不足 → 评分 10
+6. **Android 17 正式版新性能特性** → Beta 3 已在 §16.5 覆盖，正式版尚未发布无新增 → 时效性 2（等待正式版），评分 9
+
+**结论**：0 个候选达到 14 分阈值，跳过。全书已连续多轮无新合格缺口。
+
+**已检查方向汇总（避免重复）**：
+- AOSP 系统服务：AMS/PMS/WMS/SF/IMS/DMS/PMS/DisplayManager/PowerManager/ThermalManager — 全部已覆盖或素材不足
+- Android 17 特性：AudioTrack/Audio Focus/Cloud Compilation/Static Final/Adaptive Layouts — 全部已映射
+- 研究素材主题 1-9 轮转：Binder/内存/调度/启动/渲染/功耗/存储/网络/图形 — 全部已映射
+- Part 4 扩展方向：OEM 实践/AOSP 优化/版本变更 — 现有 8 节已覆盖核心内容
+- 方法论工具链：Benchmark/CI/CD/自动化测试 — §14.6 + §15.6 联合覆盖
+
+**下一步建议**：
+- 等待 Android 17 正式版（预计 Q3 2026）发布后的新性能特性
+- 专注于现有 7 个 draft 章节的加工（1.4/1.14/2.13/3.5/3.6/6.3/13.7/17.3）
+- 推进 89 个 ready-for-review 章节的精修和审查
+- FRESHNESS 队列 55 条时效性更新待处理
