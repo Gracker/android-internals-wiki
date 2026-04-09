@@ -1,8 +1,11 @@
 ---
 title: "Binder IPC 机制与性能影响"
 chapter: "1.4"
-status: draft
+section: "ch01-architecture"
+status: ready-for-review
 applicable_versions: "Android 8 (API 26) - Android 16 (API 36)"
+drafted_date: "2026-04-10"
+drafted_by: "openclaw-task2a"
 last_verified: "2026-03-31"
 last_verified_against: "AOSP android-16.0.0_r1, 官方文档"
 confidence: medium
