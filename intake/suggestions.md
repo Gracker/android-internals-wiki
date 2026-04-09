@@ -80,3 +80,39 @@
 - **位置**：进程内存限制与 largeHeap 策略的版本演进 — largeHeap 表格
 - **问题**：largeHeap 表格的具体数值（128-512MB 等）标注为"待验证"经验值，缺少权威来源
 - **建议**：补充 `adb shell getprop dalvik.vm.heapsize` 在各版本实际设备的输出，或引用官方文档
+
+## [Task9 Deep Review] 2.11 Flutter 渲染管线与性能 — 2026-04-09
+- **类型**：版本差异
+- **位置**：Flutter DevTools Performance 面板段落
+- **问题**：章节称"从 Flutter 3.19 开始 Performance 面板已集成 Perfetto trace viewer"，实际集成时间约在 Flutter 3.13-3.16，3.19 的主要变化是 Impeller 默认化
+- **建议**：修正为"Flutter 3.16 期间集成"，补充 [待验证：确认具体版本号]
+
+## [Task9 Deep Review] 2.11 Flutter 渲染管线与性能 — 2026-04-09
+- **类型**：数据缺失
+- **位置**：Impeller 性能数据段落（帧率稳定性、内存改善数据）
+- **问题**：30-50% 性能改善数据引用自"Flutter 团队 2025 年基准测试及第三方测试报告"，但章节自身已标注 [存疑: 非 Flutter 官方基准；HoldApp 报告待确认真实性]，形成数据可信度自相矛盾
+- **建议**：将断言降级为"社区报告显示"，补充具体 Flutter 官方博客 post 或 conference session 编号，与存疑标注对齐；考虑将 HoldApp 报告替换为可验证来源
+
+## [Task9 Deep Review] 2.11 Flutter 渲染管线与性能 — 2026-04-09
+- **类型**：原理完整性
+- **位置**：Shader 编译卡顿（Skia 时代）段落
+- **问题**：Skia shader 编译卡顿仅解释了"Raster 线程编译耗时"，未说明移动 GPU driver shader compiler 性能远差于桌面 GPU 的底层原因
+- **建议**：补充移动 GPU shader compiler vs 桌面 GPU 的性能差距背景，解释为什么这是 Skia 的 JIT 架构在移动端特有的瓶颈
+
+## [Task9 Deep Review] 2.11 Flutter 渲染管线与性能 — 2026-04-09
+- **类型**：交叉引用
+- **位置**：与其他章节的关联部分 §2.3 VSync 机制
+- **问题**：引用了 §2.3 VSync 机制，但 progress.json 和 src/ 中不存在 2.3 章节（相邻为 2.1 渲染架构全景、2.4 Choreographer）
+- **建议**：修正引用目标为正确章节号，或若该 VSync 独立章节不存在则删除该引用行
+
+## [Task9 Deep Review] 2.11 Flutter 渲染管线与性能 — 2026-04-09
+- **类型**：知识盲区
+- **位置**：Impeller 引擎部分 Vulkan 回退策略段落
+- **问题**：章节说明 Impeller 对 Android API 28 及以下回退到 OpenGL ES，但未说明对 Android API 29-32（Vulkan 1.0/1.1 设备）的回退处理
+- **建议**：补充 Vulkan 功能集级别（1.0/1.1/1.2+）与 Impeller 支持情况的说明
+
+## [Task9 Deep Review] 2.11 Flutter 渲染管线与性能 — 2026-04-09
+- **类型**：知识盲区
+- **位置**：Impeller 引擎部分
+- **问题**：Skia（immediate mode）与 Impeller（tile-based partial repaint）的渲染架构根本差异未展开，读者难以理解 Impeller 在复杂场景的优势来源
+- **建议**：补充 Impeller tile-based 渲染策略与 Skia immediate mode 的架构对比，解释 partial repaint 对帧率的积极影响
