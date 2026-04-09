@@ -2174,9 +2174,9 @@
   "ready_for_review": 5,
   "last_updated": "2026-04-09T07:03:04.895533",
   "stats": {
-    "total": 159,
+    "total": 162,
     "completed": 138,
-    "pending": 8,
+    "pending": 11,
     "last_updated": "2026-04-09T07:03:00+08:00",
     "reviewed": 0,
     "ready-for-review": 89,
@@ -2504,6 +2504,33 @@
     }
   ],
   "history": [
+    {
+      "date": "2026-04-09",
+      "section": "5.12",
+      "title": "Thermal 管控深度：从内核子系统到 ADPF 主动降频",
+      "action": "gap-created",
+      "created_by": "task2a-knowledge-gap",
+      "gap_source": "官方文档+研究素材+AOSP结构+读者需求",
+      "gap_score": "18/20"
+    },
+    {
+      "date": "2026-04-09",
+      "section": "13.10",
+      "title": "Perfetto SQL 性能分析实战手册",
+      "action": "gap-created",
+      "created_by": "task2a-knowledge-gap",
+      "gap_source": "官方文档+读者需求+AOSP结构",
+      "gap_score": "19/20"
+    },
+    {
+      "date": "2026-04-09",
+      "section": "14.11",
+      "title": "Battery Historian 与功耗分析工具",
+      "action": "gap-created",
+      "created_by": "task2a-knowledge-gap",
+      "gap_source": "官方文档+读者需求",
+      "gap_score": "15/20"
+    },
     {
       "date": "2026-04-09",
       "section": "11.4",

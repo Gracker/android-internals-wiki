@@ -263,6 +263,34 @@ Samsung 的折叠屏设备支持 LTPO 技术的 VRR，刷新率可以在 1Hz-120
 
 ## 参考资料
 
+### 豆包手机为什么会被其他厂商抵制？它的工作原理是什么？
+- 来源：https://juejin.cn/post/7582469532326920228
+- 类型：技术文章
+- 摘要：分析豆包手机的AI原生架构、系统级AI集成技术原理，以及被抵制的行业竞争原因。
+- 入库时间：2026-04-09
+
+
+### 已有Flutter项目适配鸿蒙6
+- 来源：https://juejin.cn/post/7582149417768812594
+- 类型：技术文章
+- 摘要：介绍现有Flutter项目适配HarmonyOS 6的完整流程，涵盖鸿蒙特性分析、Flutter鸿蒙适配插件使用、原生模块开发。
+- 入库时间：2026-04-09
+
+
+### Android15适配之targetSdkVersion升到35后全是坑
+- 来源：https://juejin.cn/post/7584295332340858943
+- 类型：技术文章
+- 摘要：深度分析Android 15适配过程中targetSdkVersion升级到35后的各种兼容性问题及解决方案。
+- 入库时间：2026-04-09
+
+
+### 聊聊2026年Android开发会是什么样
+- 来源：https://juejin.cn/post/7589903499599347766
+- 类型：技术文章
+- 摘要：分析2026年Android开发六大趋势：AI原生应用、Compose标准UI、Kotlin Multiplatform生产化等。
+- 入库时间：2026-04-09
+
+
 ### 官方文档
 
 - Android Game Mode API: https://developer.android.com/games/agdk/game-mode

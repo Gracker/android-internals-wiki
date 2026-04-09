@@ -478,5 +478,1013 @@
     "title": "Evolver 周检（只读）· 2026-04-05",
     "total_score": 6,
     "reason": "Total score 6 < 10"
+  },
+  {
+    "path": "OKB编译/2026-04-08-Leading-Effective-Engineering-Teams-in-the-Age-of-.md",
+    "title": "Leading Effective Engineering Teams in the Age of GenAI-2025-03-26",
+    "total_score": 9,
+    "reason": "Total score 9 < 10"
+  },
+  {
+    "path": "OKB编译/2026-04-07-Android-Weekly-202518.md",
+    "title": "Android Weekly #202518",
+    "total_score": 9,
+    "reason": "Total score 9 < 10"
+  },
+  {
+    "path": "调研/OKB编译/2026-04-08-Seeking-the-Productive-Life--Some-Details-of-My-Pe.md",
+    "title": "Seeking the Productive Life- Some Details of My Personal Infrastructure—Stephen Wolfram Writings-202",
+    "total_score": 6,
+    "reason": "Total score 6 < 10"
+  },
+  {
+    "path": "调研/OKB编译/index.md",
+    "title": "OKB编译目录",
+    "total_score": 8,
+    "reason": "Total score 8 < 10"
+  },
+  {
+    "path": "调研/OKB编译/2026-04-08-State-of-AI.md",
+    "title": "State of AI",
+    "total_score": 6,
+    "reason": "Total score 6 < 10"
+  },
+  {
+    "path": "调研/OKB编译/2026-04-08-页表MMU-TLB彻底讲透虚拟内存那些事.md",
+    "title": "页表、MMU、TLB：彻底讲透虚拟内存那些事",
+    "total_score": 6,
+    "reason": "Total score 6 < 10"
+  },
+  {
+    "path": "调研/OKB编译/2026-04-08-Articels-腹背受敌的中国经济3-万字长文-at-main--foreveryh-Artice.md",
+    "title": "Articels-腹背受敌的中国经济（3 万字长文） at main · foreveryh-Articels · GitHub-2024-07-07",
+    "total_score": 6,
+    "reason": "Total score 6 < 10"
+  },
+  {
+    "path": "调研/OKB编译/2026-04-08-内存屏障-多核CPU并发编程的交通规则.md",
+    "title": "内存屏障：多核CPU下并发编程的「交通规则」",
+    "total_score": 6,
+    "reason": "Total score 6 < 10"
+  },
+  {
+    "path": "调研/OKB编译/2026-04-08-Binder-IPC死亡通知机制深度解析.md",
+    "title": "Binder IPC 机制深度解析（Beyond AIDL）（6）：死亡通知",
+    "total_score": 8,
+    "reason": "Total score 8 < 10"
+  },
+  {
+    "path": "调研/OKB编译/2026-04-07-getActivity-AndroidVersionAdapter-guide.md",
+    "title": "Android 版本适配全套指南 (getActivity/AndroidVersionAdapter)",
+    "total_score": 8,
+    "reason": "Total score 8 < 10"
+  },
+  {
+    "path": "调研/OKB编译/2026-04-07-Agentic-Engineering工程革命实践记录.md",
+    "title": "认知重建之后，步入 Agentic Engineering 的工程革命",
+    "total_score": 9,
+    "reason": "Total score 9 < 10"
+  },
+  {
+    "path": "调研/OKB编译/2026-04-07-深入ANR产生的根源处理流程和日志文件.md",
+    "title": "深入 ANR：产生的根源、处理流程和日志文件",
+    "total_score": 9,
+    "reason": "Total score 9 < 10"
+  },
+  {
+    "path": "调研/OKB编译/2026-04-08-探索-AI-编程智能体-2025-02-03.md",
+    "title": "探索 AI 编程智能体-2025-02-03",
+    "total_score": 7,
+    "reason": "Total score 7 < 10"
+  },
+  {
+    "path": "调研/OKB编译/2026-04-08-bcc-profiling符号解析原理与错误案例.md",
+    "title": "为什么 bcc profiling 的函数名会不正确？",
+    "total_score": 8,
+    "reason": "Total score 8 < 10"
+  },
+  {
+    "path": "调研/OKB编译/2026-04-08-Android-SurfaceFlinger-学习之路十二----合成Layer.md",
+    "title": "Android SurfaceFlinger 学习之路(十二)----合成Layer",
+    "total_score": 8,
+    "reason": "Total score 8 < 10"
+  },
+  {
+    "path": "调研/Anthropic-81K访谈/81k-interviews-zh.md",
+    "title": "81,000 人对 AI 的期望",
+    "total_score": 7,
+    "reason": "Total score 7 < 10"
+  },
+  {
+    "path": "调研/Anthropic-81K访谈/81k-interviews-en.md",
+    "title": "What 81,000 People Want from AI",
+    "total_score": 5,
+    "reason": "Total score 5 < 10"
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-18-02-性能功耗热优化/stage-15_v1/decision.md",
+    "title": "decision",
+    "scores": {
+      "relevance": 1,
+      "depth": 0,
+      "timeliness": 3,
+      "verifiability": 0
+    },
+    "total_score": 4,
+    "matched_chapters": [],
+    "first_chars": "",
+    "indexed_at": "2026-04-09T10:50:53.017486",
+    "reason": "Total score 4 < 10"
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-18-02-性能功耗热优化/stage-15_v2/decision.md",
+    "title": "decision",
+    "scores": {
+      "relevance": 1,
+      "depth": 0,
+      "timeliness": 3,
+      "verifiability": 0
+    },
+    "total_score": 4,
+    "matched_chapters": [],
+    "first_chars": "",
+    "indexed_at": "2026-04-09T10:50:53.018154",
+    "reason": "Total score 4 < 10"
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-18-02-性能功耗热优化/stage-16/outline.md",
+    "title": "Paper Outline for Android Performance-Power-Thermal Optimization Research",
+    "scores": {
+      "relevance": 3,
+      "depth": 1,
+      "timeliness": 3,
+      "verifiability": 0
+    },
+    "total_score": 7,
+    "matched_chapters": [],
+    "first_chars": "",
+    "indexed_at": "2026-04-09T10:50:53.019366",
+    "reason": "Total score 7 < 10"
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-18-03-性能功耗热优化/stage-01/goal.md",
+    "title": "SMART Research Goal: Android Performance, Power, and Thermal Optimization Research",
+    "scores": {
+      "relevance": 3,
+      "depth": 1,
+      "timeliness": 3,
+      "verifiability": 0
+    },
+    "total_score": 7,
+    "matched_chapters": [],
+    "first_chars": "",
+    "indexed_at": "2026-04-09T10:50:53.020009",
+    "reason": "Total score 7 < 10"
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-18-03-性能功耗热优化/stage-02/problem_tree.md",
+    "title": "Research Problem Decomposition: Android Performance, Power, and Thermal Optimization",
+    "scores": {
+      "relevance": 3,
+      "depth": 1,
+      "timeliness": 3,
+      "verifiability": 0
+    },
+    "total_score": 7,
+    "matched_chapters": [],
+    "first_chars": "",
+    "indexed_at": "2026-04-09T10:50:53.020592",
+    "reason": "Total score 7 < 10"
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-18-03-性能功耗热优化/stage-06/cards/1.md",
+    "title": "A Review of Android Malware Detection Approaches Based on Machine Learning",
+    "scores": {
+      "relevance": 3,
+      "depth": 1,
+      "timeliness": 2,
+      "verifiability": 1
+    },
+    "total_score": 7,
+    "matched_chapters": [],
+    "first_chars": "## Cite_Key\nliu2020review\n## Problem\nAndroid malware detection using machine learning approaches\n## Method\nComprehensive survey of ML-based Android malware detection approaches\n## Data\nBackground on Android system architecture, security mechanisms, and classification of Android malware",
+    "indexed_at": "2026-04-09T10:50:53.021472",
+    "reason": "Total score 7 < 10"
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-18-03-性能功耗热优化/stage-06/cards/2.md",
+    "title": "A Survey of Android Malware Detection with Deep Neural Models",
+    "scores": {
+      "relevance": 3,
+      "depth": 1,
+      "timeliness": 2,
+      "verifiability": 1
+    },
+    "total_score": 7,
+    "matched_chapters": [],
+    "first_chars": "## Cite_Key\nqiu2020survey\n## Problem\nAndroid malware detection using deep learning models\n## Method\nSystematic review of DL-based Android malware detection and classification\n## Data\nLiterature organized by DL architecture (FCN, CNN, RNN, DBN, AE, hybrid models)",
+    "indexed_at": "2026-04-09T10:50:53.022060",
+    "reason": "Total score 7 < 10"
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-18-03-性能功耗热优化/stage-06/cards/3.md",
+    "title": "Android in the Wild: A Large-Scale Dataset for Android Device Control",
+    "scores": {
+      "relevance": 3,
+      "depth": 0,
+      "timeliness": 3,
+      "verifiability": 0
+    },
+    "total_score": 6,
+    "matched_chapters": [],
+    "first_chars": "",
+    "indexed_at": "2026-04-09T10:50:53.022793",
+    "reason": "Total score 6 < 10"
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-18-03-性能功耗热优化/stage-06/cards/4.md",
+    "title": "AutoDroid: LLM-powered Task Automation in Android",
+    "scores": {
+      "relevance": 3,
+      "depth": 0,
+      "timeliness": 3,
+      "verifiability": 0
+    },
+    "total_score": 6,
+    "matched_chapters": [],
+    "first_chars": "",
+    "indexed_at": "2026-04-09T10:50:53.023184",
+    "reason": "Total score 6 < 10"
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-18-03-性能功耗热优化/stage-06/cards/5.md",
+    "title": "Android in the Zoo: Chain-of-Action-Thought for GUI Agents",
+    "scores": {
+      "relevance": 3,
+      "depth": 0,
+      "timeliness": 3,
+      "verifiability": 0
+    },
+    "total_score": 6,
+    "matched_chapters": [],
+    "first_chars": "",
+    "indexed_at": "2026-04-09T10:50:53.023647",
+    "reason": "Total score 6 < 10"
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-18-03-性能功耗热优化/stage-06/cards/6.md",
+    "title": "A brief survey of deep learning methods for android Malware detection",
+    "scores": {
+      "relevance": 3,
+      "depth": 1,
+      "timeliness": 3,
+      "verifiability": 1
+    },
+    "total_score": 8,
+    "matched_chapters": [],
+    "first_chars": "",
+    "indexed_at": "2026-04-09T10:50:53.023918",
+    "reason": "Total score 8 < 10"
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-18-03-性能功耗热优化/stage-06/cards/7.md",
+    "title": "A survey of malware detection using deep learning",
+    "scores": {
+      "relevance": 1,
+      "depth": 1,
+      "timeliness": 3,
+      "verifiability": 0
+    },
+    "total_score": 5,
+    "matched_chapters": [],
+    "first_chars": "",
+    "indexed_at": "2026-04-09T10:50:53.024195",
+    "reason": "Total score 5 < 10"
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-18-03-性能功耗热优化/stage-07/synthesis.md",
+    "title": "Android 性能功耗热优化研究 - 合成分析输出",
+    "scores": {
+      "relevance": 3,
+      "depth": 1,
+      "timeliness": 3,
+      "verifiability": 0
+    },
+    "total_score": 7,
+    "matched_chapters": [],
+    "first_chars": "",
+    "indexed_at": "2026-04-09T10:50:53.024629",
+    "reason": "Total score 7 < 10"
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-18-03-性能功耗热优化/stage-08/hypotheses.md",
+    "title": "Synthesized Research Proposal for Android Performance, Power, and Thermal Optimization",
+    "scores": {
+      "relevance": 3,
+      "depth": 1,
+      "timeliness": 3,
+      "verifiability": 0
+    },
+    "total_score": 7,
+    "matched_chapters": [],
+    "first_chars": "After carefully analyzing the three perspectives, I've synthesized the most compelling ideas into a focused set of hypotheses that address the strongest elements from each viewpoint while acknowledging critical concerns and ensuring feasibility.",
+    "indexed_at": "2026-04-09T10:50:53.025332",
+    "reason": "Total score 7 < 10"
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-18-03-性能功耗热优化/stage-08/perspectives/contrarian.md",
+    "title": "Contrarian Analysis: Android 性能功耗热优化研究",
+    "scores": {
+      "relevance": 4,
+      "depth": 1,
+      "timeliness": 3,
+      "verifiability": 0
+    },
+    "total_score": 8,
+    "matched_chapters": [
+      "ch06-功耗"
+    ],
+    "first_chars": "## Contrarian Hypothesis 1: The \"Security-Performance Tradeoff Fallacy\"\n### Challenge to Widely-Held Assumption\nThe mainstream view assumes that security mechanisms (like those studied in Clusters 1, 2, and 4) necessarily degrade Android system performance and increase power consumption. This assumption underpins much of the research gap identified in Gap 2.",
+    "indexed_at": "2026-04-09T10:50:53.026001",
+    "reason": "Total score 8 < 10"
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-18-03-性能功耗热优化/stage-08/perspectives/innovator.md",
+    "title": "Novel Hypotheses for Android Performance, Power, and Thermal Optimization",
+    "scores": {
+      "relevance": 3,
+      "depth": 0,
+      "timeliness": 3,
+      "verifiability": 0
+    },
+    "total_score": 6,
+    "matched_chapters": [],
+    "first_chars": "## Hypothesis 1: Bio-Inspired Thermal Regulation\n**Bold Claim**: Android devices can achieve optimal thermal management by mimicking biological thermoregulation systems, creating a \"living\" OS that adapts its thermal behavior like a biological organism rather than using static threshold-based cooling.",
+    "indexed_at": "2026-04-09T10:50:53.026620",
+    "reason": "Total score 6 < 10"
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-18-03-性能功耗热优化/stage-08/perspectives/pragmatist.md",
+    "title": "Hypotheses for Android Performance, Power, and Thermal Optimization",
+    "scores": {
+      "relevance": 4,
+      "depth": 0,
+      "timeliness": 3,
+      "verifiability": 0
+    },
+    "total_score": 7,
+    "matched_chapters": [
+      "ch13-调度"
+    ],
+    "first_chars": "## Hypothesis 1: Lightweight On-Device Reinforcement Learning for Dynamic Thermal Management\n**Concrete Claim**: A lightweight reinforcement learning (RL) agent deployed directly on Android devices can optimize thermal management by dynamically adjusting CPU frequencies and thermal thresholds, reducing device temperature by at least 15% while maintaining within 5% of original performance levels.",
+    "indexed_at": "2026-04-09T10:50:53.027076",
+    "reason": "Total score 7 < 10"
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-18-03-性能功耗热优化/stage-10/experiment_spec.md",
+    "title": "Experiment Specification",
+    "scores": {
+      "relevance": 1,
+      "depth": 0,
+      "timeliness": 3,
+      "verifiability": 0
+    },
+    "total_score": 4,
+    "matched_chapters": [],
+    "first_chars": "",
+    "indexed_at": "2026-04-09T10:50:53.027360",
+    "reason": "Total score 4 < 10"
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-18-03-性能功耗热优化/stage-14/analysis.md",
+    "title": "Unified Analysis: Android Performance, Power, and Thermal Optimization Research",
+    "scores": {
+      "relevance": 3,
+      "depth": 1,
+      "timeliness": 3,
+      "verifiability": 0
+    },
+    "total_score": 7,
+    "matched_chapters": [],
+    "first_chars": "",
+    "indexed_at": "2026-04-09T10:50:53.028015",
+    "reason": "Total score 7 < 10"
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-18-03-性能功耗热优化/stage-14/perspectives/methodologist.md",
+    "title": "Experimental Methodology Audit: Android Performance, Power, and Thermal Optimization Research",
+    "scores": {
+      "relevance": 3,
+      "depth": 1,
+      "timeliness": 3,
+      "verifiability": 1
+    },
+    "total_score": 8,
+    "matched_chapters": [],
+    "first_chars": "",
+    "indexed_at": "2026-04-09T10:50:53.028405",
+    "reason": "Total score 8 < 10"
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-18-03-性能功耗热优化/stage-14/perspectives/optimist.md",
+    "title": "Optimistic Analysis of Android Performance, Power, and Thermal Optimization Research Results",
+    "scores": {
+      "relevance": 3,
+      "depth": 1,
+      "timeliness": 3,
+      "verifiability": 0
+    },
+    "total_score": 7,
+    "matched_chapters": [],
+    "first_chars": "",
+    "indexed_at": "2026-04-09T10:50:53.028823",
+    "reason": "Total score 7 < 10"
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-18-03-性能功耗热优化/stage-14/perspectives/skeptic.md",
+    "title": "Critical Scrutiny of Android Performance-Power-Thermal Optimization Experiment Results",
+    "scores": {
+      "relevance": 3,
+      "depth": 0,
+      "timeliness": 3,
+      "verifiability": 0
+    },
+    "total_score": 6,
+    "matched_chapters": [],
+    "first_chars": "",
+    "indexed_at": "2026-04-09T10:50:53.029492",
+    "reason": "Total score 6 < 10"
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-18-03-性能功耗热优化/stage-14_v1/analysis.md",
+    "title": "Unified Analysis: Android Performance, Power, and Thermal Optimization Research",
+    "scores": {
+      "relevance": 3,
+      "depth": 1,
+      "timeliness": 3,
+      "verifiability": 0
+    },
+    "total_score": 7,
+    "matched_chapters": [],
+    "first_chars": "",
+    "indexed_at": "2026-04-09T10:50:53.029793",
+    "reason": "Total score 7 < 10"
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-18-03-性能功耗热优化/stage-14_v1/perspectives/methodologist.md",
+    "title": "Experimental Methodology Audit: Android Performance, Power, and Thermal Optimization Research",
+    "scores": {
+      "relevance": 3,
+      "depth": 1,
+      "timeliness": 3,
+      "verifiability": 1
+    },
+    "total_score": 8,
+    "matched_chapters": [],
+    "first_chars": "",
+    "indexed_at": "2026-04-09T10:50:53.030266",
+    "reason": "Total score 8 < 10"
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-18-03-性能功耗热优化/stage-14_v1/perspectives/optimist.md",
+    "title": "Optimistic Analysis of Android Performance, Power, and Thermal Optimization Research Results",
+    "scores": {
+      "relevance": 3,
+      "depth": 1,
+      "timeliness": 3,
+      "verifiability": 0
+    },
+    "total_score": 7,
+    "matched_chapters": [],
+    "first_chars": "",
+    "indexed_at": "2026-04-09T10:50:53.030931",
+    "reason": "Total score 7 < 10"
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-18-03-性能功耗热优化/stage-14_v1/perspectives/skeptic.md",
+    "title": "Critical Scrutiny of Android Performance-Power-Thermal Optimization Experiment Results",
+    "scores": {
+      "relevance": 3,
+      "depth": 0,
+      "timeliness": 3,
+      "verifiability": 0
+    },
+    "total_score": 6,
+    "matched_chapters": [],
+    "first_chars": "",
+    "indexed_at": "2026-04-09T10:50:53.031442",
+    "reason": "Total score 6 < 10"
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-18-03-性能功耗热优化/stage-14_v2/analysis.md",
+    "title": "Unified Analysis of Android Performance, Power, and Thermal Optimization Research",
+    "scores": {
+      "relevance": 3,
+      "depth": 1,
+      "timeliness": 3,
+      "verifiability": 0
+    },
+    "total_score": 7,
+    "matched_chapters": [],
+    "first_chars": "",
+    "indexed_at": "2026-04-09T10:50:53.032506",
+    "reason": "Total score 7 < 10"
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-18-03-性能功耗热优化/stage-14_v2/perspectives/methodologist.md",
+    "title": "Audit of Experimental Methodology",
+    "scores": {
+      "relevance": 1,
+      "depth": 0,
+      "timeliness": 3,
+      "verifiability": 1
+    },
+    "total_score": 5,
+    "matched_chapters": [],
+    "first_chars": "",
+    "indexed_at": "2026-04-09T10:50:53.032897",
+    "reason": "Total score 5 < 10"
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-18-03-性能功耗热优化/stage-14_v2/perspectives/optimist.md",
+    "title": "Optimistic Analysis of Android Performance, Power, and Thermal Optimization Research",
+    "scores": {
+      "relevance": 3,
+      "depth": 1,
+      "timeliness": 3,
+      "verifiability": 0
+    },
+    "total_score": 7,
+    "matched_chapters": [],
+    "first_chars": "",
+    "indexed_at": "2026-04-09T10:50:53.033281",
+    "reason": "Total score 7 < 10"
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-18-03-性能功耗热优化/stage-14_v2/perspectives/skeptic.md",
+    "title": "Critical Scrutiny of Android Performance-Power-Thermal Optimization Experiment Results",
+    "scores": {
+      "relevance": 3,
+      "depth": 0,
+      "timeliness": 3,
+      "verifiability": 0
+    },
+    "total_score": 6,
+    "matched_chapters": [],
+    "first_chars": "",
+    "indexed_at": "2026-04-09T10:50:53.033635",
+    "reason": "Total score 6 < 10"
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-18-03-性能功耗热优化/stage-15/decision.md",
+    "title": "decision",
+    "scores": {
+      "relevance": 1,
+      "depth": 0,
+      "timeliness": 3,
+      "verifiability": 0
+    },
+    "total_score": 4,
+    "matched_chapters": [],
+    "first_chars": "",
+    "indexed_at": "2026-04-09T10:52:14.852738",
+    "reason": "Total score 4 < 10"
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-18-03-性能功耗热优化/stage-15_v1/decision.md",
+    "title": "decision",
+    "scores": {
+      "relevance": 1,
+      "depth": 0,
+      "timeliness": 3,
+      "verifiability": 0
+    },
+    "total_score": 4,
+    "matched_chapters": [],
+    "first_chars": "",
+    "indexed_at": "2026-04-09T10:52:14.853216",
+    "reason": "Total score 4 < 10"
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-18-03-性能功耗热优化/stage-15_v2/decision.md",
+    "title": "decision",
+    "scores": {
+      "relevance": 1,
+      "depth": 0,
+      "timeliness": 3,
+      "verifiability": 0
+    },
+    "total_score": 4,
+    "matched_chapters": [],
+    "first_chars": "",
+    "indexed_at": "2026-04-09T10:52:14.853599",
+    "reason": "Total score 4 < 10"
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-18-03-性能功耗热优化/stage-16/outline.md",
+    "title": "Paper Outline: Android Performance, Power, and Thermal Optimization",
+    "scores": {
+      "relevance": 3,
+      "depth": 1,
+      "timeliness": 3,
+      "verifiability": 0
+    },
+    "total_score": 7,
+    "matched_chapters": [],
+    "first_chars": "",
+    "indexed_at": "2026-04-09T10:52:14.854089",
+    "reason": "Total score 7 < 10"
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-18-热管理与CPU频率/stage-01/goal.md",
+    "title": "goal",
+    "scores": {
+      "relevance": 1,
+      "depth": 0,
+      "timeliness": 3,
+      "verifiability": 0
+    },
+    "total_score": 4,
+    "matched_chapters": [],
+    "first_chars": "",
+    "indexed_at": "2026-04-09T10:52:14.854472",
+    "reason": "Total score 4 < 10"
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-18-热管理与CPU频率/stage-02/problem_tree.md",
+    "title": "Research Problem Decomposition: Android Thermal Management",
+    "scores": {
+      "relevance": 3,
+      "depth": 1,
+      "timeliness": 3,
+      "verifiability": 0
+    },
+    "total_score": 7,
+    "matched_chapters": [],
+    "first_chars": "",
+    "indexed_at": "2026-04-09T10:52:14.854770",
+    "reason": "Total score 7 < 10"
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-18-热管理与CPU频率/stage-06/cards/1.md",
+    "title": "Benchmark Health Index: A Systematic Framework for Benchmarking the Benchmarks of LLMs",
+    "scores": {
+      "relevance": 3,
+      "depth": 1,
+      "timeliness": 3,
+      "verifiability": 0
+    },
+    "total_score": 7,
+    "matched_chapters": [],
+    "first_chars": "",
+    "indexed_at": "2026-04-09T10:52:14.855040",
+    "reason": "Total score 7 < 10"
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-18-热管理与CPU频率/stage-06/cards/2.md",
+    "title": "Evolution of Android's Permission-based Security Model and Challenges",
+    "scores": {
+      "relevance": 4,
+      "depth": 0,
+      "timeliness": 3,
+      "verifiability": 0
+    },
+    "total_score": 7,
+    "matched_chapters": [
+      "ch12-安全"
+    ],
+    "first_chars": "",
+    "indexed_at": "2026-04-09T10:52:14.855306",
+    "reason": "Total score 7 < 10"
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-18-热管理与CPU频率/stage-06/cards/3.md",
+    "title": "Understanding and Detecting Platform-Specific Violations in Android Auto Apps",
+    "scores": {
+      "relevance": 3,
+      "depth": 0,
+      "timeliness": 3,
+      "verifiability": 0
+    },
+    "total_score": 6,
+    "matched_chapters": [],
+    "first_chars": "",
+    "indexed_at": "2026-04-09T10:52:14.855555",
+    "reason": "Total score 6 < 10"
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-18-热管理与CPU频率/stage-06/cards/4.md",
+    "title": "On Benchmarking Code LLMs for Android Malware Analysis",
+    "scores": {
+      "relevance": 3,
+      "depth": 2,
+      "timeliness": 3,
+      "verifiability": 0
+    },
+    "total_score": 8,
+    "matched_chapters": [],
+    "first_chars": "",
+    "indexed_at": "2026-04-09T10:52:14.855780",
+    "reason": "Total score 8 < 10"
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-18-热管理与CPU频率/stage-06/cards/5.md",
+    "title": "GDPR-Bench-Android: A Benchmark for Evaluating Automated GDPR Compliance Detection in Android",
+    "scores": {
+      "relevance": 3,
+      "depth": 1,
+      "timeliness": 3,
+      "verifiability": 0
+    },
+    "total_score": 7,
+    "matched_chapters": [],
+    "first_chars": "",
+    "indexed_at": "2026-04-09T10:52:14.856011",
+    "reason": "Total score 7 < 10"
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-18-热管理与CPU频率/stage-06/cards/6.md",
+    "title": "LAMDA: A Longitudinal Android Malware Benchmark for Concept Drift Analysis",
+    "scores": {
+      "relevance": 3,
+      "depth": 1,
+      "timeliness": 3,
+      "verifiability": 0
+    },
+    "total_score": 7,
+    "matched_chapters": [],
+    "first_chars": "",
+    "indexed_at": "2026-04-09T10:52:14.856254",
+    "reason": "Total score 7 < 10"
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-18-热管理与CPU频率/stage-07/synthesis.md",
+    "title": "Android 热管理：CPU 频率调节策略对温度和性能的平衡",
+    "scores": {
+      "relevance": 3,
+      "depth": 0,
+      "timeliness": 3,
+      "verifiability": 0
+    },
+    "total_score": 6,
+    "matched_chapters": [],
+    "first_chars": "",
+    "indexed_at": "2026-04-09T10:52:14.856626",
+    "reason": "Total score 6 < 10"
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-18-热管理与CPU频率/stage-08/hypotheses.md",
+    "title": "Synthesized Research Proposal: Android Thermal Management",
+    "scores": {
+      "relevance": 3,
+      "depth": 1,
+      "timeliness": 3,
+      "verifiability": 0
+    },
+    "total_score": 7,
+    "matched_chapters": [],
+    "first_chars": "",
+    "indexed_at": "2026-04-09T10:52:14.856962",
+    "reason": "Total score 7 < 10"
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-18-热管理与CPU频率/stage-08/perspectives/contrarian.md",
+    "title": "Critical Examination of Android Thermal Management Synthesis",
+    "scores": {
+      "relevance": 3,
+      "depth": 0,
+      "timeliness": 3,
+      "verifiability": 0
+    },
+    "total_score": 6,
+    "matched_chapters": [],
+    "first_chars": "",
+    "indexed_at": "2026-04-09T10:52:14.857227",
+    "reason": "Total score 6 < 10"
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-18-热管理与CPU频率/stage-08/perspectives/innovator.md",
+    "title": "Novel Hypotheses for Android Thermal Management",
+    "scores": {
+      "relevance": 3,
+      "depth": 0,
+      "timeliness": 3,
+      "verifiability": 0
+    },
+    "total_score": 6,
+    "matched_chapters": [],
+    "first_chars": "",
+    "indexed_at": "2026-04-09T10:52:14.857566",
+    "reason": "Total score 6 < 10"
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-18-热管理与CPU频率/stage-08/perspectives/pragmatist.md",
+    "title": "Hypotheses for Android Thermal Management",
+    "scores": {
+      "relevance": 3,
+      "depth": 0,
+      "timeliness": 3,
+      "verifiability": 0
+    },
+    "total_score": 6,
+    "matched_chapters": [],
+    "first_chars": "",
+    "indexed_at": "2026-04-09T10:52:14.857866",
+    "reason": "Total score 6 < 10"
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-18-热管理与CPU频率/stage-10/experiment_spec.md",
+    "title": "Experiment Specification",
+    "scores": {
+      "relevance": 1,
+      "depth": 0,
+      "timeliness": 3,
+      "verifiability": 0
+    },
+    "total_score": 4,
+    "matched_chapters": [],
+    "first_chars": "",
+    "indexed_at": "2026-04-09T10:52:14.858216",
+    "reason": "Total score 4 < 10"
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-18-热管理与CPU频率/stage-14/analysis.md",
+    "title": "Unified Analysis: Android Thermal Management Experiment",
+    "scores": {
+      "relevance": 3,
+      "depth": 0,
+      "timeliness": 3,
+      "verifiability": 0
+    },
+    "total_score": 6,
+    "matched_chapters": [],
+    "first_chars": "",
+    "indexed_at": "2026-04-09T10:52:14.858431",
+    "reason": "Total score 6 < 10"
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-18-热管理与CPU频率/stage-14/perspectives/methodologist.md",
+    "title": "Experimental Methodology Audit: Android Thermal Management Research",
+    "scores": {
+      "relevance": 3,
+      "depth": 1,
+      "timeliness": 3,
+      "verifiability": 1
+    },
+    "total_score": 8,
+    "matched_chapters": [],
+    "first_chars": "",
+    "indexed_at": "2026-04-09T10:52:14.858670",
+    "reason": "Total score 8 < 10"
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-18-热管理与CPU频率/stage-14/perspectives/optimist.md",
+    "title": "Optimistic Analysis of Android Thermal Management Experiment Results",
+    "scores": {
+      "relevance": 3,
+      "depth": 0,
+      "timeliness": 3,
+      "verifiability": 0
+    },
+    "total_score": 6,
+    "matched_chapters": [],
+    "first_chars": "",
+    "indexed_at": "2026-04-09T10:52:14.858896",
+    "reason": "Total score 6 < 10"
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-18-热管理与CPU频率/stage-14/perspectives/skeptic.md",
+    "title": "Critical Scrutiny of the Experiment Results",
+    "scores": {
+      "relevance": 1,
+      "depth": 0,
+      "timeliness": 3,
+      "verifiability": 0
+    },
+    "total_score": 4,
+    "matched_chapters": [],
+    "first_chars": "",
+    "indexed_at": "2026-04-09T10:52:14.859106",
+    "reason": "Total score 4 < 10"
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-18-热管理与CPU频率/stage-14_v1/analysis.md",
+    "title": "Unified Analysis of Android Thermal Management Experiment Results",
+    "scores": {
+      "relevance": 3,
+      "depth": 0,
+      "timeliness": 3,
+      "verifiability": 0
+    },
+    "total_score": 6,
+    "matched_chapters": [],
+    "first_chars": "",
+    "indexed_at": "2026-04-09T10:52:14.859317",
+    "reason": "Total score 6 < 10"
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-18-热管理与CPU频率/stage-14_v1/perspectives/methodologist.md",
+    "title": "Audit of Experimental Methodology for Android Thermal Management Research",
+    "scores": {
+      "relevance": 3,
+      "depth": 1,
+      "timeliness": 3,
+      "verifiability": 1
+    },
+    "total_score": 8,
+    "matched_chapters": [],
+    "first_chars": "",
+    "indexed_at": "2026-04-09T10:52:14.859534",
+    "reason": "Total score 8 < 10"
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-18-热管理与CPU频率/stage-14_v1/perspectives/optimist.md",
+    "title": "Optimistic Analysis of Android Thermal Management Experiment Results",
+    "scores": {
+      "relevance": 3,
+      "depth": 0,
+      "timeliness": 3,
+      "verifiability": 0
+    },
+    "total_score": 6,
+    "matched_chapters": [],
+    "first_chars": "",
+    "indexed_at": "2026-04-09T10:52:14.859749",
+    "reason": "Total score 6 < 10"
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-18-热管理与CPU频率/stage-14_v1/perspectives/skeptic.md",
+    "title": "Critical Scrutiny of Experiment Results",
+    "scores": {
+      "relevance": 1,
+      "depth": 0,
+      "timeliness": 3,
+      "verifiability": 0
+    },
+    "total_score": 4,
+    "matched_chapters": [],
+    "first_chars": "",
+    "indexed_at": "2026-04-09T10:52:14.859966",
+    "reason": "Total score 4 < 10"
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-18-热管理与CPU频率/stage-15/decision.md",
+    "title": "decision",
+    "scores": {
+      "relevance": 1,
+      "depth": 0,
+      "timeliness": 3,
+      "verifiability": 0
+    },
+    "total_score": 4,
+    "matched_chapters": [],
+    "first_chars": "",
+    "indexed_at": "2026-04-09T10:52:14.860189",
+    "reason": "Total score 4 < 10"
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-18-热管理与CPU频率/stage-15_v1/decision.md",
+    "title": "decision",
+    "scores": {
+      "relevance": 1,
+      "depth": 0,
+      "timeliness": 3,
+      "verifiability": 0
+    },
+    "total_score": 4,
+    "matched_chapters": [],
+    "first_chars": "",
+    "indexed_at": "2026-04-09T10:52:14.860386",
+    "reason": "Total score 4 < 10"
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-18-热管理与CPU频率/stage-16/outline.md",
+    "title": "Paper Outline: Android Thermal Management Research",
+    "scores": {
+      "relevance": 3,
+      "depth": 1,
+      "timeliness": 3,
+      "verifiability": 0
+    },
+    "total_score": 7,
+    "matched_chapters": [],
+    "first_chars": "",
+    "indexed_at": "2026-04-09T10:52:14.860748",
+    "reason": "Total score 7 < 10"
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-18-热管理与CPU频率/stage-17/paper_draft.md",
+    "title": "Paper Draft Blocked",
+    "scores": {
+      "relevance": 1,
+      "depth": 1,
+      "timeliness": 3,
+      "verifiability": 0
+    },
+    "total_score": 5,
+    "matched_chapters": [],
+    "first_chars": "",
+    "indexed_at": "2026-04-09T10:52:14.860934",
+    "reason": "Total score 5 < 10"
   }
 ]
