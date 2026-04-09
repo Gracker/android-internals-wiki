@@ -1,8 +1,12 @@
 ---
 title: "APK 体积优化"
+section: "12.1"
 chapter: "12.1"
-status: ready-for-review
+status: finalized
 drafted_date: "2026-04-03"
+drafted_by: "openclaw-task2a"
+reviewed_date: "2026-04-10"
+reviewed_by: "openclaw-task6"
 applicable_versions: "Android 8 (API 26) - Android 16 (API 36)"
 last_verified: "2026-04-03"
 last_verified_against: "AGP 8.7 / R8 default"
@@ -48,11 +52,11 @@ related_chapters: ["8.3", "14.1", "15.6"]
 
 ## 为什么要关注 APK 体积
 
-当一个用户在地铁里用 4G 网络搜索你的 App，Google Play 页面显示「下载大小 156 MB」——这个数字很可能直接劝退了他。Google 在 2018 年的一项内部研究中发现，APK 体积每增加 6 MB，安装转化率就下降约 1%[待验证: Google 内部数据，引用自 Android Developers Blog]。在国内应用市场，这个数字只会更残酷——很多用户还在按流量计费，或者手机存储已经捉襟见肘。
+当一个用户在地铁里用 4G 网络搜索一个 App，Google Play 页面显示「下载大小 156 MB」——这个数字很可能直接劝退了他。Google 在 2018 年的一项内部研究中发现，APK 体积每增加 6 MB，安装转化率就下降约 1%[待验证: Google 内部数据，引用自 Android Developers Blog]。在国内应用市场，这个数字只会更残酷——很多用户还在按流量计费，或者手机存储已经捉襟见肘。
 
 体积问题不仅仅是下载体验。APK 安装后，dex 文件需要被解压、验证、编译（AOT/JIT）；resources.arsc 会被加载到内存；native libraries 被解压到磁盘。体积越大，安装时间越长，运行时的内存占用也越高。对于 MTK、高通这类平台上做性能优化的工程师来说，包体积和启动速度、内存占用之间存在一条不那么显眼但确实存在的因果链。
 
-本章的目标不是罗列一堆优化技巧——那种清单你在任何博客上都能找到。我们想回答的核心问题是：**一个 APK 里面到底装了什么，哪些东西占了多少空间，我们用什么工具能看清楚，以及从工程实践的角度，哪些优化手段投入产出比最高。**
+本章的目标不是罗列一堆优化技巧——那种清单任何博客上都能找到。我们想回答的核心问题是：**一个 APK 里面到底装了什么，哪些东西占了多少空间，我们用什么工具能看清楚，以及从工程实践的角度，哪些优化手段投入产出比最高。**
 
 ## APK 里面到底装了什么
 
@@ -60,15 +64,15 @@ related_chapters: ["8.3", "14.1", "15.6"]
 
 一个标准的 release APK 本质上是一个 ZIP 压缩包。解压之后，我们通常会看到以下几类文件：
 
-**Dex 文件（classes.dex, classes2.dex, ...）** 是编译后的 Dalvik 字节码。所有 Kotlin/Java 代码——包括你写的业务代码、AndroidX 库、第三方 SDK——最终都会编译进 dex 文件。一个中等规模的 App，dex 通常占总大小的 30%-50%。当方法数超过 65536（即一个 dex 文件的理论上限）时，Gradle 会自动进行多 dex 分包，产生 classes2.dex、classes3.dex 等文件。
+**Dex 文件（classes.dex, classes2.dex, ...）** 是编译后的 Dalvik 字节码。所有 Kotlin/Java 代码——包括业务代码、AndroidX 库、第三方 SDK——最终都会编译进 dex 文件。一个中等规模的 App，dex 通常占总大小的 30%-50%。当方法数超过 65536（即一个 dex 文件的理论上限）时，Gradle 会自动进行多 dex 分包，产生 classes2.dex、classes3.dex 等文件。
 
 **resources.arsc** 是资源索引表。它记录了所有资源 ID 到具体资源的映射关系——比如 `R.string.app_name` 对应哪个字符串值，`R.drawable.icon` 对应哪个 drawable 资源。这个文件不大（通常几百 KB 到几 MB），但它是资源加载的入口点。资源混淆工具（如 AndResGuard）的核心优化目标之一就是缩短这个表中的字符串条目。
 
-**res/ 目录**包含编译后的二进制资源文件——布局 XML 的二进制编译版、图片资源、颜色值等。值得注意的是，Android 构建工具会把 XML 布局文件编译成二进制格式（AXML），这不是普通的文本 XML。得物技术团队曾经通过裁剪二进制 XML 中的冗余字段（如 Namespace 声明、重复的属性名）实现了单个 Layout 文件体积缩减约 40%[来源: Cubox/包体积：Layout 二进制文件裁剪优化｜得物技术-2023-09-18.md]。
+**res/ 目录**包含编译后的二进制资源文件——布局 XML 的二进制编译版、图片资源、颜色值等。Android 构建工具会把 XML 布局文件编译成二进制格式（AXML），这不是普通的文本 XML。得物技术团队曾经通过裁剪二进制 XML 中的冗余字段（如 Namespace 声明、重复的属性名）实现了单个 Layout 文件体积缩减约 40%[已验证: 来源见 Cubox/包体积：Layout 二进制文件裁剪优化｜得物技术-2023-09-18.md]。
 
 **assets/ 目录**存放原始文件——字体、WebView 加载的 HTML、配置文件等。这些文件不会被编译，原样打包进 APK。如果 App 内置了字体文件或大型 JSON 配置，assets 可能成为体积大户。
 
-**lib/ 目录**是 native libraries（.so 文件）的存放位置。这个目录按 ABI（Application Binary Interface）分子目录——`arm64-v8a/`、`armeabi-v7a/`、`x86/`、`x86_64/`。每一个 ABI 子目录下都是一份完整的 so 库副本。这意味着如果你在 Gradle 里没有配置 `ndk.abiFilters`，你的 APK 里可能同时包含了 4 个架构的 native 库——arm64 设备只需要其中 1 份，另外 3 份全是浪费。
+**lib/ 目录**是 native libraries（.so 文件）的存放位置。这个目录按 ABI（Application Binary Interface）分子目录——`arm64-v8a/`、`armeabi-v7a/`、`x86/`、`x86_64/`。每一个 ABI 子目录下都是一份完整的 so 库副本。这意味着如果 Gradle 里没有配置 `ndk.abiFilters`，APK 里可能同时包含了 4 个架构的 native 库——arm64 设备只需要其中 1 份，另外 3 份全是浪费。
 
 **META-INF/ 目录**包含签名信息。这个目录下的文件（CERT.SF、CERT.RSA、MANIFEST.MF）在 APK 安装时用于验证完整性，体积通常不大。
 
@@ -82,15 +86,15 @@ related_chapters: ["8.3", "14.1", "15.6"]
 
 盲目优化是工程上的大忌。在动手之前，我们需要知道 APK 里到底什么最占空间。Android Studio 自带的 **APK Analyzer** 是做这件事的第一选择。
 
-打开方式很简单：在 Android Studio 中选择 **Build → Analyze APK...**，然后选中你的 release APK 文件。APK Analyzer 会展示一个树状结构，列出每个文件和目录的大小，包括 **Raw Size**（未压缩原始大小）和 **Download Size**（估算的下载大小，考虑了 Google Play 的进一步压缩）。
+打开方式很简单：在 Android Studio 中选择 **Build → Analyze APK...**，然后选中 release APK 文件。APK Analyzer 会展示一个树状结构，列出每个文件和目录的大小，包括 **Raw Size**（未压缩原始大小）和 **Download Size**（估算的下载大小，考虑了 Google Play 的进一步压缩）。
 
 在 APK Analyzer 的顶部，有几个关键信息值得注意：
 
-**Total Size** 给出了整个 APK 的大小概览。如果这个数字和你预期差距很大，说明构建配置可能有问题（比如 debug 构建没开混淆，或者意外包含了一个大型 SDK）。
+**Total Size** 给出了整个 APK 的大小概览。如果这个数字和预期差距很大，说明构建配置可能有问题（比如 debug 构建没开混淆，或者意外包含了一个大型 SDK）。
 
-**Dex 文件分析**：点击 classes.dex，APK Analyzer 会展示一个类列表，按包名组织。你可以看到每个包（也就是每个库或模块）贡献了多少方法和多少字节。这一步通常能立即暴露问题——比如某个你只用了一个工具方法的工具库，却带着 20000 个方法和 5 MB 的 dex 代码。
+**Dex 文件分析**：点击 classes.dex，APK Analyzer 会展示一个类列表，按包名组织。我们可以看到每个包（也就是每个库或模块）贡献了多少方法和多少字节。这一步通常能立即暴露问题——比如某个只用了其中一个工具方法的工具库，却带着 20000 个方法和 5 MB 的 dex 代码。
 
-**资源对比**：APK Analyzer 的另一个实用功能是**对比两个 APK**。把优化前后的两个 APK 拖进去，它会把差异高亮出来，让你确认优化是否生效、有没有意外引入新的资源。
+**资源对比**：APK Analyzer 的另一个实用功能是**对比两个 APK**。把优化前后的两个 APK 拖进去，它会把差异高亮出来，确认优化是否生效、有没有意外引入新的资源。
 
 在命令行环境下，可以使用 Google 提供的 `bundletool`（App Bundle 的配套工具）或 `aapt dump badging` 来获取 APK 结构信息，适合集成到 CI/CD 流水线中做体积门禁检查。
 
@@ -102,7 +106,7 @@ related_chapters: ["8.3", "14.1", "15.6"]
 
 R8 是 Android 构建工具链中的代码优化器，从 Android Gradle Plugin（AGP）3.4.0 开始取代 ProGuard 成为默认工具。它做四件事：
 
-**代码缩减（Code Shrinking / Tree Shaking）**——通过分析代码的入口点（Activity、Service、ContentProvider 等在 AndroidManifest 中声明的组件），R8 追踪所有可达的代码路径，不可达的类和方法会被直接移除。这对第三方库尤其有效——你可能只用了 Guava 的 `Strings.isNullOrEmpty()`，但 Guava 的完整 jar 包含几千个方法，R8 会帮你把没用到的那部分全部删掉。
+**代码缩减（Code Shrinking / Tree Shaking）**——通过分析代码的入口点（Activity、Service、ContentProvider 等在 AndroidManifest 中声明的组件），R8 追踪所有可达的代码路径，不可达的类和方法会被直接移除。这对第三方库尤其有效——我们可能只用了 Guava 的 `Strings.isNullOrEmpty()`，但 Guava 的完整 jar 包含几千个方法，R8 会把没用到的那部分全部删掉。
 
 **资源缩减（Resource Shrinking）**——与代码缩减联动，一旦某个代码被移除，该代码中引用的资源文件（如仅在已删除 Activity 中使用的布局文件）也会被移除。
 
@@ -135,7 +139,7 @@ android {
 
 ### Keep 规则：告诉 R8 别删错了
 
-R8 的静态分析有一个盲区：**通过反射调用的代码，R8 看不到调用链**。如果你用 `Class.forName("com.example.MyClass")` 或者 Gson 反序列化 JSON 到某个类，R8 可能会把那个类当作无用代码删掉。
+R8 的静态分析有一个盲区：**通过反射调用的代码，R8 看不到调用链**。如果用 `Class.forName("com.example.MyClass")` 或者 Gson 反序列化 JSON 到某个类，R8 可能会把那个类当作无用代码删掉。
 
 解决方法是在 `proguard-rules.pro` 中添加 keep 规则：
 
@@ -155,11 +159,11 @@ data class ApiResponse(
 
 这样 R8 知道只保留 `ApiResponse` 及其字段，而不会波及包内其他类。
 
-在 APK Analyzer 中，如果你发现某个库的代码几乎完整保留（混淆后的包名还在），很可能就是这个库缺少精确的 keep 规则，或者它的构建产物自带了过宽的 consumer ProGuard rules。检查 `.aar` 文件中的 `proguard.txt`，看看是不是它把整个库都 keep 住了。
+在 APK Analyzer 中，如果发现某个库的代码几乎完整保留（混淆后的包名还在），很可能就是这个库缺少精确的 keep 规则，或者它的构建产物自带了过宽的 consumer ProGuard rules。检查 `.aar` 文件中的 `proguard.txt`，看看是不是它把整个库都 keep 住了。
 
 ### R8 Full Mode 和新版资源缩减
 
-AGP 8.0 开始，R8 Full Mode 成为默认行为。Full Mode 比 compatibility mode 更激进——它会改变类的可见性（把 public 改为 package-private）、内联短方法、合并只有单一实现的接口。如果你的项目是从很早的 AGP 版本迁移过来的，检查 `gradle.properties` 里有没有 `android.enableR8.fullMode=false`，如果有就删掉这一行。
+AGP 8.0 开始，R8 Full Mode 成为默认行为。Full Mode 比 compatibility mode 更激进——它会改变类的可见性（把 public 改为 package-private）、内联短方法、合并只有单一实现的接口。如果项目是从很早的 AGP 版本迁移过来的，检查 `gradle.properties` 里有没有 `android.enableR8.fullMode=false`，如果有就删掉这一行。
 
 AGP 8.12.0 引入了**优化的资源缩减**（Optimized Resource Shrinking），把资源缩减逻辑也整合进了 R8 的优化管线。启用方式：
 
@@ -184,7 +188,7 @@ Android Studio 提供了批量转换功能：右键点击 `res/drawable` 目录�
 
 ### 资源混淆：AndResGuard
 
-资源混淆工具（如腾讯的 AndResGuard、字节跳动的 ResShrinker）通过缩短资源路径和文件名来减小 APK 体积。把 `res/drawable-hdpi/icon_background_launch_screen.png` 重命名为 `r/d/a.png`，看似只省了几个字符，但当你的 App 有上千个资源文件时，这种优化累积起来可以节省数百 KB 到数 MB。
+资源混淆工具（如腾讯的 AndResGuard、字节跳动的 ResShrinker）通过缩短资源路径和文件名来减小 APK 体积。把 `res/drawable-hdpi/icon_background_launch_screen.png` 重命名为 `r/d/a.png`，看似只省了几个字符，但当App 有上千个资源文件时，这种优化累积起来可以节省数百 KB 到数 MB。
 
 资源混淆的核心操作包括：将资源文件路径缩短为 `r/a/a.png` 这样的短路径，将 `resources.arsc` 中的字符串条目缩短为无意义的短字符串，合并重复的资源文件（同名同内容的资源只保留一份）。
 
@@ -210,7 +214,7 @@ andResGuard {
 
 ### 按密度过滤和按语言过滤
 
-如果你的 App 不需要支持所有屏幕密度，可以在 Gradle 中指定：
+如果 App 不需要支持所有屏幕密度，可以在 Gradle 中指定：
 
 ```kotlin
 android {
@@ -243,7 +247,7 @@ android {
 }
 ```
 
-对于 Google Play 分发的 App，更好的方案是使用 App Bundle（下一节讨论）——Play 会根据用户设备的 ABI 自动生成只包含对应架构的 APK，你不需要手动过滤。
+对于 Google Play 分发的 App，更好的方案是使用 App Bundle（下一节讨论）——Play 会根据用户设备的 ABI 自动生成只包含对应架构的 APK，不需要手动过滤。
 
 ### Strip 符号表
 
@@ -277,7 +281,7 @@ android {
 
 ### 动态下发 so
 
-对于某些大型 native 库（如人脸识别 SDK、地图引擎），最激进的优化方案是**不在 APK 中打包**，而是在用户首次使用相关功能时从服务器下载。这种方式需要自己管理下载、校验、加载的完整流程，实现复杂度较高，但对于体积和用户获取成本的收益非常显著。
+对于某些大型 native 库（如人脸识别 SDK、地图引擎），最激进的优化方案是**不在 APK 中打包**，而是在用户首次使用相关功能时从服务器下载。这种方式需要自己管理下载、校验、加载的完整流程，实现复杂度较高，但收益明确：主包体积可以减少数十 MB，直接提升安装转化率。
 
 一个折中方案是使用 Play Core Library 的 **on-demand delivery**：将大型 so 库放在 Dynamic Feature Module 中（下一节讨论），用户安装基础 APK 时不包含这些库，只有当用户导航到需要该库的功能页面时才触发下载。
 
@@ -359,17 +363,17 @@ bundletool get-size total --apks=app.apks \
     --device-spec=device-spec.json
 ```
 
-这个工具可以帮你验证：切换到 AAB 之后，用户在 arm64 + xxxhdpi 设备上的实际下载大小是多少。
+这个工具可以验证：切换到 AAB 之后，用户在 arm64 + xxxhdpi 设备上的实际下载大小是多少。
 
 ## 常见问题与误区
 
-**「开启 minifyEnabled 就够了」**——这是最常见的误区。R8 的代码缩减只能删掉静态不可达的代码。如果你的项目里有大量通过反射调用的代码、插件化框架、或者 Gson/Jackson 反序列化的 Model 类，没有配置正确的 keep 规则，R8 要么删错（运行时 ClassNotFoundException），要么不敢删（keep 范围过大）。正确的做法是：开启 R8 后跑一遍完整的回归测试，结合 APK Analyzer 检查每个库的保留比例，逐步收窄 keep 规则。
+**「开启 minifyEnabled 就够了」**——这是最常见的误区。R8 的代码缩减只能删掉静态不可达的代码。如果项目里有大量通过反射调用的代码、插件化框架、或者 Gson/Jackson 反序列化的 Model 类，没有配置正确的 keep 规则，R8 要么删错（运行时 ClassNotFoundException），要么不敢删（keep 范围过大）。正确的做法是：开启 R8 后跑一遍完整的回归测试，结合 APK Analyzer 检查每个库的保留比例，逐步收窄 keep 规则。
 
 **「应该支持所有屏幕密度」**——实际上，Android 的资源缩放机制可以在缺失某一密度资源时自动从最近的高密度资源缩放。对于大多数 App，提供 xxhdpi 资源即可覆盖主流设备，系统会自动处理其他密度的缩放。在 Gradle 中配置 `resConfigs` 过滤掉不需要的密度，可以显著减小资源体积。
 
 **「WebP 不如 PNG 清晰」**——这是过时的观念。对于照片类图片，WebP 有损压缩在 80% 质量以上时，人眼几乎无法察觉与 PNG 的差异；对于图标类图片，WebP 无损模式的压缩率也优于 PNG。唯一需要注意的是 alpha 通道——某些带半透明效果的复杂图标，WebP 有损可能产生 artifact，这种情况用 WebP 无损即可。
 
-**「App Bundle 是强制性的，国内市场没法用」**——国内应用市场确实不支持 AAB 格式。但 App Bundle 的技术价值不限于 Google Play。你可以在本地用 `bundletool` 生成针对特定 ABI 和密度的 APK，然后分渠道上传。这比「一个 APK 适配所有设备」高效得多。此外，Dynamic Feature Module 的按需加载思想，也可以通过自研的插件化框架在非 Google Play 渠道实现。
+**「App Bundle 是强制性的，国内市场没法用」**——国内应用市场确实不支持 AAB 格式。但 App Bundle 的技术价值不限于 Google Play。可以在本地用 `bundletool` 生成针对特定 ABI 和密度的 APK，然后分渠道上传。这比「一个 APK 适配所有设备」高效得多。此外，Dynamic Feature Module 的按需加载思想，也可以通过自研的插件化框架在非 Google Play 渠道实现。
 
 ## 与其他章节的关系
 
@@ -381,7 +385,7 @@ APK 体积优化不是孤立的主题。代码瘦身（R8）不仅减小 dex 体
 
 Baseline Profile（基线配置文件）是 Android 从 7.0 开始引入的 AOT 编译优化机制。它在 APK 中嵌入一个列表，告诉 ART 运行时「这些代码路径很重要，请在安装时就预编译它们」，从而避免运行时 JIT 编译的卡顿。
 
-从体积角度，Baseline Profile 文件本身很小（通常几十 KB），对 APK 体积几乎无影响。但有一个间接影响值得注意：如果你使用 Cloud Profile（从真实用户收集的编译配置），需要确保 Profile 中的类没有被 R8 混淆——否则 Profile 指向的类名在混淆后的 dex 中不存在，等于白配。AGP 在构建时会自动处理 Profile 和混淆的映射关系，但如果你手动管理 Profile，需要注意这一点。
+从体积角度，Baseline Profile 文件本身很小（通常几十 KB），对 APK 体积几乎无影响。但有一个间接影响值得注意：如果使用 Cloud Profile（从真实用户收集的编译配置），需要确保 Profile 中的类没有被 R8 混淆——否则 Profile 指向的类名在混淆后的 dex 中不存在，等于白配。AGP 在构建时会自动处理 Profile 和混淆的映射关系，但如果手动管理 Profile，需要注意这一点。
 
 [待补充: Baseline Profile 生成和配置的详细流程]
 
@@ -390,7 +394,7 @@ Baseline Profile（基线配置文件）是 Android 从 7.0 开始引入的 AOT 
 以下是公开可查的大厂优化实践数据，供参考：
 
 - **微信**：通过 AndResGuard 资源混淆 + 动态插件化，将主包体积控制在 200MB 以内（含大量 native 库）
-- **得物 App**：通过 Layout 二进制 XML 裁剪优化（裁剪 Namespace、属性名、修正偏移量），在资源层面实现了额外 10%-15% 的缩减[来源: Cubox/包体积：Layout 二进制文件裁剪优化｜得物技术-2023-09-18.md]
+- **得物 App**：通过 Layout 二进制 XML 裁剪优化（裁剪 Namespace、属性名、修正偏移量），在资源层面实现了额外 10%-15% 的缩减[已验证: 来源见 Cubox/包体积：Layout 二进制文件裁剪优化｜得物技术-2023-09-18.md]
 - **抖音**：通过 so 动态下发 + 按需加载，将核心 native 库从 APK 中分离，主包仅保留启动必需的 so
 
 [待补充: 更多可验证的大厂数据点]

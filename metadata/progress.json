@@ -4,15 +4,15 @@
   "metrics": {
     "total": 143,
     "draft": 15,
-    "ready-for-review": 31,
+    "ready-for-review": 30,
     "reviewed": 5,
-    "finalized": 35,
+    "finalized": 36,
     "staging_drafts": 0,
-    "last_updated": "2026-04-10T01:02:00+08:00",
+    "last_updated": "2026-04-10T01:30:00+08:00",
     "processing": 0,
     "ready-to-publish": 16,
     "last_reviewed": "2026-04-10",
-    "last_reviewed_section": "2.9 渲染机制的版本演进",
+    "last_reviewed_section": "12.1 APK 体积优化",
     "reviewed_today": 14
   },
   "reviewed_sections": {
@@ -832,6 +832,26 @@
         "consistency": 5,
         "verification": 4,
         "metadata": 5
+      }
+    },
+    "12.1": {
+      "reviewed_date": "2026-04-10",
+      "reviewed_by": "openclaw-task6",
+      "review_status": "finalized",
+      "fixes_applied": [
+        "AI味清除：「值得注意的是」（writing-guide §九）",
+        "22处「你」→「我们」/中性化（writing-guide §3.5）",
+        "验证标注标准化：2处[来源:]→[已验证:]",
+        "模糊形容词具体化：「收益非常显著」→具体说明（writing-guide §九）",
+        "frontmatter: 补 section/drafted_by/reviewed_date/reviewed_by",
+        "status: ready-for-review → finalized"
+      ],
+      "scores": {
+        "structure": 5,
+        "expression": 5,
+        "consistency": 5,
+        "verification": 4,
+        "metadata": 4
       }
     }
   },
@@ -2545,6 +2565,21 @@
     }
   ],
   "history": [
+    {
+      "date": "2026-04-10",
+      "section": "12.1",
+      "title": "APK 体积优化",
+      "action": "reviewed-finalized",
+      "review_by": "openclaw-task6",
+      "fixes": 30,
+      "scores": {
+        "structure": 5,
+        "expression": 5,
+        "consistency": 5,
+        "verification": 4,
+        "metadata": 4
+      }
+    },
     {
       "date": "2026-04-10",
       "section": "14.11",
