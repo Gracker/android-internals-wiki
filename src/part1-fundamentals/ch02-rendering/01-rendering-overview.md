@@ -1,9 +1,9 @@
 ---
 title: "Android 渲染架构全景"
 chapter: "2.1"
-status: ready-to-publish
+status: ready-for-review
 applicable_versions: "Android 12 (API 31) - Android 16 (API 36)"
-last_verified: "2026-03-30"
+last_verified: "2026-04-09"
 last_verified_against: "AOSP android-16.0.0_r1, 官方文档最新版本"
 confidence: high
 drafted_date: "2026-03-30"
@@ -368,16 +368,21 @@ void OpenGLRenderer::drawRect(float left, float top, float right, float bottom,
 
 Vulkan 是比 OpenGL ES 更现代的图形 API，它的核心优势在于提供了更好的 CPU/GPU 并行性和对复杂图形特性的原生支持。与 OpenGL ES 的隐式状态管理不同，Vulkan 要求开发者显式管理 GPU 资源和同步，这虽然增加了使用复杂度，但换来了更高的 CPU 提交效率和更精细的 GPU 控制。
 
-[待验证: VulkanRenderer::drawRect 路径在 AOSP android-16.0.0_r1 中可能不存在，Android 16 中 HWUI 渲染管线已重构]
+Android 16 中 HWUI 的 Vulkan 渲染路径已整合到 Skia Pipeline 架构中，不再有独立的 VulkanRenderer 类。实际的 Vulkan 调用由 Skia 内部管理（通过 SkiaVulkanPipeline），上层代码只与 Skia API 交互。
 
 ```cpp
-// [待验证] frameworks/base/libs/hwui/vulkan/VulkanRenderer.cpp
-// Android 16 中 Vulkan 渲染路径可能已整合到 Skia 后端
-void VulkanRenderer::drawRect(const SkRect& rect, const SkPaint& paint) {
-    // 创建 VkBuffer 存储顶点数据
-    // 提交绘制命令到 VkQueue
+// [示意性伪代码] Android 16 中 Vulkan 后端的实际路径
+// SkiaVulkanPipeline 位于 frameworks/base/libs/hwui/pipeline/skia/
+// Skia 内部调用 Vulkan API（vkCmdDraw 等），上层无需感知
+
+// Skia 统一入口
+void SkiaVulkanPipeline::draw(RenderNode* root) {
+    // Skia 通过 GrContext 使用 Vulkan 后端
+    // 自动管理 VkBuffer、VkImage、VkQueue 等
 }
 ```
+
+[待验证: SkiaVulkanPipeline 的具体实现细节在 android-16.0.0_r1 中是否有变化]
 
 ### 软件渲染 vs 硬件加速对比
 
@@ -441,21 +446,25 @@ public void drawRect(float left, float top, float right, float bottom, Paint pai
 }
 ```
 
-#### OpenGLCanvas：RenderThread 的画布
+#### RenderThread 的画布：从 OpenGLCanvas 到 Skia Pipeline
 
-OpenGLCanvas 则是"真干活"的画布——它将 DisplayList 中记录的绘制指令转换为实际的 OpenGL API 调用，通过 EGL 上下文与 GPU 通信，完成像素的渲染。
-
-[待验证: OpenGLCanvas 类名在 AOSP android-16.0.0_r1 中可能不存在，实际渲染通过 SkiaOpenGLPipeline]
+在早期 Android 版本中，RenderThread 使用 OpenGLCanvas 将 DisplayList 指令转换为 OpenGL API 调用。但从 Android 10 开始，HWUI 统一走 Skia 后端：RenderThread 通过 SkiaOpenGLPipeline 或 SkiaVulkanPipeline 来执行绘制指令，不再有独立的 OpenGLCanvas 类。Skia 作为中间层统一管理 OpenGL 和 Vulkan 的 API 调用——好处是上层代码不需要关心底层用的是哪个图形 API。
 
 ```cpp
-// [待验证] frameworks/base/libs/hwui/renderthread/OpenGLCanvas.cpp
-// Android 16 中 HWUI 通过 Skia 后端统一管理 OpenGL 渲染
-void OpenGLCanvas::drawRect(float left, float top, float right, float bottom,
-                            const SkPaint& paint) {
-    // 设置 OpenGL 状态，生成顶点数据，调用 glDrawArrays
-    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+// [示意性伪代码] Android 16 中 RenderThread 的实际渲染路径
+// 真实实现在 frameworks/base/libs/hwui/pipeline/skia/SkiaOpenGLPipeline.cpp
+// 和 frameworks/base/libs/hwui/pipeline/skia/SkiaVulkanPipeline.cpp
+
+// Skia Pipeline 统一处理绘制指令
+void SkiaPipeline::draw(RenderNode* root) {
+    // Skia 内部选择 OpenGL 或 Vulkan 后端
+    // 将 DisplayList 指令翻译为对应的 GPU API 调用
+    SkCanvas* canvas = surface->getCanvas();
+    root->draw(canvas);  // 递归执行 DisplayList
 }
 ```
+
+[待验证: SkiaOpenGLPipeline / SkiaVulkanPipeline 的具体类名在 android-16.0.0_r1 中是否有进一步重构]
 
 ### RenderNode 架构
 
@@ -463,17 +472,22 @@ RenderNode 与 View 树保持严格的一一对应关系——每个 View 对象
 
 #### RenderNode 的数据结构
 
-[待验证: RenderNode 内部结构在 AOSP android-16.0.0_r1 中可能已大幅简化]
+[待验证: RenderNode 内部结构在 AOSP android-16.0.0_r1 中可能有调整，以下为概念性描述]
 
 ```cpp
-// [待验证] frameworks/base/libs/hwui/RenderNode.cpp
-// 关键字段：每个 View 对应一个 RenderNode
-class RenderNode {
-    RenderProperties mProperties;       // 当前属性（位置、透明度、裁剪等）
-    RenderProperties mStagingProperties; // 暂存属性（主线程写入）
-    sp<DisplayList> mDisplayList;        // 当前绘制指令
-    Vector<sp<RenderNode>> mChildNodes;  // 子节点（对应子 View）
-};
+// [概念性伪代码] RenderNode 的核心职责：每个 View 对应一个 RenderNode
+// 实际实现见 frameworks/base/libs/hwui/RenderNode.h
+//
+// 关键设计思想：
+// 1. staging 机制实现线程安全（主线程写 staging，RenderThread 读主区）
+// 2. 持有 DisplayList（绘制指令）和子节点引用
+// 3. 与 View 树一一对应
+
+// RenderNode 的核心职责（简化）：
+// - 持有 View 的渲染属性（位置、透明度、裁剪等）
+// - 持有 DisplayList（绘制指令序列）
+// - 持有子 RenderNode 引用（与 View 树同构）
+// - staging 区实现线程安全的属性更新
 ```
 
 注意 staging 机制的设计：主线程在录制阶段将新属性和新 DisplayList 写入 staging 区，然后在 prepareTree 阶段原子性地合并到主区。这保证了 RenderThread 在读取属性和 DisplayList 时，看到的是一个一致的快照，不会因为主线程正在修改而读到半新半旧的数据。
@@ -531,16 +545,22 @@ void RenderNode::draw(RenderProperties& props, RenderThread& renderThread) {
 
 DisplayList 本质上是一个绘制指令的有序序列，记录了 View 在 onDraw 中发出的所有 drawXXX 调用。它支持分层嵌套——每个 ViewGroup 的 DisplayList 既包含自身的绘制指令，也持有子 View 的 RenderNode 引用，形成一棵与 View 树同构的 DisplayList 树。回放时，变换和裁剪等属性会沿着树形结构向下传递，子节点自动继承父节点的变换矩阵和裁剪区域。
 
-[待验证: DisplayListData 在 AOSP android-16.0.0_r1 中可能已重构，DisplayList 已大幅改版]
+[待验证: DisplayList / DisplayListData 在 AOSP android-16.0.0_r1 中可能有重构]
 
 ```cpp
-// [待验证] frameworks/base/libs/hwui/DisplayListData.cpp
-// 关键：绘制指令序列 + 子节点嵌套
-class DisplayListData {
-    Vector<Op*> mOps;          // drawXXX 指令序列
-    SkMatrix mMatrix;          // 当前变换矩阵
-    // 支持子 DisplayList 嵌套（对应 ViewGroup 包含子 View）
-};
+// [概念性伪代码] DisplayList 的核心职责
+// 实际实现见 frameworks/base/libs/hwui/RecordingCanvas.h
+//
+// 关键设计思想：
+// 1. 有序的绘制指令序列（drawRect、drawText 等）
+// 2. 每个指令编码了操作类型和参数
+// 3. 支持子 RenderNode 嵌套（ViewGroup → 子 View）
+// 4. 回放时按顺序执行指令，应用变换和裁剪
+
+// DisplayList 的核心数据：
+// - 绘制指令序列（drawXXX 调用的有序列表）
+// - 变换矩阵（当前 View 的位移/缩放/旋转）
+// - 子 RenderNode 引用（支持树形嵌套）
 ```
 
 DisplayList 的分层嵌套结构与 View 树一一对应：每个 ViewGroup 的 DisplayList 包含自身的绘制指令和子 View 的 RenderNode 引用。回放时，RenderThread 递归遍历这棵 DisplayList 树，先应用父节点的变换和裁剪，再执行子节点的绘制指令。这种设计意味着如果某个 View 调用了 invalidate()，只需要重新录制该 View 对应的 RenderNode 的 DisplayList，而不需要重录整棵树——这是硬件加速渲染比软件渲染高效的一个关键原因。
