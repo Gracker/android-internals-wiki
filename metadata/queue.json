@@ -2165,7 +2165,10 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-09T23:27:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-09T16:45:47",
+    "completed_by": "task2b-rework",
+    "notes": "修复: DevTools Perfetto集成版本修正(3.19→DevTools2.28), Impeller数据降级为社区参考值, 补充移动GPU shader编译性能差距背景。§2.3交叉引用验证存在(误报)"
   },
   {
     "section": "1.6",
@@ -2197,6 +2200,9 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-10T00:30:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-09T16:43:50",
+    "completed_by": "task2b-rework",
+    "notes": "修复: 寄存器描述从'翻倍'修正为精确数量(整数16→31, SIMD 16→32)。Dalvik移除和Zygote双进程经验证正确(Task9误报)。补充[已验证]标注。"
   }
 ]
