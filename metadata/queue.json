@@ -2286,5 +2286,32 @@
     "completed_at": "2026-04-10T02:41:34.521162",
     "completed_by": "task2b-rework",
     "notes": "修复: surfaceflinger 启动阶段从 'on core' 修正为 'class core（boot 阶段由 class_start core 触发）'。AOSP init.rc 标准触发序列中无 'on core' 阶段。"
+  },
+  {
+    "section": "2.4",
+    "section_title": "Choreographer 与渲染流水线",
+    "priority": 85,
+    "reason": "[Deep Tech Review] Compose 可暂停组合机制描述不准确：行408-419描述'Compose runtime 在帧时间即将耗尽时暂停'，但未说明暂停条件与实现原理；Frame Timeline 缺实际 Trace 示例（API 33+ 核心功能）",
+    "material_paths": [
+      "intake/suggestions.md",
+      "intake/research-gaps.md"
+    ],
+    "review_issues": [
+      {
+        "type": "原理断裂",
+        "location": "行408-419（扩展：Compose 对 Choreographer 的使用差异）",
+        "detail": "Compose pausable composition 机制描述过于简化。'在帧时间即将耗尽时暂停'缺少具体实现细节：暂停由谁判断？Composition 内部还是上层调度？协程 checkpoint 还是 Composition 专用中断机制？1.10 之前为何不能暂停？",
+        "suggestion": "补充：1) 暂停条件（FrameInfo.deadline 判定）；2) 实现原理（Composition 无界面锁定，需要 tree 结构支持；协程 CancellationException 不是答案）；3) 与 1.10 之前行为的对比"
+      },
+      {
+        "type": "知识盲区",
+        "location": "行340-368（Perfetto 可视化部分）",
+        "detail": "Frame Timeline（帧时间线）是 API 33+ 理解 Choreographer 的核心功能，文中描述了作用但缺少实际 Perfetto trace 示例。读者无法理解'App 选择的 vs. SurfaceFlinger 实际呈现的时间线对比'的具体形态。",
+        "suggestion": "补充一个真实的 Perfetto Frame Timeline 截图（标注 VSYNC-app、App target timeline、SurfaceFlinger actual timeline 的含义），或用 ASCII 描述典型 Frame Timeline Track 界面"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-10T04:34:33",
+    "status": "pending"
   }
 ]
