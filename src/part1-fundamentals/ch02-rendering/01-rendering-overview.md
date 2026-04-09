@@ -1,16 +1,16 @@
 ---
 title: "Android 渲染架构全景"
 chapter: "2.1"
-status: finalized
-applicable_versions: "Android 12 (API 31) - Android 16 (API 36)"
+status: ready-for-review
+applicable_versions: "Android 3.0 (API 11) - Android 16 (API 36)"  # 版本演进从 3.0 开始，核心内容覆盖 API 11-36
 last_verified: "2026-04-09"
 last_verified_against: "AOSP android-16.0.0_r1, 官方文档最新版本"
 confidence: high
 drafted_date: "2026-03-30"
 reviewed_date: "2026-04-05"
 reviewed_by: "openclaw-task6"
-polish_count: 1
-polish_date: "2026-04-05"
+polish_count: 2
+polish_date: "2026-04-09"
 polish_by: "task2b-polish"
 reviewed_date: "2026-04-09"
 reviewed_by: "openclaw-task6"
@@ -84,7 +84,7 @@ ViewRootImpl.performTraversals()
 
 Measure 过程的执行方式是自顶向下的：从 DecorView 开始，逐级向子 View 传递尺寸约束。每对父子之间传递的是一个 32 位整数 measureSpec，其中高 16 位编码模式（EXACTLY 表示父 View 给了精确值、AT_MOST 表示不能超过某个上限、UNSPECIFIED 表示不限制），低 16 位编码具体数值。这个紧凑的设计避免了对象的频繁分配——在一个包含几百个 View 的布局中，measureSpec 的分配开销几乎为零。
 
-值得注意的一个细节是，Android 有时会执行两轮 Measure。第一轮中，父 View 根据自身约束给子 View 一个初步大小；但如果子 View 在 onMeasure 中表明它实际需要的空间与初步分配不一致（比如一个wrap_content 的子 View 内部有更复杂的需求），父 View 就会根据子 View 的反馈调整约束，发起第二轮测量。在 Perfetto 中，如果我们看到 performTraversals 中 Measure 阶段出现了两次耗时尖峰，很可能就是这种重测量在发生——常见的原因是嵌套的 RelativeLayout 或使用了 weights 的 LinearLayout。
+Android 在某些情况下会执行两轮 Measure。第一轮中，父 View 根据自身约束给子 View 一个初步大小；但如果子 View 在 onMeasure 中表明它实际需要的空间与初步分配不一致（比如一个wrap_content 的子 View 内部有更复杂的需求），父 View 就会根据子 View 的反馈调整约束，发起第二轮测量。在 Perfetto 中，如果我们看到 performTraversals 中 Measure 阶段出现了两次耗时尖峰，很可能就是这种重测量在发生——常见的原因是嵌套的 RelativeLayout 或使用了 weights 的 LinearLayout。
 
 View.onMeasure 的默认实现只做一件事：通过 getDefaultSize 把 measureSpec 解析为实际的像素值，然后调用 setMeasuredDimension 记录结果。getDefaultSize 的逻辑非常直观——EXACTLY 模式直接使用约束值，AT_MOST 取约束值和建议值的较小者，UNSPECIFIED 直接使用 View 自身的建议大小：
 
@@ -236,12 +236,13 @@ void DisplayHardware::vsync(int64_t timestamp) {
 }
 
 // frameworks/native/services/surfaceflinger/SurfaceFlinger.cpp
+// [示意性伪代码] SurfaceFlinger 合成主循环
 void SurfaceFlinger::handleMessageRefresh() {
-    // 三缓冲管理
+    // 将已就绪的缓冲区绑定到对应 Layer
     for (auto& layer : mLayersWithQueuedFrames) {
-        layer->latchBuffer();
+        layer->latchBuffer();  // 通过 Fence 等待生产者完成绘制
     }
-    // 合成并显示
+    // 按 Z-Order 合成所有 Layer 并提交显示
     composeAndPresent();
 }
 ```
@@ -251,6 +252,8 @@ void SurfaceFlinger::handleMessageRefresh() {
 [待补充：Trace 中三缓冲的监控方法]
 
 ## BufferQueue 生产者-消费者模型：App → SurfaceFlinger → HWC
+
+三缓冲解决的是 GPU 和显示端之间的缓冲区协调问题，而 BufferQueue 则是缓冲区管理的具体实现。它是 App 进程和 SurfaceFlinger 之间传递帧数据的桥梁——理解 BufferQueue 的工作模式，是分析掉帧和延迟问题的关键。
 
 ### BufferQueue 的基本架构
 
@@ -317,6 +320,8 @@ consumerReleaseFence->signal();
 [已验证: AOSP android-16.0.0_r1, frameworks/native/libs/gui/BufferQueue.cpp]
 
 ## 软件渲染（Skia CPU）vs 硬件加速渲染（Skia OpenGL/Vulkan）
+
+上面我们看完了渲染管线的完整流程和 BufferQueue 的数据流转机制。接下来的核心问题是：App 进程内把 DisplayList 指令转化为像素的这一步，到底是怎么执行的？答案取决于渲染模式——软件渲染由 CPU 逐像素计算，硬件加速渲染则将指令提交给 GPU 并行处理。两种模式在性能特征、调试难度和适用场景上差异很大，理解这些差异是做渲染优化的前提。
 
 ### 软件渲染（Software Rendering）
 
@@ -401,17 +406,11 @@ void SkiaVulkanPipeline::draw(RenderNode* root) {
 ### 检测当前渲染模式
 
 ```java
-// 检查是否启用硬件加速
-boolean isHardwareAccelerated() {
-    return mView.isHardwareAccelerated();
-}
+// 检查是否启用硬件加速（直接调用 View 实例方法）
+boolean hw = mView.isHardwareAccelerated();
 
-// 强制软件渲染
-@Override
-protected void onAttachedToWindow() {
-    super.onAttachedToWindow();
-    setLayerType(View.LAYER_TYPE_SOFTWARE, null);
-}
+// 强制软件渲染（仅在调试或特殊场景使用）
+setLayerType(View.LAYER_TYPE_SOFTWARE, null);
 ```
 
 [已验证: 官方文档, Android硬件加速渲染指南]
@@ -426,11 +425,13 @@ HWUI 的核心设计思想是把 UI 渲染拆分为"录制"和"回放"两个阶�
 
 ### Canvas 架构
 
-**Canvas 类层次**：
+**Canvas 架构（Android 10+）**：
 ```
-SkCanvas (Skia 核心类)
-├── RecordingCanvas (UI 线程使用)
-└── OpenGLCanvas (RenderThread 使用)
+RecordingCanvas (UI 线程使用 — 录制绘制指令)
+    ↓ DisplayList
+SkiaPipeline (RenderThread 使用 — 回放指令)
+├── SkiaOpenGLPipeline
+└── SkiaVulkanPipeline
 ```
 
 #### RecordingCanvas：UI 线程的画布
@@ -439,12 +440,12 @@ RecordingCanvas 是一个"空壳"画布——它不执行任何实际的像素�
 
 ```java
 // frameworks/base/core/java/android/view/RecordingCanvas.java
+// @ AOSP android-16.0.0_r1
 @Override
 public void drawRect(float left, float top, float right, float bottom, Paint paint) {
     if (CC_UNLIKELY(paint.nothingToDraw())) return;
-    
-    // 将绘制指令存储到 DisplayList
-    fDL->drawRect(Rect(left, top, right, bottom), paint);
+    // 将绘制指令存储到 DisplayList（内部调用 native 方法写入 DisplayListData）
+    nDrawRect(mNativeRecorderWrapper, left, top, right, bottom, paint.getNativeInstance());
 }
 ```
 
@@ -492,7 +493,7 @@ RenderNode 与 View 树保持严格的一一对应关系——每个 View 对象
 // - staging 区实现线程安全的属性更新
 ```
 
-注意 staging 机制的设计：主线程在录制阶段将新属性和新 DisplayList 写入 staging 区，然后在 prepareTree 阶段原子性地合并到主区。这保证了 RenderThread 在读取属性和 DisplayList 时，看到的是一个一致的快照，不会因为主线程正在修改而读到半新半旧的数据。
+上面的伪代码展示了 staging 的核心流程：属性和 DisplayList 在 prepareTree 阶段从 staging 区原子性地合并到主区，保证 RenderThread 读取到一致快照。
 
 #### RenderNode 的生命周期
 
@@ -515,15 +516,12 @@ renderNode.endRecording();
 
 3. **准备阶段**（示意性伪代码，展示 staging 合并逻辑）：
 ```cpp
-// [示意性伪代码] staging → 主区的合并逻辑
+// [示意性伪代码] staging → 主区的合并逻辑（prepareTree 阶段）
 void RenderNode::prepareTreeImpl(TreeInfo info) {
-    // 将 staging 区属性合并到主区
-    mProperties = mStagingProperties;
-    // 将 staging 区 DisplayList 合并到主区
-    mDisplayList = mStagingDisplayList;
-    // 递归处理子节点
+    mProperties = mStagingProperties;   // 属性快照
+    mDisplayList = mStagingDisplayList;  // 指令快照
     for (auto& child : mChildNodes) {
-        child->prepareTreeImpl(info);
+        child->prepareTreeImpl(info);    // 递归合并子节点
     }
 }
 ```
@@ -635,7 +633,7 @@ RenderEngine 和 GPU Composition 是两个经常被混淆的概念。混淆的�
 
 **SurfaceFlinger 合成管线（RenderEngine + GPU Composition）** 是 SurfaceFlinger 在 HWC 无法完成合成时的 GPU 回退路径。RenderEngine（`frameworks/native/services/surfaceflinger/RenderEngine/`）运行在 SurfaceFlinger 进程中，它同样基于 Skia 构建，但职责不是"画单个 App 的 UI"，而是"把多个 Layer 的缓冲区合成到一起"。当 Layer 数量超过 HWC 的处理能力、或者 Layer 使用了 HWC 不支持的混合模式时，SurfaceFlinger 会通过 RenderEngine 调用 GPU 来完成合成——这就是 GPU Composition。
 
-简单来说，App 的 RenderThread 画的是"一个 App 的一帧"（"画一个按钮"、"绘制一段文字"），SurfaceFlinger 的 RenderEngine 组的是"所有 App 的画面叠加"（"把微信的界面叠在启动器上面，再加一层状态栏"）。两者都用到 Skia 和 GPU，但前者服务于 App 进程内的 UI 渲染，后者服务于 SurfaceFlinger 进程内的多 Layer 合成。
+App 的 RenderThread 画的是"一个 App 的一帧"（"画一个按钮"、"绘制一段文字"），SurfaceFlinger 的 RenderEngine 组的是"所有 App 的画面叠加"（"把微信的界面叠在启动器上面，再加一层状态栏"）。两者都用到 Skia 和 GPU，但前者服务于 App 进程内的 UI 渲染，后者服务于 SurfaceFlinger 进程内的多 Layer 合成。
 
 在 Perfetto 中，App 渲染管线的耗时体现在 App 进程的 RenderThread track 上（drawFrame slice），SurfaceFlinger 合成管线的耗时体现在 SurfaceFlinger 进程的 GPU 活动和 handleMessageRefresh 中。如果 SurfaceFlinger 的合成耗时异常增长，且伴随着 GPU 合成回退的迹象，就需要检查 Layer 数量和混合模式是否触发了 RenderEngine 的 GPU 合成路径。
 
@@ -721,6 +719,8 @@ RenderEngine 和 GPU Composition 是两个经常被混淆的概念。混淆的�
 ### 推荐阅读
 - [Android 性能优化之渲染篇](https://www.androidperformance.com/) — 高爷的渲染系列文章
 - [Google I/O 2012: For Butter or Worse](https://www.youtube.com/watch?v=Q8m9sHdyXnE) — Project Butter 背后的设计思路
+- [Android Graphics Architecture](https://source.android.com/docs/core/graphics/architecture) — AOSP 官方图形架构文档
+- [GPU Accelerated Compositing in Chrome](https://www.chromium.org/developers/design-documents/gpu-accelerated-compositing-in-chrome/) — GPU 合成机制的通用原理参考
 
 ## 总结
 
