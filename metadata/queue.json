@@ -1865,5 +1865,25 @@
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-09T07:34:00",
     "status": "pending"
+  },
+  {
+    "section": "2.2",
+    "section_title": "帧率与刷新率",
+    "priority": 95,
+    "reason": "[Deep Tech Review] API 33 FrameTimeline 代码示例将 FrameData 与 FrameTimeline 两个不同类的 API 混用，实为错误引用",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "API 33+ Frame Timeline 代码示例（FrameData.getPreferredFrameTimeline() / getFrameTimelines()）",
+        "detail": "API 33 中 android.view.Choreographer.FrameData 只有 getFrameTimeNanos()、getLastFrameTimeNanos()、getIntervalNanos()、getDeadlineNanos() 四个方法。getPreferredFrameTimeline() 和 getFrameTimelines() 是 FrameTimeline 类的类方法，不是 FrameData 的实例方法。当前代码将两个不同类的 API 混在一起，在实际编译/运行时会报错。",
+        "suggestion": "修正代码示例：getPreferredFrameTimeline() 和 getFrameTimelines() 应该是通过 Choreographer.getInstance().getFrameTimelines() 获取 FrameTimeline 列表，而不是通过 frameData 实例调用。需要重新查阅 AOSP android-13 API 33 的 FrameTimeline 类定义并修正代码。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-09T08:31:00",
+    "status": "pending"
   }
 ]

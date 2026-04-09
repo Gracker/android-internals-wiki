@@ -1197,3 +1197,46 @@ tags:
 - **位置**：## 在 Perfetto 中的表现 > 各层对应的 Track 和事件
 - **问题**：章节描述了各层在 Perfetto 中的表现，但缺少实际 Trace 截图（"[图：Perfetto Trace 截图示意...]" 是占位符）。"
 - **建议**：补充实际 Trace 标注截图，或在相关 Perfetto 章节（13.1-13.5）建立链接互相引用。
+
+## [Task2A Gap Mining] 2026-04-09 08:04 — 无新合格缺口
+
+**分析范围**：
+- SUMMARY.md 全书 17 Chapter / 143 sections
+- source-index.json 全部 quality=high 条目
+- research-feeds/ 最近 10 个研究素材
+- daily-info/ 最近 3 天信息
+- AOSP 结构 + 官方文档搜索 (Android 17 API 37)
+
+**候选方向评估**：
+1. App Bubbles 渲染性能 → 被已有 §2.20 多窗口覆盖，独立成节素材不足 → 素材丰富度 2/5，评分 8
+2. Android XR 渲染管线 → 脱离全书核心受众（Android 工程师），非性能核心 → 相关性 1/5，评分 5
+3. Foldable 设备性能 → 素材稀缺（0 篇高质量），可合并到 §2.20 或 §17.3 → 素材丰富度 1/5，评分 6
+4. Professional Camera API 性能 → 偏功能 API 而非性能分析，素材 0 篇 → 评分 5
+5. Android 17 Cross-Device Handoff 性能 → 偏功能，无性能相关素材 → 评分 4
+
+**结论**：本轮 0 个候选达到 14 分阈值，跳过。全书内容已进入「精修为主、增补为辅」阶段。下一轮挖掘建议聚焦 Android 17 正式版发布后的新性能特性。
+## [Task9 Deep Review] 2.2 帧率与刷新率 — 2026-04-09
+- **类型**：原理断裂
+- **位置**：SurfaceFlinger 刷新率选择策略小节
+- **问题**：描述"选择能被所有活跃图层帧率整除的刷新率"，但 LCM（最小公倍数）逻辑和 SurfaceFlinger 实际"遍历候选刷新率、对每个 Layer 检查整除、找第一个满足条件的"的实现细节之间有轻微断裂
+- **建议**：补充 SurfaceFlinger 的候选刷新率遍历逻辑（哪怕是伪代码），并说明如果找不到完美整除的刷新率时的 fallback 策略
+
+- **类型**：版本差异
+- **位置**：刷新率演进时间线表格 + "API 33+ 的 Frame Timeline 选择"小节标题
+- **问题**：表格中 Android 13 位置为空，但正文中"API 33+"直接跳过了 Android 13 版本对应关系。Android 13（API 33）是 FrameData/FrameTimeline API 首次出现的版本，需要明确标注
+- **建议**：在表格的 Android 13 行补充："FrameData API（Choreographer.VsyncCallback）首次支持多候选时间线"，与 API 33+ 小节形成版本对应
+
+- **类型**：数据缺失
+- **位置**：功耗权衡小节"120Hz 的屏幕功耗通常比 60Hz 高 20-40%"
+- **问题**：20-40% 的数字未标注来源，且该数字高度面板依赖，不同 LTPS/LTPO 面板差异显著
+- **建议**：标注数据来源（如 DisplayMate 测试数据或具体论文），或加"因面板技术而异"的限定词
+
+- **类型**：数据缺失
+- **位置**：多处 Perfetto 截图标注为"[待补充]"
+- **问题**：章节标注了 3 处以上"[待补充：Perfetto 中 XXX 截图]"。ready-to-publish 状态下截图缺失影响读者理解 Frame Timeline 和 Display Refresh Rate Track 的实际使用
+- **建议**：补充 Perfetto 截图（Frame Timeline 颜色含义示例、60Hz/120Hz 刷新率切换的 Display Refresh Rate Track）
+
+- **类型**：表述精确性
+- **位置**：JankStats 阈值"默认阈值是帧时间的 2 倍（即 60Hz 下 33.2ms 以上算 Jank）"
+- **问题**：文字"帧时间的 2 倍"有歧义。JankStats 的默认阈值是"帧预算 × 2.0"，即 60Hz 下 16.6ms × 2 = 33.2ms。但"2 倍帧时间"可能被误解为"帧时间超过 2×16.6=33.2ms"
+- **建议**：改为"JankStats 默认以帧预算的 2.0 倍为阈值（60Hz 下即超过 33.2ms 判定为 Jank）"
