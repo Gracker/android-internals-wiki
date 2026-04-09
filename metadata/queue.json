@@ -1694,6 +1694,30 @@
         "location": "LMK 的回收策略 章节",
         "detail": "描述 lmkd 按低/中/高压力三个阶段回收，这是早期版本策略描述。Android 16 的 lmkd 使用基于 minfree 配置文件的阈值判断机制，并非简单的三阶段模型。",
         "suggestion": "修正描述为基于内存压力阈值和 minfree 配置的策略。保留[待验证]标注，确认 Android 16 lmkd 行为是否有重大变化。"
+      },
+      {
+        "type": "源码错误",
+        "location": "oom_adj表格 PERSISTENT_PROC",
+        "detail": "表格标注为-12，实际AOSP android-16.0.0_r1 ProcessList.java中PERSISTENT_PROC_ADJ=-800",
+        "suggestion": "修正为-800"
+      },
+      {
+        "type": "源码错误",
+        "location": "oom_adj表格 PERSISTENT_SERVICE",
+        "detail": "表格标注为-11，实际AOSP android-16.0.0_r1 ProcessList.java中PERSISTENT_SERVICE_ADJ=-700",
+        "suggestion": "修正为-700"
+      },
+      {
+        "type": "源码错误",
+        "location": "oom_adj表格 SERVICE_B和SERVICE_A",
+        "detail": "表格标注SERVICE_B=500、SERVICE_A=400；实际AOSP中SERVICE_ADJ=500、SERVICE_B_ADJ=800。SERVICE_A常量不存在，SERVICE_B在800比500更容易被LMK杀，章节方向完全相反。",
+        "suggestion": "修正：SERVICE_ADJ=500，SERVICE_B_ADJ=800，删除SERVICE_A"
+      },
+      {
+        "type": "交叉引用错误",
+        "location": "related_chapters + 正文交叉引用",
+        "detail": "related_chapters列出1.1和1.4，但progress.json中这两个章节不存在。正文中'1.4 Binder IPC'引用也无效。",
+        "suggestion": "从related_chapters中删除1.1和1.4；正文交叉引用需确认目标章节存在"
       }
     ],
     "added_by": "task9-deep-tech-review",
