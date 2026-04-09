@@ -2,10 +2,13 @@
 title: "网络性能优化"
 chapter: "12.2"
 section: "12.2"
-status: finalized
+status: ready-for-review
 drafted_date: "2026-04-03"
 drafted_by: openclaw-task2a
 reviewed_date: "2026-04-10"
+polish_count: 1
+polish_date: "2026-04-10"
+polish_by: "task2b-polish"
 reviewed_by: openclaw-task6
 applicable_versions: "Android 8 (API 26) - Android 16 (API 36)"
 last_verified: "2026-04-03"
@@ -259,7 +262,7 @@ OkHttp 本身有一定的内置重试逻辑（`RetryOnConnectionFailure` 默认�
 
 ## 网络性能监控：OkHttp EventListener 与 NetworkCallback
 
-"无法度量就无法优化。"要系统化地改善网络性能，首先需要一套能精确度量每个请求各阶段耗时的监控体系。在 Android 上，这套体系由两部分组成：应用层的 OkHttp EventListener 和系统层的 ConnectivityManager.NetworkCallback。
+"无法度量就无法优化。"要系统化地改善网络性能，首先需要建立两个层面的感知能力：应用层面，精确度量每个请求各阶段的耗时；系统层面，感知当前网络环境的质量变化。前者由 OkHttp EventListener 承担，后者由 ConnectivityManager.NetworkCallback 承担。两者配合，才能实现“感知→度量→调整”的闭环。
 
 ### OkHttp EventListener：请求全生命周期埋点
 
@@ -297,9 +300,17 @@ public class PerfEventListener extends EventListener {
         // 上报 DNS 耗时指标
     }
 
+    private long callStartNanos;
+
+    @Override
+    public void callStart(Call call) {
+        callStartNanos = System.nanoTime();
+    }
+
     @Override
     public void responseHeadersStart(Call call) {
-        // 从 callStart 到此时刻 ≈ TTFB
+        long ttfbMs = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - callStartNanos);
+        // 上报 TTFB 指标（DNS + 连接 + TLS + 服务端处理的综合耗时）
     }
 
     public static final Factory FACTORY = call -> new PerfEventListener();
@@ -385,12 +396,14 @@ NetworkCallback 的信息可以用来驱动网络策略的自适应调整：带�
 
 **"网络优化就是优化请求速度"**——优化请求速度只是其中一面。另一面是减少请求的必要性：本地缓存减少重复请求、数据预加载减少用户等待时间、批量接口减少请求次数。最好的网络请求是不需要发出的请求。
 
+**"DNS 解析很快，不需要优化"**——在桌面网络下 DNS 确实几乎无感，但移动端的 DNS 解析面临两个特殊问题：运营商 DNS 服务器可能响应慢甚至返回劫持结果（指向广告页）；DNS 查询使用 UDP 协议，在弱网下丢包率较高导致超时重试。这就是 HTTPDNS 在国内大量使用的原因——绕过运营商 DNS，直接向可信的 DNS 服务（如阿里 DNS、腾讯 DNS）查询，同时还能返回离用户最近的 CDN 节点 IP。OkHttp 本身不内置 HTTPDNS，但可以通过 `Dns` 接口接入自定义解析逻辑。
+
 ## 参考资料
 
 - OkHttp 官方文档: <https://square.github.io/okhttp/>
-- OkHttp EventListener: <https://square.github.io/okhttp/interceptors/>
+- OkHttp EventListener API: <https://square.github.io/okhttp/events/>
 - Android ConnectivityManager: <https://developer.android.com/reference/android/net/ConnectivityManager>
 - Android NetworkCallback: <https://developer.android.com/reference/android/net/ConnectivityManager.NetworkCallback>
 - HTTP/3 (QUIC) 规范: <https://www.rfc-editor.org/rfc/rfc9114>
 - Uber Engineering — 迁移到 QUIC: <https://eng.uber.com/en/better-http-3/>
-- Google Chromium — HTTP/3 性能数据: <https://blog.chromium.org/>
+- Google Chromium Blog — HTTP/3 性能数据（通用参考）: <https://blog.chromium.org/>

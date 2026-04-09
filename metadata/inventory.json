@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-08 22:00",
+  "generated_at": "2026-04-10 06:02",
   "documents": [
     {
       "path": "Cubox/#01 创始人解密 Discord-2023-02-20.md",
@@ -49003,6 +49003,192 @@
         "ch14",
         "ch16"
       ]
+    },
+    {
+      "path": "src/part2-performance/ch18-rendering-pipelines/01-pipeline-overview.md",
+      "title": "18.1 渲染管线全景",
+      "mapped_chapters": [
+        "ch18",
+        "18"
+      ],
+      "total_score": 45
+    },
+    {
+      "path": "src/part2-performance/ch18-rendering-pipelines/02-android-view-standard.md",
+      "title": "18.2 Android View 标准绘制路径",
+      "mapped_chapters": [
+        "ch18",
+        "18",
+        "2.1"
+      ],
+      "total_score": 45
+    },
+    {
+      "path": "src/part2-performance/ch18-rendering-pipelines/03-android-view-software.md",
+      "title": "18.3 Android View 软件绘制",
+      "mapped_chapters": [
+        "ch18",
+        "18"
+      ],
+      "total_score": 45
+    },
+    {
+      "path": "src/part2-performance/ch18-rendering-pipelines/04-android-view-mixed.md",
+      "title": "18.4 Android View 混合绘制模式",
+      "mapped_chapters": [
+        "ch18",
+        "18"
+      ],
+      "total_score": 45
+    },
+    {
+      "path": "src/part2-performance/ch18-rendering-pipelines/05-android-view-multi-window.md",
+      "title": "18.5 多窗口模式下的渲染",
+      "mapped_chapters": [
+        "ch18",
+        "18"
+      ],
+      "total_score": 45
+    },
+    {
+      "path": "src/part2-performance/ch18-rendering-pipelines/06-surfaceview.md",
+      "title": "18.6 SurfaceView 渲染机制",
+      "mapped_chapters": [
+        "ch18",
+        "18",
+        "6"
+      ],
+      "total_score": 55
+    },
+    {
+      "path": "src/part2-performance/ch18-rendering-pipelines/07-textureview.md",
+      "title": "18.7 TextureView 渲染机制",
+      "mapped_chapters": [
+        "ch18",
+        "18",
+        "7"
+      ],
+      "total_score": 55
+    },
+    {
+      "path": "src/part2-performance/ch18-rendering-pipelines/08-opengl-es.md",
+      "title": "18.8 OpenGL ES 渲染",
+      "mapped_chapters": [
+        "ch18",
+        "18",
+        "8"
+      ],
+      "total_score": 45
+    },
+    {
+      "path": "src/part2-performance/ch18-rendering-pipelines/09-vulkan-native.md",
+      "title": "18.9 Vulkan 原生渲染",
+      "mapped_chapters": [
+        "ch18",
+        "18",
+        "9"
+      ],
+      "total_score": 45
+    },
+    {
+      "path": "src/part2-performance/ch18-rendering-pipelines/10-surface-control-api.md",
+      "title": "18.10 SurfaceControl API",
+      "mapped_chapters": [
+        "ch18",
+        "18"
+      ],
+      "total_score": 45
+    },
+    {
+      "path": "src/part2-performance/ch18-rendering-pipelines/11-angle-gles-vulkan.md",
+      "title": "18.11 ANGLE 与 GLES/Vulkan 转换层",
+      "mapped_chapters": [
+        "ch18",
+        "18"
+      ],
+      "total_score": 45
+    },
+    {
+      "path": "src/part2-performance/ch18-rendering-pipelines/12-flutter-rendering.md",
+      "title": "18.12 Flutter 渲染管线",
+      "mapped_chapters": [
+        "ch18",
+        "18",
+        "2.11"
+      ],
+      "total_score": 45
+    },
+    {
+      "path": "src/part2-performance/ch18-rendering-pipelines/13-webview-rendering.md",
+      "title": "18.13 WebView 渲染机制",
+      "mapped_chapters": [
+        "ch18",
+        "18"
+      ],
+      "total_score": 55
+    },
+    {
+      "path": "src/part2-performance/ch18-rendering-pipelines/14-camera-pipeline.md",
+      "title": "18.14 Camera 渲染管线",
+      "mapped_chapters": [
+        "ch18",
+        "18"
+      ],
+      "total_score": 45
+    },
+    {
+      "path": "src/part2-performance/ch18-rendering-pipelines/15-video-overlay-hwc.md",
+      "title": "18.15 视频叠加与 HWC 合成",
+      "mapped_chapters": [
+        "ch18",
+        "18"
+      ],
+      "total_score": 55
+    },
+    {
+      "path": "src/part2-performance/ch18-rendering-pipelines/16-game-engine.md",
+      "title": "18.16 游戏引擎渲染",
+      "mapped_chapters": [
+        "ch18",
+        "18"
+      ],
+      "total_score": 45
+    },
+    {
+      "path": "src/part2-performance/ch18-rendering-pipelines/17-hardware-buffer-renderer.md",
+      "title": "18.17 HardwareBuffer Renderer",
+      "mapped_chapters": [
+        "ch18",
+        "18"
+      ],
+      "total_score": 45
+    },
+    {
+      "path": "src/part2-performance/ch18-rendering-pipelines/18-pip-freeform.md",
+      "title": "18.18 PIP 与自由窗口模式",
+      "mapped_chapters": [
+        "ch18",
+        "18"
+      ],
+      "total_score": 55
+    },
+    {
+      "path": "src/part2-performance/ch18-rendering-pipelines/19-variable-refresh-rate.md",
+      "title": "18.19 可变刷新率 (VRR)",
+      "mapped_chapters": [
+        "ch18",
+        "18"
+      ],
+      "total_score": 45
+    },
+    {
+      "path": "src/part2-performance/ch18-rendering-pipelines/20-pipeline-analysis-methodology.md",
+      "title": "18.20 渲染管线分析方法论",
+      "mapped_chapters": [
+        "ch18",
+        "18"
+      ],
+      "total_score": 45
     }
   ],
   "stats": {

@@ -285,6 +285,32 @@ GLES 最大的痛点不是性能，而是**驱动碎片化**。不同 GPU 厂商
 
 **游戏**：GLThread 帧率独立于 App UI（因为基于 SurfaceView）。在 Trace 中你会看到 GL Thread 和 App Main Thread 完全解耦——游戏画面流畅，但 UI 操作可能卡顿（或反过来）。
 
+## GLSurfaceView vs 原生 EGL 集成
+
+`GLSurfaceView` 是 Android 提供的 GLES 渲染封装，它在内部处理了 EGL Context 创建、Surface 生命周期、GLThread 管理等所有样板代码。但对于高性能场景，你可能需要绕过 `GLSurfaceView`，直接使用 EGL API 与 SurfaceView 集成：
+
+**GLSurfaceView 的局限**：
+- 只支持一个 EGLSurface，不支持多 Surface 并行渲染
+- GLThread 的生命周期与 View 绑定，不够灵活
+- 错误处理不够完善，EGL Context 丢失后恢复逻辑有限
+
+**原生 EGL 集成的优势**：
+- 可以创建多个 EGL Context（Shared Context），实现资源的多线程并行加载
+- 可以更精细地控制 Surface 重建时机（比如在 Surface 尺寸变化时）
+- 可以自定义错误恢复策略
+
+```java
+// 原生 EGL 集成的核心步骤
+EGLDisplay display = eglGetDisplay(EGL_DEFAULT_DISPLAY);
+eglInitialize(display, null, null);
+// 选择 Config、创建 Context、创建 Surface...
+eglMakeCurrent(display, surface, surface, context);
+// 渲染循环
+eglSwapBuffers(display, surface);
+```
+
+对于大多数应用，`GLSurfaceView` 已经足够。只有在需要多线程渲染、精细的错误恢复、或与 Vulkan 互操作时，才需要考虑原生 EGL 集成。
+
 ---
 
 > **交叉引用**：
