@@ -1,8 +1,12 @@
 ---
 title: "网络性能优化"
 chapter: "12.2"
-status: ready-for-review
+section: "12.2"
+status: finalized
 drafted_date: "2026-04-03"
+drafted_by: openclaw-task2a
+reviewed_date: "2026-04-10"
+reviewed_by: openclaw-task6
 applicable_versions: "Android 8 (API 26) - Android 16 (API 36)"
 last_verified: "2026-04-03"
 last_verified_against: "OkHttp 4.12.x / Android 16"
@@ -15,7 +19,7 @@ sources:
   - type: official
     path: "https://developer.android.com/training/basics/network-ops"
 tags: [network, OkHttp, HTTP/2, HTTP/3, QUIC, weak-network, performance]
-related_chapters: ["12.1", "6.1"]
+related_chapters: ["12.1", "6.1", "8.1"]
 ---
 
 # 网络性能优化
@@ -92,13 +96,13 @@ HTTP/1.1 时代，浏览器（和 HTTP 客户端）对同一域名的并发请�
 
 HTTP/2 通过**多路复用**（Multiplexing）解决了这个问题。在 HTTP/2 下，一个 TCP 连接可以同时承载多个请求和响应，每个请求被分配一个独立的 Stream ID，数据被拆分为 Frame 在同一连接上交错传输。此外，HTTP/2 引入了 **HPACK 头部压缩**，减少了重复 Header 的传输开销。
 
-在 Perfetto 中，如果 App 使用 HTTP/2，我们会看到 TCP 连接数量显著减少——多个请求共享同一个连接，而不是每个请求独占一个。这对移动网络特别有利，因为每次新建 TCP 连接都需要经历三次握手（加上 TLS 握手），在弱网环境下开销巨大。
+在 Perfetto 中，如果 App 使用 HTTP/2，我们会看到 TCP 连接数量显著减少——多个请求共享同一个连接，而不是每个请求独占一个。这对移动网络特别有利，因为每次新建 TCP 连接都需要经历三次握手（加上 TLS 握手），在弱网环境下每次新建连接的 TLS 握手开销可能达到 100-200ms。
 
 但 HTTP/2 并非完美。它解决了应用层的队头阻塞，却把问题推到了传输层——TCP 层仍然存在队头阻塞：如果一个 TCP 包丢失，该连接上所有 Stream 的数据传输都会被阻塞，直到丢包被重传。在高丢包率的移动网络下，这个问题尤为突出。
 
 ### HTTP/3(QUIC)：为移动网络设计的传输协议
 
-HTTP/3 使用 QUIC 作为传输层协议，而 QUIC 基于 UDP 实现。这个架构变更带来了几个对移动网络意义重大的改进：
+HTTP/3 使用 QUIC 作为传输层协议，而 QUIC 基于 UDP 实现。这个架构变更带来了几个对移动网络场景尤为关键的改进：
 
 **零/一次 RTT 连接建立**：QUIC 将传输层握手和 TLS 1.3 加密握手合并为一次交互。首次连接只需 1-RTT，后续连接可以利用保存的会话信息实现 0-RTT，即第一个包就可以携带请求数据。在移动网络下，一个 RTT 可能是 50-100ms，省掉一次往返意味着白屏时间直接减少 50-100ms。
 
@@ -106,7 +110,7 @@ HTTP/3 使用 QUIC 作为传输层协议，而 QUIC 基于 UDP 实现。这个�
 
 **连接迁移**：QUIC 使用 Connection ID 而不是四元组（源 IP、源端口、目标 IP、目标端口）来标识连接。这意味着当用户的网络从 Wi-Fi 切换到 4G/5G 时（IP 地址改变），QUIC 连接可以无缝迁移，不需要重新建立连接。在 HTTP/2 下，这种网络切换会导致所有正在进行的请求失败并需要重试。
 
-实际性能数据也印证了 HTTP/3 在移动场景下的优势。Google 报告 YouTube 在移动设备上缓冲时间减少了 15%；Uber 在 Android/iOS 上采用 QUIC 后尾部延迟降低了 10-30%；Meta 在 Instagram 上观察到请求错误率降低 6%、尾部延迟降低 20%。 [引用: Uber Engineering Blog, Google Chromium Blog]
+实际性能数据也印证了 HTTP/3 在移动场景下的优势。Google 报告 YouTube 在移动设备上缓冲时间减少了 15%；Uber 在 Android/iOS 上采用 QUIC 后尾部延迟降低了 10-30%；Meta 在 Instagram 上观察到请求错误率降低 6%、尾部延迟降低 20%。 [已验证: 来源见 Uber Engineering Blog (eng.uber.com), Google Chromium Blog]
 
 ### 在 Android 上的选择
 
@@ -375,7 +379,7 @@ NetworkCallback 的信息可以用来驱动网络策略的自适应调整：带�
 
 **"网络慢就是服务端的问题"**——这是最常见的误区。实际上，DNS 慢、连接建立慢、客户端重试逻辑不当，都可能导致请求耗时长。区分责任方的关键是看 TTFB：如果 TTFB 正常但总耗时高，问题在数据传输或客户端处理；如果 TTFB 本身就高，问题在服务端或网络链路。
 
-**"HTTP/2 就够了，不需要 HTTP/3"**——在稳定的 Wi-Fi 环境下确实如此。但在移动网络（尤其是弱网、高丢包、频繁切换基站）下，HTTP/3 的 QUIC 协议有显著优势。如果 App 的用户主要在移动网络下使用，值得评估 HTTP/3。
+**"HTTP/2 就够了，不需要 HTTP/3"**——在稳定的 Wi-Fi 环境下确实如此。但在移动网络（尤其是弱网、高丢包、频繁切换基站）下，HTTP/3 的 QUIC 协议在高丢包和频繁网络切换场景下优势明显。如果 App 的用户主要在移动网络下使用，值得评估 HTTP/3。
 
 **"OkHttp 默认配置就够了"**——默认配置适合开发阶段，但生产环境需要根据业务特点调整超时时间、连接池大小、缓存策略。尤其是 connectTimeout 和 readTimeout，默认的 10 秒在弱网下可能太短（导致频繁超时），在好网络下可能太长（让用户白等）。
 

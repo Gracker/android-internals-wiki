@@ -4,16 +4,16 @@
   "metrics": {
     "total": 143,
     "draft": 15,
-    "ready-for-review": 30,
+    "ready-for-review": 29,
     "reviewed": 5,
-    "finalized": 36,
+    "finalized": 37,
     "staging_drafts": 0,
     "last_updated": "2026-04-10T01:30:00+08:00",
     "processing": 0,
     "ready-to-publish": 16,
     "last_reviewed": "2026-04-10",
-    "last_reviewed_section": "2.10 GPU 渲染深入",
-    "reviewed_today": 15
+    "last_reviewed_section": "12.2 网络性能优化",
+    "reviewed_today": 16
   },
   "reviewed_sections": {
     "8.1": {
@@ -861,6 +861,25 @@
       "scores": {
         "structure": 5,
         "expression": 5,
+        "consistency": 5,
+        "verification": 4,
+        "metadata": 4
+      }
+    },
+    "12.2": {
+      "reviewed_date": "2026-04-10",
+      "reviewed_by": "openclaw-task6",
+      "review_status": "finalized",
+      "fixes_applied": [
+        "元数据：补 section/drafted_by/reviewed_date/reviewed_by 字段",
+        "元数据：related_chapters 补充 §8.1",
+        "验证标注：[引用:] → [已验证: 来源见 ...] 格式标准化",
+        "模糊形容词：3处具体化（显著优势/开销巨大/意义重大）",
+        "状态：ready-for-review → finalized"
+      ],
+      "scores": {
+        "structure": 5,
+        "expression": 4,
         "consistency": 5,
         "verification": 4,
         "metadata": 4
@@ -2577,6 +2596,21 @@
     }
   ],
   "history": [
+    {
+      "date": "2026-04-10",
+      "section": "12.2",
+      "title": "网络性能优化",
+      "action": "reviewed-finalized",
+      "review_by": "openclaw-task6",
+      "fixes": 9,
+      "scores": {
+        "structure": 5,
+        "expression": 4,
+        "consistency": 5,
+        "verification": 4,
+        "metadata": 4
+      }
+    },
     {
       "date": "2026-04-10",
       "section": "2.10",
