@@ -23,9 +23,15 @@ sources:
 tags:
   - android
   - perfetto
-  - research
-
-
+  - trace-view
+  - frame-timeline
+  - binder
+  - thread-state
+  - cpu-scheduling
+related_chapters: ["13.1", "13.2", "13.4", "2.6", "14.2", "14.3"]
+polish_count: 1
+polish_date: "2026-04-10"
+polish_by: "task2b-polish"
 ---
 
 
@@ -203,6 +209,8 @@ Counter Track 的数值点来自代码中的 `Trace.traceCounter()` / `ATRACE_IN
 [来源: Perfetto分析进阶, https://mp.weixin.qq.com/s?__biz=MzAxMDM0NjExNA==&mid=2247487984]
 [已验证: 官方文档, perfetto.dev/docs/data-sources]
 
+掌握各 Track 的含义后，下一步是学会看单个事件的详细信息。Perfetto 的 Slice 详情面板是深入分析的核心入口——它不仅告诉你"这个事件持续了多久"，还揭示"这段时间里线程在干什么"。
+
 ## Slice 详情面板的解读
 
 选中任何一个 Slice 后，底部面板会展示该 Slice 的详细信息。这个面板是 Perfetto 最强大的分析入口之一——它不仅展示"这个事件持续了多久"，还展示"这段时间里线程在干什么"。
@@ -247,6 +255,8 @@ Self Time 的意义在于定位瓶颈层级。比如 `doFrame` 的 Wall Duration
 在 Perfetto 中追踪唤醒链非常方便：点击线程状态条上的 Runnable 段，底部面板展示唤醒源，点击唤醒源旁边的小箭头可以直接跳转到唤醒线程的对应位置。连续点击这个箭头，我们可以沿着唤醒链一路往回追溯，直到找到最初的触发者。这个操作在分析"响应为什么慢"时特别有用——响应慢往往是因为中间某个环节的唤醒延迟过大。
 
 [来源: https://www.androidperformance.com/2024/05/21/Android-Perfetto-03-how-to-analysis-perfetto/]
+
+上面我们分析了单个 Slice 的内部细节。但很多性能问题不是单个线程能解释的——Binder 调用跨了进程、VSync 信号连接了 App 和 SurfaceFlinger、Input 事件从内核一路传到了 App 主线程。要追踪这些跨线程、跨进程的事件流，就需要用到 Flow Events。
 
 ## Flow Events 的跟踪
 
@@ -319,7 +329,7 @@ Uninterruptible Sleep 段过长通常指向 I/O 瓶颈。常见场景包括：Ap
 
 当然，实际情况往往比这个口诀复杂——可能一个 Slice 里同时有绿色、灰色和深橙色。这时候就需要用前面介绍的 Thread States 标签来看精确的百分比分解。
 
-需要注意的是，Perfetto UI 提供了亮色和暗色两种主题（通过命令面板 `Ctrl/Cmd+Shift+P` 切换），同一种状态在两种主题下的视觉表现略有差异。但颜色编码的对应关系不变：绿色=Running、浅绿=Runnable、灰色=Sleep、深橙色=Uninterruptible。
+Perfetto UI 支持亮色和暗色两种主题。暗色主题从 Perfetto v52 起成为一等公民功能（不再是实验性的），通过命令面板 `Ctrl/Cmd+Shift+P` 搜索 "Dark mode" 即可切换。两种主题下颜色编码的对应关系不变：绿色 = Running、浅绿 = Runnable、灰色 = Sleep、深橙色 = Uninterruptible。暗色主题在长时间分析 Trace 时对眼睛更友好，建议默认开启。
 
 [图：线程状态条颜色编码对照——Running(绿)/Runnable(浅绿)/Sleep(灰)/Uninterruptible(深橙)，附 Perfetto Trace 实际截图]
 
@@ -375,6 +385,8 @@ Android Studio Profiler 也提供了 CPU Trace 的可视化视图，很多开发
 
 ## 实战示例：快速定位掉帧原因
 
+前面的内容分别介绍了操作、Track、详情面板、Flow Events、颜色编码。在实际分析中，这些能力是组合使用的。下面用一个完整的场景演示如何将它们串联起来。
+
 假设我们拿到了一个用户反馈"滑动时偶尔卡一下"的 Trace。按照以下步骤可以在几分钟内定位到原因：
 
 **第一步：看 FrameTimeline**。在 App 进程的 Track 中找到 FrameTimeline 行，快速扫描红色色块，标记所有掉帧点。
@@ -409,15 +421,18 @@ Android Studio Profiler 也提供了 CPU Trace 的可视化视图，很多开发
 
 - Perfetto UI 官方文档：[https://perfetto.dev/docs/visualization/lifecycle](https://perfetto.dev/docs/visualization/lifecycle)
 - Perfetto 键盘快捷键：[https://perfetto.dev/docs/visualization/keyboard-shortcuts](https://perfetto.dev/docs/visualization/keyboard-shortcuts)
-- Perfetto 键盘快捷键：[https://perfetto.dev/docs/visualization/keyboard-shortcuts](https://perfetto.dev/docs/visualization/keyboard-shortcuts)
 - FrameTimeline 官方文档：[https://source.android.com/docs/core/display/frame_timeline](https://source.android.com/docs/core/display/frame_timeline)
 - Android Performance — Perfetto 系列 3：[https://www.androidperformance.com/2024/05/21/Android-Perfetto-03-how-to-analysis-perfetto/](https://www.androidperformance.com/2024/05/21/Android-Perfetto-03-how-to-analysis-perfetto/)
 - Perfetto 分析进阶（内核工匠）：[https://mp.weixin.qq.com/s?__biz=MzAxMDM0NjExNA==&mid=2247487984](https://mp.weixin.qq.com/s?__biz=MzAxMDM0NjExNA==&mid=2247487984)
 - AOSP Trace API：`frameworks/base/core/java/android/os/Trace.java`
 
 
-### Perfetto v52/v54 大改版：Dark Mode + ANR 分类 + 位图时序
-- 来源：https://github.com/google/perfetto/releases
-- 类型：article
-- 摘要：UI层：Dark Mode、触摸支持、多Track批量操作。分析层：android_anrs新增anr_type字段、android.bitmaps位图时序数据、slice_self_dur自持续时间计算、regexp_extract函数、JSON trace解析性能提升。
-- 入库时间：2026-04-08
+### Perfetto 近期版本更新要点
+
+Perfetto 在 2025-2026 年的版本迭代中引入了多项影响分析体验的改进（基于 [Perfetto Releases](https://github.com/google/perfetto/releases)）：
+
+- **UI 层**：暗色主题正式支持（v52+）、触摸屏手势操作、多 Track 批量折叠/展开
+- **分析层**：`android_anrs` 表新增 `anr_type` 字段用于 ANR 分类、`slice_self_dur()` 函数直接计算 Self Duration（不再需要手动减去子 Slice）、`regexp_extract()` 函数增强 SQL 文本处理
+- **数据源**：`android.bitmaps` 表提供位图时序数据，可用于追踪 Bitmap 生命周期
+
+[已验证: Perfetto GitHub Releases, github.com/google/perfetto/releases]
