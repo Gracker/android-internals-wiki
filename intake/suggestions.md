@@ -1,3 +1,19 @@
+## [Task2A Gap Mining] 知识缺口挖掘记录 — 2026-04-10 05:06
+
+- **Phase**: Phase 1（无空 draft，进入挖掘模式）
+- **结论**: 本轮未发现评分 ≥ 14 的知识缺口
+- **已检查方向**:
+  1. source-index.json 839 条素材中 high-quality unmapped 17 条（ANR系统问题→ch9/Fence同步→2.16/Input调试→ch3/Camera×2→14.9/支付宝度量→15.5/Android14→1.6/Linux I/O→6.3/Dalvik→4.3/Reddit Baseline→8.7/Proguard→12.1/CPU利用率→5.1/渲染管线→ch2/Binder→1.4/Camera内存→14.9/IO监控→6.3），全部可映射到已有章节
+  2. research-feeds 最近 5 份研究素材（ADPF+AGDK 19分→8.9/View层级16分→7.12/AudioTrack 18分→1.16+16.5/AudioFlinger 17分→1.16/Hardware Bitmap 19分→7.10/ImageDecoder 18分→7.10/Coil3 18分→7.10）全部已映射
+  3. daily-info 最近 3 天（4/7-4/9）热点：DeliQueue/Android 17适配/Compose/AI编程/UI-Voyager/Flutter鸿蒙，均已覆盖
+  4. AOSP + 官方文档：Android 16/17 性能新特性（GenGC/DeliQueue/static final/ProfilingManager triggers/JobDebugInfo/Headroom APIs/Cloud Compilation）全部已有对应章节
+  5. 扩展点检查：ApplicationStartInfo（14.7+8.2已覆盖）、WindowInsets Animation（评分约9分，不达标）、Performance Leveling Guide（评分约11分，不达标）
+  6. 全部 20+ 候选方向最高评分 ≤ 13/20
+- **建议**: 
+  - 下轮优先处理 28 个 draft 状态章节（重点是 ch18 渲染链路全景的 20 个小节）
+  - 关注 Google I/O 2026 新 announced 的性能 API
+  - 关注 Android 17 正式版发布后的行为变更补充
+
 ## [Task6 Review] 1.3 进程模型与生命周期管理 — 2026-04-09
 - **类型**：需重写
 - **位置**：全文结构
