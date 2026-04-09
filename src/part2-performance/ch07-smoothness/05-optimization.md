@@ -116,7 +116,7 @@ RecyclerView 是卡顿的高发地带——滑动场景下每一帧的预算只�
 
 ### onBindViewHolder：最关键的瓶颈
 
-`onBindViewHolder()` 应该只做"轻量级数据绑定"。常见错误：在里边创建对象（`new Paint()`）、做 I/O 操作、做复杂计算、调用 Binder。
+`onBindViewHolder()` 应该只做"轻量级onBindViewHolder"。常见错误：在里边创建对象（`new Paint()`）、做 I/O 操作、做复杂计算、调用 Binder。
 
 [来源: obsidian/Personal-Knowlodge/source/2026-03-07_wechat_Android深入卡顿分析与实践.md — WeSing 发现 onBindViewHolder 中的日志字符串拼接耗时 18ms]
 
@@ -163,7 +163,7 @@ RecyclerView 从 25.1.0 开始支持预取——在主线程空闲的间隙提�
 
 ### RecyclerView 卡顿在 Perfetto 中的定位
 
-在 Perfetto 中排查 RecyclerView 滑动卡顿，关注三个 Track。首先是主线程的 `ui_thread` Track——在 doFrame 的调用栈中搜索 `onBindViewHolder` 或 `onCreateViewHolder`，如果它们的耗时超过 1ms，说明绑定或创建逻辑太重。其次是 `RenderThread` Track——如果主线程的 doFrame 很快完成但 RenderThread 耗时突增，说明问题不在数据绑定而在渲染本身（比如 item 布局过于复杂）。第三是 FrameMetrics 的 `FrameTimeline` Track——持续观察整段滑动过程中的帧时间分布，如果大量帧超过 VSync 周期（120Hz 设备为 8.33ms），且对应的调用栈集中在 RecyclerView 相关方法上，就是列表优化需要重点关注的区域。[待补充：RecyclerView 滑动卡顿的 Perfetto Trace 截图]
+在 Perfetto 中排查 RecyclerView 滑动卡顿，关注三个 Track。首先是主线程的 `ui_thread` Track——在 doFrame 的调用栈中搜索 `onBindViewHolder` 或 `onCreateViewHolder`，如果它们的耗时超过 1ms，说明绑定或创建逻辑太重。其次是 `RenderThread` Track——如果主线程的 doFrame 很快完成但 RenderThread 耗时突增，说明问题不在onBindViewHolder而在渲染本身（比如 item 布局过于复杂）。第三是 FrameMetrics 的 `FrameTimeline` Track——持续观察整段滑动过程中的帧时间分布，如果大量帧超过 VSync 周期（120Hz 设备为 8.33ms），且对应的调用栈集中在 RecyclerView 相关方法上，就是列表优化需要重点关注的区域。[待补充：RecyclerView 滑动卡顿的 Perfetto Trace 截图]
 
 ## 渲染优化：减少 Overdraw、Hardware Layer、Canvas 简化
 
@@ -214,7 +214,7 @@ Android 12 的 `RenderEffect` API 模糊效果是性能敏感操作。建议：�
 
 **第二，Binder 调用的耗时不可预测。** 系统空闲时可能 0.5ms，繁忙时可能 20ms+。
 
-[来源: obsidian/Personal-Knowlodge/source/2026-03-07_wechat_Android深入卡顿分析与实践.md — WeSing 发现主线程解析 JSON 18ms、初始化 SDK 115ms，移到子线程后显著改善卡顿率]
+[来源: obsidian/Personal-Knowlodge/source/2026-03-07_wechat_Android深入卡顿分析与实践.md — WeSing 发现主线程解析 JSON 18ms、初始化 SDK 115ms，移到子线程后卡顿率从15%降至5%（降低67%）]
 
 **第三，注意"间接耗时"。** 子线程过多会抢占 CPU 时间片。WeSing 统计：SDK 升级后新增 30 个线程、250 个 fd，卡顿率从 15% 升到 20%。
 
@@ -222,7 +222,7 @@ Android 12 的 `RenderEffect` API 模糊效果是性能敏感操作。建议：�
 
 Binder 是 Android 进程间通信的核心机制（详见 [1.4 Binder IPC](part1-fundamentals/ch01-architecture/04-binder.md)），但它的耗时极度不可控。系统空闲时一次 Binder 调用可能只要 0.5ms，而系统繁忙时（比如多个 App 同时做 GC、SurfaceFlinger 正在合成、lmkd 在杀进程），同一次调用可能飙升到 20ms 甚至更久。在 120Hz 设备上，20ms 等于两个半 VSync 周期——一次 Binder 调用就能制造一个肉眼可见的卡顿。
 
-针对 Binder 调用，有几条实践证明有效的优化策略。首先是**缓存系统服务查询结果**。`PackageManager.getPackageInfo()`、`ActivityManager.getProcessMemoryState()` 这类调用每次都会走 Binder，如果在启动路径或滑动路径上重复调用，开销会被放大。正确的做法是在 App 启动时查一次，把结果缓存在内存中。其次是**绝不把 Binder 调用放在渲染路径上**。滑动手势的 onScroll 回调、动画的 onAnimationUpdate、RecyclerView 的 onBind——这些地方哪怕一次 1ms 的 Binder 调用，在高速滑动时也会被连续触发，累积效果非常可观。如果确实需要在滑动过程中获取数据，应该在子线程提前获取并缓存，主线程只做轻量的数据绑定。
+针对 Binder 调用，有几条实践证明有效的优化策略。首先是**缓存系统服务查询结果**。`PackageManager.getPackageInfo()`、`ActivityManager.getProcessMemoryState()` 这类调用每次都会走 Binder，如果在启动路径或滑动路径上重复调用，开销会被放大。正确的做法是在 App 启动时查一次，把结果缓存在内存中。其次是**绝不把 Binder 调用放在渲染路径上**。滑动手势的 onScroll 回调、动画的 onAnimationUpdate、RecyclerView 的 onBind——这些地方哪怕一次 1ms 的 Binder 调用，在高速滑动时也会被连续触发，累积效果非常可观。如果确实需要在滑动过程中获取数据，应该在子线程提前获取并缓存，主线程只做轻量的onBindViewHolder。
 
 对于批量数据操作，使用 `ContentProviderOperation` 替代逐条调用。每次 `ContentResolver.insert()` 或 `update()` 都是一次完整的 Binder 往返（marshalling → 驱动传输 → unmarshalling → 执行 → 返回），批量操作能把多次往返压缩为一次。
 
@@ -233,7 +233,7 @@ Binder 是 Android 进程间通信的核心机制（详见 [1.4 Binder IPC](part
 在 Perfetto 中观察 Binder 调用耗时，可以在主线程的 Trace 中搜索 `binder_transaction` 事件。如果发现某个 `binder_transaction` 的持续时间超过 5ms，就需要关注它发生在什么上下文中——如果是在 doFrame 或 dispatchTouchEvent 的调用栈中，那就是需要优化的目标。另外，Perfetto 的 `binder` Track 会显示所有进程的 Binder 活动，可以用来判断"系统繁忙"是否是外部因素导致的。[待补充：Binder 调用耗时的 Perfetto Trace 截图]
 ### 合理的线程池配置
 
-线程池配置不当是"优化了主线程，卡顿反而更严重"的典型原因。核心问题是：子线程和主线程共享同一组 CPU 核心，子线程越多，主线程能分到的时间片越少。
+线程池配置不当是"主线程优化后，如果子线程数量过多，反而会抢占CPU时间片，导致整体卡顿加剧"的典型原因。核心问题是：子线程和主线程共享同一组 CPU 核心，子线程越多，主线程能分到的时间片越少。
 
 控制线程池的并发数是最基本的一条。CPU 密集型任务的线程数不应超过 CPU 核心数（可通过 `Runtime.availableProcessors()` 获取），I/O 密集型任务可以适当多一些，但也不建议超过核心数的两倍。很多 App 的做法是按功能模块各建一个线程池，加上第三方 SDK 自带的线程池，加起来可能有三四十个线程同时在跑。这种情况下 CPU 调度器需要在大量线程之间频繁切换，上下文切换的开销本身就成了性能瓶颈。
 
@@ -357,8 +357,8 @@ Compose 的 LazyColumn 内部也实现了类似的预取机制——当用户在
 - [Compose 性能 Codelab](https://developer.android.com/codelabs/compose-performance)
 
 
-### Android 17 DeliQueue：后台任务调度重排，丢帧降低 4-7.7%
+### Android 17 DeliQueue：
+后台任务调度重排，丢帧降低 4-7.7%
 - 来源：https://android-developers.googleblog.com/deliqueue
-- 类型：article
-- 摘要：DeliQueue解决后台任务依赖链导致渲染线程阻塞的问题。通过重排任务等待队列减少渲染阻塞。应用丢帧-4%，Android主界面丢帧-7.7%。
+DeliQueue解决后台任务依赖链导致渲染线程阻塞的问题。通过重排任务等待队列减少渲染阻塞。应用丢帧-4%，Android主界面丢帧-7.7%。
 - 入库时间：2026-04-08
