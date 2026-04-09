@@ -10964,6 +10964,2833 @@
       ],
       "summary": "Android系统文献综合，涵盖设备控制数据集、恶意软件检测、任务自动化等领域的关联分析",
       "scored_at": "2026-04-10T02:19:11.761584"
+    },
+    {
+      "title": "Android Perfetto 系列 5：基于 Choreographer 的渲染流程",
+      "path": "调研/OKB编译/2026-04-07-Perfetto-5-Choreographer渲染流程.md",
+      "score": 18,
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch11-Profiling",
+          "confidence": "high"
+        }
+      ],
+      "summary": "基于 Perfetto 分析 Choreographer 渲染流程，涵盖 VSync、doFrame、input/animate/layout/draw 各阶段",
+      "scored_at": "2026-04-10T02:51:31.511090"
+    },
+    {
+      "title": "SurfaceFlinger 图层合成过程分析（上）",
+      "path": "调研/OKB编译/2026-04-07-SurfaceFlinger图层合成过程分析上-Cubox.md",
+      "score": 18,
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch01-架构",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "SurfaceFlinger 图层合成机制分析，BufferQueue 工作流程与合成策略",
+      "scored_at": "2026-04-10T02:51:31.511098"
+    },
+    {
+      "title": "SurfaceFlinger 图层合成过程分析（下）",
+      "path": "调研/OKB编译/2026-04-07-SurfaceFlinger图层合成过程分析下-Cubox.md",
+      "score": 17,
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "high"
+        }
+      ],
+      "summary": "SurfaceFlinger 合成过程下半部分，HWC 与 GPU 合成路径详解",
+      "scored_at": "2026-04-10T02:51:31.511100"
+    },
+    {
+      "title": "Android 14 VSync 机制深入解读",
+      "path": "调研/OKB编译/2026-04-08-Android14-VSync-机制深入解读.md",
+      "score": 18,
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Android 14 VSync 机制深度解析，VSync-app/VSync-sf 分发、Phase Offset 调优",
+      "scored_at": "2026-04-10T02:51:31.511102"
+    },
+    {
+      "title": "Android 启动优化：常规优化与系统级方案完整调研",
+      "path": "调研/OKB编译/2026-04-08-Android启动优化常规优化与系统级方案完整调研.md",
+      "score": 17,
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch04-启动",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch11-Profiling",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Android 启动优化全景：冷启动/热启动、常规优化手段与系统级方案",
+      "scored_at": "2026-04-10T02:51:31.511103"
+    },
+    {
+      "title": "Android 图形系统：从点击到屏幕显示的完整渲染链路",
+      "path": "调研/OKB编译/2026-04-08-Android图形系统三-从点击到屏幕显示的完整渲染链路.md",
+      "score": 17,
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch04-启动",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "完整渲染链路分析：Input → App → SurfaceFlinger → Display 全流程",
+      "scored_at": "2026-04-10T02:51:31.511105"
+    },
+    {
+      "title": "BPF 与 CPU 调度器结合可行性调研 + ghOSt 框架解读",
+      "path": "调研/OKB编译/2026-04-08-BPF与CPU调度器结合可行性调研与ghOSt框架解读.md",
+      "score": 16,
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch13-调度",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch11-Profiling",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "eBPF 在 CPU 调度中的应用，ghOSt 框架原理与 Android 可行性",
+      "scored_at": "2026-04-10T02:51:31.511106"
+    },
+    {
+      "title": "CFS 完全公平调度器深度解析",
+      "path": "调研/OKB编译/2026-04-08-CFS完全公平调度器深度解析.md",
+      "score": 17,
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch13-调度",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Linux CFS 调度器原理：虚拟运行时间、红黑树、调度延迟与粒度",
+      "scored_at": "2026-04-10T02:51:31.511108"
+    },
+    {
+      "title": "Linux CFS 完全公平调度器原理深度解析与实战调优",
+      "path": "调研/OKB编译/2026-04-08-LinuxCFS完全公平调度器原理深度解析与实战调优.md",
+      "score": 17,
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch13-调度",
+          "confidence": "high"
+        }
+      ],
+      "summary": "CFS 调度器深度解析与 Android 实战调优经验",
+      "scored_at": "2026-04-10T02:51:31.511109"
+    },
+    {
+      "title": "GPU 渲染管线和硬件架构浅谈",
+      "path": "调研/OKB编译/2026-04-08-GPU渲染管线和硬件架构浅谈.md",
+      "score": 16,
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "high"
+        }
+      ],
+      "summary": "GPU 渲染管线流程、硬件架构与移动端 GPU 特性",
+      "scored_at": "2026-04-10T02:51:31.511111"
+    },
+    {
+      "title": "抖音 Android 包体积优化探索：Class 字节码 DEX 精简",
+      "path": "调研/OKB编译/2026-04-08-抖音Android包体积优化探索-Class字节码DEX精简.md",
+      "score": 16,
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch10-包体积",
+          "confidence": "high"
+        }
+      ],
+      "summary": "抖音包体积优化：DEX 精简、Class 字节码分析与压缩技术",
+      "scored_at": "2026-04-10T02:51:31.511112"
+    },
+    {
+      "title": "深入理解 LeakCanary 内存泄漏检测",
+      "path": "调研/OKB编译/2026-04-08-深入理解LeakCanary内存泄漏检测.md",
+      "score": 16,
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch07-内存",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch14-工具",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "LeakCanary 原理：WeakReference + GC Root 分析、Heap Dump 处理",
+      "scored_at": "2026-04-10T02:51:31.511113"
+    },
+    {
+      "title": "页表 MMU TLB 彻底讲透虚拟内存",
+      "path": "调研/OKB编译/2026-04-08-页表MMU-TLB彻底讲透虚拟内存那些事.md",
+      "score": 16,
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch07-内存",
+          "confidence": "high"
+        }
+      ],
+      "summary": "虚拟内存底层原理：页表、MMU、TLB、缺页中断与 Android 内存管理",
+      "scored_at": "2026-04-10T02:51:31.511114"
+    },
+    {
+      "title": "Binder IPC 死亡通知机制深度解析",
+      "path": "调研/OKB编译/2026-04-08-Binder-IPC死亡通知机制深度解析.md",
+      "score": 16,
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch01-架构",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Binder 死亡通知：DeathRecipient、linkToDeath 流程与系统服务监控",
+      "scored_at": "2026-04-10T02:51:31.511116"
+    },
+    {
+      "title": "CPU 缓存架构与多线程伪共享避坑指南",
+      "path": "调研/OKB编译/2026-04-08-CPU缓存架构与多线程伪共享避坑指南.md",
+      "score": 16,
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch03-线程",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch13-调度",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "CPU 缓存行、False Sharing 原理与 @CacheLine 避坑实践",
+      "scored_at": "2026-04-10T02:51:31.511117"
+    },
+    {
+      "title": "Flutter 120Hz 高刷在 Android/iOS 适配差异与 LTPO 原理",
+      "path": "调研/OKB编译/2026-04-08-Flutter120hz高刷在Android和iOS的适配差异与LTPO原理.md",
+      "score": 16,
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "high"
+        }
+      ],
+      "summary": "高刷新率适配、LTPO 动态刷新率原理与 Flutter 渲染管线差异",
+      "scored_at": "2026-04-10T02:51:31.511118"
+    },
+    {
+      "title": "深入 ANR 产生的根源：处理流程和日志文件",
+      "path": "调研/OKB编译/2026-04-07-深入ANR产生的根源处理流程和日志文件.md",
+      "score": 16,
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch03-线程",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch11-Profiling",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "ANR 根源分析：InputDispatcher 超时、BroadcastReceiver 超时与 traces.txt 解读",
+      "scored_at": "2026-04-10T02:51:31.511119"
+    },
+    {
+      "title": "从 0 到 1 吃透 MMU 与分页：内存管理底层原理",
+      "path": "调研/OKB编译/2026-04-08-从0到1吃透MMU与分页-内存管理底层原理.md",
+      "score": 17,
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch07-内存",
+          "confidence": "high"
+        }
+      ],
+      "summary": "内存管理底层：MMU、分页机制、页表层级与 Android 应用",
+      "scored_at": "2026-04-10T02:51:31.511120"
+    },
+    {
+      "title": "Android SurfaceFlinger 学习之路十二：合成 Layer",
+      "path": "调研/OKB编译/2026-04-08-Android-SurfaceFlinger-学习之路十二----合成Layer.md",
+      "score": 17,
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "high"
+        }
+      ],
+      "summary": "SurfaceFlinger Layer 合成流程：doComposition → doComposeSurfaces",
+      "scored_at": "2026-04-10T02:51:31.511122"
+    },
+    {
+      "title": "百度 App Android 启动性能优化（工具篇）",
+      "path": "调研/OKB编译/2026-04-07-百度App-Android启动性能优化-工具篇.md",
+      "score": 16,
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch04-启动",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch14-工具",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "百度启动优化工具链：Perfetto/Systrace 辅助分析与自动化监控",
+      "scored_at": "2026-04-10T02:51:31.511123"
+    },
+    {
+      "title": "btrace 2.0 技术原理大揭秘",
+      "path": "调研/OKB编译/2026-04-07-btrace-2.0技术原理大揭秘.md",
+      "score": 16,
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch11-Profiling",
+          "confidence": "high"
+        }
+      ],
+      "summary": "btrace 2.0 字节码插桩原理：方法耗时监控与启动优化",
+      "scored_at": "2026-04-10T02:51:31.511124"
+    },
+    {
+      "title": "bcc profiling 符号解析原理与错误案例",
+      "path": "调研/OKB编译/2026-04-08-bcc-profiling符号解析原理与错误案例.md",
+      "score": 16,
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch11-Profiling",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch13-调度",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "BCC 工具符号解析机制、常见错误排查与 Perfetto 集成",
+      "scored_at": "2026-04-10T02:51:31.511125"
+    },
+    {
+      "title": "性能优化第一原则：先搞清瓶颈类型",
+      "path": "调研/OKB编译/2026-04-08-性能优化第一原则-先搞清瓶颈类型.md",
+      "score": 15,
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch14-工具",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch11-Profiling",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "性能优化方法论：CPU/内存/IO/渲染瓶颈识别与分析策略",
+      "scored_at": "2026-04-10T02:51:31.511126"
+    },
+    {
+      "title": "Android 13 Changelog 深度解析 (Mishaal Rahman)",
+      "path": "调研/OKB编译/2026-04-07-Android-13-changelog-deep-dive.md",
+      "score": 15,
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch17-新版本",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch01-架构",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Android 13 变更详解：性能、内存、功耗、隐私等关键变更",
+      "scored_at": "2026-04-10T02:51:31.511127"
+    },
+    {
+      "title": "内存屏障：多核 CPU 并发编程的交通规则",
+      "path": "调研/OKB编译/2026-04-08-内存屏障-多核CPU并发编程的交通规则.md",
+      "score": 15,
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch03-线程",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch07-内存",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "内存屏障原理：StoreLoad/LoadStore 屏障、volatile 与 happens-before",
+      "scored_at": "2026-04-10T02:51:31.511129"
+    },
+    {
+      "title": "Android 动画类型对比与选型指南",
+      "path": "调研/OKB编译/2026-04-08-Android动画类型对比与选型指南.md",
+      "score": 15,
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Android 动画系统对比：View/Property/Transition/Lottie 选型与性能",
+      "scored_at": "2026-04-10T02:51:31.511130"
+    },
+    {
+      "title": "MediaCodec 在 Android 硬解码的路线",
+      "path": "调研/OKB编译/2026-04-08-MediaCodec在Android硬解码的路线.md",
+      "score": 14,
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "MediaCodec 硬件解码流程：Codec2 框架与 Surface 渲染集成",
+      "scored_at": "2026-04-10T02:51:31.511132"
+    },
+    {
+      "title": "Android 冷启动速度分析 SOP",
+      "path": "调研/Skill和 SOP 区别/sop-cold-launch-analysis.md",
+      "score": 15,
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch04-启动",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch14-工具",
+          "confidence": "high"
+        }
+      ],
+      "summary": "冷启动分析标准操作流程：Perfetto 抓取、关键路径识别、优化建议",
+      "scored_at": "2026-04-10T02:51:31.511133"
+    },
+    {
+      "title": "XTrace精读：非侵入式生产环境动态追踪框架",
+      "path": "论文/Android-2025-04-05-XTrace/03-精读.md",
+      "score": 18,
+      "quality": "high",
+      "relevance": 5,
+      "depth": 5,
+      "timeliness": 4,
+      "verifiability": 4,
+      "chapters": [
+        {
+          "id": "ch11",
+          "confidence": "high"
+        },
+        {
+          "id": "ch05",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "字节跳动出品的非侵入式Android生产环境动态追踪框架，直接关联Profiling章节",
+      "directory": "论文",
+      "scored_at": "2026-04-10T03:22:02.731598"
+    },
+    {
+      "title": "XTrace翻译：Non-Invasive Dynamic Tracing Framework",
+      "path": "论文/Android-2025-04-05-XTrace/02-翻译.md",
+      "score": 14,
+      "quality": "medium",
+      "relevance": 5,
+      "depth": 3,
+      "timeliness": 4,
+      "verifiability": 2,
+      "chapters": [
+        {
+          "id": "ch11",
+          "confidence": "high"
+        },
+        {
+          "id": "ch05",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "XTrace论文全文翻译",
+      "directory": "论文",
+      "scored_at": "2026-04-10T03:22:02.731606"
+    },
+    {
+      "title": "Ariadne精读：热度感知压缩交换技术",
+      "path": "论文/Android-2026-03-08-Ariadne-Compressed-Swap/03-精读.md",
+      "score": 17,
+      "quality": "high",
+      "relevance": 5,
+      "depth": 5,
+      "timeliness": 4,
+      "verifiability": 3,
+      "chapters": [
+        {
+          "id": "ch07",
+          "confidence": "high"
+        },
+        {
+          "id": "ch04",
+          "confidence": "high"
+        }
+      ],
+      "summary": "面向快速应用重启动的压缩swap技术，关联内存优化和启动速度",
+      "directory": "论文",
+      "scored_at": "2026-04-10T03:22:02.731608"
+    },
+    {
+      "title": "Ariadne翻译：Hotness-aware Compressed Swap",
+      "path": "论文/Android-2026-03-08-Ariadne-Compressed-Swap/02-翻译.md",
+      "score": 14,
+      "quality": "medium",
+      "relevance": 5,
+      "depth": 3,
+      "timeliness": 4,
+      "verifiability": 2,
+      "chapters": [
+        {
+          "id": "ch07",
+          "confidence": "high"
+        },
+        {
+          "id": "ch04",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Ariadne压缩交换论文翻译",
+      "directory": "论文",
+      "scored_at": "2026-04-10T03:22:02.731609"
+    },
+    {
+      "title": "Fast On-device LLM Inference with NPUs 精读",
+      "path": "论文/Android-2026-03-08-Fast-On-device-LLM-Inference-with-NPUs/03-精读.md",
+      "score": 15,
+      "quality": "medium",
+      "relevance": 4,
+      "depth": 4,
+      "timeliness": 4,
+      "verifiability": 3,
+      "chapters": [
+        {
+          "id": "ch13",
+          "confidence": "high"
+        },
+        {
+          "id": "ch06",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "端侧LLM推理加速，NPU调度与功耗优化",
+      "directory": "论文",
+      "scored_at": "2026-04-10T03:22:02.731611"
+    },
+    {
+      "title": "Fast On-device LLM Inference with NPUs 翻译",
+      "path": "论文/Android-2026-03-08-Fast-On-device-LLM-Inference-with-NPUs/02-翻译.md",
+      "score": 12,
+      "quality": "medium",
+      "relevance": 4,
+      "depth": 3,
+      "timeliness": 4,
+      "verifiability": 1,
+      "chapters": [
+        {
+          "id": "ch13",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "端侧NPU推理论文翻译",
+      "directory": "论文",
+      "scored_at": "2026-04-10T03:22:02.731612"
+    },
+    {
+      "title": "Android性能问题对比研究精读(03-09)",
+      "path": "论文/Android-2026-03-09-性能问题对比研究/03-精读.md",
+      "score": 16,
+      "quality": "high",
+      "relevance": 5,
+      "depth": 5,
+      "timeliness": 4,
+      "verifiability": 2,
+      "chapters": [
+        {
+          "id": "ch11",
+          "confidence": "high"
+        },
+        {
+          "id": "ch05",
+          "confidence": "high"
+        }
+      ],
+      "summary": "真实应用与学术文献中Android性能问题的系统性对比研究",
+      "directory": "论文",
+      "scored_at": "2026-04-10T03:22:02.731613"
+    },
+    {
+      "title": "Android性能问题对比研究翻译(03-09)",
+      "path": "论文/Android-2026-03-09-性能问题对比研究/02-翻译.md",
+      "score": 12,
+      "quality": "medium",
+      "relevance": 5,
+      "depth": 3,
+      "timeliness": 3,
+      "verifiability": 1,
+      "chapters": [
+        {
+          "id": "ch11",
+          "confidence": "high"
+        }
+      ],
+      "summary": "性能问题对比研究论文翻译",
+      "directory": "论文",
+      "scored_at": "2026-04-10T03:22:02.731615"
+    },
+    {
+      "title": "Android性能问题对比研究精读(03-10)",
+      "path": "论文/Android-2026-03-10-Android性能问题对比研究/03-精读.md",
+      "score": 15,
+      "quality": "medium",
+      "relevance": 5,
+      "depth": 4,
+      "timeliness": 4,
+      "verifiability": 2,
+      "chapters": [
+        {
+          "id": "ch11",
+          "confidence": "high"
+        },
+        {
+          "id": "ch05",
+          "confidence": "high"
+        }
+      ],
+      "summary": "同一论文的二次精读笔记，补充细节",
+      "directory": "论文",
+      "scored_at": "2026-04-10T03:22:02.731616"
+    },
+    {
+      "title": "Android性能问题对比研究翻译(03-10)",
+      "path": "论文/Android-2026-03-10-Android性能问题对比研究/02-翻译.md",
+      "score": 11,
+      "quality": "medium",
+      "relevance": 5,
+      "depth": 3,
+      "timeliness": 3,
+      "verifiability": 0,
+      "chapters": [
+        {
+          "id": "ch11",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "性能问题对比研究翻译(二次)",
+      "directory": "论文",
+      "scored_at": "2026-04-10T03:22:02.731617"
+    },
+    {
+      "title": "Hardware Optimization AI Inference精读(03-11)",
+      "path": "论文/Android-2026-03-11-Hardware-Optimization-AI-Inference/03-精读.md",
+      "score": 14,
+      "quality": "medium",
+      "relevance": 4,
+      "depth": 4,
+      "timeliness": 4,
+      "verifiability": 2,
+      "chapters": [
+        {
+          "id": "ch13",
+          "confidence": "high"
+        },
+        {
+          "id": "ch06",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Android设备AI推理的硬件优化策略",
+      "directory": "论文",
+      "scored_at": "2026-04-10T03:22:02.731619"
+    },
+    {
+      "title": "Hardware Optimization AI Inference翻译(03-11)",
+      "path": "论文/Android-2026-03-11-Hardware-Optimization-AI-Inference/02-翻译.md",
+      "score": 11,
+      "quality": "medium",
+      "relevance": 4,
+      "depth": 3,
+      "timeliness": 3,
+      "verifiability": 1,
+      "chapters": [
+        {
+          "id": "ch13",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Android硬件AI优化论文翻译",
+      "directory": "论文",
+      "scored_at": "2026-04-10T03:22:02.731620"
+    },
+    {
+      "title": "RevPerf精读：从用户评论自动复现性能问题(03-12)",
+      "path": "论文/Android-2026-03-12-RevPerf自动复现性能问题/03-精读.md",
+      "score": 17,
+      "quality": "high",
+      "relevance": 5,
+      "depth": 5,
+      "timeliness": 4,
+      "verifiability": 3,
+      "chapters": [
+        {
+          "id": "ch11",
+          "confidence": "high"
+        },
+        {
+          "id": "ch14",
+          "confidence": "high"
+        }
+      ],
+      "summary": "从用户评论自动复现Android性能问题的工具，直接关联Profiling和工具链",
+      "directory": "论文",
+      "scored_at": "2026-04-10T03:22:02.731621"
+    },
+    {
+      "title": "RevPerf翻译：Automated Performance Issue Reproduction(03-12)",
+      "path": "论文/Android-2026-03-12-RevPerf自动复现性能问题/02-翻译.md",
+      "score": 13,
+      "quality": "medium",
+      "relevance": 5,
+      "depth": 3,
+      "timeliness": 3,
+      "verifiability": 2,
+      "chapters": [
+        {
+          "id": "ch11",
+          "confidence": "high"
+        }
+      ],
+      "summary": "RevPerf论文全文翻译",
+      "directory": "论文",
+      "scored_at": "2026-04-10T03:22:02.731623"
+    },
+    {
+      "title": "代码异味重构能耗精读",
+      "path": "论文/Android-2026-03-13-代码异味重构能耗/03-精读.md",
+      "score": 14,
+      "quality": "medium",
+      "relevance": 4,
+      "depth": 4,
+      "timeliness": 4,
+      "verifiability": 2,
+      "chapters": [
+        {
+          "id": "ch06",
+          "confidence": "high"
+        }
+      ],
+      "summary": "代码异味重构对Android应用能耗影响的实证评估",
+      "directory": "论文",
+      "scored_at": "2026-04-10T03:22:02.731624"
+    },
+    {
+      "title": "代码异味重构能耗翻译",
+      "path": "论文/Android-2026-03-13-代码异味重构能耗/02-翻译.md",
+      "score": 11,
+      "quality": "medium",
+      "relevance": 4,
+      "depth": 3,
+      "timeliness": 3,
+      "verifiability": 1,
+      "chapters": [
+        {
+          "id": "ch06",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "代码异味能耗论文翻译",
+      "directory": "论文",
+      "scored_at": "2026-04-10T03:22:02.731625"
+    },
+    {
+      "title": "AndroidLens精读：长延迟任务评估",
+      "path": "论文/Android-2026-03-15-AndroidLens长延迟任务评估/03-精读.md",
+      "score": 15,
+      "quality": "medium",
+      "relevance": 4,
+      "depth": 4,
+      "timeliness": 4,
+      "verifiability": 3,
+      "chapters": [
+        {
+          "id": "ch04",
+          "confidence": "high"
+        },
+        {
+          "id": "ch05",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Android GUI Agent长延迟任务嵌套子目标评估方法",
+      "directory": "论文",
+      "scored_at": "2026-04-10T03:22:02.731627"
+    },
+    {
+      "title": "AndroidLens翻译",
+      "path": "论文/Android-2026-03-15-AndroidLens长延迟任务评估/02-翻译.md",
+      "score": 11,
+      "quality": "medium",
+      "relevance": 4,
+      "depth": 3,
+      "timeliness": 3,
+      "verifiability": 1,
+      "chapters": [
+        {
+          "id": "ch04",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "AndroidLens论文翻译",
+      "directory": "论文",
+      "scored_at": "2026-04-10T03:22:02.731628"
+    },
+    {
+      "title": "性能问题分类法研究精读(03-24)",
+      "path": "论文/Android-2026-03-24-性能问题分类法研究/03-精读.md",
+      "score": 15,
+      "quality": "medium",
+      "relevance": 5,
+      "depth": 4,
+      "timeliness": 4,
+      "verifiability": 2,
+      "chapters": [
+        {
+          "id": "ch11",
+          "confidence": "high"
+        },
+        {
+          "id": "ch05",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Android性能问题的分类法研究",
+      "directory": "论文",
+      "scored_at": "2026-04-10T03:22:02.731629"
+    },
+    {
+      "title": "性能问题分类法研究翻译(03-24)",
+      "path": "论文/Android-2026-03-24-性能问题分类法研究/02-翻译.md",
+      "score": 11,
+      "quality": "medium",
+      "relevance": 5,
+      "depth": 3,
+      "timeliness": 3,
+      "verifiability": 1,
+      "chapters": [
+        {
+          "id": "ch11",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "性能问题分类法论文翻译",
+      "directory": "论文",
+      "scored_at": "2026-04-10T03:22:02.731630"
+    },
+    {
+      "title": "ARENA精读：Android应用能耗测量与分析工具",
+      "path": "论文/Android-2026-03-27-ARENA能耗测量工具/03-精读.md",
+      "score": 16,
+      "quality": "high",
+      "relevance": 5,
+      "depth": 5,
+      "timeliness": 4,
+      "verifiability": 2,
+      "chapters": [
+        {
+          "id": "ch06",
+          "confidence": "high"
+        },
+        {
+          "id": "ch14",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Android应用能耗测量与分析工具，直接关联功耗章节",
+      "directory": "论文",
+      "scored_at": "2026-04-10T03:22:47.407460"
+    },
+    {
+      "title": "ARENA翻译",
+      "path": "论文/Android-2026-03-27-ARENA能耗测量工具/02-翻译.md",
+      "score": 12,
+      "quality": "medium",
+      "relevance": 5,
+      "depth": 3,
+      "timeliness": 3,
+      "verifiability": 1,
+      "chapters": [
+        {
+          "id": "ch06",
+          "confidence": "high"
+        }
+      ],
+      "summary": "ARENA能耗工具论文翻译",
+      "directory": "论文",
+      "scored_at": "2026-04-10T03:22:47.407466"
+    },
+    {
+      "title": "Android硬件AI推理优化精读(03-31)",
+      "path": "论文/Android-2026-03-31-Android硬件AI推理优化/03-精读.md",
+      "score": 14,
+      "quality": "medium",
+      "relevance": 4,
+      "depth": 4,
+      "timeliness": 4,
+      "verifiability": 2,
+      "chapters": [
+        {
+          "id": "ch13",
+          "confidence": "high"
+        },
+        {
+          "id": "ch06",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Android设备AI推理的硬件优化(03-31精读)",
+      "directory": "论文",
+      "scored_at": "2026-04-10T03:22:47.407468"
+    },
+    {
+      "title": "Android硬件AI推理优化翻译(03-31)",
+      "path": "论文/Android-2026-03-31-Android硬件AI推理优化/02-翻译.md",
+      "score": 11,
+      "quality": "medium",
+      "relevance": 4,
+      "depth": 3,
+      "timeliness": 3,
+      "verifiability": 1,
+      "chapters": [
+        {
+          "id": "ch13",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "硬件AI推理优化翻译",
+      "directory": "论文",
+      "scored_at": "2026-04-10T03:22:47.407469"
+    },
+    {
+      "title": "Android硬件优化AI推理精读(04-01)",
+      "path": "论文/Android-2026-04-01-Android硬件优化AI推理/03-精读.md",
+      "score": 13,
+      "quality": "medium",
+      "relevance": 4,
+      "depth": 4,
+      "timeliness": 4,
+      "verifiability": 1,
+      "chapters": [
+        {
+          "id": "ch13",
+          "confidence": "high"
+        },
+        {
+          "id": "ch06",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "同一论文的另一次精读(04-01)",
+      "directory": "论文",
+      "scored_at": "2026-04-10T03:22:47.407471"
+    },
+    {
+      "title": "Android硬件优化AI推理翻译(04-01)",
+      "path": "论文/Android-2026-04-01-Android硬件优化AI推理/02-翻译.md",
+      "score": 10,
+      "quality": "medium",
+      "relevance": 4,
+      "depth": 3,
+      "timeliness": 3,
+      "verifiability": 0,
+      "chapters": [
+        {
+          "id": "ch13",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "硬件AI推理论文翻译(二次)",
+      "directory": "论文",
+      "scored_at": "2026-04-10T03:22:47.407475"
+    },
+    {
+      "title": "AppFlow精读：GB级应用冷启动内存调度",
+      "path": "论文/Android-2026-04-02-AppFlow冷启动内存调度/03-精读.md",
+      "score": 18,
+      "quality": "high",
+      "relevance": 5,
+      "depth": 5,
+      "timeliness": 5,
+      "verifiability": 3,
+      "chapters": [
+        {
+          "id": "ch04",
+          "confidence": "high"
+        },
+        {
+          "id": "ch07",
+          "confidence": "high"
+        }
+      ],
+      "summary": "GB级应用冷启动内存调度方案，直接关联启动优化和内存管理",
+      "directory": "论文",
+      "scored_at": "2026-04-10T03:22:47.407476"
+    },
+    {
+      "title": "AppFlow翻译：Memory Scheduling for Cold Launch",
+      "path": "论文/Android-2026-04-02-AppFlow冷启动内存调度/02-翻译.md",
+      "score": 14,
+      "quality": "medium",
+      "relevance": 5,
+      "depth": 3,
+      "timeliness": 4,
+      "verifiability": 2,
+      "chapters": [
+        {
+          "id": "ch04",
+          "confidence": "high"
+        },
+        {
+          "id": "ch07",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "AppFlow论文全文翻译",
+      "directory": "论文",
+      "scored_at": "2026-04-10T03:22:47.407477"
+    },
+    {
+      "title": "Android性能问题对比研究精读(04-02)",
+      "path": "论文/Android-2026-04-02-Android性能问题对比研究/03-精读.md",
+      "score": 14,
+      "quality": "medium",
+      "relevance": 5,
+      "depth": 4,
+      "timeliness": 4,
+      "verifiability": 1,
+      "chapters": [
+        {
+          "id": "ch11",
+          "confidence": "high"
+        },
+        {
+          "id": "ch05",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "同一论文的再次精读，补充ACM投稿版细节",
+      "directory": "论文",
+      "scored_at": "2026-04-10T03:22:47.407479"
+    },
+    {
+      "title": "Android性能问题对比研究翻译(04-02)",
+      "path": "论文/Android-2026-04-02-Android性能问题对比研究/02-翻译.md",
+      "score": 10,
+      "quality": "medium",
+      "relevance": 5,
+      "depth": 3,
+      "timeliness": 3,
+      "verifiability": 0,
+      "chapters": [
+        {
+          "id": "ch11",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "性能问题对比翻译(三次)",
+      "directory": "论文",
+      "scored_at": "2026-04-10T03:22:47.407480"
+    },
+    {
+      "title": "RevPerf精读：从反馈到失败(04-03)",
+      "path": "论文/Android-2026-04-03-RevPerf自动复现/03-精读.md",
+      "score": 16,
+      "quality": "high",
+      "relevance": 5,
+      "depth": 5,
+      "timeliness": 4,
+      "verifiability": 2,
+      "chapters": [
+        {
+          "id": "ch11",
+          "confidence": "high"
+        },
+        {
+          "id": "ch14",
+          "confidence": "high"
+        }
+      ],
+      "summary": "RevPerf再次精读，关注自动复现流程细节",
+      "directory": "论文",
+      "scored_at": "2026-04-10T03:22:47.407481"
+    },
+    {
+      "title": "RevPerf翻译(04-03)",
+      "path": "论文/Android-2026-04-03-RevPerf自动复现/02-翻译.md",
+      "score": 11,
+      "quality": "medium",
+      "relevance": 5,
+      "depth": 3,
+      "timeliness": 3,
+      "verifiability": 0,
+      "chapters": [
+        {
+          "id": "ch11",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "RevPerf翻译(二次)",
+      "directory": "论文",
+      "scored_at": "2026-04-10T03:22:47.407483"
+    },
+    {
+      "title": "Android-AI推理硬件优化精读(04-04)",
+      "path": "论文/Android-2026-04-04-Android-AI推理硬件优化/03-精读.md",
+      "score": 13,
+      "quality": "medium",
+      "relevance": 4,
+      "depth": 4,
+      "timeliness": 4,
+      "verifiability": 1,
+      "chapters": [
+        {
+          "id": "ch13",
+          "confidence": "high"
+        },
+        {
+          "id": "ch06",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Android AI推理硬件优化的再次精读",
+      "directory": "论文",
+      "scored_at": "2026-04-10T03:22:47.407484"
+    },
+    {
+      "title": "Android-AI推理硬件优化翻译(04-04)",
+      "path": "论文/Android-2026-04-04-Android-AI推理硬件优化/02-翻译.md",
+      "score": 10,
+      "quality": "medium",
+      "relevance": 4,
+      "depth": 3,
+      "timeliness": 3,
+      "verifiability": 0,
+      "chapters": [
+        {
+          "id": "ch13",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "AI推理硬件优化翻译(三次)",
+      "directory": "论文",
+      "scored_at": "2026-04-10T03:22:47.407485"
+    },
+    {
+      "title": "UI-Voyager精读：移动GUI Agent训练",
+      "path": "论文/Android-2026-04-07-UI-Voyager/03-精读.md",
+      "score": 13,
+      "quality": "medium",
+      "relevance": 3,
+      "depth": 4,
+      "timeliness": 4,
+      "verifiability": 2,
+      "chapters": [
+        {
+          "id": "ch05",
+          "confidence": "medium"
+        },
+        {
+          "id": "ch14",
+          "confidence": "low"
+        }
+      ],
+      "summary": "腾讯混元出品的Android GUI Agent多步骤任务训练方案",
+      "directory": "论文",
+      "scored_at": "2026-04-10T03:22:47.407487"
+    },
+    {
+      "title": "UI-Voyager翻译",
+      "path": "论文/Android-2026-04-07-UI-Voyager/02-翻译.md",
+      "score": 10,
+      "quality": "medium",
+      "relevance": 3,
+      "depth": 3,
+      "timeliness": 3,
+      "verifiability": 1,
+      "chapters": [
+        {
+          "id": "ch05",
+          "confidence": "low"
+        }
+      ],
+      "summary": "UI-Voyager论文翻译",
+      "directory": "论文",
+      "scored_at": "2026-04-10T03:22:47.407488"
+    },
+    {
+      "title": "Android性能问题对比研究精读(04-07)",
+      "path": "论文/Android-2026-04-07-Android性能问题对比研究/03-精读.md",
+      "score": 14,
+      "quality": "medium",
+      "relevance": 5,
+      "depth": 4,
+      "timeliness": 5,
+      "verifiability": 0,
+      "chapters": [
+        {
+          "id": "ch11",
+          "confidence": "high"
+        },
+        {
+          "id": "ch07",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "性能问题对比研究最新精读，关注内存维度",
+      "directory": "论文",
+      "scored_at": "2026-04-10T03:22:47.407489"
+    },
+    {
+      "title": "Android性能问题对比研究翻译(04-07)",
+      "path": "论文/Android-2026-04-07-Android性能问题对比研究/02-翻译.md",
+      "score": 10,
+      "quality": "medium",
+      "relevance": 5,
+      "depth": 3,
+      "timeliness": 4,
+      "verifiability": 0,
+      "chapters": [
+        {
+          "id": "ch11",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "性能问题对比研究翻译",
+      "directory": "论文",
+      "scored_at": "2026-04-10T03:22:47.407490"
+    },
+    {
+      "title": "PocketLLM精读：端侧个性化LLM微调",
+      "path": "论文/AI-2026-03-08-PocketLLM-Enabling-On-Device-Fine-Tuning/03-精读.md",
+      "score": 13,
+      "quality": "medium",
+      "relevance": 3,
+      "depth": 4,
+      "timeliness": 4,
+      "verifiability": 2,
+      "chapters": [
+        {
+          "id": "ch07",
+          "confidence": "medium"
+        },
+        {
+          "id": "ch06",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "端侧LLM微调的内存与功耗挑战",
+      "directory": "论文",
+      "scored_at": "2026-04-10T03:22:47.407492"
+    },
+    {
+      "title": "PocketLLM翻译",
+      "path": "论文/AI-2026-03-08-PocketLLM-Enabling-On-Device-Fine-Tuning/02-翻译.md",
+      "score": 10,
+      "quality": "medium",
+      "relevance": 3,
+      "depth": 3,
+      "timeliness": 3,
+      "verifiability": 1,
+      "chapters": [
+        {
+          "id": "ch07",
+          "confidence": "low"
+        }
+      ],
+      "summary": "PocketLLM论文翻译",
+      "directory": "论文",
+      "scored_at": "2026-04-10T03:22:47.407493"
+    },
+    {
+      "title": "性能问题对比研究精读(03-14)",
+      "path": "论文/Android-2026-03-14-性能问题对比研究/03-精读.md",
+      "score": 13,
+      "quality": "medium",
+      "relevance": 5,
+      "depth": 4,
+      "timeliness": 3,
+      "verifiability": 1,
+      "chapters": [
+        {
+          "id": "ch11",
+          "confidence": "high"
+        },
+        {
+          "id": "ch05",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "性能问题对比研究精读(03-14)",
+      "directory": "论文",
+      "scored_at": "2026-04-10T03:23:25.376418"
+    },
+    {
+      "title": "性能问题对比研究翻译(03-14)",
+      "path": "论文/Android-2026-03-14-性能问题对比研究/02-翻译.md",
+      "score": 10,
+      "quality": "medium",
+      "relevance": 5,
+      "depth": 3,
+      "timeliness": 3,
+      "verifiability": 0,
+      "chapters": [
+        {
+          "id": "ch11",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "性能问题对比研究翻译",
+      "directory": "论文",
+      "scored_at": "2026-04-10T03:23:25.376427"
+    },
+    {
+      "title": "RevPerf精读(03-17)",
+      "path": "论文/Android-2026-03-17-RevPerf性能问题复现/03-精读.md",
+      "score": 15,
+      "quality": "medium",
+      "relevance": 5,
+      "depth": 4,
+      "timeliness": 4,
+      "verifiability": 2,
+      "chapters": [
+        {
+          "id": "ch11",
+          "confidence": "high"
+        },
+        {
+          "id": "ch14",
+          "confidence": "high"
+        }
+      ],
+      "summary": "RevPerf自动化性能问题复现精读(03-17)",
+      "directory": "论文",
+      "scored_at": "2026-04-10T03:23:25.376429"
+    },
+    {
+      "title": "RevPerf翻译(03-17)",
+      "path": "论文/Android-2026-03-17-RevPerf性能问题复现/02-翻译.md",
+      "score": 10,
+      "quality": "medium",
+      "relevance": 5,
+      "depth": 3,
+      "timeliness": 3,
+      "verifiability": 0,
+      "chapters": [
+        {
+          "id": "ch11",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "RevPerf翻译(03-17)",
+      "directory": "论文",
+      "scored_at": "2026-04-10T03:23:25.376430"
+    },
+    {
+      "title": "RevPerf精读(03-19)",
+      "path": "论文/Android-2026-03-19-RevPerf性能问题复现/03-精读.md",
+      "score": 14,
+      "quality": "medium",
+      "relevance": 5,
+      "depth": 4,
+      "timeliness": 3,
+      "verifiability": 2,
+      "chapters": [
+        {
+          "id": "ch11",
+          "confidence": "high"
+        },
+        {
+          "id": "ch14",
+          "confidence": "high"
+        }
+      ],
+      "summary": "RevPerf精读(03-19)，关注Android特殊性",
+      "directory": "论文",
+      "scored_at": "2026-04-10T03:23:25.376431"
+    },
+    {
+      "title": "RevPerf翻译(03-19)",
+      "path": "论文/Android-2026-03-19-RevPerf性能问题复现/02-翻译.md",
+      "score": 10,
+      "quality": "medium",
+      "relevance": 5,
+      "depth": 3,
+      "timeliness": 3,
+      "verifiability": 0,
+      "chapters": [
+        {
+          "id": "ch11",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "RevPerf翻译(03-19)",
+      "directory": "论文",
+      "scored_at": "2026-04-10T03:23:25.376433"
+    },
+    {
+      "title": "Android性能问题自动复现精读(03-20)",
+      "path": "论文/Android-2026-03-20-android-performance-reproduction/03-精读.md",
+      "score": 14,
+      "quality": "medium",
+      "relevance": 5,
+      "depth": 4,
+      "timeliness": 3,
+      "verifiability": 2,
+      "chapters": [
+        {
+          "id": "ch11",
+          "confidence": "high"
+        },
+        {
+          "id": "ch14",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Android性能问题自动复现精读(03-20)",
+      "directory": "论文",
+      "scored_at": "2026-04-10T03:23:25.376434"
+    },
+    {
+      "title": "Android性能问题自动复现翻译(03-20)",
+      "path": "论文/Android-2026-03-20-android-performance-reproduction/02-翻译.md",
+      "score": 10,
+      "quality": "medium",
+      "relevance": 5,
+      "depth": 3,
+      "timeliness": 3,
+      "verifiability": 0,
+      "chapters": [
+        {
+          "id": "ch11",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "性能问题自动复现翻译",
+      "directory": "论文",
+      "scored_at": "2026-04-10T03:23:25.376435"
+    },
+    {
+      "title": "性能问题自动复现精读(03-21)",
+      "path": "论文/Android-2026-03-21-性能问题自动复现/03-精读.md",
+      "score": 14,
+      "quality": "medium",
+      "relevance": 5,
+      "depth": 4,
+      "timeliness": 3,
+      "verifiability": 2,
+      "chapters": [
+        {
+          "id": "ch11",
+          "confidence": "high"
+        },
+        {
+          "id": "ch05",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "From Feedback to Failure精读(03-21)",
+      "directory": "论文",
+      "scored_at": "2026-04-10T03:23:25.376437"
+    },
+    {
+      "title": "性能问题自动复现翻译(03-21)",
+      "path": "论文/Android-2026-03-21-性能问题自动复现/02-翻译.md",
+      "score": 10,
+      "quality": "medium",
+      "relevance": 5,
+      "depth": 3,
+      "timeliness": 3,
+      "verifiability": 0,
+      "chapters": [
+        {
+          "id": "ch11",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "性能问题自动复现翻译",
+      "directory": "论文",
+      "scored_at": "2026-04-10T03:23:25.376438"
+    },
+    {
+      "title": "Android性能问题对比研究精读(03-22)",
+      "path": "论文/Android-2026-03-22-Android性能问题对比研究/03-精读.md",
+      "score": 13,
+      "quality": "medium",
+      "relevance": 5,
+      "depth": 4,
+      "timeliness": 3,
+      "verifiability": 1,
+      "chapters": [
+        {
+          "id": "ch11",
+          "confidence": "high"
+        },
+        {
+          "id": "ch05",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "性能问题对比研究精读(03-22)",
+      "directory": "论文",
+      "scored_at": "2026-04-10T03:23:25.376439"
+    },
+    {
+      "title": "Android性能问题对比研究翻译(03-22)",
+      "path": "论文/Android-2026-03-22-Android性能问题对比研究/02-翻译.md",
+      "score": 10,
+      "quality": "medium",
+      "relevance": 5,
+      "depth": 3,
+      "timeliness": 3,
+      "verifiability": 0,
+      "chapters": [
+        {
+          "id": "ch11",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "性能问题对比研究翻译",
+      "directory": "论文",
+      "scored_at": "2026-04-10T03:23:25.376447"
+    },
+    {
+      "title": "性能问题对比研究精读(03-26)",
+      "path": "论文/Android-2026-03-26-性能问题对比研究/03-精读.md",
+      "score": 13,
+      "quality": "medium",
+      "relevance": 5,
+      "depth": 4,
+      "timeliness": 3,
+      "verifiability": 1,
+      "chapters": [
+        {
+          "id": "ch11",
+          "confidence": "high"
+        },
+        {
+          "id": "ch05",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "性能问题对比研究精读(03-26)",
+      "directory": "论文",
+      "scored_at": "2026-04-10T03:23:25.376448"
+    },
+    {
+      "title": "性能问题对比研究翻译(03-26)",
+      "path": "论文/Android-2026-03-26-性能问题对比研究/02-翻译.md",
+      "score": 10,
+      "quality": "medium",
+      "relevance": 5,
+      "depth": 3,
+      "timeliness": 3,
+      "verifiability": 0,
+      "chapters": [
+        {
+          "id": "ch11",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "性能问题对比研究翻译",
+      "directory": "论文",
+      "scored_at": "2026-04-10T03:23:25.376450"
+    },
+    {
+      "title": "Android性能问题对比研究精读(04-06)",
+      "path": "论文/Android-2026-04-06-Android性能问题对比研究/03-精读.md",
+      "score": 13,
+      "quality": "medium",
+      "relevance": 5,
+      "depth": 4,
+      "timeliness": 4,
+      "verifiability": 0,
+      "chapters": [
+        {
+          "id": "ch11",
+          "confidence": "high"
+        },
+        {
+          "id": "ch05",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "性能问题对比研究精读(04-06)",
+      "directory": "论文",
+      "scored_at": "2026-04-10T03:23:25.376451"
+    },
+    {
+      "title": "Android性能问题对比研究翻译(04-06)",
+      "path": "论文/Android-2026-04-06-Android性能问题对比研究/02-翻译.md",
+      "score": 10,
+      "quality": "medium",
+      "relevance": 5,
+      "depth": 3,
+      "timeliness": 4,
+      "verifiability": 0,
+      "chapters": [
+        {
+          "id": "ch11",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "性能问题对比研究翻译",
+      "directory": "论文",
+      "scored_at": "2026-04-10T03:23:25.376452"
+    },
+    {
+      "title": "Trace2Skill精读：从Trace提取Agent技能",
+      "path": "论文/AI-2026-04-07-Trace2Skill/03-精读.md",
+      "score": 12,
+      "quality": "medium",
+      "relevance": 3,
+      "depth": 4,
+      "timeliness": 4,
+      "verifiability": 2,
+      "chapters": [
+        {
+          "id": "ch11",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "阿里通义千问的Trace到Skill提取方案，与Profiling间接相关",
+      "directory": "论文",
+      "scored_at": "2026-04-10T03:23:25.376454"
+    },
+    {
+      "title": "Trace2Skill翻译",
+      "path": "论文/AI-2026-04-07-Trace2Skill/02-翻译.md",
+      "score": 9,
+      "quality": "medium",
+      "relevance": 2,
+      "depth": 3,
+      "timeliness": 3,
+      "verifiability": 1,
+      "chapters": [
+        {
+          "id": "ch11",
+          "confidence": "low"
+        }
+      ],
+      "summary": "Trace2Skill论文翻译",
+      "directory": "论文",
+      "scored_at": "2026-04-10T03:23:25.376455"
+    },
+    {
+      "title": "SWE-Bench Mobile精读：LLM Agent开发移动应用",
+      "path": "论文/AI-2026-04-01-SWEBenchMobile/03-精读.md",
+      "score": 11,
+      "quality": "medium",
+      "relevance": 3,
+      "depth": 4,
+      "timeliness": 4,
+      "verifiability": 0,
+      "chapters": [
+        {
+          "id": "ch14",
+          "confidence": "low"
+        }
+      ],
+      "summary": "LLM编码Agent能否胜任工业级移动应用开发的benchmark",
+      "directory": "论文",
+      "scored_at": "2026-04-10T03:24:59.740892"
+    },
+    {
+      "title": "SWE-Bench Mobile翻译",
+      "path": "论文/AI-2026-04-01-SWEBenchMobile/02-翻译.md",
+      "score": 9,
+      "quality": "medium",
+      "relevance": 3,
+      "depth": 3,
+      "timeliness": 3,
+      "verifiability": 0,
+      "chapters": [
+        {
+          "id": "ch14",
+          "confidence": "low"
+        }
+      ],
+      "summary": "SWE-Bench Mobile论文翻译",
+      "directory": "论文",
+      "scored_at": "2026-04-10T03:24:59.740903"
+    },
+    {
+      "title": "OSDI串行性能优化原则与方法论精读",
+      "path": "论文/OSDI-2026-01-10-串行性能优化原则与方法论/03-精读.md",
+      "score": 14,
+      "quality": "medium",
+      "relevance": 4,
+      "depth": 5,
+      "timeliness": 4,
+      "verifiability": 3,
+      "chapters": [
+        {
+          "id": "ch13",
+          "confidence": "high"
+        },
+        {
+          "id": "ch11",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "OSDI25串行性能优化方法论，通用性能优化原则可映射到Android",
+      "directory": "论文",
+      "scored_at": "2026-04-10T03:24:59.740905"
+    },
+    {
+      "title": "Android ANR案例分享",
+      "path": "调研/OKB编译/2026-04-07-Android-ANR案例分享.md",
+      "score": 16,
+      "quality": "high",
+      "relevance": 5,
+      "depth": 5,
+      "timeliness": 4,
+      "verifiability": 2,
+      "chapters": [
+        {
+          "id": "ch02",
+          "confidence": "high"
+        },
+        {
+          "id": "ch03",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Android ANR案例分享，直接关联进程/线程章节",
+      "directory": "调研",
+      "scored_at": "2026-04-10T03:29:01.121478"
+    },
+    {
+      "title": "Android ANR系列3-ANR案例分享",
+      "path": "调研/OKB编译/2026-04-07-Android-ANR系列3-ANR案例分享.md",
+      "score": 15,
+      "quality": "medium",
+      "relevance": 5,
+      "depth": 4,
+      "timeliness": 4,
+      "verifiability": 2,
+      "chapters": [
+        {
+          "id": "ch02",
+          "confidence": "high"
+        },
+        {
+          "id": "ch03",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "ANR系列第三篇，案例分享",
+      "directory": "调研",
+      "scored_at": "2026-04-10T03:29:01.121485"
+    },
+    {
+      "title": "SurfaceFlinger图层合成过程分析(上)",
+      "path": "调研/OKB编译/2026-04-07-SurfaceFlinger图层合成过程分析上-PK.md",
+      "score": 17,
+      "quality": "high",
+      "relevance": 5,
+      "depth": 5,
+      "timeliness": 4,
+      "verifiability": 3,
+      "chapters": [
+        {
+          "id": "ch05",
+          "confidence": "high"
+        }
+      ],
+      "summary": "SurfaceFlinger图层合成过程上半部分分析",
+      "directory": "调研",
+      "scored_at": "2026-04-10T03:29:01.121487"
+    },
+    {
+      "title": "SurfaceFlinger图层合成过程分析(下)",
+      "path": "调研/OKB编译/2026-04-07-SurfaceFlinger图层合成过程分析下-PK.md",
+      "score": 17,
+      "quality": "high",
+      "relevance": 5,
+      "depth": 5,
+      "timeliness": 4,
+      "verifiability": 3,
+      "chapters": [
+        {
+          "id": "ch05",
+          "confidence": "high"
+        }
+      ],
+      "summary": "SurfaceFlinger图层合成过程下半部分分析",
+      "directory": "调研",
+      "scored_at": "2026-04-10T03:29:01.121488"
+    },
+    {
+      "title": "Systrace CPU Info解读",
+      "path": "调研/OKB编译/2026-04-07-Systrace-CPU-Info解读.md",
+      "score": 16,
+      "quality": "high",
+      "relevance": 5,
+      "depth": 5,
+      "timeliness": 4,
+      "verifiability": 3,
+      "chapters": [
+        {
+          "id": "ch11",
+          "confidence": "high"
+        },
+        {
+          "id": "ch13",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Systrace CPU Info面板详细解读，Profiling和调度章节核心素材",
+      "directory": "调研",
+      "scored_at": "2026-04-10T03:29:01.121490"
+    },
+    {
+      "title": "Systrace响应速度实战3-延伸知识",
+      "path": "调研/OKB编译/2026-04-07-Systrace响应速度实战3-延伸知识.md",
+      "score": 15,
+      "quality": "medium",
+      "relevance": 5,
+      "depth": 4,
+      "timeliness": 4,
+      "verifiability": 3,
+      "chapters": [
+        {
+          "id": "ch11",
+          "confidence": "high"
+        },
+        {
+          "id": "ch04",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Systrace响应速度实战延伸知识",
+      "directory": "调研",
+      "scored_at": "2026-04-10T03:29:01.121491"
+    },
+    {
+      "title": "Android14 VSync机制深入解读",
+      "path": "调研/OKB编译/2026-04-08-Android14-VSync机制深入解读.md",
+      "score": 18,
+      "quality": "high",
+      "relevance": 5,
+      "depth": 5,
+      "timeliness": 5,
+      "verifiability": 3,
+      "chapters": [
+        {
+          "id": "ch05",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Android 14 VSync机制深入解读，渲染章节核心素材",
+      "directory": "调研",
+      "scored_at": "2026-04-10T03:29:01.121493"
+    },
+    {
+      "title": "系统级性能分析与调优Systrace-Perfetto",
+      "path": "调研/OKB编译/2026-04-08-系统级性能分析与调优Systrace-Perfetto.md",
+      "score": 17,
+      "quality": "high",
+      "relevance": 5,
+      "depth": 5,
+      "timeliness": 4,
+      "verifiability": 3,
+      "chapters": [
+        {
+          "id": "ch11",
+          "confidence": "high"
+        },
+        {
+          "id": "ch05",
+          "confidence": "high"
+        }
+      ],
+      "summary": "系统级Systrace/Perfetto性能分析调优方法论",
+      "directory": "调研",
+      "scored_at": "2026-04-10T03:29:01.121494"
+    },
+    {
+      "title": "Android Perfetto开发者指南",
+      "path": "知识库/专题收藏/Claude-Agent-SDK_多智能体_Android性能/03-Android-AOSP-性能可观测性/24-perfetto-on-android-developers.md",
+      "score": 16,
+      "quality": "high",
+      "relevance": 5,
+      "depth": 5,
+      "timeliness": 4,
+      "verifiability": 4,
+      "chapters": [
+        {
+          "id": "ch11",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Android官方Perfetto开发者指南",
+      "directory": "知识库",
+      "scored_at": "2026-04-10T03:29:01.121495"
+    },
+    {
+      "title": "Android AOSP性能可观测性INDEX",
+      "path": "知识库/专题收藏/Claude-Agent-SDK_多智能体_Android性能/03-Android-AOSP-性能可观测性/INDEX.md",
+      "score": 14,
+      "quality": "medium",
+      "relevance": 5,
+      "depth": 3,
+      "timeliness": 4,
+      "verifiability": 4,
+      "chapters": [
+        {
+          "id": "ch11",
+          "confidence": "high"
+        }
+      ],
+      "summary": "AOSP性能可观测性系列索引页",
+      "directory": "知识库",
+      "scored_at": "2026-04-10T03:29:01.121497"
+    },
+    {
+      "title": "System Tracing Overview原文",
+      "path": "知识库/专题收藏/Claude-Agent-SDK_多智能体_Android性能/03-Android-AOSP-性能可观测性/原文/25-system-tracing-overview-readable.md",
+      "score": 15,
+      "quality": "medium",
+      "relevance": 5,
+      "depth": 4,
+      "timeliness": 4,
+      "verifiability": 5,
+      "chapters": [
+        {
+          "id": "ch11",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Android官方System Tracing概览原文",
+      "directory": "知识库",
+      "scored_at": "2026-04-10T03:29:01.121499"
+    },
+    {
+      "title": "Perfetto System Tracing Guide原文",
+      "path": "知识库/专题收藏/Claude-Agent-SDK_多智能体_Android性能/03-Android-AOSP-性能可观测性/原文/26-perfetto-system-tracing-guide-readable.md",
+      "score": 15,
+      "quality": "medium",
+      "relevance": 5,
+      "depth": 4,
+      "timeliness": 4,
+      "verifiability": 5,
+      "chapters": [
+        {
+          "id": "ch11",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Perfetto系统追踪指南原文",
+      "directory": "知识库",
+      "scored_at": "2026-04-10T03:29:01.121500"
+    },
+    {
+      "title": "AOSP StatsD Module原文",
+      "path": "知识库/专题收藏/Claude-Agent-SDK_多智能体_Android性能/03-Android-AOSP-性能可观测性/原文/27-aosp-statsd-module-readable.md",
+      "score": 13,
+      "quality": "medium",
+      "relevance": 4,
+      "depth": 4,
+      "timeliness": 4,
+      "verifiability": 5,
+      "chapters": [
+        {
+          "id": "ch11",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "AOSP StatsD模块文档",
+      "directory": "知识库",
+      "scored_at": "2026-04-10T03:29:01.121502"
+    },
+    {
+      "title": "AOSP Thermal Mitigation原文",
+      "path": "知识库/专题收藏/Claude-Agent-SDK_多智能体_Android性能/03-Android-AOSP-性能可观测性/原文/28-aosp-thermal-mitigation-readable.md",
+      "score": 14,
+      "quality": "medium",
+      "relevance": 4,
+      "depth": 4,
+      "timeliness": 4,
+      "verifiability": 5,
+      "chapters": [
+        {
+          "id": "ch06",
+          "confidence": "high"
+        },
+        {
+          "id": "ch13",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "AOSP热管理降频文档",
+      "directory": "知识库",
+      "scored_at": "2026-04-10T03:29:01.121503"
+    },
+    {
+      "title": "AOSP SimplePerf Docs原文",
+      "path": "知识库/专题收藏/Claude-Agent-SDK_多智能体_Android性能/03-Android-AOSP-性能可观测性/原文/29-aosp-simpleperf-docs-readable.md",
+      "score": 14,
+      "quality": "medium",
+      "relevance": 5,
+      "depth": 4,
+      "timeliness": 4,
+      "verifiability": 5,
+      "chapters": [
+        {
+          "id": "ch11",
+          "confidence": "high"
+        }
+      ],
+      "summary": "AOSP SimplePerf性能分析工具文档",
+      "directory": "知识库",
+      "scored_at": "2026-04-10T03:29:01.121504"
+    },
+    {
+      "title": "AOSP Evaluate Performance原文",
+      "path": "知识库/专题收藏/Claude-Agent-SDK_多智能体_Android性能/03-Android-AOSP-性能可观测性/原文/30-aosp-evaluate-performance-readable.md",
+      "score": 15,
+      "quality": "medium",
+      "relevance": 5,
+      "depth": 4,
+      "timeliness": 4,
+      "verifiability": 5,
+      "chapters": [
+        {
+          "id": "ch11",
+          "confidence": "high"
+        },
+        {
+          "id": "ch14",
+          "confidence": "high"
+        }
+      ],
+      "summary": "AOSP性能评估指南原文",
+      "directory": "知识库",
+      "scored_at": "2026-04-10T03:29:01.121506"
+    },
+    {
+      "title": "Claude-Agent-SDK多智能体Android性能INDEX",
+      "path": "知识库/专题收藏/Claude-Agent-SDK_多智能体_Android性能/INDEX.md",
+      "score": 12,
+      "quality": "medium",
+      "relevance": 5,
+      "depth": 3,
+      "timeliness": 4,
+      "verifiability": 3,
+      "chapters": [
+        {
+          "id": "ch11",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "多智能体Android性能分析系列索引",
+      "directory": "知识库",
+      "scored_at": "2026-04-10T03:29:01.121509"
+    },
+    {
+      "title": "Android15适配之targetSdkVersion升到35后全是坑",
+      "path": "source/juejin-android/2026-04-06-75842953-Android15适配之世上本无坑，ta.md",
+      "score": 12,
+      "quality": "medium",
+      "relevance": 4,
+      "depth": 3,
+      "timeliness": 5,
+      "verifiability": 0,
+      "chapters": [
+        {
+          "id": "ch17",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Android 15适配踩坑总结",
+      "directory": "source",
+      "scored_at": "2026-04-10T03:29:44.647250"
+    },
+    {
+      "title": "聊聊2026年Android开发会是什么样",
+      "path": "source/juejin-android/2026-04-06-75899034-聊聊2026年Android开发会是什么.md",
+      "score": 10,
+      "quality": "medium",
+      "relevance": 3,
+      "depth": 3,
+      "timeliness": 5,
+      "verifiability": 0,
+      "chapters": [
+        {
+          "id": "ch17",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "2026年Android开发趋势展望",
+      "directory": "source",
+      "scored_at": "2026-04-10T03:29:44.647257"
+    },
+    {
+      "title": "什么AI写Android最好用？官方基准测试排名",
+      "path": "source/juejin-android/2026-04-09-7614897667961143347-什么_AI_写_Android_最好用官.md",
+      "score": 11,
+      "quality": "medium",
+      "relevance": 3,
+      "depth": 3,
+      "timeliness": 5,
+      "verifiability": 0,
+      "chapters": [
+        {
+          "id": "ch14",
+          "confidence": "low"
+        }
+      ],
+      "summary": "Google官方AI写Android代码基准测试",
+      "directory": "source",
+      "scored_at": "2026-04-10T03:29:44.647259"
+    },
+    {
+      "title": "Android adb shell dumpsys meminfo 全面解析指南",
+      "path": "Manus/Android  全面解析指南.md",
+      "score": 15,
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch07-内存",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch14-工具",
+          "confidence": "high"
+        }
+      ],
+      "summary": "dumpsys meminfo命令全面解析，涵盖内存分析指标与方法论",
+      "scored_at": "2026-04-10T03:53:07.137596"
+    },
+    {
+      "title": "Android 16 MessageQueue 优化调研报告",
+      "path": "Manus/Android 16 MessageQueue 优化调研报告.md",
+      "score": 17,
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch03-线程",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch04-启动",
+          "confidence": "medium"
+        },
+        {
+          "chapter": "ch17-新版本",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Android 16 MessageQueue重构，lock-free数据结构解决优先级翻转，DeliQueue无锁优化",
+      "scored_at": "2026-04-10T03:53:07.137607"
+    },
+    {
+      "title": "Android ARM 平台 Running 耗时分析方法论与工具链报告",
+      "path": "Manus/Android ARM 平台 Running 耗时分析方法论与工具链报告.md",
+      "score": 14,
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch13-调度",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch11-Profiling",
+          "confidence": "high"
+        }
+      ],
+      "summary": "ARM平台Running耗时分析方法论，CPU执行时间分析与工具链",
+      "scored_at": "2026-04-10T03:53:07.137609"
+    },
+    {
+      "title": "Android App 帧渲染流程深度解析：从 Vsync 到屏幕",
+      "path": "Manus/Android App 帧渲染流程深度解析：从 Vsync 到屏幕.md",
+      "score": 16,
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Vsync到屏幕的完整渲染流程解析，包含Choreographer和SurfaceFlinger",
+      "scored_at": "2026-04-10T03:53:07.137611"
+    },
+    {
+      "title": "Android Framework 面试题解答",
+      "path": "Manus/Android Framework 面试题解答.md",
+      "score": 12,
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch01-架构",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Framework面试题汇总，含socketpair、Binder等基础知识",
+      "scored_at": "2026-04-10T03:53:07.137612"
+    },
+    {
+      "title": "Android 应用性能优化：Vsync 与 Buffer 深度研究报告",
+      "path": "Manus/Android 应用性能优化：Vsync 与 Buffer 深度研究报告.md",
+      "score": 16,
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Vsync信号机制与图形缓冲区管理深度研究，BufferQueue流转分析",
+      "scored_at": "2026-04-10T03:53:07.137613"
+    },
+    {
+      "title": "Android 性能优化知识体系大纲",
+      "path": "Manus/Android 性能优化知识体系大纲.md",
+      "score": 11,
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch14-工具",
+          "confidence": "low"
+        }
+      ],
+      "summary": "性能优化知识体系总览，涵盖指标体系与优化方法论",
+      "scored_at": "2026-04-10T03:53:07.137615"
+    },
+    {
+      "title": "Android Native 内存泄漏深度调研报告",
+      "path": "Manus/android_native_memory_leak_report.md",
+      "score": 15,
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch07-内存",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Native内存泄漏原理、检测分析方法与实际案例",
+      "scored_at": "2026-04-10T03:53:07.137616"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Cubox/技术教科书：顶级开发团队设计的Harness工程项目源码什么样-2026-04-09.md",
+      "title": "技术教科书：顶级开发团队设计的Harness工程项目源码什么样",
+      "scores": {
+        "relevance": 3,
+        "depth": 5,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "total_score": 14,
+      "quality": "medium",
+      "indexed_at": "2026-04-10T13:00:00.000000",
+      "first_chars": "---\nid: \"7441853086710104522\"\ncubox_url: https://cubox.pro/web/card/7441853086710104522\nurl: https:/"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/Agent实践探索/2026-04-09-Agent实践探索.md",
+      "title": "2026-04-09-Agent实践探索",
+      "scores": {
+        "relevance": 4,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 4
+      },
+      "total_score": 14,
+      "quality": "medium",
+      "indexed_at": "2026-04-10T13:00:00.000000",
+      "first_chars": "# 每日 Agent 实践 · 2026-04-09\n\n## 今日主题\nAgent 自我改进机制：Reflexion、Self-Refine 与 LATS 的架构对比与实践路径\n\n---\n\n## 核心"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/每日论文精读（AI）/2026-04-09-每日论文精读（AI）.md",
+      "title": "2026-04-09-每日论文精读（AI）",
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 5,
+        "verifiability": 3
+      },
+      "total_score": 15,
+      "quality": "high",
+      "indexed_at": "2026-04-10T13:00:00.000000",
+      "first_chars": "AI 论文导读 · 2026-04-09\n\n**标题：** Claude Code 智能体配置生态研究：328 个真实项目的经验揭示\n**链接：** https://arxiv.org/abs/251"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/知识加工/2026-04-09-05-深度技术Review.md",
+      "title": "2026-04-09-05-深度技术Review",
+      "scores": {
+        "relevance": 4,
+        "depth": 4,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "total_score": 14,
+      "quality": "medium",
+      "indexed_at": "2026-04-10T13:00:00.000000",
+      "first_chars": "# 深度技术Review · 2026-04-09 05:33\n\n**章节**：2.9 渲染机制的版本演进（ready-to-publish）\n**文件**：`src/part1-fundamenta"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/知识加工/2026-04-09-05-知识加工(新).md",
+      "title": "2026-04-09-05-知识加工(新)",
+      "scores": {
+        "relevance": 4,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "total_score": 11,
+      "quality": "low",
+      "indexed_at": "2026-04-10T13:00:00.000000",
+      "first_chars": "# 知识加工报告 — 2026-04-09 05:02\n\n## 📝 新章节加工\n\n**加工内容**：7.13 SystemUI 性能分析\n**素材来源**：AOSP 源码（SystemUI/Launc"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/知识加工/2026-04-09-05-知识加工(精修).md",
+      "title": "2026-04-09-05-知识加工(精修)",
+      "scores": {
+        "relevance": 4,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "total_score": 11,
+      "quality": "low",
+      "indexed_at": "2026-04-10T13:00:00.000000",
+      "first_chars": "# 出版级精修 | 2026-04-09 05:43\n\n精修章节：10.6 内存抖动与频繁 GC（第 1 轮精修）\n\n## 精修内容\n\n- **叙述流畅度**：0处（整体流畅，无明显拼接感）\n- **"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/知识加工/2026-04-09-06-深度技术Review.md",
+      "title": "2026-04-09-06-深度技术Review",
+      "scores": {
+        "relevance": 4,
+        "depth": 4,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "total_score": 14,
+      "quality": "medium",
+      "indexed_at": "2026-04-10T13:00:00.000000",
+      "first_chars": "# 深度技术Review · 2026-04-09 06:45\n\n## 任务概述\n- **任务**：Task 9 深度技术Review\n- **Review 章节**：1.5 线程模型\n- **文件*"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/知识加工/2026-04-09-06H-50M-知识加工(精修).md",
+      "title": "2026-04-09-06H-50M-知识加工(精修)",
+      "scores": {
+        "relevance": 4,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "total_score": 11,
+      "quality": "low",
+      "indexed_at": "2026-04-10T13:00:00.000000",
+      "first_chars": "# 出版级精修 | 2026-04-09 06:50\n\n精修章节：5.10 JobScheduler/WorkManager 调度与后台任务性能（第 1 轮精修）\n文件路径：src/part1-fun"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/知识加工/2026-04-09-07-深度技术Review.md",
+      "title": "2026-04-09-07-深度技术Review",
+      "scores": {
+        "relevance": 4,
+        "depth": 4,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "total_score": 14,
+      "quality": "medium",
+      "indexed_at": "2026-04-10T13:00:00.000000",
+      "first_chars": "# 深度技术Review · 2026-04-09 07:39\n\n## Review 目标\n- **章节**：1.1 Android 分层架构\n- **文件**：src/part1-fundament"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/知识加工/2026-04-09-07-知识加工(新).md",
+      "title": "2026-04-09-07-知识加工(新)",
+      "scores": {
+        "relevance": 4,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "total_score": 11,
+      "quality": "low",
+      "indexed_at": "2026-04-10T13:00:00.000000",
+      "first_chars": "# 知识加工（2A 新章节） · 2026-04-09 07:03\n\n## 运行状态：撞车跳过 + 维护清理\n\n**触发时间**：07:03（07:xx 撞车时段）\n**搜索工具状态**：不可用（与 "
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/知识加工/2026-04-09-07-知识加工(精修).md",
+      "title": "2026-04-09-07-知识加工(精修)",
+      "scores": {
+        "relevance": 4,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "total_score": 11,
+      "quality": "low",
+      "indexed_at": "2026-04-10T13:00:00.000000",
+      "first_chars": "# 知识加工 · 精修日志\n\n**日期**：2026-04-09 07:40\n**任务**：Task 2B 精修模式（无回炉任务）\n**章节**：1.9 Package Manager Service"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/知识加工/2026-04-09-08-深度技术Review.md",
+      "title": "2026-04-09-08-深度技术Review",
+      "scores": {
+        "relevance": 4,
+        "depth": 4,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "total_score": 14,
+      "quality": "medium",
+      "indexed_at": "2026-04-10T13:00:00.000000",
+      "first_chars": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/知识加工/2026"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/知识加工/2026-04-09-08-知识加工(新).md",
+      "title": "2026-04-09-08-知识加工(新)",
+      "scores": {
+        "relevance": 4,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "total_score": 11,
+      "quality": "low",
+      "indexed_at": "2026-04-10T13:00:00.000000",
+      "first_chars": "# 知识加工（新章节）· 2026-04-09 08:04\n\n## 任务状态：Phase 1 挖掘模式 — 无新合格缺口\n\n### Phase 0：空 draft 检查\n- 扫描 src/ 全部 dr"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/知识加工/2026-04-09-08-知识加工(精修).md",
+      "title": "2026-04-09-08-知识加工(精修)",
+      "scores": {
+        "relevance": 4,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "total_score": 11,
+      "quality": "low",
+      "indexed_at": "2026-04-10T13:00:00.000000",
+      "first_chars": "# 出版级精修日志 | 2026-04-09 08:44\n\n## 精修章节\n- **章节**：7.5 优化策略（src/part2-performance/ch07-smoothness/05-opt"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/知识加工/2026-04-09-09-44-知识加工(回炉).md",
+      "title": "2026-04-09-09-44-知识加工(回炉)",
+      "scores": {
+        "relevance": 4,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "total_score": 11,
+      "quality": "low",
+      "indexed_at": "2026-04-10T13:00:00.000000",
+      "first_chars": "# 知识加工 · 回炉修复报告\n**时间**: 2026-04-09 09-44:00\n**状态**: 空转（无可处理任务）\n\n## 队列分析\n\n| 类型 | 数量 | 状态 |\n|------|--"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/知识加工/2026-04-09-09-深度技术Review.md",
+      "title": "2026-04-09-09-深度技术Review",
+      "scores": {
+        "relevance": 4,
+        "depth": 4,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "total_score": 14,
+      "quality": "medium",
+      "indexed_at": "2026-04-10T13:00:00.000000",
+      "first_chars": "# 深度技术Review · 2026-04-09T09:34:48\n\n## 基本信息\n- **章节**：2.5 MainThread 与 RenderThread 协作\n- **状态**：ready"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/知识加工/2026-04-09-09-知识加工(新).md",
+      "title": "2026-04-09-09-知识加工(新)",
+      "scores": {
+        "relevance": 4,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "total_score": 11,
+      "quality": "low",
+      "indexed_at": "2026-04-10T13:00:00.000000",
+      "first_chars": "# 知识加工（新章节）· 2026-04-09 09:02\n\n## 结果：无新合格缺口\n\n### Phase 0：空 draft 检查\n扫描 src/ 全部章节，发现 7 个 draft 状态章节均有"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/知识加工/2026-04-09-12-深度技术Review.md",
+      "title": "2026-04-09-12-深度技术Review",
+      "scores": {
+        "relevance": 4,
+        "depth": 4,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "total_score": 14,
+      "quality": "medium",
+      "indexed_at": "2026-04-10T13:00:00.000000",
+      "first_chars": "# 深度技术 Review · 2026-04-09 12:49\n\n## Review 信息\n- **章节**：1.2 系统启动全流程\n- **文件**：src/part1-fundamentals/"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/知识加工/2026-04-09-12-知识加工(回炉).md",
+      "title": "2026-04-09-12-知识加工(回炉)",
+      "scores": {
+        "relevance": 4,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "total_score": 11,
+      "quality": "low",
+      "indexed_at": "2026-04-10T13:00:00.000000",
+      "first_chars": "# 知识加工（回炉修复）— 2026-04-09 12:50\n\n## 任务来源\nTask 2B 回炉修复 cron（14:50 触发）\n\n## 处理结果\n\n### ✅ 1.13 MessageQueu"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/知识加工/2026-04-09-12-知识加工(新).md",
+      "title": "2026-04-09-12-知识加工(新)",
+      "scores": {
+        "relevance": 4,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "total_score": 11,
+      "quality": "low",
+      "indexed_at": "2026-04-10T13:00:00.000000",
+      "first_chars": "# 知识加工（新章节）· 2026-04-09 12:09\n\n## 任务类型\nPhase 1：知识缺口挖掘（无空 draft 章节）\n\n## 缺口来源\n官方文档 + AOSP 结构 + 研究素材 + "
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/知识加工/2026-04-09-13-知识加工(回炉).md",
+      "title": "2026-04-09-13-知识加工(回炉)",
+      "scores": {
+        "relevance": 4,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "total_score": 11,
+      "quality": "low",
+      "indexed_at": "2026-04-10T13:00:00.000000",
+      "first_chars": "# 知识加工回炉修复报告\n\n> 日期：2026-04-09 13:40（Task 2B 回炉修复）\n> 执行者：task2b-rework（OpenClaw）\n\n---\n\n## 执行概况\n\n本次处理 "
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/知识加工/2026-04-09-15-知识加工(回炉).md",
+      "title": "2026-04-09-15-知识加工(回炉)",
+      "scores": {
+        "relevance": 4,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "total_score": 11,
+      "quality": "low",
+      "indexed_at": "2026-04-10T13:00:00.000000",
+      "first_chars": "---\ntags:\n  - openclaw-task\n  - 知识加工\n  - 回炉修复\n---\n\n# 知识加工 · 回炉修复日志\n**日期**: 2026-04-09 15:40\n**任务**: "
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/知识加工/2026-04-09-17H-知识加工(精修).md",
+      "title": "2026-04-09-17H-知识加工(精修)",
+      "scores": {
+        "relevance": 4,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "total_score": 11,
+      "quality": "low",
+      "indexed_at": "2026-04-10T13:00:00.000000",
+      "first_chars": "# 出版级精修 | 2026-04-09 17:52\n\n## 精修章节\n- **2.1 Android 渲染架构全景**（第 2 轮精修）\n- 文件：src/part1-fundamentals/ch"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/知识加工/2026-04-09-18-深度技术Review.md",
+      "title": "2026-04-09-18-深度技术Review",
+      "scores": {
+        "relevance": 4,
+        "depth": 4,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "total_score": 14,
+      "quality": "medium",
+      "indexed_at": "2026-04-10T13:00:00.000000",
+      "first_chars": "# 深度技术Review · 2026-04-09 18:30\n\n## 目标章节\n- **章节**：1.7 ART 编译管线与 dex2oat 优化\n- **文件**：src/part1-fundam"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/知识加工/2026-04-09-18-知识加工(回炉).md",
+      "title": "2026-04-09-18-知识加工(回炉)",
+      "scores": {
+        "relevance": 4,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "total_score": 11,
+      "quality": "low",
+      "indexed_at": "2026-04-10T13:00:00.000000",
+      "first_chars": "# 知识加工（回炉修复）· 2026-04-09 18:40\n\n## 处理结果\n\n### P95 · 1.7 ART 编译管线与 dex2oat 优化\n- **来源**：Task 9 Deep Tec"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/知识加工/2026-04-09-19-深度技术Review.md",
+      "title": "2026-04-09-19-深度技术Review",
+      "scores": {
+        "relevance": 4,
+        "depth": 4,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "total_score": 14,
+      "quality": "medium",
+      "indexed_at": "2026-04-10T13:00:00.000000",
+      "first_chars": "# 深度技术Review · 2026-04-09 19:40\n\n## Review 目标\n- 章节：4.6 内存相关的版本演进\n- 文件：src/part1-fundamentals/ch04-me"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/知识加工/2026-04-09-19-知识加工(回炉).md",
+      "title": "2026-04-09-19-知识加工(回炉)",
+      "scores": {
+        "relevance": 4,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "total_score": 11,
+      "quality": "low",
+      "indexed_at": "2026-04-10T13:00:00.000000",
+      "first_chars": "# 知识加工（回炉修复）\n\n**日期**: 2026-04-09 19:52\n**任务**: Task 2B 回炉修复\n\n## 修复内容\n\n### 4.6 内存相关的版本演进 — Task 9 Dee"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/知识加工/2026-04-09-19-知识加工(新).md",
+      "title": "2026-04-09-19-知识加工(新)",
+      "scores": {
+        "relevance": 4,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "total_score": 11,
+      "quality": "low",
+      "indexed_at": "2026-04-10T13:00:00.000000",
+      "first_chars": "📝 新章节加工 | 2026-04-09 19-19\n\n加工内容：13.10 Perfetto SQL 性能分析实战手册\n素材来源：\n  - perfetto.dev/docs/analysis/tr"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/知识加工/2026-04-09-23-深度技术Review.md",
+      "title": "2026-04-09-23-深度技术Review",
+      "scores": {
+        "relevance": 4,
+        "depth": 4,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "total_score": 14,
+      "quality": "medium",
+      "indexed_at": "2026-04-10T13:00:00.000000",
+      "first_chars": "# 深度技术Review · 2026-04-09 23:27\n\n## Review 目标\n- **章节**：2.11 Flutter 渲染管线与性能\n- **文件**：src/part1-funda"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/知识加工/2026-04-10-00-知识加工(回炉).md",
+      "title": "2026-04-10-00-知识加工(回炉)",
+      "scores": {
+        "relevance": 4,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "total_score": 11,
+      "quality": "low",
+      "indexed_at": "2026-04-10T13:00:00.000000",
+      "first_chars": "# 知识加工 · 回炉修复报告\n**时间**: 2026-04-10 00:46 (Asia/Shanghai)\n\n---\n\n## 修复 1：§1.6 Android 版本演进中的架构变化（P90, "
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/知识加工/2026-04-10-01-48-知识加工(精修).md",
+      "title": "2026-04-10-01-48-知识加工(精修)",
+      "scores": {
+        "relevance": 4,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "total_score": 11,
+      "quality": "low",
+      "indexed_at": "2026-04-10T13:00:00.000000",
+      "first_chars": "# 出版级精修 | 2026-04-10 01-48\n\n## 精修章节：12.1 APK 体积优化（第 1 轮精修）\n\n### 精修内容\n\n- **叙述流畅度**：1 处（APK 组成分析结尾段落收紧"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/知识加工/2026-04-10-01-深度技术Review.md",
+      "title": "2026-04-10-01-深度技术Review",
+      "scores": {
+        "relevance": 4,
+        "depth": 4,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "total_score": 14,
+      "quality": "medium",
+      "indexed_at": "2026-04-10T13:00:00.000000",
+      "first_chars": "# 深度技术Review · 2026-04-10 2026-04-10 01:42\n\n## 基本信息\n- **章节**：2.12 Window Manager Service 与窗口管理\n- **状"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/知识加工/2026-04-10-02-深度技术Review.md",
+      "title": "2026-04-10-02-深度技术Review",
+      "scores": {
+        "relevance": 4,
+        "depth": 4,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "total_score": 14,
+      "quality": "medium",
+      "indexed_at": "2026-04-10T13:00:00.000000",
+      "first_chars": "# 深度技术Review · 2026-04-10 02:33\n\n## 基本信息\n- **章节**：1.2 系统启动全流程\n- **文件**：src/part1-fundamentals/ch01-a"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/知识加工/2026-04-10-02-知识加工(回炉).md",
+      "title": "2026-04-10-02-知识加工(回炉)",
+      "scores": {
+        "relevance": 4,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "total_score": 11,
+      "quality": "low",
+      "indexed_at": "2026-04-10T13:00:00.000000",
+      "first_chars": "# 知识加工 — 回炉修复日志\n**日期**: 2026-04-10\n**时间**: 02:41\n**执行者**: task2b-rework\n\n---\n\n## 修复记录\n\n### §1.2 系统启动"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/知识加工/2026-04-10-02-知识加工(新).md",
+      "title": "2026-04-10-02-知识加工(新)",
+      "scores": {
+        "relevance": 4,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "total_score": 11,
+      "quality": "low",
+      "indexed_at": "2026-04-10T13:00:00.000000",
+      "first_chars": "# 知识加工报告 · 2026-04-10 02:00 (新章节)\n\n## 模式：知识缺口挖掘（Phase 1）\n\n### Phase 0 检查结果\n- 扫描 src/ 全部章节：198 个文件全部存"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/知识加工/2026-04-10-03-14-知识加工(新).md",
+      "title": "2026-04-10-03-14-知识加工(新)",
+      "scores": {
+        "relevance": 4,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "total_score": 11,
+      "quality": "low",
+      "indexed_at": "2026-04-10T13:00:00.000000",
+      "first_chars": "# 知识加工（新章节）· 2026-04-10 03-14\n\n## Phase 0：空 draft 检查\n\n扫描 src/ 全部文件，检查 `status: draft` 且正文 < 15 行的章节。"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/知识加工/2026-04-10-03-知识加工(精修).md",
+      "title": "2026-04-10-03-知识加工(精修)",
+      "scores": {
+        "relevance": 4,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "total_score": 11,
+      "quality": "low",
+      "indexed_at": "2026-04-10T13:00:00.000000",
+      "first_chars": "---\ntype: openclaw-task\ntask: task2b-polish\ndate: 2026-04-10\ntime: \"03:40\"\n---\n\n# 出版级精修 | 2026-04-10"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/知识加工/2026-04-10-04-44-知识加工(回炉).md",
+      "title": "2026-04-10-04-44-知识加工(回炉)",
+      "scores": {
+        "relevance": 4,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "total_score": 11,
+      "quality": "low",
+      "indexed_at": "2026-04-10T13:00:00.000000",
+      "first_chars": "# 知识加工(回炉) · 2026-04-10 04-44\n\n## [回炉修复] §2.4 Choreographer 与渲染流水线\n\n- **来源**: Task 9 Deep Tech Revie"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/知识加工/2026-04-10-04-知识加工(新).md",
+      "title": "2026-04-10-04-知识加工(新)",
+      "scores": {
+        "relevance": 4,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "total_score": 11,
+      "quality": "low",
+      "indexed_at": "2026-04-10T13:00:00.000000",
+      "first_chars": "# 知识加工（新章节）· 2026-04-10 04:19\n\n## Phase 0：检查空 draft 章节\n\n扫描 src/ 目录全部 Markdown 文件：\n- draft 状态文件：28 个\n"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/论文/AI-2026-04-09-Decoding-Claude-Code-Config/03-精读.md",
+      "title": "03-精读",
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 5,
+        "verifiability": 3
+      },
+      "total_score": 15,
+      "quality": "high",
+      "indexed_at": "2026-04-10T13:00:00.000000",
+      "first_chars": "# Decoding the Configuration of AI Coding Agents: Insights from Claude Code Projects\n\n## 核心问题\n\nAgent"
     }
   ]
 }

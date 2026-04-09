@@ -278,6 +278,13 @@ SurfaceTexture 默认只保留最新的一帧。如果 Producer 生产了 3 帧�
 - 确保 App UI 帧率足够高（避免主线程卡顿）
 - 如果需要逐帧处理，考虑使用 ImageReader 替代 SurfaceTexture
 
+## 参考资料
+
+- AOSP `frameworks/base/core/java/android/view/TextureView.java`
+- AOSP `frameworks/base/graphics/java/android/graphics/SurfaceTexture.java`
+- Android 官方文档：TextureView
+- Android 性能优化指南：SurfaceView vs TextureView
+
 ## 何时从 TextureView 迁移到 SurfaceView
 
 如果你的应用当前使用 TextureView，但实际并不需要变换能力（旋转、缩放、透明度动画），迁移到 SurfaceView 可以获得显著的性能提升。以下是迁移检查清单：

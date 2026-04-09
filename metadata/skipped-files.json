@@ -4951,5 +4951,1732 @@
     "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-22-Android性能功耗热优化研究/03-研究假设.md",
     "reason": "AI生成研究假设，偏学术推测",
     "score": 7
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-18-热管理与CPU频率/stage-07/synthesis.md",
+    "reason": "AutoResearchClaw synthesis - fetched wrong papers (malware/benchmark), not thermal mgmt",
+    "score": 7
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-18-热管理与CPU频率/stage-14/analysis.md",
+    "reason": "AutoResearchClaw analysis - based on failed experiment",
+    "score": 5
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-18-热管理与CPU频率/stage-16/outline.md",
+    "reason": "AutoResearchClaw outline - based on wrong data (experiment failed)",
+    "score": 8
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-20-性能功耗热优化/stage-06/cards/4.md",
+    "reason": "AutoResearchClaw card - LLM task automation, off-topic",
+    "score": 4
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-20-性能功耗热优化/stage-06/cards/5.md",
+    "reason": "AutoResearchClaw card - GUI agents, off-topic",
+    "score": 4
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-20-性能功耗热优化/stage-08/perspectives/contrarian.md",
+    "reason": "AutoResearchClaw perspective - meta-commentary",
+    "score": 4
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-20-性能功耗热优化/stage-14/analysis.md",
+    "reason": "AutoResearchClaw analysis - process artifact",
+    "score": 5
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-20-性能功耗热优化/stage-14_v1/analysis.md",
+    "reason": "AutoResearchClaw analysis v1 - duplicate variant",
+    "score": 4
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-20-性能功耗热优化/stage-14_v2/analysis.md",
+    "reason": "AutoResearchClaw analysis v2 - duplicate variant",
+    "score": 4
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-20-性能功耗热优化/stage-15/decision.md",
+    "reason": "AutoResearchClaw decision - process artifact",
+    "score": 4
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-20-性能功耗热优化/stage-15_v1/decision.md",
+    "reason": "AutoResearchClaw pipeline artifact",
+    "score": 4
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-20-性能功耗热优化/stage-15_v2/decision.md",
+    "reason": "AutoResearchClaw pipeline artifact",
+    "score": 4
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-20-性能功耗热优化/stage-16/outline.md",
+    "reason": "AutoResearchClaw pipeline artifact",
+    "score": 4
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-22-Android性能功耗热优化研究/01-研究目标.md",
+    "reason": "AutoResearchClaw pipeline artifact",
+    "score": 4
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-22-Android性能功耗热优化研究/README.md",
+    "reason": "AutoResearchClaw pipeline artifact",
+    "score": 4
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-23-性能功耗热优化研究/00-研究摘要.md",
+    "reason": "AutoResearchClaw pipeline artifact",
+    "score": 4
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-23-性能功耗热优化研究/01-研究目标.md",
+    "reason": "AutoResearchClaw pipeline artifact",
+    "score": 4
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-23-性能功耗热优化研究/02-文献综合.md",
+    "reason": "AutoResearchClaw pipeline artifact",
+    "score": 4
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-23-性能功耗热优化研究/03-研究假设.md",
+    "reason": "AutoResearchClaw pipeline artifact",
+    "score": 4
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-23-性能功耗热优化研究/完整输出/stage-02/problem_tree.md",
+    "reason": "AutoResearchClaw pipeline artifact",
+    "score": 4
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-23-性能功耗热优化研究/完整输出/stage-06/cards/s2-cb23a59fdf3ade707600f076df4ff27a03941fba.md",
+    "reason": "AutoResearchClaw pipeline artifact",
+    "score": 4
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-23-性能功耗热优化研究/完整输出/stage-08/perspectives/contrarian.md",
+    "reason": "AutoResearchClaw pipeline artifact",
+    "score": 4
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-23-性能功耗热优化研究/完整输出/stage-08/perspectives/innovator.md",
+    "reason": "AutoResearchClaw pipeline artifact",
+    "score": 4
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-23-性能功耗热优化研究/完整输出/stage-08/perspectives/pragmatist.md",
+    "reason": "AutoResearchClaw pipeline artifact",
+    "score": 4
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-24-Android性能功耗热优化研究/文献综合.md",
+    "reason": "AutoResearchClaw pipeline artifact",
+    "score": 4
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-24-Android性能功耗热优化研究/研究假设.md",
+    "reason": "AutoResearchClaw pipeline artifact",
+    "score": 4
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-24-Android性能功耗热优化研究/研究目标.md",
+    "reason": "AutoResearchClaw pipeline artifact",
+    "score": 4
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-25-性能功耗热优化/研究摘要.md",
+    "reason": "AutoResearchClaw pipeline artifact",
+    "score": 4
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-26-性能功耗热优化/01-研究目标.md",
+    "reason": "AutoResearchClaw pipeline artifact",
+    "score": 4
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-26-性能功耗热优化/07-文献综合.md",
+    "reason": "AutoResearchClaw pipeline artifact",
+    "score": 4
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-26-性能功耗热优化/08-假设.md",
+    "reason": "AutoResearchClaw pipeline artifact",
+    "score": 4
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-28-Android内存压力检测-LMK机制-文献综述.md",
+    "reason": "AutoResearchClaw pipeline artifact",
+    "score": 4
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-28-Android内存压力检测-LMK机制-研究假设.md",
+    "reason": "AutoResearchClaw pipeline artifact",
+    "score": 4
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-28-Android内存压力检测-LMK机制研究.md",
+    "reason": "AutoResearchClaw pipeline artifact",
+    "score": 4
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-28-Android功耗热优化研究/stage-01_goal.md",
+    "reason": "AutoResearchClaw pipeline artifact",
+    "score": 4
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-28-Android功耗热优化研究/stage-07_synthesis.md",
+    "reason": "AutoResearchClaw pipeline artifact",
+    "score": 4
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-28-Android功耗热优化研究/stage-08_hypotheses.md",
+    "reason": "AutoResearchClaw pipeline artifact",
+    "score": 4
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-28-Android功耗热优化研究/研究报告_2026-03-28.md",
+    "reason": "AutoResearchClaw pipeline artifact",
+    "score": 4
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-31-性能功耗热优化/cards/oalex-W3112311055.md",
+    "reason": "AutoResearchClaw pipeline artifact",
+    "score": 4
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-31-性能功耗热优化/cards/oalex-W4285079306.md",
+    "reason": "AutoResearchClaw pipeline artifact",
+    "score": 4
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-31-性能功耗热优化/goal.md",
+    "reason": "AutoResearchClaw pipeline artifact",
+    "score": 4
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-31-性能功耗热优化/hypotheses.md",
+    "reason": "AutoResearchClaw pipeline artifact",
+    "score": 4
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-04-01-Android内存监控-OOM优化/01-研究目标.md",
+    "reason": "AutoResearchClaw pipeline artifact",
+    "score": 4
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-04-01-Android内存监控-OOM优化/02-问题分解.md",
+    "reason": "AutoResearchClaw pipeline artifact",
+    "score": 4
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-04-01-Android内存监控-OOM优化/07-文献综合.md",
+    "reason": "AutoResearchClaw pipeline artifact",
+    "score": 4
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-04-01-Android内存监控-OOM优化/08-研究假设.md",
+    "reason": "AutoResearchClaw pipeline artifact",
+    "score": 4
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-04-01-Android内存监控OOM优化/01-研究目标.md",
+    "reason": "AutoResearchClaw pipeline artifact",
+    "score": 4
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-04-01-Android内存监控OOM优化/02-问题分解.md",
+    "reason": "AutoResearchClaw pipeline artifact",
+    "score": 4
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-04-01-Android内存监控OOM优化/07-文献综合.md",
+    "reason": "AutoResearchClaw pipeline artifact",
+    "score": 4
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-04-01-Android内存监控OOM优化/08-研究假设.md",
+    "reason": "AutoResearchClaw pipeline artifact",
+    "score": 4
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-04-02-Perfetto-Systrace深度应用/研究报告.md",
+    "reason": "AutoResearchClaw pipeline artifact",
+    "score": 4
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-04-03-Perfetto与Systrace深度应用/stage-01-goal.md",
+    "reason": "AutoResearchClaw pipeline artifact",
+    "score": 4
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-04-03-Perfetto与Systrace深度应用/stage-02-problem_tree.md",
+    "reason": "AutoResearchClaw pipeline artifact",
+    "score": 4
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-04-03-Perfetto与Systrace深度应用/stage-07-synthesis.md",
+    "reason": "AutoResearchClaw pipeline artifact",
+    "score": 4
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-04-03-Perfetto与Systrace深度应用/stage-08-hypotheses.md",
+    "reason": "AutoResearchClaw pipeline artifact",
+    "score": 4
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-04-03-Perfetto与Systrace深度应用/研究摘要.md",
+    "reason": "AutoResearchClaw pipeline artifact",
+    "score": 4
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-04-04-Linux性能分析工具-perf与eBPF/README.md",
+    "reason": "AutoResearchClaw pipeline artifact",
+    "score": 4
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-04-04-Linux性能分析工具-perf与eBPF/文献综述.md",
+    "reason": "AutoResearchClaw pipeline artifact",
+    "score": 4
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-04-04-Linux性能分析工具-perf与eBPF/研究假设.md",
+    "reason": "AutoResearchClaw pipeline artifact",
+    "score": 4
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-04-04-Linux性能分析工具-perf与eBPF/研究目标.md",
+    "reason": "AutoResearchClaw pipeline artifact",
+    "score": 4
+  },
+  {
+    "path": "调研/Browser-Use-CLI/2026-03-23-Browser-Use-CLI-调研.md",
+    "reason": "AI tool survey, not Android-related",
+    "score": 5
+  },
+  {
+    "path": "调研/Browser-Use-CLI/2026-03-23-OpenClaw集成分析.md",
+    "reason": "OpenClaw integration, personal setup",
+    "score": 4
+  },
+  {
+    "path": "调研/Claude Code架构治理与工程实践/2026-03-21-Tw93-Claude-Code最佳实践.md",
+    "reason": "AI/coding tool, not Android",
+    "score": 6
+  },
+  {
+    "path": "调研/Claude-Code-入门资源/01-官方中文文档.md",
+    "reason": "Claude Code docs, not Android",
+    "score": 3
+  },
+  {
+    "path": "调研/Claude-Code-入门资源/02-实战课程中文版.md",
+    "reason": "Claude Code course overview, not Android",
+    "score": 3
+  },
+  {
+    "path": "调研/Claude-Code-入门资源/课程章节/01-引言.md",
+    "reason": "Claude Code course, not Android",
+    "score": 3
+  },
+  {
+    "path": "调研/Claude-Code-入门资源/课程章节/02-什么是编码助手.md",
+    "reason": "Claude Code course, not Android",
+    "score": 3
+  },
+  {
+    "path": "调研/Claude-Code-入门资源/课程章节/03-Claude Code 实战.md",
+    "reason": "Claude Code course, not Android",
+    "score": 3
+  },
+  {
+    "path": "调研/Claude-Code-入门资源/课程章节/04-Claude Code 安装与配置.md",
+    "reason": "Claude Code course, not Android",
+    "score": 3
+  },
+  {
+    "path": "调研/Claude-Code-入门资源/课程章节/05-项目准备.md",
+    "reason": "Claude Code course, not Android",
+    "score": 3
+  },
+  {
+    "path": "调研/Claude-Code-入门资源/课程章节/06-添加上下文.md",
+    "reason": "Claude Code course, not Android",
+    "score": 3
+  },
+  {
+    "path": "调研/Claude-Code-入门资源/课程章节/07-进行修改.md",
+    "reason": "Claude Code course, not Android",
+    "score": 3
+  },
+  {
+    "path": "调研/Claude-Code-入门资源/课程章节/08-课程满意度调查.md",
+    "reason": "Claude Code course, not Android",
+    "score": 2
+  },
+  {
+    "path": "调研/Claude-Code-入门资源/课程章节/09-控制上下文.md",
+    "reason": "Claude Code course, not Android",
+    "score": 3
+  },
+  {
+    "path": "调研/Claude-Code-入门资源/课程章节/10-自定义命令.md",
+    "reason": "Claude Code course, not Android",
+    "score": 3
+  },
+  {
+    "path": "调研/Claude-Code-入门资源/课程章节/11-Claude Code 的 MCP 服务器.md",
+    "reason": "Claude Code course, not Android",
+    "score": 3
+  },
+  {
+    "path": "调研/Claude-Code-入门资源/课程章节/12-GitHub 集成.md",
+    "reason": "Claude Code course, not Android",
+    "score": 3
+  },
+  {
+    "path": "调研/Claude-Code-入门资源/课程章节/13-认识 Hooks.md",
+    "reason": "Claude Code course, not Android",
+    "score": 3
+  },
+  {
+    "path": "调研/Claude-Code-入门资源/课程章节/14-定义 Hooks.md",
+    "reason": "Claude Code course, not Android",
+    "score": 3
+  },
+  {
+    "path": "调研/Claude-Code-入门资源/课程章节/15-实现一个 Hook.md",
+    "reason": "Claude Code course, not Android",
+    "score": 3
+  },
+  {
+    "path": "调研/Claude-Code-入门资源/课程章节/16-Hooks 常见坑点.md",
+    "reason": "Claude Code course, not Android",
+    "score": 3
+  },
+  {
+    "path": "调研/Claude-Code-入门资源/课程章节/17-实用的 Hooks.md",
+    "reason": "Claude Code course, not Android",
+    "score": 3
+  },
+  {
+    "path": "调研/Claude-Code-入门资源/课程章节/18-另一个实用 Hook.md",
+    "reason": "Claude Code course, not Android",
+    "score": 3
+  },
+  {
+    "path": "调研/Claude-Code-入门资源/课程章节/19-Claude Code SDK.md",
+    "reason": "Claude Code course, not Android",
+    "score": 3
+  },
+  {
+    "path": "调研/Claude-Code-入门资源/课程章节/20-Claude Code 测验.md",
+    "reason": "Claude Code course, not Android",
+    "score": 2
+  },
+  {
+    "path": "调研/Claude-Code-入门资源/课程章节/21-总结与下一步.md",
+    "reason": "Claude Code course, not Android",
+    "score": 2
+  },
+  {
+    "path": "调研/M5-MacBook-Pro深度对比评测/M5-MacBook-Pro深度对比评测.md",
+    "reason": "Apple hardware review, not Android",
+    "score": 5
+  },
+  {
+    "path": "调研/OKB编译/2026-04-07-The-Cook-and-the-Chef-Musk-Secret-Sauce.md",
+    "reason": "Non-tech article, Musk biography",
+    "score": 3
+  },
+  {
+    "path": "调研/OKB编译/2026-04-08-Articels-腹背受敌的中国经济3-万字长文.md",
+    "reason": "Economics article, not Android",
+    "score": 3
+  },
+  {
+    "path": "调研/OKB编译/2026-04-08-Leading-Effective-Engineering-Teams-in-the-Age-of-.md",
+    "reason": "Engineering management, not Android",
+    "score": 4
+  },
+  {
+    "path": "调研/OKB编译/2026-04-08-Seeking-the-Productive-Life--Some-Details-of-My-Pe.md",
+    "reason": "Personal productivity, not Android",
+    "score": 3
+  },
+  {
+    "path": "调研/OKB编译/2026-04-08-State-of-AI.md",
+    "reason": "AI industry overview, not Android",
+    "score": 5
+  },
+  {
+    "path": "调研/OKB编译/2026-04-08-探索-AI-编程智能体-2025-02-03.md",
+    "reason": "AI coding agent, not Android",
+    "score": 5
+  },
+  {
+    "path": "调研/OKB编译/2026-04-07-Agentic-Engineering工程革命实践记录.md",
+    "reason": "Agentic engineering, not Android",
+    "score": 5
+  },
+  {
+    "path": "调研/OKB编译/index.md",
+    "reason": "Directory index, not content",
+    "score": 2
+  },
+  {
+    "path": "调研/Skill和 SOP 区别/SKILL.md",
+    "reason": "Skill SOP metadata, not Android content",
+    "score": 4
+  },
+  {
+    "path": "调研/X内容创作系统/README.md",
+    "reason": "X content system readme, not Android",
+    "score": 3
+  },
+  {
+    "path": "调研/X文章与收藏抓取工具/2026-03-21-工具调研.md",
+    "reason": "Tool survey, not Android content",
+    "score": 4
+  },
+  {
+    "path": "调研/graphify-out/GRAPH_REPORT.md",
+    "reason": "Graph report metadata",
+    "score": 3
+  },
+  {
+    "path": "调研/三大AI编程框架对比/X候选推文.md",
+    "reason": "AI framework tweet draft, not Android",
+    "score": 4
+  },
+  {
+    "path": "调研/三大AI编程框架对比/框架对比调研报告.md",
+    "reason": "AI framework comparison, not Android",
+    "score": 5
+  },
+  {
+    "path": "论文/AI-2025-03-27-LLM-Agent-Survey/02-翻译.md",
+    "reason": "AI Agent综述论文，非Android相关",
+    "score": 6,
+    "directory": "论文"
+  },
+  {
+    "path": "论文/AI-2025-03-27-LLM-Agent-Survey/03-精读.md",
+    "reason": "AI Agent综述精读，非Android相关",
+    "score": 6,
+    "directory": "论文"
+  },
+  {
+    "path": "论文/AI-2026-03-08-Agentic-Reasoning-Framework/02-翻译.md",
+    "reason": "Agentic Reasoning框架，非Android",
+    "score": 5,
+    "directory": "论文"
+  },
+  {
+    "path": "论文/AI-2026-03-08-Agentic-Reasoning-Framework/03-精读.md",
+    "reason": "Agentic Reasoning精读，非Android",
+    "score": 5,
+    "directory": "论文"
+  },
+  {
+    "path": "论文/AI-2026-03-09-ARTEMIS-Agent优化/02-翻译.md",
+    "reason": "ARTEMIS Agent优化，非Android",
+    "score": 5,
+    "directory": "论文"
+  },
+  {
+    "path": "论文/AI-2026-03-09-ARTEMIS-Agent优化/03-精读.md",
+    "reason": "ARTEMIS Agent精读，非Android",
+    "score": 5,
+    "directory": "论文"
+  },
+  {
+    "path": "论文/AI-2026-03-09-MeKi-ROM扩展大模型/00-公众号文章.md",
+    "reason": "MeKi ROM扩展大模型，非Android",
+    "score": 4,
+    "directory": "论文"
+  },
+  {
+    "path": "论文/AI-2026-03-09-MeKi-ROM扩展大模型/02-翻译.md",
+    "reason": "MeKi ROM论文翻译，非Android",
+    "score": 4,
+    "directory": "论文"
+  },
+  {
+    "path": "论文/AI-2026-03-09-MeKi-ROM扩展大模型/03-精读.md",
+    "reason": "MeKi ROM精读，非Android",
+    "score": 4,
+    "directory": "论文"
+  },
+  {
+    "path": "论文/AI-2026-03-10-构建自主LLM智能体基础/02-翻译.md",
+    "reason": "LLM智能体基础，非Android",
+    "score": 4,
+    "directory": "论文"
+  },
+  {
+    "path": "论文/AI-2026-03-10-构建自主LLM智能体基础/03-精读.md",
+    "reason": "LLM智能体基础精读，非Android",
+    "score": 4,
+    "directory": "论文"
+  },
+  {
+    "path": "论文/AI-2026-03-11-Nabla-Reasoner-Test-Time-Gradient/02-翻译.md",
+    "reason": "Test-Time梯度推理，非Android",
+    "score": 3,
+    "directory": "论文"
+  },
+  {
+    "path": "论文/AI-2026-03-11-Nabla-Reasoner-Test-Time-Gradient/03-精读.md",
+    "reason": "Nabla Reasoner精读，非Android",
+    "score": 3,
+    "directory": "论文"
+  },
+  {
+    "path": "论文/AI-2026-03-12-多智能体LLM推理去惰性/02-翻译.md",
+    "reason": "多智能体推理去惰性，非Android",
+    "score": 3,
+    "directory": "论文"
+  },
+  {
+    "path": "论文/AI-2026-03-12-多智能体LLM推理去惰性/03-精读.md",
+    "reason": "多智能体推理精读，非Android",
+    "score": 3,
+    "directory": "论文"
+  },
+  {
+    "path": "论文/AI-2026-03-13-CoTools冻结LLM工具学习/02-翻译.md",
+    "reason": "CoTools LLM工具学习，非Android",
+    "score": 3,
+    "directory": "论文"
+  },
+  {
+    "path": "论文/AI-2026-03-13-CoTools冻结LLM工具学习/03-精读.md",
+    "reason": "CoTools精读，非Android",
+    "score": 3,
+    "directory": "论文"
+  },
+  {
+    "path": "论文/AI-2026-03-14-SkillRL智能体进化/02-翻译.md",
+    "reason": "SkillRL智能体进化，非Android",
+    "score": 4,
+    "directory": "论文"
+  },
+  {
+    "path": "论文/AI-2026-03-14-SkillRL智能体进化/03-精读.md",
+    "reason": "SkillRL精读，非Android",
+    "score": 4,
+    "directory": "论文"
+  },
+  {
+    "path": "论文/AI-2026-03-15-LLM-Agent推理必要性/02-翻译.md",
+    "reason": "LLM Agent推理必要性，非Android",
+    "score": 4,
+    "directory": "论文"
+  },
+  {
+    "path": "论文/AI-2026-03-15-LLM-Agent推理必要性/03-精读.md",
+    "reason": "LLM Agent推理精读，非Android",
+    "score": 4,
+    "directory": "论文"
+  },
+  {
+    "path": "论文/AI-2026-03-16-LLM到自主AI智能体综述/02-翻译.md",
+    "reason": "LLM到AI智能体综述，非Android",
+    "score": 4,
+    "directory": "论文"
+  },
+  {
+    "path": "论文/AI-2026-03-16-LLM到自主AI智能体综述/03-精读.md",
+    "reason": "LLM智能体综述精读，非Android",
+    "score": 4,
+    "directory": "论文"
+  },
+  {
+    "path": "论文/AI-2026-03-17-Agentic推理综述/02-翻译.md",
+    "reason": "Agentic推理综述，非Android",
+    "score": 3,
+    "directory": "论文"
+  },
+  {
+    "path": "论文/AI-2026-03-17-Agentic推理综述/03-精读.md",
+    "reason": "Agentic推理综述精读，非Android",
+    "score": 3,
+    "directory": "论文"
+  },
+  {
+    "path": "论文/AI-2026-03-19-LLM到自主Agent综述/02-翻译.md",
+    "reason": "LLM自主Agent综述，非Android",
+    "score": 4,
+    "directory": "论文"
+  },
+  {
+    "path": "论文/AI-2026-03-19-LLM到自主Agent综述/03-精读.md",
+    "reason": "LLM Agent综述精读，非Android",
+    "score": 4,
+    "directory": "论文"
+  },
+  {
+    "path": "论文/AI-2026-03-20-ai-agent-reliability/02-翻译.md",
+    "reason": "AI Agent可靠性，非Android",
+    "score": 3,
+    "directory": "论文"
+  },
+  {
+    "path": "论文/AI-2026-03-20-ai-agent-reliability/03-精读.md",
+    "reason": "AI Agent可靠性精读，非Android",
+    "score": 3,
+    "directory": "论文"
+  },
+  {
+    "path": "论文/AI-2026-03-21-代理代码推理/02-翻译.md",
+    "reason": "代理代码推理，非Android",
+    "score": 3,
+    "directory": "论文"
+  },
+  {
+    "path": "论文/AI-2026-03-21-代理代码推理/03-精读.md",
+    "reason": "代理代码推理精读，非Android",
+    "score": 3,
+    "directory": "论文"
+  },
+  {
+    "path": "论文/AI-2026-03-23-LLM-Agent/03-精读.md",
+    "reason": "LLM Agent综述精读，非Android",
+    "score": 4,
+    "directory": "论文"
+  },
+  {
+    "path": "论文/AI-2026-03-24-Agent-Skills综述/02-翻译.md",
+    "reason": "Agent Skills综述，非Android",
+    "score": 3,
+    "directory": "论文"
+  },
+  {
+    "path": "论文/AI-2026-03-24-Agent-Skills综述/03-精读.md",
+    "reason": "Agent Skills综述精读，非Android",
+    "score": 3,
+    "directory": "论文"
+  },
+  {
+    "path": "论文/AI-2026-03-26-智能体共识/02-翻译.md",
+    "reason": "智能体共识机制，非Android",
+    "score": 3,
+    "directory": "论文"
+  },
+  {
+    "path": "论文/AI-2026-03-26-智能体共识/03-精读.md",
+    "reason": "智能体共识精读，非Android",
+    "score": 3,
+    "directory": "论文"
+  },
+  {
+    "path": "论文/AI-2026-03-22-论证型人机决策/02-翻译.md",
+    "reason": "论证型人机决策，非Android",
+    "score": 4,
+    "directory": "论文"
+  },
+  {
+    "path": "论文/AI-2026-03-22-论证型人机决策/03-精读.md",
+    "reason": "论证型人机决策精读，非Android",
+    "score": 4,
+    "directory": "论文"
+  },
+  {
+    "path": "论文/AI-2026-03-27-UI-Voyager自进化GUI智能体/02-翻译.md",
+    "reason": "GUI智能体自进化，非Android性能相关",
+    "score": 5,
+    "directory": "论文"
+  },
+  {
+    "path": "论文/AI-2026-03-27-UI-Voyager自进化GUI智能体/03-精读.md",
+    "reason": "GUI智能体精读，非Android性能相关",
+    "score": 5,
+    "directory": "论文"
+  },
+  {
+    "path": "论文/AI-2026-03-31-LLM-Agent综述/02-翻译.md",
+    "reason": "LLM Agent综述，非Android",
+    "score": 4,
+    "directory": "论文"
+  },
+  {
+    "path": "论文/AI-2026-03-31-LLM-Agent综述/03-精读.md",
+    "reason": "LLM Agent综述精读，非Android",
+    "score": 4,
+    "directory": "论文"
+  },
+  {
+    "path": "论文/AI-2026-04-02-LLM-Agent综述/03-精读.md",
+    "reason": "LLM Agent综述精读，非Android",
+    "score": 4,
+    "directory": "论文"
+  },
+  {
+    "path": "论文/AI-2026-04-03-PASTE加速Agent/02-翻译.md",
+    "reason": "PASTE Agent加速，非Android",
+    "score": 3,
+    "directory": "论文"
+  },
+  {
+    "path": "论文/AI-2026-04-03-PASTE加速Agent/03-精读.md",
+    "reason": "PASTE Agent精读，非Android",
+    "score": 3,
+    "directory": "论文"
+  },
+  {
+    "path": "论文/AI-2026-04-04-Agent-Skills综述/02-翻译.md",
+    "reason": "Agent Skills综述，非Android",
+    "score": 3,
+    "directory": "论文"
+  },
+  {
+    "path": "论文/AI-2026-04-04-Agent-Skills综述/03-精读.md",
+    "reason": "Agent Skills综述精读，非Android",
+    "score": 3,
+    "directory": "论文"
+  },
+  {
+    "path": "论文/AI-2026-04-06-LLM-Agent综述/02-翻译.md",
+    "reason": "LLM Agent综述，非Android",
+    "score": 4,
+    "directory": "论文"
+  },
+  {
+    "path": "论文/AI-2026-04-06-LLM-Agent综述/03-精读.md",
+    "reason": "LLM Agent综述精读，非Android",
+    "score": 4,
+    "directory": "论文"
+  },
+  {
+    "path": "论文/AI-2026-04-07-LLM-Agent综述/02-翻译.md",
+    "reason": "LLM Agent综述，非Android",
+    "score": 4,
+    "directory": "论文"
+  },
+  {
+    "path": "论文/AI-2026-04-07-LLM-Agent综述/03-精读.md",
+    "reason": "LLM Agent综述精读，非Android",
+    "score": 4,
+    "directory": "论文"
+  },
+  {
+    "path": "论文/AI-2026-04-08-PROV-AGENT/03-精读.md",
+    "reason": "PROV-AGENT，非Android",
+    "score": 3,
+    "directory": "论文"
+  },
+  {
+    "path": "论文/AI-2026-04-09-Decoding-Claude-Code-Config/03-精读.md",
+    "reason": "Claude Code配置解读，非Android",
+    "score": 3,
+    "directory": "论文"
+  },
+  {
+    "path": "论文/AI-2026-04-02-Agent-Skills架构与安全/02-翻译.md",
+    "reason": "Agent Skills架构安全综述，非Android",
+    "score": 3,
+    "directory": "论文"
+  },
+  {
+    "path": "论文/AI-2026-04-02-Agent-Skills架构与安全/03-精读.md",
+    "reason": "Agent Skills架构安全精读，非Android",
+    "score": 3,
+    "directory": "论文"
+  },
+  {
+    "path": "DeepResearch/2026-03-17-OpenClaw深度调研/01-OpenClaw深度调研报告.md",
+    "reason": "OpenClaw调研报告，非Android",
+    "score": 3,
+    "directory": "DeepResearch"
+  },
+  {
+    "path": "DeepResearch/2026-03-17-OpenClaw深度调研/03-报告大纲.md",
+    "reason": "OpenClaw调研大纲，非Android",
+    "score": 2,
+    "directory": "DeepResearch"
+  },
+  {
+    "path": "DeepResearch/2026-03-17-OpenClaw深度调研/slide-deck/openclaw-deep-research/outline.md",
+    "reason": "OpenClaw slide大纲，非Android",
+    "score": 2,
+    "directory": "DeepResearch"
+  },
+  {
+    "path": "DeepResearch/2026-03-17-OpenClaw深度调研/slide-deck/openclaw-deep-research/batch-prompts.md",
+    "reason": "OpenClaw slide prompts，非Android",
+    "score": 2,
+    "directory": "DeepResearch"
+  },
+  {
+    "path": "DeepResearch/2026-03-17-OpenClaw深度调研/slide-deck/openclaw-deep-research/prompts/02-slide-growth.md",
+    "reason": "OpenClaw slide prompt，非Android",
+    "score": 2,
+    "directory": "DeepResearch"
+  },
+  {
+    "path": "DeepResearch/2026-03-17-OpenClaw深度调研/slide-deck/openclaw-deep-research/prompts/01-slide-cover.md",
+    "reason": "OpenClaw slide prompt，非Android",
+    "score": 2,
+    "directory": "DeepResearch"
+  },
+  {
+    "path": "X 文章/04-06-HiTw93-Waza-AI-Engineer-Skills.md",
+    "reason": "AI/Agent/OpenClaw内容，非Android性能相关",
+    "score": 4,
+    "directory": "X 文章"
+  },
+  {
+    "path": "X 文章/04-06-Lonely-Gemma-4-31B-CRACK.md",
+    "reason": "AI/Agent/OpenClaw内容，非Android性能相关",
+    "score": 4,
+    "directory": "X 文章"
+  },
+  {
+    "path": "X 文章/04-06-MinLiBuilds-Claude-Code-Caching.md",
+    "reason": "AI/Agent/OpenClaw内容，非Android性能相关",
+    "score": 4,
+    "directory": "X 文章"
+  },
+  {
+    "path": "X 文章/04-06-Pluvio9yte-Hermes-Tutorial.md",
+    "reason": "AI/Agent/OpenClaw内容，非Android性能相关",
+    "score": 4,
+    "directory": "X 文章"
+  },
+  {
+    "path": "X 文章/04-06-RLanceMartin-Launching-Claude-Managed-Agents.md",
+    "reason": "AI/Agent/OpenClaw内容，非Android性能相关",
+    "score": 4,
+    "directory": "X 文章"
+  },
+  {
+    "path": "X 文章/04-06-blackanger-Codex-Over-Asking.md",
+    "reason": "AI/Agent/OpenClaw内容，非Android性能相关",
+    "score": 4,
+    "directory": "X 文章"
+  },
+  {
+    "path": "X 文章/04-06-dotey-Anthropic-Claude-Managed-Agents.md",
+    "reason": "AI/Agent/OpenClaw内容，非Android性能相关",
+    "score": 4,
+    "directory": "X 文章"
+  },
+  {
+    "path": "X 文章/04-06-oragnes-oh-my-codex.md",
+    "reason": "AI/Agent/OpenClaw内容，非Android性能相关",
+    "score": 4,
+    "directory": "X 文章"
+  },
+  {
+    "path": "X 文章/04-06-yanhua1010-Obsidian-LLM-Knowledge-Base.md",
+    "reason": "AI/Agent/OpenClaw内容，非Android性能相关",
+    "score": 4,
+    "directory": "X 文章"
+  },
+  {
+    "path": "X 文章/2026-02-23-1850-Citrini-2028-Global-Intelligence-Crisis-2025792470345224683.md",
+    "reason": "AI/Agent/OpenClaw内容，非Android性能相关",
+    "score": 4,
+    "directory": "X 文章"
+  },
+  {
+    "path": "X 文章/2026-02-23-2005-KevinHe-ClawFeed-5min-5000feeds-2025781752971809010.md",
+    "reason": "AI/Agent/OpenClaw内容，非Android性能相关",
+    "score": 4,
+    "directory": "X 文章"
+  },
+  {
+    "path": "X 文章/2026-02-23-2005-Lijiuer-OpenClaw-Memory-Guide-2025678747509391664.md",
+    "reason": "AI/Agent/OpenClaw内容，非Android性能相关",
+    "score": 4,
+    "directory": "X 文章"
+  },
+  {
+    "path": "X 文章/2026-02-23-2005-MuratcanKoylan-The-File-System-Is-the-New-Database-2025286163641118915.md",
+    "reason": "AI/Agent/OpenClaw内容，非Android性能相关",
+    "score": 4,
+    "directory": "X 文章"
+  },
+  {
+    "path": "X 文章/2026-02-24-1205-0xJA-Conway-Agent-Guide-2024376180707905816.md",
+    "reason": "AI/Agent/OpenClaw内容，非Android性能相关",
+    "score": 4,
+    "directory": "X 文章"
+  },
+  {
+    "path": "X 文章/2026-02-24-1205-Bozhou-Agent-Skills-Context-Engineering-2026109258224574963.md",
+    "reason": "AI/Agent/OpenClaw内容，非Android性能相关",
+    "score": 4,
+    "directory": "X 文章"
+  },
+  {
+    "path": "X 文章/2026-02-24-1605-123olp-Elite-Autonomous-Developer-Agent-2025704271921213731.md",
+    "reason": "AI/Agent/OpenClaw内容，非Android性能相关",
+    "score": 4,
+    "directory": "X 文章"
+  },
+  {
+    "path": "X 文章/2026-02-24-1605-MisbahSy-Build-Your-Own-Claw-Empire-2025570052108665231.md",
+    "reason": "AI/Agent/OpenClaw内容，非Android性能相关",
+    "score": 4,
+    "directory": "X 文章"
+  },
+  {
+    "path": "X 文章/2026-02-24-2005-AugmentCode-What-spec-driven-development-gets-wrong-2025993446633492725.md",
+    "reason": "AI/Agent/OpenClaw内容，非Android性能相关",
+    "score": 4,
+    "directory": "X 文章"
+  },
+  {
+    "path": "X 文章/2026-02-24-2005-Elvis-OpenClaw-Codex-ClaudeCode-Agent-Swarm-2025920521871716562.md",
+    "reason": "AI/Agent/OpenClaw内容，非Android性能相关",
+    "score": 4,
+    "directory": "X 文章"
+  },
+  {
+    "path": "X 文章/2026-02-25-1835-MilesDeutscher-3-steps-before-buying-OpenClaw-2026037201591787801.md",
+    "reason": "AI/Agent/OpenClaw内容，非Android性能相关",
+    "score": 4,
+    "directory": "X 文章"
+  },
+  {
+    "path": "X 文章/2026-02-25-1836-NeoReid-Agent-Reach-install-2026322683756216423.md",
+    "reason": "AI/Agent/OpenClaw内容，非Android性能相关",
+    "score": 4,
+    "directory": "X 文章"
+  },
+  {
+    "path": "X 文章/2026-02-25-1837-Lyric-Understanding-Agent-01-2026147825269051781.md",
+    "reason": "AI/Agent/OpenClaw内容，非Android性能相关",
+    "score": 4,
+    "directory": "X 文章"
+  },
+  {
+    "path": "X 文章/2026-02-25-2012-AshleyHa-Elvis-gets-it-2026175486980948448.md",
+    "reason": "AI/Agent/OpenClaw内容，非Android性能相关",
+    "score": 4,
+    "directory": "X 文章"
+  },
+  {
+    "path": "X 文章/2026-02-25-2013-zhl-ClaudeCode-Obsidian-Minimal-2026261405788405767.md",
+    "reason": "AI/Agent/OpenClaw内容，非Android性能相关",
+    "score": 4,
+    "directory": "X 文章"
+  },
+  {
+    "path": "X 文章/2026-02-26-0805-Geek-TenacitOS-Mission-Control-2026223826263044136.md",
+    "reason": "AI/Agent/OpenClaw内容，非Android性能相关",
+    "score": 4,
+    "directory": "X 文章"
+  },
+  {
+    "path": "X 文章/2026-02-26-1141-LufzzLiz-openclaw-system-prompt-2026669714072809755.md",
+    "reason": "AI/Agent/OpenClaw内容，非Android性能相关",
+    "score": 4,
+    "directory": "X 文章"
+  },
+  {
+    "path": "X 文章/2026-02-26-1141-op7418-ai-2026520431700881816.md",
+    "reason": "AI/Agent/OpenClaw内容，非Android性能相关",
+    "score": 4,
+    "directory": "X 文章"
+  },
+  {
+    "path": "X 文章/2026-02-26-1211-AravSrinivas-The-AI-is-the-Computer-2026710957272207490.md",
+    "reason": "AI/Agent/OpenClaw内容，非Android性能相关",
+    "score": 4,
+    "directory": "X 文章"
+  },
+  {
+    "path": "X 文章/2026-02-26-1211-GabrielChua-Codex-in-Plain-English-2026832978056458383.md",
+    "reason": "AI/Agent/OpenClaw内容，非Android性能相关",
+    "score": 4,
+    "directory": "X 文章"
+  },
+  {
+    "path": "X 文章/2026-02-26-1610-vista8-2026-AI-2026195338898588101.md",
+    "reason": "AI/Agent/OpenClaw内容，非Android性能相关",
+    "score": 4,
+    "directory": "X 文章"
+  },
+  {
+    "path": "X 文章/2026-02-26-2017-EXM7777-how-to-master-prompt-engineering-2011800604709175808.md",
+    "reason": "AI/Agent/OpenClaw内容，非Android性能相关",
+    "score": 4,
+    "directory": "X 文章"
+  },
+  {
+    "path": "X 文章/2026-02-26-2017-FuSheng_0306-AI的负面-2-你的知识在贬值-但房贷不会贬值-2026910973030969477.md",
+    "reason": "AI/Agent/OpenClaw内容，非Android性能相关",
+    "score": 4,
+    "directory": "X 文章"
+  },
+  {
+    "path": "X 文章/2026-02-26-2017-HangzhouIn-Pi-The-Minimal-Agent-Within-OpenClaw-2026927803820872030.md",
+    "reason": "AI/Agent/OpenClaw内容，非Android性能相关",
+    "score": 4,
+    "directory": "X 文章"
+  },
+  {
+    "path": "X 文章/2026-02-26-2017-LawrenceW_Zen-新手劝退-OpenClaw-99-的人根本不需要它-2026872793187627276.md",
+    "reason": "AI/Agent/OpenClaw内容，非Android性能相关",
+    "score": 4,
+    "directory": "X 文章"
+  },
+  {
+    "path": "X 文章/2026-02-26-2017-UncleJAI-我的-Obsidian-不是笔记软件-是操作系统-2026929169511362928.md",
+    "reason": "AI/Agent/OpenClaw内容，非Android性能相关",
+    "score": 4,
+    "directory": "X 文章"
+  },
+  {
+    "path": "X 文章/2026-02-26-2017-Zephyr_hg-The-Business-Models-That-Will-Dominate-202-2026656410084258042.md",
+    "reason": "AI/Agent/OpenClaw内容，非Android性能相关",
+    "score": 4,
+    "directory": "X 文章"
+  },
+  {
+    "path": "X 文章/2026-02-26-2017-garyvee-The-Era-of-the-Individual-Empire-Is-Here-2026667949382316285.md",
+    "reason": "AI/Agent/OpenClaw内容，非Android性能相关",
+    "score": 4,
+    "directory": "X 文章"
+  },
+  {
+    "path": "X 文章/2026-02-26-2017-indigox-科学家的消亡-AI-会终结科学-还是会引发一场新的革命-2026911299494449635.md",
+    "reason": "AI/Agent/OpenClaw内容，非Android性能相关",
+    "score": 4,
+    "directory": "X 文章"
+  },
+  {
+    "path": "X 文章/2026-02-26-2017-jinglian-2026最新-X-收益曝光量详解-2026844528204984796.md",
+    "reason": "AI/Agent/OpenClaw内容，非Android性能相关",
+    "score": 4,
+    "directory": "X 文章"
+  },
+  {
+    "path": "X 文章/2026-03-02-1610-imPrk-【完整】从自己的渠道讲一下-\"极客湾-Geekerwan\"-的这次风波的全部-2028252006813692032.md",
+    "reason": "极客湾风波讨论，非Android性能相关",
+    "score": 3,
+    "directory": "X 文章"
+  },
+  {
+    "path": "调研/OKB编译/2026-04-07-Android-Weekly-202518-技术周刊.md",
+    "reason": "Android Weekly周刊，Task 10负责",
+    "score": 5,
+    "directory": "调研"
+  },
+  {
+    "path": "调研/OKB编译/2026-04-07-Android-Weekly-202518.md",
+    "reason": "Android Weekly周刊重复",
+    "score": 5,
+    "directory": "调研"
+  },
+  {
+    "path": "调研/OKB编译/2026-04-07-Android-Weekly-55.md",
+    "reason": "Android Weekly周刊，Task 10负责",
+    "score": 5,
+    "directory": "调研"
+  },
+  {
+    "path": "知识库/专题收藏/Claude-Agent-SDK_多智能体_Android性能/03-Android-AOSP-性能可观测性/原文/24-perfetto-on-android-developers-readable.md",
+    "reason": "与已索引版本重复(原文版)",
+    "score": 8,
+    "directory": "知识库"
+  },
+  {
+    "path": "知识库/专题收藏/Claude-Agent-SDK_多智能体_Android性能/03-Android-AOSP-性能可观测性/原文/29-aosp-simpleperf-docs.md",
+    "reason": "与readable版重复",
+    "score": 8,
+    "directory": "知识库"
+  },
+  {
+    "path": "公众号文章/2026-03-12-记者采访-OpenClaw深度对谈/OpenClaw深度对谈.md",
+    "reason": "OpenClaw采访稿，非Android性能相关",
+    "score": 4,
+    "directory": "公众号文章"
+  },
+  {
+    "path": "面试/简历/史迎春-Android.md",
+    "reason": "个人简历，非技术素材",
+    "score": 2,
+    "directory": "面试"
+  },
+  {
+    "path": "面试/简历/高建武 - 资深性能优化工程师.md",
+    "reason": "个人简历，非技术素材",
+    "score": 2,
+    "directory": "面试"
+  },
+  {
+    "path": "source/juejin-android/2026-04-06-75894620-看完你就是古希腊掌管Compose输入框.md",
+    "reason": "Compose输入框教程，非性能相关",
+    "score": 6,
+    "directory": "source"
+  },
+  {
+    "path": "source/juejin-android/2026-04-06-75967106-2026年了，Android开发该如何调.md",
+    "reason": "Android调试方法论，泛泛而谈",
+    "score": 7,
+    "directory": "source"
+  },
+  {
+    "path": "source/juejin-android/2026-04-09-7582469532326920228-豆包手机为什么会被其他厂商抵制它的工作原.md",
+    "reason": "豆包手机工作原理，非Android性能",
+    "score": 5,
+    "directory": "source"
+  },
+  {
+    "path": "source/juejin-android/2026-04-09-7589903499599347766-聊聊2026年Android开发会是什么.md",
+    "reason": "重复文章",
+    "score": 5,
+    "directory": "source"
+  },
+  {
+    "path": "Manus/wechat_mini_program_research/1_history.md",
+    "reason": "微信小程序技术调研，与Android内部机制无关",
+    "score": 3
+  },
+  {
+    "path": "Manus/wechat_mini_program_research/2_importance.md",
+    "reason": "微信小程序重要性分析，与Android无关",
+    "score": 3
+  },
+  {
+    "path": "Manus/wechat_mini_program_research/3_technical_implementation.md",
+    "reason": "微信小程序技术实现，非Android内部机制",
+    "score": 3
+  },
+  {
+    "path": "Manus/wechat_mini_program_research/4_startup_and_scrolling.md",
+    "reason": "微信小程序启动与滚动，非Android原生",
+    "score": 4
+  },
+  {
+    "path": "Manus/wechat_mini_program_research/5_goals_and_challenges.md",
+    "reason": "微信小程序目标与挑战，非Android",
+    "score": 3
+  },
+  {
+    "path": "Manus/wechat_mini_program_research/6_optimization_strategies.md",
+    "reason": "微信小程序优化策略，非Android原生",
+    "score": 3
+  },
+  {
+    "path": "Manus/wechat_mini_program_research/7_app_vs_game.md",
+    "reason": "微信小程序App vs Game对比，非Android",
+    "score": 3
+  },
+  {
+    "path": "Manus/wechat_mini_program_research/index.md",
+    "reason": "微信小程序调研目录，非Android",
+    "score": 2
+  },
+  {
+    "path": "Manus/wechat_mini_program_research/todo.md",
+    "reason": "微信小程序调研TODO，非Android",
+    "score": 2
+  },
+  {
+    "path": "AutoResearchClaw研究/2026-03-17/文献卡片/1.md",
+    "reason": "AutoResearch研究文献卡片，非Android",
+    "score": 2
+  },
+  {
+    "path": "AutoResearchClaw研究/2026-03-17/文献卡片/2.md",
+    "reason": "AutoResearch研究文献卡片，非Android",
+    "score": 2
+  },
+  {
+    "path": "AutoResearchClaw研究/2026-03-17/文献卡片/3.md",
+    "reason": "AutoResearch研究文献卡片，非Android",
+    "score": 2
+  },
+  {
+    "path": "AutoResearchClaw研究/2026-03-17/文献卡片/4.md",
+    "reason": "AutoResearch研究文献卡片，非Android",
+    "score": 2
+  },
+  {
+    "path": "AutoResearchClaw研究/2026-03-17/文献卡片/5.md",
+    "reason": "AutoResearch研究文献卡片，非Android",
+    "score": 2
+  },
+  {
+    "path": "AutoResearchClaw研究/2026-03-17/文献卡片/6.md",
+    "reason": "AutoResearch研究文献卡片，非Android",
+    "score": 2
+  },
+  {
+    "path": "AutoResearchClaw研究/2026-03-17/研究假设.md",
+    "reason": "AutoResearch研究假设，非Android",
+    "score": 2
+  },
+  {
+    "path": "AutoResearchClaw研究/2026-03-17/研究摘要.md",
+    "reason": "AutoResearch研究摘要，非Android",
+    "score": 2
+  },
+  {
+    "path": "AutoResearchClaw研究/2026-03-17/研究目标.md",
+    "reason": "AutoResearch研究目标，非Android",
+    "score": 2
+  },
+  {
+    "path": "AutoResearchClaw研究/2026-03-18/00-README.md",
+    "reason": "AutoResearch研究README，非Android",
+    "score": 2
+  },
+  {
+    "path": "AutoResearchClaw研究/2026-03-18/01-论文大纲.md",
+    "reason": "AutoResearch论文大纲，非Android",
+    "score": 2
+  },
+  {
+    "path": "AutoResearchClaw研究/2026-03-18/02-论文草稿-失败.md",
+    "reason": "AutoResearch论文草稿，非Android",
+    "score": 2
+  },
+  {
+    "path": "Claude/Anthropic工程博客/2026-03-11-Quantifying-infrastructure-noise-in-agentic-coding-evals.md",
+    "reason": "Anthropic工程博客，AI工具相关非Android",
+    "score": 3
+  },
+  {
+    "path": "Claude/Anthropic工程博客/2026-03-24-Harness-design-for-long-running-application-development.md",
+    "reason": "Anthropic工程博客，非Android",
+    "score": 3
+  },
+  {
+    "path": "Claude/Anthropic工程博客/2026-03-25-Claude-Code-auto-mode-a-safer-way-to-skip-permissions.md",
+    "reason": "Claude Code auto mode，非Android",
+    "score": 2
+  },
+  {
+    "path": "Claude/Claude Code 基操/基操指南.md",
+    "reason": "Claude Code操作指南，非Android",
+    "score": 2
+  },
+  {
+    "path": "Claude/Claude 记录.md",
+    "reason": "Claude使用记录，非Android",
+    "score": 2
+  },
+  {
+    "path": "Claude/Skills/宝玉 Skill/安装.md",
+    "reason": "Claude Skill安装，非Android",
+    "score": 2
+  },
+  {
+    "path": "Claude/Skills/推荐 Skills.md",
+    "reason": "Claude推荐Skills，非Android",
+    "score": 2
+  },
+  {
+    "path": "Claude/claude 流程和架构图.md",
+    "reason": "Claude架构图，非Android",
+    "score": 2
+  },
+  {
+    "path": "Claude/插件与工具/工具与MCP.md",
+    "reason": "Claude MCP工具，非Android",
+    "score": 2
+  },
+  {
+    "path": "Claude/插件与工具/已安装插件.md",
+    "reason": "Claude已安装插件，非Android",
+    "score": 2
+  },
+  {
+    "path": "Claude/账号与密钥/Claude Account.md",
+    "reason": "Claude账号管理，非Android",
+    "score": 1
+  },
+  {
+    "path": "OpenClaw/分享调研/01-架构与原理.md",
+    "reason": "OpenClaw架构原理，非Android",
+    "score": 2
+  },
+  {
+    "path": "OpenClaw/分享调研/02-核心机制.md",
+    "reason": "OpenClaw核心机制，非Android",
+    "score": 2
+  },
+  {
+    "path": "OpenClaw/归档/skills-inventory-2026-02-23.md",
+    "reason": "OpenClaw Skills清单归档，非Android",
+    "score": 1
+  },
+  {
+    "path": "OpenClaw/技术文档/OpenClaw-安全思想钢印-v2.7-本机版.md",
+    "reason": "OpenClaw安全文档，非Android",
+    "score": 2
+  },
+  {
+    "path": "OpenClaw/技术文档/glm-mcp-routing.md",
+    "reason": "GLM MCP路由配置，非Android",
+    "score": 2
+  },
+  {
+    "path": "OpenClaw/技术文档/info-task-format.md",
+    "reason": "OpenClaw任务格式文档，非Android",
+    "score": 2
+  },
+  {
+    "path": "OpenClaw/技术文档/opencli-current-status.md",
+    "reason": "OpenCLI状态文档，非Android",
+    "score": 2
+  },
+  {
+    "path": "OpenClaw/技术文档/opencli-setup.md",
+    "reason": "OpenCLI安装文档，非Android",
+    "score": 2
+  },
+  {
+    "path": "OpenClaw/技术文档/task-model-routing.md",
+    "reason": "OpenClaw任务模型路由，非Android",
+    "score": 2
+  },
+  {
+    "path": "每日想法/2026-02-11.md",
+    "reason": "每日想法笔记，非Android技术",
+    "score": 1
+  },
+  {
+    "path": "每日想法/2026-02-18.md",
+    "reason": "每日想法笔记，非Android技术",
+    "score": 1
+  },
+  {
+    "path": "每日想法/2026-02-21.md",
+    "reason": "每日想法笔记，非Android技术",
+    "score": 1
+  },
+  {
+    "path": "每日想法/2026-03-05.md",
+    "reason": "每日想法笔记，非Android技术",
+    "score": 1
+  },
+  {
+    "path": "每日想法/2026-03-10.md",
+    "reason": "每日想法笔记，非Android技术",
+    "score": 1
+  },
+  {
+    "path": "每日想法/2026-03-12.md",
+    "reason": "每日想法笔记，非Android技术",
+    "score": 1
+  },
+  {
+    "path": "软件/1Password.md",
+    "reason": "软件使用笔记，非Android",
+    "score": 1
+  },
+  {
+    "path": "软件/OpenClaw.md",
+    "reason": "OpenClaw软件笔记，非Android",
+    "score": 1
+  },
+  {
+    "path": "软件/Proxyman.md",
+    "reason": "Proxyman工具笔记，非Android",
+    "score": 1
+  },
+  {
+    "path": "软件/Tailwind.md",
+    "reason": "Tailwind CSS笔记，非Android",
+    "score": 1
+  },
+  {
+    "path": "软件/终端美化.md",
+    "reason": "终端美化配置，非Android",
+    "score": 1
+  },
+  {
+    "path": "人生管理/2026-03-02.md",
+    "reason": "人生管理笔记，非Android",
+    "score": 1
+  },
+  {
+    "path": "人生管理/README.md",
+    "reason": "人生管理目录，非Android",
+    "score": 1
+  },
+  {
+    "path": "人生管理/信念系统.md",
+    "reason": "人生管理笔记，非Android",
+    "score": 1
+  },
+  {
+    "path": "X运营策略/2026-03-19.md",
+    "reason": "X/Twitter运营策略，非Android",
+    "score": 2
+  },
+  {
+    "path": "X运营策略/策略汇总.md",
+    "reason": "X/Twitter运营策略汇总，非Android",
+    "score": 2
+  },
+  {
+    "path": "小说工坊",
+    "reason": "小说创作内容，与Android无关",
+    "score": 1
+  },
+  {
+    "path": "工作记录",
+    "reason": "个人工作日志，非系统性Android技术文档",
+    "score": 2
+  },
+  {
+    "path": "个人项目",
+    "reason": "个人项目规划，非Android内部机制",
+    "score": 2
+  },
+  {
+    "path": "images",
+    "reason": "图片目录",
+    "score": 1
+  },
+  {
+    "path": "OpenClaw定时任务",
+    "reason": "OpenClaw任务输出目录，全部为AI Agent生成内容，与Android内部机制无关",
+    "score": 2
+  },
+  {
+    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw/分享调研/01-架构与原理.md",
+    "title": "01-架构与原理",
+    "total_score": 8,
+    "reason": "Total score < 10"
+  },
+  {
+    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw/分享调研/02-核心机制.md",
+    "title": "02-核心机制",
+    "total_score": 4,
+    "reason": "Total score < 10"
+  },
+  {
+    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/AI手机行业日报/2026-04-09-AI手机行业日报.md",
+    "title": "2026-04-09-AI手机行业日报",
+    "total_score": 9,
+    "reason": "Total score < 10"
+  },
+  {
+    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/AK-RSS-Digest（89源精选）/2026-04-09-AK-RSS-Digest（89源精选）.md",
+    "title": "2026-04-09-AK-RSS-Digest（89源精选）",
+    "total_score": 8,
+    "reason": "Total score < 10"
+  },
+  {
+    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/ClawFeed24小时高价值一览/2026-04-10-ClawFeed24小时高价值一览.md",
+    "title": "2026-04-10-ClawFeed24小时高价值一览",
+    "total_score": 9,
+    "reason": "Total score < 10"
+  },
+  {
+    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/DailyDigest日终复盘/2026-04-09-DailyDigest日终复盘.md",
+    "title": "2026-04-09-DailyDigest日终复盘",
+    "total_score": 8,
+    "reason": "Total score < 10"
+  },
+  {
+    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/GitHub自仓库IssuePR监控/2026-04-09-GitHub自仓库IssuePR监控.md",
+    "title": "2026-04-09-GitHub自仓库IssuePR监控",
+    "total_score": 8,
+    "reason": "Total score < 10"
+  },
+  {
+    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/Gracker的Rss订阅/2026-04-09-Gracker的Rss订阅.md",
+    "title": "2026-04-09-Gracker的Rss订阅",
+    "total_score": 8,
+    "reason": "Total score < 10"
+  },
+  {
+    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/Obsidian内容回顾/2026-04-09-Obsidian内容回顾.md",
+    "title": "2026-04-09-Obsidian内容回顾",
+    "total_score": 8,
+    "reason": "Total score < 10"
+  },
+  {
+    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/Obsidian新增文件与今日总结（22点）/2026-04-09-Obsidian新增文件与今日总结（22点）.md",
+    "title": "2026-04-09-Obsidian新增文件与今日总结（22点）",
+    "total_score": 8,
+    "reason": "Total score < 10"
+  },
+  {
+    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/Perfetto每日提交解读/2026-04-09-Perfetto提交解读.md",
+    "title": "2026-04-09-Perfetto提交解读",
+    "total_score": 8,
+    "reason": "Total score < 10"
+  },
+  {
+    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/三层记忆维护/2026-04-09-三层记忆维护.md",
+    "title": "2026-04-09-三层记忆维护",
+    "total_score": 8,
+    "reason": "Total score < 10"
+  },
+  {
+    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/前沿研究/2026-04-09-07-gpu-graphics-no-results.md",
+    "title": "2026-04-09-07-gpu-graphics-no-results",
+    "total_score": 8,
+    "reason": "Total score < 10"
+  },
+  {
+    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/夜航之上发布准备/2026-04-09-夜航之上发布准备.md",
+    "title": "2026-04-09-夜航之上发布准备",
+    "total_score": 8,
+    "reason": "Total score < 10"
+  },
+  {
+    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/工具链守门-SkillVetter/2026-04-09-工具链守门-SkillVetter.md",
+    "title": "2026-04-09-工具链守门-SkillVetter",
+    "total_score": 8,
+    "reason": "Total score < 10"
+  },
+  {
+    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/时效性巡检/2026-04-10-时效性巡检.md",
+    "title": "2026-04-10-时效性巡检",
+    "total_score": 8,
+    "reason": "Total score < 10"
+  },
+  {
+    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/每日Task巡检与自修复/2026-04-09-每日Task巡检与自修复.md",
+    "title": "2026-04-09-每日Task巡检与自修复",
+    "total_score": 8,
+    "reason": "Total score < 10"
+  },
+  {
+    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/每日冥想流程/2026-04-09-每日冥想流程.md",
+    "title": "2026-04-09-每日冥想流程",
+    "total_score": 8,
+    "reason": "Total score < 10"
+  },
+  {
+    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/每日自我进化/2026-04-09-每日自我进化.md",
+    "title": "2026-04-09-每日自我进化",
+    "total_score": 8,
+    "reason": "Total score < 10"
+  },
+  {
+    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/知识资产盘点/2026-04-09-知识资产盘点.md",
+    "title": "2026-04-09-知识资产盘点",
+    "total_score": 8,
+    "reason": "Total score < 10"
+  },
+  {
+    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/资讯简报（综合）/2026-04-09-资讯简报（综合）.md",
+    "title": "2026-04-09-资讯简报（综合）",
+    "total_score": 8,
+    "reason": "Total score < 10"
+  },
+  {
+    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/source/claude-code-docs/00-首页.md",
+    "title": "00-首页",
+    "total_score": 4,
+    "reason": "Total score < 10"
+  },
+  {
+    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/source/claude-code-docs/01-架构总览.md",
+    "title": "01-架构总览",
+    "total_score": 8,
+    "reason": "Total score < 10"
+  },
+  {
+    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/source/claude-code-docs/02-源码泄露的价值之争.md",
+    "title": "02-源码泄露的价值之争",
+    "total_score": 8,
+    "reason": "Total score < 10"
+  },
+  {
+    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/source/claude-code-docs/03-Agent循环.md",
+    "title": "03-Agent循环",
+    "total_score": 4,
+    "reason": "Total score < 10"
+  },
+  {
+    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/source/claude-code-docs/04-上下文工程.md",
+    "title": "04-上下文工程",
+    "total_score": 4,
+    "reason": "Total score < 10"
+  },
+  {
+    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/source/claude-code-docs/05-消息压缩系统.md",
+    "title": "05-消息压缩系统",
+    "total_score": 8,
+    "reason": "Total score < 10"
+  },
+  {
+    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/source/claude-code-docs/06-权限系统.md",
+    "title": "06-权限系统",
+    "total_score": 8,
+    "reason": "Total score < 10"
+  },
+  {
+    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/source/claude-code-docs/07-记忆管理.md",
+    "title": "07-记忆管理",
+    "total_score": 4,
+    "reason": "Total score < 10"
+  },
+  {
+    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/source/claude-code-docs/08-工具与Skill系统.md",
+    "title": "08-工具与Skill系统",
+    "total_score": 8,
+    "reason": "Total score < 10"
+  },
+  {
+    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/source/claude-code-docs/09-MCP集成.md",
+    "title": "09-MCP集成",
+    "total_score": 4,
+    "reason": "Total score < 10"
+  },
+  {
+    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/source/claude-code-docs/10-未来功能蓝图.md",
+    "title": "10-未来功能蓝图",
+    "total_score": 4,
+    "reason": "Total score < 10"
+  },
+  {
+    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/source/claude-code-docs/11-AI-Coding时代的Code-Review.md",
+    "title": "11-AI-Coding时代的Code-Review",
+    "total_score": 4,
+    "reason": "Total score < 10"
+  },
+  {
+    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/source/claude-code-docs/12-从Claude-Code权限系统学Agent安全设计.md",
+    "title": "12-从Claude-Code权限系统学Agent安全设计",
+    "total_score": 8,
+    "reason": "Total score < 10"
+  },
+  {
+    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/source/claude-code-docs/13-啃完源码之后的一些发现.md",
+    "title": "13-啃完源码之后的一些发现",
+    "total_score": 8,
+    "reason": "Total score < 10"
+  },
+  {
+    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/小说工坊/夜航之上（分章）/第002章-演练终结.md",
+    "title": "第002章-演练终结",
+    "total_score": 4,
+    "reason": "Total score < 10"
+  },
+  {
+    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/小说工坊/夜航之上（分章）/第007章-效用函数.md",
+    "title": "第007章-效用函数",
+    "total_score": 4,
+    "reason": "Total score < 10"
+  },
+  {
+    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/小说工坊/夜航之上（分章）/第044章-动态调整.md",
+    "title": "第044章-动态调整",
+    "total_score": 4,
+    "reason": "Total score < 10"
+  },
+  {
+    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/小说工坊/夜航之上（分章）/第052章-临界点突破.md",
+    "title": "第052章-临界点突破",
+    "total_score": 4,
+    "reason": "Total score < 10"
   }
 ]
