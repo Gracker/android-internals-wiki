@@ -4440,7 +4440,10 @@
       "reviewed_date": "2026-04-05",
       "reviewed_by": "openclaw-task6",
       "re_review_date": "2026-04-05",
-      "re_review_result": "审查2条素材无需修改，已恢复finalized"
+      "re_review_result": "审查2条素材无需修改，已恢复finalized",
+      "polish_count": 1,
+      "polish_date": "2026-04-10",
+      "polish_by": "task2b-polish"
     },
     "13.4": {
       "title": "命令行打开超大 Trace",
