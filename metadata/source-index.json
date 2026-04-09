@@ -10848,6 +10848,122 @@
       ],
       "summary": "从整机体验到CPU/DRAM/UFS/GPU/thermal的整机性能专家能力地图",
       "scored_at": "2026-04-10T01:57:56.097569"
+    },
+    {
+      "title": "Android性能功耗热优化研究摘要",
+      "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-23-性能功耗热优化研究/00-研究摘要.md",
+      "score": 13,
+      "quality": "medium",
+      "chapters": [
+        {
+          "id": "ch06",
+          "confidence": "high"
+        },
+        {
+          "id": "ch13",
+          "confidence": "high"
+        },
+        {
+          "id": "ch05",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "自适应Android性能功耗热优化框架研究摘要，目标降低功耗15%、性能损失≤5%，涉及CPU频率/GPU渲染/调度动态调整",
+      "scored_at": "2026-04-10T02:19:11.761569"
+    },
+    {
+      "title": "Android性能功耗热优化问题树",
+      "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-23-性能功耗热优化研究/完整输出/stage-02/problem_tree.md",
+      "score": 12,
+      "quality": "medium",
+      "chapters": [
+        {
+          "id": "ch06",
+          "confidence": "high"
+        },
+        {
+          "id": "ch13",
+          "confidence": "high"
+        },
+        {
+          "id": "ch01",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Android性能功耗热优化的问题分解树，含SMART目标（功耗降15%）、约束条件、成功标准和Benchmark定义",
+      "scored_at": "2026-04-10T02:19:11.761578"
+    },
+    {
+      "title": "Android性能功耗热优化论文大纲",
+      "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-20-性能功耗热优化/stage-16/outline.md",
+      "score": 11,
+      "quality": "medium",
+      "chapters": [
+        {
+          "id": "ch06",
+          "confidence": "high"
+        },
+        {
+          "id": "ch13",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "TEMP/APEX/THERM框架论文大纲，涵盖自适应功耗热管理框架设计与实验方案",
+      "scored_at": "2026-04-10T02:19:11.761580"
+    },
+    {
+      "title": "Android性能功耗热优化研究目标（2026-03-23）",
+      "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-23-性能功耗热优化研究/01-研究目标.md",
+      "score": 11,
+      "quality": "medium",
+      "chapters": [
+        {
+          "id": "ch06",
+          "confidence": "high"
+        },
+        {
+          "id": "ch13",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "自适应优化框架研究目标，讨论Android 15调度API、ML-based自适应组件、在线学习+强化学习混合策略",
+      "scored_at": "2026-04-10T02:19:11.761581"
+    },
+    {
+      "title": "Android性能功耗热优化研究目标（2026-03-22）",
+      "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-22-Android性能功耗热优化研究/01-研究目标.md",
+      "score": 10,
+      "quality": "medium",
+      "chapters": [
+        {
+          "id": "ch06",
+          "confidence": "high"
+        },
+        {
+          "id": "ch13",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "AI工作负载下Android性能优化研究目标，关注LLM推理/CV任务的时空相关性与自适应调度",
+      "scored_at": "2026-04-10T02:19:11.761583"
+    },
+    {
+      "title": "Android性能功耗热优化文献综合（2026-03-23）",
+      "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-23-性能功耗热优化研究/02-文献综合.md",
+      "score": 10,
+      "quality": "medium",
+      "chapters": [
+        {
+          "id": "ch06",
+          "confidence": "medium"
+        },
+        {
+          "id": "ch01",
+          "confidence": "low"
+        }
+      ],
+      "summary": "Android系统文献综合，涵盖设备控制数据集、恶意软件检测、任务自动化等领域的关联分析",
+      "scored_at": "2026-04-10T02:19:11.761584"
     }
   ]
 }

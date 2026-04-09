@@ -396,3 +396,21 @@ Android 16 代号（"Baklava" vs "Vanilla Ice Cream"）与 API 版本（35 vs 36
 
 ### 关联章节
 2.12, 1.8（Activity Manager Service）, 8.2（App 启动全流程）, 8.4（其他响应速度场景）
+
+
+## [2026-04-10] 1.2 系统启动全流程 — 知识盲区
+
+### 盲区描述
+Android 7.0 引入的 Direct Boot 机制让设备在锁屏状态下部分 App 可运行，Credential Encrypted（CE）和 Device Encrypted（DE）存储有不同的访问权限。启动链中 locked_boot_completed 和 boot_completed 的区分与 Direct Boot 直接相关，但本节未覆盖。
+
+### 重要程度
+中
+
+### 建议研究方向
+- Direct Boot 两个存储区域的访问权限差异
+- Credential Encrypted Storage 在启动链中的解锁时机
+- locked_boot_completed 与 boot_completed 之间的系统行为变化
+- 对 App 冷启动优化的影响（首次解锁后 vs 已解锁状态）
+
+### 关联章节
+1.1（Android 分层架构）, 1.3（进程模型与生命周期管理）, 8.2（App 启动全流程）
