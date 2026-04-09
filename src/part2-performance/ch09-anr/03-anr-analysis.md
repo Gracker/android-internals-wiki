@@ -2,12 +2,12 @@
 title: "ANR 分析方法"
 chapter: "9.3"
 section: "9.3"
-status: ready-for-review
+status: ready-to-publish
 drafted_date: "2026-04-02"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 36)"
 last_verified: "2026-04-02"
 last_verified_against: "AOSP android-16.0.0_r1"
-reviewed_date: "2026-04-03"
+reviewed_date: "2026-04-09"
 reviewed_by: openclaw-task6
 polish_count: 1
 polish_date: "2026-04-05"
@@ -363,11 +363,10 @@ full avg10=0.00 avg60=0.00 avg300=0.00 total=34803
 - **Android 8.0（API 26）**：traces.txt 的格式基本定型
 - **Android 10（API 29）**：ANR 日志中开始包含 Memory Pressure 信息
 - **Android 12（API 31）**：ANR traces 的 dump 路径改为 `/data/anr/<process_name>_anr_<timestamp>`
-- **Android 16（API 36）**：引入 ProfilingManager 系统触发式追踪
-
 - **Android 13（API 33）**：ANR traces 开始包含更完整的 Native 线程调用栈，Perfetto 系统层面 trace 覆盖范围扩大
 - **Android 14（API 34）**：Perfetto 中新增 `android.anr` track，ANR 触发到 dump 的完整时序可直接在 Trace 中观察
 - **Android 15（API 35）**：Input ANR 超时阈值在部分场景下从 5s 调整为更精细的分档策略
+- **Android 16（API 36）**：引入 ProfilingManager 系统触发式追踪
 
 [待验证: Android 13-15 的具体 ANR 分析机制变化细节，以上基于公开 Release Notes 推断]
 
