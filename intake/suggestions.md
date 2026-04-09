@@ -138,3 +138,36 @@
 - **位置**：frontmatter related_chapters
 - **问题**：related_chapters 列出的 8 个章节中，1.4、1.7、5.6 仍为 ready-for-review 状态，2.9 已升至 ready-to-publish。出版前需确认这些章节的状态。
 - **建议**：出版前逐一验证 related_chapters 中每个章节的实际状态和章节号/名称是否匹配
+
+
+## [Task9 Deep Review] 2.12 Window Manager Service 与窗口管理 — 2026-04-10
+
+- **类型**：版本差异
+- **位置**：版本演进表（Android 10 → Android 12）
+- **问题**：Android 11（API 30）版本变化完全缺失。Android 11 对 WMS 有重要变化：DisplayCutout API 完善（getDisplayCutout() 行为变化）、Bubbles 浮动窗口（涉及 WMS 窗口层级和 z-order 变化）、Shade 窗口变化
+- **建议**：补充 Android 11（API 30）的 WMS 变化条目
+
+- **类型**：版本差异
+- **位置**：版本演进表（Android 12 → Android 14）
+- **问题**：Android 13（API 33）版本变化完全缺失。Android 13 引入了 predictive back gesture developer options、Bubbles API 正式版，以及 Task bar 的引入（对 WMS 的系统栏窗口管理有影响）
+- **建议**：补充 Android 13（API 33）的 WMS 变化条目
+
+- **类型**：版本差异
+- **位置**：版本演进表（Android 14 → Android 16）
+- **问题**：Android 15（API 35）Edge-to-Edge 强制执行对 WMS Insets 分发频率的影响未在版本表中单独列出。Edge-to-Edge 之前是可选行为，Android 15 强制执行后 WMS 的 Insets 计算和分发成为更频繁的操作
+- **建议**：补充 Android 15（API 35）Edge-to-Edge 强制对 WMS Insets 分发的增量影响
+
+- **类型**：数据缺失
+- **位置**：StartingWindow 部分（「reportDrawFinished 信号来协调」）
+- **问题**：「无缝切换」依赖 reportDrawFinished 信号，但没有量化数据：典型设备上从 App 调用 reportDrawFinished 到 WMS 实际移除 StartingWindow 的延迟是多少 ms？这个延迟是否在 VSync 边界上？
+- **建议**：补充实测数据或 Perfetto Trace 片段，标注该延迟的典型值和影响因素
+
+- **类型**：源码准确性
+- **位置**：Surface 创建流程第5步注释 + 「[待验证] SurfaceControl.Transaction.apply() 是否同步等待」
+- **问题**：`Transaction.apply()` 的同步等待行为在 Surface 首次创建时（SurfaceFlinger 完成 Layer 创建后）是否会有不同的行为？该问题标注为「待验证」但未给出验证路径，导致关键结论依赖未确认假设
+- **建议**：补充 AOSP 源码路径（SurfaceComposerClient::apply 或 SurfaceControl::apply）并明确注释在何种条件下 apply 是异步的、何种条件下可能同步
+
+- **类型**：知识盲区
+- **位置**：relayoutWindow 部分（性能分析）
+- **问题**：未覆盖 WMS 的 mGlobalLock 锁竞争机制——这是 WMS 性能问题的核心却未体现。Binder 线程上的 relayoutWindow 被 mGlobalLock 阻塞是常见场景，读者无法据此分析实际 trace
+- **建议**：补充 mGlobalLock 的作用机制，说明 relayoutWindow 和 AMS 主线程操作在锁上的竞争关系，以及如何在 Perfetto 中识别此类问题

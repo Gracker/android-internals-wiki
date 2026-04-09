@@ -378,3 +378,21 @@ Android 16 代号（"Baklava" vs "Vanilla Ice Cream"）与 API 版本（35 vs 36
 
 ### 关联章节
 1.4（Binder IPC）、1.7（ART 编译管线）、5.6（Android 功耗管理）、4.6（内存版本演进）
+
+
+## [2026-04-10] 2.12 Window Manager Service 与窗口管理 — WMS 锁竞争机制缺失
+
+### 盲区描述
+章节覆盖了 WMS 的 relayoutWindow、performLayout、StartingWindow 等核心概念，但缺少对 WMS 全局锁（`mGlobalLock`）的锁竞争机制的深度分析。WMS 的 Binder 线程执行 relayoutWindow 时需要获取 mGlobalLock，而 AMS、IMS 等其他系统服务也在同一把锁上。当 AMS 持有锁处理 Activity 生命周期时，所有 WMS 的 relayout 请求都会被阻塞——这是 WMS 性能问题的核心根因，却未在章节中体现。读者无法据此分析"为什么 WMS 耗时但看起来没做什么"的典型场景。
+
+### 重要程度
+高
+
+### 建议研究方向
+- AOSP WindowManagerService.java 中 mGlobalLock 的获取时机和范围（relayoutWindow、performLayout、addWindow 等关键方法的锁区域）
+- system_server 主线程与 Binder 线程在 mGlobalLock 上的竞争模式
+- 如何在 Perfetto 中通过锁等待事件（THREAD_WAITING）识别 WMS 锁竞争
+- 与 AMS 的 mGlobalLock 共享关系：为什么 AMS 的耗时操作会传导到 WMS
+
+### 关联章节
+2.12, 1.8（Activity Manager Service）, 8.2（App 启动全流程）, 8.4（其他响应速度场景）
