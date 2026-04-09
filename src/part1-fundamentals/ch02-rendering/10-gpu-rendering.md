@@ -2,9 +2,9 @@
 section: "2.10"
 title: "GPU 渲染深入"
 chapter: "2.10"
-status: ready-to-publish
+status: ready-for-review
 applicable_versions: "Android 12 - Android 16 (API 31-36)"
-last_verified: "2026-04-03"
+last_verified: "2026-04-09"
 last_verified_against: "AOSP android-16.0.0_r1, developer.android.com"
 confidence: medium
 sources:
@@ -283,7 +283,7 @@ Vertex bound 在 Android UI 渲染中相对少见，但在某些场景下会出�
 
 优化的方向包括：使用更简单的几何形状替代复杂 Path（用矩形近似圆角矩形在视觉可接受的情况下）；减少 Canvas 的 save/restore 和矩阵变换层数；对于静态的复杂图形，考虑预渲染为 Bitmap 缓存。
 
-> [已验证: AOSP android-16.0.0_r1, frameworks/native/opengl/]
+> [待验证: frameworks/native/opengl/ 在 AOSP android-16 中不存在，OpenGL ES 系统头文件位于 system/core/libsystem/include/，TBR 架构描述的准确来源需重新确认
 > 在瓦片式渲染（TBR）架构的移动 GPU 上，通过高效管理加载和存储操作以及附件，可以显著提高性能。TBR 架构的 GPU（如 ARM Mali）会将一帧的渲染任务划分为多个瓦片，每个瓦片独立处理，这减少了对主显存的访问频率。
 
 ### Bandwidth Bound：内存带宽瓶颈
@@ -512,9 +512,9 @@ GPU 渲染并不是一个独立的环节，它是整个 Android 渲染管线中�
 ## 参考资料
 
 ### AOSP 源码路径
-- `frameworks/base/core/java/android/graphics/` — 图形核心类（Canvas、Paint、Shader、GraphicBuffer 等）
-- `frameworks/native/libs/ui/` — GraphicBuffer 的 native 实现
-- `frameworks/native/opengl/` — OpenGL ES EGL/GLES 实现
+- `frameworks/native/libs/ui/include/ui/GraphicBuffer.h` — GraphicBuffer C++ 定义（AOSP）
+- `system/core/libsystem/include/android/native_window.h` — ANativeWindowBuffer 定义
+- [ANGLE 源码（Google Git）](https:///android.googlesource.com/platform/external/angle/) — ANGLE OpenGL ES on Vulkan
 - `frameworks/native/vulkan/` — Vulkan API 支持
 - `hardware/interfaces/graphics/allocator/` — Gralloc HAL 定义
 - `frameworks/native/services/surfaceflinger/` — SurfaceFlinger 合成服务
