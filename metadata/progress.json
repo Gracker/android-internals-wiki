@@ -5337,7 +5337,7 @@
   },
   "8.6": {
     "title": "Kotlin Coroutine 性能实践",
-    "status": "reviewed",
+    "status": "ready-to-publish",
     "file": "src/part2-performance/ch08-responsiveness/06-coroutine-performance.md",
     "drafted_date": "2026-04-02",
     "drafted_by": "openclaw-task2a",
@@ -5347,7 +5347,8 @@
     "anchors_covered": 5,
     "anchors_total": 5,
     "verification_level": "L2",
-    "confidence": "medium"
+    "confidence": "medium",
+    "last_reviewed": "2026-04-09"
   },
   "ready-for-review": 1,
   "2.2": {
