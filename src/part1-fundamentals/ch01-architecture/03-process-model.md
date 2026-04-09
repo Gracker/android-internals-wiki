@@ -1,9 +1,9 @@
 ---
 title: "进程模型与生命周期管理"
 chapter: "1.3"
-status: ready-to-publish
+status: ready-for-review
 applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
-last_verified: "2026-03-31"
+last_verified: "2026-04-09"
 last_verified_against: "AOSP android-16.0.0_r1"
 drafted_date: "2026-03-31"
 reviewed_date: "2026-04-06"
@@ -52,23 +52,24 @@ related_chapters: ["1.1", "1.2", "1.4", "1.5"]
 
 [已验证: 官方文档, source.android.com/docs/core/memory]
 
+在 AOSP 中，Zygote 的启动和 fork 流程涉及三个关键类的协作：
+
+**`ZygoteInit.main()`** 负责初始化——预加载类和资源，然后创建 `ZygoteServer` 实例并进入等待循环：
+
 ```java
 // frameworks/base/core/java/com/android/internal/os/ZygoteInit.java
-// @ AOSP android-16.0.0_r1
+// @ AOSP android-16.0.0_r1（简化流程，非逐行源码）
 public static void main(String[] argv) {
-    ZygoteServer zygoteServer = null;
-    try {
-        // 预加载共享的类和资源
-        preload(bootTimingsTraceLog);
-        // 启动 Zygote Server，等待 AMS 的 fork 请求
-        zygoteServer = new ZygoteServer(isPrimaryZygote);
-        // 进入循环，等待新的 fork 请求
-        caller = zygoteServer.getServerSocket().accept();
-        // 收到请求后 fork 子进程
-        Zygote.forkAndSpecialize(...);
-    }
+    // 1. 预加载共享的 Java 类、资源和 native 库
+    preload(bootTimingsTraceLog);
+    // 2. 创建 ZygoteServer，打开 LocalSocket
+    ZygoteServer zygoteServer = new ZygoteServer(isPrimaryZygote);
+    // 3. 进入 selectLoop，等待 AMS 发来的 fork 请求
+    caller = zygoteServer.runSelectLoop(abiList);
 }
 ```
+
+注意：这里展示的是简化后的主干流程，省略了异常处理和参数解析。实际的 socket accept 和 fork 操作不在 `main()` 中，而是在 `ZygoteServer.runSelectLoop()` 内部处理。当收到 AMS 的请求后，`ZygoteConnection.processCommand()` 负责解析参数并调用 `Zygote.forkAndSpecialize()` 创建子进程。
 
 这里有几个值得注意的细节。第一，Zygote 实际上有两个：Primary Zygote 和 Secondary Zygote（32 位和 64 位），系统会根据 App 的 ABI 选择对应的 Zygote 来 fork。第二，fork 之后子进程会调用 `ApplicationLoaders` 来加载 App 自己的 APK 代码，而 Framework 层的代码已经在 Zygote 阶段加载好了。
 
@@ -160,17 +161,18 @@ lmkd 的核心工作逻辑并不复杂：它通过 PSI（Pressure Stall Informat
 
 ### LMK 的回收策略
 
-[图：LMK 回收流程图——PSI/memory pressure → lmkd 评估 → 按 oom_adj 从高到低选择 → SIGKILL → 释放内存，三个阶段（低/中/高压力）对应不同的回收范围]
+[图：LMK 回收流程图——PSI 压力检测 / 可用内存监控 → minfree 阈值匹配 → 按 oom_adj 等级选择目标进程 → SIGKILL → 释放内存]
 
-lmkd 并不是等到内存彻底用完才动手。它根据内存压力水平分为三个阶段：
+lmkd 并不是等到内存彻底用完才动手。它的回收策略基于 **minfree 配置阈值**——系统预设了一组内存阈值，每个阈值对应一个 oom_adj 等级。当可用内存低于某个阈值时，lmkd 就会杀掉所有 oom_adj 值高于对应等级的进程。
 
-1. **低压力（Low Memory）**：开始回收缓存进程中 oom_adj 最高的（即 999 的空进程）
-2. **中压力（Medium Memory）**：进一步回收更多的缓存进程
-3. **高压力（Critical Memory）**：回收服务进程、可见进程，极端情况下甚至回收前台进程
+这套阈值由 `lmkd` 在启动时从系统属性（`ro.lmk.low`、`ro.lmk.medium`、`ro.lmk.critical` 等）或 `lmkd.cfg` 配置文件中读取。不同设备厂商会根据物理内存大小和屏幕分辨率定制不同的阈值方案，这也是为什么同一款 App 在不同设备上的后台存活时间差异很大。
+
+从 Android 9 开始，lmkd 还集成了 **PSI（Pressure Stall Information）** 监测机制。PSI 由内核提供，能够精确感知内存分配的延迟情况（而不仅仅是剩余内存量）。当 PSI 检测到内存压力升高时，lmkd 会提前触发回收，而不是等到可用内存降到阈值以下才动手——这比传统的轮询方式更及时。
 
 在 Perfetto 中，可以通过 lmkd 事件来观察回收行为——当一个进程突然从进程列表中消失，并且时间点附近有 lmkd 的活动记录，大概率就是这个进程被 lmkd 回收了。此时可以结合 `lmkd` track 中的 kill 事件确认具体原因。
 
-[待验证: lmkd 在 Android 16 中的 PSI 配置是否有变化]
+[已验证: AOSP android-16.0.0_r1, system/memory/lmkd/ — minfree 阈值 + PSI 监测]
+[待验证: Android 16 中各厂商的默认 minfree 配置是否有统一标准]
 
 ### AMS 如何动态调整进程优先级
 
