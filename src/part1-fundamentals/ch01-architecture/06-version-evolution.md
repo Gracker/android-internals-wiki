@@ -71,13 +71,13 @@ reviewed_by: "openclaw-task6"
 
 Android 的架构演进不是线性的——有些版本在底层做了根本性的重构（如 5.0 引入 ART、8.0 引入 Treble），而有些版本则在应用层和 API 层做了大量工作。我们聚焦于那些改变了系统底层行为的版本。
 
-### Android 4.4 KitKat：ART 初登场
+### Android 4.4 KitKat（API 19）：ART 初登场
 
 Android 4.4（2013 年）是一个特殊的过渡版本。它首次将 ART（Android Runtime）作为实验性选项引入，与 Dalvik 并存。此时 ART 还不是默认运行时，但它的出现意味着 Google 已经在为 Dalvik 的替代方案做准备了。
 
 从性能角度看，ART 的 AOT（Ahead-Of-Time）编译策略与 Dalvik 的 JIT（Just-In-Time）形成了鲜明对比：ART 在安装时就把 DEX 字节码编译成本地机器码，运行时不再需要即时编译的开销。这在当时的低端设备（512MB 内存）上带来了可感知的流畅度提升。
 
-### Android 5.0 Lollipop：64 位与 ART 正式上位
+### Android 5.0 Lollipop（API 21）：64 位与 ART 正式上位
 
 Android 5.0（2014 年）是 Android 历史上架构变动最大的版本之一，两件事同时发生：
 
@@ -85,7 +85,7 @@ Android 5.0（2014 年）是 Android 历史上架构变动最大的版本之一�
 
 **64 位支持。** Android 5.0 正式支持 64 位 ARMv8 架构。这不仅仅是为了寻址更大的内存空间——ARMv8 的指令集设计比 ARMv7 更高效，寄存器数量翻倍（从 16 个通用寄存器增加到 31 个），使得编译器生成的本地代码质量更高。Zygote 也因此有了 zygote64 和 zygote 两个进程，分别用于 fork 64 位和 32 位的应用进程。
 
-### Android 8.0 Oreo：Project Treble——模块化的起点
+### Android 8.0 Oreo（API 26）：Project Treble——模块化的起点
 
 Android 8.0（2017 年）引入了 **Project Treble**，这是 Android 架构演进中最重要的一次重构。[已验证: 官方文档 source.android.com/docs/core/architecture]
 
@@ -110,7 +110,7 @@ Treble 的解决方案简洁而彻底：在 Android Framework 和厂商实现（
 
 对性能分析的影响：Treble 之后，Binder IPC 中出现了两类通信——传统的 `binder`（Framework 层）和新增的 `hwbinder`（HAL 层）。在 Perfetto 中你可以看到这两种 Binder 调用，它们的行为特征有所不同。hwbinder 调用通常涉及硬件操作（如相机、传感器），延迟更高。
 
-### Android 10：Project Mainline 与 APEX
+### Android 10（API 29）：Project Mainline 与 APEX
 
 Android 10（2019 年）在 Treble 的基础上更进一步，引入了 **Project Mainline**（也叫 Mainline modules）。[已验证: 官方文档 source.android.com/docs/core/ota/modular-system]
 
@@ -120,7 +120,7 @@ Android 10（2019 年）在 Treble 的基础上更进一步，引入了 **Projec
 
 [自动发现: 来源 obsidian/Personal-Knowlodge/source/2026-03-07_wechat_Android_运行时更新_为数十亿设备提高内存.md] ART 作为 Mainline 模块的特别意义在于：ART 的性能优化（如写入屏障消除、隐式挂起检查等编译器改进）可以通过 Play Store 推送到 Android 12+ 的设备上，无需完整系统更新。Google 称这些优化为全球超过 10 亿台设备节省了约 47-95 PB 的存储空间。
 
-### Android 12：GKI 与 Material You
+### Android 12（API 31）：GKI 与 Material You
 
 Android 12（2021 年）在模块化道路上又迈了一步：**GKI（Generic Kernel Image）**。[已验证: 官方文档 source.android.com/docs/core/architecture/kernel/gki]
 
@@ -130,7 +130,7 @@ GKI 将模块化的边界推进到了 Linux 内核。在 GKI 之前，每个设�
 
 对性能分析的影响：GKI 意味着内核行为更加标准化。在做跨设备的性能对比时，内核层面的差异会越来越小，更多差异集中在 HAL 和 Vendor 层。
 
-### Android 16 (Baklava)：最新架构变化
+### Android 16 Baklava（API 36）：最新架构变化
 
 Android 16（2025 年 6 月发布，代号 Baklava）延续了模块化和性能优化的趋势。[已验证: 官方文档 developer.android.com/about/versions/16]
 

@@ -7103,6 +7103,694 @@
       "first_chars": "# Android启动优化常规优化与系统级方案完整调研\n\nAndroid启动优化一直是移动应用开发中的重点...",
       "quality": "medium",
       "indexed_at": "2026-04-09T13:18:04.844186"
+    },
+    {
+      "path": "Cubox/Android ANR-原理解析及常见案例-2024-02-02.md",
+      "title": "Android ANR原理解析及常见案例",
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 4,
+        "verifiability": 3
+      },
+      "total_score": 14,
+      "matched_chapters": [
+        "ch03-线程"
+      ],
+      "quality": "medium",
+      "indexed_at": "2026-04-09T13:58:32.593672"
+    },
+    {
+      "path": "Cubox/Android ANR深入分析 - 掘金-2022-12-05.md",
+      "title": "Android ANR深入分析",
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "total_score": 13,
+      "matched_chapters": [
+        "ch03-线程"
+      ],
+      "quality": "medium",
+      "indexed_at": "2026-04-09T13:58:32.593672"
+    },
+    {
+      "path": "Cubox/Android ANR的设计原理 - 掘金-2022-04-21.md",
+      "title": "Android ANR的设计原理",
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "total_score": 13,
+      "matched_chapters": [
+        "ch03-线程"
+      ],
+      "quality": "medium",
+      "indexed_at": "2026-04-09T13:58:32.593672"
+    },
+    {
+      "path": "Cubox/Android APP 内存管理：深入理解 Dalvik 虚拟机参数-2026-04-06.md",
+      "title": "Android APP 内存管理：深入理解 Dalvik 虚拟机参数",
+      "scores": {
+        "relevance": 5,
+        "depth": 3,
+        "timeliness": 5,
+        "verifiability": 4
+      },
+      "total_score": 17,
+      "matched_chapters": [
+        "ch07-内存"
+      ],
+      "quality": "high",
+      "indexed_at": "2026-04-09T13:58:32.593672"
+    },
+    {
+      "path": "Cubox/Android APP系统渲染管线优化小点-2025-05-12.md",
+      "title": "Android APP系统渲染管线优化小点",
+      "scores": {
+        "relevance": 5,
+        "depth": 3,
+        "timeliness": 5,
+        "verifiability": 3
+      },
+      "total_score": 16,
+      "matched_chapters": [
+        "ch05-渲染"
+      ],
+      "quality": "high",
+      "indexed_at": "2026-04-09T13:58:32.593672"
+    },
+    {
+      "path": "Cubox/Android ART dex2oat 浅析 - 内核工匠 - 博客园-2022-02-12.md",
+      "title": "Android ART dex2oat 浅析",
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "total_score": 13,
+      "matched_chapters": [
+        "ch04-启动",
+        "ch16-构建"
+      ],
+      "quality": "medium",
+      "indexed_at": "2026-04-09T13:58:32.593672"
+    },
+    {
+      "path": "Cubox/Android App Startup and Performance Optimisation using System Trace. (Part 2) - by Vishu Gupta - Pro.md",
+      "title": "Android App Startup and Performance Optimisation using System Trace Part 2",
+      "scores": {
+        "relevance": 5,
+        "depth": 3,
+        "timeliness": 4,
+        "verifiability": 3
+      },
+      "total_score": 15,
+      "matched_chapters": [
+        "ch04-启动",
+        "ch11-Profiling"
+      ],
+      "quality": "medium",
+      "indexed_at": "2026-04-09T13:58:32.593672"
+    },
+    {
+      "path": "Cubox/Android Bander 设计与实现 - 设计篇-2022-01-23.md",
+      "title": "Android Binder 设计与实现 - 设计篇",
+      "scores": {
+        "relevance": 5,
+        "depth": 4,
+        "timeliness": 3,
+        "verifiability": 4
+      },
+      "total_score": 16,
+      "matched_chapters": [
+        "ch01-架构"
+      ],
+      "quality": "high",
+      "indexed_at": "2026-04-09T13:58:32.593672"
+    },
+    {
+      "path": "Cubox/Android C++系列：JNI开发准则 - 掘金-2022-04-21.md",
+      "title": "Android C++系列：JNI开发准则",
+      "scores": {
+        "relevance": 3,
+        "depth": 2,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "total_score": 11,
+      "matched_chapters": [
+        "ch01-架构"
+      ],
+      "quality": "medium",
+      "indexed_at": "2026-04-09T13:58:32.593672"
+    },
+    {
+      "path": "Cubox/Android Camera内存问题剖析-2024-02-04.md",
+      "title": "Android Camera内存问题剖析",
+      "scores": {
+        "relevance": 4,
+        "depth": 4,
+        "timeliness": 4,
+        "verifiability": 4
+      },
+      "total_score": 16,
+      "matched_chapters": [
+        "ch07-内存"
+      ],
+      "quality": "high",
+      "indexed_at": "2026-04-09T13:58:32.593672"
+    },
+    {
+      "path": "Cubox/Android Developers Backstage - Episode 183- Baseline Profiles-2022-02-28.md",
+      "title": "Android Developers Backstage: Baseline Profiles",
+      "scores": {
+        "relevance": 4,
+        "depth": 2,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "total_score": 12,
+      "matched_chapters": [
+        "ch04-启动",
+        "ch14-工具"
+      ],
+      "quality": "medium",
+      "indexed_at": "2026-04-09T13:58:32.593672"
+    },
+    {
+      "path": "Cubox/Android Developers Backstage- Linting on the Side of Caution- Safety & Security-2025-04-13.md",
+      "title": "Android Developers Backstage: Linting Safety & Security",
+      "scores": {
+        "relevance": 3,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 2
+      },
+      "total_score": 11,
+      "matched_chapters": [
+        "ch12-安全"
+      ],
+      "quality": "medium",
+      "indexed_at": "2026-04-09T13:58:32.593672"
+    },
+    {
+      "path": "Cubox/Android Developers Blog- How a single Android developer improved Lyft's Drivers app startup time by.md",
+      "title": "Android Developers Blog: Lyft startup time 21%",
+      "scores": {
+        "relevance": 4,
+        "depth": 2,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "total_score": 12,
+      "matched_chapters": [
+        "ch04-启动"
+      ],
+      "quality": "medium",
+      "indexed_at": "2026-04-09T13:58:32.593672"
+    },
+    {
+      "path": "Cubox/Android Developers Blog- Improving app performance...-2023-11-29.md",
+      "title": "Android Developers Blog: Improving app performance with ART",
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 4,
+        "verifiability": 4
+      },
+      "total_score": 15,
+      "matched_chapters": [
+        "ch04-启动"
+      ],
+      "quality": "medium",
+      "indexed_at": "2026-04-09T13:58:32.593672"
+    },
+    {
+      "path": "Cubox/Android Developers Blog- Level Up Your App- Why Android Widgets are a Game-Changer-2025-03-04.md",
+      "title": "Android Developers Blog: Android Widgets",
+      "scores": {
+        "relevance": 2,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 2
+      },
+      "total_score": 10,
+      "matched_chapters": [],
+      "quality": "medium",
+      "indexed_at": "2026-04-09T13:58:32.593672"
+    },
+    {
+      "path": "Cubox/Android Developers Blog- Rebuilding our guide to app architecture-2022-01-14.md",
+      "title": "Android Developers Blog: Rebuilding app architecture",
+      "scores": {
+        "relevance": 4,
+        "depth": 2,
+        "timeliness": 3,
+        "verifiability": 2
+      },
+      "total_score": 11,
+      "matched_chapters": [
+        "ch01-架构"
+      ],
+      "quality": "medium",
+      "indexed_at": "2026-04-09T13:58:32.593672"
+    },
+    {
+      "path": "Cubox/Android Developers Blog- Reddit improved app startup speed by over 50% using Baseline Profiles and R.md",
+      "title": "Reddit improved app startup by 50% with Baseline Profiles and R8",
+      "scores": {
+        "relevance": 5,
+        "depth": 3,
+        "timeliness": 5,
+        "verifiability": 4
+      },
+      "total_score": 17,
+      "matched_chapters": [
+        "ch04-启动",
+        "ch10-包体积"
+      ],
+      "quality": "high",
+      "indexed_at": "2026-04-09T13:58:32.593672"
+    },
+    {
+      "path": "Cubox/Android Fence 同步框架本文简要分析了 Android 同步框架—Fence 机制，用于保证 Android - 掘金-2025-02-23.md",
+      "title": "Android Fence 同步框架",
+      "scores": {
+        "relevance": 5,
+        "depth": 4,
+        "timeliness": 5,
+        "verifiability": 4
+      },
+      "total_score": 18,
+      "matched_chapters": [
+        "ch05-渲染"
+      ],
+      "quality": "high",
+      "indexed_at": "2026-04-09T13:58:32.593672"
+    },
+    {
+      "path": "Cubox/Android Framework - 读懂异常调用栈 - 掘金-2022-10-14.md",
+      "title": "Android Framework 读懂异常调用栈",
+      "scores": {
+        "relevance": 3,
+        "depth": 2,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "total_score": 11,
+      "matched_chapters": [],
+      "quality": "medium",
+      "indexed_at": "2026-04-09T13:58:32.593672"
+    },
+    {
+      "path": "Cubox/Android Fresco调优实践｜得物技术-2024-05-10.md",
+      "title": "Android Fresco调优实践",
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 4,
+        "verifiability": 3
+      },
+      "total_score": 14,
+      "matched_chapters": [
+        "ch07-内存",
+        "ch05-渲染"
+      ],
+      "quality": "medium",
+      "indexed_at": "2026-04-09T13:58:32.593672"
+    },
+    {
+      "path": "Cubox/Android GUI系统之SurfaceFlinger（11）理解HWComposer_51CTO博客_Android surfaceflinger-2022-10-20.md",
+      "title": "Android SurfaceFlinger: 理解HWComposer",
+      "scores": {
+        "relevance": 5,
+        "depth": 4,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "total_score": 15,
+      "matched_chapters": [
+        "ch05-渲染"
+      ],
+      "quality": "medium",
+      "indexed_at": "2026-04-09T13:58:32.593672"
+    },
+    {
+      "path": "Cubox/Android GUI系统之SurfaceFlinger（15）服务端分析4-handleMessageRefresh处理_51CTO博客_Android surfaceflinger-2022-10.md",
+      "title": "Android SurfaceFlinger: handleMessageRefresh",
+      "scores": {
+        "relevance": 5,
+        "depth": 4,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "total_score": 15,
+      "matched_chapters": [
+        "ch05-渲染"
+      ],
+      "quality": "medium",
+      "indexed_at": "2026-04-09T13:58:32.593672"
+    },
+    {
+      "path": "Cubox/Android Gradle学习（八）- gradle任务解析一：前言 gradle是如何构建apk的 各个Task做了 - 掘金-2025-02-09.md",
+      "title": "Android Gradle学习：gradle任务解析",
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 5,
+        "verifiability": 3
+      },
+      "total_score": 15,
+      "matched_chapters": [
+        "ch16-构建"
+      ],
+      "quality": "medium",
+      "indexed_at": "2026-04-09T13:58:32.593672"
+    },
+    {
+      "path": "Cubox/Android Graphics 显示系统 - 解读Source Crop和Display Frame((三二)-2024-03-23.md",
+      "title": "Android Graphics 显示系统：Source Crop和Display Frame",
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "total_score": 13,
+      "matched_chapters": [
+        "ch05-渲染"
+      ],
+      "quality": "medium",
+      "indexed_at": "2026-04-09T13:58:32.593672"
+    },
+    {
+      "path": "Cubox/Android Handler机制：面试官必问的8个问题，你真的掌握了吗？-2026-04-05.md",
+      "title": "Android Handler机制：面试官必问的8个问题",
+      "scores": {
+        "relevance": 5,
+        "depth": 2,
+        "timeliness": 5,
+        "verifiability": 2
+      },
+      "total_score": 14,
+      "matched_chapters": [
+        "ch03-线程"
+      ],
+      "quality": "medium",
+      "indexed_at": "2026-04-09T13:58:32.593672"
+    },
+    {
+      "path": "Cubox/Android IO监控 - 性能监控系列-2022-02-24.md",
+      "title": "Android IO监控",
+      "scores": {
+        "relevance": 5,
+        "depth": 4,
+        "timeliness": 3,
+        "verifiability": 4
+      },
+      "total_score": 16,
+      "matched_chapters": [
+        "ch08-存储"
+      ],
+      "quality": "high",
+      "indexed_at": "2026-04-09T13:58:32.593672"
+    },
+    {
+      "path": "Cubox/Android Input 调试与优化 - 魅族内核团队-2025-08-05.md",
+      "title": "Android Input 调试与优化",
+      "scores": {
+        "relevance": 5,
+        "depth": 4,
+        "timeliness": 5,
+        "verifiability": 4
+      },
+      "total_score": 18,
+      "matched_chapters": [
+        "ch05-渲染",
+        "ch14-工具"
+      ],
+      "quality": "high",
+      "indexed_at": "2026-04-09T13:58:32.593672"
+    },
+    {
+      "title": "Waza：AI 时代工程师的 8 个核心技能工具集",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/X 文章/04-06-HiTw93-Waza-AI-Engineer-Skills.md",
+      "score": 10,
+      "quality": "medium",
+      "chapters": [],
+      "relevance": 1,
+      "technical_depth": 1,
+      "timeliness": 5,
+      "verifiability": 3,
+      "scored_at": "2026-04-09T14:48:18.095394"
+    },
+    {
+      "title": "Google Gemma-4-31B 模型被彻底破解",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/X 文章/04-06-Lonely-Gemma-4-31B-CRACK.md",
+      "score": 10,
+      "quality": "medium",
+      "chapters": [],
+      "relevance": 1,
+      "technical_depth": 1,
+      "timeliness": 5,
+      "verifiability": 3,
+      "scored_at": "2026-04-09T14:48:18.095403"
+    },
+    {
+      "title": "搞懂缓存机制，从Gemma4到Claude Code省80%Token",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/X 文章/04-06-MinLiBuilds-Claude-Code-Caching.md",
+      "score": 12,
+      "quality": "medium",
+      "chapters": [],
+      "relevance": 1,
+      "technical_depth": 3,
+      "timeliness": 5,
+      "verifiability": 3,
+      "scored_at": "2026-04-09T14:48:18.095405"
+    },
+    {
+      "title": "Hermes 从 0 到 1 教程",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/X 文章/04-06-Pluvio9yte-Hermes-Tutorial.md",
+      "score": 10,
+      "quality": "medium",
+      "chapters": [],
+      "relevance": 1,
+      "technical_depth": 1,
+      "timeliness": 5,
+      "verifiability": 3,
+      "scored_at": "2026-04-09T14:48:18.095407"
+    },
+    {
+      "title": "Launching Claude Managed Agents",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/X 文章/04-06-RLanceMartin-Launching-Claude-Managed-Agents.md",
+      "score": 10,
+      "quality": "medium",
+      "chapters": [],
+      "relevance": 1,
+      "technical_depth": 1,
+      "timeliness": 5,
+      "verifiability": 3,
+      "scored_at": "2026-04-09T14:48:18.095408"
+    },
+    {
+      "title": "解决 Codex 过度询问问题的方法",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/X 文章/04-06-blackanger-Codex-Over-Asking.md",
+      "score": 12,
+      "quality": "medium",
+      "chapters": [],
+      "relevance": 1,
+      "technical_depth": 3,
+      "timeliness": 5,
+      "verifiability": 3,
+      "scored_at": "2026-04-09T14:48:18.095410"
+    },
+    {
+      "title": "Anthropic 今天发了一个新产品，可能会让一批做 AI 智能体基础设施的团队失业",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/X 文章/04-06-dotey-Anthropic-Claude-Managed-Agents.md",
+      "score": 10,
+      "quality": "medium",
+      "chapters": [],
+      "relevance": 1,
+      "technical_depth": 1,
+      "timeliness": 5,
+      "verifiability": 3,
+      "scored_at": "2026-04-09T14:48:18.095411"
+    },
+    {
+      "title": "oh my codex 使用教程",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/X 文章/04-06-oragnes-oh-my-codex.md",
+      "score": 12,
+      "quality": "medium",
+      "chapters": [],
+      "relevance": 1,
+      "technical_depth": 3,
+      "timeliness": 5,
+      "verifiability": 3,
+      "scored_at": "2026-04-09T14:48:18.095412"
+    },
+    {
+      "title": "用 LLM + Obsidian 构建个人知识库：基于 Karpathy 的\"LLM Knowledge Bases\"工作流",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/X 文章/04-06-yanhua1010-Obsidian-LLM-Knowledge-Base.md",
+      "score": 10,
+      "quality": "medium",
+      "chapters": [],
+      "relevance": 1,
+      "technical_depth": 1,
+      "timeliness": 5,
+      "verifiability": 3,
+      "scored_at": "2026-04-09T14:48:18.095414"
+    },
+    {
+      "title": "用开发 Agent 理解 Agent 01：握着你的手摸索小龙虾",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/X 文章/2026-02-25-1837-Lyric-Understanding-Agent-01-2026147825269051781.md",
+      "score": 10,
+      "quality": "medium",
+      "chapters": [
+        "ch09-网络"
+      ],
+      "relevance": 1,
+      "technical_depth": 1,
+      "timeliness": 5,
+      "verifiability": 3,
+      "scored_at": "2026-04-09T14:48:18.095415"
+    },
+    {
+      "title": "Pi: The Minimal Agent Within OpenClaw",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/X 文章/2026-02-26-2017-HangzhouIn-Pi-The-Minimal-Agent-Within-OpenClaw-2026927803820872030.md",
+      "score": 10,
+      "quality": "medium",
+      "chapters": [],
+      "relevance": 1,
+      "technical_depth": 1,
+      "timeliness": 5,
+      "verifiability": 3,
+      "scored_at": "2026-04-09T14:48:18.095416"
+    },
+    {
+      "title": "OpenClaw 运行报错指南（上篇）",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/X 文章/2026-02-27-2014-lijiuer92-OpenClaw-运行报错指南-上篇-2026639705933328582.md",
+      "score": 10,
+      "quality": "medium",
+      "chapters": [],
+      "relevance": 3,
+      "technical_depth": 1,
+      "timeliness": 5,
+      "verifiability": 1,
+      "scored_at": "2026-04-09T14:51:36.960378"
+    },
+    {
+      "title": "Claude Code + Codex 双模型审查流程",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/X 文章/2026-02-28-1210-runes_leo-ClaudeCode-Codex-Review-Loop-2027269214524903892.md",
+      "score": 10,
+      "quality": "medium",
+      "chapters": [],
+      "relevance": 1,
+      "technical_depth": 3,
+      "timeliness": 5,
+      "verifiability": 1,
+      "scored_at": "2026-04-09T14:51:36.960388"
+    },
+    {
+      "title": "📝 Claude Code 核心开发者分享：构建 Claude Code 的经验教训——像 Agent 一样看世界",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/X 文章/2026-02-28-2012-fkysly-📝-Claude-Code-核心开发者分享：构建-Claude-Code-的经验教训——像-Agent-一样看世界-2027610329530712204.md",
+      "score": 10,
+      "quality": "medium",
+      "chapters": [
+        "ch16-构建"
+      ],
+      "relevance": 1,
+      "technical_depth": 3,
+      "timeliness": 5,
+      "verifiability": 1,
+      "scored_at": "2026-04-09T14:51:36.960391"
+    },
+    {
+      "title": "Tweet by @cryptoxiao (Thu Feb 26 09:43:37 +0000 2026)",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/X 文章/2026-02-28-2013-cryptoxiao-Tweet-by-@cryptoxiao-(Thu-Feb-26-09-43-37-+0000-2026)-2026956308092453360.md",
+      "score": 10,
+      "quality": "medium",
+      "chapters": [],
+      "relevance": 1,
+      "technical_depth": 3,
+      "timeliness": 5,
+      "verifiability": 1,
+      "scored_at": "2026-04-09T14:51:36.960393"
+    },
+    {
+      "title": "130万次下载，2万Star开源项目CC Switch，36岁转行程序员Jason的第一个作品",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/X 文章/2026-03-01-0815-WeyGu-CC-Switch-转行故事-2027772306458812757.md",
+      "score": 13,
+      "quality": "medium",
+      "chapters": [],
+      "relevance": 1,
+      "technical_depth": 3,
+      "timeliness": 5,
+      "verifiability": 4,
+      "scored_at": "2026-04-09T14:51:36.960394"
+    },
+    {
+      "title": "该项目在github上：https://github.com/OminousIndustries/PhoneDriver",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/X 文章/2026-03-01-1612-DLKFZWilliam2-该项目在github上-https-github-com-OminousIndustries-PhoneDriver-2027913163996565521.md",
+      "score": 11,
+      "quality": "medium",
+      "chapters": [],
+      "relevance": 1,
+      "technical_depth": 1,
+      "timeliness": 5,
+      "verifiability": 4,
+      "scored_at": "2026-04-09T14:51:36.960395"
+    },
+    {
+      "title": "一个反直觉的事实：狭义理解的开发工作（feature占比80%以上阶段）其实只占一个软件产品的30%",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/X 文章/2026-03-01-1612-wquguru-一个反直觉的事实-狭义理解的开发工作-feature占比80-以上阶段-其实只占一个软件产品的30-2027727983583367436.md",
+      "score": 10,
+      "quality": "medium",
+      "chapters": [],
+      "relevance": 1,
+      "technical_depth": 3,
+      "timeliness": 5,
+      "verifiability": 1,
+      "scored_at": "2026-04-09T14:51:36.960397"
+    },
+    {
+      "title": "使用一个月 OpenClaw 的门槛与成本复盘",
+      "path": "X 文章/2026-03-02-1214-LotusDecoder-OpenClaw-One-Month-Review-2028272613919965585.md",
+      "score": 11,
+      "quality": "medium",
+      "relevance": 3,
+      "tech_depth": 2,
+      "timeliness": 3,
+      "verifiability": 3,
+      "chapters": [
+        {
+          "chapter": "ch14-工具",
+          "confidence": "medium"
+        }
+      ],
+      "scored_at": "2026-04-09T15:23:57.983010"
+    },
+    {
+      "title": "AI、矿产与澳洲经济：2026，澳洲能迎来\"新国运\"吗？",
+      "path": "X 文章/2026-03-04-1214-rwayne-AI-矿产与澳洲经济-2026-澳洲能迎来-新国运-吗-2027720734211248573.md",
+      "score": 12,
+      "quality": "medium",
+      "relevance": 2,
+      "tech_depth": 3,
+      "timeliness": 5,
+      "verifiability": 2,
+      "chapters": [
+        {
+          "chapter": "ch17-新版本",
+          "confidence": "medium"
+        }
+      ],
+      "scored_at": "2026-04-09T15:23:57.983018"
     }
   ]
 }

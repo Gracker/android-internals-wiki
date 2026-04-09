@@ -9,7 +9,7 @@ polish_count: 2
 polish_date: "2026-04-08"
 polish_by: "task2b-polish"
 review_round: 3
-applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
+applicable_versions: "Android 5.0 (API 21) - Android 17 (API 37)"
 last_verified: "2026-04-08"
 last_verified_against: "AOSP android-16.0.0_r1"
 confidence: high
@@ -152,8 +152,10 @@ void draw(View view, AttachInfo attachInfo, DrawCallbacks callbacks) {
     // ...
     // 核心同步调用：将 DisplayList 同步给 RenderThread
     int syncResult = syncAndDrawFrame(frameInfo);
-    // syncAndDrawFrame 是一个阻塞调用
-    // 它会等待 RenderThread 完成上一帧的 GPU 工作（如果还在进行）
+    // syncAndDrawFrame 是 @CriticalNative JNI 方法，Java 层仅为 thin wrapper
+    // 实际实现位于 frameworks/base/core/jni/android_view_ThreadedRenderer.cpp
+    // 最终调用 RenderThread.cpp 中的 DrawFrameTask::syncFrameState()
+    // 这是一个阻塞调用：等待 RenderThread 完成上一帧的 GPU 工作，
     // 然后将当前帧的 DisplayList 数据同步过去
 }
 ```
