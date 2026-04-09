@@ -490,3 +490,20 @@ Android 16 oom_adj常量表不完整：缺失PERCEPTIBLE_RECENT_FOREGROUND_APP_A
 
 ### 关联章节
 1.2（Zygote启动）、1.7（ART编译）、4.6（内存版本演进）
+
+
+## [2026-04-10] 1.9 Package Manager Service 与应用安装性能 — 知识盲区
+
+### 盲区描述
+installd 是常驻 daemon，通过 fork 子进程的方式执行 dex2oat 等特权操作。PMS 通过 `/dev/socket/installd` 向 installd 发送指令，installd fork 出子进程执行操作后通过 socket 返回结果。这一 fork 机制是从 system_server 权限隔离的关键架构设计，文中完全未提及。
+
+### 重要程度
+高
+
+### 建议研究方向
+- installd fork 子进程机制的具体实现（system/installd/）
+- PMS 与 installd 之间的 socket 协议格式
+- installd 的权限模型（CAP_NET_BIND_SERVICE 等）
+
+### 关联章节
+§1.7（ART 编译管线）、§1.3（进程与线程）

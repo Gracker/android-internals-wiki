@@ -1,3 +1,21 @@
+
+## [Task2A Gap Mining] 知识缺口挖掘记录 — 2026-04-10 06:05
+
+- **Phase**: Phase 1（无空 draft，进入挖掘模式）
+- **结论**: 本轮未发现评分 ≥ 14 的知识缺口
+- **已检查方向**:
+  1. source-index.json 839 条素材中 high-quality unmapped 仅 4 条（ANR系统问题→可映射ch9/Linux 6.14 I/O→可映射ch6/CPU利用率→可映射ch5/Android14发布→通用信息），均不足以支撑独立章节
+  2. research-feeds 最近 14 份研究素材全部已映射到现有章节（1.16/5.9/5.12/7.10/7.12/8.9/12.2/16.5），包括：ADPF+AGDK(19分→8.9)、Hardware Bitmap(19分→7.10)、AudioTrack(18分→1.16)、ImageDecoder(18分→7.10)、Coil3(18分→7.10)、AudioFlinger(17分→1.16)、View层级(16分→7.12)、Android 17网络(16分→12.2)
+  3. daily-info 最近 3 天（4/7-4/9）热点：DeliQueue/Android 17适配/Compose/AI编程/UI-Voyager/Flutter鸿蒙/Android Studio Panda，均已覆盖或为非性能话题
+  4. AOSP frameworks/base 核心服务（AMS/PMS/WMS/SF/Input/Choreographer/DMS）全部已有对应章节
+  5. 官方文档 Android 16/17 性能新特性（Generational GC/DeliQueue/static final/ProfilingManager triggers/ECH/Local Network/Battery Saver alarms/Large Screen mandatory）全部已有对应章节
+  6. 已评估额外候选方向：Android 17 ProfilingManager triggers(→14.7已覆盖)、AVF虚拟化(相关度2分)、Encrypted Client Hello(→12.4已覆盖)、Notification渲染管线(素材不足3分)、Kernel 6.12 io_uring(→16.4已覆盖)、K2 Compose Compiler(→7.7已覆盖)，全部不满足 ≥14 分或与现有章节重叠
+- **建议**: 
+  - 全书已达到极高覆盖率（198小节），后续增量应关注：
+    1. Google I/O 2026（5月）可能宣布的新性能 API
+    2. Android 17 正式版发布后的行为变更补充
+    3. 优先推进 28 个 draft → ready-for-review（重点是 ch18 渲染链路 20 个小节）
+    4. queue.json 中 47 条 pending 任务的执行
 ## [Task2A Gap Mining] 知识缺口挖掘记录 — 2026-04-10 05:06
 
 - **Phase**: Phase 1（无空 draft，进入挖掘模式）
@@ -348,3 +366,22 @@
 - **位置**：Phantom Process Killer章节
 - **问题**：32个子进程上限未标注来源和Android版本；Android 16是否有变化未知
 - **建议**：补充settings命令说明及风险；标注32为Android 12初始值
+
+
+## [Task9 Deep Review] 1.9 Package Manager Service 与应用安装性能 — 2026-04-10
+- **类型**：数据缺失
+- **位置**：Line 275
+- **问题**："Google 的数据是，正确配置 Baseline Profiles 可以提升约 30% 的代码执行速度"，无具体来源
+- **建议**：补充来源 URL。实际数据为 Google Maps（30% 启动速度提升）和 Android Calendar（20% 启动 + 50% 慢帧减少），引用 Google Blog 或 android.com 官方文档 Baseline Profiles 概述页面
+
+## [Task9 Deep Review] 1.9 Package Manager Service 与应用安装性能 — 2026-04-10
+- **类型**：源码准确性
+- **位置**：Line 226
+- **问题**：`art/dex2oat/dex2oat_options.cc` 作为源码引用路径粒度过粗
+- **建议**：指向更具体的类文件，如 `art/dex2oat/dex2oat.cc` 中的编译过滤器处理逻辑，或 `CompilerOptions` 类
+
+## [Task9 Deep Review] 1.9 Package Manager Service 与应用安装性能 — 2026-04-10
+- **类型**：版本差异
+- **位置**：版本演进表格（Line 473-484）
+- **问题**：Android 11 和 Android 15 在版本演进表格中缺失，而 Android 11 是 VDEX 广泛使用的关键版本
+- **建议**：补充 Android 11（VDEX 文件验证效率提升）和 Android 15（Mainline dexopt 模块化推送成熟化）条目；若确认无重大变化则标注"无重大包管理变更"
