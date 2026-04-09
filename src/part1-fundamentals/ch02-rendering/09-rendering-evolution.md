@@ -2,9 +2,10 @@
 title: "渲染机制的版本演进"
 chapter: "2.9"
 section: "2.9"
-status: ready-for-review
+status: ready-to-publish
 drafted_date: 2026-03-30
-reviewed_date: 2026-04-05
+drafted_by: "openclaw-task2a"
+reviewed_date: 2026-04-10
 reviewed_by: openclaw-task6
 applicable_versions: "Android 3.0 (API 11) ~ Android 16 (API 36)"
 last_verified: "2026-03-30"
@@ -50,7 +51,7 @@ Android 3.0（API 11，2011 年）引入了基于 OpenGL ES 2.0 的硬件加速�
 
 HWUI 带来了三个核心概念：
 
-1. **DisplayList（后更名为 RenderNode）**：将 `View` 的绘制操作录制为一份命令列表，而非直接执行。这意味着如果一个 `View` 只有位置变化（平移、旋转、缩放），无需重新录制所有 draw 命令，只需修改变换矩阵即可。这在 Perfetto 中体现为：同一个 `View` 的连续帧，主线程 `draw` 阶段的时间可能显著缩短。
+1. **DisplayList（后更名为 RenderNode）**：将 `View` 的绘制操作录制为一份命令列表，而非直接执行。这意味着如果一个 `View` 只有位置变化（平移、旋转、缩放），无需重新录制所有 draw 命令，只需修改变换矩阵即可。这在 Perfetto 中体现为：同一个 `View` 的连续帧，主线程 `draw` 阶段的耗时会明显减少——因为只需修改矩阵参数，跳过了整个命令录制过程。
 
 2. **硬件层（Hardware Layer）**：将复杂的 `View` 内容缓存为 GPU 纹理，后续帧只需做纹理合成，不再重复光栅化。适合频繁做动画但内容不变的 `View`。
 
@@ -202,7 +203,7 @@ canvas.drawRect(rect, paint);
 
 ### 自适应刷新率（ARR）
 
-Android 15 引入、Android 16 显著增强的 **自适应刷新率**（Adaptive Refresh Rate, ARR）是渲染管线的又一次重大变革。
+Android 15 引入、Android 16 进一步完善的 **自适应刷新率**（Adaptive Refresh Rate, ARR）是渲染管线的又一次重大变革。
 
 ARR 将**显示刷新率与内容帧率解耦**：当内容以 30 FPS 渲染时，屏幕刷新率可以同步降低到 30Hz（而非维持 120Hz），降低功耗（在低帧率场景下，屏幕刷新率从 120Hz 降到 30Hz，GPU 和显示驱动的功耗可下降约 40–60%，具体取决于面板和 SoC）；当用户开始滑动时，刷新率可以无缝提升到 120Hz，消除卡顿。
 
@@ -289,7 +290,7 @@ Unreal Engine 已集成 Swappy。
 | 15 | 2024 | ARR 自适应刷新率引入 | `VSYNC-app` 间隔不再固定 |
 | 16 | 2025 | Vulkan 官方图形 API + ANGLE + ARR 增强 | 渲染堆栈统一；帧率动态切换更频繁 |
 
-> [已确认: Android 16 于 2025 年 6 月 10 日正式发布（稳定版 BP2A.250605.031.A2），确认年份为 2025。验证来源: Wikipedia + androidcentral.com + androidauthority.com。验证时间: 2026-04-03]
+> [已验证: Android 16 于 2025 年 6 月 10 日正式发布（稳定版 BP2A.250605.031.A2），确认年份为 2025。验证来源: Wikipedia + androidcentral.com + androidauthority.com。验证时间: 2026-04-03]
 
 
 
@@ -324,7 +325,7 @@ FrameMetrics 是 per-window、per-process 的 API，只能报告当前 App 进�
 - `frameworks/native/libs/gui/BLASTBufferQueue.cpp` — BLASTBufferQueue 实现
 - `frameworks/native/services/surfaceflinger/` — SurfaceFlinger 合成逻辑
 
-> [已确认: 上述源码路径经 web 搜索验证，在 android-16.0.0_r1 分支中存在。hwui 目录下可见 StatsUtils.cpp、AutoBackendTextureRelease.cpp、JankTracker.cpp 等文件；Choreographer.java、FrameMetrics.java、BLASTBufferQueue.cpp、SurfaceFlinger/ 均为 AOSP 稳定路径，跨版本未变。验证时间: 2026-04-03]
+> [已验证: 上述源码路径经 web 搜索验证，在 android-16.0.0_r1 分支中存在。hwui 目录下可见 StatsUtils.cpp、AutoBackendTextureRelease.cpp、JankTracker.cpp 等文件；Choreographer.java、FrameMetrics.java、BLASTBufferQueue.cpp、SurfaceFlinger/ 均为 AOSP 稳定路径，跨版本未变。验证时间: 2026-04-03]
 
 ### 官方文档
 - [Hardware Acceleration](https://developer.android.com/guide/topics/graphics/hardware-accel)
