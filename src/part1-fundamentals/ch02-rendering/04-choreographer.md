@@ -17,6 +17,8 @@ review3_by: "openclaw-task6"
 review4_date: "2026-04-04"
 review4_by: "openclaw-task6"
 rework_reason: "Task6 review 回炉修复：doFrame伪代码修正+总结重写+Compose节重写+补充3个Type A标准节+厂商优化标注"
+rework5_date: "2026-04-10"
+rework5_by: "openclaw-task2b"
 confidence: high
 sources:
   - type: official
@@ -31,7 +33,7 @@ related_chapters: ["2.3", "2.5", "2.6", "2.9", "3.1", "8.2"]
 polish_count: 1
 polish_date: "2026-04-04"
 polish_by: "task2b-polish"
-status: ready-to-publish
+status: ready-for-review
 ---
 
 # Choreographer 与渲染流水线
@@ -343,6 +345,34 @@ Perfetto 作为现代 Android 性能分析工具，提供了更强大的 Choreog
 2. **Frame Timeline**：显示实际的帧完成时间线 vs. 期望的帧时间线
 3. **SQL 查询**：可以通过 `WHERE name = 'Choreographer#doFrame'` 精确查找特定帧
 
+#### Frame Timeline Track 详解（API 33+）
+
+Frame Timeline 是 Perfetto 中理解 Choreographer 帧调度的核心 Track。它在 Android 12（S）及以上设备上可用，API 33+ 后信息更加丰富。这个 Track 分为两个子 Track：
+
+**Expected Timeline（期望时间线）**：每个条形表示系统为 App 分配的帧渲染窗口。起始时刻对应 Choreographer 收到 VSYNC-app 的时间，结束时刻对应这一帧期望被呈现（present）的时间。在 60Hz 屏幕上，一个 Expected 条形的长度就是一个 VSync 周期（约 16.6ms）。
+
+**Actual Timeline（实际时间线）**：每个条形表示 App 实际完成帧渲染并提交给 SurfaceFlinger 的耗时。如果 Actual 条形比 Expected 条形长，说明 App 超出了帧预算，这一帧被延迟呈现。
+
+在 Perfetto 中，Frame Timeline 的典型视图如下：
+
+```
+FrameTimeline (Expected)  |====|====|====|         |====|====|
+FrameTimeline (Actual)    |====|====|=======|      |====|====|====|
+                          ^    ^    ^       ^      ^    ^    ^
+                          V0   V1   V2   延迟呈现   V3   V4   V5
+```
+
+上图第 3 帧（V2）的 Actual 条形超出了 Expected 条形，说明这一帧的渲染超出了预算，被延迟到下一个 VSync 周期才呈现。Perfetto 还会标注具体的 **JankType**：
+
+- `AppDeadlineMissed`：App 侧渲染超时（doFrame 耗时过长）
+- `BufferStuffing`：BufferQueue 中积压了多帧，App 生产速度超过 SurfaceFlinger 消费速度
+- `SfCpuDeadlineMissed`：SurfaceFlinger 的 CPU 合成超时
+- `SfGpuDeadlineMissed`：SurfaceFlinger 的 GPU 合成超时
+
+以及 **PresentType**（`On-time` 或 `Late`），直接告诉我们帧是否按时呈现。这些标注让 Frame Timeline 成了定位"卡顿到底发生在 App 侧还是系统侧"的入口工具。关于 SurfaceFlinger 侧的帧合成分析，详见 §2.6。
+
+[图：Perfetto Frame Timeline Track 截图，标注 Expected/Actual 条形和 JankType 指示器]
+
 ### 实际分析中的使用
 
 分析卡顿问题时，Perfetto 中的 Choreographer 标记提供了三个维度的信息。首先，通过 `Choreographer#doFrame` 切片的总耗时，判断是否超出帧预算——60Hz 屏幕上超过 16.6ms、90Hz 上超过 11.1ms 即为超时。其次，展开 doFrame 切片查看 `Callback_Traversal` 子阶段的占比，Traversal 通常是耗时大头，如果它占了整帧的 70% 以上，瓶颈就在布局或绘制。第三，观察连续多个 doFrame 切片的时间间隔模式，如果间隔忽大忽小，说明帧率不稳定，即使平均帧率达标，用户仍会感知到卡顿。
@@ -415,7 +445,11 @@ Jetpack Compose 的渲染管线分为三个阶段——Composition（确定“�
 
 Compose 通过 `AndroidUiDispatcher` 将协程调度与 Choreographer 的帧节奏绑定。这个 Dispatcher 实现了 `MonotonicFrameClock`，让 `withFrameNanos` 等挂起函数能精确等待 VSync 信号。在 Compose 中写 `LaunchedEffect` 并在内部使用 `animate*AsState` 时，动画帧的更新时机本质上还是由 Choreographer 的 VSync 回调驱动——只是 Compose 在上层把这些细节封装成了声明式 API。
 
-Compose 1.10（2025 年 12 月稳定版）引入了“可暂停组合”（Pausable Composition），这是一个对帧调度有重大影响的改进。在此之前，Composition 阶段必须一次性跑完，如果 UI 复杂度高，可能超过帧预算导致掉帧。有了可暂停组合，Compose runtime 可以在帧时间即将耗尽时暂停 Composition，让出主线程给 Choreographer 处理其他回调，然后在下一帧恢复。
+Compose 1.10（2025 年 12 月稳定版）引入了“可暂停组合”（Pausable Composition），这是一个对帧调度有重大影响的改进。在此之前，Composition 阶段是原子操作——要么一帧内全部完成，要么整帧掉帧。如果 UI 树复杂度高，Composition 可能耗时数毫秒甚至十毫秒以上，超出帧预算后只能放弃这一帧。
+
+可暂停组合的核心机制是 `PausableComposition` 对象的 `resume()` 方法。Lazy Layout 的预取系统（LazyColumn、LazyRow 等）会反复调用 `resume()` 来分步执行组合工作。每次 `resume()` 内部会检查一个 `shouldPause` 回调——这个回调依据 Choreographer 提供的帧截止时间（FrameInfo 中的 deadline）判断当前帧是否还有余量。如果 `shouldPause` 返回 `true`，Composition 立即在下一个“slot 边界”（Composition 树中的自然断点，如一个 Composable 函数的出口）处暂停，把主线程让出来确保当前帧能完成 Traversal 和 Draw 阶段。暂停后的组合工作会在下一帧的 VSync 回调中通过再次调用 `resume()` 继续执行，直到全部完成后通过 `apply()` 将计算结果提交到 UI 树。
+
+需要注意，这不是基于协程 `CancellationException` 的中断机制，而是 Compose Runtime 在 Composition 层面提供的基础设施。它依赖 Composition 树的 slot table 结构来实现暂停和恢复的断点管理。可暂停组合在 Compose 1.10 中默认应用于 Lazy Layout 的预取路径，对于非 Lazy 场景的常规重组（如状态变化触发的重组），仍然是原子执行。[已验证: Android Developers Blog, Compose 1.10 release notes]
 
 ### Trace 分析中的差异
 
