@@ -5437,5 +5437,10 @@
     "status": "finalized",
     "reviewed_date": "2026-04-09",
     "reviewed_by": "openclaw-task6"
+  },
+  "8.5": {
+    "title": "案例集",
+    "status": "ready-to-publish",
+    "last_reviewed": "2026-04-09"
   }
 }

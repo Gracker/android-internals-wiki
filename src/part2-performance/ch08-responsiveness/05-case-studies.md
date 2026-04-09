@@ -2,12 +2,14 @@
 title: "案例集"
 chapter: "8.5"
 section: "8.5"
-status: ready-for-review
+status: ready-to-publish
 drafted_date: "2026-04-02"
-reviewed_date: "2026-04-08"
+reviewed_date: "2026-04-09"
 rework_date: "2026-04-08"
 rework_by: "task2b-rework"
 reviewed_by: openclaw-task6
+review_cycle: 2
+re_review_date: "2026-04-09"
 applicable_versions: "Android 8.0 (API 26) - Android 16 (API 36)"
 last_verified: "2026-04-08"
 last_verified_against: "AOSP android-16.0.0_r1, developer.android.com"
@@ -170,7 +172,7 @@ Reddit 在 Google Play 上线后的 A/B 测试结果 [已验证: developer.andro
 
 **主线程耗时消息优化**方面，抖音建立了一个启动任务调度框架。核心思想是将 Application.onCreate() 和首页 Activity.onCreate() 中的所有初始化任务建模为有向无环图（DAG），根据任务间的依赖关系进行拓扑排序，然后分配到不同的线程池执行。主线程只执行必须在主线程的任务（如创建 Handler、初始化 Looper 等），其余全部放到子线程。
 
-```
+```kotlin
 // 启动任务调度框架的核心抽象（示意）
 // 将启动任务建模为 DAG 节点
 class StartupTask(
@@ -207,7 +209,7 @@ class StartupScheduler {
 
 抖音案例的核心价值在于"系统化"三个字。很多团队做启动优化是头痛医头、脚痛医脚——今天优化了这个 SDK 的初始化，明天又加了一个新的同步初始化。抖音通过任务调度框架将启动过程工程化，使得优化成果可积累、可维护。
 
-另外，Rhea 工具的投入也很值得参考。当 App 规模大到一定程度，通用的性能分析工具（Systrace/Perfetto）在"差异对比"上不够精准——我们需要知道"这次启动比上次慢了 200ms，慢在哪里"。毫秒级差异分析能力是大型 App 性能团队的刚需。
+另外，Rhea 工具的投入也很值得参考。当 App 规模大到一定程度，通用的性能分析工具（Systrace/Perfetto）在"差异对比"上不够精准——我们需要知道"这次启动比上次慢了 200ms，慢在哪里"。毫秒级差异分析能力对大型 App 性能团队来说是基本要求。
 
 ---
 
@@ -324,7 +326,7 @@ ANR 率降低 25% 是一个附带收益。分析原因，R8 的代码缩减移�
 
 ### 背景
 
-2025-2026 年，Google 在 Android 系统层面推了两项影响深远的优化——AutoFDO 和 16KB 页面大小。这两项优化不需要 App 开发者做任何改动，但会让所有 App 的启动速度有不同程度的提升 [已验证: developer.android.com, Google Blog 2026-03]。
+2025-2026 年，Google 在 Android 系统层面推了两项影响深远的优化——AutoFDO 和 16KB 页面大小。这两项优化不需要 App 开发者做任何改动，但会让所有 App 的启动速度有 2%-7% 的提升（视 App 和设备而定） [已验证: developer.android.com, Google Blog 2026-03]。
 
 ### AutoFDO：用真实数据指导内核编译
 
