@@ -12,7 +12,7 @@
     "processing": 0,
     "ready-to-publish": 15,
     "last_reviewed": "2026-04-09",
-    "last_reviewed_section": "11.4 案例集（功耗）",
+    "last_reviewed_section": "1.7 ART 编译管线与 dex2oat 优化",
     "reviewed_today": 13
   },
   "reviewed_sections": {
@@ -2172,7 +2172,7 @@
     }
   ],
   "ready_for_review": 5,
-  "last_updated": "2026-04-09T07:03:04.895533",
+  "last_updated": "2026-04-09T18:35:00+08:00",
   "stats": {
     "total": 162,
     "completed": 138,
@@ -4625,7 +4625,15 @@
       "verification_level": "L2",
       "word_count": "~9500",
       "confidence": "medium",
-      "reviewed_date": "2026-04-09"
+      "reviewed_date": "2026-04-09",
+      "reviewed_by": "task9-deep-tech-review",
+      "deep_review_date": "2026-04-09",
+      "deep_review_issues": {
+        "P0": 1,
+        "P1": 5,
+        "P2": 7,
+        "P3": 1
+      }
     },
     "2.13": {
       "title": "图形缓冲区管理 (BufferQueue)",

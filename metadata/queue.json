@@ -2054,5 +2054,25 @@
     "added_at": "2026-04-09T18:23:45",
     "status": "pending",
     "original_review_log": "logs/review/2026-04-09-18-review.md"
+  },
+  {
+    "section": "1.7",
+    "section_title": "ART 编译管线与 dex2oat 优化",
+    "priority": 95,
+    "reason": "[Deep Tech Review] dalvik.vm.jitthreshold 参数归属错误（Dalvik 而非 ART），会导致读者在调试 ART JIT 时使用错误的参数名",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "JIT 编译器原理 - 方法热度追踪代码示例",
+        "detail": "代码注释说 dalvik.vm.jitthreshold（默认值 10000）控制 JIT 编译阈值。这是 Dalvik 时代参数，ART 运行时（Android 5.0+）不读取此 property。ART JIT 阈值由内部常量控制。",
+        "suggestion": "改为：阈值由 ART 内部常量（如 kJitThreshold，art/runtime/jit/jit.cc）或 Mainline sysprop 配置，不从 dalvik.vm.* 读取。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-09T18:35:46",
+    "status": "pending"
   }
 ]

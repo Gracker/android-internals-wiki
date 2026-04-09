@@ -7791,6 +7791,996 @@
         }
       ],
       "scored_at": "2026-04-09T15:23:57.983018"
+    },
+    {
+      "title": "Title: Claude Code .claude/ 文件夹完全指南",
+      "path": "X 文章/2026-03-23-1055-Claude-Code-claude文件夹完全指南-2035341800739877091.md",
+      "relevance": 2,
+      "technical_depth": 0,
+      "timeliness": 4,
+      "verifiability": 4,
+      "total_score": 10,
+      "chapters": [],
+      "quality": "medium",
+      "scored_at": "2026-04-09T16:01:42.122943"
+    },
+    {
+      "title": "修复Codex的过度询问：从\"用户偏好\"到\"任务完成\"的重新定位",
+      "path": "X 文章/2026-04-06-1300-blackanger-修复Codex行为模式.md",
+      "score": 16,
+      "quality": "high",
+      "chapters": [
+        "ch14-工具"
+      ],
+      "confidence": "medium",
+      "relevance": 4,
+      "technical_depth": 3,
+      "timeliness": 5,
+      "verifiability": 4,
+      "summary": "AI行为修改方法论，将承诺对象从用户情绪转移到任务完成",
+      "scored_at": "2026-04-09T16:18:51.340066"
+    },
+    {
+      "title": "用 Obsidian + Claude 搭个人知识库：核心架构实践",
+      "path": "X 文章/2026-04-06-1302-yanhua1010-Obsidian+Claude架构.md",
+      "score": 17,
+      "quality": "high",
+      "chapters": [
+        "ch14-工具"
+      ],
+      "confidence": "high",
+      "relevance": 4,
+      "technical_depth": 4,
+      "timeliness": 5,
+      "verifiability": 4,
+      "summary": "Obsidian+Claude知识库架构，编译式笔记管理方法",
+      "scored_at": "2026-04-09T16:18:51.340074"
+    },
+    {
+      "title": "Claude Code 这些功能，用了就回不去了",
+      "path": "X 文章/2026-04-06-1303-sitinme-ClaudeCode高级功能.md",
+      "score": 18,
+      "quality": "high",
+      "chapters": [
+        "ch14-工具",
+        "ch17-新版本"
+      ],
+      "confidence": "high",
+      "relevance": 5,
+      "technical_depth": 4,
+      "timeliness": 5,
+      "verifiability": 4,
+      "summary": "Claude Code高级功能实践，创始人使用技巧分享",
+      "scored_at": "2026-04-09T16:18:51.340077"
+    },
+    {
+      "title": "Prompt工程之道-不是抽卡是质量阀门",
+      "path": "X 文章/2026-04-07-1352-AlexZ-Prompt工程之道-不是抽卡是质量阀门.md",
+      "score": 17,
+      "quality": "high",
+      "chapters": [],
+      "confidence": null,
+      "relevance": 4,
+      "technical_depth": 4,
+      "timeliness": 5,
+      "verifiability": 4,
+      "summary": "AI行为修改方法论，转变承诺对象到代码正确性",
+      "scored_at": "2026-04-09T16:18:51.340078"
+    },
+    {
+      "title": "LLM Knowledge Bases",
+      "path": "X 文章/2026-04-07-1352-AndrejKarpathy-LLMKnowledgeBases.md",
+      "score": 20,
+      "quality": "high",
+      "chapters": [
+        "ch14-工具"
+      ],
+      "confidence": "high",
+      "relevance": 5,
+      "technical_depth": 5,
+      "timeliness": 5,
+      "verifiability": 5,
+      "summary": "LLM个人知识库架构，编译式wiki自动化研究方法",
+      "scored_at": "2026-04-09T16:18:51.340080"
+    },
+    {
+      "title": "Android/Linux 性能优化日报 · 2026-04-01",
+      "path": "性能优化日报/2026-04-01-Android-Linux性能优化日报.md",
+      "score": 18,
+      "quality": "high",
+      "chapters": [
+        "ch07-内存",
+        "ch04-启动",
+        "ch06-功耗",
+        "ch05-渲染"
+      ],
+      "confidence": "high",
+      "relevance": 5,
+      "technical_depth": 4,
+      "timeliness": 4,
+      "verifiability": 5,
+      "summary": "Android/Linux 性能优化日报 · 2026-04-01",
+      "scored_at": "2026-04-09T16:20:18.306510"
+    },
+    {
+      "title": "Android ART Runtime 并发压缩 GC 优化",
+      "path": "性能优化日报/2026-03-14-官方-Android ART Runtime 并发压缩 GC 优化.md",
+      "score": 18,
+      "quality": "high",
+      "chapters": [
+        "ch07-内存"
+      ],
+      "confidence": "high",
+      "relevance": 5,
+      "technical_depth": 4,
+      "timeliness": 4,
+      "verifiability": 5,
+      "summary": "Android ART Runtime 并发压缩 GC 优化",
+      "scored_at": "2026-04-09T16:20:18.306519"
+    },
+    {
+      "title": "Perfetto 2025 支持超大 Trace 文件本地分析",
+      "path": "性能优化日报/2026-03-15-Perfetto-2025-大文件分析.md",
+      "score": 18,
+      "quality": "high",
+      "chapters": [
+        "ch07-内存",
+        "ch04-启动",
+        "ch05-渲染"
+      ],
+      "confidence": "high",
+      "relevance": 5,
+      "technical_depth": 4,
+      "timeliness": 4,
+      "verifiability": 5,
+      "summary": "Perfetto 2025 支持超大 Trace 文件本地分析",
+      "scored_at": "2026-04-09T16:20:18.306521"
+    },
+    {
+      "title": "Jetpack Compose 性能优化 2025 最新进展",
+      "path": "性能优化日报/2026-03-14-官方 社区-Jetpack Compose 性能优化 2025 最新进展.md",
+      "score": 18,
+      "quality": "high",
+      "chapters": [],
+      "confidence": "medium",
+      "relevance": 5,
+      "technical_depth": 4,
+      "timeliness": 4,
+      "verifiability": 5,
+      "summary": "Jetpack Compose 性能优化 2025 最新进展",
+      "scored_at": "2026-04-09T16:20:18.306523"
+    },
+    {
+      "title": "Android 15 ADPF 性能框架重大增强",
+      "path": "性能优化日报/2026-03-15-Android-15-ADPF性能框架增强.md",
+      "score": 18,
+      "quality": "high",
+      "chapters": [
+        "ch06-功耗",
+        "ch05-渲染"
+      ],
+      "confidence": "high",
+      "relevance": 5,
+      "technical_depth": 4,
+      "timeliness": 4,
+      "verifiability": 5,
+      "summary": "Android 15 ADPF 性能框架重大增强",
+      "scored_at": "2026-04-09T16:20:18.306524"
+    },
+    {
+      "title": "Android 15 前台服务管理与功耗优化变更",
+      "path": "性能优化日报/2026-03-14-官方-Android 15 前台服务管理与功耗优化变更.md",
+      "score": 18,
+      "quality": "high",
+      "chapters": [
+        "ch04-启动",
+        "ch06-功耗"
+      ],
+      "confidence": "high",
+      "relevance": 5,
+      "technical_depth": 4,
+      "timeliness": 4,
+      "verifiability": 5,
+      "summary": "Android 15 前台服务管理与功耗优化变更",
+      "scored_at": "2026-04-09T16:20:18.306526"
+    },
+    {
+      "title": "Android ANR 防治与稳定性优化最佳实践",
+      "path": "性能优化日报/2026-03-14-官方 社区-Android ANR 防治与稳定性优化最佳实践.md",
+      "score": 18,
+      "quality": "high",
+      "chapters": [
+        "ch07-内存",
+        "ch05-渲染"
+      ],
+      "confidence": "high",
+      "relevance": 5,
+      "technical_depth": 4,
+      "timeliness": 4,
+      "verifiability": 5,
+      "summary": "Android ANR 防治与稳定性优化最佳实践",
+      "scored_at": "2026-04-09T16:20:18.306527"
+    },
+    {
+      "title": "Jetpack Compose 性能优化最佳实践 2025",
+      "path": "性能优化日报/2026-03-13-官方-Jetpack Compose性能优化2025.md",
+      "score": 18,
+      "quality": "high",
+      "chapters": [
+        "ch04-启动"
+      ],
+      "confidence": "high",
+      "relevance": 5,
+      "technical_depth": 4,
+      "timeliness": 4,
+      "verifiability": 5,
+      "summary": "Jetpack Compose 性能优化最佳实践 2025",
+      "scored_at": "2026-04-09T16:20:18.306528"
+    },
+    {
+      "title": "eBPF XDP 实现高性能网络数据包处理",
+      "path": "性能优化日报/2026-03-15-eBPF-XDP-高性能网络处理.md",
+      "score": 18,
+      "quality": "high",
+      "chapters": [],
+      "confidence": "medium",
+      "relevance": 5,
+      "technical_depth": 4,
+      "timeliness": 4,
+      "verifiability": 5,
+      "summary": "eBPF XDP 实现高性能网络数据包处理",
+      "scored_at": "2026-04-09T16:20:18.306529"
+    },
+    {
+      "title": "Android 内存优化与 ART GC 改进 2025",
+      "path": "性能优化日报/2026-03-13-官方-Android内存优化与ART GC 2025.md",
+      "score": 18,
+      "quality": "high",
+      "chapters": [
+        "ch07-内存"
+      ],
+      "confidence": "high",
+      "relevance": 5,
+      "technical_depth": 4,
+      "timeliness": 4,
+      "verifiability": 5,
+      "summary": "Android 内存优化与 ART GC 改进 2025",
+      "scored_at": "2026-04-09T16:20:18.306531"
+    },
+    {
+      "title": "Android 15 支持 16KB 内存页面优化",
+      "path": "性能优化日报/2026-03-14-官方-Android 15 支持 16KB 内存页面优化.md",
+      "score": 11,
+      "quality": "medium",
+      "relevance": 3,
+      "tech_depth": 2,
+      "timeliness": 5,
+      "verifiability": 1,
+      "chapters": [],
+      "content_preview": "> 采集时间：2026-03-14 08:18 > 原文链接：https://developer.android.com/about/versions/15/behavior-changes-15#16-kb > 来源：Android Developers (android.com) > 发布时间：2024-2025 > 领域：省 内存 ## 摘要 Android 15 引入对 16KB 内存页面",
+      "date": "2026-04-09",
+      "scored_at": "2026-04-09T16:55:33.917131"
+    },
+    {
+      "title": "Android AutoFDO 内核优化提升性能",
+      "path": "性能优化日报/2026-03-14-官方-Android AutoFDO 内核优化提升性能.md",
+      "score": 15,
+      "quality": "medium",
+      "relevance": 4,
+      "tech_depth": 3,
+      "timeliness": 5,
+      "verifiability": 3,
+      "chapters": [],
+      "content_preview": "> 采集时间：2026-03-14 08:18 > 原文链接：https://android-developers.googleblog.com/ > 来源：Google Blog (googleblog.com) > 发布时间：2024-2025 > 领域：快 系统 ## 摘要 Android 将 AutoFDO（Automatic Feedback-Directed Optimization）",
+      "date": "2026-04-09",
+      "scored_at": "2026-04-09T16:55:33.917140"
+    },
+    {
+      "title": "Android Thermal API 功耗优化与热管理",
+      "path": "性能优化日报/2026-03-14-官方-Android Thermal API 功耗优化与热管理.md",
+      "score": 11,
+      "quality": "medium",
+      "relevance": 3,
+      "tech_depth": 2,
+      "timeliness": 5,
+      "verifiability": 1,
+      "chapters": [
+        {
+          "chapter": "ch06-功耗",
+          "confidence": "medium"
+        }
+      ],
+      "content_preview": "> 采集时间：2026-03-14 08:18 > 原文链接：https://developer.android.com/reference/android/os/PowerManager > 来源：Android Developers (android.com) > 发布时间：2025 > 领域：省 功耗 ## 摘要 Android Thermal API 允许应用监听设备热状态并动态调整行为。",
+      "date": "2026-04-09",
+      "scored_at": "2026-04-09T16:55:33.917142"
+    },
+    {
+      "title": "Perfetto 深度性能分析工具进阶",
+      "path": "性能优化日报/2026-03-14-官方-Perfetto 深度性能分析工具进阶.md",
+      "score": 11,
+      "quality": "medium",
+      "relevance": 3,
+      "tech_depth": 1,
+      "timeliness": 5,
+      "verifiability": 2,
+      "chapters": [
+        {
+          "chapter": "ch11-Profiling",
+          "confidence": "medium"
+        }
+      ],
+      "content_preview": "> 采集时间：2026-03-14 08:18 > 原文链接：https://perfetto.dev/docs/ > 来源：Perfetto (perfetto.dev) + Android Developers > 发布时间：2025 > 领域：工具 ## 摘要 Perfetto 已成为 Android 性能分析的核心工具，支持系统级追踪、SQL 查询和多 GB 级 trace 文件分析。20",
+      "date": "2026-04-09",
+      "scored_at": "2026-04-09T16:55:33.917144"
+    },
+    {
+      "title": "Android/Linux 性能优化日报 · 2026-03-14",
+      "path": "性能优化日报/2026-03-14-日报.md",
+      "score": 16,
+      "quality": "high",
+      "relevance": 5,
+      "tech_depth": 3,
+      "timeliness": 5,
+      "verifiability": 3,
+      "chapters": [],
+      "content_preview": "## 📊 今日概览 - 搜索关键词：Android性能优化、Linux内核调优、启动优化、ART运行时、功耗优化、Perfetto追踪 - 有效结果：8条 - 时间范围：2024-2026年（符合最近2年要求） ## 🔥 精选内容 ### 1. Android 15 AutoFDO 内核优化：应用启动提速4.3% - 来源：Google Official Blog / Android Develo",
+      "date": "2026-04-09",
+      "scored_at": "2026-04-09T16:55:33.917146"
+    },
+    {
+      "title": "Android 14 后台进程冻结策略优化",
+      "path": "性能优化日报/2026-03-15-Android-14-后台进程冻结优化.md",
+      "score": 11,
+      "quality": "medium",
+      "relevance": 3,
+      "tech_depth": 2,
+      "timeliness": 5,
+      "verifiability": 1,
+      "chapters": [],
+      "content_preview": "## 基本信息 - **来源**：Medium / Android 官方 - **时间**：2024 - **类型**：社区/官方 - **领域**：Framework/稳 - **原文链接**：https://medium.com/androiddevelopers - **日报日期**：2026-03-15 ## 摘要 Android 14 实施更严格的后台进程冻结策略，缓存应用在短时间后被完",
+      "date": "2026-04-09",
+      "scored_at": "2026-04-09T16:55:33.917148"
+    },
+    {
+      "title": "Android 15 充电优化：80% 电量限制",
+      "path": "性能优化日报/2026-03-15-Android-15-充电优化80%限制.md",
+      "score": 10,
+      "quality": "medium",
+      "relevance": 2,
+      "tech_depth": 2,
+      "timeliness": 5,
+      "verifiability": 1,
+      "chapters": [],
+      "content_preview": "## 基本信息 - **来源**：Android 官方 / ZDNet - **时间**：2024-11 - **类型**：官方 - **领域**：省 - **原文链接**：https://developer.android.com/about/versions/15/features - **日报日期**：2026-03-15 ## 摘要 Android 15（Pixel 设备 2024 年 1",
+      "date": "2026-04-09",
+      "scored_at": "2026-04-09T16:55:33.917149"
+    },
+    {
+      "title": "Android 15/16 要求 16KB 内存页面对齐",
+      "path": "性能优化日报/2026-03-15-Android-16KB-内存页面对齐.md",
+      "score": 10,
+      "quality": "medium",
+      "relevance": 3,
+      "tech_depth": 1,
+      "timeliness": 5,
+      "verifiability": 1,
+      "chapters": [],
+      "content_preview": "## 基本信息 - **来源**：Android 官方开发者博客 - **时间**：2025-11（2025 年 11 月起强制） - **类型**：官方 - **领域**：Framework/内存 - **原文链接**：https://developer.android.com/guide/practices/page-sizes - **日报日期**：2026-03-15 ## 摘要 Goog",
+      "date": "2026-04-09",
+      "scored_at": "2026-04-09T16:55:33.917150"
+    },
+    {
+      "title": "Baseline Profiles 成为应用启动优化标配",
+      "path": "性能优化日报/2026-03-15-Baseline-Profiles-启动优化标配.md",
+      "score": 11,
+      "quality": "medium",
+      "relevance": 3,
+      "tech_depth": 2,
+      "timeliness": 5,
+      "verifiability": 1,
+      "chapters": [],
+      "content_preview": "## 基本信息 - **来源**：Android 官方 / Medium / droidcon - **时间**：2024-2025 - **类型**：官方/社区 - **领域**：快 - **原文链接**：https://developer.android.com/topic/performance/baselineprofiles - **日报日期**：2026-03-15 ## 摘要 Bas",
+      "date": "2026-04-09",
+      "scored_at": "2026-04-09T16:55:33.917152"
+    },
+    {
+      "title": "Android/Linux 性能优化日报 · 2026-03-31",
+      "path": "性能优化日报/2026-03-31-性能优化日报.md",
+      "score": 13,
+      "quality": "medium",
+      "relevance": 4,
+      "tech_depth": 2,
+      "timeliness": 5,
+      "verifiability": 2,
+      "chapters": [],
+      "content_preview": "## 📊 今日概览 - 搜索关键词：Android performance、ART runtime、Linux kernel scheduler、16KB page size、AutoFDO、sched_ext、Jetpack Compose、Perfetto、R8 optimizer、battery wake lock - 有效结果：10条 - 时间范围：2024-2026 ## 🔥 精选内容（",
+      "date": "2026-04-09",
+      "scored_at": "2026-04-09T16:55:33.917153"
+    },
+    {
+      "title": "Android 17 把 MessageQueue 改成无锁了：主线程卡顿治理进入新阶段",
+      "path": "公众号文章/2026-02-18-Android17-lock-free-MessageQueue-公众号首稿.md",
+      "score": 17,
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch03-线程",
+          "confidence": "high",
+          "reason": "MessageQueue无锁化、Handler/Looper、锁竞争"
+        },
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "high",
+          "reason": "主线程卡顿、missed frames减少"
+        },
+        {
+          "chapter": "ch17-新版本",
+          "confidence": "high",
+          "reason": "Android 17 targetSdk 37行为变更"
+        }
+      ],
+      "summary": "Android 17将MessageQueue从synchronized锁升级为无锁DeliQueue，减少主线程锁竞争导致的卡顿",
+      "scored_at": "2026-04-09T17:22:59.714202"
+    },
+    {
+      "title": "Android 17 MessageQueue 无锁化深度解析：从源码到性能实战(v2)",
+      "path": "公众号文章/2026-03-12-Android17-lock-free-MessageQueue-深度补全-v2.md",
+      "score": 18,
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch03-线程",
+          "confidence": "high",
+          "reason": "ARM原子指令、DeliQueue完整实现、Java内存模型"
+        },
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "high",
+          "reason": "Branchless优化、Perfetto SQL模板分析锁竞争"
+        },
+        {
+          "chapter": "ch17-新版本",
+          "confidence": "high",
+          "reason": "Android 17 MessageQueue无锁化重构"
+        }
+      ],
+      "summary": "深度补全v2版：ARM原子指令底层、DeliQueue完整实现、JMM数据竞争、Branchless优化、Perfetto实战",
+      "scored_at": "2026-04-09T17:22:59.714212"
+    },
+    {
+      "title": "Android 17 MessageQueue 无锁化深度解析(v1)",
+      "path": "公众号文章/2026-03-12-Android17-lock-free-MessageQueue-深度补全.md",
+      "score": 17,
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch03-线程",
+          "confidence": "high",
+          "reason": "源码级MessageQueue无锁实现分析"
+        },
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "medium",
+          "reason": "性能基准数据、Perfetto实战案例"
+        },
+        {
+          "chapter": "ch17-新版本",
+          "confidence": "high",
+          "reason": "Android 17行为变更详解"
+        }
+      ],
+      "summary": "深度补全v1版：源码级实现分析、性能基准数据、Perfetto实战、新旧对比",
+      "scored_at": "2026-04-09T17:22:59.714215"
+    },
+    {
+      "title": "Under the hood: Android 17 lock-free MessageQueue",
+      "path": "公众号文章/技术简报第三期/原文/02-under-the-hood-android-17-s-lock-free-messagequeue.md",
+      "score": 16,
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch03-线程",
+          "confidence": "high",
+          "reason": "DeliQueue无锁实现、Perfetto锁竞争分析"
+        },
+        {
+          "chapter": "ch17-新版本",
+          "confidence": "high",
+          "reason": "Android 17 SDK 37 MessageQueue重构"
+        }
+      ],
+      "summary": "Google官方博客：Android 17 MessageQueue无锁化DeliQueue架构详解及Perfetto分析方法",
+      "scored_at": "2026-04-09T17:22:59.714216"
+    },
+    {
+      "title": "The Intelligent OS: Making AI agents more helpful for Android",
+      "path": "公众号文章/技术简报第三期/原文/01-the-intelligent-os-making-ai-agents-more-helpful-for-android.md",
+      "score": 14,
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch01-架构",
+          "confidence": "medium",
+          "reason": "AI agent与Android app集成架构"
+        },
+        {
+          "chapter": "ch17-新版本",
+          "confidence": "medium",
+          "reason": "Android新交互模型"
+        }
+      ],
+      "summary": "Google官方：Android上AI Agent与App交互的新架构设计",
+      "scored_at": "2026-04-09T17:22:59.714218"
+    },
+    {
+      "title": "I built a 2x faster lexer, then discovered I/O was the real bottleneck",
+      "path": "公众号文章/技术简报第三期/原文/03-i-built-a-2x-faster-lexer-then-discovered-i-o-was-the-real-b.md",
+      "score": 12,
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch08-存储",
+          "confidence": "medium",
+          "reason": "I/O性能瓶颈分析、syscall开销"
+        },
+        {
+          "chapter": "ch11-Profiling",
+          "confidence": "low",
+          "reason": "性能benchmark方法论"
+        }
+      ],
+      "summary": "ARM64汇编lexer优化发现I/O才是真正瓶颈，分析syscall开销与tar.gz压缩性能",
+      "scored_at": "2026-04-09T17:22:59.714219"
+    },
+    {
+      "title": "Spinning around: Please don not - spin-loop问题",
+      "path": "公众号文章/技术简报第三期/原文/04-spinning-around-please-don-t.md",
+      "score": 13,
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch03-线程",
+          "confidence": "high",
+          "reason": "spin-loop、busy-waiting线程问题"
+        },
+        {
+          "chapter": "ch13-调度",
+          "confidence": "medium",
+          "reason": "CPU调度与自旋线程"
+        }
+      ],
+      "summary": "spin-loop反模式总结：自旋线程导致CPU浪费、功耗升高、调度器干扰的常见问题",
+      "scored_at": "2026-04-09T17:22:59.714221"
+    },
+    {
+      "title": "All Roads Lead to IPC：重新思考CPU效能设计",
+      "path": "公众号文章/技术简报第三期/原文/05-all-roads-lead-to-ipc.md",
+      "score": 12,
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch13-调度",
+          "confidence": "high",
+          "reason": "CPU IPC效能、架构设计"
+        },
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "low",
+          "reason": "CPU性能对渲染管线影响"
+        }
+      ],
+      "summary": "从CPU架构角度分析IPC(Instructions Per Cycle)对效能设计的影响",
+      "scored_at": "2026-04-09T17:22:59.714222"
+    },
+    {
+      "title": "性能优化日报 2026-03-16",
+      "path": "公众号文章/性能优化日报/2026-03-16-性能优化日报.md",
+      "score": 14,
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch04-启动",
+          "confidence": "medium",
+          "reason": "AutoFDO内核优化启动速度"
+        },
+        {
+          "chapter": "ch11-Profiling",
+          "confidence": "medium",
+          "reason": "Perfetto分析工具"
+        }
+      ],
+      "summary": "AutoFDO内核级优化提升10.5%、Perfetto工具更新等10条",
+      "scored_at": "2026-04-09T17:24:22.669426"
+    },
+    {
+      "title": "性能优化日报 2026-03-17",
+      "path": "公众号文章/性能优化日报/2026-03-17-性能优化日报.md",
+      "score": 14,
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "medium",
+          "reason": "Jetpack Compose渲染优化"
+        },
+        {
+          "chapter": "ch07-内存",
+          "confidence": "medium",
+          "reason": "ART内存优化"
+        }
+      ],
+      "summary": "Perfetto、Compose性能、Baseline Profiles、Linux内核等10条",
+      "scored_at": "2026-04-09T17:24:22.669435"
+    },
+    {
+      "title": "性能优化日报 2026-03-18",
+      "path": "公众号文章/性能优化日报/2026-03-18-性能优化日报.md",
+      "score": 14,
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch11-Profiling",
+          "confidence": "medium",
+          "reason": "Perfetto工具"
+        }
+      ],
+      "summary": "Android性能优化日报，涵盖Perfetto、ART、内存等主题",
+      "scored_at": "2026-04-09T17:24:22.669437"
+    },
+    {
+      "title": "性能优化日报 2026-03-19",
+      "path": "公众号文章/性能优化日报/2026-03-19-Android-Linux性能优化日报.md",
+      "score": 14,
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch13-调度",
+          "confidence": "medium",
+          "reason": "Linux调度器优化"
+        },
+        {
+          "chapter": "ch07-内存",
+          "confidence": "medium",
+          "reason": "内存管理"
+        }
+      ],
+      "summary": "Android/Linux性能日报，涵盖调度器、内存管理等",
+      "scored_at": "2026-04-09T17:24:22.669439"
+    },
+    {
+      "title": "性能优化日报 2026-03-20",
+      "path": "公众号文章/性能优化日报/2026-03-20-性能优化日报.md",
+      "score": 14,
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch04-启动",
+          "confidence": "medium",
+          "reason": "启动优化、AutoFDO"
+        },
+        {
+          "chapter": "ch06-功耗",
+          "confidence": "medium",
+          "reason": "功耗优化"
+        }
+      ],
+      "summary": "启动优化、内存优化、功耗优化、Vulkan、AutoFDO等10条",
+      "scored_at": "2026-04-09T17:24:22.669440"
+    },
+    {
+      "title": "性能优化日报 2026-03-21",
+      "path": "公众号文章/性能优化日报/2026-03-21-性能优化日报.md",
+      "score": 14,
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch11-Profiling",
+          "confidence": "medium",
+          "reason": "Perfetto分析"
+        }
+      ],
+      "summary": "Android/Linux性能优化日报",
+      "scored_at": "2026-04-09T17:24:22.669441"
+    },
+    {
+      "title": "性能优化日报 2026-03-22",
+      "path": "公众号文章/性能优化日报/2026-03-22-性能优化日报.md",
+      "score": 14,
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch07-内存",
+          "confidence": "medium",
+          "reason": "内存优化"
+        },
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "medium",
+          "reason": "GPU渲染"
+        }
+      ],
+      "summary": "Android/Linux性能优化日报",
+      "scored_at": "2026-04-09T17:24:22.669442"
+    },
+    {
+      "title": "性能优化日报 2026-03-23",
+      "path": "公众号文章/性能优化日报/2026-03-23-性能优化日报.md",
+      "score": 14,
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch11-Profiling",
+          "confidence": "medium",
+          "reason": "性能分析工具"
+        }
+      ],
+      "summary": "Android/Linux性能优化日报",
+      "scored_at": "2026-04-09T17:24:22.669443"
+    },
+    {
+      "title": "性能优化日报 2026-03-24",
+      "path": "公众号文章/性能优化日报/Android-Linux性能优化日报-2026-03-24.md",
+      "score": 14,
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch13-调度",
+          "confidence": "medium",
+          "reason": "Linux调度"
+        },
+        {
+          "chapter": "ch07-内存",
+          "confidence": "medium",
+          "reason": "内存管理"
+        }
+      ],
+      "summary": "Android/Linux性能优化日报",
+      "scored_at": "2026-04-09T17:24:22.669445"
+    },
+    {
+      "title": "性能优化日报 2026-03-25",
+      "path": "公众号文章/性能优化日报/2026-03-25-性能优化日报.md",
+      "score": 14,
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "medium",
+          "reason": "渲染优化"
+        },
+        {
+          "chapter": "ch11-Profiling",
+          "confidence": "medium",
+          "reason": "Perfetto"
+        }
+      ],
+      "summary": "Android/Linux性能优化日报",
+      "scored_at": "2026-04-09T17:24:22.669446"
+    },
+    {
+      "title": "性能优化日报 2026-03-26",
+      "path": "公众号文章/性能优化日报/2026-03-26-Android-Linux-性能优化日报.md",
+      "score": 14,
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch04-启动",
+          "confidence": "medium",
+          "reason": "启动优化"
+        },
+        {
+          "chapter": "ch07-内存",
+          "confidence": "medium",
+          "reason": "内存管理"
+        }
+      ],
+      "summary": "Android/Linux性能优化日报",
+      "scored_at": "2026-04-09T17:24:22.669447"
+    },
+    {
+      "title": "性能优化日报 2026-03-27",
+      "path": "公众号文章/性能优化日报/2026-03-27-Android-Linux性能优化日报.md",
+      "score": 14,
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch06-功耗",
+          "confidence": "medium",
+          "reason": "功耗优化"
+        },
+        {
+          "chapter": "ch11-Profiling",
+          "confidence": "medium",
+          "reason": "Perfetto工具"
+        }
+      ],
+      "summary": "Android/Linux性能优化日报",
+      "scored_at": "2026-04-09T17:24:22.669448"
+    },
+    {
+      "title": "性能优化日报 2024-03-28",
+      "path": "公众号文章/性能优化日报/Android性能优化日报-2024-03-28.md",
+      "score": 15,
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch04-启动",
+          "confidence": "high",
+          "reason": "启动时间优化46条精选"
+        },
+        {
+          "chapter": "ch07-内存",
+          "confidence": "high",
+          "reason": "16KB页面、内存管理"
+        },
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "medium",
+          "reason": "滑动性能优化"
+        }
+      ],
+      "summary": "46条精选Android性能优化内容：ART优化、启动时间、滑动、功耗、16KB页面等",
+      "scored_at": "2026-04-09T17:24:22.669450"
+    },
+    {
+      "title": "NevaMind-AI/memU（24/7 Agent Memory）",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/X 文章/2026-03-02-1209-FDA-digital-health-center-excellence-url-eba5949fb801.md",
+      "score": 14,
+      "quality": "medium",
+      "chapters": [
+        "ch16-构建",
+        "ch14-工具"
+      ],
+      "confidence": "medium",
+      "relevance": 4,
+      "technical_depth": 3,
+      "timeliness": 5,
+      "verifiability": 2,
+      "scored_at": "2026-04-09T18:18:49.154658"
+    },
+    {
+      "title": "Agent工程=分布式系统工程（6支柱速读）",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/X 文章/2026-03-03-2022-yanhua1010-从-Vibe-Coding-到-Agentic-Engineering：开发者角色正在重写-2028737821855580662.md",
+      "score": 16,
+      "quality": "high",
+      "chapters": [
+        "ch16-构建",
+        "ch14-工具"
+      ],
+      "confidence": "high",
+      "relevance": 4,
+      "technical_depth": 4,
+      "timeliness": 5,
+      "verifiability": 3,
+      "scored_at": "2026-04-09T18:18:49.154668"
+    },
+    {
+      "title": "X-PLUG/MobileAgent（GUI Agent Family）",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/X 文章/2026-03-01-1613-kingluffywang-伊朗的困局-革命-制裁与帝国的阴影对话-2024587900264783967.md",
+      "score": 13,
+      "quality": "medium",
+      "chapters": [
+        "ch05-渲染",
+        "ch14-工具"
+      ],
+      "confidence": "medium",
+      "relevance": 3,
+      "technical_depth": 4,
+      "timeliness": 4,
+      "verifiability": 2,
+      "scored_at": "2026-04-09T18:18:49.154672"
+    },
+    {
+      "title": "alibaba/OpenSandbox（GitHub 日榜高热）",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/X 文章/2026-03-23-1055-Claude-Code-claude文件夹完全指南-2035341800739877091.md",
+      "score": 15,
+      "quality": "medium",
+      "chapters": [
+        "ch16-构建",
+        "ch14-工具"
+      ],
+      "confidence": "medium",
+      "relevance": 4,
+      "technical_depth": 3,
+      "timeliness": 5,
+      "verifiability": 3,
+      "scored_at": "2026-04-09T18:18:49.154674"
+    },
+    {
+      "title": "OpenClaw 记忆外挂：Tokens 消耗降低 72%",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/X 文章/2026-04-05-1215-Tw93-你不知道的大模型训练原理路径与新实践.md",
+      "score": 17,
+      "quality": "high",
+      "chapters": [
+        "ch16-构建",
+        "ch14-工具"
+      ],
+      "confidence": "high",
+      "relevance": 5,
+      "technical_depth": 4,
+      "timeliness": 5,
+      "verifiability": 3,
+      "scored_at": "2026-04-09T18:18:49.154675"
+    },
+    {
+      "title": "ruvnet/ruflo（Agent orchestration）",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/X 文章/2026-03-11-0805-Fang知识分享-Lex-Fridman-采访-Sam-Altman-AI播客深度对话-2031175084296253588.md",
+      "score": 14,
+      "quality": "medium",
+      "chapters": [
+        "ch16-构建",
+        "ch14-工具"
+      ],
+      "confidence": "medium",
+      "relevance": 4,
+      "technical_depth": 3,
+      "timeliness": 5,
+      "verifiability": 2,
+      "scored_at": "2026-04-09T18:18:49.154677"
+    },
+    {
+      "title": "OpenClaw 极简安全实践指南（Security Practice Guide）",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/X 文章/2026-04-06-1240-yanhua1010-Obsidian+Claude知识库架构.md",
+      "score": 18,
+      "quality": "high",
+      "chapters": [
+        "ch12-安全",
+        "ch16-构建"
+      ],
+      "confidence": "high",
+      "relevance": 5,
+      "technical_depth": 4,
+      "timeliness": 5,
+      "verifiability": 4,
+      "scored_at": "2026-04-09T18:18:49.154679"
+    },
+    {
+      "title": "如何从零开始写一个 OpenClaw（CrabClaw 开发手记）",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/X 文章/2026-04-06-1205-AlchainHust-CLAUDE-CODE橙皮书开源.md",
+      "score": 16,
+      "quality": "high",
+      "chapters": [
+        "ch16-构建",
+        "ch14-工具"
+      ],
+      "confidence": "high",
+      "relevance": 4,
+      "technical_depth": 5,
+      "timeliness": 5,
+      "verifiability": 2,
+      "scored_at": "2026-04-09T18:18:49.154681"
+    },
+    {
+      "title": "从 Vibe Coding 到 Agentic Engineering：开发者角色正在重写",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/X 文章/2026-03-01-1211-wangray-稳定已死，个体崛起-2027719317891207626.md",
+      "score": 15,
+      "quality": "medium",
+      "chapters": [
+        "ch16-构建",
+        "ch14-工具"
+      ],
+      "confidence": "medium",
+      "relevance": 4,
+      "technical_depth": 3,
+      "timeliness": 5,
+      "verifiability": 3,
+      "scored_at": "2026-04-09T18:18:49.154682"
+    },
+    {
+      "title": "Investigating how Codex context compaction works",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/X 文章/2026-03-09-0807-鱼总聊AI-2026最值得关注的AI出海创业独立开发副业博主大合集-2030166779096658161.md",
+      "score": 13,
+      "quality": "medium",
+      "chapters": [
+        "ch16-构建",
+        "ch14-工具"
+      ],
+      "confidence": "medium",
+      "relevance": 3,
+      "technical_depth": 4,
+      "timeliness": 4,
+      "verifiability": 2,
+      "scored_at": "2026-04-09T18:18:49.154683"
     }
   ]
 }

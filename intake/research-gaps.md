@@ -327,3 +327,21 @@ f2fs atomic_write 接口与 AOSP SQLite 的实际集成状态。当前正文描�
 
 ### 关联章节
 6.1（存储架构）、6.3（I/O 调度）、7.2（卡顿原因体系）
+
+
+## [2026-04-09] 1.7 ART 编译管线与 dex2oat 优化 — 知识盲区
+
+### 盲区描述
+Compact DEX（cdex）格式与 raw DEX 格式在 ART 编译行为上的差异。Android 10 引入了 compact DEX（cdex），这是一种将多个 DEX 文件合并打包的格式。cdex 的关键特性是：它不能被 ART 解释执行（因为不是标准 DEX），必须先编译成 OAT 才能运行。这意味着使用 cdex 的应用在安装时必须有 AOT 编译，不能回退到纯解释执行。
+
+### 重要程度
+高
+
+### 建议研究方向
+- AOSP art/libdexfile/ 中的 cdex 文件格式实现
+- Compact DEX 在 Android 10-14 的演进
+- cdex 对安装时间、存储占用、启动性能的实际影响量化
+- R8/D8 如何决定何时生成 cdex vs raw DEX
+
+### 关联章节
+§1.7（本章）、§8.2（App 启动全流程）、§8.3（启动优化策略）

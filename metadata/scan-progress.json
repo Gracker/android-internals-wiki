@@ -1,5 +1,8 @@
 {
-  "current_offset": 130,
-  "last_scan_batch": 50,
-  "last_scan_time": "2026-04-09T19:15:00.000000"
+  "current_directory": "X 文章",
+  "current_offset": 111,
+  "processed_in_batch": 30,
+  "indexed_in_batch": 10,
+  "last_scan_time": "2026-04-09T18:15:00.000000",
+  "last_scan_batch": 111
 }

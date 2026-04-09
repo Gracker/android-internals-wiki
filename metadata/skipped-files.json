@@ -2337,5 +2337,1085 @@
     "path": "X 文章/2026-03-02-1214-ruvnet-ruflo-url-c289dc3d991e.md",
     "reason": "Score 8/20 < threshold",
     "score": 8
+  },
+  {
+    "title": "没有退路的赌桌，TACO交易的终结",
+    "path": "X 文章/2026-03-11-0805-Aelia-Capitolina-没有退路的赌桌TACO交易的终结-2030781217600049185.md",
+    "relevance": 1,
+    "technical_depth": 0,
+    "timeliness": 4,
+    "verifiability": 0,
+    "total_score": 5,
+    "reason": "Low total score"
+  },
+  {
+    "title": "Lex Fridman 采访 Sam Altman - AI播客深度对话",
+    "path": "X 文章/2026-03-11-0805-Fang知识分享-Lex-Fridman-采访-Sam-Altman-AI播客深度对话-2031175084296253588.md",
+    "relevance": 1,
+    "technical_depth": 0,
+    "timeliness": 4,
+    "verifiability": 0,
+    "total_score": 5,
+    "reason": "Low total score"
+  },
+  {
+    "title": "How Coding Agents Are Reshaping Engineering, Product and Design",
+    "path": "X 文章/2026-03-11-0805-Harrison-Chase-How-Coding-Agents-Are-Reshaping-Engineering-Produc-2031051115169808685.md",
+    "relevance": 2,
+    "technical_depth": 0,
+    "timeliness": 4,
+    "verifiability": 0,
+    "total_score": 6,
+    "reason": "Low total score"
+  },
+  {
+    "title": "搜索外脑接入龙虾生态 - SearxNG 方案",
+    "path": "X 文章/2026-03-11-0805-QingYue-搜索外脑接入龙虾生态-SearxNG-方案-2030996280051462609.md",
+    "relevance": 1,
+    "technical_depth": 0,
+    "timeliness": 4,
+    "verifiability": 0,
+    "total_score": 5,
+    "reason": "Low total score"
+  },
+  {
+    "title": "去 AI 味的方法 - Agent Skills 写作风格",
+    "path": "X 文章/2026-03-11-0805-余温-去-AI-味的方法-Agent-Skills-写作风格-2023173476702728479.md",
+    "relevance": 2,
+    "technical_depth": 0,
+    "timeliness": 4,
+    "verifiability": 0,
+    "total_score": 6,
+    "reason": "Low total score"
+  },
+  {
+    "title": "98页的 OpenClaw橙皮书",
+    "path": "X 文章/2026-03-12-0804-AI进化论-花生-98页的 OpenClaw橙皮书-2031212769694068775.md",
+    "relevance": 1,
+    "technical_depth": 0,
+    "timeliness": 4,
+    "verifiability": 0,
+    "total_score": 5,
+    "reason": "Low total score"
+  },
+  {
+    "title": "没有退路的赌桌，TACO交易的终结",
+    "path": "X 文章/2026-03-12-0804-Aelia Capitolina-没有退路的赌桌，TACO交易的终结-2030781217600049185.md",
+    "relevance": 1,
+    "technical_depth": 0,
+    "timeliness": 4,
+    "verifiability": 0,
+    "total_score": 5,
+    "reason": "Low total score"
+  },
+  {
+    "title": "Lex Fridman 采访 Sam Altman - AI播客深度对话",
+    "path": "X 文章/2026-03-12-0804-Fang知识分享-Lex Fridman 采访 Sam Altman - AI播客深度对话-2031175084296253588.md",
+    "relevance": 1,
+    "technical_depth": 0,
+    "timeliness": 4,
+    "verifiability": 0,
+    "total_score": 5,
+    "reason": "Low total score"
+  },
+  {
+    "title": "How Coding Agents Are Reshaping Engineering, Product and Design",
+    "path": "X 文章/2026-03-12-0804-Harrison Chase-How Coding Agents Are Reshaping Engineering, Product and Design-2031051115169808685.md",
+    "relevance": 2,
+    "technical_depth": 0,
+    "timeliness": 4,
+    "verifiability": 0,
+    "total_score": 6,
+    "reason": "Low total score"
+  },
+  {
+    "title": "Chinese Open Source: A Definitive History",
+    "path": "X 文章/2026-03-12-0804-Kevin S. Xu-Chinese Open Source- A Definitive History-2029961571296743585.md",
+    "relevance": 1,
+    "technical_depth": 0,
+    "timeliness": 4,
+    "verifiability": 0,
+    "total_score": 5,
+    "reason": "Low total score"
+  },
+  {
+    "title": "搜索外脑接入龙虾生态 - SearxNG 方案",
+    "path": "X 文章/2026-03-12-0804-QingYue-搜索外脑接入龙虾生态 - SearxNG 方案-2030996280051462609.md",
+    "relevance": 1,
+    "technical_depth": 0,
+    "timeliness": 4,
+    "verifiability": 0,
+    "total_score": 5,
+    "reason": "Low total score"
+  },
+  {
+    "title": "I want to become an AI engineer (full course)",
+    "path": "X 文章/2026-03-12-0804-hoeem-I want to become an AI engineer (full course)-2029660075774574660.md",
+    "relevance": 1,
+    "technical_depth": 0,
+    "timeliness": 4,
+    "verifiability": 0,
+    "total_score": 5,
+    "reason": "Low total score"
+  },
+  {
+    "title": "战争、油价与你的钱包：中东炮声如何引爆全球市场",
+    "path": "X 文章/2026-03-12-0804-东铭 Insight-战争、油价与你的钱包：中东炮声如何引爆全球市场-2029869964715336007.md",
+    "relevance": 1,
+    "technical_depth": 0,
+    "timeliness": 4,
+    "verifiability": 0,
+    "total_score": 5,
+    "reason": "Low total score"
+  },
+  {
+    "title": "去 AI 味的方法 - Agent Skills 写作风格",
+    "path": "X 文章/2026-03-12-0804-余温-去 AI 味的方法 - Agent Skills 写作风格-2023173476702728479.md",
+    "relevance": 2,
+    "technical_depth": 0,
+    "timeliness": 4,
+    "verifiability": 0,
+    "total_score": 6,
+    "reason": "Low total score"
+  },
+  {
+    "title": "在没有海外信用卡的情况下，如何稳定付费 ChatGPT 和 Claude 会员",
+    "path": "X 文章/2026-03-12-0804-青年小哲-在没有海外信用卡的情况下，如何稳定付费 ChatGPT 和 Claude 会员-2029920937651622199.md",
+    "relevance": 1,
+    "technical_depth": 0,
+    "timeliness": 4,
+    "verifiability": 0,
+    "total_score": 5,
+    "reason": "Low total score"
+  },
+  {
+    "title": "2026最值得关注的AI/出海/创业/独立开发/副业博主大合集",
+    "path": "X 文章/2026-03-12-0804-鱼总聊AI-2026最值得关注的AI-出海-创业-独立开发-副业博主大合集-2030166779096658161.md",
+    "relevance": 1,
+    "technical_depth": 0,
+    "timeliness": 4,
+    "verifiability": 0,
+    "total_score": 5,
+    "reason": "Low total score"
+  },
+  {
+    "title": "X 收藏文章归档 - 2026-04-03",
+    "path": "X 文章/2026-04-03-x-bookmarks.md",
+    "relevance": 1,
+    "technical_depth": 0,
+    "timeliness": 4,
+    "verifiability": 3,
+    "total_score": 8,
+    "reason": "Low total score"
+  },
+  {
+    "title": "LLM Knowledge Bases",
+    "path": "X 文章/2026-04-05-1215-AndrejKarpathy-LLM-Knowledge-Bases.md",
+    "relevance": 1,
+    "technical_depth": 0,
+    "timeliness": 4,
+    "verifiability": 0,
+    "total_score": 5,
+    "reason": "Low total score"
+  },
+  {
+    "title": "你不知道的大模型训练：原理、路径与新实践",
+    "path": "X 文章/2026-04-05-1215-Tw93-你不知道的大模型训练原理路径与新实践.md",
+    "relevance": 1,
+    "technical_depth": 0,
+    "timeliness": 4,
+    "verifiability": 0,
+    "total_score": 5,
+    "reason": "Low total score"
+  },
+  {
+    "title": "ClaudeCode 你想知道的所有秘密，源码深度研究报告",
+    "path": "X 文章/2026-04-05-1215-XiaoTan-ClaudeCode源码深度研究报告.md",
+    "relevance": 1,
+    "technical_depth": 0,
+    "timeliness": 4,
+    "verifiability": 3,
+    "total_score": 8,
+    "reason": "Low total score"
+  },
+  {
+    "title": "open-agent-sdk 替代 claude-agent-sdk",
+    "path": "X 文章/2026-04-05-1215-idoubi-open-agent-sdk替代claude-agent-sdk.md",
+    "relevance": 1,
+    "technical_depth": 0,
+    "timeliness": 4,
+    "verifiability": 0,
+    "total_score": 5,
+    "reason": "Low total score"
+  },
+  {
+    "title": "(Note Tweet)",
+    "path": "X 文章/2026-04-06-1205-AlchainHust-CLAUDE-CODE橙皮书开源.md",
+    "relevance": 2,
+    "technical_depth": 0,
+    "timeliness": 4,
+    "verifiability": 3,
+    "total_score": 9,
+    "reason": "Low total score"
+  },
+  {
+    "title": "One Claude prompt to fix your nutrition forever",
+    "path": "X 文章/2026-04-06-1205-Hawks0x-One-Claude-prompt-to.md",
+    "relevance": 1,
+    "technical_depth": 0,
+    "timeliness": 4,
+    "verifiability": 0,
+    "total_score": 5,
+    "reason": "Low total score"
+  },
+  {
+    "title": "你不知道的大模型训练：原理、路径与新实践",
+    "path": "X 文章/2026-04-06-1205-HiTw93-你不知道的大模型训练原理路径与新实践.md",
+    "relevance": 1,
+    "technical_depth": 0,
+    "timeliness": 4,
+    "verifiability": 0,
+    "total_score": 5,
+    "reason": "Low total score"
+  },
+  {
+    "title": "(Note Tweet)",
+    "path": "X 文章/2026-04-06-1205-Lonely__MH-Google-Gemma-4-31B-模.md",
+    "relevance": 1,
+    "technical_depth": 0,
+    "timeliness": 4,
+    "verifiability": 0,
+    "total_score": 5,
+    "reason": "Low total score"
+  },
+  {
+    "title": "(Note Tweet)",
+    "path": "X 文章/2026-04-06-1205-andy88988696-口交跟性交的快感对比分析.md",
+    "relevance": 1,
+    "technical_depth": 0,
+    "timeliness": 4,
+    "verifiability": 0,
+    "total_score": 5,
+    "reason": "Low total score"
+  },
+  {
+    "title": "(Note Tweet)",
+    "path": "X 文章/2026-04-06-1205-karpathy-LLM-Knowledge-Bases.md",
+    "relevance": 1,
+    "technical_depth": 0,
+    "timeliness": 4,
+    "verifiability": 0,
+    "total_score": 5,
+    "reason": "Low total score"
+  },
+  {
+    "title": "如果你用 codex 已经厌烦了它总是：「如果你要,我下一步可以... 」，诸如此类的话",
+    "path": "X 文章/2026-04-06-1240-AlexZ 🦀-解决Codex过度询问.md",
+    "relevance": 1,
+    "technical_depth": 0,
+    "timeliness": 4,
+    "verifiability": 3,
+    "total_score": 8,
+    "reason": "Low total score"
+  },
+  {
+    "title": "graphify — Claude Code 的图谱 skill",
+    "path": "X 文章/2026-04-06-1240-Geek Lite-graphify图谱skill.md",
+    "relevance": 1,
+    "technical_depth": 0,
+    "timeliness": 4,
+    "verifiability": 3,
+    "total_score": 8,
+    "reason": "Low total score"
+  },
+  {
+    "title": "🚨 重磅！Google Gemma-4-31B 模型被彻底破解！",
+    "path": "X 文章/2026-04-06-1240-Lonely-Gemma-4-31B破解版.md",
+    "relevance": 1,
+    "technical_depth": 0,
+    "timeliness": 4,
+    "verifiability": 0,
+    "total_score": 5,
+    "reason": "Low total score"
+  },
+  {
+    "title": "花了一天时间，把我自己常用的 Skill Release 成一个新玩意叫 Waza",
+    "path": "X 文章/2026-04-06-1240-Tw93-Waza AI工程师技能.md",
+    "relevance": 1,
+    "technical_depth": 0,
+    "timeliness": 4,
+    "verifiability": 0,
+    "total_score": 5,
+    "reason": "Low total score"
+  },
+  {
+    "title": "用 LLM + Obsidian 构建个人知识库：基于 Karpathy 的\"LLM Knowledge Bases\"工作流",
+    "path": "X 文章/2026-04-06-1240-yanhua1010-LLMObsidian知识库.md",
+    "relevance": 1,
+    "technical_depth": 0,
+    "timeliness": 4,
+    "verifiability": 0,
+    "total_score": 5,
+    "reason": "Low total score"
+  },
+  {
+    "title": "用 Obsidian + Claude 搭个人知识库，分享这套架构最核心的实践",
+    "path": "X 文章/2026-04-06-1240-yanhua1010-Obsidian+Claude知识库架构.md",
+    "relevance": 1,
+    "technical_depth": 0,
+    "timeliness": 4,
+    "verifiability": 0,
+    "total_score": 5,
+    "reason": "Low total score"
+  },
+  {
+    "title": "搞懂缓存机制，从Gemma4到Claude Code省80%Token",
+    "path": "X 文章/2026-04-06-1240-实践哥MinLi-Gemma4到Claude Code缓存机制.md",
+    "relevance": 1,
+    "technical_depth": 0,
+    "timeliness": 4,
+    "verifiability": 3,
+    "total_score": 8,
+    "reason": "Low total score"
+  },
+  {
+    "title": "烧了我200万 Opus4.6 tokens，用女娲.skill 蒸馏出的这款 乔布斯.skill 已开源",
+    "path": "X 文章/2026-04-06-1240-花叔-乔布斯.skill开源.md",
+    "relevance": 1,
+    "technical_depth": 0,
+    "timeliness": 4,
+    "verifiability": 0,
+    "total_score": 5,
+    "reason": "Low total score"
+  },
+  {
+    "title": "Hermes 从 0 到 1 教程",
+    "path": "X 文章/2026-04-06-1240-雪踏乌云-Hermes从0到1教程.md",
+    "relevance": 1,
+    "technical_depth": 0,
+    "timeliness": 4,
+    "verifiability": 0,
+    "total_score": 5,
+    "reason": "Low total score"
+  },
+  {
+    "title": "对于想自己私人配置一套本地大模型环境的朋友可以关注一下 V 神这篇博客",
+    "path": "X 文章/2026-04-06-1240-马天翼-V神本地LLM环境配置.md",
+    "relevance": 1,
+    "technical_depth": 0,
+    "timeliness": 4,
+    "verifiability": 0,
+    "total_score": 5,
+    "reason": "Low total score"
+  },
+  {
+    "title": "用 LLM + Obsidian 构建个人知识库：基于 Karpathy 的\"LLM Knowledge Bases\"工作流",
+    "path": "X 文章/2026-04-06-1257-yanhua1010-用LLM + Obsidian构建个人知识库.md",
+    "relevance": 1,
+    "technical_depth": 0,
+    "timeliness": 4,
+    "verifiability": 0,
+    "total_score": 5,
+    "reason": "Low total score"
+  },
+  {
+    "title": "Waza：AI时代工程师的8个核心技能",
+    "path": "X 文章/2026-04-06-1259-HiTw93-Waza技能发布.md",
+    "relevance": 1,
+    "technical_depth": 0,
+    "timeliness": 4,
+    "verifiability": 0,
+    "total_score": 5,
+    "reason": "Low total score"
+  },
+  {
+    "title": "(Note Tweet)",
+    "path": "X 文章/2026-04-06-1205-Lonely-Gemma-4-31B-模.md",
+    "relevance": 1,
+    "technical_depth": 0,
+    "timeliness": 4,
+    "verifiability": 0,
+    "total_score": 5,
+    "reason": "Low total score"
+  },
+  {
+    "path": "性能优化日报/2026-03-14-官方-Android NNAPI 废弃与 TensorFlow Lite 迁移.md",
+    "reason": "总分8<10, 评分:相关1 技术1 时效5 可验证1",
+    "score": 8
+  },
+  {
+    "path": "性能优化日报/2026-03-15-LeakCanary-内存泄漏检测.md",
+    "reason": "总分9<10, 评分:相关2 技术1 时效5 可验证1",
+    "score": 9
+  },
+  {
+    "path": "性能优化日报/2026-03-15-Linux-Kernel-6.12-eBPF-Sched_ext.md",
+    "reason": "总分8<10, 评分:相关1 技术1 时效5 可验证1",
+    "score": 8
+  },
+  {
+    "path": "性能优化日报/2026-03-15-Perfetto-2025-大文件分析.md",
+    "reason": "总分8<10, 评分:相关1 技术1 时效5 可验证1",
+    "score": 8
+  },
+  {
+    "path": "性能优化日报/2026-03-15-cgroups-v2-Kubernetes-Android默认方案.md",
+    "reason": "总分9<10, 评分:相关2 技术1 时效5 可验证1",
+    "score": 9
+  },
+  {
+    "path": "Claude Code 文档/README.md",
+    "reason": "Claude Code产品文档，非Android技术内容",
+    "score": 4
+  },
+  {
+    "path": "Claude Code 文档/best-practices.md",
+    "reason": "Claude Code使用最佳实践，非Android",
+    "score": 4
+  },
+  {
+    "path": "Claude Code 文档/chrome.md",
+    "reason": "Claude Code Chrome扩展，非Android",
+    "score": 3
+  },
+  {
+    "path": "Claude Code 文档/claude-code-on-the-web.md",
+    "reason": "Claude Code Web版，非Android",
+    "score": 3
+  },
+  {
+    "path": "Claude Code 文档/cli-reference.md",
+    "reason": "Claude Code CLI参考，非Android",
+    "score": 3
+  },
+  {
+    "path": "Claude Code 文档/common-workflows.md",
+    "reason": "Claude Code工作流，非Android",
+    "score": 3
+  },
+  {
+    "path": "Claude Code 文档/costs.md",
+    "reason": "Claude Code计费，非Android",
+    "score": 2
+  },
+  {
+    "path": "Claude Code 文档/desktop.md",
+    "reason": "Claude Code桌面版，非Android",
+    "score": 3
+  },
+  {
+    "path": "Claude Code 文档/features-overview.md",
+    "reason": "Claude Code功能概览，非Android",
+    "score": 3
+  },
+  {
+    "path": "Claude Code 文档/github-actions.md",
+    "reason": "Claude Code GitHub Actions，非Android",
+    "score": 3
+  },
+  {
+    "path": "Claude Code 文档/hooks.md",
+    "reason": "Claude Code hooks，非Android",
+    "score": 3
+  },
+  {
+    "path": "Claude Code 文档/how-claude-code-works.md",
+    "reason": "Claude Code原理，非Android",
+    "score": 3
+  },
+  {
+    "path": "Claude Code 文档/ide-integrations.md",
+    "reason": "Claude Code IDE集成，非Android",
+    "score": 3
+  },
+  {
+    "path": "Claude Code 文档/jetbrains.md",
+    "reason": "Claude Code JetBrains插件，非Android",
+    "score": 3
+  },
+  {
+    "path": "Claude Code 文档/legal-and-compliance.md",
+    "reason": "Claude Code法律合规，非Android",
+    "score": 2
+  },
+  {
+    "path": "Claude Code 文档/mcp.md",
+    "reason": "Claude Code MCP协议，非Android",
+    "score": 3
+  },
+  {
+    "path": "Claude Code 文档/memory.md",
+    "reason": "Claude Code记忆系统，非Android",
+    "score": 3
+  },
+  {
+    "path": "Claude Code 文档/model-config.md",
+    "reason": "Claude Code模型配置，非Android",
+    "score": 3
+  },
+  {
+    "path": "Claude Code 文档/overview.md",
+    "reason": "Claude Code概览，非Android",
+    "score": 3
+  },
+  {
+    "path": "Claude Code 文档/permissions.md",
+    "reason": "Claude Code权限管理，非Android",
+    "score": 3
+  },
+  {
+    "path": "Claude Code 文档/quickstart.md",
+    "reason": "Claude Code快速入门，非Android",
+    "score": 3
+  },
+  {
+    "path": "Claude Code 文档/remote-control.md",
+    "reason": "Claude Code远程控制，非Android",
+    "score": 3
+  },
+  {
+    "path": "Claude Code 文档/settings.md",
+    "reason": "Claude Code设置，非Android",
+    "score": 3
+  },
+  {
+    "path": "Claude Code 文档/setup.md",
+    "reason": "Claude Code安装，非Android",
+    "score": 3
+  },
+  {
+    "path": "Claude Code 文档/skills.md",
+    "reason": "Claude Code技能系统，非Android",
+    "score": 3
+  },
+  {
+    "path": "Claude Code 文档/sub-agents.md",
+    "reason": "Claude Code子代理，非Android",
+    "score": 3
+  },
+  {
+    "path": "Claude Code 文档/third-party-integrations.md",
+    "reason": "Claude Code第三方集成，非Android",
+    "score": 3
+  },
+  {
+    "path": "Claude Code 文档/抓取报告.md",
+    "reason": "Claude Code文档抓取报告，非Android",
+    "score": 3
+  },
+  {
+    "path": "公众号文章/2026-02-23-极客湾媒体机争议-最终合并版.md",
+    "reason": "行业评论/媒体机评测争议，非Android内部技术",
+    "score": 8
+  },
+  {
+    "path": "公众号文章/技术简报第三期.md",
+    "reason": "技术简报总目录，内容分散无深度",
+    "score": 7
+  },
+  {
+    "path": "公众号文章/技术简报第三期/原文/06-what-is-a-transformer-model.md",
+    "reason": "Transformer模型科普，非Android",
+    "score": 6
+  },
+  {
+    "path": "公众号文章/技术简报第三期/原文/07-microgpt-implementation.md",
+    "reason": "GPT实现教程，非Android",
+    "score": 5
+  },
+  {
+    "path": "公众号文章/技术简报第三期/原文/08-liberating-code-review.md",
+    "reason": "AI Code Review工具，非Android",
+    "score": 5
+  },
+  {
+    "path": "公众号文章/技术简报第三期/原文/09-the-claude-c-compiler-what-it-reveals-about-the-future-of-so.md",
+    "reason": "Claude编译器评论，非Android",
+    "score": 5
+  },
+  {
+    "path": "公众号文章/技术简报第三期/原文/10-how-is-software-architecture-created-who.md",
+    "reason": "软件架构通用讨论，非Android",
+    "score": 6
+  },
+  {
+    "path": "公众号文章/技术简报第三期/原文/11-what-is-software-architecture-whatis.md",
+    "reason": "软件架构定义，非Android",
+    "score": 5
+  },
+  {
+    "path": "公众号文章/技术简报第三期/原文/12-why-is-software-architecture-important-why.md",
+    "reason": "软件架构重要性，非Android",
+    "score": 5
+  },
+  {
+    "path": "公众号文章/技术简报第三期/原文/13-how-to-create-software-architecture-howto.md",
+    "reason": "软件架构方法论，非Android",
+    "score": 5
+  },
+  {
+    "path": "公众号文章/OpenClaw本地实战/2026-03-08-OpenClaw本地实战-公众号爆文版/2026-03-08-OpenClaw本地实战-公众号爆文版.md",
+    "reason": "OpenClaw工具使用，非Android",
+    "score": 4
+  },
+  {
+    "path": "公众号文章/OpenClaw本地实战/2026-03-08-OpenClaw本地实战-公众号爆文版/outline.md",
+    "reason": "OpenClaw文章大纲，非Android",
+    "score": 3
+  },
+  {
+    "path": "公众号文章/OpenClaw本地实战/2026-03-08-OpenClaw本地实战-公众号爆文版/prompts/01-scene-openclaw-control-center.md",
+    "reason": "OpenClaw写作prompt，非Android",
+    "score": 3
+  },
+  {
+    "path": "公众号文章/OpenClaw本地实战/2026-03-08-OpenClaw本地实战-公众号爆文版/prompts/02-framework-core-files.md",
+    "reason": "OpenClaw写作prompt，非Android",
+    "score": 3
+  },
+  {
+    "path": "公众号文章/OpenClaw本地实战/2026-03-08-OpenClaw本地实战-公众号爆文版/prompts/03-flowchart-workflow-loop.md",
+    "reason": "OpenClaw写作prompt，非Android",
+    "score": 3
+  },
+  {
+    "path": "公众号文章/OpenClaw本地实战/2026-03-08-OpenClaw本地实战-公众号爆文版/prompts/04-comparison-openclaw-vs-claudecode.md",
+    "reason": "OpenClaw写作prompt，非Android",
+    "score": 3
+  },
+  {
+    "path": "公众号文章/OpenClaw本地实战/2026-03-08-OpenClaw本地实战-公众号爆文版/prompts/05-infographic-obsidian-artifacts-wall.md",
+    "reason": "OpenClaw写作prompt，非Android",
+    "score": 3
+  },
+  {
+    "path": "公众号文章/OpenClaw本地实战/2026-03-08-OpenClaw本地实战-公众号爆文版/source-2026-03-08-OpenClaw本地实战-公众号爆文版.md",
+    "reason": "OpenClaw文章素材，非Android",
+    "score": 3
+  },
+  {
+    "path": "公众号文章/OpenClaw本地实战/2026-03-10-OpenClaw-Skills实战/2026-03-10-OpenClaw Skills实战-85个插件让AI会干活.md",
+    "reason": "OpenClaw Skills使用，非Android",
+    "score": 4
+  },
+  {
+    "path": "公众号文章/OpenClaw本地实战/2026-03-10-OpenClaw常见问题解答/2026-03-10-OpenClaw常见问题解答.md",
+    "reason": "OpenClaw FAQ，非Android",
+    "score": 4
+  },
+  {
+    "path": "公众号文章/OpenClaw本地实战/2026-03-11-OpenClaw四问四答/2026-03-11-OpenClaw四问四答.md",
+    "reason": "OpenClaw问答，非Android",
+    "score": 4
+  },
+  {
+    "path": "公众号文章/技术简报第三期/原文/04-spinning-around-please-don-t.md",
+    "reason": "已在索引中",
+    "score": 0
+  },
+  {
+    "path": "X 文章/2026-02-26-2017-mntruell-The-third-era-of-AI-software-development-2026736314272591924.md",
+    "reason": "AI软件开发展望，无Android相关性",
+    "score": 8
+  },
+  {
+    "path": "X 文章/2026-02-26-2017-onehopeA9-OpenClaw-从中级到高级完整教程-2026905651088339408.md",
+    "reason": "OpenClaw教程，无Android相关性",
+    "score": 8
+  },
+  {
+    "path": "X 文章/2026-02-27-2014-Bytedance-GitHub-bytedance-deer-flow-An-open-source-SuperAgent-harness-url-ab15f474a276.md",
+    "reason": "字节Agent框架，无Android相关性",
+    "score": 8
+  },
+  {
+    "path": "X 文章/2026-02-27-2014-D-GitHub-D4Vinci-Scrapling-An-adaptive-Web-Scraping-framework-url-db1126994486.md",
+    "reason": "Web爬虫框架，无Android相关性",
+    "score": 8
+  },
+  {
+    "path": "X 文章/2026-02-27-2014-Obra-GitHub-obra-superpowers-An-agentic-skills-framework-software-url-2046f5e50faf.md",
+    "reason": "Agent skills框架，无Android相关性",
+    "score": 8
+  },
+  {
+    "path": "X 文章/2026-02-27-2014-dotey-Anthropic-CEO-Dario-Amodei-海啸已在地平线上-但没人在看-2027265200781402351.md",
+    "reason": "AI行业观点，无Android相关性",
+    "score": 8
+  },
+  {
+    "path": "X 文章/2026-02-27-2014-lijiuer92-OpenClaw-运行报错指南-上篇-2026639705933328582.md",
+    "reason": "OpenClaw排错，无Android相关性",
+    "score": 8
+  },
+  {
+    "path": "X 文章/2026-02-28-1210-TrevinPeterson-Qwen35-122B-A10B-RDMA-2027404303749546459.md",
+    "reason": "本地LLM部署，无Android相关性",
+    "score": 9
+  },
+  {
+    "path": "X 文章/2026-02-28-1210-mike_chong_zh-GoldenRetriever-Block-Layoff-2027228656951803914.md",
+    "reason": "裁员商业分析，无Android相关性",
+    "score": 7
+  },
+  {
+    "path": "X 文章/2026-02-28-1210-runes_leo-ClaudeCode-Codex-Review-Loop-2027269214524903892.md",
+    "reason": "AI代码审查流程，无Android相关性",
+    "score": 9
+  },
+  {
+    "path": "X 文章/2026-02-28-1210-szslg-Software-Future-Not-What-You-Think-2027198886981587407.md",
+    "reason": "软件行业展望，无Android相关性",
+    "score": 8
+  },
+  {
+    "path": "X 文章/2026-02-28-1610-Saboo_Shubham_-How-to-set-up-OpenClaw-Agents-that-actually-get-better-Over-Time-My-exac-2027463195150131572.md",
+    "reason": "OpenClaw配置教程，无Android相关性",
+    "score": 8
+  },
+  {
+    "path": "X 文章/2026-02-28-1610-trq212-Lessons-from-Building-Claude-Code-Seeing-like-an-Agent-2027463795355095314.md",
+    "reason": "Claude Code构建经验，无Android相关性",
+    "score": 9
+  },
+  {
+    "path": "X 文章/2026-02-28-1611-heynavtoor-How-to-set-up-Claude-Cowork-the-right-way-so-it-actually-does-your-work--2026717574776631556.md",
+    "reason": "Claude Cowork使用指南，无Android相关性",
+    "score": 8
+  },
+  {
+    "path": "X 文章/2026-02-28-1611-jack-Tweet-by-jack-Thu-Feb-26-21-12-36-0000-2026-2027129697092731343.md",
+    "reason": "Jack Dorsey推文，无Android相关性",
+    "score": 5
+  },
+  {
+    "path": "X 文章/2026-02-28-2012-blackanger-📝-像-Rust-Arena-Allocator-一样管理上下文-2027345330505924638.md",
+    "reason": "Rust内存管理比喻AI上下文，无Android相关性",
+    "score": 9
+  },
+  {
+    "path": "X 文章/2026-02-28-2012-fkysly-📝-Claude-Code-核心开发者分享：构建-Claude-Code-的经验教训——像-Agent-一样看世界-2027610329530712204.md",
+    "reason": "Claude Code开发经验，无Android相关性",
+    "score": 9
+  },
+  {
+    "path": "X 文章/2026-02-28-2013-cryptoxiao-Tweet-by-@cryptoxiao-(Thu-Feb-26-09-43-37-+0000-2026)-2026956308092453360.md",
+    "reason": "AI产品发布，无Android相关性",
+    "score": 7
+  },
+  {
+    "path": "X 文章/2026-02-28-2013-karpathy-Tweet-by-@karpathy-(Thu-Feb-19-20-35-06-+0000-2026)-2024583544157458452.md",
+    "reason": "Karpathy推文，无Android相关性",
+    "score": 8
+  },
+  {
+    "path": "X 文章/2026-03-01-0815-WeyGu-CC-Switch-转行故事-2027772306458812757.md",
+    "reason": "开源项目故事，无Android相关性",
+    "score": 7
+  },
+  {
+    "path": "X 文章/2026-03-01-0816-Stanley-AI-矿产与澳洲经济-2027726669814136976.md",
+    "reason": "经济分析，无Android相关性",
+    "score": 6
+  },
+  {
+    "path": "X 文章/2026-03-01-0817-Lory-OpenClaw-记忆树-2027865988558164186.md",
+    "reason": "OpenClaw记忆系统，无Android相关性",
+    "score": 8
+  },
+  {
+    "path": "X 文章/2026-03-01-1211-wangray-稳定已死，个体崛起-2027719317891207626.md",
+    "reason": "商业趋势观点，无Android相关性",
+    "score": 6
+  },
+  {
+    "path": "X 文章/2026-03-01-1212-Zephyr_hg-The-Businesses-That-Will-Own-2028-(And-the-Ones-That-Won't-Survi-2027774076673028371.md",
+    "reason": "商业预测，无Android相关性",
+    "score": 6
+  },
+  {
+    "path": "X 文章/2026-03-01-1213-Gavriel_Cohen-Don't-trust-AI-agents-2027841164150178238.md",
+    "reason": "AI安全观点，无Android相关性",
+    "score": 8
+  },
+  {
+    "path": "X 文章/2026-03-01-1213-jolestar-从-MCP-到-SKILL（II）：把调用层补齐-2027717523379261489.md",
+    "reason": "Agent扩展机制，无Android相关性",
+    "score": 9
+  },
+  {
+    "path": "X 文章/2026-03-01-1214-jolestar-从-MCP-到-SKILL：关于-Agent-扩展机制的思考-2011461813767155828.md",
+    "reason": "Agent扩展机制，无Android相关性",
+    "score": 9
+  },
+  {
+    "path": "X 文章/2026-03-01-1612-DLKFZWilliam2-该项目在github上-https-github-com-OminousIndustries-PhoneDriver-2027913163996565521.md",
+    "reason": "GitHub项目链接，无实质内容",
+    "score": 8
+  },
+  {
+    "path": "X 文章/2026-03-01-1612-RichTerry123-读霍华德-马克斯的-AI-Hurtles-Ahead-有感-2027639530820669704.md",
+    "reason": "AI行业读后感，无Android相关性",
+    "score": 7
+  },
+  {
+    "path": "X 文章/2026-03-01-1612-Svwang1-更多人应当关心-慢变量-这个概念-这个概念和-强制函数-有相关之处-2027599973345595570.md",
+    "reason": "哲学概念，无Android相关性",
+    "score": 5
+  },
+  {
+    "path": "X 文章/2026-03-01-1612-wquguru-一个反直觉的事实-狭义理解的开发工作-feature占比80-以上阶段-其实只占一个软件产品的30-2027727983583367436.md",
+    "reason": "软件开发管理，无Android相关性",
+    "score": 6
+  },
+  {
+    "path": "X 文章/2026-03-02-0810-ashpreetbedi-Agentic-Software-Engineering-2028176285575594465.md",
+    "reason": "Agent工程方法论，无Android相关性",
+    "score": 9
+  },
+  {
+    "path": "X 文章/2026-03-02-0810-guoyu-Self-Driving-Codebase-agent-matrix-2028041975472247094.md",
+    "reason": "AI代码库管理，无Android相关性",
+    "score": 8
+  },
+  {
+    "path": "X 文章/2026-03-02-0810-karpathy-AI-changed-programming-last-two-months-2026731645169185220.md",
+    "reason": "AI改变编程观点，无Android相关性",
+    "score": 8
+  },
+  {
+    "path": "X 文章/2026-03-02-0810-nazha-OpenClaw-author-interviews-Lex-OpenAI-2028043125714014699.md",
+    "reason": "OpenClaw作者采访，无Android相关性",
+    "score": 8
+  },
+  {
+    "path": "X 文章/2026-03-02-0810-shing-OpenAI-blog-Ralph-loop-human-in-the-loop-2028023523931992367.md",
+    "reason": "AI人机协作，无Android相关性",
+    "score": 8
+  },
+  {
+    "path": "X 文章/2026-03-02-0810-wangray-工程师-开始给-Agent-打工了-2028132386756780220.md",
+    "reason": "AI对工程师影响，无Android相关性",
+    "score": 8
+  },
+  {
+    "path": "X 文章/2026-03-02-1209-Apple-healthcare-url-71d624ef3a75.md",
+    "reason": "URL存根无实质内容",
+    "score": 4
+  },
+  {
+    "path": "X 文章/2026-03-02-1209-EIA-petroleum-other-liquids-url-7da82e7ddf0d.md",
+    "reason": "石油能源数据，无Android相关性",
+    "score": 5
+  },
+  {
+    "path": "X 文章/2026-03-02-1209-FDA-digital-health-center-excellence-url-eba5949fb801.md",
+    "reason": "FDA数字健康，无Android相关性",
+    "score": 5
+  },
+  {
+    "path": "X 文章/2026-03-02-1209-FRED-dgs10-10y-treasury-yield-url-9f491e385999.md",
+    "reason": "国债收益率数据，无Android相关性",
+    "score": 5
+  },
+  {
+    "title": "McKinsey Healthcare Insights (待核实)",
+    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/X 文章/2026-03-02-1209-FRED-dgs10-10y-treasury-yield-url-9f491e385999.md",
+    "score": 6,
+    "reason": "Healthcare industry insights, no Android relevance",
+    "relevance": 1,
+    "technical_depth": 2,
+    "timeliness": 3,
+    "verifiability": 0
+  },
+  {
+    "title": "Baltic Exchange Dry Index - Chart, Historical Data, and News",
+    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/X 文章/2026-02-26-2017-LawrenceW_Zen-新手劝退-OpenClaw-99-的人根本不需要它-2026872793187627276.md",
+    "score": 4,
+    "reason": "Financial shipping index, no technical relevance",
+    "relevance": 1,
+    "technical_depth": 1,
+    "timeliness": 2,
+    "verifiability": 0
+  },
+  {
+    "title": "使用一个月 OpenClaw 的门槛与成本复盘",
+    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/X 文章/2026-02-28-1210-runes_leo-ClaudeCode-Codex-Review-Loop-2027269214524903892.md",
+    "score": 5,
+    "reason": "Personal experience article, low technical depth",
+    "relevance": 2,
+    "technical_depth": 2,
+    "timeliness": 1,
+    "verifiability": 0
+  },
+  {
+    "title": "📝 【完整】从自己的渠道讲一下 \"极客湾 Geekerwan\" 的这次风波的全部",
+    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/X 文章/2026-03-12-0804-QingYue-搜索外脑接入龙虾生态 - SearxNG 方案-2030996280051462609.md",
+    "score": 3,
+    "reason": "Industry controversy discussion, no technical content",
+    "relevance": 1,
+    "technical_depth": 1,
+    "timeliness": 1,
+    "verifiability": 0
+  },
+  {
+    "title": "AI Robot Phone！！",
+    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/X 文章/2026-03-03-1612-RichTerry123-读霍华德-马克斯的-AI-Hurtles-Ahead-有感-2027639530820669704.md",
+    "score": 2,
+    "reason": "Vague AI phone announcement, no technical details",
+    "relevance": 1,
+    "technical_depth": 0,
+    "timeliness": 1,
+    "verifiability": 0
+  },
+  {
+    "title": "我在 ClawHub 折腾一周后的 10 个真香技能",
+    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/X 文章/04-06-dotey-Anthropic-Claude-Managed-Agents.md",
+    "score": 5,
+    "reason": "Personal skills list, not AIW focused",
+    "relevance": 2,
+    "technical_depth": 2,
+    "timeliness": 1,
+    "verifiability": 0
+  },
+  {
+    "title": "重读《Shipping at Inference-Speed》后的工作流启发",
+    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/X 文章/2026-03-03-0810-guoyu-Self-Driving-Codebase-agent-matrix-2028041975472247094.md",
+    "score": 4,
+    "reason": "Workflow inspiration, no technical depth",
+    "relevance": 2,
+    "technical_depth": 1,
+    "timeliness": 1,
+    "verifiability": 0
+  },
+  {
+    "title": "Agent Frameworks Are Getting Squeezed",
+    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/X 文章/2026-03-05-0817-vista8-CC-Switch-Jason-Story-2027765124828905529.md",
+    "score": 3,
+    "reason": "Market analysis article, no technical depth",
+    "relevance": 1,
+    "technical_depth": 1,
+    "timeliness": 2,
+    "verifiability": 0
+  },
+  {
+    "title": "伊朗的困局：革命、制裁与帝国的阴影对话",
+    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/X 文章/2026-02-28-2013-cryptoxiao-Tweet-by-@cryptoxiao-(Thu-Feb-26-09-43-37-+0000-2026)-2026956308092453360.md",
+    "score": 2,
+    "reason": "Political analysis, no technical relevance",
+    "relevance": 1,
+    "technical_depth": 0,
+    "timeliness": 1,
+    "verifiability": 0
+  },
+  {
+    "title": "[ 个人经验及避坑 ] 从 0M -> 5M 快速通过创作者收益门槛！",
+    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/X 文章/04-06-blackanger-Codex-Over-Asking.md",
+    "score": 2,
+    "reason": "Creator monetization guide, no technical content",
+    "relevance": 1,
+    "technical_depth": 0,
+    "timeliness": 1,
+    "verifiability": 0
+  },
+  {
+    "title": "Deep Research 盲测：ChatGPT 5.2 Pro vs Claude Opus 4.6 vs Gemini 3.1 Pro",
+    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/X 文章/2026-02-26-1141-LufzzLiz-openclaw-system-prompt-2026669714072809755.md",
+    "score": 3,
+    "reason": "AI model comparison, not Android specific",
+    "relevance": 2,
+    "technical_depth": 0,
+    "timeliness": 1,
+    "verifiability": 0
+  },
+  {
+    "title": "从说英语蛋疼，到雅思8.5，到清华苏世民——如何英语逆袭",
+    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/X 文章/2026-04-06-1240-Geek Lite-graphify图谱skill.md",
+    "score": 1,
+    "reason": "Language learning experience, no technical relevance",
+    "relevance": 0,
+    "technical_depth": 1,
+    "timeliness": 0,
+    "verifiability": 0
+  },
+  {
+    "title": "同一场 AI 革命，中美创业者却走向了两条路",
+    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/X 文章/2026-03-01-1612-wquguru-一个反直觉的事实-狭义理解的开发工作-feature占比80-以上阶段-其实只占一个软件产品的30-2027727983583367436.md",
+    "score": 2,
+    "reason": "Business analysis, no technical depth",
+    "relevance": 1,
+    "technical_depth": 1,
+    "timeliness": 0,
+    "verifiability": 0
+  },
+  {
+    "title": "AI、矿产与澳洲经济：2026，澳洲能迎来\"新国运\"吗？",
+    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/X 文章/2026-03-01-1212-Zephyr_hg-The-Businesses-That-Will-Own-2028-(And-the-Ones-That-Won't-Survi-2027774076673028371.md",
+    "score": 2,
+    "reason": "Economic analysis, no technical relevance",
+    "relevance": 1,
+    "technical_depth": 0,
+    "timeliness": 1,
+    "verifiability": 0
+  },
+  {
+    "title": "喜剧爆款视频教程：复古画面 × 离谱道具 × 极致反转",
+    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/X 文章/2026-02-26-2017-onehopeA9-OpenClaw-从中级到高级完整教程-2026905651088339408.md",
+    "score": 1,
+    "reason": "Video production tutorial, no technical relevance",
+    "relevance": 0,
+    "technical_depth": 1,
+    "timeliness": 0,
+    "verifiability": 0
+  },
+  {
+    "title": "苹果2026年新品：M5 Max MacBook Pro来了，AI性能提升很多啊！",
+    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/X 文章/2026-02-26-2017-garyvee-The-Era-of-the-Individual-Empire-Is-Here-2026667949382316285.md",
+    "score": 1,
+    "reason": "Product announcement, no technical depth",
+    "relevance": 0,
+    "technical_depth": 1,
+    "timeliness": 0,
+    "verifiability": 0
+  },
+  {
+    "title": "Vibe Coding 高效工具清单：Codex、Paper、21st、Unicorn、Agentation、Axion、Apple Docs MCP",
+    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/X 文章/2026-03-06-1628-Yanhua-Claude 终极入门指南：100 小时实测，一篇讲透-2029748928091148665.md",
+    "score": 2,
+    "reason": "Tool list, insufficient depth for indexing",
+    "relevance": 1,
+    "technical_depth": 1,
+    "timeliness": 0,
+    "verifiability": 0
+  },
+  {
+    "title": "130万次下载，2万Star开源项目CC Switch，36岁转行程序员Jason的第一个作品",
+    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/X 文章/2026-03-05-0817-vista8-CC-Switch-Jason-Story-2027765124828905529.md",
+    "score": 4,
+    "reason": "Project story, insufficient technical depth",
+    "relevance": 2,
+    "technical_depth": 1,
+    "timeliness": 1,
+    "verifiability": 0
+  },
+  {
+    "title": "17 Best Practices That Make Claude Cowork 100x More Powerful",
+    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/X 文章/2026-03-03-2022-yanhua1010-从-Vibe-Coding-到-Agentic-Engineering：开发者角色正在重写-2028737821855580662.md",
+    "score": 3,
+    "reason": "General practices list, not AIW specific",
+    "relevance": 2,
+    "technical_depth": 0,
+    "timeliness": 1,
+    "verifiability": 0
+  },
+  {
+    "title": "Investigating how Codex context compaction works",
+    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/X 文章/2026-03-12-0804-AI进化论-花生-98页的 OpenClaw橙皮书-2031212769694068775.md",
+    "score": 3,
+    "reason": "Codex research, not Android specific",
+    "relevance": 2,
+    "technical_depth": 0,
+    "timeliness": 1,
+    "verifiability": 0
   }
 ]
