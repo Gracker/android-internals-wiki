@@ -324,3 +324,27 @@
 - **位置**：行317-319（FrameCallback 注意事项）
 - **问题**：文中说"持续注册 postFrameCallback 会增加每帧的回调开销"，但没有给出具体数值（几纳秒？微秒？）。读者无法判断这个开销是否可忽略。
 - **建议**：补充量化数据，例如"每次 postFrameCallback 在 doFrame 中增加约 100-200ns 开销（取决于注册次数）"，或给出业界经验值
+
+## [Task9 Deep Review] 1.3 进程模型与生命周期管理 — 2026-04-10
+- **类型**：数据缺失
+- **位置**：Zygote预加载价值段落
+- **问题**："几十MB的Framework代码"为模糊估算，缺乏实测数据支撑
+- **建议**：补充Zygote fork后预加载的art/oat文件大小实测数据
+
+## [Task9 Deep Review] 1.3 进程模型与生命周期管理 — 2026-04-10
+- **类型**：数据缺失
+- **位置**：oom_adj实时查看段落
+- **问题**：章节已有[待补充]标注——Perfetto中oom_adj变化的具体Trace截图缺失
+- **建议**：抓取包含"am" category的Perfetto trace，截取oom_adj变化的典型片段
+
+## [Task9 Deep Review] 1.3 进程模型与生命周期管理 — 2026-04-10
+- **类型**：数据缺失
+- **位置**：前台Service oom_adj提升效果
+- **问题**："从500提升到0~100"过于简化，实际提升效果取决于多种因素
+- **建议**：补充Android 14下不同前台Service类型对应的实际adj值
+
+## [Task9 Deep Review] 1.3 进程模型与生命周期管理 — 2026-04-10
+- **类型**：知识盲区
+- **位置**：Phantom Process Killer章节
+- **问题**：32个子进程上限未标注来源和Android版本；Android 16是否有变化未知
+- **建议**：补充settings命令说明及风险；标注32为Android 12初始值

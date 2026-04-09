@@ -473,3 +473,20 @@ Frame Timeline（帧时间线）是 Android 13（API 33）引入的 Choreographe
 
 ### 关联章节
 §2.3（VSync 机制）、§2.4（本节）、§2.6（SurfaceFlinger 合成）
+
+## [2026-04-10] 1.3 进程模型与生命周期管理 — 知识盲区
+
+### 盲区描述
+Android 16 oom_adj常量表不完整：缺失PERCEPTIBLE_RECENT_FOREGROUND_APP_ADJ=50、PERCEPTIBLE_MEDIUM_APP_ADJ=225、CACHED_APP_LMK_FIRST_ADJ=950等新增常量；Phantom Process Killer在Android 13-16的演进（cgroup v2集成）未覆盖；Zygote预加载的具体类和资源对冷启动优化价值未量化。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 验证AOSP android-16.0.0_r1 ProcessList.java中全部OOM_ADJ常量，建立完整对照表
+- 研究Android 15 cgroup v2迁移对lmkd回收机制的影响（per-app memory cgroup limit）
+- 量化Zygote预加载资源大小（boot.art、boot.oat等），支撑"几十MB"的表述
+- 调研Phantom Process Killer在Android 13-16的变化
+
+### 关联章节
+1.2（Zygote启动）、1.7（ART编译）、4.6（内存版本演进）
