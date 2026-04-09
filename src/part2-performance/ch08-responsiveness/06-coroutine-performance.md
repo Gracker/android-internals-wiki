@@ -1,19 +1,22 @@
 ---
 title: "Kotlin Coroutine 性能实践"
 chapter: "8.6"
-status: ready-for-review
+status: ready-to-publish
 drafted_date: "2026-04-02"
 drafted_by: "openclaw-task2a"
-reviewed_date: "2026-04-08"
+reviewed_date: "2026-04-09"
 reviewed_by: "openclaw-task6"
 reworked_date: "2026-04-06"
 reworked_by: "openclaw-task2b"
 polish_count: 1
 polish_date: "2026-04-08"
 polish_by: "task2b-polish"
+polish_review_date: "2026-04-09"
+polish_review_by: "openclaw-task6"
+review_cycle: 2
 applicable_versions: "Android 8 (API 26) - Android 16 (API 36)"
 last_verified: "2026-04-02"
-last_verified_against: "kotlinx.coroutines 1.9.x / Kotlin 2.1.x"
+last_verified_against: "kotlinx.coroutines 1.9.x / Kotlin 2.1.x / Kotlin 2.2"
 confidence: medium-high
 sources:
   - type: official
@@ -364,7 +367,7 @@ scope.launch {
 
 ### RxJava 的优势领域
 
-**复杂流转换更成熟。** 在涉及大量操作符链、复杂的数据流变换场景（如多源合并、窗口聚合、去重、错误重试策略），RxJava 经过多年优化的操作符实现（包括操作符 fusion、复杂的 backpressure 策略）在吞吐量和延迟稳定性上可能有优势。这部分是 RxJava 作为"专职响应式框架"的积淀，不是 coroutine + Flow 短期能完全对齐的。
+**复杂流转换更成熟。** 在涉及大量操作符链、复杂的数据流变换场景（如多源合并、窗口聚合、去重、错误重试策略），RxJava 经过多年优化的操作符实现（包括操作符 fusion、复杂的 backpressure 策略）在吞吐量和延迟稳定性上通常表现更好。这部分是 RxJava 作为"专职响应式框架"的积淀，不是 coroutine + Flow 短期能完全对齐的。
 
 **调试工具链更完善。** RxJava 有更成熟的调试和可视化工具（如 RxJavaExtensions 的 lifecycle tracking、marble diagram 可视化），而 coroutine 的调试工具（kotlinx-coroutines-debug）在生产环境中有不可忽视的性能开销。
 
