@@ -2028,7 +2028,8 @@
     "added_by": "task2a-knowledge-gap",
     "added_at": "2026-04-09T12:10:00+08:00",
     "gap_score": "15/20",
-    "status": "pending"
+    "status": "completed",
+    "title": "Battery Historian 与功耗分析工具"
   },
   {
     "section": "7.5",

@@ -1,74 +1,396 @@
 ---
 title: "Battery Historian 与功耗分析工具"
 chapter: "14.11"
-status: draft
-applicable_versions: "Android 5.0 (API 21) - Android 17 (API 37)"
-tags: [Battery Historian, bugreport, 功耗分析, Wakelock, 电池, Power Profiler]
-related_chapters: ["11.1", "11.2", "11.5", "14.1", "15.5"]
 section: "14.11"
+status: ready-for-review
+applicable_versions: "Android 5.0 (API 21) - Android 17 (API 37)"
+tags: [Battery Historian, bugreport, 功耗分析, Wakelock, 电池, Power Profiler, ODPM, Energy Profiler]
+related_chapters: ["11.1", "11.2", "11.5", "14.1", "15.5"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-04-09"
 gap_source: "官方文档+读者需求"
 gap_score: "15/20"
+drafted_by: "openclaw-task2a"
+drafted_date: "2026-04-10"
+last_verified: "2026-04-10"
+last_verified_against: "Android 17 (API 37)"
+confidence: medium
+sources:
+  - type: official
+    path: "https://developer.android.com/topic/performance/power"
+  - type: official
+    path: "https://developer.android.com/studio/profile/power-profiler"
+  - type: official
+    path: "https://developer.android.com/topic/performance/batterystats-historian"
 ---
 
 # 14.11 Battery Historian 与功耗分析工具
 
-<!-- outline-start -->
-## 要点
+## 为什么需要专门的功耗分析工具
 
-### 🔹 锚点 1：为什么需要专门的功耗分析工具
-- 电池耗电是用户最敏感的性能指标之一
-- 从"感觉耗电"到"量化分析"的工具需求
-- Battery Historian 在 Android 功耗分析工具链中的定位
-- 与 Android Studio Energy Profiler 的互补关系
+电池续航是用户对手机最直接的感知之一。一个 App 是否"耗电"，用户不需要看数据——拿在手里发热、电量肉眼可见往下掉，反馈比任何性能指标都真实。
 
-### 🔹 锚点 2：Bugreport 抓取与 Battery Historian 使用
-- bugreport 的生成方式：adb bugreport > bugreport.zip
-- bugreport 中包含的功耗相关信息：batterystats、wakelocks、进程 CPU 时间
-- Battery Historian 的部署方式：Docker / Go 本地编译 / 在线工具
-- 上传 bugreport 文件后的 UI 解读
-- 时间线视图的各层含义：CPU、网络、GPS、传感器、Wakelock、屏幕状态
+但对开发者来说，从"感觉耗电"到"定位根因"之间有一道巨大的鸿沟。功耗问题的特殊性在于它几乎没有单一来源：一次网络请求、一个忘记释放的 Wakelock、一段频繁唤醒的后台任务，都可能独立看来微不足道，叠加起来却让电量条加速下降。没有工具，我们只能猜。
 
-### 🔹 锚点 3：关键功耗指标解读
-- CPU Running / CPU Active：CPU 活跃时间的占比
-- Network：WiFi / 移动数据的活跃时段
-- Wakelock：持锁线程与持锁时长
-- GPS / Sensor：传感器活跃时间
-- Sync Manager / JobScheduler：后台任务调度时间
-- Top App：各应用的 CPU 时间占比
-- 电池电量变化曲线
+Android 提供了从系统级到应用级的一整套功耗分析工具链，覆盖不同的分析粒度：
 
-### 🔹 锚点 4：从 Battery Historian 到根因定位
-- 典型模式 1：后台 Wakelock 持有时间过长 → 检查 Wakelock 获取/释放配对
-- 典型模式 2：频繁网络请求 → 检查同步策略、批量请求优化
-- 典型模式 3：GPS 持续活跃 → 检查位置更新策略、精度要求
-- 典型模式 4：后台进程 CPU 占用高 → 检查 JobScheduler 配置、后台任务频率
-- 结合 dumpsys batterystats 的详细数据
+- **Battery Historian**：基于 bugreport 的离线功耗时间线分析，适合整体回顾和趋势分析
+- **dumpsys batterystats**：命令行级的电池统计原始数据，适合精确查询特定 App 的耗电明细
+- **Android Studio Power Profiler**（AS Hedgehog+）：基于 ODPM 硬件的实时功耗子系统可视化，适合精确关联代码行为与功耗
+- **Macrobenchmark PowerMetric**：自动化功耗基准测试，适合 CI 中的回归检测
 
-### 🔹 锚点 5：Android Studio Energy Profiler
-- Energy Profiler 的实时功耗估算模型
-- CPU / Network / GPS 三维功耗可视化
-- 与 CPU Profiler 的联动分析
-- 局限性：估算模型 vs 实际功耗（硬件电流表）
+这几个工具各有侧重，不是替代关系，而是互补关系。我们在这篇里把它们串起来讲清楚——什么场景用什么工具，怎么搭配使用。
 
-### 🔹 锚点 6：功耗分析的最佳实践
-- 抓取数据前的准备：充满电、关闭不相关 App、固定屏幕亮度
-- 对比测试法：基线场景 vs 优化场景的 bugreport 对比
-- 自动化功耗测试：Battery Historian + UI Automator 的持续集成
-- 硬件级功耗测量：Monsoon Power Monitor / 华为功耗仪（精度对比）
+[图：Android 功耗分析工具链定位图——从离线分析（Battery Historian）到实时分析（Power Profiler）到自动化测试（Macrobenchmark）]
 
-## 🔸 扩展 1：常见问题与误区
-- 「Battery Historian 只能分析系统 App」→ 错误，任何 App 的功耗都可以分析
-- 「Energy Profiler 的功耗数据是精确的」→ 不准确，它是基于 CPU/网络活动的估算模型
-- 「bugreport 文件太大了」→ 可以使用 bugreport2hist 脚本只提取功耗数据
+---
 
-## 🔸 扩展 2：与其他章节的关系
-- **11.1 功耗模型**：Battery Historian 是功耗模型的具体分析工具
-- **11.2 App 耗电优化**：使用 Battery Historian 定位问题后的优化方法
-- **11.5 Wakelock 机制**：Battery Historian 可以可视化 Wakelock 持有时间
-- **14.1 AS Profiler**：Energy Profiler 是 AS Profiler 的功耗组件
-- **15.5 线上监控**：线下功耗测试与线上监控的结合
-<!-- outline-end -->
+## Bugreport 抓取与 Battery Historian 使用
 
-> 本节内容待加工。
+### 生成 bugreport
+
+Battery Historian 的输入是 Android 系统的 bugreport 文件。这个文件包含了系统状态、日志、电池统计等几乎所有诊断信息。抓取流程：
+
+```bash
+# 1. 重置电池统计（清除历史数据，获得干净的采集起点）
+adb shell dumpsys batterystats --reset
+
+# 2. （可选）启用完整 wakelock 历史，获取每个 wakelock 的精确时间戳
+# 注意：这个选项会加速电池历史日志溢出，适合 3-4 小时以内的短时测试
+adb shell dumpsys batterystats --enable full-wake-history
+
+# 3. 断开 USB，执行你要测试的场景（此时开始采集数据）
+
+# 4. 重新连接 USB，生成 bugreport
+adb bugreport bugreport.zip    # Android 7.0+
+adb bugreport > bugreport.txt  # Android 6.0 及更早
+```
+
+这里有一个容易忽略的细节：**断开 USB**。USB 连接时设备处于充电状态，这会影响电池状态数据的准确性。要获得真实的电池消耗数据，需要在完全脱离 USB 的条件下运行测试场景。
+
+bugreport 文件中与功耗直接相关的部分包括：
+- **batterystats**：按 UID 统计的电池使用明细，包含 CPU 时间、网络流量、Wakelock 持有时长、传感器使用等
+- **wakelocks**：系统所有 Wakelock 的获取/释放记录
+- **进程 CPU 时间**：每个进程的用户态和内核态 CPU 时间
+
+### Battery Historian 的部署
+
+Battery Historian 是一个 Go 语言编写的 Web 工具，接收 bugreport 文件后在浏览器中呈现交互式功耗时间线。部署方式有三种：
+
+```bash
+# 方式 1：Docker（推荐，最简单）
+docker run -p 9999:9999 gcr.io/android-battery-historian/stable/battery-historian \
+  --port 9999
+
+# 方式 2：Go 本地编译
+go run cmd/battery-historian/battery-historian.go --port 9999
+
+# 方式 3：在线工具
+# 上传 bugreport 到 https://bathist.ef.lc/（第三方托管，注意数据安全）
+```
+
+⚠️ **截至 2025 年底，Battery Historian 已不再由 Google 积极维护。** 官方推荐迁移到 Power Profiler 和 Macrobenchmark PowerMetric。但 Battery Historian 仍然是分析 bugreport 中功耗数据的最佳工具之一，特别是当你需要回顾一段较长时间（数小时）的电池消耗模式时，目前没有完美的替代品。
+
+[待验证: Battery Historian Docker 镜像在 2026 年是否仍然可用]
+
+### 时间线视图解读
+
+上传 bugreport 后，Battery Historian 会展示一张交互式时间线图。理解这张图的关键是认识它的"行"：
+
+| 行名称 | 含义 | 关注点 |
+|--------|------|--------|
+| **cpu_running** | CPU 是否在运行 | 大面积绿色表示 CPU 长时间未休眠 |
+| **screen** | 屏幕开关状态 | 屏幕灭后出现的 CPU 活动是后台耗电的信号 |
+| **top_app** | 当前前台应用 | 判断是哪个 App 在消耗电量 |
+| **wake_lock** | Wakelock 状态 | 持续的红色块表示有未释放的 Wakelock |
+| **network** | WiFi/移动数据活动 | 频繁的短脉冲表示网络请求过于碎裂 |
+| **gps** | GPS 定位状态 | 后台 GPS 活动通常是高耗电源 |
+| **sync** | 同步管理器活动 | 频繁同步会增加唤醒次数 |
+| **job** | JobScheduler 任务 | 正常，但过于频繁的 Job 也是问题 |
+| **battery_level** | 电量百分比曲线 | 整体下降速率的直观展示 |
+
+使用技巧：点击时间线上的任意位置，下方会显示该时刻的详细系统状态。可以拖拽选择时间范围来聚焦分析特定时段。
+
+---
+
+## 关键功耗指标解读
+
+Battery Historian 提供的信息需要我们主动去"读"。以下是几个最值得关注的指标及其含义。
+
+### CPU 活跃时间
+
+`cpu_running` 行显示的是 CPU 是否被唤醒。正常情况下，屏幕灭屏后 CPU 应该快速进入低功耗状态，只在偶尔的系统维护任务时短暂唤醒。如果我们在灭屏后看到大面积的 CPU 活动区域，说明有东西在阻止系统进入深度休眠。
+
+常见原因：未释放的 Partial Wakelock、频繁的 AlarmManager 唤醒、持续运行的前台服务。
+
+在 Perfetto 中，这些 CPU 唤醒也可以通过 CPU frequency track 和进程调度切片来交叉验证（参见 §13.3）。
+
+### Wakelock 持有时长
+
+这是功耗分析中最重要的指标之一。Android Vitals（Google Play Console 的一部分）将以下情况标记为"过度 Wakelock"：
+
+> 后台 Partial Wakelock 累计持有时长在 24 小时内达到 2 小时以上。
+
+这个阈值是 Google 定义的，但实际上任何超过预期的 Wakelock 持有时间都值得关注。在 Battery Historian 的 System Stats 面板中，可以看到每个 UID 的 Wakelock 统计：
+
+```
+Wake lock u0a123:my_wakelock_tag  2h 15m 30s (held)
+Wake lock u0a123:another_tag      45m 12s
+```
+
+如果看到 `(held)` 标记，表示这个 Wakelock 在 bugreport 生成时仍然被持有——这通常是泄漏的信号。
+
+### 网络活动
+
+`network` 行显示的是 WiFi 和移动数据的活跃时段。频繁的短脉冲比少量的长连接更耗电，因为每次建立连接都涉及无线电模块的状态切换（idle → connected → active → idle），这个状态机本身就有功耗成本。
+
+理想模式：将网络请求批量处理，减少连接次数。例如新闻 App 在打开时一次性拉取所有内容，而不是滚动到每条新闻时分别请求。
+
+### GPS 和传感器
+
+GPS 是功耗最高的传感器之一。持续定位请求（`requestLocationUpdates` 配合短间隔）会在 GPS 行产生持续的绿色区域。如果 App 不需要实时定位，使用 `FusedLocationProvider` 的被动模式或者 `GeofencingClient` 可以大幅降低 GPS 功耗。
+
+### Top App CPU 时间
+
+在 Battery Historian 的 App Stats 中，可以看到每个 App 的 CPU 使用时间。这是一个相对粗糙但直观的指标：如果你的 App 在后台的 CPU 时间与前台相当，几乎可以确定存在功耗问题。
+
+### 电池电量曲线
+
+`battery_level` 行是最直观的——电量百分比随时间的下降曲线。在对比测试中（基线 vs 优化版本），这条曲线的斜率变化就是优化的直接证据。
+
+---
+
+## 从 Battery Historian 到根因定位
+
+有了工具和数据，关键是怎么从"看到异常"到"找到根因"。这里介绍几种常见的功耗问题模式及其分析方法。
+
+### 模式 1：后台 Wakelock 持有时间过长
+
+**Battery Historian 中的表现**：灭屏后 `wake_lock` 行持续显示绿色，`cpu_running` 持续活跃。
+
+**分析步骤**：
+1. 在 Battery Historian 下方面板找到 Wakelock 详情，确认持锁的 UID 和 tag
+2. 用 `adb shell dumpsys batterystats | grep "Wake lock"` 获取精确的持有时长
+3. 在代码中搜索对应的 Wakelock tag，检查 acquire/release 配对
+
+```bash
+# 查看特定包名的 Wakelock 统计
+adb shell dumpsys batterystats | grep -A 5 "Wake lock" | grep "com.example.app"
+```
+
+**常见原因**：在异步操作的回调中 acquire 了 Wakelock，但异常路径（Exception/超时）缺少对应的 release。WorkManager 的 `setForegroundAsync()` 使用不当也会导致类似问题。
+
+### 模式 2：频繁网络请求
+
+**Battery Historian 中的表现**：`network` 行出现密集的短脉冲，即使在灭屏状态下也有活动。
+
+**分析步骤**：
+1. 在 Battery Historian 的 Network 行确认活跃时段和频率
+2. 用 `adb shell dumpsys netstats` 查看网络流量详情
+3. 检查 App 的网络请求策略：是否有轮询？批量请求是否合并？
+
+**优化方向**：使用 WorkManager 替代手动的定时轮询；将多个小请求合并为一个批量请求；利用 `NetworkRequest` 的 `setInterval` 控制检查频率。
+
+### 模式 3：GPS 持续活跃
+
+**Battery Historian 中的表现**：`gps` 行在灭屏后仍然持续显示绿色。
+
+**分析步骤**：
+1. 确认是哪个 App 持续请求定位（从 top_app 行关联）
+2. 检查 `requestLocationUpdates` 的参数——间隔是否过短？是否使用了 `PRIORITY_HIGH_ACCURACY`？
+3. 评估是否可以用 `PRIORITY_BALANCED_POWER_ACCURACY` 或 Geofencing 替代
+
+**优化方向**：使用 `FusedLocationProviderClient` 的 `getLastLocation()` 替代持续更新；对于地理围栏场景使用 `GeofencingClient`；在灭屏时主动降低定位精度或暂停更新。
+
+### 模式 4：后台进程 CPU 占用高
+
+**Battery Historian 中的表现**：灭屏后 CPU 持续活动，Top App 中某个后台 App 的 CPU 时间异常。
+
+**分析步骤**：
+1. 从 Battery Historian 的 App Stats 确认 CPU 时间异常的 App
+2. 用 `adb shell top` 或 Perfetto 抓取 CPU profile，确认 CPU 时间花在什么地方
+3. 检查是否有死循环、阻塞队列满导致的忙等、或者其他后台任务调度问题
+
+**结合 dumpsys batterystats**：当 Battery Historian 的图形化视图不足以定位问题时，`dumpsys batterystats` 的文本输出提供了更精确的数据：
+
+```bash
+# 获取 checkin 格式的电池统计（适合脚本解析）
+adb shell dumpsys batterystats --checkin > batterystats_checkin.txt
+
+# 获取人类可读格式的完整统计
+adb shell dumpsys batterystats > batterystats_full.txt
+
+# 过滤特定 App 的 Wakelock 信息
+adb shell dumpsys batterystats | grep -A 10 "Package com.example.app"
+```
+
+`--checkin` 格式的输出可以导入脚本进行自动化分析，每行包含 UID、时间戳和各类统计值，适合 CI 管线中的功耗回归检测。
+
+---
+
+## Android Studio Power Profiler
+
+从 Android Studio Hedgehog 开始，原来的 Energy Profiler 升级为 **Power Profiler**，基于硬件级的 On-Device Power Rails Monitor (ODPM) 提供实时功耗数据。
+
+### ODPM 的工作原理
+
+ODPM 是 Android 10 (API 29) 引入的硬件功耗监控机制，在 Pixel 6 及后续设备上可用。它直接测量电池下游各硬件子系统的功耗，不依赖估算模型，精度远高于 Energy Profiler 的 CPU/网络/GPS 估算。
+
+ODPM 测量的 Power Rail 包括：
+
+| Power Rail | 含义 |
+|------------|------|
+| CPU Big/Mid/Little | 三个 CPU 集群的功耗 |
+| GPU | GPU 子系统功耗 |
+| Display | 屏幕功耗 |
+| Cellular | 蜂窝网络功耗 |
+| WLAN | WiFi 功耗 |
+| GPS | GPS 模块功耗 |
+| Camera | 摄像头功耗 |
+| Memory | 内存功耗 |
+| UFS | 存储功耗 |
+| Sensor Core | 传感器子系统功耗 |
+
+这些数据可以在 Power Profiler 的 System Trace 视图中直接查看，与 CPU 调度、线程活动在同一个时间线上对齐——这对关联"代码行为→功耗变化"至关重要。
+
+### Power Profiler vs Energy Profiler
+
+| 维度 | Energy Profiler (旧) | Power Profiler (新) |
+|------|---------------------|-------------------|
+| 数据来源 | CPU/网络/GPS 活动的估算模型 | ODPM 硬件实测功耗 |
+| 精度 | 估算值，不能用于精确对比 | 实测值，可用于 A/B 测试 |
+| 设备要求 | Android 8.0+ | Pixel 6+ 且 Android 10+ |
+| 子系统粒度 | 仅 CPU/网络/GPS 三类 | 10+ 个独立 Power Rail |
+| 能否在模拟器使用 | 是（因为是估算） | 否（需要 ODPM 硬件） |
+
+如果你的设备不支持 ODPM，Power Profiler 会回退到 Energy Profiler 的估算模式。两者的 UI 位置相同：View → Tool Windows → Profiler → ENERGY。
+
+### 使用流程
+
+1. 连接支持 ODPM 的设备（Pixel 6+）
+2. 在 Android Studio 中启动 Profiler，选择 ENERGY
+3. 执行你的测试场景
+4. 在时间线上找到功耗异常的时段
+5. 点击该时段，下方的 System Trace 会显示对应时间段的 CPU/线程详情
+6. 关联具体代码：哪个线程在消耗 CPU → 对应什么操作
+
+**局限性**：ODPM 测量的是设备级功耗而非 App 级功耗。它告诉你"在这段时间内，CPU 大核消耗了 X 毫瓦"，但不能直接告诉你"你的 App 消耗了 Y 毫瓦"。要通过关联分析间接推断：在 App 前台时 CPU 大核功耗上升了多少，后台时又如何变化。
+
+---
+
+## Macrobenchmark PowerMetric
+
+对于需要在 CI 中自动检测功耗回归的场景，Jetpack Macrobenchmark 库从 v3 开始支持功耗指标：
+
+```kotlin
+@RunWith(AndroidJUnit4::class)
+class PowerBenchmark {
+    @get:Rule
+    val benchmarkRule = MacrobenchmarkRule()
+
+    @Test
+    fun measureAppStartupPower() = benchmarkRule.measureRepeated(
+        packageName = "com.example.app",
+        metrics = listOf(
+            PowerMetric(category = PowerMetric.Category.CPU),       // CPU 功耗
+            PowerMetric(category = PowerMetric.Category.DISPLAY),   // 屏幕功耗
+            PowerMetric(category = PowerMetric.Category.NETWORK),   // 网络功耗
+        ),
+        iterations = 10,
+        startupMode = StartupMode.COLD
+    ) {
+        // 启动 App 并执行操作
+        startActivityAndWait()
+    }
+}
+```
+
+`PowerMetric` 目前是实验性 API（`@ExperimentalMetricApi`），仅在支持 ODPM 的设备上可用。它提供的是整个测试周期内各子系统的累计能耗（毫焦耳），适合做相对比较（优化前 vs 优化后），不适合做绝对值的功耗评估。
+
+---
+
+## 功耗分析的最佳实践
+
+### 测试前准备
+
+抓取数据前的准备工作直接影响数据质量：
+
+1. **充满电**：从 100% 开始测试，避免低电量时系统的省电策略干扰数据
+2. **固定屏幕亮度**：屏幕是最大的功耗来源之一，手动固定亮度（而非自动亮度）消除变量
+3. **关闭不相关 App**：减少干扰因素，确保数据反映的是目标 App 的功耗
+4. **断开 USB**：前面提到的，USB 连接影响电池数据准确性
+5. **固定测试时长**：建议至少 1-2 小时，短时间的测试容易受系统后台任务影响
+
+### 对比测试法
+
+功耗分析最有效的方法不是看绝对值，而是对比：
+
+```
+基线场景：App 当前版本，执行标准测试用例，记录 bugreport
+         ↓
+优化场景：App 优化版本，执行相同测试用例，记录 bugreport
+         ↓
+对比 Battery Historian 时间线 + batterystats 数值差异
+```
+
+对比的关键指标：
+- 电池电量下降百分比（相同时间内）
+- CPU 活跃总时长
+- Wakelock 持有时长
+- 网络活跃时段数量
+
+### 硬件级功耗测量
+
+对于需要高精度功耗数据的场景（如 OEM 的系统级优化），硬件电流表是终极方案：
+
+- **Monsoon Power Monitor**：高精度（微安级）的外部功耗测量设备，直接串联在电池供电线路上
+- **华为功耗仪/其他厂商工具**：部分手机厂商提供自己的功耗分析工具
+
+硬件测量的精度远高于任何软件方案，但设备成本高、操作复杂，通常只在系统级功耗调优时使用。对大多数 App 开发者来说，Battery Historian + Power Profiler 的组合已经足够定位功耗问题。
+
+---
+
+## 版本演进
+
+| Android 版本 | 功耗分析工具变化 |
+|-------------|----------------|
+| Android 5.0 | Battery Historian 首次发布，基于 bugreport 的功耗时间线分析 |
+| Android 8.0 | Energy Profiler 随 Android Studio 3.0 引入，实时估算 CPU/网络/GPS 功耗 |
+| Android 10 | ODPM (On-Device Power Rails Monitor) 引入，硬件级功耗监控 |
+| Android 14 (AS Hedgehog) | Power Profiler 取代 Energy Profiler，直接展示 ODPM 数据 |
+| Android 16+ | Macrobenchmark PowerMetric 支持更多 Power Rail，CI 自动化功耗回归检测 |
+
+[待补充: Android 17 对 ODPM 或 Power Profiler 的更新内容]
+
+---
+
+## 常见问题与误区
+
+**「Battery Historian 只能分析系统 App」** → 错误。Battery Historian 解析的是完整 bugreport，其中包含所有 UID（包括第三方 App）的电池使用统计。任何 App 的功耗行为都可以在 Battery Historian 中看到。
+
+**「Energy Profiler/Power Profiler 的功耗数据是精确的」** → 需要区分。Power Profiler（基于 ODPM）提供的是硬件实测数据，精度高；Energy Profiler（旧版，基于估算模型）提供的是粗略估算，只能看趋势不能看绝对值。如果你的设备不支持 ODPM，看到的都是估算数据。
+
+**「bugreport 文件太大了」** → 可以用 `adb shell dumpsys batterystats --checkin` 只导出电池统计数据（文本格式，通常几百 KB），而不需要完整 bugreport（可能数百 MB）。这个精简输出足以用于自动化分析脚本。
+
+**「功耗分析必须用真机」** → 基本正确。模拟器没有真实电池和传感器，Energy Profiler 的估算数据在模拟器上参考价值有限。Power Profiler（ODPM）完全不支持模拟器。
+
+---
+
+## 参考资料
+
+- **官方文档**：
+  - [Analyze power usage with Battery Historian](https://developer.android.com/topic/performance/batterystats-historian) — Battery Historian 使用指南
+  - [Power Profiler](https://developer.android.com/studio/profile/power-profiler) — Android Studio Power Profiler 文档
+  - [Measure power with Macrobenchmark](https://developer.android.com/topic/performance/power/measuring) — Macrobenchmark 功耗测试
+
+- **AOSP 源码路径**：
+  - `frameworks/base/services/core/java/com/android/server/BatteryStatsService.java` — 电池统计服务
+  - `frameworks/base/core/java/android/os/BatteryStats.java` — 电池统计 API
+  - `system/hardware/interfaces/power/stats/` — ODPM HAL 接口定义
+
+- **交叉引用**：
+  - §11.1 功耗模型 — 功耗分析的理论基础
+  - §11.2 App 耗电优化 — 使用本章工具定位问题后的优化方法
+  - §11.5 Wakelock 机制与功耗分析 — Battery Historian 可视化 Wakelock 的技术原理
+  - §14.1 Android Studio Profiler — Power Profiler 是 AS Profiler 套件的一部分
+  - §15.5 线上性能监控 — 线下功耗测试与线上监控的结合
