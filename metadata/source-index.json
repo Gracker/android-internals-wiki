@@ -6922,6 +6922,187 @@
       "mapped_chapters": [],
       "quality": "medium",
       "indexed_date": "2026-04-09T11:26:20.628964"
+    },
+    {
+      "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-18-热管理与CPU频率/stage-06/cards/4.md",
+      "title": "On Benchmarking Code LLMs for Android Malware Analysis",
+      "scores": {
+        "relevance": 1,
+        "depth": 4,
+        "timeliness": 5,
+        "verifiability": 3
+      },
+      "total_score": 13,
+      "first_chars": "# On Benchmarking Code LLMs for Android Malware Analysis\n\n## Cite_Key\nhe2025benchmarking\n\n## Problem\nThe effectiveness of Large Language Models (LLMs) for Android malware analysis remains underexplore",
+      "indexed_at": "2026-04-09T12:53:30.624046",
+      "matched_chapters": [],
+      "quality": "medium"
+    },
+    {
+      "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-18-热管理与CPU频率/stage-06/cards/5.md",
+      "title": "GDPR-Bench-Android: A Benchmark for Evaluating Automated GDPR Compliance Detection in Android",
+      "scores": {
+        "relevance": 1,
+        "depth": 3,
+        "timeliness": 5,
+        "verifiability": 3
+      },
+      "total_score": 12,
+      "first_chars": "# GDPR-Bench-Android: A Benchmark for Evaluating Automated GDPR Compliance Detection in Android\n\n## Cite_Key\nran2025gdprbenchandroid\n\n## Problem\nAutomating the detection of EU General Data Protection ",
+      "indexed_at": "2026-04-09T12:53:30.625035",
+      "matched_chapters": [],
+      "quality": "medium"
+    },
+    {
+      "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-18-热管理与CPU频率/stage-06/cards/6.md",
+      "title": "LAMDA: A Longitudinal Android Malware Benchmark for Concept Drift Analysis",
+      "scores": {
+        "relevance": 1,
+        "depth": 3,
+        "timeliness": 5,
+        "verifiability": 3
+      },
+      "total_score": 12,
+      "first_chars": "# LAMDA: A Longitudinal Android Malware Benchmark for Concept Drift Analysis\n\n## Cite_Key\nhaque2025lamda\n\n## Problem\nExisting Android malware datasets are often outdated, limited in temporal scope, di",
+      "indexed_at": "2026-04-09T12:53:30.625386",
+      "matched_chapters": [],
+      "quality": "medium"
+    },
+    {
+      "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-18-03-性能功耗热优化/stage-06/cards/6.md",
+      "title": "A brief survey of deep learning methods for android Malware detection",
+      "scores": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 4,
+        "verifiability": 4
+      },
+      "total_score": 10,
+      "first_chars": "# A brief survey of deep learning methods for android Malware detection\n\n## Cite_Key\njoomye2024brief\n\n## Problem\nAndroid malware detection using deep learning methods\n\n## Method\nBrief survey of deep l",
+      "indexed_at": "2026-04-09T12:53:30.625570",
+      "matched_chapters": [],
+      "quality": "medium"
+    },
+    {
+      "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-18-03-性能功耗热优化/stage-06/cards/7.md",
+      "title": "A survey of malware detection using deep learning",
+      "scores": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 4,
+        "verifiability": 4
+      },
+      "total_score": 10,
+      "first_chars": "# A survey of malware detection using deep learning\n\n## Cite_Key\nbensaoud2024survey\n\n## Problem\nMalware detection and classification across multiple platforms using deep learning\n\n## Method\nSurvey of ",
+      "indexed_at": "2026-04-09T12:53:30.625751",
+      "matched_chapters": [],
+      "quality": "medium"
+    },
+    {
+      "path": "调研/Anthropic-81K访谈/81k-interviews-reading.md",
+      "title": "Anthropic 81K 访谈研究精读",
+      "scores": {
+        "relevance": 1,
+        "depth": 3,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "total_score": 10,
+      "first_chars": "## 一、研究概况\n\n**规模与范围**\n- 80,508 名 Claude 用户参与访谈\n- 覆盖 159 个国家、70 种语言\n- 2025 年 12 月，为期一周\n- 使用 AI 驱动的对话式访谈（Anthropic Interviewer）\n- 声称是\"迄今为止规模最大、语言最丰富的定性研究\"\n\n**方法论创新**\n- 定性研究的规模化：通过 AI 访谈员实现深度与数量的平衡\n- Clau",
+      "indexed_at": "2026-04-09T12:53:30.626468",
+      "matched_chapters": [],
+      "quality": "medium"
+    },
+    {
+      "path": "调研/Agent实践知识图谱.md",
+      "title": "Agent实践知识图谱 · 2026-03-29",
+      "scores": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 3
+      },
+      "total_score": 10,
+      "first_chars": "*本知识图谱由Agent实践探索9天内容系统化整理而成*  \n*更新时间：2026-03-28 05:34 UTC*  \n*维护频率：每周更新一次*",
+      "indexed_at": "2026-04-09T12:53:30.627129",
+      "matched_chapters": [],
+      "quality": "medium"
+    },
+    {
+      "path": "调研/X内容创作系统/README.md",
+      "title": "X内容创作系统",
+      "scores": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 3
+      },
+      "total_score": 10,
+      "first_chars": "*创建时间：2026-04-07*\n*维护周期：每周更新选题池，每月优化创作流程*",
+      "indexed_at": "2026-04-09T12:53:30.628293",
+      "matched_chapters": [],
+      "quality": "medium"
+    },
+    {
+      "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-22-Android性能功耗热优化研究/README.md",
+      "title": "Android 性能功耗热优化研究",
+      "scores": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 3
+      },
+      "total_score": 10,
+      "first_chars": "# Android 性能功耗热优化研究\n\n**研究时间**: 2026-03-22 02:11\n**Run ID**: rc-20260321-180516-b0677e\n**完成阶段**: 9/9 (TOPIC_INIT → EXPERIMENT_DESIGN)\n\n## 核心产出\n\n### 1. 研究目标\n- **主题**: Android 设备上 AI 工作负载的动态特性建模与自适应优化\n- ",
+      "indexed_at": "2026-04-09T12:53:30.629065",
+      "matched_chapters": [],
+      "quality": "medium"
+    },
+    {
+      "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-31-性能功耗热优化/README.md",
+      "title": "AutoResearchClaw · 2026-03-31 — Android 性能功耗热优化研究",
+      "scores": {
+        "relevance": 1,
+        "depth": 1,
+        "timeliness": 5,
+        "verifiability": 3
+      },
+      "total_score": 10,
+      "first_chars": "# AutoResearchClaw · 2026-03-31 — Android 性能功耗热优化研究\n\n## 基本信息\n- **Run ID**: rc-20260330-180055-b0677e\n- **主题**: Android 性能功耗热优化研究\n- **执行时间**: 2026-03-31 02:00 CST\n- **执行阶段**: 9/9 (TOPIC_INIT → EXPERIME",
+      "indexed_at": "2026-04-09T12:53:30.629340",
+      "matched_chapters": [],
+      "quality": "medium"
+    },
+    {
+      "path": "调研/Skill和 SOP 区别/SKILL.md",
+      "title": "Android Cold Launch Trace Analysis",
+      "scores": {
+        "relevance": 3,
+        "depth": 1,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "total_score": 10,
+      "first_chars": "# Android Cold Launch Trace Analysis\n\nAnalyze a Perfetto trace to identify cold launch bottlenecks and produce a structured performance report.\n\n## Inputs\n\nThe user provides:\n1. **Trace file** (requir",
+      "indexed_at": "2026-04-09T12:53:30.629641",
+      "matched_chapters": [
+        "ch11-Profiling"
+      ],
+      "quality": "medium"
+    },
+    {
+      "path": "调研/OKB编译/2026-04-08-Android启动优化常规优化与系统级方案完整调研.md",
+      "title": "Android启动优化常规优化与系统级方案完整调研",
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 5,
+        "verifiability": 3,
+        "total_score": 15
+      },
+      "first_chars": "# Android启动优化常规优化与系统级方案完整调研\n\nAndroid启动优化一直是移动应用开发中的重点...",
+      "quality": "medium",
+      "indexed_at": "2026-04-09T13:18:04.844186"
     }
   ]
 }
