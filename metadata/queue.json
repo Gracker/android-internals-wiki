@@ -2251,5 +2251,25 @@
     "completed_at": "2026-04-10T01:45:06.099947",
     "completed_by": "task2b-rework",
     "notes": "Task 9 误报: §2.1 (01-rendering-overview.md) 和 §2.6 (06-surfaceflinger.md) 均存在于 progress.json sections/reviewed_sections 和文件系统中，交叉引用正确无需修改"
+  },
+  {
+    "section": "1.2",
+    "section_title": "系统启动全流程",
+    "priority": 95,
+    "reason": "[Deep Tech Review] surfaceflinger 启动阶段源码错误（'on core' 不存在于 AOSP init.rc 标准触发序列）",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "关键 native 服务的启动顺序表格（surfaceflinger 行）",
+        "detail": "声称启动阶段为 'on core'，但 AOSP init.rc 标准触发阶段序列中不存在此阶段。surfaceflinger 实际通过 class_start core 在 late-init 或 boot 阶段触发。",
+        "suggestion": "修正 surfaceflinger 启动阶段为实际触发条件（class_start core），或说明启动阶段的精确引用来源（AOSP 版本）。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-10T02:33:02.897840",
+    "status": "pending"
   }
 ]

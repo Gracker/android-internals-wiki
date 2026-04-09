@@ -4786,5 +4786,170 @@
     "title": "12周学习路线",
     "reason": "学习路线规划元数据",
     "score": 9
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-18-02-性能功耗热优化/stage-14/perspectives/optimist.md",
+    "reason": "AutoResearchClaw AI生成中间产物（实验结果乐观分析），无原创技术内容",
+    "score": 5
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-18-02-性能功耗热优化/stage-14/perspectives/skeptic.md",
+    "reason": "AutoResearchClaw AI生成中间产物（统计质疑），无原创技术内容",
+    "score": 5
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-18-02-性能功耗热优化/stage-14_v1/perspectives/methodologist.md",
+    "reason": "AutoResearchClaw AI生成中间产物（方法论审计），无原创技术内容",
+    "score": 5
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-18-02-性能功耗热优化/stage-14_v1/perspectives/optimist.md",
+    "reason": "AutoResearchClaw AI生成中间产物（实验结果乐观分析v1），无原创技术内容",
+    "score": 5
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-18-02-性能功耗热优化/stage-14_v1/perspectives/skeptic.md",
+    "reason": "AutoResearchClaw AI生成中间产物（统计质疑v1），无原创技术内容",
+    "score": 5
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-18-02-性能功耗热优化/stage-14_v2/perspectives/methodologist.md",
+    "reason": "AutoResearchClaw AI生成中间产物（方法论审计v2），无原创技术内容",
+    "score": 5
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-18-02-性能功耗热优化/stage-14_v2/perspectives/optimist.md",
+    "reason": "AutoResearchClaw AI生成中间产物（乐观分析v2），无原创技术内容",
+    "score": 5
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-18-02-性能功耗热优化/stage-14_v2/perspectives/skeptic.md",
+    "reason": "AutoResearchClaw AI生成中间产物（统计质疑v2），无原创技术内容",
+    "score": 5
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-20-性能功耗热优化/stage-08/perspectives/innovator.md",
+    "reason": "AutoResearchClaw AI生成中间产物（创新假设），无原创技术内容",
+    "score": 6
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-20-性能功耗热优化/stage-08/perspectives/pragmatist.md",
+    "reason": "AutoResearchClaw AI生成中间产物（务实假设），无原创技术内容",
+    "score": 6
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-20-性能功耗热优化/stage-14/perspectives/methodologist.md",
+    "reason": "AutoResearchClaw AI生成中间产物（方法论审计），无原创技术内容",
+    "score": 5
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-20-性能功耗热优化/stage-14/perspectives/optimist.md",
+    "reason": "AutoResearchClaw AI生成中间产物（乐观分析），无原创技术内容",
+    "score": 5
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-20-性能功耗热优化/stage-14/perspectives/skeptic.md",
+    "reason": "AutoResearchClaw AI生成中间产物（统计质疑），无原创技术内容",
+    "score": 5
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-20-性能功耗热优化/stage-14_v1/perspectives/methodologist.md",
+    "reason": "AutoResearchClaw AI生成中间产物（方法论审计v1），无原创技术内容",
+    "score": 5
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-20-性能功耗热优化/stage-14_v1/perspectives/optimist.md",
+    "reason": "AutoResearchClaw AI生成中间产物（乐观分析v1），无原创技术内容",
+    "score": 5
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-20-性能功耗热优化/stage-14_v1/perspectives/skeptic.md",
+    "reason": "AutoResearchClaw AI生成中间产物（统计质疑v1），无原创技术内容",
+    "score": 5
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-20-性能功耗热优化/stage-14_v2/perspectives/methodologist.md",
+    "reason": "AutoResearchClaw AI生成中间产物（方法论审计v2），无原创技术内容",
+    "score": 5
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-20-性能功耗热优化/stage-14_v2/perspectives/optimist.md",
+    "reason": "AutoResearchClaw AI生成中间产物（乐观分析v2），无原创技术内容",
+    "score": 5
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-20-性能功耗热优化/stage-14_v2/perspectives/skeptic.md",
+    "reason": "AutoResearchClaw AI生成中间产物（统计质疑v2），无原创技术内容",
+    "score": 5
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-20-性能功耗热优化/stage-07/synthesis.md",
+    "reason": "AutoResearchClaw文献综合，但引用卡片与性能功耗主题不匹配（主要是恶意软件检测）",
+    "score": 8
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-20-性能功耗热优化/stage-08/hypotheses.md",
+    "reason": "AI生成研究假设，涉及热感知神经网络架构但偏学术推测，可操作性低",
+    "score": 7
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-20-性能功耗热优化/stage-10/experiment_spec.md",
+    "reason": "实验执行配置文件（代码沙箱参数），无实质技术内容",
+    "score": 4
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-23-性能功耗热优化研究/完整输出/stage-06/cards/s2-060e0df71620f1844839f6a993dfa5fb8e4c3bf6.md",
+    "reason": "文献卡片：Android设备控制数据集，与AIW章节主题不匹配",
+    "score": 6
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-23-性能功耗热优化研究/完整输出/stage-06/cards/s2-16fffbc6829841477554fdf5c2c65a1274de1bb6.md",
+    "reason": "文献卡片：IoT Android恶意软件检测，与AIW章节主题不匹配",
+    "score": 5
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-23-性能功耗热优化研究/完整输出/stage-06/cards/s2-2199a5ac145edbc46db9fcbf97b01461a2367cda.md",
+    "reason": "文献卡片：Android GUI Agent，与AIW章节主题不匹配",
+    "score": 6
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-23-性能功耗热优化研究/完整输出/stage-06/cards/s2-8bcadedef6b874b15ef8ba7d18ede1ee3608ac36.md",
+    "reason": "文献卡片：ML恶意软件检测样本重复问题，与AIW章节主题不匹配",
+    "score": 5
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-23-性能功耗热优化研究/完整输出/stage-06/cards/s2-b25af982bfeac66fd317e0aa76e3719dc36c6c50.md",
+    "reason": "文献卡片：Android GUI多标注数据集，与AIW章节主题不匹配",
+    "score": 5
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-23-性能功耗热优化研究/完整输出/stage-06/cards/s2-cb23a59fdf3ade707600f076df27a03941fba.md",
+    "reason": "文献卡片：AutoDroid LLM任务自动化，与AIW章节主题不匹配",
+    "score": 6
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-23-性能功耗热优化研究/完整输出/stage-01/goal.md",
+    "reason": "与已索引的01-研究目标.md（2026-03-23）内容重复",
+    "score": 8
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-23-性能功耗热优化研究/完整输出/stage-07/synthesis.md",
+    "reason": "与已索引的02-文献综合.md内容高度重复",
+    "score": 8
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-23-性能功耗热优化研究/完整输出/stage-08/hypotheses.md",
+    "reason": "AI生成研究假设，偏学术推测，可操作性低",
+    "score": 7
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-22-Android性能功耗热优化研究/02-文献综合.md",
+    "reason": "文献综合但引用卡片与主题不匹配（主要是恶意软件/GUI agent方向）",
+    "score": 8
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-22-Android性能功耗热优化研究/03-研究假设.md",
+    "reason": "AI生成研究假设，偏学术推测",
+    "score": 7
   }
 ]
