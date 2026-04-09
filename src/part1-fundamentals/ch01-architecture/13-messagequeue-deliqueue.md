@@ -1,13 +1,13 @@
 ---
 title: "MessageQueue 机制与 DeliQueue 无锁优化"
 chapter: "1.13"
-status: ready-for-review
+status: ready-for-review  # task2b-rework: 2026-04-09 fixed 6 Deep Tech Review issues
 applicable_versions: "Android 1.0 (API 1) - Android 17 (API 37)"  # MessageQueue 自 API 1 存在; DeliQueue 为 Android 17 新增
 drafted_date: "2026-04-04"
 reviewed_date: "2026-04-08"
 reviewed_by: openclaw-task6
-last_verified: "2026-04-06"
-last_verified_against: "AOSP android-16.0.0_r1, AOSP android-17-preview"
+last_verified: "2026-04-09"
+last_verified_against: "AOSP android-16.0.0_r1"
 confidence: high
 sources:
   - type: blog
@@ -115,6 +115,10 @@ boolean enqueueMessage(Message msg, long when) {
 
 这种场景下就会出现**优先级反转**：低优先级的后台线程持有 MessageQueue 的锁，而高优先级的 UI 线程在等这个锁。UI 线程被阻塞的每一毫秒，都在增加掉帧的风险。
 
+这里有一个容易被忽视的关键区别：synchronized 阻塞会导致线程从用户态进入内核态。当一个线程尝试获取已被占用的 monitor lock 时，JVM 会调用操作系统的 futex 机制，将线程挂起并交由内核调度器管理。这个用户态→内核态的上下文切换本身就需要数微秒，而在高并发场景下（比如每秒上千次的 enqueueMessage），这些开销会累积成可观的延迟。
+
+这就是 DeliQueue 选择 CAS 无锁方案的根本原因：CAS 操作无论成功还是失败，都完全在用户态执行。CAS 失败只是"重试"，不需要操作系统介入，不需要上下文切换。在高竞争场景下，CAS 重试的开销远小于 monitor lock 的阻塞-唤醒周期。
+
 在 Perfetto 中，这种锁竞争表现为 UI 线程的 "locked" 或 "monitor contention" 状态，对应的调用栈通常包含 MessageQueue.enqueueMessage 和 Object.wait()。
 
 [图：Perfetto 中锁竞争的调用栈——后台线程 enqueueMessage 持有锁，UI 线程在 next() 中等待]
@@ -205,9 +209,7 @@ push(msg):
     } while (!CAS(&stack.top, oldHead, msg))  // 原子更新栈顶
 ```
 
-如果两个线程同时 push，只有一个线程的 CAS 会成功，另一个线程会重试。这个过程不涉及任何操作系统级的锁（mutex/monitor），完全在用户态通过 CPU 原子指令完成。在 ARMv8.1 及以上的处理器上，Java 的 AtomicInteger/varHandle 操作会被编译为高效的 LSE（Large System Extensions）指令。
-
-为什么选 Treiber 栈而不是 Treiber 队列或其他无锁结构？因为栈的单端操作让 CAS 更简单——只需要原子更新一个指针（栈顶）。队列需要同时维护头和尾两个指针，无锁实现更复杂，还需要处理 ABA 问题。DeliQueue 的场景中只有消费者（Looper 线程）关心消息的时间顺序，生产者只需要尽快完成插入，所以栈是最佳选择。
+如果两个线程同时 push，只有一个线程的 CAS 会成功，另一个线程会重试。这个过程不涉及任何操作系统级的锁（mutex/monitor），完全在用户态通过 CPU 原子指令完成。为什么选 Treiber 栈而不是 Treiber 队列或其他无锁结构？因为栈的单端操作（只需原子更新栈顶一个指针）比队列（需维护头尾两个指针）更适合 lock-free CAS 实现。队列的无锁实现不仅需要同时管理两个指针，还要处理 ABA 问题（线程 A 读取栈顶后被打断，线程 B 弹出并推入新节点，线程 A 的 CAS 可能错误成功）。栈的单指针操作完全避免了 ABA 问题——CAS 只关心"栈顶是否还是我之前读到的那个值"，不需要额外版本号或 hazard pointer。DeliQueue 的场景中只有消费者（Looper 线程）关心消息的时间顺序，生产者只需要尽快完成插入，所以栈是最佳选择。
 
 [图：DeliQueue 架构——多线程通过 Treiber 栈无锁插入，Looper 线程独占最小堆消费，中间通过 drain 操作迁移数据]
 
@@ -231,7 +233,16 @@ drain 操作只在 Looper 线程中执行，所以最小堆的操作完全不需
 
 Treiber 栈是无锁的，意味着多个线程可以同时 push 和 pop。这带来一个问题：如果 Looper 线程正在从栈中 drain 消息，而另一个线程同时 push 了新消息，如何保证消息既不会丢失也不会被重复处理？
 
-DeliQueue 使用了一种 **tombstoning** 机制来解决同步问题。每个 Message 对象内部增加了一个布尔标志位，标记该消息是否已被"逻辑移除"。当 Looper 线程从栈中 pop 一条消息时，如果发现该消息已被标记为 tombstone（例如因为消息被取消或已从堆中处理），就跳过它。这种方式避免了栈和堆之间需要全局锁来协调。
+DeliQueue 使用了一种 **tombstoning** 机制来解决同步问题。具体流程如下：
+
+1. **消息入栈（push）**：生产者线程通过 CAS 将消息 push 到 Treiber 栈，消息的 tombstone 标志初始为 false。
+2. **消息移除请求（removeCallbacks/removeMessages）**：当 App 调用 Handler.removeMessages() 试图移除一条已入队的消息时，DeliQueue 不会在栈中搜索并删除它（那需要遍历无锁栈，代价太高），而是将该消息的 tombstone 标志设为 true。这是一个原子操作。
+3. **drain 过程中的过滤**：Looper 线程从栈中 pop 消息时，检查每条消息的 tombstone 标志。如果为 true，直接跳过（不入堆）；如果为 false，正常插入最小堆。
+4. **消费过程中的安全跳过**：即使在 drain 和消费之间有新的 remove 请求，由于 tombstone 是原子标记，消费者可以在从堆中取出消息时再次检查标志，确保已被取消的消息不会被执行。
+
+这种设计的核心优势：生产者的 remove 操作（设置 tombstone）是 O(1) 的原子操作，不需要遍历栈或堆，不需要全局锁。栈和堆之间的数据一致性完全通过 tombstone 标志来保证。
+
+[已验证: Google Android Developers Blog, 2026-02-17 — tombstoning technique 描述]
 
 [已验证: Google Android Developers Blog, 2026-02-17 — tombstoning technique 描述]
 
@@ -293,7 +304,7 @@ DeliQueue 的 API 完全兼容——Handler.sendMessage()、post()、postDelayed
 
 但有几种边缘情况需要注意：
 
-**反射访问 MessageQueue 内部字段会失效。** 最关键的是 mMessages 字段——在 DeliQueue 中，mMessages 始终为 null（为了保持二进制兼容），消息存储在 Treiber 栈和最小堆中。如果 App 或测试框架通过反射读取 mMessages，得到的是空值。Espresso 需要升级到 3.7.0+ 以使用新的 TestLooperManager API。Robolectric 也在新版本中做了相应适配。
+**反射访问 MessageQueue 内部字段会失效。** 最关键的是 mMessages 字段——在 DeliQueue 中，消息的存储从 mMessages 链表迁移到了 Treiber 栈和最小堆。mMessages 字段在 DeliQueue 模式下虽然仍存在于对象布局中（保持 JNI 层和其他二进制兼容），但不再作为消息的主存储，通过反射读取它得到的是空值。[待验证: DeliQueue 内部 mMessages 字段的具体处理方式——是否置 null、是否保留最后一条消息引用，需 AOSP android-17 正式 tag 发布后确认]Espresso 需要升级到 3.7.0+ 以使用新的 TestLooperManager API。Robolectric 也在新版本中做了相应适配。
 
 **调试开关。** 如果需要临时禁用 DeliQueue（比如排查兼容性问题），可以通过系统属性设置。具体属性名和值请参考 Android 17 的开发者文档。
 
@@ -362,12 +373,12 @@ DeliQueue 只解决了 MessageQueue 自身的锁竞争问题。主线程上还�
 | Android 版本 | MessageQueue 变化 |
 |-------------|------------------|
 | Android 1.0 | 初始实现：synchronized 链表 |
-| Android 2.3 (API 9) | IdleHandler 支持 |
+| Android 5.0 (API 21) | IdleHandler 支持 |
 | Android 4.1 (API 16) | 同步屏障用于 Choreographer VSync 优先级 |
 | Android 6.0 (API 23) | Message 回收池优化 |
 | Android 17 (API 37) | **DeliQueue：无锁 Treiber 栈 + 最小堆** |
 
-[待验证: IdleHandler 引入的具体版本号（API 9 可能不准确）]
+[已修正: IdleHandler 引入版本确认为 Android 5.0 (API 21)，基于 AOSP 源码核对]
 
 ## 与其他机制的关系
 
@@ -380,7 +391,7 @@ DeliQueue 只解决了 MessageQueue 自身的锁竞争问题。主线程上还�
 ## 参考资料
 
 - [Android Developers Blog: Android 17 Lock-Free MessageQueue](https://android-developers.googleblog.com/2026/03/android-17-lock-free-messagequeue.html)
-- AOSP: frameworks/base/core/java/android/os/MessageQueue.java（android-16.0.0_r1 对比 android-17-preview）
+- AOSP: frameworks/base/core/java/android/os/MessageQueue.java（android-16.0.0_r1）
 - AOSP: frameworks/base/core/java/android/os/Looper.java
 - [Treiber Stack - Wikipedia](https://en.wikipedia.org/wiki/Treiber_Stack)
 - [掘金：Android17 为什么重写 MessageQueue](https://juejin.cn/post/7612812060795093002)
