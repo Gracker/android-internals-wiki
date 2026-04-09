@@ -1298,3 +1298,32 @@ tags:
 - **位置**：RenderThread 调度优先级未覆盖
 - **问题**：正文未说明 RenderThread 的调度策略（SCHED_FIFO/SCHED_RR/SCHED_NORMAL）与主线程的对比。了解调度优先级对分析"主线程繁忙时 RenderThread 是否被抢占"至关重要。
 - **建议**：补充 RenderThread 线程优先级设置及其对渲染流水线稳定性的影响
+
+## [task2a-gap-mining] 2026-04-09 02:10 — 无合格缺口，跳过
+
+**已探索方向**：
+- source-index.json 全部 unmapped 高质量素材（quality ≥ 14）：0 个
+- 2026-04-07/08 research-feeds 全部 9 篇：已全部映射到现有章节
+- AOSP 系统服务（Telephony/Location/Notification）：与性能优化主线关联弱，不构成独立章节需求
+- Android 17 Game Mode/ADPF/AutoFDO/Binder 改进：现有 8.9 / 5.9 / 1.12 / 1.4 已覆盖
+- Android 17 Audio 变更（AudioTrack/AudioFlinger）：现有 1.16 已覆盖
+- Android 17 网络变更：现有 16.5 已覆盖
+- Android 17 Remote Compose：现有 7.7 已覆盖
+
+**结论**：全书 138/159（87%），核心性能主题已全部覆盖。本轮无评分 ≥ 14 的新知识缺口。
+**下次探索建议**：可尝试从 Task 6 review 反馈的"待补充"标注中逆向挖掘，或关注 Android 18 早期泄露。
+
+
+## [Task9 Deep Review] 1.2 系统启动全流程 — 2026-04-09
+- **类型**：版本差异 + 知识盲区
+- **位置**：Zygote 进程描述 + boot-optimization 章节
+- **问题**：
+  1. Zygote 进程命名：64位设备上进程名为 zygote64，正文只写"Zygote 进程"，与 Perfetto trace 中的实际进程名不符
+  2. dex2oat 未交叉引用：related_chapters 包含 1.7（ART 编译管线），但正文 boot-optimization 章节完全未提及 dex2oat 是开机时间的重要因素，也未内联引用 1.7 节
+  3. fork() 描述：SystemServer fork（主动调用）与 App 进程 fork（socket 被动请求）机制混在同一段落，易造成读者误解
+  4. AutoFDO 数据：30%/25%/2.1% 性能数据标注 [待验证] 但无具体 AOSP commit hash，仅"来源: AOSP Gerrit"
+- **建议**：
+  1. 在 Zygote 预加载段落补充：在 64 位设备上，进程名为 zygote64（32位兼容模式下为 zygote）
+  2. 在 boot-optimization 章节或 startPerformance 段落，补充一句"dex2oat 编译策略（见 1.7 节）对首次开机时间影响显著"
+  3. 在 Zygote fork 描述中增加一句：App 进程的 fork 路径（AMS → socket → Zygote）与 SystemServer 的主动 fork 不同
+  4. 补充 AutoFDO 的具体 AOSP commit 或来源链接
