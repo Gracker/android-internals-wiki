@@ -2,7 +2,7 @@
 title: "线程模型"
 chapter: "1.5"
 section: "1.5"
-status: ready-to-publish
+status: ready-for-review
 applicable_versions: "Android 5.0 (API 21) - Android 16 (API 36)"
 last_verified: "2026-03-31"
 reviewed_date: "2026-04-05"
