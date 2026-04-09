@@ -3,12 +3,12 @@
   "total_sections": 111,
   "metrics": {
     "total": 143,
-    "draft": 15,
-    "ready-for-review": 29,
+    "draft": 14,
+    "ready-for-review": 30,
     "reviewed": 5,
     "finalized": 37,
     "staging_drafts": 0,
-    "last_updated": "2026-04-10T01:30:00+08:00",
+    "last_updated": "2026-04-10T07:06:00+08:00",
     "processing": 0,
     "ready-to-publish": 16,
     "last_reviewed": "2026-04-10",
@@ -5728,5 +5728,11 @@
     "status": "ready-to-publish",
     "reviewed_date": "2026-04-09",
     "reviewed_by": "openclaw-task6"
+  },
+  "1.4": {
+    "title": "Binder IPC 机制与性能影响",
+    "status": "ready-for-review",
+    "drafted_date": "2026-04-10",
+    "drafted_by": "openclaw-task2a"
   }
 }
