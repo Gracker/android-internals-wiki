@@ -1,6 +1,6 @@
 ---
 title: "Choreographer 与渲染流水线"
-chapter: "2.4"
+chapter: "2"
 section: "2.4"
 drafted_date: "2026-03-30"
 applicable_versions: "Android 12 (API 31) - Android 16 (API 36)"
@@ -16,6 +16,8 @@ review3_date: "2026-04-03"
 review3_by: "openclaw-task6"
 review4_date: "2026-04-04"
 review4_by: "openclaw-task6"
+review5_date: "2026-04-10"
+review5_by: "openclaw-task6"
 rework_reason: "Task6 review 回炉修复：doFrame伪代码修正+总结重写+Compose节重写+补充3个Type A标准节+厂商优化标注"
 rework5_date: "2026-04-10"
 rework5_by: "openclaw-task2b"
@@ -33,7 +35,7 @@ related_chapters: ["2.3", "2.5", "2.6", "2.9", "3.1", "8.2"]
 polish_count: 1
 polish_date: "2026-04-04"
 polish_by: "task2b-polish"
-status: ready-for-review
+status: ready-to-publish
 ---
 
 # Choreographer 与渲染流水线
