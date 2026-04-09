@@ -2081,5 +2081,31 @@
     "completed_at": "2026-04-09T10:51:30",
     "completed_by": "task2b-rework",
     "notes": "Task 9 误报: dalvik.vm.jitthreshold 确实被 ART 读取（AndroidRuntime.cpp 解析 → -Xjitthreshold: → JitOptions），已补充 \"dalvik.vm.\" 前缀为 Dalvik 遗留命名的说明"
+  },
+  {
+    "section": "4.6",
+    "section_title": "内存相关的版本演进",
+    "priority": 95,
+    "reason": "[Deep Tech Review] AOSP 源码路径错误（Scudo & CMC GC）",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "AOSP 源码路径 — Scudo",
+        "detail": "章节列出 Scudo 路径为 `system/memory/libmemunreachable/scudo/`；经 AOSP 核实，正确路径为 `external/scudo/standalone/`（Android 集成版）和 `compiler-rt/lib/scudo/`（LLVM 上游）",
+        "suggestion": "修正 Scudo AOSP 路径；保留 `compiler-rt/lib/scudo/` 作为上游参考路径"
+      },
+      {
+        "type": "源码错误",
+        "location": "AOSP 源码路径 — CMC GC",
+        "detail": "章节列出 CMC GC 路径为 `art/runtime/gc/collector/concurrent_mark_compact.cc`；AOSP 实际路径为 `art/runtime/gc/collector/mark_compact.cc`（待进一步核实）",
+        "suggestion": "核实 AOSP android-16 源码中 CMC GC 的实际文件名，如不同则修正"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-09T19:40:00",
+    "status": "pending"
   }
 ]

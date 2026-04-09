@@ -8781,6 +8781,390 @@
       "timeliness": 4,
       "verifiability": 2,
       "scored_at": "2026-04-09T18:18:49.154683"
+    },
+    {
+      "title": "2025手机厂商性能优化方案",
+      "path": "性能优化日报/2026-03-13-大厂-手机厂商性能优化方案2025.md",
+      "score": 14,
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "medium"
+        },
+        {
+          "chapter": "ch06-功耗",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch13-调度",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "2025年手机厂商性能优化围绕3nm/2nm芯片、AI深度融合、功耗管理创新、散热技术",
+      "scored_at": "2026-04-09T19:27:51.406496"
+    },
+    {
+      "title": "抖音启动优化实践：主线程优化与工具链",
+      "path": "性能优化日报/2026-03-13-大厂-抖音启动优化实践2025.md",
+      "score": 15,
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch04-启动",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch11-Profiling",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "抖音通过主线程线性执行优化、Rhea性能分析工具、毫秒级差异分析进行启动优化",
+      "scored_at": "2026-04-09T19:27:51.406507"
+    },
+    {
+      "title": "Android 16 性能特性详解：AI集成与电池优化",
+      "path": "性能优化日报/2026-03-13-官方-Android16性能特性详解.md",
+      "score": 19,
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch06-功耗",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch17-新版本",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Android 16重点强化AI集成与电池管理，新增自适应电池、后台功耗控制、智能充电优化",
+      "scored_at": "2026-04-09T19:27:51.406509"
+    },
+    {
+      "title": "Android 电池优化与 Doze 模式演进 2025",
+      "path": "性能优化日报/2026-03-13-官方-Android电池优化与Doze模式2025.md",
+      "score": 18,
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch06-功耗",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Doze模式从Android 6.0演进至15的智能自适应系统，新增Adaptive Battery和App Standby Buckets",
+      "scored_at": "2026-04-09T19:27:51.406512"
+    },
+    {
+      "title": "Perfetto SQL 高级用法与2025新特性",
+      "path": "性能优化日报/2026-03-13-官方-Perfetto SQL高级用法2025.md",
+      "score": 20,
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch11-Profiling",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Perfetto v53.0引入SQL分析器、unhex函数、自定义函数表、SPAN_JOIN等高级SQL特性",
+      "scored_at": "2026-04-09T19:27:51.406514"
+    },
+    {
+      "title": "Android ANR 优化完整指南 2025",
+      "path": "性能优化日报/2026-03-13-社区-Android ANR优化完整指南2025.md",
+      "score": 17,
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch02-进程",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch03-线程",
+          "confidence": "high"
+        }
+      ],
+      "summary": "2025年ANR优化聚焦主线程保护和主动预防，使用协程+WorkManager+StrictMode+Perfetto",
+      "scored_at": "2026-04-09T19:27:51.406515"
+    },
+    {
+      "title": "Android Baseline Profiles 启动优化实战",
+      "path": "性能优化日报/2026-03-14-官方 社区-Android Baseline Profiles 启动优化实战.md",
+      "score": 18,
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch04-启动",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch14-工具",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Baseline Profiles预编译关键代码路径，冷启动缩短20-30%，Meta报告提升高达40%",
+      "scored_at": "2026-04-09T19:27:51.406517"
+    },
+    {
+      "title": "Android NNAPI 废弃与 TensorFlow Lite 迁移",
+      "path": "性能优化日报/2026-03-14-官方-Android NNAPI 废弃与 TensorFlow Lite 迁移.md",
+      "score": 14,
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch17-新版本",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Android 15起NNAPI废弃，推荐迁移到TFLite(LiteRT)和AICore，提供Gemini Nano端侧推理",
+      "scored_at": "2026-04-09T19:27:51.406519"
+    },
+    {
+      "title": "Android/Linux 性能优化日报 2026-03-14",
+      "path": "性能优化日报/2026-03-14-日报.md",
+      "score": 14,
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch04-启动",
+          "confidence": "medium"
+        },
+        {
+          "chapter": "ch07-内存",
+          "confidence": "medium"
+        },
+        {
+          "chapter": "ch11-Profiling",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "日报汇总8条精选，含AutoFDO、ART GC、Perfetto等Android性能优化内容",
+      "scored_at": "2026-04-09T19:27:51.406521"
+    },
+    {
+      "title": "Android 15 充电优化：80%电量限制",
+      "path": "性能优化日报/2026-03-15-Android-15-充电优化80%限制.md",
+      "score": 15,
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch06-功耗",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Android 15引入80%充电限制功能，基于锂电池特性部分充电延长寿命",
+      "scored_at": "2026-04-09T19:27:51.406523"
+    },
+    {
+      "title": "LeakCanary 2.x 自动化内存泄漏检测",
+      "path": "性能优化日报/2026-03-15-LeakCanary-内存泄漏检测.md",
+      "score": 14,
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch07-内存",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch14-工具",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "LeakCanary自动监控Activity/Fragment/View/ViewModel生命周期，检测弱引用后堆dump",
+      "scored_at": "2026-04-09T19:27:51.406525"
+    },
+    {
+      "title": "Linux Kernel 6.12 eBPF Sched_ext 调度器框架",
+      "path": "性能优化日报/2026-03-15-Linux-Kernel-6.12-eBPF-Sched_ext.md",
+      "score": 16,
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch13-调度",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Linux 6.12引入Sched_ext框架，允许eBPF程序附加到CPU调度器实现自定义调度策略",
+      "scored_at": "2026-04-09T19:27:51.406527"
+    },
+    {
+      "title": "Perfetto 2025 支持超大Trace文件本地分析",
+      "path": "性能优化日报/2026-03-15-Perfetto-2025-大文件分析.md",
+      "score": 18,
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch11-Profiling",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Perfetto增强trace_processor_shell支持本地分析超过2GB大trace文件，绕过浏览器内存限制",
+      "scored_at": "2026-04-09T19:27:51.406528"
+    },
+    {
+      "title": "cgroups v2 成为 Android 默认资源管理方案",
+      "path": "性能优化日报/2026-03-15-cgroups-v2-Kubernetes-Android默认方案.md",
+      "score": 16,
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch07-内存",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch02-进程",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Android 16默认启用cgroups v2，K8s v1.31将cgroup v1移入维护模式",
+      "scored_at": "2026-04-09T19:27:51.406529"
+    },
+    {
+      "title": "Android/Linux 性能优化日报 2026-03-31",
+      "path": "性能优化日报/2026-03-31-性能优化日报.md",
+      "score": 14,
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch04-启动",
+          "confidence": "medium"
+        },
+        {
+          "chapter": "ch11-Profiling",
+          "confidence": "medium"
+        },
+        {
+          "chapter": "ch07-内存",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "日报10条精选，含AutoFDO内核优化、ART编译器、16KB页、Perfetto等",
+      "scored_at": "2026-04-09T19:27:51.406531"
+    },
+    {
+      "title": "Android/Linux 性能优化日报 2026-04-01",
+      "path": "性能优化日报/2026-04-01-Android-Linux性能优化日报.md",
+      "score": 14,
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch04-启动",
+          "confidence": "medium"
+        },
+        {
+          "chapter": "ch11-Profiling",
+          "confidence": "medium"
+        },
+        {
+          "chapter": "ch13-调度",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "日报10条精选，含AutoFDO部署、Vulkan 1.4、ADPF、Perfetto、lmkd等",
+      "scored_at": "2026-04-09T19:27:51.406532"
+    },
+    {
+      "title": "Android 17 把 MessageQueue 改成无锁了",
+      "path": "公众号文章/2026-02-18-Android17-lock-free-MessageQueue-公众号首稿.md",
+      "score": 20,
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch03-线程",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch17-新版本",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Android 17 MessageQueue从synchronized单锁升级为DeliQueue无锁实现，解决主线程锁竞争卡顿",
+      "scored_at": "2026-04-09T19:32:20.672570"
+    },
+    {
+      "title": "极客湾媒体机争议：评测真问题",
+      "path": "公众号文章/2026-02-23-极客湾媒体机争议-最终合并版.md",
+      "score": 13,
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch14-工具",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "媒体机vs零售机帧率差异分析，揭示手机评测行业媒体机与零售机性能差距问题",
+      "scored_at": "2026-04-09T19:32:20.672586"
+    },
+    {
+      "title": "Android 17 MessageQueue 无锁化深度解析v2",
+      "path": "公众号文章/2026-03-12-Android17-lock-free-MessageQueue-深度补全-v2.md",
+      "score": 20,
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch03-线程",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch17-新版本",
+          "confidence": "high"
+        }
+      ],
+      "summary": "深度补全版含ARM原子指令、DeliQueue完整实现、Java内存模型、Branchless优化、Perfetto SQL",
+      "scored_at": "2026-04-09T19:32:20.672588"
+    },
+    {
+      "title": "Android 17 MessageQueue 无锁化深度解析",
+      "path": "公众号文章/2026-03-12-Android17-lock-free-MessageQueue-深度补全.md",
+      "score": 19,
+      "quality": "high",
+      "chapters": [
+        {
+          "chapter": "ch03-线程",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch17-新版本",
+          "confidence": "high"
+        }
+      ],
+      "summary": "源码级分析DeliQueue实现、性能基准数据解读、Perfetto实战、与旧synchronized实现对比",
+      "scored_at": "2026-04-09T19:32:20.672590"
+    },
+    {
+      "title": "技术简报第三期",
+      "path": "公众号文章/技术简报第三期.md",
+      "score": 14,
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch17-新版本",
+          "confidence": "medium"
+        },
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "medium"
+        },
+        {
+          "chapter": "ch11-Profiling",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "13篇文章结构化总结，涵盖端侧AI、Under the hood Android 17、性能优化等",
+      "scored_at": "2026-04-09T19:32:20.672592"
+    },
+    {
+      "title": "Agent实践知识图谱",
+      "path": "调研/Agent实践知识图谱.md",
+      "score": 10,
+      "quality": "medium",
+      "chapters": [
+        {
+          "chapter": "ch07-内存",
+          "confidence": "low"
+        }
+      ],
+      "summary": "AI Agent记忆系统优化实践，三层记忆架构，含性能与内存管理相关经验",
+      "scored_at": "2026-04-09T19:34:28.388692"
     }
   ]
 }
