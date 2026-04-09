@@ -1,6 +1,6 @@
 [
   {
-    "last_check": "2026-04-01T02:08:00+08:00",
+    "last_check": "2026-04-10T02:02:13+08:00",
     "entries": [
       {
         "date": "2026-03-30",
@@ -9,14 +9,14 @@
         "medium_risks": 2,
         "low_risks": "multiple",
         "key_findings": [
-          "Android 16 \u6027\u80fd\u4f18\u5316\u66f4\u65b0",
-          "AutoFDO \u90e8\u7f72\u8fdb\u5c55",
-          "Android 17 Beta 3 \u5e73\u53f0\u7a33\u5b9a\u6027\u8fbe\u6210"
+          "Android 16 性能优化更新",
+          "AutoFDO 部署进展",
+          "Android 17 Beta 3 平台稳定性达成"
         ],
         "action_items": [
-          "\u66f4\u65b0\u7248\u672c\u53d8\u66f4\u8ffd\u8e2a",
-          "\u66f4\u65b0 ART \u4f18\u5316\u5185\u5bb9",
-          "\u66f4\u65b0\u5404\u7ae0\u8282\u7248\u672c\u6f14\u8fdb"
+          "更新版本变更追踪",
+          "更新 ART 优化内容",
+          "更新各章节版本演进"
         ]
       },
       {
@@ -26,17 +26,37 @@
         "medium_risks": 3,
         "low_risks": "multiple",
         "key_findings": [
-          "Android 17 Beta 3 \u5e73\u53f0\u7a33\u5b9a\u6027\u8fbe\u6210 (3/26)\uff0cAPI \u9501\u5b9a",
-          "Android 17 \u65b0\u589e lock-free MessageQueue (API 37) \u5f71\u54cd\u7ebf\u7a0b\u6a21\u578b\u7ae0\u8282",
-          "AutoFDO \u786e\u8ba4\u6269\u5c55\u81f3 android17-6.18 \u5185\u6838",
-          "Android 17 AlarmManager \u65b0 OnAlarmListener \u51cf\u5c11\u5524\u9192\u9501"
+          "Android 17 Beta 3 平台稳定性达成 (3/26)，API 锁定",
+          "Android 17 新增 lock-free MessageQueue (API 37) 影响线程模型章节",
+          "AutoFDO 确认扩展至 android17-6.18 内核",
+          "Android 17 AlarmManager 新 OnAlarmListener 减少唤醒锁"
         ],
         "action_items": [
-          "\u66f4\u65b0 1.5 \u7ebf\u7a0b\u6a21\u578b \u2014 \u65b0\u589e lock-free MessageQueue",
-          "\u66f4\u65b0\u9644\u5f55 A \u2014 \u8865\u5145 Android 17 Beta 3 \u5b8c\u6574 API \u53d8\u66f4",
-          "\u66f4\u65b0 5.7 CPU \u7248\u672c\u6f14\u8fdb \u2014 AutoFDO \u6269\u5c55\u81f3 17",
-          "\u66f4\u65b0 5.6 Android \u529f\u8017\u7ba1\u7406 \u2014 AlarmManager \u4f18\u5316",
-          "\u4fee\u6b63 4.3 ART \u5185\u5b58 applicable_versions (API 36\u219237)"
+          "更新 1.5 线程模型 — 新增 lock-free MessageQueue",
+          "更新附录 A — 补充 Android 17 Beta 3 完整 API 变更",
+          "更新 5.7 CPU 版本演进 — AutoFDO 扩展至 17",
+          "更新 5.6 Android 功耗管理 — AlarmManager 优化",
+          "修正 4.3 ART 内存 applicable_versions (API 36→37)"
+        ]
+      },
+      {
+        "date": "2026-04-10",
+        "total_content_checked": 202,
+        "high_risks": 12,
+        "medium_risks": 16,
+        "low_risks": 8,
+        "key_findings": [
+          "Android 16 QPR3 发布，修复银行应用和游戏崩溃",
+          "AutoFDO 扩展至 android17-6.18 内核分支",
+          "R8 优化实际案例展示 35% 性能提升",
+          "Android 17 所有显著模式章节都需要 API 37 更新"
+        ],
+        "action_items": [
+          "更新 2.1-2.10 渲染章节 — 覆盖 Android 17 API 37",
+          "更新 3.1 输入事件分发 — 确认 DeliQueue 架构",
+          "更新 5.7 CPU 版本演进 — AutoFDO 扩展至 6.18",
+          "补充 4.7 ART 内存管理 — 16KB page size 影响",
+          "更新附录 A — 补充 Android 16 QPR3 版本变更"
         ]
       }
     ]

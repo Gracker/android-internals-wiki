@@ -9406,6 +9406,1448 @@
       ],
       "summary": "统一性能功耗热优化论文大纲，提出三资源联合优化框架",
       "scored_at": "2026-04-10T00:19:05.455198"
+    },
+    {
+      "title": "Android内存压缩：ZRAM配置对系统性能的影响（文献综述）",
+      "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-28-Android内存压力检测-LMK机制-文献综述.md",
+      "score": 16,
+      "quality": "high",
+      "relevance": 4,
+      "depth": 4,
+      "timeliness": 4,
+      "verifiability": 4,
+      "chapters": [
+        {
+          "chapter": "ch02",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch07",
+          "confidence": "high"
+        }
+      ],
+      "summary": "ZRAM内存压缩配置对系统性能影响的文献综述，覆盖LMK机制与内存压力检测",
+      "scored_at": "2026-04-10T00:52:27.036655"
+    },
+    {
+      "title": "Android内存压缩：ZRAM配置-研究假设",
+      "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-28-Android内存压力检测-LMK机制-研究假设.md",
+      "score": 12,
+      "quality": "medium",
+      "relevance": 3,
+      "depth": 3,
+      "timeliness": 3,
+      "verifiability": 3,
+      "chapters": [
+        {
+          "chapter": "ch07",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "ZRAM上下文感知配置研究假设，动态工作负载下的自适应策略",
+      "scored_at": "2026-04-10T00:52:27.036667"
+    },
+    {
+      "title": "Android内存压力检测与LMK机制研究",
+      "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-28-Android内存压力检测-LMK机制研究.md",
+      "score": 14,
+      "quality": "medium",
+      "relevance": 4,
+      "depth": 3,
+      "timeliness": 4,
+      "verifiability": 3,
+      "chapters": [
+        {
+          "chapter": "ch02",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch07",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Android内存压缩ZRAM配置对系统性能影响综合研究",
+      "scored_at": "2026-04-10T00:52:27.036669"
+    },
+    {
+      "title": "Android功耗热优化研究报告（2026-03-28）",
+      "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-28-Android功耗热优化研究/研究报告_2026-03-28.md",
+      "score": 15,
+      "quality": "medium",
+      "relevance": 4,
+      "depth": 4,
+      "timeliness": 4,
+      "verifiability": 3,
+      "chapters": [
+        {
+          "chapter": "ch06",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch13",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "异构计算资源CPU/GPU/NPU协同调度算法，温度感知多目标优化框架",
+      "scored_at": "2026-04-10T00:52:27.036671"
+    },
+    {
+      "title": "Android功耗热优化-synthesis",
+      "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-28-Android功耗热优化研究/stage-07_synthesis.md",
+      "score": 11,
+      "quality": "medium",
+      "relevance": 3,
+      "depth": 3,
+      "timeliness": 3,
+      "verifiability": 2,
+      "chapters": [
+        {
+          "chapter": "ch06",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "功耗热优化文献综合，识别性能功耗研究空白",
+      "scored_at": "2026-04-10T00:52:27.036673"
+    },
+    {
+      "title": "Android功耗热优化-研究假设",
+      "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-28-Android功耗热优化研究/stage-08_hypotheses.md",
+      "score": 11,
+      "quality": "medium",
+      "relevance": 3,
+      "depth": 3,
+      "timeliness": 3,
+      "verifiability": 2,
+      "chapters": [
+        {
+          "chapter": "ch06",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "功耗热优化研究假设，基于ML的自适应功耗管理算法",
+      "scored_at": "2026-04-10T00:52:27.036674"
+    },
+    {
+      "title": "性能功耗热优化研究目标（03-31）",
+      "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-31-性能功耗热优化/goal.md",
+      "score": 10,
+      "quality": "medium",
+      "relevance": 3,
+      "depth": 3,
+      "timeliness": 2,
+      "verifiability": 2,
+      "chapters": [
+        {
+          "chapter": "ch06",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "性能功耗热优化研究目标定义",
+      "scored_at": "2026-04-10T00:52:27.036675"
+    },
+    {
+      "title": "性能功耗热优化-假设（03-31）",
+      "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-31-性能功耗热优化/hypotheses.md",
+      "score": 10,
+      "quality": "medium",
+      "relevance": 3,
+      "depth": 3,
+      "timeliness": 2,
+      "verifiability": 2,
+      "chapters": [
+        {
+          "chapter": "ch06",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "性能功耗热优化研究假设",
+      "scored_at": "2026-04-10T00:52:27.036677"
+    },
+    {
+      "title": "Android内存监控：内存占用分析与OOM优化（文献综合）",
+      "path": "调研/AutoResearchClaw-Android功耗优化/2026-04-01-Android内存监控-OOM优化/07-文献综合.md",
+      "score": 15,
+      "quality": "medium",
+      "relevance": 4,
+      "depth": 4,
+      "timeliness": 4,
+      "verifiability": 3,
+      "chapters": [
+        {
+          "chapter": "ch07",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch11",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "内存监控与OOM优化文献综合，Benchmark方法论分析",
+      "scored_at": "2026-04-10T00:52:27.036678"
+    },
+    {
+      "title": "Android内存监控-研究假设（OOM优化）",
+      "path": "调研/AutoResearchClaw-Android功耗优化/2026-04-01-Android内存监控-OOM优化/08-研究假设.md",
+      "score": 13,
+      "quality": "medium",
+      "relevance": 4,
+      "depth": 3,
+      "timeliness": 3,
+      "verifiability": 3,
+      "chapters": [
+        {
+          "chapter": "ch07",
+          "confidence": "high"
+        }
+      ],
+      "summary": "上下文感知内存意图框架，区分有意内存保留与真实泄漏",
+      "scored_at": "2026-04-10T00:52:27.036679"
+    },
+    {
+      "title": "Android内存监控-OOM优化研究目标",
+      "path": "调研/AutoResearchClaw-Android功耗优化/2026-04-01-Android内存监控-OOM优化/01-研究目标.md",
+      "score": 12,
+      "quality": "medium",
+      "relevance": 4,
+      "depth": 3,
+      "timeliness": 3,
+      "verifiability": 2,
+      "chapters": [
+        {
+          "chapter": "ch07",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Android内存监控OOM优化研究目标定义",
+      "scored_at": "2026-04-10T00:52:27.036680"
+    },
+    {
+      "title": "Android内存监控-OOM优化问题分解",
+      "path": "调研/AutoResearchClaw-Android功耗优化/2026-04-01-Android内存监控-OOM优化/02-问题分解.md",
+      "score": 11,
+      "quality": "medium",
+      "relevance": 3,
+      "depth": 3,
+      "timeliness": 3,
+      "verifiability": 2,
+      "chapters": [
+        {
+          "chapter": "ch07",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "内存监控OOM优化问题分解与子问题识别",
+      "scored_at": "2026-04-10T00:52:27.036682"
+    },
+    {
+      "title": "Android性能追踪工具：Perfetto与Systrace深度应用（研究报告）",
+      "path": "调研/AutoResearchClaw-Android功耗优化/2026-04-02-Perfetto-Systrace深度应用/研究报告.md",
+      "score": 17,
+      "quality": "high",
+      "relevance": 5,
+      "depth": 4,
+      "timeliness": 4,
+      "verifiability": 4,
+      "chapters": [
+        {
+          "chapter": "ch05",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch11",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Perfetto与Systrace深度整合研究，建立端到端性能-功耗-热关联模型，异构计算环境分析框架",
+      "scored_at": "2026-04-10T00:52:27.036683"
+    },
+    {
+      "title": "Perfetto与Systrace深度应用研究摘要（04-03）",
+      "path": "调研/AutoResearchClaw-Android功耗优化/2026-04-03-Perfetto与Systrace深度应用/研究摘要.md",
+      "score": 15,
+      "quality": "medium",
+      "relevance": 4,
+      "depth": 4,
+      "timeliness": 4,
+      "verifiability": 3,
+      "chapters": [
+        {
+          "chapter": "ch11",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Perfetto与Systrace深度应用研究摘要，9阶段完整管线输出",
+      "scored_at": "2026-04-10T00:52:27.036684"
+    },
+    {
+      "title": "Perfetto与Systrace-synthesis",
+      "path": "调研/AutoResearchClaw-Android功耗优化/2026-04-03-Perfetto与Systrace深度应用/stage-07-synthesis.md",
+      "score": 13,
+      "quality": "medium",
+      "relevance": 3,
+      "depth": 4,
+      "timeliness": 3,
+      "verifiability": 3,
+      "chapters": [
+        {
+          "chapter": "ch11",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Perfetto与Systrace文献综合分析",
+      "scored_at": "2026-04-10T00:52:27.036685"
+    },
+    {
+      "title": "Perfetto与Systrace-研究假设",
+      "path": "调研/AutoResearchClaw-Android功耗优化/2026-04-03-Perfetto与Systrace深度应用/stage-08-hypotheses.md",
+      "score": 12,
+      "quality": "medium",
+      "relevance": 3,
+      "depth": 3,
+      "timeliness": 3,
+      "verifiability": 3,
+      "chapters": [
+        {
+          "chapter": "ch11",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Perfetto/Systrace深度应用研究假设",
+      "scored_at": "2026-04-10T00:52:27.036687"
+    },
+    {
+      "title": "Linux性能分析工具：perf与eBPF（文献综述）",
+      "path": "调研/AutoResearchClaw-Android功耗优化/2026-04-04-Linux性能分析工具-perf与eBPF/文献综述.md",
+      "score": 16,
+      "quality": "high",
+      "relevance": 4,
+      "depth": 4,
+      "timeliness": 4,
+      "verifiability": 4,
+      "chapters": [
+        {
+          "chapter": "ch11",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch13",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "eBPF和perf在Linux性能分析中的实践，覆盖网络优化、系统监控、分布式加速四大集群",
+      "scored_at": "2026-04-10T00:52:27.036688"
+    },
+    {
+      "title": "Linux perf与eBPF研究摘要",
+      "path": "调研/AutoResearchClaw-Android功耗优化/2026-04-04-Linux性能分析工具-perf与eBPF/README.md",
+      "score": 15,
+      "quality": "medium",
+      "relevance": 4,
+      "depth": 4,
+      "timeliness": 4,
+      "verifiability": 3,
+      "chapters": [
+        {
+          "chapter": "ch11",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch06",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "perf-eBPF集成方法论，关联应用性能指标与功耗热行为，系统开销<10%",
+      "scored_at": "2026-04-10T00:52:27.036689"
+    },
+    {
+      "title": "Linux perf与eBPF研究假设",
+      "path": "调研/AutoResearchClaw-Android功耗优化/2026-04-04-Linux性能分析工具-perf与eBPF/研究假设.md",
+      "score": 13,
+      "quality": "medium",
+      "relevance": 3,
+      "depth": 3,
+      "timeliness": 4,
+      "verifiability": 3,
+      "chapters": [
+        {
+          "chapter": "ch11",
+          "confidence": "high"
+        }
+      ],
+      "summary": "混合性能分析框架，融合perf与eBPF优势",
+      "scored_at": "2026-04-10T00:52:27.036691"
+    },
+    {
+      "title": "Linux perf与eBPF研究目标",
+      "path": "调研/AutoResearchClaw-Android功耗优化/2026-04-04-Linux性能分析工具-perf与eBPF/研究目标.md",
+      "score": 14,
+      "quality": "medium",
+      "relevance": 4,
+      "depth": 3,
+      "timeliness": 4,
+      "verifiability": 3,
+      "chapters": [
+        {
+          "chapter": "ch06",
+          "confidence": "medium"
+        },
+        {
+          "chapter": "ch11",
+          "confidence": "high"
+        }
+      ],
+      "summary": "perf与eBPF在Android异构计算架构下的功耗热管理应用，连接应用层性能与硬件层功耗",
+      "scored_at": "2026-04-10T00:52:27.036692"
+    },
+    {
+      "title": "Android 17 DeliQueue：二十年来最重要的消息队列架构重写",
+      "path": "DeepResearch/Android 17 DeliQueue_ Lock-Free MessageQueue Architecture Rewrite for Reduced Frame Drops and Faster App Launches.md",
+      "score": 20,
+      "quality": "high",
+      "relevance": 5,
+      "depth": 5,
+      "timeliness": 5,
+      "verifiability": 5,
+      "chapters": [
+        {
+          "chapter": "ch03-线程",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch04-启动",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Android 17用DeliQueue lock-free混合数据结构替换20年MessageQueue实现，丢帧降4-7.7%，启动提速9.1%",
+      "scanned_at": "2026-04-10T01:16:00+08:00",
+      "scored_at": "2026-04-10T01:24:51.334401"
+    },
+    {
+      "title": "Running Slice 全栈分析手册",
+      "path": "DeepResearch/Running-Slice全栈分析手册.md",
+      "score": 20,
+      "quality": "high",
+      "relevance": 5,
+      "depth": 5,
+      "timeliness": 5,
+      "verifiability": 5,
+      "chapters": [
+        {
+          "chapter": "ch11-Profiling",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch13-调度",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch14-工具",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Perfetto Running Slice六层分析框架：Java方法→ART→内核调度→CPU微架构→缓存→SoC内存子系统",
+      "scanned_at": "2026-04-10T01:16:00+08:00",
+      "scored_at": "2026-04-10T01:24:51.334409"
+    },
+    {
+      "title": "AI时代系统工程师的硬技能升级路线图",
+      "path": "DeepResearch/AI时代系统工程师的硬技能升级路线图 .md",
+      "score": 18,
+      "quality": "high",
+      "relevance": 4,
+      "depth": 5,
+      "timeliness": 5,
+      "verifiability": 4,
+      "chapters": [
+        {
+          "chapter": "ch14-工具",
+          "confidence": "medium"
+        },
+        {
+          "chapter": "ch17-新版本",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Android系统工程师AI技能投资方向：端侧AI全栈+底层性能优化，AI技能薪资溢价56%",
+      "scanned_at": "2026-04-10T01:16:00+08:00",
+      "scored_at": "2026-04-10T01:24:51.334412"
+    },
+    {
+      "title": "Agent体系与PerformanceAgent设计深度研究",
+      "path": "DeepResearch/Agent 概念.md",
+      "score": 15,
+      "quality": "medium",
+      "relevance": 3,
+      "depth": 5,
+      "timeliness": 4,
+      "verifiability": 3,
+      "chapters": [
+        {
+          "chapter": "ch14-工具",
+          "confidence": "medium"
+        },
+        {
+          "chapter": "ch17-新版本",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "面向移动设备厂商的Agent体系与PerformanceAgent参考设计，对齐Claude Agent SDK",
+      "scanned_at": "2026-04-10T01:16:00+08:00",
+      "scored_at": "2026-04-10T01:24:51.334413"
+    },
+    {
+      "title": "Perfetto on Android Developers",
+      "path": "知识库/专题收藏/Claude-Agent-SDK_多智能体_Android性能/03-Android-AOSP-性能可观测性/24-perfetto-on-android.md",
+      "score": 16,
+      "quality": "high",
+      "relevance": 5,
+      "depth": 4,
+      "timeliness": 4,
+      "verifiability": 3,
+      "chapters": [
+        {
+          "chapter": "ch11-Profiling",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch14-工具",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Android官方Perfetto文档翻译，涵盖平台级追踪配置与使用",
+      "scanned_at": "2026-04-10T01:16:00+08:00",
+      "scored_at": "2026-04-10T01:26:19.312177"
+    },
+    {
+      "title": "System tracing overview",
+      "path": "知识库/专题收藏/Claude-Agent-SDK_多智能体_Android性能/03-Android-AOSP-性能可观测性/25-system-tracing-overview.md",
+      "score": 16,
+      "quality": "high",
+      "relevance": 5,
+      "depth": 4,
+      "timeliness": 4,
+      "verifiability": 3,
+      "chapters": [
+        {
+          "chapter": "ch11-Profiling",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch13-调度",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Android系统追踪概览，atrace/ftrace/Perfetto数据采集原理",
+      "scanned_at": "2026-04-10T01:16:00+08:00",
+      "scored_at": "2026-04-10T01:26:19.312186"
+    },
+    {
+      "title": "Perfetto system tracing guide",
+      "path": "知识库/专题收藏/Claude-Agent-SDK_多智能体_Android性能/03-Android-AOSP-性能可观测性/26-perfetto-system-tracing-guide.md",
+      "score": 17,
+      "quality": "high",
+      "relevance": 5,
+      "depth": 5,
+      "timeliness": 4,
+      "verifiability": 3,
+      "chapters": [
+        {
+          "chapter": "ch11-Profiling",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch14-工具",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Perfetto系统追踪完整指南，配置/采集/分析全流程",
+      "scanned_at": "2026-04-10T01:16:00+08:00",
+      "scored_at": "2026-04-10T01:26:19.312188"
+    },
+    {
+      "title": "AOSP statsd module",
+      "path": "知识库/专题收藏/Claude-Agent-SDK_多智能体_Android性能/03-Android-AOSP-性能可观测性/27-aosp-statsd-module.md",
+      "score": 14,
+      "quality": "medium",
+      "relevance": 4,
+      "depth": 4,
+      "timeliness": 3,
+      "verifiability": 3,
+      "chapters": [
+        {
+          "chapter": "ch06-功耗",
+          "confidence": "medium"
+        },
+        {
+          "chapter": "ch14-工具",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "AOSP statsd模块，系统级统计与功耗监控",
+      "scanned_at": "2026-04-10T01:16:00+08:00",
+      "scored_at": "2026-04-10T01:26:19.312190"
+    },
+    {
+      "title": "AOSP thermal mitigation",
+      "path": "知识库/专题收藏/Claude-Agent-SDK_多智能体_Android性能/03-Android-AOSP-性能可观测性/28-aosp-thermal-mitigation.md",
+      "score": 15,
+      "quality": "medium",
+      "relevance": 5,
+      "depth": 4,
+      "timeliness": 3,
+      "verifiability": 3,
+      "chapters": [
+        {
+          "chapter": "ch06-功耗",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch13-调度",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "AOSP热管理降频机制，thermal mitigation策略文档",
+      "scanned_at": "2026-04-10T01:16:00+08:00",
+      "scored_at": "2026-04-10T01:26:19.312191"
+    },
+    {
+      "title": "AOSP simpleperf docs",
+      "path": "知识库/专题收藏/Claude-Agent-SDK_多智能体_Android性能/03-Android-AOSP-性能可观测性/29-aosp-simpleperf-docs.md",
+      "score": 16,
+      "quality": "high",
+      "relevance": 5,
+      "depth": 4,
+      "timeliness": 4,
+      "verifiability": 3,
+      "chapters": [
+        {
+          "chapter": "ch11-Profiling",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch14-工具",
+          "confidence": "high"
+        }
+      ],
+      "summary": "AOSP simpleperf文档，native性能分析工具使用",
+      "scanned_at": "2026-04-10T01:16:00+08:00",
+      "scored_at": "2026-04-10T01:26:19.312192"
+    },
+    {
+      "title": "AOSP evaluate performance",
+      "path": "知识库/专题收藏/Claude-Agent-SDK_多智能体_Android性能/03-Android-AOSP-性能可观测性/30-aosp-evaluate-performance.md",
+      "score": 15,
+      "quality": "medium",
+      "relevance": 5,
+      "depth": 4,
+      "timeliness": 3,
+      "verifiability": 3,
+      "chapters": [
+        {
+          "chapter": "ch14-工具",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch11-Profiling",
+          "confidence": "high"
+        }
+      ],
+      "summary": "AOSP性能评估方法论，Benchmark与基线测试",
+      "scanned_at": "2026-04-10T01:16:00+08:00",
+      "scored_at": "2026-04-10T01:26:19.312193"
+    },
+    {
+      "title": "SmartPerfetto：AI Agent驱动Android性能分析平台",
+      "path": "面试/SmartPerfetto.md",
+      "score": 14,
+      "quality": "medium",
+      "relevance": 4,
+      "depth": 4,
+      "timeliness": 4,
+      "verifiability": 2,
+      "chapters": [
+        {
+          "chapter": "ch11-Profiling",
+          "confidence": "medium"
+        },
+        {
+          "chapter": "ch14-工具",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "AI Agent+Perfetto UI自动分析Trace，17个MCP工具+Skill系统",
+      "scanned_at": "2026-04-10T01:16:00+08:00",
+      "scored_at": "2026-04-10T01:27:17.028199"
+    },
+    {
+      "title": "Android17 为什么重写 MessageQueue",
+      "path": "source/juejin-android/2026-04-06-76128120-Android17_为什么重写_Mess.md",
+      "score": 16,
+      "quality": "high",
+      "relevance": 5,
+      "depth": 4,
+      "timeliness": 5,
+      "verifiability": 2,
+      "chapters": [
+        {
+          "chapter": "ch03-线程",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch01-架构",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Android 17 DeliQueue重写MessageQueue的原因与实现分析",
+      "scanned_at": "2026-04-10T01:16:00+08:00",
+      "scored_at": "2026-04-10T01:28:35.009629"
+    },
+    {
+      "title": "Android 17 适配指南与禁止侧载",
+      "path": "source/juejin-android/2026-04-06-76102333-Android_17_有什么需要适配的？.md",
+      "score": 15,
+      "quality": "medium",
+      "relevance": 4,
+      "depth": 3,
+      "timeliness": 5,
+      "verifiability": 3,
+      "chapters": [
+        {
+          "chapter": "ch17-新版本",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Android 17新特性与适配要点，包含禁止侧载政策",
+      "scanned_at": "2026-04-10T01:16:00+08:00",
+      "scored_at": "2026-04-10T01:28:35.009637"
+    },
+    {
+      "title": "OSDI25：串行性能优化的原则与方法论",
+      "path": "source/赵俊民技术简报/2026-01-10-OSDI25串行性能优化论文.md",
+      "score": 17,
+      "quality": "high",
+      "relevance": 4,
+      "depth": 5,
+      "timeliness": 5,
+      "verifiability": 4,
+      "chapters": [
+        {
+          "chapter": "ch13-调度",
+          "confidence": "medium"
+        },
+        {
+          "chapter": "ch11-Profiling",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "OSDI25论文：串行优化三原则(移除/替换/重排)+八种方法论",
+      "scanned_at": "2026-04-10T01:16:00+08:00",
+      "scored_at": "2026-04-10T01:28:35.009639"
+    },
+    {
+      "title": "Android Studio Panda 1正式版",
+      "path": "source/juejin-android/2026-04-09-7605097326727266350-Android_Studio_Panda.md",
+      "score": 14,
+      "quality": "medium",
+      "relevance": 4,
+      "depth": 3,
+      "timeliness": 5,
+      "verifiability": 2,
+      "chapters": [
+        {
+          "chapter": "ch14-工具",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Android Studio Panda内置JDK配置+内存泄漏原生检测方案",
+      "scanned_at": "2026-04-10T01:16:00+08:00",
+      "scored_at": "2026-04-10T01:28:35.009641"
+    },
+    {
+      "title": "Systrace与Perfetto中wakeup from tid:0",
+      "path": "Android/ Perfetto  唤醒关系分析.md",
+      "score": 17,
+      "quality": "high",
+      "chapters": [
+        {
+          "id": "ch11-Profiling",
+          "confidence": "high"
+        },
+        {
+          "id": "ch13-调度",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Perfetto唤醒关系分析：tid=0即idle/swapper上下文",
+      "scored_at": "2026-04-10T01:56:04.670201"
+    },
+    {
+      "title": "Android 16热点矩阵",
+      "path": "Android/Android-16-热点矩阵/README.md",
+      "score": 15,
+      "quality": "medium",
+      "chapters": [
+        {
+          "id": "ch17-新版本",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Android 16新特性矩阵：VSync优化、SurfaceFlinger、渲染管线改进",
+      "scored_at": "2026-04-10T01:56:04.670209"
+    },
+    {
+      "title": "Perfetto Trace Memory Deep Dive",
+      "path": "Android/Perfetto/2026-03-24-PerfettoTraceMemoryDeepDive.md",
+      "score": 16,
+      "quality": "high",
+      "chapters": [
+        {
+          "id": "ch07-内存",
+          "confidence": "high"
+        },
+        {
+          "id": "ch11-Profiling",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Perfetto Android Tracing完整教程2025：三种捕获方法与内存分析",
+      "scored_at": "2026-04-10T01:56:04.670212"
+    },
+    {
+      "title": "PIP Freeform Window Rendering",
+      "path": "Android/rendering_pipelines/android_pip_freeform.md",
+      "score": 14,
+      "quality": "medium",
+      "chapters": [
+        {
+          "id": "ch05-渲染",
+          "confidence": "high"
+        }
+      ],
+      "summary": "多窗口模式渲染Layer Tree组织",
+      "scored_at": "2026-04-10T01:56:20.912959"
+    },
+    {
+      "title": "Android View Mixed Pipeline",
+      "path": "Android/rendering_pipelines/android_view_mixed.md",
+      "score": 16,
+      "quality": "high",
+      "chapters": [
+        {
+          "id": "ch05-渲染",
+          "confidence": "high"
+        }
+      ],
+      "summary": "混合渲染：View+SurfaceView同时运行SurfaceFlinger合成",
+      "scored_at": "2026-04-10T01:56:20.912968"
+    },
+    {
+      "title": "Multi-Window Rendering Pipeline",
+      "path": "Android/rendering_pipelines/android_view_multi_window.md",
+      "score": 15,
+      "quality": "medium",
+      "chapters": [
+        {
+          "id": "ch05-渲染",
+          "confidence": "high"
+        }
+      ],
+      "summary": "同进程双窗口：Dialog+Activity分屏同时绘制",
+      "scored_at": "2026-04-10T01:56:20.912971"
+    },
+    {
+      "title": "Software Rendering Pipeline",
+      "path": "Android/rendering_pipelines/android_view_software.md",
+      "score": 14,
+      "quality": "medium",
+      "chapters": [
+        {
+          "id": "ch05-渲染",
+          "confidence": "high"
+        }
+      ],
+      "summary": "lockCanvas+BLAST软件渲染管线",
+      "scored_at": "2026-04-10T01:56:20.912972"
+    },
+    {
+      "title": "Standard AOSP Rendering (BLAST)",
+      "path": "Android/rendering_pipelines/android_view_standard.md",
+      "score": 17,
+      "quality": "high",
+      "chapters": [
+        {
+          "id": "ch05-渲染",
+          "confidence": "high"
+        },
+        {
+          "id": "ch04-启动",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "HWUI+BLAST现代硬件加速渲染链路Deep Dive",
+      "scored_at": "2026-04-10T01:56:20.912974"
+    },
+    {
+      "title": "ANGLE GLES-over-Vulkan Pipeline",
+      "path": "Android/rendering_pipelines/angle_gles_vulkan.md",
+      "score": 16,
+      "quality": "high",
+      "chapters": [
+        {
+          "id": "ch05-渲染",
+          "confidence": "high"
+        }
+      ],
+      "summary": "ANGLE GLES-over-Vulkan：Android 15+统一GLES方向",
+      "scored_at": "2026-04-10T01:56:20.912975"
+    },
+    {
+      "title": "Camera2 HAL3 Pipeline",
+      "path": "Android/rendering_pipelines/camera_pipeline.md",
+      "score": 14,
+      "quality": "medium",
+      "chapters": [
+        {
+          "id": "ch05-渲染",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Camera管线取景器预览录像全链路",
+      "scored_at": "2026-04-10T01:56:20.912977"
+    },
+    {
+      "title": "Flutter Rendering Architecture",
+      "path": "Android/rendering_pipelines/flutter_architecture.md",
+      "score": 15,
+      "quality": "medium",
+      "chapters": [
+        {
+          "id": "ch05-渲染",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Flutter渲染版本演进Skia vs Impeller",
+      "scored_at": "2026-04-10T01:56:34.550400"
+    },
+    {
+      "title": "Flutter SurfaceView Pipeline",
+      "path": "Android/rendering_pipelines/flutter_surfaceview.md",
+      "score": 15,
+      "quality": "medium",
+      "chapters": [
+        {
+          "id": "ch05-渲染",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Flutter SurfaceView高性能模式独立Surface合成",
+      "scored_at": "2026-04-10T01:56:34.550410"
+    },
+    {
+      "title": "Flutter TextureView Pipeline",
+      "path": "Android/rendering_pipelines/flutter_textureview.md",
+      "score": 14,
+      "quality": "medium",
+      "chapters": [
+        {
+          "id": "ch05-渲染",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Flutter TextureView混合渲染宿主合成模式",
+      "scored_at": "2026-04-10T01:56:34.550412"
+    },
+    {
+      "title": "Game Engine Rendering Unity Unreal",
+      "path": "Android/rendering_pipelines/game_engine.md",
+      "score": 13,
+      "quality": "medium",
+      "chapters": [
+        {
+          "id": "ch05-渲染",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Unity/Unreal游戏引擎Android渲染固定步长GameLoop",
+      "scored_at": "2026-04-10T01:56:34.550414"
+    },
+    {
+      "title": "Hardware Buffer Renderer Android14",
+      "path": "Android/rendering_pipelines/hardware_buffer_renderer.md",
+      "score": 15,
+      "quality": "medium",
+      "chapters": [
+        {
+          "id": "ch05-渲染",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Android 14离屏渲染API RenderNode+GPU替代lockCanvas",
+      "scored_at": "2026-04-10T01:56:34.550415"
+    },
+    {
+      "title": "Rendering Pipelines Overview",
+      "path": "Android/rendering_pipelines/index.md",
+      "score": 12,
+      "quality": "medium",
+      "chapters": [
+        {
+          "id": "ch05-渲染",
+          "confidence": "high"
+        }
+      ],
+      "summary": "渲染管线总览索引覆盖AOSP核心出图链路",
+      "scored_at": "2026-04-10T01:56:34.550417"
+    },
+    {
+      "title": "OpenGL ES Rendering Pipeline",
+      "path": "Android/rendering_pipelines/opengl_es.md",
+      "score": 14,
+      "quality": "medium",
+      "chapters": [
+        {
+          "id": "ch05-渲染",
+          "confidence": "high"
+        }
+      ],
+      "summary": "GL Thread管线Android 15 Vulkan为主GLES仍重要",
+      "scored_at": "2026-04-10T01:56:34.550418"
+    },
+    {
+      "title": "SurfaceControl API Deep Dive NDK",
+      "path": "Android/rendering_pipelines/surface_control_api.md",
+      "score": 16,
+      "quality": "high",
+      "chapters": [
+        {
+          "id": "ch05-渲染",
+          "confidence": "high"
+        }
+      ],
+      "summary": "ASurfaceControl NDK API与SurfaceFlinger低级交互核心接口",
+      "scored_at": "2026-04-10T01:56:51.076448"
+    },
+    {
+      "title": "SurfaceView BLAST Pipeline",
+      "path": "Android/rendering_pipelines/surfaceview.md",
+      "score": 16,
+      "quality": "high",
+      "chapters": [
+        {
+          "id": "ch05-渲染",
+          "confidence": "high"
+        }
+      ],
+      "summary": "SurfaceView最高效视图BLAST Transaction模型详解",
+      "scored_at": "2026-04-10T01:56:51.076458"
+    },
+    {
+      "title": "TextureView Rendering Pipeline",
+      "path": "Android/rendering_pipelines/textureview.md",
+      "score": 14,
+      "quality": "medium",
+      "chapters": [
+        {
+          "id": "ch05-渲染",
+          "confidence": "high"
+        }
+      ],
+      "summary": "TextureView伪装为View的SurfaceTexture消费者",
+      "scored_at": "2026-04-10T01:56:51.076460"
+    },
+    {
+      "title": "VRR Variable Refresh Rate Pipeline",
+      "path": "Android/rendering_pipelines/variable_refresh_rate.md",
+      "score": 16,
+      "quality": "high",
+      "chapters": [
+        {
+          "id": "ch05-渲染",
+          "confidence": "high"
+        },
+        {
+          "id": "ch17-新版本",
+          "confidence": "high"
+        }
+      ],
+      "summary": "VRR ARR管线Android 11-16帧率API演进",
+      "scored_at": "2026-04-10T01:56:51.076462"
+    },
+    {
+      "title": "Video Overlay HWC Pipeline",
+      "path": "Android/rendering_pipelines/video_overlay_hwc.md",
+      "score": 14,
+      "quality": "medium",
+      "chapters": [
+        {
+          "id": "ch05-渲染",
+          "confidence": "high"
+        },
+        {
+          "id": "ch06-功耗",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "MediaCodec直接HWC Bypass GPU低功耗视频播放",
+      "scored_at": "2026-04-10T01:56:51.076464"
+    },
+    {
+      "title": "Vulkan Native Rendering",
+      "path": "Android/rendering_pipelines/vulkan_native.md",
+      "score": 15,
+      "quality": "medium",
+      "chapters": [
+        {
+          "id": "ch05-渲染",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Vulkan原生渲染Android 10+高性能图形首选",
+      "scored_at": "2026-04-10T01:56:51.076465"
+    },
+    {
+      "title": "WebView GL Functor Pipeline",
+      "path": "Android/rendering_pipelines/webview_gl_functor.md",
+      "score": 13,
+      "quality": "medium",
+      "chapters": [
+        {
+          "id": "ch05-渲染",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "WebView标准GL Functor路径渲染桥接",
+      "scored_at": "2026-04-10T01:56:51.076466"
+    },
+    {
+      "title": "WebView SurfaceControl OOP-R",
+      "path": "Android/rendering_pipelines/webview_surface_control.md",
+      "score": 14,
+      "quality": "medium",
+      "chapters": [
+        {
+          "id": "ch05-渲染",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "WebView现代化独立合成SurfaceControl+Viz条件路径",
+      "scored_at": "2026-04-10T01:57:02.440709"
+    },
+    {
+      "title": "WebView SurfaceView Wrapper",
+      "path": "Android/rendering_pipelines/webview_surfaceview_wrapper.md",
+      "score": 12,
+      "quality": "medium",
+      "chapters": [
+        {
+          "id": "ch05-渲染",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "WebView SurfaceView托管全屏视频模式",
+      "scored_at": "2026-04-10T01:57:02.440718"
+    },
+    {
+      "title": "WebView Custom TextureView",
+      "path": "Android/rendering_pipelines/webview_textureview_custom.md",
+      "score": 13,
+      "quality": "medium",
+      "chapters": [
+        {
+          "id": "ch05-渲染",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "国内App X5/UC内核TextureView定制",
+      "scored_at": "2026-04-10T01:57:02.440720"
+    },
+    {
+      "title": "谈编程语言互操作-Java/C++机制",
+      "path": "Android/技术文档库/知乎-赵君敏/03-谈编程语言互操作---Java_C++-互操作机制.md",
+      "score": 15,
+      "quality": "medium",
+      "chapters": [
+        {
+          "id": "ch01-架构",
+          "confidence": "high"
+        },
+        {
+          "id": "ch03-线程",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Java/C++互操作JNI机制原理与实现深度分析",
+      "scored_at": "2026-04-10T01:57:19.492633"
+    },
+    {
+      "title": "Java/Kotlin互操作机制",
+      "path": "Android/技术文档库/知乎-赵君敏/04-谈编程语言互操作---Java_Kotlin-互操作机制.md",
+      "score": 13,
+      "quality": "medium",
+      "chapters": [
+        {
+          "id": "ch15-Kotlin",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Java/Kotlin互操作设计原理Android开发主流语言",
+      "scored_at": "2026-04-10T01:57:19.492642"
+    },
+    {
+      "title": "Android平台ARM unwind技术",
+      "path": "Android/技术文档库/知乎-赵君敏/05-探索-Android-平台-ARM-unwind-技术.md",
+      "score": 14,
+      "quality": "medium",
+      "chapters": [
+        {
+          "id": "ch12-安全",
+          "confidence": "medium"
+        },
+        {
+          "id": "ch14-工具",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Android C/C++ stack unwind方法及原理",
+      "scored_at": "2026-04-10T01:57:19.492645"
+    },
+    {
+      "title": "ARM unwind技术-2 libunwindstack",
+      "path": "Android/技术文档库/知乎-赵君敏/06-探索-Android-平台-ARM-unwind-技术---2.md",
+      "score": 13,
+      "quality": "medium",
+      "chapters": [
+        {
+          "id": "ch12-安全",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "libunwindstack库CFI寄存器恢复tombstone分析",
+      "scored_at": "2026-04-10T01:57:19.492646"
+    },
+    {
+      "title": "ARM unwind技术-3 寄存器恢复",
+      "path": "Android/技术文档库/知乎-赵君敏/07-探索-Android-平台-ARM-unwind-技术---3.md",
+      "score": 12,
+      "quality": "medium",
+      "chapters": [
+        {
+          "id": "ch12-安全",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Dwarf CFI信息寄存器恢复hack unwind工具",
+      "scored_at": "2026-04-10T01:57:19.492648"
+    },
+    {
+      "title": "ARM unwind技术-4 Dwarf变量",
+      "path": "Android/技术文档库/知乎-赵君敏/08-探索-Android-平台-ARM-unwind-技术---4.md",
+      "score": 12,
+      "quality": "medium",
+      "chapters": [
+        {
+          "id": "ch12-安全",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Dwarf格式变量位置信息计算方法",
+      "scored_at": "2026-04-10T01:57:19.492649"
+    },
+    {
+      "title": "谈复杂软件低概率问题定位和复现",
+      "path": "Android/技术文档库/知乎-赵君敏/10-谈复杂软件低概率问题定位和复现.md",
+      "score": 14,
+      "quality": "medium",
+      "chapters": [
+        {
+          "id": "ch14-工具",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "复杂软件低概率BUG复现定位方法论",
+      "scored_at": "2026-04-10T01:57:40.253938"
+    },
+    {
+      "title": "谈内核问题定位",
+      "path": "Android/技术文档库/知乎-赵君敏/11-谈内核问题的一些定位.md",
+      "score": 15,
+      "quality": "medium",
+      "chapters": [
+        {
+          "id": "ch12-安全",
+          "confidence": "medium"
+        },
+        {
+          "id": "ch14-工具",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "内核层概率问题分类与定位工具：UAF、内存改写、死锁",
+      "scored_at": "2026-04-10T01:57:40.253947"
+    },
+    {
+      "title": "Android lock inversions可靠性",
+      "path": "Android/技术文档库/知乎-赵君敏/12-Android-可靠性问题---lock-inversions.md",
+      "score": 16,
+      "quality": "high",
+      "chapters": [
+        {
+          "id": "ch03-线程",
+          "confidence": "high"
+        },
+        {
+          "id": "ch01-架构",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Android锁反转(lock inversion)问题JVMTI agent检测",
+      "scored_at": "2026-04-10T01:57:40.253949"
+    },
+    {
+      "title": "解决可靠性问题的模式",
+      "path": "Android/技术文档库/知乎-赵君敏/13-关于解决可靠性问题的模式.md",
+      "score": 13,
+      "quality": "medium",
+      "chapters": [
+        {
+          "id": "ch12-安全",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "可靠性问题定位方法论与解决模式总结",
+      "scored_at": "2026-04-10T01:57:40.253951"
+    },
+    {
+      "title": "Scudo在Android11使用介绍",
+      "path": "Android/技术文档库/知乎-赵君敏/14-Scudo-在-Android11-使用介绍.md",
+      "score": 16,
+      "quality": "high",
+      "chapters": [
+        {
+          "id": "ch07-内存",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Scudo内存分配器替换jemalloc：Android 11 native内存分配",
+      "scored_at": "2026-04-10T01:57:40.253952"
+    },
+    {
+      "title": "Android GWP-ASAN集成分析",
+      "path": "Android/技术文档库/知乎-赵君敏/15-Android-上-GWP-ASAN-集成分析.md",
+      "score": 15,
+      "quality": "medium",
+      "chapters": [
+        {
+          "id": "ch07-内存",
+          "confidence": "high"
+        },
+        {
+          "id": "ch12-安全",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "GWP-ASAN采样内存安全检测：AddressSanitizer进化版",
+      "scored_at": "2026-04-10T01:57:40.253954"
+    },
+    {
+      "title": "Android性能优化-应用启动",
+      "path": "Android/技术文档库/知乎-赵君敏/16-Android-性能优化机制---应用启动.md",
+      "score": 16,
+      "quality": "high",
+      "chapters": [
+        {
+          "id": "ch04-启动",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Android应用启动速度优化系统方案与策略",
+      "scored_at": "2026-04-10T01:57:40.253955"
+    },
+    {
+      "title": "Android优先级反转问题",
+      "path": "Android/技术文档库/知乎-赵君敏/17-Android-性能优化机制---优先级反转问题.md",
+      "score": 17,
+      "quality": "high",
+      "chapters": [
+        {
+          "id": "ch03-线程",
+          "confidence": "high"
+        },
+        {
+          "id": "ch13-调度",
+          "confidence": "high"
+        }
+      ],
+      "summary": "UI线程IPC/lock依赖低优先级实体的优先级反转问题分析",
+      "scored_at": "2026-04-10T01:57:40.253956"
+    },
+    {
+      "title": "Android应用程序功耗技巧",
+      "path": "Android/技术文档库/知乎-赵君敏/18-Android-应用程序一些功耗技巧.md",
+      "score": 15,
+      "quality": "medium",
+      "chapters": [
+        {
+          "id": "ch06-功耗",
+          "confidence": "high"
+        }
+      ],
+      "summary": "App功耗优化：wakelock/timer/socket频繁唤醒问题",
+      "scored_at": "2026-04-10T01:57:56.097556"
+    },
+    {
+      "title": "ClassFileLoadHook技术细节",
+      "path": "Android/技术文档库/知乎-赵君敏/19-关于-ClassFileLoadHook-一些技术细节.md",
+      "score": 13,
+      "quality": "medium",
+      "chapters": [
+        {
+          "id": "ch01-架构",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "JVMTI ClassFileLoadHook回调流程与技术实现",
+      "scored_at": "2026-04-10T01:57:56.097565"
+    },
+    {
+      "title": "ART JVMTI切换到解释模式",
+      "path": "Android/技术文档库/知乎-赵君敏/20-ART-虚拟机使用-JVMTI-切换到解释模式分析.md",
+      "score": 14,
+      "quality": "medium",
+      "chapters": [
+        {
+          "id": "ch01-架构",
+          "confidence": "medium"
+        },
+        {
+          "id": "ch07-内存",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "ART虚拟机JVMTI插件导致解释器模式性能问题分析",
+      "scored_at": "2026-04-10T01:57:56.097568"
+    },
+    {
+      "title": "Android全链路性能专家能力地图",
+      "path": "Android/技术文档库/Android全链路性能专家/2026-03-14-Android全链路性能专家-能力地图-优先级-主题树.md",
+      "score": 17,
+      "quality": "high",
+      "chapters": [
+        {
+          "id": "ch14-工具",
+          "confidence": "high"
+        },
+        {
+          "id": "ch05-渲染",
+          "confidence": "high"
+        }
+      ],
+      "summary": "从整机体验到CPU/DRAM/UFS/GPU/thermal的整机性能专家能力地图",
+      "scored_at": "2026-04-10T01:57:56.097569"
     }
   ]
 }
