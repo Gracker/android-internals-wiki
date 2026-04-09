@@ -4329,11 +4329,12 @@
       "reviewed_by": "openclaw-task6"
     },
     "2.1": {
-      "status": "reviewed",
+      "status": "ready-to-publish",
       "title": "Android 渲染架构全景",
       "file": "src/part1-fundamentals/ch02-rendering/01-rendering-overview.md",
       "last_review": "2026-04-05T02:20",
-      "review_issues": 1
+      "review_issues": 1,
+      "last_reviewed": "2026-04-10"
     },
     "1.2": {
       "title": "系统启动全流程",
