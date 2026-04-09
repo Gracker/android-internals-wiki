@@ -2009,5 +2009,50 @@
     "added_at": "2026-04-09T12:10:00+08:00",
     "gap_score": "15/20",
     "status": "pending"
+  },
+  {
+    "section": "7.5",
+    "section_title": "优化策略",
+    "priority": 90,
+    "reason": "[review回炉] 多项大问题：缺少Trace截图标注、案例集不足、段落过长、验证来源不完整、术语不统一",
+    "material_paths": [
+      "intake/suggestions.md（含review意见）"
+    ],
+    "review_issues": [
+      {
+        "type": "需补充素材",
+        "location": "多处",
+        "detail": "需要补充4个Perfetto Trace截图：布局层级过深、RecyclerView卡顿、线程竞争、Binder调用耗时",
+        "suggestion": "添加对应Trace截图并标注关键区域，每个截图需要150-200字说明"
+      },
+      {
+        "type": "需补充素材",
+        "location": "章节末尾",
+        "detail": "案例集部分仅有2个案例，需要补充3-5个真实优化案例（每个1500-3000字）",
+        "suggestion": "补充WeSing、OPPO等企业的真实优化案例，包含问题现象、分析方法、优化策略、效果数据"
+      },
+      {
+        "type": "需重写",
+        "location": "线程优化部分",
+        "detail": "线程池配置段落超过8行，不符合规范要求",
+        "suggestion": "拆分为多个短段落，每个段落不超过8行"
+      },
+      {
+        "type": "需验证",
+        "location": "预渲染断言",
+        "detail": "'预渲染和预计算在RecyclerView和Compose中都有系统级支持'缺少具体验证来源",
+        "suggestion": "补充AOSP代码路径或官方文档引用"
+      },
+      {
+        "type": "需确认",
+        "location": "术语一致性",
+        "detail": "'数据绑定'和'onBindViewHolder'混用，建议统一术语",
+        "suggestion": "全文统一使用'onBindViewHolder'"
+      }
+    ],
+    "added_by": "task6-review",
+    "added_at": "2026-04-09T18:23:45",
+    "status": "pending",
+    "original_review_log": "logs/review/2026-04-09-18-review.md"
   }
 ]
