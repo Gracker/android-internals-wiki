@@ -4147,5 +4147,644 @@
     "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-20-性能功耗热优化/stage-06/cards/3.md",
     "reason": "pipeline中间产物-文献卡片",
     "score": 6
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-31-性能功耗热优化/synthesis.md",
+    "reason": "内容偏移：文献搜索结果主要为Android安全/恶意软件检测，与性能功耗主题不匹配",
+    "score": 8
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-17-后台任务调度与电池/stage-06/cards/4.md",
+    "reason": "AutoResearch管线中间产物（卡片）",
+    "score": 6
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-31-性能功耗热优化/README.md",
+    "reason": "目录级README，信息量不足",
+    "score": 7
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-31-性能功耗热优化/cards/oalex-W2966596151.md",
+    "reason": "AutoResearch管线中间产物（外部卡片）",
+    "score": 5
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-31-性能功耗热优化/cards/oalex-W3036966439.md",
+    "reason": "AutoResearch管线中间产物（外部卡片）",
+    "score": 5
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-31-性能功耗热优化/cards/oalex-W3039088822.md",
+    "reason": "AutoResearch管线中间产物（外部卡片）",
+    "score": 5
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-31-性能功耗热优化/cards/oalex-W3105429705.md",
+    "reason": "AutoResearch管线中间产物（外部卡片）",
+    "score": 5
+  },
+  {
+    "path": "X 文章/2026-03-02-1610-yyyole-AI-Robot-Phone！！-2028291669930717426.md",
+    "reason": "AI手机硬件消费品讨论，无技术深度",
+    "score": 6
+  },
+  {
+    "path": "X 文章/2026-03-03-0805-NavToor-Claude-Cowork-17-Best-Practices-2028148844891152554.md",
+    "reason": "Claude Cowork使用指南，非Android技术",
+    "score": 8
+  },
+  {
+    "path": "X 文章/2026-03-03-1210-WumingMr-ClawHub-10-Skills-2028419040847249428.md",
+    "reason": "ClawHub技能推荐，非Android技术",
+    "score": 9
+  },
+  {
+    "path": "X 文章/2026-03-03-1210-evilcos-OpenClaw-Security-Practice-Guide-2028458311801274671.md",
+    "reason": "OpenClaw安全实践指南，非Android安全",
+    "score": 9
+  },
+  {
+    "path": "X 文章/2026-03-02-1610-imPrk-极客湾风波-2028252006813692032.md",
+    "reason": "科技媒体争议话题，与Android内部机制无关",
+    "score": 7
+  },
+  {
+    "path": "DeepResearch/Anthropic六层技术栈深度解析.md",
+    "reason": "Claude Code架构分析，Android相关性极低(relevance=1)",
+    "score": 13
+  },
+  {
+    "path": "DeepResearch/女大-Research_Sources.md",
+    "reason": "仅参考文献列表，非实质内容",
+    "score": 8
+  },
+  {
+    "path": "知识库/专题收藏/Claude-Agent-SDK_多智能体_Android性能/01-Claude-Agent-SDK-官方/14-how-we-built-our-multi-agent-research-system.md",
+    "reason": "Agent SDK/论文/AI相关，非Android内部机制",
+    "score": 8
+  },
+  {
+    "path": "知识库/专题收藏/Claude-Agent-SDK_多智能体_Android性能/01-Claude-Agent-SDK-官方/08-skills-in-the-sdk.md",
+    "reason": "Agent SDK/论文/AI相关，非Android内部机制",
+    "score": 8
+  },
+  {
+    "path": "知识库/专题收藏/Claude-Agent-SDK_多智能体_Android性能/01-Claude-Agent-SDK-官方/09-plugins-in-the-sdk.md",
+    "reason": "Agent SDK/论文/AI相关，非Android内部机制",
+    "score": 8
+  },
+  {
+    "path": "知识库/专题收藏/Claude-Agent-SDK_多智能体_Android性能/01-Claude-Agent-SDK-官方/04-streaming-input-vs-single-message.md",
+    "reason": "Agent SDK/论文/AI相关，非Android内部机制",
+    "score": 8
+  },
+  {
+    "path": "知识库/专题收藏/Claude-Agent-SDK_多智能体_Android性能/01-Claude-Agent-SDK-官方/12-building-effective-agents-anthropic.md",
+    "reason": "Agent SDK/论文/AI相关，非Android内部机制",
+    "score": 8
+  },
+  {
+    "path": "知识库/专题收藏/Claude-Agent-SDK_多智能体_Android性能/01-Claude-Agent-SDK-官方/06-permissions-sdk.md",
+    "reason": "Agent SDK/论文/AI相关，非Android内部机制",
+    "score": 8
+  },
+  {
+    "path": "知识库/专题收藏/Claude-Agent-SDK_多智能体_Android性能/01-Claude-Agent-SDK-官方/01-agent-sdk-overview.md",
+    "reason": "Agent SDK/论文/AI相关，非Android内部机制",
+    "score": 8
+  },
+  {
+    "path": "知识库/专题收藏/Claude-Agent-SDK_多智能体_Android性能/01-Claude-Agent-SDK-官方/11-automatic-context-compaction-cookbook.md",
+    "reason": "Agent SDK/论文/AI相关，非Android内部机制",
+    "score": 8
+  },
+  {
+    "path": "知识库/专题收藏/Claude-Agent-SDK_多智能体_Android性能/01-Claude-Agent-SDK-官方/13-building-agents-with-the-claude-agent-sdk.md",
+    "reason": "Agent SDK/论文/AI相关，非Android内部机制",
+    "score": 8
+  },
+  {
+    "path": "知识库/专题收藏/Claude-Agent-SDK_多智能体_Android性能/01-Claude-Agent-SDK-官方/03-hooks-sdk.md",
+    "reason": "Agent SDK/论文/AI相关，非Android内部机制",
+    "score": 8
+  },
+  {
+    "path": "知识库/专题收藏/Claude-Agent-SDK_多智能体_Android性能/01-Claude-Agent-SDK-官方/INDEX.md",
+    "reason": "Agent SDK/论文/AI相关，非Android内部机制",
+    "score": 8
+  },
+  {
+    "path": "知识库/专题收藏/Claude-Agent-SDK_多智能体_Android性能/01-Claude-Agent-SDK-官方/02-agent-sdk-python-reference.md",
+    "reason": "Agent SDK/论文/AI相关，非Android内部机制",
+    "score": 8
+  },
+  {
+    "path": "知识库/专题收藏/Claude-Agent-SDK_多智能体_Android性能/01-Claude-Agent-SDK-官方/05-hosting-the-agent-sdk.md",
+    "reason": "Agent SDK/论文/AI相关，非Android内部机制",
+    "score": 8
+  },
+  {
+    "path": "知识库/专题收藏/Claude-Agent-SDK_多智能体_Android性能/01-Claude-Agent-SDK-官方/07-secure-deployment-sdk.md",
+    "reason": "Agent SDK/论文/AI相关，非Android内部机制",
+    "score": 8
+  },
+  {
+    "path": "知识库/专题收藏/Claude-Agent-SDK_多智能体_Android性能/01-Claude-Agent-SDK-官方/10-compaction-api.md",
+    "reason": "Agent SDK/论文/AI相关，非Android内部机制",
+    "score": 8
+  },
+  {
+    "path": "知识库/专题收藏/Claude-Agent-SDK_多智能体_Android性能/01-Claude-Agent-SDK-官方/原文/05-hosting-the-agent-sdk-readable.md",
+    "reason": "Agent SDK/论文/AI相关，非Android内部机制",
+    "score": 8
+  },
+  {
+    "path": "知识库/专题收藏/Claude-Agent-SDK_多智能体_Android性能/01-Claude-Agent-SDK-官方/原文/11-automatic-context-compaction-cookbook-readable.md",
+    "reason": "Agent SDK/论文/AI相关，非Android内部机制",
+    "score": 8
+  },
+  {
+    "path": "知识库/专题收藏/Claude-Agent-SDK_多智能体_Android性能/01-Claude-Agent-SDK-官方/原文/06-permissions-sdk-readable.md",
+    "reason": "Agent SDK/论文/AI相关，非Android内部机制",
+    "score": 8
+  },
+  {
+    "path": "知识库/专题收藏/Claude-Agent-SDK_多智能体_Android性能/01-Claude-Agent-SDK-官方/原文/04-streaming-input-vs-single-message-readable.md",
+    "reason": "Agent SDK/论文/AI相关，非Android内部机制",
+    "score": 8
+  },
+  {
+    "path": "知识库/专题收藏/Claude-Agent-SDK_多智能体_Android性能/01-Claude-Agent-SDK-官方/原文/02-agent-sdk-python-reference-readable.md",
+    "reason": "Agent SDK/论文/AI相关，非Android内部机制",
+    "score": 8
+  },
+  {
+    "path": "知识库/专题收藏/Claude-Agent-SDK_多智能体_Android性能/01-Claude-Agent-SDK-官方/原文/14-how-we-built-our-multi-agent-research-system-readable.md",
+    "reason": "Agent SDK/论文/AI相关，非Android内部机制",
+    "score": 8
+  },
+  {
+    "path": "知识库/专题收藏/Claude-Agent-SDK_多智能体_Android性能/01-Claude-Agent-SDK-官方/原文/08-skills-in-the-sdk-readable.md",
+    "reason": "Agent SDK/论文/AI相关，非Android内部机制",
+    "score": 8
+  },
+  {
+    "path": "知识库/专题收藏/Claude-Agent-SDK_多智能体_Android性能/01-Claude-Agent-SDK-官方/原文/09-plugins-in-the-sdk-readable.md",
+    "reason": "Agent SDK/论文/AI相关，非Android内部机制",
+    "score": 8
+  },
+  {
+    "path": "知识库/专题收藏/Claude-Agent-SDK_多智能体_Android性能/01-Claude-Agent-SDK-官方/原文/07-secure-deployment-sdk-readable.md",
+    "reason": "Agent SDK/论文/AI相关，非Android内部机制",
+    "score": 8
+  },
+  {
+    "path": "知识库/专题收藏/Claude-Agent-SDK_多智能体_Android性能/01-Claude-Agent-SDK-官方/原文/01-agent-sdk-overview-readable.md",
+    "reason": "Agent SDK/论文/AI相关，非Android内部机制",
+    "score": 8
+  },
+  {
+    "path": "知识库/专题收藏/Claude-Agent-SDK_多智能体_Android性能/01-Claude-Agent-SDK-官方/原文/12-building-effective-agents-anthropic-readable.md",
+    "reason": "Agent SDK/论文/AI相关，非Android内部机制",
+    "score": 8
+  },
+  {
+    "path": "知识库/专题收藏/Claude-Agent-SDK_多智能体_Android性能/01-Claude-Agent-SDK-官方/原文/10-compaction-api-readable.md",
+    "reason": "Agent SDK/论文/AI相关，非Android内部机制",
+    "score": 8
+  },
+  {
+    "path": "知识库/专题收藏/Claude-Agent-SDK_多智能体_Android性能/01-Claude-Agent-SDK-官方/原文/03-hooks-sdk-readable.md",
+    "reason": "Agent SDK/论文/AI相关，非Android内部机制",
+    "score": 8
+  },
+  {
+    "path": "知识库/专题收藏/Claude-Agent-SDK_多智能体_Android性能/01-Claude-Agent-SDK-官方/原文/13-building-agents-with-the-claude-agent-sdk-readable.md",
+    "reason": "Agent SDK/论文/AI相关，非Android内部机制",
+    "score": 8
+  },
+  {
+    "path": "知识库/专题收藏/Claude-Agent-SDK_多智能体_Android性能/02-Agent-多智能体-论文/21-generative-agents-park-et-al-2023.md",
+    "reason": "Agent SDK/论文/AI相关，非Android内部机制",
+    "score": 8
+  },
+  {
+    "path": "知识库/专题收藏/Claude-Agent-SDK_多智能体_Android性能/02-Agent-多智能体-论文/20-autogen-wu-et-al-2023.md",
+    "reason": "Agent SDK/论文/AI相关，非Android内部机制",
+    "score": 8
+  },
+  {
+    "path": "知识库/专题收藏/Claude-Agent-SDK_多智能体_Android性能/02-Agent-多智能体-论文/23-voyager-wang-et-al-2023.md",
+    "reason": "Agent SDK/论文/AI相关，非Android内部机制",
+    "score": 8
+  },
+  {
+    "path": "知识库/专题收藏/Claude-Agent-SDK_多智能体_Android性能/02-Agent-多智能体-论文/15-aima-chapter-2-agents-and-environments.md",
+    "reason": "Agent SDK/论文/AI相关，非Android内部机制",
+    "score": 8
+  },
+  {
+    "path": "知识库/专题收藏/Claude-Agent-SDK_多智能体_Android性能/02-Agent-多智能体-论文/17-react-yao-et-al-2022.md",
+    "reason": "Agent SDK/论文/AI相关，非Android内部机制",
+    "score": 8
+  },
+  {
+    "path": "知识库/专题收藏/Claude-Agent-SDK_多智能体_Android性能/02-Agent-多智能体-论文/16-contract-net-protocol-smith-1980.md",
+    "reason": "Agent SDK/论文/AI相关，非Android内部机制",
+    "score": 8
+  },
+  {
+    "path": "知识库/专题收藏/Claude-Agent-SDK_多智能体_Android性能/02-Agent-多智能体-论文/INDEX.md",
+    "reason": "Agent SDK/论文/AI相关，非Android内部机制",
+    "score": 8
+  },
+  {
+    "path": "知识库/专题收藏/Claude-Agent-SDK_多智能体_Android性能/02-Agent-多智能体-论文/19-toolformer-schick-et-al-2023.md",
+    "reason": "Agent SDK/论文/AI相关，非Android内部机制",
+    "score": 8
+  },
+  {
+    "path": "知识库/专题收藏/Claude-Agent-SDK_多智能体_Android性能/02-Agent-多智能体-论文/18-mrkl-systems-karpas-et-al-2022.md",
+    "reason": "Agent SDK/论文/AI相关，非Android内部机制",
+    "score": 8
+  },
+  {
+    "path": "知识库/专题收藏/Claude-Agent-SDK_多智能体_Android性能/02-Agent-多智能体-论文/22-camel-li-et-al-2023.md",
+    "reason": "Agent SDK/论文/AI相关，非Android内部机制",
+    "score": 8
+  },
+  {
+    "path": "知识库/专题收藏/Claude-Agent-SDK_多智能体_Android性能/02-Agent-多智能体-论文/原文/17-react-yao-et-al-2022-readable.md",
+    "reason": "Agent SDK/论文/AI相关，非Android内部机制",
+    "score": 8
+  },
+  {
+    "path": "知识库/专题收藏/Claude-Agent-SDK_多智能体_Android性能/02-Agent-多智能体-论文/原文/18-mrkl-systems-karpas-et-al-2022-readable.md",
+    "reason": "Agent SDK/论文/AI相关，非Android内部机制",
+    "score": 8
+  },
+  {
+    "path": "知识库/专题收藏/Claude-Agent-SDK_多智能体_Android性能/02-Agent-多智能体-论文/原文/22-camel-li-et-al-2023-readable.md",
+    "reason": "Agent SDK/论文/AI相关，非Android内部机制",
+    "score": 8
+  },
+  {
+    "path": "知识库/专题收藏/Claude-Agent-SDK_多智能体_Android性能/02-Agent-多智能体-论文/原文/16-contract-net-protocol-smith-1980-readable.md",
+    "reason": "Agent SDK/论文/AI相关，非Android内部机制",
+    "score": 8
+  },
+  {
+    "path": "知识库/专题收藏/Claude-Agent-SDK_多智能体_Android性能/02-Agent-多智能体-论文/原文/21-generative-agents-park-et-al-2023-readable.md",
+    "reason": "Agent SDK/论文/AI相关，非Android内部机制",
+    "score": 8
+  },
+  {
+    "path": "知识库/专题收藏/Claude-Agent-SDK_多智能体_Android性能/02-Agent-多智能体-论文/原文/20-autogen-wu-et-al-2023-readable.md",
+    "reason": "Agent SDK/论文/AI相关，非Android内部机制",
+    "score": 8
+  },
+  {
+    "path": "知识库/专题收藏/Claude-Agent-SDK_多智能体_Android性能/02-Agent-多智能体-论文/原文/15-aima-chapter-2-agents-and-environments-readable.md",
+    "reason": "Agent SDK/论文/AI相关，非Android内部机制",
+    "score": 8
+  },
+  {
+    "path": "知识库/专题收藏/Claude-Agent-SDK_多智能体_Android性能/02-Agent-多智能体-论文/原文/23-voyager-wang-et-al-2023-readable.md",
+    "reason": "Agent SDK/论文/AI相关，非Android内部机制",
+    "score": 8
+  },
+  {
+    "path": "知识库/专题收藏/Claude-Agent-SDK_多智能体_Android性能/02-Agent-多智能体-论文/原文/19-toolformer-schick-et-al-2023-readable.md",
+    "reason": "Agent SDK/论文/AI相关，非Android内部机制",
+    "score": 8
+  },
+  {
+    "path": "面试/大疆-面试备战.md",
+    "reason": "个人面试备考材料",
+    "score": 5
+  },
+  {
+    "path": "面试/豆包-编程备考.md",
+    "reason": "个人面试备考材料",
+    "score": 5
+  },
+  {
+    "path": "面试/豆包-面试备战.md",
+    "reason": "个人面试备考材料",
+    "score": 5
+  },
+  {
+    "path": "面试/面试-通用手册.md",
+    "reason": "个人面试备考材料",
+    "score": 5
+  },
+  {
+    "path": "面试/面试归档-2026.md",
+    "reason": "个人面试备考材料",
+    "score": 5
+  },
+  {
+    "path": "source/juejin-android/2026-04-06-75821494-已有Flutter项目适配鸿蒙6.md",
+    "reason": "Flutter适配鸿蒙，非Android内部机制",
+    "score": 6
+  },
+  {
+    "path": "source/juejin-android/2026-04-09-7582149417768812594-已有Flutter项目适配鸿蒙6.md",
+    "reason": "Flutter适配鸿蒙(重复)",
+    "score": 6
+  },
+  {
+    "path": "source/juejin-android/2026-04-06-75822463-Android全局悬浮拖拽视图.md",
+    "reason": "UI组件开发，非性能优化",
+    "score": 7
+  },
+  {
+    "path": "source/juejin-android/2026-04-06-75842953-Android15适配.md",
+    "reason": "Android 15适配，已过时(Android 17为当前)",
+    "score": 8
+  },
+  {
+    "path": "source/juejin-android/2026-04-06-75894620-Compose输入框.md",
+    "reason": "Compose输入框使用教程，无性能深度",
+    "score": 7
+  },
+  {
+    "path": "source/juejin-android/2026-04-06-75899034-聊聊2026年Android开发.md",
+    "reason": "行业展望，无技术深度",
+    "score": 7
+  },
+  {
+    "path": "source/juejin-android/2026-04-09-7589903499599347766-聊聊2026年Android开发.md",
+    "reason": "行业展望(重复)",
+    "score": 7
+  },
+  {
+    "path": "source/juejin-android/2026-04-06-75967106-调试布局.md",
+    "reason": "布局调试入门，无性能分析深度",
+    "score": 8
+  },
+  {
+    "path": "source/juejin-android/2026-04-09-7582469532326920228-豆包手机.md",
+    "reason": "豆包手机商业分析，非技术内容",
+    "score": 5
+  },
+  {
+    "path": "source/juejin-android/2026-04-09-7614897667961143347-AI写Android.md",
+    "reason": "AI写Android评测，非Android内部机制",
+    "score": 7
+  },
+  {
+    "path": "source/赵俊民技术简报/2026-01-16-赵俊民技术简报第一期AI系统工程.md",
+    "reason": "AI系统工程技术简报，非Android",
+    "score": 8
+  },
+  {
+    "path": "source/赵俊民技术简报/2026-01-28-赵俊民技术简报第二期英文.md",
+    "reason": "英文技术简报，非Android专项",
+    "score": 7
+  },
+  {
+    "path": "source/赵俊民技术简报/2026-03-03-赵俊民技术简报第三期.md",
+    "reason": "综合技术简报，非Android专项",
+    "score": 7
+  },
+  {
+    "path": "source/赵俊民技术简报/2026-04-05-赵俊民技术简报第四期.md",
+    "reason": "综合技术简报，非Android专项",
+    "score": 7
+  },
+  {
+    "path": "Claude Code 文档/README.md",
+    "title": "Claude Code 文档索引",
+    "reason": "Claude Code文档索引页，无Android性能内容",
+    "score": 8
+  },
+  {
+    "path": "Claude Code 文档/best-practices.md",
+    "title": "Claude Code 最佳实践",
+    "reason": "AI工具使用最佳实践，与AIW无关",
+    "score": 8
+  },
+  {
+    "path": "Claude Code 文档/chrome.md",
+    "title": "Chrome中使用Claude Code",
+    "reason": "浏览器集成，无Android相关",
+    "score": 7
+  },
+  {
+    "path": "Claude Code 文档/claude-code-on-the-web.md",
+    "title": "Claude Code on the web",
+    "reason": "Web版Claude Code，与AIW无关",
+    "score": 7
+  },
+  {
+    "path": "Claude Code 文档/cli-reference.md",
+    "title": "CLI参考",
+    "reason": "CLI命令参考，无Android性能内容",
+    "score": 8
+  },
+  {
+    "path": "Claude Code 文档/common-workflows.md",
+    "title": "常见工作流程",
+    "reason": "通用编码工作流，非Android性能",
+    "score": 8
+  },
+  {
+    "path": "Claude Code 文档/costs.md",
+    "title": "有效管理成本",
+    "reason": "Claude Code成本管理，与AIW无关",
+    "score": 6
+  },
+  {
+    "path": "Claude Code 文档/desktop.md",
+    "title": "Desktop使用指南",
+    "reason": "Desktop应用使用，无Android性能内容",
+    "score": 7
+  },
+  {
+    "path": "Claude Code 文档/features-overview.md",
+    "title": "扩展Claude Code",
+    "reason": "Claude Code扩展功能，与AIW无关",
+    "score": 8
+  },
+  {
+    "path": "Claude Code 文档/github-actions.md",
+    "title": "GitHub Actions集成",
+    "reason": "GitHub Actions CI/CD，与AIW无关",
+    "score": 7
+  },
+  {
+    "path": "Claude Code 文档/hooks.md",
+    "title": "Hooks参考",
+    "reason": "Hooks配置参考，与AIW无关",
+    "score": 7
+  },
+  {
+    "path": "Claude Code 文档/how-claude-code-works.md",
+    "title": "Claude Code工作原理",
+    "reason": "AI工具内部架构，与AIW无关",
+    "score": 8
+  },
+  {
+    "path": "Claude Code 文档/ide-integrations.md",
+    "title": "VS Code集成",
+    "reason": "IDE集成，与AIW无关",
+    "score": 7
+  },
+  {
+    "path": "Claude Code 文档/jetbrains.md",
+    "title": "JetBrains IDE集成",
+    "reason": "JetBrains集成含Android Studio，仅为IDE使用",
+    "score": 8
+  },
+  {
+    "path": "Claude Code 文档/legal-and-compliance.md",
+    "title": "法律和合规",
+    "reason": "法律合规文档，与AIW无关",
+    "score": 5
+  },
+  {
+    "path": "Claude Code 文档/mcp.md",
+    "title": "MCP协议",
+    "reason": "MCP工具集成协议，与AIW无关",
+    "score": 8
+  },
+  {
+    "path": "Claude Code 文档/memory.md",
+    "title": "Claude记忆系统",
+    "reason": "Claude记忆系统，与AIW无关",
+    "score": 8
+  },
+  {
+    "path": "Claude Code 文档/model-config.md",
+    "title": "模型配置",
+    "reason": "模型配置参考，与AIW无关",
+    "score": 7
+  },
+  {
+    "path": "Claude Code 文档/overview.md",
+    "title": "Claude Code概述",
+    "reason": "Claude Code概述，与AIW无关",
+    "score": 7
+  },
+  {
+    "path": "Claude Code 文档/permissions.md",
+    "title": "配置权限",
+    "reason": "权限配置，与AIW无关",
+    "score": 7
+  },
+  {
+    "path": "Claude Code 文档/quickstart.md",
+    "title": "快速开始",
+    "reason": "快速开始指南，与AIW无关",
+    "score": 6
+  },
+  {
+    "path": "Claude Code 文档/remote-control.md",
+    "title": "Remote Control",
+    "reason": "远程控制功能，与AIW无关",
+    "score": 6
+  },
+  {
+    "path": "Claude Code 文档/settings.md",
+    "title": "Claude Code设置",
+    "reason": "设置参考，与AIW无关",
+    "score": 7
+  },
+  {
+    "path": "Claude Code 文档/setup.md",
+    "title": "设置Claude Code",
+    "reason": "安装配置，与AIW无关",
+    "score": 7
+  },
+  {
+    "path": "Claude Code 文档/skills.md",
+    "title": "Skills扩展",
+    "reason": "Skills扩展系统，与AIW无关",
+    "score": 8
+  },
+  {
+    "path": "Claude Code 文档/sub-agents.md",
+    "title": "Subagents",
+    "reason": "Subagent系统，与AIW无关",
+    "score": 8
+  },
+  {
+    "path": "Claude Code 文档/third-party-integrations.md",
+    "title": "企业部署概述",
+    "reason": "企业部署集成，与AIW无关",
+    "score": 6
+  },
+  {
+    "path": "Claude Code 文档/抓取报告.md",
+    "title": "抓取报告",
+    "reason": "文档抓取元数据",
+    "score": 5
+  },
+  {
+    "path": "Android/技术文档库/知乎-赵君敏/00-主题导航-编译器-可靠性-性能-功耗.md",
+    "title": "主题导航索引页",
+    "reason": "索引导航页无实质内容",
+    "score": 8
+  },
+  {
+    "path": "Android/技术文档库/知乎-赵君敏/00-作者主页-知乎-zhao-jun-min-80.md",
+    "title": "作者主页元数据",
+    "reason": "作者信息元数据页",
+    "score": 6
+  },
+  {
+    "path": "Android/技术文档库/知乎-赵君敏/01-谈编程语言互操作---概述.md",
+    "title": "语言互操作概述",
+    "reason": "通用语言互操作概述偏编译器",
+    "score": 9
+  },
+  {
+    "path": "Android/技术文档库/知乎-赵君敏/02-谈编程语言互操作---C_C++-互操作机制.md",
+    "title": "C/C++互操作",
+    "reason": "C/C++互操作机制偏编译器",
+    "score": 9
+  },
+  {
+    "path": "Android/技术文档库/知乎-赵君敏/09-探索-Android-平台-ARM-unwind-技术---番外篇.md",
+    "title": "ARM unwind番外篇",
+    "reason": "番外篇补充内容",
+    "score": 10
+  },
+  {
+    "path": "Android/技术文档库/知乎-赵君敏/21-Performance-improvement-opportunities-in-the-open-source-C++-standard-libraries.md",
+    "title": "C++标准库性能改进",
+    "reason": "LLVM会议PDF偏编译器通用",
+    "score": 9
+  },
+  {
+    "path": "Android/技术文档库/知乎-赵君敏/22-Performance-Tuning-Future-Compiler-Improvements.md",
+    "title": "编译器性能调优",
+    "reason": "LLVM会议PDF偏编译器",
+    "score": 9
+  },
+  {
+    "path": "Android/技术文档库/知乎-赵君敏/23-Android-如何支持-Rust-程序.md",
+    "title": "Android Rust支持",
+    "reason": "Rust语言AOSP集成偏语言",
+    "score": 10
+  },
+  {
+    "path": "Android/技术文档库/知乎-赵君敏/README-索引.md",
+    "title": "赵君敏文章索引",
+    "reason": "索引页无实质内容",
+    "score": 6
+  },
+  {
+    "path": "Android/技术文档库/知乎-赵君敏/_notebooklm-import-log-20260224-143519.md",
+    "title": "NotebookLM导入日志",
+    "reason": "导入日志元数据",
+    "score": 5
+  },
+  {
+    "path": "Android/技术文档库/知乎-赵君敏/学习路线与重点问答-12周-NotebookLM.md",
+    "title": "12周学习路线",
+    "reason": "学习路线规划元数据",
+    "score": 9
   }
 ]
