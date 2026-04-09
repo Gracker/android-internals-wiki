@@ -1885,5 +1885,45 @@
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-09T08:31:00",
     "status": "pending"
+  },
+  {
+    "section": "2.5",
+    "section_title": "MainThread 与 RenderThread 协作",
+    "priority": 95,
+    "reason": "[Deep Tech Review] applicable_versions frontmatter 严重失实：声明 API 31-37，但正文版本演进表以 API 21 开头，且多处讨论 5.0-10.0 版本差异",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "版本差异",
+        "location": "frontmatter applicable_versions",
+        "detail": "声明 'Android 12 (API 31) - Android 17 (API 37)'，但章节正文从 Android 5.0 (API 21) 开始覆盖，版本演进表亦以 API 21 为首行",
+        "suggestion": "修正为 'Android 5.0 (API 21) - Android 17 (API 37)'，并同步修正 last_verified 覆盖范围"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-09T09:34:14",
+    "status": "pending"
+  },
+  {
+    "section": "2.5",
+    "section_title": "MainThread 与 RenderThread 协作",
+    "priority": 95,
+    "reason": "[Deep Tech Review] syncAndDrawFrame() 源码路径标注不准确：Java 代码块展示的是 native 方法的简化封装，而非真正的 Java 层实现",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "ThreadedRenderer.java 代码块及注释",
+        "detail": "代码展示 'syncAndDrawFrame(frameInfo)' 为 Java 层调用，但该方法在 AOSP 中是 @CriticalNative JNI 方法（ThreadedRenderer.cpp），Java 层仅为 thin wrapper。当前展示方式可能误导读者认为这是一个纯 Java API。",
+        "suggestion": "区分 Java 层签名和 native 实现，或补充 JNI 跳板说明：'syncAndDrawFrame() 是 JNI 方法，最终调用 RenderThread.cpp 中的 DrawFrameTask::syncFrameState()'"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-09T09:34:14",
+    "status": "pending"
   }
 ]
