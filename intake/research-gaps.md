@@ -260,3 +260,19 @@ Android 16 模块数量的具体数字未给出。章节提到"超过 50 个模�
 
 ### 关联章节
 2.2（帧率与刷新率）, 2.6（SurfaceFlinger 与合成）, 2.9（渲染机制版本演进）, 17.2（SoC 平台差异）
+
+## [2026-04-09] 2.5 MainThread 与 RenderThread 协作 — DisplayList 同步机制未揭示
+
+### 盲区描述
+正文描述了 SyncFrameState 的四个步骤（等待上一帧、DisplayList 同步、Bitmap 上传GPU、释放主线程），但对"DisplayList 数据如何从 MainThread 转移到 RenderThread"只用了"引用计数和资源所有权转移"这种黑盒描述。实际上这个转移依赖 GraphicBuffer 共享 + Asynchronous Fence 机制，是理解 syncFrameState 性能瓶颈的关键。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 追溯 DrawFrameTask::syncFrameState() C++ 实现，搞清楚 DisplayList 数据（哪些是共享内存引用，哪些是真正需要拷贝的数据）
+- 分析 Bitmap/GraphicBuffer 跨线程传递的 Fence 依赖（acquireFence/releaseFence）在 sync 阶段的时序
+- 量化 DisplayList sync 的耗时构成：引用传递 vs 数据拷贝 vs Fence 等待各占多少
+
+### 关联章节
+2.5（主章节）、2.16（Sync Fence 框架）、2.15（DMA-BUF/Gralloc）

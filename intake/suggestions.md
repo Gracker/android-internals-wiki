@@ -1274,3 +1274,27 @@ tags:
 - 专注于现有 7 个 draft 章节的加工（1.4/1.14/2.13/3.5/3.6/6.3/13.7/17.3）
 - 推进 89 个 ready-for-review 章节的精修和审查
 - FRESHNESS 队列 55 条时效性更新待处理
+
+## [Task9 Deep Review] 2.5 MainThread 与 RenderThread 协作 — 2026-04-09
+- **类型**：源码准确性
+- **位置**：ThreadedRenderer.java 代码块注释
+- **问题**：`flushCommands` 切片在代码注释中被归为 CanvasContext.cpp，但实际上 pipeline flush 的核心实现在 RenderThread.cpp 中，CanvasContext 是在其上层的 Pipeline 调用。
+- **建议**：将注释改为 "对应 Perfetto 中的 flushCommands（RenderThread.cpp 侧）"
+
+## [Task9 Deep Review] 2.5 MainThread 与 RenderThread 协作 — 2026-04-09
+- **类型**：版本差异
+- **位置**：版本演进表 - Android 6.0 / Android 7.0 行
+- **问题**：FrameMetrics 标注为 "Android 7.0 (API 24)"，但 API 23 和 API 24 是两个不同 API Level；另 "RenderThread 动画支持扩展" 描述不够精确（API 23 实际是 ViewPropertyAnimator 扩展支持）。
+- **建议**：统一为 API Level 表述；API 23 行改为 "ViewPropertyAnimator 扩展支持"；API 24 行改为 "FrameMetrics API（API 24）正式引入"
+
+## [Task9 Deep Review] 2.5 MainThread 与 RenderThread 协作 — 2026-04-09
+- **类型**：数据缺失
+- **位置**：Perfetto 示例 Trace 时序图（measure/layout 2-5ms 等）
+- **问题**：时序图中的耗时标注为示意性数据，非实测。读者可能误以为是实际设备 Trace 测量值。
+- **建议**：在时序图开头加注 "以下为 60Hz 设备典型值示意，实际耗时因设备而异"，或将具体数字标注为 "示例值"
+
+## [Task9 Deep Review] 2.5 MainThread 与 RenderThread 协作 — 2026-04-09
+- **类型**：知识盲区
+- **位置**：RenderThread 调度优先级未覆盖
+- **问题**：正文未说明 RenderThread 的调度策略（SCHED_FIFO/SCHED_RR/SCHED_NORMAL）与主线程的对比。了解调度优先级对分析"主线程繁忙时 RenderThread 是否被抢占"至关重要。
+- **建议**：补充 RenderThread 线程优先级设置及其对渲染流水线稳定性的影响

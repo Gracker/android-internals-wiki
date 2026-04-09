@@ -1,9 +1,9 @@
 {
-  "last_scan_time": "2026-04-09T08:15:00",
+  "last_scan_time": "2026-04-09T09:15:00",
   "scanned_files": 4575,
-  "total_files": 4575,
+  "total_files": 4878,
   "indexed_files": 396,
-  "current_directory": "知识库",
+  "current_directory": "调研",
   "current_offset": 0,
   "priority_queue": [],
   "completed_directories": [
@@ -16,5 +16,5 @@
     "OpenClaw定时任务"
   ],
   "last_scan_batch": 1,
-  "status": "completed"
+  "status": "in_progress"
 }
