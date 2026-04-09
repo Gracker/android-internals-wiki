@@ -1,10 +1,11 @@
 ---
 title: "系统启动全流程"
 chapter: "1.2"
-status: ready-for-review
+status: ready-to-publish
 section: "1.2"
-reviewed_date: "2026-04-05"
+reviewed_date: "2026-04-10"
 reviewed_by: openclaw-task6
+review_type: post-polish-quality-gate
 drafted_date: "2026-03-30"
 drafted_by: openclaw-task2a
 review_v2_fix: "误区 section boot_completed 事件描述修正 + 事件排序对齐"
