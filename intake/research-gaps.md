@@ -437,3 +437,39 @@ Java MessageQueue 的 native 层协调：DeliQueue 是否完全在 Java 层实�
 ### 建议研究方向
 - 研读 AOSP android-17 的 frameworks/base/core/jni/ 相关 native 代码
 - 确认 nativeWake/nativePollOnce pair 在 DeliQueue 架构下是否保留
+
+
+## [2026-04-10] 2.4 Choreographer 与渲染流水线 — FrameMetrics GPU Duration 可用性
+
+### 盲区描述
+章节行305-306展示了 `FrameMetrics.METRIC_GPU_DURATION`，但在部分 Android 设备（尤其是联发科早期芯片、模拟器、部分定制 ROM）上，该 metric 返回 0 或不可用——因为 GPU 渲染耗时的采集需要 GPU 时钟计数器硬件支持，并非所有设备都实现了此功能。章节未对此加以说明，读者可能会在真实项目中遇到"FrameMetrics 返回的 GPU 耗时全是 0"的困惑。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 调研 AOSP 中 `FrameMetrics.GPU_DURATION` 的实现条件（需要 GPU 驱动支持）
+- 整理已知不支持该 metric 的芯片/设备列表
+- 补充条件性说明（"在支持 GPU 时钟计数器的设备上可用"）
+- 如无法获取 GPU 耗时，推荐替代方案：Perfetto 的 `gpu_freq` track 或 `gpu_mem` track
+
+### 关联章节
+§2.9（FrameMetrics API 演进）、§2.4（本节）
+
+---
+
+## [2026-04-10] 2.4 Choreographer 与渲染流水线 — Frame Timeline 缺实际 Trace 示例
+
+### 盲区描述
+Frame Timeline（帧时间线）是 Android 13（API 33）引入的 Choreographer 核心机制，也是理解"doFrame 耗时超预算≠用户感知卡顿"这一重要结论的关键。章节已描述其作用，但缺少一个真实的 Perfetto trace 可视化示例，导致读者无法直观理解"App 期望的帧时间线"vs."SurfaceFlinger 实际呈现的时间线"之间的差异。这对于实际性能分析工作有较大影响。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 获取一个真实设备的 Perfetto trace（推荐：掉帧场景 vs. 流畅场景各一份）
+- 截取 Frame Timeline Track 的关键片段，标注：VSYNC-app 竖线、App selected timeline（虚线）、SF actual timeline（实线）、frame deadline
+- 对比说明：什么情况下 App timeline 超过了 deadline 但 SF 仍能准时呈现？什么情况下 doFrame 超时但用户未感知卡顿？
+
+### 关联章节
+§2.3（VSync 机制）、§2.4（本节）、§2.6（SurfaceFlinger 合成）
