@@ -2,11 +2,14 @@
 title: "APK 体积优化"
 section: "12.1"
 chapter: "12.1"
-status: finalized
+status: ready-for-review
 drafted_date: "2026-04-03"
 drafted_by: "openclaw-task2a"
 reviewed_date: "2026-04-10"
 reviewed_by: "openclaw-task6"
+polish_count: 1
+polish_date: "2026-04-10"
+polish_by: "task2b-polish"
 applicable_versions: "Android 8 (API 26) - Android 16 (API 36)"
 last_verified: "2026-04-03"
 last_verified_against: "AGP 8.7 / R8 default"
@@ -16,39 +19,17 @@ sources:
     path: "https://developer.android.com/topic/performance/reduce-apk-size"
   - type: official
     path: "https://developer.android.com/build/shrink-code"
-  - type: blog
+  - type: official
     path: "https://developer.android.com/build/app-bundle"
-tags: [apk, r8, proguard, app-bundle, resource-optimization, native-libs]
+  - type: official
+    path: "https://developer.android.com/guide/playcore/feature-delivery"
+  - type: blog
+    path: "得物技术《包体积：Layout 二进制文件裁剪优化》2023-09"
+tags: [apk, r8, proguard, app-bundle, resource-optimization, native-libs, dex, code-shrinking, webp, abi-filter, dynamic-feature, apk-analyzer]
 related_chapters: ["8.3", "14.1", "15.6"]
 ---
 
 # APK 体积优化
-
-<!-- outline-start -->
-## 本节要点大纲
-
-### 锚点（必须覆盖）
-
-- 🔹 APK 组成分析：dex、resources、assets、native libraries、META-INF
-- 🔹 APK Analyzer（Android Studio）的使用方法
-- 🔹 代码瘦身：R8 / ProGuard 配置、移除无用代码、减少方法数
-- 🔹 资源瘦身：WebP 替换 PNG、资源混淆、按需下载
-- 🔹 Native 库瘦身：ABI 过滤、动态下发 so、strip 符号表
-- 🔹 App Bundle 与 Dynamic Feature Module
-
-### 扩展（可选深入）
-
-- 🔸 Baseline Profile 对 APK 体积的影响
-- 🔸 各大 App 的包体积优化实践数据
-
-### OpenClaw 加工指引
-
-> **锚点**是最低覆盖要求，加工时必须逐条落实并标注验证结果。
-> **扩展**视素材丰富程度选择性深入。
-> 如果从 Obsidian 素材或 AOSP 源码中发现大纲未列出但与本节强相关的知识点，
-> 可**就地插入**最相关的锚点之后，并用 `[自动发现]` 标注，方便后续 review。
-> 锚点内容需 L1/L2 验证，扩展内容至少 L2 验证，自动发现内容至少标注来源。
-<!-- outline-end -->
 
 ## 为什么要关注 APK 体积
 
@@ -78,7 +59,7 @@ related_chapters: ["8.3", "14.1", "15.6"]
 
 `AndroidManifest.xml` 是编译后的二进制清单文件，描述了 App 的组件、权限、SDK 版本等信息。
 
-理解这个结构是优化体积的前提。因为不同类型的文件，优化策略完全不同——dex 的优化靠代码缩减和混淆，res 的优化靠资源压缩和格式替换，lib 的优化靠 ABI 过滤和动态下发。**不加区分地对整个 APK 做「压缩」是无效的**——APK 内部的某些条目（如 dex、so）已经是压缩格式，再压缩不会减小体积，反而会增加安装时的解压开销。
+理解这个结构是优化体积的前提。不同类型的文件需要完全不同的优化策略：dex 靠代码缩减和混淆，res 靠资源压缩和格式替换，lib 靠 ABI 过滤和动态下发。**不加区分地对整个 APK 做「压缩」是无效的**——dex 和 so 已经是压缩格式，再压缩不会减小体积，反而增加安装时的解压开销。
 
 ## APK Analyzer：先测量，再优化
 
@@ -377,9 +358,9 @@ bundletool get-size total --apks=app.apks \
 
 ## 与其他章节的关系
 
-APK 体积优化不是孤立的主题。代码瘦身（R8）不仅减小 dex 体积，还能通过方法内联和类合并提升运行时性能——这与第 8 章「响应速度」中讨论的启动优化直接相关。Native 库的大小和加载方式影响着冷启动时的 `dlopen` 耗时，可以在 Perfetto 的主线程 track 中观察到。资源优化则和第 4 章「内存管理」有关——加载一张 oversized 的图片不仅浪费存储，还浪费运行时内存。
+APK 体积优化不是孤立的主题。代码瘦身（R8）不仅减小 dex 体积，还能通过方法内联和类合并提升运行时性能——这与 §8.3 中讨论的启动优化直接相关。Native 库的大小和加载方式影响着冷启动时的 `dlopen` 耗时，可以在 Perfetto 的主线程 track 中观察到。资源优化则和 §4.1 内存管理有关——加载一张 oversized 的图片不仅浪费存储，还浪费运行时内存。
 
-工具层面，APK Analyzer 的使用技能与第 14 章「其他性能工具」中的 Android Studio Profiler 互补。持续集成中的体积门禁，则是第 15 章「方法论」中自动化监控理念的具体实践。
+工具层面，APK Analyzer 的使用技能与 §14.1 中的 Android Studio Profiler 互补。持续集成中的体积门禁，则是 §15.6 自动化监控理念的具体实践。
 
 ## 扩展：Baseline Profile 对体积的影响
 

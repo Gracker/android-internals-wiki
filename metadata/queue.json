@@ -2224,7 +2224,10 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-10T01:42:08",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-10T01:45:06.099947",
+    "completed_by": "task2b-rework",
+    "notes": "Task 9 误报: §2.1 (01-rendering-overview.md) 和 §2.6 (06-surfaceflinger.md) 均存在于 progress.json sections/reviewed_sections 和文件系统中，交叉引用正确无需修改"
   },
   {
     "section": "2.12",
@@ -2244,6 +2247,9 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-10T01:42:08",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-10T01:45:06.099947",
+    "completed_by": "task2b-rework",
+    "notes": "Task 9 误报: §2.1 (01-rendering-overview.md) 和 §2.6 (06-surfaceflinger.md) 均存在于 progress.json sections/reviewed_sections 和文件系统中，交叉引用正确无需修改"
   }
 ]
