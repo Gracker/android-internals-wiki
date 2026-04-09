@@ -9285,6 +9285,127 @@
       ],
       "summary": "快手OOM监控解决方案，包含Java/Native内存泄漏和线程泄漏监控",
       "scored_at": "2026-04-09T22:59:42.816963"
+    },
+    {
+      "title": "Unified Analysis: Android Performance-Power-Thermal Optimization Experiment",
+      "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-18-02-性能功耗热优化/stage-14/analysis.md",
+      "score": 12,
+      "quality": "medium",
+      "chapters": [
+        "ch13-调度",
+        "ch06-功耗"
+      ],
+      "relevance": 3,
+      "technical": 5,
+      "timeliness": 1,
+      "verifiability": 3,
+      "scored_at": "2026-04-10T00:10:30.305172"
+    },
+    {
+      "title": "Experimental Methodology Audit: Android Performance-Power-Thermal Optimization",
+      "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-18-02-性能功耗热优化/stage-14/perspectives/methodologist.md",
+      "score": 12,
+      "quality": "medium",
+      "chapters": [
+        "ch13-调度",
+        "ch06-功耗"
+      ],
+      "relevance": 3,
+      "technical": 5,
+      "timeliness": 1,
+      "verifiability": 3,
+      "scored_at": "2026-04-10T00:10:30.305182"
+    },
+    {
+      "title": "SMART Research Goal: Android Performance, Power, and Thermal Optimization Research",
+      "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-18-03-性能功耗热优化/stage-01/goal.md",
+      "score": 14,
+      "quality": "medium",
+      "chapters": [
+        "ch13-调度",
+        "ch06-功耗"
+      ],
+      "relevance": 4,
+      "technical": 4,
+      "timeliness": 3,
+      "verifiability": 3,
+      "scored_at": "2026-04-10T00:10:30.305184"
+    },
+    {
+      "title": "Android 热管理：CPU 频率调节策略对温度和性能的平衡 - 文献综合",
+      "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-18-热管理与CPU频率/stage-07/synthesis.md",
+      "score": 11,
+      "quality": "medium",
+      "chapters": [
+        {
+          "id": "ch06-功耗",
+          "confidence": "medium"
+        },
+        {
+          "id": "ch13-调度",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "热管理研究文献综合，涉及Android安全、benchmark框架与热管理策略的间接关联，内容部分偏题",
+      "scored_at": "2026-04-10T00:19:05.455180"
+    },
+    {
+      "title": "Android Thermal Management 实验统一分析",
+      "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-18-热管理与CPU频率/stage-14/analysis.md",
+      "score": 11,
+      "quality": "medium",
+      "chapters": [
+        {
+          "id": "ch06-功耗",
+          "confidence": "high"
+        },
+        {
+          "id": "ch13-调度",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Android热管理实验分析报告，涵盖温度降低目标、性能维持约束及实验失败原因",
+      "scored_at": "2026-04-10T00:19:05.455191"
+    },
+    {
+      "title": "TEMP: Adaptive Thermal Management 论文大纲",
+      "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-18-热管理与CPU频率/stage-16/outline.md",
+      "score": 12,
+      "quality": "medium",
+      "chapters": [
+        {
+          "id": "ch06-功耗",
+          "confidence": "high"
+        },
+        {
+          "id": "ch13-调度",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Android自适应热管理论文大纲，聚焦CPU频率调节策略的温度-性能平衡",
+      "scored_at": "2026-04-10T00:19:05.455196"
+    },
+    {
+      "title": "APT: Unified Performance-Power-Thermal 论文大纲",
+      "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-18-03-性能功耗热优化/stage-16/outline.md",
+      "score": 12,
+      "quality": "medium",
+      "chapters": [
+        {
+          "id": "ch06-功耗",
+          "confidence": "high"
+        },
+        {
+          "id": "ch05-渲染",
+          "confidence": "low"
+        },
+        {
+          "id": "ch13-调度",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "统一性能功耗热优化论文大纲，提出三资源联合优化框架",
+      "scored_at": "2026-04-10T00:19:05.455198"
     }
   ]
 }

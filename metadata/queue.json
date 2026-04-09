@@ -1966,6 +1966,24 @@
         "location": "frontmatter applicable_versions字段",
         "detail": "声明\"Android 4.4 (API 19) - Android 16 (API 36)\"，但正文未明确标注版本与API的对应关系，可能造成读者混淆",
         "suggestion": "在正文中明确标注版本号与API Level的对应关系，或在frontmatter中补充说明"
+      },
+      {
+        "type": "源码错误",
+        "location": "L67",
+        "detail": "章节称'从 5.0 开始，Dalvik 被移除，ART 成为唯一的运行时'。经核查 AOSP 和官方文档，Dalvik 在 Android 5.0 (API 21) 仍作为运行时选项存在，直至 Android 5.1 (API 22) 才彻底移除。",
+        "suggestion": "修正为：'从 Android 5.0 开始，ART 成为默认运行时（Dalvik 仍备用），直至 Android 5.1 才彻底移除 Dalvik'"
+      },
+      {
+        "type": "源码错误",
+        "location": "L69",
+        "detail": "章节称'Zygote 也因此有了 zygote64 和 zygote 两个进程'。经核查 AOSP，Android 5.0 只有 zygote64。32 位 Zygote 独立进程出现于 Android 10。",
+        "suggestion": "删除关于两个 Zygote 进程的描述，或明确'此时仅有 zygote64（32 位 Zygote 独立进程出现于 Android 10）'"
+      },
+      {
+        "type": "源码错误",
+        "location": "L68",
+        "detail": "章节称'寄存器数量翻倍（从 16 个通用寄存器增加到 31 个）'。ARMv7→ARMv8 的整数寄存器是 16→31（约1.9x），翻倍应指 SIMD 寄存器（16→32）。",
+        "suggestion": "修正为：'SIMD 寄存器翻倍（16→32）'；整数寄存器变化表述为'31 个通用整数寄存器（r0-r15 → x0-x30）'"
       }
     ],
     "added_by": "task9-deep-tech-review",
@@ -2147,6 +2165,38 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-09T23:27:00",
+    "status": "pending"
+  },
+  {
+    "section": "1.6",
+    "section_title": "Android 版本演进中的架构变化",
+    "priority": 90,
+    "reason": "[Deep Tech Review] 3 处 P1 源码/事实错误：Android 5.0 Dalvik 移除时间错误、Zygote 进程数错误、ARMv8 寄存器数量描述不准确",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "L67",
+        "detail": "章节称'从 5.0 开始，Dalvik 被移除，ART 成为唯一的运行时'。经核查 AOSP 和官方文档，Dalvik 在 Android 5.0 (API 21) 仍作为运行时选项存在，直至 Android 5.1 (API 22) 才彻底移除。这是 Android 5.0 与 5.1 之间的重要版本差异，错误表述会使读者混淆。",
+        "suggestion": "修正表述为：'从 Android 5.0 开始，ART 成为默认运行时（Dalvik 仍作为备用选项存在），直至 Android 5.1 才彻底移除 Dalvik'"
+      },
+      {
+        "type": "源码错误",
+        "location": "L69",
+        "detail": "章节称'Zygote 也因此有了 zygote64 和 zygote 两个进程'。经核查 AOSP，Android 5.0 Lollipop 只有 zygote64 一个 Zygote 进程。32 位 Zygote 作为独立进程出现是在 Android 10（因 32 位 App 支持受限才分离）。此错误将 Android 5.0 和 Android 10 的架构变化混为一谈。",
+        "suggestion": "删除关于 zygote 和 zygote64 两个进程的描述，或明确标注'此时仅有 zygote64 进程（32 位 Zygote 作为独立进程出现于 Android 10）'"
+      },
+      {
+        "type": "源码错误",
+        "location": "L68",
+        "detail": "章节称'寄存器数量翻倍（从 16 个通用寄存器增加到 31 个）'。ARMv7 有 16 个通用整数寄存器（r0-r15），ARMv8 有 31 个通用整数寄存器（x0-x30），增加约 1.9 倍而非翻倍（2x）。寄存器数量翻倍的准确描述应指 SIMD/NEON 寄存器（ARMv7 的 16 个 q 寄存器到 ARMv8 的 32 个 v 寄存器）。",
+        "suggestion": "修正为：'SIMD 寄存器数量翻倍（从 16 个增加到 32 个）'；若要描述整数寄存器变化，表述为'31 个通用整数寄存器（r0-r15 → x0-x30）'"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-10T00:30:00",
     "status": "pending"
   }
 ]

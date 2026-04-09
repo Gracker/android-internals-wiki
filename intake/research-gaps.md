@@ -362,3 +362,19 @@ MTE（Memory Tagging Extension）的硬件依赖性未被明确说明。MTE 需�
 
 ### 关联章节
 4.6（内存相关的版本演进）、4.3（ART 虚拟机内存管理）
+
+## [2026-04-10] 1.6 Android 版本演进中的架构变化 — 知识盲区
+
+### 盲区描述
+Android 16 代号（"Baklava" vs "Vanilla Ice Cream"）与 API 版本（35 vs 36）在章节内存在矛盾，同时 64 位过渡的完整时间线（Android 5.0 → Android 10）未在章节中完整呈现。Android 甜点代号规律（字母顺序）也未作解释，读者无法自行判断未来版本。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 核实 Android 16 正式代号和 API Level（需查阅 Google 官方 Android 16 发布公告）
+- 梳理 Android 64 位过渡完整时间线：5.0（64 位支持引入）→ 10（32 位受限/分离 zygote）→ 14（64 位强制）
+- 研究 Android 代号甜点字母顺序规律及其对性能分析的参考价值
+
+### 关联章节
+1.4（Binder IPC）、1.7（ART 编译管线）、5.6（Android 功耗管理）、4.6（内存版本演进）

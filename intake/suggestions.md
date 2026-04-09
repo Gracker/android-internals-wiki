@@ -116,3 +116,25 @@
 - **位置**：Impeller 引擎部分
 - **问题**：Skia（immediate mode）与 Impeller（tile-based partial repaint）的渲染架构根本差异未展开，读者难以理解 Impeller 在复杂场景的优势来源
 - **建议**：补充 Impeller tile-based 渲染策略与 Skia immediate mode 的架构对比，解释 partial repaint 对帧率的积极影响
+
+## [Task9 Deep Review] 1.6 Android 版本演进中的架构变化 — 2026-04-10
+
+- **类型**：版本差异 / 知识盲区
+- **位置**：L113（hwbinder 描述）
+- **问题**：章节称"hwbinder 调用通常涉及硬件操作，延迟更高"。hwbinder 的核心特征不是"高延迟"，而是"跨进程边界但比 binder 更轻量"。延迟特征取决于具体 HAL 操作，不能一概而论。
+- **建议**：修正描述为"hwbinder 是 Framework 与 HAL 层之间的 IPC 机制，相比 binder 更轻量，适用于硬件操作的跨进程通信"
+
+- **类型**：版本差异
+- **位置**：L158（Perfetto 版本差异表）
+- **问题**：Android 16 代号（"Baklava"）与 applicable_versions 中"Android 16 (API 36)"存在矛盾，且与正文 L152 "Baklava" vs "Vanilla Ice Cream" 的另一处引用形成内部不一致。API 36 尚未正式发布（Android 16 为 API 35）。
+- **建议**：统一 Android 16 的代号标注（建议标注 [待验证]），修正 applicable_versions 为 API 35，并将两处代号引用合并为一致描述
+
+- **类型**：数据缺失
+- **位置**：L123（ART Mainline 模块存储节省数据）
+- **问题**：章节引用"Google 称这些优化为全球超过 10 亿台设备节省了约 47-95 PB 的存储空间"，但来源是脚注 obsidian 素材而非原始 Google 博客链接。
+- **建议**：补充原始 Google 官方博客链接，或添加 [待验证: 来源待查] 标注
+
+- **类型**：交叉引用 / 元数据
+- **位置**：frontmatter related_chapters
+- **问题**：related_chapters 列出的 8 个章节中，1.4、1.7、5.6 仍为 ready-for-review 状态，2.9 已升至 ready-to-publish。出版前需确认这些章节的状态。
+- **建议**：出版前逐一验证 related_chapters 中每个章节的实际状态和章节号/名称是否匹配
