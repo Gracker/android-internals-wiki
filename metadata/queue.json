@@ -1631,6 +1631,18 @@
         "detail": "tombstoning 机制是 DeliQueue 数据一致性的核心，但正文描述不够清晰：具体是什么操作会触发 tombstone 标记？是消息被主动移除（removeCallbacks/removeMessages）时标记，还是 Looper 从栈中 pop 时标记？tombstone 消息最终在哪里被跳过？这个机制如果不讲清楚，读者无法理解为何栈和堆的数据迁移是安全的",
         "suggestion": "补充 tombstoning 的具体触发时机和处理流程（可标注 [待验证 AOSP 源码]）",
         "dimension": "知识盲区"
+      },
+      {
+        "type": "源码错误",
+        "location": "frontmatter last_verified_against",
+        "detail": "章节核心内容是 Android 17 DeliQueue，但验证依据标注为 android-16.0.0_r1（不含 DeliQueue）",
+        "suggestion": "待 AOSP android-17 正式 tag 后补充源码路径；frontmatter 增加 DeliQueue 源码未验证的说明"
+      },
+      {
+        "type": "源码错误",
+        "location": "全文 DeliQueue 核心实现（Triber 栈/drain/tombstoning）",
+        "detail": "所有 DeliQueue 核心逻辑（Treiber 栈、drain、tombstoning）均无 AOSP 源码引用，仅依赖 Google 博客",
+        "suggestion": "AOSP android-17 发布后补充 frameworks/base/core/java/android/os/DeliQueue.java 或对应 MessageQueue.java 的 DeliQueue 段落"
       }
     ],
     "added_by": "task9-deep-tech-review",

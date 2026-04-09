@@ -414,3 +414,26 @@ Android 7.0 引入的 Direct Boot 机制让设备在锁屏状态下部分 App �
 
 ### 关联章节
 1.1（Android 分层架构）, 1.3（进程模型与生命周期管理）, 8.2（App 启动全流程）
+
+
+## [2026-04-10] 1.13 MessageQueue 机制与 DeliQueue 无锁优化 — 知识盲区
+
+### 盲区描述
+DeliQueue 中同步屏障（SyncBarrier）与 drain/堆机制的交互：VSync 异步消息在 DeliQueue 架构下如何保证优先级？drain 后同步屏障还按原有逻辑扫描消息吗？tombstoning 是否影响异步消息？
+
+### 重要程度
+高
+
+### 建议研究方向
+- 找到 AOSP android-17 MessageQueue.java 中 DeliQueue 模式的 next() 实现，核对同步屏障分支
+- 确认 VSync 回调消息（FrameDisplayEventReceiver）在 DeliQueue 模式下的入队路径
+
+### 盲区描述
+Java MessageQueue 的 native 层协调：DeliQueue 是否完全在 Java 层实现？还是也涉及 native MessageQueue 的改造？nativePollOnce 在 DeliQueue 感知新消息时是否仍有相同作用？
+
+### 重要程度
+中
+
+### 建议研究方向
+- 研读 AOSP android-17 的 frameworks/base/core/jni/ 相关 native 代码
+- 确认 nativeWake/nativePollOnce pair 在 DeliQueue 架构下是否保留
