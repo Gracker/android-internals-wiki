@@ -2052,8 +2052,10 @@
     ],
     "added_by": "task6-review",
     "added_at": "2026-04-09T18:23:45",
-    "status": "pending",
-    "original_review_log": "logs/review/2026-04-09-18-review.md"
+    "status": "completed",
+    "original_review_log": "logs/review/2026-04-09-18-review.md",
+    "completed_at": "2026-04-09T10:51:30",
+    "completed_by": "task2b-rework"
   },
   {
     "section": "1.7",
@@ -2073,6 +2075,9 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-09T18:35:46",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-09T10:51:30",
+    "completed_by": "task2b-rework",
+    "notes": "Task 9 误报: dalvik.vm.jitthreshold 确实被 ART 读取（AndroidRuntime.cpp 解析 → -Xjitthreshold: → JitOptions），已补充 \"dalvik.vm.\" 前缀为 Dalvik 遗留命名的说明"
   }
 ]

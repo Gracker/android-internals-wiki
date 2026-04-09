@@ -88,7 +88,7 @@ Android 16 引入了云编译（Cloud Compilation）系统，Google Play 可以�
 
 ### 方法热度追踪
 
-ART 为每个方法维护一个"热度计数器"（hotness counter）。这个计数器跟踪方法的调用次数和后向分支（循环）次数。当计数器超过阈值（`dalvik.vm.jitthreshold`，默认 10000）时，该方法成为 JIT 编译候选。
+ART 为每个方法维护一个"热度计数器"（hotness counter）。这个计数器跟踪方法的调用次数和后向分支（循环）次数。当计数器超过阈值时，该方法成为 JIT 编译候选。阈值通过系统属性 `dalvik.vm.jitthreshold` 配置，默认值为 10000。注意：这个属性的 `dalvik.vm.` 前缀是 Dalvik 时代的遗留命名，但 ART 运行时仍然读取它——`AndroidRuntime.cpp` 将其解析为 `-Xjitthreshold:` 运行时参数，最终设置到 ART 内部的 `hot_method_threshold_`（art/runtime/jit/jit.cc）。
 
 ```java
 // AOSP art/runtime/jit/jit.cc（简化示意）
@@ -107,7 +107,7 @@ bool Jit::MaybeDoJitCompilation(ArtMethod* method) {
 
 JIT 编译后的机器码存放在代码缓存（JIT code cache）中。这个缓存的大小可配置：
 
-- 初始大小：`dalvik.vm.jitinitialsize`，默认 64KB
+- 初始大小：`dalvik.vm.jitinitialsize`，默认 64KB（同属 Dalvik 遗留前缀，ART 仍读取）
 - 最大容量：`dalvik.vm.jitmaxsize`，默认 64MB
 
 代码缓存会进行垃圾回收——当空间不足时，最早编译且不再被调用的方法会被清除。在实际的大型应用中，JIT 代码缓存的内存占用通常稳定在 4MB 左右。[待验证: 此数值为工程经验值，需在不同设备/应用规模下验证] 这不会对前台应用的内存造成显著压力。
