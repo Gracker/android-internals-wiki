@@ -2106,6 +2106,9 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-09T19:40:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-09T19:58:24",
+    "completed_by": "task2b-rework",
+    "notes": "修复 Scudo 路径 (system/memory/libmemunreachable/scudo/ → external/scudo/standalone/) 和 CMC GC 路径 (concurrent_mark_compact.cc → mark_compact.cc)"
   }
 ]
