@@ -12,8 +12,8 @@
     "processing": 0,
     "ready-to-publish": 16,
     "last_reviewed": "2026-04-10",
-    "last_reviewed_section": "12.1 APK 体积优化",
-    "reviewed_today": 14
+    "last_reviewed_section": "2.10 GPU 渲染深入",
+    "reviewed_today": 15
   },
   "reviewed_sections": {
     "8.1": {
@@ -258,14 +258,26 @@
       ]
     },
     "2.10": {
-      "reviewed_date": "2026-04-04",
+      "reviewed_date": "2026-04-10",
       "reviewed_by": "openclaw-task6",
-      "review_status": "ready-to-publish",
-      "review_round": 3,
+      "review_status": "finalized",
+      "review_type": "post-rework-review",
+      "review_round": 4,
       "fixes_applied": [
-        "frontmatter: status ready-for-review → ready-to-publish（精修质检终审通过）",
-        "frontmatter: reviewed_date → 2026-04-04, review_round → 3"
-      ]
+        "禁用词修正：「显著降低」→「一个数量级的差距」（writing-guide §九）",
+        "禁用词修正：「大幅减少」→「减少」（writing-guide §九 模糊形容词）",
+        "模糊形容词：「相当可观」→「不容忽视」（writing-guide §九）",
+        "元数据：补 drafted_by 字段",
+        "元数据：修正 chapter 字段（2.10→2）",
+        "状态：ready-for-review → finalized（review round 4）"
+      ],
+      "scores": {
+        "structure": 5,
+        "expression": 5,
+        "consistency": 5,
+        "verification": 4,
+        "metadata": 5
+      }
     },
     "5.4": {
       "reviewed_date": "2026-04-03",
@@ -2565,6 +2577,22 @@
     }
   ],
   "history": [
+    {
+      "date": "2026-04-10",
+      "section": "2.10",
+      "title": "GPU 渲染深入",
+      "action": "reviewed-finalized",
+      "review_by": "openclaw-task6",
+      "review_round": 4,
+      "fixes": 6,
+      "scores": {
+        "structure": 5,
+        "expression": 5,
+        "consistency": 5,
+        "verification": 4,
+        "metadata": 5
+      }
+    },
     {
       "date": "2026-04-10",
       "section": "12.1",
