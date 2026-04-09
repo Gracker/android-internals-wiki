@@ -9165,6 +9165,126 @@
       ],
       "summary": "AI Agent记忆系统优化实践，三层记忆架构，含性能与内存管理相关经验",
       "scored_at": "2026-04-09T19:34:28.388692"
+    },
+    {
+      "title": "后台任务调度与电池 - 研究综合",
+      "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-17-后台任务调度与电池/stage-07/synthesis.md",
+      "score": 12,
+      "quality": "medium",
+      "chapters": [
+        "ch06-功耗"
+      ],
+      "confidence": "medium",
+      "summary": "Android 后台任务调度对电池寿命影响的文献综合分析，涵盖功耗优化策略集群",
+      "scored_at": "2026-04-09T19:50:37.205943"
+    },
+    {
+      "title": "后台任务调度 - 论文大纲",
+      "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-17-后台任务调度与电池/stage-16/outline.md",
+      "score": 14,
+      "quality": "medium",
+      "chapters": [
+        "ch06-功耗"
+      ],
+      "confidence": "medium",
+      "summary": "BASALT 电池感知调度算法论文大纲，含候选标题和章节结构",
+      "scored_at": "2026-04-09T19:50:37.205952"
+    },
+    {
+      "title": "后台任务调度 - 统一分析",
+      "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-17-后台任务调度与电池/stage-14/analysis.md",
+      "score": 10,
+      "quality": "medium",
+      "chapters": [
+        "ch06-功耗"
+      ],
+      "confidence": "low",
+      "summary": "Android 后台任务调度功耗优化实验的统一分析，评估五种调度策略",
+      "scored_at": "2026-04-09T19:50:37.205954"
+    },
+    {
+      "title": "性能功耗热优化 - 研究综合",
+      "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-18-02-性能功耗热优化/stage-07/synthesis.md",
+      "score": 12,
+      "quality": "medium",
+      "chapters": [
+        "ch06-功耗",
+        "ch13-调度"
+      ],
+      "confidence": "medium",
+      "summary": "Android 性能功耗热优化的文献综述集群分析，涵盖安全与性能权衡",
+      "scored_at": "2026-04-09T19:50:37.205956"
+    },
+    {
+      "title": "性能功耗热优化 - 研究假设",
+      "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-18-02-性能功耗热优化/stage-08/hypotheses.md",
+      "score": 11,
+      "quality": "medium",
+      "chapters": [
+        "ch06-功耗",
+        "ch13-调度"
+      ],
+      "confidence": "low",
+      "summary": "热对称优化框架等研究假设的综合提案",
+      "scored_at": "2026-04-09T19:50:37.205957"
+    },
+    {
+      "title": "性能功耗热优化 - 跨平台性能开销实证",
+      "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-18-02-性能功耗热优化/stage-06/cards/4.md",
+      "score": 10,
+      "quality": "medium",
+      "chapters": [
+        "ch05-渲染"
+      ],
+      "confidence": "low",
+      "summary": "跨平台移动开发框架性能开销的实证研究文献卡片",
+      "scored_at": "2026-04-09T19:50:37.205958"
+    },
+    {
+      "title": "AndroidGodEye - Android开发性能监控工具",
+      "path": "AndroidWeekly/#0/AndroidGodEye性能监控工具",
+      "source_url": "https://github.com/Kyson/AndroidGodEye/blob/master/README_zh.md",
+      "weekly_issue": "#0",
+      "weekly_date": "2020-08-18",
+      "score": 17,
+      "quality": "high",
+      "scores": {
+        "relevance": 5,
+        "depth": 4,
+        "timeliness": 3,
+        "verifiability": 5
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch04-性能监控",
+          "confidence": "high"
+        }
+      ],
+      "summary": "全栈Android性能监控工具，支持CPU、内存、网络等多维度实时监控",
+      "scored_at": "2026-04-09T22:59:42.816947"
+    },
+    {
+      "title": "KOOM - 快手OOM监控解决方案",
+      "path": "AndroidWeekly/#0/KOOM_OOM监控方案",
+      "source_url": "https://github.com/KwaiAppTeam/KOOM/blob/master/README.zh-CN.md",
+      "weekly_issue": "#0",
+      "weekly_date": "2020-08-18",
+      "score": 18,
+      "quality": "high",
+      "scores": {
+        "relevance": 5,
+        "depth": 5,
+        "timeliness": 3,
+        "verifiability": 5
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch07-内存优化",
+          "confidence": "high"
+        }
+      ],
+      "summary": "快手OOM监控解决方案，包含Java/Native内存泄漏和线程泄漏监控",
+      "scored_at": "2026-04-09T22:59:42.816963"
     }
   ]
 }
