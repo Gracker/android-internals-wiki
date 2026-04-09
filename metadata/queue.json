@@ -1911,6 +1911,12 @@
         "location": "## Binder 跨层调用 > Binder 线程池管理描述",
         "detail": "\"Binder 在内核层面实现了线程池管理\" —— 这个描述过于简化和不准确。Binder 驱动的内核部分负责在请求到达时唤醒等待线程，但线程池大小、线程优先级等由 Android Framework（通过系统属性如 android.thread_interactive、Binder 驱动参数）控制，不是纯内核行为。读者可能因此高估内核的自动化程度。",
         "suggestion": "修正表述为：\"Binder 驱动的内核部分负责在请求到达时唤醒等待线程（ Binder 线程池的懒唤醒机制），但线程池大小由 Android Framework 配置（系统属性 android.thread_*/Binder 驱动参数）\"。"
+      },
+      {
+        "type": "版本差异",
+        "location": "Android 16 架构变化 - 16KB Page Size 部分",
+        "detail": "章节声称\"Android 16 在此基础上继续完善（16KB Page Size）\"，实际：16KB Page Size 由 Android 15 引入（Android 16 继续完善是对的），但 Android 16 的主要变化是要求部分设备必须支持 16KB Page Size，描述重点偏移。",
+        "suggestion": "修正描述：Android 15 引入 16KB Page Size 支持，Android 16 要求部分设备必须支持 16KB Page Size（而非\"继续完善该特性\"）。"
       }
     ],
     "added_by": "task9-deep-tech-review",
@@ -2318,7 +2324,9 @@
     "reason": "[Deep Tech Review] Compose 可暂停组合机制描述不准确：行408-419描述'Compose runtime 在帧时间即将耗尽时暂停'，但未说明暂停条件与实现原理；Frame Timeline 缺实际 Trace 示例（API 33+ 核心功能）",
     "material_paths": [
       "intake/suggestions.md",
-      "intake/research-gaps.md"
+      "intake/research-gaps.md",
+      "intake/research-feeds/2026-04-10-07-compose-pausable-composition-choreographer-deadline.md",
+      "intake/research-feeds/2026-04-10-07-frame-timeline-perfetto-visualization-choreographer-api33.md"
     ],
     "review_issues": [
       {
