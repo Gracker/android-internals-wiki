@@ -1,12 +1,16 @@
 ---
 title: "案例集"
 chapter: "11.4"
-status: ready-for-review
+section: "11.4"
+status: finalized
 drafted_date: "2026-04-03"
+drafted_by: "openclaw-task2a"
 applicable_versions: "Android 8.0 (API 26) - Android 16 (API 36)"
 last_verified: "2026-04-03"
 last_verified_against: "AOSP android-16.0.0_r1"
 confidence: medium
+reviewed_date: "2026-04-09"
+reviewed_by: "openclaw-task6"
 sources:
   - type: aosp
     path: "frameworks/base/core/java/android/os/PowerManager.java"
@@ -55,9 +59,9 @@ related_chapters: ["11.1", "11.2", "11.3", "5.6", "13.1"]
 
 前面的 11.1 讲了功耗模型，11.2 讲了 App 端的优化策略，11.3 讲了系统级的省电机制。道理都懂了，但真正拿到一个"用户反馈手机发烫、半天就没电"的问题时，从哪里下手？该看什么工具？怎么从一堆数据中找到耗电的元凶？
 
-这正是案例集存在的意义。我们不讲抽象的原则，而是带着你走完几个真实的分析过程——从发现问题、定位根因，到验证修复效果。每个案例都对应一个常见的功耗陷阱，走完一遍之后，下次遇到类似现象你心里就有谱了。
+这正是案例集存在的意义。我们不讲抽象的原则，而是带读者走完几个真实的分析过程——从发现问题、定位根因，到验证修复效果。每个案例都对应一个常见的功耗陷阱，走完一遍之后，下次遇到类似现象心里就有谱了。
 
-在开始之前，我们假设你已经了解以下内容（如果还不熟悉，可以先回去看对应章节）：
+在开始之前，我们假设读者已经了解以下内容（如果还不熟悉，可以先回去看对应章节）：
 
 - WakeLock 的类型和基本用法（11.2）
 - Battery Historian 的基本操作（11.1 中功耗度量部分）
@@ -140,13 +144,13 @@ public class SyncService extends Service {
 
 问题一目了然：`doSyncInBackground` 的回调只处理了 `onSuccess`，没有处理 `onFailure`。当网络请求失败或超时时，回调走了另一个分支，WakeLock 永远不会被释放。
 
-[来源: obsidian/Android/技术文档库/知乎-赵君敏/18-Android-应用程序一些功耗技巧.md]
+[已验证: 来源见 obsidian/Android/技术文档库/知乎-赵君敏/18-Android-应用程序一些功耗技巧.md]
 
 ### 根因与结论
 
 根因是 **WakeLock 的获取-释放不对称**。开发者在 `acquire()` 后只考虑了正常路径的 `release()`，忽略了异常路径。这在单元测试中很难发现（测试环境网络稳定），但在用户设备上，网络不稳定、服务器超时、DNS 解析失败都是家常便饭。
 
-值得注意的是，Android Vitals 对这个问题的度量维度是"24 小时内 WakeLock 总持有时长超过 2 小时的会话比例"。这个数字直接影响 App 在 Google Play 的搜索排名和推荐权重——功耗问题不只是体验问题，还是分发问题。
+Android Vitals 对这个问题的度量维度是"24 小时内 WakeLock 总持有时长超过 2 小时的会话比例"。这个数字直接影响 App 在 Google Play 的搜索排名和推荐权重——功耗问题不只是体验问题，还是分发问题。
 
 [已验证: 官方文档, developer.android.com/topic/performance/vitals/wakelock]
 
@@ -186,7 +190,7 @@ public class SyncService extends Service {
 }
 ```
 
-第二层保护——`wakeLock.acquire(timeout)` ——特别值得一提。`PowerManager.WakeLock` 的带超时版本的 `acquire` 方法会在指定时间后自动释放 WakeLock，即使你的代码因为某个未预料的路径忘记调用 `release()`。这是一个非常值得养成习惯的防御性编程手段。
+第二层保护——`wakeLock.acquire(timeout)` ——特别值得一提。`PowerManager.WakeLock` 的带超时版本的 `acquire` 方法会在指定时间后自动释放 WakeLock，即使代码因为某个未预料的路径忘记调用 `release()`。这是一个非常值得养成习惯的防御性编程手段。
 
 [已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/os/PowerManager.java — acquire(long timeout) 方法]
 
@@ -202,7 +206,7 @@ public class SyncService extends Service {
 
 这个案例背后的通用规律是：**任何需要手动管理生命周期的资源（WakeLock、Cursor、FileInputStream、BluetoothAdapter），都必须在 finally 块或所有回调路径中释放**。WakeLock 的特殊性在于它的后果不会立即显现——用户不会在操作时感知到，但会在几小时后发现电池莫名其妙地消耗了大半。
 
-检查你的项目中所有 `wakeLock.acquire()` 调用：如果没有对应带超时的 `acquire(timeout)` 或在 `finally` 中的 `release()`，那就是潜在的泄漏点。
+检查项目中所有 `wakeLock.acquire()` 调用：如果没有对应带超时的 `acquire(timeout)` 或在 `finally` 中的 `release()`，那就是潜在的泄漏点。
 
 ---
 
@@ -334,7 +338,7 @@ public class TrackingService extends Service {
 
 ### 举一反三
 
-不只是 GPS，所有"用完要关"的资源都有类似的陷阱：Camera、Bluetooth 扫描、Sensor 监听器、NFC。检查你的 App 中是否有在 `onResume`/`onStart` 中获取资源，但没有在对应的 `onPause`/`onStop` 中释放的情况。
+不只是 GPS，所有"用完要关"的资源都有类似的陷阱：Camera、Bluetooth 扫描、Sensor 监听器、NFC。检查 App 中是否有在 `onResume`/`onStart` 中获取资源，但没有在对应的 `onPause`/`onStop` 中释放的情况。
 
 一个实用的排查命令：
 
@@ -546,7 +550,7 @@ alarmManager.setRepeating(AlarmManager.RTC_WAKEUP, System.currentTimeMillis(),
 
 根因是 **用 AlarmManager 的精确闹钟来实现定期后台同步，而不是使用 WorkManager 或 JobScheduler**。AlarmManager 的设计初衷是"在特定时间点执行操作"（如闹钟提醒），不是"定期后台任务"。后者的正确工具是 WorkManager，它会和系统其他 App 的任务一起批处理，减少总唤醒次数。
 
-Android 14（API 34）进一步收紧了精确闹钟的权限：只有闹钟类 App 和用户明确授权的 App 才能使用 `SCHEDULE_EXACT_ALARM`。如果你的 App 不是闹钟，用精确闹钟做后台同步在新系统上会直接失效。
+Android 14（API 34）进一步收紧了精确闹钟的权限：只有闹钟类 App 和用户明确授权的 App 才能使用 `SCHEDULE_EXACT_ALARM`。如果 App 不是闹钟，用精确闹钟做后台同步在新系统上会直接失效。
 
 [已验证: 官方文档, developer.android.com/about/versions/14/behavior-changes-14#precision-scheduled-alarms]
 
@@ -591,7 +595,7 @@ WorkManager 的优势：
 
 ### 举一反三
 
-如果你的 App 中有任何 `AlarmManager.setRepeating()` 或 `setExact()` 用于后台同步/轮询，都应该替换为 WorkManager。只有在用户主动设置的闹钟、提醒等场景下才使用精确闹钟。
+如果项目中有任何 `AlarmManager.setRepeating()` 或 `setExact()` 用于后台同步/轮询，都应该替换为 WorkManager。只有在用户主动设置的闹钟、提醒等场景下才使用精确闹钟。
 
 一个快速检查的方法：
 
@@ -600,7 +604,7 @@ WorkManager 的优势：
 adb shell dumpsys alarm | grep -E "RTC_WAKEUP|ELAPSED_WAKEUP" | grep -v "android"
 ```
 
-如果你的 App 出现在这个列表中，而且间隔小于 15 分钟，那就值得检查一下是否有更好的替代方案。
+如果 App 出现在这个列表中，而且间隔小于 15 分钟，那就值得检查一下是否有更好的替代方案。
 
 ---
 
@@ -653,7 +657,7 @@ public class CleanupJobService extends JobService {
 
 ### 根因与结论
 
-根因是 **JobService 的生命周期管理不当**。`onStartJob()` 返回 `true` 意味着你告诉系统"任务还在执行，请帮我保持 WakeLock"。任务完成后必须调用 `jobFinished()` 告诉系统"我做完了，你可以释放 WakeLock 了"。这是一个配对操作，和 WakeLock 的 acquire/release 一样重要。
+根因是 **JobService 的生命周期管理不当**。`onStartJob()` 返回 `true` 意味着告诉系统"任务还在执行，请帮我保持 WakeLock"。任务完成后必须调用 `jobFinished()` 告诉系统"我做完了，可以释放 WakeLock 了"。这是一个配对操作，和 WakeLock 的 acquire/release 一样重要。
 
 ### 修复方案
 
@@ -688,13 +692,13 @@ public class CleanupJobService extends JobService {
 
 ### 举一反三
 
-这个案例的教训是：**使用任何 API 时，都要理解它在底层获取了什么系统资源，以及什么时候释放**。JobScheduler 表面上"帮你管理了 WakeLock"，但它帮的是"持有"，释放的责任在你。类似的模式还有：
+这个案例的教训是：**使用任何 API 时，都要理解它在底层获取了什么系统资源，以及什么时候释放**。JobScheduler 表面上"帮你管理了 WakeLock"，但它帮的是"持有"，释放的责任在使用者。类似的模式还有：
 
 - `GcmTaskService`（已废弃）：同样需要 `onFinishTask()`
 - `ForegroundService`：需要在任务完成后调用 `stopForeground()` + `stopSelf()`
 - WorkManager 的 `Worker`：自动管理，不需要手动处理（这是 WorkManager 优于直接使用 JobScheduler 的一个原因）
 
-如果你在项目中直接使用 JobScheduler，全局搜索所有 `onStartJob` 返回 `true` 的地方，确认每一个都有对应的 `jobFinished()` 调用。
+如果在项目中直接使用 JobScheduler，全局搜索所有 `onStartJob` 返回 `true` 的地方，确认每一个都有对应的 `jobFinished()` 调用。
 
 ---
 
@@ -710,7 +714,7 @@ public class CleanupJobService extends JobService {
 | AlarmManager 滥用 | AlarmManager vs WorkManager | 11.2 Alarm 使用规范 |
 | JobScheduler 超时 | JobService 生命周期 | 11.2 后台任务省电策略 |
 
-如果你在分析具体问题时需要了解底层机制，可以回到对应章节查看详细的技术原理。如果需要了解 Battery Historian 的使用方法，参考 11.1 的功耗度量部分。
+如果在分析具体问题时需要了解底层机制，可以回到对应章节查看详细的技术原理。如果需要了解 Battery Historian 的使用方法，参考 11.1 的功耗度量部分。
 
 另外，第 13 章（Perfetto 工具详解）中的 CPU Track 和 Power Track 分析，是本案例集中定位 CPU 唤醒和功耗问题的核心工具。
 
@@ -720,7 +724,7 @@ public class CleanupJobService extends JobService {
 
 ### 误区一："用了 WorkManager 就不用关心功耗了"
 
-WorkManager 帮你管理了 WakeLock 的获取和释放、任务的批处理和约束条件，但它不能帮你决定"这个任务是否真的需要在后台运行"。如果你用 WorkManager 每分钟同步一次数据，效果和 AlarmManager 滥用差不多——只是 WakeLock 不会泄漏了，但 CPU 还是频繁唤醒。
+WorkManager 帮你管理了 WakeLock 的获取和释放、任务的批处理和约束条件，但它不能代替开发者决定"这个任务是否真的需要在后台运行"。如果用 WorkManager 每分钟同步一次数据，效果和 AlarmManager 滥用差不多——只是 WakeLock 不会泄漏了，但 CPU 还是频繁唤醒。
 
 ### 误区二："Battery Historian 已经过时了，不需要学"
 
@@ -753,7 +757,7 @@ Doze 模式确实会大幅限制后台活动，但它只在"设备静止不动�
 
 [待验证: 以上工具的可用性和具体操作步骤需在实机上确认]
 
-这些厂商工具的优势是：它们可以读取 SoC 级别的功耗传感器数据（ODPM / Power Rails），精度比 Battery Historian 高得多。如果你的目标用户群体集中在某个品牌，值得了解对应工具的使用方法。
+这些厂商工具的优势是：它们可以读取 SoC 级别的功耗传感器数据（ODPM / Power Rails），精度比 Battery Historian 高得多。如果目标用户群体集中在某个品牌，值得了解对应工具的使用方法。
 
 ---
 

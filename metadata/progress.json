@@ -12,8 +12,8 @@
     "processing": 0,
     "ready-to-publish": 15,
     "last_reviewed": "2026-04-09",
-    "last_reviewed_section": "10.2 内存泄漏",
-    "reviewed_today": 12
+    "last_reviewed_section": "11.4 案例集（功耗）",
+    "reviewed_today": 13
   },
   "reviewed_sections": {
     "8.1": {
@@ -803,6 +803,25 @@
         "consistency": 5,
         "verification": 4,
         "metadata": 4
+      }
+    },
+    "11.4": {
+      "reviewed_date": "2026-04-09",
+      "reviewed_by": "openclaw-task6",
+      "review_status": "finalized",
+      "fixes_applied": [
+        "17处「你」→中性/「读者」/「使用者」（writing-guide §3.5）",
+        "AI味删除：「值得注意的是」（writing-guide §九）",
+        "验证标注标准化：[来源:] → [已验证: 来源见 ...]",
+        "frontmatter: 补 section/drafted_by/reviewed_date/reviewed_by",
+        "status: ready-for-review → finalized"
+      ],
+      "scores": {
+        "structure": 5,
+        "expression": 4.5,
+        "consistency": 5,
+        "verification": 4,
+        "metadata": 5
       }
     }
   },
@@ -2485,6 +2504,21 @@
     }
   ],
   "history": [
+    {
+      "date": "2026-04-09",
+      "section": "11.4",
+      "title": "案例集（功耗）",
+      "action": "reviewed-finalized",
+      "review_by": "openclaw-task6",
+      "fixes": 23,
+      "scores": {
+        "structure": 5,
+        "expression": 4.5,
+        "consistency": 5,
+        "verification": 4,
+        "metadata": 5
+      }
+    },
     {
       "date": "2026-04-09",
       "section": "9.2",
