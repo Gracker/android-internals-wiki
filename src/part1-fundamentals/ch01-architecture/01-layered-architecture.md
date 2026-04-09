@@ -2,7 +2,7 @@
 title: "Android 分层架构"
 chapter: "1.1"
 section: "1.1"
-status: ready-to-publish
+status: ready-for-review
 applicable_versions: "Android 8 (API 26) - Android 16 (API 36)"
 last_verified: "2026-03-30"
 last_verified_against: "AOSP android-16.0.0_r1, developer.android.com, source.android.com"
@@ -195,9 +195,11 @@ Project Mainline 在 Android 16 中已经扩展到超过 50 个模块，覆盖�
 
 [已验证: 官方文档, https://source.android.com/docs/core/architecture]
 
-### 16KB Page Size 的影响
+### 16KB Page Size 对 Android 16 的影响
 
-Android 15 引入了 16KB 页大小支持（传统是 4KB），Android 16 继续完善。更大的页大小意味着每次内存操作搬运更多数据，对大块连续内存访问（如 GPU Buffer）有正面影响，但也会增加内存碎片和小对象的内存浪费。Thread Local Storage (TLS) 的缓冲区做了专项优化，将其隔离到专用内存页面，减少了对整体内存的消耗。
+> **版本澄清**：16KB Page Size 特性由 **Android 15** 引入（Android 16 继续完善）。Android 16 的主要变化是要求部分设备必须支持 16KB Page Size，而非重新引入该特性。
+
+Android 15 引入了 16KB 页大小支持（传统是 4KB），Android 16 在此基础上继续完善。更大的页大小意味着每次内存操作搬运更多数据，对大块连续内存访问（如 GPU Buffer）有正面影响，但也会增加内存碎片和小对象的内存浪费。Thread Local Storage (TLS) 的缓冲区做了专项优化，将其隔离到专用内存页面，减少了对整体内存的消耗。
 
 [待验证: 16KB Page Size 在 Android 16 上的性能数据需实际设备验证]
 
