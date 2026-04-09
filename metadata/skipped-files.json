@@ -3962,5 +3962,190 @@
     "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-18-02-性能功耗热优化/stage-10/experiment_spec.md",
     "reason": "实验规格模板，无实质数据",
     "score": 5
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-18-02-性能功耗热优化/stage-15/decision.md",
+    "reason": "总评分10分，刚好达标",
+    "score": 10
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-18-03-性能功耗热优化/stage-14_v2/perspectives/methodologist.md",
+    "reason": "pipeline中间产物-方法学审查perspective",
+    "score": 6
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-18-03-性能功耗热优化/stage-14_v2/perspectives/optimist.md",
+    "reason": "pipeline中间产物-乐观perspective",
+    "score": 5
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-18-03-性能功耗热优化/stage-14_v2/perspectives/skeptic.md",
+    "reason": "pipeline中间产物-怀疑perspective",
+    "score": 5
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-18-03-性能功耗热优化/stage-15/decision.md",
+    "reason": "pipeline中间产物-决策",
+    "score": 5
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-18-03-性能功耗热优化/stage-15_v1/decision.md",
+    "reason": "pipeline中间产物-决策v1",
+    "score": 4
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-18-03-性能功耗热优化/stage-15_v2/decision.md",
+    "reason": "pipeline中间产物-决策v2",
+    "score": 4
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-18-热管理与CPU频率/stage-01/goal.md",
+    "reason": "pipeline中间产物-研究目标",
+    "score": 5
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-18-热管理与CPU频率/stage-02/problem_tree.md",
+    "reason": "pipeline中间产物-问题树",
+    "score": 5
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-18-热管理与CPU频率/stage-06/cards/1.md",
+    "reason": "pipeline中间产物-文献卡片",
+    "score": 6
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-18-热管理与CPU频率/stage-06/cards/2.md",
+    "reason": "pipeline中间产物-文献卡片",
+    "score": 6
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-18-热管理与CPU频率/stage-06/cards/3.md",
+    "reason": "pipeline中间产物-文献卡片",
+    "score": 6
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-18-热管理与CPU频率/stage-06/cards/4.md",
+    "reason": "pipeline中间产物-文献卡片",
+    "score": 6
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-18-热管理与CPU频率/stage-06/cards/5.md",
+    "reason": "pipeline中间产物-文献卡片",
+    "score": 6
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-18-热管理与CPU频率/stage-06/cards/6.md",
+    "reason": "pipeline中间产物-文献卡片",
+    "score": 6
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-18-热管理与CPU频率/stage-08/hypotheses.md",
+    "reason": "pipeline中间产物-假设",
+    "score": 6
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-18-热管理与CPU频率/stage-08/perspectives/contrarian.md",
+    "reason": "pipeline中间产物-视角",
+    "score": 5
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-18-热管理与CPU频率/stage-08/perspectives/innovator.md",
+    "reason": "pipeline中间产物-视角",
+    "score": 5
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-18-热管理与CPU频率/stage-08/perspectives/pragmatist.md",
+    "reason": "pipeline中间产物-视角",
+    "score": 5
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-18-热管理与CPU频率/stage-10/experiment_spec.md",
+    "reason": "pipeline中间产物-实验规格",
+    "score": 6
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-18-热管理与CPU频率/stage-14/perspectives/methodologist.md",
+    "reason": "pipeline中间产物-方法学perspective",
+    "score": 5
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-18-热管理与CPU频率/stage-14/perspectives/optimist.md",
+    "reason": "pipeline中间产物-乐观perspective",
+    "score": 5
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-18-热管理与CPU频率/stage-14/perspectives/skeptic.md",
+    "reason": "pipeline中间产物-怀疑perspective",
+    "score": 5
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-18-热管理与CPU频率/stage-14_v1/analysis.md",
+    "reason": "pipeline中间产物-分析v1已被v2替代",
+    "score": 5
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-18-热管理与CPU频率/stage-14_v1/perspectives/methodologist.md",
+    "reason": "pipeline中间产物-过期perspective",
+    "score": 4
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-18-热管理与CPU频率/stage-14_v1/perspectives/optimist.md",
+    "reason": "pipeline中间产物-过期perspective",
+    "score": 4
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-18-热管理与CPU频率/stage-14_v1/perspectives/skeptic.md",
+    "reason": "pipeline中间产物-过期perspective",
+    "score": 4
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-18-热管理与CPU频率/stage-15/decision.md",
+    "reason": "pipeline中间产物-决策",
+    "score": 5
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-18-热管理与CPU频率/stage-15_v1/decision.md",
+    "reason": "pipeline中间产物-决策v1",
+    "score": 4
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-18-热管理与CPU频率/stage-17/paper_draft.md",
+    "reason": "pipeline中间产物-论文草稿blocked-无实验数据",
+    "score": 3
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-19-性能功耗热优化/stage-01/goal.md",
+    "reason": "pipeline中间产物-研究目标",
+    "score": 5
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-19-性能功耗热优化/stage-02/problem_tree.md",
+    "reason": "pipeline中间产物-问题树",
+    "score": 5
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-20-性能功耗热优化/stage-01/goal.md",
+    "reason": "pipeline中间产物-研究目标",
+    "score": 5
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-20-性能功耗热优化/stage-02/problem_tree.md",
+    "reason": "pipeline中间产物-问题树",
+    "score": 5
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-20-性能功耗热优化/stage-06/cards/1.md",
+    "reason": "pipeline中间产物-文献卡片",
+    "score": 6
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-20-性能功耗热优化/stage-06/cards/2.md",
+    "reason": "pipeline中间产物-文献卡片",
+    "score": 6
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-20-性能功耗热优化/stage-06/cards/3.md",
+    "reason": "pipeline中间产物-文献卡片",
+    "score": 6
   }
 ]
