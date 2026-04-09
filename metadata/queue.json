@@ -1901,7 +1901,10 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-09T08:31:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-09T07:50:55",
+    "completed_by": "task2b-rework",
+    "notes": "Task 9 review 误报: Choreographer.FrameData 在 API 33 确实有 getPreferredFrameTimeline() 和 getFrameTimelines() 方法（经 web search 验证 developer.android.com），当前代码正确无需修改"
   },
   {
     "section": "2.5",
@@ -1921,7 +1924,10 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-09T09:34:14",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-09T07:50:55",
+    "completed_by": "task2b-rework",
+    "notes": "修复: applicable_versions 从 Android 12 (API 31) 修正为 Android 5.0 (API 21)，与正文版本演进表对齐"
   },
   {
     "section": "2.5",
@@ -1941,7 +1947,10 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-09T09:34:14",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-09T07:50:55",
+    "completed_by": "task2b-rework",
+    "notes": "修复: 补充 syncAndDrawFrame 为 @CriticalNative JNI 方法的说明，标注实际实现路径 (ThreadedRenderer.cpp → DrawFrameTask::syncFrameState)"
   },
   {
     "section": "1.6",
@@ -1961,7 +1970,10 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-09T11:41:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-09T07:50:55",
+    "completed_by": "task2b-rework",
+    "notes": "修复: 在正文章节标题中补充 API Level 标注（API 19/21/26/29/31/36），与 frontmatter applicable_versions 对齐"
   },
   {
     "section": "13.10",

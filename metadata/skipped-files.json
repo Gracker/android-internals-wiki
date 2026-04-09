@@ -2032,5 +2032,310 @@
     "first_chars": "## Decision\nREFINE\n\n## Justification\nThe analysis clearly indicates that the experiment fails to meet multiple minimum quality criteria for proceeding to paper writing. Specifically, the experiment la",
     "indexed_at": "2026-04-09T12:53:30.635341",
     "reason": "Total score 6 < 10"
+  },
+  {
+    "path": "Cubox/Android Architecture Pattern - by Akshay yadav - Team Pratilipi - Feb, 2022 - Medium-2022-02-05.md",
+    "title": "Android Architecture Pattern",
+    "total_score": 9,
+    "reason": "总分9<10",
+    "indexed_at": "2026-04-09T13:58:32.593672"
+  },
+  {
+    "path": "Cubox/Android Canary 正式加入  Linux 终端，终于可以运行 Doom 和其他图形应用程序了-2025-07-25.md",
+    "title": "Android Canary 正式加入 Linux 终端",
+    "total_score": 9,
+    "reason": "总分9<10",
+    "indexed_at": "2026-04-09T13:58:32.593672"
+  },
+  {
+    "path": "Cubox/Android Code Style And Guidelines-2022-01-17.md",
+    "title": "Android Code Style And Guidelines",
+    "total_score": 8,
+    "reason": "总分8<10",
+    "indexed_at": "2026-04-09T13:58:32.593672"
+  },
+  {
+    "path": "Cubox/Android Design Pattern. Design Pattern will use to improve code… - by Prachi Mishra - Jul, 2022 - Me.md",
+    "title": "Android Design Pattern",
+    "total_score": 8,
+    "reason": "总分8<10",
+    "indexed_at": "2026-04-09T13:58:32.593672"
+  },
+  {
+    "path": "Cubox/Android Developers Blog- Discontinuing Kotlin synthetics for views-2022-02-20.md",
+    "title": "Android Developers Blog: Discontinuing Kotlin synthetics",
+    "total_score": 9,
+    "reason": "总分9<10",
+    "indexed_at": "2026-04-09T13:58:32.593672"
+  },
+  {
+    "path": "Cubox/Android Developers Blog- Gemini in Android Studio for businesses- Develop with confidence, powered b.md",
+    "title": "Android Developers Blog: Gemini in Android Studio",
+    "total_score": 9,
+    "reason": "总分9<10",
+    "indexed_at": "2026-04-09T13:58:32.593672"
+  },
+  {
+    "path": "Cubox/Android Developers Blog- Prioritize media privacy with Android Photo Picker and build user trust-202.md",
+    "title": "Android Developers Blog: Photo Picker Privacy",
+    "total_score": 9,
+    "reason": "总分9<10",
+    "indexed_at": "2026-04-09T13:58:32.593672"
+  },
+  {
+    "path": "Cubox/Android Developers Blog- Prompt users to update to your latest app version-2024-01-31.md",
+    "title": "Android Developers Blog: Prompt users to update",
+    "total_score": 9,
+    "reason": "总分9<10",
+    "indexed_at": "2026-04-09T13:58:32.593672"
+  },
+  {
+    "path": "Cubox/Android Development Trends for 2022-2022-01-14.md",
+    "title": "Android Development Trends for 2022",
+    "total_score": 8,
+    "reason": "总分8<10",
+    "indexed_at": "2026-04-09T13:58:32.593672"
+  },
+  {
+    "path": "Cubox/Android Framework 如何学习，如何从应用深入到Framework？ - 知乎-2022-01-17.md",
+    "title": "Android Framework 如何学习",
+    "total_score": 8,
+    "reason": "总分8<10",
+    "indexed_at": "2026-04-09T13:58:32.593672"
+  },
+  {
+    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/X 文章/2026-02-23-1850-Citrini-2028-Global-Intelligence-Crisis-2025792470345224683.md",
+    "reason": "Failed to process",
+    "score": 0
+  },
+  {
+    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/X 文章/2026-02-23-2005-KevinHe-ClawFeed-5min-5000feeds-2025781752971809010.md",
+    "reason": "Score 4 < 10",
+    "score": 4
+  },
+  {
+    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/X 文章/2026-02-23-2005-Lijiuer-OpenClaw-Memory-Guide-2025678747509391664.md",
+    "reason": "Score 7 < 10",
+    "score": 7
+  },
+  {
+    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/X 文章/2026-02-23-2005-MuratcanKoylan-The-File-System-Is-the-New-Database-2025286163641118915.md",
+    "reason": "Score 7 < 10",
+    "score": 7
+  },
+  {
+    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/X 文章/2026-02-24-1205-0xJA-Conway-Agent-Guide-2024376180707905816.md",
+    "reason": "Score 4 < 10",
+    "score": 4
+  },
+  {
+    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/X 文章/2026-02-24-1205-Bozhou-Agent-Skills-Context-Engineering-2026109258224574963.md",
+    "reason": "Score 7 < 10",
+    "score": 7
+  },
+  {
+    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/X 文章/2026-02-24-1605-123olp-Elite-Autonomous-Developer-Agent-2025704271921213731.md",
+    "reason": "Score 6 < 10",
+    "score": 6
+  },
+  {
+    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/X 文章/2026-02-24-1605-MisbahSy-Build-Your-Own-Claw-Empire-2025570052108665231.md",
+    "reason": "Score 7 < 10",
+    "score": 7
+  },
+  {
+    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/X 文章/2026-02-24-2005-AugmentCode-What-spec-driven-development-gets-wrong-2025993446633492725.md",
+    "reason": "Score 6 < 10",
+    "score": 6
+  },
+  {
+    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/X 文章/2026-02-24-2005-Elvis-OpenClaw-Codex-ClaudeCode-Agent-Swarm-2025920521871716562.md",
+    "reason": "Score 6 < 10",
+    "score": 6
+  },
+  {
+    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/X 文章/2026-02-25-1835-MilesDeutscher-3-steps-before-buying-OpenClaw-2026037201591787801.md",
+    "reason": "Score 4 < 10",
+    "score": 4
+  },
+  {
+    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/X 文章/2026-02-25-1836-NeoReid-Agent-Reach-install-2026322683756216423.md",
+    "reason": "Score 7 < 10",
+    "score": 7
+  },
+  {
+    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/X 文章/2026-02-25-2012-AshleyHa-Elvis-gets-it-2026175486980948448.md",
+    "reason": "Score 4 < 10",
+    "score": 4
+  },
+  {
+    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/X 文章/2026-02-25-2013-zhl-ClaudeCode-Obsidian-Minimal-2026261405788405767.md",
+    "reason": "Score 6 < 10",
+    "score": 6
+  },
+  {
+    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/X 文章/2026-02-26-0805-Geek-TenacitOS-Mission-Control-2026223826263044136.md",
+    "reason": "Score 4 < 10",
+    "score": 4
+  },
+  {
+    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/X 文章/2026-02-26-1141-LufzzLiz-openclaw-system-prompt-2026669714072809755.md",
+    "reason": "Score 7 < 10",
+    "score": 7
+  },
+  {
+    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/X 文章/2026-02-26-1141-op7418-ai-2026520431700881816.md",
+    "reason": "Score 6 < 10",
+    "score": 6
+  },
+  {
+    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/X 文章/2026-02-26-1211-AravSrinivas-The-AI-is-the-Computer-2026710957272207490.md",
+    "reason": "Score 4 < 10",
+    "score": 4
+  },
+  {
+    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/X 文章/2026-02-26-1211-GabrielChua-Codex-in-Plain-English-2026832978056458383.md",
+    "reason": "Score 6 < 10",
+    "score": 6
+  },
+  {
+    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/X 文章/2026-02-26-1610-vista8-2026-AI-2026195338898588101.md",
+    "reason": "Score 4 < 10",
+    "score": 4
+  },
+  {
+    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/X 文章/2026-02-26-2017-EXM7777-how-to-master-prompt-engineering-2011800604709175808.md",
+    "reason": "Score 8 < 10",
+    "score": 8
+  },
+  {
+    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/X 文章/2026-02-26-2017-FuSheng_0306-AI的负面-2-你的知识在贬值-但房贷不会贬值-2026910973030969477.md",
+    "reason": "Score 4 < 10",
+    "score": 4
+  },
+  {
+    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/X 文章/2026-02-26-2017-LawrenceW_Zen-新手劝退-OpenClaw-99-的人根本不需要它-2026872793187627276.md",
+    "reason": "Score 4 < 10",
+    "score": 4
+  },
+  {
+    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/X 文章/2026-02-26-2017-UncleJAI-我的-Obsidian-不是笔记软件-是操作系统-2026929169511362928.md",
+    "reason": "Score 6 < 10",
+    "score": 6
+  },
+  {
+    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/X 文章/2026-02-26-2017-Zephyr_hg-The-Business-Models-That-Will-Dominate-202-2026656410084258042.md",
+    "reason": "Score 4 < 10",
+    "score": 4
+  },
+  {
+    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/X 文章/2026-02-26-2017-garyvee-The-Era-of-the-Individual-Empire-Is-Here-2026667949382316285.md",
+    "reason": "Score 6 < 10",
+    "score": 6
+  },
+  {
+    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/X 文章/2026-02-26-2017-indigox-科学家的消亡-AI-会终结科学-还是会引发一场新的革命-2026911299494449635.md",
+    "reason": "Score 7 < 10",
+    "score": 7
+  },
+  {
+    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/X 文章/2026-02-26-2017-jinglian-2026最新-X-收益曝光量详解-2026844528204984796.md",
+    "reason": "Score 8 < 10",
+    "score": 8
+  },
+  {
+    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/X 文章/2026-02-26-2017-mntruell-The-third-era-of-AI-software-development-2026736314272591924.md",
+    "reason": "Score 6 < 10",
+    "score": 6
+  },
+  {
+    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/X 文章/2026-02-26-2017-onehopeA9-OpenClaw-从中级到高级完整教程-2026905651088339408.md",
+    "reason": "Score 8 < 10",
+    "score": 8
+  },
+  {
+    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/X 文章/2026-02-27-2014-Bytedance-GitHub-bytedance-deer-flow-An-open-source-SuperAgent-harness-url-ab15f474a276.md",
+    "reason": "Score 7 < 10",
+    "score": 7
+  },
+  {
+    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/X 文章/2026-02-27-2014-D-GitHub-D4Vinci-Scrapling-An-adaptive-Web-Scraping-framework-url-db1126994486.md",
+    "reason": "Score 9 < 10",
+    "score": 9
+  },
+  {
+    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/X 文章/2026-02-27-2014-Obra-GitHub-obra-superpowers-An-agentic-skills-framework-software-url-2046f5e50faf.md",
+    "reason": "Score 4 < 10",
+    "score": 4
+  },
+  {
+    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/X 文章/2026-02-27-2014-dotey-Anthropic-CEO-Dario-Amodei-海啸已在地平线上-但没人在看-2027265200781402351.md",
+    "reason": "Score 8 < 10",
+    "score": 8
+  },
+  {
+    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/X 文章/2026-02-28-1210-TrevinPeterson-Qwen35-122B-A10B-RDMA-2027404303749546459.md",
+    "reason": "Score 4 < 10",
+    "score": 4
+  },
+  {
+    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/X 文章/2026-02-28-1210-mike_chong_zh-GoldenRetriever-Block-Layoff-2027228656951803914.md",
+    "reason": "Score 8 < 10",
+    "score": 8
+  },
+  {
+    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/X 文章/2026-02-28-1210-szslg-Software-Future-Not-What-You-Think-2027198886981587407.md",
+    "reason": "Score 8 < 10",
+    "score": 8
+  },
+  {
+    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/X 文章/2026-02-28-1610-Saboo_Shubham_-How-to-set-up-OpenClaw-Agents-that-actually-get-better-Over-Time-My-exac-2027463195150131572.md",
+    "reason": "Score 8 < 10",
+    "score": 8
+  },
+  {
+    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/X 文章/2026-02-28-1610-trq212-Lessons-from-Building-Claude-Code-Seeing-like-an-Agent-2027463795355095314.md",
+    "reason": "Score 8 < 10",
+    "score": 8
+  },
+  {
+    "path": "X 文章/2026-03-02-1209-McKinsey-healthcare-insights-url-7e5992ce4cf8.md",
+    "reason": "Score 4/20 < threshold",
+    "score": 4
+  },
+  {
+    "path": "X 文章/2026-03-02-1209-TradingEconomics-baltic-dry-index-url-970762201cda.md",
+    "reason": "Score 4/20 < threshold",
+    "score": 4
+  },
+  {
+    "path": "X 文章/2026-03-02-1214-NevaMindAI-memU-url-2fdd7b925789.md",
+    "reason": "Score 8/20 < threshold",
+    "score": 8
+  },
+  {
+    "path": "X 文章/2026-03-02-1214-Stv_Lynn-Agent-Engineering-6-Pillars-2028288139777986713.md",
+    "reason": "Score 6/20 < threshold",
+    "score": 6
+  },
+  {
+    "path": "X 文章/2026-03-02-1214-XPLUG-MobileAgent-url-32913e4053f4.md",
+    "reason": "Score 4/20 < threshold",
+    "score": 4
+  },
+  {
+    "path": "X 文章/2026-03-02-1214-alibaba-OpenSandbox-url-4dbd4d31e8c6.md",
+    "reason": "Score 4/20 < threshold",
+    "score": 4
+  },
+  {
+    "path": "X 文章/2026-03-02-1214-lxfater-OpenClaw-Memory-Plugin-2028320139368714644.md",
+    "reason": "Score 4/20 < threshold",
+    "score": 4
+  },
+  {
+    "path": "X 文章/2026-03-02-1214-ruvnet-ruflo-url-c289dc3d991e.md",
+    "reason": "Score 8/20 < threshold",
+    "score": 8
   }
 ]

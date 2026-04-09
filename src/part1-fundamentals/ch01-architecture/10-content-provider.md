@@ -45,7 +45,7 @@ ContentProvider 的设计初衷是解决一个核心问题：**不同进程之�
 
 那为什么不直接用 Binder 传数据？Binder 确实是 Android IPC 的基础，但它的设计面向的是"小数据量的命令式调用"——每个 Binder 事务的缓冲区只有 1MB，而且是所有并发事务共享的。如果要跨进程传输一个几万行的查询结果，直接用 Binder 序列化会把事务缓冲区撑爆。ContentProvider 在 Binder 之上构建了一层更高级的抽象：
 
-- **URI 寻址**：每份数据用一个 `content://authority/path` 格式的 URI 标识，调用方不需要知道数据来自哪个数据库、哪张表
+- **URI 寻址**：每份数据用一个 `content: //authority/path` 格式的 URI 标识，调用方不需要知道数据来自哪个数据库、哪张表
 - **标准化 CRUD 接口**：`query()`、`insert()`、`update()`、`delete()` 四个方法，语义清晰，跨语言可用
 - **权限控制**：通过 manifest 匇定 `readPermission` / `writePermission`，系统在 Binder 层校验调用方的权限
 - **观察者模式**：`ContentResolver.notifyChange()` + `ContentObserver`，数据变化时主动通知，避免了轮询
@@ -68,7 +68,7 @@ ContentProvider 最容易被忽视的性能问题，出在它的初始化时机�
 
 [已验证：AOSP android-16.0.0_r1, frameworks/base/core/java/android/app/ActivityThread.java, handleBindApplication() → installContentProviders()]
 
-关键在于第 4 步：`installContentProviders()` 会遍历 manifest 中声明的所有 `<provider>`，对每一个调用 `installProvider()`，而 `installProvider()` 会依次调用 `ContentProvider.attachInfo()` 和 `ContentProvider.onCreate()`。**所有 ContentProvider 的 onCreate() 都在 Application.onCreate() 之前执行，而且在主线程上顺序执行。**
+要点是第 4 步：`installContentProviders()` 会遍历 manifest 中声明的所有 `<provider>`，对每一个调用 `installProvider()`，而 `installProvider()` 会依次调用 `ContentProvider.attachInfo()` 和 `ContentProvider.onCreate()`。**所有 ContentProvider 的 onCreate() 都在 Application.onCreate() 之前执行，而且在主线程上顺序执行。**
 
 这意味着什么呢？假设你的 App 集成了 Firebase Analytics、Crashlytics、WorkManager、LeakCanary，每个库都在 manifest 中声明了一个 ContentProvider 来做自动初始化。那么冷启动时，系统会在主线程上按顺序执行这四个 CP 的 `onCreate()`——每个 CP 的初始化耗时直接累加到冷启动时间中。在实际项目中，多个 SDK 的 ContentProvider 初始化叠加可以产生几十到数百毫秒的额外启动延迟。
 
@@ -77,13 +77,13 @@ ContentProvider 最容易被忽视的性能问题，出在它的初始化时机�
 多个 ContentProvider 的初始化顺序由 manifest 中的 `android:initOrder` 属性决定。值越大的越先初始化，默认为 0。如果多个 CP 的 initOrder 相同，执行顺序取决于 manifest 中的声明顺序。
 
 ```xml
-<!-- 先初始化（initOrder=100），可能用于初始化基础库 -->
+<! -- 先初始化（initOrder=100），可能用于初始化基础库 -->
 <provider
     android:name=".BaseInitProvider"
     android:authorities="com.example.baseinit"
     android:initOrder="100" />
 
-<!-- 后初始化（initOrder=0，默认值） -->
+<! -- 后初始化（initOrder=0，默认值） -->
 <provider
     android:name=".AnalyticsProvider"
     android:authorities="com.example.analytics" />
@@ -134,7 +134,7 @@ App B: ContentProvider$Transport.query()
 
 CursorWindow 只有 2MB，但查询结果可能有几百 MB。SQLiteCursor 实现了一套"窗口滑动"机制来处理这个问题：当访问的行不在当前窗口中时，`onMove()` 方法会被触发，它会重新执行查询并填充新的窗口。
 
-这里有一个关键的性能陷阱：**SQLiteCursor 的窗口刷新是通过从头重新查询 + 跳过已读行来实现的**。假设查询返回 10000 行结果，每行 200 字节，一个 2MB 窗口大约放 10000 行。当访问第 10001 行时，SQLiteCursor 会重新执行原始查询，用类似 `SELECT ... LIMIT windowSize OFFSET currentPos` 的方式跳过前 10000 行，只取后面的行。
+这里有一个关键的性能陷阱：**SQLiteCursor 的窗口刷新是通过从头重新查询 + 跳过已读行来实现的**。假设查询返回 10000 行结果，每行 200 字节，一个 2MB 窗口大约放 10000 行。当访问第 10001 行时，SQLiteCursor 会重新执行原始查询，用类似 `SELECT . .. LIMIT windowSize OFFSET currentPos` 的方式跳过前 10000 行，只取后面的行。
 
 [已验证：AOSP, frameworks/base/core/java/android/database/sqlite/SQLiteCursor.java, fillWindow() + onMove()]
 
@@ -212,7 +212,7 @@ public class FirebaseInitializer implements Initializer<FirebaseApp> {
     }
 
     @Override
-    public List<Class<? extends Initializer<?>>> dependencies() {
+    public List<Class<? extends Initializer<? >>> dependencies() {
         return Collections.emptyList(); // 无前置依赖
     }
 }
@@ -391,9 +391,9 @@ App Startup 减少的是 ContentProvider 的**数量**（从 N 个变为 1 个�
   - `frameworks/base/core/java/android/database/CursorWindow.java` — 共享内存实现
   - `frameworks/base/core/java/android/database/sqlite/SQLiteCursor.java` — `fillWindow()`, `onMove()`
 - 官方文档：
-  - [Content Provider Basics](https://developer.android.com/guide/topics/providers/content-provider-basics)
-  - [Jetpack App Startup](https://developer.android.com/topic/libraries/app-startup)
-  - [CursorWindow API Reference](https://developer.android.com/reference/android/database/CursorWindow)
+  - [Content Provider Basics](https: //developer.android.com/guide/topics/providers/content-provider-basics)
+  - [Jetpack App Startup](https: //developer.android.com/topic/libraries/app-startup)
+  - [CursorWindow API Reference](https: //developer.android.com/reference/android/database/CursorWindow)
 - 研究素材：
   - `intake/research-feeds/2026-04-05-07-cp-startup-sequence-aosp.md`
   - `intake/research-feeds/2026-04-05-07-jetpack-app-startup-cp-consolidation.md`
@@ -402,7 +402,7 @@ App Startup 减少的是 ContentProvider 的**数量**（从 N 个变为 1 个�
 
 
 ### App Startup Library 误区：ContentProvider 启动开销
-- 来源：https://android-developers.googleblog.com/app-startup
+- 来源：https: //android-developers.googleblog.com/app-startup
 - 类型：article
-- 摘要：过度延迟SDK初始化的误区。App Startup Library 2026年更新：Application类初始化和ContentProvider启动时序的权衡。ContentProvider直接影响启动关键路径。
+- 摘要：过度延迟 SDK 初始化的误区。App Startup Library 2026年更新：Application 类初始化和 ContentProvider 启动时序的权衡。ContentProvider 直接影响启动关键路径。
 - 入库时间：2026-04-08

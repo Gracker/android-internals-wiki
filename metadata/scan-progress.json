@@ -1,29 +1,5 @@
 {
-  "last_scan_time": "2026-04-09T14:30:00.000000",
-  "scanned_files": 690,
-  "total_files": 4747,
-  "indexed_files": 481,
-  "current_directory": "X 文章",
-  "current_offset": 0,
-  "priority_queue": [
-    "X 文章",
-    "性能优化日报",
-    "Claude Code 文档",
-    "公众号文章",
-    "调研",
-    "论文",
-    "DeepResearch"
-  ],
-  "completed_directories": [
-    "Cubox",
-    "OpenClaw定时任务"
-  ],
-  "excluded_directories": [
-    "Cubox",
-    "AndroidWeekly",
-    "Personal-Knowlodge",
-    "Personal-Knowlledge"
-  ],
-  "last_scan_batch": 40,
-  "status": "in_progress"
+  "current_offset": 130,
+  "last_scan_batch": 50,
+  "last_scan_time": "2026-04-09T19:15:00.000000"
 }
