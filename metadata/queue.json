@@ -2270,6 +2270,9 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-10T02:33:02.897840",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-10T02:41:34.521162",
+    "completed_by": "task2b-rework",
+    "notes": "修复: surfaceflinger 启动阶段从 'on core' 修正为 'class core（boot 阶段由 class_start core 触发）'。AOSP init.rc 标准触发序列中无 'on core' 阶段。"
   }
 ]

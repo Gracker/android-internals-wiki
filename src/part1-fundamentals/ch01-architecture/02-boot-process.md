@@ -1,7 +1,7 @@
 ---
 title: "系统启动全流程"
 chapter: "1.2"
-status: ready-to-publish
+status: ready-for-review
 section: "1.2"
 reviewed_date: "2026-04-05"
 reviewed_by: openclaw-task6
@@ -13,7 +13,7 @@ polish_date: "2026-04-05"
 review_round: 2
 polish_by: task2b-polish
 applicable_versions: "Android 8 (API 26) - Android 16 (API 36)"
-last_verified: "2026-03-31"
+last_verified: "2026-04-10"
 last_verified_against: "AOSP android-16.0.0_r1, 官方文档"
 confidence: high
 sources:
@@ -181,7 +181,7 @@ init 启动的 native 服务中，最重要的几个及其作用：
 | 服务 | 启动阶段 | 核心作用 |
 |------|----------|----------|
 | **servicemanager** | `on init` | Binder 通信的"名字服务"，管理所有 Binder 服务的注册与查找 |
-| **surfaceflinger** | `on core`（稍后于 init） | 图形合成引擎，负责将多个图层的渲染结果合成为最终显示画面 |
+| **surfaceflinger** | `class core`（boot 阶段由 `class_start core` 触发） | 图形合成引擎，负责将多个图层的渲染结果合成为最终显示画面 |
 | **lmkd** | `on init` | Low Memory Killer Daemon，在内存不足时杀掉低优先级进程 |
 | **logd** | `on init` | 系统日志守护进程 |
 | **hwservicemanager** | `on init` | HIDL 服务的注册管理（用于 HAL 层通信） |
