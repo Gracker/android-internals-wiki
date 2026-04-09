@@ -2169,18 +2169,32 @@
       "verification_level": "L2",
       "word_count": "~7500",
       "completed_at": "2026-04-09T05:02:00+08:00"
+    },
+    {
+      "chapter": "13.10",
+      "section": "13.10",
+      "title": "Perfetto SQL 性能分析实战手册",
+      "status": "ready-for-review",
+      "drafted_date": "2026-04-09",
+      "drafted_by": "openclaw-task2a",
+      "anchors_covered": 8,
+      "anchors_total": 8,
+      "extensions_covered": 0,
+      "extensions_total": 3,
+      "verification_level": "L2",
+      "word_count": "~7500",
+      "completed_at": "2026-04-09T19:10:00+08:00"
     }
   ],
   "ready_for_review": 5,
-  "last_updated": "2026-04-09T18:35:00+08:00",
+  "last_updated": "2026-04-09T19:10:00+08:00",
   "stats": {
-    "total": 162,
-    "completed": 138,
-    "pending": 11,
-    "last_updated": "2026-04-09T07:03:00+08:00",
-    "reviewed": 0,
+    "total": 163,
+    "completed": 139,
+    "pending": 10,
     "ready-for-review": 89,
-    "ready_to_publish": 49
+    "ready_to_publish": 49,
+    "reviewed": 1
   },
   "research_stats": {
     "runs_today": [
@@ -2504,6 +2518,20 @@
     }
   ],
   "history": [
+    {
+      "date": "2026-04-09",
+      "section": "13.10",
+      "title": "Perfetto SQL 性能分析实战手册",
+      "action": "draft-completed",
+      "word_count": "~7500",
+      "anchors_covered": 8,
+      "anchors_total": 8,
+      "extensions_covered": 0,
+      "extensions_total": 3,
+      "verification_level": "L2",
+      "drafted_date": "2026-04-09",
+      "drafted_by": "openclaw-task2a"
+    },
     {
       "date": "2026-04-09",
       "section": "5.12",
