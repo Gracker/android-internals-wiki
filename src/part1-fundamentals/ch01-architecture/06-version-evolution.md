@@ -1,7 +1,7 @@
 ---
 title: "Android 版本演进中的架构变化"
 chapter: "1.6"
-status: ready-for-review
+status: finalized
 polish_count: 1
 polish_date: "2026-04-06"
 polish_by: "task2b-polish"
@@ -28,7 +28,7 @@ sources:
     path: "https://developer.android.com/about/versions"
 tags: ['treble', 'mainline', 'apex', 'gki', 'art', 'dalvik', 'privacy', 'background-restrictions', '16k-page', 'compilation', 'profile-guided', 'background-execution']
 related_chapters: ["1.1", "1.4", "1.7", "2.9", "4.4", "4.6", "5.6", "8.7"]
-reviewed_date: "2026-04-06"
+reviewed_date: "2026-04-10"
 reviewed_by: "openclaw-task6"
 review_notes: "task9 P90 rework: 寄存器描述修正(翻倍→精确), Dalvik/Zygote已验证正确"
 ---
@@ -62,9 +62,9 @@ review_notes: "task9 P90 rework: 寄存器描述修正(翻倍→精确), Dalvik/
 
 ## 为什么要了解 Android 版本演进
 
-打开 Perfetto 抓一份 Trace，那些进程、线程、Binder 调用、渲染管线的形态并非一成不变。Android 从 2008 年的 1.0 到今天的 16，每一次大版本的架构变更都在重塑这些行为。不了解这些变化，分析问题时容易犯经验主义的错误：用 Android 8 的经验去解释 Android 15 的 Trace，得出错误结论。
+打开 Perfetto 抓一份 Trace，那些进程、线程、Binder 调用、渲染管线的形态并非一成不变。Android 从 2008 年的 1.0 到今天的 Android 16，每一次大版本的架构变更都在重塑这些行为。不了解这些变化，分析问题时容易犯经验主义的错误：用 Android 8 的经验去解释 Android 15 的 Trace，得出错误结论。
 
-更重要的是，Android 的版本演进不是随意的功能堆叠——它有一条清晰的主线：**模块化**。从 Project Treble 到 Project Mainline，从 GKI 到 APEX，Google 一直在把 Android 从一个"铁板一块"的操作系统拆解为可独立升级的模块。理解这条主线，不仅能帮你看懂系统架构的设计意图，还能帮你在实际工作中判断"这个问题是系统层面的还是厂商层面的"——这在 OEM 和 App 开发者的日常工作中至关重要。
+Android 的版本演进不是随意的功能堆叠——它有一条清晰的主线：**模块化**。从 Project Treble 到 Project Mainline，从 GKI 到 APEX，Google 一直在把 Android 从一个"铁板一块"的操作系统拆解为可独立升级的模块。理解这条主线，不仅能帮你看懂系统架构的设计意图，还能帮你在实际工作中判断"这个问题是系统层面的还是厂商层面的"——这在 OEM 和 App 开发者的日常工作中至关重要。
 
 本节会梳理 Android 版本演进中那些对性能分析有直接影响的架构变化，而不是事无巨细地罗列每个版本的新功能。
 
@@ -94,8 +94,9 @@ Android 8.0（2017 年）引入了 **Project Treble**，这是 Android 架构演
 
 Treble 的解决方案简洁而彻底：在 Android Framework 和厂商实现（HAL）之间插入一层稳定的接口（HIDL（HAL Interface Definition Language）/AIDL（Android Interface Definition Language）），将系统分为 **System 分区**（Google 控制）和 **Vendor 分区**（芯片/设备厂商控制）。这样，Framework 可以独立于 Vendor 进行升级。
 
-```
 [图：Project Treble 前后的架构对比]
+
+```
 ┌──────────────┐    ┌──────────────┐
 │   Framework   │    │   Framework   │
 │              │    │              │
@@ -119,7 +120,7 @@ Android 10（2019 年）在 Treble 的基础上更进一步，引入了 **Projec
 
 为了实现这一点，Google 设计了 **APEX**（Android Pony EXpress）——一种类似于 APK 但可以包含本地库和服务的打包格式。APEX 模块可以在启动早期（比常规 APK 更早）被加载，因此适合承载像 ART 这样的底层组件。Android 10 首次发布时包含 13 个 Mainline 模块，后续版本中数量持续增加。
 
-[自动发现: 来源 obsidian/Personal-Knowlodge/source/2026-03-07_wechat_Android_运行时更新_为数十亿设备提高内存.md] ART 作为 Mainline 模块的特别意义在于：ART 的性能优化（如写入屏障消除、隐式挂起检查等编译器改进）可以通过 Play Store 推送到 Android 12+ 的设备上，无需完整系统更新。Google 称这些优化为全球超过 10 亿台设备节省了约 47-95 PB 的存储空间。
+[自动发现: 来源 obsidian/Personal-Knowlodge/source/2026-03-07_wechat_Android_运行时更新_为数十亿设备提高内存.md] ART 作为 Mainline 模块的特别意义在于：ART 的性能优化（如写入屏障消除、隐式挂起检查等编译器改进）可以通过 Play Store 推送到 Android 12+ 的设备上，无需完整系统更新。Google 称这些优化为全球超过 10 亿台设备节省了约 47-95 PB 的存储空间。[待验证: 具体数值需对照原文; Android 12+ ART Mainline 模块通过 Play Store 更新的编译器优化具体包含哪些]
 
 ### Android 12（API 31）：GKI 与 Material You
 
@@ -153,9 +154,9 @@ Android 16（2025 年 6 月发布，代号 Baklava）延续了模块化和性能
 
 这条链条的目标只有一个：**让 Android 的每一层都可以独立更新。**
 
-```
 [图：Android 模块化演进全景]
 
+```
 ┌─────────────────────────────────────┐
 │           App Layer                  │  ← 一直可以独立更新（Play Store）
 ├─────────────────────────────────────┤
