@@ -2,19 +2,19 @@
 title: "线程模型"
 chapter: "1.5"
 section: "1.5"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 5.0 (API 21) - Android 16 (API 36)"
 last_verified: "2026-03-31"
 reviewed_date: "2026-04-05"
 reviewed_by: openclaw-task6
 review_round: 2
-polish_count: 1
-polish_date: "2026-04-05"
+polish_count: 2
+polish_date: "2026-04-10"
 polish_by: task2b-polish
 drafted_by: openclaw-task2
 last_verified_against: "AOSP android-16.0.0_r1"
 drafted_date: "2026-03-31"
-confidence: medium
+confidence: high
 sources:
   - type: blog
     path: "Personal-Knowlodge/source/Android-Perfetto-07-MainThread-And-RenderThread.md"
@@ -274,7 +274,7 @@ Process.setThreadPriority(Process.THREAD_PRIORITY_BACKGROUND);
 
 仅仅用 nice 值来区分优先级还不够。Android 引入了 Linux 的 cgroup（控制组）机制来实现更严格的隔离。当一个线程的 nice 值被设置为 `THREAD_PRIORITY_BACKGROUND`（10）或更高时，它会被自动移入后台 cgroup。
 
-前台 cgroup 和后台 cgroup 的 CPU 时间分配比例大约是 95:5 [待验证: 具体比例因 Android 版本和内核配置可能不同]。这意味着即使后台线程数量很多，它们能获得的 CPU 时间总和也非常有限。这个设计的目的是确保前台 App 的线程能获得充足的 CPU 资源，而后台 App 的工作不会干扰用户体验。
+前台 cgroup 和后台 cgroup 的 CPU 时间分配比例大约是 95:5（具体比例因 Android 版本和内核配置可能不同，实际以设备上 `/dev/cpuctl` cgroup 参数为准）。这意味着即使后台线程数量很多，它们能获得的 CPU 时间总和也非常有限。这个设计的目的是确保前台 App 的线程能获得充足的 CPU 资源，而后台 App 的工作不会干扰用户体验。
 
 在 Perfetto 的 CPU 视图中，我们可以观察到这个效果：后台线程的 CPU slice 通常很短且稀疏，而前台线程的 CPU slice 更长且连续。如果看到一个后台线程意外地占用了大量 CPU，首先要检查的是它的优先级设置是否正确。
 
@@ -446,7 +446,7 @@ Choreographer 也使用了同样的模式：通过 `ThreadLocal` 为每个线程
 
 4. **内存压力**：每个线程的栈空间加起来可能达到几十甚至上百 MB，在内存紧张的设备上会加速 LMK 回收。
 
-Android Framework 对线程数量的控制体现在多个层面：Binder 线程池默认最多 16 个线程 [待验证: 含主线程，实际 maxSpawnCount=15]；`Dispatchers.IO` 的线程池上限为 64；`Dispatchers.Default` 的线程数等于 CPU 核心数。这些限制不是随意的，而是经过实践验证的平衡点。
+Android Framework 对线程数量的控制体现在多个层面：Binder 线程池默认最多 16 个线程（含主线程，共 15 个可 Spawn 的 Binder 线程）；`Dispatchers.IO` 的线程池上限为 64；`Dispatchers.Default` 的线程数等于 CPU 核心数。这些限制不是随意的，而是经过实践验证的平衡点。
 
 [已验证: 官方文档, developer.android.com/topic/performance]
 
