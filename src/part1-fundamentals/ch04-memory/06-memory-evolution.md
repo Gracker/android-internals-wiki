@@ -209,9 +209,9 @@ CMC 的分配器也从 `RegionSpace` 切换为 `BumpPointerSpace`，结构更简
 
 AOSP 源码路径：
 - CC GC：`art/runtime/gc/collector/concurrent_copying.cc`
-- CMC GC：`art/runtime/gc/collector/concurrent_mark_compact.cc`
+- CMC GC：`art/runtime/gc/collector/mark_compact.cc`
 
-[已验证: AOSP android-15.0.0_r1, art/runtime/gc/collector/concurrent_mark_compact.cc]
+[已修正: AOSP 实际文件名为 mark_compact.cc（非 concurrent_mark_compact.cc），经 android.googlesource.com 验证]
 [来源: Cubox/ART虚拟机CMC GC算法核心实现介绍-2023-06-24.md]
 
 ## Android 11+：Native malloc 切换到 Scudo 分配器
@@ -271,8 +271,8 @@ Google 在后续版本中对 Scudo 做了大量优化，主要集中在三个方
 **Cache 分级设计。** 采用两级缓存：一级缓存是数组结构，每次存取操作数组末尾元素，局部性好、速度快；二级缓存是链表结构，批量补充一级缓存。这种分级让频繁的小内存分配几乎不需要锁操作。
 
 AOSP 源码路径：
-- Scudo 实现：`system/memory/libmemunreachable/scudo/`（Android 集成版本）
-- LLVM Scudo：`compiler-rt/lib/scudo/`
+- Scudo 实现：`external/scudo/standalone/`（Android 集成版本）
+- LLVM Scudo 上游：`compiler-rt/lib/scudo/standalone/`
 
 [来源: Cubox/【Android 15】内存分配器Scudo在这些年的优化-2024-06-14.md]
 [已验证: Cubox/Scudo内存分配器介绍-2022-01-14.md]
@@ -508,7 +508,7 @@ MTE 的 Async 模式开销只有 1-2%，这在绝大多数场景下可以忽略�
 ### AOSP 源码路径
 - ART CMS GC：`art/runtime/gc/collector/concurrent_mark_sweep.cc`
 - ART CC GC：`art/runtime/gc/collector/concurrent_copying.cc`
-- ART CMC GC：`art/runtime/gc/collector/concurrent_mark_compact.cc`
+- ART CMC GC：`art/runtime/gc/collector/mark_compact.cc`
 - RosAlloc：`art/runtime/gc/allocator/rosalloc.cc`
 - RegionSpace：`art/runtime/gc/space/region_space.cc`
 - Bitmap 分配（Android 8.0+）：`frameworks/base/libs/hwui/Bitmap.cpp`
