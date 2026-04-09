@@ -5,7 +5,7 @@ status: ready-for-review
 applicable_versions: "Android 5.0 (API 21) - Android 16 (API 36)"
 last_verified: "2026-04-01"
 last_verified_against: "AOSP android-16.0.0_r1, Android 官方文档"
-confidence: medium
+confidence: high
 sources:
   - type: blog
     path: "obsidian/Personal-Knowlodge/source/2026-03-07_wechat_Android深入卡顿分析与实践.md"
@@ -21,13 +21,20 @@ sources:
     path: "frameworks/base/core/java/android/view/View.java (LAYER_TYPE_HARDWARE)"
 tags:
   - android
-  - research
+  - smoothness
+  - jank-optimization
+  - recyclerview
+  - compose-performance
+  - layout-optimization
 
 
 reviewed_date: "2026-04-04"
 reviewed_by: "openclaw-task6"
 rework_date: "2026-04-04"
 rework_by: "openclaw-task2b"
+polish_count: 1
+polish_date: "2026-04-09"
+polish_by: "task2b-polish"
 
 ---
 
@@ -199,9 +206,11 @@ Android 12 的 `RenderEffect` API 模糊效果是性能敏感操作。建议：�
 
 ## 线程优化：耗时操作异步化、Binder 调用、线程池
 
+前面讲的布局、列表、渲染三类优化，解决的是渲染管线内部的效率问题。但很多卡顿的根因不在渲染本身——主线程被耗时操作阻塞，根本没有时间完成一帧的渲染。这类问题需要从线程调度层面解决。
+
 ### 耗时操作异步化的基本原则
 
-**第一，"耗时"的阈值比你想象的低。** 120Hz 设备上一个 VSync 周期只有 8.33ms，扣除渲染固定开销 3-5ms，留给业务逻辑的时间只有 3-5ms。
+**第一，"耗时"的阈值比直觉判断要低。** 120Hz 设备上一个 VSync 周期只有 8.33ms，扣除渲染固定开销 3-5ms，留给业务逻辑的时间只有 3-5ms。
 
 **第二，Binder 调用的耗时不可预测。** 系统空闲时可能 0.5ms，繁忙时可能 20ms+。
 
@@ -250,7 +259,7 @@ val config by lazy(LazyThreadSafetyMode.NONE) { parseConfig() }
 
 ## Compose 性能优化：减少重组、stable 标记、remember/derivedStateOf
 
-Compose 的声明式编程模型引入了新的性能陷阱——**不必要的 Recomposition**。传统 View 系统的优化核心是减少 measure/layout/draw 开销，Compose 多了一个 **composition** 阶段。
+传统 View 系统的优化到此基本覆盖了主要场景。但越来越多的项目正在迁移到 Jetpack Compose，它引入了一套全新的性能模型——不只有 measure/layout/draw，还多了一个 **composition** 阶段。Composition 阶段的开销取决于 Recomposition（重组）的频率和范围，这是 Compose 性能优化的核心战场。
 
 ### 减少 Recomposition 的核心策略
 
@@ -328,6 +337,7 @@ Compose 的 LazyColumn 内部也实现了类似的预取机制——当用户在
 3. **"Hardware Layer 神器"**：只在属性动画场景有效，滥用反而增加开销
 4. **"onBindViewHolder 调用越少越好"**：应关注单次调用的耗时，不是次数
 5. **"子线程不影响主线程"**：大量子线程抢 CPU 时间片、增内存压力、导致更频繁 GC
+6. **"预取越多越好"**：GapWorker 预取和图片预加载都占用帧间空闲时间，过度预取反而会挤占主线程的渲染预算；`setInitialPrefetchCount` 应根据实际 item 复杂度调优，不是越大越好
 
 ## 参考资料
 
