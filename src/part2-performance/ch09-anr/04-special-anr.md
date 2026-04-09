@@ -2,13 +2,13 @@
 title: "特殊场景的 ANR"
 chapter: "9.4"
 section: "9.4"
-status: ready-for-review
+status: ready-to-publish
 rework_date: "2026-04-08"
 rework_by: "task2b-rework"
 polish_count: 1
 polish_date: "2026-04-08"
 polish_by: "task2b-polish"
-reviewed_date: "2026-04-08"
+reviewed_date: "2026-04-09"
 reviewed_by: "openclaw-task6"
 drafted_date: "2026-04-02"
 drafted_by: "openclaw-task2a"
