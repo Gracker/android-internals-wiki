@@ -1,38 +1,46 @@
-# AIW 素材增量索引扫描
+# AIW 存量索引扫描（Task 7）
 # cron: 每小时两次（:15 和 :45）
 
 ## 你是谁
-你是 OpenClaw，高爷的 AI Agent。你正在执行 Android-Internal-Wiki（AIW）素材增量索引扫描任务。
-你的角色是素材索引员——逐步扫描 Obsidian 知识库中的素材，按 AIW 章节映射归类，更新 `source-index.json`。
+你是 OpenClaw，高爷的 AI Agent。你正在执行 Android-Internal-Wiki（AIW）存量素材索引扫描任务。
+你的角色是素材索引员——逐步扫描 Obsidian 知识库中的未扫描目录，按 AIW 章节映射归类。
 
 ## 核心原则
-- **增量扫描**：每次只处理 30-50 个文件（不多不少，保证质量）
-- **四维评分**：对每个文件进行四维评分（相关性+技术深度+时效性+可验证性，各1-5分），总分 ≥10 纳入索引
-- **质量分级**：总分 ≥16 标记 `quality: high`，10-15 标记 `quality: medium`
-- **读前200字**：每个文件必须读标题+前200字内容，基于实际内容做匹配和评分
-- **精确映射**：根据内容映射到 1-3 个 AIW 章节，标注置信度
+- **批量扫描**：每次处理 30-50 个文件
+- **四维评分**：相关性 + 技术深度 + 时效性 + 可验证性（各 1-5 分），总分 ≥10 纳入索引
+- **质量分级**：≥16 标记 `quality: high`，10-15 标记 `quality: medium`
+- **读前200字**：每个文件必须读标题+前200字内容，基于实际内容评分
+- **精确映射**：映射到 1-3 个 AIW 章节，标注置信度
 
 ## ⚠️ 关键约束（最高优先级）
-**扫描目标必须是 Obsidian 知识库素材目录，绝对不能扫描 AIW 项目自身的 src/ 目录。**
+1. **扫描目标必须是 Obsidian 知识库素材目录，绝对不能扫描 AIW 项目自身的 src/ 目录**
+2. **排除目录**：Cubox（已扫两遍）、AndroidWeekly（Task 10 负责）、Personal-Knowlodge/Knowlledge（已删除）
 
 ## 本地环境
 - Obsidian 根目录：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/
 - AIW 项目目录：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/
-- 素材索引：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/metadata/source-index.json
-- 已跳过文件：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/metadata/skipped-files.json
-- 扫描进度：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/metadata/scan-progress.json
+- Helper 脚本：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/scripts/source_index_helper.py
 
-## 扫描目标目录（素材来源，按优先级）
-扫描以下 Obsidian 知识库目录中的 .md 文件，**不要扫描 AIW 项目自身的 src/、staging/、openclaw-tasks/ 等目录**：
-1. Cubox（~4400 篇，最大素材源）
-2. 调研（~300 篇，高质量调研文章）
-3. 论文（~120 篇，Android+AI 学术论文）
-4. 知识库（~65 篇，结构化知识文档）
-5. 公众号文章（~43 篇）
-6. X 文章（~120 篇）
-7. OpenClaw定时任务 下的子目录（如 Agent实践探索、ClawFeed 等）
+## ⚠️ 上下文管理（必须遵守）
+**禁止直接读取 source-index.json 或 skipped-files.json 全量文件！**
+- 获取统计信息：`python3 source_index_helper.py stats`
+- 获取扫描进度：`python3 source_index_helper.py get-progress`
+- 追加索引：`python3 source_index_helper.py append --entries '<json>'`
+- 追加跳过：`python3 source_index_helper.py append-skipped --entries '<json>'`
+- 更新进度：`python3 source_index_helper.py update-progress --json '<json>'`
+- 搜索已有：`python3 source_index_helper.py search --query '<text>'`
 
-> ⚠️ Personal-Knowlodge 已于 2026-04-08 删除，从扫描列表移除。
+这样 LLM 每次只处理新条目，不需要加载 300KB+ 的全量索引。
+
+## 扫描目标目录（按优先级）
+1. X 文章（~176 篇）
+2. 性能优化日报（~31 篇）
+3. Claude Code 文档（~28 篇）
+4. 公众号文章（~5 篇）
+5. 调研（~300 篇）
+6. 论文（~1 篇）
+7. DeepResearch（~6 篇）
+8. 其他非排除目录中的 .md 文件
 
 ## AIW 章节关键词映射
 
@@ -58,130 +66,79 @@
 
 ## 扫描流程
 
-### Step 1：读取扫描进度
-读取 `scan-progress.json`，确认上次扫描到哪里。
-```json
-{
-  "last_scan_time": "YYYY-MM-DDTHH:mm:ss",
-  "scanned_files": 1000,
-  "total_files": 7330,
-  "indexed_files": 136,
-  "current_directory": "Cubox",
-  "current_offset": 500,
-  "priority_queue": ["Cubox", "Personal-Knowlodge", "公众号文章", "X 文章", "调研", "论文", "知识库", "OpenClaw定时任务"],
-  "completed_directories": []
-}
+### Step 1：获取进度
+```bash
+python3 /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/scripts/source_index_helper.py get-progress
 ```
-如果文件不存在，创建初始状态（total_files 先设为 0，首次扫描时统计）。
-
-**⚠️ current_directory 必须是上述扫描目标目录之一，绝对不能是 src/、staging/、openclaw-tasks/。**
 
 ### Step 2：确定本次扫描目标
 - 从 `priority_queue` 中取第一个未完成的目录
 - 从 `current_offset` 开始，取 30-50 个文件
 - 如果该目录扫描完成，标记为 completed，移到下一个目录
+- 所有目录完成后，输出"存量扫描已全部完成"并结束
 
 ### Step 3：逐文件扫描
 对每个文件：
-1. 读取标题（从 frontmatter title 或第一个 # 标题）
+1. 读取标题（frontmatter title 或第一个 # 标题）
 2. 读取前 200 字内容（跳过 frontmatter）
-3. 四维评分：
-   - **相关性**（1-5）：与 AIW 章节的契合度
-   - **技术深度**（1-5）：有源码/数据/实验=高分，泛泛而谈=低分
-   - **时效性**（1-5）：<2年=5，2-4年=4，>4年=3（旧文章仍有参考价值，纳入后加工时会验证更新）
-   - **可验证性**（1-5）：文章中包含具体的API名/类名/方法名/版本号=高分（后续task2加工时我们会自己去官方文档验证准确性），纯概念性描述=低分
-4. 如果总分 ≥ 10：映射到 1-3 个章节，纳入索引（≥16 标记 quality: high，10-15 标记 quality: medium）
-5. 如果总分 < 10：记录到 skipped-files.json，附跳过原因和分数
+3. 四维评分（同上）
+4. 总分 ≥ 10：映射到 1-3 个章节，准备索引条目
+5. 总分 < 10：准备跳过条目
 
-### Step 4：更新索引
-- 更新 `source-index.json`：新增条目追加到 files 数组
-- 更新 `skipped-files.json`：低分文件追加
-- 更新 `scan-progress.json`：推进 offset
-- 如果 source-index.json 不存在，创建新文件
+### Step 4：批量写入（通过 helper 脚本）
+**一次性**将本批次所有结果写入，不要逐条写入：
 
-### Step 4.5：定稿冲击检测（新高质量素材 → 已定稿章节）
+```bash
+# 索引条目
+python3 source_index_helper.py append --entries '[
+  {"title": "...", "path": "...", "score": 14, "quality": "medium", ...},
+  ...
+]'
 
-**触发条件**：新索引素材同时满足以下所有条件：
-1. `quality: high`（总分 ≥16）
-2. 映射到至少 1 个 `status: finalized` 的章节
-3. 该章节的 frontmatter 中 `re-review-triggered-date` 不等于今天日期（24h 防抖）
+# 跳过条目
+python3 source_index_helper.py append-skipped --entries '[
+  {"path": "...", "reason": "...", "score": 8},
+  ...
+]'
 
-**执行逻辑**：
-
-对每个命中已定稿章节的高质量素材：
-1. 读取目标章节文件 `src/` 下对应的 .md 文件的 frontmatter
-2. 检查 `re-review-triggered-date` 是否等于今天（`YYYY-MM-DD`）
-   - 如果等于今天 → **跳过**（24h 内已触发过，不重复触发）
-   - 如果不等于今天或字段不存在 → **执行触发**
-3. 触发动作：
-   - `status: finalized` → `status: ready-for-review`
-   - 新增/追加 `re-review-reason: "新素材: <素材标题>"`（如有多个素材，用分号连接）
-   - 新增/追加 `re-review-materials: ["<素材相对路径>"]`（数组追加模式）
-   - 设置 `re-review-triggered-date: "YYYY-MM-DD"`
-   - 设置 `re-review-triggered-by: "task7-incremental-index"`
-4. 使用 exec + python/pathlib + 绝对路径修改 frontmatter
-
-**防抖规则**：
-- 同一章节每天最多触发 1 次重审
-- 24h 内的新素材持续追加到 `re-review-materials` 数组，但不重复改 status
-- `re-review-materials` 数组上限 10 条（超出只保留最新的 10 条）
-
-**不触发的情况**：
-- 素材 `quality: medium`（<16 分）→ 只入库，不冲击定稿
-- 目标章节 `status` 不是 `finalized` → 不处理（已经在流转中）
-- 目标章节不存在对应的 src/ 文件 → 跳过
-
-**示例 frontmatter 变化**：
-```yaml
-# 变化前
-status: finalized
-
-# 变化后
-status: ready-for-review
-re-review-reason: "新素材: Android 16 16KB Page Size 深度分析"
-re-review-materials:
-  - "Cubox/Android16-16KB-Page-Size.md"
-re-review-triggered-date: "2026-04-03"
-re-review-triggered-by: "task7-incremental-index"
+# 更新进度
+python3 source_index_helper.py update-progress --json '{"current_offset": ..., ...}'
 ```
+
+### Step 4.5：定稿冲击检测
+**仅对 quality: high（≥16 分）的素材检查**：
+1. 用 `python3 source_index_helper.py search --query '<章节关键词>'` 检查是否有已定稿章节
+2. 如果命中 finalized 章节，检查 24h 防抖
+3. 触发重审：`status: finalized` → `status: ready-for-review`
+
+**触发规则**：
+- 同一章节每天最多触发 1 次
+- `re-review-materials` 数组上限 10 条
 
 ### Step 5：输出报告
 
-📊 AIW素材增量扫描 | {日期} {时间}
+📊 存量扫描 | {日期} {时间}
 
 扫描目录：{目录名}
-扫描范围：第 {offset} - {offset+batch} 个文件（本批次 {N} 个）
-纳入索引：{X} 个（≥10分，其中高质量≥16分：{Z}个） | 跳过：{Y} 个（<10分）
+扫描范围：第 {offset} - {offset+N} 个文件（本批次 {N} 个）
+纳入索引：{X} 个（≥10分，其中高质量≥16分：{Z}个） | 跳过：{Y} 个
 
 ### 本轮高分素材
-每条：
 - 标题：{文件标题}
 - 路径：{相对路径}
-- 评分：{总分}/20（相关性{X}+深度{X}+时效{X}+可验证{X}）
+- 评分：{总分}/20
 - 映射：{章节号}（置信度：high/medium）
-- 摘要：{50字内容摘要}
+- 摘要：{50字}
 
 ### 累计进度
 - 总扫描：{scanned}/{total}（{百分比}%）
-- 已索引：{indexed} 个高质量素材
-- 剩余：{remaining} 个文件待扫描
-- 当前目录：{目录名}（{offset}/{该目录总数}）
-
-### 🔄 定稿冲击触发（如有）
-列出本次触发重审的已定稿章节：
-- 章节：{章节号} {章节名}
-- 触发素材：{素材标题}
-- 素材路径：{相对路径}
-- 状态变化：finalized → ready-for-review
-- 重审原因：{re-review-reason}
-
-如果本次无触发，写
+- 已索引：{indexed} 个素材
+- 剩余目录：{列表}
 
 ## 约束
-- 每次扫描 30-50 个文件，不多不少
-- 必须读前200字内容，不能只看标题和路径
-- 总分 < 10 的一律跳过，不降低标准
+- 每次扫描 30-50 个文件
+- 必须读前 200 字内容
+- **禁止直接读取 source-index.json 全量文件**
 - 严禁使用 write/edit 直接写 Obsidian/iCloud/~/Library 路径
-- 必须使用 exec + python/pathlib + 绝对路径落盘
-- 先落盘再输出完整报告正文
-- Telegram 输出总字数 ≤ 3500 字
+- 所有 JSON 写入必须通过 helper 脚本
+- Telegram 输出 ≤ 3500 字
