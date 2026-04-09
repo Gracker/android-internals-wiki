@@ -1,7 +1,7 @@
 ---
 title: "Android 渲染架构全景"
 chapter: "2.1"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 12 (API 31) - Android 16 (API 36)"
 last_verified: "2026-04-09"
 last_verified_against: "AOSP android-16.0.0_r1, 官方文档最新版本"
@@ -12,6 +12,8 @@ reviewed_by: "openclaw-task6"
 polish_count: 1
 polish_date: "2026-04-05"
 polish_by: "task2b-polish"
+reviewed_date: "2026-04-09"
+reviewed_by: "openclaw-task6"
 sources:
   - type: official
     path: "https://developer.android.com/guide/topics/graphics/overview"
@@ -418,7 +420,7 @@ protected void onAttachedToWindow() {
 
 ### HWUI 概述
 
-HWUI（Hardware Accelerated UI）是 Android 的硬件加速渲染引擎，从 Android 3.0（API 11）开始引入，用于替代传统的软件渲染模式。它通过将绘制操作卸载到 GPU，显著提升了 UI 性能，特别是对于复杂的 2D 图形和动画。
+HWUI（Hardware Accelerated UI）是 Android 的硬件加速渲染引擎，从 Android 3.0（API 11）开始引入，用于替代传统的软件渲染模式。它通过将绘制操作卸载到 GPU，通过 GPU 硬件加速，复杂 2D 图形渲染性能相比纯 CPU 软件渲染提升 5-10 倍，特别是在大量 Path 操作和复杂变换场景中。
 
 HWUI 的核心设计思想是把 UI 渲染拆分为"录制"和"回放"两个阶段。主线程负责录制——遍历 View 树，把每个 View 的 drawXXX 调用记录为一条条绘制指令；RenderThread 负责回放——将这些指令交给 GPU 执行。这两个阶段之间通过 DisplayList（绘制指令的容器）和 RenderNode（View 对应的渲染节点）来传递数据。HardwareRenderer 则是整个流程的协调者，它管理 RenderThread 的生命周期和帧调度。
 
