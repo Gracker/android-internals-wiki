@@ -5005,7 +5005,10 @@
       "drafted_by": "openclaw-task2a",
       "reviewed_date": "2026-04-06",
       "reviewed_by": "openclaw-task6",
-      "confidence": "medium"
+      "confidence": "medium",
+      "polish_count": 2,
+      "polish_date": "2026-04-10",
+      "polish_by": "task2b-polish"
     },
     "1.13": {
       "title": "MessageQueue 机制与 DeliQueue 无锁优化",
