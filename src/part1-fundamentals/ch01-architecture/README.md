@@ -10,3 +10,4 @@
 - Binder IPC 机制与性能影响
 - 线程模型
 - Android 版本演进中的架构变化
+- IPC 全景：Android 进程间通信机制对比与性能选型
