@@ -310,3 +310,20 @@ Android 16 模块数量的具体数字未给出。章节提到"超过 50 个模�
 
 ### 关联章节
 1.7（ART 编译管线与 dex2oat 优化）、8.2（启动优化策略）
+
+
+## [2026-04-09] 6.1 Android 存储架构 — 知识盲区
+
+### 盲区描述
+f2fs atomic_write 接口与 AOSP SQLite 的实际集成状态。当前正文描述 f2fs 提供 atomic_write ioctl，允许 SQLite"跳过写日志直接原子提交"。但未说明：SQLite 在 AOSP 中默认是否启用 f2fs atomic_write support？该功能需要 SQLite 编译时启用 SQLITE_F2FS_ATOMIC_WRITE 宏，实际设备上该宏是否默认启用？
+
+### 重要程度
+高
+
+### 建议研究方向
+- 查找 AOSP external/sqlite/dist/SqliteWiki 和 Fts5 源码中 f2fs atomic_write 相关代码
+- 确认 Android 10/11/12/13/14 各版本中 SQLite 是否默认启用 f2fs atomic_write
+- 如果未默认启用，查找哪些设备/rom 厂商手动启用了该特性，以及量化数据
+
+### 关联章节
+6.1（存储架构）、6.3（I/O 调度）、7.2（卡顿原因体系）

@@ -1327,3 +1327,25 @@ tags:
   2. 在 boot-optimization 章节或 startPerformance 段落，补充一句"dex2oat 编译策略（见 1.7 节）对首次开机时间影响显著"
   3. 在 Zygote fork 描述中增加一句：App 进程的 fork 路径（AMS → socket → Zygote）与 SystemServer 的主动 fork 不同
   4. 补充 AutoFDO 的具体 AOSP commit 或来源链接
+
+
+## [Task9 Deep Review] 6.1 Android 存储架构 — 2026-04-09
+- **类型**：源码准确性 + 原理完整性
+- **位置**：UFS 协议栈描述段 + cgroup v2 隔离段落 + FBE 版本描述段
+- **问题**：
+  1. P1: UFS 命令集描述为"SCSI 子集"属于错误归类；UFS 有独立 UCS 命令集
+  2. P1: cgroup v2 buffered I/O 优先级倒置（flush 线程 cgroup 归属与原始进程不一致）完全未覆盖
+  3. P1: FBE 强制要求版本描述不准确（Android 10 可通过 DPC 豁免）
+  4. P2: f2fs atomic_write 与 SQLite 实际集成状态未明确（AOSP SQLite 默认不使用）
+  5. P2: dm-default-key 用于元数据加密的描述存疑
+  6. P2: NAND TLC P/E 次数缺来源标注
+  7. P2: FUSE 开销数据缺版本和来源
+  8. P2: related_chapters 4.1/7.1 正文未内联引用
+- **建议**：
+  1. UFS 命令集描述修正：UFS Transport Protocol 基于 SCSI 架构模型，但 UFS Command Set (UCS) 是独立的，修正正文表述
+  2. 在 cgroup v2 I/O 隔离段落补充 buffered I/O 优先级倒置问题
+  3. FBE 版本要求修正：区分"要求支持"与"强制要求"，补充 Android 10/11 差异
+  4. f2fs atomic_write 段落补充 SQLite AOSP 编译选项默认状态
+  5. NAND P/E 次数补充 JEDEC 来源
+  6. FUSE 开销补充具体 Android 版本和测试来源
+  7. 正文内联引用 related_chapters 中的 4.1 和 7.1

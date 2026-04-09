@@ -1,10 +1,10 @@
 {
-  "last_scan_time": "2026-04-09T11:26:20.630034",
-  "scanned_files": 4724,
+  "last_scan_time": "2026-04-09T13:17:54.919150",
+  "scanned_files": 208,
   "total_files": 4878,
-  "indexed_files": 427,
+  "indexed_files": 453,
   "current_directory": "调研",
-  "current_offset": 118,
+  "current_offset": 208,
   "priority_queue": [],
   "completed_directories": [
     "Cubox",
@@ -15,6 +15,6 @@
     "论文",
     "OpenClaw定时任务"
   ],
-  "last_scan_batch": 1,
+  "last_scan_batch": 40,
   "status": "in_progress"
 }

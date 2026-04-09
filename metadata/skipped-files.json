@@ -1486,5 +1486,551 @@
     "first_chars": "",
     "indexed_at": "2026-04-09T10:52:14.860934",
     "reason": "Total score 5 < 10"
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-17-后台任务调度与电池/stage-06/cards/3.md",
+    "title": "A Survey of Android Malware Detection with Deep Neural Models",
+    "scores": {
+      "relevance": 1,
+      "depth": 1,
+      "timeliness": 3,
+      "verifiability": 3
+    },
+    "total_score": 8,
+    "first_chars": "",
+    "indexed_at": "2026-04-09T12:53:30.623078",
+    "reason": "Total score 8 < 10"
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-20-性能功耗热优化/stage-06/cards/4.md",
+    "title": "AutoDroid: LLM-powered Task Automation in Android",
+    "scores": {
+      "relevance": 1,
+      "depth": 1,
+      "timeliness": 3,
+      "verifiability": 3
+    },
+    "total_score": 8,
+    "first_chars": "# AutoDroid: LLM-powered Task Automation in Android\n\n## Cite_Key\nwen2023autodroid\n\n## Problem\nPoor scalability of existing mobile task automation approaches due to limited language understanding and m",
+    "indexed_at": "2026-04-09T12:53:30.623424",
+    "reason": "Total score 8 < 10"
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-18-02-性能功耗热优化/stage-06/cards/4.md",
+    "title": "An empirical investigation of performance overhead in cross-platform mobile development frameworks",
+    "scores": {
+      "relevance": 1,
+      "depth": 1,
+      "timeliness": 2,
+      "verifiability": 3
+    },
+    "total_score": 7,
+    "first_chars": "# An empirical investigation of performance overhead in cross-platform mobile development frameworks\n\n## Cite_Key\nbirnhansen2020empirical\n\n## Problem\nConcerns about performance drawbacks of cross-plat",
+    "indexed_at": "2026-04-09T12:53:30.623705",
+    "reason": "Total score 7 < 10"
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-18-03-性能功耗热优化/stage-06/cards/4.md",
+    "title": "AutoDroid: LLM-powered Task Automation in Android",
+    "scores": {
+      "relevance": 1,
+      "depth": 1,
+      "timeliness": 3,
+      "verifiability": 4
+    },
+    "total_score": 9,
+    "first_chars": "# AutoDroid: LLM-powered Task Automation in Android\n\n## Cite_Key\nwen2023autodroid\n\n## Problem\nMobile task automation with limited language understanding and non-trivial manual efforts\n\n## Method\nAutoD",
+    "indexed_at": "2026-04-09T12:53:30.624356",
+    "reason": "Total score 9 < 10"
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-17-后台任务调度与电池/stage-06/cards/4.md",
+    "title": "Securing IoT Devices Using Dynamic Power Management: Machine Learning Approach",
+    "scores": {
+      "relevance": 1,
+      "depth": 1,
+      "timeliness": 3,
+      "verifiability": 1
+    },
+    "total_score": 6,
+    "first_chars": "",
+    "indexed_at": "2026-04-09T12:53:30.624605",
+    "reason": "Total score 6 < 10"
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-20-性能功耗热优化/stage-06/cards/5.md",
+    "title": "Android in the Zoo: Chain-of-Action-Thought for GUI Agents",
+    "scores": {
+      "relevance": 1,
+      "depth": 1,
+      "timeliness": 4,
+      "verifiability": 3
+    },
+    "total_score": 9,
+    "first_chars": "# Android in the Zoo: Chain-of-Action-Thought for GUI Agents\n\n## Cite_Key\nzhang2024android\n\n## Problem\nExisting GUI agents for smartphones typically consider little semantic information from intermedi",
+    "indexed_at": "2026-04-09T12:53:30.624875",
+    "reason": "Total score 9 < 10"
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-18-03-性能功耗热优化/stage-06/cards/5.md",
+    "title": "Android in the Zoo: Chain-of-Action-Thought for GUI Agents",
+    "scores": {
+      "relevance": 1,
+      "depth": 1,
+      "timeliness": 4,
+      "verifiability": 3
+    },
+    "total_score": 9,
+    "first_chars": "# Android in the Zoo: Chain-of-Action-Thought for GUI Agents\n\n## Cite_Key\nzhang2024android\n\n## Problem\nExisting GUI agents for smartphones consider little semantic information from intermediate screen",
+    "indexed_at": "2026-04-09T12:53:30.625226",
+    "reason": "Total score 9 < 10"
+  },
+  {
+    "path": "调研/Anthropic-81K访谈/81k-interviews-en.md",
+    "title": "What 81,000 People Want from AI",
+    "scores": {
+      "relevance": 1,
+      "depth": 1,
+      "timeliness": 3,
+      "verifiability": 1
+    },
+    "total_score": 6,
+    "first_chars": "AI is used heavily for work, and so it's perhaps unsurprising that the largest group of people (19%) sought \"professional excellence\"—wanting AI to handle mundane tasks so they can focus on strategic,",
+    "indexed_at": "2026-04-09T12:53:30.626128",
+    "reason": "Total score 6 < 10"
+  },
+  {
+    "path": "调研/Anthropic-81K访谈/81k-interviews-zh.md",
+    "title": "81,000 人对 AI 的期望",
+    "scores": {
+      "relevance": 1,
+      "depth": 3,
+      "timeliness": 3,
+      "verifiability": 1
+    },
+    "total_score": 8,
+    "first_chars": "AI 大量用于工作，因此最大的人群（19%）追求\"专业卓越\"也许并不令人惊讶——他们希望 AI 处理琐碎任务，以便他们专注于战略性的更高层次问题。另有 9% 的人将 AI 设想为帮助他们建立和扩展业务的企业家合作伙伴。\n\n许多人在访谈开始时同样谈论生产力，但在 Anthropic Interviewer 询问其背后的潜在希望——实现这一愿景能为他们带来什么——之后，其他优先事项浮出水面。这不是关于",
+    "indexed_at": "2026-04-09T12:53:30.626835",
+    "reason": "Total score 8 < 10"
+  },
+  {
+    "path": "调研/graphify-out/GRAPH_REPORT.md",
+    "title": "Graph Report - /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/调研  (2026-04-08)",
+    "scores": {
+      "relevance": 1,
+      "depth": 1,
+      "timeliness": 5,
+      "verifiability": 1
+    },
+    "total_score": 8,
+    "first_chars": "# Graph Report - /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/调研  (2026-04-08)\n\n## Corpus Check\n- 282 files · ~0 words\n- Verdict: corpus is large enough that graph str",
+    "indexed_at": "2026-04-09T12:53:30.627694",
+    "reason": "Total score 8 < 10"
+  },
+  {
+    "path": "调研/M5-MacBook-Pro深度对比评测/M5-MacBook-Pro深度对比评测.md",
+    "title": "新 M5 系列 MacBook Pro 深度对比评测：Fusion 架构重塑一切，Pro 与 Max 差距再拉大",
+    "scores": {
+      "relevance": 1,
+      "depth": 1,
+      "timeliness": 3,
+      "verifiability": 1
+    },
+    "total_score": 6,
+    "first_chars": "## 本文将有理有据地深入揭发并严肃讨论：\n\n- M5 系列 MacBook Pro 到底值不值得入手？\n- M5 Pro 的全新三核架构到底意味着什么？\n- 从 M1 到 M5，Apple 芯片设计思路的演进\n- M5 Pro 与 M5 Max 到底差距有多大？\n- 不同需求用户应该如何选择？\n\n\n## 二、革命性变化：三核架构取代大小核\n\n### 2.1 从\"大小核\"到\"超级核 + 性能核\"",
+    "indexed_at": "2026-04-09T12:53:30.628048",
+    "reason": "Total score 6 < 10"
+  },
+  {
+    "path": "调研/AI-Agent-落地案例库/README.md",
+    "title": "AI Agent 落地案例库",
+    "scores": {
+      "relevance": 1,
+      "depth": 1,
+      "timeliness": 5,
+      "verifiability": 1
+    },
+    "total_score": 8,
+    "first_chars": "*最后更新：2026-04-07*\n*维护者：高爷*",
+    "indexed_at": "2026-04-09T12:53:30.628537",
+    "reason": "Total score 8 < 10"
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-04-04-Linux性能分析工具-perf与eBPF/README.md",
+    "title": "Linux 性能分析工具：perf 与 eBPF 在性能调优中的实践",
+    "scores": {
+      "relevance": 1,
+      "depth": 1,
+      "timeliness": 3,
+      "verifiability": 4
+    },
+    "total_score": 9,
+    "first_chars": "## 研究目标\n\n开发一种集成 perf-eBPF 方法论，将应用性能指标与 Android 设备功耗和热行为进行关联分析，系统开销 <10%。\n\n## 文献综述核心发现\n\n### 四大研究集群\n\n1. **网络性能优化** — eBPF + XDP 在高速数据包处理中的应用\n2. **系统监控与可观测性** — 容器化/微服务环境中的非侵入式监控\n3. **分布式系统加速** — 内核级聚合/广",
+    "indexed_at": "2026-04-09T12:53:30.628803",
+    "reason": "Total score 9 < 10"
+  },
+  {
+    "path": "调研/三大AI编程框架对比/X候选推文.md",
+    "title": "X 候选推文",
+    "scores": {
+      "relevance": 1,
+      "depth": 1,
+      "timeliness": 3,
+      "verifiability": 1
+    },
+    "total_score": 6,
+    "first_chars": "",
+    "indexed_at": "2026-04-09T12:53:30.629810",
+    "reason": "Total score 6 < 10"
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-20-性能功耗热优化/stage-14/analysis.md",
+    "title": "Unified Analysis: Android Performance, Power, and Thermal Optimization Experiment",
+    "scores": {
+      "relevance": 1,
+      "depth": 1,
+      "timeliness": 3,
+      "verifiability": 3
+    },
+    "total_score": 8,
+    "first_chars": "# Unified Analysis: Android Performance, Power, and Thermal Optimization Experiment\n\n## Metrics Summary\nThe experiment aimed to reduce thermal throttling by 30% while maintaining within 5% of peak per",
+    "indexed_at": "2026-04-09T12:53:30.630066",
+    "reason": "Total score 8 < 10"
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-20-性能功耗热优化/stage-14_v1/analysis.md",
+    "title": "Unified Analysis: Android Performance-Power-Thermal Optimization Research",
+    "scores": {
+      "relevance": 1,
+      "depth": 1,
+      "timeliness": 3,
+      "verifiability": 3
+    },
+    "total_score": 8,
+    "first_chars": "# Unified Analysis: Android Performance-Power-Thermal Optimization Research\n\n## Metrics Summary\n- **Thermal Throttling Reduction**: Primary target of 30% reduction (untested due to experiment failure)",
+    "indexed_at": "2026-04-09T12:53:30.630329",
+    "reason": "Total score 8 < 10"
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-20-性能功耗热优化/stage-14_v2/analysis.md",
+    "title": "Unified Analysis: Android Performance, Power, and Thermal Optimization Experiment",
+    "scores": {
+      "relevance": 1,
+      "depth": 1,
+      "timeliness": 3,
+      "verifiability": 3
+    },
+    "total_score": 8,
+    "first_chars": "# Unified Analysis: Android Performance, Power, and Thermal Optimization Experiment\n\n## Metrics Summary\n\nThe experiment evaluates three primary metrics:\n1. **Thermal throttling reduction**: Measures t",
+    "indexed_at": "2026-04-09T12:53:30.630550",
+    "reason": "Total score 8 < 10"
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-18-02-性能功耗热优化/stage-14/analysis.md",
+    "title": "Unified Analysis: Android Performance-Power-Thermal Optimization Experiment",
+    "scores": {
+      "relevance": 1,
+      "depth": 1,
+      "timeliness": 3,
+      "verifiability": 4
+    },
+    "total_score": 9,
+    "first_chars": "# Unified Analysis: Android Performance-Power-Thermal Optimization Experiment\n\n## Metrics Summary\n\n| Metric | Range | Proposed Method Variant | Best Performer | Validity Concern |\n|--------|-------|--",
+    "indexed_at": "2026-04-09T12:53:30.630803",
+    "reason": "Total score 9 < 10"
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-18-02-性能功耗热优化/stage-14_v1/analysis.md",
+    "title": "Unified Analysis: Android Performance-Power-Thermal Optimization Experiment",
+    "scores": {
+      "relevance": 1,
+      "depth": 1,
+      "timeliness": 3,
+      "verifiability": 3
+    },
+    "total_score": 8,
+    "first_chars": "# Unified Analysis: Android Performance-Power-Thermal Optimization Experiment\n\n## Metrics Summary\n\nThe experiment reports energy efficiency scores and thermal stability metrics across multiple configu",
+    "indexed_at": "2026-04-09T12:53:30.631060",
+    "reason": "Total score 8 < 10"
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-18-02-性能功耗热优化/stage-14_v2/analysis.md",
+    "title": "Unified Analysis: Android Performance-Power-Thermal Optimization Experiment",
+    "scores": {
+      "relevance": 1,
+      "depth": 1,
+      "timeliness": 3,
+      "verifiability": 3
+    },
+    "total_score": 8,
+    "first_chars": "# Unified Analysis: Android Performance-Power-Thermal Optimization Experiment\n\n## Metrics Summary\n- **Energy Efficiency Score**: 0.0065-0.0078 (extremely small values with unclear normalization)\n- **T",
+    "indexed_at": "2026-04-09T12:53:30.631358",
+    "reason": "Total score 8 < 10"
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-18-热管理与CPU频率/stage-14/analysis.md",
+    "title": "Unified Analysis: Android Thermal Management Experiment",
+    "scores": {
+      "relevance": 1,
+      "depth": 1,
+      "timeliness": 3,
+      "verifiability": 3
+    },
+    "total_score": 8,
+    "first_chars": "# Unified Analysis: Android Thermal Management Experiment\n\n## Metrics Summary\n- **Primary Metric**: Temperature reduction (15% target)\n- **Secondary Metric**: Performance maintenance (within 5% of pea",
+    "indexed_at": "2026-04-09T12:53:30.631439",
+    "reason": "Total score 8 < 10"
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-18-热管理与CPU频率/stage-14_v1/analysis.md",
+    "title": "Unified Analysis of Android Thermal Management Experiment Results",
+    "scores": {
+      "relevance": 1,
+      "depth": 1,
+      "timeliness": 3,
+      "verifiability": 3
+    },
+    "total_score": 8,
+    "first_chars": "# Unified Analysis of Android Thermal Management Experiment Results\n\n## Metrics Summary\nThe experiment resulted in a failed run with an AttributeError in the harness setup, yielding no collected metri",
+    "indexed_at": "2026-04-09T12:53:30.631517",
+    "reason": "Total score 8 < 10"
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-18-03-性能功耗热优化/stage-14/analysis.md",
+    "title": "Unified Analysis: Android Performance, Power, and Thermal Optimization Research",
+    "scores": {
+      "relevance": 1,
+      "depth": 1,
+      "timeliness": 3,
+      "verifiability": 3
+    },
+    "total_score": 8,
+    "first_chars": "# Unified Analysis: Android Performance, Power, and Thermal Optimization Research\n\n## Metrics Summary\nThe research focuses on optimizing the intersection of AI workloads, heterogeneous computing, and ",
+    "indexed_at": "2026-04-09T12:53:30.631789",
+    "reason": "Total score 8 < 10"
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-18-03-性能功耗热优化/stage-14_v1/analysis.md",
+    "title": "Unified Analysis: Android Performance, Power, and Thermal Optimization Research",
+    "scores": {
+      "relevance": 1,
+      "depth": 1,
+      "timeliness": 3,
+      "verifiability": 3
+    },
+    "total_score": 8,
+    "first_chars": "# Unified Analysis: Android Performance, Power, and Thermal Optimization Research\n\n## Metrics Summary\n- **Thermal Throttling**: 99.3866 (single measurement, appears to be percentage)\n- **Overall Score",
+    "indexed_at": "2026-04-09T12:53:30.631946",
+    "reason": "Total score 8 < 10"
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-18-03-性能功耗热优化/stage-14_v2/analysis.md",
+    "title": "Unified Analysis of Android Performance, Power, and Thermal Optimization Research",
+    "scores": {
+      "relevance": 1,
+      "depth": 1,
+      "timeliness": 3,
+      "verifiability": 3
+    },
+    "total_score": 8,
+    "first_chars": "# Unified Analysis of Android Performance, Power, and Thermal Optimization Research\n\n## Metrics Summary\n- **Thermal Throttling Reduction**: 98.22% (reported, but statistically questionable)\n- **AI Per",
+    "indexed_at": "2026-04-09T12:53:30.632112",
+    "reason": "Total score 8 < 10"
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-17-后台任务调度与电池/stage-14/analysis.md",
+    "title": "Unified Analysis: Android Background Task Scheduling for Power Optimization",
+    "scores": {
+      "relevance": 1,
+      "depth": 1,
+      "timeliness": 3,
+      "verifiability": 3
+    },
+    "total_score": 8,
+    "first_chars": "",
+    "indexed_at": "2026-04-09T12:53:30.632358",
+    "reason": "Total score 8 < 10"
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-17-后台任务调度与电池/stage-14_v1/analysis.md",
+    "title": "Unified Analysis: Android Power Optimization Experiment",
+    "scores": {
+      "relevance": 1,
+      "depth": 1,
+      "timeliness": 3,
+      "verifiability": 3
+    },
+    "total_score": 8,
+    "first_chars": "",
+    "indexed_at": "2026-04-09T12:53:30.632624",
+    "reason": "Total score 8 < 10"
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-17-后台任务调度与电池/stage-14_v2/analysis.md",
+    "title": "Unified Analysis: Android Power Optimization Experiment Results",
+    "scores": {
+      "relevance": 1,
+      "depth": 1,
+      "timeliness": 3,
+      "verifiability": 3
+    },
+    "total_score": 8,
+    "first_chars": "",
+    "indexed_at": "2026-04-09T12:53:30.632840",
+    "reason": "Total score 8 < 10"
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-20-性能功耗热优化/stage-08/perspectives/contrarian.md",
+    "title": "Critical Examination of Android Performance, Power, and Thermal Optimization Research",
+    "scores": {
+      "relevance": 1,
+      "depth": 1,
+      "timeliness": 3,
+      "verifiability": 3
+    },
+    "total_score": 8,
+    "first_chars": "# Critical Examination of Android Performance, Power, and Thermal Optimization Research\n\n## Contrarian Hypothesis 1: The Thermal Optimization Paradigm is Fundamentally Flawed\n\n**Challenge to Widely-He",
+    "indexed_at": "2026-04-09T12:53:30.633073",
+    "reason": "Total score 8 < 10"
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-23-性能功耗热优化研究/完整输出/stage-08/perspectives/contrarian.md",
+    "title": "Critical Examination of Android Performance, Power, and Thermal Optimization Research",
+    "scores": {
+      "relevance": 1,
+      "depth": 1,
+      "timeliness": 3,
+      "verifiability": 3
+    },
+    "total_score": 8,
+    "first_chars": "# Critical Examination of Android Performance, Power, and Thermal Optimization Research\n\n## Contrarian Hypothesis 1: The \"Resource Optimization Paradox\"\n\n### Challenge to Widely-Held Assumption\nThe sy",
+    "indexed_at": "2026-04-09T12:53:30.633318",
+    "reason": "Total score 8 < 10"
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-18-02-性能功耗热优化/stage-08/perspectives/contrarian.md",
+    "title": "Contrarian Examination of Android Performance-Power-Thermal Optimization Research",
+    "scores": {
+      "relevance": 1,
+      "depth": 1,
+      "timeliness": 3,
+      "verifiability": 3
+    },
+    "total_score": 8,
+    "first_chars": "# Contrarian Examination of Android Performance-Power-Thermal Optimization Research\n\n## Contrarian Hypothesis 1: The Performance-Security Tradeoff is Fundamentally Misconceived\n\n**Challenge to Widely-",
+    "indexed_at": "2026-04-09T12:53:30.633552",
+    "reason": "Total score 8 < 10"
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-18-热管理与CPU频率/stage-08/perspectives/contrarian.md",
+    "title": "Critical Examination of Android Thermal Management Synthesis",
+    "scores": {
+      "relevance": 1,
+      "depth": 1,
+      "timeliness": 3,
+      "verifiability": 3
+    },
+    "total_score": 8,
+    "first_chars": "# Critical Examination of Android Thermal Management Synthesis\n\n## Contrarian Hypothesis 1: Thermal Management as a Source of Performance Degradation Rather Than Optimization\n\n**Challenge to Widely-He",
+    "indexed_at": "2026-04-09T12:53:30.633637",
+    "reason": "Total score 8 < 10"
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-18-03-性能功耗热优化/stage-08/perspectives/contrarian.md",
+    "title": "Contrarian Analysis: Android 性能功耗热优化研究",
+    "scores": {
+      "relevance": 1,
+      "depth": 1,
+      "timeliness": 3,
+      "verifiability": 3
+    },
+    "total_score": 8,
+    "first_chars": "# Contrarian Analysis: Android 性能功耗热优化研究\n\n## Contrarian Hypothesis 1: The \"Security-Performance Tradeoff Fallacy\"\n\n### Challenge to Widely-Held Assumption\nThe mainstream view assumes that security mec",
+    "indexed_at": "2026-04-09T12:53:30.633903",
+    "reason": "Total score 8 < 10"
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-17-后台任务调度与电池/stage-08/perspectives/contrarian.md",
+    "title": "Critical Examination of Android Power Optimization Synthesis",
+    "scores": {
+      "relevance": 1,
+      "depth": 1,
+      "timeliness": 3,
+      "verifiability": 3
+    },
+    "total_score": 8,
+    "first_chars": "",
+    "indexed_at": "2026-04-09T12:53:30.634120",
+    "reason": "Total score 8 < 10"
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-20-性能功耗热优化/stage-15_v1/decision.md",
+    "title": "Unknown Title",
+    "scores": {
+      "relevance": 1,
+      "depth": 1,
+      "timeliness": 3,
+      "verifiability": 1
+    },
+    "total_score": 6,
+    "first_chars": "## Decision\nREFINE\n\n## Justification\nThis decision is warranted because the analysis clearly shows that none of the minimum quality criteria for PROCEED have been met. The experiment failed at a funda",
+    "indexed_at": "2026-04-09T12:53:30.634354",
+    "reason": "Total score 6 < 10"
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-20-性能功耗热优化/stage-15/decision.md",
+    "title": "Unknown Title",
+    "scores": {
+      "relevance": 1,
+      "depth": 1,
+      "timeliness": 3,
+      "verifiability": 1
+    },
+    "total_score": 6,
+    "first_chars": "## Decision\nREFINE\n\n## Justification\nThe decision to REFINE is based on multiple unmet minimum quality criteria for PROCEED. The experiment failed to execute completely due to a missing dependency iss",
+    "indexed_at": "2026-04-09T12:53:30.634606",
+    "reason": "Total score 6 < 10"
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-20-性能功耗热优化/stage-15_v2/decision.md",
+    "title": "Unknown Title",
+    "scores": {
+      "relevance": 1,
+      "depth": 3,
+      "timeliness": 3,
+      "verifiability": 1
+    },
+    "total_score": 8,
+    "first_chars": "## Decision\nREFINE\n\n## Justification\nThe experiment fails to meet any of the minimum quality criteria for PROCEED. Most critically, there is a complete implementation failure with all experimental con",
+    "indexed_at": "2026-04-09T12:53:30.634910",
+    "reason": "Total score 8 < 10"
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-18-02-性能功耗热优化/stage-15_v1/decision.md",
+    "title": "Unknown Title",
+    "scores": {
+      "relevance": 1,
+      "depth": 1,
+      "timeliness": 3,
+      "verifiability": 1
+    },
+    "total_score": 6,
+    "first_chars": "## Decision\nREFINE\n\n## Justification\nThe analysis clearly shows that the experiment fails to meet multiple minimum quality criteria for proceeding to paper writing. Specifically, the experiment lacks ",
+    "indexed_at": "2026-04-09T12:53:30.635138",
+    "reason": "Total score 6 < 10"
+  },
+  {
+    "path": "调研/AutoResearchClaw-Android功耗优化/2026-03-18-02-性能功耗热优化/stage-15/decision.md",
+    "title": "Unknown Title",
+    "scores": {
+      "relevance": 1,
+      "depth": 1,
+      "timeliness": 3,
+      "verifiability": 1
+    },
+    "total_score": 6,
+    "first_chars": "## Decision\nREFINE\n\n## Justification\nThe analysis clearly indicates that the experiment fails to meet multiple minimum quality criteria for proceeding to paper writing. Specifically, the experiment la",
+    "indexed_at": "2026-04-09T12:53:30.635341",
+    "reason": "Total score 6 < 10"
   }
 ]
