@@ -2,7 +2,7 @@
 title: "ANR 类型与触发条件"
 section: "9.2"
 chapter: "9.2"
-status: ready-for-review
+status: ready-to-publish
 drafted_date: "2026-04-02"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37)"
@@ -24,7 +24,10 @@ sources:
     path: "intake/research-feeds/2026-04-01-07-ch09-binder-anr-android15-16-17.md"
 tags: [anr, input-dispatching, broadcast, service, contentprovider, timeout]
 related_chapters: ["9.1", "9.3", "9.4", "1.4", "1.5", "1.10"]
-reviewed_date: "2026-04-07"
+reviewed_date: "2026-04-09"
+review_v2_date: "2026-04-09"
+review_v2_by: "openclaw-task6"
+review_type: "post-polish-quality-gate"
 reviewed_by: openclaw-task6
 polish_count: 1
 polish_date: "2026-04-07"

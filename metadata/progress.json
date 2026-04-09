@@ -1258,7 +1258,10 @@
       "extensions_covered": 2,
       "extensions_total": 2,
       "verification_level": "L2",
-      "word_count": "~7500"
+      "word_count": "~7500",
+      "status": "ready-to-publish",
+      "review_v2_date": "2026-04-09",
+      "review_v2_by": "openclaw-task6"
     },
     {
       "section": "9.5",
@@ -2482,6 +2485,23 @@
     }
   ],
   "history": [
+    {
+      "date": "2026-04-09",
+      "section": "9.2",
+      "title": "ANR 类型与触发条件",
+      "action": "reviewed-ready-to-publish",
+      "review_by": "openclaw-task6",
+      "review_type": "post-polish-quality-gate",
+      "review_round": 2,
+      "fixes": 2,
+      "scores": {
+        "structure": 5,
+        "expression": 5,
+        "consistency": 5,
+        "verification": 4,
+        "metadata": 5
+      }
+    },
     {
       "date": "2026-04-09",
       "section": "10.6",
