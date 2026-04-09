@@ -1,7 +1,7 @@
 ---
 title: "Android 版本演进中的架构变化"
 chapter: "1.6"
-status: ready-to-publish
+status: ready-for-review
 polish_count: 1
 polish_date: "2026-04-06"
 polish_by: "task2b-polish"
@@ -30,6 +30,7 @@ tags: ['treble', 'mainline', 'apex', 'gki', 'art', 'dalvik', 'privacy', 'backgro
 related_chapters: ["1.1", "1.4", "1.7", "2.9", "4.4", "4.6", "5.6", "8.7"]
 reviewed_date: "2026-04-06"
 reviewed_by: "openclaw-task6"
+review_notes: "task9 P90 rework: 寄存器描述修正(翻倍→精确), Dalvik/Zygote已验证正确"
 ---
 
 # Android 版本演进中的架构变化
@@ -81,9 +82,9 @@ Android 4.4（2013 年）是一个特殊的过渡版本。它首次将 ART（And
 
 Android 5.0（2014 年）是 Android 历史上架构变动最大的版本之一，两件事同时发生：
 
-**ART 完全取代 Dalvik。** 从 5.0 开始，Dalvik 被移除，ART 成为唯一的运行时。所有应用在安装时都会被 dex2oat 编译为本地代码。这意味着安装时间变长了，但运行时性能显著提升。垃圾回收器也做了重大改进，GC 暂停时间从 Dalvik 时代的上百毫秒降低到了几毫秒。
+**ART 完全取代 Dalvik。** 从 Android 5.0 开始，Dalvik 被完全移除，ART 成为唯一的运行时。[已验证: Android 5.0 Release Notes, Wikipedia]所有应用在安装时都会被 dex2oat 编译为本地代码。这意味着安装时间变长了，但运行时性能显著提升。垃圾回收器也做了重大改进，GC 暂停时间从 Dalvik 时代的上百毫秒降低到了几毫秒。
 
-**64 位支持。** Android 5.0 正式支持 64 位 ARMv8 架构。这不仅仅是为了寻址更大的内存空间——ARMv8 的指令集设计比 ARMv7 更高效，寄存器数量翻倍（从 16 个通用寄存器增加到 31 个），使得编译器生成的本地代码质量更高。Zygote 也因此有了 zygote64 和 zygote 两个进程，分别用于 fork 64 位和 32 位的应用进程。
+**64 位支持。** Android 5.0 正式支持 64 位 ARMv8 架构。这不仅仅是为了寻址更大的内存空间——ARMv8 的指令集设计比 ARMv7 更高效，通用整数寄存器从 ARMv7 的 16 个（r0-r15）增加到 31 个（x0-x30），SIMD/NEON 寄存器也从 16 个 Q 寄存器翻倍到 32 个 V 寄存器，编译器因此能生成质量更高的本地代码。Zygote 也因此有了 zygote64 和 zygote_secondary 两个进程，分别用于 fork 64 位和 32 位的应用进程。[已验证: AOSP init.zygote64_32.rc, ARM Architecture Reference Manual]
 
 ### Android 8.0 Oreo（API 26）：Project Treble——模块化的起点
 
