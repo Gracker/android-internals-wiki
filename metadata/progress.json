@@ -4339,10 +4339,11 @@
     "1.2": {
       "title": "系统启动全流程",
       "status": "ready-to-publish",
-      "reviewed_date": "2026-04-05",
+      "reviewed_date": "2026-04-10",
       "reviewed_by": "openclaw-task6",
       "review_round": 2,
-      "polish_count": 1
+      "polish_count": 1,
+      "review_type": "post-polish-quality-gate"
     },
     "1.6": {
       "title": "Android 版本演进中的架构变化",
