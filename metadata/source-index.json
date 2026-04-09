@@ -6156,6 +6156,23 @@
       "first_chars": "Large Language Model Agent: A Survey on Methodolog...",
       "quality": "medium",
       "indexed_at": "2026-04-09T03:49:32.904938"
+    },
+    {
+      "path": "调研/Agent实践知识图谱.md",
+      "title": "Agent实践知识图谱 · 2026-03-29",
+      "scores": {
+        "relevance": 2,
+        "depth": 3,
+        "timeliness": 5,
+        "verifiability": 4
+      },
+      "total_score": 14,
+      "matched_chapters": [
+        "ch14-工具"
+      ],
+      "first_chars": "---\ntags:\n  - ai\n  - performance\n  - memory\n  - blog\n\n# Agent实践知识图谱 · 2026-03-29\n\n## 四大核心主题\n\n### 1. 记忆系统优化\n#### 1.1 长期记忆架构\n- **状态管理**：三层记忆架构（日记层→核心记忆层→向量层抽检）\n- **维护策略**：每日心跳检查，定期MEMORY.md更新，避免\"mental notes\"\n- **存储优化**：文本>Brain，文件是记忆唯一可靠载体\n- **跨场景适用**：主session专属MEMORY.md，子agent使用SUBAGENT_SOUL_GLM5.md",
+      "quality": "medium",
+      "indexed_at": "2026-04-09T08:15:00"
     }
   ],
   "task8-daily/2026-04-09/聊聊2026年Android开发会是什么样": {
