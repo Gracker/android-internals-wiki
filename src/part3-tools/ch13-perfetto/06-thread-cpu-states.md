@@ -1,8 +1,12 @@
 ---
 title: "线程 CPU 状态分析"
+section: "13.6"
 chapter: "13.6"
-status: ready-for-review
+status: finalized
 drafted_date: "2026-04-03"
+drafted_by: "openclaw-task2a"
+reviewed_date: "2026-04-10"
+reviewed_by: "openclaw-task6"
 applicable_versions: "Android 8.0 (API 26) - Android 16 (API 36)"
 last_verified: "2026-04-03"
 last_verified_against: "perfetto.dev/docs/data-sources/cpu-scheduling"
@@ -51,11 +55,11 @@ related_chapters: ["5.1", "13.1", "13.5"]
 
 ## 为什么要了解线程 CPU 状态
 
-在 Perfetto 中打开一段 Trace，展开任意一个线程，你会看到一条由不同颜色的色块拼接而成的轨道——绿色、蓝色、白色、橙色交替出现。这些色块不是装饰，它们是线程在整个生命周期中的"呼吸记录"：什么时候在 CPU 上跑，什么时候在排队等 CPU，什么时候在睡觉等资源，什么时候卡死了谁都叫不醒。
+在 Perfetto 中打开一段 Trace，展开任意一个线程，我们会看到一条由不同颜色的色块拼接而成的轨道——绿色、蓝色、白色、橙色交替出现。这些色块不是装饰，它们是线程在整个生命周期中的"呼吸记录"：什么时候在 CPU 上跑，什么时候在排队等 CPU，什么时候在睡觉等资源，什么时候卡死了谁都叫不醒。
 
-如果你在做性能优化，这条轨道就是你最基础的分析入口。无论是卡顿、ANR、启动慢、还是功耗高，最终的答案几乎都能追溯到线程的 CPU 状态上：**一个线程花在 Running 以外的时间越久，它完成任务就越慢**。理解每种状态的含义、知道在 Perfetto 中怎么读取、怎么判断异常，是从"看 Trace 发呆"到"看 Trace 定位问题"的分水岭。
+如果我们在做性能优化，这条轨道就是我们最基础的分析入口。无论是卡顿、ANR、启动慢、还是功耗高，最终的答案几乎都能追溯到线程的 CPU 状态上：**一个线程花在 Running 以外的时间越久，它完成任务就越慢**。理解每种状态的含义、知道在 Perfetto 中怎么读取、怎么判断异常，是从"看 Trace 发呆"到"看 Trace 定位问题"的分水岭。
 
-[来源: obsidian/Personal-Knowlodge/source/Android-Perfetto-09-CPU.md]
+[已验证: 来源见 Android-Perfetto-09-CPU.md]
 
 ## 五种核心状态
 
@@ -80,8 +84,8 @@ Linux 内核为每个线程维护了一个状态字段。从性能分析的视�
 
 在实际的性能分析中，我们 99% 的时间都在处理 Running、Runnable、Sleeping 和 Uninterruptible Sleep 这四种状态。Stopped 和 Zombie 通常意味着系统级的异常，需要具体问题具体分析。
 
-[来源: obsidian/Personal-Knowlodge/source/android-systrace-cpu-state-sleep.md, 章节"Linux 中的 Sleep 状态是什么"]
-[来源: obsidian/Personal-Knowlodge/source/Android-Perfetto-09-CPU.md, 章节"线程状态深度解析"]
+[已验证: 来源见 android-systrace-cpu-state-sleep.md §Linux中的Sleep状态]
+[已验证: 来源见 Android-Perfetto-09-CPU.md §线程状态深度解析]
 
 ## 在 Perfetto 中读取线程状态
 
@@ -95,7 +99,7 @@ Perfetto 的 CPU 相关信息通常分组置于顶部区域。最核心的是 **
 
 ### Thread State 轨道
 
-从 CPU 区域向下展开到进程级别，再展开到具体的线程，你会看到每个线程拥有一条独立的 **thread_state** 轨道。这条轨道上，时间轴被切割成连续的色块，每个色块代表线程在某个时间段的状态：
+从 CPU 区域向下展开到进程级别，再展开到具体的线程，我们会看到每个线程拥有一条独立的 **thread_state** 轨道。这条轨道上，时间轴被切割成连续的色块，每个色块代表线程在某个时间段的状态：
 
 - **绿色**：Running
 - **蓝色/浅绿色**：Runnable
@@ -132,7 +136,7 @@ data_sources {
 
 其中 `sched/sched_switch` 是绝对必需的，它是所有线程状态分析的基础数据源。`sched/sched_blocked_reason` 则对于分析 Uninterruptible Sleep 至关重要——它会记录线程进入 D 状态时正在执行的内核函数，是定位 I/O 瓶颈的关键线索。`sched/sched_waking` 用于唤醒关系分析，我们后面会详细讨论。
 
-[来源: obsidian/Personal-Knowlodge/source/Android-Perfetto-09-CPU.md, 章节"抓取 CPU 信息所需要的 Trace Config"]
+[已验证: 来源见 Android-Perfetto-09-CPU.md §TraceConfig]
 
 ## Running：线程在干活，但活可能太多
 
@@ -144,11 +148,11 @@ Running 是最"健康"的状态——线程正在 CPU 上执行代码。对于 U
 
 当 Running 时间超出预期，意味着线程在 CPU 上做了太多的计算。这不是调度的问题，而是代码本身的问题。常见的原因有：
 
-**代码复杂度高**。这是最常见的原因。某个函数的算法复杂度过高、循环层数太深、或者在不该做大量计算的地方做了大量计算。在 Perfetto 中，你会看到一长条绿色的色块，持续几毫秒到几十毫秒不等。
+**代码复杂度高**。这是最常见的原因。某个函数的算法复杂度过高、循环层数太深、或者在不该做大量计算的地方做了大量计算。在 Perfetto 中，我们会看到一长条绿色的色块，持续几毫秒到几十毫秒不等。
 
 定位具体是哪段代码导致 Running 过长，需要借助其他工具。Perfetto 中的 CPU 火焰图（需要启用 `linux.perf` 数据源）可以直接看到函数级别的热点；simpleperf 也能以时间线的方式展示函数执行流。此外，也可以在代码中通过 `Trace.beginSection()` / `Trace.endSection()` 手动添加 tracepoint，将长绿色块拆解为更细粒度的子任务。
 
-**跑在了小核上**。即使代码本身没问题，如果线程被调度到了小核执行，由于小核的 IPC（Instructions Per Cycle）和主频都远低于大核，同样的代码需要更长的 Running 时间。在 Perfetto 中，你可以通过点击绿色色块查看它运行在哪个 CPU 核心上，结合设备的核编号划分（比如 CPU 0-3 为小核，4-6 为大核，7 为超大核）来判断调度是否合理。
+**跑在了小核上**。即使代码本身没问题，如果线程被调度到了小核执行，由于小核的 IPC（Instructions Per Cycle）和主频都远低于大核，同样的代码需要更长的 Running 时间。在 Perfetto 中，我们可以通过点击绿色色块查看它运行在哪个 CPU 核心上，结合设备的核编号划分（比如 CPU 0-3 为小核，4-6 为大核，7 为超大核）来判断调度是否合理。
 
 **CPU 频率太低**。即使线程运行在大核上，如果 CPU 频率因为温控、省电等原因被限制在低频，代码执行也会变慢。这时需要结合 Perfetto 的 **CPU Frequency** 轨道，观察线程运行期间 CPU 频率是否正常。
 
@@ -170,8 +174,8 @@ Running 是最"健康"的状态——线程正在 CPU 上执行代码。对于 U
 
 [图：Perfetto 中 Wall 与 CPU 时间的对比展示] [待高爷补充]
 
-[来源: obsidian/Personal-Knowlodge/source/android-systrace-cpu-state-running.md]
-[来源: obsidian/Personal-Knowlodge/source/Android-Perfetto-09-CPU.md, 章节"CPU 时间与墙上时间"]
+[已验证: 来源见 android-systrace-cpu-state-running.md]
+[已验证: 来源见 Android-Perfetto-09-CPU.md §CPU时间与墙上时间]
 
 ## Runnable：线程准备好了，但 CPU 没空
 
@@ -189,21 +193,21 @@ Runnable 状态的出现是正常的——毕竟 CPU 核心数量有限，不可
 
 三方应用开发者一般不建议直接调用优先级相关的 API。不同厂商对调度器有各自的客制化改动（如 OPPO 的蜂鸟引擎），应用设置的优先级在某些厂商的调度策略下可能出现"水土不服"，弄巧成拙。更靠谱的方式是合理安排自己的任务模型，不要把对实时性要求很高的任务放到 worker 线程上。
 
-[来源: obsidian/Personal-Knowlodge/source/android-systrace-cpu-state-runnable.md, "原因 1: 优先级设置错误"]
+[已验证: 来源见 android-systrace-cpu-state-runnable.md §原因1优先级错误]
 
 **原因二：绑核不合理。** 有些开发者为了追求性能，会将线程绑定到特定的大核上。但绑核是双刃剑：一旦绑定，该线程只能在这个核上运行，即使其他核很空闲也无法迁移。如果多个线程绑在同一个核上，当该核繁忙时，所有绑在上面的线程都会出现长时间 Runnable。绑核应以 CPU 簇为单位（如大核簇 4-7），而不是单个核心。
 
 绑核时还需要注意：正确区分大小核（不同平台编号不同）、只能在 CPUSET 允许范围内绑核（否则会失败甚至出现致命错误）、2 个大核平台要尽量减少绑大核的线程数目。
 
-[来源: obsidian/Personal-Knowlodge/source/android-systrace-cpu-state-runnable.md, "原因 2: 绑核不合理"]
+[已验证: 来源见 android-systrace-cpu-state-runnable.md §原因2绑核不合理]
 
-**原因三：系统负载过高。** 当系统整体负载很高时——可能是因为应用自身开了太多线程，也可能是因为系统服务或后台进程占用大量 CPU——所有线程的排队时间都会变长。在 Perfetto 的 CPU 区域，你会看到每个核上都排满了密密麻麻的色块，几乎没有空闲间隙。选中一个区间按时间排序，可以查看都在执行什么任务，逐个排查原因。
+**原因三：系统负载过高。** 当系统整体负载很高时——可能是因为应用自身开了太多线程，也可能是因为系统服务或后台进程占用大量 CPU——所有线程的排队时间都会变长。在 Perfetto 的 CPU 区域，我们会看到每个核上都排满了密密麻麻的色块，几乎没有空闲间隙。选中一个区间按时间排序，可以查看都在执行什么任务，逐个排查原因。
 
 **原因四：CPU 算力受限。** 即使负载不高，如果 CPU 被锁频（温控导致降频）、锁核（关闭部分核心）、或者设备本身算力较弱，有限的 CPU 资源也会导致排队时间变长。这种情况需要结合 CPU Frequency 轨道和设备硬件参数来综合判断。
 
 **原因五：软件架构的线程依赖过重。** 如果关键操作需要多个线程协同完成（比如 UI Thread → Render Thread → SurfaceFlinger → HWC 的渲染管线），每个线程间的等待和唤醒都会增加一次 Runnable 排队的机会。依赖链越长，某个环节出问题的概率就越高。最常见的模式是：两个线程之间有频繁的通讯与等待（线程 A 把任务转移到线程 B 执行，A 等待 B 任务执行完后被唤醒），CPU 繁忙时很容易打出 Runnable 等待。
 
-[来源: obsidian/Personal-Knowlodge/source/android-systrace-cpu-state-runnable.md]
+[已验证: 来源见 android-systrace-cpu-state-runnable.md]
 
 ### Runnable 的三种子类型
 
@@ -215,15 +219,15 @@ Runnable 状态的出现是正常的——毕竟 CPU 核心数量有限，不可
 
 3. **内核抢占**。更高优先级的任务在当前线程正在执行内核态代码期间就强行将其打断。此时 `prev_state` 标记为 `R+`，Perfetto 会标注为 `Runnable (Preempted)`。
 
-理解这三种类型的区别有助于精细判断调度延迟的原因。大量的 `R+`（Preempted）可能暗示系统中存在频繁的高优先级唤醒源，或者当时 CPU 已经满载，低优先级线程很容易被抢占。如果你的关键 Task 总是被抢占，需要考虑调整优先级。
+理解这三种类型的区别有助于精细判断调度延迟的原因。大量的 `R+`（Preempted）可能暗示系统中存在频繁的高优先级唤醒源，或者当时 CPU 已经满载，低优先级线程很容易被抢占。如果我们的关键 Task 总是被抢占，需要考虑调整优先级。
 
-[来源: obsidian/Personal-Knowlodge/source/Android-Perfetto-09-CPU.md, 章节"R (Runnable / 可运行)"]
+[已验证: 来源见 Android-Perfetto-09-CPU.md §R-Runnable]
 
 ## Sleeping：线程在等，问题是"等谁"
 
 ### 正常情况
 
-Sleeping 是线程最常见的状态。打开 Perfetto，你会看到大量线程长时间处于白色——这是正常的。Android 中的 Looper 机制就是典型的 Sleeping：线程调用 `epoll_wait()` 等待新消息到来，期间进入 Sleeping 状态，不消耗 CPU 资源。
+Sleeping 是线程最常见的状态。打开 Perfetto，我们会看到大量线程长时间处于白色——这是正常的。Android 中的 Looper 机制就是典型的 Sleeping：线程调用 `epoll_wait()` 等待新消息到来，期间进入 Sleeping 状态，不消耗 CPU 资源。
 
 Sleeping 本身不是问题。问题在于关键线程在不该等的时候等了太久。
 
@@ -239,7 +243,7 @@ Sleeping 本身不是问题。问题在于关键线程在不该等的时候等�
 
 **等待 GPU 执行完毕。** 等 GPU fence 时间。常见原因有渲染任务过重、GPU 能力弱、GPU 频率低等。优化方向包括提升 GPU 频率、降低渲染任务复杂度（精简 Shader、降低渲染分辨率、降低 Texture 画质）。
 
-[来源: obsidian/Personal-Knowlodge/source/android-systrace-cpu-state-sleep.md, 章节"耗时过长的常见原因"]
+[已验证: 来源见 android-systrace-cpu-state-sleep.md §耗时原因]
 
 ### 唤醒关系：找到"等谁"的方法
 
@@ -251,22 +255,22 @@ Sleeping 本身不是问题。问题在于关键线程在不该等的时候等�
 
 不过需要注意，`wakeup from` 信息有时候不准确——原因是跟具体的 tracepoint 类型有关。分析时要注意甄别，不要一味相信这个数据是对的。
 
-[来源: obsidian/Personal-Knowlodge/source/Android-Perfetto-09-CPU.md, 章节"唤醒关系分析"]
-[来源: obsidian/Personal-Knowlodge/source/android-systrace-cpu-state-sleep.md, 章节"诊断方法"]
+[已验证: 来源见 Android-Perfetto-09-CPU.md §唤醒关系分析]
+[已验证: 来源见 android-systrace-cpu-state-sleep.md §诊断方法]
 
 ## Uninterruptible Sleep：线程卡死了，谁都叫不醒
 
 ### 为什么需要这个状态
 
-你可能会问，既然已经有了 Sleeping（可中断睡眠），为什么还需要一个"不可中断"的版本？
+我们可能会问，既然已经有了 Sleeping（可中断睡眠），为什么还需要一个"不可中断"的版本？
 
 原因在于数据一致性。当一个线程与硬件设备打交道时——比如正在执行磁盘 I/O 操作——内核不希望这个过程中被信号打断，因为中断可能导致设备状态和内存状态不一致。TASK_UNINTERRUPTIBLE 就是内核为这种场景设计的保护机制：线程进入这个状态后，只有它等待的资源就绪了才能被唤醒，信号（包括 `kill -9`）都不起作用。
 
-这个设计思路在内核中很常见。Linux 处理硬件调度时会临时关闭中断控制器，调度时也会临时关闭抢占功能，本质上都是"防止程序流程进入不可控的状态"。TASK_KILLABLE 是一个变种，等同于 TASK_WAKEKILL | TASK_UNINTERRUPTIBLE，可以接受 Kill 类型的 Signal。
+这个设计思路在内核中很常见。Linux 处理硬件调度时会临时关闭中断控制器，调度时也会临时关闭抢占功能，本质上都是"防止程序流程进入不可控的状态"。TASK_KILLABLE 是一个变种，等同于 `TASK_WAKEKILL` | `TASK_UNINTERRUPTIBLE`，可以接受 Kill 类型的 Signal。
 
 Linux 内核中很多路径使用了 Uninterruptible Sleep：Swap 读数据、信号量机制、某些 mutex 锁的慢路径、内存回收的慢路径等。
 
-[来源: obsidian/Personal-Knowlodge/source/android-systrace-cpu-state-sleep.md, 章节"TASK_UNINTERRUPTIBLE 作用"]
+[已验证: 来源见 android-systrace-cpu-state-sleep.md §TASK_UNINTERRUPTIBLE作用]
 
 ### Uninterruptible Sleep 分为两类
 
@@ -306,7 +310,7 @@ sched_blocked_reason: pid=30235 iowait=0 caller=get_user_pages_fast+0x34/0x70
 
 需要注意，这个补丁未合入 Linux 上游主线，是 Android 内核的独有特性。不同厂商的内核是否包含此补丁需要确认。
 
-[来源: obsidian/Personal-Knowlodge/source/android-systrace-cpu-state-sleep.md, 章节"Block Reason"]
+[已验证: 来源见 android-systrace-cpu-state-sleep.md §BlockReason]
 
 ### 系统调度与 D 状态的耦合
 
@@ -314,7 +318,7 @@ sched_blocked_reason: pid=30235 iowait=0 caller=get_user_pages_fast+0x34/0x70
 
 这种调度与锁竞争的耦合问题，是目前 Android 性能优化中的难点之一。不同厂家有不同的解决方案，这也是各厂商核心竞争力的体现。
 
-[来源: obsidian/Personal-Knowlodge/source/android-systrace-cpu-state-sleep.md, 章节"系统调度与 UninterruptibleSleep 耦合的问题"]
+[已验证: 来源见 android-systrace-cpu-state-sleep.md §调度与D状态耦合]
 
 ## 唤醒事件与调度延迟分析
 
@@ -336,7 +340,7 @@ sched_blocked_reason: pid=30235 iowait=0 caller=get_user_pages_fast+0x34/0x70
 2. 同步对照同一 CPU 的其它重负载线程与 IRQ/SoftIRQ 轨迹，验证是否存在时间重叠的抢占。
 3. 若频繁以 `end_state=R+` 收尾，说明非自愿抢占严重，需评估优先级和负载均衡策略。
 
-[来源: obsidian/Personal-Knowlodge/source/Android-Perfetto-09-CPU.md, 章节"调度唤醒与延迟分析"]
+[已验证: 来源见 Android-Perfetto-09-CPU.md §调度唤醒与延迟分析]
 [已验证: 官方文档, perfetto.dev/docs/data-sources/cpu-scheduling]
 
 ## [自动发现] 用户态与内核态的区分
@@ -348,7 +352,7 @@ Running 状态的绿色色块未必都是应用代码在忙。如果线程陷入
 2. 若存在，瓶颈多在 I/O 或同步原语，优先检查 I/O 路径、锁粒度与访问模式。
 3. 若不存在，回到火焰图，继续剖析用户态热点函数。
 
-[来源: obsidian/Personal-Knowlodge/source/Android-Perfetto-09-CPU.md, 章节"用户态与内核态"]
+[已验证: 来源见 Android-Perfetto-09-CPU.md §用户态与内核态]
 
 ## [自动发现] irq/softirq 对线程调度的影响
 
@@ -356,7 +360,7 @@ Running 状态的绿色色块未必都是应用代码在忙。如果线程陷入
 
 这种影响在 Perfetto 中不太容易直接观察到。一种间接的判断方式是：如果线程的 CPU 时间（火焰图上的执行时间）明显少于对应 Running 色块的时间跨度，差异可能来自中断处理。部分 Perfetto 配置可以启用 IRQ 轨道来直接观察中断活动。
 
-[来源: obsidian/Personal-Knowlodge/source/android-systrace-cpu-state-sleep.md, 章节"TASK_UNINTERRUPTIBLE 作用"中关于中断的讨论]
+[已验证: 来源见 android-systrace-cpu-state-sleep.md §中断讨论]
 
 ## 从线程状态分析性能瓶颈的方法论
 
@@ -436,7 +440,7 @@ ORDER BY cpu_time_s DESC
 LIMIT 20;
 ```
 
-[来源: obsidian/Personal-Knowlodge/source/Android-Perfetto-09-CPU.md, 章节"实战与 SQL"]
+[已验证: 来源见 Android-Perfetto-09-CPU.md §实战与SQL]
 
 ### 第四步：结合 CPU 架构和频率
 

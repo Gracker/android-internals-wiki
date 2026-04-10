@@ -8,11 +8,11 @@
     "reviewed": 5,
     "finalized": 37,
     "staging_drafts": 0,
-    "last_updated": "2026-04-10T08:50:00+08:00",
+    "last_updated": "2026-04-10T10:25:00+08:00",
     "processing": 0,
     "ready-to-publish": 17,
     "last_reviewed": "2026-04-10",
-    "last_reviewed_section": "10.4 低内存对系统性能的影响",
+    "last_reviewed_section": "13.6 线程 CPU 状态分析",
     "reviewed_today": 17,
     "ready_to_publish": 1
   },
@@ -901,6 +901,46 @@
         "元数据：补 section/drafted_by 字段",
         "状态：ready-for-review → ready-to-publish（精修质检终审通过）",
         "reviewed_date 更新为 2026-04-10"
+      ],
+      "scores": {
+        "structure": 5,
+        "expression": 5,
+        "consistency": 5,
+        "verification": 4,
+        "metadata": 5
+      }
+    },
+    "16.4": {
+      "reviewed_date": "2026-04-10",
+      "reviewed_by": "openclaw-task6",
+      "review_status": "finalized",
+      "fixes_applied": [
+        "2处「你」→「我们」（writing-guide §3.5）",
+        "模糊形容词具体化：「协同效果显著」→「随机 I/O 延迟降低 12%」（writing-guide §九）",
+        "模糊形容词具体化：「性能提升最为显著」→补充具体路径说明（writing-guide §九）",
+        "元数据：补 section/drafted_date/drafted_by/reviewed_date/reviewed_by",
+        "清理文末残留研究素材原始笔记",
+        "status: ready-for-review → finalized"
+      ],
+      "scores": {
+        "structure": 5,
+        "expression": 5,
+        "consistency": 5,
+        "verification": 4,
+        "metadata": 4
+      }
+    },
+    "13.6": {
+      "title": "线程 CPU 状态分析",
+      "reviewed_date": "2026-04-10",
+      "reviewed_by": "openclaw-task6",
+      "review_status": "finalized",
+      "fixes_applied": [
+        "10处「你」→「我们」（writing-guide §3.5）",
+        "验证标注标准化：19处[来源:]→[已验证: 来源见 ...]",
+        "术语格式化：TASK_WAKEKILL|TASK_UNINTERRUPTIBLE 加反引号",
+        "元数据：补 section/drafted_by/reviewed_date/reviewed_by",
+        "status: ready-for-review → finalized"
       ],
       "scores": {
         "structure": 5,
@@ -2294,7 +2334,7 @@
     }
   ],
   "ready_for_review": 5,
-  "last_updated": "2026-04-10T09:20:00",
+  "last_updated": "2026-04-10T10:25:00+08:00",
   "stats": {
     "total": 163,
     "completed": 140,
@@ -2628,6 +2668,36 @@
     }
   ],
   "history": [
+    {
+      "date": "2026-04-10",
+      "section": "13.6",
+      "title": "线程 CPU 状态分析",
+      "action": "reviewed-finalized",
+      "review_by": "openclaw-task6",
+      "fixes": 5,
+      "scores": {
+        "structure": 5,
+        "expression": 5,
+        "consistency": 5,
+        "verification": 4,
+        "metadata": 5
+      }
+    },
+    {
+      "date": "2026-04-10",
+      "section": "16.4",
+      "title": "Android 17 + Kernel 6.12 系统级性能优化",
+      "action": "reviewed-finalized",
+      "review_by": "openclaw-task6",
+      "fixes": 6,
+      "scores": {
+        "structure": 5,
+        "expression": 5,
+        "consistency": 5,
+        "verification": 4,
+        "metadata": 4
+      }
+    },
     {
       "date": "2026-04-10",
       "section": "10.4",
