@@ -1,40 +1,43 @@
 {
-  "generated_at": "2026-04-11T00:27:16+08:00",
+  "generated_at": "2026-04-11T01:15:00+08:00",
   "state_machine_version": "v2",
   "total_sections": 174,
   "metrics": {
     "total": 174,
     "draft": 0,
     "ready-for-review": 172,
-    "pipeline_task6_pending": 174,
+    "pipeline_task6_pending": 173,
     "pipeline_task9_pending": 0,
-    "pipeline_task2b_pending": 0,
+    "pipeline_task2b_pending": 1,
     "pipeline_publish_ready": 0,
-    "task6_pending": 173,
-    "task6_reviewed": 0,
+    "task6_pending": 172,
+    "task6_reviewed": 1,
     "task6_revisiting": 1,
     "task9_pending": 174,
     "task9_reviewed": 0,
-    "task2b_idle": 173,
-    "task2b_pending": 0,
+    "task2b_idle": 172,
+    "task2b_pending": 1,
     "task2b_fixed": 1,
-    "last_updated": "2026-04-11T00:27:16+08:00",
+    "last_updated": "2026-04-11T01:15:00+08:00",
     "unknown": 2
   },
   "pipeline": {
     "pipeline_stage_counts": {
-      "task6_pending": 174
+      "task6_pending": 173,
+      "task2b_pending": 1
     },
     "task6_state_counts": {
-      "pending": 173,
-      "revisiting": 1
+      "pending": 172,
+      "revisiting": 1,
+      "reviewed": 1
     },
     "task9_state_counts": {
       "pending": 174
     },
     "task2b_state_counts": {
-      "idle": 173,
-      "fixed": 1
+      "idle": 172,
+      "fixed": 1,
+      "pending": 1
     }
   },
   "issues": {
@@ -1454,10 +1457,10 @@
       "title": "Package Manager Service 与应用安装性能",
       "path": "src/part1-fundamentals/ch01-architecture/09-package-manager.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "pending",
+      "pipeline_stage": "task2b_pending",
+      "task6_state": "reviewed",
       "task9_state": "pending",
-      "task2b_state": "idle"
+      "task2b_state": "pending"
     },
     "src/part1-fundamentals/ch01-architecture/14-lock-contention.md": {
       "chapter": "1.14",
@@ -2772,6 +2775,28 @@
         "JIT trampoline and OatWriter structure missing",
         "quicken filter definition imprecise"
       ]
+    },
+    "1.9": {
+      "reviewed_date": "2026-04-11",
+      "reviewed_by": "openclaw-task6",
+      "review_status": "reviewed",
+      "fixes_applied": [
+        "引言措辞收束：1处“这个格局”→“这套权衡”",
+        "术语格式：`PackageManagerService` 类名统一为代码格式",
+        "口语化表述收束：2处（“大头”→“主要耗时”，“补课”→“补充优化”）",
+        "模糊表述具体化：Cloud Compilation 收益改为直接陈述主导耗时变化",
+        "元数据：补 reviewed_by/reviewed_date/task6_result，并更新 pipeline_stage/task6_state/task2b_state",
+        "B类标注：缺少 outline/锚点；Baseline Profiles 量化数据缺少原始来源"
+      ],
+      "b_class_issues": 2,
+      "review_log": "logs/review/2026-04-11-01-review.md",
+      "scores": {
+        "structure": 2,
+        "expression": 4,
+        "consistency": 4,
+        "verification": 3,
+        "metadata": 5
+      }
     }
   }
 }

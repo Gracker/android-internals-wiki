@@ -8,6 +8,8 @@ polish_count: 1
 polish_date: "2026-04-09"
 polish_by: "task2b-polish"
 drafted_by: "openclaw-task2a"
+reviewed_date: "2026-04-11"
+reviewed_by: "openclaw-task6"
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-04-05"
 last_verified_against: "AOSP android-17-beta3"
@@ -37,10 +39,12 @@ tags:
   - cloud-compilation
   - app-installation
   - compilation
-
-
+pipeline_stage: task2b_pending
+task6_state: reviewed
+task6_result: needs-rework
+task9_state: pending
+task2b_state: pending
 ---
-
 
 # 1.9 Package Manager Service 与应用安装性能
 
@@ -57,13 +61,13 @@ tags:
 - 系统升级后所有应用都需要重新编译，这个过程对用户体验有什么影响？
 - 在 Perfetto 中怎么定位安装和编译相关的性能问题？
 
-这篇文章从 PMS 的架构位置出发，把应用安装的完整流程走一遍，重点放在每个阶段的性能特征和调试方法上。关于 dex2oat 本身的编译机制和优化策略，我们在 §1.7 已经详细分析过，这里不再重复——本节聚焦的是 PMS 如何**调度** dex2oat、安装流水线的性能瓶颈在哪里、以及 Android 16 云端编译如何改变这个格局。
+这篇文章从 PMS 的架构位置出发，把应用安装的完整流程走一遍，重点放在每个阶段的性能特征和调试方法上。关于 dex2oat 本身的编译机制和优化策略，我们在 §1.7 已经详细分析过，这里不再重复——本节聚焦的是 PMS 如何**调度** dex2oat、安装流水线的性能瓶颈在哪里、以及 Android 16 云端编译如何改变这套权衡。
 
 [图：应用安装流水线全景——从用户点击"安装"到应用可启动的完整时序]
 
 ## PMS 在系统架构中的位置
 
-PackageManagerService 是 `system_server` 中的核心系统服务之一，和 ActivityManagerService（AMS）、WindowManagerService（WMS）并称 Android 系统服务的"三巨头"。它们之间的分工很清晰：PMS 管理**包信息**（哪些应用安装了、权限是什么、组件声明了哪些），AMS 管理**组件生命周期**（Activity、Service、ContentProvider 的调度），WMS 管理**窗口和显示**。
+`PackageManagerService` 是 `system_server` 中的核心系统服务之一，和 ActivityManagerService（AMS）、WindowManagerService（WMS）并称 Android 系统服务的"三巨头"。它们之间的分工很清晰：PMS 管理**包信息**（哪些应用安装了、权限是什么、组件声明了哪些），AMS 管理**组件生命周期**（Activity、Service、ContentProvider 的调度），WMS 管理**窗口和显示**。
 
 在系统启动流程中，PMS 的初始化时机非常早。`SystemServer.java` 通过三个阶段启动系统服务：`startBootstrapServices()` → `startCoreServices()` → `startOtherServices()`。PMS 在 `startCoreServices()` 阶段就被初始化了，因为它是一切应用运行的基础——AMS 启动 Activity 之前，必须先从 PMS 获取应用的包信息（PackageInfo）、组件声明（ActivityInfo、ServiceInfo）、权限列表。
 
@@ -159,7 +163,7 @@ PMS 解析 `AndroidManifest.xml`，提取应用声明的权限、Activity、Serv
 
 - **system_server 进程**：搜索 `installPackage`、`PackageInstallerSession` 相关 Slice
 - **installd 进程**：文件操作耗时
-- **dex2oat 进程**：编译耗时（通常是大头）
+- **dex2oat 进程**：编译耗时（通常是主要耗时）
 - **I/O Track**：`ext4` / `f2fs` 的写入延迟
 
 一个实用的 adb 命令来查看应用的编译状态：
@@ -180,7 +184,7 @@ adb shell dumpsys package dexopt
 
 ## dex2oat 编译对安装和启动的双重影响
 
-安装时的 dex2oat 编译是一个"付出 vs 收获"的权衡：编译越多，安装越慢但运行越快；编译越少，安装越快但运行时依赖 JIT 热身。这个 trade-off 是 Android 编译策略演进的核心驱动力。
+安装时的 dex2oat 编译是一个"付出 vs 收获"的权衡：编译越多，安装越慢但运行越快；编译越少，安装越快但运行时依赖 JIT 热身。这组权衡是 Android 编译策略演进的核心驱动力。
 
 ### 安装时编译 vs 后台编译 vs 运行时 JIT
 
@@ -188,7 +192,7 @@ adb shell dumpsys package dexopt
 
 **安装时编译（install-time dexopt）**：PMS 在安装流程中触发，编译级别取决于是否有可用的 Profile（Baseline Profiles 或 Cloud Profiles）。没有 Profile 时，默认只做 `verify`，安装很快但冷启动全靠解释执行和 JIT。
 
-**后台编译（bg-dexopt）**：设备空闲充电时，ART Service 通过 JobScheduler 触发的后台优化。使用设备上积累的 JIT Profile，以 `speed-profile` 级别编译热点方法。这是安装后的"补课"环节。
+**后台编译（bg-dexopt）**：设备空闲充电时，ART Service 通过 JobScheduler 触发的后台优化。使用设备上积累的 JIT Profile，以 `speed-profile` 级别编译热点方法。这是安装后的补充优化环节。
 
 **运行时 JIT**：应用运行时即时编译热点方法，同时在后台收集 Profile 供后续的 AOT 编译使用。
 
@@ -274,6 +278,8 @@ Baseline Profiles 的工作流从开发阶段就开始了：
 
 关键点在于第 4 步：如果没有 Baseline Profiles，`speed-profile` 在没有 Profile 数据时等效于 `verify`——什么都不编译。有了 Baseline Profiles，安装时就能编译出有意义的 AOT 产物。Google 的数据是，正确配置 Baseline Profiles 可以提升约 30% 的代码执行速度。
 
+[需补充素材: 本节中的“约 30%”与“15-30%”量化数据需补充 Google 官方原始来源。]
+
 ### Startup Profiles 与 DEX 布局
 
 Startup Profiles 是 Baseline Profiles 的启动子集，但它影响的不是编译策略，而是 DEX 文件的物理布局。AGP 8.3 起默认启用 DEX 布局优化（`dexLayoutOptimization = true`），R8/D8 编译器会将启动关键类集中到 classes.dex 的前部，减少类加载时的 I/O 操作。
@@ -306,7 +312,7 @@ Android 16 引入了一个可能从根本上改变安装体验的特性：**云�
 
 ### 对低端设备的改善
 
-云端编译最大的受益者是低端设备。在 2GB 内存的入门级手机上，dex2oat 编译一个大型应用可能需要几分钟，期间 CPU 占用高、内存紧张、用户体验很差。云端编译把这段等待时间完全消除了——只要网络带宽足够（SDM 文件通常比 APK 本身小），安装速度可以大幅提升。
+云端编译最大的受益者是低端设备。在 2GB 内存的入门级手机上，dex2oat 编译一个大型应用可能需要几分钟，期间 CPU 占用高、内存紧张、用户体验很差。云端编译把这段等待时间完全消除了——只要网络带宽足够（SDM 文件通常比 APK 本身小），安装时间主要由下载 SDM 和文件落盘决定，而不再被设备端 dex2oat 主导。
 
 ### 与 Baseline Profiles 的关系
 

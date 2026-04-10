@@ -2605,5 +2605,32 @@
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-11T00:47:19+08:00",
     "status": "pending"
+  },
+  {
+    "section": "1.9",
+    "section_title": "Package Manager Service 与应用安装性能",
+    "priority": 90,
+    "reason": "[review回炉] 缺少 outline/锚点，且 Baseline Profiles 量化断言缺少可追溯来源",
+    "material_paths": [
+      "intake/suggestions.md（含 review 意见）"
+    ],
+    "review_issues": [
+      {
+        "type": "需重写",
+        "location": "全文结构",
+        "detail": "缺少 outline-start / outline-end 与锚点设计，Task 6 无法按规范检查锚点覆盖。",
+        "suggestion": "按 writing-guide.md 补齐 outline 块，并让每个锚点至少对应 1 个完整段落。"
+      },
+      {
+        "type": "需补充素材",
+        "location": "Baseline Profiles 与安装时优化 → 量化数据段落",
+        "detail": "“约 30%”与“15-30%”两组量化数据缺少可追溯的官方来源。",
+        "suggestion": "补充 Google 官方文档或博客原始链接；若暂时无法确认，则降级为非量化表述或改为 [待验证]。"
+      }
+    ],
+    "added_by": "task6-review",
+    "added_at": "2026-04-11T01:15:00+08:00",
+    "status": "pending",
+    "original_review_log": "logs/review/2026-04-11-01-review.md"
   }
 ]
