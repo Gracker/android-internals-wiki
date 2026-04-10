@@ -238,20 +238,41 @@
   {
     "section": "1.14",
     "section_title": "锁竞争与同步性能分析",
-    "priority": 85,
-    "reason": "知识缺口挖掘：锁竞争是 jank/ANR/启动延迟的核心根因之一，DeliQueue(1.13)仅覆盖 MQ 特例，general lock contention analysis 是全书缺失的基础分析维度",
+    "priority": 90,
+    "reason": "[review回炉] 文末结构未闭环，且 PI-futex / DeliQueue 量化断言缺少精确来源",
     "material_paths": [
       "intake/research-feeds/2026-04-05-19-android17-deliqueue-lockfree-messagequeue.md",
       "intake/daily-info/2026-04-05.md (Mutex/Futex 优先级继承条目)",
       "intake/research-feeds/2026-04-06-15-perfetto-monitor-contention-art-lock-analysis.md",
       "intake/research-feeds/2026-04-06-15-art-thin-fat-lock-inflation-long-wait.md",
       "intake/research-feeds/2026-04-06-15-priority-inversion-futex-pi-android-lock-performance.md",
-      "intake/research-feeds/2026-04-06-15-art-lock-contention-monitor-contention-futex.md"
+      "intake/research-feeds/2026-04-06-15-art-lock-contention-monitor-contention-futex.md",
+      "intake/suggestions.md"
     ],
-    "added_by": "task2a-knowledge-gap",
-    "added_at": "2026-04-06T01:02:00+08:00",
-    "gap_score": "17/20",
-    "status": "pending"
+    "review_issues": [
+      {
+        "type": "需重写",
+        "location": "文末结构",
+        "detail": "outline 含「常见问题与误区 / 与其他机制的关系 / 读者诊断清单」，但正文停在版本演进表后，没有把这 3 个扩展块写出来。",
+        "suggestion": "补齐 3 个扩展小节，并增加一个简短收尾，让结构闭环。"
+      },
+      {
+        "type": "需确认",
+        "location": "PI-futex 版本演进",
+        "detail": "“Android 12 统一启用 Binder 和 ART monitor 的 PI-futex”缺少精确源码或版本依据。",
+        "suggestion": "由 Task 9 核对 AOSP 版本范围与对应实现，再决定正文表述。"
+      },
+      {
+        "type": "需补充素材",
+        "location": "量化数据与 sources",
+        "detail": "PI-futex 15% 开销、DeliQueue 15% 降低等量化断言缺少明确来源，frontmatter 也未列主要 sources。",
+        "suggestion": "补充原始素材/链接与 sources 字段，或将量化表述降级为定性描述。"
+      }
+    ],
+    "added_by": "task6-review",
+    "added_at": "2026-04-11T04:11:00+08:00",
+    "status": "pending",
+    "original_review_log": "logs/review/2026-04-11-04-review.md"
   },
   {
     "section": "FRESHNESS-part1-fundamentals-ch02-rendering-03-vsync",

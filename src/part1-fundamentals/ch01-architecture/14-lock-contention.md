@@ -4,7 +4,7 @@ chapter: "1.14"
 status: ready-for-review
 applicable_versions: "Android 1.0 (API 1) - Android 17 (API 37)"
 tags: [Mutex, Futex, monitor lock, 优先级反转, 锁竞争, DeliQueue, Perfetto, Binder, jank, ANR]
-related_chapters: ["1.5", "1.13", "2.4", "2.5", "7.1", "9.1"]
+related_chapters: ["1.4", "1.5", "1.13", "2.4", "2.5", "7.1", "9.1"]
 section: "1.14"
 created_by: "task2a-knowledge-gap"
 created_date: "2026-04-06"
@@ -12,7 +12,14 @@ gap_source: "研究素材+AOSP结构+每日信息+读者需求"
 gap_score: "17/20"
 drafted_date: "2026-04-06"
 drafted_by: "openclaw-task2a"
+reviewed_date: "2026-04-11"
+reviewed_by: "openclaw-task6"
 confidence: "medium"
+pipeline_stage: task2b_pending
+task6_state: reviewed
+task6_result: needs-rework
+task9_state: pending
+task2b_state: pending
 ---
 
 # 1.14 锁竞争与同步性能分析
@@ -34,7 +41,7 @@ confidence: "medium"
 - Object.wait() / notify() / notifyAll() 的 futex 机制
 - Monitor 性能开销：无竞争时 < 10ns（CAS 成功路径），竞争时 1-10μs（futex 调度延迟）
 
-### 🔹 锁点 3：Futex 与 Linux 同步原语
+### 🔹 锚点 3：Futex 与 Linux 同步原语
 - futex(2) 系统调用：用户态快速路径 + 内核态慢速路径的设计哲学
 - FUTEX_WAIT / FUTEX_WAKE 的语义
 - PI-futex（优先级继承 futex）：解决优先级反转的内核支持
@@ -58,7 +65,7 @@ confidence: "medium"
 - system_server 中常见的高争抢锁：ActivityManagerGlobalLock、WindowManagerGlobalLock、PackageManagerGlobalLock
 - Binder 事务超时与 ANR 的锁竞争关联
 
-### 🔹 锁点 6：在 Perfetto 中的表现
+### 🔹 锚点 6：在 Perfetto 中的表现
 - 线程状态解读：S（Sleeping）+ blocked_function=futex_wait_queue_me → 锁等待
 - Monitor Contention 切片：Perfetto 直接显示 Java monitor 竞争
 - Owner-Waiter 关系可视化：Perfetto UI 中连接持锁线程和等待线程
@@ -138,7 +145,7 @@ Android 系统横跨 Java、Native、内核三个层次，每一层都有自己�
 
 **Java 层的锁**以 `synchronized` 和 `java.util.concurrent` 包为核心。`synchronized` 是最基础的互斥机制，编译为 `monitorenter` / `monitorexit` 字节码，底层由 ART 虚拟机的 monitor 实现。ART 的 monitor 经历了几代优化：无竞争时使用 CAS（thin lock），竞争时膨胀为完整的 monitor 对象并调用 futex 系统调用。`ReentrantLock` 提供了更灵活的控制（可中断、可超时、公平/非公平模式），但底层同样依赖 CAS + futex。`ReadWriteLock` 和 `StampedLock` 在读多写少的场景中通过读写分离减少竞争。
 
-**Native 层的锁**使用 POSIX `pthread_mutex` 和 C++ `std::mutex`。Android 的 bionic libc 实现了 `pthread_mutex`，支持 normal、errorcheck、recursive 三种类型。从 Android 12 开始，bionic 的 mutex 实现增加了对优先级继承（PI）的支持，通过 `PTHREAD_PRIO_INHERIT` 属性启用。这个改进对 Binder 等系统服务的锁性能至关重要。
+**Native 层的锁**使用 POSIX `pthread_mutex` 和 C++ `std::mutex`。Android 的 bionic libc 实现了 `pthread_mutex`，支持 normal、errorcheck、recursive 三种类型。从 Android 12 开始，bionic 的 mutex 实现增加了对优先级继承（PI）的支持，通过 `PTHREAD_PRIO_INHERIT` 属性启用。这个改进会直接影响 Binder 等系统服务在竞争场景下的等待时间。
 
 **内核层的锁**是所有上层锁的基础。`futex`（Fast Userspace Mutex）是 Linux 提供的通用同步原语——用户态先通过 CAS 尝试获取锁（快速路径），失败时通过 `futex(2)` 系统调用让内核挂起线程（慢速路径）。`rt_mutex` 是内核的实时互斥锁，原生支持优先级继承。`spinlock` 用于内核中不可睡眠的上下文（中断处理、软中断），通过忙等而非睡眠实现互斥。
 
@@ -192,7 +199,7 @@ Binder 驱动为每个进程维护一个线程池（默认最大 16 个线程）
 
 ## 在 Perfetto 中识别锁竞争
 
-Perfetto 是分析锁竞争的主要工具。在 trace 中，锁竞争有几种典型的表现形式。
+Perfetto 是分析锁竞争的主要工具。在 Perfetto trace 中，锁竞争有几种典型的表现形式。
 
 **线程状态分析**是最直接的方式。当一个线程因锁竞争而阻塞时，它的状态从 Running（R）变为 Sleeping（S），blocked function 显示为 `futex_wait_queue_me`（Native 锁）或对应的 Java monitor 等待函数。在 Perfetto UI 的线程 track 上，这表现为一段较长的灰色（S 状态）区域，其间线程没有任何 CPU 活动。
 
@@ -230,7 +237,7 @@ LIMIT 30;
 
 减少锁竞争的核心思路有三种：消除锁（无锁设计）、缩小锁的范围（减小粒度）、减少锁的持有时间（快速路径）。
 
-**无锁设计**是最彻底的方案。DeliQueue（1.13 节）就是典型案例——它用无锁 Treiber 栈替代了 monitor lock 管理消息队列，使后台线程插入消息时不再需要获取主线程的锁。无锁设计的代价是实现复杂度更高（需要处理 CAS 失败、ABA 问题等），但在高争抢场景下性能收益显著。
+**无锁设计**是最彻底的方案。DeliQueue（1.13 节）就是典型案例——它用无锁 Treiber 栈替代了 monitor lock 管理消息队列，使后台线程插入消息时不再需要获取主线程的锁。无锁设计的代价是实现复杂度更高（需要处理 CAS 失败、ABA 问题等），但在高争抢场景下通常更有优势。
 
 **减小锁粒度**从全局锁改为分区锁。例如，将一个保护所有窗口状态的锁拆分为每个窗口独立的锁，使不同窗口的操作可以并行。Android 的 WMS 在演进过程中就经历了这种粒度细化。
 
@@ -238,7 +245,7 @@ LIMIT 30;
 
 **避免嵌套锁**是防止死锁和降低竞争的基本原则。当两个线程以不同顺序获取相同的两把锁时，就会产生死锁。遵循固定的锁排序（如总是先锁 A 再锁 B）可以避免死锁，但嵌套锁本身也增加了锁的持有时间。
 
-从 Android 版本演进看，锁优化是一个持续的过程。Android 17 的 DeliQueue 是近年最显著的锁优化，但更广泛地看，几乎每个大版本都在减少系统关键路径上的锁竞争。例如 Android 8.0 将 Binder 线程池从 8 扩展到 16、Android 12 统一启用 PI-futex、Android 16 引入 ADPF 对持锁线程的调度优先级动态调整等。
+从 Android 版本演进看，锁优化是一个持续的过程。Android 17 的 DeliQueue 是近年的代表性锁优化案例，但更广泛地看，几乎每个大版本都在减少系统关键路径上的锁竞争。例如 Android 8.0 将 Binder 线程池从 8 扩展到 16、Android 12 统一启用 PI-futex、Android 16 引入 ADPF 对持锁线程的调度优先级动态调整等。
 
 ## 版本演进中的锁优化
 
