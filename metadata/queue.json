@@ -2887,8 +2887,11 @@
     ],
     "added_by": "task6-review",
     "added_at": "2026-04-11T05:05:00+08:00",
-    "status": "pending",
-    "original_review_log": "logs/review/2026-04-11-05-review.md"
+    "status": "completed",
+    "original_review_log": "logs/review/2026-04-11-05-review.md",
+    "completed_at": "2026-04-11T05:56:19+08:00",
+    "completed_by": "task2b-content-processing-rework",
+    "result": "fixed"
   },
   {
     "section": "1.11",
@@ -2927,7 +2930,10 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-11T05:20:00+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-11T05:56:19+08:00",
+    "completed_by": "task2b-content-processing-rework",
+    "result": "fixed"
   },
   {
     "section": "1.11",
@@ -2959,6 +2965,9 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-11T05:20:00+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-11T05:56:19+08:00",
+    "completed_by": "task2b-content-processing-rework",
+    "result": "fixed"
   }
 ]
