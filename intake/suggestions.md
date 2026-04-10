@@ -584,3 +584,17 @@
 - **位置**：AMS 的 Service 管理 → 前台服务的演进 / 版本演进表
 - **问题**：Android 16 被概括为“后台 Job（包括通过 FGS 启动的）遵守各自运行配额”，但没有说明 user-initiated data transfer jobs（UIDT）是重要例外，容易把约束讲成绝对规则。
 - **建议**：补一句“Android 16 开始，从 FGS 发起的普通 Job 也受 runtime quota 约束，但 UIDT jobs 是官方给出的长时用户触发传输例外路径”。
+
+## [Task6 Review] 1.9 Package Manager Service 与应用安装性能 — 2026-04-11
+- **类型**：需重写
+- **位置**：全文结构
+- **问题**：缺少 `outline-start` / `outline-end` 与锚点设计，Task 6 无法按规范检查锚点覆盖。
+- **建议**：按 writing-guide.md 补齐 outline 块，并让每个锚点至少对应 1 个完整段落。
+- **review 日志**：logs/review/2026-04-11-01-review.md
+
+## [Task6 Review] 1.9 Package Manager Service 与应用安装性能 — 2026-04-11
+- **类型**：需补充素材
+- **位置**：`Baseline Profiles 与安装时优化` → 量化数据段落
+- **问题**：`约 30%` 与 `15-30%` 两组量化数据缺少可追溯的官方来源。
+- **建议**：补充 Google 官方文档或博客原始链接；若暂时无法确认，则降级为非量化表述或改为 `[待验证]`。
+- **review 日志**：logs/review/2026-04-11-01-review.md
