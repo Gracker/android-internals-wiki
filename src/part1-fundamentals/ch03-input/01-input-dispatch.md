@@ -3,11 +3,15 @@ title: "Input 事件分发全流程"
 chapter: "3.1"
 status: ready-to-publish
 applicable_versions: "Android 12 (API 31) - Android 16 (API 36)"
-last_verified: "2026-03-30"
+last_verified: "2026-04-10"
 last_verified_against: "AOSP android-14.0.0_r1"
+version_note: "正文以 android-14 验证为主；Android 12 InputFlinger 分离和 Android 13 ANR Tracker 变更基于官方文档和社区素材，标注 [待验证]。建议后续补充 android-12/13 源码级验证"
 confidence: high
 reviewed_date: "2026-04-07"
 reviewed_by: openclaw-task6
+rework2_date: "2026-04-10"
+rework2_by: "openclaw-task2b"
+rework2_reason: "Task9 Deep Tech Review: applicable_versions 补充版本验证说明; DEFAULT_INPUT_DISPATCHING_TIMEOUT_NANOS 经 web search 验证确在 WMS.java(Task9误报); §9.2 交叉引用经查实存在(Task9误报)"
 polish_count: 1
 polish_date: "2026-04-05"
 polish_by: "task2b-polish"
@@ -368,7 +372,7 @@ if (connection->responsive) {
 
 ```java
 // frameworks/base/services/core/java/com/android/server/wm/WindowManagerService.java
-// [已验证: AOSP android-14.0.0_r1]
+// [已验证: AOSP android-14.0.0_r1; android-16 经 web search 确认常量仍在 WMS.java 中定义]
 static final long DEFAULT_INPUT_DISPATCHING_TIMEOUT_NANOS = 5000 * 1000000L; // 5 sec
 ```
 
@@ -410,7 +414,9 @@ static final long DEFAULT_INPUT_DISPATCHING_TIMEOUT_NANOS = 5000 * 1000000L; // 
 
 在 Android 12 之前，`InputReader` 和 `InputDispatcher` 直接运行在 `system_server` 进程中。从 Android 12 开始，Google 将它们抽取到独立的 `InputFlinger` 服务中（虽然仍然运行在 `system_server` 进程），代码路径也重新组织为 `frameworks/native/services/inputflinger/`。
 
-这个重构的主要目的是将 Input 系统的代码与 `system_server` 的其他模块解耦，使得 Input 系统可以独立演进和测试。[待验证：Android 15+ 中 InputFlinger 是否已支持独立进程隔离模式]在 Android 12+ 的代码中，`InputFlinger` 的目录结构为：
+这个重构的主要目的是将 Input 系统的代码与 `system_server` 的其他模块解耦，使得 Input 系统可以独立演进和测试。[待验证：Android 15+ 中 InputFlinger 是否已支持独立进程隔离模式]
+
+[待验证：InputFlinger 在 Android 12 的具体拆分粒度（reader/dispatcher 分目录结构是否从 12 开始就是当前形式）、Android 13 mAnrTracker 的源码级行为——以上基于社区素材和官方文档，未在 android-12/13 源码中逐一验证]在 Android 12+ 的代码中，`InputFlinger` 的目录结构为：
 
 ```
 frameworks/native/services/inputflinger/
