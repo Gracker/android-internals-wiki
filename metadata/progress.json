@@ -4,16 +4,16 @@
   "metrics": {
     "total": 144,
     "draft": 15,
-    "ready-for-review": 30,
+    "ready-for-review": 29,
     "reviewed": 5,
     "finalized": 37,
     "staging_drafts": 0,
-    "last_updated": "2026-04-10T07:06:00+08:00",
+    "last_updated": "2026-04-10T08:50:00+08:00",
     "processing": 0,
-    "ready-to-publish": 16,
+    "ready-to-publish": 17,
     "last_reviewed": "2026-04-10",
-    "last_reviewed_section": "12.2 网络性能优化",
-    "reviewed_today": 16
+    "last_reviewed_section": "10.4 低内存对系统性能的影响",
+    "reviewed_today": 17
   },
   "reviewed_sections": {
     "8.1": {
@@ -883,6 +883,25 @@
         "consistency": 5,
         "verification": 4,
         "metadata": 4
+      }
+    },
+    "10.4": {
+      "reviewed_date": "2026-04-10",
+      "reviewed_by": "openclaw-task6",
+      "review_status": "ready-to-publish",
+      "review_type": "post-polish-quality-gate",
+      "review_round": 2,
+      "fixes_applied": [
+        "元数据：补 section/drafted_by 字段",
+        "状态：ready-for-review → ready-to-publish（精修质检终审通过）",
+        "reviewed_date 更新为 2026-04-10"
+      ],
+      "scores": {
+        "structure": 5,
+        "expression": 5,
+        "consistency": 5,
+        "verification": 4,
+        "metadata": 5
       }
     }
   },
@@ -2596,6 +2615,23 @@
     }
   ],
   "history": [
+    {
+      "date": "2026-04-10",
+      "section": "10.4",
+      "title": "低内存对系统性能的影响",
+      "action": "reviewed-ready-to-publish",
+      "review_by": "openclaw-task6",
+      "review_type": "post-polish-quality-gate",
+      "review_round": 2,
+      "fixes": 4,
+      "scores": {
+        "structure": 5,
+        "expression": 5,
+        "consistency": 5,
+        "verification": 4,
+        "metadata": 5
+      }
+    },
     {
       "date": "2026-04-10",
       "section": "12.2",
