@@ -1,4 +1,21 @@
 
+
+## [Task9 Deep Review] 1.10 ContentProvider 性能与优化 — 2026-04-11
+- **类型**：数据缺失
+- **位置**：行 234 App Startup 量化收益
+- **问题**："冷启动时间可减少 35% 到 42%"已标注 [待验证]，但仍以量化结论形式呈现，读者可能忽略待验证标注
+- **建议**：降级为"实测项目可减少 30%-40%，具体收益视 SDK 数量和初始化复杂度而定"，或将 [待验证] 标注升级为更醒目的 [数据来源: 待补充]
+
+- **类型**：源码准确性
+- **位置**：行 160 Binder 缓冲区 1MB
+- **问题**："[已验证：AOSP Binder 驱动默认配置]"未给出精确源码路径。Binder buffer size 在不同 Android 版本中配置来源不同（kernel binder driver vs system property）
+- **建议**：补充精确路径，如 `kernel/msm-5.4/drivers/android/binder.c` 中的 `binder_proc_dir_entry_default` 或 `system/core/binder/` 相关配置
+
+- **类型**：知识盲区
+- **位置**：行 144-154 SQLiteCursor 分页机制
+- **问题**：描述为"LIMIT windowSize OFFSET currentPos"，但 AOSP 实际实现是通过 native `movePosition()` 重新执行查询并逐行跳过，不是直接用 SQL OFFSET 语义
+- **建议**：修正分页实现描述，补充 native 层 `fillWindow()` 的实际行为，或标注为"[待验证：SQLiteCursor.fillWindow() 的具体实现机制]"
+
 ## [Task2A Gap Mining] 知识缺口挖掘记录 — 2026-04-10 06:05
 
 - **Phase**: Phase 1（无空 draft，进入挖掘模式）

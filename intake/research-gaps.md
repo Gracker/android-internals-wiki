@@ -1,3 +1,33 @@
+
+
+## [Task9 Deep Review] 1.10 ContentProvider 性能与优化 — 2026-04-11
+
+### 盲区 1：ContentProvider Binder 线程池模型
+**描述**：章节 ANR 机制未覆盖 Provider 端 Binder 线程池的默认线程数、线程耗尽型 ANR 与主线程阻塞型 ANR 的区别、以及跨进程死锁的典型模式（调用方持有锁 A，等待 Provider；Provider 需要锁 A 才能完成请求）。
+
+**重要程度**：高
+
+**建议研究方向**：
+- AOSP ActivityManagerService 中 ContentProvider 进程的 Binder 线程池配置
+- traces.txt 中 Binder 线程耗尽（"binder thread pool is full"）的特征栈帧
+- 经典跨进程死锁案例（ContentProvider + 数据库锁）
+
+**关联章节**：§1.10、§9.1-9.4 ANR 机制、§1.4 Binder IPC
+
+### 盲区 2：Android 11 ContentProvider URI 权限安全变更
+**描述**：Android 11 对 FLAG_GRANT_READ_URI_PERMISSION 和 ClipData 的交互引入了重要变化，ALLOWED_URI_LENGTH_SECURITY_SENSITIVE 限制也在 Android 11.0（API 30）中引入，影响跨 App 数据共享的安全性分析。
+
+**重要程度**：中
+
+**建议研究方向**：
+- Android 11 变更日志中关于 ContentProvider grant 机制的修改
+- AOSP ContentProviderRecord 和 AppOpsManager 相关实现
+- URI 权限 grant 操作的性能开销（与 App 启动的关系）
+
+**关联章节**：§1.10、§1.4 Binder IPC
+
+---
+
 ## [2026-04-08] 1.1 Android 分层架构 — Zygote 预加载机制源码路径缺失
 
 ### 盲区描述
