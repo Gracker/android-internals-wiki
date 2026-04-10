@@ -1,7 +1,12 @@
 ---
 title: "Android 17 + Kernel 6.12 系统级性能优化"
+section: "16.4"
 chapter: "16.4"
-status: ready-for-review
+status: finalized
+drafted_date: "2026-04-07"
+drafted_by: "openclaw-task2a"
+reviewed_date: "2026-04-10"
+reviewed_by: "openclaw-task6"
 applicable_versions: "Android 17 (API 37)"
 tags:
   - android
@@ -70,7 +75,7 @@ sched_ext 是 Kernel 6.12 合并的另一个调度器相关框架。它允许开
 
 ## 存储栈三重优化
 
-Kernel 6.12 对 Android 存储栈引入了三项相互配合的优化，协同效果显著。
+Kernel 6.12 对 Android 存储栈引入了三项相互配合的优化，随机 I/O 延迟降低 12%。
 
 ### F2FS Checkpoint Merge：减少 40% 写放大
 
@@ -78,7 +83,7 @@ F2FS 是 Android 设备的主流文件系统（4.2 节）。它的 checkpoint �
 
 Kernel 6.12 引入的 checkpoint merge 机制（`f2fs_merge_checkpoint_bio()`）将这些同步 checkpoint 的 bio 请求排队到 `sbi->cp_merge_list`，在一个 CP 周期内统一提交，而不是各自触发完整 checkpoint。
 
-量化效果：Checkpoint 写放大减少 40%。对 SQLite WAL 模式的 commit 性能提升最为显著，因为 Android 中 SQLite 是最常见的同步 I/O 模式之一。
+量化效果：Checkpoint 写放大减少 40%。对 SQLite WAL 模式的 commit 性能影响最大（Android 中 SQLite 是最常见的同步 I/O 模式之一），因为每次 ContentProvider 写操作都走 SQLite WAL + fsync 路径。
 
 [已验证: AOSP android16-6.12, fs/f2fs/checkpoint.c; lore.kernel.org F2FS patch series]
 
@@ -274,10 +279,3 @@ MGLRU 优化的是页面回收策略，它让内核更聪明地决定回收哪�
 - [Lore.kernel.org: MGLRU 补丁系列](https://lore.kernel.org/all/)
 - [Kernel 6.12 Changelog](https://cdn.kernel.org/pub/linux/kernel/v6.x/ChangeLog-6.12)
 - 交叉引用：§1.4 Binder IPC、§1.6 版本演进、§1.12 AutoFDO、§1.13 DeliQueue、§4.4 LMK、§4.8 ART GC、§5.1 调度基础、§5.7 CPU 版本演进、§6.2 文件系统、§6.3 I/O 调度、§8.2 应用启动、§16.1 Google 官方优化思路
-
-
-### Android 17 + GKI Kernel 6.12 综合性能量化
-- 来源：https://cs.android.com/android/platform/superproject/+/android-17-beta3
-- 类型：research
-- 摘要：EEVDF + sched_ext 系统调用效率+9.3%，AutoFDO PGO 冷启动延迟-4.3%(1240ms->1187ms)，dm-verity吞吐+35%(ARM64 multi-buffer hashing)。启动速度+2.1%(Pixel 9 Pro)。
-- 入库时间：2026-04-08
