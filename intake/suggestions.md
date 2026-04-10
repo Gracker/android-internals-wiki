@@ -649,3 +649,22 @@
 - **问题**：给出了 10.5% 几何平均、26.4% 峰值和 Binder 受益明显等结论，但没有标注这些数字对应的 benchmark/case，也没有给出一个最小 Perfetto/simpleperf 对照样例。
 - **建议**：至少补 1 个官方 benchmark 名称或截图占位，并把“Binder 受益明显”绑定到具体计数器/benchmark（如 IPC、cache miss、binder microbenchmark）。
 
+
+## [Task6 Review] 1.14 锁竞争与同步性能分析 — 2026-04-11
+- **类型**：需重写
+- **位置**：文末结构
+- **问题**：outline 中的「常见问题与误区 / 与其他机制的关系 / 读者诊断清单」未在正文展开，正文停在版本演进表后，收尾不完整。
+- **建议**：按 writing-guide.md 补齐这 3 个小节，每节至少 1 段，并补一个简短收尾。
+- **review 日志**：logs/review/2026-04-11-04-review.md
+
+- **类型**：需确认
+- **位置**：`PI-futex` 版本演进与优先级继承相关表述
+- **问题**：正文与版本演进表多次写到“Android 12 统一启用 Binder 和 ART monitor 的 PI-futex”，但缺少精确源码或版本依据，Task 6 不做技术裁决。
+- **建议**：交给 Task 9 核实版本范围与 AOSP 依据，再决定是否保留统一表述。
+- **review 日志**：logs/review/2026-04-11-04-review.md
+
+- **类型**：需补充素材
+- **位置**：量化数据与 frontmatter metadata
+- **问题**：`PI-futex` wake 路径“多约 15% 开销”和 DeliQueue “主线程锁竞争时间减少 15%”缺少明确来源，frontmatter 也未列主要 `sources`。
+- **建议**：补充原始素材/链接与 `sources` 字段，再决定保留或降级为定性表述。
+- **review 日志**：logs/review/2026-04-11-04-review.md

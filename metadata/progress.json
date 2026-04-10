@@ -1,43 +1,47 @@
 {
-  "generated_at": "2026-04-11T03:58:02+08:00",
+  "generated_at": "2026-04-11T04:11:00+08:00",
   "state_machine_version": "v2",
-  "total_sections": 174,
+  "total_sections": 175,
   "metrics": {
-    "total": 174,
+    "total": 175,
     "draft": 0,
-    "ready-for-review": 172,
-    "pipeline_task6_pending": 172,
+    "ready-for-review": 171,
+    "pipeline_task6_pending": 170,
     "pipeline_task9_pending": 0,
-    "pipeline_task2b_pending": 2,
+    "pipeline_task2b_pending": 3,
     "pipeline_publish_ready": 0,
-    "task6_pending": 169,
-    "task6_reviewed": 2,
+    "task6_pending": 167,
+    "task6_reviewed": 3,
     "task6_revisiting": 3,
-    "task9_pending": 174,
+    "task9_pending": 173,
     "task9_reviewed": 0,
-    "task2b_idle": 169,
-    "task2b_pending": 2,
+    "task2b_idle": 167,
+    "task2b_pending": 3,
     "task2b_fixed": 3,
-    "last_updated": "2026-04-11T03:58:02+08:00",
-    "unknown": 2
+    "last_updated": "2026-04-11T04:11:00+08:00",
+    "unknown": 4
   },
   "pipeline": {
     "pipeline_stage_counts": {
-      "task6_pending": 172,
-      "task2b_pending": 2
+      "task6_pending": 170,
+      "task2b_pending": 3,
+      "unknown": 2
     },
     "task6_state_counts": {
-      "pending": 169,
-      "reviewed": 2,
-      "revisiting": 3
+      "pending": 167,
+      "revisiting": 3,
+      "reviewed": 3,
+      "unknown": 2
     },
     "task9_state_counts": {
-      "pending": 174
+      "pending": 173,
+      "unknown": 2
     },
     "task2b_state_counts": {
-      "idle": 169,
-      "pending": 2,
-      "fixed": 3
+      "idle": 167,
+      "fixed": 3,
+      "pending": 3,
+      "unknown": 2
     }
   },
   "issues": {
@@ -48,7 +52,9 @@
     },
     "missing_chapter": [
       "src/part3-tools/ch14-other-tools/07-profiling-manager.md",
-      "src/part1-fundamentals/ch05-cpu-power/05-thermal.md"
+      "src/part1-fundamentals/ch05-cpu-power/05-thermal.md",
+      "src/part1-fundamentals/ch06-storage/02-filesystem.md",
+      "src/part4-system/ch16-aosp/01-google-optimization.md"
     ]
   },
   "sections": {
@@ -454,7 +460,7 @@
     },
     "src/part2-performance/ch08-responsiveness/08-system-triggered-profiling.md": {
       "chapter": "8.8",
-      "title": "ProfilingManager API Reference",
+      "title": "ProfilingManager 系统触发式性能追踪",
       "path": "src/part2-performance/ch08-responsiveness/08-system-triggered-profiling.md",
       "status": "ready-for-review",
       "pipeline_stage": "task6_pending",
@@ -604,7 +610,7 @@
     },
     "src/part2-performance/ch07-smoothness/14-gaps-dynamic-analysis.md": {
       "chapter": "7.14",
-      "title": "Mind the GAPS: Automated Path Reconstruction for Android Method Reachability",
+      "title": "GAPS：Android 动态分析目标可达性路径重建",
       "path": "src/part2-performance/ch07-smoothness/14-gaps-dynamic-analysis.md",
       "status": "ready-for-review",
       "pipeline_stage": "task6_pending",
@@ -774,7 +780,7 @@
     },
     "src/part2-performance/ch09-anr/07-non-technical-anr-diagnosis.md": {
       "chapter": "9.7",
-      "title": "Activity Manager Service ANR 处理",
+      "title": "ANR 非技术故障诊断",
       "path": "src/part2-performance/ch09-anr/07-non-technical-anr-diagnosis.md",
       "status": "ready-for-review",
       "pipeline_stage": "task6_pending",
@@ -1004,7 +1010,7 @@
     },
     "src/part2-performance/ch18-rendering-pipelines/21-eyedropper-crossdevice.md": {
       "chapter": "18.21",
-      "title": "System-level Color Picking",
+      "title": "EyeDropper API 与跨设备协作性能",
       "path": "src/part2-performance/ch18-rendering-pipelines/21-eyedropper-crossdevice.md",
       "status": "ready-for-review",
       "pipeline_stage": "task6_pending",
@@ -1090,8 +1096,7 @@
       "pipeline_stage": "task6_pending",
       "task6_state": "revisiting",
       "task9_state": "pending",
-      "task2b_state": "fixed",
-      "task2b_result": "fixed"
+      "task2b_state": "fixed"
     },
     "src/part1-fundamentals/ch02-rendering/05-main-render-thread.md": {
       "chapter": "2.5",
@@ -1401,8 +1406,7 @@
       "pipeline_stage": "task6_pending",
       "task6_state": "revisiting",
       "task9_state": "pending",
-      "task2b_state": "fixed",
-      "task2b_result": "fixed"
+      "task2b_state": "fixed"
     },
     "src/part1-fundamentals/ch01-architecture/11-zygote-startup.md": {
       "chapter": "1.11",
@@ -1469,10 +1473,10 @@
       "title": "锁竞争与同步性能分析",
       "path": "src/part1-fundamentals/ch01-architecture/14-lock-contention.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "pending",
+      "pipeline_stage": "task2b_pending",
+      "task6_state": "reviewed",
       "task9_state": "pending",
-      "task2b_state": "idle"
+      "task2b_state": "pending"
     },
     "src/part1-fundamentals/ch01-architecture/01-layered-architecture.md": {
       "chapter": "1.1",
@@ -1565,14 +1569,14 @@
       "task2b_state": "idle"
     },
     "src/part1-fundamentals/ch06-storage/02-filesystem.md": {
-      "chapter": "6.2",
-      "title": "文件系统",
+      "chapter": null,
+      "title": "02-filesystem",
       "path": "src/part1-fundamentals/ch06-storage/02-filesystem.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "pending",
-      "task9_state": "pending",
-      "task2b_state": "idle"
+      "status": "unknown",
+      "pipeline_stage": "unknown",
+      "task6_state": "unknown",
+      "task9_state": "unknown",
+      "task2b_state": "unknown"
     },
     "src/part1-fundamentals/ch04-memory/03-art-memory.md": {
       "chapter": "4.3",
@@ -1723,6 +1727,16 @@
       "task6_state": "pending",
       "task9_state": "pending",
       "task2b_state": "idle"
+    },
+    "src/part4-system/ch16-aosp/01-google-optimization.md": {
+      "chapter": null,
+      "title": "01-google-optimization",
+      "path": "src/part4-system/ch16-aosp/01-google-optimization.md",
+      "status": "unknown",
+      "pipeline_stage": "unknown",
+      "task6_state": "unknown",
+      "task9_state": "unknown",
+      "task2b_state": "unknown"
     },
     "src/part4-system/ch16-aosp/03-build-debug-env.md": {
       "chapter": "16.3",
@@ -2826,6 +2840,29 @@
       "deep_review_p0": 2,
       "deep_review_p1": 2,
       "deep_review_p2": 3
+    },
+    "1.14": {
+      "reviewed_date": "2026-04-11",
+      "reviewed_by": "openclaw-task6",
+      "review_status": "reviewed",
+      "fixes_applied": [
+        "frontmatter：补 reviewed_by/reviewed_date/task6_result，补 related_chapters 中缺失的 1.4，并更新 pipeline_stage/task6_state/task2b_state",
+        "outline：2 处“锁点”统一为“锚点”",
+        "措辞收束：1 处“至关重要”改为具体影响",
+        "措辞收束：1 处“在 trace 中”改为“在 Perfetto trace 中”",
+        "措辞收束：1 处“性能收益显著”改为“通常更有优势”",
+        "措辞收束：1 处“最显著的锁优化”改为“代表性锁优化案例”",
+        "B类标注：扩展块未展开；PI-futex 版本表述待核；15% 量化断言与 sources 待补"
+      ],
+      "b_class_issues": 3,
+      "review_log": "logs/review/2026-04-11-04-review.md",
+      "scores": {
+        "structure": 3,
+        "expression": 4,
+        "consistency": 4,
+        "verification": 2,
+        "metadata": 3
+      }
     }
   }
 }
