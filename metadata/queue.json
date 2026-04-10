@@ -2889,5 +2889,76 @@
     "added_at": "2026-04-11T05:05:00+08:00",
     "status": "pending",
     "original_review_log": "logs/review/2026-04-11-05-review.md"
+  },
+  {
+    "section": "1.11",
+    "section_title": "Zygote 机制与启动性能优化",
+    "priority": 95,
+    "reason": "[Deep Tech Review] Zygote 通信链、预加载源码/Trace 名称、Perfetto SQL 与 ZygotePreload 版本均存在事实错误",
+    "material_paths": [
+      "intake/suggestions.md",
+      "intake/research-gaps.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "行 101, 186, 192, 289, 483",
+        "detail": "把 system_server → Zygote 的进程创建请求写成 Binder IPC。AOSP android-16 实际走 Process.start() → ZygoteProcess.startViaZygote() → zygoteSendArgsAndGetResult()，底层是 LocalSocket/zygote socket。",
+        "suggestion": "改成两段链路：Launcher/App ↔ system_server 使用 Binder，system_server ↔ Zygote 使用 LocalSocket；必要时补 `ZygoteProcess.java` 调用链。"
+      },
+      {
+        "type": "源码错误",
+        "location": "行 230-265, 411-420",
+        "detail": "在 last_verified_against=android-16.0.0_r1 的前提下仍使用旧版 `preloadOpenGL` / `PreloadOpenGL` / `BeginIcuCachePinning` 叙述，并把 BootTimingsTraceLog slice 说成在 system_server track。android-16 实际是 `CacheNonBootClasspathClassLoaders` / `PreloadGraphicsDriver` 等阶段，trace 发生在 zygote 进程；`frameworks/base/config/preloaded-classes` 也不包含 `RecyclerView`。",
+        "suggestion": "按 android-16 ZygoteInit.java 重写预加载阶段；若保留旧版行为，明确标注适用版本。"
+      },
+      {
+        "type": "源码错误",
+        "location": "行 324-336",
+        "detail": "Perfetto SQL 用 `process.name = 'zygote64' AND slice.name LIKE '%fork%'` 定位 fork，但 android-16 `Zygote.java` 的 trace 点是子进程 `PostFork`，不是 zygote64 进程里的 fork slice。",
+        "suggestion": "改用 child process `PostFork`、`bindApplication`、`am_proc_start/am_proc_bound` 或 sched span 来定位 fork 与初始化边界。"
+      },
+      {
+        "type": "版本差异",
+        "location": "行 381-382",
+        "detail": "`android.app.ZygotePreload` 不是 Android 9 引入；android-9.0.0_r1 无此接口，android-10.0.0_r1 才有，而且它服务于 App Zygote / isolated service（`useAppZygote`, `zygotePreloadName`），不是主 Zygote 的通用自定义预加载接口。",
+        "suggestion": "把版本演进改为 Android 10+ App Zygote 机制，并说明作用范围和使用条件。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-11T05:20:00+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "1.11",
+    "section_title": "Zygote 机制与启动性能优化",
+    "priority": 85,
+    "reason": "[Deep Tech Review] Perfetto 可观测链路不闭环，且缺少 App Zygote / child zygote 机制边界",
+    "material_paths": [
+      "intake/research-gaps.md"
+    ],
+    "review_issues": [
+      {
+        "type": "原理断裂",
+        "location": "行 299-336, 405-425",
+        "detail": "章节想说明“如何在 Perfetto 中区分 Zygote fork 阶段和 App 初始化阶段”，但省略了 `RuntimeInit.applicationInit()`、`ActivityThread.attach()`、`bindApplication`、`launching: xxx` 等可观测 marker，方法论无法直接落地。",
+        "suggestion": "补一条从 Process.start 到首帧的可观测链路，明确每个阶段在 Perfetto / logcat / am trace 里的锚点。"
+      },
+      {
+        "type": "版本差异",
+        "location": "行 385",
+        "detail": "把 Android 17 DeliQueue 写成 Zygote 版本演进和 fork 后消息循环优化，混淆了 MessageQueue/Looper 演进与 Zygote 进程孵化机制的边界。",
+        "suggestion": "把 DeliQueue 移到 §1.13 或启动优化章节；如果要保留，必须单列说明它只影响主线程消息分发，不是 Zygote 机制本身。"
+      },
+      {
+        "type": "知识盲区",
+        "location": "版本演进 / 优化策略整体",
+        "detail": "缺少 App Zygote / child zygote / WebViewZygote 的职责边界，导致 `ZygotePreload` 的适用范围和自定义 preload 能力讲不清。",
+        "suggestion": "新增一个“小节：Primary Zygote、WebViewZygote、App Zygote 的差异”，并补一张进程关系图。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-11T05:20:00+08:00",
+    "status": "pending"
   }
 ]
