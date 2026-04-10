@@ -2771,5 +2771,75 @@
     "status": "completed",
     "completed_at": "2026-04-11T03:58:02+08:00",
     "completed_by": "task2b-rework"
+  },
+  {
+    "section": "1.14",
+    "section_title": "锁竞争与同步性能分析",
+    "priority": 95,
+    "reason": "[Deep Tech Review] Binder/ART/Perfetto/版本事实错误",
+    "material_paths": [
+      "intake/research-gaps.md",
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "severity": "P0",
+        "location": "行 48, 56, 174-176, 184, 256",
+        "detail": "正文把 Binder、ART monitor 与 PI-futex 写成同一条实现链。Binder 驱动当前通过 wait queue 与 transaction priority inheritance 处理阻塞和优先级提升，不是 futex/PI-futex；ART monitor 在 art/runtime/monitor.h 与 runtime/base/mutex.cc 中对应 Monitor/Mutex/ConditionVariable 路径，也未见 PTHREAD_PRIO_INHERIT / FUTEX_LOCK_PI 被直接启用。",
+        "suggestion": "拆开“Binder transaction priority inheritance”和“Java/ART monitor 锁竞争”两条链路，分别给出 AOSP/内核路径；不能证实的 PI-futex 结论一律降级为 [待验证]。",
+        "dimension": "源码准确性"
+      },
+      {
+        "type": "源码错误",
+        "severity": "P0",
+        "location": "行 217",
+        "detail": "Perfetto SQL 模块名写成了 android.monitor。Perfetto stdlib 当前提供的是 android.monitor_contention，按正文写法执行会直接跑不通。",
+        "suggestion": "改为 `INCLUDE PERFETTO MODULE android.monitor_contention;`，或删除 INCLUDE 并明确这是 raw slice 查询。",
+        "dimension": "源码准确性"
+      },
+      {
+        "type": "版本差异",
+        "severity": "P0",
+        "location": "行 148, 248, 255-256",
+        "detail": "版本演进表把 bionic 的 PTHREAD_PRIO_INHERIT 与 Binder 线程池变更都归到 Android 12/8.0 不准确。android-9.0.0_r1 的 bionic 已有 pthread_mutexattr_setprotocol(..., PTHREAD_PRIO_INHERIT)；android-7.1.2_r39 与 android-8.0.0_r1 的 ProcessState.cpp 都是 DEFAULT_MAX_BINDER_THREADS 15（常见总线程上限 16 含启动线程），不存在“8→16”的版本跳变。",
+        "suggestion": "重写版本演进表，按“bionic PI 支持至少可追到 Android 9、Binder 线程池默认上限并非 Android 8 才从 8 改到 16”来表述，并给出具体 tag/分支。",
+        "dimension": "版本差异"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-11T04:24:00+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "1.14",
+    "section_title": "锁竞争与同步性能分析",
+    "priority": 85,
+    "reason": "[Deep Tech Review] 原理链混淆 + Native/Binder driver 诊断盲区",
+    "material_paths": [
+      "intake/research-gaps.md",
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "原理断裂",
+        "severity": "P1",
+        "location": "行 168-196",
+        "detail": "章节把 futex PI、Java monitor、Binder 事务调度、MessageQueue 锁竞争串成了单一因果链，但没有解释哪些场景是同进程锁等待，哪些是跨进程 Binder priority inheritance，哪些根本不是锁而是 Binder driver wait queue。读者会把“主线程卡在 Binder”误判成 Java lock contention。",
+        "suggestion": "按“Java monitor / bionic pthread_mutex / Binder transaction priority inheritance / DeliQueue”四条路径拆开，并在 Perfetto 章节补判别条件（track、blocked_function、owner 可见性）。",
+        "dimension": "原理链完整性"
+      },
+      {
+        "type": "知识盲区",
+        "severity": "P1",
+        "location": "行 200-248 + 诊断清单",
+        "detail": "正文几乎只覆盖 Java monitor 的识别方式，没有给出 native mutex、binder driver waitqueue、system_server 全局锁链（WMS/AMS/SurfaceFlinger）这些真实热点问题的诊断路径。以“系统级锁竞争分析”为目标，这个盲区会直接影响实战可用性。",
+        "suggestion": "补 1 个 system_server 或 SurfaceFlinger 案例，至少覆盖 WMS GlobalLock / Binder 线程池耗尽 / Native mutex 三类路径，并说明 Perfetto 中各自怎么定位。",
+        "dimension": "知识盲区"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-11T04:24:00+08:00",
+    "status": "pending"
   }
 ]

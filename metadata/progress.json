@@ -1475,7 +1475,7 @@
       "status": "ready-for-review",
       "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
-      "task9_state": "pending",
+      "task9_state": "reviewed",
       "task2b_state": "pending"
     },
     "src/part1-fundamentals/ch01-architecture/01-layered-architecture.md": {
@@ -2862,7 +2862,22 @@
         "consistency": 4,
         "verification": 2,
         "metadata": 3
-      }
+      },
+      "deep_review_date": "2026-04-11T04:24:00+08:00",
+      "deep_review_by": "task9-deep-tech-review",
+      "deep_review_score": 1.8,
+      "deep_review_p0": 3,
+      "deep_review_p1": 2,
+      "deep_review_p2": 2,
+      "issues_found": [
+        "Binder/ART/PI-futex 机制被混写为同一实现（P0）",
+        "Perfetto SQL 模块名写成 android.monitor，官方标准库为 android.monitor_contention（P0）",
+        "版本演进表把 bionic PI 与 Binder 线程池演进写错到 Android 12/8.0（P0）",
+        "Futex / Binder transaction priority inheritance / Java monitor 因果链混淆（P1）",
+        "缺少 native mutex / binder driver / system_server 锁诊断路径（P1）",
+        "关键量化数字缺少 benchmark / 设备 / trace 绑定（P2）",
+        "与 §1.4 对 Binder 线程池数量表述不一致（P2）"
+      ]
     }
   }
 }
