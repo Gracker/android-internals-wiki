@@ -718,3 +718,20 @@ OEM/自研内核接入 AutoFDO 的关键前置条件缺失。正文提到 Kleaf�
 ### 关联章节
 1.4（Binder IPC 机制与性能影响）、1.5（线程模型）、2.12（Window Manager Service 与窗口管理）、14.10（Perfetto SQL Cookbook）
 
+
+## [2026-04-11] 1.11 Zygote 机制与启动性能优化 — 知识盲区
+
+### 盲区描述
+章节提到了 `ZygotePreload`，但没有交代它依附的是 App Zygote / child zygote 机制，也没有解释 primary zygote、WebViewZygote、App Zygote 三者的职责边界。读者很容易误以为任意系统 App 都能直接向主 Zygote 注入自定义 preload。这个盲区会直接影响对启动优化能力边界的判断。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 梳理 `AppZygote` / `ChildZygoteProcess` / `ZygotePreload` 在 Android 10+ 的完整调用链
+- 补清 manifest `useAppZygote` / `zygotePreloadName` 与 isolated service 的约束条件
+- 对比 primary zygote、WebViewZygote、App Zygote 的 preload 内容、隔离边界与性能收益
+- 补一张“谁负责 fork 谁”的进程关系图，并对应 Perfetto/日志里可观测的 marker
+
+### 关联章节
+§1.11、§1.3、§8.2、§8.3
