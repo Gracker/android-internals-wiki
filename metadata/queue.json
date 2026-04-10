@@ -2387,5 +2387,38 @@
     "added_at": "2026-04-10T06:47:19.213840",
     "completed_at": "2026-04-10T06:47:19.213846",
     "completed_by": "task2b-polish"
+  },
+  {
+    "section": "3.1",
+    "section_title": "Input 事件分发全流程",
+    "priority": 95,
+    "reason": "[Deep Tech Review] 版本覆盖声称失实（声称覆盖 Android 12-16 仅验证 Android 14）+ 交叉引用无效（9.2 不存在）",
+    "material_paths": [
+      "intake/research-gaps.md",
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "版本差异",
+        "location": "frontmatter applicable_versions + 版本演进表 + 锚点",
+        "detail": "章节 applicable_versions 声明覆盖 Android 12-16，但正文仅在 android-14.0.0_r1 上验证。Android 12 引入 InputFlinger 从 system_server 分离——重大架构变化——仅在可选扩展章节提及，锚点清单（必须覆盖）未包含此差异，导致声称的版本覆盖范围与实际内容不符。",
+        "suggestion": "方案1：将 applicable_versions 修正为 'Android 14 (API 34) - Android 16 (API 36)'；方案2：在锚点中增加 Android 12 InputFlinger 分离说明，在正文补充 Android 12/13/15/16 各版本具体差异（ANR Tracker 变化、折叠屏支持、输入法优化等）。"
+      },
+      {
+        "type": "交叉引用错误",
+        "location": "related_chapters (line 24)",
+        "detail": "related_chapters 列出 '9.2'，但 progress.json 中不存在章节 9.2（ANR 类型详解不存在）。",
+        "suggestion": "从 related_chapters 中删除 9.2；搜索正文确认是否有显式引用（如'第9.2节'），如有则修正目标章节号。"
+      },
+      {
+        "type": "源码准确性",
+        "location": "§5 秒超时的来源（line 370-372）",
+        "detail": "源码注释标注 'AOSP android-14.0.0_r1, frameworks/base/services/core/java/com/android/server/wm/WindowManagerService.java'，但 DEFAULT_INPUT_DISPATCHING_TIMEOUT_NANOS 常量实际定义在 InputManagerService.java（或其常量定义类），WMS 只是引用方。",
+        "suggestion": "修正源码注释指向 InputManagerService.java 中的常量定义位置。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-10T09:33:00",
+    "status": "pending"
   }
 ]

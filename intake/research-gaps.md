@@ -528,3 +528,74 @@ installd 是常驻 daemon，通过 fork 子进程的方式执行 dex2oat 等特�
 
 ### 关联章节
 1.10（ContentProvider 性能）, 8.2（App 启动全流程）, 8.3（启动优化策略）
+
+## [2026-04-10] 3.1 Input 事件分发全流程 — 知识盲区
+
+### 盲区描述
+章节版本演进表（line 450）称"Android 13: InputDispatcher 使用 mAnrTracker 替代之前的超时检测方式"，但正文完全没有说明 mAnrTracker 具体替代了什么机制，差异在哪里，为何改变。读者无法从现有描述中获得有意义的版本差异知识。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 调研 Android 13 之前 InputDispatcher ANR 超时检测的实现方式（是否基于 processLocked 中的 mAnrTracker 替代方案？）
+- 对比 Android 13 前后的 ANR 检测精度差异
+- 补充 mAnrTracker 的数据结构说明及其对 Trace 分析的影响
+
+### 关联章节
+3.1（本章）、9.1（ANR 设计思想）
+
+---
+
+## [2026-04-10] 3.1 Input 事件分发全流程 — 知识盲区
+
+### 盲区描述
+版本演进表（line 451）称"Android 14+: InputFlinger 进一步模块化，增加对折叠屏、多显示器的支持"，表述模糊。"进一步模块化"不构成有技术价值的版本差异信息。折叠屏/多显示器支持对 Input 路由的具体影响未说明。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 调研 Android 14 InputFlinger 具体新增模块（InputClassifier？InputFlinger-Performance？）
+- 调研折叠屏场景下 InputDispatcher 的多屏路由策略变化
+- 调研多显示器场景下触摸事件分发目标窗口的选择逻辑变化
+
+### 关联章节
+3.1（本章）、3.3（手势导航与系统交互）
+
+---
+
+## [2026-04-10] 3.1 Input 事件分发全流程 — 知识盲区
+
+### 盲区描述
+版本演进表（line 453）标注 Android 16 "[待验证：预测性返回手势（Predictive Back）对 Input 分发路径的影响]"，InputFlinger 扩展章节（line 413）也标注了相同 [待验证]。Predictive Back Gesture 已在 Android 14 正式引入，这对 InputDispatcher 的窗口查找路径有直接影响（back gesture 走 findFocusedWindowTargets 而非 findTouchedWindowTargets）。此差异悬而未决影响章节对 Android 16 的适用性声明。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 调研 Predictive Back Gesture 在 InputDispatcher 中的处理路径
+- 确认 Android 16 中 Predictive Back 是否有新的 Input 事件类型或分发策略
+- 补充对 Trace 分析的影响（back gesture 的 ANR 超时判断路径是否与触摸事件不同）
+
+### 关联章节
+3.1（本章）、3.3（手势导航与系统交互）、9.1（ANR 设计思想）
+
+---
+
+## [2026-04-10] 3.1 Input 事件分发全流程 — 知识盲区
+
+### 盲区描述
+§InputFlinger 的角色与演进（line 413）标注"[待验证：Android 15+ 中 InputFlinger 是否已支持独立进程隔离模式]"。如果 InputFlinger 在 Android 15/16 中真正实现独立进程（而非仍在 system_server 内），这对 Perfetto Trace 分析中 system_server 进程内 InputReader/Dispatcher 线程的可见性有直接影响。
+
+### 重要程度
+中
+
+### 建议研究方向
+- 调研 AOSP android-15/16 源码，确认 InputFlinger 是否运行在独立进程
+- 确认 android-15/16 中 InputFlinger 的实际进程模型
+- 分析对 Trace 分析方法的潜在影响
+
+### 关联章节
+3.1（本章）
+

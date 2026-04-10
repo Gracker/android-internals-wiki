@@ -442,3 +442,18 @@
 - **位置**：Android 16 启动优化段落（AutoFDO 部分）
 - **问题**：AutoFDO 描述缺少具体编译配置、内核优化指标和 Kernel 6.12 代码路径，读者无法在 AOSP 中验证
 - **建议**：补充 AutoFDO 在 android-16.0.0_r1 内核中的关键源码路径（如 kernel config CONFIG_AUTOFDO）、Perfetto 中的验证方法
+
+## [Task9 Deep Review] 3.1 Input 事件分发全流程 — 2026-04-10
+
+### 建议 1
+- **类型**：源码准确性
+- **位置**：§5 秒超时的来源（line 370-372）
+- **问题**：源码注释标注 `frameworks/base/services/core/java/com/android/server/wm/WindowManagerService.java`，但 DEFAULT_INPUT_DISPATCHING_TIMEOUT_NANOS 常量实际定义在 InputManagerService.java（或其常量定义类），WMS 只是引用方，注释指向不精准。
+- **建议**：修正源码注释为 InputManagerService.java 中的常量定义位置。
+
+### 建议 2
+- **类型**：数据缺失
+- **位置**：Perfetto 表现 - §wq Track 说明后（line 407）
+- **问题**：章节已有 [待补充] 标注——Perfetto 中 iq/oq/wq Track 与 deliverInputEvent 的对应关系截图缺失。这是锚点要求"输入事件在 Perfetto/Systrace 中的完整追踪"的核心配套素材，缺失会显著降低本章作为实践指南的价值。
+- **建议**：抓取包含 inputflinger（system_server）和 App 侧双进程的 Perfetto trace，截取 iq/oq/wq 队列堆积导致 ANR 的典型案例，逐 Track 标注含义和处理延迟的读法。
+
