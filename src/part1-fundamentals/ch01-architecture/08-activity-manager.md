@@ -4,8 +4,8 @@ chapter: "1.8"
 status: ready-for-review
 drafted_date: "2026-04-05"
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
-last_verified: "2026-04-05"
-last_verified_against: "AOSP android-16.0.0_r1"
+last_verified: "2026-04-11"
+last_verified_against: "AOSP android-16.0.0_r1 + Android Developers behavior changes 14/17"
 confidence: medium
 sources:
   - type: aosp
@@ -16,6 +16,16 @@ sources:
     path: "frameworks/base/services/core/java/com/android/server/am/BroadcastQueue.java"
   - type: aosp
     path: "frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp"
+  - type: aosp
+    path: "frameworks/base/services/core/java/com/android/server/wm/ActivityTaskManagerService.java"
+  - type: aosp
+    path: "frameworks/base/services/core/java/com/android/server/wm/RootWindowContainer.java"
+  - type: aosp
+    path: "frameworks/base/services/core/java/com/android/server/wm/TaskDisplayArea.java"
+  - type: aosp
+    path: "frameworks/base/services/core/java/com/android/server/wm/Task.java"
+  - type: aosp
+    path: "frameworks/base/core/res/res/values/attrs_manifest.xml"
   - type: blog
     path: "https://juejin.cn/post/7083438148843225102"
   - type: blog
@@ -24,6 +34,12 @@ sources:
     path: "https://developer.android.com/about/versions/12/behavior-changes-12"
   - type: official
     path: "https://developer.android.com/about/versions/14/behavior-changes-14"
+  - type: official
+    path: "https://developer.android.com/about/versions/14/behavior-changes-all"
+  - type: official
+    path: "https://developer.android.com/about/versions/17/behavior-changes-all"
+  - type: official
+    path: "https://developer.android.com/reference/android/R.attr#recreateOnConfigChanges"
 tags: [ams, activity-manager, process-lifecycle, anr, service-management, broadcast, content-provider]
 related_chapters: ["1.3", "1.4", "4.4", "8.1", "8.2", "5.8"]
 created_by: "task2a-knowledge-gap"
@@ -34,10 +50,11 @@ rework_by: "task2a"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-04-10"
 task6_result: needs-rework
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task9_state: pending
-task2b_state: pending
+task2b_result: fixed
+task2b_state: fixed
 ---
 
 # 1.8 Activity Manager Service 与性能分析
@@ -56,16 +73,16 @@ task2b_state: pending
 
 ## AMS 在 Android 架构中的角色
 
-AMS 运行在 `system_server` 进程中，是 Android 最核心的系统服务之一。它管理着四大组件（Activity、Service、BroadcastReceiver、ContentProvider）的完整生命周期，同时负责进程的创建、优先级调整和回收。
+AMS 运行在 `system_server` 进程中，是 Android 最核心的系统服务之一。它负责进程的创建、优先级调整和回收，负责 Service、BroadcastReceiver、ContentProvider 的系统侧调度，也承接 ANR、Crash、前后台状态变化这些全局管理逻辑。对于 Activity，现代 Android 已经把大部分任务与窗口容器管理拆到了 `ActivityTaskManagerService`（ATMS）和 `WindowManagerService`（WMS）一侧，所以我们分析启动和任务切换时，不能只盯着 AMS。
 
 从架构上看，AMS 和几个关键服务之间有紧密的协作关系：
 
 - **PackageManagerService（PMS）**：AMS 在启动 Activity/Service 时，需要通过 PMS 解析目标组件的信息（权限、声明、进程名等）。
-- **WindowManagerService（WMS）**：Activity 需要窗口才能显示，AMS 负责管理 Activity 的生命周期，WMS 负责管理窗口的显示。两者通过 `ActivityRecord` 和 `WindowState` 关联。ANR 中 Input 超时的检测就涉及 WMS 侧的 `InputDispatcher`。
+- **ActivityTaskManagerService（ATMS） / WindowManagerService（WMS）**：Activity 需要窗口才能显示，现代 AOSP 里任务与窗口容器管理主要落在 ATMS / WMS。AMS 更多负责进程、Service、Broadcast 和 ANR 管线；ATMS 负责 Activity / Task 的调度；WMS 负责窗口、焦点和输入相关状态。Input ANR 的检测也要看 WMS 侧的 `InputDispatcher`。
 - **SurfaceFlinger**：虽然不直接交互，但 AMS 决定了哪个 Activity 可见 → WMS 据此决定 Surface 的层级 → SurfaceFlinger 合成显示。
 - **ProcessList**：AMS 内部维护的进程列表，和 lmkd（Low Memory Killer Daemon）协作完成内存回收。我们在 §4.4 会专门讲这个机制。
 
-应用进程通过 `ActivityManager`（客户端代理类）与 AMS 通信。这层通信走的是 Binder IPC——`IActivityManager.aidl` 定义了接口，`ActivityManagerService` 实现了接口。所以你在 Perfetto 中看到的 `Binder:system` 线程上的调用，很可能就是某个 App 在请求 AMS 的服务。
+应用进程通过 `ActivityManager`（客户端代理类）与 AMS 通信。这层通信走的是 Binder IPC，`IActivityManager.aidl` 定义接口，`ActivityManagerService` 实现接口。需要区分的是，`startActivity()` 这类 Activity / Task 相关调用虽然入口还在 AMS 对外接口上，但会继续委托给 `ActivityTaskManagerService`。所以你在 Perfetto 中看到的 `Binder:system` 线程调用，往往只是系统服务链路的起点，不是全部。
 
 ```
 [图：AMS 在系统架构中的位置，展示 system_server 内 AMS 与 PMS/WMS 的关系，以及 App 进程通过 Binder 与 AMS 通信的路径]
@@ -289,21 +306,23 @@ LIMIT 10;
 
 ### Activity 栈与 Task 管理
 
-AMS 使用 `TaskStack` 和 `Task` 两个层级来组织 Activity。一个 Task 对应一个"任务"（如用户通过 Recents 界面看到的卡片），内部包含一组按栈结构排列的 Activity。
+如果你看的还是早期 Android 文章，很容易把这部分记成 `TaskStack` + `Task`。这个说法放在历史版本里不算错，但放到 Android 10 之后就会把旧模型和现行实现混在一起。当前 AOSP 里，Activity 与 Task 的容器管理已经从 AMS 主类拆到 `ActivityTaskManagerService`（ATMS）和 `WindowManager` 侧。`ActivityManagerService.startActivity()` 现在只是把请求转给 `mActivityTaskManager.startActivity()`，真正决定“这个 Activity 落到哪个任务、哪个显示区域、是否复用已有任务”的，是 `ActivityStarter`、`RootWindowContainer`、`TaskDisplayArea` 和 `Task` 这一套容器。
 
-在 Perfetto 中观察 Activity 切换时，关注 `am_activity_launch` 事件和 `system_server` 中 `ActivityManager` 线程的 Binder 调用链。一次 Activity 启动的完整流程涉及多次跨进程调用：
+从容器层级看，现代实现更接近下面这个结构：
 
+```text
+RootWindowContainer
+  └─ DisplayContent
+      └─ TaskDisplayArea
+          └─ Task（root task / leaf task）
+              └─ ActivityRecord
 ```
-App.startActivity()
-  → AMS.startActivityAsUser()
-    → ActivityStarter.execute()
-      → 如果目标进程不存在 → startProcessAsync()
-      → 如果进程已存在 → 直接调度
-    → App.thread.scheduleLaunchActivity()  // Binder 回调到 App
-      → ActivityThread.handleLaunchActivity()
-        → Activity.onCreate() → onStart() → onResume()
-        → WMS addView() → Surface 创建 → 第一帧渲染
-```
+
+`RootWindowContainer` 是整台设备的顶层窗口容器；每个 `DisplayContent` 下面可以有一个或多个 `TaskDisplayArea`；`TaskDisplayArea` 的孩子既可以是 `Task`，也可以是嵌套的 `TaskDisplayArea`；`Task` 本身既可能是用户在 Recents 里看到的一张任务卡片，也可能继续包含子 `Task`。所以我们今天谈“Activity 落在哪个栈里”时，更准确的说法不是“AMS 把它塞进某个 TaskStack”，而是“ATMS / WindowManager 在目标 `TaskDisplayArea` 中选择或创建合适的 `Task`，再把 `ActivityRecord` 挂进去”。
+
+落实到启动链路，`ActivityStarter.startActivityInner()` 会先计算 `mPreferredTaskDisplayArea`，再通过 `TaskDisplayArea.getOrCreateRootTask()` 找到或创建目标 root task，最后把新的 `ActivityRecord` 放进目标 `Task`。这对性能分析有一个直接影响：我们在 Perfetto 里看到 `am_activity_launch`，只能说明 `system_server` 侧已经发起了启动流程；真正影响启动手感的“复用旧任务还是新建任务、是否切到别的 display area、是否走多窗口 / PiP 路径”，要结合 `ActivityStarter` 的决策和后续 `ActivityThread.handleLaunchActivity()` 一起看。AMS 负责把进程和全局状态管起来，ATMS 负责把 Activity 放到正确的容器里，这两条线要放在一起看，启动链路才完整。
+
+> [已验证: AOSP android-16.0.0_r1，`frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java` 中 `startActivity()` 委托给 `mActivityTaskManager.startActivity()`；`frameworks/base/services/core/java/com/android/server/wm/RootWindowContainer.java`、`TaskDisplayArea.java`、`Task.java` 定义了当前任务容器层级]
 
 ### Activity 启动耗时在 Perfetto 中的定位
 
@@ -323,9 +342,15 @@ App.startActivity()
 [待高爷补充：Trace 截图]
 ```
 
-### Android 17 的 `recreateOnConfigChanges`
+### manifest 中的 `recreateOnConfigChanges`
 
-[待验证：Android 17 引入了 recreateOnConfigChanges 行为变更，可能影响 Activity 在配置变更（如屏幕旋转）时的重启策略。待正式文档发布后补充。]
+这一项不能写成“Android 17 新引入”。当前公开 AOSP 在 `frameworks/base/core/res/res/values/attrs_manifest.xml` 里已经定义了 `recreateOnConfigChanges`，而且注释写得很直白：从 Android O 开始，`mcc` 和 `mnc` 这两类配置变化默认不会再触发 Activity 重建；如果应用确实希望在这两种变化发生时重走一次 Activity 重建流程，需要在 manifest 里显式声明 `recreateOnConfigChanges`。
+
+这意味着我们分析配置变更带来的重启问题时，不能把 `recreateOnConfigChanges` 当成一个“通用的 Activity 重启开关”。就公开源码可验证的语义来看，它主要针对 `mcc` / `mnc` 这类运营商和区域配置变化。屏幕旋转、夜间模式、窗口尺寸变化这类更常见的场景，仍然应该先看 `android:configChanges`、`onConfigurationChanged()` 和实际生命周期回调，而不是先假设系统会因为 `recreateOnConfigChanges` 把 Activity 杀掉重建。
+
+从性能角度，这个属性影响的不是高频日常交互，而是少见但难查的区域 / 运营商切换场景。假如你在跨境 SIM、eSIM 切换或运营商配置更新后看到 Activity 没有按预期重建，先查 manifest 是否声明了 `mcc|mnc` 的 `recreateOnConfigChanges`，再决定是否继续沿着 AMS / ATMS 的重启链路追。至少就当前公开的 AOSP 与 Android Developers 文档，我们没有证据把它解释成 Android 17 的通用行为变更。
+
+> [已验证: AOSP android-16.0.0_r1，`frameworks/base/core/res/res/values/attrs_manifest.xml`；Android Developers `android.R.attr#recreateOnConfigChanges`]
 
 ---
 
@@ -394,7 +419,15 @@ AMS 通过 `BroadcastQueue` 管理所有广播的分发。系统维护两个队�
 
 ### Android 14+ 的广播限制
 
-[待验证：Android 14+ 引入了 `BACKPORTED_BROADCAST_EXTRAS` 相关的安全限制，影响广播携带的 Extra 数据大小。具体细节待进一步确认。]
+Android 14 对广播做的变化，重点不在 Extra 大小，而在**投递时机**和**动态注册边界**。
+
+第一层变化发生在进程处于 cached state 时。官方行为变更文档明确写到，`context-registered broadcasts` 可以在应用进入 cached state 后被放进队列，等应用回到前台或离开 cached state 再投递。Manifest 中声明的广播不走这套排队逻辑，系统甚至会把应用从 cached state 拉出来立即投递。这会直接改变我们在 Perfetto 里理解“广播什么时候真正执行”的方式：发送时刻和 `onReceive()` 真正跑起来的时刻，Android 14 之后不一定重合。
+
+第二层变化是动态注册 Receiver 的导出属性。面向 Android 14+ 的应用在调用 `Context.registerReceiver()` 时，需要显式指定 `RECEIVER_EXPORTED` 或 `RECEIVER_NOT_EXPORTED`，除非它只接收 system broadcast。这个改动是安全收口，不是性能优化本身，但它会影响旧代码能不能顺利走到广播分发路径。
+
+对性能分析来说，我们至少要记住两件事。第一，cached 进程里的动态广播可能被延后，因此不能再用“发送广播后主线程没立刻响应”直接推断 AMS 分发慢。第二，Manifest 广播依旧可能把进程拉起，所以 `BOOT_COMPLETED`、网络变化、电量状态切换这类广播仍然可能造成进程批量唤醒，低端设备上尤其容易放大冷启动风暴和后台抖动。
+
+> [已验证: Android Developers `Behavior changes: all apps`（Android 14，cached state 下的 context-registered broadcast 排队）与 `Behavior changes: Android 14`（runtime-registered receiver 必须显式声明 `RECEIVER_EXPORTED` / `RECEIVER_NOT_EXPORTED`）]
 
 ---
 
@@ -466,7 +499,7 @@ AMS 通过 `BroadcastQueue` 管理所有广播的分发。系统维护两个队�
 | Android 14 (API 34) | FGS 类型声明强制化 + while-in-use 限制 | 必须声明 `foregroundServiceType` |
 | Android 15 (API 35) | dataSync FGS 运行时间上限（6h） | 长时间后台数据同步需换方案 |
 | Android 16 (API 36) | 后台 Job 配额 + ProfilingManager | 后台任务受配额限制 |
-| Android 17 (API 37) | 后台音频 API 限制 + `recreateOnConfigChanges` | [待验证：具体行为变更待正式文档确认] |
+| Android 17 (API 37) | 后台音频 API 限制 | 后台调用音频播放 / 焦点 / 音量 API 可能失败或静默无效 |
 
 > [已验证: 官方文档, developer.android.com — 各版本 Behavior changes]
 
@@ -495,6 +528,11 @@ AMS 通过 `BroadcastQueue` 管理所有广播的分发。系统维护两个队�
 
 ### AOSP 源码路径
 - `frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java` — AMS 主类
+- `frameworks/base/services/core/java/com/android/server/wm/ActivityTaskManagerService.java` — Activity / Task 管理入口
+- `frameworks/base/services/core/java/com/android/server/wm/RootWindowContainer.java` — 顶层任务 / 显示容器
+- `frameworks/base/services/core/java/com/android/server/wm/TaskDisplayArea.java` — Display 下的任务容器
+- `frameworks/base/services/core/java/com/android/server/wm/Task.java` — Task 定义与 Recents 语义
+- `frameworks/base/core/res/res/values/attrs_manifest.xml` — `recreateOnConfigChanges` 定义
 - `frameworks/base/services/core/java/com/android/server/am/ActiveServices.java` — Service 管理与 ANR 检测
 - `frameworks/base/services/core/java/com/android/server/am/BroadcastQueue.java` — 广播分发与超时
 - `frameworks/base/services/core/java/com/android/server/am/AnrHelper.java` — ANR 统一处理管线
@@ -505,9 +543,12 @@ AMS 通过 `BroadcastQueue` 管理所有广播的分发。系统维护两个队�
 
 ### 官方文档
 - [Behavior changes: Android 12](https://developer.android.com/about/versions/12/behavior-changes-12) — FGS 后台启动限制
-- [Behavior changes: Android 14](https://developer.android.com/about/versions/14/behavior-changes-14) — FGS 类型声明
+- [Behavior changes: Android 14](https://developer.android.com/about/versions/14/behavior-changes-14) — 动态注册 Receiver 导出属性与 FGS 相关约束
+- [Behavior changes: all apps on Android 14](https://developer.android.com/about/versions/14/behavior-changes-all) — cached state 下的 context-registered broadcast 排队
+- [Behavior changes: all apps on Android 17](https://developer.android.com/about/versions/17/behavior-changes-all) — 后台音频 API 限制
 - [Foreground services overview](https://developer.android.com/develop/background-work/services/foreground-services) — FGS 官方指南
 - [Background execution limits](https://developer.android.com/about/versions/oreo/background) — Android 8.0 后台限制
+- [android.R.attr#recreateOnConfigChanges](https://developer.android.com/reference/android/R.attr#recreateOnConfigChanges) — `recreateOnConfigChanges` 属性说明
 
 ### 深入阅读
 - 《Android ANR 的设计原理》— 掘金，ANR 埋雷-拆雷-爆雷机制的源码级分析
@@ -517,3 +558,30 @@ AMS 通过 `BroadcastQueue` 管理所有广播的分发。系统维护两个队�
 ---
 
 > [自动发现] AMS 内部的锁竞争（`mService` 全局锁）和 `system_server` Binder 线程池饱和问题，是分析 system_server 侧性能瓶颈时的重要切入点。这部分内容计划在扩展章节中详细展开。
+
+
+<!-- outline-start -->
+## 本节要点大纲
+
+### 锚点（必须覆盖）
+
+- 🔹 **AMS / ATMS 分工与 Perfetto 入口**：[已验证: AOSP android-16.0.0_r1]
+  AMS 负责进程管理、ANR、Service / Broadcast / Provider 调度；Activity / Task 容器管理在 ATMS / WindowManager。Perfetto 入口看 `system_server` 的 `ActivityManager` 线程和 `am_*` 事件。
+
+- 🔹 **进程优先级、启动与回收链路**：[已验证: AOSP android-16.0.0_r1]
+  关注 `oom_adj`、`am_proc_start`、`am_proc_bound`、lmkd 协作与冷启动关键时间点。
+
+- 🔹 **ANR 类型与超时差异**：[已验证: AOSP + 官方文档]
+  Input / Broadcast / Service / ContentProvider 有不同超时和埋雷位置，不能用“ANR = 5 秒”一把梭。
+
+- 🔹 **现代 Activity 任务容器模型**：[已验证: AOSP android-16.0.0_r1]
+  现代层级是 `RootWindowContainer → DisplayContent → TaskDisplayArea → Task → ActivityRecord`，不能再把 `TaskStack` 当成当前主术语。
+
+- 🔹 **Android 14+ 广播与配置变更差异**：[已验证: developer.android.com + AOSP]
+  Android 14 对 cached state 下的 context-registered broadcast 引入排队，并要求动态注册 Receiver 显式声明导出属性；`recreateOnConfigChanges` 的公开可验证语义是 Android O+ 下 `mcc/mnc` 场景的显式重建。
+
+### 扩展（可选深入）
+
+- 🔸 **system_server 侧瓶颈排查**：Binder 线程池饱和、AMS 全局锁竞争、Task 切换与窗口动画联动
+- 🔸 **Trace 实战脚本化**：用 SQL 把 `am_*` 事件与主线程首帧、Binder 调用链、Process Stats 串起来
+<!-- outline-end -->
