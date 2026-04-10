@@ -297,22 +297,11 @@
       ]
     },
     "3.2": {
-      "reviewed_date": "2026-04-05",
-      "reviewed_by": "openclaw-task6",
-      "review_status": "ready-to-publish",
-      "review_type": "post-polish-quality-gate",
-      "review_round": 2,
-      "fixes_applied": [
-        "验证标注降级：Motion Prediction API 19 [已验证] → [待验证]（Jetpack minSdk=21）",
-        "status: ready-for-review → ready-to-publish（出版终态）"
-      ],
-      "scores": {
-        "structure": 5,
-        "expression": 5,
-        "consistency": 5,
-        "verification": 4,
-        "metadata": 5
-      }
+      "deep_review_date": "2026-04-10T10:54:17",
+      "deep_review_by": "task9-deep-tech-review",
+      "deep_review_score": 3.8,
+      "deep_review_p1": 2,
+      "deep_review_p2": 3
     },
     "3.3": {
       "reviewed_date": "2026-04-06",
@@ -5971,5 +5960,8 @@
     "status": "ready-for-review",
     "drafted_date": "2026-04-10",
     "drafted_by": "openclaw-task2a"
-  }
+  },
+  "deep_review_sessions": [],
+  "last_reviewed": "2026-04-10",
+  "last_reviewed_section": "触摸响应的性能分析"
 }
