@@ -12,8 +12,8 @@
     "processing": 0,
     "ready-to-publish": 17,
     "last_reviewed": "2026-04-10",
-    "last_reviewed_section": "2.11 Flutter 渲染管线与性能",
-    "reviewed_today": 18,
+    "last_reviewed_section": "2.1 Android 渲染架构全景",
+    "reviewed_today": 19,
     "ready_to_publish": 1
   },
   "reviewed_sections": {
@@ -96,22 +96,11 @@
       }
     },
     "2.1": {
-      "reviewed_date": "2026-04-05",
-      "reviewed_by": "openclaw-task6",
-      "review_status": "ready-to-publish",
-      "review_type": "post-polish-quality-gate",
-      "fixes_applied": [
-        "无 A 类修复（task2b 精修后质量已达标）",
-        "无 B 类问题",
-        "status: ready-for-review → ready-to-publish（出版终态）"
-      ],
-      "scores": {
-        "structure": 5,
-        "expression": 5,
-        "consistency": 5,
-        "verification": 4,
-        "metadata": 5
-      }
+      "deep_review_date": "2026-04-10T16:13:40",
+      "deep_review_by": "task9-deep-tech-review",
+      "deep_review_score": 3.7,
+      "deep_review_p1": 3,
+      "deep_review_p2": 3
     },
     "5.1": {
       "reviewed_date": "2026-04-06",
@@ -4625,12 +4614,13 @@
       "polish_by": "task2b-polish-2"
     },
     "2.1": {
-      "status": "ready-to-publish",
       "title": "Android 渲染架构全景",
-      "file": "src/part1-fundamentals/ch02-rendering/01-rendering-overview.md",
-      "last_review": "2026-04-05T02:20",
-      "review_issues": 1,
-      "last_reviewed": "2026-04-10"
+      "deep_review_date": "2026-04-10T16:13:40",
+      "deep_review_by": "task9-deep-tech-review",
+      "deep_review_score": 3.7,
+      "deep_review_p0": 0,
+      "deep_review_p1": 3,
+      "deep_review_p2": 3
     },
     "1.2": {
       "title": "系统启动全流程",
