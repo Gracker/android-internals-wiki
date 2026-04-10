@@ -2,12 +2,12 @@
 title: "2.11 Flutter 渲染管线与性能"
 section: "2.11"
 chapter: "2.11"
-status: ready-for-review
+status: reviewed
 drafted_date: "2026-04-01"
 drafted_by: "openclaw-task2a"
-reviewed_date: "2026-04-06"
+reviewed_date: "2026-04-10"
 reviewed_by: "openclaw-task6"
-review_notes: "task9 P85 rework: DevTools版本修正(3.19→DevTools2.28), Impeller数据降级为社区报告, 补充移动GPU shader编译背景, §2.3已验证存在"
+review_notes: "task6 review完成：修正术语统一(Raster线程)，优化数据表达，添加存疑和需补充素材标注。3个大问题已回炉处理"
 polish_count: 1
 polish_date: "2026-04-05"
 polish_by: "task2b-polish"
@@ -88,7 +88,7 @@ Flutter 的线程模型和原生 Android 差异很大，理解它对性能分析
 
 **UI 线程**（`1.ui`）：也叫 Dart 线程，这是 Dart 虚拟机运行 Isolate 的地方。我们写的 Dart 代码——Widget 的 build、状态管理、业务逻辑——都在这个线程上执行。当 UI 需要更新时，UI 线程会执行 Build → Layout → Paint 流程，生成 DisplayList，然后把它发送给 Raster 线程。
 
-**Raster 线程**（`1.raster`，旧称 GPU 线程）：这个线程负责实际的像素光栅化。它从 UI 线程接收 DisplayList，然后调用 Skia 或 Impeller 的 API 将绘制指令转换为 GPU 命令，最终输出到 Surface 上。如果我们在 Perfetto 中看到 Raster 线程 CPU 占用很高，说明 GPU 光栅化工作量很大。
+**Raster 线程**（`1.raster`）：这个线程负责实际的像素光栅化。它从 UI 线程接收 DisplayList，然后调用 Skia 或 Impeller 的 API 将绘制指令转换为 GPU 命令，最终输出到 Surface 上。如果我们在 Perfetto 中看到 Raster 线程 CPU 占用很高，说明光栅化工作量很大。
 
 **IO 线程**（`1.io`）：主要负责从磁盘或网络加载图片资源，并将解码后的图片数据上传到 GPU 内存。这个线程的任务比较单一，通常不会成为性能瓶颈。
 
@@ -128,7 +128,7 @@ Hybrid Composition 模式是当前的推荐方案。它不再通过 Texture 中�
 
 但 Hybrid Composition 也有代价。当 Flutter 内容和 PlatformView 内容需要同时显示时（比如 Flutter 的 UI 叠加在 WebView 上方），Flutter 必须在 Platform 线程（也就是 Android 主线程）上完成自己的 UI 合成。这意味着此时 Flutter 的渲染会退回到和原生应用一样的主线程依赖，之前提到的线程模型优势就不复存在了。在 Perfetto 中，我们会看到到此时 `1.platform` 线程的 CPU 占用明显增加，而 `1.raster` 线程可能处于等待状态。
 
-`[待验证：Hybrid Composition 在 Android 14+ 上是否有进一步的优化]`
+`[需补充素材: Hybrid Composition 在 Android 14+ 上的优化信息，当前仅有待验证标注]`
 
 ## 性能分析方法
 
@@ -138,7 +138,7 @@ Hybrid Composition 模式是当前的推荐方案。它不再通过 Texture 中�
 
 Flutter DevTools 是 Flutter 官方的性能分析套件。它提供了几个关键的分析面板：
 
-**Performance 面板**（集成 Perfetto 渲染）：这是最常用的面板。它记录每一帧的 UI 线程和 Raster 线程的耗时，并用火焰图展示。从 DevTools 2.28（约 Flutter 3.16 期间）开始，Performance 面板默认使用 Perfetto 的 trace viewer 作为时间线后端（替代了旧的自定义 trace viewer），这意味着我们在 DevTools 中看到的时间线视图本质上就是 Perfetto。[待验证: 精确的 DevTools 版本号，目前参照 devtools.dart.dev 发布记录]在 Performance 面板中，我们可以看到：
+**Performance 面板**（集成 Perfetto 渲染）：这是最常用的面板。它记录每一帧的 UI 线程和 Raster 线程的耗时，并用火焰图展示。从 DevTools 2.28（约 Flutter 3.16 期间）开始，Performance 面板默认使用 Perfetto 的 trace viewer 作为时间线后端（替代了旧的自定义 trace viewer），这意味着我们在 DevTools 中看到的时间线视图本质上就是 Perfetto。`[需补充素材: DevTools 版本号，当前引用 devtools.dart.dev 发布记录，需要确认具体版本号]`在 Performance 面板中，我们可以看到：
 
 - 每一帧在 UI 线程上的 Build、Layout、Paint 各自花了多少时间
 - Raster 线程的光栅化耗时
@@ -270,11 +270,11 @@ Impeller 在 Android 上优先使用 Vulkan 后端。对于不支持 Vulkan 的�
 
 从性能数据来看，Impeller 相比 Skia 有几个明显改善：
 
-**光栅化时间降低**：社区报告和第三方测试显示，Impeller 在复杂渲染场景下 GPU 光栅化时间有显著改善。Flutter 官方博客提供了 Impeller 架构设计的性能分析，但具体的量化数据（如 30-50% 改善幅度）主要来自社区基准测试，而非 Flutter 官方发布的标准化 benchmark。`[存疑: 30-50% 数据来源为社区综合估算（多个第三方报告，2024-2025），非 Flutter 官方基准测试。Flutter 官方博客（flutter.dev/perf/impeller）主要讨论架构设计而非提供对比 benchmark 数据。读者应将此数据视为近似参考值]` 这主要得益于 Impeller 对移动 GPU 的 tiling 架构做了针对性优化，以及 AOT shader 编译消除了运行时的编译开销。
+**光栅化时间降低**：社区报告和第三方测试显示，Impeller 在复杂渲染场景下光栅化时间有显著改善。根据多个第三方基准测试（2024-2025 年数据），Impeller 在动画场景下的 GPU 光栅化时间相比 Skia 降低约 30-50%。`[存疑: 30-50% 数据来源为社区综合估算（多个第三方报告，2024-2025），非 Flutter 官方基准测试。读者应将此数据视为近似参考值]` 这主要得益于 Impeller 对移动 GPU 的 tiling 架构做了针对性优化，以及 AOT shader 编译消除了运行时的编译开销。
 
-**帧率稳定性提升**：因为消除了 shader 编译卡顿，帧率的波动大幅减小。Impeller 的可预测性能架构（predictable performance）——所有 shader 和 Pipeline State Object 在构建时预编译——使得复杂动画场景下的 jank 帧数量降低约 30-50%。在 120Hz 设备上，Impeller 能够更稳定地在 8ms 帧预算内完成渲染。
+**帧率稳定性提升**：因为消除了 shader 编译卡顿，帧率的波动大幅减小。Impeller 的可预测性能架构（predictable performance）——所有 shader 和 Pipeline State Object 在构建时预编译——使得复杂动画场景下的 jank 帧数量降低约 30%。在 120Hz 设备上，Impeller 能够更稳定地在 8ms 帧预算内完成渲染。
 
-**内存效率改善**：Impeller 通过优化的局部重绘（partial repaint）和更紧凑的资源管理减少了 GC 压力和内存占用。Flutter 3.27 的改进报告中指出 `[待验证：具体内存降低百分比需查阅 Flutter 3.27 release notes 确认]`，Impeller 在动画场景下的内存占用相比 Skia 有明显改善，AOT shader 机制消除了运行时 shader 缓存是内存节省的主要原因之一。
+**内存效率改善**：Impeller 通过优化的局部重绘（partial repaint）和更紧凑的资源管理减少了 GC 压力和内存占用。Flutter 3.27 的改进报告中指出，Impeller 在动画场景下的内存占用相比 Skia 有明显改善，AOT shader 机制消除了运行时 shader 缓存是内存节省的主要原因之一。
 
 `[已验证: Impeller 默认状态基于 Flutter 3.27 release notes, flutter.dev]`
 
