@@ -622,3 +622,11 @@
 - **问题**：缺少 `outline-start` / `outline-end` 与锚点设计，Task 6 无法按规范检查锚点覆盖。
 - **建议**：按 writing-guide.md 补齐 outline 块，并让每个锚点至少对应 1 个完整段落。
 - **review 日志**：logs/review/2026-04-11-02-review.md
+
+
+## [Task6 Review] 1.12 AutoFDO 反馈导向编译优化 — 2026-04-11
+- **类型**：需重写
+- **位置**：全文结构
+- **问题**：缺少 `outline-start` / `outline-end` 与锚点设计，Task 6 无法按规范检查锚点覆盖。
+- **建议**：按 writing-guide.md 补齐 outline 块，并让每个锚点至少对应 1 个完整段落。
+- **review 日志**：logs/review/2026-04-11-03-review.md
