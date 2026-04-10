@@ -1,445 +1,265 @@
 ---
-title: JNI/NDK 性能优化
-chapter: '1.15'
+title: "JNI/NDK 性能优化"
+section: "1.15"
+chapter: "1.15"
 status: ready-for-review
-drafted_date: '2026-04-06'
-applicable_versions: Android 8 (API 26) - Android 17 (API 37)
-last_verified: '2026-04-06'
-last_verified_against: AOSP android-17-beta3
+drafted_date: "2026-04-06"
+applicable_versions: "Android 8 (API 26) - Android 16 (API 36)"
+last_verified: "2026-04-11"
+last_verified_against: "AOSP android-16.0.0_r1 + developer.android.com"
 confidence: medium
 sources:
-- type: official
-  path: developer.android.com/reference/dalvik/annotation/optimization/CriticalNative
-- type: official
-  path: developer.android.com/ndk/guides/simpleperf
-- type: official
-  path: developer.android.com/build/apps/16kb-page-size
-- type: aosp
-  path: art/runtime/jni/jni_internal.cc
-- type: aosp
-  path: libnativehelper/include/nativehelper/JNIHelp.h
-- type: official
-  path: developer.android.com/training/articles/perf-jni
-- type: official
-  path: developer.android.com/reference/java/nio/ByteBuffer
-- type: spec
-  path: docs.oracle.com/javase/8/docs/technotes/guides/jni/
+  - type: official
+    path: "https://developer.android.com/training/articles/perf-jni"
+  - type: official
+    path: "https://developer.android.com/reference/dalvik/annotation/optimization/FastNative"
+  - type: official
+    path: "https://developer.android.com/reference/dalvik/annotation/optimization/CriticalNative"
+  - type: official
+    path: "https://developer.android.com/guide/practices/page-sizes"
+  - type: official
+    path: "https://developer.android.com/ndk/guides/simpleperf"
+  - type: official
+    path: "https://developer.android.com/reference/java/nio/ByteBuffer"
+  - type: spec
+    path: "https://docs.oracle.com/javase/8/docs/technotes/guides/jni/"
+  - type: aosp
+    path: "platform/frameworks/base/core/java/android/os/Binder.java (android-16.0.0_r1)"
+  - type: aosp
+    path: "platform/frameworks/base/core/java/android/os/Parcel.java (android-16.0.0_r1)"
+  - type: aosp
+    path: "platform/frameworks/base/core/java/android/os/SystemProperties.java (android-16.0.0_r1)"
+  - type: aosp
+    path: "platform/frameworks/base/core/java/android/os/Trace.java (android-16.0.0_r1)"
+  - type: aosp
+    path: "platform/frameworks/native/include/android/trace.h (android-16.0.0_r1)"
+  - type: aosp
+    path: "platform/system/core/libcutils/include/cutils/trace.h (android-16.0.0_r1)"
 tags:
-- android
-- research
-- jni
-- ndk
-- performance
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: pending
-task9_result: needs-rework
+  - android
+  - research
+  - jni
+  - ndk
+  - performance
+related_chapters:
+  - "4.7"
+  - "14.2"
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
+task2b_state: fixed
+task2b_result: fixed
 reviewed_by: openclaw-task6
-reviewed_date: '2026-04-11'
-task6_result: needs-rework
+reviewed_date: "2026-04-11"
 ---
-
-
 
 # 1.15 JNI/NDK 性能优化
 
-在 Android 系统中，Java/Kotlin 代码运行在 ART 虚拟机上，而底层的大量核心服务——从 SurfaceFlinger 到 AudioFlinger，从 MediaCodec 到 Hardware Composer——都是 native 代码（C/C++）。两者之间的桥梁就是 JNI（Java Native Interface）。
+只要一段链路跨过 Java/Kotlin 和 C/C++ 的边界，JNI（Java Native Interface）就不再是“实现细节”，而是性能模型的一部分。音视频编解码、图像处理、游戏引擎、端侧 AI 推理，这些场景里的热路径往往不是单个 native 函数有多快，而是我们到底跨了多少次边界、每次跨边界时做了什么、在 Trace 里又能看到多少证据。
 
-理解 JNI 的性能特性，对两类场景至关重要：第一，如果你在 App 中使用了 native 库（音视频编解码、图像处理、游戏引擎），JNI 调用开销会直接影响帧率和响应时间；第二，如果你在分析系统服务的行为（比如在 Perfetto 中看到 Zygote 或 SystemServer 的 JNI 调用），你需要知道这些调用本身有多大开销，才能判断是 JNI 瓶颈还是业务逻辑瓶颈。
+如果我们只记住“native 比 Java 快”这种口号，真正排查问题时很容易看错方向。很多卡顿不是 native 算法慢，而是 JNI 调用过碎、字符串和数组在两侧来回拷贝、native 线程 attach/detach 用错位置，或者 16KB page size 下第三方 `.so` 根本没有对齐，应用连加载都过不了。
 
-我们来看 JNI 的性能边界在哪里，以及如何在设计和分析中规避常见的陷阱。
+这一节不想把 JNI 写成 API 词典。我们关心三件事：第一，JNI 开销到底来自哪里；第二，哪些优化是真的，哪些只是把问题换了个地方；第三，当我们打开 Perfetto 或 simpleperf 时，应该沿着什么线索把问题定位出来。
 
-[需重写: 当前章节缺少 `<!-- outline-start -->` / `<!-- outline-end -->` 与锚点映射，Task 2B 需先补齐结构骨架，再继续深修。]
+<!-- outline-start -->
+## 本节要点大纲
 
-## JNI 调用的开销：一次 transition 到底有多贵
+### 锚点（必须覆盖）
 
-每次从 Java 调入 native 代码（或反过来），都要经历一次 JNI transition。这个过程不是"函数调用"那么简单——ART 需要做几件事：
+- 🔹 **Perfetto 中的 JNI 可观测性有三条路**：[已验证: platform/frameworks/native/include/android/trace.h, https://developer.android.com/ndk/guides/simpleperf]
+  手工 `ATrace`/`android.os.Trace` 插桩会生成精确 slice；callstack 或 native symbol 采样能看到 trampoline 和 native 热点；simpleperf 的 `report-sample --protobuf` 结果可以导入 Perfetto，但它是采样证据，不是逐次调用时长。
 
-1. **保存 Java 侧的执行上下文**，包括栈帧、寄存器状态。
-2. **通知 GC（垃圾回收器）**，当前线程即将进入 native 代码。ART 需要在 JNI 边界处插入一个 GC safepoint 检查，确保在 transition 期间 GC 不会移动当前线程正在使用的对象引用。
-3. **解析函数指针**，找到 native 方法的实际实现地址。
-4. **设置 JNIEnv**，为 native 代码提供回调 Java 的能力。
+- 🔹 **JNI transition 的量级要看来源和设备条件**：[已验证: https://developer.android.com/reference/dalvik/annotation/optimization/CriticalNative]
+  官方文档给出的参考值来自 `angler-userdebug`（2016-07）：普通 JNI 约 115ns，`@FastNative` 约 35ns，`@CriticalNative` 约 25ns。它能说明量级和优化方向，但不能直接当成今天所有设备的固定数字。
 
-这个过程在每次 JNI 调用时都会发生。在 Pixel 8（Tensor G3）上，一个不做任何实际工作的空 JNI 调用（no-op），单次 transition 开销大约在 **100-120ns**。这个数字看起来很小，但如果你的渲染循环每帧调用 1000 次 JNI，光 transition 本身就吃掉了 ~100μs——在 120fps 的设备上，一帧的预算只有 8.33ms，100μs 已经占了 1.2%。 [需确认: 这里的 no-op benchmark 需要补充测试方法、调用方式、采样条件和原始来源。]
+- 🔹 **减少 JNI 次数通常比追逐单次纳秒数更重要**：[已验证: https://developer.android.com/training/articles/perf-jni]
+  `FindClass()` / `GetMethodID()` / `GetFieldID()` 应该在初始化阶段缓存；热路径优先做批量传输和粗粒度 API 设计，而不是每个元素一次 JNI 调用。
 
-更关键的是，**JIT 编译器无法跨越 JNI 边界做优化**。ART 的 JIT 可以内联（inline）Java 方法、消除死代码、做逃逸分析——但这些优化在遇到 native 方法时全部失效。这意味着，如果你有一个热路径方法，其中穿插了 JNI 调用，整个热路径的优化质量都会下降。
+- 🔹 **`@FastNative` 和 `@CriticalNative` 的边界完全不同**：[已验证: https://developer.android.com/reference/dalvik/annotation/optimization/FastNative, https://developer.android.com/reference/dalvik/annotation/optimization/CriticalNative, platform/frameworks/base/core/java/android/os/Parcel.java, platform/frameworks/base/core/java/android/os/Binder.java]
+  `@FastNative` 可以处理托管对象，`@CriticalNative` 不能携带托管对象，也没有 `JNIEnv*` / `jclass` 参数；错误地把数组当成 `@CriticalNative` 可用参数，会直接把 ABI 讲错。
 
-### 在 Perfetto 中识别 JNI 开销
+- 🔹 **线程和引用生命周期比单次 transition 更常见地出问题**：[已验证: https://developer.android.com/training/articles/perf-jni]
+  `JNIEnv*` 线程私有，不能跨线程共享；`AttachCurrentThread()` 创建的是可调用 JNI 的线程上下文，不该放在每次任务里反复做；attached native 线程创建的 local reference 不会像普通 JNI 调用那样自动清理。
 
-在 Perfetto trace 中，JNI 相关的 slice 通常出现在以下位置：
+- 🔹 **16KB page size 影响的是 native library 的可加载性和内存布局**：[已验证: https://developer.android.com/guide/practices/page-sizes]
+  自 2025-11-01 起，提交到 Google Play、且 targeting Android 15+ 的 64 位设备版本必须支持 16KB page size。真正需要重编和校验的是包含 native code 的应用或 SDK。
 
-- **主线程或 RenderThread** 上，函数名包含 `JNI` 的 slice（如 `JNI_OnLoad`、`JNI_CallStaticVoidMethod` 等）
-- 如果开启了 CheckJNI（调试模式），slice 中会出现 `CheckJNI` 前缀，此时开销会比正常模式大一个数量级（因为每次调用都会做参数类型校验）
-- **系统服务**（如 system_server）中，频繁出现的短暂 native slice 如果聚集在某个功能区域，可能是 JNI 热路径的信号
+### 扩展（可选深入）
 
-[已验证: 官方文档, developer.android.com/reference/dalvik/annotation/optimization/CriticalNative] [待补充：Trace 截图 — 显示 JNI transition 的 Perfetto slice]
+- 🔸 `@FastNative` / `@CriticalNative` 调用方与 Baseline Profile 的配合
+- 🔸 Java Binder、JNI bridge、`libbinder_ndk` 三种调用栈的证据链怎么拆开看
+- 🔸 音视频 / 游戏 / 端侧 AI 场景里 DirectByteBuffer 与对象池的组合策略
+<!-- outline-end -->
 
-## JNI ID 缓存：不要在热路径里重复查找
+## 为什么 JNI 性能问题很少表现成“单个函数慢”
 
-JNI 提供了一组函数来查找 Java 侧的类、方法和字段：`FindClass()`、`GetMethodID()`、`GetFieldID()`、`GetStaticMethodID()` 等。这些查找操作的底层实现是**字符串比较**——ART 需要遍历类的虚方法表或字段表，逐一比对方法名和签名。
+一次 JNI 调用的成本，不只是从 Java 栈跳到 native 栈那一下。我们至少要付出几类开销：运行时状态切换、参数编组、对象或数组的引用处理、必要时的字符串编码转换，以及调用结束后的返回路径。如果调用很少，这些成本几乎可以忽略；如果调用发生在每帧、每包音频、每个像素块、每个 Binder transaction 上，问题就会从“一个函数快不快”变成“边界设计得碎不碎”。
 
-在冷启动或初始化阶段调用几次没问题，但如果在每次 JNI 调用时都去 `GetMethodID()`，相当于每次 JNI call 之前都做了一次 O(n) 的字符串搜索。在热路径中，这会把一次 100ns 的 transition 炸到几微秒。
+这也是为什么分析 JNI 时，我们不应该先盯着某个 C++ 函数，而要先看接口形状。一个粗粒度 JNI 接口，一次把 1MB 数据交给 native 批处理，即使 native 侧算法并不极限，通常也比“循环 10 万次，每次过一次 JNI”更稳。前者把成本集中在一次调用里，后者把 transition、局部引用、异常检查、字符串/数组处理全部放大了。
 
-### 正确的做法：在 JNI_OnLoad 中全局缓存
+## 先把证据链搭好：Perfetto 里到底怎么看 JNI
+
+很多章节一上来就说“在 Perfetto 里看 JNI slice”，这句话本身就不完整。默认 system trace 并不会自动替我们生成统一名字的“JNI transition”切片。要在 Perfetto 里真正看见 JNI，我们通常走三条路，而且每条路回答的问题都不一样。
+
+第一条路是**手工插桩**。如果代码在我们控制之下，Java 侧可以用 `android.os.Trace`，NDK 侧可以直接包含 `<android/trace.h>`，调用 `ATrace_beginSection()` / `ATrace_endSection()`。这时 Perfetto 线程轨上出现的 slice 名字，就是我们自己写进去的 section name。AOSP android-16.0.0_r1 中，公开 NDK 头文件在 `platform/frameworks/native/include/android/trace.h`，`ATrace_beginSection()` 和 `ATrace_endSection()` 也在这个头里声明。系统内部如果用 `ATRACE_BEGIN` / `ATRACE_END` 宏，走的是 `platform/system/core/libcutils/include/cutils/trace.h` 这套包装层，它不是声明 `ATrace_beginSection()` 的那个头文件。[已验证: platform/frameworks/native/include/android/trace.h, platform/system/core/libcutils/include/cutils/trace.h]
+
+第二条路是**采样**。Perfetto 的 callstack / native symbol 采样，或者 simpleperf 采样，能告诉我们 CPU 时间主要烧在什么 native 符号上，也能看到 `art_jni_trampoline` 这一类运行时桥接符号是否频繁出现。但采样给的是“这里经常被采到”，不是“这一次 JNI 调用精确耗时多少微秒”。如果我们要回答“哪个 native 算法最热”，采样很好用；如果我们要回答“Java 调用 native 的边界本身耗了多久”，还是得靠插桩或更细的实验。
+
+第三条路是**simpleperf 导入 Perfetto**。simpleperf 能记录 native call graph，`report-sample --protobuf` 之后可以把样本导入 Perfetto UI 继续看时间线和热点。这条路的好处是应用代码不用预埋 trace label，就能先知道“热点在哪一层”；限制是它依然属于采样视角。我们看到的是热点分布，而不是每次 JNI 调用的 begin/end 切片。具体命令和采样策略，建议跟 `§14.2 Simpleperf` 配合着看，不要在本节重复维护完整工具手册。
+
+[图：同一条线程时间线上，Java 段落后面紧接着出现 `nativeDecodeFrame` 手工 `ATrace` slice；另一视图里展示 simpleperf 导入后的 native 栈热点。]
+[待补充：Trace 截图]
+
+把这三条路分清之后，很多误判就会自动消失。比如我们在默认 Trace 里没看到“JNI slice”，不代表 JNI 没有成本，可能只是根本没有插桩。反过来，如果我们在采样火焰图里看到了 native 热点，也不代表 JNI transition 本身贵，真正贵的可能是 native 算法本身。
+
+## JNI transition 到底有多贵
+
+官方文档在 `@CriticalNative` 说明页里给过一组常被引用的基准值，测试环境是 `angler-userdebug`，时间点是 2016-07。那组数字不是给今天所有设备背书的，而是给我们一个量级感：普通 JNI 约 115ns，`@FastNative` 约 35ns，`@CriticalNative` 约 25ns。[已验证: https://developer.android.com/reference/dalvik/annotation/optimization/CriticalNative]
+
+| 调用路径 | 官方参考值 | 这组数字真正说明了什么 |
+| --- | --- | --- |
+| 普通 JNI | 115ns | 过边界本身不是“零成本”，但单次也没有慢到值得恐慌 |
+| `@FastNative` | 35ns | 运行时少做一部分状态切换后，开销能明显下降 |
+| `@CriticalNative` | 25ns | 把 ABI 收紧到只有 primitive 参数/返回值时，过边界还能再快一点 |
+
+这组数字最容易被误用的地方有两个。第一，把它当成今天 Pixel 8、骁龙 8 Gen 4 或某台车机上的绝对值。第二，只盯着单次调用的纳秒数，却不算调用次数。假设一帧里做 1000 次普通 JNI，光 transition 的参考量级就是 `1000 × 115ns ≈ 115μs`。它仍然不是 16.67ms 帧预算里的大头，但已经不再是可以完全无视的噪声，何况真实业务里往往还夹着字符串、数组、对象和锁。
+
+所以我们看 JNI 成本时，先问两个问题：**次数是否已经多到要重构接口**，以及**过边界时有没有顺手带上额外成本**。后一种情况比前一种更常见，比如热路径里每次都 `GetMethodID()`、每次都把 `String` 转一遍 MUTF-8、或者在一个 `@FastNative` 方法里做了可能阻塞的系统调用。
+
+## 先把次数降下来：缓存 ID，合并调用，做粗粒度接口
+
+ART 不会替我们优化 API 设计。如果 Java 侧一次只传一个数字，native 侧再返回一个结果，运行时就只能老老实实陪我们来回过边界。减少 JNI 成本最朴素也最有效的办法，通常不是换注解，而是**减少次数**。
+
+ID 缓存是第一步。`FindClass()`、`GetMethodID()`、`GetFieldID()` 都不该出现在热路径里。更稳的做法是在 `JNI_OnLoad()` 或显式初始化阶段完成查找，把 `jclass` 提升为 global reference，把 `jmethodID` / `jfieldID` 保存在静态缓存里。`jclass` 是 local reference，离开当前 native 调用就失效；`jmethodID` / `jfieldID` 不是 Java 对象，只要对应 class 还活着，就可以跨调用复用。[已验证: https://developer.android.com/training/articles/perf-jni]
 
 ```cpp
-// 缓存全局引用，在 JNI_OnLoad 中执行一次
-static jclass g_myClass;
-static jmethodID g_myMethodID;
-static jfieldID g_myFieldID;
+static jclass gDecoderClass;
+static jmethodID gOnFrameReady;
 
-JNIEXPORT jint JNI_OnLoad(JavaVM* vm, void* reserved) {
-    JNIEnv* env;
+JNIEXPORT jint JNI_OnLoad(JavaVM* vm, void* /* reserved */) {
+    JNIEnv* env = nullptr;
     if (vm->GetEnv(reinterpret_cast<void**>(&env), JNI_VERSION_1_6) != JNI_OK) {
         return JNI_ERR;
     }
 
-    // FindClass 在 JNI_OnLoad 中使用正确的 ClassLoader
-    jclass localClass = env->FindClass("com/example/MyClass");
-    // jclass 是 local reference，需要转为 global reference 才能跨调用持有
-    g_myClass = reinterpret_cast<jclass>(env->NewGlobalRef(localClass));
-    env->DeleteLocalRef(localClass);
-
-    // jmethodID / jfieldID 不需要 NewGlobalRef，只要对应的 class 没被 unload 就一直有效
-    g_myMethodID = env->GetMethodID(g_myClass, "myMethod", "(I)V");
-    g_myFieldID = env->GetFieldID(g_myClass, "myField", "I");
-
+    jclass local = env->FindClass("com/example/Decoder");
+    gDecoderClass = reinterpret_cast<jclass>(env->NewGlobalRef(local));
+    env->DeleteLocalRef(local);
+    gOnFrameReady = env->GetMethodID(gDecoderClass, "onFrameReady", "(J)V");
     return JNI_VERSION_1_6;
 }
 ```
 
-这段代码展示了缓存的关键点：
+真正影响架构的，是第二步，也就是**把细粒度接口改成粗粒度接口**。如果我们要把 4096 个采样点从 Java 送到 native，不应该设计成“4096 次 JNI，每次传一个 `short`”。更像样的接口是：一次传整个 `short[]`、`ByteBuffer` 或句柄，让 native 在本地完成整批处理，再把最终结果返回。对于图像、音频、推理输入这类大块数据，粗粒度设计通常比“单次 transition 再压 10ns”更值钱。
 
-- `jclass` 通过 `FindClass()` 获取的是 **local reference**，只在当前 native 调用内有效。要用 `NewGlobalRef()` 转为全局引用，否则下次调用时引用已经失效，访问会崩溃。
-- `jmethodID` 和 `jfieldID` 不需要转全局引用——它们是 ART 内部的句柄，只要对应的类没有被 unload，就永远有效。
-- `JNI_OnLoad()` 是最佳缓存时机，因为它使用的 ClassLoader 和调用 `System.loadLibrary()` 的代码是同一个，避免了 ClassLoader 隔离导致的 `FindClass` 失败。
+## `@FastNative` 和 `@CriticalNative`，到底快在哪，边界又在哪
 
-[已验证: AOSP art/runtime/jni/jni_internal.cc — FindClass 使用调用者的 ClassLoader]
+这两个注解经常一起出现，但它们解决的不是同一个问题。`@FastNative` 还是 JNI，只是运行时给它走了一条更短的过渡路径，所以它依然能拿到托管对象、依然能做 JNI 调用；`@CriticalNative` 则把规则收得更死，换来更短的 ABI。
 
-### 批量操作：合并 JNI 调用
-
-除了缓存 ID，另一个重要的设计原则是**合并 JNI 调用**。假设你需要把 1000 个整数从 Java 传到 native 处理：
-
-**差的做法**：1000 次 JNI 调用，每次传 1 个整数。总开销：1000 × ~115ns ≈ 115μs，光是 transition 就超过了 8.33ms 帧预算的 1%。
-
-**好的做法**：1 次 JNI 调用，传入一个 `int[]`。native 侧通过 `GetIntArrayElements()` 或 `GetIntArrayRegion()` 获取数据指针后批量处理。总开销：1 次 transition + 数组拷贝（如果 ART 决定拷贝的话），通常 < 10μs。
-
-这个原则适用于所有 JNI API 设计：native 侧的接口应该是"粗粒度"的——一次调用完成一批工作，而不是"细粒度"的——每个元素一次调用。
-
-## @FastNative 与 @CriticalNative：ART 的快速通道
-
-Android 7（API 24）引入了 `@FastNative`，Android 8（API 26）引入了 `@CriticalNative`。这两个注解告诉 ART："这个 JNI 方法的实现很轻量、很短、不会阻塞"，让 ART 跳过常规 JNI transition 中的部分安全检查，从而降低 transition 开销。
-
-### 开销对比
-
-| 类型 | 单次 transition 开销 | 典型节省 |
-|------|---------------------|---------|
-| 普通 JNI | ~115ns | 基线 |
-| @FastNative | ~35ns | 约 70% |
-| @CriticalNative | ~25ns | 约 78% |
-
-[已验证: 多个独立 benchmark 交叉验证，实际开销因设备/SoC 不同有 ±20% 浮动] [需确认: 普通 JNI、@FastNative、@CriticalNative 三组开销数据需要补充具体 benchmark 链接与测试设备条件。]
-
-### @FastNative：轻量但能用对象
-
-`@FastNative` 的核心优化是：**跳过 GC safepoint 检查和部分 JNI 安全验证**。这意味着：
-
-- 可以正常使用 `jobject`、`jstring` 等 Java 对象参数
-- 可以调用 JNI 函数回调 Java
-- 可以 throw 异常
-- 但方法必须**短且不阻塞**——因为在 @FastNative 执行期间，GC 无法 suspend 当前线程。如果你在一个 @FastNative 方法里拿了锁然后阻塞等待，其他线程的 GC 就会被卡住，可能导致整个进程 hang
+先看 `@FastNative`。AOSP android-16.0.0_r1 的 `platform/frameworks/base/core/java/android/os/Parcel.java` 里有一个很直接的例子：
 
 ```java
-// frameworks/base/core/java/android/os/Process.java
 @FastNative
-public static final native int getUidForPid(int pid);
+private static native void nativeWriteString16(long nativePtr, String val);
 ```
 
-这是 AOSP 中 @FastNative 的一个典型用法——读取 `/proc/<pid>/status` 获取 UID，纯计算、不阻塞、不分配对象。
+这里的 `String val` 已经说明了问题，`@FastNative` 并不是“不能碰托管对象”，它只是要求这条调用链足够短、足够可控。`platform/frameworks/base/core/java/android/os/SystemProperties.java` 里还有一个反例：源码直接注释了 `native_set` **不能**标成 `@FastNative`，因为它会做 IPC，可能阻塞。这个反例比空泛地说“不要乱用”更有说服力。[已验证: platform/frameworks/base/core/java/android/os/Parcel.java, platform/frameworks/base/core/java/android/os/SystemProperties.java]
 
-### @CriticalNative：最快但限制最严
+再看 `@CriticalNative`。官方文档写得很直接，它只能用于**不使用托管对象**的方法，既不能把对象放进参数和返回值，也不能依赖隐式 `this`，所以本质上只适合 `static` native 方法。native 侧函数签名里也没有 `JNIEnv*` 和 `jclass` 参数，因为 ABI 已经变了。如果把 primitive array 也算进去，就会把这条边界讲错，因为数组仍然是 managed object。[已验证: https://developer.android.com/reference/dalvik/annotation/optimization/CriticalNative]
 
-`@CriticalNative` 在 @FastNative 的基础上进一步优化：**完全跳过 JNIEnv 设置和 Java 对象桥接**。代价是一组严格的约束：
-
-- 方法必须是 `static`
-- 参数只能是**原始类型**（int, long, float, double 等）和**原始类型数组**（int[], byte[] 等）
-- native 实现的函数签名中**不包含 `JNIEnv*` 和 `jclass` 参数**——因为 ART 不会传入它们
-- **不能分配 Java 对象、不能 throw 异常、不能调用任何 JNI 函数**
-- 必须用 `RegisterNatives` 注册（Android 8-11 不支持动态链接查找 @CriticalNative 方法）
+AOSP 里真正符合这条规则的例子很多，`platform/frameworks/base/core/java/android/os/Binder.java` 里的 `getCallingUid()` 就很典型：
 
 ```java
-// frameworks/base/core/java/android/util/LongSparseArray.java
 @CriticalNative
-private static native long nativeGC();
+public static final native int getCallingUid();
 ```
 
-在 AOSP 中，@CriticalNative 主要用在 Zygote 和 SystemServer 的关键路径上——比如 Zygote fork 后的资源清理、SystemServer 的 UID 状态查询等。这些调用每秒可能执行数千次，每次节省的 90ns 累积起来很可观。
+`Parcel.java` 里的 `nativeWriteInt(long nativePtr, int val)`、`nativeReadInt(long nativePtr)` 也是同一路子。参数全是 primitive 或 native 句柄，没有对象参与，所以运行时才能把过渡路径压到最短。[已验证: platform/frameworks/base/core/java/android/os/Binder.java, platform/frameworks/base/core/java/android/os/Parcel.java]
 
-### 使用陷阱
+这两个注解还有一条共同约束，官方文档专门强调过：**执行期间，GC 不能把当前线程挂起做关键工作，因此长时间运行、I/O、长时间持有 native 锁都不合适。** 文档没有给 1ms、10ms 这类阈值，也不鼓励我们自己编阈值。更稳的写法是，把它们理解为“只给很短、很确定、很少阻塞的 native 路径使用”。如果方法里会等锁、等 Binder、等磁盘、等网络，那就不该指望 `@FastNative` / `@CriticalNative` 帮我们省时间。[已验证: https://developer.android.com/reference/dalvik/annotation/optimization/FastNative, https://developer.android.com/reference/dalvik/annotation/optimization/CriticalNative]
 
-1. **GC 风险**：@FastNative 和 @CriticalNative 执行期间 GC 无法 suspend 线程。如果你的方法执行时间超过 1ms，就会开始影响 GC 调度。超过 10ms 就可能导致其他线程分配对象时卡在 GC safepoint 上。
+兼容性上也别想当然。官方文档给出的口径是：这套优化从 Android 8 开始在系统内部使用，Android 14 才成为 CTS-tested public API。内建的动态 JNI linking 只在 Android 12+ 工作，Android 8-11 如果要认真依赖它，必须显式 `RegisterNatives()`；Android 7 及以下会忽略注解，而 `@CriticalNative` 还会因为 ABI 不匹配带来参数编组错误甚至崩溃。这意味着，如果应用真要跨很多版本用这条路，最好把兼容矩阵写清楚，而不是只在 Java 层加个注解就当完事。[已验证: https://developer.android.com/reference/dalvik/annotation/optimization/FastNative, https://developer.android.com/reference/dalvik/annotation/optimization/CriticalNative]
 
-2. **Android 14 的变化**：@CriticalNative 在 Android 8 引入时仅供系统使用，Android 14 开始成为 CTS 测试的公开 API。如果你的 App target 低于 API 34，使用 @CriticalNative 可能不会生效（ART 会忽略注解回退到普通路径）。
+官方文档还给了一个很实用的建议：如果调用方在启动路径上，最好把这些调用方放进 Baseline Profile。原因很简单，过边界路径再快，如果调用方本身还在解释执行或刚进入 JIT 预热，启动阶段仍然看不到理想收益。[已验证: https://developer.android.com/training/articles/perf-jni]
 
-3. **Baseline Profile 联动**：对于 App 启动路径上的 @CriticalNative 调用，官方建议把调用方加入 Baseline Profile，确保这些方法在安装时就被 AOT 编译，而不是等到 JIT 编译——因为 JIT 编译完成之前，@CriticalNative 的优化效果无法体现。 [需确认: 本节关于 GC suspend、1ms/10ms 阈值、targetSdk < 34 行为差异的表述，需要补充精确来源或降级为更保守的描述。]
+## native 线程与引用生命周期，才是日常最容易踩坑的地方
 
-[已验证: 官方文档, developer.android.com/reference/dalvik/annotation/optimization/CriticalNative] [已验证: AOSP art/runtime/jni/jni_internal.cc — FastNative/CriticalNative 快速路径实现]
+对很多项目来说，真正频繁出现的问题不是 `@CriticalNative` 用没用对，而是线程模型和引用生命周期根本没有管住。
 
-## 字符串与数组操作：JNI 中最容易被忽视的性能黑洞
+第一条铁律是：`JNIEnv*` 是线程私有的。官方文档明确说过，`JNIEnv` 用在 thread-local storage 上，不能跨线程共享。正确的共享对象是 `JavaVM*`。如果某段 native 代码需要在当前线程拿到 `JNIEnv*`，应该通过 `JavaVM::GetEnv()` 查询当前线程是否已经 attach，而不是把别的线程里的 `JNIEnv*` 偷过来复用。[已验证: https://developer.android.com/training/articles/perf-jni]
 
-JNI 的字符串和数组操作是性能问题的重灾区，原因是它们涉及**编码转换**和**内存拷贝**——这两件事在纯 Java 或纯 native 代码中都不会出现。
+第二条铁律是：native 自己创建的线程，在调用任何 JNI 之前必须先 `AttachCurrentThread()` 或 `AttachCurrentThreadAsDaemon()`。线程 attach 之后才有 `JNIEnv*`，attach 过的线程再次 attach 是 no-op，所以正确的使用位置通常是**线程启动时 attach 一次，线程退出前 detach 一次**。如果在线程池里把 attach/detach 放到每个任务执行前后，等于把线程上下文管理也塞进热路径了，既麻烦又没必要。文档还强调了一点，attached native 线程必须在退出前 `DetachCurrentThread()`，否则运行时资源不会被正常回收。[已验证: https://developer.android.com/training/articles/perf-jni]
 
-### 字符串：UTF-16 与 Modified UTF-8 的转换代价
+第三条铁律是：local reference 不是无限免费的。普通 JNI 调用返回时，运行时会替我们清理当前调用里创建的大部分 local reference；但如果线程是通过 `AttachCurrentThread()` 进来的，文档明确写了，local reference **不会自动释放，直到线程 detach 为止**。这意味着音视频解码循环、遍历 Java 对象数组、构建大量临时 `jstring` 这类代码，必须显式 `DeleteLocalRef()`，或者用 `EnsureLocalCapacity()` / `PushLocalFrame()` / `PopLocalFrame()` 管住引用数量。JNI 规范只要求实现至少保留 16 个 local reference slot，超过这个量还不做管理，问题迟早会出来。[已验证: https://developer.android.com/training/articles/perf-jni]
 
-Java 的 `String` 内部是 UTF-16 编码。JNI 的 `GetStringUTFChars()` 返回的是 **Modified UTF-8** 编码（不是标准 UTF-8——`\0` 被编码为 `0xC0 0x80`，补充字符使用代理对编码而非 4 字节序列）。
+这也是为什么在高频场景里，我们更愿意让 native 线程池长期存活，而不是不停创建线程，再 attach，再构造一堆 local reference。前者的成本和行为边界都更稳定，后者既放大生命周期管理成本，又让问题更难在 Trace 里还原。
 
-每次调用 `GetStringUTFChars()`，ART 可能需要：
+## 字符串、数组和 DirectByteBuffer，不要把“零拷贝”想得太轻松
 
-1. 分配一块新的 native 内存
-2. 把 UTF-16 数据转码为 Modified UTF-8
-3. 拷贝转码后的数据到新分配的内存
+字符串是 JNI 里最容易被低估的一类成本。Java `String` 和 native 侧期待的字节序列并不是一回事，`GetStringUTFChars()` 涉及到 MUTF-8 视角，`GetStringChars()` 则保留 UTF-16 视角。Android 8 之后，`String` 的内部表示和 moving GC 行为都变了，官方文档明确提醒过，哪怕是 `GetStringCritical()`，运行时也更经常需要做复制，而不是直接把内部指针借给我们。所以，如果我们只需要一段子串，或者目标本来就接受 UTF-16，优先考虑 `GetStringRegion()` / `GetStringChars()` 这类更贴近需求的 API，不要默认每次都走 UTF 转换。[已验证: https://developer.android.com/training/articles/perf-jni]
 
-对于一个 100 字符的 ASCII 字符串，这个过程大约需要 200-500ns（包括分配和转码）。对于包含中文的字符串，转码开销更大，因为 UTF-16 到 MUTF-8 的转换更复杂。
+数组也一样。`Get<PrimitiveType>ArrayElements()` 可能返回真实指针，也可能分配一块 native buffer 再拷贝过去；不管哪种情况，都必须对应一次 `Release`。如果运行时直接把堆里的数组暴露给 native，那块数组在 release 之前就可能被 pin 住，无法参与压缩式移动。[已验证: https://developer.android.com/training/articles/perf-jni]
 
-**优化策略**：
+`GetPrimitiveArrayCritical()` 更应该谨慎。它不是“更快的数组 API”这么简单，而是给运行时更少干预空间的一条通道。官方建议是：critical 区域要尽可能短，不要在中间执行任意 JNI 调用，也不要做阻塞系统调用。稳妥的理解方式不是“它一定会暂停整个进程 GC”，而是“运行时在这段时间里对堆移动和关键回收工作的选择会变得非常受限，所以我们必须尽快 release”。这比写一个并无来源的固定阈值可靠得多。
 
-- 如果只需要读取字符串的一部分，用 `GetStringUTFRegion()` 预分配好 buffer 后拷贝指定范围——比 `GetStringUTFChars()` + `memcpy` + `ReleaseStringUTFChars()` 少一次 JNI 调用
-- 如果 native 侧只需要 UTF-16 数据（比如传递给另一个 Java API），用 `GetStringChars()` 跳过 UTF-8 转码
-- 如果同一个字符串在多次 JNI 调用中使用，在 Java 侧预先转为 `byte[]`，然后用 `GetByteArrayElements()` 传递——省去每次的字符串转码
+如果数据本来就很大，而且会长期在 Java 和 native 之间来回传，`DirectByteBuffer` 往往是更像样的方案。它把存储放在 managed heap 之外，native 侧可以通过 `GetDirectBufferAddress()` 直接拿到地址，省掉重复拷贝。代价也很明确：direct buffer 的分配和回收比普通 `byte[]` 重，适合池化复用，不适合每次现建现扔。[已验证: https://developer.android.com/reference/java/nio/ByteBuffer]
 
-### 数组：GetPrimitiveArrayCritical 的代价
+## 16KB page size，不是“内存章节的事”，而是 JNI/NDK 项目的上线门槛
 
-`GetPrimitiveArrayCritical()`（和对应的 `GetStringCritical()`）看起来很美好——它尝试返回 Java 数组的**直接内存指针**，避免拷贝。但它有一个严重的副作用：**GC 会被暂停**。
+很多人第一次关注 16KB page size，是因为 Google Play 的兼容性提醒；但对 JNI/NDK 项目来说，它不是“发版前顺手看一眼”的检查项，而是 native library 能不能在目标设备上被正确加载的前提条件。
 
-当 native 代码持有 Critical reference 时，ART 无法执行任何 GC 操作，直到调用 `ReleasePrimitiveArrayCritical()`。如果这个过程持续超过几毫秒，其他线程中试图分配对象的代码就会卡在 GC safepoint 上。
+官方文档现在的口径很清楚：**从 2025-11-01 起，所有提交到 Google Play、且 targeting Android 15+ devices 的新应用和更新，都必须在 64 位设备上支持 16KB page sizes。** 这句话的重点有三个。第一，范围是 targeting Android 15+ 的提交，不是所有历史版本一刀切。第二，约束对象是 64 位设备。第三，真正需要处理的是包含 native code 的应用，包括直接引入 NDK 库，或者通过第三方 SDK 间接带入 `.so` 的情况。纯 Java/Kotlin 应用通常不需要为此重编 NDK 库，但如果包里带了 native 依赖，就必须认真检查。[已验证: https://developer.android.com/guide/practices/page-sizes]
 
-```cpp
-// 正确但危险的用法——只在极短的计算密集型操作中使用
-jbyte* data = (jbyte*)env->GetPrimitiveArrayCritical(array, nullptr);
-if (data) {
-    // 快速处理数据，不调用任何 JNI 函数，不阻塞
-    processInPlace(data, len);
-    env->ReleasePrimitiveArrayCritical(array, data, 0);
-}
-```
+16KB page size 对性能确实有正向收益，官方给出的初步测试数据包括：内存压力下 app launch time 平均下降 3.16%，部分应用能到 30%；启动期功耗平均下降 4.56%；camera hot start 平均快 4.48%，cold start 平均快 6.60%；system boot time 平均提升约 8%。这些数字可以用来解释“为什么平台要推 16KB”，但它们不是替任何单个应用背书，具体收益还得看自己的内存访问模式和三方库状况。[已验证: https://developer.android.com/guide/practices/page-sizes]
 
-**使用约束**（违反这些约束可能导致死锁）：
-- 在 Critical 区域内**不能调用任何 JNI 函数**（除了 `ReleasePrimitiveArrayCritical` 和 `GetStringCritical`）
-- 不能阻塞（不能等锁、不能做 I/O）
-- 执行时间要尽可能短（微秒级，不要超过毫秒级）
+从 JNI/NDK 视角看，真正要紧的是 `.so` 的 segment alignment。旧的 4KB 对齐库在 16KB 设备上可能需要额外填充，严重时甚至会因为对齐不满足而加载失败。Android 文档给出的迁移建议也很直接：NDK r28 及以上默认按 16KB 对齐；如果还在 NDK r27，需要按文档补充 linker flags；同时要把三方 SDK 一起纳入检查，不要只修自己写的库。更完整的迁移清单和 APK Analyzer 检查方法，建议回看 `§4.7 16KB Page Size 与 Android 性能`，本节只保留与 JNI/NDK 直接相关的判断准则。[已验证: https://developer.android.com/guide/practices/page-sizes]
 
-### DirectByteBuffer：真正的零拷贝方案
+## 系统服务的设计启示：JNI 适合同进程桥接，不适合替代 IPC
 
-对于需要频繁在 Java 和 native 之间传递大量数据的场景（比如音视频编解码、图像处理），`DirectByteBuffer` 是最佳选择。
+AOSP 自己的实现方式很能说明问题。`Binder.java`、`Parcel.java` 这种 framework 边界里，JNI 主要承担的是 Java API 和 native runtime 之间的桥接，所以我们能看到大量 `@FastNative` / `@CriticalNative`。但到了 SurfaceFlinger、AudioFlinger 这类对时延极敏感、又本来就在 native 世界里的服务，系统更愿意直接保持 native-only 栈，而不是再绕回 Java。
 
-```java
-// Java 侧
-ByteBuffer buffer = ByteBuffer.allocateDirect(1024 * 1024); // 1MB direct buffer
-nativeProcess(buffer);
-```
-
-```cpp
-// Native 侧
-void Java_com_example_MyClass_nativeProcess(JNIEnv* env, jobject thiz, jobject buffer) {
-    void* addr = env->GetDirectBufferAddress(buffer);
-    jlong capacity = env->GetDirectBufferCapacity(buffer);
-    // 直接操作内存，零拷贝
-    process(addr, capacity);
-}
-```
-
-`DirectByteBuffer` 分配在 Java 堆之外（native 堆），GC 管不到它。native 代码通过 `GetDirectBufferAddress()` 直接拿到内存地址，没有拷贝、没有转码、没有 GC 停顿。
-
-代价是 `allocateDirect()` 本身比较慢（需要向操作系统申请内存），所以 DirectByteBuffer 应该**池化复用**而不是每次新建。
-
-[已验证: 官方 JNI 规范, docs.oracle.com/javase/8/docs/technotes/guides/jni/]
-[待验证：GetPrimitiveArrayCritical 在 Android 17 中是否仍然会暂停整个进程的 GC] [需确认: 需要补充 ART 实现或实验依据，明确影响范围是整个进程 GC，还是对象移动/回收受到限制。]
-
-## 16KB Page Size：Android 15 的强制迁移
-
-从 Android 15 开始，64 位设备可以配置 16KB 的内存页大小（传统是 4KB）。这不是一个可选的优化——从 2025 年 11 月起，**Google Play 要求所有新 App 和更新都必须支持 16KB page size**，否则拒绝上架。
-
-### 为什么要改？
-
-16KB page size 提升的是 TLB（Translation Lookaside Buffer）的效率。TLB 是 CPU 内部缓存虚拟地址到物理地址映射的小容量高速缓存。页越大，同样数量的 TLB 条目能覆盖的内存越多，TLB miss 率越低。
-
-根据 Google 的数据，16KB page size 带来的性能提升包括：
-- App 启动速度提升 3%-30%
-- 相机启动速度提升 4.5%-6.6%
-- 平均功耗降低约 4.5%
-
-### 对 Native 库的影响
-
-影响的核心在于 `.so` 文件的**段对齐（segment alignment）**。ELF 格式的 shared library 在加载时，每个 segment 的起始地址必须是 page size 的整数倍。如果一个 .so 文件在编译时按 4KB 对齐，在 16KB page size 的设备上加载时，加载器需要在每个 segment 之间填充空白来满足 16KB 对齐——这会显著增加内存占用。
-
-更严重的情况：如果 .so 文件的某些 segment 之间的偏移不满足 16KB 对齐要求，`dlopen()` 会直接失败，抛出 `UnsatisfiedLinkError`。
-
-### 适配步骤
-
-1. **升级 NDK 到 r28+**：NDK r28 默认启用 16KB 对齐。如果使用 r27 或更早版本，需要手动在 CMake 中添加链接器标志：
-   ```cmake
-   target_link_options(mylib PRIVATE "-Wl,-z,max-page-size=16384")
-   ```
-   或在 `ndk-build` 的 `Application.mk` 中设置：
-   ```makefile
-   APP_SUPPORT_FLEXIBLE_PAGE_SIZES := true
-   ```
-
-2. **检查硬编码的 PAGE_SIZE**：如果 native 代码中有 `#define PAGE_SIZE 4096` 或 `sysconf(_SC_PAGESIZE) == 4096` 的假设，需要改为运行时动态获取。
-
-3. **第三方 SDK**：如果 App 依赖的第三方 SDK 包含 .so 文件，需要确认它们也做了 16KB 对齐。可以用 Android Studio 的 APK Analyzer 检查——它会标记未对齐的 native 库。
-
-4. **验证**：使用 Android Studio SDK Manager 下载 16KB page size 的模拟器镜像，或在 Pixel 8/9 系列的开发者选项中启用 "Boot with 16KB page size"。
-
-[已验证: 官方文档, developer.android.com/build/apps/16kb-page-size] [已验证: Google Play Console 强制要求, 2025年11月生效]
-
-## Native 层性能分析工具
-
-当性能瓶颈出在 native 代码中时，需要使用专门的工具来定位问题。Android 生态中有三种主要的 native profiling 方案。
-
-### Simpleperf：Android 原生 CPU Profiler
-
-Simpleperf 是 Android NDK 自带的命令行 profiling 工具，基于 Linux 的 `perf_event_open` 系统调用。它能做三件关键的事：
-
-1. **CPU 采样**：按指定频率（默认 4000Hz）采集中文调用栈，找出 native 代码的热点函数
-2. **调用图（Call Graph）**：记录函数调用关系，生成火焰图
-3. **Off-CPU 分析**：用 `--trace-offcpu` 追踪线程被阻塞（等锁、等 I/O）的时间
-
-```bash
-# 基本采样命令
-adb shell simpleperf record -p <pid> -g --duration 10 -o /data/local/tmp/perf.data
-adb pull /data/local/tmp/perf.data
-
-# 转换为 Perfetto 可读的 protobuf 格式
-simpleperf report-sample --protobuf -i perf.data -o perf_trace.pb
-```
-
-转换后的 `.pb` 文件可以直接在 [ui.perfetto.dev](https://ui.perfetto.dev) 打开，看到 native 函数的火焰图和 CPU 热点。
-
-### ATRACE：在 Perfetto 中标注 Native 函数
-
-如果你想在 Perfetto trace 中精确看到某个 native 函数的执行时间，可以用 ATRACE 宏手动插桩：
-
-```cpp
-#include <android/trace.h>
-
-// 定义 trace 函数指针（需要动态加载，因为不是所有版本都支持）
-void *(*ATrace_beginSection_func)(const char*);
-void *(*ATrace_endSection_func)(void);
-
-void initATrace() {
-    void *lib = dlopen("libandroid.so", RTLD_NOW | RTLD_LOCAL);
-    if (lib) {
-        ATrace_beginSection_func = (decltype(ATrace_beginSection_func))
-            dlsym(lib, "ATrace_beginSection");
-        ATrace_endSection_func = (decltype(ATrace_endSection_func))
-            dlsym(lib, "ATrace_endSection");
-    }
-}
-
-// RAII 封装
-class ScopedTrace {
-    const char* mName;
-public:
-    ScopedTrace(const char* name) : mName(name) {
-        if (ATrace_beginSection_func) ATrace_beginSection_func(name);
-    }
-    ~ScopedTrace() {
-        if (ATrace_endSection_func) ATrace_endSection_func();
-    }
-};
-
-#define ATRACE_NAME(name) ScopedTrace ___tracer(name)
-#define ATRACE_CALL() ATRACE_NAME(__FUNCTION__)
-```
-
-在 Perfetto 中，这些 trace point 会显示在进程的 track 上，和 Java 层的 ATRACE slice 处于同一个时间线——你可以直接看到 native 函数和 Java 函数的调用时序关系。
-
-### Sanitizers：内存和线程问题检测
-
-NDK 还提供了一系列 Sanitizer 工具，不是用来找性能热点的，而是用来找**内存错误**和**线程问题**的——这些问题经常表现为不可解释的性能抖动或偶发崩溃：
-
-- **ASan（AddressSanitizer）**：检测越界访问、use-after-free、double-free
-- **UBSan（UndefinedBehaviorSanitizer）**：检测未定义行为（整数溢出、空指针解引用等）
-- **TSan（ThreadSanitizer）**：检测数据竞争（data race）
-
-在 CMake 中启用 ASan：
-```cmake
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fsanitize=address -fno-omit-frame-pointer")
-set(CMAKE_LINKER_FLAGS "${CMAKE_LINKER_FLAGS} -fsanitize=address")
-```
-
-注意：Sanitizer 会显著降低性能（ASan 约 2x 慢，TSan 约 5-10x 慢），只用于调试构建。
-
-[已验证: 官方文档, developer.android.com/ndk/guides/simpleperf] [已验证: AOSP system/core/libcutils/include/android/trace.h]
-
-## Android 系统服务中的 JNI 使用模式
-
-观察 AOSP 中系统服务如何使用 JNI，对我们设计自己的 native 交互方案很有启发。
-
-### Binder 的两层实现
-
-Android 的 Binder IPC 有两套实现：
-
-1. **Java Binder**（`android.os.Binder`）：Java 层的 Binder 对象，跨进程调用时需要经过 JNI 调用 libbinder.so 的 native 实现。每次 IPC 都有一次 JNI transition + 数据序列化/反序列化。
-
-2. **libbinder_ndk**：纯 C API 的 Binder 实现，通过 Stable AIDL 的 NDK backend 生成代码。整个 IPC 过程不经过 JNI，从 native 代码直接走 `/dev/binder` 驱动。
-
-性能对比：对于同样的 IPC 调用，libbinder_ndk 比通过 JNI 桥接的 Java Binder 快约 20-40%（省掉了 JNI transition + Java 层的序列化开销）。
-
-在 AOSP 中，**所有新的 HAL 接口和 vendor 分区的 IPC 都要求使用 libbinder_ndk + Stable AIDL**，Java Binder 主要保留给 App 层和 Framework 层使用。
-
-### SurfaceFlinger：纯 native 的设计选择
-
-SurfaceFlinger 是 Android 图形合成的核心服务。它完全用 C++ 编写，**不经过任何 JNI 调用**——它直接通过 Binder（native 层）与 App 的 RenderThread、Hardware Composer 通信。
-
-这个设计选择的核心原因：图形合成是整个系统中对延迟最敏感的环节。一帧的合成时间通常只有 2-5ms，如果 SurfaceFlinger 需要经过 JNI 和 Java 层，每次 transition 的 100ns 开销在每帧数十次调用下就会累积到可感知的程度。
-
-### 设计启示：什么时候用 JNI，什么时候用 IPC
-
-从系统服务的实现模式中，我们可以提炼出一个判断框架：
-
-- **用 JNI**：同进程内，Java/Kotlin 代码需要调用已有的 native 库（图像处理、音视频编解码、加密算法）。JNI 的开销可预测，可以通过 @FastNative/@CriticalNative 优化。
-- **用 IPC（Binder）**：跨进程通信。不要为了"共享内存"而把两个服务塞进同一个进程然后走 JNI——进程隔离带来的稳定性收益远大于 JNI 节省的微秒级开销。
-- **用 Shared Memory / DirectByteBuffer**：同进程内大量数据传递。当数据量超过 1MB 时，JNI 的拷贝开销会变得不可接受，应该使用零拷贝方案。
-
-[待验证：libbinder_ndk 与 Java Binder 的具体 benchmark 数据（20-40% 为社区综合估算，非官方数据）]
+这给我们的判断标准也很简单。如果调用发生在**同进程**里，而且 Java/Kotlin 的确需要借助现成的 C/C++ 库，JNI 是合适的桥。如果问题本质上是**跨进程通信**，那就应该老老实实用 Binder / AIDL，不要为了躲开 IPC 而硬把两个组件塞进一个进程再走 JNI。至于 `libbinder_ndk` 和 Java Binder 谁更快，不能脱离 payload、序列化路径和测试设备去写固定百分比。更稳的结论是：native-only 的 Binder 栈可以减少 Java ↔ native 桥接和部分序列化层级，但具体收益必须结合 workload 单独测。
 
 ## 版本演进
 
-| Android 版本 | JNI 相关变化 |
-|-------------|-------------|
-| Android 7 (API 24) | 引入 @FastNative 注解（替代旧的 `!bang` JNI 快速调用语法） |
-| Android 8 (API 26) | 引入 @CriticalNative 注解；引入 libbinder_ndk |
-| Android 10 (API 29) | Stable AIDL 支持 NDK backend |
-| Android 14 (API 34) | @CriticalNative 成为公开 API（之前是 @hide 系统内部 API） |
-| Android 15 (API 35) | 16KB page size 支持；Google Play 要求 16KB 对齐 |
-| Android 16 (API 36) | [待验证：是否有新的 JNI 优化或 API 变更] |
+| Android 版本 | 与本节直接相关的变化 |
+| --- | --- |
+| Android 8 (API 26) | `@CriticalNative` 在系统内部引入；`@FastNative` / `@CriticalNative` 开始在 framework 代码里广泛使用 |
+| Android 12 (API 31) | 官方文档说明：内建 dynamic JNI linking 对这两类注解的支持从 Android 12+ 才完整可用 |
+| Android 14 (API 34) | `@FastNative` / `@CriticalNative` 成为 CTS-tested public API |
+| Android 15 (API 35) | 16KB page size 成为平台重点兼容项，Google Play 对 targeting Android 15+ 的 64 位提交提出强制支持要求 |
+| Android 16 (API 36) | 本轮核对未发现新的 public JNI annotation 语义变化，仍按 Android 15 的规则理解和验证 |
 
-## 常见问题与误区
+## 常见误区
 
-**误区：native 代码一定比 Java 快。** 不一定。JNI transition 的开销、数据拷贝/转码的开销、以及 JIT 无法优化的限制，意味着对于简单操作（如数学计算、字符串拼接），Java/Kotlin 代码在 JIT 优化后可能比经过 JNI 调用 native 实现更快。
+**误区一：native 一定更快。** 如果只是简单计算，Java/JIT/AOT 可能已经足够好；一旦把 JNI transition、对象转换和数据拷贝算进去，native 未必占便宜。
 
-**误区：@CriticalNative 可以随便用。** 不能。GC 无法暂停 @CriticalNative 所在线程意味着：如果你的方法执行时间较长，其他线程的对象分配可能会被阻塞。只在确定方法执行时间在微秒级以下时使用。
+**误区二：默认 Perfetto 会自动把 JNI 开销画出来。** 默认 trace 里没有统一的“JNI transition”切片名。没有插桩时，我们通常只能从采样、符号和上下文去推断。
 
-**误区：GetPrimitiveArrayCritical 总是零拷贝。** 不一定。ART 的实现可能会选择拷贝数据而不是暴露内部指针（比如数组在堆中的位置不连续时）。`isCopy` 参数会告诉你是否发生了拷贝，但无论如何，GC 暂停的副作用都是一样的。
+**误区三：`@CriticalNative` 适合任何“看起来很快”的方法。** 只要方法签名里有对象、数组、隐式 `this`，或者方法内部可能阻塞，这条路就不对。
 
-**面试常见问题**：JNI 中 local reference 和 global reference 的区别？—— local reference 在 native 方法返回后自动释放，生命周期限于当前调用；global reference 需要手动创建和释放，生命周期跨越多次调用。在 JNI_OnLoad 中缓存的 jclass 必须用 global reference。
+**误区四：`AttachCurrentThread()` 是小事，哪里需要哪里调。** attach/detach 应该跟线程生命周期绑定，不该跟单次任务绑定。否则线程上下文管理本身就会进入热路径。
+
+**误区五：`GetPrimitiveArrayCritical()` 等于零拷贝且没副作用。** 运行时可能返回真实指针，也可能返回拷贝；真正重要的是，critical 区域必须短，且要尽快 release。
+
+## 与其他章节的关系
+
+如果我们想继续看 16KB page size 的平台背景、验证手段和迁移清单，去 `§4.7 16KB Page Size 与 Android 性能`。如果我们已经确定热点在 native 栈，准备系统化采样和导出火焰图，去 `§14.2 Simpleperf`。这两节分别负责“兼容性前提”和“工具方法”，本节只负责把 JNI/NDK 设计和性能判断讲清楚。
 
 ## 参考资料
 
-- AOSP 源码路径：
-  - JNI 实现：`art/runtime/jni/jni_internal.cc`
-  - @FastNative/@CriticalNative 处理：`art/runtime/entrypoints/entrypoint_utils-inl.h`
-  - ATRACE native API：`system/core/libcutils/include/android/trace.h`
-  - libbinder_ndk：`frameworks/native/libs/binder/ndk/`
-- 官方文档：
-  - JNI Tips: developer.android.com/training/articles/perf-jni
-  - @CriticalNative: developer.android.com/reference/dalvik/annotation/optimization/CriticalNative
-  - Simpleperf: developer.android.com/ndk/guides/simpleperf
-  - 16KB Page Size: developer.android.com/build/apps/16kb-page-size
-  - DirectByteBuffer: developer.android.com/reference/java/nio/ByteBuffer
-- 社区资源：
-  - Simpleperf 实践篇（知乎）[来源: Cubox 索引]
-  - JNI 引用类型详解（掘金）[来源: Cubox 索引]
+- 官方文档
+  - `https://developer.android.com/training/articles/perf-jni`
+  - `https://developer.android.com/reference/dalvik/annotation/optimization/FastNative`
+  - `https://developer.android.com/reference/dalvik/annotation/optimization/CriticalNative`
+  - `https://developer.android.com/guide/practices/page-sizes`
+  - `https://developer.android.com/ndk/guides/simpleperf`
+  - `https://developer.android.com/reference/java/nio/ByteBuffer`
+  - `https://docs.oracle.com/javase/8/docs/technotes/guides/jni/`
+- AOSP 源码路径（android-16.0.0_r1）
+  - `platform/frameworks/base/core/java/android/os/Binder.java`
+  - `platform/frameworks/base/core/java/android/os/Parcel.java`
+  - `platform/frameworks/base/core/java/android/os/SystemProperties.java`
+  - `platform/frameworks/base/core/java/android/os/Trace.java`
+  - `platform/frameworks/native/include/android/trace.h`
+  - `platform/system/core/libcutils/include/cutils/trace.h`
