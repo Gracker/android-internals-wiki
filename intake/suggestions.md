@@ -571,3 +571,16 @@
 - **问题**：两节目前只有占位式 `[待验证]`，不足以支撑成章。
 - **建议**：补充官方文档或源码依据，至少说明行为变化、影响范围和适用版本。
 - **review 日志**：logs/review/2026-04-10-2359-review.md
+
+
+## [Task9 Deep Review] 1.8 Activity Manager Service 与性能分析 — 2026-04-11
+- **类型**：版本差异
+- **位置**：AMS 的 Service 管理 → 前台服务的演进 / 版本演进表
+- **问题**：Android 15 的 FGS 限制被写成“dataSync 最长 6 小时”，遗漏了 per-type 的 rolling 24h 预算、`mediaProcessing` 共享同类预算，以及超时后 `Service.onTimeout()` / `stopSelf()` 这条关键收口路径。
+- **建议**：把表述改成“`dataSync` / `mediaProcessing` 类型前台服务在后台场景下各自受 24 小时滚动窗口内 6 小时预算限制；超时会回调 `Service.onTimeout()`，服务需尽快 `stopSelf()`”。
+
+## [Task9 Deep Review] 1.8 Activity Manager Service 与性能分析 — 2026-04-11
+- **类型**：版本差异
+- **位置**：AMS 的 Service 管理 → 前台服务的演进 / 版本演进表
+- **问题**：Android 16 被概括为“后台 Job（包括通过 FGS 启动的）遵守各自运行配额”，但没有说明 user-initiated data transfer jobs（UIDT）是重要例外，容易把约束讲成绝对规则。
+- **建议**：补一句“Android 16 开始，从 FGS 发起的普通 Job 也受 runtime quota 约束，但 UIDT jobs 是官方给出的长时用户触发传输例外路径”。

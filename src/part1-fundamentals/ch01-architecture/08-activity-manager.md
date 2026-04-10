@@ -50,11 +50,12 @@ rework_by: "task2a"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-04-10"
 task6_result: needs-rework
-pipeline_stage: task6_pending
+pipeline_stage: task2b_pending
 task6_state: revisiting
-task9_state: pending
-task2b_result: fixed
-task2b_state: fixed
+task9_result: needs-rework
+task9_state: reviewed
+task2b_result: pending
+task2b_state: pending
 ---
 
 # 1.8 Activity Manager Service 与性能分析
