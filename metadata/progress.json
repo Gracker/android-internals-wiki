@@ -993,6 +993,22 @@
         "verification": 5,
         "metadata": 5
       }
+    },
+    "1.7": {
+      "reviewed_date": "2026-04-10",
+      "reviewed_by": "task9-deep-tech-review",
+      "review_status": "ready-to-publish",
+      "review_type": "deep-tech-review",
+      "deep_review_date": "2026-04-10T12:35:38",
+      "deep_review_score": 3.7,
+      "deep_review_p1": 4,
+      "deep_review_p2": 9,
+      "issues_found": [
+        "speed-profile filter behavior misdescription",
+        "Android 9 Profile-Guided compilation version attribution",
+        "JIT trampoline and OatWriter structure missing",
+        "quicken filter definition imprecise"
+      ]
     }
   },
   "review_stats": {
