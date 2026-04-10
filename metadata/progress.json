@@ -13,7 +13,8 @@
     "ready-to-publish": 17,
     "last_reviewed": "2026-04-10",
     "last_reviewed_section": "10.4 低内存对系统性能的影响",
-    "reviewed_today": 17
+    "reviewed_today": 17,
+    "ready_to_publish": 1
   },
   "reviewed_sections": {
     "8.1": {
@@ -2284,19 +2285,26 @@
       "verification_level": "L2",
       "word_count": "~5500",
       "completed_at": "2026-04-10T01:02:00+08:00"
+    },
+    {
+      "section": "2.10",
+      "title": "GPU 渲染深入",
+      "status": "ready-to-publish",
+      "last_reviewed": "2026-04-10"
     }
   ],
   "ready_for_review": 5,
-  "last_updated": "2026-04-10T05:20:00",
+  "last_updated": "2026-04-10T09:20:00",
   "stats": {
     "total": 163,
     "completed": 140,
     "pending": 10,
-    "ready-for-review": 88,
+    "ready-for-review": 87,
     "ready_to_publish": 51,
     "reviewed": 1,
     "ready_for_review": 0,
-    "last_updated": "2026-04-10T01:02:00+08:00"
+    "last_updated": "2026-04-10T01:02:00+08:00",
+    "ready-to-publish": 1
   },
   "research_stats": {
     "runs_today": [

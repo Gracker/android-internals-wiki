@@ -2,7 +2,7 @@
 section: "2.10"
 title: "GPU 渲染深入"
 chapter: "2"
-status: ready-for-review
+status: ready-to-publish
 applicable_versions: "Android 5.0 - Android 16 (API 21-36)"
 last_verified: "2026-04-09"
 last_verified_against: "AOSP android-16.0.0_r1, developer.android.com"
@@ -26,7 +26,7 @@ reviewed_date: 2026-04-10
 reviewed_by: openclaw-task6
 rework_date: 2026-04-03
 rework_by: openclaw-task2b
-review_round: 4
+review_round: 5
 last_polish_notes: "第2轮出版级精修：修复applicable_versions范围、ANGLE URL拼写、叙述过渡、口语化表达"
 polish_count: 2
 polish_date: "2026-04-10"
@@ -41,7 +41,7 @@ polish_by: "task2b-polish"
 
 如果我们缺乏对 GPU 渲染管线的理解，遇到这类掉帧就只能停留在"主线程没问题，不知道什么原因"的阶段。理解了 GPU 渲染机制之后，我们就能做到三件事：把 GPU 渲染过程从看不见的"黑盒"变成可分析、可定位的链条；精准区分 CPU 瓶颈、GPU 瓶颈和内存带宽瓶颈，避免把力气花在错误的方向上；理解 Android 16 中 Vulkan 成为默认 API 这件事背后的真正含义，知道如何为未来做准备。
 
-接下来的内容从 GPU 渲染管线的基本原理出发，逐步深入到性能瓶颈分析方法、GPU 内存管理机制，最后通过一个实战案例将所有知识点串联起来。
+接下来的内容从 GPU 渲染管线的基本原理出发，逐步深入到性能瓶颈分析方法、GPU 内存管理机制，最后通过一个实战案例将所有知识点贯穿起来。
 
 <!-- outline-start -->
 ## 本节要点大纲
@@ -76,7 +76,7 @@ polish_by: "task2b-polish"
 
 流程的起点在 CPU 侧：应用主线程执行 `View.onDraw()`，通过 Canvas API 绘制界面。这些 Canvas 调用被 Skia 图形库接收后，Skia 会根据运行环境将其转换为 OpenGL ES 或 Vulkan 调用——这是 GPU 指令生成阶段。接下来 GPU 接管工作，依次执行顶点处理、片段处理等计算任务，将渲染结果写入显存中的帧缓冲区。最后，SurfaceFlinger 将多个图层合成为最终图像，提交给显示硬件。
 
-这里有一个关键点值得注意：CPU 和 GPU 之间的分工经历了几次重要演进。在 Android 5.0 之前，主线程包揽了所有渲染工作——measure/layout、DisplayList 录制、GPU 命令提交全部在同一线程完成。Android 5.0 引入了独立的 RenderThread，将 GPU 命令的提交和执行从主线程剥离出来，主线程只负责 measure/layout 和 DisplayList（draw 命令列表）的录制。从 Android 12 开始，Google 进一步优化了这一分工，RenderThread 承担了更多工作，使得主线程的渲染负担进一步减轻。这意味着我们在 Trace 中看到的"GPU 耗时"，实际上对应的是 RenderThread 将命令提交到 GPU 直到 GPU 完成渲染的整个过程。
+CPU 和 GPU 之间的分工经历了几个重要阶段的演进。在 Android 5.0 之前，主线程包揽了所有渲染工作——measure/layout、DisplayList 录制、GPU 命令提交全部在同一线程完成。Android 5.0 引入了独立的 RenderThread，将 GPU 命令的提交和执行从主线程剥离出来，主线程只负责 measure/layout 和 DisplayList（draw 命令列表）的录制。从 Android 12 开始，Google 进一步优化了这一分工，RenderThread 承担了更多工作，使得主线程的渲染负担进一步减轻。我们在 Trace 中看到的"GPU 耗时"，实际上对应的是 RenderThread 将命令提交到 GPU 直到 GPU 完成渲染的整个过程。
 
 [图：Android GPU 渲染管线全景图——从 CPU 准备到屏幕合成的完整数据流]
 
@@ -154,7 +154,7 @@ Framebuffer 的管理采用双缓冲（或多缓冲）机制：前缓冲区用�
 
 在 Perfetto Trace 中，我们有时会看到一种特定的掉帧模式：应用前 60fps 流畅运行，然后突然掉到 10-20fps 持续几百毫秒，之后又恢复到 60fps。这种"突然卡一下又恢复"的模式，很多时候就是 Shader Compilation Jank——当应用首次使用某个着色器时，GPU 需要将其从 GLSL/SkSL 源码编译成本地 GPU 指令，这个过程耗时可能从几毫秒到几十毫秒不等。
 
-为什么需要在运行时编译？根本原因是 Android 设备的 GPU 架构多样性。Qualcomm Adreno、ARM Mali、Imagination PowerVR 各有不同的指令集和优化策略，同一份 GLSL 着色器在不同 GPU 上编译出的机器码完全不同。这意味着开发者无法在 APK 中预编译所有平台的着色器二进制，只能在运行时根据实际 GPU 架构进行编译。
+为什么需要在运行时编译？根本原因是 Android 设备的 GPU 架构多样性。Qualcomm Adreno、ARM Mali、Imagination PowerVR 各有不同的指令集和优化策略，同一份 GLSL 着色器在不同 GPU 上编译出的机器码完全不同。开发者无法在 APK 中预编译所有平台的着色器二进制，只能在运行时根据实际 GPU 架构进行编译。
 
 ```cpp
 // 示意性伪代码：着色器编译的概念流程
@@ -207,7 +207,7 @@ Android 16 将 Vulkan 定为默认图形 API 的一个重要动机，就是利�
 
 ### Android 16 的重大转变：Vulkan 成为默认
 
-Android 16 标志着一个重要里程碑：Vulkan 成为官方默认图形 API。这意味着新开发的应用将直接使用 Vulkan 后端，而仍然使用 OpenGL ES 的应用则会通过 ANGLE 层转换为 Vulkan 调用。对于性能优化工程师来说，理解这两种 API 的差异以及 ANGLE 层的影响，已经成为必备知识。
+Android 16 标志着一个重要里程碑：Vulkan 成为官方默认图形 API。新开发的应用将直接使用 Vulkan 后端，而仍然使用 OpenGL ES 的应用则会通过 ANGLE 层转换为 Vulkan 调用。理解这两种 API 的差异以及 ANGLE 层的影响，已经成为 Android 性能分析的必备知识。
 
 这个转变背后的根本原因是 OpenGL ES 的驱动实现质量参差不齐。不同 GPU 厂商（Qualcomm Adreno、ARM Mali、Imagination PowerVR）各自维护 OpenGL ES 驱动，bug 和性能差异很大。Google 通过 ANGLE 将所有 OpenGL ES 调用统一翻译为 Vulkan，只需要维护一套 Vulkan 后端的质量，减少了碎片化问题。
 
@@ -223,7 +223,7 @@ glDrawArrays(GL_TRIANGLES, 0, vertexCount);
 vkQueueSubmit(queue, 1, &submitInfo, fence);
 ```
 
-这意味着在 OpenGL ES 中，一个简单的 draw call 可能需要 10-50μs 的 CPU 时间来处理驱动逻辑（具体取决于状态复杂度和驱动实现）；而在 Vulkan 中，同样的 draw call 只需要 1-5μs——差距达到了一个数量级。对于 draw call 数量很多的应用（比如复杂的 UI 界面），这个差异会直接体现在帧时间上。
+在 OpenGL ES 中，一个简单的 draw call 可能需要 10-50μs 的 CPU 时间来处理驱动逻辑（具体取决于状态复杂度和驱动实现）；而在 Vulkan 中，同样的 draw call 只需要 1-5μs——差距达到了一个数量级。对于 draw call 数量很多的应用（比如复杂的 UI 界面），这个差异会直接体现在帧时间上。
 
 ### 多线程渲染能力
 
@@ -304,7 +304,7 @@ Bandwidth bound 是三种瓶颈中最容易被忽略的一种。它的本质是 
 
 Android 的 GPU 内存管理涉及多个层次。从上往下看：应用层通过 `GraphicBuffer` 类来引用和管理图形缓冲区；系统框架层通过 BufferQueue 机制协调生产者（应用）和消费者（SurfaceFlinger）对缓冲区的使用；HAL 层通过 Gralloc 模块负责实际的物理内存分配；硬件层的 GPU 则直接访问这些物理内存来执行渲染和合成操作。
 
-理解这个层次结构的关键在于认识到：在移动设备上，CPU 和 GPU 共享同一块物理内存（统一内存架构，UMA）。这与 PC 上 CPU 内存和 GPU 显存分离的架构有本质区别。在 UMA 架构下，"GPU 内存"并不是独立的物理存储，而是从系统内存中划分出来的、具有特定对齐和访问属性的内存区域。这意味着 GPU 的内存使用会直接影响系统的可用内存总量，在分析应用内存占用时不能只看 Java heap——GPU 占用的内存同样重要。
+理解这个层次结构，有一点至关重要：在移动设备上，CPU 和 GPU 共享同一块物理内存（统一内存架构，UMA）。这与 PC 上 CPU 内存和 GPU 显存分离的架构有本质区别。在 UMA 架构下，"GPU 内存"并不是独立的物理存储，而是从系统内存中划分出来的、具有特定对齐和访问属性的内存区域。这意味着 GPU 的内存使用会直接影响系统的可用内存总量，在分析应用内存占用时不能只看 Java heap——GPU 占用的内存同样重要。
 
 ```java
 // frameworks/base/core/java/android/graphics/GraphicBuffer.java
@@ -361,7 +361,7 @@ ANGLE 的架构可以理解为一个翻译层：上层应用仍然使用熟悉�
 
 在 Android 16 中，ANGLE 的角色从"可选兼容层"升级为"默认渲染路径"。对于仍然使用 OpenGL ES 的应用，系统自动通过 ANGLE 将渲染调用转发到 Vulkan 后端；对于直接使用 Vulkan 的应用，则绕过 ANGLE 直接与 Vulkan 驱动交互；对于不支持 Vulkan 的极老旧设备，才会回退到原生的 OpenGL ES 驱动。
 
-这个分层策略意味着 Android 16 上的绝大多数应用最终都运行在 Vulkan 上——要么是原生 Vulkan 应用直接使用，要么是 OpenGL ES 应用通过 ANGLE 间接使用。对于性能优化工程师来说，这意味着理解 Vulkan 的性能特征变得比以往任何时候都重要。
+这个分层策略意味着 Android 16 上的绝大多数应用最终都运行在 Vulkan 上——要么是原生 Vulkan 应用直接使用，要么是 OpenGL ES 应用通过 ANGLE 间接使用。理解 Vulkan 的性能特征因此变得比以往任何时候都重要。
 
 ## GPU Profiling 工具：Snapdragon Profiler、ARM Streamline、AGI
 
@@ -463,7 +463,7 @@ GPU 渲染并不是一个独立的环节，它是整个 Android 渲染管线中�
 
 **MainThread/RenderThread → GPU 的关系。** 在 Android 12+ 的架构中（详见 §2.5），主线程负责录制 DisplayList（draw 命令列表），RenderThread 负责将 DisplayList 通过 Skia 转换为 GPU 命令并提交。这意味着 GPU 渲染的开始时间取决于 RenderThread 何时完成命令提交，而 RenderThread 的提交又取决于主线程何时完成 draw 命令录制。任何一个环节的延迟都会推迟 GPU 开始工作的时间。
 
-**SurfaceFlinger → GPU 的关系。** SurfaceFlinger（详见 §2.6）在 VSync-sf 信号到来时读取应用渲染好的缓冲区，将其与其他图层合成为最终图像。SurfaceFlinger 的合成操作本身也可能使用 GPU（GPU 合成路径），这意味着应用和 SurfaceFlinger 在某些时刻会竞争 GPU 资源。在 Perfetto 中，我们有时会看到应用的 GPU 渲染和 SurfaceFlinger 的 GPU 合成时间重叠，这就是 GPU 资源竞争的表现。
+**SurfaceFlinger → GPU 的关系。** SurfaceFlinger（详见 §2.6）在 VSync-sf 信号到来时读取应用渲染好的缓冲区，将其与其他图层合成为最终图像。SurfaceFlinger 的合成操作本身也可能使用 GPU（GPU 合成路径），应用和 SurfaceFlinger 在某些时刻会因此竞争 GPU 资源。在 Perfetto 中，我们有时会看到应用的 GPU 渲染和 SurfaceFlinger 的 GPU 合成时间重叠，这就是 GPU 资源竞争的表现。
 
 ## 在 Perfetto 中的具体表现
 
