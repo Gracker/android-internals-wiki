@@ -2,7 +2,9 @@
 title: "Binder IPC 机制与性能影响"
 chapter: "1.4"
 section: "ch01-architecture"
-status: ready-for-review
+status: finalized
+reviewed_date: "2026-04-10"
+reviewed_by: "openclaw-task6"
 applicable_versions: "Android 8 (API 26) - Android 16 (API 36)"
 drafted_date: "2026-04-10"
 drafted_by: "openclaw-task2a"
@@ -61,7 +63,7 @@ related_chapters: ["1.1", "2.5", "7.2", "8.2", "9.1"]
 
 理解 Binder 的工作原理和在 Perfetto 中的表现形式，意味着你能回答这些问题：主线程那段 Sleeping 时间到底在等谁？是服务端处理慢、还是排队等线程、还是锁竞争？是同步调用还是 oneway？答案不同，优化方向完全不同。
 
-[已验证: 官方文档, developer.android.com/reference/android/os/IBinder] [来源: obsidian/Personal-Knowlodge/source/Android-Perfetto-10-Binder.md]
+[已验证: 官方文档 developer.android.com/reference/android/os/IBinder, 来源: obsidian/Personal-Knowlodge/source/Android-Perfetto-10-Binder.md]
 
 ## Binder 的核心架构
 
