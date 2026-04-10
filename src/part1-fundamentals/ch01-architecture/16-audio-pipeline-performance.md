@@ -12,6 +12,9 @@ drafted_by: "openclaw-task2a"
 last_verified: "2026-04-09"
 last_verified_against: "AOSP android-16.0.0_r1"
 confidence: medium
+reviewed_by: "openclaw-task6"
+reviewed_date: "2026-04-11"
+task6_result: "pass-light-edit"
 sources:
   - type: official
     path: "https://source.android.com/docs/core/audio/latency"
@@ -25,9 +28,36 @@ sources:
     path: "intake/research-feeds/2026-04-08-15-android17-background-audio-hardening-audio-focus.md"
   - type: research
     path: "intake/research-feeds/2026-04-08-15-android17-audiotrack-api-assistant-volume-stream.md"
+pipeline_stage: task9_pending
+task6_state: reviewed
+task9_state: pending
+task2b_state: idle
 ---
 
 # 1.16 Audio Pipeline 延迟与性能
+
+<!-- outline-start -->
+## 本节要点大纲
+
+### 锚点（必须覆盖）
+
+- 🔹 Audio Pipeline 的整体链路，以及 AudioFlinger / AudioPolicyService 的角色分工
+- 🔹 延迟分解：输出延迟、往返延迟与缓冲区大小
+- 🔹 FAST Mixer 的工作机制、进入条件与线程调度
+- 🔹 AAudio、MMAP 与 Oboe 的低延迟路径差异
+- 🔹 Audio Pipeline 在 Perfetto 中的关键 Track、Slice 与常见问题特征
+
+### 扩展（可选深入）
+
+- 🔸 Android 17 音频行为变更
+- 🔸 蓝牙音频延迟与游戏音频实践
+
+### OpenClaw 加工指引
+
+> 锚点是最低覆盖要求，加工时必须逐条落实并标注验证状态。
+> 扩展内容可以结合素材深挖，但不要替代主线叙述。
+> 若某个延迟数字或设备能力具有明显平台差异，应优先标注 `[待验证]`，不要写成无条件结论。
+<!-- outline-end -->
 
 ## 为什么需要了解 Audio Pipeline
 
@@ -48,7 +78,7 @@ App (AudioTrack/AAudio)
     ↓  write()
 AudioFlinger (AudioServer)
     ↓  混音 + 重采样
-Audio HAL (AIDL, Android 14+)
+Audio HAL（AIDL/HIDL，取决于 Android 版本与平台实现）
     ↓  ALSA/TinyALSA
 DSP / Codec
     ↓
@@ -158,7 +188,7 @@ FAST Mixer 运行在一个专用线程上，使用 `SCHED_FIFO` 实时调度策�
 
 AAudio 是 Android 8.0 引入的原生音频 C API，专为低延迟音频场景设计（游戏、音乐制作、实时音频处理）。相比传统的 OpenSL ES（已标记为废弃）和 Java 层的 AudioTrack，AAudio 提供了更底层的控制和更低的延迟。
 
-AAudio 的核心设计原则是简洁：创建流（`AAudioStream`）、写入数据（`aaudio_stream_write`）、关闭流。没有复杂的回调层级，没有 Java 层的额外开销。
+AAudio 的核心设计原则是简洁：创建流（`AAudioStream`）、写入数据（`AAudioStream_write()`）、关闭流。没有复杂的回调层级，没有 Java 层的额外开销。
 
 [已验证: developer.android.com/ndk/guides/audio/aaudio]
 
@@ -262,7 +292,7 @@ Android 17 对后台音频播放实施了严格管控。这是 Android 持续收
 **调试方法**：
 
 ```bash
-# 在 Android 16+ 设备上提前测试
+# 在 Android 16 及以上设备上提前测试
 adb shell cmd audio set-enable-hardening
 
 # 查看违规日志
@@ -301,6 +331,8 @@ Android 17 引入了 `USAGE_ASSISTANT` 专用音量流，将语音助手的音�
 ### AAudio Offload 支持
 
 Android 16 起支持 AAudio Offload，允许通过 AAudio 直接将压缩音频数据（如 AAC/MP3）透传至硬件 DSP 解码。这意味着 CPU 不再需要参与解码过程，在长音频播放场景下可以节省可观的功耗。
+
+[待验证: AAudio Offload 的 API 入口、编解码格式覆盖范围与设备支持矩阵，仍需结合 Android 16/17 API diff 与实机再核实]
 
 ## API 选择指南
 
@@ -369,6 +401,8 @@ Audio Pipeline 与全书其他章节的关联点：
 - **LE Audio（LC3 编码）**：20-40ms。蓝牙 5.2 引入的新一代低延迟音频协议，代表了蓝牙音频延迟的未来方向。
 
 蓝牙音频的额外延迟来源包括：编码/解码处理时间、无线传输的协议开销、Bluetooth Audio HAL 内部的额外缓冲区。空间音频（Spatial Audio）结合头部追踪功能对延迟的要求更高——头部转动到声音位置更新的延迟需要低于 20ms 才能避免感知错位。
+
+[待验证: 不同编解码器配置、耳机固件和链路状态会显著改变实际延迟，上述数值更适合作为经验范围，而不是统一结论]
 
 [待验证: LE Audio 的实际部署比例和设备支持情况，2026 年数据]
 
