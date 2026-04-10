@@ -2,7 +2,9 @@
 title: "内存分析工具"
 chapter: "14.3"
 section: "14.3"
-status: ready-for-review
+status: finalized
+reviewed_date: "2026-04-10"
+reviewed_by: "openclaw-task6"
 drafted_date: "2026-04-03"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 8 (API 26) - Android 16 (API 36)"
@@ -59,7 +61,7 @@ related_chapters: ["10.1", "10.2", "10.3", "14.1", "13.1"]
 
 ## 为什么需要这么多种内存分析工具
 
-做过 Android 内存优化的工程师大概都有这样的体会：内存问题的排查路径特别长，而且每种问题的"入口"不一样。有时候用户反馈"应用越用越卡"，打开 Perfetto 一看，GC 事件密集得像心电图——这可能是 Java 堆泄漏。有时候 `crashlytics` 报了一堆 Native crash，信号是 SIGSEGV——这可能是 Native 内存越界访问。还有时候系统日志里 LMK 频繁杀后台，但你不清楚是哪个进程吃掉了内存。
+做过 Android 内存优化的工程师大概都有这样的体会：内存问题的排查路径特别长，而且每种问题的"入口"不一样。有时候用户反馈"应用越用越卡"，打开 Perfetto 一看，GC 事件密集得像心电图——这可能是 Java 堆泄漏。有时候 `crashlytics` 报了一堆 Native crash，信号是 SIGSEGV——这可能是 Native 内存越界访问。还有时候系统日志里 LMK 频繁杀后台，但我们不清楚是哪个进程吃掉了内存。
 
 没有哪一个工具能覆盖所有场景。`LeakCanary` 擅长自动发现 Activity/Fragment 级别的 Java 泄漏，但它对 Native 堆和系统级内存占用无能为力。`MAT` 可以深入分析 hprof 文件中的引用链，找出"谁持有了不该持有的引用"，但它需要你先抓到堆转储，而且是离线分析。`heapprofd` 能实时采样 Native 堆的分配行为，但它给出的不是"谁泄漏了"，而是"谁在分配"。`dumpsys meminfo` 则是全局视角的入口——告诉你这个进程总共占了多少内存、各分多少，但它不会告诉你为什么。
 
@@ -69,7 +71,7 @@ related_chapters: ["10.1", "10.2", "10.3", "14.1", "13.1"]
 
 ### LeakCanary 解决什么问题
 
-在所有内存分析工具中，LeakCanary 的定位最明确：它是一个开发阶段的自动泄漏检测器。你不需要手动抓堆转储、不需要打开 MAT 分析引用链——LeakCanary 会在 Activity、Fragment、ViewModel、Service 等组件被销毁后，自动检查它们是否还被 GC 回收。如果没有被回收，它会抓取堆转储、分析引用链，并通过系统通知把泄漏路径展示给开发者。
+在所有内存分析工具中，LeakCanary 的定位最明确：它是一个开发阶段的自动泄漏检测器。我们不需要手动抓堆转储、不需要打开 MAT 分析引用链——LeakCanary 会在 Activity、Fragment、ViewModel、Service 等组件被销毁后，自动检查它们是否还被 GC 回收。如果没有被回收，它会抓取堆转储、分析引用链，并通过系统通知把泄漏路径展示给开发者。
 
 这个工具解决的核心痛点是"泄漏的早期发现"。很多内存泄漏在开发阶段根本不会触发 OOM——设备内存够大，测试时间不够长。但 LeakCanary 能在泄漏还很小的时候就抓住它，让开发者在代码提交前就修复问题，而不是等到线上用户反馈"应用卡死了"才去排查。
 
@@ -127,7 +129,7 @@ LeakCanary 2.x 还增强了对 Kotlin Coroutines 和 Jetpack Compose 的支持�
 
 MAT（Memory Analyzer Tool）解决的是一个更深入的问题：你已经知道内存有问题了（可能通过 LeakCanary 发现了泄漏，可能通过 `dumpsys meminfo` 看到 Java Heap 持续增长，也可能应用刚发生了 OOM），现在需要搞清楚"到底是谁在占用内存、为什么没有被释放"。
 
-如果说 LeakCanary 是自动化的哨兵，那 MAT 就是手动的解剖刀。它不自动运行，不给你发通知，但当你把一个 hprof 文件交给它时，它能精确地展示堆中每个对象的持有关系、占用大小、引用路径。高爷有一篇 MAT 三部曲系列文章（入门、进阶、打开 Bitmap 原图），详细介绍了 MAT 的实战用法。
+如果说 LeakCanary 是自动化的哨兵，那 MAT 就是手动的解剖刀。它不自动运行，不给你发通知，但当我们把一个 hprof 文件交给它时，它能精确地展示堆中每个对象的持有关系、占用大小、引用路径。高爷有一篇 MAT 三部曲系列文章（入门、进阶、打开 Bitmap 原图），详细介绍了 MAT 的实战用法。
 
 ### 抓取 hprof 文件
 
@@ -167,7 +169,7 @@ hprof-conv /data/local/tmp/heap.hprof heap-std.hprof
 
 一个典型的 MAT 分析流程如下。
 
-首先，在 Histogram 视图中，使用正则表达式过滤出你关心的类。比如你在 LeakCanary 中看到了某个 Activity 泄漏，就在 Histogram 中搜索这个 Activity 类名。找到后，右键选择 "List objects → with incoming references"（列出持有该对象引用的其他对象）。
+首先，在 Histogram 视图中，使用正则表达式过滤出我们关心的类。比如我们在 LeakCanary 中看到了某个 Activity 泄漏，就在 Histogram 中搜索这个 Activity 类名。找到后，右键选择 "List objects → with incoming references"（列出持有该对象引用的其他对象）。
 
 然后，沿着引用链逐层展开。MAT 会在引用路径上标记 "Shallow Heap"（对象自身大小）和 "Retained Heap"（该对象被回收后可释放的总大小）。如果某个中间节点的 Retained Heap 异常大，它很可能就是泄漏的关键持有者。
 
@@ -262,7 +264,7 @@ data_sources: {
 
 ### dumpsys meminfo 解决什么问题
 
-`dumpsys meminfo` 不分析引用链，不抓取堆转储，也不展示调用栈。它做的事情更简单也更基础：给你一个进程的内存使用概览，告诉你这个进程总共占了多少内存，分别花在了哪里。
+`dumpsys meminfo` 不分析引用链，不抓取堆转储，也不展示调用栈。它做的事情更简单也更基础：给我们一个进程的内存使用概览，告诉你这个进程总共占了多少内存，分别花在了哪里。
 
 这个命令在性能优化的日常工作中有两个核心用途。第一，快速判断"内存是否正常"。如果某个应用的 PSS（Proportional Set Size）明显高于同类型应用，或者 Java Heap 接近了 `dalvik.vm.heapsize` 上限，那内存可能有问题。第二，周期性地执行这个命令，可以观察到内存的长期趋势——如果 PSS 持续增长且不回落，几乎可以确定存在泄漏。
 
@@ -308,7 +310,7 @@ App Summary
 
 **用 `-d` 参数获取更详细的信息**：`adb shell dumpsys meminfo -d <package>` 会额外输出 Dalvik/ART 的详细内存统计，包括线性分配器（LinearAlloc）和代码缓存的占用情况。
 
-**内存分级与 LMK 的关系**：`dumpsys meminfo` 的输出与系统 LMK（Low Memory Killer）的决策直接相关。LMK 根据 PSS 总量和进程优先级（oom_adj）决定杀谁。了解你的应用的 PSS 水平，可以评估它在低内存场景下被杀的风险。
+**内存分级与 LMK 的关系**：`dumpsys meminfo` 的输出与系统 LMK（Low Memory Killer）的决策直接相关。LMK 根据 PSS 总量和进程优先级（oom_adj）决定杀谁。了解我们的应用的 PSS 水平，可以评估它在低内存场景下被杀的风险。
 
 [已验证: 官方文档, https://developer.android.com/studio/command-line/dumpsys#meminfo]
 [适用版本: Android 8 (API 26) - Android 16 (API 36)]
@@ -341,7 +343,7 @@ showmap 最常用的场景是确认"某类内存到底有多大"。当 `dumpsys 
 
 ### procrank：全系统进程内存排名
 
-`procrank` 的功能很简单：列出系统上所有进程的 VSS、RSS、PSS、USS，并按 PSS 排序。它让你一眼就能看出"谁在吃内存"。
+`procrank` 的功能很简单：列出系统上所有进程的 VSS、RSS、PSS、USS，并按 PSS 排序。它让我们一眼就能看出"谁在吃内存"。
 
 ```bash
 adb shell procrank
@@ -356,7 +358,7 @@ adb shell procrank
   ...
 ```
 
-procrank 在排查系统级内存压力时特别有用。当你需要评估"低内存场景下系统会先杀谁"，或者"多个应用同时运行时内存是否够用"，procrank 提供的跨进程对比视角是 `dumpsys meminfo`（单进程视角）无法替代的。
+procrank 在排查系统级内存压力时特别有用。当我们需要评估"低内存场景下系统会先杀谁"，或者"多个应用同时运行时内存是否够用"，procrank 提供的跨进程对比视角是 `dumpsys meminfo`（单进程视角）无法替代的。
 
 需要注意的是，procrank 的可用性取决于设备。有些厂商的 ROM 没有预装 procrank，需要自己编译推入设备。它的底层依赖 `libpagemap.so`，通过读取 `/proc/<pid>/pagemap` 来获取精确的页面级统计。
 
@@ -372,7 +374,7 @@ libmeminfo 提供了以下核心能力：
 
 `dumpsys meminfo` 和 `procrank` 底层都调用了 libmeminfo 的接口。Java 层的 `android.os.Debug.MemoryInfo` 和 `ActivityManager.MemoryInfo` 也通过 JNI 调用 libmeminfo 获取数据。
 
-对于性能优化工程师来说，了解 libmeminfo 的意义在于：当你需要自定义内存采集逻辑（比如写一个自动化测试脚本，定期采集特定进程的内存分布），可以参考 libmeminfo 的实现来编写你自己的采集工具，而不是反复调用 `dumpsys` 命令再解析文本输出。
+对于性能优化工程师来说，了解 libmeminfo 的意义在于：当我们需要自定义内存采集逻辑（比如写一个自动化测试脚本，定期采集特定进程的内存分布），可以参考 libmeminfo 的实现来编写你自己的采集工具，而不是反复调用 `dumpsys` 命令再解析文本输出。
 
 [已验证: AOSP, system/core/libmeminfo]
 [已验证: 官方文档, https://source.android.com/docs/core/debug/eval-performance]
@@ -382,7 +384,7 @@ libmeminfo 提供了以下核心能力：
 
 ### 解决的问题
 
-前面提到的 heapprofd 适合"看趋势"——它告诉你谁在分配、分配了多少。但如果你需要更精确的调试信息（比如"这次 `free` 对应的 `malloc` 是在哪里调的"、"有没有 double free"、"有没有 use-after-free"），就需要 malloc debug 或 malloc hooks 了。
+前面提到的 heapprofd 适合"看趋势"——它告诉你谁在分配、分配了多少。但如果我们需要更精确的调试信息（比如"这次 `free` 对应的 `malloc` 是在哪里调的"、"有没有 double free"、"有没有 use-after-free"），就需要 malloc debug 或 malloc hooks 了。
 
 ### malloc debug
 
