@@ -5,6 +5,8 @@ section: "1.12"
 status: ready-for-review
 drafted_date: "2026-04-06"
 drafted_by: "openclaw-task2a"
+reviewed_date: "2026-04-11"
+reviewed_by: "openclaw-task6"
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 last_verified: "2026-04-06"
 last_verified_against: "AOSP android16-6.12 / android15-6.6"
@@ -23,10 +25,22 @@ sources:
 tags:
   - android
   - research
-
-
+  - AutoFDO
+  - PGO
+  - LLVM
+  - GKI
+  - kernel
+  - simpleperf
+related_chapters:
+  - "1.7"
+  - "8.3"
+  - "8.7"
+pipeline_stage: task2b_pending
+task6_state: reviewed
+task9_state: pending
+task2b_state: pending
+task6_result: needs-rework
 ---
-
 
 # 1.12 AutoFDO 反馈导向编译优化
 
@@ -54,7 +68,7 @@ Profile-Guided Optimization（PGO）的思路很简单：**先跑一遍，看看
 
 PGO 有两种主要的实现方式：
 
-**Instrumentation-based PGO（插桩 PGO）**：在代码里插入计数器，每个基本块执行一次就加一。精度高，但插桩本身会改变代码的行为（heisenbug 的近亲），而且有运行时开销。Google 的服务器基础设施广泛使用这种方式。
+**Instrumentation-based PGO（插桩 PGO）**：在代码里插入计数器，每个基本块执行一次就加一。精度高，但插桩本身会改变代码的行为（Heisenbug 的近亲），而且有运行时开销。Google 的服务器基础设施广泛使用这种方式。
 
 **Sampling-based PGO（采样 PGO）**：不修改代码，而是利用 CPU 硬件的性能监控单元（PMU）定期采样程序的执行状态。精度比插桩略低，但零代码侵入，运行时开销极小。**AutoFDO 就是这条路**。
 
@@ -130,7 +144,7 @@ create_llvm_prof --binary=vmlinux --input=injected.data --output=profile.afdo
 
 这里需要澄清一个容易混淆的点。Android 有两层编译优化：
 
-**第一层：ART/dex2oat 层**——针对 Java/Kotlin 字节码。`dex2oat` 的 `speed-profile` 编译器过滤器使用 Baseline Profiles 或 JIT 积累的运行时 profile，决定哪些 Java 方法需要 AOT 编译。这是我们在 [1.7 ART 编译管线](part1-fundamentals/ch01-architecture/07-art-compilation.md) 中详细讨论的。
+**第一层：ART/dex2oat 层**——针对 Java/Kotlin 字节码。`dex2oat` 的 `speed-profile` 编译器过滤器使用 Baseline Profiles 或 JIT 积累的运行时 profile，决定哪些 Java 方法需要 AOT 编译。这是我们在 [1.7 ART 编译管线](07-art-compilation.md) 中详细讨论的。
 
 **第二层：LLVM/Clang 层**——针对原生代码（C/C++）。AutoFDO 在这一层工作，优化内核和原生库的机器码生成。它优化的是 `dex2oat` 这个工具本身的执行效率，而不是直接优化 Java 字节码。
 
@@ -184,7 +198,7 @@ Google 在 Pixel 设备上，对 `android16-6.12`、`android15-6.6` 和 `6.1` �
 
 简单来说：**Baseline Profiles 让你的 App 跑得更快，AutoFDO 让你的 App 跑在更快的系统上**。两个机制不冲突，同时生效。
 
-在启动优化中（参见 [8.3 启动优化策略](part2-performance/ch08-responsiveness/03-launch-optimization.md) 和 [8.7 Baseline Profiles](part2-performance/ch08-responsiveness/07-baseline-profiles.md)），Baseline Profiles 直接减少 App 自身的冷启动耗时，AutoFDO 则通过优化内核和系统服务的响应速度来间接减少冷启动中的系统调用开销。
+在启动优化中（参见 [8.3 启动优化策略](../../part2-performance/ch08-responsiveness/03-launch-optimization.md) 和 [8.7 Baseline Profiles](../../part2-performance/ch08-responsiveness/07-baseline-profiles.md)），Baseline Profiles 直接减少 App 自身的冷启动耗时，AutoFDO 则通过优化内核和系统服务的响应速度来间接减少冷启动中的系统调用开销。
 
 ## Android 16 中的支持状态
 
@@ -226,7 +240,7 @@ create_llvm_prof --binary=vmlinux --input=injected.data --output=custom.afdo
 
 ### App 开发者能做什么
 
-内核 AutoFDO 对 App 开发者完全透明，不需要任何操作。但 App 开发者能做的是：确保自己的 App 使用了 **Baseline Profiles**（参见 [8.7 Baseline Profiles 与编译优化实践](part2-performance/ch08-responsiveness/07-baseline-profiles.md)），这样 App 层和系统层的编译优化同时生效，叠加收益最大。
+内核 AutoFDO 对 App 开发者完全透明，不需要任何操作。但 App 开发者能做的是：确保自己的 App 使用了 **Baseline Profiles**（参见 [8.7 Baseline Profiles 与编译优化实践](../../part2-performance/ch08-responsiveness/07-baseline-profiles.md)），这样 App 层和系统层的编译优化同时生效，叠加收益最大。
 
 ## 在 Perfetto 中的观测
 
@@ -299,9 +313,3 @@ Google 的官方说法是：AutoFDO 主要影响编译器的启发式决策（�
 - [GKI（Generic Kernel Image）文档](https://source.android.com/docs/core/architecture/kernel/generic-kernel-image)
 - [Coresight 内核驱动](https://android.googlesource.com/kernel/common/+/refs/heads/android16-6.12/drivers/hwtracing/coresight)
 
-
-### Android 17 + GKI Kernel 6.12 综合性能量化
-- 来源：https://cs.android.com/android/platform/superproject/+/android-17-beta3
-- 类型：research
-- 摘要：EEVDF + sched_ext 系统调用效率+9.3%，AutoFDO PGO 冷启动延迟-4.3%(1240ms->1187ms)，dm-verity吞吐+35%(ARM64 multi-buffer hashing)。启动速度+2.1%(Pixel 9 Pro)。
-- 入库时间：2026-04-08
