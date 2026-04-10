@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-11T02:05:00+08:00",
+  "generated_at": "2026-04-11T02:48:12.983415+08:00",
   "state_machine_version": "v2",
   "total_sections": 174,
   "metrics": {
@@ -1088,9 +1088,10 @@
       "path": "src/part1-fundamentals/ch02-rendering/11-flutter-rendering.md",
       "status": "ready-for-review",
       "pipeline_stage": "task6_pending",
-      "task6_state": "pending",
+      "task6_state": "revisiting",
       "task9_state": "pending",
-      "task2b_state": "idle"
+      "task2b_state": "fixed",
+      "task2b_result": "fixed"
     },
     "src/part1-fundamentals/ch02-rendering/05-main-render-thread.md": {
       "chapter": "2.5",

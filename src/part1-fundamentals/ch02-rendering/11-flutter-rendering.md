@@ -24,7 +24,11 @@ sources:
     path: "https://github.com/flutter/flutter/wiki/Impeller"
 tags: [flutter, rendering, impeller, skia, cross-platform, shader-compilation, jank]
 related_chapters: ["2.1", "2.3", "2.4", "2.5", "7.1", "7.7"]
-
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
+task2b_state: fixed
+task2b_result: fixed
 ---
 
 <!-- outline-start -->
@@ -124,11 +128,11 @@ PlatformView 有两种合成模式：**Virtual Display** 模式和 **Hybrid Comp
 
 Virtual Display 模式是早期方案，它将原生 View 的内容渲染到一个 VirtualDisplay 的 Surface 上，然后 Flutter 通过 Texture Widget 来显示这个 Surface 的内容。这种方式有一个严重的性能问题：数据需要经过 GPU → CPU → GPU 的往返传输（在 Android 10 之前），导致每帧有显著的额外开销。
 
-Hybrid Composition 模式是当前的推荐方案。它不再通过 Texture 中转，而是直接将原生 View 添加到 Android 的 View 树中，让 Flutter 的 Surface 和原生 View 在 SurfaceFlinger 层面进行合成。这种方式在 Android 10+ 上性能更好，因为 Android 10 引入了 GPU 内存共享优化，避免了 GPU → CPU → GPU 的拷贝。
+Hybrid Composition 模式是当前的推荐方案。它不再通过 Texture 中转，而是直接将原生 View 添加到 Android 的 View 树中，让 Flutter 的 Surface 和原生 View 在 SurfaceFlinger 层面进行合成。这种方式在 Android 10+ 上性能更好，因为 Flutter 官方文档明确提到，Android 10 之前每一帧都要经历一次“显存 → 主存 → GPU 纹理”的往返拷贝，而 Android 10 及之后只需要一次拷贝。这才是 Hybrid Composition 在系统层面的关键性能拐点。`[已验证: Flutter Platform Views 文档, https://docs.flutter.dev/platform-integration/android/platform-views]`
 
-但 Hybrid Composition 也有代价。当 Flutter 内容和 PlatformView 内容需要同时显示时（比如 Flutter 的 UI 叠加在 WebView 上方），Flutter 必须在 Platform 线程（也就是 Android 主线程）上完成自己的 UI 合成。这意味着此时 Flutter 的渲染会退回到和原生应用一样的主线程依赖，之前提到的线程模型优势就不复存在了。在 Perfetto 中，我们会看到到此时 `1.platform` 线程的 CPU 占用明显增加，而 `1.raster` 线程可能处于等待状态。
+但 Hybrid Composition 也有代价。当 Flutter 内容和 PlatformView 内容需要同时显示时（比如 Flutter 的 UI 叠加在 WebView 上方），Flutter 必须在 Platform 线程（也就是 Android 主线程）上完成自己的 UI 合成。这意味着此时 Flutter 的渲染会退回到和原生应用一样的主线程依赖，之前提到的线程模型优势就不复存在了。在 Perfetto 中，我们会看到此时 `1.platform` 线程的 CPU 占用明显增加，而 `1.raster` 线程可能处于等待状态。
 
-`[需补充素材: Hybrid Composition 在 Android 14+ 上的优化信息，当前仅有待验证标注]`
+到了 Android 14 这一代，公开可核对的 Flutter 官方资料并没有给出“Hybrid Composition 再减少一次拷贝”这类新的通用结论。更实际的变化是 PlatformView 相关路径经历了一轮兼容性修复，Flutter 3.24 的 release notes 里可以直接看到 `Workaround HardwareRenderer breakage in Android 14` 和 `Fix another instance of platform view breakage on Android 14` 这样的修复项。换句话说，Android 14+ 的收益更偏向 PlatformView/Surface 管理路径的稳定性修复，而不是 Hybrid Composition 的基本合成模型被重新设计。`[已验证: Flutter 3.24 release notes, https://docs.flutter.dev/release/release-notes/release-notes-3.24.0]`
 
 ## 性能分析方法
 
@@ -138,7 +142,7 @@ Hybrid Composition 模式是当前的推荐方案。它不再通过 Texture 中�
 
 Flutter DevTools 是 Flutter 官方的性能分析套件。它提供了几个关键的分析面板：
 
-**Performance 面板**（集成 Perfetto 渲染）：这是最常用的面板。它记录每一帧的 UI 线程和 Raster 线程的耗时，并用火焰图展示。从 DevTools 2.28（约 Flutter 3.16 期间）开始，Performance 面板默认使用 Perfetto 的 trace viewer 作为时间线后端（替代了旧的自定义 trace viewer），这意味着我们在 DevTools 中看到的时间线视图本质上就是 Perfetto。`[需补充素材: DevTools 版本号，当前引用 devtools.dart.dev 发布记录，需要确认具体版本号]`在 Performance 面板中，我们可以看到：
+**Performance 面板**（集成 Perfetto trace viewer）：这是最常用的面板。它记录每一帧的 UI 线程和 Raster 线程的耗时，并用火焰图展示。这里更准确的说法是，Flutter DevTools 在 2.21.1 版本就已经把旧的 timeline trace viewer 替换成 Perfetto trace viewer，所以这件事不宜写成“从 Flutter 3.16 起”。DevTools 的演进节奏和 Flutter SDK 版本不是一一绑定的，我们分析问题时应该以 DevTools 自身版本为准。`[已验证: Flutter DevTools 2.21.1 release notes, https://docs.flutter.dev/tools/devtools/release-notes/release-notes-2.21.1]`在 Performance 面板中，我们可以看到：
 
 - 每一帧在 UI 线程上的 Build、Layout、Paint 各自花了多少时间
 - Raster 线程的光栅化耗时
@@ -268,13 +272,11 @@ Impeller 的内部架构可以分为几个层次：
 
 Impeller 在 Android 上优先使用 Vulkan 后端。对于不支持 Vulkan 的设备（主要是 Android API 28 及以下），Impeller 会回退到 OpenGL ES 后端。
 
-从性能数据来看，Impeller 相比 Skia 有几个明显改善：
+从公开可核对的资料看，Impeller 相比 Skia 最明确的收益不是一个统一的百分比，而是更可预测的渲染时序。Flutter 官方文档强调的是两件事：一是 shader 在 engine build 阶段就完成预编译，不再把编译压力留到运行时；二是 pipeline state object 会提前构建好，所以复杂动画第一次出现时更不容易被 shader compilation jank 打断。`[已验证: Flutter Impeller 文档, https://docs.flutter.dev/perf/impeller]`
 
-**光栅化时间降低**：社区报告和第三方测试显示，Impeller 在复杂渲染场景下光栅化时间有显著改善。根据多个第三方基准测试（2024-2025 年数据），Impeller 在动画场景下的 GPU 光栅化时间相比 Skia 降低约 30-50%。`[存疑: 30-50% 数据来源为社区综合估算（多个第三方报告，2024-2025），非 Flutter 官方基准测试。读者应将此数据视为近似参考值]` 这主要得益于 Impeller 对移动 GPU 的 tiling 架构做了针对性优化，以及 AOT shader 编译消除了运行时的编译开销。
+这也是为什么前文的“30-50% 改善”不适合当作通用结论。那组数字更接近 2024-2025 年第三方样本中的经验区间，受 GPU 型号、驱动版本、场景复杂度、是否夹杂 PlatformView 等因素影响很大。更稳妥的写法是：社区测试经常观察到光栅化时间下降、jank 帧减少，但 Flutter 官方并没有给出一个对所有 Android 设备都成立的统一基准。
 
-**帧率稳定性提升**：因为消除了 shader 编译卡顿，帧率的波动大幅减小。Impeller 的可预测性能架构（predictable performance）——所有 shader 和 Pipeline State Object 在构建时预编译——使得复杂动画场景下的 jank 帧数量降低约 30%。在 120Hz 设备上，Impeller 能够更稳定地在 8ms 帧预算内完成渲染。
-
-**内存效率改善**：Impeller 通过优化的局部重绘（partial repaint）和更紧凑的资源管理减少了 GC 压力和内存占用。Flutter 3.27 的改进报告中指出，Impeller 在动画场景下的内存占用相比 Skia 有明显改善，AOT shader 机制消除了运行时 shader 缓存是内存节省的主要原因之一。
+如果我们在项目里评估 Impeller，真正该关注的是两类现象：第一，首次进入复杂页面或首次播放动画时，Raster 线程是否还会被 shader 编译长时间阻塞；第二，在同一段动画里，帧时间分布是否比 Skia 更稳定。至于提升幅度，最好直接用目标机型的 Perfetto 和 Flutter DevTools 做实测，而不是套用别人的百分比。
 
 `[已验证: Impeller 默认状态基于 Flutter 3.27 release notes, flutter.dev]`
 
