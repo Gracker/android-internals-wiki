@@ -8,16 +8,22 @@ drafted_by: "openclaw-task2a"
 reviewed_date: "2026-04-11"
 reviewed_by: "openclaw-task6"
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
-last_verified: "2026-04-06"
-last_verified_against: "AOSP android16-6.12 / android15-6.6"
+last_verified: "2026-04-11"
+last_verified_against: "Google blog 2026-03 + AOSP android16-6.12/android15-6.6 + simpleperf ETM doc"
 confidence: medium
 sources:
   - type: blog
     path: "https://android-developers.googleblog.com/2026/03/BoostingAndroid%20PerformanceIntroducingAutoFDO.html"
   - type: aosp
-    path: "kernel/common/android/gki/aarch64/afdo/"
+    path: "kernel/common (branch: android16-6.12) / gki/aarch64/afdo/README.md"
   - type: aosp
-    path: "system/extras/simpleperf/"
+    path: "kernel/common (branch: android16-6.12) / gki/aarch64/afdo/kernel.afdo"
+  - type: aosp
+    path: "kernel/common (branch: android15-6.6) / android/gki/aarch64/afdo/README.md"
+  - type: aosp
+    path: "kernel/common (branch: android15-6.6) / android/gki/aarch64/afdo/kernel.afdo"
+  - type: aosp
+    path: "system/extras/simpleperf/doc/collect_etm_data_for_autofdo.md"
   - type: aosp
     path: "drivers/hwtracing/coresight/"
   - type: official
@@ -35,10 +41,11 @@ related_chapters:
   - "1.7"
   - "8.3"
   - "8.7"
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: pending
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
+task2b_result: fixed
+task2b_state: fixed
 task6_result: needs-rework
 task9_result: needs-rework
 ---
@@ -58,6 +65,31 @@ AutoFDO（Automatic Feedback-Directed Optimization）是 Google 从系统层面�
 - Android 的编译优化体系里，AutoFDO 处在什么位置？它和 Baseline Profiles、dex2oat 的 speed-profile 是什么关系？
 - AutoFDO 是怎么从 CPU 硬件层面采集数据的？采集出来的 profile 又是怎么变成编译器能用的信息？
 - Google 给出的性能数据有多少可信度？OEM 和 App 开发者分别能做什么？
+
+<!-- outline-start -->
+## 本节要点大纲
+
+### 锚点（必须覆盖）
+
+- 🔹 **AutoFDO 在 Android 编译体系中的位置**：[已验证: Google blog + AOSP 文档]
+  Baseline Profiles 决定 Java/Kotlin 方法的 AOT 范围；AutoFDO 优化内核与系统 native binary 的机器码质量，两者不是同一层。
+
+- 🔹 **ARM64 场景下的采样基础**：[已验证: simpleperf ETM 文档 + Coresight 驱动]
+  Android 内核 AutoFDO 依赖 ETM / Coresight 采集分支轨迹；PMU 负责计数采样，ETM / ETE / TRBE 决定 profile 的精细度。
+
+- 🔹 **ETM → perf.data → branch-list → LLVM profile 的转换顺序**：[已验证: simpleperf ETM 文档 + AutoFDO 工具说明]
+  `simpleperf record` 先生成 `perf.data`，`simpleperf inject --output branch-list` 再生成 `branch_list.data`，最后 `create_llvm_prof` 为单个 binary 生成 `kernel.afdo`。
+
+- 🔹 **GKI 分支对应的 profile 路径**：[已验证: AOSP kernel/common android15-6.6 / android16-6.12]
+  `android15-6.6` 使用 `android/gki/aarch64/afdo/`，`android16-6.12` 使用 `gki/aarch64/afdo/`，不能把两个分支写成同一路径。
+
+- 🔹 **OEM 自行复现所需的前置条件**：[已验证: simpleperf ETM 文档 + Kleaf/DDK 文档]
+  需要 ARM64 ETM/ETE 能力、`userdebug/eng` + root、未剥离的 `vmlinux` / 模块符号，以及 Kleaf / DDK 的构建配置入口。
+
+### 扩展（可选深入）
+- 🔸 **如何把 kernel AutoFDO 与 Baseline Profiles 一起看**
+- 🔸 **如何用 simpleperf / Perfetto 做优化前后的回归对比**
+<!-- outline-end -->
 
 ## 从 PGO 到 AutoFDO：编译优化的思路变迁
 
@@ -91,7 +123,9 @@ AutoFDO 的数据来源是 ARM 处理器上的两个硬件特性：
 
 ### 数据采集流程
 
-Google 描述的内核 AutoFDO 数据采集流程如下：
+这里最容易写错的是顺序。设备侧先把 ETM 数据录成 `perf.data`，host 侧再把 `perf.data` 转成 branch-list，最后才由 `create_llvm_prof` 为单个 binary 生成 LLVM sample profile。把这三个阶段写反，后面的命令和文件名就会全部错位。
+
+[图：AutoFDO 数据流程示意。设备侧运行 `simpleperf record` 产出 `perf.data`；host 侧运行 `simpleperf inject --output branch-list` 产出 `branch_list.data`；随后 `create_llvm_prof` 针对 `vmlinux` 生成 `kernel.afdo`；最后构建系统在 Kleaf / DDK 中消费 `kernel.afdo`。]
 
 **Step 1：构建代表性工作负载**
 
@@ -100,32 +134,43 @@ Google 在实验室环境中模拟真实用户的使用模式。工作负载包�
 - 启动 Top 100 最受欢迎的应用（来自 [Android App Compatibility Test Suite (C-Suite)](https://android.googlesource.com/platform/test/app_compat/csuite/)）
 - 覆盖前台交互、后台工作、跨进程通信等系统级行为
 
-Google 的测试表明，这套合成工作负载与从内部设备 fleet 采集到的真实执行模式有 **85% 的相似度**——足以代表真实用户场景。
+Google 的测试表明，这套合成工作负载与从内部设备 fleet 采集到的真实执行模式有 **85% 的相似度**，已经足够接近真实用户场景。
 
-**Step 2：使用 simpleperf 采集 ETM 数据**
+**Step 2：设备侧使用 simpleperf 采集 ETM 数据**
 
 在测试设备上运行：
 
-```
-simpleperf record -e cs-etm:k -a --duration 60
+```bash
+adb root
+adb shell simpleperf record -e cs-etm:k -a -o /data/local/tmp/perf.data --duration 60
 ```
 
-这条命令让 simpleperf 通过 Coresight ETM 采集整个系统的内核分支追踪数据。`cs-etm:k` 表示 Coresight ETM 事件，仅追踪内核态（`:k` 后缀）。
+这一步的产物是 `perf.data`。`cs-etm:k` 表示 Coresight ETM 事件，只追踪内核态（`:k` 后缀）。
 
 `[已验证: AOSP system/extras/simpleperf/doc/collect_etm_data_for_autofdo.md]`
 
-**Step 3：转换为 AutoFDO Profile 格式**
+**Step 3：host 侧把 `perf.data` 转成 branch-list**
 
-采集到的 ETM 原始数据（`branch_list.data`）需要转换为 LLVM 编译器能识别的 profile 格式：
+把设备上的采样结果拉回 host 后，再执行转换：
 
+```bash
+adb pull /data/local/tmp/perf.data .
+simpleperf inject -i perf.data --output branch-list -o branch_list.data
 ```
-simpleperf inject --itrace=etm --branch-list branch_list.data -o injected.data
-create_llvm_prof --binary=vmlinux --input=injected.data --output=profile.afdo
+
+`branch_list.data` 才是后续 AutoFDO 工具真正消费的输入。也就是说，branch-list 是 `simpleperf inject` 的输出，不是 `create_llvm_prof` 的输出。
+
+**Step 4：为单个 binary 生成 LLVM sample profile**
+
+```bash
+create_llvm_prof -profile branch_list.data -profiler text -binary vmlinux -out kernel.afdo -format binary
 ```
 
-`create_llvm_prof` 是 [AutoFDO 开源项目](https://github.com/google/autofdo) 提供的工具，将分支追踪数据转换为 LLVM profile 格式（`.afdo` 文件）。
+这里有两个细节必须说清楚。
 
-`[待验证: create_llvm_prof 的具体参数和配置在 Android 构建系统中的集成方式]`
+第一，`create_llvm_prof` 的输入是 `branch_list.data`，不是 `perf.data`，也不是某个“injected.data”中间文件。第二，它一次只处理一个 binary。内核场景通常就是 `vmlinux`；如果 branch-list 里混入多个目标，需要先按 binary 拆分，再分别生成 profile。
+
+`[待验证: create_llvm_prof 的具体 flag 名称会随 AutoFDO 工具版本调整，但 branch-list 是输入、LLVM sample profile 是输出，这个顺序是稳定的]`
 
 ### 编译器如何利用 Profile
 
@@ -143,18 +188,19 @@ create_llvm_prof --binary=vmlinux --input=injected.data --output=profile.afdo
 
 ### 与 dex2oat 的关系
 
-这里需要澄清一个容易混淆的点。Android 有两层编译优化：
+这里最容易混的是“谁决定编什么”和“谁自己被编得更好”。
 
-**第一层：ART/dex2oat 层**——针对 Java/Kotlin 字节码。`dex2oat` 的 `speed-profile` 编译器过滤器使用 Baseline Profiles 或 JIT 积累的运行时 profile，决定哪些 Java 方法需要 AOT 编译。这是我们在 [1.7 ART 编译管线](07-art-compilation.md) 中详细讨论的。
+Baseline Profiles 和 `speed-profile` 解决的是前者。App 安装或后台 dexopt 时，ART 根据 profile 决定哪些 Java/Kotlin 方法值得做 AOT 编译，重点是**编译范围**。这一层发生在 `dex2oat` 处理 DEX / OAT 的时候。这部分内容我们已经在 [1.7 ART 编译管线](07-art-compilation.md) 里展开过。
 
-**第二层：LLVM/Clang 层**——针对原生代码（C/C++）。AutoFDO 在这一层工作，优化内核和原生库的机器码生成。它优化的是 `dex2oat` 这个工具本身的执行效率，而不是直接优化 Java 字节码。
+AutoFDO 解决的是后者。它不告诉 ART “哪些 Java 方法要编译”，而是把真实运行时的热点反馈给 LLVM / Clang，让内核、Bionic、系统 native library，甚至 `dex2oat` 这样的原生可执行文件，在重新构建时得到更好的代码布局、分支预测和内联结果。冷启动收益的主路径来自**内核与系统 native binary 的运行时 hot path 被优化**，不是 `dex2oat` 自己跑得更快这一点。
 
-换句话说：
+所以更准确的关系应该写成：
 
-- Baseline Profiles → 影响 `dex2oat` 编译**什么** Java 方法
-- AutoFDO → 影响 `dex2oat` 这个**二进制程序**编译得有多快
+- Baseline Profiles / `speed-profile` → 决定哪些 App 方法做 AOT
+- AutoFDO → 优化内核和系统 native binary 的机器码质量
+- `dex2oat` → 只是可能从 AutoFDO 受益的一个 native executable，不是 AutoFDO 在启动优化里的唯一目标
 
-两者互补，作用于不同的抽象层。
+这三者可以叠加，但不能互相替代。
 
 ## 实测性能数据
 
@@ -205,43 +251,62 @@ Google 在 Pixel 设备上，对 `android16-6.12`、`android15-6.6` 和 `6.1` �
 
 ### 系统级集成
 
-内核 AutoFDO 的部署路径如下：
+这里要先把两类对象分开。Android 12 起，Google 已经在 userspace / native binary 上使用 AutoFDO；Android 15 和 Android 16 则把同样的思路推进到 GKI 内核。读 AOSP 时最容易犯的错，就是把不同 GKI 分支的 profile 目录写成同一路径。
 
-1. **Profile 仓库**：AutoFDO profile 存放在 AOSP 的内核仓库中，按内核版本和架构组织：
-   - `android16-6.12`: `kernel/common/android/gki/aarch64/afdo/`
-   - `android15-6.6`: `kernel/common/android/gki/aarch64/afdo/`
+| 方向 | 版本 / 分支 | 主要对象 | AOSP 验证锚点 |
+|------|-------------|----------|---------------|
+| userspace / native AutoFDO | Android 12+ | 系统 native library、native executable | Google blog + 系统构建说明 |
+| kernel AutoFDO | `android15-6.6` | GKI `vmlinux` | `android/gki/aarch64/afdo/README.md`、`kernel.afdo` |
+| kernel AutoFDO | `android16-6.12` | GKI `vmlinux` | `gki/aarch64/afdo/README.md`、`kernel.afdo` |
 
-2. **构建集成**：Android 内核构建系统（Kleaf）在编译 GKI 内核时自动应用这些 profile。OEM 只要在 GKI 基础上构建，就自动受益。
+如果把仓库前缀也写全，可以理解成在 `kernel/common` 仓库里，只是分支内部的相对路径不同：
 
-3. **持续更新**：Google 在每个 GKI 发布前刷新 profile，确保 profile 与最新代码保持同步。代码会随时间"漂移"，静态 profile 的效果会逐渐衰减——持续的 profile 刷新是维持优化效果的关键。
+- `android15-6.6` → `android/gki/aarch64/afdo/`
+- `android16-6.12` → `gki/aarch64/afdo/`
 
-`[已验证: AOSP kernel/common 仓库, android16-6.12 分支, gki/aarch64/afdo/ 目录]`
+这个 `android/` 目录的差别看起来很小，但会直接决定你能不能找到正确的 `README.md` 和 `kernel.afdo`。
+
+`[已验证: AOSP kernel/common 仓库中，android15-6.6 与 android16-6.12 分支目录结构不同；可用 README.md 与 kernel.afdo 交叉核对]`
 
 ### OEM 能做什么
 
-对于使用 GKI 内核的 OEM（Android 13+ 的合规要求），内核 AutoFDO 是自动生效的。但 OEM 还有额外优化空间：
+对于直接使用 GKI 的 OEM，内核 AutoFDO 的基础收益会跟着 Google 维护的 profile 一起进入构建流程。真正需要自己处理的，主要是 vendor module 和自研内核这两类额外目标。
 
-**Vendor 模块优化**：Google 正在扩展 AutoFDO 支持 vendor 模块（通过 [Driver Development Kit (DDK)](https://android.googlesource.com/kernel/build/+/refs/heads/main/kleaf/docs/ddk/main.md) 构建的硬件驱动）。Kleaf 构建系统和 simpleperf 已经支持了内核模块的 AutoFDO profile 采集和构建集成。OEM 可以为自己的 Camera HAL、GPU 驱动、传感器驱动等生成专属 profile。
+在动手之前，我们先确认四个前置条件：
 
-**非 GKI 内核**：如果设备使用自研内核（部分低端设备或特殊形态设备），需要自行搭建 AutoFDO 采集管线。Google 提供了完整的工具链：
+- 设备是 ARM64，并且具备 ETM 能力；ARMv9 设备通常会把这套能力演进为 ETE + TRBE。
+- 构建版本至少是 `userdebug` / `eng`，并能 `adb root`，否则 ETM 采集往往拿不到完整数据。
+- host 侧要有未剥离的 `vmlinux` 或目标模块符号，`create_llvm_prof` 需要把 branch-list 映射回真实符号。
+- 构建系统要能把生成的 profile 接到 Kleaf / DDK 的构建配置里，否则采集结果没法真正进入编译。
 
+最小可复现流程可以按三个阶段理解。
+
+**device 侧：采集 `perf.data`**
+
+```bash
+adb root
+adb shell simpleperf record -e cs-etm:k -a -o /data/local/tmp/perf.data --duration 120
+adb pull /data/local/tmp/perf.data .
 ```
-# 1. 采集 ETM 数据
-simpleperf record -e cs-etm:k -a --duration 120
 
-# 2. 转换为 AutoFDO 格式
-simpleperf inject --itrace=etm --branch-list branch_list.data -o injected.data
-create_llvm_prof --binary=vmlinux --input=injected.data --output=custom.afdo
+**host 侧：转换成 branch-list，再生成 LLVM sample profile**
 
-# 3. 在内核构建中应用
-# Kleaf 构建系统会自动识别 afdo/ 目录下的 profile 文件
+```bash
+simpleperf inject -i perf.data --output branch-list -o branch_list.data
+create_llvm_prof -profile branch_list.data -profiler text -binary vmlinux -out kernel.afdo -format binary
 ```
 
-`[待验证: Kleaf 构建系统中 AFDO_PROFILE 变量的具体配置方式]`
+**build 侧：把 profile 接回目标构建**
+
+- GKI 内核：把 `kernel.afdo` 放回对应分支的 `gki/aarch64/afdo/` 或 `android/gki/aarch64/afdo/` 目录，由 Kleaf 在对应 `kernel_build` 中消费。
+- vendor module：在 DDK 模块的 profile 配置里显式引用对应的 `.afdo` 文件，再触发模块重编。
+- 如果 profile 覆盖多个 target，要按 binary 拆分，分别生成 profile；`create_llvm_prof` 不是“一个 profile 喂所有 binary”的工具。
+
+`[待验证: Kleaf / DDK 的具体属性名会随分支演进调整，但“device 采集 → host 转换 → build 接入”这三段职责划分是稳定的]`
 
 ### App 开发者能做什么
 
-内核 AutoFDO 对 App 开发者完全透明，不需要任何操作。但 App 开发者能做的是：确保自己的 App 使用了 **Baseline Profiles**（参见 [8.7 Baseline Profiles 与编译优化实践](../../part2-performance/ch08-responsiveness/07-baseline-profiles.md)），这样 App 层和系统层的编译优化同时生效，叠加收益最大。
+内核 AutoFDO 对 App 开发者完全透明，不需要任何操作。但 App 开发者能做的是：确保自己的 App 使用了 **Baseline Profiles**（参见 [8.7 Baseline Profiles 与编译优化实践](../../part2-performance/ch08-responsiveness/07-baseline-profiles.md)），这样 App 层和系统层的编译优化可以同时生效，叠加收益最大。
 
 ## 在 Perfetto 中的观测
 
