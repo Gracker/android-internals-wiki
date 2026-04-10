@@ -2691,5 +2691,58 @@
     "added_at": "2026-04-11T03:06:00+08:00",
     "status": "pending",
     "original_review_log": "logs/review/2026-04-11-03-review.md"
+  },
+  {
+    "section": "1.12",
+    "section_title": "AutoFDO 反馈导向编译优化",
+    "priority": 95,
+    "reason": "[Deep Tech Review] AOSP AutoFDO profile 路径与 ETM→profile 命令链存在事实错误，会误导源码定位和复现流程",
+    "material_paths": [
+      "intake/suggestions.md",
+      "intake/research-gaps.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "frontmatter sources + “Android 16 中的支持状态”（行 18, 209-212）",
+        "detail": "文中把 android16-6.12 和 android15-6.6 的 profile 目录都写成 `kernel/common/android/gki/aarch64/afdo/`。实际分支路径不同：android16-6.12 为 `gki/aarch64/afdo/`，android15-6.6 为 `android/gki/aarch64/afdo/`。当前写法会直接把读者带到错误目录。",
+        "suggestion": "按分支分别给出精确 AOSP 路径，并补充 `kernel.afdo` / `README.md` 作为验证锚点。"
+      },
+      {
+        "type": "源码错误",
+        "location": "“转换为 AutoFDO Profile 格式”与 OEM 工具链示例（行 118-123, 227-233）",
+        "detail": "当前命令把 `branch_list.data` 当成 simpleperf inject 的输入，并生成 `injected.data` 交给 `create_llvm_prof`。而 AOSP simpleperf 文档/afdo README 的链路是先用 `simpleperf inject --output branch-list -o branch_list.data` 生成 branch-list，再由 `create_llvm_prof` 消费 branch-list（通常按 binary 拆分）生成 sample profile。当前命令链前后顺序反了。",
+        "suggestion": "重写 ETM→branch_list→create_llvm_prof 的完整 host/device 流程，明确 branch-list 的生产者、消费者，以及 per-binary 约束。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-11T03:24:00+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "1.12",
+    "section_title": "AutoFDO 反馈导向编译优化",
+    "priority": 85,
+    "reason": "[Deep Tech Review] AutoFDO 与 dex2oat 的因果关系表述偏差，且 OEM 复现链路缺少关键前置条件/构建挂点",
+    "material_paths": [
+      "intake/research-gaps.md"
+    ],
+    "review_issues": [
+      {
+        "type": "原理断裂",
+        "location": "“与 dex2oat 的关系”（行 143-156）",
+        "detail": "文中把 AutoFDO 的主要作用概括成“影响 dex2oat 这个二进制程序编译得有多快”。这会误导读者把冷启动收益归因到 dex2oat 执行速度，而实际冷启动收益主要来自内核与系统原生二进制/库的运行时 hot path 被优化，和安装/后台编译阶段的 dex2oat 不是同一条主链路。",
+        "suggestion": "改成“Baseline Profiles 决定哪些 app 方法被 AOT；AutoFDO 优化内核/系统 native binary 的机器码布局与分支预测”，并单独注明 dex2oat 只是可能受益的 native executable 之一。"
+      },
+      {
+        "type": "知识盲区",
+        "location": "“OEM 能做什么”（行 221-239）",
+        "detail": "章节告诉 OEM 可以为自研内核/模块接入 AutoFDO，但没有交代 ETM/ETE/TRBE 采集前置条件、root/debug 约束、host 侧符号准备、以及 Kleaf/DDK 的具体接入点。对目标读者来说，这一段还不足以形成可执行方案。",
+        "suggestion": "补一个最小可复现链路：设备硬件前提 → simpleperf 采集 → host 侧 profile 转换 → Kleaf/DDK 挂接 profile 的 BUILD/Bazel 入口。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-11T03:24:00+08:00",
+    "status": "pending"
   }
 ]

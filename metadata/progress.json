@@ -1400,8 +1400,9 @@
       "status": "ready-for-review",
       "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
-      "task9_state": "pending",
-      "task2b_state": "pending"
+      "task9_state": "reviewed",
+      "task2b_state": "pending",
+      "task9_result": "needs-rework"
     },
     "src/part1-fundamentals/ch01-architecture/11-zygote-startup.md": {
       "chapter": "1.11",
@@ -2814,6 +2815,17 @@
         "Binder buffer 1MB precise source path missing (P2)",
         "App Startup 35-42% quant claim still in body despite [待验证] (P2)"
       ]
+    },
+    "1.12": {
+      "reviewed_date": "2026-04-11",
+      "reviewed_by": "openclaw-task6",
+      "review_status": "ready-for-review",
+      "deep_review_date": "2026-04-11T03:24:00+08:00",
+      "deep_review_by": "task9-deep-tech-review",
+      "deep_review_score": 2.5,
+      "deep_review_p0": 2,
+      "deep_review_p1": 2,
+      "deep_review_p2": 3
     }
   }
 }
