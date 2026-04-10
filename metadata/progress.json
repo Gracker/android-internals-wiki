@@ -8,11 +8,11 @@
     "reviewed": 5,
     "finalized": 37,
     "staging_drafts": 0,
-    "last_updated": "2026-04-10T10:40:00+08:00",
+    "last_updated": "2026-04-10T10:45:00+08:00",
     "processing": 0,
     "ready-to-publish": 17,
     "last_reviewed": "2026-04-10",
-    "last_reviewed_section": "14.2 Simpleperf",
+    "last_reviewed_section": "14.3 内存分析工具",
     "reviewed_today": 17,
     "ready_to_publish": 1
   },
@@ -979,6 +979,23 @@
         "6处「你」→「我们」（writing-guide §3.5）",
         "元数据：补 reviewed_date/reviewed_by",
         "status: ready-for-review → finalized"
+      ],
+      "scores": {
+        "structure": 5,
+        "expression": 5,
+        "consistency": 5,
+        "verification": 5,
+        "metadata": 5
+      }
+    },
+    "14.3": {
+      "title": "内存分析工具",
+      "reviewed_date": "2026-04-10",
+      "reviewed_by": "openclaw-task6",
+      "review_status": "finalized",
+      "fixes_applied": [
+        "元数据：补 reviewed_date/reviewed_by",
+        "状态：ready-for-review → finalized"
       ],
       "scores": {
         "structure": 5,
@@ -2372,7 +2389,7 @@
     }
   ],
   "ready_for_review": 5,
-  "last_updated": "2026-04-10T10:40:00+08:00",
+  "last_updated": "2026-04-10T10:45:00+08:00",
   "stats": {
     "total": 163,
     "completed": 140,
@@ -2706,6 +2723,21 @@
     }
   ],
   "history": [
+    {
+      "date": "2026-04-10",
+      "section": "14.3",
+      "title": "内存分析工具",
+      "action": "reviewed-finalized",
+      "review_by": "openclaw-task6",
+      "fixes": 2,
+      "scores": {
+        "structure": 5,
+        "expression": 5,
+        "consistency": 5,
+        "verification": 5,
+        "metadata": 5
+      }
+    },
     {
       "date": "2026-04-10",
       "section": "14.2",
