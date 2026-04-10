@@ -2,7 +2,9 @@
 title: "Simpleperf"
 chapter: "14.2"
 section: "14.2"
-status: ready-for-review
+status: finalized
+reviewed_date: "2026-04-10"
+reviewed_by: "openclaw-task6"
 drafted_date: "2026-04-03"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 5.0 (API 21) - Android 16 (API 36)"
@@ -53,7 +55,7 @@ related_chapters: ["13.1", "13.2", "13.6", "14.1"]
 
 这时候就需要 CPU profiling 工具了。Android Studio Profiler 的 Callstack Sample 功能底层用的就是 Simpleperf（详见 14.1 节），但 IDE 集成的方案有时不够灵活——比如需要在 CI 环境中自动采集、需要 profiling 系统进程、或者需要使用特定的硬件 PMU 事件做深度分析。这些场景下，命令行的 Simpleperf 是不可替代的。
 
-Simpleperf 是 Android NDK 中自带的 CPU profiling 工具，它的设计思路来源于 Linux 的 `perf` 工具，但针对 Android 做了大量适配：能识别 APK 内嵌的 so 库、支持 Java/Kotlin 代码的采样（Android 9+）、能生成带符号解析的 HTML 报告。如果你在 Linux 上用过 `perf record` + `perf report` 的工作流，上手 Simpleperf 会非常自然。
+Simpleperf 是 Android NDK 中自带的 CPU profiling 工具，它的设计思路来源于 Linux 的 `perf` 工具，但针对 Android 做了大量适配：能识别 APK 内嵌的 so 库、支持 Java/Kotlin 代码的采样（Android 9+）、能生成带符号解析的 HTML 报告。如果我们在 Linux 上用过 `perf record` + `perf report` 的工作流，上手 Simpleperf 会非常自然。
 
 [已验证: 官方文档, developer.android.com/ndk/guides/simpleperf]
 
@@ -65,7 +67,7 @@ Simpleperf 基于 Linux 内核的 `perf_event_open` 系统调用。这个系统�
 
 整个流程是这样的：Simpleperf 向内核注册采样事件，内核按频率触发中断，中断处理函数收集当前 CPU 状态（PC、调用栈），Simpleperf 将收集到的样本写入 `perf.data` 文件。最后我们用 `simpleperf report` 分析这个文件，就能看到各个函数被采样到的频率——频率越高，说明 CPU 在这个函数上花的时间越多。
 
-这里有一个关键点需要理解：Simpleperf 是**统计性采样**，不是全量追踪。它记录的是"CPU 在哪些函数上花了时间"的概率分布，而不是每一次函数调用的精确耗时。这意味着对于执行频率非常低但每次都很慢的函数，Simpleperf 可能采样不到。如果你需要精确追踪每一帧每个函数的耗时，应该用 AS Profiler 的 Java Method Trace（详见 14.1 节）。
+这里有一个关键点需要理解：Simpleperf 是**统计性采样**，不是全量追踪。它记录的是"CPU 在哪些函数上花了时间"的概率分布，而不是每一次函数调用的精确耗时。这意味着对于执行频率非常低但每次都很慢的函数，Simpleperf 可能采样不到。如果我们需要精确追踪每一帧每个函数的耗时，应该用 AS Profiler 的 Java Method Trace（详见 14.1 节）。
 
 [已验证: 官方文档, android.googlesource.com/platform/system/extras/+/master/simpleperf/README.md]
 
@@ -176,7 +178,7 @@ Simpleperf 的一大优势在于它不仅能采样 CPU 时间，还能利用 ARM
 - **cpu-clock**（task-clock 的别名）：跟踪线程在 CPU 上的运行时间（以纳秒为单位）。与 cpu-cycles 的区别是：cpu-clock 不关心 CPU 频率，纯粹按时间采样。
 - **task-clock**：与 cpu-clock 类似，但还包括线程等待 CPU 调度的时间。
 
-日常分析中，用默认的 cpu-cycles 就足够了。如果你需要精确到"时间"而非"周期"，可以改用 task-clock。
+日常分析中，用默认的 cpu-cycles 就足够了。如果我们需要精确到"时间"而非"周期"，可以改用 task-clock。
 
 ### 硬件 PMU 事件
 
@@ -315,7 +317,7 @@ Simpleperf 最初是为 Native（C/C++）代码 profiling 设计的，在 Native
 
 Native 代码 profiling 最常见的问题是：火焰图中只看到一堆十六进制地址，看不到函数名。这通常是因为符号信息缺失。
 
-解决方法是确保 Simpleperf 能找到带调试符号的 so 文件。如果你用的是 `app_profiler.py`，它会自动在 `binary_cache/` 目录中收集需要的文件。如果需要手动指定：
+解决方法是确保 Simpleperf 能找到带调试符号的 so 文件。如果我们用的是 `app_profiler.py`，它会自动在 `binary_cache/` 目录中收集需要的文件。如果需要手动指定：
 
 ```bash
 # 构建 binary_cache
@@ -345,7 +347,7 @@ python <ndk-path>/simpleperf/app_profiler.py \
 
 当 profiling 涉及内核代码（比如系统调用、驱动、调度器）时，我们需要内核符号信息才能看到有意义的函数名。Android 设备上的 `/proc/kallsyms` 文件包含了内核符号表。
 
-默认情况下，出于安全考虑，Android 设备的 `/proc/kallsyms` 对非 root 用户不可读。需要 root 权限才能访问。如果你有 root 设备或使用 userdebug build：
+默认情况下，出于安全考虑，Android 设备的 `/proc/kallsyms` 对非 root 用户不可读。需要 root 权限才能访问。如果我们有 root 设备或使用 userdebug build：
 
 ```bash
 # 导出内核符号
@@ -390,7 +392,7 @@ profileable 模式下，Simpleperf 只能采集 CPU 采样数据，无法录制 
 
 当在 Perfetto UI 中启用 callstack sampling 后，Trace 中会出现一个 `CPU Profile` 的 flamegraph 图标，点击即可查看火焰图。这个火焰图的数据来源和 Simpleperf 是同一个内核接口（`perf_event_open`），只是采集和展示框架不同。
 
-反过来，如果你已经用 Simpleperf 采集了 `perf.data`，也可以通过 Perfetto 的 `trace_processor` 导入分析——虽然这不如直接用 Simpleperf 自带的报告工具方便。
+反过来，如果我们已经用 Simpleperf 采集了 `perf.data`，也可以通过 Perfetto 的 `trace_processor` 导入分析——虽然这不如直接用 Simpleperf 自带的报告工具方便。
 
 [图：Perfetto UI 中的 CPU Callstack 视图，标注火焰图入口和数据来源说明]
 
