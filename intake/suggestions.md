@@ -681,3 +681,29 @@
 - **问题**：本章把 Binder 线程池写成“默认最大 16 个线程”，版本表又写成“Android 8.0 从 8 扩展到 16”；而 §1.4 写的是“默认最大 15 个 binder worker threads（不含主线程）”。两章实际在“总线程数”与“worker 线程数”之间切换，但正文没有说明，读者会以为全书自相矛盾。
 - **建议**：统一改成“默认上限 15 个 binder worker threads；常见总线程数上限为 16（含启动/join 线程）”，并删除“Android 8.0 从 8→16”的表述。
 
+
+
+## [Task6 Review] 1.11 Zygote 机制与启动性能优化 — 2026-04-11
+- **类型**：需确认
+- **位置**：开头第 1 段（system_server → Zygote 请求链路）
+- **问题**：system_server 向 Zygote 发起创建进程请求的通信机制写成了 Binder，存在技术事实风险。
+- **建议**：由 Task 9 核对 AOSP 调用链，再由 Task 2B 回写为准确表述。
+- **review 日志**：logs/review/2026-04-11-05-review.md
+
+- **类型**：存疑
+- **位置**：“preloadOpenGL” 段
+- **问题**：把 `preloadOpenGL()` 直接等同于“每个 App 的 GPU 上下文初始化已完成”，表述边界过宽。
+- **建议**：区分驱动/EGL 预热与 App 侧 GPU context 创建，必要时降级为更保守的描述。
+- **review 日志**：logs/review/2026-04-11-05-review.md
+
+- **类型**：需补充素材
+- **位置**：Android 17 版本演进表（DeliQueue 量化收益）
+- **问题**：“P95 冷启动首帧时间改善约 9%”缺少可追溯来源。
+- **建议**：补充 Google 官方博客、实验记录或原始研究素材；若找不到，则改成定性描述。
+- **review 日志**：logs/review/2026-04-11-05-review.md
+
+- **类型**：需确认
+- **位置**：Perfetto SQL 段的验证标注（2 处）
+- **问题**：`[已验证: L2]` 不是可追溯验证来源，当前验证标注不完整。
+- **建议**：补充具体 Trace、SQL 运行结果截图或官方文档出处，再保留 [已验证]。
+- **review 日志**：logs/review/2026-04-11-05-review.md

@@ -1,9 +1,12 @@
 ---
 title: "Zygote 机制与启动性能优化"
 chapter: "1.11"
+section: "1.11"
 status: ready-for-review
 drafted_date: "2026-04-05"
 drafted_by: "openclaw-task2a"
+reviewed_date: "2026-04-11"
+reviewed_by: "openclaw-task6"
 applicable_versions: "Android 5.0 (API 21) - Android 17 (API 37)"
 last_verified: "2026-04-05"
 last_verified_against: "AOSP android-16.0.0_r1"
@@ -29,6 +32,11 @@ sources:
     path: "obsidian/Cubox/From Biology to Code- How Android's Zygote Enables Fast and Efficient App Launching-2025-07-27.md"
 tags: [zygote, fork, startup, preload, class-loading, USAP, COW, perfetto]
 related_chapters: ["1.2", "1.3", "8.2", "8.3"]
+pipeline_stage: task2b_pending
+task6_state: reviewed
+task6_result: needs-rework
+task9_state: pending
+task2b_state: pending
 ---
 
 # 1.11 Zygote 机制与启动性能优化
@@ -90,7 +98,7 @@ related_chapters: ["1.2", "1.3", "8.2", "8.3"]
 
 ## 为什么要了解 Zygote
 
-如果你分析过 Android 应用的冷启动，一定在 Perfetto 里见过这样的场景：点击图标后，system_server 先通过 Binder 通知 Zygote fork 一个新进程，新进程在几毫秒内完成 fork，然后开始执行 `ActivityThread.main()`。这个 fork 过程本身通常只需要 5-15ms，但它背后的机制决定了冷启动后续阶段的快慢——新进程从 Zygote 继承的预加载资源越多，App 启动时需要重新加载的东西就越少。
+如果我们分析过 Android 应用的冷启动，一定在 Perfetto 里见过这样的场景：点击图标后，system_server 先通过 Binder 通知 Zygote fork 一个新进程，新进程在几毫秒内完成 fork，然后开始执行 `ActivityThread.main()`。[存疑：system_server 与 Zygote 的创建进程请求通常经由 Zygote socket/LocalSocket，而非 Binder；需 Task 9 核对 AOSP 调用链。] 这个 fork 过程本身通常只需要 5-15ms，但它背后的机制决定了冷启动后续阶段的快慢——新进程从 Zygote 继承的预加载资源越多，App 启动时需要重新加载的东西就越少。
 
 Zygote（受精卵）这个名字来自生物学：一个细胞通过分裂产生所有其他细胞。Android 的 Zygote 进程做的事情类似——它在系统启动时预加载所有常用的 Java 类、系统资源和 ART 运行时环境，然后通过 `fork()` 系统调用创建每一个 App 进程和 SystemServer 进程。这些 fork 出来的子进程通过 COW（Copy-on-Write）共享 Zygote 的内存页，直到它们第一次修改某个页面才发生实际的内存拷贝。
 
@@ -199,7 +207,7 @@ ZygoteServer.runSelectLoop()
 
 **fork 后的特化**（在子进程中）：`specializeAppProcess()` 根据请求中的参数设置 UID、GID、SELinux 上下文、nice name 等，将通用的 Zygote 子进程"特化"为特定的 App 进程。然后调用 `ZygoteInit.zygoteInit()` 初始化 Binder 线程池、打开 `/dev/binder`，最后通过反射调用 `ActivityThread.main()` 进入 App 的主循环。
 
-整个过程在 Perfetto 中表现为：在 Zygote 进程的时间线上，你会看到一个很短的 Running 片段（fork 本身通常 5-15ms），然后子进程开始出现在 Trace 中。如果在 Trace 中看到 `boot_progress_preload_start` 到 `boot_progress_preload_end` 的 logcat 事件，那是系统启动阶段 Zygote 预加载的耗时标记。
+整个过程在 Perfetto 中表现为：在 Zygote 进程的时间线上，我们会看到一个很短的 Running 片段（fork 本身通常 5-15ms），然后子进程开始出现在 Trace 中。如果在 Trace 中看到 `boot_progress_preload_start` 到 `boot_progress_preload_end` 的 logcat 事件，那是系统启动阶段 Zygote 预加载的耗时标记。
 
 [已验证: AOSP, frameworks/base/core/java/com/android/internal/os/Zygote.java] [来源: obsidian/Cubox/From Biology to Code- How Android's Zygote Enables Fast and Efficient App Launching-2025-07-27.md]
 
@@ -240,7 +248,7 @@ Zygote 预加载的 Java 类列表定义在 `frameworks/base/config/preloaded-cl
 
 **共享库**：`preloadSharedLibraries()` 加载 `android.graphics` 等包含 JNI 方法的共享库。这确保了所有 App 启动时这些 native 库已经加载完毕。
 
-**OpenGL 相关**：`preloadOpenGL()` 预加载 OpenGL 驱动和 EGL 环境。对于使用硬件加速渲染的 App（几乎所有现代 App），这意味着 GPU 上下文的初始化工作在 Zygote 阶段就已经完成。
+**OpenGL 相关**：`preloadOpenGL()` 预加载 OpenGL 驱动和 EGL 环境。对于使用硬件加速渲染的 App（几乎所有现代 App），这意味着 GPU 上下文的初始化工作在 Zygote 阶段就已经完成。[存疑：`preloadOpenGL()` 更接近驱动/EGL 预热，不等于每个 App 的 GPU 上下文都已完成初始化；需 Task 9 核对表述边界。]
 
 **文本资源**：`preloadTextResources()` 预加载 ICU（International Components for Unicode）数据，这对文本渲染和国际化支持是必需的。
 
@@ -299,7 +307,7 @@ Zygote fork 出子进程后，在子进程中执行的关键步骤是：
 5. **安装 ContentProvider**：调用 `installContentProviders()` 安装所有声明的 ContentProvider
 6. **调用 Application.onCreate()**：App 的初始化入口
 
-步骤 2 和 3 之间有一个关键的 Binder 调用（步骤 4），这就是为什么在 Perfetto 中冷启动的子进程初始化阶段，你经常看到主线程有一段短暂的 Sleeping——它在等 system_server 的 Binder 回复。
+步骤 2 和 3 之间有一个关键的 Binder 调用（步骤 4），这就是为什么在 Perfetto 中冷启动的子进程初始化阶段，我们经常看到主线程有一段短暂的 Sleeping——它在等 system_server 的 Binder 回复。
 
 [已验证: AOSP, frameworks/base/core/java/android/app/ActivityThread.java] [来源: obsidian/Cubox/Systrace角度- 拆解分析应用的启动流程 · 李海洲-2022-11-02.md]
 
@@ -307,7 +315,7 @@ Zygote fork 出子进程后，在子进程中执行的关键步骤是：
 
 在 Perfetto 中分析冷启动时，可以通过以下方式区分两个阶段：
 
-**Zygote fork 阶段**：在 Zygote 进程的 track 上，你会看到一个短暂的 Running 片段，对应 `Zygote.forkAndSpecialize()` 的执行。这个片段通常很短（5-15ms）。紧接着，一个新的进程出现在 Trace 中——这就是 fork 出来的 App 进程。
+**Zygote fork 阶段**：在 Zygote 进程的 track 上，我们会看到一个短暂的 Running 片段，对应 `Zygote.forkAndSpecialize()` 的执行。这个片段通常很短（5-15ms）。紧接着，一个新的进程出现在 Trace 中——这就是 fork 出来的 App 进程。
 
 **App 初始化阶段**：在新进程的 track 上，从进程出现开始，到 `Activity.onCreate()` 执行完成为止。这个阶段包括 Binder 初始化、`ActivityThread.main()` 的执行、`Application.onCreate()` 的执行。如果这个阶段很长（比如 500ms+），问题不在 Zygote，而在 App 本身的初始化逻辑。
 
@@ -325,7 +333,7 @@ ORDER BY ts DESC
 LIMIT 10;
 ```
 
-[已验证: L2, Perfetto SQL 语法正确] [待补充: Perfetto 截图]
+[已验证: L2, Perfetto SQL 语法正确] [待补充: Perfetto 截图] [需确认：此处“L2”不是可追溯验证来源，发布前需补具体 Trace 或官方文档出处。]
 
 ### WebViewZygote：独立的 WebView 进程孵化器
 
@@ -333,7 +341,7 @@ LIMIT 10;
 
 原因是安全和内存隔离。WebView 内部运行着 Chromium 渲染引擎，它的攻击面很大——加载的网页可能包含恶意代码。如果 WebView 和 App 共享同一个 Zygote 的预加载内存，WebView 的安全漏洞可能影响到所有 App。
 
-WebViewZygote 的预加载列表比主 Zygote 更精简——只包含 WebView/Chromium 相关的类和资源。这使得 WebViewZygote 的内存占用更可控，同时提供了独立的隔离边界。在 Perfetto 中，你会看到一个名为 `webview_zygote` 的独立进程。
+WebViewZygote 的预加载列表比主 Zygote 更精简——只包含 WebView/Chromium 相关的类和资源。这使得 WebViewZygote 的内存占用更可控，同时提供了独立的隔离边界。在 Perfetto 中，我们会看到一个名为 `webview_zygote` 的独立进程。
 
 [已验证: 官方文档, source.android.com/docs/core/runtime/zygote]
 
@@ -374,7 +382,7 @@ Zygote 在 Android 版本中持续优化：
 - **Android 10（API 29）**：引入 USAP 进程池机制。预加载列表从 `frameworks/base/config/preloaded-classes` 迁移到 APEX 模块中（`apex/com.android.art/etc/preloaded-classes`）。
 - **Android 12（API 31）**：引入 `--enable-lazy-preload` 选项，允许 Zygote 延迟执行部分预加载（主要用在 `zygote_secondary` 32 位进程上，减少不必要的内存开销）。
 - **Android 14/15（API 34/35）**：优化 Zygote 预加载阶段的并行度，减少开机时间。`ZygoteHooks` 的 preFork/postFork 生命周期更加完善，确保 fork 前后运行时状态的一致性。
-- **Android 17（API 37）**：引入 DeliQueue（无锁 MessageQueue），减少主线程消息分发中的锁等待。这对 Zygote fork 后子进程的消息循环启动有优化——Lock-free 队列避免了 fork 后第一个 Message 分发时的锁竞争，实测 P95 冷启动首帧时间改善约 9%。
+- **Android 17（API 37）**：引入 DeliQueue（无锁 MessageQueue），减少主线程消息分发中的锁等待。这对 Zygote fork 后子进程的消息循环启动有优化——Lock-free 队列避免了 fork 后第一个 Message 分发时的锁竞争，实测 P95 冷启动首帧时间改善约 9%。[需补充素材：缺少可追溯来源支撑“P95 冷启动首帧时间改善约 9%”这一定量结论；需 Task 9 / Task 2B 处理。]
 
 [已验证: 官方文档, source.android.com/docs/core/runtime/zygote] [待验证: Android 17 DeliQueue 的具体收益数据]
 
@@ -460,7 +468,7 @@ adb shell "cat /apex/com.android.art/etc/preloaded-classes | wc -l"
 
 ## Zygote 与 Profiling 的关系
 
-Zygote 的 COW 机制会对内存 Profiling 产生一个容易被忽略的影响：当你用 `dumpsys meminfo` 或 Android Studio Profiler 查看 App 的内存占用时，看到的 PSS（Proportional Set Size）包含了按比例分摊的共享页。但 RSS（Resident Set Size）包含了所有 COW 共享页——这些页在 Zygote 和所有 App 之间共享，并非 App 独占。
+Zygote 的 COW 机制会对内存 Profiling 产生一个容易被忽略的影响：当我们用 `dumpsys meminfo` 或 Android Studio Profiler 查看 App 的内存占用时，看到的 PSS（Proportional Set Size）包含了按比例分摊的共享页。但 RSS（Resident Set Size）包含了所有 COW 共享页——这些页在 Zygote 和所有 App 之间共享，并非 App 独占。
 
 正确测量 App 真实独占内存的方法是关注 `Private Dirty` 和 `Private Clean` 这两个指标，它们排除了 COW 共享的部分。
 
