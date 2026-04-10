@@ -1,43 +1,43 @@
 {
-  "generated_at": "2026-04-11T01:15:00+08:00",
+  "generated_at": "2026-04-11T02:05:00+08:00",
   "state_machine_version": "v2",
   "total_sections": 174,
   "metrics": {
     "total": 174,
     "draft": 0,
     "ready-for-review": 172,
-    "pipeline_task6_pending": 173,
+    "pipeline_task6_pending": 172,
     "pipeline_task9_pending": 0,
-    "pipeline_task2b_pending": 1,
+    "pipeline_task2b_pending": 2,
     "pipeline_publish_ready": 0,
-    "task6_pending": 172,
-    "task6_reviewed": 1,
+    "task6_pending": 171,
+    "task6_reviewed": 2,
     "task6_revisiting": 1,
     "task9_pending": 174,
     "task9_reviewed": 0,
-    "task2b_idle": 172,
-    "task2b_pending": 1,
+    "task2b_idle": 171,
+    "task2b_pending": 2,
     "task2b_fixed": 1,
-    "last_updated": "2026-04-11T01:15:00+08:00",
+    "last_updated": "2026-04-11T02:05:00+08:00",
     "unknown": 2
   },
   "pipeline": {
     "pipeline_stage_counts": {
-      "task6_pending": 173,
-      "task2b_pending": 1
+      "task6_pending": 172,
+      "task2b_pending": 2
     },
     "task6_state_counts": {
-      "pending": 172,
-      "revisiting": 1,
-      "reviewed": 1
+      "pending": 171,
+      "reviewed": 2,
+      "revisiting": 1
     },
     "task9_state_counts": {
       "pending": 174
     },
     "task2b_state_counts": {
-      "idle": 172,
-      "fixed": 1,
-      "pending": 1
+      "idle": 171,
+      "pending": 2,
+      "fixed": 1
     }
   },
   "issues": {
@@ -454,7 +454,7 @@
     },
     "src/part2-performance/ch08-responsiveness/08-system-triggered-profiling.md": {
       "chapter": "8.8",
-      "title": "ProfilingManager 系统触发式性能追踪",
+      "title": "ProfilingManager API Reference",
       "path": "src/part2-performance/ch08-responsiveness/08-system-triggered-profiling.md",
       "status": "ready-for-review",
       "pipeline_stage": "task6_pending",
@@ -604,7 +604,7 @@
     },
     "src/part2-performance/ch07-smoothness/14-gaps-dynamic-analysis.md": {
       "chapter": "7.14",
-      "title": "GAPS：Android 动态分析目标可达性路径重建",
+      "title": "Mind the GAPS: Automated Path Reconstruction for Android Method Reachability",
       "path": "src/part2-performance/ch07-smoothness/14-gaps-dynamic-analysis.md",
       "status": "ready-for-review",
       "pipeline_stage": "task6_pending",
@@ -774,7 +774,7 @@
     },
     "src/part2-performance/ch09-anr/07-non-technical-anr-diagnosis.md": {
       "chapter": "9.7",
-      "title": "ANR 非技术故障诊断",
+      "title": "Activity Manager Service ANR 处理",
       "path": "src/part2-performance/ch09-anr/07-non-technical-anr-diagnosis.md",
       "status": "ready-for-review",
       "pipeline_stage": "task6_pending",
@@ -1004,7 +1004,7 @@
     },
     "src/part2-performance/ch18-rendering-pipelines/21-eyedropper-crossdevice.md": {
       "chapter": "18.21",
-      "title": "EyeDropper API 与跨设备协作性能",
+      "title": "System-level Color Picking",
       "path": "src/part2-performance/ch18-rendering-pipelines/21-eyedropper-crossdevice.md",
       "status": "ready-for-review",
       "pipeline_stage": "task6_pending",
@@ -1427,10 +1427,10 @@
       "title": "ContentProvider 性能与优化",
       "path": "src/part1-fundamentals/ch01-architecture/10-content-provider.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "pending",
+      "pipeline_stage": "task2b_pending",
+      "task6_state": "reviewed",
       "task9_state": "pending",
-      "task2b_state": "idle"
+      "task2b_state": "pending"
     },
     "src/part1-fundamentals/ch01-architecture/08-activity-manager.md": {
       "chapter": "1.8",
@@ -2795,6 +2795,26 @@
         "expression": 4,
         "consistency": 4,
         "verification": 3,
+        "metadata": 5
+      }
+    },
+    "1.10": {
+      "reviewed_date": "2026-04-11",
+      "reviewed_by": "openclaw-task6",
+      "review_status": "reviewed",
+      "fixes_applied": [
+        "frontmatter：补 drafted_by，扩展 tags，并写入 task6 review 元数据",
+        "叙述视角：2处“你”→“我们”/中性表达（writing-guide §语言风格）",
+        "格式修正：URI / XML 注释 / App Startup 泛型示例 / 4处参考链接",
+        "清理文末残留研究素材原始笔记"
+      ],
+      "b_class_issues": 1,
+      "review_log": "logs/review/2026-04-11-02-review.md",
+      "scores": {
+        "structure": 2,
+        "expression": 4,
+        "consistency": 4,
+        "verification": 4,
         "metadata": 5
       }
     }

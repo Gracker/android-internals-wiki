@@ -2604,7 +2604,9 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-11T00:47:19+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-11T01:07:31+08:00",
+    "completed_by": "task2b-rework"
   },
   {
     "section": "1.9",
@@ -2632,5 +2634,26 @@
     "added_at": "2026-04-11T01:15:00+08:00",
     "status": "pending",
     "original_review_log": "logs/review/2026-04-11-01-review.md"
+  },
+  {
+    "section": "1.10",
+    "section_title": "ContentProvider 性能与优化",
+    "priority": 90,
+    "reason": "[review回炉] 缺少 outline/锚点设计，Task 6 无法按规范检查锚点覆盖",
+    "material_paths": [
+      "intake/suggestions.md（含 review 意见）"
+    ],
+    "review_issues": [
+      {
+        "type": "需重写",
+        "location": "全文结构",
+        "detail": "缺少 outline-start / outline-end 与锚点设计，Task 6 无法按规范检查锚点覆盖。",
+        "suggestion": "按 writing-guide.md 补齐 outline 块，并让每个锚点至少对应 1 个完整段落。"
+      }
+    ],
+    "added_by": "task6-review",
+    "added_at": "2026-04-11T02:05:00+08:00",
+    "status": "pending",
+    "original_review_log": "logs/review/2026-04-11-02-review.md"
   }
 ]
