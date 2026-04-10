@@ -470,3 +470,15 @@
 - **位置**：L339-346（Input Boost 章节）
 - **问题**：Input Boost 仅描述为"系统标准机制"，但实际各厂商（高通/MTK/华为/三星）定制 ROM 的 Input Boost 策略（提频幅度/持续时间/核心绑定）差异显著，读者在多设备适配时缺乏判断依据。
 - **建议**：在 Input Boost 段落补充 Perfetto CPU Frequency Track 观察方法，说明如何识别各厂商差异；在"常见触摸卡顿原因"第 4 点增加厂商定制差异导致的性能问题的排查思路。
+
+## [Task9 Deep Review] 2.5 MainThread 与 RenderThread 协作 — 2026-04-10
+- **类型**：原理描述精确性
+- **位置**：L167（DisplayList同步机制）
+- **问题**："通过引用计数和资源所有权转移来实现的"——AOSP中RenderNode通过引用传递（主线程持有RenderNode，RenderThread持有对同一对象的引用），并非"所有权转移"语义
+- **建议**：改为"主线程将 RenderNode 引用传递给 RenderThread，RenderThread 持有只读访问权"，或标注[待验证：AOSP实际同步机制]
+
+## [Task9 Deep Review] 2.5 MainThread 与 RenderThread 协作 — 2026-04-10
+- **类型**：数据/案例支撑
+- **位置**：L226-246（正常帧时序示意）
+- **问题**："measure/layout (2-5ms)"、"draw (构建 DisplayList) (5-8ms)" 等具体数值是示意性数据，但未标注
+- **建议**：在时序图下方加注"[示意数据，典型 60Hz 设备参考值，非实测]"

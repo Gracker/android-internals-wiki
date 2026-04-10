@@ -616,3 +616,21 @@ PAMTD（Perceivable Average Minimum Time to Display）= 11ms / 点击可接受�
 
 ### 关联章节
 3.2 触摸响应的性能分析
+
+## [2026-04-10] 2.5 MainThread 与 RenderThread 协作 — 知识盲区
+
+### 盲区描述
+1. **RenderThread Animations API版本溯源**：正文(L380)称"从Android 7.0 (API 24)开始"，版本演进表(L424)称"API 23扩展"，两处矛盾。ViewPropertyAnimator平台API自API 12存在，但其RenderThread执行能力从哪个版本开始？API 23/24各扩展了什么动画类型？
+
+2. **多窗口/PiP场景下RenderThread的调度机制**：多窗口并发时RenderThread如何调度多个Surface？PiP子窗口与主窗口渲染时序？系统内存压力导致GPU资源被抢占时对RenderThread的影响？
+
+### 重要程度
+高
+
+### 建议研究方向
+- 追溯AOSP：RenderThread.cpp中AnimationChannel的引入版本
+- AOSP源码：不同窗口类型（Activity/Dialog/PopupWindow/PiP）渲染路径差异
+- Perfetto trace采集：多窗口/PiP场景实际渲染时序
+
+### 关联章节
+2.3(VSync), 2.4(Choreographer), 2.6(SurfaceFlinger), 3.1(Input分发)
