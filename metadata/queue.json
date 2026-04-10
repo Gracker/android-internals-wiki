@@ -2375,7 +2375,10 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-10T04:34:33",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-10T09:50:33",
+    "completed_by": "task2b-rework",
+    "notes": "修复: Compose pausable composition 补充 FrameData deadlineNanos 判定来源、1.7前行为对比、apply()提交机制、slot table断点管理; Frame Timeline 补充颜色编码规则(绿/红/黄)、Track命名、VSYNC-app与Expected Timeline关系、perfetto抓取命令"
   },
   {
     "section": "12.2",
@@ -2419,6 +2422,9 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-10T09:33:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-10T09:57:50",
+    "completed_by": "task2b-rework",
+    "notes": "修复: applicable_versions 补充版本验证说明(frontmatter version_note); DEFAULT_INPUT_DISPATCHING_TIMEOUT_NANOS 经 web search 验证确在 WMS.java(Task9误报); §9.2 交叉引用经查实存在(Task9误报); InputFlinger 12/13 版本差异补充[待验证]标注"
   }
 ]

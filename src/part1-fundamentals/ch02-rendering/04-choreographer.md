@@ -21,6 +21,9 @@ review5_by: "openclaw-task6"
 rework_reason: "Task6 review 回炉修复：doFrame伪代码修正+总结重写+Compose节重写+补充3个Type A标准节+厂商优化标注"
 rework5_date: "2026-04-10"
 rework5_by: "openclaw-task2b"
+rework6_date: "2026-04-10"
+rework6_by: "openclaw-task2b"
+rework6_reason: "Task9 Deep Tech Review: Compose pausable composition 补充 FrameData deadline 来源和 1.7 前对比; Frame Timeline 补充颜色编码规则和 Track 命名"
 confidence: high
 sources:
   - type: official
@@ -355,7 +358,7 @@ Frame Timeline 是 Perfetto 中理解 Choreographer 帧调度的核心 Track。�
 
 **Actual Timeline（实际时间线）**：每个条形表示 App 实际完成帧渲染并提交给 SurfaceFlinger 的耗时。如果 Actual 条形比 Expected 条形长，说明 App 超出了帧预算，这一帧被延迟呈现。
 
-在 Perfetto 中，Frame Timeline 的典型视图如下：
+在 Perfetto 中，Frame Timeline 通过两条 Track 并排展示：
 
 ```
 FrameTimeline (Expected)  |====|====|====|         |====|====|
@@ -364,16 +367,31 @@ FrameTimeline (Actual)    |====|====|=======|      |====|====|====|
                           V0   V1   V2   延迟呈现   V3   V4   V5
 ```
 
-上图第 3 帧（V2）的 Actual 条形超出了 Expected 条形，说明这一帧的渲染超出了预算，被延迟到下一个 VSync 周期才呈现。Perfetto 还会标注具体的 **JankType**：
+**Track 命名**：在 Perfetto UI 中，Frame Timeline 的 Track 名称通常是 `FrameTimeline`，展开后可见 Expected 和 Actual 两个子 Track。Expected Timeline 的每个 slice 起始时间并非简单的 VSYNC-app 时刻，而是平台综合了 VSync offset、SurfaceFlinger 合成时间、Display 显示延迟后计算出的"最优帧呈现时间窗口"。这就是为什么 Expected Timeline 的 slice 与主线程 Track 中的 VSYNC-app 信号之间存在可观测的时间差。
+
+**颜色编码规则**是 Frame Timeline 最实用的分析入口：
+
+- **绿色**：帧在预期时间内完成，Actual Timeline 未超出 Expected Timeline 边界——无 jank
+- **红色**：App 侧 jank——Actual Timeline 超出了 Expected Timeline 边界，根因在 App 的 `doFrame` 耗时过长
+- **黄色**：SurfaceFlinger 侧 jank——App 侧按时完成了，但 SurfaceFlinger 合成超时（CPU 或 GPU），责任不在 App
+
+上图第 3 帧（V2）的 Actual 条形超出 Expected 条形，在 Perfetto 中会显示为红色，表示 App 侧渲染超时。Perfetto 还会标注具体的 **JankType**：
 
 - `AppDeadlineMissed`：App 侧渲染超时（doFrame 耗时过长）
 - `BufferStuffing`：BufferQueue 中积压了多帧，App 生产速度超过 SurfaceFlinger 消费速度
 - `SfCpuDeadlineMissed`：SurfaceFlinger 的 CPU 合成超时
 - `SfGpuDeadlineMissed`：SurfaceFlinger 的 GPU 合成超时
 
-以及 **PresentType**（`On-time` 或 `Late`），直接告诉我们帧是否按时呈现。这些标注让 Frame Timeline 成了定位"卡顿到底发生在 App 侧还是系统侧"的入口工具。关于 SurfaceFlinger 侧的帧合成分析，详见 §2.6。
+以及 **PresentType**（`On-time` 或 `Late`），直接告诉我们帧是否按时呈现。颜色 + JankType + PresentType 三者组合，让 Frame Timeline 成为定位"卡顿到底发生在 App 侧还是系统侧"的入口工具。关于 SurfaceFlinger 侧的帧合成分析，详见 §2.6。
 
-[图：Perfetto Frame Timeline Track 截图，标注 Expected/Actual 条形和 JankType 指示器]
+Frame Timeline 的抓取需要包含 `gfx view` 等 atrace category。最简命令：
+
+```bash
+adb shell perfetto -o /data/misc/perfetto-traces/trace.perfetto-trace -t 15s \
+  sched freq idle am wm gfx view binder_driver hal
+```
+
+[图：Perfetto Frame Timeline Track 截图，标注 Expected/Actual 条形、颜色编码（绿/红/黄）和 JankType 指示器]
 
 ### 实际分析中的使用
 
@@ -449,9 +467,13 @@ Compose 通过 `AndroidUiDispatcher` 将协程调度与 Choreographer 的帧节�
 
 Compose 1.10（2025 年 12 月稳定版）引入了“可暂停组合”（Pausable Composition），这是一个对帧调度有重大影响的改进。在此之前，Composition 阶段是原子操作——要么一帧内全部完成，要么整帧掉帧。如果 UI 树复杂度高，Composition 可能耗时数毫秒甚至十毫秒以上，超出帧预算后只能放弃这一帧。
 
-可暂停组合的核心机制是 `PausableComposition` 对象的 `resume()` 方法。Lazy Layout 的预取系统（LazyColumn、LazyRow 等）会反复调用 `resume()` 来分步执行组合工作。每次 `resume()` 内部会检查一个 `shouldPause` 回调——这个回调依据 Choreographer 提供的帧截止时间（FrameInfo 中的 deadline）判断当前帧是否还有余量。如果 `shouldPause` 返回 `true`，Composition 立即在下一个“slot 边界”（Composition 树中的自然断点，如一个 Composable 函数的出口）处暂停，把主线程让出来确保当前帧能完成 Traversal 和 Draw 阶段。暂停后的组合工作会在下一帧的 VSync 回调中通过再次调用 `resume()` 继续执行，直到全部完成后通过 `apply()` 将计算结果提交到 UI 树。
+Compose 1.7 在内部引入了 `PausableComposition`，1.10 将其设为默认行为。核心控制流是 `setPausableContent()` → 返回 `PausedComposition` 控制器对象 → 预取系统反复调用 `resume()` 分步执行组合。每次 `resume()` 内部，Compose Runtime 通过 `shouldPause` lambda 频繁检查帧截止时间。这个截止时间来自 Choreographer 在 `doFrame` 开始时写入 `FrameInfo` 的 `deadlineNanos` 字段——即当前帧必须完成所有工作的最晚时间点。当 `System.nanoTime()` 接近 `deadlineNanos` 时，`shouldPause` 返回 `true`，Composition 立即在下一个 slot 边界（对应 slot table 中的一个完整 slot group）处暂停，把主线程让出来，确保当前帧的 Traversal 和 Draw 阶段能按时完成。
 
-需要注意，这不是基于协程 `CancellationException` 的中断机制，而是 Compose Runtime 在 Composition 层面提供的基础设施。它依赖 Composition 树的 slot table 结构来实现暂停和恢复的断点管理。可暂停组合在 Compose 1.10 中默认应用于 Lazy Layout 的预取路径，对于非 Lazy 场景的常规重组（如状态变化触发的重组），仍然是原子执行。[已验证: Android Developers Blog, Compose 1.10 release notes]
+暂停后的组合工作不会丢失。Compose Runtime 依赖 Composition 树的 slot table 结构来管理暂停和恢复的断点——slot table 中每个 slot group 记录了组合进度，下次 `resume()` 时从断点继续。当 `resume()` 返回 `isComplete=true` 时，调用 `apply()` 将计算结果通过 `applyChanges()` 回放到 UI 树，分发生命周期回调（`onRemembered`）和运行排队的 `SideEffect`。未完成的 UI 树不会被渲染。
+
+这个机制不是基于协程 `CancellationException` 的中断——它是 Compose Runtime 在 Composition 层面提供的基础设施，与协程调度无关。可暂停组合在 Compose 1.10 中默认应用于 Lazy Layout 的预取路径；对于非 Lazy 场景的常规重组（如状态变化触发的重组），仍然是原子执行。
+
+[已验证: Android Developers Blog, Compose 1.10 release notes; shreyaspatil.dev PausableComposition 深度解析]
 
 ### Trace 分析中的差异
 
