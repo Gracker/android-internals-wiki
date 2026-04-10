@@ -634,3 +634,23 @@ PAMTD（Perceivable Average Minimum Time to Display）= 11ms / 点击可接受�
 
 ### 关联章节
 2.3(VSync), 2.4(Choreographer), 2.6(SurfaceFlinger), 3.1(Input分发)
+
+
+## [2026-04-10] 1.7 ART 编译管线与 dex2oat 优化 — 知识盲区
+
+### 盲区描述
+1. **OatWriter OAT 文件内部结构**：正文（L160-161）描述了编译流程（DEX→H图→机器码→OAT），但未说明 OatWriter 如何在 OAT 文件中物理组织编译后的机器码。理解按类（class）还是按方法（method）组织，对理解类加载性能很关键。
+
+2. **Baseline Profiles / Cloud Profiles 的版本历史**：正文（L219-234）描述了三层 Profile 体系，但未说明 Baseline Profiles 通过 Play 系统下发是从哪个 Android 版本开始的（Android 13？），以及 Cloud Profiles 生成的触发条件（下载量阈值？设备类型？）。
+
+### 重要程度
+高
+
+### 建议研究方向
+- AOSP 源码：OatWriter::WriteCodeAndData() 中 ArtMethod/ArtField 的排列顺序
+- 验证 OatWriter 是否按类为单位组织（同一类的所有方法连续排放）
+- Google 官方文档：Baseline Profiles via Play 发布时间
+- AOSP：ART Service 中 Cloud Profile 的处理逻辑
+
+### 关联章节
+1.6（Android 版本演进）, 4.3（ART 内存管理：OAT 文件内存映射）, 8.2（App 启动全流程：类加载路径）

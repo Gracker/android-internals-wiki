@@ -503,3 +503,33 @@
 - **问题**：缺少Android 14+上Hybrid Composition的优化信息
 - **建议**：补充Android 14+对Hybrid Composition的进一步优化内容
 - **review 日志**：logs/review/2026-04-10-16-review.md
+
+## [Task9 Deep Review] 1.7 ART 编译管线与 dex2oat 优化 — 2026-04-10
+- **类型**：数据缺失
+- **位置**：L228
+- **问题**："Google 官方数据表明，正确配置 Baseline Profiles 可以提升约 30% 的代码执行速度" — 标注了 [待验证]，但缺少 Google 官方基准测试报告出处
+- **建议**：补充 Google 官方文档（如 Baseline Profiles overview 页面）或 Android Developers Blog 原文链接和具体数字
+
+## [Task9 Deep Review] 1.7 ART 编译管线与 dex2oat 优化 — 2026-04-10
+- **类型**：数据缺失
+- **位置**：L254
+- **问题**："使用 Startup Profiles + DEX Layout 后，冷启动速度比单独使用 Baseline Profiles 快 15-30%" — 缺少可验证来源
+- **建议**：补充 AGP 官方文档或 Google 性能博客中的具体数据
+
+## [Task9 Deep Review] 1.7 ART 编译管线与 dex2oat 优化 — 2026-04-10
+- **类型**：数据缺失
+- **位置**：L113
+- **问题**："JIT 代码缓存的内存占用通常稳定在 4MB 左右" — 标注了 [待验证]，建议补充不同设备/应用规模的验证数据
+- **建议**：补充在真实设备（低端/中端/高端）上的实测数据，或引用 Google 官方性能报告
+
+## [Task9 Deep Review] 1.7 ART 编译管线与 dex2oat 优化 — 2026-04-10
+- **类型**：版本差异
+- **位置**：L181（编译级别表）
+- **问题**：`quicken` 的定义"验证 + 部分 DEX 指令优化" 不够精确。quicken 实际执行的是 DEX 指令 quickening（运行时重写），不是提前优化
+- **建议**：修正为"verify + DEX quickening（字节码即时重写，如 invoke-polymorphic 优化）"
+
+## [Task9 Deep Review] 1.7 ART 编译管线与 dex2oat 优化 — 2026-04-10
+- **类型**：交叉引用
+- **位置**：L402（与其他机制的关系）
+- **问题**：§1.6 引用名写作"版本演进"，实际章节名为"Android 版本演进中的架构变化"，描述不完全一致
+- **建议**：统一引用名称，写全"§1.6 Android 版本演进中的架构变化"
