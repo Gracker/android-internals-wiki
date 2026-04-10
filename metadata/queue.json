@@ -2850,5 +2850,44 @@
     "completed_at": "2026-04-11T04:49:35+08:00",
     "completed_by": "task2b-content-processing-rework",
     "result": "fixed"
+  },
+  {
+    "section": "1.11",
+    "section_title": "Zygote 机制与启动性能优化",
+    "priority": 90,
+    "reason": "[review回炉] 存在通信机制、preloadOpenGL 表述边界、DeliQueue 量化收益与验证标注来源等 4 个问题，需 Task 9 / Task 2B 处理",
+    "material_paths": [
+      "intake/suggestions.md（含 review 意见）"
+    ],
+    "review_issues": [
+      {
+        "type": "需确认",
+        "location": "开头第 1 段（system_server → Zygote 请求链路）",
+        "detail": "system_server 向 Zygote 发起创建进程请求的通信机制写成了 Binder，存在技术事实风险。",
+        "suggestion": "由 Task 9 核对 AOSP 调用链，再由 Task 2B 回写为准确表述。"
+      },
+      {
+        "type": "存疑",
+        "location": "“preloadOpenGL” 段",
+        "detail": "把 `preloadOpenGL()` 直接等同于“每个 App 的 GPU 上下文初始化已完成”，表述边界过宽。",
+        "suggestion": "区分驱动/EGL 预热与 App 侧 GPU context 创建，必要时降级为更保守的描述。"
+      },
+      {
+        "type": "需补充素材",
+        "location": "Android 17 版本演进表（DeliQueue 量化收益）",
+        "detail": "“P95 冷启动首帧时间改善约 9%”缺少可追溯来源。",
+        "suggestion": "补充 Google 官方博客、实验记录或原始研究素材；若找不到，则改成定性描述。"
+      },
+      {
+        "type": "需确认",
+        "location": "Perfetto SQL 段的验证标注（2 处）",
+        "detail": "`[已验证: L2]` 不是可追溯验证来源，当前验证标注不完整。",
+        "suggestion": "补充具体 Trace、SQL 运行结果截图或官方文档出处，再保留 [已验证]。"
+      }
+    ],
+    "added_by": "task6-review",
+    "added_at": "2026-04-11T05:05:00+08:00",
+    "status": "pending",
+    "original_review_log": "logs/review/2026-04-11-05-review.md"
   }
 ]
