@@ -2567,5 +2567,43 @@
     "original_review_log": "logs/review/2026-04-10-2359-review.md",
     "completed_at": "2026-04-11T00:27:16+08:00",
     "completed_by": "task2b-rework"
+  },
+  {
+    "section": "1.8",
+    "section_title": "Activity Manager Service 与性能分析",
+    "priority": 95,
+    "reason": "[Deep Tech Review] Activity 启动链路、Perfetto am_* 事件、Service ANR 时序与 FGS adj 存在事实错误",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "AMS 在 Android 架构中的角色 / 进程启动流程",
+        "detail": "正文把 Android 10-17 的 Activity 启动入口讲成“ActivityManager/IActivityManager → AMS.startActivity() → AMS.startProcessAsync()”。但 android-16.0.0_r1 中客户端实际由 Instrumentation.execStartActivity() 调用 ActivityTaskManager.getService().startActivity()；ActivityManagerService.startActivity() 只是 deprecated shim，立即委托给 ActivityTaskManagerService。当前写法会把 AMS/ATMS 分工和启动链路讲反。",
+        "suggestion": "改成“Instrumentation.execStartActivity() → IActivityTaskManager/ATMS.startActivity() → ActivityStarter/ATMS 决策任务容器；需要新进程时再进入 AMS/进程启动链路”，并明确 AMS.startActivity 在现代版本只是兼容转发层。"
+      },
+      {
+        "type": "源码错误",
+        "location": "在 Perfetto 中定位 AMS / Activity 启动耗时在 Perfetto 中的定位",
+        "detail": "正文把 am_activity_launch 当作已验证的 EventLogTags 事件，并给出 `SELECT * FROM slice WHERE name LIKE 'am_%'` 的统一查询方式。但 android-16.0.0_r1 的 services/core/java/com/android/server/am/EventLogTags.logtags 中可找到 am_proc_start、am_proc_bound、am_anr、am_kill 等，找不到 am_activity_launch；当前写法把 EventLog、atrace/Perfetto slice 表混成一层。",
+        "suggestion": "把“事件名 + 数据源 + 查询表”拆开写清楚：哪些来自 EventLog，哪些来自 trace slice 或 Perfetto stdlib；移除未经源码验证的 am_activity_launch，换成当前版本可核验的事件名和对应 SQL。"
+      },
+      {
+        "type": "源码错误",
+        "location": "AMS 与 ANR 检测 → Service ANR",
+        "detail": "正文称“拆雷发生在 service.onCreate() 之前”。但 android-16.0.0_r1 的 ActivityThread.handleCreateService() 先执行 service.onCreate()，随后才调用 ActivityManager.getService().serviceDoneExecuting(...)。这会直接反转读者对 Service 创建阶段 ANR 计时窗口的理解。",
+        "suggestion": "改成“handleCreateService() 执行 service.onCreate() 后，再通过 serviceDoneExecuting() 通知 AMS 结束本次执行计时”，并补一句：onCreate 本身就在 Service ANR 计时窗口内。"
+      },
+      {
+        "type": "源码错误",
+        "location": "AMS 的进程管理机制 → 进程优先级（oom_adj）表 / 常见误区 3",
+        "detail": "正文把前台服务进程写成稳定的 FOREGROUND_SERVICE=100。android-16.0.0_r1 中 ProcessList.VISIBLE_APP_ADJ 才是 100，常规非 short FGS 在 OomAdjuster 中被提升到 PERCEPTIBLE_APP_ADJ=200；最近从 TOP 降到 FGS 的短期宽限才会抬到 PERCEPTIBLE_RECENT_FOREGROUND_APP_ADJ=50。当前表格会误导读者理解 FGS 的保活级别。",
+        "suggestion": "删除“FGS=100”的静态表述，改为“FGS 的 adj 取决于具体状态；常规 FGS 为 perceptible 级，recent-top→FGS 有短期 grace 提升”，并给出 ProcessList/OomAdjuster 依据。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-11T00:47:19+08:00",
+    "status": "pending"
   }
 ]
