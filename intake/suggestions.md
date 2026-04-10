@@ -755,3 +755,15 @@
 - **位置**：行 258-317，行 429-441
 - **问题**：16KB page size 与 Simpleperf 在全书已有专章（§4.7、§14.2），本章却独立展开且没有回链，工具路径和官方来源也已开始出现漂移风险。
 - **建议**：本章保留“与 JNI 直接相关的判断准则”，把 16KB page size、Simpleperf 的通用方法显式交叉引用到 §4.7 / §14.2，避免多处并行维护同一事实表。
+
+
+## [Task9 Deep Review] 1.16 Audio Pipeline 延迟与性能 — 2026-04-11
+- **类型**：源码准确性
+- **位置**：行 193 AAudio 段落验证链接
+- **问题**：`https://developer.android.com/ndk/guides/audio/aaudio` 当前返回 404，但正文标成了 `[已验证]`
+- **建议**：改成有效地址 `https://developer.android.com/ndk/guides/audio/aaudio/aaudio`，或退回到父级目录 `https://developer.android.com/ndk/guides/audio`
+
+- **类型**：数据缺失
+- **位置**：行 238-259 Perfetto / underrun SQL
+- **问题**：当前 SQL 用 `%Audio%` / `%underrun%` 占位，正文没有给出一份真实 trace 中验证过的 track 名和 slice 名，读者落地时还要二次猜测
+- **建议**：补一份实测设备（例如 Pixel）的真实线程名、slice 名、筛选 SQL 和截图说明，至少固定一个可复用样例

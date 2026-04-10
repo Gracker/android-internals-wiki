@@ -3072,5 +3072,84 @@
     "status": "completed",
     "completed_at": "2026-04-11T07:02:11+08:00",
     "completed_by": "task2b-rework"
+  },
+  {
+    "section": "1.16",
+    "section_title": "Audio Pipeline 延迟与性能",
+    "priority": 95,
+    "reason": "[Deep Tech Review] FAST Mixer 机制错误 + Android 17 AudioTrack/API 语义误读 + 输入链路缺失",
+    "material_paths": [
+      "intake/research-gaps.md",
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码准确性",
+        "severity": "P0",
+        "location": "FAST Mixer：Normal Mixer vs FAST Mixer / 进入条件（行 156-175）",
+        "detail": "AOSP《Design for reduced latency》明确写明 fast mixer 会混合 normal mixer 的 sub-mix 和最多 7 条 client fast tracks，省掉的是 per-track sample rate conversion / effects，而不是“不做混音”。正文把 FAST Mixer 写成“只服务单一音频流”，并用“当前没有其他低延迟流占用 FAST Mixer”解释进入条件，会把 fast track slot 机制讲反。",
+        "suggestion": "改为：fast mixer 是绑定到 output 的低延迟混音线程；进入条件应写成 fast mixer thread 存在、sample rate 匹配、client callback 线程存在、track buffer size 合适、仍有 fast track slot。",
+        "dimension": "源码引用准确性"
+      },
+      {
+        "type": "源码准确性",
+        "severity": "P0",
+        "location": "AudioTrack 新增精确 Flush 控制（行 307-313）",
+        "detail": "AudioTrack 参考文档写明 flushWrittenFramesFromPosition(long, int) 仅允许用于 offload mode（Builder.setOffloadedPlayback(true)），并且创建前要先调用 getFlushWrittenFramesFromPositionSupport(AudioFormat, AudioAttributes) 判断支持度。正文把它写成通用 seek 场景 API，遗漏了 offload-only 前提。",
+        "suggestion": "补充“仅限 offloaded AudioTrack”与 getFlushWrittenFramesFromPositionSupport() 的前置检查，并说明普通 PCM 播放不能直接套用这套语义。",
+        "dimension": "源码引用准确性"
+      },
+      {
+        "type": "源码准确性",
+        "severity": "P0",
+        "location": "编解码器来源查询（行 315-321）",
+        "detail": "AudioTrack API 参考页对 getCodecProvenance() 的定义是“返回配置时指定的 audio codec media type string”，不是“硬件解码 / 软件解码 / offload 模式”三选一。正文当前解释错了 API 语义。",
+        "suggestion": "把这一段改成返回 codec media type / provenance string；如果要讨论硬解、软解、offload 的执行路径，请另找对应可验证 API 或改成 [待验证]。",
+        "dimension": "源码引用准确性"
+      },
+      {
+        "type": "源码准确性",
+        "severity": "P0",
+        "location": "后台音频强化 调试方法（行 294-300）",
+        "detail": "官方 bg-audio 文档给出的命令是 Android 16 上 `adb shell cmd audio set-enable-hardening 1` 打开强制、Android 17 上 `... 0` 关闭强制；正文命令缺少必需的 1/0 参数，直接照抄会执行失败。",
+        "suggestion": "把调试命令改成带参数的版本，并按 Android 16 / Android 17 区分 enable 与 disable 示例。",
+        "dimension": "源码引用准确性"
+      },
+      {
+        "type": "源码准确性",
+        "severity": "P0",
+        "location": "游戏音频性能最佳实践 第 3 条（行 413-416）",
+        "detail": "AAudio NDK 参考中不存在 `AAudio_getSampleRate()` 这个 API。可用的是 `AAudioStream_getSampleRate()`（针对已打开的 stream）或 Builder/AudioManager/Oboe 对应接口。当前写法无法编译。",
+        "suggestion": "改成“开放流后调用 `AAudioStream_getSampleRate()` 读取实际采样率”，或明确推荐用 Oboe 的 stream->getSampleRate() / AudioManager 属性做预判。",
+        "dimension": "源码引用准确性"
+      },
+      {
+        "type": "版本差异",
+        "severity": "P1",
+        "location": "Android 17 背景音频强化 受影响 API 列表（行 280-288）",
+        "detail": "官方“Full list of Audio APIs impacted”列出的受影响范围是播放 write path、AudioManager.requestAudioFocus()、音量/铃声 API；正文把 `AudioRecord` 录制也列成受影响 API，但当前引用来源没有给出这层结论。",
+        "suggestion": "删除 AudioRecord 的硬判断，或拆成“播放硬化”和“录音/Telecom 约束”两个不同问题，并对后者单独补证据。",
+        "dimension": "版本差异覆盖"
+      },
+      {
+        "type": "版本差异",
+        "severity": "P1",
+        "location": "版本演进表（行 366-376）",
+        "detail": "AOSP《AIDL and HIDL Audio HAL comparison》写的是“Starting with Android 14 ... vendors are encouraged to replace HIDL with AIDL，framework supports both”。正文直接写成“Android 14 | Audio HAL 全面 AIDL”，会把 Android 14 之后仍可存在 HIDL 实现的现实抹掉；Android 9/12 两个时间点也缺少对应 release note/AOSP 证据。",
+        "suggestion": "把 Android 14 改成“开始明确鼓励迁移到 AIDL，framework 同时支持 HIDL/AIDL”；Android 9/12 的阶段判断如果拿不出明确来源，就降级成 [待验证]。",
+        "dimension": "版本差异覆盖"
+      },
+      {
+        "type": "原理断裂",
+        "severity": "P1",
+        "location": "往返延迟与 API 选择主线（行 128-220, 337-358）",
+        "detail": "章节引入了 round-trip latency，却只拆了输出链路，没有补输入侧 AudioRecord / AAudio input / FastCapture / input MMAP，也没交代 `LOW_LATENCY` 请求是如何在 AudioPolicyService / createTrack / output profile 选择中落到 Normal Mixer、FastMixer 或 MMAP output。读者能背结论，但还不能解释“为什么这条流没进 fast path”。",
+        "suggestion": "补一段“创建流到选路”的关键调用链，并补输入链路和 FastCapture，让 round-trip latency 真正闭环。",
+        "dimension": "原理链完整性"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-11T07:32:58+08:00",
+    "status": "pending"
   }
 ]

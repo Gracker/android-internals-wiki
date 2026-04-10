@@ -751,3 +751,21 @@ OEM/自研内核接入 AutoFDO 的关键前置条件缺失。正文提到 Kleaf�
 
 ### 关联章节
 1.1、4.3、5.11、14.2
+
+
+## [2026-04-11] 1.16 Audio Pipeline 延迟与性能 — 输入链路与 fast path 选路缺口
+
+### 盲区描述
+正文把 round-trip latency 当成关键指标，但实际只覆盖了输出链路。输入侧 `AudioRecord` / AAudio input / FastCapture / input MMAP 完全缺席，同时也没有解释 `LOW_LATENCY` 请求在 AudioPolicyService、`createTrack`、output profile 选择中的决策链。结果是读者知道 Normal / Fast / MMAP 三条路的名字，却还不能回答“为什么这条流没进 fast path”或“往返延迟的输入半边是谁在拖后腿”。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 补输入侧数据链：App → RecordThread / FastCapture → HAL → DSP / Mic
+- 梳理 `AudioTrack` / AAudio 创建流时的关键决策链：request flag、profile match、fast track slot、MMAP output 选择
+- 给 round-trip latency 增加一张输入/输出双向时序图，并标注 Perfetto 中可观测的线程与事件
+- 对比普通 capture、FastCapture、MMAP input 在调度与缓冲模型上的差异
+
+### 关联章节
+§1.16、§1.4 Binder IPC、§5.1 CPU 调度、§16.5 Android 17 变更
