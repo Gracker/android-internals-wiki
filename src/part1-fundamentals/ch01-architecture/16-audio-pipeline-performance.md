@@ -15,6 +15,7 @@ confidence: medium
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-04-11"
 task6_result: "pass-light-edit"
+task9_result: needs-rework
 sources:
   - type: official
     path: "https://source.android.com/docs/core/audio/latency"
@@ -28,10 +29,10 @@ sources:
     path: "intake/research-feeds/2026-04-08-15-android17-background-audio-hardening-audio-focus.md"
   - type: research
     path: "intake/research-feeds/2026-04-08-15-android17-audiotrack-api-assistant-volume-stream.md"
-pipeline_stage: task9_pending
+pipeline_stage: task2b_pending
 task6_state: reviewed
-task9_state: pending
-task2b_state: idle
+task9_state: reviewed
+task2b_state: pending
 ---
 
 # 1.16 Audio Pipeline 延迟与性能
