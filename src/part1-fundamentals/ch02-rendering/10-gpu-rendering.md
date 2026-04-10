@@ -2,11 +2,11 @@
 section: "2.10"
 title: "GPU 渲染深入"
 chapter: "2"
-status: finalized
-applicable_versions: "Android 12 - Android 16 (API 31-36)"
+status: ready-for-review
+applicable_versions: "Android 5.0 - Android 16 (API 21-36)"
 last_verified: "2026-04-09"
 last_verified_against: "AOSP android-16.0.0_r1, developer.android.com"
-confidence: medium
+confidence: medium-high
 sources:
   - type: aosp
     path: "frameworks/base/core/java/android/graphics/"
@@ -22,14 +22,14 @@ tags: ['gpu', 'rendering', 'shader', 'vulkan', 'opengl', 'performance', 'memory'
 related_chapters: ["2.3", "2.4", "2.5", "2.6", "2.9", "3.2", "14.3"]
 drafted_date: 2026-03-30
 drafted_by: openclaw-task2a
-reviewed_date: 2026-04-04
-reviewed_by: openclaw-task6
 reviewed_date: 2026-04-10
+reviewed_by: openclaw-task6
 rework_date: 2026-04-03
 rework_by: openclaw-task2b
 review_round: 4
-polish_count: 1
-polish_date: "2026-04-04"
+last_polish_notes: "第2轮出版级精修：修复applicable_versions范围、ANGLE URL拼写、叙述过渡、口语化表达"
+polish_count: 2
+polish_date: "2026-04-10"
 polish_by: "task2b-polish"
 ---
 
@@ -39,9 +39,9 @@ polish_by: "task2b-polish"
 
 在 Perfetto Trace 中，我们经常看到这样的场景：主线程（MainThread）在很短时间内完成了 measure、layout、draw 操作，RenderThread 也快速完成了 draw command 的录制，但 UI 更新却明显滞后——下一帧的 VSync 到来了，上一帧还在 GPU 中处理。这种情况下，问题往往出在 GPU 渲染阶段：应用发送的绘制指令虽然不多，但 GPU 处理这些指令花费了大量时间，或者 GPU 本身遇到了内存带宽瓶颈。
 
-如果我们缺乏对 GPU 渲染管线的理解，遇到这类掉帧就只能停留在"主线程没问题，不知道什么原因"的阶段。而理解了 GPU 渲染深入机制之后，我们就能做到三件事：把 GPU 渲染过程从看不见的"黑盒"变成可分析、可定位的链条；精准区分 CPU 瓶颈、GPU 瓶颈和内存带宽瓶颈，避免把力气花在错误的方向上；以及理解 Android 16 中 Vulkan 成为默认 API 这件事背后的真正含义，知道如何为未来做准备。
+如果我们缺乏对 GPU 渲染管线的理解，遇到这类掉帧就只能停留在"主线程没问题，不知道什么原因"的阶段。理解了 GPU 渲染机制之后，我们就能做到三件事：把 GPU 渲染过程从看不见的"黑盒"变成可分析、可定位的链条；精准区分 CPU 瓶颈、GPU 瓶颈和内存带宽瓶颈，避免把力气花在错误的方向上；理解 Android 16 中 Vulkan 成为默认 API 这件事背后的真正含义，知道如何为未来做准备。
 
-本文将深入探讨 Android GPU 渲染管线的各个环节，从基础的渲染管线原理，到实际的性能瓶颈分析和优化策略。
+接下来的内容从 GPU 渲染管线的基本原理出发，逐步深入到性能瓶颈分析方法、GPU 内存管理机制，最后通过一个实战案例将所有知识点串联起来。
 
 <!-- outline-start -->
 ## 本节要点大纲
@@ -103,7 +103,7 @@ public void drawRect(float left, float top, float right, float bottom, Paint pai
 
 ### Fragment Shader：像素颜色的决定者
 
-Fragment Shader（也称为 Pixel Shader）是渲染管线的核心阶段，它决定了屏幕上每个像素的最终颜色。对于 Android UI 渲染来说，Fragment Shader 的重要性甚至超过 Vertex Shader——原因很简单，UI 界面的像素数量通常远多于顶点数量。一个全屏的 `drawRect()` 只有四个顶点，但需要处理的像素可能多达数百万个。
+Fragment Shader（也称为 Pixel Shader）是渲染管线的核心阶段，它决定了屏幕上每个像素的最终颜色。对于 Android UI 渲染来说，Fragment Shader 的重要性甚至超过 Vertex Shader——UI 界面的像素数量通常远多于顶点数量，Fragment Shader 的计算量与像素数成正比。一个全屏的 `drawRect()` 只有四个顶点，但需要处理的像素可能多达数百万个。
 
 ```glsl
 // 简化的 Android UI Fragment Shader 示例（示意性伪代码）
@@ -229,7 +229,7 @@ vkQueueSubmit(queue, 1, &submitInfo, fence);
 
 [图：OpenGL ES 单线程提交 vs Vulkan 多线程命令缓冲区构建对比]
 
-OpenGL ES 的另一个架构限制是命令提交只能在单一上下文中进行，本质上就是单线程渲染。Vulkan 引入了命令缓冲区（Command Buffer）的概念：不同的线程可以独立构建各自的命令缓冲区，最后在一个线程上统一提交到 GPU。对于 CPU 侧有大量渲染命令需要生成的场景——比如游戏引擎中不同线程分别处理场景渲染、UI 渲染和后处理——多线程构建命令缓冲区可以显著降低 CPU 瓶颈。
+OpenGL ES 的另一个架构限制是命令提交只能在单一上下文中进行，多线程无法并行构建渲染命令。Vulkan 引入了命令缓冲区（Command Buffer）的概念：不同的线程可以独立构建各自的命令缓冲区，最后在一个线程上统一提交到 GPU。对于 CPU 侧有大量渲染命令需要生成的场景——比如游戏引擎中不同线程分别处理场景渲染、UI 渲染和后处理——多线程构建命令缓冲区可以显著降低 CPU 瓶颈。
 
 在 Android UI 渲染的场景中，多线程渲染的优势不如游戏场景明显，因为 UI 渲染的 draw call 数量通常不太多。但随着 Material Design 的效果越来越复杂（模糊、阴影、动画），这个优势在未来会越来越重要。
 
@@ -347,7 +347,7 @@ Android 12 引入了改进的 GPU 内存追踪机制，使得开发者和性能�
 
 ## ANGLE（OpenGL ES on Vulkan）的性能影响
 
-既然 Vulkan 已经成为 Android 16 的默认图形 API，那么大量仍然使用 OpenGL ES 的应用会如何运行？答案是 ANGLE——Google 的 OpenGL ES 兼容层，它将所有 GL 调用翻译为 Vulkan 调用。对于性能分析工程师来说，理解 ANGLE 的性能特征，是评估现有应用在新系统上渲染表现的关键。
+前面我们讨论了 GPU 内存管理的完整链条，从应用层的 GraphicBuffer 到 HAL 层的 Gralloc。而在 Android 16 的渲染架构中，还有一个关键层位于 GPU 内存管理和应用之间——ANGLE 兼容层。既然 Vulkan 已经成为 Android 16 的默认图形 API，大量仍然使用 OpenGL ES 的应用会如何运行？答案是 ANGLE——Google 的 OpenGL ES 兼容层，它将所有 GL 调用翻译为 Vulkan 调用。对于性能分析工程师来说，理解 ANGLE 的性能特征，是评估现有应用在新系统上渲染表现的关键。
 
 ### ANGLE 的设计目标
 
@@ -516,7 +516,7 @@ GPU 渲染并不是一个独立的环节，它是整个 Android 渲染管线中�
 ### AOSP 源码路径
 - `frameworks/native/libs/ui/include/ui/GraphicBuffer.h` — GraphicBuffer C++ 定义（AOSP）
 - `system/core/libsystem/include/android/native_window.h` — ANativeWindowBuffer 定义
-- [ANGLE 源码（Google Git）](https:///android.googlesource.com/platform/external/angle/) — ANGLE OpenGL ES on Vulkan
+- [ANGLE 源码（Google Git）](https://android.googlesource.com/platform/external/angle/) — ANGLE OpenGL ES on Vulkan
 - `frameworks/native/vulkan/` — Vulkan API 支持
 - `hardware/interfaces/graphics/allocator/` — Gralloc HAL 定义
 - `frameworks/native/services/surfaceflinger/` — SurfaceFlinger 合成服务
