@@ -533,3 +533,21 @@
 - **位置**：L402（与其他机制的关系）
 - **问题**：§1.6 引用名写作"版本演进"，实际章节名为"Android 版本演进中的架构变化"，描述不完全一致
 - **建议**：统一引用名称，写全"§1.6 Android 版本演进中的架构变化"
+
+## [Task9 Deep Review] 2.1 Android 渲染架构全景 — 2026-04-10
+- **类型**：源码准确性（[待验证]遗留）
+- **位置**：HWUI 架构 → RenderNode 内部结构
+- **问题**：正文标注 `[待验证: RenderNode 内部结构在 AOSP android-16.0.0_r1 中可能有调整，以下为概念性描述]`。RenderNode staging 机制设计思路正确，但 Android 16 HWUI 重构后的具体字段名和方法名未确认。
+- **建议**：AOSP frameworks/base/libs/hwui/RenderNode.h 调研，确认 Android 16 staging 机制的字段名。
+
+## [Task9 Deep Review] 2.1 Android 渲染架构全景 — 2026-04-10
+- **类型**：数据缺失
+- **位置**：HWUI 概述章节（L"硬件加速渲染相比纯 CPU 软件渲染提升 5-10 倍"）
+- **问题**：5-10x 性能提升断言未注明来源和测试条件（工作负载类型？设备规格？Android 版本？），读者无法验证或复现。
+- **建议**：补充具体测试来源（Google 官方 benchmark 或学术论文），或降级为"业界普遍认为"并注明近似值。
+
+## [Task9 Deep Review] 2.1 Android 渲染架构全景 — 2026-04-10
+- **类型**：版本差异
+- **位置**：BufferQueue 生产者-消费者章节
+- **问题**：章节标注了 `[待验证: 以下 dequeueBuffer/queueBuffer 实现在 Android 16 BlastBufferQueue 重构后可能有变化]`，但未补充 BlastBufferQueue（Android 12）的存在及其与旧版 BufferQueue 的关键差异。BlastBufferQueue 改变了 App↔SurfaceFlinger 的通信方式，对多窗口和游戏渲染性能分析很重要。
+- **建议**：补充 BlastBufferQueue 基本原理及其与旧版 BufferQueue 的区别说明。
