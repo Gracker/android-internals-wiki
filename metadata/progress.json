@@ -1,41 +1,40 @@
 {
-  "generated_at": "2026-04-10T23:59:00+08:00",
+  "generated_at": "2026-04-11T00:27:16+08:00",
   "state_machine_version": "v2",
   "total_sections": 174,
   "metrics": {
     "total": 174,
     "draft": 0,
     "ready-for-review": 172,
-    "pipeline_task6_pending": 173,
+    "pipeline_task6_pending": 174,
     "pipeline_task9_pending": 0,
-    "pipeline_task2b_pending": 1,
+    "pipeline_task2b_pending": 0,
     "pipeline_publish_ready": 0,
     "task6_pending": 173,
-    "task6_reviewed": 1,
-    "task6_revisiting": 0,
+    "task6_reviewed": 0,
+    "task6_revisiting": 1,
     "task9_pending": 174,
     "task9_reviewed": 0,
     "task2b_idle": 173,
-    "task2b_pending": 1,
-    "task2b_fixed": 0,
-    "last_updated": "2026-04-10T23:59:00+08:00",
+    "task2b_pending": 0,
+    "task2b_fixed": 1,
+    "last_updated": "2026-04-11T00:27:16+08:00",
     "unknown": 2
   },
   "pipeline": {
     "pipeline_stage_counts": {
-      "task2b_pending": 1,
-      "task6_pending": 173
+      "task6_pending": 174
     },
     "task6_state_counts": {
       "pending": 173,
-      "reviewed": 1
+      "revisiting": 1
     },
     "task9_state_counts": {
       "pending": 174
     },
     "task2b_state_counts": {
       "idle": 173,
-      "pending": 1
+      "fixed": 1
     }
   },
   "issues": {
@@ -1435,10 +1434,10 @@
       "title": "Activity Manager Service 与性能分析",
       "path": "src/part1-fundamentals/ch01-architecture/08-activity-manager.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
-      "task6_state": "reviewed",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
       "task9_state": "pending",
-      "task2b_state": "pending"
+      "task2b_state": "fixed"
     },
     "src/part1-fundamentals/ch01-architecture/15-jni-ndk-performance.md": {
       "chapter": "1.15",

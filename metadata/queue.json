@@ -2563,7 +2563,9 @@
     ],
     "added_by": "task6-review",
     "added_at": "2026-04-10T23:59:00+08:00",
-    "status": "pending",
-    "original_review_log": "logs/review/2026-04-10-2359-review.md"
+    "status": "completed",
+    "original_review_log": "logs/review/2026-04-10-2359-review.md",
+    "completed_at": "2026-04-11T00:27:16+08:00",
+    "completed_by": "task2b-rework"
   }
 ]
