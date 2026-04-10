@@ -1,7 +1,7 @@
 ---
 title: "系统启动全流程"
 chapter: "1.2"
-status: ready-to-publish
+status: ready-for-review
 section: "1.2"
 reviewed_date: "2026-04-10"
 reviewed_by: openclaw-task6

@@ -2,7 +2,7 @@
 title: "特殊场景的 ANR"
 chapter: "9.4"
 section: "9.4"
-status: ready-to-publish
+status: ready-for-review
 rework_date: "2026-04-08"
 rework_by: "task2b-rework"
 polish_count: 1

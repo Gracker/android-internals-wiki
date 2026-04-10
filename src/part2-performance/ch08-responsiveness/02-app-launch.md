@@ -1,7 +1,7 @@
 ---
 title: "App 启动全流程"
 chapter: "8.2"
-status: ready-to-publish
+status: ready-for-review
 applicable_versions: "Android 8.0 (API 26) - Android 16 (API 36)"
 last_verified: "2026-04-01"
 last_verified_against: "AOSP android-15.0.0_r1"

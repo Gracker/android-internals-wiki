@@ -2,7 +2,7 @@
 title: "App 内存分析"
 chapter: "10.1"
 section: "10.1"
-status: ready-to-publish
+status: ready-for-review
 drafted_date: "2026-04-02"
 drafted_by: "openclaw-task2"
 applicable_versions: "Android 8.0 (API 26) - Android 16 (API 36)"

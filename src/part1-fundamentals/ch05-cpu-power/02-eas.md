@@ -1,7 +1,7 @@
 ---
 title: "EAS 能量感知调度"
 chapter: "5.2"
-status: ready-to-publish
+status: ready-for-review
 applicable_versions: "Android 9 (API 28) - Android 16 (API 36)"
 last_verified: "2026-03-31"
 last_verified_against: "Linux kernel 6.6, Documentation/scheduler/sched-energy.rst"

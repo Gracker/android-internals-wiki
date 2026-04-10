@@ -1,7 +1,7 @@
 ---
 title: "Vulkan 原生渲染链路"
 chapter: "18.9"
-status: draft
+status: ready-for-review
 applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
 tags: ["Vulkan", "VkSwapchainKHR", "explicit-control", "AVP", "Swappy", "frame-pacing", "VkQueue", "Presentation-Mode"]
 related_chapters: ["2.1", "2.6", "2.14", "18.8", "18.10"]

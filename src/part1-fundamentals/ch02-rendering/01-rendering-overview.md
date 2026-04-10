@@ -1,7 +1,7 @@
 ---
 title: "Android 渲染架构全景"
 chapter: "2.1"
-status: ready-to-publish
+status: ready-for-review
 applicable_versions: "Android 3.0 (API 11) - Android 16 (API 36)"  # 版本演进从 3.0 开始，核心内容覆盖 API 11-36
 last_verified: "2026-04-09"
 last_verified_against: "AOSP android-16.0.0_r1, 官方文档最新版本"

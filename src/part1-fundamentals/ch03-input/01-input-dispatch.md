@@ -1,7 +1,7 @@
 ---
 title: "Input 事件分发全流程"
 chapter: "3.1"
-status: ready-to-publish
+status: ready-for-review
 applicable_versions: "Android 12 (API 31) - Android 16 (API 36)"
 last_verified: "2026-04-10"
 last_verified_against: "AOSP android-14.0.0_r1"

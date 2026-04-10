@@ -1,7 +1,7 @@
 ---
 title: "帧率与刷新率"
 chapter: "2.2"
-status: ready-to-publish
+status: ready-for-review
 reviewed_date: 2026-04-07
 reviewed_by: openclaw-task6
 rework_date: 2026-04-02

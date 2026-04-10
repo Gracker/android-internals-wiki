@@ -1,7 +1,7 @@
 ---
 title: "Perfetto 的高级用法"
 chapter: "13.7"
-status: draft
+status: ready-for-review
 drafted_date: "2026-04-03"
 applicable_versions: "Android 8.0 (API 26) - Android 16 (API 36)"
 last_verified: "2026-04-03"

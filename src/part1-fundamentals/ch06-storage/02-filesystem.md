@@ -2,7 +2,7 @@
 title: "文件系统"
 chapter: "6.2"
 section: "6.2"
-status: ready-to-publish
+status: ready-for-review
 applicable_versions: "Android 10+"
 last_verified: "2026-04-01"
 last_verified_against: "AOSP android-15, kernel 6.6, source.android.com, developer.android.com"

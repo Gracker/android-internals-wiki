@@ -1,7 +1,7 @@
 ---
 title: "Camera 渲染管线"
 chapter: "18.14"
-status: draft
+status: ready-for-review
 applicable_versions: "Android 5.0 (API 21) - Android 16 (API 36)"
 tags: ["Camera", "Camera2", "HAL3", "ZSL", "多流并发", "SurfaceView", "ImageReader", "渲染链路"]
 related_chapters: ["2.13", "2.15", "14.9", "18.6"]

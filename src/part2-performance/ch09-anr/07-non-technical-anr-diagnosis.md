@@ -1,7 +1,7 @@
 ---
 title: "ANR 非技术故障诊断"
 chapter: "9.7"
-status: draft
+status: ready-for-review
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
 tags: [anr, non-technical, fault-diagnosis, system-bugs, google-engineer]
 related_chapters: ["9.3", "8.2", "13.7"]

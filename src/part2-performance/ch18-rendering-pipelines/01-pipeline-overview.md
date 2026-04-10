@@ -1,7 +1,7 @@
 ---
 title: "渲染链路分类与选择矩阵"
 chapter: "18.1"
-status: draft
+status: ready-for-review
 applicable_versions: "Android 9 (API 28) - Android 16 (API 36)"
 tags: ["rendering-pipeline", "BLAST", "SurfaceFlinger", "HWUI", "SurfaceView", "TextureView", "Vulkan", "OpenGL ES"]
 related_chapters: ["2.1", "2.5", "2.6", "2.7", "2.14", "18.2", "18.3", "18.4", "18.5", "18.6", "18.7", "18.8", "18.9", "18.10"]

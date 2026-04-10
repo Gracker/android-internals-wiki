@@ -1,7 +1,7 @@
 ---
 title: "Kotlin Coroutine 性能实践"
 chapter: "8.6"
-status: ready-to-publish
+status: ready-for-review
 drafted_date: "2026-04-02"
 drafted_by: "openclaw-task2a"
 reviewed_date: "2026-04-09"

@@ -2,7 +2,7 @@
 title: "其他响应速度场景"
 chapter: "8.4"
 section: "8.4"
-status: ready-to-publish
+status: ready-for-review
 drafted_date: "2026-04-02"
 drafted_by: "openclaw-task2a"
 reviewed_date: "2026-04-08"

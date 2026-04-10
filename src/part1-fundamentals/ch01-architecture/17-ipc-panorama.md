@@ -1,7 +1,7 @@
 ---
 title: "IPC 全景：Android 进程间通信机制对比与性能选型"
 chapter: "1.17"
-status: draft
+status: ready-for-review
 applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37)"
 last_verified: "2026-04-09"
 last_verified_against: "AOSP android-16.0.0_r1, 官方文档"

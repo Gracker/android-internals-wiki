@@ -1,7 +1,7 @@
 ---
 title: "ANR 设计思想"
 chapter: "9.1"
-status: ready-to-publish
+status: ready-for-review
 drafted_date: "2026-04-02"
 polish_count: 1
 polish_date: "2026-04-07"

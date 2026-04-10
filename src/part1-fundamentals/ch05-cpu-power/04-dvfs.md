@@ -2,7 +2,7 @@
 title: "DVFS 与功耗管理"
 chapter: "5.4"
 section: "5.4"
-status: ready-to-publish
+status: ready-for-review
 applicable_versions: "Android 7.0 (API 24) - Android 16 (API 36)"
 last_verified: "2026-04-01"
 last_verified_against: "Linux kernel 6.6 (android16-6.6)"

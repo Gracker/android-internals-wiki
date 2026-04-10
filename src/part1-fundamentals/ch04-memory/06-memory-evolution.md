@@ -1,7 +1,7 @@
 ---
 title: "内存相关的版本演进"
 chapter: "4.6"
-status: ready-to-publish
+status: ready-for-review
 section: "4.6"
 reviewed_date: "2026-04-08"
 reviewed_by: "openclaw-task6"

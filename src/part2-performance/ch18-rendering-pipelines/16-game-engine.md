@@ -1,7 +1,7 @@
 ---
 title: "游戏引擎渲染链路"
 chapter: "18.16"
-status: draft
+status: ready-for-review
 applicable_versions: "Android 5.0 (API 21) - Android 16 (API 36)"
 tags: ["Unity", "Unreal", "Game-Engine", "Swappy", "Frame-Pacing", "Vulkan", "GLES", "渲染链路"]
 related_chapters: ["2.5", "8.9", "18.6", "18.8", "18.9"]

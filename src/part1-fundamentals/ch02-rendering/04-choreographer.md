@@ -38,7 +38,7 @@ related_chapters: ["2.3", "2.5", "2.6", "2.9", "3.1", "8.2"]
 polish_count: 1
 polish_date: "2026-04-04"
 polish_by: "task2b-polish"
-status: ready-to-publish
+status: ready-for-review
 ---
 
 # Choreographer 与渲染流水线

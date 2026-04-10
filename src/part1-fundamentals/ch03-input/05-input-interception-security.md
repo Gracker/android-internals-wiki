@@ -2,7 +2,7 @@
 title: "输入事件拦截与安全机制"
 chapter: "3.5"
 section: "3.5"
-status: draft
+status: ready-for-review
 drafted_by: "openclaw-task"
 applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
 confidence: medium

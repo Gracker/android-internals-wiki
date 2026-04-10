@@ -1,7 +1,7 @@
 ---
 title: "链路分析方法论"
 chapter: "18.20"
-status: draft
+status: ready-for-review
 applicable_versions: "Android 9 (API 28) - Android 16 (API 36)"
 tags: ["方法论", "渲染链路", "Perfetto", "dumpsys", "诊断", "BufferQueue", "性能分析"]
 related_chapters: ["2.1", "2.6", "13.5", "15.1"]

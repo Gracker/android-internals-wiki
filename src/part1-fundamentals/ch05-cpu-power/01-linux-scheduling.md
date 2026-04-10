@@ -2,7 +2,7 @@
 title: "Linux 进程调度基础"
 chapter: "5.1"
 section: "5.1"
-status: ready-to-publish
+status: ready-for-review
 applicable_versions: "Android 6.0 (API 23) - Android 17 (API 37, EEVDF 部分需 6.6+ 内核)"
 last_verified: "2026-04-02"
 last_verified_against: "AOSP android-16.0.0_r1, Linux kernel 6.6"

@@ -1,7 +1,7 @@
 ---
 title: "Android View 标准链路（BLAST 深入）"
 chapter: "18.2"
-status: draft
+status: ready-for-review
 applicable_versions: "Android 11 (API 30) - Android 16 (API 36)"
 tags: ["BLAST", "RenderThread", "HWUI", "DisplayList", "FrameTimeline", "Triple-Buffering"]
 related_chapters: ["2.1", "2.5", "2.6", "2.7", "18.1"]

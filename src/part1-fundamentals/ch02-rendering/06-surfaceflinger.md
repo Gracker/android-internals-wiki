@@ -1,7 +1,7 @@
 ---
 title: "SurfaceFlinger 与合成"
 chapter: "2.6"
-status: ready-to-publish
+status: ready-for-review
 applicable_versions: "Android 12 (API S) - Android 16 (API 36)"
 last_verified: "2026-04-02"
 drafted_date: 2026-03-30

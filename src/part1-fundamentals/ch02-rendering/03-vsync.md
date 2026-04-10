@@ -1,7 +1,7 @@
 ---
 title: "VSync 机制"
 chapter: "2.3"
-status: ready-to-publish
+status: ready-for-review
 reviewed_date: 2026-04-02
 reviewed_by: openclaw-task6
 polish_count: 1

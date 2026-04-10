@@ -2,7 +2,7 @@
 section: "2.10"
 title: "GPU 渲染深入"
 chapter: "2"
-status: ready-to-publish
+status: ready-for-review
 applicable_versions: "Android 5.0 - Android 16 (API 21-36)"
 last_verified: "2026-04-09"
 last_verified_against: "AOSP android-16.0.0_r1, developer.android.com"

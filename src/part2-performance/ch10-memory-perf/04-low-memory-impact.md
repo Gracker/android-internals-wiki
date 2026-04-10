@@ -2,7 +2,7 @@
 title: "低内存对系统性能的影响"
 chapter: "10.4"
 section: "10.4"
-status: ready-to-publish
+status: ready-for-review
 drafted_date: "2026-04-02"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"

@@ -2,7 +2,7 @@
 title: "Android 分层架构"
 chapter: "1.1"
 section: "1.1"
-status: ready-to-publish
+status: ready-for-review
 applicable_versions: "Android 8 (API 26) - Android 16 (API 36)"
 last_verified: "2026-03-30"
 last_verified_against: "AOSP android-16.0.0_r1, developer.android.com, source.android.com"

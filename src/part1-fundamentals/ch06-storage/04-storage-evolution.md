@@ -2,7 +2,7 @@
 title: "存储相关的版本演进"
 chapter: "6.4"
 section: "6.4"
-status: ready-to-publish
+status: ready-for-review
 applicable_versions: "Android 4.4 (API 19) - Android 15 (API 35)"
 last_verified: "2026-04-01"
 last_verified_against: "Android 15 / UFS 4.0 spec / AOSP android-15.0.0_r1"

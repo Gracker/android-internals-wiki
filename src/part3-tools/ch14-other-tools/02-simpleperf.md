@@ -2,7 +2,7 @@
 title: "Simpleperf"
 chapter: "14.2"
 section: "14.2"
-status: finalized
+status: ready-for-review
 reviewed_date: "2026-04-10"
 reviewed_by: "openclaw-task6"
 drafted_date: "2026-04-03"

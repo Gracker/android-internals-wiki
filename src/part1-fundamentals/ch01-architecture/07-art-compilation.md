@@ -2,7 +2,7 @@
 title: "ART 编译管线与 dex2oat 优化"
 chapter: "1.7"
 section: "1.7"
-status: ready-to-publish
+status: ready-for-review
 drafted_date: "2026-04-05"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 7.0 (API 24) - Android 17 (API 37)"

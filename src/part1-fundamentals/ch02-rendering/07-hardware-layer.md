@@ -1,7 +1,7 @@
 ---
 title: "Hardware Layer"
 chapter: "2.7"
-status: ready-to-publish
+status: ready-for-review
 drafted_date: "2026-03-30"
 applicable_versions: "Android 3.0 (API 11) - Android 16 (API 36)"
 last_verified: "2026-03-30"

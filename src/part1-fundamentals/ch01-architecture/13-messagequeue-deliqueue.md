@@ -1,7 +1,7 @@
 ---
 title: "MessageQueue 机制与 DeliQueue 无锁优化"
 chapter: "1.13"
-status: ready-for-review  # task2b-rework: 2026-04-09 fixed 6 Deep Tech Review issues
+status: ready-for-review
 applicable_versions: "Android 1.0 (API 1) - Android 17 (API 37)"  # MessageQueue 自 API 1 存在; DeliQueue 为 Android 17 新增
 drafted_date: "2026-04-04"
 reviewed_date: "2026-04-08"

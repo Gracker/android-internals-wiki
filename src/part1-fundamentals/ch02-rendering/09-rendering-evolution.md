@@ -2,7 +2,7 @@
 title: "渲染机制的版本演进"
 chapter: "2.9"
 section: "2.9"
-status: ready-to-publish
+status: ready-for-review
 drafted_date: 2026-03-30
 drafted_by: "openclaw-task2a"
 reviewed_date: 2026-04-10

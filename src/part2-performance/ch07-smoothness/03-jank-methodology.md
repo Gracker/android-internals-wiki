@@ -1,7 +1,7 @@
 ---
 title: "卡顿分析方法论"
 chapter: "7.3"
-status: ready-to-publish
+status: ready-for-review
 reviewed_date: "2026-04-08"
 reviewed_by: openclaw-task6
 rework_date: "2026-04-04"

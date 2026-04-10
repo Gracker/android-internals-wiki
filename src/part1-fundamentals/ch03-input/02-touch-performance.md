@@ -2,7 +2,7 @@
 title: "触摸响应的性能分析"
 chapter: "3.2"
 section: "3.2"
-status: ready-to-publish
+status: ready-for-review
 drafted_date: "2026-03-30"
 drafted_by: "openclaw-task2"
 applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
