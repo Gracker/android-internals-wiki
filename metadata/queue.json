@@ -271,8 +271,11 @@
     ],
     "added_by": "task6-review",
     "added_at": "2026-04-11T04:11:00+08:00",
-    "status": "pending",
-    "original_review_log": "logs/review/2026-04-11-04-review.md"
+    "status": "completed",
+    "original_review_log": "logs/review/2026-04-11-04-review.md",
+    "completed_at": "2026-04-11T04:49:35+08:00",
+    "completed_by": "task2b-content-processing-rework",
+    "result": "fixed"
   },
   {
     "section": "FRESHNESS-part1-fundamentals-ch02-rendering-03-vsync",
@@ -2809,7 +2812,10 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-11T04:24:00+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-11T04:49:35+08:00",
+    "completed_by": "task2b-content-processing-rework",
+    "result": "fixed"
   },
   {
     "section": "1.14",
@@ -2840,6 +2846,9 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-11T04:24:00+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-11T04:49:35+08:00",
+    "completed_by": "task2b-content-processing-rework",
+    "result": "fixed"
   }
 ]
