@@ -630,3 +630,22 @@
 - **问题**：缺少 `outline-start` / `outline-end` 与锚点设计，Task 6 无法按规范检查锚点覆盖。
 - **建议**：按 writing-guide.md 补齐 outline 块，并让每个锚点至少对应 1 个完整段落。
 - **review 日志**：logs/review/2026-04-11-03-review.md
+
+## [Task9 Deep Review] 1.12 AutoFDO 反馈导向编译优化 — 2026-04-11
+- **类型**：版本差异
+- **位置**：frontmatter `applicable_versions` + 版本演进表（行 10, 276-285）
+- **问题**：文章用单一范围 `Android 12-17` 覆盖两条不同落地线：Android 12+ 的 userspace/native AutoFDO 和 Android 15/16 起的 kernel GKI AutoFDO。读者容易误读成“Android 12-14 已经有 kernel AutoFDO”。
+- **建议**：把支持矩阵拆成 `userspace/native` 与 `kernel/GKI` 两列，单独列出 android15-6.6 / android16-6.12 / android17-6.18（计划）的分支映射。
+
+## [Task9 Deep Review] 1.12 AutoFDO 反馈导向编译优化 — 2026-04-11
+- **类型**：交叉引用
+- **位置**：与 §8.7 的交叉引用（行 184-201；目标章节 8.7 行 254-268）
+- **问题**：本章把 Android/ARM 场景下的 AutoFDO 采集基础写成 ETM/Coresight，而 §8.7 当前写成“基于 CPU 的 LBR 收集热路径信息”。两章对同一机制的硬件基础描述不一致。
+- **建议**：统一改成“x86 常见 LBR，Android ARM64 内核场景以 ETM/ETE 为主”，避免读者把 x86 术语直接套到 Android GKI。
+
+## [Task9 Deep Review] 1.12 AutoFDO 反馈导向编译优化 — 2026-04-11
+- **类型**：数据缺失
+- **位置**：`实测性能数据` + `在 Perfetto 中的观测`（行 160-176, 251-272）
+- **问题**：给出了 10.5% 几何平均、26.4% 峰值和 Binder 受益明显等结论，但没有标注这些数字对应的 benchmark/case，也没有给出一个最小 Perfetto/simpleperf 对照样例。
+- **建议**：至少补 1 个官方 benchmark 名称或截图占位，并把“Binder 受益明显”绑定到具体计数器/benchmark（如 IPC、cache miss、binder microbenchmark）。
+

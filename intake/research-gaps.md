@@ -684,3 +684,21 @@ PAMTD（Perceivable Average Minimum Time to Display）= 11ms / 点击可接受�
 
 ### 关联章节
 1.6（Android 版本演进）, 4.3（ART 内存管理：OAT 文件内存映射）, 8.2（App 启动全流程：类加载路径）
+
+## [2026-04-11] 1.12 AutoFDO 反馈导向编译优化 — 知识盲区
+
+### 盲区描述
+OEM/自研内核接入 AutoFDO 的关键前置条件缺失。正文提到 Kleaf、DDK、vendor 模块和 simpleperf，但没有说明哪些设备具备可用的 ETM/ETE/TRBE 采集能力、采集时是否需要 root/debug 接口、host 侧需要准备哪些符号（`vmlinux`/模块符号）、以及 profile 最终如何挂接到 Kleaf/DDK 构建目标。没有这些信息，读者很难把“知道有 AutoFDO”推进到“真的接进自家内核/模块”。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 梳理 ARM64 设备采集 ETM/ETE/TRBE 数据的硬件与权限前提（Pixel/GKI 与 OEM 自研设备分别看）
+- 补齐 simpleperf host 侧转换链路，明确 branch-list / create_llvm_prof / per-binary profile 的关系
+- 调研 Kleaf / DDK 中内核与模块接入 AFDO profile 的 BUILD/Bazel 入口与示例
+- 给出 vmlinux 与 vendor 模块分别生成/刷新 profile 的最小实践路径
+
+### 关联章节
+1.7（ART 编译管线）、8.7（Baseline Profiles）、14.2（Simpleperf）、16.1（Google 官方的性能优化思路）
+

@@ -37,9 +37,10 @@ related_chapters:
   - "8.7"
 pipeline_stage: task2b_pending
 task6_state: reviewed
-task9_state: pending
+task9_state: reviewed
 task2b_state: pending
 task6_result: needs-rework
+task9_result: needs-rework
 ---
 
 # 1.12 AutoFDO 反馈导向编译优化
