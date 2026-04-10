@@ -2532,5 +2532,38 @@
     "added_at": "2026-04-10T22:06:00",
     "status": "pending",
     "original_review_log": "logs/review/2026-04-10-22-review.md"
+  },
+  {
+    "section": "1.8",
+    "section_title": "Activity Manager Service 与性能分析",
+    "priority": 90,
+    "reason": "[review回炉] 缺少 outline/锚点，Activity 栈描述存在技术风险，两个版本差异小节仍是占位内容",
+    "material_paths": [
+      "intake/suggestions.md（含 review 意见）"
+    ],
+    "review_issues": [
+      {
+        "type": "需重写",
+        "location": "全文结构",
+        "detail": "缺少 outline-start/outline-end 和锚点设计，无法按 task6 规范检查锚点覆盖。",
+        "suggestion": "按 writing-guide.md 补齐 outline，并让每个锚点至少对应 1 个完整段落。"
+      },
+      {
+        "type": "需确认",
+        "location": "AMS 的 Activity 管理 → Activity 栈与 Task 管理",
+        "detail": "TaskStack / Task 的叙述存在版本与术语风险，可能与现代 Android 任务模型不一致。",
+        "suggestion": "交给 Task 9 核对当前 AOSP 中 Task、RootWindowContainer、TaskDisplayArea 相关实现后再修订。"
+      },
+      {
+        "type": "需补充素材",
+        "location": "Android 17 的 recreateOnConfigChanges、Android 14+ 的广播限制",
+        "detail": "两个小节目前只有占位式待验证说明，缺少正式资料支撑。",
+        "suggestion": "补充官方文档或源码依据，说明行为变化、影响范围和适用版本。"
+      }
+    ],
+    "added_by": "task6-review",
+    "added_at": "2026-04-10T23:59:00+08:00",
+    "status": "pending",
+    "original_review_log": "logs/review/2026-04-10-2359-review.md"
   }
 ]

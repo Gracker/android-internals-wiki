@@ -551,3 +551,23 @@
 - **位置**：BufferQueue 生产者-消费者章节
 - **问题**：章节标注了 `[待验证: 以下 dequeueBuffer/queueBuffer 实现在 Android 16 BlastBufferQueue 重构后可能有变化]`，但未补充 BlastBufferQueue（Android 12）的存在及其与旧版 BufferQueue 的关键差异。BlastBufferQueue 改变了 App↔SurfaceFlinger 的通信方式，对多窗口和游戏渲染性能分析很重要。
 - **建议**：补充 BlastBufferQueue 基本原理及其与旧版 BufferQueue 的区别说明。
+
+
+## [Task6 Review] 1.8 Activity Manager Service 与性能分析 — 2026-04-10
+- **类型**：需重写
+- **位置**：全文结构
+- **问题**：缺少 `outline-start` / `outline-end` 与锚点设计，Task 6 无法按规范做锚点覆盖检查。
+- **建议**：按 writing-guide.md 补齐 outline 块，并让每个锚点至少对应 1 个完整段落。
+- **review 日志**：logs/review/2026-04-10-2359-review.md
+
+- **类型**：需确认
+- **位置**：AMS 的 Activity 管理 → Activity 栈与 Task 管理
+- **问题**：`TaskStack` / `Task` 的叙述存在版本与术语风险，可能与现代 Android 任务模型不一致。
+- **建议**：交给 Task 9 核对当前 AOSP 中 `Task`、`RootWindowContainer`、`TaskDisplayArea` 相关实现后再修订。
+- **review 日志**：logs/review/2026-04-10-2359-review.md
+
+- **类型**：需补充素材
+- **位置**：Android 17 的 `recreateOnConfigChanges`、Android 14+ 的广播限制
+- **问题**：两节目前只有占位式 `[待验证]`，不足以支撑成章。
+- **建议**：补充官方文档或源码依据，至少说明行为变化、影响范围和适用版本。
+- **review 日志**：logs/review/2026-04-10-2359-review.md
