@@ -31,6 +31,13 @@ created_date: "2026-04-04"
 gap_source: "AOSP结构+官方文档+研究素材+读者需求"
 rework_date: "2026-04-05"
 rework_by: "task2a"
+reviewed_by: openclaw-task6
+reviewed_date: "2026-04-10"
+task6_result: needs-rework
+pipeline_stage: task2b_pending
+task6_state: reviewed
+task9_state: pending
+task2b_state: pending
 ---
 
 # 1.8 Activity Manager Service 与性能分析
@@ -49,7 +56,7 @@ rework_by: "task2a"
 
 ## AMS 在 Android 架构中的角色
 
-AMS 运行在 `system_server` 进程中，是 Android 最核心的系统服务之一——如果不算最核心的那个的话。它管理着四大组件（Activity、Service、BroadcastReceiver、ContentProvider）的完整生命周期，同时负责进程的创建、优先级调整和回收。
+AMS 运行在 `system_server` 进程中，是 Android 最核心的系统服务之一。它管理着四大组件（Activity、Service、BroadcastReceiver、ContentProvider）的完整生命周期，同时负责进程的创建、优先级调整和回收。
 
 从架构上看，AMS 和几个关键服务之间有紧密的协作关系：
 
@@ -316,7 +323,7 @@ App.startActivity()
 [待高爷补充：Trace 截图]
 ```
 
-### Android 17 recreateOnConfigChanges
+### Android 17 的 `recreateOnConfigChanges`
 
 [待验证：Android 17 引入了 recreateOnConfigChanges 行为变更，可能影响 Activity 在配置变更（如屏幕旋转）时的重启策略。待正式文档发布后补充。]
 
@@ -459,7 +466,7 @@ AMS 通过 `BroadcastQueue` 管理所有广播的分发。系统维护两个队�
 | Android 14 (API 34) | FGS 类型声明强制化 + while-in-use 限制 | 必须声明 `foregroundServiceType` |
 | Android 15 (API 35) | dataSync FGS 运行时间上限（6h） | 长时间后台数据同步需换方案 |
 | Android 16 (API 36) | 后台 Job 配额 + ProfilingManager | 后台任务受配额限制 |
-| Android 17 (API 37) | 后台音频 API 限制 + recreateOnConfigChanges | [待验证] |
+| Android 17 (API 37) | 后台音频 API 限制 + `recreateOnConfigChanges` | [待验证：具体行为变更待正式文档确认] |
 
 > [已验证: 官方文档, developer.android.com — 各版本 Behavior changes]
 
