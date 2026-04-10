@@ -1,5 +1,24 @@
 [
   {
+    "section": "7.14",
+    "section_title": "GAPS：Android 动态分析目标可达性路径重建",
+    "priority": 80,
+    "reason": "知识缺口挖掘：GAPS 论文（16/20）是 Android 动态分析领域最新 SOTA，ch07 流畅性章缺少方法可达性路径重建内容",
+    "material_paths": [
+      "intake/daily-info/2026-04-10.md"
+    ],
+    "added_by": "openclaw-task2a",
+    "added_at": "2026-04-10T00:14:00+08:00",
+    "status": "pending",
+    "gap_score": 16,
+    "gap_dimensions": {
+      "relevance": 4,
+      "depth": 4,
+      "timeliness": 5,
+      "verifiability": 3
+    }
+  },
+  {
     "section": "2.1",
     "section_title": "Android 渲染架构全景",
     "priority": 90,

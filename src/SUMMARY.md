@@ -117,6 +117,7 @@ tags:
   - [7.11 WebView 渲染性能与优化](part2-performance/ch07-smoothness/11-webview-performance.md)
   - [7.12 View 体系性能优化：布局层级、inflate 与 measure/layout 开销](part2-performance/ch07-smoothness/12-view-layout-performance.md)
   - [7.13 SystemUI 性能分析](part2-performance/ch07-smoothness/13-systemui-performance.md)
+  - [7.14 GAPS：Android 动态分析目标可达性路径重建](part2-performance/ch07-smoothness/14-gaps-dynamic-analysis.md)
 
 - [第 8 章：响应速度](part2-performance/ch08-responsiveness/README.md)
   - [8.1 响应速度原理](part2-performance/ch08-responsiveness/01-responsiveness-principles.md)
