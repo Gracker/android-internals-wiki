@@ -13,12 +13,12 @@
     "task6_pending": 165,
     "task6_reviewed": 3,
     "task6_revisiting": 5,
-    "task9_pending": 173,
-    "task9_reviewed": 0,
+    "task9_pending": 172,
+    "task9_reviewed": 1,
     "task2b_idle": 165,
     "task2b_pending": 3,
     "task2b_fixed": 5,
-    "last_updated": "2026-04-11T06:08:00+08:00",
+    "last_updated": "2026-04-11T06:20:00+08:00",
     "unknown": 4
   },
   "pipeline": {
@@ -34,7 +34,8 @@
       "unknown": 2
     },
     "task9_state_counts": {
-      "pending": 173,
+      "pending": 172,
+      "reviewed": 1,
       "unknown": 2
     },
     "task2b_state_counts": {
@@ -1455,7 +1456,7 @@
       "status": "ready-for-review",
       "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
-      "task9_state": "pending",
+      "task9_state": "reviewed",
       "task2b_state": "pending",
       "reviewed_by": "openclaw-task6",
       "reviewed_date": "2026-04-11",
@@ -2880,6 +2881,28 @@
         "缺少 native mutex / binder driver / system_server 锁诊断路径（P1）",
         "关键量化数字缺少 benchmark / 设备 / trace 绑定（P2）",
         "与 §1.4 对 Binder 线程池数量表述不一致（P2）"
+      ]
+    },
+    "1.15": {
+      "reviewed_date": "2026-04-11",
+      "reviewed_by": "openclaw-task6",
+      "review_status": "ready-for-review",
+      "deep_review_date": "2026-04-11T06:20:00+08:00",
+      "deep_review_by": "task9-deep-tech-review",
+      "deep_review_score": 1.8,
+      "deep_review_p0": 4,
+      "deep_review_p1": 3,
+      "deep_review_p2": 2,
+      "issues_found": [
+        "Process.getUidForPid 示例被误写为 @FastNative native（P0）",
+        "@CriticalNative 参数约束与 LongSparseArray 示例双重失真（P0）",
+        "16KB Play 适用范围被写大，遗漏 target Android 15+ / 64-bit 限定（P0）",
+        "ATrace 公开头文件路径与内部 cutils 头混用（P0）",
+        "Perfetto 观测 JNI 的采集前提没有讲清（P1）",
+        "Android 17 验证声明与正文覆盖不一致（P1）",
+        "缺少 native 线程 attach/detach 与 local ref 压力（P1）",
+        "libbinder_ndk 20-40% 量化比较缺少实验边界（P2）",
+        "与 §4.7 / §14.2 的交叉引用缺失，事实表有漂移风险（P2）"
       ]
     }
   }

@@ -2995,5 +2995,76 @@
     "completed_at": "2026-04-11T05:56:19+08:00",
     "completed_by": "task2b-content-processing-rework",
     "result": "fixed"
+  },
+  {
+    "section": "1.15",
+    "section_title": "JNI/NDK 性能优化",
+    "priority": 95,
+    "reason": "[Deep Tech Review] FastNative/CriticalNative 示例、16KB Play 适用范围与 ATrace 头文件路径存在事实错误",
+    "material_paths": [
+      "intake/suggestions.md",
+      "intake/research-gaps.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "行 152-158",
+        "detail": "把 `android.os.Process.getUidForPid()` 写成 `@FastNative native` 示例，但 AOSP android-16.0.0_r1 中该方法是纯 Java helper，不是 native 方法，也没有 `@FastNative` 注解。",
+        "suggestion": "替换为经 AOSP 核对的 `@FastNative` 示例，并删除基于该例子推导的 `/proc/<pid>/status` 说明。"
+      },
+      {
+        "type": "源码错误",
+        "location": "行 164-174",
+        "detail": "把 `@CriticalNative` 的参数约束写成“原始类型和原始类型数组”，并举 `LongSparseArray.nativeGC()` 为例。官方文档明确要求“不能使用 managed objects”，数组属于 managed object；AOSP android-16 的 `LongSparseArray.java` 也不存在该 `@CriticalNative` 方法。",
+        "suggestion": "改成“仅 primitive 参数/返回值，且无 implicit this”，并换成真实可核对的 framework 示例。"
+      },
+      {
+        "type": "版本差异",
+        "location": "行 258-260, 294, 416",
+        "detail": "16KB page size 的 Play 要求被写成“所有新 App 和更新都必须支持，否则拒绝上架”。官方说明的真实范围是：自 2025-11-01 起，提交到 Google Play、且 targeting Android 15+ 的 64 位设备版本需要支持 16KB page size。",
+        "suggestion": "把政策范围改精确，明确目标版本、64 位设备约束，以及与“是否包含 native code”之间的关系。"
+      },
+      {
+        "type": "源码错误",
+        "location": "行 323-374, 431-434",
+        "detail": "代码示例使用的是 `<android/trace.h>` / `ATrace_beginSection()` API，但参考路径写成 `system/core/libcutils/include/android/trace.h`。AOSP android-16 中公开 NDK 头文件位于 `frameworks/native/include/android/trace.h`；`system/core/libcutils/include/cutils/trace.h` 是另一套内部宏头，并不声明 `ATrace_beginSection()`。",
+        "suggestion": "把来源路径改成 `frameworks/native/include/android/trace.h`；若要同时讲内部宏 `ATRACE_*`，单列说明 `cutils/trace.h` 的作用边界。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-11T06:20:00+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "1.15",
+    "section_title": "JNI/NDK 性能优化",
+    "priority": 85,
+    "reason": "[Deep Tech Review] Perfetto 可观测链未闭环，Android 17 覆盖声明不自洽，且缺少 native 线程生命周期关键坑点",
+    "material_paths": [
+      "intake/research-gaps.md"
+    ],
+    "review_issues": [
+      {
+        "type": "原理断裂",
+        "location": "行 67-75, 300-317",
+        "detail": "章节想教读者“在 Perfetto 中识别 JNI 开销”，但直接跳到 `JNI_*` slice 名称，没有解释前置条件。实际要先区分三种可观测路径：手工 `ATrace` 插桩、Perfetto callstack/native symbol 采样、simpleperf `report-sample --protobuf` 转 Perfetto。缺这层桥接，方法不可复现。",
+        "suggestion": "补一段“采集方式 → Perfetto/Perfetto UI 中可见信号 → 局限性”的完整链路，并明确默认 trace 不会自动出现 JNI transition slice。"
+      },
+      {
+        "type": "版本差异",
+        "location": "frontmatter 行 6-8；正文行 408-417",
+        "detail": "frontmatter 声称适用 Android 8-17，且 `last_verified_against` 为 `android-17-beta3`，但版本演进表只写到 Android 16，Android 17 仍是空白占位。当前“验证范围”与正文覆盖不一致。",
+        "suggestion": "要么补出 android-17-beta3 下已核对的 JNI/ART 结论，要么把 `applicable_versions` / `last_verified_against` 回收为已真正覆盖的版本范围。"
+      },
+      {
+        "type": "知识盲区",
+        "location": "全文主题覆盖",
+        "detail": "缺少 native 创建线程的 `AttachCurrentThread` / `DetachCurrentThread` 成本、`JNIEnv*` 线程亲和性，以及循环里 local reference 压力这组三连坑。对音视频、游戏、端侧 AI 这类高频 JNI 场景，这些比单次 transition 纳秒数更常见。",
+        "suggestion": "新增“小节：native 线程与引用生命周期”，覆盖线程附着时机、线程池复用、局部引用表溢出与批量释放策略。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-11T06:20:00+08:00",
+    "status": "pending"
   }
 ]

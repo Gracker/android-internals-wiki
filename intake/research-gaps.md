@@ -735,3 +735,19 @@ OEM/自研内核接入 AutoFDO 的关键前置条件缺失。正文提到 Kleaf�
 
 ### 关联章节
 §1.11、§1.3、§8.2、§8.3
+
+## [2026-04-11] 1.15 JNI/NDK 性能优化 — 知识盲区
+
+### 盲区描述
+章节没有覆盖 native 创建线程时的 `AttachCurrentThread` / `DetachCurrentThread` 成本、`JNIEnv*` 的线程亲和性，以及循环里 local reference 表膨胀这组三连坑。对媒体、游戏、端侧 AI 推理这类高频 JNI 场景，这些问题比单次 transition 纳秒数更容易成为真实性能瓶颈。
+
+### 重要程度
+高
+
+### 建议研究方向
+- `AttachCurrentThread` / `DetachCurrentThread` 在 Android 14-17 的行为边界与线程池复用建议
+- local reference table overflow 的触发模式、批量 `DeleteLocalRef` 策略与实测案例
+- `RegisterNatives`、线程附着、DirectByteBuffer 在端侧 AI / 音视频 pipeline 中的组合实践
+
+### 关联章节
+1.1、4.3、5.11、14.2
