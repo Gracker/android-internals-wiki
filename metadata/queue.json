@@ -2327,10 +2327,22 @@
         "location": "关键 native 服务的启动顺序表格（surfaceflinger 行）",
         "detail": "声称启动阶段为 'on core'，但 AOSP init.rc 标准触发阶段序列中不存在此阶段。surfaceflinger 实际通过 class_start core 在 late-init 或 boot 阶段触发。",
         "suggestion": "修正 surfaceflinger 启动阶段为实际触发条件（class_start core），或说明启动阶段的精确引用来源（AOSP 版本）。"
+      },
+      {
+        "type": "原理断裂",
+        "location": "SystemServer 启动阶段表格/正文",
+        "detail": "WMS 和 InputManagerService 被列在第三阶段（Other Services），但两者均在 SystemServer.startCoreServices() 中启动",
+        "suggestion": "将 WMS 和 InputManagerService 移至第二阶段（Core Services）表格行；正文对应描述修正"
+      },
+      {
+        "type": "版本差异",
+        "location": "frontmatter applicable_versions + Android 16 启动优化段落",
+        "detail": "AutoFDO 在 Android 16 (Kernel 6.12) 才引入，章节标注 Android 8 (API 26) - Android 16 (API 36) 存在矛盾",
+        "suggestion": "修正 applicable_versions 为更精确的版本范围，或在 AutoFDO 相关段落添加版本标签 [适用于: Android 15/16/17 beta]"
       }
     ],
     "added_by": "task9-deep-tech-review",
-    "added_at": "2026-04-10T02:33:02.897840",
+    "added_at": "2026-04-10T09:01:48",
     "status": "completed",
     "completed_at": "2026-04-10T02:41:34.521162",
     "completed_by": "task2b-rework",

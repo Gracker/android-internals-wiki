@@ -507,3 +507,24 @@ installd 是常驻 daemon，通过 fork 子进程的方式执行 dex2oat 等特�
 
 ### 关联章节
 §1.7（ART 编译管线）、§1.3（进程与线程）
+
+
+## [2026-04-10] 1.2 系统启动全流程 — ContentProvider 启动时序缺失
+
+### 盲区描述
+章节覆盖了 init → Zygote → SystemServer → Launcher 的完整启动链，但没有覆盖 ContentProvider 的启动时序。在 Android 中，ContentProvider.onCreate() 在 Application.onCreate() 之前执行，这是 App 冷启动的第一道关卡，也是最常见的启动优化盲区。具体来说：
+- ContentProvider 的 publishContentProviders() 调用发生在 Application.attachBaseContext() 之后、Application.onCreate() 之前
+- 如果 ContentProvider.onCreate() 中有耗时操作（如加载 SO 库、访问数据库），会直接拖慢冷启动速度
+- 这是理解 1.10 ContentProvider 性能和 8.2 App 启动全流程的关键前置知识
+
+### 重要程度
+高
+
+### 建议研究方向
+- ContentProvider.onCreate() 的精确执行时机（相对于 Application 生命周期）
+- ActivityThread.installContentProviders() 的完整源码流程
+- 如何在 Perfetto 中定位 ContentProvider 初始化耗时
+- App Startup 库如何合并多个 ContentProvider 的初始化
+
+### 关联章节
+1.10（ContentProvider 性能）, 8.2（App 启动全流程）, 8.3（启动优化策略）

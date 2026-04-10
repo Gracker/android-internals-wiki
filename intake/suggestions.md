@@ -385,3 +385,60 @@
 - **位置**：版本演进表格（Line 473-484）
 - **问题**：Android 11 和 Android 15 在版本演进表格中缺失，而 Android 11 是 VDEX 广泛使用的关键版本
 - **建议**：补充 Android 11（VDEX 文件验证效率提升）和 Android 15（Mainline dexopt 模块化推送成熟化）条目；若确认无重大变化则标注"无重大包管理变更"
+
+
+## [Task2A Gap Mining] 知识缺口挖掘记录 — 2026-04-10 07:06
+
+- **Phase**: Phase 0 无空 draft（28 个 draft 均 >50 行）→ Phase 1（Gap Mining 复检）
+- **Gap Mining 结果**: 无新缺口（复检确认 05:06/06:05 结论仍然成立）
+- **Queue 状态**: 6 个非 FRESHNESS pending 条目（1.14/2.18/13.8/4.8/14.9）均已存在文件且有实质内容（68-444 行），queue 条目为历史遗留
+- **本轮处理**: 1.4 Binder IPC 草稿元数据补充 + 状态升级（draft → ready-for-review）
+- **Git commit**: fb1e3eb
+- **全书进度**: draft 27→26（1.4 已升级），ready-for-review 29→30
+- **剩余工作**: 
+  1. 其余 26 个 draft 章节（ch18 渲染链路 15 个 + ch02/03/06/13/17 各 1-3 个）
+  2. queue.json 47 条 pending FRESHNESS 任务（Task 2B 范畴）
+  3. 下轮可继续推进 draft→ready-for-review 转换
+
+
+## [Task9 Deep Review] 1.2 系统启动全流程 — 2026-04-10
+- **类型**：原理断裂 + 版本差异
+- **位置**：SystemServer 启动阶段正文/表格
+- **问题**：WMS 和 InputManagerService 被列在"第三阶段（Other Services）"，但两者均在 SystemServer.startCoreServices() 阶段启动；servicemanager "最先启动" 描述不准确（ueventd/healthd/watchdog 更早）
+- **建议**：将 WMS/IMS 移至 Core Services 阶段；补充 servicemanager "Binder 通信体系中" 最先启动的条件说明
+
+## [Task9 Deep Review] 1.2 系统启动全流程 — 2026-04-10
+- **类型**：版本差异 + 数据缺失
+- **位置**：frontmatter applicable_versions + Android 16 启动优化段落
+- **问题**：标注 Android 8 (API 26) - Android 16 (API 36)，但 AutoFDO 仅适用于 Android 16 (Kernel 6.12)，内容实质不适配；"Pixel 10 模块加载减少 30%" 无来源
+- **建议**：修正 applicable_versions 或在 AutoFDO 段落加 [适用于: Android 15/16/17 beta] 标签；补充 AutoFDO 量化数据来源
+
+## [Task9 Deep Review] 1.2 系统启动全流程 — 2026-04-10
+- **类型**：知识盲区
+- **位置**：Zygote → SystemServer 时序描述
+- **问题**：未说明 Zygote fork SystemServer 几乎无耗时（fork 本身是内存页表复制，不复制数据）；Zygote fork 后 SystemServer 与 Zygote 预加载实际是并发的
+- **建议**：补充 Zygote fork 机制说明（fork→copy-on-write 父子进程关系），说明为何 fork SystemServer 本身不耗时
+
+## [Task9 Deep Review] 1.2 系统启动全流程 — 2026-04-10
+- **类型**：数据缺失
+- **位置**：boot_progress 里程碑事件段落
+- **问题**：boot_progress_preload_start/end 等事件标注 [已验证: source.android.com]，但该文档是总览页，事件列表源码定义在 frameworks/base/core/java/com/android/server/am/ActivityManagerService.java 或 system/core/bootstat/
+- **建议**：标注更精确的 AOSP 源码位置（如 AMS 中对应 boot_progress_* 输出的代码路径）
+
+## [Task9 Deep Review] 1.2 系统启动全流程 — 2026-04-10
+- **类型**：数据缺失
+- **位置**：Zygote 预加载类数量描述
+- **问题**：Zygote 预加载 "3000-4000 个常用类" 仅适用于 Android 10+（APEX 模块化后）；Android 8/9 版本 preloaded-classes 数量更多（约 5000+），未区分版本可能误导读者
+- **建议**：在描述中加版本标签：[适用于: Android 10+]，旧版本数据另注说明
+
+## [Task9 Deep Review] 1.2 系统启动全流程 — 2026-04-10
+- **类型**：知识盲区
+- **位置**：开机完成度量章节
+- **问题**：提到了 locked_boot_completed 但未解释 Direct Boot 机制（Android 7.0 引入），读者无法理解其与一般"开机完成"的状态区别
+- **建议**：在 boot_completed 广播段落增加 Direct Boot 机制说明（Credential-encrypted / Device-encrypted 存储区域）
+
+## [Task9 Deep Review] 1.2 系统启动全流程 — 2026-04-10
+- **类型**：原理断裂
+- **位置**：Android 16 启动优化段落（AutoFDO 部分）
+- **问题**：AutoFDO 描述缺少具体编译配置、内核优化指标和 Kernel 6.12 代码路径，读者无法在 AOSP 中验证
+- **建议**：补充 AutoFDO 在 android-16.0.0_r1 内核中的关键源码路径（如 kernel config CONFIG_AUTOFDO）、Perfetto 中的验证方法
