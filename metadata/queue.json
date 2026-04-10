@@ -2194,43 +2194,35 @@
   {
     "section": "2.11",
     "section_title": "Flutter 渲染管线与性能",
-    "priority": 85,
-    "reason": "[Deep Tech Review] 3处P1问题：Perfetto集成版本标注错误、Impeller数据来源存疑、shader编译底层原因缺失；另1处P1交叉引用错误（§2.3不存在）",
+    "priority": 90,
+    "reason": "[review回炉] DevTools版本信息不准确、Impeller数据来源存疑、Hybrid Composition缺少Android 14+优化信息",
     "material_paths": [
       "intake/suggestions.md"
     ],
     "review_issues": [
       {
-        "type": "版本差异",
-        "location": "Flutter DevTools 段落",
-        "detail": "章节称'从 Flutter 3.19 开始 Performance 面板集成了 Perfetto trace viewer'，但实际集成时间约在 Flutter 3.13-3.16，3.19 的主要变化是 Impeller 默认化",
-        "suggestion": "修正为 Flutter 3.16 期间集成，并标注 [待验证：确认具体版本号]"
+        "type": "需补充素材",
+        "location": "DevTools版本段落",
+        "detail": "DevTools版本信息不准确，当前引用devtools.dart.dev发布记录，需要确认具体版本号",
+        "suggestion": "查阅Flutter官方发布记录确认DevTools 2.28与Flutter版本对应关系，补充准确版本号"
       },
       {
-        "type": "数据缺失",
-        "location": "Impeller 性能数据段落",
-        "detail": "30-50% 性能改善数据引用自'Flutter 团队 2025 年基准测试以及多个第三方测试报告'，但章节末尾自相矛盾地标注了 [存疑: 非 Flutter 官方基准]",
-        "suggestion": "将断言降级为'社区报告显示'，补充具体 benchmark 来源（Flutter 官方博客 post 或 conference session 编号），并与 [存疑] 标注对齐"
+        "type": "存疑",
+        "location": "Impeller性能数据段落",
+        "detail": "30-50%性能改善数据来源为社区综合估算（多个第三方报告，2024-2025），非Flutter官方基准测试",
+        "suggestion": "读者应将此数据视为近似参考值，标注数据来源局限性"
       },
       {
-        "type": "原理断裂",
-        "location": "Shader 编译卡顿段落",
-        "detail": "Skia shader 编译卡顿仅解释了'在 Raster 线程编译耗时'，未说明移动 GPU 的 shader 编译器性能远差于桌面 GPU 的底层原因，读者可能误以为是 Flutter bug 而非 GPU 架构限制",
-        "suggestion": "补充移动 GPU driver shader compiler vs 桌面 GPU 的性能差距背景，解释为什么 JIT 方式在移动端影响更大"
-      },
-      {
-        "type": "交叉引用错误",
-        "location": "与其他章节的关联 - §2.3 VSync 机制",
-        "detail": "引用了 §2.3 VSync 机制，但 progress.json 和 src/ 中不存在 2.3 章节（相邻章节为 2.1 和 2.4 Choreographer）",
-        "suggestion": "修正引用目标为正确章节号（若无对应 VSync 章节则删除该引用），或确认 2.3 是否存在于其他位置"
+        "type": "需补充素材",
+        "location": "PlatformView Hybrid Composition段落",
+        "detail": "缺少Android 14+上Hybrid Composition的优化信息",
+        "suggestion": "补充Android 14+对Hybrid Composition的进一步优化内容"
       }
     ],
-    "added_by": "task9-deep-tech-review",
-    "added_at": "2026-04-09T23:27:00",
-    "status": "completed",
-    "completed_at": "2026-04-09T16:45:47",
-    "completed_by": "task2b-rework",
-    "notes": "修复: DevTools Perfetto集成版本修正(3.19→DevTools2.28), Impeller数据降级为社区参考值, 补充移动GPU shader编译性能差距背景。§2.3交叉引用验证存在(误报)"
+    "added_by": "task6-review",
+    "added_at": "2026-04-10T12:24:40.367408",
+    "status": "pending",
+    "original_review_log": "logs/review/2026-04-10-12-review.md"
   },
   {
     "section": "1.6",

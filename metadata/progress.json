@@ -4,16 +4,16 @@
   "metrics": {
     "total": 144,
     "draft": 15,
-    "ready-for-review": 29,
-    "reviewed": 5,
+    "ready-for-review": 28,
+    "reviewed": 6,
     "finalized": 37,
     "staging_drafts": 0,
     "last_updated": "2026-04-10T10:45:00+08:00",
     "processing": 0,
     "ready-to-publish": 17,
     "last_reviewed": "2026-04-10",
-    "last_reviewed_section": "14.3 内存分析工具",
-    "reviewed_today": 17,
+    "last_reviewed_section": "2.11 Flutter 渲染管线与性能",
+    "reviewed_today": 18,
     "ready_to_publish": 1
   },
   "reviewed_sections": {
@@ -210,9 +210,9 @@
       ]
     },
     "2.11": {
-      "reviewed_date": "2026-04-03",
+      "reviewed_date": "2026-04-10",
       "reviewed_by": "openclaw-task6",
-      "review_status": "finalized-v2",
+      "review_status": "reviewed",
       "fixes_applied": [
         "11处'你'→'我们'替换（writing-guide §3.5合规）",
         "frontmatter补充section字段",
@@ -5449,6 +5449,12 @@
       "drafted_by": "openclaw-task2a",
       "gap_source": "研究素材",
       "confidence": "medium"
+    },
+    "16.5": {
+      "status": "reviewed",
+      "drafted_date": "",
+      "reviewed_date": "2026-04-10",
+      "reviewed_by": "openclaw-task6"
     }
   },
   "5.1": {
@@ -5963,5 +5969,6 @@
   },
   "deep_review_sessions": [],
   "last_reviewed": "2026-04-10",
-  "last_reviewed_section": "触摸响应的性能分析"
+  "last_reviewed_section": "触摸响应的性能分析",
+  "review_count": 1
 }

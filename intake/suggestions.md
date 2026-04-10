@@ -482,3 +482,24 @@
 - **位置**：L226-246（正常帧时序示意）
 - **问题**："measure/layout (2-5ms)"、"draw (构建 DisplayList) (5-8ms)" 等具体数值是示意性数据，但未标注
 - **建议**：在时序图下方加注"[示意数据，典型 60Hz 设备参考值，非实测]"
+
+## [Task6 Review] 2.11 Flutter 渲染管线与性能 — 2026-04-10
+- **类型**：需补充素材
+- **位置**：DevTools版本段落
+- **问题**：DevTools版本信息不准确，当前引用devtools.dart.dev发布记录，需要确认具体版本号
+- **建议**：查阅Flutter官方发布记录确认DevTools 2.28与Flutter版本对应关系，补充准确版本号
+- **review 日志**：logs/review/2026-04-10-16-review.md
+
+## [Task6 Review] 2.11 Flutter 渲染管线与性能 — 2026-04-10
+- **类型**：存疑
+- **位置**：Impeller性能数据段落
+- **问题**：30-50%性能改善数据来源为社区综合估算（多个第三方报告，2024-2025），非Flutter官方基准测试
+- **建议**：读者应将此数据视为近似参考值，标注数据来源局限性
+- **review 日志**：logs/review/2026-04-10-16-review.md
+
+## [Task6 Review] 2.11 Flutter 渲染管线与性能 — 2026-04-10
+- **类型**：需补充素材
+- **位置**：PlatformView Hybrid Composition段落
+- **问题**：缺少Android 14+上Hybrid Composition的优化信息
+- **建议**：补充Android 14+对Hybrid Composition的进一步优化内容
+- **review 日志**：logs/review/2026-04-10-16-review.md
