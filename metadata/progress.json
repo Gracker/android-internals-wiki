@@ -1,36 +1,37 @@
 {
-  "generated_at": "2026-04-11T07:02:11+08:00",
+  "generated_at": "2026-04-11T07:13:42+08:00",
   "state_machine_version": "v2",
   "total_sections": 175,
   "metrics": {
     "total": 175,
     "draft": 0,
     "ready-for-review": 171,
-    "pipeline_task6_pending": 171,
-    "pipeline_task9_pending": 0,
+    "pipeline_task6_pending": 170,
+    "pipeline_task9_pending": 1,
     "pipeline_task2b_pending": 2,
     "pipeline_publish_ready": 0,
-    "task6_pending": 165,
-    "task6_reviewed": 2,
+    "task6_pending": 164,
+    "task6_reviewed": 3,
     "task6_revisiting": 6,
     "task9_pending": 173,
     "task9_reviewed": 0,
     "task2b_idle": 165,
     "task2b_pending": 2,
     "task2b_fixed": 6,
-    "last_updated": "2026-04-11T07:02:11+08:00",
+    "last_updated": "2026-04-11T07:13:42+08:00",
     "unknown": 4
   },
   "pipeline": {
     "pipeline_stage_counts": {
-      "task6_pending": 171,
+      "task6_pending": 170,
       "task2b_pending": 2,
-      "unknown": 2
+      "unknown": 2,
+      "task9_pending": 1
     },
     "task6_state_counts": {
-      "pending": 165,
+      "pending": 164,
       "revisiting": 6,
-      "reviewed": 2,
+      "reviewed": 3,
       "unknown": 2
     },
     "task9_state_counts": {
@@ -1384,8 +1385,8 @@
       "title": "Audio Pipeline 延迟与性能",
       "path": "src/part1-fundamentals/ch01-architecture/16-audio-pipeline-performance.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "pending",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
       "task9_state": "pending",
       "task2b_state": "idle"
     },
