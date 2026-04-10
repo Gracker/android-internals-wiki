@@ -1,7 +1,7 @@
 ---
 title: "SurfaceView 直出链路"
 chapter: "18.6"
-status: draft
+status: ready-for-review
 applicable_versions: "Android 1.0 (API 1) - Android 16 (API 36)"
 tags: ["SurfaceView", "BLAST", "SurfaceFlinger", "HWC", "Direct-Producer", "独立Layer", "Overlay", "渲染链路"]
 related_chapters: ["2.1", "2.6", "2.13", "2.14", "18.1", "18.7", "18.8", "18.9"]

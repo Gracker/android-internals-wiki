@@ -1,7 +1,7 @@
 ---
 title: "Android View 软件渲染链路"
 chapter: "18.3"
-status: draft
+status: ready-for-review
 applicable_versions: "Android 9 (API 28) - Android 16 (API 36)"
 tags: ["software-rendering", "CPU-rasterization", "Skia", "Canvas", "lockCanvas"]
 related_chapters: ["2.1", "2.5", "18.2"]

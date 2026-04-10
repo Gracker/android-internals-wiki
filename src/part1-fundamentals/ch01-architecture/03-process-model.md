@@ -1,7 +1,7 @@
 ---
 title: "进程模型与生命周期管理"
 chapter: "1.3"
-status: reviewed
+status: ready-for-review
 applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
 last_verified: "2026-04-09"
 last_verified_against: "AOSP android-16.0.0_r1"

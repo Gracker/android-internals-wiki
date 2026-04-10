@@ -1,7 +1,7 @@
 ---
 title: "ProfilingManager 系统触发式性能追踪"
 chapter: "8.8"
-status: draft
+status: ready-for-review
 applicable_versions: "Android 15 (API 35) - Android 17 (API 37)"
 tags: [profiling-manager, system-triggered, cold-start, anr, tracing, performance-monitoring]
 related_chapters: ["8.2", "9.3", "13.7"]

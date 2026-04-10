@@ -4,7 +4,7 @@ chapter: "4.3"
 section: "4.3"
 drafted_date: "2026-03-31"
 drafted_by: "openclaw-task2"
-status: ready-to-publish
+status: ready-for-review
 applicable_versions: "Android 8.0 (API 26) - Android 17 (API 36)"
 last_verified: "2026-03-31"
 reviewed_date: "2026-04-06"

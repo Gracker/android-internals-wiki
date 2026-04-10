@@ -2,7 +2,7 @@
 title: "手势识别算法与性能优化"
 chapter: "3.6"
 section: "3.6"
-status: "draft"
+status: ready-for-review
 drafted_by: "openclaw-task"
 applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
 confidence: "medium"

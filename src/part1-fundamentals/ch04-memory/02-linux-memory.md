@@ -1,7 +1,7 @@
 ---
 title: "Linux 内核内存管理"
 chapter: "4.2"
-status: ready-to-publish
+status: ready-for-review
 drafted_date: "2026-03-30"
 polish_count: 1
 polish_date: "2026-04-06"

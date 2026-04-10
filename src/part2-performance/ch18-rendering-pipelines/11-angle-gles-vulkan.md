@@ -1,7 +1,7 @@
 ---
 title: "ANGLE（GLES-over-Vulkan 翻译层）"
 chapter: "18.11"
-status: draft
+status: ready-for-review
 applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
 tags: ["ANGLE", "GLES", "Vulkan", "翻译层", "SPIR-V", "图形驱动", "渲染链路"]
 related_chapters: ["2.14", "18.8", "18.9"]

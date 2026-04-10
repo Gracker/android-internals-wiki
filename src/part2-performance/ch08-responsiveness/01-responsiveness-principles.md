@@ -2,7 +2,7 @@
 title: "响应速度原理"
 chapter: "8.1"
 section: "8.1"
-status: ready-to-publish
+status: ready-for-review
 polish_count: 1
 polish_date: "2026-04-05"
 polish_by: "task2b-polish"

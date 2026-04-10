@@ -2,7 +2,7 @@
 title: "GAPS：Android 动态分析目标可达性路径重建"
 chapter: "7.14"
 section: "7.14"
-status: draft
+status: ready-for-review
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
 tags: [dynamic-analysis, gui-testing, static-analysis, perfetto, jank, android-testing]
 related_chapters: ["7.3", "7.4", "13.1", "13.3"]

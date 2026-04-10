@@ -1,7 +1,7 @@
 ---
 title: "锁竞争与同步性能分析"
 chapter: "1.14"
-status: draft
+status: ready-for-review
 applicable_versions: "Android 1.0 (API 1) - Android 17 (API 37)"
 tags: [Mutex, Futex, monitor lock, 优先级反转, 锁竞争, DeliQueue, Perfetto, Binder, jank, ANR]
 related_chapters: ["1.5", "1.13", "2.4", "2.5", "7.1", "9.1"]

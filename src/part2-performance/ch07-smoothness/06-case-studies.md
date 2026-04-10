@@ -6,7 +6,7 @@ drafted_date: "2026-04-01"
 drafted_by: "openclaw-task2a"
 reviewed_date: "2026-04-06"
 reviewed_by: "openclaw-task6"
-status: ready-to-publish
+status: ready-for-review
 applicable_versions: "Android 8.0 (API 26) - Android 16 (API 36)"
 last_verified: "2026-04-01"
 last_verified_against: "AOSP android-16.0.0_r1, Android 官方文档"

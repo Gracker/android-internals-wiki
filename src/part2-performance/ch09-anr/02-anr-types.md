@@ -2,7 +2,7 @@
 title: "ANR 类型与触发条件"
 section: "9.2"
 chapter: "9.2"
-status: ready-to-publish
+status: ready-for-review
 drafted_date: "2026-04-02"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37)"

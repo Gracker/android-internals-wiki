@@ -1,7 +1,7 @@
 ---
 title: "可变刷新率渲染管线"
 chapter: "18.19"
-status: draft
+status: ready-for-review
 applicable_versions: "Android 11 (API 30) - Android 16 (API 36)"
 tags: ["VRR", "ARR", "Variable-Refresh-Rate", "LTPO", "setFrameRate", "FrameTimeline", "渲染链路"]
 related_chapters: ["2.3", "2.18", "2.19"]

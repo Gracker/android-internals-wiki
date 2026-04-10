@@ -2,7 +2,7 @@
 title: "卡顿的定义与分类"
 section: "7.1"
 chapter: "7.1"
-status: ready-to-publish
+status: ready-for-review
 drafted_date: "2026-03-30"
 drafted_by: "openclaw-task2"
 reviewed_date: "2026-04-05"

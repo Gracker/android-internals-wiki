@@ -2,7 +2,7 @@
 title: "案例集"
 chapter: "8.5"
 section: "8.5"
-status: ready-to-publish
+status: ready-for-review
 drafted_date: "2026-04-02"
 reviewed_date: "2026-04-09"
 rework_date: "2026-04-08"

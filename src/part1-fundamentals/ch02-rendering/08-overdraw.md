@@ -1,7 +1,7 @@
 ---
 title: "过度绘制"
 chapter: "2.8"
-status: ready-to-publish
+status: ready-for-review
 polish_count: 1
 polish_date: "2026-04-05"
 polish_by: "task2b-polish"

@@ -1,7 +1,7 @@
 ---
 title: "OpenGL ES 渲染链路"
 chapter: "18.8"
-status: draft
+status: ready-for-review
 applicable_versions: "Android 9 (API 28) - Android 16 (API 36)"
 tags: ["OpenGL-ES", "EGL", "GLThread", "GLSurfaceView", "eglSwapBuffers", "fence", "ANGLE", "Triple-Buffering"]
 related_chapters: ["2.1", "2.6", "2.14", "18.6", "18.9"]

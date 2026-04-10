@@ -1,7 +1,7 @@
 ---
 title: "WebView 渲染链路"
 chapter: "18.13"
-status: draft
+status: ready-for-review
 applicable_versions: "Android 5.0 (API 21) - Android 16 (API 36)"
 tags: ["WebView", "Chromium", "GL-Functor", "SurfaceControl", "SurfaceTexture", "X5内核", "渲染链路"]
 related_chapters: ["2.5", "2.6", "7.11", "18.6", "18.7"]

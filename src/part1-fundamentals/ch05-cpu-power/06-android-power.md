@@ -2,7 +2,7 @@
 title: "Android 功耗管理"
 chapter: "5.6"
 section: "5.6"
-status: ready-to-publish
+status: ready-for-review
 applicable_versions: "Android 6.0 (API 23) - Android 17 (API 37)"
 last_verified: "2026-04-01"
 last_verified_against: "AOSP android-16.0.0_r1, android-17-beta3"

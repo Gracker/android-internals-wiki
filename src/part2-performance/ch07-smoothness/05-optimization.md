@@ -2,7 +2,7 @@
 title: "优化策略"
 section: "7.5"
 chapter: "7.5"
-status: finalized
+status: ready-for-review
 drafted_by: "openclaw-task2a"
 reviewed_date: "2026-04-10"
 reviewed_by: "openclaw-task6"

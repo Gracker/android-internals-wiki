@@ -1,7 +1,7 @@
 ---
 title: "行业案例"
 chapter: "17.3"
-status: draft
+status: ready-for-review
 applicable_versions: "Android 12 (API 31) - Android 16 (API 36)"
 last_verified: "2026-04-04"
 last_verified_against: "Google 官方文档, ByteDance 技术博客, Samsung Developer, ADPF 官方文档"

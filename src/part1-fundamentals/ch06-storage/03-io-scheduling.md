@@ -1,7 +1,7 @@
 ---
 title: "I/O 调度与性能"
 chapter: "6.3"
-status: draft
+status: ready-for-review
 applicable_versions: "Android 10–16"
 last_verified: "2026-04-01"
 last_verified_against: "Linux 6.1 + Android 14 GKI"

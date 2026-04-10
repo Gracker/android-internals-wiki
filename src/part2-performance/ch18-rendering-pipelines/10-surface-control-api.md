@@ -1,7 +1,7 @@
 ---
 title: "SurfaceControl API 深入"
 chapter: "18.10"
-status: draft
+status: ready-for-review
 applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
 tags: ["SurfaceControl", "ASurfaceControl", "ASurfaceTransaction", "NDK", "layer-hierarchy", "FrameTimeline", "atomicity", "AHardwareBuffer"]
 related_chapters: ["2.1", "2.5", "2.6", "18.2", "18.6", "18.9"]

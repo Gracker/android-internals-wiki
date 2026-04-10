@@ -2,7 +2,7 @@
 title: "Trace 抓取"
 chapter: "13.2"
 section: "13.2"
-status: ready-to-publish
+status: ready-for-review
 drafted_date: "2026-04-03"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"

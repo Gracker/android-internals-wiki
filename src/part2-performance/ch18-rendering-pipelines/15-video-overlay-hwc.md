@@ -1,7 +1,7 @@
 ---
 title: "视频叠加与 HWC"
 chapter: "18.15"
-status: draft
+status: ready-for-review
 applicable_versions: "Android 7.0 (API 24) - Android 16 (API 36)"
 tags: ["HWC", "Hardware-Composer", "Overlay", "Video", "GPU-Composition", "DRM", "Tunnel-Mode", "渲染链路"]
 related_chapters: ["2.6", "2.10", "18.6"]

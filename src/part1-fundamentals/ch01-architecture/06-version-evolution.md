@@ -1,7 +1,7 @@
 ---
 title: "Android 版本演进中的架构变化"
 chapter: "1.6"
-status: finalized
+status: ready-for-review
 polish_count: 1
 polish_date: "2026-04-06"
 polish_by: "task2b-polish"

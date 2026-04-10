@@ -1,7 +1,7 @@
 ---
 title: "Flutter 渲染链路"
 chapter: "18.12"
-status: draft
+status: ready-for-review
 applicable_versions: "Flutter 3.10+ / Android 10 (API 29) - Android 16 (API 36)"
 tags: ["Flutter", "Impeller", "Skia", "SurfaceView", "TextureView", "Merged-Thread", "PlatformView", "渲染链路"]
 related_chapters: ["2.5", "2.11", "18.6", "18.7"]

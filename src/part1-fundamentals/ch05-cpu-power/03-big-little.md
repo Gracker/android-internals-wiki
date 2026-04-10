@@ -1,7 +1,7 @@
 ---
 title: "大小核架构"
 chapter: "5.3"
-status: ready-to-publish
+status: ready-for-review
 applicable_versions: "Android 5.0 (API 21) - Android 17 (API 37)"
 last_verified: "2026-03-31"
 last_verified_against: "ARM official documentation, Linux kernel 6.6"

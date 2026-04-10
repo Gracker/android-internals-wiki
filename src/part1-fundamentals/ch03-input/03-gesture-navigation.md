@@ -2,7 +2,7 @@
 title: "手势导航与系统交互"
 section: "3.3"
 chapter: "3.3"
-status: ready-to-publish
+status: ready-for-review
 polish_count: 1
 polish_date: "2026-04-06"
 polish_by: "task2b-polish"

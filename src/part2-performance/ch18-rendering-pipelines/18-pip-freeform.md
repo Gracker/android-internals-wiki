@@ -1,7 +1,7 @@
 ---
 title: "PIP 与自由窗口渲染"
 chapter: "18.18"
-status: draft
+status: ready-for-review
 applicable_versions: "Android 8.0 (API 26) - Android 16 (API 36)"
 tags: ["PIP", "画中画", "Freeform", "多窗口", "SurfaceControl", "BLAST", "渲染链路"]
 related_chapters: ["2.6", "2.12", "18.10"]

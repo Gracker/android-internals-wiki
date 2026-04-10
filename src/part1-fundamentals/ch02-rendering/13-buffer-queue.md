@@ -2,7 +2,7 @@
 title: "图形缓冲区管理 (BufferQueue)"
 chapter: "2.13"
 section: "2.13"
-status: draft
+status: ready-for-review
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 tags: [BufferQueue, BlastBufferQueue, GraphicBuffer, Surface, 渲染管线, GRALLOC, SurfaceFlinger, 三缓冲]
 related_chapters: ["2.1", "2.5", "2.6", "2.9", "7.2"]

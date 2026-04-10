@@ -2,7 +2,7 @@
 title: "Android 存储架构"
 chapter: "6.1"
 section: "6.1"
-status: ready-to-publish
+status: ready-for-review
 applicable_versions: "Android 10+"
 last_verified: "2026-04-01"
 last_verified_against: "Android 15, JEDEC UFS 4.0 Spec, AOSP source.android.com"

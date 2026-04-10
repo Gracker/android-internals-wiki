@@ -1,7 +1,7 @@
 ---
 title: "TextureView 合成链路"
 chapter: "18.7"
-status: draft
+status: ready-for-review
 applicable_versions: "Android 4.0 (API 14) - Android 16 (API 36)"
 tags: ["TextureView", "SurfaceTexture", "App侧合成", "纹理采样", "OES", "BLAST", "渲染链路"]
 related_chapters: ["2.1", "2.6", "2.13", "18.6", "18.8"]

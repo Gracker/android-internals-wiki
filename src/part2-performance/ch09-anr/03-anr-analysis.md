@@ -2,7 +2,7 @@
 title: "ANR 分析方法"
 chapter: "9.3"
 section: "9.3"
-status: ready-to-publish
+status: ready-for-review
 drafted_date: "2026-04-02"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 36)"
 last_verified: "2026-04-02"

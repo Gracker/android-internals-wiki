@@ -3,7 +3,7 @@
 title: "CPU 相关的版本演进"
 chapter: "5.7"
 section: "5.7"
-status: ready-to-publish
+status: ready-for-review
 applicable_versions: "Android 5.0 - 16"
 last_verified: "2026-04-01"
 last_verified_against: "Android 15 developer docs, AOSP source code"

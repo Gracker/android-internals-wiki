@@ -1,7 +1,7 @@
 ---
 title: "Android View 多窗口链路"
 chapter: "18.5"
-status: draft
+status: ready-for-review
 applicable_versions: "Android 9 (API 28) - Android 16 (API 36)"
 tags: ["multi-window", "Dialog", "RenderThread-contention", "Choreographer", "serial-rendering"]
 related_chapters: ["2.1", "18.2"]

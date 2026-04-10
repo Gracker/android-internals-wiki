@@ -1,7 +1,7 @@
 ---
 title: "典型场景分析"
 chapter: "7.4"
-status: ready-to-publish
+status: ready-for-review
 polish_count: 1
 polish_date: "2026-04-06"
 polish_by: "task2b-polish"

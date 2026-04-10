@@ -1,7 +1,7 @@
 ---
 title: "Android View 混合渲染链路"
 chapter: "18.4"
-status: draft
+status: ready-for-review
 applicable_versions: "Android 11 (API 30) - Android 16 (API 36)"
 tags: ["hybrid-composition", "SurfaceView", "mixed-rendering", "parallel-pipeline", "video-playback"]
 related_chapters: ["2.1", "2.5", "18.2", "18.6"]

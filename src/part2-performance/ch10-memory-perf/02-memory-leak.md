@@ -2,7 +2,7 @@
 title: "内存泄漏"
 chapter: "10.2"
 section: "10.2"
-status: ready-to-publish
+status: ready-for-review
 drafted_date: "2026-04-02"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 8.0 (API 26) - Android 16 (API 36)"

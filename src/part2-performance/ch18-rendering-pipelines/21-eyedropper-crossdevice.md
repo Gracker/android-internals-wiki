@@ -1,7 +1,7 @@
 ---
 title: "EyeDropper API 与跨设备协作性能"
 chapter: "18.21"
-status: draft
+status: ready-for-review
 applicable_versions: "Android 17 (API 37)"
 tags: [eyedropper, cross-device, performance, color-picking, collaboration]
 related_chapters: ["18.1", "2.1", "8.2"]

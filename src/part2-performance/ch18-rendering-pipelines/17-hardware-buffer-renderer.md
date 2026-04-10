@@ -1,7 +1,7 @@
 ---
 title: "Hardware Buffer Renderer"
 chapter: "18.17"
-status: draft
+status: ready-for-review
 applicable_versions: "Android 14 (API 34) - Android 16 (API 36)"
 tags: ["HardwareBufferRenderer", "离屏渲染", "GPU", "RenderNode", "HDR", "BLAST", "渲染链路"]
 related_chapters: ["2.5", "2.10", "18.2"]
