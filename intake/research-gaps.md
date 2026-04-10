@@ -702,3 +702,19 @@ OEM/自研内核接入 AutoFDO 的关键前置条件缺失。正文提到 Kleaf�
 ### 关联章节
 1.7（ART 编译管线）、8.7（Baseline Profiles）、14.2（Simpleperf）、16.1（Google 官方的性能优化思路）
 
+## [2026-04-11] 1.14 锁竞争与同步性能分析 — 知识盲区
+
+### 盲区描述
+章节已经覆盖 Java monitor、futex 和 DeliQueue，但缺少 Native/system_server 真实热点锁的诊断路径。当前正文没有说明：Binder driver 的 wait queue 与 transaction priority inheritance 怎样区分于 Java monitor；native mutex / rwsem / system_server 全局锁链（如 WMS/AMS/SurfaceFlinger）在 Perfetto 中分别长什么样；当主线程卡在 Binder 时，如何判断根因是服务端锁竞争、线程池耗尽，还是驱动排队。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 梳理 Binder driver wait queue、transaction priority inheritance、node priority inheritance 的当前实现与版本演进
+- 研究 ART monitor、bionic pthread_mutex、binder driver waitqueue 在 Perfetto 中的可观测差异（track、blocked_function、SQL 模块、trace config）
+- 补 1 个 system_server / SurfaceFlinger 锁链案例，覆盖 WMS GlobalLock、Binder 线程池耗尽、native mutex 三类路径
+
+### 关联章节
+1.4（Binder IPC 机制与性能影响）、1.5（线程模型）、2.12（Window Manager Service 与窗口管理）、14.10（Perfetto SQL Cookbook）
+
