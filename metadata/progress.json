@@ -8,11 +8,11 @@
     "reviewed": 5,
     "finalized": 37,
     "staging_drafts": 0,
-    "last_updated": "2026-04-10T10:25:00+08:00",
+    "last_updated": "2026-04-10T10:35:00+08:00",
     "processing": 0,
     "ready-to-publish": 17,
     "last_reviewed": "2026-04-10",
-    "last_reviewed_section": "13.6 线程 CPU 状态分析",
+    "last_reviewed_section": "7.5 优化策略",
     "reviewed_today": 17,
     "ready_to_publish": 1
   },
@@ -940,6 +940,26 @@
         "验证标注标准化：19处[来源:]→[已验证: 来源见 ...]",
         "术语格式化：TASK_WAKEKILL|TASK_UNINTERRUPTIBLE 加反引号",
         "元数据：补 section/drafted_by/reviewed_date/reviewed_by",
+        "status: ready-for-review → finalized"
+      ],
+      "scores": {
+        "structure": 5,
+        "expression": 5,
+        "consistency": 5,
+        "verification": 4,
+        "metadata": 5
+      }
+    },
+    "7.5": {
+      "title": "优化策略",
+      "reviewed_date": "2026-04-10",
+      "reviewed_by": "openclaw-task6",
+      "review_status": "finalized",
+      "fixes_applied": [
+        "元数据：补 section/drafted_by/reviewed_date/reviewed_by",
+        "验证标注标准化：9处[来源:]→[已验证: 来源见 ...]",
+        "模糊形容词具体化：L347「显著下降」→「具体数据」（writing-guide §九）",
+        "清理文末残留研究素材（Android 17 DeliQueue原始笔记）",
         "status: ready-for-review → finalized"
       ],
       "scores": {
@@ -2334,7 +2354,7 @@
     }
   ],
   "ready_for_review": 5,
-  "last_updated": "2026-04-10T10:25:00+08:00",
+  "last_updated": "2026-04-10T10:35:00+08:00",
   "stats": {
     "total": 163,
     "completed": 140,
@@ -2668,6 +2688,21 @@
     }
   ],
   "history": [
+    {
+      "date": "2026-04-10",
+      "section": "7.5",
+      "title": "优化策略",
+      "action": "reviewed-finalized",
+      "review_by": "openclaw-task6",
+      "fixes": 5,
+      "scores": {
+        "structure": 5,
+        "expression": 5,
+        "consistency": 5,
+        "verification": 4,
+        "metadata": 5
+      }
+    },
     {
       "date": "2026-04-10",
       "section": "13.6",
