@@ -1,8 +1,10 @@
 ---
 title: "低内存对系统性能的影响"
 chapter: "10.4"
-status: ready-for-review
+section: "10.4"
+status: ready-to-publish
 drafted_date: "2026-04-02"
+drafted_by: "openclaw-task2a"
 applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
 last_verified: "2026-04-02"
 last_verified_against: "AOSP android-16.0.0_r1"
@@ -20,7 +22,7 @@ sources:
     path: "source.android.com - mm_events, PSI, lmkd"
 tags: ['low-memory', 'kswapd', 'direct-reclaim', 'lmkd', 'GC', 'memory-pressure', 'PSI', 'ZRAM', 'Perfetto', 'MGLRU', 'cgroup', 'mm-events', 'vmscan', 'oom-score-adj']
 related_chapters: ["4.1", "4.2", "4.4", "4.5", "4.8", "10.1", "10.6"]
-reviewed_date: "2026-04-09"
+reviewed_date: "2026-04-10"
 reviewed_by: openclaw-task6
 polish_count: 2
 polish_date: "2026-04-09"
