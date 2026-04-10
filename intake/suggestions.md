@@ -718,3 +718,29 @@
 - **位置**：行 101, 186, 192, 289, 483 与 §1.3 行 72-79、§8.2 行 142
 - **问题**：本章写 Binder IPC，相关章节写 Local Socket/zygote socket，同一启动链路口径冲突。
 - **建议**：统一全书描述为“Launcher/App ↔ system_server 走 Binder，system_server ↔ Zygote 走 LocalSocket/zygote socket”，并在 1.11 反链到 1.3/8.2。
+
+## [Task6 Review] 1.15 JNI/NDK 性能优化 — 2026-04-11
+- **类型**：需重写
+- **位置**：全文结构
+- **问题**：缺少 `outline-start` / `outline-end` 与锚点映射，Task 6 无法按结构锚点检查覆盖率。
+- **建议**：先按 writing-guide.md 补齐结构骨架，再进入深修。
+- **review 日志**：logs/review/2026-04-11-0608-review.md
+
+- **类型**：需确认
+- **位置**：L48、L108-L126
+- **问题**：JNI transition、`@FastNative`、`@CriticalNative` 的量化数据缺少精确 benchmark 来源、设备条件和测试方法。
+- **建议**：补充原始 benchmark 链接与测试条件，或把数字降级为更保守的范围表述。
+- **review 日志**：logs/review/2026-04-11-0608-review.md
+
+- **类型**：需确认
+- **位置**：L165-L169、L241
+- **问题**：`@FastNative` / `@CriticalNative` 的 GC suspend 风险、阈值，以及 `GetPrimitiveArrayCritical()` 对 GC 的影响范围，验证链不完整。
+- **建议**：补充 AOSP / 官方文档或实验依据，避免对阈值和影响范围做过强断言。
+- **review 日志**：logs/review/2026-04-11-0608-review.md
+
+- **类型**：需补充素材
+- **位置**：L52-L60
+- **问题**：Perfetto 中的 JNI 表现只有概述，没有真实 Trace 截图或更具体的 slice 示例。
+- **建议**：补一张 Trace 截图，或给出明确的 trace category / slice 名称来源。
+- **review 日志**：logs/review/2026-04-11-0608-review.md
+
