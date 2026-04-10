@@ -1094,19 +1094,45 @@
   {
     "section": "1.15",
     "section_title": "JNI/NDK 性能优化",
-    "priority": 80,
-    "reason": "知识缺口挖掘：JNI/NDK 性能是全书缺失的基础维度——Android 系统服务大量使用 JNI，@FastNative/@CriticalNative 是 Android 独有优化，16KB page size 直接影响 native 库",
+    "priority": 90,
+    "reason": "[review回炉] 缺少 outline 骨架，且多处 JNI/GC/benchmark 量化断言缺少精确来源",
     "material_paths": [
       "intake/research-feeds/2026-04-06-15-priority-inversion-futex-pi-android-lock-performance.md",
       "intake/research-feeds/2026-04-07-11-android-16kb-page-size-jni-native-library-quantification.md",
       "intake/research-feeds/2026-04-07-11-fastnative-criticalnative-jni-art-optimization.md",
-      "intake/research-feeds/2026-04-07-19-art-fastnative-criticalnative-jni-optimization.md"
+      "intake/research-feeds/2026-04-07-19-art-fastnative-criticalnative-jni-optimization.md",
+      "intake/suggestions.md（含 review 意见）"
     ],
-    "added_by": "task2a-knowledge-gap",
-    "added_at": "2026-04-06T17:05:00+08:00",
-    "status": "completed",
-    "completed_at": "2026-04-09T07:03:00+08:00",
-    "completed_by": "task2a-stale-cleanup"
+    "review_issues": [
+      {
+        "type": "需重写",
+        "location": "全文结构",
+        "detail": "缺少 outline-start / outline-end 与锚点映射，Task 6 无法按结构覆盖率审校。",
+        "suggestion": "先按 writing-guide.md 补齐结构骨架。"
+      },
+      {
+        "type": "需确认",
+        "location": "L48、L108-L126",
+        "detail": "JNI transition、@FastNative、@CriticalNative 的量化数据缺少 benchmark 来源和测试条件。",
+        "suggestion": "补充原始 benchmark 来源，或改为更保守的范围表述。"
+      },
+      {
+        "type": "需确认",
+        "location": "L165-L169、L241",
+        "detail": "@FastNative / @CriticalNative 的 GC 风险、阈值，以及 GetPrimitiveArrayCritical() 的影响范围需要精确验证。",
+        "suggestion": "补 AOSP / 官方文档或实验依据。"
+      },
+      {
+        "type": "需补充素材",
+        "location": "L52-L60",
+        "detail": "Perfetto 表现段缺少真实 Trace 截图或更具体的 slice 示例。",
+        "suggestion": "补截图，或明确 trace category / slice 名称来源。"
+      }
+    ],
+    "added_by": "task6-review",
+    "added_at": "2026-04-11T06:08:00+08:00",
+    "status": "pending",
+    "original_review_log": "logs/review/2026-04-11-0608-review.md"
   },
   {
     "section": "10.7",

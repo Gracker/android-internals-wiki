@@ -1,29 +1,44 @@
 ---
-title: "JNI/NDK 性能优化"
-chapter: "1.15"
+title: JNI/NDK 性能优化
+chapter: '1.15'
 status: ready-for-review
-drafted_date: "2026-04-06"
-applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
-last_verified: "2026-04-06"
-last_verified_against: "AOSP android-17-beta3"
+drafted_date: '2026-04-06'
+applicable_versions: Android 8 (API 26) - Android 17 (API 37)
+last_verified: '2026-04-06'
+last_verified_against: AOSP android-17-beta3
 confidence: medium
 sources:
-  - type: official
-    path: "developer.android.com/reference/dalvik/annotation/optimization/CriticalNative"
-  - type: official
-    path: "developer.android.com/ndk/guides/simpleperf"
-  - type: official
-    path: "developer.android.com/build/apps/16kb-page-size"
-  - type: aosp
-    path: "art/runtime/jni/jni_internal.cc"
-  - type: aosp
-    path: "libnativehelper/include/nativehelper/JNIHelp.h"
+- type: official
+  path: developer.android.com/reference/dalvik/annotation/optimization/CriticalNative
+- type: official
+  path: developer.android.com/ndk/guides/simpleperf
+- type: official
+  path: developer.android.com/build/apps/16kb-page-size
+- type: aosp
+  path: art/runtime/jni/jni_internal.cc
+- type: aosp
+  path: libnativehelper/include/nativehelper/JNIHelp.h
+- type: official
+  path: developer.android.com/training/articles/perf-jni
+- type: official
+  path: developer.android.com/reference/java/nio/ByteBuffer
+- type: spec
+  path: docs.oracle.com/javase/8/docs/technotes/guides/jni/
 tags:
-  - android
-  - research
-
-
+- android
+- research
+- jni
+- ndk
+- performance
+pipeline_stage: task2b_pending
+task6_state: reviewed
+task9_state: pending
+task2b_state: pending
+reviewed_by: openclaw-task6
+reviewed_date: '2026-04-11'
+task6_result: needs-rework
 ---
+
 
 
 # 1.15 JNI/NDK 性能优化
@@ -34,6 +49,8 @@ tags:
 
 我们来看 JNI 的性能边界在哪里，以及如何在设计和分析中规避常见的陷阱。
 
+[需重写: 当前章节缺少 `<!-- outline-start -->` / `<!-- outline-end -->` 与锚点映射，Task 2B 需先补齐结构骨架，再继续深修。]
+
 ## JNI 调用的开销：一次 transition 到底有多贵
 
 每次从 Java 调入 native 代码（或反过来），都要经历一次 JNI transition。这个过程不是"函数调用"那么简单——ART 需要做几件事：
@@ -43,7 +60,7 @@ tags:
 3. **解析函数指针**，找到 native 方法的实际实现地址。
 4. **设置 JNIEnv**，为 native 代码提供回调 Java 的能力。
 
-这个过程在每次 JNI 调用时都会发生。在 Pixel 8（Tensor G3）上，一个不做任何实际工作的空 JNI 调用（no-op），单次 transition 开销大约在 **100-120ns**。这个数字看起来很小，但如果你的渲染循环每帧调用 1000 次 JNI，光 transition 本身就吃掉了 ~100μs——在 120fps 的设备上，一帧的预算只有 8.33ms，100μs 已经占了 1.2%。
+这个过程在每次 JNI 调用时都会发生。在 Pixel 8（Tensor G3）上，一个不做任何实际工作的空 JNI 调用（no-op），单次 transition 开销大约在 **100-120ns**。这个数字看起来很小，但如果你的渲染循环每帧调用 1000 次 JNI，光 transition 本身就吃掉了 ~100μs——在 120fps 的设备上，一帧的预算只有 8.33ms，100μs 已经占了 1.2%。 [需确认: 这里的 no-op benchmark 需要补充测试方法、调用方式、采样条件和原始来源。]
 
 更关键的是，**JIT 编译器无法跨越 JNI 边界做优化**。ART 的 JIT 可以内联（inline）Java 方法、消除死代码、做逃逸分析——但这些优化在遇到 native 方法时全部失效。这意味着，如果你有一个热路径方法，其中穿插了 JNI 调用，整个热路径的优化质量都会下降。
 
@@ -121,7 +138,7 @@ Android 7（API 24）引入了 `@FastNative`，Android 8（API 26）引入了 `@
 | @FastNative | ~35ns | 约 70% |
 | @CriticalNative | ~25ns | 约 78% |
 
-[已验证: 多个独立 benchmark 交叉验证，实际开销因设备/SoC 不同有 ±20% 浮动]
+[已验证: 多个独立 benchmark 交叉验证，实际开销因设备/SoC 不同有 ±20% 浮动] [需确认: 普通 JNI、@FastNative、@CriticalNative 三组开销数据需要补充具体 benchmark 链接与测试设备条件。]
 
 ### @FastNative：轻量但能用对象
 
@@ -164,7 +181,7 @@ private static native long nativeGC();
 
 2. **Android 14 的变化**：@CriticalNative 在 Android 8 引入时仅供系统使用，Android 14 开始成为 CTS 测试的公开 API。如果你的 App target 低于 API 34，使用 @CriticalNative 可能不会生效（ART 会忽略注解回退到普通路径）。
 
-3. **Baseline Profile 联动**：对于 App 启动路径上的 @CriticalNative 调用，官方建议把调用方加入 Baseline Profile，确保这些方法在安装时就被 AOT 编译，而不是等到 JIT 编译——因为 JIT 编译完成之前，@CriticalNative 的优化效果无法体现。
+3. **Baseline Profile 联动**：对于 App 启动路径上的 @CriticalNative 调用，官方建议把调用方加入 Baseline Profile，确保这些方法在安装时就被 AOT 编译，而不是等到 JIT 编译——因为 JIT 编译完成之前，@CriticalNative 的优化效果无法体现。 [需确认: 本节关于 GC suspend、1ms/10ms 阈值、targetSdk < 34 行为差异的表述，需要补充精确来源或降级为更保守的描述。]
 
 [已验证: 官方文档, developer.android.com/reference/dalvik/annotation/optimization/CriticalNative] [已验证: AOSP art/runtime/jni/jni_internal.cc — FastNative/CriticalNative 快速路径实现]
 
@@ -236,7 +253,7 @@ void Java_com_example_MyClass_nativeProcess(JNIEnv* env, jobject thiz, jobject b
 代价是 `allocateDirect()` 本身比较慢（需要向操作系统申请内存），所以 DirectByteBuffer 应该**池化复用**而不是每次新建。
 
 [已验证: 官方 JNI 规范, docs.oracle.com/javase/8/docs/technotes/guides/jni/]
-[待验证：GetPrimitiveArrayCritical 在 Android 17 中是否仍然会暂停整个进程的 GC]
+[待验证：GetPrimitiveArrayCritical 在 Android 17 中是否仍然会暂停整个进程的 GC] [需确认: 需要补充 ART 实现或实验依据，明确影响范围是整个进程 GC，还是对象移动/回收受到限制。]
 
 ## 16KB Page Size：Android 15 的强制迁移
 
@@ -425,10 +442,3 @@ SurfaceFlinger 是 Android 图形合成的核心服务。它完全用 C++ 编写
 - 社区资源：
   - Simpleperf 实践篇（知乎）[来源: Cubox 索引]
   - JNI 引用类型详解（掘金）[来源: Cubox 索引]
-
-
-### @FastNative/@CriticalNative ART 优化：JNI 开销从 115ns 降至 25ns
-- 来源：https://cs.android.com/android/platform/superproject/+/master/art/
-- 类型：research
-- 摘要：ART runtime中@FastNative将JNI开销从115ns降至25ns，@CriticalNative进一步优化。注意：会阻塞GC，需谨慎在高频调用路径使用。
-- 入库时间：2026-04-08
