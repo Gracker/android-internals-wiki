@@ -2426,5 +2426,32 @@
     "completed_at": "2026-04-10T09:57:50",
     "completed_by": "task2b-rework",
     "notes": "修复: applicable_versions 补充版本验证说明(frontmatter version_note); DEFAULT_INPUT_DISPATCHING_TIMEOUT_NANOS 经 web search 验证确在 WMS.java(Task9误报); §9.2 交叉引用经查实存在(Task9误报); InputFlinger 12/13 版本差异补充[待验证]标注"
+  },
+  {
+    "section": "2.5",
+    "section_title": "MainThread 与 RenderThread 协作",
+    "priority": 85,
+    "reason": "[Deep Tech Review] 新发现3个P1：1)正文(L380)与版本演进表(L424)对RenderThread Animations API版本描述矛盾；2)ViewPropertyAnimator可用性(API 12)与RenderThread执行能力(API 24)混为一谈；3)多窗口/PiP场景RenderThread调度机制未覆盖",
+    "material_paths": [
+      "intake/research-gaps.md",
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "版本差异",
+        "location": "L380（正文）+ L424（版本演进表）",
+        "detail": "正文'从 Android 7.0 (API 24) 开始'，版本表'Android 6.0 (API 23) | RenderThread动画支持扩展'——两处说法互相矛盾。RenderThread Animations各类型(VPAnimator/Win anim)的引入版本需要逐个核实",
+        "suggestion": "统一：RenderThread Animations的ViewPropertyAnimator能力(API 24+)与Window动画能力(API 23?)，与版本演进表对齐"
+      },
+      {
+        "type": "知识盲区",
+        "location": "L298-313（多窗口场景）",
+        "detail": "仅提及两窗口串行执行。未覆盖：1)并发多Surface时RenderThread的调度策略；2)系统内存压力导致GPU资源被抢占时的影响机制",
+        "suggestion": "补充PiP/分屏模式下RenderThread渲染时序图；补充内存压力场景排查方法"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-10T11:31:00",
+    "status": "pending"
   }
 ]
