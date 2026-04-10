@@ -2799,24 +2799,20 @@
       }
     },
     "1.10": {
-      "reviewed_date": "2026-04-11",
-      "reviewed_by": "openclaw-task6",
-      "review_status": "reviewed",
-      "fixes_applied": [
-        "frontmatter：补 drafted_by，扩展 tags，并写入 task6 review 元数据",
-        "叙述视角：2处“你”→“我们”/中性表达（writing-guide §语言风格）",
-        "格式修正：URI / XML 注释 / App Startup 泛型示例 / 4处参考链接",
-        "清理文末残留研究素材原始笔记"
-      ],
-      "b_class_issues": 1,
-      "review_log": "logs/review/2026-04-11-02-review.md",
-      "scores": {
-        "structure": 2,
-        "expression": 4,
-        "consistency": 4,
-        "verification": 4,
-        "metadata": 5
-      }
+      "deep_review_date": "2026-04-11T02:25:15",
+      "deep_review_by": "task9-deep-tech-review",
+      "deep_review_score": 3.0,
+      "deep_review_p1": 4,
+      "deep_review_p2": 3,
+      "issues_found": [
+        "ANR timeout table conflates publish vs onCreate (P0)",
+        "Binder thread pool model not covered (P1)",
+        "Android 11 URI permission changes missing (P1)",
+        "Android 9 CursorWindow API vague [待验证] (P1)",
+        "SQLiteCursor fillWindow implementation detail (P2)",
+        "Binder buffer 1MB precise source path missing (P2)",
+        "App Startup 35-42% quant claim still in body despite [待验证] (P2)"
+      ]
     }
   }
 }

@@ -2649,10 +2649,22 @@
         "location": "全文结构",
         "detail": "缺少 outline-start / outline-end 与锚点设计，Task 6 无法按规范检查锚点覆盖。",
         "suggestion": "按 writing-guide.md 补齐 outline 块，并让每个锚点至少对应 1 个完整段落。"
+      },
+      {
+        "type": "原理错误",
+        "location": "行 172-178 ANR 超时表",
+        "detail": "ContentProvider publish 超时（CONTENT_PROVIDER_PUBLISH_TIMEOUT=10s）和 onCreate() 超时是两个不同的机制，前者是 publish 步骤的等待超时，后者是 onCreate 本身的执行超时（由 ActivityThread 的 serviceDoneExecuting 管理）。表中有误导性",
+        "suggestion": "拆分为：publish 超时（系统等待 provider 上线）、onCreate 超时（ActivityThread 管理）、一般操作超时（ANR 检测）三个独立条目，并说明各自的管理机制"
+      },
+      {
+        "type": "知识盲区",
+        "location": "行 166-202 ANR 机制小节",
+        "detail": "CRUD 操作运行在 Provider 进程的 Binder 线程池（不是主线程），Binder 线程耗尽可以独立导致 ANR，与调用方主线程阻塞是两种不同路径",
+        "suggestion": "补充 Binder 线程池模型：默认线程数、与死锁场景的关联、ANR traces.txt 中的识别方式"
       }
     ],
-    "added_by": "task6-review",
-    "added_at": "2026-04-11T02:05:00+08:00",
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-11T02:24:41",
     "status": "pending",
     "original_review_log": "logs/review/2026-04-11-02-review.md"
   }
