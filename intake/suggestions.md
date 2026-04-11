@@ -1255,3 +1255,28 @@
 - **问题**：`Vulkan 作为 RenderEngine 后端的支持逐步完善 [待验证...]` 仍未闭环，版本说明还不能作为稳定结论。
 - **建议**：Task 9 核对引入版本和适用范围，再决定是保留版本断言还是改成更保守的表述。
 - **review 日志**：logs/review/2026-04-12-01-review.md
+
+## [Task6 Review] 3.6 手势识别算法与性能优化 — 2026-04-12
+- **类型**：需确认
+- **位置**：`VelocityTrackerFallbackStrategy` 段落 + 版本演进表
+- **问题**：`Android 13 引入 FallbackStrategy`、`Android 14+ Impulse 优先` 这两组版本断言写得偏满，默认 strategy 与 fallback 路径需要 Task 9 再核一遍 AOSP。
+- **建议**：按 `frameworks/base/core/jni/android_view_VelocityTracker.cpp`、`VelocityTracker.cpp` 和相关提交记录核对版本切换点，再决定是否保留当前表述。
+- **review 日志**：logs/review/2026-04-12-02-review.md
+
+- **类型**：需确认
+- **位置**：`双击检测机制`
+- **问题**：`单击事件至少有 300ms 延迟` 这段把延迟确认和具体回调语义压在一起写了，`onSingleTapUp()` / `onSingleTapConfirmed()` 的边界不够清楚。
+- **建议**：交给 Task 9 核对 GestureDetector 回调链，再决定这里要保留哪一个 callback 作为解释中心。
+- **review 日志**：logs/review/2026-04-12-02-review.md
+
+- **类型**：需补充素材
+- **位置**：`VelocityTracker 的 Perfetto 视角`、`NestedScroll 性能影响`
+- **问题**：关键性能判断目前以定性描述为主，还缺真实 Trace 片段或等价图示，读者很难把结论映射回 Perfetto。
+- **建议**：补 2-3 个 Trace 证据，至少覆盖 `dispatchTouchEvent`、嵌套滑动多层回调、Fling 判定前后的关键片段。
+- **review 日志**：logs/review/2026-04-12-02-review.md
+
+- **类型**：需补充素材
+- **位置**：frontmatter `sources`、`厂商手势增强方案`、`Compose 手势系统的架构差异`
+- **问题**：`frameworks/base/core/java/androidx/core/widget/NestedScrollView.java` 这条来源路径不够可靠，Compose 与厂商扩展段也缺精确来源，验证链不完整。
+- **建议**：把 AOSP、AndroidX、Compose 官方文档分开列清楚，并为厂商扩展补具体资料或改成更保守的表述。
+- **review 日志**：logs/review/2026-04-12-02-review.md

@@ -4333,5 +4333,44 @@
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-12T00:41:50+08:00",
     "status": "pending"
+  },
+  {
+    "section": "3.6",
+    "section_title": "手势识别算法与性能优化",
+    "priority": 90,
+    "reason": "[review回炉] 版本演进、双击回调语义、Perfetto 证据和扩展来源存在 4 个待处理问题",
+    "material_paths": [
+      "intake/suggestions.md（含 review 意见）"
+    ],
+    "review_issues": [
+      {
+        "type": "需确认",
+        "location": "VelocityTrackerFallbackStrategy + 版本演进表",
+        "detail": "VelocityTracker 默认 strategy、fallback 路径和 Android 13/14 的切换点需要 Task 9 再核一遍。",
+        "suggestion": "按 Native / Java 两侧源码和提交记录核对版本切换点。"
+      },
+      {
+        "type": "需确认",
+        "location": "双击检测机制",
+        "detail": "单击延迟确认和具体 callback 语义写得偏满，容易把 onSingleTapUp() 和 onSingleTapConfirmed() 混在一起。",
+        "suggestion": "核对 GestureDetector 回调链后再收口表述。"
+      },
+      {
+        "type": "需补充素材",
+        "location": "VelocityTracker 的 Perfetto 视角 / NestedScroll 性能影响",
+        "detail": "缺真实 Trace 片段或等价图示，关键结论还停留在定性描述。",
+        "suggestion": "补 2-3 个 Perfetto 证据，至少覆盖 dispatchTouchEvent、嵌套滑动多层回调和 Fling 判定。"
+      },
+      {
+        "type": "需补充素材",
+        "location": "frontmatter sources / 厂商手势增强方案 / Compose 手势系统",
+        "detail": "AndroidX/Compose/厂商扩展来源链不完整，当前 sources 无法支撑对应段落的验证标注。",
+        "suggestion": "拆分并补齐 AOSP、AndroidX、Compose 官方来源；厂商扩展补具体资料或降级表述。"
+      }
+    ],
+    "added_by": "task6-review",
+    "added_at": "2026-04-12T02:05:00+08:00",
+    "status": "pending",
+    "original_review_log": "logs/review/2026-04-12-02-review.md"
   }
 ]
