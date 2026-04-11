@@ -6,32 +6,39 @@ status: ready-for-review
 drafted_date: "2026-04-07"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 11 (API 30) - Android 17 (API 37)"
-last_verified: "2026-04-07"
-last_verified_against: "AOSP android-16.0.0_r1, 官方文档最新版本"
+last_verified: "2026-04-11"
+last_verified_against: "AOSP android-16.0.0_r1, developer.android.com ARR / Display / View / Surface 文档"
 confidence: medium
 sources:
   - type: expert-insight
     path: "intake/research-feeds/2026-04-06-gracker-jank-insights.md"
   - type: official
+    path: "https://developer.android.com/develop/ui/views/animations/adaptive-refresh-rate"
+  - type: official
     path: "https://developer.android.com/reference/android/view/Surface#setFrameRate"
   - type: official
-    path: "https://developer.android.com/develop/ui/views/graphics/refresh-rate"
+    path: "https://developer.android.com/reference/android/view/Display#getSuggestedFrameRate(int)"
+  - type: official
+    path: "https://developer.android.com/reference/android/view/View#setRequestedFrameRate(float)"
   - type: research
     path: "intake/research-feeds/2026-04-05-19-android16-arr-surfaceflinger-choreographer-frame-pacing.md"
   - type: aosp
+    path: "frameworks/native/services/surfaceflinger/SurfaceFlinger.cpp"
+  - type: aosp
     path: "frameworks/native/services/surfaceflinger/Scheduler/RefreshRateSelector.cpp"
   - type: aosp
-    path: "services/surfaceflinger/Scheduler/VsyncModulator.cpp"
+    path: "frameworks/native/services/surfaceflinger/Scheduler/VsyncModulator.cpp"
 tags: [refresh-rate, frame-rate, SurfaceFlinger, VSync, setFrameRate, jank, rendering, display-mode, ARR]
 related_chapters: ["2.2", "2.3", "2.4", "2.6", "2.18"]
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: pending
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
+task2b_state: fixed
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-04-11"
 task6_result: pass-light-edit
 task9_result: needs-rework
+task2b_result: fixed
 ---
 
 # 2.19 刷新率切换与帧率适配性能
@@ -80,7 +87,7 @@ task9_result: needs-rework
 
 5. **过渡期的帧处理**：在硬件过渡完成之前，VSync 信号可能不稳定或暂时中断。SurfaceFlinger 在这段时间内无法正常合成和提交帧，结果要么重复显示上一帧，要么直接跳过一次合成。
 
-[已验证: 官方文档, developer.android.com/develop/ui/views/graphics/refresh-rate]
+[已验证: 官方文档, developer.android.com/develop/ui/views/animations/adaptive-refresh-rate]
 [来源: intake/research-feeds/2026-04-06-gracker-jank-insights.md — 高爷专家洞察]
 
 这就是为什么用户感知到了卡顿，但 App 侧 Trace 看起来一切正常。App 的渲染工作可能在刷新率切换之前就已经完成了，问题发生在 SurfaceFlinger / Display HAL 层面，App 完全没有感知。
@@ -95,7 +102,7 @@ task9_result: needs-rework
 
 **ARR 离散步进**（Android 15+）：在 LTPO 面板上，ARR 通过离散 VSync 步进调整刷新率，不需要完整的 Display Mode 切换。理论上过渡几乎无感知延迟，因为 PLL 仍然在同一个频率范围内微调，而不是跳变。这是目前最优的切换方式，但仅限支持 ARR 的 LTPO 设备。
 
-[已验证: 官方文档, developer.android.com/reference/android/hardware/display/DisplayManager]
+[已验证: 官方文档, developer.android.com/develop/ui/views/animations/adaptive-refresh-rate]
 
 ## SurfaceFlinger 的刷新率选择策略
 
@@ -127,20 +134,15 @@ surface.setFrameRate(24f, Surface.FRAME_RATE_COMPATIBILITY_FIXED_SOURCE);
 
 ### 多 Layer 仲裁：SurfaceFlinger 怎么选
 
-当屏幕上有多个活跃 Layer 时（比如前台 App + 浮窗 + StatusBar），SurfaceFlinger 需要找到一个能满足所有 Layer 需求的刷新率。这个仲裁逻辑在 `RefreshRateSelector.cpp` 中实现。
+当屏幕上有多个活跃 Layer 时（比如前台 App + 浮窗 + StatusBar），SurfaceFlinger 需要在设备支持的刷新率集合里挑一个当前最合适的值。把这段逻辑理解成“候选模式排序”更贴近源码，而不是“最小公倍数规则”。
 
-基本策略是选择所有活跃 Layer 请求帧率的**最小公倍数**或其附近的值。假设 Layer A 请求 24fps（视频播放），Layer B 请求 60fps（前台 App），SurfaceFlinger 会倾向于选择 120Hz——因为 120 是 24 和 60 的最小公倍数，两个 Layer 的帧都能被按时呈现。
+在 `frameworks/native/services/surfaceflinger/SurfaceFlinger.cpp` 里，发起仲裁的是 `mScheduler->chooseRefreshRateForContent(...)`。Scheduler 会把可见 Layer 整理成 `LayerRequirement` 列表，再交给 `RefreshRateSelector::getRankedFrameRates()` 生成一个按分数排序的候选结果。
 
-但仲裁不只是数学题。`RefreshRateSelector` 使用了一种投票（voting）机制，每个活跃 Layer 根据自己的帧率偏好投出一票：
+每个 Layer 都带着自己的 `LayerVoteType` 进入打分流程。android-16.0.0_r1 里常见的票型有 `Min`、`Max`、`Heuristic`、`ExplicitDefault`、`ExplicitExactOrMultiple`、`ExplicitGte` 和 `ExplicitCategory`。`RefreshRateSelector::calculateLayerScoreLocked()` 会按票型、目标帧率、候选模式是否支持 seamless 切换来计算单层 score，再把所有 Layer 的 score 汇总后排序。
 
-- **LayerVoteType::Max**：要求最高刷新率（通常是触摸交互、动画场景）
-- **LayerVoteType::Min**：要求最低刷新率（静态内容，省电优先）
-- **LayerVoteType::Heuristic**：启发式投票，基于内容检测自动判断
-- **LayerVoteType::ExplicitDefault / ExplicitExact**：基于 `setFrameRate()` 的显式请求
+24fps 视频和 60fps 前台动画同时存在时，120Hz 往往会排在前面，因为它同时满足 24fps 的整数倍关系和 60fps 的交互需求，还常常落在可 seamless 切换的候选集合里。但这不是写死的规则。只要 Battery Saver、GameManager、Display policy 或 App 请求范围收窄了候选集合，排序结果就可能变成 60Hz、90Hz 或别的模式。
 
-SurfaceFlinger 收集所有 Layer 的投票后，通过 `getBestRefreshRate()` 计算最终决策。如果有任何一个 Layer 投了 Max 票，最终刷新率会倾向于最高值（触摸 boost 场景）。如果所有 Layer 都是 Min 或 Heuristic 且帧率需求很低，系统会降到较低的刷新率以节省功耗。
-
-[已验证: AOSP android-16.0.0_r1, frameworks/native/services/surfaceflinger/Scheduler/RefreshRateSelector.cpp]
+[已验证: AOSP android-16.0.0_r1, frameworks/native/services/surfaceflinger/SurfaceFlinger.cpp + frameworks/native/services/surfaceflinger/Scheduler/RefreshRateSelector.cpp]
 
 ### 系统级干预：谁有权覆盖 App 的请求
 
@@ -278,13 +280,23 @@ DisplayMode: switching from 60Hz to 120Hz (seamless)
 
 3. **VsyncModulator 的 offset 调整**：刷新率切换时，VSYNC-app 和 VSYNC-sf 之间的 offset 会动态调整（由 `VsyncModulator` 管理）。在 offset 变化的瞬间，App 和 SurfaceFlinger 的时间余量可能不匹配。
 
-[已验证: AOSP android-16.0.0_r1, services/surfaceflinger/Scheduler/VsyncModulator.cpp]
+[已验证: AOSP android-16.0.0_r1, frameworks/native/services/surfaceflinger/Scheduler/VsyncModulator.cpp]
 
-### Android 15/16/17 的持续优化
+### 精确 fps 请求、category 请求和 range 请求怎么选
 
-- **Android 15**：引入 True ARR，单模式内离散步进变频。首次在软件层面支持 LTPO 面板的完整变频能力。
-- **Android 16**：新增 `Display.hasArrSupport()`、`Display.getSuggestedFrameRate()`、`Display.getSupportedRefreshRates()` API。RecyclerView 1.4 内置 ARR 支持，在 fling 和 smooth scroll 时自动提升刷新率。Compose 1.9 引入 `preferredFrameRate()` 修饰符。
-- **Android 17**：[待验证: ARR 与 DeliQueue 无锁 MessageQueue 的交互对帧调度的影响]
+Android 11-14 的主入口还是 `Surface.setFrameRate(float, int)`。到 Android 15-QPR1+ 的 ARR 场景，App 侧更常见的做法是把“这是固定片源”“这是高刷动画”“这是随速度变化的滚动”分别交给不同 API，再让系统把它映射到当前设备可用的刷新率集合。
+
+| 场景 | 首选 API | 适合什么时候用 | 备注 |
+|------|----------|----------------|------|
+| 视频、Camera 预览、固定帧率游戏画面 | `Surface.setFrameRate(..., FRAME_RATE_COMPATIBILITY_FIXED_SOURCE)` | 内容生产速率固定，系统只需要找整数倍刷新率 | 24fps / 30fps / 60fps 这类场景最稳妥 |
+| 普通 View 动画 | `View.setRequestedFrameRate(120f)` 或 `View.REQUESTED_FRAME_RATE_CATEGORY_HIGH` | 只想表达“这里需要更高刷新率”，不想把值绑死到某个 mode | category 请求更适合 ARR 设备 |
+| Compose 动画 | `Modifier.preferredFrameRate(...)` | Compose 组件的局部动画、滚动和过渡 | 语义和 View 侧一致 |
+| 自定义滚动控件 | `View.setFrameContentVelocity(...)` | 刷新率应该跟着 fling / smooth scroll 速度变化 | 系统按速度决定是否升降刷新率 |
+| 底层 Surface 需要范围提示 | `Surface.setFrameRate(new Surface.FrameRateParams.Builder().setDesiredRateRange(min, max).setFixedSourceRate(fps).build())` | 渲染管线自己掌握 Surface，希望给出范围或固定片源的组合约束 | 更适合视频引擎、游戏引擎、自定义渲染 |
+
+`Display.getSuggestedFrameRate(int)` 只有 `FRAME_RATE_CATEGORY_NORMAL` 和 `FRAME_RATE_CATEGORY_HIGH` 两个有效入参。它返回的是系统给出的 normal / high 建议值，不负责回答“45fps 该映射到 60Hz 还是 90Hz”。45fps 这类映射仍然要交给 `RefreshRateSelector`、Display policy 和设备支持的刷新率集合去决定。
+
+RecyclerView 1.4 和 `NestedScrollView` 这类滚动容器，做法是把滚动速度交给系统；Compose 动画更适合用 `Modifier.preferredFrameRate(...)` 或 View category 请求，让 ARR 自己选 normal 还是 high。
 
 ## 优化策略与最佳实践
 
@@ -292,17 +304,16 @@ DisplayMode: switching from 60Hz to 120Hz (seamless)
 
 最好的优化是不需要切换。
 
-**减少帧率变更频率**：如果 App 的某个界面需要 120Hz（比如动画丰富的页面），尽量让它在进入时就以 120Hz 运行，而不是在动画开始时才请求切换。通过 `Surface.setFrameRate()` 提前声明帧率需求，给 SurfaceFlinger 留出提前切换的余量。
+**减少帧率变更频率**：如果 App 的某个界面需要高刷新率（比如过渡动画很多的页面），尽量在界面进入时就表达偏好，而不是等动画开始才触发仲裁。固定片源继续用 `Surface.setFrameRate()`；UI 层动画在 ARR 设备上更适合 `View.setRequestedFrameRate()`。
 
 ```java
-// 在 Activity.onResume() 中声明帧率偏好，而不是在动画开始时
+// Android 15-QPR1+
+// 在界面恢复时先表达高刷偏好，避免动画开始时才触发仲裁
 @Override
 protected void onResume() {
     super.onResume();
-    if (getWindow() != null && getWindow().getDecorView() != null) {
-        getWindow().getDecorView().setFrameRate(120f,
-            Surface.FRAME_RATE_COMPATIBILITY_DEFAULT);
-    }
+    final View decorView = getWindow().getDecorView();
+    decorView.setRequestedFrameRate(View.REQUESTED_FRAME_RATE_CATEGORY_HIGH);
 }
 ```
 
@@ -320,37 +331,34 @@ protected void onResume() {
 
 [待验证: 不同 OEM 厂商的 Display HAL 实现差异和切换性能数据]
 
-### setFrameRate() 的正确使用
+### 观察实际刷新节奏时看什么
 
-`setFrameRate()` 是 App 影响刷新率选择的主要手段，但用错了反而会导致更多切换。
+App 侧公开 API 没有直接暴露刷新率字段。`Choreographer.VsyncCallback#onVsync(FrameData data)` 暴露的是 `FrameData` / `FrameTimeline`，我们能直接读到的是 `getFrameTimeNanos()`、`getFrameTimelines()` 和 `getPreferredFrameTimeline()` 这类时间线信息。
 
-**要做的**：
-- 为视频播放使用 `FRAME_RATE_COMPATIBILITY_FIXED_SOURCE`，帮助系统选择精确的刷新率整数倍
-- 在游戏场景中声明目标帧率（比如 60fps），让系统知道不需要 120Hz
-- 使用 `Choreographer.VsyncEventData.refreshRate` 监听实际刷新率，据此调整渲染节奏
+调试时可以分成两层看：
 
-**不要做的**：
-- 不要在每一帧都调用 `setFrameRate()`，它不是逐帧 API，频繁调用只会增加 SurfaceFlinger 的仲裁负担
-- 不要假设 `setFrameRate()` 的请求一定会被满足，始终通过 `VsyncEventData.refreshRate` 确认实际值
-- 不要在 `setFrameRate()` 和 `preferredDisplayModeId` 之间反复切换，选一个并保持一致
+- **看 FrameData / FrameTimeline**：用 `getPreferredFrameTimeline()` 和相邻帧的 expected presentation time，判断这一段动画是不是已经按新的节奏在调度。
+- **看 Display API**：用 `Display.getRefreshRate()`、`DisplayManager.DisplayListener`、`Display.getSuggestedFrameRate()` 和 `Display.getSupportedRefreshRates()` 看当前模式、系统建议值和设备支持集合。
+- **看 Trace**：把上面的 Display 变化放到和 Perfetto 的 VSYNC-app / VSYNC-sf 间隔跳变同一条时间轴里，确认卡顿究竟出在模式切换、调度延后，还是 App 自己没跟上。
+
+所以这里有两条简单规则：
+- 不要把 `Display.getSuggestedFrameRate()` 当成任意 fps → 刷新率映射器，它只接受 `FRAME_RATE_CATEGORY_NORMAL` / `FRAME_RATE_CATEGORY_HIGH`。
+- 不要假设 `setFrameRate()` 请求一定会被满足，最终还是要回到 Display API 和 Perfetto 结果核对。
 
 ## 版本演进
 
-| 版本 | 关键变化 |
-|------|----------|
-| Android 11 (API 30) | `Surface.setFrameRate()` API，Composer HAL 2.4 Config Groups 支持无缝切换 |
-| Android 12 (API 31) | `preferredDisplayModeId` 行为优化，触摸触发刷新率提升 |
-| Android 13 (API 33) | `Choreographer.VsyncEventData.refreshRate` 字段，App 可感知实际刷新率 |
-| Android 14 (API 34) | `setFrameRate()` 允许传入非面板原生支持的帧率值 |
-| Android 15 (API 35) | ARR 引入——LTPO 面板单模式内离散步进变频，减少硬件切换代价 |
-| Android 16 (API 36) | `hasArrSupport()` / `getSuggestedFrameRate()` API，RecyclerView 1.4 内置 ARR |
-| Android 17 (API 37) | [待验证: ARR 帧率切换行为是否有进一步优化] |
+| 阶段 | 已验证的变化 |
+|------|--------------|
+| Android 11-14 | 多刷新率 mode switching 成为常见实现，`Surface.setFrameRate()` 用来表达固定帧源或显式 fps 提示 |
+| Android 15-QPR1+ | 支持对应 HAL API 的设备开始提供 ARR，刷新率可以在单一 mode 内跟随内容节奏变化 |
+| Android 16 公开接口 | `Display.hasArrSupport()`、`Display.getSuggestedFrameRate()`、`Display.getSupportedRefreshRates()` 让 App 能直接读取设备能力和系统建议值 |
+| AndroidX / Compose | RecyclerView 1.4、AndroidX core 1.15、Compose `preferredFrameRate()` 把滚动和局部动画的 ARR 适配放到更高层 API 里 |
 
 ## 与其他机制的关系
 
 - **帧率与刷新率（2.2）**：本节是 2.2 节的延伸。2.2 讲的是帧率和刷新率的基础概念，本节聚焦于两者不匹配时的切换性能问题。
 - **VSync 机制（2.3）**：刷新率切换直接改变 VSync 信号的周期，是 VSync 行为异常的常见原因之一。
-- **Choreographer（2.4）**：Choreographer 通过 `VsyncEventData` 感知刷新率变化，App 需要根据变化调整动画节奏。
+- **Choreographer（2.4）**：Choreographer 提供 `FrameData / FrameTimeline` 这类调度时间线；刷新率数值本身仍要结合 Display API 来看。
 - **SurfaceFlinger（2.6）**：SurfaceFlinger 是刷新率决策和切换执行的核心组件。
 - **Adaptive Refresh Rate（2.18）**：ARR 是减少刷新率切换性能代价的关键机制，本节讨论的很多卡顿场景在 ARR 设备上会得到缓解。
 
@@ -392,7 +400,7 @@ Camera App 是帧率切换卡顿的高发场景，因为它有独特的帧率需
 - **Frame Pacing Library（Swappy）**：对于 OpenGL/Vulkan 游戏，Swappy 自动处理帧率适配，包括 ARR 场景下的过渡处理。使用 Swappy 的游戏不需要手动调用 `setFrameRate()`。
 - **避免动态帧率**：如果游戏帧率在 45-60fps 之间波动，系统可能反复切换刷新率。建议锁定到固定帧率（通过 `setFrameRate()` 或 `WindowManager` 参数）。
 
-[已验证: 官方文档, developer.android.com/games/agdk/frame-pacing]
+[已验证: 官方文档, developer.android.com/games/sdk/frame-pacing]
 
 ### 🔸 OEM 厂商对帧率切换的定制优化
 
@@ -407,16 +415,21 @@ OEM 厂商在 Display HAL 和 SurfaceFlinger 层面有大量定制空间：
 ## 参考资料
 
 - AOSP 源码路径：
-  - `frameworks/native/services/surfaceflinger/Scheduler/RefreshRateSelector.cpp`（刷新率选择算法）
+  - `frameworks/native/services/surfaceflinger/SurfaceFlinger.cpp`（`mScheduler->chooseRefreshRateForContent(...)` 调用点）
+  - `frameworks/native/services/surfaceflinger/Scheduler/RefreshRateSelector.cpp`（候选模式排序与 score 计算）
+  - `frameworks/native/services/surfaceflinger/Scheduler/RefreshRateSelector.h`（`LayerVoteType` 定义）
   - `frameworks/native/services/surfaceflinger/Scheduler/VsyncModulator.cpp`（VSync offset 动态调整）
-  - `frameworks/base/core/java/android/view/Surface.java`（setFrameRate API）
-  - `frameworks/base/core/java/android/view/Choreographer.java`（VsyncEventData.refreshRate）
-  - `frameworks/base/services/core/java/com/android/server/display/DisplayManagerService.java`（DisplayManager 策略）
+  - `frameworks/base/core/java/android/view/Surface.java`（`setFrameRate()` 与 `FrameRateParams`）
+  - `frameworks/base/core/java/android/view/View.java`（`setRequestedFrameRate()`、`setFrameContentVelocity()`）
+  - `frameworks/base/core/java/android/view/Display.java`（`hasArrSupport()`、`getSuggestedFrameRate()`、`getSupportedRefreshRates()`）
+  - `frameworks/base/core/java/android/view/Choreographer.java`（`VsyncCallback` 与 `FrameData`）
 - 官方文档：
-  - [Refresh Rate Management](https://developer.android.com/develop/ui/views/graphics/refresh-rate)
+  - [Adaptive Refresh Rate](https://developer.android.com/develop/ui/views/animations/adaptive-refresh-rate)
   - [Surface.setFrameRate()](https://developer.android.com/reference/android/view/Surface#setFrameRate)
-  - [Android Frame Pacing](https://developer.android.com/games/agdk/frame-pacing)
-  - [Adaptive Refresh Rate Blog](https://android-developers.googleblog.com/2025/adaptive-refresh-rate.html)
+  - [Display.getSuggestedFrameRate(int)](https://developer.android.com/reference/android/view/Display#getSuggestedFrameRate(int))
+  - [View.setRequestedFrameRate(float)](https://developer.android.com/reference/android/view/View#setRequestedFrameRate(float))
+  - [View.setFrameContentVelocity(float)](https://developer.android.com/reference/android/view/View#setFrameContentVelocity(float))
+  - [Android Frame Pacing](https://developer.android.com/games/sdk/frame-pacing)
 - 系统属性参考：
   - `ro.surface_flinger.use_content_detection_for_refresh_rate`
   - `ro.surface_flinger.set_touch_timer_ms`

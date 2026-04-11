@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-11T20:10:00+08:00",
+  "generated_at": "2026-04-11T21:02:09+08:00",
   "state_machine_version": "v2",
   "total_sections": 206,
   "metrics": {
@@ -10,42 +10,41 @@
     "task9_unknown": 30,
     "task2b_unknown": 30,
     "ready-for-review": 173,
-    "pipeline_task2b_pending": 4,
-    "pipeline_task6_pending": 170,
+    "pipeline_task2b_pending": 3,
+    "pipeline_task6_pending": 171,
     "pipeline_task9_pending": 2,
     "task6_pending": 154,
-    "task6_reviewed": 6,
-    "task6_revisiting": 16,
-    "task9_pending": 175,
-    "task9_reviewed": 1,
-    "task2b_fixed": 16,
+    "task6_reviewed": 5,
+    "task6_revisiting": 17,
+    "task9_pending": 176,
+    "task9_reviewed": 0,
+    "task2b_fixed": 17,
     "task2b_idle": 156,
-    "task2b_pending": 4,
-    "last_updated": "2026-04-11T20:10:00+08:00"
+    "task2b_pending": 3,
+    "last_updated": "2026-04-11T21:02:09+08:00"
   },
   "pipeline": {
     "pipeline_stage_counts": {
       "unknown": 30,
       "task9_pending": 2,
-      "task6_pending": 170,
-      "task2b_pending": 4
+      "task6_pending": 171,
+      "task2b_pending": 3
     },
     "task6_state_counts": {
       "unknown": 30,
-      "reviewed": 6,
+      "reviewed": 5,
       "pending": 154,
-      "revisiting": 16
+      "revisiting": 17
     },
     "task9_state_counts": {
       "unknown": 30,
-      "pending": 175,
-      "reviewed": 1
+      "pending": 176
     },
     "task2b_state_counts": {
       "unknown": 30,
       "idle": 156,
-      "fixed": 16,
-      "pending": 4
+      "fixed": 17,
+      "pending": 3
     }
   },
   "issues": {
@@ -640,14 +639,15 @@
       "title": "刷新率切换与帧率适配性能",
       "path": "src/part1-fundamentals/ch02-rendering/19-refresh-rate-switching.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
-      "task6_state": "reviewed",
-      "task9_state": "reviewed",
-      "task2b_state": "pending",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
+      "task9_state": "pending",
+      "task2b_state": "fixed",
       "reviewed_by": "openclaw-task6",
       "reviewed_date": "2026-04-11",
       "task6_result": "pass-light-edit",
-      "task9_result": "needs-rework"
+      "task9_result": "needs-rework",
+      "task2b_result": "fixed"
     },
     "src/part1-fundamentals/ch02-rendering/20-multiwindow-desktop-rendering.md": {
       "chapter": "2.20",

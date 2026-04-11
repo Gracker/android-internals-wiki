@@ -5,25 +5,34 @@ status: ready-for-review
 drafted_date: "2026-04-05"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 4.0 (API 14) - Android 17 (API 37)"
-last_verified: "2026-04-05"
-last_verified_against: "AOSP android-17-beta3"
+last_verified: "2026-04-11"
+last_verified_against: "source.android.com + developer.android.com + AOSP main"
 confidence: medium
 sources:
   - type: official
     path: "https://developer.android.com/ndk/guides/graphics"
   - type: official
-    path: "https://source.android.com/docs/core/graphics/angle"
-  - type: blog
-    path: "https://android-developers.googleblog.com/ (Vulkan as official Android graphics API)"
+    path: "https://source.android.com/docs/core/graphics/implement-vulkan"
+  - type: official
+    path: "https://developer.android.com/ndk/guides/graphics/android-vulkan-profile"
+  - type: official
+    path: "https://developer.android.com/about/versions/15/features#graphics"
   - type: aosp
-    path: "platform/external/angle"
+    path: "frameworks/base/core/java/android/os/GraphicsEnvironment.java"
+  - type: aosp
+    path: "frameworks/native/opengl/libs/EGL/Loader.cpp"
+  - type: aosp
+    path: "frameworks/native/libs/graphicsenv/GraphicsEnv.cpp"
+  - type: aosp
+    path: "platform/external/angle/"
 tags: [opengl-es, vulkan, angle, gpu, graphics-api, rendering]
 related_chapters: ["2.1", "2.9", "2.10", "14.8"]
 section: "2.14"
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: pending
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
+task2b_result: fixed
+task2b_state: fixed
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-04-11"
 task6_result: "pass-light-edit"
@@ -33,9 +42,9 @@ task9_result: needs-rework
 
 # 2.14 图形 API 演进与选择策略（OpenGL ES / Vulkan / ANGLE）
 
-我们在 §2.1 中看到了 Android 渲染架构的全景，在 §2.9 中了解了渲染管线从 HWUI 到 SkiaVulkan 的演进，在 §2.10 中分析了 GPU 渲染的深入机制。但有一个维度一直没有展开：当我们要写一个游戏引擎、一个视频滤镜、或者一个需要直接操作 GPU 的应用时，应该选择哪个图形 API？OpenGL ES、Vulkan、还是等 ANGLE 帮我们翻译？在 Android 17 的迁移背景下，这个选择会直接影响兼容性判断和性能分析路径，因为 OpenGL ES 正在进入维护模式，ANGLE 也开始成为更多 GLES 应用的默认执行路径。
+我们在 §2.1 中看到了 Android 渲染架构的全景，在 §2.9 中了解了渲染管线从 HWUI 到 SkiaVulkan 的演进，在 §2.10 中分析了 GPU 渲染的深入机制。但有一个维度一直没有展开：当我们要写一个游戏引擎、一个视频滤镜、或者一个需要直接操作 GPU 的应用时，应该选择哪个图形 API？OpenGL ES、Vulkan，还是把 GLES 交给 ANGLE 翻译？这个选择在 Android 15 之后尤其重要。Google 已经把 Vulkan 明确为 Android 首选 GPU 接口，并把 ANGLE 定位为在 Vulkan 之上承载 OpenGL ES 的过渡层。同样是一段 GLES 代码，在不同设备上可能仍走厂商原生驱动，也可能被平台切到 ANGLE，再落到 Vulkan 驱动。
 
-理解图形 API 的演进脉络和架构差异，不只是“选对工具”的问题。我们在 Perfetto 里看到 GPU Activity slice 时，需要先分清它是 Vulkan 直接提交，还是 GLES 经过 ANGLE 翻译后的提交；分析帧时间抖动时，也要判断瓶颈究竟来自 API 翻译层，还是来自驱动实现本身。
+理解图形 API 的演进脉络和架构差异，不只是“选对工具”的问题。我们在 Perfetto 里看到 GPU 工作时，需要先分清自己手上拿到的是哪一层信号：是应用侧 API 调用、驱动暴露的 GPU renderstage，还是系统合成层记录的帧结果。只有把这些层次分开，后面的兼容性判断和性能分析才不会混线。
 
 ## Android 图形 API 的三代演进
 
@@ -67,43 +76,62 @@ ES 3.0/3.1/3.2 在 ES 2.0 的基础上逐步添加了更高级的 GPU 特性：�
 
 Vulkan 同样由 Khronos Group 制定，2016 年发布 1.0 版本。与 OpenGL ES 的"驱动替你做决定"不同，Vulkan 的设计哲学是"开发者自己控制一切"：内存分配、命令提交时机、GPU/CPU 同步策略、管线状态——全部由应用显式指定。
 
-Android 对 Vulkan 的支持时间线：
+Android 对 Vulkan 的版本基线可以直接看官方 `implement-vulkan` 文档。它给出的对应关系是：
 
-| Vulkan 版本 | 强制要求的 Android 版本 | 关键能力 |
+| Vulkan 版本 | Android 版本基线（官方表） | 关键能力 |
 |---|---|---|
-| 1.0 | Android 7.0 (可选) | 显式 API、Command Buffer、多线程渲染 |
-| 1.1 | Android 10 (64 位设备强制) | subgroup 操作、YCbCr 转换、多视图渲染 |
-| 1.3 | Android 13 (新设备强制) | 动态渲染（无 RenderPass）、同步 2.0、内联 uniform block |
-| 1.4 | Android 17 (新设备强制) | 简化的管线创建、scalar block layout、额外内存特性 |
+| 1.0 | Android 7 | 显式 API、Command Buffer、多线程命令录制 |
+| 1.1 | Android 9 | subgroup 操作、YCbCr 转换、多视图渲染 |
+| 1.3 | Android 13 | 动态渲染、Synchronization 2、更多现代 Vulkan 能力进入主流基线 |
+| 1.4 | Android 16 | 更多此前可选的现代能力进入 core，平台继续向更完整的 Vulkan 功能集收敛 |
 
-[已验证: 官方文档, developer.android.com/ndk/guides/graphics]
+[已验证: 官方文档, source.android.com/docs/core/graphics/implement-vulkan]
 
 Vulkan 1.0 就已经提供了 OpenGL ES 不具备的核心能力：Command Buffer 允许多线程并行构建 GPU 命令、显式内存管理让应用控制 GPU 内存的分配和回收时机、Pipeline State Object（PSO）将着色器和渲染状态预编译为一个不可变对象，避免了运行时的状态验证开销。
 
-但 Vulkan 1.0 的 API 复杂度极高。创建一个"画一个三角形"的最小 Vulkan 程序需要约 800 行代码——同样的功能在 OpenGL ES 中只需要不到 100 行。Vulkan 1.1/1.3/1.4 的迭代本质上是在降低这个复杂度：Vulkan 1.3 的动态渲染让开发者不再需要显式定义 RenderPass 对象，Vulkan 1.4 进一步简化了管线创建流程。
+但 Vulkan 1.0 的 API 复杂度极高。创建一个"画一个三角形"的最小 Vulkan 程序需要约 800 行代码——同样的功能在 OpenGL ES 中只需要不到 100 行。Vulkan 1.1/1.3/1.4 的迭代本质上是在降低这个复杂度：Vulkan 1.3 的动态渲染让开发者不再需要显式定义 RenderPass 对象，Vulkan 1.4 继续把更多现代能力并入核心能力集合。
 
-Android 17 强制要求新设备支持 Vulkan 1.4，同时定义了 **Android Vulkan Profile 2025 (AVP 2025)**——这是一个 Vulkan 扩展和特性的标准集合，确保所有 Android 设备提供一致的 GPU 能力基线。AVP 2025 包含了额外内存特性、细粒度浮点控制、GPU query 重置、标准化像素格式等扩展。
+这里要特别区分两件事。第一，上表说的是平台 / OEM 侧的 Vulkan 版本基线，我们可以把它理解为“这一代 Android 对新设备希望具备什么 Vulkan 能力”；它不等于“所有升级到该版本的旧设备都会自动获得同样的 Vulkan 版本”。第二，**Android Vulkan Profile 2025（AVP 2025）** 不是平台最低门槛，而是面向活跃设备生态的兼容 profile。官方 AVP 页面把它定义为一组“在绝大多数活跃 Android 设备上都能找到”的 Vulkan 扩展、特性、格式和 limits，用来帮助游戏和引擎选择一条更稳定的跨设备能力集合。
 
-[已验证: 官方文档, source.android.com/docs/core/graphics/angle]
+AVP 2025 在 AVP 2022 / 2021 的基础上继续扩展了能力范围，官方特别点名了额外内存特性、浮点控制、host query reset，以及更多标准化像素格式。这些内容适合放在“兼容性 profile”这一层理解，而不是和“Android 16 新设备要求 Vulkan 1.4”写成同一件事。
+
+[已验证: 官方文档, developer.android.com/ndk/guides/graphics/android-vulkan-profile]
 
 ### 第三代：ANGLE——翻译层，不是新 API
 
 严格来说，ANGLE（Almost Native Graphics Layer Engine）不是一个独立的图形 API，它是一个**翻译层**：接收 OpenGL ES API 调用，将其翻译为 Vulkan（或 macOS/iOS 上的 Metal）调用。
 
-ANGLE 的定位可以用一句话概括：它让 OpenGL ES 应用无需修改代码就能跑在 Vulkan 上。
+ANGLE 的定位可以用一句话概括：它让 OpenGL ES 应用在不改 API 的前提下，有机会跑在 Vulkan 后端之上。但在 Android 上，真正关键的不是“系统里有没有 ANGLE”，而是“这次进程启动时，GLES driver 最终选中了谁”。
 
-Google 的策略是分阶段推进：
+Android 15 的图形说明页把 ANGLE 描述为“running OpenGL ES on top of Vulkan”的 optional layer，同时明确写到，后续会在更多**新设备**上把 ANGLE 作为 GL system driver 出厂。因此，我们更应该把 ANGLE 理解为一条持续推进中的路线，而不是一个已经对所有设备统一生效的开关。
 
-| Android 版本 | ANGLE 策略 | 含义 |
-|---|---|---|
-| 12 ~ 14 | 开发者可选 opt-in | 仅特定应用主动启用 |
-| 15 | 扩展 opt-in | 更多应用可以选用 |
-| 16 | 新设备 allowlist | 特定应用强制使用 ANGLE |
-| **17** | **新设备 denylist** | **所有应用默认使用 ANGLE，仅排除列表中的应用使用原生 GLES 驱动** |
+AOSP `GraphicsEnvironment.queryAngleChoice()` 给出了 Java 层的第一段选路顺序：先看全局开关 `ANGLE_GL_DRIVER_ALL_ANGLE`，再看按包名配置的 `angle_gl_driver_selection_pkgs` / `angle_gl_driver_selection_values`，最后才落到平台资源里的 `config_angleAllowList`。如果显式选了 `native`，Java 层会把 `shouldUseNativeDriver` 传给 native 层；如果选了 ANGLE，则先尝试 ANGLE APK，再回退到 system ANGLE。到了 `frameworks/native/opengl/libs/EGL/Loader.cpp`，loader 的顺序是“先尝试 ANGLE，再尝试 updatable driver，最后再落回 native / system GLES driver”。这也是为什么我们不能把“Android 15+”直接等同于“所有 GLES 应用都会自动经过 ANGLE”。
 
-[已验证: 官方文档, developer.android.com/about/versions/17]
+```java
+// frameworks/base/core/java/android/os/GraphicsEnvironment.java
+private String queryAngleChoice(...) {
+    if (allUseAngle == ANGLE_GL_DRIVER_ALL_ANGLE_ON) return "angle";
+    ...
+    if (optInValue.equals("angle")) return "angle";
+    if (optInValue.equals("native")) return "native";
+    ...
+    for (String allowedPackage : angleAllowListPackages) {
+        if (allowedPackage.equals(packageName)) return "angle";
+    }
+    return "default";
+}
+```
 
-注意关键细节：Android 17 的 denylist 策略仅对**新设备**生效。旧设备升级到 Android 17 不受此强制约束。所谓 denylist 是指"不在排除名单中的应用都走 ANGLE"，与之前的 allowlist（"在名单中的应用才走 ANGLE"）正好相反。
+开发者选项和 ADB override，本质上就是在改这些 `Settings.Global` 键值。调试单个包时，常见做法是同时写入包名列表和值列表：
+
+```bash
+adb shell settings put global angle_gl_driver_selection_pkgs com.example.app
+adb shell settings put global angle_gl_driver_selection_values angle
+```
+
+如果要回到平台默认选路，再删除对应的 global setting 即可。除此之外，AOSP `GraphicsEnv.cpp` 还暴露了 `ANGLEAndroidParseRulesString()` 和 `ANGLEShouldBeUsedForApplication()` 这条调用链，说明 ANGLE 包自身还可以结合 rules string、设备信息和 app 包名做进一步判断。对排查“为什么这台机型走 ANGLE、那台不走”这类问题时，这条链路比简单的 allowlist / denylist 口号更有解释力。
+
+[已验证: 官方文档 + AOSP 源码, developer.android.com/about/versions/15/features#graphics, frameworks/base/core/java/android/os/GraphicsEnvironment.java, frameworks/native/opengl/libs/EGL/Loader.cpp, frameworks/native/libs/graphicsenv/GraphicsEnv.cpp]
 
 ## Vulkan 与 OpenGL ES 的架构差异
 
@@ -180,7 +208,7 @@ OpenGL ES 没有命令缓冲区的概念——每次绘制都是"即时的"（�
 
 这个特性对 UI 渲染特别有价值。Android 的 View 系统在 UI 没有变化时不会重新走一遍 measure/layout/draw 流程，但 GPU 命令仍然需要提交。如果使用 Vulkan 的 Command Buffer 复用，静态 UI 的帧提交开销几乎为零。
 
-## ANGLE 的角色与 Android 17 强制迁移
+## ANGLE 的角色与 Android 图形栈收敛
 
 ### ANGLE 的翻译架构
 
@@ -212,34 +240,28 @@ ANGLE 的翻译不是简单的 API 映射。最复杂的部分是**状态转换*
 1. **GLSL ES 到 SPIR-V 的着色器翻译**：ANGLE 内置了一个着色器编译器，将 GLSL ES 源码翻译为 Vulkan 使用的 SPIR-V 二进制格式。这个翻译发生在着色器首次编译时，之后会被缓存
 2. **状态追踪和 Pipeline 查找**：每次 GLES draw call 都需要在哈希表中查找匹配的 Vulkan Pipeline，如果未命中则创建新的 Pipeline（这个创建过程本身是耗时的）
 
-### ANGLE 的性能实测
+### ANGLE 的性能影响应该怎么理解
 
-Google 在多个公开场合（Google I/O、Android Dev Summit）展示了 ANGLE 的性能数据。对于大多数应用来说，ANGLE 的性能影响在可接受范围内：
+官方资料强调的重点是 compatibility 和 behavior consistency，而不是给出一个统一的“ANGLE 一定慢多少”结论。原因很简单：ANGLE 的成本不只取决于 ANGLE 本身，还取决于 workload 的 draw call 形态、shader 数量、state change 密度，以及原生 GLES driver 自身的质量。
 
-| 应用类型 | ANGLE 性能开销 | 说明 |
-|---|---|---|
-| 2D UI 应用 | 2-5% | 简单的 GLES 操作，翻译开销极小 |
-| 3D 游戏（中等复杂度） | 5-10% | 更多的着色器和状态切换 |
-| 合成基准测试 | 10-20% | 极端场景，大量状态切换 |
+从机制上看，ANGLE 的额外成本主要集中在两个阶段。第一次是 shader 翻译和 pipeline 建立：GLES shader 需要被 ANGLE 翻译到后端可用的形式，首次命中时会有额外 CPU 开销。第二次是 draw call 前的状态映射：ANGLE 需要把 OpenGL ES 的状态机语义折算成 Vulkan 的 pipeline、descriptor 和 render pass 语义。如果 workload 状态切换频繁、pipeline cache 命中率又不高，这部分成本就会更明显。
 
-[来源: Google I/O 技术演讲及社区基准测试，非官方系统性基准数据，具体数值可能因设备和驱动版本而异]
+反过来看，如果某个 SoC 的原生 GLES driver 本身存在较重的 CPU 开销或兼容性问题，ANGLE 走 Vulkan 后端反而可能更稳定，甚至更快。所以我们不应该在文章里给出脱离场景的固定百分比，更合理的结论是：**ANGLE 带来的不是统一的性能方向，而是“以一定翻译成本换取更一致的驱动行为”**。真正的答案只能在目标 workload 和目标设备上测出来。
 
-实际测试里，部分游戏通过 ANGLE 运行反而比原生 GLES 驱动更快。原因通常不是 ANGLE 本身更“轻”，而是某些 GPU 厂商的原生 GLES 驱动实现质量较差，ANGLE→Vulkan 路径恰好绕开了这部分问题驱动代码。
+另外，Vulkan 确实支持 pipeline cache，但“系统 ANGLE 一定能替所有 GLES 应用统一管理并稳定复用 cache”并不是官方给出的通用承诺。分析启动抖动时，我们可以把 pipeline / shader 首次编译当成重点怀疑对象，但不要先把它写成一条无条件成立的系统保证。
 
-ANGLE 还带来了一个间接的优化：Pipeline Cache。Vulkan 支持将编译好的 Pipeline 序列化到磁盘，下次启动时直接加载，避免了运行时的 Pipeline 创建开销。社区测试（如 Fortnite Mobile）显示，加载 Pipeline Cache 可以将 Pipeline 创建的平均耗时降低 95%。ANGLE 作为系统级服务，可以为所有 GLES 应用统一管理 Pipeline Cache。
+### ANGLE 路线对开发者的实际影响
 
-[来源: ARM GPU Best Practices, developer.arm.com]
+对开发者来说，更可靠的判断方式不是先假设“系统一定已经强制切到 ANGLE”，而是先回答三个问题：这个设备的 GL system driver 是什么？这个包有没有被 developer option / adb override 改写？如果都没有，平台默认策略是否把它放进了 ANGLE 路径？
 
-### Android 17 ANGLE 强制化的实际影响
+因此，现阶段更稳妥的工程结论是：
 
-对于开发者来说，Android 17 的 ANGLE denylist 策略意味着：
+1. **现有 GLES 应用不一定需要立刻迁移**：如果目标设备仍在原生 GLES driver 上，应用会继续按原路径运行；如果设备把该包选进 ANGLE，API 代码通常不用改，但我们仍要重新做稳定性和性能回归。
+2. **性能变化要按 workload 测**：ANGLE 可能变慢，也可能因为绕开厂商 GLES driver 的问题而更稳定。
+3. **调试时先确认“是否走 ANGLE”再看 Trace**：没有这一步，后面的 Perfetto 解释很容易错层。
+4. **WebView / WebGL 需要单独判断**：Chromium、Skia、WebView 的 GPU backend 由它自己的构建和运行时选择决定，不能直接套用系统 ANGLE policy 得出结论。
 
-1. **不需要修改代码**：GLES 应用自动通过 ANGLE 运行，API 行为不变
-2. **性能可能略有变化**：大多数场景持平或略慢，少数场景可能反而更快
-3. **调试方式改变**：使用 ANGLE 后，GPU Activity 在 Perfetto 中通常会通过 Vulkan 路径呈现，而不是直接显示为 GLES 路径
-4. **驱动 bug 表现可能变化**：原来在原生 GLES 驱动上的 bug 在 ANGLE→Vulkan 路径上可能出现不同的表现
-
-需要特别注意的是：WebView 和 WebGL 仍然走 GLES 路径。WebView 内部的渲染引擎（Skia）有自己的 GPU 后端选择逻辑，ANGLE 的系统级策略不会直接干预 WebView 内部的图形 API 选择。
+换句话说，系统 ANGLE policy 只解释“系统 GLES driver 怎么选”，它并不自动回答“Chromium 内部这次到底用的是哪条 GPU backend”。
 
 ## API 选择对渲染性能的实际影响
 
@@ -269,11 +291,16 @@ Vulkan 则要求开发者自己做这些优化。它不会替你合并 draw call
 
 ### 在 Perfetto 中识别图形 API
 
-在 Perfetto Trace 中，我们可以通过以下方式判断应用使用的图形 API：
+在 Perfetto 里，最容易出错的地方是把不同层次的数据源混成一条因果链。更稳妥的读法是先分清“这个数据源到底观测的是 CPU API 调用、GPU work submission，还是进程装载状态”。
 
-1. **GPU Activity Track**：Vulkan 提交的 GPU 工作通常标记为 `vkQueueSubmit` 相关的 slice；GLES 提交则可能显示为 `gles*` 或通过 ANGLE 显示为 `vk*` slice
-2. **GPU Counter Track**：启用 `gpu.counters` 数据源后，可以看到 GPU 频率、利用率和内存带宽等指标。不同 API 的 GPU counter 可用性不同
-3. **进程级信息**：检查进程加载的共享库——加载 `libvulkan.so` 表示使用 Vulkan，加载 `libGLESv2.so` 表示使用 OpenGL ES，两者都加载则可能使用 ANGLE
+| 数据源 / 观察面 | 我们能看到什么 | 不能单独回答什么 |
+|---|---|---|
+| GPU Activity / `gpu.renderstages` | 驱动暴露出来的 GPU 阶段、queue work、部分 `vk*` 或 vendor slice 名称 | 不能只凭一个 `vkQueueSubmit` 就断定“应用一定是原生 Vulkan”或“一定是 GLES 经 ANGLE” |
+| `gpu.counters` | 频率、利用率、带宽等时间序列 | 反映负载，不直接反映 API 选路 |
+| 进程 maps / 已加载共享库 | `libEGL.so`、`libGLESv2.so`、`libvulkan.so`、ANGLE 相关库是否出现 | 很多栈会同时加载多种库，不能只凭 loaded libs 判断最终渲染后端 |
+| App 侧自检日志 | 当前进程向上暴露的 renderer / backend 信息 | 需要应用配合，单独使用时也看不到 GPU 负载细节 |
+
+真正靠谱的做法是把这些信号组合起来：先用 app 侧自检或 driver selection 配置确认“这次想走哪条路”，再用 maps 和 Perfetto 看“实际加载了什么、GPU 工作怎么分布”，最后再把 Frame Timeline 里的帧结果对上去。这样我们才能区分 native Vulkan、native GLES，以及 GLES-over-ANGLE 这三类路径，而不是被某一个 slice 名字带偏。
 
 GPU counter 的配置方式（在 TraceConfig 中）：
 
@@ -290,9 +317,9 @@ data_sources {
 }
 ```
 
-在驱动支持较完整的设备上，Vulkan 通常能拿到比 GLES 更丰富的 GPU 性能计数器，包括 per-stage GPU 利用率（顶点/片段/Compute）、更精细的显存带宽计量，以及 GPU Cache 命中率等。这些计数器的可用性仍然取决于 GPU 厂商和驱动实现。
+因此，`gpu.counters` 更适合回答“这一段 GPU 忙不忙、频率高不高”，不适合单独回答“到底是 GLES 还是 Vulkan”。只有在我们已经通过进程 maps、driver selection 或 app 侧日志确认了 API 路径之后，这些 counters 才能作为性能分析证据继续往下用。
 
-[待补充: Perfetto 中 Vulkan vs GLES 的 GPU Activity slice 截图对比]
+[待补充: Perfetto 中 renderstages / maps / Frame Timeline 的三层对照截图]
 
 ### AGI 与不同 API 的兼容性
 
@@ -306,9 +333,9 @@ Android GPU Inspector（AGI）是 Google 官方的 GPU 分析工具（详见 §1
 
 ### Frame Timeline 中的表现差异
 
-Frame Timeline（帧时间线）在 Android 10+ 可用，它展示了每帧从 App 提交到 SurfaceFlinger 合成再到显示的完整时间线。无论是使用 Vulkan 还是 GLES（通过 ANGLE），Frame Timeline 都能正常工作，因为帧的呈现时间戳是在 SurfaceFlinger 层面记录的，与上层的图形 API 无关。
+Frame Timeline（帧时间线）在 Android 10+ 可用，它展示了每帧从 App 提交到 SurfaceFlinger 合成再到显示的完整时间线。它非常适合回答“哪一帧晚了、晚在 App 还是晚在 SurfaceFlinger”，因为这些时间戳记录在合成链路这一层，与上层用的是 Vulkan 还是 GLES 无关。
 
-但 GPU 执行时间（Frame Timeline 中的 GPU duration）的精度会因 API 不同而有所差异。Vulkan 应用可以通过 `VkSemaphore` 精确标记 GPU 工作的开始和结束，而 GLES 应用的 GPU 时间戳依赖于驱动实现，精度可能稍低。
+但 Frame Timeline 本身并不告诉我们“这一帧背后走的是 native Vulkan、native GLES 还是 ANGLE”。它关注的是 frame result，而不是 driver selection。遇到图形 API 归因问题时，正确顺序应该是：先用 driver selection、process maps 或 app 日志确认 API 路径，再回到 Frame Timeline 判断这条路径上的帧延迟究竟卡在 CPU、GPU 还是合成阶段。
 
 ## 迁移策略与最佳实践
 
@@ -318,10 +345,10 @@ Frame Timeline（帧时间线）在 Android 10+ 可用，它展示了每帧从 A
 新项目？
   ├─ 是 → 直接使用 Vulkan（推荐）
   ├─ 否（已有 GLES 代码）
-  │   ├─ 性能关键型（游戏/AR/VR）→ 评估迁移到 Vulkan
-  │   ├─ 普通 UI 应用 → 不需要改动，ANGLE 会自动处理
-  │   └─ WebView/WebGL → 保持 GLES，不受 ANGLE 策略影响
-  └─ 使用游戏引擎 → 跟随引擎默认设置
+  │   ├─ 性能关键型（游戏/AR/VR）→ 评估原生 Vulkan，并在目标设备上对比 native GLES / ANGLE 路径
+  │   ├─ 普通 UI 应用 → 先维持 GLES，但在 Android 15+ 目标设备上验证是否被切到 ANGLE
+  │   └─ WebView/WebGL → 额外检查 Chromium / WebView backend，不直接套用系统 ANGLE 结论
+  └─ 使用游戏引擎 → 跟随引擎默认设置，再用目标设备做实测
 ```
 
 **直接使用 Vulkan 的场景**：
@@ -330,33 +357,33 @@ Frame Timeline（帧时间线）在 Android 10+ 可用，它展示了每帧从 A
 - 对 GPU 内存布局有精细控制需求的场景
 - 需要使用 Compute Shader 做大规模并行计算
 
-**保持 GLES（通过 ANGLE）的场景**：
-- 现有的 GLES 应用，性能表现稳定
-- 以 2D UI 为主的普通应用
-- 跨平台代码需要兼容 iOS（iOS 的 GLES 通过 ANGLE→Metal 运行）
-- 开发资源有限，不值得投入 Vulkan 的高学习成本
+**继续维护 GLES 的场景**：
+- 现有的 GLES 应用，目标设备实测稳定
+- 以 2D UI 为主，且没有明确的 CPU driver bottleneck
+- 跨平台代码仍需要保持 GLES 抽象层
+- 开发资源有限，但要把 native GLES / ANGLE 两条路径纳入回归矩阵
 
 ### 从 GLES 迁移到 Vulkan 的关键步骤
 
 迁移不是简单的 API 替换。以下是需要重点关注的事项：
 
 1. **Pipeline 预创建**：Vulkan 的 Pipeline 创建是耗时操作（可能数十毫秒）。必须在应用启动或场景加载时完成所有 Pipeline 的创建，绝不能在渲染循环中创建 Pipeline
-2. **Pipeline Cache 持久化**：将 Pipeline Cache 序列化到磁盘，下次启动时加载。这可以将冷启动的 Pipeline 创建时间减少 95%
+2. **Pipeline Cache 持久化**：将 Pipeline Cache 序列化到磁盘，下次启动时加载。这样可以减少重复建管线的冷启动开销，但具体收益取决于 workload 和驱动实现
 3. **内存管理**：Vulkan 要求应用自己管理 GPU 内存。移动设备使用统一内存架构（CPU/GPU 共享物理内存），`VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT` 的选择策略与桌面端不同
 4. **Pre-rotation**：设备旋转时，Vulkan 应用需要自己在渲染时处理画面旋转，否则 SurfaceFlinger 会做额外的旋转合成，导致性能下降
 5. **验证层**：开发阶段启用 Vulkan Validation Layer（`VK_LAYER_KHRONOS_validation`）检查 API 使用错误，发布时关闭。验证层会带来显著的性能开销
 
 [已验证: 官方文档, developer.android.com/ndk/guides/graphics]
 
-### Android 17 对开发者的实际影响清单
+### Android 15+ 图形栈收敛后的实际检查项
 
-| 场景 | 影响 | 行动 |
+| 场景 | 我们该关注什么 | 建议动作 |
 |---|---|---|
-| GLES 应用（普通 App） | 自动走 ANGLE，性能基本不变 | 无需行动 |
-| GLES 应用（游戏） | 可能有 5-10% 性能变化 | 在 Android 17 设备上测试 ANGLE 路径 |
-| Vulkan 应用 | 无直接影响 | 确认 Vulkan 1.4 兼容性 |
-| WebView/WebGL 应用 | 不受 ANGLE 策略影响 | 无需行动 |
-| NDK 图形代码 | 可能有新的 API 行为差异 | 测试 ANGLE denylist 模式下的表现 |
+| 现有 GLES 应用 | 该包在目标设备上究竟走 native GLES 还是 ANGLE | 用 developer option、app 日志、进程 maps 做一次确认 |
+| 游戏 / 重负载渲染 | ANGLE 是否带来额外 shader / pipeline 抖动，或绕开原生 driver bug | 分别测首帧、稳态帧、shader warm-up |
+| Vulkan 应用 | 是否满足 Android 13 / 16 的 Vulkan 1.3 / 1.4 基线，以及目标 AVP profile | 对照 `implement-vulkan` 和 AVP 页面做 capability audit |
+| WebView / WebGL | Chromium backend 与系统 GLES driver 是否一致 | 单独看 Chromium / WebView 构建与运行时配置 |
+| NDK 图形代码 | 代码是否把“GLES == 厂商原生驱动”当成硬编码假设 | 清理这些假设，改成运行时检测 |
 
 ## 与其他章节的关系
 
@@ -367,23 +394,22 @@ Frame Timeline（帧时间线）在 Android 10+ 可用，它展示了每帧从 A
 
 ## 常见问题与误区
 
-**误区：ANGLE 翻译层会让所有 GLES 应用变慢**
-实际情况：对于大多数 2D UI 应用，ANGLE 的性能开销在 2-5% 以内，用户完全感知不到。部分场景下 ANGLE→Vulkan 路径反而比原生 GLES 驱动更快。
+**误区：ANGLE 一定会让所有 GLES 应用变慢**
+实际情况：ANGLE 没有统一适用的固定性能百分比。它的开销取决于 workload、shader 首次编译、状态切换密度，以及原生 GLES driver 的质量。真正可靠的结论只能来自目标设备实测。
 
-**误区：Android 17 之后 OpenGL ES 就不能用了**
-实际情况：OpenGL ES 仍然可用，只是通过 ANGLE 翻译为 Vulkan 执行。API 接口不变，应用不需要修改代码。Android 17 的 denylist 策略仅对新设备生效。
+**误区：Android 15+ 之后所有 GLES 应用都会自动走 ANGLE**
+实际情况：是否走 ANGLE，取决于系统 driver、全局开关、per-app override、平台 allowlist，以及 loader 的 fallback 路径。官方 roadmap 说的是“更多新设备会把 ANGLE 作为 GL system driver”，不是“所有设备、所有应用今天都已经统一切换”。
 
-**误区：应该把所有 GLES 代码迁移到 Vulkan**
-实际情况：对于普通 UI 应用，迁移的投入产出比很低。ANGLE 的翻译质量在持续提升，Google 的策略本身就是"让 GLES 应用无感迁移"。
+**误区：WebView / WebGL 一定不受系统 ANGLE 路线影响**
+实际情况：WebView / Chromium 的 GPU backend 是它自己的运行时选择问题，不能直接拿系统 GLES driver policy 代替结论。分析这类问题时，我们需要单独验证 Chromium / Skia / WebView 当前 build 的 backend。
 
 **误区：Vulkan 一定比 OpenGL ES 快**
-实际情况：如果 Vulkan 代码没有做 Pipeline 预创建、Cache 持久化、正确的同步等优化，性能可能反而比 GLES 更差。Vulkan 提供了更高的性能上限，但也要求更多的优化工作。
+实际情况：如果 Vulkan 代码没有做 Pipeline 预创建、cache 预热和正确的同步，性能可能反而比 GLES 更差。Vulkan 提供了更高的性能上限，但也要求更多的工程投入。
 
 ## 参考资料
 
-- [Android NDK Graphics Guide](https://developer.android.com/ndk/guides/graphics) — Vulkan 和 GLES 的官方开发指南
-- [ANGLE on Android](https://source.android.com/docs/core/graphics/angle) — ANGLE 的系统级集成文档
-- [Vulkan as official Android graphics API](https://android-developers.googleblog.com/) — Google 官方博客公告
-- [Android Vulkan Profile 2025](https://developer.android.com/ndk/guides/graphics) — AVP 2025 设备能力基线
-- [ARM GPU Best Practices for Vulkan](https://developer.arm.com/) — 移动端 Vulkan 优化指南
-- AOSP 源码路径：`platform/external/angle`（ANGLE 实现）、`frameworks/native/vulkan`（Vulkan NDK wrapper）
+- [Android NDK Graphics Guide](https://developer.android.com/ndk/guides/graphics) — GLES / Vulkan 官方入口
+- [Implement Vulkan](https://source.android.com/docs/core/graphics/implement-vulkan) — Android 版本与 Vulkan 能力基线
+- [Android Vulkan Profile](https://developer.android.com/ndk/guides/graphics/android-vulkan-profile) — AVP 2025 与 profile 说明
+- [Android 15 Features: Graphics](https://developer.android.com/about/versions/15/features#graphics) — ANGLE as optional layer 与官方 roadmap
+- AOSP 源码路径：`frameworks/base/core/java/android/os/GraphicsEnvironment.java`（driver selection / per-app override）、`frameworks/native/opengl/libs/EGL/Loader.cpp`（ANGLE / native / updated driver 选路）、`frameworks/native/libs/graphicsenv/GraphicsEnv.cpp`（ANGLE APK / system setup 与 rules string 接口）、`platform/external/angle/`（ANGLE 实现）
