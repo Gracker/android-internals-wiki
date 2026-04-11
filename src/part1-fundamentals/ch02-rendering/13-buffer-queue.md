@@ -1,35 +1,49 @@
 ---
-title: "图形缓冲区管理 (BufferQueue)"
-chapter: "2.13"
-section: "2.13"
+title: 图形缓冲区管理 (BufferQueue)
+chapter: '2.13'
+section: '2.13'
 status: ready-for-review
-applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
-tags: [BufferQueue, BlastBufferQueue, GraphicBuffer, Surface, 渲染管线, GRALLOC, SurfaceFlinger, 三缓冲]
-related_chapters: ["2.1", "2.5", "2.6", "2.9", "7.2"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-04-04"
-gap_source: "AOSP结构+官方文档+研究素材"
-gap_score: "14/20"
-drafted_by: "openclaw-task2a"
-drafted_date: "2026-04-04"
+applicable_versions: Android 10 (API 29) - Android 17 (API 37)
+tags:
+- BufferQueue
+- BlastBufferQueue
+- GraphicBuffer
+- Surface
+- 渲染管线
+- GRALLOC
+- SurfaceFlinger
+- 三缓冲
+related_chapters:
+- '2.1'
+- '2.5'
+- '2.6'
+- '2.9'
+- '7.2'
+created_by: task2a-knowledge-gap
+created_date: '2026-04-04'
+gap_source: AOSP结构+官方文档+研究素材
+gap_score: 14/20
+drafted_by: openclaw-task2a
+drafted_date: '2026-04-04'
 reviewed_by: openclaw-task6
-reviewed_date: "2026-04-11"
+reviewed_date: '2026-04-11'
 sources:
-  - type: aosp
-    path: "frameworks/native/libs/gui/BufferQueue.cpp"
-  - type: aosp
-    path: "frameworks/native/libs/gui/BufferQueueCore.cpp"
-  - type: aosp
-    path: "frameworks/native/libs/gui/BLASTBufferQueue.cpp"
-  - type: official
-    path: "https://source.android.com/docs/core/graphics/architecture"
-  - type: official
-    path: "https://source.android.com/docs/core/graphics/bufferqueue"
+- type: aosp
+  path: frameworks/native/libs/gui/BufferQueue.cpp
+- type: aosp
+  path: frameworks/native/libs/gui/BufferQueueCore.cpp
+- type: aosp
+  path: frameworks/native/libs/gui/BLASTBufferQueue.cpp
+- type: official
+  path: https://source.android.com/docs/core/graphics/architecture
+- type: official
+  path: https://source.android.com/docs/core/graphics/bufferqueue
 pipeline_stage: task2b_pending
 task6_result: needs-rework
 task6_state: reviewed
-task9_state: pending
+task9_state: reviewed
 task2b_state: pending
+task9_result: needs-rework
 ---
 
 # 2.13 图形缓冲区管理 (BufferQueue)
