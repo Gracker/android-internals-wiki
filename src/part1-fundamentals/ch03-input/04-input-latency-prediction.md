@@ -6,8 +6,8 @@ status: ready-for-review
 drafted_date: "2026-04-05"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
-last_verified: "2026-04-05"
-last_verified_against: "AOSP android-16.0.0_r1"
+last_verified: "2026-04-11"
+last_verified_against: "AOSP android-16.0.0_r1 + developer.android.com + perfetto stdlib docs"
 confidence: medium
 sources:
   - type: official
@@ -15,7 +15,9 @@ sources:
   - type: official
     path: "developer.android.com/reference/androidx/input/motionprediction/MotionEventPredictor"
   - type: official
-    path: "perfetto.dev/docs/analysis/sql-tables/android-input"
+    path: "https://developer.android.com/reference/android/view/MotionPredictor"
+  - type: official
+    path: "https://perfetto.dev/docs/analysis/stdlib-docs#android_input_events"
   - type: blog
     path: "https://kernel.meizu.com/2023/10/27/Android-inputTuning-and-Optimizing/"
   - type: blog
@@ -26,12 +28,13 @@ sources:
     path: "intake/research-feeds/2026-04-05-15-perfetto-input-latency-sql.md"
 tags: [input, latency, touch, prediction, motioneventpredictor, front-buffer, kalman-filter, perfetto, input-latency]
 related_chapters: ["3.1", "3.2", "2.3", "2.4", "2.5", "8.1", "13.3", "13.5"]
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
-task9_result: needs-rework
-task2b_state: pending
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
+task2b_state: fixed
 task6_result: needs-rework
+task9_result: needs-rework
+task2b_result: fixed
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-04-11"
 ---
@@ -102,37 +105,80 @@ InputDispatcher 从 InputReader 获取事件后，执行窗口焦点判断、事
 
 [已验证: AOSP frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp]
 
-**阶段 5：App 处理延迟**（Choreographer → measure/layout/draw）
-事件到达 App 进程后，通过 `ViewRootImpl.enqueueInputEvent()` 放入本地待处理队列，然后在 `deliverInputEvent` 流程中分发给 View 树。但这里有一个关键的时间同步点：**输入事件必须等待 VSync 才会触发 Choreographer 的 doFrame**。
+**阶段 5：App 输入处理延迟**（InputChannel → ViewRootImpl → View 树）
+事件到达 App 进程后，并不会天然等到下一个 VSync 才开始处理。`ViewRootImpl.WindowInputEventReceiver.onInputEvent()` 会先调用 `processRawInputEvent(event)`，随后主线程消息循环收到 `MSG_DISPATCH_INPUT_EVENT`，再通过 `enqueueInputEvent(event, receiver, 0, true)` 把事件放入本地待处理队列，交给 `doProcessInputEvents()` 和 `deliverInputEvent` 流程分发给 View 树。
 
-在 Choreographer.doFrame() 中，回调严格按照以下顺序执行：
+```java
+// frameworks/base/core/java/android/view/ViewRootImpl.java
+// @ AOSP android-16.0.0_r1
+@Override
+public void onInputEvent(InputEvent event) {
+    processRawInputEvent(event);
+}
+
+...
+
+case MSG_DISPATCH_INPUT_EVENT: {
+    InputEvent event = (InputEvent) args.arg1;
+    InputEventReceiver receiver = (InputEventReceiver) args.arg2;
+    enqueueInputEvent(event, receiver, 0, true);
+} break;
+```
+
+这里要分清两件事。第一，输入事件的逻辑处理可以在主线程拿到消息后立即开始。第二，用户是否已经看到反馈，还要看下一帧什么时候开始绘制。
+
+批量 motion event 是另一条分支。`onBatchedInputEventPending()` 会根据是否开启 unbuffered dispatch，决定立刻消费还是挂到 `Choreographer.CALLBACK_INPUT`：
+
+```java
+// frameworks/base/core/java/android/view/ViewRootImpl.java
+// @ AOSP android-16.0.0_r1
+@Override
+public void onBatchedInputEventPending(int source) {
+    final boolean unbuffered = mUnbufferedInputDispatch
+            || (source & mUnbufferedInputSource) != SOURCE_CLASS_NONE;
+    if (unbuffered) {
+        consumeBatchedInputEvents(-1);
+        return;
+    }
+    scheduleConsumeBatchedInput();
+}
+
+void scheduleConsumeBatchedInput() {
+    mChoreographer.postCallback(Choreographer.CALLBACK_INPUT,
+            mConsumedBatchedInputRunnable, null);
+}
+```
+
+这就是为什么同样是触控事件，有些 trace 会看到事件刚到 App 就进入 `DeliverInputEvent`，有些则贴着下一帧的 `CALLBACK_INPUT` 统一消费。手写笔、绘图、部分低延迟交互会请求 unbuffered dispatch，换更短的等待时间。代价是失去 batching 和 resampling 带来的平滑收益。`View.requestUnbufferedDispatch(MotionEvent)` 的文档也明确写了，这个 API 不适合大多数应用，副作用包括 jittery scrolls 和无法利用 system resampling。
+
+[已验证: AOSP android-16.0.0_r1, ViewRootImpl.java + View.java]
+
+**阶段 6：视觉反馈等待下一帧并完成上屏**
+事件逻辑处理完，不等于像素已经更新。多数 UI 反馈仍要等下一次 `Choreographer#doFrame()` 触发 `CALLBACK_INPUT → CALLBACK_ANIMATION → CALLBACK_TRAVERSAL → CALLBACK_COMMIT`，View 树才会完成 measure/layout/draw，随后通过 `queueBuffer()` 提交 GraphicBuffer，交给 SurfaceFlinger 在后续 VSYNC-sf 上屏。
 
 ```java
 // frameworks/base/core/java/android/view/Choreographer.java
 // @ AOSP android-16.0.0_r1
-void doFrame(long frameTimeNanos, int frame,
-    DisplayEventReceiver.VsyncEventData vsyncEventData) {
-    // ...
-    doCallbacks(Choreographer.CALLBACK_INPUT, frameData, frameIntervalNanos);
-    doCallbacks(Choreographer.CALLBACK_ANIMATION, frameData, frameIntervalNanos);
-    doCallbacks(Choreographer.CALLBACK_INSETS_ANIMATION, frameData, frameIntervalNanos);
-    doCallbacks(Choreographer.CALLBACK_TRAVERSAL, frameData, frameIntervalNanos);
-    doCallbacks(Choreographer.CALLBACK_COMMIT, frameData, frameIntervalNanos);
-}
+mFrameInfo.markInputHandlingStart();
+doCallbacks(Choreographer.CALLBACK_INPUT, frameIntervalNanos);
+
+mFrameInfo.markAnimationsStart();
+doCallbacks(Choreographer.CALLBACK_ANIMATION, frameIntervalNanos);
+doCallbacks(Choreographer.CALLBACK_INSETS_ANIMATION, frameIntervalNanos);
+
+mFrameInfo.markPerformTraversalsStart();
+doCallbacks(Choreographer.CALLBACK_TRAVERSAL, frameIntervalNanos);
+
+doCallbacks(Choreographer.CALLBACK_COMMIT, frameIntervalNanos);
 ```
 
-[已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/view/Choreographer.java]
+所以我们分析输入延迟时，至少要拆成两段。一段是“事件多久送到并被 App 处理”，另一段是“处理结果多久出现在下一帧并真正显示”。前者更多受 InputDispatcher、主线程消息队列和 batching 影响，后者更多受 VSync 对齐、渲染耗时和 SurfaceFlinger 合成影响。
 
-CALLBACK_INPUT 排在第一位，输入事件会先于动画、measure/layout/draw 被处理。如果 CALLBACK_INPUT 处理耗时过长（比如 View.onTouchEvent() 中做了大量计算），会直接压缩后续 CALLBACK_TRAVERSAL 的时间，导致这一帧来不及在 VSync 截止前完成渲染。
-
-**阶段 6：SurfaceFlinger 合成与显示延迟**
-App 通过 `queueBuffer()` 将渲染好的 GraphicBuffer 提交给 BufferQueue，SurfaceFlinger 在下一个 VSYNC-sf 信号到来时取走 buffer 进行合成，然后交给 HAL Composer 送往屏幕。这个阶段的延迟取决于 VSYNC-app 和 VSYNC-sf 之间的 offset（参见 §2.3 VSync 机制），典型值在半个到一个 VSync 周期。
-
-[交叉引用: §2.3 VSync 机制；§2.6 SurfaceFlinger 与合成]
+[已验证: AOSP android-16.0.0_r1, Choreographer.java]
 
 ### 典型延迟量级
 
-以 120Hz 屏幕（VSync 周期 8.33ms）为例，一个"理想路径"的触控响应延迟大约是：
+以 120Hz 屏幕（VSync 周期 8.33ms）为例，一个“理想路径”的触控响应延迟大约是：
 
 | 阶段 | 典型延迟 |
 |------|----------|
@@ -149,12 +195,9 @@ App 通过 `queueBuffer()` 将渲染好的 GraphicBuffer 提交给 BufferQueue�
 
 ### VSync 同步引入的固有延迟
 
-上面表格中的“VSync 等待”需要单独展开。输入事件到达 App 进程的时刻是随机的，它可能落在两个 VSync 信号之间的任意位置。但 Choreographer 必须等到下一个 VSync-app 信号到来才开始处理帧，因此会出现两种情况：
+上面表格中的“VSync 等待”，指的是视觉反馈等待，而不是所有输入事件都在这一段才开始处理。未批量化的输入事件可以先进入 `ViewRootImpl` 的即时处理路径，但只要这个事件最终要驱动 View 更新，大多数 UI 反馈仍然得等下一次 `doFrame()` 才能真正显示出来。
 
-- 如果事件恰好在 VSync 后立即到达，需要等几乎一整个 VSync 周期
-- 如果事件恰好在 VSync 前到达，几乎不用等
-
-这就是 §2.3 中讨论的 VSYNC offset 机制的价值所在：通过让 VSYNC-app 和 VSYNC-sf 之间有一个精心计算的时间差，App 的渲染和 SurfaceFlinger 的合成可以流水线化，从而减少整体端到端延迟。
+这也是 §2.3 中 VSYNC offset 机制的价值所在。通过让 VSYNC-app 和 VSYNC-sf 之间保持可预测的时间差，App 的渲染和 SurfaceFlinger 的合成可以流水线化，减少“事件处理完成了，但像素还要再等一拍”的额外等待。
 
 [交叉引用: §2.3 VSync 机制 中关于 DispSync 和 offset 的详细分析]
 
@@ -228,25 +271,26 @@ Android 提供了两条互补的路径：
 
 ### MotionEventPredictor 的工作原理
 
-`MotionEventPredictor`（`androidx.input:input-motionprediction`）基于 Kalman Filter 算法，根据已接收到的真实 MotionEvent 序列（方向、速度、压力、时间戳），预测未来 1-2 帧的触控位置。核心 API 只有两个方法：
+Jetpack 的 `androidx.input.motionprediction.MotionEventPredictor` 对外暴露的是三个核心 API：`newInstance(View)`、`record(MotionEvent)` 和 `predict()`。当前公开文档里没有 `predict(MotionEvent)` 这个重载，示例也不能把原始 `MotionEvent` 直接传进 `predict()`。
 
 ```java
-// 每收到一个真实的 MotionEvent，调用 record() 记录
-motionEventPredictor.record(motionEvent);
+MotionEventPredictor predictor = MotionEventPredictor.newInstance(view);
 
-// 在渲染时，调用 predict() 获取预测事件
-MotionEvent predictedEvent = motionEventPredictor.predict(motionEvent);
+predictor.record(motionEvent);
+MotionEvent predictedEvent = predictor.predict();
 ```
 
 [已验证: developer.android.com/reference/androidx/input/motionprediction/MotionEventPredictor]
 
-predict() 返回的 MotionEvent 是基于历史数据的数学预测。渲染时用 predictedEvent 的坐标来绘制，当真实的 MotionEvent 到达时再替换。这在笔迹类应用（手写、绘图）中效果尤为明显——用户会感觉笔迹跟随手指的延迟明显减小。
+`record()` 负责把真实事件送进预测器，`predict()` 返回基于已有轨迹估算出来的预测事件。渲染层要把真实点和预测点分开处理。预测点只用于缩短感知延迟，真实点到达后仍然要回写最终笔迹。
 
-Kalman Filter 的优势在于它的速度和内存效率：不需要深度学习模型，只需要简单的矩阵运算就能在微秒级完成一次预测。这在每个 VSync 周期都要执行的渲染循环中非常关键。
+Jetpack API 和 platform API 要分开讲。AndroidX 的 `MotionEventPredictor` 是库封装。framework 里的 `android.view.MotionPredictor` 文档写明 Added in API level 34，对应 Android 14。也就是说，如果我们讨论 framework 内建预测器，版本边界应该写 Android 14+；如果讨论 AndroidX 封装，就直接引用 AndroidX API，不要把它混成“Android 12+ 的系统级预测 API”。
 
-MotionEventPredictor 兼容 API 19+，新版本在 Android 12+ 的设备上可以利用系统级预测 API（`android.view.MotionPredictor`），由系统框架提供更精确的预测模型。
+`android.view.MotionPredictor` 的接口也不同。它使用 `record(MotionEvent)` 累积真实事件，用 `predict(long)` 按目标时间预测，并可通过 `isPredictionAvailable(int, int)` 检查设备和输入源是否支持。
 
-[已验证: developer.android.com, androidx.input:input-motionprediction library documentation]
+[已验证: developer.android.com/reference/android/view/MotionPredictor]
+
+Kalman Filter 适合这个场景，是因为一次预测只需要轻量的矩阵运算，能塞进每帧的输入处理预算里。它的局限也很明确。轨迹突然折返、急停或抬笔时，预测点会偏离真实路径，所以笔迹类应用通常只把它用在“笔尖前沿”的临时显示，不直接当最终结果。
 
 ### 前缓冲渲染（Front Buffer Rendering）
 
@@ -285,23 +329,59 @@ Google 推荐在笔迹类应用中同时使用 MotionEventPredictor 和前缓冲
 
 ### Perfetto android.input 模块
 
-Perfetto 提供了专门的 `android.input` 标准库模块，其中 `android_input_events` 表对输入延迟进行了五个维度的精确分解：
+Perfetto stdlib 的 `android_input_events` 表把输入事件拆成五段 latency。官方文档还特别说明，input delivery 是 socket based，每个事件从系统发出后都要等待 App ACK，因此 `dispatch_latency_dur`、`handling_latency_dur`、`ack_latency_dur`、`total_latency_dur` 四段都能独立量化。
 
-[已验证: perfetto.dev/docs/analysis/sql-tables/android-input]
+[已验证: perfetto.dev/docs/analysis/stdlib-docs#android_input_events]
 
 | 字段 | 含义 |
 |------|------|
 | `dispatch_latency_dur` | InputDispatcher 发送事件到 App 接收事件 |
-| `handling_latency_dur` | App 接收事件到 App 处理完毕（发送 ACK） |
+| `handling_latency_dur` | App 接收事件到 App 处理完毕并发送 ACK |
 | `ack_latency_dur` | App 发送 ACK 到 InputDispatcher 收到 ACK |
 | `total_latency_dur` | dispatch 到 ACK 的完整往返时间 |
-| `end_to_end_latency_dur` | InputReader 读取事件到帧上屏的端到端延迟 |
+| `end_to_end_latency_dur` | InputReader 读取事件到帧真正 present 的端到端延迟 |
 
-前四个维度覆盖了从 InputDispatcher 到 App 的 IPC 往返过程，`end_to_end_latency_dur` 则把视角拉到了从事件产生到最终显示的完整路径——如果有关联帧事件的话。
+前四个维度覆盖了 InputDispatcher 和 App 之间的 socket 往返。`end_to_end_latency_dur` 再把视角往前拉到 InputReader，往后拉到帧上屏。官方文档已经写明，如果输入事件没有关联到 frame event，这个字段就是 `NULL`。
+
+### end_to_end_latency_dur 为什么会是 NULL
+
+这里不能只看 Perfetto 表结构，还要回到 AOSP。`ViewRootImpl` 在启用 input latency tracking 且 `ThreadedRenderer` 存在时，会创建 `InputMetricsListener` 和 `HardwareRendererObserver`。`onFrameMetricsAvailable()` 会读取 `FrameMetrics.Index.INPUT_EVENT_ID`、`DISPLAY_PRESENT_TIME` 和 `GPU_COMPLETED`，然后通过 `mInputEventReceiver.reportTimeline(inputEventId, gpuCompletedTime, presentTime)` 把输入事件和实际显示时间绑起来。
+
+```java
+// frameworks/base/core/java/android/view/ViewRootImpl.java
+// @ AOSP android-16.0.0_r1
+final class InputMetricsListener
+        implements HardwareRendererObserver.OnFrameMetricsAvailableListener {
+    @Override
+    public void onFrameMetricsAvailable(int dropCountSinceLastInvocation) {
+        final int inputEventId = (int) data[FrameMetrics.Index.INPUT_EVENT_ID];
+        if (inputEventId == INVALID_INPUT_EVENT_ID) {
+            return;
+        }
+        final long presentTime = data[FrameMetrics.Index.DISPLAY_PRESENT_TIME];
+        if (presentTime <= 0) {
+            return;
+        }
+        final long gpuCompletedTime = data[FrameMetrics.Index.GPU_COMPLETED];
+        mInputEventReceiver.reportTimeline(inputEventId, gpuCompletedTime, presentTime);
+    }
+}
+```
+
+这段代码告诉我们，`end_to_end_latency_dur` 至少依赖四个条件：
+
+1. 这次输入事件拿到了有效的 `android_input_id` / `INPUT_EVENT_ID`
+2. 这次输入最终关联到一帧真实渲染
+3. `DISPLAY_PRESENT_TIME` 可用，也就是系统拿到了 frame present 时间
+4. App 走的是带 `ThreadedRenderer` 的渲染路径，输入 metrics 能被上报
+
+如果事件只触发了逻辑处理，没有形成可呈现的帧，或者 trace 没有采到 frame metrics，对应的 `end_to_end_latency_dur` 就会是 `NULL`。这不是 SQL 写错了，而是关联路径还没有闭合。
+
+[已验证: AOSP android-16.0.0_r1, ViewRootImpl.java + perfetto stdlib docs]
 
 ### SQL 实战查询
 
-通过 `INCLUDE PERFETTO MODULE android.input` 引入模块，结合 thread/process 表可以定位到具体线程和进程：
+通过 `INCLUDE PERFETTO MODULE android.input` 引入模块，结合 `thread` 和 `process` 表可以定位到具体线程和进程：
 
 ```sql
 INCLUDE PERFETTO MODULE android.input;
@@ -324,26 +404,29 @@ ORDER BY input.total_latency_dur DESC
 LIMIT 100;
 ```
 
-[来源: perfetto.dev/docs/analysis/sql-tables/android-input]
+[来源: perfetto.dev/docs/analysis/stdlib-docs#android_input_events]
 
-这个查询按 `total_latency_dur` 降序排列，直接定位到最慢的 100 个输入事件。通过分析 `dispatch_ms`、`handling_ms`、`ack_ms` 的分布，可以判断瓶颈在哪一段：
+这个查询按 `total_latency_dur` 降序排列，能先把最慢的事件抓出来。解读时建议把 `total_ms` 和 `e2e_ms` 分开看：
 
-- **dispatch_ms 高**：InputDispatcher 到 App 的 IPC 延迟大，可能是系统负载高或 InputDispatcher 调度不及时
-- **handling_ms 高**：App 主线程处理事件耗时过长，需要在 App 侧优化
-- **ack_ms 高**：App 处理完后 ACK 信号回传慢，通常是 Binder/socketpair 调度问题
+- `dispatch_ms` 高，说明 system_server 到 App 的投递慢，优先看 InputDispatcher 线程调度和目标进程唤醒
+- `handling_ms` 高，说明 App 主线程或输入处理路径本身耗时长
+- `ack_ms` 高，说明 App 已经处理完事件，但 ACK 回传晚，常见于主线程回切、调度延迟或进程负载高
+- `e2e_ms` 为 `NULL`，先确认有没有 frame present 时间，不要直接把它当成 trace 异常
 
-### 在 Perfetto UI 中的可视化
+### 在 Perfetto UI 中怎么把证据对应起来
 
-启用 `input` trace category 后，Perfetto UI 中通常会出现以下内容：
-- **InputReader track**：显示事件读取的时间点
-- **InputDispatcher track**：显示 iq/oq/wq 队列长度的 counter
-- **App 线程**：`DeliverInputEvent` 切片，标识事件分发给 View 树的时间段
+如果想把同一条输入事件从 InputReader 一直追到屏幕，最稳妥的做法是拿 `android_input_id` 做主线，再去对照以下轨道：
 
-结合 FrameTimeline（参见 §13.3），可以判断某个输入事件是否导致了掉帧：如果 `DeliverInputEvent` 的结束时间超过了该帧的 VSync 截止时间，对应的 FrameTimeline 标记就会显示为 Dropped 或 Late。
+- `system_server` 中的 InputReader / InputDispatcher 线程调度状态
+- App 主线程上的 `DeliverInputEvent` 或输入相关 slice
+- `Choreographer#doFrame` 和 FrameTimeline
+- 最终帧的 present 时间
 
-[图：Perfetto 中 InputReader/InputDispatcher/App 线程的 Track 对照，标注 iq/oq/wq 和 DeliverInputEvent 切片]
+这样我们就能把“事件进了 App”“App 开始画了”“帧真的上屏了”三件事拆开看，而不是把它们糊成一个大延迟数字。
 
-[待补充: Trace 截图]
+[图：同一条 `android_input_id` 在 Perfetto 中的对照轨道，依次标出 InputReader、InputDispatcher、DeliverInputEvent、Choreographer#doFrame、FrameTimeline]
+
+[待补充：真实 Trace 截图]
 
 
 ## 降低输入延迟的优化策略
@@ -352,7 +435,7 @@ LIMIT 100;
 
 **1. 线程调度优化**
 
-正如前面魅族团队的案例所示，InputReader 和 InputDispatcher 的调度优先级对输入延迟影响巨大。在 CPU 负载高的场景（如游戏），如果这两个线程不能及时获得 CPU 时间，即使触控 IC 按时报点，系统也来不及处理。
+正如前面魅族团队的案例所示，InputReader 和 InputDispatcher 的调度优先级对输入延迟影响很大。在 CPU 负载高的场景（如游戏），如果这两个线程不能及时获得 CPU 时间，即使触控 IC 按时报点，系统也来不及处理。
 
 优化方向：
 - 提高 InputReader/InputDispatcher 线程的调度优先级
@@ -365,13 +448,13 @@ LIMIT 100;
 
 提高触控 IC 的报点频率可以减少硬件采样延迟。从 120Hz 提升到 240Hz，最坏情况的采样延迟从 8.33ms 降到 4.17ms。但代价是功耗增加和驱动层的事件密度翻倍，需要在性能和功耗之间做场景化的权衡。
 
-**3. VSync offset 调优**
+**3. OEM 显示管线调优**
 
-通过调整 VSYNC-app 和 VSYNC-sf 之间的 offset 值，可以让 App 渲染和 SurfaceFlinger 合成更好地流水线化。魅族团队的另一个优化实践是：当应用提交帧的时间刚好错过一个 VSync 周期时，主动通知 SurfaceFlinger 立即处理（而不是等到下一个 VSYNC-sf），这样可以节约一帧的等待时间。
+部分厂商文章会讨论调整 VSYNC-app 和 VSYNC-sf 的 offset、buffer release 时机，或者本地显示管线的唤醒策略，以减少“刚好错过一个 VSync”后的额外等待。这类做法确实可能改善个别机型的触控到显示延迟，但公开 AOSP 主线资料并没有把“主动唤醒 SurfaceFlinger 立即处理”暴露成通用 API。
+
+更稳妥的写法是，把它归类为 OEM 定制经验，而不是所有 Android 设备都默认具备的系统能力。如果后续要保留更强的结论，需要补出对应机型、版本和源码路径。
 
 [来源: Cubox/Android Input 调试与优化 - 魅族内核团队-2025-08-05.md]
-
-[待验证: 这种"主动唤醒 SurfaceFlinger"的机制是否已集成到 AOSP 主线]
 
 ### App 层面
 
@@ -383,20 +466,23 @@ Choreographer 的回调顺序（INPUT → ANIMATION → TRAVERSAL）意味着 `C
 
 **2. 使用 MotionEventPredictor 和前缓冲渲染**
 
-对于笔迹、绘图类应用，接入 MotionEventPredictor 和低延迟图形库是目前最有效的延迟优化手段。接入成本低（Jetpack 库），效果显著，尤其是配合手写笔使用时。
+对于笔迹、绘图类应用，接入 MotionEventPredictor 和低延迟图形库是目前最有效的延迟优化手段。接入成本低（Jetpack 库），效果明显，尤其是配合手写笔使用时。
 
-**3. InputTransport 的异步模式**
+**3. batched input 与 unbuffered dispatch 的取舍**
 
-InputChannel 支持同步和异步两种模式。同步模式下 InputDispatcher 会等待 App 的 ACK 才继续发送下一个事件；异步模式下 InputDispatcher 不等 ACK 就持续发送事件。对于需要极低延迟的场景（如游戏），异步模式可以减少 IPC 往复的开销。但代价是 InputDispatcher 无法精确知道 App 是否跟得上事件速率。
+大多数应用默认走 batched input，让系统把一批 motion event 放到 `CALLBACK_INPUT` 一起消费。这样能配合 resampling 降低抖动，并减少主线程被高频 move event 打满的概率。只有笔迹、绘图、部分低延迟交互，才值得调用 `View.requestUnbufferedDispatch(MotionEvent)`，让 `onBatchedInputEventPending()` 直接走 `consumeBatchedInputEvents(-1)` 的即时路径。
 
-[待验证: 异步 InputChannel 的启用方式和对 ANR 超时机制的影响]
+AOSP `View.java` 的文档也明确提醒，这个 API 不适合大多数应用，副作用包括 jittery scrolls 和失去 system resampling。这里真正的取舍，不是“同步/异步 InputChannel 模式”二选一，而是“是否为特定输入流关闭 batching，换更低的等待时间”。
+
+[已验证: AOSP android-16.0.0_r1, View.java + ViewRootImpl.java]
 
 ### 游戏模式（Game Mode）的输入优化
 
-Android 12 引入的 Game Mode API 允许系统在游戏场景下进行更积极的性能调度。这里先把它视为“系统可能为游戏场景提高整体响应预算”的入口，而不要直接等同于 InputDispatcher 级的事件优先处理。[需确认: GameManagerService 是否直接影响 InputDispatcher 的事件优先级，需 Task 9 核对调用链]
+Game Mode 和 Game Mode Interventions 更接近系统为游戏提供的性能、功耗和画质策略入口，例如调整目标帧率、backbuffer 大小或处理器资源使用。当前公开文档没有给出“GameManagerService 直接通知 InputDispatcher 优先处理输入事件”的官方调用关系。
 
-[交叉引用: §5.8 后台执行限制与优化中关于 Game Mode 的讨论]
+这里更稳妥的结论是，Game Mode 可能通过整体调度预算间接改善输入到显示延迟，但它不是 InputDispatcher 专用 low-latency API，也不能替代 App 自己做好主线程和渲染路径优化。
 
+[来源: developer.android.com/games/optimize/performance#adpf + Game Mode Interventions 文档]
 
 ## 与其他机制的关系
 
@@ -405,7 +491,7 @@ Android 12 引入的 Game Mode API 允许系统在游戏场景下进行更积极
 - **VSync 机制**（§2.3）：VSYNC offset 直接决定了 App 渲染和 SurfaceFlinger 合成的时间差，是减少端到端延迟的关键
 - **Choreographer**（§2.4）：输入事件在 doFrame 中被优先处理，但处理时间会影响后续渲染阶段
 - **BufferQueue**（§2.13）：前缓冲渲染绕过了 BufferQueue 的多缓冲交换机制
-- **SurfaceFlinger**（§2.6）：合成阶段是端到端延迟的最后一环
+- **SurfaceFlinger**（§2.6）：合成阶段是端到端延迟的末端阶段
 - **触摸响应分析**（§3.2）：§3.2 从触摸采样率和 Batching 的角度分析性能，本节聚焦延迟量化和预测补偿
 - **ANR 机制**（§9.1）：InputDispatcher 的 5 秒超时是输入 ANR 的触发条件
 
