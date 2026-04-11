@@ -31,6 +31,10 @@ sources:
     path: "https://developer.android.com/topic/performance/battery/battery-historian"
 tags: ['power', 'case-study', 'wakelock', 'location', 'network-polling', 'cpu-wakeup', 'battery-historian', 'workmanager']
 related_chapters: ["11.1", "11.2", "11.3", "5.6", "5.10", "13.1"]
+pipeline_stage: task6_pending
+task6_state: pending
+task9_state: pending
+task2b_state: idle
 ---
 
 # 案例集

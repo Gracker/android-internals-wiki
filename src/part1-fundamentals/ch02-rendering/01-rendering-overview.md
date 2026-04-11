@@ -25,6 +25,10 @@ sources:
     path: "AOSP 源码分析 frameworks/base/core/java/android/view"
 tags: ['rendering', 'hwui', 'skia', 'surfaceflinger', 'gpu', 'triple-buffering', 'rendering-pipeline', 'bufferqueue', 'vsync', 'displaylist', 'rendernode']
 related_chapters: ["2.2", "2.3", "2.4", "2.5", "2.6", "2.10"]
+pipeline_stage: task6_pending
+task6_state: pending
+task9_state: pending
+task2b_state: idle
 ---
 
 # Android 渲染架构全景

@@ -33,6 +33,10 @@ related_chapters: ["8.1", "8.2", "2.4", "2.5", "7.5", "1.10", "1.12", "8.7"]
 section: "8.3"
 drafted_by: "openclaw-task2a"
 drafted_date: "2026-04-01"
+pipeline_stage: task6_pending
+task6_state: pending
+task9_state: pending
+task2b_state: idle
 ---
 
 # 启动优化策略

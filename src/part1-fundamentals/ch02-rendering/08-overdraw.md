@@ -23,6 +23,10 @@ sources:
     path: "developer.android.com/reference/android/graphics/Canvas#clipRect"
 tags: [overdraw, GPU, rendering, clipRect, quickReject, 性能优化, Compose, DisplayList]
 related_chapters: ["2.1", "2.4", "2.5", "7.2"]
+pipeline_stage: task6_pending
+task6_state: pending
+task9_state: pending
+task2b_state: idle
 ---
 
 # 过度绘制

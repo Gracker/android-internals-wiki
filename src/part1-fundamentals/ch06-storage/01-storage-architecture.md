@@ -22,6 +22,10 @@ drafted_by: openclaw-task2a
 reviewed_date: 2026-04-06
 reviewed_by: openclaw-task6
 reviewers: []
+pipeline_stage: task6_pending
+task6_state: pending
+task9_state: pending
+task2b_state: idle
 ---
 
 <!-- outline-start -->

@@ -29,6 +29,10 @@ drafted_date: "2026-04-01"
 drafted_by: "openclaw-task2a"
 reviewed_date: "2026-04-06"
 reviewed_by: "openclaw-task6"
+pipeline_stage: task6_pending
+task6_state: pending
+task9_state: pending
+task2b_state: idle
 ---
 
 # 存储相关的版本演进

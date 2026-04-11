@@ -24,6 +24,10 @@ sources:
     path: "https://perfetto.dev/docs/data-sources/cpu-scheduling"
 tags: ['perfetto', 'thread-state', 'sched-switch', 'running', 'runnable', 'sleep', 'uninterruptible-sleep', 'cpu-scheduling']
 related_chapters: ["5.1", "13.1", "13.5"]
+pipeline_stage: task6_pending
+task6_state: pending
+task9_state: pending
+task2b_state: idle
 ---
 
 # 线程 CPU 状态分析

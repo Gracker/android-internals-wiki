@@ -18,8 +18,10 @@ sources:
 tags:
   - android
   - research
-
-
+pipeline_stage: task6_pending
+task6_state: pending
+task9_state: pending
+task2b_state: idle
 ---
 
 

@@ -30,6 +30,10 @@ polish_date: "2026-04-06"
 polish_by: "task2b-polish"
 review_type: post-polish-quality-gate
 review_round: 2
+pipeline_stage: task6_pending
+task6_state: pending
+task9_state: pending
+task2b_state: idle
 ---
 
 <!-- outline-start -->

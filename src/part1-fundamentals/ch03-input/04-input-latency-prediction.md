@@ -26,6 +26,10 @@ sources:
     path: "intake/research-feeds/2026-04-05-15-perfetto-input-latency-sql.md"
 tags: [input, latency, touch, prediction, motioneventpredictor, front-buffer, kalman-filter, perfetto, input-latency]
 related_chapters: ["3.1", "3.2", "2.3", "2.4", "2.5", "8.1", "13.3", "13.5"]
+pipeline_stage: task6_pending
+task6_state: pending
+task9_state: pending
+task2b_state: idle
 ---
 
 # 3.4 输入延迟与预测输入技术

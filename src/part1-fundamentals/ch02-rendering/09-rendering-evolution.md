@@ -29,6 +29,10 @@ sources:
     path: "intake/research-feeds/2026-03-30-ch02-skia-surfaceflinger.md"
 tags: ['frametimeline', 'vulkan', 'rendering-evolution', 'blastBufferQueue', 'hwui', 'skia', 'choreographer', 'FrameMetrics']
 related_chapters: ["2.1", "2.3", "2.6", "2.10", "3.1", "8.2"]
+pipeline_stage: task6_pending
+task6_state: pending
+task9_state: pending
+task2b_state: idle
 ---
 
 # 渲染机制的版本演进

@@ -27,6 +27,10 @@ reviewed_by: openclaw-task6
 polish_count: 2
 polish_date: "2026-04-09"
 polish_by: "task2b-polish"
+pipeline_stage: task6_pending
+task6_state: pending
+task9_state: pending
+task2b_state: idle
 ---
 
 # 低内存对系统性能的影响

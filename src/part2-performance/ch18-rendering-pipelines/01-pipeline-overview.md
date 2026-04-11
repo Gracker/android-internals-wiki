@@ -7,6 +7,10 @@ tags: ["rendering-pipeline", "BLAST", "SurfaceFlinger", "HWUI", "SurfaceView", "
 related_chapters: ["2.1", "2.5", "2.6", "2.7", "2.14", "18.2", "18.3", "18.4", "18.5", "18.6", "18.7", "18.8", "18.9", "18.10"]
 created_by: "rendering-pipelines-merge"
 created_date: "2026-04-09"
+pipeline_stage: task6_pending
+task6_state: pending
+task9_state: pending
+task2b_state: idle
 ---
 
 <!-- outline-start -->

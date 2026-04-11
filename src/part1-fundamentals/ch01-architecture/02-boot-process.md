@@ -40,6 +40,10 @@ sources:
     path: "Android 16 Parallel Module Loading + AutoFDO (AOSP Gerrit/9to5Google)"
 tags: ['boot', 'init', 'zygote', 'SystemServer', '启动优化', 'bootchart', 'bootloader', 'preloaded-classes', 'boot-timings']
 related_chapters: ["1.1", "1.3", "1.4", "1.5", "1.7", "8.2", "8.3"]
+pipeline_stage: task6_pending
+task6_state: pending
+task9_state: pending
+task2b_state: idle
 ---
 
 # 系统启动全流程

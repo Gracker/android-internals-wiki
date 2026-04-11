@@ -27,6 +27,10 @@ sources:
     path: "https://source.android.com/docs/core/debug/interpreting-cpu"
 tags: [memory, pss, rss, mat, heapprofd, memtrack, memory-analysis]
 related_chapters: ["4.1", "4.3", "4.5", "13.1", "14.3"]
+pipeline_stage: task6_pending
+task6_state: pending
+task9_state: pending
+task2b_state: idle
 ---
 
 # App 内存分析

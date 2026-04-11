@@ -7,193 +7,238 @@ drafted_date: "2026-04-10"
 drafted_by: "openclaw-task2a"
 reviewed_date: "2026-04-10"
 reviewed_by: "openclaw-task6"
-applicable_versions: "Android 4.1 - Android 17"
+applicable_versions: "Android 4.1 (API 16) - Android 17 (API 37)"
 last_verified: "2026-04-11"
-last_verified_against: "Android 17 release notes + Android Developers Blog DeliQueue post"
+last_verified_against: "Android 17 release notes + Android 17 behavior changes + Mainline docs + AOSP master MessageQueue/Binder/BLAST"
 confidence: medium
 tags:
   - android
   - performance
   - aosp
-pipeline_stage: task2b_pending
+pipeline_stage: task6_pending
 task6_state: revisiting
-task9_state: reviewed
+task9_state: pending
 task9_result: needs-rework
-task2b_state: pending
+task2b_state: fixed
 task2b_result: fixed
 sources:
   - type: official
     path: "https://developer.android.com/about/versions/17/release-notes"
   - type: official
+    path: "https://developer.android.com/about/versions/17/behavior-changes-17"
+  - type: official
+    path: "https://developer.android.com/topic/performance/baselineprofiles/overview"
+  - type: official
+    path: "https://source.android.com/docs/core/ota/modular-system"
+  - type: official
+    path: "https://source.android.com/docs/core/architecture/hidl/binder-ipc"
+  - type: official
     path: "https://android-developers.googleblog.com/2026/02/under-hood-android-17s-lock-free.html"
+  - type: official
+    path: "https://android-developers.googleblog.com/2026/03/BoostingAndroidPerformanceIntroducingAutoFDO.html"
+  - type: aosp
+    path: "platform/frameworks/base/core/java/android/os/LockedMessageQueue/MessageQueue.java (refs/heads/master)"
+  - type: aosp
+    path: "platform/frameworks/base/core/java/android/os/ConcurrentMessageQueue/MessageQueue.java (refs/heads/master)"
+  - type: aosp
+    path: "platform/frameworks/native/libs/binder/ProcessState.cpp (refs/heads/master)"
+  - type: aosp
+    path: "platform/frameworks/native/libs/gui/BLASTBufferQueue.cpp (refs/heads/master)"
 ---
 
 # Google 官方的性能优化思路
 
-<!-- outline-start -->
-# Google 官方的性能优化思路
 <!-- outline-start -->
 ## 本节要点大纲
 ### 锚点（必须覆盖）
 - 🔹 Google 性能优化的核心理念：Systemic Performance、User-Perceived Performance
 - 🔹 各版本的 Performance 旗舰特性：Project Butter(4.1) → Svelte(4.4) → ART(5.0) → Treble(8.0) → Mainline(10)
 - 🔹 Android Runtime (ART) 的持续优化方向
-- 🔹 Framework 层的性能优化实践（View 系统、Handler、Binder Pool）
+- 🔹 Framework 层的性能优化实践（View 系统、Handler、Binder、窗口管理）
 - 🔹 Google 官方的 Performance 文档与最佳实践总结
 ### 扩展（可选深入）
 - 🔸 Android Go Edition 的性能优化策略
 - 🔸 Google 内部的性能测试基础设施（公开信息）
-### OpenClaw 加工指引
-> **锚点**是最低覆盖要求，加工时必须逐条落实并标注验证结果。
-> **扩展**视素材丰富程度选择性深入。
-> 如果从 Obsidian 素材或 AOSP 源码中发现大纲未列出但与本节强相关的知识点，
-> 可**就地插入**最相关的锚点之后，并用 `[自动发现]` 标注，方便后续 review。
-> 锚点内容需 L1/L2 验证，扩展内容至少 L2 验证，自动发现内容至少标注来源。
 <!-- outline-end -->
-## 为什么要了解 Google 的性能优化思路
-我们这本书花了大量篇幅讲解 Android 内部的各种机制——VSync、Binder、内存管理、调度器。但如果你退后一步，站在 Google 的视角看整个 Android 生态的演进，会发现这些具体的机制改动背后有一条清晰的主线：Google 在用一种特定的方式思考性能问题，并且这种思考方式贯穿了从系统架构到开发工具的每一层。
-理解这条主线有三个直接的好处。第一，当你面对一个性能问题时，能判断它是 Google 已经在系统层面解决的问题、还是需要 App 端自己处理的——这决定了你的优化方向。第二，Google 的官方文档和工具（Baseline Profiles、Jetpack Benchmark、Android Vitals）都是围绕这套理念设计的，理解理念才能用好工具。第三，Google 每个版本的性能改动不是随机的——从 Project Butter 到 Project Mainline，有一条可预测的演进逻辑。掌握了这条逻辑，你就能提前预判下一个版本会动什么。
-## 核心理念：两层性能观
-Google 对性能问题的认知可以归纳为两个层面。
-### 系统层（Systemic Performance）
-第一层是系统本身的性能基础。这不是某个 App 能左右的，而是整个平台的能力上限。Google 在这方面的核心策略是持续优化系统底层——内核、运行时、驱动、合成管线——让所有 App 自动受益。
-举个具体的例子：Android 内核大约占设备 CPU 时间的 40%。Google 在 Android 16 中引入了 AutoFDO（Automatic Feedback-Directed Optimization），通过分析真实使用模式来重新排列和优化内核代码的指令布局。这个优化不需要任何 App 配合，所有运行在该内核上的代码都会变快——冷启动提升约 4.3%，Binder 调用提升 21.7%，某些微基准测试提升高达 37.7%。[已验证: Google Blog, android-developers.googleblog.com]
-类似的系统级优化还包括：ART 运行时的 GC 演进（从 Dalvik 的 STW 到 ART 的并发拷贝 GC），Binder 驱动的性能改进，以及 SurfaceFlinger 合成管线的持续重构。这些改动的一个共同特点：App 开发者什么都不用做，升级系统就自动受益。
-### 用户感知层（User-Perceived Performance）
-第二层是用户直接感受到的性能。这一层的优化对象是启动时间、滚动流畅度、触控响应速度、ANR 率。Google 的核心观点是：**性能的本质是用户感知，不是技术指标**。一个 App 的帧率从 55fps 提升到 58fps，如果用户在操作时仍然能感知到卡顿，那这个优化在工程上可能是对的，但在产品上是不够的。
-这个理念体现在 Google 的很多工具设计上。Android Vitals 在 Google Play Console 中追踪的核心指标不是 CPU 利用率或内存分配量，而是用户直接感知到的指标：ANR 率、崩溃率、卡顿率（bad behavior rate）、前台服务滥用率。Jetpack Benchmark 库的设计目标也不是"测出某个方法的绝对耗时"，而是"测出用户实际会感受到的差异"。
-这两层性能观的关系是这样的：系统层决定了平台的能力天花板，用户感知层决定了 App 能不能用好这个天花板。一个 App 如果在启动时做了太多的同步初始化、在主线程做了阻塞 I/O、在滚动时触发了大量的 GC，那即使系统再快，用户感知到的也是慢。
-## 版本旗舰特性：一条清晰的演进线
-Google 从 Android 4.1 开始，几乎每个大版本都有以性能为核心的"Project"。这些 Project 不是孤立的，它们之间有明确的递进关系。
-### Project Butter（Android 4.1，2012）：让动画变得"丝滑"
-Project Butter 是 Android 性能优化的分水岭。在 4.1 之前，Android 的"卡"是出了名的——滑动不流畅、动画掉帧、触控有延迟。Project Butter 用三个核心改动试图解决这个问题。
-第一个是 **VSync 同步**。在此之前，App 渲染和屏幕刷新是不同步的，导致画面撕裂和帧率不稳定。Project Butter 引入了 VSync 信号驱动的渲染管线——Choreographer 在 VSync 到来时统一调度 Input、Animation、Traversal 三类回调，整个渲染过程被纳入一个严格的时间框架。（我们在 [2.3 VSync 机制](../part1-fundamentals/ch02-rendering/03-vsync.md) 和 [2.4 Choreographer](../part1-fundamentals/ch02-rendering/04-choreographer.md) 中详细分析了这套机制。）
-第二个是 **三缓冲**。双缓冲在某些场景下会导致 CPU 空闲一个 VSync 周期——它必须等 GPU 释放 Buffer 才能开始画下一帧。三缓冲增加了一个缓冲区，让 CPU 可以提前开始下一帧的渲染，减少掉帧。
-第三个是 **触控预测**。系统根据用户的触控轨迹预测下一个触控点，提前开始处理，降低从手指触碰到屏幕响应之间的延迟。
-Project Butter 的核心贡献不只是这三个技术改动，更重要的是它建立了一个"以帧为单位"的性能思维模型——后续所有的渲染优化，从 RenderThread 到 Frame Pacing Library 到 FrameMetrics API，都是在这个模型上发展的。[已验证: 官方文档, source.android.com]
-### Project Svelte（Android 4.4，2013）：让系统跑在 512MB 内存上
-如果说 Project Butter 解决的是"快不快"的问题，Project Svelte 解决的就是"能不能跑"的问题。
-Android 4.4 的核心目标是让最新版本的 Android 能在只有 512MB RAM 的设备上流畅运行。Google 工程团队的做法很硬核：他们把 Nexus 4 降级到 512MB 内存、双核 CPU、960x540 分辨率，在这个配置上跑系统，发现哪里 OOM 就修哪里。
-具体的改动包括：精简系统进程的内存占用、优化 Google Apps 的内存使用（大量预装应用从系统镜像中解耦出来）、改进 low memory 状态下应用的行为（通过 onTrimMemory 回调），以及提供新工具 ProcStats 帮开发者监控应用的内存消耗。[已验证: Google I/O 2013 演讲 + developer.android.com]
-Project Svelte 的遗产是 Android Go Edition，这个轻量版系统至今仍在面向入门级设备发布。
-### ART 替代 Dalvik（Android 5.0，2014）：运行时的根本性重写
-从 Dalvik 切换到 ART 不是一次简单的"升级"，而是整个运行时的推倒重来。Dalvik 使用 JIT（Just-In-Time）编译，每次运行代码时都需要解释执行或即时编译，这导致两个问题：运行时性能不稳定（热路径代码第一次执行一定慢），以及 GC 暂停时间不可控。
-ART 引入了 AOT（Ahead-Of-Time）编译——在应用安装时就把 DEX 字节码编译成本地机器码。这让应用的运行速度有了可预测的基础，GC 也从 Dalvik 的 mark-and-sweep 演进为并发拷贝收集器（Concurrent Copying Collector），暂停时间大幅降低。
-但这不是故事的终点。纯 AOT 有自己的问题：安装时间过长、存储空间占用过大。所以从 Android 7.0 开始，ART 走上了一条 JIT + AOT + Profile-Guided 的混合编译路径。系统先用 JIT 解释执行，同时收集"热方法"的 Profile；设备空闲时，根据 Profile 做针对性的 AOT 编译。这条路径最终演化出了 Baseline Profiles 和 Cloud Profiles。
-[已验证: 官方文档, source.android.com/docs/core/runtime]
-### Project Treble（Android 8.0，2017）：解耦 HAL，加速系统更新
-Project Treble 解决的不是直接的性能问题，而是"性能优化能不能及时到达用户"的问题。
-在 Treble 之前，Android 的框架代码和芯片厂商的 HAL 代码是耦合在一起的。Google 改了框架层的性能 bug，但这个更新需要芯片厂商和手机厂商适配 HAL，而适配周期可能长达一年甚至更久。结果是大量设备永远停留在旧版本，享受不到系统级的性能改进。
-Treble 引入了 HIDL 接口层，把 Framework 和 HAL 彻底隔离开。Google 可以独立更新 Framework，不需要等厂商适配。这个架构改动是后续所有"快速推送性能优化"的基础——没有 Treble，就不会有 Project Mainline。[已验证: source.android.com/docs/core/architecture/treble]
-### Project Mainline（Android 10，2019）：通过 Play 推送系统组件更新
-Project Mainline 在 Treble 的基础上走得更远：它把 Android 系统拆分为十几个独立的 APEX 模块，这些模块可以通过 Google Play 系统更新来推送，不需要完整的 OTA 升级。
-对性能优化影响最大的 Mainline 模块是 ART 模块。从 Android 12 开始，ART 的更新可以通过 Play 推送到设备上。这意味着 Google 不需要等设备厂商发布系统更新，就能把运行时的性能改进推送给用户。前面提到的 AutoFDO 优化、分代 GC、Cloud Profiles 这些技术，都是通过 Mainline 机制快速到达设备的。[已验证: source.android.com/docs/core/mainline]
-这条演进线的逻辑越来越清晰：从 Project Butter 的"让系统更快"到 Project Mainline 的"让优化更快到达用户"。Google 在做的不只是优化系统本身，还在优化"优化系统的分发方式"。
-## ART 的持续优化方向
-ART 不是一成不变的运行时。在从 Android 5.0 的纯 AOT 到今天的混合编译路径之间，Google 做了大量增量优化。这里我们梳理几个最重要的方向。
-### 编译策略的演进：从 AOT 到 Profile-Guided
-纯 AOT 编译的问题前面提到了——安装太慢、占用太多空间。Android 7.0 引入了 JIT 解释执行 + Profile 收集的混合模式。具体来说：应用首次运行时，ART 用 JIT 解释执行字节码，同时在后台记录哪些方法被频繁调用（"热方法"）。设备充电且空闲时，`dex2oat` 编译器根据 Profile 对热方法做 AOT 编译。这样下次启动应用时，关键路径已经是机器码了，而不是需要 JIT 解释的字节码。
-Android 9.0 进一步引入了 Cloud Profiles：当足够多的用户在设备上产生了 Profile，Google 会把这些 Profile 聚合后上传到云端，然后在其他用户首次安装应用时预置这些 Cloud Profiles。这解决了"新安装的应用第一次运行一定慢"的问题——因为 ART 有了云端提供的 Profile，安装时就能对关键路径做 AOT 编译。
-Baseline Profiles 是 Cloud Profiles 的开发者可控版本。开发者可以在应用中打包一个自己定义的 Profile（指定哪些类和方法需要在安装时编译），ART 在安装时优先使用 Baseline Profiles 做编译。根据 Google 的数据，Baseline Profiles 可以将关键代码路径的执行速度提升约 30%。[已验证: developer.android.com/topic/performance/baselineprofiles]
-### GC 的演进：从暂停到尽量不打断前台体验
-Dalvik 的 mark-and-sweep GC 有两个致命问题：GC 时所有线程暂停（Stop-The-World），以及堆碎片化导致的频繁 Full GC。ART 后续通过 Concurrent Copying Collector、并发标记和对象搬移，持续减少 GC 对前台线程的打断。
-到了 Android 17，Google 又在 ART 的 Concurrent Mark-Compact collector 中加入了 generational GC。Android 17 release notes 给出的准确信息是：系统开始更频繁地处理 young generation，用更低的成本回收短生命周期对象。官方明确强调的是 GC 的整体成本更低，而不是给出一个适用于所有设备的统一暂停时间数字，所以这里不再写固定的毫秒数。[已验证: https://developer.android.com/about/versions/17/release-notes]
-### 工具链优化：R8、D8 和 Startup Profiles
-R8 是 Android 的代码压缩和优化工具，替代了旧的 ProGuard。R8 不只是做代码混淆和移除未使用的类——它还能做类合并、方法内联、常量折叠等优化，生成更小的 DEX 文件。更小的 DEX 意味着更短的 dex2oat 编译时间和更少的页面错误（page fault）。
-Startup Profiles（AGP 8.3 默认启用）是 Baseline Profiles 的编译时补充。它们指导 D8 编译器在生成 DEX 文件时，将启动关键路径上的类放在 DEX 文件的前部，减少冷启动时的 page fault。配合 Baseline Profiles 使用，冷启动可以提升 15-30%。[已验证: developer.android.com/topic/performance/baselineprofiles]
-## Framework 层的性能优化实践
-Google 在 Framework 层的优化往往不像 Project Butter 那样有一个响亮的名字，但它们的累积效果同样显著。
-### View 系统的持续瘦身
-Android 的 View 系统从 1.0 开始就存在，历史包袱沉重。Google 在每个版本中都在做小幅度的优化：减少 View.measure 和 View.layout 的重复调用、优化 invalidate 的传播范围、减少不必要的 requestLayout 触发。
-一个值得注意的长期趋势是：Google 正在把越来越多的渲染工作从主线程转移到 RenderThread。从 Android 5.0 引入 RenderThread 开始，到今天，主线程主要负责 measure/layout/draw 的记录（生成 DisplayList），而实际的 OpenGL/Vulkan 渲染指令执行都在 RenderThread 中异步进行。这意味着主线程的耗时不再直接等于渲染耗时——即使主线程稍微慢一点，只要 RenderThread 能在 VSync 周期内完成渲染，用户仍然不会感知到卡顿。[已验证: AOSP, frameworks/base/libs/hwui/]
-### Handler/MessageQueue 的优化
-主线程的 MessageQueue 是 Android 事件驱动的核心。Google 在近期的版本中对它做了两个重要的性能优化。
-第一个是锁优化。MessageQueue 的 `next()` 方法需要与 `enqueueMessage()` 争抢锁（`mLock`）。在高频消息场景下（比如快速滑动时的 Input 事件和 Traversal 消息交替入队），锁竞争会导致主线程不必要的等待。Android 14/15 对锁的粒度做了优化，减少了临界区的范围。
-第二个是 Android 17 引入的 DeliQueue。这是一套 lock-free MessageQueue 重构：生产者线程先把消息推入 Treiber stack，Looper 线程再把待处理消息整理到自己独占的 min-heap 里，从而把"并发入队"和"按截止时间取消息"拆成两条路径。Google 在官方技术博客里给出的数据是，应用主线程用于 MessageQueue 锁竞争的时间下降约 15%，应用 missed frames 下降约 4%，启动到首帧绘制的 P95 延迟改善约 9.1%。
-不过这里有一个边界必须写清楚：官方说法不是"Android 17 对所有应用默认打开 DeliQueue"，而是"targetSdk 37 或更高的应用会自动收到新的 MessageQueue 实现"。也就是说，它是 Android 17 面向 targetSdk 37 应用的默认路径，不是老应用在升级系统后无条件切换到新队列。[已验证: https://android-developers.googleblog.com/2026/02/under-hood-android-17s-lock-free.html]
-### Binder 的性能改进
-Binder 是 Android 进程间通信的基础设施，几乎所有的跨进程调用都经过它。Google 在 Binder 上的优化主要是减少数据拷贝和改进调度。
-Android 8.0 引入了 Binder 线程池的动态扩展（之前是固定的 16 个线程），允许系统根据负载调整线程池大小。Android 10+ 引入了 Binder 事务的优先级继承，防止低优先级进程的 Binder 调用阻塞高优先级进程。
-在 Perfetto 中，我们可以通过 Binder Track 观察这些优化的效果——`client_dur`（客户端耗时）、`server_dur`（服务端耗时）、`dispatch_dur`（分发延迟）三个维度的指标可以帮助我们定位 Binder 调用中的性能瓶颈。[已验证: perfetto.dev/docs/data-sources/android-binder]
-### 窗口管理的优化：从 WindowManager 到 BlastBufferQueue
-Android 12 引入的 BlastBufferQueue 是窗口管理管线的一次重要重构。在此之前，Buffer 的跨进程传递需要经过 BufferQueue 的多个中间状态（FREE → DEQUEUED → QUEUED → ACQUIRED），每次状态转换都可能涉及 Binder 调用和锁竞争。BlastBufferQueue 简化了 Buffer 的传递路径，让 App 进程可以直接将渲染完成的 Buffer "blast" 给 SurfaceFlinger，减少了中间环节的延迟。[已验证: AOSP, frameworks/native/libs/gui/]
-## Google 官方的 Performance 工具与文档体系
-Google 围绕性能优化建立了一套完整的工具和文档体系。这里我们做一次系统性的梳理，帮助读者知道"有什么工具"以及"在什么场景下用什么工具"。
-### 文档入口
-Google 官方的性能文档有几个主要入口：
-- **developer.android.com/topic/performance**：总入口，涵盖启动性能、渲染性能、内存管理、网络优化、电池优化等所有主题。
-- **Android Performance Patterns**：2015 年发布的一系列视频教程，由 Google 工程师 Colt McAnlis 主讲。虽然部分内容已经过时（比如当时还在讲 Dalvik），但其中关于渲染管线、VSync、过度绘制的基础概念讲解至今仍然值得一看。
-- **developer.android.com/studio/profile**：Android Studio Profiler 的官方文档，包括 CPU Profiler、Memory Profiler、Network Profiler 的使用方法。
-### 开发者工具链
-Google 提供的性能工具可以分为三类：**度量工具**、**分析工具**和**优化工具**。
-度量工具回答"有没有问题"：
-- **Jetpack Benchmark**（`androidx.benchmark`）：在 CI 环境中稳定测量代码执行时间。它自动处理 CPU 频率锁定、预热循环、结果统计等细节，确保测量结果的可重复性。
-- **Macrobenchmark**：Jetpack Benchmark 的"宏观"版本，用于测量整个用户操作的耗时，比如冷启动时间、帧率。配合 Baseline Profiles 使用，可以直接测量 Profile 带来的性能提升。
-- **Android Vitals**：通过 Google Play Console 查看真实用户的性能数据。核心指标包括 ANR 率、崩溃率、卡顿率（用户感知到卡顿的会话比例）。这是唯一能告诉你"真实用户到底体验如何"的工具。
-分析工具回答"问题在哪里"：
-- **Android Studio Profiler**：集成的 CPU、内存、网络、能耗分析器。适合开发阶段的问题定位。
-- **Perfetto**：系统级 Trace 分析工具。适合分析跨进程的性能问题，比如 App → Binder → SystemServer → SurfaceFlinger 的完整链路。（我们在 [第 13 章 Perfetto](../part3-tools/ch13-perfetto/01-perfetto-intro.md) 有详细介绍。）
-- **Simpleperf**：基于 Linux `perf` 的 Native 代码性能分析工具。适合分析 C/C++ 代码的热点函数和调用栈。
-优化工具回答"怎么修"：
-- **Baseline Profiles + Startup Profiles**：在安装时预编译关键代码路径，减少运行时的 JIT 开销。
-- **R8**：代码压缩和优化工具，减小 APK 体积和运行时内存占用。
-- **App Startup Library**：Jetpack 提供的启动库，帮助组织 Application 的初始化逻辑，支持懒加载和依赖管理。
-### Google 的最佳实践总结
-Google 在多个场合（I/O 演讲、官方文档、Codelab）中反复强调的性能最佳实践可以归纳为几条核心原则：
-**原则一：不要在主线程做阻塞操作。** 这条规则说起来简单，但实际违反它的场景无处不在：同步的 SharedPreferences 写入、主线程的 Binder 调用、数据库的同步查询、甚至一个大 JSON 的反序列化。Google 的建议是：如果它可能超过 1ms，就放到后台线程。
-**原则二：延迟初始化。** 不是所有代码都需要在 Application.onCreate() 里执行。Google 推荐的做法是：只初始化用户在启动后前几秒内就需要使用的组件，其他的延迟到实际需要时再初始化。App Startup Library 可以帮助管理这种依赖关系。
-**原则三：优化关键路径，而非全局优化。** 用 Macrobenchmark 识别用户感知最明显的操作（通常是冷启动和列表滚动），然后集中优化这些路径。Baseline Profiles 的核心思路就是这个——只预编译用户真正会用到的代码路径，而不是试图优化所有代码。
-**原则四：在低端设备上测试。** Google 的 Android Vitals 数据显示，低端设备上的性能问题发生率远高于高端设备。Google 的内部测试 framework 包括各种 RAM 大小、CPU 核心数和屏幕分辨率的设备配置。如果一个优化方案只在旗舰设备上有效，那它很可能不是一个好的优化。
-**原则五：度量先行。** 在优化之前先测量基准值，优化之后确认提升幅度。Jetpack Benchmark 和 Macrobenchmark 是为此设计的。没有数据的优化和盲猜没有区别。
-## Android Go Edition：面向入门设备的性能策略
-[已验证: developer.android.com/android-go]
-Android Go Edition（也叫 Android Go）是 Google 面向 1-2GB RAM 入门设备的轻量版系统。它的核心策略和 Project Svelte 一脉相承，但在技术实现上走得更远。
-系统层面的改动包括：预装应用的内存占用被严格限制（每个 Google Go 应用比标准版应用节省约 50% 内存），系统服务被精简（一些不必要的服务直接裁剪），以及针对低内存场景的 LMK 策略调整。
-应用层面的策略是：鼓励开发者使用 Feature Flags 或 APK Split 来减少单个安装包的功能和代码量。Go Edition 的用户设备上通常只有 8-16GB 的存储空间，一个 100MB 的应用可能就占用了 1% 的存储。
-Go Edition 的存在也验证了 Google 性能理念中的一个重要观点：**好的性能优化应该是向下兼容的**。为低端设备做的优化（减少内存分配、减少后台工作、延迟初始化）同样会让高端设备受益。
-## Google 内部的性能测试基础设施
-Google 内部的性能测试体系在公开信息中能了解到的主要有以下几个方面。
-**AOSP 中的测试框架。** AOSP 中包含了大量的性能基准测试（在 `platform/testing` 目录下），涵盖启动时间、渲染性能、Binder 调用延迟等。这些测试是 Google 内部 CI 系统的一部分，每次提交代码都会运行，用于回归检测。
-**Postsubmit 性能监控。** Google 在内部的 CI 系统中持续监控每个 AOSP 提交对性能指标的影响。如果某个提交导致启动时间增加了 50ms 或帧率下降了 2fps，会自动触发告警并通知提交者。这种"性能回归检测"机制确保了性能是持续改善的，而不是随着功能增加而逐渐退化。
-**设备农场（Device Farm）。** Google 在全球多个数据中心维护了大量的真实设备集群，用于运行自动化性能测试。这些设备覆盖了不同的 SoC 平台（高通、联发科、三星、谷歌 Tensor）、不同的 Android 版本和不同的内存配置。
-[待补充: Google 内部 Perfetto Dashboard 和 Android Vitals 后台的具体使用细节，这些信息目前只有公开演讲中的零散提及]
-## 常见问题与误区
-### "Google 的系统级优化就够了，App 不需要自己优化"
-系统级优化提高了平台的能力上限，但 App 的实际表现取决于它怎么使用这个平台。一个在主线程做同步 Binder 调用的 App，在再快的系统上也会卡。Google 的优化是乘数（让好的更好），不是魔法（不能让差的不差）。
-### "Baseline Profiles 能解决所有启动性能问题"
-Baseline Profiles 只解决"代码需要 JIT 编译"这一层的问题。如果你的启动慢是因为在主线程做了大量 I/O、或者初始化了太多不需要的库，Baseline Profiles 帮不了你。它是在代码已经是机器码的基础上还能省多少的问题，不是能替代架构优化的银弹。
-### "升级到最新的 Android 版本，性能自动就会变好"
-这句话大部分时候是对的——ART 的优化、Binder 的改进、渲染管线的重构确实在每个版本都有进步。但有两个例外：一是新的隐私限制可能导致某些操作变慢（比如 Android 11+ 的包可见性查询需要额外的 IPC）；二是新的功能可能引入新的开销（比如 Android 12 的 SplashScreen API 如果配置不当，反而会增加启动时间）。升级通常带来净正收益，但具体到某个 App 某个场景，仍然需要实测。
-### "Google 的性能优化思路只适用于大厂 App"
-Google 的最佳实践——延迟初始化、避免主线程阻塞、减少内存分配——适用于所有大小的 App。事实上，小 App 反而更容易做到这些，因为它们的依赖更少、架构更简单。Baseline Profiles 和 Macrobenchmark 也被设计为可以在任何项目中集成的 Gradle 插件，不需要复杂的构建系统。
-## 参考资料
-- AOSP 源码路径：
-  - `frameworks/base/core/java/android/view/Choreographer.java`（VSync 驱动的渲染调度）
-  - `frameworks/base/core/java/android/os/Handler.java`（消息队列核心）
-  - `frameworks/native/libs/binder/`（Binder IPC 实现）
-  - `art/runtime/`（ART 运行时核心）
-  - `system/memory/`（内存管理相关）
-- [已验证: 官方文档, developer.android.com/topic/performance]
-- [已验证: 官方文档, developer.android.com/topic/performance/baselineprofiles]
 
-- [已验证: 官方文档, source.android.com/docs/core/runtime]
-- [已验证: 官方文档, source.android.com/docs/core/mainline]
-- [已验证: 官方文档, source.android.com/docs/core/architecture/treble]
-- [已验证: Google Blog, android-developers.googleblog.com]
-- [已验证: Perfetto 文档, perfetto.dev/docs/data-sources/android-binder]
-- [引用: https://www.androidperformance.com/（高爷博客）]
-### Android Studio supports Gemma 4：本地代理编程模型
-- 来源：http://android-developers.googleblog.com/2026/04/android-studio-supports-gemma-4-local.html
-- 类型：article
-- 摘要：Google 宣布 Android Studio 正式支持 Gemma 4，为 Android 平台设计的本地代理编程模型，支持设备上高级推理和代码生成，无需云端连接。
-- 入库时间：2026-04-08
-### Google Gemma 4 开源模型系列：专为代理工作流设计
-- 来源：http://www.techmeme.com/260402/p18
-- 类型：article
-- 摘要：Google 发布 Gemma 4 开源模型系列(Apache 2.0)，专为高级推理和代理工作流设计，涵盖手机到工作站多种规格。
-- 入库时间：2026-04-08
-### Gemini Nano 4：端侧 AI 多模态 + 链式推理
-- 来源：https://developer.android.com/ai/gemini-nano
-- 类型：article
-- 摘要：基于 Gemma 4，Fast(E2B)和 Full(E4B)两个变体。比上代快 4 倍、省电 60%。已通过 AICore Developer Preview 开放。支持多模态(文本+图像+音频)、链式推理。Nano 系列已覆盖 1.4 亿台设备。
-- 入库时间：2026-04-08
+## 为什么要了解 Google 的性能优化思路
+我们这本书前面花了很多篇幅讲 Android 内部的具体机制，VSync、Binder、内存管理、调度器、BufferQueue。再往后退一步，会发现这些机制改动背后其实有一条很稳定的主线，Google 并不是在零散地修小问题，而是在持续抬高整个平台的性能上限，同时让优化尽快到达真实用户。
+
+理解这条主线有三个直接价值。第一，我们能判断某个问题究竟应该优先在系统层找答案，还是应该回到 App 自己的初始化、线程模型和渲染路径上。第二，Google 官方提供的工具，Baseline Profiles、Macrobenchmark、Android Vitals、Perfetto，本质上都是围绕这套思路设计的，不理解设计目标就容易把工具用成“测个数”的仪表盘。第三，Google 每个版本的性能特性并不是随机出现的，从 Project Butter 到 Mainline，再到 Android 17 的 lock-free MessageQueue，这条线是连贯的。顺着这条线看版本演进，我们更容易预判下一轮优化会动到哪一层。
+
+## 核心理念：两层性能观
+Google 对性能的判断，基本可以拆成两层。
+
+### 系统层（Systemic Performance）
+第一层是系统本身的能力上限。这个层面关注的是内核、运行时、驱动、合成管线、线程调度、系统服务这些底层设施。Google 在这里的目标不是“帮某个 App 快一点”，而是让整个平台默认更快，让所有 App 在不改业务代码的前提下也能吃到收益。
+
+AutoFDO 就是典型例子。它优化的是内核和系统 native binary 的机器码布局与分支预测，不要求 App 配合，但会影响冷启动、Binder 调用、系统服务执行这些底层热点路径。这个方向的细节可以继续看 §1.12《AutoFDO 反馈导向编译优化》和本章的 §16.4《Android 17 + Kernel 6.12 系统级性能优化》。Google 在系统层做的其他长期工作也属于这一类，比如 ART 编译与 GC 的持续演进、Binder 调度与线程池模型的调整、SurfaceFlinger 合成与 Buffer 管线重构。
+
+### 用户感知层（User-Perceived Performance）
+第二层是用户真正能感知到的性能。Google 一直在强调，性能不是 CPU 利用率、不是某个函数跑了多少纳秒，而是启动是不是拖、滑动是不是卡、点击是不是迟、ANR 会不会冒出来。技术指标是证据，不是终点。
+
+这层思路决定了 Google 的工具长什么样。Android Vitals 追踪的是 ANR 率、崩溃率、卡顿率这类用户感知指标，不是“某个线程平均占了多少 CPU”。Macrobenchmark 也不是为了测一个方法的极限吞吐，而是为了复现冷启动、滚动、页面切换这些用户动作，然后确认优化前后用户真的会感觉到差别。
+
+这两层并不是二选一。系统层决定平台天花板，用户感知层决定 App 有没有把这个天花板用出来。系统已经把渲染、调度、编译链路做得很快了，但如果 App 还在主线程做同步 I/O、启动时塞满阻塞初始化、滚动里频繁分配对象，用户感知到的照样是慢。
+
+## 版本旗舰特性：一条清晰的演进线
+Google 从 Android 4.1 开始，几乎每个关键版本都有一轮很鲜明的性能主线。把这些主线串起来看，比单独背技术名词更有用。
+
+### Project Butter（Android 4.1，2012）
+Project Butter 是 Android 性能口碑的一个分水岭。它解决的不是单个模块快不快，而是整条 UI 渲染时序混不混乱。
+
+它做的三件事今天看仍然是主线。第一，把渲染正式绑到 VSync 节奏上，让 Choreographer 在 VSync 到来时统一调度 Input、Animation、Traversal。第二，引入三缓冲，把 CPU、GPU、SurfaceFlinger 的工作时序拉开，减少双缓冲里常见的“上一帧没放开，下一帧没法开始”这种等待。第三，围绕输入响应做延迟控制，尽量缩短从手指动作到屏幕变化之间的间隔。
+
+这套思路的价值不只是“4.1 比以前顺”，而是它建立了按帧理解性能的思维模型。后面 RenderThread、FrameMetrics、Frame Timeline、Frame Pacing Library 这整串工具和机制，都是从这个模型里长出来的。相关机制可以回看 §2.3《VSync 机制》和 §2.4《Choreographer 与渲染流水线》。
+
+### Project Svelte（Android 4.4，2013）
+如果说 Project Butter 解决的是“顺不顺”，Project Svelte 解决的是“资源很差时还能不能跑”。
+
+Android 4.4 的目标是让系统在 512MB RAM 设备上也能工作。这个目标很朴素，但它把 Google 的另一条性能哲学钉死了，性能不是只为旗舰机准备的，低端机上的稳定运行同样是性能工程的一部分。为了做到这一点，Google 去压系统服务内存、减少预装软件的常驻开销、强化低内存回调和行为约束，还给开发者补上了 ProcStats 这类观测工具。
+
+后来的 Android Go Edition，本质上就是这条思路的延伸，低资源设备不是例外场景，而是性能设计必须覆盖的基线场景。
+
+### ART 替代 Dalvik（Android 5.0，2014）
+Dalvik 到 ART 的切换，是 Android 运行时层面最重要的一次重写。Dalvik 时代更依赖解释执行和 JIT，热路径第一次执行一定更慢，GC 也更容易把前台线程直接停住。ART 把 AOT 编译引进来，让安装阶段就能把 DEX 转成机器码，运行时性能的基线一下子稳定了很多。
+
+但纯 AOT 很快又暴露出安装慢、产物大、全量编译不划算这些问题，所以从 Android 7.0 开始，ART 逐步走向 JIT、AOT、Profile-Guided 混合编译。系统先解释和采样，再根据真实热路径做更有针对性的编译。这条线最后演变成了 Baseline Profiles、Cloud Profiles、Startup Profiles 这些今天仍然在用的工具链。
+
+### Project Treble（Android 8.0，2017）
+Project Treble 表面上讲的是架构解耦，实际上它解决了另一个性能大问题，Google 修好的系统优化到底能不能及时送到用户手里。
+
+Treble 之前，Framework 和厂商 HAL 绑得很紧。Google 即使修好了框架层的性能 bug，也得等 SoC 厂商和 OEM 一层层适配，很多设备根本等不到更新。Treble 通过稳定接口把 Framework 和 HAL 拆开，把“平台层改进”和“厂商适配”之间的耦合降下来，这才给后面的 Mainline、Stable AIDL、模块化更新创造了前提。
+
+### Project Mainline（Android 10，2019）：先把“交付路径”拆清楚
+Mainline 最大的价值，不是又多了几个模块名字，而是它把“系统能力更新如何送达设备”这件事做成了独立问题。官方 Mainline 文档写得很明确，Android 10 引入 Mainline 后，终端可以通过 Google Play system update feature 或 partner-provided OTA 获取模块更新；模块本身既可能是 APEX，也可能是 APK。ART 模块 `com.android.art` 是从 Android 12 开始作为 APEX 交付的。
+
+这里最容易写错的地方，是把“性能特性本身”与“特性怎么交付”混成一条线。至少要把下面三条路径分开看。
+
+- Mainline / APEX / APK 模块更新。这是 ART、DNS Resolver、Permission Controller 这类系统模块的交付方式。像 ART runtime 的能力演进，才可能走这条路。
+- GKI kernel 分支与设备 OTA。AutoFDO 属于内核与系统 native binary 的构建优化，首先落在 `android15-6.6`、`android16-6.12` 这类内核分支和对应构建产物里，最终通过厂商 kernel OTA 或完整 OTA 到达设备，不属于 ART Mainline。
+- Google Play 安装期编译。Baseline Profiles 由 App 自己随 APK/AAB 打包，Cloud Profiles 由 Google Play 聚合用户行为后参与安装或后台编译。这条链路作用在 App 的安装与编译阶段，也不是 Mainline。
+
+这样再回头看 Android 17 的 runtime 变化，很多表述就会自然变准。比如 generational GC 是 Android 17 release notes 里写出的 runtime 能力变化，但不能因此把它直接写成“Mainline 推送的特性”；它是否回推到旧设备，要看对应 ART 模块版本、设备集成和 Google Play system update 的实际覆盖范围。Cloud Profiles 也是一样，它服务于 Play 安装期编译，不属于 ART Mainline 本身。
+
+## ART 的持续优化方向
+ART 这些年的优化，最值得我们盯住的是三条线，编译策略、GC、构建期工具链。
+
+### 编译策略：从 AOT 走向 Profile-Guided
+纯 AOT 的问题很直接，安装成本高、产物大、并不是所有方法都值得提前编译。Android 7.0 之后，ART 把解释执行、JIT 和后台 AOT 编译揉到一起，先靠运行时收集热路径，再决定哪些方法值得编译。
+
+这条路继续往前走，就有了 Google Play 参与的 Cloud Profiles 和开发者可控的 Baseline Profiles。官方 Baseline Profiles 文档给出的表述很清楚，Baseline Profiles 可以让关键代码路径从第一次启动开始就避免解释执行和 JIT，很多应用测得的执行速度提升大约在 30% 左右。更重要的是，官方同时强调了另一件事，发布 Baseline Profile 之后，优化生效会明显快于“只依赖 Cloud Profiles”的情况。这其实就是前面那三条交付路径里的第三条，Play 安装期编译链路，而不是 Mainline。
+
+### GC：目标不是追求某个固定毫秒数，而是减少前台打断
+Dalvik 时代的痛点我们都熟，STW 时间长、碎片化重、前台容易直接被顶住。ART 后续通过 Concurrent Copying、并发标记与对象搬移，一直在往“少打断前台”这件事上使劲。
+
+Android 17 release notes 对 generational GC 的描述也保持了这个口径，ART 的 Concurrent Mark-Compact collector 现在支持 generational GC，会更频繁地做低成本的 young generation 回收。官方强调的是“frequent, low-cost”，而不是给一个放之四海而皆准的暂停时间数字。所以这节只保留机制层判断，不再硬写某个固定毫秒数。更细的 GC 演进可以继续看 §4.8《ART 分代垃圾回收与 GC 暂停优化》。
+
+### 工具链：R8、D8 与 Startup Profiles
+除了运行时本身，Google 还在持续优化“代码在到达运行时之前”的形态。R8 负责 shrink、optimize、inline、merge，目标是让 DEX 更小、更整齐。DEX 体积小了，冷启动时要 fault 进来的页面就更少，dex2oat 和加载阶段的负担也会跟着变轻。
+
+Startup Profiles 则是编译期补刀。它和 Baseline Profiles 配合时，一个负责安装期编译关键代码路径，一个负责在 DEX 布局阶段把启动热点排到更容易被顺序读取的位置。两者放在一起看，才是今天 Android 启动优化工具链的完整图景。
+
+## Framework 层的性能优化实践
+Google 在 Framework 层的工作，很多都没有单独冠上一个 Project 名字，但真正落地到卡顿、启动、切换速度时，往往就是这些改动在起作用。
+
+### View 系统：持续减主线程负担
+View 系统历史太久，Google 这些年一直在做两件事，减少不必要的 measure/layout/invalidate 传播，以及把真正重的绘制工作继续往 RenderThread 挪。
+
+从 Android 5.0 引入 RenderThread 之后，主线程更多是在记录 DisplayList，真正的 OpenGL 或 Vulkan 指令提交不再都堵在 UI 线程上。这个变化对性能分析很关键，主线程慢不等于整帧一定慢，RenderThread 和合成侧是不是还能赶上 VSync，才决定用户能不能看见掉帧。
+
+### Handler / MessageQueue：先分清 legacy queue 和 Android 17 新队列
+MessageQueue 的性能问题，本质上是“很多生产者在并发入队”和“Looper 必须按消息到期时间有序取出”这两件事，被塞进了同一套队列结构里。
+
+在 legacy locked queue 里，这个问题通常表现为单锁竞争。Looper 在 `next()` 里遍历并取出到期消息，生产者在 `enqueueMessage()` 里按 `when` 插入单链表，两边都会碰到同一份队列状态。所以我们如果分析旧实现，说它围绕一把锁序列化访问，是成立的。但这时候应该引用 `MessageQueue` 自身，而不是 `Handler.java`。`Handler` 只是暴露 `sendMessage()`、`post()` 这些 API 的封装层，真正的队列实现应该看 `Looper.java` 和 `MessageQueue` 的具体实现文件。
+
+到了 Android 17，这个前提就不能再直接套用了。Android 17 release notes 和 behavior changes 都明确写到，targetSdk 37 及以上应用会收到新的 lock-free `android.os.MessageQueue`。而当前 AOSP master 的 `core/java/android/os/` 目录里，已经能直接看到 `LockedMessageQueue/MessageQueue.java`、`ConcurrentMessageQueue/MessageQueue.java`、`CombinedMessageQueue/`、`SemiConcurrentMessageQueue/` 这些实现拆分。这说明“MessageQueue 就是一份带 `mLock` 的单一实现”只对历史 locked queue 成立，不能拿来概括现在的代码树。
+
+Google 在 DeliQueue 技术博客里给出的主线也和这个拆分一致，生产者尽量走无锁入队，Looper 再在自己的视角里整理待执行消息。对我们做性能分析来说，这个变化的意义是，不能再看到 `Handler.post()` 就默认脑补成“老式单锁链表”。必须先分清设备系统版本和 App 的 targetSdk，再决定该看 legacy locked queue 还是新的 concurrent queue。更细的实现与兼容边界，可以继续看 §1.13《MessageQueue 机制与 DeliQueue 无锁优化》。
+
+### Binder：线程池与优先级继承的时间线要按事实写
+Binder 这部分也非常容易被写成“Android 8 动态扩展线程池，Android 10 才有优先级继承”这种顺口溜，但这条时间线并不准。
+
+先看线程池。AOSP `frameworks/native/libs/binder/ProcessState.cpp` 很早就把默认 worker 上限定义成 `DEFAULT_MAX_BINDER_THREADS = 15`，并通过 `BINDER_SET_MAX_THREADS` 把这个上限交给 driver。也就是说，Binder 线程池本来就是“driver 按需唤醒或拉起 worker，userspace 负责设置上限”的模型，并不是 Android 8 才从固定线程数突然变成动态线程池。工程里常听到“16 线程”，大多是把发起调用的线程也口语化算进去了，不是 driver 的默认 worker 上限。
+
+再看优先级继承。官方 binder IPC 文档写得很直接，binder driver 一直支持 nice priority inheritance。Android 8 的关键变化，是随着 Treble 引入 `/dev/hwbinder` 域，同时把 real-time priority inheritance 加进 binder driver；到了 Android 10，Stable AIDL 又让满足稳定性要求的 HAL 可以回到 `/dev/binder`。所以更准确的演进线应该是，早期就有 nice priority inheritance，Android 8 加入 RT inheritance 与 hwbinder 域，Android 10 通过 Stable AIDL 重新整理了 binder domain 的边界，而不是“10+ 才有优先级继承”。
+
+这段时间线搞清楚之后，我们再看 Perfetto 里的 Binder track，才不会把线程池耗尽、调度延迟、优先级反转这些问题混成一团。Binder 的具体机制还可以回看 §1.4《Binder IPC 机制与性能影响》。
+
+### 窗口管理：BLASTBufferQueue 优化的是 buffer 与 transaction 的同步
+BLASTBufferQueue 也经常被一句话讲歪，最常见的说法是“Android 12 让 App 直接把 buffer blast 给 SurfaceFlinger，绕过了中间 BufferQueue”。这不准确。
+
+AOSP 里的 `BLASTBufferQueue` 仍然会创建内部的 `BufferQueueCore`、producer 和 consumer，它没有把 BufferQueue 这套基础设施删掉。它真正做的，是把 buffer acquire 与 `SurfaceControl.Transaction` 的提交时机绑到同一个 frame number 上。`BLASTBufferQueue.cpp` 里能直接看到这条主线，`syncNextTransaction()` 负责登记同步点，`mergeWithNextTransaction()` 决定当前 transaction 是立刻 apply 还是暂存到 `mPendingTransactions`，等目标 frame 到达后再 merge/apply；`SurfaceControl.java` 里也有 `onMergeWithNextTransaction()` 这条 Java 侧钩子。
+
+所以 BLAST 解决的问题，不是“BufferQueue 状态机太慢，所以把它绕过去”，而是“buffer 已经准备好了，但几何变化、裁剪、层级 transaction 没和它在同一帧落地”。换句话说，BLAST 减少的是 buffer latch 与 transaction apply 之间的错位和额外等待，让窗口尺寸变化、动画和内容更新更容易对齐。窗口事务这条线如果要继续往下追，可以接着看 §2.12《Window Manager Service 与窗口管理》。
+
+## Google 官方的 Performance 工具与文档体系
+Google 的性能思路最终都会落到工具和文档上。我们真要把这套思路用在工程里，入口基本就这几类。
+
+### 文档入口
+官方文档入口里最常用的还是三个。
+
+第一是 `developer.android.com/topic/performance`，这是总入口，启动、渲染、内存、网络、电池这些主题都从这里发散。第二是 Baseline Profiles 与 Macrobenchmark 相关文档，它们对应的不是某个细节 API，而是 Google 当前最主推的 App 侧性能工作流。第三是 Android 各版本的 release notes 与 behavior changes，这两类页面负责回答“这一版系统新增了什么”和“targetSdk 提上去之后什么行为会变”。Android 17 的 lock-free MessageQueue 就是典型例子，release notes 讲能力变化，behavior changes 讲适用边界。
+
+### 度量、分析、优化三类工具
+Google 的性能工具大致可以分成三类。
+
+度量工具回答“有没有问题”。Jetpack Benchmark 负责稳定地测代码段，Macrobenchmark 负责复现冷启动、滚动、页面切换这些用户动作，Android Vitals 负责告诉我们真实用户到底有没有在现场感知到问题。
+
+分析工具回答“问题在哪里”。Android Studio Profiler 适合开发阶段的单进程定位，Perfetto 适合看跨线程、跨进程、跨系统服务的完整时序，simpleperf 更适合 native 代码热点与调用栈分析。Perfetto 的方法论我们在第 13 章有完整展开。
+
+优化工具回答“怎么修”。Baseline Profiles 和 Startup Profiles 负责把关键代码路径更早变成机器码，R8 负责把 DEX 组织得更小更紧凑，App Startup Library 负责把初始化依赖整理清楚，尽量避免所有工作都挤进 `Application.onCreate()`。
+
+### 官方最佳实践，反复回到五件事
+Google 在 I/O、Codelab 和官方文档里反复强调的原则，其实没有那么花哨，反复出现的就五件事。
+
+第一，不要在主线程做阻塞操作。第二，初始化要按用户真正的使用顺序来排，不要启动时全量摊开。第三，优先优化关键路径，而不是试图全局打磨每一行代码。第四，一定要在资源更紧的设备上测，旗舰机上的“没感觉”往往说明不了什么。第五，优化之前和之后都要量化，没基线就谈不上收益。
+
+这些原则看起来像常识，但它们刚好解释了为什么 Google 会同时推动系统层优化和开发者工具链优化。系统层在抬平台底座，开发者工具在逼我们把 App 真正跑在这块底座上。
+
+## Android Go Edition：面向低资源设备的性能策略
+Android Go Edition 是 Project Svelte 思路的延续版。它不是“阉割版 Android”，而是把低内存、低存储、低算力设备当成真实目标平台，再反过来重做系统和应用默认配置。
+
+这条线的意义在于，它不断提醒我们，好的性能优化应该天然向下兼容。减少常驻内存、延迟初始化、降低后台工作、缩短关键路径，这些策略不会只对低端机有效。相反，低端机场景往往最容易把问题放大，也最容易逼我们看清楚什么才是真正的性能瓶颈。
+
+## Google 内部的性能测试基础设施
+公开信息里能看到的 Google 内部性能基础设施，主要还是三块。
+
+一块是 AOSP 与平台测试仓库里的基准测试，用来守住启动时间、渲染耗时、系统服务行为这些基础指标。第二块是持续回归监控，也就是每次平台代码变更之后，都要确认关键性能指标没有被悄悄拉坏。第三块是覆盖不同 SoC、不同内存规模、不同分辨率配置的设备池，避免性能结论只在单一测试机上成立。
+
+这部分公开细节不算多，所以这里我们只保留工程上能确定的结论，不去硬写内部平台名称和实现细节。[待补充：公开演讲中关于内部 Perfetto Dashboard 与大规模设备回归的更多材料]
+
+## 常见问题与误区
+### “系统已经越来越快了，App 端不用太管”
+系统层优化确实会抬高默认上限，但它不会替我们删掉主线程阻塞 I/O，也不会自动把启动阶段那些不该同步做的初始化搬走。Google 的系统优化更像乘数，前提还是 App 自己的结构别太差。
+
+### “Baseline Profiles 能包治启动慢”
+Baseline Profiles 解决的是“关键代码路径尽早编译成机器码”，不是“所有启动问题都自动消失”。如果启动慢的真正根因是主线程 I/O、同步 Binder、数据库初始化、第三方 SDK 常驻初始化，那它只能缓解一部分，不可能替代架构和线程模型层面的整理。
+
+### “升级 Android 版本，性能自然会整体变好”
+大方向通常是对的，但具体场景仍然要实测。新系统会带来更好的运行时、更好的调度和更好的系统工具，也可能同时带来新的行为限制、更多安全检查或 targetSdk 适配成本。Google 每一版都在优化平台，也每一版都在改平台规则，这两件事是一起发生的。
+
+## 参考资料
+- AOSP / 官方源码路径
+  - `platform/frameworks/base/core/java/android/view/Choreographer.java`（android-16.0.0_r1，VSync 驱动的帧调度入口）
+  - `platform/frameworks/base/core/java/android/os/Looper.java`（refs/heads/master，Looper 驱动 MessageQueue）
+  - `platform/frameworks/base/core/java/android/os/LockedMessageQueue/MessageQueue.java`（refs/heads/master，legacy locked queue）
+  - `platform/frameworks/base/core/java/android/os/ConcurrentMessageQueue/MessageQueue.java`（refs/heads/master，Android 17 concurrent queue）
+  - `platform/frameworks/native/libs/binder/ProcessState.cpp`（refs/heads/master，`DEFAULT_MAX_BINDER_THREADS` / `BINDER_SET_MAX_THREADS`）
+  - `platform/frameworks/native/libs/gui/include/gui/BLASTBufferQueue.h`（refs/heads/master，BLAST 的同步接口定义）
+  - `platform/frameworks/native/libs/gui/BLASTBufferQueue.cpp`（refs/heads/master，`syncNextTransaction()` / `mergeWithNextTransaction()` / `applyPendingTransactions()`）
+  - `platform/frameworks/base/core/java/android/view/SurfaceControl.java`（refs/heads/master，`mergeWithNextTransaction` Java 侧钩子）
+- 官方文档
+  - `https://developer.android.com/topic/performance`
+  - `https://developer.android.com/topic/performance/baselineprofiles/overview`
+  - `https://developer.android.com/about/versions/17/release-notes`
+  - `https://developer.android.com/about/versions/17/behavior-changes-17`
+  - `https://source.android.com/docs/core/ota/modular-system`
+  - `https://source.android.com/docs/core/architecture/treble`
+  - `https://source.android.com/docs/core/architecture/hidl/binder-ipc`
+- 官方博客
+  - `https://android-developers.googleblog.com/2026/02/under-hood-android-17s-lock-free.html`
+  - `https://android-developers.googleblog.com/2026/03/BoostingAndroidPerformanceIntroducingAutoFDO.html`
+- 交叉阅读
+  - §1.12《AutoFDO 反馈导向编译优化》
+  - §1.13《MessageQueue 机制与 DeliQueue 无锁优化》
+  - §2.12《Window Manager Service 与窗口管理》
+  - §16.4《Android 17 + Kernel 6.12 系统级性能优化》

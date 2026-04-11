@@ -31,6 +31,10 @@ created_date: "2026-04-05"
 gap_source: "AOSP结构+官方文档+研究素材"
 drafted_by: "openclaw-task2a"
 drafted_date: "2026-04-05"
+pipeline_stage: task6_pending
+task6_state: pending
+task9_state: pending
+task2b_state: idle
 ---
 
 # 14.8 GPU 图形调试与分析工具

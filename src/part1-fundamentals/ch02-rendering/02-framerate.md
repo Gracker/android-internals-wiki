@@ -31,6 +31,10 @@ sources:
 tags: ['framerate', 'refresh-rate', 'frame-time', 'jank', 'frame-pacing', 'LTPO', 'VRR', 'ARR', 'SurfaceFlinger']
 related_chapters: ["2.1", "2.3", "2.4", "2.6", "2.9", "7.1"]
 re-review-result: "已纳入1条素材(部分纳入:OEM VSync修改误区+交叉引用),0处修正,待正常review质检"
+pipeline_stage: task6_pending
+task6_state: pending
+task9_state: pending
+task2b_state: idle
 ---
 
 # 帧率与刷新率

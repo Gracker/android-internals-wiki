@@ -18,6 +18,10 @@ sources:
     path: "frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java"
     title: "Activity Manager Service ANR 处理"
     date: "Android 17"
+pipeline_stage: task6_pending
+task6_state: pending
+task9_state: pending
+task2b_state: idle
 ---
 
 # ANR 非技术故障诊断

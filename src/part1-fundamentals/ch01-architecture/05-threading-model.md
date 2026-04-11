@@ -44,6 +44,10 @@ sources:
     path: "developer.android.com/reference/android/os/Process#setThreadPriority(int,int)"
 tags: [thread, handler, looper, messagequeue, renderthread, coroutine, workmanager, thread-priority]
 related_chapters: ["1.2", "1.4", "2.4", "2.5", "5.1"]
+pipeline_stage: task6_pending
+task6_state: pending
+task9_state: pending
+task2b_state: idle
 ---
 
 # 线程模型

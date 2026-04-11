@@ -28,6 +28,10 @@ related_chapters: ["4.3", "7.1", "7.2", "10.1", "10.4"]
 word_count: "~7500"
 reviewed_date: "2026-04-09"
 reviewed_by: "openclaw-task6"
+pipeline_stage: task6_pending
+task6_state: pending
+task9_state: pending
+task2b_state: idle
 ---
 
 # 内存抖动与频繁 GC

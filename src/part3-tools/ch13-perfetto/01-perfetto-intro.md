@@ -23,6 +23,10 @@ sources:
     path: "https://www.androidperformance.com/2019/12/01/Android-Systrace(Perfetto)-Basic/"
 tags: ['perfetto', 'systrace', 'tracing', 'trace-processor', 'traced', 'ftrace', 'atrace', 'heapprofd', 'performance-analysis']
 related_chapters: ["13.2", "13.3", "2.1", "7.1"]
+pipeline_stage: task6_pending
+task6_state: pending
+task9_state: pending
+task2b_state: idle
 ---
 
 # Perfetto 简介与演进
@@ -326,6 +330,12 @@ Perfetto 的引入和演进与 Android 版本紧密相关：
 到这里，我们对 Perfetto 的定位、架构、核心概念有了完整的认识。接下来的章节会逐步深入实操层面：13.2 节讲解如何在设备上抓取 trace，13.3 节讲解 Perfetto UI 的使用方法。如果对渲染管线还不熟悉，可以先回顾 2.1 节的渲染架构全景，那里介绍的每个组件在 Perfetto 中都有对应的 Track。
 
 ## 参考资料
+### 从 Trace 到洞察：SmartPerfetto AI Agent 的 Harness Engineering 实战
+- 来源：https://androidperformance.com/2026/04/10/SmartPerfetto-Architecture-Deep-Dive/
+- 类型：博客文章
+- 摘要：关键词: perfetto,agent,trace
+- 入库时间：2026-04-11
+
 
 - Perfetto 官方文档：https://perfetto.dev/docs/
 - Android 官方 Perfetto 指南：https://source.android.com/docs/core/debug/perfetto

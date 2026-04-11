@@ -17,6 +17,10 @@ sources:
     path: "https://mp.weixin.qq.com/s?__biz=MzI4NTk1NzYwNg==&mid=2247483668"
 tags: ['aosp', 'code-reading', 'cs.android.com', 'methodology']
 related_chapters: ["1.1", "2.4", "2.5", "13.1"]
+pipeline_stage: task6_pending
+task6_state: pending
+task9_state: pending
+task2b_state: idle
 ---
 
 # AOSP 代码阅读

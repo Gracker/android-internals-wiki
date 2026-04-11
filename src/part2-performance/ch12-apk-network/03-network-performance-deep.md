@@ -24,6 +24,10 @@ created_date: "2026-04-07"
 gap_source: "AOSP结构+官方文档+读者需求"
 gap_score: 14
 drafted_by: "openclaw-task2a"
+pipeline_stage: task6_pending
+task6_state: pending
+task9_state: pending
+task2b_state: idle
 ---
 
 # 12.3 网络性能深入：连接池、TLS 与传输优化

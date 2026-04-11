@@ -26,6 +26,10 @@ sources:
     path: "frameworks/base/core/java/android/os/PowerManager.java"
   - type: official
     path: "https://developer.android.com/topic/libraries/workmanager"
+pipeline_stage: task6_pending
+task6_state: pending
+task9_state: pending
+task2b_state: idle
 ---
 
 # 11.5 Wakelock 机制与功耗分析

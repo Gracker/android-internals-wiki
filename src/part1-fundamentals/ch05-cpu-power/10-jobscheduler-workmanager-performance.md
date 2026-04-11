@@ -29,6 +29,10 @@ sources:
     path: "https://android-developers.googleblog.com/ (Play Store Wake Lock Policy 2026)"
 tags: [jobscheduler, workmanager, background-scheduling, power, doze, battery, wakelock, app-standby, quota]
 related_chapters: ["5.6", "5.8", "1.5", "11.2", "15.5"]
+pipeline_stage: task6_pending
+task6_state: pending
+task9_state: pending
+task2b_state: idle
 ---
 
 # 5.10 JobScheduler/WorkManager 调度与后台任务性能

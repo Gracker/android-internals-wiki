@@ -20,6 +20,10 @@ sources:
     path: "developer.android.com/topic/performance/background-optimization"
 tags: ['oem', 'performance', 'freezer', 'preloading', 'background-management']
 related_chapters: ["5.1", "5.5", "5.6", "4.4", "8.3", "17.2"]
+pipeline_stage: task6_pending
+task6_state: pending
+task9_state: pending
+task2b_state: idle
 ---
 
 # OEM 性能优化的通用思路

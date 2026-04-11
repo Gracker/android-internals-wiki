@@ -7,6 +7,10 @@ tags: ["PIP", "画中画", "Freeform", "多窗口", "SurfaceControl", "BLAST", "
 related_chapters: ["2.6", "2.12", "18.10"]
 created_by: "rendering-pipelines-merge"
 created_date: "2026-04-09"
+pipeline_stage: task6_pending
+task6_state: pending
+task9_state: pending
+task2b_state: idle
 ---
 
 <!-- outline-start -->

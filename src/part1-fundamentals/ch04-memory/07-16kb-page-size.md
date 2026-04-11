@@ -29,6 +29,10 @@ tags:
   - tlb
   - compatibility
   - research
+pipeline_stage: task6_pending
+task6_state: pending
+task9_state: pending
+task2b_state: idle
 ---
 # 4.7 16KB Page Size 与 Android 性能
 

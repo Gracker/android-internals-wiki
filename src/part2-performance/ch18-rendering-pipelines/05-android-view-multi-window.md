@@ -7,6 +7,10 @@ tags: ["multi-window", "Dialog", "RenderThread-contention", "Choreographer", "se
 related_chapters: ["2.1", "18.2"]
 created_by: "rendering-pipelines-merge"
 created_date: "2026-04-09"
+pipeline_stage: task6_pending
+task6_state: pending
+task9_state: pending
+task2b_state: idle
 ---
 
 <!-- outline-start -->

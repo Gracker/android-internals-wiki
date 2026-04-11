@@ -28,6 +28,10 @@ created_by: "task2a-knowledge-gap"
 created_date: "2026-04-05"
 gap_source: "素材驱动+AOSP结构+每日信息"
 gap_score: "17/20"
+pipeline_stage: task6_pending
+task6_state: pending
+task9_state: pending
+task2b_state: idle
 ---
 
 # 2.15 DMA-BUF、Gralloc 与跨进程图形内存共享

@@ -20,6 +20,10 @@ sources:
 section: "16.3"
 tags: ['aosp', 'build', 'soong', 'ninja', 'emulator', 'cuttlefish', 'debug']
 related_chapters: ["16.1", "16.2", "15.7", "14.7"]
+pipeline_stage: task6_pending
+task6_state: pending
+task9_state: pending
+task2b_state: idle
 ---
 
 # AOSP 源码编译与调试环境

@@ -36,6 +36,10 @@ tags:
   - smoothness
 related_chapters: ["7.1", "2.3", "2.4", "2.5", "1.4", "1.5", "3.1", "4.3"]
 re-review-result: "审查 0 条素材，无需修改"
+pipeline_stage: task6_pending
+task6_state: pending
+task9_state: pending
+task2b_state: idle
 ---
 
 # 卡顿原因体系

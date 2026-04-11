@@ -7,6 +7,10 @@ tags: ["TextureView", "SurfaceTexture", "App侧合成", "纹理采样", "OES", "
 related_chapters: ["2.1", "2.6", "2.13", "18.6", "18.8"]
 created_by: "rendering-pipelines-merge"
 created_date: "2026-04-09"
+pipeline_stage: task6_pending
+task6_state: pending
+task9_state: pending
+task2b_state: idle
 ---
 
 <!-- outline-start -->

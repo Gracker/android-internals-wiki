@@ -20,6 +20,10 @@ sources:
     path: "intake/research-feeds/2026-04-05-19-android16-arr-surfaceflinger-choreographer-frame-pacing.md"
 tags: [ARR, refresh-rate, VSync, SurfaceFlinger, Choreographer, LTPO, frame-pacing, Android-16]
 related_chapters: ["2.2", "2.3", "2.4", "2.6", "2.13", "2.16"]
+pipeline_stage: task6_pending
+task6_state: pending
+task9_state: pending
+task2b_state: idle
 ---
 
 # 2.18 Adaptive Refresh Rate 与动态帧率控制

@@ -13791,6 +13791,145 @@
       "quality": "high",
       "indexed_at": "2026-04-10T13:00:00.000000",
       "first_chars": "# Decoding the Configuration of AI Coding Agents: Insights from Claude Code Projects\n\n## 核心问题\n\nAgent"
+    },
+    {
+      "title": "New language features and more in Kotlin 1.4",
+      "path": "AndroidWeekly/#1/New language features and more in Kotlin 1.4",
+      "source_url": "https://android-developers.googleblog.com/2020/08/new-language-features-and-more-in.html",
+      "weekly_issue": "#1",
+      "weekly_date": "2020-08-25",
+      "score": 14,
+      "quality": "medium",
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 4
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch04-编译",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch08-Kotlin",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Kotlin 1.4 新语言特性、编译器改进，支持Jetpack Compose的IR后端"
+    },
+    {
+      "title": "AI × 手机行业日报 | 2026-04-10",
+      "path": "OpenClaw定时任务/AI手机行业日报/2026-04-10-AI手机行业日报.md",
+      "relative_path": "OpenClaw定时任务/AI手机行业日报/2026-04-10-AI手机行业日报.md",
+      "score": 18,
+      "max_score": 20,
+      "quality": "high",
+      "categories": [
+        "AI",
+        "Mobile",
+        "Industry News"
+      ],
+      "summary": "Comprehensive daily report covering AI mobile industry developments including WeChat AI regulations, KnowU-Bench benchmark, OPPO Find X9 Ultra launch, and various mobile AI agent products from Samsung, Google, Xiaomi, vivo, Honor, and Huawei.",
+      "date": "2026-04-10",
+      "source": "OpenClaw定时任务",
+      "chapters": [
+        "1.1",
+        "1.2",
+        "3.1",
+        "5.1"
+      ],
+      "scored_at": "2026-04-11T05:02:21.710556"
+    },
+    {
+      "title": "Position: Episodic Memory is the Missing Piece for Long-Term LLM Agents",
+      "path": "论文/AI-2026-04-10-Episodic-Memory-LLM-Agents/03-精读.md",
+      "relative_path": "论文/AI-2026-04-10-Episodic-Memory-LLM-Agents/03-精读.md",
+      "score": 20,
+      "max_score": 20,
+      "quality": "high",
+      "categories": [
+        "AI",
+        "Memory Systems",
+        "LLM Agents"
+      ],
+      "summary": "Deep technical review of a position paper on episodic memory for LLM agents, covering the five core attributes framework, analysis of existing memory methods, and four research directions for implementing complete episodic memory systems.",
+      "date": "2026-04-10",
+      "source": "论文",
+      "chapters": [
+        "2.1",
+        "2.2",
+        "2.3",
+        "3.1"
+      ],
+      "scored_at": "2026-04-11T05:02:21.710566"
+    },
+    {
+      "title": "GAPS：结合静态调用图重建与动态 GUI 执行，解决 Android 方法级可达性问题",
+      "path": "论文/Android-2026-04-10-Mind-the-GAPS/03-精读.md",
+      "relative_path": "论文/Android-2026-04-10-Mind-the-GAPS/03-精读.md",
+      "score": 19,
+      "max_score": 20,
+      "quality": "high",
+      "categories": [
+        "Android",
+        "Performance Analysis",
+        "Static Analysis"
+      ],
+      "summary": "Technical review of GAPS framework for Android method-level reachability analysis, combining static call graph reconstruction with dynamic GUI execution to achieve 57.44% dynamic method coverage vs 17.12% for LLM-based tools.",
+      "date": "2026-04-10",
+      "source": "论文",
+      "chapters": [
+        "1.2",
+        "1.3",
+        "2.1",
+        "4.1"
+      ],
+      "scored_at": "2026-04-11T05:02:21.710569"
+    },
+    {
+      "title": "深度技术Review · 1.3 进程模型与生命周期管理",
+      "path": "OpenClaw定时任务/知识加工/2026-04-10-05-深度技术Review.md",
+      "relative_path": "OpenClaw定时任务/知识加工/2026-04-10-05-深度技术Review.md",
+      "score": 19,
+      "max_score": 20,
+      "quality": "high",
+      "categories": [
+        "Android",
+        "Process Management",
+        "OOM"
+      ],
+      "summary": "Technical review of Android process model and lifecycle management, covering critical issues in oom_adj constants, version evolution gaps from Android 10-16, and cgroup v2 migration analysis.",
+      "date": "2026-04-10",
+      "source": "知识加工",
+      "chapters": [
+        "1.3",
+        "2.1",
+        "3.1"
+      ],
+      "scored_at": "2026-04-11T05:02:21.710571"
+    },
+    {
+      "title": "单Agent框架",
+      "path": "awesome-ai-field-notes/site-src/agent-frameworks/single-agent.md",
+      "relative_path": "awesome-ai-field-notes/site-src/agent-frameworks/single-agent.md",
+      "score": 15,
+      "max_score": 20,
+      "quality": "medium",
+      "categories": [
+        "AI",
+        "Agent Frameworks",
+        "Resources"
+      ],
+      "summary": "Curated list of single-agent frameworks including Hermes, AI's impact on programmers, and OpenAI Harness Engineering resources with ratings and technical evaluations.",
+      "date": "2026-04-06",
+      "source": "awesome-ai-field-notes",
+      "chapters": [
+        "1.1",
+        "2.1",
+        "3.1"
+      ],
+      "scored_at": "2026-04-11T05:02:21.710573"
     }
   ]
 }

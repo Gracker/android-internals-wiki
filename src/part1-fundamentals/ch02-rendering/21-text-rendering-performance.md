@@ -24,6 +24,10 @@ sources:
     path: "developer.android.com/reference/android/text/PrecomputedText"
 tags: [text, rendering, minikin, skia, emoji, layout, performance, textview, staticlayout]
 related_chapters: ["2.1", "2.4", "2.5", "7.5", "7.12"]
+pipeline_stage: task6_pending
+task6_state: pending
+task9_state: pending
+task2b_state: idle
 ---
 
 # 2.21 文字渲染性能
