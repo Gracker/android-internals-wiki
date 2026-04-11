@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-11T20:03:40+08:00",
+  "generated_at": "2026-04-11T20:10:00+08:00",
   "state_machine_version": "v2",
   "total_sections": 206,
   "metrics": {
@@ -11,41 +11,41 @@
     "task2b_unknown": 30,
     "ready-for-review": 173,
     "pipeline_task2b_pending": 4,
-    "pipeline_task6_pending": 171,
-    "pipeline_task9_pending": 1,
-    "task6_pending": 155,
-    "task6_reviewed": 5,
+    "pipeline_task6_pending": 170,
+    "pipeline_task9_pending": 2,
+    "task6_pending": 154,
+    "task6_reviewed": 6,
     "task6_revisiting": 16,
     "task9_pending": 175,
     "task9_reviewed": 1,
     "task2b_fixed": 16,
     "task2b_idle": 156,
     "task2b_pending": 4,
-    "last_updated": "2026-04-11T20:03:40+08:00"
+    "last_updated": "2026-04-11T20:10:00+08:00"
   },
   "pipeline": {
     "pipeline_stage_counts": {
-      "task2b_pending": 4,
-      "task6_pending": 171,
-      "task9_pending": 1,
-      "unknown": 30
+      "unknown": 30,
+      "task9_pending": 2,
+      "task6_pending": 170,
+      "task2b_pending": 4
     },
     "task6_state_counts": {
-      "pending": 155,
-      "reviewed": 5,
-      "revisiting": 16,
-      "unknown": 30
+      "unknown": 30,
+      "reviewed": 6,
+      "pending": 154,
+      "revisiting": 16
     },
     "task9_state_counts": {
+      "unknown": 30,
       "pending": 175,
-      "reviewed": 1,
-      "unknown": 30
+      "reviewed": 1
     },
     "task2b_state_counts": {
-      "fixed": 16,
+      "unknown": 30,
       "idle": 156,
-      "pending": 4,
-      "unknown": 30
+      "fixed": 16,
+      "pending": 4
     }
   },
   "issues": {
@@ -165,12 +165,13 @@
       "title": "Android 分层架构",
       "path": "src/part1-fundamentals/ch01-architecture/01-layered-architecture.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "pending",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
       "task9_state": "pending",
       "task2b_state": "idle",
-      "reviewed_date": "2026-04-05",
-      "reviewed_by": "openclaw-task6"
+      "reviewed_date": "2026-04-11",
+      "reviewed_by": "openclaw-task6",
+      "task6_result": "pass-light-edit"
     },
     "src/part1-fundamentals/ch01-architecture/02-boot-process.md": {
       "chapter": "1.2",
