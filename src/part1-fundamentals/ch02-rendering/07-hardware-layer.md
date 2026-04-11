@@ -4,7 +4,7 @@ chapter: "2.7"
 status: ready-for-review
 drafted_date: "2026-03-30"
 applicable_versions: "Android 3.0 (API 11) - Android 16 (API 36)"
-last_verified: "2026-03-30"
+last_verified: "2026-04-12"
 last_verified_against: "AOSP android-16.0.0_r1"
 confidence: medium
 reviewed_date: "2026-04-12"
@@ -22,15 +22,16 @@ sources:
   - type: aosp
     path: "frameworks/base/core/java/android/view/View.java (buildLayer/buildDrawingCache)"
   - type: aosp
-    path: "frameworks/base/core/java/android/view/RenderNode.java (setUseCompositingLayer)"
+    path: "frameworks/base/graphics/java/android/graphics/RenderNode.java (setUseCompositingLayer/getUseCompositingLayer)"
 tags: [hardware-layer, LAYER_TYPE_HARDWARE, LAYER_TYPE_SOFTWARE, animation, RenderNode, compositing-layer, buildLayer, graphicsLayer, GPU-纹理缓存]
 related_chapters: ["2.4", "2.5", "2.6", "7.1", "7.5"]
-pipeline_stage: task2b_pending
+pipeline_stage: task6_pending
 task6_result: pass-light-edit
-task6_state: reviewed
-task9_state: reviewed
+task6_state: revisiting
+task9_state: pending
 task9_result: needs-rework
-task2b_state: pending
+task2b_state: fixed
+task2b_result: fixed
 ---
 
 # Hardware Layer
@@ -41,13 +42,13 @@ task2b_state: pending
 ### 锚点（必须覆盖）
 
 - 🔹 Hardware Layer 的本质：将 View 树缓存为离屏 GPU 纹理
-- 🔹 setLayerType(LAYER_TYPE_HARDWARE) 的适用场景：复杂动画、Alpha 变换
+- 🔹 setLayerType(LAYER_TYPE_HARDWARE) 的适用场景：复杂子树复用、Alpha 与离屏合成
 - 🔹 Hardware Layer 的代价：额外 GPU 内存、失效与重建开销
 - 🔹 何时 Hardware Layer 能提升性能 vs 何时反而劣化
 
 ### 扩展（可选深入）
 
-- 🔸 与 RenderNode.setUseCompositingLayer 的关系
+- 🔸 与 RenderNode compositing layer 的关系
 - 🔸 在 Compose 中使用 graphicsLayer 的性能考量
 
 ### OpenClaw 加工指引
@@ -73,16 +74,17 @@ Hardware Layer 这个名字容易让人困惑：Android 默认不是已经开启
 
 [已验证: 官方文档, developer.android.com/guide/topics/graphics/hardware-accel]
 
-**Hardware Layer** 则是另一个层面的东西：它指的是把某个 View 及其子 View 树的绘制结果缓存为一块离屏 GPU 纹理（通常是 OpenGL 的 FBO，即 Frame Buffer Object）。一旦缓存建立，后续帧只需要对这块纹理做变换（平移、缩放、旋转、透明度），而不需要重新执行 View 的 measure/layout/draw 流程。
+**Hardware Layer** 指的是在硬件加速开启时，把某个 View 子树的绘制结果放进一块离屏 GPU render target，后续以纹理的形式参与合成。官方文档把它描述为 hardware layer 或 hardware texture。它解决的是“同一批绘制结果要被连续复用”的问题，例如 alpha、translation、scale、rotation 这些变换持续发生，但内容本身没有变化的场景。
 
-打个比方：硬件加速是"用 GPU 画图"，Hardware Layer 是"把画好的图拍张照片贴在 GPU 上，后面只对照片做变换"。后者是在前者基础上的进一步优化手段。
+这里要收窄一点。Hardware Layer 能减少的是这棵子树反复重录 DisplayList、反复执行 draw 和反复光栅化的成本，它本身不是 measure/layout 的跳过开关。布局能不能跳过，取决于这一帧有没有新的 layout request、尺寸约束有没有变化；内容一旦 `invalidate()`，layer 缓存仍然会失效并重建。
 
-我们在 Perfetto 中可以通过一个直观的对比来理解它们的区别：
+为了不把几个层级混在一起，我们把三个场景分开看：
 
-- **硬件加速模式下**：App 同时有 MainThread 和 RenderThread 两个线程参与渲染。MainThread 负责 Input → Animation → Traversal（measure/layout/draw 记录到 DisplayList），RenderThread 负责将 DisplayList 交给 GPU 执行。两线程流水线并行，帧时间更短。
-- **软件渲染模式下**（部分老旧 App 或关闭硬件加速的 View）：只有 MainThread，没有 RenderThread。所有渲染工作都在主线程用 CPU 完成，每帧执行时间通常超过一个 VSync 周期（16.6ms@60Hz），滑动时顿挫感明显。
+- **整个 window/app 开启硬件加速，View 保持默认 `LAYER_TYPE_NONE`**：这是现代 Android 的常态。MainThread 记录 DisplayList，RenderThread 把 RenderNode 提交给 GPU。
+- **单个 View 使用 `LAYER_TYPE_SOFTWARE`**：只有这个 View 子树改走软件缓存，先生成 Bitmap，再参与窗口合成；窗口其他部分仍然可以保持硬件加速。
+- **整个 window/app 关闭硬件加速**：窗口没有 ThreadedRenderer，整帧绘制都回到软件管线，这才是“整个窗口没有 RenderThread”的情形。
 
-[待补充：Trace 截图——硬件加速 vs 软件渲染的 Perfetto 对比]
+[待补充：Trace 截图——默认硬件加速、单 View software layer、整窗软件渲染的 Perfetto 对比]
 
 [来源: obsidian/Personal-Knowlodge/source/Android-Hardware-Layer.md (高爷原创)]
 
@@ -111,7 +113,7 @@ public void buildLayer() {
     switch (mLayerType) {
         case LAYER_TYPE_HARDWARE:
             updateDisplayListIfDirty();
-            if (attachInfo.mThreadedRenderer != null && mRenderNode.isValid()) {
+            if (attachInfo.mThreadedRenderer != null && mRenderNode.hasDisplayList()) {
                 attachInfo.mThreadedRenderer.buildLayer(mRenderNode);
             }
             break;
@@ -122,7 +124,9 @@ public void buildLayer() {
 }
 ```
 
-这段代码说明，`LAYER_TYPE_SOFTWARE` 走的是 `buildDrawingCache` 路径，最终会调用 `buildDrawingCacheImpl` 生成一个 Bitmap。这个操作发生在主线程。
+这里先看硬件层分支。`updateDisplayListIfDirty()` 先把当前 View 子树的绘制命令同步到 `RenderNode`，随后再用 `mRenderNode.hasDisplayList()` 判断这个节点是否已经持有可复用的 DisplayList。`buildLayer()` 依赖的是“已经有 DisplayList 可以建层”，不是泛化的“节点有效”。
+
+`LAYER_TYPE_SOFTWARE` 则走 `buildDrawingCache()` 路径，最终生成一个 Bitmap 缓存。这个操作发生在主线程。
 
 Software Layer 的适用场景比较有限。最常见的情况是 App 没有开启硬件加速时，需要给 View 应用颜色过滤器、混合模式或半透明效果——此时 Software Layer 是唯一能提供离屏缓冲的方式。在硬件加速模式下，如果某个 View 使用了不被硬件渲染管线支持的 API（这类 API 列表可以在官方文档中查到），Software Layer 也可以作为一种降级方案，让该 View 用 CPU 渲染后以 Bitmap 形式参与后续合成。
 
@@ -130,17 +134,18 @@ Software Layer 的适用场景比较有限。最常见的情况是 App 没有开
 
 ### LAYER_TYPE_HARDWARE
 
-设置 `LAYER_TYPE_HARDWARE` 后，系统会将 View 的绘制结果缓存为一个 GPU 纹理（FBO）。这是性能收益最大的一种 LayerType，但有一个前提条件：**硬件加速必须开启。** 如果硬件加速关闭，`LAYER_TYPE_HARDWARE` 会退化为 `LAYER_TYPE_SOFTWARE` 的行为。
+设置 `LAYER_TYPE_HARDWARE` 后，系统会要求这个 View 子树优先以 hardware layer 的方式参与合成。官方文档明确写到，如果当前层级没有开启硬件加速，`LAYER_TYPE_HARDWARE` 的行为会退化成 software layer。
 
 [已验证: 官方文档, developer.android.com/reference/android/view/View#setLayerType(int,%20android.graphics.Paint)]
 
-Hardware Layer 适合的场景：
+在 Android 10 之后的 HWUI 里，手动 `setLayerType(LAYER_TYPE_HARDWARE)` 已经不是属性动画的默认动作。`RenderNode` 自己就有 compositing layer 机制：当 `alpha` 与 `hasOverlappingRendering()` 的组合需要离屏缓冲，或者系统判断这样更省时，它会自动提升为 composition layer。手动 forcing layer 更适合下面两类场景：
 
-- **属性动画期间**：对 View 做 alpha、translation、scale、rotation 变换时，缓存的 GPU 纹理可以直接做矩阵变换和混合，不需要每帧重新执行 View 的 draw 流程
-- **复杂 View 树的动画**：如果 View 层级很深、子 View 很多，动画时只做变换操作，Hardware Layer 可以避免每帧遍历整棵 View 树
-- **需要半透明效果**：`setAlpha()`、`AlphaAnimation` 或 `ObjectAnimator` 设置透明度时，系统默认会使用离屏缓冲区；对于较大的 View，显式设置 Hardware Layer 可以提升效率
+- **Trace 已经看到复杂子树在动画期间被反复重绘**：内容本身没变，但每帧都在重录 DisplayList 或重做光栅化
+- **需要稳定的离屏合成语义**：例如大 View 子树的 alpha 混合、ColorFilter，或者多帧连续复用同一批绘制结果
 
-正确用法是"按需启用、用完关闭"：
+如果 View 很简单，或者动画过程中内容一直在变，手动 forcing layer 只会多一层缓存维护成本。
+
+如果 Trace 已经确认 forcing layer 有收益，可以只在动画窗口内短暂启用：
 
 ```java
 // 动画开始前启用 Hardware Layer
@@ -247,55 +252,51 @@ Android 开发者选项中有一个"显示硬件层更新"（Show hardware layer
 
 [来源: obsidian/Personal-Knowlodge/source/Android-Hardware-Layer.md (高爷原创)]
 
-## 与 RenderNode.setUseCompositingLayer 的关系
+## 与 RenderNode compositing layer 的关系
 
-在 Android 的渲染引擎内部，每个 View 对应一个 `RenderNode`，View 的绘制命令被记录在 RenderNode 的 DisplayList 中。Hardware Layer 的底层实现，正是通过 RenderNode 的合成分层（Compositing Layer）机制来完成的。
+在 Android 的渲染引擎内部，每个 View 都对应一个 `RenderNode`，View 的绘制命令会记录进这个 `RenderNode` 的 DisplayList。Hardware Layer 在底层对应的就是 compositing layer 语义。
 
-从 Android 10（API 29）开始，`RenderNode` 暴露了 `setUseCompositingLayer(boolean)` 方法。当设为 `true` 时，系统会将该 RenderNode 的内容渲染到一块离屏 GPU 纹理中——这个机制和 `View.setLayerType(LAYER_TYPE_HARDWARE)` 在底层是同一件事。
+AOSP `frameworks/base/graphics/java/android/graphics/RenderNode.java` 的公开 API 是 `setUseCompositingLayer(boolean forceToLayer, Paint paint)` 和 `getUseCompositingLayer()`。原注释把边界写得很清楚：`RenderNode` 会在“这样更省时”或者 `alpha + hasOverlappingRendering()` 组合需要时，自动提升为 composition layer；`forceToLayer=false` 才是默认且推荐的值。`paint` 只在强制建层时生效，用来给这层额外叠加 blend mode、alpha 和 `ColorFilter`。
 
 ```java
-// frameworks/base/core/java/android/view/RenderNode.java
+// frameworks/base/graphics/java/android/graphics/RenderNode.java
 // @ AOSP android-16.0.0_r1
-public boolean useCompositingLayer() { ... }
-public void setUseCompositingLayer(boolean useCompositingLayer) { ... }
+public boolean setUseCompositingLayer(boolean forceToLayer, @Nullable Paint paint) { ... }
+public boolean getUseCompositingLayer() { ... }
 ```
 
-二者的区别在于控制粒度：
-- `View.setLayerType()` 是 View 层级的 API，面向应用开发者，操作对象是整个 View（含子树）
-- `RenderNode.setUseCompositingLayer()` 是渲染引擎层级的 API，面向自定义绘制场景（如 `Canvas` 直接操作 RenderNode），控制粒度更细
+这能帮我们厘清边界：`View.setLayerType()` 是 View 侧 API，操作对象是整个 View 子树；`RenderNode.setUseCompositingLayer(...)` 是更底层的 RenderNode API，用来显式要求中间缓冲并附带合成用的 `Paint`。二者谈的是同一类机制，但现代 HWUI 已经会自己做一部分自动建层，不需要应用把每个动画都手动改成 `LAYER_TYPE_HARDWARE`。
 
-[已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/view/RenderNode.java]
-
-在实现上，`View.setLayerType(LAYER_TYPE_HARDWARE)` 内部会通过设置其关联 RenderNode 的 compositing layer 属性来完成。理解了这一层关系，在分析 Perfetto 中 RenderThread 的行为时就更容易判断：`buildLayer` 这个操作就是在为 RenderNode 建立合成分层纹理。
+[已验证: AOSP android-16.0.0_r1, frameworks/base/graphics/java/android/graphics/RenderNode.java]
 
 ## 在 Jetpack Compose 中的对应：graphicsLayer
 
-[待验证: Compose graphicsLayer 的 compositingLayer 行为在 Compose 1.7+ 中是否已稳定]
+Jetpack Compose 没有直接暴露 `setLayerType`，对应概念是 `Modifier.graphicsLayer`。官方文档把它描述为“让内容绘制进一个 draw layer”。这个 layer 先提供绘制隔离，再决定是否要栅格化成 offscreen buffer。
 
-Jetpack Compose 中没有直接暴露 `setLayerType` API，取而代之的是 `Modifier.graphicsLayer`。这个 Modifier 的底层同样是基于 `RenderNode` 的 compositing layer 机制。
+先把两个概念分开：
 
-`graphicsLayer` 的核心设计思想是：将 Composable 的绘制指令隔离到一个独立的 draw layer 中，对这个 layer 做变换（scale、rotation、translation、alpha、shadow 等）时，不需要重新执行 Composable 的组合和布局流程，GPU 直接对纹理做变换即可。
+- **draw layer**：把一组绘制指令隔离出来，便于单独做 translation、scale、rotation、alpha、shadow 等变换
+- **offscreen compositing**：真的分配一块离屏 texture/bitmap，把输出先画进去，再把这块 buffer 合成回目标 surface
+
+`graphicsLayer` 默认只是给出 draw layer 语义，不等于“每次都会创建离屏缓存”。Compose 文档对 `CompositingStrategy` 的描述比较清楚：
+
+- `CompositingStrategy.Auto`：默认策略。`alpha < 1.0f` 或设置了 `RenderEffect` 时，会自动创建 offscreen buffer
+- `CompositingStrategy.Offscreen`：总是先栅格化到离屏 texture/bitmap，再做合成
+- `CompositingStrategy.ModulateAlpha`：把 alpha 直接作用到每条绘制指令上；如果没有 `RenderEffect`，`alpha < 1.0f` 时也可以不建离屏 buffer，但重叠内容的视觉结果会和 `Auto` 不一样
 
 ```kotlin
-// Compose 中的 graphicsLayer 用法示例
 Box(
     modifier = Modifier.graphicsLayer {
-        // 这些属性变化不需要触发 recomposition
-        // GPU 直接对纹理做变换
-        scaleX = 1.5f
-        scaleY = 1.5f
         alpha = 0.7f
         rotationZ = 45f
+        compositingStrategy = CompositingStrategy.Auto
     }
 )
 ```
 
-与 View 体系中 Hardware Layer 相同的性能陷阱在 Compose 中同样存在：如果在 `graphicsLayer` 内的 Composable 内容频繁变化（频繁 recomposition），缓存的纹理会不断失效重建，性能反而更差。
+如果只有 layer 属性在变，Compose 可以高效重发这一层的绘制结果，不必重新测量和放置。可一旦 Composable 内容本身频繁变化，离屏层同样要重栅格化，收益会下降。
 
-Compose 中的优化建议：
-- **动画用 `graphicsLayer`**：对 scale、alpha、rotation、translation 做动画时，通过 `graphicsLayer` 的 lambda 属性修改，不会触发 recomposition
-- **避免在 `graphicsLayer` 内部做频繁内容更新**：如果内容每帧都在变，`graphicsLayer` 的缓存就失去了意义
-- **使用 `sharedGraphicsLayerInfo`**（Compose 1.7+）可以在多个 Composable 之间共享同一个 graphics layer 配置，减少 layer 数量
+`rememberGraphicsLayer()` 是 Compose 1.7.0-alpha07+ 提供的另一组 API，主要用来显式创建 `GraphicsLayer`、录制内容并导出 `ImageBitmap`。它更接近 capture / advanced drawing 的能力，不是一个“共享 graphics layer 配置”的通用性能开关。
 
 ## 与其他章节的关系
 
@@ -314,7 +315,7 @@ Hardware Layer 是 Android 渲染管线中的一个优化手段，它与以下�
 | Android 4.0 (API 14) | 硬件加速默认开启，Hardware Layer 有了实际运行的基石 |
 | Android 4.1 (API 16) | Project Butter 引入 VSync 和 Choreographer，Hardware Layer 的调度节拍与 VSync 同步 |
 | Android 5.0 (API 21) | RenderThread 引入，Hardware Layer 的 buildLayer 从主线程移到 RenderThread |
-| Android 10 (API 29) | `RenderNode.setUseCompositingLayer()` 公开 API，提供更细粒度的控制 |
+| Android 10 (API 29) | `RenderNode.setUseCompositingLayer(boolean, Paint)` 与 `getUseCompositingLayer()` 作为公开 API 可用 |
 | Android 12 (API 31) | Jetpack Compose 1.0 正式发布，`graphicsLayer` Modifier 基于底层 RenderNode compositing layer 机制提供声明式 layer 控制 |
 
 [已验证: 官方文档, developer.android.com/reference/android/view/View#setLayerType(int,%20android.graphics.Paint)]
@@ -326,9 +327,9 @@ Hardware Layer 是 Android 渲染管线中的一个优化手段，它与以下�
 
 这是最常见的混淆。硬件加速是渲染管线的整体策略（GPU vs CPU），Hardware Layer 是针对单个 View 的缓存优化。开启硬件加速不代表任何 View 自动获得 Hardware Layer——所有 View 默认都是 `LAYER_TYPE_NONE`。
 
-### 误区二："Hardware Layer 能加速所有动画"
+### 误区二："属性动画一定要手动开 Hardware Layer"
 
-只有 **属性动画**（alpha、translation、scale、rotation、pivot）才能受益于 Hardware Layer。如果动画过程中 View 的内容在变化（比如文字在变、图片在换），缓存每帧都失效，性能反而更差。
+现代 HWUI 下，translation、scale、rotation、alpha 这类动画经常已经能吃到 RenderNode 的自动 composition layer。手动 `setLayerType(LAYER_TYPE_HARDWARE)` 只有在 Trace 已经证明存在重复重绘，或者确实需要稳定离屏合成语义时才值得加。如果 View 很简单，或者动画过程中内容一直在变，手动 forcing layer 只会增加缓存维护成本。
 
 ### 误区三："设置 Hardware Layer 后就不用管了"
 
@@ -345,7 +346,7 @@ Hardware Layer 占用 GPU 显存。长期保持 `LAYER_TYPE_HARDWARE` 而不释�
 - 官方文档：[Hardware acceleration](https://developer.android.com/guide/topics/graphics/hardware-accel)
 - 官方 API：[View.setLayerType()](https://developer.android.com/reference/android/view/View#setLayerType(int,%20android.graphics.Paint))
 - AOSP 源码：`frameworks/base/core/java/android/view/View.java`（buildLayer、buildDrawingCache 方法）
-- AOSP 源码：`frameworks/base/core/java/android/view/RenderNode.java`（setUseCompositingLayer 方法）
+- AOSP 源码：`frameworks/base/graphics/java/android/graphics/RenderNode.java`（setUseCompositingLayer/getUseCompositingLayer 方法）
 - 推荐阅读：[Android硬件加速原理与实现简介](https://www.mtyun.com/library/hardware-accelerate)
 - 推荐阅读：[理解Android硬件加速的小白文](https://juejin.im/post/5a1f7b3e6fb9a0451b0451bb)
 - 实验代码与 Trace 文件：[Android_HardwareLayer_Example (GitHub)](https://github.com/Gracker/Android_HardwareLayer_Example)
