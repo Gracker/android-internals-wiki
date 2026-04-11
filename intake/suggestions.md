@@ -987,3 +987,29 @@
 - **问题**：目前只有文字说明和占位图，缺少至少一组真实 Trace、track 名称或可复用 SQL/截图标注，实操闭环不够。
 - **建议**：补一组真实 Perfetto 样例，至少覆盖 FrameTimeline、Buffer stuffing 或帧间隔不均匀的可视化识别。
 - **review 日志**：logs/review/2026-04-11-17-review.md
+
+
+## [Task6 Review] 2.18 Adaptive Refresh Rate 与动态帧率控制 — 2026-04-11
+- **类型**：需重写
+- **位置**：全文结构（L34）
+- **问题**：缺少 `outline-start` / `outline-end` 大纲块，Task 6 无法按锚点逐项检查覆盖率。
+- **建议**：按现有章节结构补齐大纲与锚点，再回到 Task 6 做覆盖检查。
+- **review 日志**：logs/review/2026-04-11-18-review.md
+
+- **类型**：需补充素材
+- **位置**：开头 / Perfetto 分析 / Game Mode 扩展（L46-L48 等）
+- **问题**：ARR 开启前后 VSYNC 间隔、模式切换卡顿、Game Mode 交互仍是占位符，没有真实 Trace 截图或等价图示。
+- **建议**：补 2-4 张真实 Perfetto Trace 截图，至少覆盖 ARR 前后对比、模式切换、Game Mode 交互。
+- **review 日志**：logs/review/2026-04-11-18-review.md
+
+- **类型**：需确认
+- **位置**：ARR 对功耗的影响（L257-L261）
+- **问题**：60Hz 升到 120Hz 时功耗增加 20%-50%、1Hz 与 120Hz 功耗差 5-10 倍，这两组量化数据缺少明确来源和测试条件。
+- **建议**：补官方文档或实测条件，若补不齐则下调为定性表述。
+- **review 日志**：logs/review/2026-04-11-18-review.md
+
+- **类型**：需确认
+- **位置**：frontmatter applicable_versions + 版本演进表（L281-L290）
+- **问题**：Android 16 / 17 的 API Level 标注需要和全书版本约定统一，当前写法存在版本风险。
+- **建议**：交给 Task 9 统一核对版本号与 API Level，再决定是否保留 API 36 / 37。
+- **review 日志**：logs/review/2026-04-11-18-review.md

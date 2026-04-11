@@ -20,13 +20,18 @@ sources:
     path: "intake/research-feeds/2026-04-05-19-android16-arr-surfaceflinger-choreographer-frame-pacing.md"
 tags: [ARR, refresh-rate, VSync, SurfaceFlinger, Choreographer, LTPO, frame-pacing, Android-16]
 related_chapters: ["2.2", "2.3", "2.4", "2.6", "2.13", "2.16"]
-pipeline_stage: task6_pending
-task6_state: pending
+pipeline_stage: task2b_pending
+task6_state: reviewed
 task9_state: pending
-task2b_state: idle
+task2b_state: pending
+reviewed_by: "openclaw-task6"
+reviewed_date: "2026-04-11"
+task6_result: needs-rework
 ---
 
 # 2.18 Adaptive Refresh Rate 与动态帧率控制
+
+[需重写: 本章缺少 `outline-start` / `outline-end` 大纲块，Task 6 无法按锚点逐项检查覆盖率，需由 Task 2B 补齐结构化大纲。]
 
 ## 为什么要了解 Adaptive Refresh Rate
 
@@ -34,11 +39,13 @@ task2b_state: idle
 
 这个浪费不只是性能问题，更是功耗问题。显示面板在每次刷新时都会消耗电流，120Hz 面板以全速运行时的功耗可能是 60Hz 的两倍。如果内容只有 24fps（电影播放），强制面板以 120Hz 刷新意味着每帧画面被重复显示 5 次，其中 4 次刷新完全是浪费。
 
-Adaptive Refresh Rate（ARR）就是解决这个问题的机制。它让屏幕的刷新率能够跟随内容的帧率动态调整——App 渲染 60 帧时屏幕跑 60Hz，播放 24fps 视频时屏幕降到 24Hz（或其整数倍），静态页面甚至可以降到 1Hz。在 Perfetto 中，你会看到 VSYNC-app 的间隔从固定的 8.33ms 变成了不均匀的值——这不是故障，而是 ARR 在工作。
+Adaptive Refresh Rate（ARR）就是解决这个问题的机制。它让屏幕的刷新率能够跟随内容的帧率动态调整。App 渲染 60 帧时屏幕跑 60Hz，播放 24fps 视频时屏幕降到 24Hz（或其整数倍），静态页面甚至可以降到 1Hz。在 Perfetto 中，VSYNC-app 的间隔会从固定的 8.33ms 变成不均匀的值，这通常表示 ARR 已开始介入。
 
 了解 ARR 的工作原理，能帮助我们在分析渲染性能问题时正确解读 VSync 行为，理解帧率切换时的短暂卡顿从何而来，以及如何通过 API 让系统选择最优的刷新率来平衡流畅度和功耗。
 
-[待补充：Trace 截图 — 展示 ARR 开启前后 VSYNC-app 间隔的对比]
+[待补充：Trace 截图，展示 ARR 开启前后 VSYNC-app 间隔的对比]
+
+[需补充素材: 本章涉及 ARR 开启前后 VSYNC 间隔、模式切换卡顿、Game Mode 交互，但当前关键 Trace 位置仍是占位符，需补 2-4 张真实 Perfetto Trace 截图或等价图示。]
 
 ## 从固定刷新率到自适应刷新率
 
@@ -147,7 +154,7 @@ choreographer.postVsyncCallback(vsyncEvent -> {
 });
 ```
 
-`refreshRate` 字段的关键意义在于：它反映的是**实际**刷新率，不是 App 请求的刷新率。App 可以用它来判断系统是否采纳了自己的帧率建议，以及当前 VSync 周期的实际长度。
+`refreshRate` 字段反映的是**实际**刷新率，不是 App 请求的刷新率。App 可以用它来判断系统是否采纳了自己的帧率建议，以及当前 VSync 周期的实际长度。
 
 比如，App 请求了 60fps，但系统因为其他前台 App 需要 120Hz 而选择了 120Hz 刷新率。此时 `refreshRate` 会返回 120.0f，App 就知道一个 VSync 周期只有 8.33ms 而不是 16.67ms，需要相应调整动画插值等逻辑。
 
@@ -235,7 +242,7 @@ ORDER BY ts
 
 ### SurfaceFlinger 刷新率决策日志
 
-SurfaceFlinger 在做出刷新率决策时会输出日志。通过 `adb logcat -s SurfaceFlinger` 可以看到类似这样的信息：
+SurfaceFlinger 在做出刷新率决策时会输出日志。通过 `adb logcat -s SurfaceFlinger` 会看到类似信息：
 
 ```
 ChooseRefreshRate: layers={LayerA: 60fps, LayerB: 24fps} -> chosen: 120Hz
@@ -251,7 +258,9 @@ ChooseRefreshRate: layers={LayerA: 60fps, LayerB: 24fps} -> chosen: 120Hz
 
 ARR 的功耗优化逻辑是：在不影响用户体验的前提下，尽可能降低刷新率。一个静态的阅读页面，1Hz 和 120Hz 在视觉上没有区别（因为画面根本没变），但功耗差距可能达到 5-10 倍。
 
-### Seamless Refresh Rate Switching
+[需确认: 60Hz 升到 120Hz 时功耗增加 20%-50%、静态页 1Hz 与 120Hz 功耗差 5-10 倍，这两组量化数据缺少明确来源和测试条件，建议 Task 9 补证据后再保留具体数字。]
+
+### 无缝刷新率切换（Seamless Refresh Rate Switching）
 
 ARR 使用的离散步进变频是"无缝"的——没有模式切换的黑屏，没有帧冻结。硬件上，LTPO 面板通过调整像素电路的刷新时序来实现变频；软件上，SurfaceFlinger 通过调整 VSync 信号的周期来匹配新的刷新率。
 
@@ -272,11 +281,13 @@ SurfaceFlinger 的降帧不是随意的。它遵循以下优先级：
 |------|----------|
 | Android 11 (API 30) | 引入多刷新率支持，`Surface.setFrameRate()` API，Config Groups 支持无缝模式切换 |
 | Android 12 (API 31) | `preferredDisplayModeId` 行为优化，触摸触发刷新率提升 |
-| Android 13 (API 33) | `Choreographer.VsyncEventData.refreshRate` 字段，Vsync-AppSF 信号引入 |
+| Android 13 (API 33) | `Choreographer.VsyncEventData.refreshRate` 字段，VSYNC-app / VSYNC-sf 信号引入 |
 | Android 14 (API 34) | `setFrameRate()` 允许传入非面板原生支持的帧率值 |
 | Android 15 (API 35) | "True" ARR 引入——单模式内离散步进变频，不再依赖模式切换 |
 | Android 16 (API 36) | `hasArrSupport()`、`getSuggestedFrameRate()`、`getSupportedRefreshRates()` 恢复，RecyclerView 1.4 内置 ARR，Compose `preferredFrameRate()` |
 | Android 17 (API 37) | [待验证: ARR 与 DeliQueue 无锁 MessageQueue 的交互对帧调度的影响] |
+
+[需确认: Android 16/17 的 API Level 标注需与全书版本约定统一。当前 frontmatter 与版本表写的是 Android 16 (API 36)、Android 17 (API 37)，建议交给 Task 9 统一核对。]
 
 ## 与其他机制的关系
 
@@ -290,7 +301,7 @@ SurfaceFlinger 的降帧不是随意的。它遵循以下优先级：
 
 **误区：App 调用 `setFrameRate(120f)` 就能强制屏幕跑 120Hz。**
 
-实际上 `setFrameRate()` 只是一个建议。系统可能因为省电模式、温控、或其他 App 的帧率需求而选择不同的刷新率。要判断系统实际选择了什么刷新率，应该看 `Choreographer.VsyncEventData.refreshRate` 的返回值，而不是想当然地认为请求被接受了。
+`setFrameRate()` 只是一个建议。系统可能因为省电模式、温控、或其他 App 的帧率需求而选择不同的刷新率。要判断系统实际选择了什么刷新率，应该看 `Choreographer.VsyncEventData.refreshRate` 的返回值，而不是想当然地认为请求被接受了。
 
 **误区：ARR 开启后就不会再掉帧了。**
 
