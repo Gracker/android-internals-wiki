@@ -1280,3 +1280,24 @@
 - **问题**：`frameworks/base/core/java/androidx/core/widget/NestedScrollView.java` 这条来源路径不够可靠，Compose 与厂商扩展段也缺精确来源，验证链不完整。
 - **建议**：把 AOSP、AndroidX、Compose 官方文档分开列清楚，并为厂商扩展补具体资料或改成更保守的表述。
 - **review 日志**：logs/review/2026-04-12-02-review.md
+
+## [Task9 Deep Review] 3.6 手势识别算法与性能优化 — 2026-04-12
+- **类型**：数据缺失
+- **位置**：行 198-200、353-355、518
+- **问题**：`addMovement 1-5μs`、`computeCurrentVelocity 5-20μs`、`dispatchTouchEvent` / nested scroll 的 Perfetto 观察都属于定量或可观测结论，但正文没有给出设备、trace config、采样条件。默认 system trace 下也未必直接出现 `dispatchTouchEvent` 这种 Java 方法名 slice。
+- **建议**：补设备型号、trace category、截图和 slice 名；如果补不齐，把这些量化数字和可观测结论降级成 `[待验证]` 或改成更保守的定性描述。
+
+- **类型**：数据缺失
+- **位置**：行 530-546 厂商手势增强方案
+- **问题**：`边缘 2-3mm`、`TouchSlop 4-5dp`、`已验证: 部分厂商实现` 都没有具体厂商、机型、文档或实验来源。当前写法像经验猜测，不足以支撑“已验证”。
+- **建议**：补 MTK / QCOM / 具体 ROM 文档或实测条件；补不齐就改成 `[待验证]`，并删掉具体数值。
+
+- **类型**：源码准确性
+- **位置**：行 548-567 Compose 手势系统
+- **问题**：`手势判定逻辑运行在 Compose 的合成层中` 说法不准确，也没有给出 `AndroidComposeView`、`MotionEventAdapter`、`PointerInputEventProcessor` 等真实输入链路来源，容易把 pointer input 和 composition / recomposition 混成一件事。
+- **建议**：补 Compose UI 输入管线与源码/官方 docs；如果暂时补不了，先收敛为“AndroidComposeView 接收 MotionEvent 并转换为 PointerInputEvent，再经 pointer input 节点分发”，不要写“合成层”。
+
+- **类型**：交叉引用
+- **位置**：frontmatter related_chapters
+- **问题**：正文大量涉及 `onInterceptTouchEvent()`、`requestDisallowInterceptTouchEvent()` 和输入拦截边界，但 `related_chapters` 只列到 3.4 / 2.4，漏了 3.5《输入事件拦截与安全机制》。ch03 内部关联不完整。
+- **建议**：补 `3.5` 到 `related_chapters`，保持输入分发、拦截、安全三章的互链一致。

@@ -1090,3 +1090,20 @@ Emoji 一节把系统字体、EmojiCompat、下载字体 provider、color font �
 
 ### 关联章节
 3.5、9.2、16.2
+
+## [2026-04-12] 3.6 手势识别算法与性能优化 — VelocityTracker 策略矩阵与版本演进
+
+### 盲区描述
+当前章节把 `VelocityTracker` 的 Java wrapper、JNI 边界、native `VelocityTracker.cpp` 策略实现混在一起写，并虚构了 `VelocityTrackerFallbackStrategy.java`。这会让读者误判“默认策略”到底发生在 Java 层还是 native 层，也看不清 X/Y 轴与 scroll axis 的默认策略差异。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 核对 `android.view.VelocityTracker` 与 `frameworks/native/libs/input/VelocityTracker.cpp` 的真实调用链
+- 梳理默认策略按 axis 选择的规则，区分 X/Y 与 scroll axis
+- 核对 `obtain(String strategy)` / `obtain(int strategy)` 的调试或测试属性，不要写成生产默认路径
+- 对比 Android 10、13、14、16 的策略矩阵与公开 API 变化，确认是否真的存在可写进“版本演进表”的切换点
+
+### 关联章节
+§3.6、§3.4、§2.4
