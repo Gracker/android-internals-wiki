@@ -28,13 +28,43 @@ sources:
     path: "frameworks/base/core/java/android/app/Service.java"
 tags: [后台限制, Doze, App Standby, 前台服务, WorkManager, JobScheduler, AlarmManager, 省电, 后台启动, BAL]
 related_chapters: ["5.6", "5.7", "11.2", "8.4"]
-pipeline_stage: task6_pending
-task6_state: pending
+pipeline_stage: task2b_pending
+task6_state: reviewed
 task9_state: pending
-task2b_state: idle
+task2b_state: pending
+reviewed_date: "2026-04-12"
+reviewed_by: "openclaw-task6"
+task6_result: "needs-rework"
 ---
 
 # 5.8 后台执行限制与优化
+
+<!-- outline-start -->
+## 本节要点大纲
+
+### 锚点（必须覆盖）
+
+- 🔹 Android 后台限制的演进：Doze、App Standby、后台服务限制与 FGS 类型化
+- 🔹 Doze 与 App Standby Buckets 的工作方式，以及在 Perfetto / dumpsys 中怎么观察
+- 🔹 前台服务的定位、类型声明和超时约束
+- 🔹 WorkManager、JobScheduler、AlarmManager 的适用边界
+- 🔹 后台执行对前台性能的影响：CPU、内存与热节流
+- 🔹 与 CPU 调度、DVFS、Thermal、响应速度章节的关系
+- 🔹 版本演进与常见误区
+
+### 扩展（可选深入）
+
+- 🔸 Standby Bucket、Job 配额与网络策略的内部实现
+- 🔸 Android 16 / 17 的后台任务调试接口与策略变化
+
+### OpenClaw 加工指引
+
+> **锚点**是最低覆盖要求，加工时必须逐条落实并标注验证结果。
+> **扩展**视素材丰富程度选择性深入。
+> 如果从 Obsidian 素材或官方文档中发现大纲未列出但与本节强相关的知识点，
+> 可**就地插入**最相关的锚点之后，并用 `[自动发现]` 标注，方便后续 review。
+> 锚点内容需 L1/L2 验证，扩展内容至少 L2 验证，自动发现内容至少标注来源。
+<!-- outline-end -->
 
 ## 为什么要了解后台执行限制
 
@@ -86,7 +116,7 @@ Android 10（API 29）引入了 **后台 Activity 启动限制**（Background Ac
 
 Android 12（API 31）进一步收紧了前台服务的启动限制：**后台 App 不能再启动前台服务**（除非满足特定豁免条件，如收到高优先级 FCM 消息）。如果违反，会抛出 `ForegroundServiceStartNotAllowedException`。同时引入了 **Notification Trampoline 限制**：从通知点击启动的 Broadcast Receiver 不能再启动后台服务，必须直接启动 Activity 或使用其他方式。
 
-Android 13（API 33）加速了 Restricted 桶的生效速度——从 Android 12 的 45 天未使用缩短到 **8 天**。这意味着一个 App 如果连续 8 天没有被用户打开，就会被系统扔进最高限制级别的桶里。
+Android 13（API 33）加快了 Restricted 桶的生效速度——从 Android 12 的 45 天未使用缩短到 **8 天**。如果一个 App 连续 8 天没有被用户打开，更容易进入最高限制级别的桶里。
 
 Android 14（API 34）引入了两项重要变化：
 
@@ -167,7 +197,7 @@ public static final int STANDBY_BUCKET_RESTRICTED = 45;
 - **CPU Track**：灭屏期间是否有异常的 CPU 活动持续存在
 - **Network Track**：后台网络活动是否符合维护窗口的时间模式
 
-如果发现一个后台 Job 在预期时间没有被触发，首先检查 App 的 Standby Bucket 级别，然后检查设备是否在 Doze 中。大部分"我的 JobScheduler 怎么不执行了"的问题，根源都是这两条。
+如果发现一个后台 Job 在预期时间没有被触发，先检查 App 的 Standby Bucket 级别，再检查设备是否在 Doze 中。大部分“我的 JobScheduler 怎么不执行了”的问题，根源都在这两条。
 
 [待高爷补充：Perfetto 中 device_idle Track 的截图示例]
 
@@ -234,7 +264,7 @@ WorkManager 是 Jetpack 组件之一，也是 Google 官方推荐的"可延迟�
 
 WorkManager 的关键特性包括：
 
-**约束条件（Constraints）**：可以指定任务执行的前提条件——需要网络、需要充电、需要设备空闲、需要存储空间充足等。只有在所有约束条件都满足时，任务才会被调度执行。这意味着 WorkManager 可以配合 Doze 的维护窗口，在系统认为"合适的时候"才运行任务。
+**约束条件（Constraints）**：可以指定任务执行的前提条件——需要网络、需要充电、需要设备空闲、需要存储空间充足等。只有在所有约束条件都满足时，任务才会被调度执行。这样 WorkManager 可以配合 Doze 的维护窗口，在系统认为“合适的时候”运行任务。
 
 **周期性任务**：支持定义周期执行的 WorkRequest，最小周期间隔为 15 分钟。系统会根据 App 的 Standby Bucket 动态调整实际执行频率。
 
