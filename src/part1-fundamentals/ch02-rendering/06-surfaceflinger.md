@@ -3,13 +3,13 @@ title: "SurfaceFlinger 与合成"
 chapter: "2.6"
 status: ready-for-review
 applicable_versions: "Android 12 (API S) - Android 16 (API 36)"
-last_verified: "2026-04-02"
+last_verified: "2026-04-12"
 drafted_date: 2026-03-30
 reviewed_date: 2026-04-12
 reviewed_by: openclaw-task6
 task6_result: needs-rework
 rework_date: 2026-04-02
-last_verified_against: "AOSP android-16.0.0_r1, 官方文档最新版本"
+last_verified_against: "AOSP android-12.0.0_r1, android-14.0.0_r1, android-16.0.0_r1, source.android.com docs"
 confidence: medium
 polish_count: 1
 polish_date: "2026-04-04"
@@ -23,10 +23,11 @@ sources:
     path: "https://www.androidperformance.com/"
 tags: ['surfaceflinger', 'bufferqueue', 'hwc', 'composition', 'layer', 'vsync', 'blastbufferqueue', 'renderengine']
 related_chapters: ["2.1", "2.3", "2.4", "2.5", "2.10", "7.3"]
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task9_state: pending
-task2b_state: pending
+task2b_state: fixed
+task2b_result: fixed
 ---
 
 # SurfaceFlinger 与合成
@@ -39,7 +40,7 @@ task2b_state: pending
 - 🔹 SurfaceFlinger 的核心职责：Layer 合成、VSync 分发、Buffer 管理
 - 🔹 合成方式：Client Composition (GPU) vs Device Composition (HWC)
 - 🔹 Layer 的概念与 z-order 排列
-- 🔹 SurfaceFlinger 主循环：onMessageReceived → INVALIDATE/REFRESH
+- 🔹 SurfaceFlinger 主循环：Android 12-13 为 onMessageReceived → INVALIDATE/REFRESH，Android 14+ 为 commit/composite
 - 🔹 Jank 与 SurfaceFlinger 的关系：SF 主线程卡顿对全局帧率的影响
 - 🔹 BlastBufferQueue 的引入与改进（Android 12+）
 - 🔹 在 Perfetto 中的表现：各 Track 对照与正常/异常判断
@@ -60,7 +61,7 @@ task2b_state: pending
 
 ## 为什么要了解 SurfaceFlinger
 
-打开 Perfetto 抓一段 Trace，在进程列表里总能看到一个名为 `surfaceflinger` 的进程。它的主线程 Track 上，每隔一帧都会出现一组标记——`INVALIDATE`、`handleMessageRefresh`、`preComposition`、`doComposition`。做过 Android 性能优化的工程师，大概率在排查系统级卡顿时被这块区域吸引过，但往往不知道该怎么读。
+打开 Perfetto 抓一段 Trace，在进程列表里总能看到一个名为 `surfaceflinger` 的进程。它的主线程 Track 上，每隔一帧都会出现一组和版本相关的 slice。Android 12-13 常见 `INVALIDATE`、`REFRESH`，Android 14+ 更常见 `commit`、`composite`、`present`。做过 Android 性能优化的工程师，大概率在排查系统级卡顿时被这块区域吸引过，但往往不知道该怎么读。
 
 这就是 SurfaceFlinger——Android 图形系统的合成器。它接受来自多个来源的数据缓冲区，对它们进行合成，然后发送到显示设备。用一个形象的比喻：如果把每个应用的渲染结果比作一张幻灯片，SurfaceFlinger 就是把这些幻灯片按顺序叠在一起，投影到屏幕上的那个投影仪。
 
@@ -82,14 +83,12 @@ SurfaceFlinger 是 Android 系统中唯一能够直接修改显示内容的核�
 
 ### VSync 分发：管线的节拍器
 
-SurfaceFlinger 既负责合成画面，也参与 VSync 信号分发。硬件 VSync 信号由 HWC（Hardware Composer）产生，SurfaceFlinger 通过 DispSync（Android 12 之后为 VsyncModulator）将其分发为两个关键信号：
+SurfaceFlinger 既负责合成画面，也参与软件 VSync 的调度。硬件 VSync 仍由 HWC（Hardware Composer）提供，但 Android 12 之后不能简单写成“DispSync 被 VsyncModulator 替换”。在 `android-14.0.0_r1` 的 `Scheduler::createEventThread()` 里，系统仍然为 `app` 和 `appSf` 创建 EventThread 连接，它们共用 `getVsyncSchedule()` 计算软件 VSync；`Scheduler::onFrameSignal()` 再把 `sf-vsync` 送进合成入口。`VsyncModulator` 负责的是 phase 调整，例如事务提交和刷新率切换时修改 app / sf 的 offset，它不是整条分发路径的唯一入口。
 
-- **VSYNC-app**：发给应用程序，触发 Choreographer 开始一帧的渲染工作（measure → layout → draw）。
-- **VSYNC-sf**：发给 SurfaceFlinger 自身，触发 SurfaceFlinger 开始合成。
+- **VSYNC-app**：发给应用进程，触发 Choreographer 开始一帧的 `measure → layout → draw`。
+- **VSYNC-sf**：发给 SurfaceFlinger，触发本帧的事务整理、Buffer 获取和合成。
 
-这两个信号之间有一个精心计算的时间差（offset）。VSYNC-app 先到，让 App 有时间画完一帧；等 App 渲染完、Buffer 提交到 BufferQueue 之后，VSYNC-sf 才到来，触发 SurfaceFlinger 去拿这个 Buffer 做合成。这个时序设计非常关键——如果两者的 offset 设置不合理，就会导致 App 画完了但 SurfaceFlinger 没来得及拿，或者 SurfaceFlinger 开始合成了但 App 还没画完，表现为掉帧。
-
-我们在 §2.3（VSync 机制）中详细讲解过 offset 的计算逻辑，这里只需要记住一个关键点：**SurfaceFlinger 的合成时机由 VSYNC-sf 决定，而 VSYNC-sf 的 offset 是整个图形管线时序调优的核心参数之一。**
+工程上更稳妥的理解是，`Scheduler`、`EventThread`、`VSyncSchedule` 负责生成并投递软件 VSync，`VsyncModulator` 负责在特殊时刻调整 phase。我们在 §2.3 中单独展开 offset 的计算，这里先记住一点，SurfaceFlinger 能不能在合适的时刻拿到 Buffer，取决于 `VSYNC-app` 和 `VSYNC-sf` 的相对 phase 是否稳定。
 
 ### Buffer 管理：BufferQueue 的四步流转
 
@@ -102,7 +101,7 @@ SurfaceFlinger 和应用之间通过 BufferQueue 传递画面数据。BufferQueu
 
 这四步形成了一个循环。在 Perfetto 中，可以分别在 App 进程和 SurfaceFlinger 进程的 Track 里看到 dequeueBuffer/queueBuffer 和 acquireBuffer/releaseBuffer 的时间点。正常情况下，dequeue → queue → acquire → release 应该在一个 VSync 周期内顺畅完成；如果某个环节耗时过长或被阻塞，就会在 Trace 中表现为明显的间隔。
 
-[待补充：Trace 截图——BufferQueue 四步操作在 Perfetto 中的对应 Track]
+[图：Perfetto 对照示意。上方是应用进程中的 dequeueBuffer 和 queueBuffer，下方是 surfaceflinger 进程中的 acquireBuffer 和 releaseBuffer，旁边再标出 VSYNC-sf。正常节奏下，queueBuffer 出现在应用完成 GPU 渲染之后，acquireBuffer 紧跟下一次 VSYNC-sf，releaseBuffer 出现在该帧提交完成之后。]
 
 ## 合成方式：Client 合成与 Device 合成
 
@@ -130,85 +129,61 @@ SurfaceFlinger 在 `prepareFrame` 阶段会与 HWC 协商：先让 HWC 尝试接
 
 ## SurfaceFlinger 主循环
 
-了解了 SurfaceFlinger 的三大核心职责后，我们来看它在每一帧里到底做了什么。SurfaceFlinger 的主循环由 VSYNC-sf 信号驱动。在 Android 14 之前，核心入口是 `onMessageReceived`，处理 INVALIDATE 和 REFRESH 两类消息。从 Android 14 开始，SurfaceFlinger 重构为 `ICompositor` 接口模式，入口变为 `Scheduler::onFrameSignal` → `SurfaceFlinger::commit()` + `SurfaceFlinger::composite()`，但内部的步骤和调用顺序保持一致——下文展示的是经典流程（INVALIDATE → REFRESH 模式），方便理解各阶段的职责：
+了解了 SurfaceFlinger 的三大核心职责后，我们来看它在每一帧里到底做了什么。这里最好按版本拆开读，不然最容易把 Android 12-13 的 `INVALIDATE / REFRESH` 与 Android 14 之后的 `commit() / composite()` 混成一套代码路径。
+
+### Android 12-13：INVALIDATE / REFRESH
+
+`android-12.0.0_r1` 里，SurfaceFlinger 主线程收到 VSync 后，会在 `SurfaceFlinger::onMessageReceived()` 中处理 `INVALIDATE` 和 `REFRESH` 两类消息：
 
 ```cpp
 // frameworks/native/services/surfaceflinger/SurfaceFlinger.cpp
-// @ AOSP android-16.0.0_r1
-void SurfaceFlinger::onMessageReceived(int32_t what) NO_THREAD_SAFETY_ANALYSIS {
-    ATRACE_CALL();
+// @ AOSP android-12.0.0_r1
+void SurfaceFlinger::onMessageReceived(int32_t what, int64_t vsyncId,
+                                       nsecs_t expectedVSyncTime) {
     switch (what) {
         case MessageQueue::INVALIDATE: {
-            bool refreshNeeded = handleMessageTransaction();
-            refreshNeeded |= handleMessageInvalidate();
+            onMessageInvalidate(vsyncId, expectedVSyncTime);
             break;
         }
         case MessageQueue::REFRESH: {
-            handleMessageRefresh();
+            onMessageRefresh();
             break;
         }
     }
 }
 ```
 
-这段代码告诉我们，SurfaceFlinger 在每个 VSYNC-sf 到来时处理两类消息：INVALIDATE 和 REFRESH。INVALIDATE 消息触发事务处理和 Buffer 检查；REFRESH 消息触发实际的合成工作。我们先看 INVALIDATE 阶段。
+这套模型里，`INVALIDATE` 负责把“这一帧有哪些内容变了”收拢起来。它会处理事务、检查新的 Buffer、更新可见区域和脏区。`REFRESH` 再根据这些结果组织本帧的合成，决定哪些 Layer 交给 HWC，哪些 Layer 交给 RenderEngine。
 
-### INVALIDATE 阶段：检查有没有新东西
+如果你在旧 Trace 或旧博客里看到 `handleMessageInvalidate`、`onMessageRefresh`、`INVALIDATE`、`REFRESH` 这些 slice，它们描述的就是 Android 12-13 这套主线程消息模型。
 
-```cpp
-// frameworks/native/services/surfaceflinger/SurfaceFlinger.cpp
-// @ AOSP android-16.0.0_r1
-bool SurfaceFlinger::handleMessageInvalidate() {
-    ATRACE_CALL();
-    bool refreshNeeded = handlePageFlip();
-    // ... visible regions, layer bounds
-    return refreshNeeded;
-}
-```
+### Android 14+：commit() / composite()
 
-`handleMessageInvalidate` 的核心是 `handlePageFlip`——遍历所有 Layer，检查是否有新的 Buffer 被 queueBuffer 进来。如果有，就 acquire 这个 Buffer，更新 Layer 的可见区域和边界信息。名字中的"Page Flip"来自传统的图形术语，意思是"翻页"——把新的一页（Buffer）翻上来。
-
-如果 `handlePageFlip` 发现确实有新 Buffer 需要合成，就返回 true，表示接下来需要触发 REFRESH 消息执行合成。
-
-### REFRESH 阶段：执行合成
+Android 14 起，入口收束到 `Scheduler::onFrameSignal()`。`android-14.0.0_r1` 的调度器在收到一帧信号后，先调 `commit()`，再调 `composite()`：
 
 ```cpp
-// frameworks/native/services/surfaceflinger/SurfaceFlinger.cpp
-// @ AOSP android-16.0.0_r1
-void SurfaceFlinger::handleMessageRefresh() {
-    ATRACE_CALL();
-    mRefreshPending = false;
-    const bool repaintEverything = mRepaintEverything.exchange(false);
-    preComposition();
-    rebuildLayerStacks();
-    calculateWorkingSet();
-    for (const auto& [token, display] : mDisplays) {
-        beginFrame(display);
-        prepareFrame(display);
-        doDebugFlashRegions(display, repaintEverything);
-        doComposition(display, repaintEverything);
+// frameworks/native/services/surfaceflinger/Scheduler/Scheduler.cpp
+// @ AOSP android-14.0.0_r1
+void Scheduler::onFrameSignal(ICompositor& compositor, VsyncId vsyncId,
+                              TimePoint expectedVsyncTime) {
+    const TimePoint frameTime = SchedulerClock::now();
+
+    if (!compositor.commit(frameTime, vsyncId, expectedVsyncTime)) {
+        return;
     }
-    logLayerStats();
-    postFrame();
-    postComposition();
+
+    compositor.composite(frameTime, vsyncId);
+    compositor.sample();
 }
 ```
 
-这段代码是 SurfaceFlinger 每帧合成的完整流程，我们逐个拆解：
+`android-14.0.0_r1` 的 `SurfaceFlinger::commit(TimePoint, VsyncId, TimePoint)` 和 `SurfaceFlinger::composite(TimePoint, VsyncId)` 已经不再走旧版 `onMessageReceived()`。到 `android-16.0.0_r1`，这两个阶段继续保留，只是签名扩展成多显示场景使用的 `PhysicalDisplayId`、`FrameTargets` 和 `FrameTargeters`。
 
-**preComposition**：合成前的准备工作，包括处理任何待处理的事务（Transaction）。
+读代码和读 Trace 时，可以先建立一组近似关系：`commit()` 更接近旧版 `INVALIDATE` 的职责，负责收事务、latch Buffer、更新本帧状态；`composite()` 更接近旧版 `REFRESH` 的职责，负责组织合成并提交到显示设备。这样对照 Android 12 到 Android 16 的资料时，不会把不同版本的入口混成一条线。
 
-**rebuildLayerStacks**：重新构建 Layer 栈。这一步会根据每个 Display 的 Layer 过滤规则，从全局 Layer 列表中筛选出需要在当前 Display 上显示的 Layer，并按 z-order 排序。如果某个 Layer 的可见区域发生变化（比如窗口移动、缩放），这里会更新。
+在 Perfetto 中，旧版本更容易看到 `INVALIDATE / REFRESH` 这组 slice；新版本更适合直接盯 `commit`、`composite`、`present` 这一组阶段。无论名称怎么变，我们关心的问题没变，本帧什么时候拿到了新 Buffer，合成决策花了多久，真正的合成有没有跨过当前 VSync 窗口。
 
-**calculateWorkingSet**：计算工作集——确定每个 Layer 的合成方式（Client 还是 Device），以及需要 GPU 合成的 Layer 列表。这一步会与 HWC 协商（调用 HWC 的 prepare 接口）。
-
-**beginFrame / prepareFrame / doComposition**：这三个步骤对每个 Display 执行。`beginFrame` 初始化帧的渲染环境；`prepareFrame` 向 HWC 提交 Layer 信息并确认合成策略；`doComposition` 执行实际的合成——对于 Client 合成的 Layer，通过 RenderEngine 渲染；对于 Device 合成的 Layer，交给 HWC 硬件处理。
-
-**postFrame / postComposition**：帧的收尾工作。`postFrame` 处理帧完成后的统计；`postComposition` 通知 VSync 时间戳给 FrameTimeline，用于后续的帧呈现时间预测。
-
-在 Perfetto 中，每个阶段都有对应的 ATRACE 标记。正常情况下，从 `handleMessageRefresh` 到 `postComposition` 的完整流程应在一个 VSync 周期内完成（60Hz 约 16.67ms，120Hz 约 8.33ms）；某个阶段耗时明显偏长，就是瓶颈所在。下一节我们直接对照 Perfetto，把上述流程映射到 Track 上。
-
-[图：SurfaceFlinger 主循环时序图——从 VSYNC-sf 触发到 postComposition 完成的完整流程]
+[图：SurfaceFlinger 主循环时序图，左侧是 Android 12-13 的 INVALIDATE / REFRESH，两步模型；右侧是 Android 14+ 的 commit / composite，两步模型。两侧都标出 VSYNC-sf 到来、Buffer latch、合成决策、present 提交四个观察点。]
 
 ## 在 Perfetto 中的表现
 
@@ -216,14 +191,14 @@ void SurfaceFlinger::handleMessageRefresh() {
 
 ### SurfaceFlinger 主线程 Track
 
-在 Perfetto 中展开 SurfaceFlinger 进程，主线程 Track 上能看到每帧的合成工作。正常情况下，每隔一个 VSync 周期（取决于刷新率），Track 上会出现一组标记：
+在 Perfetto 中展开 `surfaceflinger` 进程，主线程 Track 上最先要看的是本帧主循环的阶段名。这里同样要按版本读。
 
-- **INVALIDATE**：对应 `handleMessageInvalidate`，检查是否有新 Buffer。这一步通常很快，几百微秒级别。
-- **REFRESH**：对应 `handleMessageRefresh`，这是合成的主体工作。在它内部能看到 `preComposition`、`rebuildLayerStacks`、`calculateWorkingSet`、`doComposition` 等子阶段的 ATRACE 切片。
+- **Android 12-13**：更常见的是 `INVALIDATE` 和 `REFRESH`。`INVALIDATE` 对应事务处理、Buffer 检查、脏区收敛；`REFRESH` 对应真正的合成与 present。
+- **Android 14+**：更适合直接看 `commit`、`composite`、`present` 这一组 slice。名称变了，分析思路没有变，仍然是先看本帧是否 latch 到新内容，再看合成阶段是否超时。
 
-**正常表现**：REFRESH 的总耗时通常在 2-6ms 左右（取决于 Layer 数量和合成复杂度），并且每个 VSync 周期稳定出现一次，没有明显的毛刺。
+**正常表现**：不论 slice 名称是哪一组，总耗时都应该稳定落在当前刷新周期内。60Hz 设备的预算约 16.67ms，120Hz 设备约 8.33ms，SurfaceFlinger 自身通常只占其中一部分。
 
-**异常表现**：如果 REFRESH 耗时突然飙到 10ms+，可能的原因包括：Layer 数量突然增多（如多窗口模式）、Client 合成的 Layer 比例增大（HWC 容量不足）、或者 GPU 合成时被其他任务的 GPU 工作阻塞。如果 REFRESH 根本没有按时出现，说明 SurfaceFlinger 主线程被其他操作阻塞了（比如一个耗时的 Transaction 处理）。
+**异常表现**：如果 `REFRESH` 或 `composite` 突然拉长，先看是不是 Client 合成比例上升、Layer 数量突增，或者 GPU 被 App 侧任务占满。如果 `INVALIDATE` 或 `commit` 明显变长，优先怀疑事务量、窗口几何变化、Buffer latch 迟到，或者主线程被长事务阻塞。
 
 ### VSYNC-sf Track
 
@@ -265,7 +240,7 @@ SurfaceFlinger 与 HWC 的通信过程也可以在 Trace 中追踪。在 Surface
 
 **排查要点**：在 Trace 中发现 SurfaceFlinger 的 `doComposition` 突然耗时增加时，第一件事就是检查是否有 Layer 从 Device 合成退回到了 Client 合成。可以通过 `dumpsys SurfaceFlinger --list` 查看各 Layer 的合成类型分配，或者直接在 Perfetto 中对比正常/异常时段的 Layer 数量和合成方式变化。
 
-[待补充：Trace 截图——正常 vs 异常的 SurfaceFlinger Perfetto 片段对比，标注 Device/Client 合成切换]
+[图：Perfetto 对照示意。左侧是 Device Composition 场景，`doComposition` slice 很短，FrameTimeline 按预期 present；右侧是某个 Layer 因缩放、裁剪或特效退回 Client Composition 后，`doComposition` 明显拉长，RenderEngine 相关工作与 GPU 负载重叠，最终出现 delayed present。]
 
 ### 正常 vs 异常：一个对比案例
 
@@ -308,23 +283,19 @@ SurfaceFlinger 的性能问题有一个特点：它不是"某个 App 卡了"，�
 
 ## BlastBufferQueue
 
-Android 12 引入了 BlastBufferQueue（BBQ），这是 BufferQueue 机制的一次重要改动。要理解 BBQ 解决了什么问题，我们需要先看它之前的方案存在哪些问题。
+Android 12 引入了 `BLASTBufferQueue`。它没有把 BufferQueue 整套机制“搬回 App 进程”，也没有让 acquire / release 这类消费者动作消失。更准确的说法是，BLAST 把 Buffer 提交和 `SurfaceControl.Transaction` 绑到同一帧语义里，减少几何变更和 Buffer 更新错位。
 
-### 之前的问题：Buffer 状态由 SurfaceFlinger 管理
+### Android 12 之前：Buffer 和几何信息可能不同步
 
-在 Android 12 之前，App 的 BufferQueue 中的消费者端（Consumer）运行在 SurfaceFlinger 进程中。于是每次 Buffer 状态变化（acquire、release）都需要跨进程通信。当 App 提交一个 Buffer（queueBuffer），需要通过 Binder 通知 SurfaceFlinger；SurfaceFlinger 用完 Buffer 后，又要通过 Binder 通知 App 可以重新使用。每次跨进程调用都有开销，在多 Layer 场景下这些开销会累加。
+旧模型里，Buffer 仍然通过 BufferQueue 在 producer 和 consumer 之间流转，窗口大小、裁剪、位置这类几何信息则通过 `SurfaceControl.Transaction` 单独提交。窗口 resize、旋转、分屏切换、IME 顶起这类场景里，二者如果落在不同的 frame boundary，上层就可能看到内容已经换成新 Buffer，几何信息却还是旧状态，表现为 stretch、jump 或短暂不同步。
 
-### BBQ 的改进：App 端直接管理 Buffer 周转
+### BLAST 做了什么
 
-BlastBufferQueue 将 Buffer 的状态管理移到了 App 进程内。App 不再需要每次都通过 Binder 与 SurfaceFlinger 协调 Buffer 的获取和释放，而是可以本地完成 dequeue → queue 的循环，只在必要时通知 SurfaceFlinger 有新帧可用。
+`frameworks/native/libs/gui/BLASTBufferQueue.cpp` 里，`BLASTBufferQueue::onFrameAvailable()` 会进入 `acquireNextBufferLocked()`；这个函数内部仍调用 `mBufferItemConsumer->acquireBuffer()`。拿到 Buffer 后，BLAST 通过 `SurfaceComposerClient::Transaction::setBuffer()` 把 Buffer、fence、dataspace、damage、FrameTimeline 信息写进同一个 `Transaction`，再用 `mergeWithNextTransaction()` 把挂起的几何 transaction 合并进去。释放阶段仍会走 `releaseBufferCallbackLocked()`，最终回到 `mBufferItemConsumer->releaseBuffer()`。
 
-具体来看，BBQ 带来了三个变化。一个变化是 Buffer 的 acquire/release 不再需要跨进程，App 可以在本地完成 Buffer 的获取和归还，只有真正需要通知 SurfaceFlinger“有新帧了”的时候才走一次 Binder 调用，跨进程通信次数更少。
+这带来两点直接效果。第一，Buffer 内容和几何属性更容易在同一次 `Transaction` 里生效，窗口缩放、旋转、reparent 这类场景更不容易出现“内容先到、壳子后到”的错位。第二，应用侧仍然通过 `Surface` / `SurfaceControl` 使用熟悉的 API，SurfaceFlinger 侧仍然通过 BufferQueue consumer 获取和释放 Buffer。BLAST 改的是提交同步方式，不是把 BufferQueue 换成另一套无消费者模型。
 
-另一个变化是帧的提交方式。App 渲染完一帧后，通过 SurfaceControl Transaction 将 Buffer 直接提交给 SurfaceFlinger，不再经过传统的 BufferQueue Consumer 中转。
-
-还有一个变化在时序上。App 可以在任意时刻提交帧，不必等待某个特定的信号，SurfaceFlinger 会在下一个合适的 VSYNC-sf 到来时处理它。几处改动叠在一起，多 Layer 场景下的帧传递效率更高。
-
-BBQ 目前仅在 C++ 层使用（实现在 `frameworks/native/libs/gui/BlastBufferQueue.cpp`），对应用开发者来说是透明的。应用仍然通过 Surface、Canvas 等标准 API 进行渲染，底层已自动切换为 BBQ，因此不存在所谓的"BlastBufferQueue Java API"。
+对性能分析来说，读 Trace 时最好把 BLAST 看成“BufferQueue + Transaction 的同帧提交适配层”。如果某一帧既有 Buffer 更新又有 geometry 变化，重点看这两类操作是否在同一个 frame number 上被合并，而不是假定 acquire / release 已经不再跨进程可见。
 
 ## 与其他机制的关系
 
@@ -338,25 +309,29 @@ SurfaceFlinger 不是孤立工作的，它是整条渲染管线中的一个关�
 
 ## 版本演进
 
-SurfaceFlinger 在不同 Android 版本中经历了多次重大变化：
+SurfaceFlinger 的主干职责没有变，变化主要发生在调度入口、Buffer 提交方式，以及 HWC / RenderEngine 的接口演进上。
 
 **Android 4.1（Project Butter）**：引入 VSync 同步机制和三缓冲，这是 SurfaceFlinger 现代架构的起点。
 
-**Android 4.3**：引入 OpenGL ES 渲染路径，SurfaceFlinger 开始使用 GPU 进行 Client 合成。
+**Android 4.3**：引入 OpenGL ES 渲染路径，SurfaceFlinger 开始使用 GPU 承担 Client 合成。
 
-**Android 7.0**：引入 HWC 2.0，API 函数大幅扩充，新增 HDR、色彩变换矩阵等支持，`prepare()/set()` 更名为 `validate()/present()`，引入非推测性 Fence（一种硬件同步原语，用于精确等待 GPU 渲染完成后再读取 Buffer）。 [已验证：AOSP + web search 确认 HWC 2.0 为 Android 7.0 引入]
+**Android 7.0**：引入 HWC 2.0，`prepare()/set()` 演进为 `validate()/present()`，HDR、color transform matrix 等能力开始纳入统一接口。 [已验证：AOSP + source.android.com HWC 文档]
 
-**Android 7.0**：SurfaceFlinger 从 mediaserver 进程独立为单独的 servicemanager 管理的服务。
+**Android 7.0**：SurfaceFlinger 从 mediaserver 体系中独立出来，作为单独的系统服务运行。
 
-**Android 8.0（Project Treble）**：HWC HAL 迁移到 HIDL 接口（`android.hardware.graphics.composer@2.1` ~ `@2.4`），SurfaceFlinger 通过 HIDL 与 HWC HAL 通信。
+**Android 8.0（Project Treble）**：HWC HAL 迁移到 HIDL 接口（`android.hardware.graphics.composer@2.1` 到 `@2.4`），SurfaceFlinger 通过稳定 HAL 边界与厂商实现交互。
 
-**Android 10**：引入 FrameTimeline，SurfaceFlinger 开始记录帧的预期呈现时间和实际呈现时间，为 Jank 检测提供了更精确的数据。
+**Android 10**：FrameTimeline 体系逐步成形，系统开始更系统地记录预期 present time 和实际 present time，Jank 判断的证据面更完整。
 
-**Android 12**：引入 BlastBufferQueue，减少跨进程 Buffer 管理开销；SurfaceFlinger 合成流程重构。
+**Android 12**：引入 `BLASTBufferQueue`。这一版的重点是把 Buffer 提交与 `SurfaceControl.Transaction` 合并到同一帧语义里，减少 Buffer 内容与窗口几何信息错位；VSync 调度仍由 `Scheduler`、`EventThread`、`VSyncSchedule` 负责，`VsyncModulator` 负责 phase 调整。
 
-**Android 13**：HWC HAL 开始支持 AIDL 接口（`android.hardware.graphics.composer3` / `IComposer.aidl`），替代 HIDL 接口。这个 AIDL 版本通常被称为 HWC 3.0。Vulkan 作为 RenderEngine 后端的支持逐步完善 [待验证：Vulkan 后端的具体引入版本和适用范围]。
+**Android 13**：HWC HAL 开始支持 AIDL 接口（`android.hardware.graphics.composer3` / `IComposer.aidl`），用于替代 HIDL composer；RenderEngine 的常见 backend 仍以 GLES / SkiaGL 路径为主。
 
-**Android 14+**：HIDL 版 HWC HAL（`@2.4`）正式标记为 deprecated，厂商被要求迁移到 AIDL 版本。
+**Android 14**：`Scheduler::onFrameSignal()` 加上 `SurfaceFlinger::commit()` / `composite()` 成为主流程；`PROPERTY_DEBUG_RENDERENGINE_BACKEND` 已能识别 `skiavk` 和 `skiavkthreaded`，但 Vulkan backend 是否实际启用仍取决于设备配置和厂商实现。
+
+**Android 14+**：HIDL 版 composer 2.4 被标记为 deprecated，厂商实现继续向 AIDL 收敛。
+
+**Android 16**：`SurfaceFlinger::commit(PhysicalDisplayId, FrameTargets)` 与 `composite(PhysicalDisplayId, FrameTargeters)` 继续沿用分阶段模型，多显示 target 计算更细，入口没有回到旧版 `onMessageReceived()`。
 
 ## 常见问题与误区
 
@@ -380,9 +355,9 @@ SurfaceFlinger 在不同 Android 版本中经历了多次重大变化：
 
 ### AOSP 源码
 
-- `frameworks/native/services/surfaceflinger/SurfaceFlinger.cpp` — SurfaceFlinger 主循环，核心入口 `onMessageReceived`、`handleMessageInvalidate`、`handleMessageRefresh`
+- `frameworks/native/services/surfaceflinger/SurfaceFlinger.cpp` — SurfaceFlinger 主流程实现，Android 12-13 侧重 `onMessageReceived` / `handleMessageInvalidate` / `onMessageRefresh`，Android 14+ 侧重 `commit()` / `composite()`
 - `frameworks/native/services/surfaceflinger/` — SurfaceFlinger 服务完整实现
-- `frameworks/native/libs/gui/BlastBufferQueue.cpp` — BBQ 实现（Android 12+）
+- `frameworks/native/libs/gui/BLASTBufferQueue.cpp` — BLASTBufferQueue 实现（Android 12+）
 - `hardware/interfaces/graphics/composer/` — HWC HAL 接口定义（HIDL @2.x 和 AIDL composer3）
 - `frameworks/native/libs/renderengine/` — RenderEngine 实现（OpenGL ES / Vulkan 后端）
 
