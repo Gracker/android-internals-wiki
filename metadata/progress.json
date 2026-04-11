@@ -1,49 +1,49 @@
 {
-  "generated_at": "2026-04-11T14:06:00+08:00",
+  "generated_at": "2026-04-11T14:52:51+08:00",
   "state_machine_version": "v2",
   "total_sections": 187,
   "metrics": {
     "total": 187,
-    "ready-for-review": 173,
     "unknown": 14,
-    "pipeline_task2b_pending": 3,
-    "pipeline_task6_pending": 171,
-    "pipeline_task9_pending": 1,
+    "ready-for-review": 173,
     "pipeline_unknown": 12,
-    "task6_pending": 159,
-    "task6_reviewed": 4,
-    "task6_revisiting": 12,
+    "pipeline_task6_pending": 172,
+    "pipeline_task2b_pending": 2,
+    "pipeline_task9_pending": 1,
     "task6_unknown": 12,
-    "task9_pending": 175,
+    "task6_pending": 159,
+    "task6_revisiting": 13,
+    "task6_reviewed": 3,
     "task9_unknown": 12,
-    "task2b_fixed": 12,
-    "task2b_idle": 160,
-    "task2b_pending": 3,
+    "task9_pending": 175,
     "task2b_unknown": 12,
-    "last_updated": "2026-04-11T14:06:00+08:00"
+    "task2b_idle": 160,
+    "task2b_fixed": 13,
+    "task2b_pending": 2,
+    "last_updated": "2026-04-11T14:52:51+08:00"
   },
   "pipeline": {
     "pipeline_stage_counts": {
-      "task2b_pending": 3,
-      "task6_pending": 171,
-      "task9_pending": 1,
-      "unknown": 12
+      "unknown": 12,
+      "task6_pending": 172,
+      "task2b_pending": 2,
+      "task9_pending": 1
     },
     "task6_state_counts": {
+      "unknown": 12,
       "pending": 159,
-      "reviewed": 4,
-      "revisiting": 12,
-      "unknown": 12
+      "revisiting": 13,
+      "reviewed": 3
     },
     "task9_state_counts": {
-      "pending": 175,
-      "unknown": 12
+      "unknown": 12,
+      "pending": 175
     },
     "task2b_state_counts": {
-      "fixed": 12,
+      "unknown": 12,
       "idle": 160,
-      "pending": 3,
-      "unknown": 12
+      "fixed": 13,
+      "pending": 2
     }
   },
   "issues": {
@@ -445,14 +445,16 @@
       "title": "DMA-BUF、Gralloc 与跨进程图形内存共享",
       "path": "src/part1-fundamentals/ch02-rendering/15-dmabuf-gralloc.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
-      "task6_state": "reviewed",
-      "task9_state": "reviewed",
-      "task2b_state": "pending",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
+      "task9_state": "pending",
+      "task2b_state": "fixed",
       "task6_result": "needs-rework",
       "reviewed_date": "2026-04-11",
       "reviewed_by": "openclaw-task6",
-      "task9_result": "needs-rework"
+      "task9_result": "needs-rework",
+      "task2b_result": "fixed",
+      "last_updated": "2026-04-11T14:52:51+08:00"
     },
     "src/part1-fundamentals/ch02-rendering/16-sync-fence.md": {
       "chapter": "2.16",
