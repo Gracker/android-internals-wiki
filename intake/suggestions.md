@@ -1230,3 +1230,28 @@
 - **位置**：行 482-484 误区一：App 可以注册自己的 InputFilter
 - **问题**：正文把“普通 App 不能注册 InputFilter”的原因写成“需要 `INJECT_EVENTS` 权限”，但 AOSP 当前没有给 App 暴露 `setInputFilter()` 这样的公共 API；系统内部是 `WindowManagerService.setInputFilter()` / `InputManagerService.setInputFilter()` 路径。
 - **建议**：改成“这是系统内部 API，普通 App 没有公开入口；不要把原因简化成单一权限判断”。
+
+## [Task6 Review] 2.6 SurfaceFlinger 与合成 — 2026-04-12
+- **类型**：需确认
+- **位置**：`VSync 分发：管线的节拍器`
+- **问题**：`DispSync（Android 12 之后为 VsyncModulator）` 把 Android 12+ 的 VSync 调度路径压成了单点替换，版本演进写得偏满，读者容易误以为 Android 12-16 只是换了一个模块名。
+- **建议**：交给 Task 9 核对 Android 12-16 的 `Scheduler` / `EventThread` / `VSyncSchedule` 路径，再决定是否改成更保守的表述。
+- **review 日志**：logs/review/2026-04-12-01-review.md
+
+- **类型**：需确认
+- **位置**：`BlastBufferQueue` 章节 + 版本演进 Android 12
+- **问题**：`Buffer 状态管理移到了 App 进程内`、`acquire/release 不再需要跨进程` 这组表述过满，`BlastBufferQueue` 与传统 `BufferQueue` / `SurfaceControl Transaction` 的关系没有讲清，存在技术风险。
+- **建议**：按 `frameworks/native/libs/gui/BlastBufferQueue.cpp` 重核一遍机制，再决定是保留“移到 App 进程内”，还是降级为“减少跨进程 Buffer 协调开销”。
+- **review 日志**：logs/review/2026-04-12-01-review.md
+
+- **类型**：需补充素材
+- **位置**：`BufferQueue 的四步流转`、`HWC 合成 Track`
+- **问题**：两个核心 Perfetto 分析段仍是 `[待补充：Trace 截图]` 占位，章节虽然讲了 Track 怎么看，但证据面还不够。
+- **建议**：补 2 张真实或等价图示，至少覆盖 BufferQueue 四步流转，以及 Device/Client 合成切换的正常/异常对比。
+- **review 日志**：logs/review/2026-04-12-01-review.md
+
+- **类型**：需确认
+- **位置**：版本演进 Android 13
+- **问题**：`Vulkan 作为 RenderEngine 后端的支持逐步完善 [待验证...]` 仍未闭环，版本说明还不能作为稳定结论。
+- **建议**：Task 9 核对引入版本和适用范围，再决定是保留版本断言还是改成更保守的表述。
+- **review 日志**：logs/review/2026-04-12-01-review.md
