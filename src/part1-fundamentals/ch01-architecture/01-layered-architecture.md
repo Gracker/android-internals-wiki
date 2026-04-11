@@ -16,14 +16,15 @@ sources:
     path: "https://androidperformance.com"
 tags: ['architecture', '分层架构', 'HAL', 'HIDL', 'AIDL', 'Binder', 'SystemServer', 'Zygote', 'SurfaceFlinger', '性能优化', 'Perfetto']
 related_chapters: ["1.2", "1.3", "2.1", "3.1", "4.1", "5.1", "7.1"]
-reviewed_date: "2026-04-05"
+reviewed_date: "2026-04-11"
 reviewed_by: "openclaw-task6"
 polish_count: 1
 polish_date: "2026-04-05"
 polish_by: "task2b-polish"
-review_notes: "2026-04-05 task2b-polish质检: 通过→ready-to-publish。小修1处（补充section字段）。无B类大问题。评分: 结构5/5·措辞5/5·一致性5/5·验证4/5·元数据5/5。| 2026-03-31 二次review: 通过finalized。小修7处（标准化验证标注格式/补充4处待验证标注/补充来源标注）。无B类大问题。评分: 结构4/5·措辞4/5·一致性4/5·验证4/5·元数据4/5。| 历史记录: 2026-03-30 task6 review 回炉 v2：集成3篇新研究素材（Perfetto映射/误区/Treble演进），补充数据源三层映射、HAL追踪完整方法、hwbinder vs binder区别、新增3条误区（线程状态/Binder阻塞/全系统视角），所有锚点已覆盖"
-pipeline_stage: task6_pending
-task6_state: pending
+review_notes: "2026-04-11 task6 review: pass-light-edit。小修14处（禁用词替换/句式去模板化/验证标注格式统一）。无B类大问题。评分: 结构5/5·措辞4/5·一致性4/5·验证4/5·元数据5/5。| 2026-04-05 task2b-polish质检: 通过→ready-to-publish。小修1处（补充section字段）。无B类大问题。评分: 结构5/5·措辞5/5·一致性5/5·验证4/5·元数据5/5。| 2026-03-31 二次review: 通过finalized。小修7处（标准化验证标注格式/补充4处待验证标注/补充来源标注）。无B类大问题。评分: 结构4/5·措辞4/5·一致性4/5·验证4/5·元数据4/5。| 历史记录: 2026-03-30 task6 review 回炉 v2：集成3篇新研究素材（Perfetto映射/误区/Treble演进），补充数据源三层映射、HAL追踪完整方法、hwbinder vs binder区别、新增3条误区（线程状态/Binder阻塞/全系统视角），所有锚点已覆盖"
+pipeline_stage: task9_pending
+task6_state: reviewed
+task6_result: pass-light-edit
 task9_state: pending
 task2b_state: idle
 ---
@@ -62,13 +63,13 @@ task2b_state: idle
 
 当我们在分析一个渲染卡顿问题时，在 Trace 里看到的可能是：主线程在 `doFrame()` 里卡了 30ms，原因是某个 `measure()` 调用触发了 Binder 通信，等 SystemServer 那边返回结果就花掉了 20ms。这时候如果我们不知道主线程、SystemServer、Binder 分别属于架构的哪一层、为什么要跨层通信，就只能看到一堆彩色方块而无法定位根因。
 
-所以，理解分层架构不是学术兴趣，而是性能分析的**基础设施**。读完这一节，我们再看 Perfetto Trace 的时候，应该能快速判断一段异常耗时发生在哪一层、为什么发生、可以从哪一层入手优化。
+所以，理解分层架构，是性能分析的基础功。读完这一节，我们再看 Perfetto Trace 的时候，应该能快速判断一段异常耗时发生在哪一层、为什么发生、可以从哪一层入手优化。
 
 [已验证: 官方文档, https://developer.android.com/guide/platform]
 
 ## Android 经典五层架构
 
-Android 的架构从底向上分为五层：Linux Kernel、HAL、Native Libraries & ART Runtime、Framework、Apps。这个分层不是随意划分的——每一层的存在都是为了解决一个特定的问题。
+Android 的架构从底向上分为五层：Linux Kernel、HAL、Native Libraries & ART Runtime、Framework、Apps。这个分层有明确的工程动机，每一层的存在都对应一类具体问题。
 
 ### 从硬件到应用：为什么需要五层
 
@@ -112,7 +113,7 @@ graph TB
 
 **应用框架层 (Framework)** 是系统服务的聚集地。SystemServer 进程在这里运行，管理着 Activity Manager (AMS)、Window Manager (WMS)、Package Manager (PMS) 等几十个核心服务。这些服务通过 Binder 暴露给所有 App。SurfaceFlinger 虽然与 Framework 紧密协作，但它是一个独立的 Native 进程，不属于 SystemServer。
 
-Zygote 进程也在这一层扮演关键角色：所有 App 进程都由 Zygote fork 而来，fork 后子进程继承了 Zygote 预加载的类和资源，省去了大量初始化时间。这就是为什么 Android 的冷启动能做到几百毫秒而不是几秒。
+Zygote 进程也在这一层扮演关键角色：所有 App 进程都由 Zygote fork 而来，fork 后子进程继承了 Zygote 预加载的类和资源，省去了大量初始化时间。这也是 Android 冷启动通常能控制在几百毫秒量级的原因。
 
 **应用层 (Apps)** 是用户直接交互的层次。无论是系统预装的电话、设置，还是用户安装的微信、抖音，都通过 Framework 提供的 API 与系统交互。从性能角度看，App 层能控制的优化范围有限——启动流程的大部分耗时在 Framework 层（AMS 调度、Zygote fork、Surface 分配），渲染管线的大部分耗时在 Native/HAL 层（Skia 绘制、GPU 合成）。理解这一点，才能在优化时找对方向。
 
@@ -158,7 +159,7 @@ Zygote 的设计是 Android 启动速度优化中最聪明的一笔。系统启�
 
 ## Treble 架构：HIDL → AIDL 演进
 
-在 Android 8.0 之前，系统更新是 Android 生态最大的痛点。每次发布新版本，OEM 厂商需要把整个 Framework + HAL + 内核重新编译测试，导致大多数设备要等半年甚至一年才能收到更新，有些设备永远等不到。
+在 Android 8.0 之前，系统更新一直是 Android 生态里最棘手的问题。每次发布新版本，OEM 厂商都需要把整个 Framework + HAL + 内核重新编译测试，导致大多数设备要等半年甚至一年才能收到更新，有些设备永远等不到。
 
 ### Project Treble 的核心思路
 
@@ -183,7 +184,7 @@ AIDL 的优势在于：它就是 Android Framework 开发者已经熟悉的语�
 
 Treble 架构给 HAL 分析带来了一个根本性的改变：Treble 之前，HAL 代码藏在 `system_server` 或 `mediaserver` 进程内部，Trace 中看不到进程边界，HAL 崩溃会拖垮整个宿主进程。Treble 之后，HAL 有了自己的独立进程和 Track，我们可以在 Trace 中直接观察 Framework 和 HAL 之间的通信延迟，这在以前是不可能的。
 
-但这也意味着分析 HAL 问题需要一套完整的方法：首先在 Framework 线程找到 Binder 调用发起的时间点，然后切换到 Binder Transaction Track 找到对应的 Transaction 记录，再跳到 HAL 进程的线程 Track 检查它的处理逻辑——HAL 可能因为 I/O 等待（"Uninterruptible Sleep"）、锁竞争或其他 HAL 客户端的请求排队而导致响应慢。只看 Framework 侧的 Binder 调用发起时间是不够的，需要看到完整的跨进程链路。
+但这也意味着分析 HAL 问题需要一套完整的方法：先在 Framework 线程找到 Binder 调用发起的时间点，然后切换到 Binder Transaction Track 找到对应的 Transaction 记录，再跳到 HAL 进程的线程 Track 检查它的处理逻辑。HAL 可能因为 I/O 等待（"Uninterruptible Sleep"）、锁竞争或其他 HAL 客户端的请求排队而导致响应慢。只看 Framework 侧的 Binder 调用发起时间还不够，需要把完整的跨进程调用路径串起来。
 
 对于 AIDL HAL，还需要额外启用 `aidl` atrace category 才能看到 AIDL 层面的追踪事件。
 
@@ -225,13 +226,13 @@ Binder 是 Android 的"血管系统"，几乎所有跨层操作都通过它完�
 
 JNI 是 Java/Kotlin 代码调用 C/C++ Native 代码的唯一通道。每次跨越这个边界，都要执行上下文切换、参数编组（marshalling）、引用表管理等一系列固定操作。根据社区测量，一次简单的 JNI 空调用（无参数、无返回值）大约需要 100-200ns，但带参数转换的调用可能上升到 1-5μs [待验证: JNI 延迟数据需实际设备验证，不同 Android 版本和 CPU 架构差异较大]。
 
-真正的问题不是单次调用的开销，而是调用次数。一个常见反模式是：在循环中反复调用 JNI 方法，每次只处理一条数据。比如逐像素调 JNI 方法做图像处理——100 万个像素就是 100 万次 JNI 调用，光 JNI 开销就达到数百毫秒。正确做法是把数据打包成数组或 DirectByteBuffer，一次 JNI 调用传过去批量处理。
+更常见的成本来自调用次数。一个常见反模式是：在循环中反复调用 JNI 方法，每次只处理一条数据。比如逐像素调 JNI 方法做图像处理，100 万个像素就是 100 万次 JNI 调用，光 JNI 开销就会累积到数百毫秒。正确做法是把数据打包成数组或 DirectByteBuffer，一次 JNI 调用传过去批量处理。
 
 Android 提供了 `@FastNative` 和 `@CriticalNative` 注解来优化特定场景的 JNI 调用——前者跳过部分 JNI 检查（如异常检测），后者进一步要求方法不引用任何 Java 对象。这两个注解可以将 JNI 调用开销降低 30-50% [待验证: 降低比例数据来源需确认]。
 
 [已验证: 官方文档, https://developer.android.com/reference/dalvik/annotation/optimization/FastNative]
 
-### HAL 延迟：硬件响应的"最后一公里"
+### HAL 延迟：硬件响应阶段的瓶颈
 
 HAL 层的延迟往往是最难优化的，因为它取决于具体的硬件实现。以 Camera HAL 为例，一次拍照操作的调用链是：App → Camera2 API（Framework）→ Camera HAL Service（独立进程，Binder IPC）→ Camera 驱动（内核）→ ISP 硬件。每一步都有延迟，其中硬件处理（自动对焦、曝光、ISP 处理）通常占大头。
 
@@ -239,7 +240,7 @@ HAL 层的延迟往往是最难优化的，因为它取决于具体的硬件实�
 
 ## 在 Perfetto 中的表现
 
-Android 分层架构不是一个抽象概念——在 Perfetto Trace 中，每一层都有直观的可视化表现。学会在 Trace 中"看到"分层架构，是性能分析的基本功。
+Android 分层架构在 Perfetto Trace 里有很直观的映射，每一层都有对应的可视化表现。学会在 Trace 中“看到”分层架构，是性能分析的基本功。
 
 ### 三种数据源与三层架构的对应关系
 
@@ -261,7 +262,7 @@ Perfetto 采集数据的方式恰好与 Android 的三层结构一一对应。�
 
 `surfaceflinger` 进程是 Framework 层中另一个关键组件。它的主线程上可以看到 `onMessageReceived` → `handleMessageRefresh` → `doComposition` 的调用链。如果 `doComposition` 耗时过长，说明 GPU 合成负担重，可能需要减少 Surface 数量或降低图层复杂度。SurfaceFlinger 的 `FrameMissed` 行可以直接告诉我们问题出在合成层而非 App 层。
 
-**Native/HAL 层**的表现比较分散。HAL Service 通常是独立的进程（Treble 之后），名字类似 `android.hardware.camera.provider@2.4-service`。它们的 CPU 活动在各自的进程 Track 上。如果这些进程频繁出现 "Runnable" 但不被调度的状态，说明系统 CPU 负载高，HAL 请求排队等待。需要同时启用 `hal` 和 `binder_driver` 这两个 atrace category 才能看到完整的 Framework → HAL 调用链路——只看 Framework 侧是不够的，因为 HAL 是独立进程。
+**Native/HAL 层**的表现比较分散。HAL Service 通常是独立的进程（Treble 之后），名字类似 `android.hardware.camera.provider@2.4-service`。它们的 CPU 活动在各自的进程 Track 上。如果这些进程频繁出现 "Runnable" 但不被调度的状态，说明系统 CPU 负载高，HAL 请求排队等待。需要同时启用 `hal` 和 `binder_driver` 这两个 atrace category，才能看到完整的 Framework → HAL 调用路径。只看 Framework 侧是不够的，因为 HAL 是独立进程。
 
 **内核层**在 Perfetto 中表现为底层的 CPU 调度 Track 和 ftrace 事件。每个 CPU core 上的调度切片（sched slice）显示了哪个线程正在执行。Binder 的事务事件（`binder_transaction`）可以看到跨进程通信的发起方、目标方和数据大小。这是唯一一个横跨所有架构层的数据源——无论跨的是哪两层，Binder 事务都会在这里留下记录。
 
@@ -288,18 +289,18 @@ Perfetto 采集数据的方式恰好与 Android 的三层结构一一对应。�
 
 ### 误区：Zygote fork 会复制 ART 堆
 
-有人认为 Zygote fork 会复制父进程的所有内存，因此内存开销很大。实际上，Linux 的 `fork()` 使用 Copy-on-Write（COW）机制：fork 后子进程和父进程共享同一份物理内存页，只有当某一方尝试写入时才复制被修改的页。由于 Zygote 在 fork 后会进入"等待下次 fork 请求"的状态（不修改已加载的类和资源），大部分内存页永远不会被复制。所以 Zygote fork 的实际内存开销远比直觉上的"复制整个堆"要小。
+有人认为 Zygote fork 会复制父进程的所有内存，因此内存开销很大。Linux 的 `fork()` 使用 Copy-on-Write（COW）机制：fork 后子进程和父进程共享同一份物理内存页，只有当某一方尝试写入时才复制被修改的页。由于 Zygote 在 fork 后会进入“等待下次 fork 请求”的状态（不修改已加载的类和资源），大部分内存页永远不会被复制。所以 Zygote fork 的实际内存开销远比直觉上的“复制整个堆”要小。
 
 ### 误区：HAL 层不影响性能，因为只是"接口封装"
 
-HAL 不仅仅是接口封装——在现代 Android（Treble 之后），HAL Service 是独立进程，每次 HAL 调用都涉及一次完整的 Binder IPC（参数序列化 → 内核态切换 → 目标进程反序列化 → 执行 → 原路返回）。对于高频 HAL 操作（如 Camera 预览回调、Audio 数据流），这个 IPC 开销可以成为显著瓶颈。一些关键 HAL（如 Graphics HAL）因此设计了零拷贝的共享内存通道来绕过 Binder 的数据拷贝。
+HAL 在现代 Android 里还承担接口定义之外的进程隔离与硬件访问协调。Treble 之后，HAL Service 是独立进程，每次 HAL 调用都涉及一次完整的 Binder IPC（参数序列化 → 内核态切换 → 目标进程反序列化 → 执行 → 原路返回）。对于高频 HAL 操作（如 Camera 预览回调、Audio 数据流），这个 IPC 开销可以成为显著瓶颈。一些关键 HAL（如 Graphics HAL）因此设计了零拷贝的共享内存通道来绕过 Binder 的数据拷贝。
 
 ### 误区：App 的性能问题一定在 App 层
 
 很多性能问题确实出在 App 层（主线程做了耗时操作），但有不少场景根因在系统层。比如：
 - **启动慢**：可能是因为 SystemServer 在处理多个启动请求时发生锁竞争，AMS 的 `ActivityManagerService.attachApplication()` 被阻塞。
-- **渲染卡顿**：可能是因为 SurfaceFlinger 的 `doComposition` 耗时过长（GPU 合成负担重），而不是 App 端的绘制慢。
-- **ANR**：Input ANR 的根因可能不是 App 主线程阻塞，而是 SystemServer 端的 InputDispatcher 被其他工作拖慢了。
+- **渲染卡顿**：根因也可能落在 SurfaceFlinger 的 `doComposition` 耗时过长，也就是 GPU 合成负担过重。
+- **ANR**：Input ANR 的根因也可能出在 SystemServer 端的 InputDispatcher 被其他工作拖慢。
 
 在 Perfetto 中遇到性能问题时，**不要只看 App 进程**——把视线扩展到 `system_server`、`surfaceflinger`、相关 HAL 进程，往往能发现真正的根因。当我们在 Perfetto 中看到 Main Thread 上有一个持续几十毫秒的 Binder slice 时，不要急着去优化 App 代码。先翻到 `system_server` 进程，找到处理这个 Binder 调用的线程——问题可能不在 App 本身，而在系统服务那边排队等待。这就是为什么理解架构分层对性能分析至关重要：每一层都可能是瓶颈所在。
 
@@ -333,7 +334,7 @@ Binder 相比 Socket/管道的核心优势在于：**一次拷贝**。传统 IPC
 
 分层架构的接口隔离不只发生在 HAL 层。在 Android 8.0 引入 Treble 之后，Vendor 和 Framework 使用的 Native 库同样需要隔离——这就是 VNDK（Vendor Native Development Kit）机制。
 
-[已验证: source.android.com/docs/core/architecture/vndk; 标记为自动发现]
+[已验证: 官方文档, https://source.android.com/docs/core/architecture/vndk]
 
 为什么需要隔离？Framework 和 Vendor 模块可能依赖同一个 C++ 库的不同版本。如果不隔离，链接器会随机加载其中一个版本，导致符号冲突或 ABI 不兼容的崩溃。
 
