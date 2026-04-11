@@ -960,3 +960,30 @@ BLASTBufferQueue 小节只讲了“App 本地管理 buffer，最后用 Transacti
 
 ### 关联章节
 2.4（Choreographer）、2.17（Frame Pacing Library）、7.8（RecyclerView 列表滑动性能深度优化）
+
+## [Task9 Deep Review] 3.4 输入延迟与预测输入技术 — 2026-04-11
+
+### 盲区 1：batched input / unbuffered dispatch / resampling 的系统内建低延迟路径
+**描述**：正文把输入送达 App 和下一帧 doFrame 渲染几乎讲成了同一件事，没有补 ViewRootImpl 的两条关键分叉：一条是 processRawInputEvent() 立即处理路径，另一条是 onBatchedInputEventPending() -> scheduleConsumeBatchedInput() -> Choreographer.CALLBACK_INPUT 的批量消费路径。touch resampling 也没有出现，导致“为什么输入有时立刻处理、有时会贴着 VSync 走”解释不完整。
+
+**重要程度**：高
+
+**建议研究方向**：
+- ViewRootImpl.WindowInputEventReceiver.processRawInputEvent() / onBatchedInputEventPending() / scheduleConsumeBatchedInput()
+- InputConsumer consumeBatchedInputEvents 与 resampling 的触发条件
+- unbuffered input dispatch 对 stylus / drawing / game 场景的影响
+
+**关联章节**：§3.1、§3.2、§3.4、§2.3、§2.4
+
+### 盲区 2：Perfetto end-to-end input latency 的生成条件
+**描述**：章节给出了 android_input_events 的 SQL 和字段，但没有解释 end_to_end_latency_dur 依赖什么链路才能生成。AOSP ViewRootImpl 里 InputMetricsListener 通过 HardwareRendererObserver、FrameMetrics.Index.INPUT_EVENT_ID、DISPLAY_PRESENT_TIME / GPU_COMPLETED 去回填 timeline。少了这部分，读者很难理解为什么有些 trace 里 e2e latency 是 null，或者为什么没有 FrameTimeline 时无法算完整端到端。
+
+**重要程度**：高
+
+**建议研究方向**：
+- ViewRootImpl.InputMetricsListener 与 HardwareRendererObserver 的工作方式
+- FrameMetrics.Index.INPUT_EVENT_ID / DISPLAY_PRESENT_TIME / GPU_COMPLETED 的采样条件
+- Perfetto android_input_events 模块如何把 input id 和 frame timeline 关联起来
+
+**关联章节**：§3.4、§13.3、§13.5、§2.4
+

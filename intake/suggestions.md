@@ -1088,3 +1088,15 @@
 - **问题**：目前只有 SQL 和文字说明，缺少一组真实 Trace 截图或查询结果示例，输入延迟的可观测证据链还不完整。
 - **建议**：补 1 组真实 Perfetto Trace 截图，至少标出 InputReader、InputDispatcher、DeliverInputEvent 与 FrameTimeline 的对应关系。
 - **review 日志**：logs/review/2026-04-11-21-review.md
+
+## [Task9 Deep Review] 3.4 输入延迟与预测输入技术 — 2026-04-11
+- **类型**：数据缺失
+- **位置**：行 134-147 120Hz 理想路径延迟表
+- **问题**：`10-38ms` 的阶段分解没有设备型号、触控采样率、是否触摸/手写笔、trace 配置和测量来源，当前更像估算值。
+- **建议**：把这张表降级为“示意量级”，或补一组真实设备的 Perfetto/FrameTimeline 数据作为基线。
+
+## [Task9 Deep Review] 3.4 输入延迟与预测输入技术 — 2026-04-11
+- **类型**：源码准确性
+- **位置**：行 441-442 官方参考链接
+- **问题**：`developer.android.com/develop/ui/views/graphics/low-latency-graphics` 和 `perfetto.dev/docs/analysis/sql-tables/android-input` 当前链接均返回 404/已迁移，和正文的“已验证”标注不匹配。
+- **建议**：改成当前可访问的类级 reference / 新文档入口，避免后续 review 无法复核。
