@@ -23,26 +23,39 @@ sources:
   - type: official
     path: "developer.android.com/reference/android/text/PrecomputedText"
 tags: [text, rendering, minikin, skia, emoji, layout, performance, textview, staticlayout]
-related_chapters: ["2.1", "2.4", "2.5", "7.5", "7.12"]
-pipeline_stage: task6_pending
-task6_state: pending
+related_chapters: ["2.1", "2.4", "2.5", "7.8", "7.12"]
+reviewed_by: openclaw-task6
+reviewed_date: "2026-04-11"
+task6_result: needs-rework
+pipeline_stage: task2b_pending
+task6_state: reviewed
 task9_state: pending
-task2b_state: idle
+task2b_state: pending
 ---
 
 # 2.21 文字渲染性能
+
+<!-- outline-start -->
+## 本节大纲
+- 🔹 为什么文字测量会成为列表与聊天场景的瓶颈
+- 🔹 TextView、Layout、Minikin、Skia 组成的文字渲染链路
+- 🔹 Minikin、StaticLayout、Emoji 的主要性能开销
+- 🔹 PrecomputedText、BoringLayout 与参数裁剪的优化手段
+- 🔹 在 Perfetto 中定位 measure 与 glyph upload 瓶颈
+- 🔹 版本演进、常见误区与相关章节关联
+<!-- outline-end -->
 
 ## 为什么要了解文字渲染
 
 打开手机上任何一个 App——微信聊天、微博信息流、新闻客户端——占据屏幕面积最大的元素是什么？文字。
 
-文字看起来简单，不就是画几个字嘛。但在 Android 的渲染管线中，文字恰恰是 CPU 开销最高的绘制类型之一。原因在于：文字不是简单的像素拷贝，而是需要经过"整形→测量→换行→光栅化→绘制"一整套流水线。其中"整形"（text shaping）和"测量"（measurement）尤其昂贵——它们需要根据字体、语言、上下文计算出每个字符的精确位置，涉及 HarfBuzz 整形引擎和 ICU 换行算法的密集计算。
+文字看起来简单，像是把几个字画到屏幕上。但在 Android 的渲染管线中，文字往往是 CPU 开销最高的绘制类型之一。原因很直接，文字渲染不是简单的像素拷贝，而是要经过“整形→测量→换行→光栅化→绘制”这一整套流程。其中“整形”（text shaping）和“测量”（measurement）尤其昂贵，需要根据字体、语言、上下文计算每个字符的精确位置，背后是 HarfBuzz 整形引擎和 ICU 换行算法的密集计算。
 
 对于列表类 App（聊天、社交、新闻），一屏可能同时存在几十个 TextView。在滑动过程中，每个 TextView 都需要在 8.33ms（120Hz）或 16.67ms（60Hz）的帧预算内完成 measure → layout → draw 全流程。如果某个 TextView 的文字测量耗时超标，帧就掉了。
 
-我们在 Perfetto 中经常看到的场景是：主线程上一大片 "measure" slice 占了大半个 VSync 周期，展开一看全是 TextView.onMeasure()。这不是个例，而是列表类 App 的通病。
+我们在 Perfetto 中经常看到这样的场景：主线程上一大片 "measure" slice 占了大半个 VSync 周期，展开一看全是 TextView.onMeasure()。这种情况在列表类 App 里很常见。
 
-了解文字渲染的性能特征，能让你在分析这类 jank 时直接定位到根因，而不是在 View 层级里盲目猜测。
+了解文字渲染的性能特征，能让我们在分析这类 jank 时更快定位到根因，不必在 View 层级里盲目猜测。
 
 ## Android 文字渲染管线全景
 
@@ -67,7 +80,7 @@ Canvas.drawText()
       → GPU texture upload（如果 glyph 不在 atlas 中）
 ```
 
-Skia 维护了一个 **Glyph Atlas**——一张大的 GPU 纹理，上面缓存了已光栅化好的 glyph 位图。当需要绘制一个字符时，Skia 先查 atlas，找到了就直接从 GPU 纹理中采样，找不到才触发 CPU 光栅化再上传到 atlas。这意味着文字渲染的性能高度依赖 glyph atlas 的缓存命中率。
+Skia 维护了一个 **Glyph Atlas**——一张大的 GPU 纹理，上面缓存了已光栅化好的 glyph 位图。当需要绘制一个字符时，Skia 先查 atlas，找到了就直接从 GPU 纹理中采样，找不到才触发 CPU 光栅化再上传到 atlas。文字渲染的性能高度依赖 glyph atlas 的缓存命中率。
 
 [待补充：文字渲染管线架构图，展示 TextView → Layout → Minikin → Skia → GPU 的完整路径]
 
@@ -337,7 +350,7 @@ RenderThread track 上，文字渲染主要出现在：
 
 **误区：TextView.setText() 很轻量，不需要优化。**
 
- setText() 本身只是设置 CharSequence 引用，确实很快。但 setText() 会触发 `checkForRelayout()`，最终在下一个 VSync 周期的 `performTraversals()` 中执行 measure → layout → draw。如果你在 `onBindViewHolder()` 中调用了 setText()，那么 measure 的开销就计入了这一帧。
+setText() 本身只是设置 CharSequence 引用，确实很快。但 setText() 会触发 `checkForRelayout()`，最终在下一个 VSync 周期的 `performTraversals()` 中执行 measure → layout → draw。如果你在 `onBindViewHolder()` 中调用了 setText()，那么 measure 的开销就计入了这一帧。
 
 **误区：PrecomputedText 能解决所有文字测量问题。**
 
@@ -345,7 +358,7 @@ PrecomputedText 的前提是：TextView 的参数（宽度、字体、字号等�
 
 **误区：文字缓存会自动帮我优化。**
 
-Minikin 的缓存是进程级的，跨 TextView 共享。但缓存的 key 包含文本内容 hash——这意味着不同文本几乎不可能命中彼此的缓存。在列表滑动场景中，每个 Item 的文本通常是不同的，缓存命中率很低。
+Minikin 的缓存是进程级的，跨 TextView 共享。但缓存的 key 包含文本内容 hash，不同文本几乎不可能命中彼此的缓存。在列表滑动场景中，每个 Item 的文本通常是不同的，缓存命中率很低。
 
 **常见面试问题：RecyclerView 列表中，聊天消息的 TextView 经常导致 jank，你会怎么优化？**
 
@@ -360,7 +373,7 @@ Minikin 的缓存是进程级的，跨 TextView 共享。但缓存的 key 包含
 
 - **§2.4 Choreographer**：TextView 的 measure/layout/draw 由 Choreographer 在 VSYNC-app 信号到来时统一调度。文字测量的耗时直接占用了 doFrame 的时间预算。
 - **§2.5 MainThread/RenderThread**：文字测量发生在 MainThread，文字绘制（glyph 光栅化、texture upload）发生在 RenderThread。
-- **§7.5 列表滑动优化**：RecyclerView 的滑动流畅性高度依赖 TextView 的测量效率，PrecomputedText 是核心优化手段。
+- **§7.8 RecyclerView 列表滑动性能深度优化**：RecyclerView 的滑动流畅性高度依赖 TextView 的测量效率，PrecomputedText 是核心优化手段。
 - **§7.12 View 体系性能**：TextView.onMeasure() 是 View 层级 measure 开销的主要贡献者之一，深嵌套层级中的多个 TextView 会叠加出显著的 measure 耗时。
 
 ## 参考资料
