@@ -3643,5 +3643,49 @@
     "status": "completed",
     "original_review_log": "logs/review/2026-04-11-15-review.md",
     "completed_at": "2026-04-11T15:57:33+08:00"
+  },
+  {
+    "section": "2.4",
+    "section_title": "Choreographer 与渲染流水线",
+    "priority": 95,
+    "reason": "[Deep Tech Review] 2.4 存在多处技术事实错误：doFrame 源码块与 android-16 实现不符，FrameMetrics / FrameCallback 示例不可直接工作，Perfetto SQL 与版本演进也有偏差",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "行166-207（doFrame 核心代码块）",
+        "detail": "文中将代码块标成“AOSP android-16.0.0_r1 的实际关键代码”，但与真实实现不符：android-16 中签名是 `void doFrame(long frameTimeNanos, int frame, VsyncEventData ...)`，trace 名称是 `Choreographer#doFrame <vsyncId>`，实际流程还包含 `mFrameData.update(...)` 与 `mFrameInfo.setVsync(...)`，`doCallbacks` 也不是三参版本。",
+        "suggestion": "要么把代码块改成明确标注的伪代码，要么对齐 android-16.0.0_r1 实际实现，避免读者把伪代码当成源码事实。"
+      },
+      {
+        "type": "源码错误",
+        "location": "行308-329（FrameMetrics 示例）",
+        "detail": "示例使用了不存在的 `View.OnFrameMetricsAvailableListener` / `setOnFrameMetricsAvailableListener(...)` / `FrameMetrics.METRIC_*` 常量，并把 `getMetric()` 返回值当成毫秒。公开 API 实际是 `Window.addOnFrameMetricsAvailableListener(Window.OnFrameMetricsAvailableListener, Handler)`；常量名是 `DRAW_DURATION`、`GPU_DURATION` 等，返回单位是纳秒；其中 `GPU_DURATION` 还是 API 31 才加入。",
+        "suggestion": "改成 Window 级监听示例，使用 `FrameMetrics.DRAW_DURATION` / `FrameMetrics.GPU_DURATION`（或 API 24 可用的 `COMMAND_ISSUE_DURATION`），并明确单位是 ns。"
+      },
+      {
+        "type": "源码错误",
+        "location": "行434-447（FrameCallback 持续监控示例）",
+        "detail": "lambda 示例里写 `choreographer.postFrameCallback(this)`，在 Java 里 `this` 指向外层对象而不是当前 lambda 对应的 `FrameCallback`，代码无法按文中描述完成自我续订。",
+        "suggestion": "改成具名 `FrameCallback` 变量或匿名内部类自引用版本，确保示例可以直接编译并持续注册。"
+      },
+      {
+        "type": "源码错误",
+        "location": "行356-423（Perfetto 查询与分析）",
+        "detail": "文中说可以用 `WHERE name = 'Choreographer#doFrame'` 精确查找帧，但 android-16.0.0_r1 的 trace 名称实际是 `Choreographer#doFrame <vsyncId>`。按当前 SQL 直接等值过滤，现代 trace 上可能查不到或漏掉目标切片。",
+        "suggestion": "把查询改成 `name LIKE 'Choreographer#doFrame%'` / `GLOB`，并补一个 Frame Timeline 专用查询示例。"
+      },
+      {
+        "type": "版本差异",
+        "location": "行517-523（版本演进）",
+        "detail": "`CALLBACK_INSETS_ANIMATION` 被写成 Android 9 / API 28，引入背景也归因到“手势导航”；但它与 WindowInsetsAnimation 体系对应，版本应落在 Android 11 / API 30。`Surface.setFrameRate(float, int)` 也不是 Android 12 才有，而是 API 30 先引入，两参数/三参数重载在 30/31 分开出现。",
+        "suggestion": "重写这一段的版本时间线：API 24 是 FrameMetrics listener；API 30 是 WindowInsetsAnimation / `Surface.setFrameRate(float, int)`；API 31 是三参 `setFrameRate` 与更多帧率管理；API 33 才是 `VsyncEventData` / Frame Timeline。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-11T16:20:00+08:00",
+    "status": "pending"
   }
 ]
