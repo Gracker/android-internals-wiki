@@ -3965,5 +3965,56 @@
     "added_at": "2026-04-11T21:14:00+08:00",
     "status": "pending",
     "original_review_log": "logs/review/2026-04-11-21-review.md"
+  },
+  {
+    "section": "3.4",
+    "section_title": "输入延迟与预测输入技术",
+    "priority": 95,
+    "reason": "[Deep Tech Review] ViewRootImpl 输入时序讲反，MotionEventPredictor API/版本写错，Perfetto e2e 指标缺关键链路",
+    "material_paths": [
+      "intake/research-gaps.md",
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "行 109-119 Choreographer.doFrame() 代码片段",
+        "detail": "正文写成 doCallbacks(CALLBACK_*, frameData, frameIntervalNanos)，但 android-16.0.0_r1 实际签名是 doCallbacks(callbackType, frameIntervalNanos)。当前代码片段无法在 AOSP 对上。",
+        "suggestion": "按 AOSP android-16.0.0_r1 改成真实签名，或缩减为只展示回调顺序的准确片段。"
+      },
+      {
+        "type": "原理断裂",
+        "location": "行 104-125、151-156 App 处理延迟 / VSync 等待",
+        "detail": "正文把“事件送达 App”与“下一帧 doFrame 开始渲染”合并成同一阶段，容易让读者误以为输入事件必须等 VSync 才会被处理。AOSP ViewRootImpl 的 processRawInputEvent() -> enqueueInputEvent(..., true) -> doProcessInputEvents() 是立即处理路径，只有 batched motion 消费才会挂到 Choreographer.CALLBACK_INPUT。",
+        "suggestion": "拆成“输入处理延迟”和“视觉反馈等待下一帧”两段，并补 ViewRootImpl 的立即处理/批处理分叉。"
+      },
+      {
+        "type": "源码错误",
+        "location": "行 232-238 MotionEventPredictor 示例",
+        "detail": "示例写成 motionEventPredictor.predict(motionEvent)，但 Jetpack androidx.input.motionprediction.MotionEventPredictor 的接口是 predict()，没有 MotionEvent 入参。",
+        "suggestion": "改为 record(event) + predict() 的真实调用方式，并补 newInstance(View) 的创建上下文。"
+      },
+      {
+        "type": "版本差异",
+        "location": "行 246 MotionPredictor 版本边界",
+        "detail": "正文写“Android 12+ 可利用系统级预测 API android.view.MotionPredictor”，但官方 API 文档显示 MotionPredictor Added in API level 34，对应 Android 14，不是 Android 12。",
+        "suggestion": "明确区分 Jetpack MotionEventPredictor 的兼容层与 platform MotionPredictor(API 34+) 的版本边界。"
+      },
+      {
+        "type": "知识盲区",
+        "location": "行 104-125 / 387-391 输入处理时序",
+        "detail": "章节没有覆盖 batched input、unbuffered dispatch、resampling 这条系统内建低延迟路径，导致“为何有些输入立刻处理，有些输入会对齐 CALLBACK_INPUT”说不清。",
+        "suggestion": "补 ViewRootImpl.WindowInputEventReceiver.onBatchedInputEventPending()、scheduleConsumeBatchedInput()、consumeBatchedInputEvents() 与 touch resampling 的关系。"
+      },
+      {
+        "type": "知识盲区",
+        "location": "行 287-326 Perfetto android_input_events",
+        "detail": "正文把 end_to_end_latency_dur 当成现成指标使用，但没有解释 android_input_id 如何与 FrameMetrics.Index.INPUT_EVENT_ID、HardwareRendererObserver、presentTime 关联，读者无法判断为什么有时 e2e 为 null。",
+        "suggestion": "补 InputMetricsListener / FrameMetrics 链路，解释 end_to_end_latency_dur 的生成条件和失效场景。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-11T21:23:00+08:00",
+    "status": "pending"
   }
 ]
