@@ -3687,5 +3687,38 @@
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-11T16:20:00+08:00",
     "status": "completed"
+  },
+  {
+    "section": "2.17",
+    "section_title": "Frame Pacing Library 与帧节奏控制",
+    "priority": 90,
+    "reason": "[review回炉] 缺少 outline/锚点，且关键量化与版本演进断言缺少可追溯来源",
+    "material_paths": [
+      "intake/suggestions.md（含 review 意见）"
+    ],
+    "review_issues": [
+      {
+        "type": "需重写",
+        "location": "全文结构",
+        "detail": "缺少 outline-start / outline-end 与 🔹 锚点设计，Task 6 无法按统一大纲检查结构覆盖率。",
+        "suggestion": "按 writing-guide.md 补齐 outline 块，并让每个锚点至少对应 1 个完整段落。"
+      },
+      {
+        "type": "需确认",
+        "location": "版本演进 + 多处量化断言",
+        "detail": "Android 9/10/12/16/17 的演进描述，以及“帧间隔标准差 1ms→3ms”“Auto 模式 11ms/12-16ms/22ms 阈值”等断言缺少可追溯来源。",
+        "suggestion": "由 Task 9 / Task 2B 核对官方文档、AOSP 和原始 benchmark；无法确认时降级为定性表述或补 [待验证]。"
+      },
+      {
+        "type": "需补充素材",
+        "location": "Perfetto / FrameTimeline 分析",
+        "detail": "目前只有文字说明和占位图，缺少至少一组真实 Trace、track 名称或可复用 SQL/截图标注，实操闭环不够。",
+        "suggestion": "补一组真实 Perfetto 样例，至少覆盖 FrameTimeline、Buffer stuffing 或帧间隔不均匀的可视化识别。"
+      }
+    ],
+    "added_by": "task6-review",
+    "added_at": "2026-04-11T17:10:52+08:00",
+    "status": "pending",
+    "original_review_log": "logs/review/2026-04-11-17-review.md"
   }
 ]

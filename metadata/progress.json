@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-11T16:52:50+08:00",
+  "generated_at": "2026-04-11T17:10:52+08:00",
   "state_machine_version": "v2",
   "total_sections": 206,
   "metrics": {
@@ -10,28 +10,28 @@
     "task9_unknown": 30,
     "task2b_unknown": 30,
     "ready-for-review": 173,
-    "pipeline_task6_pending": 172,
-    "task6_pending": 158,
+    "pipeline_task6_pending": 171,
+    "task6_pending": 157,
     "task9_pending": 175,
-    "task2b_idle": 159,
+    "task2b_idle": 158,
     "task6_revisiting": 14,
     "task2b_fixed": 14,
-    "pipeline_task2b_pending": 3,
-    "task6_reviewed": 4,
-    "task2b_pending": 3,
+    "pipeline_task2b_pending": 4,
+    "task6_reviewed": 5,
+    "task2b_pending": 4,
     "pipeline_task9_pending": 1,
-    "last_updated": "2026-04-11T16:20:00+08:00"
+    "last_updated": "2026-04-11T17:10:52+08:00"
   },
   "pipeline": {
     "pipeline_stage_counts": {
-      "task2b_pending": 3,
-      "task6_pending": 172,
+      "task2b_pending": 4,
+      "task6_pending": 171,
       "task9_pending": 1,
       "unknown": 30
     },
     "task6_state_counts": {
-      "pending": 158,
-      "reviewed": 4,
+      "pending": 157,
+      "reviewed": 5,
       "revisiting": 14,
       "unknown": 30
     },
@@ -42,8 +42,8 @@
     },
     "task2b_state_counts": {
       "fixed": 14,
-      "idle": 159,
-      "pending": 3,
+      "idle": 158,
+      "pending": 4,
       "unknown": 30
     }
   },
@@ -610,10 +610,13 @@
       "title": "Frame Pacing Library 与帧节奏控制",
       "path": "src/part1-fundamentals/ch02-rendering/17-frame-pacing.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "pending",
+      "pipeline_stage": "task2b_pending",
+      "task6_state": "reviewed",
       "task9_state": "pending",
-      "task2b_state": "idle"
+      "task2b_state": "pending",
+      "reviewed_by": "openclaw-task6",
+      "reviewed_date": "2026-04-11",
+      "task6_result": "needs-rework"
     },
     "src/part1-fundamentals/ch02-rendering/18-adaptive-refresh-rate.md": {
       "chapter": "2.18",

@@ -23,10 +23,13 @@ created_by: "task2a-knowledge-gap"
 created_date: "2026-04-05"
 gap_source: "官方文档 + 研究素材"
 section: "2.17"
-pipeline_stage: task6_pending
-task6_state: pending
+pipeline_stage: task2b_pending
+task6_state: reviewed
 task9_state: pending
-task2b_state: idle
+task2b_state: pending
+reviewed_by: "openclaw-task6"
+reviewed_date: "2026-04-11"
+task6_result: needs-rework
 ---
 
 # 2.17 Frame Pacing Library 与帧节奏控制
@@ -270,11 +273,11 @@ Frame Pacing Library 的演进反映了 Android 游戏生态的成熟：
 
 **误区：Swappy 只对游戏有用。** 任何使用自定义渲染循环的场景都需要帧节奏控制——包括视频播放器、AR/VR 应用、实时预览编辑器。不过对于使用 View 系统或 Jetpack Compose 的普通应用，Choreographer 已经自动处理了帧同步，不需要额外的帧节奏控制。
 
-**误区：启用 Swappy 后帧率会降低。** Swappy 不会降低帧率上限——如果游戏能稳定跑到 60FPS 在 60Hz 设备上，Swappy 不会把它降到 30FPS。Swappy 只在游戏渲染速度不稳定时介入，选择一个能保持均匀帧间隔的目标帧率。实际上，启用 Swappy 后用户感知的流畅度通常更好，因为消除了帧间隔的波动。
+**误区：启用 Swappy 后帧率会降低。** Swappy 不会降低帧率上限——如果游戏能稳定跑到 60FPS 在 60Hz 设备上，Swappy 不会把它降到 30FPS。Swappy 只在游戏渲染速度不稳定时介入，选择一个能保持均匀帧间隔的目标帧率。启用 Swappy 后，用户感知的流畅度通常会更好，因为帧间隔波动更小。
 
 **误区：Vulkan 游戏不需要 Swappy，因为 Vulkan 自己有 present mode。** Vulkan 的 `VK_PRESENT_MODE_FIFO_KHR` 确实提供了 VSync 同步，但它不知道 Android 的 Choreographer 时间线，也无法利用 `VK_GOOGLE_display_timing` 精确控制呈现时间。没有 Swappy，Vulkan 游戏在 Android 上的帧节奏控制精度远不如有 Swappy 的版本。
 
-[已验证: L2 官方文档 + L4 交叉验证（developer.android.com + AOSP 源码）]
+[已验证: 官方文档 + AOSP 源码]
 
 ## 非游戏场景的帧节奏控制
 
