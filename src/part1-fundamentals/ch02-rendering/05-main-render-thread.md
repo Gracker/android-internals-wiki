@@ -208,22 +208,22 @@ GPU 命令的提交是**异步的**。CPU（RenderThread）把命令扔给 GPU �
 
 ### Fence 机制
 
-Fence 是 Android 图形系统中的核心同步原语，它本质上是一个文件描述符（file descriptor），可以跨进程、跨 CPU/GPU 传递。（关于 Fence 的底层实现与 DMA-BUF 的关系，我们在 [2.16 Sync Fence 框架与帧同步机制](16-sync-fence.md) 中有详细讨论。）在渲染流程中有两个关键的 Fence：
+Fence 是 Android 图形系统中的核心同步原语，它本质上是一个文件描述符（file descriptor），可以跨进程、跨 CPU/GPU 传递。（关于 Fence 的底层实现与 DMA-BUF 的关系，我们在 [2.16 Sync Fence 框架与帧同步机制](16-sync-fence.md) 中有详细讨论。）这里最容易讲反的是方向，所以先把语义钉住。
 
-**acquireFence**：当 RenderThread 调用 `dequeueBuffer()` 从 BufferQueue 获取一个 Buffer 时，这个 Buffer 可能还在被 SurfaceFlinger 使用（上一帧还没有完全显示完）。acquireFence 表示"这个 Buffer 何时可以被安全写入"。如果 SurfaceFlinger 还没释放这个 Buffer，RenderThread 会等待这个 Fence signal。
+**`queueBuffer()` 输入的 fence（到 consumer 一侧叫 acquire fence）**：RenderThread 提交一帧时，会把“GPU 可能还没完全写完这个 buffer”的 fence 一起交给 BufferQueue。这个 fd 到了 SurfaceFlinger / HWC 一侧，就表示“读之前先等 producer 写完”，所以 consumer 会把它当 acquire fence。
 
-**releaseFence**：当 RenderThread 调用 `queueBuffer()` 提交渲染完成的帧时，它会附带一个 releaseFence，告诉 SurfaceFlinger："GPU 可能还在画，等这个 Fence signal 后 Buffer 的内容才算真正准备好了"。SurfaceFlinger 在合成时需要等待这个 Fence。
+**`dequeueBuffer()` 返回的 fence（consumer 返回来的 release fence）**：RenderThread 下一次拿回旧 buffer 时，如果 SurfaceFlinger / HWC 还没彻底用完上一帧，就会同时拿到一条 release fence。这个 fence 表示“写之前先等 consumer 读完”，所以 RenderThread 在重新写这个 buffer 前必须先等它 signal。
 
 ```
 时间线：
-RenderThread:  dequeueBuffer ──→ [GPU 渲染中] ──→ queueBuffer(releaseFence) ──→ 等下一帧
-               ↑ 等待 acquireFence                   │
-               │ (可能等待 SF 释放 Buffer)            ↓
-SurfaceFlinger:                              ←── 收到 Buffer + releaseFence
-                                               等待 releaseFence ──→ 合成 ──→ 上屏
+RenderThread:  dequeueBuffer + releaseFence ──→ [GPU 渲染中] ──→ queueBuffer(input fence) ──→ 等下一帧
+               ↑ 等 consumer 读完                                         │
+               │                                                          ↓
+SurfaceFlinger:                     ←── 收到 Buffer + acquire fence
+                                     等 acquire fence ──→ 合成 / 上屏 ──→ 返回 release fence
 ```
 
-这个异步机制解释了一个常见的 Perfetto 现象：`queueBuffer` 的耗时通常不是 GPU 渲染本身的时间，而是等待 `acquireFence`（等 Buffer 可用）的时间。如果 Triple Buffering 被耗尽，这个等待可以很长。
+这个异步机制解释了一个常见的 Perfetto 现象：`queueBuffer()` 结束得很快，不代表 GPU 已经画完；真正拖长 RenderThread 的，往往是下一次 `dequeueBuffer()` 之前等待 release fence 的时间，也就是等旧 buffer 可重用。如果 Triple Buffering 被耗尽，这个等待会非常明显。
 
 ## 在 Perfetto 中的表现
 
@@ -244,9 +244,9 @@ VSync-app (0ms)
 │
 ├── RenderThread
 │   ├── DrawFrame 开始 (8.5ms)
-│   ├── dequeueBuffer (等待 acquireFence)
+│   ├── dequeueBuffer (等待 release fence，可重用旧 buffer)
 │   ├── Flush GPU Commands (GPU 后台执行)
-│   └── queueBuffer (提交 + releaseFence)
+│   └── queueBuffer (提交 + 输入 fence，供 consumer 当 acquire fence 使用)
 │
 └── VSync-sf (~11ms offset) → SurfaceFlinger 合成
 ```
@@ -448,7 +448,7 @@ SF:        ...    [Latch F0] [Latch F1] [Latch F2] ...
 
 **误区四："queueBuffer 耗时等于 GPU 渲染耗时"**
 
-不是。`queueBuffer` 的耗时主要是等待 `acquireFence`（等 Buffer 可用）的时间。GPU 渲染是异步的，RenderThread 提交命令后 GPU 在后台执行。`queueBuffer` 变长通常意味着 Buffer 被耗尽，而不是 GPU 本身变慢。
+不是。GPU 渲染是异步的，RenderThread 提交命令后 GPU 会在后台继续执行。真正容易把 RenderThread 卡住的，通常是下一次 `dequeueBuffer()` 时等待 release fence，也就是等旧 buffer 被 SurfaceFlinger / HWC 用完后再回收。
 
 ## 总结
 
