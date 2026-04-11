@@ -27,6 +27,14 @@ related_chapters: ["2.1", "2.6", "3.1", "8.2", "8.4"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-04-04"
 gap_source: "AOSP结构+官方文档+读者需求"
+pipeline_stage: task9_pending
+task6_state: reviewed
+task9_state: pending
+task2b_state: idle
+reviewed_by: "openclaw-task6"
+reviewed_date: "2026-04-11"
+task6_result: "pass-light-edit"
+review_log: "logs/review/2026-04-11-11-review.md"
 ---
 
 # 2.12 Window Manager Service 与窗口管理
@@ -59,7 +67,7 @@ WMS 与其他关键组件的协作关系可以这样概括：
 
 理解 WMS 的工作方式，最核心的一步是搞清楚 Window 和 Surface 的关系。这两个概念经常被混淆，但它们在架构上是完全不同的东西。
 
-每个 Window 在 WMS 中对应一个 WindowState 对象，WindowState 持有一个 SurfaceControl。SurfaceControl 是一个句柄，它代表 SurfaceFlinger 中的一个 Layer——但 SurfaceControl 本身不能用来绘制。可以绘制的 Surface 通过 `relayoutWindow()` 返回给 App 端。所以准确的 ownership 是：
+每个 Window 在 WMS 中对应一个 WindowState 对象，WindowState 持有一个 SurfaceControl。SurfaceControl 是一个句柄，它代表 SurfaceFlinger 中的一个 Layer——但 SurfaceControl 本身不能用来绘制。可以绘制的 Surface 通过 `relayoutWindow()` 返回给 App 端。所以准确的职责分工是：
 
 - **WMS 端**：持有 SurfaceControl，控制 Surface 的位置、大小、透明度、Z-order 等元数据
 - **App 端**：持有 Surface（通过 ViewRootImpl），用于实际的绘制（Canvas 或 GPU 渲染）
@@ -298,7 +306,7 @@ Android 17 引入的 `recreateOnConfigChanges` 属性进一步优化了这个场
 
 ### Android 16 Desktop Windowing
 
-Android 16（2025 年 6 月发布）将 Desktop Windowing 推向了 GA。在外接显示器场景下，WMS 需要管理自由窗口的拖拽、缩放、层级——这和传统 PC 操作系统的窗口管理非常类似。
+Android 16（2025 年 6 月发布）将 Desktop Windowing 推向了 GA。在外接显示器场景下，WMS 需要管理自由窗口的拖拽、缩放、层级——这和传统 PC 操作系统的窗口管理很接近。
 
 Desktop Windowing 对 WMS 的核心挑战：
 
@@ -385,7 +393,7 @@ WMS 的部分操作确实在 system_server 主线程上执行，但动画相关�
 
 ### 误区 2："Window 数量越多越卡"
 
-Window 数量本身不是问题，关键在于有多少 Window 参与 `performLayout()` 的计算。一个后台 App 的隐藏 Window 几乎不消耗 WMS 的资源。真正的性能瓶颈是"同时可见的、需要频繁 relayout 的 Window 数量"——这正是多窗口和 Desktop 模式下需要关注的。
+Window 数量本身不是问题。真正需要关注的是有多少 Window 参与 `performLayout()` 的计算。一个后台 App 的隐藏 Window 几乎不消耗 WMS 的资源。真正的性能瓶颈是"同时可见的、需要频繁 relayout 的 Window 数量"——这正是多窗口和 Desktop 模式下需要关注的。
 
 ### 误区 3："StartingWindow 是 App 画的"
 
