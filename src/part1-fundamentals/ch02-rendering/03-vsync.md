@@ -2,7 +2,7 @@
 title: "VSync 机制"
 chapter: "2.3"
 status: ready-for-review
-reviewed_date: 2026-04-02
+reviewed_date: 2026-04-11
 reviewed_by: openclaw-task6
 polish_count: 1
 polish_date: "2026-04-04"
@@ -26,6 +26,11 @@ sources:
     path: "https://cloud.tencent.com/developer/article/1905184 (Vsync Phase 详解)"
 tags: [vsync, dispsync, choreographer, surfaceflinger, phase-offset, arr, rendering]
 related_chapters: ["2.1", "2.4", "2.5", "2.6", "2.9", "8.1"]
+pipeline_stage: task2b_pending
+task6_state: reviewed
+task6_result: needs-rework
+task9_state: pending
+task2b_state: pending
 ---
 
 # VSync 机制
@@ -104,7 +109,7 @@ VSync 信号也叫 VBlank 信号或 TE（Tearing Effect）信号。从硬件角�
 
 Android 4.1（Jelly Bean，2012 年）引入了 Project Butter（黄油计划），这是 Android 历史上第一次系统性地解决流畅度问题。Project Butter 的三个核心组件是：
 
-1. **VSync 同步**：让 App 渲染、SurfaceFlinger 合成都与硬件 VSync 对齐
+1. **VSync 同步**：让 App 渲染、SurfaceFlinger 合成都跟硬件 VSync 同步
 2. **Choreographer**：让 App 能按 VSync 节拍进行绘制
 3. **三缓冲（Triple Buffer）**：缓解双缓冲下偶发超时导致的连续掉帧
 
@@ -304,7 +309,7 @@ DispSync / VsyncTracker (软件模型)
     │
     └──→ [Phase: AppSF offset, Android 13+]
          DispSyncSource → CallbackRepeater → EventThread (appSf)
-         → BitTube → DisplayEventReceiver → Choreographer (VSYNC-appSf)
+         → BitTube → DisplayEventReceiver → Choreographer (vsync-appSf)
 ```
 
 ---
@@ -571,7 +576,7 @@ Android 16 新增的 API：
 
 **[自动发现: 来源 intake/research-feeds/2026-04-02-11-ch02-android17-deltique-lockfree-messagequeue.md]**
 
-Android 17（API 37）引入了**DeliQueue**——一个革命性的无锁 MessageQueue 实现，从架构层面消除了主线程锁竞争，对 VSync 机制和 Choreographer 性能产生了深远影响。
+Android 17（API 37）引入了**DeliQueue**——一个无锁 MessageQueue 实现，目标是减少主线程锁竞争。它对 VSync 机制和 Choreographer 的直接影响，仍需结合公开源码与数据进一步核实。
 
 #### DeliQueue 架构设计
 
@@ -652,7 +657,7 @@ DeliQueue 的引入与 Android 17 的其他 VSync 改进形成协同效应：
 2. **ARR 反应速度提升**：在帧率切换场景下，DeliQueue 确保 doFrame 能快速响应 VSync-app 信号
 3. **帧节奏库基础优化**：Frame Pacing Library 依赖稳定的 doFrame 调用，Deliqueue 为其提供了更可靠的基础
 
-`[已验证: AOSP android-17-preview frameworks/native/services/surfaceflinger/DispSync.cpp + Google 内部 Beta 测试数据]`
+`[存疑: 本节引用了 android-17-preview 与“Google 内部 Beta 测试数据”，但验证来源没有给出可公开复核的源码路径或外部数据出处，需 Task 9 / Task 2B 进一步核实 DeliQueue 对 VSync/Choreographer 的直接影响与量化数据。]`
 
 ---
 
