@@ -255,12 +255,42 @@
   {
     "section": "4.8",
     "section_title": "ART 分代垃圾回收与 GC 暂停优化",
-    "priority": 80,
-    "reason": "知识缺口挖掘：Android 17 Generational GC 新特性，GC 暂停是 jank 主要来源之一，16/20",
-    "created_date": "2026-04-05",
+    "priority": 90,
+    "reason": "[review回炉] 版本结论、源码锚点、Perfetto 表名与采集链仍需技术核对",
     "material_paths": [
-      "intake/research-feeds/2026-04-07-11-android17-art-generational-gc-concurrent-mark-compact.md"
-    ]
+      "intake/research-feeds/2026-04-07-11-android17-art-generational-gc-concurrent-mark-compact.md",
+      "intake/suggestions.md（含 review 意见）"
+    ],
+    "review_issues": [
+      {
+        "type": "需确认",
+        "location": "版本时间线 + Android 17 变化",
+        "detail": "Android 10 正式引入分代 GC、Android 17 将分代收集原生集成到 CMC、以及“可通过 Google Play System Updates 回推到 Android 12+”这组版本结论写得偏满，当前章节缺少逐项可追溯的版本证据。",
+        "suggestion": "由 Task 9 对照 AOSP / 官方发布说明核对版本线；无法确认时改成更保守的版本演进描述。"
+      },
+      {
+        "type": "需确认",
+        "location": "Write Barrier / Card Table / Young GC 执行流程",
+        "detail": "正文把 Write Barrier 入口、Remembered Set 构建流程和 Young GC 步骤写成确定结论，但当前引用主要是概括式路径，和 Android 17 实际实现之间还缺一层源码锚点。",
+        "suggestion": "补具体 AOSP 路径或代码片段；如果某些细节只是概念示意，应明确标注适用范围和待验证点。"
+      },
+      {
+        "type": "需确认",
+        "location": "Perfetto 分析章节",
+        "detail": "`android_garbage_collection_events` 表、`actual_frame_timeline` 表、`art_gc` counter track，以及 `adb shell heapprofd --pid=<PID> --java` 这组用法需要核对当前 Android / Perfetto 版本的可用性、表名和采集方式。",
+        "suggestion": "由 Task 9 复核 Perfetto stdlib、数据表和 heapprofd 命令；必要时改成已验证可运行的查询与抓取方法。"
+      },
+      {
+        "type": "需补充素材",
+        "location": "GC 与掉帧的 Perfetto 证据",
+        "detail": "GC pause 与 doFrame 冲突、正常 GC 模式 vs 内存抖动模式目前只有文字和 ASCII 示意，没有真实 Trace 截图或等价图示，证据链不完整。",
+        "suggestion": "补 2-3 张真实 Perfetto 片段，至少覆盖 GC pause 与 FrameTimeline 重叠，以及高频 Young GC 的典型图形。"
+      }
+    ],
+    "added_by": "task6-review",
+    "added_at": "2026-04-12T03:10:00+08:00",
+    "status": "pending",
+    "original_review_log": "logs/review/2026-04-12-03-review.md"
   },
   {
     "section": "14.9",

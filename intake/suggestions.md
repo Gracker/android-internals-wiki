@@ -1301,3 +1301,29 @@
 - **位置**：frontmatter related_chapters
 - **问题**：正文大量涉及 `onInterceptTouchEvent()`、`requestDisallowInterceptTouchEvent()` 和输入拦截边界，但 `related_chapters` 只列到 3.4 / 2.4，漏了 3.5《输入事件拦截与安全机制》。ch03 内部关联不完整。
 - **建议**：补 `3.5` 到 `related_chapters`，保持输入分发、拦截、安全三章的互链一致。
+
+
+## [Task6 Review] 4.8 ART 分代垃圾回收与 GC 暂停优化 — 2026-04-12
+- **类型**：需确认
+- **位置**：版本时间线 + Android 17 变化
+- **问题**：Android 10 正式引入分代 GC、Android 17 将分代收集原生集成到 CMC、以及“可通过 Google Play System Updates 回推到 Android 12+”这组版本结论写得偏满，当前章节缺少逐项可追溯的版本证据。
+- **建议**：由 Task 9 对照 AOSP / 官方发布说明核对版本线；无法确认时改成更保守的版本演进描述。
+- **review 日志**：logs/review/2026-04-12-03-review.md
+
+- **类型**：需确认
+- **位置**：Write Barrier / Card Table / Young GC 执行流程
+- **问题**：正文把 Write Barrier 入口、Remembered Set 构建流程和 Young GC 步骤写成确定结论，但当前引用主要是概括式路径，和 Android 17 实际实现之间还缺一层源码锚点。
+- **建议**：补具体 AOSP 路径或代码片段；如果某些细节只是概念示意，应明确标注适用范围和待验证点。
+- **review 日志**：logs/review/2026-04-12-03-review.md
+
+- **类型**：需确认
+- **位置**：Perfetto 分析章节
+- **问题**：`android_garbage_collection_events` 表、`actual_frame_timeline` 表、`art_gc` counter track，以及 `adb shell heapprofd --pid=<PID> --java` 这组用法需要核对当前 Android / Perfetto 版本的可用性、表名和采集方式。
+- **建议**：由 Task 9 复核 Perfetto stdlib、数据表和 heapprofd 命令；必要时改成已验证可运行的查询与抓取方法。
+- **review 日志**：logs/review/2026-04-12-03-review.md
+
+- **类型**：需补充素材
+- **位置**：GC 与掉帧的 Perfetto 证据
+- **问题**：GC pause 与 doFrame 冲突、正常 GC 模式 vs 内存抖动模式目前只有文字和 ASCII 示意，没有真实 Trace 截图或等价图示，证据链不完整。
+- **建议**：补 2-3 张真实 Perfetto 片段，至少覆盖 GC pause 与 FrameTimeline 重叠，以及高频 Young GC 的典型图形。
+- **review 日志**：logs/review/2026-04-12-03-review.md

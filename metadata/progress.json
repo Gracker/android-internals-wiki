@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-12T02:55:18+08:00",
+  "generated_at": "2026-04-12T03:10:00+08:00",
   "state_machine_version": "v2",
   "total_sections": 206,
   "metrics": {
@@ -9,30 +9,30 @@
     "task6_unknown": 30,
     "task9_unknown": 30,
     "task2b_unknown": 30,
-    "last_updated": "2026-04-12T02:55:18+08:00",
+    "last_updated": "2026-04-12T03:10:00+08:00",
     "ready-for-review": 173,
     "pipeline_task9_pending": 2,
-    "pipeline_task6_pending": 171,
-    "pipeline_task2b_pending": 3,
-    "task6_reviewed": 5,
-    "task6_pending": 148,
+    "pipeline_task6_pending": 170,
+    "pipeline_task2b_pending": 4,
+    "task6_reviewed": 6,
+    "task6_pending": 147,
     "task6_revisiting": 23,
     "task9_pending": 176,
-    "task2b_idle": 150,
+    "task2b_idle": 149,
     "task2b_fixed": 23,
-    "task2b_pending": 3
+    "task2b_pending": 4
   },
   "pipeline": {
     "pipeline_stage_counts": {
       "unknown": 30,
       "task9_pending": 2,
-      "task6_pending": 171,
-      "task2b_pending": 3
+      "task6_pending": 170,
+      "task2b_pending": 4
     },
     "task6_state_counts": {
       "unknown": 30,
-      "reviewed": 5,
-      "pending": 148,
+      "reviewed": 6,
+      "pending": 147,
       "revisiting": 23
     },
     "task9_state_counts": {
@@ -41,9 +41,9 @@
     },
     "task2b_state_counts": {
       "unknown": 30,
-      "idle": 150,
+      "idle": 149,
       "fixed": 23,
-      "pending": 3
+      "pending": 4
     }
   },
   "issues": {
@@ -866,10 +866,13 @@
       "title": "ART 分代垃圾回收与 GC 暂停优化",
       "path": "src/part1-fundamentals/ch04-memory/08-art-generational-gc.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "pending",
+      "pipeline_stage": "task2b_pending",
+      "task6_state": "reviewed",
       "task9_state": "pending",
-      "task2b_state": "idle"
+      "task2b_state": "pending",
+      "reviewed_date": "2026-04-12",
+      "reviewed_by": "openclaw-task6",
+      "task6_result": "needs-rework"
     },
     "src/part1-fundamentals/ch04-memory/README.md": {
       "chapter": null,

@@ -1,41 +1,71 @@
 ---
-title: "ART 分代垃圾回收与 GC 暂停优化"
-chapter: "4.8"
+title: ART 分代垃圾回收与 GC 暂停优化
+chapter: '4.8'
+section: '4.8'
 status: ready-for-review
-drafted_date: "2026-04-06"
-applicable_versions: "Android 14 (API 34) - Android 17 (API 37)"
-last_verified: "2026-04-06"
-last_verified_against: "AOSP android-17-beta3 + source.android.com/docs/core/perf/art-management"
+drafted_date: '2026-04-06'
+applicable_versions: Android 14 (API 34) - Android 17 (API 37)
+last_verified: '2026-04-06'
+last_verified_against: AOSP android-17-beta3 + source.android.com/docs/core/perf/art-management
 confidence: medium
 sources:
-  - type: official
-    path: "https://source.android.com/docs/core/perf/art-management"
-  - type: official
-    path: "https://developer.android.com/about/versions/17"
-  - type: aosp
-    path: "art/runtime/gc/collector/concurrent_copying.cc"
-  - type: aosp
-    path: "art/runtime/gc/heap.cc"
-  - type: research
-    path: "intake/research-feeds/2026-04-03-19-ch04-android17-generational-gc.md"
-  - type: research
-    path: "intake/research-feeds/2026-03-31-11-ch04-art-generational-gc.md"
-  - type: research
-    path: "intake/research-feeds/2026-04-02-07-ch04-art-gc-pause-time-data.md"
-  - type: research
-    path: "intake/research-feeds/2026-03-31-19-ch04-app-memory-churn-gc-objectpool.md"
+- type: official
+  path: https://source.android.com/docs/core/perf/art-management
+- type: official
+  path: https://developer.android.com/about/versions/17
+- type: aosp
+  path: art/runtime/gc/collector/concurrent_copying.cc
+- type: aosp
+  path: art/runtime/gc/heap.cc
+- type: research
+  path: intake/research-feeds/2026-04-03-19-ch04-android17-generational-gc.md
+- type: research
+  path: intake/research-feeds/2026-03-31-11-ch04-art-generational-gc.md
+- type: research
+  path: intake/research-feeds/2026-04-02-07-ch04-art-gc-pause-time-data.md
+- type: research
+  path: intake/research-feeds/2026-03-31-19-ch04-app-memory-churn-gc-objectpool.md
 tags:
-  - android
-  - memory
-  - research
-pipeline_stage: task6_pending
-task6_state: pending
+- android
+- memory
+- research
+- art
+- gc
+- perfetto
+reviewed_date: '2026-04-12'
+reviewed_by: openclaw-task6
+review_notes: '2026-04-12 task6 review: needs-rework。L1/L2 小修 10 处（section/tags/outline/措辞/验证标注/术语统一）。L3 回炉 4 项（版本结论、源码锚点、Perfetto 表名与采集链、Trace 证据）。'
+pipeline_stage: task2b_pending
+task6_state: reviewed
+task6_result: needs-rework
 task9_state: pending
-task2b_state: idle
+task2b_state: pending
 ---
 
-
 # 4.8 ART 分代垃圾回收与 GC 暂停优化
+
+<!-- outline-start -->
+## 本节要点大纲
+
+### 锚点（必须覆盖）
+
+- 🔹 GC 暂停为什么会影响流畅性
+- 🔹 ART 分代 GC 的演进路径，以及 Android 17 的变化
+- 🔹 Write Barrier、Card Table、Remembered Set 与 Young GC 的执行流程
+- 🔹 在 Perfetto 中识别 GC 暂停、GC 频率与掉帧的关系
+- 🔹 App 端减轻 GC 压力的常见手段
+
+### 扩展（可选深入）
+
+- 🔸 分代 GC 与 §4.3 ART 内存管理、§7.2 滑动卡顿分析的关系
+- 🔸 版本演进与常见误区
+
+### OpenClaw 加工指引
+
+> **锚点**是最低覆盖要求，加工时必须逐条落实并标注验证结果。
+> **扩展**视素材丰富程度选择性深入。
+> 涉及具体 API、AOSP 路径、Perfetto 表名或量化数据时，如暂时无法确认来源，保留 `[待验证]` 比写成确定结论更稳妥。
+<!-- outline-end -->
 
 阅读本节之前，建议先了解 §4.3 中 ART 堆结构和 GC 策略演进的基础内容。本节在 §4.3 的基础上，深入分代垃圾回收的内部实现——Write Barrier 如何工作、Card Table 怎么记录跨代引用、Android 17 对分代 GC 做了哪些增强——然后把视角拉回到实际工作：GC 暂停怎么导致掉帧，在 Perfetto 中怎么分析，App 端有哪些手段可以减轻 GC 压力。
 
@@ -61,9 +91,9 @@ GC 干扰帧:
 
 问题不止于暂停时间。GC 线程在并发标记和拷贝阶段需要占用 CPU——在 4 核的设备上，一个 GC 线程就吃掉了 25% 的计算资源。如果应用在滑动列表时触发了频繁的 Young GC，主线程和 RenderThread 可用的 CPU 时间被压缩，帧率下降可能比"暂停导致掉帧"更常见。
 
-这就是为什么 Android 17 花大力气在 ART 中引入增强的分代 GC：不是让单次暂停更短（已经够短了），而是减少 GC 的总 CPU 开销和触发频率，让渲染管线有更充足的 CPU 时间来完成每一帧。
+因此，Android 17 在 ART 中继续强化分代 GC。重点不在把单次暂停再压短一点，而在减少 GC 的总 CPU 开销和触发频率，给渲染管线留出更充足的 CPU 时间。
 
-[已验证: 官方文档, developer.android.com/about/versions/17]
+[已验证: 官方文档, https://developer.android.com/about/versions/17]
 [待补充: Trace 截图 — GC pause 与 doFrame 时间冲突的具体 Perfetto 片段]
 
 ## 从 Concurrent Mark-Sweep 到分代 GC：ART 的演进路径
@@ -84,7 +114,7 @@ ART 的实测数据支撑了这个假设：在典型的 Android 应用中，超�
 
 **Android 8.0（Oreo）**：CC（Concurrent Copying）GC 成为默认收集器。CC 本身不是分代的，但它引入了 RegionSpace 和 TLAB 分配，为后续分代策略奠定了基础。CC GC 的暂停时间相比 Android 7.0 减少了 85%。
 
-[已验证: 官方文档, source.android.com/docs/core/perf/art-management]
+[已验证: 官方文档, https://source.android.com/docs/core/perf/art-management]
 
 **Android 10（Q）**：在 CC 的基础上正式引入分代 GC。堆被划分为 Young Generation（Nursery）和 Old Generation（Tenured）。Young GC 只处理新生代，暂停时间通常在 1-3ms（实测平均值约 1.83ms）。经历多次 Young GC 仍存活的对象被提升（promote）到老年代。
 
@@ -229,7 +259,7 @@ Remembered Set 的构建过程如下：
 
 [待补充: Trace 截图 — 正常 GC 模式 vs 内存抖动 GC 模式的 Perfetto 对比]
 
-### GC 相关的 PerfettoSQL 查询
+### GC 相关的 Perfetto SQL 查询
 
 Perfetto 提供了 `android_garbage_collection_events` 表，可以通过 SQL 精确分析 GC 行为。以下是几个实用的查询：
 
@@ -284,7 +314,7 @@ GROUP BY tid
 ORDER BY avg_pause_ms DESC;
 ```
 
-[已验证: 官方文档, perfetto.dev/docs/data-sources/java-heap-profiler]
+[已验证: 官方文档, https://perfetto.dev/docs/data-sources/java-heap-profiler]
 [待验证: `android_garbage_collection_events` 表在各 Android 版本中的可用性和字段差异]
 
 ### heapprofd：定位内存抖动的源头
@@ -417,12 +447,12 @@ GC 暂停如果恰好发生在 VSYNC-app 信号到来之后、`doFrame()` 执行
 | Android 版本 | GC 策略变化 | 对 App 性能的影响 |
 |---|---|---|
 | 7.0 及更早 | Mark-Sweep / CMS，stop-the-world 暂停较长 | Full GC 可能暂停 50-100ms，严重影响流畅性 |
-| 8.0 (Orepo) | Concurrent Copying GC 成为默认，暂停减少 85% | 大部分应用 GC 暂停降至 5ms 以下 |
+| 8.0 (Oreo) | Concurrent Copying GC 成为默认，暂停减少 85% | 大部分应用 GC 暂停降至 5ms 以下 |
 | 10 (Q) | 在 CC 基础上引入分代 GC | Young GC 暂停 1-3ms，Full GC 频率大幅降低 |
 | 14-15 | CMC GC 替代 CC，UFFD 替代 Read Barrier | GC 不运行时零额外开销，堆占用更小 |
 | 17 (API 37) | 分代收集正式集成到 CMC，调度更激进 | 资源密集型应用 GC CPU 开销降低，卡顿减少 |
 
-[已验证: 官方文档, source.android.com/docs/core/perf/art-management + developer.android.com/about/versions/17]
+[已验证: 官方文档, https://source.android.com/docs/core/perf/art-management + https://developer.android.com/about/versions/17]
 
 ## 常见问题与误区
 
@@ -432,7 +462,7 @@ GC 暂停如果恰好发生在 VSYNC-app 信号到来之后、`doFrame()` 执行
 
 ### "GC 暂停只有 1-3ms，不可能导致掉帧"
 
-单次暂停确实短，但在高刷新率设备上，帧预算本身就很紧张。更关键的是，GC 的影响不仅仅是暂停——并发 GC 的 CPU 开销会与渲染线程争抢计算资源。多次"小暂停"叠加的累积效应，加上 CPU 争用导致的帧处理变慢，完全可以导致可感知的卡顿。
+单次暂停确实短，但在高刷新率设备上，帧预算本身就很紧张。更关键的是，GC 的影响不只体现在暂停时间上，并发 GC 的 CPU 开销也会与渲染线程争抢计算资源。多次"小暂停"叠加后的累积效应，再加上 CPU 争用导致的帧处理变慢，完全可能变成可感知的卡顿。
 
 ### "分代 GC 意味着我不需要关心对象分配了"
 
@@ -467,5 +497,5 @@ GC 暂停如果恰好发生在 VSYNC-app 信号到来之后、`doFrame()` 执行
 ### Android 17 ART 分代 GC：Concurrent Mark-Compact
 - 来源：https://cs.android.com/android/platform/superproject/+/master/art/runtime/gc/
 - 类型：research
-- 摘要：Android 17引入Concurrent Mark-Compact + Generational GC，专门优化年轻代对象快速回收。目标消除RecyclerView GC jank。与DeliQueue协同减少UI停顿。
+- 摘要：Android 17 引入 Concurrent Mark-Compact + Generational GC，专门优化年轻代对象的快速回收。目标是减少 RecyclerView 场景中的 GC jank，并与 DeliQueue 一起降低 UI 停顿。
 - 入库时间：2026-04-08
