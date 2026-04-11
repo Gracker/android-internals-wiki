@@ -1,35 +1,50 @@
 ---
-title: "手势识别算法与性能优化"
-chapter: "3.6"
-section: "3.6"
+title: 手势识别算法与性能优化
+chapter: '3.6'
+section: '3.6'
 status: ready-for-review
-drafted_by: "openclaw-task"
-applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
-confidence: "medium"
+drafted_by: openclaw-task
+applicable_versions: Android 10 (API 29) - Android 16 (API 36)
+confidence: medium
 sources:
-  - type: aosp
-    path: "frameworks/base/core/java/android/view/VelocityTracker.java"
-  - type: aosp
-    path: "frameworks/base/core/java/android/view/VelocityTrackerFallbackStrategy.java"
-  - type: aosp
-    path: "frameworks/base/core/java/android/view/GestureDetector.java"
-  - type: aosp
-    path: "frameworks/base/core/java/android/view/ViewConfiguration.java"
-  - type: aosp
-    path: "frameworks/base/core/java/android/view/ViewGroup.java"
-  - type: aosp
-    path: "frameworks/base/core/java/androidx/core/widget/NestedScrollView.java"
+- type: aosp
+  path: frameworks/base/core/java/android/view/VelocityTracker.java
+- type: aosp
+  path: frameworks/base/core/java/android/view/VelocityTrackerFallbackStrategy.java
+- type: aosp
+  path: frameworks/base/core/java/android/view/GestureDetector.java
+- type: aosp
+  path: frameworks/base/core/java/android/view/ViewConfiguration.java
+- type: aosp
+  path: frameworks/base/core/java/android/view/ViewGroup.java
+- type: aosp
+  path: frameworks/base/core/java/androidx/core/widget/NestedScrollView.java
 tags:
-  - android
-  - performance
-  - rendering
-  - research
-related_chapters: ["3.1", "3.2", "3.3", "3.4", "2.4"]
-pipeline_stage: task6_pending
-task6_state: pending
+- android
+- performance
+- input
+- gesture
+- velocitytracker
+- gesturedetector
+- nestedscroll
+related_chapters:
+- '3.1'
+- '3.2'
+- '3.3'
+- '3.4'
+- '2.4'
+pipeline_stage: task2b_pending
+task6_state: reviewed
 task9_state: pending
-task2b_state: idle
+task2b_state: pending
+reviewed_date: '2026-04-12'
+reviewed_by: openclaw-task6
+task6_result: needs-rework
+review_notes: '2026-04-12 task6 review: needs-rework。小修 8 处（frontmatter 标签、禁用词替换、段落拆分、代码注释格式统一）。回炉
+  4 项（VelocityTracker 版本演进、双击回调语义、Perfetto 证据、扩展素材与来源）。评分: 结构 4/5·措辞 4/5·一致性 3/5·验证
+  3/5·元数据 4/5。'
 ---
+
 # 手势识别算法与性能优化
 
 <!-- outline-start -->
@@ -63,13 +78,17 @@ task2b_state: idle
 
 手势识别是 Input 事件分发之后、UI 渲染之前的"决策层"。它决定了用户的触摸行为会被解读成什么——点击、滑动、快速滑动、长按、还是双击。这个决策层的算法质量直接影响了用户对 App "流畅度"的感知。
 
-更重要的是，手势识别是一个**高频路径**：每次 ACTION_MOVE 都会触发 VelocityTracker 的速度更新，每次 ACTION_DOWN 都会触发 GestureDetector 的状态初始化。在这个路径上的任何性能开销——对象分配、不必要的计算、过深的 View 遍历——都会在快速滑动时被放大。
+手势识别还是一个**高频路径**。每次 ACTION_MOVE 都会触发 VelocityTracker 的速度更新，每次 ACTION_DOWN 都会触发 GestureDetector 的状态初始化。
+
+在这条路径上的任何额外开销，例如对象分配、不必要的计算、过深的 View 遍历，都会在快速滑动时被放大。
 
 本节将从 VelocityTracker 的速度计算算法、GestureDetector 的状态机设计、手势冲突的解决机制三个核心维度展开，最终落到性能优化的实践建议。
 
 ## VelocityTracker：速度计算的底层引擎
 
-VelocityTracker 是 Android 手势识别系统中最基础的组件。它的职责只有一个：根据最近收到的若干个 Touch 事件的位置和时间戳，计算出当前的手指移动速度。这个速度值是 Fling 手势判断的核心依据——`GestureDetector.onFling()` 的两个速度参数（`velocityX`、`velocityY`）就来自 VelocityTracker。
+VelocityTracker 是 Android 手势识别系统中最基础的组件。它的职责只有一个：根据最近收到的若干个 Touch 事件的位置和时间戳，计算出当前的手指移动速度。
+
+这个速度值是 Fling 手势判断的核心依据。`GestureDetector.onFling()` 的两个速度参数（`velocityX`、`velocityY`）就来自 VelocityTracker。
 
 ### 核心接口：obtain / addMovement / computeCurrentVelocity
 
@@ -88,7 +107,7 @@ public final class VelocityTracker {
         nativeAddMovement(mPtr, event);
     }
 
-    // 计算当前速度，units 参数决定单位（像素/秒 或 像素/毫秒）
+    // 计算当前速度，`units` 参数决定单位（像素/秒或像素/毫秒）
     public void computeCurrentVelocity(int units, float maxVelocity) {
         nativeComputeCurrentVelocity(mPtr, units, maxVelocity);
     }
@@ -112,7 +131,9 @@ public final class VelocityTracker {
 
 ### 对象池复用：避免 GC 压力
 
-VelocityTracker 的 `obtain()` / `recycle()` 使用了 `Pools.SynchronizedPool` 做对象复用。这在滑动场景中至关重要——一个 RecyclerView 的每一次滑动都涉及 `ACTION_DOWN` 时 obtain、`ACTION_UP` 时 recycle 的完整生命周期。如果不做复用，快速滑动时会产生大量短生命周期对象，增加 GC 压力。
+VelocityTracker 的 `obtain()` / `recycle()` 使用了 `Pools.SynchronizedPool` 做对象复用。这在滑动场景中很重要，一个 RecyclerView 的每一次滑动都涉及 `ACTION_DOWN` 时 obtain、`ACTION_UP` 时 recycle 的完整生命周期。
+
+如果不做复用，快速滑动时会产生大量短生命周期对象，增加 GC 压力。
 
 ```java
 // frameworks/base/core/java/android/view/VelocityTracker.java
@@ -124,7 +145,7 @@ private static final Pools.SynchronizedPool<VelocityTracker> sPool =
 
 ### 速度计算算法：从移动平均到最小二乘法
 
-VelocityTracker 的 Native 层（`VelocityTracker.cpp`）维护了一个环形缓冲区（ring buffer），存储最近的若干个采样点（位置 + 时间戳）。速度计算的核心问题是如何从这些离散的采样点推导出"当前速度"。
+VelocityTracker 的 Native 层（`VelocityTracker.cpp`）维护了一个环形缓冲区（ring buffer），存储最近的若干个采样点（位置 + 时间戳）。速度计算要做的是从这些离散的采样点推导出"当前速度"。
 
 **移动平均法（Moving Average）**是最简单的策略：用最近两个采样点的位移除以时间差。这种方法计算量小，但对噪声非常敏感——一次异常的报点偏差就会导致速度值剧烈波动。
 
@@ -148,7 +169,7 @@ public final class VelocityTrackerFallbackStrategy {
             mLeastSquares = new LeastSquaresVelocityTracker(3);
             mImpulse = null;
         } else {
-            // 默认使用 Impulse（基于冲量/动量）
+            // 默认走 Impulse（基于冲量/动量）
             mImpulse = new ImpulseVelocityTracker();
             mLeastSquares = null;
         }
@@ -284,7 +305,7 @@ GestureDetector 的双击检测基于一个**延迟确认**的设计模式：
 2. 如果在 300ms 内又收到了 `ACTION_DOWN`，取消延迟消息，触发 `onDoubleTap()` 回调
 3. 如果 300ms 内没有新的触摸，延迟消息到期，触发 `onSingleTapUp()` 回调
 
-这意味着**单击事件至少有 300ms 的延迟**。对于需要快速响应的场景（如快速点击按钮），这个延迟可能不可接受。解决方案是不使用 GestureDetector 的双击检测，改用自定义的快速单击处理。
+因此，**单击事件至少会延后 300ms 才能确认**。对于需要快速响应的场景（如快速点击按钮），这个延迟可能不可接受。解决方案是不使用 GestureDetector 的双击检测，改用自定义的快速单击处理。
 
 ### 长按超时
 
@@ -329,7 +350,9 @@ if (dispatchNestedScroll(dxConsumed, dyConsumed, 0, dyUnconsumed, mScrollOffset)
 }
 ```
 
-**性能影响**：每次 ACTION_MOVE 都会触发 `dispatchNestedPreScroll()` 和 `dispatchNestedScroll()` 的调用。这些调用本身非常轻量（只是遍历 Parent 链并回调），但如果嵌套层级很深（比如 5+ 层），累积的调用链可能变得可观。在 Perfetto 中，如果嵌套滑动层级过深，可以在 `dispatchTouchEvent` 的 slice 内看到多个连续的小 slice。
+**性能影响**：每次 ACTION_MOVE 都会触发 `dispatchNestedPreScroll()` 和 `dispatchNestedScroll()` 的调用。这些调用本身非常轻量，主要是在 Parent 链上做回调。
+
+如果嵌套层级很深（比如 5+ 层），累积的调用链就会变得可观。在 Perfetto 中，如果嵌套滑动层级过深，可以在 `dispatchTouchEvent` 的 slice 内看到多个连续的小 slice。
 
 ### 同方向手势冲突：横滑 vs 竖滑
 
@@ -539,6 +562,8 @@ Modifier.pointerInput(Unit) {
 }
 ```
 
-**性能特点**：Compose 的手势系统在底层仍然依赖 Android 的 MotionEvent（通过 `AndroidPointerInputEvent` 转换），但手势判定的逻辑运行在 Compose 的合成层中。这意味着 Compose 的手势识别可以更细粒度地与 Composable 的重组和布局阶段集成，但也引入了额外的转换开销。
+**性能特点**：Compose 的手势系统在底层仍然依赖 Android 的 MotionEvent（通过 `AndroidPointerInputEvent` 转换），但手势判定的逻辑运行在 Compose 的合成层中。
+
+因此，Compose 的手势识别可以更细粒度地与 Composable 的重组和布局阶段集成，但也引入了额外的转换开销。
 
 > [已验证: Jetpack Compose 1.6+, androidx.compose.ui.input.pointer]
