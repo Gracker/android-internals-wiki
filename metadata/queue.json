@@ -3265,10 +3265,12 @@
   {
     "section": "2.3",
     "section_title": "VSync 机制",
-    "priority": 90,
-    "reason": "[review回炉] Android 17 DeliQueue 段落的验证来源与正文机制未对上，需核实其对 VSync/Choreographer 的直接影响与量化数据出处",
+    "priority": 95,
+    "reason": "[Deep Tech Review] 2.3 的当前版本验证链失效：官方 VSync 文档链接已失效，android-16 AOSP 路径/类名与正文不一致，Android 17 preview 段落仍缺公开源码与数据闭环",
     "material_paths": [
-      "intake/suggestions.md（含 review 意见）"
+      "intake/suggestions.md（含 review 意见）",
+      "intake/suggestions.md",
+      "intake/research-gaps.md"
     ],
     "review_issues": [
       {
@@ -3276,10 +3278,34 @@
         "location": "9.6 Android 17：DeliQueue 无锁 MessageQueue",
         "detail": "验证来源写成 android-17-preview + Google 内部 Beta 数据，但没有公开可复核的源码路径或数据出处，且末尾路径指向 DispSync.cpp，与正文的 MessageQueue/Looper 机制不匹配。",
         "suggestion": "核实 DeliQueue 对 VSync/Choreographer 的直接影响、量化数据来源，以及应引用的 MessageQueue/Looper 相关源码路径。"
+      },
+      {
+        "type": "源码错误",
+        "location": "frontmatter sources + 文内多处 [已验证]（行 22/102/118/143/210/402/490/728）",
+        "detail": "VSync 官方验证链接统一指向 `https://source.android.com/docs/core/display/improve-performance`，该地址已 404，导致多个“已验证”断言失去可公开复核来源。",
+        "suggestion": "替换为当前可访问的官方页面 `https://source.android.com/docs/core/graphics/implement-vsync`，并逐条重校对应断言。"
+      },
+      {
+        "type": "源码错误",
+        "location": "frontmatter AOSP sources + §3.1 DispSync 伪代码（行 16-18, 180-190）",
+        "detail": "章节声明基于 `AOSP android-16.0.0_r1` 验证，但 `frameworks/native/services/surfaceflinger/DispSync.cpp` 与 `.../EventThread.cpp` 在该 tag 下不存在/已迁至 Scheduler 子目录；`DispSync::addResyncSample` 伪代码因此没有实际锚点。",
+        "suggestion": "若讲历史 DispSync，请显式切到旧 Android tag；若讲 android-16 当前实现，请改锚到 `services/surfaceflinger/Scheduler/{VSyncPredictor.cpp,VSyncReactor.cpp,EventThread.cpp,MessageQueue.cpp}`。"
+      },
+      {
+        "type": "原理断裂",
+        "location": "§3.3-§4.2 现代架构/VSYNC-app 传递路径（行 214-257）",
+        "detail": "正文把 `DispSyncSource` / `CallbackRepeater` 写成当前 app 侧主路径，但 android-16 Scheduler 树已以 `Scheduler::createEventThread(\"app\"/\"appSf\")`、`EventThread`、`VSyncDispatchTimerQueue` 为核心；读者无法区分历史链路与当前链路。",
+        "suggestion": "补一段 Android 13+ 当前实现：`VsyncSchedule` 预测 → `VSyncDispatchTimerQueue` 调度 → `app/appSf EventThread` → BitTube → `DisplayEventReceiver`，并把旧类名降为历史实现说明。"
+      },
+      {
+        "type": "版本差异",
+        "location": "frontmatter applicable_versions/confidence + §9.5-§9.6（行 10-13, 545-680）",
+        "detail": "章节写成 `Android 4.1 - Android 17` 且 `confidence: high`，但 `last_verified_against` 只到 android-16；§9.6 DeliQueue 仍依赖 preview/blog/research feed，且其对 VSync/Choreographer 的直接收益与量化数据没有公开源码/trace 闭环。",
+        "suggestion": "把正文已验证范围收敛到 Android 4.1-16；Android 17 改成 preview appendix 或 `[待验证]` 版本演进附录，待公开 tag/trace 后再恢复强断言。"
       }
     ],
-    "added_by": "task6-review",
-    "added_at": "2026-04-11T10:12:00+08:00",
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-11T10:21:00+08:00",
     "status": "pending",
     "original_review_log": "logs/review/2026-04-11-10-review.md"
   }
