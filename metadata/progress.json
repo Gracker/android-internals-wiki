@@ -482,13 +482,14 @@
       "title": "Hardware Layer",
       "path": "src/part1-fundamentals/ch02-rendering/07-hardware-layer.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
-      "task9_state": "pending",
-      "task2b_state": "idle",
+      "task9_state": "reviewed",
+      "task2b_state": "pending",
       "reviewed_date": "2026-04-12",
       "reviewed_by": "openclaw-task6",
-      "task6_result": "pass-light-edit"
+      "task6_result": "pass-light-edit",
+      "task9_result": "needs-rework"
     },
     "src/part1-fundamentals/ch02-rendering/08-overdraw.md": {
       "chapter": "2.8",

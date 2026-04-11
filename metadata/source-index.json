@@ -14035,6 +14035,254 @@
       "chapter": "ch12-apk-network",
       "date": "2026-04-11",
       "source": "daily-intake"
+    },
+    {
+      "path": "Cubox/几个简单程序的top-down性能分析-2026-04-11.md",
+      "title": "几个简单程序的top-down性能分析",
+      "score": 11,
+      "chapter": "性能优化",
+      "date": "2026-04-12",
+      "scored_at": "2026-04-12T05:27:00.416543"
+    },
+    {
+      "path": "Blog/Blog-en/source/_posts/Android-ANR-02-How-to-analysis-ANR.md",
+      "title": "ANR Analysis Methodology",
+      "score": 10,
+      "chapter": "技术调研",
+      "date": "2026-04-12",
+      "scored_at": "2026-04-12T05:27:00.416552"
+    },
+    {
+      "path": "Blog/Blog-en/source/_posts/Android-ANR-03-ANR-Case-Share.md",
+      "title": "Common Causes of ANR",
+      "score": 10,
+      "chapter": "技术调研",
+      "date": "2026-04-12",
+      "scored_at": "2026-04-12T05:27:00.416555"
+    },
+    {
+      "path": "Blog/Blog-en/source/_posts/Android-ANR-01-ANR-Design.md",
+      "title": "1. Universality and Complexity of ANR",
+      "score": 10,
+      "chapter": "技术调研",
+      "date": "2026-04-12",
+      "scored_at": "2026-04-12T05:27:00.416556"
+    },
+    {
+      "path": "Blog/Blog-en/source/_posts/android-bottom-bar-1.md",
+      "title": "# 1. Previous Android Bottom Bar Design Specs",
+      "score": 10,
+      "chapter": "Android系统",
+      "date": "2026-04-12",
+      "scored_at": "2026-04-12T05:27:00.416558"
+    },
+    {
+      "path": "Blog/Blog-en/source/_posts/view-android-source-code-with-androidstudio.md",
+      "title": "# Android Studio",
+      "score": 10,
+      "chapter": "Android系统",
+      "date": "2026-04-12",
+      "scored_at": "2026-04-12T05:27:00.416559"
+    },
+    {
+      "path": "Blog/android_performance_skill/output/sample_jank_answer.md",
+      "title": "Android 卡顿 (Jank) 深度解析与处理指南",
+      "score": 11,
+      "chapter": "Android系统",
+      "date": "2026-04-12",
+      "scored_at": "2026-04-12T05:27:00.416560"
+    },
+    {
+      "path": "Blog/android_performance_skill/output/vsync_choreographer_deep_dive.md",
+      "title": "Android VSync 与 Choreographer 机制深度解析",
+      "score": 11,
+      "chapter": "Android系统",
+      "date": "2026-04-12",
+      "scored_at": "2026-04-12T05:27:00.416562"
+    },
+    {
+      "path": "Blog/android_performance_skill/SKILL.md",
+      "title": "Android Performance Expert Skill",
+      "score": 10,
+      "chapter": "Android系统",
+      "date": "2026-04-12",
+      "scored_at": "2026-04-12T05:27:00.416563"
+    },
+    {
+      "path": "Blog/Blog/source/_posts/AndroidMemory-Usage-Of-MAT-Pro.md",
+      "title": "Java的内存泄露的特点",
+      "score": 10,
+      "chapter": "技术调研",
+      "date": "2026-04-12",
+      "scored_at": "2026-04-12T05:27:00.416564"
+    },
+    {
+      "path": "Blog/Blog/source/_posts/Android-ANR-02-How-to-analysis-ANR.md",
+      "title": "ANR 分析套路",
+      "score": 11,
+      "chapter": "技术调研",
+      "date": "2026-04-12",
+      "scored_at": "2026-04-12T05:27:00.416565"
+    },
+    {
+      "path": "Blog/Blog/source/_posts/Android-Jank-Due-To-App.md",
+      "title": "Android App 自身导致的性能问题",
+      "score": 11,
+      "chapter": "Android系统",
+      "date": "2026-04-12",
+      "scored_at": "2026-04-12T05:27:00.416567"
+    },
+    {
+      "path": "Blog/Blog/source/_posts/Android-Jank-Due-To-System.md",
+      "title": "Android 平台性能导致的性能案例",
+      "score": 11,
+      "chapter": "Android系统",
+      "date": "2026-04-12",
+      "scored_at": "2026-04-12T05:27:00.416568"
+    },
+    {
+      "path": "Blog/Blog/source/_posts/Android-Performance-Patterns-4.md",
+      "title": "# GPU Profile工具",
+      "score": 10,
+      "chapter": "技术调研",
+      "date": "2026-04-12",
+      "scored_at": "2026-04-12T05:27:00.416569"
+    },
+    {
+      "path": "Blog/Blog/source/_posts/android-system-develop-0.md",
+      "title": "安装 Ubuntu 系统",
+      "score": 10,
+      "chapter": "技术调研",
+      "date": "2026-04-12",
+      "scored_at": "2026-04-12T05:27:00.416570"
+    },
+    {
+      "path": "Blog/Blog/source/_posts/Android-ANR-03-ANR-Case-Share.md",
+      "title": "ANR 常见原因",
+      "score": 10,
+      "chapter": "技术调研",
+      "date": "2026-04-12",
+      "scored_at": "2026-04-12T05:27:00.416572"
+    },
+    {
+      "path": "Blog/Blog/source/_posts/Android-Jank-Due-To-Low-Memory.md",
+      "title": "低内存的数据特征和行为特征",
+      "score": 10,
+      "chapter": "技术调研",
+      "date": "2026-04-12",
+      "scored_at": "2026-04-12T05:27:00.416573"
+    },
+    {
+      "path": "Blog/Blog/source/_posts/Android-app-lunch-optimize-delay-load.md",
+      "title": "1. 优化后的DelayLoad的实现",
+      "score": 11,
+      "chapter": "性能优化",
+      "date": "2026-04-12",
+      "scored_at": "2026-04-12T05:27:00.416574"
+    },
+    {
+      "path": "Blog/Blog/source/_posts/Android-Performance-Patterns-1.md",
+      "title": "# Android渲染知识",
+      "score": 10,
+      "chapter": "Android系统",
+      "date": "2026-04-12",
+      "scored_at": "2026-04-12T05:27:00.416575"
+    },
+    {
+      "path": "Blog/Blog/source/_posts/Android-Performance-Memory-AndroidResource.md",
+      "title": "Android资源优化",
+      "score": 11,
+      "chapter": "Android系统",
+      "date": "2026-04-12",
+      "scored_at": "2026-04-12T05:27:00.416576"
+    },
+    {
+      "path": "Blog/Blog/source/_posts/Android-App-Lunch-Optimize.md",
+      "title": "应用启动概述",
+      "score": 10,
+      "chapter": "技术调研",
+      "date": "2026-04-12",
+      "scored_at": "2026-04-12T05:27:00.416578"
+    },
+    {
+      "path": "Blog/Blog/source/_posts/How-to-calculation-android-app-lunch-time.md",
+      "title": "1 应用启动场景",
+      "score": 10,
+      "chapter": "技术调研",
+      "date": "2026-04-12",
+      "scored_at": "2026-04-12T05:27:00.416579"
+    },
+    {
+      "path": "Blog/Blog/source/_posts/Android-ANR-01-ANR-Design.md",
+      "title": "一、ANR 的普遍性与复杂性",
+      "score": 10,
+      "chapter": "技术调研",
+      "date": "2026-04-12",
+      "scored_at": "2026-04-12T05:27:00.416580"
+    },
+    {
+      "path": "Blog/Blog/source/_posts/Android-performance-optimization-skills-and-tools.md",
+      "title": "优化心得和经验",
+      "score": 11,
+      "chapter": "性能优化",
+      "date": "2026-04-12",
+      "scored_at": "2026-04-12T05:27:00.416581"
+    },
+    {
+      "path": "Blog/Blog/source/_posts/The-Performace-1-Performance-Tools.md",
+      "title": "1 性能分析中的可观测性技术",
+      "score": 11,
+      "chapter": "性能优化",
+      "date": "2026-04-12",
+      "scored_at": "2026-04-12T05:27:00.416582"
+    },
+    {
+      "path": "Blog/Blog/source/_posts/SmartPerfetto-Architecture-Deep-Dive-QA.md",
+      "title": "# Q1：为什么不用 Claude Code 的标准 Skill 系统，而要自建 YAML Skill？",
+      "score": 10,
+      "chapter": "技术调研",
+      "date": "2026-04-12",
+      "scored_at": "2026-04-12T05:27:00.416584"
+    },
+    {
+      "path": "Blog/Blog/source/_posts/view-android-source-code-with-androidstudio.md",
+      "title": "# Android Studio",
+      "score": 10,
+      "chapter": "Android系统",
+      "date": "2026-04-12",
+      "scored_at": "2026-04-12T05:27:00.416585"
+    },
+    {
+      "path": "Blog/Blog/source/_posts/android-memory.md",
+      "title": "# Android系统下关闭程序后，系统内存并不释放？",
+      "score": 10,
+      "chapter": "Android系统",
+      "date": "2026-04-12",
+      "scored_at": "2026-04-12T05:27:00.416586"
+    },
+    {
+      "path": "awesome-ai-field-notes/content/q32ssunn.md",
+      "title": "抽丝剥茧：深度解析 OpenClaw 万字系统提示词构成",
+      "score": 10,
+      "chapter": "技术调研",
+      "date": "2026-04-12",
+      "scored_at": "2026-04-12T05:27:00.416587"
+    },
+    {
+      "path": "awesome-ai-field-notes/site-src/entry/7az6rlg5.md",
+      "title": "Agent Frameworks Are Getting Squeezed",
+      "score": 10,
+      "chapter": "AI技术",
+      "date": "2026-04-12",
+      "scored_at": "2026-04-12T05:27:00.416588"
+    },
+    {
+      "path": "awesome-ai-field-notes/site-src/entry/q32ssunn.md",
+      "title": "抽丝剥茧：深度解析 OpenClaw 万字系统提示词构成",
+      "score": 10,
+      "chapter": "技术调研",
+      "date": "2026-04-12",
+      "scored_at": "2026-04-12T05:27:00.416589"
     }
   ]
 }
