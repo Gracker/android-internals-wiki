@@ -1013,3 +1013,22 @@
 - **问题**：Android 16 / 17 的 API Level 标注需要和全书版本约定统一，当前写法存在版本风险。
 - **建议**：交给 Task 9 统一核对版本号与 API Level，再决定是否保留 API 36 / 37。
 - **review 日志**：logs/review/2026-04-11-18-review.md
+
+
+## [Task9 Deep Review] 2.17 Frame Pacing Library 与帧节奏控制 · 2026-04-11
+- **类型**：数据缺失
+- **位置**：行 59 帧间隔标准差 1ms→3ms 的感知结论
+- **问题**：正文把“帧间隔标准差从 1ms 增加到 3ms，用户就能明显感知到不够流畅”写成定量结论，但没有给出论文、实验设置或原始 benchmark。这个数值很容易被读者当成通用阈值复用。
+- **建议**：补 primary source；如果拿不出来源，就降级成“帧间隔波动增大时，主观流畅度会明显下降”的定性表述。
+
+## [Task9 Deep Review] 2.17 Frame Pacing Library 与帧节奏控制 · 2026-04-11
+- **类型**：数据缺失
+- **位置**：行 214-241 Perfetto / FrameTimeline 分析
+- **问题**：这一节把 Expected / Actual Timeline、Buffer stuffing、红黄 jank 都提到了，但仍只有占位图和文字，没有 1 个真实 trace 截图、track 名称或 actual_frame_timeline_slice / expected_frame_timeline_slice 的 SQL 例子。
+- **建议**：补 1 组真实 Perfetto 样例，至少覆盖 FrameTimeline 两条 track、1 个 jank_type 字段和 1 个实际 present 时间对比。
+
+## [Task9 Deep Review] 2.17 Frame Pacing Library 与帧节奏控制 · 2026-04-11
+- **类型**：交叉引用
+- **位置**：行 206-210 游戏引擎集成
+- **问题**：Unity 2019.2、Unreal 5.2 默认启用 Swappy 这类引擎版本线属于高风险生态断言，当前正文没有给出精确的 Epic / Unity 一手文档链接，读者难以判断“支持”与“默认启用”的边界。
+- **建议**：把每条引擎版本结论都补到具体 release note / 官方文档；如果只有社区帖子或二手摘要，就把语气降到“已支持/可启用”，不要写成默认行为。

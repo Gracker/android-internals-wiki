@@ -3752,5 +3752,61 @@
     "added_at": "2026-04-11T17:10:52+08:00",
     "status": "pending",
     "original_review_log": "logs/review/2026-04-11-17-review.md"
+  },
+  {
+    "section": "2.17",
+    "section_title": "Frame Pacing Library 与帧节奏控制",
+    "priority": 95,
+    "reason": "[Deep Tech Review] Swappy 文档链接、源码路径、示例代码与版本演进存在事实错误，需按 AGDK 实际实现回炉",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "frontmatter sources + 参考资料（L13, L17, L318-L323）",
+        "detail": "章节把官方文档写成 https://developer.android.com/games/agdk/frame-pacing，该地址当前返回 404；AOSP 路径写成 frameworks/native/libs/swappy/，当前 AOSP 实际源码仓库在 platform/frameworks/opt/gamesdk，Frame Pacing 代码位于 games-frame-pacing/ 与 include/swappy/。",
+        "suggestion": "把官方链接统一改为 https://developer.android.com/games/sdk/frame-pacing，并把源码路径改成 platform/frameworks/opt/gamesdk 下的真实子路径，例如 games-frame-pacing/opengl/SwappyGL.cpp、games-frame-pacing/vulkan/SwappyVk.cpp、include/swappy/swappyGL.h。"
+      },
+      {
+        "type": "原理断裂",
+        "location": "Choreographer 同步 + 与其他机制的关系（L71-L81, L244-L249）",
+        "detail": "正文把 Swappy 讲成“专门线程 + 不经过 Java 层”的单一路径，但当前实现是分层回退的：sdk>=24 或无 JVM 时优先 NDK Choreographer；否则回退 Java Choreographer；再不行才退到 no-Choreographer best effort。把这条回退链抹平后，API 24 以下与不同初始化方式的行为就被写错了。",
+        "suggestion": "补一张“NDK Choreographer / Java Choreographer / no-Choreographer”选择矩阵，并明确 API 24、API 30 preview、API 31+ 在 refresh-rate callback 和 DisplayManager 路径上的边界。"
+      },
+      {
+        "type": "源码错误",
+        "location": "Sync Fence 段示例代码（L93-L116）",
+        "detail": "代码块被标成“frameworks/native/libs/swappy/SwappyGL.cpp（简化）@ AOSP android-17-beta3”，但当前仓库没有这条路径，且真实调用链分散在 games-frame-pacing/opengl/SwappyGL.cpp::swapInternal、opengl/EGL.cpp::insertSyncFence / setPresentationTime 和 common/SwappyCommon 中，不是文中那段单函数实现。",
+        "suggestion": "如果只是解释机制，改成“伪代码/示意代码”；如果要标 AOSP 实码，就按真实文件和函数拆开引用，不要把 synthetic snippet 标成当前源码。"
+      },
+      {
+        "type": "源码错误",
+        "location": "Vulkan 集成示例（L195-L205）",
+        "detail": "示例写成 SwappyVk_queuePresent(device, queue, presentInfo)，但当前头文件 include/swappy/swappyVk.h 的签名是 SwappyVk_queuePresent(VkQueue queue, const VkPresentInfoKHR* pPresentInfo)。示例按文中写法无法通过编译。",
+        "suggestion": "把示例改成真实函数签名，并同步补 presentInfo 需传指针这一点。"
+      },
+      {
+        "type": "原理断裂",
+        "location": "多刷新率支持与 Auto 模式（L140-L144）",
+        "detail": "11ms / 12-16ms / 22ms 这组三段式阈值在当前源码和官方文档里都找不到。现有实现是按 frameTime 与 refreshPeriod 计算 swap interval，并用 500ns margin 和 50ms max auto swap duration 做控制，不是写死的“90FPS/45FPS/30FPS 三档阈值表”。",
+        "suggestion": "删除这组硬编码数值，改成“基于帧时长、刷新周期和支持的 refresh config 动态求解”；若要保留数字，必须给出对应版本源码或官方文档证据。"
+      },
+      {
+        "type": "版本差异",
+        "location": "版本演进（L259-L269）",
+        "detail": "“Android 9 作为 Jetpack 库 androidx.graphics:graphics-core 首次发布”这一条与现有 AGDK / AOSP 证据不符。当前源码树和 sample 注释都指向 games-frame-pacing / androidx.games:games-frame-pacing，而不是 androidx.graphics:graphics-core。后面“Android 17 的 DeliQueue 提升 Swappy 精度”也缺少直接代码链路，属于把平台消息队列变化硬连到 Swappy。",
+        "suggestion": "把版本演进改写成“库形态 / 仓库位置 / API 能力”的可验证时间线，不要把无直接证据的平台改动写成 Swappy 的既成事实。"
+      },
+      {
+        "type": "源码错误",
+        "location": "非游戏场景 Choreographer 示例（L296-L303）",
+        "detail": "lambda 末尾的 Choreographer.getInstance().postFrameCallback(this) 在 Java 里不会把 this 解析成当前 FrameCallback，而是外层对象，示例无法按文意工作。",
+        "suggestion": "改成具名 FrameCallback 实例或匿名内部类自引用，不要在 lambda 里写 this。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-11T18:20:00+08:00",
+    "status": "pending"
   }
 ]
