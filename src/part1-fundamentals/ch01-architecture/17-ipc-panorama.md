@@ -30,7 +30,8 @@ task6_result: needs-rework
 review_log: "logs/review/2026-04-11-09-review.md"
 pipeline_stage: task2b_pending
 task6_state: reviewed
-task9_state: pending
+task9_result: needs-rework
+task9_state: reviewed
 task2b_state: pending
 ---
 

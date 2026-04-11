@@ -769,3 +769,19 @@ OEM/自研内核接入 AutoFDO 的关键前置条件缺失。正文提到 Kleaf�
 
 ### 关联章节
 §1.16、§1.4 Binder IPC、§5.1 CPU 调度、§16.5 Android 17 变更
+
+## [2026-04-11] 1.17 IPC 全景：Android 进程间通信机制对比与性能选型 — 知识盲区
+
+### 盲区描述
+章节把 Binder、共享内存、FMQ、socket 当成并列机制，但缺少 Android 实战里最关键的“控制面 / 数据面”组合模型。尤其是 `BINDER_TYPE_FD`、`ParcelFileDescriptor`、`SCM_RIGHTS` 这条 fd 传递链没有展开，导致 BufferQueue、CursorWindow、GraphicBuffer 这类零拷贝方案的真实工作方式解释不完整。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 梳理 Binder `BINDER_TYPE_FD`、Java `ParcelFileDescriptor`、native `SCM_RIGHTS` 的角色边界
+- 用 BufferQueue / CursorWindow / SharedMemory 各做一个“控制面 + 数据面”案例
+- 补充 Stable AIDL HAL、HIDL HwBinder、FMQ 在 HAL 场景下的搭配关系
+
+### 关联章节
+1.4, 1.10, 2.13, 2.15

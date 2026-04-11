@@ -786,3 +786,21 @@
 - **问题**：多处延迟、占比、版本演进与 API 范围断言缺少逐项来源或验证标注，存在版本与数据漂移风险。
 - **建议**：交由 Task 9 / Task 2B 核对原始来源；无法确认时降级为定性描述或补 [待验证]。
 - **review 日志**：logs/review/2026-04-11-09-review.md
+
+## [Task9 Deep Review] 1.17 IPC 全景：Android 进程间通信机制对比与性能选型 — 2026-04-11
+- **类型**：数据缺失
+- **位置**：§4.1-§4.2 定量对比与使用频率统计（行 296-318）
+- **问题**：延迟表、吞吐量表和“Binder ~90% / Socket ~5% / 共享内存 ~3%”这些数字没有给出设备、Android 版本、负载模型、payload 大小或 Trace / benchmark 来源。当前写法是高精度数字，但没有实验边界。
+- **建议**：要么补一个 benchmark 方法说明（设备 / payload / 单向或双向 / sync 或 async / 采样次数），要么把这些数字降级成定性排序。
+
+## [Task9 Deep Review] 1.17 IPC 全景：Android 进程间通信机制对比与性能选型 — 2026-04-11
+- **类型**：数据缺失
+- **位置**：§6 Perfetto 中的 IPC 分析（行 357-388）
+- **问题**：SQL 直接用 `slice.name GLOB "*binder*"`、`*sock*`、`*buffer*alloc*` 做匹配，但没有说明抓 trace 时启用了哪些 category，也没有说明 Binder 应该用 `android.binder` 模块还是哪张原始表。读者照抄后很可能查不到稳定结果。
+- **建议**：补一份真实 trace 的配置 + 表映射，至少说明 Binder 走 `android.binder` / 对应数据源，socket / dmabuf 依赖哪些 tracepoint 或 slice 名，再给一条经过实测可跑通的 SQL。
+
+## [Task9 Deep Review] 1.17 IPC 全景：Android 进程间通信机制对比与性能选型 — 2026-04-11
+- **类型**：交叉引用错误
+- **位置**：§3.2 / §3.3 / §3.7 与 §3.1 / §1.5 / §1.1
+- **问题**：本章当前的 InputChannel、Looper wake fd、AIDL HAL 描述，分别和已审核章节《3.1 Input 事件分发全流程》《1.5 线程模型》《1.1 Android 分层架构》冲突。即使单章修正了，若不做一次全书一致性回扫，后面还是会出现“同一个机制在不同章节说法不同”的漂移。
+- **建议**：Task 2B 回炉后，顺手做一次 IPC 相关章节的一致性回扫，至少对齐 InputChannel、Binder thread pool、AIDL / HIDL / hwbinder 三组表述。

@@ -3188,5 +3188,76 @@
     "added_at": "2026-04-11T09:08:00+08:00",
     "status": "pending",
     "original_review_log": "logs/review/2026-04-11-09-review.md"
+  },
+  {
+    "section": "1.17",
+    "section_title": "IPC 全景：Android 进程间通信机制对比与性能选型",
+    "priority": 95,
+    "reason": "[Deep Tech Review] InputChannel/Looper/Binder/HwBinder 事实错误 + 混合 IPC 主线缺失",
+    "material_paths": [
+      "intake/research-gaps.md",
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "severity": "P0",
+        "location": "§3.2 Android 中的关键使用（InputDispatcher 行 162）",
+        "detail": "正文把 InputDispatcher 的 IPC 端点写成 `/data/system/input_manager/*`。Android 实际输入分发链路是 WMS / InputDispatcher 创建 `InputChannel`，底层用未命名 `socketpair()` 在 `system_server` 与 App 之间传事件和 FINISHED 回执；`/data/system/input_manager/` 不是事件分发 socket 路径。",
+        "suggestion": "将该行改为 `InputChannel / socketpair（未命名 Unix domain socket）`，并补一句它通过 Binder 回传 fd 给 App。",
+        "dimension": "源码引用准确性"
+      },
+      {
+        "type": "源码错误",
+        "severity": "P0",
+        "location": "§3.3 Pipe（Looper.epoll 行 185）",
+        "detail": "正文称 `MessageQueue` 底层用 pipe 的 wake fd 唤醒 epoll。对 frontmatter 声称覆盖的 Android 8-17 来说，这个结论过时。现代 Android native `Looper` 使用 `mWakeEventFd` / `eventfd()`，本书 §1.5 也已写明是 eventfd。",
+        "suggestion": "把现代版本的唤醒机制改成 `eventfd`；如果要提 pipe，只能作为更早历史实现并注明版本。",
+        "dimension": "源码引用准确性"
+      },
+      {
+        "type": "源码错误",
+        "severity": "P0",
+        "location": "§3.1 Binder 性能关键指标（行 143）",
+        "detail": "正文写“线程池默认 16 线程（`BIND_MAX_THREADS = 16`）”。AOSP `frameworks/native/libs/binder/ProcessState.cpp` 使用的是 `DEFAULT_MAX_BINDER_THREADS=15`。常见“16”是把 caller / 主线程一起算进去，不是默认 worker 上限，而且常量名也写错了。",
+        "suggestion": "改成“默认上限约 15 个 Binder worker 线程，常见总并发执行上下文可被口语化写成 16（含 caller）”，并统一引用 `DEFAULT_MAX_BINDER_THREADS`。",
+        "dimension": "源码引用准确性"
+      },
+      {
+        "type": "源码错误",
+        "severity": "P0",
+        "location": "§3.7 HwBinder 与 Treble 架构（行 284-289）",
+        "detail": "表格把 HwBinder 一列写成“接口定义 AIDL (Android 11+) / HIDL (旧)”，并绑定 `/dev/hwbinder`。这会把 Stable AIDL HAL 和 HIDL HwBinder 混成一类。已审过的 §1.1 明确写了：HIDL 使用 `hwbinder`，AIDL HAL 使用标准 `binder`。",
+        "suggestion": "拆成“HIDL / hwbinder”与“Stable AIDL HAL / binder”两条路径，避免把 AIDL HAL 错归到 HwBinder。",
+        "dimension": "源码引用准确性"
+      },
+      {
+        "type": "原理断裂",
+        "severity": "P1",
+        "location": "§4-§5 性能对比表 + 选型决策树（行 296-353）",
+        "detail": "正文把 Binder、Socket、共享内存、FMQ 当成互斥的“单选题”，缺了 Android 最常见的两层设计：Binder 做 control plane，fd / shared memory / FMQ 做 data plane。没有这层桥梁，读者很难解释 BufferQueue、CursorWindow、GraphicBuffer、很多 HAL 为什么“看起来是 Binder，实际大数据不走 Binder 负载”。",
+        "suggestion": "新增“控制面 vs 数据面”小节，并把决策树改成先判断控制协议，再判断是否需要 fd / 共享内存 / FMQ 承载大数据。",
+        "dimension": "原理链完整性"
+      },
+      {
+        "type": "知识盲区",
+        "severity": "P1",
+        "location": "§3.4-§5（outline 提到 `BINDER_TYPE_FD`，正文未展开）",
+        "detail": "章节大纲明确提了“跨 PID 传递文件描述符（Binder `BINDER_TYPE_FD`）”，但正文没有解释 `ParcelFileDescriptor` / `BINDER_TYPE_FD` / `SCM_RIGHTS` 这组桥接机制，也没有说明为什么共享内存通常需要先通过 Binder / socket 传 fd。这个缺口会直接削弱零拷贝 IPC 的可理解性。",
+        "suggestion": "补一小节专讲 fd 传递，并用 BufferQueue、CursorWindow、SharedMemory 各举一个真实例子。",
+        "dimension": "知识盲区"
+      },
+      {
+        "type": "版本差异",
+        "severity": "P1",
+        "location": "§7 版本演进中的 IPC 变化（行 405-410）",
+        "detail": "版本表把 “Android 11 | HIDL → AIDL-HAL 迁移开始” 当成主要转折点，却漏了 Android 10 Stable AIDL / `/dev/binder` 这条真正改变 binder domain 叙事的里程碑。再加上 §3.7 把 AIDL HAL 写成 hwbinder，整张时间线会把 Treble 之后的 IPC 域演进讲歪。",
+        "suggestion": "重写成：Android 8 引入 Treble / hwbinder，Android 10 引入 Stable AIDL，Android 11 新 HAL 可用 AIDL，Android 14+ 继续鼓励迁移而非“全面完成”。",
+        "dimension": "版本差异覆盖"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-11T09:20:00+08:00",
+    "status": "pending"
   }
 ]
