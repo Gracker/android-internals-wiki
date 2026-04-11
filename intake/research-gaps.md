@@ -926,3 +926,20 @@ BLASTBufferQueue 小节只讲了“App 本地管理 buffer，最后用 Transacti
 
 ### 关联章节
 §2.3 VSync、§2.5 MainThread 与 RenderThread、§2.6 SurfaceFlinger、§2.13 BufferQueue、§2.15 DMA-BUF 与 Gralloc
+
+
+## [2026-04-11] 2.19 刷新率切换与帧率适配性能 — 知识盲区
+
+### 盲区描述
+章节讨论 ARR 时仍以 `Surface.setFrameRate(float, int)` 的旧模型为主，没有把 Android 15+ 的 `Surface.FrameRateParams`、`Display.FRAME_RATE_CATEGORY_*`、`Display.getSuggestedFrameRate(int)` 等 category/range API 讲清楚，也没有说明它们与 exact-fps 请求的适用边界。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 梳理 `Surface.setFrameRate(float, int)` → `Surface.FrameRateParams` 的 public API 演进路径
+- 结合 `Display.FRAME_RATE_CATEGORY_NORMAL/HIGH`、`Display.getSuggestedFrameRate(int)` 写一套 Android 15+ 的场景化建议
+- 补充 RecyclerView / Compose 在 ARR 设备上的真实调用路径和版本边界
+
+### 关联章节
+2.18, 2.4

@@ -3808,5 +3808,55 @@
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-11T18:20:00+08:00",
     "status": "pending"
+  },
+  {
+    "section": "2.19",
+    "section_title": "刷新率切换与帧率适配性能",
+    "priority": 95,
+    "reason": "[Deep Tech Review] AOSP 路径、刷新率仲裁函数名、示例代码与刷新率观察 API 存在事实错误，ARR 部分缺少当前 public API 路线",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "frontmatter sources（L21-L24） + ARR 段引用（L278-L280）",
+        "detail": "章节把 VsyncModulator 的 AOSP 路径写成 services/surfaceflinger/Scheduler/VsyncModulator.cpp，但实际源码位于 frameworks/native/services/surfaceflinger/Scheduler/VsyncModulator.cpp。按文中路径无法定位源码。",
+        "suggestion": "统一把路径修正为 frameworks/native/services/surfaceflinger/Scheduler/VsyncModulator.cpp，并检查全文 AOSP 路径是否都带上 frameworks/native 前缀。"
+      },
+      {
+        "type": "源码错误",
+        "location": "RefreshRateSelector 仲裁说明（L131-L142）",
+        "detail": "正文把最终决策函数写成 getBestRefreshRate()，并把策略概括为“最小公倍数或其附近”。当前 RefreshRateSelector 实际公开的是 getRankedFrameRates() 及分层打分逻辑，不存在 getBestRefreshRate() 这条源码锚点。",
+        "suggestion": "改写为“layer vote + score + seamlessness + policy signals”的仲裁模型，并用 RefreshRateSelector.cpp / .h 中真实存在的 getRankedFrameRates()、LayerVoteType、score 排序路径做源码锚点。"
+      },
+      {
+        "type": "源码错误",
+        "location": "App 优化示例代码（L296-L305）",
+        "detail": "示例调用 getWindow().getDecorView().setFrameRate(120f, Surface.FRAME_RATE_COMPATIBILITY_DEFAULT)，但当前 View/DecorView 并不存在 setFrameRate(float, int) 这个 API，按文中代码无法编译。",
+        "suggestion": "如果要讲 Surface 路径，使用真实的 Surface.setFrameRate(...)；如果要讲 toolkit 侧偏好，改成当前 View#setRequestedFrameRate(float) 或明确对应版本的 public API。"
+      },
+      {
+        "type": "源码错误",
+        "location": "setFrameRate 使用建议 + 版本演进（L326-L334, L342-L346）",
+        "detail": "章节多次要求通过 Choreographer.VsyncEventData.refreshRate 观察实际刷新率，并把它写成 Android 13 新字段。但当前 DisplayEventReceiver.VsyncEventData / Choreographer Java 源码没有 refreshRate 字段，可用的是 frameInterval 和 preferredFrameTimeline()。",
+        "suggestion": "删除 refreshRate 字段说法，改成基于 frameInterval、preferredFrameTimeline()、Display#getRefreshRate() / DisplayListener 或 NDK refresh-rate callback 的可验证观察路径。"
+      },
+      {
+        "type": "知识盲区",
+        "location": "Android 15/16/17 持续优化 + setFrameRate() 最佳实践（L282-L285, L322-L334）",
+        "detail": "ARR 部分只沿用“精确 fps + setFrameRate()”模型，没有把新的 category/range API 讲清楚，例如 Surface.FrameRateParams、Display.FRAME_RATE_CATEGORY_NORMAL/HIGH、Display.getSuggestedFrameRate(int) 与 ARR 的关系。读者看完仍然不知道 Android 15+ 的推荐写法和老 API 的边界。",
+        "suggestion": "补一节“精确 fps 请求 vs category/range 请求”的对照表，说明 Android 11-14 和 Android 15+ 的 public API 路线差异，并给出 RecyclerView / Compose 场景各自应该走哪条路径。"
+      },
+      {
+        "type": "版本差异",
+        "location": "Android 15/16/17 演进（L284-L286, L342-L346）",
+        "detail": "这一段把已验证 API、库侧能力和“ARR 与 DeliQueue 无锁 MessageQueue 的交互”这种推断混在一起，证据强度不一致。尤其 Android 17 条目仍是 [待验证]，不应该和前面已确认的版本事实并列。",
+        "suggestion": "把版本演进拆成“已验证 API / 库支持 / 推测性观察”三层；凡是 DeliQueue 这类尚无直接源码链路或官方文档的内容，移到备注或删掉。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-11T19:49:46+08:00",
+    "status": "pending"
   }
 ]
