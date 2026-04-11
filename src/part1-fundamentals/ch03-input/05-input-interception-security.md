@@ -30,11 +30,12 @@ related_chapters:
 reviewed_date: '2026-04-12'
 reviewed_by: openclaw-task6
 review_notes: '2026-04-12 task6 review: needs-rework。小修8处（措辞/术语/元数据）。大问题5处已写入 queue.json，待 Task 9 / Task 2B 处理。评分: 结构4/5·措辞4/5·一致性3/5·验证3/5·元数据4/5。'
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: needs-rework
-task9_state: reviewed
-task2b_state: pending
+task9_state: pending
+task2b_result: fixed
+task2b_state: fixed
 task9_result: needs-rework
 ---
 # 输入事件拦截与安全机制
@@ -84,326 +85,250 @@ InputFilter 是 Android 系统提供的一个**全局事件拦截机制**，允�
 
 ### InputFilter 的注册流程
 
-InputFilter 的注册和管理工作由 `InputManagerService`（Java 层）和 `InputDispatcher`（Native 层）协同完成。
+InputFilter 的入口不在 `InputManagerService` 自己对外暴露的公开 API，而是 `WindowManagerService` 通过 `IWindowManager.setInputFilter()` 把过滤器交给 `InputManagerService`。`InputManagerService` 保存当前 filter、创建 `InputFilterHost`、调用 `filter.install(mInputFilterHost)`，然后只把一个布尔开关同步到 Native 层。
 
 ```java
+// frameworks/base/services/core/java/com/android/server/wm/WindowManagerService.java
+@Override
+public void setInputFilter(IInputFilter filter) {
+    mInputManager.setInputFilter(filter);
+}
+
 // frameworks/base/services/core/java/com/android/server/input/InputManagerService.java
-public boolean setInputFilter(IInputFilter filter) {
+public void setInputFilter(IInputFilter filter) {
     synchronized (mInputFilterLock) {
-        if (mInputFilter != null) {
-            mInputFilterHost.disconnectLocked();
-            mInputFilter = null;
-        }
+        ...
         if (filter != null) {
             mInputFilter = filter;
-            mInputFilterHost = new InputFilterHost(this);
-            // 通过 JNI 通知 Native 层
-            mNative.setInputFilter(mInputFilterHost, filter);
-        } else {
-            mNative.setInputFilter(null, null);
+            mInputFilterHost = new InputFilterHost();
+            filter.install(mInputFilterHost);
         }
-        return true;
+        mNative.setInputFilterEnabled(filter != null);
     }
 }
 ```
 
-Native 层接收到 InputFilter 后，会在 InputDispatcher 的事件分发循环中插入过滤逻辑：
+这里最容易写错的是 Native 侧的关系。`InputDispatcher` 并不会直接持有 Java 层的 `IInputFilter` 对象，也不会调用旧稿里的 `mInputFilter.filterMotionEvent(args)`。真实做法是，当 `mInputFilterEnabled` 为 `true` 时，`InputDispatcher` 把事件交给 policy 的 `filterInputEvent(...)`，是否继续分发由这个调用的返回值决定。
 
 ```cpp
 // frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp
-void InputDispatcher::notifyMotion(const NotifyMotionArgs* args) {
-    // ... 常规处理 ...
-    // 如果注册了 InputFilter，事件先经过 filter
-    if (mInputFilterEnabled) {
-        mInputFilter.filterMotionEvent(args);
-        return;  // 事件由 filter 决定是否继续分发
+if (shouldSendMotionToInputFilterLocked(args)) {
+    policyFlags |= POLICY_FLAG_FILTERED;
+    if (!mPolicy.filterInputEvent(event, policyFlags)) {
+        return; // event was consumed by the filter
     }
-    // 没有 filter 时，正常入队
-    enqueueInboundEventLocked(std::make_unique<MotionEntry>(*args));
 }
 ```
 
-系统中最典型的 InputFilter 使用者是**无障碍服务**。当无障碍服务请求"过滤关键事件"（`FLAG_REQUEST_FILTER_KEY_EVENTS`）时，系统会为其创建一个 InputFilter，将按键事件先发给无障碍服务处理，再决定是否继续分发给目标窗口。
+按键事件也是同一套做法，只是入口换成 `shouldSendKeyToInputFilterLocked()`。把这几层放在一起看，比较准确的流程是：
 
-> [已验证: AOSP android-14.0.0_r1, frameworks/base/services/core/java/com/android/server/input/InputManagerService.java]
-> [已验证: AOSP android-14.0.0_r1, frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp]
+`WindowManagerService.setInputFilter()` → `InputManagerService.setInputFilter()` → `filter.install(...)` → `mNative.setInputFilterEnabled(true)` → `InputDispatcher` 在分发前调用 `mPolicy.filterInputEvent(...)`。
 
 ### InputFilter 的事件处理模型
 
-InputFilter 接收到事件后，有以下几种处理选项：
+`InputFilter` 的 Java 合同很直接，`onInputEvent(InputEvent event, int policyFlags)` 默认马上调用 `sendInputEvent(event, policyFlags)` 放行。自定义 filter 可以消费事件，也可以构造替代事件再调用 `sendInputEvent()` 重新发布。
 
-1. **透传**：不做任何修改，事件继续正常分发
-2. **修改**：改变事件的属性（如修改按键码、坐标值），然后继续分发
-3. **消费**：拦截事件，不让它到达目标窗口
-4. **注入新事件**：在拦截原始事件的同时，注入一个新的事件替代
+这件事更像“拦下原事件，再决定要不要发出另一个事件”，不是在原地改一块共享状态。`InputFilter` 文档也强调了事件一致性，如果 filter 自己重组了一串 `MotionEvent`，它要保证 down/move/up 序列仍然合法，不然下游窗口会收到不成对的事件。
 
-```java
-// frameworks/base/core/java/android/view/InputFilter.java
-public void onInputEvent(InputEvent event, int policyFlags) {
-    // 默认实现：直接放行
-    if (event instanceof KeyEvent) {
-        onKeyEvent((KeyEvent) event, policyFlags);
-    } else if (event instanceof MotionEvent) {
-        onMotionEvent((MotionEvent) event, policyFlags);
-    }
-}
-
-// 子类可以重写这些方法来拦截/修改事件
-protected void onKeyEvent(KeyEvent event, int policyFlags) {
-    sendInputEvent(event, policyFlags);  // 放行
-}
-```
-
-> [已验证: AOSP android-14.0.0_r1, frameworks/base/core/java/android/view/InputFilter.java]
+`InputFilter` 运行在 system_server 这一侧。普通 App 只能接收过滤后的结果，不能自己挂一个全局 filter。
 
 ### InputFilter 在 Perfetto 中的表现
 
-InputFilter 的处理发生在 InputDispatcher 线程中。如果 InputFilter 的处理逻辑耗时较长（比如无障碍服务的事件回调中执行了耗时操作），在 Perfetto 中会看到 InputDispatcher 线程出现额外的耗时 Slice，同时 InboundQueue 的长度可能堆积。
+这里要把两类耗时分开看。
 
-一个关键观察点：如果 InputFilter 在处理事件时需要与远端进程（如无障碍服务进程）通信，那么 InputDispatcher 线程会阻塞在 Binder 调用上。这是 InputFilter 导致延迟的主要原因——InputDispatcher 本应快速地将事件分发给目标窗口，但如果它在分发前要先等无障碍服务的远程回调返回，就引入了不确定的延迟。
+一类是 filter 本身在 system_server 里的本地处理时间，例如 Java 回调、事件复制、坐标变换、`sendInputEvent()` 重新发布。这部分会直接拉长“事件进入 Input 子系统之后，到达目标窗口之前”的时间。
+
+另一类是无障碍按键判定带来的额外等待。它不是 `InputDispatcher` 线程同步等远端 Binder 返回，而是 `KeyboardInterceptor` 把按键交给 `AccessibilityManagerService`，再由 `KeyEventDispatcher` 异步等服务调用 `setOnKeyEventResult()`。旧稿把这件事写成“InputDispatcher 卡在 Binder 上”，这个判断不对。
+
+当前素材没有对应的真实 trace 截图，本节只保留可从源码核对到的结论。Perfetto 图例先记为 `[待补充：展示 InputDispatcher、AccessibilityManagerService、无障碍服务进程的时间关系]`。
 
 ## 无障碍服务的事件拦截
 
 ### AccessibilityService 与 Input 事件的关系
 
-无障碍服务（AccessibilityService）是 Android 为残障用户提供辅助功能的系统级服务框架。它不仅能读取屏幕上的 UI 内容（通过 AccessibilityNodeInfo），还能拦截和修改输入事件——这是无障碍服务与 Input 系统产生交叉的核心原因。
+无障碍和 Input 的交叉点主要在 `AccessibilityInputFilter`。系统在服务能力和 flags 满足条件时启用它，然后把按键处理交给 `KeyboardInterceptor`，把触摸相关变换交给 `TouchExplorer`、放大镜手势处理器或 `MotionEventInjector`。
 
-无障碍服务拦截输入事件的能力通过两种方式实现：
+按键过滤的前提不是在 `android:accessibilityEventTypes` 里写一个 flag。真实约束分成两步：
 
-**第一种：通过 InputFilter 拦截按键事件。** 当无障碍服务在 `android:accessibilityEventTypes` 中声明了 `FLAG_REQUEST_FILTER_KEY_EVENTS`，系统会注册一个 InputFilter，将所有按键事件先发给无障碍服务的 `onKeyEvent()` 回调。无障碍服务可以消费（返回 `true`）或放行（返回 `false`）这个事件。
+1. 服务 metadata 中声明 `android:canRequestFilterKeyEvents="true"`，系统据此赋予 `AccessibilityServiceInfo.CAPABILITY_CAN_REQUEST_FILTER_KEY_EVENTS`
+2. 服务运行时把 `AccessibilityServiceInfo.FLAG_REQUEST_FILTER_KEY_EVENTS` 放进 `AccessibilityServiceInfo.flags`
 
-```java
-// frameworks/base/core/java/android/accessibilityservice/AccessibilityService.java
-protected boolean onKeyEvent(KeyEvent event) {
-    return false;  // 默认放行
-}
-```
+android-10.0.0_r1 和 android-14.0.0_r1 都是这套做法，所以“Android 10+ 只有系统无障碍服务能用这个 flag”这句话不能保留。
 
-**第二种：通过 dispatchGesture() 注入手势事件。** 无障碍服务可以构造 `GestureDescription` 并通过 `dispatchGesture()` 注入触摸事件。系统会将这些手势事件转换为 MotionEvent，注入到 InputDispatcher 中，最终分发给目标窗口。这是屏幕阅读器（TalkBack）"点击"、"滑动"等操作的基础。
-
-> [已验证: AOSP android-14.0.0_r1, frameworks/base/core/java/android/accessibilityservice/AccessibilityService.java]
+触摸事件的情况也不能简单写成“无障碍通过 UI 树间接操作”。`AccessibilityInputFilter.onInputEvent()` 会直接收到 `MotionEvent`，按启用的功能把事件交给 `TouchExplorer`、放大镜相关 handler，或 `MotionEventInjector`。无障碍服务主动产生手势时，再通过 `dispatchGesture()` 走另一条注入流程。
 
 ### 事件拦截的回调路径
 
-当无障碍服务声明了按键过滤能力后，按键事件的传递路径变为：
+按键过滤可以拆成两个阶段看。
 
-```
-InputReader → InputDispatcher → InputFilter → [IPC] AccessibilityService.onKeyEvent()
-                                                    ↓
-                                          返回 true/false
-                                                    ↓
-                                    InputDispatcher 继续分发 / 丢弃事件
-```
+**阶段 1：Input 子系统把按键送进 accessibility filter。**
 
-这个 IPC 调用是关键瓶颈。InputDispatcher 线程需要通过 Binder 同步调用无障碍服务进程的 `onKeyEvent()` 方法，等待返回结果。如果无障碍服务进程繁忙或主线程卡顿，InputDispatcher 就会被阻塞。
+`InputReader → InputDispatcher → mPolicy.filterInputEvent(...) → AccessibilityInputFilter → KeyboardInterceptor`
 
-对于触摸事件，无障碍服务的拦截方式不同。它不是通过 InputFilter 拦截，而是通过 `AccessibilityInteractionController` 间接操作 UI 树。TalkBack 在用户触摸屏幕时，会先"捕获"触摸事件（让无障碍服务自己消费），然后根据触摸位置找到对应的 UI 元素并执行朗读操作，而不是将原始触摸事件直接传递给 App。
+这一步发生在 system_server 一侧，`InputDispatcher` 只负责把事件交给 filter。
 
-> [已验证: AOSP android-14.0.0_r1, frameworks/base/services/accessibility/java/com/android/server/accessibility/AccessibilityManagerService.java]
+**阶段 2：无障碍服务异步给出“消费/放行”结果。**
+
+`KeyboardInterceptor → AccessibilityManagerService.notifyKeyEvent() → KeyEventDispatcher.notifyKeyEventLocked() → AccessibilityService.onKeyEvent()`
+
+`KeyEventDispatcher` 会为待判定的按键建一个 `PendingKeyEvent`，并启动 500ms 超时计时。服务稍后通过 `setOnKeyEventResult()` 回传结果：
+
+- 服务返回 handled，事件在无障碍层结束，不再发给 App
+- 服务返回 unhandled，或 500ms 内没有回结果，`KeyEventDispatcher` 把原始按键重新送回 input filter，再继续分发给目标窗口
+
+这就是为什么我们在分析按键延迟时，应该去看 `AccessibilityManagerService`、`KeyEventDispatcher` 和服务进程自己的处理时间，而不是假定 `InputDispatcher` 一直堵着不动。
 
 ### 事件修改的安全限制
 
-无障碍服务对事件的修改能力受到严格限制：
+无障碍或系统 filter 的“可改”范围，最好按三件事来理解。
 
-1. **不能修改触摸事件的坐标**：无障碍服务只能消费或放行触摸事件，不能改变触摸点的位置。这是为了防止无障碍服务被恶意利用来"劫持"用户的触摸操作。
-2. **可以修改按键事件的键码**：`onKeyEvent()` 返回 `true` 消费事件，但无障碍服务本身不能直接修改 `KeyEvent` 的内容再放行。
-3. **注入的手势事件有来源标记**：通过 `dispatchGesture()` 注入的事件会被标记为来自无障碍服务，目标 App 可以通过 `MotionEvent.getSource()` 区分。
-
-> [已验证: AOSP android-14.0.0_r1, frameworks/base/core/java/android/accessibilityservice/GestureDescription.java]
+1. **原始硬件事件不能被服务直接原位改写。** 触摸从 `EventHub/InputReader` 进入系统后，普通服务拿不到那份内核事件缓冲。无障碍更常见的做法是消费原事件，再通过 `MotionEventInjector` 或 `dispatchGesture()` 发出替代手势。
+2. **按键判定是“消费还是放行”，不是修改原 `KeyEvent` 再放行。** `AccessibilityService.onKeyEvent()` 给出的只是一个布尔结果。若服务想产生另一组按键，仍然要走注入入口。
+3. **`source` 不能拿来判断无障碍注入。** `MotionEvent.getSource()` / `KeyEvent.getSource()` 描述的是设备类别。App 真正能直接看到的标记是 `KeyEvent.FLAG_IS_ACCESSIBILITY_EVENT` 和 `MotionEvent.FLAG_IS_ACCESSIBILITY_EVENT`。`POLICY_FLAG_INJECTED`、`POLICY_FLAG_INJECTED_FROM_ACCESSIBILITY` 属于 InputDispatcher 内部 policy flag，不是 public API。
 
 ## 系统级事件注入
 
-### 三种事件注入路径
+### 几种常见事件注入路径
 
-Android 系统提供了多种在 Framework 层注入输入事件的方式。这些方式绕过了正常的硬件→InputReader→InputDispatcher 路径，直接将事件注入到分发流程中。
+这些入口都叫“注入事件”，但它们进入系统的地方并不一样。把它们混成一类，后面就会把可观测性和权限边界全写乱。
 
 #### 1. Instrumentation.sendPointerSync()
 
-这是 Android 测试框架提供的事件注入方式。它直接在 App 进程内部注入事件，绕过 InputDispatcher：
+`Instrumentation.sendPointerSync()` 先做一次 window transaction 同步，然后调用 `InputManagerGlobal.getInstance().injectInputEvent(..., Process.myUid())`。AOSP 注释写得很直白，它只会把事件定向到 instrumentation target 自己拥有的窗口，不会像 `UiAutomation` 那样跨 App。
 
 ```java
 // frameworks/base/core/java/android/app/Instrumentation.java
-public boolean sendPointerSync(MotionEvent event) {
-    try {
-        // 直接调用 ViewRootImpl 的输入通道注入事件
-        (IWindowManager.Stub.asInterface(
-            ServiceManager.getService("window")))
-            .injectInputEventToInputFilter(event,
-                InputManager.INJECT_INPUT_EVENT_MODE_WAIT_FOR_FINISH);
-        return true;
-    } catch (RemoteException e) {
-        return false;
-    }
+public void sendPointerSync(MotionEvent event) {
+    ...
+    syncInputTransactionsAndInjectEventIntoSelf(event);
+}
+
+private void syncInputTransactionsAndInjectEventIntoSelf(MotionEvent event) {
+    ...
+    InputManagerGlobal.getInstance().injectInputEvent(
+            event, InputManager.INJECT_INPUT_EVENT_MODE_WAIT_FOR_FINISH, Process.myUid());
 }
 ```
 
-> [已验证: AOSP android-14.0.0_r1, frameworks/base/core/java/android/app/Instrumentation.java]
+它并没有直接写 `ViewRootImpl` 输入通道，底层仍然走 Input 注入入口。
 
-#### 2. uiautomator
+#### 2. UiAutomation.injectInputEvent()
 
-uiautomator 是 Android 自动化测试工具，它的底层通过 `UiAutomation` 注入事件。`UiAutomation` 内部使用 `InputManager.injectInputEvent()` 将事件注入到 InputDispatcher：
+`UiAutomation.injectInputEvent()` 通过 `mUiAutomationConnection.injectInputEvent(...)` 进入标准注入流程，可以跨应用窗口工作。`UiAutomation.java` 里还写了一个例外，标准 `injectInputEvent()` 会跳过 accessibility input filter，目的是避免 feedback loop。
+
+#### 3. UiAutomation.injectInputEventToInputFilter()
+
+这是测试 accessibility input filter 的专用入口。名字已经说明了它的去向，事件不是走普通注入流程，而是直接送进 accessibility input filter。
+
+#### 4. adb shell input
+
+`adb shell input` 最终仍会落到 `InputManager.injectInputEvent()` / `InputManagerService.injectInputEventToTarget()` / `mNative.injectInputEvent(...)` 这一套标准注入入口。它和 `UiAutomation.injectInputEvent()` 一样，属于普通 injected event，不是 accessibility input filter 专用入口。
+
+#### 5. AccessibilityService.dispatchGesture()
+
+`dispatchGesture()` 不是普通 `INJECT_EVENTS` 权限入口。服务调用它之后，`AccessibilityServiceConnection.dispatchGesture()` 会拿到对应 display 的 `MotionEventInjector`，再由 `MotionEventInjector.injectEvents()` 生成一串 `MotionEvent`。这一类事件会带上 `FLAG_INJECTED_FROM_ACCESSIBILITY`，App 侧能看到对应的 `FLAG_IS_ACCESSIBILITY_EVENT`。
 
 ```java
-// frameworks/base/core/java/android/app/UiAutomation.java
-public boolean injectInputEvent(InputEvent event, ...) {
-    return mInstrumentation.getUiAutomationConnection().injectInputEvent(event, mode,
-        ...);
+// frameworks/base/services/accessibility/java/com/android/server/accessibility/AccessibilityServiceConnection.java
+public void dispatchGesture(int sequence, ParceledListSlice gestureSteps, int displayId) {
+    ...
+    MotionEventInjector motionEventInjector =
+            mSystemSupport.getMotionEventInjectorForDisplayLocked(displayId);
+    ...
+    motionEventInjector.injectEvents(gestureSteps.getList(), mServiceInterface, sequence, displayId);
 }
 ```
 
-与 `Instrumentation.sendPointerSync()` 不同，uiautomator 注入的事件会经过 InputDispatcher 的完整分发流程（包括 ANR 检测、权限检查等），行为更接近真实的用户输入。
+下面这张表把几种入口放在一起看：
 
-> [已验证: AOSP android-14.0.0_r1, frameworks/base/core/java/android/app/UiAutomation.java]
+| 方式 | 最终入口 | 是否经过 accessibility input filter | 目标范围 | App 侧可直接看到的标记 |
+|------|----------|--------------------------------------|----------|------------------------|
+| `Instrumentation.sendPointerSync()` | `InputManagerGlobal.injectInputEvent(..., Process.myUid())` | 否 | instrumentation target 自己的窗口 | 无专门 injected public flag |
+| `UiAutomation.injectInputEvent()` | `mUiAutomationConnection.injectInputEvent(...)` | 否 | 跨应用窗口 | 无专门 injected public flag |
+| `UiAutomation.injectInputEventToInputFilter()` | accessibility input filter 测试入口 | 是 | filter 测试场景 | 取决于 filter 是否以 accessibility 方式再发布 |
+| `adb shell input` | `InputManagerService.injectInputEventToTarget()` | 否 | shell 可达的标准注入目标 | 无专门 injected public flag |
+| `AccessibilityService.dispatchGesture()` | `MotionEventInjector.injectEvents()` | 是 | 目标显示与目标窗口 | `FLAG_IS_ACCESSIBILITY_EVENT` |
 
-#### 3. adb shell input
-
-`adb shell input` 命令是开发者最常用的事件注入工具。它的实现路径如下：
-
-```
-adb shell input tap x y
-  → com.android.commands.input.Input (Java)
-    → InputManager.injectInputEvent()
-      → InputManagerService.injectInputEvent()
-        → [JNI] nativeInjectInputEvent()
-          → InputDispatcher::injectInputEvent()
-```
-
-```java
-// frameworks/base/services/core/java/com/android/server/input/InputManagerService.java
-private int injectInputEvent(InputEvent event, int mode, ...) {
-    // 权限检查
-    if (!checkInjectPermission()) {
-        return InputManager.INJECT_RESULT_PERMISSION_DENIED;
-    }
-    return mNative.injectInputEvent(event, ...);
-}
-```
-
-`adb shell input` 注入的事件同样经过 InputDispatcher 的完整流程。在 Perfetto 中，注入事件与正常事件的区别在于来源标记——注入事件会携带 `POLICY_FLAG_INJECTED` 标志。
-
-> [已验证: AOSP android-14.0.0_r1, frameworks/base/services/core/java/com/android/server/input/InputManagerService.java]
-> [已验证: AOSP android-14.0.0_r1, frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp]
+这里顺手修正一个旧稿里的错误，`POLICY_FLAG_INJECTED` 只是 InputDispatcher 内部 policy flag。普通 App 没有 `InputEvent.getFlags()` 这个统一入口去读它，也不能靠 `MotionEvent.isFromSource()` 把 injected event 和真实硬件事件区分开。
 
 ### 注入事件的权限控制
 
-从 Android 9（API 28）开始，`injectInputEvent()` 要求调用者持有 `INJECT_EVENTS` 权限。这个权限是 `signature|privileged` 级别的——只有系统签名应用或特权应用才能声明。
+普通注入入口最终都会过 `InputManagerService.injectInputEventToTarget()` 的权限检查。android-14.0.0_r1 里，这一步调用 `checkCallingPermission(android.Manifest.permission.INJECT_EVENTS, "injectInputEvent()", true)`，没有 `INJECT_EVENTS` 的调用者会抛 `SecurityException`。
 
-```java
-// frameworks/base/services/core/java/com/android/server/input/InputManagerService.java
-private boolean checkInjectPermission() {
-    // 检查是否持有 INJECT_EVENTS 权限
-    if (mContext.checkCallingPermission(Manifest.permission.INJECT_EVENTS)
-            == PackageManager.PERMISSION_GRANTED) {
-        return true;
-    }
-    // shell 用户也可以注入（adb shell）
-    if (Binder.getCallingUid() == Process.SHELL_UID) {
-        return true;
-    }
-    return false;
-}
-```
-
-这意味着普通 App 无法通过 `InputManager.injectInputEvent()` 注入事件。但在测试场景中，`Instrumentation` 和 `UiAutomation` 通过特殊的 IPC 通道绕过了这个限制——它们使用的是 `UiAutomationConnection`，这个连接由系统在 Instrumentation 初始化时建立，自带注入权限。
-
-> [已验证: AOSP android-14.0.0_r1, frameworks/base/services/core/java/com/android/server/input/InputManagerService.java]
+`Instrumentation` 和 `UiAutomation` 看上去像“绕过了权限”，实际不是。它们用的是系统帮测试框架建立的受控通道，最终仍然落回受权限保护的注入接口。`dispatchGesture()` 又是另一套门禁，它看的是无障碍服务是否通过 `canPerformGestures()` 校验，而不是 `INJECT_EVENTS`。
 
 ## Input 事件的安全边界
 
 ### 哪些环节可以被拦截/修改
 
-基于前文的分析，我们可以绘制出 Input 事件传递路径上的"可拦截点"：
+Input 事件从硬件到 App 之间，真正可编程的拦截点没有旧稿写得那么散。按源码可以落到下面几处：
 
-```
-[硬件] → EventHub → InputReader → InputDispatcher → [InputFilter] → App ViewRootImpl → View 树
-                                ↑                    ↑                        ↑
-                          可修改（Native）      可拦截/修改/丢弃         可拦截/修改（Java）
-```
+| 位置 | 能做什么 | 典型实现 |
+|------|----------|----------|
+| `InputReader` / policy | 设备级重映射、丢弃、策略判断 | 系统 policy、厂商输入定制 |
+| `InputFilter` | 放行、消费、发出替代事件 | 自定义系统 filter、`AccessibilityInputFilter` |
+| `AccessibilityInputFilter` 内部变换器 | 按键判定、触摸探索、手势注入 | `KeyboardInterceptor`、`TouchExplorer`、`MotionEventInjector` |
+| App 自己的 `InputStage` / `ViewGroup` | 只影响本进程窗口 | `ViewRootImpl`、`onInterceptTouchEvent()` |
 
-**可拦截/修改的环节：**
+下面几处普通 App 或普通服务碰不到：
 
-| 环节 | 能力 | 谁可以做 |
-|------|------|---------|
-| InputReader（Native 层） | 修改事件属性、坐标变换、甚至丢弃 | InputReaderPolicy（系统级） |
-| InputFilter（InputDispatcher 内） | 拦截、修改、丢弃所有事件 | InputManagerService（需系统权限） |
-| ViewRootImpl InputStage | 拦截触摸/按键事件 | App 自身 |
-| ViewGroup 事件分发 | 拦截触摸事件、修改分发目标 | App 自身 |
-| AccessibilityService | 拦截按键事件、注入手势事件 | 系统授权的无障碍服务 |
+1. **`EventHub → InputReader` 的原始设备事件。** 这是内核输入设备到系统服务的边界。
+2. **`InputChannel` 的 socket 传输。** 事件进入 socket 之后，App 只能从自己那一端读，不能改 system_server 已经写出的包。
+3. **InputDispatcher 内部 policy flag。** 例如 `POLICY_FLAG_INJECTED` 只在分发器里流转，不是 public API。
 
-**不可篡改的环节：**
-
-1. **EventHub → InputReader**：原始的 `input_event` 从内核到达 EventHub 后，被 InputReader 读取。普通 App 无法在这一层做任何事情。
-2. **InputChannel（socketpair）传输**：事件通过 socketpair 跨进程传输，传输过程本身无法被篡改（除非攻击者已经获得了 root 权限或注入了 system_server 进程）。
-3. **内核 Input 子系统**：`/dev/input/eventX` 的写入权限被系统控制，普通进程无法向输入设备节点写入伪造事件（除非有 root 权限）。
-
-> [已验证: AOSP android-14.0.0_r1, 多个源码文件交叉验证]
+把这些边界分清之后，就不容易把“全局 filter 可做什么”和“App 自己在 View 层能做什么”混在一起。
 
 ### 安全策略的版本演进
 
-Android 在每个版本都在收紧输入事件的安全边界：
+旧稿那张版本表里混入了几条找不到一手证据的说法。本节改成只保留当前能直接核对的内容。
 
-| 版本 | 安全策略变化 |
-|------|------------|
-| Android 4.3 (API 18) | 引入 `INJECT_EVENTS` 权限要求，限制非系统应用的注入能力 |
-| Android 8.0 (API 26) | AccessibilityService 注入手势需要用户显式授权 |
-| Android 9 (API 28) | `injectInputEvent()` 强制权限检查，shell 注入需要开发者选项启用 |
-| Android 10 (API 29) | 增加对 `FLAG_REQUEST_FILTER_KEY_EVENTS` 的限制，只有系统无障碍服务可使用 |
-| Android 12 (API 31) | 限制无障碍服务通过 `performGlobalAction()` 执行系统级操作（需二次确认） |
-| Android 13 (API 33) | 注入事件的 `POLICY_FLAG_INJECTED` 标志在 App 侧可通过 `MotionEvent.isFromSource()` 检测 |
-| Android 14 (API 34) | 无障碍服务的事件过滤权限进一步收紧，需 `R.string.accessibility_filter_key_events` 资源声明 |
+| 版本/来源 | 能直接核对到的结论 | 证据 |
+|-----------|--------------------|------|
+| android-10.0.0_r1 | `canRequestFilterKeyEvents` metadata 会转成 `CAPABILITY_CAN_REQUEST_FILTER_KEY_EVENTS`；运行时用 `FLAG_REQUEST_FILTER_KEY_EVENTS` 打开按键过滤 | `AccessibilityServiceInfo.java` |
+| android-14.0.0_r1 | 按键过滤仍是 capability + runtime flag 这套机制，不存在“只有系统无障碍服务可用该 flag”的 AOSP 依据 | `AccessibilityServiceInfo.java` |
+| android-14.0.0_r1 | 标准 `UiAutomation.injectInputEvent()` 会跳过 accessibility input filter；测试 filter 需要 `injectInputEventToInputFilter()` | `UiAutomation.java` |
+| android-14.0.0_r1 | accessibility 注入事件会在 InputDispatcher 中转成 `FLAG_IS_ACCESSIBILITY_EVENT` 供 App 识别 | `InputDispatcher.cpp`、`KeyEvent.java`、`MotionEvent.java` |
 
-> [已验证: AOSP android-14.0.0_r1, frameworks/base/services/accessibility/]
-> [已验证: AOSP android-14.0.0_r1, frameworks/base/services/core/java/com/android/server/input/InputManagerService.java]
+下面这些说法本节先删掉，不再标 `[已验证]`：
+- `MotionEvent.isFromSource()` 可检测 injected event
+- Android 14 需要 `R.string.accessibility_filter_key_events` 资源声明
+- Android 10 只有系统无障碍服务能使用 `FLAG_REQUEST_FILTER_KEY_EVENTS`
+
+等补到 tag + 文件或官方文档之后，再恢复版本表。
 
 ## 事件拦截对性能的影响
 
 ### InputFilter 的延迟开销
 
-InputFilter 在 InputDispatcher 线程中同步执行，它的处理时间直接影响事件的分发延迟。如果 InputFilter 需要进行跨进程 IPC（如无障碍服务的按键过滤），延迟会进一步放大。
+`InputFilter` 自身带来的延迟主要来自三件事，filter Java 回调、本地变换逻辑、重新发布事件。这里没有现成 trace 数据支持“0.1ms”“2ms”这样的固定数值，所以旧稿里的量化表先撤掉。
 
-我们来量化一下延迟的组成：
+如果 filter 只是做轻量判断，然后马上 `sendInputEvent()`，额外开销通常很小。若 filter 在回调里做对象分配、复杂手势状态机、跨线程切换，分发前置时间就会拉长。这个时间发生在 system_server 侧，不是 App 主线程自己造成的。
 
-```
-InputFilter 处理延迟 = 本地处理时间 + IPC 往返时间
-
-本地处理：微秒级（通常 < 0.1ms）
-IPC 往返（无障碍服务进程空闲）：0.5-2ms
-IPC 往返（无障碍服务进程繁忙）：2-10ms+
-```
-
-在 Perfetto 中，如果 InputFilter 的 IPC 调用耗时超过 5ms，就能在 InputDispatcher 线程上看到明显的 Binder 调用 Slice。如果这种情况频繁发生（比如每秒处理几十个按键事件），累积的延迟会严重影响输入响应。
-
-一个极端的案例：如果无障碍服务的 `onKeyEvent()` 中执行了耗时操作（如发起网络请求、读写数据库），InputDispatcher 线程会被长时间阻塞，导致所有窗口的输入事件都得不到分发——不只是目标窗口，而是**整个系统**的输入都会卡住。因为 InputDispatcher 是全局唯一的，它不区分窗口。
-
-> [已验证: AOSP android-14.0.0_r1, frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp]
+[待补充：同设备 Perfetto 或 microbenchmark，量化空 filter / 复杂 filter 的差值]
 
 ### 无障碍服务对事件分发路径的性能影响
 
-无障碍服务对性能的影响不仅限于 InputFilter 层面，还体现在以下几个方面：
+无障碍的性能成本要按事件类型分开看。
 
-**1. 事件分发路径变长。** 当无障碍服务启用按键过滤时，每个按键事件都要经过 InputDispatcher → InputFilter → AccessibilityService IPC → 处理回调 → 返回结果 这条路径。相比无拦截时的 InputDispatcher → 目标窗口，路径显著变长。
+**按键事件。** 开启 `FLAG_REQUEST_FILTER_KEY_EVENTS` 后，事件会先到 `KeyboardInterceptor`，再交给 `KeyEventDispatcher` 等待服务结果。等待窗口上限是 500ms。这个等待发生在无障碍子系统维护的 `PendingKeyEvent` 队列里，不是 `InputDispatcher` 同步等远端 Binder。
 
-**2. 额外的 Binder 调用开销。** 无障碍服务需要通过 Binder IPC 与 `AccessibilityManagerService` 通信。当屏幕上有大量无障碍节点需要更新时（如快速滚动的列表），频繁的节点变更通知会产生大量的 Binder 调用，间接影响主线程的调度。
+**触摸事件。** `TouchExplorer`、放大镜手势处理器、`MotionEventInjector` 可能把一段原始触摸重写成另一串 `MotionEvent`。这会增加事件数量，也会让时序更复杂。TalkBack 的“朗读后双击激活”就是这类变换的典型例子。
 
-**3. 事件注入的额外路径。** TalkBack 等无障碍服务通过 `dispatchGesture()` 注入触摸事件时，这些事件需要先到达 InputDispatcher，再经过正常的分发流程到达目标窗口。这意味着一次"点击"操作实际涉及两条路径：原始触摸事件被无障碍服务消费，然后无障碍服务注入一个新的点击事件——两次事件处理的开销。
+**服务进程自己的耗时。** `AccessibilityService.onKeyEvent()`、`onAccessibilityEvent()`、手势回调如果在主线程里做重活，结果返回就会变慢，待决按键在 `KeyEventDispatcher` 里停留更久。
 
-在 Perfetto 中分析无障碍服务导致的性能问题时，建议关注以下 Track：
-
-- **InputDispatcher 线程**：查看是否有长时间的 Binder 调用 Slice（InputFilter IPC）
-- **AccessibilityManagerService 线程**：查看是否有频繁的 Binder 调用（节点变更通知）
-- **无障碍服务进程的主线程**：查看 `onKeyEvent()` / `onAccessibilityEvent()` 的处理耗时
-
-> [已验证: AOSP android-14.0.0_r1, frameworks/base/services/accessibility/java/com/android/server/accessibility/AccessibilityManagerService.java]
+分析时，不要只盯着“有没有一条 Binder slice 很长”，更该看的是：
+- `KeyboardInterceptor` / `KeyEventDispatcher` 是否积压待判定按键
+- 服务进程回结果是否接近 500ms 超时
+- `dispatchGesture()` 是否把一次用户动作扩成了更多 injected `MotionEvent`
 
 ### 性能影响对比表
 
-| 拦截机制 | 对事件延迟的影响 | 影响范围 | 典型延迟增量 |
-|---------|----------------|---------|------------|
-| InputFilter（本地处理） | 低 | 全局所有事件 | < 0.1ms |
-| InputFilter（IPC 到无障碍服务） | 中~高 | 全局所有按键事件 | 1-5ms |
-| AccessibilityService 注入手势 | 中 | 目标窗口 | 2-8ms |
-| ViewGroup.onInterceptTouchEvent | 低 | 单个 App | < 0.01ms |
-| Instrumentation 注入 | 低 | 目标窗口 | < 0.5ms |
+| 机制 | 额外工作发生位置 | 影响范围 | 当前能直接核对的结论 |
+|------|------------------|----------|----------------------|
+| 轻量 `InputFilter` | system_server filter 回调 | 经过 filter 的 key / motion | 会增加分发前处理时间，幅度取决于 filter 代码 |
+| 无障碍按键过滤 | `KeyboardInterceptor` + `KeyEventDispatcher` + 服务进程 | 开启 key filter 的按键 | 等待窗口上限 500ms；超时后事件继续发给 App |
+| 无障碍手势注入 | `MotionEventInjector` | 目标窗口 | 会额外生成 accessibility injected `MotionEvent` |
+| App 自己的 `onInterceptTouchEvent()` | App 进程 | 仅本 App | 不会回过头影响全局 `InputDispatcher` |
 
 ## 厂商定制的拦截增强方案
 
@@ -431,93 +356,104 @@ IPC 往返（无障碍服务进程繁忙）：2-10ms+
 
 > [待验证: 各厂商防误触实现的具体位置和方案差异]
 
-## Android 14+ 对无障碍服务事件拦截的权限收紧
+## Android 14 时代仍可核对到的权限边界
 
-从 Android 14 开始，Google 进一步收紧了无障碍服务对输入事件的拦截能力：
+这一节原来写了几条“Android 14+ 进一步收紧”的判断，但其中有两条找不到 AOSP 或官方文档依据，本轮已经删掉。android-14.0.0_r1 里，至少有下面三条边界可以直接核对：
 
-1. **`FLAG_REQUEST_FILTER_KEY_EVENTS` 需要系统声明**：普通的无障碍服务不能再通过声明 `android:canRequestFilterKeyEvents` 来请求按键过滤能力。只有被系统白名单认可的无障碍服务才能使用此功能。
+1. **按键过滤仍然依赖 capability + runtime flag。** 代码位置在 `AccessibilityServiceInfo.java`，不是某个 `R.string.*` 资源开关。
+2. **手势注入要过无障碍安全检查。** `AccessibilityServiceConnection.dispatchGesture()` 会先看 `mSecurityPolicy.canPerformGestures(this)`，拿到 `MotionEventInjector` 之后才会发事件。
+3. **标准 injected event 和 accessibility injected event 是两回事。** 前者走普通注入入口，后者会在 `MotionEventInjector` / `InputDispatcher` 里补上 accessibility 标记。
 
-2. **手势注入的来源标记更明确**：通过 `dispatchGesture()` 注入的事件携带更详细的来源信息，App 端可以通过 `MotionEvent.isFromSource(InputDevice.SOURCE_TOUCHSCREEN)` 和额外的 flag 判断事件是否来自无障碍服务的注入。
-
-3. **权限审查更严格**：Play Store 对声明无障碍服务的 App 进行更严格的审查，特别是那些同时声明了网络权限的无障碍服务——因为"无障碍 + 网络"的组合存在严重的安全风险（事件数据外泄、远程控制）。
-
-这些变化反映了 Android 团队的一个核心原则：**无障碍服务的功能越强大，其安全审计就越严格。** 事件拦截能力是一把双刃剑——它帮助残障用户使用手机，但也可能被恶意软件利用来劫持用户的输入操作。
-
-> [已验证: AOSP android-14.0.0_r1, frameworks/base/services/accessibility/]
-> [已验证: 官方文档, developer.android.com/guide/topics/ui/accessibility/service]
+如果后续补到 Android 15/16 的一手材料，再单独写版本增量会更稳。当前这一版不再保留没有证据的“14+ 白名单收紧”描述。
 
 ## 在 Perfetto 中分析事件拦截问题
 
-当怀疑事件拦截导致性能问题时，推荐的 Perfetto 分析流程如下：
+排查这类问题时，先把事件停留的层次分出来。
 
-### Step 1：确认事件是否到达 InputDispatcher
+### Step 1：先确认事件有没有进入 InputDispatcher
 
-在 `system_server` 进程中找到 InputDispatcher 线程，查看 InboundQueue（iq）的变化：
-- 如果 iq 持续增长：事件到达了 InputDispatcher 但处理不过来
-- 如果 iq 正常但目标窗口没有收到事件：可能在 InputFilter 中被拦截了
+在 `system_server` 里看 InputDispatcher 相关线程和目标 App 的 `deliverInputEvent` / `InputEventReceiver` 节奏。
 
-### Step 2：检查 InputFilter 的处理耗时
+- App 完全收不到事件，先确认是不是在 filter 或无障碍层被消费了
+- App 能收到事件，但时间明显晚，再看 system_server 前置处理和无障碍服务回结果时间
 
-在 InputDispatcher 线程中搜索 `InputFilter` 相关的 Slice：
-- 如果看到长时间的 Binder 调用（通常标记为 `BINDER` 或服务名），说明 InputFilter 正在等待远程进程的回调
-- 关注 Binder 调用的目标进程：如果是无障碍服务进程，说明无障碍服务的事件处理是瓶颈
+### Step 2：把 InputFilter 本地处理和无障碍异步判定分开看
 
-### Step 3：检查目标窗口的事件接收情况
+如果是自定义 `InputFilter` 做了重处理，延迟会体现在 system_server 这一侧的前置工作里。  
+如果是无障碍按键过滤，不要把排查目标锁死在“InputDispatcher 卡 Binder”上。实际更该确认的是 `KeyboardInterceptor` → `AccessibilityManagerService` → 服务进程这一段有没有积压，以及是否接近 500ms 超时。
 
-切换到目标 App 进程的主线程，查看 `deliverInputEvent` 的频率：
-- 如果频率明显低于预期（比如 60Hz 触摸但只看到 30Hz 的 deliverInputEvent），说明有事件在中间环节被过滤或延迟了
-- 如果完全没有 `deliverInputEvent`，说明事件被完全拦截
+[待补充：对应 trace 截图，标出 InputDispatcher、AccessibilityManagerService、服务进程主线程]
 
-### Step 4：使用 dumpsys input 辅助验证
+### Step 3：检查无障碍服务进程自己的处理时间
 
-```
+看服务进程主线程或工作线程上：
+- `onKeyEvent()` 是否快速回结果
+- `onAccessibilityEvent()` 是否挤占了主线程
+- `dispatchGesture()` 之后是否又生成了更多 injected `MotionEvent`
+
+如果服务回调本身慢，system_server 那边看到的通常是待决事件变多，不是 InputDispatcher 一条长时间静止的同步调用。
+
+### Step 4：用 dumpsys 补足运行态信息
+
+```bash
 adb shell dumpsys input | grep -A 20 "Input Filter"
+adb shell dumpsys accessibility
 ```
 
-如果输出显示 `Input Filter: enabled`，说明当前系统注册了 InputFilter。进一步查看过滤器的状态和配置，确认是哪个组件注册的。
-
-> [来源: obsidian/Personal-Knowlodge/source/Android-Systrace-Input.md]
+`dumpsys input` 适合确认当前是否启用了 input filter。  
+`dumpsys accessibility` 更适合确认哪些服务处于启用状态、是否声明了相关 capability，以及当前是不是存在会影响输入的 accessibility 组件。
 
 ## 常见问题与误区
 
 ### 误区一：App 可以注册自己的 InputFilter
 
-不能。InputFilter 的注册需要 `INJECT_EVENTS` 权限，普通 App 无法获取。InputFilter 是系统级的机制，只能由 `InputManagerService` 管理。
+不能。`InputFilter` 由 `WindowManagerService` / `InputManagerService` 管理，普通 App 没有这条入口，也拿不到全局注入所需的权限。
 
-### 误区二：无障碍服务可以拦截所有类型的输入事件
+### 误区二：无障碍按键过滤是 InputDispatcher 同步调 `onKeyEvent()`
 
-不完全准确。无障碍服务可以拦截按键事件（通过 InputFilter），但对触摸事件的拦截能力有限——它主要通过"消费触摸事件 + 注入手势"的间接方式工作，而不是直接拦截和修改触摸事件的坐标。
+不是。`InputDispatcher` 把事件交给 filter 之后，真正的“是否消费”判定发生在 `AccessibilityManagerService` / `KeyEventDispatcher` / 服务进程这一侧，并带 500ms 超时。
 
-### 误区三：adb shell input 注入的事件和真实用户输入完全一样
+### 误区三：触摸无障碍只能“间接操作 UI 树”，不碰 MotionEvent
 
-不完全一样。`adb shell input` 注入的事件会携带 `POLICY_FLAG_INJECTED` 标志，App 可以通过 `InputEvent.getFlags()` 检测到这个标志。此外，注入事件不经过 InputReader 的硬件采样阶段，因此没有硬件层面的延迟特征（如采样间隔）。
+不对。`AccessibilityInputFilter.onInputEvent()` 会直接处理 `MotionEvent`，并按启用功能把事件交给 `TouchExplorer`、放大镜处理器或 `MotionEventInjector`。无障碍并不需要先经过 `AccessibilityInteractionController` 才能影响触摸流。
 
-### 误区四：InputFilter 只影响按键事件
+### 误区四：App 可以用 `InputEvent.getFlags()` 或 `MotionEvent.isFromSource()` 判断 injected event
 
-不。InputFilter 可以拦截所有类型的输入事件，包括触摸事件和按键事件。但系统默认只为无障碍服务注册了按键过滤的 InputFilter，而触摸事件的 InputFilter 需要额外配置。
+不对。`InputEvent` 基类没有 `getFlags()`。`source` 表示设备来源，不等于 injected 标记。对 App 来说，能直接看到的是 `KeyEvent.getFlags()` / `MotionEvent.getFlags()` 暴露出来的 public flag，其中和无障碍最相关的是 `FLAG_IS_ACCESSIBILITY_EVENT`。
+
+### 误区五：InputFilter 只影响按键事件
+
+不对。android-14.0.0_r1 的 `InputDispatcher` 在 `mInputFilterEnabled` 为真时，会把按键和触摸都送去 `filterInputEvent(...)`。无障碍场景下，`KeyboardInterceptor` 负责按键，`TouchExplorer` 等组件负责触摸，两边都在 filter 这一层工作。
 
 ## 参考资料
 
 ### AOSP 源码路径
 
-- `frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp` — InputDispatcher 与 InputFilter 的交互
-- `frameworks/native/services/inputflinger/dispatcher/InputDispatcher.h` — InputFilter 接口定义
-- `frameworks/base/services/core/java/com/android/server/input/InputManagerService.java` — InputFilter 注册与管理
-- `frameworks/base/core/java/android/view/InputFilter.java` — Java 层 InputFilter 抽象类
-- `frameworks/base/core/java/android/accessibilityservice/AccessibilityService.java` — 无障碍服务事件拦截
-- `frameworks/base/core/java/android/app/Instrumentation.java` — 测试框架事件注入
-- `frameworks/base/core/java/android/app/UiAutomation.java` — UiAutomation 事件注入
-- `frameworks/base/services/accessibility/java/com/android/server/accessibility/AccessibilityManagerService.java` — 无障碍服务管理
+- `frameworks/base/services/core/java/com/android/server/wm/WindowManagerService.java` — `setInputFilter()`
+- `frameworks/base/services/core/java/com/android/server/input/InputManagerService.java` — `setInputFilter()`、`injectInputEventToTarget()`
+- `frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp` — `filterInputEvent()` 调用点、`injectInputEvent()`
+- `frameworks/base/core/java/android/view/InputFilter.java` — `InputFilter` 抽象与 `sendInputEvent()`
+- `frameworks/base/core/java/android/accessibilityservice/AccessibilityServiceInfo.java` — `CAPABILITY_CAN_REQUEST_FILTER_KEY_EVENTS`、`FLAG_REQUEST_FILTER_KEY_EVENTS`
+- `frameworks/base/services/accessibility/java/com/android/server/accessibility/AccessibilityInputFilter.java` — 无障碍 filter 的 key / motion 入口
+- `frameworks/base/services/accessibility/java/com/android/server/accessibility/KeyboardInterceptor.java` — 按键预处理
+- `frameworks/base/services/accessibility/java/com/android/server/accessibility/AccessibilityManagerService.java` — `notifyKeyEvent()`
+- `frameworks/base/services/accessibility/java/com/android/server/accessibility/KeyEventDispatcher.java` — `PendingKeyEvent`、500ms 超时、`setOnKeyEventResult()`
+- `frameworks/base/services/accessibility/java/com/android/server/accessibility/AccessibilityServiceConnection.java` — `dispatchGesture()`
+- `frameworks/base/services/accessibility/java/com/android/server/accessibility/MotionEventInjector.java` — accessibility 手势注入
+- `frameworks/base/core/java/android/app/Instrumentation.java` — `sendPointerSync()`
+- `frameworks/base/core/java/android/app/UiAutomation.java` — 标准注入与 `injectInputEventToInputFilter()`
+- `frameworks/base/core/java/android/hardware/input/InputManagerGlobal.java` — `injectInputEvent()`
 
 ### 官方文档
 
-- [source.android.com — Input pipeline architecture]
-- [developer.android.com — AccessibilityService 指南]
-- [developer.android.com — 测试框架 UiAutomator]
+- `https://source.android.com/docs/core/interaction/input`
+- `https://developer.android.com/reference/android/accessibilityservice/AccessibilityService`
+- `https://developer.android.com/reference/android/accessibilityservice/AccessibilityServiceInfo`
+- `https://developer.android.com/reference/android/app/Instrumentation`
+- `https://developer.android.com/reference/android/app/UiAutomation`
 
 ### 相关章节
 
 - 3.1 Input 事件分发全流程 — 事件传递的基础路径
-- 3.2 触摸响应的性能分析 — 性能分析方法论
-- 9.1 ANR 设计思想 — Input ANR 的触发机制
-- 9.2 安全模型 — Android 安全架构全景
+- 9.1 安全边界与权限模型 — 输入注入与系统权限的交叉点
+- 9.2 无障碍服务的安全风险与审计 — 无障碍能力的安全侧分析

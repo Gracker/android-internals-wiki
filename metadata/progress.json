@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-12T02:05:00+08:00",
+  "generated_at": "2026-04-12T02:55:18+08:00",
   "state_machine_version": "v2",
   "total_sections": 206,
   "metrics": {
@@ -9,31 +9,31 @@
     "task6_unknown": 30,
     "task9_unknown": 30,
     "task2b_unknown": 30,
-    "last_updated": "2026-04-12T02:05:00+08:00",
+    "last_updated": "2026-04-12T02:55:18+08:00",
     "ready-for-review": 173,
     "pipeline_task9_pending": 2,
-    "pipeline_task6_pending": 170,
-    "pipeline_task2b_pending": 4,
-    "task6_reviewed": 6,
+    "pipeline_task6_pending": 171,
+    "pipeline_task2b_pending": 3,
+    "task6_reviewed": 5,
     "task6_pending": 148,
-    "task6_revisiting": 22,
+    "task6_revisiting": 23,
     "task9_pending": 176,
     "task2b_idle": 150,
-    "task2b_fixed": 22,
-    "task2b_pending": 4
+    "task2b_fixed": 23,
+    "task2b_pending": 3
   },
   "pipeline": {
     "pipeline_stage_counts": {
       "unknown": 30,
       "task9_pending": 2,
-      "task6_pending": 170,
-      "task2b_pending": 4
+      "task6_pending": 171,
+      "task2b_pending": 3
     },
     "task6_state_counts": {
       "unknown": 30,
-      "reviewed": 6,
+      "reviewed": 5,
       "pending": 148,
-      "revisiting": 22
+      "revisiting": 23
     },
     "task9_state_counts": {
       "unknown": 30,
@@ -42,8 +42,8 @@
     "task2b_state_counts": {
       "unknown": 30,
       "idle": 150,
-      "fixed": 22,
-      "pending": 4
+      "fixed": 23,
+      "pending": 3
     }
   },
   "issues": {
@@ -745,13 +745,14 @@
       "title": "输入事件拦截与安全机制",
       "path": "src/part1-fundamentals/ch03-input/05-input-interception-security.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
-      "task6_state": "reviewed",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
       "task9_state": "pending",
-      "task2b_state": "pending",
+      "task2b_state": "fixed",
       "reviewed_date": "2026-04-12",
       "reviewed_by": "openclaw-task6",
-      "task6_result": "needs-rework"
+      "task6_result": "needs-rework",
+      "task2b_result": "fixed"
     },
     "src/part1-fundamentals/ch03-input/06-gesture-recognition-performance.md": {
       "chapter": "3.6",
