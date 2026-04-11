@@ -865,3 +865,19 @@
 - **问题**：`frame rate override`、`maxBufferCount`、`无锁 MessageQueue + BlastBufferQueue 协同优化` 三处缺少可追溯来源。
 - **建议**：补充 AOSP commit、官方文档或发布说明，再决定是否保留这些版本结论。
 - **review 日志**：logs/review/2026-04-11-12-review.md
+
+## [Task9 Deep Review] 2.13 图形缓冲区管理 (BufferQueue) — 2026-04-11
+- **类型**：数据缺失
+- **位置**：行 203-229 Perfetto 表现
+- **问题**：`dequeueBuffer` “超过 3-4ms 就算异常”以及 `bufs_queued` 计数器的说法没有设备、刷新率、trace 配置前提。这个阈值在 60Hz / 120Hz、HWUI / SurfaceView、不同 GPU 驱动下差异很大。
+- **建议**：补同机型 trace 样本或明确“示意阈值，仅适用于某设备/场景”；同时给出实际 track 名称或 SQL 观察方法。
+
+- **类型**：交叉引用
+- **位置**：frontmatter `related_chapters` + 正文行 238
+- **问题**：frontmatter 只列了 `2.1/2.5/2.6/2.9/7.2`，正文却显式引用了 `§2.4 Choreographer`。同时 `04-choreographer.md` 目前在 progress 索引里表现为 `chapter: 2, section: 2.4`，自动校验容易把它误判成断链。
+- **建议**：把 `2.4` 补进 `related_chapters`，并同步修正相关章节的 chapter/section 元数据，避免后续 Task 9 再次误报。
+
+- **类型**：源码准确性
+- **位置**：frontmatter `sources`
+- **问题**：当前 sources 只有 `BufferQueue.cpp / BufferQueueCore.cpp / BLASTBufferQueue.cpp`，但正文两个关键结论实际依赖 `libs/gui/include/gui/BufferSlot.h` 与 `include/gui/IGraphicBufferProducer.h`。
+- **建议**：把 `BufferSlot.h` 和 `IGraphicBufferProducer.h` 加进 sources，后续所有 slot 状态和 queue/request 语义都以这两个头文件为主锚点。

@@ -1,62 +1,193 @@
 {
-  "generated_at": "2026-04-11T11:20:00+08:00",
+  "generated_at": "2026-04-11T12:30:00+08:00",
   "state_machine_version": "v2",
-  "total_sections": 175,
+  "total_sections": 187,
   "metrics": {
-    "total": 175,
+    "total": 187,
     "draft": 0,
-    "ready-for-review": 172,
-    "pipeline_task6_pending": 170,
+    "ready-for-review": 173,
+    "pipeline_task6_pending": 171,
     "pipeline_task2b_pending": 3,
     "pipeline_publish_ready": 0,
     "task6_pending": 161,
-    "task6_reviewed": 3,
+    "task6_reviewed": 4,
     "task6_revisiting": 10,
-    "task9_pending": 173,
+    "task9_pending": 174,
     "task9_reviewed": 1,
     "task2b_idle": 162,
     "task2b_pending": 3,
-    "last_updated": "2026-04-11T11:20:00+08:00",
-    "unknown": 3
+    "last_updated": "2026-04-11T12:30:00+08:00",
+    "unknown": 14
   },
   "pipeline": {
     "pipeline_stage_counts": {
       "task2b_pending": 3,
-      "task6_pending": 170,
+      "task6_pending": 171,
       "task9_pending": 1,
-      "unknown": 1
+      "unknown": 12
     },
     "task6_state_counts": {
       "pending": 161,
-      "reviewed": 3,
+      "reviewed": 4,
       "revisiting": 10,
-      "unknown": 1
+      "unknown": 12
     },
     "task9_state_counts": {
-      "pending": 173,
-      "unknown": 1,
+      "pending": 174,
+      "unknown": 12,
       "reviewed": 1
     },
     "task2b_state_counts": {
-      "fixed": 9,
+      "fixed": 10,
       "idle": 162,
       "pending": 3,
-      "unknown": 1
+      "unknown": 12
     }
   },
   "issues": {
     "duplicate_chapter_ids": {
-      "8.8": 2,
+      "16.3": 2,
       "2": 2,
-      "16.3": 2
+      "8.8": 2
     },
     "missing_chapter": [
+      "src/appendix/commands-cheatsheet.md",
+      "src/appendix/glossary.md",
+      "src/appendix/version-changelog.md",
+      "src/appendix/analysis-checklist.md",
+      "src/appendix/recommended-reading.md",
+      "src/appendix/perfetto-templates.md",
+      "src/preface/target-audience.md",
+      "src/preface/version-conventions.md",
+      "src/preface/intro.md",
+      "src/preface/verification-standards.md",
+      "src/preface/reading-paths.md",
+      "src/preface/how-to-use.md",
       "src/part3-tools/ch14-other-tools/07-profiling-manager.md",
-      "src/part1-fundamentals/ch05-cpu-power/05-thermal.md",
-      "src/part1-fundamentals/ch06-storage/02-filesystem.md"
+      "src/part1-fundamentals/ch05-cpu-power/05-thermal.md"
     ]
   },
   "sections": {
+    "src/appendix/commands-cheatsheet.md": {
+      "chapter": null,
+      "title": "commands-cheatsheet",
+      "path": "src/appendix/commands-cheatsheet.md",
+      "status": "unknown",
+      "pipeline_stage": "unknown",
+      "task6_state": "unknown",
+      "task9_state": "unknown",
+      "task2b_state": "unknown"
+    },
+    "src/appendix/glossary.md": {
+      "chapter": null,
+      "title": "glossary",
+      "path": "src/appendix/glossary.md",
+      "status": "unknown",
+      "pipeline_stage": "unknown",
+      "task6_state": "unknown",
+      "task9_state": "unknown",
+      "task2b_state": "unknown"
+    },
+    "src/appendix/version-changelog.md": {
+      "chapter": null,
+      "title": "version-changelog",
+      "path": "src/appendix/version-changelog.md",
+      "status": "unknown",
+      "pipeline_stage": "unknown",
+      "task6_state": "unknown",
+      "task9_state": "unknown",
+      "task2b_state": "unknown"
+    },
+    "src/appendix/analysis-checklist.md": {
+      "chapter": null,
+      "title": "analysis-checklist",
+      "path": "src/appendix/analysis-checklist.md",
+      "status": "unknown",
+      "pipeline_stage": "unknown",
+      "task6_state": "unknown",
+      "task9_state": "unknown",
+      "task2b_state": "unknown"
+    },
+    "src/appendix/recommended-reading.md": {
+      "chapter": null,
+      "title": "recommended-reading",
+      "path": "src/appendix/recommended-reading.md",
+      "status": "unknown",
+      "pipeline_stage": "unknown",
+      "task6_state": "unknown",
+      "task9_state": "unknown",
+      "task2b_state": "unknown"
+    },
+    "src/appendix/perfetto-templates.md": {
+      "chapter": null,
+      "title": "perfetto-templates",
+      "path": "src/appendix/perfetto-templates.md",
+      "status": "unknown",
+      "pipeline_stage": "unknown",
+      "task6_state": "unknown",
+      "task9_state": "unknown",
+      "task2b_state": "unknown"
+    },
+    "src/preface/target-audience.md": {
+      "chapter": null,
+      "title": "target-audience",
+      "path": "src/preface/target-audience.md",
+      "status": "unknown",
+      "pipeline_stage": "unknown",
+      "task6_state": "unknown",
+      "task9_state": "unknown",
+      "task2b_state": "unknown"
+    },
+    "src/preface/version-conventions.md": {
+      "chapter": null,
+      "title": "version-conventions",
+      "path": "src/preface/version-conventions.md",
+      "status": "unknown",
+      "pipeline_stage": "unknown",
+      "task6_state": "unknown",
+      "task9_state": "unknown",
+      "task2b_state": "unknown"
+    },
+    "src/preface/intro.md": {
+      "chapter": null,
+      "title": "intro",
+      "path": "src/preface/intro.md",
+      "status": "unknown",
+      "pipeline_stage": "unknown",
+      "task6_state": "unknown",
+      "task9_state": "unknown",
+      "task2b_state": "unknown"
+    },
+    "src/preface/verification-standards.md": {
+      "chapter": null,
+      "title": "verification-standards",
+      "path": "src/preface/verification-standards.md",
+      "status": "unknown",
+      "pipeline_stage": "unknown",
+      "task6_state": "unknown",
+      "task9_state": "unknown",
+      "task2b_state": "unknown"
+    },
+    "src/preface/reading-paths.md": {
+      "chapter": null,
+      "title": "reading-paths",
+      "path": "src/preface/reading-paths.md",
+      "status": "unknown",
+      "pipeline_stage": "unknown",
+      "task6_state": "unknown",
+      "task9_state": "unknown",
+      "task2b_state": "unknown"
+    },
+    "src/preface/how-to-use.md": {
+      "chapter": null,
+      "title": "how-to-use",
+      "path": "src/preface/how-to-use.md",
+      "status": "unknown",
+      "pipeline_stage": "unknown",
+      "task6_state": "unknown",
+      "task9_state": "unknown",
+      "task2b_state": "unknown"
+    },
     "src/part3-tools/ch14-other-tools/07-profiling-manager.md": {
       "chapter": null,
       "title": "07-profiling-manager",
@@ -1096,7 +1227,8 @@
       "pipeline_stage": "task6_pending",
       "task6_state": "revisiting",
       "task9_state": "pending",
-      "task2b_state": "fixed"
+      "task2b_state": "fixed",
+      "task2b_result": "fixed"
     },
     "src/part1-fundamentals/ch02-rendering/05-main-render-thread.md": {
       "chapter": "2.5",
@@ -1193,10 +1325,11 @@
       "title": "图形缓冲区管理 (BufferQueue)",
       "path": "src/part1-fundamentals/ch02-rendering/13-buffer-queue.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "pending",
-      "task9_state": "pending",
-      "task2b_state": "idle"
+      "pipeline_stage": "task2b_pending",
+      "task6_state": "reviewed",
+      "task9_state": "reviewed",
+      "task2b_state": "pending",
+      "task9_result": "needs-rework"
     },
     "src/part1-fundamentals/ch02-rendering/15-dmabuf-gralloc.md": {
       "chapter": "2.15",
@@ -1366,7 +1499,8 @@
       "pipeline_stage": "task6_pending",
       "task6_state": "revisiting",
       "task9_state": "pending",
-      "task2b_state": "fixed"
+      "task2b_state": "fixed",
+      "task2b_result": "fixed"
     },
     "src/part1-fundamentals/ch01-architecture/13-messagequeue-deliqueue.md": {
       "chapter": "1.13",
@@ -1386,7 +1520,8 @@
       "pipeline_stage": "task6_pending",
       "task6_state": "revisiting",
       "task9_state": "pending",
-      "task2b_state": "fixed"
+      "task2b_state": "fixed",
+      "task2b_result": "fixed"
     },
     "src/part1-fundamentals/ch01-architecture/02-boot-process.md": {
       "chapter": "1.2",
@@ -1406,7 +1541,8 @@
       "pipeline_stage": "task6_pending",
       "task6_state": "revisiting",
       "task9_state": "pending",
-      "task2b_state": "fixed"
+      "task2b_state": "fixed",
+      "task2b_result": "fixed"
     },
     "src/part1-fundamentals/ch01-architecture/11-zygote-startup.md": {
       "chapter": "1.11",
@@ -1416,7 +1552,8 @@
       "pipeline_stage": "task6_pending",
       "task6_state": "revisiting",
       "task9_state": "pending",
-      "task2b_state": "fixed"
+      "task2b_state": "fixed",
+      "task2b_result": "fixed"
     },
     "src/part1-fundamentals/ch01-architecture/07-art-compilation.md": {
       "chapter": "1.7",
@@ -1446,7 +1583,8 @@
       "pipeline_stage": "task6_pending",
       "task6_state": "revisiting",
       "task9_state": "pending",
-      "task2b_state": "fixed"
+      "task2b_state": "fixed",
+      "task2b_result": "fixed"
     },
     "src/part1-fundamentals/ch01-architecture/15-jni-ndk-performance.md": {
       "chapter": "1.15",
@@ -1456,7 +1594,8 @@
       "pipeline_stage": "task6_pending",
       "task6_state": "revisiting",
       "task9_state": "pending",
-      "task2b_state": "fixed"
+      "task2b_state": "fixed",
+      "task2b_result": "fixed"
     },
     "src/part1-fundamentals/ch01-architecture/09-package-manager.md": {
       "chapter": "1.9",
@@ -1476,7 +1615,8 @@
       "pipeline_stage": "task6_pending",
       "task6_state": "revisiting",
       "task9_state": "pending",
-      "task2b_state": "fixed"
+      "task2b_state": "fixed",
+      "task2b_result": "fixed"
     },
     "src/part1-fundamentals/ch01-architecture/01-layered-architecture.md": {
       "chapter": "1.1",
@@ -1569,14 +1709,14 @@
       "task2b_state": "idle"
     },
     "src/part1-fundamentals/ch06-storage/02-filesystem.md": {
-      "chapter": null,
-      "title": "02-filesystem",
+      "chapter": "6.2",
+      "title": "文件系统",
       "path": "src/part1-fundamentals/ch06-storage/02-filesystem.md",
-      "status": "unknown",
-      "pipeline_stage": "unknown",
-      "task6_state": "unknown",
-      "task9_state": "unknown",
-      "task2b_state": "unknown"
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "pending",
+      "task9_state": "pending",
+      "task2b_state": "idle"
     },
     "src/part1-fundamentals/ch04-memory/03-art-memory.md": {
       "chapter": "4.3",
@@ -1733,10 +1873,11 @@
       "title": "Google 官方的性能优化思路",
       "path": "src/part4-system/ch16-aosp/01-google-optimization.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
+      "pipeline_stage": "task6_pending",
       "task6_state": "revisiting",
-      "task9_state": "reviewed",
-      "task2b_state": "pending"
+      "task9_state": "pending",
+      "task2b_state": "fixed",
+      "task2b_result": "fixed"
     },
     "src/part4-system/ch16-aosp/03-build-debug-env.md": {
       "chapter": "16.3",
@@ -2984,6 +3125,32 @@
         "验证范围只覆盖 Android 17 release notes + DeliQueue post，无法支撑全文跨版本断言（P2）",
         "缺少到 §1.12 / §1.13 / §16.4 / §2.12 的显式交叉引用（P2）",
         "参考资料尾部混入 Gemma / Gemini Nano 资讯，主题域污染（P2）"
+      ],
+      "task2b_reworked_at": "2026-04-11T11:41:00+08:00",
+      "task2b_reworked_by": "task2b-content-processing-rework",
+      "task2b_result": "fixed"
+    },
+    "2.13": {
+      "title": "图形缓冲区管理 (BufferQueue)",
+      "reviewed_date": "2026-04-11",
+      "reviewed_by": "openclaw-task6",
+      "review_status": "ready-for-review",
+      "task6_result": "needs-rework",
+      "review_log": "logs/review/2026-04-11-12-review.md",
+      "deep_review_date": "2026-04-11T12:30:00+08:00",
+      "deep_review_by": "task9-deep-tech-review",
+      "deep_review_score": 2.0,
+      "deep_review_p0": 4,
+      "deep_review_p1": 2,
+      "deep_review_p2": 3,
+      "issues_found": [
+        "把 `queueBuffer()` 写成每帧传 handle，混淆了 `requestBuffer()` 与 `queueBuffer()` 语义（P0）",
+        "把 `BufferState` 写成互斥 enum，并引用了不存在的 `BufferState::FREE` 代码（P0）",
+        "把 BufferQueue native 化错误归到 Android 7.0（P0）",
+        "把 BLAST 引入时间写成 Android 10，和 AOSP 标签不符（P0）",
+        "BLAST 小节缺少 app-side consumer / frameNumber / transaction merge 主线（P1）",
+        "缺 acquire/release/dequeue fence，同步语义无法闭环（P1）",
+        "Perfetto 阈值与 §2.4 交叉引用仍需补证据和对齐元数据（P2）"
       ]
     }
   }

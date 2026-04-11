@@ -3306,8 +3306,10 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-11T10:21:00+08:00",
-    "status": "pending",
-    "original_review_log": "logs/review/2026-04-11-10-review.md"
+    "status": "completed",
+    "original_review_log": "logs/review/2026-04-11-10-review.md",
+    "completed_at": "2026-04-11T10:55:06+08:00",
+    "completed_by": "task2b-rework"
   },
   {
     "section": "16.1",
@@ -3395,5 +3397,56 @@
     "added_at": "2026-04-11T12:20:00+08:00",
     "status": "pending",
     "original_review_log": "logs/review/2026-04-11-12-review.md"
+  },
+  {
+    "section": "2.13",
+    "section_title": "图形缓冲区管理 (BufferQueue)",
+    "priority": 95,
+    "reason": "[Deep Tech Review] BufferQueue 核心机制存在源码与版本双重错误，需回炉修正状态机、queue/request 语义、BLAST 时间线与同步链",
+    "material_paths": [
+      "intake/research-gaps.md",
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "行 88-90 GraphicBuffer 传递链路",
+        "detail": "把 `queueBuffer()` 写成“每帧把 binder handle 传给 SurfaceFlinger”不准确。AOSP `IGraphicBufferProducer.h` 说明 slot->buffer 映射通过 `requestBuffer()` 同步，`queueBuffer(int slot, QueueBufferInput)` 主要提交 slot、fence 和 metadata，而不是每帧重新传完整 GraphicBuffer handle。",
+        "suggestion": "拆开 `dequeueBuffer()` → `requestBuffer()`（首次/重分配）→ producer 填充 slot → `queueBuffer(slot, QueueBufferInput)` 的真实链路，并补 slot cache / fence 说明。"
+      },
+      {
+        "type": "源码错误",
+        "location": "行 127-142 BufferSlot 状态机",
+        "detail": "引用的 `BufferSlot` 代码片段与解释都不符合当前 AOSP。`BufferState` 不是 `BufferState::FREE` 这种 enum，而是由 `mDequeueCount / mQueueCount / mAcquireCount / mShared` 组合出来的 struct；shared buffer mode 下也不是单一互斥状态。",
+        "suggestion": "改引 `libs/gui/include/gui/BufferSlot.h` 中的 `BufferState` 定义，并说明 `isFree()/isDequeued()/isQueued()/isAcquired()/isShared()` 与 shared/async mode 的关系。"
+      },
+      {
+        "type": "版本差异",
+        "location": "行 245-248 版本演进表",
+        "detail": "“Android 7.0 BufferQueue 从 Java 层迁移到 Native 层”是错误时间线。AOSP `android-4.1.2_r1` 已存在 native `frameworks/native/libs/gui/BufferQueue.cpp` / `include/gui/BufferQueue.h`，不能把 native 化归到 Nougat。",
+        "suggestion": "删除这条时间线，换成真正可证实的里程碑，比如 Jelly Bean / Lollipop BufferQueue 重构、Android 11 BLAST 接入等。"
+      },
+      {
+        "type": "版本差异",
+        "location": "行 175-179 与行 247-248 BLASTBufferQueue 时间线",
+        "detail": "“Android 10 引入 BLASTBufferQueue，并在 Android 12 成为默认模式”边界不准。`BLASTBufferQueue.cpp` 在 `android-10.0.0_r47` 不存在，但在 `android-11.0.0_r48` 已存在，且 `ViewRootImpl.java` 已创建 `new BLASTBufferQueue(...)`。",
+        "suggestion": "把 Android 11/R 作为 BLAST 引入与 ViewRootImpl 接入的可证实边界；如果要写 Android 12 的默认化/覆盖面扩大，需要再补 release note 或 commit 证据。"
+      },
+      {
+        "type": "原理断裂",
+        "location": "行 173-191 BLASTBufferQueue 小节",
+        "detail": "小节只讲“本地管理 buffer + Transaction 提交”，没有交代 `createBufferQueue()`、app 侧 `BLASTBufferItemConsumer`、`setFrameAvailableListener()`、`Transaction::setBuffer(..., frameNumber)`、`mergeWithNextTransaction()` / `applyPendingTransactions()` 这条同步链，导致 BLAST 被写成“少一次 Binder hop”的简单提速。",
+        "suggestion": "补一段 BLAST 的本地 producer / consumer / frameNumber gating / transaction merge 流程，说明它解决的是 buffer 与 geometry transaction 对齐问题。"
+      },
+      {
+        "type": "知识盲区",
+        "location": "行 55-59、102-142、218-229 同步语义",
+        "detail": "全文几乎没覆盖 acquire fence、release fence、dequeue fence，只讲 slot 状态，不足以解释 queue 后何时真正可读、release 后何时真正可复用。这个缺口会直接削弱 Trace 分析章节的解释力。",
+        "suggestion": "补“同步栅栏与可见性”小节，并显式回链到 §2.16 Sync Fence。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-11T12:30:00+08:00",
+    "status": "pending"
   }
 ]

@@ -847,3 +847,35 @@ OEM/自研内核接入 AutoFDO 的关键前置条件缺失。正文提到 Kleaf�
 
 ### 关联章节
 1.4（Binder IPC 机制与性能影响）, 1.13（DeliQueue）, 14.10（Perfetto SQL Cookbook）, 16.1（Google 官方的性能优化思路）
+
+## [2026-04-11] 2.13 图形缓冲区管理 (BufferQueue) — 同步栅栏链路
+
+### 盲区描述
+正文把重点放在 slot 状态和三缓冲，但几乎没覆盖 acquire fence、release fence、dequeue fence 这条同步链。AOSP `BufferSlot.h` 明确要求 QUEUED / ACQUIRED 状态下必须等待 fence signal 才能安全访问 buffer；如果不把 fence 讲清楚，读者很难解释“queue 了为什么还不能合成”“dequeueBuffer 为什么会卡在 release fence 之后”。这会直接削弱 Perfetto 卡顿定位能力。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 追 `IGraphicBufferProducer::dequeueBuffer()` / `queueBuffer()` 与 `BufferSlot.h` 中 fence 语义的对应关系
+- 补 `acquire fence`、`release fence`、`dequeue fence` 在 App / SurfaceFlinger / HWC 三方之间的传递链
+- 对应到 §2.16 Sync Fence，补一张“slot 状态 + fence 信号”的联合时序图
+
+### 关联章节
+§2.13、§2.16、§2.6、§13.1-§13.5
+
+## [2026-04-11] 2.13 图形缓冲区管理 (BufferQueue) — BLAST 同步事务细节
+
+### 盲区描述
+BLASTBufferQueue 小节只讲了“App 本地管理 buffer，最后用 Transaction 提交”，但没有展开 app 侧 `createBufferQueue()`、`BLASTBufferItemConsumer`、`setFrameAvailableListener()`、`Transaction::setBuffer(..., frameNumber)`、`mergeWithNextTransaction()` / `applyPendingTransactions()` 这条同步链。这样会把 BLAST 写成“少一次 Binder hop”的性能优化，而漏掉它真正解决的 buffer 与 geometry transaction 对齐问题。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 追 `BLASTBufferQueue.cpp` 中本地 producer / consumer 的创建与回调链
+- 说明 frameNumber gating 与 pending transaction merge 如何避免 resize / relayout 场景下的错帧
+- 补一张“传统 BufferQueue vs BLASTBufferQueue”的同步路径对比图
+
+### 关联章节
+§2.13、§2.12、§2.6、§2.9
