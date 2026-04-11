@@ -1,6 +1,7 @@
 ---
 title: "JobScheduler/WorkManager 调度与后台任务性能"
 chapter: "5.10"
+section: "5.10"
 status: ready-for-review
 drafted_date: "2026-04-06"
 polish_count: 1
@@ -8,6 +9,8 @@ polish_date: "2026-04-09"
 polish_by: "task2b-polish"
 applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37)"
 last_verified: "2026-04-06"
+reviewed_date: "2026-04-12"
+reviewed_by: openclaw-task6
 last_verified_against: "AOSP android-17-beta3"
 confidence: medium
 sources:
@@ -29,13 +32,41 @@ sources:
     path: "https://android-developers.googleblog.com/ (Play Store Wake Lock Policy 2026)"
 tags: [jobscheduler, workmanager, background-scheduling, power, doze, battery, wakelock, app-standby, quota]
 related_chapters: ["5.6", "5.8", "1.5", "11.2", "15.5"]
-pipeline_stage: task6_pending
-task6_state: pending
+pipeline_stage: task2b_pending
+task6_state: reviewed
+task6_result: needs-rework
 task9_state: pending
-task2b_state: idle
+task2b_state: pending
 ---
 
-# 5.10 JobScheduler/WorkManager 调度与后台任务性能
+# JobScheduler/WorkManager 调度与后台任务性能
+
+<!-- outline-start -->
+## 本节要点大纲
+
+### 锚点（必须覆盖）
+
+- 🔹 JobScheduler 的调度模型：JobSchedulerService、Controller、JobStore、JobServiceContext
+- 🔹 JobInfo 的约束、优先级、配额与 Expedited Job
+- 🔹 WorkManager 的调度架构：SystemJobScheduler、SystemAlarmScheduler、GreedyScheduler
+- 🔹 后台任务在 Perfetto、`dumpsys jobscheduler`、WorkManager Inspector 中的观测面
+- 🔹 Play Store 后台行为政策、UIDT、Foreground Service 与 WorkManager 的选择边界
+- 🔹 Android 8.0 到 Android 17 的后台调度演进与调试能力变化
+
+### 扩展（可选深入）
+
+- 🔸 AlarmManager 到 JobScheduler 的批处理差异
+- 🔸 Chain Work 与 `PeriodicWorkRequest` 的调度开销
+- 🔸 App Standby Bucket 与 Job 配额的联动
+
+### OpenClaw 加工指引
+
+> **锚点**是最低覆盖要求，加工时必须逐条落实并标注验证结果。
+> **扩展**视素材丰富程度选择性深入。
+> 如果从 Obsidian 素材、官方文档或 AOSP 源码中发现大纲未列出但与本节强相关的知识点，
+> 可**就地插入**最相关的锚点之后，并用 `[自动发现]` 标注，方便后续 review。
+> 锚点内容需 L1/L2 验证，扩展内容至少 L2 验证，自动发现内容至少标注来源。
+<!-- outline-end -->
 
 ## 为什么需要了解后台任务调度
 
@@ -43,7 +74,7 @@ task2b_state: idle
 
 Android 提供了多种后台执行方式：Thread + Handler、Service、AlarmManager、JobScheduler、WorkManager、Foreground Service。选择哪一种不只是 API 偏好问题——选错了会直接导致系统级功耗问题，而且从 Android 8.0 开始，很多"老办法"已经被系统限制甚至禁止。
 
-JobScheduler 和 WorkManager 是 Google 推荐的后台任务方案。JobScheduler 是系统级调度器，从 Android 5.0 引入；WorkManager 是 Jetpack 库，在 JobScheduler 之上封装了兼容层和更高级的功能。理解它们的内部机制，不仅帮助我们写出功耗友好的代码，更重要的是，当后台任务出现性能问题时（任务积压、调度延迟、功耗异常），我们知道在 Perfetto 中怎么定位、怎么分析。
+JobScheduler 和 WorkManager 是 Google 推荐的后台任务方案。JobScheduler 是系统级调度器，从 Android 5.0 引入；WorkManager 是 Jetpack 库，在 JobScheduler 之上封装了兼容层和更高级的功能。理解它们的内部机制，不仅帮助我们写出功耗友好的代码，同时，当后台任务出现性能问题时（任务积压、调度延迟、功耗异常），我们知道该去 Perfetto 里的哪些位置看什么。
 
 本章和 5.6（Android 功耗管理）、5.8（后台执行限制）互补：5.6 讲 Doze 和 App Standby 的宏观策略，5.8 讲后台执行的限制演进，本章聚焦在 JobScheduler 和 WorkManager 自身的调度机制与性能分析。
 
@@ -232,7 +263,7 @@ WorkManager.getInstance(context)
 
 [自动发现] 建议：轻量级的连续操作（如多步数据处理）优先考虑在单个 Worker 中顺序完成，而不是拆成链式 WorkRequest。
 
-以上内容覆盖了 JobScheduler 和 WorkManager 的核心调度机制。在实际开发中，还有一个痛点贯穿始终：任务提交后，怎么知道它为什么没执行？Android 17 在这方面补上了重要的一块拼图。
+以上内容覆盖了 JobScheduler 和 WorkManager 的核心调度机制。在实际开发中，还有一个难点一直存在：任务提交后，怎么知道它为什么没执行？Android 17 在这方面补上了重要的一块拼图。
 
 ## Android 17 新增调试能力
 
@@ -252,7 +283,7 @@ Map<Integer, Long> reasons = js.getPendingJobReasonStats(jobId);
 // QUOTA -> 1800000 (配额耗尽等待 30 分钟)
 ```
 
-这个 API 直接回答了"任务为什么没执行"的问题。结合 Perfetto trace 中的 JobScheduler track，我们可以建立完整的分析链路：从"看到任务 pending"到"知道具体原因"再到"决定优化策略"。
+这个 API 直接回答了"任务为什么没执行"的问题。结合 Perfetto Trace 中的 JobScheduler track，我们可以建立完整的分析路径：从“看到任务 pending”到“知道具体原因”，再到“决定优化策略”。
 
 [已验证: 官方文档, developer.android.com/about/versions/17/features#job-debugging]
 
@@ -269,7 +300,7 @@ Android 17 的 ProfilingManager 增加了三个新的系统触发器：
 [已验证: 官方文档, developer.android.com/about/versions/17/features]
 [待验证: TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE 的触发阈值]
 
-理解了调度机制和调试 API 后，下一个问题是：在 Perfetto 和其他工具中，我们怎么观察这些后台任务的实际行为？本节从工具实践角度展开。
+理解了调度机制和调试 API 后，接下来要看的是：在 Perfetto 和其他工具中，我们怎么观察这些后台任务的实际行为？本节从工具实践角度展开。
 
 ## 后台任务的性能分析实践
 
@@ -277,7 +308,7 @@ Android 17 的 ProfilingManager 增加了三个新的系统触发器：
 
 Perfetto 提供了多种方式观察 JobScheduler 的行为。
 
-**Jobs Track**：在 Perfetto UI 中，展开 system_server 进程，可以看到 `JobScheduler` 相关的 track。每个 slice 代表一个 Job 的执行周期，从 `onStartJob()` 到 `jobFinished()`。Slice 的名称通常包含包名和 Job ID。
+**Jobs Track**：在 Perfetto UI 中，展开 system_server 进程，会看到 `JobScheduler` 相关的 track。每个 slice 代表一个 Job 的执行周期，从 `onStartJob()` 到 `jobFinished()`。Slice 的名称通常包含包名和 Job ID。
 
 **Device State 区域**：在 trace 顶部的 Device State 区域，有 `Jobs` 和 `Long Wake locks` track。Jobs track 显示当前正在执行的所有 Job（跨所有 App），Long Wake locks track 显示持有时长超过阈值的 WakeLock。如果看到 Jobs track 上频繁出现同一个 App 的 slice，说明该 App 的后台任务调度过于频繁。
 
@@ -300,7 +331,7 @@ ORDER BY ts;
 
 也可以通过 `android.statsd` 数据源采集 `ATOM_SCHEDULED_JOB_STATE_CHANGED`（atom ID 10041）事件。
 
-抓取包含 JobScheduler 信息的 Perfetto trace 时，需要启用 `jobscheduler` atrace category 和 `power` category（用于 WakeLock 信息）：
+抓取包含 JobScheduler 信息的 Perfetto Trace 时，需要启用 `jobscheduler` atrace category 和 `power` category（用于 WakeLock 信息）：
 
 ```bash
 adb shell perfetto -o /data/misc/perfetto-traces/trace.pb -t 60s \
@@ -344,7 +375,7 @@ Android Studio 提供了 **WorkManager Inspector**（View → Tool Windows → A
 
 - `pending`：等待执行的任务数
 - `active`：正在执行的任务数
-- ` Periodic` / `OneOff`：任务类型
+- `Periodic` / `OneOff`：任务类型
 - `Required constraints`：当前设置的约束
 - `Satisfied constraints`：当前已满足的约束
 - `Last run`：上次执行时间
