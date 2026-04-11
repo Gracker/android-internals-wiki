@@ -4049,5 +4049,68 @@
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-11T21:23:00+08:00",
     "status": "pending"
+  },
+  {
+    "section": "2.20",
+    "section_title": "多窗口与桌面模式渲染性能",
+    "priority": 95,
+    "reason": "[Deep Tech Review] recreateOnConfigChanges / Android 12-17 行为边界写错，Perfetto 表名与 jank 分类不准确",
+    "material_paths": [
+      "intake/research-gaps.md",
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "行 118-133、229、247、258、268 recreateOnConfigChanges 段",
+        "detail": "AOSP `frameworks/base/core/res/res/values/attrs_manifest.xml` 中的 `recreateOnConfigChanges` 不是 Android 17 新增能力，当前公开 attr 只声明了 `mcc|mnc`，并不支持正文给出的 `screenSize|smallestScreenSize|screenLayout|orientation|density|uiMode`。基于这段错误 XML 推导出的“Android 17 官方轻路径、1-2 帧完成过渡”结论也没有源码或官方文档支撑。",
+        "suggestion": "删除当前 XML 示例和“Android 17 官方解决方案”结论，改为已核实的配置变更处理机制；如果后续确认 Android 17 另有新行为，必须补官方行为变更文档或 AOSP 路径后再写回。"
+      },
+      {
+        "type": "源码错误",
+        "location": "行 171 Perfetto SQL 表名",
+        "detail": "正文写 `surfaceflinger_layers`，但 Perfetto stdlib 文档公开的相关表是 `surfaceflinger_layers_snapshot` 和 `surfaceflinger_layer`。照正文写法直接执行 SQL，读者很可能查不到表。",
+        "suggestion": "把表名改成当前 Perfetto schema 中真实存在的表，并补一个能直接跑通的查询示例。"
+      },
+      {
+        "type": "源码错误",
+        "location": "行 181、272 FrameTimeline jank 分类",
+        "detail": "Perfetto FrameTimeline 文档列出的 SurfaceFlinger 侧 jank 原因是 `SurfaceFlingerCpuDeadlineMissed` 和 `SurfaceFlingerGpuDeadlineMissed`，正文使用的 `SFDeadlineMissed` 与当前官方命名对不上。",
+        "suggestion": "改成官方分类名，并说明 CPU miss 与 GPU miss 的区别；如果要保留旧别名，必须补版本范围。"
+      },
+      {
+        "type": "版本差异",
+        "location": "行 235-247 Android 16/17 大屏强制适配段",
+        "detail": "正文把 manifest 属性写成 `resizeActivity`，官方文档实际是 `resizeableActivity`。同时段落漏掉了 API 36 的 `PROPERTY_COMPAT_ALLOW_RESTRICTED_RESIZABILITY` opt-out，以及 API 37 移除 opt-out 的边界，导致读者看不清 Android 16 与 Android 17 的真实行为差异。",
+        "suggestion": "修正属性名为 `resizeableActivity`，补上 API 36 可 opt-out、API 37 不再允许 opt-out 的版本边界，再重写这段适配结论。"
+      },
+      {
+        "type": "版本差异",
+        "location": "行 255 版本演进表 Android 12 条目",
+        "detail": "正文写成“Android 12 小屏设备强制多窗口，600dp 以下设备也进入多窗口”，这和官方 multi-window 文档不一致。当前公开文档强调的是 Android 12 在大屏设备上把 multi-window 变成标准行为，而不是把 600dp 以下设备作为同一条规则。",
+        "suggestion": "按官方 multi-window 文档重写 Android 12 条目，区分 API 24 的分屏支持、API 31/32 的 large-screen 标准行为，以及 API 36/37 的 sw600dp resizability 规则。"
+      },
+      {
+        "type": "版本差异",
+        "location": "行 49 桌面窗口模式演进段",
+        "detail": "正文把“桌面窗口模式”统一写成 Android 16 QPR3 手机端能力，混淆了 OEM/大屏设备上的 desktop windowing、Android 16 connected displays、以及手机外接显示器上的 desktop session。`Pixel 8 及以上机型支持` 这类设备断言在当前引用里也没有精确出处。",
+        "suggestion": "拆成“厂商/大屏设备的 desktop windowing”与“Android 16 connected displays/手机外接显示器”两条时间线，设备支持范围单独引用 Pixel 或 Android release note；拿不到权威来源就标 `[待验证]`。"
+      },
+      {
+        "type": "原理断裂",
+        "location": "行 203-229 后台窗口节流与生命周期优化段",
+        "detail": "正文把“窗口失去焦点”和“Activity 进入 onStop()”近似处理，但官方 multi-window 文档明确写了 Android 10+ 支持 multi-resume，多个可见 Activity 可以同时保持 RESUMED。只靠 `onStop()/onStart()` 无法解释多窗口下的实际渲染节流行为。",
+        "suggestion": "补上 focus / visible / top-resumed / RESUMED 的区别，结合 `onTopResumedActivityChanged()`、PiP 和 split-screen 生命周期重新整理优化建议。"
+      },
+      {
+        "type": "版本差异",
+        "location": "行 195 Perfetto SQL 的 doCompose 过滤条件",
+        "detail": "正文把 `slice.name LIKE %doCompose%` 写成通用查询条件，但当前可核对的 `frameworks/native/services/surfaceflinger/SurfaceFlinger.cpp` 主线 trace 名更接近 `commit`/`composite` 的 SFTRACE 名称，没有把 `doCompose` 证明为稳定 slice 名。",
+        "suggestion": "用真实 trace 截图或 trace processor 查询结果确认当前版本的 slice 名，再写 SQL；如果不同版本差异大，就改成“按实际 trace 名筛选”的方法说明。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-11T22:20:00+08:00",
+    "status": "pending"
   }
 ]

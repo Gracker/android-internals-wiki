@@ -19,7 +19,8 @@ tags: [multiwindow, desktop-mode, split-screen, freeform, foldable, surfacefling
 related_chapters: ["2.6", "2.9", "2.12", "2.13", "7.4", "3.3"]
 pipeline_stage: task2b_pending
 task6_state: reviewed
-task9_state: pending
+task9_state: reviewed
+task9_result: needs-rework
 task2b_state: pending
 reviewed_date: "2026-04-11"
 reviewed_by: "openclaw-task6"

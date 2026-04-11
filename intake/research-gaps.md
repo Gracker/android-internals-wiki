@@ -987,3 +987,36 @@ BLASTBufferQueue 小节只讲了“App 本地管理 buffer，最后用 Transacti
 
 **关联章节**：§3.4、§13.3、§13.5、§2.4
 
+
+
+## [2026-04-11] 2.20 多窗口与桌面模式渲染性能 — 多窗口生命周期与渲染节流
+
+### 盲区描述
+正文把“窗口失去焦点”和“Activity 停止可见”近似处理，没有覆盖 Android 10+ multi-resume、top-resumed activity、`onTopResumedActivityChanged()` 这些直接影响渲染节流策略的生命周期边界。对分屏、PiP、桌面窗口来说，这是多窗口性能分析的基础前提。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 官方 multi-window 文档中 multi-resume / top-resumed / onStop 语义
+- `onTopResumedActivityChanged()` 与相机、视频、动画等独占资源的关系
+- 分屏、PiP、桌面窗口三种形态下 focus / visible / resumed 的区别
+
+### 关联章节
+§2.20、§2.12、§7.4
+
+## [2026-04-11] 2.20 多窗口与桌面模式渲染性能 — Desktop Windowing / Connected Displays 版本与设备矩阵
+
+### 盲区描述
+正文把 OEM/大屏设备的 desktop windowing、Android 16 connected displays、外接显示器上的独立 desktop session、以及 Pixel 机型支持范围写成了一条线，版本与设备边界混在一起。读者很难判断某条结论到底适用于平板、折叠屏、ChromeOS，还是只适用于手机外接显示器。
+
+### 重要程度
+高
+
+### 建议研究方向
+- `support-desktop-windowing` 与 `support-connected-displays` 官方文档的行为边界
+- 手机连接外接显示器时的独立 desktop session，与 desktop-windowing enabled device 的扩展模式差异
+- Pixel / Samsung 等具体机型支持范围对应的 release note 或官方博客
+
+### 关联章节
+§2.20、§2.12、§2.18

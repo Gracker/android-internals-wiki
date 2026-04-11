@@ -1123,3 +1123,20 @@
 - **问题**：`surfaceflinger_layers` 表、`doCompose` slice 名称，以及非焦点 App VSync 节流的写法需要核对当前版本的数据表、slice 名和系统行为。
 - **建议**：交给 Task 9 核对实际表名 / slice 名与系统行为，再决定正文是否保留当前写法。
 - **review 日志**：logs/review/2026-04-11-22-review.md
+
+
+## [Task9 Deep Review] 2.20 多窗口与桌面模式渲染性能 — 2026-04-11
+- **类型**：数据缺失
+- **位置**：行 52-54、104-116、130-131 多处量化断言
+- **问题**：`2-4ms`、`6-10ms`、`200-500ms`、`1-2 帧`、`每 2-3 帧一次` 这类结论缺少设备、刷新率、trace 或 dumpsys 条件，读者无法判断它们是通用规律还是单机样本。
+- **建议**：补真实 Perfetto / dumpsys 证据并标注设备、Android 版本、刷新率；补不齐就降级为定性描述。
+
+- **类型**：交叉引用
+- **位置**：行 283 参考资料 Desktop windowing 链接
+- **问题**：`https://developer.android.com/guide/topics/large-screens/desktop-windowing` 当前返回 404，和“已验证”章节状态不一致。
+- **建议**：改用当前官方文档 `https://developer.android.com/develop/ui/compose/layouts/adaptive/support-desktop-windowing`，并补 `support-connected-displays` 作为手机外接显示器场景的直接参考。
+
+- **类型**：交叉引用
+- **位置**：frontmatter `sources[2]`
+- **问题**：`Android 16 Desktop Windowing — android.com` 只是标题字符串，不是可追溯 URL，后续无法复核发布时间、设备范围和原文措辞。
+- **建议**：替换成精确 URL（博客 / release note / 官方文档）并补发布日期；拿不到可追溯来源就删掉这条 source。
