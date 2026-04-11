@@ -943,3 +943,15 @@
 - **问题**：虽然已有文字说明，但缺少正常 vs 异常的 Trace 截图占位与关键区域标注，和 writing-guide.md 的图文配合要求不够一致。
 - **建议**：补 1-2 张 Perfetto 截图，至少覆盖 `latchBuffer` 等待和 BufferQueue 积压两个场景。
 - **review 日志**：logs/review/2026-04-11-15-review.md
+
+## [Task9 Deep Review] 2.16 Sync Fence 框架与帧同步机制 — 2026-04-11
+- **类型**：数据缺失
+- **位置**：行 243-247 BufferQueue Track
+- **问题**：正文把“60fps 正常 queued 数量在 0-1 之间波动，持续为 2 就说明 SurfaceFlinger 消费跟不上”写成通用判断，但没有给出设备、刷新率、BLAST / 非 BLAST 场景或真实 trace 证据，这个阈值结论容易被误用。
+- **建议**：补 1 组真实 Perfetto 样例，明确设备、刷新率、窗口类型，并把结论改成“常见经验信号”而不是通用定律。
+
+## [Task9 Deep Review] 2.16 Sync Fence 框架与帧同步机制 — 2026-04-11
+- **类型**：源码准确性
+- **位置**：行 284-290 Fence 泄漏段落
+- **问题**：把“fd 没关”直接推导成“buffer 永远不回到 free pool”过于绝对。fd 泄漏、slot 长时间占用、release fence 不 signal 是三类不同问题，当前表述把资源泄漏和 BufferQueue 生命周期混成一件事。
+- **建议**：拆开写：一类是进程 fd 泄漏；另一类是 release fence / consumer 生命周期导致的 slot 不可复用，并分别给出 `dumpsys SurfaceFlinger` / BufferQueue / `/proc/<pid>/fd` 的定位方法。

@@ -911,3 +911,18 @@ BLASTBufferQueue 小节只讲了“App 本地管理 buffer，最后用 Transacti
 
 **关联章节**：§2.13 BufferQueue、§2.15 DMA-BUF 与 Gralloc、§2.6 SurfaceFlinger
 
+## [2026-04-11] 2.16 Sync Fence 框架与帧同步机制 — 现代 explicit sync 演进链缺失
+
+### 盲区描述
+章节没有把 Android 图形同步的现代演进链讲完整：HWC1 → HWC2 的 fence 语义变化、legacy `sync_timeline`/`sync_pt`/`sync_fence` 与 modern `sync_file` API 的对应关系、HWUI/Skia 在当前版本里如何生成 release fence、present fence 又怎样进入 `VSyncReactor` / FrameTimeline。这些节点分散出现在正文里，但没有被串成一条能指导源码核对与 Perfetto 分析的主线。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 对比 `android-7.0.0_r1`、`android-8.1.0_r81`、`android-16.0.0_r1` 的 `HWC2.h`、`libsync`、`libs/hwui/pipeline/skia/`
+- 梳理 `queueBuffer()` 输入 fence、`releaseBuffer()` 返回 fence、`presentDisplay()` present fence 三类 fence 在 producer / consumer / HWC 三侧的命名映射
+- 用一段真实 Perfetto + `dumpsys SurfaceFlinger` 样例验证 acquire / release / present fence 的 trace 位置与等待路径
+
+### 关联章节
+§2.3 VSync、§2.5 MainThread 与 RenderThread、§2.6 SurfaceFlinger、§2.13 BufferQueue、§2.15 DMA-BUF 与 Gralloc

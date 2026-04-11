@@ -24,11 +24,12 @@ tags: [sync-fence, fence, hwui, rendering, synchronization, timeline]
 related_chapters: ["2.4", "2.5", "2.6", "2.13", "2.15"]
 pipeline_stage: task2b_pending
 task6_state: reviewed
-task9_state: pending
+task9_state: reviewed
 task2b_state: pending
 reviewed_by: openclaw-task6
 reviewed_date: "2026-04-11"
 task6_result: needs-rework
+task9_result: needs-rework
 ---
 
 # 2.16 Sync Fence 框架与帧同步机制
