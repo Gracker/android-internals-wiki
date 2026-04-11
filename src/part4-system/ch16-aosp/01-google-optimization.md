@@ -15,10 +15,11 @@ tags:
   - android
   - performance
   - aosp
-pipeline_stage: task6_pending
+pipeline_stage: task2b_pending
 task6_state: revisiting
-task9_state: pending
-task2b_state: fixed
+task9_state: reviewed
+task9_result: needs-rework
+task2b_state: pending
 task2b_result: fixed
 sources:
   - type: official

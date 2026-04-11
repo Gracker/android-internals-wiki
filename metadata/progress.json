@@ -1,28 +1,28 @@
 {
-  "generated_at": "2026-04-11T11:05:00+08:00",
+  "generated_at": "2026-04-11T11:20:00+08:00",
   "state_machine_version": "v2",
   "total_sections": 175,
   "metrics": {
     "total": 175,
     "draft": 0,
     "ready-for-review": 172,
-    "pipeline_task6_pending": 171,
-    "pipeline_task2b_pending": 2,
+    "pipeline_task6_pending": 170,
+    "pipeline_task2b_pending": 3,
     "pipeline_publish_ready": 0,
     "task6_pending": 161,
     "task6_reviewed": 3,
     "task6_revisiting": 10,
-    "task9_pending": 174,
-    "task9_reviewed": 0,
+    "task9_pending": 173,
+    "task9_reviewed": 1,
     "task2b_idle": 162,
-    "task2b_pending": 2,
-    "last_updated": "2026-04-11T11:05:00+08:00",
+    "task2b_pending": 3,
+    "last_updated": "2026-04-11T11:20:00+08:00",
     "unknown": 3
   },
   "pipeline": {
     "pipeline_stage_counts": {
-      "task2b_pending": 2,
-      "task6_pending": 171,
+      "task2b_pending": 3,
+      "task6_pending": 170,
       "task9_pending": 1,
       "unknown": 1
     },
@@ -33,13 +33,14 @@
       "unknown": 1
     },
     "task9_state_counts": {
-      "pending": 174,
-      "unknown": 1
+      "pending": 173,
+      "unknown": 1,
+      "reviewed": 1
     },
     "task2b_state_counts": {
-      "fixed": 10,
+      "fixed": 9,
       "idle": 162,
-      "pending": 2,
+      "pending": 3,
       "unknown": 1
     }
   },
@@ -1732,10 +1733,10 @@
       "title": "Google 官方的性能优化思路",
       "path": "src/part4-system/ch16-aosp/01-google-optimization.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "revisiting",
-      "task9_state": "pending",
-      "task2b_state": "fixed"
+      "task9_state": "reviewed",
+      "task2b_state": "pending"
     },
     "src/part4-system/ch16-aosp/03-build-debug-env.md": {
       "chapter": "16.3",
@@ -2960,6 +2961,30 @@
         "verification": 4,
         "metadata": 5
       }
+    },
+    "16.1": {
+      "title": "Google 官方的性能优化思路",
+      "reviewed_date": "2026-04-10",
+      "reviewed_by": "openclaw-task6",
+      "review_status": "ready-for-review",
+      "task6_result": "needs-rework",
+      "review_log": "logs/review/2026-04-10-22-review.md",
+      "deep_review_date": "2026-04-11T11:20:00+08:00",
+      "deep_review_by": "task9-deep-tech-review",
+      "deep_review_score": 2.3,
+      "deep_review_p0": 2,
+      "deep_review_p1": 3,
+      "deep_review_p2": 3,
+      "issues_found": [
+        "Mainline 小节把 AutoFDO / generational GC / Cloud Profiles 混成同一分发链路（P0）",
+        "MessageQueue 小节把 `mLock` 当成统一实现，并误把 `Handler.java` 当作核心源码路径（P0）",
+        "Binder 线程池 / priority inheritance 时间线写粗且版本不准（P1）",
+        "BLASTBufferQueue 被描述成直接绕过中间环节的直连路径（P1）",
+        "缺少 OTA / GKI / APEX / Play Profile 的交付路径矩阵（P1）",
+        "验证范围只覆盖 Android 17 release notes + DeliQueue post，无法支撑全文跨版本断言（P2）",
+        "缺少到 §1.12 / §1.13 / §16.4 / §2.12 的显式交叉引用（P2）",
+        "参考资料尾部混入 Gemma / Gemini Nano 资讯，主题域污染（P2）"
+      ]
     }
   }
 }
