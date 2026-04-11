@@ -3926,5 +3926,44 @@
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-11T20:37:56+08:00",
     "status": "pending"
+  },
+  {
+    "section": "3.4",
+    "section_title": "输入延迟与预测输入技术",
+    "priority": 90,
+    "reason": "[review回炉] Game Mode/InputTransport/VSync 调优表述需核对，Perfetto 证据链缺真实 Trace 素材",
+    "material_paths": [
+      "intake/suggestions.md（含 review 意见）"
+    ],
+    "review_issues": [
+      {
+        "type": "需确认",
+        "location": "“游戏模式（Game Mode）的输入优化”段",
+        "detail": "正文把 Game Mode 直接写成“GameManagerService 通知 InputDispatcher 优先处理输入事件”，调用链和机制边界还不够清楚。",
+        "suggestion": "由 Task 9 核对 GameManagerService、Game Mode 与 InputDispatcher 之间的实际关系；若没有直接证据，改成更保守的策略描述。"
+      },
+      {
+        "type": "需确认",
+        "location": "“InputTransport 的异步模式”段",
+        "detail": "同步/异步 InputChannel 模式、ACK 行为和 ANR 计时之间的关系仍停留在待验证状态，当前表述容易被读者当成确定结论。",
+        "suggestion": "核对 InputTransport / InputChannel 的实现与官方文档，明确异步模式的启用条件、行为边界，以及对 ANR 统计是否有影响。"
+      },
+      {
+        "type": "需确认",
+        "location": "“VSync offset 调优”段",
+        "detail": "“主动通知 SurfaceFlinger 立即处理，节约一帧等待时间”来自厂商实践，但还没有补出公开可复核的 AOSP 路径或版本边界。",
+        "suggestion": "由 Task 9 核对该机制是否属于厂商定制还是 AOSP 主线能力；若无法确认，保留为厂商实践案例并弱化到定性描述。"
+      },
+      {
+        "type": "需补充素材",
+        "location": "“输入延迟在 Perfetto 中的分析方法”段",
+        "detail": "目前只有 SQL 和文字说明，缺少一组真实 Trace 截图或查询结果示例，输入延迟的可观测证据链还不完整。",
+        "suggestion": "补 1 组真实 Perfetto Trace 截图，至少标出 InputReader、InputDispatcher、DeliverInputEvent 与 FrameTimeline 的对应关系。"
+      }
+    ],
+    "added_by": "task6-review",
+    "added_at": "2026-04-11T21:14:00+08:00",
+    "status": "pending",
+    "original_review_log": "logs/review/2026-04-11-21-review.md"
   }
 ]

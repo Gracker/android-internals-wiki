@@ -1062,3 +1062,29 @@
 - **位置**：行 257-261
 - **问题**：`60Hz → 120Hz 功耗增加 20%-50%`、`1Hz 与 120Hz 功耗差 5-10 倍` 仍是无测试条件的量化断言，没有设备、亮度、面板、场景、测量工具说明。
 - **建议**：补官方功耗资料或实测条件；若短期无法补证据，把量化值降级为定性描述。
+
+
+## [Task6 Review] 3.4 输入延迟与预测输入技术 — 2026-04-11
+- **类型**：需确认
+- **位置**：游戏模式（Game Mode）的输入优化
+- **问题**：正文把 Game Mode 直接写成“GameManagerService 通知 InputDispatcher 优先处理输入事件”，调用链和机制边界还不够清楚。
+- **建议**：由 Task 9 核对 GameManagerService、Game Mode 与 InputDispatcher 之间的实际关系；若没有直接证据，改成更保守的策略描述。
+- **review 日志**：logs/review/2026-04-11-21-review.md
+
+- **类型**：需确认
+- **位置**：InputTransport 的异步模式
+- **问题**：同步/异步 InputChannel 模式、ACK 行为和 ANR 计时之间的关系仍停留在待验证状态，当前表述容易被读者当成确定结论。
+- **建议**：核对 InputTransport / InputChannel 的实现与官方文档，明确异步模式的启用条件、行为边界，以及对 ANR 统计是否有影响。
+- **review 日志**：logs/review/2026-04-11-21-review.md
+
+- **类型**：需确认
+- **位置**：VSync offset 调优
+- **问题**：“主动通知 SurfaceFlinger 立即处理，节约一帧等待时间”来自厂商实践，但还没有补出公开可复核的 AOSP 路径或版本边界。
+- **建议**：由 Task 9 核对该机制是否属于厂商定制还是 AOSP 主线能力；若无法确认，保留为厂商实践案例并弱化到定性描述。
+- **review 日志**：logs/review/2026-04-11-21-review.md
+
+- **类型**：需补充素材
+- **位置**：输入延迟在 Perfetto 中的分析方法
+- **问题**：目前只有 SQL 和文字说明，缺少一组真实 Trace 截图或查询结果示例，输入延迟的可观测证据链还不完整。
+- **建议**：补 1 组真实 Perfetto Trace 截图，至少标出 InputReader、InputDispatcher、DeliverInputEvent 与 FrameTimeline 的对应关系。
+- **review 日志**：logs/review/2026-04-11-21-review.md
