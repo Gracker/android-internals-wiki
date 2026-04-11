@@ -20,17 +20,21 @@ sources:
 tags: [opengl-es, vulkan, angle, gpu, graphics-api, rendering]
 related_chapters: ["2.1", "2.9", "2.10", "14.8"]
 section: "2.14"
-pipeline_stage: task6_pending
-task6_state: pending
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task2b_state: idle
+reviewed_by: "openclaw-task6"
+reviewed_date: "2026-04-11"
+task6_result: "pass-light-edit"
+review_log: "logs/review/2026-04-11-13-review.md"
 ---
 
 # 2.14 图形 API 演进与选择策略（OpenGL ES / Vulkan / ANGLE）
 
-我们在 §2.1 中看到了 Android 渲染架构的全景，在 §2.9 中了解了渲染管线从 HWUI 到 SkiaVulkan 的演进，在 §2.10 中分析了 GPU 渲染的深入机制。但有一个维度一直没有展开：当我们要写一个游戏引擎、一个视频滤镜、或者一个需要直接操作 GPU 的应用时，应该选择哪个图形 API？OpenGL ES、Vulkan、还是等 ANGLE 帮我们翻译？这个选择在今天变得前所未有的重要，因为 Android 17 正在把 OpenGL ES 推入维护模式，ANGLE 成为所有 GLES 应用的默认路径。
+我们在 §2.1 中看到了 Android 渲染架构的全景，在 §2.9 中了解了渲染管线从 HWUI 到 SkiaVulkan 的演进，在 §2.10 中分析了 GPU 渲染的深入机制。但有一个维度一直没有展开：当我们要写一个游戏引擎、一个视频滤镜、或者一个需要直接操作 GPU 的应用时，应该选择哪个图形 API？OpenGL ES、Vulkan、还是等 ANGLE 帮我们翻译？在 Android 17 的迁移背景下，这个选择会直接影响兼容性判断和性能分析路径，因为 OpenGL ES 正在进入维护模式，ANGLE 也开始成为更多 GLES 应用的默认执行路径。
 
-理解图形 API 的演进脉络和架构差异，不只是"选对工具"的问题。在 Perfetto 中看到 GPU activity slice 时，我们需要知道它是 Vulkan 提交还是 GLES 通过 ANGLE 翻译后提交的；分析帧时间抖动时，需要判断瓶颈是 API 翻译层的开销还是驱动实现的质量问题。
+理解图形 API 的演进脉络和架构差异，不只是“选对工具”的问题。我们在 Perfetto 里看到 GPU Activity slice 时，需要先分清它是 Vulkan 直接提交，还是 GLES 经过 ANGLE 翻译后的提交；分析帧时间抖动时，也要判断瓶颈究竟来自 API 翻译层，还是来自驱动实现本身。
 
 ## Android 图形 API 的三代演进
 
@@ -102,7 +106,7 @@ Google 的策略是分阶段推进：
 
 ## Vulkan 与 OpenGL ES 的架构差异
 
-理解这两种 API 的架构差异，不只是理论问题。当我们在 Perfetto 中分析 GPU activity 时，看到的 slice 行为、时间分布和抖动模式都跟底层 API 的架构选择直接相关。
+理解这两种 API 的架构差异，不只是理论问题。我们在 Perfetto 中分析 GPU Activity 时，看到的 slice 行为、时间分布和抖动模式，都和底层 API 的架构选择直接相关。
 
 ### 状态机 vs 显式命令
 
@@ -167,7 +171,7 @@ Vulkan 的 Command Buffer 天然支持多线程。不同的线程可以各自独
 主线程: vkQueueSubmit(A + B + C) → 一次性提交到 GPU
 ```
 
-在 Perfetto 中，如果应用使用 Vulkan 的多线程命令构建，我们可以在多个线程的 track 上同时看到 GPU 命令的录制活动，而最终的 `vkQueueSubmit` 只在提交线程上出现一个很短的 slice。
+在 Perfetto 中，如果应用使用 Vulkan 的多线程命令构建，我们可以在多个线程的 Track 上同时看到 GPU 命令的录制活动，而最终的 `vkQueueSubmit` 只会在提交线程上出现一个很短的 slice。
 
 ### Command Buffer 复用
 
@@ -219,7 +223,7 @@ Google 在多个公开场合（Google I/O、Android Dev Summit）展示了 ANGLE
 
 [来源: Google I/O 技术演讲及社区基准测试，非官方系统性基准数据，具体数值可能因设备和驱动版本而异]
 
-有意思的是，部分游戏通过 ANGLE 运行反而比原生 GLES 驱动更快。原因是某些 GPU 厂商的原生 GLES 驱动实现质量较差（这也是 Google 推 ANGLE 的根本原因之一），而 ANGLE→Vulkan 路径绕过了这些问题驱动代码。
+实际测试里，部分游戏通过 ANGLE 运行反而比原生 GLES 驱动更快。原因通常不是 ANGLE 本身更“轻”，而是某些 GPU 厂商的原生 GLES 驱动实现质量较差，ANGLE→Vulkan 路径恰好绕开了这部分问题驱动代码。
 
 ANGLE 还带来了一个间接的优化：Pipeline Cache。Vulkan 支持将编译好的 Pipeline 序列化到磁盘，下次启动时直接加载，避免了运行时的 Pipeline 创建开销。社区测试（如 Fortnite Mobile）显示，加载 Pipeline Cache 可以将 Pipeline 创建的平均耗时降低 95%。ANGLE 作为系统级服务，可以为所有 GLES 应用统一管理 Pipeline Cache。
 
@@ -231,7 +235,7 @@ ANGLE 还带来了一个间接的优化：Pipeline Cache。Vulkan 支持将编�
 
 1. **不需要修改代码**：GLES 应用自动通过 ANGLE 运行，API 行为不变
 2. **性能可能略有变化**：大多数场景持平或略慢，少数场景可能反而更快
-3. **调试方式改变**：使用 ANGLE 后，GPU activity 在 Perfetto 中会通过 Vulkan 路径呈现，而不是 GLES 路径
+3. **调试方式改变**：使用 ANGLE 后，GPU Activity 在 Perfetto 中通常会通过 Vulkan 路径呈现，而不是直接显示为 GLES 路径
 4. **驱动 bug 表现可能变化**：原来在原生 GLES 驱动上的 bug 在 ANGLE→Vulkan 路径上可能出现不同的表现
 
 需要特别注意的是：WebView 和 WebGL 仍然走 GLES 路径。WebView 内部的渲染引擎（Skia）有自己的 GPU 后端选择逻辑，ANGLE 的系统级策略不会直接干预 WebView 内部的图形 API 选择。
@@ -285,7 +289,7 @@ data_sources {
 }
 ```
 
-Vulkan 通常提供比 GLES 更丰富的 GPU 性能计数器，包括 per-stage 的 GPU 利用率（顶点/片段/Compute）、精确的显存带宽计量、以及 GPU cache 命中率等。这些计数器的可用性取决于 GPU 厂商和驱动实现。
+在驱动支持较完整的设备上，Vulkan 通常能拿到比 GLES 更丰富的 GPU 性能计数器，包括 per-stage GPU 利用率（顶点/片段/Compute）、更精细的显存带宽计量，以及 GPU Cache 命中率等。这些计数器的可用性仍然取决于 GPU 厂商和驱动实现。
 
 [待补充: Perfetto 中 Vulkan vs GLES 的 GPU Activity slice 截图对比]
 
@@ -295,7 +299,7 @@ Android GPU Inspector（AGI）是 Google 官方的 GPU 分析工具（详见 §1
 
 - **Vulkan 应用**：AGI 直接捕获和分析 Vulkan 调用，支持逐 draw call 的 GPU 时间分析
 - **OpenGL ES 应用**：AGI 通过自定义的 ANGLE build 将 GLES 命令翻译为 Vulkan 进行追踪。这意味着即使是 GLES 应用，AGI 也是通过 Vulkan 路径来分析
-- **AGI 2026 路线图**：改进版 System Profiler（2026 H1，支持超大 trace、帧截图、开源）和高级 Frame Profiler Alpha（2026 H2，基于 GFXReconstruct，支持 frame looping 和 render pass graph 分析）
+- **AGI 2026 路线图**：[待验证: 公开路线图链接待补] 改进版 System Profiler（2026 H1，支持超大 trace、帧截图、开源）和高级 Frame Profiler Alpha（2026 H2，基于 GFXReconstruct，支持 frame looping 和 render pass graph 分析）
 
 [已验证: AGI 官方文档, developer.android.com/agi]
 

@@ -1,39 +1,40 @@
 {
-  "generated_at": "2026-04-11T13:08:42+08:00",
+  "generated_at": "2026-04-11T13:17:55+08:00",
   "state_machine_version": "v2",
   "total_sections": 187,
   "metrics": {
     "total": 187,
     "draft": 0,
     "ready-for-review": 173,
-    "pipeline_task6_pending": 172,
+    "pipeline_task6_pending": 171,
     "pipeline_task2b_pending": 2,
     "pipeline_publish_ready": 0,
-    "task6_pending": 161,
-    "task6_reviewed": 3,
+    "task6_pending": 160,
+    "task6_reviewed": 4,
     "task6_revisiting": 11,
     "task9_pending": 175,
     "task9_reviewed": 0,
     "task2b_idle": 162,
     "task2b_pending": 2,
-    "last_updated": "2026-04-11T13:08:42+08:00",
+    "last_updated": "2026-04-11T13:17:55+08:00",
     "unknown": 14
   },
   "pipeline": {
     "pipeline_stage_counts": {
       "task2b_pending": 2,
-      "task6_pending": 172,
-      "task9_pending": 1,
+      "task6_pending": 171,
+      "task9_pending": 2,
       "unknown": 12
     },
     "task6_state_counts": {
-      "pending": 161,
-      "reviewed": 3,
+      "pending": 160,
+      "reviewed": 4,
       "revisiting": 11,
       "unknown": 12
     },
     "task9_state_counts": {
       "pending": 175,
+      "reviewed": 0,
       "unknown": 12
     },
     "task2b_state_counts": {
@@ -1264,8 +1265,8 @@
       "title": "图形 API 演进与选择策略（OpenGL ES / Vulkan / ANGLE）",
       "path": "src/part1-fundamentals/ch02-rendering/14-graphics-api-evolution.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "pending",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
       "task9_state": "pending",
       "task2b_state": "idle"
     },
