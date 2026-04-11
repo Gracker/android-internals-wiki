@@ -943,3 +943,20 @@ BLASTBufferQueue 小节只讲了“App 本地管理 buffer，最后用 Transacti
 
 ### 关联章节
 2.18, 2.4
+
+## [2026-04-11] 2.18 Adaptive Refresh Rate 与动态帧率控制 — View 层 ARR API 与滚动速度通路
+
+### 盲区描述
+章节把 App 侧 ARR 适配几乎全部收敛到 `Surface.setFrameRate()`，但 Android 15-QPR1+/16 的官方主线已经转向 View / Compose：`View.setRequestedFrameRate()`、`View.setFrameContentVelocity()`、RecyclerView 1.4 / NestedScrollView 的滚动速度上报，以及 Compose 的 `preferredFrameRate()`。如果这一层不补，读者会知道系统侧有 ARR，却不知道 App 侧该如何正确表达帧率意图。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 核对 android-16.0.0_r1 `View.java` 中 `setRequestedFrameRate()` / `setFrameContentVelocity()` 的行为与限制
+- 追踪 AndroidX RecyclerView 1.4 的 ARR 实现，确认 fling / smooth scroll 如何上报 velocity
+- 梳理 `Surface.setFrameRate()`、View `requestedFrameRate`、Compose `preferredFrameRate()` 三者的分工边界
+- 补一个滚动场景的 Perfetto / FrameTimeline 例子，说明 velocity 与 refresh-rate 变化如何对应
+
+### 关联章节
+2.4（Choreographer）、2.17（Frame Pacing Library）、7.8（RecyclerView 列表滑动性能深度优化）

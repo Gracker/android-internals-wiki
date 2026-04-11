@@ -3862,5 +3862,68 @@
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-11T19:49:46+08:00",
     "status": "pending"
+  },
+  {
+    "section": "2.18",
+    "section_title": "Adaptive Refresh Rate 与动态帧率控制",
+    "priority": 95,
+    "reason": "[Deep Tech Review] ARR API 语义错误 + Choreographer 回调模型错误 + 官方验证链接失效",
+    "material_paths": [
+      "intake/research-gaps.md",
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码准确性",
+        "severity": "P0",
+        "location": "frontmatter sources / 行 16-18, 74, 345, 355-357",
+        "detail": "章节把 3 个官方验证入口写成失效 URL：`android-developers.googleblog.com/2025/adaptive-refresh-rate.html`、`developer.android.com/develop/ui/views/graphics/refresh-rate`、`developer.android.com/games/agdk/frame-pacing` 当前均返回 404，导致 frontmatter、文内 `[已验证]` 和参考资料都无法公开复核。",
+        "suggestion": "改用当前可访问的官方页面，例如 `https://developer.android.com/develop/ui/views/animations/adaptive-refresh-rate` 和 `https://developer.android.com/games/sdk/frame-pacing`，并逐条重绑 `[已验证]` 标注。",
+        "dimension": "源码引用准确性"
+      },
+      {
+        "type": "源码准确性",
+        "severity": "P0",
+        "location": "行 86, 203, 349-353",
+        "detail": "正文称帧率决策逻辑位于 `SurfaceFlinger::chooseRefreshRateForContent()`，并把 `VsyncModulator.cpp` 路径写成 `services/surfaceflinger/Scheduler/...`。AOSP android-16.0.0_r1 中实际调用点是 `frameworks/native/services/surfaceflinger/SurfaceFlinger.cpp` 内的 `mScheduler->chooseRefreshRateForContent(...)`，`VsyncModulator.cpp` 也位于 `frameworks/native/services/surfaceflinger/Scheduler/`。当前写法把 Scheduler 和 SurfaceFlinger 的边界讲混了。",
+        "suggestion": "把实现关系改成“SurfaceFlinger 通过 Scheduler 做 refresh-rate selection”，并把 AOSP 路径统一写成 `frameworks/native/services/surfaceflinger/...`。",
+        "dimension": "源码引用准确性"
+      },
+      {
+        "type": "源码准确性",
+        "severity": "P0",
+        "location": "行 137-141",
+        "detail": "`Display.getSuggestedFrameRate(int)` 被解释成“给定目标帧率，系统返回最优刷新率”，并举了 45fps → 90Hz/60Hz 的例子。但 AOSP android-16.0.0_r1 `Display.java` 的真实语义是“按帧率类别取系统建议值”，入参只接受 `FRAME_RATE_CATEGORY_NORMAL` / `FRAME_RATE_CATEGORY_HIGH`，不是任意目标 fps。",
+        "suggestion": "重写这一段，改成基于 `FRAME_RATE_CATEGORY_NORMAL/HIGH` 的示例；如果要讲“45fps 该如何映射”，应另起一段说明这不是 `getSuggestedFrameRate()` 的 API 语义。",
+        "dimension": "源码引用准确性"
+      },
+      {
+        "type": "源码准确性",
+        "severity": "P0",
+        "location": "行 88-97, 143-161, 284-295, 302-304, 350",
+        "detail": "章节把公开 App 侧回调写成 `Choreographer.VsyncEventData.refreshRate` / `getRefreshRate()`。AOSP android-16.0.0_r1 中 `Choreographer.VsyncCallback` 的签名是 `onVsync(FrameData data)`，公开 `FrameData` 只有 `getFrameTimeNanos()`、`getFrameTimelines()`、`getPreferredFrameTimeline()` 等；`DisplayEventReceiver.VsyncEventData` 是内部承载结构，并没有公开 `refreshRate` 字段给 App。当前代码示例无法按文意编译，也会把 Android 13+ 的 API 叙述讲错。",
+        "suggestion": "删掉 `VsyncEventData.refreshRate` 这条主线，改成 `FrameData/FrameTimeline` 的真实 public API；如果要表达当前刷新节奏，需改用真实可用的 Display/View/Compose API 或明确按帧时间线推导。",
+        "dimension": "源码引用准确性"
+      },
+      {
+        "type": "版本差异",
+        "severity": "P1",
+        "location": "frontmatter applicable_versions / 行 64-68, 278-288",
+        "detail": "章节 frontmatter 声称适用 `Android 11 (API 30) - Android 17 (API 37)`，但官方 ARR 文档明确写的是“支持 ARR 的设备需实现特定 HAL API，且运行在 Android 15-QPR1 及以上”。当前正文把“Android 11 的多刷新率支持”和“Android 15+ 的 ARR”混在同一适用范围里，容易把 pre-ARR 的 mode switching 历史和真正 ARR 支持窗口讲成一回事。",
+        "suggestion": "把章节拆成“Android 11-14 多刷新率背景”和“Android 15-QPR1+ ARR 正式能力”两层，并收紧 `applicable_versions` 或在 frontmatter 明确“ARR 主体适用范围”。",
+        "dimension": "版本差异覆盖"
+      },
+      {
+        "type": "原理链完整性",
+        "severity": "P1",
+        "location": "行 100-167",
+        "detail": "App 侧 API 主线不完整。官方 ARR 文档与 android-16 `View.java` 的关键能力是 `View.setRequestedFrameRate()`、`View.setFrameContentVelocity()` 和 Compose `preferredFrameRate()`；RecyclerView 1.4 的滚动适配也不是“自动调用 `setFrameRate()` 拉满最高刷新率”，AndroidX `RecyclerView.java` 在 API 35+ 的实现是 `setFrameContentVelocity(...)`。当前章节把 `Surface.setFrameRate()` 当成 App 侧主入口，会让读者错过 View 层 ARR 的真实用法。",
+        "suggestion": "补一节“View/Compose 侧 ARR API”，把 `requestedFrameRate`、`frameContentVelocity`、RecyclerView/NestedScrollView、Compose `preferredFrameRate()` 串成完整主线，并将 `Surface.setFrameRate()` 降为更底层的单 Surface 提示机制。",
+        "dimension": "原理链完整性"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-11T20:37:56+08:00",
+    "status": "pending"
   }
 ]

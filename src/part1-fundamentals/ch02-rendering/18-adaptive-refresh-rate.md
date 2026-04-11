@@ -22,11 +22,12 @@ tags: [ARR, refresh-rate, VSync, SurfaceFlinger, Choreographer, LTPO, frame-paci
 related_chapters: ["2.2", "2.3", "2.4", "2.6", "2.13", "2.16"]
 pipeline_stage: task2b_pending
 task6_state: reviewed
-task9_state: pending
+task9_state: reviewed
 task2b_state: pending
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-04-11"
 task6_result: needs-rework
+task9_result: needs-rework
 ---
 
 # 2.18 Adaptive Refresh Rate 与动态帧率控制
