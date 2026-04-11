@@ -1,12 +1,12 @@
 ---
 title: "Choreographer 与渲染流水线"
-chapter: "2"
+chapter: "2.4"
 section: "2.4"
 drafted_date: "2026-03-30"
 applicable_versions: "Android 12 (API 31) - Android 16 (API 36)"
 last_verified: "2026-04-02"
 last_verified_against: "AOSP android-16.0.0_r1"
-reviewed_date: "2026-04-02"
+reviewed_date: "2026-04-11"
 reviewed_by: "openclaw-task6"
 review2_date: "2026-04-02"
 review2_by: "openclaw-task6"
@@ -18,6 +18,8 @@ review4_date: "2026-04-04"
 review4_by: "openclaw-task6"
 review5_date: "2026-04-10"
 review5_by: "openclaw-task6"
+review6_date: "2026-04-11"
+review6_by: "openclaw-task6"
 rework_reason: "Task6 review 回炉修复：doFrame伪代码修正+总结重写+Compose节重写+补充3个Type A标准节+厂商优化标注"
 rework5_date: "2026-04-10"
 rework5_by: "openclaw-task2b"
@@ -39,8 +41,9 @@ polish_count: 1
 polish_date: "2026-04-04"
 polish_by: "task2b-polish"
 status: ready-for-review
-pipeline_stage: task6_pending
-task6_state: pending
+pipeline_stage: task9_pending
+task6_state: reviewed
+task6_result: pass-light-edit
 task9_state: pending
 task2b_state: idle
 ---
@@ -150,7 +153,7 @@ sequenceDiagram
 
 **TRAVERSAL 最后的原因**：视图的 measure、layout、draw 是最耗时的操作，必须等到所有其他准备都完成后才能执行，这样才能保证最终的绘制结果是最新的。
 
-[已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/view/Choreographer.java:1248]
+[已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/view/Choreographer.java（CALLBACK_* 常量定义）]
 
 ## doFrame() 的完整执行流程
 
@@ -205,22 +208,22 @@ void doFrame(long frameTimeNanos, int vsyncSource,
 
 ### 实际执行时序
 
-在 60Hz 的屏幕上，一个典型的 `doFrame()` 执行时序如下：
+下面的时序只用于说明回调的先后顺序，不代表固定耗时。真实设备上各阶段的耗时会随界面复杂度、动画数量和设备性能明显波动：
 
 ```
-VSync 信号 (0ms)
+VSync 信号到达
 ├── doFrame 开始
-│   ├── CALLBACK_INPUT (0-2ms)
-│   ├── CALLBACK_ANIMATION (2-4ms)
-│   ├── CALLBACK_INSETS_ANIMATION (4-6ms)
-│   ├── CALLBACK_TRAVERSAL (6-15ms)  // 最耗时的部分
-│   └── CALLBACK_COMMIT (15-16ms)
-└── VSync 结束 (16.6ms)
+│   ├── CALLBACK_INPUT（通常较短）
+│   ├── CALLBACK_ANIMATION（通常较短）
+│   ├── CALLBACK_INSETS_ANIMATION（按需出现）
+│   ├── CALLBACK_TRAVERSAL（常见耗时大头）
+│   └── CALLBACK_COMMIT（提交与收尾）
+└── 当前帧预算结束（60Hz 下约 16.6ms，120Hz 下约 8.33ms）
 ```
 
-如果 `CALLBACK_TRAVERSAL` 阶段耗时过长（比如超过 16.6ms），那么 `doFrame()` 会延续到下一个 VSync 周期，导致帧率下降。
+如果 `CALLBACK_TRAVERSAL` 或其前置阶段挤占了整帧预算，`doFrame()` 就会延续到下一个 VSync 周期，导致帧率下降。
 
-[已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/view/Choreographer.java:842]
+[已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/view/Choreographer.java（doFrame() 方法）]
 
 [自动发现: 个人知识库/source/Android-Choreographer.md] **MessageQueue 的同步屏障机制**
 
@@ -572,8 +575,8 @@ Choreographer 不是孤立工作的，它位于 Android 渲染管线的中心节
    - [Systrace 使用指南](https://source.android.com/devices/tech/debug/systrace)
 
 4. **相关章节**：
-   - [第 2.3 节：VSync 机制](2.3.md)
-   - [第 2.5 节：MainThread 与 RenderThread 协作](05-mainthread-renderthread.md)
+   - [第 2.3 节：VSync 机制](03-vsync.md)
+   - [第 2.5 节：MainThread 与 RenderThread 协作](05-main-render-thread.md)
    - [第 2.6 节：SurfaceFlinger 与合成](06-surfaceflinger.md)
-   - [第 3.1 节：Input 事件分发全流程](../ch03-input/01-input-pipeline.md)
-   - [第 8.2 节：App 启动全流程](../../part4-responsiveness/ch08-startup/02-app-startup.md)
+   - [第 3.1 节：Input 事件分发全流程](../ch03-input/01-input-dispatch.md)
+   - [第 8.2 节：App 启动全流程](../../part2-performance/ch08-responsiveness/02-app-launch.md)
