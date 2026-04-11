@@ -1442,3 +1442,22 @@
 - **问题**：后半段以清单为主，缺少一个从问题现象、调度选型到工具验证的完整案例，读起来更像汇总而不是工程师经验分享。
 - **建议**：交给 Task 2B 用一个真实场景串起 `WorkManager`、`UIDT`、`Foreground Service` 的选择边界，再回扣 Perfetto / dumpsys 的观测方法。
 - **review 日志**：logs/review/2026-04-12-07-review.md
+
+## [Task9 Deep Review] 5.10 JobScheduler/WorkManager 调度与后台任务性能 — 2026-04-12
+- **类型**：数据缺失
+- **位置**：行 240 PeriodicWorkRequest 调度开销
+- **问题**："写入 + 注册的开销大约是几十毫秒"没有实验条件、设备、Android 版本、样本数或源码依据，属于会被读者当成经验常量的量化断言。顺带一提，这一句还命中了 STYLE.md 禁词 `这意味着`。
+- **建议**：改成明确的实验结论格式（设备/版本/trace 或 benchmark 方法/样本量），或者降级为"存在额外数据库写入与重新调度成本，量级需按设备实测"。
+
+## [Task9 Deep Review] 5.10 JobScheduler/WorkManager 调度与后台任务性能 — 2026-04-12
+- **类型**：数据缺失
+- **位置**：行 400-419 Play Store 后台行为政策 / Android Vitals
+- **问题**：2 小时 / 24 小时、5% session、WakeLock 指标等关键口径目前只挂了站点级来源，缺少原始 Play policy、Android Developers 或 Play Console 帮助页链接。
+- **建议**：补原始政策页和指标定义页；如果暂时拿不到一手来源，把具体阈值降级为 `[待验证]`，不要保留硬数字。
+
+## [Task9 Deep Review] 5.10 JobScheduler/WorkManager 调度与后台任务性能 — 2026-04-12
+- **类型**：交叉引用
+- **位置**：行 549 User-Initiated Data Transfer 参考链接
+- **问题**：`https://developer.android.com/guide/background/persistent/user-initiated-data-transfer` 当前返回 404，参考资料区存在失效官方链接。
+- **建议**：改成仍然在线的官方入口（如 `JobInfo.Builder#setUserInitiated(boolean)` reference 或新的 UIDT 指南页面），避免读者顺着参考资料跳到死链。
+

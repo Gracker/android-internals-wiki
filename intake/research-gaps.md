@@ -1189,3 +1189,36 @@ Emoji 一节把系统字体、EmojiCompat、下载字体 provider、color font �
 
 ### 关联章节
 2.5、2.7、7.1、7.5
+
+## [2026-04-12] 5.10 JobScheduler/WorkManager 调度与后台任务性能 — 知识盲区
+
+### 盲区描述
+章节把 UIDT 只写成“用户发起的长时间数据传输方案”，但没有交代真正会影响实现决策的边界条件：`JobInfo.Builder.setUserInitiated(true)` 仅在 API 34+ 可用，调度时要求前台或允许后台启动 Activity 的状态，需要 `RUN_USER_INITIATED_JOBS` 权限，运行中必须调用 `JobService.setNotification(...)` 绑定通知，Android 14 还要求它是 network data transfer。缺少这些条件后，读者很容易把 UIDT 当成“更强的 WorkManager/FGS 替代品”。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 系统梳理 UIDT、Expedited Job、Foreground Service、WorkManager 的选择边界和失败返回条件（`RESULT_FAILURE` / quota / user stop）
+- 补齐 `setUserInitiated(true)` 的权限、通知、网络约束、停止后不可重调度等官方要求
+- 给出一个“用户点击下载大文件”场景的决策树，串起 UIDT 与 5.8 / 11.2 的限制条件
+
+### 关联章节
+5.8、11.2、15.5
+
+## [2026-04-12] 5.10 JobScheduler/WorkManager 调度与后台任务性能 — 观测面知识盲区
+
+### 盲区描述
+Perfetto 观测面被写成一个平面概念，但实际上至少有三层来源：`android.job_scheduler_states` 模块来自 `ScheduledJobStateChanged` statsd atom，`android.job_scheduler` 模块来自 system_server atrace `ss`，UI 里的 Jobs/Long Wake locks track 又依赖 trace 中实际采到的轨道。正文没有把“采集配置 → 生成哪张表/哪条轨”说清楚，读者难以复现实战排查。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 区分 statsd atom、atrace、UI track 三种观测面的对应关系
+- 给出最小可复现的 Perfetto 配置，并说明何时用 `android_job_scheduler_states`，何时只能看 `android_job_scheduler_events`
+- 补一组真实 trace + SQL 查询，验证 `pending reason` 与轨道表现如何互相对照
+
+### 关联章节
+5.10、15.5
+

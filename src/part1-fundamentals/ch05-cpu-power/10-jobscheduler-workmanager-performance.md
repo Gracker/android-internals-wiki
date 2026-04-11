@@ -35,8 +35,9 @@ related_chapters: ["5.6", "5.8", "1.5", "11.2", "15.5"]
 pipeline_stage: task2b_pending
 task6_state: reviewed
 task6_result: needs-rework
-task9_state: pending
+task9_state: reviewed
 task2b_state: pending
+task9_result: needs-rework
 ---
 
 # JobScheduler/WorkManager 调度与后台任务性能
