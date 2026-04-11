@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-11T10:12:00+08:00",
+  "generated_at": "2026-04-11T11:05:00+08:00",
   "state_machine_version": "v2",
   "total_sections": 175,
   "metrics": {
@@ -7,39 +7,39 @@
     "draft": 0,
     "ready-for-review": 172,
     "pipeline_task6_pending": 171,
-    "pipeline_task2b_pending": 3,
+    "pipeline_task2b_pending": 2,
     "pipeline_publish_ready": 0,
-    "task6_pending": 162,
+    "task6_pending": 161,
     "task6_reviewed": 3,
-    "task6_revisiting": 9,
-    "task9_pending": 173,
-    "task9_reviewed": 1,
+    "task6_revisiting": 10,
+    "task9_pending": 174,
+    "task9_reviewed": 0,
     "task2b_idle": 162,
-    "task2b_pending": 3,
-    "last_updated": "2026-04-11T10:21:00+08:00",
+    "task2b_pending": 2,
+    "last_updated": "2026-04-11T11:05:00+08:00",
     "unknown": 3
   },
   "pipeline": {
     "pipeline_stage_counts": {
+      "task2b_pending": 2,
       "task6_pending": 171,
-      "task2b_pending": 3,
+      "task9_pending": 1,
       "unknown": 1
     },
     "task6_state_counts": {
-      "pending": 162,
+      "pending": 161,
       "reviewed": 3,
-      "revisiting": 9,
+      "revisiting": 10,
       "unknown": 1
     },
     "task9_state_counts": {
-      "pending": 173,
-      "reviewed": 1,
+      "pending": 174,
       "unknown": 1
     },
     "task2b_state_counts": {
+      "fixed": 10,
       "idle": 162,
-      "pending": 3,
-      "fixed": 9,
+      "pending": 2,
       "unknown": 1
     }
   },
@@ -1041,10 +1041,11 @@
       "title": "VSync 机制",
       "path": "src/part1-fundamentals/ch02-rendering/03-vsync.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
-      "task6_state": "reviewed",
-      "task9_state": "reviewed",
-      "task2b_state": "pending"
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
+      "task9_state": "pending",
+      "task2b_state": "fixed",
+      "task2b_result": "fixed"
     },
     "src/part1-fundamentals/ch02-rendering/20-multiwindow-desktop-rendering.md": {
       "chapter": "2.20",
@@ -1231,8 +1232,8 @@
       "title": "Window Manager Service 与窗口管理",
       "path": "src/part1-fundamentals/ch02-rendering/12-window-manager.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "pending",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
       "task9_state": "pending",
       "task2b_state": "idle"
     },
@@ -2939,6 +2940,26 @@
         "Perfetto SQL 缺 trace 配置和模块/表映射，方法不可直接复现（P2）",
         "与 §3.1 / §1.5 / §1.1 的机制描述存在交叉引用漂移（P2）"
       ]
+    },
+    "2.12": {
+      "reviewed_date": "2026-04-11",
+      "reviewed_by": "openclaw-task6",
+      "review_status": "reviewed",
+      "task6_result": "pass-light-edit",
+      "review_log": "logs/review/2026-04-11-11-review.md",
+      "fixes_applied": [
+        "中英文混排：ownership → 职责分工",
+        "AI 味句式：关键在于 → 真正需要关注的是",
+        "模糊副词：非常类似 → 很接近",
+        "frontmatter：补 reviewed_by/reviewed_date/task6_result/review_log，并更新 pipeline_stage/task6_state"
+      ],
+      "scores": {
+        "structure": 4,
+        "expression": 4,
+        "consistency": 4,
+        "verification": 4,
+        "metadata": 5
+      }
     }
   }
 }
