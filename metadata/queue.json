@@ -1698,15 +1698,36 @@
   },
   {
     "section": "2.21",
-    "title": "文字渲染性能",
-    "priority": 80,
-    "status": "completed",
-    "material_paths": [],
-    "created_date": "2026-04-09",
-    "created_by": "task2a-knowledge-gap",
-    "gap_score": 14,
-    "completed_at": "2026-04-09T07:03:00+08:00",
-    "completed_by": "task2a-stale-cleanup"
+    "section_title": "文字渲染性能",
+    "priority": 90,
+    "reason": "[review回炉] 多处量化断言缺少来源，版本演进与 Perfetto 证据链不完整",
+    "material_paths": [
+      "intake/suggestions.md（含 review 意见）"
+    ],
+    "review_issues": [
+      {
+        "type": "需补充素材",
+        "location": "Android 文字渲染管线全景 / Minikin 与文字测量性能 / Emoji 渲染性能 / PrecomputedText / Perfetto 分析",
+        "detail": "多处性能倍数、耗时和收益数字没有绑定 benchmark、设备、Trace 或官方来源。",
+        "suggestion": "补充量化来源；补不齐时改成定性描述或降级为 [待验证]。"
+      },
+      {
+        "type": "需确认",
+        "location": "Bitmap Emoji vs 系统 glyph / 版本演进 / PrecomputedText",
+        "detail": "Android 7.0 / 11 / 14 等版本变化与 API 行为写成了硬断言，但当前依据不足。",
+        "suggestion": "对照官方文档和 AOSP 核对版本线，无法确认时改成更保守的表述。"
+      },
+      {
+        "type": "需补充素材",
+        "location": "Android 文字渲染管线全景 / 在 Perfetto 中识别文字渲染瓶颈",
+        "detail": "架构图和 Perfetto 证据链仍是占位状态，正文缺少可视化锚点。",
+        "suggestion": "补 1 张文字渲染链路图，至少补 2 组真实 Perfetto 片段和关键区域说明。"
+      }
+    ],
+    "added_by": "task6-review",
+    "added_at": "2026-04-11T23:06:00+08:00",
+    "status": "pending",
+    "original_review_log": "logs/review/2026-04-11-23-review.md"
   },
   {
     "section": "1.13",

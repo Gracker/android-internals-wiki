@@ -1140,3 +1140,23 @@
 - **位置**：frontmatter `sources[2]`
 - **问题**：`Android 16 Desktop Windowing — android.com` 只是标题字符串，不是可追溯 URL，后续无法复核发布时间、设备范围和原文措辞。
 - **建议**：替换成精确 URL（博客 / release note / 官方文档）并补发布日期；拿不到可追溯来源就删掉这条 source。
+
+
+## [Task6 Review] 2.21 文字渲染性能 — 2026-04-11
+- **类型**：需补充素材
+- **位置**：`Android 文字渲染管线全景`、`Minikin 与文字测量性能`、`Emoji 渲染性能`、`PrecomputedText：将测量移到后台线程`、`在 Perfetto 中识别文字渲染瓶颈`
+- **问题**：多处性能倍数、耗时和收益数字没有绑定 benchmark、设备、Trace 或官方来源，当前写法更像通用结论。
+- **建议**：为量化断言补充具体来源；补不齐时改成定性描述，或降级为 `[待验证]`。
+- **review 日志**：logs/review/2026-04-11-23-review.md
+
+- **类型**：需确认
+- **位置**：`Bitmap Emoji vs 系统 glyph`、`版本演进`、`PrecomputedText：将测量移到后台线程`
+- **问题**：Android 7.0 / 11 / 14 等版本变化与 API 行为写成了硬断言，但当前章节没有给出足够的官方文档或 AOSP 锚点。
+- **建议**：逐条核对版本线，保留能验证的版本变化，无法确认的部分改为更保守的表述。
+- **review 日志**：logs/review/2026-04-11-23-review.md
+
+- **类型**：需补充素材
+- **位置**：`Android 文字渲染管线全景`、`在 Perfetto 中识别文字渲染瓶颈`
+- **问题**：架构图和 Perfetto 证据链仍是占位状态，读者只能看到结论，看不到对应的图示和 Trace 读法。
+- **建议**：补 1 张文字渲染链路图，至少补 2 组真实 Perfetto 片段（measure jank、glyph upload / TextBlob 观察点）。
+- **review 日志**：logs/review/2026-04-11-23-review.md
