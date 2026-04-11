@@ -4194,5 +4194,50 @@
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-11T23:21:00+08:00",
     "status": "pending"
+  },
+  {
+    "section": "3.5",
+    "section_title": "输入事件拦截与安全机制",
+    "priority": 90,
+    "reason": "[review回炉] 事件注入路径、无障碍拦截边界和版本断言存在技术风险，需 Task 9 / Task 2B 处理",
+    "material_paths": [
+      "intake/suggestions.md（含 review 意见）"
+    ],
+    "review_issues": [
+      {
+        "type": "需确认",
+        "location": "AccessibilityService 与 Input 事件的关系（L153）",
+        "detail": "`FLAG_REQUEST_FILTER_KEY_EVENTS` 的声明位置与系统注册条件描述存在技术风险。",
+        "suggestion": "核对 `AccessibilityServiceInfo.FLAG_REQUEST_FILTER_KEY_EVENTS` 的声明位置，以及 `AccessibilityManagerService` / `InputFilter` 的实际注册路径。"
+      },
+      {
+        "type": "需确认",
+        "location": "事件修改的安全限制（L188-L190）、Android 14+ 权限收紧（L420）、误区三（L473）",
+        "detail": "关于 injected / 无障碍来源可检测性的 API 说法过于绝对，App 侧可见 flag/source 范围需要核对。",
+        "suggestion": "核对 `MotionEvent.getSource()`、`MotionEvent.isFromSource()`、`InputEvent.getFlags()` 在该场景下的真实可观测性。"
+      },
+      {
+        "type": "需确认",
+        "location": "Instrumentation.sendPointerSync（L202-L214）与 uiautomator 对比（L234）",
+        "detail": "`sendPointerSync()` 的实现路径、是否绕过 `InputDispatcher`，以及示例接口名都存在技术风险。",
+        "suggestion": "核对 `Instrumentation` / `UiAutomation` / `InputManagerService` 的真实注入路径后重写。"
+      },
+      {
+        "type": "需确认",
+        "location": "安全策略的版本演进（L327-L333）",
+        "detail": "Android 9 / 10 / 13 / 14 的权限与检测断言缺少足够证据支撑，版本差异风险偏高。",
+        "suggestion": "逐条补来源；补不齐时降级为保守表述。"
+      },
+      {
+        "type": "需补充素材",
+        "location": "在 Perfetto 中分析事件拦截问题（L427-L461）",
+        "detail": "缺少真实 Trace 截图或等价图示，实操支撑偏弱。",
+        "suggestion": "补 1-2 组真实 Trace 截图，覆盖 InputDispatcher Binder 阻塞和目标窗口 `deliverInputEvent` 对比。"
+      }
+    ],
+    "added_by": "task6-review",
+    "added_at": "2026-04-12T00:11:00+08:00",
+    "status": "pending",
+    "original_review_log": "logs/review/2026-04-12-00-review.md"
   }
 ]

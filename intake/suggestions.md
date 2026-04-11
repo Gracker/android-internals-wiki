@@ -1182,3 +1182,35 @@
 - **建议**：把 tracing 基础设施章节加入相关章节；源码链接统一钉到 `android-16.0.0_r1` 或正文明确说明“master 仅作最新参考”。
 - **review 日志**：logs/deep-review/2026-04-11-23-deep-review.md
 
+
+## [Task6 Review] 3.5 输入事件拦截与安全机制 — 2026-04-12
+
+- **类型**：需确认
+- **位置**：AccessibilityService 与 Input 事件的关系（L153）
+- **问题**：`FLAG_REQUEST_FILTER_KEY_EVENTS` 被写成声明在 `android:accessibilityEventTypes` 中，这里的字段位置与系统注册条件存在技术风险。
+- **建议**：交给 Task 9 核对 `AccessibilityServiceInfo.FLAG_REQUEST_FILTER_KEY_EVENTS` 的声明位置，以及 `AccessibilityManagerService` / `InputFilter` 的实际注册路径。
+- **review 日志**：logs/review/2026-04-12-00-review.md
+
+- **类型**：需确认
+- **位置**：事件修改的安全限制（L188-L190）、Android 14+ 权限收紧（L420）、误区三（L473）
+- **问题**：关于“可以修改按键事件的键码”、`MotionEvent.getSource()` / `MotionEvent.isFromSource()` / `InputEvent.getFlags()` 可直接识别 injected 或无障碍来源的说法过于绝对，API 可见性和行为边界需要核对。
+- **建议**：交给 Task 9 核对 App 侧可观测的 flag/source 范围，再由 Task 2B 重写这组安全边界描述。
+- **review 日志**：logs/review/2026-04-12-00-review.md
+
+- **类型**：需确认
+- **位置**：Instrumentation.sendPointerSync（L202-L214）与 uiautomator 对比（L234）
+- **问题**：`sendPointerSync()` 的代码路径、是否“绕过 InputDispatcher”的结论，以及示例里的 `injectInputEventToInputFilter` 接口名都存在技术风险。
+- **建议**：交给 Task 9 核对 `Instrumentation` / `UiAutomation` / `InputManagerService` 的真实注入路径，再由 Task 2B 改写该节。
+- **review 日志**：logs/review/2026-04-12-00-review.md
+
+- **类型**：需确认
+- **位置**：安全策略的版本演进（L327-L333）
+- **问题**：Android 9 / 10 / 13 / 14 这几行都给了很具体的权限或检测行为，但文内没有足够证据支撑，版本差异风险偏高。
+- **建议**：交给 Task 9 逐条核对版本断言；补不齐来源时，改成更保守的定性表述。
+- **review 日志**：logs/review/2026-04-12-00-review.md
+
+- **类型**：需补充素材
+- **位置**：在 Perfetto 中分析事件拦截问题（L427-L461）
+- **问题**：分析步骤有用，但缺少真实 Trace 截图或等价图示，也没有给出更具体的 slice 名称或观察点，实操支撑偏弱。
+- **建议**：交给 Task 2B 补 1-2 组真实 Trace 截图，至少覆盖 InputDispatcher Binder 阻塞和目标窗口 `deliverInputEvent` 对比。
+- **review 日志**：logs/review/2026-04-12-00-review.md

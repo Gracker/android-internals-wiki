@@ -1,21 +1,40 @@
 ---
-title: "输入事件拦截与安全机制"
-chapter: "3.5"
-section: "3.5"
+title: 输入事件拦截与安全机制
+chapter: '3.5'
+section: '3.5'
 status: ready-for-review
-drafted_by: "openclaw-task"
-applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
+drafted_by: openclaw-task
+applicable_versions: Android 10 (API 29) - Android 16 (API 36)
 confidence: medium
+sources:
+- type: official
+  path: https://source.android.com/docs/core/interaction/input
+- type: official
+  path: https://developer.android.com/reference/android/accessibilityservice/AccessibilityService
+- type: official
+  path: https://developer.android.com/reference/android/app/Instrumentation
+- type: official
+  path: https://developer.android.com/reference/android/app/UiAutomation
 tags:
-  - android
-  - tools
-  - npu
-  - research
-related_chapters: ["3.1", "3.2", "9.1", "9.2"]
-pipeline_stage: task6_pending
-task6_state: pending
+- android
+- input
+- security
+- accessibility
+- InputDispatcher
+- Perfetto
+related_chapters:
+- '3.1'
+- '3.2'
+- '9.1'
+- '9.2'
+reviewed_date: '2026-04-12'
+reviewed_by: openclaw-task6
+review_notes: '2026-04-12 task6 review: needs-rework。小修8处（措辞/术语/元数据）。大问题5处已写入 queue.json，待 Task 9 / Task 2B 处理。评分: 结构4/5·措辞4/5·一致性3/5·验证3/5·元数据4/5。'
+pipeline_stage: task2b_pending
+task6_state: reviewed
+task6_result: needs-rework
 task9_state: pending
-task2b_state: idle
+task2b_state: pending
 ---
 # 输入事件拦截与安全机制
 
@@ -28,7 +47,7 @@ task2b_state: idle
 - 🔹 无障碍服务（AccessibilityService）的事件拦截：onKeyEvent/onTouchEvent 回调、事件流修改能力、安全限制
 - 🔹 系统级事件注入：Instrumentation.sendPointerSync、uiautomator、adb shell input 的实现路径
 - 🔹 Input 事件的安全边界：哪些环节可以被拦截/修改、哪些环节不可篡改、安全策略的版本演进
-- 🔹 事件拦截对性能的影响：InputFilter 的延迟开销、无障碍服务对事件分发链路的性能影响
+- 🔹 事件拦截对性能的影响：InputFilter 的延迟开销、无障碍服务对事件分发路径的性能影响
 
 ### 扩展（可选深入）
 
@@ -48,7 +67,7 @@ task2b_state: idle
 
 在第 3.1 节中，我们追踪了一条 Input 事件从硬件到 View 树的完整路径。但那条路径描述的是"正常情况"——事件沿着设计好的管道一路传递到目标窗口。现实远比这复杂：系统中存在多种机制可以在事件传递的不同环节进行拦截、过滤甚至注入新事件。
 
-做性能优化时，你可能会遇到一种诡异的卡顿：Perfetto 中 InputDispatcher 的队列状态完全正常，App 主线程也没有阻塞，但用户就是感觉触摸响应慢了。排查到最后发现，系统注册了一个 InputFilter，每个事件在分发前都要经过一层过滤处理，引入了额外的延迟。又或者在分析无障碍服务相关的 bug 时，发现事件在到达 View 树之前就被无障碍服务拦截并修改了——你以为是 App 代码的问题，实际上根因在上层。
+做性能优化时，你可能会遇到一种诡异的卡顿：Perfetto 中 InputDispatcher 的队列状态完全正常，App 主线程也没有阻塞，但用户就是感觉触摸响应慢了。排查到最后发现，系统注册了一个 InputFilter，每个事件在分发前都要经过一层过滤处理，引入了额外的延迟。又或者在分析无障碍服务相关的 bug 时，发现事件在到达 View 树之前就被无障碍服务拦截并修改。你以为是 App 代码的问题，根因却在更上层。
 
 理解这些拦截机制的存在、工作原理和安全边界，一方面是为了在性能分析时能够识别"事件去哪了"，另一方面也是为了在做 Framework 定制或安全审计时，清楚系统允许什么、禁止什么。
 
@@ -56,7 +75,7 @@ task2b_state: idle
 
 ### 什么是 InputFilter
 
-InputFilter 是 Android 系统提供的一个**全局事件拦截机制**，允许系统级组件在 InputDispatcher 将事件分发给目标窗口之前，对事件进行拦截、修改或过滤。它工作在 InputDispatcher 内部，是事件分发链路上最早的可编程拦截点。
+InputFilter 是 Android 系统提供的一个**全局事件拦截机制**，允许系统级组件在 InputDispatcher 将事件分发给目标窗口之前，对事件进行拦截、修改或过滤。它工作在 InputDispatcher 内部，是事件分发路径上最早的可编程拦截点。
 
 与 App 层面的事件拦截（如 `ViewGroup.onInterceptTouchEvent()`）不同，InputFilter 是**系统级**的——它拦截的是所有窗口的事件，而不是单个 App 的事件。这意味着一个 InputFilter 可以影响整个系统的输入行为。
 
@@ -163,7 +182,7 @@ protected boolean onKeyEvent(KeyEvent event) {
 
 > [已验证: AOSP android-14.0.0_r1, frameworks/base/core/java/android/accessibilityservice/AccessibilityService.java]
 
-### 事件拦截的回调链路
+### 事件拦截的回调路径
 
 当无障碍服务声明了按键过滤能力后，按键事件的传递路径变为：
 
@@ -357,11 +376,11 @@ IPC 往返（无障碍服务进程繁忙）：2-10ms+
 
 > [已验证: AOSP android-14.0.0_r1, frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp]
 
-### 无障碍服务对事件分发链路的性能影响
+### 无障碍服务对事件分发路径的性能影响
 
 无障碍服务对性能的影响不仅限于 InputFilter 层面，还体现在以下几个方面：
 
-**1. 事件分发路径变长。** 当无障碍服务启用按键过滤时，每个按键事件都要经过 InputDispatcher → InputFilter → AccessibilityService IPC → 处理回调 → 返回结果 这条链路。相比无拦截时的 InputDispatcher → 目标窗口，路径显著变长。
+**1. 事件分发路径变长。** 当无障碍服务启用按键过滤时，每个按键事件都要经过 InputDispatcher → InputFilter → AccessibilityService IPC → 处理回调 → 返回结果 这条路径。相比无拦截时的 InputDispatcher → 目标窗口，路径显著变长。
 
 **2. 额外的 Binder 调用开销。** 无障碍服务需要通过 Binder IPC 与 `AccessibilityManagerService` 通信。当屏幕上有大量无障碍节点需要更新时（如快速滚动的列表），频繁的节点变更通知会产生大量的 Binder 调用，间接影响主线程的调度。
 
