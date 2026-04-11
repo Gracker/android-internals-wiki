@@ -967,3 +967,23 @@
 - **位置**：行 531-533 “Choreographer 只管 UI 线程吗？”
 - **问题**：当前回答把 `Choreographer.getInstance()` 写成“返回主线程 Looper 对应实例”，容易让读者误以为 Choreographer 天生只属于主线程。实际上它是 **per-calling-thread Looper**：任意已经准备好 Looper 的线程都能拿到自己的 Choreographer；`getSfInstance()` 还是隐藏且已 deprecated 的特殊入口。
 - **建议**：把表述改成“默认 UI 场景通常在主线程使用，但只要线程有 Looper，`getInstance()` 就返回该线程自己的 Choreographer”，并把 `getSfInstance()` 降级成系统/历史背景说明。
+
+
+## [Task6 Review] 2.17 Frame Pacing Library 与帧节奏控制 — 2026-04-11
+- **类型**：需重写
+- **位置**：全文结构
+- **问题**：缺少 `outline-start` / `outline-end` 与 `🔹` 锚点设计，Task 6 无法按统一大纲检查结构覆盖率。
+- **建议**：按 writing-guide.md 补齐 outline 块，并让每个锚点至少对应 1 个完整段落。
+- **review 日志**：logs/review/2026-04-11-17-review.md
+
+- **类型**：需确认
+- **位置**：版本演进 + 多处量化断言
+- **问题**：`Android 9/10/12/16/17` 的演进描述，以及“帧间隔标准差 1ms→3ms”“Auto 模式 11ms/12-16ms/22ms 阈值”等断言缺少可追溯来源。
+- **建议**：交给 Task 9 / Task 2B 核对官方文档、AOSP 和原始 benchmark；无法确认时降级为定性表述或补 `[待验证]`。
+- **review 日志**：logs/review/2026-04-11-17-review.md
+
+- **类型**：需补充素材
+- **位置**：Perfetto / FrameTimeline 分析
+- **问题**：目前只有文字说明和占位图，缺少至少一组真实 Trace、track 名称或可复用 SQL/截图标注，实操闭环不够。
+- **建议**：补一组真实 Perfetto 样例，至少覆盖 FrameTimeline、Buffer stuffing 或帧间隔不均匀的可视化识别。
+- **review 日志**：logs/review/2026-04-11-17-review.md
