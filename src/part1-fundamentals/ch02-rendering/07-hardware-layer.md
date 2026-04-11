@@ -7,7 +7,7 @@ applicable_versions: "Android 3.0 (API 11) - Android 16 (API 36)"
 last_verified: "2026-03-30"
 last_verified_against: "AOSP android-16.0.0_r1"
 confidence: medium
-reviewed_date: "2026-04-04"
+reviewed_date: "2026-04-12"
 reviewed_by: openclaw-task6
 polish_count: 1
 polish_date: "2026-04-04"
@@ -25,8 +25,9 @@ sources:
     path: "frameworks/base/core/java/android/view/RenderNode.java (setUseCompositingLayer)"
 tags: [hardware-layer, LAYER_TYPE_HARDWARE, LAYER_TYPE_SOFTWARE, animation, RenderNode, compositing-layer, buildLayer, graphicsLayer, GPU-纹理缓存]
 related_chapters: ["2.4", "2.5", "2.6", "7.1", "7.5"]
-pipeline_stage: task6_pending
-task6_state: pending
+pipeline_stage: task9_pending
+task6_result: pass-light-edit
+task6_state: reviewed
 task9_state: pending
 task2b_state: idle
 ---
@@ -120,7 +121,7 @@ public void buildLayer() {
 }
 ```
 
-从代码可以看到，`LAYER_TYPE_SOFTWARE` 走的是 `buildDrawingCache` 路径，最终会调用 `buildDrawingCacheImpl` 生成一个 Bitmap。这个操作发生在主线程。
+这段代码说明，`LAYER_TYPE_SOFTWARE` 走的是 `buildDrawingCache` 路径，最终会调用 `buildDrawingCacheImpl` 生成一个 Bitmap。这个操作发生在主线程。
 
 Software Layer 的适用场景比较有限。最常见的情况是 App 没有开启硬件加速时，需要给 View 应用颜色过滤器、混合模式或半透明效果——此时 Software Layer 是唯一能提供离屏缓冲的方式。在硬件加速模式下，如果某个 View 使用了不被硬件渲染管线支持的 API（这类 API 列表可以在官方文档中查到），Software Layer 也可以作为一种降级方案，让该 View 用 CPU 渲染后以 Bitmap 形式参与后续合成。
 
@@ -154,7 +155,7 @@ animator.addListener(new AnimatorListenerAdapter() {
 animator.start();
 ```
 
-为什么要在动画结束后设回 `LAYER_TYPE_NONE`？因为 Hardware Layer 占用的是 GPU 的 Video Memory（显存），不及时释放会在 GPU 内存紧张时影响其他组件的渲染性能。
+为什么要在动画结束后设回 `LAYER_TYPE_NONE`？因为 Hardware Layer 占用的是 GPU 显存，不及时释放会在 GPU 内存紧张时影响其他组件的渲染性能。
 
 ## Hardware Layer 的代价
 
@@ -264,7 +265,7 @@ public void setUseCompositingLayer(boolean useCompositingLayer) { ... }
 
 [已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/view/RenderNode.java]
 
-实际上，`View.setLayerType(LAYER_TYPE_HARDWARE)` 内部就是通过设置其关联 RenderNode 的 compositing layer 属性来实现的。理解了这一层关系，在分析 Perfetto 中 RenderThread 的行为时就能更准确：`buildLayer` 操作本质上就是在为 RenderNode 建立合成分层纹理。
+在实现上，`View.setLayerType(LAYER_TYPE_HARDWARE)` 内部会通过设置其关联 RenderNode 的 compositing layer 属性来完成。理解了这一层关系，在分析 Perfetto 中 RenderThread 的行为时就更容易判断：`buildLayer` 这个操作就是在为 RenderNode 建立合成分层纹理。
 
 ## 在 Jetpack Compose 中的对应：graphicsLayer
 
@@ -310,7 +311,7 @@ Hardware Layer 是 Android 渲染管线中的一个优化手段，它与以下�
 |------|------|
 | Android 3.0 (API 11) | 引入 `setLayerType()` API 和 Hardware Layer 机制 |
 | Android 4.0 (API 14) | 硬件加速默认开启，Hardware Layer 有了实际运行的基石 |
-| Android 4.1 (API 16) | Project Butter 引入 VSync 和 Choreographer，Hardware Layer 与 VSync 对齐 |
+| Android 4.1 (API 16) | Project Butter 引入 VSync 和 Choreographer，Hardware Layer 的调度节拍与 VSync 同步 |
 | Android 5.0 (API 21) | RenderThread 引入，Hardware Layer 的 buildLayer 从主线程移到 RenderThread |
 | Android 10 (API 29) | `RenderNode.setUseCompositingLayer()` 公开 API，提供更细粒度的控制 |
 | Android 12 (API 31) | Jetpack Compose 1.0 正式发布，`graphicsLayer` Modifier 基于底层 RenderNode compositing layer 机制提供声明式 layer 控制 |
