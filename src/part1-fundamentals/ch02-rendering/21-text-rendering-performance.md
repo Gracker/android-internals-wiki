@@ -4,8 +4,8 @@ chapter: "2.21"
 status: ready-for-review
 drafted_date: "2026-04-09"
 applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37)"
-last_verified: "2026-04-09"
-last_verified_against: "AOSP android-16.0.0_r1"
+last_verified: "2026-04-12"
+last_verified_against: "AOSP android-16.0.0_r1 + androidx-main"
 confidence: medium
 sources:
   - type: aosp
@@ -27,11 +27,12 @@ related_chapters: ["2.1", "2.4", "2.5", "7.8", "7.12"]
 reviewed_by: openclaw-task6
 reviewed_date: "2026-04-11"
 task6_result: needs-rework
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
 task9_result: needs-rework
-task2b_state: pending
+task2b_state: fixed
+task2b_result: fixed
 ---
 
 # 2.21 文字渲染性能
@@ -39,7 +40,7 @@ task2b_state: pending
 <!-- outline-start -->
 ## 本节大纲
 - 🔹 为什么文字测量会成为列表与聊天场景的瓶颈
-- 🔹 TextView、Layout、Minikin、Skia 组成的文字渲染链路
+- 🔹 TextView、Layout、Minikin、Skia 组成的文字渲染流程
 - 🔹 Minikin、StaticLayout、Emoji 的主要性能开销
 - 🔹 PrecomputedText、BoringLayout 与参数裁剪的优化手段
 - 🔹 在 Perfetto 中定位 measure 与 glyph upload 瓶颈
@@ -70,19 +71,21 @@ task2b_state: pending
 
 - **DynamicLayout**：用于可编辑文本（EditText）。它在 StaticLayout 的基础上增加了文本变化时的增量更新逻辑。
 
-选好 Layout 之后，文字测量（measure）阶段就算完成了。接下来是 layout 和 draw。在 draw 阶段，Canvas 会调用 `drawText()` 或 `drawTextRun()` 将文字绘制到 Canvas 上。这里的底层调用链是：
+选好 Layout 之后，主线程已经拿到了每个 run 的测量结果、行分布和 glyph 位置信息。接下来进入 draw 阶段。这里要避开一个旧资料里很常见的坑：当前 Android 并不是沿着 `SkPaint::textToGlyphs()` → `SkDraw::drawPosText()` 这条旧调用往下走。以 `android-16.0.0_r1` 的 `frameworks/base/libs/hwui/SkiaCanvas.cpp` 为例，HWUI 的文字入口是 `SkiaCanvas::drawGlyphs()`，它先把 glyph 和坐标写进 `SkTextBlobBuilder`，再调用 `mCanvas->drawTextBlob()` 交给 Skia。
 
+```cpp
+// frameworks/base/libs/hwui/SkiaCanvas.cpp @ android-16.0.0_r1
+void SkiaCanvas::drawGlyphs(...) {
+    const SkTextBlobBuilder::RunBuffer& buffer = builder.allocRunPos(font, count);
+    glyphFunc(buffer.glyphs, buffer.pos);
+    sk_sp<SkTextBlob> textBlob(builder.make());
+    mCanvas->drawTextBlob(textBlob, 0, 0, paint);
+}
 ```
-Canvas.drawText()
-  → SkiaCanvas.drawText()
-    → SkPaint::textToGlyphs()  // Unicode → Glyph ID 映射
-    → SkDraw::drawPosText()    // 按位置绘制 glyph
-      → SkGlyphCache::getGlyphMetrics()  // 从 glyph atlas 获取位图
-      → GPU texture upload（如果 glyph 不在 atlas 中）
-```
 
-Skia 维护了一个 **Glyph Atlas**——一张大的 GPU 纹理，上面缓存了已光栅化好的 glyph 位图。当需要绘制一个字符时，Skia 先查 atlas，找到了就直接从 GPU 纹理中采样，找不到才触发 CPU 光栅化再上传到 atlas。文字渲染的性能高度依赖 glyph atlas 的缓存命中率。
+这段代码说明两件事。第一，Unicode 到 glyph 的整形主要发生在更早的 `Layout` / Minikin 阶段，HWUI 这一层负责把已经算好的 glyph run 组装后提交给 Skia。第二，当前更稳的描述层级应该是“Java Canvas / TextLine / Layout → HWUI `drawGlyphs()` → Skia `drawTextBlob()`”，不要把已经退场的内部函数名写成今天的真实实现。
 
+Glyph atlas 仍然存在，首次出现的字形也仍可能触发 atlas miss、CPU 光栅化和纹理上传。但这些属于 Skia / HWUI 的内部实现细节，具体函数名会随版本变化；写到书里时保留到可直接核对的层级更稳。
 [待补充：文字渲染管线架构图，展示 TextView → Layout → Minikin → Skia → GPU 的完整路径]
 
 这条管线的性能瓶颈集中在两个地方：
@@ -116,7 +119,7 @@ FontCollection（字体集合）
 
 **LineBreaker** 负责多行文字的换行计算。它调用 ICU 的换行算法，根据语言规则决定在哪里断行。换行算法的复杂度与文本长度线性相关，但 ICU 的实现中涉及大量的字典查找（特别是 CJK，因为中文没有空格作为天然断点），所以 CJK 文本的换行开销明显高于拉丁文本。
 
-一个容易被忽略的性能点是 **Hyphenation**（连字符处理）。从 Android 6.0 开始，TextView 默认开启 hyphenation。当一行文字在某个单词中间断开时，系统需要查 hyphenation 字典确定合法的断点位置，并插入连字符。这个操作涉及 ICU 的 Hyphenator 查找，对于长文本可能产生可测量的性能影响。如果 App 不需要 hyphenation（比如聊天消息、列表项），可以通过 `textView.setHyphenationFrequency(Layout.HYPHENATION_FREQUENCY_NONE)` 显式关闭。
+一个容易被误判的点是 **Hyphenation**（连字符处理）。`android-6.0.1_r1` 的 `TextView.java` 构造默认值已经是 `mHyphenationFrequency = Layout.HYPHENATION_FREQUENCY_NONE`，所以系统默认并不是“全文开启连字符处理”。只有样式或代码把 hyphenation 频率调高时，换行阶段才会额外查 `Hyphenator` 字典并插入连字符。对聊天消息、列表标题这类短文本，我们通常不需要主动开启它。
 
 ### Minikin 的缓存策略
 
@@ -150,10 +153,10 @@ new StaticLayout(text, paint, width, align, spacingMult, spacingAdd)
 
 [已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/text/StaticLayout.java]
 
-从 Android 9.0 (API 28) 开始，Google 引入了 **StaticLayout.Builder**，替代直接调用构造函数的方式。Builder 提供了更清晰的 API，并且在内部做了优化：将布局参数的解析和验证提前到 Builder 阶段，减少了 StaticLayout 构造函数内部的重复计算。
+在较新的代码里，我们更应该直接使用 **StaticLayout.Builder**。这个 Builder 至少在 `android-6.0.1_r1` 就已经存在，不是 Android 9 才出现。它把布局参数的设置集中到一处，也更容易和 `breakStrategy`、`hyphenationFrequency` 等参数一起核对。
 
 ```java
-// 推荐用法（Android 9+）
+// 推荐用法（android-6.0.1_r1 已可见）
 StaticLayout layout = StaticLayout.Builder.obtain(text, 0, text.length(), paint, maxWidth)
     .setAlignment(Layout.Alignment.ALIGN_NORMAL)
     .setLineSpacing(0f, 1f)
@@ -184,60 +187,62 @@ StaticLayout 本身不做缓存——每次创建新的 StaticLayout 实例都�
 
 ## Emoji 渲染性能
 
-Emoji 的渲染路径与普通文字不同。Android 系统对 Emoji 的处理经历了几个阶段的演进：
+Emoji 这一节最容易写偏的地方，是把所有 emoji 都当成同一条渲染流程。站在当前可核对的 AOSP / AndroidX 实现上，我们至少要分清三件事。
 
-**Android 4.4 - 7.1**：Emoji 由系统字体提供。每个 Emoji 对应字体文件中的一个 glyph，通过正常的文字渲染管线绘制。这种方式的问题是：系统字体不能及时更新新 Emoji，导致不同版本的 Android 显示的 Emoji 不一致（显示为 □）。
+**Android 4.4 - 7.1**：Emoji 主要依赖系统字体。它和普通文字一样参与字体 fallback、整形和绘制，只是字体文件里保存的是 color emoji glyph。这个阶段的主要问题，是字体版本跟系统版本绑定，新 emoji 很容易显示成 tofu。
 
-**Android 8.0+**：引入了 EmojiCompat 兼容库。EmojiCompat 的工作原理是：初始化时加载一个独立的 Emoji 字体文件（`NotoColorCompat.ttf` 或 `MicrosoftCompatibilityFont.ttf`），通过 `EmojiSpan`（一种 ReplacementSpan）将文本中的 Emoji 替换为字体中的 glyph。
+**AndroidX EmojiCompat / emoji2**：App 侧如果要在旧系统上显示新 emoji，主流做法是接入 EmojiCompat。它不会把 emoji 统一改成“先 decode bitmap 再绘制”的固定流程，而是把文本里的 emoji 序列替换成 `EmojiSpan` / `TypefaceEmojiSpan`。绘制时，`TypefaceEmojiSpan.draw()` 会进一步走到 `TypefaceEmojiRasterizer.draw()`，临时切换到 emoji typeface，再调用 `canvas.drawText()` 输出 glyph。
 
-[已验证: AOSP android-16.0.0_r1, frameworks/support/emoji2/]
+```java
+// androidx-main/emoji2/.../TypefaceEmojiRasterizer.java
+paint.setTypeface(typeface);
+canvas.drawText(mMetadataRepo.getEmojiCharArray(), charArrayStartIndex, 2, x, y, paint);
+```
 
-EmojiCompat 的初始化本身是一个性能关注点。字体文件通常 5-15MB，加载和解析需要 50-200ms。Google 提供了两种初始化方式：
+**字体来源**：EmojiCompat 有两种常见配置。`FontRequestEmojiCompatConfig` 走 downloadable font provider，`BundledEmojiCompatConfig` 把字体和元数据随 APK 一起打包。前者更省 APK 体积，后者更容易控制离线可用性。
 
-1. **BundledFontConfig**：字体文件打包在 APK 内。初始化快，但增大了 APK 体积。
-2. **DefaultEmojiCompatConfig**（推荐）：从系统下载字体。首次使用需要网络下载，之后缓存在本地。
+### Emoji 渲染版本与实现边界
 
-在聊天类 App 中，大量 Emoji 的混合文本（比如 "😂😂😂你好😊"）性能值得关注。每个 Emoji 都是一个独立的 EmojiSpan，StaticLayout 需要为每个 Span 单独测量和绘制。当一条消息包含 20+ 个 Emoji 时，测量耗时可能翻倍。
+分析性能时，我们至少要分清三条路径：
 
-### Bitmap Emoji vs 系统 glyph
+1. **系统 emoji font**：系统字体直接提供 glyph，开销落在字体 fallback、shaping、rasterization 和缓存命中上。
+2. **EmojiCompat / emoji2 span**：`EmojiSpan` 会把文本切成更多 run，`getSize()` / `draw()` 也会增加一次 span 级开销。
+3. **下载字体 provider**：首次加载的成本在字体元数据初始化和字体文件准备，不等于每次绘制都走 bitmap decode。
 
-从 Android 11 开始，系统 Emoji 渲染路径开始转向基于 Bitmap 的方式。Bitmap Emoji 的绘制流程是：解码 bitmap → 上传到 GPU 纹理 → 绘制。首次绘制的 decode + upload 开销是普通 glyph 的 10 倍以上（因为涉及图像解码而非矢量光栅化）。
-
-对于列表滑动场景，大量 Bitmap Emoji 的 decode 可能导致 RenderThread 的 texture upload 耗时超标，表现为 RenderThread track 上的长 slice。
+所以，这一章不再把“Android 11 之后统一转向 bitmap emoji”写成版本事实。基于当前能核对的实现，更稳的结论是：emoji 可能让 run 数量变多、span 测量变重、首帧字体准备更慢；至于某台设备上是否会出现明显的 GPU upload 突刺，还要结合字体、字符集和机型继续核实。
 
 ## 文字渲染优化实践
 
-### PrecomputedText：将测量移到后台线程
+### PrecomputedText：提前做字符测量，不替代最终布局
 
-PrecomputedText 是 Android 9.0 (API 28) 引入的 API，核心思路是：将文字测量（measure）从主线程移到后台线程，提前计算好 StaticLayout 的测量结果，主线程只需执行 layout 和 draw。
+`PrecomputedText` 是 Android 9.0 (API 28) 引入的 API，用来把“可以脱离 `TextView` 独立完成”的文字测量工作提前做掉。AOSP 在 `PrecomputedText.Params` 注释里把边界写得很直接：这些参数用于在 **final layout constraints are not known** 时预计算测量元数据。这里提前完成的是字符度量、段落边界、`breakStrategy` / `hyphenationFrequency` 相关准备，不是把最终宽度已经确定的 `StaticLayout` 整体缓存下来。
 
 [已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/text/PrecomputedText.java]
 
-使用方式分两步：
-
-**第一步：后台线程创建 PrecomputedText**
-
 ```java
-// 在后台线程（如 RecyclerView 的 DiffUtil 回调中）
 PrecomputedText.Params params = textView.getTextMetricsParams();
 PrecomputedText precomputed = PrecomputedText.create(text, params);
-```
-
-`PrecomputedText.create()` 内部执行的就是 StaticLayout 的全部测量逻辑：文字整形、换行计算、Span 处理。但因为不在主线程，不会阻塞帧渲染。
-
-**第二步：主线程设置预计算结果**
-
-```java
-// 在主线程（onBindViewHolder 中）
-textView.setTextMetricsParams(precomputed.getParams());
 textView.setText(precomputed);
 ```
 
-主线程的 `setText()` 检测到参数是 PrecomputedText，直接跳过测量，使用预计算结果。这在 Perfetto 中表现为 `TextView.onMeasure()` 的耗时从可能的 1-5ms 降到 0.01ms。
+这个模式能省掉一大块主线程上的 shaping / measurement 开销，但最终布局仍然要看 `TextView` 当时的宽度、`maxLines`、`ellipsize`、行距等条件。如果 `TextView` 当前参数和创建 `PrecomputedText` 时不一致，框架会直接丢弃预计算结果，按当前参数重新计算。
 
-有一个关键约束：**PrecomputedText 的 Params 必须与 TextView 的当前参数完全匹配**。如果 textSize、typeface、width 等参数在创建 PrecomputedText 之后发生了变化，系统会回退到正常的测量路径，PrecomputedText 就白做了。所以 PrecomputedText 适合 TextView 参数固定的场景（比如 RecyclerView 中 Item 的固定宽度文字区域）。
+所以，PrecomputedText 更准确的理解是“提前做 `MeasuredText` / 段落测量准备”，不是“主线程完全跳过 `StaticLayout`”。
 
-从 Android 14 开始，Jetpack 的 `AppCompatTextView` 在设置了 `setPrecomputedText()` 后会自动在后台线程执行测量，开发者不需要手动管理线程。
+### AppCompatTextView 的异步接入方式
+
+Jetpack 里对应的能力来自 `PrecomputedTextCompat.getTextFuture()` 和 `AppCompatTextView.setTextFuture()`，不是 Android 14 新增的平台自动行为。`AppCompatTextView` 在 `onMeasure()` 之前会调用 `consumeTextFutureAndSetBlocking()` 取回 future 结果，所以后台线程是谁来执行，仍然由调用方提供的 `Executor` 决定。
+
+```java
+PrecomputedTextCompat.Params params = TextViewCompat.getTextMetricsParams(textView);
+Future<PrecomputedTextCompat> future =
+        PrecomputedTextCompat.getTextFuture(text, params, executor);
+textView.setTextFuture(future);
+```
+
+这一套更适合 RecyclerView：在 `onBindViewHolder()` 之前启动预计算，把字体、字号、break strategy 这些固定参数先固定下来，再让 `AppCompatTextView` 在测量前消费结果。
+
+有一个边界必须记住：`TextMetricsParams` 包含的是字体、字号、text direction、break strategy、hyphenation 等测量参数，不包含最终可用宽度本身。宽度约束一旦变化，最终 layout 仍可能在主线程重建。这个边界决定了 PrecomputedText 更适合“文本长、参数稳定、宽度相对固定”的场景。
 
 ### BoringLayout：单行场景的最优选择
 
@@ -259,12 +264,12 @@ textView.setSingleLine(true);
 
 BoringLayout 的测量只调用一次 `Paint.measureText()`，耗时通常是 StaticLayout 的 1/10 以下。
 
-### 关闭不必要的 Hyphenation
+### 避免误开 Hyphenation
 
-如前所述，hyphenation 的换行字典查找对 CJK 文本几乎没有意义（中文不使用连字符），但默认可能是开启的。对于不需要 hyphenation 的场景：
+默认 `TextView` 已经是 `HYPHENATION_FREQUENCY_NONE`。真正需要处理的是：项目样式、富文本阅读页，或者某些排版组件把 hyphenation 显式开成 `normal` / `full`。如果场景是短文本、列表项或 CJK 为主的内容，把它关回 `none` 往往更稳。
 
 ```java
-// XML 方式（Android 9+）
+// XML 方式
 <TextView
     android:hyphenationFrequency="none" />
 
@@ -274,7 +279,7 @@ if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
 }
 ```
 
-[待验证：Android 9+ 是否已将默认 hyphenation 改为频率较低的算法]
+这类设置更像是在防止样式误伤，而不是去覆盖系统默认值。
 
 ### IncludeFontPadding 的影响
 
@@ -297,7 +302,7 @@ textView.setIncludeFontPadding(false);
 
 2. **Skia TextBlob cache**：Skia 维护的 glyph 批量绘制缓存。当多个连续的 drawText 调用被合并为一个 TextBlob 时，Skia 可以一次性提交给 GPU，减少 draw call 数量。Android 的 RenderThread 在某些条件下会自动将文字绘制合并为 TextBlob。
 
-这两个缓存对开发者是透明的，但在 Perfetto 中可以看到它们的效果：当 TextBlob 缓存命中时，draw 阶段的耗时明显缩短。
+这两个缓存对开发者是透明的，但在 Perfetto 里有时能观察到它们的效果：当 TextBlob 缓存命中时，draw 阶段的耗时会缩短。
 
 ## 在 Perfetto 中识别文字渲染瓶颈
 
@@ -311,41 +316,40 @@ textView.setIncludeFontPadding(false);
 
 [待补充：Perfetto 截图，展示文字 measure 导致的 jank 帧]
 
-### RenderThread 的文字相关开销
+### 文字渲染在 Perfetto 中的可观测面
 
-RenderThread track 上，文字渲染主要出现在：
-- **drawText/drawPosText** slice：文字绘制的基本单元
-- **Glyph cache miss**：当新字符首次渲染时，可以看到 GPU texture upload 的耗时突刺
+这个话题最容易写飘。默认 Perfetto trace 能稳定看到的，主要是 MainThread 上的 `performTraversals → measure / layout`，以及其中的 `TextView.onMeasure()`。如果这里已经占满一帧，根因通常就在文字测量、span 处理或布局约束变化上。
 
-如果 RenderThread 中频繁出现 glyph upload 突刺，通常意味着 App 使用了大量不同的字体或字符集，导致 glyph atlas 频繁淘汰和重建。
+RenderThread / HWUI 侧当然也可能有文字相关成本，但要分清“能推测”和“能稳定看见”：
+- **默认 trace**：更适合看 MainThread 的 measure 开销。
+- **额外打开 `gfx`、`view`、`hwui` 等 atrace 类别**：能看到录制、提交、上传这类更细的渲染工作。
+- **具体 slice 名称**：会随 Android 版本、厂商定制和 trace 配置变化，不适合把 `drawPosText`、`TextBlob` 这类名字当成通用检查清单。
 
-### Skia TextBlob 相关指标
-
-在开启了 `android.graphics.Bitmap` atrace 标签的 Trace 中，可以观察 TextBlob 的缓存命中情况。不过这个指标需要自定义 Trace 配置，默认的 Perfetto 抓取可能不包含。
+如果你在某台设备上观察到首次 emoji / 生僻字渲染伴随 RenderThread 或 GPU 侧的 upload 突刺，那是一个需要结合 trace 配置和机型继续核实的现象，不是所有设备都会露出的固定 slice。
 
 ### 定位建议
 
 如果怀疑文字渲染是 jank 根因，推荐的分析路径：
 
 1. 在 Perfetto 中找到 jank 帧（FrameTimeline 标记的红色帧）
-2. 检查主线程 measure 阶段是否有大量 TextView.onMeasure()
-3. 如果有，检查对应 Item 的文本内容——是否有复杂 Span？长文本？CJK + 阿拉伯语混排？
-4. 检查是否可以应用 PrecomputedText
-5. 检查 RenderThread 是否有 glyph upload 突刺
+2. 检查主线程 measure 阶段是否有大量 `TextView.onMeasure()`
+3. 如果有，回到对应 Item 的文本内容，确认是不是复杂 Span、长文本，或者多语种混排
+4. 评估能不能用 PrecomputedText、BoringLayout、hyphenation 参数裁剪去减轻主线程测量
+5. 只有在 trace 配置包含 `gfx` / `hwui` 类别时，再去看 RenderThread 或 GPU 侧有没有 upload / 录制突刺
 
 ## 版本演进
 
-| 版本 | 变化 |
-|------|------|
-| Android 4.4 (API 19) | 引入 Minikin 库，替代此前 HarfBuzz 直接集成的方式 |
-| Android 7.0 (API 24) | 引入 EmojiCompat 兼容库概念 |
-| Android 8.0 (API 26) | 正式发布 EmojiCompat；引入 Hardware Bitmap（间接影响文字+图片混合内容的渲染） |
-| Android 9.0 (API 28) | 引入 PrecomputedText API；StaticLayout.Builder 成为推荐 API |
-| Android 10 (API 29) | Hyphenation 默认频率降低（减少性能开销） |
-| Android 11 (API 30) | 系统 Emoji 开始转向 Bitmap 渲染路径 |
-| Android 12 (API 31) | 优化了 Minikin 的缓存策略，减少了重复测量时的 CPU 开销 |
-| Android 14 (API 34) | AppCompatTextView 自动集成 PrecomputedText 后台测量 |
-| Android 16 (API 36) | [待验证：是否有新的文字渲染优化] |
+下面只保留能直接核对到 tag、源码或官方文档的节点，拿不稳的版本判断先不写。
+
+| 版本 / 组件 | 可直接核对的变化 | 证据锚点 |
+|-------------|------------------|----------|
+| Android 5.0 (API 21) | AOSP 已有独立 `frameworks/minikin/` 仓库，文字整形与换行能力集中到 Minikin | `platform/frameworks/minikin` @ `android-5.0.0_r1` |
+| Android 6.0.1 (API 23) | `StaticLayout.Builder` 已存在；`TextView` 构造默认 `mHyphenationFrequency = HYPHENATION_FREQUENCY_NONE` | `StaticLayout.java` / `TextView.java` @ `android-6.0.1_r1` |
+| Android 9.0 (API 28) | framework 引入 `PrecomputedText` | Android Developers `PrecomputedText` reference（Added in API 28） |
+| AndroidX core / appcompat | `PrecomputedTextCompat.getTextFuture()` 配合 `AppCompatTextView.setTextFuture()` 提供异步预计算接入 | androidx-main `PrecomputedTextCompat.java` / `AppCompatTextView.java` |
+| AndroidX emoji / emoji2 | `EmojiCompat` 通过 `EmojiSpan` / `TypefaceEmojiSpan` 兼容新 emoji，字体来源可选 bundled 或 downloadable font provider | Android Developers EmojiCompat 文档；androidx-main `TypefaceEmojiSpan.java` |
+
+这张表没有再写“Android 11 统一切到 bitmap emoji”或“Android 14 自动后台测量”这类说法，因为它们对不上当前能核对的源码与文档。
 
 ## 常见问题与误区
 
@@ -384,5 +388,6 @@ Minikin 的缓存是进程级的，跨 TextView 共享。但缓存的 key 包含
 - [AOSP StaticLayout.java](https://android.googlesource.com/platform/frameworks/base/+/master/core/java/android/text/StaticLayout.java) — StaticLayout 源码
 - [AOSP PrecomputedText.java](https://android.googlesource.com/platform/frameworks/base/+/master/core/java/android/text/PrecomputedText.java) — PrecomputedText API
 - [Android Developers - PrecomputedText](https://developer.android.com/reference/android/text/PrecomputedText) — 官方文档
-- [Android Developers - Text Performance](https://developer.android.com/topic/performance/text) — 官方文字性能指南
+- [Android Developers - AppCompatTextView](https://developer.android.com/reference/androidx/appcompat/widget/AppCompatTextView) — AndroidX 文档
+- [Android Developers - EmojiCompat](https://developer.android.com/develop/ui/views/text-and-emoji/emoji-compat) — Emoji 兼容与字体配置文档
 - [Medium - PrecomputedText: Improving Text Rendering](https://medium.com/androiddevelopers/precomputedtext-improving-text-rendering-6f04345b079c) — Android Developers Blog
