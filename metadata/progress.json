@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-11T15:57:33+08:00",
+  "generated_at": "2026-04-11T16:06:00+08:00",
   "state_machine_version": "v2",
   "total_sections": 206,
   "metrics": {
@@ -10,28 +10,28 @@
     "task9_unknown": 30,
     "task2b_unknown": 30,
     "ready-for-review": 173,
-    "pipeline_task6_pending": 173,
-    "task6_pending": 159,
+    "pipeline_task6_pending": 172,
+    "task6_pending": 158,
     "task9_pending": 176,
     "task2b_idle": 160,
     "task6_revisiting": 14,
     "task2b_fixed": 14,
     "pipeline_task2b_pending": 2,
-    "task6_reviewed": 3,
+    "task6_reviewed": 4,
     "task2b_pending": 2,
-    "pipeline_task9_pending": 1,
-    "last_updated": "2026-04-11T15:57:33+08:00"
+    "pipeline_task9_pending": 2,
+    "last_updated": "2026-04-11T16:06:00+08:00"
   },
   "pipeline": {
     "pipeline_stage_counts": {
       "task2b_pending": 2,
-      "task6_pending": 173,
-      "task9_pending": 1,
+      "task6_pending": 172,
+      "task9_pending": 2,
       "unknown": 30
     },
     "task6_state_counts": {
-      "pending": 159,
-      "reviewed": 3,
+      "pending": 158,
+      "reviewed": 4,
       "revisiting": 14,
       "unknown": 30
     },
@@ -49,7 +49,6 @@
   "issues": {
     "duplicate_chapter_ids": {
       "16.3": 2,
-      "2": 2,
       "8.8": 2
     },
     "missing_chapter": [
@@ -434,16 +433,17 @@
       "task2b_result": "fixed"
     },
     "src/part1-fundamentals/ch02-rendering/04-choreographer.md": {
-      "chapter": "2",
+      "chapter": "2.4",
       "title": "Choreographer 与渲染流水线",
       "path": "src/part1-fundamentals/ch02-rendering/04-choreographer.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "pending",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
       "task9_state": "pending",
       "task2b_state": "idle",
-      "reviewed_date": "2026-04-02",
-      "reviewed_by": "openclaw-task6"
+      "reviewed_date": "2026-04-11",
+      "reviewed_by": "openclaw-task6",
+      "task6_result": "pass-light-edit"
     },
     "src/part1-fundamentals/ch02-rendering/05-main-render-thread.md": {
       "chapter": "2.5",
