@@ -5,9 +5,9 @@ section: "1.5"
 status: ready-for-review
 applicable_versions: "Android 5.0 (API 21) - Android 16 (API 36)"
 last_verified: "2026-03-31"
-reviewed_date: "2026-04-05"
+reviewed_date: "2026-04-12"
 reviewed_by: openclaw-task6
-review_round: 2
+review_round: 3
 polish_count: 2
 polish_date: "2026-04-10"
 polish_by: task2b-polish
@@ -44,8 +44,9 @@ sources:
     path: "developer.android.com/reference/android/os/Process#setThreadPriority(int,int)"
 tags: [thread, handler, looper, messagequeue, renderthread, coroutine, workmanager, thread-priority]
 related_chapters: ["1.2", "1.4", "2.4", "2.5", "5.1"]
-pipeline_stage: task6_pending
-task6_state: pending
+pipeline_stage: task9_pending
+task6_state: reviewed
+task6_result: pass-light-edit
 task9_state: pending
 task2b_state: idle
 ---
@@ -83,7 +84,7 @@ task2b_state: idle
 
 打开 Perfetto，我们会看到每个 App 进程下都有好几个线程在活动。其中最显眼的两条是 UI Thread（主线程）和 RenderThread（渲染线程）。在滑动列表的时候，UI Thread 上会出现一串整齐的 `doFrame` 方块，紧跟着 RenderThread 上出现对应的 `DrawFrame` 方块——两个线程像齿轮一样咬合，一帧一帧地把画面推到屏幕上。
 
-做卡顿分析、ANR 排查或启动速度优化，都必须理解这套线程模型。因为 Android 的主线程承担了几乎所有与用户交互相关的工作——处理 Input 事件、执行动画、measure/layout/draw、响应 Binder 调用。任何一项工作阻塞了主线程，用户就会感知到卡顿甚至 ANR。而理解主线程为什么会被阻塞、阻塞在哪里，首先要搞清楚主线程是怎么运转的——它的核心不是"一个线程在跑代码"，而是"一个线程在不断地从消息队列中取出消息并处理"。
+做卡顿分析、ANR 排查或启动速度优化，都必须理解这套线程模型。因为 Android 的主线程承担了几乎所有与用户交互相关的工作——处理 Input 事件、执行动画、measure/layout/draw、响应 Binder 调用。任何一项工作阻塞了主线程，用户就会感知到卡顿甚至 ANR。而理解主线程为什么会被阻塞、阻塞在哪里，首先要搞清楚主线程是怎么运转的。更精确地说，主线程会不断地从消息队列中取出消息并处理，代码执行只是这个循环中的一个片段。
 
 同时，从 Android 5.0 开始，渲染工作被分离到了独立的 RenderThread。理解主线程和 RenderThread 之间的分工和同步机制，是在 Perfetto 中正确解读渲染性能数据的前提。
 
@@ -118,9 +119,9 @@ public static void main(String[] args) {
 
 [已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/app/ActivityThread.java]
 
-注意最后一行 `throw new RuntimeException`——这不是错误处理，而是一个声明：`Looper.loop()` 正常情况下永远不会返回。主线程进入消息循环之后，就一直在循环中取消息、处理消息，直到进程被杀掉。
+注意最后一行 `throw new RuntimeException`，这行代码直接表明了一个事实：`Looper.loop()` 正常情况下永远不会返回。主线程进入消息循环之后，就一直在循环中取消息、处理消息，直到进程被杀掉。
 
-高爷在他的 Perfetto 系列文章中指出：ActivityThread 这个名字容易引起误解——它不是一个 Thread，而是一个逻辑处理单元。真正的主线程是 fork 出来的那个 Linux 线程，ActivityThread 只是在这个线程上初始化了消息机制，并通过其内部类 `H`（继承自 Handler）来处理四大组件相关的消息。所以当我们说"主线程在处理 Activity 生命周期"时，更精确的说法是"主线程的 Looper 从 MessageQueue 中取出了一条 BIND_APPLICATION 或 RECEIVER 消息，然后由 ActivityThread 的 Handler 分发处理"。
+高爷在他的 Perfetto 系列文章中指出，ActivityThread 这个名字很容易引起误解。它表示的是运行在主线程上的一组调度逻辑，不是一个独立的 Thread 对象。真正的主线程是 fork 出来的那个 Linux 线程，ActivityThread 只是在这个线程上初始化了消息机制，并通过其内部类 `H`（继承自 Handler）来处理四大组件相关的消息。所以当我们说"主线程在处理 Activity 生命周期"时，更精确的说法是"主线程的 Looper 从 MessageQueue 中取出了一条 BIND_APPLICATION 或 RECEIVER 消息，然后由 ActivityThread 的 Handler 分发处理"。
 
 [已验证: 来源见 obsidian/Personal-Knowlodge/source/Android-Perfetto-07-MainThread-And-RenderThread.md]
 
@@ -151,7 +152,7 @@ public static void loop() {
 
 [已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/os/Looper.java]
 
-这里有一个容易被忽略但非常重要的设计：`msg.target` 就是发送这条消息的 Handler。这意味着同一条 MessageQueue 可以被多个 Handler 共享——不同 Handler 发送的消息都会进入同一个队列，但每条消息都会被自己的 Handler 处理。主线程上，ActivityThread 的内部类 `H` 就是最核心的 Handler，它处理 BIND_APPLICATION、CREATE_SERVICE、RECEIVER、BIND_SERVICE 等消息，驱动四大组件的生命周期。
+这里有一个容易被忽略的设计：`msg.target` 就是发送这条消息的 Handler。因此，同一条 MessageQueue 可以被多个 Handler 共享。不同 Handler 发送的消息都会进入同一个队列，但每条消息都会被自己的 Handler 处理。主线程上，ActivityThread 的内部类 `H` 就是最核心的 Handler，它处理 BIND_APPLICATION、CREATE_SERVICE、RECEIVER、BIND_SERVICE 等消息，驱动四大组件的生命周期。
 
 [图：Looper → MessageQueue → Handler 消息驱动模型示意图 — 展示多 Handler 共享同一 MessageQueue 的消息流转]
 
@@ -165,7 +166,7 @@ public static void loop() {
 2. 有 Native 层的定时消息到期
 3. 有被监控的 fd 变为可读状态（比如 Input 事件的 socket fd、VSync 信号的 fd、Binder 的 fd）
 
-这种设计意味着主线程的 Looper 不只是一个 Java 消息泵，它还是一个统一的事件分发中心。Input 事件、VSync 信号、Binder 调用，这些看似不同的系统事件，最终都通过 fd 被 epoll 统一监控，通过回调机制被分发到各自的处理路径。
+这种设计让主线程的 Looper 同时承担了 Java 消息泵和统一事件分发中心这两个角色。Input 事件、VSync 信号、Binder 调用，这些看似不同的系统事件，最终都通过 fd 被 epoll 统一监控，通过回调机制被分发到各自的处理路径。
 
 [已验证: 官方文档, developer.android.com/reference/android/os/MessageQueue]
 [已验证: 来源见 obsidian/Personal-Knowlodge/source/2026-03-05_wechat_Looper到底在等什么.md]
@@ -196,7 +197,7 @@ IdleHandler 的典型用途包括：
 
 ### 为什么需要独立的渲染线程
 
-在 Android 4.4 及更早的版本中，所有的 UI 渲染工作都在主线程完成：measure、layout、draw，然后调用 OpenGL API 提交绘制命令，最后与 SurfaceFlinger 交互。这意味着 GPU 命令提交是同步阻塞主线程的——如果 GPU 处理慢了，主线程就跟着慢。
+在 Android 4.4 及更早的版本中，所有的 UI 渲染工作都在主线程完成：measure、layout、draw，然后调用 OpenGL API 提交绘制命令，最后与 SurfaceFlinger 交互。结果是 GPU 命令提交会同步阻塞主线程。如果 GPU 处理慢了，主线程也会一起被拖慢。
 
 Android 5.0（Lollipop）引入了 RenderThread，将渲染工作从主线程分离出去。这个改动的核心思想是：主线程只负责构建绘制指令（DisplayList），构建完成后通过 `syncAndDrawFrame()` 将 DisplayList（一组平台无关的绘制指令序列）同步给 RenderThread，然后主线程就可以解放出来处理下一个 VSync 周期的消息。RenderThread 在自己的线程上独立执行 GPU 渲染命令、管理 Buffer、与 SurfaceFlinger 交互。
 
@@ -218,7 +219,7 @@ mAttachInfo.mThreadedRenderer.initializeIfNeeded(
     mWidth, mHeight, mAttachInfo, mSurface, surfaceInsets);
 ```
 
-在 native 层，RenderThread 使用独立的 Looper（注意：不是主线程的 Looper，而是 native 层自己的 `Looper` 实现），通过管道接收来自主线程的 `DrawFrameTask`。RenderThread 本质上是一个单线程的渲染引擎——它按顺序处理每一帧的渲染任务，不会出现多线程并发操作 GPU 的场景。
+在 native 层，RenderThread 使用独立的 Looper（注意：不是主线程的 Looper，而是 native 层自己的 `Looper` 实现），通过管道接收来自主线程的 `DrawFrameTask`。RenderThread 仍然是一个单线程的渲染引擎，它按顺序处理每一帧的渲染任务，不会出现多线程并发操作 GPU 的场景。
 
 [已验证: AOSP android-16.0.0_r1, frameworks/base/libs/hwui/renderthread/RenderThread.cpp]
 
@@ -278,7 +279,7 @@ Process.setThreadPriority(Process.THREAD_PRIORITY_BACKGROUND);
 
 仅仅用 nice 值来区分优先级还不够。Android 引入了 Linux 的 cgroup（控制组）机制来实现更严格的隔离。当一个线程的 nice 值被设置为 `THREAD_PRIORITY_BACKGROUND`（10）或更高时，它会被自动移入后台 cgroup。
 
-前台 cgroup 和后台 cgroup 的 CPU 时间分配比例大约是 95:5（具体比例因 Android 版本和内核配置可能不同，实际以设备上 `/dev/cpuctl` cgroup 参数为准）。这意味着即使后台线程数量很多，它们能获得的 CPU 时间总和也非常有限。这个设计的目的是确保前台 App 的线程能获得充足的 CPU 资源，而后台 App 的工作不会干扰用户体验。
+前台 cgroup 和后台 cgroup 的 CPU 时间分配比例大约是 95:5（具体比例因 Android 版本和内核配置可能不同，实际以设备上 `/dev/cpuctl` cgroup 参数为准）。因此，即使后台线程数量很多，它们能获得的 CPU 时间总和也非常有限。这个设计的目的是确保前台 App 的线程能获得充足的 CPU 资源，而后台 App 的工作不会干扰用户体验。
 
 在 Perfetto 的 CPU 视图中，我们可以观察到这个效果：后台线程的 CPU slice 通常很短且稀疏，而前台线程的 CPU slice 更长且连续。如果看到一个后台线程意外地占用了大量 CPU，首先要检查的是它的优先级设置是否正确。
 
@@ -304,7 +305,7 @@ Linux 提供了多种调度策略，Android 中最常用的有两种：
 
 ## 从 AsyncTask 到 Kotlin Coroutine：异步编程的演进
 
-Android 的异步编程方案经历了多次迭代，每一次迭代都在解决前一代方案的痛点。了解这段演进，有助于在实际项目中做出正确的技术选择。
+Android 的异步编程方案经历了多次迭代，每一次迭代都在修正前一代方案暴露出来的问题。了解这段演进，有助于在实际项目中做出正确的技术选择。
 
 ### AsyncTask（Android 1.5 - API 30 deprecated）
 
@@ -345,7 +346,7 @@ viewModelScope.launch {
 
 ### HandlerThread：带 Looper 的后台线程
 
-HandlerThread 继承自 Thread，它在线程启动后自动创建 Looper 并进入消息循环。这意味着我们可以像操作主线程一样，通过 Handler 向它发送消息。
+HandlerThread 继承自 Thread，它在线程启动后自动创建 Looper 并进入消息循环。因此我们可以像操作主线程一样，通过 Handler 向它发送消息。
 
 HandlerThread 的典型用途是创建一个串行执行的后台任务队列。比如图片处理、日志写入、传感器数据处理——这些任务需要按顺序执行，但不需要在主线程上做。
 
@@ -403,7 +404,7 @@ public static Looper myLooper() {
 
 ### Choreographer 中的 ThreadLocal
 
-Choreographer 也使用了同样的模式：通过 `ThreadLocal` 为每个线程存储一个独立的 Choreographer 实例。这意味着主线程有自己的 Choreographer，其他有 Looper 的线程也可以有自己的 Choreographer——虽然实践中，只有主线程的 Choreographer 才会收到 VSync 信号并驱动渲染。
+Choreographer 也使用了同样的模式：通过 `ThreadLocal` 为每个线程存储一个独立的 Choreographer 实例。因此，主线程有自己的 Choreographer，其他有 Looper 的线程也可以有自己的 Choreographer。实践里，只有主线程的 Choreographer 会收到 VSync 信号并驱动渲染。
 
 [已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/os/Looper.java 和 frameworks/base/core/java/android/view/Choreographer.java]
 
