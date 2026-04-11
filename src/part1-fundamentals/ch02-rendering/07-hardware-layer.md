@@ -25,11 +25,12 @@ sources:
     path: "frameworks/base/core/java/android/view/RenderNode.java (setUseCompositingLayer)"
 tags: [hardware-layer, LAYER_TYPE_HARDWARE, LAYER_TYPE_SOFTWARE, animation, RenderNode, compositing-layer, buildLayer, graphicsLayer, GPU-纹理缓存]
 related_chapters: ["2.4", "2.5", "2.6", "7.1", "7.5"]
-pipeline_stage: task9_pending
+pipeline_stage: task2b_pending
 task6_result: pass-light-edit
 task6_state: reviewed
-task9_state: pending
-task2b_state: idle
+task9_state: reviewed
+task9_result: needs-rework
+task2b_state: pending
 ---
 
 # Hardware Layer

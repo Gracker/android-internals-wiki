@@ -289,8 +289,9 @@
     ],
     "added_by": "task6-review",
     "added_at": "2026-04-12T03:10:00+08:00",
-    "status": "pending",
-    "original_review_log": "logs/review/2026-04-12-03-review.md"
+    "status": "completed",
+    "original_review_log": "logs/review/2026-04-12-03-review.md",
+    "completed_at": "2026-04-12T04:43:00+08:00"
   },
   {
     "section": "14.9",
@@ -4496,7 +4497,8 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-12T03:36:12+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-12T04:43:00+08:00"
   },
   {
     "section": "5.8",
@@ -4588,5 +4590,50 @@
     "updated_by": "task9-deep-tech-review",
     "updated_at": "2026-04-12T04:23:00+08:00",
     "deep_review_log": "logs/deep-review/2026-04-12-04-deep-review.md"
+  },
+  {
+    "section": "2.7",
+    "section_title": "Hardware Layer",
+    "priority": 95,
+    "reason": "[Deep Tech Review] RenderNode/Compose API 与 layer 语义存在源码错误，现代 HWUI 自动分层机制被写旧",
+    "material_paths": [
+      "intake/research-gaps.md",
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "行 104-121 View.buildLayer() 代码片段",
+        "detail": "正文把硬件层分支写成 `mRenderNode.isValid()`。android-16.0.0_r1 的 `frameworks/base/core/java/android/view/View.java` 实际条件是 `mRenderNode.hasDisplayList()`，配合 `updateDisplayListIfDirty()` 判断 DisplayList 是否可用于 buildLayer。`isValid()` 不是这里的源码条件，会把读者带到错误的方法名。",
+        "suggestion": "把代码片段和解释改成 `hasDisplayList()`，并说明 buildLayer 依赖的是 RenderNode 已持有 DisplayList，而不是泛化的“节点有效”。"
+      },
+      {
+        "type": "源码错误",
+        "location": "frontmatter sources / 行 255-266 / 参考资料中的 RenderNode 路径与 API",
+        "detail": "章节把 RenderNode 源码路径写成 `frameworks/base/core/java/android/view/RenderNode.java`，并给出 `useCompositingLayer()` / `setUseCompositingLayer(boolean)` 这样的签名。android-16.0.0_r1 实际文件是 `frameworks/base/graphics/java/android/graphics/RenderNode.java`，公开方法是 `setUseCompositingLayer(boolean forceToLayer, Paint paint)` 与 `getUseCompositingLayer()`。",
+        "suggestion": "统一修正源码路径、包名和方法签名，不要把 `android.view.View` 侧的 layerType 概念直接投影成不存在的 RenderNode API。"
+      },
+      {
+        "type": "源码错误",
+        "location": "行 270-297 Compose graphicsLayer 小节",
+        "detail": "正文把 `Modifier.graphicsLayer` 直接等同于“RenderNode compositing layer + GPU 纹理缓存”，并引入了 `sharedGraphicsLayerInfo`（Compose 1.7+）这一不存在的 API。官方 Compose 文档描述的是 draw layer / isolation 语义，离屏缓冲是否创建取决于 `CompositingStrategy`、alpha<1、RenderEffect 等条件；Compose 1.7 官方新增的是 `rememberGraphicsLayer()`。",
+        "suggestion": "重写 Compose 小节：先区分 draw layer 与 offscreen compositing，再补 `CompositingStrategy.Auto/Offscreen/ModulateAlpha` 与 `rememberGraphicsLayer()`；删除 `sharedGraphicsLayerInfo`。"
+      },
+      {
+        "type": "原理断裂",
+        "location": "行 75-82 硬件加速 vs Hardware Layer 对比",
+        "detail": "正文把 Hardware Layer 写成“通常是 OpenGL FBO，命中后可跳过 measure/layout/draw”，并把“关闭硬件加速的 View”与“整个 App 进入软件渲染、没有 RenderThread”混在一起。对于 Android 10-16，这会把实现细节讲窄，也会把“单个 View 的 software layer”与“整个窗口软件渲染”混为一谈。Hardware Layer 主要避免的是未变化内容的重绘/重栅格化，不是一个通用的 measure/layout 跳过开关。",
+        "suggestion": "改成实现无关的“离屏 GPU render target / texture”表述，并明确区分：1) 整个 window/app 关闭硬件加速；2) 单个 View 使用 `LAYER_TYPE_SOFTWARE`；3) `LAYER_TYPE_HARDWARE` 强制合成层。"
+      },
+      {
+        "type": "版本差异",
+        "location": "行 133-158、184-204、328-334 手动 setLayerType 的收益判断",
+        "detail": "章节把 `setLayerType(LAYER_TYPE_HARDWARE)` 写成属性动画的通用优化手段，并在误区小节给出“只有属性动画才能受益”的强断言。android-16.0.0_r1 的 RenderNode 注释明确写到：RenderNode 在“有性能收益”或 `alpha + hasOverlappingRendering` 组合需要时会自动提升为 composition layer，且默认推荐 `forceToLayer=false`。这意味着现代 HWUI 下，手动强制 layer 不是常规默认项，更不能把 translation/scale/rotation 一概归入“必须手动上 Hardware Layer”的范畴。",
+        "suggestion": "把建议收窄为“对 alpha/复杂 subtree/trace 已证实存在重复重绘的场景再手动 forcing layer”，并补上 RenderNode 自动提升机制与 `hasOverlappingRendering` 的判断边界。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-12T06:33:25+08:00",
+    "status": "pending"
   }
 ]

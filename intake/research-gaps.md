@@ -1173,3 +1173,19 @@ Emoji 一节把系统字体、EmojiCompat、下载字体 provider、color font �
 
 ### 关联章节
 5.6（Android 功耗管理）、5.8（后台执行限制）、14.x（工具与调试章节）
+
+## [2026-04-12] 2.7 Hardware Layer — View Layer / RenderNode / Compose graphicsLayer 语义边界
+
+### 盲区描述
+当前章节把 `View.setLayerType(LAYER_TYPE_HARDWARE)`、`RenderNode.setUseCompositingLayer(...)`、Compose `Modifier.graphicsLayer` 基本视为同一套“强制缓存成 GPU 纹理”的机制，但 Android 10+ / Compose 1.4+ 以后，这三者在“是否一定分配离屏缓冲”“何时自动晋升 compositing layer”“是否只是 draw layer isolation”上已经出现明显分化。若不把这些边界讲清楚，读者会把 View 时代的 Hardware Layer 经验直接套到 Compose。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 对照 `android.graphics.RenderNode` 注释，梳理自动晋升 compositing layer 与手动 `forceToLayer` 的边界
+- 补 Compose `graphicsLayer` / `CompositingStrategy.Auto` / `Offscreen` / `ModulateAlpha` / `rememberGraphicsLayer()` 的官方语义
+- 用一组 Perfetto/FrameTimeline 例子区分 View Hardware Layer、RenderNode forced layer、Compose draw layer 在 trace 中分别长什么样
+
+### 关联章节
+2.5、2.7、7.1、7.5

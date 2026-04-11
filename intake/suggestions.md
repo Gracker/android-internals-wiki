@@ -1399,3 +1399,14 @@
 - **位置**：frontmatter `related_chapters` + Buffer 管理 / BlastBufferQueue 小节
 - **问题**：正文大量依赖 BufferQueue、BLAST 与 fence 语义，但 `related_chapters` 只列了 `2.1/2.3/2.4/2.5/2.10/7.3`，没有把最直接相关的 `§2.13 BufferQueue`、`§2.16 Sync Fence` 挂出来。
 - **建议**：把 `2.13` 和 `2.16` 加入 `related_chapters`，并在 BufferQueue / BLAST 小节正文里显式跳转。
+
+## [Task9 Deep Review] 2.7 Hardware Layer — 2026-04-12
+- **类型**：数据缺失
+- **位置**：行 184-208 两组 gfxinfo 实验表
+- **问题**：表格给出了 Janky Frames、99th percentile 和 High input latency，但没有设备型号、Android 版本、刷新率、View 尺寸、动画类型、采样轮次和 `dumpsys gfxinfo` / framestats 的采集命令。当前数字只能说明“某次实验如此”，不足以支持章节级结论。
+- **建议**：补实验环境（设备/系统/刷新率）、测试脚本、样本量和采集命令；至少说明这些数据来自哪一版 demo、哪一台设备、跑了多少轮。
+
+- **类型**：数据缺失
+- **位置**：行 232-245 Perfetto / Show hardware layers updates 诊断方法
+- **问题**：正文给了 `buildLayer` / `buildDrawingCache` 的读法，但没有任何真实 Trace、track 名称、slice 持续时间或 FrameTimeline 对照，读者很难判断“看到什么才算异常”。
+- **建议**：补 1 组真实 Perfetto 截图或文字化 trace 片段，至少标出 MainThread、RenderThread、`buildLayer`、`buildDrawingCache/SW Layer`、FrameTimeline 或 SurfaceFlinger 相关轨道的位置。

@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-10 06:02",
+  "generated_at": "2026-04-12 06:00",
   "documents": [
     {
       "path": "Cubox/#01 创始人解密 Discord-2023-02-20.md",
@@ -49391,5 +49391,28 @@
     "scan_time": "2026-04-09T14:03:53.463769"
   },
   "last_scan": "2026-04-10T22:02:40.226237",
-  "total_documents": 7602
+  "total_documents": 7602,
+  "scan_metadata": {
+    "last_scan": "2026-04-12 06:00",
+    "previous_scan": "2026-04-10 06:02",
+    "new_suggestions_entries": 30,
+    "active_chapters_reviewed": [
+      "2.4",
+      "2.6",
+      "2.17",
+      "2.18",
+      "2.19",
+      "2.20",
+      "2.21",
+      "3.4",
+      "3.5",
+      "3.6",
+      "4.8",
+      "5.8"
+    ],
+    "total_wiki_docs": 207,
+    "inventory_doc_count": 7622,
+    "docs_with_chapter_mapping": 126,
+    "chapters_with_content": "12/17"
+  }
 }
