@@ -5,8 +5,9 @@ status: ready-for-review
 applicable_versions: "Android 12 (API S) - Android 16 (API 36)"
 last_verified: "2026-04-02"
 drafted_date: 2026-03-30
-reviewed_date: 2026-04-04
+reviewed_date: 2026-04-12
 reviewed_by: openclaw-task6
+task6_result: needs-rework
 rework_date: 2026-04-02
 last_verified_against: "AOSP android-16.0.0_r1, 官方文档最新版本"
 confidence: medium
@@ -22,10 +23,10 @@ sources:
     path: "https://www.androidperformance.com/"
 tags: ['surfaceflinger', 'bufferqueue', 'hwc', 'composition', 'layer', 'vsync', 'blastbufferqueue', 'renderengine']
 related_chapters: ["2.1", "2.3", "2.4", "2.5", "2.10", "7.3"]
-pipeline_stage: task6_pending
-task6_state: pending
+pipeline_stage: task2b_pending
+task6_state: reviewed
 task9_state: pending
-task2b_state: idle
+task2b_state: pending
 ---
 
 # SurfaceFlinger 与合成
@@ -73,7 +74,7 @@ SurfaceFlinger 是 Android 系统中唯一能够直接修改显示内容的核�
 
 ### Layer 合成：多源汇聚为一帧
 
-大多数应用在屏幕上一次显示三个 Layer：屏幕顶部的状态栏、底部或侧面的导航栏、以及应用自身的界面。每个 Layer 都可以独立更新——比如状态栏在显示时间变化时只更新自己的 Layer，而不需要整个屏幕重绘。
+一个典型的前台界面，至少会同时出现几个 Layer：屏幕顶部的状态栏、底部或侧面的导航栏，以及应用自身的界面。每个 Layer 都可以独立更新，比如状态栏显示时间变化时，只需要刷新自己的 Layer，不需要整个屏幕一起重绘。
 
 当 VSYNC 信号到达时，SurfaceFlinger 会遍历它的 Layer 列表，检查每个 Layer 是否有新的 Buffer。如果找到了新 Buffer，就获取（acquire）它；如果没有新 Buffer，就继续使用上一次获取的旧 Buffer。然后 SurfaceFlinger 把所有可见的 Layer 按照 z-order 从后往前叠加，合成为一帧完整的画面，交给显示硬件呈现。
 
@@ -81,7 +82,7 @@ SurfaceFlinger 是 Android 系统中唯一能够直接修改显示内容的核�
 
 ### VSync 分发：管线的节拍器
 
-SurfaceFlinger 不只是被动地合成画面，它还参与 VSync 信号的分发。硬件 VSync 信号由 HWC（Hardware Composer）产生，SurfaceFlinger 通过 DispSync（Android 12 之后为 VsyncModulator）将其分发为两个关键信号：
+SurfaceFlinger 既负责合成画面，也参与 VSync 信号分发。硬件 VSync 信号由 HWC（Hardware Composer）产生，SurfaceFlinger 通过 DispSync（Android 12 之后为 VsyncModulator）将其分发为两个关键信号：
 
 - **VSYNC-app**：发给应用程序，触发 Choreographer 开始一帧的渲染工作（measure → layout → draw）。
 - **VSYNC-sf**：发给 SurfaceFlinger 自身，触发 SurfaceFlinger 开始合成。
@@ -105,7 +106,7 @@ SurfaceFlinger 和应用之间通过 BufferQueue 传递画面数据。BufferQueu
 
 ## 合成方式：Client 合成与 Device 合成
 
-SurfaceFlinger 有两种合成方式：Client 合成（也叫 GPU 合成）和 Device 合成（也叫 HWC 硬件合成）。理解两者的区别，对于分析合成性能和功耗至关重要。
+SurfaceFlinger 有两种合成方式：Client 合成（也叫 GPU 合成）和 Device 合成（也叫 HWC 硬件合成）。区分两者，才能读懂合成耗时和功耗变化。
 
 ### Client 合成：GPU 走一遍完整渲染流程
 
@@ -117,7 +118,7 @@ Client 合成的优势在于灵活性——GPU 能处理任何复杂的变换、
 
 HWC（Hardware Composer）是显示控制器中专门用于合成的硬件单元。SurfaceFlinger 向 HWC 提供完整的 Layer 列表，HWC 为每个 Layer 判断：这个 Layer 能不能直接用硬件叠加（Overlay）的方式合成？如果能，就标记为 Device 合成；如果不能（比如 Layer 有复杂的混合效果或缩放），就标记为 Client 合成，退回 GPU 处理。
 
-HWC 硬件合成的效率极高——它不经过 GPU，不需要渲染管线，只是把多个 Layer 的 Buffer 指针交给显示控制器，让硬件在扫描输出时直接从多个 Buffer 中读取像素并混合。这意味着合成过程几乎零 CPU/GPU 开销，功耗也更低。
+HWC 硬件合成的效率很高——它不经过 GPU 渲染管线，而是把多个 Layer 的 Buffer 指针交给显示控制器，让硬件在扫描输出时直接从多个 Buffer 中读取像素并混合。这样做几乎不占用 GPU，CPU 参与也更少，功耗通常更低。
 
 不过 HWC 也有其限制。每个设备的 HWC 支持的 Overlay 平面数量是有限的（不同设备从 4 个到 16 个不等，取决于 SoC 和显示控制器型号），超出数量限制的 Layer 必须退回 Client 合成。此外，某些复杂的变换（如圆角裁剪、模糊效果）HWC 可能不支持，也会退回 GPU。
 
@@ -307,21 +308,21 @@ SurfaceFlinger 的性能问题有一个特点：它不是"某个 App 卡了"，�
 
 ## BlastBufferQueue
 
-Android 12 引入了 BlastBufferQueue（BBQ），这是 BufferQueue 机制的一次重大改进。要理解 BBQ 解决了什么问题，我们需要先看看它之前的方案有什么痛点。
+Android 12 引入了 BlastBufferQueue（BBQ），这是 BufferQueue 机制的一次重要改动。要理解 BBQ 解决了什么问题，我们需要先看它之前的方案存在哪些问题。
 
 ### 之前的问题：Buffer 状态由 SurfaceFlinger 管理
 
-在 Android 12 之前，App 的 BufferQueue 中的消费者端（Consumer）运行在 SurfaceFlinger 进程中。这意味着每次 Buffer 状态变化（acquire、release）都需要跨进程通信。当 App 提交一个 Buffer（queueBuffer），需要通过 Binder 通知 SurfaceFlinger；SurfaceFlinger 用完 Buffer 后，又要通过 Binder 通知 App 可以重新使用。每次跨进程调用都有开销，在多 Layer 场景下这些开销会累加。
+在 Android 12 之前，App 的 BufferQueue 中的消费者端（Consumer）运行在 SurfaceFlinger 进程中。于是每次 Buffer 状态变化（acquire、release）都需要跨进程通信。当 App 提交一个 Buffer（queueBuffer），需要通过 Binder 通知 SurfaceFlinger；SurfaceFlinger 用完 Buffer 后，又要通过 Binder 通知 App 可以重新使用。每次跨进程调用都有开销，在多 Layer 场景下这些开销会累加。
 
 ### BBQ 的改进：App 端直接管理 Buffer 周转
 
 BlastBufferQueue 将 Buffer 的状态管理移到了 App 进程内。App 不再需要每次都通过 Binder 与 SurfaceFlinger 协调 Buffer 的获取和释放，而是可以本地完成 dequeue → queue 的循环，只在必要时通知 SurfaceFlinger 有新帧可用。
 
-具体来说，BBQ 带来了三个层面的变化。首先是 Buffer 的 acquire/release 不再需要跨进程——App 自己在本地完成 Buffer 的获取和归还，只有真正需要通知 SurfaceFlinger "有新帧了" 的时候才走一次 Binder 调用，大幅减少了跨进程通信次数。
+具体来看，BBQ 带来了三个变化。一个变化是 Buffer 的 acquire/release 不再需要跨进程，App 可以在本地完成 Buffer 的获取和归还，只有真正需要通知 SurfaceFlinger“有新帧了”的时候才走一次 Binder 调用，跨进程通信次数更少。
 
-其次是帧的提交方式改变了：App 渲染完一帧后，通过 SurfaceControl Transaction 将 Buffer 直接提交给 SurfaceFlinger，不再经过传统的 BufferQueue Consumer 中转。
+另一个变化是帧的提交方式。App 渲染完一帧后，通过 SurfaceControl Transaction 将 Buffer 直接提交给 SurfaceFlinger，不再经过传统的 BufferQueue Consumer 中转。
 
-最后是时序上的解耦——App 可以在任意时刻提交帧，不必等待某个特定的信号，SurfaceFlinger 会在下一个合适的 VSYNC-sf 到来时拿去处理。这三层变化叠加在一起，让多 Layer 场景下的帧传递效率提升非常明显。
+还有一个变化在时序上。App 可以在任意时刻提交帧，不必等待某个特定的信号，SurfaceFlinger 会在下一个合适的 VSYNC-sf 到来时处理它。几处改动叠在一起，多 Layer 场景下的帧传递效率更高。
 
 BBQ 目前仅在 C++ 层使用（实现在 `frameworks/native/libs/gui/BlastBufferQueue.cpp`），对应用开发者来说是透明的。应用仍然通过 Surface、Canvas 等标准 API 进行渲染，底层已自动切换为 BBQ，因此不存在所谓的"BlastBufferQueue Java API"。
 
