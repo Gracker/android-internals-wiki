@@ -823,3 +823,20 @@
 - **位置**：§8.3 → §8.1 响应速度原理
 - **问题**：本章与 §3.1 都把 Input 事件跨进程传输写成 `InputChannel/socketpair`，但 §8.1 第 132 行写成了 "InputDispatcher 通过 Binder IPC 将事件发送给目标 App 进程"，同一机制在相邻章节中出现冲突。
 - **建议**：统一全书表述为 `InputChannel/socketpair`，如需提到 Binder，仅用于窗口创建时回传 `InputChannel` handle 的场景，不要写成运行时事件传输通道。
+
+
+## [Task9 Deep Review] 16.1 Google 官方的性能优化思路 — 2026-04-11
+- **类型**：数据缺失
+- **位置**：frontmatter `last_verified_against` + 行 67-118 多个历史/框架小节
+- **问题**：当前验证范围只覆盖 Android 17 release notes 与 DeliQueue blog，但正文横跨 Project Butter / Svelte / Treble / Mainline / Binder / BLAST 等多个时代，"[已验证]"覆盖面明显不足。
+- **建议**：为 Project Butter / Svelte / Treble / Mainline / Binder 版本演进补充官方文档或源码依据；补不齐时把对应断言降级为“需进一步核对”，不要统一挂在 Android 17 验证范围下。
+
+- **类型**：交叉引用
+- **位置**：行 59、89、111、117
+- **问题**：AutoFDO、DeliQueue、Kernel 6.12、Window 管线等内容已经在专章展开，但本章没有显式回链到 §1.12、§1.13、§16.4、§2.12，容易造成术语漂移与重复解释。
+- **建议**：在对应段落追加明确交叉引用，把“总览章节”与“机制专章”绑紧，避免同一概念在不同章节出现不同口径。
+
+- **类型**：交叉引用一致性
+- **位置**：行 184-198 参考资料尾部
+- **问题**：Gemma / Gemini Nano 条目与“Google 官方的性能优化思路”主题无直接关系，属于 AI 能力资讯，不应挂在本章参考资料中。
+- **建议**：移出本章参考资料，改挂到 AI / Android AI 相关章节或独立资料池，避免引用域被污染。

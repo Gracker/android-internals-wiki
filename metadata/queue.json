@@ -3308,5 +3308,50 @@
     "added_at": "2026-04-11T10:21:00+08:00",
     "status": "pending",
     "original_review_log": "logs/review/2026-04-11-10-review.md"
+  },
+  {
+    "section": "16.1",
+    "section_title": "Google 官方的性能优化思路",
+    "priority": 95,
+    "reason": "[Deep Tech Review] Mainline/MessageQueue/Binder/BLAST 存在事实错误与主线缺口",
+    "material_paths": [
+      "intake/research-gaps.md",
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "版本差异/原理断裂",
+        "location": "行 87-89 Project Mainline 小节",
+        "detail": "把 AutoFDO、分代 GC、Cloud Profiles 统称为 Mainline 交付。AutoFDO 属于 GKI kernel 分支/OTA 路径，Cloud Profiles 走 Play 安装编译链路，不是 ART Mainline 模块。该表述会直接误导读者判断性能优化到达用户的分发机制。",
+        "suggestion": "拆成 APEX/Mainline、GKI kernel 分支/OTA、Play 安装期 Profile 三条路径，并分别标注版本、适用范围与典型特性。"
+      },
+      {
+        "type": "源码错误",
+        "location": "行 108-112 + 参考资料行 169-172 MessageQueue 小节",
+        "detail": "把 `MessageQueue.next()`/`enqueueMessage()` 的竞争描述成单个 `mLock` 模型，并把 `Handler.java` 写成消息队列核心源码路径。当前 AOSP 已拆为多个 `android/os/*MessageQueue/MessageQueue.java` 实现；至少在 current branch 下并不存在一个统一的 `mLock` 字段可支撑该结论。",
+        "suggestion": "改用精确源码路径与版本标注，区分 legacy locked queue 与 Android 17 targetSdk 37+ 的新队列实现，不要把 `Handler.java` 当成消息队列核心实现。"
+      },
+      {
+        "type": "版本差异",
+        "location": "行 113-115 Binder 性能改进",
+        "detail": "“Android 8.0 引入动态扩展（此前固定 16 线程）”“Android 10+ 引入优先级继承”两句时间线过粗且不准确。Binder 线程池本就由 driver 按需拉起并受 `BINDER_SET_MAX_THREADS` / `ProcessState` 上限约束，priority inheritance 也早于 Android 10 存在，Android 8 的关键变化更接近 RT inheritance / hwbinder 语义。",
+        "suggestion": "补一张 Binder 线程池与 priority inheritance 演进表，至少区分默认线程上限、on-demand spawn、nice/RT inheritance、binder 与 hwbinder 域差异。"
+      },
+      {
+        "type": "原理断裂",
+        "location": "行 117-118 BLASTBufferQueue 小节",
+        "detail": "把 BLASTBufferQueue 写成“App 直接把 Buffer blast 给 SurfaceFlinger”，容易被读成绕过 BufferQueue/Transaction。BLAST 的关键是 buffer 与 geometry transaction 的同步提交，不是简单的“直连 shortcut”。",
+        "suggestion": "补清 BLASTBufferQueue 与 SurfaceControl transaction / BufferQueue 的关系，并说明它主要解决的是 buffer + geometry 原子同步问题。"
+      },
+      {
+        "type": "知识盲区",
+        "location": "全文主线",
+        "detail": "缺少“性能优化交付路径矩阵”，没有把 OTA、GKI、Play System Update(APEX/Mainline)、Play 安装期 Profile 这四类交付通道分开。对“Google 官方的性能优化思路”这一章，这是理解主线的关键缺口。",
+        "suggestion": "补一张交付路径矩阵，并把 AutoFDO / DeliQueue / ART / Cloud Profiles 放回各自正确的分发链路。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-11T11:20:00+08:00",
+    "status": "pending"
   }
 ]

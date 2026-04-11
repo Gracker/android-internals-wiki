@@ -812,3 +812,38 @@ OEM/自研内核接入 AutoFDO 的关键前置条件缺失。正文提到 Kleaf�
 - 明确 DeliQueue 影响的是 `doFrame` 排队延迟、还是 VSync 调度本身，避免把 Looper 改动写成 VSync 机制改动
 
 **关联章节**：§2.3、§2.4、§1.13
+
+
+## [2026-04-11] 16.1 Google 官方的性能优化思路 — 优化交付路径矩阵缺口
+
+### 盲区描述
+正文把系统性能优化放在一条主线上讲，但没有把优化真正“怎么到达用户设备”讲清楚。现在至少混在一起了四条路径：完整 OTA、GKI kernel 分支更新、Play System Update(APEX/Mainline)、以及 Play 安装期/云端 Profile 编译。缺少这张矩阵，读者会把内核优化、ART 模块更新、Cloud Profiles 误认为同一条分发通道。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 梳理 OTA / GKI / APEX(Mainline) / Play 安装期 Profile 四条路径的边界与触发条件
+- 给 AutoFDO、DeliQueue、ART generational GC、Cloud Profiles 各自标注真实分发链路
+- 补“系统版本升级”和“Google Play 系统更新”在用户侧的可见差异
+- 做一张“技术 -> 分发通道 -> 到达范围 -> 依赖前提”的对照表
+
+### 关联章节
+1.12（AutoFDO）, 1.13（DeliQueue）, 8.7（Baseline Profiles）, 16.4（Android 17 + Kernel 6.12 系统级性能优化）
+
+## [2026-04-11] 16.1 Google 官方的性能优化思路 — MessageQueue / Binder 演进时间线缺口
+
+### 盲区描述
+正文试图把 Handler/MessageQueue 与 Binder 的性能演进压缩成几句话，但缺少“版本-实现-能力边界”三元关系。没有讲清 legacy locked queue、Android 17 新队列实现、targetSdk gating、Binder thread pool 上限配置、nice/RT priority inheritance、binder 与 hwbinder 域差异，读者很容易记住几个结论，却记错它们分别属于哪个版本和哪个实现。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 梳理 Android 14-17 MessageQueue 实现谱系与 targetSdk gating
+- 用 AOSP 精确路径补全 legacy / concurrent / combined / semi-concurrent queue 的实现差异
+- 补 Binder thread pool 的默认上限、按需扩容机制和 `BINDER_SET_MAX_THREADS` / `ProcessState` 关系
+- 区分 binder / hwbinder 的 priority inheritance 语义与 Android 8 之后的演进
+
+### 关联章节
+1.4（Binder IPC 机制与性能影响）, 1.13（DeliQueue）, 14.10（Perfetto SQL Cookbook）, 16.1（Google 官方的性能优化思路）
