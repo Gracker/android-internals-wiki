@@ -1,38 +1,38 @@
 {
-  "generated_at": "2026-04-11T15:14:52+08:00",
+  "generated_at": "2026-04-11T15:57:33+08:00",
   "state_machine_version": "v2",
   "total_sections": 206,
   "metrics": {
     "total": 206,
-    "ready-for-review": 173,
     "unknown": 33,
-    "pipeline_task2b_pending": 3,
-    "pipeline_task6_pending": 172,
-    "pipeline_task9_pending": 1,
     "pipeline_unknown": 30,
-    "task6_pending": 159,
-    "task6_reviewed": 4,
-    "task6_revisiting": 13,
     "task6_unknown": 30,
-    "task9_pending": 176,
     "task9_unknown": 30,
-    "task2b_fixed": 13,
-    "task2b_idle": 160,
-    "task2b_pending": 3,
     "task2b_unknown": 30,
-    "last_updated": "2026-04-11T15:14:52+08:00"
+    "ready-for-review": 173,
+    "pipeline_task6_pending": 173,
+    "task6_pending": 159,
+    "task9_pending": 176,
+    "task2b_idle": 160,
+    "task6_revisiting": 14,
+    "task2b_fixed": 14,
+    "pipeline_task2b_pending": 2,
+    "task6_reviewed": 3,
+    "task2b_pending": 2,
+    "pipeline_task9_pending": 1,
+    "last_updated": "2026-04-11T15:57:33+08:00"
   },
   "pipeline": {
     "pipeline_stage_counts": {
-      "task2b_pending": 3,
-      "task6_pending": 172,
+      "task2b_pending": 2,
+      "task6_pending": 173,
       "task9_pending": 1,
       "unknown": 30
     },
     "task6_state_counts": {
       "pending": 159,
-      "reviewed": 4,
-      "revisiting": 13,
+      "reviewed": 3,
+      "revisiting": 14,
       "unknown": 30
     },
     "task9_state_counts": {
@@ -40,9 +40,9 @@
       "unknown": 30
     },
     "task2b_state_counts": {
-      "fixed": 13,
+      "fixed": 14,
       "idle": 160,
-      "pending": 3,
+      "pending": 2,
       "unknown": 30
     }
   },
@@ -593,13 +593,14 @@
       "title": "Sync Fence 框架与帧同步机制",
       "path": "src/part1-fundamentals/ch02-rendering/16-sync-fence.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
-      "task6_state": "reviewed",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
       "task9_state": "pending",
-      "task2b_state": "pending",
+      "task2b_state": "fixed",
       "task6_result": "needs-rework",
       "reviewed_date": "2026-04-11",
-      "reviewed_by": "openclaw-task6"
+      "reviewed_by": "openclaw-task6",
+      "task2b_result": "fixed"
     },
     "src/part1-fundamentals/ch02-rendering/17-frame-pacing.md": {
       "chapter": "2.17",
