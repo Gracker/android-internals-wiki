@@ -1100,3 +1100,26 @@
 - **位置**：行 441-442 官方参考链接
 - **问题**：`developer.android.com/develop/ui/views/graphics/low-latency-graphics` 和 `perfetto.dev/docs/analysis/sql-tables/android-input` 当前链接均返回 404/已迁移，和正文的“已验证”标注不匹配。
 - **建议**：改成当前可访问的类级 reference / 新文档入口，避免后续 review 无法复核。
+
+
+## [Task6 Review] 2.20 多窗口与桌面模式渲染性能 — 2026-04-11
+- **类型**：需重写
+- **位置**：全文结构
+- **问题**：缺少 outline-start / outline-end 与锚点设计，Task 6 无法按规范检查锚点覆盖。
+- **建议**：按 writing-guide.md 补齐 outline 块，并让每个锚点至少对应 1 个完整段落。
+
+- **类型**：需确认
+- **位置**：桌面模式 / 大屏适配 / 版本演进表
+- **问题**：Desktop Windowing 手机端发布时间、Pixel 8 机型支持、`recreateOnConfigChanges`、600dp+ 设备上的 manifest 限制等断言需要统一核对版本、API Level 和行为边界。
+- **建议**：由 Task 9 对照官方文档和 AOSP 统一版本范围、适用设备与行为描述，再由 Task 2B 回写。
+
+- **类型**：需补充素材
+- **位置**：Perfetto / dumpsys 观测段
+- **问题**：分屏 2-4ms、自由窗口 6-10ms、HWC/GLES 回退、Layer 列表对比等结论缺少对应的 Perfetto 或 dumpsys 证据。
+- **建议**：补 2-4 张真实 Perfetto / dumpsys 截图，或把量化表述降为定性描述。
+
+- **类型**：需确认
+- **位置**：Perfetto SQL 与后台窗口节流说明
+- **问题**：`surfaceflinger_layers` 表、`doCompose` slice 名称，以及非焦点 App VSync 节流的写法需要核对当前版本的数据表、slice 名和系统行为。
+- **建议**：交给 Task 9 核对实际表名 / slice 名与系统行为，再决定正文是否保留当前写法。
+- **review 日志**：logs/review/2026-04-11-22-review.md

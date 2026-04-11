@@ -1432,13 +1432,42 @@
   },
   {
     "section": "2.20",
-    "title": "多窗口与桌面模式渲染性能",
-    "priority": 80,
-    "status": "completed",
-    "file": "src/part1-fundamentals/ch02-rendering/20-multiwindow-desktop-rendering.md",
-    "notes": "gap-mining 2026-04-08, score 16/20",
-    "completed_at": "2026-04-09T07:03:00+08:00",
-    "completed_by": "task2a-stale-cleanup"
+    "section_title": "多窗口与桌面模式渲染性能",
+    "priority": 90,
+    "reason": "[review回炉] 缺少 outline 结构，多处桌面模式/Perfetto/版本断言缺少可追溯验证",
+    "material_paths": [
+      "intake/suggestions.md（含 review 意见）"
+    ],
+    "review_issues": [
+      {
+        "type": "需重写",
+        "location": "全文结构",
+        "detail": "缺少 outline-start / outline-end 与锚点设计，Task 6 无法按规范检查锚点覆盖。",
+        "suggestion": "按 writing-guide.md 补齐 outline 块，并让每个锚点至少对应 1 个完整段落。"
+      },
+      {
+        "type": "需确认",
+        "location": "桌面模式 / 大屏适配 / 版本演进表",
+        "detail": "Desktop Windowing 手机端发布时间、Pixel 8 机型支持、recreateOnConfigChanges、600dp+ 设备上的 manifest 限制等断言需要统一核对版本、API Level 和行为边界。",
+        "suggestion": "由 Task 9 对照官方文档和 AOSP 统一版本范围、适用设备与行为描述，再由 Task 2B 回写。"
+      },
+      {
+        "type": "需补充素材",
+        "location": "Perfetto / dumpsys 观测段",
+        "detail": "分屏 2-4ms、自由窗口 6-10ms、HWC/GLES 回退、Layer 列表对比等结论缺少对应的 Perfetto 或 dumpsys 证据。",
+        "suggestion": "补 2-4 张真实 Perfetto / dumpsys 截图，或把量化表述降为定性描述。"
+      },
+      {
+        "type": "需确认",
+        "location": "Perfetto SQL 与后台窗口节流说明",
+        "detail": "surfaceflinger_layers 表、doCompose slice 名称，以及非焦点 App VSync 节流的写法需要核对当前版本的数据表、slice 名和系统行为。",
+        "suggestion": "交给 Task 9 核对实际表名 / slice 名与系统行为，再决定正文是否保留当前写法。"
+      }
+    ],
+    "added_by": "task6-review",
+    "added_at": "2026-04-11T22:07:00+08:00",
+    "status": "pending",
+    "original_review_log": "logs/review/2026-04-11-22-review.md"
   },
   {
     "section": "15.8",
