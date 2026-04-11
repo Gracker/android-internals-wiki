@@ -1,29 +1,33 @@
 {
-  "generated_at": "2026-04-11T13:17:55+08:00",
+  "generated_at": "2026-04-11T13:31:00+08:00",
   "state_machine_version": "v2",
   "total_sections": 187,
   "metrics": {
     "total": 187,
-    "draft": 0,
     "ready-for-review": 173,
+    "unknown": 14,
+    "pipeline_task2b_pending": 3,
     "pipeline_task6_pending": 171,
-    "pipeline_task2b_pending": 2,
-    "pipeline_publish_ready": 0,
+    "pipeline_task9_pending": 1,
+    "pipeline_unknown": 12,
     "task6_pending": 160,
     "task6_reviewed": 4,
     "task6_revisiting": 11,
-    "task9_pending": 175,
-    "task9_reviewed": 0,
-    "task2b_idle": 162,
-    "task2b_pending": 2,
-    "last_updated": "2026-04-11T13:17:55+08:00",
-    "unknown": 14
+    "task6_unknown": 12,
+    "task9_pending": 174,
+    "task9_reviewed": 1,
+    "task9_unknown": 12,
+    "task2b_fixed": 11,
+    "task2b_idle": 161,
+    "task2b_pending": 3,
+    "task2b_unknown": 12,
+    "last_updated": "2026-04-11T13:31:00+08:00"
   },
   "pipeline": {
     "pipeline_stage_counts": {
-      "task2b_pending": 2,
+      "task2b_pending": 3,
       "task6_pending": 171,
-      "task9_pending": 2,
+      "task9_pending": 1,
       "unknown": 12
     },
     "task6_state_counts": {
@@ -33,14 +37,14 @@
       "unknown": 12
     },
     "task9_state_counts": {
-      "pending": 175,
-      "reviewed": 0,
+      "pending": 174,
+      "reviewed": 1,
       "unknown": 12
     },
     "task2b_state_counts": {
       "fixed": 11,
-      "idle": 162,
-      "pending": 2,
+      "idle": 161,
+      "pending": 3,
       "unknown": 12
     }
   },
@@ -51,23 +55,33 @@
       "8.8": 2
     },
     "missing_chapter": [
+      "src/appendix/analysis-checklist.md",
       "src/appendix/commands-cheatsheet.md",
       "src/appendix/glossary.md",
-      "src/appendix/version-changelog.md",
-      "src/appendix/analysis-checklist.md",
-      "src/appendix/recommended-reading.md",
       "src/appendix/perfetto-templates.md",
-      "src/preface/target-audience.md",
-      "src/preface/version-conventions.md",
-      "src/preface/intro.md",
-      "src/preface/verification-standards.md",
-      "src/preface/reading-paths.md",
-      "src/preface/how-to-use.md",
+      "src/appendix/recommended-reading.md",
+      "src/appendix/version-changelog.md",
+      "src/part1-fundamentals/ch05-cpu-power/05-thermal.md",
       "src/part3-tools/ch14-other-tools/07-profiling-manager.md",
-      "src/part1-fundamentals/ch05-cpu-power/05-thermal.md"
+      "src/preface/how-to-use.md",
+      "src/preface/intro.md",
+      "src/preface/reading-paths.md",
+      "src/preface/target-audience.md",
+      "src/preface/verification-standards.md",
+      "src/preface/version-conventions.md"
     ]
   },
   "sections": {
+    "src/appendix/analysis-checklist.md": {
+      "chapter": null,
+      "title": "analysis-checklist",
+      "path": "src/appendix/analysis-checklist.md",
+      "status": "unknown",
+      "pipeline_stage": "unknown",
+      "task6_state": "unknown",
+      "task9_state": "unknown",
+      "task2b_state": "unknown"
+    },
     "src/appendix/commands-cheatsheet.md": {
       "chapter": null,
       "title": "commands-cheatsheet",
@@ -88,20 +102,10 @@
       "task9_state": "unknown",
       "task2b_state": "unknown"
     },
-    "src/appendix/version-changelog.md": {
+    "src/appendix/perfetto-templates.md": {
       "chapter": null,
-      "title": "version-changelog",
-      "path": "src/appendix/version-changelog.md",
-      "status": "unknown",
-      "pipeline_stage": "unknown",
-      "task6_state": "unknown",
-      "task9_state": "unknown",
-      "task2b_state": "unknown"
-    },
-    "src/appendix/analysis-checklist.md": {
-      "chapter": null,
-      "title": "analysis-checklist",
-      "path": "src/appendix/analysis-checklist.md",
+      "title": "perfetto-templates",
+      "path": "src/appendix/perfetto-templates.md",
       "status": "unknown",
       "pipeline_stage": "unknown",
       "task6_state": "unknown",
@@ -118,400 +122,1080 @@
       "task9_state": "unknown",
       "task2b_state": "unknown"
     },
-    "src/appendix/perfetto-templates.md": {
+    "src/appendix/version-changelog.md": {
       "chapter": null,
-      "title": "perfetto-templates",
-      "path": "src/appendix/perfetto-templates.md",
+      "title": "version-changelog",
+      "path": "src/appendix/version-changelog.md",
       "status": "unknown",
       "pipeline_stage": "unknown",
       "task6_state": "unknown",
       "task9_state": "unknown",
       "task2b_state": "unknown"
     },
-    "src/preface/target-audience.md": {
+    "src/part1-fundamentals/ch01-architecture/01-layered-architecture.md": {
+      "chapter": "1.1",
+      "title": "Android 分层架构",
+      "path": "src/part1-fundamentals/ch01-architecture/01-layered-architecture.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "pending",
+      "task9_state": "pending",
+      "task2b_state": "idle"
+    },
+    "src/part1-fundamentals/ch01-architecture/02-boot-process.md": {
+      "chapter": "1.2",
+      "title": "系统启动全流程",
+      "path": "src/part1-fundamentals/ch01-architecture/02-boot-process.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "pending",
+      "task9_state": "pending",
+      "task2b_state": "idle"
+    },
+    "src/part1-fundamentals/ch01-architecture/03-process-model.md": {
+      "chapter": "1.3",
+      "title": "进程模型与生命周期管理",
+      "path": "src/part1-fundamentals/ch01-architecture/03-process-model.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "pending",
+      "task9_state": "pending",
+      "task2b_state": "idle"
+    },
+    "src/part1-fundamentals/ch01-architecture/04-binder.md": {
+      "chapter": "1.4",
+      "title": "Binder IPC 机制与性能影响",
+      "path": "src/part1-fundamentals/ch01-architecture/04-binder.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "pending",
+      "task9_state": "pending",
+      "task2b_state": "idle"
+    },
+    "src/part1-fundamentals/ch01-architecture/05-threading-model.md": {
+      "chapter": "1.5",
+      "title": "线程模型",
+      "path": "src/part1-fundamentals/ch01-architecture/05-threading-model.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "pending",
+      "task9_state": "pending",
+      "task2b_state": "idle"
+    },
+    "src/part1-fundamentals/ch01-architecture/06-version-evolution.md": {
+      "chapter": "1.6",
+      "title": "Android 版本演进中的架构变化",
+      "path": "src/part1-fundamentals/ch01-architecture/06-version-evolution.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "pending",
+      "task9_state": "pending",
+      "task2b_state": "idle"
+    },
+    "src/part1-fundamentals/ch01-architecture/07-art-compilation.md": {
+      "chapter": "1.7",
+      "title": "ART 编译管线与 dex2oat 优化",
+      "path": "src/part1-fundamentals/ch01-architecture/07-art-compilation.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "pending",
+      "task9_state": "pending",
+      "task2b_state": "idle"
+    },
+    "src/part1-fundamentals/ch01-architecture/08-activity-manager.md": {
+      "chapter": "1.8",
+      "title": "Activity Manager Service 与性能分析",
+      "path": "src/part1-fundamentals/ch01-architecture/08-activity-manager.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
+      "task9_state": "pending",
+      "task2b_state": "fixed"
+    },
+    "src/part1-fundamentals/ch01-architecture/09-package-manager.md": {
+      "chapter": "1.9",
+      "title": "Package Manager Service 与应用安装性能",
+      "path": "src/part1-fundamentals/ch01-architecture/09-package-manager.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task2b_pending",
+      "task6_state": "reviewed",
+      "task9_state": "pending",
+      "task2b_state": "pending"
+    },
+    "src/part1-fundamentals/ch01-architecture/10-content-provider.md": {
+      "chapter": "1.10",
+      "title": "ContentProvider 性能与优化",
+      "path": "src/part1-fundamentals/ch01-architecture/10-content-provider.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task2b_pending",
+      "task6_state": "reviewed",
+      "task9_state": "pending",
+      "task2b_state": "pending"
+    },
+    "src/part1-fundamentals/ch01-architecture/11-zygote-startup.md": {
+      "chapter": "1.11",
+      "title": "Zygote 机制与启动性能优化",
+      "path": "src/part1-fundamentals/ch01-architecture/11-zygote-startup.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
+      "task9_state": "pending",
+      "task2b_state": "fixed"
+    },
+    "src/part1-fundamentals/ch01-architecture/12-autofdo-optimization.md": {
+      "chapter": "1.12",
+      "title": "AutoFDO 反馈导向编译优化",
+      "path": "src/part1-fundamentals/ch01-architecture/12-autofdo-optimization.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
+      "task9_state": "pending",
+      "task2b_state": "fixed"
+    },
+    "src/part1-fundamentals/ch01-architecture/13-messagequeue-deliqueue.md": {
+      "chapter": "1.13",
+      "title": "MessageQueue 机制与 DeliQueue 无锁优化",
+      "path": "src/part1-fundamentals/ch01-architecture/13-messagequeue-deliqueue.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "pending",
+      "task9_state": "pending",
+      "task2b_state": "idle"
+    },
+    "src/part1-fundamentals/ch01-architecture/14-lock-contention.md": {
+      "chapter": "1.14",
+      "title": "锁竞争与同步性能分析",
+      "path": "src/part1-fundamentals/ch01-architecture/14-lock-contention.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
+      "task9_state": "pending",
+      "task2b_state": "fixed"
+    },
+    "src/part1-fundamentals/ch01-architecture/15-jni-ndk-performance.md": {
+      "chapter": "1.15",
+      "title": "JNI/NDK 性能优化",
+      "path": "src/part1-fundamentals/ch01-architecture/15-jni-ndk-performance.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
+      "task9_state": "pending",
+      "task2b_state": "fixed"
+    },
+    "src/part1-fundamentals/ch01-architecture/16-audio-pipeline-performance.md": {
+      "chapter": "1.16",
+      "title": "Audio Pipeline 延迟与性能",
+      "path": "src/part1-fundamentals/ch01-architecture/16-audio-pipeline-performance.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
+      "task9_state": "pending",
+      "task2b_state": "fixed"
+    },
+    "src/part1-fundamentals/ch01-architecture/17-ipc-panorama.md": {
+      "chapter": "1.17",
+      "title": "IPC 全景：Android 进程间通信机制对比与性能选型",
+      "path": "src/part1-fundamentals/ch01-architecture/17-ipc-panorama.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
+      "task9_state": "pending",
+      "task2b_state": "fixed"
+    },
+    "src/part1-fundamentals/ch02-rendering/01-rendering-overview.md": {
+      "chapter": "2.1",
+      "title": "Android 渲染架构全景",
+      "path": "src/part1-fundamentals/ch02-rendering/01-rendering-overview.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "pending",
+      "task9_state": "pending",
+      "task2b_state": "idle"
+    },
+    "src/part1-fundamentals/ch02-rendering/02-framerate.md": {
+      "chapter": "2.2",
+      "title": "帧率与刷新率",
+      "path": "src/part1-fundamentals/ch02-rendering/02-framerate.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "pending",
+      "task9_state": "pending",
+      "task2b_state": "idle"
+    },
+    "src/part1-fundamentals/ch02-rendering/03-vsync.md": {
+      "chapter": "2.3",
+      "title": "VSync 机制",
+      "path": "src/part1-fundamentals/ch02-rendering/03-vsync.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
+      "task9_state": "pending",
+      "task2b_state": "fixed"
+    },
+    "src/part1-fundamentals/ch02-rendering/04-choreographer.md": {
+      "chapter": "2",
+      "title": "Choreographer 与渲染流水线",
+      "path": "src/part1-fundamentals/ch02-rendering/04-choreographer.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "pending",
+      "task9_state": "pending",
+      "task2b_state": "idle"
+    },
+    "src/part1-fundamentals/ch02-rendering/05-main-render-thread.md": {
+      "chapter": "2.5",
+      "title": "MainThread 与 RenderThread 协作",
+      "path": "src/part1-fundamentals/ch02-rendering/05-main-render-thread.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "pending",
+      "task9_state": "pending",
+      "task2b_state": "idle"
+    },
+    "src/part1-fundamentals/ch02-rendering/06-surfaceflinger.md": {
+      "chapter": "2.6",
+      "title": "SurfaceFlinger 与合成",
+      "path": "src/part1-fundamentals/ch02-rendering/06-surfaceflinger.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "pending",
+      "task9_state": "pending",
+      "task2b_state": "idle"
+    },
+    "src/part1-fundamentals/ch02-rendering/07-hardware-layer.md": {
+      "chapter": "2.7",
+      "title": "Hardware Layer",
+      "path": "src/part1-fundamentals/ch02-rendering/07-hardware-layer.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "pending",
+      "task9_state": "pending",
+      "task2b_state": "idle"
+    },
+    "src/part1-fundamentals/ch02-rendering/08-overdraw.md": {
+      "chapter": "2.8",
+      "title": "过度绘制",
+      "path": "src/part1-fundamentals/ch02-rendering/08-overdraw.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "pending",
+      "task9_state": "pending",
+      "task2b_state": "idle"
+    },
+    "src/part1-fundamentals/ch02-rendering/09-rendering-evolution.md": {
+      "chapter": "2.9",
+      "title": "渲染机制的版本演进",
+      "path": "src/part1-fundamentals/ch02-rendering/09-rendering-evolution.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "pending",
+      "task9_state": "pending",
+      "task2b_state": "idle"
+    },
+    "src/part1-fundamentals/ch02-rendering/10-gpu-rendering.md": {
+      "chapter": "2",
+      "title": "GPU 渲染深入",
+      "path": "src/part1-fundamentals/ch02-rendering/10-gpu-rendering.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "pending",
+      "task9_state": "pending",
+      "task2b_state": "idle"
+    },
+    "src/part1-fundamentals/ch02-rendering/11-flutter-rendering.md": {
+      "chapter": "2.11",
+      "title": "2.11 Flutter 渲染管线与性能",
+      "path": "src/part1-fundamentals/ch02-rendering/11-flutter-rendering.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
+      "task9_state": "pending",
+      "task2b_state": "fixed"
+    },
+    "src/part1-fundamentals/ch02-rendering/12-window-manager.md": {
+      "chapter": "2.12",
+      "title": "Window Manager Service 与窗口管理",
+      "path": "src/part1-fundamentals/ch02-rendering/12-window-manager.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
+      "task9_state": "pending",
+      "task2b_state": "idle"
+    },
+    "src/part1-fundamentals/ch02-rendering/13-buffer-queue.md": {
+      "chapter": "2.13",
+      "title": "图形缓冲区管理 (BufferQueue)",
+      "path": "src/part1-fundamentals/ch02-rendering/13-buffer-queue.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
+      "task9_state": "pending",
+      "task2b_state": "fixed"
+    },
+    "src/part1-fundamentals/ch02-rendering/14-graphics-api-evolution.md": {
+      "chapter": "2.14",
+      "title": "图形 API 演进与选择策略（OpenGL ES / Vulkan / ANGLE）",
+      "path": "src/part1-fundamentals/ch02-rendering/14-graphics-api-evolution.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task2b_pending",
+      "task6_state": "reviewed",
+      "task9_state": "reviewed",
+      "task2b_state": "pending"
+    },
+    "src/part1-fundamentals/ch02-rendering/15-dmabuf-gralloc.md": {
+      "chapter": "2.15",
+      "title": "DMA-BUF、Gralloc 与跨进程图形内存共享",
+      "path": "src/part1-fundamentals/ch02-rendering/15-dmabuf-gralloc.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "pending",
+      "task9_state": "pending",
+      "task2b_state": "idle"
+    },
+    "src/part1-fundamentals/ch02-rendering/16-sync-fence.md": {
+      "chapter": "2.16",
+      "title": "Sync Fence 框架与帧同步机制",
+      "path": "src/part1-fundamentals/ch02-rendering/16-sync-fence.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "pending",
+      "task9_state": "pending",
+      "task2b_state": "idle"
+    },
+    "src/part1-fundamentals/ch02-rendering/17-frame-pacing.md": {
+      "chapter": "2.17",
+      "title": "Frame Pacing Library 与帧节奏控制",
+      "path": "src/part1-fundamentals/ch02-rendering/17-frame-pacing.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "pending",
+      "task9_state": "pending",
+      "task2b_state": "idle"
+    },
+    "src/part1-fundamentals/ch02-rendering/18-adaptive-refresh-rate.md": {
+      "chapter": "2.18",
+      "title": "Adaptive Refresh Rate 与动态帧率控制",
+      "path": "src/part1-fundamentals/ch02-rendering/18-adaptive-refresh-rate.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "pending",
+      "task9_state": "pending",
+      "task2b_state": "idle"
+    },
+    "src/part1-fundamentals/ch02-rendering/19-refresh-rate-switching.md": {
+      "chapter": "2.19",
+      "title": "刷新率切换与帧率适配性能",
+      "path": "src/part1-fundamentals/ch02-rendering/19-refresh-rate-switching.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "pending",
+      "task9_state": "pending",
+      "task2b_state": "idle"
+    },
+    "src/part1-fundamentals/ch02-rendering/20-multiwindow-desktop-rendering.md": {
+      "chapter": "2.20",
+      "title": "多窗口与桌面模式渲染性能",
+      "path": "src/part1-fundamentals/ch02-rendering/20-multiwindow-desktop-rendering.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "pending",
+      "task9_state": "pending",
+      "task2b_state": "idle"
+    },
+    "src/part1-fundamentals/ch02-rendering/21-text-rendering-performance.md": {
+      "chapter": "2.21",
+      "title": "文字渲染性能",
+      "path": "src/part1-fundamentals/ch02-rendering/21-text-rendering-performance.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "pending",
+      "task9_state": "pending",
+      "task2b_state": "idle"
+    },
+    "src/part1-fundamentals/ch03-input/01-input-dispatch.md": {
+      "chapter": "3.1",
+      "title": "Input 事件分发全流程",
+      "path": "src/part1-fundamentals/ch03-input/01-input-dispatch.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "pending",
+      "task9_state": "pending",
+      "task2b_state": "idle"
+    },
+    "src/part1-fundamentals/ch03-input/02-touch-performance.md": {
+      "chapter": "3.2",
+      "title": "触摸响应的性能分析",
+      "path": "src/part1-fundamentals/ch03-input/02-touch-performance.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "pending",
+      "task9_state": "pending",
+      "task2b_state": "idle"
+    },
+    "src/part1-fundamentals/ch03-input/03-gesture-navigation.md": {
+      "chapter": "3.3",
+      "title": "手势导航与系统交互",
+      "path": "src/part1-fundamentals/ch03-input/03-gesture-navigation.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "pending",
+      "task9_state": "pending",
+      "task2b_state": "idle"
+    },
+    "src/part1-fundamentals/ch03-input/04-input-latency-prediction.md": {
+      "chapter": "3.4",
+      "title": "输入延迟与预测输入技术",
+      "path": "src/part1-fundamentals/ch03-input/04-input-latency-prediction.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "pending",
+      "task9_state": "pending",
+      "task2b_state": "idle"
+    },
+    "src/part1-fundamentals/ch03-input/05-input-interception-security.md": {
+      "chapter": "3.5",
+      "title": "输入事件拦截与安全机制",
+      "path": "src/part1-fundamentals/ch03-input/05-input-interception-security.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "pending",
+      "task9_state": "pending",
+      "task2b_state": "idle"
+    },
+    "src/part1-fundamentals/ch03-input/06-gesture-recognition-performance.md": {
+      "chapter": "3.6",
+      "title": "手势识别算法与性能优化",
+      "path": "src/part1-fundamentals/ch03-input/06-gesture-recognition-performance.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "pending",
+      "task9_state": "pending",
+      "task2b_state": "idle"
+    },
+    "src/part1-fundamentals/ch04-memory/01-memory-overview.md": {
+      "chapter": "4.1",
+      "title": "Android 内存模型全景",
+      "path": "src/part1-fundamentals/ch04-memory/01-memory-overview.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "pending",
+      "task9_state": "pending",
+      "task2b_state": "idle"
+    },
+    "src/part1-fundamentals/ch04-memory/02-linux-memory.md": {
+      "chapter": "4.2",
+      "title": "Linux 内核内存管理",
+      "path": "src/part1-fundamentals/ch04-memory/02-linux-memory.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "pending",
+      "task9_state": "pending",
+      "task2b_state": "idle"
+    },
+    "src/part1-fundamentals/ch04-memory/03-art-memory.md": {
+      "chapter": "4.3",
+      "title": "ART 虚拟机内存管理",
+      "path": "src/part1-fundamentals/ch04-memory/03-art-memory.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "pending",
+      "task9_state": "pending",
+      "task2b_state": "idle"
+    },
+    "src/part1-fundamentals/ch04-memory/04-lmk.md": {
+      "chapter": "4.4",
+      "title": "Low Memory Killer",
+      "path": "src/part1-fundamentals/ch04-memory/04-lmk.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "pending",
+      "task9_state": "pending",
+      "task2b_state": "idle"
+    },
+    "src/part1-fundamentals/ch04-memory/05-app-memory-optimization.md": {
+      "chapter": "4.5",
+      "title": "App 内存优化",
+      "path": "src/part1-fundamentals/ch04-memory/05-app-memory-optimization.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "pending",
+      "task9_state": "pending",
+      "task2b_state": "idle"
+    },
+    "src/part1-fundamentals/ch04-memory/06-memory-evolution.md": {
+      "chapter": "4.6",
+      "title": "内存相关的版本演进",
+      "path": "src/part1-fundamentals/ch04-memory/06-memory-evolution.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "pending",
+      "task9_state": "pending",
+      "task2b_state": "idle"
+    },
+    "src/part1-fundamentals/ch04-memory/07-16kb-page-size.md": {
+      "chapter": "4.7",
+      "title": "16KB Page Size 与 Android 性能",
+      "path": "src/part1-fundamentals/ch04-memory/07-16kb-page-size.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "pending",
+      "task9_state": "pending",
+      "task2b_state": "idle"
+    },
+    "src/part1-fundamentals/ch04-memory/08-art-generational-gc.md": {
+      "chapter": "4.8",
+      "title": "ART 分代垃圾回收与 GC 暂停优化",
+      "path": "src/part1-fundamentals/ch04-memory/08-art-generational-gc.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "pending",
+      "task9_state": "pending",
+      "task2b_state": "idle"
+    },
+    "src/part1-fundamentals/ch05-cpu-power/01-linux-scheduling.md": {
+      "chapter": "5.1",
+      "title": "Linux 进程调度基础",
+      "path": "src/part1-fundamentals/ch05-cpu-power/01-linux-scheduling.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "pending",
+      "task9_state": "pending",
+      "task2b_state": "idle"
+    },
+    "src/part1-fundamentals/ch05-cpu-power/02-eas.md": {
+      "chapter": "5.2",
+      "title": "EAS 能量感知调度",
+      "path": "src/part1-fundamentals/ch05-cpu-power/02-eas.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "pending",
+      "task9_state": "pending",
+      "task2b_state": "idle"
+    },
+    "src/part1-fundamentals/ch05-cpu-power/03-big-little.md": {
+      "chapter": "5.3",
+      "title": "大小核架构",
+      "path": "src/part1-fundamentals/ch05-cpu-power/03-big-little.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "pending",
+      "task9_state": "pending",
+      "task2b_state": "idle"
+    },
+    "src/part1-fundamentals/ch05-cpu-power/04-dvfs.md": {
+      "chapter": "5.4",
+      "title": "DVFS 与功耗管理",
+      "path": "src/part1-fundamentals/ch05-cpu-power/04-dvfs.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "pending",
+      "task9_state": "pending",
+      "task2b_state": "idle"
+    },
+    "src/part1-fundamentals/ch05-cpu-power/05-thermal.md": {
       "chapter": null,
-      "title": "target-audience",
-      "path": "src/preface/target-audience.md",
-      "status": "unknown",
-      "pipeline_stage": "unknown",
-      "task6_state": "unknown",
-      "task9_state": "unknown",
-      "task2b_state": "unknown"
-    },
-    "src/preface/version-conventions.md": {
-      "chapter": null,
-      "title": "version-conventions",
-      "path": "src/preface/version-conventions.md",
-      "status": "unknown",
-      "pipeline_stage": "unknown",
-      "task6_state": "unknown",
-      "task9_state": "unknown",
-      "task2b_state": "unknown"
-    },
-    "src/preface/intro.md": {
-      "chapter": null,
-      "title": "intro",
-      "path": "src/preface/intro.md",
-      "status": "unknown",
-      "pipeline_stage": "unknown",
-      "task6_state": "unknown",
-      "task9_state": "unknown",
-      "task2b_state": "unknown"
-    },
-    "src/preface/verification-standards.md": {
-      "chapter": null,
-      "title": "verification-standards",
-      "path": "src/preface/verification-standards.md",
-      "status": "unknown",
-      "pipeline_stage": "unknown",
-      "task6_state": "unknown",
-      "task9_state": "unknown",
-      "task2b_state": "unknown"
-    },
-    "src/preface/reading-paths.md": {
-      "chapter": null,
-      "title": "reading-paths",
-      "path": "src/preface/reading-paths.md",
-      "status": "unknown",
-      "pipeline_stage": "unknown",
-      "task6_state": "unknown",
-      "task9_state": "unknown",
-      "task2b_state": "unknown"
-    },
-    "src/preface/how-to-use.md": {
-      "chapter": null,
-      "title": "how-to-use",
-      "path": "src/preface/how-to-use.md",
-      "status": "unknown",
-      "pipeline_stage": "unknown",
-      "task6_state": "unknown",
-      "task9_state": "unknown",
-      "task2b_state": "unknown"
-    },
-    "src/part3-tools/ch14-other-tools/07-profiling-manager.md": {
-      "chapter": null,
-      "title": "07-profiling-manager",
-      "path": "src/part3-tools/ch14-other-tools/07-profiling-manager.md",
+      "title": "05-thermal",
+      "path": "src/part1-fundamentals/ch05-cpu-power/05-thermal.md",
       "status": "unknown",
       "pipeline_stage": "task6_pending",
       "task6_state": "pending",
       "task9_state": "pending",
       "task2b_state": "idle"
     },
-    "src/part3-tools/ch14-other-tools/02-simpleperf.md": {
-      "chapter": "14.2",
-      "title": "Simpleperf",
-      "path": "src/part3-tools/ch14-other-tools/02-simpleperf.md",
+    "src/part1-fundamentals/ch05-cpu-power/06-android-power.md": {
+      "chapter": "5.6",
+      "title": "Android 功耗管理",
+      "path": "src/part1-fundamentals/ch05-cpu-power/06-android-power.md",
       "status": "ready-for-review",
       "pipeline_stage": "task6_pending",
       "task6_state": "pending",
       "task9_state": "pending",
       "task2b_state": "idle"
     },
-    "src/part3-tools/ch14-other-tools/01-as-profiler.md": {
-      "chapter": "14.1",
-      "title": "Android Studio Profiler",
-      "path": "src/part3-tools/ch14-other-tools/01-as-profiler.md",
+    "src/part1-fundamentals/ch05-cpu-power/07-cpu-evolution.md": {
+      "chapter": "5.7",
+      "title": "CPU 相关的版本演进",
+      "path": "src/part1-fundamentals/ch05-cpu-power/07-cpu-evolution.md",
       "status": "ready-for-review",
       "pipeline_stage": "task6_pending",
       "task6_state": "pending",
       "task9_state": "pending",
       "task2b_state": "idle"
     },
-    "src/part3-tools/ch14-other-tools/03-memory-tools.md": {
-      "chapter": "14.3",
-      "title": "内存分析工具",
-      "path": "src/part3-tools/ch14-other-tools/03-memory-tools.md",
+    "src/part1-fundamentals/ch05-cpu-power/08-background-execution.md": {
+      "chapter": "5.8",
+      "title": "后台执行限制与优化",
+      "path": "src/part1-fundamentals/ch05-cpu-power/08-background-execution.md",
       "status": "ready-for-review",
       "pipeline_stage": "task6_pending",
       "task6_state": "pending",
       "task9_state": "pending",
       "task2b_state": "idle"
     },
-    "src/part3-tools/ch14-other-tools/09-camera-performance-analysis.md": {
-      "chapter": "14.9",
-      "title": "Android Camera 性能与 Perfetto 分析",
-      "path": "src/part3-tools/ch14-other-tools/09-camera-performance-analysis.md",
+    "src/part1-fundamentals/ch05-cpu-power/09-adpf.md": {
+      "chapter": "5.9",
+      "title": "ADPF 自适应性能框架",
+      "path": "src/part1-fundamentals/ch05-cpu-power/09-adpf.md",
       "status": "ready-for-review",
       "pipeline_stage": "task6_pending",
       "task6_state": "pending",
       "task9_state": "pending",
       "task2b_state": "idle"
     },
-    "src/part3-tools/ch14-other-tools/08-gpu-debug-tools.md": {
-      "chapter": "14.8",
-      "title": "GPU 图形调试与分析工具",
-      "path": "src/part3-tools/ch14-other-tools/08-gpu-debug-tools.md",
+    "src/part1-fundamentals/ch05-cpu-power/10-jobscheduler-workmanager-performance.md": {
+      "chapter": "5.10",
+      "title": "JobScheduler/WorkManager 调度与后台任务性能",
+      "path": "src/part1-fundamentals/ch05-cpu-power/10-jobscheduler-workmanager-performance.md",
       "status": "ready-for-review",
       "pipeline_stage": "task6_pending",
       "task6_state": "pending",
       "task9_state": "pending",
       "task2b_state": "idle"
     },
-    "src/part3-tools/ch14-other-tools/10-ebpf-performance-analysis.md": {
-      "chapter": "14.10",
-      "title": "eBPF/BPF 在 Android 性能分析中的应用",
-      "path": "src/part3-tools/ch14-other-tools/10-ebpf-performance-analysis.md",
+    "src/part1-fundamentals/ch05-cpu-power/11-ondevice-ml-inference-performance.md": {
+      "chapter": "5.11",
+      "title": "端侧 AI 推理性能：NPU/GPU 加速与 TFLite 管线",
+      "path": "src/part1-fundamentals/ch05-cpu-power/11-ondevice-ml-inference-performance.md",
       "status": "ready-for-review",
       "pipeline_stage": "task6_pending",
       "task6_state": "pending",
       "task9_state": "pending",
       "task2b_state": "idle"
     },
-    "src/part3-tools/ch14-other-tools/04-dumpsys.md": {
-      "chapter": "14.4",
-      "title": "dumpsys 系列命令",
-      "path": "src/part3-tools/ch14-other-tools/04-dumpsys.md",
+    "src/part1-fundamentals/ch05-cpu-power/12-thermal-management-deep-dive.md": {
+      "chapter": "5.12",
+      "title": "Thermal 管控深度：从内核子系统到 ADPF 主动降频",
+      "path": "src/part1-fundamentals/ch05-cpu-power/12-thermal-management-deep-dive.md",
       "status": "ready-for-review",
       "pipeline_stage": "task6_pending",
       "task6_state": "pending",
       "task9_state": "pending",
       "task2b_state": "idle"
     },
-    "src/part3-tools/ch14-other-tools/05-third-party-libs.md": {
-      "chapter": "14.5",
-      "title": "三方性能库",
-      "path": "src/part3-tools/ch14-other-tools/05-third-party-libs.md",
+    "src/part1-fundamentals/ch06-storage/01-storage-architecture.md": {
+      "chapter": "6.1",
+      "title": "Android 存储架构",
+      "path": "src/part1-fundamentals/ch06-storage/01-storage-architecture.md",
       "status": "ready-for-review",
       "pipeline_stage": "task6_pending",
       "task6_state": "pending",
       "task9_state": "pending",
       "task2b_state": "idle"
     },
-    "src/part3-tools/ch14-other-tools/11-battery-historian.md": {
-      "chapter": "14.11",
-      "title": "Battery Historian 与功耗分析工具",
-      "path": "src/part3-tools/ch14-other-tools/11-battery-historian.md",
+    "src/part1-fundamentals/ch06-storage/02-filesystem.md": {
+      "chapter": "6.2",
+      "title": "文件系统",
+      "path": "src/part1-fundamentals/ch06-storage/02-filesystem.md",
       "status": "ready-for-review",
       "pipeline_stage": "task6_pending",
       "task6_state": "pending",
       "task9_state": "pending",
       "task2b_state": "idle"
     },
-    "src/part3-tools/ch14-other-tools/06-automation-tools.md": {
-      "chapter": "14.6",
-      "title": "自动化测试工具",
-      "path": "src/part3-tools/ch14-other-tools/06-automation-tools.md",
+    "src/part1-fundamentals/ch06-storage/03-io-scheduling.md": {
+      "chapter": "6.3",
+      "title": "I/O 调度与性能",
+      "path": "src/part1-fundamentals/ch06-storage/03-io-scheduling.md",
       "status": "ready-for-review",
       "pipeline_stage": "task6_pending",
       "task6_state": "pending",
       "task9_state": "pending",
       "task2b_state": "idle"
     },
-    "src/part3-tools/ch15-methodology/03-metrics.md": {
-      "chapter": "15.3",
-      "title": "性能指标体系",
-      "path": "src/part3-tools/ch15-methodology/03-metrics.md",
+    "src/part1-fundamentals/ch06-storage/04-storage-evolution.md": {
+      "chapter": "6.4",
+      "title": "存储相关的版本演进",
+      "path": "src/part1-fundamentals/ch06-storage/04-storage-evolution.md",
       "status": "ready-for-review",
       "pipeline_stage": "task6_pending",
       "task6_state": "pending",
       "task9_state": "pending",
       "task2b_state": "idle"
     },
-    "src/part3-tools/ch15-methodology/05-online-monitoring.md": {
-      "chapter": "15.5",
-      "title": "线上性能监控",
-      "path": "src/part3-tools/ch15-methodology/05-online-monitoring.md",
+    "src/part1-fundamentals/ch06-storage/05-sharedpreferences-datastore.md": {
+      "chapter": "6.5",
+      "title": "SharedPreferences/DataStore 性能与 ANR 优化",
+      "path": "src/part1-fundamentals/ch06-storage/05-sharedpreferences-datastore.md",
       "status": "ready-for-review",
       "pipeline_stage": "task6_pending",
       "task6_state": "pending",
       "task9_state": "pending",
       "task2b_state": "idle"
     },
-    "src/part3-tools/ch15-methodology/08-empirical-performance-issues.md": {
-      "chapter": "15.8",
-      "title": "Android 性能问题实证：真实世界的分类与代码模式",
-      "path": "src/part3-tools/ch15-methodology/08-empirical-performance-issues.md",
+    "src/part2-performance/ch07-smoothness/01-jank-definition.md": {
+      "chapter": "7.1",
+      "title": "卡顿的定义与分类",
+      "path": "src/part2-performance/ch07-smoothness/01-jank-definition.md",
       "status": "ready-for-review",
       "pipeline_stage": "task6_pending",
       "task6_state": "pending",
       "task9_state": "pending",
       "task2b_state": "idle"
     },
-    "src/part3-tools/ch15-methodology/02-system-vs-app.md": {
-      "chapter": "15.2",
-      "title": "如何区分系统问题和 App 问题",
-      "path": "src/part3-tools/ch15-methodology/02-system-vs-app.md",
+    "src/part2-performance/ch07-smoothness/02-jank-causes.md": {
+      "chapter": "7.2",
+      "title": "卡顿原因体系",
+      "path": "src/part2-performance/ch07-smoothness/02-jank-causes.md",
       "status": "ready-for-review",
       "pipeline_stage": "task6_pending",
       "task6_state": "pending",
       "task9_state": "pending",
       "task2b_state": "idle"
     },
-    "src/part3-tools/ch15-methodology/01-philosophy.md": {
-      "chapter": "15.1",
-      "title": "性能优化的术、道、器",
-      "path": "src/part3-tools/ch15-methodology/01-philosophy.md",
+    "src/part2-performance/ch07-smoothness/03-jank-methodology.md": {
+      "chapter": "7.3",
+      "title": "卡顿分析方法论",
+      "path": "src/part2-performance/ch07-smoothness/03-jank-methodology.md",
       "status": "ready-for-review",
       "pipeline_stage": "task6_pending",
       "task6_state": "pending",
       "task9_state": "pending",
       "task2b_state": "idle"
     },
-    "src/part3-tools/ch15-methodology/04-competitive-analysis.md": {
-      "chapter": "15.4",
-      "title": "竞品分析方法",
-      "path": "src/part3-tools/ch15-methodology/04-competitive-analysis.md",
+    "src/part2-performance/ch07-smoothness/04-typical-scenarios.md": {
+      "chapter": "7.4",
+      "title": "典型场景分析",
+      "path": "src/part2-performance/ch07-smoothness/04-typical-scenarios.md",
       "status": "ready-for-review",
       "pipeline_stage": "task6_pending",
       "task6_state": "pending",
       "task9_state": "pending",
       "task2b_state": "idle"
     },
-    "src/part3-tools/ch15-methodology/06-testing-best-practices.md": {
-      "chapter": "15.6",
-      "title": "性能测试最佳实践",
-      "path": "src/part3-tools/ch15-methodology/06-testing-best-practices.md",
+    "src/part2-performance/ch07-smoothness/05-optimization.md": {
+      "chapter": "7.5",
+      "title": "优化策略",
+      "path": "src/part2-performance/ch07-smoothness/05-optimization.md",
       "status": "ready-for-review",
       "pipeline_stage": "task6_pending",
       "task6_state": "pending",
       "task9_state": "pending",
       "task2b_state": "idle"
     },
-    "src/part3-tools/ch15-methodology/07-aosp-reading.md": {
-      "chapter": "15.7",
-      "title": "AOSP 代码阅读",
-      "path": "src/part3-tools/ch15-methodology/07-aosp-reading.md",
+    "src/part2-performance/ch07-smoothness/06-case-studies.md": {
+      "chapter": "7.6",
+      "title": "案例集",
+      "path": "src/part2-performance/ch07-smoothness/06-case-studies.md",
       "status": "ready-for-review",
       "pipeline_stage": "task6_pending",
       "task6_state": "pending",
       "task9_state": "pending",
       "task2b_state": "idle"
     },
-    "src/part3-tools/ch13-perfetto/06-thread-cpu-states.md": {
-      "chapter": "13.6",
-      "title": "线程 CPU 状态分析",
-      "path": "src/part3-tools/ch13-perfetto/06-thread-cpu-states.md",
+    "src/part2-performance/ch07-smoothness/07-compose-performance.md": {
+      "chapter": "7.7",
+      "title": "Jetpack Compose 性能优化",
+      "path": "src/part2-performance/ch07-smoothness/07-compose-performance.md",
       "status": "ready-for-review",
       "pipeline_stage": "task6_pending",
       "task6_state": "pending",
       "task9_state": "pending",
       "task2b_state": "idle"
     },
-    "src/part3-tools/ch13-perfetto/07-advanced-usage.md": {
-      "chapter": "13.7",
-      "title": "Perfetto 的高级用法",
-      "path": "src/part3-tools/ch13-perfetto/07-advanced-usage.md",
+    "src/part2-performance/ch07-smoothness/08-recyclerview-performance.md": {
+      "chapter": "7.8",
+      "title": "RecyclerView 列表滑动性能深度优化",
+      "path": "src/part2-performance/ch07-smoothness/08-recyclerview-performance.md",
       "status": "ready-for-review",
       "pipeline_stage": "task6_pending",
       "task6_state": "pending",
       "task9_state": "pending",
       "task2b_state": "idle"
     },
-    "src/part3-tools/ch13-perfetto/05-topic-analysis.md": {
-      "chapter": "13.5",
-      "title": "专题解读",
-      "path": "src/part3-tools/ch13-perfetto/05-topic-analysis.md",
+    "src/part2-performance/ch07-smoothness/09-perceived-smoothness.md": {
+      "chapter": "7.9",
+      "title": "感知流畅性：步幅波动与无掉帧卡顿",
+      "path": "src/part2-performance/ch07-smoothness/09-perceived-smoothness.md",
       "status": "ready-for-review",
       "pipeline_stage": "task6_pending",
       "task6_state": "pending",
       "task9_state": "pending",
       "task2b_state": "idle"
     },
-    "src/part3-tools/ch13-perfetto/01-perfetto-intro.md": {
-      "chapter": "13.1",
-      "title": "Perfetto 简介与演进",
-      "path": "src/part3-tools/ch13-perfetto/01-perfetto-intro.md",
+    "src/part2-performance/ch07-smoothness/10-image-bitmap-performance.md": {
+      "chapter": "7.10",
+      "title": "图片加载与 Bitmap 性能优化",
+      "path": "src/part2-performance/ch07-smoothness/10-image-bitmap-performance.md",
       "status": "ready-for-review",
       "pipeline_stage": "task6_pending",
       "task6_state": "pending",
       "task9_state": "pending",
       "task2b_state": "idle"
     },
-    "src/part3-tools/ch13-perfetto/04-large-traces.md": {
-      "chapter": "13.4",
-      "title": "命令行打开超大 Trace",
-      "path": "src/part3-tools/ch13-perfetto/04-large-traces.md",
+    "src/part2-performance/ch07-smoothness/11-webview-performance.md": {
+      "chapter": "7.11",
+      "title": "WebView 渲染性能与优化",
+      "path": "src/part2-performance/ch07-smoothness/11-webview-performance.md",
       "status": "ready-for-review",
       "pipeline_stage": "task6_pending",
       "task6_state": "pending",
       "task9_state": "pending",
       "task2b_state": "idle"
     },
-    "src/part3-tools/ch13-perfetto/10-perfetto-sql-cookbook.md": {
-      "chapter": "13.10",
-      "title": "Perfetto SQL 性能分析实战手册",
-      "path": "src/part3-tools/ch13-perfetto/10-perfetto-sql-cookbook.md",
+    "src/part2-performance/ch07-smoothness/12-view-layout-performance.md": {
+      "chapter": "7.12",
+      "title": "View 体系性能优化：布局层级、inflate 与 measure/layout 开销",
+      "path": "src/part2-performance/ch07-smoothness/12-view-layout-performance.md",
       "status": "ready-for-review",
       "pipeline_stage": "task6_pending",
       "task6_state": "pending",
       "task9_state": "pending",
       "task2b_state": "idle"
     },
-    "src/part3-tools/ch13-perfetto/09-tracing-infrastructure.md": {
-      "chapter": "13.9",
-      "title": "Android Tracing 基础设施：atrace、ftrace 与 Perfetto 数据采集原理",
-      "path": "src/part3-tools/ch13-perfetto/09-tracing-infrastructure.md",
+    "src/part2-performance/ch07-smoothness/13-systemui-performance.md": {
+      "chapter": "7.13",
+      "title": "SystemUI 性能分析",
+      "path": "src/part2-performance/ch07-smoothness/13-systemui-performance.md",
       "status": "ready-for-review",
       "pipeline_stage": "task6_pending",
       "task6_state": "pending",
       "task9_state": "pending",
       "task2b_state": "idle"
     },
-    "src/part3-tools/ch13-perfetto/08-input-latency-sql.md": {
-      "chapter": "13.8",
-      "title": "Perfetto 输入延迟 SQL 深度分析",
-      "path": "src/part3-tools/ch13-perfetto/08-input-latency-sql.md",
+    "src/part2-performance/ch07-smoothness/14-gaps-dynamic-analysis.md": {
+      "chapter": "7.14",
+      "title": "GAPS：Android 动态分析目标可达性路径重建",
+      "path": "src/part2-performance/ch07-smoothness/14-gaps-dynamic-analysis.md",
       "status": "ready-for-review",
       "pipeline_stage": "task6_pending",
       "task6_state": "pending",
       "task9_state": "pending",
       "task2b_state": "idle"
     },
-    "src/part3-tools/ch13-perfetto/03-perfetto-view.md": {
-      "chapter": "13.3",
-      "title": "Perfetto View 解读",
-      "path": "src/part3-tools/ch13-perfetto/03-perfetto-view.md",
+    "src/part2-performance/ch08-responsiveness/01-responsiveness-principles.md": {
+      "chapter": "8.1",
+      "title": "响应速度原理",
+      "path": "src/part2-performance/ch08-responsiveness/01-responsiveness-principles.md",
       "status": "ready-for-review",
       "pipeline_stage": "task6_pending",
       "task6_state": "pending",
       "task9_state": "pending",
       "task2b_state": "idle"
     },
-    "src/part3-tools/ch13-perfetto/02-trace-capture.md": {
-      "chapter": "13.2",
-      "title": "Trace 抓取",
-      "path": "src/part3-tools/ch13-perfetto/02-trace-capture.md",
+    "src/part2-performance/ch08-responsiveness/02-app-launch.md": {
+      "chapter": "8.2",
+      "title": "App 启动全流程",
+      "path": "src/part2-performance/ch08-responsiveness/02-app-launch.md",
       "status": "ready-for-review",
       "pipeline_stage": "task6_pending",
       "task6_state": "pending",
       "task9_state": "pending",
       "task2b_state": "idle"
     },
-    "src/part2-performance/ch12-apk-network/03-network-performance-deep.md": {
-      "chapter": "12.3",
-      "title": "网络性能深入：连接池、TLS 与传输优化",
-      "path": "src/part2-performance/ch12-apk-network/03-network-performance-deep.md",
+    "src/part2-performance/ch08-responsiveness/03-launch-optimization.md": {
+      "chapter": "8.3",
+      "title": "启动优化策略",
+      "path": "src/part2-performance/ch08-responsiveness/03-launch-optimization.md",
       "status": "ready-for-review",
       "pipeline_stage": "task6_pending",
       "task6_state": "pending",
       "task9_state": "pending",
       "task2b_state": "idle"
     },
-    "src/part2-performance/ch12-apk-network/02-network-performance.md": {
-      "chapter": "12.2",
-      "title": "网络性能优化",
-      "path": "src/part2-performance/ch12-apk-network/02-network-performance.md",
+    "src/part2-performance/ch08-responsiveness/04-other-scenarios.md": {
+      "chapter": "8.4",
+      "title": "其他响应速度场景",
+      "path": "src/part2-performance/ch08-responsiveness/04-other-scenarios.md",
       "status": "ready-for-review",
       "pipeline_stage": "task6_pending",
       "task6_state": "pending",
       "task9_state": "pending",
       "task2b_state": "idle"
     },
-    "src/part2-performance/ch12-apk-network/01-apk-size.md": {
-      "chapter": "12.1",
-      "title": "APK 体积优化",
-      "path": "src/part2-performance/ch12-apk-network/01-apk-size.md",
+    "src/part2-performance/ch08-responsiveness/05-case-studies.md": {
+      "chapter": "8.5",
+      "title": "案例集",
+      "path": "src/part2-performance/ch08-responsiveness/05-case-studies.md",
       "status": "ready-for-review",
       "pipeline_stage": "task6_pending",
       "task6_state": "pending",
       "task9_state": "pending",
       "task2b_state": "idle"
     },
-    "src/part2-performance/ch12-apk-network/04-network-security-tls-performance.md": {
-      "chapter": "12.4",
-      "title": "Android 网络安全与 TLS 性能优化",
-      "path": "src/part2-performance/ch12-apk-network/04-network-security-tls-performance.md",
+    "src/part2-performance/ch08-responsiveness/06-coroutine-performance.md": {
+      "chapter": "8.6",
+      "title": "Kotlin Coroutine 性能实践",
+      "path": "src/part2-performance/ch08-responsiveness/06-coroutine-performance.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "pending",
+      "task9_state": "pending",
+      "task2b_state": "idle"
+    },
+    "src/part2-performance/ch08-responsiveness/07-baseline-profiles.md": {
+      "chapter": "8.7",
+      "title": "Baseline Profiles 与编译优化实践",
+      "path": "src/part2-performance/ch08-responsiveness/07-baseline-profiles.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "pending",
+      "task9_state": "pending",
+      "task2b_state": "idle"
+    },
+    "src/part2-performance/ch08-responsiveness/08-media-pipeline.md": {
+      "chapter": "8.8",
+      "title": "Android 多媒体管线性能",
+      "path": "src/part2-performance/ch08-responsiveness/08-media-pipeline.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "pending",
+      "task9_state": "pending",
+      "task2b_state": "idle"
+    },
+    "src/part2-performance/ch08-responsiveness/08-system-triggered-profiling.md": {
+      "chapter": "8.8",
+      "title": "ProfilingManager 系统触发式性能追踪",
+      "path": "src/part2-performance/ch08-responsiveness/08-system-triggered-profiling.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "pending",
+      "task9_state": "pending",
+      "task2b_state": "idle"
+    },
+    "src/part2-performance/ch08-responsiveness/09-game-performance.md": {
+      "chapter": "8.9",
+      "title": "Android 游戏性能与 Game Mode/State API",
+      "path": "src/part2-performance/ch08-responsiveness/09-game-performance.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "pending",
+      "task9_state": "pending",
+      "task2b_state": "idle"
+    },
+    "src/part2-performance/ch09-anr/01-anr-design.md": {
+      "chapter": "9.1",
+      "title": "ANR 设计思想",
+      "path": "src/part2-performance/ch09-anr/01-anr-design.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "pending",
+      "task9_state": "pending",
+      "task2b_state": "idle"
+    },
+    "src/part2-performance/ch09-anr/02-anr-types.md": {
+      "chapter": "9.2",
+      "title": "ANR 类型与触发条件",
+      "path": "src/part2-performance/ch09-anr/02-anr-types.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "pending",
+      "task9_state": "pending",
+      "task2b_state": "idle"
+    },
+    "src/part2-performance/ch09-anr/03-anr-analysis.md": {
+      "chapter": "9.3",
+      "title": "ANR 分析方法",
+      "path": "src/part2-performance/ch09-anr/03-anr-analysis.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "pending",
+      "task9_state": "pending",
+      "task2b_state": "idle"
+    },
+    "src/part2-performance/ch09-anr/04-special-anr.md": {
+      "chapter": "9.4",
+      "title": "特殊场景的 ANR",
+      "path": "src/part2-performance/ch09-anr/04-special-anr.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "pending",
+      "task9_state": "pending",
+      "task2b_state": "idle"
+    },
+    "src/part2-performance/ch09-anr/05-case-studies.md": {
+      "chapter": "9.5",
+      "title": "案例集",
+      "path": "src/part2-performance/ch09-anr/05-case-studies.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "pending",
+      "task9_state": "pending",
+      "task2b_state": "idle"
+    },
+    "src/part2-performance/ch09-anr/06-notification-performance-anr.md": {
+      "chapter": "9.6",
+      "title": "Notification 性能与 ANR",
+      "path": "src/part2-performance/ch09-anr/06-notification-performance-anr.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "pending",
+      "task9_state": "pending",
+      "task2b_state": "idle"
+    },
+    "src/part2-performance/ch09-anr/07-non-technical-anr-diagnosis.md": {
+      "chapter": "9.7",
+      "title": "ANR 非技术故障诊断",
+      "path": "src/part2-performance/ch09-anr/07-non-technical-anr-diagnosis.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "pending",
+      "task9_state": "pending",
+      "task2b_state": "idle"
+    },
+    "src/part2-performance/ch10-memory-perf/01-app-memory-analysis.md": {
+      "chapter": "10.1",
+      "title": "App 内存分析",
+      "path": "src/part2-performance/ch10-memory-perf/01-app-memory-analysis.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "pending",
+      "task9_state": "pending",
+      "task2b_state": "idle"
+    },
+    "src/part2-performance/ch10-memory-perf/02-memory-leak.md": {
+      "chapter": "10.2",
+      "title": "内存泄漏",
+      "path": "src/part2-performance/ch10-memory-perf/02-memory-leak.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "pending",
+      "task9_state": "pending",
+      "task2b_state": "idle"
+    },
+    "src/part2-performance/ch10-memory-perf/03-memory-growth.md": {
+      "chapter": "10.3",
+      "title": "内存持续增长",
+      "path": "src/part2-performance/ch10-memory-perf/03-memory-growth.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "pending",
+      "task9_state": "pending",
+      "task2b_state": "idle"
+    },
+    "src/part2-performance/ch10-memory-perf/04-low-memory-impact.md": {
+      "chapter": "10.4",
+      "title": "低内存对系统性能的影响",
+      "path": "src/part2-performance/ch10-memory-perf/04-low-memory-impact.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "pending",
+      "task9_state": "pending",
+      "task2b_state": "idle"
+    },
+    "src/part2-performance/ch10-memory-perf/05-case-studies.md": {
+      "chapter": "10.5",
+      "title": "案例集",
+      "path": "src/part2-performance/ch10-memory-perf/05-case-studies.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "pending",
+      "task9_state": "pending",
+      "task2b_state": "idle"
+    },
+    "src/part2-performance/ch10-memory-perf/06-memory-churn.md": {
+      "chapter": "10.6",
+      "title": "内存抖动与频繁 GC",
+      "path": "src/part2-performance/ch10-memory-perf/06-memory-churn.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "pending",
+      "task9_state": "pending",
+      "task2b_state": "idle"
+    },
+    "src/part2-performance/ch10-memory-perf/07-sqlite-room-performance.md": {
+      "chapter": "10.7",
+      "title": "SQLite/Room 数据库性能优化",
+      "path": "src/part2-performance/ch10-memory-perf/07-sqlite-room-performance.md",
       "status": "ready-for-review",
       "pipeline_stage": "task6_pending",
       "task6_state": "pending",
@@ -568,430 +1252,40 @@
       "task9_state": "pending",
       "task2b_state": "idle"
     },
-    "src/part2-performance/ch08-responsiveness/05-case-studies.md": {
-      "chapter": "8.5",
-      "title": "案例集",
-      "path": "src/part2-performance/ch08-responsiveness/05-case-studies.md",
+    "src/part2-performance/ch12-apk-network/01-apk-size.md": {
+      "chapter": "12.1",
+      "title": "APK 体积优化",
+      "path": "src/part2-performance/ch12-apk-network/01-apk-size.md",
       "status": "ready-for-review",
       "pipeline_stage": "task6_pending",
       "task6_state": "pending",
       "task9_state": "pending",
       "task2b_state": "idle"
     },
-    "src/part2-performance/ch08-responsiveness/01-responsiveness-principles.md": {
-      "chapter": "8.1",
-      "title": "响应速度原理",
-      "path": "src/part2-performance/ch08-responsiveness/01-responsiveness-principles.md",
+    "src/part2-performance/ch12-apk-network/02-network-performance.md": {
+      "chapter": "12.2",
+      "title": "网络性能优化",
+      "path": "src/part2-performance/ch12-apk-network/02-network-performance.md",
       "status": "ready-for-review",
       "pipeline_stage": "task6_pending",
       "task6_state": "pending",
       "task9_state": "pending",
       "task2b_state": "idle"
     },
-    "src/part2-performance/ch08-responsiveness/08-system-triggered-profiling.md": {
-      "chapter": "8.8",
-      "title": "ProfilingManager 系统触发式性能追踪",
-      "path": "src/part2-performance/ch08-responsiveness/08-system-triggered-profiling.md",
+    "src/part2-performance/ch12-apk-network/03-network-performance-deep.md": {
+      "chapter": "12.3",
+      "title": "网络性能深入：连接池、TLS 与传输优化",
+      "path": "src/part2-performance/ch12-apk-network/03-network-performance-deep.md",
       "status": "ready-for-review",
       "pipeline_stage": "task6_pending",
       "task6_state": "pending",
       "task9_state": "pending",
       "task2b_state": "idle"
     },
-    "src/part2-performance/ch08-responsiveness/06-coroutine-performance.md": {
-      "chapter": "8.6",
-      "title": "Kotlin Coroutine 性能实践",
-      "path": "src/part2-performance/ch08-responsiveness/06-coroutine-performance.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "pending",
-      "task9_state": "pending",
-      "task2b_state": "idle"
-    },
-    "src/part2-performance/ch08-responsiveness/03-launch-optimization.md": {
-      "chapter": "8.3",
-      "title": "启动优化策略",
-      "path": "src/part2-performance/ch08-responsiveness/03-launch-optimization.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "pending",
-      "task9_state": "pending",
-      "task2b_state": "idle"
-    },
-    "src/part2-performance/ch08-responsiveness/04-other-scenarios.md": {
-      "chapter": "8.4",
-      "title": "其他响应速度场景",
-      "path": "src/part2-performance/ch08-responsiveness/04-other-scenarios.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "pending",
-      "task9_state": "pending",
-      "task2b_state": "idle"
-    },
-    "src/part2-performance/ch08-responsiveness/02-app-launch.md": {
-      "chapter": "8.2",
-      "title": "App 启动全流程",
-      "path": "src/part2-performance/ch08-responsiveness/02-app-launch.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "pending",
-      "task9_state": "pending",
-      "task2b_state": "idle"
-    },
-    "src/part2-performance/ch08-responsiveness/09-game-performance.md": {
-      "chapter": "8.9",
-      "title": "Android 游戏性能与 Game Mode/State API",
-      "path": "src/part2-performance/ch08-responsiveness/09-game-performance.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "pending",
-      "task9_state": "pending",
-      "task2b_state": "idle"
-    },
-    "src/part2-performance/ch08-responsiveness/07-baseline-profiles.md": {
-      "chapter": "8.7",
-      "title": "Baseline Profiles 与编译优化实践",
-      "path": "src/part2-performance/ch08-responsiveness/07-baseline-profiles.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "pending",
-      "task9_state": "pending",
-      "task2b_state": "idle"
-    },
-    "src/part2-performance/ch08-responsiveness/08-media-pipeline.md": {
-      "chapter": "8.8",
-      "title": "Android 多媒体管线性能",
-      "path": "src/part2-performance/ch08-responsiveness/08-media-pipeline.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "pending",
-      "task9_state": "pending",
-      "task2b_state": "idle"
-    },
-    "src/part2-performance/ch10-memory-perf/05-case-studies.md": {
-      "chapter": "10.5",
-      "title": "案例集",
-      "path": "src/part2-performance/ch10-memory-perf/05-case-studies.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "pending",
-      "task9_state": "pending",
-      "task2b_state": "idle"
-    },
-    "src/part2-performance/ch10-memory-perf/02-memory-leak.md": {
-      "chapter": "10.2",
-      "title": "内存泄漏",
-      "path": "src/part2-performance/ch10-memory-perf/02-memory-leak.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "pending",
-      "task9_state": "pending",
-      "task2b_state": "idle"
-    },
-    "src/part2-performance/ch10-memory-perf/04-low-memory-impact.md": {
-      "chapter": "10.4",
-      "title": "低内存对系统性能的影响",
-      "path": "src/part2-performance/ch10-memory-perf/04-low-memory-impact.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "pending",
-      "task9_state": "pending",
-      "task2b_state": "idle"
-    },
-    "src/part2-performance/ch10-memory-perf/07-sqlite-room-performance.md": {
-      "chapter": "10.7",
-      "title": "SQLite/Room 数据库性能优化",
-      "path": "src/part2-performance/ch10-memory-perf/07-sqlite-room-performance.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "pending",
-      "task9_state": "pending",
-      "task2b_state": "idle"
-    },
-    "src/part2-performance/ch10-memory-perf/06-memory-churn.md": {
-      "chapter": "10.6",
-      "title": "内存抖动与频繁 GC",
-      "path": "src/part2-performance/ch10-memory-perf/06-memory-churn.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "pending",
-      "task9_state": "pending",
-      "task2b_state": "idle"
-    },
-    "src/part2-performance/ch10-memory-perf/03-memory-growth.md": {
-      "chapter": "10.3",
-      "title": "内存持续增长",
-      "path": "src/part2-performance/ch10-memory-perf/03-memory-growth.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "pending",
-      "task9_state": "pending",
-      "task2b_state": "idle"
-    },
-    "src/part2-performance/ch10-memory-perf/01-app-memory-analysis.md": {
-      "chapter": "10.1",
-      "title": "App 内存分析",
-      "path": "src/part2-performance/ch10-memory-perf/01-app-memory-analysis.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "pending",
-      "task9_state": "pending",
-      "task2b_state": "idle"
-    },
-    "src/part2-performance/ch07-smoothness/14-gaps-dynamic-analysis.md": {
-      "chapter": "7.14",
-      "title": "GAPS：Android 动态分析目标可达性路径重建",
-      "path": "src/part2-performance/ch07-smoothness/14-gaps-dynamic-analysis.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "pending",
-      "task9_state": "pending",
-      "task2b_state": "idle"
-    },
-    "src/part2-performance/ch07-smoothness/01-jank-definition.md": {
-      "chapter": "7.1",
-      "title": "卡顿的定义与分类",
-      "path": "src/part2-performance/ch07-smoothness/01-jank-definition.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "pending",
-      "task9_state": "pending",
-      "task2b_state": "idle"
-    },
-    "src/part2-performance/ch07-smoothness/09-perceived-smoothness.md": {
-      "chapter": "7.9",
-      "title": "感知流畅性：步幅波动与无掉帧卡顿",
-      "path": "src/part2-performance/ch07-smoothness/09-perceived-smoothness.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "pending",
-      "task9_state": "pending",
-      "task2b_state": "idle"
-    },
-    "src/part2-performance/ch07-smoothness/07-compose-performance.md": {
-      "chapter": "7.7",
-      "title": "Jetpack Compose 性能优化",
-      "path": "src/part2-performance/ch07-smoothness/07-compose-performance.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "pending",
-      "task9_state": "pending",
-      "task2b_state": "idle"
-    },
-    "src/part2-performance/ch07-smoothness/11-webview-performance.md": {
-      "chapter": "7.11",
-      "title": "WebView 渲染性能与优化",
-      "path": "src/part2-performance/ch07-smoothness/11-webview-performance.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "pending",
-      "task9_state": "pending",
-      "task2b_state": "idle"
-    },
-    "src/part2-performance/ch07-smoothness/10-image-bitmap-performance.md": {
-      "chapter": "7.10",
-      "title": "图片加载与 Bitmap 性能优化",
-      "path": "src/part2-performance/ch07-smoothness/10-image-bitmap-performance.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "pending",
-      "task9_state": "pending",
-      "task2b_state": "idle"
-    },
-    "src/part2-performance/ch07-smoothness/06-case-studies.md": {
-      "chapter": "7.6",
-      "title": "案例集",
-      "path": "src/part2-performance/ch07-smoothness/06-case-studies.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "pending",
-      "task9_state": "pending",
-      "task2b_state": "idle"
-    },
-    "src/part2-performance/ch07-smoothness/13-systemui-performance.md": {
-      "chapter": "7.13",
-      "title": "SystemUI 性能分析",
-      "path": "src/part2-performance/ch07-smoothness/13-systemui-performance.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "pending",
-      "task9_state": "pending",
-      "task2b_state": "idle"
-    },
-    "src/part2-performance/ch07-smoothness/04-typical-scenarios.md": {
-      "chapter": "7.4",
-      "title": "典型场景分析",
-      "path": "src/part2-performance/ch07-smoothness/04-typical-scenarios.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "pending",
-      "task9_state": "pending",
-      "task2b_state": "idle"
-    },
-    "src/part2-performance/ch07-smoothness/12-view-layout-performance.md": {
-      "chapter": "7.12",
-      "title": "View 体系性能优化：布局层级、inflate 与 measure/layout 开销",
-      "path": "src/part2-performance/ch07-smoothness/12-view-layout-performance.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "pending",
-      "task9_state": "pending",
-      "task2b_state": "idle"
-    },
-    "src/part2-performance/ch07-smoothness/05-optimization.md": {
-      "chapter": "7.5",
-      "title": "优化策略",
-      "path": "src/part2-performance/ch07-smoothness/05-optimization.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "pending",
-      "task9_state": "pending",
-      "task2b_state": "idle"
-    },
-    "src/part2-performance/ch07-smoothness/03-jank-methodology.md": {
-      "chapter": "7.3",
-      "title": "卡顿分析方法论",
-      "path": "src/part2-performance/ch07-smoothness/03-jank-methodology.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "pending",
-      "task9_state": "pending",
-      "task2b_state": "idle"
-    },
-    "src/part2-performance/ch07-smoothness/08-recyclerview-performance.md": {
-      "chapter": "7.8",
-      "title": "RecyclerView 列表滑动性能深度优化",
-      "path": "src/part2-performance/ch07-smoothness/08-recyclerview-performance.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "pending",
-      "task9_state": "pending",
-      "task2b_state": "idle"
-    },
-    "src/part2-performance/ch07-smoothness/02-jank-causes.md": {
-      "chapter": "7.2",
-      "title": "卡顿原因体系",
-      "path": "src/part2-performance/ch07-smoothness/02-jank-causes.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "pending",
-      "task9_state": "pending",
-      "task2b_state": "idle"
-    },
-    "src/part2-performance/ch09-anr/05-case-studies.md": {
-      "chapter": "9.5",
-      "title": "案例集",
-      "path": "src/part2-performance/ch09-anr/05-case-studies.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "pending",
-      "task9_state": "pending",
-      "task2b_state": "idle"
-    },
-    "src/part2-performance/ch09-anr/02-anr-types.md": {
-      "chapter": "9.2",
-      "title": "ANR 类型与触发条件",
-      "path": "src/part2-performance/ch09-anr/02-anr-types.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "pending",
-      "task9_state": "pending",
-      "task2b_state": "idle"
-    },
-    "src/part2-performance/ch09-anr/03-anr-analysis.md": {
-      "chapter": "9.3",
-      "title": "ANR 分析方法",
-      "path": "src/part2-performance/ch09-anr/03-anr-analysis.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "pending",
-      "task9_state": "pending",
-      "task2b_state": "idle"
-    },
-    "src/part2-performance/ch09-anr/07-non-technical-anr-diagnosis.md": {
-      "chapter": "9.7",
-      "title": "ANR 非技术故障诊断",
-      "path": "src/part2-performance/ch09-anr/07-non-technical-anr-diagnosis.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "pending",
-      "task9_state": "pending",
-      "task2b_state": "idle"
-    },
-    "src/part2-performance/ch09-anr/06-notification-performance-anr.md": {
-      "chapter": "9.6",
-      "title": "Notification 性能与 ANR",
-      "path": "src/part2-performance/ch09-anr/06-notification-performance-anr.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "pending",
-      "task9_state": "pending",
-      "task2b_state": "idle"
-    },
-    "src/part2-performance/ch09-anr/01-anr-design.md": {
-      "chapter": "9.1",
-      "title": "ANR 设计思想",
-      "path": "src/part2-performance/ch09-anr/01-anr-design.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "pending",
-      "task9_state": "pending",
-      "task2b_state": "idle"
-    },
-    "src/part2-performance/ch09-anr/04-special-anr.md": {
-      "chapter": "9.4",
-      "title": "特殊场景的 ANR",
-      "path": "src/part2-performance/ch09-anr/04-special-anr.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "pending",
-      "task9_state": "pending",
-      "task2b_state": "idle"
-    },
-    "src/part2-performance/ch18-rendering-pipelines/07-textureview.md": {
-      "chapter": "18.7",
-      "title": "TextureView 合成链路",
-      "path": "src/part2-performance/ch18-rendering-pipelines/07-textureview.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "pending",
-      "task9_state": "pending",
-      "task2b_state": "idle"
-    },
-    "src/part2-performance/ch18-rendering-pipelines/03-android-view-software.md": {
-      "chapter": "18.3",
-      "title": "Android View 软件渲染链路",
-      "path": "src/part2-performance/ch18-rendering-pipelines/03-android-view-software.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "pending",
-      "task9_state": "pending",
-      "task2b_state": "idle"
-    },
-    "src/part2-performance/ch18-rendering-pipelines/15-video-overlay-hwc.md": {
-      "chapter": "18.15",
-      "title": "视频叠加与 HWC",
-      "path": "src/part2-performance/ch18-rendering-pipelines/15-video-overlay-hwc.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "pending",
-      "task9_state": "pending",
-      "task2b_state": "idle"
-    },
-    "src/part2-performance/ch18-rendering-pipelines/05-android-view-multi-window.md": {
-      "chapter": "18.5",
-      "title": "Android View 多窗口链路",
-      "path": "src/part2-performance/ch18-rendering-pipelines/05-android-view-multi-window.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "pending",
-      "task9_state": "pending",
-      "task2b_state": "idle"
-    },
-    "src/part2-performance/ch18-rendering-pipelines/18-pip-freeform.md": {
-      "chapter": "18.18",
-      "title": "PIP 与自由窗口渲染",
-      "path": "src/part2-performance/ch18-rendering-pipelines/18-pip-freeform.md",
+    "src/part2-performance/ch12-apk-network/04-network-security-tls-performance.md": {
+      "chapter": "12.4",
+      "title": "Android 网络安全与 TLS 性能优化",
+      "path": "src/part2-performance/ch12-apk-network/04-network-security-tls-performance.md",
       "status": "ready-for-review",
       "pipeline_stage": "task6_pending",
       "task6_state": "pending",
@@ -1008,70 +1302,20 @@
       "task9_state": "pending",
       "task2b_state": "idle"
     },
-    "src/part2-performance/ch18-rendering-pipelines/20-pipeline-analysis-methodology.md": {
-      "chapter": "18.20",
-      "title": "链路分析方法论",
-      "path": "src/part2-performance/ch18-rendering-pipelines/20-pipeline-analysis-methodology.md",
+    "src/part2-performance/ch18-rendering-pipelines/02-android-view-standard.md": {
+      "chapter": "18.2",
+      "title": "Android View 标准链路（BLAST 深入）",
+      "path": "src/part2-performance/ch18-rendering-pipelines/02-android-view-standard.md",
       "status": "ready-for-review",
       "pipeline_stage": "task6_pending",
       "task6_state": "pending",
       "task9_state": "pending",
       "task2b_state": "idle"
     },
-    "src/part2-performance/ch18-rendering-pipelines/19-variable-refresh-rate.md": {
-      "chapter": "18.19",
-      "title": "可变刷新率渲染管线",
-      "path": "src/part2-performance/ch18-rendering-pipelines/19-variable-refresh-rate.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "pending",
-      "task9_state": "pending",
-      "task2b_state": "idle"
-    },
-    "src/part2-performance/ch18-rendering-pipelines/13-webview-rendering.md": {
-      "chapter": "18.13",
-      "title": "WebView 渲染链路",
-      "path": "src/part2-performance/ch18-rendering-pipelines/13-webview-rendering.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "pending",
-      "task9_state": "pending",
-      "task2b_state": "idle"
-    },
-    "src/part2-performance/ch18-rendering-pipelines/16-game-engine.md": {
-      "chapter": "18.16",
-      "title": "游戏引擎渲染链路",
-      "path": "src/part2-performance/ch18-rendering-pipelines/16-game-engine.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "pending",
-      "task9_state": "pending",
-      "task2b_state": "idle"
-    },
-    "src/part2-performance/ch18-rendering-pipelines/11-angle-gles-vulkan.md": {
-      "chapter": "18.11",
-      "title": "ANGLE（GLES-over-Vulkan 翻译层）",
-      "path": "src/part2-performance/ch18-rendering-pipelines/11-angle-gles-vulkan.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "pending",
-      "task9_state": "pending",
-      "task2b_state": "idle"
-    },
-    "src/part2-performance/ch18-rendering-pipelines/10-surface-control-api.md": {
-      "chapter": "18.10",
-      "title": "SurfaceControl API 深入",
-      "path": "src/part2-performance/ch18-rendering-pipelines/10-surface-control-api.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "pending",
-      "task9_state": "pending",
-      "task2b_state": "idle"
-    },
-    "src/part2-performance/ch18-rendering-pipelines/06-surfaceview.md": {
-      "chapter": "18.6",
-      "title": "SurfaceView 直出链路",
-      "path": "src/part2-performance/ch18-rendering-pipelines/06-surfaceview.md",
+    "src/part2-performance/ch18-rendering-pipelines/03-android-view-software.md": {
+      "chapter": "18.3",
+      "title": "Android View 软件渲染链路",
+      "path": "src/part2-performance/ch18-rendering-pipelines/03-android-view-software.md",
       "status": "ready-for-review",
       "pipeline_stage": "task6_pending",
       "task6_state": "pending",
@@ -1088,60 +1332,30 @@
       "task9_state": "pending",
       "task2b_state": "idle"
     },
-    "src/part2-performance/ch18-rendering-pipelines/12-flutter-rendering.md": {
-      "chapter": "18.12",
-      "title": "Flutter 渲染链路",
-      "path": "src/part2-performance/ch18-rendering-pipelines/12-flutter-rendering.md",
+    "src/part2-performance/ch18-rendering-pipelines/05-android-view-multi-window.md": {
+      "chapter": "18.5",
+      "title": "Android View 多窗口链路",
+      "path": "src/part2-performance/ch18-rendering-pipelines/05-android-view-multi-window.md",
       "status": "ready-for-review",
       "pipeline_stage": "task6_pending",
       "task6_state": "pending",
       "task9_state": "pending",
       "task2b_state": "idle"
     },
-    "src/part2-performance/ch18-rendering-pipelines/09-vulkan-native.md": {
-      "chapter": "18.9",
-      "title": "Vulkan 原生渲染链路",
-      "path": "src/part2-performance/ch18-rendering-pipelines/09-vulkan-native.md",
+    "src/part2-performance/ch18-rendering-pipelines/06-surfaceview.md": {
+      "chapter": "18.6",
+      "title": "SurfaceView 直出链路",
+      "path": "src/part2-performance/ch18-rendering-pipelines/06-surfaceview.md",
       "status": "ready-for-review",
       "pipeline_stage": "task6_pending",
       "task6_state": "pending",
       "task9_state": "pending",
       "task2b_state": "idle"
     },
-    "src/part2-performance/ch18-rendering-pipelines/14-camera-pipeline.md": {
-      "chapter": "18.14",
-      "title": "Camera 渲染管线",
-      "path": "src/part2-performance/ch18-rendering-pipelines/14-camera-pipeline.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "pending",
-      "task9_state": "pending",
-      "task2b_state": "idle"
-    },
-    "src/part2-performance/ch18-rendering-pipelines/02-android-view-standard.md": {
-      "chapter": "18.2",
-      "title": "Android View 标准链路（BLAST 深入）",
-      "path": "src/part2-performance/ch18-rendering-pipelines/02-android-view-standard.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "pending",
-      "task9_state": "pending",
-      "task2b_state": "idle"
-    },
-    "src/part2-performance/ch18-rendering-pipelines/17-hardware-buffer-renderer.md": {
-      "chapter": "18.17",
-      "title": "Hardware Buffer Renderer",
-      "path": "src/part2-performance/ch18-rendering-pipelines/17-hardware-buffer-renderer.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "pending",
-      "task9_state": "pending",
-      "task2b_state": "idle"
-    },
-    "src/part2-performance/ch18-rendering-pipelines/21-eyedropper-crossdevice.md": {
-      "chapter": "18.21",
-      "title": "EyeDropper API 与跨设备协作性能",
-      "path": "src/part2-performance/ch18-rendering-pipelines/21-eyedropper-crossdevice.md",
+    "src/part2-performance/ch18-rendering-pipelines/07-textureview.md": {
+      "chapter": "18.7",
+      "title": "TextureView 合成链路",
+      "path": "src/part2-performance/ch18-rendering-pipelines/07-textureview.md",
       "status": "ready-for-review",
       "pipeline_stage": "task6_pending",
       "task6_state": "pending",
@@ -1158,710 +1372,420 @@
       "task9_state": "pending",
       "task2b_state": "idle"
     },
-    "src/part1-fundamentals/ch02-rendering/17-frame-pacing.md": {
-      "chapter": "2.17",
-      "title": "Frame Pacing Library 与帧节奏控制",
-      "path": "src/part1-fundamentals/ch02-rendering/17-frame-pacing.md",
+    "src/part2-performance/ch18-rendering-pipelines/09-vulkan-native.md": {
+      "chapter": "18.9",
+      "title": "Vulkan 原生渲染链路",
+      "path": "src/part2-performance/ch18-rendering-pipelines/09-vulkan-native.md",
       "status": "ready-for-review",
       "pipeline_stage": "task6_pending",
       "task6_state": "pending",
       "task9_state": "pending",
       "task2b_state": "idle"
     },
-    "src/part1-fundamentals/ch02-rendering/03-vsync.md": {
-      "chapter": "2.3",
-      "title": "VSync 机制",
-      "path": "src/part1-fundamentals/ch02-rendering/03-vsync.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "revisiting",
-      "task9_state": "pending",
-      "task2b_state": "fixed",
-      "task2b_result": "fixed"
-    },
-    "src/part1-fundamentals/ch02-rendering/20-multiwindow-desktop-rendering.md": {
-      "chapter": "2.20",
-      "title": "多窗口与桌面模式渲染性能",
-      "path": "src/part1-fundamentals/ch02-rendering/20-multiwindow-desktop-rendering.md",
+    "src/part2-performance/ch18-rendering-pipelines/10-surface-control-api.md": {
+      "chapter": "18.10",
+      "title": "SurfaceControl API 深入",
+      "path": "src/part2-performance/ch18-rendering-pipelines/10-surface-control-api.md",
       "status": "ready-for-review",
       "pipeline_stage": "task6_pending",
       "task6_state": "pending",
       "task9_state": "pending",
       "task2b_state": "idle"
     },
-    "src/part1-fundamentals/ch02-rendering/16-sync-fence.md": {
-      "chapter": "2.16",
-      "title": "Sync Fence 框架与帧同步机制",
-      "path": "src/part1-fundamentals/ch02-rendering/16-sync-fence.md",
+    "src/part2-performance/ch18-rendering-pipelines/11-angle-gles-vulkan.md": {
+      "chapter": "18.11",
+      "title": "ANGLE（GLES-over-Vulkan 翻译层）",
+      "path": "src/part2-performance/ch18-rendering-pipelines/11-angle-gles-vulkan.md",
       "status": "ready-for-review",
       "pipeline_stage": "task6_pending",
       "task6_state": "pending",
       "task9_state": "pending",
       "task2b_state": "idle"
     },
-    "src/part1-fundamentals/ch02-rendering/04-choreographer.md": {
-      "chapter": "2",
-      "title": "Choreographer 与渲染流水线",
-      "path": "src/part1-fundamentals/ch02-rendering/04-choreographer.md",
+    "src/part2-performance/ch18-rendering-pipelines/12-flutter-rendering.md": {
+      "chapter": "18.12",
+      "title": "Flutter 渲染链路",
+      "path": "src/part2-performance/ch18-rendering-pipelines/12-flutter-rendering.md",
       "status": "ready-for-review",
       "pipeline_stage": "task6_pending",
       "task6_state": "pending",
       "task9_state": "pending",
       "task2b_state": "idle"
     },
-    "src/part1-fundamentals/ch02-rendering/07-hardware-layer.md": {
-      "chapter": "2.7",
-      "title": "Hardware Layer",
-      "path": "src/part1-fundamentals/ch02-rendering/07-hardware-layer.md",
+    "src/part2-performance/ch18-rendering-pipelines/13-webview-rendering.md": {
+      "chapter": "18.13",
+      "title": "WebView 渲染链路",
+      "path": "src/part2-performance/ch18-rendering-pipelines/13-webview-rendering.md",
       "status": "ready-for-review",
       "pipeline_stage": "task6_pending",
       "task6_state": "pending",
       "task9_state": "pending",
       "task2b_state": "idle"
     },
-    "src/part1-fundamentals/ch02-rendering/11-flutter-rendering.md": {
-      "chapter": "2.11",
-      "title": "2.11 Flutter 渲染管线与性能",
-      "path": "src/part1-fundamentals/ch02-rendering/11-flutter-rendering.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "revisiting",
-      "task9_state": "pending",
-      "task2b_state": "fixed",
-      "task2b_result": "fixed"
-    },
-    "src/part1-fundamentals/ch02-rendering/05-main-render-thread.md": {
-      "chapter": "2.5",
-      "title": "MainThread 与 RenderThread 协作",
-      "path": "src/part1-fundamentals/ch02-rendering/05-main-render-thread.md",
+    "src/part2-performance/ch18-rendering-pipelines/14-camera-pipeline.md": {
+      "chapter": "18.14",
+      "title": "Camera 渲染管线",
+      "path": "src/part2-performance/ch18-rendering-pipelines/14-camera-pipeline.md",
       "status": "ready-for-review",
       "pipeline_stage": "task6_pending",
       "task6_state": "pending",
       "task9_state": "pending",
       "task2b_state": "idle"
     },
-    "src/part1-fundamentals/ch02-rendering/10-gpu-rendering.md": {
-      "chapter": "2",
-      "title": "GPU 渲染深入",
-      "path": "src/part1-fundamentals/ch02-rendering/10-gpu-rendering.md",
+    "src/part2-performance/ch18-rendering-pipelines/15-video-overlay-hwc.md": {
+      "chapter": "18.15",
+      "title": "视频叠加与 HWC",
+      "path": "src/part2-performance/ch18-rendering-pipelines/15-video-overlay-hwc.md",
       "status": "ready-for-review",
       "pipeline_stage": "task6_pending",
       "task6_state": "pending",
       "task9_state": "pending",
       "task2b_state": "idle"
     },
-    "src/part1-fundamentals/ch02-rendering/09-rendering-evolution.md": {
-      "chapter": "2.9",
-      "title": "渲染机制的版本演进",
-      "path": "src/part1-fundamentals/ch02-rendering/09-rendering-evolution.md",
+    "src/part2-performance/ch18-rendering-pipelines/16-game-engine.md": {
+      "chapter": "18.16",
+      "title": "游戏引擎渲染链路",
+      "path": "src/part2-performance/ch18-rendering-pipelines/16-game-engine.md",
       "status": "ready-for-review",
       "pipeline_stage": "task6_pending",
       "task6_state": "pending",
       "task9_state": "pending",
       "task2b_state": "idle"
     },
-    "src/part1-fundamentals/ch02-rendering/14-graphics-api-evolution.md": {
-      "chapter": "2.14",
-      "title": "图形 API 演进与选择策略（OpenGL ES / Vulkan / ANGLE）",
-      "path": "src/part1-fundamentals/ch02-rendering/14-graphics-api-evolution.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
-      "task6_state": "reviewed",
-      "task9_state": "pending",
-      "task2b_state": "idle"
-    },
-    "src/part1-fundamentals/ch02-rendering/01-rendering-overview.md": {
-      "chapter": "2.1",
-      "title": "Android 渲染架构全景",
-      "path": "src/part1-fundamentals/ch02-rendering/01-rendering-overview.md",
+    "src/part2-performance/ch18-rendering-pipelines/17-hardware-buffer-renderer.md": {
+      "chapter": "18.17",
+      "title": "Hardware Buffer Renderer",
+      "path": "src/part2-performance/ch18-rendering-pipelines/17-hardware-buffer-renderer.md",
       "status": "ready-for-review",
       "pipeline_stage": "task6_pending",
       "task6_state": "pending",
       "task9_state": "pending",
       "task2b_state": "idle"
     },
-    "src/part1-fundamentals/ch02-rendering/06-surfaceflinger.md": {
-      "chapter": "2.6",
-      "title": "SurfaceFlinger 与合成",
-      "path": "src/part1-fundamentals/ch02-rendering/06-surfaceflinger.md",
+    "src/part2-performance/ch18-rendering-pipelines/18-pip-freeform.md": {
+      "chapter": "18.18",
+      "title": "PIP 与自由窗口渲染",
+      "path": "src/part2-performance/ch18-rendering-pipelines/18-pip-freeform.md",
       "status": "ready-for-review",
       "pipeline_stage": "task6_pending",
       "task6_state": "pending",
       "task9_state": "pending",
       "task2b_state": "idle"
     },
-    "src/part1-fundamentals/ch02-rendering/21-text-rendering-performance.md": {
-      "chapter": "2.21",
-      "title": "文字渲染性能",
-      "path": "src/part1-fundamentals/ch02-rendering/21-text-rendering-performance.md",
+    "src/part2-performance/ch18-rendering-pipelines/19-variable-refresh-rate.md": {
+      "chapter": "18.19",
+      "title": "可变刷新率渲染管线",
+      "path": "src/part2-performance/ch18-rendering-pipelines/19-variable-refresh-rate.md",
       "status": "ready-for-review",
       "pipeline_stage": "task6_pending",
       "task6_state": "pending",
       "task9_state": "pending",
       "task2b_state": "idle"
     },
-    "src/part1-fundamentals/ch02-rendering/19-refresh-rate-switching.md": {
-      "chapter": "2.19",
-      "title": "刷新率切换与帧率适配性能",
-      "path": "src/part1-fundamentals/ch02-rendering/19-refresh-rate-switching.md",
+    "src/part2-performance/ch18-rendering-pipelines/20-pipeline-analysis-methodology.md": {
+      "chapter": "18.20",
+      "title": "链路分析方法论",
+      "path": "src/part2-performance/ch18-rendering-pipelines/20-pipeline-analysis-methodology.md",
       "status": "ready-for-review",
       "pipeline_stage": "task6_pending",
       "task6_state": "pending",
       "task9_state": "pending",
       "task2b_state": "idle"
     },
-    "src/part1-fundamentals/ch02-rendering/18-adaptive-refresh-rate.md": {
-      "chapter": "2.18",
-      "title": "Adaptive Refresh Rate 与动态帧率控制",
-      "path": "src/part1-fundamentals/ch02-rendering/18-adaptive-refresh-rate.md",
+    "src/part2-performance/ch18-rendering-pipelines/21-eyedropper-crossdevice.md": {
+      "chapter": "18.21",
+      "title": "EyeDropper API 与跨设备协作性能",
+      "path": "src/part2-performance/ch18-rendering-pipelines/21-eyedropper-crossdevice.md",
       "status": "ready-for-review",
       "pipeline_stage": "task6_pending",
       "task6_state": "pending",
       "task9_state": "pending",
       "task2b_state": "idle"
     },
-    "src/part1-fundamentals/ch02-rendering/13-buffer-queue.md": {
-      "chapter": "2.13",
-      "title": "图形缓冲区管理 (BufferQueue)",
-      "path": "src/part1-fundamentals/ch02-rendering/13-buffer-queue.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "revisiting",
-      "task9_state": "pending",
-      "task2b_state": "fixed",
-      "task9_result": "needs-rework"
-    },
-    "src/part1-fundamentals/ch02-rendering/15-dmabuf-gralloc.md": {
-      "chapter": "2.15",
-      "title": "DMA-BUF、Gralloc 与跨进程图形内存共享",
-      "path": "src/part1-fundamentals/ch02-rendering/15-dmabuf-gralloc.md",
+    "src/part3-tools/ch13-perfetto/01-perfetto-intro.md": {
+      "chapter": "13.1",
+      "title": "Perfetto 简介与演进",
+      "path": "src/part3-tools/ch13-perfetto/01-perfetto-intro.md",
       "status": "ready-for-review",
       "pipeline_stage": "task6_pending",
       "task6_state": "pending",
       "task9_state": "pending",
       "task2b_state": "idle"
     },
-    "src/part1-fundamentals/ch02-rendering/08-overdraw.md": {
-      "chapter": "2.8",
-      "title": "过度绘制",
-      "path": "src/part1-fundamentals/ch02-rendering/08-overdraw.md",
+    "src/part3-tools/ch13-perfetto/02-trace-capture.md": {
+      "chapter": "13.2",
+      "title": "Trace 抓取",
+      "path": "src/part3-tools/ch13-perfetto/02-trace-capture.md",
       "status": "ready-for-review",
       "pipeline_stage": "task6_pending",
       "task6_state": "pending",
       "task9_state": "pending",
       "task2b_state": "idle"
     },
-    "src/part1-fundamentals/ch02-rendering/02-framerate.md": {
-      "chapter": "2.2",
-      "title": "帧率与刷新率",
-      "path": "src/part1-fundamentals/ch02-rendering/02-framerate.md",
+    "src/part3-tools/ch13-perfetto/03-perfetto-view.md": {
+      "chapter": "13.3",
+      "title": "Perfetto View 解读",
+      "path": "src/part3-tools/ch13-perfetto/03-perfetto-view.md",
       "status": "ready-for-review",
       "pipeline_stage": "task6_pending",
       "task6_state": "pending",
       "task9_state": "pending",
       "task2b_state": "idle"
     },
-    "src/part1-fundamentals/ch02-rendering/12-window-manager.md": {
-      "chapter": "2.12",
-      "title": "Window Manager Service 与窗口管理",
-      "path": "src/part1-fundamentals/ch02-rendering/12-window-manager.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
-      "task6_state": "reviewed",
-      "task9_state": "pending",
-      "task2b_state": "idle"
-    },
-    "src/part1-fundamentals/ch05-cpu-power/12-thermal-management-deep-dive.md": {
-      "chapter": "5.12",
-      "title": "Thermal 管控深度：从内核子系统到 ADPF 主动降频",
-      "path": "src/part1-fundamentals/ch05-cpu-power/12-thermal-management-deep-dive.md",
+    "src/part3-tools/ch13-perfetto/04-large-traces.md": {
+      "chapter": "13.4",
+      "title": "命令行打开超大 Trace",
+      "path": "src/part3-tools/ch13-perfetto/04-large-traces.md",
       "status": "ready-for-review",
       "pipeline_stage": "task6_pending",
       "task6_state": "pending",
       "task9_state": "pending",
       "task2b_state": "idle"
     },
-    "src/part1-fundamentals/ch05-cpu-power/04-dvfs.md": {
-      "chapter": "5.4",
-      "title": "DVFS 与功耗管理",
-      "path": "src/part1-fundamentals/ch05-cpu-power/04-dvfs.md",
+    "src/part3-tools/ch13-perfetto/05-topic-analysis.md": {
+      "chapter": "13.5",
+      "title": "专题解读",
+      "path": "src/part3-tools/ch13-perfetto/05-topic-analysis.md",
       "status": "ready-for-review",
       "pipeline_stage": "task6_pending",
       "task6_state": "pending",
       "task9_state": "pending",
       "task2b_state": "idle"
     },
-    "src/part1-fundamentals/ch05-cpu-power/09-adpf.md": {
-      "chapter": "5.9",
-      "title": "ADPF 自适应性能框架",
-      "path": "src/part1-fundamentals/ch05-cpu-power/09-adpf.md",
+    "src/part3-tools/ch13-perfetto/06-thread-cpu-states.md": {
+      "chapter": "13.6",
+      "title": "线程 CPU 状态分析",
+      "path": "src/part3-tools/ch13-perfetto/06-thread-cpu-states.md",
       "status": "ready-for-review",
       "pipeline_stage": "task6_pending",
       "task6_state": "pending",
       "task9_state": "pending",
       "task2b_state": "idle"
     },
-    "src/part1-fundamentals/ch05-cpu-power/03-big-little.md": {
-      "chapter": "5.3",
-      "title": "大小核架构",
-      "path": "src/part1-fundamentals/ch05-cpu-power/03-big-little.md",
+    "src/part3-tools/ch13-perfetto/07-advanced-usage.md": {
+      "chapter": "13.7",
+      "title": "Perfetto 的高级用法",
+      "path": "src/part3-tools/ch13-perfetto/07-advanced-usage.md",
       "status": "ready-for-review",
       "pipeline_stage": "task6_pending",
       "task6_state": "pending",
       "task9_state": "pending",
       "task2b_state": "idle"
     },
-    "src/part1-fundamentals/ch05-cpu-power/10-jobscheduler-workmanager-performance.md": {
-      "chapter": "5.10",
-      "title": "JobScheduler/WorkManager 调度与后台任务性能",
-      "path": "src/part1-fundamentals/ch05-cpu-power/10-jobscheduler-workmanager-performance.md",
+    "src/part3-tools/ch13-perfetto/08-input-latency-sql.md": {
+      "chapter": "13.8",
+      "title": "Perfetto 输入延迟 SQL 深度分析",
+      "path": "src/part3-tools/ch13-perfetto/08-input-latency-sql.md",
       "status": "ready-for-review",
       "pipeline_stage": "task6_pending",
       "task6_state": "pending",
       "task9_state": "pending",
       "task2b_state": "idle"
     },
-    "src/part1-fundamentals/ch05-cpu-power/01-linux-scheduling.md": {
-      "chapter": "5.1",
-      "title": "Linux 进程调度基础",
-      "path": "src/part1-fundamentals/ch05-cpu-power/01-linux-scheduling.md",
+    "src/part3-tools/ch13-perfetto/09-tracing-infrastructure.md": {
+      "chapter": "13.9",
+      "title": "Android Tracing 基础设施：atrace、ftrace 与 Perfetto 数据采集原理",
+      "path": "src/part3-tools/ch13-perfetto/09-tracing-infrastructure.md",
       "status": "ready-for-review",
       "pipeline_stage": "task6_pending",
       "task6_state": "pending",
       "task9_state": "pending",
       "task2b_state": "idle"
     },
-    "src/part1-fundamentals/ch05-cpu-power/07-cpu-evolution.md": {
-      "chapter": "5.7",
-      "title": "CPU 相关的版本演进",
-      "path": "src/part1-fundamentals/ch05-cpu-power/07-cpu-evolution.md",
+    "src/part3-tools/ch13-perfetto/10-perfetto-sql-cookbook.md": {
+      "chapter": "13.10",
+      "title": "Perfetto SQL 性能分析实战手册",
+      "path": "src/part3-tools/ch13-perfetto/10-perfetto-sql-cookbook.md",
       "status": "ready-for-review",
       "pipeline_stage": "task6_pending",
       "task6_state": "pending",
       "task9_state": "pending",
       "task2b_state": "idle"
     },
-    "src/part1-fundamentals/ch05-cpu-power/02-eas.md": {
-      "chapter": "5.2",
-      "title": "EAS 能量感知调度",
-      "path": "src/part1-fundamentals/ch05-cpu-power/02-eas.md",
+    "src/part3-tools/ch14-other-tools/01-as-profiler.md": {
+      "chapter": "14.1",
+      "title": "Android Studio Profiler",
+      "path": "src/part3-tools/ch14-other-tools/01-as-profiler.md",
       "status": "ready-for-review",
       "pipeline_stage": "task6_pending",
       "task6_state": "pending",
       "task9_state": "pending",
       "task2b_state": "idle"
     },
-    "src/part1-fundamentals/ch05-cpu-power/08-background-execution.md": {
-      "chapter": "5.8",
-      "title": "后台执行限制与优化",
-      "path": "src/part1-fundamentals/ch05-cpu-power/08-background-execution.md",
+    "src/part3-tools/ch14-other-tools/02-simpleperf.md": {
+      "chapter": "14.2",
+      "title": "Simpleperf",
+      "path": "src/part3-tools/ch14-other-tools/02-simpleperf.md",
       "status": "ready-for-review",
       "pipeline_stage": "task6_pending",
       "task6_state": "pending",
       "task9_state": "pending",
       "task2b_state": "idle"
     },
-    "src/part1-fundamentals/ch05-cpu-power/11-ondevice-ml-inference-performance.md": {
-      "chapter": "5.11",
-      "title": "端侧 AI 推理性能：NPU/GPU 加速与 TFLite 管线",
-      "path": "src/part1-fundamentals/ch05-cpu-power/11-ondevice-ml-inference-performance.md",
+    "src/part3-tools/ch14-other-tools/03-memory-tools.md": {
+      "chapter": "14.3",
+      "title": "内存分析工具",
+      "path": "src/part3-tools/ch14-other-tools/03-memory-tools.md",
       "status": "ready-for-review",
       "pipeline_stage": "task6_pending",
       "task6_state": "pending",
       "task9_state": "pending",
       "task2b_state": "idle"
     },
-    "src/part1-fundamentals/ch05-cpu-power/06-android-power.md": {
-      "chapter": "5.6",
-      "title": "Android 功耗管理",
-      "path": "src/part1-fundamentals/ch05-cpu-power/06-android-power.md",
+    "src/part3-tools/ch14-other-tools/04-dumpsys.md": {
+      "chapter": "14.4",
+      "title": "dumpsys 系列命令",
+      "path": "src/part3-tools/ch14-other-tools/04-dumpsys.md",
       "status": "ready-for-review",
       "pipeline_stage": "task6_pending",
       "task6_state": "pending",
       "task9_state": "pending",
       "task2b_state": "idle"
     },
-    "src/part1-fundamentals/ch05-cpu-power/05-thermal.md": {
+    "src/part3-tools/ch14-other-tools/05-third-party-libs.md": {
+      "chapter": "14.5",
+      "title": "三方性能库",
+      "path": "src/part3-tools/ch14-other-tools/05-third-party-libs.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "pending",
+      "task9_state": "pending",
+      "task2b_state": "idle"
+    },
+    "src/part3-tools/ch14-other-tools/06-automation-tools.md": {
+      "chapter": "14.6",
+      "title": "自动化测试工具",
+      "path": "src/part3-tools/ch14-other-tools/06-automation-tools.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "pending",
+      "task9_state": "pending",
+      "task2b_state": "idle"
+    },
+    "src/part3-tools/ch14-other-tools/07-profiling-manager.md": {
       "chapter": null,
-      "title": "05-thermal",
-      "path": "src/part1-fundamentals/ch05-cpu-power/05-thermal.md",
+      "title": "07-profiling-manager",
+      "path": "src/part3-tools/ch14-other-tools/07-profiling-manager.md",
       "status": "unknown",
       "pipeline_stage": "task6_pending",
       "task6_state": "pending",
       "task9_state": "pending",
       "task2b_state": "idle"
     },
-    "src/part1-fundamentals/ch01-architecture/17-ipc-panorama.md": {
-      "chapter": "1.17",
-      "title": "IPC 全景：Android 进程间通信机制对比与性能选型",
-      "path": "src/part1-fundamentals/ch01-architecture/17-ipc-panorama.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "revisiting",
-      "task9_state": "pending",
-      "task2b_state": "fixed",
-      "task2b_result": "fixed"
-    },
-    "src/part1-fundamentals/ch01-architecture/13-messagequeue-deliqueue.md": {
-      "chapter": "1.13",
-      "title": "MessageQueue 机制与 DeliQueue 无锁优化",
-      "path": "src/part1-fundamentals/ch01-architecture/13-messagequeue-deliqueue.md",
+    "src/part3-tools/ch14-other-tools/08-gpu-debug-tools.md": {
+      "chapter": "14.8",
+      "title": "GPU 图形调试与分析工具",
+      "path": "src/part3-tools/ch14-other-tools/08-gpu-debug-tools.md",
       "status": "ready-for-review",
       "pipeline_stage": "task6_pending",
       "task6_state": "pending",
       "task9_state": "pending",
       "task2b_state": "idle"
     },
-    "src/part1-fundamentals/ch01-architecture/16-audio-pipeline-performance.md": {
-      "chapter": "1.16",
-      "title": "Audio Pipeline 延迟与性能",
-      "path": "src/part1-fundamentals/ch01-architecture/16-audio-pipeline-performance.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "revisiting",
-      "task9_state": "pending",
-      "task2b_state": "fixed",
-      "task2b_result": "fixed"
-    },
-    "src/part1-fundamentals/ch01-architecture/02-boot-process.md": {
-      "chapter": "1.2",
-      "title": "系统启动全流程",
-      "path": "src/part1-fundamentals/ch01-architecture/02-boot-process.md",
+    "src/part3-tools/ch14-other-tools/09-camera-performance-analysis.md": {
+      "chapter": "14.9",
+      "title": "Android Camera 性能与 Perfetto 分析",
+      "path": "src/part3-tools/ch14-other-tools/09-camera-performance-analysis.md",
       "status": "ready-for-review",
       "pipeline_stage": "task6_pending",
       "task6_state": "pending",
       "task9_state": "pending",
       "task2b_state": "idle"
     },
-    "src/part1-fundamentals/ch01-architecture/12-autofdo-optimization.md": {
-      "chapter": "1.12",
-      "title": "AutoFDO 反馈导向编译优化",
-      "path": "src/part1-fundamentals/ch01-architecture/12-autofdo-optimization.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "revisiting",
-      "task9_state": "pending",
-      "task2b_state": "fixed",
-      "task2b_result": "fixed"
-    },
-    "src/part1-fundamentals/ch01-architecture/11-zygote-startup.md": {
-      "chapter": "1.11",
-      "title": "Zygote 机制与启动性能优化",
-      "path": "src/part1-fundamentals/ch01-architecture/11-zygote-startup.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "revisiting",
-      "task9_state": "pending",
-      "task2b_state": "fixed",
-      "task2b_result": "fixed"
-    },
-    "src/part1-fundamentals/ch01-architecture/07-art-compilation.md": {
-      "chapter": "1.7",
-      "title": "ART 编译管线与 dex2oat 优化",
-      "path": "src/part1-fundamentals/ch01-architecture/07-art-compilation.md",
+    "src/part3-tools/ch14-other-tools/10-ebpf-performance-analysis.md": {
+      "chapter": "14.10",
+      "title": "eBPF/BPF 在 Android 性能分析中的应用",
+      "path": "src/part3-tools/ch14-other-tools/10-ebpf-performance-analysis.md",
       "status": "ready-for-review",
       "pipeline_stage": "task6_pending",
       "task6_state": "pending",
       "task9_state": "pending",
       "task2b_state": "idle"
     },
-    "src/part1-fundamentals/ch01-architecture/10-content-provider.md": {
-      "chapter": "1.10",
-      "title": "ContentProvider 性能与优化",
-      "path": "src/part1-fundamentals/ch01-architecture/10-content-provider.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
-      "task6_state": "reviewed",
-      "task9_state": "pending",
-      "task2b_state": "pending"
-    },
-    "src/part1-fundamentals/ch01-architecture/08-activity-manager.md": {
-      "chapter": "1.8",
-      "title": "Activity Manager Service 与性能分析",
-      "path": "src/part1-fundamentals/ch01-architecture/08-activity-manager.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "revisiting",
-      "task9_state": "pending",
-      "task2b_state": "fixed",
-      "task2b_result": "fixed"
-    },
-    "src/part1-fundamentals/ch01-architecture/15-jni-ndk-performance.md": {
-      "chapter": "1.15",
-      "title": "JNI/NDK 性能优化",
-      "path": "src/part1-fundamentals/ch01-architecture/15-jni-ndk-performance.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "revisiting",
-      "task9_state": "pending",
-      "task2b_state": "fixed",
-      "task2b_result": "fixed"
-    },
-    "src/part1-fundamentals/ch01-architecture/09-package-manager.md": {
-      "chapter": "1.9",
-      "title": "Package Manager Service 与应用安装性能",
-      "path": "src/part1-fundamentals/ch01-architecture/09-package-manager.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
-      "task6_state": "reviewed",
-      "task9_state": "pending",
-      "task2b_state": "pending"
-    },
-    "src/part1-fundamentals/ch01-architecture/14-lock-contention.md": {
-      "chapter": "1.14",
-      "title": "锁竞争与同步性能分析",
-      "path": "src/part1-fundamentals/ch01-architecture/14-lock-contention.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "revisiting",
-      "task9_state": "pending",
-      "task2b_state": "fixed",
-      "task2b_result": "fixed"
-    },
-    "src/part1-fundamentals/ch01-architecture/01-layered-architecture.md": {
-      "chapter": "1.1",
-      "title": "Android 分层架构",
-      "path": "src/part1-fundamentals/ch01-architecture/01-layered-architecture.md",
+    "src/part3-tools/ch14-other-tools/11-battery-historian.md": {
+      "chapter": "14.11",
+      "title": "Battery Historian 与功耗分析工具",
+      "path": "src/part3-tools/ch14-other-tools/11-battery-historian.md",
       "status": "ready-for-review",
       "pipeline_stage": "task6_pending",
       "task6_state": "pending",
       "task9_state": "pending",
       "task2b_state": "idle"
     },
-    "src/part1-fundamentals/ch01-architecture/04-binder.md": {
-      "chapter": "1.4",
-      "title": "Binder IPC 机制与性能影响",
-      "path": "src/part1-fundamentals/ch01-architecture/04-binder.md",
+    "src/part3-tools/ch15-methodology/01-philosophy.md": {
+      "chapter": "15.1",
+      "title": "性能优化的术、道、器",
+      "path": "src/part3-tools/ch15-methodology/01-philosophy.md",
       "status": "ready-for-review",
       "pipeline_stage": "task6_pending",
       "task6_state": "pending",
       "task9_state": "pending",
       "task2b_state": "idle"
     },
-    "src/part1-fundamentals/ch01-architecture/05-threading-model.md": {
-      "chapter": "1.5",
-      "title": "线程模型",
-      "path": "src/part1-fundamentals/ch01-architecture/05-threading-model.md",
+    "src/part3-tools/ch15-methodology/02-system-vs-app.md": {
+      "chapter": "15.2",
+      "title": "如何区分系统问题和 App 问题",
+      "path": "src/part3-tools/ch15-methodology/02-system-vs-app.md",
       "status": "ready-for-review",
       "pipeline_stage": "task6_pending",
       "task6_state": "pending",
       "task9_state": "pending",
       "task2b_state": "idle"
     },
-    "src/part1-fundamentals/ch01-architecture/06-version-evolution.md": {
-      "chapter": "1.6",
-      "title": "Android 版本演进中的架构变化",
-      "path": "src/part1-fundamentals/ch01-architecture/06-version-evolution.md",
+    "src/part3-tools/ch15-methodology/03-metrics.md": {
+      "chapter": "15.3",
+      "title": "性能指标体系",
+      "path": "src/part3-tools/ch15-methodology/03-metrics.md",
       "status": "ready-for-review",
       "pipeline_stage": "task6_pending",
       "task6_state": "pending",
       "task9_state": "pending",
       "task2b_state": "idle"
     },
-    "src/part1-fundamentals/ch01-architecture/03-process-model.md": {
-      "chapter": "1.3",
-      "title": "进程模型与生命周期管理",
-      "path": "src/part1-fundamentals/ch01-architecture/03-process-model.md",
+    "src/part3-tools/ch15-methodology/04-competitive-analysis.md": {
+      "chapter": "15.4",
+      "title": "竞品分析方法",
+      "path": "src/part3-tools/ch15-methodology/04-competitive-analysis.md",
       "status": "ready-for-review",
       "pipeline_stage": "task6_pending",
       "task6_state": "pending",
       "task9_state": "pending",
       "task2b_state": "idle"
     },
-    "src/part1-fundamentals/ch06-storage/03-io-scheduling.md": {
-      "chapter": "6.3",
-      "title": "I/O 调度与性能",
-      "path": "src/part1-fundamentals/ch06-storage/03-io-scheduling.md",
+    "src/part3-tools/ch15-methodology/05-online-monitoring.md": {
+      "chapter": "15.5",
+      "title": "线上性能监控",
+      "path": "src/part3-tools/ch15-methodology/05-online-monitoring.md",
       "status": "ready-for-review",
       "pipeline_stage": "task6_pending",
       "task6_state": "pending",
       "task9_state": "pending",
       "task2b_state": "idle"
     },
-    "src/part1-fundamentals/ch06-storage/01-storage-architecture.md": {
-      "chapter": "6.1",
-      "title": "Android 存储架构",
-      "path": "src/part1-fundamentals/ch06-storage/01-storage-architecture.md",
+    "src/part3-tools/ch15-methodology/06-testing-best-practices.md": {
+      "chapter": "15.6",
+      "title": "性能测试最佳实践",
+      "path": "src/part3-tools/ch15-methodology/06-testing-best-practices.md",
       "status": "ready-for-review",
       "pipeline_stage": "task6_pending",
       "task6_state": "pending",
       "task9_state": "pending",
       "task2b_state": "idle"
     },
-    "src/part1-fundamentals/ch06-storage/05-sharedpreferences-datastore.md": {
-      "chapter": "6.5",
-      "title": "SharedPreferences/DataStore 性能与 ANR 优化",
-      "path": "src/part1-fundamentals/ch06-storage/05-sharedpreferences-datastore.md",
+    "src/part3-tools/ch15-methodology/07-aosp-reading.md": {
+      "chapter": "15.7",
+      "title": "AOSP 代码阅读",
+      "path": "src/part3-tools/ch15-methodology/07-aosp-reading.md",
       "status": "ready-for-review",
       "pipeline_stage": "task6_pending",
       "task6_state": "pending",
       "task9_state": "pending",
       "task2b_state": "idle"
     },
-    "src/part1-fundamentals/ch06-storage/04-storage-evolution.md": {
-      "chapter": "6.4",
-      "title": "存储相关的版本演进",
-      "path": "src/part1-fundamentals/ch06-storage/04-storage-evolution.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "pending",
-      "task9_state": "pending",
-      "task2b_state": "idle"
-    },
-    "src/part1-fundamentals/ch06-storage/02-filesystem.md": {
-      "chapter": "6.2",
-      "title": "文件系统",
-      "path": "src/part1-fundamentals/ch06-storage/02-filesystem.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "pending",
-      "task9_state": "pending",
-      "task2b_state": "idle"
-    },
-    "src/part1-fundamentals/ch04-memory/03-art-memory.md": {
-      "chapter": "4.3",
-      "title": "ART 虚拟机内存管理",
-      "path": "src/part1-fundamentals/ch04-memory/03-art-memory.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "pending",
-      "task9_state": "pending",
-      "task2b_state": "idle"
-    },
-    "src/part1-fundamentals/ch04-memory/08-art-generational-gc.md": {
-      "chapter": "4.8",
-      "title": "ART 分代垃圾回收与 GC 暂停优化",
-      "path": "src/part1-fundamentals/ch04-memory/08-art-generational-gc.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "pending",
-      "task9_state": "pending",
-      "task2b_state": "idle"
-    },
-    "src/part1-fundamentals/ch04-memory/07-16kb-page-size.md": {
-      "chapter": "4.7",
-      "title": "16KB Page Size 与 Android 性能",
-      "path": "src/part1-fundamentals/ch04-memory/07-16kb-page-size.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "pending",
-      "task9_state": "pending",
-      "task2b_state": "idle"
-    },
-    "src/part1-fundamentals/ch04-memory/01-memory-overview.md": {
-      "chapter": "4.1",
-      "title": "Android 内存模型全景",
-      "path": "src/part1-fundamentals/ch04-memory/01-memory-overview.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "pending",
-      "task9_state": "pending",
-      "task2b_state": "idle"
-    },
-    "src/part1-fundamentals/ch04-memory/06-memory-evolution.md": {
-      "chapter": "4.6",
-      "title": "内存相关的版本演进",
-      "path": "src/part1-fundamentals/ch04-memory/06-memory-evolution.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "pending",
-      "task9_state": "pending",
-      "task2b_state": "idle"
-    },
-    "src/part1-fundamentals/ch04-memory/02-linux-memory.md": {
-      "chapter": "4.2",
-      "title": "Linux 内核内存管理",
-      "path": "src/part1-fundamentals/ch04-memory/02-linux-memory.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "pending",
-      "task9_state": "pending",
-      "task2b_state": "idle"
-    },
-    "src/part1-fundamentals/ch04-memory/04-lmk.md": {
-      "chapter": "4.4",
-      "title": "Low Memory Killer",
-      "path": "src/part1-fundamentals/ch04-memory/04-lmk.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "pending",
-      "task9_state": "pending",
-      "task2b_state": "idle"
-    },
-    "src/part1-fundamentals/ch04-memory/05-app-memory-optimization.md": {
-      "chapter": "4.5",
-      "title": "App 内存优化",
-      "path": "src/part1-fundamentals/ch04-memory/05-app-memory-optimization.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "pending",
-      "task9_state": "pending",
-      "task2b_state": "idle"
-    },
-    "src/part1-fundamentals/ch03-input/02-touch-performance.md": {
-      "chapter": "3.2",
-      "title": "触摸响应的性能分析",
-      "path": "src/part1-fundamentals/ch03-input/02-touch-performance.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "pending",
-      "task9_state": "pending",
-      "task2b_state": "idle"
-    },
-    "src/part1-fundamentals/ch03-input/03-gesture-navigation.md": {
-      "chapter": "3.3",
-      "title": "手势导航与系统交互",
-      "path": "src/part1-fundamentals/ch03-input/03-gesture-navigation.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "pending",
-      "task9_state": "pending",
-      "task2b_state": "idle"
-    },
-    "src/part1-fundamentals/ch03-input/05-input-interception-security.md": {
-      "chapter": "3.5",
-      "title": "输入事件拦截与安全机制",
-      "path": "src/part1-fundamentals/ch03-input/05-input-interception-security.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "pending",
-      "task9_state": "pending",
-      "task2b_state": "idle"
-    },
-    "src/part1-fundamentals/ch03-input/01-input-dispatch.md": {
-      "chapter": "3.1",
-      "title": "Input 事件分发全流程",
-      "path": "src/part1-fundamentals/ch03-input/01-input-dispatch.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "pending",
-      "task9_state": "pending",
-      "task2b_state": "idle"
-    },
-    "src/part1-fundamentals/ch03-input/06-gesture-recognition-performance.md": {
-      "chapter": "3.6",
-      "title": "手势识别算法与性能优化",
-      "path": "src/part1-fundamentals/ch03-input/06-gesture-recognition-performance.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "pending",
-      "task9_state": "pending",
-      "task2b_state": "idle"
-    },
-    "src/part1-fundamentals/ch03-input/04-input-latency-prediction.md": {
-      "chapter": "3.4",
-      "title": "输入延迟与预测输入技术",
-      "path": "src/part1-fundamentals/ch03-input/04-input-latency-prediction.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "pending",
-      "task9_state": "pending",
-      "task2b_state": "idle"
-    },
-    "src/part4-system/ch16-aosp/05-android17-api37-performance-changes.md": {
-      "chapter": "16.5",
-      "title": "Android 17 (API 37) 性能行为变更与适配指南",
-      "path": "src/part4-system/ch16-aosp/05-android17-api37-performance-changes.md",
+    "src/part3-tools/ch15-methodology/08-empirical-performance-issues.md": {
+      "chapter": "15.8",
+      "title": "Android 性能问题实证：真实世界的分类与代码模式",
+      "path": "src/part3-tools/ch15-methodology/08-empirical-performance-issues.md",
       "status": "ready-for-review",
       "pipeline_stage": "task6_pending",
       "task6_state": "pending",
@@ -1876,8 +1800,27 @@
       "pipeline_stage": "task6_pending",
       "task6_state": "revisiting",
       "task9_state": "pending",
-      "task2b_state": "fixed",
-      "task2b_result": "fixed"
+      "task2b_state": "fixed"
+    },
+    "src/part4-system/ch16-aosp/02-version-changes.md": {
+      "chapter": "16.2",
+      "title": "各 Android 版本性能变更追踪",
+      "path": "src/part4-system/ch16-aosp/02-version-changes.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "pending",
+      "task9_state": "pending",
+      "task2b_state": "idle"
+    },
+    "src/part4-system/ch16-aosp/03-aosp-build.md": {
+      "chapter": "16.3",
+      "title": "AOSP 源码编译与调试环境",
+      "path": "src/part4-system/ch16-aosp/03-aosp-build.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "pending",
+      "task9_state": "pending",
+      "task2b_state": "idle"
     },
     "src/part4-system/ch16-aosp/03-build-debug-env.md": {
       "chapter": "16.3",
@@ -1899,20 +1842,10 @@
       "task9_state": "pending",
       "task2b_state": "idle"
     },
-    "src/part4-system/ch16-aosp/03-aosp-build.md": {
-      "chapter": "16.3",
-      "title": "AOSP 源码编译与调试环境",
-      "path": "src/part4-system/ch16-aosp/03-aosp-build.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "pending",
-      "task9_state": "pending",
-      "task2b_state": "idle"
-    },
-    "src/part4-system/ch16-aosp/02-version-changes.md": {
-      "chapter": "16.2",
-      "title": "各 Android 版本性能变更追踪",
-      "path": "src/part4-system/ch16-aosp/02-version-changes.md",
+    "src/part4-system/ch16-aosp/05-android17-api37-performance-changes.md": {
+      "chapter": "16.5",
+      "title": "Android 17 (API 37) 性能行为变更与适配指南",
+      "path": "src/part4-system/ch16-aosp/05-android17-api37-performance-changes.md",
       "status": "ready-for-review",
       "pipeline_stage": "task6_pending",
       "task6_state": "pending",
@@ -1929,6 +1862,16 @@
       "task9_state": "pending",
       "task2b_state": "idle"
     },
+    "src/part4-system/ch17-oem/02-soc-differences.md": {
+      "chapter": "17.2",
+      "title": "SoC 平台差异",
+      "path": "src/part4-system/ch17-oem/02-soc-differences.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "pending",
+      "task9_state": "pending",
+      "task2b_state": "idle"
+    },
     "src/part4-system/ch17-oem/03-industry-cases.md": {
       "chapter": "17.3",
       "title": "行业案例",
@@ -1939,1219 +1882,65 @@
       "task9_state": "pending",
       "task2b_state": "idle"
     },
-    "src/part4-system/ch17-oem/02-soc-differences.md": {
-      "chapter": "17.2",
-      "title": "SoC 平台差异",
-      "path": "src/part4-system/ch17-oem/02-soc-differences.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "pending",
-      "task9_state": "pending",
-      "task2b_state": "idle"
-    }
-  },
-  "reviewed_sections": {
-    "8.1": {
-      "reviewed_date": "2026-04-04",
-      "reviewed_by": "openclaw-task6",
-      "review_status": "finalized",
-      "fixes_applied": [
-        "语言风格：4处「你」→「我们」（writing-guide §3.5）",
-        "元数据：修正 applicable_versions（API B → API 36）",
-        "元数据：补 section、drafted_date、drafted_by",
-        "状态：ready-for-review → finalized"
-      ]
-    },
-    "1.1": {
-      "reviewed_date": "2026-03-31",
-      "reviewed_by": "openclaw-task6",
-      "review_status": "finalized-v2",
-      "fixes_applied": [
-        "标准化6处验证标注格式（[来源:]→[已验证:]）",
-        "补充4处待验证标注（Zygote fork时间/Binder延迟/JNI延迟/JNI优化比例）",
-        "补充1处来源标注（冷启动Binder调用次数）",
-        "更新frontmatter（status→finalized, 添加reviewed_date/reviewed_by）"
-      ]
-    },
-    "1.2": {
-      "reviewed_date": "2026-04-05",
-      "reviewed_by": "openclaw-task6",
-      "review_status": "ready-to-publish",
-      "review_type": "post-polish-quality-gate",
-      "review_round": 2,
-      "fixes_applied": [
-        "版本命名：Android 24+ → Android 7.0+（Nougat，API 24+）",
-        "版本标注：startApexServices 添加 [待验证] 标注",
-        "frontmatter: status ready-for-review → ready-to-publish（出版终态）"
-      ],
-      "scores": {
-        "structure": 5,
-        "expression": 5,
-        "consistency": 4,
-        "verification": 4,
-        "metadata": 5
-      },
-      "deep_review_date": "2026-04-10T08:56:00",
-      "deep_review_by": "task9-deep-tech-review",
-      "deep_review_score": 3.4,
-      "deep_review_p1": 4,
-      "deep_review_p2": 8
-    },
-    "1.3": {
-      "reviewed_date": "2026-03-31",
-      "reviewed_by": "openclaw-task6",
-      "review_status": "finalized",
-      "fixes_applied": [
-        "标准化3处验证标注格式（[来源:]→[已验证: 来源见 ...]）",
-        "添加1处待验证标注（SERVICE_CUR=800）",
-        "添加2处[图：...]标记（五级优先级示意、LMK流程图）",
-        "补全frontmatter（drafted_date, reviewed_date, reviewed_by）",
-        "状态更新：ready-for-review → finalized"
-      ]
-    },
-    "4.5": {
-      "reviewed_date": "2026-04-08",
-      "reviewed_by": "openclaw-task6",
-      "review_status": "ready-to-publish",
-      "review_type": "post-polish-quality-gate",
-      "review_round": 2,
-      "fixes_applied": [
-        "元数据：补 section 字段",
-        "措辞：「显著」→ 直接陈述（writing-guide §九）",
-        "验证标注：3 处 [来源:] → [已验证:] 格式统一",
-        "状态：ready-for-review → ready-to-publish（精修质检终审通过）"
-      ],
-      "scores": {
-        "structure": 5,
-        "expression": 5,
-        "consistency": 5,
-        "verification": 4,
-        "metadata": 5
-      }
-    },
-    "2.1": {
-      "deep_review_date": "2026-04-10T16:13:40",
-      "deep_review_by": "task9-deep-tech-review",
-      "deep_review_score": 3.7,
-      "deep_review_p1": 3,
-      "deep_review_p2": 3
-    },
-    "5.1": {
-      "reviewed_date": "2026-04-06",
-      "reviewed_by": "openclaw-task6",
-      "review_status": "ready-to-publish",
-      "review_type": "post-polish-quality-gate",
-      "review_round": 2,
-      "fixes_applied": [
-        "frontmatter: status ready-for-review → ready-to-publish（出版终态）",
-        "frontmatter: reviewed_date → 2026-04-06",
-        "frontmatter: 添加 review_type + review_round"
-      ],
-      "scores": {
-        "structure": 5,
-        "expression": 5,
-        "consistency": 5,
-        "verification": 5,
-        "metadata": 5
-      }
-    },
-    "4.6": {
-      "reviewed_date": "2026-04-07",
-      "reviewed_by": "openclaw-task6",
-      "review_status": "reviewed",
-      "fixes_applied": [
-        "禁用词修正：痛点→问题、落地→启用（writing-guide §9）",
-        "汇报腔修正：革命性突破→核心改进（writing-guide §9）",
-        "AI味清除：删除「值得注意的是」（writing-guide §9）",
-        "先结论后证据修正：性能数据非常亮眼→具体改善（writing-guide §9）",
-        "section标题版本范围修正：8.0-10→8.0-15（覆盖 CMC GC）",
-        "冗余修饰精简：非常常见→常见",
-        "B类标注：Bitmap回收策略表格7.0/7.1行需确认",
-        "状态：ready-for-review → reviewed"
-      ]
-    },
-    "2.3": {
-      "reviewed_date": "2026-04-02",
-      "reviewed_by": "openclaw-task6",
-      "review_status": "finalized",
-      "file": "src/part1-fundamentals/ch02-rendering/03-vsync.md"
-    },
-    "2.4": {
-      "reviewed_date": "2026-04-03",
-      "reviewed_by": "openclaw-task6",
-      "review_status": "finalized",
-      "fixes_applied": [
-        "5处'你'→'我们'替换（writing-guide §3.5合规）",
-        "1处大小写修正（Choreographer#doframe→#doFrame）"
-      ]
-    },
-    "2.6": {
-      "reviewed_date": "2026-04-02",
-      "reviewed_by": "openclaw-task6",
-      "review_status": "reviewed",
-      "fixes_applied": [
-        "frontmatter: 补 drafted_date/reviewed_date/reviewed_by, status -> reviewed",
-        "frontmatter: applicable_versions API B -> API 36",
-        "frontmatter: sources 移除 androidcentral.com, skia.org -> source.android.com",
-        "confidence: high -> medium",
-        "添加 [待补充: Trace 截图] 标注",
-        "标记 6 处 [存疑] 代码",
-        "标记 1 处 [需重写] BlastBufferQueue Java 虚构 API",
-        "标记 1 处 [需验证] HWC 3.0 版本",
-        "添加全文 [需重写] 文体标注"
-      ],
-      "b_class_issues": 4
-    },
-    "2.7": {
-      "reviewed_date": "2026-04-02",
-      "reviewed_by": "openclaw-task6",
-      "review_status": "finalized",
-      "fixes_applied": [
-        "Software Layer 适用场景：从列表改为连贯叙述（writing-guide 合规）",
-        "规律总结过渡措辞优化",
-        "frontmatter：补 drafted_date/reviewed_date/reviewed_by，status → finalized"
-      ]
-    },
-    "2.8": {
-      "reviewed_date": "2026-04-02",
-      "reviewed_by": "openclaw-task6",
-      "review_status": "finalized",
-      "fixes_applied": [
-        "修正 you -> women (writing-guide compliance)",
-        "添加 GPU overdraw debug color figure marker",
-        "补充 frontmatter: drafted_date, reviewed_date, reviewed_by",
-        "status: ready-for-review -> finalized"
-      ]
-    },
-    "5.3": {
-      "reviewed_date": "2026-04-02",
-      "reviewed_by": "openclaw-task6",
-      "review_status": "finalized",
-      "fixes_applied": [
-        "措辞修正：集群迁移\"中断\"→\"迁移开销\"（更准确的术语）",
-        "frontmatter：补 reviewed_date/reviewed_by, status ready-for-review → finalized"
-      ]
-    },
-    "2.11": {
-      "reviewed_date": "2026-04-10",
-      "reviewed_by": "openclaw-task6",
-      "review_status": "reviewed",
-      "fixes_applied": [
-        "11处'你'→'我们'替换（writing-guide §3.5合规）",
-        "frontmatter补充section字段",
-        "3处[存疑]标注（Flutter 3.38版本号、450ms→11ms来源、HoldApp报告真实性）",
-        "status ready-for-review → finalized"
-      ],
-      "b_class_notes": "3处存疑均为数据来源验证，非结构性问题，不触发回炉"
-    },
-    "2.9": {
-      "reviewed_date": "2026-04-10",
-      "reviewed_by": "openclaw-task6",
-      "review_status": "ready-to-publish",
-      "review_type": "post-polish-quality-gate",
-      "review_round": 2,
-      "fixes_applied": [
-        "验证标注：[已确认:] → [已验证:]（2处，L292/L327）",
-        "模糊形容词：显著缩短 → 具体描述（L53）",
-        "模糊形容词：显著增强 → 进一步完善（L205）",
-        "元数据：补 drafted_by 字段",
-        "状态：ready-for-review → ready-to-publish（精修质检终审通过）"
-      ],
-      "scores": {
-        "structure": 5,
-        "expression": 5,
-        "consistency": 5,
-        "verification": 4,
-        "metadata": 5
-      }
-    },
-    "4.1": {
-      "reviewed_date": "2026-04-03",
-      "reviewed_by": "openclaw-task6",
-      "review_status": "finalized",
-      "fixes_applied": [
-        "frontmatter: 补 section/drafted_date, status → finalized",
-        "frontmatter: 添加 reviewed_date/reviewed_by",
-        "标准化 4 处 [来源:] → [已验证:] 标注格式",
-        "ZRAM 75% 声明添加 [待验证] 标注"
-      ]
-    },
-    "9.3": {
-      "reviewed_date": "2026-04-03",
-      "reviewed_by": "openclaw-task6",
-      "review_status": "finalized",
-      "fixes_applied": [
-        "8处'你'→'我们'替换（writing-guide §3.5合规）",
-        "frontmatter: status ready-for-review → finalized",
-        "frontmatter: 补 reviewed_date/reviewed_by"
-      ]
-    },
-    "2.10": {
-      "reviewed_date": "2026-04-10",
-      "reviewed_by": "openclaw-task6",
-      "review_status": "finalized",
-      "review_type": "post-rework-review",
-      "review_round": 4,
-      "fixes_applied": [
-        "禁用词修正：「显著降低」→「一个数量级的差距」（writing-guide §九）",
-        "禁用词修正：「大幅减少」→「减少」（writing-guide §九 模糊形容词）",
-        "模糊形容词：「相当可观」→「不容忽视」（writing-guide §九）",
-        "元数据：补 drafted_by 字段",
-        "元数据：修正 chapter 字段（2.10→2）",
-        "状态：ready-for-review → finalized（review round 4）"
-      ],
-      "scores": {
-        "structure": 5,
-        "expression": 5,
-        "consistency": 5,
-        "verification": 4,
-        "metadata": 5
-      }
-    },
-    "5.4": {
-      "reviewed_date": "2026-04-03",
-      "reviewed_by": "openclaw-task6",
-      "review_status": "finalized",
-      "fixes_applied": [
-        "9处'你'→'我们'替换（writing-guide §3.5合规）",
-        "5处[来源:]→[已验证: 来源见 ...]标注格式标准化",
-        "frontmatter补充section字段",
-        "status ready-for-review → finalized"
-      ]
-    },
-    "3.2": {
-      "deep_review_date": "2026-04-10T10:54:17",
-      "deep_review_by": "task9-deep-tech-review",
-      "deep_review_score": 3.8,
-      "deep_review_p1": 2,
-      "deep_review_p2": 3
-    },
-    "3.3": {
-      "reviewed_date": "2026-04-06",
-      "reviewed_by": "openclaw-task6",
-      "review_status": "ready-to-publish",
-      "review_type": "post-polish-quality-gate",
-      "review_round": 2,
-      "fixes_applied": [
-        "禁用词：5处「链路」→「流程/路径/分发路径」（writing-guide §九）",
-        "frontmatter: status ready-for-review → ready-to-publish（精修质检终审通过）",
-        "frontmatter: reviewed_date → 2026-04-06",
-        "frontmatter: 添加 review_type + review_round"
-      ],
-      "scores": {
-        "structure": 5,
-        "expression": 5,
-        "consistency": 5,
-        "verification": 4,
-        "metadata": 5
-      }
-    },
-    "4.3": {
-      "reviewed_date": "2026-04-03",
-      "reviewed_by": "openclaw-task6",
-      "review_status": "finalized",
-      "fixes_applied": [
-        "5处'你'→'我们'替换（writing-guide §3.5合规）",
-        "frontmatter补充section/drafted_date/drafted_by字段",
-        "frontmatter更新：status→finalized, 添加reviewed_date/reviewed_by"
-      ]
-    },
-    "5.5": {
-      "reviewed_date": "2026-04-03",
-      "reviewed_by": "openclaw-task6",
-      "review_status": "finalized",
-      "fixes_applied": [
-        "8处'你'→'我们'替换（writing-guide §3.5合规）",
-        "frontmatter补 section/drafted_date 字段",
-        "frontmatter更新：status→finalized, 添加reviewed_date/reviewed_by"
-      ]
-    },
-    "4.4": {
-      "reviewed_date": "2026-04-03",
-      "reviewed_by": "openclaw-task6",
-      "review_status": "finalized",
-      "fixes_applied": [
-        "9处'你'→'我们'替换（writing-guide §3.5合规）",
-        "frontmatter补 section/drafted_date/reviewed_date/reviewed_by",
-        "status ready-for-review → finalized"
-      ]
-    },
-    "6.1": {
-      "reviewed_date": "2026-04-03",
-      "reviewed_by": "openclaw-task6",
-      "review_status": "finalized",
-      "fixes_applied": [
-        "标注标准化: 10处[来源:]→[已验证: 来源见 ...]（3种来源）",
-        "frontmatter补 drafted_date/drafted_by/section 字段",
-        "frontmatter: status ready-for-review → finalized"
-      ]
-    },
-    "7.1": {
-      "reviewed_date": "2026-04-03",
-      "reviewed_by": "openclaw-task6",
-      "review_status": "finalized",
-      "fixes_applied": [
-        "4处'你'→'我们'替换（writing-guide §3.5合规）",
-        "4处[来源:]→[已验证: 来源见 ...]标注格式标准化",
-        "frontmatter补 section/drafted_date/drafted_by 字段",
-        "status ready-for-review → finalized"
-      ]
-    },
-    "5.6": {
-      "reviewed_date": "2026-04-08",
-      "reviewed_by": "openclaw-task6",
-      "review_status": "ready-to-publish",
-      "fixes_applied": [
-        "禁用词修正：'串联' → '按先后顺序编排'（writing-guide §9）",
-        "版本引用统一：'API level 26（Android 8.0）' → 'Android 8.0（API 26）'"
-      ],
-      "polish_review": true,
-      "note": "task2b 精修后质检，无B类大问题，直接晋升 ready-to-publish"
-    },
-    "5.7": {
-      "reviewed_date": "2026-04-04",
-      "reviewed_by": "openclaw-task6",
-      "review_status": "finalized",
-      "fixes_applied": [
-        "4 处语言风格修正（你→我们/中性表述，符合 writing-guide）",
-        "frontmatter: status ready-for-review → finalized",
-        "frontmatter: 补 reviewed_date/reviewed_by"
-      ]
-    },
-    "6.4": {
-      "reviewed_date": "2026-04-06",
-      "reviewed_by": "openclaw-task6-v2",
-      "review_status": "ready-to-publish",
-      "review_type": "post-polish-quality-gate",
-      "fixes_applied": [
-        "禁用词修复：痛点 → 困扰（L122）",
-        "禁用词修复：落地 → 推进（L314）",
-        "验证标注标准化：[来源:] → [已验证: 来源见 ...]（L304）",
-        "去重：f2fs 章节两段重复开头合并为一段（L287-291）",
-        "措辞优化：去掉模糊形容词「显著」（L88）"
-      ],
-      "scores": {
-        "structure": 5,
-        "expression": 4,
-        "consistency": 5,
-        "verification": 5,
-        "metadata": 5
-      }
-    },
-    "7.6": {
-      "reviewed_date": "2026-04-04",
-      "reviewed_by": "openclaw-task6",
-      "review_status": "finalized",
-      "fixes_applied": [
-        "frontmatter补全：section/drafted_date/drafted_by/reviewed_date/reviewed_by",
-        "12处[来源:]→[已验证: 来源见 ...]标注格式标准化",
-        "status ready-for-review → finalized"
-      ]
-    },
-    "7.7": {
-      "reviewed_date": "2026-04-07",
-      "reviewed_by": "openclaw-task6",
-      "review_status": "ready-to-publish",
-      "review_type": "post-polish-quality-gate",
-      "review_round": 2,
-      "fixes_applied": [
-        "无 A 类修复（task2b 精修后质量已达标）",
-        "无 B 类问题",
-        "status: ready-for-review → ready-to-publish（出版终态）"
-      ],
-      "scores": {
-        "structure": 5,
-        "expression": 5,
-        "consistency": 5,
-        "verification": 4,
-        "metadata": 5
-      }
-    },
-    "11.1": {
-      "reviewed_date": "2026-04-04",
-      "reviewed_by": "openclaw-task6",
-      "review_status": "finalized",
-      "fixes_applied": [
-        "11处'你'→'我们'替换（writing-guide §3.5合规）",
-        "frontmatter补充：section/drafted_by/reviewed_date/reviewed_by",
-        "status ready-for-review → finalized"
-      ]
-    },
-    "11.2": {
-      "reviewed_date": "2026-04-04",
-      "reviewed_by": "openclaw-task6",
-      "review_status": "finalized",
-      "fixes_applied": [
-        "frontmatter: 补 section/drafted_by/reviewed_date/reviewed_by",
-        "Google Play 2026年3月生效日期：添加[待验证]标注",
-        "status ready-for-review → finalized"
-      ]
-    },
-    "11.3": {
-      "reviewed_date": "2026-04-05",
-      "reviewed_by": "openclaw-task6",
-      "review_status": "finalized",
-      "fixes_applied": [
-        "frontmatter补全：section/drafted_by/reviewed_date/reviewed_by",
-        "status: ready-for-review → finalized"
-      ]
-    },
-    "13.2": {
-      "reviewed_date": "2026-04-05",
-      "reviewed_by": "openclaw-task6",
-      "review_status": "finalized",
-      "re_review_date": "2026-04-05",
-      "re_review_result": "审查2条Camera素材无需修改（素材为Trace Processor SQL分析，与Trace抓取/View解读不匹配）"
-    },
-    "13.3": {
-      "reviewed_date": "2026-04-05",
-      "reviewed_by": "openclaw-task6",
-      "review_status": "finalized",
-      "re_review_date": "2026-04-05",
-      "re_review_result": "审查2条Camera素材无需修改（素材为SQL分析，与UI视觉解读不匹配）"
-    },
-    "13.4": {
-      "reviewed_date": "2026-04-05",
-      "reviewed_by": "openclaw-task6",
-      "review_status": "reviewed",
-      "fixes_applied": [
-        "frontmatter: 补 section/drafted_by/reviewed_date/reviewed_by, status → reviewed",
-        "措辞: 移除禁用词「显然」（writing-guide §9）",
-        "参数格式: --W → -W（单字母 flag 使用单横线）",
-        "标注: EXTRACT_ARG 示例 slice name 添加 [存疑]"
-      ]
-    },
-    "8.2": {
-      "reviewed_date": "2026-04-05",
-      "reviewed_by": "openclaw-task6",
-      "review_status": "finalized",
-      "fixes_applied": [
-        "28处「你」→「我们」替换（writing-guide §3.5合规）",
-        "frontmatter补 section/drafted_by/reviewed_date/reviewed_by",
-        "status ready-for-review → finalized"
-      ],
-      "scores": {
-        "structure": 5,
-        "expression": 5,
-        "consistency": 5,
-        "verification": 4,
-        "metadata": 5
-      }
-    },
-    "8.3": {
-      "reviewed_date": "2026-04-06",
-      "reviewed_by": "openclaw-task6",
-      "review_status": "finalized",
-      "fixes_applied": [
-        "10处'你'→'我们'替换（writing-guide §3.5合规）",
-        "3处[来源:]→[已验证: 来源见 ...]标注格式标准化",
-        "frontmatter补全：section/drafted_by/reviewed_date/reviewed_by",
-        "status: ready-for-review → finalized"
-      ]
-    },
-    "13.1": {
-      "reviewed_date": "2026-04-06",
-      "reviewed_by": "openclaw-task6",
-      "review_status": "finalized",
-      "fixes_applied": [
-        "42处「你」→「我们」/中性化替换（writing-guide §3.5）",
-        "禁用词修正：「对齐」→「统一」、「串联」→「关联」（writing-guide §9）",
-        "frontmatter：补 drafted_by/reviewed_date/reviewed_by",
-        "验证标注：Systrace platform-tools 移除添加 [待验证]",
-        "status: ready-for-review → finalized"
-      ]
-    },
-    "8.4": {
-      "reviewed_date": "2026-04-06",
-      "reviewed_by": "openclaw-task6",
-      "review_status": "finalized",
-      "fixes_applied": [
-        "10处'你'→'我们'/中性化替换（writing-guide §3.5合规）",
-        "7处'链路'→'路径/流程'（writing-guide §9禁用词替换）",
-        "frontmatter补全：section/drafted_by/reviewed_date/reviewed_by",
-        "status: ready-for-review → finalized"
-      ]
-    },
-    "8.5": {
-      "reviewed_date": "2026-04-06",
-      "reviewed_by": "openclaw-task6",
-      "review_status": "finalized",
-      "fixes_applied": [
-        "措辞：5处「你」→「我们」（writing-guide §3.5）",
-        "禁用词：「全链路」→「完整流程」「闭环」→「反馈循环/体系」「落地」→「应用」",
-        "元数据：补充 section 字段",
-        "状态：ready-for-review → finalized"
-      ]
-    },
-    "1.6": {
-      "title": "Android 版本演进中的架构变化",
-      "status": "ready-to-publish",
-      "reviewed_date": "2026-04-06",
-      "reviewed_by": "openclaw-task6",
-      "scores": {
-        "structure": 5,
-        "wording": 4.5,
-        "consistency": 5,
-        "verification": 4,
-        "metadata": 5
-      }
-    },
-    "7.4": {
-      "reviewed_date": "2026-04-06",
-      "reviewed_by": "openclaw-task6",
-      "review_status": "ready-to-publish",
-      "review_type": "post-polish-quality-gate",
-      "review_round": 2,
-      "fixes_applied": [
-        "禁用词：「链路」→「调用路径」（writing-guide §九）",
-        "版本修正：applicable_versions API 35 → API 36",
-        "状态：ready-for-review → ready-to-publish（精修质检通过）"
-      ],
-      "scores": {
-        "structure": 5,
-        "expression": 5,
-        "consistency": 5,
-        "verification": 4,
-        "metadata": 5
-      }
-    },
-    "13.5": {
-      "reviewed_date": "2026-04-06",
-      "reviewed_by": "openclaw-task6",
-      "review_status": "finalized",
-      "fixes_applied": [
-        "禁用词: 4处「链路」→「流程/路径」（writing-guide §九）",
-        "语言风格: 3处「你」→「我们」（writing-guide §3.5）",
-        "frontmatter: status ready-for-review -> finalized",
-        "frontmatter: 补充 confidence/word_count/reviewed_date/reviewed_by"
-      ]
-    },
-    "2.2": {
-      "reviewed_date": "2026-04-06",
-      "reviewed_by": "openclaw-task6",
-      "review_status": "finalized",
-      "fixes_applied": [
-        "元数据：清理空 re-review 残留字段",
-        "状态：ready-for-review → finalized",
-        "措辞：60Hz 描述从指代模糊改为直接陈述"
-      ],
-      "issues_remaining": [
-        "[待补充] LTPO Perfetto 截图",
-        "[待补充] Frame Timeline 截图",
-        "[待验证] 华为 VSync 问题在 HarmonyOS 4+ 的状态"
-      ]
-    },
-    "9.2": {
-      "reviewed_date": "2026-04-07",
-      "reviewed_by": "openclaw-task6",
-      "review_status": "finalized",
-      "fixes_applied": [
-        "2处「你」→中性/「我们」（writing-guide §3.5）",
-        "1处「链路」→「分发路径」（writing-guide §9 一致性）",
-        "1处 shortService 超时补充 [待验证] 标注",
-        "frontmatter: 补 section/drafted_by/reviewed_date/reviewed_by",
-        "status: ready-for-review → finalized"
-      ]
-    },
-    "14.1": {
-      "reviewed_date": "2026-04-07",
-      "reviewed_by": "openclaw-task6",
-      "review_status": "finalized",
-      "fixes_applied": [
-        "禁用词修正：显著提升→大幅提升（writing-guide §九 模糊形容词）",
-        "清理底部原始 intake 条目（布局调试文章，与本节无关）",
-        "frontmatter: 补 reviewed_date/reviewed_by",
-        "status: ready-for-review → finalized"
-      ],
-      "scores": {
-        "structure": 5,
-        "expression": 5,
-        "consistency": 5,
-        "verification": 4,
-        "metadata": 5
-      }
-    },
-    "9.4": {
-      "reviewed_date": "2026-04-08",
-      "reviewed_by": "openclaw-task6",
-      "review_status": "finalized",
-      "review_type": "post-rework-first-review",
-      "fixes_applied": [
-        "元数据：补 section/drafted_by 字段",
-        "验证标注：4处 [来源:] → [已验证: 来源见 ...]",
-        "文体：锁竞争防御段落列表式→叙述式",
-        "状态：ready-for-review → finalized"
-      ]
-    },
-    "10.2": {
-      "reviewed_date": "2026-04-09",
-      "reviewed_by": "openclaw-task6 (quality-gate)",
-      "review_status": "ready-to-publish",
-      "review_type": "post-polish-quality-gate",
-      "review_round": 2,
-      "fixes_applied": [
-        "Quality gate 通过，无需修复",
-        "状态：ready-for-review → ready-to-publish（出版终态）"
-      ],
-      "scores": {
-        "structure": 5,
-        "expression": 5,
-        "consistency": 5,
-        "verification": 4,
-        "metadata": 5
-      }
-    },
-    "14.7": {
-      "reviewed_date": "2026-04-08",
-      "reviewed_by": "openclaw-task6",
-      "review_status": "finalized",
-      "review_type": "post-rework-second-review",
-      "review_round": 2,
-      "fixes_applied": [
-        "交叉引用修正：4处 frontmatter + 4处正文（章节号/名/拼写）",
-        "元数据：补 review_round: 2",
-        "状态：ready-for-review → finalized"
-      ],
-      "scores": {
-        "structure": 5,
-        "expression": 5,
-        "consistency": 5,
-        "verification": 4,
-        "metadata": 5
-      }
-    },
-    "6.2": {
-      "reviewed_date": "2026-04-08",
-      "reviewed_by": "openclaw-task6",
-      "review_status": "ready-to-publish",
-      "review_type": "post-polish-quality-gate",
-      "review_round": 2,
-      "fixes_applied": [
-        "禁用词修正：痛点→性能问题、分析链路→分析路径（writing-guide §九）",
-        "验证标注标准化：9处[来源:]→[已验证: 来源见 ...]、1处[已确认:]→[已验证:]",
-        "清除文末残留研究素材（Kernel 6.12 存储三重优化原始笔记）",
-        "frontmatter补全：drafted_date/drafted_by/reviewed_date/reviewed_by",
-        "status: ready-for-review → ready-to-publish（精修质检终审通过）"
-      ],
-      "scores": {
-        "structure": 5,
-        "expression": 5,
-        "consistency": 5,
-        "verification": 4,
-        "metadata": 5
-      }
-    },
-    "10.1": {
-      "reviewed_date": "2026-04-08",
-      "reviewed_by": "openclaw-task6",
-      "review_status": "ready-to-publish",
-      "review_type": "post-polish-quality-gate",
-      "review_round": 2,
-      "fixes_applied": [
-        "验证标注标准化: 12处[来源:]→[已验证: 来源见 ...]（writing-guide §4）",
-        "frontmatter: status ready-for-review → ready-to-publish（精修质检终审通过）",
-        "frontmatter: reviewed_date → 2026-04-08",
-        "frontmatter: 添加 review_type + review_round"
-      ],
-      "scores": {
-        "structure": 5,
-        "expression": 5,
-        "consistency": 5,
-        "verification": 4,
-        "metadata": 5
-      }
-    },
-    "7.2": {
-      "title": "卡顿原因体系",
-      "status": "ready-to-publish",
-      "last_reviewed": "2026-04-08"
-    },
-    "10.3": {
-      "reviewed_date": "2026-04-08",
-      "reviewed_by": "openclaw-task6",
-      "review_status": "finalized",
-      "fixes_applied": [
-        "标注标准化: 3处[来源:]→[已验证: 来源见 ...]（Cubox素材来源）",
-        "frontmatter补全: drafted_by/word_count/reviewed_date/reviewed_by",
-        "status: ready-for-review → finalized"
-      ],
-      "scores": {
-        "structure": 5,
-        "expression": 5,
-        "consistency": 5,
-        "verification": 4,
-        "metadata": 4
-      }
-    },
-    "8.6": {
-      "reviewed_at": "2026-04-08",
-      "status": "finalized"
-    },
-    "9.5": {
-      "reviewed_date": "2026-04-09",
-      "reviewed_by": "openclaw-task6",
-      "review_status": "reviewed",
-      "fixes_applied": [
-        "元数据：补 section/drafted_by 字段",
-        "验证标注标准化：5处[来源:]→[已验证: 来源见 ...]",
-        "措辞：「非常明确」→「明确」（writing-guide §九）",
-        "措辞：「非常重的 IO 操作」→ 补充具体数据（writing-guide §九）",
-        "B类标注：缺少死锁案例（outline 要求覆盖）"
-      ],
-      "b_class_issues": 1
-    },
-    "2.5": {
-      "reviewed_date": "2026-04-09",
-      "reviewed_by": "openclaw-task6",
-      "review_status": "ready-to-publish",
-      "review_type": "post-polish-quality-gate",
-      "review_round": 3,
-      "fixes_applied": [
-        "交叉引用：2.16 DMA-BUF → 2.16 Sync Fence 框架与帧同步机制",
-        "模糊形容词：急剧上升 → 呈指数增长（writing-guide §九）"
-      ],
-      "scores": {
-        "structure": 5,
-        "expression": 5,
-        "consistency": 4,
-        "verification": 4,
-        "metadata": 5
-      }
-    },
-    "9.1": {
-      "reviewed_date": "2026-04-09",
-      "reviewed_by": "openclaw-task6",
-      "review_status": "ready-to-publish",
-      "fixes_applied": [
-        "措辞优化：1处表述具体化（「深远的影响」→ 具体说明影响方式）"
-      ],
-      "issues_found": 0
-    },
-    "10.6": {
-      "reviewed_date": "2026-04-09",
-      "reviewed_by": "openclaw-task6",
-      "review_status": "finalized",
-      "fixes_applied": [
-        "元数据：补 section/drafted_by/word_count/reviewed_date/reviewed_by 字段",
-        "AI味清除：「值得注意的是」→「这里有一个容易忽略的细节」（writing-guide §九）",
-        "验证标注标准化：2处 [来源:] → [已验证: 来源见 ...]",
-        "状态：ready-for-review → finalized"
-      ],
-      "scores": {
-        "structure": 5,
-        "expression": 5,
-        "consistency": 5,
-        "verification": 4,
-        "metadata": 4
-      }
-    },
-    "11.4": {
-      "reviewed_date": "2026-04-09",
-      "reviewed_by": "openclaw-task6",
-      "review_status": "finalized",
-      "fixes_applied": [
-        "17处「你」→中性/「读者」/「使用者」（writing-guide §3.5）",
-        "AI味删除：「值得注意的是」（writing-guide §九）",
-        "验证标注标准化：[来源:] → [已验证: 来源见 ...]",
-        "frontmatter: 补 section/drafted_by/reviewed_date/reviewed_by",
-        "status: ready-for-review → finalized"
-      ],
-      "scores": {
-        "structure": 5,
-        "expression": 4.5,
-        "consistency": 5,
-        "verification": 4,
-        "metadata": 5
-      }
-    },
-    "12.1": {
-      "reviewed_date": "2026-04-10",
-      "reviewed_by": "openclaw-task6",
-      "review_status": "finalized",
-      "fixes_applied": [
-        "AI味清除：「值得注意的是」（writing-guide §九）",
-        "22处「你」→「我们」/中性化（writing-guide §3.5）",
-        "验证标注标准化：2处[来源:]→[已验证:]",
-        "模糊形容词具体化：「收益非常显著」→具体说明（writing-guide §九）",
-        "frontmatter: 补 section/drafted_by/reviewed_date/reviewed_by",
-        "status: ready-for-review → finalized"
-      ],
-      "scores": {
-        "structure": 5,
-        "expression": 5,
-        "consistency": 5,
-        "verification": 4,
-        "metadata": 4
-      }
-    },
-    "12.2": {
-      "reviewed_date": "2026-04-10",
-      "reviewed_by": "openclaw-task6",
-      "review_status": "finalized",
-      "fixes_applied": [
-        "元数据：补 section/drafted_by/reviewed_date/reviewed_by 字段",
-        "元数据：related_chapters 补充 §8.1",
-        "验证标注：[引用:] → [已验证: 来源见 ...] 格式标准化",
-        "模糊形容词：3处具体化（显著优势/开销巨大/意义重大）",
-        "状态：ready-for-review → finalized"
-      ],
-      "scores": {
-        "structure": 5,
-        "expression": 4,
-        "consistency": 5,
-        "verification": 4,
-        "metadata": 4
-      }
-    },
-    "10.4": {
-      "reviewed_date": "2026-04-10",
-      "reviewed_by": "openclaw-task6",
-      "review_status": "ready-to-publish",
-      "review_type": "post-polish-quality-gate",
-      "review_round": 2,
-      "fixes_applied": [
-        "元数据：补 section/drafted_by 字段",
-        "状态：ready-for-review → ready-to-publish（精修质检终审通过）",
-        "reviewed_date 更新为 2026-04-10"
-      ],
-      "scores": {
-        "structure": 5,
-        "expression": 5,
-        "consistency": 5,
-        "verification": 4,
-        "metadata": 5
-      }
-    },
-    "16.4": {
-      "reviewed_date": "2026-04-10",
-      "reviewed_by": "openclaw-task6",
-      "review_status": "finalized",
-      "fixes_applied": [
-        "2处「你」→「我们」（writing-guide §3.5）",
-        "模糊形容词具体化：「协同效果显著」→「随机 I/O 延迟降低 12%」（writing-guide §九）",
-        "模糊形容词具体化：「性能提升最为显著」→补充具体路径说明（writing-guide §九）",
-        "元数据：补 section/drafted_date/drafted_by/reviewed_date/reviewed_by",
-        "清理文末残留研究素材原始笔记",
-        "status: ready-for-review → finalized"
-      ],
-      "scores": {
-        "structure": 5,
-        "expression": 5,
-        "consistency": 5,
-        "verification": 4,
-        "metadata": 4
-      }
-    },
-    "13.6": {
-      "title": "线程 CPU 状态分析",
-      "reviewed_date": "2026-04-10",
-      "reviewed_by": "openclaw-task6",
-      "review_status": "finalized",
-      "fixes_applied": [
-        "10处「你」→「我们」（writing-guide §3.5）",
-        "验证标注标准化：19处[来源:]→[已验证: 来源见 ...]",
-        "术语格式化：TASK_WAKEKILL|TASK_UNINTERRUPTIBLE 加反引号",
-        "元数据：补 section/drafted_by/reviewed_date/reviewed_by",
-        "status: ready-for-review → finalized"
-      ],
-      "scores": {
-        "structure": 5,
-        "expression": 5,
-        "consistency": 5,
-        "verification": 4,
-        "metadata": 5
-      }
-    },
-    "7.5": {
-      "title": "优化策略",
-      "reviewed_date": "2026-04-10",
-      "reviewed_by": "openclaw-task6",
-      "review_status": "finalized",
-      "fixes_applied": [
-        "元数据：补 section/drafted_by/reviewed_date/reviewed_by",
-        "验证标注标准化：9处[来源:]→[已验证: 来源见 ...]",
-        "模糊形容词具体化：L347「显著下降」→「具体数据」（writing-guide §九）",
-        "清理文末残留研究素材（Android 17 DeliQueue原始笔记）",
-        "status: ready-for-review → finalized"
-      ],
-      "scores": {
-        "structure": 5,
-        "expression": 5,
-        "consistency": 5,
-        "verification": 4,
-        "metadata": 5
-      }
-    },
-    "14.2": {
-      "title": "Simpleperf",
-      "reviewed_date": "2026-04-10",
-      "reviewed_by": "openclaw-task6",
-      "review_status": "finalized",
-      "fixes_applied": [
-        "6处「你」→「我们」（writing-guide §3.5）",
-        "元数据：补 reviewed_date/reviewed_by",
-        "status: ready-for-review → finalized"
-      ],
-      "scores": {
-        "structure": 5,
-        "expression": 5,
-        "consistency": 5,
-        "verification": 5,
-        "metadata": 5
-      }
-    },
-    "14.3": {
-      "title": "内存分析工具",
-      "reviewed_date": "2026-04-10",
-      "reviewed_by": "openclaw-task6",
-      "review_status": "finalized",
-      "fixes_applied": [
-        "元数据：补 reviewed_date/reviewed_by",
-        "状态：ready-for-review → finalized"
-      ],
-      "scores": {
-        "structure": 5,
-        "expression": 5,
-        "consistency": 5,
-        "verification": 5,
-        "metadata": 5
-      }
-    },
-    "1.7": {
-      "reviewed_date": "2026-04-10",
-      "reviewed_by": "task9-deep-tech-review",
-      "review_status": "ready-to-publish",
-      "review_type": "deep-tech-review",
-      "deep_review_date": "2026-04-10T12:35:38",
-      "deep_review_score": 3.7,
-      "deep_review_p1": 4,
-      "deep_review_p2": 9,
-      "issues_found": [
-        "speed-profile filter behavior misdescription",
-        "Android 9 Profile-Guided compilation version attribution",
-        "JIT trampoline and OatWriter structure missing",
-        "quicken filter definition imprecise"
-      ]
-    },
-    "1.9": {
-      "reviewed_date": "2026-04-11",
-      "reviewed_by": "openclaw-task6",
-      "review_status": "reviewed",
-      "fixes_applied": [
-        "引言措辞收束：1处“这个格局”→“这套权衡”",
-        "术语格式：`PackageManagerService` 类名统一为代码格式",
-        "口语化表述收束：2处（“大头”→“主要耗时”，“补课”→“补充优化”）",
-        "模糊表述具体化：Cloud Compilation 收益改为直接陈述主导耗时变化",
-        "元数据：补 reviewed_by/reviewed_date/task6_result，并更新 pipeline_stage/task6_state/task2b_state",
-        "B类标注：缺少 outline/锚点；Baseline Profiles 量化数据缺少原始来源"
-      ],
-      "b_class_issues": 2,
-      "review_log": "logs/review/2026-04-11-01-review.md",
-      "scores": {
-        "structure": 2,
-        "expression": 4,
-        "consistency": 4,
-        "verification": 3,
-        "metadata": 5
-      }
-    },
-    "1.10": {
-      "deep_review_date": "2026-04-11T02:25:15",
-      "deep_review_by": "task9-deep-tech-review",
-      "deep_review_score": 3.0,
-      "deep_review_p1": 4,
-      "deep_review_p2": 3,
-      "issues_found": [
-        "ANR timeout table conflates publish vs onCreate (P0)",
-        "Binder thread pool model not covered (P1)",
-        "Android 11 URI permission changes missing (P1)",
-        "Android 9 CursorWindow API vague [待验证] (P1)",
-        "SQLiteCursor fillWindow implementation detail (P2)",
-        "Binder buffer 1MB precise source path missing (P2)",
-        "App Startup 35-42% quant claim still in body despite [待验证] (P2)"
-      ]
-    },
-    "1.12": {
-      "reviewed_date": "2026-04-11",
-      "reviewed_by": "openclaw-task6",
-      "review_status": "ready-for-review",
-      "deep_review_date": "2026-04-11T03:24:00+08:00",
-      "deep_review_by": "task9-deep-tech-review",
-      "deep_review_score": 2.5,
-      "deep_review_p0": 2,
-      "deep_review_p1": 2,
-      "deep_review_p2": 3
-    },
-    "1.14": {
-      "reviewed_date": "2026-04-11",
-      "reviewed_by": "openclaw-task6",
-      "review_status": "reviewed",
-      "fixes_applied": [
-        "frontmatter：补 reviewed_by/reviewed_date/task6_result，补 related_chapters 中缺失的 1.4，并更新 pipeline_stage/task6_state/task2b_state",
-        "outline：2 处“锁点”统一为“锚点”",
-        "措辞收束：1 处“至关重要”改为具体影响",
-        "措辞收束：1 处“在 trace 中”改为“在 Perfetto trace 中”",
-        "措辞收束：1 处“性能收益显著”改为“通常更有优势”",
-        "措辞收束：1 处“最显著的锁优化”改为“代表性锁优化案例”",
-        "B类标注：扩展块未展开；PI-futex 版本表述待核；15% 量化断言与 sources 待补"
-      ],
-      "b_class_issues": 3,
-      "review_log": "logs/review/2026-04-11-04-review.md",
-      "scores": {
-        "structure": 3,
-        "expression": 4,
-        "consistency": 4,
-        "verification": 2,
-        "metadata": 3
-      },
-      "deep_review_date": "2026-04-11T04:24:00+08:00",
-      "deep_review_by": "task9-deep-tech-review",
-      "deep_review_score": 1.8,
-      "deep_review_p0": 3,
-      "deep_review_p1": 2,
-      "deep_review_p2": 2,
-      "issues_found": [
-        "Binder/ART/PI-futex 机制被混写为同一实现（P0）",
-        "Perfetto SQL 模块名写成 android.monitor，官方标准库为 android.monitor_contention（P0）",
-        "版本演进表把 bionic PI 与 Binder 线程池演进写错到 Android 12/8.0（P0）",
-        "Futex / Binder transaction priority inheritance / Java monitor 因果链混淆（P1）",
-        "缺少 native mutex / binder driver / system_server 锁诊断路径（P1）",
-        "关键量化数字缺少 benchmark / 设备 / trace 绑定（P2）",
-        "与 §1.4 对 Binder 线程池数量表述不一致（P2）"
-      ]
-    },
-    "1.15": {
-      "reviewed_date": "2026-04-11",
-      "reviewed_by": "openclaw-task6",
-      "review_status": "ready-for-review",
-      "deep_review_date": "2026-04-11T06:20:00+08:00",
-      "deep_review_by": "task9-deep-tech-review",
-      "deep_review_score": 1.8,
-      "deep_review_p0": 4,
-      "deep_review_p1": 3,
-      "deep_review_p2": 2,
-      "issues_found": [
-        "Process.getUidForPid 示例被误写为 @FastNative native（P0）",
-        "@CriticalNative 参数约束与 LongSparseArray 示例双重失真（P0）",
-        "16KB Play 适用范围被写大，遗漏 target Android 15+ / 64-bit 限定（P0）",
-        "ATrace 公开头文件路径与内部 cutils 头混用（P0）",
-        "Perfetto 观测 JNI 的采集前提没有讲清（P1）",
-        "Android 17 验证声明与正文覆盖不一致（P1）",
-        "缺少 native 线程 attach/detach 与 local ref 压力（P1）",
-        "libbinder_ndk 20-40% 量化比较缺少实验边界（P2）",
-        "与 §4.7 / §14.2 的交叉引用缺失，事实表有漂移风险（P2）"
-      ]
-    },
-    "1.17": {
-      "title": "IPC 全景：Android 进程间通信机制对比与性能选型",
-      "reviewed_date": "2026-04-11",
-      "reviewed_by": "openclaw-task6",
-      "review_status": "reviewed",
-      "task6_result": "needs-rework",
-      "fixes_applied": [
-        "frontmatter：补 section/reviewed_date/reviewed_by/task6_result/review_log，并更新 pipeline_stage/task6_state/task2b_state",
-        "禁用词修正：2处「性能对比矩阵」→「性能对比表」（writing-guide §九）",
-        "措辞与格式：1处「比Binder」→「比 Binder」",
-        "版本表述收束：1处「16KB page size 对齐」→「16KB page size 适配」",
-        "表格格式：1处 InputDispatcher 路径前导空格清理"
-      ],
-      "b_class_issues": 3,
-      "review_log": "logs/review/2026-04-11-09-review.md",
-      "scores": {
-        "structure": 3,
-        "expression": 4,
-        "consistency": 4,
-        "verification": 2,
-        "metadata": 5
-      },
-      "deep_review_date": "2026-04-11T09:20:00+08:00",
-      "deep_review_by": "task9-deep-tech-review",
-      "deep_review_score": 2.0,
-      "deep_review_p0": 4,
-      "deep_review_p1": 3,
-      "deep_review_p2": 3,
-      "issues_found": [
-        "InputDispatcher 被误写成 `/data/system/input_manager/*` 命名 socket，实际是 InputChannel/socketpair（P0）",
-        "MessageQueue wake fd 被写成 pipe，Android 8-17 现代实现应为 eventfd（P0）",
-        "Binder 默认线程池被写成 `BIND_MAX_THREADS = 16`，AOSP 实际是 `DEFAULT_MAX_BINDER_THREADS = 15`（P0）",
-        "AIDL HAL 被错误归入 HwBinder `/dev/hwbinder` 域（P0）",
-        "选型主线缺少“Binder 控制面 + fd/共享内存数据面”的组合模型（P1）",
-        "正文未展开 `BINDER_TYPE_FD` / fd 传递机制，零拷贝 IPC 解释不完整（P1）",
-        "IPC 版本表漏掉 Android 10 Stable AIDL 这个关键拐点（P1）",
-        "延迟/占比表缺少 benchmark 边界与来源（P2）",
-        "Perfetto SQL 缺 trace 配置和模块/表映射，方法不可直接复现（P2）",
-        "与 §3.1 / §1.5 / §1.1 的机制描述存在交叉引用漂移（P2）"
-      ]
-    },
-    "2.12": {
-      "reviewed_date": "2026-04-11",
-      "reviewed_by": "openclaw-task6",
-      "review_status": "reviewed",
-      "task6_result": "pass-light-edit",
-      "review_log": "logs/review/2026-04-11-11-review.md",
-      "fixes_applied": [
-        "中英文混排：ownership → 职责分工",
-        "AI 味句式：关键在于 → 真正需要关注的是",
-        "模糊副词：非常类似 → 很接近",
-        "frontmatter：补 reviewed_by/reviewed_date/task6_result/review_log，并更新 pipeline_stage/task6_state"
-      ],
-      "scores": {
-        "structure": 4,
-        "expression": 4,
-        "consistency": 4,
-        "verification": 4,
-        "metadata": 5
-      }
-    },
-    "16.1": {
-      "title": "Google 官方的性能优化思路",
-      "reviewed_date": "2026-04-10",
-      "reviewed_by": "openclaw-task6",
-      "review_status": "ready-for-review",
-      "task6_result": "needs-rework",
-      "review_log": "logs/review/2026-04-10-22-review.md",
-      "deep_review_date": "2026-04-11T11:20:00+08:00",
-      "deep_review_by": "task9-deep-tech-review",
-      "deep_review_score": 2.3,
-      "deep_review_p0": 2,
-      "deep_review_p1": 3,
-      "deep_review_p2": 3,
-      "issues_found": [
-        "Mainline 小节把 AutoFDO / generational GC / Cloud Profiles 混成同一分发链路（P0）",
-        "MessageQueue 小节把 `mLock` 当成统一实现，并误把 `Handler.java` 当作核心源码路径（P0）",
-        "Binder 线程池 / priority inheritance 时间线写粗且版本不准（P1）",
-        "BLASTBufferQueue 被描述成直接绕过中间环节的直连路径（P1）",
-        "缺少 OTA / GKI / APEX / Play Profile 的交付路径矩阵（P1）",
-        "验证范围只覆盖 Android 17 release notes + DeliQueue post，无法支撑全文跨版本断言（P2）",
-        "缺少到 §1.12 / §1.13 / §16.4 / §2.12 的显式交叉引用（P2）",
-        "参考资料尾部混入 Gemma / Gemini Nano 资讯，主题域污染（P2）"
-      ],
-      "task2b_reworked_at": "2026-04-11T11:41:00+08:00",
-      "task2b_reworked_by": "task2b-content-processing-rework",
-      "task2b_result": "fixed"
-    },
-    "2.13": {
-      "title": "图形缓冲区管理 (BufferQueue)",
-      "reviewed_date": "2026-04-11",
-      "reviewed_by": "openclaw-task6",
-      "review_status": "ready-for-review",
-      "task6_result": "needs-rework",
-      "review_log": "logs/review/2026-04-11-12-review.md",
-      "deep_review_date": "2026-04-11T12:30:00+08:00",
-      "deep_review_by": "task9-deep-tech-review",
-      "deep_review_score": 2.0,
-      "deep_review_p0": 4,
-      "deep_review_p1": 2,
-      "deep_review_p2": 3,
-      "issues_found": [
-        "把 `queueBuffer()` 写成每帧传 handle，混淆了 `requestBuffer()` 与 `queueBuffer()` 语义（P0）",
-        "把 `BufferState` 写成互斥 enum，并引用了不存在的 `BufferState::FREE` 代码（P0）",
-        "把 BufferQueue native 化错误归到 Android 7.0（P0）",
-        "把 BLAST 引入时间写成 Android 10，和 AOSP 标签不符（P0）",
-        "BLAST 小节缺少 app-side consumer / frameNumber / transaction merge 主线（P1）",
-        "缺 acquire/release/dequeue fence，同步语义无法闭环（P1）",
-        "Perfetto 阈值与 §2.4 交叉引用仍需补证据和对齐元数据（P2）"
-      ]
+    "src/preface/how-to-use.md": {
+      "chapter": null,
+      "title": "how-to-use",
+      "path": "src/preface/how-to-use.md",
+      "status": "unknown",
+      "pipeline_stage": "unknown",
+      "task6_state": "unknown",
+      "task9_state": "unknown",
+      "task2b_state": "unknown"
+    },
+    "src/preface/intro.md": {
+      "chapter": null,
+      "title": "intro",
+      "path": "src/preface/intro.md",
+      "status": "unknown",
+      "pipeline_stage": "unknown",
+      "task6_state": "unknown",
+      "task9_state": "unknown",
+      "task2b_state": "unknown"
+    },
+    "src/preface/reading-paths.md": {
+      "chapter": null,
+      "title": "reading-paths",
+      "path": "src/preface/reading-paths.md",
+      "status": "unknown",
+      "pipeline_stage": "unknown",
+      "task6_state": "unknown",
+      "task9_state": "unknown",
+      "task2b_state": "unknown"
+    },
+    "src/preface/target-audience.md": {
+      "chapter": null,
+      "title": "target-audience",
+      "path": "src/preface/target-audience.md",
+      "status": "unknown",
+      "pipeline_stage": "unknown",
+      "task6_state": "unknown",
+      "task9_state": "unknown",
+      "task2b_state": "unknown"
+    },
+    "src/preface/verification-standards.md": {
+      "chapter": null,
+      "title": "verification-standards",
+      "path": "src/preface/verification-standards.md",
+      "status": "unknown",
+      "pipeline_stage": "unknown",
+      "task6_state": "unknown",
+      "task9_state": "unknown",
+      "task2b_state": "unknown"
+    },
+    "src/preface/version-conventions.md": {
+      "chapter": null,
+      "title": "version-conventions",
+      "path": "src/preface/version-conventions.md",
+      "status": "unknown",
+      "pipeline_stage": "unknown",
+      "task6_state": "unknown",
+      "task9_state": "unknown",
+      "task2b_state": "unknown"
     }
   }
 }

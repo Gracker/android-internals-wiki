@@ -881,3 +881,32 @@
 - **位置**：frontmatter `sources`
 - **问题**：当前 sources 只有 `BufferQueue.cpp / BufferQueueCore.cpp / BLASTBufferQueue.cpp`，但正文两个关键结论实际依赖 `libs/gui/include/gui/BufferSlot.h` 与 `include/gui/IGraphicBufferProducer.h`。
 - **建议**：把 `BufferSlot.h` 和 `IGraphicBufferProducer.h` 加进 sources，后续所有 slot 状态和 queue/request 语义都以这两个头文件为主锚点。
+## 2026-04-11 - 无法匹配的素材
+
+- **链接：<https://androidperformance.com/2026/04/10/SmartPerfetto-Architecture-Deep-Dive/>** (https://androidperformance.com/2026/04/10/SmartPerfetto-Architecture-Deep-Dive/>) - 原因: Chapter ch12-apk-network does not exist
+- **链接：<https://w2solo.com/topics/7184>** (https://w2solo.com/topics/7184>) - 原因: Chapter ch12-apk-network does not exist
+- **链接：<http://www.techmeme.com/260410/p8#a260410p8>** (http://www.techmeme.com/260410/p8#a260410p8>) - 原因: Chapter ch12-apk-network does not exist
+- **链接：<https://androidperformance.com/2026/04/10/SmartPerfetto-Architecture-Deep-Dive-QA/>** (https://androidperformance.com/2026/04/10/SmartPerfetto-Architecture-Deep-Dive-QA/>) - 原因: Chapter ch12-apk-network does not exist
+- **链接：<https://w2solo.com/topics/7186>** (https://w2solo.com/topics/7186>) - 原因: Chapter ch12-apk-network does not exist
+- **链接：<http://www.techmeme.com/260410/p12#a260410p12>** (http://www.techmeme.com/260410/p12#a260410p12>) - 原因: Chapter ch12-apk-network does not exist
+- **链接：<https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247559481&idx=1&sn=ee2dd74d42080dcd8ae1024f3a46a480>** (https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&mid=2247559481&idx=1&sn=ee2dd74d42080dcd8ae1024f3a46a480>) - 原因: Chapter ch12-apk-network does not exist
+- **链接：<https://mp.weixin.qq.com/s?__biz=MzI2MzEwNTY3OQ==&mid=2648991546&idx=1&sn=eb4edcc29f05c9506117f5be663b38d0>** (https://mp.weixin.qq.com/s?__biz=MzI2MzEwNTY3OQ==&mid=2648991546&idx=1&sn=eb4edcc29f05c9506117f5be663b38d0>) - 原因: Chapter ch12-apk-network does not exist
+- **链接：<https://mp.weixin.qq.com/s?__biz=MjM5MzI5ODA4NQ==&mid=2453654000&idx=1&sn=3c69b5047d715f825d56f54514095036>** (https://mp.weixin.qq.com/s?__biz=MjM5MzI5ODA4NQ==&mid=2453654000&idx=1&sn=3c69b5047d715f825d56f54514095036>) - 原因: Chapter ch12-apk-network does not exist
+- **链接：<https://www.ccgxk.com/codeother/711.html>** (https://www.ccgxk.com/codeother/711.html>) - 原因: Chapter ch12-apk-network does not exist
+- **链接：<https://t.me/hyi0618/12042>** (https://t.me/hyi0618/12042>) - 原因: Chapter ch12-apk-network does not exist
+- **链接：<https://t.me/reorx_share/6735>** (https://t.me/reorx_share/6735>) - 原因: Chapter ch12-apk-network does not exist
+- **链接：https://github.com/google/perfetto/commit/d6d4e7f478503496c39188e37ea7ba6ddca46760** (https://github.com/google/perfetto/commit/d6d4e7f478503496c39188e37ea7ba6ddca46760) - 原因: Chapter ch12-apk-network does not exist
+- **链接：https://github.com/google/perfetto/commit/341fda782494784844b77f1651d815ea08809075** (https://github.com/google/perfetto/commit/341fda782494784844b77f1651d815ea08809075) - 原因: Chapter ch12-apk-network does not exist
+- **- **链接**：https://arxiv.org/abs/2502.04202** (https://arxiv.org/abs/2502.04202) - 原因: Chapter ch12-apk-network does not exist
+
+## [Task9 Deep Review] 2.14 图形 API 演进与选择策略（OpenGL ES / Vulkan / ANGLE） — 2026-04-11
+- **类型**：数据缺失
+- **位置**：行 130、218-228、343
+- **问题**：`10-50μs vs 1-5μs`、`ANGLE 2-5% / 5-10% / 10-20%`、`Pipeline Cache 降低 95%` 都缺设备型号、GPU、驱动版本、工作负载和测试方法。当前写法像统一结论，读者无法判断哪些数字可迁移到自己的项目。
+- **建议**：把量化结论改成“示例数据”，补设备/GPU/bench 场景；若拿不到同口径实验，改成趋势判断并保留来源限制。
+
+## [Task9 Deep Review] 2.14 图形 API 演进与选择策略（OpenGL ES / Vulkan / ANGLE） — 2026-04-11
+- **类型**：交叉引用
+- **位置**：行 35、71-86，对照 §2.9 Android 16：Vulkan 统一渲染堆栈
+- **问题**：§2.9 已把 Android 16 写成 Vulkan 成为官方图形 API 的平台转折点，但本章把 Vulkan 1.4 / AVP 2025 / 迁移背景整体后移到 Android 17，导致全书时间线不一致。
+- **建议**：统一成“双阶段”叙述：Android 16 是平台基线抬升与 Vulkan 1.4 要求，Android 17 是 ANGLE denylist 扩大覆盖面；同步校正 §2.9 / §14.8 的相关描述。

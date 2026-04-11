@@ -20,14 +20,15 @@ sources:
 tags: [opengl-es, vulkan, angle, gpu, graphics-api, rendering]
 related_chapters: ["2.1", "2.9", "2.10", "14.8"]
 section: "2.14"
-pipeline_stage: task9_pending
+pipeline_stage: task2b_pending
 task6_state: reviewed
-task9_state: pending
-task2b_state: idle
+task9_state: reviewed
+task2b_state: pending
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-04-11"
 task6_result: "pass-light-edit"
 review_log: "logs/review/2026-04-11-13-review.md"
+task9_result: needs-rework
 ---
 
 # 2.14 图形 API 演进与选择策略（OpenGL ES / Vulkan / ANGLE）

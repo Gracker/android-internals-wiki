@@ -879,3 +879,20 @@ BLASTBufferQueue 小节只讲了“App 本地管理 buffer，最后用 Transacti
 
 ### 关联章节
 §2.13、§2.12、§2.6、§2.9
+
+## [2026-04-11] 2.14 图形 API 演进与选择策略（OpenGL ES / Vulkan / ANGLE） — 知识盲区
+
+### 盲区描述
+章节已经给出 ANGLE allowlist / denylist 的结论，但没有把 Android 上真正决定“某个包是否走 ANGLE、何时回退 native GLES”的选路链讲清楚，也没有拆开 system ANGLE driver 与 Chromium / WebView 自身图形 backend 的边界。对于 API 选型和线上问题定位，这是最容易踩坑的部分。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 梳理 ANGLE driver package、rules file、per-app override、adb / developer option 与 native fallback 的完整链路
+- 验证 Android 16 / 17 新设备政策与旧设备升级场景的差异
+- 拆分 Chromium / WebView / WebGL 的 GPU backend 选择逻辑，确认哪些路径受系统 ANGLE policy 影响，哪些由 Chromium build 决定
+- 为 Perfetto / AGI 补一张“native Vulkan / GLES / ANGLE / Chromium-WebView”判定矩阵
+
+### 关联章节
+§2.9、§2.14、§14.8
