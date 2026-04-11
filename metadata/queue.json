@@ -4449,5 +4449,50 @@
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-12T02:20:00+08:00",
     "status": "pending"
+  },
+  {
+    "section": "4.8",
+    "section_title": "ART 分代垃圾回收与 GC 暂停优化",
+    "priority": 95,
+    "reason": "[Deep Tech Review] 4.8 存在 P0/P1 技术问题：源码路径、Android 17 三代模型、Perfetto 查询/采集链、Bitmap/LOS 事实错误。",
+    "material_paths": [
+      "intake/research-gaps.md",
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "行 173-176 / 477-482，Write Barrier 入口与符号",
+        "detail": "正文把 Write Barrier 入口写成 `art/runtime/entrypoints/quick/quick_entrypoints.cc` 的 `art_quick_write_barrier`。当前 AOSP art/runtime/entrypoints/quick 目录不存在该文件，检索也未发现该符号，已标注为“已验证”与源码现状不符。",
+        "suggestion": "改成可定位到的真实实现路径，或明确这是“概念示意”而不是 android-17-beta3 的精确符号。"
+      },
+      {
+        "type": "原理断裂",
+        "location": "行 119-123、179-204，Android 17 分代 GC 内部实现",
+        "detail": "正文用“两代模型 + 存活对象直接 young→old 提升”解释 Android 17 内部实现。但 AOSP `runtime/gc/collector/mark_compact.h` 明确写明 generational mode 维护 young / mid / old 三代，`heap.cc` 也会在 generational MarkCompact 路径创建 `YoungMarkCompact`。当前叙述把 Android 10 的 generational CC 概念和 Android 15+/17 的 generational CMC 机制混在了一起。",
+        "suggestion": "拆开写：先讲 Android 10 的 generational CC，再单列 Android 15+/17 的 YoungMarkCompact / MarkCompact 三代模型、mid-gen 和提升规则。"
+      },
+      {
+        "type": "工具/数据错误",
+        "location": "行 264-327，Perfetto SQL 与 heapprofd 用法",
+        "detail": "SQL 示例直接在 `android_garbage_collection_events` 和 `slice` 上使用 `package_name`、`thread_name` 等字段，和 Perfetto 常见 schema 不一致；`adb shell heapprofd --pid=<PID> --java` 也不是 Perfetto 官方文档给出的 Java heap profiling 入口。",
+        "suggestion": "用已实测可运行的查询替换，显式 JOIN process/thread/packages 相关表；Java heap profiling 改为官方支持的 trace config 或 `tools/heap_profile -p <PID> --heaps com.android.art` 流程。"
+      },
+      {
+        "type": "事实错误",
+        "location": "行 407-410，Bitmap 与 Large Object Space",
+        "detail": "正文称“1920x1080 ARGB_8888 Bitmap 占约 8MB，会进入 Large Object Space”。但 Android 官方文档说明 API 26+ Bitmap 像素数据在 native heap，不在 ART Java heap；按本章适用版本（Android 14-17）这 8MB 像素数据不会作为 Java 大对象进入 ART LOS。",
+        "suggestion": "改成 Java `byte[]` / `char[]` / large String 等真实 LOS 例子；Bitmap 另行说明 native heap / GPU memory 的成本。"
+      },
+      {
+        "type": "版本差异",
+        "location": "行 121-128 / 447-455，CMC 替换时间线与 Android 12+ 回推结论",
+        "detail": "“Android 14-15 CMC 替代 CC”“Android 17 将分代收集正式集成到 CMC”“可通过 Google Play System Updates 回推到 Android 12+”这组结论写得过满，文中没有给出 release note、flag 名或分支/tag 级证据。AOSP `mark_compact.cc` 还能看到 `use_generational_cmc` / `persist.device_config.runtime_native_boot.use_generational_gc` 等开关，实际启用条件依赖版本与设备。",
+        "suggestion": "补 release/tag/flag 级证据；如果拿不到，改成“Android 15+ / Android 17 Beta 路径中可见 …，具体是否启用取决于版本与配置”。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-12T03:36:12+08:00",
+    "status": "pending"
   }
 ]
