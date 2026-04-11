@@ -24,21 +24,42 @@ sources:
     path: "services/surfaceflinger/Scheduler/VsyncModulator.cpp"
 tags: [refresh-rate, frame-rate, SurfaceFlinger, VSync, setFrameRate, jank, rendering, display-mode, ARR]
 related_chapters: ["2.2", "2.3", "2.4", "2.6", "2.18"]
-pipeline_stage: task6_pending
-task6_state: pending
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task2b_state: idle
+reviewed_by: "openclaw-task6"
+reviewed_date: "2026-04-11"
+task6_result: pass-light-edit
 ---
 
 # 2.19 刷新率切换与帧率适配性能
 
+<!-- outline-start -->
+## 本节要点大纲
+
+### 锚点（必须覆盖）
+
+- 🔹 **为什么刷新率切换会引发“App 正常但用户仍感到卡顿”**：从相机 → 多任务这类典型场景切入，说明问题主要发生在 SurfaceFlinger / Display HAL，而不是 App 主线程。
+- 🔹 **SurfaceFlinger 如何理解和仲裁多个 Layer 的帧率需求**：覆盖 `Surface.setFrameRate()`、内容检测、投票机制和系统级覆盖因素。
+- 🔹 **硬件切换的真实代价来自哪里**：解释 PLL 重配置、Display HAL 状态机，以及无缝切换、非无缝切换、ARR 离散步进的差异。
+- 🔹 **在 Perfetto 中如何识别刷新率切换卡顿**：覆盖 VSync 周期跳变、FrameTimeline 特征和 SurfaceFlinger 日志三个观察面。
+- 🔹 **ARR 为什么能缓解切换卡顿，以及它的边界是什么**：说明硬件过渡缩短后，软件调度仍然可能带来卡顿。
+- 🔹 **App 与系统两侧分别能做什么**：给出 `setFrameRate()`、预测性切换、过渡期缓冲策略和场景化建议。
+
+### 扩展（可选深入）
+
+- 🔸 **版本演进与常见误区**：把 Android 11-17 的刷新率相关演进和常见误判放在一起，方便回查。
+- 🔸 **Camera / 游戏 / OEM 三类高频场景**：分别讨论预览、游戏帧率锁定和厂商定制策略。
+<!-- outline-end -->
+
 ## 为什么要了解刷新率切换
 
-在 Android 手机上，有一个几乎所有厂商都无法彻底消除的卡顿场景：从相机界面划到多任务，再返回桌面的动画。无论旗舰还是中端，无论高通、联发科还是三星芯片，这个场景几乎必卡。原因不是 App 渲染慢了，也不是 GC 暂停了——而是系统在切换屏幕刷新率。
+在 Android 手机上，有一个几乎所有厂商都很难彻底消除的卡顿场景：从相机界面划到多任务，再返回桌面的动画。无论旗舰还是中端，无论高通、联发科还是三星芯片，这个场景都很常见。问题通常出在屏幕刷新率切换。
 
-相机界面通常以 60Hz 运行（Camera 的传感器采集帧率有限，高刷新率纯属浪费功耗），而桌面动画需要 120Hz 才能流畅。当用户从相机上划触发多任务动画时，系统需要把刷新率从 60Hz 切到 120Hz。这个切换不是软件层面改个数字那么简单——它涉及 PLL 时钟重配置、Display HAL 状态机切换、VSync 信号源周期调整。整个过程中，若干帧可能被延迟或丢弃，用户就看到了一瞬间的卡顿。
+相机界面通常以 60Hz 运行（Camera 传感器采集帧率有限，更高刷新率只会增加功耗），而桌面动画需要 120Hz 才能更顺滑。当用户从相机上划触发多任务动画时，系统需要把刷新率从 60Hz 切到 120Hz。这个切换不只是改一个配置值，它还涉及 PLL 时钟重配置、Display HAL 状态机切换和 VSync 信号源周期调整。整个过程中，若干帧可能被延迟或丢弃，用户就会看到一瞬间的卡顿。
 
-这种卡顿有一个让人头疼的特征：在 App 侧的 Perfetto Trace 中看起来完全正常。Choreographer#doFrame 的耗时没有异常，主线程没有阻塞，RenderThread 也没有超时——但用户就是感受到了不流畅。如果我们不知道刷新率切换会导致这种卡顿，就会在错误的 Track 上浪费大量分析时间。
+这种卡顿有一个让人头疼的特征：在 App 侧的 Perfetto Trace 中看起来完全正常。Choreographer#doFrame 的耗时没有异常，主线程没有阻塞，RenderThread 也没有超时，但用户还是会觉得不流畅。如果我们不知道刷新率切换会导致这种卡顿，就会在错误的 Track 上浪费大量分析时间。
 
 读完这一节，我们会知道：刷新率切换在系统层面到底发生了什么、SurfaceFlinger 如何仲裁多个 Surface 的帧率需求、在 Perfetto 中如何识别刷新率切换导致的卡顿、以及 App 开发者和系统工程师分别能做什么来减少这类卡顿。
 
@@ -50,18 +71,18 @@ task2b_state: idle
 
 1. **相机界面阶段**：Camera App 通过 `Surface.setFrameRate(60f, FRAME_RATE_COMPATIBILITY_FIXED_SOURCE)` 告诉系统"我的帧率是固定的 60fps"。SurfaceFlinger 据此将屏幕刷新率设为 60Hz（或其整数倍中最低满足帧率需求的值）。
 
-2. **用户上划触发多任务**：WindowManager 开始执行多任务动画，Launcher 的 Surface 变为活跃状态。Launcher 并没有设置特定的帧率偏好，但动画场景的 `Content Detection` 会检测到帧率需求上升——或者更直接地，触摸事件触发了 SurfaceFlinger 的 touch boost 机制，将刷新率临时提升到最高值（通常是 120Hz）。
+2. **用户上划触发多任务**：WindowManager 开始执行多任务动画，Launcher 的 Surface 变为活跃状态。Launcher 并没有设置特定的帧率偏好，但动画场景的 `Content Detection` 可能会检测到帧率需求上升。另一条常见路径是触摸事件触发了 SurfaceFlinger 的 touch boost 机制，将刷新率临时提升到最高值（通常是 120Hz）。
 
 3. **SurfaceFlinger 决策切换**：SurfaceFlinger 收集所有活跃 Layer 的帧率需求，通过 `RefreshRateSelector` 判断当前 60Hz 无法满足新出现的 120Hz 需求，决定切换到 120Hz。
 
 4. **Display HAL 执行硬件切换**：SurfaceFlinger 通过 Composer HAL 向 Display HAL 发送模式切换指令。Display HAL 需要重新配置 PLL（Phase-Locked Loop）时钟，调整显示时序参数。这个过程在不同 SoC 平台上耗时不同：通常在 1-3 帧之间（16ms-50ms @ 60Hz），期间显示管道处于"过渡态"。
 
-5. **过渡期的帧处理**：在硬件过渡完成之前，VSync 信号可能不稳定或暂时中断。SurfaceFlinger 在这段时间内无法正常合成和提交帧——它可能重复显示上一帧，或者完全跳过合成。
+5. **过渡期的帧处理**：在硬件过渡完成之前，VSync 信号可能不稳定或暂时中断。SurfaceFlinger 在这段时间内无法正常合成和提交帧，结果要么重复显示上一帧，要么直接跳过一次合成。
 
 [已验证: 官方文档, developer.android.com/develop/ui/views/graphics/refresh-rate]
 [来源: intake/research-feeds/2026-04-06-gracker-jank-insights.md — 高爷专家洞察]
 
-这就是为什么用户感知到了卡顿，但 App 侧 Trace 看起来一切正常。App 的渲染工作可能在刷新率切换之前就已经完成了——问题发生在 SurfaceFlinger / Display HAL 层面，App 完全没有感知。
+这就是为什么用户感知到了卡顿，但 App 侧 Trace 看起来一切正常。App 的渲染工作可能在刷新率切换之前就已经完成了，问题发生在 SurfaceFlinger / Display HAL 层面，App 完全没有感知。
 
 ### 不同切换类型的差异
 
@@ -148,7 +169,7 @@ PLL 重配置的过程是：先解除锁定 → 调整分频系数 → 重新锁
 
 [待验证: 不同 SoC 平台的具体 PLL 重配置延迟数据]
 
-值得注意的是，ARR（Adaptive Refresh Rate）的离散步进变频之所以能做到"无缝"，正是因为它在 LTPO 面板上不需要重新配置 PLL——面板通过调整像素电路的刷新时序来实现变频，而不是改变像素时钟频率。这是 ARR 比传统模式切换在硬件层面更有优势的根本原因。
+ARR（Adaptive Refresh Rate）的离散步进变频之所以能做到"无缝"，核心原因是它在 LTPO 面板上不需要重新配置 PLL。面板通过调整像素电路的刷新时序实现变频，而不是改变像素时钟频率。这也是 ARR 比传统模式切换更有优势的硬件基础。
 
 ### Display HAL 的状态机
 
@@ -161,11 +182,11 @@ Display HAL（通过 Composer HAL / HWC 接口）在收到 SurfaceFlinger 的模
 
 在整个阶段 2-3 期间，显示管道的输出可能不稳定。SurfaceFlinger 通常会在这段时间暂停帧提交，等待 HAL 确认完成后再恢复。这就是过渡期出现帧丢失的原因。
 
-[图：Display HAL 模式切换状态机流程图 — 展示从 SurfaceFlinger 请求到 HAL 确认的完整时序]
+[图：Display HAL 模式切换状态机流程图，展示从 SurfaceFlinger 请求到 HAL 确认的完整时序]
 
 ## 在 Perfetto 中识别刷新率切换卡顿
 
-识别刷新率切换卡顿的关键在于：不在 App 侧找问题，而在 SurfaceFlinger 和 VSync Track 中找证据。
+识别刷新率切换卡顿时，我们要把重点放在 SurfaceFlinger 和 VSync Track 上，而不是先在 App 侧找问题。
 
 ### VSync 周期跳变
 
@@ -222,7 +243,7 @@ ChooseRefreshRate: layers={CameraPreview: 60fps, Launcher: Max} -> chosen: 120Hz
 DisplayMode: switching from 60Hz to 120Hz (seamless)
 ```
 
-这些日志能帮助确认 SurfaceFlinger 的决策逻辑——是因为哪个 Layer 的帧率需求触发了切换。
+这些日志能帮助确认 SurfaceFlinger 的决策逻辑，也能帮助我们判断究竟是哪个 Layer 的帧率需求触发了切换。
 
 ### 如何区分帧率切换卡顿和其他类型卡顿
 
@@ -244,7 +265,7 @@ DisplayMode: switching from 60Hz to 120Hz (seamless)
 
 传统模式切换需要 Display HAL 执行完整的硬件状态机（PLL 重配置 + 时序参数重写），过渡期在 1-3 帧之间。ARR 的离散步进变频在 LTPO 面板上通过调整像素电路的刷新时序来实现，不需要完整的模式切换。
 
-这意味着在支持 ARR 的设备上，相机→多任务的切换理论上可以更平滑：SurfaceFlinger 仍然需要从 60Hz 调到 120Hz，但硬件层面的过渡时间从"若干帧"缩短到"几乎无感知"。
+在支持 ARR 的设备上，相机→多任务的切换理论上会更平滑。SurfaceFlinger 仍然需要从 60Hz 调到 120Hz，但硬件层面的过渡时间会从"若干帧"缩短到"几乎无感知"。
 
 ### 但 ARR 不能消除所有切换卡顿
 
@@ -261,7 +282,7 @@ DisplayMode: switching from 60Hz to 120Hz (seamless)
 ### Android 15/16/17 的持续优化
 
 - **Android 15**：引入 True ARR，单模式内离散步进变频。首次在软件层面支持 LTPO 面板的完整变频能力。
-- **Android 16**：新增 `Display.hasArrSupport()`、`Display.getSuggestedFrameRate()`、`Display.getSupportedRefreshRates()` API。RecyclerView 1.4 内置 ARR 支持——在 fling 和 smooth scroll 时自动提升刷新率。Compose 1.9 引入 `preferredFrameRate()` 修饰符。
+- **Android 16**：新增 `Display.hasArrSupport()`、`Display.getSuggestedFrameRate()`、`Display.getSupportedRefreshRates()` API。RecyclerView 1.4 内置 ARR 支持，在 fling 和 smooth scroll 时自动提升刷新率。Compose 1.9 引入 `preferredFrameRate()` 修饰符。
 - **Android 17**：[待验证: ARR 与 DeliQueue 无锁 MessageQueue 的交互对帧调度的影响]
 
 ## 优化策略与最佳实践
@@ -308,9 +329,9 @@ protected void onResume() {
 - 使用 `Choreographer.VsyncEventData.refreshRate` 监听实际刷新率，据此调整渲染节奏
 
 **不要做的**：
-- 不要在每一帧都调用 `setFrameRate()`——它不是逐帧 API，频繁调用只会增加 SurfaceFlinger 的仲裁负担
-- 不要假设 `setFrameRate()` 的请求一定会被满足——始终通过 `VsyncEventData.refreshRate` 确认实际值
-- 不要在 `setFrameRate()` 和 `preferredDisplayModeId` 之间反复切换——选一个，坚持用
+- 不要在每一帧都调用 `setFrameRate()`，它不是逐帧 API，频繁调用只会增加 SurfaceFlinger 的仲裁负担
+- 不要假设 `setFrameRate()` 的请求一定会被满足，始终通过 `VsyncEventData.refreshRate` 确认实际值
+- 不要在 `setFrameRate()` 和 `preferredDisplayModeId` 之间反复切换，选一个并保持一致
 
 ## 版本演进
 
@@ -326,7 +347,7 @@ protected void onResume() {
 
 ## 与其他机制的关系
 
-- **帧率与刷新率（2.2）**：本节是 2.2 节的延伸——2.2 讲的是帧率和刷新率的基础概念，本节聚焦于两者不匹配时的切换性能问题。
+- **帧率与刷新率（2.2）**：本节是 2.2 节的延伸。2.2 讲的是帧率和刷新率的基础概念，本节聚焦于两者不匹配时的切换性能问题。
 - **VSync 机制（2.3）**：刷新率切换直接改变 VSync 信号的周期，是 VSync 行为异常的常见原因之一。
 - **Choreographer（2.4）**：Choreographer 通过 `VsyncEventData` 感知刷新率变化，App 需要根据变化调整动画节奏。
 - **SurfaceFlinger（2.6）**：SurfaceFlinger 是刷新率决策和切换执行的核心组件。
@@ -348,7 +369,7 @@ protected void onResume() {
 
 **误区：App 可以通过提前渲染来解决切换卡顿。**
 
-不行。帧率切换卡顿发生在 SurfaceFlinger / Display HAL 层面，App 侧渲染得再快也没用——问题在于 SurfaceFlinger 在过渡期无法正常合成和提交帧。提前渲染只会增加 BufferQueue 的积压（BufferStuffing），反而可能增加延迟。
+不行。帧率切换卡顿发生在 SurfaceFlinger / Display HAL 层面，App 侧渲染得再快也没用，问题在于 SurfaceFlinger 在过渡期无法正常合成和提交帧。提前渲染只会增加 BufferQueue 的积压（BufferStuffing），反而可能增加延迟。
 
 ## 扩展
 
