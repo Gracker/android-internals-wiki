@@ -10,7 +10,7 @@ sources:
 - type: aosp
   path: frameworks/base/core/java/android/view/VelocityTracker.java
 - type: aosp
-  path: frameworks/base/core/java/android/view/VelocityTrackerFallbackStrategy.java
+  path: frameworks/native/libs/input/VelocityTracker.cpp
 - type: aosp
   path: frameworks/base/core/java/android/view/GestureDetector.java
 - type: aosp
@@ -18,7 +18,9 @@ sources:
 - type: aosp
   path: frameworks/base/core/java/android/view/ViewGroup.java
 - type: aosp
-  path: frameworks/base/core/java/androidx/core/widget/NestedScrollView.java
+  path: frameworks/base/core/res/res/values/config.xml
+- type: androidx
+  path: frameworks/support/core/core/src/main/java/androidx/core/widget/NestedScrollView.java
 tags:
 - android
 - performance
@@ -33,11 +35,12 @@ related_chapters:
 - '3.3'
 - '3.4'
 - '2.4'
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
 task9_result: needs-rework
-task2b_state: pending
+task2b_state: fixed
+task2b_result: fixed
 reviewed_date: '2026-04-12'
 reviewed_by: openclaw-task6
 task6_result: needs-rework
@@ -95,35 +98,33 @@ VelocityTracker 是 Android 手势识别系统中最基础的组件。它的职�
 
 ```java
 // frameworks/base/core/java/android/view/VelocityTracker.java
-public final class VelocityTracker {
-    // 对象池获取实例，避免频繁 GC
-    public static VelocityTracker obtain() {
-        VelocityTracker instance = sPool.acquire();
-        return (instance != null) ? instance : new VelocityTracker(null);
-    }
+static public VelocityTracker obtain() {
+    VelocityTracker instance = sPool.acquire();
+    return (instance != null) ? instance
+            : new VelocityTracker(VELOCITY_TRACKER_STRATEGY_DEFAULT);
+}
 
-    // 添加一个 MotionEvent 到速度计算缓冲区
-    public void addMovement(MotionEvent event) {
-        // ...
-        nativeAddMovement(mPtr, event);
-    }
+private VelocityTracker(@VelocityTrackerStrategy int strategy) {
+    ...
+    mPtr = nativeInitialize(mStrategy);
+}
 
-    // 计算当前速度，`units` 参数决定单位（像素/秒或像素/毫秒）
-    public void computeCurrentVelocity(int units, float maxVelocity) {
-        nativeComputeCurrentVelocity(mPtr, units, maxVelocity);
-    }
+public void addMovement(MotionEvent event) {
+    nativeAddMovement(mPtr, event);
+}
 
-    // 获取 X/Y 方向速度
-    public float getXVelocity() { return nativeGetXVelocity(mPtr, ID_X); }
-    public float getYVelocity() { return nativeGetYVelocity(mPtr, ID_Y); }
+public void computeCurrentVelocity(int units, float maxVelocity) {
+    nativeComputeCurrentVelocity(mPtr, units, maxVelocity);
+}
 
-    // 回收到对象池
-    public void recycle() {
-        if (mPtr != 0) {
-            nativeDispose(mPtr);
-            mPtr = 0;
-            sPool.release(this);
-        }
+public float getXVelocity() {
+    return getAxisVelocity(MotionEvent.AXIS_X, ACTIVE_POINTER_ID);
+}
+
+public void recycle() {
+    if (mStrategy == VELOCITY_TRACKER_STRATEGY_DEFAULT) {
+        clear();
+        sPool.release(this);
     }
 }
 ```
@@ -144,51 +145,53 @@ private static final Pools.SynchronizedPool<VelocityTracker> sPool =
 
 池容量只有 2，因为同一时间通常只有一个活跃的 VelocityTracker 实例（一个手指触摸）。这个设计在多指触摸场景下可能不够用，但考虑到多指同时计算速度的场景很少，这是一个合理的取舍。
 
-### 速度计算算法：从移动平均到最小二乘法
+### 速度计算算法：Java wrapper + JNI + native strategy matrix
 
-VelocityTracker 的 Native 层（`VelocityTracker.cpp`）维护了一个环形缓冲区（ring buffer），存储最近的若干个采样点（位置 + 时间戳）。速度计算要做的是从这些离散的采样点推导出"当前速度"。
-
-**移动平均法（Moving Average）**是最简单的策略：用最近两个采样点的位移除以时间差。这种方法计算量小，但对噪声非常敏感——一次异常的报点偏差就会导致速度值剧烈波动。
-
-**最小二乘法（Least Squares）**是更稳健的策略：对最近的 N 个采样点做线性拟合，用拟合直线的斜率作为速度。这种方法天然具有"平滑"效果，能滤除单点噪声，但计算量更大。
-
-Android 14 引入了 `VelocityTrackerFallbackStrategy`，这是一个**策略选择机制**：
+前面那几个 Java API 只是入口。公开 AOSP 里的真实调用链是 `android.view.VelocityTracker` 把事件交给 JNI，再由 `frameworks/native/libs/input/VelocityTracker.cpp` 按 axis 选择策略并完成拟合。Java 层负责对象池、策略 ID 和 `MotionEvent` 封装，不负责真正的速度拟合。
 
 ```java
-// frameworks/base/core/java/android/view/VelocityTrackerFallbackStrategy.java
-public final class VelocityTrackerFallbackStrategy {
-    // 当 Native VelocityTracker 不可用时的 Fallback 实现
-    private final LeastSquaresVelocityTracker mLeastSquares;
-    private final ImpulseVelocityTracker mImpulse;
+// frameworks/base/core/java/android/view/VelocityTracker.java
+static public VelocityTracker obtain() {
+    VelocityTracker instance = sPool.acquire();
+    return (instance != null) ? instance
+            : new VelocityTracker(VELOCITY_TRACKER_STRATEGY_DEFAULT);
+}
 
-    // 根据策略名选择具体实现
-    public VelocityTrackerFallbackStrategy(String strategy) {
-        if ("lsq2".equals(strategy)) {
-            mLeastSquares = new LeastSquaresVelocityTracker(2);
-            mImpulse = null;
-        } else if ("lsq3".equals(strategy)) {
-            mLeastSquares = new LeastSquaresVelocityTracker(3);
-            mImpulse = null;
-        } else {
-            // 默认走 Impulse（基于冲量/动量）
-            mImpulse = new ImpulseVelocityTracker();
-            mLeastSquares = null;
-        }
-    }
+private VelocityTracker(@VelocityTrackerStrategy int strategy) {
+    ...
+    mPtr = nativeInitialize(mStrategy);
+}
+
+public void addMovement(MotionEvent event) {
+    nativeAddMovement(mPtr, event);
+}
+
+public void computeCurrentVelocity(int units, float maxVelocity) {
+    nativeComputeCurrentVelocity(mPtr, units, maxVelocity);
 }
 ```
 
-> [已验证: AOSP android-14.0.0_r1, frameworks/base/core/java/android/view/VelocityTrackerFallbackStrategy.java]
+`obtain(String strategy)` 和 `obtain(int strategy)` 也确实存在，但注释写得很直白，它们是 “For testing and comparison purposes only”。平时业务代码用 `obtain()` 即可。只有在做算法对比、回归测试或排查设备差异时，才会显式指定 strategy。
 
-**策略选择的演进**：
+JNI 进入 native 后，`VelocityTracker.cpp` 会根据 axis 选择默认策略：
 
-| 版本 | 默认策略 | 说明 |
-|------|---------|------|
-| Android 10-12 | Native 实现（厂商定制） | 厂商可在 Native 层替换算法 |
-| Android 13 | Native + LSQ Fallback | 引入 FallbackStrategy |
-| Android 14+ | Impulse 优先 | 基于冲量的新算法，Fling 手感更好 |
+```cpp
+// frameworks/native/libs/input/VelocityTracker.cpp
+static const std::map<int32_t, VelocityTracker::Strategy> DEFAULT_STRATEGY_BY_AXIS =
+        {{AMOTION_EVENT_AXIS_X, VelocityTracker::Strategy::LSQ2},
+         {AMOTION_EVENT_AXIS_Y, VelocityTracker::Strategy::LSQ2},
+         {AMOTION_EVENT_AXIS_SCROLL, VelocityTracker::Strategy::IMPULSE}};
 
-`Impulse` 策略的核心思想是：不直接计算速度，而是跟踪"冲量"（impulse = 力 × 时间），在 `computeCurrentVelocity()` 时用总冲量除以时间窗口得到平均速度。这种方法在手指加速和减速阶段都能给出更稳定的速度值，避免 LSQ 在加速阶段的"速度滞后"问题。
+void VelocityTracker::configureStrategy(int32_t axis) {
+    ...
+    createdStrategy = createStrategy(DEFAULT_STRATEGY_BY_AXIS.at(axis),
+                                     /*deltaValues=*/isDifferentialAxis);
+}
+```
+
+这张表比“Android 14 之后统一改成 Impulse”更接近源码现状。触摸平面的 X/Y 轴默认还是 `LSQ2`，滚轮或 scroll 这种差分轴默认是 `IMPULSE`。如果调用 `obtain(String/int)` 指定了策略，native 才会绕过这张默认表。
+
+从排查角度看，这里要先分清两件事：一是当前取的是哪个 axis，二是代码是否显式覆盖了默认 strategy。把问题一概写成“Android 13 引入 FallbackStrategy，Android 14 默认 Impulse”会把分析入口带偏。
 
 ### Perfetto 视角：VelocityTracker 的性能影响
 
@@ -217,80 +220,38 @@ IDLE → DOWN → TAP / LONG_PRESS / SCROLL → FLING / TAP
 ```java
 // frameworks/base/core/java/android/view/GestureDetector.java
 public boolean onTouchEvent(MotionEvent ev) {
-    switch (ev.getAction()) {
+    switch (ev.getActionMasked()) {
         case MotionEvent.ACTION_DOWN:
-            // 重置状态
-            mIsDoubleTapping = false;
-            mStillDown = true;
-            mInLongPress = false;
-
-            // 处理双击检测
             if (mDoubleTapListener != null) {
                 boolean hadTapMessage = mHandler.hasMessages(TAP);
-                if (hadTapMessage) {
+                if (hadTapMessage) mHandler.removeMessages(TAP);
+                if ((mCurrentDownEvent != null) && (mPreviousUpEvent != null)
+                        && hadTapMessage
+                        && isConsideredDoubleTap(mCurrentDownEvent, mPreviousUpEvent, ev)) {
                     mIsDoubleTapping = true;
-                    // 取消单次 TAP 的 pending 消息，改为双击回调
-                    mHandler.removeMessages(TAP);
-                    return mDoubleTapListener.onDoubleTap(ev);
+                    handled |= mDoubleTapListener.onDoubleTap(mCurrentDownEvent);
+                    handled |= mDoubleTapListener.onDoubleTapEvent(ev);
+                } else {
+                    mHandler.sendEmptyMessageDelayed(TAP, DOUBLE_TAP_TIMEOUT);
                 }
             }
-
-            // 发送长按超时消息（默认 ViewConfiguration.getLongPressTimeout() = 500ms）
-            mHandler.sendEmptyMessageAtTime(LONG_PRESS,
-                SystemClock.uptimeMillis() + mLongPressTimeout);
-
-            // 发送 ShowPress 超时消息（默认 TAP_TIMEOUT = 100ms）
-            mHandler.sendEmptyMessageAtTime(SHOW_PRESS,
-                SystemClock.uptimeMillis() + TAP_TIMEOUT);
-
-            mListener.onDown(ev);  // 通知 Listener：手指按下
-            break;
-
-        case MotionEvent.ACTION_MOVE:
-            // 首次移动超过 TouchSlop → 确认为 SCROLL
-            if (mIsDoubleTapping) {
-                // 双击后的滑动 → onDoubleTapEvent
-                handled = mDoubleTapListener.onDoubleTapEvent(ev);
-            } else if (mInLongPress) {
-                // 已在长按状态，不响应滑动
-                handled = true;
-            } else {
-                final float scrollX = ev.getX() - mLastFocusX;
-                final float scrollY = ev.getY() - mLastFocusY;
-                if (mIsDoubleTapping) {
-                    // ...
-                } else if (Math.abs(scrollX) > mTouchSlop || Math.abs(scrollY) > mTouchSlop) {
-                    // 取消长按和 ShowPress
-                    mHandler.removeMessages(LONG_PRESS);
-                    mHandler.removeMessages(SHOW_PRESS);
-                    mListener.onScroll(mCurrentDownEvent, ev, scrollX, scrollY);
-                    mLastFocusX = ev.getX();
-                    mLastFocusY = ev.getY();
-                }
-            }
+            ...
             break;
 
         case MotionEvent.ACTION_UP:
-            mStillDown = false;
-            if (mInLongPress) {
-                mHandler.removeMessages(TAP);
-                mInLongPress = false;
-            } else {
-                // 检查是否满足 FLING 条件
-                final VelocityTracker vt = mVelocityTracker;
-                vt.computeCurrentVelocity(1000, mMaximumFlingVelocity);
-                final float velocityY = vt.getYVelocity();
-                if (Math.abs(velocityY) > mMinimumFlingVelocity) {
-                    handled = mListener.onFling(mCurrentDownEvent, ev,
-                        vt.getXVelocity(), velocityY);
+            if (mIsDoubleTapping) {
+                handled |= mDoubleTapListener.onDoubleTapEvent(ev);
+            } else if (mAlwaysInTapRegion && !mIgnoreNextUpEvent) {
+                handled = mListener.onSingleTapUp(ev);
+                if (mDeferConfirmSingleTap && mDoubleTapListener != null) {
+                    mDoubleTapListener.onSingleTapConfirmed(ev);
                 }
-                // 检查是否为单击（未超过 TouchSlop）
-                if (!mIsDoubleTapping) {
-                    mHandler.sendEmptyMessageAtTime(TAP,
-                        SystemClock.uptimeMillis() + DOUBLE_TAP_TIMEOUT);
-                }
+            } else if (!mIgnoreNextUpEvent) {
+                velocityTracker.computeCurrentVelocity(1000, mMaximumFlingVelocity);
+                ...
+                handled = mListener.onFling(mCurrentDownEvent, ev, velocityX, velocityY);
             }
-            break;
+            ...
     }
     return handled;
 }
@@ -300,13 +261,34 @@ public boolean onTouchEvent(MotionEvent ev) {
 
 ### 双击检测机制
 
-GestureDetector 的双击检测基于一个**延迟确认**的设计模式：
+GestureDetector 把“立即回调”和“延迟确认”分成了两套接口，混在一起时最容易写错。
 
-1. 第一次 `ACTION_UP` 时，不立即回调 `onSingleTapUp()`，而是向 Handler 发送一个延迟消息（延迟时间 = `DOUBLE_TAP_TIMEOUT`，默认 300ms）
-2. 如果在 300ms 内又收到了 `ACTION_DOWN`，取消延迟消息，触发 `onDoubleTap()` 回调
-3. 如果 300ms 内没有新的触摸，延迟消息到期，触发 `onSingleTapUp()` 回调
+1. 第一次点击的 `ACTION_UP` 落在 tap region 内时，`onSingleTapUp(ev)` 会立刻执行。
+2. `ACTION_DOWN` 阶段已经投递了一个 `TAP` 消息，用来等待第二次点击。
+3. 第二次 `ACTION_DOWN` 到来时，只有 `hadTapMessage == true`，并且 `isConsideredDoubleTap(firstDown, firstUp, secondDown)` 通过，才会进入双击分支。这个判断同时检查时间窗 `DOUBLE_TAP_MIN_TIME ~ DOUBLE_TAP_TIMEOUT` 和位移是否落在 `mDoubleTapSlopSquare` 内。
+4. 如果超时还没有第二次点击，Handler 处理 `TAP` 消息时才回调 `onSingleTapConfirmed(mCurrentDownEvent)`。
 
-因此，**单击事件至少会延后 300ms 才能确认**。对于需要快速响应的场景（如快速点击按钮），这个延迟可能不可接受。解决方案是不使用 GestureDetector 的双击检测，改用自定义的快速单击处理。
+```java
+// frameworks/base/core/java/android/view/GestureDetector.java
+case MotionEvent.ACTION_UP:
+    ...
+    handled = mListener.onSingleTapUp(ev);
+    if (mDeferConfirmSingleTap && mDoubleTapListener != null) {
+        mDoubleTapListener.onSingleTapConfirmed(ev);
+    }
+
+private boolean isConsideredDoubleTap(...) {
+    ...
+    final long deltaTime = secondDown.getEventTime() - firstUp.getEventTime();
+    if (deltaTime > DOUBLE_TAP_TIMEOUT || deltaTime < DOUBLE_TAP_MIN_TIME) {
+        return false;
+    }
+    ...
+    return (deltaX * deltaX + deltaY * deltaY < mDoubleTapSlopSquare);
+}
+```
+
+所以要区分三类回调：`onSingleTapUp()` 用来拿到第一时间的抬手事件，`onSingleTapConfirmed()` 用来拿到“已经排除双击”的单击确认，`onDoubleTap()` / `onDoubleTapEvent()` 用来处理第二次点击及其后续 move/up。做按钮点击反馈时，通常关心前两者的选择；做双击缩放、双击点赞这类交互时，再看 `isConsideredDoubleTap()` 的时间窗和位移窗是不是符合产品预期。
 
 ### 长按超时
 
@@ -337,7 +319,7 @@ RecyclerView 自己消费剩余距离
 
 ```java
 // 嵌套滑动的核心调用流程（简化）
-// frameworks/base/core/java/androidx/core/widget/NestedScrollView.java
+// AndroidX: frameworks/support/core/core/src/main/java/androidx/core/widget/NestedScrollView.java
 
 // 子 View 在消费滚动之前，先问父 View 要不要预消费
 if (dispatchNestedPreScroll(dxConsumed, dyConsumed, mScrollConsumed, mScrollOffset)) {
@@ -350,6 +332,8 @@ if (dispatchNestedScroll(dxConsumed, dyConsumed, 0, dyUnconsumed, mScrollOffset)
     // ...
 }
 ```
+
+这里引用的是 AndroidX `NestedScrollView`，不是 `frameworks/base` 里的 framework 代码。原因很简单，NestedScrolling 支持类长期维护在 AndroidX，正文里的来源也要按这个边界来标。
 
 **性能影响**：每次 ACTION_MOVE 都会触发 `dispatchNestedPreScroll()` 和 `dispatchNestedScroll()` 的调用。这些调用本身非常轻量，主要是在 Parent 链上做回调。
 
@@ -408,7 +392,7 @@ public void requestDisallowInterceptTouchEvent(boolean disallowIntercept) {
 
 **性能注意**：`requestDisallowInterceptTouchEvent(true)` 会沿着 Parent 链递归向上传递。如果 View 层级很深（比如 20+ 层的嵌套布局），这个递归调用会有不可忽视的开销。RecyclerView 内部就大量使用了这个机制，在快速滑动时确保事件不被外部 View 截获。
 
-## TouchSlop 与 VelocityThreshold：版本演进
+## TouchSlop 与 VelocityThreshold：阈值模型与设备差异
 
 ### TouchSlop：判断"这是滑动还是点击"的分界线
 
@@ -429,13 +413,15 @@ mTouchSlop = res.getDimensionPixelSize(
 
 > [已验证: AOSP android-14.0.0_r1, frameworks/base/core/java/android/view/ViewConfiguration.java]
 
-**TouchSlop 的版本演进**：
+TouchSlop 这一段更适合按“常量 → 配置资源 → 设备 overlay”来理解，而不是硬写一张版本表。`ViewConfiguration.java` 里仍保留了 `TOUCH_SLOP = 8` 这个 fallback 常量；对大多数设备真正生效的值，是构造函数从 `config_viewConfigurationTouchSlop` 读取的 dimen；再往下，OEM 可以通过 resource overlay 覆盖同名资源来校准不同触控面板。
 
-| 版本 | 默认 TouchSlop（dp） | 说明 |
-|------|---------------------|------|
-| Android 1.0-4.x | 8dp | 最初定义，后续未改动 |
-| Android 5.0+ | 8dp（可通过 config 覆盖） | 引入 `config_viewConfigurationTouchSlop` 资源 |
-| Android 12+ | 8dp（厂商可定制） | 部分厂商增大到 10-12dp 以减少误触 |
+| 层次 | 位置 | 作用 |
+|------|------|------|
+| framework fallback 常量 | `ViewConfiguration.TOUCH_SLOP = 8` | 给没有合适 `Context` 的旧代码兜底 |
+| platform 配置资源 | `core/res/res/values/config.xml` 中的 `config_viewConfigurationTouchSlop = 8dp` | 由 `ViewConfiguration` 读取后换算成像素值 |
+| device overlay | 设备 overlay 中覆盖同名 dimen | 厂商按触控面板和固件特性微调阈值 |
+
+公开源码里 `config_viewConfigurationTouchSlop` 早就存在，不能写成“Android 5.0 才引入这个资源”。如果某个版本真的改了手势阈值，我们要把变更点落到具体资源、overlay 或行为差异上；如果只是同一套资源在不同设备上取值不同，就应该归到设备校准，而不是版本演进。
 
 **性能影响**：TouchSlop 的值越大，手指需要移动更多距离才能触发滑动，这在用户体感上表现为"不跟手"。但 TouchSlop 太小又会导致误触——轻微的手指抖动就会触发滑动而不是点击。这是一个 UX 和性能之间的权衡。
 
