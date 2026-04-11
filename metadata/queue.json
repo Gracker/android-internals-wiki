@@ -3578,5 +3578,32 @@
     "completed_at": "2026-04-11T14:52:51+08:00",
     "completed_by": "task2b-content-processing-rework",
     "result": "fixed"
+  },
+  {
+    "section": "2.16",
+    "section_title": "Sync Fence 框架与帧同步机制",
+    "priority": 90,
+    "reason": "[review回炉] 缺少 outline / 锚点设计，且 Perfetto 截图支撑不足",
+    "material_paths": [
+      "intake/suggestions.md（含 review 意见）"
+    ],
+    "review_issues": [
+      {
+        "type": "需重写",
+        "location": "全文结构",
+        "detail": "缺少 outline-start / outline-end 与 🔹 锚点设计，Task 6 无法按统一大纲检查结构覆盖率。",
+        "suggestion": "按 writing-guide.md 补齐 outline 块，并让每个锚点至少对应 1 个完整段落。"
+      },
+      {
+        "type": "需补充素材",
+        "location": "在 Perfetto 中的 Fence 表现",
+        "detail": "缺少正常 vs 异常的 Trace 截图占位与关键区域标注，图文配合不够完整。",
+        "suggestion": "补 1-2 张 Perfetto 截图，至少覆盖 latchBuffer 等待和 BufferQueue 积压两个场景。"
+      }
+    ],
+    "added_by": "task6-review",
+    "added_at": "2026-04-11T15:12:50",
+    "status": "pending",
+    "original_review_log": "logs/review/2026-04-11-15-review.md"
   }
 ]
