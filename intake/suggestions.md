@@ -910,3 +910,17 @@
 - **位置**：行 35、71-86，对照 §2.9 Android 16：Vulkan 统一渲染堆栈
 - **问题**：§2.9 已把 Android 16 写成 Vulkan 成为官方图形 API 的平台转折点，但本章把 Vulkan 1.4 / AVP 2025 / 迁移背景整体后移到 Android 17，导致全书时间线不一致。
 - **建议**：统一成“双阶段”叙述：Android 16 是平台基线抬升与 Vulkan 1.4 要求，Android 17 是 ANGLE denylist 扩大覆盖面；同步校正 §2.9 / §14.8 的相关描述。
+
+## [Task6 Review] 2.15 DMA-BUF、Gralloc 与跨进程图形内存共享 — 2026-04-11
+- **类型**：需确认
+- **位置**：“从 AOSP 源码看分配链路”段末 [待验证]
+- **问题**：“Gralloc Allocator AIDL 接口在 Android 16 中是否已完全替代 HIDL 接口” 仍缺明确版本线与接口证据。
+- **建议**：由 Task9 核对 allocator/mapper HAL 的 AIDL/HIDL 演进，再由 Task2B 将结论收窄到已验证版本。
+- **review 日志**：logs/review/2026-04-11-1406-review.md
+
+## [Task6 Review] 2.15 DMA-BUF、Gralloc 与跨进程图形内存共享 — 2026-04-11
+- **类型**：需确认
+- **位置**：“Android 16/17：Gralloc AIDL 化”小节
+- **问题**：“Android 16 开始将 Gralloc HAL 从 HIDL 迁移到 AIDL 接口”和“更少的 IPC 开销”属于版本差异与效果判断，当前来源不足。
+- **建议**：由 Task9 复核 Android 16/17 官方文档与 AOSP 接口变更，必要时 Task2B 改成更保守的表述。
+- **review 日志**：logs/review/2026-04-11-1406-review.md

@@ -9,6 +9,8 @@ last_verified_against: "AOSP android-16.0.0_r1, Linux kernel 6.12"
 confidence: medium
 drafted_date: "2026-04-05"
 drafted_by: "openclaw-task2a"
+reviewed_date: "2026-04-11"
+reviewed_by: "openclaw-task6"
 sources:
   - type: aosp
     path: "frameworks/native/libs/ui/GraphicBuffer.cpp"
@@ -28,10 +30,11 @@ created_by: "task2a-knowledge-gap"
 created_date: "2026-04-05"
 gap_source: "素材驱动+AOSP结构+每日信息"
 gap_score: "17/20"
-pipeline_stage: task6_pending
-task6_state: pending
+pipeline_stage: task2b_pending
+task6_state: reviewed
+task6_result: needs-rework
 task9_state: pending
-task2b_state: idle
+task2b_state: pending
 ---
 
 # 2.15 DMA-BUF、Gralloc 与跨进程图形内存共享
@@ -46,7 +49,7 @@ task2b_state: idle
 
 这个文件描述符背后就是 DMA-BUF，Linux 内核提供的跨设备、跨进程内存共享框架。Gralloc 则是 Android 在 DMA-BUF 之上封装的图形内存分配器。理解了这两个机制，我们就明白了 Android 渲染管线的「物理层」——BufferQueue 和 SurfaceFlinger 在逻辑层管理缓冲区流转，而 DMA-BUF 和 Gralloc 在物理层保证数据能零拷贝地跨进程移动。
 
-如果你在 Perfetto 中看到 GPU 内存使用量异常增长、或者 BufferQueue track 中 buffer 释放延迟增大，排查的终点往往会落在 DMA-BUF 的生命周期管理上。
+如果我们在 Perfetto 中看到 GPU 内存使用量异常增长，或者在 BufferQueue track 中发现 buffer 释放延迟增大，排查的终点往往会落在 DMA-BUF 的生命周期管理上。
 
 ## 为什么需要跨进程零拷贝
 
@@ -120,7 +123,7 @@ DMA-BUF 只是一个「共享框架」，它本身不负责分配内存。内存
 | cma | `/dev/dma_heap/default_cma_region` | 物理连续 | Camera、Display 等需要物理连续内存的硬件 |
 | vendor-secure | `/dev/dma_heap/system-secure-<vendor>` | 受保护内存 | DRM、安全视频解码 |
 
-这个过渡对应用层透明——Gralloc HAL 内部从调用 ION 换成了调用 DMA-BUF Heap，上层 API 不变。但如果你在做系统级开发或排查底层内存问题，需要知道这个变化。
+这个过渡对应用层透明——Gralloc HAL 内部从调用 ION 换成了调用 DMA-BUF Heap，上层 API 不变。但如果我们在做系统级开发或排查底层内存问题，需要知道这个变化。
 
 ## Android Gralloc 与 GraphicBuffer
 
@@ -342,7 +345,7 @@ DMA-BUF 和 Gralloc 是 Android 图形栈的「物理基础设施」，它们与
 
 ### 「所有设备上的 Gralloc 实现都一样」
 
-差异很大。Gralloc 是 SoC 厂商实现的 HAL，Qualcomm（Adreno GPU）、MediaTek（Mali/Immortalis GPU）、Samsung各有不同。不同实现可能：
+差异很大。Gralloc 是 SoC 厂商实现的 HAL，Qualcomm（Adreno GPU）、MediaTek（Mali/Immortalis GPU）、Samsung 各有不同。不同实现可能：
 
 - 使用不同的 DMA-BUF Heap 策略
 - 对同一组 usage flags 选择不同的内存布局
