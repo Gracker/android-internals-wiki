@@ -22,10 +22,13 @@ sources:
     path: "https://source.android.com/docs/core/graphics/architecture"
 tags: [sync-fence, fence, hwui, rendering, synchronization, timeline]
 related_chapters: ["2.4", "2.5", "2.6", "2.13", "2.15"]
-pipeline_stage: task6_pending
-task6_state: pending
+pipeline_stage: task2b_pending
+task6_state: reviewed
 task9_state: pending
-task2b_state: idle
+task2b_state: pending
+reviewed_by: openclaw-task6
+reviewed_date: "2026-04-11"
+task6_result: needs-rework
 ---
 
 # 2.16 Sync Fence 框架与帧同步机制
@@ -53,7 +56,7 @@ Fence 给出了第三个选择：**等一个信号**。GPU 画完后自动发信
 
 ### Linux dma-buf fence
 
-Android 的 Fence 机制建立在 Linux 内核的 `dma-buf fence` 框架之上。`dma-buf`（Direct Memory Access Buffer）是内核提供的跨设备/跨进程内存共享机制（我们在 [2.15 DMA-BUF 与 Gralloc](part1-fundamentals/ch02-rendering/15-dmabuf-gralloc.md) 中详细讨论过它的内存管理层面），而 `dma-fence` 是附在 `dma-buf` 上的同步原语。
+Android 的 Fence 机制建立在 Linux 内核的 `dma-buf fence` 框架之上。`dma-buf`（Direct Memory Access Buffer）是内核提供的跨设备/跨进程内存共享机制（我们在 [2.15 DMA-BUF 与 Gralloc](15-dmabuf-gralloc.md) 中详细讨论过它的内存管理层面），而 `dma-fence` 是附在 `dma-buf` 上的同步原语。
 
 内核中的核心概念有三个：
 
@@ -96,7 +99,7 @@ sync_fence = {sync_pt B}  → 当 GPU 推进到值 4 时 signal
 
 内核提供了底层的 fence 机制，AOSP 在此之上做了 C++ 封装：
 
-```
+```cpp
 // frameworks/native/libs/ui/Fence.cpp
 // frameworks/native/include/ui/Fence.h
 class Fence {
@@ -132,7 +135,7 @@ class Fence {
 
 在代码层面，`BufferQueueProducer::queueBuffer()` 会把 fence fd 传给 BufferQueue 的消费者侧。SurfaceFlinger 在 `Layer::onFrameAvailable()` 中收到这个 fence，在合成前调用 `fence->wait()` 或把它传给 HWC 让硬件等。
 
-```
+```cpp
 // 简化的 SurfaceFlinger 合成流程
 void SurfaceFlinger::compose() {
     for (auto& layer : layers) {
@@ -235,6 +238,8 @@ readyFence->wait(kAcquireTimeoutMs);
 
 ## 在 Perfetto 中的 Fence 表现
 
+[图：Perfetto 中 BufferQueue track 与 SurfaceFlinger fence wait 对照截图，标注 queued/acquired/free 状态变化，以及 `latchBuffer` 等待区间]
+
 ### BufferQueue Track
 
 BufferQueue track（通常在 App 进程或 SurfaceFlinger 进程下）是观察 Fence 最直接的窗口。它显示了每个 buffer 的状态（free/queued/acquired）和数量变化。
@@ -272,7 +277,7 @@ HWC2 重新定义了 fence 的交互接口。之前 HWC1 使用 `set()` + `prepa
 
 随着 HWUI 全面切换到 Skia 渲染管线（RenderThread 使用 Skia + Vulkan/OpenGL），fence 的创建和管理路径有了一些变化。Skia 的 `GrDirectContext` 在 flush 时生成 fence，通过 `flushAndSignal()` 与 fence 交互。Android 16 的 ARR（Adaptive Refresh Rate）引入了动态 VSync 步进，fence 的时间戳计算需要适配不同的刷新率。
 
-[待验证：Android 17 对 fence 机制是否有进一步的优化]
+[待验证: Android 17 对 fence 机制是否有进一步的优化]
 
 ## 常见问题与排查
 
@@ -307,12 +312,12 @@ fallback 路径的性能影响取决于实现——软件 fence 通常比硬件 
 
 ## 与其他机制的关系
 
-- **VSync（[2.3](part1-fundamentals/ch02-rendering/03-vsync.md)）**：VSync 决定「什么时候开始」，Fence 决定「什么时候结束」。两者共同构成了帧渲染的时间约束。
-- **Choreographer（[2.4](part1-fundamentals/ch02-rendering/04-choreographer.md)）**：Choreographer 在 VSync-app 到来时开始渲染，渲染完成后通过 Fence 通知 SurfaceFlinger。
-- **MainThread 与 RenderThread（[2.5](part1-fundamentals/ch02-rendering/05-main-render-thread.md)）**：RenderThread 提交 GPU 命令后生成 acquire fence，MainThread 的 `dequeueBuffer` 可能被 release fence 阻塞。
-- **SurfaceFlinger（[2.6](part1-fundamentals/ch02-rendering/06-surfaceflinger.md)）**：SurfaceFlinger 是 fence 的核心消费者——它等 acquire fence，产生 release fence，接收 retire fence。
-- **BufferQueue（[2.13](part1-fundamentals/ch02-rendering/13-buffer-queue.md)）**：BufferQueue 的每次状态转换都伴随着 fence 的传递，fence 是 buffer 状态机的同步保障。
-- **DMA-BUF 与 Gralloc（[2.15](part1-fundamentals/ch02-rendering/15-dmabuf-gralloc.md)）**：Fence 的底层实现基于 dma-buf fence，Gralloc 分配的 GraphicBuffer 通过 dma-buf 跨进程共享，fence 负责同步对这些 buffer 的访问。
+- **VSync（[2.3](03-vsync.md)）**：VSync 决定「什么时候开始」，Fence 决定「什么时候结束」。两者共同构成了帧渲染的时间约束。
+- **Choreographer（[2.4](04-choreographer.md)）**：Choreographer 在 VSync-app 到来时开始渲染，渲染完成后通过 Fence 通知 SurfaceFlinger。
+- **MainThread 与 RenderThread（[2.5](05-main-render-thread.md)）**：RenderThread 提交 GPU 命令后生成 acquire fence，MainThread 的 `dequeueBuffer` 可能被 release fence 阻塞。
+- **SurfaceFlinger（[2.6](06-surfaceflinger.md)）**：SurfaceFlinger 是 fence 的核心消费者——它等 acquire fence，产生 release fence，接收 retire fence。
+- **BufferQueue（[2.13](13-buffer-queue.md)）**：BufferQueue 的每次状态转换都伴随着 fence 的传递，fence 是 buffer 状态机的同步保障。
+- **DMA-BUF 与 Gralloc（[2.15](15-dmabuf-gralloc.md)）**：Fence 的底层实现基于 dma-buf fence，Gralloc 分配的 GraphicBuffer 通过 dma-buf 跨进程共享，fence 负责同步对这些 buffer 的访问。
 
 ## 参考资料
 

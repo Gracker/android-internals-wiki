@@ -930,3 +930,16 @@
 - **位置**：行 190、220；参见 §2.13 行 134-154
 - **问题**：本章把 slot 状态写成 `DEQUEUED / QUEUED / FREE / ACQUIRED` 的单态流转，而 §2.13 已明确当前 AOSP `BufferState` 是 counter-based，shared mode 下状态可叠加，应以 `isFree()` / `isDequeued()` / `isQueued()` / `isAcquired()` / `isShared()` 判断。前后文口径不一致。
 - **建议**：在本章补一句“这里先按普通路径做简化，shared buffer mode 的计数语义详见 §2.13”，避免读者把单态流转当成当前源码事实。
+
+## [Task6 Review] 2.16 Sync Fence 框架与帧同步机制 — 2026-04-11
+- **类型**：需重写
+- **位置**：全文结构
+- **问题**：缺少 `outline-start` / `outline-end` 与 `🔹` 锚点设计，Task 6 无法按统一大纲检查结构覆盖率。
+- **建议**：按 writing-guide.md 补齐 outline 块，并让每个锚点至少对应 1 个完整段落。
+- **review 日志**：logs/review/2026-04-11-15-review.md
+
+- **类型**：需补充素材
+- **位置**：`在 Perfetto 中的 Fence 表现`
+- **问题**：虽然已有文字说明，但缺少正常 vs 异常的 Trace 截图占位与关键区域标注，和 writing-guide.md 的图文配合要求不够一致。
+- **建议**：补 1-2 张 Perfetto 截图，至少覆盖 `latchBuffer` 等待和 BufferQueue 积压两个场景。
+- **review 日志**：logs/review/2026-04-11-15-review.md
