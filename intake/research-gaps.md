@@ -1107,3 +1107,36 @@ Emoji 一节把系统字体、EmojiCompat、下载字体 provider、color font �
 
 ### 关联章节
 §3.6、§3.4、§2.4
+
+
+## [2026-04-12] 4.8 ART 分代垃圾回收与 GC 暂停优化 — 知识盲区
+
+### 盲区描述
+章节把 Android 17 的分代 GC 近似写成“young / old 两代 + Write Barrier / Card Table / Remembered Set”。但当前 AOSP generational MarkCompact 路径已经出现 `YoungMarkCompact`、young / mid / old 三代、old-gen aged cards、native roots to young/mid generation、userfaultfd slow path 等关键实现细节。缺少这些 collector-specific 机制，读者很难把“Android 10 的 generational CC”与“Android 15+/17 的 generational CMC”区分开。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 核对 `art/runtime/gc/collector/mark_compact.h/.cc` 中 `YoungMarkCompact`、`mid_gen_end_`、`old_gen_end_`、`ScanOldGenObjects()` 的真实职责
+- 明确 Android 10 generational CC 与 Android 15+/17 generational CMC 的差异：read barrier、userfaultfd、代际提升规则
+- 追踪 `use_generational_cmc`、`persist.device_config.runtime_native_boot.use_generational_gc` 等开关与版本边界
+
+### 关联章节
+§4.3、§4.6、§13.10
+
+## [2026-04-12] 4.8 ART 分代垃圾回收与 GC 暂停优化 — Perfetto GC 分析前置条件
+
+### 盲区描述
+章节直接给出 `android_garbage_collection_events`、`actual_frame_timeline` 和 `heapprofd` 的查询/命令，但没有说明 trace config、stdlib 版本、表字段和 Java heap sampling / Java heap dump 的边界。缺少这些前置条件，读者照着执行很容易查不到表、字段不匹配，或者把 Java heap dump 和 allocation sampling 混为一谈。
+
+### 重要程度
+中
+
+### 建议研究方向
+- 整理 `android_garbage_collection_events` / FrameTimeline 相关表的字段、JOIN 关系和版本前提
+- 补一组“最小可运行”Perfetto 配置，区分 GC event、Java heap dump、Java heap sampling 三条链
+- 说明 `packages_list` / process / thread JOIN 后怎样稳定拿到包名与线程名
+
+### 关联章节
+§4.8、§7.2、§13.2、§13.10、§14.3

@@ -38,7 +38,8 @@ review_notes: '2026-04-12 task6 review: needs-rework。L1/L2 小修 10 处（sec
 pipeline_stage: task2b_pending
 task6_state: reviewed
 task6_result: needs-rework
-task9_state: pending
+task9_state: reviewed
+task9_result: needs-rework
 task2b_state: pending
 ---
 

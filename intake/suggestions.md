@@ -1327,3 +1327,25 @@
 - **问题**：GC pause 与 doFrame 冲突、正常 GC 模式 vs 内存抖动模式目前只有文字和 ASCII 示意，没有真实 Trace 截图或等价图示，证据链不完整。
 - **建议**：补 2-3 张真实 Perfetto 片段，至少覆盖 GC pause 与 FrameTimeline 重叠，以及高频 Young GC 的典型图形。
 - **review 日志**：logs/review/2026-04-12-03-review.md
+
+
+## [Task9 Deep Review] 4.8 ART 分代垃圾回收与 GC 暂停优化 — 2026-04-12
+- **类型**：交叉引用
+- **位置**：行 60、437-439
+- **问题**：正文把 §7.2 写成“滑动卡顿分析”，但 `src/SUMMARY.md` 中 7.2 实际标题是“卡顿原因体系”。
+- **建议**：按真实意图改成 §7.2（卡顿原因体系）、§7.3（卡顿分析方法论）或 §7.8（RecyclerView 列表滑动性能深度优化）。
+
+- **类型**：引用链失效
+- **位置**：frontmatter `sources`、行 117、455、485
+- **问题**：`https://source.android.com/docs/core/perf/art-management` 当前返回 404，和文中的 `[已验证]` 标注不一致。
+- **建议**：更新为当前有效的 AOSP / Android 官方文档 URL，并重新核实依赖该链接的版本结论与性能数据。
+
+- **类型**：数据支撑
+- **位置**：行 96-97、251-258、317-318
+- **问题**：GC jank 诊断段落把 `art_gc` counter、GC slice 颜色密度和 SQL 表可用性写成通用结论，但没有给出 trace config、版本前提或已跑通的样例 trace。
+- **建议**：补一个已验证 trace 的截图 + SQL 结果，顺带说明使用的 Perfetto 版本、Android 版本和采集配置。
+
+- **类型**：交叉引用/内容污染
+- **位置**：行 497-500
+- **问题**：参考资料摘要把 ART 分代 GC 与 `DeliQueue` 并列，主题发生串线。DeliQueue 属于 MessageQueue/Looper 方向，不是 GC 机制的一部分。
+- **建议**：删除这句，或把该条研究摘要改回只描述 ART GC / MarkCompact / young generation 相关结论。
