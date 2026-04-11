@@ -3506,6 +3506,35 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-11T13:31:00+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-11T13:46:00+08:00",
+    "completed_by": "task2b-rework"
+  },
+  {
+    "section": "2.15",
+    "section_title": "DMA-BUF、Gralloc 与跨进程图形内存共享",
+    "priority": 90,
+    "reason": "[review回炉] Gralloc HAL 的 AIDL/HIDL 演进与版本表述需复核",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "需确认",
+        "location": "“从 AOSP 源码看分配链路”段末 [待验证]",
+        "detail": "“Gralloc Allocator AIDL 接口在 Android 16 中是否已完全替代 HIDL 接口” 仍缺明确版本线与接口证据。",
+        "suggestion": "由 Task9 核对 allocator/mapper HAL 的 AIDL/HIDL 演进，再由 Task2B 将结论收窄到已验证版本。"
+      },
+      {
+        "type": "需确认",
+        "location": "“Android 16/17：Gralloc AIDL 化”小节",
+        "detail": "“Android 16 开始将 Gralloc HAL 从 HIDL 迁移到 AIDL 接口”和“更少的 IPC 开销”属于版本差异与效果判断，当前来源不足。",
+        "suggestion": "由 Task9 复核 Android 16/17 官方文档与 AOSP 接口变更，必要时 Task2B 改成更保守的表述。"
+      }
+    ],
+    "added_by": "task6-review",
+    "added_at": "2026-04-11T14:06:00+08:00",
+    "status": "pending",
+    "original_review_log": "logs/review/2026-04-11-1406-review.md"
   }
 ]
