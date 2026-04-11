@@ -3155,5 +3155,38 @@
     "status": "completed",
     "completed_at": "2026-04-11T07:42:00+08:00",
     "completed_by": "task2b-content-processing-rework"
+  },
+  {
+    "section": "1.17",
+    "section_title": "IPC 全景：Android 进程间通信机制对比与性能选型",
+    "priority": 90,
+    "reason": "[review回炉] 文体偏清单化，Perfetto 识别说明不足，且多处量化/版本断言需补来源",
+    "material_paths": [
+      "intake/suggestions.md（含 review 意见）"
+    ],
+    "review_issues": [
+      {
+        "type": "需重写",
+        "location": "§3-§5 多处",
+        "detail": "核心机制详解、性能对比表、选型决策树以表格和清单为主，缺少“为什么这样选”“与其他机制的边界在哪里”的连贯叙述。",
+        "suggestion": "保留表格作摘要，但需补足叙述主线，把 Binder/Socket/Pipe/共享内存的取舍讲成连续说明。"
+      },
+      {
+        "type": "需补充素材",
+        "location": "§6 Perfetto 中的 IPC 分析",
+        "detail": "目前只有 SQL 片段，缺少 Binder、socket、共享内存在 Perfetto 中对应的 track、slice、正常/异常表现和截图占位。",
+        "suggestion": "补充可视化识别说明，并至少添加 2-3 个 [图：...] 截图标记。"
+      },
+      {
+        "type": "需确认",
+        "location": "§3.1 / §4.1 / §7 / frontmatter applicable_versions",
+        "detail": "多处延迟、占比、版本演进与 API 范围断言缺少逐项来源或验证标注，存在版本与数据漂移风险。",
+        "suggestion": "交由 Task 9 / Task 2B 核对原始来源；无法确认时降级为定性描述或补 [待验证]。"
+      }
+    ],
+    "added_by": "task6-review",
+    "added_at": "2026-04-11T09:08:00+08:00",
+    "status": "pending",
+    "original_review_log": "logs/review/2026-04-11-09-review.md"
   }
 ]

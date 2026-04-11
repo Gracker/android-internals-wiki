@@ -1,6 +1,7 @@
 ---
 title: "IPC 全景：Android 进程间通信机制对比与性能选型"
 chapter: "1.17"
+section: "1.17"
 status: ready-for-review
 applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37)"
 last_verified: "2026-04-09"
@@ -23,6 +24,14 @@ tags: [ipc, binder, socket, pipe, shared-memory, mmap, ashmem, intent, aidl, mes
 related_chapters: ["1.4", "1.10", "1.13", "2.15", "4.1", "9.1"]
 created_by: "manual-request"
 created_date: "2026-04-09"
+reviewed_date: "2026-04-11"
+reviewed_by: "openclaw-task6"
+task6_result: needs-rework
+review_log: "logs/review/2026-04-11-09-review.md"
+pipeline_stage: task2b_pending
+task6_state: reviewed
+task9_state: pending
+task2b_state: pending
 ---
 
 # IPC 全景：Android 进程间通信机制对比与性能选型
@@ -46,7 +55,7 @@ created_date: "2026-04-09"
    - AIDL 生成代码的 Binder 调用路径
    - Messenger（单线程 Binder 封装）
    - BroadcastReceiver（Binder + AMS 中转）
-4. **性能对比矩阵** — 延迟 / 吞吐 / 拷贝次数 / 数据量上限 / 适用场景
+4. **性能对比表** — 延迟 / 吞吐 / 拷贝次数 / 数据量上限 / 适用场景
 5. **选型决策树** — 根据数据量、频率、方向性、安全需求选择 IPC 机制
 6. **Perfetto 中识别 IPC 开销** — Binder 延迟追踪、socket 通信追踪、共享内存零拷贝验证
 
@@ -150,7 +159,7 @@ Android 上约 **90%+ 的 IPC 调用** 走 Binder 路径。四大组件的生命
 | 使用者 | 路径 | 用途 |
 |--------|------|------|
 | logd | `/dev/socket/logd/*` | 日志写入与读取 |
-| InputDispatcher | ` /data/system/input_manager/*` | 触摸/按键事件分发 |
+| InputDispatcher | `/data/system/input_manager/*` | 触摸/按键事件分发 |
 | vold | `/dev/socket/vold` | 存储管理命令 |
 | installd | `/dev/socket/installd` | 应用安装命令 |
 | netd | `/dev/socket/netd` | 网络管理命令 |
@@ -158,7 +167,7 @@ Android 上约 **90%+ 的 IPC 调用** 走 Binder 路径。四大组件的生命
 
 **性能特征：**
 
-- 延迟：**~0.1-0.5ms**（本地 socket 比Binder 略快或相当，取决于数据量）
+- 延迟：**~0.1-0.5ms**（本地 socket 比 Binder 略快或相当，取决于数据量）
 - 两次数据拷贝（send buffer → 内核 → recv buffer）
 - 无 1MB 事务限制，适合流式数据
 - 支持 `sendmsg` + `SCM_RIGHTS` 传递文件描述符
@@ -284,7 +293,7 @@ Android 13+:    Graphify/GraphicBuffer 全面基于 dmabuf
 - HAL 调用比同进程调用多一次 IPC 开销
 - 某些热路径（如音频、相机）使用 FMQ 绕过 HwBinder 实现零拷贝
 
-## 4. 性能对比矩阵
+## 4. 性能对比表
 
 ### 4.1 定量对比
 
@@ -397,7 +406,7 @@ ORDER BY avg_ms DESC;
 | Android 10 | ashmem 新分配弃用，迁移至 dmabuf-heaps | 大块共享内存路径优化 |
 | Android 11 | HIDL → AIDL-HAL 迁移开始 | 序列化开销降低 |
 | Android 13 | GraphicBuffer 全面 dmabuf | 图形管线统一内存管理 |
-| Android 14 | 16KB page size 对齐 | 共享内存粒度变化 |
+| Android 14 | 16KB page size 适配 | 共享内存粒度变化 |
 | Android 16 | 进一步 AIDL-HAL 迁移 | 减少 HIDL 开销 |
 | Android 17 | Rust HAL 服务试点 | 内存安全 + 接口不变 |
 
