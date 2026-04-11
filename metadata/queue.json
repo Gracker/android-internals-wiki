@@ -2585,8 +2585,10 @@
     ],
     "added_by": "task6-review",
     "added_at": "2026-04-10T22:06:00",
-    "status": "pending",
-    "original_review_log": "logs/review/2026-04-10-22-review.md"
+    "status": "completed",
+    "original_review_log": "logs/review/2026-04-10-22-review.md",
+    "completed_at": "2026-04-11T08:52:00+08:00",
+    "completed_by": "task2b-content-processing-rework"
   },
   {
     "section": "1.8",

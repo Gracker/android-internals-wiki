@@ -1,5 +1,31 @@
-
-
+---
+title: "Google 官方的性能优化思路"
+section: "16.1"
+chapter: "16.1"
+status: ready-for-review
+drafted_date: "2026-04-10"
+drafted_by: "openclaw-task2a"
+reviewed_date: "2026-04-10"
+reviewed_by: "openclaw-task6"
+applicable_versions: "Android 4.1 - Android 17"
+last_verified: "2026-04-11"
+last_verified_against: "Android 17 release notes + Android Developers Blog DeliQueue post"
+confidence: medium
+tags:
+  - android
+  - performance
+  - aosp
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
+task2b_state: fixed
+task2b_result: fixed
+sources:
+  - type: official
+    path: "https://developer.android.com/about/versions/17/release-notes"
+  - type: official
+    path: "https://android-developers.googleblog.com/2026/02/under-hood-android-17s-lock-free.html"
+---
 
 # Google 官方的性能优化思路
 
@@ -68,9 +94,9 @@ ART 不是一成不变的运行时。在从 Android 5.0 的纯 AOT 到今天的�
 纯 AOT 编译的问题前面提到了——安装太慢、占用太多空间。Android 7.0 引入了 JIT 解释执行 + Profile 收集的混合模式。具体来说：应用首次运行时，ART 用 JIT 解释执行字节码，同时在后台记录哪些方法被频繁调用（"热方法"）。设备充电且空闲时，`dex2oat` 编译器根据 Profile 对热方法做 AOT 编译。这样下次启动应用时，关键路径已经是机器码了，而不是需要 JIT 解释的字节码。
 Android 9.0 进一步引入了 Cloud Profiles：当足够多的用户在设备上产生了 Profile，Google 会把这些 Profile 聚合后上传到云端，然后在其他用户首次安装应用时预置这些 Cloud Profiles。这解决了"新安装的应用第一次运行一定慢"的问题——因为 ART 有了云端提供的 Profile，安装时就能对关键路径做 AOT 编译。
 Baseline Profiles 是 Cloud Profiles 的开发者可控版本。开发者可以在应用中打包一个自己定义的 Profile（指定哪些类和方法需要在安装时编译），ART 在安装时优先使用 Baseline Profiles 做编译。根据 Google 的数据，Baseline Profiles 可以将关键代码路径的执行速度提升约 30%。[已验证: developer.android.com/topic/performance/baselineprofiles]
-### GC 的演进：从暂停到几乎无感
-Dalvik 的 mark-and-sweep GC 有两个致命问题：GC 时所有线程暂停（Stop-The-World），以及堆碎片化导致的频繁 Full GC。ART 的 Concurrent Copying Collector 通过并发标记和对象搬移同时解决了这两个问题。
-从 Android 8.0 开始，ART 进一步引入了分代收集：年轻代（Young Generation）使用 Copying Collector，回收频率高但暂停时间极短（1-3ms）；老年代（Old Generation）使用标记-压缩收集器，回收频率低但更彻底。Android 17 中的分代 GC 进一步细化了年轻代的处理，暂停时间进一步缩短。[需确认: Android 17 分代 GC 暂停时间的精确数据]
+### GC 的演进：从暂停到尽量不打断前台体验
+Dalvik 的 mark-and-sweep GC 有两个致命问题：GC 时所有线程暂停（Stop-The-World），以及堆碎片化导致的频繁 Full GC。ART 后续通过 Concurrent Copying Collector、并发标记和对象搬移，持续减少 GC 对前台线程的打断。
+到了 Android 17，Google 又在 ART 的 Concurrent Mark-Compact collector 中加入了 generational GC。Android 17 release notes 给出的准确信息是：系统开始更频繁地处理 young generation，用更低的成本回收短生命周期对象。官方明确强调的是 GC 的整体成本更低，而不是给出一个适用于所有设备的统一暂停时间数字，所以这里不再写固定的毫秒数。[已验证: https://developer.android.com/about/versions/17/release-notes]
 ### 工具链优化：R8、D8 和 Startup Profiles
 R8 是 Android 的代码压缩和优化工具，替代了旧的 ProGuard。R8 不只是做代码混淆和移除未使用的类——它还能做类合并、方法内联、常量折叠等优化，生成更小的 DEX 文件。更小的 DEX 意味着更短的 dex2oat 编译时间和更少的页面错误（page fault）。
 Startup Profiles（AGP 8.3 默认启用）是 Baseline Profiles 的编译时补充。它们指导 D8 编译器在生成 DEX 文件时，将启动关键路径上的类放在 DEX 文件的前部，减少冷启动时的 page fault。配合 Baseline Profiles 使用，冷启动可以提升 15-30%。[已验证: developer.android.com/topic/performance/baselineprofiles]
@@ -82,7 +108,8 @@ Android 的 View 系统从 1.0 开始就存在，历史包袱沉重。Google 在
 ### Handler/MessageQueue 的优化
 主线程的 MessageQueue 是 Android 事件驱动的核心。Google 在近期的版本中对它做了两个重要的性能优化。
 第一个是锁优化。MessageQueue 的 `next()` 方法需要与 `enqueueMessage()` 争抢锁（`mLock`）。在高频消息场景下（比如快速滑动时的 Input 事件和 Traversal 消息交替入队），锁竞争会导致主线程不必要的等待。Android 14/15 对锁的粒度做了优化，减少了临界区的范围。
-第二个是 Android 17 中引入的 DeliQueue（实验性）。这是一种无锁的消息队列设计，针对主线程的高频消息场景做了特殊优化。根据公开数据，DeliQueue 可以将主线程锁等待减少约 15%，掉帧减少约 4%，冷启动首帧的 P95 延迟改善约 9.1%。[需确认: DeliQueue 是否在 Android 17 正式版中默认启用]
+第二个是 Android 17 引入的 DeliQueue。这是一套 lock-free MessageQueue 重构：生产者线程先把消息推入 Treiber stack，Looper 线程再把待处理消息整理到自己独占的 min-heap 里，从而把"并发入队"和"按截止时间取消息"拆成两条路径。Google 在官方技术博客里给出的数据是，应用主线程用于 MessageQueue 锁竞争的时间下降约 15%，应用 missed frames 下降约 4%，启动到首帧绘制的 P95 延迟改善约 9.1%。
+不过这里有一个边界必须写清楚：官方说法不是"Android 17 对所有应用默认打开 DeliQueue"，而是"targetSdk 37 或更高的应用会自动收到新的 MessageQueue 实现"。也就是说，它是 Android 17 面向 targetSdk 37 应用的默认路径，不是老应用在升级系统后无条件切换到新队列。[已验证: https://android-developers.googleblog.com/2026/02/under-hood-android-17s-lock-free.html]
 ### Binder 的性能改进
 Binder 是 Android 进程间通信的基础设施，几乎所有的跨进程调用都经过它。Google 在 Binder 上的优化主要是减少数据拷贝和改进调度。
 Android 8.0 引入了 Binder 线程池的动态扩展（之前是固定的 16 个线程），允许系统根据负载调整线程池大小。Android 10+ 引入了 Binder 事务的优先级继承，防止低优先级进程的 Binder 调用阻塞高优先级进程。
