@@ -4636,5 +4636,50 @@
     "added_at": "2026-04-12T06:33:25+08:00",
     "status": "completed",
     "completed_at": "2026-04-12T06:59:42+08:00"
+  },
+  {
+    "section": "5.10",
+    "section_title": "JobScheduler/WorkManager 调度与后台任务性能",
+    "priority": 90,
+    "reason": "[review回炉] Android 16/17 版本边界、Expedited API、Perfetto 观测面与政策来源仍需核对，后半段需要补一条实战案例主线",
+    "material_paths": [
+      "intake/suggestions.md（含 review 意见）"
+    ],
+    "review_issues": [
+      {
+        "type": "需确认",
+        "location": "Expedited Job 段落",
+        "detail": "setExpedited(ExistingWorkPolicy.APPEND) 写法与常见 API 形态不一致，配额耗尽后的降级路径也缺少更精确依据。",
+        "suggestion": "核对 WorkManager setExpedited() 的真实参数类型、映射方式与 out-of-quota 行为。"
+      },
+      {
+        "type": "需确认",
+        "location": "Android 17 新增调试能力 / 版本差异与兼容性",
+        "detail": "JobDebugInfo、getPendingJobReasonStats()、AlarmManager.setExactAndAllowWhileIdle(OnAlarmListener) 与 Android 16 / 17 API Level 的归属存在混用风险。",
+        "suggestion": "统一核对 Android 16 / 17 的 API Level、类名、方法名和功能归属。"
+      },
+      {
+        "type": "需补充素材",
+        "location": "在 Perfetto 中分析 JobScheduler / JobDebugInfo API",
+        "detail": "Jobs track、android.job_scheduler SQL module、jobscheduler atrace category 只有文字描述，没有 Trace 截图或更精确来源。",
+        "suggestion": "补 1 组真实 Perfetto Trace 观察面与对应截图说明。"
+      },
+      {
+        "type": "需补充素材",
+        "location": "WakeLock 惩罚政策 / Android Vitals 监控指标",
+        "detail": "政策和指标只有站点级来源，没有原始政策链接与指标口径页面。",
+        "suggestion": "补 Google Play 政策原文、Android Developers / Play Console 页面链接，或下调为 [待验证]。"
+      },
+      {
+        "type": "需重写",
+        "location": "合规方案 / 最佳实践与优化策略",
+        "detail": "后半段以清单为主，缺少一个从问题现象到工具验证的完整案例，活人感和决策路径都不够。",
+        "suggestion": "用一个真实调度案例串起 WorkManager、UIDT、Foreground Service 的选择边界，再回扣 Perfetto / dumpsys。"
+      }
+    ],
+    "added_by": "task6-review",
+    "added_at": "2026-04-12T07:06:00+08:00",
+    "status": "pending",
+    "original_review_log": "logs/review/2026-04-12-07-review.md"
   }
 ]

@@ -1410,3 +1410,35 @@
 - **位置**：行 232-245 Perfetto / Show hardware layers updates 诊断方法
 - **问题**：正文给了 `buildLayer` / `buildDrawingCache` 的读法，但没有任何真实 Trace、track 名称、slice 持续时间或 FrameTimeline 对照，读者很难判断“看到什么才算异常”。
 - **建议**：补 1 组真实 Perfetto 截图或文字化 trace 片段，至少标出 MainThread、RenderThread、`buildLayer`、`buildDrawingCache/SW Layer`、FrameTimeline 或 SurfaceFlinger 相关轨道的位置。
+
+
+## [Task6 Review] 5.10 JobScheduler/WorkManager 调度与后台任务性能 — 2026-04-12
+- **类型**：需确认
+- **位置**：`Expedited Job` 段落
+- **问题**：`WorkManager` 的 `setExpedited(ExistingWorkPolicy.APPEND)` 写法与常见 API 形态不一致，`Expedited` 配额耗尽后的降级路径也缺少更精确的源码或官方文档支撑。
+- **建议**：交给 Task 9 核对 `setExpedited()` 的真实参数类型、WorkManager 到 JobScheduler 的映射方式，以及 out-of-quota 时的实际行为。
+- **review 日志**：logs/review/2026-04-12-07-review.md
+
+- **类型**：需确认
+- **位置**：`Android 17 新增调试能力`、`版本差异与兼容性`
+- **问题**：`JobDebugInfo`、`getPendingJobReasonStats()`、`AlarmManager.setExactAndAllowWhileIdle(OnAlarmListener)` 和 `Android 16 / 17` 的 API Level 归属写在一起，版本边界有混用风险。
+- **建议**：交给 Task 9 统一核对 Android 16 / 17 的 API Level、类名、方法名和功能归属，再回写本章与相关章节。
+- **review 日志**：logs/review/2026-04-12-07-review.md
+
+- **类型**：需补充素材
+- **位置**：`在 Perfetto 中分析 JobScheduler`、`JobDebugInfo API`
+- **问题**：`Jobs` track、`android.job_scheduler` SQL module、`jobscheduler` atrace category 目前只有文字描述，没有配套 Trace 截图或更精确的验证来源，证据链偏薄。
+- **建议**：补 1 组真实 Perfetto Trace 观察面，至少覆盖 Job 执行 slice、Device State / Jobs track 和 SQL 查询结果，再补回章节。
+- **review 日志**：logs/review/2026-04-12-07-review.md
+
+- **类型**：需补充素材
+- **位置**：`WakeLock 惩罚政策`、`Android Vitals 监控指标`
+- **问题**：`[已验证: googleblog.com + android.com, 2026-03-01]` 只有站点级来源，没有原始政策链接；`Android Vitals` 指标口径也没有落到具体页面或文档。
+- **建议**：补 Google Play 政策原文、Android Developers / Play Console 指标页面链接；如果暂时补不齐，把强断言下调为 `[待验证]`。
+- **review 日志**：logs/review/2026-04-12-07-review.md
+
+- **类型**：需重写
+- **位置**：`合规方案`、`最佳实践与优化策略`
+- **问题**：后半段以清单为主，缺少一个从问题现象、调度选型到工具验证的完整案例，读起来更像汇总而不是工程师经验分享。
+- **建议**：交给 Task 2B 用一个真实场景串起 `WorkManager`、`UIDT`、`Foreground Service` 的选择边界，再回扣 Perfetto / dumpsys 的观测方法。
+- **review 日志**：logs/review/2026-04-12-07-review.md
