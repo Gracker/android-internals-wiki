@@ -767,3 +767,22 @@
 - **位置**：行 238-259 Perfetto / underrun SQL
 - **问题**：当前 SQL 用 `%Audio%` / `%underrun%` 占位，正文没有给出一份真实 trace 中验证过的 track 名和 slice 名，读者落地时还要二次猜测
 - **建议**：补一份实测设备（例如 Pixel）的真实线程名、slice 名、筛选 SQL 和截图说明，至少固定一个可复用样例
+
+## [Task6 Review] 1.17 IPC 全景：Android 进程间通信机制对比与性能选型 — 2026-04-11
+- **类型**：需重写
+- **位置**：§3-§5 多处
+- **问题**：核心机制详解、性能对比表、选型决策树以表格和清单为主，缺少从原理到选型的连贯叙述，不符合 writing-guide.md 的“叙述为主，列表为辅”。
+- **建议**：保留表格作摘要，但需补足叙述主线，把 Binder、Unix Domain Socket、Pipe、共享内存的取舍讲成连续说明。
+- **review 日志**：logs/review/2026-04-11-09-review.md
+
+- **类型**：需补充素材
+- **位置**：§6 Perfetto 中的 IPC 分析
+- **问题**：目前只有 SQL 片段，缺少 Binder、socket、共享内存在 Perfetto 中对应的 track、slice、正常/异常表现和截图占位。
+- **建议**：补充可视化识别说明，并至少添加 2-3 个 [图：...] 截图标记。
+- **review 日志**：logs/review/2026-04-11-09-review.md
+
+- **类型**：需确认
+- **位置**：§3.1 / §4.1 / §7 / frontmatter applicable_versions
+- **问题**：多处延迟、占比、版本演进与 API 范围断言缺少逐项来源或验证标注，存在版本与数据漂移风险。
+- **建议**：交由 Task 9 / Task 2B 核对原始来源；无法确认时降级为定性描述或补 [待验证]。
+- **review 日志**：logs/review/2026-04-11-09-review.md

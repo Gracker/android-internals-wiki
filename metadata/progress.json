@@ -1,35 +1,35 @@
 {
-  "generated_at": "2026-04-11T08:56:58+08:00",
+  "generated_at": "2026-04-11T09:08:00+08:00",
   "state_machine_version": "v2",
   "total_sections": 175,
   "metrics": {
     "total": 175,
     "draft": 0,
     "ready-for-review": 172,
-    "pipeline_task6_pending": 172,
-    "pipeline_task2b_pending": 2,
+    "pipeline_task6_pending": 171,
+    "pipeline_task2b_pending": 3,
     "pipeline_publish_ready": 0,
-    "task6_pending": 164,
-    "task6_reviewed": 2,
+    "task6_pending": 163,
+    "task6_reviewed": 3,
     "task6_revisiting": 8,
     "task9_pending": 174,
     "task9_reviewed": 0,
-    "task2b_idle": 164,
-    "task2b_pending": 2,
+    "task2b_idle": 163,
+    "task2b_pending": 3,
     "task2b_fixed": 8,
-    "last_updated": "2026-04-11T08:56:58+08:00",
+    "last_updated": "2026-04-11T09:08:00+08:00",
     "unknown": 3
   },
   "pipeline": {
     "pipeline_stage_counts": {
-      "task6_pending": 172,
-      "task2b_pending": 2,
+      "task6_pending": 171,
+      "task2b_pending": 3,
       "unknown": 1
     },
     "task6_state_counts": {
-      "pending": 164,
+      "pending": 163,
       "revisiting": 8,
-      "reviewed": 2,
+      "reviewed": 3,
       "unknown": 1
     },
     "task9_state_counts": {
@@ -37,9 +37,9 @@
       "unknown": 1
     },
     "task2b_state_counts": {
-      "idle": 164,
+      "idle": 163,
       "fixed": 8,
-      "pending": 2,
+      "pending": 3,
       "unknown": 1
     }
   },
@@ -1361,10 +1361,10 @@
       "title": "IPC 全景：Android 进程间通信机制对比与性能选型",
       "path": "src/part1-fundamentals/ch01-architecture/17-ipc-panorama.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "pending",
+      "pipeline_stage": "task2b_pending",
+      "task6_state": "reviewed",
       "task9_state": "pending",
-      "task2b_state": "idle"
+      "task2b_state": "pending"
     },
     "src/part1-fundamentals/ch01-architecture/13-messagequeue-deliqueue.md": {
       "chapter": "1.13",
@@ -2898,6 +2898,29 @@
         "libbinder_ndk 20-40% 量化比较缺少实验边界（P2）",
         "与 §4.7 / §14.2 的交叉引用缺失，事实表有漂移风险（P2）"
       ]
+    },
+    "1.17": {
+      "title": "IPC 全景：Android 进程间通信机制对比与性能选型",
+      "reviewed_date": "2026-04-11",
+      "reviewed_by": "openclaw-task6",
+      "review_status": "reviewed",
+      "task6_result": "needs-rework",
+      "fixes_applied": [
+        "frontmatter：补 section/reviewed_date/reviewed_by/task6_result/review_log，并更新 pipeline_stage/task6_state/task2b_state",
+        "禁用词修正：2处「性能对比矩阵」→「性能对比表」（writing-guide §九）",
+        "措辞与格式：1处「比Binder」→「比 Binder」",
+        "版本表述收束：1处「16KB page size 对齐」→「16KB page size 适配」",
+        "表格格式：1处 InputDispatcher 路径前导空格清理"
+      ],
+      "b_class_issues": 3,
+      "review_log": "logs/review/2026-04-11-09-review.md",
+      "scores": {
+        "structure": 3,
+        "expression": 4,
+        "consistency": 4,
+        "verification": 2,
+        "metadata": 5
+      }
     }
   }
 }
