@@ -3261,5 +3261,26 @@
     "status": "completed",
     "completed_at": "2026-04-11T09:40:00+08:00",
     "completed_by": "task2b-rework"
+  },
+  {
+    "section": "2.3",
+    "section_title": "VSync 机制",
+    "priority": 90,
+    "reason": "[review回炉] Android 17 DeliQueue 段落的验证来源与正文机制未对上，需核实其对 VSync/Choreographer 的直接影响与量化数据出处",
+    "material_paths": [
+      "intake/suggestions.md（含 review 意见）"
+    ],
+    "review_issues": [
+      {
+        "type": "需确认",
+        "location": "9.6 Android 17：DeliQueue 无锁 MessageQueue",
+        "detail": "验证来源写成 android-17-preview + Google 内部 Beta 数据，但没有公开可复核的源码路径或数据出处，且末尾路径指向 DispSync.cpp，与正文的 MessageQueue/Looper 机制不匹配。",
+        "suggestion": "核实 DeliQueue 对 VSync/Choreographer 的直接影响、量化数据来源，以及应引用的 MessageQueue/Looper 相关源码路径。"
+      }
+    ],
+    "added_by": "task6-review",
+    "added_at": "2026-04-11T10:12:00+08:00",
+    "status": "pending",
+    "original_review_log": "logs/review/2026-04-11-10-review.md"
   }
 ]
