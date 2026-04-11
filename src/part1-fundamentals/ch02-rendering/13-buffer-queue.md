@@ -3,21 +3,23 @@ title: 图形缓冲区管理 (BufferQueue)
 chapter: '2.13'
 section: '2.13'
 status: ready-for-review
-applicable_versions: Android 10 (API 29) - Android 17 (API 37)
+applicable_versions: Android 4.1 (API 16) - Android 17 (API 37)
 tags:
 - BufferQueue
-- BlastBufferQueue
+- BLASTBufferQueue
 - GraphicBuffer
 - Surface
 - 渲染管线
-- GRALLOC
+- Gralloc
 - SurfaceFlinger
 - 三缓冲
 related_chapters:
 - '2.1'
+- '2.4'
 - '2.5'
 - '2.6'
 - '2.9'
+- '2.16'
 - '7.2'
 created_by: task2a-knowledge-gap
 created_date: '2026-04-04'
@@ -27,281 +29,278 @@ drafted_by: openclaw-task2a
 drafted_date: '2026-04-04'
 reviewed_by: openclaw-task6
 reviewed_date: '2026-04-11'
+last_verified: '2026-04-11'
+last_verified_against: AOSP main + android-11.0.0_r48 + android-10.0.0_r47 + android-4.1.2_r1
 sources:
+- type: aosp
+  path: frameworks/native/libs/gui/include/gui/IGraphicBufferProducer.h
+- type: aosp
+  path: frameworks/native/libs/gui/include/gui/IGraphicBufferConsumer.h
+- type: aosp
+  path: frameworks/native/libs/gui/include/gui/BufferSlot.h
+- type: aosp
+  path: frameworks/native/libs/gui/include/gui/BufferItem.h
 - type: aosp
   path: frameworks/native/libs/gui/BufferQueue.cpp
 - type: aosp
   path: frameworks/native/libs/gui/BufferQueueCore.cpp
 - type: aosp
   path: frameworks/native/libs/gui/BLASTBufferQueue.cpp
+- type: aosp
+  path: frameworks/base/core/java/android/view/ViewRootImpl.java
 - type: official
   path: https://source.android.com/docs/core/graphics/architecture
-- type: official
-  path: https://source.android.com/docs/core/graphics/bufferqueue
-pipeline_stage: task2b_pending
+pipeline_stage: task6_pending
 task6_result: needs-rework
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: pending
+task6_state: revisiting
+task9_state: pending
+task2b_state: fixed
 task9_result: needs-rework
+task2b_result: fixed
 ---
 
 # 2.13 图形缓冲区管理 (BufferQueue)
 
-[需重写：补充 `outline-start` / `outline-end` 与 `🔹` 锚点，当前无法按统一大纲检查章节覆盖率。]
+<!-- outline-start -->
+## 本节要点大纲
+
+### 锚点（必须覆盖）
+
+- 🔹 BufferQueue 为什么存在，它解决的是跨进程共享 GraphicBuffer 和同步问题，不是“传像素数组”
+- 🔹 `dequeueBuffer()` → `requestBuffer()` → `queueBuffer()` 的真实调用链
+- 🔹 `BufferSlot::BufferState` 如何描述 FREE / DEQUEUED / QUEUED / ACQUIRED / SHARED
+- 🔹 Sync Fence 如何决定 buffer 何时可写、可读、可复用
+- 🔹 BLASTBufferQueue 如何把 buffer 与 `SurfaceControl.Transaction` 绑到同一帧
+- 🔹 BufferQueue 在 Perfetto 中的正常与异常读法
+
+### 扩展（可选深入）
+
+- 🔸 三缓冲与 `setMaxDequeuedBufferCount(2)` 的关系
+- 🔸 从 Project Butter 到 BLAST 的两次大变化
+
+### OpenClaw 加工指引
+
+> 锚点是最低覆盖要求。
+> 没有实测 Trace 的地方，用 `[图：...]` 或 `[需补充素材：...]` 明确占位，不写假截图。
+> 涉及版本结论，只保留能在 AOSP tag 或官方文档中落下来的事实。
+
+<!-- outline-end -->
 
 ## 为什么要了解 BufferQueue
 
-如果你在 Perfetto 中看到主线程或 RenderThread 出现一长段「等待 dequeueBuffer」的阻塞，或者在 SurfaceFlinger 的 Track 中发现某一帧的 acquireBuffer 延迟异常——你正在看的就是 BufferQueue 的行为。BufferQueue 是 Android 渲染管线的核心数据通道：App 画好的一帧像素数据，必须通过它才能到达 SurfaceFlinger，最终显示在屏幕上。
+如果我们在 Perfetto 里看到 RenderThread 卡在 `dequeueBuffer()`，或者看到 App 已经 `queueBuffer()` 了，但 SurfaceFlinger 很晚才把这一帧合成上屏，问题往往不在“画得快不快”这一层，而在 BufferQueue 这一层。它决定了一帧图像怎样在 producer 和 consumer 之间流转，也决定了什么时候能复用旧 buffer，什么时候必须继续等。
 
-理解 BufferQueue 的意义不在于记住几个状态名，而在于搞清楚：一帧从 App 的 Canvas 到屏幕上，中间经过了哪些缓冲区操作，每个操作在什么条件下会阻塞，阻塞的时候在 Trace 中是什么样子。掌握这些之后，我们就能区分「GPU 太慢导致的掉帧」和「缓冲区管理不当导致的掉帧」——两者的优化方向完全不同。
+这部分知识真正有用的地方，不是记住几个 API 名字，而是能把“GPU 太慢”、“SurfaceFlinger 太慢”、“buffer 没有及时释放”、“geometry transaction 和 buffer 落在不同帧”这几类问题拆开。拆开之后，我们在 Trace 里看到的长等待，才知道该往哪条链路继续挖。
 
-## BufferQueue 的核心模型：Producer-Consumer
+## BufferQueue 不是“传一帧像素”，而是“共享一组 slot”
 
-BufferQueue 的设计模式非常直观：生产者-消费者。App 是生产者，负责把像素数据写入缓冲区；SurfaceFlinger 是消费者，负责从缓冲区取出数据做合成和显示。两者之间通过 BufferQueue 这个中间层解耦。
+BufferQueue 的基本角色没有什么花哨的地方。producer 负责写入一帧内容，consumer 负责读取这一帧去合成或显示，中间那层 BufferQueue 负责维护一组 slot、这些 slot 上绑定的 `GraphicBuffer`，以及双方交接时需要的同步信息。
 
-为什么需要这个中间层？因为 App 和 SurfaceFlinger 运行在不同的进程中。如果 App 直接把帧数据交给 SurfaceFlinger，要么需要跨进程拷贝整帧像素（性能灾难），要么需要某种共享内存加同步机制。BufferQueue 就是这个「共享内存 + 同步机制」的封装。
+在经典窗口路径里，App 是 producer，SurfaceFlinger 是 consumer。两边不直接拷贝整帧像素，而是共享同一块 `GraphicBuffer`。这样一来，1080p 一帧八九 MB 的像素不会在进程之间来回复制，跨进程传的主要是 slot、fence 和元数据。
 
-[已验证：来源见 https://source.android.com/docs/core/graphics/architecture]
+这也是很多文章最容易写歪的地方。BufferQueue 的核心不是“我把这一帧图传给 SurfaceFlinger”，而是“我把某个 slot 里已经存在的那块 buffer 交给下一方，并告诉它什么时候可以安全地读写”。
 
-整个流程是这样的：
+[已验证：AOSP main `frameworks/native/libs/gui/include/gui/IGraphicBufferProducer.h`、`frameworks/native/libs/gui/include/gui/BufferItem.h`]
 
-1. App 通过 `dequeueBuffer()` 从 BufferQueue 申请一个空闲的 GraphicBuffer
-2. App 在这个 buffer 上绘制（Canvas / OpenGL / Vulkan）
-3. 绘制完成后，App 调用 `queueBuffer()` 将 buffer 归还 BufferQueue
-4. SurfaceFlinger 通过 `acquireBuffer()` 取走这个 buffer 进行合成
-5. 合成完成并显示后，SurfaceFlinger 调用 `releaseBuffer()` 将 buffer 还回 BufferQueue
+## `dequeueBuffer()` → `requestBuffer()` → `queueBuffer()` 的真实链路
 
-这是一个循环。在一个典型的 60fps 场景下，这个循环每 16.6ms 重复一次。
-
-```
- App (Producer)                    BufferQueue                SurfaceFlinger (Consumer)
- ──────────────                    ────────────               ──────────────────────────
-     |                                  |                              |
-     |--- dequeueBuffer() ------------>|                              |
-     |<-- GraphicBuffer (空闲) ---------|                              |
-     |                                  |                              |
-     |  [在 buffer 上绘制...]          |                              |
-     |                                  |                              |
-     |--- queueBuffer() ------------->|                              |
-     |                                  |--- acquireBuffer() -------->|
-     |                                  |<-- (取出已填充的 buffer) ----|
-     |                                  |                              |
-     |                                  |                  [合成 + 显示]|
-     |                                  |                              |
-     |                                  |<-- releaseBuffer() ----------|
-     |<-- GraphicBuffer (空闲) ---------|                              |
-```
-
-## GraphicBuffer：像素数据的载体
-
-GraphicBuffer 是 BufferQueue 中流转的实际数据单元。它是一块硬件支持的共享内存，由 GRALLOC（Graphics Allocator）分配。
-
-GRALLOC 是一个 HAL 层接口，具体实现由 SoC 厂商提供。不同厂商的 GRALLOC 分配的内存可能有不同的特性——有些直接映射到 GPU 可访问的显存，有些使用 DMA 友好的连续物理内存。但从 BufferQueue 的视角，这些差异被 GraphicBuffer 抽象掉了。
-
-GraphicBuffer 的跨进程共享是 Android 渲染架构的关键优化之一。它通过 binder handle（文件描述符）在不同进程间传递，而非拷贝像素数据。当 App 调用 `queueBuffer()` 时，实际传递给 SurfaceFlinger 的只是一个 handle，SurfaceFlinger 通过这个 handle 映射到同一块物理内存。
-
-这意味着一帧 1080p RGBA 的数据（约 8MB）在 App → SurfaceFlinger 之间传递时，实际拷贝的数据量只有几十字节（handle + 元数据）。
-
-[已验证：来源见 https://source.android.com/docs/core/graphics/architecture 和 AOSP `frameworks/native/libs/ui/GraphicBuffer.cpp`]
-
-每个 GraphicBuffer 携带的元数据包括：
-
-- **宽高和像素格式**（如 1080×2400 RGBA_8888）
-- **Usage 标志**（如 GRALLOC_USAGE_HW_RENDER 表示 GPU 可写入，GRALLOC_USAGE_HW_COMPOSER 表示 HWC 可读取）
-- **Stride**（一行像素占用的字节数，可能大于 width × bpp，因为 GPU 对齐要求）
-
-Usage 标志非常重要——它告诉 GRALLOC 如何分配内存。如果一个 buffer 的 usage 标记为仅 CPU 可写，GPU 就无法直接渲染到这个 buffer 上，系统不得不在中间加一次拷贝。这就是为什么在某些老设备或特定 Surface 类型下，渲染性能会明显下降。
-
-## 缓冲区状态机：DEQUEUED → QUEUED → ACQUIRED → RELEASED
-
-每个 GraphicBuffer 在 BufferQueue 中有自己的状态。理解状态转换是分析缓冲区相关掉帧的基础。
-
-**DEQUEUED**：App 持有这个 buffer，正在往里面绘制内容。此时只有 App 能访问这块内存（消费者端无法看到它）。
-
-**QUEUED**：App 绘制完成，通过 `queueBuffer()` 把 buffer 放回 BufferQueue。此时 buffer 处于「等待被消费」的状态。
-
-**ACQUIRED**：SurfaceFlinger 通过 `acquireBuffer()` 取走了 buffer，正在进行合成。此时生产者无法 dequeue 这个 buffer。
-
-**RELEASED**：SurfaceFlinger 合成完成，buffer 被释放回 BufferQueue，可以被 App 重新 dequeue。
-
-```
-                    dequeueBuffer()
-    FREE ──────────────────────────> DEQUEUED
-     ↑                                  │
-     │                          queueBuffer()
-     │                                  ↓
-  releaseBuffer()                   QUEUED
-     ↑                                  │
-     │                         acquireBuffer()
-     │                                  ↓
-    ACQUIRED ◄────────────────────── (合成完成)
-```
-
-在 AOSP 中，这个状态机由 `BufferSlot` 类管理。`BufferQueueCore` 维护一个 `BufferSlot` 数组（默认大小为 64，但实际使用的缓冲区数量通常只有 2-3 个）。
-
-关键观察：**一个 buffer 同时只能被生产者或消费者中的一方持有**（DEQUEUED 状态 = 生产者独占，ACQUIRED 状态 = 消费者独占）。这是缓冲区竞争的根源——如果所有 buffer 都被占用了，生产者 dequeueBuffer 就会阻塞。
+把 `queueBuffer()` 写成“每帧把 binder handle 传给 SurfaceFlinger”，这个说法不对。AOSP 的 producer 接口把“选 slot”和“取 buffer 句柄”拆成了两个步骤：先 `dequeueBuffer()`，必要时再 `requestBuffer()`。
 
 ```cpp
-// frameworks/native/libs/gui/BufferSlot.h
-// @ AOSP android-17-beta3
-struct BufferSlot {
-    BufferState mBufferState = BufferState::FREE;
-    sp<GraphicBuffer> mGraphicBuffer;
-    // mBufferState 追踪当前 slot 的状态
-    // 一个 slot 只能处于一种状态
+// frameworks/native/libs/gui/include/gui/IGraphicBufferProducer.h
+virtual status_t requestBuffer(int slot, sp<GraphicBuffer>* buf) = 0;
+virtual status_t dequeueBuffer(int* slot, sp<Fence>* fence, uint32_t w, uint32_t h,
+                               PixelFormat format, uint64_t usage,
+                               uint64_t* outBufferAge,
+                               FrameEventHistoryDelta* outTimestamps) = 0;
+virtual status_t queueBuffer(int slot, const QueueBufferInput& input,
+                             QueueBufferOutput* output) = 0;
+```
+
+这三个调用连起来，真实语义是这样的。
+
+第一步，`dequeueBuffer()` 先从 BufferQueue 里挑一个可用 slot 出来，同时返回一个 fence。AOSP 注释写得很直接，producer 在这个 fence signal 之前不能覆盖旧内容。这条 fence 代表的是“上一次 consumer 对这块 buffer 的使用已经结束了没有”。
+
+第二步，如果 `dequeueBuffer()` 返回的 slot 需要重新分配，producer 会看到 `BUFFER_NEEDS_REALLOCATION`，这时再调用 `requestBuffer(slot, &buf)` 把这个 slot 当前绑定的 `GraphicBuffer` 取出来。也就是说，slot 和 `GraphicBuffer` 的映射不是每帧都重新传一次，只有首次分配、尺寸变化、格式变化，或者 attach/detach 这类场景，才需要同步新的句柄。
+
+第三步，producer 把内容画到这块 `GraphicBuffer` 里。等 GPU 或 CPU 写完以后，调用 `queueBuffer(slot, QueueBufferInput)` 把 slot 放回队列。这里真正跟着这次 `queueBuffer()` 一起提交的，是 slot 编号、时间戳、crop、transform、dataspace，以及 `QueueBufferInput::fence`。AOSP 对这个 fence 的注释也很明确，它是“consumer 在读取这个 buffer 之前必须等待的 fence”。
+
+所以，真正高频流转的不是“完整 `GraphicBuffer` handle”，而是“slot + metadata + fence”。把这条链路说准，后面讨论阻塞和掉帧才不会偏。
+
+[已验证：AOSP main `frameworks/native/libs/gui/include/gui/IGraphicBufferProducer.h`]
+
+## `BufferSlot::BufferState` 不是单一 enum
+
+另一个常见误解，是把 slot 状态机写成一个互斥 enum，然后假设一个 slot 在任何时刻只能是 FREE、DEQUEUED、QUEUED、ACQUIRED 中的一个。普通窗口路径大多数时候看起来像这样，但 AOSP 现在的实现不是这么建模的。
+
+```cpp
+// frameworks/native/libs/gui/include/gui/BufferSlot.h
+struct BufferState {
+    uint32_t mDequeueCount;
+    uint32_t mQueueCount;
+    uint32_t mAcquireCount;
+    bool mShared;
+
+    inline bool isFree() const { return !isAcquired() && !isDequeued() && !isQueued(); }
+    inline bool isDequeued() const { return mDequeueCount > 0; }
+    inline bool isQueued() const { return mQueueCount > 0; }
+    inline bool isAcquired() const { return mAcquireCount > 0; }
+    inline bool isShared() const { return mShared; }
 };
 ```
 
-这段代码的核心意义：`mBufferState` 是一个枚举，不是位掩码。一个 slot 在任何时刻只有一种状态。如果所有 slot 都不是 FREE，dequeueBuffer 就会阻塞等待。我们在 Perfetto 中看到的 dequeueBuffer 耗时过长，通常就是这种情况。
+AOSP 注释给出的状态表很清楚。正常模式下，FREE、DEQUEUED、QUEUED、ACQUIRED 这些状态看起来还是互斥的，但实现层面已经换成了计数器。原因是 shared buffer mode 允许 `mShared` 和其他状态并存，一个 slot 可以一边 shared，一边仍然处在 dequeued、queued 或 acquired 计数不为 0 的状态。
 
-## 三缓冲 vs 双缓冲
+这意味着我们在排查问题时，不能再把 `mBufferState == FREE` 这种老口径当成今天的源码事实。更稳妥的说法是，普通路径里 slot 大多数时候呈现为单状态流转，shared buffer mode 下状态会叠加，源码判断应以 `isFree()`、`isDequeued()`、`isQueued()`、`isAcquired()`、`isShared()` 这几组方法为准。
 
-BufferQueue 中同时存在的 buffer 数量直接决定了渲染管线的吞吐量和延迟。
+[已验证：AOSP main `frameworks/native/libs/gui/include/gui/BufferSlot.h`]
 
-**双缓冲**是最基本的形式。两个 buffer 轮换使用：一个给 App 画（DEQUEUED），一个给 SurfaceFlinger 显示（ACQUIRED）。问题在于，如果某一帧 App 渲染时间超过了 VSync 周期（比如在 60Hz 设备上超过 16.6ms），App 需要等 SurfaceFlinger 释放 buffer 才能继续 dequeue，这意味着下一个 VSync 周期也被浪费了——帧率从 60fps 直接跌到 30fps。
+### 三缓冲通常怎么出现
 
-**三缓冲**增加了第三个 buffer，让 App 在 SurfaceFlinger 还在消费前一帧的时候，可以提前开始渲染下一帧。即使某一帧超时，App 也不必等待 SurfaceFlinger 释放，因为还有第三个空闲 buffer 可用。
+“三缓冲”是最常见的窗口表现，不是唯一合法配置。对 App 窗口来说，我们经常会看到 producer 最多同时 dequeue 两块 buffer，consumer 再持有一块正在显示或等待 release 的 buffer，于是整体表现成三缓冲。
 
-```
-时间线 (60Hz VSync):
+在 BLAST 路径里，AOSP `BLASTBufferQueue::onFirstRef()` 会把 `mProducer->setMaxDequeuedBufferCount(2)` 设成安全默认值。这个设置配上 consumer 侧的一块已 acquire buffer，刚好形成大家最熟悉的三缓冲工作形态。可它不是“永远固定三块”，不同 Surface 类型、async mode、consumer 约束都可能让上限变化。
 
-双缓冲，第 N 帧超时：
-  VSync 1: App 渲染帧 N (超时) ────┐ SurfaceFlinger 显示帧 N-1
-  VSync 2: App 等待...             │ SurfaceFlinger 显示帧 N (等待完成)
-  VSync 3: App 渲染帧 N+1          ┘ ← 掉了 1 帧，帧率从 60→30
+## Sync Fence 决定“状态变了”和“真的能碰这块内存”不是一回事
 
-三缓冲，第 N 帧超时：
-  VSync 1: App 渲染帧 N (超时) ────┐ SurfaceFlinger 显示帧 N-1
-  VSync 2: App 渲染帧 N+1 (用第三块 buffer) │ SurfaceFlinger 显示帧 N
-  VSync 3: App 渲染帧 N+2          │ SurfaceFlinger 显示帧 N+1
-                                          ↑ 没有掉帧！只是多了 1 帧延迟
-```
+只看 slot 状态，我们最多知道 buffer 的所有权大概在谁手里；只看 fence，我们才知道它是不是已经真的可以读写。这两件事必须放在一起看。
 
-三缓冲的代价是多占一块完整分辨率的 GraphicBuffer 内存。在 1080p RGBA_8888 设备上，约 8MB；在 1440p 设备上约 16MB。对于内存紧张的设备（或低端机），这是需要考虑的开销。
+先看 producer 这一侧。`dequeueBuffer()` 返回的 fence 说明上一位使用者是不是已经彻底放手。slot 已经回到了 producer 这边，不代表 producer 立刻就能覆盖旧内容，必须等这条 fence signal。
 
-Android 默认使用三缓冲。这个策略在 Android 4.1（Project Butter）中引入，目的是在帧时间波动时保持流畅性。但三缓冲引入了额外的 1 帧输入延迟——用户触摸屏幕后，对应的画面变化需要多等一个 VSync 周期才能显示。对于游戏和交互式应用，这个延迟有时是可感知的。
+再看 consumer 这一侧。producer 调 `queueBuffer()` 时会把 `QueueBufferInput::fence` 一起交出去。这个 fence 说明“我把 slot 交给你了，但 GPU 可能还没把最后几笔写完，你要等到 fence signal 才能读”。所以，slot 进入 QUEUED 不代表 SurfaceFlinger 这一刻就能安全合成。
 
-[已验证：来源见 https://source.android.com/docs/core/graphics/bufferqueue 与 AOSP SurfaceFlinger 相关实现]
+最后是回收。consumer 处理完成后会走 `releaseBuffer(..., releaseFence)`。这个 release fence 会在下一次 producer `dequeueBuffer()` 这块 slot 时回到 producer 手里，告诉它“现在这块内存真的空了，可以重写”。
 
-## BlastBufferQueue：从「SurfaceFlinger 管一切」到「App 自管理」
+AOSP 在 `BufferItem.h` 里把 `mFence` 注释为“buffer idle 时 signal 的 fence”，在 `IGraphicBufferConsumer.h` 里又把 `releaseBuffer()` 的 `releaseFence` 明确成 consumer 归还 buffer 时携带的同步信息。光看 FREE / QUEUED / ACQUIRED 这些字面状态，不足以解释为什么某个 buffer 明明已经 release 了，producer 还要再等一会儿才能复用，原因就在 fence。
 
-Android 10 引入了 BlastBufferQueue（简称 BBQ），并在 Android 12 成为默认的缓冲区管理模式。这是 BufferQueue 架构的一次重要演进。
+这一层和 §2.16 Sync Fence 框架与帧同步机制是同一件事的两个切面。§2.16 解释 fence 在内核和 SurfaceFlinger 里的同步意义，这一节更关心 fence 怎样把 BufferQueue 的 slot 状态变成“真正可写、真正可读、真正可复用”的时间边界。
 
-在传统模式中，BufferQueue 由 SurfaceFlinger 创建和管理。App 的 `dequeueBuffer()` 需要通过 Binder 调用 SurfaceFlinger 进程来完成。这意味着每个缓冲区操作都涉及一次跨进程通信。如果 SurfaceFlinger 正忙于合成，App 的 dequeueBuffer 调用就会被阻塞。
+[已验证：AOSP main `frameworks/native/libs/gui/include/gui/IGraphicBufferProducer.h`、`frameworks/native/libs/gui/include/gui/IGraphicBufferConsumer.h`、`frameworks/native/libs/gui/include/gui/BufferItem.h`]
 
-BlastBufferQueue 改变了这个架构。核心变化是：**缓冲区队列由 App 进程本地创建和管理**，App 可以直接 dequeue 和 queue buffer，不需要每次都跨进程调用 SurfaceFlinger。只有当 App 完成一帧需要提交给 SurfaceFlinger 时，才通过 SurfaceControl Transaction 发送一次跨进程消息。
+## BLASTBufferQueue 解决的是 buffer 与 geometry transaction 落在同一帧
+
+如果把 BLAST 只概括成“少了一次 Binder hop”，说轻了。它真正解决的问题，是 buffer 提交和 geometry transaction 以前走的是两条线，窗口尺寸、crop、transform、buffer 内容不一定能落在同一帧。
+
+AOSP tag 也能直接说明它的引入边界。`android-10.0.0_r47` 里没有 `frameworks/native/libs/gui/BLASTBufferQueue.cpp`，`android-11.0.0_r48` 已经有了这个文件，同时 `ViewRootImpl.java` 里也已经有 `mBlastBufferQueue` 和 `new BLASTBufferQueue(...)`。也就是说，BLAST 至少从 Android 11 的窗口路径里已经正式出现了。
 
 ```java
 // frameworks/base/core/java/android/view/ViewRootImpl.java
-// @ AOSP android-17-beta3
-// BlastBufferQueue 的创建点
-mBlastBufferQueue = new BLASTBufferQueue(session(), "ViewRootImpl@" + ...,
-    mSurfaceControl, /* width */ 0, /* height */ 0);
+mBlastBufferQueue = new BLASTBufferQueue(mTag, mSurfaceControl,
+        mSurfaceSize.x, mSurfaceSize.y, mWindowAttributes.format);
 ```
 
-BlastBufferQueue 的名称「BLAST」来自「Buffer LASer Transaction」——它将缓冲区提交与 SurfaceControl 的 Transaction 绑定在一起。每次 `queueBuffer` 时，BBQ 自动创建一个 Transaction，把 buffer 和对应的帧号（frameNumber）一起提交给 SurfaceFlinger。
-
-这个架构变化带来的直接变化是：dequeueBuffer 从跨进程调用变成了本地操作。
-
-[需确认：这里的“延迟大幅降低”“显著减少”缺少量化数据或同机型 Trace 对比，建议补充实测依据。]
-
-[已验证：来源见 AOSP `frameworks/native/libs/gui/BLASTBufferQueue.cpp`]
-
-## 在 Perfetto 中的表现
-
-BufferQueue 相关的性能问题在 Perfetto 中通常表现为以下几种模式：
-
-### dequeueBuffer 阻塞
-
-在 RenderThread 的 Track 中，如果看到 `dequeueBuffer` 这个 slice 持续时间很长（超过 3-4ms），说明 App 在等待空闲 buffer。常见原因：
-
-1. **所有 buffer 都被 SurfaceFlinger 持有**（还没 release），导致无 buffer 可 dequeue
-2. **GPU 渲染太慢**，SurfaceFlinger 等 GPU 完成后才能 release，级联导致 App dequeue 阻塞
-3. **SurfaceFlinger 合成负担太重**，处理速度跟不上
-
-```
-在 Perfetto 中的典型表现：
-
-RenderThread: ──[drawFrame]──────────[dequeueBuffer ████████████]──[queueBuffer]──
-                                              ↑ 阻塞 8ms
-SurfaceFlinger: ──────[composite frame N]──────────[release]──[composite frame N+1]──
-                                                   ↑ 释放太晚
+```cpp
+// frameworks/native/libs/gui/BLASTBufferQueue.cpp
+createBufferQueue(&mProducer, &mConsumer);
+mBufferItemConsumer = new BLASTBufferItemConsumer(...);
+mBufferItemConsumer->setFrameAvailableListener(this);
+...
+t->setBuffer(mSurfaceControl, buffer, fence, bufferItem.mFrameNumber, mProducerId,
+             releaseBufferCallback, dequeueTime);
 ```
 
-### queueBuffer 到 SurfaceFlinger 合成的延迟
+这段流程拆开看，一共五步。
 
-从 App 的 `queueBuffer` 到 SurfaceFlinger 的 `acquireBuffer` 之间的时间差，反映了缓冲区在队列中的等待时间。如果这个延迟大于一个 VSync 周期，说明 SurfaceFlinger 的处理速度跟不上。
+第一，`ViewRootImpl` 在 App 进程里创建 `BLASTBufferQueue`。这一步已经说明它不是旧 BufferQueue 的一个简单参数，而是窗口提交路径上的新组件。
 
-[需补充素材：BufferQueue 正常与异常行为的 Perfetto Trace 截图（至少各 1 张，并标注 `dequeueBuffer`、`queueBuffer`、`acquireBuffer` 的对应区域）。]
+第二，BLAST 在本地创建自己的 producer / consumer 对。`createBufferQueue(&mProducer, &mConsumer)` 做的就是这件事。producer 还是给渲染线程 dequeue / queue 用，consumer 则是 App 进程里的 `BLASTBufferItemConsumer`。
 
-### 如何查看
+第三，本地 consumer 把 `setFrameAvailableListener(this)` 挂到自己身上。也就是说，producer 一旦 `queueBuffer()`，回调不是直接跑到远端 SurfaceFlinger，而是先在 App 进程里的 BLAST 这层拿到 `onFrameAvailable()`。
 
-在 Perfetto UI 中：
-- **RenderThread Track**：搜索 `dequeueBuffer`、`queueBuffer` slice
-- **SurfaceFlinger Track**：搜索 `acquireBuffer`、`releaseBuffer`（部分版本可能不直接暴露）
-- **BufferQueue 计数器**：部分设备的 Perfetto 中有 `bufs_queued` 计数器，实时显示队列中的 buffer 数量
+第四，BLAST 在 `acquireNextBufferLocked()` 里拿到下一块 buffer，再通过 `Transaction::setBuffer(..., frameNumber, ...)` 把 buffer、fence 和 `frameNumber` 一起塞进 `SurfaceControl.Transaction`。这里的 `frameNumber` 很关键，它把“这块 buffer 属于哪一帧”说死了。
+
+第五，如果这一帧还有窗口大小、裁剪区域、alpha、z-order 之类的 geometry 变化，BLAST 会把它们先放进 pending transaction，后面通过 `mergeWithNextTransaction(frameNumber)` 和 `applyPendingTransactions(frameNumber)` 按 frame number 归到同一帧再统一 apply。这样一来，buffer 和 geometry 就不会错帧。
+
+所以，BLAST 的核心价值不是一句“跨进程更少，所以更快”就能讲完的。它真正做的是把“这一帧的内容”和“这一帧的窗口状态”绑在一起，减少内容已经更新了、窗口属性却还停在上一帧的错位。
+
+[已验证：AOSP `android-10.0.0_r47`、`android-11.0.0_r48`、main 的 `ViewRootImpl.java` 与 `BLASTBufferQueue.cpp`]
+
+## 在 Perfetto 中怎么读 BufferQueue
+
+先别拿一个固定阈值往所有设备上套。`dequeueBuffer()` 等 3ms 在 120Hz 游戏场景里可能已经很扎眼，在 60Hz、复杂合成、SurfaceView 或视频路径里却未必能直接下结论。看 BufferQueue，先在同机型、同刷新率、同 Surface 类型上建立一条正常基线，再看偏离。
+
+### 正常路径长什么样
+
+正常情况下，App 这边 `queueBuffer()` 之后，consumer 会在接下来的合成周期里把它消费掉。BLAST 路径下，AOSP 还会把 trace 名字拼成 `QueuedBuffer - {windowName}BLAST#{producerId}`，这给我们把 app 侧提交和窗口消费对应起来提供了一个很实用的锚点。
+
+如果同机型的平滑滑动 trace 里，`QueuedBuffer - ...BLAST#...` 到 FrameTimeline 实际呈现之间通常只隔一个合成周期，而某次卡顿 trace 连续跨了多个周期，这就说明问题已经不只是“这一帧画慢了”，而是 buffer 提交之后在下游又堆住了。
+
+[图：正常场景。同机型、同刷新率下的窗口渲染 trace，标出 RenderThread 的 `queueBuffer()`、BLAST 的 `QueuedBuffer - <window>BLAST#<id>`，以及下一次合成周期里的呈现位置。]
+
+[需补充素材：正常场景 Perfetto 截图 1 张，要求同机型、同刷新率，并标注 App 提交和实际呈现的对应关系。]
+
+### 异常 1：`dequeueBuffer()` 等不到可复用 buffer
+
+这类问题最典型的表现，是 App 或 RenderThread 想拿下一块 buffer 开工，却一直等不到。原因通常不是一个名字能概括的，它可能是 consumer 还没 release，也可能是 release 了但 release fence 还没 signal，还可能是 SurfaceFlinger / HWC 下游太慢，整条链都在往后推。
+
+这时不要只盯着 `dequeueBuffer()` 本身。要把它和 consumer 侧一起看。假如 SurfaceFlinger 合成周期也在拉长，或者上一帧 present 很晚才完成，那么 `dequeueBuffer()` 等待往往只是结果，不是根因。反过来，如果 consumer 并不忙，却还是迟迟拿不到可复用 buffer，就该回头查 slot 数量、shared mode、buffer count 约束这些上游配置。
+
+[图：异常场景。RenderThread 在 `dequeueBuffer()` 处长时间等待，同时标出 SurfaceFlinger 合成和上一帧 release 的时间位置。]
+
+[需补充素材：异常场景 Perfetto 截图 1 张，要求标出 `dequeueBuffer()` 长等待，以及与上一帧 release / present 的关系。]
+
+### 异常 2：`queueBuffer()` 之后很久才被消费
+
+另一类问题是 producer 已经把这一帧交出去了，但 consumer 很久才真正消费。BLAST 路径下，这时要重点看两件事：一是 `QueuedBuffer - ...BLAST#...` 到实际呈现之间隔了几帧，二是这段时间里有没有 geometry transaction 一起排队，等着同一个 `frameNumber` 被 apply。
+
+如果 trace 里没有直接露出 `acquireBuffer` 这种 slice 名字，也不要硬猜。更稳妥的办法，是把 App 侧提交点、BLAST trace、SurfaceFlinger 合成周期和 FrameTimeline 的实际呈现摆到同一条时间线上。只要这些时间轴能对应上，哪怕设备厂商改了 slice 名字，我们照样能看清“是 queue 之后就堵住了”，还是“consumer 早就拿到 buffer 了，只是后面的合成或显示又慢了一拍”。
 
 ## 与其他机制的关系
 
-BufferQueue 是渲染管线中承上启下的环节，与多个系统组件紧密关联：
+如果把一帧从输入到上屏拆开看，§2.4 Choreographer 决定这一帧什么时候启动，§2.5 MainThread 与 RenderThread 决定 DisplayList 和 GPU 命令怎样生成，§2.13 BufferQueue 决定生成好的内容怎样在 producer 和 consumer 之间流转，§2.16 Sync Fence 决定每一步交接什么时候真的生效，§2.6 SurfaceFlinger 决定这些 layer 何时被合成到屏幕上。
 
-- **Surface（§2.1）**：Surface 是 BufferQueue 的 Producer 端封装。App 通过 Surface 的 Canvas 或 EGL 接口绘制，底层就是调用 BufferQueue 的 dequeueBuffer/queueBuffer
-- **MainThread 与 RenderThread（§2.5）**：MainThread 完成 measure/layout/draw（构建 DisplayList），RenderThread 负责实际的 GPU 渲染和 buffer 操作。dequeueBuffer 和 queueBuffer 都在 RenderThread 中执行
-- **SurfaceFlinger（§2.6）**：SurfaceFlinger 是 BufferQueue 的 Consumer 端。它从多个 App 的 BufferQueue 中 acquireBuffer，合成后交给 HWC 显示
-- **VSync（§2.3）与 Choreographer（§2.4）**：VSync 驱动整个渲染节奏。Choreographer 在 VSYNC-app 到来时触发 doFrame，整个 dequeue → draw → queue 的过程理论上应该在一个 VSync 周期内完成
-- **卡顿原因体系（§7.2）**：「GPU 渲染超时」和「缓冲区竞争」是两类不同的卡顿原因，区分它们的关键就是看 dequeueBuffer 的耗时
+我们在性能分析里经常会遇到一种错觉，看见掉帧就先怀疑主线程太慢。BufferQueue 这一节真正帮我们拆掉的，就是这类错觉。主线程、RenderThread、SurfaceFlinger、HWC，谁都可能是瓶颈，但它们会通过同一条 buffer 流转链暴露出来。懂这条链，问题才有机会分层。
 
 ## 版本演进
 
-| 版本 | 变化 | 影响 |
-|------|------|------|
-| Android 4.1 (API 16) | Project Butter 引入三缓冲和 VSync 同步 | 框定了 BufferQueue 的基本架构 |
-| Android 7.0 (API 24) | BufferQueue 实现从 Java 层迁移到 Native 层 | 减少一层 JNI 开销 |
-| Android 10 (API 29) | 引入 BlastBufferQueue | App 端本地管理 buffer，减少跨进程调用 |
-| Android 12 (API 31) | BlastBufferQueue 成为默认模式 | 全面替代传统 BufferQueue 路径 |
-| Android 13 (API 33) | BlastBufferQueue 优化：支持 frame rate override | 配合 ARR（自适应刷新率）调整 buffer 策略 |
-| Android 14 (API 34) | BufferQueue 支持更灵活的 maxBufferCount 配置 | OEM 可根据设备能力调整缓冲区数量 |
-| Android 17 (API 37) | 无锁 MessageQueue + BlastBufferQueue 协同优化 | 进一步减少主线程和渲染线程的锁竞争 |
+这一节只保留已经能在 AOSP tag 上落下来的里程碑，不强写没有把握的版本表。
 
-[已验证：版本信息基于 AOSP changelog 和 source.android.com。]
+| 版本 | 已核实的变化 | 对理解 BufferQueue 的意义 |
+|------|--------------|----------------------------|
+| Android 4.1 (API 16) | `android-4.1.2_r1` 已存在 `frameworks/native/libs/gui/BufferQueue.cpp` | 说明 BufferQueue 从 Project Butter 时代起就已经是 native 图形管线的一部分，不存在“Android 7 才从 Java 迁到 native”这回事 |
+| Android 11 (API 30) | `android-11.0.0_r48` 已存在 `BLASTBufferQueue.cpp`，`ViewRootImpl.java` 已创建 `new BLASTBufferQueue(...)` | BLAST 进入窗口提交流程，buffer 与 geometry transaction 开始按 frame number 归到同一帧 |
 
-[需确认：Android 13-17 这几项版本演进需要补充对应 AOSP commit、官方文档或发布说明，尤其是“frame rate override”“maxBufferCount”“无锁 MessageQueue + BlastBufferQueue 协同优化”三处。]
+Android 12 之后当然还有持续演进，但 `frame rate override`、`maxBufferCount`、以及“无锁 MessageQueue 与 BLAST 协同优化”这些说法，必须分别拿 release note、commit 或源码落点来支撑，不能因为它们听起来合理就先写进版本表。当前素材还不足以把这些结论稳稳地归因到 BufferQueue 本身，所以这里先不展开。
+
+[已验证：AOSP `android-4.1.2_r1`、`android-10.0.0_r47`、`android-11.0.0_r48`]
 
 ## 常见问题与误区
 
-### 「dequeueBuffer 慢就是 GPU 慢」
+### `queueBuffer()` 不是“每帧重新传一份 GraphicBuffer handle”
 
-不一定。dequeueBuffer 慢说明没有空闲 buffer 可用，但原因可能是多方面的：SurfaceFlinger 处理慢、GPU 确实慢、或者缓冲区数量不足。需要结合 SurfaceFlinger 的 Track 一起判断——如果 SurfaceFlinger 的合成时间也长，那可能是 GPU 负载问题；如果 SurfaceFlinger 合成很快但 releaseBuffer 延迟，那可能是 HWC 或显示驱动的问题。
+`queueBuffer()` 的高频动作是提交 slot、metadata 和 fence。真正把新的 `GraphicBuffer` 句柄同步给对端，通常发生在首次分配、重分配、attach / detach 这些低频路径上。把这两类路径混成一件事，会直接把 BufferQueue 的成本模型看错。
 
-### 「三缓冲一定比双缓冲好」
+### slot 状态变化，不等于这块内存已经能安全访问
 
-三缓冲牺牲了延迟换取流畅度。对于绝大多数应用场景，这个取舍是值得的。但在低延迟交互场景（如触控绘图、游戏），额外的 1 帧延迟是可感知的。Android 允许通过 `setSwapBehavior()` 或 SurfaceControl 参数调整缓冲区行为，但大多数 App 不需要关心这个。
+slot 从 DEQUEUED 变成 QUEUED，不代表 consumer 立刻能读；slot 从 ACQUIRED 变回 FREE，也不代表 producer 这一刻就能重写。状态只告诉我们所有权大致在哪，真正的“现在能不能碰”还要看 fence。
 
-### 「BufferQueue 是 SurfaceFlinger 实现的」
+### BLAST 不只是“更快”
 
-在传统模式下，BufferQueue 确实由 SurfaceFlinger 创建和管理。但自从 BlastBufferQueue 引入后，BufferQueue 的核心逻辑已经移到了 App 进程本地。SurfaceFlinger 只负责消费端（acquireBuffer/releaseBuffer），生产端的操作全部在 App 进程内完成。
+少一次远端交互当然有帮助，但 BLAST 最重要的价值是把 buffer 和 geometry transaction 绑定到同一个 `frameNumber`。如果只把它理解成一层加速器，就解释不了为什么它会直接影响窗口尺寸变化、crop 更新、多窗口切换这些场景的稳定性。
 
-### 「缓冲区数量越多越好」
+### 绝对毫秒阈值不能脱离设备基线使用
 
-并非如此。更多的缓冲区意味着更大的内存占用和更高的输入延迟。Android 默认使用三缓冲是在流畅度和延迟之间找到的平衡点。增加第四个 buffer 只在极端场景下（GPU 渲染时间极不规律）有帮助，但日常场景中得不偿失。
+BufferQueue 的等待时间强依赖刷新率、Surface 类型、GPU / HWC 驱动、系统负载。脱离同机型基线去说“超过几毫秒就异常”，这种结论很容易误导。更稳的做法，是先抓一条同场景正常 trace，再拿问题 trace 去做相对比较。
 
 ## 参考资料
 
-- **AOSP 源码路径**：
-  - `frameworks/native/libs/gui/BufferQueue.cpp` — BufferQueue 核心实现
-  - `frameworks/native/libs/gui/BufferQueueCore.cpp` — 状态机和 slot 管理
-  - `frameworks/native/libs/gui/BLASTBufferQueue.cpp` — BlastBufferQueue 实现
-  - `frameworks/native/libs/ui/GraphicBuffer.cpp` — GraphicBuffer 实现
-  - `frameworks/native/services/surfaceflinger/SurfaceFlinger.cpp` — 消费端 acquire/release
+- **AOSP 源码路径**
+  - `frameworks/native/libs/gui/include/gui/IGraphicBufferProducer.h`
+  - `frameworks/native/libs/gui/include/gui/IGraphicBufferConsumer.h`
+  - `frameworks/native/libs/gui/include/gui/BufferSlot.h`
+  - `frameworks/native/libs/gui/include/gui/BufferItem.h`
+  - `frameworks/native/libs/gui/BufferQueue.cpp`
+  - `frameworks/native/libs/gui/BufferQueueCore.cpp`
+  - `frameworks/native/libs/gui/BLASTBufferQueue.cpp`
+  - `frameworks/base/core/java/android/view/ViewRootImpl.java`
 
-- **官方文档**：
-  - [https://source.android.com/docs/core/graphics/architecture](https://source.android.com/docs/core/graphics/architecture) — Android 图形架构全景
-  - [https://source.android.com/docs/core/graphics/bufferqueue](https://source.android.com/docs/core/graphics/bufferqueue) — BufferQueue 详细说明
+- **官方文档**
+  - <https://source.android.com/docs/core/graphics/architecture>
 
-- **交叉引用**：
+- **交叉引用**
   - §2.1 Android 渲染架构全景
+  - §2.4 Choreographer 与渲染流水线
   - §2.5 MainThread 与 RenderThread 协作
   - §2.6 SurfaceFlinger 与合成
-  - §2.9 渲染机制的版本演进
+  - §2.16 Sync Fence 框架与帧同步机制
   - §7.2 卡顿原因体系
