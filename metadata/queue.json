@@ -4681,5 +4681,75 @@
     "added_at": "2026-04-12T07:06:00+08:00",
     "status": "pending",
     "original_review_log": "logs/review/2026-04-12-07-review.md"
+  },
+  {
+    "section": "5.10",
+    "section_title": "JobScheduler/WorkManager 调度与后台任务性能",
+    "priority": 95,
+    "reason": "[Deep Tech Review] AOSP 路径、Expedited/Perfetto/JobDebugInfo API 与版本表存在多处事实错误，UIDT/Perfetto 观测链路也缺关键边界",
+    "material_paths": [
+      "intake/research-gaps.md",
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "frontmatter sources / 行 173 / 行 537-538 AOSP 路径",
+        "detail": "章节把 JobSchedulerService 与 controllers 路径写成 `frameworks/base/services/core/java/com/android/server/job/...`，但当前 AOSP 主线已在 `frameworks/base/apex/jobscheduler/service/java/com/android/server/job/...`。正文自称已按 android-17-beta3 校验，这组路径会直接把读者带到错目录。",
+        "suggestion": "统一改为 apex/jobscheduler/service 路径，并把 JobSchedulerService、controllers、JobStore 三处引用保持同一版本口径。"
+      },
+      {
+        "type": "源码错误",
+        "location": "行 193 Expedited WorkManager API",
+        "detail": "正文写成 `setExpedited(ExistingWorkPolicy.APPEND)`，但官方公开 API 是 `WorkRequest.Builder#setExpedited(OutOfQuotaPolicy)`。`ExistingWorkPolicy` 属于 unique work 入队策略，不是 expedited 参数。",
+        "suggestion": "改为 `setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)` 或 `DROP_WORK_REQUEST`，并区分 WorkManager 降级策略和 JobScheduler 自身 quota 行为。"
+      },
+      {
+        "type": "源码错误",
+        "location": "行 317-346 Perfetto SQL / trace config",
+        "detail": "示例把 `android_job_scheduler_states` 表挂在 `INCLUDE PERFETTO MODULE android.job_scheduler;` 下面，同时要求启用 `jobscheduler` atrace category。Perfetto stdlib 当前是：`android.job_scheduler_states` 模块生成 `android_job_scheduler_states`，`android.job_scheduler` 模块生成 `android_job_scheduler_events`，atrace 说明写的是 system_server 类别 `ss`。",
+        "suggestion": "按 statsd vs atrace 拆开两套示例，明确 `android_job_scheduler_states` / `android_job_scheduler_events` 各自依赖的采集配置。"
+      },
+      {
+        "type": "源码错误",
+        "location": "行 274-279 getPendingJobReasonStats() 示例",
+        "detail": "正文把返回值写成 `Map<Integer, Long>`，而 API 37 文档定义是 `Map<Integer, Duration>`。如果读者照着代码写，会直接在类型层面出错。",
+        "suggestion": "把示例改成 `Map<Integer, Duration>`，并用 `Duration.ofMillis(...)` / `toMillis()` 说明如何消费结果。"
+      },
+      {
+        "type": "版本差异",
+        "location": "行 158 / 行 498-500 优先级与 Android 16",
+        "detail": "章节把 Android 16 描述成引入“Priority Hints（urgent/deferrable）”，但公开 JobScheduler API 的 `JobInfo.Builder#setPriority(int)` 早在 API 33 就已加入，文档只暴露 `PRIORITY_MIN/LOW/DEFAULT/HIGH/MAX`，没有这组公开 urgent/deferrable 语义。",
+        "suggestion": "把版本表改成“API 33 引入 `setPriority(int)`，Android 14+ 仅影响 namespace 内排序”，如需保留 Android 16 行为变化，必须补可验证来源。"
+      },
+      {
+        "type": "版本差异",
+        "location": "行 480-485 App Standby Buckets",
+        "detail": "正文写“Android 9 引入五个 Bucket，包括 Restricted”，但 `UsageStatsManager#STANDBY_BUCKET_RESTRICTED` 是 API 30 新增，且官方注释明确说明在 R 中并未启用。当前说法会把 Restricted 的时间线讲错。",
+        "suggestion": "把 Android 9 改成四桶起点，另补 API 30/后续版本对 Restricted 的引入与启用状态。"
+      },
+      {
+        "type": "原理断裂",
+        "location": "行 311-346 Perfetto 观测面",
+        "detail": "正文把 UI Jobs Track、statsd atom 表和 atrace slice 混成一个观测口径，没有交代“采集了什么数据源，最终能看到哪张表/哪条 track”。读者即使照抄命令，也很难得到文中描述的视图。",
+        "suggestion": "按“statsd atom -> android_job_scheduler_states / UI state track”“atrace ss -> android_job_scheduler_events”重写观测链路，并给出最小复现实验。"
+      },
+      {
+        "type": "版本差异",
+        "location": "行 268-288 / 行 504-508 Android 16/17 调试 API",
+        "detail": "章节把 JobScheduler 调试能力几乎全压到 Android 17，遗漏了 API 36 已加入的 `getPendingJobReasons(int)` 与 `getPendingJobReasonsHistory(int)`，同时又把 API 37 的 aggregated stats 混在一起，导致版本演进断层。",
+        "suggestion": "把调试 API 演进拆成 API 36（current reasons / history）和 API 37（aggregated stats）两层。"
+      },
+      {
+        "type": "知识盲区",
+        "location": "行 423-430 UIDT / FGS / WorkManager 选择边界",
+        "detail": "UIDT 只被写成“用户发起的大文件传输方案”，遗漏了 `RUN_USER_INITIATED_JOBS` 权限、前台/允许后台启动 Activity 的调度条件、必须绑定通知、Android 14 的 network transfer 限定，以及用户主动停止后不可直接重调度等关键约束。",
+        "suggestion": "补一张选择边界表或决策树，明确 UIDT、Expedited Job、Foreground Service、WorkManager 各自的前置条件、时间限制与失败模式。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-12T07:37:27+08:00",
+    "status": "pending",
+    "original_review_log": "logs/deep-review/2026-04-12-07-deep-review.md"
   }
 ]
