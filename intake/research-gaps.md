@@ -1057,3 +1057,36 @@ Emoji 一节把系统字体、EmojiCompat、下载字体 provider、color font �
 ### 关联章节
 2.21、7.8、7.10、13.9
 
+
+## [2026-04-12] 3.5 输入事件拦截与安全机制 — 无障碍输入变换链的真实组件边界
+
+### 盲区描述
+章节把无障碍输入写成“按键走 InputFilter，触摸走 AccessibilityInteractionController”，但没有把 `AccessibilityInputFilter`、`KeyboardInterceptor`、`TouchExplorer`、`MotionEventInjector` 这些真实组件串起来。读者看完仍然很难回答：按键过滤和触摸探索分别在哪一层完成？哪些事件是原始事件，哪些是消费后重新注入的事件？
+
+### 重要程度
+高
+
+### 建议研究方向
+- 梳理 `AccessibilityInputFilter.onInputEvent()` 对 KeyEvent / MotionEvent 的两条处理分支
+- 追 `KeyboardInterceptor` → `AccessibilityManagerService.notifyKeyEvent()` → `KeyEventDispatcher` 的 500ms 超时机制
+- 追 `TouchExplorer` / `MotionEventInjector` 如何把探索手势转成新的 MotionEvent
+- 明确 App 侧能看到哪些 flag / source，哪些只是 InputDispatcher 内部 policy flag
+
+### 关联章节
+3.1、3.5、9.1、9.2
+
+## [2026-04-12] 3.5 输入事件拦截与安全机制 — 输入安全策略版本演进证据链
+
+### 盲区描述
+当前版本表把 Android 4.3 / 8.0 / 9 / 10 / 12 / 13 / 14 的输入安全变化揉在一起，但多数条目没有给出一手依据，且 10 / 13 / 14 至少三条可以直接被现有源码推翻。这个主题需要单独建立“版本号 → 变更点 → 一手证据”的证据链，否则章节会持续复写错误结论。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 逐个核对 android-4.3.1_r1、android-8.0.0_r1、android-9.0.0_r1、android-10.0.0_r1、android-13.0.0_r1、android-14.0.0_r1 中输入注入和 accessibility 相关 API/权限变更
+- 为每个版本条目绑定至少一条一手证据（AOSP tag、官方文档、release notes）
+- 单独区分“权限/能力声明”“系统白名单”“App 侧可观测标记”三类变化，避免混写
+
+### 关联章节
+3.5、9.2、16.2

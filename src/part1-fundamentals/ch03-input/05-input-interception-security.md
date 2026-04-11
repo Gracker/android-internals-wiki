@@ -33,8 +33,9 @@ review_notes: '2026-04-12 task6 review: needs-rework。小修8处（措辞/术�
 pipeline_stage: task2b_pending
 task6_state: reviewed
 task6_result: needs-rework
-task9_state: pending
+task9_state: reviewed
 task2b_state: pending
+task9_result: needs-rework
 ---
 # 输入事件拦截与安全机制
 

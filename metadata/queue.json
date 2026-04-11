@@ -4239,5 +4239,68 @@
     "added_at": "2026-04-12T00:11:00+08:00",
     "status": "pending",
     "original_review_log": "logs/review/2026-04-12-00-review.md"
+  },
+  {
+    "section": "3.5",
+    "section_title": "输入事件拦截与安全机制",
+    "priority": 95,
+    "reason": "[Deep Tech Review] InputFilter / Accessibility / 注入事件三条主链有多处源码级错误，版本演进表与可观测性结论也站不住",
+    "material_paths": [
+      "intake/research-gaps.md",
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "行 88-123 InputFilter 的注册流程",
+        "detail": "正文给出的 `InputManagerService.setInputFilter()` 和 `InputDispatcher::notifyMotion()` 代码片段与 android-14.0.0_r1 不符。AOSP 真实实现是 `InputManagerService.setInputFilter(IInputFilter)` 返回 `void`，通过 `filter.install(mInputFilterHost)` 安装，再调用 `mNative.setInputFilterEnabled(filter != null)`；InputDispatcher 侧走的是 `mPolicy.filterInputEvent(event, policyFlags)`，不是文中的 `mInputFilter.filterMotionEvent(args)`。",
+        "suggestion": "把 Java/Native 两段代码都改成真实调用链：WindowManagerService.setInputFilter() → InputManagerService.setInputFilter() → InputDispatcher `mPolicy.filterInputEvent(...)`。不要保留当前伪代码级错误实现。"
+      },
+      {
+        "type": "源码错误",
+        "location": "行 172-179 AccessibilityService 与 Input 事件的关系",
+        "detail": "`FLAG_REQUEST_FILTER_KEY_EVENTS` 被写成声明在 `android:accessibilityEventTypes` 中，这和 AOSP 不符。android-14.0.0_r1 以及 android-10.0.0_r1 都把它定义为 `AccessibilityServiceInfo.FLAG_REQUEST_FILTER_KEY_EVENTS`，并要求服务同时具备 `CAPABILITY_CAN_REQUEST_FILTER_KEY_EVENTS`。",
+        "suggestion": "改成“服务在 metadata 中声明 `canRequestFilterKeyEvents` 能力，运行时再通过 `AccessibilityServiceInfo.flags` 打开 `FLAG_REQUEST_FILTER_KEY_EVENTS`”。同时删掉“只有 Android 10+ 系统无障碍服务可用”的说法。"
+      },
+      {
+        "type": "原理断裂",
+        "location": "行 187-199、361-375、383-393 按键过滤回调路径与性能分析",
+        "detail": "正文把按键过滤讲成 “InputDispatcher 同步 Binder 调用 AccessibilityService.onKeyEvent() 并等待 true/false 返回”，这条链路不对。android-14.0.0_r1 的真实路径是 `AccessibilityInputFilter` → `KeyboardInterceptor` → `AccessibilityManagerService.notifyKeyEvent()` → `KeyEventDispatcher.notifyKeyEventLocked()`，之后异步发给服务，并用 500ms 超时等待 `setOnKeyEventResult()`。InputDispatcher 不会同步阻塞到无障碍服务进程返回。",
+        "suggestion": "重画按键过滤时序图，区分“InputDispatcher 进入 InputFilter”与“AccessibilityService 异步判定 key 是否消费”两个阶段；性能分析也要改成基于 `KeyEventDispatcher` 超时/排队，而不是“InputDispatcher 被远端 Binder 卡住”。"
+      },
+      {
+        "type": "源码错误",
+        "location": "行 199-211 触摸事件拦截与来源标记",
+        "detail": "正文把触摸事件路径写成“不是通过 InputFilter，而是通过 AccessibilityInteractionController 间接操作 UI 树”，这和 AOSP 不符。android-14.0.0_r1 的 `AccessibilityInputFilter.onInputEvent()` 会直接处理 MotionEvent，并安装 `TouchExplorer` 等事件变换器。与此同时，AOSP 为无障碍注入事件显式追加的是 `FLAG_IS_ACCESSIBILITY_EVENT`，不是靠 `MotionEvent.getSource()` 来区分。",
+        "suggestion": "把触摸路径改成 `AccessibilityInputFilter` / `TouchExplorer` / `MotionEventInjector` 视角，并明确“source 不能替代 accessibility flag”。另外把“不能修改坐标”改成更精确的表述，区分“不能原位改写原始触摸”与“可以消费后注入替代手势”。"
+      },
+      {
+        "type": "源码错误",
+        "location": "行 221-239 Instrumentation.sendPointerSync()",
+        "detail": "当前代码片段和原理都写错了。android-14.0.0_r1 的 `Instrumentation.sendPointerSync()` 实际调用 `syncInputTransactionsAndInjectEventIntoSelf()`，随后走 `InputManagerGlobal.getInstance().injectInputEvent(..., Process.myUid())`。它不是“直接调用 ViewRootImpl 输入通道”，也不是“绕过 InputDispatcher”。",
+        "suggestion": "用真实源码重写，并强调它只是把事件定向到 instrumentation target 拥有的窗口，底层仍走注入路径。"
+      },
+      {
+        "type": "源码错误",
+        "location": "行 243-255 uiautomator / UiAutomation.injectInputEvent()",
+        "detail": "正文写“uiautomator 注入的事件会经过 InputDispatcher 的完整分发流程”，但没指出一个关键例外。android-14.0.0_r1 `UiAutomation.java` 明确写着：标准 `injectInputEvent()` 会跳过 accessibility input filter，以避免 feedback loop；只有 `injectInputEventToInputFilter()` 才专门送去测 accessibility input filter。",
+        "suggestion": "补一张注入方式对照表，至少区分 `Instrumentation.sendPointerSync()`、`UiAutomation.injectInputEvent()`、`UiAutomation.injectInputEventToInputFilter()`、`adb shell input`、`dispatchGesture()` 对 accessibility filter 的参与差异。"
+      },
+      {
+        "type": "源码错误",
+        "location": "行 281、349-352、437-440、492 注入事件可观测性",
+        "detail": "正文把 `POLICY_FLAG_INJECTED` 讲成 App 可通过 `InputEvent.getFlags()` 观测，这里有两层错误。第一，`POLICY_FLAG_INJECTED` 是 InputDispatcher 内部 policy flag，不是直接暴露给 App 的 public event flag。第二，`InputEvent` 基类本身没有 `getFlags()`；真正有 `getFlags()` 的是 `KeyEvent` 和 `MotionEvent`。AOSP 明确暴露给 App 区分无障碍注入的，是 `KeyEvent/MotionEvent.FLAG_IS_ACCESSIBILITY_EVENT`。",
+        "suggestion": "把“内部 policy flag”和“App 侧可观测 event flag”拆开写，删除 `InputEvent.getFlags()` 和 `MotionEvent.isFromSource()` 检测 injected 的说法。"
+      },
+      {
+        "type": "版本差异",
+        "location": "行 344-352 安全策略的版本演进；行 433-446 Android 14+ 权限收紧",
+        "detail": "版本表至少有三处能直接判错的内容：Android 10 “只有系统无障碍服务可使用 FLAG_REQUEST_FILTER_KEY_EVENTS” 与 android-10.0.0_r1 源码冲突；Android 13 “MotionEvent.isFromSource() 可检测 POLICY_FLAG_INJECTED” 与 AOSP 暴露方式不符；Android 14 “需 R.string.accessibility_filter_key_events 资源声明” 在当前 AOSP / 官方文档里都找不到依据。其余 4.3 / 8.0 / 9 / 12 条目也没有给一手证据。",
+        "suggestion": "把这张表整体降级重做。能给出 tag+文件/官方文档的再保留，补不齐证据的条目改成 `[待验证]` 或删掉，不要继续标 `[已验证]`。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-12T00:41:50+08:00",
+    "status": "pending"
   }
 ]

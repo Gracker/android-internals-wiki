@@ -1214,3 +1214,19 @@
 - **问题**：分析步骤有用，但缺少真实 Trace 截图或等价图示，也没有给出更具体的 slice 名称或观察点，实操支撑偏弱。
 - **建议**：交给 Task 2B 补 1-2 组真实 Trace 截图，至少覆盖 InputDispatcher Binder 阻塞和目标窗口 `deliverInputEvent` 对比。
 - **review 日志**：logs/review/2026-04-12-00-review.md
+
+## [Task9 Deep Review] 3.5 输入事件拦截与安全机制 — 2026-04-12
+- **类型**：数据缺失
+- **位置**：行 365-370、399-405 延迟量化表
+- **问题**：`InputFilter` / `AccessibilityService` / `Instrumentation` 的延迟数字都没有设备型号、trace 条件、采样率或 benchmark 来源支撑，当前量化表更像经验估计，不足以标成技术结论。
+- **建议**：补至少 1 组真实设备 trace 或实验表，给出输入类型、服务是否启用、屏幕刷新率、统计口径，再决定是否保留这些数字。
+
+- **类型**：数据缺失
+- **位置**：行 448-476 Perfetto 分析流程
+- **问题**：正文要求读者在 Perfetto 中搜索 `InputFilter` / Binder slice，并用 `dumpsys input` 验证，但没有给任何真实 trace 截图、slice 名称样例或 dumpsys 输出片段。加上前文对同步阻塞路径的判断本身就不准确，这一节可操作性偏弱。
+- **建议**：补 1 组“无无障碍服务 / 开启按键过滤服务”的对比 trace，外加一段真实 `dumpsys input` 示例输出；如果拿不到证据，就把这节降级成“排查思路”，不要写成确定观测点。
+
+- **类型**：源码准确性
+- **位置**：行 482-484 误区一：App 可以注册自己的 InputFilter
+- **问题**：正文把“普通 App 不能注册 InputFilter”的原因写成“需要 `INJECT_EVENTS` 权限”，但 AOSP 当前没有给 App 暴露 `setInputFilter()` 这样的公共 API；系统内部是 `WindowManagerService.setInputFilter()` / `InputManagerService.setInputFilter()` 路径。
+- **建议**：改成“这是系统内部 API，普通 App 没有公开入口；不要把原因简化成单一权限判断”。
