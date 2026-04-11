@@ -17,17 +17,20 @@ sources:
     path: "Android 16 Desktop Windowing — android.com"
 tags: [multiwindow, desktop-mode, split-screen, freeform, foldable, surfaceflinger, rendering]
 related_chapters: ["2.6", "2.9", "2.12", "2.13", "7.4", "3.3"]
-pipeline_stage: task6_pending
-task6_state: pending
+pipeline_stage: task2b_pending
+task6_state: reviewed
 task9_state: pending
-task2b_state: idle
+task2b_state: pending
+reviewed_date: "2026-04-11"
+reviewed_by: "openclaw-task6"
+task6_result: needs-rework
 ---
 
 # 2.20 多窗口与桌面模式渲染性能
 
 ## 为什么要了解多窗口渲染
 
-在 Android 7.0 引入分屏模式之前，系统同一时刻只有一个 App 的 Surface 是活跃的——SurfaceFlinger 的合成压力很低，HWC 叠加层的数量一般不会超过上限。但从 Android 7.0 到 Android 16，多窗口形态经历了从分屏、画中画、自由窗口到桌面模式的演进，每种形态都在增加同时可见的 Layer 数量。
+在 Android 7.0 引入分屏模式之前，系统同一时刻只有一个 App 的 Surface 是活跃的——SurfaceFlinger 的合成压力很低，HWC 叠加层的数量一般不会超过上限。但从 Android 7.0 到 Android 16，多窗口形态经历了从分屏、画中画、自由窗口到桌面模式的演进，这些形态都会增加同时可见的 Layer 数量。
 
 这对渲染性能有直接影响：SurfaceFlinger 需要在每个 VSync 周期内完成更多 Layer 的合成，HWC 叠加层数量有限（通常 4-8 层），超出上限时回退到 GPU 合成会带来功耗和帧率的双重损失。折叠屏的折叠/展开、桌面模式外接显示器、Android 16 的大屏强制适配——这些场景都会触发多窗口渲染路径。
 
@@ -37,7 +40,7 @@ task2b_state: idle
 
 Android 的多窗口支持经历了几个关键阶段，每个阶段都改变了 SurfaceFlinger 需要同时处理的 Layer 数量和复杂度。
 
-**分屏模式（Split-Screen）**，Android 7.0（API 24）引入。屏幕被一分为二，两个 App 各占一半，中间一条分割线。两个 App 的 Surface 同时活跃，SurfaceFlinger 每帧需要合成的 Layer 从原来的"App + 系统UI"变成了"App A + App B + 分割线 + 系统UI"。虽然看起来只是多了一个 App，但实际上每个 App 可能有多个 Layer（比如 SurfaceView 会产生额外的 BufferQueue），Layer 数量可能从 3-4 层增长到 6-8 层。
+**分屏模式（Split-Screen）**，Android 7.0（API 24）引入。屏幕被一分为二，两个 App 各占一半，中间一条分割线。两个 App 的 Surface 同时活跃，SurfaceFlinger 每帧需要合成的 Layer 从原来的"App + 系统 UI"变成了"App A + App B + 分割线 + 系统 UI"。表面上只是多了一个 App，但很多时候每个 App 都不止一个 Layer，比如 `SurfaceView` 会带来额外的 BufferQueue，Layer 数量可能从 3-4 层增长到 6-8 层。
 
 **画中画模式（PiP）**，Android 8.0（API 26）引入。视频、导航类 App 进入小窗悬浮在主 App 上方。PiP 窗口的 Layer 通常尺寸较小但需要持续更新，主 App 的渲染不受 PiP 存在的影响——它们各自有独立的 Choreographer 和 VSync-app 回调。
 
@@ -47,7 +50,7 @@ Android 的多窗口支持经历了几个关键阶段，每个阶段都改变了
 
 [图：Android 多窗口模式演进时间线——从分屏到桌面模式的 Layer 数量增长示意]
 
-在 Perfetto 中，我们可以在 SurfaceFlinger 进程的 Track 中看到这些不同模式下合成耗时的差异。分屏模式下 SurfaceFlinger 每帧合成耗时一般在 2-4ms；自由窗口模式可能达到 6-10ms，接近一个 VSync 周期的预算。
+在 Perfetto 的 SurfaceFlinger 进程 Track 中，可以观察这些不同模式下的合成耗时差异。分屏模式下 SurfaceFlinger 每帧合成耗时一般在 2-4ms；自由窗口模式可能达到 6-10ms，接近一个 VSync 周期的预算。
 
 ## 多窗口下 SurfaceFlinger 的合成负载
 
@@ -146,9 +149,9 @@ SurfaceFlinger 为每个物理显示设备维护独立的合成管线。在桌�
 - **手机屏幕**：显示 Android 系统的常规界面（可能是一个简化的任务切换器或者保持当前 App）
 - **外接显示器**：显示桌面环境，包含多个自由窗口、任务栏等
 
-每个显示设备有独立的 VSync 信号和合成触发。SurfaceFlinger 内部为每个 Display 创建一个 `DisplayDevice` 对象，独立执行合成循环。这意味着 SurfaceFlinger 的 CPU 开销近似翻倍——原来处理一个 Display 的合成，现在要处理两个。
+每个显示设备有独立的 VSync 信号和合成触发。SurfaceFlinger 内部为每个 `Display` 创建一个 `DisplayDevice` 对象，独立执行合成循环。对应到 CPU 开销，SurfaceFlinger 原来只处理一个 `Display` 的合成，现在要同时处理两个，负载会明显上升。
 
-在 Perfetto 中，我们可以看到 SurfaceFlinger 进程下的合成 Slice 从一套变成了两套，分别对应两个 Display 的合成周期。外接显示器的分辨率通常高于手机屏幕（如 1920×1080 或 2560×1440），高分辨率意味着 GPU 合成时需要处理更多像素，进一步增加合成耗时。
+在 Perfetto 中，SurfaceFlinger 进程下的合成 Slice 会从一套变成两套，分别对应两个 `Display` 的合成周期。外接显示器的分辨率通常高于手机屏幕（如 1920×1080 或 2560×1440），高分辨率意味着 GPU 合成时需要处理更多像素，进一步增加合成耗时。
 
 ### 窗口独立的 VSync-app 与帧率控制
 
@@ -231,7 +234,7 @@ protected void onStart() {
 
 Android 16（API 36）开始，在 smallestWidth ≥ 600dp 的设备上（包括大部分平板和折叠屏展开态），系统开始忽略 App 设置的屏幕方向锁定和尺寸限制。`screenOrientation`、`resizeActivity`、`minAspectRatio`、`maxAspectRatio` 这些 manifest 属性在 600dp+ 设备上不再生效。
 
-这意味着所有 App 都会被系统强制放到多窗口可能的状态中——即使 App 只声明了竖屏，它也会在横屏大屏设备上以非全屏比例显示。
+对应到运行形态，所有 App 都可能进入可调整窗口尺寸的状态。即使 App 只声明了竖屏，它也可能在横屏大屏设备上以非全屏比例显示。
 
 ### 对渲染管线的具体影响
 
