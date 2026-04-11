@@ -23,11 +23,12 @@ sources:
     path: "https://www.androidperformance.com/"
 tags: ['surfaceflinger', 'bufferqueue', 'hwc', 'composition', 'layer', 'vsync', 'blastbufferqueue', 'renderengine']
 related_chapters: ["2.1", "2.3", "2.4", "2.5", "2.10", "7.3"]
-pipeline_stage: task2b_pending
+pipeline_stage: task6_pending
 task6_state: revisiting
-task9_state: reviewed
+task9_state: pending
 task9_result: needs-rework
-task2b_state: pending
+task2b_state: fixed
+task2b_result: fixed
 ---
 
 # SurfaceFlinger 与合成
@@ -92,16 +93,16 @@ SurfaceFlinger 既负责合成画面，也参与软件 VSync 的调度。硬件 
 
 ### Buffer 管理：BufferQueue 的四步流转
 
-SurfaceFlinger 和应用之间通过 BufferQueue 传递画面数据。BufferQueue 的核心操作只有四步，理解了这四步就掌握了图形数据在 App 和 SurfaceFlinger 之间的完整流转：
+SurfaceFlinger 和应用之间通过 BufferQueue 传递画面数据。最常见的状态变化有四步，但它们描述的是一个 Buffer 如何在 producer 和 consumer 之间周转，不能把它理解成“同一帧一定在一个 VSync 周期里完成完整往返”：
 
-1. **dequeueBuffer（App 发起）**：App 从 BufferQueue 请求一块空闲的 GraphicBuffer，用来承载即将渲染的画面。
-2. **queueBuffer（App 发起）**：App 在这块 Buffer 上完成渲染后，将它放回 BufferQueue，通知消费者（SurfaceFlinger）有新数据可用。
-3. **acquireBuffer（SurfaceFlinger 发起）**：SurfaceFlinger 在 VSYNC-sf 到来时，从 BufferQueue 取出 App 最新提交的 Buffer，准备合成。
-4. **releaseBuffer（SurfaceFlinger 发起）**：SurfaceFlinger 合成完毕、该 Buffer 已被显示硬件消费后，将其归还给 BufferQueue，App 可以再次 dequeue 使用。
+1. **dequeueBuffer（App 发起）**：App 从 BufferQueue 申请一块当前可写的 `GraphicBuffer`，准备用来绘制下一帧。
+2. **queueBuffer（App 发起）**：App 完成渲染后，把这个 Buffer 连同 acquire fence 交回队列，通知 consumer 有新内容可取。
+3. **acquireBuffer（SurfaceFlinger 发起）**：SurfaceFlinger 在合适的 latch 时机取出最新可用 Buffer，准备参与本帧合成。
+4. **releaseBuffer（SurfaceFlinger 发起）**：这一帧完成 present 之后，consumer 通过 release fence 告诉 producer 这个 Buffer 何时可以再次复用。
 
-这四步形成了一个循环。在 Perfetto 中，可以分别在 App 进程和 SurfaceFlinger 进程的 Track 里看到 dequeueBuffer/queueBuffer 和 acquireBuffer/releaseBuffer 的时间点。正常情况下，dequeue → queue → acquire → release 应该在一个 VSync 周期内顺畅完成；如果某个环节耗时过长或被阻塞，就会在 Trace 中表现为明显的间隔。
+读 Trace 时要把 `queueBuffer()` 和“Buffer 已经可复用”分开看。`queueBuffer()` 只是把新内容送进队列，SurfaceFlinger 往往要等下一次 `VSYNC-sf` 或后续一次 latch 才会 `acquireBuffer()`；Buffer 真正回到空闲池，还要等显示侧消费完成、release fence signal、然后再执行 `releaseBuffer()`。三缓冲、`max acquired buffer count`、以及 HWC 持有 Buffer 的时长，会一起决定这条流水线能压多深。想把 backpressure 看明白，最好把本节和 §2.13 BufferQueue、§2.16 Sync Fence 一起读。
 
-[图：Perfetto 对照示意。上方是应用进程中的 dequeueBuffer 和 queueBuffer，下方是 surfaceflinger 进程中的 acquireBuffer 和 releaseBuffer，旁边再标出 VSYNC-sf。正常节奏下，queueBuffer 出现在应用完成 GPU 渲染之后，acquireBuffer 紧跟下一次 VSYNC-sf，releaseBuffer 出现在该帧提交完成之后。]
+[图：Perfetto 对照示意。上方是应用进程中的 dequeueBuffer 和 queueBuffer，下方是 surfaceflinger 进程中的 acquireBuffer 和 releaseBuffer，旁边再标出 VSYNC-sf。正常节奏下，queueBuffer 出现在应用完成 GPU 渲染之后，acquireBuffer 通常跟在下一次或后续一次 VSYNC-sf 的 latch 之后，releaseBuffer 要等 present 完成并且 release fence signal，Buffer 才能重新进入空闲池。]
 
 ## 合成方式：Client 合成与 Device 合成
 
@@ -218,17 +219,17 @@ void Scheduler::onFrameSignal(ICompositor& compositor, VsyncId vsyncId,
 
 BufferQueue 的四步操作在 Perfetto 中可以分别追踪：
 
-- **dequeueBuffer**：出现在 App 进程中。App 请求一块空闲 Buffer。如果这里耗时过长，说明 BufferQueue 中的空闲 Buffer 不够用了——可能是 SurfaceFlinger 持有 Buffer 太久没 release，也可能是三缓冲策略下的 Buffer 全部被占满。
-- **queueBuffer**：出现在 App 进程中。App 完成渲染后提交 Buffer。正常情况下 dequeue 和 queue 之间就是 App 的渲染耗时。
-- **acquireBuffer**：出现在 SurfaceFlinger 进程中。SurfaceFlinger 取出 App 提交的最新 Buffer。acquire 应该在 queue 之后不久发生（通常在下一个 VSYNC-sf 到来时）。
-- **releaseBuffer**：出现在 SurfaceFlinger 进程中。SurfaceFlinger 用完 Buffer 后归还。
+- **dequeueBuffer**：出现在 App 进程中。App 请求一块空闲 Buffer。如果这里阻塞，先看是不是空闲 Buffer 数量不够，或者前一批 Buffer 的 release fence 还没 signal。
+- **queueBuffer**：出现在 App 进程中。App 完成渲染后提交 Buffer。queue 之后并不等于“这一帧马上就会被显示”，它只是进入 consumer 等待队列。
+- **acquireBuffer**：出现在 SurfaceFlinger 进程中。SurfaceFlinger 在本帧 latch 时取出一个可用 Buffer。三缓冲下，`queueBuffer()` 与 `acquireBuffer()` 之间跨一帧是正常现象。
+- **releaseBuffer**：出现在 SurfaceFlinger 进程中。只有 consumer 不再持有这个 Buffer，且 release fence 已经满足复用条件，producer 侧才能再次把它 dequeue 回去。
 
-**正常流转**：dequeue → 渲染 → queue → [等待 VSYNC-sf] → acquire → 合成 → release → [Buffer 回到空闲池]。整个周期在一个 VSync 周期内完成。
+**正常流转**：dequeue → 渲染 → queue 之后，Buffer 进入等待 latch 的队列；SurfaceFlinger 在后续某次 `VSYNC-sf` 中 acquire；present 完成后再 release。三缓冲 trace 里，经常能看到应用正在绘制 frame N，而 SurfaceFlinger 此时释放的是 frame N-2 或 N-3 的 Buffer，这属于正常流水线深度。
 
 **异常标志**：
-- dequeueBuffer 耗时过长（>2ms）：Buffer 全部被占用，App 在等 SurfaceFlinger 释放。这通常意味着 SurfaceFlinger 合成太慢，没有及时 release。
-- acquireBuffer 和 queueBuffer 之间间隔超过一个 VSync 周期：SurfaceFlinger 漏了一帧，没有在下一个 VSYNC-sf 时处理这个 Buffer。
-- releaseBuffer 延迟：合成耗时太长或者 HWC 持有 Buffer 时间过长。
+- dequeueBuffer 明显阻塞：空闲 Buffer 不够用。根因可能是 `max acquired buffer count` 已满、release fence 迟迟没有 signal，或者 HWC / SurfaceFlinger 持有 Buffer 时间过长。
+- queueBuffer 之后连续多个 `VSYNC-sf` 都没有对应的 acquireBuffer：说明这块 Buffer 没有按预期在下一轮 latch，被跳帧、旧 Buffer 复用或 consumer 时序拖慢。
+- releaseBuffer 一直推迟：要继续看 present 阶段、FrameTimeline 和 fence 状态，确认是 SurfaceFlinger 合成慢，还是显示硬件扫描输出仍在持有这个 Buffer。
 
 ### HWC 合成 Track
 
@@ -266,18 +267,18 @@ Layer 之间有父子关系，构成树形结构。父 Layer 可以控制子 Lay
 
 SurfaceFlinger 的性能问题有一个特点：它不是"某个 App 卡了"，而是"整个系统卡了"。因为 SurfaceFlinger 是全局合成器，它的主线程卡顿会影响所有可见的应用。
 
-具体来说，如果 SurfaceFlinger 在某一帧的合成过程中耗时过长（比如 `doComposition` 超过一个 VSync 周期），会发生以下连锁反应：
+具体来说，如果 SurfaceFlinger 在某一帧的事务处理或合成过程中耗时过长，会发生以下连锁反应：
 
-1. 这一帧的合成结果来不及在当前 VSync 周期内提交给显示硬件，被推迟到下一个 VSync。
-2. 所有 App 的最新渲染结果都不会在当前帧呈现——即使 App 本身渲染得很快。
-3. SurfaceFlinger 持有 Buffer 的时间变长，releaseBuffer 延迟，导致 App 端 dequeueBuffer 被阻塞。
-4. App 因为拿不到空闲 Buffer，渲染也被迫等待，形成恶性循环。
+1. 这一帧来不及在当前 VSync 窗口内完成 latch、composite 或 present，被推迟到后续一次显示周期。
+2. 所有 App 的最新渲染结果都不会在当前帧呈现，即使 App 侧已经按时 `queueBuffer()`。
+3. SurfaceFlinger 或 HWC 持有已 acquire 的 Buffer 更久，release fence 更晚 signal，producer 可复用的 Buffer 数量减少。
+4. 如果 BufferQueue 已经接近 `max acquired buffer count`，后续 `dequeueBuffer()` 就会阻塞；如果三缓冲里暂时还有空闲 Buffer，阻塞可能延后一两帧才出现。
 
 在 Perfetto 中，这种情况表现为：SurfaceFlinger 主线程 Track 上出现一个明显拉长的合成切片，紧接着几个 VSYNC-sf 信号都没有触发合成（因为上一帧还在处理），然后 SurfaceFlinger 追赶式地处理积压的帧。在用户侧，这就是一段明显的卡顿。
 
 我们在实际分析中，最常遇到的 SurfaceFlinger 卡顿原因有四类。
 
-第一类是**Layer 数量突增**。比如进入多窗口模式或弹出系统 Dialog，合成工作量显著增加。第二类是**Client 合成比例增大**——某些 Layer 的属性发生变化（如添加圆角裁剪、模糊效果），HWC 无法处理，被迫退回 GPU 合成，GPU 渲染耗时陡增。第三类是**GPU 争抢**：App 的渲染任务和 SurfaceFlinger 的 Client 合成任务共享 GPU，当 App 侧的 GPU 负载很高时，SurfaceFlinger 的合成也会被拖慢。第四类是**Transaction 风暴**——大量 Layer 状态更新（比如动画期间窗口属性频繁变化）涌向 SurfaceFlinger，`handleMessageTransaction` 的处理耗时增加。
+第一类是**Layer 数量突增**。比如进入多窗口模式或弹出系统 Dialog，合成工作量显著增加。第二类是**Client 合成比例增大**。某些 Layer 的属性发生变化后，HWC 无法处理，系统只能退回 GPU 合成，GPU 渲染耗时会明显上升。第三类是**GPU 争抢**：App 的渲染任务和 SurfaceFlinger 的 Client 合成任务共享 GPU，当 App 侧的 GPU 负载很高时，SurfaceFlinger 的合成也会被拖慢。第四类是**Transaction 风暴**。大量 Layer 状态更新会把事务处理阶段拉长，Android 12-13 常表现为 `handleMessageTransaction` / `INVALIDATE` 相关 slice 变长，Android 14+ 更常见的是 `commit` 阶段里的事务处理时间增加。
 
 应对思路也很直接：减少 Layer 数量、尽量让更多 Layer 走 HWC 合成、控制 Transaction 的频率和数据量。具体的排查方法论，我们在 §7.3（卡顿分析方法论）中会系统讲解。
 
@@ -311,19 +312,15 @@ SurfaceFlinger 不是孤立工作的，它是整条渲染管线中的一个关�
 
 SurfaceFlinger 的主干职责没有变，变化主要发生在调度入口、Buffer 提交方式，以及 HWC / RenderEngine 的接口演进上。
 
-**Android 4.1（Project Butter）**：引入 VSync 同步机制和三缓冲，这是 SurfaceFlinger 现代架构的起点。
+**Android 4.1（Project Butter）**：引入 VSync 同步、三缓冲和更成体系的 HWC 协同，这是 SurfaceFlinger 现代调度模型的起点。
 
-**Android 4.3**：引入 OpenGL ES 渲染路径，SurfaceFlinger 开始使用 GPU 承担 Client 合成。
-
-**Android 7.0**：引入 HWC 2.0，`prepare()/set()` 演进为 `validate()/present()`，HDR、color transform matrix 等能力开始纳入统一接口。 [已验证：AOSP + source.android.com HWC 文档]
-
-**Android 7.0**：SurfaceFlinger 从 mediaserver 体系中独立出来，作为单独的系统服务运行。
+**Android 7.0**：HWC 2.0 接口成熟，`prepare()/set()` 演进为 `validate()/present()`，HDR、color transform matrix 等能力开始纳入统一接口。Nougat 这一版的另一个系统级变化是 mediaserver 拆分，SurfaceFlinger 在更早版本就已经是独立的系统合成服务。 [已验证：AOSP + source.android.com HWC 文档]
 
 **Android 8.0（Project Treble）**：HWC HAL 迁移到 HIDL 接口（`android.hardware.graphics.composer@2.1` 到 `@2.4`），SurfaceFlinger 通过稳定 HAL 边界与厂商实现交互。
 
-**Android 10**：FrameTimeline 体系逐步成形，系统开始更系统地记录预期 present time 和实际 present time，Jank 判断的证据面更完整。
+**Android 10**：围绕帧统计、present fence 和合成观测的能力继续完善，SurfaceFlinger 与性能工具能拿到的时间戳更多，但 Perfetto 中今天所说的 FrameTimeline 还没有作为完整体系出现。
 
-**Android 12**：引入 `BLASTBufferQueue`。这一版的重点是把 Buffer 提交与 `SurfaceControl.Transaction` 合并到同一帧语义里，减少 Buffer 内容与窗口几何信息错位；VSync 调度仍由 `Scheduler`、`EventThread`、`VSyncSchedule` 负责，`VsyncModulator` 负责 phase 调整。
+**Android 12**：引入 `BLASTBufferQueue`，把 Buffer 提交与 `SurfaceControl.Transaction` 合到同一帧语义里，减少 Buffer 内容与窗口几何信息错位；同时 FrameTimeline 开始进入官方性能分析语境，Perfetto 能把预期 present、实际 present 和 jank 分类放到同一条时间线上。VSync 调度仍由 `Scheduler`、`EventThread`、`VSyncSchedule` 负责，`VsyncModulator` 负责 phase 调整。
 
 **Android 13**：HWC HAL 开始支持 AIDL 接口（`android.hardware.graphics.composer3` / `IComposer.aidl`），用于替代 HIDL composer；RenderEngine 的常见 backend 仍以 GLES / SkiaGL 路径为主。
 
