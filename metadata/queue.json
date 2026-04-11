@@ -207,9 +207,41 @@
   {
     "section": "2.18",
     "section_title": "Adaptive Refresh Rate 与动态帧率控制",
-    "priority": 80,
-    "reason": "知识缺口挖掘：Android 16 ARR 是渲染管线重大新特性，19/20 研究素材支撑，涉及 SF/Choreographer/DisplayManager 三方协调",
-    "created_date": "2026-04-05"
+    "priority": 90,
+    "reason": "[review回炉] 缺少结构化大纲，关键 Trace 素材缺失，功耗量化数据与 Android 16/17 API Level 标注需核对",
+    "material_paths": [
+      "intake/suggestions.md（含 review 意见）"
+    ],
+    "review_issues": [
+      {
+        "type": "需重写",
+        "location": "全文结构（L34）",
+        "detail": "缺少 outline-start / outline-end 大纲块，Task 6 无法按锚点逐项检查覆盖率。",
+        "suggestion": "按现有章节结构补齐大纲与锚点，再回到 Task 6 做覆盖检查。"
+      },
+      {
+        "type": "需补充素材",
+        "location": "开头 / Perfetto 分析 / Game Mode 扩展（L46-L48 等）",
+        "detail": "ARR 开启前后 VSYNC 间隔、模式切换卡顿、Game Mode 交互仍是占位符，没有真实 Trace 截图或等价图示。",
+        "suggestion": "补 2-4 张真实 Perfetto Trace 截图，至少覆盖 ARR 前后对比、模式切换、Game Mode 交互。"
+      },
+      {
+        "type": "需确认",
+        "location": "ARR 对功耗的影响（L257-L261）",
+        "detail": "60Hz→120Hz 功耗增加 20%-50%、1Hz 与 120Hz 功耗差 5-10 倍，这两组量化数据缺少明确来源和测试条件。",
+        "suggestion": "补官方文档或实测条件，若补不齐则下调为定性表述。"
+      },
+      {
+        "type": "需确认",
+        "location": "frontmatter applicable_versions + 版本演进表（L281-L290）",
+        "detail": "Android 16 / 17 的 API Level 标注需要和全书版本约定统一，当前写法存在版本风险。",
+        "suggestion": "交给 Task 9 统一核对版本号与 API Level，再决定是否保留 API 36 / 37。"
+      }
+    ],
+    "added_by": "task6-review",
+    "added_at": "2026-04-11T18:06:00+08:00",
+    "status": "pending",
+    "original_review_log": "logs/review/2026-04-11-18-review.md"
   },
   {
     "section": "13.8",
