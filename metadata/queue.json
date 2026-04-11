@@ -3513,10 +3513,11 @@
   {
     "section": "2.15",
     "section_title": "DMA-BUF、Gralloc 与跨进程图形内存共享",
-    "priority": 90,
-    "reason": "[review回炉] Gralloc HAL 的 AIDL/HIDL 演进与版本表述需复核",
+    "priority": 95,
+    "reason": "[Deep Tech Review] queueBuffer/GraphicBuffer 传递链路、fd 泄漏根因、Gralloc HAL 版本线存在技术错误",
     "material_paths": [
-      "intake/suggestions.md"
+      "intake/suggestions.md",
+      "intake/research-gaps.md"
     ],
     "review_issues": [
       {
@@ -3530,11 +3531,49 @@
         "location": "“Android 16/17：Gralloc AIDL 化”小节",
         "detail": "“Android 16 开始将 Gralloc HAL 从 HIDL 迁移到 AIDL 接口”和“更少的 IPC 开销”属于版本差异与效果判断，当前来源不足。",
         "suggestion": "由 Task9 复核 Android 16/17 官方文档与 AOSP 接口变更，必要时 Task2B 改成更保守的表述。"
+      },
+      {
+        "type": "源码错误",
+        "location": "行 182-188、200-206",
+        "detail": "把高频路径写成 queueBuffer 携带 GraphicBuffer handle/Binder fd 传给 consumer。AOSP `IGraphicBufferProducer` 明确 `requestBuffer()` 只在 `BUFFER_NEEDS_REALLOCATION` 后同步句柄，client 会 mirror slot->buffer mapping，以避免每次 dequeue/queue 都传完整 GraphicBuffer。",
+        "suggestion": "改成 `dequeueBuffer()` → 仅在 `BUFFER_NEEDS_REALLOCATION` 时 `requestBuffer()` → `queueBuffer(slot + QueueBufferInput)` 的链路，并说明 consumer import / fd 复制发生在新 buffer 首次出现、attachBuffer 或 cache miss 时，不是每帧 `queueBuffer()`。"
+      },
+      {
+        "type": "源码错误",
+        "location": "行 264-268",
+        "detail": "“GraphicBuffer 对象被 GC 回收前没有调用 unflatten 清理 fd”与 AOSP 行为不符。`GraphicBuffer::~GraphicBuffer()` 通过 `free_handle()` 释放 handle；`unflatten()` 是反序列化入口，不是 cleanup API。",
+        "suggestion": "把泄漏根因改成可验证的释放路径问题，例如 `GraphicBuffer` 生命周期过长、`mapper.freeBuffer` / `allocator.free` 未走到、imported handle / fd close 漏调等。"
+      },
+      {
+        "type": "源码错误",
+        "location": "行 119-124",
+        "detail": "heap 表把 `cma` 路径写成 `/dev/dma_heap/default_cma_region`，secure heap 写成 `/dev/dma_heap/system-secure-<vendor>`。官方 DMA-BUF Heaps 文档只把 `/dev/dma_heap/system`、`/dev/dma_heap/system_uncached` 当通用示例；secure heap 是 vendor-specific 的 `/dev/dma_heap/system-secure<vendor-suffix>`，`default_cma_region` 也不是 AOSP 通用 contract。",
+        "suggestion": "把表格拆成“标准 heaps”与“vendor/board-specific examples”，修正 secure heap 路径写法，并删除或显式标注 `default_cma_region` 的板级属性。"
+      },
+      {
+        "type": "版本差异",
+        "location": "行 141-145、149",
+        "detail": "正文举的是 legacy `GRALLOC_USAGE_HW_*` 宏，但验证锚点指向的是 Android 16 的 AIDL allocator/common 定义；当前 HAL 术语实际是 `BufferUsage::{GPU_RENDER_TARGET,GPU_TEXTURE,COMPOSER_OVERLAY,VIDEO_ENCODER,CPU_READ_OFTEN}`。缺少 legacy→current 映射会让读者把旧宏当成现行 HAL 术语。",
+        "suggestion": "补一张“legacy gralloc usage vs AIDL BufferUsage”对照表，正文主线统一到 Android 12+/AIDL 术语，旧宏只保留为历史别名。"
+      },
+      {
+        "type": "版本差异",
+        "location": "行 192、317-321",
+        "detail": "`android-16.0.0_r1` 同时存在 `graphics/allocator/aidl/.../IAllocator.aidl`、`graphics/allocator/4.0/IAllocator.hal` 和 `graphics/mapper/4.0/IMapper.hal`。AIDL allocator 也显式保留 mapper@4 共存场景，因此“Android 16 开始把 Gralloc HAL 从 HIDL 迁到 AIDL，且 IPC 更少”的版本线和效果判断证据不足。",
+        "suggestion": "改成“Android 16 仍处于 AIDL allocator + HIDL mapper 共存期”，补齐 allocator/mapper/version matrix 之后再谈性能影响。"
+      },
+      {
+        "type": "知识盲区",
+        "location": "行 198-214",
+        "detail": "“一帧零拷贝旅程”只画了 classic App→SurfaceFlinger 路径，没有补现代窗口路径里的 BLASTBufferQueue、本地 consumer 和 handle cache。读者容易把 app trace 里的 `queueBuffer()` 误当成 SurfaceFlinger 首次 import 点。",
+        "suggestion": "补“classic BufferQueue vs BLAST window path”对照图，明确哪一跳发生在 app 进程、哪一跳是 slot mirror、哪一跳才会触发 consumer import。"
       }
     ],
     "added_by": "task6-review",
     "added_at": "2026-04-11T14:06:00+08:00",
     "status": "pending",
-    "original_review_log": "logs/review/2026-04-11-1406-review.md"
+    "original_review_log": "logs/review/2026-04-11-1406-review.md",
+    "updated_by": "task9-deep-tech-review",
+    "updated_at": "2026-04-11T14:27:00+08:00"
   }
 ]
