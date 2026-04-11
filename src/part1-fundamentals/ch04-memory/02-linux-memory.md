@@ -31,6 +31,10 @@ sources:
     path: "Cubox/LPC2025-Android MC主题-2026-01-10.md"
 tags: ['kernel', 'memory', 'buddy', 'slab', 'kswapd', 'page-reclaim', 'compaction', 'ION', 'DMA-BUF', 'LRU', 'MGLRU', '16K-page']
 related_chapters: ["4.1", "4.3", "4.4", "2.6"]
+pipeline_stage: task6_pending
+task6_state: pending
+task9_state: pending
+task2b_state: idle
 ---
 
 # Linux 内核内存管理

@@ -33,6 +33,10 @@ sources:
     path: "perfetto.dev/docs/analysis/trace-processor"
 tags: ['scrolling', 'animation', 'RecyclerView', 'transition', 'jank', 'Perfetto']
 related_chapters: ["7.1", "7.2", "7.3", "2.4", "2.5"]
+pipeline_stage: task6_pending
+task6_state: pending
+task9_state: pending
+task2b_state: idle
 ---
 
 # 典型场景分析

@@ -18,6 +18,10 @@ sources:
     path: "Android 17 EyeDropper API"
     title: "System-level Color Picking"
     date: "2026"
+pipeline_stage: task6_pending
+task6_state: pending
+task9_state: pending
+task2b_state: idle
 ---
 
 # EyeDropper API 与跨设备协作性能

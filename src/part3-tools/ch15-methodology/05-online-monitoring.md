@@ -23,6 +23,10 @@ sources:
     path: "perfetto.dev/docs/instrumentation/tracing-sdk"
 tags: [monitoring, APM, FrameMetrics, JankStats, ANR, startup, production]
 related_chapters: ["7.3", "9.3", "14.1", "14.6", "15.4"]
+pipeline_stage: task6_pending
+task6_state: pending
+task9_state: pending
+task2b_state: idle
 ---
 
 # 线上性能监控

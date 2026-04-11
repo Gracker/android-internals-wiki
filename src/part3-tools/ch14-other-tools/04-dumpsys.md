@@ -18,6 +18,10 @@ sources:
     path: "source.android.com/docs/core/graphics/surfaceflinger-windowmanager"
 tags: [dumpsys, meminfo, gfxinfo, activity, window, batterystats, SurfaceFlinger, debugging]
 related_chapters: ["4.1", "4.5", "7.3", "13.1", "14.1"]
+pipeline_stage: task6_pending
+task6_state: pending
+task9_state: pending
+task2b_state: idle
 ---
 
 # dumpsys 系列命令

@@ -33,6 +33,10 @@ related_chapters: ["7.1", "7.2", "7.3", "2.4", "2.5", "2.11"]
 drafted_date: "2026-04-01"
 drafted_by: "openclaw-task2a"
 section: "7.7"
+pipeline_stage: task6_pending
+task6_state: pending
+task9_state: pending
+task2b_state: idle
 ---
 
 # Jetpack Compose 性能优化

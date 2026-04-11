@@ -23,6 +23,10 @@ created_by: "task2a-knowledge-gap"
 created_date: "2026-04-05"
 gap_source: "官方文档 + 研究素材"
 section: "2.17"
+pipeline_stage: task6_pending
+task6_state: pending
+task9_state: pending
+task2b_state: idle
 ---
 
 # 2.17 Frame Pacing Library 与帧节奏控制

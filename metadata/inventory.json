@@ -44122,54 +44122,71 @@
     {
       "path": "src/part4-system/ch17-oem/03-industry-cases.md",
       "title": "行业案例",
-      "mtime": "2026-04-09 05:32",
-      "size_kb": 28.2,
+      "mtime": "2026-04-10T22:25:00",
+      "size_kb": 28.3,
       "wc": 273,
       "tags": [
-        "'case-study'",
-        "'game-mode'",
-        "'adpf'",
-        "'startup'",
-        "'foldable'"
+        "case-study",
+        "game-mode",
+        "adpf",
+        "startup",
+        "foldable"
       ],
       "is_original": false,
       "is_quicknote": false,
       "has_reprint": false,
       "chapters": [
-        "ch01",
-        "ch02",
-        "ch05",
-        "ch07",
-        "ch09",
-        "ch14",
-        "ch16",
-        "ch17"
-      ]
+        "ch17",
+        "ch02"
+      ],
+      "chapter": "17.3",
+      "word_count": 1178,
+      "status": "ready-for-review",
+      "source_type": "高爷原创",
+      "confidence": "medium",
+      "quality_score": {
+        "篇幅分": 18,
+        "新鲜度": 25,
+        "准确性线索": 18,
+        "可用度": 18,
+        "total": 79
+      },
+      "applicable_versions": "Android 12 (API 31) - Android 16 (API 36)"
     },
     {
       "path": "src/part4-system/ch17-oem/02-soc-differences.md",
       "title": "SoC 平台差异",
-      "mtime": "2026-04-04 16:16",
-      "size_kb": 27.3,
+      "mtime": "2026-04-10T22:25:00",
+      "size_kb": 27.4,
       "wc": 314,
       "tags": [
-        "'qualcomm'",
-        "'mediatek'",
-        "'samsung'",
-        "'exynos'",
-        "'tensor'"
+        "qualcomm",
+        "mediatek",
+        "samsung",
+        "exynos",
+        "tensor",
+        "soc"
       ],
       "is_original": false,
       "is_quicknote": false,
       "has_reprint": true,
       "chapters": [
-        "ch01",
-        "ch02",
-        "ch05",
-        "ch14",
-        "ch16",
-        "ch17"
-      ]
+        "ch17",
+        "ch14"
+      ],
+      "chapter": "17.2",
+      "word_count": 1418,
+      "status": "ready-for-review",
+      "source_type": "高爷原创",
+      "confidence": "medium",
+      "quality_score": {
+        "篇幅分": 20,
+        "新鲜度": 20,
+        "准确性线索": 18,
+        "可用度": 18,
+        "total": 76
+      },
+      "applicable_versions": "Android 12 (API 31) - Android 16 (API 36)"
     },
     {
       "path": "src/appendix/commands-cheatsheet.md",
@@ -45131,26 +45148,36 @@
     {
       "path": "src/part1-fundamentals/ch03-input/01-input-dispatch.md",
       "title": "Input 事件分发全流程",
-      "mtime": "2026-04-07 22:21",
-      "size_kb": 30.7,
+      "mtime": "2026-04-10T22:25:00",
+      "size_kb": 31.6,
       "wc": 303,
       "tags": [
-        "'input'",
-        "'inputdispatcher'",
-        "'inputreader'",
-        "'eventhub'",
-        "'inputchannel'"
+        "input",
+        "InputDispatcher",
+        "InputManager",
+        "ANR",
+        "Perfetto"
       ],
       "is_original": false,
       "is_quicknote": false,
       "has_reprint": false,
       "chapters": [
-        "ch01",
         "ch03",
-        "ch08",
-        "ch10",
-        "ch16"
-      ]
+        "ch01"
+      ],
+      "chapter": "3.1",
+      "word_count": 1935,
+      "status": "ready-for-review",
+      "source_type": "高爷原创",
+      "confidence": "high",
+      "quality_score": {
+        "篇幅分": 20,
+        "新鲜度": 25,
+        "准确性线索": 22,
+        "可用度": 20,
+        "total": 87
+      },
+      "applicable_versions": "Android 12 (API 31) - Android 16 (API 36)"
     },
     {
       "path": "src/part1-fundamentals/ch03-input/README.md",
@@ -46414,27 +46441,35 @@
     {
       "path": "src/part3-tools/ch13-perfetto/01-perfetto-intro.md",
       "title": "Perfetto 简介与演进",
-      "mtime": "2026-04-07 07:56",
-      "size_kb": 24.1,
+      "mtime": "2026-04-11T05:41:00",
+      "size_kb": 25.1,
       "wc": 297,
       "tags": [
-        "'perfetto'",
-        "'systrace'",
-        "'tracing'",
-        "'performance-analysis'"
+        "perfetto",
+        "systrace",
+        "tracing",
+        "buffering",
+        "protobuf"
       ],
       "is_original": false,
       "is_quicknote": false,
       "has_reprint": false,
       "chapters": [
-        "ch01",
-        "ch04",
-        "ch05",
-        "ch09",
-        "ch10",
-        "ch14",
-        "ch16"
-      ]
+        "ch13"
+      ],
+      "chapter": "13.1",
+      "word_count": 1450,
+      "status": "ready-for-review",
+      "source_type": "高爷原创",
+      "confidence": "medium",
+      "quality_score": {
+        "篇幅分": 20,
+        "新鲜度": 25,
+        "准确性线索": 15,
+        "可用度": 20,
+        "total": 80
+      },
+      "applicable_versions": "Android 10 (API 29) - Android 17 (API 37)"
     },
     {
       "path": "src/part3-tools/ch13-perfetto/README.md",
@@ -46771,26 +46806,36 @@
     {
       "path": "src/part1-fundamentals/ch02-rendering/11-flutter-rendering.md",
       "title": "2.11 Flutter 渲染管线与性能",
-      "mtime": "2026-04-07 07:56",
-      "size_kb": 29.2,
+      "mtime": "2026-04-11T02:48:00",
+      "size_kb": 30.6,
       "wc": 323,
       "tags": [
         "flutter",
-        "rendering",
         "impeller",
         "skia",
-        "cross-platform"
+        "rendering",
+        "shader"
       ],
       "is_original": false,
       "is_quicknote": false,
       "has_reprint": false,
       "chapters": [
-        "ch01",
         "ch02",
-        "ch10",
-        "ch14",
-        "ch16"
-      ]
+        "ch07"
+      ],
+      "chapter": "2.11",
+      "word_count": 1806,
+      "status": "ready-for-review",
+      "source_type": "高爷原创",
+      "confidence": "medium",
+      "quality_score": {
+        "篇幅分": 20,
+        "新鲜度": 25,
+        "准确性线索": 18,
+        "可用度": 18,
+        "total": 81
+      },
+      "applicable_versions": "Android 5.0 (API 21) - Android 17 (API 37)"
     },
     {
       "path": "intake/research-feeds/2026-04-06-07-android17-power-management-wakelock-policy-aod-minmode.md",
@@ -46917,50 +46962,70 @@
     },
     {
       "path": "src/part4-system/ch16-aosp/05-android17-api37-performance-changes.md",
-      "title": "16.5 Android 17 (API 37) 性能行为变更与适配指南",
-      "mtime": "2026-04-08 05:07",
-      "size_kb": 23.0,
+      "title": "Android 17 (API 37) 性能行为变更与适配指南",
+      "mtime": "2026-04-10T22:25:00",
+      "size_kb": 23.1,
       "wc": 273,
       "tags": [
-        "android17",
-        "api37",
-        "behavior-changes",
-        "performance",
-        "deliqueue"
+        "Android17",
+        "API 37",
+        "behavior changes",
+        "DeliQueue",
+        "performance"
       ],
       "is_original": false,
       "is_quicknote": false,
       "has_reprint": false,
       "chapters": [
-        "ch01",
-        "ch04",
-        "ch07",
-        "ch10",
-        "ch11",
-        "ch13",
         "ch16"
-      ]
+      ],
+      "chapter": "16.5",
+      "word_count": 1364,
+      "status": "ready-for-review",
+      "source_type": "高爷原创",
+      "confidence": "medium",
+      "quality_score": {
+        "篇幅分": 20,
+        "新鲜度": 25,
+        "准确性线索": 18,
+        "可用度": 18,
+        "total": 81
+      },
+      "applicable_versions": "Android 17 (API 37)"
     },
     {
       "path": "src/part4-system/ch16-aosp/04-android17-kernel612-performance.md",
-      "title": "16.4 Android 17 + Kernel 6.12 系统级性能优化",
-      "mtime": "2026-04-08 06:15",
+      "title": "Android 17 + Kernel 6.12 系统级性能优化",
+      "mtime": "2026-04-10T22:25:00",
       "size_kb": 18.2,
       "wc": 340,
-      "tags": [],
+      "tags": [
+        "Android17",
+        "kernel 6.12",
+        "GKI",
+        "io_uring",
+        "AutoFDO"
+      ],
       "is_original": false,
       "is_quicknote": false,
       "has_reprint": true,
       "chapters": [
-        "ch04",
-        "ch05",
-        "ch06",
-        "ch07",
-        "ch08",
-        "ch11",
-        "ch13",
-        "ch16"
-      ]
+        "ch16",
+        "ch05"
+      ],
+      "chapter": "16.4",
+      "word_count": 1257,
+      "status": "ready-for-review",
+      "source_type": "高爷原创",
+      "confidence": "medium",
+      "quality_score": {
+        "篇幅分": 20,
+        "新鲜度": 25,
+        "准确性线索": 18,
+        "可用度": 18,
+        "total": 81
+      },
+      "applicable_versions": "Android 17 (API 37)"
     },
     {
       "path": "src/part1-fundamentals/ch02-rendering/20-multiwindow-desktop-rendering.md",
@@ -47030,40 +47095,70 @@
     },
     {
       "path": "src/part1-fundamentals/ch01-architecture/12-autofdo-optimization.md",
-      "title": "1.12 AutoFDO 反馈导向编译优化",
-      "mtime": "2026-04-08 06:15",
-      "size_kb": 18.5,
+      "title": "AutoFDO 反馈导向编译优化",
+      "mtime": "2026-04-11T03:52:00",
+      "size_kb": 23.0,
       "wc": 239,
-      "tags": [],
+      "tags": [
+        "AutoFDO",
+        "PGO",
+        "dex2oat",
+        "compilation",
+        "profile-guided"
+      ],
       "is_original": false,
       "is_quicknote": false,
       "has_reprint": true,
       "chapters": [
         "ch01",
-        "ch04",
-        "ch05",
-        "ch10",
-        "ch14",
-        "ch16"
-      ]
+        "ch07"
+      ],
+      "chapter": "1.12",
+      "word_count": 1488,
+      "status": "ready-for-review",
+      "source_type": "高爷原创",
+      "confidence": "medium",
+      "quality_score": {
+        "篇幅分": 20,
+        "新鲜度": 25,
+        "准确性线索": 20,
+        "可用度": 20,
+        "total": 85
+      },
+      "applicable_versions": "Android 12 (API 31) - Android 17 (API 37)"
     },
     {
       "path": "src/part1-fundamentals/ch01-architecture/10-content-provider.md",
-      "title": "1.10 ContentProvider 性能与优化",
-      "mtime": "2026-04-08 06:15",
-      "size_kb": 26.9,
+      "title": "ContentProvider 性能与优化",
+      "mtime": "2026-04-11T02:10:00",
+      "size_kb": 26.8,
       "wc": 217,
-      "tags": [],
+      "tags": [
+        "ContentProvider",
+        "app startup",
+        "初始化",
+        "冷启动"
+      ],
       "is_original": false,
       "is_quicknote": false,
       "has_reprint": false,
       "chapters": [
         "ch01",
-        "ch07",
-        "ch10",
-        "ch11",
-        "ch16"
-      ]
+        "ch08"
+      ],
+      "chapter": "1.10",
+      "word_count": 1521,
+      "status": "ready-for-review",
+      "source_type": "高爷原创",
+      "confidence": "medium",
+      "quality_score": {
+        "篇幅分": 20,
+        "新鲜度": 25,
+        "准确性线索": 20,
+        "可用度": 20,
+        "total": 85
+      },
+      "applicable_versions": "Android 8 (API 26) - Android 17 (API 37)"
     },
     {
       "path": "src/part1-fundamentals/ch01-architecture/15-jni-ndk-performance.md",
@@ -47086,20 +47181,37 @@
     },
     {
       "path": "src/part1-fundamentals/ch01-architecture/09-package-manager.md",
-      "title": "1.9 Package Manager Service 与应用安装性能",
-      "mtime": "2026-04-09 07:42",
-      "size_kb": 29.9,
+      "title": "Package Manager Service 与应用安装性能",
+      "mtime": "2026-04-11T01:21:00",
+      "size_kb": 30.3,
       "wc": 244,
-      "tags": [],
+      "tags": [
+        "PMS",
+        "安装性能",
+        "dexopt",
+        "vdex",
+        "baseline profile"
+      ],
       "is_original": false,
       "is_quicknote": false,
       "has_reprint": false,
       "chapters": [
         "ch01",
-        "ch07",
-        "ch14",
-        "ch16"
-      ]
+        "ch08"
+      ],
+      "chapter": "1.9",
+      "word_count": 1795,
+      "status": "ready-for-review",
+      "source_type": "高爷原创",
+      "confidence": "medium",
+      "quality_score": {
+        "篇幅分": 20,
+        "新鲜度": 25,
+        "准确性线索": 20,
+        "可用度": 20,
+        "total": 85
+      },
+      "applicable_versions": "Android 5.0 (API 21) - Android 17 (API 37)"
     },
     {
       "path": "src/part1-fundamentals/ch06-storage/05-sharedpreferences-datastore.md",
@@ -48112,27 +48224,35 @@
     {
       "path": "src/part4-system/ch16-aosp/03-build-debug-env.md",
       "title": "AOSP 源码编译与调试环境",
-      "mtime": "2026-04-04 13:42",
+      "mtime": "2026-04-10T22:25:00",
       "size_kb": 19.4,
       "wc": 328,
       "tags": [
-        "'aosp'",
-        "'build'",
-        "'soong'",
-        "'ninja'",
-        "'emulator'"
+        "aosp",
+        "build",
+        "soong",
+        "ninja",
+        "emulator"
       ],
       "is_original": false,
       "is_quicknote": false,
       "has_reprint": false,
       "chapters": [
-        "ch01",
-        "ch02",
-        "ch05",
-        "ch11",
-        "ch14",
         "ch16"
-      ]
+      ],
+      "chapter": "16.3",
+      "word_count": 1287,
+      "status": "ready-for-review",
+      "source_type": "高爷原创",
+      "confidence": "medium",
+      "quality_score": {
+        "篇幅分": 20,
+        "新鲜度": 20,
+        "准确性线索": 20,
+        "可用度": 20,
+        "total": 80
+      },
+      "applicable_versions": "Android 11 (API 30) - Android 16 (API 36)"
     },
     {
       "path": "src/part1-fundamentals/ch02-rendering/17-frame-pacing.md",
@@ -48481,25 +48601,38 @@
     },
     {
       "path": "src/part1-fundamentals/ch01-architecture/11-zygote-startup.md",
-      "title": "1.11 Zygote 机制与启动性能优化",
-      "mtime": "2026-04-05 11:49",
-      "size_kb": 33.7,
+      "title": "Zygote 机制与启动性能优化",
+      "mtime": "2026-04-11T05:56:00",
+      "size_kb": 21.3,
       "wc": 363,
       "tags": [
         "zygote",
-        "fork",
-        "startup",
+        "启动优化",
         "preload",
-        "class-loading"
+        "fork",
+        "SystemServer",
+        "DeliQueue"
       ],
       "is_original": false,
       "is_quicknote": false,
       "has_reprint": false,
       "chapters": [
         "ch01",
-        "ch07",
-        "ch16"
-      ]
+        "ch08"
+      ],
+      "chapter": "1.11",
+      "word_count": 1195,
+      "status": "ready-for-review",
+      "source_type": "高爷原创",
+      "confidence": "medium",
+      "quality_score": {
+        "篇幅分": 20,
+        "新鲜度": 25,
+        "准确性线索": 20,
+        "可用度": 20,
+        "total": 85
+      },
+      "applicable_versions": "Android 5.0 (API 21) - Android 17 (API 37)"
     },
     {
       "path": "src/part1-fundamentals/ch01-architecture/07-art-compilation.md",
@@ -48528,53 +48661,77 @@
     },
     {
       "path": "src/part1-fundamentals/ch01-architecture/08-activity-manager.md",
-      "title": "1.8 Activity Manager Service 与性能分析",
-      "mtime": "2026-04-05 01:45",
-      "size_kb": 28.1,
+      "title": "Activity Manager Service 与性能分析",
+      "mtime": "2026-04-11T01:07:00",
+      "size_kb": 40.1,
       "wc": 264,
       "tags": [
-        "ams",
-        "activity-manager",
-        "process-lifecycle",
-        "anr",
-        "service-management"
+        "AMS",
+        "activity",
+        "service",
+        "进程管理",
+        "oom_adj",
+        "FGS"
       ],
       "is_original": false,
       "is_quicknote": false,
       "has_reprint": false,
       "chapters": [
         "ch01",
-        "ch03",
-        "ch04",
         "ch07",
-        "ch10",
-        "ch16"
-      ]
+        "ch08"
+      ],
+      "chapter": "1.8",
+      "word_count": 2599,
+      "status": "ready-for-review",
+      "source_type": "高爷原创",
+      "confidence": "high",
+      "quality_score": {
+        "篇幅分": 25,
+        "新鲜度": 25,
+        "准确性线索": 22,
+        "可用度": 22,
+        "total": 94
+      },
+      "applicable_versions": "Android 10 (API 29) - Android 17 (API 37)"
     },
     {
       "path": "src/part1-fundamentals/ch01-architecture/14-lock-contention.md",
-      "title": "1.14 锁竞争与同步性能分析",
-      "mtime": "2026-04-07 07:56",
-      "size_kb": 20.3,
+      "title": "锁竞争与同步性能分析",
+      "mtime": "2026-04-11T04:48:00",
+      "size_kb": 25.1,
       "wc": 359,
       "tags": [
         "Mutex",
         "Futex",
         "monitor lock",
         "优先级反转",
-        "锁竞争"
+        "锁竞争",
+        "DeliQueue",
+        "Perfetto",
+        "Binder"
       ],
       "is_original": false,
       "is_quicknote": false,
       "has_reprint": false,
       "chapters": [
         "ch01",
-        "ch05",
-        "ch08",
-        "ch10",
         "ch11",
-        "ch16"
-      ]
+        "ch13"
+      ],
+      "chapter": "1.14",
+      "word_count": 1380,
+      "status": "ready-for-review",
+      "source_type": "高爷原创",
+      "confidence": "medium",
+      "quality_score": {
+        "篇幅分": 20,
+        "新鲜度": 25,
+        "准确性线索": 20,
+        "可用度": 20,
+        "total": 85
+      },
+      "applicable_versions": "Android 1.0 (API 1) - Android 17 (API 37)"
     },
     {
       "path": "src/part1-fundamentals/ch03-input/05-input-interception-security.md",
@@ -48595,46 +48752,67 @@
     {
       "path": "src/part1-fundamentals/ch03-input/06-gesture-recognition-performance.md",
       "title": "手势识别算法与性能优化",
-      "mtime": "2026-04-08 09:19",
-      "size_kb": 25.7,
+      "mtime": "2026-04-10T22:25:00",
+      "size_kb": 25.8,
       "wc": 247,
-      "tags": [],
-      "is_original": false,
-      "is_quicknote": false,
-      "has_reprint": false,
-      "chapters": [
-        "ch01",
-        "ch03",
-        "ch04",
-        "ch10",
-        "ch16"
-      ]
-    },
-    {
-      "path": "src/part1-fundamentals/ch03-input/04-input-latency-prediction.md",
-      "title": "3.4 输入延迟与预测输入技术",
-      "mtime": "2026-04-05 15:50",
-      "size_kb": 26.4,
-      "wc": 263,
       "tags": [
-        "input",
-        "latency",
-        "touch",
-        "prediction",
-        "motioneventpredictor"
+        "gesture",
+        "fling",
+        "velocity",
+        "GestureDetector"
       ],
       "is_original": false,
       "is_quicknote": false,
       "has_reprint": false,
       "chapters": [
-        "ch02",
+        "ch03"
+      ],
+      "chapter": "3.6",
+      "word_count": 1541,
+      "status": "ready-for-review",
+      "source_type": "高爷原创",
+      "confidence": "medium",
+      "quality_score": {
+        "篇幅分": 20,
+        "新鲜度": 25,
+        "准确性线索": 18,
+        "可用度": 18,
+        "total": 81
+      },
+      "applicable_versions": "Android 10 (API 29) - Android 16 (API 36)"
+    },
+    {
+      "path": "src/part1-fundamentals/ch03-input/04-input-latency-prediction.md",
+      "title": "输入延迟与预测输入技术",
+      "mtime": "2026-04-10T22:25:00",
+      "size_kb": 26.5,
+      "wc": 263,
+      "tags": [
+        "输入延迟",
+        "预测输入",
+        "MotionEventPredictor",
+        "touch"
+      ],
+      "is_original": false,
+      "is_quicknote": false,
+      "has_reprint": false,
+      "chapters": [
         "ch03",
-        "ch05",
-        "ch08",
-        "ch10",
-        "ch14",
-        "ch16"
-      ]
+        "ch02"
+      ],
+      "chapter": "3.4",
+      "word_count": 1389,
+      "status": "ready-for-review",
+      "source_type": "高爷原创",
+      "confidence": "medium",
+      "quality_score": {
+        "篇幅分": 20,
+        "新鲜度": 25,
+        "准确性线索": 20,
+        "可用度": 20,
+        "total": 85
+      },
+      "applicable_versions": "Android 10 (API 29) - Android 17 (API 37)"
     },
     {
       "path": "src/part2-performance/ch11-power/05-wakelock.md",
@@ -49212,6 +49390,6 @@
     "updated": 116,
     "scan_time": "2026-04-09T14:03:53.463769"
   },
-  "last_scan": "2026-04-09T06:03:26.499662",
+  "last_scan": "2026-04-10T22:02:40.226237",
   "total_documents": 7602
 }

@@ -19,10 +19,11 @@
 
 ## ⚠️ 铁律
 
-1. **只 Review 不修改**——发现问题标注并写入建议，不直接改章节内容
-2. **每次只 Review 1 个章节**，深度 > 广度
-3. **不重复 Task 6 的工作**——不管措辞、格式、中英文间距等写作质量问题
-4. **不编造技术事实**——如果不确定，标注 `[待验证]` 而不是给出错误判断
+1. **只 Review 不修改**——发现问题标注并写入建议，不直接改章节内容；审计结论必须足够具体，能直接指导下一轮精修
+2. **每次 Review 1-2 个章节**，深度优先，默认 1 个；仅当两个章节都较短或问题较聚焦时才处理 2 个
+3. **不重复 Task 6 的工作**——不管措辞、格式、中英文间距、段落流畅度等写作质量问题
+4. **只审技术，不做写作层结论**——源码、原理链、版本差异、数据支撑、知识盲区是你的边界
+5. **不编造技术事实**——如果不确定，标注 `[待验证]` 而不是给出错误判断
 
 ---
 
@@ -30,19 +31,22 @@
 
 ### 目标池
 以下状态的章节可被选中：
-- `status: ready-to-publish`（出版终态，最高优先）
-- `status: finalized`（已定稿）
-- `status: ready-for-review`（待 review，次优先）
+- `status: ready-for-review` 且 `task9_state: pending`
+- `status: finalized` 且 `task9_state: pending`
+- `status: ready-to-publish` 且 `task9_state: pending`
 
 ### 排除
 - `status: draft` 或空壳章节（内容不够，没有 Review 价值）
 - 今天已被 Task 9 Review 过的章节（检查日志防重复）
+- `task6_state: pending` 的章节（先过 Task 6）
+- 已被 Task 6 标记为纯写作问题、且没有技术风险信号的章节
 
 ### 选择规则
-1. **优先选 ready-to-publish**（最需要技术审计把关）
-2. **按章节号顺序**（1.1 → 1.2 → 2.1...）
-3. **追踪已 Review 章节**：在日志中维护，避免重复（同一章节至少间隔 7 天才可重审）
-4. 如果没有可 Review 的章节 → 回复"当前无可 Review 章节"并结束
+1. **优先选 `pipeline_stage: task9_pending` 且最近 24 小时内被 Task 6 处理过的章节**
+2. 其次选择 `task9_state: pending` 的其他章节
+3. 同优先级时按章节号顺序（1.1 → 1.2 → 2.1...）
+4. 追踪已 Review 章节：在日志中维护，避免重复（同一章节至少间隔 7 天才可重审）
+5. 如果没有可 Review 的章节 → 回复"当前无可 Review 章节"并结束
 
 ---
 
@@ -125,6 +129,12 @@
 
 ### 3a. P0/P1 → 写入 queue.json（自动闭环）
 
+写入 queue 后，同时在章节 frontmatter 中更新：
+- `task9_result: needs-rework`
+- `task9_state: reviewed`
+- `task2b_state: pending`
+- `pipeline_stage: task2b_pending`
+
 ```json
 {
   "section": "{章节号}",
@@ -181,9 +191,17 @@
 - **建议**：{具体建议}
 ```
 
+**注意**：不要在 suggestions.md 中写措辞、格式、段落流畅度类建议，这些属于 Task 6 范围。
+
 ### 3d. P3 → 仅日志记录
 
 不写入任何待处理文件，只在 Review 日志中记录。
+
+### 3e. 无 P0/P1 时的前进规则
+如果本轮无 P0/P1 问题：
+- 更新 frontmatter：`task9_result: pass-tech-review`、`task9_state: reviewed`
+- 若 `task6_result: pass-light-edit` 且无待处理 queue 条目，则将 `pipeline_stage: publish_ready`
+- 章节状态可保持 `ready-for-review`，由后续人工或专门发布流程决定是否推进为 `ready-to-publish`
 
 ---
 

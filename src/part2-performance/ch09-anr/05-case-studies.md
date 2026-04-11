@@ -30,6 +30,10 @@ sources:
     path: "frameworks/native/libs/binder/ProcessState.cpp"
 tags: ['anr', 'case-study', 'input-dispatching', 'sharedpreferences', 'system-load', 'binder', 'process-freeze', 'deadlock', 'lock-ordering', 'synchronized']
 related_chapters: ["9.1", "9.2", "9.3", "9.4", "1.4"]
+pipeline_stage: task6_pending
+task6_state: pending
+task9_state: pending
+task2b_state: idle
 ---
 
 # 案例集

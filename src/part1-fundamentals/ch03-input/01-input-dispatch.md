@@ -26,6 +26,10 @@ sources:
     path: "https://mp.weixin.qq.com/s/Analyze-AOSP-input-architecture"
 tags: ['input', 'inputdispatcher', 'inputreader', 'eventhub', 'inputchannel', 'anr', 'inputflinger', 'socketpair', 'touch', 'view-hierarchy']
 related_chapters: ["3.2", "3.3", "2.5", "9.1", "9.2"]
+pipeline_stage: task6_pending
+task6_state: pending
+task9_state: pending
+task2b_state: idle
 ---
 
 # Input 事件分发全流程

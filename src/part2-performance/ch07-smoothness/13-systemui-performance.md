@@ -19,6 +19,10 @@ sources:
     path: "packages/apps/Launcher3/"
   - type: official
     path: "https://source.android.com/docs/core/display"
+pipeline_stage: task6_pending
+task6_state: pending
+task9_state: pending
+task2b_state: idle
 ---
 
 # 7.13 SystemUI 性能分析

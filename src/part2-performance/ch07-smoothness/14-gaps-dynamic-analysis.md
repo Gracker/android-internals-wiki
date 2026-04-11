@@ -16,6 +16,10 @@ sources:
     title: "Mind the GAPS: Automated Path Reconstruction for Android Method Reachability"
     authors: "arXiv 2025"
     date: "2025-11"
+pipeline_stage: task6_pending
+task6_state: pending
+task9_state: pending
+task2b_state: idle
 ---
 
 # 7.14 GAPS：Android 动态分析目标可达性路径重建

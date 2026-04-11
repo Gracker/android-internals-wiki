@@ -16,6 +16,10 @@ sources:
     path: "developer.android.com/topic/performance/benchmarking/benchmarking-in-ci"
 tags: [macrobenchmark, microbenchmark, espresso, uiautomator, ci/cd, baseline-profiles]
 related_chapters: ["13.1", "13.2", "14.1", "8.3"]
+pipeline_stage: task6_pending
+task6_state: pending
+task9_state: pending
+task2b_state: idle
 ---
 
 # 自动化测试工具

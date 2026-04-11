@@ -27,6 +27,10 @@ sources:
     path: "ai.google.dev/edge/litert"
   - type: aosp
     path: "frameworks/ml/nn/"
+pipeline_stage: task6_pending
+task6_state: pending
+task9_state: pending
+task2b_state: idle
 ---
 
 # 5.11 端侧 AI 推理性能：NPU/GPU 加速与 TFLite 管线

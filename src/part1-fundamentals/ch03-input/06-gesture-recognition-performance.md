@@ -25,6 +25,10 @@ tags:
   - rendering
   - research
 related_chapters: ["3.1", "3.2", "3.3", "3.4", "2.4"]
+pipeline_stage: task6_pending
+task6_state: pending
+task9_state: pending
+task2b_state: idle
 ---
 # 手势识别算法与性能优化
 

@@ -30,6 +30,10 @@ created_by: "task2a-knowledge-gap"
 created_date: "2026-04-09"
 gap_source: "官方文档+读者需求+AOSP结构"
 gap_score: "19/20"
+pipeline_stage: task6_pending
+task6_state: pending
+task9_state: pending
+task2b_state: idle
 ---
 
 # 13.10 Perfetto SQL 性能分析实战手册

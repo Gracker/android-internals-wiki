@@ -37,6 +37,10 @@ review_round: 2
 polish_count: 1
 polish_date: "2026-04-08"
 polish_by: "task2b-polish"
+pipeline_stage: task6_pending
+task6_state: pending
+task9_state: pending
+task2b_state: idle
 ---
 
 # App 内存优化

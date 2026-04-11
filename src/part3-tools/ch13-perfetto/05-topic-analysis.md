@@ -24,6 +24,10 @@ sources:
     path: "https://perfetto.dev/docs/analysis/sql-tables"
 tags: ['perfetto', 'cpu', 'vsync', 'surfaceflinger', 'binder', 'heapprofd', 'io', 'frame-timeline', 'jank']
 related_chapters: ["13.1", "13.2", "13.3", "13.4", "2.1", "2.4", "4.1", "5.1", "7.1", "8.1", "9.1"]
+pipeline_stage: task6_pending
+task6_state: pending
+task9_state: pending
+task2b_state: idle
 ---
 
 # 专题解读

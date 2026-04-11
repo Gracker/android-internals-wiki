@@ -31,7 +31,6 @@ tags:
   - compose-performance
   - layout-optimization
 
-
 reviewed_date: "2026-04-04"
 reviewed_by: "openclaw-task6"
 rework_date: "2026-04-04"
@@ -42,7 +41,10 @@ polish_by: "task2b-polish"
 rework_count: 1
 rework_date: "2026-04-09"
 rework_by: "task2b-rework"
-
+pipeline_stage: task6_pending
+task6_state: pending
+task9_state: pending
+task2b_state: idle
 ---
 
 

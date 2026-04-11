@@ -7,6 +7,10 @@ tags: ["ANGLE", "GLES", "Vulkan", "翻译层", "SPIR-V", "图形驱动", "渲染
 related_chapters: ["2.14", "18.8", "18.9"]
 created_by: "rendering-pipelines-merge"
 created_date: "2026-04-09"
+pipeline_stage: task6_pending
+task6_state: pending
+task9_state: pending
+task2b_state: idle
 ---
 
 <!-- outline-start -->

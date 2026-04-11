@@ -28,11 +28,11 @@
 
 ### Step 2：扫描待 review 章节
 扫描 src/ 下所有 .md 文件，按以下优先级筛选：
-1. **最高优先**：`status: ready-for-review` 且有 `re-review-materials` 字段的章节（素材冲击重审，由 task7 触发）
-2. **次优先**：`status: ready-for-review` 的章节（task2 加工完成或 task2b 精修后，等待 review）
-3. **第三优先**：`status: reviewed` 的章节（task2 回炉修复后，需二次 review）
+1. **最高优先**：`status: ready-for-review` 且 `task6_state: pending` 且有 `re-review-materials` 字段的章节（素材冲击重审，由 task7 触发）
+2. **次优先**：`status: ready-for-review` 且 `task6_state: pending` 的章节（等待 Task 6 文稿质检）
+3. **第三优先**：`status: ready-for-review` 且 `task6_state: revisiting` 的章节（回炉后重新进入 Task 6）
 4. **可选抽检**：`status: finalized` 的章节（每周抽检 1 个已定稿章节，防止质量退化）
-5. **永不选中**：`status: ready-to-publish` 的章节（已通过精修+质检，出版终态）
+5. **永不选中**：仅 `task9_state: pending`、但 `task6_state` 非 pending 的章节；以及 `status: ready-to-publish` 的章节
 如果没有任何待 review 章节，回复"当前无待 review 草稿"并结束。
 
 **区分首次 review 和重审**：
@@ -122,10 +122,11 @@ git commit -m "[openclaw] re-review: {章节号} {小节名} — 素材冲击重
 **前置条件**：选中章节的 frontmatter **不含** `re-review-materials` 字段。
 
 选择本次 review 目标：
-1. **最早 drafted 的章节优先**（frontmatter 中的 drafted_date）
-2. **如果同日期，按章节号排序**（1.1 → 1.2 → 2.1 ...）
-3. **每次只 review 1 个章节**（深度 > 广度）
+1. **优先选择尚未被 Task 6 review 过，或距上次 Task 6 review 已超过 7 天的章节**
+2. **同优先级时按章节号排序**（1.1 → 1.2 → 2.1 ...）
+3. **每次 review 1-2 个章节**（默认 1 个；仅当两个章节都较短、问题都偏轻量时才处理 2 个）
 4. **必须通过 Step 3 的内容充分性检查**
+5. **如果章节明显存在技术事实风险，不在 Task 6 内做技术裁决，只标记并交给 Task 9 / Task 2B**
 
 ### Step 5：逐维度 Review
 
@@ -164,11 +165,11 @@ git commit -m "[openclaw] re-review: {章节号} {小节名} — 素材冲击重
 - `sources` 是否列出了主要素材来源
 - `tags` 是否覆盖了本章核心话题
 
-### Step 6：执行精修
+### Step 6：执行 review + 小修
 
 根据 review 结果，分两类处理：
 
-#### A. 可直接修复（小修）
+#### A. 可直接修复（仅限轻量小修）
 以下问题**直接修复**，不需要等高爷确认：
 - 措辞优化（更简洁/准确）
 - 标点/格式统一
@@ -176,29 +177,34 @@ git commit -m "[openclaw] re-review: {章节号} {小节名} — 素材冲击重
 - frontmatter 补全
 - 验证标注格式统一
 - 中英文间距规范化
+- 局部衔接优化（仅限句子级、段落级微调）
 
-#### B. 需标注但不改（大问题）
-以下问题**只标注不修改**，留给高爷决策：
+**禁止在 Task 6 中执行的动作：**
+- 大段重写
+- 重新组织章节大纲
+- 补写大量新技术内容
+- 裁决源码/API/版本真伪
+- 处理需要外部研究才能解决的问题
+
+#### B. 需标注但不改（交给 Task 9 / Task 2B）
+以下问题**只标注不修改**：
 - 技术观点可能有误（标注 `[存疑: 原因]`）
 - 需要重写的段落（标注 `[需重写: 原因]`）
 - 缺少关键素材支撑（标注 `[需补充素材: 具体缺什么]`）
 - 与其他章节存在潜在矛盾（标注 `[需确认: 与 X.Y 章节可能矛盾]`）
+- 任何涉及源码准确性、原理链断裂、版本差异的问题（统一交由 Task 9 审核后，再由 Task 2B 修复）
 
 ### Step 7：更新文件
-1. 将精修后的内容写回 src/ 对应文件（使用 exec + python/pathlib + 绝对路径）
+1. 将小修后的内容写回 src/ 对应文件（使用 exec + python/pathlib + 绝对路径）
 2. 更新 frontmatter：
-   - **如果无 B 类大问题**：
-     - 如果 frontmatter 含 `polish_by: "task2b-polish"`（精修质检）→ `status: ready-for-review` → `status: ready-to-publish`（出版终态，不再被任何任务选中）
-     - 否则（普通首次 review）→ `status: ready-for-review` → `status: finalized`
-   - **如果有 B 类大问题**：`status: ready-for-review` → `status: reviewed`（reviewed 但有问题待修，将回炉给 task2）
-   - 添加 `reviewed_date: YYYY-MM-DD`
-   - 添加 `reviewed_by: openclaw-task6`
+   - **如果仅有轻量写作问题且已完成小修**：保持 `status: ready-for-review`，写入 `reviewed_by: openclaw-task6`、`reviewed_date: YYYY-MM-DD`、`task6_result: pass-light-edit`、`task6_state: reviewed`、`task9_state: pending`、`pipeline_stage: task9_pending`
+   - **如果存在 B 类大问题**：保持 `status: ready-for-review`，写入 `reviewed_by: openclaw-task6`、`reviewed_date: YYYY-MM-DD`、`task6_result: needs-rework`、`task6_state: reviewed`、`task2b_state: pending`、`pipeline_stage: task2b_pending`
 3. 如果有大问题标注，同步写入 `intake/suggestions.md`（追加到末尾）
-4. 更新 `metadata/progress.json` 中对应小节的状态
+4. 更新 `metadata/progress.json` 中对应小节的状态或 review 记录，但**不要在 Task 6 中把章节推进到 ready-to-publish/finalized**
 
 ### Step 7.1：大问题回炉（闭环关键）
 
-**如果 Step 6 中存在 B 类大问题（需重写/需补充素材/需确认），必须执行以下闭环动作：**
+**如果 Step 6 中存在 B 类大问题（需重写/需补充素材/需确认），必须执行以下闭环动作。Task 6 只负责生成问题单，不负责解决：**
 
 **7a. 写回 queue.json（最高优先级）**
 将该章节重新加入加工队列，priority 设为 90（高于普通 pending 项），让 task2 在下一轮加工时优先拾取：
@@ -315,7 +321,7 @@ writing-guide 合规：✅ 合规 / ⚠️ N 处不合规（已修复/已标注�
 下一 review 候选：{章节号} {小节名}
 
 ## 注意事项
-- 每次 review 只处理 1 个章节，保证深度
+- 每次 review 处理 1-2 个章节，默认 1 个；仅当两个章节都较短或问题较轻时才处理 2 个
 - 不改变高爷的技术观点
 - 不删除已有的验证标注
 - 大问题只标注不改，留给高爷决策

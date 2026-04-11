@@ -26,6 +26,10 @@ sources:
     path: "frameworks/base/core/java/android/os/PerformanceHintManager.java"
   - type: blog
     path: "https://android-developers.googleblog.com/ ADPF enhancements Android 15/16"
+pipeline_stage: task6_pending
+task6_state: pending
+task9_state: pending
+task2b_state: idle
 ---
 
 # 5.9 ADPF 自适应性能框架

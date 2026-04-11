@@ -18,6 +18,10 @@ sources:
     path: "Cubox/一文N张图带你理解Android Camera Native Framework架构-2023-08-13.md"
 tags: ['camera', 'perfetto', 'buffer-queue', 'preview-stutter', 'hal3']
 related_chapters: ["2.13", "13.5", "11.2", "4.3"]
+pipeline_stage: task6_pending
+task6_state: pending
+task9_state: pending
+task2b_state: idle
 ---
 
 # 14.9 Android Camera 性能与 Perfetto 分析

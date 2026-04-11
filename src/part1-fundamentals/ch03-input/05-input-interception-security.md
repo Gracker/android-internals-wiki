@@ -12,6 +12,10 @@ tags:
   - npu
   - research
 related_chapters: ["3.1", "3.2", "9.1", "9.2"]
+pipeline_stage: task6_pending
+task6_state: pending
+task9_state: pending
+task2b_state: idle
 ---
 # 输入事件拦截与安全机制
 

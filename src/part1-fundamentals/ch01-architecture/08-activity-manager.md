@@ -13,9 +13,17 @@ sources:
   - type: aosp
     path: "frameworks/base/services/core/java/com/android/server/am/ActiveServices.java"
   - type: aosp
+    path: "frameworks/base/services/core/java/com/android/server/am/OomAdjuster.java"
+  - type: aosp
+    path: "frameworks/base/services/core/java/com/android/server/am/EventLogTags.logtags"
+  - type: aosp
     path: "frameworks/base/services/core/java/com/android/server/am/BroadcastQueue.java"
   - type: aosp
     path: "frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp"
+  - type: aosp
+    path: "frameworks/base/core/java/android/app/Instrumentation.java"
+  - type: aosp
+    path: "frameworks/base/core/java/android/app/ActivityThread.java"
   - type: aosp
     path: "frameworks/base/services/core/java/com/android/server/wm/ActivityTaskManagerService.java"
   - type: aosp
@@ -50,12 +58,12 @@ rework_by: "task2a"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-04-10"
 task6_result: needs-rework
-pipeline_stage: task2b_pending
+pipeline_stage: task6_pending
 task6_state: revisiting
 task9_result: needs-rework
-task9_state: reviewed
-task2b_result: pending
-task2b_state: pending
+task9_state: pending
+task2b_result: fixed
+task2b_state: fixed
 ---
 
 # 1.8 Activity Manager Service 与性能分析
@@ -99,17 +107,27 @@ AMS 运行在 `system_server` 进程中，是 Android 最核心的系统服务�
 - `Binder:system_server` 线程池（通常 16 个线程）：接收来自 App 进程的 Binder 调用。
 - `android.fg` / `android.display` 线程：处理前台和显示相关的后台任务。
 
-**关键 Trace 事件（在 ftrace 或 atrace 中搜索 `am_` 前缀）：**
-- `am_proc_start`：AMS 通知 Zygote fork 新进程。
-- `am_proc_bound`：新进程启动完成，与 AMS 建立 Binder 连接。
-- `am_anr`：检测到 ANR，开始收集 trace。
+**关键 EventLog / Android logs 事件：**
+- `am_proc_start`：AMS 决定创建新进程，并把启动请求交给 Zygote。
+- `am_proc_bound`：新进程与 `system_server` 建立连接，应用线程已经 attach 完成。
+- `am_anr`：系统记录一次 ANR。
 - `am_crash`：应用崩溃。
-- `am_activity_launch`：Activity 启动。
-- `am_kill` / `am_pss`：进程被杀或内存统计。
+- `am_kill` / `am_pss`：进程被杀或进行内存统计。
+- `am_create_service` / `am_destroy_service`：Service 的创建与销毁。
 
-> [已验证: AOSP android-16.0.0_r1, frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java — EventLogTags 定义]
+这里要把 EventLog 和 slice 分开看。`am_proc_start`、`am_anr` 这些是 EventLog tag，在 Perfetto 里应当从 `android_logs` 这类日志数据源读取；Activity 启动本身没有 `am_activity_launch` 这个 EventLog tag，启动耗时更适合结合 `ActivityTaskManager` / `WindowManager` 的系统侧 slice、应用主线程的 `bindApplication` / Activity 生命周期，以及首帧 `doFrame` 一起看。
 
-在 Perfetto 的 SQL 视图中，这些事件可以通过 `SELECT * FROM slice WHERE name LIKE 'am_%'` 来查询。
+> [已验证: AOSP android-16.0.0_r1，`frameworks/base/services/core/java/com/android/server/am/EventLogTags.logtags` 中存在 `am_proc_start` / `am_proc_bound` / `am_anr` / `am_kill`，不存在 `am_activity_launch`]
+
+如果 trace 打开了 Android logs 数据源，可以先用下面的 SQL 看 AMS 侧 EventLog：
+
+```sql
+SELECT ts, tag
+FROM android_logs
+WHERE tag IN ('am_proc_start', 'am_proc_bound', 'am_anr', 'am_crash', 'am_kill')
+ORDER BY ts DESC
+LIMIT 20;
+```
 
 ---
 
@@ -123,21 +141,23 @@ Android 不是"前台就活着、后台就杀掉"这么简单。系统维护了�
 
 | 优先级 | oom_adj | 含义 | 典型场景 |
 |--------|---------|------|----------|
-| FOREGROUND | 0 | 前台进程 | 当前可见的 Activity 所在进程 |
-| FOREGROUND_SERVICE | 100 | 前台服务 | 正在执行前台 Service 的进程 |
-| TOP_SLEEPING | 200 | 顶层休眠 | 屏幕关闭但之前是前台 |
+| FOREGROUND | 0 | 前台进程 | 当前可见且正在交互的 Activity 所在进程 |
+| PERCEPTIBLE_RECENT_FOREGROUND | 50 | 最近从 TOP 切到 FGS 的短期宽限 | 刚从前台退到后台，但还在执行 non-short FGS |
 | VISIBLE | 100 | 可见进程 | Activity 可见但不在前台（如被透明 Activity 遮挡） |
-| PERCEPTIBLE | 200 | 可感知 | 正在播放音乐等用户可感知的后台操作 |
+| TOP_SLEEPING | 200 | 顶层休眠 | 屏幕关闭但之前是前台 |
+| PERCEPTIBLE | 200 | 可感知 | 音乐播放、导航、常规 non-short 前台 Service |
 | PERCEPTIBLE_LOW | 250 | 低可感知 | 后台有轻量级操作 |
 | BACKUP | 300 | 备份 | 正在执行备份操作 |
 | HEAVY_WEIGHT | 400 | 重量级 | 后台 heavyweight 应用 |
-| SERVICE | 500 | 服务 | 后台运行着 Service |
+| SERVICE | 500 | 服务 | 后台运行着普通 Service |
 | HOME | 600 | 主页 | Launcher 进程 |
 | PREVIOUS | 700 | 上一个 | 上一个后台 Activity |
 | SERVICE_B | 800 | B 类服务 | 较老的后台 Service |
 | CACHED / CACHED_EMPTY | 900+ | 缓存 | 纯缓存的后台进程 |
 
-> [待验证：上表具体数值在 Android 16/17 中可能有微调，不同厂商可能自定义层级]
+这里要避免把前台 Service 写成固定的 100 档位。AOSP android-16.0.0_r1 的 `OomAdjuster` 里，常规 non-short FGS 会被抬到 `PERCEPTIBLE_APP_ADJ = 200`；只有最近刚从 TOP Activity 切到 FGS 的短期宽限窗口，才会临时抬到 `PERCEPTIBLE_RECENT_FOREGROUND_APP_ADJ = 50`。
+
+> [待验证：上表其余细分档位在 Android 17 正式版和厂商 ROM 中可能继续调整；FGS 的 50 / 200 档位已按 AOSP android-16.0.0_r1 的 `ProcessList.java` 与 `OomAdjuster.java` 核对]
 
 AMS 调整 oom_adj 的核心方法是 `ActivityManagerService.updateOomAdjLocked()`。这个方法会遍历所有进程，根据每个进程中运行的组件（Activity、Service、Provider、广播接收器）的状态重新计算优先级。
 
@@ -145,30 +165,30 @@ AMS 调整 oom_adj 的核心方法是 `ActivityManagerService.updateOomAdjLocked
 
 ### 进程启动流程
 
-当用户点击一个 App 图标时，Launcher 通过 Binder 调用 AMS 的 `startActivity()`。如果目标 App 的进程还不存在，AMS 会走一个完整的进程创建链路：
+当用户点击一个 App 图标时，客户端入口并不是 AMS，而是 Launcher 进程里的 `Instrumentation.execStartActivity()`。它通过 `ActivityTaskManager.getService().startActivity()` 进入 `system_server`，先由 ATMS / `ActivityStarter` 做任务容器和启动模式决策；只有在发现目标进程还不存在时，才会继续落到 AMS 的进程启动链路。`ActivityManagerService.startActivity()` 在现代版本里更多是兼容旧接口的转发层。
 
-```
-Launcher.startActivity()
-  → AMS.startActivity()          // Binder 调用到 system_server
-    → AMS.startProcessAsync()    // 异步发起进程创建
-      → ZygoteProcess.start()    // 通过 Socket 通知 Zygote
-        → Zygote fork 新进程
-          → new 进程执行 RuntimeInit.applicationInit()
-            → ActivityThread.main()   // App 主线程启动
-              → ActivityThread.attachApplication()  // 通知 AMS 进程已就绪
-                → AMS.attachApplicationLocked()     // 绑定 Application
-                  → 回调 Application.onCreate()
-                  → 调度第一个 Activity 的创建
+```text
+Launcher / Instrumentation.execStartActivity()
+  → ActivityTaskManager.getService().startActivity()   // Binder 到 system_server
+    → ATMS.startActivity() / ActivityStarter.execute() // 先决定 Task / DisplayArea / 启动模式
+      → 若目标进程不存在，AMS.startProcessAsync()
+        → ZygoteProcess.start()
+          → Zygote fork 新进程
+            → ActivityThread.main()
+              → ActivityThread.attach()
+                → AMS.attachApplicationLocked()
+                  → Application.onCreate()
+                  → ATMS 继续调度 ActivityRecord 启动与可见化
 ```
 
-在 Perfetto 中，这个过程表现为：
-1. `system_server` 的 `ActivityManager` 线程中出现 `am_proc_start` 切片
+在 Perfetto 中，这个过程通常表现为：
+1. `android_logs` 里出现 `am_proc_start`
 2. `zygote64`（或 `zygote`）中出现 fork 操作
-3. 新进程出现，主线程开始执行
-4. `am_proc_bound` 标记进程与 AMS 的连接建立
-5. `am_activity_launch` 标记 Activity 开始加载
+3. 新进程出现，主线程开始执行 `bindApplication`
+4. `android_logs` 里出现 `am_proc_bound`
+5. `system_server` 侧出现 ATMS / WindowManager 的启动 slice，应用主线程进入 `Activity` 生命周期并准备首帧
 
-> [已验证: AOSP android-16.0.0_r1, frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java — startProcessLocked → ZygoteProcess.start]
+> [已验证: AOSP android-16.0.0_r1，`frameworks/base/core/java/android/app/Instrumentation.java` 的 `execStartActivity()` 调用 `ActivityTaskManager.getService().startActivity()`；`frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java` 中 `startActivity()` 为委托到 `mActivityTaskManager.startActivity()` 的兼容转发]
 
 ### 进程回收策略
 
@@ -265,9 +285,9 @@ void scheduleServiceTimeoutLocked(ProcessRecord proc) {
 }
 ```
 
-"拆雷"发生在 App 端 Service 的 `onCreate()` 被调用之前：`ActivityThread.handleCreateService()` 中，在调用 `service.onCreate()` 之前，会通过 `ActivityManager.getService().serviceDoneExecuting()` 通知 AMS 移除超时消息。
+"拆雷"并不发生在 `service.onCreate()` 之前。AOSP android-16.0.0_r1 的 `ActivityThread.handleCreateService()` 先执行 `service.onCreate()`，把 Service 真正创建出来，然后才通过 `ActivityManager.getService().serviceDoneExecuting()` 通知 AMS 本次执行结束。换句话说，`onCreate()` 本身就在 Service ANR 的计时窗口里；如果这里阻塞太久，AMS 会把这段时间直接算进超时。
 
-> [已验证: AOSP android-16.0.0_r1, ActiveServices.java — scheduleServiceTimeoutLocked / serviceDoneExecutingLocked]
+> [已验证: AOSP android-16.0.0_r1，`frameworks/base/core/java/android/app/ActivityThread.java` 的 `handleCreateService()` 与 `frameworks/base/services/core/java/com/android/server/am/ActiveServices.java` 的 `scheduleServiceTimeoutLocked()` / `serviceDoneExecutingLocked()`]
 
 注意 `startForeground()` 的 5 秒超时是另一条独立的检测路径——如果 App 调用了 `Context.startForegroundService()` 但在 5 秒内没有调用 `startForeground()`，AMS 会直接抛出 ANR（早期版本是 crash，Android 12+ 改为 ANR）。
 
@@ -290,14 +310,13 @@ void scheduleServiceTimeoutLocked(ProcessRecord proc) {
 
 > [已验证: AOSP android-16.0.0_r1, frameworks/base/services/core/java/com/android/server/am/AnrHelper.java]
 
-在 Perfetto 中，ANR 事件通过 `am_anr` 标记可以精确定位。SQL 查询：
+在 Perfetto 中，ANR 事件可以通过 `android_logs` 里的 `am_anr` 精确定位。SQL 查询：
 
 ```sql
-SELECT track.name, slice.name, slice.ts, slice.dur
-FROM slice
-JOIN track ON slice.track_id = track.id
-WHERE slice.name LIKE 'am_anr%'
-ORDER BY slice.ts DESC
+SELECT ts, tag
+FROM android_logs
+WHERE tag = 'am_anr'
+ORDER BY ts DESC
 LIMIT 10;
 ```
 
@@ -321,7 +340,7 @@ RootWindowContainer
 
 `RootWindowContainer` 是整台设备的顶层窗口容器；每个 `DisplayContent` 下面可以有一个或多个 `TaskDisplayArea`；`TaskDisplayArea` 的孩子既可以是 `Task`，也可以是嵌套的 `TaskDisplayArea`；`Task` 本身既可能是用户在 Recents 里看到的一张任务卡片，也可能继续包含子 `Task`。所以我们今天谈“Activity 落在哪个栈里”时，更准确的说法不是“AMS 把它塞进某个 TaskStack”，而是“ATMS / WindowManager 在目标 `TaskDisplayArea` 中选择或创建合适的 `Task`，再把 `ActivityRecord` 挂进去”。
 
-落实到启动链路，`ActivityStarter.startActivityInner()` 会先计算 `mPreferredTaskDisplayArea`，再通过 `TaskDisplayArea.getOrCreateRootTask()` 找到或创建目标 root task，最后把新的 `ActivityRecord` 放进目标 `Task`。这对性能分析有一个直接影响：我们在 Perfetto 里看到 `am_activity_launch`，只能说明 `system_server` 侧已经发起了启动流程；真正影响启动手感的“复用旧任务还是新建任务、是否切到别的 display area、是否走多窗口 / PiP 路径”，要结合 `ActivityStarter` 的决策和后续 `ActivityThread.handleLaunchActivity()` 一起看。AMS 负责把进程和全局状态管起来，ATMS 负责把 Activity 放到正确的容器里，这两条线要放在一起看，启动链路才完整。
+落实到启动链路，`ActivityStarter.startActivityInner()` 会先计算 `mPreferredTaskDisplayArea`，再通过 `TaskDisplayArea.getOrCreateRootTask()` 找到或创建目标 root task，最后把新的 `ActivityRecord` 放进目标 `Task`。这对性能分析有一个直接影响：我们不能再假设 Perfetto 里存在一个统一的 `am_activity_launch` EventLog 作为启动锚点。更稳妥的做法，是把 `android_logs` 里的 `am_proc_start` / `am_proc_bound`、`system_server` 侧的 ATMS / WindowManager slice，以及应用主线程的 `bindApplication`、Activity 生命周期和首帧 `doFrame` 串起来看。AMS 负责把进程和全局状态管起来，ATMS 负责把 Activity 放到正确的容器里，这两条线要放在一起看，启动链路才完整。
 
 > [已验证: AOSP android-16.0.0_r1，`frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java` 中 `startActivity()` 委托给 `mActivityTaskManager.startActivity()`；`frameworks/base/services/core/java/com/android/server/wm/RootWindowContainer.java`、`TaskDisplayArea.java`、`Task.java` 定义了当前任务容器层级]
 
@@ -329,14 +348,14 @@ RootWindowContainer
 
 分析 Activity 启动耗时，我们通常关注以下几个时间节点：
 
-1. `am_proc_start`（如果是冷启动）：进程创建开始
-2. `am_proc_bound`：进程就绪
-3. Binder: `attachApplication`：Application 绑定
-4. `Application.onCreate()`：App 初始化
-5. `Activity.onCreate()` → `onResume()`：Activity 生命周期
+1. 用户点击 Launcher 图标（或系统发起启动 Intent）
+2. `am_proc_start`（如果是冷启动）：AMS 开始创建进程
+3. `am_proc_bound`：新进程与 `system_server` 建立连接
+4. Binder `attachApplication` / 主线程 `bindApplication`
+5. `Application.onCreate()` 与 `Activity.onCreate()` → `onResume()`
 6. 第一帧 `doFrame`：首帧渲染完成
 
-冷启动的场景下，`am_proc_start` 到首帧 `doFrame` 之间的时间就是用户感知的"冷启动耗时"。
+冷启动场景下，我们真正关心的是“启动请求发出”到首帧 `doFrame` 之间的总时间；`am_proc_start` 只是其中的进程创建起点，不等于完整启动耗时。
 
 ```
 [图：Perfetto 中冷启动的完整 Trace 片段，标注上述 6 个关键时间节点]
@@ -451,25 +470,25 @@ Android 14 对广播做的变化，重点不在 Extra 大小，而在**投递时
 ### 典型场景的 Trace 特征
 
 **冷启动场景：**
-1. `ActivityManager` 线程出现 `am_proc_start`
+1. `android_logs` 里出现 `am_proc_start`
 2. `zygote64` 出现 fork（一个极短的 CPU burst）
-3. 新进程出现，`main` 线程开始执行
+3. 新进程出现，`main` 线程开始执行 `bindApplication`
 4. `Binder:system_server_X` 上出现 `attachApplication` 调用
-5. 新进程 `main` 线程执行 `Application.onCreate()`
-6. `am_activity_launch` 出现在 `ActivityManager` 线程
+5. 新进程 `main` 线程执行 `Application.onCreate()` 和 `Activity` 生命周期
+6. `system_server` 侧出现 ATMS / WindowManager 的启动 slice
 7. 新进程渲染第一帧
 
 **ANR 场景：**
 1. 主线程上某个 Message 执行时间过长（或被阻塞）
-2. `ActivityManager` 线程出现 `am_anr` 切片
-3. `system_server` 的 Binder 线程上出现 `dumpStackTraces` 调用
+2. `android_logs` 里出现 `am_anr`
+3. `system_server` 的 Binder 线程或 `ActivityManager` 相关线程开始 `dumpStackTraces`
 4. 目标进程收到 signal，各线程堆栈被 dump
 5. 如果启用了 ANR 对话框，`system_server` 中出现 `AppNotRespondingDialog` 相关活动
 
 **进程被杀场景：**
 1. `Process Stats` Track 中看到目标进程的 `oom_score_adj` 逐步升高
 2. 系统内存水位上升
-3. `ActivityManager` 线程出现 `am_kill`
+3. `android_logs` 里出现 `am_kill`
 4. 目标进程的所有线程消失
 
 ```
@@ -515,10 +534,10 @@ Android 14 对广播做的变化，重点不在 Extra 大小，而在**投递时
 不一定。除了 lmkd 的内存回收，进程还可能因为 ANR（用户选择"关闭"）、Crash、或者 AMS 主动杀（如 App 后台行为违规）而被终止。需要看 `am_kill` 事件的具体原因字段。
 
 **误区 3："前台 Service 不会被杀"**
-前台 Service 的 oom_adj 确实比较低（100），不容易被 lmkd 杀。但如果系统极端缺内存，或者 Service 本身出现 ANR/Crash，仍然会被杀。而且 Android 12+ 对后台启动 FGS 有严格限制，不是想用就能用的。
+前台 Service 不是固定的 `100` 档。常规 non-short FGS 在 AOSP android-16.0.0_r1 的 `OomAdjuster` 里通常落在 perceptible 档（`PERCEPTIBLE_APP_ADJ = 200`），只有 recent-top → FGS 的短期宽限窗口才会临时抬到 `50`。如果系统极端缺内存，或者 Service 本身出现 ANR / Crash，FGS 仍然会被杀；而且 Android 12+ 对后台启动 FGS 有严格限制，不是想用就能用的。
 
 **误区 4："`am_proc_start` 时间就是冷启动耗时"**
-`am_proc_start` 只标记了 AMS 向 Zygote 发起 fork 请求的时刻。真正的冷启动耗时应该从用户点击（或 `am_activity_launch`）开始，到首帧 `doFrame` 结束。中间还包括 Zygote fork、Application 初始化、Activity 生命周期执行、首帧渲染等多个阶段。
+`am_proc_start` 只标记了 AMS 向 Zygote 发起 fork 请求的时刻。真正的冷启动耗时应该从用户点击 Launcher 图标（或系统发起启动 Intent）开始，到首帧 `doFrame` 结束。中间还包括 Zygote fork、Application 初始化、Activity 生命周期执行、首帧渲染等多个阶段。
 
 **误区 5："后台 App 的广播不影响前台性能"**
 影响。如果大量后台 App 注册了静态广播，系统事件触发时 AMS 会尝试启动多个进程，这会抢占 CPU 和 I/O 资源，间接影响前台 App 的性能。在低端设备上尤其明显。
@@ -529,16 +548,19 @@ Android 14 对广播做的变化，重点不在 Extra 大小，而在**投递时
 
 ### AOSP 源码路径
 - `frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java` — AMS 主类
+- `frameworks/base/core/java/android/app/Instrumentation.java` — 客户端 `execStartActivity()` 入口
 - `frameworks/base/services/core/java/com/android/server/wm/ActivityTaskManagerService.java` — Activity / Task 管理入口
 - `frameworks/base/services/core/java/com/android/server/wm/RootWindowContainer.java` — 顶层任务 / 显示容器
 - `frameworks/base/services/core/java/com/android/server/wm/TaskDisplayArea.java` — Display 下的任务容器
 - `frameworks/base/services/core/java/com/android/server/wm/Task.java` — Task 定义与 Recents 语义
 - `frameworks/base/core/res/res/values/attrs_manifest.xml` — `recreateOnConfigChanges` 定义
 - `frameworks/base/services/core/java/com/android/server/am/ActiveServices.java` — Service 管理与 ANR 检测
+- `frameworks/base/services/core/java/com/android/server/am/OomAdjuster.java` — `oom_adj` / `procState` 动态计算
 - `frameworks/base/services/core/java/com/android/server/am/BroadcastQueue.java` — 广播分发与超时
 - `frameworks/base/services/core/java/com/android/server/am/AnrHelper.java` — ANR 统一处理管线
 - `frameworks/base/services/core/java/com/android/server/am/ProcessList.java` — 进程列表与 lmkd 交互
 - `frameworks/base/core/java/android/app/ActivityThread.java` — App 端主线程入口
+- `frameworks/base/services/core/java/com/android/server/am/EventLogTags.logtags` — `am_*` EventLog 标签定义
 - `frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp` — Input 事件分发与 ANR 检测
 - `frameworks/base/core/java/android/app/IActivityManager.aidl` — AMS 的 Binder 接口定义
 

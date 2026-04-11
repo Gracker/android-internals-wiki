@@ -26,6 +26,10 @@ sources:
     path: "developer.android.com/topic/performance"
 tags: ['methodology', 'philosophy', 'tools', 'best-practices']
 related_chapters: ["13.1", "13.2", "15.2", "15.3", "15.7"]
+pipeline_stage: task6_pending
+task6_state: pending
+task9_state: pending
+task2b_state: idle
 ---
 
 # 性能优化的术、道、器

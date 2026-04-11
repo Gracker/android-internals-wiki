@@ -25,6 +25,10 @@ tags:
   - binder
   - research
 related_chapters: ["1.5", "1.14", "2.4", "2.5", "7.1"]
+pipeline_stage: task6_pending
+task6_state: pending
+task9_state: pending
+task2b_state: idle
 ---
 
 

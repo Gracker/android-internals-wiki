@@ -28,6 +28,10 @@ sources:
     path: "https://perfetto.dev/docs/data-sources/native-heap-profiling"
 tags: [memory, pss, memory-growth, fragmentation, lru-cache, bitmap, native-heap]
 related_chapters: ["10.1", "10.2", "4.1", "4.3", "4.5"]
+pipeline_stage: task6_pending
+task6_state: pending
+task9_state: pending
+task2b_state: idle
 ---
 
 # 内存持续增长

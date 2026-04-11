@@ -23,6 +23,10 @@ sources:
     path: "https://developer.android.com/training/basics/network-ops"
 tags: [network, OkHttp, HTTP/2, HTTP/3, QUIC, weak-network, performance]
 related_chapters: ["12.1", "6.1", "8.1"]
+pipeline_stage: task6_pending
+task6_state: pending
+task9_state: pending
+task2b_state: idle
 ---
 
 # 网络性能优化

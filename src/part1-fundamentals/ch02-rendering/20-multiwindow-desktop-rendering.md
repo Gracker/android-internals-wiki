@@ -17,6 +17,10 @@ sources:
     path: "Android 16 Desktop Windowing — android.com"
 tags: [multiwindow, desktop-mode, split-screen, freeform, foldable, surfaceflinger, rendering]
 related_chapters: ["2.6", "2.9", "2.12", "2.13", "7.4", "3.3"]
+pipeline_stage: task6_pending
+task6_state: pending
+task9_state: pending
+task2b_state: idle
 ---
 
 # 2.20 多窗口与桌面模式渲染性能

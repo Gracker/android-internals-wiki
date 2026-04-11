@@ -1,5 +1,4 @@
 ---
-
 title: "CPU 相关的版本演进"
 chapter: "5.7"
 section: "5.7"
@@ -28,8 +27,6 @@ tags:
   - job-scheduler
   - gki
 
-
-
 polish_count: 1
 drafted_date: "2026-04-01"
 reviewed_date: "2026-04-04"
@@ -37,6 +34,10 @@ related_chapters:
   - "5.2 EAS 能量感知调度"
   - "5.6 Android 功耗管理"
   - "5.8 后台执行限制与优化"
+pipeline_stage: task6_pending
+task6_state: pending
+task9_state: pending
+task2b_state: idle
 ---
 
 

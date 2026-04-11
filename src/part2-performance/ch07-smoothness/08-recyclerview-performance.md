@@ -23,6 +23,10 @@ sources:
     path: "developer.android.com/reference/androidx/recyclerview/widget/RecyclerView"
   - type: blog
     path: "android-developers.googleblog.com - Adaptive Refresh Rate"
+pipeline_stage: task6_pending
+task6_state: pending
+task9_state: pending
+task2b_state: idle
 ---
 
 # 7.8 RecyclerView 列表滑动性能深度优化

@@ -27,6 +27,10 @@ reviewed_by: "openclaw-task6"
 polish_count: 1
 polish_date: "2026-04-06"
 polish_by: "task2b-polish"
+pipeline_stage: task6_pending
+task6_state: pending
+task9_state: pending
+task2b_state: idle
 ---
 
 # App 启动全流程

@@ -29,6 +29,10 @@ tags: ['case-study', 'game-mode', 'adpf', 'startup', 'foldable', 'oem', 'industr
 related_chapters: ["5.6", "7.4", "7.5", "8.2", "8.3", "11.1", "16.1", "17.1", "17.2"]
 drafted_date: "2026-04-04"
 drafted_by: "openclaw-task2a"
+pipeline_stage: task6_pending
+task6_state: pending
+task9_state: pending
+task2b_state: idle
 ---
 
 # 行业案例

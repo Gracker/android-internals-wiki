@@ -20,6 +20,10 @@ sources:
     path: "Web research: simpleperf usage guide 2025-2026"
 tags: ['simpleperf', 'pmu', 'cpu-profiling', 'flamegraph', 'native-profiling']
 related_chapters: ["13.1", "13.2", "13.6", "14.1"]
+pipeline_stage: task6_pending
+task6_state: pending
+task9_state: pending
+task2b_state: idle
 ---
 
 # Simpleperf
