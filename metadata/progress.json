@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-11T16:20:00+08:00",
+  "generated_at": "2026-04-11T16:52:50+08:00",
   "state_machine_version": "v2",
   "total_sections": 206,
   "metrics": {
@@ -438,14 +438,15 @@
       "title": "Choreographer 与渲染流水线",
       "path": "src/part1-fundamentals/ch02-rendering/04-choreographer.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
-      "task6_state": "reviewed",
-      "task9_state": "reviewed",
-      "task2b_state": "pending",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
+      "task9_state": "pending",
+      "task2b_state": "fixed",
       "reviewed_date": "2026-04-11",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
-      "task9_result": "needs-rework"
+      "task9_result": "needs-rework",
+      "task2b_result": "fixed"
     },
     "src/part1-fundamentals/ch02-rendering/05-main-render-thread.md": {
       "chapter": "2.5",
