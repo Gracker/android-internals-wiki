@@ -1387,3 +1387,15 @@
 - **位置**：行 341-351 与 CPU / 响应速度章节的关系
 - **问题**：`Restricted 桶降低 cgroup 优先级`、`从通知启动 Activity 需要通过 ActivityOptions 中的 BAL 权限` 两处结论都缺少当前章节内的代码或官方文档锚点，容易把经验判断写成硬规则。
 - **建议**：补充对应代码路径 / 官方文档；如果证据链暂时不完整，就把表述收窄为“可能受版本与场景影响，需要结合具体系统验证”。
+
+## [Task9 Deep Review] 2.6 SurfaceFlinger 与合成 — 2026-04-12
+- **类型**：数据缺失
+- **位置**：在 Perfetto 中的表现（Lines 229, 237-239, 247-249）
+- **问题**：正文直接给出 `dequeueBuffer > 2ms`、`doComposition < 1ms`、`Client 合成 3-8ms`、`异常场景 12ms` 这类阈值，但没有设备型号、刷新率、Layer 数量、trace config 或截图上下文。它们现在更像经验值而不是可复核证据。
+- **建议**：补 1 组真实 Trace 或明确标注“示例范围，仅用于帮助理解”，同时给出设备/刷新率/场景条件。
+
+## [Task9 Deep Review] 2.6 SurfaceFlinger 与合成 — 2026-04-12
+- **类型**：交叉引用
+- **位置**：frontmatter `related_chapters` + Buffer 管理 / BlastBufferQueue 小节
+- **问题**：正文大量依赖 BufferQueue、BLAST 与 fence 语义，但 `related_chapters` 只列了 `2.1/2.3/2.4/2.5/2.10/7.3`，没有把最直接相关的 `§2.13 BufferQueue`、`§2.16 Sync Fence` 挂出来。
+- **建议**：把 `2.13` 和 `2.16` 加入 `related_chapters`，并在 BufferQueue / BLAST 小节正文里显式跳转。
