@@ -4372,5 +4372,50 @@
     "added_at": "2026-04-12T02:05:00+08:00",
     "status": "pending",
     "original_review_log": "logs/review/2026-04-12-02-review.md"
+  },
+  {
+    "section": "3.6",
+    "section_title": "手势识别算法与性能优化",
+    "priority": 95,
+    "reason": "[Deep Tech Review] VelocityTracker 策略来源链错误、双击 callback 语义写反、TouchSlop 版本演进表失真",
+    "material_paths": [
+      "intake/suggestions.md",
+      "intake/research-gaps.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "frontmatter sources L13 / VelocityTracker 段 L154-L188",
+        "detail": "章节把 `frameworks/base/core/java/android/view/VelocityTrackerFallbackStrategy.java` 和 `VelocityTrackerFallbackStrategy` Java 类当成 AOSP android-14.0.0_r1 的真实实现，但公开源码中 VelocityTracker 的策略实现主体在 `android/view/VelocityTracker.java` 与 native `frameworks/native/libs/input/VelocityTracker.cpp`。由此延伸出的“Android 13 引入 FallbackStrategy、Android 14+ 默认 Impulse”也和按 axis 选择默认策略的真实实现不一致。",
+        "suggestion": "删除虚构的 Java 类片段，改成 Java wrapper + JNI + native strategy matrix 的真实调用链；补充 `VelocityTracker.obtain(String/int)` 的测试用途，并区分 X/Y 轴默认 LSQ2、scroll axis 默认 IMPULSE 等实际策略。"
+      },
+      {
+        "type": "源码错误",
+        "location": "frontmatter sources L21 / NestedScroll 段 L337-L340",
+        "detail": "`frameworks/base/core/java/androidx/core/widget/NestedScrollView.java` 不是有效的 AOSP 路径。`NestedScrollView` 属于 AndroidX，源码应在 `frameworks/support/core/core/src/main/java/androidx/core/widget/NestedScrollView.java`，不是 frameworks/base/core/java。",
+        "suggestion": "把 AndroidX 源码和 framework AOSP 源分开列，正文注明这里引用的是 AndroidX 实现，不要继续打成 `[已验证: AOSP ...]`。"
+      },
+      {
+        "type": "源码错误",
+        "location": "双击检测机制 L304-L308",
+        "detail": "正文写成“第一次 ACTION_UP 不立即回调 `onSingleTapUp()`，300ms 后再确认”，把 `onSingleTapUp()` 和 `onSingleTapConfirmed()` 混为一谈。官方语义是 `onSingleTapUp()` 在 ACTION_UP 立即触发，延迟确认的是 `onSingleTapConfirmed()`；双击判定还要经过 `isConsideredDoubleTap()` 的时间窗和 double-tap slop 检查，不是只看 hadTapMessage。",
+        "suggestion": "重写双击回调链，区分 `onSingleTapUp()`、`onSingleTapConfirmed()`、`onDoubleTap()`、`onDoubleTapEvent()`，并补 `isConsideredDoubleTap()` 的时间/位移条件。"
+      },
+      {
+        "type": "版本差异",
+        "location": "TouchSlop 版本演进表 L433-L437",
+        "detail": "表中写“Android 5.0+ 引入 `config_viewConfigurationTouchSlop` 资源”不成立。该资源早于 Android 5 就已存在于 frameworks/base/core/res/res/values/config.xml。当前表把 framework 常量、config 资源和 OEM overlay 混成一张“版本演进表”，会误导读者。",
+        "suggestion": "把这部分改成“framework 常量 / config 资源 / 设备 overlay”三层模型；只有确实发生版本变更的项目才放进版本演进表。"
+      },
+      {
+        "type": "原理断裂",
+        "location": "VelocityTracker 算法段 L146-L190",
+        "detail": "正文从“移动平均 vs 最小二乘”直接跳到一个不存在的 Java fallback 类，漏掉真正决定行为的 Java → JNI → native 调用链，也没解释按 axis 选择策略与 `obtain(String strategy)` 的调试边界。",
+        "suggestion": "补完整链路：`android.view.VelocityTracker` → JNI → `frameworks/native/libs/input/VelocityTracker.cpp`，再说明默认策略是按 axis 选的，不是一句“Android 14+ 默认 Impulse”能概括。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-12T02:20:00+08:00",
+    "status": "pending"
   }
 ]
