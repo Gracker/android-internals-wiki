@@ -1020,3 +1020,40 @@ BLASTBufferQueue 小节只讲了“App 本地管理 buffer，最后用 Transacti
 
 ### 关联章节
 §2.20、§2.12、§2.18
+
+## [2026-04-11] 2.21 文字渲染性能 — 知识盲区
+
+### 盲区描述
+章节多次指导读者去 Perfetto 里找 TextView.onMeasure、RenderThread 文本绘制、glyph upload、TextBlob 命中，但没有交代默认 trace、gfx/hwui atrace、FrameTimeline、SQL 视图之间各自能看到什么。没有这张“观测面清单”，读者很难判断某个文字性能问题到底该在 MainThread、RenderThread 还是 tracing 配置本身上定位。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 核对默认 Perfetto 配置下，文字相关问题能直接看到哪些 slice / track
+- 补 gfx/hwui/atrace 额外配置后，哪些 HWUI/Skia 事件会出现，哪些仍然不可见
+- 给一组“TextView.onMeasure 过长”和一组“RenderThread 纹理上传/首次渲染”示例 trace
+- 关联 §13.9 tracing 基础设施，说明为什么同一段文字问题在不同 trace 配置下可见性不同
+
+### 关联章节
+2.21、2.5、7.8、7.12、13.9
+
+---
+
+## [2026-04-11] 2.21 文字渲染性能 — 知识盲区
+
+### 盲区描述
+Emoji 一节把系统字体、EmojiCompat、下载字体 provider、color font 和“Bitmap Emoji”混成一条线，但没有说明这些机制各自的版本范围和实现边界。结果是正文既写了 EmojiCompat 的 ReplacementSpan/字体路径，又写了 Android 11 之后统一转向 Bitmap 的结论，前后标准不一致。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 梳理 Android 8-16 间系统 emoji 字体、EmojiCompat/emoji2、下载字体 provider 的时间线
+- 区分系统 color font 渲染、EmojiCompat span 渲染、厂商自定义 emoji 字体三类路径
+- 核对 NotoColorEmoji / downloadable fonts / EmojiCompatInitializer 的官方文档与 AndroidX 源码
+- 补充“哪些说法来自系统实现，哪些只适用于 AndroidX emoji2”的边界说明
+
+### 关联章节
+2.21、7.8、7.10、13.9
+

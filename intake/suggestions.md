@@ -1160,3 +1160,25 @@
 - **问题**：架构图和 Perfetto 证据链仍是占位状态，读者只能看到结论，看不到对应的图示和 Trace 读法。
 - **建议**：补 1 张文字渲染链路图，至少补 2 组真实 Perfetto 片段（measure jank、glyph upload / TextBlob 观察点）。
 - **review 日志**：logs/review/2026-04-11-23-review.md
+
+## [Task9 Deep Review] 2.21 文字渲染性能 — 2026-04-11
+- **类型**：数据缺失
+- **位置**：行 89、112、173、194-205、235、259、285
+- **问题**：复杂文本 5-10 倍、Span 2-3 倍、EmojiCompat 5-15MB/50-200ms、Bitmap Emoji 10 倍、PrecomputedText 1-5ms→0.01ms、BoringLayout 1/10、IncludeFontPadding 20-30% 等数字都没有绑定设备、trace、benchmark 或官方来源。
+- **建议**：给每组数字补测试条件和出处；拿不到证据时统一降级为定性描述，或标成 [待验证]。
+- **review 日志**：logs/deep-review/2026-04-11-23-deep-review.md
+
+## [Task9 Deep Review] 2.21 文字渲染性能 — 2026-04-11
+- **类型**：需补充素材
+- **位置**：行 85、311、323
+- **问题**：文字渲染架构图、measure jank 的 Perfetto 片段、TextBlob / glyph upload 观测说明仍是占位或空口说明，技术结论缺少可核对的图示证据。
+- **建议**：至少补 1 张 TextView -> Layout -> HWUI/Skia 的结构图，补 2 组真实 trace 片段，并标注各自对应的线程/track/观测点。
+- **review 日志**：logs/deep-review/2026-04-11-23-deep-review.md
+
+## [Task9 Deep Review] 2.21 文字渲染性能 — 2026-04-11
+- **类型**：交叉引用
+- **位置**：frontmatter `related_chapters`、参考资料
+- **问题**：正文多次谈到 Perfetto 观测与 atrace，但 `related_chapters` 没有把 §13.9 tracing 基础设施纳入；参考资料里的 AOSP 链接又指向 `master`，和 frontmatter `last_verified_against: AOSP android-16.0.0_r1` 不一致。
+- **建议**：把 tracing 基础设施章节加入相关章节；源码链接统一钉到 `android-16.0.0_r1` 或正文明确说明“master 仅作最新参考”。
+- **review 日志**：logs/deep-review/2026-04-11-23-deep-review.md
+

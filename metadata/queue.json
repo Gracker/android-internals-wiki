@@ -4135,5 +4135,62 @@
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-11T22:20:00+08:00",
     "status": "pending"
+  },
+  {
+    "section": "2.21",
+    "section_title": "文字渲染性能",
+    "priority": 95,
+    "reason": "[Deep Tech Review] Skia 文本绘制路径陈旧，版本演进表多处失真，Emoji/PrecomputedText 机制描述写偏",
+    "material_paths": [
+      "intake/research-gaps.md",
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "行 72-78 Android 文字渲染管线全景",
+        "detail": "正文把当前绘制路径写成 Canvas.drawText() -> SkiaCanvas.drawText() -> SkPaint::textToGlyphs() -> SkDraw::drawPosText() -> SkGlyphCache。android-16.0.0_r1 的 frameworks/base/libs/hwui/SkiaCanvas.cpp 实际文本入口是 drawGlyphs()，随后构造 SkTextBlob 并调用 mCanvas->drawTextBlob()；文中列出的 textToGlyphs / drawPosText 在该文件里都不存在。",
+        "suggestion": "删掉这条过时调用序列，改成基于 android-16.0.0_r1 的真实实现描述，或降级为“Java Canvas -> HWUI/Skia 文本绘制”这一层级，不要硬写已过时的内部函数名。"
+      },
+      {
+        "type": "版本差异",
+        "location": "行 339-346 版本演进表",
+        "detail": "版本表里有多处可直接核对的里程碑错误：platform/frameworks/minikin 在 android-4.4.4_r2 不存在、在 android-5.0.0_r1 已存在；StaticLayout.Builder 在 android-6.0.1_r1 已存在，不是 Android 9 才引入；TextView 从 android-6.0.1_r1 起默认就是 HYPHENATION_FREQUENCY_NONE，不能写成 Android 10 才“默认频率降低”。此外“Android 7.0 引入 EmojiCompat 兼容库概念”也缺少 AOSP/support tag 依据。",
+        "suggestion": "按可验证 tag 重写版本表。能明确锚定到 AOSP/support tag 的再写进表；拿不到直接证据的条目改成 [待验证] 或删掉。"
+      },
+      {
+        "type": "源码错误",
+        "location": "行 239、346 PrecomputedText / AppCompatTextView",
+        "detail": "正文写“从 Android 14 开始，Jetpack 的 AppCompatTextView 在设置了 setPrecomputedText() 后会自动在后台线程执行测量”。androidx-main 的 AppCompatTextView 实际提供的是 setTextFuture(Future<PrecomputedTextCompat>)，并在 onMeasure 前 consumeTextFutureAndSetBlocking()；后台线程由调用方自己提供，不存在“Android 14 自动后台测量”的框架行为。",
+        "suggestion": "改成“AppCompatTextView 可配合 PrecomputedTextCompat.getTextFuture()/setTextFuture() 使用异步预计算”，并删掉 Android 14 自动行为这一说法。"
+      },
+      {
+        "type": "源码错误",
+        "location": "行 201-205、344 Bitmap Emoji vs 系统 glyph",
+        "detail": "正文把 Android 11 之后的 Emoji 渲染写成“转向基于 Bitmap 的方式”，并给出 decode bitmap -> upload -> draw 的固定路径与 10 倍开销。当前章节引用的 frameworks/support/emoji2 源码并不支持这个结论：androidx-main 的 TypefaceEmojiSpan/TypefaceEmojiRasterizer 仍是 ReplacementSpan + Typeface + canvas.drawText() 路径，不是通用的 bitmap decode 流程。",
+        "suggestion": "把这一段改成“需区分系统 color font、EmojiCompat span、下载字体 provider 的不同路径”；拿不到系统级官方证据前，不要写成 Android 11 的既成事实。"
+      },
+      {
+        "type": "原理断裂",
+        "location": "行 225-237 PrecomputedText.create() / setText()",
+        "detail": "正文把 PrecomputedText 讲成“StaticLayout 的全部测量逻辑都提前做完，主线程 setText() 直接跳过测量”。但 PrecomputedText.Params 不包含最终宽度约束，AOSP 类注释明确写了它可在“final layout constraints are not known”时预计算。把它等同于完整 StaticLayout 结果，会让读者误判哪些开销已提前完成、哪些仍取决于最终宽度和参数匹配。",
+        "suggestion": "拆开“MeasuredText/段落预计算”和“最终宽度相关的 layout”两层，明确 PrecomputedText 能提前做什么、不能替代什么。"
+      },
+      {
+        "type": "原理断裂",
+        "location": "行 314-323 Perfetto 识别文字渲染瓶颈",
+        "detail": "正文直接让读者去 RenderThread 看 drawText/drawPosText、用 android.graphics.Bitmap atrace 看 TextBlob 命中，但没有给出 trace 配置、事件来源或源码锚点。以当前表述，读者很难在默认 Perfetto 抓取里稳定复现这些观察点，分析方法会变成“按文搜 slice 名称”而不是按证据定位。",
+        "suggestion": "补“默认 trace 能看到什么、额外打开哪些 gfx/hwui/atrace 后能看到什么”的观测矩阵；拿不到稳定观测证据时，删掉具体 slice 名称。"
+      },
+      {
+        "type": "知识盲区",
+        "location": "Emoji / Perfetto 两节整体",
+        "detail": "章节缺少两个直接影响实战判断的边界：一是系统 emoji、EmojiCompat、下载字体 provider、color font 之间的版本演进与实现边界；二是文字渲染在 Perfetto 中的可观测面边界，哪些属于 MainThread measure，哪些能在 RenderThread/HWUI 侧被直接观测。",
+        "suggestion": "分别补一节“Emoji 渲染版本与实现边界”和“文字渲染 Perfetto 观测面”，否则当前多处版本判断和 trace 指南都站不稳。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-11T23:21:00+08:00",
+    "status": "pending"
   }
 ]
