@@ -1349,3 +1349,29 @@
 - **位置**：行 497-500
 - **问题**：参考资料摘要把 ART 分代 GC 与 `DeliQueue` 并列，主题发生串线。DeliQueue 属于 MessageQueue/Looper 方向，不是 GC 机制的一部分。
 - **建议**：删除这句，或把该条研究摘要改回只描述 ART GC / MarkCompact / young generation 相关结论。
+
+
+## [Task6 Review] 5.8 后台执行限制与优化 — 2026-04-12
+- **类型**：需确认
+- **位置**：App Standby Buckets：五级分类
+- **问题**：Bucket 执行频率、Doze 维护窗口时长，以及 `DeviceIdleController` 作为核心代码路径的写法偏满，可能把 App Standby / bucket 管理链路写窄了。
+- **建议**：由 Task 9 对照 UsageStatsService / AppStandbyController / JobScheduler 的实际实现核对 bucket 管理路径，并把频率结论收窄到有证据的范围。
+- **review 日志**：logs/review/2026-04-12-04-review.md
+
+- **类型**：需确认
+- **位置**：前台服务类型体系 + 超时机制
+- **问题**：FGS 类型列表与后文超时段落不完全一致，`mediaProcessing`、权限映射和 Android 14 / 15 的类型边界需要统一核对。
+- **建议**：核对官方 FGS types 文档与 Android 15 行为变更，再统一类型矩阵、权限和 6 小时预算说明。
+- **review 日志**：logs/review/2026-04-12-04-review.md
+
+- **类型**：需确认
+- **位置**：JobScheduler：系统级调度 + 版本演进 Android 16 / 17
+- **问题**：`JobDebugInfo`、`getPendingJobReasonsHistory` 以及 Android 17 行为变化被写成了硬结论，当前来源链还不够完整。
+- **建议**：由 Task 9 对照 Android 16 / 17 官方文档和 AOSP API 复核；无法确认时改成更保守的表述。
+- **review 日志**：logs/review/2026-04-12-04-review.md
+
+- **类型**：需补充素材
+- **位置**：在 Perfetto 中的表现
+- **问题**：`device_idle`、后台 Job 延迟和网络受限的章节仍缺真实 Trace 或等价图示，当前只有读法说明，没有可复核证据。
+- **建议**：补 2 组真实 Perfetto / Battery Historian 片段，至少覆盖 Doze 状态切换与后台任务延迟两个场景。
+- **review 日志**：logs/review/2026-04-12-04-review.md

@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-12T03:50:53+08:00",
+  "generated_at": "2026-04-12T04:14:00+08:00",
   "state_machine_version": "v2",
   "total_sections": 206,
   "metrics": {
@@ -9,30 +9,30 @@
     "task6_unknown": 30,
     "task9_unknown": 30,
     "task2b_unknown": 30,
-    "last_updated": "2026-04-12T03:50:53+08:00",
+    "last_updated": "2026-04-12T04:14:00+08:00",
     "ready-for-review": 173,
-    "pipeline_task2b_pending": 3,
-    "pipeline_task6_pending": 171,
+    "pipeline_task2b_pending": 4,
+    "pipeline_task6_pending": 170,
     "pipeline_task9_pending": 2,
-    "task6_pending": 147,
-    "task6_reviewed": 5,
+    "task6_pending": 146,
+    "task6_reviewed": 6,
     "task6_revisiting": 24,
     "task9_pending": 175,
     "task9_reviewed": 1,
     "task2b_fixed": 24,
-    "task2b_idle": 149,
-    "task2b_pending": 3
+    "task2b_idle": 148,
+    "task2b_pending": 4
   },
   "pipeline": {
     "pipeline_stage_counts": {
-      "task2b_pending": 3,
-      "task6_pending": 171,
+      "task2b_pending": 4,
+      "task6_pending": 170,
       "task9_pending": 2,
       "unknown": 30
     },
     "task6_state_counts": {
-      "pending": 147,
-      "reviewed": 5,
+      "pending": 146,
+      "reviewed": 6,
       "revisiting": 24,
       "unknown": 30
     },
@@ -43,8 +43,8 @@
     },
     "task2b_state_counts": {
       "fixed": 24,
-      "idle": 149,
-      "pending": 3,
+      "idle": 148,
+      "pending": 4,
       "unknown": 30
     }
   },
@@ -980,10 +980,13 @@
       "title": "后台执行限制与优化",
       "path": "src/part1-fundamentals/ch05-cpu-power/08-background-execution.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "pending",
+      "pipeline_stage": "task2b_pending",
+      "task6_state": "reviewed",
       "task9_state": "pending",
-      "task2b_state": "idle"
+      "task2b_state": "pending",
+      "reviewed_date": "2026-04-12",
+      "reviewed_by": "openclaw-task6",
+      "task6_result": "needs-rework"
     },
     "src/part1-fundamentals/ch05-cpu-power/09-adpf.md": {
       "chapter": "5.9",

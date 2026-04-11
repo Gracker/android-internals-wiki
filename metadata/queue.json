@@ -4495,5 +4495,44 @@
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-12T03:36:12+08:00",
     "status": "pending"
+  },
+  {
+    "section": "5.8",
+    "section_title": "后台执行限制与优化",
+    "priority": 90,
+    "reason": "[review回炉] Bucket / FGS / JobScheduler 的版本与证据链需核，Perfetto 观测素材不足",
+    "material_paths": [
+      "intake/suggestions.md（含 review 意见）"
+    ],
+    "review_issues": [
+      {
+        "type": "需确认",
+        "location": "App Standby Buckets：五级分类",
+        "detail": "Bucket 执行频率、Doze 维护窗口时长，以及 `DeviceIdleController` 作为核心代码路径的写法偏满，可能把 App Standby / bucket 管理链路写窄了。",
+        "suggestion": "由 Task 9 对照 UsageStatsService / AppStandbyController / JobScheduler 的实际实现核对 bucket 管理路径，并把频率结论收窄到有证据的范围。"
+      },
+      {
+        "type": "需确认",
+        "location": "前台服务类型体系 + 超时机制",
+        "detail": "FGS 类型列表与后文超时段落不完全一致，`mediaProcessing`、权限映射和 Android 14 / 15 的类型边界需要统一核对。",
+        "suggestion": "核对官方 FGS types 文档与 Android 15 行为变更，再统一类型矩阵、权限和 6 小时预算说明。"
+      },
+      {
+        "type": "需确认",
+        "location": "JobScheduler：系统级调度 + 版本演进 Android 16 / 17",
+        "detail": "`JobDebugInfo`、`getPendingJobReasonsHistory` 以及 Android 17 行为变化被写成了硬结论，当前来源链还不够完整。",
+        "suggestion": "由 Task 9 对照 Android 16 / 17 官方文档和 AOSP API 复核；无法确认时改成更保守的表述。"
+      },
+      {
+        "type": "需补充素材",
+        "location": "在 Perfetto 中的表现",
+        "detail": "`device_idle`、后台 Job 延迟和网络受限的章节仍缺真实 Trace 或等价图示，当前只有读法说明，没有可复核证据。",
+        "suggestion": "补 2 组真实 Perfetto / Battery Historian 片段，至少覆盖 Doze 状态切换与后台任务延迟两个场景。"
+      }
+    ],
+    "added_by": "task6-review",
+    "added_at": "2026-04-12T04:14:00+08:00",
+    "status": "pending",
+    "original_review_log": "logs/review/2026-04-12-04-review.md"
   }
 ]
