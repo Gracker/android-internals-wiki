@@ -240,8 +240,10 @@
     ],
     "added_by": "task6-review",
     "added_at": "2026-04-11T18:06:00+08:00",
-    "status": "pending",
-    "original_review_log": "logs/review/2026-04-11-18-review.md"
+    "status": "completed",
+    "original_review_log": "logs/review/2026-04-11-18-review.md",
+    "completed_at": "2026-04-11T22:01:48+08:00",
+    "completed_by": "task2b-rework"
   },
   {
     "section": "13.8",
@@ -3925,7 +3927,9 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-11T20:37:56+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-11T22:01:48+08:00",
+    "completed_by": "task2b-rework"
   },
   {
     "section": "3.4",
