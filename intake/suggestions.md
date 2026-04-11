@@ -811,3 +811,15 @@
 - **问题**：DeliQueue 段落把主线程 MessageQueue 变更直接归因到 VSync/Choreographer 的量化收益，并使用“Google 内部 Beta 测试数据”作为验证来源，但没有给出可公开复核的源码路径或数据出处；末尾验证路径还指向 `DispSync.cpp`，与正文讨论的机制不匹配。
 - **建议**：交给 Task 9 / Task 2B 核实 MessageQueue/Looper 相关源码路径、量化数据来源，以及该段是否应改写为更谨慎的版本演进说明。
 - **review 日志**：logs/review/2026-04-11-10-review.md
+
+
+## [Task9 Deep Review] 2.3 VSync 机制 — 2026-04-11
+- **类型**：数据缺失
+- **位置**：§8.3 VSync 与 Input 事件（行 519）
+- **问题**："120Hz 采样率的触摸屏，从中断处理到 App 收到 Input 事件大约需要半个 VSync 周期"没有设备、Trace、采样频率或测量方法支撑，当前只能算经验判断。
+- **建议**：补一段 Perfetto/厂商 trace 的测量方法（InputReader/InputDispatcher/App 收到事件的时间点），或降级为定性表述。
+
+- **类型**：交叉引用
+- **位置**：§8.3 → §8.1 响应速度原理
+- **问题**：本章与 §3.1 都把 Input 事件跨进程传输写成 `InputChannel/socketpair`，但 §8.1 第 132 行写成了 "InputDispatcher 通过 Binder IPC 将事件发送给目标 App 进程"，同一机制在相邻章节中出现冲突。
+- **建议**：统一全书表述为 `InputChannel/socketpair`，如需提到 Binder，仅用于窗口创建时回传 `InputChannel` handle 的场景，不要写成运行时事件传输通道。

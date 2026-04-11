@@ -12,17 +12,17 @@
     "task6_pending": 162,
     "task6_reviewed": 3,
     "task6_revisiting": 9,
-    "task9_pending": 174,
-    "task9_reviewed": 0,
+    "task9_pending": 173,
+    "task9_reviewed": 1,
     "task2b_idle": 162,
     "task2b_pending": 3,
-    "last_updated": "2026-04-11T10:12:00+08:00",
+    "last_updated": "2026-04-11T10:21:00+08:00",
     "unknown": 3
   },
   "pipeline": {
     "pipeline_stage_counts": {
-      "task2b_pending": 3,
       "task6_pending": 171,
+      "task2b_pending": 3,
       "unknown": 1
     },
     "task6_state_counts": {
@@ -32,13 +32,14 @@
       "unknown": 1
     },
     "task9_state_counts": {
-      "pending": 174,
+      "pending": 173,
+      "reviewed": 1,
       "unknown": 1
     },
     "task2b_state_counts": {
-      "fixed": 9,
       "idle": 162,
       "pending": 3,
+      "fixed": 9,
       "unknown": 1
     }
   },
@@ -1042,7 +1043,7 @@
       "status": "ready-for-review",
       "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
-      "task9_state": "pending",
+      "task9_state": "reviewed",
       "task2b_state": "pending"
     },
     "src/part1-fundamentals/ch02-rendering/20-multiwindow-desktop-rendering.md": {

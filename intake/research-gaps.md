@@ -785,3 +785,30 @@ OEM/自研内核接入 AutoFDO 的关键前置条件缺失。正文提到 Kleaf�
 
 ### 关联章节
 1.4, 1.10, 2.13, 2.15
+
+
+## [Task9 Deep Review] 2.3 VSync 机制 — 2026-04-11
+
+### 盲区 1：Android 13+ 当前 VSync 调度链（app / appSf）
+**描述**：正文已经引入 `vsync-appSf` 和 `VsyncConfiguration / VSyncPredictor / VSyncReactor`，但没有把 Android 13+ 当前实现从 `Scheduler::createEventThread("app"/"appSf")`、`VSyncDispatchTimerQueue` 调度，到 `EventThread` / BitTube / `DisplayEventReceiver` 的真实链路讲透，反而混入了旧版 `DispSyncSource` / `CallbackRepeater` 命名。读者会分不清历史 DispSync 时代与当前 Scheduler 时代的边界。
+
+**重要程度**：高
+
+**建议研究方向**：
+- 梳理 android-16 `services/surfaceflinger/Scheduler/{Scheduler.cpp, EventThread.cpp, VSyncDispatchTimerQueue.cpp, VSyncPredictor.cpp, VSyncReactor.cpp}` 的调用关系
+- 对比 Android 10 的 DispSync 时代和 Android 13+ 的 `app/appSf` 双 EventThread 架构
+- 补一张 current vs historical call chain 图，明确 VSYNC-app / VSYNC-sf / VSYNC-appSf 的来源与消费者
+
+**关联章节**：§2.3、§2.4、§2.6
+
+### 盲区 2：Android 17 DeliQueue 对 VSync/Choreographer 的公开证据链
+**描述**：§9.6 已给出 DeliQueue 的结构、量化收益和 Perfetto 观察结论，但公开可复核的源码 tag、trace 样本和 benchmark 来源仍不闭环。当前章节把 preview 级结论直接并入 VSync 主线，会放大版本叙事风险。
+
+**重要程度**：高
+
+**建议研究方向**：
+- 等待 android-17 public tag 后核实 `MessageQueue` / `Looper` 实现与 DeliQueue 开关路径
+- 找公开 trace 或官方 benchmark，确认“4% 掉帧下降 / 9.1% 首帧改善”适用范围
+- 明确 DeliQueue 影响的是 `doFrame` 排队延迟、还是 VSync 调度本身，避免把 Looper 改动写成 VSync 机制改动
+
+**关联章节**：§2.3、§2.4、§1.13
