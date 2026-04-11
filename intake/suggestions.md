@@ -924,3 +924,9 @@
 - **问题**：“Android 16 开始将 Gralloc HAL 从 HIDL 迁移到 AIDL 接口”和“更少的 IPC 开销”属于版本差异与效果判断，当前来源不足。
 - **建议**：由 Task9 复核 Android 16/17 官方文档与 AOSP 接口变更，必要时 Task2B 改成更保守的表述。
 - **review 日志**：logs/review/2026-04-11-1406-review.md
+
+## [Task9 Deep Review] 2.15 DMA-BUF、Gralloc 与跨进程图形内存共享 — 2026-04-11
+- **类型**：交叉引用
+- **位置**：行 190、220；参见 §2.13 行 134-154
+- **问题**：本章把 slot 状态写成 `DEQUEUED / QUEUED / FREE / ACQUIRED` 的单态流转，而 §2.13 已明确当前 AOSP `BufferState` 是 counter-based，shared mode 下状态可叠加，应以 `isFree()` / `isDequeued()` / `isQueued()` / `isAcquired()` / `isShared()` 判断。前后文口径不一致。
+- **建议**：在本章补一句“这里先按普通路径做简化，shared buffer mode 的计数语义详见 §2.13”，避免读者把单态流转当成当前源码事实。

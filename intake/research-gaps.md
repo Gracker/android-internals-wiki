@@ -896,3 +896,18 @@ BLASTBufferQueue 小节只讲了“App 本地管理 buffer，最后用 Transacti
 
 ### 关联章节
 §2.9、§2.14、§14.8
+
+## [Task9 Deep Review] 2.15 DMA-BUF、Gralloc 与跨进程图形内存共享 — 2026-04-11
+
+### 盲区 1：BLASTBufferQueue 与 handle cache 的现代窗口路径
+**描述**：正文把跨进程共享写成经典的 App → SurfaceFlinger 直连模型，但没有补 Android 现代窗口路径里 BLASTBufferQueue、本地 consumer、slot mirror 和 handle cache 的分层关系。缺这一层，读者很容易把 app 侧 `queueBuffer()`、SurfaceFlinger import、GraphicBuffer 首次同步混成一个事件，进而误判 trace 上的阻塞位置。
+
+**重要程度**：高
+
+**建议研究方向**：
+- BLASTBufferQueue / BufferStateLayer 在 modern window path 中的职责边界
+- `requestBuffer()` / `BUFFER_NEEDS_REALLOCATION` / consumer import cache 的真实时机
+- 在 Perfetto 中如何把 app 侧 `queueBuffer()`、BLAST `QueuedBuffer` 和 SurfaceFlinger `latchBuffer` 串起来
+
+**关联章节**：§2.13 BufferQueue、§2.15 DMA-BUF 与 Gralloc、§2.6 SurfaceFlinger
+
