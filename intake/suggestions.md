@@ -955,3 +955,15 @@
 - **位置**：行 284-290 Fence 泄漏段落
 - **问题**：把“fd 没关”直接推导成“buffer 永远不回到 free pool”过于绝对。fd 泄漏、slot 长时间占用、release fence 不 signal 是三类不同问题，当前表述把资源泄漏和 BufferQueue 生命周期混成一件事。
 - **建议**：拆开写：一类是进程 fd 泄漏；另一类是 release fence / consumer 生命周期导致的 slot 不可复用，并分别给出 `dumpsys SurfaceFlinger` / BufferQueue / `/proc/<pid>/fd` 的定位方法。
+
+## [Task9 Deep Review] 2.4 Choreographer 与渲染流水线 — 2026-04-11
+- **类型**：数据缺失
+- **位置**：行 360-401 Frame Timeline Track 详解
+- **问题**：这一节已经把 Expected / Actual、颜色和 JankType 讲到了，但仍只有占位图 `[图：...]` 和通用描述，没有 1 个真实 trace 片段或对应 SQL 表的例子。读者很难把文中的概念映射到 Perfetto 实际界面。
+- **建议**：补一个真实 Perfetto 截图，或至少补一段基于 `actual_frame_timeline_slice` / `expected_frame_timeline_slice` 的 SQL 示例，把 `on_time_finish` / `jank_type` / `present_type` 对到图上。
+
+## [Task9 Deep Review] 2.4 Choreographer 与渲染流水线 — 2026-04-11
+- **类型**：源码准确性
+- **位置**：行 531-533 “Choreographer 只管 UI 线程吗？”
+- **问题**：当前回答把 `Choreographer.getInstance()` 写成“返回主线程 Looper 对应实例”，容易让读者误以为 Choreographer 天生只属于主线程。实际上它是 **per-calling-thread Looper**：任意已经准备好 Looper 的线程都能拿到自己的 Choreographer；`getSfInstance()` 还是隐藏且已 deprecated 的特殊入口。
+- **建议**：把表述改成“默认 UI 场景通常在主线程使用，但只要线程有 Looper，`getInstance()` 就返回该线程自己的 Choreographer”，并把 `getSfInstance()` 降级成系统/历史背景说明。

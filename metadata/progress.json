@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-11T16:06:00+08:00",
+  "generated_at": "2026-04-11T16:20:00+08:00",
   "state_machine_version": "v2",
   "total_sections": 206,
   "metrics": {
@@ -12,21 +12,21 @@
     "ready-for-review": 173,
     "pipeline_task6_pending": 172,
     "task6_pending": 158,
-    "task9_pending": 176,
-    "task2b_idle": 160,
+    "task9_pending": 175,
+    "task2b_idle": 159,
     "task6_revisiting": 14,
     "task2b_fixed": 14,
-    "pipeline_task2b_pending": 2,
+    "pipeline_task2b_pending": 3,
     "task6_reviewed": 4,
-    "task2b_pending": 2,
-    "pipeline_task9_pending": 2,
-    "last_updated": "2026-04-11T16:06:00+08:00"
+    "task2b_pending": 3,
+    "pipeline_task9_pending": 1,
+    "last_updated": "2026-04-11T16:20:00+08:00"
   },
   "pipeline": {
     "pipeline_stage_counts": {
-      "task2b_pending": 2,
+      "task2b_pending": 3,
       "task6_pending": 172,
-      "task9_pending": 2,
+      "task9_pending": 1,
       "unknown": 30
     },
     "task6_state_counts": {
@@ -36,13 +36,14 @@
       "unknown": 30
     },
     "task9_state_counts": {
-      "pending": 176,
+      "pending": 175,
+      "reviewed": 1,
       "unknown": 30
     },
     "task2b_state_counts": {
       "fixed": 14,
-      "idle": 160,
-      "pending": 2,
+      "idle": 159,
+      "pending": 3,
       "unknown": 30
     }
   },
@@ -437,13 +438,14 @@
       "title": "Choreographer 与渲染流水线",
       "path": "src/part1-fundamentals/ch02-rendering/04-choreographer.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
-      "task9_state": "pending",
-      "task2b_state": "idle",
+      "task9_state": "reviewed",
+      "task2b_state": "pending",
       "reviewed_date": "2026-04-11",
       "reviewed_by": "openclaw-task6",
-      "task6_result": "pass-light-edit"
+      "task6_result": "pass-light-edit",
+      "task9_result": "needs-rework"
     },
     "src/part1-fundamentals/ch02-rendering/05-main-render-thread.md": {
       "chapter": "2.5",

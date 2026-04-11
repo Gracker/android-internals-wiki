@@ -41,11 +41,12 @@ polish_count: 1
 polish_date: "2026-04-04"
 polish_by: "task2b-polish"
 status: ready-for-review
-pipeline_stage: task9_pending
+pipeline_stage: task2b_pending
 task6_state: reviewed
 task6_result: pass-light-edit
-task9_state: pending
-task2b_state: idle
+task9_result: needs-rework
+task9_state: reviewed
+task2b_state: pending
 ---
 
 # Choreographer 与渲染流水线
