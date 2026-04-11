@@ -1984,54 +1984,56 @@
     "section": "2.6",
     "section_title": "SurfaceFlinger 与合成",
     "priority": 95,
-    "reason": "[review回炉] VSync 分发版本差异待核、BlastBufferQueue 机制表述过满、核心 Trace 证据缺失",
+    "reason": "[Deep Tech Review] 版本演进表含事实错误，BufferQueue 时序链被写成单帧闭环",
     "material_paths": [
-      "intake/suggestions.md",
-      "intake/suggestions.md（含 review 意见）"
+      "intake/suggestions.md"
     ],
     "review_issues": [
       {
+        "type": "事实错误",
+        "location": "版本演进 / Android 7.0（Line 320）",
+        "detail": "“SurfaceFlinger 从 mediaserver 体系中独立出来”这一句与 Android 实际演进不符。Android 7.0 的重点是 mediaserver 拆分与权限收缩，SurfaceFlinger 早已是独立的系统合成服务，不是 Nougat 才从 mediaserver 中拆出。",
+        "suggestion": "删除这条时间线，或改成“Android 7.0 重点是 mediaserver 拆分；SurfaceFlinger 并非在这一版才独立”。"
+      },
+      {
+        "type": "事实错误",
+        "location": "版本演进 / Android 10（Line 324）",
+        "detail": "正文把“FrameTimeline 体系逐步成形”放在 Android 10，会把当前 Perfetto / SurfaceFlinger 语境里的 FrameTimeline 引到错误版本。FrameTimeline 是 Android 12 才进入官方性能分析语境的能力，不应回溯到 Android 10。",
+        "suggestion": "把 FrameTimeline 的里程碑改到 Android 12；如果想保留 Android 10，可单独写成“帧统计与 present 观测能力继续演进”，不要直接写 FrameTimeline。"
+      },
+      {
         "type": "版本差异",
-        "location": "主循环章节（INVALIDATE/REFRESH 代码块附近）",
-        "detail": "Android 14 SurfaceFlinger 重构为 ICompositor/SurfaceFlinger::commit()+composite() 架构，但章节仅一句带过。INVALIDATE/REFRESH 代码示例只适用于 Android 12-13，Android 14+ 的实际流程和代码路径缺失。",
-        "suggestion": "在主循环一节增加 Android 14+ 流程对比（commit() vs handleMessageRefresh()），可给出 Android 14 的新代码片段或 at android-14.0.0_r1 的路径说明。"
+        "location": "版本演进 / Android 4.3（Line 316）",
+        "detail": "“Android 4.3 引入 OpenGL ES 渲染路径，SurfaceFlinger 开始使用 GPU 承担 Client 合成”时间点过晚。SurfaceFlinger 在更早版本就已经有 GLES client composition 路径，这里会把早期图形栈演进讲错。",
+        "suggestion": "删除“4.3 引入 GLES 路径”这句，或改写成更准确的里程碑，例如 4.1 Project Butter / HWC 协同、后续版本 RenderEngine 路径持续演进。"
       },
       {
-        "type": "需确认",
-        "location": "VSync 分发：管线的节拍器",
-        "detail": "“DispSync（Android 12 之后为 VsyncModulator）”把 Android 12+ 的 VSync 调度路径压成了单点替换，版本演进表述偏满。",
-        "suggestion": "核对 Android 12-16 的 Scheduler / EventThread / VSyncSchedule 路径，再决定是否改成更保守的表述。"
+        "type": "原理断裂",
+        "location": "BufferQueue 四步流转 + 异常标志 + Jank 小节（Lines 102, 226-231, 273-274）",
+        "detail": "正文把 dequeue → queue → acquire → release 写成“一个 VSync 周期内顺畅完成”的单帧闭环，并把 release 延迟直接等价成 App dequeue 阻塞。这个描述缺了 acquire fence / release fence、triple buffering、max acquired buffer count 与 HWC 持有时序，读者会把正常的一帧流水线深度误判成异常。",
+        "suggestion": "明确区分“Buffer 被 queue 之后进入下一次 latch”“Buffer 真正可复用要等 release fence signal”，并把 backpressure 解释成 Buffer 数量、fence、consumer 持有时长共同作用的结果；必要时交叉引用 §2.13 BufferQueue 和 §2.16 Sync Fence。"
       },
       {
-        "type": "需确认",
-        "location": "BlastBufferQueue 章节 + 版本演进 Android 12",
-        "detail": "“Buffer 状态管理移到了 App 进程内”“acquire/release 不再需要跨进程”这组表述过满，BLAST 与传统 BufferQueue / SurfaceControl Transaction 的关系没有讲清。",
-        "suggestion": "按 frameworks/native/libs/gui/BlastBufferQueue.cpp 重核机制，再决定是否保留当前绝对化表述。"
-      },
-      {
-        "type": "需补充素材",
-        "location": "BufferQueue 的四步流转、HWC 合成 Track",
-        "detail": "两个核心 Perfetto 分析段仍是 Trace 截图占位，证据面不足。",
-        "suggestion": "补 2 张真实或等价图示，覆盖 BufferQueue 四步流转和 Device/Client 合成切换。"
-      },
-      {
-        "type": "需确认",
-        "location": "版本演进 Android 13",
-        "detail": "“Vulkan 作为 RenderEngine 后端的支持逐步完善 [待验证...]”仍未闭环。",
-        "suggestion": "核对引入版本和适用范围，再决定保留版本断言还是改成保守表述。"
+        "type": "版本差异",
+        "location": "Jank 与 SurfaceFlinger 的关系（Line 280）",
+        "detail": "这里用“Transaction 风暴导致 handleMessageTransaction 变慢”解释所有适用版本，但本章前文已经说明 Android 14+ 主流程改成 commit/composite。把旧函数名直接写成通用现象，会把 Android 14-16 的读者带回 Android 12/13 代码路径。",
+        "suggestion": "给 `handleMessageTransaction` 加版本限定（Android 12-13），Android 14+ 改写成“事务处理阶段 / commit 阶段变长”。"
       }
     ],
     "added_by": "task6-review",
     "added_at": "2026-04-12T01:05:00+08:00",
-    "status": "completed",
-    "notes": "Deep review found P1 coverage issues (Android 14重构), no P0 source code errors - skipped by task2b P0 rework scope",
+    "status": "pending",
+    "notes": "Deep review found P1 coverage issues (Android 14重构), no P0 source code errors - skipped by task2b P0 rework scope | Reopened by task9 deep review; active issue list replaced with current unresolved findings.",
     "previous_completed_at": "2026-04-09T13:49:41",
     "previous_completed_by": "task2b-rework",
-    "reopened_at": "2026-04-12T01:05:00+08:00",
-    "reopened_by": "task6-review",
+    "reopened_at": "2026-04-12T05:36:45+08:00",
+    "reopened_by": "task9-deep-tech-review",
     "original_review_log": "logs/review/2026-04-12-01-review.md",
     "completed_at": "2026-04-12T01:54:48+08:00",
-    "completed_by": "task2b-rework"
+    "completed_by": "task2b-rework",
+    "updated_at": "2026-04-12T05:36:45+08:00",
+    "updated_by": "task9-deep-tech-review",
+    "deep_review_log": "logs/deep-review/2026-04-12-05-deep-review.md"
   },
   {
     "section": "2.9",
