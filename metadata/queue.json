@@ -3352,6 +3352,48 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-11T11:20:00+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-11T11:41:00+08:00",
+    "completed_by": "task2b-content-processing-rework",
+    "result": "fixed"
+  },
+  {
+    "section": "2.13",
+    "section_title": "图形缓冲区管理 (BufferQueue)",
+    "priority": 90,
+    "reason": "[review回炉] 需补齐统一大纲、Trace 截图，并核实 BLASTBufferQueue 收益与 Android 13-17 版本演进来源",
+    "material_paths": [
+      "intake/suggestions.md（含 review 意见）"
+    ],
+    "review_issues": [
+      {
+        "type": "需重写",
+        "location": "全文结构",
+        "detail": "缺少 outline-start / outline-end 与 🔹 锚点，无法按统一大纲检查覆盖率",
+        "suggestion": "按 writing-guide.md 补齐大纲块，并为每个锚点补足对应段落"
+      },
+      {
+        "type": "需补充素材",
+        "location": "在 Perfetto 中的表现",
+        "detail": "缺少 BufferQueue 正常/异常行为的 Perfetto Trace 截图",
+        "suggestion": "补 2 张 Trace 截图，标出 dequeueBuffer 阻塞与 queueBuffer → acquireBuffer 延迟"
+      },
+      {
+        "type": "需确认",
+        "location": "BLASTBufferQueue 性能收益段落",
+        "detail": "“延迟大幅降低”“显著减少”缺少量化数据或同机型 Trace 对比",
+        "suggestion": "补充同机型对比数据，或改写为不带量化色彩的机制描述"
+      },
+      {
+        "type": "需确认",
+        "location": "版本演进表（Android 13-17）",
+        "detail": "frame rate override、maxBufferCount、无锁 MessageQueue + BlastBufferQueue 协同优化缺少来源",
+        "suggestion": "补充 AOSP commit、官方文档或发布说明"
+      }
+    ],
+    "added_by": "task6-review",
+    "added_at": "2026-04-11T12:20:00+08:00",
+    "status": "pending",
+    "original_review_log": "logs/review/2026-04-11-12-review.md"
   }
 ]

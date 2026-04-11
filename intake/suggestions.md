@@ -840,3 +840,28 @@
 - **位置**：行 184-198 参考资料尾部
 - **问题**：Gemma / Gemini Nano 条目与“Google 官方的性能优化思路”主题无直接关系，属于 AI 能力资讯，不应挂在本章参考资料中。
 - **建议**：移出本章参考资料，改挂到 AI / Android AI 相关章节或独立资料池，避免引用域被污染。
+
+## [Task6 Review] 2.13 图形缓冲区管理 (BufferQueue) — 2026-04-11
+- **类型**：需重写
+- **位置**：全文结构
+- **问题**：缺少 `outline-start` / `outline-end` 与 `🔹` 锚点，Task 6 无法按统一大纲检查覆盖率。
+- **建议**：按 writing-guide.md 补齐大纲块，并让每个锚点至少对应 1 个完整段落。
+- **review 日志**：logs/review/2026-04-11-12-review.md
+
+- **类型**：需补充素材
+- **位置**："在 Perfetto 中的表现"
+- **问题**：目前只有文字描述，没有正常/异常 BufferQueue 行为的 Trace 截图或标注图。
+- **建议**：补 2 张 Perfetto 截图，至少覆盖 `dequeueBuffer` 阻塞和 `queueBuffer` → `acquireBuffer` 延迟两个场景。
+- **review 日志**：logs/review/2026-04-11-12-review.md
+
+- **类型**：需确认
+- **位置**：BLASTBufferQueue 性能收益段落
+- **问题**："延迟大幅降低"、"显著减少"属于量化结论，但正文没有给出同机型对比数据或 Trace 证据。
+- **建议**：补充同机型 Android 10/12+ 对比 Trace，或改写为不带量化色彩的机制描述。
+- **review 日志**：logs/review/2026-04-11-12-review.md
+
+- **类型**：需确认
+- **位置**：版本演进表（Android 13-17）
+- **问题**：`frame rate override`、`maxBufferCount`、`无锁 MessageQueue + BlastBufferQueue 协同优化` 三处缺少可追溯来源。
+- **建议**：补充 AOSP commit、官方文档或发布说明，再决定是否保留这些版本结论。
+- **review 日志**：logs/review/2026-04-11-12-review.md
