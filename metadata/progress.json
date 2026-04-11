@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-11T09:08:00+08:00",
+  "generated_at": "2026-04-11T09:20:00+08:00",
   "state_machine_version": "v2",
   "total_sections": 175,
   "metrics": {
@@ -1363,7 +1363,7 @@
       "status": "ready-for-review",
       "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
-      "task9_state": "pending",
+      "task9_state": "reviewed",
       "task2b_state": "pending"
     },
     "src/part1-fundamentals/ch01-architecture/13-messagequeue-deliqueue.md": {
@@ -2920,7 +2920,25 @@
         "consistency": 4,
         "verification": 2,
         "metadata": 5
-      }
+      },
+      "deep_review_date": "2026-04-11T09:20:00+08:00",
+      "deep_review_by": "task9-deep-tech-review",
+      "deep_review_score": 2.0,
+      "deep_review_p0": 4,
+      "deep_review_p1": 3,
+      "deep_review_p2": 3,
+      "issues_found": [
+        "InputDispatcher 被误写成 `/data/system/input_manager/*` 命名 socket，实际是 InputChannel/socketpair（P0）",
+        "MessageQueue wake fd 被写成 pipe，Android 8-17 现代实现应为 eventfd（P0）",
+        "Binder 默认线程池被写成 `BIND_MAX_THREADS = 16`，AOSP 实际是 `DEFAULT_MAX_BINDER_THREADS = 15`（P0）",
+        "AIDL HAL 被错误归入 HwBinder `/dev/hwbinder` 域（P0）",
+        "选型主线缺少“Binder 控制面 + fd/共享内存数据面”的组合模型（P1）",
+        "正文未展开 `BINDER_TYPE_FD` / fd 传递机制，零拷贝 IPC 解释不完整（P1）",
+        "IPC 版本表漏掉 Android 10 Stable AIDL 这个关键拐点（P1）",
+        "延迟/占比表缺少 benchmark 边界与来源（P2）",
+        "Perfetto SQL 缺 trace 配置和模块/表映射，方法不可直接复现（P2）",
+        "与 §3.1 / §1.5 / §1.1 的机制描述存在交叉引用漂移（P2）"
+      ]
     }
   }
 }
