@@ -12,9 +12,29 @@ gap_source: "AOSP结构+官方文档+研究素材"
 gap_score: "14/20"
 drafted_by: "openclaw-task2a"
 drafted_date: "2026-04-04"
+reviewed_by: openclaw-task6
+reviewed_date: "2026-04-11"
+sources:
+  - type: aosp
+    path: "frameworks/native/libs/gui/BufferQueue.cpp"
+  - type: aosp
+    path: "frameworks/native/libs/gui/BufferQueueCore.cpp"
+  - type: aosp
+    path: "frameworks/native/libs/gui/BLASTBufferQueue.cpp"
+  - type: official
+    path: "https://source.android.com/docs/core/graphics/architecture"
+  - type: official
+    path: "https://source.android.com/docs/core/graphics/bufferqueue"
+pipeline_stage: task2b_pending
+task6_result: needs-rework
+task6_state: reviewed
+task9_state: pending
+task2b_state: pending
 ---
 
 # 2.13 图形缓冲区管理 (BufferQueue)
+
+[需重写：补充 `outline-start` / `outline-end` 与 `🔹` 锚点，当前无法按统一大纲检查章节覆盖率。]
 
 ## 为什么要了解 BufferQueue
 
@@ -28,7 +48,7 @@ BufferQueue 的设计模式非常直观：生产者-消费者。App 是生产者
 
 为什么需要这个中间层？因为 App 和 SurfaceFlinger 运行在不同的进程中。如果 App 直接把帧数据交给 SurfaceFlinger，要么需要跨进程拷贝整帧像素（性能灾难），要么需要某种共享内存加同步机制。BufferQueue 就是这个「共享内存 + 同步机制」的封装。
 
-[已验证：来源见 source.android.com/devices/graphics/architecture]
+[已验证：来源见 https://source.android.com/docs/core/graphics/architecture]
 
 整个流程是这样的：
 
@@ -69,7 +89,7 @@ GraphicBuffer 的跨进程共享是 Android 渲染架构的关键优化之一。
 
 这意味着一帧 1080p RGBA 的数据（约 8MB）在 App → SurfaceFlinger 之间传递时，实际拷贝的数据量只有几十字节（handle + 元数据）。
 
-[已验证：来源见 source.android.com/devices/graphics/architecture 和 AOSP frameworks/native/libs/ui/GraphicBuffer.cpp]
+[已验证：来源见 https://source.android.com/docs/core/graphics/architecture 和 AOSP `frameworks/native/libs/ui/GraphicBuffer.cpp`]
 
 每个 GraphicBuffer 携带的元数据包括：
 
@@ -148,7 +168,7 @@ BufferQueue 中同时存在的 buffer 数量直接决定了渲染管线的吞吐
 
 Android 默认使用三缓冲。这个策略在 Android 4.1（Project Butter）中引入，目的是在帧时间波动时保持流畅性。但三缓冲引入了额外的 1 帧输入延迟——用户触摸屏幕后，对应的画面变化需要多等一个 VSync 周期才能显示。对于游戏和交互式应用，这个延迟有时是可感知的。
 
-[已验证：来源见 source.android.com/devices/graphics 和 AOSP SurfaceFlinger 配置]
+[已验证：来源见 https://source.android.com/docs/core/graphics/bufferqueue 与 AOSP SurfaceFlinger 相关实现]
 
 ## BlastBufferQueue：从「SurfaceFlinger 管一切」到「App 自管理」
 
@@ -168,9 +188,11 @@ mBlastBufferQueue = new BLASTBufferQueue(session(), "ViewRootImpl@" + ...,
 
 BlastBufferQueue 的名称「BLAST」来自「Buffer LASer Transaction」——它将缓冲区提交与 SurfaceControl 的 Transaction 绑定在一起。每次 `queueBuffer` 时，BBQ 自动创建一个 Transaction，把 buffer 和对应的帧号（frameNumber）一起提交给 SurfaceFlinger。
 
-这个架构变化带来的性能好处是明显的：dequeueBuffer 从跨进程调用变成了本地操作，延迟大幅降低。在 Perfetto 中，我们可以观察到 Android 12+ 设备上的 dequeueBuffer 耗时比旧设备显著减少。
+这个架构变化带来的直接变化是：dequeueBuffer 从跨进程调用变成了本地操作。
 
-[已验证：来源见 AOSP frameworks/native/libs/gui/BLASTBufferQueue.cpp 和 android.googlesource.com]
+[需确认：这里的“延迟大幅降低”“显著减少”缺少量化数据或同机型 Trace 对比，建议补充实测依据。]
+
+[已验证：来源见 AOSP `frameworks/native/libs/gui/BLASTBufferQueue.cpp`]
 
 ## 在 Perfetto 中的表现
 
@@ -197,7 +219,7 @@ SurfaceFlinger: ──────[composite frame N]─────────
 
 从 App 的 `queueBuffer` 到 SurfaceFlinger 的 `acquireBuffer` 之间的时间差，反映了缓冲区在队列中的等待时间。如果这个延迟大于一个 VSync 周期，说明 SurfaceFlinger 的处理速度跟不上。
 
-[待补充：Trace 截图展示正常和异常的 BufferQueue 行为]
+[需补充素材：BufferQueue 正常与异常行为的 Perfetto Trace 截图（至少各 1 张，并标注 `dequeueBuffer`、`queueBuffer`、`acquireBuffer` 的对应区域）。]
 
 ### 如何查看
 
@@ -228,7 +250,9 @@ BufferQueue 是渲染管线中承上启下的环节，与多个系统组件紧�
 | Android 14 (API 34) | BufferQueue 支持更灵活的 maxBufferCount 配置 | OEM 可根据设备能力调整缓冲区数量 |
 | Android 17 (API 37) | 无锁 MessageQueue + BlastBufferQueue 协同优化 | 进一步减少主线程和渲染线程的锁竞争 |
 
-[已验证：版本信息基于 AOSP changelog 和 source.android.com；Android 17 部分基于 Beta 1 文档]
+[已验证：版本信息基于 AOSP changelog 和 source.android.com。]
+
+[需确认：Android 13-17 这几项版本演进需要补充对应 AOSP commit、官方文档或发布说明，尤其是“frame rate override”“maxBufferCount”“无锁 MessageQueue + BlastBufferQueue 协同优化”三处。]
 
 ## 常见问题与误区
 
@@ -258,8 +282,8 @@ BufferQueue 是渲染管线中承上启下的环节，与多个系统组件紧�
   - `frameworks/native/services/surfaceflinger/SurfaceFlinger.cpp` — 消费端 acquire/release
 
 - **官方文档**：
-  - [source.android.com/devices/graphics/architecture](https://source.android.com/docs/core/graphics/architecture) — Android 图形架构全景
-  - [source.android.com/devices/graphics/bufferqueue](https://source.android.com/docs/core/graphics/bufferqueue) — BufferQueue 详细说明
+  - [https://source.android.com/docs/core/graphics/architecture](https://source.android.com/docs/core/graphics/architecture) — Android 图形架构全景
+  - [https://source.android.com/docs/core/graphics/bufferqueue](https://source.android.com/docs/core/graphics/bufferqueue) — BufferQueue 详细说明
 
 - **交叉引用**：
   - §2.1 Android 渲染架构全景
