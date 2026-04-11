@@ -4499,10 +4499,11 @@
   {
     "section": "5.8",
     "section_title": "后台执行限制与优化",
-    "priority": 90,
-    "reason": "[review回炉] Bucket / FGS / JobScheduler 的版本与证据链需核，Perfetto 观测素材不足",
+    "priority": 95,
+    "reason": "[Deep Tech Review] App Standby / FGS / JobScheduler 存在源码路径、API 与版本时间线错误",
     "material_paths": [
-      "intake/suggestions.md（含 review 意见）"
+      "intake/suggestions.md",
+      "intake/research-gaps.md"
     ],
     "review_issues": [
       {
@@ -4528,11 +4529,62 @@
         "location": "在 Perfetto 中的表现",
         "detail": "`device_idle`、后台 Job 延迟和网络受限的章节仍缺真实 Trace 或等价图示，当前只有读法说明，没有可复核证据。",
         "suggestion": "补 2 组真实 Perfetto / Battery Historian 片段，至少覆盖 Doze 状态切换与后台任务延迟两个场景。"
+      },
+      {
+        "type": "源码错误",
+        "location": "行 177-186 / 395-400 App Standby Bucket 代码锚点与参考资料",
+        "detail": "正文把 Standby Bucket 常量和管理逻辑挂到 DeviceIdleController.java，且引用的 `frameworks/base/services/core/...` 路径在 android-16.0.0_r1 已失效。实际 bucket 常量位于 `android.app.usage.UsageStatsManager`，管理链路应回到 `frameworks/base/apex/jobscheduler/service/java/com/android/server/usage/AppStandbyController.java`；DeviceIdleController 主要负责 Doze/device idle。",
+        "suggestion": "把 App Standby Bucket 的源码锚点改为 UsageStatsManager + AppStandbyController，并将 DeviceIdleController 仅用于 Doze 维护窗口与 idle 状态部分。"
+      },
+      {
+        "type": "源码错误",
+        "location": "行 123 / 214-223 前台服务类型矩阵",
+        "detail": "类型表把 `remoteMessaging` 写成了 `messaging`，同时漏掉 `microphone`、`shortService`、`systemExempted`，后文又直接讨论 `mediaProcessing` 的超时，导致 Android 14/15 的 FGS 类型矩阵前后不一致。",
+        "suggestion": "按官方 FGS types 文档重建类型表，明确 Android 14 新增类型与 Android 15 新增 `mediaProcessing` 的时间线，并统一权限映射。"
+      },
+      {
+        "type": "源码错误",
+        "location": "行 240-250 Service.onTimeout 示例",
+        "detail": "章节声称 AOSP `frameworks/base/core/java/android/app/Service.java` 提供 `onTimeout(int startId, int fgsType)`，但 android-16.0.0_r1 源码中的公开回调仍是 `onTimeout(int startId)`，`fgsType` 出现在内部 `callOnTimeLimitExceeded(...)`。当前代码块与标注分支不符。",
+        "suggestion": "二选一：要么改用与当前分支一致的源码片段，要么明确改为引用官方 API reference 而不是 AOSP r1 代码。"
+      },
+      {
+        "type": "源码错误",
+        "location": "行 283-290 / 398-400 Android 16 JobScheduler 调试 API",
+        "detail": "`JobDebugInfo` 在当前 AOSP/API 中不存在；`JobScheduler#getPendingJobReasonsHistory(int)` 的返回类型也不是 `List<String>`，而是 `List<PendingJobReasonsInfo>`。同时 `JobScheduler.java` 在 android-16.0.0_r1 位于 `frameworks/base/apex/jobscheduler/framework/java/android/app/job/JobScheduler.java`。",
+        "suggestion": "改用 `JobScheduler#getPendingJobReasonsHistory(int)` + `PendingJobReasonsInfo`，并修正到 apex/jobscheduler/framework 路径。"
+      },
+      {
+        "type": "事实错误",
+        "location": "行 300-302 精确闹钟权限行为",
+        "detail": "正文写成“没有权限调用 `setExact()` 会静默降级为非精确闹钟”。官方文档要求 targetSdk 31+ 声明 exact alarm 权限，否则会触发 `SecurityException`；同时需要用 `canScheduleExactAlarms()` 做运行时门禁。",
+        "suggestion": "改写为“先检查 `canScheduleExactAlarms()`；未获授权时不要调用 exact alarm API”，并区分 `SCHEDULE_EXACT_ALARM` 与 `USE_EXACT_ALARM`。"
+      },
+      {
+        "type": "版本差异",
+        "location": "行 87-93 / 107-109 / 357-360 后台限制时间线",
+        "detail": "章节把 App Standby 写成 Android 7.0 才引入，又把 Android 9 的 Buckets 写成五桶 `Active/Working Set/Frequent/Rare/Restricted`。官方文档显示 Doze 和 App Standby 都属于 Android 6.0 电量优化；Android 9 才引入 App Standby Buckets，`Restricted` 在 Android 12 才加入，且还存在 special never bucket。",
+        "suggestion": "重写时间线：Android 6.0=Doze+App Standby；Android 7.0=Light Doze；Android 9=Buckets；Android 12=Restricted。"
+      },
+      {
+        "type": "版本差异",
+        "location": "行 119-125 / 364-368 Android 13/17 版本结论",
+        "detail": "“Restricted 桶 45 天缩到 8 天”“Android 17 AI 驱动的后台管理”这两处没有被当前官方来源链支撑。Android 17 官方页面目前能证实的是 background audio hardening，以及 targetSdk 17 页面里的 BAL 对 IntentSender 的收紧。",
+        "suggestion": "删掉无证据的 Android 13/17 结论，或补上对应官方页面、发布日期和适用范围；Android 17 行建议改成“背景音频硬化 + BAL/IntentSender 收紧”。"
+      },
+      {
+        "type": "知识盲区",
+        "location": "行 255-315 后台任务选型",
+        "detail": "选型部分只给了 WorkManager / JobScheduler / AlarmManager / FGS 四选一，没有覆盖 expedited jobs、user-initiated data transfer jobs、temporary allowlist、FCM 高优先级等例外路径。这样会解释不了“为什么某些后台工作在限制开启后仍能跑起来”。",
+        "suggestion": "补一个“例外与豁免”小节，串起 Android 12-16 的 UIDT、expedited work、temp allowlist 与 exact alarm 权限边界。"
       }
     ],
     "added_by": "task6-review",
     "added_at": "2026-04-12T04:14:00+08:00",
     "status": "pending",
-    "original_review_log": "logs/review/2026-04-12-04-review.md"
+    "original_review_log": "logs/review/2026-04-12-04-review.md",
+    "updated_by": "task9-deep-tech-review",
+    "updated_at": "2026-04-12T04:23:00+08:00",
+    "deep_review_log": "logs/deep-review/2026-04-12-04-deep-review.md"
   }
 ]

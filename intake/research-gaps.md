@@ -1140,3 +1140,36 @@ Emoji 一节把系统字体、EmojiCompat、下载字体 provider、color font �
 
 ### 关联章节
 §4.8、§7.2、§13.2、§13.10、§14.3
+
+
+## [2026-04-12] 5.8 后台执行限制与优化 — 知识盲区（后台任务豁免矩阵）
+
+### 盲区描述
+正文把后台任务选型收敛成 WorkManager / JobScheduler / AlarmManager / FGS 四选一，但缺少 Android 12-16 真正常用的豁免路径：expedited jobs、user-initiated data transfer jobs、temporary allowlist、FCM 高优先级、exact alarm 特殊访问等。没有这部分，读者很难解释“为什么某个后台任务在限制开启后仍然跑了起来”。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 对比 WorkManager expedited work、JobScheduler user-initiated jobs / UIDT 与普通 job 的配额差异
+- 梳理 Android 12-16 的 foreground-service start exemptions、temporary allowlist 和 FCM 高优先级触发条件
+- 给出 2-3 个“同样是后台同步，为什么一个能跑一个不能跑”的对照案例
+
+### 关联章节
+5.6（Android 功耗管理）、5.8（后台执行限制）、8.4（后台启动/响应速度）、11.2（App 端功耗优化）
+
+## [2026-04-12] 5.8 后台执行限制与优化 — 知识盲区（可观测性闭环）
+
+### 盲区描述
+当前章节提到了 Perfetto、`dumpsys deviceidle`、Standby Bucket 和 JobScheduler pending reason，但没有形成一套可复核的观测闭环。缺少“抓什么 trace / 看什么 dumpsys / 对应什么症状”的系统性方法，读者仍然很难把后台限制问题落到证据上。
+
+### 重要程度
+中
+
+### 建议研究方向
+- 整理 `dumpsys deviceidle`、`dumpsys usagestats appstandby`、`dumpsys jobscheduler`、`cmd jobscheduler` 的最小排查流程
+- 验证 Perfetto 中可稳定观察的 device idle / job delay / alarm 受限信号，必要时改用 Battery Historian 作为主证据
+- 补一个“后台任务未执行”的端到端排查案例，从权限、bucket、Doze、quota 一路走到结论
+
+### 关联章节
+5.6（Android 功耗管理）、5.8（后台执行限制）、14.x（工具与调试章节）

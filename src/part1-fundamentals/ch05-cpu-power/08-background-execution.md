@@ -30,12 +30,14 @@ tags: [后台限制, Doze, App Standby, 前台服务, WorkManager, JobScheduler,
 related_chapters: ["5.6", "5.7", "11.2", "8.4"]
 pipeline_stage: task2b_pending
 task6_state: reviewed
-task9_state: pending
+task9_state: reviewed
+task9_result: needs-rework
 task2b_state: pending
 reviewed_date: "2026-04-12"
 reviewed_by: "openclaw-task6"
 task6_result: "needs-rework"
 ---
+
 
 # 5.8 后台执行限制与优化
 

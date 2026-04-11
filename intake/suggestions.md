@@ -1375,3 +1375,15 @@
 - **问题**：`device_idle`、后台 Job 延迟和网络受限的章节仍缺真实 Trace 或等价图示，当前只有读法说明，没有可复核证据。
 - **建议**：补 2 组真实 Perfetto / Battery Historian 片段，至少覆盖 Doze 状态切换与后台任务延迟两个场景。
 - **review 日志**：logs/review/2026-04-12-04-review.md
+
+
+## [Task9 Deep Review] 5.8 后台执行限制与优化 — 2026-04-12
+- **类型**：数据缺失
+- **位置**：行 191-202 Perfetto 观测
+- **问题**：`device_idle`、`am_proc_start` / `am_kill`、Network Track 仅给了读法说明，没有已跑通的 trace config、截图或 SQL 证据，当前读者无法复核这些观察点。
+- **建议**：补 1 组 Doze 状态切换 + 1 组后台 Job 延迟/Alarm 受限的真实 Trace 或 Battery Historian / dumpsys 联合示例，并确认 Track 名称与抓取配置。
+
+- **类型**：原理链
+- **位置**：行 341-351 与 CPU / 响应速度章节的关系
+- **问题**：`Restricted 桶降低 cgroup 优先级`、`从通知启动 Activity 需要通过 ActivityOptions 中的 BAL 权限` 两处结论都缺少当前章节内的代码或官方文档锚点，容易把经验判断写成硬规则。
+- **建议**：补充对应代码路径 / 官方文档；如果证据链暂时不完整，就把表述收窄为“可能受版本与场景影响，需要结合具体系统验证”。
