@@ -1662,3 +1662,20 @@ AsyncLayoutInflater 一节缺少 AndroidX 当前实现的关键边界，尤其�
 
 ### 关联章节
 8.9、2.17、5.9、7.1、14.10
+
+## [2026-04-13] 1.3 进程模型与生命周期管理 — 知识盲区
+
+### 盲区描述
+正文把重点放在 `oom_score_adj` 和 LMK，但没有把 `procstate`、sched group、task profile、cgroup/cpuset 以及 cached-apps freezer 这条链讲出来。实际性能定位里，很多问题先表现为 top-app/foreground/background CPU 资源变化，或者进程被冻结，而不是直接被 kill。没有这层映射，读者很难在 Perfetto 里解释“进程没死但已经变慢”的场景。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 追溯 AMS / OomAdjuster 计算 `procstate` 后，task profile / cgroup / cpuset 的写入链路
+- 对照 Perfetto 展示 `procstate` 变化、sched 轨迹、CPU 资源变化与 `oom_score_adj` 的区别
+- 补 cached-apps freezer / app freezer 与 LMK 的边界，以及它们各自在 trace 里的观测入口
+
+### 关联章节
+1.5、4.4、5.1、5.8
+

@@ -2148,3 +2148,33 @@
 - **问题**：`1-2ms`、`10-20ms`、`10-50ms`、`100ms+` 等耗时结论没有给出设备、图片尺寸、系统负载或原始 benchmark 条件。
 - **建议**：补测试条件与原始来源；若短期补不齐，就降级为定性描述。
 - **review 日志**：logs/review/2026-04-13-06-review.md
+
+## [Task9 Deep Review] 1.3 进程模型与生命周期管理 — 2026-04-13
+- **类型**：源码准确性
+- **位置**：L241-L252 `android:process`
+- **问题**：正文把“不以冒号开头”解释成“全局进程，可以被其他 App 通过显式 Intent 访问”。官方 manifest 文档的真实约束是：该进程名可以被其他应用共享，但前提是两边共享同一 UID 且使用同一证书；组件能否被其他 App 调起取决于 exported/permission，而不是进程名本身。
+- **建议**：把这段改成“global process name 允许同 UID + 同签名应用共用进程”，并把跨 App 访问条件移回 exported/permission 语义。
+
+## [Task9 Deep Review] 1.3 进程模型与生命周期管理 — 2026-04-13
+- **类型**：源码准确性
+- **位置**：L227-L229 `ActivityManagerService.updateOomAdjLocked()`
+- **问题**：当前把 AMS 说成“核心实现”。在 android-16.0.0_r1 里，AMS 这里已经是 `mProcessStateController.runUpdate(...)` 的入口包装，真正的计算逻辑在 `OomAdjuster.updateOomAdjLSP()/computeOomAdjLSP()`。只给 AMS 会让读者顺源码时停在壳方法。
+- **建议**：把源码锚点扩成 AMS 入口 + `OomAdjuster.java` 实际计算路径，至少补出委托关系。
+
+## [Task9 Deep Review] 1.3 进程模型与生命周期管理 — 2026-04-13
+- **类型**：源码准确性
+- **位置**：L281-L284 共享内存（ashmem / memfd）
+- **问题**：正文用 `GraphicBuffer` 作为 ashmem/memfd 例子，会把通用匿名共享内存和图形缓冲区分配路径混在一起。现代图形栈的 buffer 更接近 gralloc / dma-buf heaps 路径，而不是“GraphicBuffer 从 ashmem 迁到 memfd”。
+- **建议**：把示例改成 `ASharedMemory` / 普通大块匿名共享内存；如果要讲图形缓冲区，单独说明 gralloc / dma-buf / HardwareBuffer 路径。
+
+## [Task9 Deep Review] 1.3 进程模型与生命周期管理 — 2026-04-13
+- **类型**：数据缺失
+- **位置**：L395-L439 在 Perfetto 中的表现
+- **问题**：本节已经给了通用 SQL，但还缺 1 个真实案例把“top-app→cached 降级”“lmkd kill”“am_crash”三类场景拆开。读者现在仍然缺少可复现的抓取配置、track 名称和截图锚点。
+- **建议**：补 1 组真实 trace：同时打开 `android.log`、`linux.process_stats`、`linux.sys_stats`、`oom/oom_score_adj_update`，并给出一张截图 + 一条 SQL，分别说明 kill / crash / 仅降级三种判别信号。
+
+## [Task9 Deep Review] 1.3 进程模型与生命周期管理 — 2026-04-13
+- **类型**：交叉引用
+- **位置**：frontmatter `related_chapters` + “与其他章节的关系”
+- **问题**：正文大量讨论 LMK、后台限制和调度表现，但相关章节只列了 1.1/1.2/1.4/1.5，没有把已经修正了现代 lmkd 口径的 4.4《Low Memory Killer》、5.1《Linux 进程调度基础》、5.8《后台执行限制与优化》串起来。
+- **建议**：把 4.4、5.1、5.8 补进 related_chapters 或正文“与其他章节的关系”，减少同一概念在不同章节里各说各话。

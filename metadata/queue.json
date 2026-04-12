@@ -1954,39 +1954,58 @@
     "section": "1.3",
     "section_title": "进程模型与生命周期管理",
     "priority": 95,
-    "reason": "[review回炉] Perfetto 观测证据与量化断言仍需补强/核对",
+    "reason": "[Deep Tech Review] 1.3 进程优先级表混用 legacy/modern adj，foreground service 与 lmkd/PSI 机制描述失真，isolated process 与 procstate→Perfetto 链路需回炉修正",
     "material_paths": [
+      "intake/research-gaps.md",
       "intake/suggestions.md"
     ],
     "review_issues": [
       {
-        "type": "需补充素材",
-        "location": "Binder IPC（主力通道）",
-        "detail": "“Binder 承担系统中 90% 以上的跨进程调用”属于量化断言，但当前正文没有给出可追溯来源或适用范围。",
-        "suggestion": "补官方文档、AOSP 统计依据或实测来源；如果暂时补不齐，改成不带百分比的定性表述。"
+        "type": "源码错误",
+        "location": "L139-L153、L451-L453 前台/前台 Service 优先级",
+        "detail": "正文把 running foreground service 归到 foreground process，并写成 startForeground() 后优先级与前台 Activity 相同。官方 process-lifecycle 文档把 foreground service 归到 visible/perceptible bucket；AOSP ProcessList 也保留 PERCEPTIBLE_APP_ADJ=200，而不是统一落到 FOREGROUND_APP_ADJ=0。",
+        "suggestion": "把 taxonomy 改成 foreground / visible / perceptible / service / cached / empty，至少明确 foreground service 是 user-visible/perceptible，不等于 resumed Activity 的 foreground process。"
       },
       {
-        "type": "需确认",
-        "location": "Phantom Process Killer（Android 12+）",
-        "detail": "“每个 App 最多允许 32 个子进程”以及 `settings_enable_monitor_phantom_procs` 开关的写法带有版本和设备边界，当前缺少精确来源。",
-        "suggestion": "由 Task 9 对照官方文档和 AOSP 行为核对版本范围、默认值与设置项名称，再决定是否保留当前写法。"
+        "type": "源码错误",
+        "location": "L180-L198 oom_adj 表",
+        "detail": "表格混用了旧版 oom_adj(-12/-11) 和 android-16.0.0_r1 的现代 adj 值(0/100/200...)。AOSP 16 中 PERSISTENT_PROC_ADJ=-800、PERSISTENT_SERVICE_ADJ=-700；SERVICE_A 常量不存在；SERVICE_ADJ=500，SERVICE_B_ADJ=800。当前表会把服务进程杀伤顺序写反。",
+        "suggestion": "按 android-16.0.0_r1 ProcessList.java 重写整张表，并在文中明确 legacy oom_adj 与现代 oom_score_adj/adj scale 的区别。"
       },
       {
-        "type": "需补充素材",
-        "location": "在 Perfetto 中的表现 / 进程死亡回调：DeathRecipient",
-        "detail": "当前只给了泛化描述，没有把 `lmkd` kill 事件、`oom_adj` 变化记录、`binderDied` 相关追踪方式落到可复现的 Trace / SQL / 截图锚点上。",
-        "suggestion": "补 2-3 个真实 Perfetto 片段或等价图示，并明确对应的数据源、track 名称或查询方式。"
+        "type": "原理错误",
+        "location": "L170-L217 lmkd 压力检测与回收策略",
+        "detail": "正文写成 lmkd 通过 `/proc/<pid>/oom_score_adj` 感知内存压力，并把 `ro.lmk.low/medium/critical`+minfree 当成通用默认路径。source.android 的 lmkd 文档说明：压力信号来自 vmpressure/PSI monitors，不是 per-process oom_score_adj；`ro.lmk.use_minfree_levels=true` 才进入 legacy free-memory/file-cache 阈值模式，Android 10+ / 11+ 的现代路径是 PSI + thrashing/file cache/watermark 决策。",
+        "suggestion": "重写成“oom_score_adj 决定谁可杀，PSI/vmpressure 决定何时杀”；拆开 legacy minfree 路径与 Android 10+/11+ PSI 路径，并补 `ro.lmk.use_psi` / `ro.lmk.use_minfree_levels` / `ro.lmk.lowmem_min_oom_score`。"
+      },
+      {
+        "type": "版本差异",
+        "location": "L170-L172、L212-L217 userspace lmkd 时间线",
+        "detail": "正文写“从 Android 9 开始 lmkd 成为默认机制”，口径过满。source.android 文档给的是：Android 9+ 若未检测到 in-kernel LMK 才启用 userspace lmkd；Android 10+ 才引入 PSI 模式，Android 11 再引入基于 PSI/thrashing 的新 killing strategy。当前时间线和 4.4《Low Memory Killer》的说法不一致。",
+        "suggestion": "按 Android 9 fallback、Android 10 PSI、Android 11 killing strategy 三段重写，并和 4.4 保持同一口径。"
+      },
+      {
+        "type": "源码错误",
+        "location": "L382-L383 Isolated Process",
+        "detail": "正文写“隔离进程没有自己的 UID”。官方 manifest 文档只说 isolated process 没有应用权限；AOSP `android_filesystem_config.h` 明确保留 `AID_ISOLATED_START..END` UID 区间给 isolated sandboxed processes。当前表述把“无权限”误写成“无 UID”。",
+        "suggestion": "改成“隔离进程运行在独立的 isolated UID 下，没有应用声明权限，只能通过 Service API 与外界交互”，避免把 UID 和 permission 混为一谈。"
+      },
+      {
+        "type": "知识盲区",
+        "location": "全文整体，尤其 L219-L229 / L395-L439",
+        "detail": "章节几乎只讲 `oom_score_adj` 与 LMK，缺少 `procstate` / sched group / task profile / cgroup 到 Perfetto 观测的完整链路。实际性能定位里，很多问题先表现为 top-app/foreground/background CPU 资源变化或 cached-apps freezer，而不是直接被杀。没有这层映射，读者很难解释“进程没死但已经变慢”的场景。",
+        "suggestion": "补 `procstate`→task profile/cgroup→Perfetto sched/process stats 的一节，并交叉引用 4.4、5.1、5.8。"
       }
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-09T01:30:00",
-    "status": "completed",
+    "status": "pending",
     "completed_at": "2026-04-12T23:19:37+08:00",
     "completed_by": "task2b-rework",
-    "reopened_at": "2026-04-12T22:37:00+08:00",
-    "reopened_by": "task6-review",
-    "updated_at": "2026-04-12T23:19:37+08:00",
-    "updated_by": "task2b-rework",
+    "reopened_at": "2026-04-13T06:47:00+08:00",
+    "reopened_by": "task9-deep-tech-review",
+    "updated_at": "2026-04-13T06:47:00+08:00",
+    "updated_by": "task9-deep-tech-review",
     "original_review_log": "logs/review/2026-04-12-22-review.md",
     "previous_reason": "[Deep Tech Review] 源码错误（ZygoteInit伪代码）+ 原理断裂（lmkd三阶段描述不准确）",
     "previous_review_issues": [
@@ -2027,7 +2046,7 @@
         "suggestion": "从related_chapters中删除1.1和1.4；正文交叉引用需确认目标章节存在"
       }
     ],
-    "notes": "2026-04-12 Task6 复检：2026-04-09 的 deep review 问题已由 task2b 处理，本次仅保留新增未解决项，避免与 Task 9 / Task 2B 重复劳动。"
+    "notes": "2026-04-12 Task6 复检：2026-04-09 的 deep review 问题已由 task2b 处理，本次仅保留新增未解决项，避免与 Task 9 / Task 2B 重复劳动。\n2026-04-13 Task9 复审：按 writing-guide/STYLE + 最新 Task6 结果重做技术审计，重新打开 P95 回炉。"
   },
   {
     "section": "2.1",
