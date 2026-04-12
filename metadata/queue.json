@@ -1981,11 +1981,7 @@
         "suggestion": "从related_chapters中删除1.1和1.4；正文交叉引用需确认目标章节存在"
       }
     ],
-    "added_by": "task9-deep-tech-review",
-    "added_at": "2026-04-09T01:30:00",
-    "status": "completed",
-    "completed_at": "2026-04-09T13:42:33",
-    "completed_by": "task2b-rework"
+    "notes": "2026-04-12 Task6 复检：2026-04-09 的 deep review 问题已由 task2b 处理，本次仅保留新增未解决项，避免与 Task 9 / Task 2B 重复劳动。"
   },
   {
     "section": "2.1",
@@ -5598,7 +5594,9 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-12T17:27:00+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-12T22:28:34+08:00",
+    "completed_by": "task2b-rework"
   },
   {
     "section": "6.3",
@@ -5873,6 +5871,57 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-12T21:53:36+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "7.11",
+    "section_title": "WebView 渲染性能与优化",
+    "priority": 95,
+    "reason": "[Deep Tech Review] WebView 架构、JS Bridge 线程模型与预热示例存在事实性错误，版本边界也需要回写",
+    "material_paths": [
+      "intake/suggestions.md",
+      "intake/research-gaps.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "L152-L156 预热策略 / 方案一代码示例",
+        "detail": "`webView.setData(null, null)` 不是 `android.webkit.WebView` 的公开 API，示例代码不可运行。",
+        "suggestion": "改成可验证的公开调用（如 `loadData(...)` / `loadUrl(\"about:blank\")`），或只保留“提前实例化触发加载”的思路并标注验证边界。"
+      },
+      {
+        "type": "原理错误",
+        "location": "L195-L199 JavaScript Interface 的线程模型",
+        "detail": "正文写“Native 方法中的耗时操作不会直接阻塞 MainThread”，但 Chromium `java-bridge.md` 明确写到：`@JavascriptInterface` 方法虽运行在 private background thread，上层交互期间 `main application thread (browser UI thread)` 仍会被阻塞。当前结论会误导 ANR 定位。",
+        "suggestion": "改写为“执行线程不是 UI thread，但调用期间 browser UI thread 仍可能等待该桥接调用完成”，并给出 Chromium 文档出处。"
+      },
+      {
+        "type": "原理错误",
+        "location": "L80-L101 / L277-L284 / L435-L439 WebView 进程与 GPU 模型",
+        "detail": "将 WebView 描述成共享的 “Chromium 引擎进程（Browser Process + GPU Process）”，并把 GPU 写成独立 GPU 进程，与 Chromium `architecture.md` 不符。官方文档明确说明 WebView browser code 运行在宿主 app 进程，GPU/Network service 也 in-process；只有 renderer 视版本与设备条件 out-of-process。",
+        "suggestion": "重画架构图，明确区分 host app process、in-process browser/GPU service、renderer process，并同步修正内存模型与 Perfetto 线程解释。"
+      },
+      {
+        "type": "版本差异",
+        "location": "L84 / L409 Android 8.0+ Renderer 独立进程",
+        "detail": "把 Android 8.0+ 一概写成独立 renderer 进程，遗漏 O-Q 低内存 32-bit 设备仍可能使用 in-process renderer 的边界；“所有设备默认 out-of-process”应放到 Android 11+。",
+        "suggestion": "在正文和版本演进表补齐 O-Q / Android 11+ 的设备边界与默认行为差异。"
+      },
+      {
+        "type": "版本差异",
+        "location": "L408-L415 版本演进表",
+        "detail": "“Android 7.0 WebView 实现合并到 Chrome APK”“Android 10 之前 WebView 和 Chrome 各自包含完整 Chromium 副本”写得过于绝对。Chromium 文档显示 N-P 是 packaging/provider 变体问题，AOSP/TV/car 设备仍可能使用 standalone WebView。",
+        "suggestion": "把 Android 7-9 改写为 Monochrome / Chrome-provider 的条件性演进，而不是统一事实。"
+      },
+      {
+        "type": "原理断裂",
+        "location": "L106 / L348-L356 Chromium 滚动调度",
+        "detail": "“不沿用原生 View 那套 Choreographer / VSync 调度方式”“WebView 的滚动不是由 Android 的 View 体系处理”表述过满，容易把 Chromium compositor 的 off-main-thread scrolling 写成完全脱离 Android View/draw/显示同步链。",
+        "suggestion": "收紧为条件性结论：某些滚动/动画可由 compositor thread 处理，但 WebView 仍嵌在 Android View/onDraw/显示同步路径中；补 Chromium BeginFrame / WebView onDraw 证据。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-12T22:48:00+08:00",
     "status": "pending"
   }
 ]
