@@ -4790,5 +4790,57 @@
     "added_at": "2026-04-12T08:24:00+08:00",
     "status": "pending",
     "original_review_log": "logs/review/2026-04-12-08-review.md"
+  },
+  {
+    "section": "2.8",
+    "section_title": "过度绘制",
+    "priority": 95,
+    "reason": "[Deep Tech Review] 检测工具、clipRect/quickReject 时间线与 Compose overdraw 机制存在事实错误，版本表也混入了无证据推断",
+    "material_paths": [
+      "intake/research-gaps.md",
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "版本差异",
+        "location": "行 120 / 行 157 检测工具",
+        "detail": "正文把 `Tracer for OpenGL ES`（Android Device Monitor）和 `Hierarchy Viewer` 当作当前排查手段。官方 Android Device Monitor 页面明确写明：Android Device Monitor 在 Android Studio 3.1 废弃、3.2 移除；Tracer for OpenGL ES 的替代是 Android GPU Inspector，Hierarchy Viewer 的替代是 Layout Inspector。当前 applicable_versions 到 Android 16，这组建议会把读者带到已经下线的工具链。",
+        "suggestion": "把 Tracer / Hierarchy Viewer 收敛成历史工具说明，当前主线改成 Layout Inspector + Profile GPU Rendering / FrameTimeline + Android GPU Inspector（如需 draw call 级分析）。"
+      },
+      {
+        "type": "版本差异",
+        "location": "行 263 / 行 208-243 clipRect 与 quickReject",
+        "detail": "版本演进写成 Android 4.3 才引入 `clipRect` 和 `quickReject` 的硬件加速支持，但官方 Canvas 文档显示 `quickReject` 自 API 1 就存在；硬件加速文档列出的 API 18 限制主要是 `clipPath` / `clipRegion` 和特定 `clipRect(Region.Op...)`、rotation/perspective 情形，不是普通 `clipRect()`。现在的写法把 plain clipRect、特殊 clip op、硬件加速时间线混在了一起。",
+        "suggestion": "拆成三层来写：1) `quickReject` 的 API 历史；2) 普通 `clipRect()` 的基本裁剪语义；3) API 18 以后才支持的是 `clipPath`、`clipRegion` 和部分复杂 clip 场景。"
+      },
+      {
+        "type": "原理断裂",
+        "location": "行 291-292 Compose 特有的优化手段",
+        "detail": "把 `drawBehind`、`derivedStateOf` 放进“过度绘制优化手段”会把像素重复填充和 Compose recomposition / state read 优化混成同一个问题。`derivedStateOf` 限制的是不必要重组，不会直接减少同一像素的 fill；`drawBehind` vs `background` 也属于 draw phase / state read 策略，不等于 overdraw 本身减少。",
+        "suggestion": "把 Compose 小节拆成两层：一层讲真正会增加像素重复填充的场景（多层 background、alpha、shadow / offscreen compositing），另一层单列“重组 / 绘制阶段优化”，并明确它解决的是 CPU / phase 开销，不是 overdraw 指标。"
+      },
+      {
+        "type": "原理断裂",
+        "location": "行 108-114 Perfetto 观测面",
+        "detail": "章节只写了 GPU Track / MainThread draw / RenderThread DrawFrame 这类泛称，没有交代具体要看 FrameTimeline、HWUI / RenderThread slice、GPU counters 还是 SurfaceFlinger 轨道，也没有说明哪些现象只能提示“GPU 重”，哪些才能与 overdraw 联合判断。读者很难把 overdraw 颜色图、Profile GPU Rendering、Perfetto / AGI 证据串起来。",
+        "suggestion": "补一条完整观测链：Debug GPU Overdraw 定位区域 -> Profile GPU Rendering 看 Process / GPU 压力 -> Perfetto / AGI 看 FrameTimeline + HWUI / RenderThread + GPU counter / draw call 证据，并给出至少一个真实 trace / 截图。"
+      },
+      {
+        "type": "版本差异",
+        "location": "行 264-267 版本演进",
+        "detail": "Android 5 的“过度绘制数值显示移除”、Android 7 的 HWC 客户端合成减少、Android 12 的 DisplayList 合并降低 overdraw 影响，这三条都没有给出可验证来源，而且后两条把 compositor / display list 变化直接等同为 overdraw 优化，机制边界不清。",
+        "suggestion": "把版本演进表收窄到“开发者工具变化”和“确实影响 overdraw 诊断 / 开销模型的渲染架构变化”，不能确认的行降级为 [待验证] 或删除。"
+      },
+      {
+        "type": "知识盲区",
+        "location": "参考资料 / Compose 扩展 / 版本演进",
+        "detail": "frontmatter 的 `last_verified_against` 是 `AOSP android-16.0.0_r1`，但参考资料只给了早期 `frameworks/base/libs/hwui/OpenGLRenderer.cpp`，没有现代 HWUI / Skia 的 overdraw 调试实现路径；Compose 也没有补 `graphicsLayer` / `CompositingStrategy` / offscreen buffer 与 overdraw 的边界。当前章节缺少现代实现层面的落点。",
+        "suggestion": "补现代 HWUI / Skia 的 overdraw debug 实现入口，另补 Compose layer / offscreen compositing 的机制边界。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-12T08:33:00+08:00",
+    "status": "pending",
+    "original_review_log": "logs/deep-review/2026-04-12-08-deep-review.md"
   }
 ]
