@@ -4,8 +4,9 @@ section: "7.5"
 chapter: "7.5"
 status: ready-for-review
 drafted_by: "openclaw-task2a"
-reviewed_date: "2026-04-10"
+reviewed_date: "2026-04-12"
 reviewed_by: "openclaw-task6"
+task6_result: pass-light-edit
 applicable_versions: "Android 5.0 (API 21) - Android 16 (API 36)"
 last_verified: "2026-04-01"
 last_verified_against: "AOSP android-16.0.0_r1, Android 官方文档"
@@ -30,19 +31,14 @@ tags:
   - recyclerview
   - compose-performance
   - layout-optimization
-
-reviewed_date: "2026-04-04"
-reviewed_by: "openclaw-task6"
-rework_date: "2026-04-04"
-rework_by: "openclaw-task2b"
 polish_count: 1
 polish_date: "2026-04-09"
 polish_by: "task2b-polish"
 rework_count: 1
 rework_date: "2026-04-09"
 rework_by: "task2b-rework"
-pipeline_stage: task6_pending
-task6_state: pending
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task2b_state: idle
 ---
@@ -73,7 +69,7 @@ task2b_state: idle
 
 同样是"主线程耗时"，有的是布局层级太深导致 measure 反复执行，有的是 RecyclerView 的 onBindViewHolder 里做了不该做的事，有的是一个看似无害的 Binder 调用正好赶上了系统服务繁忙。每一种原因对应的优化策略都不同，用错方法不仅白费力气，还可能引入新问题。
 
-这一章按照优化的"作用域"来组织——从最底层的布局结构，到列表控件，再到渲染管线和线程模型，最后是 Compose。每一条策略都回答三个问题：**为什么有效**、**在 Trace 中怎么验证效果**、**容易踩什么坑**。
+这一章按优化的"作用域"来组织。我们先看最底层的布局结构，再看列表控件、渲染管线和线程模型，最后看 Compose。每一条策略都回答三个问题：**为什么有效**、**在 Trace 中怎么验证效果**、**容易踩什么坑**。
 
 
 
@@ -117,7 +113,7 @@ Google 官方基准测试表明，在同等布局效果下，ConstraintLayout �
 
 另外，`layout_weight` 是一个常被忽视的性能陷阱。LinearLayout 在使用 weight 时需要做两次 measure：第一次确定剩余空间，第二次按 weight 比例分配。ConstraintLayout 的 `match_constraint`（0dp + 约束）在效果上等同于 weight，但只需要一次 measure。如果项目中还有使用 weight 的布局，优先用 ConstraintLayout 替代。
 
-在 Perfetto 中，布局层级过深表现为 measure 阶段耗时突增。打开 Trace 后，在主线程（ui_thread）的每个 `doFrame` slice 中可以看到 inflate → measure → layout → draw 的细分。如果某个 doFrame 中 measure 耗时超过 2-3ms，且对应的 View 树 depth 在 Perfetto 的 View hierarchy 信息中超过 10 层，就是布局层级需要优化的信号。[待补充：布局层级过深的 Perfetto Trace 截图]
+在 Perfetto 中，布局层级过深表现为 measure 阶段耗时突增。打开 Trace 后，在主线程（ui_thread）的每个 `doFrame` slice 中可以看到 inflate → measure → layout → draw 的细分。如果某个 doFrame 中 measure 耗时超过 2-3ms，且对应的 View 树 depth 在 Perfetto 的 View hierarchy 信息中超过 10 层，就是布局层级需要优化的信号。[图：布局层级过深时，Perfetto 中某个 doFrame 的 measure slice 明显拉长，旁注 View 树 depth 超过 10 层]
 
 ## RecyclerView 优化：预创建、DiffUtil、预取
 
@@ -125,7 +121,7 @@ RecyclerView 是卡顿的高发地带——滑动场景下每一帧的预算只�
 
 ### onBindViewHolder：最关键的瓶颈
 
-`onBindViewHolder()` 应该只做"轻量级onBindViewHolder"。常见错误：在里边创建对象（`new Paint()`）、做 I/O 操作、做复杂计算、调用 Binder。
+`onBindViewHolder()` 应该只做轻量级的绑定逻辑。常见错误是在这里创建对象（`new Paint()`）、做 I/O 操作、做复杂计算，或者调用 Binder。
 
 [已验证: 来源见 2026-03-07_wechat_Android深入卡顿分析与实践.md §onBindViewHolder日志耗时]
 
@@ -172,7 +168,7 @@ RecyclerView 从 25.1.0 开始支持预取——在主线程空闲的间隙提�
 
 ### RecyclerView 卡顿在 Perfetto 中的定位
 
-在 Perfetto 中排查 RecyclerView 滑动卡顿，关注三个 Track。首先是主线程的 `ui_thread` Track——在 doFrame 的调用栈中搜索 `onBindViewHolder` 或 `onCreateViewHolder`，如果它们的耗时超过 1ms，说明绑定或创建逻辑太重。其次是 `RenderThread` Track——如果主线程的 doFrame 很快完成但 RenderThread 耗时突增，说明问题不在onBindViewHolder而在渲染本身（比如 item 布局过于复杂）。第三是 FrameMetrics 的 `FrameTimeline` Track——持续观察整段滑动过程中的帧时间分布，如果大量帧超过 VSync 周期（120Hz 设备为 8.33ms），且对应的调用栈集中在 RecyclerView 相关方法上，就是列表优化需要重点关注的区域。[待补充：RecyclerView 滑动卡顿的 Perfetto Trace 截图]
+在 Perfetto 中排查 RecyclerView 滑动卡顿，重点看三个 Track。首先是主线程的 `ui_thread` Track，在 doFrame 的调用栈中搜索 `onBindViewHolder` 或 `onCreateViewHolder`，如果它们的耗时超过 1ms，说明绑定或创建逻辑太重。其次是 `RenderThread` Track，如果主线程的 doFrame 很快完成，但 RenderThread 耗时突增，说明瓶颈更可能在渲染本身，比如 item 布局过于复杂。第三是 FrameMetrics 的 `FrameTimeline` Track，持续观察整段滑动过程中的帧时间分布。如果大量帧超过 VSync 周期（120Hz 设备为 8.33ms），且对应的调用栈集中在 RecyclerView 相关方法上，这一段就是优化重点。[图：RecyclerView 高速滑动时，主线程出现 `onBindViewHolder` / `onCreateViewHolder` 长 slice，对应 `FrameTimeline` 中连续超时帧]
 
 ## 渲染优化：减少 Overdraw、Hardware Layer、Canvas 简化
 
@@ -243,11 +239,11 @@ Binder 是 Android 进程间通信的核心机制（详见 [1.4 Binder IPC](part
 
 最后，对于不需要返回值的场景（如日志上报、状态通知），使用 AIDL 的 `oneway` 关键字让调用异步化——调用方不会阻塞等待对端执行完毕，而是直接返回。
 
-在 Perfetto 中观察 Binder 调用耗时，可以在主线程的 Trace 中搜索 `binder_transaction` 事件。如果发现某个 `binder_transaction` 的持续时间超过 5ms，就需要关注它发生在什么上下文中——如果是在 doFrame 或 dispatchTouchEvent 的调用栈中，那就是需要优化的目标。另外，Perfetto 的 `binder` Track 会显示所有进程的 Binder 活动，可以用来判断"系统繁忙"是否是外部因素导致的。[待补充：Binder 调用耗时的 Perfetto Trace 截图]
+在 Perfetto 中观察 Binder 调用耗时，可以在主线程的 Trace 中搜索 `binder_transaction` 事件。如果发现某个 `binder_transaction` 的持续时间超过 5ms，就需要关注它发生在什么上下文中。如果它出现在 doFrame 或 dispatchTouchEvent 的调用栈里，这一笔开销就值得优先处理。另外，Perfetto 的 `binder` Track 会显示所有进程的 Binder 活动，可以用来判断“系统繁忙”是不是外部因素导致的。[图：主线程 doFrame 内出现 `binder_transaction` 长 slice，同时 `binder` Track 有明显事务堆积]
 
 ### 合理的线程池配置
 
-线程池配置不当是"主线程优化后，如果子线程数量过多，反而会抢占CPU时间片，导致整体卡顿加剧"的典型原因。核心问题是：子线程和主线程共享同一组 CPU 核心，子线程越多，主线程能分到的时间片越少。
+线程池配置不当，常见现象是主线程已经做了优化，掉帧却还是没有消失。原因通常不复杂，子线程和主线程共享同一组 CPU 核心，子线程越多，主线程能分到的 CPU 时间片就越少。
 
 **控制线程池的并发数。** CPU 密集型任务的线程数不应超过 CPU 核心数（可通过 `Runtime.availableProcessors()` 获取），I/O 密集型任务可以适当多一些，但也不建议超过核心数的两倍。
 
@@ -259,7 +255,7 @@ Binder 是 Android 进程间通信的核心机制（详见 [1.4 Binder IPC](part
 
 另一个容易被忽视的点是生命周期管理。Activity 或 Fragment 销毁时，如果线程池中还有对应的任务在执行，这些任务可能持有 Activity 的引用导致内存泄漏，或者任务完成后尝试更新已销毁的 UI 导致崩溃。正确的做法是在 `onDestroy()` 中取消或中断相关任务。可以通过 `adb shell ps -T | grep <package>` 快速监控 App 的线程数量是否正常。
 
-在 Perfetto 中，线程池问题通常表现为：在主线程的 doFrame 耗时突增的同时，同进程的其他线程（特别是 CPU 密集型线程）也占用了大量 CPU 时间。打开 Perfetto 的 CPU Track，观察主线程所在进程的所有线程的 CPU 使用分布——如果发现在掉帧发生的时间段，多个子线程同时处于 Running 状态，而主线程反而处于 Runnable 等待调度，就是线程池配置需要调整的信号。[待补充：线程竞争导致主线程调度的 Perfetto Trace 截图]
+在 Perfetto 中，线程池问题通常表现为主线程 doFrame 耗时突增的同时，同进程的其他线程，特别是 CPU 密集型线程，也占用了大量 CPU 时间。打开 Perfetto 的 CPU Track，观察主线程所在进程的所有线程的 CPU 使用分布。如果发现在掉帧发生的时间段，多个子线程同时处于 Running 状态，而主线程反而处于 Runnable 等待调度，就是线程池配置需要调整的信号。[图：掉帧发生时，多个后台线程同时处于 Running，主线程处于 Runnable 等待调度]
 
 ### 任务拆分与延迟初始化
 
@@ -350,7 +346,7 @@ Compose 的 LazyColumn 内部也实现了类似的预取机制——当用户在
 
 ### 案例一：WeSing 进房卡顿优化
 
-WeSing 在进房场景中发现主线程inflate耗时过长，原因是"游客模式"和"登录模式"两套布局全部预加载。优化方案是用 ViewStub 延迟加载游客模式布局，只在实际需要时才 inflate。同时发现 onBindViewHolder 中有一条日志字符串拼接耗时 18ms，移除后单帧渲染时间从 Xms 降至 Yms（具体数值视设备而定）。整体优化后卡顿率从 15% 降至 5%（降低 67%）。
+WeSing 在进房场景中发现主线程 inflate 耗时过长，原因是“游客模式”和“登录模式”两套布局全部预加载。优化方案是用 ViewStub 延迟加载游客模式布局，只在实际需要时才 inflate。同时还发现 `onBindViewHolder` 中有一条日志字符串拼接耗时 18ms，移除后单帧渲染时间明显下降。两项优化合并后，整体卡顿率从 15% 降至 5%（降低 67%）。
 
 [已验证: 来源见 2026-03-07_wechat_Android深入卡顿分析与实践.md §进房优化案例]
 
