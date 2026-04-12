@@ -2178,3 +2178,35 @@
 - **位置**：frontmatter `related_chapters` + “与其他章节的关系”
 - **问题**：正文大量讨论 LMK、后台限制和调度表现，但相关章节只列了 1.1/1.2/1.4/1.5，没有把已经修正了现代 lmkd 口径的 4.4《Low Memory Killer》、5.1《Linux 进程调度基础》、5.8《后台执行限制与优化》串起来。
 - **建议**：把 4.4、5.1、5.8 补进 related_chapters 或正文“与其他章节的关系”，减少同一概念在不同章节里各说各话。
+
+
+## [Task6 Review] 10.7 SQLite/Room 数据库性能优化 — 2026-04-13
+- **类型**：需确认
+- **位置**：1.1 WAL 模式段落（Compatibility WAL、ext4 4 倍写入收益）
+- **问题**：Android 9 引入 Compatibility WAL、ext4 约 4 倍写入收益这两处结论都带有版本或量化断言，但当前 `[已验证]` 只落到 `SQLiteDatabase` 官方文档，证据链不够精确。
+- **建议**：补充 `SQLiteCompatibilityWalFlags` / `enableWriteAheadLogging()` 的精确来源；如果拿不到可回溯数据，把 4 倍收益降级为定性表述。
+- **review 日志**：logs/review/2026-04-13-07-review.md
+
+- **类型**：需确认
+- **位置**：2.4、3.3、6.2（Paging 3 / Keyset 分页）
+- **问题**：正文多次把 "Paging 3 内部使用 Keyset 分页" 写成普遍结论，容易把 Paging 框架能力和具体 SQL 实现混在一起。
+- **建议**：拆开说明 Paging 3 的分页框架与 Room 查询写法；确认是否真的基于 Keyset，再决定保留还是降级表述。
+- **review 日志**：logs/review/2026-04-13-07-review.md
+
+- **类型**：需确认
+- **位置**：3.4 Migration 的性能风险
+- **问题**："Migration 在主线程上执行"、"可用 Jetpack App Startup 在后台线程预执行" 这组说法牵涉 Room 打开时机和线程模型，当前没有给出源码或官方文档支撑。
+- **建议**：补充 Room / `SQLiteOpenHelper` 的调用链依据；如果线程语义不能稳定复现，把这段改成条件化表述。
+- **review 日志**：logs/review/2026-04-13-07-review.md
+
+- **类型**：需确认
+- **位置**：5.2、5.3（ContentProvider 死锁、Perfetto SQL）
+- **问题**：`DatabaseConnectionPool`、`android_monitor_contention`、`android.monitor_contention` 这几处术语和表名混用，且正文没有给出对应 Android 版本或 Perfetto 证据。
+- **建议**：核实 AOSP / Perfetto 中的真实类名、表名和适用版本，再决定保留哪一种写法。
+- **review 日志**：logs/review/2026-04-13-07-review.md
+
+- **类型**：需重写
+- **位置**：6.2 最佳实践总结 + 扩展部分
+- **问题**：结尾连续使用 checklist 式条目，和开头的 ANR 锁竞争场景没有回扣，收束偏平，活人感和章节记忆点不够。
+- **建议**：等技术问题核实后，用一个真实排查场景或一条 Perfetto 观察路径把结尾收回来。
+- **review 日志**：logs/review/2026-04-13-07-review.md

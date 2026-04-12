@@ -1204,14 +1204,47 @@
   {
     "section": "10.7",
     "section_title": "SQLite/Room 数据库性能优化",
-    "priority": 80,
-    "reason": "知识缺口挖掘：DB 操作是 ANR/jank 的主要来源之一，CursorWindow Binder 限制是系统级约束，Room Paging 影响滑动性能",
-    "material_paths": [],
-    "added_by": "task2a-knowledge-gap",
-    "added_at": "2026-04-06T17:05:00+08:00",
-    "status": "completed",
-    "completed_at": "2026-04-06T23:21:05.002528",
-    "completed_by": "openclaw-task2a"
+    "priority": 90,
+    "reason": "[review回炉] 多处版本/API 断言与收尾结构需复核：Compatibility WAL、Paging 3/Keyset、Migration 线程模型、Perfetto SQL 表名",
+    "material_paths": [
+      "intake/suggestions.md（含 review 意见）"
+    ],
+    "added_by": "task6-review",
+    "added_at": "2026-04-13T07:32:25+08:00",
+    "status": "pending",
+    "review_issues": [
+      {
+        "type": "需确认",
+        "location": "1.1 WAL 模式段落",
+        "detail": "Compatibility WAL 与 ext4 约 4 倍写入收益都缺少精确来源，当前 `[已验证]` 无法支撑版本和量化断言。",
+        "suggestion": "补精确来源，拿不到就降级为定性表述。"
+      },
+      {
+        "type": "需确认",
+        "location": "2.4、3.3、6.2 Paging 3 / Keyset 分页",
+        "detail": "把 Paging 3 的分页框架能力写成 Keyset 的普遍实现，容易误导读者。",
+        "suggestion": "区分框架能力和具体 SQL 实现，确认后再保留结论。"
+      },
+      {
+        "type": "需确认",
+        "location": "3.4 Migration 的性能风险",
+        "detail": "Migration 主线程执行与 App Startup 后台预执行的说法缺少 Room / `SQLiteOpenHelper` 证据。",
+        "suggestion": "补调用链或改成条件化表述。"
+      },
+      {
+        "type": "需确认",
+        "location": "5.2、5.3 ContentProvider 死锁与 Perfetto SQL",
+        "detail": "`DatabaseConnectionPool` 与 `android_monitor_contention` / `android.monitor_contention` 混用，术语和版本边界不清。",
+        "suggestion": "核实 AOSP / Perfetto 的真实类名、表名和适用版本。"
+      },
+      {
+        "type": "需重写",
+        "location": "6.2 最佳实践总结 + 扩展部分",
+        "detail": "结尾连续 checklist 化，没回扣开头的 ANR / Perfetto 场景，收束偏弱。",
+        "suggestion": "在技术问题核实后，用一个真实排查场景把结尾收回来。"
+      }
+    ],
+    "original_review_log": "logs/review/2026-04-13-07-review.md"
   },
   {
     "section": "8.6",
