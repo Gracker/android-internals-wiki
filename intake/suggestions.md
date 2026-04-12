@@ -1608,3 +1608,14 @@
 - **位置**：行 250-266 Android 15 / Android 16 小节
 - **问题**：Android 15 的 `UnknownHostException`、Doze 50% / 最多 3 小时收益，以及 Android 16 JobScheduler 配额优化，当前缺少精确的一手来源与 API 锚点；尤其 Android 16 小节仍以 web search 摘要为主。
 - **建议**：补官方页面或 blog 的精确链接，并把 API / adb 入口写实（如 `JobParameters.getStopReason()`、`JobScheduler#getPendingJobReasonsHistory()`）；如果一手来源拿不稳，就把结论收窄为更保守的行为描述。
+
+## [Task9 Deep Review] 1.1 Android 分层架构 — 2026-04-12
+- **类型**：数据缺失
+- **位置**：Zygote / Binder / JNI / VNDK 的量化断言（如 20-50ms、10-100μs、100-200ns、30-50%）
+- **问题**：章节给了多组很具体的时间和收益数字，但没有绑定设备、Android 版本、benchmark、Trace 或官方原始来源。当前写法更像经验值，不足以当成通用技术结论。
+- **建议**：每组数字至少补 1 个来源锚点（官方文档、AOSP 注释、benchmark 名称、真实 Trace 截图）；补不齐时改成定性描述或明确标注“经验量级”。
+
+- **类型**：原理完整性
+- **位置**：`在 Perfetto 中的表现` → `三种数据源与三层架构的对应关系`
+- **问题**：正文把 Perfetto 数据源写成与“Android 的三层结构”一一对应，但本章前文定义的是五层架构，而且现代 Perfetto 还包含 FrameTimeline、track_event、heapprofd 等数据源。当前写法会让读者把观测层和系统分层混成一张一一映射表。
+- **建议**：改成“常见性能分析数据源的粗分类”，保留 ftrace / atrace / procfs 作为主线，同时注明 FrameTimeline / track_event 等补充来源，避免使用“一一对应”的硬表述。

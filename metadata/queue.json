@@ -2138,35 +2138,71 @@
     "section": "1.1",
     "section_title": "Android 分层架构",
     "priority": 95,
-    "reason": "[Deep Tech Review] 版本差异错误 + 表述需修正",
+    "reason": "[Deep Tech Review] Treble/Mainline 机制混淆 + HAL 进程模型错误 + 内核层版本差异缺失",
     "material_paths": [
-      "intake/research-gaps.md"
+      "intake/research-gaps.md",
+      "intake/suggestions.md"
     ],
     "review_issues": [
       {
-        "type": "版本差异",
-        "location": "## Android 16 架构层面的最新变化 > 16Kb Page Size 的影响",
-        "detail": "\"Android 15 引入了 16KB 页大小支持\" —— 正确。但该段落在 Android 16 章节下，读者容易误以为 16KB Page Size 是 Android 16 的新特性。Android 15 才是引入版本，Android 16 继续完善。",
-        "suggestion": "在该段落开头加一句\"Android 15 首次引入 16KB 页大小支持，Android 16 继续完善\"，或在章节副标题中明确标注 15+。"
+        "type": "源码错误",
+        "severity": "P0",
+        "location": "Treble 小节（“Google 可以独立更新 Framework 层（通过 Mainline 模块）”）",
+        "detail": "Project Treble 和 Project Mainline 被写成同一套机制。Treble 解决的是 system/vendor 解耦与独立升级边界，依赖稳定 vendor interface（VINTF + 分区边界）；Mainline 是 Android 10 起的模块化更新体系，二者不是一回事。当前表述会把系统 OTA、vendor 兼容性和 Play System Update 混成一条链路。",
+        "suggestion": "把 Treble 和 Mainline 拆开写：Treble 负责 framework/vendor 解耦与兼容性边界，Mainline 负责部分系统组件的 APK/APEX 模块化更新；同时补上 VINTF / system-vendor 分区这层实现。",
+        "dimension": "源码引用准确性"
       },
       {
-        "type": "源码错误/表述偏差",
-        "location": "## Binder 跨层调用 > Binder 线程池管理描述",
-        "detail": "\"Binder 在内核层面实现了线程池管理\" —— 这个描述过于简化和不准确。Binder 驱动的内核部分负责在请求到达时唤醒等待线程，但线程池大小、线程优先级等由 Android Framework（通过系统属性如 android.thread_interactive、Binder 驱动参数）控制，不是纯内核行为。读者可能因此高估内核的自动化程度。",
-        "suggestion": "修正表述为：\"Binder 驱动的内核部分负责在请求到达时唤醒等待线程（ Binder 线程池的懒唤醒机制），但线程池大小由 Android Framework 配置（系统属性 android.thread_*/Binder 驱动参数）\"。"
+        "type": "原理错误",
+        "severity": "P0",
+        "location": "Treble 小节 + “在 Perfetto 中追踪 HAL 问题的完整方法”（Treble 前后 HAL 进程模型）",
+        "detail": "正文把“Treble 之前 = HAL 和 Framework 同进程 passthrough；Treble 之后 = HAL 全部独立进程 binderized”写成二元切换，这不符合 AOSP 实际。HIDL 的 passthrough / binderized 都是 Treble 时代的传输模式；AIDL HAL 才是只支持 binderized。Treble 前也存在独立 native service / daemon，不是所有 HAL 都与 Framework 同进程。",
+        "suggestion": "改成：Treble 时代 HIDL 支持 passthrough 与 binderized 两种模式，AIDL HAL 只支持 binderized；说明 legacy HAL、独立 daemon 与 modern HAL service 的差异，避免把“是否独立进程”讲成单一版本分界。",
+        "dimension": "原理链完整性"
+      },
+      {
+        "type": "源码错误",
+        "severity": "P0",
+        "location": "AIDL HAL 验证标注与参考资料（`https://source.android.com/docs/core/architecture/hal/aidl`）",
+        "detail": "当前 AIDL HAL 官方链接返回 404，但正文仍标为 [已验证]。这会直接破坏本章的验证链。当前可访问的官方页面是 `https://source.android.com/docs/core/architecture/aidl/aidl-hals`。",
+        "suggestion": "将正文与参考资料中的 AIDL HAL 链接统一替换为 `https://source.android.com/docs/core/architecture/aidl/aidl-hals`，并重新核对依赖该链接的结论。",
+        "dimension": "源码引用准确性"
       },
       {
         "type": "版本差异",
-        "location": "Android 16 架构变化 - 16KB Page Size 部分",
-        "detail": "章节声称\"Android 16 在此基础上继续完善（16KB Page Size）\"，实际：16KB Page Size 由 Android 15 引入（Android 16 继续完善是对的），但 Android 16 的主要变化是要求部分设备必须支持 16KB Page Size，描述重点偏移。",
-        "suggestion": "修正描述：Android 15 引入 16KB Page Size 支持，Android 16 要求部分设备必须支持 16KB Page Size（而非\"继续完善该特性\"）。"
+        "severity": "P1",
+        "location": "Linux 内核层（LMK / Ashmem 段落）",
+        "detail": "本章适用范围写到 Android 8-16，但内核层仍用“LMK + Ashmem”概括现代 Android。Android 10+ 已以 userspace lmkd + PSI 作为主线；Android 12+ 正在从 ashmem 迁移到 memfd。若不拆版本，读者会把旧时代机制当成 Android 16 的默认事实。",
+        "suggestion": "将该段拆成版本演进写法：Android 8-9 可讲 in-kernel LMK / ashmem，Android 10+ 补 userspace lmkd + PSI，Android 12+ 补 ashmem→memfd 迁移。",
+        "dimension": "版本差异覆盖"
+      },
+      {
+        "type": "知识盲区",
+        "severity": "P1",
+        "location": "Project Treble 的核心思路",
+        "detail": "章节反复说“画一条硬边界”，但没有解释这条边界在 AOSP 中如何真正成立。system/vendor 分区、VINTF manifest / compatibility matrix、稳定接口校验这几层都缺失，读者无法理解 framework-only OTA 为什么能工作，也无法把 Treble 和“只是换了接口定义语言”区分开。",
+        "suggestion": "补一小节说明 Treble 的落地机制：分区边界、VINTF、兼容性矩阵、vendor freeze 与接口稳定性，并给出 1-2 个可核对的源码/文档锚点。",
+        "dimension": "知识盲区"
+      },
+      {
+        "type": "源码错误",
+        "severity": "P1",
+        "location": "Project Mainline 的持续扩展",
+        "detail": "正文写成“这些模块通过 APEX 格式打包”，这会把 Mainline 模块类型讲错。Mainline 既有 APEX，也有 APK（以及 APK-in-APEX）形态；“都通过 APEX 打包”不成立。",
+        "suggestion": "改成“Mainline 模块以 APEX / APK 两类形态发布”，并把需要重启的 APEX 与可热更新的 APK 区分开。",
+        "dimension": "源码引用准确性"
       }
     ],
     "added_by": "task9-deep-tech-review",
-    "added_at": "2026-04-09T07:34:00",
-    "status": "completed",
-    "completed_at": "2026-04-09T13:52:04",
-    "completed_by": "task2b-rework"
+    "added_at": "2026-04-12T13:20:00+08:00",
+    "status": "pending",
+    "previous_completed_at": "2026-04-09T13:52:04",
+    "previous_completed_by": "task2b-rework",
+    "reopened_at": "2026-04-12T13:20:00+08:00",
+    "reopened_by": "task9-deep-tech-review",
+    "updated_at": "2026-04-12T13:20:00+08:00",
+    "updated_by": "task9-deep-tech-review",
+    "notes": "2026-04-12 重新 deep review：旧的 16KB page size 问题已不再是主问题，当前活动问题改为 Treble / Mainline / HAL 边界与内核层版本差异。"
   },
   {
     "section": "2.2",

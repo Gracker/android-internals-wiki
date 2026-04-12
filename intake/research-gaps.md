@@ -1324,3 +1324,19 @@ Perfetto 段落没有给出可复现的观测路径。当前章节直接写 `pow
 
 ### 关联章节
 §5.2 EAS 能量感知调度、§5.9 ADPF 自适应性能框架、§5.6 Android 功耗管理
+
+## [2026-04-12] 1.1 Android 分层架构 — Treble 硬边界的落地机制
+
+### 盲区描述
+正文多次提到 Treble 在 Framework 和 HAL 之间画出“硬边界”，但没有把这条边界如何在 AOSP 中真正成立讲出来。当前缺失的关键环节包括：system/vendor 分区切分、VINTF manifest / compatibility matrix、HIDL passthrough vs binderized 的边界、AIDL HAL 为什么只能 binderized。没有这层实现细节，读者很难理解“Treble 解决的到底是接口语言问题，还是系统升级兼容性问题”。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 调研 VINTF manifest / compatibility matrix 的校验链路与 system/vendor 分区边界
+- 对比 HIDL passthrough、HIDL binderized、AIDL HAL 三种模式的进程模型与传输路径
+- 补充 framework-only OTA、vendor freeze 与接口稳定性的关系
+
+### 关联章节
+1.1、1.2、1.6、2.15
