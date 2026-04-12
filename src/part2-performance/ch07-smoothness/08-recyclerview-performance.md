@@ -28,7 +28,8 @@ sources:
     path: "android-developers.googleblog.com - Adaptive Refresh Rate"
 pipeline_stage: task2b_pending
 task6_state: reviewed
-task9_state: pending
+task9_state: reviewed
+task9_result: needs-rework
 task2b_state: pending
 ---
 

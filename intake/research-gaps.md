@@ -1440,3 +1440,23 @@ frontmatter 把章节适用范围写到 Android 17，但版本演进表对 Andro
 
 ### 关联章节
 5.11、5.9、14.1、1.15
+
+
+---
+
+## [2026-04-12] 7.8 RecyclerView 列表滑动性能深度优化 — GapWorker 预算预测与 Trace 可观测性
+
+### 盲区描述
+当前章节把 GapWorker 写成“按 deadline 依次 create + bind，超时就丢弃剩余任务”，但没有解释 `RecycledViewPool.willCreateInTime()` / `willBindInTime()` 如何基于历史耗时预测是否值得继续，也没有把这些判定和 `RV Prefetch` / `RV onCreateViewHolder` / `RV onBindViewHolder` 的可观测关系串起来。结果是读者知道有 prefetch，却仍然解释不了“为什么明明发起了预取，trace 里却没看到 create/bind”。
+
+### 重要程度
+中
+
+### 建议研究方向
+- 核对 `GapWorker.prefetchPositionWithDeadline()`、`Recycler.tryGetViewHolderForPositionByDeadline()`、`RecycledViewPool.willCreateInTime()`、`willBindInTime()` 的完整调用链
+- 梳理 `factorInCreateTime()` / `factorInBindTime()` 如何更新历史耗时，以及它们怎样影响下一次 prefetch 决策
+- 用一条真实 Perfetto trace 对照“有 `RV Prefetch` 但没有 `RV onBindViewHolder`”和“预取成功命中 bind/create”两种场景
+- 关联 §13.9 tracing 基础设施，说明默认 trace 配置下哪些 RecyclerView slice 可见，哪些需要额外 atrace category
+
+### 关联章节
+7.8、13.9

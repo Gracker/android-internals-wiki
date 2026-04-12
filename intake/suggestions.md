@@ -1762,3 +1762,15 @@
 - **问题**：正文把“桌面可见”“Launcher 启动”“LOCKED_BOOT_COMPLETED / BOOT_COMPLETED”压在一段里，叙述过快，容易让读者把用户可见节点和广播节点当成同一个里程碑。
 - **建议**：请 Task 9 先核对启动里程碑和发送主体，再由 Task 2B 把这几个节点拆开写清楚。
 - **review 日志**：logs/review/2026-04-12-17-review.md
+
+
+## [Task9 Deep Review] 7.8 RecyclerView 列表滑动性能深度优化 — 2026-04-12
+- **类型**：数据缺失
+- **位置**：行 230-234 VSync 时间精度与步幅波动
+- **问题**：`±1ms` 取整误差、`120Hz 下约 12%` 波动，以及“Perfetto FrameTimeline 不会标记为 Jank”的结论都属于强断言，但当前只挂了“高爷补充素材”，没有绑定 `OverScroller` / 时间源代码路径、实验 trace 或可复现实验条件。
+- **建议**：补一条源码或实验链路（时间戳来源、位移计算公式、120Hz 设备 trace / screen recording 对照）；如果证据还不够，就把这段降级成待验证假设，不要直接写成结论。
+
+- **类型**：数据缺失
+- **位置**：行 264-283 Perfetto 分析实战
+- **问题**：本节给了 SQL 和截图占位，但没有一条真实 trace、实际 slice 名命中结果、阈值样本或“现象 → Trace → 根因 → 修复”的闭环案例。读者即使知道概念，也很难复现整套排查流程。
+- **建议**：补 1 个真实滑动 trace 案例，至少包含 `RV OnLayout` / `RV Prefetch` / `RV onBindViewHolder` 中的一组真实 slice，以及修复前后对比。
