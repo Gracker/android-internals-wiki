@@ -7,8 +7,8 @@ drafted_date: "2026-03-30"
 drafted_by: "openclaw-task2"
 applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
 last_verified: "2026-03-31"
-reviewed_date: "2026-04-05"
-reviewed_by: "openclaw-task6"  # round 2 (post-polish quality gate)
+reviewed_date: "2026-04-13"
+reviewed_by: "openclaw-task6"
 last_verified_against: "AOSP android-16.0.0_r1"
 confidence: medium
 polish_count: 1
@@ -27,10 +27,11 @@ sources:
     path: "developer.android.com/reference/android/view/MotionEvent"
 tags: [touch, input, latency, InputReader, InputDispatcher, sampling-rate, batching, Choreographer, responsiveness]
 related_chapters: ["3.1", "2.3", "2.4", "2.5", "8.1"]
-pipeline_stage: task6_pending
-task6_state: pending
+pipeline_stage: task2b_pending
+task6_result: needs-rework
+task6_state: reviewed
 task9_state: pending
-task2b_state: idle
+task2b_state: pending
 ---
 
 # 触摸响应的性能分析
@@ -62,9 +63,9 @@ task2b_state: idle
 
 ## 为什么需要关注触摸响应
 
-在 Perfetto 中打开一段用户滑动列表的 Trace，我们会看到这样的画面：InputReader 线程每隔几毫秒就读取一个触摸坐标，InputDispatcher 线程把这些坐标派发给应用，应用的主线程被唤醒，处理事件、执行 invalidate()、等 VSync、绘制一帧——然后用户的手指已经移动到了下一个位置，但屏幕上显示的还是上一帧的内容。
+在 Perfetto 中打开一段用户滑动列表的 Trace，我们会看到这样的画面：InputReader 线程每隔几毫秒就读取一个触摸坐标，InputDispatcher 线程把这些坐标派发给应用，应用的主线程被唤醒，处理事件、执行 invalidate()、等 VSync、绘制一帧。等这一帧真正显示出来时，用户的手指已经移动到了下一个位置，但屏幕上显示的还是上一帧的内容。
 
-这就是触摸响应延迟。用户的手指已经离开了某个位置，但系统还没来得及把画面更新到屏幕上。在 60Hz 屏幕上，最坏情况下一帧从"触摸发生"到"画面更新"可能经历一个完整的 VSync 周期（16.6ms）的延迟；在 120Hz 屏幕上这个数字降到了约 8.3ms，但如果我们在 Perfetto 中仔细看，从触摸硬件采样到画面最终上屏，实际的总延迟往往在 30-80ms 之间——这中间发生了什么，就是本节要讲清楚的内容。
+这就是触摸响应延迟。用户的手指已经离开了某个位置，但系统还没来得及把画面更新到屏幕上。在 60Hz 屏幕上，最坏情况下一帧从"触摸发生"到"画面更新"可能经历一个完整的 VSync 周期（16.6ms）的延迟；在 120Hz 屏幕上这个数字降到了约 8.3ms，但如果我们在 Perfetto 中仔细看，从触摸硬件采样到画面最终上屏，实际的总延迟往往在 30-80ms 之间。本节就按时间顺序把这段延迟拆开。
 
 理解触摸响应延迟的组成，是优化所有"跟手性"问题的前提。不管我们在做滑动流畅度优化、启动速度优化还是 ANR 分析，Input 事件传递路径上的每一个环节都可能成为瓶颈。
 
@@ -82,7 +83,7 @@ task2b_state: idle
 - **240Hz 采样率**：每 4.16ms 扫描一次
 - **480Hz 采样率**：每 2.08ms 扫描一次，一些游戏手机甚至达到 720Hz 或 960Hz
 
-采样率越高，第一个触摸事件被捕获的延迟越低，后续的 MOVE 事件也越密集。但采样率不是越高越好——如果系统的渲染帧率只有 60fps（16.6ms 一帧），那么在一个 VSync 周期内产生过多的 MOVE 事件反而会造成浪费，因为中间的事件最终会被 Batch 合并。高爷在实战分析中明确指出：在 60fps 渲染下，120Hz 的触摸采样率已经足够；只有当渲染帧率提升到 90fps 或 120fps 时，240Hz 甚至更高的触摸采样率才有实际意义。
+采样率越高，第一个触摸事件被捕获的延迟越低，后续的 MOVE 事件也越密集。但采样率不是越高越好。如果系统的渲染帧率只有 60fps（16.6ms 一帧），那么在一个 VSync 周期内产生过多的 MOVE 事件反而会造成浪费，因为中间的事件最终会被 Batch 合并。高爷在实战分析中明确指出：在 60fps 渲染下，120Hz 的触摸采样率已经足够；只有当渲染帧率提升到 90fps 或 120fps 时，240Hz 甚至更高的触摸采样率才有实际意义。
 
 [已验证: 官方文档, source.android.com/docs/core/interaction/input] [来源: obsidian/Personal-Knowlodge/source/Android-Systrace-Input.md]
 
@@ -90,7 +91,7 @@ task2b_state: idle
 
 触摸屏驱动将原始触控数据转换为 Linux input 事件格式（`input_event` 结构体），写入 `/dev/input/eventX` 设备节点。Android 的 EventHub 利用 Linux 的 inotify + epoll 机制监听这些设备节点，当有新事件时通过 `getEvents()` 接口读取出来。
 
-这一步的延迟通常很小（微秒级别），因为内核的中断处理和 EventHub 的 epoll 机制都是高效的。但在极端情况下——比如系统 I/O 负载极高、或者触控驱动与 SoC 之间的总线带宽被其他外设占用——这里可能引入额外的毫秒级延迟。
+这一步的延迟通常很小（微秒级别），因为内核的中断处理和 EventHub 的 epoll 机制都是高效的。但在极端情况下，比如系统 I/O 负载极高，或者触控驱动与 SoC 之间的总线带宽被其他外设占用，这里可能引入额外的毫秒级延迟。
 
 ### 3. InputReader 读取和加工
 
@@ -122,11 +123,11 @@ InputDispatcher 也是 `system_server` 中的 Native 线程，被 InputReader �
 
 事件在 InputDispatcher 中经过三个关键队列：
 
-1. **InboundQueue（"iq"）**：InputReader 交付的事件首先进入这里。InputDispatcher 从队列头取出事件开始处理。
+1. **InboundQueue（"iq"）**：InputReader 交付的事件先进入这里。InputDispatcher 从队列头取出事件开始处理。
 2. **OutboundQueue（"oq"）**：每个目标窗口（Connection）都有一个 OutboundQueue。事件被包装成 `DispatchEntry` 后放入对应窗口的 OutboundQueue，等待通过 socketpair 发送。
 3. **WaitQueue（"wq"）**：事件通过 socket 发送给 App 后，从 OutboundQueue 移到 WaitQueue。直到 App 处理完事件并回调 `finishInputEvent()`，才从 WaitQueue 中移除。
 
-在 Perfetto 中，这三个队列以 Slice 的形式出现在 `system_server` 进程的 InputDispatcher 线程中。它们是分析触摸延迟的核心入口点——如果 InboundQueue 堆积，说明 InputDispatcher 处理不过来；如果 OutboundQueue 堆积，说明目标窗口的 socket 通道拥塞；如果 WaitQueue 堆积，说明 App 端处理太慢（可能是主线程被阻塞了）。
+在 Perfetto 中，这三个队列以 Slice 的形式出现在 `system_server` 进程的 InputDispatcher 线程中。它们是分析触摸延迟的核心入口点。如果 InboundQueue 堆积，说明 InputDispatcher 处理不过来；如果 OutboundQueue 堆积，说明目标窗口的 socket 通道拥塞；如果 WaitQueue 堆积，说明 App 端处理太慢，主线程很可能被阻塞了。
 
 [已验证: AOSP android-16.0.0_r1, frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp] [来源: obsidian/Personal-Knowlodge/source/Android-Systrace-Input.md]
 
@@ -163,7 +164,7 @@ App 主线程被 Input 事件唤醒后，执行 `ViewRootImpl.deliverInputEvent(
 | 渲染上屏 | 8-50ms | GPU 负载、Buffer 状态、帧率 |
 | **总计** | **~15-75ms** | 诸多因素 |
 
-这也解释了为什么用户对"拖动跟手性"特别敏感——学术论文的研究结果表明，直接触摸拖动的可感知平均最小时延（Perceivable Average Minimum Time to Display, PAMTD）仅为 11ms，而点击的可接受时延约为 263ms。也就是说，拖动场景对延迟的容忍度远低于点击场景，优化拖动跟手性是触摸响应优化的重中之重。
+这也解释了为什么用户对"拖动跟手性"特别敏感。学术论文的研究结果表明，直接触摸拖动的可感知平均最小时延（Perceivable Average Minimum Time to Display, PAMTD）仅为 11ms，而点击的可接受时延约为 263ms。也就是说，拖动场景对延迟的容忍度远低于点击场景，优化拖动跟手性是触摸响应优化的重中之重。
 
 [来源: obsidian/Personal-Knowlodge/source/2026-03-06_wechat_响应时延的科学研究.md] [待补充: PAMTD 11ms 数据的学术论文出处]
 
@@ -192,7 +193,7 @@ App 主线程被 Input 事件唤醒后，执行 `ViewRootImpl.deliverInputEvent(
 - **60fps 渲染 + 240Hz 采样**：一个 VSync 周期内产生约 4 个 MOVE 事件，其中 3 个被丢弃。额外的采样没有带来视觉上的改善。
 - **120fps 渲染 + 240Hz 采样**：一个 VSync 周期（8.3ms）内产生约 2 个 MOVE 事件，与 60fps + 120Hz 的比例一致。这时 240Hz 采样才真正发挥了价值。
 
-结论是：**触摸采样率应该至少是渲染帧率的 2 倍**，更高的采样率在大多数场景下意义不大。不过，更高的采样率对预测算法（Motion Prediction）有间接帮助——数据点越密集，预测越准确。
+结论是：**触摸采样率应该至少是渲染帧率的 2 倍**，更高的采样率在大多数场景下意义不大。不过，更高的采样率对预测算法（Motion Prediction）有间接帮助，数据点越密集，预测越准确。
 
 [来源: obsidian/Personal-Knowlodge/source/Android-Systrace-Input.md]
 
@@ -200,11 +201,11 @@ App 主线程被 Input 事件唤醒后，执行 `ViewRootImpl.deliverInputEvent(
 
 ### 为什么需要 Batching
 
-当触摸采样率高于渲染帧率时（这是常见情况），一个 VSync 周期内会产生多个 MOVE 事件。如果系统对每一个 MOVE 事件都触发一次完整的渲染流程，那 GPU 和 CPU 的工作量会翻倍，而用户最终只能看到每帧一个画面——中间的渲染工作全部浪费了。
+当触摸采样率高于渲染帧率时（这是常见情况），一个 VSync 周期内会产生多个 MOVE 事件。如果系统对每一个 MOVE 事件都触发一次完整的渲染流程，那 GPU 和 CPU 的工作量会翻倍，而用户最终只能看到每帧一个画面，中间的渲染工作都会白白消耗 CPU 和 GPU 时间。
 
 Android 的解决方案是 **Input Batching**（输入事件批量处理）。Choreographer 的 `doFrame()` 方法在处理 `INPUT` 类型的 Callback 时，会一次性消费当前所有待处理的 Input 事件，只保留最后一个 MOVE 事件的位置信息用于绘制。
 
-从 Perfetto 中可以看到这种现象：在 InputResponse 区域内，一个 VSync 周期中的多个 MOVE 事件被快速消费，只有最后到达 VSync 边界时才触发实际的绘制操作。
+在 Perfetto 中经常会看到这种现象：在 InputResponse 区域内，一个 VSync 周期中的多个 MOVE 事件被快速消费，只有最后到达 VSync 边界时才触发实际的绘制操作。
 
 ### Choreographer 中 Input 的优先级
 
@@ -215,7 +216,7 @@ Choreographer 的 `doFrame()` 按以下顺序处理四种 Callback：
 3. **CALLBACK_INSETS_ANIMATION**：处理窗口 Insets 动画
 4. **CALLBACK_TRAVERSAL**：执行 measure/layout/draw
 
-Input 被安排在第一位，这意味着在一个 VSync 周期内，系统优先处理输入事件，然后计算动画，最后才执行布局和绘制。这个顺序是精心设计的——先处理输入，才能让后续的动画和绘制基于最新的输入状态来工作。
+Input 被安排在第一位。在一个 VSync 周期内，系统先处理输入事件，再计算动画，最后执行布局和绘制。这个顺序是刻意安排的，后续动画和绘制才能基于最新的输入状态。
 
 不过，`CALLBACK_INPUT` 并不是在每次有 Input 事件时都注册的。对于 DOWN 事件，系统可能会直接唤醒主线程处理而不等待 VSync（这也是为什么 DOWN 事件的响应通常比 MOVE 更快）。对于连续的 MOVE 事件，系统倾向于等 VSync 到来后批量处理。
 
@@ -228,7 +229,7 @@ Input 被安排在第一位，这意味着在一个 VSync 周期内，系统优�
 1. 找到 `system_server` 进程的 InputDispatcher 线程
 2. 观察 WaitQueue（"wq"）的 Slice：如果在一个 VSync 周期内 WaitQueue 中有多个 MOVE 事件等待，说明 App 还没来得及处理，InputDispatcher 一直在堆积事件
 3. 切换到 App 进程的主线程 Track：在 `InputResponse` 区域内，如果看到 `deliverInputEvent` 快速连续执行多次，那就是在消费 Batch 中的事件
-4. 最后看 `doFrame` 的执行：它发生在 Batch 消费之后，使用最新的事件位置来计算布局和绘制
+4. 再看 `doFrame` 的执行：它发生在 Batch 消费之后，使用最新的事件位置来计算布局和绘制
 
 如果 WaitQueue 持续堆积且不下降，那就是一个明确的信号：App 的主线程处理速度跟不上 Input 事件的到来速度，可能正在发生卡顿。
 
@@ -236,14 +237,14 @@ Input 被安排在第一位，这意味着在一个 VSync 周期内，系统优�
 
 ## 触摸场景的性能分析方法
 
-### 方法论：从 Input 事件链路定位瓶颈
+### 从 Input 事件路径定位瓶颈
 
 分析触摸响应问题，最有效的方法是沿着事件传递路径从源头到终点逐步排查。基本思路是：
 
 1. **看 InputDispatcher 的队列状态**：InboundQueue、OutboundQueue、WaitQueue 是否有堆积？
 2. **看 App 主线程的状态**：被 Input 唤醒后，是 Running 还是 Sleep/Runnable？
 3. **看 doFrame 的执行**：Input 处理 → Animation → Traversal 各阶段的耗时
-4. **看渲染管线**：RenderThread 和 GPU 执行是否超时
+4. **再看渲染管线**：RenderThread 和 GPU 执行是否超时
 
 ### 实战案例：Input Boost 未生效导致响应慢
 
@@ -381,7 +382,7 @@ Android 系统有 **Input Boost** 机制：在检测到 Input 事件时，临时
 
 对于手写笔和绘图场景，Android 提供了 Motion Prediction 库（`androidx.input:input-motionprediction`）来降低感知延迟。它的原理是：基于已有的 MotionEvent 轨迹数据，使用卡尔曼滤波等算法预测用户接下来的手势路径，生成预测的 MotionEvent 并提前渲染。当真实的 MotionEvent 到达后，用真实数据替换预测数据。
 
-这套方案不适用于普通的触摸交互（手指点击和滑动），因为预测不准确时会导致画面跳动——在拖动列表时预测错一个方向，用户会立即察觉。它主要针对连续的、可预测的运动轨迹，如手写笔绘图。从 Android 4.4（API 19）开始支持，Android 13+ 的 `WindowManager` 也提供了系统级别的预测渲染支持。
+这套方案不适用于普通的触摸交互（手指点击和滑动），因为预测不准确时会导致画面跳动。在拖动列表时一旦预测错方向，用户会立即察觉。它主要针对连续的、可预测的运动轨迹，如手写笔绘图。从 Android 4.4（API 19）开始支持，Android 13+ 的 `WindowManager` 也提供了系统级别的预测渲染支持。
 
 在实际工程中，如果 App 不涉及手写笔场景，这一节可以跳过。对于需要集成的项目，官方推荐使用 `Jetpack` 的 `androidx.input:input-motionprediction` 库，而非直接调用平台 API。
 
@@ -405,14 +406,14 @@ Android 系统有 **Input Boost** 机制：在检测到 Input 事件时，临时
 
 厂商会定制 CPU 的 Input Boost 策略：在检测到触摸事件时，不仅提升 CPU 频率，还可能把 App 的主线程和 RenderThread 绑定到大核上执行，确保触摸响应的关键路径获得最高的 CPU 优先级。
 
-[待验证：各厂商具体的 Input Boost 实现差异]
+[待验证: 各厂商具体的 Input Boost 实现差异]
 
 ## 与其他章节的关系
 
 触摸响应不是一个孤立的系统，它和多个章节的内容交叉关联：
 
 - **3.1 Input 事件分发全流程**：本章聚焦于触摸事件的性能分析，3.1 章节则详细讲解了 Input 事件从硬件到 App 的完整分发机制，是理解本章内容的前置知识。
-- **2.3 VSync 机制**：触摸事件的 Batching 和渲染时机都受 VSync 控制——理解 VSync 周期和 offset，才能理解为什么 MOVE 事件要"等一个 VSync"才被消费。本章的"延迟全景图"中渲染上屏的耗时，本质上就是等待 VSync + 渲染执行的时间。
+- **2.3 VSync 机制**：触摸事件的 Batching 和渲染时机都受 VSync 控制。理解 VSync 周期和 offset，才能理解为什么 MOVE 事件要"等一个 VSync"才被消费。本章"延迟全景图"里的渲染上屏耗时，就是等待 VSync 加上渲染执行时间。
 - **2.4 Choreographer 与渲染流水线**：本章提到的 CALLBACK_INPUT 优先级和 doFrame() 的执行顺序，在 2.4 节有完整的机制讲解。如果想深入理解 Batching 的代码实现，建议先读 2.4。
 - **2.5 MainThread 与 RenderThread 协作**：触摸事件在 MainThread 处理，渲染在 RenderThread 执行。GPU 渲染瓶颈的排查（本章"常见卡顿原因"第 5 点）需要理解这两个线程的 syncAndDrawFrame 流程，详见 2.5 节。
 - **8.1 响应速度原理**：触摸响应是"响应速度"的一个子集，8.1 节从更宏观的角度讨论了"输入延迟 → 处理延迟 → 输出延迟"的通用模型，并给出了量化的优化目标。

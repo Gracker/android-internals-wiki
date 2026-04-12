@@ -1,40 +1,40 @@
 {
-  "generated_at": "2026-04-13T01:00:04+08:00",
+  "generated_at": "2026-04-13T01:05:00+08:00",
   "state_machine_version": "v2",
   "total_sections": 207,
   "metrics": {
     "total": 207,
-    "last_updated": "2026-04-13T01:00:04+08:00",
+    "last_updated": "2026-04-13T01:05:00+08:00",
     "unknown": 34,
     "ready-for-review": 173,
     "pipeline_unknown": 31,
-    "pipeline_task6_pending": 166,
-    "pipeline_task2b_pending": 7,
+    "pipeline_task6_pending": 165,
+    "pipeline_task2b_pending": 8,
     "pipeline_task9_pending": 3,
     "task6_unknown": 31,
     "task6_revisiting": 39,
-    "task6_reviewed": 10,
-    "task6_pending": 127,
+    "task6_reviewed": 11,
+    "task6_pending": 126,
     "task9_unknown": 31,
     "task9_pending": 173,
     "task9_reviewed": 3,
     "task2b_unknown": 31,
     "task2b_fixed": 39,
-    "task2b_pending": 7,
-    "task2b_idle": 130
+    "task2b_pending": 8,
+    "task2b_idle": 129
   },
   "pipeline": {
     "pipeline_stage_counts": {
       "unknown": 31,
-      "task6_pending": 166,
-      "task2b_pending": 7,
+      "task6_pending": 165,
+      "task2b_pending": 8,
       "task9_pending": 3
     },
     "task6_state_counts": {
       "unknown": 31,
       "revisiting": 39,
-      "reviewed": 10,
-      "pending": 127
+      "reviewed": 11,
+      "pending": 126
     },
     "task9_state_counts": {
       "unknown": 31,
@@ -44,8 +44,8 @@
     "task2b_state_counts": {
       "unknown": 31,
       "fixed": 39,
-      "pending": 7,
-      "idle": 130
+      "pending": 8,
+      "idle": 129
     }
   },
   "issues": {
@@ -738,12 +738,13 @@
       "title": "触摸响应的性能分析",
       "path": "src/part1-fundamentals/ch03-input/02-touch-performance.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "pending",
+      "pipeline_stage": "task2b_pending",
+      "task6_state": "reviewed",
       "task9_state": "pending",
-      "task2b_state": "idle",
-      "reviewed_date": "2026-04-05",
-      "reviewed_by": "openclaw-task6"
+      "task2b_state": "pending",
+      "reviewed_date": "2026-04-13",
+      "reviewed_by": "openclaw-task6",
+      "task6_result": "needs-rework"
     },
     "src/part1-fundamentals/ch03-input/03-gesture-navigation.md": {
       "chapter": "3.3",

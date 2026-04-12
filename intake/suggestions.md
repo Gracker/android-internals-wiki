@@ -2023,3 +2023,22 @@
 - **问题**：AAudio 官方链接 `https://developer.android.com/ndk/guides/audio/aaudio/low-latency-audio` 当前返回 404；`https://android-developers.googleblog.com/ (Media3 1.10 Release)` 也只是首页占位，无法支撑精确溯源。
 - **建议**：替换为当前可访问的官方文档或具体 release note / blog URL，避免后续复核时找不到原始依据。
 
+## [Task6 Review] 3.2 触摸响应的性能分析 — 2026-04-13
+- **类型**：需补充素材
+- **位置**：延迟全景图后的 PAMTD 数据段
+- **问题**：PAMTD 11ms / 点击 263ms 目前只有二手笔记来源，没有原始论文标题、实验条件和适用场景。
+- **建议**：补原始论文与实验上下文，若短期补不齐，改成定性结论并保留 `[待验证]`。
+- **review 日志**：logs/review/2026-04-13-01-review.md
+
+- **类型**：需确认
+- **位置**：Motion Prediction：降低感知延迟
+- **问题**："从 Android 4.4（API 19）开始支持"、Jetpack motionprediction 库、Android 13+ `WindowManager` 预测渲染三组表述混在一起，平台 API 与 Jetpack 库的版本边界不清。
+- **建议**：交给 Task 9 核对平台 API、Jetpack 依赖和适用场景，再决定保留哪一套表述。
+- **review 日志**：logs/review/2026-04-13-01-review.md
+
+- **类型**：需补充素材
+- **位置**：厂商触控优化方案 / Input Boost 策略
+- **问题**：低延迟触控 IC、主线程绑定大核、Input Boost 持续时间等断言主要依赖泛化的 web research 和待验证标注，缺少厂商文档、具体设备案例或 Trace 证据。
+- **建议**：补具体设备/厂商资料，或把这一节收缩成“常见做法概览”，避免写成确定结论。
+- **review 日志**：logs/review/2026-04-13-01-review.md
+
