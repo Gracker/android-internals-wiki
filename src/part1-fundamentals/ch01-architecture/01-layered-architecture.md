@@ -4,14 +4,22 @@ chapter: "1.1"
 section: "1.1"
 status: ready-for-review
 applicable_versions: "Android 8 (API 26) - Android 16 (API 36)"
-last_verified: "2026-03-30"
-last_verified_against: "AOSP android-16.0.0_r1, developer.android.com, source.android.com"
+last_verified: "2026-04-12"
+last_verified_against: "AOSP android-16.0.0_r1, developer.android.com, source.android.com HAL/AIDL/VINTF/Mainline/lmkd docs"
 confidence: high
 sources:
   - type: official
     path: "https://developer.android.com/guide/platform"
   - type: official
-    path: "https://source.android.com/docs/core/architecture"
+    path: "https://source.android.com/docs/core/architecture/hal"
+  - type: official
+    path: "https://source.android.com/docs/core/architecture/aidl/aidl-hals"
+  - type: official
+    path: "https://source.android.com/docs/core/architecture/vintf"
+  - type: official
+    path: "https://source.android.com/docs/core/ota/modular-system"
+  - type: official
+    path: "https://source.android.com/docs/core/perf/lmkd"
   - type: blog
     path: "https://androidperformance.com"
 tags: ['architecture', '分层架构', 'HAL', 'HIDL', 'AIDL', 'Binder', 'SystemServer', 'Zygote', 'SurfaceFlinger', '性能优化', 'Perfetto']
@@ -22,12 +30,13 @@ polish_count: 1
 polish_date: "2026-04-05"
 polish_by: "task2b-polish"
 review_notes: "2026-04-11 task6 review: pass-light-edit。小修14处（禁用词替换/句式去模板化/验证标注格式统一）。无B类大问题。评分: 结构5/5·措辞4/5·一致性4/5·验证4/5·元数据5/5。| 2026-04-05 task2b-polish质检: 通过→ready-to-publish。小修1处（补充section字段）。无B类大问题。评分: 结构5/5·措辞5/5·一致性5/5·验证4/5·元数据5/5。| 2026-03-31 二次review: 通过finalized。小修7处（标准化验证标注格式/补充4处待验证标注/补充来源标注）。无B类大问题。评分: 结构4/5·措辞4/5·一致性4/5·验证4/5·元数据4/5。| 历史记录: 2026-03-30 task6 review 回炉 v2：集成3篇新研究素材（Perfetto映射/误区/Treble演进），补充数据源三层映射、HAL追踪完整方法、hwbinder vs binder区别、新增3条误区（线程状态/Binder阻塞/全系统视角），所有锚点已覆盖"
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
-task9_state: reviewed
+task9_state: pending
 task9_result: needs-rework
-task2b_state: pending
+task2b_state: fixed
+task2b_result: fixed
 ---
 
 # Android 分层架构
@@ -98,13 +107,14 @@ graph TB
 
 ### 各层职责：从 Kernel 到 App 的"责任链"
 
-**Linux 内核层**是整个系统的基础。进程调度、内存管理、网络栈、设备驱动这些最底层的工作都在这里完成。Android 对标准 Linux 内核做了几项关键定制：Binder 驱动让进程间通信效率远高于传统 Socket/管道；Low Memory Killer (LMK) 在内存紧张时按优先级杀后台进程，保证前台 App 的内存供给；Ashmem 提供匿名共享内存机制，让跨进程的数据共享不再需要完整拷贝。
+**Linux 内核层**是整个系统的基础。进程调度、内存管理、网络栈、设备驱动这些最底层的工作都在这里完成。Android 对标准 Linux 内核做了几项关键定制。Binder 驱动负责高频进程间通信。内存回收这条线要按版本看：Android 8-9 仍能看到 in-kernel LMK 的历史实现，Android 10 及以后主线切到 userspace `lmkd`，并可结合 PSI（Pressure Stall Information）判断内存压力。共享内存也不是一套机制覆盖所有版本，早期大量使用 ashmem，现代 Android 已经逐步转向更标准的 fd-backed shared memory backend，例如 `memfd`；图形等子系统还会结合 `dmabuf` 一类机制。[待验证: 各子系统从 ashmem 迁移的具体时间线]
 
 [已验证: 官方文档, https://source.android.com/docs/core/architecture/kernel]
+[已验证: 官方文档, https://source.android.com/docs/core/perf/lmkd]
 
 **硬件抽象层 (HAL)** 是 Android 解决硬件碎片化的核心手段。设想一下：高通的 Camera ISP 和联发科的 Camera ISP 实现完全不同，但上层 Framework 需要用同一套 API 来调用它们。HAL 层做的就是定义统一的接口（比如 `CameraDeviceSession`），由各 SoC 厂商实现自己的版本。Framework 调用接口时不关心下面是高通还是联发科，甚至不关心是实机还是模拟器。
 
-从 Android 8.0 Treble 开始，HAL 进一步独立为单独的进程（binderized HAL），Framework 和 HAL 之间通过稳定的 HIDL/AIDL 接口通信。这不仅让系统更新不再依赖厂商适配，也让 HAL 层的崩溃不会拖垮整个系统。
+从 Android 8.0 开始，Treble 把 HAL 接口稳定性和 system/vendor 边界提到架构级约束。这里不能简单理解成“HAL 从这一版开始全部独立成进程”。Treble 时代的 HIDL 同时支持 binderized 和 passthrough 两种传输模式，只有 binderized HAL 才以独立服务进程运行；AIDL HAL 则统一走 Binder 化的稳定接口。这套拆分让 framework-only OTA 有了成立条件，也把不少 HAL 故障隔离在独立服务进程内。
 
 [已验证: 官方文档, https://source.android.com/docs/core/architecture/hal]
 
@@ -164,30 +174,34 @@ Zygote 的设计是 Android 启动速度优化中最聪明的一笔。系统启�
 
 ### Project Treble 的核心思路
 
-Project Treble 的解法是在 Framework 和 HAL 之间画一条"硬边界"。这条边界用接口定义语言（先 HIDL，后 AIDL）精确描述，Framework 只依赖接口定义，不依赖厂商的具体实现。这样一来，Google 可以独立更新 Framework 层（通过 Mainline 模块），厂商只需要维护自己那侧的 HAL 实现。
+Project Treble 的目标，是把 framework 和 vendor 侧实现之间的兼容性边界固定下来。支撑这条边界的是几层机制：system/vendor 分区拆分、VINTF（Vendor Interface）契约、framework compatibility matrix / device compatibility matrix 的匹配校验，以及可冻结的稳定接口。Framework 能在不重刷 vendor 分区的前提下升级，靠的是这整套边界同时成立。
 
-这个架构转变对性能分析也有影响：Treble 之前，HAL 代码和 Framework 在同一个进程里（passthrough 模式），调用几乎没有开销；Treble 之后，HAL 独立成进程，每次调用都要经过 Binder IPC。这意味着在 Perfetto 中，一次 Camera 拍照操作可能涉及 App → Framework → Camera HAL Service 三个进程之间的多次 Binder 往返，延迟从微秒级上升到了百微秒级。
+Treble 和 Project Mainline 负责的事情不同。Treble 解决 framework/vendor 解耦与兼容性，Mainline 解决部分系统组件的模块化更新。二者可以叠加，但职责不同。
+
+这个架构变化对性能分析的影响也要分 transport 看。Treble 时代的 HIDL 既可以是 passthrough，也可以是 binderized。passthrough 模式下，HAL 代码以共享库形式被 client 进程加载；binderized 模式下，HAL 作为独立服务进程通过 Binder 暴露能力。到 Stable AIDL HAL，这条调用链统一收敛到 binderized 服务。看 Trace 时，先确认 HAL 属于哪一种 transport，再判断延迟是在调用方进程内，还是在跨进程 Binder 往返里。
 
 [已验证: 官方文档, https://source.android.com/docs/core/architecture/hal]
+[已验证: 官方文档, https://source.android.com/docs/core/architecture/vintf]
 
 ### HIDL 到 AIDL 的迁移
 
-HIDL（Hardware Interface Definition Language）是 Treble 初期引入的接口定义语言。随着 Android 发展，Google 发现维护两套 IDL（HIDL 给 HAL 用，AIDL 给 Framework 内部用）增加了开发负担。从 Android 11 开始，新的 HAL 接口改用 AIDL 定义，HIDL 逐步退役。
+HIDL（Hardware Interface Definition Language）是 Treble 早期为 HAL 引入的接口定义语言。它的传输模型本身就分成两类：binderized 服务用于跨进程 IPC，passthrough 只适用于 C++ client / implementation，常用来包住 legacy HAL。这个区分很重要，因为它决定了我们在 Trace 里是去找独立 HAL service 进程，还是在 client 进程内继续追踪。
 
-AIDL 的优势在于：它就是 Android Framework 开发者已经熟悉的语言，学习成本低；工具链（`aidl` 编译器）更成熟稳定；支持更复杂的数据类型。到 Android 16，几乎所有新 HAL 接口都使用 AIDL，HIDL 只保留向后兼容。
+随着 Android 版本演进，Google 把新 HAL 接口逐步收敛到 Stable AIDL。AIDL HAL 需要 `@VintfStability` 标注和 `stability: "vintf"` 声明，并进入 VINTF manifest，运行形态是 binderized service。到 Android 13，HIDL 在官方文档里已经标为 deprecated，旧 HIDL HAL 继续兼容，新接口主线则转到 AIDL。
 
-有一个重要的底层差异值得一提：HIDL 使用的是 `hwbinder`（`/dev/hwbinder`），而 AIDL HAL 使用标准 `binder`（`/dev/binder`）。这个变化在 Perfetto Trace 中体现为：AIDL HAL 的 IPC 事件出现在标准的 Binder Track 中，与 App ↔ system_server 的通信混在一起，需要通过进程名来区分。如果我们在分析 Binder 延迟时发现一个不认识的目标进程，它很可能就是一个 AIDL HAL 服务进程。
+底层传输也随之简化。HIDL HAL 常见 `hwbinder`（`/dev/hwbinder`）与 passthrough 两条路；AIDL HAL 使用标准 `binder`（`/dev/binder`）。在 Perfetto 里，AIDL HAL 的 IPC 会和 App ↔ `system_server` 的 Binder 事件出现在同一组观测面里，排查时要靠目标进程名和 transaction 方向区分。
 
-[已验证: 官方文档, https://source.android.com/docs/core/architecture/hal/aidl]
+[已验证: 官方文档, https://source.android.com/docs/core/architecture/aidl/aidl-hals]
+[已验证: 官方文档, https://source.android.com/docs/core/architecture/hidl]
 [已验证: 来源见 research-feeds/2026-03-30-19-ch01-treble-aidl-evolution.md]
 
 ### 在 Perfetto 中追踪 HAL 问题的完整方法
 
-Treble 架构给 HAL 分析带来了一个根本性的改变：Treble 之前，HAL 代码藏在 `system_server` 或 `mediaserver` 进程内部，Trace 中看不到进程边界，HAL 崩溃会拖垮整个宿主进程。Treble 之后，HAL 有了自己的独立进程和 Track，我们可以在 Trace 中直接观察 Framework 和 HAL 之间的通信延迟，这在以前是不可能的。
+Treble 之后，HAL 追踪最容易出错的地方，是把它理解成“所有 HAL 都分家了”。Treble 之前就存在独立 native service / daemon；Treble 时代的 HIDL 也同时存在 passthrough 和 binderized 两种形态；AIDL HAL 才统一收敛到 binderized 服务。所以，Trace 里能不能直接看到独立 HAL 进程，取决于这次调用走的是哪条传输路径。
 
-但这也意味着分析 HAL 问题需要一套完整的方法：先在 Framework 线程找到 Binder 调用发起的时间点，然后切换到 Binder Transaction Track 找到对应的 Transaction 记录，再跳到 HAL 进程的线程 Track 检查它的处理逻辑。HAL 可能因为 I/O 等待（"Uninterruptible Sleep"）、锁竞争或其他 HAL 客户端的请求排队而导致响应慢。只看 Framework 侧的 Binder 调用发起时间还不够，需要把完整的跨进程调用路径串起来。
+排查方法也要跟着 transport 选。遇到 binderized HAL，先在 Framework client 线程找到调用起点，再沿 Binder transaction 跳到 HAL service 进程，看它是在执行、等锁还是等 I/O。遇到 passthrough HAL，则更多要在 client 所在进程里继续看 native slice、锁竞争和系统调用。把两种路径混成一套固定剧本，定位很容易跑偏。
 
-对于 AIDL HAL，还需要额外启用 `aidl` atrace category 才能看到 AIDL 层面的追踪事件。
+如果设备构建开启了对应 trace 类别，AIDL 层事件可以和 Binder 事务一起看；只盯着 Framework 侧的调用发起时间不够，需要把完整调用路径串起来。
 
 [已验证: 来源见 research-feeds/2026-03-30-19-ch01-treble-aidl-evolution.md]
 
@@ -195,11 +209,11 @@ Treble 架构给 HAL 分析带来了一个根本性的改变：Treble 之前，H
 
 ### Project Mainline 的持续扩展
 
-Project Mainline 在 Android 16 中已经扩展到超过 50 个模块，覆盖了 Media Codecs、ART 运行时、Graphics Driver、Network Stack 等核心组件。这些模块通过 APEX（Android Pony EXpress）格式打包，可以像 App 一样通过 Google Play 独立更新。
+Project Mainline 在 Android 16 上已经覆盖到 ART、Media、Network Stack 等一批核心组件。这里也要和 Treble 分开看。Treble 处理的是 framework/vendor 边界，Mainline 处理的是可更新模块的分发形态。Mainline 模块有 APEX，也有 APK；部分能力还会采用 APK-in-APEX 的组合方式。设备端可以通过 Google Play system update 或 OEM 的 OTA 机制拿到这些更新。
 
-对性能分析而言，Mainline 意味着一个重要变化：同一台设备上，不同时间点的系统行为可能不同——因为某个 Mainline 模块静默更新了。分析 Trace 时需要确认设备上安装的模块版本，否则可能会把版本差异误判为性能回归。
+对性能分析而言，Mainline 带来的变化是：同一台设备即使系统版本号没变，某个模块的实现也可能已经更新。分析 Trace 前最好先确认相关 Mainline 模块版本，避免把模块升级带来的行为变化误判成系统回归。
 
-[已验证: 官方文档, https://source.android.com/docs/core/architecture]
+[已验证: 官方文档, https://source.android.com/docs/core/ota/modular-system]
 
 ### 16KB Page Size 对 Android 16 的影响
 
@@ -366,22 +380,28 @@ Binder 相比 Socket/管道的核心优势在于：**一次拷贝**。传统 IPC
 6. Android HAL Overview
    https://source.android.com/docs/core/architecture/hal
 
-7. Project Treble 架构说明
-   https://source.android.com/docs/core/architecture
+7. VINTF 与 system/vendor 兼容性
+   https://source.android.com/docs/core/architecture/vintf
 
-8. AIDL HAL 接口迁移指南
-   https://source.android.com/docs/core/architecture/hal/aidl
+8. AIDL HAL 接口说明
+   https://source.android.com/docs/core/architecture/aidl/aidl-hals
 
-9. ART and Dalvik 运行时
-   https://source.android.com/docs/core/runtime
+9. Project Mainline / Modular System
+   https://source.android.com/docs/core/ota/modular-system
 
-10. VNDK 概述
+10. Low memory killer daemon
+    https://source.android.com/docs/core/perf/lmkd
+
+11. ART and Dalvik 运行时
+    https://source.android.com/docs/core/runtime
+
+12. VNDK 概述
     https://source.android.com/docs/core/architecture/vndk
 
 ### 工具与延伸阅读
 
-11. Perfetto 数据源文档
+13. Perfetto 数据源文档
     https://perfetto.dev/docs/data-sources/atrace
 
-12. Android 性能优化系列 — androidperformance.com
+14. Android 性能优化系列 — androidperformance.com
     https://androidperformance.com/
