@@ -1,51 +1,51 @@
 {
-  "generated_at": "2026-04-12T21:30:00+08:00",
+  "generated_at": "2026-04-12T23:20:49+08:00",
   "state_machine_version": "v2",
   "total_sections": 207,
   "metrics": {
     "total": 207,
-    "last_updated": "2026-04-12T21:30:00+08:00",
-    "ready-for-review": 173,
     "unknown": 34,
-    "pipeline_task2b_pending": 7,
-    "pipeline_task6_pending": 166,
-    "pipeline_task9_pending": 3,
+    "ready-for-review": 173,
+    "last_updated": "2026-04-12T23:20:49+08:00",
     "pipeline_unknown": 31,
-    "task6_pending": 130,
-    "task6_reviewed": 10,
-    "task6_revisiting": 36,
+    "pipeline_task6_pending": 166,
+    "pipeline_task2b_pending": 7,
+    "pipeline_task9_pending": 3,
     "task6_unknown": 31,
+    "task6_revisiting": 37,
+    "task6_reviewed": 10,
+    "task6_pending": 129,
+    "task9_unknown": 31,
     "task9_pending": 172,
     "task9_reviewed": 4,
-    "task9_unknown": 31,
-    "task2b_fixed": 36,
-    "task2b_idle": 133,
+    "task2b_unknown": 31,
+    "task2b_fixed": 37,
     "task2b_pending": 7,
-    "task2b_unknown": 31
+    "task2b_idle": 132
   },
   "pipeline": {
     "pipeline_stage_counts": {
-      "task2b_pending": 7,
+      "unknown": 31,
       "task6_pending": 166,
-      "task9_pending": 3,
-      "unknown": 31
+      "task2b_pending": 7,
+      "task9_pending": 3
     },
     "task6_state_counts": {
-      "pending": 130,
+      "unknown": 31,
+      "revisiting": 37,
       "reviewed": 10,
-      "revisiting": 36,
-      "unknown": 31
+      "pending": 129
     },
     "task9_state_counts": {
+      "unknown": 31,
       "pending": 172,
-      "reviewed": 4,
-      "unknown": 31
+      "reviewed": 4
     },
     "task2b_state_counts": {
-      "fixed": 36,
-      "idle": 133,
+      "unknown": 31,
+      "fixed": 37,
       "pending": 7,
-      "unknown": 31
+      "idle": 132
     }
   },
   "issues": {
@@ -204,13 +204,14 @@
       "title": "进程模型与生命周期管理",
       "path": "src/part1-fundamentals/ch01-architecture/03-process-model.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
-      "task6_state": "reviewed",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
       "task9_state": "pending",
-      "task2b_state": "pending",
+      "task2b_state": "fixed",
       "reviewed_date": "2026-04-12",
       "reviewed_by": "openclaw-task6",
-      "task6_result": "needs-rework"
+      "task6_result": "needs-rework",
+      "task2b_result": "fixed"
     },
     "src/part1-fundamentals/ch01-architecture/04-binder.md": {
       "chapter": "1.4",
