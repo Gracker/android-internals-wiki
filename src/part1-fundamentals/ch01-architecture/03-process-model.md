@@ -22,6 +22,14 @@ sources:
   - type: aosp
     path: "frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java"
   - type: aosp
+    path: "frameworks/base/core/java/android/os/Binder.java"
+  - type: aosp
+    path: "frameworks/base/services/core/java/com/android/server/am/ActivityManagerConstants.java"
+  - type: aosp
+    path: "frameworks/base/services/core/java/com/android/server/am/PhantomProcessList.java"
+  - type: aosp
+    path: "frameworks/base/core/java/android/util/FeatureFlagUtils.java"
+  - type: aosp
     path: "system/memory/lmkd/"
   - type: official
     path: "developer.android.com/guide/components/processes-and-threads"
@@ -29,10 +37,11 @@ sources:
     path: "source.android.com/docs/core/memory"
 tags: [process, ams, oom_adj, lmkd, zygote, process-lifecycle, binder]
 related_chapters: ["1.1", "1.2", "1.4", "1.5"]
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task9_state: pending
-task2b_state: pending
+task2b_result: fixed
+task2b_state: fixed
 ---
 
 # 进程模型与生命周期管理
@@ -257,9 +266,11 @@ Android 提供了多种进程间通信（IPC）机制，适用于不同场景：
 
 ### Binder IPC（主力通道）
 
-Binder 是 Android IPC 的核心机制，承担了系统中 90% 以上的跨进程调用。ActivityManagerService、PackageManagerService 等所有系统服务的调用都走 Binder。它由内核驱动提供同步调用能力，支持一次调用一个方法并等待返回。
+Binder 是 Android IPC 的主力机制。ActivityManagerService、PackageManagerService 这类系统服务调用，默认都通过 Binder 在客户端进程和 `system_server` 之间传递。它提供同步事务语义，一次调用对应一次事务，客户端发起调用后通常会阻塞到服务端返回结果。
 
 关于 Binder 的详细机制，我们会在 1.4 Binder IPC 机制与性能影响 中深入展开。
+
+[已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/os/Binder.java]
 
 ### LocalSocket / Network Socket
 
@@ -301,9 +312,19 @@ binder.linkToDeath(new IBinder.DeathRecipient() {
 }, 0);
 ```
 
-当目标进程死亡时，Binder 驱动会通知所有持有其代理的客户端进程，触发 `binderDied()` 回调。这个机制在系统服务中被广泛使用——AMS 就是靠它来感知 App 进程死亡，WMS 也通过它监听输入法进程的状态变化。
+当目标进程死亡时，Binder 驱动会通知所有持有其代理的客户端进程，触发 `binderDied()` 回调。系统服务里也大量依赖这个机制，在对端消失后清理代理对象并重新建立连接。
 
-在 Perfetto 中，通过搜索 `binderDied` 相关的日志可以追踪进程死亡事件。
+`binderDied()` 本身不是系统自动写入 Trace 的固定事件。要在 Perfetto 里稳定定位它，抓取时至少打开 `android.log`，并在客户端的 `binderDied()` 回调里补一条 log 或 `Trace.beginSection("binderDied")`。复现后先查系统侧的 `am_kill` / `am_proc_died`，再看客户端是否在同一时间窗里进入 `binderDied()`。这样能把真正的对端进程死亡，和普通的 Binder 调用超时区分开。
+
+```sql
+SELECT ts, tag
+FROM android_logs
+WHERE tag IN ('am_kill', 'am_proc_died')
+ORDER BY ts DESC
+LIMIT 20;
+```
+
+[图：Perfetto 中客户端 `binderDied` 自定义日志，与 `am_proc_died` 出现在同一时间窗]
 
 [已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/os/IBinder.java]
 
@@ -326,16 +347,17 @@ Android 官方推荐的"保活"方式只有一种：**做用户需要的事情**
 
 ## Phantom Process Killer（Android 12+）
 
-Android 12 引入了一个新的限制机制：Phantom Process Killer。这里的"Phantom Process"指的是 App 进程通过 `Runtime.exec()` 或 `ProcessBuilder` 创建的子进程。
+Android 12 引入了一个新的限制机制：Phantom Process Killer。这里的“Phantom Process”指的是 App 进程通过 `Runtime.exec()` 或 `ProcessBuilder` 创建的子进程。
 
-为什么需要这个机制？因为有些 App 会利用子进程来绕过后台限制——主进程虽然被限制了，但子进程不受同样的约束。Phantom Process Killer 的作用就是限制这些子进程的资源使用。
+为什么需要这个机制？因为有些 App 会利用子进程绕开后台限制，主进程退到后台后，子进程仍然继续占用 CPU 和内存。Phantom Process Killer 用来监控这类子进程，并在系统认为数量过多或资源占用不合适时进行裁剪。
 
-默认情况下，每个 App 最多允许 **32 个** 子进程同时存在（可以通过 `settings put global settings_enable_monitor_phantom_procs false` 关闭，但不推荐）。当系统内存紧张时，这些子进程会被优先回收。
+在 AOSP 中，这个上限由 `ActivityManagerConstants.DEFAULT_MAX_PHANTOM_PROCESSES` 定义，默认值是 32。`PhantomProcessList.trimPhantomProcessesIfNecessary()` 比较的是系统当前追踪到的 `mPhantomProcesses.size()` 与 `MAX_PHANTOM_PROCESSES`，所以这里的 32 指的是系统级的 phantom process 总数，不是单个 App 固定拥有 32 个子进程。超过上限后，系统会按父进程的 `oom_adj` 顺序裁剪多出来的 phantom process。
 
-在 Perfetto 中，Phantom Process 可以在进程列表中看到——它们的用户 ID（UID）与父 App 相同，但进程名不同。
+监控逻辑还受 `FeatureFlagUtils.SETTINGS_ENABLE_MONITOR_PHANTOM_PROCS` 控制，AOSP 默认值是 `true`。同时，`MAX_PHANTOM_PROCESSES` 可以通过 `DeviceConfig.NAMESPACE_ACTIVITY_MANAGER` 下的 `max_phantom_processes` 覆盖，所以不同设备上的实际门槛可能不同。正文里不宜把某条 adb 命令写成所有版本、所有 ROM 都成立的统一开关。
 
-[已验证: 官方文档, source.android.com/docs/core/memory]
-[待验证: Android 16 中 Phantom Process 的上限是否有变化]
+[图：Perfetto 进程列表中，同一 UID 下出现父 App 进程和多个 phantom process，系统裁剪后多余子进程消失]
+
+[已验证: AOSP main, frameworks/base/services/core/java/com/android/server/am/ActivityManagerConstants.java; frameworks/base/services/core/java/com/android/server/am/PhantomProcessList.java; frameworks/base/core/java/android/util/FeatureFlagUtils.java]
 
 ## App Standby Buckets 对进程调度的影响
 
@@ -372,32 +394,49 @@ Android 13 引入了 SDK Sandbox，允许广告 SDK 运行在一个独立的沙�
 
 ## 在 Perfetto 中的表现
 
-理解了进程模型之后，我们在 Perfetto 中就能有目的地观察进程状态：
+只看“进程消失了”还不够。要判断它是被 `lmkd` 回收、自己崩溃，还是被 AMS 主动终止，至少把 `android.log`、`linux.process_stats`、`linux.sys_stats` 放在同一个时间窗里看；如果还想看优先级变化，再加 `linux.ftrace` 里的 `oom/oom_score_adj_update`。
 
-### 1. 进程列表中的信息
+### 1. 用 AMS EventLog 定位进程终止时刻
 
-在 Perfetto 左侧的进程列表中，每个进程会显示进程名、PID、UID。可以通过以下特征识别进程类型：
+`android.log` 数据源里的 `am_kill`、`am_proc_died`、`am_crash` 是最直接的时间锚点。`am_kill` 更接近 AMS 或 LMK 侧的终止动作，`am_crash` 表示进程自己崩了，`am_proc_died` 说明 AMS 已经确认进程退出。
 
-- **system_server**：系统服务进程，AMS、WMS 等都在这里
-- **surfaceflinger**：显示合成服务
-- **zygote / zygote64**：App 进程母体
-- **`<包名>`**：App 主进程
-- **`<包名>:xxx`**：App 的子进程（通过 android:process 配置）
-- **`<包名>_sdk_sandbox`**：SDK 沙箱进程（Android 13+）
+```sql
+SELECT ts, tag
+FROM android_logs
+WHERE tag IN ('am_proc_start', 'am_kill', 'am_proc_died', 'am_crash')
+ORDER BY ts DESC
+LIMIT 40;
+```
 
-### 2. 进程状态变化
+[图：Perfetto 中 `android_logs` 依次出现 `am_kill`、`am_proc_died`，目标进程随后从进程列表消失]
 
-在 CPU Slice 视图中，能观察到进程在不同 CPU 上的调度情况。当一个进程突然从 Perfetto 中消失（后续没有 CPU 活动），通常意味着：
+### 2. 看 `Process Stats` 和内存 Counter 是否一起恶化
 
-- 被 lmkd 杀掉（内存回收）
-- 自身崩溃（crash）
-- 调用了 `System.exit()` 或 `Process.killProcess()`
+如果目标进程在进入后台后，`Process Stats` 里的 `oom_score_adj` 逐步升高，同时 `System Stats` 下的 `MemAvailable` 持续走低，`lmkd` 进程附近又出现短促的 CPU 活动，这组现象基本能说明系统正在靠内存回收腾空间。
 
-### 3. oom_adj 的实时查看
+```sql
+SELECT
+  ts,
+  (value / 1024) AS rss_kb
+FROM counter
+JOIN process_counter_track ON counter.track_id = process_counter_track.id
+JOIN process USING (upid)
+WHERE process.name = '<App包名>'
+  AND process_counter_track.name = 'rssanon'
+ORDER BY ts;
+```
 
-虽然 Perfetto 默认不直接显示 oom_adj 值，但抓 Trace 时如果带上 `atrace` 的 `am` category，仍然可以从 AMS 相关日志里找到进程优先级变化的记录。
+这个查询给的是目标进程 RSS 变化。把它和 `Process Stats` 里的 `oom_score_adj` 变化、`lmkd` 的活动时刻放在一起看，能分清“进程只是降级到缓存态”还是“已经进入可杀区”。
 
-[待补充：Perfetto 中 oom_adj 变化的具体 Trace 截图]
+[图：目标 App 的 `Process Stats` 显示 `oom_score_adj` 从 0 升到 900+，下方 `MemAvailable` 回落，`lmkd` 在同一时间窗活跃]
+
+### 3. 需要核对内核侧调级时，再补 `oom/oom_score_adj_update`
+
+`oom_score_adj_update` 不是默认每条 trace 都有，只有在 `linux.ftrace` 里显式打开 `oom/oom_score_adj_update` 后，才能看到内核收到新的 `oom_score_adj`。这个事件适合核对 AMS 的调级是否真的写进了 `/proc/<pid>/oom_score_adj`。没有这组 ftrace 事件时，不要把 UI 上的进程消失直接写成“LMK 已确认”，最多只能写“AMS 侧已经记录到 kill / died 事件”。
+
+[图：Perfetto 中 `oom_score_adj_update` 事件与 `Process Stats` 变化对应起来，确认 AMS 调级已经写入内核]
+
+[已验证: AOSP android-16.0.0_r1, frameworks/base/services/core/java/com/android/server/am/EventLogTags.logtags；Perfetto 抓取配置见 §13.5 `oom/oom_score_adj_update` 示例]
 
 ## 常见问题与误区
 
