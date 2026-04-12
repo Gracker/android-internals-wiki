@@ -1679,3 +1679,20 @@ AsyncLayoutInflater 一节缺少 AndroidX 当前实现的关键边界，尤其�
 ### 关联章节
 1.5、4.4、5.1、5.8
 
+## [2026-04-13] 3.2 触摸响应的性能分析 — batched input / unbuffered dispatch / resampling
+
+### 盲区描述
+当前章节把触摸事件几乎都写成“MOVE 事件等到 VSync 的 CALLBACK_INPUT 再统一消费”，但 Android 实际还有一条关键低延迟分支：`ViewRootImpl.WindowInputEventReceiver.onBatchedInputEventPending()` 会根据 `mUnbufferedInputDispatch` 和输入 source 决定是否立刻 `consumeBatchedInputEvents(-1)`。同时，batched MotionEvent 的历史采样、system resampling、stylus/绘图场景的 unbuffered dispatch 取舍也没有讲清楚。少了这层，读者很难解释“为什么同样是触摸事件，有的 trace 贴着 VSync，有的却立即处理”。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 核对 `ViewRootImpl.WindowInputEventReceiver.onBatchedInputEventPending()`、`scheduleConsumeBatchedInput()`、`consumeBatchedInputEvents(-1)` 的真实分叉
+- 梳理 `View.requestUnbufferedDispatch()` / `requestUnbufferedDispatch(MotionEvent)` 的适用场景与副作用
+- 补 batched MotionEvent 的 historical samples、system resampling 与绘图/游戏低延迟路径的关系
+- 给一段 Perfetto 例子，对比 buffered vs unbuffered 输入在主线程上的时序差异
+
+### 关联章节
+3.2、3.4、2.4
+

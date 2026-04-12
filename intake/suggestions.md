@@ -2210,3 +2210,20 @@
 - **问题**：结尾连续使用 checklist 式条目，和开头的 ANR 锁竞争场景没有回扣，收束偏平，活人感和章节记忆点不够。
 - **建议**：等技术问题核实后，用一个真实排查场景或一条 Perfetto 观察路径把结尾收回来。
 - **review 日志**：logs/review/2026-04-13-07-review.md
+
+## [Task9 Deep Review] 3.2 触摸响应的性能分析 — 2026-04-13
+- **类型**：数据缺失
+- **位置**：L196
+- **问题**："触摸采样率应该至少是渲染帧率的 2 倍" 被写成结论，但当前章节没有给设备、刷新率、交互类型或 trace 数据，且这个经验值不适用于所有场景。
+- **建议**：降级为工程经验，并补充适用条件（滚动/绘图/游戏、60Hz/120Hz、是否启用 batching/resampling）。
+
+- **类型**：数据缺失
+- **位置**：L366
+- **问题**：把 "deliverInputEvent → GPU Completion 超过 32ms" 直接判成渲染管线瓶颈，测量口径过粗。这个区间混合了输入排队、主线程逻辑、渲染、SurfaceFlinger 合成与 present。
+- **建议**：改成“可疑信号”而不是直接定性，并补 FrameTimeline / INPUT_EVENT_ID / DISPLAY_PRESENT_TIME 的量化路径。
+
+- **类型**：交叉引用
+- **位置**：Motion Prediction 小节 / 与其他章节的关系
+- **问题**：§3.2 单独展开了 Motion Prediction，但没有显式回链 §3.4，而且当前术语和版本口径已经与 §3.4 不一致，后续容易双写漂移。
+- **建议**：在本节只保留摘要并明确回链 §3.4，统一使用“AndroidX MotionEventPredictor / platform MotionPredictor(API 34+)”口径。
+
