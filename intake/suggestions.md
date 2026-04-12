@@ -1876,3 +1876,24 @@
 - **位置**：L255、L448 AVIF 硬件解码
 - **问题**：章节把“Android 14+ 设备支持硬件解码”写成普遍结论，但当前正文没有给出 CDD、codec capability 或官方文档证据，也没交代 SoC / 设备差异。
 - **建议**：补官方来源并注明设备条件；如果暂时补不齐，把结论降级为“部分 Android 14+ 新设备可提供 AVIF 硬件解码，需以设备编解码能力为准”，并标 `[待验证]`。
+
+
+## [Task9 Deep Review] 7.5 优化策略 — 2026-04-12
+- **类型**：源码准确性
+- **位置**：行 112，动态添加 View vs GONE View
+- **问题**：“`GONE` 状态的 View 在 measure 阶段仍然会被遍历”这个表述过于绝对。多数 `ViewGroup.measureChildren()`/`measureChild()` 路径会跳过 `GONE` 子 View；真正稳定存在的成本是 inflate 已发生、对象常驻、父容器遍历与状态维护。
+- **建议**：把结论改成“预置大量 GONE View 仍有 inflate/内存/遍历成本，但不是每次都会完整参与 measure”，避免把优化原因讲偏。
+
+
+## [Task9 Deep Review] 7.5 优化策略 — 2026-04-12
+- **类型**：数据缺失
+- **位置**：行 165，SnapHelper 性能考量
+- **问题**：“自定义 SnapHelper 要确保时间复杂度不超过 O(log n)”没有来源，也不符合 RecyclerView 实际热点。Snap 逻辑通常在已 attach 的少量 child 上线性扫描，真正要避免的是额外分配、重复布局请求和跨帧重算。
+- **建议**：把要求改成“基于已 attach child 做轻量扫描，避免分配和额外 requestLayout”，不要给出缺少依据的 O(log n) 指标。
+
+
+## [Task9 Deep Review] 7.5 优化策略 — 2026-04-12
+- **类型**：交叉引用
+- **位置**：正文多处相对链接（如 [2.4] / [2.8] / [1.4]）
+- **问题**：当前 Markdown 链接写成 `part1-fundamentals/...`，从 `src/part2-performance/ch07-smoothness/05-optimization.md` 出发会解析到错误路径，实际在仓库内不可达。
+- **建议**：改成正确的相对路径（如 `../../part1-fundamentals/...`），或统一改成 Obsidian wiki link，避免章节间跳转失效。

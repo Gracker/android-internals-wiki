@@ -1529,3 +1529,21 @@ frontmatter 把章节适用范围写到 Android 17，但版本演进表对 Andro
 
 ### 关联章节
 §7.10、§2.5、§7.2
+
+
+## [2026-04-12] 7.5 优化策略 — 知识盲区
+
+### 盲区描述
+Hardware Layer 一节只给出了 `setLayerType(View.LAYER_TYPE_HARDWARE, null)` 的手法，但章节适用范围覆盖 API 21-36，缺少几个关键边界：`ViewPropertyAnimator.withLayer()` 的临时图层策略、RenderNode/属性动画在现代 HWUI 中的默认优化路径、以及 Compose `graphicsLayer` 与传统 View Layer 的差异。没有这层版本边界，读者容易把“手动开硬件层”理解成通用解法。
+
+### 重要程度
+中
+
+### 建议研究方向
+- 官方 `ViewPropertyAnimator.withLayer()` / `View.setLayerType()` 文档与适用条件
+- HWUI / RenderNode 在 Android 12-16 中的属性动画与图层提升路径
+- View 系统 Hardware Layer 与 Compose `graphicsLayer` 的职责边界
+- 在 Perfetto / FrameTimeline 中如何区分“减少 redraw”与“额外图层成本”
+
+### 关联章节
+§7.5、§2.5 MainThread 与 RenderThread 协作、§2.7 Hardware Layer、§7.6 Compose 性能

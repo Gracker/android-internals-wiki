@@ -5805,5 +5805,43 @@
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-12T20:29:00+08:00",
     "status": "pending"
+  },
+  {
+    "section": "7.5",
+    "section_title": "优化策略",
+    "priority": 95,
+    "reason": "[Deep Tech Review] P0 API错误：Binder 示例含不存在的 ActivityManager API；P0 原理错误：把 binder_transaction 当成主线程长 slice；P1 校验路径错误：Perfetto 不能直接给出 View depth；P1 风险指导：postAtFrontOfQueue 被当成通用优化手段",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "API错误",
+        "location": "行 232，Binder 调用优化示例",
+        "detail": "`ActivityManager.getProcessMemoryState()` 不是 Android SDK 公共 API。公开可用的是 `ActivityManager.getMyMemoryState(...)`、`getProcessMemoryInfo(int[])` 等。当前写法会把读者带到不存在的方法上。",
+        "suggestion": "改成真实 API，并区分“查询当前进程状态”与“查询指定 PID 内存信息”两类场景。"
+      },
+      {
+        "type": "原理断裂",
+        "location": "行 242，Perfetto 中 Binder 调用耗时定位",
+        "detail": "正文把 `binder_transaction` 写成主线程上的长 slice，并要求按“持续时间超过 5ms”判断耗时。Perfetto 中 `linux.ftrace/binder_transaction` 是事务事件，不是可直接读 duration 的主线程 slice。同步 Binder 延迟应结合 `android.binder` Transactions 轨道、`blocking_dur_ns`，或 client/server `thread_state` 关联分析。",
+        "suggestion": "把观测方法改成“看 Android Binder / Transactions 轨道，或看主线程在 `binder_thread_read` / `ioctl(BINDER_WRITE_READ)` 的阻塞时长”，不要把 `binder_transaction` 当作 thread slice。"
+      },
+      {
+        "type": "工具校验路径错误",
+        "location": "行 116，布局层级验证方法",
+        "detail": "正文要求在 Perfetto 中看“View hierarchy 信息超过 10 层”。Perfetto 不提供通用的 View tree depth 面板，这类层级信息通常应由 Layout Inspector、ViewCapture/Winscope 或 `dumpsys gfxinfo` 提供。当前写法会让读者无法按文中步骤完成验证。",
+        "suggestion": "把“View depth / 层级”验证迁移到 Layout Inspector 或 `gfxinfo`，Perfetto 只保留 `performTraversals`、FrameTimeline 和主线程 slice 的耗时验证。"
+      },
+      {
+        "type": "原理断裂",
+        "location": "行 263，任务拆分与优先级控制",
+        "detail": "把 `Handler.postAtFrontOfQueue()` 当成通用 UI 优先级优化手段有风险。官方文档明确说明该 API 只适合 very special circumstances，容易打乱消息顺序、饿死队列，并干扰正常的帧调度。",
+        "suggestion": "降级为“极少数场景使用”，主路径建议改成分帧拆任务、`Choreographer.postFrameCallback`、取消旧消息或缩短单次任务耗时，而不是 front-of-queue 抢占。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-12T21:53:36+08:00",
+    "status": "pending"
   }
 ]
