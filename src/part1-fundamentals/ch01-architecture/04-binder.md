@@ -8,8 +8,8 @@ reviewed_by: "openclaw-task6"
 applicable_versions: "Android 8 (API 26) - Android 16 (API 36)"
 drafted_date: "2026-04-10"
 drafted_by: "openclaw-task2a"
-last_verified: "2026-03-31"
-last_verified_against: "AOSP android-16.0.0_r1, 官方文档"
+last_verified: "2026-04-13"
+last_verified_against: "AOSP android-16.0.0_r1, source.android / developer.android 官方文档"
 confidence: medium
 sources:
   - type: blog
@@ -22,14 +22,23 @@ sources:
     path: "developer.android.com/reference/android/os/IBinder"
   - type: official
     path: "developer.android.com/guide/components/aidl"
+  - type: official
+    path: "https://source.android.com/docs/core/architecture/aidl/aidl-hals"
+  - type: official
+    path: "https://source.android.com/docs/core/architecture/ipc/priority-inheritance"
+  - type: official
+    path: "https://source.android.com/docs/core/architecture/ipc/binder-freezer"
+  - type: official
+    path: "https://source.android.com/docs/core/perf/cached-apps-freezer"
 tags: [binder, ipc, aidl, oneway, 线程池, 锁竞争, perfetto]
 related_chapters: ["1.1", "2.5", "7.2", "8.2", "9.1"]
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
 task9_result: needs-rework
-task9_state: reviewed
-task2b_state: pending
+task9_state: pending
+task2b_result: fixed
+task2b_state: fixed
 ---
 
 # Binder IPC 机制与性能影响
@@ -104,45 +113,41 @@ Binder 的设计目标是让跨进程调用看起来像本地函数调用。当�
 
 ### AIDL：让跨进程调用看起来像本地调用
 
-AIDL（Android Interface Definition Language）是 Binder 在应用层的接口。我们写一个 `.aidl` 文件定义接口，编译器会生成两个类：`Stub`（服务端基类）和 `Proxy`（客户端代理）。
+AIDL（Android Interface Definition Language）是 Binder 在应用层的接口。我们写一个 `.aidl` 文件定义接口，编译器会生成 `Stub`（服务端基类）和 `Proxy`（客户端代理），业务代码通过这两个类把“本地方法调用”翻译成 `Parcel` 序列化和 `transact()`。
 
-一个典型的 AIDL 接口：
+这里用一个自定义接口演示 Proxy/Stub 模式。这样更容易把调用过程讲清楚，也不会把系统私有接口名和示例方法签名混在一起。窗口添加相关的真实系统入口在 `frameworks/base/core/java/android/view/IWindowSession.aidl` 的 `addToDisplay*()`，不是 `IWindowManager.addView()`。
 
 ```java
-// IWindowManager.aidl
-interface IWindowManager {
-    boolean addView(IBinder windowToken, in Rect frame);
+// IExampleService.aidl
+interface IExampleService {
+    int getFrameBudgetNanos(int displayId);
 }
 ```
 
-编译后生成的 `Proxy` 类中的 `addView` 方法大致是这样的：
+编译后生成的 `Proxy` 方法大致会是下面这个样子：
 
 ```java
-// 编译生成：IWindowManager.Stub.Proxy
+// 编译生成：IExampleService.Stub.Proxy
 @Override
-public boolean addView(IBinder windowToken, Rect frame) {
+public int getFrameBudgetNanos(int displayId) throws RemoteException {
     Parcel data = Parcel.obtain();
     Parcel reply = Parcel.obtain();
-    // ① 序列化参数
-    data.writeInterfaceToken(DESCRIPTOR);
-    data.writeStrongBinder(windowToken);
-    frame.writeToParcel(data, 0);
-    // ② 发起跨进程调用，mRemote 是 BinderProxy 对象
-    mRemote.transact(Stub.TRANSACTION_addView, data, reply, 0);
-    // ③ 等待回复后反序列化结果
-    reply.readException();
-    boolean result = reply.readBoolean();
-    reply.recycle();
-    data.recycle();
-    return result;
+    try {
+        data.writeInterfaceToken(DESCRIPTOR);
+        data.writeInt(displayId);
+        mRemote.transact(Stub.TRANSACTION_getFrameBudgetNanos, data, reply, 0);
+        reply.readException();
+        return reply.readInt();
+    } finally {
+        reply.recycle();
+        data.recycle();
+    }
 }
 ```
 
-这段代码做了三件事：先把参数打包成 `Parcel`，然后通过 `mRemote.transact()` 发起真正的跨进程调用，最后从返回的 `Parcel` 中读出结果。其中 `mRemote.transact()` 是阻塞调用——调用线程会停在这里，直到 Binder Driver 把结果送回来。
+这个模式的关键点不在方法名，而在调用步骤：先把参数写进 `Parcel`，再通过 `mRemote.transact()` 把事务交给 Binder Driver，再从 reply `Parcel` 中读取结果。服务端的 `Stub.onTransact()` 会根据事务码分发到真实实现。我们读系统接口时，重点也该放在这条调用链，不该把示例代码误当成某个 AOSP 接口的原样拷贝。
 
-在服务端，对应的 `Stub.onTransact()` 会被 Binder 线程调用，根据 `code` 参数分发到对应的方法实现。
-
-[已验证: AOSP 源码, frameworks/base/core/java/android/os/Binder.java] [已验证: 官方文档, developer.android.com/guide/components/aidl]
+[已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/view/IWindowSession.aidl] [已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/os/Binder.java] [已验证: 官方文档, developer.android.com/guide/components/aidl]
 
 ## Binder 线程池：性能分析的关键变量
 
@@ -152,19 +157,19 @@ public boolean addView(IBinder windowToken, Rect frame) {
 
 **按需创建，有上限。** 线程不是一开始就全创建出来的。Binder Driver 根据负载动态创建新线程，默认上限约 15 个工作线程（不含主线程）。这个上限可以通过 `ProcessState.setThreadPoolMaxThreadCount()` 修改，但一旦设置就不能减小。`system_server` 等核心进程可能在厂商定制 ROM 中被调高。
 
-**命名规则。** 在 Perfetto 中展开一个进程的线程列表，能看到类似 `Binder:1234_1`、`Binder:1234_2` 这样的线程名，其中 `1234` 是进程 PID。`Binder:1234_B` 这种带 `B` 后缀的通常是处理从驱动侧到来的请求的线程。
+**命名规则。** AOSP `ProcessState::makeBinderThreadName()` 用 `"%.*s:%d_%X"` 生成线程名，前缀取决于 driver 名称，所以常见的是 `binder:<pid>_<hex-seq>`、`hwbinder:<pid>_<hex-seq>` 或 `vndbinder:<pid>_<hex-seq>`。这里的后缀是线程池里的十六进制序号，`_B` 只是第 11 个线程，不代表特殊角色。
 
-[已验证: AOSP, frameworks/native/libs/binder/ProcessState.cpp, DEFAULT_MAX_BINDER_THREADS=15]
+[已验证: AOSP android-16.0.0_r1, frameworks/native/libs/binder/ProcessState.cpp, DEFAULT_MAX_BINDER_THREADS=15]
 
-### 线程池耗尽意味着什么
+### 线程池耗尽后会发生什么
 
-当所有 Binder 工作线程都处于忙碌状态（Running 或 Uninterruptible Sleep），新的 Binder 请求会在驱动层排队。调用端线程会停在 `binder_thread_read` 上，表现为主线程长时间 Sleeping。
+当空闲 Binder worker 不够时，新的同步请求会在驱动里排队，调用端线程常会停在 `binder_thread_read` 或相关 `ioctl(BINDER_WRITE_READ)` 上等待回复。主线程如果在这里连续等待，这段时间会直接记到启动耗时或 ANR 超时里。
 
-ANR 统计会直接把这段等待时间算进去。如果应用主线程发起的同步 Binder 调用因为线程池耗尽而等了很久，这段时间就会被计入 ANR 超时。在 `system_server` 这边更严重，它的 Binder 线程要处理所有 App 的系统服务请求，一旦线程池被打满，所有 App 的系统服务调用都会变慢。
+判断线程池是否真的吃紧，不能只数 Running 的 Binder 线程。更稳妥的看法有两层。第一层，看目标进程的 `binder:` / `hwbinder:` worker 数量是否已经接近 `ProcessState.setThreadPoolMaxThreadCount()` 的上限。第二层，看这些 worker 是否长期不在空闲的 `binder_thread_read` 上，而是分散在 Running、锁等待、IO 等状态里，同时客户端的 Binder latency 或 binder reply wait 明显抬高。只有这几类证据同时出现，我们再把结论落到“线程池压力大”。
 
-在 Perfetto 中判断线程池是否饱和：展开目标进程，数一下 `Binder:` 线程中有多少个同时处于 Running 状态。如果大部分都活跃且持续了较长时间，基本可以判定线程池压力过大。
+如果只看到少数 worker 在 Running，其余 worker 卡在锁或 IO，问题通常不在线程数本身，而在某个 Binder 方法把 worker 占住太久。后面的排查要继续沿着 `thread_state`、Lock contention 和服务端 slice 往下看。
 
-[已验证: L2, Perfetto Trace 中可观测] [来源: obsidian/Personal-Knowlodge/source/Android-Perfetto-10-Binder.md]
+[已验证: AOSP android-16.0.0_r1, frameworks/native/libs/binder/ProcessState.cpp] [已验证: L2, Perfetto thread_state / Binder Transactions 可观测]
 
 ## 同步调用 vs oneway 调用
 
@@ -195,6 +200,18 @@ oneway 很容易被当成“更快”的选择，但这里有几个容易踩的�
 **适用场景。** 真正"发出就忘"的场景适合用 oneway：状态通知、日志上报、事件广播。需要返回值、或者需要确认对方已处理的场景，不要用 oneway。
 
 [已验证: AOSP, frameworks/native/libs/binder/IPCThreadState.cpp] [已验证: 官方文档, developer.android.com/guide/components/aidl#oneway]
+
+## Binder 调度优先级如何传播
+
+同步 Binder 调用不是单纯把 work 扔给另一进程。source.android 的 priority inheritance 文档把这套机制拆成三层：transaction priority inheritance、node priority inheritance 和 real-time priority inheritance。
+
+对性能分析最常见的是 transaction priority inheritance。高优先级线程发起同步 Binder 调用时，Binder Driver 会临时把服务端 worker 的优先级调到和调用方一致；事务结束后再恢复。这样做是为了减少优先级反转。异步 `oneway` 调用不阻塞调用方，所以默认不会继承调用方优先级。
+
+如果某个服务希望所有事务至少以某个调度等级执行，还可以在服务端节点上配置 node priority inheritance。文档给出的入口是 `BBinder::setMinSchedulerPolicy`。real-time priority inheritance 也是同一套思路，但默认关闭，只有显式调用 `BBinder::setInheritRt(true)` 的节点才会传播 RT policy。
+
+这套机制能解释一个常见现象：前台线程发起同步 Binder 后，服务端 worker 往往很快就被调起来，但事务总耗时还是偏长。问题通常不在 Binder 没有继承优先级，而在 worker 被 Java 锁、内核 IO 或下游慢服务挡住了。Perfetto 里要同时看 `sched`、`thread_state` 和锁竞争轨道，确认延迟是出在调度之前，还是出在拿到 CPU 之后。
+
+[已验证: 官方文档, source.android.com/docs/core/architecture/ipc/priority-inheritance]
 
 ## 在 Perfetto 中分析 Binder
 
@@ -238,7 +255,7 @@ Perfetto 提供两层 Binder 数据源：
 
 ### 一个典型案例：窗口管理延迟
 
-以应用冷启动为例。我们发现 `Activity.startActivity` 的耗时异常，主线程在调用 `IActivityTaskManager.startActivity` 期间 Sleeping 了 30ms。沿着 Flow 箭头追到 `system_server` 的 `Binder:1605_2` 线程，会发现它在处理请求时又 Sleeping 了 20ms，不是在做实际工作，而是在等锁。再看 Lock contention 轨道，`WindowManagerGlobalLock` 正被 `android.anim` 线程持有。
+以应用冷启动为例。我们发现 `Activity.startActivity` 的耗时异常，主线程在调用 `IActivityTaskManager.startActivity` 期间 Sleeping 了 30ms。沿着 Flow 箭头追到 `system_server` 的 `binder:1605_2` 线程，会发现它在处理请求时又 Sleeping 了 20ms，不是在做实际工作，而是在等锁。再看 Lock contention 轨道，`WindowManagerGlobalLock` 正被 `android.anim` 线程持有。
 
 结论：App 启动发起的 Binder 请求，在 `system_server` 端因为等待窗口管理锁而被阻塞。锁被系统动画线程持有，用于更新窗口状态。这是一个典型的系统层锁竞争问题。App 端能做的优化，是减少冷启动期间的 IPC 调用频率，避免在动画密集期做复杂的窗口操作。
 
@@ -304,23 +321,25 @@ Binder 和全书多个章节直接相连：
 
 Binder 在 Android 版本中持续优化，这里列出对性能分析有影响的变化：
 
-- **Android 8.0（API 26）**：引入 scatter-gather 优化，将 Binder 数据拷贝从最多三次减少到一次。Project Treble 引入 HIDL 和 hwbinder，HAL 层开始 Binder 化。
-- **Android 10（API 29）**：开始将 HAL 接口从 HIDL 迁移回 Stable AIDL，到 Android 13 HIDL 正式标记废弃。新 HAL 接口统一使用 AIDL。
-- **Android 12（API 31）**：引入 Binder Freeze——被缓存的进程其 Binder 接口会被冻结，同步调用该进程的 Binder 会快速失败（而不是长时间卡住），有助于减少 ANR。
-- **Android 14/15（API 34/35）**：`android.binder` 数据源在 Perfetto 中完善，提供更丰富的事务语义。oneway 调用支持 Lazy Async（延迟派发），减少唤醒风暴带来的功耗。
-- **Android 15（API 35）**：Binder Heavy Hitter Watcher 自动监测过度使用 Binder 的进程并打印日志警告。
+- **Android 8.0（API 26）**：引入 scatter-gather 优化，将 Binder 数据拷贝从最多三次减少到一次。Project Treble 也在这一代引入 HIDL 和 hwbinder，HAL 层开始大规模 Binder 化。
+- **Android 11（API 30）**：官方开始支持 HAL 使用 Stable AIDL。迁移方向是“where possible”转到 AIDL；如果上游 HAL 仍然使用 HIDL，就还得继续用 HIDL。
+- **Android 11 QPR3+**：cached apps freezer / binder-freezer 开始影响 Binder 语义。对 frozen app 发起同步（非 `oneway`）Binder 调用时，系统会 kill remote process；异步事务会先缓冲，缓冲区溢出时可能把目标进程一起拖崩。
+- **Android 12（API 31）源码已可见 `BinderCallHeavyHitterWatcher`**：系统侧对 Binder 热点调用的内部观测能力早已存在，不适合写成 Android 15 才出现的新变化。
+- **Android 14/15（API 34/35）**：`android.binder` 数据源在 Perfetto 里更完整，事务语义和阻塞时长字段更容易直接消费。
 
-[已验证: 官方文档, developer.android.com] [来源: obsidian/Personal-Knowlodge/source/Android-Perfetto-10-Binder.md]
+[已验证: 官方文档, source.android.com/docs/core/architecture/aidl/aidl-hals] [已验证: 官方文档, source.android.com/docs/core/perf/cached-apps-freezer] [已验证: 官方文档, source.android.com/docs/core/architecture/ipc/binder-freezer] [已验证: AOSP android-12.0.0_r1, frameworks/base/core/java/com/android/internal/os/BinderCallHeavyHitterWatcher.java]
 
 ### AIDL 与 HIDL 的演进
 
-[自动发现: 来源 developer.android.com/architecture/hidl]
+[自动发现: 来源 https://source.android.com/docs/core/architecture/aidl/aidl-hals]
 
-Android 8 引入 Project Treble 时，为了解耦 Framework 和 HAL，Google 创建了 HIDL（HAL Interface Definition Language）作为 HAL 层的接口定义语言。HIDL 使用 C++ 风格的语法定义接口，支持版本化（major/minor），并且同时支持 binderized（跨进程）和 passthrough（进程内直通）两种模式。
+Android 8 引入 Project Treble 时，HIDL 是 Framework 与 HAL 之间的主力接口语言。它支持显式版本号，既能走 binderized 模式，也能走 passthrough 模式。
 
-但从 Android 11 开始，Google 决定把 HAL 接口也统一到 AIDL。Stable AIDL 支持向后兼容的增量修改（可以加方法、加字段），比 HIDL 的显式版本号更灵活。到 Android 13，HIDL 被正式标记为废弃，所有新 HAL 接口必须使用 AIDL。
+Android 11 开始，Google 官方提供了 HAL 使用 Stable AIDL 的路径。迁移原则是“where possible”转到 AIDL，不是无条件一次切完。如果上游 HAL 仍然使用 HIDL，系统还得继续用 HIDL 保持兼容。
 
-这对性能分析的影响是：从 Perfetto 的角度看，HAL 层的 Binder 调用（无论是 hwbinder 还是 AIDL binder）都会出现在 `android.binder` 和 `ftrace` 的 binder 轨道中。AIDL HAL 都是 binderized 模式（走 Binder IPC），比 HIDL 的 passthrough 模式多一次进程切换，但获得了更好的隔离性和安全性。
+从性能分析的角度看，binderized HIDL 通常走 `hwbinder`，AIDL HAL 走稳定 AIDL Binder；两者都会留下跨进程事务痕迹。passthrough HIDL 不经过这条 IPC 路径，Trace 形态也完全不同。我们在 Perfetto 里先分清调用是 binderized 还是 passthrough，再判断瓶颈落在 IPC 调度、服务端执行，还是压根不经过 Binder。
+
+[已验证: 官方文档, source.android.com/docs/core/architecture/aidl/aidl-hals]
 
 ## 常见问题与误区
 
@@ -341,12 +360,18 @@ oneway 调用避免了 Client 端的阻塞等待，但它不意味着"零成本"
 - AOSP 源码路径：
   - `frameworks/native/libs/binder/BpBinder.cpp`（Proxy 侧 transact 实现）
   - `frameworks/native/libs/binder/IPCThreadState.cpp`（与驱动通信的核心循环）
-  - `frameworks/native/libs/binder/ProcessState.cpp`（线程池初始化、mmap）
+  - `frameworks/native/libs/binder/ProcessState.cpp`（线程池初始化、线程名生成、mmap）
   - `frameworks/base/core/java/android/os/Binder.java`（Java 层 Binder 基类）
+  - `frameworks/base/core/java/android/view/IWindowSession.aidl`（窗口相关真实 AIDL 入口）
+  - `frameworks/base/core/java/com/android/internal/os/BinderCallHeavyHitterWatcher.java`（内部 Binder 热点调用监控）
   - `drivers/android/binder.c`（内核 Binder Driver 实现）
 - [已验证: 官方文档, developer.android.com/reference/android/os/IBinder]
 - [已验证: 官方文档, developer.android.com/guide/components/aidl]
 - [已验证: Perfetto 文档, perfetto.dev/docs/data-sources/android-binder]
+- [引用: https://source.android.com/docs/core/architecture/aidl/aidl-hals]
+- [引用: https://source.android.com/docs/core/architecture/ipc/priority-inheritance]
+- [引用: https://source.android.com/docs/core/architecture/ipc/binder-freezer]
+- [引用: https://source.android.com/docs/core/perf/cached-apps-freezer]
 - [来源: obsidian/Personal-Knowlodge/source/Android-Perfetto-10-Binder.md]（高爷原创：Android Perfetto 系列 10 - Binder 调度与锁竞争）
 - [来源: obsidian/Personal-Knowlodge/source/Android-Systrace-Binder.md]（高爷原创：Android Systrace 基础知识 - Binder 和锁竞争解读）
 - [来源: obsidian/Personal-Knowlodge/source/2026-03-06_wechat_Binder驱动中的流程详解.md]（OPPO 内核工匠：Binder 驱动中的流程详解）
