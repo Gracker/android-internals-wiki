@@ -1805,3 +1805,23 @@
 - **问题**：`UFS 4.0 随机读 < 1ms`、`fsync < 5ms`、`iowait > 5%` 这类数值被写成通用阈值，但缺设备、文件系统、工作负载和 trace 配置上下文。读者照搬这些数字，很容易把机型差异、F2FS/ext4 差异或采样方式差异误判成异常。
 - **建议**：把数值改成“示例区间 + 测试条件”，至少补机型、存储介质、文件系统、trace 配置和 workload；拿不出统一基线时，就把这些阈值降级成经验值。
 
+
+
+## [Task6 Review] 7.9 感知流畅性：步幅波动与无掉帧卡顿 — 2026-04-12
+- **类型**：需补充素材
+- **位置**：开头阈值说明、Chrome 经验、Frame Timeline 差值分析
+- **问题**：文中有多处量化断言缺少可追溯来源，例如“相邻帧位移偏差超过 10% 就可能被察觉”、CV 0.05/0.1 阈值，以及 Chrome 时间精度优化经验。当前只有 `[待验证]` 占位，证据链还不够。
+- **建议**：补论文、官方文档或 commit；如果找不到可靠来源，就把具体数值降级为经验描述。
+- **review 日志**：logs/review/2026-04-12-19-review.md
+
+- **类型**：需确认
+- **位置**：Android 16 AppJankStats 与 RelativeFrameTimeHistogram、版本演进表、Perfetto SQL 示例
+- **问题**：FrameTimeline、AppJankStats、RelativeFrameTimeHistogram 的平台版本和 API 归属存在核对风险，SQL 示例也还没有确认是否能在当前 Perfetto schema 下直接运行。
+- **建议**：交给 Task 9 对照官方文档、AOSP 版本历史和 trace processor schema 复核。
+- **review 日志**：logs/review/2026-04-12-19-review.md
+
+- **类型**：需重写
+- **位置**：优化策略（二）到（四）
+- **问题**：后半段从问题分析切成了方案清单，和前文的 Trace 观察、真实场景回扣不够，读起来更像提纲。
+- **建议**：Task 2B 收紧成 2-3 条有证据支撑的建议，最好每条都回扣到前面的症状或可观察信号。
+- **review 日志**：logs/review/2026-04-12-19-review.md
