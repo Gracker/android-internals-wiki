@@ -2129,3 +2129,22 @@
 - **位置**：L400-L417，Perfetto SQL
 - **问题**：SQL 用 `slice.name LIKE 'Choreographer#doFrame%'` 和 `countif(dur > 16.666e6)` 统计“游戏掉帧”，但没有交代只适用于 doFrame 驱动路径，也没有把 90Hz/120Hz 目标帧周期区分开。这个查询可以当示例，不能直接写成通用游戏统计模板。
 - **建议**：补“适用前提”说明，并按 60/90/120Hz 给不同阈值示例；native game 另给一套 query 或明确转到 FrameTimeline/SurfaceFlinger 口径。
+
+## [Task6 Review] 9.6 Notification 性能与 ANR — 2026-04-13
+- **类型**：需确认
+- **位置**：Android 17 通知性能变更 + 版本演进表
+- **问题**：Android 14 并行分发、Android 15 排名优化、Android 17 后台通知监听器限频等版本断言仍缺精确来源，当前 `[已验证]` / `[待验证]` 粒度不够。
+- **建议**：由 Task 9 对照 AOSP 与官方文档统一核对版本边界，再由 Task 2B 回写。
+- **review 日志**：logs/review/2026-04-13-06-review.md
+
+- **类型**：需补充素材
+- **位置**：在 Perfetto 中诊断通知 ANR
+- **问题**：`notif-handler` 线程、`onNotificationPosted` slice、Binder SQL 示例和 `[待补充：Trace 截图]` 仍缺真实 trace 或已跑通的 schema 证据，当前实操闭环不完整。
+- **建议**：补 1-2 份真实 Perfetto 片段或已验证 SQL，并固定对应的 track、slice、table 名称。
+- **review 日志**：logs/review/2026-04-13-06-review.md
+
+- **类型**：需补充素材
+- **位置**：RemoteViews / 图片通知 / 通知限流的量化成本
+- **问题**：`1-2ms`、`10-20ms`、`10-50ms`、`100ms+` 等耗时结论没有给出设备、图片尺寸、系统负载或原始 benchmark 条件。
+- **建议**：补测试条件与原始来源；若短期补不齐，就降级为定性描述。
+- **review 日志**：logs/review/2026-04-13-06-review.md
