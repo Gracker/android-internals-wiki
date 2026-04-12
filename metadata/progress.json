@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-12T14:13:39+08:00",
+  "generated_at": "2026-04-12T14:55:06+08:00",
   "state_machine_version": "v2",
   "total_sections": 206,
   "metrics": {
@@ -9,19 +9,19 @@
     "task6_unknown": 30,
     "task9_unknown": 30,
     "task2b_unknown": 30,
-    "last_updated": "2026-04-12T14:13:39+08:00",
+    "last_updated": "2026-04-12T14:55:06+08:00",
     "ready-for-review": 173,
     "pipeline_task9_pending": 3,
-    "pipeline_task6_pending": 166,
-    "pipeline_task2b_pending": 7,
-    "task6_reviewed": 10,
+    "pipeline_task6_pending": 167,
+    "pipeline_task2b_pending": 6,
+    "task6_reviewed": 9,
     "task6_pending": 137,
-    "task6_revisiting": 29,
-    "task9_pending": 174,
-    "task9_reviewed": 2,
+    "task6_revisiting": 30,
+    "task9_pending": 175,
+    "task9_reviewed": 1,
     "task2b_idle": 140,
-    "task2b_fixed": 29,
-    "task2b_pending": 7,
+    "task2b_fixed": 30,
+    "task2b_pending": 6,
     "finalized": 0,
     "ready-to-publish": 0
   },
@@ -29,25 +29,25 @@
     "pipeline_stage_counts": {
       "unknown": 30,
       "task9_pending": 3,
-      "task6_pending": 166,
-      "task2b_pending": 7
+      "task6_pending": 167,
+      "task2b_pending": 6
     },
     "task6_state_counts": {
       "unknown": 30,
-      "reviewed": 10,
+      "reviewed": 9,
       "pending": 137,
-      "revisiting": 29
+      "revisiting": 30
     },
     "task9_state_counts": {
       "unknown": 30,
-      "pending": 174,
-      "reviewed": 2
+      "pending": 175,
+      "reviewed": 1
     },
     "task2b_state_counts": {
       "unknown": 30,
       "idle": 140,
-      "fixed": 29,
-      "pending": 7
+      "fixed": 30,
+      "pending": 6
     }
   },
   "issues": {
@@ -501,14 +501,15 @@
       "title": "过度绘制",
       "path": "src/part1-fundamentals/ch02-rendering/08-overdraw.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
-      "task6_state": "reviewed",
-      "task9_state": "reviewed",
-      "task2b_state": "pending",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
+      "task9_state": "pending",
+      "task2b_state": "fixed",
       "reviewed_date": "2026-04-12",
       "reviewed_by": "openclaw-task6",
       "task6_result": "needs-rework",
-      "task9_result": "needs-rework"
+      "task9_result": "needs-rework",
+      "task2b_result": "fixed"
     },
     "src/part1-fundamentals/ch02-rendering/09-rendering-evolution.md": {
       "chapter": "2.9",
