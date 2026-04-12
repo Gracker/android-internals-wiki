@@ -2067,3 +2067,15 @@
 - **问题**：`App 开发者基本无法控制` 与 Perfetto 观察方式属于跨层结论，当前章节缺少清晰的 HAL / FrameTimeline 证据链。
 - **建议**：交给 Task 9 补 HAL / FrameTimeline 证据链，Task 2B 再统一回写更稳妥的表述。
 - **review 日志**：logs/review/2026-04-13-03-review.md
+## [Task9 Deep Review] 1.4 Binder IPC 机制与性能影响 — 2026-04-13
+- **类型**：数据缺失
+- **位置**：L67，冷启动 Binder 调用次数
+- **问题**：`典型冷启动流程主线程可能发起 30-50 次同步 Binder 调用` 属于量化判断，但正文没有给出机型、应用形态、系统版本、trace 抓取条件。这个范围可以作为经验值，不能直接写成通用事实。
+- **建议**：补一条实际冷启动 trace 的统计口径，或改成“在某类冷启动样本中常见 30-50 次”这类带条件的表述。
+
+## [Task9 Deep Review] 1.4 Binder IPC 机制与性能影响 — 2026-04-13
+- **类型**：工具链精度
+- **位置**：L277-L287，Binder 风暴 SQL
+- **问题**：SQL 只用 `slice.name LIKE 'binder%'` 统计事务，没有限定 Android Binder / Transactions 轨道、请求/回复方向或版本口径。不同版本和不同 trace 配置下，这个条件可能漏算、误算，甚至把非 Binder slice 混进来。
+- **建议**：改成和数据源绑定的版本化查询，至少补清楚依赖 `android.binder` 还是 `ftrace`，以及应该按哪个 track/table 过滤事务。
+

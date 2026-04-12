@@ -1630,3 +1630,19 @@ AsyncLayoutInflater 一节缺少 AndroidX 当前实现的关键边界，尤其�
 
 ### 关联章节
 4.4、1.3、10.4、8.3
+## [2026-04-13] 1.4 Binder IPC 机制与性能影响 — Binder 调度优先级链
+
+### 盲区描述
+正文已经覆盖线程池、锁竞争和 oneway，但没有解释同步 Binder 调用里的 priority inheritance / 调度优先级传播。对性能定位来说，这会留下一个关键黑盒：为什么前台线程发起的同步调用有时能把服务端 worker 提到更高优先级，为什么另一些调用又会被锁、IO 或线程池排队拖慢。少了这块，读者很难把 Binder 延迟和 CPU 调度、ANR、主线程卡顿几章串起来。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 核对 Binder priority inheritance 的触发条件、同步调用与 oneway 的差异
+- 梳理 Binder 调用链里 scheduler / nice / RT 优先级传播到服务端 worker 的边界
+- 补 Perfetto 观察点：sched、thread_state、binder transaction latency、锁竞争与 priority inversion 的对应关系
+
+### 关联章节
+1.4、5.1、7.2、8.2、9.1
+

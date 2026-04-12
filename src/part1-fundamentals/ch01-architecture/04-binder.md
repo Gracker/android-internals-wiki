@@ -24,11 +24,12 @@ sources:
     path: "developer.android.com/guide/components/aidl"
 tags: [binder, ipc, aidl, oneway, 线程池, 锁竞争, perfetto]
 related_chapters: ["1.1", "2.5", "7.2", "8.2", "9.1"]
-pipeline_stage: task9_pending
+pipeline_stage: task2b_pending
 task6_state: reviewed
 task6_result: pass-light-edit
-task9_state: pending
-task2b_state: idle
+task9_result: needs-rework
+task9_state: reviewed
+task2b_state: pending
 ---
 
 # Binder IPC 机制与性能影响
