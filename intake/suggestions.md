@@ -1984,3 +1984,23 @@
 - **位置**：L152 启动优化章节链接
 - **问题**：正文链接到了不存在的 `../ch08-responsiveness/03-startup-optimization.md`。
 - **建议**：修正为实际文件 `../ch08-responsiveness/03-launch-optimization.md`。
+
+
+## [Task6 Review] 8.8 Android 多媒体管线性能 — 2026-04-13
+- **类型**：需补充素材
+- **位置**：HDR / AudioFlinger / Perfetto 小节（L167-L390)
+- **问题**：HDR 渲染特征和 AudioFlinger underrun 观察点仍停留在 `[待补充]` 占位，Perfetto 小节缺少能对上正文结论的真实 trace 截图或等价图示。
+- **建议**：补 2-3 个真实样例，至少覆盖 HDR tone mapping、AudioFlinger mixer/underrun、MediaCodec 解码阻塞三类观察点。
+- **review 日志**：logs/review/2026-04-13-00-review.md
+
+- **类型**：需确认
+- **位置**：Media3 / 首帧延迟 / 多实例资源限制（L205-L427)
+- **问题**：Reddit 缓冲策略、`80ms` 编解码器初始化、`20-30MB` Player 实例占用、`>200ms` 异常阈值等量化说法没有给出精确来源，容易把经验值写成结论。
+- **建议**：交给 Task 9 对照官方文档、博客或实测数据核对；补不齐来源时，统一降级为经验描述。
+- **review 日志**：logs/review/2026-04-13-00-review.md
+
+- **类型**：需确认
+- **位置**：Tunneled playback / Perfetto SQL / atrace / 版本演进（L151-L448)
+- **问题**：SoC 支持差异、`EXTRACT_ARG` 参数名、atrace 示例命令、`low-latency decoding` 的版本演进都还带着明显的技术核对风险。
+- **建议**：先由 Task 9 核对 AOSP / trace processor schema / 官方文档，再由 Task 2B 回写这些段落。
+- **review 日志**：logs/review/2026-04-13-00-review.md

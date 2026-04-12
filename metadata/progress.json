@@ -1,40 +1,40 @@
 {
-  "generated_at": "2026-04-13T00:05:24+08:00",
+  "generated_at": "2026-04-13T00:13:00+08:00",
   "state_machine_version": "v2",
   "total_sections": 207,
   "metrics": {
     "total": 207,
     "unknown": 34,
     "ready-for-review": 173,
-    "last_updated": "2026-04-12T23:28:00+08:00",
+    "last_updated": "2026-04-13T00:13:00+08:00",
     "pipeline_unknown": 31,
-    "pipeline_task6_pending": 165,
-    "pipeline_task2b_pending": 8,
+    "pipeline_task6_pending": 164,
+    "pipeline_task2b_pending": 9,
     "pipeline_task9_pending": 3,
     "task6_unknown": 31,
     "task6_revisiting": 37,
-    "task6_reviewed": 11,
-    "task6_pending": 128,
+    "task6_reviewed": 12,
+    "task6_pending": 127,
     "task9_unknown": 31,
     "task9_pending": 172,
     "task9_reviewed": 4,
     "task2b_unknown": 31,
     "task2b_fixed": 37,
-    "task2b_pending": 8,
-    "task2b_idle": 131
+    "task2b_pending": 9,
+    "task2b_idle": 130
   },
   "pipeline": {
     "pipeline_stage_counts": {
       "unknown": 31,
-      "task6_pending": 165,
-      "task2b_pending": 8,
+      "task6_pending": 164,
+      "task2b_pending": 9,
       "task9_pending": 3
     },
     "task6_state_counts": {
       "unknown": 31,
       "revisiting": 37,
-      "reviewed": 11,
-      "pending": 128
+      "reviewed": 12,
+      "pending": 127
     },
     "task9_state_counts": {
       "unknown": 31,
@@ -44,8 +44,8 @@
     "task2b_state_counts": {
       "unknown": 31,
       "fixed": 37,
-      "pending": 8,
-      "idle": 131
+      "pending": 9,
+      "idle": 130
     }
   },
   "issues": {
@@ -1437,10 +1437,13 @@
       "title": "Android 多媒体管线性能",
       "path": "src/part2-performance/ch08-responsiveness/08-media-pipeline.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "pending",
+      "pipeline_stage": "task2b_pending",
+      "task6_state": "reviewed",
       "task9_state": "pending",
-      "task2b_state": "idle"
+      "task2b_state": "pending",
+      "reviewed_date": "2026-04-13",
+      "reviewed_by": "openclaw-task6",
+      "task6_result": "needs-rework"
     },
     "src/part2-performance/ch08-responsiveness/08-system-triggered-profiling.md": {
       "chapter": "8.8",

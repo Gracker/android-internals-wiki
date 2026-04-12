@@ -8,6 +8,9 @@ drafted_by: "openclaw-task2a"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
 last_verified: "2026-04-06"
 last_verified_against: "AOSP android-17.0.0_r1"
+reviewed_date: "2026-04-13"
+reviewed_by: "openclaw-task6"
+task6_result: needs-rework
 confidence: medium
 sources:
   - type: official
@@ -26,23 +29,45 @@ created_by: "task2a-knowledge-gap"
 created_date: "2026-04-06"
 gap_source: "AOSP结构+官方文档+读者需求"
 gap_score: "16/20"
-pipeline_stage: task6_pending
-task6_state: pending
+pipeline_stage: task2b_pending
+task6_state: reviewed
 task9_state: pending
-task2b_state: idle
+task2b_state: pending
 ---
 
 # 8.8 Android 多媒体管线性能
+
+<!-- outline-start -->
+## 本节要点大纲
+
+### 锚点（必须覆盖）
+
+- 🔹 视频播放管线的数据流、零拷贝路径与 `Surface` / `BufferQueue` 的角色
+- 🔹 `MediaCodec` 的 Buffer 管理、同步 / 异步模式，以及音视频同步的基本思路
+- 🔹 `MediaCodec` 与 `Surface`、Sync Fence、tunneled playback 的协同方式
+- 🔹 Media3 / ExoPlayer 的 ABR、缓冲策略、动态调度与 Player 池化
+- 🔹 AudioFlinger、AAudio、MMAP 与端到端音频延迟的构成
+- 🔹 在 Perfetto 中抓取和分析 `MediaCodec` / `AudioFlinger` 性能问题的方法
+
+### 扩展（可选深入）
+
+- 🔸 HDR / Dolby Vision 带来的额外渲染开销
+- 🔸 Camera → `MediaCodec` 编码管线的零拷贝与 GPU 处理权衡
+
+### OpenClaw 加工指引
+
+> 锚点是最低覆盖要求。涉及 SoC 支持差异、Perfetto SQL 字段名、版本演进这类内容时，如果来源不够硬，保留 `[待验证]`，不要硬写结论。
+<!-- outline-end -->
 
 ## 为什么要了解多媒体管线性能
 
 如果你做过视频播放、音频录制或者 Camera 预览相关的开发，你大概率遇到过这些问题：视频首帧加载慢、播放过程中偶发卡顿、音频出现断续的"嘟嘟"声（underrun）、或者后台播放时耗电飙升。
 
-这些问题背后的共性是：Android 多媒体管线横跨了 App 框架、硬件编解码器（VPU/DSP）、AudioFlinger、SurfaceFlinger 以及内核驱动，链路长且环节多。只要其中任何一个环节处理不及时，用户就会感知到——视频掉帧、音频爆音、或者电池健康度快速下降。
+这类问题的共同点是：Android 多媒体管线横跨 App 框架、硬件编解码器（VPU/DSP）、AudioFlinger、SurfaceFlinger 以及内核驱动，路径很长，参与组件也多。只要其中任何一个环节处理不及时，用户就会直接感知到，比如视频掉帧、音频爆音，或者后台播放耗电升高。
 
 理解这条管线的架构和性能特征，可以让我们在 Perfetto 中精准定位问题发生在哪个环节：是解码慢、渲染慢、还是合成慢？是音频 buffer 供给不上、还是 CPU 调度不够及时？本节的目标就是帮我们建立这种端到端的定位能力。
 
-在 Perfetto 中，多媒体相关的信息分布在多个 track 上——MediaCodec 的编解码耗时、AudioFlinger 的 mixer 活动以及 Surface 渲染的帧时间线。理解这些 track 之间的关联，是分析多媒体性能问题的关键。
+在 Perfetto 中，多媒体相关的信息分布在多个 track 上，比如 MediaCodec 的编解码耗时、AudioFlinger 的 mixer 活动，以及 Surface 渲染的帧时间线。理解这些 track 之间的关联，是分析多媒体性能问题的关键。
 
 ## 多媒体管线架构全景
 
@@ -101,7 +126,7 @@ codec.setCallback(new MediaCodec.Callback() {
 });
 ```
 
-从性能角度看，异步模式是更好的选择。同步模式的阻塞等待会占用线程资源，如果 dequeue 操作长时间没有返回（比如解码器内部排队），线程会被卡住。异步模式则让系统来调度回调的时机，App 只需在回调中做实际的数据搬运工作。实际上，Media3/ExoPlayer 内部使用的就是异步模式。
+从性能角度看，异步模式通常更合适。同步模式的阻塞等待会占用线程资源，如果 dequeue 操作长时间没有返回（比如解码器内部排队），线程就会一直卡住。异步模式把回调时机交给系统调度，App 只需要在回调里处理实际的数据搬运。很多播放器框架，包括 Media3 / ExoPlayer，都会采用这种方式。
 
 [已验证: 官方文档, developer.android.com/reference/android/media/MediaCodec — Asynchronous Processing]
 
@@ -121,13 +146,13 @@ codec.setCallback(new MediaCodec.Callback() {
 
 [已验证: 官方文档, source.android.com/docs/core/graphics — Explicit Sync]
 
-这条 fence 链确保了从硬件解码器到 GPU 合成到显示控制器的整个流程不会出现竞态条件，同时又不引入额外的 CPU 等待开销——因为 fence 是在内核中以文件描述符的形式传递的，GPU 和显示控制器可以直接在硬件层面等待 fence signal，不需要 CPU 自旋。
+这条 fence 链确保了从硬件解码器到 GPU 合成再到显示控制器的整个流程不会出现竞态条件，同时也不引入额外的 CPU 等待开销，因为 fence 是在内核中以文件描述符的形式传递的，GPU 和显示控制器可以直接在硬件层面等待 fence signal，不需要 CPU 自旋。
 
 ### Tunneled Video Playback：直通模式减少一帧延迟
 
 普通的视频播放流程是：解码器输出帧 → BufferQueue → App 进程处理（如字幕叠加）→ SurfaceFlinger 合成 → 显示。这个过程中，帧至少要经过一次 App 进程的中转。
 
-Tunneled（直通）模式可以让压缩视频数据绕过 App 和 Android 框架层，直接从硬件解码器送到显示控制器。在这个模式下，App 甚至不需要创建 Surface——硬件解码器通过一个 sideband handle 直接与 Hardware Composer (HWC) 通信，HWC 负责将解码帧与音频时间戳同步后显示。
+Tunneled（直通）模式可以让压缩视频数据绕过 App 和 Android 框架层，直接从硬件解码器送到显示控制器。在这个模式下，App 甚至不需要创建 Surface，硬件解码器通过一个 sideband handle 直接与 Hardware Composer (HWC) 通信，HWC 负责将解码帧与音频时间戳同步后显示。
 
 直通模式的优势：
 - **减少一帧延迟**：帧不需要经过 BufferQueue 和 App 进程中转
@@ -226,11 +251,11 @@ AudioFlinger 内部有两种 mixer thread：
 
 [已验证: 官方文档, source.android.com/docs/core/audio — AudioFlinger]
 
-### AAUDIO：面向低延迟的 C API
+### AAudio：面向低延迟的 C API
 
-Android 8.0 引入了 AAUDIO API，专门为高性能、低延迟的音频应用设计（如音乐合成器、实时音效处理、游戏音频）。相比旧的 OpenSL ES，AAUDIO 的设计更简洁，延迟更低。
+Android 8.0 引入了 AAudio API，专门为高性能、低延迟的音频应用设计（如音乐合成器、实时音效处理、游戏音频）。相比旧的 OpenSL ES，AAudio 的设计更简洁，延迟更低。
 
-AAUDIO 的核心使用模式是**异步回调**：App 注册一个回调函数，AAUDIO 在一个高优先级的内部线程中调用这个回调来传输音频数据。相比同步读写模式，回调模式的优势在于调度更及时、时序抖动更小。
+AAudio 的核心使用模式是**异步回调**：App 注册一个回调函数，AAudio 在一个高优先级的内部线程中调用这个回调来传输音频数据。相比同步读写模式，回调模式的优势在于调度更及时、时序抖动更小。
 
 低延迟回调中的代码必须遵守严格的约束：
 - 不做内存分配/释放
@@ -242,7 +267,7 @@ AAUDIO 的核心使用模式是**异步回调**：App 注册一个回调函数�
 
 [已验证: 官方文档, developer.android.com/ndk/guides/audio/aaudio/low-latency-audio]
 
-### AAUDIO MMAP 路径：极致低延迟
+### AAudio MMAP 路径：极致低延迟
 
 Android 8.1 进一步引入了 MMAP（Memory Mapped）数据路径，可以将延迟降到最低。在 MMAP EXCLUSIVE 模式下，App 直接写入一块与 ALSA 驱动共享的内存映射 buffer，完全绕过了 AudioFlinger 的 mixer——这意味着零额外延迟。
 
@@ -250,7 +275,7 @@ MMAP 的两种模式：
 - **EXCLUSIVE**：App 独占音频设备，直接写 MMAP buffer，延迟最低
 - **SHARED**：多个 App 共享 MMAP buffer，AudioFlinger 的 mixer 仍然参与
 
-MMAP 需要 HAL 和驱动的支持。如果设备不支持 MMAP 或打开失败，AAUDIO 会自动回退到传统的 AudioFlinger 数据路径。这就是为什么同一款 App 在不同设备上的音频延迟差异可以很大——从不到 10ms（MMAP EXCLUSIVE）到超过 100ms（传统路径）。
+MMAP 需要 HAL 和驱动的支持。如果设备不支持 MMAP 或打开失败，AAudio 会自动回退到传统的 AudioFlinger 数据路径。这就是为什么同一款 App 在不同设备上的音频延迟差异可以很大——从不到 10ms（MMAP EXCLUSIVE）到超过 100ms（传统路径）。
 
 [已验证: 官方文档, developer.android.com/ndk/guides/audio/aaudio/low-latency-audio — MMAP Mode]
 
@@ -261,9 +286,9 @@ MMAP 需要 HAL 和驱动的支持。如果设备不支持 MMAP 或打开失败�
 1. **硬件延迟**：DAC 芯片处理延迟（通常 1-3ms）
 2. **HAL 延迟**：厂商音频 HAL 实现（差异最大，2-20ms 不等）
 3. **AudioFlinger 缓冲**：Normal Mixer 约 20ms 一轮，Fast Mixer 可以短到 2-4ms
-4. **应用缓冲**：App 端 AudioTrack/AAUDIO 的 buffer 大小配置
+4. **应用缓冲**：App 端 AudioTrack/AAudio 的 buffer 大小配置
 
-在 Perfetto 中，可以通过音频相关的 track 观察到 AudioFlinger 的 mixer 活动。如果看到 mixer thread 出现大的间隔或者 underrun 标记，说明 CPU 调度不够及时（可能是高优先级线程被抢占、或者 GC 暂停阻塞了音频回调）。
+在 Perfetto 中，可以通过音频相关的 track 观察 AudioFlinger 的 mixer 活动。如果 mixer thread 出现较大的调度间隔或者 underrun 标记，通常说明 CPU 调度不够及时，比如高优先级线程被抢占，或者 GC 暂停阻塞了音频回调。
 
 [待补充：AudioFlinger track 的 Perfetto 截图描述]
 
@@ -350,9 +375,9 @@ ORDER BY avg_duration_ms DESC;
 要抓取完整的 MediaCodec 和 AudioFlinger 信息，需要启用以下 atrace 分类：
 
 ```bash
-atrace --a
-tr catego
-ries=media,codec,audio,view,gfx,am
+# [待验证] 具体命令格式需按设备和抓取方式核对
+# 需要启用的 atrace 分类：
+media,codec,audio,view,gfx,am
 ```
 
 - `media`：MediaCodec、ACodec 相关事件
@@ -379,14 +404,14 @@ ries=media,codec,audio,view,gfx,am
 
 **解码慢**：硬件解码器处理某些复杂帧（如高运动场景的 B 帧）耗时过长，超过了一个 VSync 周期。在 Perfetto 中表现为 decode slice 的 duration 出现异常峰值。解决方案包括降低分辨率/码率、或者切换到更高效的编码格式（如从 AVC 切换到 HEVC）。
 
-**渲染慢**：解码完成了，但 GPU 合成耗时过长。这种情况在 HDR 内容或存在复杂的 Surface 叠加（如字幕+弹幕+视频）时容易出现。在 Perfetto 中可以看到 SurfaceFlinger 的合成耗时异常。
+**渲染慢**：解码完成了，但 GPU 合成耗时过长。这种情况在 HDR 内容或存在复杂的 Surface 叠加（如字幕 + 弹幕 + 视频）时容易出现。在 Perfetto 中，常见表现是 SurfaceFlinger 的合成耗时异常。
 
 ### 音频 Underrun 的根因分析
 
 Audio underrun 是指 AudioFlinger 的 buffer 被耗尽，导致输出端没有数据可播放，用户听到"嘟"的一声断续。常见的根因有：
 
-- **CPU 调度不及时**：音频回调线程（SCHED_FIFO 高优先级）被其他高负载线程抢占。在 Perfetto 中可以看到音频线程的 scheduling slice 出现异常间隔
-- **GC 暂停**：如果音频回调在 Java 层执行，ART GC 的 stop-the-world 暂停会阻塞音频数据的生产。这就是为什么 AAUDIO 的推荐使用方式是纯 native 代码回调
+- **CPU 调度不及时**：音频回调线程（SCHED_FIFO 高优先级）被其他高负载线程抢占。常见表现是音频线程的 scheduling slice 出现异常间隔
+- **GC 暂停**：如果音频回调在 Java 层执行，ART GC 的 stop-the-world 暂停会阻塞音频数据的生产。这就是为什么 AAudio 的推荐使用方式是纯 native 代码回调
 - **锁竞争**：音频回调路径上等待被其他线程持有的锁。在 Perfetto 中可以通过 monitor contention slice 看到锁等待
 
 ### 多实例编解码器的资源限制
@@ -413,8 +438,8 @@ Camera 采集和视频编码的组合管线（如直播、录屏）需要特别�
 - **Android 4.1 (Project Butter)**：引入 Fast Mixer Thread，音频延迟从约 100ms 降到约 20-40ms
 - **Android 4.3**：引入 Surface 作为 MediaCodec output，开启零拷贝视频渲染路径
 - **Android 5.0**：引入 async mode (`setCallback`)，MediaCodec 从同步轮询变为异步回调驱动
-- **Android 8.0**：引入 AAUDIO API，提供 C 语言级别的低延迟音频接口
-- **Android 8.1**：AAUDIO 支持 MMAP 路径，延迟可降至 10ms 以下
+- **Android 8.0**：引入 AAudio API，提供 C 语言级别的低延迟音频接口
+- **Android 8.1**：AAudio 支持 MMAP 路径，延迟可降至 10ms 以下
 - **Android 11**：引入 low-latency decoding 模式（需要 SoC 支持），支持 tunneled playback via Codec2
 - **Android 10+**：媒体模块（`com.android.media`）通过 APEX 格式可独立更新，不再依赖系统 OTA
 - **Media3 1.10 (2026-03)**：动态调度、Compose PlayerSurface、Player 池化预热
@@ -426,7 +451,7 @@ Camera 采集和视频编码的组合管线（如直播、录屏）需要特别�
 - AOSP MediaCodec 源码：`frameworks/av/media/libstagefright/`
 - AOSP AudioFlinger 源码：`frameworks/av/services/audioflinger/`
 - 官方文档 MediaCodec：https://developer.android.com/reference/android/media/MediaCodec
-- 官方文档 AAUDIO Low Latency：https://developer.android.com/ndk/guides/audio/aaudio/low-latency-audio
+- 官方文档 AAudio Low Latency：https://developer.android.com/ndk/guides/audio/aaudio/low-latency-audio
 - Media3 官方文档：https://developer.android.com/media/media3
 - Google Android Developers Blog, Media3 1.10 Release, 2026-03-30
 - Perfetto SQL Reference：https://ui.perfetto.dev
