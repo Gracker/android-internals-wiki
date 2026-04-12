@@ -2105,3 +2105,27 @@
 - **问题**：两段偏资料罗列和一般性建议，第一手观察不足，读起来更像资料汇编而不是工程师复盘。
 - **建议**：Task 2B 回炉时补实际分析路径或更具体的场景判断，压缩泛化表述。
 - **review 日志**：logs/review/2026-04-13-05-review.md
+
+## [Task9 Deep Review] 8.9 Android 游戏性能与 Game Mode/State API — 2026-04-13
+- **类型**：数据缺失
+- **位置**：L67，ADPF “最高 57% 帧率提升”
+- **问题**：量化结论没有交代测试游戏、SoC、功耗/温度条件和基线。即使原始材料存在，这个数字也不能直接当成通用收益。
+- **建议**：补原始测试上下文，至少写清设备、负载场景和“最高值/平均值”的区别；补不齐就降成条件化表述。
+
+## [Task9 Deep Review] 8.9 Android 游戏性能与 Game Mode/State API — 2026-04-13
+- **类型**：数据与版本口径
+- **位置**：L357-L365，Android 16 新特性
+- **问题**：`SystemHealthManager#getCpuHeadroom()` / `getGpuHeadroom()` 属于 API 36 的真实接口，但同一段顺手写进了 “Vulkan 1.4 默认图形 API”“ANGLE 统一兼容层”“5-15% 开销”“Game Mode PERFORMANCE 会额外优化 ANGLE” 等结论，当前引用页并不能支撑这些说法。
+- **建议**：把 Headroom API 与 Vulkan/ANGLE 路线拆开；每条版本/性能断言各自补官方来源或实测，否则降为 `[待验证]`。
+
+## [Task9 Deep Review] 8.9 Android 游戏性能与 Game Mode/State API — 2026-04-13
+- **类型**：交叉引用与来源可验证性
+- **位置**：frontmatter L14-L20；参考资料 L486-L487
+- **问题**：`/games/gamemode/gamemode-api`、`/games/optimize/performance`、`/reference/android/app/GameStateManager` 当前都不可用或已迁移，导致正文中的“已验证”无法复核。
+- **建议**：统一替换为当前有效页面，例如 `/games/optimize/adpf/gamemode/gamemode-api`、`/games/optimize/adpf/gamemode/gamemode-interventions`、`/reference/android/app/GameState` / `GameManager`。
+
+## [Task9 Deep Review] 8.9 Android 游戏性能与 Game Mode/State API — 2026-04-13
+- **类型**：工具链精度
+- **位置**：L400-L417，Perfetto SQL
+- **问题**：SQL 用 `slice.name LIKE 'Choreographer#doFrame%'` 和 `countif(dur > 16.666e6)` 统计“游戏掉帧”，但没有交代只适用于 doFrame 驱动路径，也没有把 90Hz/120Hz 目标帧周期区分开。这个查询可以当示例，不能直接写成通用游戏统计模板。
+- **建议**：补“适用前提”说明，并按 60/90/120Hz 给不同阈值示例；native game 另给一套 query 或明确转到 FrameTimeline/SurfaceFlinger 口径。

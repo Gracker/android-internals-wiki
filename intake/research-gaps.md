@@ -1646,3 +1646,19 @@ AsyncLayoutInflater 一节缺少 AndroidX 当前实现的关键边界，尤其�
 ### 关联章节
 1.4、5.1、7.2、8.2、9.1
 
+
+## [2026-04-13] 8.9 Android 游戏性能与 Game Mode/State API — 原生游戏帧观测口径
+
+### 盲区描述
+正文把 `Choreographer#doFrame`、UI 线程调度延迟和普通 App 的 Frame Timeline 观察方法直接当成“游戏帧时间分析”的通用方案，但很多 Android 游戏走的是 GameActivity / SurfaceView / Vulkan / Swappy 路径，帧生产者、呈现节奏和线程模型都不同。少了 native game 这条观测链，读者很容易在 Perfetto 里盯着错误的 track，最后把 Java/UI 层结论套到原生渲染循环上。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 梳理 GameActivity / SurfaceView / Vulkan / Swappy 游戏在 Perfetto 里的关键观察点：FrameTimeline、SurfaceFlinger、GPU counters、sched
+- 对比 Java/Choreographer 驱动游戏与 native game 在帧时间统计口径上的差异，补一张“什么时候看 doFrame，什么时候看 SurfaceFrame/Swappy”的判定表
+- 核对 ADPF / thermal / frame pacing 在 native game trace 中的对应信号和局限
+
+### 关联章节
+8.9、2.17、5.9、7.1、14.10
