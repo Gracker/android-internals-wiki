@@ -2079,3 +2079,29 @@
 - **问题**：SQL 只用 `slice.name LIKE 'binder%'` 统计事务，没有限定 Android Binder / Transactions 轨道、请求/回复方向或版本口径。不同版本和不同 trace 配置下，这个条件可能漏算、误算，甚至把非 Binder slice 混进来。
 - **建议**：改成和数据源绑定的版本化查询，至少补清楚依赖 `android.binder` 还是 `ftrace`，以及应该按哪个 track/table 过滤事务。
 
+
+
+## [Task6 Review] 8.9 Android 游戏性能与 Game Mode/State API — 2026-04-13
+- **类型**：需重写
+- **位置**：全文结构
+- **问题**：缺少 `outline-start` / `outline-end` 与 `🔹` 锚点，Task 6 无法按统一结构检查覆盖率。
+- **建议**：按 writing-guide.md 补齐大纲与锚点，再把现有 H2/H3 映射到对应骨架。
+- **review 日志**：logs/review/2026-04-13-05-review.md
+
+- **类型**：需补充素材
+- **位置**：`Perfetto 中的关键 Track` / `游戏卡顿分析方法论`
+- **问题**：目前只有概述和 `[图：...]` 占位，缺少真实 Trace 截图、稳定的 track/slice 名以及可复用 SQL，工程可操作性不够。
+- **建议**：补 2-3 组真实 Perfetto 片段，至少覆盖帧时间异常、频率变化、热状态或 Hint Session 的对应关系。
+- **review 日志**：logs/review/2026-04-13-05-review.md
+
+- **类型**：需确认
+- **位置**：`Game State API` / `Android 16/17 的游戏性能新特性`
+- **问题**：`GameStateManager`、`GameState.create(...)`、Game Mode Interventions、Vulkan 1.4 默认化等表述涉及 API 与版本边界，Task 6 不做技术裁决。
+- **建议**：交给 Task 9 对照官方文档 / AOSP 核对 API 名称、版本范围和适用条件。
+- **review 日志**：logs/review/2026-04-13-05-review.md
+
+- **类型**：需重写
+- **位置**：`AGDK 工具链` / `OEM 游戏模式与 Game Mode API 的关系`
+- **问题**：两段偏资料罗列和一般性建议，第一手观察不足，读起来更像资料汇编而不是工程师复盘。
+- **建议**：Task 2B 回炉时补实际分析路径或更具体的场景判断，压缩泛化表述。
+- **review 日志**：logs/review/2026-04-13-05-review.md

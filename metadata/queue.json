@@ -6223,5 +6223,44 @@
     "status": "completed",
     "completed_at": "2026-04-13T04:50:37+08:00",
     "completed_by": "task2b-rework"
+  },
+  {
+    "section": "8.9",
+    "section_title": "Android 游戏性能与 Game Mode/State API",
+    "priority": 90,
+    "reason": "[review回炉] 缺少 outline/锚点，Perfetto 实战证据不足，Android 16/17 游戏 API 与版本表述需复核",
+    "material_paths": [
+      "intake/suggestions.md（含 review 意见）"
+    ],
+    "review_issues": [
+      {
+        "type": "需重写",
+        "location": "全文结构",
+        "detail": "缺少 `outline-start` / `outline-end` 与 `🔹` 锚点，Task 6 无法按统一结构检查覆盖率。",
+        "suggestion": "按 writing-guide.md 补齐大纲与锚点，再把现有 H2/H3 映射到对应骨架。"
+      },
+      {
+        "type": "需补充素材",
+        "location": "Perfetto 中的关键 Track / 游戏卡顿分析方法论",
+        "detail": "目前只有概述和 `[图：...]` 占位，缺少真实 Trace 截图、稳定的 track/slice 名以及可复用 SQL，工程可操作性不够。",
+        "suggestion": "补 2-3 组真实 Perfetto 片段，至少覆盖帧时间异常、频率变化、热状态或 Hint Session 的对应关系。"
+      },
+      {
+        "type": "需确认",
+        "location": "Game State API / Android 16-17 新特性",
+        "detail": "`GameStateManager`、`GameState.create(...)`、Game Mode Interventions、Vulkan 1.4 默认化等表述涉及 API 与版本边界，Task 6 不做技术裁决。",
+        "suggestion": "交给 Task 9 对照官方文档 / AOSP 核对 API 名称、版本范围和适用条件。"
+      },
+      {
+        "type": "需重写",
+        "location": "AGDK 工具链 / OEM 游戏模式与 Game Mode API 的关系",
+        "detail": "这两段偏资料罗列和一般性建议，第一手观察不足，读起来更像资料汇编而不是工程师复盘。",
+        "suggestion": "Task 2B 回炉时补实际分析路径或更具体的场景判断，压缩泛化表述。"
+      }
+    ],
+    "added_by": "task6-review",
+    "added_at": "2026-04-13T05:06:00+08:00",
+    "status": "pending",
+    "original_review_log": "logs/review/2026-04-13-05-review.md"
   }
 ]

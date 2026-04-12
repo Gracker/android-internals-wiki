@@ -29,10 +29,13 @@ related_chapters: ["2.17", "5.9", "5.5", "7.1", "7.9", "14.10"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-04-08"
 gap_source: "官方文档+读者需求+研究素材"
-pipeline_stage: task6_pending
-task6_state: pending
+pipeline_stage: task2b_pending
+task6_state: reviewed
 task9_state: pending
-task2b_state: idle
+task2b_state: pending
+reviewed_by: "openclaw-task6"
+reviewed_date: "2026-04-13"
+task6_result: needs-rework
 ---
 
 # 8.9 Android 游戏性能与 Game Mode/State API
@@ -53,7 +56,7 @@ Android 从 Android 12 开始逐步构建了一套面向游戏的系统级性能
 
 一个普通 App 在用户点击后，主线程执行 onClick → measure → layout → draw → syncAndDraw，整个流程通常在 5-10ms 内完成，占 60fps 帧预算（16.66ms）的 30-60%。即使偶尔超过预算，用户感知也不明显——因为下一帧可能几秒后才会来。
 
-游戏的帧时间预算几乎是 100% 占满的。以 60fps 为例，每帧 16.66ms 的预算中，游戏引擎需要完成逻辑更新（AI、物理、碰撞检测）、场景图遍历、命令提交、GPU 渲染。120fps 下预算减半到 8.33ms，几乎没有容错空间。这意味着：
+游戏的帧时间预算几乎是 100% 占满的。以 60fps 为例，每帧 16.66ms 的预算中，游戏引擎需要完成逻辑更新（AI、物理、碰撞检测）、场景图遍历、命令提交、GPU 渲染。120fps 下预算减半到 8.33ms，几乎没有容错空间。对应的约束主要有三点：
 
 1. **CPU 调度延迟直接导致掉帧**。普通 App 偶尔被调度延迟 2-3ms 影响不大，但游戏如果主线程在某帧被内核调度器延迟了 3ms，这帧就几乎必然超时。在 §5.1 中我们讨论过 Linux CFS 调度器的公平性问题——游戏主线程和后台几十个线程竞争 CPU 时间时，如果没有特殊照顾，游戏线程被抢占的概率不低。
 
@@ -69,7 +72,7 @@ Google 在 2025-2026 年的实测数据显示，有效使用 ADPF 的游戏可�
 
 ### 为什么需要 Game Mode
 
-在 Game Mode API 出现之前，游戏性能调优面临一个尴尬的局面：系统不知道一个 App 是游戏。系统看到的是一个消耗大量 CPU/GPU 资源的进程，处理方式和任何后台服务一样——根据整体负载和温度做调度决策。这意味着：
+在 Game Mode API 出现之前，游戏性能调优面临一个尴尬的局面：系统不知道一个 App 是游戏。系统看到的是一个消耗大量 CPU/GPU 资源的进程，处理方式和任何后台服务一样，只会根据整体负载和温度做调度决策。结果会出现两个直接问题：
 
 - 用户插着充电器、手机不烫、想要最高画质满帧体验时，系统可能正在省电模式下降频
 - 用户在户外用流量、手机发烫、只希望再撑一小时时，游戏还在以最高画质狂跑
@@ -134,7 +137,7 @@ switch (gameMode) {
 }
 ```
 
-这里有两个细节值得注意。第一，`GAME_MODE_UNSUPPORTED` 表示设备不支持 Game Mode（通常是没有通过 CTS 认证的低端设备或模拟器），游戏应该按默认策略运行。第二，Game Mode 可以在运行时变化——用户可能从设置中切换模式，App 通过 `GameManager.GameModeListener` 注册回调来监听变化，无需轮询。
+这里有两个细节需要单独说明。第一，`GAME_MODE_UNSUPPORTED` 表示设备不支持 Game Mode（通常是没有通过 CTS 认证的低端设备或模拟器），游戏应该按默认策略运行。第二，Game Mode 可以在运行时变化，用户可能从设置中切换模式，App 通过 `GameManager.GameModeListener` 注册回调来监听变化，无需轮询。
 
 [已验证: AOSP android-17-beta3, frameworks/base/core/java/android/app/GameManager.java]
 
@@ -152,7 +155,7 @@ Game Mode 不仅仅是给 App 读的一个标志——它同时会影响系统�
 - 后台同步和网络活动可能被进一步限制
 - 屏幕亮度可能被限制
 
-系统侧的行为由 `GameManagerService`（运行在 system_server）协调，具体的调度策略调整委托给 PowerManager 和 ThermalManager。这意味着 Game Mode 的实际效果在不同 OEM 设备上可能存在差异——有的厂商在 PERFORMANCE 模式下会解锁更高的 CPU 频率上限，有的则只是微调调度策略。
+系统侧的行为由 `GameManagerService`（运行在 system_server）协调，具体的调度策略调整委托给 PowerManager 和 ThermalManager。因此，Game Mode 在不同 OEM 设备上的实际效果可能存在差异，有的厂商在 PERFORMANCE 模式下会解锁更高的 CPU 频率上限，有的则只是微调调度策略。
 
 [已验证: AOSP android-17-beta3, frameworks/base/services/core/java/com/android/server/GameManagerService.java]
 
@@ -244,7 +247,7 @@ Frame Pacing Library 已在 §2.17 详细讨论，这里重点关注与性能优
 
 大多数游戏使用 C/C++ 引擎渲染，通常基于 `NativeActivity`。`Game Activity` 是 Google 提供的替代方案，针对游戏场景做了几项关键优化：
 
-1. **减少输入延迟**。`NativeActivity` 的输入事件经过 Java 层的 InputQueue 分发，再通过 JNI 传递到 native 代码。`Game Activity` 允许 native 代码直接通过 `android/input.h` 接收事件，绕过 Java 层的分发链路，减少约 1-2ms 的输入延迟。
+1. **减少输入延迟**。`NativeActivity` 的输入事件经过 Java 层的 InputQueue 分发，再通过 JNI 传递到 native 代码。`Game Activity` 允许 native 代码直接通过 `android/input.h` 接收事件，绕过 Java 层的分发路径，减少约 1-2ms 的输入延迟。
 2. **更好的窗口管理**。`Game Activity` 正确处理了分割屏、画中画、通知遮罩等场景的生命周期，避免了 `NativeActivity` 在这些场景下的常见 bug。
 3. **C/C++ 接口统一**。`Game Activity` 将输入、窗口、游戏模式查询都统一到 native API，游戏引擎不需要通过 JNI 回调 Java 层。
 
@@ -343,7 +346,7 @@ EOF
 
 Samsung 的 Game Booster、Xiaomi 的 Game Turbo、OPPO 的 Game Space 等厂商游戏模式，在检测到游戏运行后会执行一系列激进的优化：强制锁定 CPU 最高频率、禁止后台进程运行、修改 GPU 调度策略。这些优化会"掩盖"代码层面的性能问题——在开启厂商游戏模式时看起来流畅的 60fps，在关闭后可能暴露出大量卡顿。
 
-这意味着在做性能分析和优化时，**必须关闭厂商的游戏模式**，只依赖 Game Mode API + ADPF 进行性能管理。否则优化效果可能只是厂商模式的功劳，在其他设备上无法复现。
+做性能分析和优化时，**必须关闭厂商的游戏模式**，只依赖 Game Mode API + ADPF 进行性能管理。否则我们很难区分到底是代码优化生效，还是厂商模式在托底。
 
 [待补充：各主要 OEM 厂商游戏模式的关闭方法列表]
 
@@ -355,7 +358,7 @@ Android 16 在游戏性能方面的核心变化是 ADPF 的 Headroom API 和 Vul
 
 `SystemHealthManager` 新增的 `getCpuHeadroom()` 和 `getGpuHeadroom()` 让游戏可以在每帧开始时查询"当前还有多少性能余量"，而不是等帧时间超标了才发现问题。这对自适应画质引擎尤其有价值——引擎可以根据 Headroom 提前调整渲染复杂度，避免在热降频发生时才被动应对。
 
-同时，Android 16 将 Vulkan 1.4 作为默认的图形 API，ANGLE 作为 OpenGL ES 的兼容层。对游戏来说这意味着：
+同时，Android 16 将 Vulkan 1.4 作为默认的图形 API，ANGLE 作为 OpenGL ES 的兼容层。对游戏来说，可以把影响拆成三点：
 - 使用 Vulkan 的游戏可以直接获得更低的驱动开销和更精确的 GPU 时间控制
 - 使用 OpenGL ES 的游戏通过 ANGLE 转译到 Vulkan，存在约 5-15% 的性能开销（§2.14 讨论过 ANGLE 的转译机制）
 - Game Mode 的 PERFORMANCE 模式下，系统可能为 ANGLE 转译路径提供额外的优化
@@ -448,9 +451,9 @@ ART 的 GC 暂停是游戏卡顿的常见来源之一。游戏通常在每帧的
 - **Xiaomi Game Turbo**：类似策略，额外提供网络加速（QoS 优先级提升）和免打扰模式
 - **OPPO/OnePlus Game Space**：锁定最高频率 + GPU 频率提升 + 触控采样率提升
 
-这些厂商模式的存在导致了一个尴尬的碎片化问题：同一个游戏在不同品牌手机上的性能表现可能差异巨大，而且这种差异来自厂商模式而非游戏代码。对于做跨设备性能优化的开发者来说，这意味着：
+这些厂商模式的存在导致了一个尴尬的碎片化问题：同一个游戏在不同品牌手机上的性能表现可能差异巨大，而且这种差异来自厂商模式而非游戏代码。对于做跨设备性能优化的开发者来说，处理时至少要注意三件事：
 
-1. **测试时必须关闭厂商模式**。否则你无法区分是代码优化有效还是厂商模式在帮忙。
+1. **测试时必须关闭厂商模式**。否则我们无法区分是代码优化有效，还是厂商模式在帮忙。
 2. **Game Mode API 是跨设备的标准化方案**。Google 的 Game Mode API 在所有通过 GMS 认证的设备上行为一致，而厂商模式各不相同。
 3. **两者可能冲突**。某些厂商模式会忽略 Game Mode API 的 BATTERY 模式，强制保持最高性能——这看似"更好"，实际上会导致设备更快过热，最终体验更差。
 
