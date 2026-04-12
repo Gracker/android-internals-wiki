@@ -30,7 +30,8 @@ related_chapters: ["3.1", "2.3", "2.4", "2.5", "8.1"]
 pipeline_stage: task2b_pending
 task6_result: needs-rework
 task6_state: reviewed
-task9_state: pending
+task9_state: reviewed
+task9_result: needs-rework
 task2b_state: pending
 ---
 

@@ -6109,10 +6109,12 @@
   {
     "section": "3.2",
     "section_title": "触摸响应的性能分析",
-    "priority": 90,
-    "reason": "[review回炉] PAMTD 数据出处缺失，Motion Prediction 版本边界不清，厂商触控优化段证据不足",
+    "priority": 95,
+    "reason": "[Deep Tech Review] Batching / Choreographer / Motion Prediction 三处技术事实需要回炉",
     "material_paths": [
-      "intake/suggestions.md（含 review 意见）"
+      "intake/suggestions.md（含 review 意见）",
+      "intake/research-gaps.md",
+      "intake/suggestions.md"
     ],
     "review_issues": [
       {
@@ -6132,10 +6134,34 @@
         "location": "厂商触控优化方案 / Input Boost 策略",
         "detail": "低延迟触控 IC、主线程绑定大核、Input Boost 持续时间等断言主要依赖泛化的 web research 和待验证标注，缺少厂商文档、具体设备案例或 Trace 证据。",
         "suggestion": "补具体设备/厂商资料，或把这一节收缩成“常见做法概览”，避免写成确定结论。"
+      },
+      {
+        "type": "源码错误",
+        "location": "L188-L193、L206-L208",
+        "detail": "把高采样率下的 MOVE 事件写成“丢弃中间事件，只拿最后一个绘制”，与 MotionEvent batching 文档不符。ACTION_MOVE 批处理会把历史采样保存在同一个 MotionEvent 里，可通过 getHistoricalX/Y 和 getHistorySize 访问；当前写法把“画面每帧只显示一个结果”和“事件数据被丢弃”混为一谈。",
+        "suggestion": "改成“渲染结果通常按帧呈现最新状态，但 batched MotionEvent 仍可携带历史采样”；同时补 MotionEvent 历史样本的代码或官方文档锚点。"
+      },
+      {
+        "type": "原理断裂",
+        "location": "L221-L223",
+        "detail": "把连续 MOVE 基本都写成“等 VSync 到来后批量处理”，遗漏 ViewRootImpl 的 unbuffered dispatch 分支。onBatchedInputEventPending() 在 mUnbufferedInputDispatch 或特定 source 下会直接 consumeBatchedInputEvents(-1)，并非统一贴着 VSync 走。",
+        "suggestion": "补 buffered vs unbuffered dispatch 的分叉，以及 stylus、绘图、低延迟交互为何会关闭 batching。"
+      },
+      {
+        "type": "源码错误",
+        "location": "L212-L217",
+        "detail": "把 Choreographer#doFrame() 写成 4 个 callback，和 android-16.0.0_r1 不符。当前实现实际顺序是 INPUT → ANIMATION → INSETS_ANIMATION → TRAVERSAL → COMMIT。",
+        "suggestion": "修正 callback 顺序，并说明 CALLBACK_COMMIT 的职责边界。"
+      },
+      {
+        "type": "版本差异",
+        "location": "L383-L389",
+        "detail": "Motion Prediction 小节混淆了 AndroidX MotionEventPredictor、framework MotionPredictor 和不存在的 WindowManager 预测 API。framework 实际类名是 android.view.MotionPredictor，开发者文档标注 Added in API level 34；AndroidX release notes 显示 input-motionprediction 1.0.0-rc01 将默认 minSdk 从 21 调整到 23，并在 beta06 起“系统 API 可用时优先使用系统预测”。",
+        "suggestion": "拆成“AndroidX 库 vs framework API”两套版本矩阵，移除 WindowManager 说法，并按 Android U / API 34+ 标注系统预测能力。"
       }
     ],
-    "added_by": "task6-review",
-    "added_at": "2026-04-13T01:05:00+08:00",
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-13T07:33:00+08:00",
     "status": "pending",
     "original_review_log": "logs/review/2026-04-13-01-review.md"
   },
