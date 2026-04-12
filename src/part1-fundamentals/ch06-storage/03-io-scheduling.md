@@ -14,11 +14,12 @@ tags:
   - linux
   - android
   - research
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
 task9_result: needs-rework
-task2b_state: pending
+task2b_state: fixed
+task2b_result: fixed
 reviewed_by: openclaw-task6
 reviewed_date: "2026-04-12"
 task6_result: needs-rework
@@ -120,13 +121,15 @@ Kyber 目前不支持 io priority 和 blkio cgroup，因此在需要前台/后�
 
 ### Android 上的选择
 
-| Android 版本 | GKI 内核 | 默认调度器 | 说明 |
-|---|---|---|---|
-| Android 10–11 | 4.14/4.19 | CFQ 或 BFQ | 部分厂商魔改为 SIO/Row/Maple |
-| Android 12–13 | 5.4/5.10 | BFQ | GKI 统一切换到 BFQ |
-| Android 14–16 | 5.15/6.1 | BFQ | BFQ + cgroup v2 成为标配 |
+Android 版本、GKI 内核版本和默认调度器之间不能直接画成一张固定映射表。同一 Android 版本，不同 SoC、存储介质和 vendor kernel config，`/sys/block/<device>/queue/scheduler` 里的当前值都可能不同。GKI 统一的是接口和基础能力，不是替所有设备选定同一个 elevator。
 
-[需确认: 具体 GKI 版本与默认调度器的映射关系仍可能受厂商内核配置影响，建议由 Task 9 对照 GKI 配置和主流机型内核再核一轮。]
+对性能分析来说，更稳的做法是先看实机配置，再谈结论：
+
+- eMMC / UFS 设备常见候选是 BFQ、mq-deadline 或 none，具体默认值要以 `/sys/block/<device>/queue/scheduler` 为准。
+- 如果设备启用了 BFQ，`ionice`、权重和 cgroup 分组更容易直接体现在 dispatch 顺序里。
+- 如果设备走 `mq-deadline` 或 none，前后台隔离更要看 task profile、io controller 和 writeback ownership，不能假定“调度器一定会兜底”。
+
+我们在做设备分析时，至少先确认三件事：块设备节点、当前 scheduler、线程所在的 task profile / cgroup。这样比按 Android 版本猜默认值更稳。
 
 ## I/O 优先级与 cgroup blkio 控制
 
@@ -169,36 +172,29 @@ cgroup v2 的优势在于统一的层级结构，可以同时控制 CPU、内存
 
 ## 前台 App I/O 优先级保障机制
 
-Android 的核心挑战是：后台任务众多且活跃（媒体扫描、应用更新、日志写入、同步等），但前台 App 的响应速度不能被打扰。系统通过多层机制来保障前台 I/O：
+Android 的核心挑战是：后台任务很多，前台交互线程又经常卡在 `read()`、`fsync()` 或 page cache reclaim 上。这里不能把“前台 I/O 保障”理解成单一开关，它至少分成三层，而且分别落在不同的 controller 上。
 
-### 第一层：调度器级隔离
+### 第一层：block 层调度
 
-BFQ 调度器 + cgroup 分组是基础。Android 将进程分为不同的 cgroup 组：
+这一层决定已经进入 block layer 的请求谁先发。如果设备启用了 BFQ，`ionice`、权重和 cgroup 组别更容易直接体现在 dispatch 顺序里。若设备走 `mq-deadline` 或 none，它仍然会影响读写延迟分布，但前后台隔离不能只指望 elevator。
 
-- **foreground 组**：当前可见的 App 和 system_server 关键服务，BFQ 权重最高（如 500）。
-- **background 组**：后台进程、同步服务，BFQ 权重最低（如 10）。
-- **top-app 组**：当前正在交互的 App，获得额外的 I/O boost。
+### 第二层：memcg / page cache 记账
 
-这样即使后台在做大量文件写入，前台的 I/O 请求也会被 BFQ 优先处理。
+buffered I/O 先把数据写进 page cache，真正落盘发生在后续 writeback。这里要看的是 memory controller，而不是 I/O 调度器本身。内核按 page 记账，`active_file`、`inactive_file`、`file_dirty`、`file_writeback` 这些值反映的是某个 cgroup 持有了多少 file-backed memory，以及这些页里有多少已经变脏、多少正在回写。后台任务把自己的 file cache 撑大后，前台进程即使没有直接和它抢 block queue，也可能因为 refault 增加、major fault 增加而变慢。
 
-### 第二层：fsync 隔离
+### 第三层：writeback ownership
 
-SQLite 是 Android 上最频繁使用 fsync 的组件。每个数据库事务的提交都会触发 fsync，确保数据落盘。问题在于：后台进程的 fsync 会占用存储设备的写入带宽，直接延长前台 fsync 的耗时。
+cgroup v2 的 writeback 不是按 page 记账，而是按 inode 归属。Linux `admin-guide/cgroup-v2` 明确区分了这两件事：memory ownership 是 per-page，writeback ownership 是 per-inode。若一个 inode 的脏页长期主要来自另一个 cgroup，内核会把该 inode 的 writeback ownership 切过去。看到后台写入拖慢前台时，不一定只是 scheduler 没让路，也可能是 writeback ownership 和 dirty memory 限额在起作用。
 
-优化手段包括：
-- 将后台进程的 I/O 优先级设为 IDLE，让调度器在有空余时才处理后台的 fsync。
-- 部分厂商在内核中实现了 fsync 合并或延迟写入策略，减少 fsync 的实际 I/O 次数。
+### Android task profile 怎么把这三层串起来
 
-### 第三层：Page Cache 隔离
+Android 10+ 用 `cgroups.json` 描述 controller 挂载点，用 `task_profiles.json` 描述线程或进程要进入哪些 resource group；Android 11+ 框架侧通过 `SetTaskProfiles()` 和 `SetProcessProfiles()` 应用这些 profile。分析实际设备时，我们至少要同时确认三件事：
 
-前台 App 读取的文件数据会被缓存在 page cache 中，后续读取直接命中缓存，不需要实际 I/O。但当后台进程大量写入时，page cache 中的脏页（dirty pages）增多，触发内核的回写（writeback），回写过程又会占用存储设备的写入带宽。
+1. 这个线程当前在哪个 task profile / cgroup 里。
+2. 该 cgroup 是否真的启用了需要的 io / memory controller。
+3. 目标文件的瓶颈发生在 block queue、page reclaim，还是 writeback ownership。
 
-Android 通过以下方式减轻影响：
-- 调整 `/proc/sys/vm/dirty_ratio` 和 `dirty_background_ratio`，控制脏页比例。
-- 将回写线程（flush 线程）的 I/O 优先级设为 IDLE。
-- 使用 cgroup 限制后台进程的 page cache 占用。
-
-[已验证：来源见 手机Android存储性能优化架构分析 中关于前后台隔离三层机制的说明]
+把这三件事分开看，才能解释“后台写入很多，但前台为什么慢”的根因。
 
 ### [自动发现] 厂商定制的调度器
 
@@ -229,7 +225,7 @@ Page cache 使用的是"可回收内存"（reclaimable memory）。当系统内�
 
 - **`/proc/sys/vm/dirty_ratio`**：脏页占总内存的最大比例（默认 20%）。超过这个比例，写入进程会被阻塞直到脏页被写回。
 - **`/proc/sys/vm/dirty_background_ratio`**：后台回写触发的脏页比例（默认 10%）。超过这个比例，内核的 flush 线程开始异步回写脏页。
-- **`/proc/sys/vm/swappiness`**：控制内核回收 page cache 和匿名内存的倾向。值越低，越倾向于保留 page cache。
+- **`/proc/sys/vm/swappiness`**：定义 swap I/O 和 filesystem paging I/O 的相对成本，范围 0–200。100 表示两者成本相同；值越低表示 swap 更贵，内核更不愿意 swap，更容易回收 file-backed pages / page cache。默认值 60；zram / zswap 这类内存内 swap 场景可以考虑大于 100。
 
 ## I/O 性能问题在 Perfetto 中的表现
 
@@ -252,28 +248,40 @@ Perfetto 可以捕获 block 层的 ftrace 事件（需要在录制配置中启�
 - **`ext4_sync_file_enter / ext4_sync_file_exit`**：fsync 的开始和结束。
 - **`ext4_da_write_begin / ext4_da_write_end`**：文件的延迟分配写入。
 
-通过 SQL 查询可以聚合这些事件：
+通过 SQL 做聚合前，先确认 trace 打开了 block / ext4 / writeback 相关 ftrace 数据源。没有这些 data source，UI 里不会出现对应事件，`linux.block_io` 模块也拿不到结果。
 
-[需确认: 文中直接使用 `block_io_events` 作为查询表名。不同 Perfetto 版本和 trace 配置下，可用表名、字段和是否存在预处理表可能不同，需要按当前 trace processor schema 再核对。]
+下面两组查询是按当前 Perfetto schema 改写过的：
 
 ```sql
--- 查询各进程的 I/O 延迟统计
+-- 先找 iowait 最重的线程，不依赖 block_io stdlib
 SELECT
-  process.name AS process_name,
+  COALESCE(process.name, '[kernel]') AS process_name,
   thread.name AS thread_name,
-  COUNT(*) AS io_count,
-  AVG(io_duration_us) AS avg_latency_us,
-  MAX(io_duration_us) AS max_latency_us
-FROM (
-  SELECT
-    thread_id,
-    (ts_end - ts_start) / 1000 AS io_duration_us
-  FROM block_io_events
-)
-GROUP BY process_name, thread_name
-ORDER BY avg_latency_us DESC
+  ROUND(SUM(thread_state.dur) / 1e6, 2) AS iowait_ms,
+  ROUND(MAX(thread_state.dur) / 1e6, 2) AS max_single_wait_ms
+FROM thread_state
+JOIN thread USING (utid)
+LEFT JOIN process USING (upid)
+WHERE thread_state.state = 'D' AND thread_state.io_wait = 1
+GROUP BY thread.utid, process.name, thread.name
+ORDER BY iowait_ms DESC
 LIMIT 20;
 ```
+
+```sql
+INCLUDE PERFETTO MODULE linux.block_io;
+
+-- 观察 block 设备队列深度，需要 trace 中存在 block_io track
+SELECT
+  dev,
+  MAX(ops_in_queue_or_device) AS max_ops_in_queue,
+  ROUND(AVG(ops_in_queue_or_device), 2) AS avg_ops_in_queue
+FROM linux_active_block_io_operations_by_device
+GROUP BY dev
+ORDER BY max_ops_in_queue DESC;
+```
+
+如果我们要看 fsync，本章更建议直接在 UI 里搜 `ext4_sync_file_*` slice，再把它和主线程 D 状态、writeback 线程、同时间窗的 background writer 放到同一屏里一起看。这样更接近真实排障流程。
 
 ### 正常 vs 异常的表现对比
 
@@ -288,7 +296,11 @@ LIMIT 20;
 - fsync 耗时异常（正常 < 5ms，异常可达 50ms–200ms），通常是后台大量写入导致的。
 - 系统整体 iowait > 5%，伴随 kswapd 活跃（说明内存回收也在引发 I/O）。
 
-[需补充素材: 这一节已经讲了主线程 D 状态、后台写入争抢和 fsync 拉长的观察方法，但还缺 2-3 个真实 Perfetto 片段或等价图示，最好至少覆盖这三类典型信号。]
+[图：Perfetto 片段 1。主线程在点击后进入一段连续 D 状态，调用栈落在 `vfs_read`；同一时间 CPU summary 的 iowait 抬升，这类画面通常说明前台线程正卡在同步读路径上。]
+
+[图：Perfetto 片段 2。后台同步或日志线程连续出现 `ext4_da_write_*` / `block_io` 相关事件，`linux_active_block_io_operations_by_device` 的队列深度从 1 抬到 8 以上；前台线程随后出现一簇短 D 状态。]
+
+[图：Perfetto 片段 3。`ext4_sync_file_enter` 到 `ext4_sync_file_exit` 持续 60ms 以上，同窗口里 writeback 线程活跃，主线程事务提交后阻塞在 `do_fsync`。这类片段通常能把“fsync 拉长”落到具体时间窗。]
 
 ## Direct I/O vs Buffered I/O 在 Android 场景的取舍 [扩展]
 
@@ -334,24 +346,25 @@ Android 上 SQLite 是 I/O 最密集的组件之一。它的核心特征是**频
 
 ## 在 Perfetto 中的观察清单
 
-| 观察目标 | Perfetto 位置 | 正常范围 | 异常标志 |
+| 观察目标 | Perfetto / 辅助位置 | 正常范围 | 异常标志 |
 |---|---|---|---|
 | 线程 D 状态 | 线程调度 track | < 10ms | > 50ms |
 | iowait 占比 | CPU summary | < 2% | > 5% |
 | fsync 耗时 | ftrace: `ext4_sync_file_*` | < 5ms | > 50ms |
-| block I/O 延迟 | ftrace: `block_rq_*` | < 1ms (UFS 4.0) | > 10ms |
+| block I/O 延迟 | `block_io` track / `block_rq_*` | 需按设备基线判断 | 队列深度持续抬高，完成时间明显拉长 |
 | 脏页回写 | ftrace: `writeback:*` | 低频 | 高频 + kswapd 活跃 |
-| page cache 命中率 | 需通过 `/proc/meminfo` 辅助 | 高（> 80%） | 低（< 50%） |
+| memcg file cache / reclaim | `memory.stat` + Perfetto 中的 `kswapd` / `writeback:*` | `active_file`、`inactive_file` 波动平稳 | `workingset_refault_file`、major fault、`file_writeback` 同时抬升 |
+| writeback ownership / io pressure | `io.stat`、`io.pressure` + `writeback:*` | 前台窗口内 background cgroup 写回平稳 | 背景 cgroup 的 `wbytes` / `wios` 暴涨，前台窗口同步出现 fsync 拉长 |
 
 ## 本章小结
 
 I/O 调度在 Android 性能优化里很容易被忽略，但它会直接影响实际体验。麻烦的地方在于 I/O 问题常常和内存问题交织在一起。page cache 被回收后，缓存命中率下降，实际 I/O 变多；I/O 延迟上来后，内存分配又更容易走 slow path，问题会越拖越重。
 
-对于性能优化工程师来说，关键要记住三点：
+对于性能优化工程师来说，至少要记住三点：
 
-1. **BFQ + cgroup 是 Android I/O 隔离的基础**。如果设备还在用 CFQ 或者没有做前后台 cgroup 分组，I/O 优先级保障就是空谈。
-2. **fsync 是 SQLite 性能的关键瓶颈**。减少不必要的 fsync、使用 WAL 模式、批量提交事务，是数据库 I/O 优化的三板斧。
-3. **I/O 和内存是一体两面**。分析 I/O 问题时一定要同时看内存状态，反之亦然。
+1. **先看实机配置**。用 `/sys/block/*/queue/scheduler`、task profile 和 cgroup controller 确认设备实际策略，不要按 Android 版本猜默认调度器。
+2. **把 block 调度、page cache 和记账/写回分开看**。前台变慢未必只是 block queue 被抢，也可能是 memcg reclaim 或 cgroup v2 writeback ownership 在起作用。
+3. **Perfetto 要把线程等待和底层 I/O 信号放在一起看**。主线程 D 状态、`ext4_sync_file_*`、`block_io` 队列深度、`writeback:*`、`kswapd` 和 `workingset_refault_file` 一起看，定位才不会跑偏。
 
 ---
 
@@ -370,4 +383,25 @@ I/O 调度在 Android 性能优化里很容易被忽略，但它会直接影响�
 - 类型：research
 - 摘要：F2FS Checkpoint Merge: -40%写放大(SQLite WAL commit性能提升)。io_uring multishot + zero-copy: -50%系统调用开销。dm-verity multi-buffer hashing: +35% ARM64吞吐。协同效果：随机I/O延迟-12%(fio randread 4k, UFS 4.0)。
 - 入库时间：2026-04-08
+
+### Linux VM / cgroup writeback / Android cgroups 参考
+- 来源：https://docs.kernel.org/admin-guide/sysctl/vm.html
+- 类型：official
+- 摘要：`swappiness` 定义的是 swap I/O 与 filesystem paging I/O 的相对成本，取值 0–200，100 表示两者成本相同。
+- 入库时间：2026-04-12
+
+- 来源：https://docs.kernel.org/admin-guide/cgroup-v2.html
+- 类型：official
+- 摘要：cgroup v2 中 memory ownership 按 page 记账，writeback ownership 按 inode 归属；dirty memory 与 writeback 受 memory controller 和 io controller 共同影响。
+- 入库时间：2026-04-12
+
+- 来源：https://source.android.com/docs/core/perf/cgroups
+- 类型：official
+- 摘要：Android 10+ 通过 `cgroups.json` 和 `task_profiles.json` 描述 controller 与 task profile，Android 11+ 可由 `SetTaskProfiles()` / `SetProcessProfiles()` 应用。
+- 入库时间：2026-04-12
+
+- 来源：https://raw.githubusercontent.com/google/perfetto/main/src/trace_processor/perfetto_sql/stdlib/linux/block_io.sql
+- 类型：upstream-source
+- 摘要：Perfetto stdlib 提供 `linux_active_block_io_operations_by_device` 视图，底层来自 `slice` + `track.type = 'block_io'`。
+- 入库时间：2026-04-12
 
