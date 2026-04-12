@@ -1506,3 +1506,35 @@
 - **问题**：`Cloud Compilation` / `Secure DEX Metadata (SDM)` 段落当前主要依赖二手新闻与大会口径，缺少可回溯的 AOSP / 官方文档锚点。对“设备端跳过 dex2oat”“SDM 与 APK 同签名”这类细节，章节写成了确定结论，但证据链不够硬。
 - **建议**：补 Android 官方文档、AOSP 代码或正式发布材料；如果暂时只能拿到媒体报道，应把关键判断改成 `[待验证]`，并明确这是 Play 分发侧能力而不是通用 sideload 行为。
 
+
+
+## [Task6 Review] 5.9 ADPF 自适应性能框架 — 2026-04-12
+- **类型**：需重写
+- **位置**：全文结构
+- **问题**：缺少 `<!-- outline-start -->` / `<!-- outline-end -->` 大纲块，Task 6 无法按锚点检查覆盖率；`ADPF 的完整工作流` 到 `扩展` 一段也缺少可回溯锚点。
+- **建议**：按 writing-guide.md 补齐大纲与锚点，再回到 Task 6 做覆盖检查。
+- **review 日志**：logs/review/2026-04-12-1013-review.md
+
+- **类型**：需确认
+- **位置**：HintSession 示例代码（L61-L72）
+- **问题**：`updateTargetWorkDuration()` 的注释写的是“从 60 fps 切到 120 fps”，但传入值 `16_666_000L` 对应 16.666 ms，更像 60 fps；注释和示例值不一致。
+- **建议**：由 Task 9 核对 API 用法后，统一示例注释和数值。
+- **review 日志**：logs/review/2026-04-12-1013-review.md
+
+- **类型**：需确认
+- **位置**：Game State 段落与版本演进表（L203-L218, L263）
+- **问题**：正文使用 `GameStateManager` 与 `android/app/GameStateManager` 引用，需核对实际类名、调用入口和 Android 13 的 API surface。
+- **建议**：交由 Task 9 核对官方 API；如果实际入口是 `GameManager#setGameState(GameState)`，同步改正文、代码示例与版本表。
+- **review 日志**：logs/review/2026-04-12-1013-review.md
+
+- **类型**：需确认
+- **位置**：Android 16 的 Headroom API（L103-L111, L266）
+- **问题**：`SystemHealthManager.getCpuHeadroom()` / `getGpuHeadroom()`、`AThermal_HeadroomCallback` 的引入版本和宿主类需要核对；版本演进表里的 API 边界也要和全书约定保持一致。
+- **建议**：由 Task 9 统一核对类名、API level 和 Android 16/17 的版本写法。
+- **review 日志**：logs/review/2026-04-12-1013-review.md
+
+- **类型**：需补充素材
+- **位置**：Perfetto 分析与结尾扩展（L231-L314）
+- **问题**：`power.hint_session` / `power.thermal` 的观察点没有真实 Trace 截图或等价图示支撑，末尾两节也更像资料汇总，收尾偏空。
+- **建议**：补 1-2 份真实 Trace 截图，至少覆盖 Hint Session 与 CPU frequency 的对应关系；结尾最好补一个真实接入或设备差异场景。
+- **review 日志**：logs/review/2026-04-12-1013-review.md

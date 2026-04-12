@@ -25,11 +25,14 @@ sources:
   - type: aosp
     path: "frameworks/base/core/java/android/os/PerformanceHintManager.java"
   - type: blog
-    path: "https://android-developers.googleblog.com/ ADPF enhancements Android 15/16"
-pipeline_stage: task6_pending
-task6_state: pending
+    path: "https://android-developers.googleblog.com/"
+pipeline_stage: task2b_pending
+task6_state: reviewed
 task9_state: pending
-task2b_state: idle
+task2b_state: pending
+reviewed_by: "openclaw-task6"
+reviewed_date: "2026-04-12"
+task6_result: needs-rework
 ---
 
 # 5.9 ADPF 自适应性能框架
@@ -38,9 +41,9 @@ task2b_state: idle
 
 移动设备的性能困境可以用一个矛盾来概括：CPU 和 GPU 的性能上限是固定的（由 SoC 和散热能力决定），但 App 的负载是波动的——游戏进入团战时负载飙升，浏览界面时负载回落。传统的 CPU 调频策略基于历史负载采样来预测未来需求，存在一个无法回避的滞后：负载上升时，系统需要若干个采样周期才能确认趋势并提频，而这几个周期内 App 可能已经掉帧了。
 
-这个滞后在高帧率场景中尤为致命。以 120fps 为例，一帧的预算只有 8.33ms。如果系统在 2-3 个采样周期（可能 10-30ms）后才完成提频，App 已经连续掉了几帧。反过来，负载下降后系统缓慢降频又浪费了功耗。
+这个滞后在高帧率场景中尤为致命。以 120 fps 为例，一帧的预算只有 8.33 ms。如果系统在 2-3 个采样周期（可能 10-30 ms）后才完成提频，App 已经连续掉了几帧。反过来，负载下降后系统缓慢降频又浪费了功耗。
 
-ADPF（Android Dynamic Performance Framework）的核心思路是消除这个滞后——让 App 直接告诉系统"我接下来需要多少性能"，而不是等系统自己猜。系统拿到这个信息后，可以更精准、更快速地调整 CPU/GPU 频率和核心分配。这不是一个单一 API，而是 Performance Hint API、Thermal API、Game Mode API 三个互补组件构成的框架，覆盖了"预告需求→动态调频→热管理→模式适配"的完整性能调控链路。
+ADPF（Android Dynamic Performance Framework）的核心思路是消除这个滞后——让 App 直接告诉系统"我接下来需要多少性能"，而不是等系统自己猜。系统拿到这个信息后，可以更精准、更快速地调整 CPU/GPU 频率和核心分配。这不是一个单一 API，而是 Performance Hint API、Thermal API、Game Mode API 三个互补组件构成的框架，覆盖了"预告需求→动态调频→热管理→模式适配"的完整性能调控流程。
 
 [已验证: 官方文档, developer.android.com/reference/android/os/PerformanceHintManager]
 
@@ -58,7 +61,7 @@ Performance Hint API 的核心抽象是 HintSession。App 创建一个 HintSessi
 PerformanceHintManager phm = getSystemService(PerformanceHintManager.class);
 
 // 创建 HintSession：指定工作线程和目标帧时间
-long targetDurationNanos = 8_333_000L; // 120fps = 8.33ms
+long targetDurationNanos = 8_333_000L; // 120 fps = 8.33 ms
 HintSession session = phm.createHintSession(
     Collections.singletonList(mainThreadId),
     targetDurationNanos
@@ -68,15 +71,15 @@ HintSession session = phm.createHintSession(
 long actualDurationNanos = frameEndTime - frameStartTime;
 session.reportActualWorkDuration(actualDurationNanos);
 
-// 如果目标帧率变化（如从60fps切到120fps），更新目标
+// 如果目标帧率变化（如从60 fps切到120 fps），更新目标
 session.updateTargetWorkDuration(16_666_000L);
 ```
 
 这段代码展示了 HintSession 的基本用法，有两个细节值得注意。
 
-第一，`createHintSession()` 接受的是一个线程 ID 列表。这意味着 App 可以同时把主线程和 RenderThread 都纳入同一个 session，系统会为这组线程统一调整 CPU 频率。对于游戏场景，还可以把游戏逻辑线程和渲染线程一起绑定，确保整个渲染管线获得一致的 CPU 资源。
+第一，`createHintSession()` 接受的是一个线程 ID 列表。App 可以同时把主线程和 RenderThread 都纳入同一个 session，系统会为这组线程统一调整 CPU 频率。对于游戏场景，还可以把游戏逻辑线程和渲染线程一起绑定，确保整个渲染管线获得一致的 CPU 资源。
 
-第二，`updateTargetWorkDuration()` 不是一次性设定就完事的。当 App 的帧率目标发生变化时（比如从省电模式的 30fps 切到性能模式的 120fps），需要调用这个方法更新目标。系统会根据新目标重新计算 CPU 频率。
+第二，`updateTargetWorkDuration()` 不是一次性设定就完事的。当 App 的帧率目标发生变化时（比如从省电模式的 30 fps 切到性能模式的 120 fps），需要调用这个方法更新目标。系统会根据新目标重新计算 CPU 频率。
 
 [已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/os/PerformanceHintManager.java]
 
@@ -94,7 +97,7 @@ Native 层的实现位于 `frameworks/base/native/android/performance_hint.cpp`�
 
 Android 15 为 Performance Hint API 引入了两个重要增强。
 
-第一个是 GPU 工作时长上报。之前的 ADPF 只能上报 CPU 工作时长，系统据此只能调整 CPU 频率。Android 15 允许 App 在同一个 HintSession 中同时上报 CPU 和 GPU 的工作时长，系统可以据此同时调整 CPU 和 GPU 的频率。这对 GPU bound 的游戏场景尤为重要——如果系统只根据 CPU 耗时来调频，而瓶颈在 GPU 上，ADPF 的调频就完全打偏了。
+第一个是 GPU 工作时长上报。之前的 ADPF 只能上报 CPU 工作时长，系统据此只能调整 CPU 频率。Android 15 允许 App 在同一个 HintSession 中同时上报 CPU 和 GPU 的工作时长，系统可以据此同时调整 CPU 和 GPU 的频率。这对 GPU-bound 的游戏场景尤为重要——如果系统只根据 CPU 耗时来调频，而瓶颈在 GPU 上，ADPF 的调频就完全打偏了。
 
 第二个是能效模式（power-efficiency mode）。HintSession 可以设置能效优先模式，让系统将关联线程调度到效率核（E-core）上，优先功耗而非性能。这个模式适合后台长时间运行的任务，比如游戏加载场景中的资源解压——不需要极致性能，但希望功耗尽可能低。
 
@@ -114,7 +117,7 @@ Headroom 的计算基于设备的实时热状态和功耗状态。App 可以设�
 
 ### 热状态的层级模型
 
-ThermalManager API 不返回具体的温度值（"芯片 72°C"），而是返回一个抽象的热状态等级。这个设计是有意为之的——不同 SoC 的温度阈值完全不同，直接暴露温度值对 App 开发者没有意义。App 关心的不是"多少度"，而是"在这个状态下我应该做什么"。
+ThermalManager API 不返回具体的温度值（"芯片 72 °C"），而是返回一个抽象的热状态等级。这个设计是有意为之的——不同 SoC 的温度阈值完全不同，直接暴露温度值对 App 开发者没有意义。App 关心的不是"多少度"，而是"在这个状态下我应该做什么"。
 
 热状态从低到高分为七个等级：
 
@@ -130,7 +133,7 @@ ThermalManager API 不返回具体的温度值（"芯片 72°C"），而是返�
 
 [图：热状态等级变化示意图——时间线上展示状态从 NONE 到 SEVERE 再回到 NONE 的过程，标注每个阶段对应的系统行为和 App 建议行为]
 
-App 通过 `ThermalManager.addThermalStatusListener()` 注册监听器，在状态变化时收到回调。关键是 App 不应该等到 SEVERE 才开始降级——到那时系统已经强制降频，帧率已经崩了。正确的做法是在 LIGHT 就开始做轻微调整（比如降低阴影分辨率），在 MODERATE 做更明显的调整（比如降低帧率目标），这样用户感知到的变化是平滑的，而不是突然从 60fps 掉到 30fps。
+App 通过 `ThermalManager.addThermalStatusListener()` 注册监听器，在状态变化时收到回调。App 不应该等到 SEVERE 才开始降级——到那时系统已经强制降频，帧率已经崩了。正确的做法是在 LIGHT 就开始做轻微调整（比如降低阴影分辨率），在 MODERATE 做更明显的调整（比如降低帧率目标），这样用户感知到的变化是平滑的，而不是突然从 60 fps 掉到 30 fps。
 
 [已验证: 官方文档, developer.android.com/reference/android/os/ThermalManager]
 
@@ -232,7 +235,7 @@ stateManager.setGameState(GameState.create(
 
 ### ADPF 相关 Track
 
-在 Perfetto trace 中，ADPF 相关信息分散在几个 Track 中：
+在 Perfetto Trace 中，ADPF 相关信息分散在几个 Track 中：
 
 **Hint Session Track**（`power.hint_session`）：每个 HintSession 有一个独立的 Track，显示 target duration 和 actual duration 的对比。正常情况下两条线贴近，说明 ADPF 调频精准；如果 actual 持续高于 target，说明系统资源跟不上 App 需求（可能是 SoC 性能不足或热降频限制了提频）。
 
@@ -274,7 +277,7 @@ ADPF 不能突破硬件的物理上限。如果 SoC 在最高频率下仍然无�
 
 ### 误区二：HintSession 创建后就能自动优化
 
-创建 HintSession 只是第一步。如果 App 从来不调用 `reportActualWorkDuration()`，系统拿不到反馈数据，就等于这个 session 是空的。同样，如果 target duration 设置得过于宽松（比如 60fps 的 App 设了 100ms 的 target），系统会认为当前性能绰绰有余而降频，反而导致性能下降。target duration 应该等于帧预算时间（1000ms / 目标帧率）。
+创建 HintSession 只是第一步。如果 App 从来不调用 `reportActualWorkDuration()`，系统拿不到反馈数据，就等于这个 session 是空的。同样，如果 target duration 设置得过于宽松（比如 60 fps 的 App 设了 100ms 的 target），系统会认为当前性能绰绰有余而降频，反而导致性能下降。target duration 应该等于帧预算时间（1000 ms / 目标帧率）。
 
 ### 误区三：热降频只需要系统处理
 
@@ -287,7 +290,7 @@ ADPF 不能突破硬件的物理上限。如果 SoC 在最高频率下仍然无�
 ## 与其他章节的关系
 
 - **§5.5 Thermal 管控**：本章侧重 App 侧的 Thermal API 使用，§5.5 侧重系统侧的热管理机制（HAL、内核温控策略）
-- **§5.6 Android 功耗管理**：ADPF 的调频本质上是功耗管理的一部分，与 §5.6 的 DVFS、EAS 机制有底层关联
+- **§5.6 Android 功耗管理**：从调频机制看，ADPF 属于功耗管理的一部分，与 §5.6 的 DVFS、EAS 机制有底层关联
 - **§7.5 优化策略**：ADPF 是帧率优化的手段之一，§7.5 中的"动态画质调节"策略通常需要结合 ADPF 使用
 - **§14.7 Perfetto 高级分析**：本章涉及的 Perfetto Track 分析是 §13/14 工具使用的基础应用
 
@@ -299,7 +302,7 @@ ADPF 不能突破硬件的物理上限。如果 SoC 在最高频率下仍然无�
 
 **自动 ADPF vs 手动 ADPF** 的取舍是一个实际决策点。自动模式由引擎统一管理 HintSession 的创建、target duration 的设定、actual duration 的上报——开发者只需要启用开关。手动模式允许开发者精细控制：哪些线程纳入 session、target duration 根据场景动态调整、上报时机精确到每帧。
 
-对于大多数游戏，自动模式足够。但如果游戏有非常特殊的帧率需求（比如 VR 场景要求精确的 72fps、或者有可变刷新率的渲染管线），手动模式能提供更精确的控制。
+对于大多数游戏，自动模式足够。但如果游戏有非常特殊的帧率需求（比如 VR 场景要求精确的 72 fps、或者有可变刷新率的渲染管线），手动模式能提供更精确的控制。
 
 [待补充：Unity ADPF 插件的具体配置步骤]
 
@@ -309,6 +312,6 @@ ADPF 不能突破硬件的物理上限。如果 SoC 在最高频率下仍然无�
 
 高通平台通过 PowerHint HAL 将 ADPF 的 Hint 信号映射到 PerfLock 请求，触发 CPU/GPU 频率调整和核心分配。联发科平台通过 Perfservice 接收 ADPF Hint，结合自己的调度策略做频率决策。Google Tensor 平台有自己的 DVFS 调度策略，与 ADPF 的集成方式也可能不同。
 
-这意味着同一款游戏在不同设备上的 ADPF 响应速度和效果可能不同。在做竞品分析（§15.4）或跨设备性能对比时，需要把 OEM 的 ADPF 定制策略纳入考量。
+同一款游戏在不同设备上的 ADPF 响应速度和效果可能不同。在做竞品分析（§15.4）或跨设备性能对比时，需要把 OEM 的 ADPF 定制策略纳入考量。
 
 [待验证：不同 OEM 的 ADPF HAL 实现差异的具体数据]
