@@ -6080,5 +6080,56 @@
     "added_at": "2026-04-13T01:05:00+08:00",
     "status": "pending",
     "original_review_log": "logs/review/2026-04-13-01-review.md"
+  },
+  {
+    "section": "4.4",
+    "section_title": "Low Memory Killer",
+    "priority": 95,
+    "reason": "[Deep Tech Review] P0 原理错误：PSI 路径被写成 legacy `ro.lmk.low/critical`；P0 观测错误：App 侧 trim 回调与 Perfetto 抓取链不准确；P0 策略错误：low-RAM 设备“单轮多杀”与源码相反；P1 缺少 reaper/process_mrelease 与版本边界",
+    "material_paths": [
+      "intake/research-gaps.md",
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "原理错误",
+        "location": "行 219-225，PSI 触发后的杀进程流程",
+        "detail": "正文把 PSI 模式下的 kill 门槛写成 `ro.lmk.low` / `ro.lmk.critical` 两档切换。AOSP android-16.0.0_r1 的新策略先看 watermark、file cache、thrashing，再用 `ro.lmk.lowmem_min_oom_score` 作为常规下限，只有 `critical_stall` 才会把下限降到 0。当前写法把 legacy vmpressure 配置和现代 PSI 路径混成了一条因果链。",
+        "suggestion": "拆开“legacy vmpressure/minfree 模式”和“Android 10+ PSI 新策略”两条路径，现代路径补 `lowmem_min_oom_score`、critical stall、thrashing/file cache 判据。"
+      },
+      {
+        "type": "API错误",
+        "location": "行 271-282，App 侧内存信号观测",
+        "detail": "正文写成“注册 `ActivityManager.OnTrimMemory` 回调”，这个回调类型并不存在。实际入口是 `ComponentCallbacks2.onTrimMemory(int)` / `Application#onTrimMemory()`。同时把 `TRIM_MEMORY_UI_HIDDEN` 写成“LMK 即将行动的信号”也不对，该级别只是 UI 不再可见；而 `TRIM_MEMORY_COMPLETE`、`TRIM_MEMORY_MODERATE`、`TRIM_MEMORY_RUNNING_LOW/CRITICAL` 在 API 34 起已不再通知 App。",
+        "suggestion": "改成 `ComponentCallbacks2` 语义，并把“UI 不可见”与“低内存回调”拆开写，同时补 Android 14+/API 34 的通知变化。"
+      },
+      {
+        "type": "工具链错误",
+        "location": "行 267-269、313-335，Perfetto 抓取配置与观测",
+        "detail": "示例只配置了 `lowmemorykiller/lowmemory_kill` 这一类 legacy kernel tracepoint，却把结果描述成现代 `lmkd` 通用观测路径。对 Android 9+ userspace `lmkd` 来说，AOSP android-16.0.0_r1 的 kill trace 走 `LMKD_TRACE_KILLS` ATrace 标记，旧 tracepoint 只覆盖 in-kernel lowmemorykiller。当前步骤会让读者在新设备上抓不到主路径。",
+        "suggestion": "把 Perfetto 配置分成两套：legacy kernel LMK 用 `lowmemorykiller/lowmemory_kill`，userspace `lmkd` 用 `atrace_apps: \"lmkd\"` / `mem.lmk` 归一化事件，并说明 PID/kill_reason 出现在 slice 名或解析结果里。"
+      },
+      {
+        "type": "源码错误",
+        "location": "行 231-237，低内存设备（Android Go）策略",
+        "detail": "正文写“低内存设备一次可能杀掉多个”。AOSP android-16.0.0_r1 `lmkd.cpp` 在 low-RAM 分支明确写着 `For Go devices kill only one task`，并且仍然只走一次 `find_and_kill_process()`。当前表述与源码相反。",
+        "suggestion": "改成“low-RAM 设备会更早、更激进，但单轮仍 kill one task；差异主要在阈值、swap、thrashing 参数”。"
+      },
+      {
+        "type": "版本差异",
+        "location": "行 375-384，Android 16 的变化",
+        "detail": "正文把 `sys.lmk.minfree_levels` 和 `sys.lmk.reportkills` 写成 Android 16 的“标准化变化”，但这些属性在 android-12.0.0_r1、android-13.0.0_r1、android-14.0.0_r1 的 `lmkd.cpp` 中已经存在。当前“Android 16 新变化”结论站不住。",
+        "suggestion": "删除这两个“Android 16 新增变化”，改成真正有版本差异的内容，或明确这是 Android 12+ 早已存在的能力。"
+      },
+      {
+        "type": "知识盲区",
+        "location": "正文整体，缺少 modern kill 执行路径",
+        "detail": "章节把注意力放在“谁该被杀”，但没有补现代 `lmkd` 真正执行 kill 后怎么回收内存。android-16.0.0_r1 的 `reaper.cpp` 已经使用 `pidfd_send_signal` + `process_mrelease()`，这条路径直接关系到 kill 后 reclaim 延迟、why userspace LMK 仍能快速回收，以及 Perfetto 中该看哪段 CPU/等待时间。",
+        "suggestion": "补一小节说明 `kill_one_process()` → `reaper.kill()` → `pidfd_send_signal/process_mrelease` 的执行链，并给出对性能定位的意义。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-13T02:20:00+08:00",
+    "status": "pending"
   }
 ]
