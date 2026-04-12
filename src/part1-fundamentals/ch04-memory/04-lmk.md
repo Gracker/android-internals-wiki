@@ -17,6 +17,8 @@ sources:
   - type: aosp
     path: "system/memory/lmkd/"
   - type: aosp
+    path: "system/memory/lmkd/reaper.cpp"
+  - type: aosp
     path: "frameworks/base/services/core/java/com/android/server/am/ProcessList.java"
   - type: official
     path: "https://source.android.com/docs/core/perf/lmkd"
@@ -26,12 +28,13 @@ sources:
     path: "https://android-developers.googleblog.com/2020/07/lmkd-userspace-low-memory-killer-daemon.html"
 tags: ['lmk', 'lmkd', 'oom_adj', 'oom_score_adj', 'PSI', 'memory-pressure', 'process-kill']
 related_chapters: ["4.1", "4.2", "4.3", "1.3", "10.4"]
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
 task9_result: needs-rework
-task9_state: reviewed
-task2b_state: pending
+task9_state: pending
+task2b_state: fixed
+task2b_result: fixed
 ---
 
 # Low Memory Killer
@@ -219,23 +222,33 @@ PSI 相比旧版 `vmpressure` 信号有本质区别。`vmpressure` 基于内存�
 
 ### 杀进程的执行流程
 
-当 PSI 信号触发后，`lmkd` 会先判断当前的压力级别，是"中等"还是"严重"。压力级别直接决定了杀进程的门槛：中等压力下，使用 `ro.lmk.low`（默认 1001，即不杀任何进程）配置的最低 oom_adj；严重压力下，使用 `ro.lmk.critical`（默认 0），前台 App 也可能进入候选范围。
+`lmkd` 的执行流程要分成两条路径看。
 
-确定了门槛之后，`lmkd` 从 `/proc` 读取所有进程的 `oom_score_adj`，按值从大到小排序，然后在满足阈值要求的进程中，选择 `oom_score_adj` 最大的（即优先级最低的）进程，调用 `kill(pid, SIGKILL)` 将其终止。
+**legacy vmpressure / minfree 路径。** 如果设备关闭了 PSI，或者显式设置 `ro.lmk.use_minfree_levels=true`，`lmkd` 会按 `ro.lmk.low`、`ro.lmk.medium`、`ro.lmk.critical` 和 minfree 档位工作。这条路径和旧版内核 LMK 接近，内存水位跌破阈值后，再按 `oom_score_adj` 选择候选进程。
 
-杀死一个进程后，`lmkd` 不会立刻继续——它会等待一小段时间，观察 PSI 信号是否缓解。如果压力依然存在，才会选择下一个优先级最低的进程继续杀。这种"杀一个、等一等、看效果"的策略，避免了过度杀进程造成的性能抖动。
+**Android 10+ 的 PSI 路径。** PSI 事件只是入口，不直接等价于“切到 `ro.lmk.critical`”。AOSP `lmkd.cpp` 在收到 stall 信号后，还会继续看 watermark、file-backed page cache、workingset refault thrashing、swap 和可回收页状态。常规低内存场景下，候选门槛由 `ro.lmk.lowmem_min_oom_score` 控制，默认值是 `PREVIOUS_APP_ADJ + 1`，也就是从 cached app 开始。只有进入 `critical stall`，或者 thrashing / file cache 状态已经说明系统快失去前台响应能力时，门槛才会继续下探，最坏可以降到 `oom_score_adj = 0`。
 
-[已验证: 官方文档, source.android.com/docs/core/perf/lmkd]
+门槛确定后，`lmkd` 仍然按 `oom_score_adj` 从高到低挑候选，优先回收 cached、service B、previous 这类进程。现代路径和旧路径的差别，不在“杀谁”，而在“什么条件下允许杀到哪一层”。
+
+### userspace lmkd 的 kill 与回收流程
+
+选定目标以后，Android 16 的 userspace `lmkd` 不只是调一次 `kill(pid, SIGKILL)`。AOSP 里实际走的是 `kill_one_process()` → `reaper.kill()`。`reaper` 线程先用 `pidfd_send_signal()` 发送 `SIGKILL`，再调用 `process_mrelease()` 促使内核尽快回收目标进程的匿名页和页表。
+
+这段执行流程和性能分析直接相关。我们在 trace 里看到“进程已经收到 kill 信号”与“内存真正回到系统可用池”之间，可能还隔着一段 reclaim 延迟。判断 LMK 是否正在拖慢系统时，不能只盯着 kill 事件，也要看 kill 之后的内存回收速度。
+
+[已验证: AOSP android-16.0.0_r1, system/memory/lmkd/lmkd.cpp + reaper.cpp]
 
 ### 低内存设备（Android Go）的特殊策略
 
-对于配置了 `ro.config.low_ram=true` 的低内存设备（通常 RAM <= 2GB），`lmkd` 会使用更激进的策略：
+对于配置了 `ro.config.low_ram=true` 的低内存设备（通常 RAM <= 2GB），`lmkd` 会把门槛设得更激进：
 
-- 更低的 PSI 阈值，更早开始杀进程
-- 同时考虑 Swap 使用率（如果启用了 ZRAM）
-- 杀进程时一次可能杀掉多个，而不是一次一个
+- 更低的 PSI / thrashing 阈值，更早开始回收后台进程
+- 更依赖 swap 使用率、page cache 和 refault 情况来判断压力
+- 单轮仍然只 kill one task，不会在一次决策里连续杀多个进程
 
-[已验证: AOSP system/memory/lmkd/lmkd.cpp — use_low_mem_swap preset logic]
+AOSP android-16.0.0_r1 的 low-RAM 分支在 `do_kill` 处直接写了 `For Go devices kill only one task`。低内存设备和普通设备的差别，主要在阈值和压力判断，不在单轮 kill 的数量。
+
+[已验证: AOSP android-16.0.0_r1, system/memory/lmkd/lmkd.cpp]
 
 ## LMK 在性能问题中的角色
 
@@ -265,30 +278,37 @@ adb logcat | grep "lmkd"
 adb shell dumpsys meminfo --checkin
 ```
 
-更精确的分析需要 Perfetto。抓取 trace 时确保包含 `meminfo` 和 `lmkd` 相关的 ftrace 事件，然后在 Perfetto UI 中找到 `lmkd` track——每次杀进程都会显示为一条记录，鼠标悬停可以看到被杀进程的详细信息。
+更精确的分析要先分实现路径。旧版 in-kernel LMK 可以抓 `lowmemorykiller/lowmemory_kill`；Android 9+ 的 userspace `lmkd` 更适合抓 `atrace_apps: "lmkd"` 配合 `linux.sys_stats`。如果设备没有打开 `LMKD_TRACE_KILLS`，我们再回退到 logcat、statsd 和 `dumpsys meminfo` 联合判断。
 
 [图：Perfetto 中 lmkd track 的示例，标注 kill 事件、被杀进程名、oom_score_adj 值]
 
-在 App 内部，也能看到 LMK 动手前的信号。注册 `ActivityManager.OnTrimMemory` 回调后，当系统回调 `TRIM_MEMORY_UI_HIDDEN` 或更低级别时，说明系统正在要求 App 释放内存——这通常是 LMK 即将行动的信号。
+在 App 侧，我们能接到的入口是 `ComponentCallbacks2.onTrimMemory(int)`，常见实现位置是 `Application#onTrimMemory()` 或自定义 `ComponentCallbacks2`。
 
 ```java
-// ComponentCallbacks2 的 onTrimMemory 回调级别
-TRIM_MEMORY_UI_HIDDEN       = 20  // UI 不可见，可以释放 UI 资源
-TRIM_MEMORY_RUNNING_LOW     = 10  // 内存开始紧张
-TRIM_MEMORY_RUNNING_CRITICAL = 15 // 内存严重紧张
-TRIM_MEMORY_MODERATE        = 60  // 进程在 LRU 列表中间，可能被杀
-TRIM_MEMORY_COMPLETE        = 80  // 进程即将被杀，释放一切可以释放的
+import android.app.Application;
+import android.content.ComponentCallbacks2;
+
+public final class App extends Application {
+    @Override
+    public void onTrimMemory(int level) {
+        if (level == ComponentCallbacks2.TRIM_MEMORY_UI_HIDDEN) {
+            // 释放 UI 相关缓存
+        }
+    }
+}
 ```
 
-这些回调级别的数值并不是 oom_score_adj——它们是独立的一套语义。`TRIM_MEMORY_COMPLETE`（80）出现时，进程大概率已经被列入 LMK 的杀进程候选名单，此时应该释放所有可重建的资源（Bitmap 缓存、数据库连接等），尽量降低自身的内存占用以"自救"。
+这里要把两类信号分开看。`TRIM_MEMORY_UI_HIDDEN` 只表示界面已经不可见，适合释放 Bitmap、Adapter、Surface 等 UI 资源。它不等价于“LMK 马上要杀进程”。
 
-[已验证: 官方文档, developer.android.com/reference/android/content/ComponentCallbacks2]
+历史上 `TRIM_MEMORY_RUNNING_LOW`、`TRIM_MEMORY_RUNNING_CRITICAL`、`TRIM_MEMORY_MODERATE`、`TRIM_MEMORY_COMPLETE` 代表更强的内存压力。但从 Android 14 / API 34 开始，App 已经收不到这些级别。现代版本里，如果我们想确认 LMK 是否真的发生过，更可靠的证据来自 logcat、Perfetto、statsd 和进程是否被冷启动，而不是 trim callback 本身。
+
+[已验证: developer.android.com/reference/android/content/ComponentCallbacks2]
 
 ### 常见误区
 
 **误区一："我的 App 在前台被杀了，是 LMK 的锅。"**
 
-不太可能。前台 App 的 `oom_score_adj` 为 0，是最低可杀级别。`lmkd` 只有在极端的 `critical` 压力下才会杀 `oom_score_adj` 为 0 的进程，而且默认配置下 `ro.lmk.critical` 就是为保护前台 App 而设的。前台 App 被杀更可能是：
+不太可能。前台 App 的 `oom_score_adj` 为 0，是最低可杀级别。常规路径会先从 cached、service B、previous 这类进程开始回收，只有 `critical stall` 等极端条件下才可能下探到 `oom_score_adj = 0`。前台 App 被杀更常见的原因是：
 
 - App 自身 crash（看 logcat 中的 FATAL EXCEPTION）
 - 系统级 ANR（看 logcat 中的 "ANR in" 日志）
@@ -307,51 +327,47 @@ TRIM_MEMORY_COMPLETE        = 80  // 进程即将被杀，释放一切可以释�
 
 ## 扩展一：通过 Perfetto 观察 lmkd 行为
 
-在 Perfetto 中观察 LMK 行为是一个高级但非常有用的分析方法。具体操作如下：
+Perfetto 这里也要分两条路径看。
 
-**抓取配置：** 确保 Perfetto 配置包含以下数据源：
+**in-kernel LMK（旧路径）。** 如果分析的是早期 Android 或特定 legacy 内核，`lowmemorykiller/lowmemory_kill` 这个 ftrace event 仍然有用。它直接对应旧版 kernel LMK driver。
 
-```
-# 在 trace config 中添加
+**userspace `lmkd`（Android 9+ 主路径）。** 现代设备的主路径是 userspace `lmkd`。AOSP android-16 的 `lmkd.cpp` 在打开 `LMKD_TRACE_KILLS` 时会通过 ATrace 记录 kill span，所以更稳妥的抓法是把 `lmkd` 纳入 atrace app 列表，再配合 `linux.sys_stats` 观察 `MemAvailable`、`Cached`、`SwapFree` 这些系统指标。
+
+```textproto
 data_sources: {
-    config {
-        name: "linux.ftrace"
-        ftrace_events: "lowmemorykiller/lowmemory_kill"
-    }
+  config {
+    name: "linux.ftrace"
+    atrace_apps: "lmkd"
+  }
 }
 data_sources: {
-    config {
-        name: "linux.sys_stats"
-        meminfo_period_ms: 100
-    }
+  config {
+    name: "linux.sys_stats"
+    meminfo_period_ms: 100
+  }
 }
 ```
 
-[已验证: Perfetto 官方文档, perfetto.dev — ftrace 配置说明]
+如果设备构建没有打开 `LMKD_TRACE_KILLS`，trace 里可能看不到 `lmkd` 的 kill slice。这种情况下，不要误判成“系统没有触发 LMK”，而应回退到 `adb logcat | grep lmkd`、statsd 事件和 `dumpsys meminfo` 联合判断。
 
-**在 Perfetto UI 中的表现：**
+在 Perfetto UI 里，我们通常把三样东西放在一起看：
 
-当我们打开 trace 文件后，在进程列表中找到 `lmkd` 进程。它的 track 上会出现一些短暂的 CPU 活动尖峰——每次尖峰对应一次杀进程操作。
+- `lmkd` slice 或 kill 相关系统事件
+- `MemAvailable`、`Cached`、`SwapFree` 的变化曲线
+- 被杀 App 之后是否马上出现冷启动流程
 
-我们可以在 `lmkd` track 上看到具体的事件，包含被杀进程的 PID。将这个 PID 与同一 trace 中的进程对应，我们就能知道是哪个 App 被杀了。
+如果 kill 之前已经出现长期的 thrashing、`MemAvailable` 下探，kill 之后内存短暂回升，随后用户回到某个 App 又触发冷启动，这就是 LMK 正在影响体验的典型模式。
 
-同时观察 `meminfo` track（通常在 System Stats 下面），就能看到 `MemFree` 和 `MemAvailable` 的变化趋势。如果这两个值持续走低然后突然上升（因为 LMK 杀了进程释放了内存），这就是典型的 LMK 干预模式。
-
-**关联分析技巧：**
-
-- 将 LMK kill 事件与前台 App 的冷启动时间关联：如果我们看到 LMK kill 后紧接着某个 App 的 Activity.onCreate，说明用户切回了一个被杀的 App
-- 将 LMK 活动频率与系统整体内存趋势关联：如果 `MemAvailable` 长期低于某个值（通常 500MB 以下），LMK 会非常活跃
-- 对比 kill 前后的 `Cached` 内存值：如果 kill 后 Cached 值大幅下降，说明系统确实需要这些内存
-
-[待补充: Perfetto 截图 — 展示 lmkd kill 事件与 meminfo 变化的关联]
+[已验证: AOSP android-16.0.0_r1, system/memory/lmkd/lmkd.cpp]
+[待补充：Perfetto 截图，展示 `lmkd` kill、meminfo 变化和 App 冷启动的对应关系]
 
 ## 扩展二：各厂商对 lmkd 的定制化策略
 
 由于 `lmkd` 运行在用户空间，OEM 厂商可以根据自己设备的硬件配置定制杀进程策略。常见的定制包括：
 
-**调整 oom_adj 杀进程阈值：** 通过 `ro.lmk.low`、`ro.lmk.medium`、`ro.lmk.critical` 属性配置。内存更大的设备可以设置更保守的阈值（允许更多后台 App 存活），而低内存设备需要更激进的阈值。
+**调整 kill 门槛与 thrashing 阈值：** legacy 路径常见 `ro.lmk.low`、`ro.lmk.medium`、`ro.lmk.critical`，PSI 路径更常见 `ro.lmk.lowmem_min_oom_score`、`ro.lmk.thrashing_limit` 和 swap 相关属性。不同 RAM 档位会配不同门槛。
 
-**自定义 minfree 级别：** 即使在 PSI 模式下，`lmkd` 也可能回退到 minfree 模式。OEM 会根据设备 RAM 大小调整 `sys.lmk.minfree_levels`。
+**自定义 minfree 级别：** 如果设备显式启用 `ro.lmk.use_minfree_levels=true`，OEM 还会调整 `sys.lmk.minfree_levels`。
 
 **特定进程白名单：** 一些厂商会在 init.rc 中通过 `write /proc/<pid>/oom_score_adj -1000` 来保护特定的系统进程。
 
@@ -373,16 +389,13 @@ Android 15 引入了对 16KB 内存页的支持（传统为 4KB）。这不会�
 
 在 16KB 页模式下，虽然单个进程的内存开销可能略有增加，但系统整体性能的改善，尤其是冷启动速度的提升，可以缓解 LMK 频繁杀进程带来的用户体验问题。
 
-### Android 16：lmkd 配置属性的标准化
+### Android 16：沿用 userspace lmkd + reaper 回收链
 
-Android 16 对 `lmkd` 本身没有引入重大的算法变更，但系统在属性配置方面进行了标准化：
+`sys.lmk.minfree_levels` 和 `sys.lmk.reportkills` 不是 Android 16 才出现的属性。它们在 Android 12-14 的 `lmkd.cpp` 里已经存在，所以不适合拿来当 Android 16 的版本里程碑。
 
-- `sys.lmk.minfree_levels`：标准化的 minfree-to-oom_adj_score 配对属性
-- `sys.lmk.reportkills`：标识设备是否支持向客户端报告进程 kill 事件
+对 Android 16 来说，和分析更相关的点是 userspace `lmkd` 路径已经稳定：PSI / thrashing / file cache 判断负责决定是否 kill，`reaper` 线程负责 `pidfd_send_signal()` + `process_mrelease()`。我们在 Android 16 设备上排查低内存卡顿时，重点应放在 kill 触发条件、kill 后 reclaim 延迟，以及 App 被杀后的冷启动连锁反应。
 
-[已验证: AOSP android-16.0.0_r2, system/memory/lmkd/]
-
-另外，Android 16 在系统层面的内存优化（如 16KB 页的进一步推广、ART 分配器的改进）减少了 `lmkd` 需要介入的频率。当系统整体内存效率提升后，自然就不需要那么频繁地杀后台进程了。
+[已验证: AOSP android-12.0.0_r1 ~ android-16.0.0_r1, system/memory/lmkd/lmkd.cpp]
 
 ## 参考资料
 
@@ -390,11 +403,13 @@ Android 16 对 `lmkd` 本身没有引入重大的算法变更，但系统在属�
 - `system/memory/lmkd/` — lmkd 守护进程源码
 - `frameworks/base/services/core/java/com/android/server/am/ProcessList.java` — oom_adj 常量定义
 - `frameworks/base/services/core/java/com/android/server/am/OomAdjuster.java` — 优先级动态调整逻辑
-- `frameworks/base/core/java/android/app/ActivityManager.java` — OnTrimMemory 回调定义
+- `frameworks/base/core/java/android/content/ComponentCallbacks2.java` — `onTrimMemory()` 与 trim 级别定义
+- `system/memory/lmkd/reaper.cpp` — kill 后回收执行链
 
 ### 官方文档
 - [lmkd — source.android.com](https://source.android.com/docs/core/perf/lmkd)
 - [Memory Management — developer.android.com](https://developer.android.com/topic/performance/memory)
+- [ComponentCallbacks2 — developer.android.com](https://developer.android.com/reference/android/content/ComponentCallbacks2)
 - [16KB Page Size — developer.android.com](https://developer.android.com/guide/practices/page-sizes)
 
 ### 技术博客
