@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-12T23:28:00+08:00",
+  "generated_at": "2026-04-13T00:05:24+08:00",
   "state_machine_version": "v2",
   "total_sections": 207,
   "metrics": {
@@ -1120,14 +1120,15 @@
       "title": "I/O 调度与性能",
       "path": "src/part1-fundamentals/ch06-storage/03-io-scheduling.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
-      "task6_state": "reviewed",
-      "task9_state": "reviewed",
-      "task2b_state": "pending",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
+      "task9_state": "pending",
+      "task2b_state": "fixed",
       "reviewed_date": "2026-04-12",
       "reviewed_by": "openclaw-task6",
       "task6_result": "needs-rework",
-      "task9_result": "needs-rework"
+      "task9_result": "needs-rework",
+      "task2b_result": "fixed"
     },
     "src/part1-fundamentals/ch06-storage/04-storage-evolution.md": {
       "chapter": "6.4",
