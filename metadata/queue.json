@@ -5447,5 +5447,38 @@
     "status": "completed",
     "completed_at": "2026-04-12T17:12:26+08:00",
     "completed_by": "task2b-rework"
+  },
+  {
+    "section": "1.2",
+    "section_title": "系统启动全流程",
+    "priority": 90,
+    "reason": "[review回炉] 优化段落仍偏清单化，厂商案例缺少证据，启动完成里程碑叙述需拆开核对",
+    "material_paths": [
+      "intake/suggestions.md（含 review 意见）"
+    ],
+    "review_issues": [
+      {
+        "type": "需重写",
+        "location": "开机性能优化的常见手段",
+        "detail": "当前更像平铺的优化清单，缺少从启动瓶颈信号到对应优化动作的分析路径。",
+        "suggestion": "按“阶段/瓶颈信号 → 观察指标 → 优化动作”重写，并把厂商特定策略独立出来。"
+      },
+      {
+        "type": "需补充素材",
+        "location": "厂商优化黑科技 + Android 16 的启动优化",
+        "detail": "多处案例带有定量或结论性描述，但缺少一手来源、设备条件和测试口径。",
+        "suggestion": "补精确来源和测试条件；补不齐时降级为定性描述。"
+      },
+      {
+        "type": "需确认",
+        "location": "Launcher：最后的临门一脚 + boot_completed 广播",
+        "detail": "桌面可见、Launcher 启动、LOCKED_BOOT_COMPLETED/BOOT_COMPLETED 被压在一段里，读者容易把几个启动里程碑混成一个。",
+        "suggestion": "请 Task 9 先核对里程碑与发送主体，再由 Task 2B 拆开叙述。"
+      }
+    ],
+    "added_by": "task6-review",
+    "added_at": "2026-04-12T17:14:00+08:00",
+    "status": "pending",
+    "original_review_log": "logs/review/2026-04-12-17-review.md"
   }
 ]

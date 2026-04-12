@@ -3,9 +3,10 @@ title: "系统启动全流程"
 chapter: "1.2"
 status: ready-for-review
 section: "1.2"
-reviewed_date: "2026-04-10"
+reviewed_date: "2026-04-12"
 reviewed_by: openclaw-task6
-review_type: post-polish-quality-gate
+review_type: task6-writing-quality-review
+task6_result: needs-rework
 drafted_date: "2026-03-30"
 drafted_by: openclaw-task2a
 review_v2_fix: "误区 section boot_completed 事件描述修正 + 事件排序对齐"
@@ -40,10 +41,10 @@ sources:
     path: "Android 16 Parallel Module Loading + AutoFDO (AOSP Gerrit/9to5Google)"
 tags: ['boot', 'init', 'zygote', 'SystemServer', '启动优化', 'bootchart', 'bootloader', 'preloaded-classes', 'boot-timings']
 related_chapters: ["1.1", "1.3", "1.4", "1.5", "1.7", "8.2", "8.3"]
-pipeline_stage: task6_pending
-task6_state: pending
+pipeline_stage: task2b_pending
+task6_state: reviewed
 task9_state: pending
-task2b_state: idle
+task2b_state: pending
 ---
 
 # 系统启动全流程
@@ -227,10 +228,10 @@ Zygote 完成预加载后，就进入"等待"状态，监听 Unix 域套接字�
 
 fork 的妙处在于 **Copy-on-Write（CoW）** 机制。新 fork 出来的子进程和父进程（Zygote）共享同一块物理内存，只有在子进程试图修改某个内存页时，内核才会为子进程创建该页的独立副本。
 
-这意味着：
+结果是：
 - 所有 App 进程共享 Zygote 预加载的那几千个类和资源，内存开销极小
 - App 进程启动时不需要重新加载这些类，启动速度大幅提升
-- 在 Perfetto 中，可以看到 App 进程启动后很快就开始执行 Application.onCreate()，不需要再花时间加载基础类
+- 在 Perfetto 中，App 进程启动后会很快进入 `Application.onCreate()`，不需要再为基础类加载单独付出一段明显的启动时间
 
 但这也带来了一个限制：**Zygote 预加载之后，不能再加载新的 class 或资源到共享区域**。这就是为什么 Zygote 启动后的类加载都只影响当前进程。
 
@@ -363,7 +364,7 @@ BootTimingsTraceLog 是一个轻量级的追踪工具，主要在 ZygoteInit 中
 
 #### TimingsTraceAndSlog：SystemServer 启动阶段的"审计员"
 
-SystemServer 使用的是另一个追踪工具——TimingsTraceAndSlog。它和 BootTimingsTraceLog 的区别在于：TimingsTraceAndSlog 不仅通过 `Trace.traceBegin()/traceEnd()` 写入 Perfetto 追踪，还会同步通过 `Slog` 输出日志。这意味着既可以可视化地查看各阶段耗时，也可以通过 logcat 快速检索。
+SystemServer 使用的是另一个追踪工具——TimingsTraceAndSlog。它和 BootTimingsTraceLog 的区别在于：TimingsTraceAndSlog 不仅通过 `Trace.traceBegin()/traceEnd()` 写入 Perfetto 追踪，还会同步通过 `Slog` 输出日志。这样我们既可以在 Perfetto 中查看各阶段耗时，也可以通过 logcat 快速检索。
 
 [已验证: AOSP frameworks/base/core/java/android/os/TimingsTraceAndSlog.java @ android-16.0.0_r1]
 
@@ -400,11 +401,11 @@ adb logcat | grep boot_progress
 
 ### dmesg 与 logcat
 
-在 Kernel 阶段，`dmesg` 可以看到内核启动的时间线：
+在 Kernel 阶段，`dmesg` 会显示内核启动的时间线：
 
 ```bash
 adb shell dmesg | head -50
-# 可以看到各驱动的加载时间
+# 可查看各驱动的加载时间
 ```
 
 在用户空间阶段，`logcat` 过滤 `boot` 相关 tag。特别是上面提到的 `boot_progress` 系列事件，可以通过 logcat 快速查看各阶段耗时分布：
@@ -566,7 +567,7 @@ dm-verity（Device Mapper Verity）是 Android 用于验证系统分区完整性
 | 阶段 | 在 Perfetto 中的表现 | 关键 Track |
 |------|---------------------|-----------|
 | Kernel 启动 | Trace 的最前面，通常有几个空白区域（Kernel 启动前无法 trace） | cpu track |
-| init 进程 | init 进程的 CPU 活动，可以看到多个阶段性的执行区间 | init 进程 track |
+| init 进程 | init 进程的 CPU 活动，通常会出现多个阶段性的执行区间 | init 进程 track |
 | Zygote 预加载 | zygote64/zygote 进程的 CPU 使用高峰期，持续数秒 | zygote 进程 track |
 | SystemServer 启动 | system_server 进程中出现密集的 CPU 活动 | system_server track |
 | Launcher 首帧 | launcher 进程开始渲染，到第一帧提交完成 | launcher / SurfaceFlinger track |
