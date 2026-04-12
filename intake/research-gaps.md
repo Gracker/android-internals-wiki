@@ -1547,3 +1547,20 @@ Hardware Layer 一节只给出了 `setLayerType(View.LAYER_TYPE_HARDWARE, null)`
 
 ### 关联章节
 §7.5、§2.5 MainThread 与 RenderThread 协作、§2.7 Hardware Layer、§7.6 Compose 性能
+
+## [2026-04-12] 7.11 WebView 渲染性能与优化 — Renderer 崩溃恢复与优先级策略
+
+### 盲区描述
+正文提到了多进程 WebView 和 renderer 崩溃隔离，但没有覆盖应用侧真正要处理的恢复接口和策略边界：`WebViewClient.onRenderProcessGone()`、`setRendererPriorityPolicy()`、低内存回收 vs renderer crash 的区分、以及 Android 8-10 与 Android 11+ 的默认多进程差异。缺少这部分，读者知道“会崩/会被杀”，但不知道 App 该怎么兜底。
+
+### 重要程度
+高
+
+### 建议研究方向
+- `WebViewClient.onRenderProcessGone()` 的触发条件、返回值语义与销毁/重建流程
+- `WebView.setRendererPriorityPolicy()` 对低内存回收行为的影响
+- Android 8-10 低内存 32-bit 设备与 Android 11+ 默认 out-of-process 的行为边界
+- Perfetto / bugreport 中 renderer crash 与 low-memory kill 的识别特征
+
+### 关联章节
+§7.11、§9.1
