@@ -1927,3 +1927,29 @@
 - **位置**：L507 交叉引用 §8.1 Android 功耗管理
 - **问题**：仓库里的 `8.1` 实际是《响应速度原理》，当前引用标题与真实章节不一致。
 - **建议**：改为真实章节号/标题；如果想引用功耗章节，需改指向正确目标。
+
+
+## [Task6 Review] 7.12 View 体系性能优化：布局层级、inflate 与 measure/layout 开销 — 2026-04-12
+- **类型**：需确认
+- **位置**：LayoutInflater.Factory2 / ComposeView 段落
+- **问题**：把 ComposeView 直接归因为“跳过 XML inflate，因此创建 UI 有性能优势”，结论过满，缺少与 Compose 组合、测量和首次 composition 成本的边界说明。
+- **建议**：收敛成“Compose 避开 XML inflate 固定开销”，并补充它引入的其他初始化成本；若暂时补不齐，交给 Task 9 核对后再写定性结论。
+- **review 日志**：logs/review/2026-04-12-23-review.md
+
+- **类型**：需确认
+- **位置**：RelativeLayout 嵌套段（`$2^n$` 结论）
+- **问题**：用“最终产生 `$2^n$` 轮”描述嵌套放大效应，结论过硬，当前没有对应源码或 trace 证据支撑严格指数关系。
+- **建议**：改成定性描述，或补一段真实 trace / 源码说明两轮 measure 如何在嵌套场景放大。
+- **review 日志**：logs/review/2026-04-12-23-review.md
+
+- **类型**：需确认
+- **位置**：ConstraintLayout benchmark 段
+- **问题**：“一次遍历就能确定所有子 View 的位置”和“简单场景下差距在 5% 以内”都缺少明确出处和适用条件，读者容易把它们理解成普遍结论。
+- **建议**：补 Google benchmark 的测试条件和来源；如果补不齐，就收敛成定性表述。
+- **review 日志**：logs/review/2026-04-12-23-review.md
+
+- **类型**：存疑
+- **位置**：Perfetto 中定位具体 View 耗时段落
+- **问题**：`View.setTransitionVisibility()`、`Window.setFrameContent()` 作为 trace 入口的表述不够稳，存在 API/trace tag 误导风险。
+- **建议**：交给 Task 9 核对实际可用的 trace tag 或改成手动 `Trace.beginSection()` 的可验证方案。
+- **review 日志**：logs/review/2026-04-12-23-review.md

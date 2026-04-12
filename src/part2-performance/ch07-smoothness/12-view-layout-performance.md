@@ -8,6 +8,9 @@ drafted_by: "openclaw-task2a"
 applicable_versions: "Android 5.0 (API 21) - Android 17 (API 37)"
 last_verified: "2026-04-08"
 last_verified_against: "AOSP android-16.0.0_r1"
+reviewed_date: "2026-04-12"
+reviewed_by: "openclaw-task6"
+task6_result: needs-rework
 confidence: high
 sources:
   - type: official
@@ -27,13 +30,36 @@ related_chapters: ["7.1", "7.2", "7.4", "7.5", "2.4", "2.5", "8.3"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-04-08"
 gap_source: "AOSP结构+官方文档+读者需求"
-pipeline_stage: task6_pending
-task6_state: pending
+pipeline_stage: task2b_pending
+task6_state: reviewed
 task9_state: pending
-task2b_state: idle
+task2b_state: pending
 ---
 
 # 7.12 View 体系性能优化：布局层级、inflate 与 measure/layout 开销
+
+<!-- outline-start -->
+## 本节要点大纲
+
+### 锚点（必须覆盖）
+
+- 🔹 布局层级深度为什么会推高 `measure` / `layout` 开销
+- 🔹 `LayoutInflater.inflate()` 的三阶段流程与主要耗时来源
+- 🔹 `requestLayout()` 与 `invalidate()` 的触发路径和代价差异
+- 🔹 `ConstraintLayout`、`ViewStub`、`<merge>`、`<include>` 的使用边界
+- 🔹 `AsyncLayoutInflater` 的适用场景与限制
+- 🔹 在 Perfetto / Layout Inspector 中定位布局性能瓶颈的方法
+
+### 扩展（可选深入）
+
+- 🔸 `Factory2` / AppCompat 对 inflate 路径的影响
+- 🔸 高刷新率设备下的布局帧预算压力
+
+### OpenClaw 加工指引
+
+> 锚点是最低覆盖要求，加工时必须逐条落实并标注验证状态。
+> 缺少真实 trace 或截图时，用 `[图：...]` 标注说明，不要编造现象。
+<!-- outline-end -->
 
 我们在前面的章节中分析了卡顿的定义、原因和分析方法论。这一节我们把镜头拉近到 Android View 体系本身——每一个 Activity 的界面都是由一棵 View 树构成的，这棵树的创建（inflate）、测量（measure）、布局（layout）是每一帧渲染工作的起点。如果这三步出了问题，后面的 draw 和 GPU 渲染再快也救不回来。
 
@@ -43,7 +69,7 @@ task2b_state: idle
 
 Android 渲染管线的三个阶段——Measure、Layout、Draw——都是对整棵 View 树的**自顶向下遍历**。树越深，遍历的节点越多，每个阶段耗费的时间就越长。更麻烦的是，某些 ViewGroup（比如 `RelativeLayout`，以及使用了 `layout_weight` 的 `LinearLayout`）需要对子 View 执行**两轮甚至多轮** measure 才能确定最终尺寸。嵌套几层这样的 ViewGroup，measure 的轮次会指数级增长。
 
-Google 官方做过一个基准测试 [已验证: Google Developers Blog, 2017-08-24]：用一个包含 `RelativeLayout` 嵌套 `LinearLayout` 的典型注册表单布局，Systrace 记录到 **80 次** measure/layout pass；用 `ConstraintLayout` 扁平化重写后，同一个布局的 pass 数降到接近个位数。80 次 pass 意味着什么？在 60Hz 屏幕上，一帧的预算是 16.6ms，80 次 pass 可能吃掉整帧预算的绝大部分。
+Google 官方做过一个基准测试 [已验证: Google Developers Blog, 2017-08-24]：用一个包含 `RelativeLayout` 嵌套 `LinearLayout` 的典型注册表单布局，Systrace 记录到 **80 次** measure/layout pass；用 `ConstraintLayout` 扁平化重写后，同一个布局的 pass 数降到接近个位数。80 次 pass 的代价很直接。在 60Hz 屏幕上，一帧的预算是 16.6ms，80 次 pass 可能吃掉整帧预算的绝大部分。
 
 [图：Google 官方 benchmark 对比——RelativeLayout 嵌套 vs ConstraintLayout 的 Systrace 截图，标注 pass 数差异]
 
@@ -85,7 +111,7 @@ public final View createView(String name, String prefix, AttributeSet attrs)
 }
 ```
 
-这里有一个关键的优化点：`sConstructorMap` 缓存了每个 View 类的 `Constructor` 对象。第一次遇到某个 View 类需要反射查找，后续遇到同类型 View 就直接用缓存。这就是为什么 RecyclerView 的 ViewHolder 复用比反复 inflate 快得多——不只是省了 XML 解析，连反射开销都省了。
+这里真正省时间的是 `sConstructorMap` 缓存了每个 View 类的 `Constructor` 对象。第一次遇到某个 View 类需要反射查找，后续遇到同类型 View 就直接用缓存。这就是为什么 RecyclerView 的 ViewHolder 复用比反复 inflate 快得多，既省了 XML 解析，也省了反射开销。
 
 [已验证: AOSP LayoutInflater.java, sConstructorMap 缓存机制]
 
@@ -121,9 +147,9 @@ public View createView(View parent, String name, Context context, AttributeSet a
 - `Activity.onCreate` → `performSetContentView` → `installDecor` → `inflate`：可以在 Main Thread 的 track 上看到这整个过程
 - 如果 inflate 耗时超过一帧预算，会在 `Choreographer#doFrame` 之前形成一个明显的"峡谷"，直接导致首帧延迟
 
-[待补充：Perfetto 截图——setContentView inflate 耗时的典型表现，标注 inflate 区间]
+[图：Perfetto 中 `setContentView()` / inflate 耗时区间示意，标注主线程忙碌段与首帧延迟]
 
-在实际分析中，如果看到 Activity 冷启动时主线程有一个 30-80ms 的"平台"，大概率就是 `setContentView` 在 inflate 一个复杂的布局文件。我们可以在应用启动优化的章节（→ [8.3](part2-performance/ch08-responsiveness/03-startup-optimization.md)）找到对应的优化策略。
+在实际分析中，如果看到 Activity 冷启动时主线程有一个 30-80ms 的"平台"，大概率就是 `setContentView` 在 inflate 一个复杂的布局文件。我们可以在应用启动优化的章节（→ [8.3](../ch08-responsiveness/03-startup-optimization.md)）找到对应的优化策略。
 
 ## 布局层级深度与渲染性能的因果关系
 
@@ -137,7 +163,7 @@ Android 的渲染管线在处理 View 树时，三个阶段都是自顶向下的
 
 [图：View 树三阶段遍历示意图——Measure/Layout/Draw 的递归过程]
 
-关键在于：View 树的**每一层**都会增加一轮方法调用栈。如果一个布局有 10 层嵌套（不算少见），Measure 阶段就要走过 10 层递归；如果其中某层有多个子 View，每一层还要遍历兄弟节点。假设一棵 View 树有 100 个节点、平均深度 8 层，一次 measure 的递归调用次数至少是 100 次，加上 ViewGroup 自身对子 View 的遍历逻辑，实际调用次数更多。
+这里要看清一点：View 树的**每一层**都会增加一轮方法调用栈。如果一个布局有 10 层嵌套（不算少见），Measure 阶段就要走过 10 层递归；如果其中某层有多个子 View，每一层还要遍历兄弟节点。假设一棵 View 树有 100 个节点、平均深度 8 层，一次 measure 的递归调用次数至少是 100 次，加上 ViewGroup 自身对子 View 的遍历逻辑，实际调用次数更多。
 
 ### 量化关系：层级深度与帧耗时
 
@@ -267,7 +293,7 @@ Google 官方做了详细的性能对比 [已验证: Google Developers Blog, "Un
 
 ### 什么时候不该用 ConstraintLayout
 
-`ConstraintLayout` 并非万能药。在以下场景，传统布局反而更合适：
+`ConstraintLayout` 也有边界。在以下场景，传统布局反而更合适：
 
 - **2-3 个子 View 的简单布局**：`FrameLayout` 或 `LinearLayout` 就够了，`ConstraintLayout` 的约束求解器有自己的初始化开销
 - **纯线性排列**：几个 View 水平或垂直排列，用 `LinearLayout` 最直接
@@ -364,7 +390,7 @@ new AsyncLayoutInflater(context).inflate(
 - 后台线程（通常是 `AsyncLayoutInflater` 的 `HandlerThread`）出现 inflate 活动
 - 主线程在回调 `onInflateComplete` 时有一个短暂的 `addView` 操作
 
-[待补充：Perfetto 截图——AsyncLayoutInflater 使用前后的主线程 trace 对比]
+[图：AsyncLayoutInflater 使用前后主线程与后台线程 trace 对比，标注 inflate 与 addView 区间]
 
 ## 在 Perfetto/工具中的表现
 
@@ -415,7 +441,7 @@ Android Studio 的 Layout Inspector 可以在运行时查看 View 树的结构�
 
 减少 View 数量确实能降低 measure/layout 的开销，但"过度扁平化"也有代价。如果一个 View 的 `onDraw()` 逻辑过于复杂（比如用 Canvas 手动画了一个本来应该拆成多个 View 的复杂界面），draw 阶段的耗时反而可能超过省下来的 measure 时间。
 
-正确做法：优先减少**层级深度**（嵌套层数），其次减少**View 总数**。一个 5 层 50 个 View 的布局，通常比 2 层 200 个 View 的布局更慢；但一个 1 层 500 个 View 的布局也未必比 3 层 100 个 View 的布局快。
+正确做法：优先减少**层级深度**（嵌套层数），再看**View 总数**。一个 5 层 50 个 View 的布局，通常比 2 层 200 个 View 的布局更慢；但一个 1 层 500 个 View 的布局也未必比 3 层 100 个 View 的布局快。
 
 ### 误区 2：ConstraintLayout 总是比 LinearLayout 快
 
