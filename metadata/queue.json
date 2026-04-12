@@ -1296,7 +1296,7 @@
   {
     "section": "7.9",
     "priority": 90,
-    "status": "pending",
+    "status": "completed",
     "material_paths": [
       "intake/suggestions.md（含 review 意见）"
     ],
@@ -1324,7 +1324,9 @@
     ],
     "added_by": "task6-review",
     "added_at": "2026-04-12T19:14:00+08:00",
-    "original_review_log": "logs/review/2026-04-12-19-review.md"
+    "original_review_log": "logs/review/2026-04-12-19-review.md",
+    "completed_at": "2026-04-13T01:55:46+08:00",
+    "completed_by": "task2b-rework"
   },
   {
     "section": "4.6",
@@ -5785,7 +5787,9 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-12T19:30:00+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-13T01:55:46+08:00",
+    "completed_by": "task2b-rework"
   },
   {
     "section": "7.11",

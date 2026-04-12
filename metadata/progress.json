@@ -1,51 +1,51 @@
 {
-  "generated_at": "2026-04-13T01:05:00+08:00",
+  "generated_at": "2026-04-13T01:55:46+08:00",
   "state_machine_version": "v2",
   "total_sections": 207,
   "metrics": {
     "total": 207,
-    "last_updated": "2026-04-13T01:05:00+08:00",
+    "last_updated": "2026-04-13T01:55:46+08:00",
     "unknown": 34,
     "ready-for-review": 173,
     "pipeline_unknown": 31,
-    "pipeline_task6_pending": 165,
-    "pipeline_task2b_pending": 8,
-    "pipeline_task9_pending": 3,
+    "pipeline_task6_pending": 167,
+    "pipeline_task2b_pending": 7,
+    "pipeline_task9_pending": 2,
     "task6_unknown": 31,
-    "task6_revisiting": 39,
-    "task6_reviewed": 11,
+    "task6_revisiting": 41,
+    "task6_reviewed": 9,
     "task6_pending": 126,
     "task9_unknown": 31,
-    "task9_pending": 173,
-    "task9_reviewed": 3,
+    "task9_pending": 172,
+    "task9_reviewed": 4,
     "task2b_unknown": 31,
-    "task2b_fixed": 39,
-    "task2b_pending": 8,
-    "task2b_idle": 129
+    "task2b_fixed": 41,
+    "task2b_pending": 7,
+    "task2b_idle": 128
   },
   "pipeline": {
     "pipeline_stage_counts": {
       "unknown": 31,
-      "task6_pending": 165,
-      "task2b_pending": 8,
-      "task9_pending": 3
+      "task6_pending": 167,
+      "task2b_pending": 7,
+      "task9_pending": 2
     },
     "task6_state_counts": {
       "unknown": 31,
-      "revisiting": 39,
-      "reviewed": 11,
+      "revisiting": 41,
+      "reviewed": 9,
       "pending": 126
     },
     "task9_state_counts": {
       "unknown": 31,
-      "pending": 173,
-      "reviewed": 3
+      "pending": 172,
+      "reviewed": 4
     },
     "task2b_state_counts": {
       "unknown": 31,
-      "fixed": 39,
-      "pending": 8,
-      "idle": 129
+      "fixed": 41,
+      "pending": 7,
+      "idle": 128
     }
   },
   "issues": {
@@ -577,7 +577,7 @@
       "task6_result": "pass-light-edit"
     },
     "src/part1-fundamentals/ch02-rendering/13-buffer-queue.md": {
-      "chapter": "2.13",
+      "chapter": "'2.13'",
       "title": "图形缓冲区管理 (BufferQueue)",
       "path": "src/part1-fundamentals/ch02-rendering/13-buffer-queue.md",
       "status": "ready-for-review",
@@ -585,7 +585,7 @@
       "task6_state": "revisiting",
       "task9_state": "pending",
       "task2b_state": "fixed",
-      "reviewed_date": "2026-04-11",
+      "reviewed_date": "'2026-04-11'",
       "reviewed_by": "openclaw-task6",
       "task6_result": "needs-rework",
       "task9_result": "needs-rework",
@@ -774,7 +774,7 @@
       "task2b_result": "fixed"
     },
     "src/part1-fundamentals/ch03-input/05-input-interception-security.md": {
-      "chapter": "3.5",
+      "chapter": "'3.5'",
       "title": "输入事件拦截与安全机制",
       "path": "src/part1-fundamentals/ch03-input/05-input-interception-security.md",
       "status": "ready-for-review",
@@ -782,14 +782,14 @@
       "task6_state": "revisiting",
       "task9_state": "pending",
       "task2b_state": "fixed",
-      "reviewed_date": "2026-04-12",
+      "reviewed_date": "'2026-04-12'",
       "reviewed_by": "openclaw-task6",
       "task6_result": "needs-rework",
       "task9_result": "needs-rework",
       "task2b_result": "fixed"
     },
     "src/part1-fundamentals/ch03-input/06-gesture-recognition-performance.md": {
-      "chapter": "3.6",
+      "chapter": "'3.6'",
       "title": "手势识别算法与性能优化",
       "path": "src/part1-fundamentals/ch03-input/06-gesture-recognition-performance.md",
       "status": "ready-for-review",
@@ -797,7 +797,7 @@
       "task6_state": "revisiting",
       "task9_state": "pending",
       "task2b_state": "fixed",
-      "reviewed_date": "2026-04-12",
+      "reviewed_date": "'2026-04-12'",
       "reviewed_by": "openclaw-task6",
       "task6_result": "needs-rework",
       "task9_result": "needs-rework",
@@ -898,7 +898,7 @@
       "reviewed_by": "openclaw-task6"
     },
     "src/part1-fundamentals/ch04-memory/08-art-generational-gc.md": {
-      "chapter": "4.8",
+      "chapter": "'4.8'",
       "title": "ART 分代垃圾回收与 GC 暂停优化",
       "path": "src/part1-fundamentals/ch04-memory/08-art-generational-gc.md",
       "status": "ready-for-review",
@@ -906,7 +906,7 @@
       "task6_state": "revisiting",
       "task9_state": "pending",
       "task2b_state": "fixed",
-      "reviewed_date": "2026-04-12",
+      "reviewed_date": "'2026-04-12'",
       "reviewed_by": "openclaw-task6",
       "task6_result": "needs-rework",
       "task9_result": "needs-rework",
@@ -1221,13 +1221,14 @@
       "title": "优化策略",
       "path": "src/part2-performance/ch07-smoothness/05-optimization.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
-      "task9_state": "pending",
-      "task2b_state": "idle",
+      "task9_state": "reviewed",
+      "task2b_state": "pending",
       "reviewed_date": "2026-04-12",
       "reviewed_by": "openclaw-task6",
-      "task6_result": "pass-light-edit"
+      "task6_result": "pass-light-edit",
+      "task9_result": "needs-rework"
     },
     "src/part2-performance/ch07-smoothness/06-case-studies.md": {
       "chapter": "7.6",
@@ -1258,28 +1259,30 @@
       "title": "RecyclerView 列表滑动性能深度优化",
       "path": "src/part2-performance/ch07-smoothness/08-recyclerview-performance.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
-      "task6_state": "reviewed",
-      "task9_state": "reviewed",
-      "task2b_state": "pending",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
+      "task9_state": "pending",
+      "task2b_state": "fixed",
       "reviewed_date": "2026-04-12",
       "reviewed_by": "openclaw-task6",
       "task6_result": "needs-rework",
-      "task9_result": "needs-rework"
+      "task9_result": "needs-rework",
+      "task2b_result": "fixed"
     },
     "src/part2-performance/ch07-smoothness/09-perceived-smoothness.md": {
       "chapter": "7.9",
       "title": "感知流畅性：步幅波动与无掉帧卡顿",
       "path": "src/part2-performance/ch07-smoothness/09-perceived-smoothness.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
-      "task6_state": "reviewed",
-      "task9_state": "reviewed",
-      "task2b_state": "pending",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
+      "task9_state": "pending",
+      "task2b_state": "fixed",
       "reviewed_date": "2026-04-12",
       "reviewed_by": "openclaw-task6",
       "task6_result": "needs-rework",
-      "task9_result": "needs-rework"
+      "task9_result": "needs-rework",
+      "task2b_result": "fixed"
     },
     "src/part2-performance/ch07-smoothness/10-image-bitmap-performance.md": {
       "chapter": "7.10",
@@ -1302,11 +1305,12 @@
       "status": "ready-for-review",
       "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
-      "task9_state": "pending",
+      "task9_state": "reviewed",
       "task2b_state": "pending",
       "reviewed_date": "2026-04-12",
       "reviewed_by": "openclaw-task6",
-      "task6_result": "needs-rework"
+      "task6_result": "needs-rework",
+      "task9_result": "needs-rework"
     },
     "src/part2-performance/ch07-smoothness/12-view-layout-performance.md": {
       "chapter": "7.12",
@@ -1320,8 +1324,8 @@
       "reviewed_date": "2026-04-12",
       "reviewed_by": "openclaw-task6",
       "task6_result": "needs-rework",
-      "task2b_result": "fixed",
-      "task9_result": "needs-rework"
+      "task9_result": "needs-rework",
+      "task2b_result": "fixed"
     },
     "src/part2-performance/ch07-smoothness/13-systemui-performance.md": {
       "chapter": "7.13",
@@ -1442,11 +1446,12 @@
       "status": "ready-for-review",
       "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
-      "task9_state": "pending",
+      "task9_state": "reviewed",
       "task2b_state": "pending",
       "reviewed_date": "2026-04-13",
       "reviewed_by": "openclaw-task6",
-      "task6_result": "needs-rework"
+      "task6_result": "needs-rework",
+      "task9_result": "needs-rework"
     },
     "src/part2-performance/ch08-responsiveness/08-system-triggered-profiling.md": {
       "chapter": "8.8",
