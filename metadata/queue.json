@@ -1673,19 +1673,41 @@
   {
     "section": "7.12",
     "section_title": "View 体系性能优化：布局层级、inflate 与 measure/layout 开销",
-    "priority": 80,
-    "reason": "知识缺口挖掘：布局层级/inflate/measure-layout 是 jank 和启动速度的核心根因之一，ViewStub/Merge/ConstraintLayout/AsyncLayoutInflater 是每个 Android 开发者必学的优化手段，全书缺少对 View 体系性能的系统性深度分析",
+    "priority": 90,
+    "reason": "[review回炉] 4 个待确认问题：ComposeView 对比表述过满、RelativeLayout “2^n” 结论过强、ConstraintLayout benchmark 边界不足、Perfetto 定位 API 表述存疑",
     "material_paths": [
-      "https://developer.android.com/topic/performance/rendering/optimizing-view-hierarchies",
-      "https://developer.android.com/topic/performance/vitals/measure-layout",
-      "https://android-developers.googleblog.com/2017/08/understanding-benefits-of-android.html",
-      "intake/research-feeds/2026-04-08-19-view-hierarchy-measure-layout-perfetto-jank-optimization.md"
+      "intake/suggestions.md（含 review 意见）"
     ],
-    "added_by": "task2a-knowledge-gap",
-    "added_at": "2026-04-08T17:05:00+08:00",
-    "status": "completed",
-    "completed_at": "2026-04-09T07:03:00+08:00",
-    "completed_by": "task2a-stale-cleanup"
+    "review_issues": [
+      {
+        "type": "需确认",
+        "location": "LayoutInflater.Factory2 / ComposeView 段落",
+        "detail": "把 ComposeView 直接归因为“跳过 XML inflate，因此创建 UI 有性能优势”，结论过满，缺少与 Compose 组合、测量和首次 composition 成本的边界说明。",
+        "suggestion": "收敛成“Compose 避开 XML inflate 固定开销”，并补充它引入的其他初始化成本。"
+      },
+      {
+        "type": "需确认",
+        "location": "RelativeLayout 嵌套段（`$2^n$` 结论）",
+        "detail": "用“最终产生 `$2^n$` 轮”描述嵌套放大效应，结论过硬，当前没有对应源码或 trace 证据支撑严格指数关系。",
+        "suggestion": "改成定性描述，或补一段真实 trace / 源码说明放大机制。"
+      },
+      {
+        "type": "需确认",
+        "location": "ConstraintLayout benchmark 段",
+        "detail": "“一次遍历就能确定所有子 View 的位置”和“简单场景下差距在 5% 以内”都缺少明确出处和适用条件。",
+        "suggestion": "补 benchmark 条件和来源；如果补不齐，就收敛成定性表述。"
+      },
+      {
+        "type": "存疑",
+        "location": "Perfetto 中定位具体 View 耗时段落",
+        "detail": "`View.setTransitionVisibility()`、`Window.setFrameContent()` 作为 trace 入口的表述不够稳，存在 API/trace tag 误导风险。",
+        "suggestion": "交给 Task 9 核对实际可用的 trace tag，或改成手动 `Trace.beginSection()` 方案。"
+      }
+    ],
+    "added_by": "task6-review",
+    "added_at": "2026-04-12T23:28:00+08:00",
+    "status": "pending",
+    "original_review_log": "logs/review/2026-04-12-23-review.md"
   },
   {
     "section": "8.9",
