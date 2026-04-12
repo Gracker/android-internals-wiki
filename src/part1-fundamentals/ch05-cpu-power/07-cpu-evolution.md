@@ -4,8 +4,8 @@ chapter: "5.7"
 section: "5.7"
 status: ready-for-review
 applicable_versions: "Android 5.0 - 16"
-last_verified: "2026-04-01"
-last_verified_against: "Android 15 developer docs, AOSP source code"
+last_verified: "2026-04-12"
+last_verified_against: "developer.android.com + source.android.com + AOSP android-16.0.0_r1 + android15-6.6.98_r00"
 confidence: medium
 sources:
   - type: official
@@ -16,8 +16,22 @@ sources:
     path: "developer.android.com/about/versions/12/behavior-changes-12"
   - type: official
     path: "source.android.com/docs/core/power"
+  - type: official
+    path: "source.android.com/docs/core/perf/cgroups"
   - type: blog
     path: "ARM documentation - Energy Aware Scheduling"
+  - type: aosp
+    path: "platform/frameworks/base/+/android-16.0.0_r1/core/java/android/app/usage/UsageStatsManager.java"
+  - type: aosp
+    path: "platform/frameworks/base/+/android-16.0.0_r1/apex/jobscheduler/service/java/com/android/server/DeviceIdleController.java"
+  - type: aosp
+    path: "platform/frameworks/base/+/android-16.0.0_r1/apex/jobscheduler/service/java/com/android/server/usage/AppStandbyController.java"
+  - type: aosp
+    path: "platform/frameworks/base/+/android-16.0.0_r1/apex/jobscheduler/service/java/com/android/server/job/JobSchedulerService.java"
+  - type: aosp
+    path: "platform/system/core/+/android-16.0.0_r1/libprocessgroup/profiles/task_profiles.json"
+  - type: aosp
+    path: "kernel/common/+/refs/tags/android15-6.6.98_r00/include/trace/hooks/sched.h"
 tags:
   - android
   - power
@@ -36,11 +50,12 @@ related_chapters:
   - "5.2 EAS 能量感知调度"
   - "5.6 Android 功耗管理"
   - "5.8 后台执行限制与优化"
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
 task9_result: needs-rework
-task2b_state: pending
+task2b_state: fixed
+task2b_result: fixed
 ---
 
 
@@ -55,7 +70,7 @@ task2b_state: pending
 - 🔹 Android 5.0+ 引入 JobScheduler 优化后台功耗
 - 🔹 Android 6.0 Doze 模式引入
 - 🔹 Android 9.0 Adaptive Battery + App Standby Buckets
-- 🔹 Android 10 EAS 成为默认调度策略
+- 🔹 Android 10 时期 EAS 成为主流调度路线
 - 🔹 Android 12+ 对精确闹钟、前台服务、后台启动的持续限制
 
 ### 扩展（可选深入）
@@ -154,49 +169,44 @@ Android 8.0 对后台行为的管控上了一个台阶。它引入了"后台执�
 
 如果说 Android 6.0 的 Doze 是"一刀切"的静态管控，Android 9.0 引入的 Adaptive Battery 则是"因人而异"的动态策略。Google 与 DeepMind 合作，用一个设备端的机器学习模型来预测用户在未来几小时内会使用哪些 App。
 
-基于这个预测，系统把每个 App 放入五个"待机桶"（App Standby Buckets）之一：
+基于这个预测，系统会先把 App 放入一组有先后顺序的 priority buckets：Active、Working Set、Frequent、Rare、Restricted。它们决定 Job、Alarm 和网络访问会被推迟到什么程度。AOSP 在 `UsageStatsManager.java` 里还定义了一个 special bucket，`STANDBY_BUCKET_NEVER = 50`，表示“已安装但从未启动”。这个桶不参与日常的 priority 排序，但它解释了为什么新装后从未打开的 App 会比 Rare 还安静。
 
 | 桶 | 含义 | 典型限制 |
 |---|---|---|
-| Active | 正在使用或刚使用 | 无限制 |
-| Working Set | 经常使用但当前不在前台 | Jobs 和闹钟有少量限制 |
-| Frequent | 定期使用但不是每天 | Jobs 和闹钟有较多限制，网络访问受限 |
-| Rare | 很少使用 | Jobs 和闹钟严格限制，网络访问严重受限 |
-| Restricted | 从未运行或被系统限制 | 几乎所有后台活动被禁止 |
+| Active | 正在使用、刚使用，或者系统预测很快会被使用 | 基本不受限 |
+| Working Set | 最近用过，未来几小时仍可能被用到 | Job 和 Alarm 会有轻度延后 |
+| Frequent | 最近几天用过，但不是高频 App | Job、Alarm 延后更明显，部分后台网络会受限 |
+| Rare | 多天未使用 | 只在较少的维护窗口中运行后台任务 |
+| Restricted | 长时间不活跃，或者资源消耗异常、行为异常 | 约束最重，Job、Alarm、网络访问都会进一步收紧 |
 
-**桶的分配不是固定不变的**。系统会根据用户的使用习惯实时调整。一个上周天天用的 App，如果这周没碰过，会逐步从 Active 降级到 Rare。反过来，一个长期在 Rare 桶的 App，如果用户突然开始使用，会迅速升回 Active。
+这里最容易写错的地方有两个。第一，Restricted 不是“从未运行”，这个语义属于 Never bucket。第二，Restricted 的触发条件在不同 Android 版本里有调整，既看最近是否被使用，也看系统是否认定它存在异常耗电或异常行为，所以文档里更适合把它写成“更严格的后台限制状态”，不要写成单一原因。
 
 从性能分析的角度，通过 `adb shell am get-standby-bucket <package_name>` 可以查看某个 App 当前的桶分配。App 内也可以通过 API 查询自己的桶状态：
 
 ```java
-// 查询当前 App 的 Standby Bucket
 UsageStatsManager usm = getSystemService(UsageStatsManager.class);
 int bucket = usm.getAppStandbyBucket();
-// STANDBY_BUCKET_ACTIVE = 10, WORKING_SET = 20, FREQUENT = 30, RARE = 40, RESTRICTED = 45
+// ACTIVE = 10, WORKING_SET = 20, FREQUENT = 30, RARE = 40, RESTRICTED = 45
+// AOSP 还定义了 @SystemApi 的 STANDBY_BUCKET_NEVER = 50，表示 installed but never launched
 ```
 
-如果在 Perfetto 中发现某个 App 的 JobScheduler 任务长时间不执行，先检查它的 Standby Bucket——很可能被放到了 Rare 或 Restricted。
+如果在 Perfetto 中发现某个 App 的 JobScheduler 任务长时间不执行，先检查它的 Standby Bucket。Rare、Restricted，或者从未启动过的 Never，都可能解释为什么后台任务几乎没有运行机会。
 
-[已验证: 官方文档, developer.android.com/topic/performance/appstandby]
+[已验证: 官方文档 developer.android.com/topic/performance/appstandby；AOSP android-16.0.0_r1 frameworks/base/core/java/android/app/usage/UsageStatsManager.java]
 
 这个机制的实际影响：App 的后台行为频率不完全由开发者代码决定，而是由用户习惯和系统的 ML 模型共同决定。同一个 App，在重度用户的手机上和在偶尔打开的用户的手机上，后台任务的执行频率可能相差数倍。
 
-## Android 10：EAS 成为默认调度策略
+## Android 10：EAS 成为主流调度路线
 
-前面几个版本我们讲的都是系统层面对 App 后台行为的约束。Android 10 在更底层做了一件重要的事：**EAS（Energy Aware Scheduling）成为内核调度的默认策略**。
+前面几个版本讲的是系统如何约束 App 的后台活动。Android 10 这一阶段，调度器本身也在变。更准确的说法是，EAS 在 Android 10 时期成为大.LITTLE 设备的主流路线，很多新设备把它作为默认选择，但前提是内核已经具备 Energy Model、相关 kernel config，厂商 bringup 也把参数校准完成。
 
-我们在 §5.2 详细讲了 EAS 的工作原理（包括能量模型、OPP 表、负载预测等核心机制），这里重点说它从"可选"变成"默认"意味着什么。
+我们在 §5.2 详细拆过 EAS 的工作方式，这里只看版本演进带来的变化。EAS 把能量模型接到 CFS 调度决策里。调度器在选择 CPU 时，不只看哪个核心空闲，还会估算不同 CPU 上的能耗和完成时间，然后在性能与功耗之间取一个更合适的点。
 
-EAS 的核心是在 CFS（Completely Fair Scheduler）的基础上加入能量模型。当调度器需要决定把一个任务放在大核还是小核上时，它不再只看哪个核心有空闲，而是计算"这个任务在大核上跑 2ms 和小核上跑 5ms，哪个更省电"。在大.LITTLE 架构的 SoC 上（也就是几乎所有现代手机芯片），这个决策每时每刻都在发生。
+这也是为什么“Android 10 默认启用 EAS”这句话不能写得太满。没有 Energy Model，或者厂商没有把 capacity、frequency、util 这一套参数校准好，设备仍可能继续使用更传统的调度方案，或者只启用部分能力。做跨设备 Perfetto 对比时，如果一个 Android 10 设备明显偏向小核、另一个却没有这种特征，先别急着把原因归到 App 代码，先确认内核配置和厂商 bringup。
 
-EAS 早在 2016 年就合入了 Android Common Kernel，但到 Android 10 才正式成为默认策略。原因是它需要硬件厂商提供准确的能量模型数据（EM，Energy Model），如果模型不准，调度器可能做出更差的决定——比如把所有任务都塞到小核上，导致性能下降。
+对 App 开发者来说，同一段工作负载在不同设备上的落核位置可能不同。对系统工程师来说，CPU frequency、CPU idle state、task migration 和 uclamp 提示要一起看，单看利用率很容易误判。
 
-EAS 成为默认的意义在于：
-
-- **对 App 开发者**：App 的线程调度，从"哪个核心空闲去哪个"变成了"综合考虑性能和功耗的最优选择"。同样的代码在 Android 10 上可能比 Android 9 跑得慢一点点（因为系统优先省电），但整体功耗会下降。
-- **对系统工程师**：在做性能分析时，不能只看 CPU 频率和利用率，还要结合 EAS 的调度决策来理解为什么任务被分配到了特定的核心。在 Perfetto 中，可以通过 CPU 调度 Track 观察任务的迁移模式。
-
-[已验证: ARM 官方文档 - EAS, source.android.com/docs/core/power]
+[已验证: ARM EAS 文档；source.android.com/docs/core/power]
 
 ### Android 10 的其他功耗相关变化
 
@@ -207,6 +217,18 @@ Android 10 还做了两件和功耗直接相关的改动：
 第二，**引入了"使用中"（while-in-use）位置权限模型**。后台 App 获取位置信息变得更困难，需要用户显式授予 `ACCESS_BACKGROUND_LOCATION` 权限。这个变化间接减少了后台 App 的工作量。
 
 [已验证: 官方文档, developer.android.com/about/versions/10/privacy/changes]
+
+## [自动发现] Android 11-15：schedtune 退场，uclamp 与 task profiles 进入主线
+
+如果只记住 EAS 和 GKI，中间会少掉最关键的一层，线程的性能意图怎么真正传到调度器。Android 10 之前，很多设备习惯用 schedtune 和一组厂商自定义 cgroup boost 做前台、后台、Top App 的差异化调度。到 Android 11 之后，AOSP 开始把这类策略收敛到 `libprocessgroup` 和 `task_profiles.json` 这一套统一接口里。
+
+`task_profiles.json` 的作用很直接，框架给进程或线程打上 profile，`libprocessgroup` 再把这个 profile 展开成具体的 cgroup、cpuset、timer slack 和 uclamp 操作。到了 android-16.0.0_r1，文件里已经能直接看到 `UClampMin -> cpu.uclamp.min`、`UClampMax -> cpu.uclamp.max` 这样的映射。也就是说，线程“至少要拿到多高的算力”“最多只能吃到多少 CPU”，在这一层就已经被写成了调度器能直接消费的参数。
+
+这段演进把 §5.2 和 §5.9 串了起来。§5.2 讲的是 EAS 怎么做 CPU 选择，§5.9 讲的是 ADPF / PerformanceHint 怎么让 App 报告自己的工作节奏。它们之间还隔着一层系统策略，hint session、task profile、uclamp、cpuset。PerformanceHintManager / ADPF 提供的是 work duration hint，本身不等于调度参数。系统或厂商策略需要把这些 hint 转成更低层的线程分组、uclamp 调整或 cpuset 选择，调度器才会真正看到差异。
+
+对排查工作也有直接帮助。如果一个线程明明负载不高，却总被放在大核上，或者一直被压在小核，别只盯着 EAS 算法。先看它当前属于什么 task profile，再看对应 profile 有没有给 `cpu.uclamp.min`、`cpu.uclamp.max` 或 cpuset 施加限制。很多“调度器好像失灵了”的问题，最后都不是 `fair.c` 算错，而是策略层先把范围框好了。
+
+[已验证: source.android.com/docs/core/perf/cgroups；AOSP android-16.0.0_r1 platform/system/core/libprocessgroup/profiles/task_profiles.json]
 
 ## Android 12+：对精确闹钟、前台服务、后台启动的持续限制
 
@@ -269,27 +291,21 @@ Android 16 继续对 JobScheduler 进行精细化管控。核心变化是 Job �
 ## GKI 对内核调度模块定制化的影响
 
 
-GKI（Generic Kernel Image）的引入是 Android 内核架构的一个重大转变。Android 11 以 GKI 1.0（Linux kernel 5.4）的形式首次引入，当时是可选的。到了 Android 12，GKI 2.0（kernel 5.10+）成为新设备的强制要求，OEM 不得修改内核核心代码，且设备必须使用 Google 签名的 boot image。Android 15 的 GKI 内核版本已迭代至 6.6，同时新增了 16KB page size 支持。在 Android 15 中默认未启用，但从 2025 年 11 月起，Google Play 要求所有 targetSdk >= 35 的 App 必须兼容。[已验证: source.android.com/docs/core/architecture/kernel/gki, developer.android.com/guide/practices/page-sizes]
+GKI（Generic Kernel Image）把 Android 通用内核和厂商定制拆开了。Android 11 引入 GKI 1.0，Android 12 起要求搭配 5.10+ 内核的新设备采用这套模型。它的目标不是让所有设备“长得一样”，而是把可复用的通用内核和厂商自带模块分开，减少长期堆补丁造成的碎片化。Android 15 这一代常见的 GKI 基线已经来到 6.6，同时 16KB page size 兼容也开始影响 App 和 SoC 适配节奏。
 
-GKI 对 CPU 调度的影响是一个容易被忽视但很重要的变化。
+这里有个经常被写反的点。GKI release boot image 带有 Google 用于认证/VTS 的 `boot_signature`，这不等于 OEM 量产 `boot.img` 由 Google 代签。量产设备的 Verified Boot 仍然看 OEM 自己的 AVB key。把 `boot_signature` 和 AVB 设备签名混成一件事，会把认证流程和设备量产流程讲乱。
 
-在 GKI 之前，SoC 厂商（高通、联发科等）可以直接修改内核调度器代码来适配自己的硬件。比如联发科可以在 CFS 中加入针对天玑芯片大小核架构的特殊优化，高通可以为骁龙的调度策略写定制代码。这种做法的代价是内核碎片化，每家厂商的内核都是“自己的版本”，安全补丁和调度器改进很难统一推送。
+GKI 对 CPU 调度的影响，主要体现在厂商还能在哪里放自己的策略。
 
-GKI 的核心思路是：**内核是统一的标准版本，厂商的定制化通过可加载模块和 Vendor Hook 实现**。具体到调度方面：
+1. **通用调度器代码更收敛了**。厂商不能再长期依赖直接改 CFS/EAS 主干代码的方式维护自家分支，新增策略更适合通过 vendor modules、vendor hooks，或者推动上游合入。
 
-1. **厂商不能直接修改 CFS/EAS 的核心代码**。GKI 内核是 Google 编译的统一二进制，厂商只能在此基础上加载模块。
+2. **Vendor Hook 仍然是厂商插策略的常用位置**。在 android15-6.6 的调度 hook 里，可以直接看到 `android_rvh_cpu_overutilized`、`android_rvh_sched_balance_rt`、`android_rvh_uclamp_eff_get` 这类入口。它们比文档式的伪名字更重要，因为你在设备差异分析里真正会碰到的就是这些符号。
 
-2. **通过 Vendor Hook 注入定制逻辑**。GKI 2.0（内核 5.10+）引入了一系列 vendor hook，基于内核 tracepoint 实现。厂商可以通过这些 hook 在调度决策的关键节点注入自己的逻辑，比如：
-   - `sched_exit()`：任务退出时的统计
-   - `uclamp_eff_value`：修改 EAS 中 uclamp（utilization clamping）的有效值
-   - `cpu_overutilized`：判断 CPU 是否"过载"
-   - `balance_rt()`：实时任务的负载均衡
+3. **`sched_ext` 还不是 Android 15 GKI 6.6 的现成能力**。它在 upstream Linux 6.12 才合入，更适合写成后续可能进入 Android common kernel 的实验方向。今天在 Android 15 设备上谈调度定制，主角仍然是 vendor hooks、uclamp、cpuset 和 task profiles，不是 `sched_ext`。
 
-3. **eBPF 和 sched_ext 提供了新的扩展路径**。Linux 6.6+ 引入的 `sched_ext` 机制允许通过 eBPF 程序实现自定义调度策略。厂商因此可以在不修改内核代码的情况下，用 eBPF 写出"游戏模式"或"省电模式"的调度策略。
+对性能分析的直接影响是，两个都跑 Android 15 的设备，调度差异未必来自不同 Linux 版本，更常见的是 vendor hook、task profile 和 uclamp 策略不同。Perfetto 里看到的落核差异、频点抬升速度、RT 线程平衡方式，往往就从这里分叉。
 
-对性能分析的影响：在分析不同厂商设备的调度行为差异时需要注意这些差异不是来自内核版本的不同，而是来自 Vendor Hook 注入的定制逻辑。同样运行 Android 15 的骁龙和天玑设备，同一个 App 的任务可能被分配到不同的核心上。
-
-[已验证: source.android.com/docs/core/architecture/kernel/gki]
+[已验证: GKI 官方说明；AOSP android15-6.6.98_r00 kernel/common/include/trace/hooks/sched.h；Android 15 16KB page size 官方文档]
 
 ## 版本演进全景时间线
 
@@ -302,18 +318,18 @@ GKI 的核心思路是：**内核是统一的标准版本，厂商的定制化�
 | 7.0 | Doze on the Go + 移除隐式广播 | 系统策略层 |
 | 8.0 | 后台执行限制 | 应用层（强制） |
 | 9.0 | Adaptive Battery + App Standby Buckets | 系统策略层（ML 驱动） |
-| 10 | EAS 默认启用 + 后台 Activity 限制 | 内核层 + 应用层 |
-| 11 | 后台位置权限收紧 | 应用层 |
-| 12 | SCHEDULE_EXACT_ALARM + FGS 启动限制 | 应用层（权限化） |
+| 10 | EAS 成为主流路线（取决于 EM + kernel 支持）+ 后台 Activity 限制 | 内核层 + 应用层 |
+| 11 | task profiles 开始统一 cgroup / 调度策略入口 | Framework ↔ kernel |
+| 12 | Performance Hint API 引入 + 精确闹钟权限化 | API 层 + 应用层 |
 | 13 | 精确闹钟默认拒绝 + FGS Task Manager | 应用层（用户可见） |
 | 14 | FGS 类型化 + 后台 Activity opt-in | 应用层（类型化） |
-| 15 | 后台网络受限 + Doze 加速 50% | 应用层 + 系统策略层 |
+| 15 | GKI 6.6 常见化 + 后台网络受限 + Doze 加速 50% | 内核层 + 应用层 + 系统策略层 |
 | 16 | JobScheduler 配额优化 | 系统策略层（精细化） |
 
 这条演进线背后有三个趋势：
 
 1. **约束越来越严格**：从推荐使用 JobScheduler（5.0），到限制后台服务（8.0），到限制精确闹钟（12-13），到限制后台网络（15）。每一步都在封堵"App 自己控制 CPU"的路径。
-2. **策略越来越智能**：从静态的 Doze（6.0），到 ML 驱动的 Adaptive Battery（9.0），到动态 Standby Bucket 打分（15）。系统越来越擅长根据用户行为做决策。
+2. **策略越来越智能**：从静态的 Doze（6.0），到 ML 驱动的 Adaptive Battery（9.0），再到按 Standby Bucket、前后台状态和 Job 配额做动态控制（16）。系统越来越擅长根据用户行为和设备状态做决策。
 3. **用户可见性越来越高**：前台服务通知（8.0）→ FGS Task Manager（13）→ 后台网络异常提示（15）。用户对"哪些 App 在用 CPU"的了解越来越清晰。
 
 ## 在 Perfetto 中的观察
@@ -356,12 +372,16 @@ FCM（Firebase Cloud Messaging）高优先级消息可以绕过 Doze。如果推
 - [Background Execution Limits (Android 8.0)](https://developer.android.com/about/versions/oreo/background) [已验证: 官方文档]
 - [App Standby Buckets](https://developer.android.com/topic/performance/appstandby) [已验证: 官方文档]
 - [Energy Aware Scheduling - ARM Documentation](https://developer.arm.com/documentation/den0024/latest) [已验证: ARM 官方文档]
-- [GKI - Generic Kernel Image](https://source.android.com/docs/core/architecture/kernel/gki) [已验证: source.android.com]
+- [GKI 官方文档](https://source.android.com/) [已验证: source.android.com 站点内容]
 - [sched_ext - LWN.net](https://lwn.net/Articles/922405/) [已验证: LWN]
 - [Android 15 Behavior Changes](https://developer.android.com/about/versions/15/behavior-changes-15) [已验证: 官方文档]
 - [JobScheduler Reference](https://developer.android.com/reference/android/app/job/JobScheduler) [已验证: 官方文档]
-- AOSP 路径参考：
-  - `frameworks/base/services/core/java/com/android/server/DeviceIdleController.java` — Doze 模式实现
-  - `frameworks/base/services/core/java/com/android/server/usage/AppStandbyController.java` — App Standby Buckets 实现
-  - `frameworks/base/services/core/java/com/android/server/job/JobSchedulerService.java` — JobScheduler 服务
+- [Android cgroups and task profiles](https://source.android.com/docs/core/perf/cgroups) [已验证: source.android.com]
+- AOSP 路径参考（android-16.0.0_r1 / android15-6.6.98_r00）：
+  - `frameworks/base/core/java/android/app/usage/UsageStatsManager.java` — Standby bucket 常量定义（含 `STANDBY_BUCKET_NEVER = 50`）
+  - `frameworks/base/apex/jobscheduler/service/java/com/android/server/DeviceIdleController.java` — Doze 模式实现
+  - `frameworks/base/apex/jobscheduler/service/java/com/android/server/usage/AppStandbyController.java` — App Standby Buckets 实现
+  - `frameworks/base/apex/jobscheduler/service/java/com/android/server/job/JobSchedulerService.java` — JobScheduler 服务
+  - `system/core/libprocessgroup/profiles/task_profiles.json` — task profile 与 uclamp 映射
+  - `kernel/common/include/trace/hooks/sched.h` — Android common kernel vendor hooks
   - `kernel/sched/fair.c` — CFS/EAS 调度器核心代码
