@@ -30,11 +30,12 @@ related_chapters: ["7.1", "7.2", "7.4", "7.5", "2.4", "2.5", "8.3"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-04-08"
 gap_source: "AOSP结构+官方文档+读者需求"
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
 task9_result: needs-rework
-task2b_state: pending
+task2b_result: fixed
+task2b_state: fixed
 ---
 
 # 7.12 View 体系性能优化：布局层级、inflate 与 measure/layout 开销
@@ -62,15 +63,15 @@ task2b_state: pending
 > 缺少真实 trace 或截图时，用 `[图：...]` 标注说明，不要编造现象。
 <!-- outline-end -->
 
-我们在前面的章节中分析了卡顿的定义、原因和分析方法论。这一节我们把镜头拉近到 Android View 体系本身——每一个 Activity 的界面都是由一棵 View 树构成的，这棵树的创建（inflate）、测量（measure）、布局（layout）是每一帧渲染工作的起点。如果这三步出了问题，后面的 draw 和 GPU 渲染再快也救不回来。
+我们在前面的章节中分析了卡顿的定义、原因和分析方法论。这一节把镜头拉近到 Android View 体系本身。每个 Activity 的界面都对应一棵 View 树，首帧创建和发生布局请求的那几帧，inflate、measure、layout 往往就是主线程最重的工作；如果这里只要多跑几轮，后面的 draw 和 GPU 渲染再快也补不回来。
 
-这一节我们从三个维度拆解 View 体系的性能开销：布局层级深度对帧耗时的影响、LayoutInflater.inflate() 的完整流程与耗时来源、measure/layout 的递归遍历机制以及 `requestLayout()` 和 `invalidate()` 的性能差异。每个部分都配有在 Perfetto 中的定位方法。
+这一节从三个维度拆解 View 体系的开销：布局层级深度对帧耗时的影响、`LayoutInflater.inflate()` 的完整流程与耗时来源、`measure/layout` 的递归遍历机制，以及 `requestLayout()` 和 `invalidate()` 的边界。每个部分都配有在 Perfetto 中的定位方法。
 
 ## 为什么要关注 View 体系的性能
 
-Android 渲染管线的三个阶段——Measure、Layout、Draw——都是对整棵 View 树的**自顶向下遍历**。树越深，遍历的节点越多，每个阶段耗费的时间就越长。更麻烦的是，某些 ViewGroup（比如 `RelativeLayout`，以及使用了 `layout_weight` 的 `LinearLayout`）需要对子 View 执行**两轮甚至多轮** measure 才能确定最终尺寸。嵌套几层这样的 ViewGroup，measure 的轮次会指数级增长。
+Android 的一次 traversal 可能包含 Measure、Layout、Draw 三个阶段，但只有在 `requestLayout()`、窗口尺寸变化或 insets 变化把 `mLayoutRequested` 置为 true 时，系统才会重新执行 Measure 和 Layout。树越深，节点越多，一旦这两个阶段被触发，主线程就要花更多时间递归整棵 View 树。更麻烦的是，某些 ViewGroup（比如 `RelativeLayout`，以及使用了 `layout_weight` 的 `LinearLayout`）会让重复 measure 次数继续上升。
 
-Google 官方做过一个基准测试 [已验证: Google Developers Blog, 2017-08-24]：用一个包含 `RelativeLayout` 嵌套 `LinearLayout` 的典型注册表单布局，Systrace 记录到 **80 次** measure/layout pass；用 `ConstraintLayout` 扁平化重写后，同一个布局的 pass 数降到接近个位数。80 次 pass 的代价很直接。在 60Hz 屏幕上，一帧的预算是 16.6ms，80 次 pass 可能吃掉整帧预算的绝大部分。
+Google 在 2017 support ConstraintLayout 时代做过一个基准案例 [已验证: Google Developers Blog, 2017-08-24]：一个以 `RelativeLayout` 嵌套 `LinearLayout` 为主的注册表单，在 20 秒 Systrace 窗口里出现了 80 次 expensive measure/layout alerts；换成更扁平的 `ConstraintLayout` 版本后，同一窗口里的 alerts 明显减少。这个数字说明嵌套层级和重复 measure 会把布局成本迅速放大，但它不是“单帧固定 80 次 pass”，也不能直接外推到今天的 AndroidX / 120Hz 设备。
 
 [图：Google 官方 benchmark 对比——RelativeLayout 嵌套 vs ConstraintLayout 的 Systrace 截图，标注 pass 数差异]
 
@@ -84,7 +85,7 @@ Google 官方做过一个基准测试 [已验证: Google Developers Blog, 2017-0
 
 `LayoutInflater.inflate()` 的核心流程可以拆成三步：
 
-**第一步：XML 解析。** Android 的布局文件在编译时已经被 `aapt2` 转换为二进制 XML 格式（`.arsc` 优化的 compact binary XML），运行时由 `XmlPullParser` 读取。二进制 XML 比纯文本 XML 解析快得多，但这仍然是 inflate 的固定开销之一。
+**第一步：XML 解析。** Android 的 layout XML 在 `aapt2` 的 compile / link 阶段会以 APK 内的 binary XML 形式保存，`resources.arsc` 保存的是资源表与索引，两者不是同一个产物。运行时 `XmlPullParser` 读取的是 binary XML 中的节点和属性信息，这部分成本比文本 XML 低，但仍然属于 inflate 的固定开销。
 
 [已验证: AOSP frameworks/base/core/java/android/view/LayoutInflater.java, inflate() 方法]
 
@@ -156,15 +157,19 @@ public View createView(View parent, String name, Context context, AttributeSet a
 
 ### measure/layout 的递归遍历机制
 
-Android 的渲染管线在处理 View 树时，三个阶段都是自顶向下的深度优先遍历：
+从 `ViewRootImpl` 的视角看，真正驱动 View 树遍历的是 `performTraversals()`。这一轮 traversal 不一定每次都完整执行 Measure、Layout、Draw 三个阶段。`requestLayout()`、窗口尺寸变化、insets 变化等条件会让 `mLayoutRequested` 为 true，这时 `performTraversals()` 会进入 `performMeasure()` 和 `performLayout()`；如果只是 `invalidate()`，很多帧会直接复用上一次布局结果，把主要成本留在 `performDraw()`。
 
-- **Measure 阶段**：从 ViewRootImpl 开始，调用根 View 的 `measure()`，根 View（通常是一个 `DecorView` → `FrameLayout`）在 `onMeasure()` 中遍历所有子 View 并调用它们的 `measure()`。每个子 ViewGroup 再递归地 `measure()` 自己的子 View，直到叶子节点。
-- **Layout 阶段**：类似地，从 `ViewRootImpl.performLayout()` 开始，递归调用每个 View 的 `layout()` → `onLayout()`。
+当系统确实需要重新布局时，Measure 和 Layout 都是自顶向下的递归过程：
+
+- **Measure 阶段**：从 `ViewRootImpl` 调用根 View 的 `measure()` 开始，父 `ViewGroup` 在 `onMeasure()` 中继续 measure 子 View。
+- **Layout 阶段**：从 `ViewRootImpl.performLayout()` 开始，递归调用每个 View 的 `layout()` → `onLayout()`。
 - **Draw 阶段**：从 `ViewRootImpl.performDraw()` 开始，递归调用 `draw()` → `onDraw()`。
 
-[图：View 树三阶段遍历示意图——Measure/Layout/Draw 的递归过程]
+[图：View 树 traversal 示意图——标注 `mLayoutRequested=true` 时会进入 Measure/Layout，普通重绘帧可只走 Draw]
 
-这里要看清一点：View 树的**每一层**都会增加一轮方法调用栈。如果一个布局有 10 层嵌套（不算少见），Measure 阶段就要走过 10 层递归；如果其中某层有多个子 View，每一层还要遍历兄弟节点。假设一棵 View 树有 100 个节点、平均深度 8 层，一次 measure 的递归调用次数至少是 100 次，加上 ViewGroup 自身对子 View 的遍历逻辑，实际调用次数更多。
+[已验证: AOSP frameworks/base/core/java/android/view/ViewRootImpl.java, `performTraversals()` 对 `mLayoutRequested` 的判断]
+
+这里要看清一点：View 树的**每一层**都会增加一轮方法调用栈。如果一个布局有 10 层嵌套（不算少见），一旦进入 Measure 阶段，就要走过 10 层递归；如果其中某层有多个子 View，每一层还要遍历兄弟节点。假设一棵 View 树有 100 个节点、平均深度 8 层，一次 measure 的递归调用次数至少是 100 次，加上 ViewGroup 自身对子 View 的遍历逻辑，实际调用次数更多。
 
 ### 量化关系：层级深度与帧耗时
 
@@ -182,7 +187,7 @@ Android 的渲染管线在处理 View 树时，三个阶段都是自顶向下的
 
 `RelativeLayout` 的 `onMeasure()` 会对每个子 View 执行两轮 measure。原因是 `RelativeLayout` 允许子 View 之间相互约束（如 `layout_toRightOf`、`layout_below`），在第一轮 measure 时，某个子 View 的尺寸可能依赖另一个子 View 的尺寸，而后者尚未完成测量。所以 `RelativeLayout` 不得不再跑一轮。
 
-嵌套的 `RelativeLayout`（这在老项目中很常见）会让这个问题加剧：外层 `RelativeLayout` 的每一轮 measure 都会触发内层 `RelativeLayout` 的两轮 measure，最终产生 $2^n$ 轮（n 是嵌套层数）的效果。
+嵌套的 `RelativeLayout`（这在老项目中很常见）会让这个问题更难控制：外层每次重新 measure，内层 `RelativeLayout` 也可能各自再跑两轮 measure，累计 pass 数会上升得很快。这里更稳妥的表述是“重复 measure 开销被层层放大”，而不是把它写成严格的 `$2^n$` 数学公式。真实放大量取决于子树结构、`MeasureSpec` 组合以及是否提前复用已测结果。
 
 [已验证: AOSP frameworks/base/core/java/android/widget/RelativeLayout.java, onMeasure() 中的两次遍历]
 
@@ -266,13 +271,15 @@ void scheduleTraversals() {
 
 ### 官方 benchmark 数据
 
-Google 官方做了详细的性能对比 [已验证: Google Developers Blog, "Understanding the performance benefits of ConstraintLayout", 2017-08-24]：
+Google 在 2017 support ConstraintLayout 时代做过一组公开测试 [已验证: Google Developers Blog, "Understanding the performance benefits of ConstraintLayout", 2017-08-24]：
 
-- **测试布局**：一个典型的注册表单页面，包含图片、标题、多个输入框和按钮
-- **RelativeLayout 嵌套方案**：XML 中有多层嵌套的 `RelativeLayout` + `LinearLayout`，Systrace 记录到 **80 次** measure/layout pass
-- **ConstraintLayout 方案**：同一布局用 `ConstraintLayout` 重写，XML 中只有 1 层嵌套，pass 数降到极低
+- **测试布局**：一个注册表单页面，包含图片、标题、多个输入框和按钮
+- **RelativeLayout 嵌套方案**：Systrace 在 20 秒抓取窗口里报告 80 次 expensive measure/layout alerts
+- **ConstraintLayout 方案**：把层级压平后，同一窗口里的 expensive alerts 明显减少
 
-这个差异的根源就是前面提到的：`RelativeLayout` 的二次 measure + 嵌套放大效应。`ConstraintLayout` 通过内部优化的约束求解器，一次遍历就能确定所有子 View 的位置。
+这组数据能证明两件事。第一，扁平层级通常更容易减少重复 measure/layout。第二，`RelativeLayout` 这类需要多轮测量的容器，在嵌套后会更容易把 traversal 成本放大。它不能直接说明“当前 AndroidX 项目每帧一定节省多少毫秒”，因为测试对象、support library 版本、设备刷新率和 trace 口径都与今天的项目环境不同。
+
+`ConstraintLayout` 的内部实现也不该被简化成“一次遍历就能确定所有子 View 的位置”。更准确的说法是：它通过约束求解器和更扁平的层级，减少很多传统嵌套布局里的重复 `measure/layout`。真正的收益大小，还是要用当前设备上的 FrameMetrics 或 Perfetto 实测。
 
 [图：Google 官方 benchmark 的 Systrace 对比截图——80 passes vs 扁平化的 pass 数]
 
@@ -374,14 +381,16 @@ new AsyncLayoutInflater(context).inflate(
 
 ### 限制与注意事项
 
-`AsyncLayoutInflater` 有几个硬性限制：
+`AsyncLayoutInflater` 能不能真的把 inflate 留在后台线程，关键看下面几个前提：
 
-1. **不支持 Fragment.onCreateView()**：Fragment 的 View 创建必须在主线程
-2. **不支持带有 `onClick` 属性的 View**：因为 `onClick` 底层是通过 `Handler` 在主线程查找方法的
-3. **不支持创建 `LayoutInflater.Factory2` 拦截的 View**：如果 App 的 `Factory2` 依赖主线程的 Context（比如主题相关），后台线程的 Context 可能不完整
-4. ** inflate 的 View 树中不能有依赖主线程 Looper 的初始化逻辑**
+1. **parent 的 `generateLayoutParams(AttributeSet)` 必须线程安全**。如果父容器的这一步只能在主线程执行，后台 inflate 会失败并回退到 UI thread。
+2. **被创建的 View 不能在构造或初始化阶段创建 `Handler`，也不能依赖 `Looper.myLooper()`**。这类 View 在后台线程里构造时很容易抛异常。
+3. **默认 `BasicInflater` 不会复用 AppCompat 那套主线程 `Factory2` 链，也不支持包含 Fragment 的布局**。AndroidX 新版额外提供 `AsyncLayoutFactory` 构造入口，但 factory 逻辑本身也必须能在后台线程安全运行。
+4. **回退是常见结果，不是异常路径**。`AsyncLayoutInflater` 的后台线程只要抛 `RuntimeException`，就会记录日志并在 UI thread 重新 inflate。功能可能看起来正常，但主线程时间并没有省下来。
 
-实际使用中，`AsyncLayoutInflater` 最适合用在启动阶段加载不立即显示的复杂布局（如首页的某个延迟出现的模块），或者在弹窗/对话框中延迟加载内容视图。
+[已验证: AndroidX `asynclayoutinflater/asynclayoutinflater/src/main/java/androidx/asynclayoutinflater/view/AsyncLayoutInflater.java` 注释与 `InflateThread.runInner()` 回退逻辑]
+
+实际使用中，`AsyncLayoutInflater` 更适合启动后延迟展示的复杂布局，或者弹窗/对话框里可以晚一点 attach 的内容视图。
 
 ### 在 Perfetto 中的表现
 
@@ -412,7 +421,13 @@ Choreographer#doFrame
 
 ### 定位具体 View 的耗时
 
-在 Android 10（API 29）及以上，可以通过 `View.setTransitionVisibility()` 或 `Window.setFrameContent()` 的 trace tag 来看到具体 View 的 measure/layout 时间。也可以在代码中手动添加 trace：
+Perfetto 最稳的系统级入口还是 `Choreographer#doFrame`、`ViewRootImpl.performTraversals()`、`performMeasure()`、`performLayout()` 这些 slice。它默认不会把每个 View 实例的 `onMeasure()` / `onLayout()` 逐个展开给我们，所以不要把 `View.setTransitionVisibility()` 或 `Window.setFrameContent()` 当成通用定位入口。
+
+要把系统级耗时继续收敛到具体 View，常用的是三种可验证路径：
+
+- **手动 trace**：在自定义 View、复杂容器或 Adapter 绑定代码里加 `Trace.beginSection()` / `Trace.endSection()`
+- **结构检查**：用 Layout Inspector、ViewCapture 或 `gfxinfo` 看层级、节点数量和可疑容器
+- **业务埋点**：把可疑布局阶段的开始/结束时间记到日志，再和 Perfetto 中的长 traversal 放到同一时间段里比较
 
 ```java
 // 在自定义 View 中添加 trace
@@ -424,7 +439,7 @@ protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
 }
 ```
 
-在 Perfetto 中搜索对应的 trace tag 即可看到每次 `onMeasure()` 的精确耗时。
+在 Perfetto 中搜索对应的 trace tag，即可看到每次 `onMeasure()` 的精确耗时。这种办法虽然需要手工埋点，但结论可复现，也不会把不存在的 framework API 当成定位入口。
 
 ### Layout Inspector
 
@@ -476,6 +491,7 @@ Android Studio 的 Layout Inspector 可以在运行时查看 View 树的结构�
 - `frameworks/base/core/java/android/view/ViewGroup.java` — measureChildWithMargins、addView
 - `frameworks/base/core/java/android/widget/RelativeLayout.java` — 二次 measure 的实现
 - `frameworks/base/core/java/android/widget/LinearLayout.java` — layout_weight 的 measure 逻辑
+- `androidx/asynclayoutinflater/asynclayoutinflater/src/main/java/androidx/asynclayoutinflater/view/AsyncLayoutInflater.java` — 后台 inflate 条件与回退逻辑
 
 ### 官方文档与博客
 
