@@ -3,39 +3,60 @@ title: "后台执行限制与优化"
 chapter: "5.8"
 section: "5.8"
 status: ready-for-review
-applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37)"
+applicable_versions: "Android 6.0 (API 23) - Android 16 (API 36)"
 drafted_date: "2026-04-05"
 drafted_by: "openclaw-task2a"
-last_verified: "2026-04-05"
-last_verified_against: "AOSP android-16.0.0_r1"
+last_verified: "2026-04-12"
+last_verified_against: "AOSP android-16.0.0_r1 + Android Developers docs"
 confidence: medium
 sources:
   - type: official
+    path: "https://developer.android.com/training/monitoring-device-state/doze-standby"
+  - type: official
+    path: "https://developer.android.com/topic/performance/appstandby"
+  - type: official
+    path: "https://developer.android.com/topic/performance/power/power-details#app-stdby-bucket"
+  - type: official
     path: "https://developer.android.com/about/versions/oreo/background"
   - type: official
-    path: "https://developer.android.com/guide/background"
+    path: "https://developer.android.com/about/versions/14/changes/fgs-types-required"
   - type: official
-    path: "https://developer.android.com/about/versions/12/foreground-services"
+    path: "https://developer.android.com/about/versions/15/behavior-changes-15#fgs-hardening"
   - type: official
-    path: "https://developer.android.com/about/versions/14/changes/fgs-types"
+    path: "https://developer.android.com/about/versions/15/changes/foreground-service-types"
   - type: official
-    path: "https://developer.android.com/about/versions/15/changes"
+    path: "https://developer.android.com/develop/background-work/background-tasks/persistent/getting-started/define-work"
+  - type: official
+    path: "https://developer.android.com/develop/background-work/background-tasks/data-transfer-options"
+  - type: official
+    path: "https://developer.android.com/develop/background-work/services/alarms/schedule"
+  - type: official
+    path: "https://developer.android.com/develop/background-work/services/fgs/restrictions-bg-start"
+  - type: official
+    path: "https://developer.android.com/reference/android/app/Service"
+  - type: official
+    path: "https://developer.android.com/reference/android/app/job/JobScheduler"
   - type: aosp
-    path: "frameworks/base/services/core/java/com/android/server/DeviceIdleController.java"
-  - type: aosp
-    path: "frameworks/base/core/java/android/app/job/JobScheduler.java"
+    path: "frameworks/base/core/java/android/app/usage/UsageStatsManager.java"
   - type: aosp
     path: "frameworks/base/core/java/android/app/Service.java"
+  - type: aosp
+    path: "frameworks/base/apex/jobscheduler/service/java/com/android/server/usage/AppStandbyController.java"
+  - type: aosp
+    path: "frameworks/base/apex/jobscheduler/service/java/com/android/server/DeviceIdleController.java"
+  - type: aosp
+    path: "frameworks/base/apex/jobscheduler/framework/java/android/app/job/JobScheduler.java"
 tags: [后台限制, Doze, App Standby, 前台服务, WorkManager, JobScheduler, AlarmManager, 省电, 后台启动, BAL]
 related_chapters: ["5.6", "5.7", "11.2", "8.4"]
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
 task9_result: needs-rework
-task2b_state: pending
+task2b_state: fixed
+task6_result: "needs-rework"
+task2b_result: fixed
 reviewed_date: "2026-04-12"
 reviewed_by: "openclaw-task6"
-task6_result: "needs-rework"
 ---
 
 
@@ -57,7 +78,7 @@ task6_result: "needs-rework"
 ### 扩展（可选深入）
 
 - 🔸 Standby Bucket、Job 配额与网络策略的内部实现
-- 🔸 Android 16 / 17 的后台任务调试接口与策略变化
+- 🔸 Android 16 的后台任务调试接口与版本边界
 
 ### OpenClaw 加工指引
 
@@ -70,255 +91,246 @@ task6_result: "needs-rework"
 
 ## 为什么要了解后台执行限制
 
-当我们在 Perfetto 中看到灭屏后某个进程仍在疯狂地占用 CPU，或者在 Battery Historian 中发现某个 App 的后台网络活动密密麻麻地布满整条时间线——这些现象背后，要么是 App 没有遵守系统的后台限制，要么是系统已经对它进行了限制而开发者还浑然不知。
+当我们在 Perfetto 里看到灭屏后某个进程还在持续跑 CPU，或者在 Battery Historian 里看到后台 alarm、job、network 活动一直冒出来，排查往往会卡在同一个问题上：这是应用代码没收住，还是系统已经开始限流了。
 
-Android 的后台执行限制不是一蹴而就的。从 Android 6.0 引入 Doze 模式开始，到 Android 8.0 限制后台服务，再到 Android 14 强制声明前台服务类型，Google 用了近十年时间，一步步收紧 App 在后台能做的事情。每一次收紧都伴随着大量 App 崩溃、功能异常和开发者抱怨——但方向从未改变：**让后台行为可预测、可控、可省电。**
+Android 的后台限制是一套逐步收紧的制度。Android 6.0 引入 Doze 和 App Standby，Android 8.0 开始限制后台 service，Android 9 把 App Standby 细化成 Buckets，Android 12 加入 Restricted bucket 并限制后台启动 FGS，Android 14 和 15 又把 FGS 类型、权限和超时写成了更硬的运行时规则，Android 16 补上了 JobScheduler 的待执行原因观测接口。
 
-理解这套限制体系，对我们分析性能问题有两层意义。第一层，当我们发现某个后台任务没有被按时执行时，能判断出是系统主动限制的结果（正常行为），还是代码逻辑的 bug。第二层，当我们需要做后台优化时，知道应该用什么 API、遵循什么约束，才能既完成任务又不拖垮系统。
+理解这套机制，主要是为了解决两类问题。第一，后台任务没按预期执行时，先判断它是被系统延后了，还是代码本身有 bug。第二，真有后台需求时，选对 API，别拿前台服务、精确闹钟或者轮询把系统拖热。
 
-本章前面讨论了 CPU 调度（5.1）、EAS（5.2）、大小核（5.3）、DVFS（5.4）、Thermal（5.5）和 Android 功耗管理框架（5.6）。那些章节解决的是"硬件如何高效运行"的问题，而这一节解决的是"软件如何被允许运行"的问题——当 App 被推到后台，系统会逐步剥夺它的执行权利，直到它几乎什么都做不了。
+本章前面讨论了 CPU 调度（5.1）、EAS（5.2）、大小核（5.3）、DVFS（5.4）、Thermal（5.5）和 Android 功耗管理框架（5.6）。那些章节回答的是硬件怎么分配资源，这一节回答的是框架什么时候允许 App 在后台继续消耗这些资源。
 
-## Android 后台限制的演进：从"自由"到"管制"
+## Android 后台限制的演进：从“能跑就行”到“按规则跑”
 
-### Android 6.0 之前：蛮荒时代
+### Android 6.0 之前：后台几乎没有总闸门
 
-在 Android 6.0（Marshmallow）之前，App 在后台几乎没有限制。一个 App 只要在 manifest 中声明了 `android.permission.WAKE_LOCK`，就可以通过 `startService()` 启动一个长期运行的后台服务，然后持有一个 PARTIAL_WAKE_LOCK，让 CPU 一直为自己工作。用户的手机灭屏之后，几十个 App 各自持锁、各自同步、各自拉网络——电池以肉眼可见的速度往下掉。
+在 Android 6.0（Marshmallow）之前，App 在后台几乎没有统一的系统级约束。一个 App 只要拿到 `WAKE_LOCK`，再配一个长期存活的 service，就能在灭屏后继续占着 CPU、拉网络、做同步。那时很多厂商做“自启动管理”“后台白名单”，是在给 AOSP 补一层额外管控。
 
-那个年代，"杀后台"是所有手机厂商的标配功能。MIUI 的"自启动管理"、EMUI 的"受保护应用"、ColorOS 的"后台运行白名单"——这些厂商定制功能的本质，都是在弥补 AOSP 对后台行为管控的缺失。
+### Android 6.0-7.1：Doze、App Standby 与 Light Doze
 
-### Android 6.0-7.0：Doze 与 App Standby 登场
+Android 6.0 同时引入了 **Doze** 和 **App Standby**。Doze 盯的是设备状态，满足灭屏、静止、未充电等条件后，把大量后台活动推迟到维护窗口；App Standby 盯的是单个 App 的使用情况，长时间没被用户碰过的 App 会受到更严的后台限制。
 
-Android 6.0（API 23）引入了 **Doze 模式**。这是 Android 第一次在系统层面对后台行为进行大规模限制。当设备灭屏、静止、未充电一段时间后，系统进入 Doze 状态，强制暂停大部分后台活动。
+Android 7.0（API 24）又加了 **Light Doze**。设备只要灭屏，就会先进入更温和的 idle 流程，不必等到“长时间静止”才开始限流。它没有 Deep Doze 那么狠，但已经会推迟一部分后台工作。
 
-Android 7.0（API 24）在此基础上增加了 **Light Doze**——一个较温和的版本，在设备灭屏但可能还在移动时生效，限制比 Deep Doze 宽松但仍然有效。
+### Android 8.0：后台 service 真正被掐住
 
-同时，Android 7.0 引入了 **App Standby**，根据 App 的使用频率对其进行分级管理。不常用的 App 会被限制网络访问和后台任务执行频率。
+Android 8.0（API 26，Oreo）是后台执行模型的分水岭。后台 App 再直接调 `startService()`，系统会抛 `IllegalStateException`。如果必须在后台拉起持续工作，就要改成 `startForegroundService()`，并在很短时间内调用 `startForeground()` 把通知挂出来。
 
-我们在 5.6 节（Android 功耗管理）中详细讨论了 Doze 的维护窗口机制和 App Standby 的基本原理。这里不再重复，而是聚焦于从 Android 8.0 开始的进一步收紧。
+同一轮变更里，隐式广播也被大幅收紧。很多靠 manifest 常驻 receiver 拉起后台逻辑的旧做法，从这一代开始就走不通了。
 
-### Android 8.0：后台服务限制的转折点
+### Android 9-10：Buckets 与 BAL
 
-Android 8.0（API 26，Oreo）是一个分水岭。在此之前，App 可以通过 `startService()` 随时启动后台服务；在此之后，**后台 App 调用 `startService()` 会抛出 `IllegalStateException`**。这不是建议，是强制禁止。
+Android 9（API 28）把 App Standby 进一步细化为 **App Standby Buckets**，从按“常用/不常用”粗分，变成 Active、Working Set、Frequent、Rare 四档主桶。Android 12 以后又补上 Restricted 桶。
 
-Google 同时引入了 `startForegroundService()` 作为替代方案——它允许后台启动服务，但要求 App 必须在 **5 秒内** 调用 `startForeground()` 显示一个用户可见的通知。如果超时，系统会抛出 `ForegroundServiceDidNotStartInTimeException`（在某些版本中是 ANR），直接杀掉 App。
+Android 10（API 29）开始限制 **Background Activity Launch（BAL）**。后台弹 Activity 不再是想弹就弹，很多“锁屏后突然跳广告页”的路径从系统层就被卡掉了。
 
-这个设计反映了一个核心理念：**后台工作可以存在，但必须对用户透明。** 你想做后台同步？可以，但用户得看到一个通知知道你在做。如果用户觉得这个通知烦人，他可以关掉它——这就等于关掉了你的后台工作。
+### Android 12-16：Restricted bucket、FGS 类型和调试接口
 
-此外，Android 8.0 还限制了隐式广播（Implicit Broadcast）的接收。大部分系统广播（如 `BOOT_COMPLETED` 除外）不再能通过 manifest 注册的 Receiver 接收，必须使用 Context 注册的动态 Receiver。这直接砍掉了大量 App 在开机后扎堆唤醒的"传统操作"。
+Android 12（API 31）把后台限制又拧紧了一圈：
 
-### Android 9.0-10：App Standby Buckets 与后台启动 Activity 限制
+- 加入 **Restricted bucket**，给高耗电或长时间不使用的 App 更重的 job、alarm、network 限流
+- 后台启动前台服务时，如果不满足豁免条件，会抛 `ForegroundServiceStartNotAllowedException`
+- exact alarm 进入 special app access 体系，targetSdk 31+ 需要先处理权限门禁
 
-Android 9.0（API 28，Pie）引入了 **App Standby Buckets**，将前面的 App Standby 机制细化为五个桶：Active、Working Set、Frequent、Rare、Restricted。系统会根据用户的使用习惯（可能借助设备端机器学习）动态调整 App 所属的桶。不同桶的 App 在 JobScheduler 执行频率、Alarm 触发频率、网络访问权限上享有不同级别的限制。
+Android 13（API 33）把“长期未交互后更容易进入 Restricted bucket”的阈值，从 Android 12 / 12L 的 45 天收紧到 8 天。官方 App Standby 文档同时说明，满足 exemption 的应用不走这条自动降桶路径。
 
-这个机制与我们前面讨论的 EAS 调度器（5.2 节）和 DVFS（5.4 节）形成互补：硬件层通过调度器决定"哪个任务分到多少 CPU 资源"，框架层通过 Standby Bucket 决定"这个 App 的后台任务到底能不能执行"。
+Android 14（API 34）要求 FGS **显式声明类型**。类型、专属权限和运行时前提开始做强校验。Android 15（API 35）又补了 `mediaProcessing` 类型，并给 `dataSync` / `mediaProcessing` 加上 6 小时预算和 `Service.onTimeout(...)` 超时回调。
 
-Android 10（API 29）引入了 **后台 Activity 启动限制**（Background Activity Launch，简称 BAL）。在此之前，任何 App 都可以从后台弹出一个 Activity 覆盖在当前界面上——这就是臭名昭著的"广告弹窗"。Android 10 之后，后台 App 启动 Activity 会被系统静默忽略，只有极少数豁免情况（如全屏 Intent 通知、来电等）被允许。
+Android 16（API 36）没有推翻这套模型，但把 JobScheduler 的可观测性补得更像样了，开发者可以直接看 pending reason 和 pending reason history，不必只靠 `dumpsys jobscheduler` 猜原因。
 
-### Android 12-14：前台服务类型强制声明
-
-Android 12（API 31）进一步收紧了前台服务的启动限制：**后台 App 不能再启动前台服务**（除非满足特定豁免条件，如收到高优先级 FCM 消息）。如果违反，会抛出 `ForegroundServiceStartNotAllowedException`。同时引入了 **Notification Trampoline 限制**：从通知点击启动的 Broadcast Receiver 不能再启动后台服务，必须直接启动 Activity 或使用其他方式。
-
-Android 13（API 33）加快了 Restricted 桶的生效速度——从 Android 12 的 45 天未使用缩短到 **8 天**。如果一个 App 连续 8 天没有被用户打开，更容易进入最高限制级别的桶里。
-
-Android 14（API 34）引入了两项重要变化：
-
-**第一，前台服务类型强制声明。** App 必须在 manifest 中明确声明前台服务的类型（如 `camera`、`connectedDevice`、`dataSync`、`health`、`location`、`mediaPlayback`、`mediaProjection`、`messaging`、`phoneCall`、`specialUse`），否则调用 `startForeground()` 会抛出 `MissingForegroundServiceTypeException`。每种类型还对应一个特定的权限（如 `FOREGROUND_SERVICE_DATA_SYNC`），这些权限默认授予但不可由用户撤销。
-
-**第二，能耗惩罚桶。** 如果一个 App 反复触发 ANR，系统会自动将其移入 Restricted 桶，即使它的使用频率本应属于更高的桶。
-
-[图：Android 后台限制演进时间线，从 6.0 到 17，标注每个版本的核心限制变化]
+[图：Android 后台限制演进时间线，从 6.0 到 16，标注 Doze、App Standby Buckets、Restricted bucket、FGS 类型与 JobScheduler 调试接口]
 
 ## Doze 与 App Standby 机制的内部工作
 
-我们在 5.6 节中了解了 Doze 的基本概念和维护窗口机制。这里从性能分析的角度，深入看看 Doze 和 App Standby Buckets 对后台任务的实际影响。
+Doze 和 App Standby 经常一起出现，但它们盯的对象不同。Doze 看设备整体状态，App Standby 看单个应用的活跃度。排查后台任务时，这两个维度要一起看。
 
-### Deep Doze：逐步加深的休眠
+### Deep Doze：把后台工作压缩到维护窗口
 
-Deep Doze 在设备灭屏、静止、未充电的条件下触发。它的核心设计是**逐步延长休眠时间、缩短维护窗口**。
+Deep Doze 在设备灭屏、静止、未充电一段时间后触发。进入这一状态后，系统会把大多数后台活动延后，只在维护窗口里集中放行一小段时间。
 
-进入 Doze 后的第一阶段，系统大约每 25 分钟打开一个维护窗口（maintenance window），持续约 5 分钟。在维护窗口中，App 可以执行被暂停的工作（JobScheduler 任务、同步、Alarm 等）。之后系统回到休眠，间隔逐步加长到约 60 分钟、120 分钟……维护窗口的持续时间也逐渐缩短。
+Doze 期间，常见限制包括：
 
-在 Doze 期间被限制的行为包括：
+- 常规网络访问暂停，维护窗口内才会放行
+- 普通 `AlarmManager` 闹钟会推迟到维护窗口
+- `JobScheduler`、`SyncAdapter` 等延迟型后台任务会被后移
+- Wi-Fi 扫描等周期性动作会被压缩
 
-- 网络访问被完全禁止（维护窗口期间除外）
-- 标准 `AlarmManager` 闹钟被延迟到下一个维护窗口
-- `WakeLock` 被忽略（部分类型除外）
-- WiFi 扫描被禁止
-- 同步适配器（SyncAdapter）被暂停
-- `JobScheduler` 任务被推迟
+`setAndAllowWhileIdle()` / `setExactAndAllowWhileIdle()` 仍然能在 Doze 中触发，但这类 while-idle alarm 也有单独的频率上限，不能当成无限制的后门。
 
-唯一的例外是 `setAndAllowWhileIdle()` 和 `setExactAndAllowWhileIdle()` 设置的 Alarm——它们可以在 Doze 期间触发，但每个 App 每大约 9 分钟只能触发一次。这是给闹钟、日历提醒等必须准时触发的场景留的口子。
+### Light Doze：先限流，再进入更深 idle
 
-### Light Doze：温和版休眠
+Android 7.0 引入 Light Doze。设备只要灭屏，就可能先进入这一层。它比 Deep Doze 温和，但已经会把一部分 job、sync 和网络活动后移。很多“刚锁屏就不再秒回调”的现象，实际发生在 Light Doze 阶段，不必等到 Deep Doze。
 
-Light Doze 在设备灭屏但可能仍在移动时生效（比如手机放在口袋里但人在走路）。它的限制比 Deep Doze 宽松：
+### App Standby Buckets：桶常量在 UsageStatsManager，分桶逻辑在 AppStandbyController
 
-- 网络访问在维护窗口期间被允许
-- `JobScheduler` 和 `SyncAdapter` 在维护窗口中可以运行
-- `WakeLock` 不受影响
-- Alarm 不受影响
-
-Light Doze 的维护窗口间隔从约 10 分钟开始，逐步延长到约 30 分钟。
-
-在 Perfetto 中，我们可以通过搜索 `device_idle` 相关的事件来观察 Doze 状态的切换。`adb shell dumpsys deviceidle` 可以查看当前的 Doze 状态和维护窗口历史。
-
-### App Standby Buckets：五级分类
-
-App Standby Buckets 从 Android 9 开始引入，五个桶的资源和限制差异如下：
-
-**Active（活跃）**：App 当前正在使用或刚被使用过。没有后台限制，JobScheduler 和网络访问不受约束。
-
-**Working Set（工作集）**：App 经常使用但当前不在前台。有轻微限制——JobScheduler 的执行频率约每 2 小时一次（非精确值，系统会动态调整）。
-
-**Frequent（频繁）**：App 定期使用但不是每天。JobScheduler 执行频率更低，网络访问在 Doze 期间更受限。
-
-**Rare（稀有）**：App 很少使用。JobScheduler 执行频率约每天一次，Alarm 被严格限制，网络访问受限更严重。
-
-**Restricted（受限）**：Android 12 新增。App 被系统判定为"消耗过多资源"或用户手动限制。这是最严格的级别：Jobs 每天最多执行一次，Alarm 被严重限制（每天几个），网络访问受限，甚至 FCM 高优先级消息的数量也被限制。
-
-关键代码路径在 `DeviceIdleController.java` 中，它负责维护每个 App 的 Standby Bucket 并根据 Bucket 级别向 `JobScheduler`、`AlarmManager`、`NetworkPolicyManager` 等子系统下发限制策略。[已验证: AOSP android-16.0.0_r1, frameworks/base/services/core/java/com/android/server/DeviceIdleController.java]
+App Standby Bucket 的常量定义在 `UsageStatsManager`，不是 `DeviceIdleController`。在 `android-16.0.0_r1` 中，App 的桶位管理由 `AppStandbyController` 负责，Doze / device idle 才由 `DeviceIdleController` 负责。
 
 ```java
-// frameworks/base/services/core/java/com/android/server/DeviceIdleController.java
-// App Standby Bucket 定义（部分）
+// frameworks/base/core/java/android/app/usage/UsageStatsManager.java
 public static final int STANDBY_BUCKET_ACTIVE = 10;
 public static final int STANDBY_BUCKET_WORKING_SET = 20;
 public static final int STANDBY_BUCKET_FREQUENT = 30;
 public static final int STANDBY_BUCKET_RARE = 40;
 public static final int STANDBY_BUCKET_RESTRICTED = 45;
+public static final int STANDBY_BUCKET_NEVER = 50; // @hide
 ```
 
-开发者可以通过 `UsageStatsManager.getAppStandbyBucket()` 查询自己 App 的当前桶级别。测试时可以用 `adb shell am set-standby-bucket <package> <bucket>` 强制设置。
+对应用开发者，常用的是五个公开桶：Active、Working Set、Frequent、Rare、Restricted。`NEVER` 是内部桶，表示安装后从未真正使用过的应用。
 
-### 在 Perfetto 中的表现
+当前官方 `power-details` 页面给出的资源上限如下，表里是“App state 与 device state 没有进一步放宽或收紧”时的基线值：
 
-当分析后台任务不执行的问题时，我们在 Perfetto 中可以关注以下 Track 和事件：
+| Bucket | Regular jobs | Expedited jobs | Alarms | Network |
+|------|------|------|------|------|
+| Active | 60 分钟滚动窗口内最多 20 分钟 | 24 小时滚动窗口内最多 30 分钟 | 无额外执行上限 | 不限 |
+| Working Set | 4 小时滚动窗口内最多 10 分钟 | 24 小时滚动窗口内最多 15 分钟 | 每小时最多 10 次 | 不限 |
+| Frequent | 12 小时滚动窗口内最多 10 分钟 | 24 小时滚动窗口内最多 10 分钟 | 每小时最多 2 次 | 不限 |
+| Rare | 24 小时滚动窗口内最多 10 分钟 | 24 小时滚动窗口内最多 10 分钟 | 每小时最多 1 次 | 禁用 |
+| Restricted | 每天 1 次，最多 10 分钟 | 24 小时滚动窗口内最多 5 分钟 | 每天 1 次，只能是 exact 或 inexact alarm 之一 | 禁用 |
 
-- **`device_idle` Track**：显示设备当前处于什么 Doze 状态（active/idle/light_idle/maintenance 等）
-- **`am_proc_start` / `am_kill` 事件**：观察 App 进程被系统回收的情况
-- **CPU Track**：灭屏期间是否有异常的 CPU 活动持续存在
-- **Network Track**：后台网络活动是否符合维护窗口的时间模式
+这些上限只适用于设备在电池供电、应用没有额外豁免时的基线。官方 App Standby 文档明确写到，Standby bucket 的限制只在 on battery 时生效；`power-details` 页面也给出了 charging、screen on、screen off + doze active 三种 device state 下的差异，其中 charging 基本不按桶限流，screen off + doze active 时 regular alarm、job 和 network 还会再叠加 Doze 的维护窗口约束。
 
-如果发现一个后台 Job 在预期时间没有被触发，先检查 App 的 Standby Bucket 级别，再检查设备是否在 Doze 中。大部分“我的 JobScheduler 怎么不执行了”的问题，根源都在这两条。
+开发者侧最常用的查询入口仍然是 `UsageStatsManager.getAppStandbyBucket()`。测试时可以用 `adb shell am get-standby-bucket <package>` 读取当前桶位，用 `adb shell am set-standby-bucket <package> <bucket>` 强制切桶。
 
-[待高爷补充：Perfetto 中 device_idle Track 的截图示例]
+### 观测方法：先看 dumpsys，再看 Battery Historian / Perfetto
 
-## 前台服务：后台工作的"合法通行证"
+排查后台任务时，别先假设 Trace 里一定有现成的 `device_idle` track。是否能直接看到 Doze 状态切换，取决于 trace config、系统版本和厂商裁剪。
 
-当 App 确实需要做后台工作时，前台服务（Foreground Service，简称 FGS）是最可靠的方式。它的代价是：必须向用户展示一个持续的通知。
+建议把观测顺序固定下来：
+
+- `adb shell dumpsys deviceidle`，确认当前是否进入 light / deep doze，以及 allowlist 状态
+- `adb shell dumpsys usagestats appstandby` 或 `adb shell am get-standby-bucket <package>`，确认 bucket
+- `adb shell dumpsys jobscheduler <package>`，确认 job 的 pending reason、quota 和实际约束
+- Battery Historian，观察灭屏后 alarm、job、network、wakelock 的时间分布
+- Perfetto，在 trace config 已包含 framework / power / batterystats 相关数据源时，再去看 screen-off 期间的 CPU、wakeup、alarm/job slice 和网络活动
+
+Perfetto 更适合回答“后台工作有没有把前台拖慢、有没有在灭屏后持续跑 CPU”，`dumpsys` 和 Battery Historian 更适合回答“系统为什么没让它现在执行”。
+
+现成的等价证据可以直接从 `bugreport` + `dumpsys` 组合里拿到，不必等 Trace 里刚好有现成的 `device_idle` 轨道。
+
+第一组证据看 Doze 状态切换。设备灭屏、静止、未充电后，`dumpsys deviceidle` 会从 active 进入 idle / idle maintenance。对应的 Battery Historian 时间线里，`screen` 熄灭后 `cpu_running` 会从连续活跃收缩成稀疏脉冲，`job`、`alarm`、`network` 条带集中出现在短暂窗口里；这和官方 Doze 文档描述的 maintenance window 行为一致。14.11《Battery Historian 与功耗分析工具》已经把 `cpu_running`、`wake_lock`、`job`、`alarm` 这些行的读法拆开讲过，可以直接拿来做对照。
+
+第二组证据看后台任务被延后。把目标包切到 `Rare` 或 `Restricted` 桶后，先用 `dumpsys jobscheduler <package>` 看 pending reason、quota 和约束，再看 Battery Historian 的 `job` 行或 Perfetto 里的 CPU / network burst。正常现象是任务没有消失，而是执行时间被挪到配额允许或 Doze 维护窗口到来之后。11.4《功耗分析案例集》里的 AlarmManager 滥用案例能看到每 60 秒一次的 `alarm` 唤醒条带，JobScheduler 生命周期错误案例能看到 30 分钟 `WakeLock` 条带；两组样本虽然问题类型不同，但都给了我们一个可复核的对照基线，方便把“系统主动延后”和“任务自己跑飞”区分开来。
+
+如果 trace config 已打开 power、batterystats 和调度数据源，Perfetto 里通常还能看到同一时间段的 CPU frequency 下降、进程 runnable slice 稀疏化，以及维护窗口内短促的 network / alarm burst。没有这些数据源时，不要硬从空白轨道猜结论，回到 `dumpsys` + Battery Historian 更稳。
+
+[图：Doze 等价证据对照图。左侧是 `dumpsys deviceidle` 的 idle / idle maintenance 状态切换，右侧是 Battery Historian 中 `cpu_running`、`job`、`alarm` 条带只在短窗口出现。]
+
+[图：后台任务延后对照图。上方是 `dumpsys jobscheduler <package>` 的 pending reason / quota 信息，下方是 Battery Historian 或 Perfetto 中任务真正开始执行的延后时间点。]
+
+## 前台服务：后台工作的“合法通行证”
+
+当 App 确实要在后台持续做用户可感知的事情，前台服务（Foreground Service，FGS）仍然是最直接的手段。代价也很明确，系统要求它对用户可见，并且越来越严格地校验“你为什么要开这个 FGS”。
 
 ### 前台服务类型体系
 
-从 Android 14 开始，前台服务必须声明类型。每种类型对应特定的使用场景和权限要求：
+Android 14 起，FGS 类型是运行时约束。manifest 没声明类型，或者声明了类型却没补齐专属权限 / 运行时前提，`startForeground()` 就可能失败。
 
-| 类型 | 权限 | 典型场景 |
-|------|------|----------|
-| `camera` | `FOREGROUND_SERVICE_CAMERA` | 后台拍照/视频通话 |
-| `connectedDevice` | `FOREGROUND_SERVICE_CONNECTED_DEVICE` | BLE 通信、USB 外设 |
-| `dataSync` | `FOREGROUND_SERVICE_DATA_SYNC` | 文件同步、数据备份 |
-| `health` | `FOREGROUND_SERVICE_HEALTH` | 健康数据采集（心率等） |
-| `location` | `FOREGROUND_SERVICE_LOCATION` | 导航、位置追踪 |
-| `mediaPlayback` | `FOREGROUND_SERVICE_MEDIA_PLAYBACK` | 音乐/视频播放 |
-| `mediaProjection` | `FOREGROUND_SERVICE_MEDIA_PROJECTION` | 屏幕录制 |
-| `messaging` | `FOREGROUND_SERVICE_MESSAGING` | 即时通讯消息收发 |
-| `phoneCall` | `FOREGROUND_SERVICE_PHONE_CALL` | VoIP 通话 |
-| `specialUse` | `FOREGROUND_SERVICE_SPECIAL_USE` | 不属于以上任何类型的特殊场景 |
+| 类型 | 专属权限 | 首个要求版本 | 典型场景 |
+|------|------|------|------|
+| `camera` | `FOREGROUND_SERVICE_CAMERA` | Android 14 | 后台拍摄、视频通话 |
+| `connectedDevice` | `FOREGROUND_SERVICE_CONNECTED_DEVICE` | Android 14 | BLE、USB、外设连接 |
+| `dataSync` | `FOREGROUND_SERVICE_DATA_SYNC` | Android 14 | 云同步、备份、上传下载 |
+| `health` | `FOREGROUND_SERVICE_HEALTH` | Android 14 | 运动 / 健康数据采集 |
+| `location` | `FOREGROUND_SERVICE_LOCATION` | Android 14 | 导航、持续定位 |
+| `mediaPlayback` | `FOREGROUND_SERVICE_MEDIA_PLAYBACK` | Android 14 | 音视频播放 |
+| `mediaProjection` | `FOREGROUND_SERVICE_MEDIA_PROJECTION` | Android 14 | 投屏、录屏 |
+| `microphone` | `FOREGROUND_SERVICE_MICROPHONE` | Android 14 | 录音、语音通话 |
+| `phoneCall` | `FOREGROUND_SERVICE_PHONE_CALL` | Android 14 | VoIP / 通话保持 |
+| `remoteMessaging` | `FOREGROUND_SERVICE_REMOTE_MESSAGING` | Android 14 | 设备间消息连续性 |
+| `shortService` | 无专属权限（仍需 `FOREGROUND_SERVICE`） | Android 14 | 约 3 分钟内必须完成的关键短任务 |
+| `specialUse` | `FOREGROUND_SERVICE_SPECIAL_USE` | Android 14 | 无法归类到标准类型的特殊场景 |
+| `systemExempted` | `FOREGROUND_SERVICE_SYSTEM_EXEMPTED` | Android 14 | 设备拥有者、紧急角色等系统级集成 |
+| `mediaProcessing` | `FOREGROUND_SERVICE_MEDIA_PROCESSING` | Android 15 | 转码、导出、媒体加工 |
 
-[已验证: 官方文档, developer.android.com/about/versions/14/changes/fgs-types]
+`camera`、`microphone`、`location` 这类还会叠加 while-in-use 权限限制。即使应用碰巧满足“允许从后台启动 FGS”的豁免条件，只要对应运行时权限只在前台可用，后台也照样起不来。
 
-声明方式是在 manifest 的 `<service>` 标签中使用 `android:foregroundServiceType` 属性：
+manifest 声明至少要把类型和权限写完整：
 
 ```xml
-<!-- AndroidManifest.xml -->
+<uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+<uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+
 <service
     android:name=".SyncService"
-    android:foregroundServiceType="dataSync"
-    android:exported="false">
-</service>
+    android:exported="false"
+    android:foregroundServiceType="dataSync" />
 ```
 
-### 超时机制：6 小时的硬限制
+### 超时机制：`shortService` 看单次时长，`dataSync` / `mediaProcessing` 看 24 小时预算
 
-Android 15（API 35）引入了一个重要变化：`dataSync` 和 `mediaProcessing` 类型的前台服务有 **6 小时/24 小时** 的运行上限。超过这个时间后，系统会调用服务的 `onTimeout(int id, int fgsType)` 方法。如果服务不自行停止，系统会强制杀掉它。
+`shortService` 的规则来自 Android 14 的 FGS types 文档。它没有类型专属权限，但只能跑大约 3 分钟，超时从 `startForeground()` 开始计时。Android 14 文档明确要求实现 `Service.onTimeout()`：超时后系统会给应用几秒钟调用 `stopSelf()` / `stopForeground()`；如果服务还不退出，应用会收到带 `FOREGROUND_SERVICE_TYPE_SHORT_SERVICE` 的 ANR。官方同时说明，这个回调在 Android 13 及以下不存在，所以兼容旧版本时不能把“等回调再停”当成前提。
 
-```java
-// frameworks/base/core/java/android/app/Service.java
-// Android 15+ 新增
-public void onTimeout(int startId, int fgsType) {
-    // 默认实现：什么都不做，然后被系统杀掉
-    // 正确做法：在这里停止服务
-    stopForeground(STOP_FOREGROUND_REMOVE);
-    stopSelf();
-}
-```
+Android 15 又给 `dataSync` 和 `mediaProcessing` 加了累计预算。两种类型分别按 24 小时窗口统计，同一类型所有 FGS 共用 6 小时额度，用户把应用带回前台后计时器重置。预算用完后，再启动同类型 FGS 会直接失败；Android 15 行为变更页给出的报错示例是 `Time limit already exhausted for foreground service type dataSync`。
 
-这里有几个细节值得注意。第一，6 小时的计时是按类型独立计算的——`dataSync` 用了 5 小时不影响 `mediaProcessing` 的额度。第二，把 App 带到前台会重置计时器。第三，超过额度后再尝试启动同类型的前台服务，会直接抛出 `ForegroundServiceStartNotAllowedException`。
+这一组超时回调以 Android Developers 的 `Service` API reference 和 Android 15 behavior changes 页为准。当前 reference 同时列出 `onTimeout(int startId)` 和 `onTimeout(int startId, int fgsType)` 两个重载：前者对应 `shortService`，后者对应 Android 15 新增的类型化超时。`dataSync` / `mediaProcessing` 收到 `Service.onTimeout(int, int)` 后如果几秒内还不 `stopSelf()`，Logcat 会记录 `RemoteServiceException`；`shortService` 超时不退出则会走 ANR。
 
 ## WorkManager vs JobScheduler vs AlarmManager：选型指南
 
-当 App 需要做后台任务时，这三个 API 是最常见的选项。它们的定位和适用场景差异很大。
+当 App 需要做后台任务时，这三个 API 最常见，但职责边界差很多。选错工具，后面看到的大部分“系统为什么不让我跑”都只是后果。
 
-### WorkManager：推荐首选
+### WorkManager：默认选择
 
-WorkManager 是 Jetpack 组件之一，也是 Google 官方推荐的"可延迟后台任务"解决方案。它的核心优势在于**兼容性和可靠性**：
+WorkManager 适合“可以延迟，但希望最终能执行”的任务。它会按系统版本自动落到底层实现，在 API 23+ 上通常还是走 JobScheduler，所以 Doze、App Standby bucket 和 quota 依然会生效。
 
-在底层，WorkManager 会根据设备的 API 级别自动选择最佳实现——在 API 23+ 上使用 JobScheduler，在更低版本上回退到 AlarmManager + BroadcastReceiver。开发者不需要关心这些差异，只需要定义 WorkRequest 和约束条件。
+它的优势在于：
 
-WorkManager 的关键特性包括：
+- 用 `Constraints` 表达网络、充电、空闲等条件
+- 持久化到数据库，进程被杀后还能恢复
+- 支持链式依赖和周期任务
+- 默认帮你做批处理，减少碎片化唤醒
 
-**约束条件（Constraints）**：可以指定任务执行的前提条件——需要网络、需要充电、需要设备空闲、需要存储空间充足等。只有在所有约束条件都满足时，任务才会被调度执行。这样 WorkManager 可以配合 Doze 的维护窗口，在系统认为“合适的时候”运行任务。
+如果任务要尽快开始，又不该拉一个长期 FGS，WorkManager 2.7+ 的 `setExpedited()` 是更合适的入口。官方文档把 expedited work 定义成“重要、用户在意、几分钟内完成、希望立刻开始”的短任务。它仍然受 quota 控制，但比普通 work 更不容易被 Doze 或 Battery Saver 拖得太久。
 
-**周期性任务**：支持定义周期执行的 WorkRequest，最小周期间隔为 15 分钟。系统会根据 App 的 Standby Bucket 动态调整实际执行频率。
+### JobScheduler：系统原生调度层
 
-**链式任务**：可以将多个 WorkRequest 组成执行链，定义先后顺序和并行关系。
+JobScheduler 是系统原生调度 API。和 WorkManager 相比，它需要你自己处理更多细节，但也能直接用到一些 WorkManager 还没完全封装的能力，比如 `setPrefetch()`、`setUserInitiated(true)`，以及 Android 16 的 pending reason 调试接口。
 
-**持久化保证**：WorkRequest 会被持久化到数据库中，即使 App 被杀掉或设备重启，任务仍然会在条件满足时被执行。
+这部分在 Android 16 的 public API 里，可以直接写成：
 
-从性能角度看，WorkManager 相比直接使用 JobScheduler 的一个重要优势是**任务批处理**。WorkManager 会尽量将多个任务的执行窗口合并，减少设备唤醒次数。每次设备唤醒都是一笔功耗开销（CPU 从 idle 恢复、可能还要点亮 radio），合并执行窗口可以显著降低总功耗。
+- `getPendingJobReason(int jobId)`，返回当前主因
+- `getPendingJobReasons(int jobId)`，返回可能的原因集合 `int[]`
+- `getPendingJobReasonsHistory(int jobId)`，返回 `List<PendingJobReasonsInfo>`，也就是“有限历史视图”，不是 `List<String>`，更不是不存在的 `JobDebugInfo`
 
-### JobScheduler：系统级调度
+官方 reference 还列出了 `getPendingJobReasonStats(int jobId)` 聚合统计接口，但本节先聚焦排查最常用的前三个。对应的 AOSP public API 路径是 `frameworks/base/apex/jobscheduler/framework/java/android/app/job/JobScheduler.java`。
 
-JobScheduler 从 Android 5.0（API 21）开始提供，是 Android 原生的任务调度 API。它的工作方式与 WorkManager 类似——开发者定义 JobInfo 和约束条件，系统负责在合适的时机触发执行。
+对性能排查，`getPendingJobReasonsHistory()` 的价值在于：它把“最近一段时间为什么一直没跑”这件事变成可读数据，不必只靠 `dumpsys jobscheduler` 和零散日志猜。
 
-JobScheduler 的优势在于它是系统服务的一部分，调度策略由系统统一管理。系统可以将多个 App 的 Job 合并到同一个执行窗口中（batching），减少设备唤醒次数。在 App Standby Buckets 的机制下，JobScheduler 会根据 App 的 Bucket 级别自动调整 Job 的执行频率。
+### AlarmManager：只留给真正需要精确时刻的事情
 
-Android 16（API 36）对 JobScheduler 的配额管理做了进一步收紧。Job 的运行时配额会更加严格地考虑 App 的 Standby Bucket、Job 是否在前台状态下启动的、以及是否与前台服务并发运行等因素。新增的 `JobDebugInfo` API 和 `JobScheduler#getPendingJobReasonsHistory` 可以帮助开发者理解 Job 为什么没被执行或为什么被停止。[已验证: 官方文档, developer.android.com/about/versions/16]
+AlarmManager 的强项是精确时间点触发，代价是最难和系统的省电批处理和平共处。只要你开始频繁调 `setExact()` / `setExactAndAllowWhileIdle()`，就等于主动放弃系统帮你合并唤醒窗口的机会。
 
-```java
-// Android 16 新增的 JobDebugInfo API
-// frameworks/base/core/java/android/app/job/JobDebugInfo.java
-JobScheduler js = (JobScheduler) getSystemService(Context.JOB_SCHEDULER_SERVICE);
-// 查询 Job 未被执行的历史原因
-List<String> reasons = js.getPendingJobReasonsHistory(jobId);
-// reasons 包含如 "APP_STANDBY_BUCKET_RARE"、"BATTERY_NOT_CHARGING" 等原因
-```
+从 Android 12（targetSdk 31）开始，如果要用 exact alarm 的 PendingIntent 路径，应用必须先声明并处理 exact alarm special access。targetSdk 33+ 可以根据场景选择 `SCHEDULE_EXACT_ALARM` 或 `USE_EXACT_ALARM`。代码里要先用 `AlarmManager.canScheduleExactAlarms()` 做门禁；未获授权时继续调 exact API，会命中 `SecurityException`，系统不会替你偷偷改成非精确闹钟。
 
-### AlarmManager：精确时机的最后手段
+处理方式通常有三种：
 
-AlarmManager 是最古老的调度 API，用于在精确的时间点触发代码执行。它的特点是可以设置**精确闹钟**（`setExact()`、`setExactAndAllowWhileIdle()`），即使在 Doze 模式下也能按时触发。
+- 引导用户去 `ACTION_REQUEST_SCHEDULE_EXACT_ALARM` 对应的设置页授权
+- 退回 inexact alarm
+- 如果任务本来就不要求秒级，直接改成 WorkManager / JobScheduler
 
-正因为如此，AlarmManager 也是对电池影响最大的调度方式。每次精确闹钟触发都意味着一次设备唤醒，如果多个 App 各设各的精确闹钟，系统就没办法合并唤醒窗口，电池损耗会成倍增加。
+### 例外与豁免：为什么“已经受限”的任务有时还是能跑
 
-从 Android 12（API 31）开始，使用精确闹钟需要声明 `SCHEDULE_EXACT_ALARM` 权限。这个权限不是自动授予的——用户需要在系统设置中手动允许。如果 App 没有这个权限就调用 `setExact()`，闹钟会被静默降级为非精确闹钟。
+后台限制不是只有一条主路，系统留了几类明确的例外：
 
-从 Android 13（API 33）开始，`SCHEDULE_EXACT_ALARM` 权限默认只授予闹钟和日历类 App。其他类型的 App 需要用户在设置中手动授权。
+- **Expedited work / expedited jobs**：短、急、用户在意的任务可以请求更快执行，但受 quota 控制
+- **User-initiated data transfer job（UIDT）**：Android 官方给“用户明确点了上传 / 下载”这种数据传输任务的专用入口，走 JobScheduler 的 `setUserInitiated(true)`，并要求进度通知
+- **Temporary allowlist**：Android 8.0 文档明确写了，高优先级 FCM、SMS / MMS 广播、通知 `PendingIntent`、VPN 启动等场景，应用会被临时放进 allowlist 几分钟，这段时间可以启动 service 并继续跑后台逻辑
+- **Android 12+ 的后台启动 FGS 豁免**：高优先级 FCM、用户可见交互、exact alarm 等场景仍可能允许起 FGS，但如果 FCM 最终被系统降级，`startForegroundService()` 依旧会因为 `ForegroundServiceStartNotAllowedException` 失败
 
-**AlarmManager 只应用于真正的"闹钟"场景**——定时提醒、日历事件、计时器等。其他任何后台定时任务都应该使用 WorkManager 或 JobScheduler。
+因此，看到“受限状态下任务还是执行了”，先别急着怀疑系统不一致，先核对它是不是走了这些例外入口。
 
 ### 选型决策
 
-用一个简单的决策路径来概括：
+可以按这条路径判断：
 
-1. 任务需要准时触发（精度要求在秒级）→ AlarmManager（但需精确闹钟权限）
-2. 任务可以延迟但必须保证执行 → WorkManager（默认选择）
-3. 任务需要系统级批处理优化、不需要持久化 → JobScheduler
-4. 任务需要长期持续运行且用户需要感知 → 前台服务
-
-绝大多数后台任务都应该使用 WorkManager。它覆盖了"可延迟但需保证执行"这个最常见的需求，同时自动适配 Doze 和 App Standby 的限制。
+1. 必须在精确时刻触发，并且这是用户明确期待的提醒或闹钟，选 AlarmManager
+2. 任务很短，用户刚刚触发，而且希望马上开始，先看 expedited WorkManager
+3. 任务是用户亲手发起的长时间上传 / 下载，优先看 UIDT job
+4. 任务可以延迟，但希望条件满足后最终执行，默认选 WorkManager
+5. 需要 JobScheduler 的底层能力或细粒度调试接口，再直接用 JobScheduler
+6. 任务需要持续运行且必须让用户清楚知道它在干什么，才用 FGS
 
 ## 后台执行对前台性能的影响
 
-这个话题在性能分析中经常被忽视——我们通常关注的是前台 App 的渲染和响应速度，而忽略了后台行为对前台的间接影响。实际上，不合理的后台工作是前台卡顿、发热和续航变短的常见根因之一。
+性能分析里，很多时候只盯前台 App 的渲染和响应，却漏掉了后台行为带来的间接代价。不合理的后台工作，经常和前台卡顿、发热、续航变短一起出现。
 
 ### CPU 争抢
 
@@ -340,34 +352,32 @@ AlarmManager 是最古老的调度 API，用于在精确的时间点触发代码
 
 ## 与其他机制的关系
 
-**与 CPU 调度（5.1）的关系**：App Standby Buckets 通过影响进程的调度优先级来间接影响 CPU 分配。Restricted 桶的 App 进程会被降低 cgroup 优先级，获得更少的 CPU 时间。
+**与 CPU 调度（5.1）的关系**：Standby bucket 主要控制的是 job、alarm、network 这类后台资源额度，不是直接给线程改一个固定的 CPU 优先级。它对调度的影响更多是间接的，后台任务被延后了，可运行线程自然变少，前台争抢压力也会下降。线程一旦真的进入 runnable，最终怎么分配 CPU，还要看进程状态、cgroup / uclamp、线程策略和具体子系统规则。
 
-**与 EAS（5.2）的关系**：后台任务的唤醒模式直接影响 EAS 对能量最优调度决策的判断。频繁的短时唤醒会导致 CPU 在大小核之间频繁迁移，增加迁移开销。
+**与 EAS（5.2）的关系**：后台任务越碎、唤醒越频繁，EAS 就越难把工作稳定压在合适的核上。大量短时唤醒会让大小核迁移变多，额外吃掉能量和调度开销。
 
-**与 DVFS（5.4）的关系**：后台工作推高 CPU 利用率后，DVFS 会提升频率和电压，增加功耗。Doze 的本质就是通过限制后台工作来让 CPU 保持低频甚至休眠。
+**与 DVFS（5.4）的关系**：后台工作把利用率顶上去后，DVFS 会升频，功耗跟着走高。Doze 和 bucket 限流的价值之一，就是少让这类后台负载在灭屏后把频率拉起来。
 
-**与 Thermal（5.5）的关系**：上面提到的热节流是最直接的交叉影响。后台工作的累积热量会导致 Thermal 管控触发，降频影响前台。
+**与 Thermal（5.5）的关系**：后台同步、转码、上传这类持续工作，最容易把 SoC 温度慢慢推高。温度一旦过阈值，Thermal 降频打到的是整个前台体验，不会只处罚后台线程。
 
-**与 Android 功耗管理（5.6）的关系**：5.6 节讨论了 WakeLock 和 PowerManagerService 的机制，本节则聚焦在"系统如何限制 App 的后台行为"这个更上层的维度。
+**与 Android 功耗管理（5.6）的关系**：5.6 节偏底层，讲 WakeLock、PowerManagerService、device idle。这里更偏框架和 API 选择，讲的是应用层后台任务最终会被哪些规则拦下来。
 
-**与响应速度（8.4）的关系**：后台 Activity 启动限制（BAL）直接影响 App 的后台启动体验。从 Android 12 开始，从通知启动 Activity 需要通过全屏 Intent 或使用 Activity Options 中的 BAL 权限。
+**与响应速度（8.4）的关系**：BAL 从 Android 10 开始收紧，后续版本还在继续加限制。后台能不能拉起 Activity，取决于用户可见性、通知 / `PendingIntent` / `IntentSender` 路径和系统豁免条件，不能再按老版本经验硬推。
 
 ## 版本演进
 
 | 版本 | 核心变化 | 性能分析影响 |
 |------|----------|-------------|
-| Android 6.0 (API 23) | 引入 Deep Doze | 灭屏静止后后台任务大幅减少 |
-| Android 7.0 (API 24) | 引入 Light Doze + App Standby | 移动中灭屏也有后台限制 |
-| Android 8.0 (API 26) | 禁止后台 `startService()` | 大量 App 崩溃需适配 `startForegroundService()` |
-| Android 9.0 (API 28) | App Standby Buckets 五级分类 | Bucket 级别影响所有后台 API 行为 |
-| Android 10 (API 29) | 后台 Activity 启动限制 | 后台弹窗被禁止 |
-| Android 11 (API 30) | 收紧后台位置权限 | 后台定位更困难 |
-| Android 12 (API 31) | 禁止后台启动 FGS + 精确闹钟需权限 | 后台服务启动受限，Alarm 需声明权限 |
-| Android 13 (API 33) | Restricted 桶 8 天生效 | 不常用 App 快速进入高限制状态 |
-| Android 14 (API 34) | FGS 类型强制声明 + 能耗惩罚桶 | 后台服务必须声明用途 |
-| Android 15 (API 35) | dataSync/mediaProcessing 6h 超时 + PendingIntent BAL 收紧 | 长时间同步任务被强制限时 |
-| Android 16 (API 36) | JobScheduler 配额收紧 + JobDebugInfo API | Job 执行频率更严格，调试工具增强 |
-| Android 17 (API 37) | 后台音频限制 + AI 驱动的后台管理 + BAL 扩展到 IntentSender | 后台行为管控更加智能化 |
+| Android 6.0 (API 23) | 引入 Doze 和 App Standby | 灭屏后后台任务开始系统级延后 |
+| Android 7.0 (API 24) | 引入 Light Doze | 刚灭屏就可能开始限流 |
+| Android 8.0 (API 26) | 限制后台 `startService()`，收紧隐式广播 | 很多旧式后台常驻方案直接失效 |
+| Android 9.0 (API 28) | 引入 App Standby Buckets | Job、alarm、network 开始按桶分级限流 |
+| Android 10 (API 29) | BAL 收紧 | 后台弹 Activity 的路径明显变少 |
+| Android 12 (API 31) | Restricted bucket、后台启动 FGS 限制、exact alarm special access | 后台任务调度和 FGS 启动都要先过门禁 |
+| Android 13 (API 33) | Restricted bucket 的长期未交互阈值从 45 天降到 8 天 | 很久不用的 App 更快进入重限流状态 |
+| Android 14 (API 34) | FGS 类型强制声明，新增 `remoteMessaging`、`shortService`、`systemExempted` 等类型 | FGS 类型、权限和运行时前提都要写完整 |
+| Android 15 (API 35) | `mediaProcessing` 类型加入，`dataSync` / `mediaProcessing` 引入 6 小时预算 | 长时间同步和媒体加工要处理超时回调 |
+| Android 16 (API 36) | `getPendingJobReasons()` / `getPendingJobReasonsHistory()` 等调试接口进入 public API | Job 为何 pending 更容易直接定位 |
 
 ## 常见问题与误区
 
@@ -377,11 +387,11 @@ WorkManager 不保证精确时间。它定义的是"约束条件"，系统会在
 
 ### 误区 2："前台服务不会被系统杀掉"
 
-前台服务的进程优先级确实很高，但不是不可杀。内存极度紧张时系统仍然可能杀掉前台服务进程。更重要的是，从 Android 15 开始，`dataSync` 和 `mediaProcessing` 类型有 6 小时的超时限制。
+前台服务的进程优先级确实很高，但不是不可杀。内存极度紧张时系统仍然可能杀掉前台服务进程。另外，从 Android 15 开始，`dataSync` 和 `mediaProcessing` 类型有 6 小时的超时限制。
 
 ### 误区 3："我的 JobScheduler 不执行一定是系统 bug"
 
-大部分情况下是 App 的 Standby Bucket 太低。用 `adb shell am get-standby-bucket <package>` 检查当前桶级别，用 `adb shell dumpsys jobscheduler` 查看具体的 Job 状态和未执行原因。
+大部分情况下，问题出在 bucket、quota、约束条件或者设备状态。先用 `adb shell am get-standby-bucket <package>` 看桶位，再用 `adb shell dumpsys jobscheduler <package>` 看具体约束；如果平台版本够新，还可以直接看 `getPendingJobReason()` 和 `getPendingJobReasonsHistory()`。
 
 ### 误区 4："Doze 只在晚上才生效"
 
@@ -394,22 +404,32 @@ Doze 的触发条件是灭屏 + 静止 + 未充电，与时间无关。白天如
 ## 参考资料
 
 ### AOSP 源码路径
-- `frameworks/base/services/core/java/com/android/server/DeviceIdleController.java` — Doze 与 App Standby 核心实现
-- `frameworks/base/services/core/java/com/android/server/job/JobSchedulerService.java` — JobScheduler 服务
-- `frameworks/base/core/java/android/app/Service.java` — 前台服务 API
-- `frameworks/base/core/java/android/app/job/JobScheduler.java` — JobScheduler API
-- `frameworks/base/core/java/android/app/AlarmManager.java` — AlarmManager API
-- `frameworks/base/apex/jobscheduler/service/java/com/android/server/job/JobDebugInfo.java` — Android 16 JobDebugInfo
+- `frameworks/base/apex/jobscheduler/service/java/com/android/server/DeviceIdleController.java` — Doze / device idle 状态机
+- `frameworks/base/core/java/android/app/usage/UsageStatsManager.java` — App Standby bucket 常量定义
+- `frameworks/base/apex/jobscheduler/service/java/com/android/server/usage/AppStandbyController.java` — App Standby bucket 管理逻辑
+- `frameworks/base/apex/jobscheduler/service/java/com/android/server/job/JobSchedulerService.java` — JobScheduler 服务端实现
+- `frameworks/base/apex/jobscheduler/service/java/com/android/server/job/controllers/QuotaController.java` — Job quota 与 bucket 约束控制
+- `frameworks/base/apex/jobscheduler/framework/java/android/app/job/JobScheduler.java` — JobScheduler public API
+- `frameworks/base/apex/jobscheduler/framework/java/android/app/AlarmManager.java` — AlarmManager public API
+- `frameworks/base/core/java/android/app/Service.java` — Service 生命周期；FGS timeout 签名以 `Service` API reference 为准
 
 ### 官方文档
-- [Background Execution Limits (Android 8.0)](https://developer.android.com/about/versions/oreo/background)
 - [Optimize for Doze and App Standby](https://developer.android.com/training/monitoring-device-state/doze-standby)
-- [Foreground Services (Android 12+)](https://developer.android.com/about/versions/12/foreground-services)
-- [FGS Types (Android 14+)](https://developer.android.com/about/versions/14/changes/fgs-types)
-- [Background Work with WorkManager](https://developer.android.com/guide/background)
-- [Android 15 Behavior Changes](https://developer.android.com/about/versions/15/changes)
 - [App Standby Buckets](https://developer.android.com/topic/performance/appstandby)
+- [Power management resource limits](https://developer.android.com/topic/performance/power/power-details#app-stdby-bucket)
+- [Background Execution Limits (Android 8.0)](https://developer.android.com/about/versions/oreo/background)
+- [Foreground service types are required (Android 14)](https://developer.android.com/about/versions/14/changes/fgs-types-required)
+- [Android 15 behavior changes: foreground services](https://developer.android.com/about/versions/15/behavior-changes-15#fgs-hardening)
+- [Android 15 foreground service types](https://developer.android.com/about/versions/15/changes/foreground-service-types)
+- [Define work requests with WorkManager](https://developer.android.com/develop/background-work/background-tasks/persistent/getting-started/define-work)
+- [Data transfer background task options](https://developer.android.com/develop/background-work/background-tasks/data-transfer-options)
+- [Schedule alarms](https://developer.android.com/develop/background-work/services/alarms/schedule)
+- [Restrictions on starting a foreground service from the background](https://developer.android.com/develop/background-work/services/fgs/restrictions-bg-start)
+- [Service API reference](https://developer.android.com/reference/android/app/Service)
+- [JobScheduler API reference](https://developer.android.com/reference/android/app/job/JobScheduler)
 
 ### 深入阅读
 - [Battery Historian 使用指南](https://developer.android.com/topic/performance/power/setup-battery-historian)
 - [Perfetto Power Analysis](https://perfetto.dev/docs/quickstart/android-power)
+- [Perfetto trace 配置与数据源说明](https://perfetto.dev/docs/concepts/config)
+
