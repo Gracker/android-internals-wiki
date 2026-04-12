@@ -1222,3 +1222,36 @@ Perfetto 观测面被写成一个平面概念，但实际上至少有三层来�
 ### 关联章节
 5.10、15.5
 
+
+
+## [2026-04-12] 2.8 过度绘制 — 现代 HWUI / Skia overdraw 调试实现
+
+### 盲区描述
+章节 frontmatter 写的是 `last_verified_against: AOSP android-16.0.0_r1`，但参考资料只保留了早期 `frameworks/base/libs/hwui/OpenGLRenderer.cpp`。对于 Android 10-16 的 HWUI / Skia 路径，Debug GPU Overdraw 的实现入口、system property、与 RenderThread / FrameTimeline 的关系都没有落点，导致“现代版本里 overdraw 调试到底靠什么实现”这一层仍是黑盒。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 梳理 android-16 `frameworks/base/libs/hwui/` 中 overdraw debug 的实现入口与调试开关
+- 确认 Debug GPU Overdraw 在 SkiaGL / SkiaVulkan 路径下的着色或计数实现
+- 对齐开发者选项颜色叠加、HWUI slice、FrameTimeline 和 GPU 工具之间的证据关系
+
+### 关联章节
+2.5（MainThread 与 RenderThread 协作）、2.6（SurfaceFlinger 与合成）、2.10（GPU 渲染深入）、13.1（Perfetto 基础）
+
+## [2026-04-12] 2.8 过度绘制 — Compose layer / offscreen compositing / overdraw 边界
+
+### 盲区描述
+当前 Compose 小节把 `background`、`drawBehind`、`derivedStateOf` 放在一起讨论，但没有区分哪些 API 真正增加像素重复填充，哪些只是减少 recomposition 或 draw phase 的 CPU 开销。对于 Compose UI，`graphicsLayer`、`CompositingStrategy`、alpha、shadow、blur 是否触发离屏 buffer，以及这些行为和 overdraw 指标的关系，都还没有讲清楚。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 对照 `graphicsLayer` / `CompositingStrategy` / alpha / shadow / blur，梳理哪些场景会增加 offscreen pass 或额外 fill
+- 用 Layout Inspector、Android GPU Inspector 或真实 trace 验证 nested background、alpha、graphicsLayer 对 overdraw 的实际影响
+- 明确区分“减少重组/状态读取”和“减少 overdraw”的边界，避免把 CPU 优化写成 GPU fill 优化
+
+### 关联章节
+2.7（Hardware Layer）、2.8（过度绘制）、7.7（Compose 性能）
