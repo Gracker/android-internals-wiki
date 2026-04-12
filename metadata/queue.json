@@ -1295,19 +1295,36 @@
   },
   {
     "section": "7.9",
-    "title": "感知流畅性：步幅波动与无掉帧卡顿",
-    "priority": 80,
-    "status": "completed",
-    "source": "task2a-gap-mining",
-    "created_date": "2026-04-07",
-    "gap_score": 16,
-    "notes": "高爷专家洞察(步幅波动+VSync时间精度)+全新概念",
+    "priority": 90,
+    "status": "pending",
     "material_paths": [
-      "intake/research-feeds/2026-04-07-16-perfetto-frame-timeline-perceived-smoothness-analysis.md",
-      "intake/research-feeds/2026-04-07-16-android16-appjankstats-relative-frame-time-histogram.md"
+      "intake/suggestions.md（含 review 意见）"
     ],
-    "completed_at": "2026-04-07T17:00:00+08:00",
-    "completed_by": "openclaw-task2a"
+    "section_title": "感知流畅性：步幅波动与无掉帧卡顿",
+    "reason": "[review回炉] 量化阈值、平台 API / 版本演进和 Perfetto SQL 仍需核实，优化策略后半段偏提纲式，需补源并收紧",
+    "review_issues": [
+      {
+        "type": "需补充素材",
+        "location": "开头阈值说明、Chrome 经验、Frame Timeline 差值分析",
+        "detail": "“相邻帧位移偏差超过 10% 可被察觉”、CV 0.05/0.1 阈值以及 Chrome 时间精度优化经验都缺少可追溯来源。",
+        "suggestion": "补论文、官方文档或 commit；找不到可靠来源时，把具体数值降级为经验描述。"
+      },
+      {
+        "type": "需确认",
+        "location": "Android 16 AppJankStats 与 RelativeFrameTimeHistogram、版本演进表、Perfetto SQL 示例",
+        "detail": "FrameTimeline、AppJankStats、RelativeFrameTimeHistogram 的版本归属和 SQL 可运行性都需要再核一轮。",
+        "suggestion": "交给 Task 9 对照官方文档、AOSP 版本历史和 trace processor schema 复核。"
+      },
+      {
+        "type": "需重写",
+        "location": "优化策略（二）到（四）",
+        "detail": "后半段更像方案清单，和前文 Trace 观察、真实场景的回扣不够。",
+        "suggestion": "Task 2B 收紧成 2-3 条有证据支撑的建议，并把每条建议和前文症状对应起来。"
+      }
+    ],
+    "added_by": "task6-review",
+    "added_at": "2026-04-12T19:14:00+08:00",
+    "original_review_log": "logs/review/2026-04-12-19-review.md"
   },
   {
     "section": "4.6",
