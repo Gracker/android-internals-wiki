@@ -14,10 +14,13 @@ tags:
   - linux
   - android
   - research
-pipeline_stage: task6_pending
-task6_state: pending
+pipeline_stage: task2b_pending
+task6_state: reviewed
 task9_state: pending
-task2b_state: idle
+task2b_state: pending
+reviewed_by: openclaw-task6
+reviewed_date: "2026-04-12"
+task6_result: needs-rework
 ---
 
 
@@ -50,9 +53,9 @@ task2b_state: idle
 
 ## 从一个卡顿说起
 
-你正在分析一份 Perfetto trace，发现主线程有一段长达 200ms 的 D 状态（Uninterruptible Sleep），stack trace 指向 `vfs_read`。与此同时，后台有好几个进程在做密集的文件写入。这不是 CPU 问题，也不是内存问题——这是 I/O 调度的问题。
+我们在分析一份 Perfetto trace 时，发现主线程有一段长达 200ms 的 D 状态（Uninterruptible Sleep），stack trace 指向 `vfs_read`。与此同时，后台有好几个进程在做密集的文件写入。主线程既没跑满 CPU，也没有明显的内存回收迹象，瓶颈落在 I/O 调度上。
 
-Android 设备的存储性能不只是芯片速度决定的。即使你用了最快的 UFS 4.0，如果 I/O 调度器不区分前台和后台，后台的媒体扫描器完全可以让前台的界面滑动卡顿。I/O 调度策略决定了谁的请求先被处理、谁的请求被延迟，而这直接影响用户感知到的流畅度。
+Android 设备的存储性能不只由芯片速度决定。即使设备用的是 UFS 4.0，只要 I/O 调度器不区分前台和后台，媒体扫描器这类后台任务照样会把前台界面拖慢。I/O 调度策略决定了谁先被服务、谁被延后，这会直接落到用户感知的流畅度上。
 
 这一节我们来拆解 Android 上 I/O 调度的工作机制：调度器如何演进、优先级如何控制、Page Cache 如何加速读取，以及当 I/O 成为瓶颈时，Perfetto 里能看到什么。
 
@@ -64,7 +67,7 @@ Android 设备的存储性能不只是芯片速度决定的。即使你用了最
 
 到了 SSD 和 UFS 时代，存储芯片没有机械结构，随机访问速度接近顺序读写。排序合并的意义大大降低，I/O 调度的目标转变为服务质量控制（QoS）：让交互式进程（前台 App）的 I/O 请求获得更低的延迟，同时保证系统整体的吞吐量。[已验证：来源见 Cubox/IO调度器详解-2024-03-08.md]
 
-Android 设备使用 eMMC 或 UFS 这类"中低速"存储芯片（相对于服务器 NVMe），内核存储栈的开销占比不高，仍然依赖传统的文件系统和 I/O 调度器来管理请求。这与服务器场景形成了鲜明对比——后者因为 SSD 太快，内核栈反而成为瓶颈，催生了 io_uring、SPDK 等绕过内核的方案。[已验证：来源见 Personal-Knowlodge/source/2026-03-08_wechat_手机Android存储性能优化架构分析_1.md]
+Android 设备常用 eMMC 或 UFS 这类相对服务器 NVMe 更慢的存储芯片。内核存储栈的开销占比还不算高，所以系统仍然依赖传统的文件系统和 I/O 调度器来管理请求。服务器场景不同，SSD 太快时，内核栈本身反而会成为瓶颈，于是才有 io_uring、SPDK 这类尽量绕开内核的方案。[已验证：来源见 Personal-Knowlodge/source/2026-03-08_wechat_手机Android存储性能优化架构分析_1.md]
 
 ### CFQ：公平但不够好
 
@@ -97,7 +100,7 @@ mq-deadline 是传统 deadline 调度器的多队列版本（blk-mq 架构），
 2. 调度时优先处理超时的请求（deadline 到了），然后按读写 2:1 的比例从 sort queue 中分发。
 3. 读请求的 deadline（默认 500ms）远短于写请求（默认 5s），体现了"读优先"的策略。
 
-mq-deadline 从 Linux 5.14 开始支持 io priority（RT/BE/IDLE 三个级别），但不支持 blkio cgroup。这意味着它可以区分单个进程的 I/O 优先级，但不能做进程组级别的带宽控制。[已验证：来源见 IO调度器详解-2024-03-08.md]
+mq-deadline 从 Linux 5.14 开始支持 io priority（RT/BE/IDLE 三个级别），但不支持 blkio cgroup。它可以区分单个进程的 I/O 优先级，但做不了进程组级别的带宽控制。[已验证：来源见 IO调度器详解-2024-03-08.md]
 
 ### none（noop）：让硬件自己决定
 
@@ -122,7 +125,7 @@ Kyber 目前不支持 io priority 和 blkio cgroup，因此在需要前台/后�
 | Android 12–13 | 5.4/5.10 | BFQ | GKI 统一切换到 BFQ |
 | Android 14–16 | 5.15/6.1 | BFQ | BFQ + cgroup v2 成为标配 |
 
-[待验证：具体 GKI 版本与默认调度器的映射关系，不同厂商可能有差异]
+[需确认: 具体 GKI 版本与默认调度器的映射关系仍可能受厂商内核配置影响，建议由 Task 9 对照 GKI 配置和主流机型内核再核一轮。]
 
 ## I/O 优先级与 cgroup blkio 控制
 
@@ -142,7 +145,7 @@ ionice -c 3 -p <pid>
 ionice -c 1 -n 0 -p <pid>
 ```
 
-在 mq-deadline 中，RT 和 IDLE 的 I/O 带宽差距非常显著——RT 进程可以获得几乎全部带宽，而 IDLE 进程只能使用剩余的零头。[已验证：来源见 IO调度器详解-2024-03-08.md 中的 deadline idle/RT 带宽对比数据]
+在 mq-deadline 中，RT 和 IDLE 的 I/O 带宽差距非常大。RT 进程可以获得几乎全部带宽，IDLE 进程只能使用剩余的零头。[已验证：来源见 IO调度器详解-2024-03-08.md 中的 deadline idle/RT 带宽对比数据]
 
 ### cgroup blkio：进程组级带宽控制
 
@@ -161,7 +164,7 @@ echo 10 > /sys/fs/cgroup/blkio/background/blkio.bfq.weight
 echo "259:0 rbps=2097152 wiops=120" > /sys/fs/cgroup/background/io.max
 ```
 
-cgroup v2 的优势在于统一的层级结构，可以同时控制 CPU、内存和 I/O，实现一致的前后台隔离策略。但 cgroup v2 对 buffered I/O 存在优先级倒置问题——写请求先经过 page cache（属于内核），再由 flush 线程异步下发到存储设备，此时 flush 线程的 cgroup 归属可能与原始发起进程不同。[已验证：来源见 手机Android存储性能优化架构分析 中关于 cgroup v2 buffered IO 优先级倒置的说明]
+cgroup v2 的优势在于统一的层级结构，可以同时控制 CPU、内存和 I/O，实现一致的前后台隔离策略。但它对 buffered I/O 存在优先级倒置问题。写请求先经过 page cache（属于内核），再由 flush 线程异步下发到存储设备，此时 flush 线程的 cgroup 归属可能与原始发起进程不同。[已验证：来源见 手机Android存储性能优化架构分析 中关于 cgroup v2 buffered IO 优先级倒置的说明]
 
 ## 前台 App I/O 优先级保障机制
 
@@ -202,7 +205,7 @@ Android 通过以下方式减轻影响：
 
 - **SIO（Simple I/O）**：不合并 I/O 请求，简单高效。
 - **Row（Read Over Write）**：优先处理读请求，适合交互式场景。
-- **Maple**：根据屏幕亮灭状态切换调度策略——亮屏时偏向低延迟，灭屏时偏向高吞吐。
+- **Maple**：根据屏幕亮灭状态切换调度策略，亮屏时偏向低延迟，灭屏时偏向高吞吐。
 - **FIFO（FIOPS）**：基于 IOPS 指标做进程公平。
 
 这些调度器均未进入 Linux 主线。GKI 推行后，Android 设备统一使用上游调度器，BFQ 成为主流选择。[来源：IO调度器详解-2024-03-08.md 中的 vendor elv 章节]
@@ -211,15 +214,15 @@ Android 通过以下方式减轻影响：
 
 ### Page Cache 的工作原理
 
-当进程通过 `read()` 系统调用读取文件时，内核首先检查 page cache——一段用于缓存文件内容的物理内存。如果数据已经在 page cache 中（cache hit），直接拷贝到用户空间，不需要实际的存储设备 I/O。如果不在（cache miss），内核从存储设备读取数据，同时缓存在 page cache 中，下次读取就能命中。
+当进程通过 `read()` 系统调用读取文件时，内核会先检查 page cache，也就是一段用于缓存文件内容的物理内存。如果数据已经在 page cache 中（cache hit），直接拷贝到用户空间，不需要实际的存储设备 I/O。如果不在（cache miss），内核再从存储设备读取数据，同时把数据缓存在 page cache 中，下次读取就能命中。
 
-Android 上绝大多数 I/O 都是 buffered I/O（经过 page cache），direct I/O 和异步 I/O 很少使用。这意味着：存储性能问题的根因往往是内存和 I/O 交织在一起的。page cache 被回收（因为内存紧张）→ 缓存命中率下降 → 更多实际 I/O → 延迟增加 → 可能触发更多内存回收（因为 I/O 路径中也需要内存分配）。[已验证：来源见 手机Android存储性能优化架构分析 中关于 buffer IO 和内存/IO 交织的说明]
+Android 上绝大多数 I/O 都是 buffered I/O（经过 page cache），direct I/O 和异步 I/O 很少使用。所以存储性能问题往往和内存问题缠在一起。page cache 被回收（因为内存紧张）→ 缓存命中率下降 → 更多实际 I/O → 延迟增加 → 可能触发更多内存回收（因为 I/O 路径中也需要内存分配）。[已验证：来源见 手机Android存储性能优化架构分析 中关于 buffer IO 和内存/IO 交织的说明]
 
 ### Page Cache 对内存的压力
 
 Page cache 使用的是"可回收内存"（reclaimable memory）。当系统内存紧张时，内核会优先回收 page cache 而不是杀进程。这本身是合理的，但在 Android 上有个问题：如果后台进程大量读取文件（如媒体扫描），它们的 page cache 会挤占前台 App 的 page cache，导致前台 App 冷启动时缓存命中率低，需要从存储设备重新读取。
 
-这就是为什么低内存设备上 App 启动特别慢——不只是内存不够，还因为 page cache 被后台进程挤占了，每次启动都需要实际 I/O。
+这也是为什么低内存设备上的 App 启动会特别慢。内存本来就紧，再加上 page cache 被后台进程挤占，每次启动都更容易落到真实 I/O。
 
 ### 关键参数
 
@@ -249,6 +252,8 @@ Perfetto 可以捕获 block 层的 ftrace 事件（需要在录制配置中启�
 - **`ext4_da_write_begin / ext4_da_write_end`**：文件的延迟分配写入。
 
 通过 SQL 查询可以聚合这些事件：
+
+[需确认: 文中直接使用 `block_io_events` 作为查询表名。不同 Perfetto 版本和 trace 配置下，可用表名、字段和是否存在预处理表可能不同，需要按当前 trace processor schema 再核对。]
 
 ```sql
 -- 查询各进程的 I/O 延迟统计
@@ -282,13 +287,15 @@ LIMIT 20;
 - fsync 耗时异常（正常 < 5ms，异常可达 50ms–200ms），通常是后台大量写入导致的。
 - 系统整体 iowait > 5%，伴随 kswapd 活跃（说明内存回收也在引发 I/O）。
 
+[需补充素材: 这一节已经讲了主线程 D 状态、后台写入争抢和 fsync 拉长的观察方法，但还缺 2-3 个真实 Perfetto 片段或等价图示，最好至少覆盖这三类典型信号。]
+
 ## Direct I/O vs Buffered I/O 在 Android 场景的取舍 [扩展]
 
 ### Buffered I/O：默认选择
 
 Android 上绝大多数文件操作都走 buffered I/O（经过 page cache）。好处是：读命中缓存时零 I/O 延迟，写操作先写缓存再异步落盘，对调用者来说几乎是"免费的"。
 
-坏处是：数据可靠性依赖脏页回写时机。如果设备突然断电，尚未落盘的数据会丢失。这就是为什么 SQLite 使用 WAL 模式 + fsync 来保证数据完整性——它需要在 buffered I/O 的基础上额外调用 fsync 强制落盘。
+坏处是：数据可靠性依赖脏页回写时机。如果设备突然断电，尚未落盘的数据会丢失。这就是为什么 SQLite 使用 WAL 模式 + fsync 来保证数据完整性。它需要在 buffered I/O 的基础上额外调用 fsync 强制落盘。
 
 ### Direct I/O：绕过 Page Cache
 
@@ -302,7 +309,7 @@ Direct I/O（通过 `O_DIRECT` 标志打开文件）直接在用户空间缓冲�
 - **大文件传输**：如视频录制、文件下载，不需要缓存中间数据。
 - **数据库的 WAL 文件**：部分高性能数据库实现使用 Direct I/O 写 WAL，减少 page cache 污染。
 
-大多数 App 不需要使用 Direct I/O，但理解它有助于分析 I/O 性能问题：当你看到 page cache 命中率低但内存紧张时，Direct I/O 可能是一个优化方向。
+大多数 App 不需要使用 Direct I/O，但理解它有助于分析 I/O 性能问题：当我们看到 page cache 命中率低、内存又紧张时，Direct I/O 才值得作为候选方向。
 
 [待验证：Android 上 SQLite 默认是否使用 Direct I/O 写 WAL，可能因版本和厂商定制而异]
 
@@ -337,7 +344,7 @@ Android 上 SQLite 是 I/O 最密集的组件之一。它的核心特征是**频
 
 ## 本章小结
 
-I/O 调度在 Android 性能优化中是一个容易被忽视但影响深远的领域。它的特殊性在于：I/O 问题往往与内存问题交织在一起——page cache 被回收导致缓存命中率下降，进而引发更多实际 I/O，I/O 延迟又可能触发内存分配的 slow path，形成恶性循环。
+I/O 调度在 Android 性能优化里很容易被忽略，但它会直接影响实际体验。麻烦的地方在于 I/O 问题常常和内存问题交织在一起。page cache 被回收后，缓存命中率下降，实际 I/O 变多；I/O 延迟上来后，内存分配又更容易走 slow path，问题会越拖越重。
 
 对于性能优化工程师来说，关键要记住三点：
 

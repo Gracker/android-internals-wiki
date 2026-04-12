@@ -1774,3 +1774,23 @@
 - **位置**：行 264-283 Perfetto 分析实战
 - **问题**：本节给了 SQL 和截图占位，但没有一条真实 trace、实际 slice 名命中结果、阈值样本或“现象 → Trace → 根因 → 修复”的闭环案例。读者即使知道概念，也很难复现整套排查流程。
 - **建议**：补 1 个真实滑动 trace 案例，至少包含 `RV OnLayout` / `RV Prefetch` / `RV onBindViewHolder` 中的一组真实 slice，以及修复前后对比。
+
+## [Task6 Review] 6.3 I/O 调度与性能 — 2026-04-12
+- **类型**：需确认
+- **位置**：Android 版本 / GKI / 默认调度器映射表
+- **问题**：正文把 Android 版本、GKI 内核和默认调度器写成直接映射，但这件事会受厂商内核配置影响，当前缺少更精确的设备或配置证据。
+- **建议**：由 Task 9 对照 GKI 配置和主流机型内核核一轮；如果覆盖不住，就改成更保守的版本说明。
+- **review 日志**：logs/review/2026-04-12-18-review.md
+
+- **类型**：需确认
+- **位置**：Perfetto SQL 查询示例
+- **问题**：正文直接使用 `block_io_events` 表名和对应字段；不同 Perfetto 版本、trace 配置、stdlib 预处理表是否存在，可能并不一致。
+- **建议**：由 Task 9 按当前 trace processor schema 复核表名、字段和可运行查询，必要时换成实测可跑的 SQL。
+- **review 日志**：logs/review/2026-04-12-18-review.md
+
+- **类型**：需补充素材
+- **位置**：Perfetto 观察章节
+- **问题**：正文已经讲了主线程 D 状态、后台写入争抢和 fsync 拉长，但没有真实 trace 截图或等价图示，证据链还不完整。
+- **建议**：请 Task 2B 补 2-3 个真实 Perfetto 片段，至少覆盖这三类典型信号。
+- **review 日志**：logs/review/2026-04-12-18-review.md
+
