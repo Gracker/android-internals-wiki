@@ -4,7 +4,7 @@ section: "4.4"
 chapter: "4.4"
 status: ready-for-review
 drafted_date: "2026-03-31"
-reviewed_date: "2026-04-05"
+reviewed_date: "2026-04-13"
 reviewed_by: "openclaw-task6"
 polish_count: 1
 polish_date: "2026-04-05"
@@ -26,8 +26,9 @@ sources:
     path: "https://android-developers.googleblog.com/2020/07/lmkd-userspace-low-memory-killer-daemon.html"
 tags: ['lmk', 'lmkd', 'oom_adj', 'oom_score_adj', 'PSI', 'memory-pressure', 'process-kill']
 related_chapters: ["4.1", "4.2", "4.3", "1.3", "10.4"]
-pipeline_stage: task6_pending
-task6_state: pending
+pipeline_stage: task9_pending
+task6_state: reviewed
+task6_result: pass-light-edit
 task9_state: pending
 task2b_state: idle
 ---
@@ -41,7 +42,7 @@ task2b_state: idle
 
 - 🔹 LMK 的设计目标：在内存不足时有序释放进程
 - 🔹 传统 LowMemoryKiller（内核模块）→ lmkd（用户空间守护进程）的演进
-- 🔹 oom_adj_score 与进程优先级的映射关系
+- 🔹 oom_score_adj 与进程优先级的映射关系
 - 🔹 lmkd 的杀进程策略：PSI（Pressure Stall Information）驱动的现代策略 vs 传统 minfree 阈值触发，PSI 信号的含义与使用
 - 🔹 LMK 在性能问题中的角色：频繁 kill → 频繁冷启动 → 用户感知卡顿
 
@@ -82,7 +83,7 @@ Linux 内核有自己的 OOM Killer，但它的设计面向服务器场景——
 
 这套机制简单有效，但有几个根本性问题：
 
-**内核不了解 Android 语义。** `ActivityManagerService`（AMS）知道哪个 App 是前台 App、哪个在播放音乐、哪个只是缓存的后台进程——但内核不知道。它只能看 `oom_adj` 这个数字，无法理解背后的语义。这意味着内核端的 LMK 只能做一个"按数字排序后杀最大值"的简单操作，无法实现更智能的策略。
+**内核不了解 Android 语义。** `ActivityManagerService`（AMS）知道哪个 App 是前台 App、哪个在播放音乐、哪个只是缓存的后台进程——但内核不知道。它只能看 `oom_adj` 这个数字，无法理解背后的语义。内核端的 LMK 只能做一个"按数字排序后杀最大值"的简单操作，无法实现更智能的策略。
 
 **与 Linux 自身 OOM Killer 功能重叠。** Linux 内核已经有自己的 OOM Killer，两者在内存极度紧张时可能产生冲突——两个 Killer 同时工作，可能杀死过多进程。
 
@@ -202,7 +203,7 @@ PSI 是 Linux 内核在 4.20（主线合入）中引入的一个机制，Android
 `lmkd` 关注的是 memory 的 `some` 和 `full` 信号：
 
 - **`memory.some`**：部分进程因内存分配而等待（Page Fault 需要换入、需要回收内存页等）。这表示系统开始感到内存压力。
-- **`memory.full`**：所有进程都在等待内存。这意味着系统已经严重缺乏可用内存，可能影响前台 App 的响应。
+- **`memory.full`**：所有进程都在等待内存。系统已经严重缺乏可用内存，前台 App 的响应也会受到影响。
 
 `lmkd` 通过两个属性来配置 PSI 阈值：
 
@@ -217,7 +218,7 @@ PSI 相比旧版 `vmpressure` 信号有本质区别。`vmpressure` 基于内存�
 
 ### 杀进程的执行流程
 
-当 PSI 信号触发后，`lmkd` 首先判断当前的压力级别——是"中等"还是"严重"。压力级别直接决定了杀进程的门槛：中等压力下，使用 `ro.lmk.low`（默认 1001，即不杀任何进程）配置的最低 oom_adj；严重压力下，使用 `ro.lmk.critical`（默认 0），这意味着连前台 App 都可能成为候选。
+当 PSI 信号触发后，`lmkd` 会先判断当前的压力级别，是"中等"还是"严重"。压力级别直接决定了杀进程的门槛：中等压力下，使用 `ro.lmk.low`（默认 1001，即不杀任何进程）配置的最低 oom_adj；严重压力下，使用 `ro.lmk.critical`（默认 0），前台 App 也可能进入候选范围。
 
 确定了门槛之后，`lmkd` 从 `/proc` 读取所有进程的 `oom_score_adj`，按值从大到小排序，然后在满足阈值要求的进程中，选择 `oom_score_adj` 最大的（即优先级最低的）进程，调用 `kill(pid, SIGKILL)` 将其终止。
 
@@ -239,7 +240,7 @@ PSI 相比旧版 `vmpressure` 信号有本质区别。`vmpressure` 基于内存�
 
 ### 频繁 Kill 的连锁反应
 
-理解 LMK 对性能分析至关重要，因为 LMK 的行为直接决定了用户能感知到的卡顿来源。问题通常不是"LMK 杀错了进程"，而是"LMK 不得不频繁杀进程"——这意味着系统整体内存不足。
+判断性能问题时，LMK 的行为必须纳入分析，因为它会直接改变用户感知到的卡顿来源。问题通常不是"LMK 杀错了进程"，而是"LMK 不得不频繁杀进程"，这类现象通常说明系统整体内存不足。
 
 当一个缓存 App 被 LMK 杀死后，如果用户切回这个 App，系统必须重新走完整的冷启动流程：Zygote fork → 加载 APK → 初始化 Application → 创建 Activity → 布局渲染。这个过程可能需要数百毫秒甚至数秒，远比从缓存中恢复（通常 < 100ms）慢得多。
 
@@ -267,7 +268,7 @@ adb shell dumpsys meminfo --checkin
 
 [图：Perfetto 中 lmkd track 的示例，标注 kill 事件、被杀进程名、oom_score_adj 值]
 
-最后，在 App 内部也可以感知到 LMK 的"前兆"。注册 `ActivityManager.OnTrimMemory` 回调后，当系统回调 `TRIM_MEMORY_UI_HIDDEN` 或更低级别时，说明系统正在要求 App 释放内存——这通常是 LMK 即将行动的信号。
+在 App 内部，也能看到 LMK 动手前的信号。注册 `ActivityManager.OnTrimMemory` 回调后，当系统回调 `TRIM_MEMORY_UI_HIDDEN` 或更低级别时，说明系统正在要求 App 释放内存——这通常是 LMK 即将行动的信号。
 
 ```java
 // ComponentCallbacks2 的 onTrimMemory 回调级别
@@ -333,7 +334,7 @@ data_sources: {
 
 我们可以在 `lmkd` track 上看到具体的事件，包含被杀进程的 PID。将这个 PID 与同一 trace 中的进程对应，我们就能知道是哪个 App 被杀了。
 
-同时观察 `meminfo` track（通常在 System Stats 下面），我们可以看到 `MemFree` 和 `MemAvailable` 的变化趋势。如果这两个值持续走低然后突然上升（因为 LMK 杀了进程释放了内存），这就是典型的 LMK 干预模式。
+同时观察 `meminfo` track（通常在 System Stats 下面），就能看到 `MemFree` 和 `MemAvailable` 的变化趋势。如果这两个值持续走低然后突然上升（因为 LMK 杀了进程释放了内存），这就是典型的 LMK 干预模式。
 
 **关联分析技巧：**
 
@@ -369,7 +370,7 @@ Android 15 引入了对 16KB 内存页的支持（传统为 4KB）。这不会�
 
 [已验证: 官方文档, developer.android.com — 16KB Page Size 说明]
 
-这意味着在 16KB 页模式下，虽然单个进程的内存开销可能略有增加，但系统整体性能的改善（尤其是冷启动速度）可以缓解 LMK 频繁杀进程带来的用户体验问题。
+在 16KB 页模式下，虽然单个进程的内存开销可能略有增加，但系统整体性能的改善，尤其是冷启动速度的提升，可以缓解 LMK 频繁杀进程带来的用户体验问题。
 
 ### Android 16：lmkd 配置属性的标准化
 
@@ -380,7 +381,7 @@ Android 16 对 `lmkd` 本身没有引入重大的算法变更，但系统在属�
 
 [已验证: AOSP android-16.0.0_r2, system/memory/lmkd/]
 
-更重要的是，Android 16 在系统层面的内存优化（如 16KB 页的进一步推广、ART 分配器的改进）减少了 `lmkd` 需要介入的频率。当系统整体内存效率提升后，自然就不需要那么频繁地杀后台进程了。
+另外，Android 16 在系统层面的内存优化（如 16KB 页的进一步推广、ART 分配器的改进）减少了 `lmkd` 需要介入的频率。当系统整体内存效率提升后，自然就不需要那么频繁地杀后台进程了。
 
 ## 参考资料
 
