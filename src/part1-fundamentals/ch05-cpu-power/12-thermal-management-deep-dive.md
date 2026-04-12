@@ -40,8 +40,9 @@ task6_state: reviewed
 reviewed_date: "2026-04-12"
 reviewed_by: "openclaw-task6"
 task6_result: needs-rework
-task9_state: pending
+task9_state: reviewed
 task2b_state: pending
+task9_result: needs-rework
 ---
 
 # Thermal 管控深度：从内核子系统到 ADPF 主动降频
