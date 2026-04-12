@@ -37,11 +37,11 @@ sources:
     path: "source.android.com/docs/core/memory"
 tags: [process, ams, oom_adj, lmkd, zygote, process-lifecycle, binder]
 related_chapters: ["1.1", "1.2", "1.4", "1.5"]
-pipeline_stage: task6_pending
+pipeline_stage: task2b_pending
 task6_state: revisiting
-task9_state: pending
-task2b_result: fixed
-task2b_state: fixed
+task9_state: reviewed
+task9_result: needs-rework
+task2b_state: pending
 ---
 
 # 进程模型与生命周期管理
