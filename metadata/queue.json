@@ -2331,17 +2331,41 @@
   {
     "section": "5.12",
     "section_title": "Thermal 管控深度：从内核子系统到 ADPF 主动降频",
-    "priority": 80,
-    "reason": "知识缺口挖掘：thermal throttling 是游戏/相机/导航等场景的核心性能瓶颈。5.5 仅为概述，缺少内核 thermal 子系统、Thermal HAL、ADPF Thermal API 的深度分析。",
+    "priority": 90,
+    "reason": "[review回炉] Thermal HAL 版本边界、Headroom API、Perfetto SQL 和 MAGT 量化数据仍需技术核对",
     "material_paths": [
-      "intake/research-feeds/2026-04-08-19-android-adpf-agdk-game-mode-thermal-performance.md"
+      "intake/suggestions.md（含 review 意见）"
     ],
-    "added_by": "task2a-knowledge-gap",
-    "added_at": "2026-04-09T12:10:00+08:00",
-    "gap_score": "18/20",
-    "status": "completed",
-    "completed_at": "2026-04-09T13:05:00+08:00",
-    "completed_by": "openclaw-task2a"
+    "review_issues": [
+      {
+        "type": "需确认",
+        "location": "Thermal HAL 小节 + 版本演进表",
+        "detail": "正文把 AIDL 接口、HIDL 2.0 和 Android 14 之后的迁移关系写在一起，版本边界不够清楚。",
+        "suggestion": "核对 `hardware/interfaces/thermal/` 的接口演进后，再统一正文和版本表。"
+      },
+      {
+        "type": "需确认",
+        "location": "Thermal Headroom 段 / 版本演进表 Android 16-17",
+        "detail": "`SystemHealthManager.getCpuHeadroom()`、`getGpuHeadroom()`、`AThermal_HeadroomCallback` 的 API 名称和首发版本存在风险。",
+        "suggestion": "用官方 API diff 和版本发布文档核对后再保留具体名称。"
+      },
+      {
+        "type": "需确认",
+        "location": "Perfetto SQL 示例",
+        "detail": "`cpu_frequency_scans` 表名和 thermal slice name 模式可能不是通用 schema，读者直接运行有失败风险。",
+        "suggestion": "按标准 Perfetto schema 重写查询，或补充 trace-processor 版本前提。"
+      },
+      {
+        "type": "需补充素材",
+        "location": "MediaTek MAGT 案例数据",
+        "detail": "三组帧率、功耗和续航数字缺少精确文章标题、日期和测试条件。",
+        "suggestion": "补具体官方文章链接和测试条件，或改成定性表述。"
+      }
+    ],
+    "added_by": "task6-review",
+    "added_at": "2026-04-12T15:05:00+08:00",
+    "status": "pending",
+    "original_review_log": "logs/review/2026-04-12-15-review.md"
   },
   {
     "section": "14.11",

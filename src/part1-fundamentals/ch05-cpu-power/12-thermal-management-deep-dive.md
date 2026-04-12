@@ -28,24 +28,54 @@ sources:
   - type: official
     path: "source.android.com/docs/core/thermal"
   - type: blog
-    path: "mediaTek.com - MAGT ADPF integration case studies"
+    path: "mediatek.com - MAGT ADPF integration case studies"
 tags: [thermal, throttling, ADPF, Thermal HAL, sustained performance, 游戏性能, 功耗, devfreq, power_allocator]
 related_chapters: ["5.5", "5.9", "4.7", "8.9", "11.1", "16.4"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-04-09"
 gap_source: "官方文档+研究素材+AOSP结构+读者需求"
 gap_score: "18/20"
-pipeline_stage: task6_pending
-task6_state: pending
+pipeline_stage: task2b_pending
+task6_state: reviewed
+reviewed_date: "2026-04-12"
+reviewed_by: "openclaw-task6"
+task6_result: needs-rework
 task9_state: pending
-task2b_state: idle
+task2b_state: pending
 ---
 
-# 5.12 Thermal 管控深度：从内核子系统到 ADPF 主动降频
+# Thermal 管控深度：从内核子系统到 ADPF 主动降频
 
-本章是 [5.5 Thermal 管控](./05-thermal.md) 的深度扩展。5.5 讲的是"温控系统从传感器到 App 的完整链路"，适合建立全局认知。如果你已经读完 5.5，并且需要回答这些问题——"内核的 thermal governor 具体怎么决策？""power_allocator 的 PID 参数怎么调？""为什么同一款 SoC 的两台手机 thermal 表现差这么多？""在 Perfetto 里怎么用 SQL 量化 thermal throttling 对帧率的影响？"——那么你在这篇文章里能找到答案。
+<!-- outline-start -->
+## 本节要点大纲
 
-[5.9 ADPF 自适应性能框架](./09-adpf.md) 讲了 Performance Hint API 和 Game Mode API 的使用方法。本章聚焦在 thermal 这条线上：内核子系统的内部机制、Thermal HAL 的接口演进、以及从被动降频到主动温控的范式变化。ADPF 作为"App 主动参与温控"的手段，在本章中从 thermal 的视角被重新审视。
+### 锚点（必须覆盖）
+
+- 🔹 Thermal Zone、trip point、cooling device 三者的关系
+- 🔹 `step_wise` 与 `power_allocator` 的决策逻辑和调参差异
+- 🔹 Thermal HAL 的接口结构、severity 映射与 OEM 差异
+- 🔹 ADPF / thermal headroom 如何把被动降频变成主动控温
+- 🔹 游戏场景里的分辨率、帧率和厂商扩展策略
+- 🔹 Perfetto + SQL 分析 thermal throttling 的定位流程
+
+### 扩展（可选深入）
+
+- 🔸 `power_allocator` 的 PID 参数与 `sustainable_power`
+- 🔸 MediaTek MAGT 与多传感器融合策略
+- 🔸 Thermal 能力从 Android 7 到 Android 17 的版本演进
+
+### OpenClaw 加工指引
+
+> **锚点**是最低覆盖要求，加工时必须逐条落实并标注验证结果。
+> **扩展**视素材丰富程度选择性深入。
+> 如果从 Obsidian 素材或 AOSP 源码中发现大纲未列出但与本节强相关的知识点，
+> 可**就地插入**最相关的锚点之后，并用 `[自动发现]` 标注，方便后续 review。
+> 锚点内容需 L1/L2 验证，扩展内容至少 L2 验证，自动发现内容至少标注来源。
+<!-- outline-end -->
+
+本章是 [5.5 Thermal 管控](./05-thermal.md) 的深度扩展。5.5 讲的是"温控系统从传感器到 App 的完整流程"，适合建立全局认知。如果你已经读完 5.5，并且需要回答这些问题——"内核的 thermal governor 具体怎么决策？""power_allocator 的 PID 参数怎么调？""为什么同一款 SoC 的两台手机 thermal 表现差这么多？""在 Perfetto 里怎么用 SQL 量化 thermal throttling 对帧率的影响？"——那么你在这篇文章里能找到答案。
+
+[5.9 ADPF 自适应性能框架](./09-adpf.md) 讲了 Performance Hint API 和 Game Mode API 的使用方法。本章聚焦在 thermal 这一侧：内核子系统的内部机制、Thermal HAL 的接口演进、以及从被动降频到主动温控的范式变化。ADPF 作为"App 主动参与温控"的手段，在本章中从 thermal 的视角被重新审视。
 
 ## 为什么需要深挖 Thermal 子系统
 
@@ -289,7 +319,7 @@ Hotplug 通常在 severity 达到 SEVERE 或 CRITICAL 时触发。比如一台 8
 
 5.5 中介绍了 Thermal HAL 的基本职责——将内核的温度数据抽象为标准化的 severity 级别，通过回调机制上报给 Framework。这里我们深入 HAL 层的接口设计和版本演进。
 
-### Thermal HAL 2.0 的接口架构
+### AIDL 版 Thermal HAL 的接口结构
 
 从 Android 14 开始，Thermal HAL 从 HIDL 迁移到 AIDL。AIDL 版本的接口定义在 `hardware/interfaces/thermal/aidl/android/hardware/thermal/` 目录下，核心文件包括：
 
@@ -327,7 +357,7 @@ interface IThermal {
 }
 ```
 
-AIDL 接口要求 OEM 实现两个核心方法。`getTemperatures()` 在 Framework 初始化时调用一次，获取所有传感器的当前状态。之后 Framework 通过 `registerThermalChangedCallback()` 注册回调，HAL 在温度跨越阈值时主动推送更新——这是从 HIDL 1.0 轮询模式到 2.0 事件驱动模式的核心变化。
+AIDL 接口里，OEM 主要要把温度读取和回调注册这两类能力接出来。`getTemperatures()` 常用于 Framework 初始化时拿当前状态。之后 Framework 通过 `registerThermalChangedCallback()` 注册回调，HAL 在温度跨过阈值时主动推送更新。这一段要点不在版本号本身，而在温度上报从轮询读数转向事件驱动回调。
 
 ### OEM 实现差异：同一 SoC 的不同表现
 
@@ -343,7 +373,7 @@ Thermal HAL 的实现是 OEM 差异化最严重的部分之一。即使是同一
 
 ## 从被动降频到主动温控：ADPF 带来的范式变化
 
-5.5 中我们看到的温控链路是"被动"的：温度升高 → 内核限制频率 → App 性能下降。App 在这个过程中是被动的承受者——不知道为什么突然卡了，也无法提前准备。
+5.5 中我们看到的温控过程是"被动"的：温度升高 → 内核限制频率 → App 性能下降。App 在这个过程中是被动的承受者——不知道为什么突然卡了，也无法提前准备。
 
 ADPF（Android Dynamic Performance Framework）改变了这个范式。通过 Thermal API，App 可以在系统强制降频**之前**感知到温度趋势，主动降低自己的负载。这种"主动降载"相比"被动降频"有几个优势：
 
@@ -363,7 +393,7 @@ headroom 的预测不是简单的线性外推。Framework 内部维护了一个�
 
 ```java
 // frameworks/base/services/core/java/com/android/server/power/ThermalManagerService.java
-// getThermalHeadroom 的核心逻辑（简化）
+// 伪代码，只说明 getThermalHeadroom() 的计算思路
 float getThermalHeadroom(int forecastSeconds) {
     // 1. 获取当前皮肤温度估算
     float skinTemp = getSkinTemperatureEstimate();
@@ -380,7 +410,7 @@ float getThermalHeadroom(int forecastSeconds) {
 }
 ```
 
-这意味着 headroom API 的精度取决于两个因素：HAL 上报的温度数据的准确性和更新频率，以及 Framework 的热模型的复杂度。不同设备上的 headroom 预测精度可能差异很大。
+headroom API 的精度取决于两个因素：HAL 上报的温度数据的准确性和更新频率，以及 Framework 的热模型的复杂度。不同设备上的 headroom 预测精度可能差异很大。
 
 [已验证: 官方文档 developer.android.com/reference/android/os/PowerManager#getThermalHeadroom(int)]
 [待验证: ThermalManagerService 内部热模型的具体算法，不同 Android 版本是否有变化]
@@ -399,7 +429,7 @@ Android 16 的 ADPF 提供了 `SystemHealthManager.getCpuHeadroom()` 和 `getGpu
 
 当分辨率已经降到下限但温度仍在上升时，下一步是降低帧率目标。从 120fps 降到 60fps 直接将每帧的 GPU 时间预算从 8.33ms 放宽到 16.67ms，GPU 可以在更低的频率下完成渲染。
 
-关键是要和 ADPF 的 `HintSession` 同步更新。降低帧率目标后，需要调用 `updateTargetWorkDuration()` 更新 target duration，否则 ADPF 会认为 App 还在追求 8.33ms 的帧时间，继续尝试提频——反而加剧发热。
+`HintSession` 要和 ADPF 同步更新。降低帧率目标后，需要调用 `updateTargetWorkDuration()` 更新 target duration，否则 ADPF 会认为 App 还在追求 8.33ms 的帧时间，继续尝试提频——反而加剧发热。
 
 ```java
 // 游戏场景的动态帧率调整
@@ -417,7 +447,7 @@ void adjustForThermal(float headroom) {
         targetFps = 60;
         renderer.setResolutionScale(0.5f);
     }
-    // 关键：同步更新 ADPF HintSession
+    // 同步更新 ADPF HintSession
     hintSession.updateTargetWorkDuration(
         TimeUnit.SECONDS.toNanos(1) / targetFps);
 }
@@ -621,7 +651,7 @@ thermal governor（尤其是 power_allocator）利用了这个非线性特性—
 - **[5.5 Thermal 管控](./05-thermal.md)**：本章是 5.5 的深度扩展。5.5 建立全局认知，本章深入内核机制和工程实践。
 - **[5.4 DVFS](./04-dvfs.md)**：DVFS 是 thermal cooling 的执行手段。cpufreq cooling 通过限制 DVFS 的频率上限来降温。
 - **[5.9 ADPF](./09-adpf.md)**：ADPF 是 App 参与温控的桥梁。本章从 thermal 视角审视 ADPF，5.9 从性能优化视角审视 ADPF。
-- **[8.9 游戏性能](../../part2-performance/ch08-responsiveness/05-case-studies.md)**：游戏是 thermal 问题最集中的场景。本章的游戏策略可以直接应用于 8.9 中的案例。
+- **[8.9 游戏性能](../../part2-performance/ch08-responsiveness/09-game-performance.md)**：游戏是 thermal 问题最集中的场景。本章的游戏策略可以直接应用于 8.9 中的案例。
 - **[11.1 功耗模型](../../part2-performance/ch11-power/01-power-model.md)**：thermal 和功耗是一体两面——功耗决定发热量，发热量触发 thermal throttling。理解功耗模型有助于从源头减少 thermal 压力。
 
 ## 参考资料

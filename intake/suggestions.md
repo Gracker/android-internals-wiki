@@ -1661,3 +1661,28 @@
 - **位置**：frontmatter `related_chapters`
 - **问题**：当前列出的 `6.3`、`9.1` 在仓库里不存在，会导致索引和后续交叉引用失真。当前内容更接近 `6.2 文件系统`、`6.4 存储相关的版本演进`、`9.3 ANR 分析方法`、`9.4 特殊场景的 ANR`。
 - **建议**：把不存在的章节号替换为实际存在的小节，并在正文相应位置补显式引用。
+
+## [Task6 Review] 5.12 Thermal 管控深度：从内核子系统到 ADPF 主动降频 — 2026-04-12
+- **类型**：需确认
+- **位置**：Thermal HAL 小节 + 版本演进表
+- **问题**：正文把 AIDL 接口、HIDL 2.0 和 Android 14 之后的迁移关系写在一起，版本边界不够清楚。
+- **建议**：请 Task 9 核对 `hardware/interfaces/thermal/` 的接口演进，再统一正文和版本表。
+- **review 日志**：logs/review/2026-04-12-15-review.md
+
+- **类型**：需确认
+- **位置**：Thermal Headroom 段 / 版本演进表 Android 16-17
+- **问题**：`SystemHealthManager.getCpuHeadroom()`、`getGpuHeadroom()`、`AThermal_HeadroomCallback` 的 API 名称和首发版本存在风险。
+- **建议**：请 Task 9 核对官方 API diff 和版本约定。
+- **review 日志**：logs/review/2026-04-12-15-review.md
+
+- **类型**：需确认
+- **位置**：Perfetto SQL 示例
+- **问题**：`cpu_frequency_scans` 表名和 thermal slice name 模式可能不是通用 schema，读者直接运行有失败风险。
+- **建议**：请 Task 9 用标准 Perfetto schema 核对后再定稿。
+- **review 日志**：logs/review/2026-04-12-15-review.md
+
+- **类型**：需补充素材
+- **位置**：MediaTek MAGT 案例数据
+- **问题**：三组帧率、功耗和续航数字缺少精确文章标题、日期和测试条件。
+- **建议**：请 Task 2B 补具体官方文章链接和测试条件，或改成定性表述。
+- **review 日志**：logs/review/2026-04-12-15-review.md
