@@ -10,8 +10,8 @@ created_by: "task2a-knowledge-gap"
 created_date: "2026-04-06"
 drafted_date: "2026-04-06"
 drafted_by: "openclaw-task2a"
-last_verified: "2026-04-06"
-last_verified_against: "AOSP android-17.0.0_r3"
+last_verified: "2026-04-12"
+last_verified_against: "AOSP android-17.0.0_r3 + AndroidX androidx-main + AOSP android-16.0.0_r1"
 confidence: medium
 polish_count: 1
 polish_date: "2026-04-08"
@@ -20,17 +20,28 @@ reviewed_date: "2026-04-12"
 reviewed_by: "openclaw-task6"
 task6_result: needs-rework
 sources:
+  - type: androidx
+    path: "platform/frameworks/support/+/androidx-main/recyclerview/recyclerview/src/main/java/androidx/recyclerview/widget/RecyclerView.java"
+  - type: androidx
+    path: "platform/frameworks/support/+/androidx-main/recyclerview/recyclerview/src/main/java/androidx/recyclerview/widget/GapWorker.java"
+  - type: androidx
+    path: "platform/frameworks/support/+/androidx-main/recyclerview/recyclerview/src/main/java/androidx/recyclerview/widget/LinearLayoutManager.java"
+  - type: androidx
+    path: "platform/frameworks/support/+/androidx-main/recyclerview/recyclerview/src/main/java/androidx/recyclerview/widget/DiffUtil.java"
   - type: aosp
-    path: "frameworks/support/recyclerview/src/main/java/androidx/recyclerview/widget/"
+    path: "platform/frameworks/base/+/android-16.0.0_r1/core/java/android/view/View.java"
+  - type: aosp
+    path: "platform/frameworks/base/+/android-16.0.0_r1/core/java/android/view/Display.java"
   - type: official
-    path: "developer.android.com/reference/androidx/recyclerview/widget/RecyclerView"
-  - type: blog
-    path: "android-developers.googleblog.com - Adaptive Refresh Rate"
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
+    path: "https://developer.android.com/reference/androidx/recyclerview/widget/RecyclerView"
+  - type: official
+    path: "https://developer.android.com/jetpack/androidx/releases/recyclerview"
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
 task9_result: needs-rework
-task2b_state: pending
+task2b_state: fixed
+task2b_result: fixed
 ---
 
 # 7.8 RecyclerView 列表滑动性能深度优化
@@ -64,20 +75,25 @@ task2b_state: pending
 
 ## RecyclerView 的布局流程
 
-RecyclerView 的每次布局都走 `onLayout()` → `dispatchLayoutStep1/2/3` 三个阶段。这不是随便分的三个步骤，每个步骤都有明确的职责：
+RecyclerView 的一次完整布局仍然由 `dispatchLayoutStep1()`、`dispatchLayoutStep2()`、`dispatchLayoutStep3()` 组成，但 Perfetto 不会直接把这三个阶段显示成同名 slice。当前 AndroidX 主线真正打点的是外层入口：`onLayout()` 对应 `RV OnLayout`，`consumePendingUpdateOperations()` 在整表失效时打 `RV FullInvalidate`，在局部更新路径上打 `RV PartialInvalidate`。因此，Trace 里看到的是外层布局切片，我们再结合调用栈和更新类型去判断 step1/2/3 落在什么位置。
 
-`dispatchLayoutStep1` 处理 Adapter 的更新（如果有的话），包括预布局（pre-layout）。预布局是 RecyclerView 的一个巧妙设计——当 Adapter 数据变化时，RecyclerView 会先用旧数据做一次布局来记录旧位置，然后用新数据做正式布局，这样 ItemAnimator 就能根据新旧位置的差异计算动画。
+`dispatchLayoutStep1()` 负责消费 Adapter 更新、决定是否运行 predictive animation、保存旧布局信息。列表收到 `notifyDataSetChanged()` 这类整表失效时，外层 slice 往往是 `RV FullInvalidate`。收到局部更新并且 `AdapterHelper` 能在一次 pass 里处理时，更常见的是 `RV PartialInvalidate`。
 
-`dispatchLayoutStep2` 是真正的布局阶段，LayoutManager 在这里决定每个 Item 的位置和大小。如果启用了自动测量（`isAutoMeasureEnabled`，默认开启），RecyclerView 会在这一步完成 measure 和 layout。
+`dispatchLayoutStep2()` 进入最终布局阶段，`LayoutManager.onLayoutChildren()` 在这里摆放 item。LinearLayoutManager、GridLayoutManager、StaggeredGridLayoutManager 的差异，主要都体现在这一段。Perfetto 里通常只能看到 `RV OnLayout` 或前面的 invalidation slice，而看不到名为 `dispatchLayoutStep2` 的独立标签。所以我们判断 step2，靠的是展开 `RV OnLayout` 的调用栈，确认时间是不是花在 `onLayoutChildren()`、子 view measure/layout，或者布局前后紧邻的 bind / inflate。
 
-`dispatchLayoutStep3` 完成动画的启动和最终的清理工作。
+`dispatchLayoutStep3()` 负责记录 post-layout 信息、驱动 ItemAnimator、清理 scrap 和旧状态。源码同样没有给 step3 单独打 `Trace.beginSection()`，只能通过 `dispatchLayout()` 尾部调用和随后的动画行为侧推。
 
-对性能分析来说，先盯住 step2。如果这一步耗时过长，在 Perfetto 中通常会表现为 doFrame 内部一段明显偏长的 layout 时间，对应 `Choreographer#doFrame` 下面的 RecyclerView 相关切片。
+把三阶段和 Trace 对应起来时，用下面这组映射更稳妥：
 
-RecyclerView 和传统的 ListView 相比，架构上有两个核心优势。第一，将布局逻辑完全委托给 LayoutManager，使得 LinearLayoutManager、GridLayoutManager、StaggeredGridLayoutManager 可以各自优化自己的布局策略。第二，ViewHolder 的回收复用体系（下面会详细讲），这是 RecyclerView 性能优势的根基。
+- step1：`RV FullInvalidate` / `RV PartialInvalidate` 外层 slice，常伴随 Adapter 更新处理
+- step2：`RV OnLayout` 内部的 `LayoutManager.onLayoutChildren()` 和子 view layout
+- step3：`dispatchLayout()` 收尾后的动画、scrap 回收与状态清理，通常没有独立 slice 名
 
-[图：RecyclerView layout 三阶段时序图，标注 step1/step2/step3 在 Perfetto Trace 中的对应区域]
+对性能分析来说，先盯 `RV OnLayout`。如果它在一个 `doFrame` 里反复出现，或者单次耗时已经吃掉大半帧预算，再继续展开调用栈区分是布局本身慢，还是前面的更新合并、bind、动画准备把时间吃掉了。
 
+RecyclerView 和 ListView 的差别主要在两处。布局策略交给 `LayoutManager`，不同布局可以单独优化。ViewHolder 回收复用体系把 create/bind 的成本尽量从滑动路径上挪开，后面几节的缓存、预取和共享 Pool 都围绕这件事展开。
+
+[图：RecyclerView 三阶段布局与 `RV FullInvalidate` / `RV PartialInvalidate` / `RV OnLayout` 的对应关系]
 ## ViewHolder 回收复用的四级缓存
 
 RecyclerView 的缓存体系分为四级，理解每一级的工作方式，是在 Trace 中分析滑动卡顿的基础。
@@ -92,41 +108,54 @@ RecyclerView 的缓存体系分为四级，理解每一级的工作方式，是�
 
 缓存查找的顺序是：AttachedScrap → CachedViews → ViewCacheExtension → RecycledViewPool。如果在所有缓存中都没找到，才会调用 `onCreateViewHolder()` 创建新的。
 
-在 Perfetto 中，我们可以通过观察 `RV Prefetch` 和 `RV OnBindView` 这两类 trace point 来判断缓存效率。如果一个 fling 操作中频繁出现 `onCreateViewHolder` 或 `onBindViewHolder`，说明缓存命中率低，需要调整缓存大小或检查是否有不必要的 invalidate。
+在 Perfetto 中，缓存命中率不能靠假想的 `RV OnBindView` 名字判断。当前 AndroidX 打点使用的是 `RV Prefetch`、`RV onCreateViewHolder type=0x%X` 和 `RV onBindViewHolder type=0x%X`。如果 fling 过程中频繁出现 create/bind slice，说明 CachedViews 或 RecycledViewPool 没接住；如果只有 `RV Prefetch`，没有后续 create/bind，就要继续看 GapWorker 的时间预算是不是提前放弃了这轮预取。
 
-[已验证: AOSP android-17.0.0_r3, frameworks/support/recyclerview/src/main/java/androidx/recyclerview/widget/Recycler.java — tryGetViewHolderForPositionByDeadline()]
+[已验证: AndroidX androidx-main，`RecyclerView.java` `tryGetViewHolderForPositionByDeadline()` / Adapter trace sections]
 
 ## GapWorker 预取机制
 
-RecyclerView 从 Android 5.0 开始引入了 GapWorker 预取机制。它的核心思想是：在 UI 线程空闲时，提前创建并绑定即将进入屏幕的 ViewHolder，这样当真正的布局发生时，需要的 ViewHolder 已经准备好了。
-
-GapWorker 在 `Choreographer.doFrame()` 的 COMMIT 阶段被触发。这个时间点的选择很讲究——COMMIT 阶段是当前帧布局完成之后、下一帧开始之前的空隙。RecyclerView 利用这个空隙，根据当前的滑动方向和速度，预测接下来几个 item 的位置，然后提前执行 create + bind。
-
-对于嵌套 RecyclerView（比如 ViewPager2 内部的列表），`setInitialPrefetchItemCount` 是一个关键参数。它控制内层 RecyclerView 在首次可见时预先创建多少个 item。默认值是 2，如果内部列表每个 item 的 inflate 成本较高（比如包含复杂的布局或图片），可以适当增大这个值到 3-4。但不要盲目增大——预取太多会占用当前帧的时间，反而导致卡顿。
-
-预取失败的常见原因有几种。最常见的是缓存污染——如果 CachedViews 中有被标记为 invalid 的 ViewHolder（比如刚经历了数据更新），GapWorker 在预取时可能找不到合适的缓存，被迫创建新的。另一个原因是布局未完成——如果上一帧的布局还没结束（比如嵌套 RecyclerView 的内部布局延迟），GapWorker 无法正确预测下一个 item 的位置。
+RecyclerView 的预取不是 `Choreographer#doFrame()` 的一个公开阶段。当前 AndroidX 主线里，触发点在滚动遍历之后：`scrollByInternal()` 和 `ViewFlinger.run()` 在还有滚动位移时调用 `mGapWorker.postFromTraversal()`，后者把滚动向量写进 `mPrefetchRegistry`，再用 `recyclerView.post(this)` 把 `GapWorker` 作为 Runnable 投到主线程消息队列。
 
 ```java
-// androidx/recyclerview/widget/GapWorker.java
-// @ AOSP recyclerview-1.4.0
-void prefetch(long deadlineNs) {
-    // deadlineNs 是当前帧的截止时间，prefetch 必须在此之前完成
-    if (mRecyclerViews.isEmpty()) return;
-    
-    // 1. 从所有注册的 RecyclerView 收集预取请求
-    //    每个 RecyclerView 的 LayoutManager 通过 getPrefabItemCount()
-    //    报告需要预取的 item 数量（默认 LinearLayoutManager 返回相邻 2 个）
-    // 2. 按优先级排序：当前正在 fling 的 RecyclerView 优先级最高
-    // 3. 对每个请求依次执行 create + bind，中途检查是否超过 deadline
-    //    如果超时，剩余请求被丢弃——宁可少预取也不能影响当前帧
+// RecyclerView.java
+if (mGapWorker != null && (x != 0 || y != 0)) {
+    mGapWorker.postFromTraversal(this, x, y);
+}
+
+// GapWorker.java
+void postFromTraversal(RecyclerView recyclerView, int prefetchDx, int prefetchDy) {
+    if (mPostTimeNs == 0) {
+        mPostTimeNs = recyclerView.getNanoTime();
+        recyclerView.post(this);
+    }
+    recyclerView.mPrefetchRegistry.setPrefetchVector(prefetchDx, prefetchDy);
 }
 ```
 
-这段代码说明，预取不是免费的。如果 `create + bind` 本身很慢（比如 item 布局过于复杂），预取会挤占 COMMIT 阶段的时间，影响下一帧的准备。在 Perfetto 中，如果一个 doFrame 的 COMMIT 阶段耗时异常长，可以检查是否有过多的预取活动。
+这段调用路径说明两件事。第一，GapWorker 跟随滚动事件调度，不挂在 `doFrame()` 的 COMMIT 回调里。第二，预取请求先记录滚动方向和距离，真正执行时再统一排序和消费。
 
-[已验证: AOSP recyclerview-1.4.0, GapWorker.java — prefetch() 和 collectPrefetchPositions()]
-[需确认: "从 Android 5.0 开始引入"、"在 Choreographer.doFrame() 的 COMMIT 阶段触发" 这两处表述，以及注释里的 API 名，需要按 RecyclerView 版本和实际源码调用路径再核对。]
+具体要预取哪些 position，由 `LayoutManager.collectAdjacentPrefetchPositions()` 和 `collectInitialPrefetchPositions()` 决定。前者服务滑动中的相邻 item，后者服务嵌套列表首次可见时的 initial prefetch。`setInitialPrefetchItemCount()` 调的就是这条 initial prefetch 路径。
 
+`GapWorker.run()` 会读取最近一次 `getDrawingTime()`，再加上刷新周期，估算下一帧 deadline。随后 `prefetchPositionWithDeadline()` 进入 `Recycler.tryGetViewHolderForPositionByDeadline()`。这里不会无条件 create/bind。创建前，Pool 先看 `willCreateInTime()`；绑定前，再看 `willBindInTime()`。这两个判断读取的是按 viewType 维护的运行平均耗时，平均值由 `factorInCreateTime()` 和 `factorInBindTime()` 在每次成功 create/bind 后回写。
+
+```java
+// RecyclerView.Recycler
+if (deadlineNs != FOREVER_NS
+        && !mRecyclerPool.willBindInTime(viewType, startBindNs, deadlineNs)) {
+    return false;
+}
+
+if (deadlineNs != FOREVER_NS
+        && !mRecyclerPool.willCreateInTime(type, start, deadlineNs)) {
+    return null;
+}
+```
+
+这个预算判断会直接反映到 Trace。`RV Prefetch` 说明 GapWorker 已经开始工作；如果随后能看到 `RV onCreateViewHolder type=...` 或 `RV onBindViewHolder type=...`，说明这次预取真的执行了 create 或 bind。Trace 里如果只有 `RV Prefetch`，没有 create/bind，常见原因有三种：目标 position 已经 attached，缓存命中后不需要额外 bind，或者 `willCreateInTime()` / `willBindInTime()` 判断赶不上 deadline，提前退出。嵌套列表还可能出现 `RV Nested Prefetch`，含义和外层 prefetch 一样，只是目标 RecyclerView 变成了内层列表。
+
+嵌套 RecyclerView 场景下，`setInitialPrefetchItemCount()` 仍然值得调，但它控制的是 initial prefetch 请求数量，不保证这些请求都能在本帧预算内完成。item inflate 或 bind 很重时，请求数设得再大，也可能被时间预算提前截断。
+
+[已验证: AndroidX androidx-main，`RecyclerView.java` `scrollByInternal()` / `ViewFlinger.run()` / `tryGetViewHolderForPositionByDeadline()`，`GapWorker.java` `postFromTraversal()` / `run()` / `prefetchPositionWithDeadline()`]
 ## DiffUtil 与增量更新
 
 当列表数据发生变化时，最简单的做法是调用 `notifyDataSetChanged()`——但这会触发整个列表的重新布局，即使只有一个 item 发生了变化。DiffUtil 解决的就是这个问题：它通过计算新旧列表之间的最小差异集，只更新真正变化的 item。
@@ -166,33 +195,32 @@ public void onBindViewHolder(@NonNull ViewHolder holder, int position,
 }
 ```
 
-[已验证: AOSP recyclerview-1.4.0, DiffUtil.java — Myers 差分算法实现]
+[已验证: AndroidX androidx-main，`DiffUtil.java` Myers 差分算法实现]
 
 ### RecycledViewPool 共享的典型实现
 
-嵌套 RecyclerView 的场景下，共享 RecycledViewPool 是最有效的优化手段之一。核心思路是：为同类型的内层列表创建一个共享 Pool，避免每个子列表各自维护独立的缓存池。
+嵌套 RecyclerView 场景下，共享 RecycledViewPool 的作用，是把多个内层列表的 ViewHolder 放进同一组缓存桶里。这样内层列表滑出屏幕后，外层列表里下一个同类型模块可以直接复用，不用每次重新 inflate。
 
 ```java
-// 在 Adapter 中创建共享 Pool
-private final RecycledViewPool sharedPool = new RecycledViewPool();
-
-// 配置每种 ViewType 的缓存数量（根据可见 item 数量调整）
-sharedPool.setMaxRecycledViews(TYPE_NORMAL, 10);
-sharedPool.setMaxRecycledViews(TYPE_HEADER, 2);
+private final RecyclerView.RecycledViewPool sharedPool = new RecyclerView.RecycledViewPool();
 
 @Override
 public void onBindViewHolder(@NonNull ParentViewHolder holder, int position) {
-    // 为每个内层 RecyclerView 设置共享 Pool
-    holder.innerRecyclerView.setRecycledViewPool(sharedPool);
-    // 滑出屏幕时立即回收子 ViewHolder
-    holder.innerRecyclerView.setRecycleChildrenOnDetach(true);
+    RecyclerView innerRv = holder.innerRecyclerView;
+    innerRv.setRecycledViewPool(sharedPool);
+
+    RecyclerView.LayoutManager lm = innerRv.getLayoutManager();
+    if (lm instanceof LinearLayoutManager) {
+        LinearLayoutManager llm = (LinearLayoutManager) lm;
+        llm.setInitialPrefetchItemCount(4);
+        llm.setRecycleChildrenOnDetach(true);
+    }
 }
 ```
 
-这里需要先调 `setMaxRecycledViews()` 的值。设置过小会导致频繁的 create/bind，设置过大则占用不必要的内存。经验上，可以先从略高于同时可见 item 数量的值开始试。
+`setRecycleChildrenOnDetach(true)` 属于 `LinearLayoutManager`，`GridLayoutManager` 也能直接复用这条 API，因为它继承自 `LinearLayoutManager`。如果内层列表用的是自定义 LayoutManager，就不能把这行代码直接照抄到 `RecyclerView` 上。
 
-[需确认: 共享 Pool 示例里的 `setRecycleChildrenOnDetach(true)` 调用对象需要按实际 API 所属类核对，避免读者直接复制后编译失败。]
-
+`setMaxRecycledViews()` 仍然需要按 viewType 单独调。数值过小，create/bind 会频繁回到滑动路径；数值过大，则只是在拿内存换命中率。起步值可以略高于同屏可见 item 数，再用 Trace 看 create/bind 是否明显下降。
 ## 嵌套滑动的性能影响
 
 嵌套滑动（NestedScrolling）是 Android 处理嵌套可滑动容器之间协作的协议。RecyclerView 通过 `NestedScrollingChild3` 接口参与这个协议，允许父 View 在子 View 滑动之前或之后拦截滑动事件。
@@ -206,7 +234,7 @@ public void onBindViewHolder(@NonNull ParentViewHolder holder, int position) {
 针对嵌套 RecyclerView 的优化策略：
 
 - 共享 RecycledViewPool：为所有内层 RecyclerView 设置同一个 Pool 实例，避免每个子列表各自维护独立的缓存池
-- `setRecycleChildrenOnDetach(true)`：当内层 RecyclerView 滑出屏幕时立即回收其 ViewHolder 到共享 Pool
+- `LinearLayoutManager#setRecycleChildrenOnDetach(true)`：在内层列表使用 `LinearLayoutManager` / `GridLayoutManager` 时，滑出屏幕后立即把子 ViewHolder 回收到共享 Pool
 - `setMaxRecycledViews()` 调整 Pool 大小：根据可见 item 数量合理配置
 - 禁用 OverScroll 效果：`setOverScrollMode(View.OVER_SCROLL_NEVER)`，减少不必要的绘制开销
 
@@ -224,7 +252,7 @@ public void onBindViewHolder(@NonNull ParentViewHolder holder, int position) {
 
 **onBindViewHolder 中的 IO 操作** 是另一个高频问题。图片加载的磁盘 IO、数据库查询、甚至 SharedPreferences 的同步读取，都可能在 bind 路径上引入不可预测的延迟。解决方法是将这些操作全部异步化——图片用 Glide/Coil 等库自动异步加载，数据预加载到内存，bind 方法只做轻量的视图更新。
 
-**ItemAnimator 触发的额外布局** 是一个容易被忽略的问题。RecyclerView 的 ItemAnimator（特别是 DefaultItemAnimator）在执行变更动画时，需要对变化的 item 做两次布局 pass：一次记录旧位置，一次记录新位置。如果列表数据频繁更新（比如实时数据流），动画的额外开销会累积。解决方法是使用 `SimpleItemAnimator`（更轻量）或者在不需要动画的场景直接关闭 `setItemAnimator(null)`。
+**ItemAnimator 触发的额外布局** 也是常见原因。默认的 `DefaultItemAnimator` 本身就继承自 `SimpleItemAnimator`。当 change animation 开着时，RecyclerView 需要同时保留旧、新两份位置信息来计算过渡，列表高频更新时，这部分布局和动画记录开销会持续叠加。更直接的优化做法有两种：一是对默认动画器调用 `((SimpleItemAnimator) rv.getItemAnimator()).setSupportsChangeAnimations(false)`，先关掉 change animation；二是在页面不需要任何列表动画时直接 `rv.setItemAnimator(null)`。
 
 **图片加载回调触发的 requestLayout** 是一种隐性的性能问题。当图片异步加载完成后，如果在回调中修改了 ImageView 的尺寸（比如 `wrap_content` 导致从占位图切换到真实图片时大小变化），会触发整个 RecyclerView 的重新布局。解决方法是为 ImageView 设置固定的宽高，或者使用 `setHasFixedSize(true)` 告知 RecyclerView 不要因为 item 内容变化而重新测量自身大小。
 
@@ -236,53 +264,81 @@ public void onBindViewHolder(@NonNull ParentViewHolder holder, int position) {
 
 ## RecyclerView 1.4 与 Adaptive Refresh Rate
 
-RecyclerView 1.4.0（2025 年 1 月发布）引入了内置的 Adaptive Refresh Rate (ARR) 支持。在支持 ARR 的设备上（Android 15+），RecyclerView 在 fling 或 smoothScroll 期间会自动调用 `View.setFrameContentVelocity()`，告知系统当前的内容滑动速度。系统根据这个信号临时提升屏幕刷新率，使滑动更流畅。
+RecyclerView 1.4.0 的 release notes 把这项能力写成 `Adaptive refresh rate support`。变化点很具体：RecyclerView 在 `OverScroller` 驱动的 fling 或 smooth scroll 过程中，会在 `ViewFlinger.run()` 里调用 `View.setFrameContentVelocity()`，把当前滚动速度上报给系统。
 
-`setFrameContentVelocity()` 的参数是像素/秒为单位的速度值。RecyclerView 1.4 内部从 OverScroller 获取当前速度并传递给这个 API。对于自定义的可滑动组件，开发者需要自己实现这个调用——在每帧绘制时传入当前速度，注意速度信息会在每次重绘后被重置，需要持续更新。
+当前 AndroidX 主线的代码路径也很直接：`ViewFlinger.run()` 在继续滚动时拿 `scroller.getCurrVelocity()`，API 35 及以上通过 `Api35Impl.setFrameContentVelocity(RecyclerView.this, Math.abs(scroller.getCurrVelocity()))` 写入 view。RecyclerView 1.4 做的是速度上报这一步，不负责查询设备是否支持 ARR，也不直接决定系统会切到多少 Hz。
 
-ARR 的工作流程是：RecyclerView 开始 fling → 通过 `setFrameContentVelocity()` 报告速度 → SurfaceFlinger 收到信号后决定是否提升刷新率（比如从 60Hz 提升到 120Hz）→ fling 减速时刷新率逐步降低 → 停止后恢复到默认刷新率。这个过程的刷新率切换由 SurfaceFlinger 的启发式算法决定，应用层不需要关心具体的切换逻辑。
+设备能力查询属于平台 `Display` API。`android-16.0.0_r1` 的 `Display.java` 里，`hasArrSupport()`、`getSupportedRefreshRates()` 和 `getSuggestedFrameRate(int)` 都定义在 `android.view.Display` 上。它们回答的是设备支持情况和系统建议值，版本边界应和平台 API 一起写，不要和 RecyclerView 1.4.0 的库版本混成一层。
 
-ARR 相关的新 API 包括：`hasArrSupport()` 检测设备是否支持 ARR，`getSuggestedFrameRate(int)` 查询推荐帧率，`getSupportedRefreshRates()` 列出设备支持的刷新率。这些 API 在 §2.18 中有更详细的讲解。
+工程上可以把这两层分开理解：
 
-对于高刷新率设备（120Hz 及以上），RecyclerView 面临一个额外的挑战：帧预算从 16.67ms 缩短到 8.33ms 甚至更短。原来在 60Hz 下勉强能在 16ms 内完成的 bind 操作，到了高刷新率设备上就可能超时。如果发现高刷新率设备的滑动反而更卡，应该先检查 `onBindViewHolder` 的执行时间是否超过了一半的帧预算。
+- RecyclerView 1.4.0：滚动时调用 `View.setFrameContentVelocity()`
+- Android 16 `Display` API：查询设备是否支持 ARR，以及系统建议的刷新率区间
 
-[已验证: 官方文档, developer.android.com/reference/android/view/View#setFrameContentVelocity()]
-[已验证: AOSP recyclerview-1.4.0, RecyclerView.java — ARR 集成实现]
-[需确认: 本节列出的 `hasArrSupport()`、`getSuggestedFrameRate(int)`、`getSupportedRefreshRates()` 需要再核对实际 API 名、所属类和版本边界。]
+这样写，`§2.18` 讲平台能力，`§7.8` 讲 RecyclerView 在滑动场景里怎样把速度信号交给系统，边界就清楚了。
 
+[已验证: AndroidX RecyclerView 1.4.0 release notes（2025-01-15），`RecyclerView.java` `ViewFlinger.run()`，AOSP `android-16.0.0_r1` `View.java` / `Display.java`]
 ## 在 Perfetto 中分析 RecyclerView 性能
 
-RecyclerView 在 Perfetto 中有一组专用的 trace point。在 `Choreographer#doFrame` 的 trace 中，RecyclerView 的布局操作通常以 `RV Layout` / `RV OnBindView` / `RV Prefetch` 等标记出现。
+RecyclerView 没有固定的 “RecyclerView track”。这些 slice 出现在触发它们的线程上，最常见是主线程。分析时不要先去找一个不存在的专用 track，而是从卡顿帧所在的主线程 `doFrame` 展开，再看其中有没有 `RV OnLayout`、`RV FullInvalidate`、`RV PartialInvalidate`、`RV Prefetch`、`RV onCreateViewHolder type=...`、`RV onBindViewHolder type=...`。
 
-分析 RecyclerView 滑动卡顿时，建议的关注顺序：
+排查顺序可以按这个次序走：
 
-1. **先看帧率**：在 FrameTimeline track 中检查是否有大帧（帧时间超过预算）。如果没有大帧但用户仍然反馈卡顿，考虑步幅波动问题
-2. **定位慢操作**：在 `RecyclerView` track 中找到耗时超过 3ms 的操作，判断是 inflate、bind 还是 layout
-3. **检查缓存效率**：连续 bind 操作多说明缓存命中率低，考虑增大 CachedViews 或 RecycledViewPool
-4. **检查预取**：COMMIT 阶段的预取活动是否在挤占帧时间
-5. **检查嵌套影响**：嵌套 RecyclerView 是否触发了不必要的 requestLayout
+1. 先在 FrameTimeline 找超预算帧，确认卡顿发生在哪几个 `doFrame`
+2. 展开对应主线程 slice，判断大头是在 `RV OnLayout`、`RV FullInvalidate` 还是 `RV PartialInvalidate`
+3. 如果外层布局不长，再看同一帧里有没有 `RV onCreateViewHolder type=...` 或 `RV onBindViewHolder type=...`
+4. 再看 `RV Prefetch` / `RV Nested Prefetch`，确认预取是在帮忙，还是因为预算不够提前退出
 
-对于具体的 SQL 查询，可以用 Perfetto 的 Trace Processor 分析 RecyclerView 相关的 slice：
+下面这条 SQL 可以直接把常见 RecyclerView slice 拉出来：
 
 ```sql
--- 查询 RecyclerView bind 操作耗时
-SELECT name, dur / 1e6 as dur_ms
-FROM slice
-WHERE name LIKE '%RV OnBindView%'
-ORDER BY dur DESC
-LIMIT 20;
-
--- 查询 RecyclerView layout 操作
-SELECT name, dur / 1e6 as dur_ms
-FROM slice
-WHERE name LIKE '%RV Layout%'
-ORDER BY dur DESC
-LIMIT 20;
+SELECT
+  s.name,
+  ROUND(s.dur / 1e6, 2) AS dur_ms,
+  COALESCE(th.name, 'unknown') AS thread_name
+FROM slice s
+LEFT JOIN thread_track tt ON s.track_id = tt.id
+LEFT JOIN thread th ON tt.utid = th.utid
+WHERE s.name IN (
+    'RV OnLayout',
+    'RV FullInvalidate',
+    'RV PartialInvalidate',
+    'RV Prefetch',
+    'RV Nested Prefetch'
+)
+   OR s.name GLOB 'RV onCreateViewHolder type=0x*'
+   OR s.name GLOB 'RV onBindViewHolder type=0x*'
+ORDER BY s.dur DESC
+LIMIT 50;
 ```
 
-[图：Perfetto 中 RecyclerView 滑动 Trace 的典型截图，标注 layout/bind/prefetch 各阶段]
-[需补充素材: 最好补 1 个真实滑动 trace 案例，把 `RV Layout`、`RV OnBindView`、`RV Prefetch` 与掉帧或步幅波动的观察顺序串起来。]
+如果要先看哪一类 slice 最重，再跑一条聚合查询：
 
+```sql
+SELECT
+  name,
+  COUNT(*) AS cnt,
+  ROUND(AVG(dur) / 1e6, 2) AS avg_ms,
+  ROUND(MAX(dur) / 1e6, 2) AS max_ms
+FROM slice
+WHERE name IN (
+    'RV OnLayout',
+    'RV FullInvalidate',
+    'RV PartialInvalidate',
+    'RV Prefetch',
+    'RV Nested Prefetch'
+)
+   OR name GLOB 'RV onCreateViewHolder type=0x*'
+   OR name GLOB 'RV onBindViewHolder type=0x*'
+GROUP BY name
+ORDER BY max_ms DESC;
+```
+
+有两个判断点很常用。`RV OnLayout` 很长，通常说明布局、measure 或动画准备在吃时间。`RV Prefetch` 很明显，但后面没有 create/bind，则多半是预算检查提前结束了预取，或者目标 ViewHolder 已经在缓存里。
+
+`dispatchLayoutStep1/2/3` 不会直接出现在 Trace 名字里。看到 `RV FullInvalidate`、`RV PartialInvalidate`、`RV OnLayout` 之后，还要回到上一节的阶段映射去解释它们分别对应哪一段布局流程。
+
+[图：Perfetto 中 RecyclerView 滑动 Trace 的典型截图，标注 `RV OnLayout`、`RV Prefetch`、`RV onBindViewHolder` 的观察顺序]
 ## 常见问题与误区
 
 **误区：增大 RecycledViewPool 就能解决所有滑动卡顿。** Pool 只解决 inflate 开销，如果瓶颈在 bind（比如 bind 中有 IO 操作），增大 Pool 不会有效果。要先在 Trace 中区分是 create 慢还是 bind 慢。
@@ -305,17 +361,22 @@ LIMIT 20;
 
 `ItemDecoration.getItemOffsets()` 在每次 measure/layout 时被调用。如果这个方法中有复杂计算（比如根据 position 动态计算间距），会直接影响布局性能。建议将计算结果缓存。
 
-`DefaultItemAnimator` 在执行 change 动画时需要两次布局 pass，代价较高。如果列表数据频繁更新且不需要复杂动画，使用 `SimpleItemAnimator` 或者关闭动画（`setItemAnimator(null)`）可以减少一半的布局开销。
+`DefaultItemAnimator` 在执行 change 动画时需要两次布局 pass，代价较高。它本身已经继承 `SimpleItemAnimator`，所以优化时不用把“换成 `SimpleItemAnimator`”当成单独选项。列表频繁更新又不需要 change 动画时，优先调用 `setSupportsChangeAnimations(false)`；页面完全不需要列表动画时，再考虑 `setItemAnimator(null)`。
 
 支持 change 动画（`supportsChangeAnimations()`）的额外代价是：RecyclerView 需要对变化的 item 创建一个新 ViewHolder（用于动画），然后在动画结束后回收旧的。一次 change 操作往往要同时保留旧、新两个 ViewHolder，内存压力也会更高。如果不需要交叉淡入淡出的效果，重写 `supportsChangeAnimations()` 返回 false 可以避免这个开销。
 
 ## 参考资料
 
-- **AOSP 源码**：`frameworks/support/recyclerview/src/main/java/androidx/recyclerview/widget/`（RecyclerView、Recycler、GapWorker、DiffUtil）
-- **AOSP 版本基准**：android-17.0.0_r3、recyclerview-1.4.0
+- **AndroidX 源码**：`platform/frameworks/support/+/androidx-main/recyclerview/recyclerview/src/main/java/androidx/recyclerview/widget/RecyclerView.java`
+- **AndroidX 源码**：`platform/frameworks/support/+/androidx-main/recyclerview/recyclerview/src/main/java/androidx/recyclerview/widget/GapWorker.java`
+- **AndroidX 源码**：`platform/frameworks/support/+/androidx-main/recyclerview/recyclerview/src/main/java/androidx/recyclerview/widget/LinearLayoutManager.java`
+- **AndroidX 源码**：`platform/frameworks/support/+/androidx-main/recyclerview/recyclerview/src/main/java/androidx/recyclerview/widget/DiffUtil.java`
+- **AndroidX 源码**：`platform/frameworks/support/+/androidx-main/recyclerview/recyclerview/src/main/java/androidx/recyclerview/widget/SimpleItemAnimator.java`
+- **AndroidX 源码**：`platform/frameworks/support/+/androidx-main/recyclerview/recyclerview/src/main/java/androidx/recyclerview/widget/DefaultItemAnimator.java`
+- **平台源码**：`platform/frameworks/base/+/android-16.0.0_r1/core/java/android/view/View.java`
+- **平台源码**：`platform/frameworks/base/+/android-16.0.0_r1/core/java/android/view/Display.java`
 - **官方文档**：[RecyclerView reference](https://developer.android.com/reference/androidx/recyclerview/widget/RecyclerView)
+- **官方文档**：[RecyclerView release notes](https://developer.android.com/jetpack/androidx/releases/recyclerview)
 - **官方文档**：[Adaptive Refresh Rate](https://developer.android.com/reference/android/view/View#setFrameContentVelocity())
-- **官方文档**：[RecyclerView 性能优化](https://developer.android.com/topic/performance/recycler-view-optimization)
 - **Myers 差分算法**：Eugene W. Myers, "An O(ND) Difference Algorithm and Its Variations", 1986
 - **高爷补充素材**：VSync 时间精度与步幅波动（2026-04-06）
-
