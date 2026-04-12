@@ -6002,5 +6002,44 @@
     "added_at": "2026-04-13T00:13:00+08:00",
     "status": "pending",
     "original_review_log": "logs/review/2026-04-13-00-review.md"
+  },
+  {
+    "section": "8.8",
+    "section_title": "Android 多媒体管线性能",
+    "priority": 95,
+    "reason": "[Deep Tech Review] 3 处 P0：AudioFlinger 进程归属错误、tunneled playback 显示路径描述错误、DefaultLoadControl 默认值错误；另有 1 处关键原理盲区",
+    "material_paths": [
+      "intake/research-gaps.md",
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "L244 AudioFlinger 架构",
+        "detail": "正文称 AudioFlinger 运行在 mediaserver 进程。对本章 frontmatter 标注的 Android 8-17 范围来说，这个表述整体错误。Android 7 起媒体服务拆分后，AudioFlinger 由 audioserver 进程承载；AOSP 入口为 frameworks/av/media/audioserver/main_audioserver.cpp，服务实现位于 frameworks/av/services/audioflinger/AudioFlinger.cpp。",
+        "suggestion": "改为“Android 7+ 运行在 audioserver；如果要讲历史，再补一句 Android 6 及更早在 mediaserver”。"
+      },
+      {
+        "type": "源码错误",
+        "location": "L153-L162 Tunneled Video Playback",
+        "detail": "正文把 tunneled playback 写成“App 甚至不需要创建 Surface”，并把普通视频路径概括为“BufferQueue → App 进程处理 → SurfaceFlinger 合成”。这两句都会误导读者。tunneled 模式通常仍需 SurfaceView/sideband layer 作为显示目标，只是 App 不再处理每帧像素；普通 Surface 输出也不能一概写成经 App 进程中转。",
+        "suggestion": "重写为三条显示路径：SurfaceView/BufferQueue→SurfaceFlinger/HWC，TextureView/SurfaceTexture→App RenderThread/GPU，tunneled sideband→SurfaceView/HWC；补充 sideband handle 与 SurfaceView 的关系。"
+      },
+      {
+        "type": "源码错误",
+        "location": "L209-L214 DefaultLoadControl 默认值表",
+        "detail": "Media3 DefaultLoadControl 默认值写错。androidx/media release 分支 DefaultLoadControl.java 当前常量是 DEFAULT_MIN_BUFFER_MS=50000、DEFAULT_MAX_BUFFER_MS=50000、DEFAULT_BUFFER_FOR_PLAYBACK_MS=1000、DEFAULT_BUFFER_FOR_PLAYBACK_AFTER_REBUFFER_MS=2000。文中的 2500/5000 会直接误导缓冲策略调参。",
+        "suggestion": "按源码修正表格和正文，并注明所依据的 Media3 版本或源码链接。"
+      },
+      {
+        "type": "原理断裂",
+        "location": "L80-L93 与 L151-L162 视频输出模型",
+        "detail": "章节把 output Surface 的消费者默认写成 SurfaceFlinger，又把 tunneled 另写成完全绕过 Surface。缺少 SurfaceView、TextureView、sideband 三条路径的分叉条件，读者很难把零拷贝、Overlay、GPU 合成和 Perfetto 观察点对应起来。",
+        "suggestion": "补一张三路径对照表或时序图，明确各自的 producer/consumer、拷贝次数、Overlay 条件和 Perfetto/dumpsys 观察点。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-13T00:35:00+08:00",
+    "status": "pending"
   }
 ]
