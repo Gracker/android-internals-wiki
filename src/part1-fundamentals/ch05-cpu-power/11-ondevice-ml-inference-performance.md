@@ -2,7 +2,7 @@
 title: "端侧 AI 推理性能：NPU/GPU 加速与 TFLite 管线"
 chapter: "5.11"
 status: ready-for-review
-applicable_versions: "Android 11 (API 30) - Android 17 (API 37)"
+applicable_versions: "Android 8.1 (API 27) - Android 17 (API 37)"
 tags:
   - android
   - ai
@@ -15,8 +15,8 @@ created_by: "task2a-knowledge-gap"
 created_date: "2026-04-08"
 drafted_date: "2026-04-08"
 drafted_by: "openclaw-task2a"
-last_verified: "2026-04-08"
-last_verified_against: "AOSP android-17-beta3 + developer.android.com"
+last_verified: "2026-04-12"
+last_verified_against: "AOSP android-17-beta3 + developer.android.com + ai.google.dev/edge/litert/android/gpu"
 confidence: medium
 sources:
   - type: official
@@ -24,54 +24,51 @@ sources:
   - type: official
     path: "developer.android.com/ai/aicore"
   - type: official
-    path: "ai.google.dev/edge/litert"
+    path: "ai.google.dev/edge/litert/android/gpu"
   - type: aosp
     path: "frameworks/ml/nn/"
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-04-12"
 task6_result: needs-rework
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
 task9_result: needs-rework
-task2b_state: pending
+task2b_result: fixed
+task2b_state: fixed
 ---
 
 # 5.11 端侧 AI 推理性能：NPU/GPU 加速与 TFLite 管线
 
-过去三年，端侧 AI 推理从实验室技术变成了 Android 性能工程师必须面对的生产问题。当你的 App 里集成了一个图像分类模型用于实时滤镜，或者用 OCR 模型处理相机取景框里的文字时，推理任务的 CPU 占用、内存峰值和功耗直接影响用户体验——推理占用主线程 50 ms，一帧就掉了；推理峰值吃掉 300 MB 内存，LMK 可能把后台 App 杀了；持续的 NPU 调用让设备发热降频，滑动也开始卡了。
+过去三年，端侧 AI 推理从实验室技术变成了 Android 性能工程师必须面对的生产问题。当 App 把图像分类、OCR、语音理解或生成式模型塞进前台交互过程后，推理任务就会直接占用 CPU 时间片、拉高内存峰值，并持续推动 GPU / NPU / thermal 子系统进入高负载状态。它不只是“AI 功能能不能跑起来”的问题，更是掉帧、发热、后台进程被杀和续航下降会不会一起冒出来的问题。
 
-本节要讲的是：Android 上 ML 推理走过了怎样的硬件加速路径，NNAPI 为什么从统一加速入口走向废弃，TFLite 管线怎么工作，以及作为性能工程师，如何在 Perfetto 里定位 ML 推理导致的性能问题。
+本节要讲的是：Android 上 ML 推理走过了怎样的硬件加速路径，NNAPI 为什么从统一加速入口走向废弃，LiteRT / TFLite 管线怎么工作，以及作为性能工程师，怎样把 Delegate 选择、内存代价、热压力和 Perfetto 证据链连起来。
 
 ## 为什么端侧 AI 推理是性能工程师的新课题
 
-云推理的延迟在 500 ms 到 2 s 之间，加上网络抖动，用户体验无法保证。隐私敏感数据（人脸、语音、医疗影像）上传到云端在很多场景下也不可行。这两个因素推动了 ML 推理从云端向端侧迁移。
+云推理首先受延迟和可用性限制。网络一抖，前台交互就跟着抖；隐私敏感数据也未必适合上传云端。这两个因素把越来越多的推理任务推回到设备本地。
 
-但端侧推理不是免费的。一个典型的 MobileNet V2 模型在 CPU 上推理一次需要 30-100 ms（取决于设备和量化策略），这已经超过了一帧的预算（120 Hz 设备上 8.33 ms）。如果推理发生在主线程，用户会看到明显的卡顿。更麻烦的是内存：一个未量化的浮点模型可能占用几十到上百 MB 内存，加上推理过程中的中间激活值，峰值内存很容易达到 200-400 MB——在内存紧张的设备上，这足以触发 LMK。
-
-在 Perfetto 中，ML 推理的典型表现是：一段密集的 CPU 占用（如果是 CPU 推理）或 GPU/NPU 占用（如果走了硬件加速），伴随着明显的内存增长。如果推理阻塞了主线程，在主线程 track 上会看到一个超长的 slice。
+但端侧推理也会把原本分散的成本压回手机上。模型权重、临时 tensor、delegate 初始化、硬件调度、持续高负载带来的热约束，都会直接映射到卡顿和功耗问题。在 Perfetto 里，我们通常先看到线程繁忙、频率抬升、内存水位变化或 thermal 回调，再顺着这些信号反推是不是推理过程本身出了问题。
 
 ## Android ML 推理硬件加速栈
 
-Android 设备上的 ML 推理可以跑在三种硬件上：CPU、GPU 和 NPU（也叫 AI 加速器）。选择哪种硬件，决定了推理延迟、功耗和兼容性。
+Android 设备上的 ML 推理可以跑在三种硬件上：CPU、GPU 和 NPU（也叫 AI 加速器）。选择哪种硬件，决定了延迟、功耗、兼容性，以及后续能不能在 Trace 里把问题看清楚。
 
 ### NPU：各 SoC 厂商的实现差异
 
-NPU 是专门为神经网络运算设计的加速器，对矩阵乘法和卷积运算做了硬件级优化。但 Android 生态的复杂性在于：每家 SoC 厂商的 NPU 架构完全不同。
+NPU 是为张量乘加、卷积和 attention 这类运算准备的专用加速器，但 Android 生态里并不存在一个“统一 NPU”。Qualcomm、MediaTek、Samsung、Google 都有各自的硬件和 runtime。对性能工程师来说，更有用的是把注意力放在三件事上：当前模型能不能完整落到该加速器上，fallback 会不会回到 CPU，以及在 Trace 里有没有对应的可观测证据。
 
-Qualcomm 平台的 AI 加速经历了三代演进：早期的 Hexagon DSP（用于 Pixel 1-3 时代的 ML 推理）、Hexagon Tensor Accelerator（HTA，用于 Snapdragon 865+）、以及最新的 Qualcomm AI Engine（Hexagon NPU，用于 Snapdragon 8 Gen 1+）。Snapdragon 8 Gen 4 的 NPU 可以达到 75 TOPS 的峰值算力，在运行 Gemini Nano 时能达到 93 tokens/s 的推理速度。
+Qualcomm 的公开路径从 Hexagon DSP 逐步演进到 HTA 和更新的 AI Engine / NPU；MediaTek 使用 APU；Google Tensor 平台则有自己的端侧 AI 加速路径。这些代际名字可以帮助我们理解生态演进，但单独引用 TOPS、tokens/s 或“某代首 token 延迟”帮助不大，因为它们强依赖模型大小、量化方式、prefill / decode 口径和测试负载。
 
-[待验证：Qualcomm AI Engine TOPS 数据精确值，不同 Gen 版本差异]
-
-MediaTek 的 APU（AI Processing Unit）在 Dimensity 9300+ 上提供了整数推理能力，支持 INT8/INT16 量化模型。Samsung Exynos 的 NPU 主要用于 Galaxy 系列设备的端侧推理。Google Pixel 使用的是自研的 Edge TPU，从 Pixel 6 的 Tensor 芯片开始集成。
-
-在 Perfetto 中，NPU 的工作负载目前没有标准化的 trace track。部分厂商通过 vendor-specific atrace 标签暴露 NPU 利用率，但需要查看对应厂商的文档。通用的做法是通过观察 GPU 频率和总 CPU 利用率变化来间接推断硬件加速是否生效——当推理在进行但 CPU 利用率很低时，说明工作负载被卸载到了 NPU 或 GPU。
+在 Perfetto 里，NPU 工作负载没有统一的标准 track。部分厂商会暴露 vendor tracepoint 或 atrace 标签，更多时候我们只能通过 CPU 利用率下降、GPU 频率变化、thermal 状态和 delegate 日志做交叉判断。只看一个 counter，通常不够。
 
 ### GPU 推理
 
-GPU 通过 Vulkan Compute 或 OpenCL 执行 ML 推理。GPU 推理的优势是不依赖专用 NPU 硬件（几乎所有 Android 设备都有 GPU），缺点是功耗比 NPU 高、推理延迟通常比 NPU 大。
+公开的 Android GPU Delegate 文档主要围绕 OpenCL 和 OpenGL ES 展开，具体后端取决于设备驱动、运行时版本和 delegate 实现。把 Android 上的 LiteRT / TFLite GPU 路径直接写成“Vulkan Compute 或 OpenCL”，会把边界写满；如果要谈 Vulkan，更合适的写法是把它单列为图形 / 计算栈背景，不把它当成当前 LiteRT Android 默认公开 delegate 路径。
 
-TFLite 的 GPU Delegate 使用 OpenGL ES 或 Vulkan Compute 执行推理。在 Adreno GPU（Qualcomm 平台）上，Vulkan Compute 后端通常比 OpenGL ES 后端快 10-30%，因为 Vulkan 的计算管线更轻量。
+GPU 推理的优点是覆盖面广，几乎所有现代 Android 设备都有可用 GPU；缺点是它会和渲染共享带宽、功耗和热预算。只要同一时段还有 RenderThread、SurfaceFlinger 或相机预处理一起抢 GPU，GPU Delegate 的收益就需要放回整段渲染过程里评估。
+
+[已验证: ai.google.dev/edge/litert/android/gpu, Android GPU delegate public docs focus on OpenCL / OpenGL ES]
 
 ### DSP 推理
 
@@ -79,121 +76,104 @@ Qualcomm 的 Hexagon DSP 在旧设备（Android 8-10 时代）上是 ML 推理�
 
 ## NNAPI 的兴衰与迁移路径
 
-NNAPI（Neural Networks API）在 Android 8.0（API 27）引入，目标是提供一套统一的硬件加速 API，让开发者不需要针对每家 SoC 写不同的加速代码。设计目标很明确：App 调用 NNAPI，NNAPI 通过厂商提供的 HAL 驱动转发到 NPU/GPU/DSP 执行。
+NNAPI（Neural Networks API）在 Android 8.1（API 27）引入，目标是提供统一的硬件加速入口，让上层框架把模型提交给系统，再由厂商驱动决定跑在 NPU、GPU 还是 DSP 上。
 
 ### 为什么 NNAPI 被废弃
 
-Android 15 正式废弃了 NNAPI。Google 给出的理由直指核心问题：
+Android 官方文档现在明确把 NNAPI 标为 deprecated，并建议对性能敏感 workload 迁移到其他路径，例如 TF Lite GPU runtime。问题并不神秘：
 
 第一，**驱动碎片化严重**。每家 SoC 厂商的 NNAPI HAL 实现质量参差不齐。同一个模型在 Qualcomm 平台上可能正常运行，在 MediaTek 平台上可能因为某个算子不支持而 fallback 到 CPU。兼容性测试很快会变成设备数 × SoC 厂商数 × Android 版本数的组合问题，几乎不可能全面覆盖。
 
-第二，**fallback 导致性能不可预测**。NNAPI 的设计是：如果某个算子在硬件加速器上不支持，就静默 fallback 到 CPU 执行。同一个模型在不同设备上的实际推理路径可能完全不同，在旗舰设备上是全 NPU 执行，在中端设备上可能是 70% NPU + 30% CPU，在低端设备上则可能全程跑在 CPU 上。开发者很难提前预测实际性能。
+第二，**fallback 导致性能不可预测**。NNAPI 的设计是：如果某个算子在硬件加速器上不支持，就静默 fallback 到 CPU 执行。同一个模型在不同设备上的实际推理路径可能完全不同，在旗舰设备上是全 NPU 执行，在中端设备上可能是部分 NPU + 部分 CPU，在低端设备上则可能全程跑在 CPU 上。开发者很难提前预测实际性能。
 
-第三，**性能在某些场景下反而不如纯 CPU**。NNAPI 的驱动调度有固定开销（构建计算图、内存拷贝、跨进程通信）。对于小模型或简单推理任务，这个开销可能占总推理时间的 50% 以上，导致使用 NNAPI 反而比纯 CPU 推理更慢。
+第三，**性能在某些场景下反而不如纯 CPU**。NNAPI 的驱动调度有固定开销（构建计算图、内存拷贝、跨进程通信）。对于小模型或简单推理任务，这个开销可能已经足够抵消硬件加速带来的收益。
 
-[已验证: developer.android.com/ndk/guides/neuralnetworks, NNAPI deprecation announcement]
+[已验证: developer.android.com/ndk/guides/neuralnetworks, NNAPI available on Android 8.1 (API 27)+ and deprecated in Android 15]
 
 ### 迁移路径
 
-Google 推荐的迁移路径是 **TFLite in Google Play Services**（后更名为 LiteRT in Play Services）。这个方案的核心思路是：TFLite 运行时不再打包在 App 内，而是由 Google Play Services 统一提供。Google 负责确保在不同设备上的兼容性和性能优化，开发者只需要指定使用哪个 Delegate。
+Google 推荐的迁移方向是 **TFLite in Google Play Services**，现在的命名是 **LiteRT in Play Services**。运行时不再由每个 App 单独打包，而是由 Google Play Services 提供和更新。这样做的好处是兼容性修复和运行时升级可以脱离 App 发版；代价是要同时考虑 GMS 依赖，以及没有 Play Services 时的回退路径。
 
-迁移的实际影响：App 体积减少约 5 MB（不再打包 TFLite 库），TFLite 运行时通过 Play Services 独立更新（不需要等 App 发版），但同时也意味着 App 依赖了 Play Services 的可用性——在国内市场（没有 Play Services 的设备上）需要回退到静态链接的 TFLite。
+## LiteRT / TFLite 管线与 Play Services 集成
 
-## TFLite 管线与 Play Services 集成
+### LiteRT / TFLite 架构
 
-### TFLite 架构
+LiteRT / TFLite 的推理管线可以分为四个阶段：
 
-TFLite 的推理管线可以分为四个阶段：
+1. **模型加载**：从 `.tflite` 文件（FlatBuffer 格式）解析计算图和权重。FlatBuffer 的优势是零拷贝映射，模型文件可以直接被运行时读取。
 
-1. **模型加载**：从 `.tflite` 文件（FlatBuffer 格式）解析计算图和权重。FlatBuffer 的优势是零拷贝解析——不需要像 Protocol Buffers 那样先反序列化到内存再使用，而是直接映射到内存。
+2. **Interpreter 初始化**：构建推理上下文，分配中间 tensor 的内存。模型越大，这一步越容易在冷启动时成为显著成本。
 
-2. **Interpreter 初始化**：构建推理引擎，分配中间张量（tensor）的内存。这一步的耗时取决于模型大小，大型模型可能需要几百毫秒。
+3. **Delegate 绑定**：根据设备能力选择执行后端。XNNPACK 是稳定的 CPU 基线；Android GPU Delegate 的公开路径以 OpenCL / OpenGL ES 为主；NNAPI Delegate 则把执行请求交给厂商驱动。
 
-3. **Delegate 绑定**：根据设备能力选择硬件加速器。GPU Delegate 使用 Vulkan Compute 或 OpenGL ES，XNNPACK Delegate 使用优化过的 CPU 实现。Delegate 的选择直接影响推理性能。
+4. **推理执行**：调用 `interpreter.run(input, output)` 或等价接口执行一次前向传播。
 
-4. **推理执行**：调用 `interpreter.run(input, output)` 执行一次前向传播。
+### XNNPACK Delegate：先拿到可重复的 CPU 基线
 
-### XNNPACK Delegate：CPU 推理的性能标杆
+XNNPACK 是 Google 的优化 CPU 推理库，针对 ARM NEON / SVE 指令集做了长期优化。对性能工程师来说，它最大的价值在于结果稳定、兼容性好、fallback 边界清楚。分析新模型时，先用 XNNPACK 在同机型上跑出一条 CPU 基线，再和 GPU Delegate 或 NNAPI Delegate 对比，通常比直接引用别人的 benchmark 更可靠。
 
-XNNPACK 是 Google 开发的优化 CPU 推理库，针对 ARM NEON/SVE 指令集做了深度优化。在大多数现代 Android 设备上，XNNPACK Delegate 的 CPU 推理性能已经非常接近 GPU Delegate，同时兼容性远好于 GPU（不存在算子不支持的问题）。
+如果一份 benchmark 没写清模型版本、输入尺寸、batch size、线程数和量化策略，它只能帮助我们判断趋势，不能直接拿来做 SLA 或选型决策。
 
-实测数据：MobileNet V2 在 Snapdragon 8 Gen 2 上，XNNPACK CPU 推理约 8 ms/帧，GPU Delegate 约 5 ms/帧，NPU 推理约 2 ms/帧。CPU 推理虽然最慢，但在所有设备上行为一致，不存在 fallback 问题。
+## AICore 与 Gemini Nano：什么时候需要把它当成性能问题
 
-[待验证：MobileNet V2 推理时间数据需要实测确认，设备/模型/量化策略差异较大]
+### AICore 的系统角色
 
-### 模型量化的性能影响
+Android 官方文档把 Gemini Nano 的运行环境描述为 Android 的 AICore system service。对 App 来说，AICore 更像系统提供的共享推理能力，而不是一个普通三方 SDK。文档还提到，AICore 没有直接 internet access，模型下载通过 Private Compute Services 完成。这两个事实很重要：一是模型准备成本可能出现在首次使用前后，二是模型分发和缓存不完全由单个 App 控制。
 
-量化是 ML 推理优化中最有效的手段。将模型从 float32 量化到 int8，推理速度通常提升 2-4 倍（因为 int8 矩阵乘法在硬件上更快），模型大小减少 75%（从 float32 的 4 字节/参数降到 int8 的 1 字节/参数），内存峰值也相应降低。
+[已验证: developer.android.com/ai/aicore, Gemini Nano runs in Android's AICore system service; model downloads are routed through Private Compute Services]
 
-TFLite 支持 Post-training quantization（不需要重新训练）和 Quantization-aware training（训练时模拟量化效果，精度更好）。对于大多数应用场景，Post-training int8 量化已经够用——MobileNet V2 的 int8 量化版本在 ImageNet 上的精度损失通常小于 1%。
+### 对性能工程师真正重要的边界
 
-Float16 量化是另一个选择：模型大小减半（float32 → float16），在支持 FP16 计算的 GPU 上推理速度提升明显，精度损失几乎可以忽略。适合需要保持精度的场景。
+这类能力对产品功能很有吸引力，但性能分析时更该先看四个边界：
 
-## AICore 与 Gemini Nano
+- 当前设备和系统镜像是否真的支持这条能力
+- 首次使用时是否发生模型下载、准备或冷启动初始化
+- 请求是否命中共享模型缓存，还是每次都要重新准备上下文
+- 持续推理时，内存、thermal 和前台交互是否还能压在预算内
 
-### AICore 架构
+离开机型、模型版本、输入长度和测试口径，单独引用 TOPS、tokens/s、首 token 延迟或峰值内存数字，分析价值很有限。写到书里时，最好把这些数字降级成“具体 benchmark 以官方兼容列表和机型实测为准”。
 
-Android AICore 是 Android 14 引入的系统级 AI 运行时服务。它的定位是：像 GPU 驱动由系统统一管理一样，端侧 AI 模型也由系统统一管理。AICore 负责模型的下载、存储、版本更新和运行时调度。
+### 和 ADPF、内存、Trace 的关系
 
-AICore 的架构解决了 TFLite 时代的一个核心问题：每个 App 各自打包模型、各自管理推理运行时。这不仅浪费存储空间（同一个模型可能被 10 个 App 各存一份），还导致内存浪费（多个 App 同时加载同一模型到内存）。
+如果一个功能调用的是 AICore / Gemini Nano，Perfetto 里最先暴露出来的通常是线程活跃度、调度延迟、内存上涨、温度上升和频率变化，而不是模型名字。分析这类问题时，我们一般同时看三件事：模型首次使用时的准备成本，稳态推理时的 CPU / GPU / NPU 负载，以及后台缓存对 LMK 的压力。
 
-### Gemini Nano 的性能特征
+## 模型优化技术：先看收益落在哪个子系统
 
-Gemini Nano 是 Google 的端侧小语言模型，通过 AICore 提供 API 给第三方 App 使用。截至 2026 年初：
+### 量化：先确认目标 Delegate
 
-- **Nano v1**（1.8B 参数）：仅文本，约 1 GB 模型大小（4-bit 量化），在 Pixel 8 Pro 上首次可用
-- **Nano v2**（3.25B 参数）：多模态（文本+图片），Pixel 9 系列首发
-- **Nano v3/v4**：2026 年发布于 Pixel 10+，推理速度大幅提升
+量化通常是第一刀，但收益大小取决于模型结构、kernel 覆盖率和目标 delegate。INT8 更常见于 CPU / NPU 路径，Float16 更常见于 GPU 路径。评估量化时，至少记录四项：模型大小、峰值 RSS、单次推理耗时、持续运行数分钟后的 thermal 变化。只看单次 latency，容易把后面的热降频问题漏掉。
 
-性能数据方面，Gemini Nano 的端侧推理延迟已经达到了可用的水平：首 token 延迟在 100 ms 以内（2026 年旗舰设备），持续推理速度在 Snapdragon 8 Gen 4 上可达 93 tokens/s。作为对比，云端推理的延迟通常在 500 ms 到 2 s。
+TFLite 支持 post-training quantization 和 quantization-aware training。前者接入成本低，适合先验证是否有明显收益；后者更适合对精度损失敏感、并且愿意改训练流程的团队。
 
-[待验证：Gemini Nano tokens/s 数据来自 Qualcomm 基准测试，实际 App 场景可能有差异]
+### 裁剪与蒸馏：先看部署成本
 
-内存方面，AICore 使用动态模型加载策略，不把整个模型常驻内存，而是按需加载需要的神经网络层，将峰值内存占用控制在约 1.2 GB（对比 2025 年的 3.4 GB）。这对前台 App 的内存预算更友好。
-
-### AICore 与 ADPF 的协同
-
-AI 推理是持续性的高负载任务，容易导致设备发热。AICore 与 Android 的 ADPF（自适应性能框架，见 §5.9）有协同机制：当设备温度接近热阈值时，ADPF 可以通知 AICore 降低推理频率或切换到更轻量的模型。
-
-## 模型优化技术对 Android 性能的影响
-
-模型优化是 ML 推理性能的基础。在硬件加速之上，模型本身的优化决定了推理性能的天花板。
-
-### 量化
-
-INT8 量化是最常用的优化手段。在 TFLite 中，Post-training full integer quantization 会将所有权重和激活值都量化到 int8，推理速度提升 2-4 倍，模型体积减少 75%。代价是精度损失，但对于大多数图像分类、目标检测、语义分割任务来说，1-2% 的精度下降是可接受的。
-
-Float16 量化对 GPU 友好，在 Adreno GPU 上 FP16 计算吞吐量是 FP32 的近两倍。如果目标设备确定有 GPU 加速支持，Float16 是精度和速度的最佳平衡点。
-
-### 裁剪与蒸馏
-
-模型裁剪（Pruning）将不重要的权重置零，产生稀疏模型。理论上稀疏模型可以跳过零值计算加速推理，但在 Android 硬件上的实际加速效果取决于 NPU/GPU 对稀疏矩阵运算的支持程度——目前大多数移动端加速器对非结构化稀疏的加速有限。
-
-知识蒸馏（Knowledge Distillation）用大模型（teacher）指导小模型（student）训练，让小模型逼近大模型的精度。MobileBERT 和 TinyBERT 是典型的蒸馏成果——参数量减少 4-10 倍，精度损失控制在 2-3% 以内。
+模型裁剪和知识蒸馏都能减小模型，但移动端收益并不会自动成立。非结构化稀疏在很多移动加速器上并不能直接换来等比例加速；蒸馏得到的小模型，则是在训练阶段付出额外成本，换运行时更小的计算量。对前台交互场景，优先级通常是：先把线程模型、delegate 选择和量化做好，再决定是否值得改训练流程。
 
 ## ML 推理性能分析与调优实战
 
 ### 在 Perfetto 中分析 ML 推理
 
-ML 推理在 Perfetto 中的表现取决于推理走的是哪个路径：
+默认 system trace 能稳定看到的是线程调度、CPU / GPU 频率、内存水位和 thermal 变化。模型内部阶段 slice 只有在 App 或 native runtime 主动打点后才会出现，所以分析前先分清“默认能看到什么”和“额外打点后能看到什么”。
 
-**CPU 推理（XNNPACK 或无 Delegate）**：在主线程或工作线程 track 上看到一段密集的 CPU 占用。如果是主线程推理，slice 会显示为 `TfLiteInterpreter::run` 或类似名称。通过 CPU frequency track 可以确认 CPU 是否满频运行。
+- **默认 Perfetto**：能看到主线程 / 工作线程是否被推理压满，CPU frequency 是否持续拉高，GPU freq 是否跟渲染一起上升，RSS / heap 是否在模型加载后明显抬升。
+- **App trace instrumentation**：如果 Java 层在 `interpreter.run()` 外包了 `Trace.beginSection()`，或 native 层用 `ATrace_beginSection()` 给预处理、推理、后处理打点，Perfetto 才会稳定出现这些阶段的 slice。`TfLiteInterpreter::run` 这种名字不是默认保证可见的。
+- **Vendor tracepoint / delegate 日志**：NPU 相关观测通常依赖厂商 tracepoint、NNAPI / delegate 日志或专用 profiler。没有这些数据时，只能用 CPU、GPU、thermal 和 logcat 做交叉定位。
 
-**GPU 推理（GPU Delegate）**：CPU 占用降低，但在 GPU track 上看到对应的计算负载。如果 GPU 推理与渲染（RenderThread）同时进行，可能产生 GPU 带宽争抢导致掉帧。
+[图：CPU 推理的 Perfetto 观察示意。主线程或 worker 线程连续运行，CPU frequency 抬升；如果有 `Trace.beginSection()`，可以在对应线程上看到 preprocess / inference / postprocess 三段 slice。]
 
-**NPU 推理（NNAPI Delegate 或 AICore）**：CPU 占用极低，但推理延迟取决于 NPU 调度。部分设备在 NPU 被多个 App 同时使用时会排队等待。
+[图：GPU Delegate 的 Perfetto 观察示意。CPU 线程忙碌度下降，但 GPU 频率和 GPU 工作负载上升；若与 RenderThread 同时活跃，需要检查帧时间是否同步恶化。]
 
-[待补充：Perfetto 截图 — CPU 推理 vs GPU 推理 vs NPU 推理的 track 对比]
+[图：NPU 或 NNAPI Delegate 的 Perfetto 观察示意。默认 trace 里没有统一 NPU track，CPU 负载可能不高，但 thermal、频率和 delegate 日志显示推理仍在进行；必要时结合厂商 tracepoint 判断是否真的命中 NPU。]
 
 ### 常见性能问题
 
-**NPU fallback 导致的 CPU jank**：这是最常见的 ML 性能问题。模型中的某个算子不被当前设备的 NPU 支持，整个推理 fallback 到 CPU，延迟从 2 ms 暴增到 50 ms。解决方法是检查 TFLite 的 delegate 日志，确认所有算子都被硬件加速器支持；必要时替换不支持的算子。
+**NPU / NNAPI fallback 导致的 CPU jank**：模型中的一部分算子没有被当前 delegate 接住，执行路径退回 CPU。表面现象通常是 CPU 线程突然忙起来，GPU / NPU 预期负载却没有出现。先看 delegate 日志，再对照模型算子覆盖率，比单看平均 latency 更容易定位。
 
-**模型加载阻塞主线程**：大模型的 FlatBuffer 解析和 Interpreter 初始化可能需要几百毫秒。如果这个过程在主线程执行，会导致启动延迟或页面切换卡顿。解决方法是在后台线程做模型加载和预热（用 dummy input 跑一次推理），加载完成后再通知 UI 线程。
+**模型加载阻塞主线程**：大模型的 FlatBuffer 映射、Interpreter 初始化和 delegate 绑定如果放在主线程，会直接拖慢冷启动或页面切换。排查时重点看初始化是否落在主线程，以及预热是否和首帧竞争。
 
-**推理内存峰值触发 LMK**：一个 100 MB 的模型加上推理过程中的中间激活值，峰值内存可能达到 200-300 MB。在内存紧张的设备上，这足以把后台 App 杀掉。解决方法是使用量化模型减少内存占用，或者在推理前检查 `ActivityManager.getMemoryInfo()` 判断是否有足够内存。
+**推理内存峰值触发 LMK**：模型文件本身往往不是全部成本，中间 tensor、delegate workspace 和缓存策略都可能把 RSS 顶上去。排查时不要只看 Java heap，Native heap 和总 PSS 更关键。
 
-**后台 ML 任务与前台 App 的 CPU 争抢**：后台 Service 持续做 ML 推理（如语音识别、健康监测），会占用大量 CPU 和 NPU 资源，影响前台 App 的流畅性。解决方法是使用 WorkManager 或 JobScheduler 调度 ML 任务，避免在高优先级场景（如滑动、动画）期间做推理。
+**后台 ML 任务与前台 App 争抢资源**：语音识别、相机理解、健康检测这类持续任务，即使不在主线程上，也会抢 CPU 时间、GPU 带宽或 NPU 调度资源。WorkManager / JobScheduler 只能解决调度时机问题，不能替代你对前台预算的测量。
 
 ### 工程实践中的优化策略
 
@@ -210,3 +190,32 @@ ML 推理在 Perfetto 中的表现取决于推理走的是哪个路径：
 - **§5.9 ADPF**：AI 工作负载的热管理策略
 - **§1.15 JNI/NDK 性能**：TFLite 的 C++ 推理引擎通过 JNI 调用，JNI 开销在高频推理场景下需要关注
 - **§14.1 Android Studio Profiler**：ML Profiler 可视化推理性能
+
+<!-- outline-start -->
+## 本节要点大纲
+
+### 锚点（必须覆盖）
+
+- 🔹 **端侧 AI 推理为什么会变成性能问题**：[已验证: 章节正文 + developer.android.com]
+  端侧推理会把 latency、内存、thermal 和硬件调度成本一起带回设备，本质是前台交互预算问题。
+
+- 🔹 **Android ML 硬件加速栈**：[已验证: developer.android.com/ndk/guides/neuralnetworks, ai.google.dev/edge/litert/android/gpu]
+  CPU / GPU / NPU / DSP 各有优缺点，公开 GPU Delegate 路径以 OpenCL / OpenGL ES 为主，NPU 可观测性依赖厂商实现。
+
+- 🔹 **NNAPI 的版本边界与迁移方向**：[已验证: developer.android.com/ndk/guides/neuralnetworks]
+  NNAPI 在 Android 8.1（API 27）引入，在 Android 15 被官方标记为 deprecated，对性能敏感 workload 建议迁移。
+
+- 🔹 **LiteRT / TFLite 管线与 Delegate 选择**：[已验证: ai.google.dev/edge/litert/android/gpu]
+  模型加载、Interpreter 初始化、Delegate 绑定、执行四阶段决定冷启动成本和稳态表现。
+
+- 🔹 **Perfetto 中的 ML 推理观测对照表**：[已验证: 章节正文]
+  默认 Perfetto 看到的是调度 / 频率 / 内存 / thermal，模型阶段 slice 需要 app 或 native instrumentation，NPU 额外依赖厂商 tracepoint 或 delegate 日志。
+
+- 🔹 **AICore / Gemini Nano 与模型优化的工程判断**：[已验证: developer.android.com/ai/aicore]
+  先看设备支持、冷启动准备、共享缓存、内存和 thermal，再谈模型版本和 benchmark 数字。
+
+### 扩展（可选深入）
+
+- 🔸 **LiteRT in Play Services 的部署取舍**：GMS 依赖、国内设备回退、运行时更新节奏
+- 🔸 **量化 / 裁剪 / 蒸馏的验证顺序**：模型大小、RSS、单次 latency、持续运行后的 thermal 变化
+<!-- outline-end -->
