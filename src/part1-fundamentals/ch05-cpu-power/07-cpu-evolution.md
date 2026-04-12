@@ -29,15 +29,17 @@ tags:
 
 polish_count: 1
 drafted_date: "2026-04-01"
-reviewed_date: "2026-04-04"
+reviewed_date: "2026-04-12"
+reviewed_by: "openclaw-task6"
+task6_result: needs-rework
 related_chapters:
   - "5.2 EAS 能量感知调度"
   - "5.6 Android 功耗管理"
   - "5.8 后台执行限制与优化"
-pipeline_stage: task6_pending
-task6_state: pending
+pipeline_stage: task2b_pending
+task6_state: reviewed
 task9_state: pending
-task2b_state: idle
+task2b_state: pending
 ---
 
 
@@ -117,7 +119,7 @@ Android 6.0 引入了 Doze 模式，这是 Android 功耗管理的第一个里�
 - Wi-Fi 扫描停止
 - SyncAdapter 同步被暂停
 
-但系统并不是一直把 App "冻住"。Doze 采用了一种"维护窗口"机制：设备进入 Doze 后，会周期性地打开一个短暂的窗口，让挂起的任务集中执行。这个窗口的间隔会越来越长——第一次可能在进入 Doze 后的一小时出现，之后逐渐拉长到两小时、四小时……这意味着设备静止时间越长，后台活动越少，省电效果越明显。
+但系统并不是一直把 App "冻住"。Doze 采用了一种"维护窗口"机制：设备进入 Doze 后，会周期性地打开一个短暂的窗口，让挂起的任务集中执行。这个窗口的间隔会越来越长——第一次可能在进入 Doze 后的一小时出现，之后逐渐拉长到两小时、四小时……设备静止时间越长，后台活动越少，省电效果也越明显。
 
 [图：Doze 模式周期示意图——展示 Doze 进入→维护窗口→深度休眠的周期]
 
@@ -141,9 +143,9 @@ Android 8.0 对后台行为的管控上了一个台阶。它引入了"后台执�
 
 第一，**后台 App 不能再随意创建后台服务**。如果一个 App 处于后台（没有可见的 Activity、没有前台服务），调用 `startService()` 会直接抛出 `IllegalStateException`。唯一的出路是使用 `startForegroundService()` 启动一个前台服务——但前台服务必须显示一个持续通知，用户能清楚地知道"有个 App 在后台跑"。
 
-第二，**隐式广播接收器被大幅限制**。除了少数例外，App 无法再在 Manifest 中静态注册大部分隐式广播。这意味着像"网络变化"、"拍照完成"这类事件，不再能唤醒 App。需要在 App 正在运行时动态注册，或者使用 JobScheduler 来响应。
+第二，**隐式广播接收器被大幅限制**。除了少数例外，App 无法再在 Manifest 中静态注册大部分隐式广播。像"网络变化"、"拍照完成"这类事件，不再能唤醒 App。需要在 App 正在运行时动态注册，或者使用 JobScheduler 来响应。
 
-这两个变化让 JobScheduler 从"推荐使用"变成了"事实上的必选项"。如果要做后台工作，JobScheduler（以及后来基于它的 WorkManager）成了最可靠的途径。
+这两个变化让 JobScheduler 从"推荐使用"逐渐变成了"基本必选"。如果要做后台工作，JobScheduler（以及后来基于它的 WorkManager）成了更稳妥的途径。
 
 [已验证: 官方文档, developer.android.com/about/versions/oreo/background]
 
@@ -161,7 +163,7 @@ Android 8.0 对后台行为的管控上了一个台阶。它引入了"后台执�
 | Rare | 很少使用 | Jobs 和闹钟严格限制，网络访问严重受限 |
 | Restricted | 从未运行或被系统限制 | 几乎所有后台活动被禁止 |
 
-关键在于：**桶的分配不是固定不变的**。系统会根据用户的使用习惯实时调整。一个上周天天用的 App，如果这周没碰过，会逐步从 Active 降级到 Rare。反过来，一个长期在 Rare 桶的 App，如果用户突然开始使用，会迅速升回 Active。
+**桶的分配不是固定不变的**。系统会根据用户的使用习惯实时调整。一个上周天天用的 App，如果这周没碰过，会逐步从 Active 降级到 Rare。反过来，一个长期在 Rare 桶的 App，如果用户突然开始使用，会迅速升回 Active。
 
 从性能分析的角度，通过 `adb shell am get-standby-bucket <package_name>` 可以查看某个 App 当前的桶分配。App 内也可以通过 API 查询自己的桶状态：
 
@@ -197,7 +199,7 @@ EAS 成为默认的意义在于：
 
 ### Android 10 的其他功耗相关变化
 
-Android 10 还做了两件值得注意的事：
+Android 10 还做了两件和功耗直接相关的改动：
 
 第一，**限制了后台 App 启动 Activity 的能力**。如果一个 App 在后台，它不能直接弹出界面。取而代之的方式是发一个高优先级通知，让用户主动点击。这减少了后台 App 意外弹窗带来的 CPU 和 GPU 消耗。
 
@@ -211,7 +213,7 @@ Android 10 还做了两件值得注意的事：
 
 ### Android 12：精确闹钟需要权限
 
-Android 12 引入了 `SCHEDULE_EXACT_ALARM` 权限。在此之前，任何 App 都可以通过 `AlarmManager.setExact()` 或 `setExactAndAllowWhileIdle()` 设置精确闹钟，这个闹钟会绕过 Doze 模式精确触发——换句话说，它可以在任何时间唤醒 CPU。
+Android 12 引入了 `SCHEDULE_EXACT_ALARM` 权限。在此之前，任何 App 都可以通过 `AlarmManager.setExact()` 或 `setExactAndAllowWhileIdle()` 设置精确闹钟。精确闹钟会绕过 Doze 模式，在指定时刻唤醒 CPU。
 
 从 Android 12 开始，如果要使用精确闹钟 API（`setExact()`、`setExactAndAllowWhileIdle()`、`setAlarmClock()`），必须在 Manifest 中声明这个权限。不声明的话，调用会直接抛出 `SecurityException`。
 
@@ -231,7 +233,7 @@ Android 13 把精确闹钟的管控又推进了一步：对于 `targetSdkVersion
 
 ### Android 14：前台服务类型化 + 后台 Activity 启动需显式 opt-in
 
-Android 14 要求前台服务必须声明**至少一个类型**（foreground service type），比如 `camera`、`location`、`mediaPlayback` 等。每种类型对应不同的权限要求和系统行为。这让系统可以更精准地管理不同类型的前台服务——比如一个声称在做媒体播放的前台服务，如果实际上没有在播放音频，系统可以检测到并终止它。
+Android 14 要求前台服务必须声明**至少一个类型**（foreground service type），比如 `camera`、`location`、`mediaPlayback` 等。每种类型对应不同的权限要求和系统行为，系统也能据此更细地管理服务。如果一个声称在做媒体播放的前台服务并没有在播放音频，系统就可能终止它。
 
 Android 14 还引入了后台 Activity 启动的显式 opt-in 机制。在此之前的版本中，App 发送 `PendingIntent` 时会隐式地将自己的后台 Activity 启动权限传递给接收方——恶意 App 可以通过 PendingIntent 链绕过后台启动限制。
 
@@ -245,7 +247,7 @@ Android 14 还引入了后台 Activity 启动的显式 opt-in 机制。在此之
 
 Android 15 在两个方面做了重要改进：
 
-**后台网络访问被限制**：如果一个 App 在 `Activity.onStop()` 之后不久发起网络请求（即 App 进入了缓存或后台状态），系统会返回 `UnknownHostException`。这意味着从 Android 15 开始，后台网络操作必须通过 `WorkManager` 或前台服务来执行。直接在后台线程中做网络请求变得不可靠了。
+**后台网络访问被限制**：如果一个 App 在 `Activity.onStop()` 之后不久发起网络请求（即 App 进入了缓存或后台状态），系统会返回 `UnknownHostException`。从 Android 15 开始，后台网络操作必须通过 `WorkManager` 或前台服务来执行。直接在后台线程中做网络请求变得不可靠了。
 
 **Doze 激活速度提升 50%**：设备进入 Doze 模式的速度比 Android 14 快了一倍。根据 Google 的数据，这可以带来最多 3 小时的额外待机时间。这个变化不需要开发者做任何适配，但对后台任务的时间窗口有影响——App 可能比以前更早被 Doze "冻住"。
 
@@ -266,11 +268,11 @@ Android 16 继续对 JobScheduler 进行精细化管控。核心变化是 Job �
 ## GKI 对内核调度模块定制化的影响
 
 
-GKI（Generic Kernel Image）的引入是 Android 内核架构的一个重大转变。Android 11 以 GKI 1.0（Linux kernel 5.4）的形式首次引入，当时是可选的。到了 Android 12，GKI 2.0（kernel 5.10+）成为新设备的强制要求——OEM 不得修改内核核心代码，且设备必须使用 Google 签名的 boot image。Android 15 的 GKI 内核版本已迭代至 6.6，同时新增了 16KB page size 支持——在 Android 15 中默认未启用，但从 2025 年 11 月起，Google Play 要求所有 targetSdk >= 35 的 App 必须兼容。[已验证: source.android.com/docs/core/architecture/kernel/gki, developer.android.com/guide/practices/page-sizes]
+GKI（Generic Kernel Image）的引入是 Android 内核架构的一个重大转变。Android 11 以 GKI 1.0（Linux kernel 5.4）的形式首次引入，当时是可选的。到了 Android 12，GKI 2.0（kernel 5.10+）成为新设备的强制要求，OEM 不得修改内核核心代码，且设备必须使用 Google 签名的 boot image。Android 15 的 GKI 内核版本已迭代至 6.6，同时新增了 16KB page size 支持。在 Android 15 中默认未启用，但从 2025 年 11 月起，Google Play 要求所有 targetSdk >= 35 的 App 必须兼容。[已验证: source.android.com/docs/core/architecture/kernel/gki, developer.android.com/guide/practices/page-sizes]
 
 GKI 对 CPU 调度的影响是一个容易被忽视但很重要的变化。
 
-在 GKI 之前，SoC 厂商（高通、联发科等）可以直接修改内核调度器代码来适配自己的硬件。比如联发科可以在 CFS 中加入针对天玑芯片大小核架构的特殊优化，高通可以为骁龙的调度策略写定制代码。这种做法的代价是内核碎片化——每家厂商的内核都是"自己的版本"，安全补丁和调度器改进很难统一推送。
+在 GKI 之前，SoC 厂商（高通、联发科等）可以直接修改内核调度器代码来适配自己的硬件。比如联发科可以在 CFS 中加入针对天玑芯片大小核架构的特殊优化，高通可以为骁龙的调度策略写定制代码。这种做法的代价是内核碎片化，每家厂商的内核都是“自己的版本”，安全补丁和调度器改进很难统一推送。
 
 GKI 的核心思路是：**内核是统一的标准版本，厂商的定制化通过可加载模块和 Vendor Hook 实现**。具体到调度方面：
 
@@ -282,7 +284,7 @@ GKI 的核心思路是：**内核是统一的标准版本，厂商的定制化�
    - `cpu_overutilized`：判断 CPU 是否"过载"
    - `balance_rt()`：实时任务的负载均衡
 
-3. **eBPF 和 sched_ext 提供了新的扩展路径**。Linux 6.6+ 引入的 `sched_ext` 机制允许通过 eBPF 程序实现自定义调度策略。这意味着厂商可以在不修改内核代码的情况下，用 eBPF 写出"游戏模式"或"省电模式"的调度策略。
+3. **eBPF 和 sched_ext 提供了新的扩展路径**。Linux 6.6+ 引入的 `sched_ext` 机制允许通过 eBPF 程序实现自定义调度策略。厂商因此可以在不修改内核代码的情况下，用 eBPF 写出"游戏模式"或"省电模式"的调度策略。
 
 对性能分析的影响：在分析不同厂商设备的调度行为差异时需要注意这些差异不是来自内核版本的不同，而是来自 Vendor Hook 注入的定制逻辑。同样运行 Android 15 的骁龙和天玑设备，同一个 App 的任务可能被分配到不同的核心上。
 
@@ -290,7 +292,7 @@ GKI 的核心思路是：**内核是统一的标准版本，厂商的定制化�
 
 ## 版本演进全景时间线
 
-把以上内容用一条时间线串起来，我们可以看到 Google 在 CPU/功耗管理上的策略是一脉相承的：**逐步限制 App 对 CPU 的自主使用权，让系统来做决策**。
+把以上内容放到一条时间线上，Google 在 CPU 和功耗管理上的策略是一脉相承的：**逐步限制 App 对 CPU 的自主使用权，让系统来做决策**。
 
 | 版本 | 核心变化 | 约束层面 |
 |------|---------|---------|
@@ -307,7 +309,7 @@ GKI 的核心思路是：**内核是统一的标准版本，厂商的定制化�
 | 15 | 后台网络受限 + Doze 加速 50% | 应用层 + 系统策略层 |
 | 16 | JobScheduler 配额优化 | 系统策略层（精细化） |
 
-可以看到三个趋势：
+这条演进线背后有三个趋势：
 
 1. **约束越来越严格**：从推荐使用 JobScheduler（5.0），到限制后台服务（8.0），到限制精确闹钟（12-13），到限制后台网络（15）。每一步都在封堵"App 自己控制 CPU"的路径。
 2. **策略越来越智能**：从静态的 Doze（6.0），到 ML 驱动的 Adaptive Battery（9.0），到动态 Standby Bucket 打分（15）。系统越来越擅长根据用户行为做决策。
@@ -319,11 +321,11 @@ GKI 的核心思路是：**内核是统一的标准版本，厂商的定制化�
 
 1. **Doze 状态**：在设备空闲时段，检查 CPU 是否有长时间的无活动期（对应 Doze 深度休眠）。Android 15 的 Doze 加速意味着这个无活动期开始得更早。
 
-2. **任务迁移模式**：对比不同 Android 版本上同一 App 的 CPU 调度 Track。在 EAS 启用前（Android 9 及更早），任务迁移更"随机"；EAS 启用后（Android 10+），可以看到更多"把轻量任务集中到小核"的规律性模式。
+2. **任务迁移模式**：对比不同 Android 版本上同一 App 的 CPU 调度 Track。在 EAS 启用前（Android 9 及更早），任务迁移更"随机"；EAS 启用后（Android 10+），会更常看到"把轻量任务集中到小核"的规律性模式。
 
 3. **JobScheduler 执行**：在 Android 12+ 上，Job 的执行间隔明显更不规律，特别是 Rare 桶的 App。可以通过 System Server 进程中的 JobScheduler track 观察任务的调度和执行情况。
 
-4. **Standby Bucket 变化**：在长时间 Trace 中，可以观察到同一个 App 的 Job 执行频率随时间推移而降低——这正是 Adaptive Battery 在起作用。通过 System Server 进程中的 `JobScheduler` track，可以看到任务调度间隔逐渐拉长。
+4. **Standby Bucket 变化**：在长时间 Trace 中，同一个 App 的 Job 执行频率通常会随时间推移而降低，这正是 Adaptive Battery 在起作用。通过 System Server 进程中的 `JobScheduler` track，能看到任务调度间隔逐渐拉长。
 
 5. **WakeLock 持有时间**：Doze 模式下 WakeLock 被忽略，所以在 Perfetto 中可能会看到 WakeLock 被 acquire 后很久才被 release，但这期间 CPU 并没有实际活动——因为 Doze 覆盖了 WakeLock 的效果。
 
