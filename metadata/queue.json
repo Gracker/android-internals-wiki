@@ -1579,17 +1579,41 @@
   {
     "section": "5.11",
     "section_title": "端侧 AI 推理性能：NPU/GPU 加速与 TFLite 管线",
-    "priority": 80,
-    "reason": "知识缺口挖掘：NNAPI Android 15 废弃，TFLite/AICore 取代，NPU/GPU 调度影响 CPU/功耗/内存，15/20",
+    "priority": 90,
+    "reason": "[review回炉] 缺少 outline 大纲，Perfetto 实战缺少真实 trace 素材，多处量化数据与版本边界待核对，AICore/Gemini 段落偏资料汇总",
     "material_paths": [
-      "https://developer.android.com/ndk/guides/neuralnetworks",
-      "https://www.tensorflow.org/lite/android",
-      "https://developer.android.com/ai/aicore"
+      "intake/suggestions.md（含 review 意见）"
     ],
-    "added_by": "task2a-knowledge-gap",
-    "added_at": "2026-04-08T09:05:00+08:00",
-    "status": "completed",
-    "completed_at": "2026-04-08T10:30:00+08:00"
+    "review_issues": [
+      {
+        "type": "需重写",
+        "location": "全文结构",
+        "detail": "缺少 outline-start / outline-end 大纲块，Task 6 无法按锚点检查覆盖率。",
+        "suggestion": "按现有章节结构补齐大纲与锚点，再回到 Task 6 做覆盖检查。"
+      },
+      {
+        "type": "需补充素材",
+        "location": "NPU 观察点与 Perfetto 分析（L67, L175-L185）",
+        "detail": "Perfetto 段只有通用描述，没有真实 trace 截图或等价图示，难以支撑“怎么在实际工作中排查”的主线。",
+        "suggestion": "补 1-2 份真实 trace，至少覆盖 CPU 推理、GPU Delegate、NPU/NNAPI Delegate 三种观察点。"
+      },
+      {
+        "type": "需确认",
+        "location": "NPU/AICore/Gemini Nano 数据与版本边界（L61-L63, L119-L121, L141-L151）",
+        "detail": "TOPS、tokens/s、首 token 延迟、内存峰值、Nano v3/v4 时间线仍以确定口吻出现，但验证标注和来源不足。",
+        "suggestion": "由 Task 9 核对数据来源、测试条件和版本边界；补不齐时降级为定性表述。"
+      },
+      {
+        "type": "需重写",
+        "location": "AICore 与 Gemini Nano / 模型优化技术（L131-L171）",
+        "detail": "两节更像资料汇总，和“性能工程师如何判断代价与收益”的主线衔接较弱，实战姿态不够。",
+        "suggestion": "收紧为工程判断视角，说明什么时候该关心 AICore、量化、Delegate 选择，以及这些选择怎样反映到 Trace、内存和热表现。"
+      }
+    ],
+    "added_by": "task6-review",
+    "added_at": "2026-04-12T11:05:00+08:00",
+    "status": "pending",
+    "original_review_log": "logs/review/2026-04-12-1105-review.md"
   },
   {
     "section": "1.16",
