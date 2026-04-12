@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-12T09:42:37+08:00",
+  "generated_at": "2026-04-12T10:05:40+08:00",
   "state_machine_version": "v2",
   "total_sections": 206,
   "metrics": {
@@ -9,19 +9,19 @@
     "task6_unknown": 30,
     "task9_unknown": 30,
     "task2b_unknown": 30,
-    "last_updated": "2026-04-12T09:42:37+08:00",
+    "last_updated": "2026-04-12T10:05:40+08:00",
     "ready-for-review": 173,
     "pipeline_task9_pending": 3,
-    "pipeline_task6_pending": 168,
-    "pipeline_task2b_pending": 5,
-    "task6_reviewed": 8,
+    "pipeline_task6_pending": 169,
+    "pipeline_task2b_pending": 4,
+    "task6_reviewed": 7,
     "task6_pending": 142,
-    "task6_revisiting": 26,
-    "task9_pending": 172,
-    "task9_reviewed": 4,
+    "task6_revisiting": 27,
+    "task9_pending": 173,
+    "task9_reviewed": 3,
     "task2b_idle": 145,
-    "task2b_fixed": 26,
-    "task2b_pending": 5,
+    "task2b_fixed": 27,
+    "task2b_pending": 4,
     "finalized": 0,
     "ready-to-publish": 0
   },
@@ -29,25 +29,25 @@
     "pipeline_stage_counts": {
       "unknown": 30,
       "task9_pending": 3,
-      "task6_pending": 168,
-      "task2b_pending": 5
+      "task6_pending": 169,
+      "task2b_pending": 4
     },
     "task6_state_counts": {
       "unknown": 30,
-      "reviewed": 8,
+      "reviewed": 7,
       "pending": 142,
-      "revisiting": 26
+      "revisiting": 27
     },
     "task9_state_counts": {
       "unknown": 30,
-      "pending": 172,
-      "reviewed": 4
+      "pending": 173,
+      "reviewed": 3
     },
     "task2b_state_counts": {
       "unknown": 30,
       "idle": 145,
-      "fixed": 26,
-      "pending": 5
+      "fixed": 27,
+      "pending": 4
     }
   },
   "issues": {
@@ -990,14 +990,15 @@
       "title": "后台执行限制与优化",
       "path": "src/part1-fundamentals/ch05-cpu-power/08-background-execution.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
-      "task6_state": "reviewed",
-      "task9_state": "reviewed",
-      "task2b_state": "pending",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
+      "task9_state": "pending",
+      "task2b_state": "fixed",
       "reviewed_date": "2026-04-12",
       "reviewed_by": "openclaw-task6",
       "task6_result": "needs-rework",
-      "task9_result": "needs-rework"
+      "task9_result": "needs-rework",
+      "task2b_result": "fixed"
     },
     "src/part1-fundamentals/ch05-cpu-power/09-adpf.md": {
       "chapter": "5.9",
