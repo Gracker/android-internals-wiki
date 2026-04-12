@@ -5705,5 +5705,44 @@
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-12T19:30:00+08:00",
     "status": "pending"
+  },
+  {
+    "section": "7.11",
+    "section_title": "WebView 渲染性能与优化",
+    "priority": 90,
+    "reason": "[review回炉] 预热示例存在 API 风险，双层渲染/滚动调度表述偏绝对，关键图示与量化来源仍需补强",
+    "material_paths": [
+      "intake/suggestions.md（含 review 意见）"
+    ],
+    "review_issues": [
+      {
+        "type": "需确认",
+        "location": "预热策略 / 方案一代码示例",
+        "detail": "`webView.setData(null, null);` 不是标准 WebView API，当前预热示例存在接口风险。",
+        "suggestion": "由 Task 9 核对实际可用的预热调用，再由 Task 2B 回写成可运行示例。"
+      },
+      {
+        "type": "需确认",
+        "location": "双层渲染架构 / 关键认知 / 滚动性能小节",
+        "detail": "“不走 Android 的 Choreographer/VSync 体系”“滚动和动画由 cc 合成线程处理”等表述写得偏满，容易把 Chromium 内部调度和 Android 显示同步关系讲成绝对二分。",
+        "suggestion": "交给 Task 9 结合 Chromium 文档与 AOSP 显示链核对，再由 Task 2B 收紧表述边界。"
+      },
+      {
+        "type": "需补充素材",
+        "location": "初始化开销 / 混合渲染 / Perfetto 分析",
+        "detail": "双层渲染架构示意图、混合渲染 Trace、首次初始化分布仍缺真实图示或等价证据，实战链条不够完整。",
+        "suggestion": "补 2-3 份真实图示或 Perfetto 片段，至少覆盖架构图、混合渲染合成负担和首次初始化观察点。"
+      },
+      {
+        "type": "需补充素材",
+        "location": "初始化与内存量化数据",
+        "detail": "“200-500ms”“30-80MB”等量化描述没有同时给出设备条件、版本范围或直接来源。",
+        "suggestion": "补充测试条件或官方来源；补不齐时改成定性描述或更保守的范围表达。"
+      }
+    ],
+    "added_by": "task6-review",
+    "added_at": "2026-04-12T20:26:33+08:00",
+    "status": "pending",
+    "original_review_log": "logs/review/2026-04-12-20-review.md"
   }
 ]

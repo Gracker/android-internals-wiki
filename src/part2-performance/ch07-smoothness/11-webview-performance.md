@@ -23,19 +23,45 @@ sources:
     path: "frameworks/base/core/java/android/webkit/"
   - type: aosp
     path: "android_webview/docs/ (chromium.googlesource.com)"
-pipeline_stage: task6_pending
-task6_state: pending
+reviewed_date: "2026-04-12"
+reviewed_by: "openclaw-task6"
+task6_result: needs-rework
+pipeline_stage: task2b_pending
+task6_state: reviewed
 task9_state: pending
-task2b_state: idle
+task2b_state: pending
 ---
 
 # 7.11 WebView 渲染性能与优化
 
+<!-- outline-start -->
+## 本节要点大纲
+
+### 锚点（必须覆盖）
+
+- 🔹 WebView 的双层渲染架构，以及它与 Android 原生渲染管线的关系
+- 🔹 首次创建 WebView 的冷启动开销、预热思路与 Perfetto 观察点
+- 🔹 JS Bridge / `evaluateJavascript()` 的线程模型与常见 ANR 路径
+- 🔹 WebView 的内存模型、典型泄漏方式与排查方法
+- 🔹 Chromium 合成器驱动滚动、混合渲染场景与常见掉帧根因
+- 🔹 版本演进、Perfetto 线程识别、常见误区与相关章节连接点
+
+### 扩展（可选深入）
+
+- 🔸 Chrome Custom Tabs 与 WebView 的选型边界
+- 🔸 WebView 多进程、Renderer 崩溃隔离与调试策略
+
+### OpenClaw 加工指引
+
+> 锚点是最低覆盖要求，加工时必须逐条落实并标注验证状态。
+> 涉及 Chromium 线程模型、滚动调度、量化数据和 API 示例时，无法确认的细节保留 `[待验证]`，不要硬写结论。
+<!-- outline-end -->
+
 ## 为什么要了解 WebView 性能
 
-如果你的 App 里有任何一个页面用了 WebView——不管是一个内嵌的 H5 活动 页、一个完整的混合开发模块、还是一个小程序 容器——WebView 的性能直接决定了用户对这个页面的感受。而 WebView 的性能问题有个特点：它不是「卡一下就好了」，而是「一旦出问题，所有交互都受影响」。JS 执行慢会拖住整个页面，内存泄漏会让 App 越用越卡，WebView 初始化慢会让冷启动凭空多出几百毫秒。
+如果你的 App 里有页面用了 WebView，不管是内嵌的 H5 活动页、完整的混合开发模块，还是小程序容器，性能都会直接影响用户感受。WebView 的问题也很少是孤立的一次卡顿，往往是一处失控后，滚动、点击和页面切换都会一起变差。JS 执行慢会拖住整个页面，内存泄漏会让 App 越用越卡，WebView 初始化慢会让冷启动平白多出几百毫秒。
 
-理解 WebView 性能的关键在于搞清楚两件事：第一，WebView 不是普通的 Android View，它内部跑着一个精简版的 Chromium 引擎，有自己的渲染管线、自己的线程模型、自己的内存管理；第二，WebView 和 App 的原生 渲染管线之间存在交互——这两条管线叠加在一起，形成了「双层渲染架构」，这也是很多性能问题的根源。
+理解 WebView 性能，先要搞清楚两件事。第一，WebView 不是普通的 Android View，它内部跑着一个精简版的 Chromium 引擎，有自己的渲染管线、线程模型和内存管理。第二，WebView 会和 App 的原生渲染管线发生交互，两条管线叠在一起，形成了「双层渲染架构」，这正是很多性能问题的来源。
 
 掌握这些之后，我们在 Perfetto 中看到 WebView 相关的线程和 slice 就不会一头雾水，能区分「JS 执行导致的卡顿」和「GPU 合成导致的卡顿」，能定位内存泄漏是出在 WebView 内部还是 App 的使用方式上。
 
@@ -75,9 +101,9 @@ App 进程
     └── GPU 线程（OpenGL/Vulkan 指令）
 ```
 
-[待补充：双层渲染架构的示意图]
+[图：WebView 双层渲染架构示意图，标出 App MainThread、Browser 线程、Renderer 进程、cc 合成线程、GPU 线程，以及最终提交到 SurfaceFlinger 的路径]
 
-关键认知：**WebView 的滚动和动画由 cc 合成线程处理，不走 Android 的 Choreographer/VSync 体系**。这意味着 WebView 的滚动流畅度主要取决于 Chromium 内部的调度，而非 Android 的 VSync-app 信号。
+关键认知：**WebView 的滚动和动画主要由 cc 合成线程处理，不沿用原生 View 那套 Choreographer / VSync 调度方式**。因此，排查 WebView 滚动流畅度时，重点要先放在 Chromium 内部调度，而不是直接套用 Android 的 VSync-app 分析方法。
 
 [已验证：来源见 chromium.googlesource.com/android_webview/docs/ 和 developer.android.com]
 
@@ -166,7 +192,7 @@ WebView 初始化在 Perfetto 中的特征：
 
 JavaScript Interface 是 WebView 和 App 原生代码之间的桥梁。通过 `@JavascriptInterface` 注解的方法可以从 JS 调用 Native 代码。理解这些方法运行在哪个线程上，是避免 ANR 的关键。
 
-**`@JavascriptInterface` 方法运行在 WebView 的私有后台线程上**，不是 App 的 MainThread，也不是 JS 执行线程。这意味着：
+**`@JavascriptInterface` 方法运行在 WebView 的私有后台线程上**，不是 App 的 MainThread，也不是 JS 执行线程。这里要注意三点：
 
 - Native 方法中的耗时操作不会直接阻塞 MainThread
 - 但如果需要在 Native 方法中操作 UI，必须通过 `runOnUiThread()` 或 Handler 切回 MainThread
@@ -195,7 +221,7 @@ class WebAppInterface(private val activity: Activity) {
 
 ### evaluateJavascript() 的同步陷阱
 
-`WebView.evaluateJavascript()` 必须 在 UI 线程调用，它的 `ValueCallback` 回调也在 UI 线程执行。这个方法本身是异步的——调用后 JS 开始执行，结果通过回调返回。
+`WebView.evaluateJavascript()` 必须在 UI 线程调用，它的 `ValueCallback` 回调也在 UI 线程执行。这个方法本身是异步的，调用后 JS 开始执行，结果通过回调返回。
 
 但实际开发中最常见的 ANR 模式是这样的：App 在 MainThread 调用 `evaluateJavascript()`，然后通过某种同步机制（如 `CountDownLatch`）等待 JS 返回结果。如果 JS 执行时间超过 5 秒，就会触发 ANR。
 
@@ -257,7 +283,7 @@ WebView 基于 Chromium 引擎，内存管理方式和普通 Android 组件有�
 - **JavaScript 堆**：V8 引擎为 JS 对象分配的堆内存
 - **网络缓存**：HTTP 缓存、图片解码缓存
 
-在 Android 8.0+ 上，Renderer 进程是独立的，这意味着渲染内存（DOM + JS 堆 + GPU 纹理）的归属在 `dumpsys meminfo` 中可能分布在多个进程中。
+在 Android 8.0+ 上，Renderer 进程是独立的，因此渲染内存（DOM + JS 堆 + GPU 纹理）的归属在 `dumpsys meminfo` 中可能分布在多个进程中。
 
 ### 内存泄漏的常见原因
 
@@ -327,7 +353,7 @@ WebView 的滚动不是由 Android 的 View 体系处理的，而是由 Chromium
 2. 每一层生成一个 GPU 纹理（tile）
 3. 滚动时，cc 合成器只需要调整各层的偏移量，重新合成即可——不需要重新执行 Blink 的布局和绘制
 
-这意味着，**如果页面的 CSS 只修改了 `transform` 和 `opacity` 属性，滚动和动画可以完全在 cc 合成线程完成，不需要经过 Blink 主线程**。这就是所谓的「合成器驱动滚动」（compositor-driven scrolling）。
+也就是说，**如果页面的 CSS 只修改了 `transform` 和 `opacity` 属性，滚动和动画可以完全在 cc 合成线程完成，不需要经过 Blink 主线程**。这就是所谓的「合成器驱动滚动」（compositor-driven scrolling）。
 
 但如果 JavaScript 在滚动事件处理器中触发了布局变化（修改了 width、height、top、left 等），cc 合成器就不得不回到 Blink 主线程重新计算布局，这就是所谓的「主线程命中」（main thread hit），在 Perfetto 中表现为滚动期间的帧延迟。
 
@@ -372,7 +398,7 @@ element.addEventListener('touchmove', handler, { passive: true });
 
 优化建议：避免在 WebView 上叠加半透明的原生 View；如果必须叠加，尽量让覆盖区域小且不频繁变化。
 
-[待补充：混合渲染的 Perfetto Trace 截图]
+[图：混合渲染场景的 Perfetto Trace 片段，标出 SurfaceFlinger 合成时间增长、WebView GPU 纹理层与原生浮层叠加区域]
 
 ## WebView 版本演进与性能改善
 
