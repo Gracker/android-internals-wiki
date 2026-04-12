@@ -1725,3 +1725,20 @@
 - **问题**：这一节已经给了方法，但还缺 1 组真实 Trace 片段或等价图示，尤其是主线程解码、`Trace.beginSection()` 打点后在 Perfetto 中的观察顺序。
 - **建议**：请 Task 2B 补 1-2 张真实 Perfetto 片段，至少覆盖主线程解码 slice 和对应卡顿帧的观察点。
 - **review 日志**：logs/review/2026-04-12-16-review.md
+
+
+## [Task9 Deep Review] 5.11 端侧 AI 推理性能：NPU/GPU 加速与 TFLite 管线 — 2026-04-12
+- **类型**：数据缺失
+- **位置**：行 49、119-127、163-165
+- **问题**：`30-100 ms`、`200-400 MB`、`8/5/2 ms`、`2-4 倍`、`<1% 精度损失` 等量化数字没有给出模型版本、输入尺寸、量化策略、batch size、设备型号和测试框架，当前只能当经验值，不能当通用结论。
+- **建议**：把这些数字改成“示例 benchmark”，并补齐测试条件；没有条件时降级为定性描述。
+
+- **类型**：数据缺失
+- **位置**：行 147-151
+- **问题**：Gemini Nano 的 `100 ms` 首 token、`93 tokens/s`、`1.2 GB / 3.4 GB` 内存数字没有一手来源，也没有说明是 prompt-prefill、decode 还是端到端场景。
+- **建议**：补充原始 benchmark 来源与测试口径，区分 prefill / decode / end-to-end；没有一手来源就统一标记为 [待验证]。
+
+- **类型**：交叉引用
+- **位置**：行 207-210 + frontmatter related_chapters
+- **问题**：正文明确引用了 `§4.4 Low Memory Killer`，但 frontmatter `related_chapters` 只有 `4.3`，缺少和 LMK 章节的显式关联。
+- **建议**：把 `4.4` 加入 `related_chapters`，并检查 `4.3 / 4.4` 在本节中的角色是否需要拆分说明。

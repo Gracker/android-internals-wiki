@@ -1405,3 +1405,38 @@ frontmatter 把章节适用范围写到 Android 17，但版本演进表对 Andro
 ### 关联章节
 5.9、5.12、16.4
 
+
+
+## [2026-04-12] 5.11 端侧 AI 推理性能：NPU/GPU 加速与 TFLite 管线 — 端侧 AI 可观测性矩阵
+
+### 盲区描述
+正文讲了 CPU / GPU / NPU 三条推理路径，但没有建立“默认 Perfetto 能看到什么、需要 app instrumentation 才能看到什么、哪些信号只能依赖厂商 atrace / delegate 日志”的统一观测模型。没有这张矩阵，读者很难把 LiteRT / TFLite 的 delegate 选择和真实 Trace 证据对上。
+
+### 重要程度
+高
+
+### 建议研究方向
+- Perfetto 默认数据源下可直接观测的 CPU 调度、频率、内存、热信号
+- app `Trace.beginSection()` / native atrace / symbolized native slice 对 LiteRT 阶段切片的可见性差异
+- Qualcomm / MediaTek / Tensor 平台对 NPU / DSP 推理暴露的 vendor tracepoint 与 counters
+- NNAPI / LiteRT delegate 日志与 Trace 的联合定位方法
+
+### 关联章节
+5.11、5.9、14.1、2.5
+
+## [2026-04-12] 5.11 端侧 AI 推理性能：NPU/GPU 加速与 TFLite 管线 — AICore / Gemini Nano 设备与版本矩阵
+
+### 盲区描述
+正文把 AICore 平台能力、Gemini Nano 模型版本、设备 rollout 和 benchmark 数字写在一起，但缺少一张可核对的“设备 × Android 版本 × 模型版本 × API 可用性”矩阵。没有这张矩阵，AICore 段很容易把“平台支持”误写成“所有 Android 14+ 设备都可用”。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 官方可核对的 AICore / Gemini Nano 支持设备列表与最低系统版本
+- Nano 版本号、参数规模、多模态能力与设备首发时间线
+- token/s、首 token 延迟、峰值内存等 benchmark 的统一测试方法
+- 无 Play Services / 无 AICore 设备上的 LiteRT fallback 路径
+
+### 关联章节
+5.11、5.9、14.1、1.15
