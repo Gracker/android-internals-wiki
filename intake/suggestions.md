@@ -1953,3 +1953,34 @@
 - **问题**：`View.setTransitionVisibility()`、`Window.setFrameContent()` 作为 trace 入口的表述不够稳，存在 API/trace tag 误导风险。
 - **建议**：交给 Task 9 核对实际可用的 trace tag 或改成手动 `Trace.beginSection()` 的可验证方案。
 - **review 日志**：logs/review/2026-04-12-23-review.md
+
+
+## [Task9 Deep Review] 7.12 View 体系性能优化：布局层级、inflate 与 measure/layout 开销 — 2026-04-12
+- **类型**：数据缺失
+- **位置**：L141 ComposeView 对比段
+- **问题**：把 ComposeView 简化为“跳过 XML inflate，因此创建 UI 更有性能优势”，只写了省掉的成本，没有交代首次 composition、slot table、measure/layout 等新增成本边界。
+- **建议**：收敛成“Compose 避开 XML inflate 固定开销”，并补一句“首帧成本要结合 composition / recomposition 一起评估”。
+
+## [Task9 Deep Review] 7.12 View 体系性能优化：布局层级、inflate 与 measure/layout 开销 — 2026-04-12
+- **类型**：数据缺失
+- **位置**：L292 `layout_optimizationLevel`
+- **问题**：“复杂布局可减少约 20%-30% measure 时间”缺少来源、测试设备和 ConstraintLayout 版本信息。
+- **建议**：补 AndroidX 官方文档或实测数据；补不齐就改成定性表述。
+
+## [Task9 Deep Review] 7.12 View 体系性能优化：布局层级、inflate 与 measure/layout 开销 — 2026-04-12
+- **类型**：数据缺失
+- **位置**：L448 ConstraintLayout vs LinearLayout 简单场景
+- **问题**：“差距在 5% 以内”缺少 benchmark 条件与出处，当前属于裸数字。
+- **建议**：补真实测试条件（节点数、层级、设备、刷新率、FrameMetrics 口径），或删除具体百分比。
+
+## [Task9 Deep Review] 7.12 View 体系性能优化：布局层级、inflate 与 measure/layout 开销 — 2026-04-12
+- **类型**：数据缺失
+- **位置**：L430-L434 Layout Inspector traffic light
+- **问题**：把 Layout Inspector 颜色直接写成固定毫秒阈值（0.5ms / 1ms），当前缺少官方文档支撑，容易和旧版 Hierarchy Viewer 经验混淆。
+- **建议**：核对当前 Android Studio 文档；若无权威阈值，就改成“颜色用于相对提示，不宜当成固定预算线”。
+
+## [Task9 Deep Review] 7.12 View 体系性能优化：布局层级、inflate 与 measure/layout 开销 — 2026-04-12
+- **类型**：交叉引用
+- **位置**：L152 启动优化章节链接
+- **问题**：正文链接到了不存在的 `../ch08-responsiveness/03-startup-optimization.md`。
+- **建议**：修正为实际文件 `../ch08-responsiveness/03-launch-optimization.md`。

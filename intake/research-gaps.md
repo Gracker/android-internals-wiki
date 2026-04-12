@@ -1564,3 +1564,36 @@ Hardware Layer 一节只给出了 `setLayerType(View.LAYER_TYPE_HARDWARE, null)`
 
 ### 关联章节
 §7.11、§9.1
+
+
+## [2026-04-12] 7.12 View 体系性能优化：布局层级、inflate 与 measure/layout 开销 — 知识盲区（ConstraintLayout 现代表现）
+
+### 盲区描述
+章节大量使用 2017 年 Google ConstraintLayout benchmark 做论据，但没有补 AndroidX 2.x、120Hz 设备和现代 FrameMetrics / Macrobenchmark 口径。这样会把 support-library 时代的结论直接投射到 Android 17。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 用 AndroidX ConstraintLayout 2.x 在 60Hz / 120Hz 设备上重做 FrameMetrics 或 Macrobenchmark 对比
+- 分开验证 `RelativeLayout`、`LinearLayout(layout_weight)`、`ConstraintLayout` 在复杂层级与简单场景下的 measure/layout 开销
+- 核实 `layout_optimizationLevel` 在当前版本中的默认值和真实收益边界
+
+### 关联章节
+7.12、7.5、8.3、2.4
+
+## [2026-04-12] 7.12 View 体系性能优化：布局层级、inflate 与 measure/layout 开销 — 知识盲区（AsyncLayoutInflater 现代边界）
+
+### 盲区描述
+AsyncLayoutInflater 一节缺少 AndroidX 当前实现的关键边界，尤其是 `generateLayoutParams()` 线程安全、View 构造期不能创建 Handler / 调用 `Looper.myLooper()`、以及 AppCompat / Factory2 兼容方式。这会直接影响工程可用性判断。
+
+### 重要程度
+中
+
+### 建议研究方向
+- 阅读 AndroidX AsyncLayoutInflater 当前版本源码，确认后台 inflate 的真实 fallback 条件
+- 核实 AppCompat / AsyncLayoutFactory / Factory2 的兼容路径与版本边界
+- 补一个“适合异步 inflate / 不适合异步 inflate”的判定表，避免误用到 Fragment 或复杂自定义 View
+
+### 关联章节
+7.12、8.3、14.6

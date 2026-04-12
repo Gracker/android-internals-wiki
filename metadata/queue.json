@@ -1673,41 +1673,61 @@
   {
     "section": "7.12",
     "section_title": "View 体系性能优化：布局层级、inflate 与 measure/layout 开销",
-    "priority": 90,
-    "reason": "[review回炉] 4 个待确认问题：ComposeView 对比表述过满、RelativeLayout “2^n” 结论过强、ConstraintLayout benchmark 边界不足、Perfetto 定位 API 表述存疑",
+    "priority": 95,
+    "reason": "[Deep Tech Review] 布局遍历时机、AAPT2 资源格式、RelativeLayout 放大机制、ConstraintLayout benchmark 边界、AsyncLayoutInflater 前提、Perfetto 定位入口均存在高风险误导",
     "material_paths": [
-      "intake/suggestions.md（含 review 意见）"
+      "intake/research-gaps.md",
+      "intake/suggestions.md"
     ],
     "review_issues": [
       {
-        "type": "需确认",
-        "location": "LayoutInflater.Factory2 / ComposeView 段落",
-        "detail": "把 ComposeView 直接归因为“跳过 XML inflate，因此创建 UI 有性能优势”，结论过满，缺少与 Compose 组合、测量和首次 composition 成本的边界说明。",
-        "suggestion": "收敛成“Compose 避开 XML inflate 固定开销”，并补充它引入的其他初始化成本。"
+        "type": "源码错误",
+        "location": "L86 inflate 三阶段",
+        "detail": "把布局 XML 的编译产物写成“`.arsc` 优化的 compact binary XML”，混淆了 APK 中的 binary XML 与 `resources.arsc` 资源表。",
+        "suggestion": "改成“layout XML 由 aapt2 编译为 APK 内的 binary XML，`resources.arsc` 保存资源表与索引”，不要把两者写成同一个产物。"
       },
       {
-        "type": "需确认",
-        "location": "RelativeLayout 嵌套段（`$2^n$` 结论）",
-        "detail": "用“最终产生 `$2^n$` 轮”描述嵌套放大效应，结论过硬，当前没有对应源码或 trace 证据支撑严格指数关系。",
-        "suggestion": "改成定性描述，或补一段真实 trace / 源码说明放大机制。"
+        "type": "原理断裂",
+        "location": "L64、L70、L158-L162 开头与三阶段机制",
+        "detail": "正文把 Measure / Layout / Draw 写成“每一帧都会完整执行”的固定三阶段，遗漏了 `mLayoutRequested` / invalidated-only 的前提。真实情况是很多帧不会重新 measure/layout。",
+        "suggestion": "补一段 ViewRootImpl 视角的边界说明：`requestLayout()` / 尺寸变化才触发 measure+layout，普通 `invalidate()` 主要进入 draw，避免把所有卡顿都误判成布局问题。"
       },
       {
-        "type": "需确认",
-        "location": "ConstraintLayout benchmark 段",
-        "detail": "“一次遍历就能确定所有子 View 的位置”和“简单场景下差距在 5% 以内”都缺少明确出处和适用条件。",
-        "suggestion": "补 benchmark 条件和来源；如果补不齐，就收敛成定性表述。"
+        "type": "原理断裂",
+        "location": "L184 RelativeLayout 嵌套放大效应",
+        "detail": "“最终产生 `$2^n$` 轮”的说法过硬，不符合 RelativeLayout 实际测量行为，也没有源码或 trace 证据支持严格指数关系。",
+        "suggestion": "改成“嵌套 RelativeLayout 会显著放大重复 measure 开销”，如果要给数量级，必须补真实 trace 或源码级推导。"
       },
       {
-        "type": "存疑",
-        "location": "Perfetto 中定位具体 View 耗时段落",
-        "detail": "`View.setTransitionVisibility()`、`Window.setFrameContent()` 作为 trace 入口的表述不够稳，存在 API/trace tag 误导风险。",
-        "suggestion": "交给 Task 9 核对实际可用的 trace tag，或改成手动 `Trace.beginSection()` 方案。"
+        "type": "版本差异",
+        "location": "L72、L268-L274 ConstraintLayout benchmark",
+        "detail": "2017 官方博客的 benchmark 基于 support ConstraintLayout 时代的示例布局。正文一方面把“80 次 expensive passes”直接映射成单帧 16.6ms 预算，另一方面又把旧 benchmark 外推到 `Android 5-17` 当前结论，版本边界失真。",
+        "suggestion": "明确这是“2017 support-library 时代的基准案例”，不要把 80 次 alerts 直接解释成单帧预算；若要支撑 AndroidX / 120Hz / Android 17，需补新的 FrameMetrics 或 Macrobenchmark 数据。"
+      },
+      {
+        "type": "原理断裂",
+        "location": "L274 ConstraintLayout 机制描述",
+        "detail": "“一次遍历就能确定所有子 View 的位置”把 ConstraintLayout 的约束求解器机制讲得过于线性，容易让读者误解为普通 top-down 单遍历。",
+        "suggestion": "改成“通过约束求解减少嵌套带来的重复 measure/layout”，不要把求解过程简化成“一次遍历”。"
+      },
+      {
+        "type": "知识盲区",
+        "location": "L376-L381 AsyncLayoutInflater 限制",
+        "detail": "当前列出的“Fragment/onClick/Factory2”三条硬限制并不是最关键的实现边界，缺少 AndroidX 当前版本真正需要交代的前提：parent `generateLayoutParams()` 线程安全，以及被构造的 View 不能在后台线程里创建 Handler / 调用 `Looper.myLooper()`。",
+        "suggestion": "补 AsyncLayoutInflater 的真实 fallback 条件、AppCompat/Factory2 兼容边界与版本信息，把“线程安全前提”写清楚。"
+      },
+      {
+        "type": "源码错误",
+        "location": "L414 Perfetto 定位具体 View 耗时",
+        "detail": "`Window.setFrameContent()` 不是公开 Android API，`View.setTransitionVisibility()` 也不是官方提供的 per-view measure/layout trace 入口。按文中写法定位会直接跑偏。",
+        "suggestion": "删除这两个 API 说法，改成“系统级 trace 看 ViewRootImpl / doFrame / traversal，总结到具体 View 时用自定义 `Trace.beginSection()`、Layout Inspector 或手工埋点”。"
       }
     ],
-    "added_by": "task6-review",
-    "added_at": "2026-04-12T23:28:00+08:00",
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-12T23:38:00+08:00",
     "status": "pending",
-    "original_review_log": "logs/review/2026-04-12-23-review.md"
+    "original_review_log": "logs/review/2026-04-12-23-review.md",
+    "deep_review_log": "logs/deep-review/2026-04-12-23-deep-review.md"
   },
   {
     "section": "8.9",
