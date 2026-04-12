@@ -1794,3 +1794,14 @@
 - **建议**：请 Task 2B 补 2-3 个真实 Perfetto 片段，至少覆盖这三类典型信号。
 - **review 日志**：logs/review/2026-04-12-18-review.md
 
+## [Task9 Deep Review] 6.3 I/O 调度与性能 — 2026-04-12
+- **类型**：源码准确性
+- **位置**：行 330 Room 异步 API
+- **问题**：正文写成“Room 默认使用 `Coroutine` 或 `RxJava` 在后台线程执行数据库操作”，但 Room 不会把所有 DAO 默认异步化。只有 `suspend` / `Flow` / `LiveData` / Rx 返回类型，或显式配置的 query/transaction executor，才有对应的异步执行路径；同步 DAO 在主线程上会直接抛异常，除非显式 `allowMainThreadQueries()`。
+- **建议**：把这段改成“API 形态决定执行模型”，区分 `suspend` / `Flow` / Rx / 同步 DAO 与 `allowMainThreadQueries()` 的边界。
+
+- **类型**：数据缺失
+- **位置**：行 281-343 Perfetto 观察阈值表
+- **问题**：`UFS 4.0 随机读 < 1ms`、`fsync < 5ms`、`iowait > 5%` 这类数值被写成通用阈值，但缺设备、文件系统、工作负载和 trace 配置上下文。读者照搬这些数字，很容易把机型差异、F2FS/ext4 差异或采样方式差异误判成异常。
+- **建议**：把数值改成“示例区间 + 测试条件”，至少补机型、存储介质、文件系统、trace 配置和 workload；拿不出统一基线时，就把这些阈值降级成经验值。
+

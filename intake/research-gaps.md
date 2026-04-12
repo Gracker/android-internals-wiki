@@ -1460,3 +1460,23 @@ frontmatter 把章节适用范围写到 Android 17，但版本演进表对 Andro
 
 ### 关联章节
 7.8、13.9
+
+---
+
+## [2026-04-12] 6.3 I/O 调度与性能 — Android 前后台 I/O 隔离的真实实现边界
+
+### 盲区描述
+正文把前台 I/O 保障写成 BFQ / cgroup / fsync / page cache 三层，但没有把 Android task profiles、blkcg/io controller、memcg page cache 记账、cgroup v2 writeback ownership 这几层真正串起来。没有这条链，读者很难判断“后台写入拖慢前台”到底是 scheduler 问题、reclaim 问题，还是 writeback 归属问题。
+
+### 重要程度
+高
+
+### 建议研究方向
+- Android task profiles / process groups 如何映射到 blkio / io / memory controller
+- cgroup v2 buffered writeback ownership 与 memcg page cache 记账的真实行为
+- UFS 设备上 `none` / `mq-deadline` / `bfq` 的默认值怎样通过 `/sys/block/*/queue/scheduler` 与 defconfig 取证
+- Perfetto 中 block I/O、writeback、kswapd、major fault、PSI 信号怎样联合定位前后台 I/O 抢占
+
+### 关联章节
+6.1、6.3、4.8、7.2
+

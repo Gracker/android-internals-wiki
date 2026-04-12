@@ -5578,5 +5578,56 @@
     "added_at": "2026-04-12T18:11:00+08:00",
     "status": "pending",
     "original_review_log": "logs/review/2026-04-12-18-review.md"
+  },
+  {
+    "section": "6.3",
+    "section_title": "I/O 调度与性能",
+    "priority": 95,
+    "reason": "[Deep Tech Review] `swappiness` 语义写反、Perfetto SQL 示例不可运行，Android 默认调度器与前后台 I/O 隔离描述仍有关键事实错误",
+    "material_paths": [
+      "intake/research-gaps.md",
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "行 229-231 `swappiness` 参数说明",
+        "detail": "上游 Linux `Documentation/admin-guide/sysctl/vm.rst` 把 swappiness 定义为“swap I/O 与 filesystem paging I/O 的相对成本”。值越低表示 swap I/O 越贵，内核会更倾向回收 file-backed pages / page cache。正文却写成“值越低，越倾向于保留 page cache”，方向反了。",
+        "suggestion": "改成“值越低，越不愿意 swap，更容易回收 file-backed pages”；如果要结合 Android zram 解释，再补 0/60/>100 三档语义和设备前提。"
+      },
+      {
+        "type": "源码错误",
+        "location": "行 254-274 Perfetto SQL 示例",
+        "detail": "这段 SQL 不能直接运行。正文使用了未证实的 `block_io_events` / `thread_id` / `ts_start` / `ts_end` 字段，外层还直接引用 `process.name` / `thread.name` 却没有任何 join。Perfetto 上游 `stdlib/linux/block_io.sql` 暴露的是 `linux_active_block_io_operations_by_device`，原始 block 事件通常也要从 `slice` + `track.type = \"block_io\"` 或 `ftrace_event` 取数。",
+        "suggestion": "按当前 trace processor schema 重写成可跑查询，并把“需要启用哪些 ftrace / block_io 数据源”写清楚；不要保留当前会直接报错的 SQL。"
+      },
+      {
+        "type": "版本差异",
+        "location": "行 122-128 Android 版本 / GKI / 默认调度器映射表",
+        "detail": "正文把 Android 版本、GKI 内核和默认调度器写成一一对应，并把 Android 12-16 直接落到 BFQ。这个结论缺少 `/sys/block/*/queue/scheduler` 样本、GKI defconfig 或主流机型实测支撑；BFQ 被编进内核，不等于它就是设备当前默认 elevator。",
+        "suggestion": "要么补设备/内核配置证据，要么降级成“常见选择 / 可选调度器”，避免把 vendor / device 依赖问题写成平台定论。"
+      },
+      {
+        "type": "原理断裂",
+        "location": "行 191-200 前台 I/O 保障三层机制",
+        "detail": "这一段把 BFQ/blkio、fsync、page cache 统称为同一条“I/O 优先级保障链”，并写出“使用 cgroup 限制后台进程的 page cache 占用”。但 page cache 记账属于 memory controller，buffered writeback 又牵涉 cgroup v2 writeback ownership，不是单靠 blkio/io scheduler 就能解释。当前写法把 block I/O 调度、memcg、writeback 三层混在了一起。",
+        "suggestion": "拆成“block 层调度”“memcg/page cache 记账”“buffered writeback 归属”三部分，并给出 Android task profile / controller 映射，不要继续用一段话糊成同一层。"
+      },
+      {
+        "type": "知识盲区",
+        "location": "行 191-200 + 334-343 Android 前后台 I/O 隔离与观测",
+        "detail": "章节没有把 Android task profiles、blkcg/io controller、memcg page cache、cgroup v2 writeback ownership 和 Perfetto / kswapd / writeback 信号串成一条可验证链路。读者仍然无法判断“后台写入拖慢前台”到底是 scheduler 问题、reclaim 问题，还是 writeback 归属问题。",
+        "suggestion": "补一节“task profile → controller → writeback ownership → trace signal”的因果链，并把这个主题写入 research gap，后续按 AOSP task profiles 与 kernel controller 文档继续补证。"
+      },
+      {
+        "type": "原理断裂",
+        "location": "行 336-343 Perfetto 观察清单",
+        "detail": "表格把“page cache 命中率”写成“需通过 `/proc/meminfo` 辅助，高 >80% / 低 <50%”。但 `/proc/meminfo` 只能看 cache 容量等静态量，不能直接给 hit rate，这会把 cache size 和 hit rate 混为一谈。",
+        "suggestion": "把这个观察项改成可直接观测的指标组合，例如 workingset refault / major fault / memcg file cache bytes / trace 中的 writeback 与 reclaim 信号；如果拿不到 hit rate，就不要硬写百分比阈值。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-12T18:39:04+08:00",
+    "status": "pending"
   }
 ]
