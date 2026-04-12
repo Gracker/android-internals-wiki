@@ -1538,3 +1538,29 @@
 - **问题**：`power.hint_session` / `power.thermal` 的观察点没有真实 Trace 截图或等价图示支撑，末尾两节也更像资料汇总，收尾偏空。
 - **建议**：补 1-2 份真实 Trace 截图，至少覆盖 Hint Session 与 CPU frequency 的对应关系；结尾最好补一个真实接入或设备差异场景。
 - **review 日志**：logs/review/2026-04-12-1013-review.md
+
+
+## [Task6 Review] 5.11 端侧 AI 推理性能：NPU/GPU 加速与 TFLite 管线 — 2026-04-12
+- **类型**：需重写
+- **位置**：全文结构
+- **问题**：缺少 `<!-- outline-start -->` / `<!-- outline-end -->` 大纲块，Task 6 无法按锚点检查覆盖率。
+- **建议**：按现有章节结构补齐大纲与锚点，再回到 Task 6 做覆盖检查。
+- **review 日志**：logs/review/2026-04-12-1105-review.md
+
+- **类型**：需补充素材
+- **位置**：NPU 观察点与 Perfetto 分析（L67, L175-L185）
+- **问题**：Perfetto 段只有通用描述，没有真实 trace 截图或等价图示，难以支撑“怎么在实际工作中排查”的主线。
+- **建议**：补 1-2 份真实 trace，至少覆盖 CPU 推理、GPU Delegate、NPU/NNAPI Delegate 三种观察点。
+- **review 日志**：logs/review/2026-04-12-1105-review.md
+
+- **类型**：需确认
+- **位置**：NPU/AICore/Gemini Nano 数据与版本边界（L61-L63, L119-L121, L141-L151）
+- **问题**：TOPS、tokens/s、首 token 延迟、内存峰值、Nano v3/v4 时间线仍以确定口吻出现，但验证标注和来源不足。
+- **建议**：由 Task 9 核对数据来源、测试条件和版本边界；补不齐时降级为定性表述。
+- **review 日志**：logs/review/2026-04-12-1105-review.md
+
+- **类型**：需重写
+- **位置**：AICore 与 Gemini Nano / 模型优化技术（L131-L171）
+- **问题**：两节更像资料汇总，和“性能工程师如何判断代价与收益”的主线衔接较弱，实战姿态不够。
+- **建议**：收紧为工程判断视角，说明什么时候该关心 AICore、量化、Delegate 选择，以及这些选择怎样反映到 Trace、内存和热表现。
+- **review 日志**：logs/review/2026-04-12-1105-review.md
