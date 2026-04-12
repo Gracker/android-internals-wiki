@@ -1255,3 +1255,20 @@ Perfetto 观测面被写成一个平面概念，但实际上至少有三层来�
 
 ### 关联章节
 2.7（Hardware Layer）、2.8（过度绘制）、7.7（Compose 性能）
+
+## [2026-04-12] 1.9 Package Manager Service 与应用安装性能 — 知识盲区
+
+### 盲区描述
+章节没有把 Android 14+ / 16 的现代安装与编译控制链讲完整：`PackageManagerShellCommand -> PackageInstallerSession -> InstallPackageHelper / DexOptHelper -> ART Service / artd / IInstalld`。当前文本把 PMS、installd、dex2oat 压成一层，读者很难建立“安装会话管理”和“编译任务调度”之间的真实边界。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 对照 `PackageManagerShellCommand.java`、`PackageInstallerSession.java`、`InstallPackageHelper.java`、`DexOptHelper.java` 画出现代安装控制链
+- 补出 `Installer.java`、`IInstalld` 与 `artd` / ART Service 的职责分界
+- 区分 `adb install`、Play 安装、OTA 后 dexopt 三种触发入口在控制链上的差异
+
+### 关联章节
+§1.7、§1.9、§8.2、§8.3
+

@@ -1499,3 +1499,10 @@
 - **位置**：行 313 参考资料
 - **问题**：参考资料只保留早期 `frameworks/base/libs/hwui/OpenGLRenderer.cpp`，与 `android-16.0.0_r1` 的校验口径不一致，也无法支撑现代 RenderThread / Skia / Compose 讨论
 - **建议**：补当前版本源码路径，或在参考资料中明确该文件只用于早期历史实现
+
+## [Task9 Deep Review] 1.9 Package Manager Service 与应用安装性能 — 2026-04-12
+- **类型**：数据缺失
+- **位置**：Android 16 云端编译（行 295-305）
+- **问题**：`Cloud Compilation` / `Secure DEX Metadata (SDM)` 段落当前主要依赖二手新闻与大会口径，缺少可回溯的 AOSP / 官方文档锚点。对“设备端跳过 dex2oat”“SDM 与 APK 同签名”这类细节，章节写成了确定结论，但证据链不够硬。
+- **建议**：补 Android 官方文档、AOSP 代码或正式发布材料；如果暂时只能拿到媒体报道，应把关键判断改成 `[待验证]`，并明确这是 Play 分发侧能力而不是通用 sideload 行为。
+
