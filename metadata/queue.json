@@ -4842,5 +4842,62 @@
     "added_at": "2026-04-12T08:33:00+08:00",
     "status": "pending",
     "original_review_log": "logs/deep-review/2026-04-12-08-deep-review.md"
+  },
+  {
+    "section": "1.9",
+    "section_title": "Package Manager Service 与应用安装性能",
+    "priority": 95,
+    "reason": "[Deep Tech Review] P0源码错误：PMS启动阶段、installd通信方式、adb install 入口链路与 android-16 AOSP 不符；P1原理断裂：bindApplication 与现代编译控制路径描述混淆",
+    "material_paths": [
+      "intake/research-gaps.md",
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "frontmatter `last_verified_against` / `sources`",
+        "detail": "`last_verified_against: AOSP android-17-beta3` 对应的 Gitiles tag 不存在；同时 `sources` 中的 `system/installd/` 在 android-16.0.0_r1 下也不存在，实际源码目录是 `frameworks/native/cmds/installd/`。当前章节的源码校验链从 frontmatter 就已断裂。",
+        "suggestion": "把校验基线改成可访问的 tag（例如 `android-16.0.0_r1`），并把 installd 源码路径改为 `frameworks/native/cmds/installd/` 或更精确的 `frameworks/native/cmds/installd/InstalldNativeService.cpp`。"
+      },
+      {
+        "type": "源码错误",
+        "location": "PMS 在系统架构中的位置（行 72-80）",
+        "detail": "正文写成 `PackageManagerService` 在 `SystemServer.startCoreServices()` 初始化，但 android-16.0.0_r1 的 `SystemServer.java` 明确是在 `startBootstrapServices()` 中执行 `StartPackageManagerService` 并调用 `PackageManagerService.main(...)`。",
+        "suggestion": "把启动阶段修正为 `startBootstrapServices()`，并补一段为什么 PMS 必须早于大量 core/other services 初始化。"
+      },
+      {
+        "type": "源码错误",
+        "location": "PMS 与 installd 的协作关系（行 108）",
+        "detail": "正文写成 PMS 与 installd 通过 `/dev/socket/installd` 通信，这对应的是更早期实现。android-16.0.0_r1 中 `Installer.connect()` 使用 `ServiceManager.getService(\"installd\")` 获取 Binder 服务，再通过 `IInstalld.Stub.asInterface(...)` 调用。",
+        "suggestion": "把通信机制改成 `Installer -> Binder(IInstalld) -> installd`，如需补历史演进，可单独说明旧时代曾使用本地 socket。"
+      },
+      {
+        "type": "源码错误",
+        "location": "安装触发路径 / adb install（行 120）",
+        "detail": "正文写成 adb install 直接通过 Binder 调用 PMS 的 `installPackage()`。android-16.0.0_r1 的 shell 入口实际是 `PackageManagerShellCommand` 走 `doCreateSession()` / `doCommitSession()`，随后进入 `PackageInstallerSession.commit()` / `installStage()`。文章把现代会话式安装链路写成了旧式直调 PMS 接口。",
+        "suggestion": "改成“adb install 通过 package manager shell command 创建安装 session，再由 PackageInstallerSession 驱动后续安装”，并补出会话式安装对 split APK / staged install 的意义。"
+      },
+      {
+        "type": "原理断裂",
+        "location": "开篇 bindApplication 说明（行 53）",
+        "detail": "正文把“加载 OAT、验证 APK 签名、构建运行时包信息”都归到冷启动 `bindApplication` 阶段，并归因到 PMS。这里把安装期与启动期混在了一起。`ActivityThread.handleBindApplication()` 属于进程绑定/运行时初始化路径，APK 签名验证发生在安装/扫描期，不属于 app 冷启动时的 bindApplication 主路径。",
+        "suggestion": "把“安装期工作（签名校验、dexopt、包扫描）”和“启动期工作（进程绑定、类加载、代码页映射）”拆开写，避免把 PMS 安装职责误投射到冷启动 bindApplication。"
+      },
+      {
+        "type": "知识盲区",
+        "location": "安装与编译关键路径（全文）",
+        "detail": "章节缺少 Android 14+ / 16 现代控制链：`PackageManagerShellCommand -> PackageInstallerSession -> InstallPackageHelper / DexOptHelper -> ART Service / artd / IInstalld`。当前文本直接从 PMS 跳到 installd / dex2oat，读者看不到现代安装会话、dexopt 调度、ART Service 之间的真实分层。",
+        "suggestion": "补一个“现代安装控制链”小节，至少给出上述 4 段调用关系和各自职责边界。"
+      },
+      {
+        "type": "版本差异",
+        "location": "版本演进表（行 485）",
+        "detail": "“Android 10 | A/B 分区更新成为强制”写得过满。公开版本线中，A/B / Virtual A/B 的强制要求是逐步收紧的，不能直接下结论为 Android 10 起对所有设备“成为强制”。这会把 OTA 能力演进写错成单点开关。",
+        "suggestion": "改成更保守的时间线表述，例如“Android 10 起 Virtual A/B 方案持续推进，后续版本才逐步形成更强的 launch requirement”，并补官方 OTA/Virtual A/B 文档来源。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-12T09:42:37+08:00",
+    "status": "pending"
   }
 ]
