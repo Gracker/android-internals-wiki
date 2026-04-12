@@ -12,7 +12,7 @@ gap_source: "AOSP结构+官方文档+读者需求"
 gap_score: 17
 drafted_date: "2026-04-07"
 drafted_by: "openclaw-task2a"
-last_verified: "2026-04-07"
+last_verified: "2026-04-13"
 last_verified_against: "AOSP android-16.0.0_r1"
 reviewed_date: "2026-04-12"
 reviewed_by: "openclaw-task6"
@@ -33,11 +33,12 @@ sources:
     path: "抖音 Android 端图片优化最佳实践（AndroidPub，2024-12-19）"
   - type: research
     path: "intake/research-feeds/2026-03-31-19-ch04-app-bitmap-pool-optimization.md"
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
 task9_result: needs-rework
-task2b_state: pending
+task2b_state: fixed
+task2b_result: fixed
 ---
 
 # 7.10 图片加载与 Bitmap 性能优化
@@ -137,17 +138,17 @@ Drawable drawable = ImageDecoder.decodeDrawable(source, (decoder, info, s) -> {
 });
 ```
 
-实际项目中，BitmapFactory 和 ImageDecoder 的选择往往被图片加载库封装了。Glide 内部在 API 28+ 的设备上会优先使用 ImageDecoder，低版本回退到 BitmapFactory。开发者不需要直接关心这个差异，但理解底层机制有助于排查解码性能问题。
+实际项目中，BitmapFactory 和 ImageDecoder 的选择往往被图片加载库封装了。以 Glide 4.x 为例，Bitmap 请求默认仍走 `Downsampler` / `BitmapFactory`。只有应用显式调用 `GlideBuilder.setImageDecoderEnabledForBitmaps(true)`，并且设备是 Android 10（API 29）及以上时，Glide 才会把 Bitmap 解码切到 `ImageDecoder`。排查同一张图在不同设备上的解码差异时，先确认库版本和这个开关。[已验证：Glide `GlideBuilder#setImageDecoderEnabledForBitmaps`]
 
-### Bitmap 内存分配的版本差异
+### Bitmap 像素内存分配的版本差异
 
-Bitmap 的像素内存分配方式在 Android 8.0（API 26）发生了根本变化：
+Bitmap 的 Java 对象一直在 Java 堆里，但像素数据放在哪里，Android 历史上分成三段：
 
-**Android 8.0 之前**：像素数据分配在 Java 堆。Bitmap 对象本身在 Java 堆，像素数组也在 Java 堆。这导致两个问题——Java 堆大小受限于 VM 的 heap growth limit（通常 128-512MB），加载大图容易 OOM；同时，像素数组占用大量 Java 堆空间，触发更频繁的 GC。
+**Android 2.3.3（API 10）及以下**：像素数据在 Native memory，Java 堆里只有 Bitmap 壳对象。旧版本里像素内存释放和 Dalvik GC 不完全同步，所以经常要配合 `recycle()` 尽快回收。[已验证：官方文档 `Managing Bitmap Memory`]
 
-**Android 8.0 及之后**：像素数据分配在 Native 堆（通过 `calloc` 系统调用）。Bitmap 的 Java 对象仍然在 Java 堆，但它只持有一个指向 Native 内存的引用。Native 堆的虚拟地址空间远大于 Java 堆（64 位设备上几乎不受限），所以大图 OOM 的概率大幅降低。[已验证：AOSP `frameworks/base/libs/hwui/jni/Bitmap.cpp` 中 `allocateHeapBitmap` 与 `NativeAllocator` 的实现]
+**Android 3.0（API 11）到 Android 7.1（API 25）**：像素数据改放到 Dalvik / ART managed heap，Bitmap 对象和像素一起受 GC 管理。`inBitmap` 这类复用策略在这个阶段也更容易观察和调试。[已验证：官方文档 `Managing Bitmap Memory`]
 
-但要注意：虽然像素数据不在 Java 堆了，它仍然计入进程的 PSS（Proportional Set Size）。系统在计算内存压力和决定杀哪个进程时，看的是 PSS 而非 Java 堆大小。所以 Bitmap 多了，Native 堆涨了，进程被 lmkd 杀掉的风险一样会升高。[已验证：来源见 深入探索Android Bitmap 中关于 Native 堆与 PSS 关系的说明]
+**Android 8.0（API 26）及之后**：像素数据再次回到 Native heap。Java 堆压力会下降，但这些像素页仍然计入进程 PSS，所以图片解码过多，进程一样会因为总体内存压力被 `lmkd` 回收。[已验证：官方文档 `Managing Bitmap Memory` + AOSP `frameworks/base/libs/hwui/jni/Bitmap.cpp`]
 
 ### 各 Bitmap.Config 的内存开销对比
 
@@ -169,32 +170,28 @@ Android 8.0（API 26）引入了 `Bitmap.Config.HARDWARE`，它的像素数据�
 
 一张普通 Bitmap 的渲染路径是：CPU 侧 Native 堆存像素 → 上传到 GPU 纹理 → GPU 渲染。上传这一步需要把像素数据从 CPU 内存拷贝到 GPU 内存，既占带宽又占时间。列表快速滑动时，如果每帧都有新图片需要上传纹理，这个拷贝就会成为瓶颈。
 
-Hardware Bitmap 跳过了上传步骤。像素直接就在 GPU 可以访问的内存中，渲染时 GPU 直接读取，零拷贝。同时，Java 堆侧几乎没有占用——`getByteCount()` 返回的是 GPU 侧的大小，但不会计入 Java 堆的内存限制。
+Hardware Bitmap 跳过的是“software bitmap 首次绘制前的 GPU 纹理上传”。普通 software bitmap 解码完成后，像素还在 CPU 可访问内存里，第一次真正绘制时，RenderThread 仍要把它上传到 GPU。`Bitmap.prepareToDraw()` 的作用，就是尽量把这次上传提前到正常 draw path 之外。AOSP 注释写明，从 Android 7.0 起，这个调用会在 RenderThread 上异步触发 upload。如果图片已经是 `Bitmap.Config.HARDWARE`，渲染阶段就不再走这一步。[已验证：AOSP `Bitmap.prepareToDraw()` 注释]
 
 ### 文件描述符的隐性成本
 
-每个 Hardware Bitmap 底层对应一个 `AHardwareBuffer`，而这个 buffer 会消耗一个文件描述符（fd）。Android 对每个进程的 fd 数量有上限（早期 1024，Android 8.1+ 部分设备提升到 32K）。
+每个 Hardware Bitmap 底层对应一个 `AHardwareBuffer`，而这个 buffer 会消耗文件描述符。进程 fd 上限由内核和设备配置决定，图片多的长列表、瀑布流和图库场景要特别留意这项开销。
 
-在实际项目中，如果一个 `RecyclerView` 显示 100 张图，每张都用 Hardware Bitmap，那就是 100 个 fd。加上网络连接、数据库、日志文件等其他 fd 消耗者，fd 耗尽并非不可能。抖音的技术团队就遇到过类似问题：大量图片加载导致 fd 接近上限，触发了不可预期的崩溃。[来源：抖音 Android 端图片优化实践]
+在实际项目中，如果一个 `RecyclerView` 同屏保留大量 Hardware Bitmap，fd 数量会跟着增长。再叠加网络连接、数据库、日志文件等其他 fd 消耗者，进程就可能逼近上限。Glide 的 `HardwareConfigState` 之所以定期检查 `/proc/self/fd`，就是为了避免 hardware bitmap 把 fd 用光。[已验证：Glide `HardwareConfigState`]
 
 ### 限制
 
-Hardware Bitmap 不是万能的。它的核心限制是**不可修改**——你不能用 Canvas 往上面画东西，不能用 `getPixel()` 读像素，不能用 `copyPixelsToBuffer()` 拷贝数据。如果尝试这些操作，系统会先把像素从 GPU 拷回 CPU，然后打印一条 `StrictMode#noteSlowCall` 警告——这个拷贝过程很慢，违背了使用 Hardware Bitmap 的初衷。
+Hardware Bitmap 的限制，不是“系统会自动降级成普通 Bitmap”，而是很多 CPU 侧操作根本不成立，或者代价很高：
 
-具体来说：
+- `getPixel()`、`getPixels()`、`copyPixelsToBuffer()` 这类直接读像素的 API，会抛 `IllegalStateException`，因为 `Config.HARDWARE` 不支持 CPU 读写像素。[已验证：AOSP `Bitmap.java`]
+- `sameAs()`、`copy(Config, ...)` 这类需要比较或复制整张图的路径，会触发 `StrictMode.noteSlowCall()`，因为框架可能要把 GPU 侧像素拉回 CPU 再处理。[已验证：AOSP `Bitmap.java`]
 
-- 不支持软件 Canvas 渲染（会抛 `IllegalArgumentException`）
-- 不支持 `Palette` 提取颜色
-- 不支持 Shared Element Transition（过渡动画需要对像素做处理）
-- 不支持 `Bitmap.createBitmap` 的变体操作
-
-Glide 在 API 26+ 默认使用 Hardware Bitmap，但遇到需要后处理的场景（圆角裁剪、模糊等），会自动回退到 ARGB_8888。[已验证：Glide 官方文档关于 Hardware Bitmap 配置的说明]
+对图片库来说，真正要看的，是请求有没有软件 Canvas、像素读取、Palette、共享元素过渡或复杂 Transformation。遇到这些场景，就应该显式回退到 software bitmap。Glide 4.x 用 `disallowHardwareConfig()`，Coil 用 `allowHardware(false)`。如果请求只是把图直接画到屏幕上，才适合保留 `Bitmap.Config.HARDWARE`。
 
 ### 使用建议
 
-- 列表中的图片展示 → 用 Hardware Bitmap（Glide/Coil 默认行为）
-- 需要对图片做二次处理 → 用 ARGB_8888
-- 关注 fd 数量 → 在低端设备或大量图片场景下，可能需要限制 Hardware Bitmap 的数量
+- 纯展示、无像素访问：可以保留 Hardware Bitmap
+- 需要圆角、模糊、Palette、共享元素或软件 Canvas：直接用 `ARGB_8888`
+- 图片很多的 feed：顺手观察 `/proc/self/fd` 或图片库的 hardware bitmap 限额
 
 ## inBitmap 复用机制与 BitmapPool
 
@@ -236,20 +233,20 @@ Glide 的内存缓存体系分成三层：
 
 不同图片格式的解码速度差异很大，理解这些差异有助于在业务中选择合适的格式。
 
-### 各格式解码耗时对比
+### 各格式解码成本对比
 
-以下数据基于典型中端设备（Snapdragon 7 系列，Android 14），解码一张 1920×1080 的图片：
+下面的比较只讨论“同一设备、同一分辨率、使用系统默认解码器”时的常见趋势，不是 benchmark 结果。真正做格式选型，还是要在目标机型上实测。
 
-| 格式 | 文件大小（约） | 解码耗时（约） | 特点 |
-|------|--------------|--------------|------|
-| JPEG | 300KB | 15-25ms | 通用性最好，解码快 |
-| PNG | 1.2MB | 40-80ms | 无损，文件大，解码慢 |
-| WebP（有损） | 200KB | 20-35ms | 比 JPEG 压缩率高 25-35%，解码略慢 |
-| WebP（无损） | 600KB | 80-150ms | 无损压缩，解码明显慢于有损 |
-| AVIF | 150KB | 30-100ms | 压缩率最高，软解慢、硬解快 |
-| GIF（单帧） | 500KB | 30-50ms | 支持动画，但色彩只有 256 色 |
+| 格式 | 文件体积趋势 | 解码成本 | 适合场景 | 备注 |
+|------|-------------|---------|---------|------|
+| JPEG | 小 | 低 | 照片、封面 | 通用性最好 |
+| PNG | 大 | 高 | 图标、透明 UI 资源 | 无损，照片类内容不划算 |
+| WebP（有损） | 更小 | 低到中 | 照片、信息流图片 | 常见做法是用它替代 JPEG |
+| WebP（无损） | 中到大 | 中到高 | 需要无损压缩的 UI 资源 | 解码通常比有损 WebP 更重 |
+| AVIF | 很小 | 差异很大 | 带宽敏感的图片 | 软件解码偏慢，硬件能力要按设备确认 |
+| GIF（单帧） | 中 | 中 | 兼容旧动画资源 | 色彩位数有限 |
 
-[待验证：以上数值为多来源综合估算，实际性能因设备和解码器实现差异较大。建议在目标设备上用 Benchmark 验证]
+[待验证：如果要给出具体毫秒数，需要固定设备、分辨率、图片样本、解码器实现，再用 Macrobenchmark 或自建基准实测]
 
 ### AVIF：压缩率的新天花板
 
@@ -336,11 +333,9 @@ Glide 在解码时会自动根据 `ImageView` 的尺寸计算采样率。流程�
 
 ## Coil 管线架构
 
-Coil 是 Kotlin-first 的图片加载库，名字本身就来自 **C**oroutine **I**mage **L**oader 的首字母缩写。相比 Glide，它更轻量，API 更现代。
+Coil 的 API 设计以 Kotlin Coroutine 为中心，和 Compose 的结合也更自然。请求取消、超时和生命周期联动都更直接，但底层获取和解码仍然落在 Dispatcher 对应的工作线程上，不是“完全没有线程”。
 
-### 基于 Coroutine 的异步架构
-
-Coil 的核心区别在于它完全基于 Kotlin Coroutine 构建，不依赖线程池。图片加载请求在 Coroutine 上下文中执行，自动支持取消、超时、异常处理。
+### 基于 Coroutine 的请求模型
 
 ```kotlin
 // Coil 的典型用法
@@ -351,39 +346,51 @@ imageView.load("https://example.com/photo.jpg") {
 }
 ```
 
-### 三级缓存
+一次 Coil 请求大致会经历：请求构建 → Memory Cache 查找 → Disk Cache / Fetcher 读取数据 → Decoder 解码 → Transformation（如有）→ Target 显示。
 
-Coil 的缓存策略与 Glide 类似：
+### 缓存与 Bitmap 管理要按版本看
 
-1. **Memory Cache**：基于 `LruCache` 的内存缓存，默认大小 = `maxMemory / 8`
-2. **Disk Cache**：基于 OkHttp 的 `DiskLruCache`，默认 250MB
-3. **Network**：通过 OkHttp 的 `Call` 获取网络数据
+Coil 2.x 开始移除了 `BitmapPool` 和相关 API，不再走“把旧 Bitmap 放回池里，再用 `inBitmap` 复用”的路线。Coil 3.x 延续了这个策略，没有把 BitmapPool 加回来。[已验证：Coil `upgrading_to_coil2.md`]
+
+磁盘缓存也有明确版本边界：
+
+1. **Coil 1.x**：主要依赖 OkHttp `Cache`
+2. **Coil 2.x**：切到自带 `DiskCache`，官方明确不建议再把 OkHttp `Cache` 当成图片磁盘缓存
+3. **Coil 3.x**：继续使用自带 `DiskCache`，但缓存格式和 2.x 不兼容；升级时通常要准备清缓存。同时，3.x 把网络加载拆成独立模块，只有引入 `coil-network-okhttp` 等网络 artifact，才具备网络图片加载能力。[已验证：Coil `upgrading_to_coil2.md` / `upgrading_to_coil3.md`]
+
+Hardware Bitmap 也不能写成一句“默认开启”就完事。Coil Android 侧的 `allowHardware` 默认值是 `true`，但如果目标 View 不是硬件加速，或者请求配置与硬件位图不兼容，Coil 会把 `Bitmap.Config.HARDWARE` 回退成 `ARGB_8888`。[已验证：Coil `imageRequests.android.kt` / `RequestService.android.kt`]
 
 ### Coil vs Glide 的选择
 
-| 维度 | Glide | Coil |
-|------|-------|------|
-| 语言 | Java + Kotlin | Kotlin-only |
-| 体积 | ~500KB（JAR） | ~200KB（AAR） |
-| 协程支持 | 通过适配层 | 原生 |
-| Compose 支持 | 需要额外库 | 原生 `AsyncImage` |
-| Bitmap 管理 | 自建 BitmapPool | 复用系统 `inBitmap` |
-| 硬件位图 | 默认开启 | 默认开启 |
-| 社区 & 生态 | 更成熟，更多插件 | 增长中，API 更简洁 |
+| 维度 | Glide 4.x | Coil 2.x / 3.x |
+|------|-----------|----------------|
+| 语言与 API 风格 | Java + Kotlin，历史兼容性好 | Kotlin-first，Coroutine / Compose 友好 |
+| Compose 支持 | 需要额外库 | `AsyncImage` 等 API 更直接 |
+| Bitmap 复用 | `LruBitmapPool` + `inBitmap` | 不提供 BitmapPool |
+| 磁盘缓存 | `DiskLruCacheWrapper` | 自带 `DiskCache`，3.x 网络模块单独引入 |
+| Hardware Bitmap | 按请求条件决定，必要时 `disallowHardwareConfig()` | `allowHardware(true)` 默认允许，不兼容请求会回退 |
+| 适合场景 | 历史 Java 项目、定制化 `ModelLoader`、成熟插件生态 | 纯 Kotlin / Compose 项目，希望 API 更轻 |
 
-如果项目是纯 Kotlin、使用 Compose、追求最小依赖体积，Coil 是更好的选择。如果项目历史较长、有大量 Java 代码、依赖 Glide 的特定功能（如自定义 ModelLoader），继续用 Glide 完全没问题。
+如果项目是纯 Kotlin、使用 Compose，Coil 更顺手。如果项目历史较长、有大量 Java 代码，或者已经深度依赖 Glide 的扩展点，继续用 Glide 更稳妥。
 
 [自动发现] 抖音的 BDFresco 框架在 Fresco 基础上做了多层优化，包括动静图缓存拆分、HEIF 软解码、按需缩放等。抖音的实验数据表明：动静图缓存拆分后，OOM 显著降低，大盘帧率正向提升；将不携带透明通道的图片从 ARGB_8888 降级为 RGB_565，内存占用减少近一半。这些是大型 App 在图片优化上的工程实践，思路值得借鉴。[来源：抖音 Android 端图片优化实践、抖音 Android 端图片优化最佳实践]
 
 ## 在 Perfetto 中定位图片解码卡顿
 
-### BitmapFactory.decode* 的 Trace 表现
+### 先分清两类耗时
 
-图片解码本身不会自动产生 Perfetto trace event，除非你的 App 或图片库手动打了 trace。Glide 默认不对外暴露解码的 trace 点，但仍可以通过以下方式在 Perfetto 中识别图片解码问题：
+图片相关 jank 常见有两段：
 
-**方法 1：看主线程的 CPU 使用和调用栈**。如果主线程有长时间的 CPU 密集操作，展开调用栈后看到 `BitmapFactory.nativeDecodeAsset` / `BitmapFactory.nativeDecodeStream`，就是图片解码在主线程执行了。
+1. **解码阶段**：`BitmapFactory` / `ImageDecoder` 把压缩数据展开成像素
+2. **首帧上传阶段**：software bitmap 第一次参与绘制时，RenderThread 把像素上传成 GPU 纹理
 
-**方法 2：添加自定义 Trace**。在项目代码中用 `android.os.Trace` 包裹图片解码操作：
+如果只盯主线程，容易漏掉第二段；如果只盯 RenderThread，又会把“上传慢”误判成“解码慢”。
+
+### 主线程解码怎么找
+
+图片解码不会自动出现在 Perfetto 里，除非 App 或图片库自己打了 trace。定位方法通常有两种：
+
+**方法 1：自定义 Trace。** 在业务的解码包装层加 `Trace.beginSection("Bitmap.decode")` / `Trace.endSection()`，这样 `slice` 表里就会有可查询的名字。
 
 ```java
 Trace.beginSection("Bitmap.decode");
@@ -391,40 +398,43 @@ Bitmap bitmap = BitmapFactory.decodeResource(res, resId, options);
 Trace.endSection();
 ```
 
-这样在 Perfetto 中就能看到名为 `Bitmap.decode` 的 slice，直接看到每次解码的耗时。
+**方法 2：看调用栈。** 如果某一帧的主线程 CPU slice 很长，展开调用栈后看到 `BitmapFactory.nativeDecodeAsset`、`BitmapFactory.nativeDecodeStream` 或 `ImageDecoder` 相关栈帧，通常就是解码跑上主线程了。
 
-### 用 Perfetto SQL 查询解码耗时
+[图：Perfetto 主线程片段。FrameTimeline 中某一帧超过预算；同一时间 MainThread 上出现 `Bitmap.decode` slice，持续 20ms 以上。标出该帧开始时间、slice 持续时间、对应的 `Choreographer#doFrame` 区间。]
 
-如果在 App 中打了自定义 trace，可以用 Perfetto 的 SQL 接口查询所有图片解码事件：
+### software bitmap 首帧为什么会卡
+
+software bitmap 解码完成后，像素还在 CPU 可访问内存里。第一次真正绘制到屏幕时，RenderThread 还要把它上传成 GPU 纹理。AOSP 对 `Bitmap.prepareToDraw()` 的注释写得很明确，从 Android 7.0 起，这个调用会在 RenderThread 上异步触发 upload，尽量把成本挪到正常 draw path 之外。[已验证：AOSP `Bitmap.java`]
+
+对应到分析过程，可以按这个顺序看：
+
+`decode 完成` → `Bitmap.prepareToDraw()` 预上传，或者首帧 draw 时同步上传 → RenderThread 出现 upload / draw 开销 → FrameTimeline 出现 jank frame
+
+Hardware Bitmap 的价值就在这里。像素本来就在 GPU 可访问内存中，渲染阶段不用再做 software bitmap 的首帧上传。
+
+[图：Perfetto RenderThread 片段。`Bitmap.prepareToDraw` 或首帧 `DrawFrame` 前后出现长 slice，并且能看到同一帧的 jank frame。旁边补一张使用 Hardware Bitmap 的正常帧，说明少掉了首帧 texture upload。]
+
+### 用 Perfetto SQL 查自定义解码 slice
+
+如果我们已经在代码里打了 `Bitmap.decode` 这类自定义 trace，可以直接查 `slice` 表：
 
 ```sql
--- 查询所有 Bitmap 解码事件及其耗时
 SELECT
   name,
   track_id,
-  (ts + duration - ts) / 1000000 AS duration_ms,
+  dur / 1000000.0 AS dur_ms,
   ts
 FROM slice
 WHERE name LIKE 'Bitmap.decode%'
-ORDER BY duration_ms DESC
+ORDER BY dur DESC
 LIMIT 50;
 ```
 
-如果发现某次解码超过 32ms（一帧的时间，120Hz 屏幕为 8ms），这个解码就可能导致了掉帧。
+这个查询只覆盖手工标过的 slice，它不会自动识别所有 `BitmapFactory.decode*` 调用。
 
-### GPU 内存压力的间接特征
+### StrictMode 在这里能做什么
 
-Hardware Bitmap 在 GPU 内存不足时会降级为普通 Bitmap。这个降级在 Perfetto 中没有直接的 trace 点，但仍可以通过以下间接特征判断：
-
-- `GLES20.glTexImage2D` 或 `EGL` 相关调用耗时异常增加——说明 GPU 在忙于其他任务，纹理上传变慢。
-- 进程的 GPU 内存（`gfxinfo` 或 `procfs/gpu_mem`) 突然增加——说明有大量 Bitmap 从 Hardware 降级到了 Software。
-
-```bash
-# 查看进程的 GPU 内存使用
-adb shell cat /sys/kernel/debug/gpu_mem /proc/<pid>/status | grep -i gpu
-```
-
-[图：GPU 内存压力场景下的观察点，待补真实 Trace 截图]
+`StrictMode` 只能观测显式标记的慢调用。调试构建里，如果线程策略开启 `detectCustomSlowCalls()`，业务代码又在解码包装层调用了 `StrictMode.noteSlowCall("Bitmap decode on main thread")`，日志里就会出现对应告警。[已验证：AOSP `StrictMode.java`] 它不会自动把所有 `BitmapFactory.decode*` 抓出来，所以排查主线程解码，还是要靠自定义 Trace、调用栈或 benchmark。
 
 ## 优化实践总结
 
@@ -434,24 +444,24 @@ adb shell cat /sys/kernel/debug/gpu_mem /proc/<pid>/status | grep -i gpu
 
 1. **匹配 ImageView 尺寸**：解码前计算 `inSampleSize`，不加载比显示尺寸大的图。Glide/Coil 自动做了这件事。
 2. **选择合适的 Bitmap.Config**：不需要透明通道的图片用 `RGB_565`，省一半内存。
-3. **优先用 ImageDecoder**（API 28+）：自动处理 EXIF 旋转，API 更安全。
+3. **优先用 ImageDecoder**（API 28+）：系统 API 会自动处理 EXIF 旋转。若使用 Glide 4.x 加载 Bitmap，还要先确认有没有显式打开 `setImageDecoderEnabledForBitmaps(true)`。
 4. **使用 Hardware Bitmap**：只展示不修改的图片用 `Bitmap.Config.HARDWARE`，Java 堆几乎零占用。
 
 ### 内存管理
 
-5. **利用 inBitmap 复用**：减少内存分配/释放频率，降低 GC 压力。Glide/Coil 的 BitmapPool 已经封装好了。
+5. **利用内存复用**：减少内存分配/释放频率，降低 GC 压力。Glide 4.x 已封装 `BitmapPool` / `inBitmap`；Coil 2.x / 3.x 不再提供 BitmapPool，要把重点放在尺寸控制、缓存命中和请求配置上。
 6. **监控 fd 数量**：Hardware Bitmap 消耗 fd，大量图片场景需要关注 `/proc/<pid>/fd` 的数量。
 7. **响应 onTrimMemory**：在系统内存紧张时释放图片缓存。Glide 自动做了。
 
 ### 格式选择
 
 8. **WebP 有损替代 JPEG**：同等画质下体积小 25-35%，解码速度可接受。
-9. **AVIF 前瞻**：Android 14+ 设备支持硬件解码，带宽优势明显。minSdk 31 以下需要软解兜底。
+9. **AVIF 前瞻**：带宽优势很明显，但解码成本和硬件能力要按设备确认；minSdk 31 以下要准备软件解码兜底。
 10. **避免 PNG 大图**：PNG 无损压缩，文件大、解码慢。照片类内容永远不要用 PNG。
 
 ### 工具链
 
-11. **用 StrictMode 检测主线程解码**：开发阶段开启 `StrictMode.detectCustomSlowCall()`，捕获主线程的图片解码操作。
+11. **用 StrictMode 标记自定义慢调用**：开启 `detectCustomSlowCalls()`，并在自有解码包装层手动调用 `noteSlowCall()`；它不会自动捕获 `BitmapFactory.decode*`。
 12. **自定义 Trace 标记解码**：在 `BitmapFactory.decode*` 调用前后加 `Trace.beginSection / endSection`，Perfetto 中直接可见。
 
 ---
