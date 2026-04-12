@@ -1461,3 +1461,28 @@
 - **问题**：`https://developer.android.com/guide/background/persistent/user-initiated-data-transfer` 当前返回 404，参考资料区存在失效官方链接。
 - **建议**：改成仍然在线的官方入口（如 `JobInfo.Builder#setUserInitiated(boolean)` reference 或新的 UIDT 指南页面），避免读者顺着参考资料跳到死链。
 
+
+## [Task6 Review] 2.8 过度绘制 — 2026-04-12
+- **类型**：需补充素材
+- **位置**：Perfetto 分析（L99-L107）
+- **问题**：只写了 GPU Track / RenderThread Track 级别的泛化描述，缺少具体 Track 名称、判断步骤和真实 Trace 证据；当前仍停在 `[待补充]`。
+- **建议**：补 1-2 张真实 Perfetto 片段，明确对应 Track、观察点和过度绘制与 GPU 饱和的关联判断。
+- **review 日志**：logs/review/2026-04-12-08-review.md
+
+- **类型**：需确认
+- **位置**：检测工具与验收标准（L93-L115）
+- **问题**：`粉色区域不超过屏幕 1/4` 与 `Tracer for OpenGL ES` / `Android Device Monitor` 的推荐用法缺少可追溯来源，后者还存在版本时效性风险。
+- **建议**：核对这些建议是否仍适用于当前 Android Studio / 平台版本；无可靠来源时改成经验性提示并明确适用范围。
+- **review 日志**：logs/review/2026-04-12-08-review.md
+
+- **类型**：需确认
+- **位置**：版本演进 + frontmatter applicable_versions（L8, L251-L262）
+- **问题**：Android 4.3 对 `clipRect` / `quickReject` 的硬件加速支持、Android 7 SurfaceFlinger 优化、Android 12 DisplayList 合并，以及 Android 16 API 级别写法都带版本风险。
+- **建议**：由 Task 9 对照 AOSP / 官方文档逐条核对；不能确认的版本结论改成更保守的表述。
+- **review 日志**：logs/review/2026-04-12-08-review.md
+
+- **类型**：需重写
+- **位置**：Jetpack Compose 扩展（L264-L288）
+- **问题**：这一节和前文主线衔接偏硬，部分因果关系写得过满，例如 `drawBehind` 比 `background` 更高效、`derivedStateOf` 可间接减少过度绘制，容易把重组优化和像素重复绘制混在一起。
+- **建议**：按“Compose 中怎么发现 overdraw / 哪些场景与 View 系统一样 / 哪些说法需要证据”重写成两个短块，并把能直接验证的结论和经验判断分开。
+- **review 日志**：logs/review/2026-04-12-08-review.md
