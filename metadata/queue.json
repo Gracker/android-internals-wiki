@@ -5077,5 +5077,56 @@
     "added_at": "2026-04-12T12:15:00+08:00",
     "status": "pending",
     "original_review_log": "logs/review/2026-04-12-12-review.md"
+  },
+  {
+    "section": "5.7",
+    "section_title": "CPU 相关的版本演进",
+    "priority": 95,
+    "reason": "[Deep Tech Review] 4 处 P0 源码/事实错误 + 2 处 P1 版本链缺口",
+    "material_paths": [
+      "intake/suggestions.md",
+      "intake/research-gaps.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "行 156-175 App Standby Buckets 表格与 API 示例",
+        "detail": "把 Restricted 写成“从未运行或被系统限制”，并省略了 special Never bucket。官方文档中 installed-but-never-ran 属于 Never bucket，Restricted 则用于资源消耗高或行为异常的 app；代码注释也漏掉了 STANDBY_BUCKET_NEVER = 50。",
+        "suggestion": "把桶模型拆成“当前 priority buckets + special Never bucket”，修正 Restricted 定义，并注明不同 Android 版本下 bucket 语义有演进。"
+      },
+      {
+        "type": "源码错误",
+        "location": "行 271 GKI 概述",
+        "detail": "“设备必须使用 Google 签名的 boot image”表述错误。GKI certification 的 boot_signature 不等于 OEM 量产 boot.img 由 Google 代签；量产镜像仍由设备厂商用自己的 AVB key 签名。",
+        "suggestion": "区分 GKI 认证与 AVB 设备签名，删除“Google 签名 boot image”这类绝对表述。"
+      },
+      {
+        "type": "版本差异/源码错误",
+        "location": "行 281-287 Vendor Hook 与 sched_ext",
+        "detail": "示例 hook 名称写成 sched_exit/uclamp_eff_value/cpu_overutilized/balance_rt，和 android15-6.6 实际 android_rvh_* hook 名不一致；同时 `sched_ext` 不是 Linux 6.6 基线能力，它在 upstream Linux 6.12 才合入，不能写成 Android 15 GKI 6.6 的现成扩展路径。",
+        "suggestion": "把 hook 示例改成实际 android_rvh_* 名称（如 `android_rvh_cpu_overutilized`、`android_rvh_sched_balance_rt`、`android_rvh_uclamp_eff_get`），并把 sched_ext 改写成未来/实验性方向，而不是 Android 15 既成事实。"
+      },
+      {
+        "type": "源码错误",
+        "location": "行 362-366 AOSP 路径参考",
+        "detail": "Android 16 上 DeviceIdleController / AppStandbyController / JobSchedulerService 已迁移到 `frameworks/base/apex/jobscheduler/service/...`；当前列出的 `frameworks/base/services/core/...` 路径在 `android-16.0.0_r1` 下已失效。",
+        "suggestion": "更新为 `frameworks/base/apex/jobscheduler/service/java/com/android/server/DeviceIdleController.java`、`.../usage/AppStandbyController.java`、`.../job/JobSchedulerService.java`，并补一句 Jobscheduler Mainline / APEX 化带来的目录迁移。"
+      },
+      {
+        "type": "版本差异",
+        "location": "行 183-198 Android 10：EAS 成为默认调度策略",
+        "detail": "“Android 10 成为默认调度策略”写得过满。EAS 是否启用仍依赖 kernel config、Energy Model 和厂商 bringup，不应被表述成所有 Android 10 设备统一切换。",
+        "suggestion": "收窄为“Android 10 时期 EAS 成为主流/默认路线，尤其在满足 EM + kernel 支持的设备上”，并补前置条件与例外。"
+      },
+      {
+        "type": "知识盲区",
+        "location": "Kernel 演进主线（Android 10 EAS → Android 15 GKI 之间）",
+        "detail": "缺失 schedtune → uclamp / task_profiles / libprocessgroup 这条关键迁移线。读者看完会知道 EAS 和 GKI，但不知道 Android 12+ 如何把线程性能意图真正传给调度器，也无法把本章和 5.2、5.9 串起来。",
+        "suggestion": "补一个小节，覆盖 schedtune 退场、uclamp 生效路径、task_profiles.json 与 PerformanceHint / ADPF 的关系。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-12T12:28:00+08:00",
+    "status": "pending"
   }
 ]
