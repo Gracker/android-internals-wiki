@@ -5330,7 +5330,9 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-12T14:29:50+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-12T20:03:33+08:00",
+    "completed_by": "task2b-rework"
   },
   {
     "section": "5.12",
@@ -5744,5 +5746,62 @@
     "added_at": "2026-04-12T20:26:33+08:00",
     "status": "pending",
     "original_review_log": "logs/review/2026-04-12-20-review.md"
+  },
+  {
+    "section": "7.10",
+    "section_title": "图片加载与 Bitmap 性能优化",
+    "priority": 95,
+    "reason": "[Deep Tech Review] 7.10 图片加载与 Bitmap 性能优化存在版本分界、库行为、Perfetto SQL、StrictMode 与 Hardware Bitmap 机制错误",
+    "material_paths": [
+      "intake/suggestions.md",
+      "intake/research-gaps.md"
+    ],
+    "review_issues": [
+      {
+        "type": "版本差异",
+        "location": "L81、L143-L149 Bitmap 像素内存分配",
+        "detail": "把 Bitmap 像素内存历史简化成“8.0 前 Java 堆、8.0+ Native 堆”，与官方文档不符。官方口径是 API 10 及以下 native memory、API 11-25 Dalvik heap、API 26+ native heap。",
+        "suggestion": "按三个阶段重写版本差异，并补 Android Developers《Managing Bitmap Memory》或对应 AOSP 实现作为证据。"
+      },
+      {
+        "type": "源码准确性",
+        "location": "L139 Glide 与 ImageDecoder",
+        "detail": "文中称 Glide 在 API 28+ 默认优先用 ImageDecoder。当前 Glide 代码显示，仅在显式启用 GlideBuilder.setImageDecoderEnabledForBitmaps(true) 且 Android Q+ 时，才会用 ImageDecoder 替代 Downsampler/BitmapFactory；不是默认行为。",
+        "suggestion": "改成“Glide 默认仍走 Downsampler/BitmapFactory；只有显式启用 ImageDecoder 实验开关时才切到 ImageDecoder”，并标清版本边界。"
+      },
+      {
+        "type": "源码准确性",
+        "location": "L190、L357-L370、L441 Glide/Coil 管线对比",
+        "detail": "Glide 的 Hardware Bitmap“默认开启”、Coil“复用系统 inBitmap / 自带 BitmapPool”、Coil Disk Cache“基于 OkHttp”的表述与当前库行为不符。Glide 的 ALLOW_HARDWARE_CONFIG 默认值是 false；Coil 2.x 起已移除 BitmapPool，且自建 DiskCache，不再依赖 OkHttp Cache。",
+        "suggestion": "按 Glide 4.x / Coil 2.x / Coil 3.x 分版本重写库行为矩阵，避免把不同主版本揉成一个结论。"
+      },
+      {
+        "type": "源码准确性",
+        "location": "L404 Perfetto SQL",
+        "detail": "Perfetto 的 slice 表没有 duration 字段，正确列名是 dur。当前 SQL 直接执行会失败。",
+        "suggestion": "把 `(ts + duration - ts) / 1000000` 改为 `dur / 1000000.0`，保留 ts、track_id、name 即可。"
+      },
+      {
+        "type": "源码准确性",
+        "location": "L416-L419 Hardware Bitmap 降级机制",
+        "detail": "“GPU 内存不足时会降级为普通 Bitmap”缺少官方/AOSP依据，且与公开文档的限制模型不符。官方资料强调的是 fd 限制、软件 Canvas/像素读写异常和显式禁用场景，不是运行时自动降级。",
+        "suggestion": "删除“自动降级”结论。若要讨论失败路径，应改写为“分配受限或场景不兼容时需要显式回退到软件位图”；无法证实时标 `[待验证]`。"
+      },
+      {
+        "type": "源码准确性",
+        "location": "L453 StrictMode 检测建议",
+        "detail": "API 名写成了 `detectCustomSlowCall()`，正确名称是 `detectCustomSlowCalls()`。且该能力只会在代码显式调用 `StrictMode.noteSlowCall()` 时触发，不会自动捕获 `BitmapFactory.decode*`。",
+        "suggestion": "改成“若业务代码在解码包装层手动埋 `noteSlowCall()`，可配合 detectCustomSlowCalls() 观察”；自动检测主线程解码应依赖自定义 Trace、调用栈或 benchmark。"
+      },
+      {
+        "type": "原理断裂",
+        "location": "L163-L181、L395-L419 Hardware Bitmap 与 Perfetto",
+        "detail": "章节讲了 Hardware Bitmap 的结果，却没有补齐 software bitmap 首帧 texture upload、RenderThread、`Bitmap.prepareToDraw()` 与 Perfetto 观察点之间的因果链，读者难以把“减少 jank”落到具体 trace 现象。",
+        "suggestion": "补一段“software bitmap 首次绘制为何卡”的链路：decode 完成 → 首帧 texture upload → RenderThread slice / `Bitmap.prepareToDraw()` 观察点 → Hardware Bitmap 如何绕开该路径。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-12T20:29:00+08:00",
+    "status": "pending"
   }
 ]
