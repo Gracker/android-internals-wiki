@@ -1564,3 +1564,21 @@
 - **问题**：两节更像资料汇总，和“性能工程师如何判断代价与收益”的主线衔接较弱，实战姿态不够。
 - **建议**：收紧为工程判断视角，说明什么时候该关心 AICore、量化、Delegate 选择，以及这些选择怎样反映到 Trace、内存和热表现。
 - **review 日志**：logs/review/2026-04-12-1105-review.md
+
+## [Task9 Deep Review] 5.9 ADPF 自适应性能框架 — 2026-04-12
+
+- **类型**：交叉引用
+- **位置**：行 295 与其他章节的关系
+- **问题**：`§14.7 Perfetto 高级分析` 与 SUMMARY.md 不一致。14.7 实际是 ProfilingManager，Perfetto 的高级用法在 13.7。
+- **建议**：改成 `§13.7 Perfetto 的高级用法`，或直接写准确标题。
+
+- **类型**：数据缺失
+- **位置**：行 301-307 Unity/Unreal Engine 的 ADPF 集成
+- **问题**：`Unity 从 2021.2 版本开始提供 ADPF 集成插件` 这种版本结论没有给出包名、Android provider 版本或官方文档。当前说法过于笼统，容易把 Unity 版本、Adaptive Performance 包版本、Android provider 版本混成一个数字。
+- **建议**：补 Unity Adaptive Performance 包版本矩阵、Android provider 版本与官方链接；补不齐时降级为“Unity 通过 Adaptive Performance Android provider 支持 ADPF”。
+
+- **类型**：数据缺失
+- **位置**：行 311-317 OEM 对 ADPF 的定制
+- **问题**：高通 PerfLock、联发科 Perfservice、Tensor 定制策略这些判断没有给出公开资料或 AOSP 锚点，当前更像经验判断。
+- **建议**：补厂商公开文档 / 会议资料 / 可验证源码入口；补不齐时改成 `[待验证]`，避免把厂商实现细节写成确定事实。
+

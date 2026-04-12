@@ -1272,3 +1272,38 @@ Perfetto 观测面被写成一个平面概念，但实际上至少有三层来�
 ### 关联章节
 §1.7、§1.9、§8.2、§8.3
 
+
+
+## [2026-04-12] 5.9 ADPF 自适应性能框架 — 控制面分层盲区
+
+### 盲区描述
+章节直接从 App 侧 API 跳到“系统会提频 / 系统会热管理”，但没有把 `PerformanceHintManager.Session -> HintManagerService -> vendor power hint HAL/AIDL`，以及 `PowerManager -> IThermalService -> Thermal HAL` 的中间层写出来。缺了这两段，读者无法判断 ADPF 问题该落在 App 集成、system_server 转发，还是 OEM / SoC 实现。
+
+### 重要程度
+高
+
+### 建议研究方向
+- AOSP `frameworks/base/core/java/android/os/PerformanceHintManager.java`
+- AOSP `services/core/java/com/android/server/power/hint/HintManagerService.java`
+- `IHintManager` / vendor power hint HAL 或 AIDL 入口
+- `PowerManager`、`IThermalService` 与 `hardware/interfaces/thermal/` 的分层关系
+
+### 关联章节
+§5.5、§5.6、§5.9
+
+## [2026-04-12] 5.9 ADPF 自适应性能框架 — ADPF 观测证据盲区
+
+### 盲区描述
+Perfetto 段落没有给出可复现的观测路径。当前章节直接写 `power.hint_session` / `power.thermal`，但没有 trace config、截图、SQL、可见 counter 名称，也没有说明哪些现象来自 Perfetto，哪些更适合用 AGI、Frame Timeline、CPU frequency 或 PowerManager 热状态去看。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 一份可复现的 ADPF TraceConfig，覆盖 CPU frequency、Frame Timeline、热状态与电源数据源
+- 验证 HintSession 是否会以固定 track 名称暴露，还是需要依赖自定义 trace / OEM 实现
+- 补一组真实案例：ADPF 开 / 关对比，CPU-bound 与 GPU-bound 各一组
+- 明确 Perfetto / AGI / Game Dashboard 各自负责观察什么
+
+### 关联章节
+§5.9、§7.5、§13.2、§13.3、§13.7、§14.8
