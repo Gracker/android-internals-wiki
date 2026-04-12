@@ -1602,3 +1602,9 @@
 - **问题**：Android 12 强制、Google 签名 boot image、Android 15 与 16KB page size / Play 要求被写在同一段里，GKI、page size 和发布政策的边界不够清楚。
 - **建议**：拆开核对 GKI 版本要求、16KB page size 与 Play 兼容政策的适用范围，再由 Task 2B 收窄表述。
 - **review 日志**：logs/review/2026-04-12-12-review.md
+
+## [Task9 Deep Review] 5.7 CPU 相关的版本演进 — 2026-04-12
+- **类型**：数据缺失
+- **位置**：行 250-266 Android 15 / Android 16 小节
+- **问题**：Android 15 的 `UnknownHostException`、Doze 50% / 最多 3 小时收益，以及 Android 16 JobScheduler 配额优化，当前缺少精确的一手来源与 API 锚点；尤其 Android 16 小节仍以 web search 摘要为主。
+- **建议**：补官方页面或 blog 的精确链接，并把 API / adb 入口写实（如 `JobParameters.getStopReason()`、`JobScheduler#getPendingJobReasonsHistory()`）；如果一手来源拿不稳，就把结论收窄为更保守的行为描述。

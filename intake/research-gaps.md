@@ -1307,3 +1307,20 @@ Perfetto 段落没有给出可复现的观测路径。当前章节直接写 `pow
 
 ### 关联章节
 §5.9、§7.5、§13.2、§13.3、§13.7、§14.8
+
+## [2026-04-12] 5.7 CPU 相关的版本演进 — 调度意图传递链缺口
+
+### 盲区描述
+章节从 Android 10 的 EAS 直接跳到 GKI / Android 15，缺少 Android 11-14 这段对 CPU 调度最关键的“意图传递”演进：schedtune 向 uclamp 的迁移、task_profiles.json / libprocessgroup 如何把前台、后台、top-app、latency-sensitive 等意图传给调度器，以及这条链路和 ADPF / PerformanceHint 的关系。没有这段，读者无法把“EAS 会怎么调度”与“系统和 App 怎样表达调度诉求”串起来。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 核对 Android common kernel 中 schedtune 退场与 uclamp 生效的时间线
+- 调研 `system/core/libprocessgroup/profiles/task_profiles.json` 与 task profile 继承关系
+- 补充 `android15-6.6` 中 `android_rvh_uclamp_eff_get` 等 hook 与厂商调优的连接点
+- 连接 `PerformanceHintManager` / ADPF 与 task profile / uclamp 的实际传递路径
+
+### 关联章节
+§5.2 EAS 能量感知调度、§5.9 ADPF 自适应性能框架、§5.6 Android 功耗管理
