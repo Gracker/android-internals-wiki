@@ -1513,3 +1513,19 @@ frontmatter 把章节适用范围写到 Android 17，但版本演进表对 Andro
 
 ### 关联章节
 §7.1、§2.18、§2.19、§2.4、§3.2
+
+## [2026-04-12] 7.10 图片加载与 Bitmap 性能优化 — Software Bitmap 首帧纹理上传与 RenderThread 观察点
+
+### 盲区描述
+章节把图片卡顿几乎全部落在“解码慢 / 内存大”上，但没有讲清 software bitmap 首次绘制时的 texture upload 路径，也没有覆盖 `Bitmap.prepareToDraw()`、RenderThread 相关 slice、以及如何在 Perfetto 区分“主线程解码卡顿”和“首帧上传卡顿”。这会削弱 Hardware Bitmap 一节的技术解释力。
+
+### 重要程度
+高
+
+### 建议研究方向
+- AOSP 中 `Bitmap.prepareToDraw()` / HardwareBitmapUploader / RenderThread 相关调用链
+- Perfetto / atrace 中与 bitmap pre-upload、texture upload 对应的 slice 名称与观察方法
+- Glide / Coil 在加载完成后是否以及如何触发 pre-draw / pre-upload
+
+### 关联章节
+§7.10、§2.5、§7.2
