@@ -16,14 +16,22 @@ polish_count: 1
 polish_date: "2026-04-08"
 polish_by: "task2b-polish"
 sources:
-  - type: official
-    path: "https://developer.android.com/develop/ui/performance/jankstats"
   - type: aosp
     path: "frameworks/base/core/java/android/widget/OverScroller.java"
   - type: aosp
     path: "frameworks/base/core/java/android/view/Choreographer.java"
   - type: aosp
     path: "frameworks/base/core/java/android/view/animation/AnimationUtils.java"
+  - type: official
+    path: "https://developer.android.com/reference/android/view/Choreographer#postVsyncCallback(android.view.Choreographer.VsyncCallback)"
+  - type: official
+    path: "https://developer.android.com/reference/android/view/View#reportAppJankStats(android.app.jank.AppJankStats)"
+  - type: official
+    path: "https://developer.android.com/reference/android/app/jank/AppJankStats"
+  - type: official
+    path: "https://developer.android.com/reference/android/app/jank/RelativeFrameTimeHistogram"
+  - type: official
+    path: "https://perfetto.dev/docs/data-sources/frametimeline"
 tags:
   - android
   - jank
@@ -32,12 +40,14 @@ tags:
   - frame-pacing
   - overScroller
   - research
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
 task9_result: needs-rework
-task2b_state: pending
+task2b_state: fixed
+task2b_result: fixed
 ---
+
 
 
 # 7.9 感知流畅性：步幅波动与无掉帧卡顿
@@ -79,44 +89,43 @@ task2b_state: pending
 
 **步幅均匀性**衡量的是每帧画面位移量的均匀性。一个列表在匀速滚动时，相邻两帧之间应该移动相同的像素数。如果帧 A 移动了 10px、帧 B 移动了 13px、帧 C 移动了 8px，即使三帧都在 VSync 预算内完成，用户也会感觉到"抖动"。
 
-用户在连续动画中建立的预期不是"每 8.33ms 刷新一次"，而是"画面在匀速运动"。当这个运动轨迹出现不规则跳动时，视觉系统会立即感知到不连贯。研究表明，人类视觉系统对帧间位移差异的敏感度非常高，在快速滑动场景下，相邻帧位移偏差超过 10% 就可能被察觉。
+用户在连续动画中建立的预期不是"每 8.33ms 刷新一次"，而是"画面在匀速运动"。当这个运动轨迹出现不规则跳动时，视觉系统会立即感知到不连贯。在高刷新率滑动场景里，没有一个跨设备、跨 workload 通用的阈值可以直接套用。更稳妥的做法是把同一段轨迹里的位移采样拿出来看，确认是否持续出现可见的像素级交替。
 
 这就是为什么一台跑满 120fps 的设备，列表滑动时仍然可能"感觉不丝滑"。问题不在帧率，而在步幅。
 
 ### 典型场景
 
-最常见的感知流畅性问题是手势导航时的窗口动画。在多任务界面（Recent Apps）上划回桌面时，窗口缩小的动画前期变化速度过快、后期突然变慢。这里更像是动画插值曲线的加速度分布不合理，导致画面位移量在动画开头和结尾差异太大。
+最常见的一类感知流畅性场景出现在手势导航窗口动画里。在多任务界面（Recent Apps）上划回桌面时，窗口缩小的动画前期变化速度过快、后期突然变慢。这里更像是动画插值曲线的加速度分布不合理，导致画面位移量在动画开头和结尾差异太大。
 
 另一个典型场景是 RecyclerView 的 fling 滚动。手指快速划过后，列表惯性滚动的前几帧位移量往往波动较大，后几帧又趋于平稳。这种"开头猛后面缓"的非线性减速如果不够平滑，就会产生顿挫感。
 
 ## 步幅波动的技术成因
 
-上面描述的现象在 Trace 中不会标红，在 FrameTimeline 里也不会有 jank 标记，但它确确实实影响了用户体验。我们来看导致步幅波动的底层机制。
+上面描述的现象在 Trace 中不会标红，在 FrameTimeline 里也不会有 jank 标记，但它确确实实影响了用户体验。App 侧时间量化只是其中一类成因。先把 OverScroller 和 Choreographer 的时间模型讲清，再看怎样把它和显示侧、输入侧的问题分开。
 
-步幅波动有三个主要的技术来源：动画插值算法、VSync 时间精度损失、以及物理模拟的时间步长不稳定。我们逐一分析。
+### 成因一：OverScroller 的毫秒时间量化
 
-### 成因一：OverScroller 的时间精度瓶颈
-
-Android 的惯性滚动（fling）由 `OverScroller` 驱动。`OverScroller` 内部的 `computeScrollOffset()` 方法使用 `AnimationUtils.currentAnimationTimeMillis()` 获取当前时间，然后计算经过的时间来驱动物理模型。
+RecyclerView fling 常走 `OverScroller.computeScrollOffset()` 的 `FLING_MODE`。真正推进位置的是内部 `SplineOverScroller.update()`，它先读取 `AnimationUtils.currentAnimationTimeMillis()`，再按经过的时间推进当前位置。
 
 ```java
 // frameworks/base/core/java/android/widget/OverScroller.java
-// @ AOSP android-17-beta3
 boolean computeScrollOffset() {
-    // 时间来源：AnimationUtils.currentAnimationTimeMillis()
+    ...
+    case FLING_MODE:
+        if (!mScrollerX.mFinished) {
+            if (!mScrollerX.update()) { ... }
+        }
+        ...
+}
+
+boolean update() {
     final long time = AnimationUtils.currentAnimationTimeMillis();
-    // 经过的时间（毫秒级精度）
-    final long elapsedTime = time - mStartTime;
-    // 基于 elapsedTime 计算当前位移
+    final long currentTime = time - mStartTime;
     ...
 }
 ```
 
-注意：`AnimationUtils.currentAnimationTimeMillis()` 返回的是**毫秒级**时间戳。而 `Choreographer.getFrameTimeNanos()` 提供的是**纳秒级**的 VSync 时间。
-
-在 60Hz 屏幕上，VSync 周期是 16.67ms，毫秒精度勉强够用，取整误差最多 ±1ms，占帧周期的 6%。但在 120Hz 屏幕上，VSync 周期只有 8.33ms，±1ms 的取整误差就意味着 **12% 的帧间时间差异**。
-
-具体来说，假设一个理想的 120Hz fling 动画：
+`currentAnimationTimeMillis()` 的返回值只有毫秒精度。60Hz 面板一帧 16.67ms，1ms 量化误差还比较隐蔽；120Hz 一帧 8.33ms，同样的 1ms 误差就会把相邻两帧推到 8ms / 9ms 两档。这个结论来自时间量化本身，不依赖经验阈值。
 
 | 帧序号 | 理想 VSync 时间 (ns) | 实际 ms 取整 | 帧间时间 | 偏差 |
 |--------|---------------------|-------------|---------|------|
@@ -127,47 +136,54 @@ boolean computeScrollOffset() {
 | 4 | 33,333,332 | 33ms | 8ms | -4% |
 | 5 | 41,666,665 | 42ms | 9ms | +8% |
 
-ms 取整导致帧间时间在 8ms 和 9ms 之间交替跳动。对于匀速滚动的列表来说，对应的滚动像素数也会在两个值之间来回切换，用户看到的就是列表在"微颤"。
+ms 取整之后，时间推进不再是稳定的 8.33ms，而是在 8ms 和 9ms 之间跳。高速度 fling 段里，同样的 1ms 跳动会直接反映到位移采样。
 
-这种波动在慢速滚动时几乎不可察觉（每帧只移动 1-2px），但在快速 fling 时（每帧移动 15-30px），8ms 和 9ms 对应的位移差异可能达到 2-4px，足以让视觉系统感知到不连贯。
+### 成因二：常规 fling 走样条表，不是二次公式
 
-### 成因二：物理模拟的时间步长不稳定
+`SplineOverScroller.update()` 在 `SPLINE` 状态下不会按 `position = start + velocity * time - friction * time^2` 直接算位移。它先把 `currentTime / mSplineDuration` 映射到样条进度 `t`，再从 `SPLINE_POSITION` 表和相邻采样点的斜率里插值出 `distanceCoef` 与 `velocityCoef`。
 
-OverScroller 内部的 fling 物理模型可以简化为：`position = start + velocity * time - friction * time ^ 2`。当时间步长从 8ms 变成 9ms 再变回 8ms 时，计算的位移量不是简单的线性缩放，因为摩擦力项是时间的二次函数，时间步长的波动会被放大。
-
-具体而言，如果 velocity=3000px/s、friction 系数使动画持续 500ms，那么：
-
-- 8ms 步长：位移约 24px - 0.38px = 23.62px
-- 9ms 步长：位移约 27px - 0.43px = 26.57px
-- 差异：2.95px（约 12.5%）
-
-这个 12.5% 的帧间位移差异，就是用户感知到的"不够丝滑"的来源。
-
-### 成因三：从 Choreographer 到动画引擎的精度损失过程
-
-把视角放大一点，看整个时间传递过程：
-
-```
-硬件 VSync (ns 精度)
-  -> SurfaceFlinger DispSync (ns 精度)
-  -> Choreographer.doFrame() -> getFrameTimeNanos() (ns 精度)
-  -> View.draw() -> Animation/OverScroller (ms 精度)
-  -> 每帧位移量计算（累积误差）
+```java
+// frameworks/base/core/java/android/widget/OverScroller.java
+switch (mState) {
+    case SPLINE:
+        final float t = (float) currentTime / mSplineDuration;
+        final int index = (int) (NB_SAMPLES * t);
+        ...
+        final float d_inf = SPLINE_POSITION[index];
+        final float d_sup = SPLINE_POSITION[index + 1];
+        velocityCoef = (d_sup - d_inf) / (t_sup - t_inf);
+        distanceCoef = d_inf + (t - t_inf) * velocityCoef;
+        distance = distanceCoef * mSplineDistance;
+        ...
+}
 ```
 
-这个过程的前两段保持了纳秒精度。问题出在第三段到第四段的转换：Android 的动画框架（包括 OverScroller、ValueAnimator、ObjectAnimator）内部使用 `AnimationUtils.currentAnimationTimeMillis()` 作为时间源，在 ns 到 ms 的转换过程中丢失了精度。
+这段代码决定了常规 fling 的主要轨迹。`BALLISTIC` 和 `CUBIC` 只覆盖越界、回弹和 springback 等状态，不能拿来代表整段 fling。真正会受 8ms / 9ms 交替影响的，是样条进度 `t` 的采样点和由此得到的 `distanceCoef` / `velocityCoef`。在高速段，样条表相邻采样点之间的位移差更大，所以 1ms 量化更容易变成肉眼可见的步幅抖动。
 
-`Choreographer.doFrame()` 回调时会通过 `getFrameTimeNanos()` 提供纳秒级的帧时间戳，但这个值并没有直接传递给 OverScroller。OverScroller 自己重新调用 `currentAnimationTimeMillis()` 获取时间。
+### 成因三：Choreographer 把时间同步到 VSync，但精度仍停在毫秒
 
-[已验证: AOSP android-17-beta3, frameworks/base/core/java/android/view/Choreographer.java]
+这里还有一个容易写错的地方。OverScroller 并没有完全绕开 `Choreographer`。`Choreographer.doFrame()` 在执行本帧回调前，会把当前线程的动画时钟锁到这一帧的 `frameTimeNanos`，同时记录期望呈现时间。
 
-结果是，即使 Choreographer 提供了精确的纳秒时间，动画引擎也没有用到它。
+```java
+// frameworks/base/core/java/android/view/Choreographer.java
+AnimationUtils.lockAnimationClock(
+        frameTimeNanos / TimeUtils.NANOS_PER_MS,
+        timeline.mExpectedPresentationTimeNanos);
+```
 
-### Chrome 的经验：时间精度优化的工程实践
+```java
+// frameworks/base/core/java/android/view/animation/AnimationUtils.java
+public static long currentAnimationTimeMillis() {
+    AnimationState state = sAnimationState.get();
+    if (state.animationClockLocked) {
+        return Math.max(state.currentVsyncTimeMillis,
+                state.lastReportedTimeMillis);
+    }
+    ...
+}
+```
 
-不止 Android 框架面临这个问题。Chrome 团队在优化 Android 滚动流畅性时发现了类似的问题。他们发现使用 `MotionEvent.getEventTime()`（毫秒精度）做速度预测，比使用 native 层的纳秒时间戳产生了更大的误差。切换到纳秒时间源后，滚动流畅性有可感知的改善。
-
-[待验证: Chrome Android 滚动时间精度优化具体 commit]
+这说明 `AnimationUtils.currentAnimationTimeMillis()` 读到的并不是另一套独立时钟，而是跟当前 VSync 同步过的线程本地动画时钟。精度损失发生在 `frameTimeNanos / NANOS_PER_MS` 这一步。这里更准确的结论是，时间源和 VSync 同步，但只有毫秒精度。
 
 ## 帧率稳定性与步幅均匀性的关系
 
@@ -186,131 +202,69 @@ OverScroller 内部的 fling 物理模型可以简化为：`position = start + v
 
 ## 在 Perfetto 中量化步幅波动
 
-步幅波动不是 Perfetto 的标准指标，需要自定义分析。但有两条路径可以接近它。
+FrameTimeline 能回答“这一帧何时计划、何时提交、何时呈现”，但它不直接保存 `scrollY`、`translationX` 或动画值。帧时间均匀，只能说明调度节奏稳定，不能直接推出位移也均匀。
 
-### 路径一：Frame Timeline 差值分析
+### 路径一：在应用侧同步采样位移
 
-Perfetto 的 Frame Timeline 记录了 `actual_frame_timeline_slice` 和 `expected_frame_timeline_slice`。通过分析相邻帧的时间差，可以间接推导帧间位移的均匀性。
+最直接的办法是在 `FrameCallback`、动画更新回调或自定义 `RecyclerView.OnScrollListener` 中，同帧记录位移与时间。
 
-```sql
--- 计算相邻帧的 actual presentation time 差值
--- 用于检测帧节奏的均匀性
-WITH frame_times AS (
-  SELECT
-    id,
-    track_id,
-    ts,
-    LEAD(ts) OVER (PARTITION BY track_id ORDER BY ts) AS next_ts
-  FROM actual_frame_timeline_slice
-  WHERE name = 'Choreographer#doFrame'
-),
-frame_deltas AS (
-  SELECT
-    id,
-    ts,
-    next_ts,
-    (next_ts - ts) AS delta_ns
-  FROM frame_times
-  WHERE next_ts IS NOT NULL
-)
-SELECT
-  AVG(delta_ns) / 1e6 AS avg_frame_delta_ms,
-  STDEV(delta_ns) / 1e6 AS stdev_frame_delta_ms,
-  MAX(delta_ns) / 1e6 - MIN(delta_ns) / 1e6 AS range_ms,
-  -- 变异系数：标准差/均值，用于衡量步幅波动
-  CAST(STDEV(delta_ns) AS FLOAT) / AVG(delta_ns) AS cv
-FROM frame_deltas;
+```kotlin
+// [示意代码] 在同一条动画轨迹上记录 dt 和 displacement
+class StepJitterProbe(
+    private val view: View
+) : Choreographer.FrameCallback {
+    private var lastFrameNanos = 0L
+    private var lastScrollY = 0
+
+    override fun doFrame(frameTimeNanos: Long) {
+        val scrollY = view.scrollY
+        if (lastFrameNanos != 0L) {
+            val dtMs = (frameTimeNanos - lastFrameNanos) / 1_000_000.0
+            val dy = scrollY - lastScrollY
+            record(frameTimeNanos, dtMs, dy)
+        }
+        lastFrameNanos = frameTimeNanos
+        lastScrollY = scrollY
+        Choreographer.getInstance().postFrameCallback(this)
+    }
+}
 ```
 
-这个查询计算帧间时间差的变异系数（CV）。CV 越小表示帧节奏越均匀。在 120Hz 下，CV 理论值为 0，实际设备上 0.05 以下可以认为是"步幅均匀"，0.1 以上则有可感知的波动。
+目标对象可以换成 `translationX`、`RecyclerView.computeVerticalScrollOffset()`、自定义动画值或 layer bounds。真正要算的是同一段轨迹上的 `displacement variance`、`velocity variance` 和 `dt variance`。其中 `dt variance` 只是辅助指标，不能替代位移采样。
 
-[待验证: 此 SQL 在 Perfetto UI 中的实际运行效果]
+### 路径二：用 FrameTimeline 判断呈现节奏是不是根因
 
-### 路径二：Android 16 AppJankStats 与 RelativeFrameTimeHistogram
+Perfetto 的价值在于分型。Perfetto 文档对 FrameTimeline 的定义很清楚：Android 12(S)+ 才有这组数据，`Expected Timeline` 是调度器分给 app 的渲染窗口，`Actual Timeline` 是 app 实际完成并提交给 SurfaceFlinger 的时间。
 
-Android 16 引入了两个平台级 API 来量化感知流畅性：
+如果 displacement sample 明显波动，但 `Actual Timeline` 基本贴着 `Expected Timeline`，更像 App 侧的物理模型、插值或时间量化问题。如果位移采样相对平稳，`Actual Timeline` 到 SurfaceFlinger 的实际呈现时间仍有抖动，就要继续看合成、显示模式切换和 present fence。
 
-**AppJankStats** 提供系统级的 jank 统计，无需集成 Jetpack JankStats 库。核心优势是零代码侵入、系统自动收集。
+### 路径三：Android 16 的 AppJankStats 与 RelativeFrameTimeHistogram
 
-**RelativeFrameTimeHistogram** 更直接相关。它提供帧渲染时间的直方图分布，不仅标记 jank 帧，还展示所有帧的时间分布。通过观察分布的方差和偏度，可以量化感知流畅性：即使没有超过 VSync 预算的帧，如果分布很散（方差大），说明帧间时间差异大，步幅波动的可能性也大。
+Android 16 在 `android.app.jank` 包里提供了 `AppJankStats` 和 `RelativeFrameTimeHistogram`，但它们不是“系统自动收集、零代码侵入”的全局 trace API。`AppJankStats` 用来描述单个 UI widget 在某个状态下的 jank 统计，`RelativeFrameTimeHistogram` 记录这些帧相对 deadline 的分布。真正把数据交给系统的入口是 `View.reportAppJankStats(AppJankStats)`。
 
-[已验证: 官方文档, developer.android.com/develop/ui/performance/jankstats]
+这组 API 更适合 library / widget instrumentation，例如列表、播放器控件或复杂动画组件把自己的局部抖动统计上报给系统。它能补齐“哪个 widget 在什么状态下更容易抖”的视角，但不能替代 Perfetto 对整个显示栈的被动追踪。
 
-两个 API 的互补关系：AppJankStats 用于快速发现 jank 问题窗口（系统级聚合），RelativeFrameTimeHistogram 用于量化步幅波动（帧时间分布）。
+### 根因分型：不要把所有“无掉帧卡顿”都归到 OverScroller
 
-### Trace 中的典型特征
-
-在 Perfetto 中，步幅波动的 Trace 特征通常有三类：
-
-- **帧间隔的规律性跳动**：在 Main Thread track 中，doFrame slice 之间的间距不完全等距，常见表现是有规律的交替（如 8-9-8-9ms）
-- **SurfaceFlinger 合成时间的微小波动**：即使 App 端帧率稳定，如果合成时间有波动，也会导致呈现时间不均匀
-- **Expected vs Actual 的微小偏差**：FrameTimeline 中 expected 和 actual 有 0.5-1ms 的偏差，但不足以标红
-
-[图：Perfetto 中 120Hz fling 的帧间隔交替模式]
+| 现象 | 重点看哪里 | 更像哪类问题 |
+|---|---|---|
+| `scrollY` / `translationX` 采样在同一段轨迹上交替跳动，FrameTimeline 仍大体贴线 | App 主线程、动画值采样、`OverScroller` / 自定义动画时间源 | App 侧毫秒量化或插值问题 |
+| App 侧位移采样平稳，但 SurfaceFlinger 的 actual / present 时间不稳 | FrameTimeline、SurfaceFlinger tracks、display mode 切换、present fence | ARR 模式切换、buffer stuffing、present-time jitter |
+| 主要出现在触摸跟手阶段，抬手后的 fling 反而正常 | InputDispatcher / InputReader、MotionEvent resampling、velocity estimate | 输入重采样或预测偏差 |
 
 ## 优化策略
 
-### 策略一：使用纳秒级时间戳替代毫秒级
+### 策略一：App 侧动画使用同一套 VSync 时间基准
 
-最直接的修复方案是在动画回调中直接使用 `Choreographer.getFrameTimeNanos()` 提供的纳秒时间戳，而不是让 OverScroller 自己去获取毫秒时间。
+当根因落在 `OverScroller` 或自定义动画时，首要目标是让位移计算和显示调度使用同一套时间基准。对可改造的动画逻辑，优先使用 `frameTimeNanos` 或 `VsyncCallback` 提供的 `FrameData`，不要在帧回调里额外采一次毫秒时钟。只有当位移采样已经证明“FrameTimeline 绿色，但 displacement variance 高”时，这类改造才值得做。
 
-```java
-// [伪代码] 自定义纳秒精度的 fling 实现示意
-// 实际实现需处理边界条件、多指触控、嵌套滚动等场景
-Choreographer.getInstance().postFrameCallback(new Choreographer.FrameCallback() {
-    @Override
-    public void doFrame(long frameTimeNanos) {
-        // frameTimeNanos 是纳秒精度的 VSync 时间
-        // 替代 OverScroller 内部的 ms 级时间
-        long elapsedNanos = frameTimeNanos - mStartFrameTimeNanos;
-        double elapsedSeconds = elapsedNanos / 1e9;
-        // 用 elapsedSeconds 计算位移
-        double position = computePosition(elapsedSeconds);
-        scrollTo(position);
-        // 继续请求下一帧
-        Choreographer.getInstance().postFrameCallback(this);
-    }
-});
-```
+### 策略二：显示节奏不稳时，先修 SurfaceFlinger 和刷新率切换
 
-一些 OEM 厂商在系统级别的滚动优化中采用了类似方案，直接使用纳秒时间戳计算位移，绕过 OverScroller 的毫秒精度限制。
+如果 Trace 显示 `Actual Timeline`、display mode 或 present fence 在抖，继续打磨 `OverScroller` 没什么用。这里更有效的是固定刷新率范围、减少 ARR 来回切换、检查 buffer stuffing 恢复，以及确认 SurfaceFlinger 合成负载是否在波动。判断依据是，App 侧位移采样相对平稳，但最终呈现时间不稳。
 
-[待验证: 厂商级纳秒时间戳优化的具体实现]
+### 策略三：跟手动画要同时看输入采样和位移采样
 
-### 策略二：平滑时间步长
-
-另一个思路是在动画引擎层面做时间步长的平滑处理。不直接使用原始的帧间时间差，而是使用指数移动平均（EMA）来平滑：
-
-```
-smoothed_dt = alpha * raw_dt + (1 - alpha) * prev_smoothed_dt
-```
-
-其中 alpha 通常取 0.3-0.5。这样可以过滤掉 ±1ms 的取整噪声，使位移计算更稳定。
-
-但这种方法有副作用：它会引入延迟，使动画响应变慢。对于需要精确跟随手指的触摸滚动场景不太适用，更适合惯性滚动（fling）这种不需要即时响应的场景。
-
-### 策略三：基于位移的动画而非基于时间的动画
-
-与其用"时间到位移"的映射（会受时间精度影响），不如在某些场景下直接用"速度到位移"的映射。例如在 RecyclerView 的 fling 中：
-
-1. 记录手指离开屏幕时的初始速度
-2. 每帧根据当前速度和摩擦系数计算位移
-3. 更新速度：`velocity *= friction_factor`
-4. 累加位移
-
-这种方式不依赖绝对时间戳，只依赖上一帧的速度，因此不受 ms 取整的影响。它把"时间驱动"改成了"速度衰减驱动"，时间步长的波动被封装在每帧的速度更新中，不会直接反映到位移量上。
-
-[自动发现] 这是 Android RecyclerView 内部 `LinearSmoothScroller` 的部分实现思路，但标准 `OverScroller` 仍然是基于时间的。实际使用时需要注意：速度衰减因子（friction_factor）的选择直接影响减速曲线的形状，过大会导致"急停"、过小会导致"滑太远"。
-
-### 策略四：动画插值器的选择
-
-对于自定义动画，选择插值器时要注意加速度曲线的平滑性。`AccelerateDecelerateInterpolator` 的加速度变化是连续的（正弦曲线），不会产生突变。而 `LinearInterpolator` 配合不均匀的时间步长，反而可能比非线性插值器更容易暴露步幅波动，因为它没有任何"平滑"效果来掩盖时间精度的抖动。
-
-选择建议：
-
-- 短距离动画（< 300ms）：使用 `FastOutSlowInInterpolator`，动画末期速度已经很慢，步幅波动不明显
-- 长距离 fling（> 300ms）：使用纳秒时间源 + 自定义物理模型
-- 循环/无限动画：避免使用有加速度变化的插值器，纯线性 + 匀速更稳定
+触摸跟手场景里，平滑 `dt` 只是兜底手段。更常见的做法是先对比输入事件时间戳、resampling 后的位置和屏幕上的实际位移。如果问题集中在手指刚按下、即将抬起或快速变向，优先检查 velocity estimate 与 prediction，而不是直接给动画再包一层 EMA。EMA 会减小抖动，也会带来额外跟手延迟。
 
 ## 与其他章节的关联
 
@@ -324,13 +278,11 @@ smoothed_dt = alpha * raw_dt + (1 - alpha) * prev_smoothed_dt
 
 ## 版本演进
 
-| Android 版本 | 变化 | 对感知流畅性的影响 |
-|-------------|------|-----------------|
-| Android 10 (API 29) | 引入 FrameTimeline API | 首次可量化帧呈现时间偏差 |
-| Android 12 (API 31) | Choreographer API 改进，VsyncCallback | 提供更精确的 VSync 时间 |
-| Android 15 (API 35) | 进一步优化 Choreographer 时间精度 | [待验证: 具体优化内容] |
-| Android 16 (API 36) | AppJankStats + RelativeFrameTimeHistogram | 首次提供帧时间分布直方图，可直接量化步幅波动 |
-| Android 17 (API 37) | [待验证: 是否改进了 OverScroller 的时间精度] | — |
+| Android 版本 | 变化 | 对本章分析的意义 |
+|-------------|------|------------------|
+| Android 12 (API 31) | Perfetto FrameTimeline / SurfaceFlinger FrameTimeline data source | 第一次能把 `Expected Timeline` 与 `Actual Timeline` 放到同一套 trace 里看 |
+| Android 13 (API 33) | `Choreographer.postVsyncCallback(VsyncCallback)` 与 `FrameData` 成为公开 API | App 侧可以拿到多条 frame timeline、deadline 和 expected presentation time |
+| Android 16 (API 36) | `View.reportAppJankStats(AppJankStats)`、`AppJankStats`、`RelativeFrameTimeHistogram` | 这是主动上报接口和数据容器，适合 library/widget 合并局部 jank 统计，不等于被动 trace |
 
 ## 常见问题与误区
 
@@ -349,13 +301,15 @@ FrameTimeline 只检测帧是否在 VSync 预算内完成。步幅波动不会�
 ## 参考资料
 
 - AOSP 源码路径：
-  - `frameworks/base/core/java/android/widget/OverScroller.java`（fling 物理模型与时间处理）
-  - `frameworks/base/core/java/android/view/Choreographer.java`（VSync 时间回调）
-  - `frameworks/base/core/java/android/view/animation/AnimationUtils.java`（currentAnimationTimeMillis 实现）
-  - `frameworks/base/core/java/android/widget/Scroller.java`（基础 Scroller 实现）
+  - `frameworks/base/core/java/android/widget/OverScroller.java`（`computeScrollOffset()`、`SplineOverScroller.update()`）
+  - `frameworks/base/core/java/android/view/Choreographer.java`（`doFrame()`、`postVsyncCallback()`）
+  - `frameworks/base/core/java/android/view/animation/AnimationUtils.java`（`lockAnimationClock()`、`currentAnimationTimeMillis()`）
 - 官方文档：
-  - JankStats: https://developer.android.com/develop/ui/performance/jankstats
-  - Frame Timeline: https://developer.android.com/reference/android/view/FrameTimeline
+  - Choreographer VsyncCallback: https://developer.android.com/reference/android/view/Choreographer#postVsyncCallback(android.view.Choreographer.VsyncCallback)
+  - View.reportAppJankStats: https://developer.android.com/reference/android/view/View#reportAppJankStats(android.app.jank.AppJankStats)
+  - AppJankStats: https://developer.android.com/reference/android/app/jank/AppJankStats
+  - RelativeFrameTimeHistogram: https://developer.android.com/reference/android/app/jank/RelativeFrameTimeHistogram
+  - Perfetto FrameTimeline: https://perfetto.dev/docs/data-sources/frametimeline
 - 研究素材：
   - `intake/research-feeds/2026-04-07-16-perfetto-frame-timeline-perceived-smoothness-analysis.md`
   - `intake/research-feeds/2026-04-07-16-android16-appjankstats-relative-frame-time-histogram.md`
