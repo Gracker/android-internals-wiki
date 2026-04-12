@@ -4970,5 +4970,79 @@
     "added_at": "2026-04-12T10:13:00+08:00",
     "status": "pending",
     "original_review_log": "logs/review/2026-04-12-1013-review.md"
+  },
+  {
+    "section": "5.9",
+    "section_title": "ADPF 自适应性能框架",
+    "priority": 95,
+    "reason": "[Deep Tech Review] 5.9 ADPF 章节存在多处 API/类名错误：HintSession 示例代码无法编译，Thermal API 错把 PowerManager 写成 ThermalManager，GameStateManager/GameState.create 不存在，Headroom 轮询策略也与官方约束冲突。",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "行 61-75 HintSession 示例代码",
+        "detail": "AOSP android-16.0.0_r1 中 `PerformanceHintManager#createHintSession()` 签名是 `(int[] tids, long)`，返回类型是 `PerformanceHintManager.Session`。正文示例却写成 `HintSession` + `Collections.singletonList(mainThreadId)`，代码无法编译；`updateTargetWorkDuration(16_666_000L)` 的注释也把 60 fps / 120 fps 写反了。",
+        "suggestion": "改为 `int[] tids = {mainThreadId}; PerformanceHintManager.Session session = phm.createHintSession(tids, 8_333_333L);`，并把 `16_666_000L` 注释改成 60 fps，或改值为 8_333_333L 表示 120 fps。"
+      },
+      {
+        "type": "源码错误",
+        "location": "行 88-94 系统侧服务命名",
+        "detail": "android-16.0.0_r1 中并不存在 `services/core/java/com/android/server/power/hint/PerformanceHintService.java`。system_server 里的实际实现是 `HintManagerService`。",
+        "suggestion": "把服务名与源码路径改成 `com.android.server.power.hint.HintManagerService`，再说明它通过 IHintManager / HAL 与厂商电源管理实现交互。"
+      },
+      {
+        "type": "源码错误",
+        "location": "行 106-112 Android 16 Headroom API",
+        "detail": "`SystemHealthManager` 不是 Android 16 新引入的类，Android 16 新增的是 `getCpuHeadroom()` / `getGpuHeadroom()` 等 headroom API。正文把类引入时间和 API 引入时间混成了一件事。",
+        "suggestion": "改成“Android 16 在既有 `SystemHealthManager` 上新增 CPU/GPU headroom API”，并把“降频前还有多少性能空间”改成“available CPU/GPU capacity headroom”一类表述。"
+      },
+      {
+        "type": "源码错误",
+        "location": "行 112-162 Thermal API / Thermal Headroom",
+        "detail": "正文和 sources 都把热状态与 headroom API 归到 `android.os.ThermalManager`，但公开 SDK 中对应 API 在 `PowerManager`：`getCurrentThermalStatus()`、`addThermalStatusListener()`、`getThermalHeadroom()`；`android/os/ThermalManager.java` 在 AOSP android-16.0.0_r1 中也不存在。",
+        "suggestion": "整段改为 `PowerManager` 视角，frontmatter source 也替换为 `developer.android.com/reference/android/os/PowerManager`。"
+      },
+      {
+        "type": "源码错误",
+        "location": "行 142-159 Thermal Headroom 示例",
+        "detail": "`PowerManager#getThermalHeadroom()` 官方文档写明返回值 >= 0，1.0 代表 severe throttling 阈值，值可以大于 1.0；同时不应显著快于约 1 Hz 调用，否则可能返回 NaN。正文把范围写成 0.0-1.0，并建议“每帧查询”。",
+        "suggestion": "把示例改成低频采样或监听器配合阈值判断，并明确 >1.0 与 NaN / forecast 的约束。"
+      },
+      {
+        "type": "源码错误",
+        "location": "行 206-221 Game State API",
+        "detail": "android-16.0.0_r1 中没有 `GameStateManager` 类，也没有 `GameState.create()` 和 `isPerformanceCritical` 这一套公开 API。公开接口是 `GameManager#setGameState(GameState)`，`GameState` 通过构造函数传入 `isLoading` 和 `mode`。",
+        "suggestion": "改成 `GameManager gameManager = getSystemService(GameManager.class); gameManager.setGameState(new GameState(false, GameState.MODE_GAMEPLAY_UNINTERRUPTIBLE));`，再按真实 API 解释 `mode / isLoading / label / quality`。"
+      },
+      {
+        "type": "版本差异",
+        "location": "行 263-269 版本演进表",
+        "detail": "Android 13 行把 `GameStateManager` 写成新类，同时把 `AThermalManager` 标成 API 31。前者类名错误，后者 NDK thermal manager 实际自 API 30 就可用，当前版本表把 Android 12 / 13 / 16 的边界写乱了。",
+        "suggestion": "重做版本表：Android 12 引入 Performance Hint / Game Mode；Android 13 使用 `GameManager#setGameState(GameState)`；API 30 引入 `PowerManager#getThermalHeadroom` 与 NDK thermal manager；Android 16 新增 CPU/GPU headroom API 与 thermal headroom listener。"
+      },
+      {
+        "type": "原理断裂",
+        "location": "行 86-90 / 164-168 系统响应与热管理",
+        "detail": "正文从“App 上报”直接跳到“系统提频/热管理兜底”，缺少 `PerformanceHintManager.Session -> HintManagerService -> vendor power hint HAL/AIDL`，以及 `PowerManager -> IThermalService -> Thermal HAL` 这两段关键控制面。读者看不见中间层，就无法定位问题是在 App、system_server 还是 OEM 实现。",
+        "suggestion": "补一段控制面时序，把 App API、system_server 服务、HAL / 厂商实现三层写清楚。"
+      },
+      {
+        "type": "原理断裂",
+        "location": "行 108-110 / 140-149 Headroom 使用方式",
+        "detail": "`SystemHealthManager` source 明确说明 `getCpuHeadroom()` / `getGpuHeadroom()` 每次调用至少一次同步 Binder，可能超过 1 ms，不建议放在 critical thread；正文却建议“每帧开始时查询 Headroom”，会把自适应策略本身变成渲染干扰项。",
+        "suggestion": "改成后台工作线程或较低频采样，并说明它与 frame loop 解耦。"
+      },
+      {
+        "type": "知识盲区",
+        "location": "行 236-259 Perfetto 观测",
+        "detail": "Perfetto 段落直接给出 `power.hint_session` / `power.thermal` track 名称，但没有 trace config、数据源、截图或官方文档锚点。当前证据链不足以证明这些就是标准可见 track，读者也难以复现。",
+        "suggestion": "补真实 trace、采集配置、可见 track / counter 名称；补不齐时把表述降级为 `[待验证]`，只保留可确认的 CPU freq / frame timeline / thermal status 观察点。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-12T11:20:00+08:00",
+    "status": "pending"
   }
 ]
