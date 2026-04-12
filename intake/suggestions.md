@@ -1582,3 +1582,23 @@
 - **问题**：高通 PerfLock、联发科 Perfservice、Tensor 定制策略这些判断没有给出公开资料或 AOSP 锚点，当前更像经验判断。
 - **建议**：补厂商公开文档 / 会议资料 / 可验证源码入口；补不齐时改成 `[待验证]`，避免把厂商实现细节写成确定事实。
 
+
+
+## [Task6 Review] 5.7 CPU 相关的版本演进 — 2026-04-12
+- **类型**：需补充素材
+- **位置**：`在 Perfetto 中的观察`
+- **问题**：这一节目前只有泛化读法，没有真实 Trace 截图、具体 track / slice 样例或查询结果，读者很难把版本演进里的判断映射到实际证据。
+- **建议**：补 1-2 组真实 Perfetto 片段，至少覆盖 Doze 空闲期、JobScheduler 调度间隔变化或 EAS 任务迁移中的一个具体案例。
+- **review 日志**：logs/review/2026-04-12-12-review.md
+
+- **类型**：需确认
+- **位置**：`Android 15：后台网络访问受限`
+- **问题**：`UnknownHostException` 和“后台网络操作必须通过 WorkManager 或前台服务”这组结论写得偏满，当前章节内没有给出足够清楚的版本边界和一手来源。
+- **建议**：由 Task 9 核对 Android 15 官方行为变更与适用条件，再决定保留硬结论还是改成更保守的描述。
+- **review 日志**：logs/review/2026-04-12-12-review.md
+
+- **类型**：需确认
+- **位置**：`GKI 对内核调度模块定制化的影响`
+- **问题**：Android 12 强制、Google 签名 boot image、Android 15 与 16KB page size / Play 要求被写在同一段里，GKI、page size 和发布政策的边界不够清楚。
+- **建议**：拆开核对 GKI 版本要求、16KB page size 与 Play 兼容政策的适用范围，再由 Task 2B 收窄表述。
+- **review 日志**：logs/review/2026-04-12-12-review.md

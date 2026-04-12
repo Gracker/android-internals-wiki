@@ -5044,5 +5044,38 @@
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-12T11:20:00+08:00",
     "status": "pending"
+  },
+  {
+    "section": "5.7",
+    "section_title": "CPU 相关的版本演进",
+    "priority": 90,
+    "reason": "[review回炉] Perfetto 证据偏弱，Android 15 后台网络与 GKI/16KB 版本断言需复核",
+    "material_paths": [
+      "intake/suggestions.md（含 review 意见）"
+    ],
+    "review_issues": [
+      {
+        "type": "需补充素材",
+        "location": "在 Perfetto 中的观察",
+        "detail": "当前只有泛化读法，没有真实 Trace 截图、具体 track / slice 样例或查询结果，实战落点还不够硬。",
+        "suggestion": "补 1-2 组真实 Perfetto 片段，至少覆盖 Doze 空闲期、JobScheduler 调度间隔变化或 EAS 任务迁移中的一个具体案例。"
+      },
+      {
+        "type": "需确认",
+        "location": "Android 15：后台网络访问受限",
+        "detail": "`UnknownHostException` 和“后台网络操作必须通过 WorkManager 或前台服务”这组结论写得偏满，缺少当前章节内可追溯的一手来源与行为边界。",
+        "suggestion": "由 Task 9 核对 Android 15 官方行为变更与适用条件，再决定保留硬结论还是改成更保守的描述。"
+      },
+      {
+        "type": "需确认",
+        "location": "GKI 对内核调度模块定制化的影响",
+        "detail": "Android 12 强制、Google 签名 boot image、Android 15 与 16KB page size / Play 要求被写在同一段里，GKI、page size 和发布政策的边界不够清楚。",
+        "suggestion": "拆开核对 GKI 版本要求、16KB page size 与 Play 兼容政策的适用范围，再由 Task 2B 收窄表述。"
+      }
+    ],
+    "added_by": "task6-review",
+    "added_at": "2026-04-12T12:15:00+08:00",
+    "status": "pending",
+    "original_review_log": "logs/review/2026-04-12-12-review.md"
   }
 ]
