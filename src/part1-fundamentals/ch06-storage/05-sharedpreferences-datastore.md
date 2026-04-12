@@ -7,6 +7,9 @@ drafted_by: "openclaw-task2a"
 applicable_versions: "Android 1.0 (API 1) - Android 17 (API 37)"
 last_verified: "2026-04-08"
 last_verified_against: "AOSP android-16.0.0_r1"
+reviewed_date: "2026-04-12"
+reviewed_by: "openclaw-task6"
+task6_result: pass-light-edit
 confidence: medium
 sources:
   - type: blog
@@ -20,29 +23,52 @@ sources:
 tags: [sharedpreferences, datastore, anr, io, storage, performance, queuedwork]
 related_chapters: ["6.1", "6.3", "9.1", "9.2", "8.2", "4.5"]
 section: "6.5"
-pipeline_stage: task6_pending
-task6_state: pending
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task2b_state: idle
 ---
 
 # 6.5 SharedPreferences/DataStore 性能与 ANR 优化
 
+<!-- outline-start -->
+## 本节要点大纲
+
+### 锚点（必须覆盖）
+
+- 🔹 SharedPreferences 首次加载阻塞与 `awaitLoadedLocked()` 的等待点
+- 🔹 `apply()`、`QueuedWork.waitToFinish()` 与生命周期切换中的 ANR 关系
+- 🔹 SP 写入的完整过程：内存更新、后台落盘、主线程等待
+- 🔹 DataStore 的异步模型，以及它和 SP 的关键差异
+- 🔹 在 Perfetto / traces.txt 中定位 SP 相关 ANR 的方法
+- 🔹 从 SP 迁移到 DataStore 的实战策略与注意事项
+
+### 扩展（可选深入）
+
+- 🔸 MMKV 与 DataStore 的选型边界
+- 🔸 多进程 KV 存储的替代方案
+
+### OpenClaw 加工指引
+
+> 锚点是最低覆盖要求，加工时必须逐条落实并标注验证状态。
+> 扩展内容视素材完整度决定是否展开，无法确认的技术细节保留 `[待验证]`，不要硬写结论。
+<!-- outline-end -->
+
 ## 为什么要了解 SharedPreferences 的性能问题
 
-SharedPreferences（以下简称 SP）是 Android 最古老的数据持久化方案之一。它的 API 简洁到令人上瘾——`putString()`、`apply()`，两行代码就能把数据写到磁盘。也正因为这种便捷，SP 成了 Android 应用中使用频率最高的存储方式之一。
+SharedPreferences（以下简称 SP）是 Android 最古老的数据持久化方案之一。它的 API 很简洁，`putString()`、`apply()` 两行代码就能把数据写到磁盘。也正因为这种便捷，SP 成了 Android 应用中使用频率最高的存储方式之一。
 
 但 SP 的设计有一个根本性的矛盾：它声称自己是"轻量级"的键值存储，却在实际使用中被当作通用数据仓库来用。开发者往里面塞越来越多的数据，调用越来越频繁的 `apply()`，直到有一天 ANR 爆发，traces.txt 里的主线程堆栈赫然指向 `QueuedWork.waitToFinish()`。
 
-这个问题不是偶发的。在字节跳动（今日头条）的 ANR 优化实践中，SP 相关的 ANR 是最顽固的一类——即使常规的 ANR 治理已经生效，SP 导致的 ANR 仍然持续出现，因为它的触发机制不是应用代码本身的问题，而是系统框架在组件生命周期切换时的强制等待行为。
+这个问题并不偶发。在字节跳动（今日头条）的 ANR 优化实践中，SP 相关 ANR 一直很顽固。即使常规的 ANR 治理已经生效，这类问题仍然持续出现，因为触发点不在应用业务代码本身，而在系统框架会在组件生命周期切换时强制等待。
 
 了解 SP 的性能陷阱和 DataStore 的替代方案，对于任何一个需要做 ANR 治理或存储优化的 Android 工程师来说都是必要的。
 
-## SP 导致 ANR 的两条链路
+## SP 导致 ANR 的两类路径
 
-SP 导致 ANR 主要有两条独立的链路，它们分别发生在读取和写入阶段。
+SP 导致 ANR 主要有两类路径，分别发生在读取和写入阶段。
 
-### 链路一：首次加载阻塞
+### 路径一：首次加载阻塞
 
 SP 文件创建后，系统会启动一个后台线程加载并解析对应的 XML 文件。这个加载过程调用 `SharedPreferencesImpl.startLoadFromDisk()`，在加载完成前会将 `mLoaded` 标记为 `false`。
 
@@ -77,11 +103,11 @@ private void awaitLoadedLocked() {
 
 这个问题的触发条件和设备性能强相关。在高端设备上，即使 XML 文件有几十 KB，加载也可能在毫秒级完成，不会触发 ANR。但在低端设备或高 I/O 负载时，加载时间可能超过 5 秒的 ANR 阈值。
 
-### 链路二：`apply()` 的异步假象
+### 路径二：`apply()` 的异步假象
 
 `apply()` 是 API 9 引入的异步写入方法。它先更新内存中的缓存，然后把磁盘写入操作提交到一个后台队列。从调用者的角度看，`apply()` 立即返回，不阻塞调用线程。
 
-这正是危险的来源——开发者以为 `apply()` 是"安全的异步操作"，放心地在各种地方频繁调用。但他们不知道，系统框架在 Activity/Service 的生命周期切换点会强制等待所有未完成的 SP 写入。
+危险就在这里。开发者往往把 `apply()` 当成安全的异步操作，于是在各种场景里频繁调用。但系统框架在 Activity / Service 的生命周期切换点，会强制等待所有尚未完成的 SP 写入。
 
 具体来说，当 `Activity.onPause()`、`Activity.onStop()`、`Service.onDestroy()` 等生命周期回调触发时，`ActivityThread` 中的 `H` handler 会处理对应的消息（`PAUSE_ACTIVITY`、`STOP_ACTIVITY_SHOW`、`STOP_SERVICE` 等），在这些消息的处理过程中，系统会调用 `QueuedWork.waitToFinish()`：
 
@@ -95,7 +121,7 @@ public static void waitToFinish() {
 }
 ```
 
-这里的 `toFinish.run()` 实际上在等待什么？我们来看 `apply()` 提交的 `Runnable`：
+这里的 `toFinish.run()` 等的是什么？我们来看 `apply()` 提交的 `Runnable`：
 
 ```java
 // SharedPreferencesImpl.enqueueDiskWrite() 中
@@ -103,13 +129,13 @@ QueuedWork.queue(writeToDiskRunnable, !isFromSyncCommit);
 // 同时向 sPendingWorkFinishers 中添加一个 await 封装
 ```
 
-每个 `apply()` 调用都会在 `sPendingWorkFinishers` 队列中添加一个 `CountDownLatch.await()` 封装。当 `waitToFinish()` 被调用时，主线程逐一执行这些 `Runnable`，而每个 `Runnable` 内部实际是在 `writtenToDiskLatch.await()` 上等待——直到后台线程完成对应的磁盘写入。
+每个 `apply()` 调用都会在 `sPendingWorkFinishers` 队列中添加一个 `CountDownLatch.await()` 封装。当 `waitToFinish()` 被调用时，主线程会逐一执行这些 `Runnable`。每个 `Runnable` 内部都在 `writtenToDiskLatch.await()` 上等待，直到后台线程完成对应的磁盘写入。
 
 [已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/app/QueuedWork.java]
 
-这意味着：如果在 `onPause()` 之前积累了大量未完成的 `apply()` 调用（比如一次性修改了 20 个 key，每次修改都调用 `apply()`），主线程在处理 `PAUSE_ACTIVITY` 消息时就需要等待所有这些写入完成。如果设备 I/O 繁忙，每个 `fsync()` 可能需要数十毫秒，20 个写入累积起来就是数百毫秒甚至数秒的阻塞。
+如果在 `onPause()` 之前积累了大量未完成的 `apply()` 调用（比如一次性修改了 20 个 key，每次修改都调用 `apply()`），主线程在处理 `PAUSE_ACTIVITY` 消息时就需要等待这些写入全部完成。如果设备 I/O 繁忙，每个 `fsync()` 可能需要数十毫秒，20 个写入累积起来就是数百毫秒甚至数秒的阻塞。
 
-## SP 写入的完整源码链路
+## SP 写入的完整过程
 
 我们沿着 `apply()` 的调用链走一遍，看看到底发生了什么。
 
@@ -163,7 +189,7 @@ private void enqueueDiskWrite(final MemoryCommitResult mcr, final Runnable postW
 
 **第三步：实际写入磁盘**
 
-`writeToFile()` 的核心逻辑是将整个内存中的键值对重新序列化为 XML 并全量写入文件。注意这里没有增量更新——即使只改了一个 key，也要把整个文件重写一遍：
+`writeToFile()` 的核心逻辑是将整个内存中的键值对重新序列化为 XML 并全量写入文件。这里没有增量更新。即使只改了一个 key，也要把整个文件重写一遍：
 
 ```java
 private void writeToFile(MemoryCommitResult mcr, boolean isFromSyncCommit) {
@@ -180,7 +206,7 @@ private void writeToFile(MemoryCommitResult mcr, boolean isFromSyncCommit) {
 
 **Android 8.0+ 的优化**
 
-从 Android 8.0 开始，Google 对 `waitToFinish()` 做了优化：主线程不再傻等，而是会"帮忙"执行待写入的任务（`processPendingWork()`），利用主线程的优先级来加速磁盘写入。但这个优化是保守的——如果待写入的任务特别多，或者磁盘 I/O 本身就很慢，主线程仍然会被长时间阻塞。
+从 Android 8.0 开始，Google 对 `waitToFinish()` 做了优化。主线程不再只是等待，也会“帮忙”执行待写入的任务（`processPendingWork()`），利用自己的优先级加速磁盘写入。但这个优化很保守，如果待写入任务特别多，或者磁盘 I/O 本身就很慢，主线程仍然可能被长时间阻塞。
 
 ## Jetpack DataStore：为什么它是更好的替代方案
 
@@ -253,9 +279,9 @@ val Context.dataStore: DataStore<Preferences> by preferencesDataStore(
 1. 找到主线程 track，搜索 `PAUSE_ACTIVITY` 对应的 slice
 2. 观察 `QueuedWork.waitToFinish` 的持续时间
 3. 如果超过 500ms，基本可以确认是 SP 写入堆积导致的
-4. 在 `queued-work-looper` 线程中可以看到对应的 `writeToFile` 操作
+4. 在 `queued-work-looper` 线程中观察对应的 `writeToFile` 操作
 
-[待补充：Perfetto 截图展示主线程等待与 SP 写入线程的时序关系]
+[图：主线程在 `PAUSE_ACTIVITY` 中等待 `QueuedWork.waitToFinish()`，`queued-work-looper` 线程同时执行 `writeToFile`，标出两者的时间重叠和等待结束点]
 
 ### 案例 2：首次加载大 XML 文件阻塞
 
@@ -267,8 +293,8 @@ val Context.dataStore: DataStore<Preferences> by preferencesDataStore(
 - 后台 `SharedPreferencesImpl-load` 线程正在执行 `XmlUtils.readMapXml()`
 
 **分析思路**：
-1. 检查 SP 文件大小——如果超过几十 KB，加载时间会明显增加
-2. 检查加载时机——`getSharedPreferences()` 是否在主线程调用
+1. 检查 SP 文件大小：如果超过几十 KB，加载时间会明显增加
+2. 检查加载时机：`getSharedPreferences()` 是否在主线程调用
 3. 检查是否有预加载策略
 
 ### 在 traces.txt 中的特征堆栈
@@ -303,11 +329,11 @@ at android.app.SharedPreferencesImpl.getString(SharedPreferencesImpl.java:XXX)
 
 如果短期内无法完全迁移到 DataStore，至少遵循以下规则来降低 ANR 风险：
 
-1. **永远不要在主线程调用 `commit()`**——它是同步的，直接阻塞调用线程直到 `fsync()` 完成。如果必须在后台使用 `commit()`，确保在后台线程调用。
-2. **避免在 `onPause()` 之前批量 `apply()`**——`onPause()` 触发时系统会强制等待所有 pending 的写入。如果需要批量写入，合并成一次 `apply()` 调用。
-3. **控制 SP 文件大小**——SP 是"轻量级"的，不要往里面塞大对象。单个 SP 文件建议控制在几十 KB 以内。
-4. **预加载策略**——在 `Application.onCreate()` 中提前调用 `getSharedPreferences()` 触发后台加载，避免在 UI 操作时阻塞。
-5. **不要使用 SP 做跨进程通信**——SP 不支持多进程安全，`MODE_MULTI_PROCESS` 已在 API 23 中废弃。需要跨进程共享数据时使用 ContentProvider + Room。
+1. **永远不要在主线程调用 `commit()`**：它是同步的，会直接阻塞调用线程直到 `fsync()` 完成。如果必须使用 `commit()`，确保它运行在后台线程。
+2. **避免在 `onPause()` 之前批量 `apply()`**：`onPause()` 触发时系统会强制等待所有 pending 写入。如果需要批量写入，尽量合并成一次 `apply()`。
+3. **控制 SP 文件大小**：SP 适合轻量键值数据，不要往里面塞大对象。单个 SP 文件建议控制在几十 KB 以内。
+4. **预加载策略**：可以在 `Application.onCreate()` 中提前调用 `getSharedPreferences()`，先把后台加载触发起来，减少后续 UI 阶段阻塞的概率。
+5. **不要使用 SP 做跨进程通信**：SP 不支持多进程安全，`MODE_MULTI_PROCESS` 已在 API 23 中废弃。需要跨进程共享数据时，使用 ContentProvider + Room。
 
 ### DataStore 使用注意事项
 
@@ -326,7 +352,7 @@ val preferencesFlow: Flow<Preferences> = context.dataStore.data
     }
 ```
 
-## 在 Perfetto/工具中的表现
+## 在 Perfetto 和其他工具中的表现
 
 ### SP ANR 在 Perfetto 中的定位方法
 
@@ -353,13 +379,13 @@ suspend fun updateSettings(key: Preferences.Key<Boolean>, value: Boolean) {
 
 ### Android Studio Profiler 中的可见性
 
-Android Studio 的 CPU Profiler 可以捕获 SP 相关的磁盘 I/O 操作。在 Call Chart 中搜索 `writeToFile` 或 `QueuedWork`，可以看到主线程在这些操作上的等待时间。但 Profiler 本身有性能开销，建议在开发阶段使用，不要用于生产环境监控。
+Android Studio 的 CPU Profiler 可以捕获 SP 相关的磁盘 I/O 操作。在 Call Chart 中搜索 `writeToFile` 或 `QueuedWork`，就能看到主线程在这些操作上的等待时间。但 Profiler 本身有性能开销，建议在开发阶段使用，不要用于生产环境监控。
 
 ## MMKV 与其他高性能 KV 存储方案
 
-[待补充：腾讯 MMKV 的 mmap 机制与性能对比数据]
+[待补充素材：MMKV 的 mmap 机制与性能对比数据]
 
-腾讯 MMKV 是另一个常见的 SP 替代方案。它使用 `mmap`（内存映射文件）来避免传统的文件 I/O 开销——写入操作直接修改内存映射区域，由操作系统负责将脏页回写到磁盘，应用层不需要显式调用 `fsync()`。这使得 MMKV 的写入速度比 SP 快一个数量级。
+腾讯 MMKV 是另一个常见的 SP 替代方案。它使用 `mmap`（内存映射文件）来避免传统文件 I/O 的一部分开销。写入操作会直接修改内存映射区域，由操作系统负责把脏页回写到磁盘，应用层不需要显式调用 `fsync()`。在高频写入场景里，它通常比 SP 更轻。
 
 选择策略：
 - **新项目，代码全是 Kotlin**：优先 DataStore，与协程生态天然集成。
