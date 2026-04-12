@@ -5398,5 +5398,50 @@
     "added_at": "2026-04-12T16:22:35+08:00",
     "status": "pending",
     "original_review_log": "logs/review/2026-04-12-16-review.md"
+  },
+  {
+    "section": "5.11",
+    "section_title": "端侧 AI 推理性能：NPU/GPU 加速与 TFLite 管线",
+    "priority": 95,
+    "reason": "[Deep Tech Review] NNAPI 版本号、GPU Delegate 后端与 AICore/Gemini Nano 版本边界存在事实错误，Perfetto 可观测性链条未闭合",
+    "material_paths": [
+      "intake/suggestions.md",
+      "intake/research-gaps.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "行 71-73 GPU Delegate 后端",
+        "detail": "正文将 Android GPU 推理主路径写成“Vulkan Compute 或 OpenCL”，并称 TFLite GPU Delegate 使用 OpenGL ES 或 Vulkan Compute。LiteRT/TFLite 公开 Android GPU Delegate 文档以 OpenCL/OpenGL ES 为主，Vulkan 不能直接当作通用公开后端描述。",
+        "suggestion": "改成“公开 GPU Delegate 以 OpenCL/OpenGL ES 为主，具体后端取决于设备与运行时；若要讲 Vulkan，需要单独说明它不是当前 LiteRT Android 的默认公开 delegate 路径，并给出官方来源”。"
+      },
+      {
+        "type": "源码错误",
+        "location": "行 81 NNAPI 引入版本",
+        "detail": "正文写“Android 8.0 (API 27) 引入 NNAPI”，Android 8.0 实际是 API 26，API 27 对应 Android 8.1。官方 NNAPI 文档写明 API is available on Android 8.1 (API level 27) or higher。",
+        "suggestion": "修正为“Android 8.1 (API 27) 引入 NNAPI”，并在版本演进里区分 API 27 引入与 Android 15 废弃。"
+      },
+      {
+        "type": "版本差异",
+        "location": "行 135-155 AICore / Gemini Nano 段落",
+        "detail": "AICore 段把平台能力、设备支持和第三方 benchmark 混在一起：正文按“Android 14 系统服务”叙述，同时直接给出 Nano v1-v4、Pixel 10+、93 tokens/s、1.2 GB 等具体时间线和数字，但这些信息没有体现在 sources 中，也超出了 current verified boundary。",
+        "suggestion": "拆成两层：一层写平台侧 AICore/Gemini Nano API 与系统角色，另一层单列“设备支持与 benchmark（需官方来源或明确 [待验证]）”；没有一手来源的 Nano v3/v4 / Pixel 10+ / tokens/s 数字先降级或删除。"
+      },
+      {
+        "type": "原理断裂",
+        "location": "行 67、177-185 Perfetto 分析路径",
+        "detail": "章节告诉读者“CPU/GPU/NPU 推理在 Perfetto 中会看到什么”，但没有交代默认 Perfetto、app Trace instrumentation、vendor atrace、NNAPI/LiteRT logging 各自能看到什么。`TfLiteInterpreter::run` 这类 slice 名称也不是默认一定可见。",
+        "suggestion": "补一个观测矩阵：默认 Perfetto 能看 CPU 调度 / freq / memory；需要 app `Trace.beginSection()` 或 native atrace 才能看到模型阶段切片；NPU 依赖厂商 tracepoint 或 delegate 日志；无法观测时如何用 CPU/GPU freq、thermal、memory 与 logcat 交叉定位。"
+      },
+      {
+        "type": "版本差异",
+        "location": "frontmatter applicable_versions（行 5）+ 行 77-81",
+        "detail": "frontmatter 标注适用版本为 Android 11-17，但正文明确覆盖 Android 8.1 起的 NNAPI 和 Android 8-10 的 Hexagon DSP 路径，章节边界与正文不一致。",
+        "suggestion": "要么把 applicable_versions 调整为 Android 8.1+，要么明确“正文仅把 8.1-10 作为历史背景，实战建议范围是 11+”。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-12T16:55:44+08:00",
+    "status": "pending"
   }
 ]
