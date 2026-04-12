@@ -24,10 +24,13 @@ sources:
     path: "intake/research-feeds/2026-04-03-11-android16-live-updates-progressstyle.md"
 tags: [notification, anr, notificationmanagerservice, remoteviews, performance, notificationlistenerservice, foreground-service]
 related_chapters: ["9.2", "9.3", "9.4", "1.4", "9.5"]
-pipeline_stage: task6_pending
-task6_state: pending
+pipeline_stage: task2b_pending
+task6_state: reviewed
+reviewed_by: openclaw-task6
+reviewed_date: "2026-04-13"
+task6_result: needs-rework
 task9_state: pending
-task2b_state: idle
+task2b_state: pending
 ---
 
 # 9.6 Notification 性能与 ANR
@@ -52,11 +55,11 @@ task2b_state: idle
 
 ## 为什么要了解 Notification 与性能
 
-如果你做过 Android 稳定性优化，很可能见过这样的 ANR 日志：主线程的 stack trace 停在 `NotificationManager.notify()` 或 `NotificationListenerService.onNotificationPosted()` 里。这类 ANR 在线上占比不高，但一旦出现就很难排查——因为问题不在你的 App 代码里，而在通知的跨进程交互链路中。
+做 Android 稳定性优化时，经常会看到这样的 ANR 日志：主线程的 stack trace 停在 `NotificationManager.notify()` 或 `NotificationListenerService.onNotificationPosted()` 里。这类 ANR 在线上占比不高，但一旦出现就很难排查，因为问题不在应用自身代码里，而在通知的跨进程交互路径中。
 
-Android 的通知系统涉及至少三个进程：App（发起通知）→ system_server 的 NotificationManagerService（管理和排名）→ SystemUI（渲染通知栏 UI）。这条链路上的任何一个环节卡住，都可能导致 App 端主线程阻塞，最终触发 ANR。
+Android 的通知系统涉及至少三个进程：App（发起通知）→ system_server 的 NotificationManagerService（管理和排名）→ SystemUI（渲染通知栏 UI）。这条路径上的任何一个环节卡住，都可能导致 App 端主线程阻塞，最终触发 ANR。
 
-理解通知系统的性能特征，本质上是在理解一条跨越三个进程的 Binder 调用链——它的瓶颈在哪、什么条件下会阻塞调用方、以及怎么在 Perfetto 中定位这些阻塞。掌握这些之后，我们就能区分「App 自己卡了」和「被通知系统拖累了」——两者的优化方向完全不同。
+理解通知系统的性能特征，其实是在拆开一条跨越三个进程的 Binder 调用路径，看看瓶颈落在哪、什么条件下会阻塞调用方，以及怎么在 Perfetto 中定位这些阻塞。掌握这些之后，我们就能区分「App 自己卡了」和「被通知系统拖慢了」，两者的优化方向完全不同。
 
 ## 通知发布流程与 ANR 触发点
 
@@ -70,7 +73,7 @@ Android 的通知系统涉及至少三个进程：App（发起通知）→ syste
 
 **第一步：App → NMS（跨进程 Binder 调用）。** App 进程通过 `INotificationManager` 代理（AIDL 生成的 Binder Proxy）调用 `enqueueNotificationWithTag()`。这个调用是同步的——App 主线程会进入 Sleeping 状态，等待 NMS 处理完毕并返回。这是第一种 ANR 风险的来源。
 
-**第二步：NMS 内部处理。** NotificationManagerService 在 system_server 的前台线程（`notif-handler`）上处理这个请求。处理包括权限校验、通知排名（ranking）、过滤（filter）、以及通知限流检查。如果 NMS 的处理队列积压了太多通知（比如某个 App 在短时间内发送了大量通知），你的通知就需要排队等待。
+**第二步：NMS 内部处理。** NotificationManagerService 在 system_server 的前台线程（`notif-handler`）上处理这个请求。处理包括权限校验、通知排名（ranking）、过滤（filter）、以及通知限流检查。如果 NMS 的处理队列积压了太多通知（比如某个 App 在短时间内发送了大量通知），当前通知就需要排队等待。
 
 **第三步：NMS → SystemUI（跨进程回调）。** NMS 通过 `INotificationListener` 回调通知 SystemUI 有新通知到达。SystemUI 收到回调后需要反序列化 `RemoteViews` 并 inflate 出实际的 View 树来渲染通知 UI。如果 SystemUI 进程繁忙（比如正在渲染锁屏、处理大量通知动画），这个回调的执行时间就会变长。
 
@@ -95,7 +98,7 @@ void enqueueNotificationInternal(String pkg, String opPkg, int callingUid,
 }
 ```
 
-这段代码说明了为什么 `notify()` 不总是即时的：权限检查、限流判断、排名计算、监听器分发——这些步骤都在 system_server 的同一个 Handler 线程上串行执行。如果前面有 100 条通知在排队，你的通知就要等 100 次 `rank()` 和 `notifyPostedLocked()` 才能轮到。
+这段代码说明了为什么 `notify()` 不总是即时的：权限检查、限流判断、排名计算、监听器分发，这些步骤都在 system_server 的同一个 Handler 线程上串行执行。如果前面有 100 条通知在排队，当前通知就要等 100 次 `rank()` 和 `notifyPostedLocked()` 才能轮到。
 
 [已验证: AOSP 源码路径 frameworks/base/services/core/java/com/android/server/notification/NotificationManagerService.java]
 
@@ -120,13 +123,13 @@ private Notification buildForegroundNotification() {
 }
 ```
 
-**场景二：NotificationListenerService 回调阻塞。** 如果你的 App 实现了 `NotificationListenerService`，它的 `onNotificationPosted()` 和 `onNotificationRemoved()` 回调**默认在主线程执行**。如果回调中做了耗时操作（数据库写入、网络请求、复杂计算），主线程就被阻塞，任何后续的 UI 操作或 Input 事件都无法响应，最终触发 Input ANR。
+**场景二：NotificationListenerService 回调阻塞。** 如果应用实现了 `NotificationListenerService`，它的 `onNotificationPosted()` 和 `onNotificationRemoved()` 回调**默认在主线程执行**。如果回调中做了耗时操作（数据库写入、网络请求、复杂计算），主线程就被阻塞，任何后续的 UI 操作或 Input 事件都无法响应，最终触发 Input ANR。
 
 这个场景隐蔽的原因在于：开发者可能根本不知道自己注册了 NLS 回调，或者不知道回调跑在主线程上。从 Perfetto 中看到的 ANR 现象就是主线程被某个方法卡住，但那个方法不在你写的 Activity/Fragment 代码里，而在 NLS 的回调中。
 
 **场景三：高频通知更新导致系统过载。** 某些场景下 App 会极高频地更新通知——下载进度条、音乐播放器的实时歌词、股票行情刷新。每次 `notify()` 都触发一次完整的 NMS 排名 + 监听器回调 + SystemUI 渲染链路。当频率超过系统的处理能力时，NMS 的消息队列积压，后续的 `notify()` 调用（包括其他 App 的通知）都需要等待，形成级联延迟。
 
-Android 12 引入了通知速率限制（rate limiting）：`NotificationManagerService` 对每个 App 的通知发布频率做了上限检查。超过限制的通知会被静默丢弃，不会抛异常。这意味着你的进度更新可能丢失了，但你不知道。这个机制保护了系统不被某个恶意或设计不当的 App 拖垮，但对于 App 开发者来说，需要在高频更新和系统限流之间找到平衡。
+Android 12 引入了通知速率限制（rate limiting）：`NotificationManagerService` 对每个 App 的通知发布频率做了上限检查。超过限制的通知会被静默丢弃，不会抛异常。这说明进度更新可能丢失，而调用方并不会收到提示。这个机制保护了系统不被某个恶意或设计不当的 App 拖垮，但对于 App 开发者来说，需要在高频更新和系统限流之间找到平衡。
 
 [已验证: Android 12 rate limiting — AOSP NotificationManagerService 中 `mRateLimitingEnabled` 标志]
 
@@ -136,7 +139,7 @@ Android 12 引入了通知速率限制（rate limiting）：`NotificationManager
 
 NMS 的核心逻辑运行在 system_server 进程的 `notif-handler` 线程上（Android 14+）。这个线程负责处理所有通知的入队、排名、过滤和分发。
 
-关键点在于：**所有 App 的通知请求都由这同一个线程处理。** 这意味着如果某个 App 发送了 500 条通知（在限流之前），其他所有 App 的通知请求都要排队等待。在极端情况下，你可能在 Perfetto 中看到主线程的一段 Sleeping 状态，blocked_function 是 `binder_thread_read`，而对面 system_server 的 `notif-handler` 线程正在忙着处理另一个 App 的大量通知。
+这里最要紧的是：**所有 App 的通知请求都由这同一个线程处理。** 如果某个 App 发送了 500 条通知（在限流之前），其他所有 App 的通知请求都要排队等待。在极端情况下，Perfetto 里会看到主线程出现一段 Sleeping 状态，`blocked_function` 是 `binder_thread_read`，而对面的 system_server `notif-handler` 线程正在忙着处理另一个 App 的大量通知。
 
 ### 通知排名的性能开销
 
@@ -150,7 +153,7 @@ Android 14 对排名算法做了优化，将全局重排改为增量更新——
 
 Android 12 引入了通知速率限制。每个 App 在每个通知渠道上有发布频率的上限（具体数值由系统内部配置控制，不同厂商可能调整）。超过限制的通知被静默丢弃。
 
-对 App 开发者来说，这意味着：如果你的下载进度条每 100ms 更新一次通知，一段时间后系统会开始丢弃你的更新。用户看到的可能是进度条卡在 47%，然后突然跳到 73%。正确的做法是控制通知更新频率（如每秒最多 1 次），并使用 `Notification.Builder.setProgress()` 让系统做节流优化。
+对 App 开发者来说，后果很直接：如果下载进度条每 100ms 更新一次通知，一段时间后系统就会开始丢弃更新。用户看到的可能是进度条卡在 47%，然后突然跳到 73%。更稳妥的做法是控制通知更新频率（如每秒最多 1 次），并使用 `Notification.Builder.setProgress()` 让系统做节流优化。
 
 ```java
 // 正确做法：让系统控制进度更新频率
@@ -166,7 +169,7 @@ notificationManager.notify(ID, notificationBuilder.build());
 
 ### 跨进程 inflate 的工作原理
 
-RemoteViews 是 Android 通知系统的核心设计之一。它允许 App 定义通知的 UI 布局，但实际的 View 创建和渲染发生在 SystemUI 进程中——因为通知栏属于 SystemUI，不属于你的 App。
+RemoteViews 是 Android 通知系统的核心设计之一。它允许 App 定义通知的 UI 布局，但实际的 View 创建和渲染发生在 SystemUI 进程中，因为通知栏属于 SystemUI，不属于应用进程。
 
 工作流程是这样的：App 端创建 `RemoteViews` 对象时，并不真正 inflate View。而是把一系列「布局操作」（「在 ID 为 title 的 TextView 上设置文字为 X」、「在 ID 为 icon 的 ImageView 上设置图片为 Y」）序列化到 `Parcel` 中。当通知到达 SystemUI 后，SystemUI 在自己的进程里反序列化这些操作，inflate 出真实的 View 树，并逐一执行这些操作。
 
@@ -187,7 +190,7 @@ public class RemoteViews implements Parcelable, Filter {
 }
 ```
 
-这个设计的性能瓶颈在于 **inflate 过程发生在 SystemUI 进程中**。如果 SystemUI 正忙（正在处理动画、渲染锁屏、响应其他通知），你的 RemoteViews inflate 就需要排队等待。从 App 端看，就是 `notify()` 调用迟迟不返回。
+这个设计的性能瓶颈在于 **inflate 过程发生在 SystemUI 进程中**。如果 SystemUI 正忙（正在处理动画、渲染锁屏、响应其他通知），当前 RemoteViews 的 inflate 就需要排队等待。从 App 端看，就是 `notify()` 调用迟迟不返回。
 
 [已验证: AOSP frameworks/base/core/java/android/widget/RemoteViews.java]
 
@@ -195,7 +198,7 @@ public class RemoteViews implements Parcelable, Filter {
 
 RemoteViews 的 inflate 时间与布局的嵌套深度呈近似指数关系。一个包含 3 层嵌套的简单通知布局，inflate 时间通常在 1-2ms。但如果嵌套达到 6-7 层（比如自定义通知里套了多层 LinearLayout + RelativeLayout），inflate 时间可能跳到 10-20ms 甚至更高。
 
-这不是 RemoteViews 特有的问题——Android 的布局 inflate 本身就受嵌套深度影响。但 RemoteViews 的特殊性在于：inflate 发生在你无法控制的进程（SystemUI）中，你无法通过 Systrace 直接追踪它。如果你的自定义通知布局导致 SystemUI 的通知栏掉帧或卡顿，用户感知到的是「通知栏好卡」，但根因是你的 App 发了一个布局过于复杂的通知。
+这不是 RemoteViews 特有的问题，Android 的布局 inflate 本身就受嵌套深度影响。但 RemoteViews 的特殊性在于，inflate 发生在调用方无法控制的进程（SystemUI）中，也很难直接通过 Systrace 追踪。如果自定义通知布局导致 SystemUI 的通知栏掉帧或卡顿，用户感知到的是「通知栏好卡」，但根因是应用发了一个布局过于复杂的通知。
 
 **最佳实践：**
 - 自定义通知布局的嵌套层级控制在 **3 层以内**
@@ -241,7 +244,7 @@ public class MyNotificationListener extends NotificationListenerService {
 }
 ```
 
-在 Perfetto 中，这类 ANR 的表现为：主线程出现一段长时间 Running 或 Sleeping（如果等待数据库锁），stack trace 指向 `onNotificationPosted()` 内部的代码。如果 ANR 发生时你刚好没有在操作 UI，`InputDispatcher` 的超时倒计时就会启动——5 秒后 ANR。
+在 Perfetto 中，这类 ANR 的表现是主线程出现一段长时间 Running 或 Sleeping（如果等待数据库锁），stack trace 指向 `onNotificationPosted()` 内部的代码。如果 ANR 发生时主线程没有处理 UI 交互，`InputDispatcher` 的超时倒计时就会启动，5 秒后触发 ANR。
 
 ### 正确的做法：回调转发到后台线程
 
@@ -269,7 +272,7 @@ public class MyNotificationListener extends NotificationListenerService {
 
 `NotificationListenerService.onNotificationPosted()` 的参数中包含 `RankingMap`，它是 NMS 对所有活跃通知的当前排名结果。每次有通知变化时，NMS 会重新生成完整的 `RankingMap` 并分发给所有监听器。
 
-在通知数量较多时（100+），`RankingMap` 的 Parcel 序列化/反序列化开销不可忽略。虽然单次开销在毫秒级，但在高频通知场景下会累积。如果你的 NLS 回调中持有 `RankingMap` 引用而不及时释放，还可能导致内存压力。
+在通知数量较多时（100+），`RankingMap` 的 Parcel 序列化/反序列化开销不可忽略。虽然单次开销在毫秒级，但在高频通知场景下会累积。如果 NLS 回调中持有 `RankingMap` 引用而不及时释放，还可能导致内存压力。
 
 [已验证: AOSP frameworks/base/core/java/android/service/notification/NotificationListenerService.java — 回调在主线程的主 Looper 上执行]
 
@@ -305,9 +308,9 @@ backgroundExecutor.execute(() -> {
 
 ### 模式二：NLS 回调中的阻塞操作
 
-如果你的 App 实现了 `NotificationListenerService`，且回调中做了数据库操作、SharedPreferences 写入（参见 6.5 节关于 SP ANR 的讨论）、或网络请求，主线程就会被阻塞。当用户在 NLS 回调执行期间触摸屏幕，Input 事件无法在 5 秒内得到响应，ANR 触发。
+如果应用实现了 `NotificationListenerService`，且回调中做了数据库操作、SharedPreferences 写入（参见 6.5 节关于 SP ANR 的讨论）或网络请求，主线程就会被阻塞。当用户在 NLS 回调执行期间触摸屏幕，Input 事件无法在 5 秒内得到响应，ANR 就会触发。
 
-这个模式的特征是：ANR 的 stack trace 指向 `onNotificationPosted()` 内部的阻塞调用，而非你写的 Activity/Fragment 代码。如果你只看自己 App 的代码路径，可能完全找不到问题。
+这个模式的特征是，ANR 的 stack trace 指向 `onNotificationPosted()` 内部的阻塞调用，而不是 Activity / Fragment 里的常规 UI 代码。如果只看应用自己的页面代码，往往很难第一时间定位到问题。
 
 ### 模式三：高频通知更新导致系统队列积压
 
@@ -316,7 +319,7 @@ backgroundExecutor.execute(() -> {
 1. **被限流**：多余的通知被静默丢弃，用户看到的信息过时或不连续
 2. **系统队列积压**：NMS 的消息队列堆积，所有 App 的通知操作都变慢
 
-第二种情况最危险——你的高频更新不仅影响自己，还拖累了系统中所有 App 的通知发布。从 Perfetto 中可以看到 system_server 的 `notif-handler` 线程长时间 Running，处理队列中的通知。
+第二种情况最危险，高频更新不只会影响调用方自己，还会拖慢系统中其他 App 的通知发布。在 Perfetto 中常能看到 system_server 的 `notif-handler` 线程长时间 Running，持续处理队列中的通知。
 
 **推荐更新频率：** 对于进度型通知，每秒更新不超过 1 次。使用 `setProgress()` 让系统合并更新。
 
@@ -328,7 +331,7 @@ backgroundExecutor.execute(() -> {
 
 ### 模式五：SystemUI 进程过载（间接 ANR）
 
-这不是你的 App 的 ANR，但它会影响你的 App。当 SystemUI 进程因为渲染大量通知、处理锁屏动画或其他 UI 操作而过载时，它对 NMS 回调（`INotificationListener`）的响应速度会变慢。由于 NMS 通知监听器的分发在 Android 13 之前是串行的，如果 SystemUI 的回调处理慢了，NMS 就无法及时处理后续的通知请求，导致其他 App 的 `notify()` 调用被阻塞。
+这不是调用方应用自己的 ANR，但会反过来拖慢调用方。当 SystemUI 进程因为渲染大量通知、处理锁屏动画或其他 UI 操作而过载时，它对 NMS 回调（`INotificationListener`）的响应速度会变慢。由于 NMS 通知监听器的分发在 Android 13 之前是串行的，如果 SystemUI 的回调处理慢了，NMS 就无法及时处理后续的通知请求，导致其他 App 的 `notify()` 调用被阻塞。
 
 Android 14 对此做了优化，将监听器分发改为并行执行，大幅减少了单个监听器性能问题对全局通知系统的影响。
 
@@ -340,7 +343,7 @@ Android 14 对此做了优化，将监听器分发改为并行执行，大幅减
 
 Android 13 引入了 `POST_NOTIFICATIONS` 运行时权限，用户可以拒绝某个 App 发送通知。Android 17 进一步收紧了后台通知发送的限制——与后台服务限制联动，后台 App 未经用户许可不能发送通知。
 
-从性能角度看，这个变化的影响是：**权限拒绝实际上减少了系统中需要处理的通知总量**，间接降低了 NMS 的负载。但同时，如果你的 App 在后台需要发送重要通知（如即时通讯消息），需要正确处理权限被拒绝的场景——否则代码可能在权限检查路径上阻塞。
+从性能角度看，权限拒绝会减少系统需要处理的通知总量，间接降低 NMS 的负载。但同时，如果应用在后台需要发送重要通知（如即时通讯消息），也要正确处理权限被拒绝的场景，否则代码可能卡在权限检查路径上。
 
 ### Notification.ProgressStyle API
 
@@ -364,9 +367,9 @@ Android 17 对通知监听器的回调频率做了限制。如果一个监听器
 
 ### 识别 NMS 相关的 Binder 调用
 
-当 App 的 `notify()` 调用耗时过长时，在 App 主线程或调用线程的 Track 中，你会看到一段 `thread_state: S`（Sleeping），同时 `blocked_function` 显示为 `binder_thread_read`。这意味着线程在等待 Binder 调用返回。
+当 App 的 `notify()` 调用耗时过长时，在 App 主线程或调用线程的 Track 中，会看到一段 `thread_state: S`（Sleeping），同时 `blocked_function` 显示为 `binder_thread_read`。这说明线程正在等待 Binder 调用返回。
 
-定位到对端：在 system_server 进程中搜索 `notif-handler` 线程（Android 14+），或搜索包含 `NotificationManagerService` 的 slice。如果这个线程正在处理大量通知，你就会看到连续的 `enqueueNotificationInternal` slice 堆叠。
+定位到对端：在 system_server 进程中搜索 `notif-handler` 线程（Android 14+），或搜索包含 `NotificationManagerService` 的 slice。如果这个线程正在处理大量通知，就会看到连续的 `enqueueNotificationInternal` slice 堆叠。
 
 ```sql
 -- 查找 App 进程中与 NMS 相关的 Binder 调用
@@ -382,7 +385,7 @@ ORDER BY slice.dur DESC;
 
 ### 分析 NLS 回调耗时
 
-如果你的 App 实现了 `NotificationListenerService`，可以在 App 主线程的 Track 中搜索 `onNotificationPosted` slice。如果这个 slice 的持续时间超过 16ms（一帧预算），说明回调中有耗时操作。
+如果应用实现了 `NotificationListenerService`，可以在 App 主线程的 Track 中搜索 `onNotificationPosted` slice。如果这个 slice 的持续时间超过 16ms（一帧预算），说明回调中有耗时操作。
 
 ```sql
 -- 查找 NLS 回调耗时
@@ -415,7 +418,7 @@ ORDER BY slice.dur DESC;
 
 - **通知数量**：如果某 App 的活跃通知数量超过几十条，说明该 App 可能存在通知泄漏
 - **通知排名延迟**：`RankingMap` 的更新时间戳可以帮助判断排名计算是否滞后
-- **通知限流状态**：可以看到哪些 App 触发了限流
+- **通知限流状态**：能看到哪些 App 触发了限流
 
 ```bash
 # 导出通知系统状态
@@ -430,7 +433,7 @@ adb shell dumpsys notification
 ## 与其他机制的关系
 
 - **Service ANR（§9.2）**：前台服务通知超时是 Notification ANR 与 Service ANR 的交叉点，`startForeground()` 的 5 秒超时直接关联通知发布耗时
-- **Binder 性能（§1.4）**：通知发布的全链路依赖 Binder IPC，NMS 的线程模型和 Binder 线程池耗尽都可能导致通知延迟
+- **Binder 性能（§1.4）**：通知发布的整个过程都依赖 Binder IPC，NMS 的线程模型和 Binder 线程池耗尽都可能导致通知延迟
 - **SharedPreferences ANR（§6.5）**：NLS 回调中的 SP `apply()` / `commit()` 是常见的 ANR 触发组合
 - **ContentProvider（§1.10）**：某些 NLS 实现在回调中通过 ContentProvider 查询数据，Provider 的冷启动会阻塞回调
 - **Perfetto SQL 分析（§13.7）**：通知 ANR 的深度分析需要结合 Perfetto SQL 查询 Binder 调用链
@@ -460,7 +463,7 @@ adb shell dumpsys notification
 
 ### 「通知限流会抛异常，所以不用担心」
 
-Android 12+ 的通知限流是静默丢弃——超过频率限制的通知直接被 NMS 忽略，不会抛异常或回调通知 App。这意味着你的进度更新可能丢失，但你不会收到任何错误反馈。需要主动控制更新频率。
+Android 12+ 的通知限流是静默丢弃，超过频率限制的通知会被 NMS 直接忽略，不会抛异常，也不会回调通知 App。这说明进度更新可能丢失，但调用方收不到错误反馈，因此需要主动控制更新频率。
 
 ### 「自定义通知布局比标准模板性能更好」
 

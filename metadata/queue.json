@@ -6321,5 +6321,38 @@
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-13T05:37:57+08:00",
     "status": "pending"
+  },
+  {
+    "section": "9.6",
+    "section_title": "Notification 性能与 ANR",
+    "priority": 90,
+    "reason": "[review回炉] 版本断言与 Perfetto 证据链仍需收紧，量化成本缺少来源",
+    "material_paths": [
+      "intake/suggestions.md（含 review 意见）"
+    ],
+    "review_issues": [
+      {
+        "type": "需确认",
+        "location": "Android 17 通知性能变更 + 版本演进表",
+        "detail": "Android 14 并行分发、Android 15 排名优化、Android 17 后台通知监听器限频等版本断言仍缺精确来源，当前 [已验证]/[待验证] 粒度不够。",
+        "suggestion": "由 Task 9 对照 AOSP 与官方文档统一核对版本边界，再由 Task 2B 回写。"
+      },
+      {
+        "type": "需补充素材",
+        "location": "在 Perfetto 中诊断通知 ANR",
+        "detail": "notif-handler 线程、onNotificationPosted slice、Binder SQL 示例和 [待补充：Trace 截图] 仍缺真实 trace 或已跑通的 schema 证据，当前实操闭环不完整。",
+        "suggestion": "补 1-2 份真实 Perfetto 片段或已验证 SQL，并固定对应的 track、slice、table 名称。"
+      },
+      {
+        "type": "需补充素材",
+        "location": "RemoteViews / 图片通知 / 通知限流的量化成本",
+        "detail": "1-2ms、10-20ms、10-50ms、100ms+ 等耗时结论没有给出设备、图片尺寸、系统负载或原始 benchmark 条件。",
+        "suggestion": "补测试条件与原始来源；若短期补不齐，就降级为定性描述。"
+      }
+    ],
+    "added_by": "task6-review",
+    "added_at": "2026-04-13T06:24:00+08:00",
+    "status": "pending",
+    "original_review_log": "logs/review/2026-04-13-06-review.md"
   }
 ]
