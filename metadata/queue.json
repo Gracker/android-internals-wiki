@@ -1725,9 +1725,11 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-12T23:38:00+08:00",
-    "status": "pending",
+    "status": "completed",
     "original_review_log": "logs/review/2026-04-12-23-review.md",
-    "deep_review_log": "logs/deep-review/2026-04-12-23-deep-review.md"
+    "deep_review_log": "logs/deep-review/2026-04-12-23-deep-review.md",
+    "completed_at": "2026-04-13T01:00:04+08:00",
+    "completed_by": "task2b-rework"
   },
   {
     "section": "8.9",
