@@ -6043,5 +6043,38 @@
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-13T00:35:00+08:00",
     "status": "pending"
+  },
+  {
+    "section": "3.2",
+    "section_title": "触摸响应的性能分析",
+    "priority": 90,
+    "reason": "[review回炉] PAMTD 数据出处缺失，Motion Prediction 版本边界不清，厂商触控优化段证据不足",
+    "material_paths": [
+      "intake/suggestions.md（含 review 意见）"
+    ],
+    "review_issues": [
+      {
+        "type": "需补充素材",
+        "location": "延迟全景图后的 PAMTD 数据段",
+        "detail": "PAMTD 11ms / 点击 263ms 当前只有二手笔记来源，没有原始论文标题、实验条件和适用场景。",
+        "suggestion": "补原始论文与实验上下文，若短期补不齐，改成定性结论并保留 [待验证]。"
+      },
+      {
+        "type": "需确认",
+        "location": "Motion Prediction：降低感知延迟",
+        "detail": "\"从 Android 4.4（API 19）开始支持\"、Jetpack motionprediction 库、Android 13+ WindowManager 预测渲染混在一起，平台 API 与 Jetpack 库的版本边界不清。",
+        "suggestion": "交给 Task 9 核对平台 API、Jetpack 依赖和适用场景，再决定保留哪一套表述。"
+      },
+      {
+        "type": "需补充素材",
+        "location": "厂商触控优化方案 / Input Boost 策略",
+        "detail": "低延迟触控 IC、主线程绑定大核、Input Boost 持续时间等断言主要依赖泛化的 web research 和待验证标注，缺少厂商文档、具体设备案例或 Trace 证据。",
+        "suggestion": "补具体设备/厂商资料，或把这一节收缩成“常见做法概览”，避免写成确定结论。"
+      }
+    ],
+    "added_by": "task6-review",
+    "added_at": "2026-04-13T01:05:00+08:00",
+    "status": "pending",
+    "original_review_log": "logs/review/2026-04-13-01-review.md"
   }
 ]
