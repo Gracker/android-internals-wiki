@@ -6262,5 +6262,62 @@
     "added_at": "2026-04-13T05:06:00+08:00",
     "status": "pending",
     "original_review_log": "logs/review/2026-04-13-05-review.md"
+  },
+  {
+    "section": "8.9",
+    "section_title": "Android 游戏性能与 Game Mode/State API",
+    "priority": 95,
+    "reason": "[Deep Tech Review] GameState/GameMode API 命名、AOSP 路径、Interventions 版本与配置存在事实错误；Perfetto 分析链还混淆了 Game Mode、Game State、OEM interventions 与原生游戏帧观测路径",
+    "material_paths": [
+      "intake/research-gaps.md",
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "frontmatter sources L14-L24；正文 L175-L216、L483-L489",
+        "detail": "章节把不存在的 `android.app.GameStateManager` 当成公开 API，并引用了 404 的官方文档与不存在的 AOSP 路径。AOSP / SDK 公开接口实际是 `GameManager#setGameState(GameState)`，`GameState` 为公开类，`GameStateManager.java` 在 AOSP main 上也不存在。",
+        "suggestion": "把 Game State 一节改为 `GameManager#setGameState(new GameState(...))` 的真实 API；删除 `GameStateManager` 相关源码/链接，并改用 `GameManager` 与 `GameState` 官方 reference。"
+      },
+      {
+        "type": "源码错误",
+        "location": "L103-L140",
+        "detail": "`game_mode_config.xml` 属性名写成 `android:gameModePerformance` / `android:gameModeBattery` / `android:gameModeCustom`，正文还把 `GAME_MODE_CUSTOM` 写成 Android 17 新增，并声称 App 可通过 `GameManager.GameModeListener` 监听切换。官方文档与 AOSP 当前口径只公开 `supportsBatteryGameMode` / `supportsPerformanceGameMode`；`GAME_MODE_CUSTOM` 在 reference 中标为 API 34，`GameManager` 公开类中也没有 `GameModeListener`。",
+        "suggestion": "改成官方 XML 示例；把 custom mode 版本降到 API 34；删除 `GameModeListener` 说法，恢复为“resume 时重新查询 `getGameMode()`”。"
+      },
+      {
+        "type": "源码错误",
+        "location": "L146-L160；frontmatter L24；参考资料 L484",
+        "detail": "系统服务源码路径写成 `frameworks/base/services/core/java/com/android/server/GameManagerService.java`。AOSP main 实际路径是 `frameworks/base/services/core/java/com/android/server/app/GameManagerService.java`。",
+        "suggestion": "修正 AOSP 路径，并在正文里区分 system_server 服务实现与公开 SDK API。"
+      },
+      {
+        "type": "源码错误",
+        "location": "L175-L216",
+        "detail": "Game State 示例使用了不存在的 `GameState.create(...)` 和虚构字段 `isPerformanceCritical` / `gameMode`。AOSP `GameState` 公开构造器是 `GameState(boolean isLoading, int mode)` 或 `GameState(boolean isLoading, int mode, int label, int quality)`；模式枚举是 `MODE_NONE / MODE_GAMEPLAY_INTERRUPTIBLE / MODE_GAMEPLAY_UNINTERRUPTIBLE / MODE_CONTENT`。",
+        "suggestion": "整段重写为真实 `GameState` 构造器与 mode 语义，避免把“加载/主菜单/战斗”直接映射成不存在的字段。"
+      },
+      {
+        "type": "原理断裂",
+        "location": "L146-L216",
+        "detail": "正文把 Game Mode 和 Game State 写成“系统会绑定核心、提高调度优先级、延迟热降频”的统一调度入口，但 AOSP `GameManagerService#setGameState()` 的可见行为主要是 statsd 记录，以及在 PERFORMANCE 模式下按 `isLoading` 切 `Mode.GAME_LOADING` 电源模式；官方 Game Mode API 文档还明确说，游戏一旦声明支持 Game Mode，就应自己实现优化，平台会重置 OEM interventions。现有叙述把 app 自优化、OEM interventions、system_server loading boost 三条路径混成了一条。",
+        "suggestion": "拆开解释三层：`GameManager#getGameMode()` 读取用户偏好，`setGameState()` 上报加载/玩法状态，OEM interventions/ANGLE/downscale/fps override 是另一套机制；不要把核心绑定、调度优先级提升写成 `GameState` 的已证实默认行为。"
+      },
+      {
+        "type": "版本差异",
+        "location": "L368-L388；L467",
+        "detail": "章节把 Game Mode Interventions 写成 Android 17 新机制，并使用不存在的 `android:allowInterventions=\"false\"` 与错误 shell 命令 `adb shell cmd game mode set <package> <mode>`。官方 interventions 文档当前口径是：Game Mode API/interventions 在“部分 Android 12 设备”和“Android 13+ 设备”可用；opt-out 用 `allowGameDownscaling` / `allowGameFpsOverride`；切换命令是 `adb shell cmd game mode [standard|performance|battery] <PACKAGE_NAME>`。",
+        "suggestion": "把版本口径改成 Android 12/13+；按 interventions 文档重写 opt-out 配置与测试命令；删除 Android 17 独占表述。"
+      },
+      {
+        "type": "知识盲区",
+        "location": "L294-L339；L400-L417",
+        "detail": "性能分析方法默认用 `Choreographer#doFrame%` 统计“游戏帧时间”，更适合 UI / Java 驱动帧，对大量 GameActivity / SurfaceView / Vulkan / Swappy 的原生游戏并不成立。章节缺少 native game 的观测口径，读者会把普通 App 的 doFrame 方法误当成通用游戏帧分析方案。",
+        "suggestion": "补 native game 分析路径：FrameTimeline / SurfaceFlinger / Swappy / GPU counters 的观察点，并明确 `Choreographer#doFrame` 只适用于某类游戏架构。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-13T05:37:57+08:00",
+    "status": "pending"
   }
 ]

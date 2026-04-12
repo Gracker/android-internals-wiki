@@ -31,11 +31,12 @@ created_date: "2026-04-08"
 gap_source: "官方文档+读者需求+研究素材"
 pipeline_stage: task2b_pending
 task6_state: reviewed
-task9_state: pending
+task9_state: reviewed
 task2b_state: pending
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-04-13"
 task6_result: needs-rework
+task9_result: needs-rework
 ---
 
 # 8.9 Android 游戏性能与 Game Mode/State API
