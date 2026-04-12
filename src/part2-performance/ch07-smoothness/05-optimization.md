@@ -37,11 +37,12 @@ polish_by: "task2b-polish"
 rework_count: 1
 rework_date: "2026-04-09"
 rework_by: "task2b-rework"
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
 task9_result: needs-rework
-task2b_state: pending
+task2b_result: fixed
+task2b_state: fixed
 ---
 
 # 优化策略
@@ -113,7 +114,7 @@ Google 官方基准测试表明，在同等布局效果下，ConstraintLayout �
 
 另外，`layout_weight` 是一个常被忽视的性能陷阱。LinearLayout 在使用 weight 时需要做两次 measure：第一次确定剩余空间，第二次按 weight 比例分配。ConstraintLayout 的 `match_constraint`（0dp + 约束）在效果上等同于 weight，但只需要一次 measure。如果项目中还有使用 weight 的布局，优先用 ConstraintLayout 替代。
 
-在 Perfetto 中，布局层级过深表现为 measure 阶段耗时突增。打开 Trace 后，在主线程（ui_thread）的每个 `doFrame` slice 中可以看到 inflate → measure → layout → draw 的细分。如果某个 doFrame 中 measure 耗时超过 2-3ms，且对应的 View 树 depth 在 Perfetto 的 View hierarchy 信息中超过 10 层，就是布局层级需要优化的信号。[图：布局层级过深时，Perfetto 中某个 doFrame 的 measure slice 明显拉长，旁注 View 树 depth 超过 10 层]
+在 Perfetto 中，布局层级过深通常表现为 `performTraversals()` 或 measure/layout 相关 slice 耗时突增。打开 Trace 后，先在主线程的 `doFrame` 中确认 measure、layout、draw 哪一段拉长，再回到 Layout Inspector、ViewCapture/Winscope 或 `adb shell dumpsys gfxinfo <package>` 查看实际的 View 树层级和重绘统计。Perfetto 负责告诉我们哪一帧慢、慢在 measure 还是 layout；层级本身要靠布局检查工具确认。如果同一段交互里 `performTraversals()` 经常超过 2-3ms，且 Layout Inspector 显示树深已经到 10 层以上，这一组证据就足够支持先做布局扁平化。[图：Layout Inspector 显示 View 树层级 12 层，同时 Perfetto 中同一帧的 `performTraversals()` / measure slice 拉长]
 
 ## RecyclerView 优化：预创建、DiffUtil、预取
 
@@ -229,7 +230,9 @@ Binder 是 Android 进程间通信的核心机制（详见 [1.4 Binder IPC](part
 
 针对 Binder 调用，有几条实践证明有效的优化策略。
 
-**缓存系统服务查询结果。** `PackageManager.getPackageInfo()`、`ActivityManager.getProcessMemoryState()` 这类调用每次都会走 Binder，如果在启动路径或滑动路径上重复调用，开销会被放大。正确的做法是在 App 启动时查一次，把结果缓存在内存中。
+**缓存系统服务查询结果。** `PackageManager.getPackageInfo()` 这类调用每次都会走 Binder。进程状态查询也要区分场景：如果只是看当前进程的 importance、lru 或 `lastTrimLevel`，用 `ActivityManager.getMyMemoryState(ActivityManager.RunningAppProcessInfo)`；如果要看指定 PID 的 PSS、Private Dirty 等内存指标，用 `ActivityManager.getProcessMemoryInfo(int[])`。这两类查询都不该放在启动路径或滑动路径上反复执行，更适合在生命周期边界更新缓存，或者放到后台采样线程做诊断。
+
+[已验证: 官方文档, developer.android.com/reference/android/app/ActivityManager — `getMyMemoryState(...)` 用于当前进程状态，`getProcessMemoryInfo(int[])` 用于指定 PID 的内存信息]
 
 **绝不把 Binder 调用放在渲染路径上。** 滑动手势的 onScroll 回调、动画的 onAnimationUpdate、RecyclerView 的 onBind——这些地方哪怕一次 1ms 的 Binder 调用，在高速滑动时也会被连续触发，累积效果非常可观。如果确实需要在滑动过程中获取数据，应该在子线程提前获取并缓存，主线程只做轻量的 onBindViewHolder。
 
@@ -239,7 +242,7 @@ Binder 是 Android 进程间通信的核心机制（详见 [1.4 Binder IPC](part
 
 最后，对于不需要返回值的场景（如日志上报、状态通知），使用 AIDL 的 `oneway` 关键字让调用异步化——调用方不会阻塞等待对端执行完毕，而是直接返回。
 
-在 Perfetto 中观察 Binder 调用耗时，可以在主线程的 Trace 中搜索 `binder_transaction` 事件。如果发现某个 `binder_transaction` 的持续时间超过 5ms，就需要关注它发生在什么上下文中。如果它出现在 doFrame 或 dispatchTouchEvent 的调用栈里，这一笔开销就值得优先处理。另外，Perfetto 的 `binder` Track 会显示所有进程的 Binder 活动，可以用来判断“系统繁忙”是不是外部因素导致的。[图：主线程 doFrame 内出现 `binder_transaction` 长 slice，同时 `binder` Track 有明显事务堆积]
+在 Perfetto 中观察同步 Binder 延迟，不要把 `linux.ftrace/binder_transaction` 当成主线程上的长 slice。它只是事务事件，不能直接拿来读 thread duration。更可靠的做法有两条：一条是打开 Android Binder / Transactions 轨道，直接看同步事务对应的阻塞时间；另一条是回到主线程的调用栈，观察它是否卡在 `binder_thread_read` 或 `ioctl(BINDER_WRITE_READ)`，再和服务端 binder 线程的 Running / Runnable 状态对起来。只有当这些阻塞恰好落在 `doFrame`、`dispatchTouchEvent()` 或启动关键路径里时，这笔 Binder 开销才值得优先处理。[图：主线程 `doFrame` 中卡在 `ioctl(BINDER_WRITE_READ)`，同时 Android Binder / Transactions 轨道出现对应同步事务]
 
 ### 合理的线程池配置
 
@@ -259,15 +262,17 @@ Binder 是 Android 进程间通信的核心机制（详见 [1.4 Binder IPC](part
 
 ### 任务拆分与延迟初始化
 
-- **任务拆解**：将一个大任务拆成多个小 Message，用 `Handler.post()` 分发到不同帧处理
-- **优先级控制**：UI 更新任务用 `Handler.postAtFrontOfQueue()` 确保尽快执行
+- **任务拆解**：将一个大任务拆成多个小 Message，用 `Handler.post()` 或 `Choreographer.postFrameCallback()` 分发到不同帧处理
+- **取消旧消息**：新状态到来时先移除过期 Message，保证主线程只处理当前还需要的工作
 - **延迟初始化**：`by lazy(LazyThreadSafetyMode.NONE)` 减少首帧负担
+
+`Handler.postAtFrontOfQueue()` 只适合极少数场景。它会把消息插到队列头部，容易打乱原有顺序，也可能让普通 UI 消息长期拿不到执行机会。主路径更稳的做法是把大任务拆到多帧、在帧回调里安排下一段工作，或者在新输入到来时取消旧任务。
 
 ```kotlin
 val config by lazy(LazyThreadSafetyMode.NONE) { parseConfig() }
 ```
 
-[已验证: 来源见 2026-03-07_wechat_Android深入卡顿分析与实践.md §postAtFrontOfQueue]
+[已验证: 官方文档, developer.android.com/reference/android/os/Handler#postAtFrontOfQueue(android.os.Runnable) — 仅建议用于 very special circumstances]
 
 ## Compose 性能优化：减少重组、stable 标记、remember/derivedStateOf
 
