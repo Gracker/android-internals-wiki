@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-12T12:44:00+08:00",
+  "generated_at": "2026-04-12T13:05:00+08:00",
   "state_machine_version": "v2",
   "total_sections": 206,
   "metrics": {
@@ -9,13 +9,13 @@
     "task6_unknown": 30,
     "task9_unknown": 30,
     "task2b_unknown": 30,
-    "last_updated": "2026-04-12T12:44:00+08:00",
+    "last_updated": "2026-04-12T13:05:00+08:00",
     "ready-for-review": 173,
-    "pipeline_task9_pending": 3,
-    "pipeline_task6_pending": 167,
+    "pipeline_task9_pending": 4,
+    "pipeline_task6_pending": 166,
     "pipeline_task2b_pending": 6,
-    "task6_reviewed": 9,
-    "task6_pending": 139,
+    "task6_reviewed": 10,
+    "task6_pending": 138,
     "task6_revisiting": 28,
     "task9_pending": 174,
     "task9_reviewed": 2,
@@ -28,14 +28,14 @@
   "pipeline": {
     "pipeline_stage_counts": {
       "unknown": 30,
-      "task9_pending": 3,
-      "task6_pending": 167,
+      "task9_pending": 4,
+      "task6_pending": 166,
       "task2b_pending": 6
     },
     "task6_state_counts": {
       "unknown": 30,
-      "reviewed": 9,
-      "pending": 139,
+      "reviewed": 10,
+      "pending": 138,
       "revisiting": 28
     },
     "task9_state_counts": {
@@ -1114,10 +1114,13 @@
       "title": "SharedPreferences/DataStore 性能与 ANR 优化",
       "path": "src/part1-fundamentals/ch06-storage/05-sharedpreferences-datastore.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "pending",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
       "task9_state": "pending",
-      "task2b_state": "idle"
+      "task2b_state": "idle",
+      "reviewed_date": "2026-04-12",
+      "reviewed_by": "openclaw-task6",
+      "task6_result": "pass-light-edit"
     },
     "src/part1-fundamentals/ch06-storage/README.md": {
       "chapter": null,
