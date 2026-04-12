@@ -5,7 +5,7 @@ chapter: "7.1"
 status: ready-for-review
 drafted_date: "2026-03-30"
 drafted_by: "openclaw-task2"
-reviewed_date: "2026-04-05"
+reviewed_date: "2026-04-13"
 reviewed_by: "openclaw-task6"
 applicable_versions: "Android 4.1 (API 16) - Android 16 (API 36)"
 last_verified: "2026-03-31"
@@ -34,10 +34,11 @@ sources:
     path: "Personal-Knowlodge/source/Android-Perfetto-05-Chorergrapher.md"
 tags: [jank, smoothness, FrameTimeline, Choreographer, 掉帧, 渲染性能]
 related_chapters: ["2.1", "2.3", "2.4", "2.5", "7.2", "7.3"]
-pipeline_stage: task6_pending
-task6_state: pending
+pipeline_stage: task2b_pending
+task6_state: reviewed
+task6_result: needs-rework
 task9_state: pending
-task2b_state: idle
+task2b_state: pending
 ---
 
 # 卡顿的定义与分类
@@ -93,7 +94,7 @@ Android 系统的渲染管线是围绕 VSync 信号构建的。在 60Hz 屏幕�
 | 90Hz | 11.11ms | 11.11ms |
 | 120Hz | 8.33ms | 8.33ms |
 
-刷新率越高，留给每一帧的时间窗口越窄。在 120Hz 设备上，一帧只有 8.33ms——这意味着 App 的主线程渲染（measure/layout/draw）加上 RenderThread 的 GPU 执行，再加上 SurfaceFlinger 的合成，全部加起来必须在 8.33ms 内完成。任何环节超时，都会导致 Jank。
+刷新率越高，留给每一帧的时间窗口越窄。在 120Hz 设备上，一帧只有 8.33ms。App 的主线程渲染（measure/layout/draw）、RenderThread 的 GPU 执行，以及 SurfaceFlinger 的合成，都得压在这 8.33ms 里。任何环节超时，都会导致 Jank。
 
 [已验证: 官方文档, developer.android.com/develop/ui/views/layout/swing-animations]
 [已验证: 来源见 obsidian/Personal-Knowlodge/source/Android-Perfetto-06-Why-120Hz.md]
@@ -164,7 +165,7 @@ Buffer Stuffing 是一种容易被忽略的状态：App 持续不断地向 Surfa
 
 这不会直接导致 Jank（帧率可能看起来很高甚至超过刷新率），但会导致**输入延迟（Input Latency）显著增加**——用户的触摸操作要等好几帧之后才能在屏幕上看到反馈。用户的主观感受是"画面很流畅但不跟手"，这在竞速类游戏等持续渲染场景中尤其明显。
 
-在 Perfetto 中，Buffer Stuffing 的典型特征是 BufferQueue 中有多个已入队（queued）但未被消费的 Buffer。在 `BufferQueue` Track 中可以看到 `|queued|` 计数持续大于 1。修复思路通常是使用 `Choreographer.postFrameCallback` 替代无节制的 `invalidate()` 循环，让渲染节奏回到 VSync 驱动。
+在 Perfetto 中，Buffer Stuffing 的典型特征是 BufferQueue 中有多个已入队（queued）但未被消费的 Buffer。在 `BufferQueue` Track 中，会看到 `|queued|` 计数持续大于 1。修复思路通常是用 `Choreographer.postFrameCallback` 替代无节制的 `invalidate()` 循环，让渲染节奏回到 VSync 驱动。
 
 ### Jank 类型在 Perfetto 中的颜色编码
 
@@ -266,7 +267,7 @@ Google 的标准从系统底层出发，关注 VSync 对齐；PerfDog 的标准�
 
 ## 用户感知与技术指标的映射
 
-了解了各种技术指标之后，一个关键问题是：这些数字对用户意味着什么？用户不会看 Perfetto Trace，他们只会说"这个列表滑起来不顺手"或"这个动画一卡一卡的"。
+了解了各种技术指标之后，我们还得回答一个更实际的问题：这些数字对应的用户感受是什么？用户不会看 Perfetto Trace，他们只会说"这个列表滑起来不顺手"或"这个动画一卡一卡的"。
 
 ### 视觉惯性与帧率稳定性
 
@@ -327,7 +328,7 @@ JankStats 的工作原理：
 
 ### 误区 3：「掉帧率必须做到 0%」
 
-实际上，追求 0% 的掉帧率既不现实也不经济。Google 的 Android Vitals 将"慢帧"阈值设在 16ms，但实际项目中的优化目标通常是将掉帧率控制在 5% 以下，并确保没有 Frozen Frame（>700ms）。极端场景（如复杂列表快速滑动）掉帧率 3-5% 是可接受的。优化的 ROI（投入产出比）比绝对数字更重要。
+工程实践里，追求 0% 的掉帧率既不现实，也不经济。Google 的 Android Vitals 将"慢帧"阈值设在 16ms，但实际项目中的优化目标通常是将掉帧率控制在 5% 以下，并确保没有 Frozen Frame（>700ms）。极端场景（如复杂列表快速滑动）掉帧率 3-5% 是可接受的。优化的 ROI（投入产出比）比绝对数字更重要。
 
 ### 误区 4：「120Hz 设备不需要优化，因为帧预算变小了」
 

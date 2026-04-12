@@ -1,40 +1,40 @@
 {
-  "generated_at": "2026-04-13T02:55:15+08:00",
+  "generated_at": "2026-04-13T03:12:00+08:00",
   "state_machine_version": "v2",
   "total_sections": 207,
   "metrics": {
     "total": 207,
-    "last_updated": "2026-04-13T02:55:15+08:00",
+    "last_updated": "2026-04-13T03:12:00+08:00",
     "unknown": 34,
     "ready-for-review": 173,
     "pipeline_unknown": 31,
-    "pipeline_task6_pending": 167,
-    "pipeline_task2b_pending": 6,
+    "pipeline_task6_pending": 166,
+    "pipeline_task2b_pending": 7,
     "pipeline_task9_pending": 3,
     "task6_unknown": 31,
     "task6_revisiting": 42,
-    "task6_reviewed": 9,
-    "task6_pending": 125,
+    "task6_reviewed": 10,
+    "task6_pending": 124,
     "task9_unknown": 31,
     "task9_pending": 173,
     "task9_reviewed": 3,
     "task2b_unknown": 31,
     "task2b_fixed": 42,
-    "task2b_pending": 6,
-    "task2b_idle": 128
+    "task2b_pending": 7,
+    "task2b_idle": 127
   },
   "pipeline": {
     "pipeline_stage_counts": {
       "unknown": 31,
-      "task6_pending": 167,
-      "task2b_pending": 6,
+      "task6_pending": 166,
+      "task2b_pending": 7,
       "task9_pending": 3
     },
     "task6_state_counts": {
       "unknown": 31,
       "revisiting": 42,
-      "reviewed": 9,
-      "pending": 125
+      "reviewed": 10,
+      "pending": 124
     },
     "task9_state_counts": {
       "unknown": 31,
@@ -44,8 +44,8 @@
     "task2b_state_counts": {
       "unknown": 31,
       "fixed": 42,
-      "pending": 6,
-      "idle": 128
+      "pending": 7,
+      "idle": 127
     }
   },
   "issues": {
@@ -1174,12 +1174,13 @@
       "title": "卡顿的定义与分类",
       "path": "src/part2-performance/ch07-smoothness/01-jank-definition.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "pending",
+      "pipeline_stage": "task2b_pending",
+      "task6_state": "reviewed",
       "task9_state": "pending",
-      "task2b_state": "idle",
-      "reviewed_date": "2026-04-05",
-      "reviewed_by": "openclaw-task6"
+      "task2b_state": "pending",
+      "reviewed_date": "2026-04-13",
+      "reviewed_by": "openclaw-task6",
+      "task6_result": "needs-rework"
     },
     "src/part2-performance/ch07-smoothness/02-jank-causes.md": {
       "chapter": "7.2",
