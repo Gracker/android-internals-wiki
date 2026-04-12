@@ -1340,3 +1340,35 @@ Perfetto 段落没有给出可复现的观测路径。当前章节直接写 `pow
 
 ### 关联章节
 1.1、1.2、1.6、2.15
+
+## [2026-04-12] 6.5 SharedPreferences/DataStore 性能与 ANR 优化 — DataStore 迁移语义与多进程边界
+
+### 盲区描述
+当前章节仍把 DataStore 描述成“单进程设计”，并把 `SharedPreferencesMigration` 写成一次性自动搬迁后“删除或重命名旧文件”的简单流程。缺失了 DataStore 1.1.0+ `MultiProcessDataStoreFactory` 的官方能力、`keysToMigrate` 的边界、迁移只发生一次的语义，以及旧 SharedPreferences 何时真正清理/删除的条件。这会直接影响迁移方案设计和数据一致性判断。
+
+### 重要程度
+高
+
+### 建议研究方向
+- DataStore 1.1.0+ `MultiProcessDataStoreFactory` 的一致性保证与适用边界
+- `SharedPreferencesMigration` 的 migrate-once 规则、`keysToMigrate` 行为、cleanup / delete 条件
+- 单进程 `preferencesDataStore` delegate 与多进程 DataStore factory 的选型边界
+
+### 关联章节
+6.5、6.4、9.3、9.4
+
+## [2026-04-12] 6.5 SharedPreferences/DataStore 性能与 ANR 优化 — `QueuedWork.waitToFinish()` 触发点与 trace 特征
+
+### 盲区描述
+章节把 SP ANR 诊断几乎全部锚定在 Activity `onPause()` / `handlePauseActivity()`，没有覆盖 modern Activity `handleStopActivity()`、BroadcastReceiver `onReceive()` 收尾、Service command handling / destroy 等实际触发点，也没有说明 trace 中如何区分主线程正在 `processPendingWork()` 执行写盘，还是只是卡在 `CountDownLatch.await()`。这会影响实际排障命中率。
+
+### 重要程度
+高
+
+### 建议研究方向
+- AOSP `ActivityThread` 中 `handlePauseActivity()` vs `handleStopActivity()` 的版本边界
+- Service / BroadcastReceiver 调 `QueuedWork.waitToFinish()` 的调用点与典型 ANR 栈
+- Perfetto / traces.txt 中 `processPendingWork()`、`queued-work-looper`、`CountDownLatch.await()` 的判别方式
+
+### 关联章节
+6.5、9.3、9.4、9.5

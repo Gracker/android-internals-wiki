@@ -5213,5 +5213,68 @@
     "added_at": "2026-04-12T14:13:39+08:00",
     "status": "pending",
     "original_review_log": "logs/review/2026-04-12-14-review.md"
+  },
+  {
+    "section": "6.5",
+    "section_title": "SharedPreferences/DataStore 性能与 ANR 优化",
+    "priority": 95,
+    "reason": "[Deep Tech Review] SharedPreferences/QueuedWork 源码片段已过时，现代 Activity ANR 栈写错，DataStore 多进程与迁移边界缺失",
+    "material_paths": [
+      "intake/research-gaps.md",
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "行 75-87 `startLoadFromDisk()`",
+        "detail": "正文按 android-16.0.0_r1 标注“已验证”，但代码片段仍是旧版 `new Thread(\"SharedPreferencesImpl-load\")`。AOSP android-16.0.0_r1 实际实现是 `sLoadExecutor.execute(() -> loadFromDisk())`，后文据此推导的 `SharedPreferencesImpl-load` 线程名也不再可靠。",
+        "suggestion": "按 android-16.0.0_r1 改成 `sLoadExecutor` 版本，并把 Perfetto 观察点改成“加载 executor 线程 / 读盘线程”，不要硬写旧线程名。"
+      },
+      {
+        "type": "源码错误",
+        "location": "行 114-134 `QueuedWork.waitToFinish()`",
+        "detail": "代码与解释都没有对上当前 AOSP。android-16.0.0_r1 的 `waitToFinish()` 先 `handlerRemoveMessages()`、关闭 delay、`processPendingWork()` 执行 `sWork`，再 drain `sFinishers`；正文里的 `sPendingWorkFinishers.poll()` 不是当前实现。",
+        "suggestion": "重写这一段，明确区分 `sWork`（真正待执行的磁盘任务）和 `sFinishers`（`awaitCommit` 收尾等待），并补 `processPendingWork()` 帮忙执行写盘的路径。"
+      },
+      {
+        "type": "版本差异",
+        "location": "行 110-136、269-307 生命周期与 traces.txt 栈",
+        "detail": "正文把现代 App 的主线程等待路径写成 `Activity.onPause()` / `handlePauseActivity()`。但 android-16.0.0_r1 里 `handlePauseActivity()` 只对 pre-Honeycomb Activity 调 `QueuedWork.waitToFinish()`，非 pre-Honeycomb Activity 的等待点在 `handleStopActivity()`；Service 则出现在 `handleServiceArgs()` / `handleStopService()`。",
+        "suggestion": "把 Activity、Service、BroadcastReceiver 三类入口拆开写，至少区分“pre-Honeycomb pause 路径”和“现代 Activity stop 路径”，并同步修正 traces.txt 示例。"
+      },
+      {
+        "type": "源码错误",
+        "location": "行 170-187 `enqueueDiskWrite()`",
+        "detail": "片段把锁对象写成 `SharedPreferencesImpl.this`，而当前 AOSP 用的是 `mWritingToDiskLock`；同时漏掉 `postWriteRunnable.run()`，还把 `commit()` 简化成“总是当前线程执行”。实际上只有 `mDiskWritesInFlight == 1` 时同步 commit 才会 inline run，否则也会走 `QueuedWork.queue(...)`。",
+        "suggestion": "按 android-16.0.0_r1 的真实代码重写，并补“commit 何时 inline，何时也会入队”的判断条件。"
+      },
+      {
+        "type": "版本差异",
+        "location": "行 393-403 多进程选型",
+        "detail": "正文把 DataStore 写成“单进程设计，跨进程需要额外封装”，并把 `ContentProvider + Room` 写成默认替代方案。官方文档已明确说明 DataStore multi-process 自 1.1.0 起可用，可通过 `MultiProcessDataStoreFactory` 在多进程间共享同一数据文件。",
+        "suggestion": "把选型改成“单进程 delegate 用 `preferencesDataStore` / `DataStoreFactory`，多进程用 `MultiProcessDataStoreFactory`；Room 仅在需要关系查询或复杂事务时再选”。"
+      },
+      {
+        "type": "知识盲区",
+        "location": "行 244-257 `SharedPreferencesMigration`",
+        "detail": "迁移段只讲了“第一次访问时自动迁移”，没讲官方文档强调的 one-shot 语义：key 只会从 SharedPreferences 迁移一次，迁移后继续写旧 SP 会造成数据分叉；也没讲 `keysToMigrate`、清理旧 key、旧 XML 仅在清空后才可能被删除的条件。",
+        "suggestion": "补 `SharedPreferencesMigration` 的 migrate-once 规则、`keysToMigrate`/cleanup 条件，以及“迁移后必须停止读写旧 SP”的约束。"
+      },
+      {
+        "type": "知识盲区",
+        "location": "行 267-313 Perfetto / traces 诊断路径",
+        "detail": "章节只覆盖 Activity 场景，没有覆盖 BroadcastReceiver `onReceive()`、Service command handling / destroy 路径里的 `QueuedWork.waitToFinish()`，也没说明 trace 里如何区分“主线程在 `processPendingWork()` 执行写盘”与“主线程在 `CountDownLatch.await()` 纯等待”。",
+        "suggestion": "补至少三类典型栈：Activity stop、BroadcastReceiver 收尾、Service args/stop，并说明 `queued-work-looper` 活跃 + 主线程 `await()` 与主线程自己执行 `processPendingWork()` 的区别。"
+      },
+      {
+        "type": "源码错误",
+        "location": "行 365-375 自定义 Trace 示例",
+        "detail": "示例代码不可编译。`android.os.Trace.beginSection()` 返回 `void/Unit`，不能保存到 `val trace` 再调用 `trace.end()`；正确 API 是 `Trace.beginSection()` 和 `Trace.endSection()` 配对。",
+        "suggestion": "改成 `Trace.beginSection(\"DataStore.write.${key.name}\")` + `finally { Trace.endSection() }`，或使用 `androidx.tracing.trace { ... }`。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-12T14:29:50+08:00",
+    "status": "pending"
   }
 ]

@@ -23,10 +23,11 @@ sources:
 tags: [sharedpreferences, datastore, anr, io, storage, performance, queuedwork]
 related_chapters: ["6.1", "6.3", "9.1", "9.2", "8.2", "4.5"]
 section: "6.5"
-pipeline_stage: task9_pending
+pipeline_stage: task2b_pending
 task6_state: reviewed
-task9_state: pending
-task2b_state: idle
+task9_state: reviewed
+task9_result: needs-rework
+task2b_state: pending
 ---
 
 # 6.5 SharedPreferences/DataStore 性能与 ANR 优化
