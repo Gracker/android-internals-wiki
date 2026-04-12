@@ -2004,3 +2004,22 @@
 - **问题**：SoC 支持差异、`EXTRACT_ARG` 参数名、atrace 示例命令、`low-latency decoding` 的版本演进都还带着明显的技术核对风险。
 - **建议**：先由 Task 9 核对 AOSP / trace processor schema / 官方文档，再由 Task 2B 回写这些段落。
 - **review 日志**：logs/review/2026-04-13-00-review.md
+
+## [Task9 Deep Review] 8.8 Android 多媒体管线性能 — 2026-04-13
+- **类型**：原理准确性
+- **位置**：L228 Compose PlayerSurface 段落
+- **问题**：把 `PlayerSurface` 写成“直接使用 ComposeView 管道”不准确。Media3 1.10 release notes 明确提到 `ContentFrame` / `PlayerSurface` 仍会受到 `SurfaceView inside a Compose AndroidView` 平台 bug 影响，说明它封装的是 `SurfaceView` / `TextureView` 这类平台 surface primitive，而不是脱离 surface 的纯 Compose 渲染路径。
+- **建议**：改成“PlayerSurface 把 `SurfaceView` / `TextureView` 的管理封装进 Compose 组件”，并说明 zero-copy / overlay 是否成立仍取决于 surface type。
+
+## [Task9 Deep Review] 8.8 Android 多媒体管线性能 — 2026-04-13
+- **类型**：交叉引用
+- **位置**：frontmatter `related_chapters` + Tunneled playback / Camera → MediaCodec 小节
+- **问题**：正文已经深入讨论 AudioFlinger / AAudio、Camera → Codec、HWC / tunneled，但 `related_chapters` 只列了 `2.6`、`2.13`、`2.15`、`2.16`、`8.4`、`14.9`，缺少已存在的 `1.16 Audio Pipeline 延迟与性能`、`18.14 Camera 渲染管线`、`18.15 视频叠加与 HWC`。
+- **建议**：补齐这些交叉引用，避免本章与音频专题、Camera 渲染、Overlay/HWC 章节断开。
+
+## [Task9 Deep Review] 8.8 Android 多媒体管线性能 — 2026-04-13
+- **类型**：参考资料
+- **位置**：frontmatter `sources`
+- **问题**：AAudio 官方链接 `https://developer.android.com/ndk/guides/audio/aaudio/low-latency-audio` 当前返回 404；`https://android-developers.googleblog.com/ (Media3 1.10 Release)` 也只是首页占位，无法支撑精确溯源。
+- **建议**：替换为当前可访问的官方文档或具体 release note / blog URL，避免后续复核时找不到原始依据。
+

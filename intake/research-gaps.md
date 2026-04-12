@@ -1597,3 +1597,20 @@ AsyncLayoutInflater 一节缺少 AndroidX 当前实现的关键边界，尤其�
 
 ### 关联章节
 7.12、8.3、14.6
+
+## [2026-04-13] 8.8 Android 多媒体管线性能 — 视频显示路径分叉模型
+
+### 盲区描述
+正文把“MediaCodec 输出到 Surface”“TextureView 路径”“tunneled sideband 输出”压成了一条叙述线，导致零拷贝、Overlay、GPU 合成和 HWC sideband 的边界不清。实际做性能定位时，我们至少要区分三条路径：SurfaceView/BufferQueue→SurfaceFlinger/HWC、TextureView/SurfaceTexture→App RenderThread/GPU、tunneled sideband→SurfaceView/HWC。少了这层分叉，读者无法把 Perfetto 中看到的 GPU 忙、HWC overlay、SurfaceTexture 采样、Secure Video Path 限制对应到正确机制。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 核对 SurfaceView、TextureView、tunneled sideband 在 producer/consumer 关系上的差异
+- 补 dumpsys SurfaceFlinger / Perfetto / HWC overlay 的对应观察点
+- 补 secure video path / Widevine L1 与 overlay、tunneled playback 的边界条件
+
+### 关联章节
+8.8、18.15、18.14、2.13、2.16、1.16
+
