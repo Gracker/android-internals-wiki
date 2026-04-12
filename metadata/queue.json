@@ -5480,5 +5480,68 @@
     "added_at": "2026-04-12T17:14:00+08:00",
     "status": "pending",
     "original_review_log": "logs/review/2026-04-12-17-review.md"
+  },
+  {
+    "section": "7.8",
+    "section_title": "RecyclerView 列表滑动性能深度优化",
+    "priority": 95,
+    "reason": "[Deep Tech Review] 7.8 存在 4 处会直接误导源码核对或让示例/SQL失效的技术错误，且 GapWorker / ARR / ItemAnimator 还有 3 处关键边界缺口需要回炉。",
+    "material_paths": [
+      "intake/suggestions.md",
+      "intake/research-gaps.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "frontmatter `sources` + 行 96/126/249/313-315 的 AndroidX 源码锚点",
+        "detail": "章节把 AndroidX 源码写成 `frameworks/support/recyclerview/src/main/java/...`，并把 `android-17.0.0_r3`、`recyclerview-1.4.0` 当成可直接复核的源码 ref；这些 gitiles 路径/refs 不能直接解析到 RecyclerView 源码，读者无法按文中锚点复核。当前可用锚点应切到 `platform/frameworks/support/+/androidx-main/recyclerview/recyclerview/src/main/java/androidx/recyclerview/widget/` 或 `androidx-recyclerview-release`。",
+        "suggestion": "统一重写 AndroidX 源码路径与验证基线，区分 platform tag、AndroidX branch 和 release notes，不要把不可访问的 ref 当成“已验证”。"
+      },
+      {
+        "type": "源码错误",
+        "location": "行 100-127 GapWorker 预取机制",
+        "detail": "正文把 GapWorker 写成在 `Choreographer.doFrame()` 的 COMMIT 阶段触发，注释里还出现 `getPrefabItemCount()` 这样的伪 API。实际调用链是 `RecyclerView.ViewFlinger.run()` 在继续滚动时调用 `mGapWorker.postFromTraversal()`，后者通过 `recyclerView.post(this)` 把 `GapWorker` Runnable 投到主线程消息队列；预取位置来自 `collectAdjacentPrefetchPositions()` / `collectInitialPrefetchPositions()`。",
+        "suggestion": "按真实调用链重写 GapWorker 小节，删除 COMMIT 阶段表述和伪 API，并把“deadline 预算”解释到 `postFromTraversal()` / `run()` / `prefetchPositionWithDeadline()` 这一层。"
+      },
+      {
+        "type": "源码错误",
+        "location": "行 94、254-283 Perfetto trace 名称 / SQL / track 指引",
+        "detail": "正文使用 `RV Layout`、`RV OnBindView` 和 `LIKE \"%RV Layout%\"`、`LIKE \"%RV OnBindView%\"` 这样的 SQL；实际 RecyclerView 源码 trace 名为 `RV OnLayout`、`RV FullInvalidate`、`RV PartialInvalidate`、`RV Prefetch`、`RV onCreateViewHolder type=0x%X`、`RV onBindViewHolder type=0x%X`。按当前 SQL 直接跑会漏数甚至查空，而且这些 slice 出现在调用线程上，不存在单独的“RecyclerView track”。",
+        "suggestion": "把 Perfetto 一节改成真实 slice 名和可运行 SQL，并说明 step1/2/3 需要通过外层 slice + 调用栈推断，不会在 Trace 里直接出现同名切片。"
+      },
+      {
+        "type": "源码错误",
+        "location": "行 174-188 / 207-209 RecycledViewPool 共享示例",
+        "detail": "`setRecycleChildrenOnDetach(true)` 属于 `LinearLayoutManager`，不是 `RecyclerView`。当前示例 `holder.innerRecyclerView.setRecycleChildrenOnDetach(true)` 读者直接复制会编译失败。",
+        "suggestion": "把调用移到具体的 `LinearLayoutManager` 实例上，或在创建内层 LayoutManager 时配置该选项。"
+      },
+      {
+        "type": "版本差异",
+        "location": "行 236-250 RecyclerView 1.4 与 ARR",
+        "detail": "本段把 RecyclerView 1.4 的 `setFrameContentVelocity()` 接入，与 Android 16 的 `Display.hasArrSupport()` / `getSuggestedFrameRate()` / `getSupportedRefreshRates()` 混成同一组“ARR 新 API”。这些 API 的确存在，但属于平台 `android.view.Display`，版本边界和 AndroidX 1.4 不是同一件事。",
+        "suggestion": "拆成两层说明：RecyclerView 1.4 负责在滚动时调用 `View.setFrameContentVelocity()`；设备能力查询和建议帧率单独落到 `Display` API，并标明 Android 16。"
+      },
+      {
+        "type": "原理断裂",
+        "location": "行 42/66-75/254-262 三阶段布局与 Trace 对位",
+        "detail": "章节把 `dispatchLayoutStep1/2/3` 写成可以直接在 Trace 中定位，但源码并没有同名 `Trace.beginSection()`。真实可见的外层 slice 更接近 `RV OnLayout`、`RV FullInvalidate`、`RV PartialInvalidate`；step1/2/3 需要结合 `dispatchLayout()` 调用栈和 `AdapterHelper` 更新类型推断。",
+        "suggestion": "补一张“step1/2/3 ↔ 外层 slice ↔ 典型触发条件”的对照表，避免读者误以为 Perfetto 会直接显示 step 名。"
+      },
+      {
+        "type": "原理断裂",
+        "location": "行 226-227 / 307-309 ItemAnimator 优化建议",
+        "detail": "正文建议“使用 `SimpleItemAnimator`（更轻量）”，但 `SimpleItemAnimator` 本身是 abstract class，默认的 `DefaultItemAnimator` 就继承它。当前说法会把抽象基类写成可直接替换的轻量实现。",
+        "suggestion": "改成关闭 change animation（如 `((SimpleItemAnimator) rv.getItemAnimator()).setSupportsChangeAnimations(false)`）、直接 `setItemAnimator(null)`，或显式给出自定义 `ItemAnimator` 子类。"
+      },
+      {
+        "type": "知识盲区",
+        "location": "GapWorker 预算判断与 skipped prefetch 的可观测性",
+        "detail": "正文只写“deadline 超时会丢弃剩余请求”，没有解释 `willCreateInTime()` / `willBindInTime()` 与 `factorInCreateTime()` / `factorInBindTime()` 这套历史耗时预测机制。读者看 trace 时仍然无法解释“为什么预取请求存在，但没有执行 create / bind”。",
+        "suggestion": "补 `RecycledViewPool` 的时间预算预测链，并和 `RV Prefetch`、`RV onCreateViewHolder`、`RV onBindViewHolder` 的观测关系一起写清楚。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-12T17:27:00+08:00",
+    "status": "pending"
   }
 ]
