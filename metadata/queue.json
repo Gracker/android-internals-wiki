@@ -2923,8 +2923,10 @@
     ],
     "added_by": "task6-review",
     "added_at": "2026-04-11T01:15:00+08:00",
-    "status": "pending",
-    "original_review_log": "logs/review/2026-04-11-01-review.md"
+    "status": "completed",
+    "original_review_log": "logs/review/2026-04-11-01-review.md",
+    "completed_at": "2026-04-12T16:07:21+08:00",
+    "completed_by": "task2b-rework"
   },
   {
     "section": "1.10",
@@ -4992,7 +4994,9 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-12T09:42:37+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-12T16:07:21+08:00",
+    "completed_by": "task2b-rework"
   },
   {
     "section": "5.9",
@@ -5361,5 +5365,38 @@
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-12T15:20:00+08:00",
     "status": "pending"
+  },
+  {
+    "section": "7.10",
+    "section_title": "图片加载与 Bitmap 性能优化",
+    "priority": 90,
+    "reason": "[review回炉] 解码耗时表缺少测试条件，Coil Bitmap 复用表述存在版本风险，Perfetto 部分缺真实 Trace 素材",
+    "material_paths": [
+      "intake/suggestions.md（含 review 意见）"
+    ],
+    "review_issues": [
+      {
+        "type": "需补充素材",
+        "location": "各格式解码耗时对比",
+        "detail": "JPEG / PNG / WebP / AVIF 的耗时表缺少测试设备、图片样本、解码器实现和原始来源。",
+        "suggestion": "补充 benchmark 条件和原始来源，或把表格降级为定性比较。"
+      },
+      {
+        "type": "需确认",
+        "location": "Coil 管线架构 / Coil vs Glide 的选择",
+        "detail": "Coil 的 Bitmap 管理被概括成“复用系统 inBitmap”，但不同版本的 Bitmap Pool 策略差异没有交代清楚。",
+        "suggestion": "按实际引用的 Coil 版本核对 Bitmap 复用策略，再统一正文和对比表。"
+      },
+      {
+        "type": "需补充素材",
+        "location": "在 Perfetto 中定位图片解码卡顿",
+        "detail": "缺少 1 组真实 Trace 片段或等价图示，无法把主线程解码和卡顿帧的观察顺序落到具体画面。",
+        "suggestion": "补 1-2 张真实 Perfetto 片段，至少覆盖主线程解码 slice 和对应卡顿帧。"
+      }
+    ],
+    "added_by": "task6-review",
+    "added_at": "2026-04-12T16:22:35+08:00",
+    "status": "pending",
+    "original_review_log": "logs/review/2026-04-12-16-review.md"
   }
 ]

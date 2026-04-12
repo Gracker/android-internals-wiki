@@ -14,6 +14,9 @@ drafted_date: "2026-04-07"
 drafted_by: "openclaw-task2a"
 last_verified: "2026-04-07"
 last_verified_against: "AOSP android-16.0.0_r1"
+reviewed_date: "2026-04-12"
+reviewed_by: "openclaw-task6"
+task6_result: needs-rework
 confidence: medium
 sources:
   - type: official
@@ -30,19 +33,42 @@ sources:
     path: "抖音 Android 端图片优化最佳实践（AndroidPub，2024-12-19）"
   - type: research
     path: "intake/research-feeds/2026-03-31-19-ch04-app-bitmap-pool-optimization.md"
-pipeline_stage: task6_pending
-task6_state: pending
+pipeline_stage: task2b_pending
+task6_state: reviewed
 task9_state: pending
-task2b_state: idle
+task2b_state: pending
 ---
 
 # 7.10 图片加载与 Bitmap 性能优化
 
-你打开一份 Perfetto trace，发现主线程有一帧花了 200ms。展开调用栈，罪魁祸首是 `BitmapFactory.decodeResource`——一张 4000×3000 的照片被原尺寸解码到内存，吃掉了 48MB，GC 被触发，界面就卡了。
+<!-- outline-start -->
+## 本节要点大纲
+
+### 锚点（必须覆盖）
+
+- 🔹 BitmapFactory / ImageDecoder 的解码流程，以及 `inSampleSize`、`setTargetSize` 等关键参数
+- 🔹 Bitmap 像素内存的版本差异，与 `Bitmap.Config.HARDWARE` 的适用边界
+- 🔹 `inBitmap` 复用、BitmapPool，以及 Glide / Coil 的缓存与解码管线
+- 🔹 JPEG、WebP、AVIF 等格式的解码成本，与大图 OOM 风险
+- 🔹 在 Perfetto 中定位图片解码卡顿的方法与观察点
+- 🔹 图片加载优化的可执行检查清单
+
+### 扩展（可选深入）
+
+- 🔸 Hardware Bitmap 的 fd 成本与低端设备限制
+- 🔸 大型 App 的图片优化实践
+
+### OpenClaw 加工指引
+
+> 锚点是最低覆盖要求，加工时必须逐条落实并标注验证状态。
+> 量化数据、GPU 内存与解码器行为如果没有官方或实测证据，保留 `[待验证]`，不要写成确定结论。
+<!-- outline-end -->
+
+我们打开一份 Perfetto trace，发现主线程有一帧花了 200ms。展开调用栈，罪魁祸首是 `BitmapFactory.decodeResource`——一张 4000×3000 的照片被原尺寸解码到内存，吃掉了 48MB，GC 被触发，界面就卡了。
 
 图片解码是 Android 上最"昂贵"的常规操作之一。一张手机拍的照片，磁盘上可能只有 5MB，但解码后在内存中占用的空间是 `宽 × 高 × 4` 字节（ARGB_8888 格式），轻松突破 20MB。列表滑动场景中，如果在主线程连续解码十几张这样的图，GC 频繁触发，掉帧几乎是必然的。
 
-这一节我们拆解图片加载和 Bitmap 管理的完整链路：从 BitmapFactory 的内部机制到 Hardware Bitmap 的 GPU 内存模型，从 Glide/Coil 的管线架构到如何在 Perfetto 中定位图片解码导致的卡顿。读完之后，你应该能独立分析图片相关的性能问题，并给出针对性的优化方案。
+这一节我们拆解图片加载和 Bitmap 管理的完整过程：从 BitmapFactory 的内部机制到 Hardware Bitmap 的 GPU 内存模型，从 Glide/Coil 的管线架构到如何在 Perfetto 中定位图片解码导致的卡顿。读完之后，我们就能独立分析图片相关的性能问题，并给出针对性的优化方案。
 
 ## BitmapFactory 与 ImageDecoder：解码的两代方案
 
@@ -89,7 +115,7 @@ if (options.inTargetDensity != 0 && options.inDensity != 0) {
 
 Android 9（API 28）引入了 `ImageDecoder`，官方推荐在新项目优先使用。相比 BitmapFactory，它有几个实质性改进：
 
-**自动处理 EXIF 旋转**。用 BitmapFactory 加载一张手机拍的 JPEG，如果照片有旋转标记（Exif ORIENTATION_ROTATE_90），你需要手动读取 EXIF 信息并做矩阵变换。ImageDecoder 在解码时自动处理了这件事。
+**自动处理 EXIF 旋转**。用 BitmapFactory 加载一张手机拍的 JPEG，如果照片有旋转标记（Exif ORIENTATION_ROTATE_90），通常要手动读取 EXIF 信息并做矩阵变换。ImageDecoder 在解码时自动处理了这件事。
 
 **统一的数据源 API**。不再需要区分 `decodeResource`、`decodeFile`、`decodeStream`——`ImageDecoder.decodeDrawable` / `decodeBitmap` 接受 `Source` 对象，通过 `ImageDecoder.createSource` 从任意来源创建。
 
@@ -116,7 +142,7 @@ Drawable drawable = ImageDecoder.decodeDrawable(source, (decoder, info, s) -> {
 
 Bitmap 的像素内存分配方式在 Android 8.0（API 26）发生了根本变化：
 
-**Android 8.0 之前**：像素数据分配在 Java 堆。Bitmap 对象本身在 Java 堆，像素数组也在 Java 堆。这导致两个问题——Java 堆大小受限于 VM 的 heap growth limit（通常 128-512MB），加载大图容易 OOM；其次，像素数组占用大量 Java 堆空间，触发更频繁的 GC。
+**Android 8.0 之前**：像素数据分配在 Java 堆。Bitmap 对象本身在 Java 堆，像素数组也在 Java 堆。这导致两个问题——Java 堆大小受限于 VM 的 heap growth limit（通常 128-512MB），加载大图容易 OOM；同时，像素数组占用大量 Java 堆空间，触发更频繁的 GC。
 
 **Android 8.0 及之后**：像素数据分配在 Native 堆（通过 `calloc` 系统调用）。Bitmap 的 Java 对象仍然在 Java 堆，但它只持有一个指向 Native 内存的引用。Native 堆的虚拟地址空间远大于 Java 堆（64 位设备上几乎不受限），所以大图 OOM 的概率大幅降低。[已验证：AOSP `frameworks/base/libs/hwui/jni/Bitmap.cpp` 中 `allocateHeapBitmap` 与 `NativeAllocator` 的实现]
 
@@ -148,11 +174,11 @@ Hardware Bitmap 跳过了上传步骤。像素直接就在 GPU 可以访问的�
 
 每个 Hardware Bitmap 底层对应一个 `AHardwareBuffer`，而这个 buffer 会消耗一个文件描述符（fd）。Android 对每个进程的 fd 数量有上限（早期 1024，Android 8.1+ 部分设备提升到 32K）。
 
-在实际项目中，如果你用一个 `RecyclerView` 显示 100 张图，每张都用 Hardware Bitmap，那就是 100 个 fd。加上网络连接、数据库、日志文件等其他 fd 消耗者，fd 耗尽并非不可能。抖音的技术团队就遇到过类似问题：大量图片加载导致 fd 接近上限，触发了不可预期的崩溃。[来源：抖音 Android 端图片优化实践]
+在实际项目中，如果一个 `RecyclerView` 显示 100 张图，每张都用 Hardware Bitmap，那就是 100 个 fd。加上网络连接、数据库、日志文件等其他 fd 消耗者，fd 耗尽并非不可能。抖音的技术团队就遇到过类似问题：大量图片加载导致 fd 接近上限，触发了不可预期的崩溃。[来源：抖音 Android 端图片优化实践]
 
 ### 限制
 
-Hardware Bitmap 不是万能的。它的核心限制是**不可修改**——你不能用 Canvas 往上面画东西，不能用 `getPixel()` 读像素，不能用 `copyPixelsToBuffer()` 拷贝数据。如果你尝试这些操作，系统会先把像素从 GPU 拷回 CPU，然后打印一条 `StrictMode#noteSlowCall` 警告——这个拷贝过程很慢，违背了使用 Hardware Bitmap 的初衷。
+Hardware Bitmap 不是万能的。它的核心限制是**不可修改**——你不能用 Canvas 往上面画东西，不能用 `getPixel()` 读像素，不能用 `copyPixelsToBuffer()` 拷贝数据。如果尝试这些操作，系统会先把像素从 GPU 拷回 CPU，然后打印一条 `StrictMode#noteSlowCall` 警告——这个拷贝过程很慢，违背了使用 Hardware Bitmap 的初衷。
 
 具体来说：
 
@@ -189,7 +215,7 @@ Bitmap newBitmap = BitmapFactory.decodeResource(res, resId, options);
 // reusableBitmap 被回收，其像素内存被 newBitmap 接管
 ```
 
-API 19+ 的规则：复用 Bitmap 的内存必须 ≥ 新 Bitmap 需要的内存（按 `getAllocationByteCount()` 判断，而非 `getByteCount()`）。这意味着你可以用一个大的 Bitmap 复用来解码更小的图片。
+API 19+ 的规则：复用 Bitmap 的内存必须 ≥ 新 Bitmap 需要的内存（按 `getAllocationByteCount()` 判断，而非 `getByteCount()`）。这意味着可以用一个大的 Bitmap 复用来解码更小的图片。
 
 ### Glide 的 BitmapPool 实现
 
@@ -197,13 +223,13 @@ Glide 4.x 使用 `LruBitmapPool` 管理 Bitmap 复用池。当 Bitmap 不再使�
 
 BitmapPool 的大小由 `MemorySizeCalculator` 根据设备配置自动计算（通常与内存缓存共享同一个内存预算）。当池满时，用 LRU 策略淘汰最早放入的 Bitmap。
 
-Glide 的内存缓存体系实际上是三层：
+Glide 的内存缓存体系分成三层：
 
 1. **Active Resources**：正在被使用的图片，用弱引用持有。ImageView 还在显示这张图时，它会留在这里。
 2. **LruResourceCache**：LRU 内存缓存。图片不再被 Active 持有时进入这里。
 3. **LruBitmapPool**：Bitmap 复用池。解码新图片时优先从这里取可复用的 Bitmap。
 
-这三层协同工作：当系统内存紧张时，Glide 收到 `ComponentCallbacks2.onTrimMemory` 回调，会按优先级清理缓存——先清 BitmapPool，再清 LruResourceCache，最后清 Active Resources。
+这三层协同工作：当系统内存紧张时，Glide 收到 `ComponentCallbacks2.onTrimMemory` 回调，会按优先级清理缓存——先清 BitmapPool，再清 LruResourceCache，再清 Active Resources。
 
 ## 图片格式解码性能
 
@@ -230,7 +256,7 @@ Android 12（API 31）引入了对 AVIF 的基础支持，Android 14 对新设�
 
 AVIF 基于 AV1 视频编码的帧内压缩，相比 JPEG 在同等画质下文件体积减少约 50%。对于带宽敏感的场景（图片 CDN、社交信息流），这是一个巨大的成本优势。抖音的技术团队通过将 JPEG 转为 HEIC（类似思路的格式），带宽成本降低超过 80%。[来源：抖音 Android 端图片优化实践]
 
-但 AVIF 的软件解码比较慢，在低端设备上可能成为瓶颈。如果你的 minSdk 低于 31，还需要考虑软件解码兜底。
+但 AVIF 的软件解码比较慢，在低端设备上可能成为瓶颈。如果应用的 minSdk 低于 31，还需要考虑软件解码兜底。
 
 ### 大图解码的 OOM 风险
 
@@ -344,7 +370,7 @@ Coil 的缓存策略与 Glide 类似：
 | 硬件位图 | 默认开启 | 默认开启 |
 | 社区 & 生态 | 更成熟，更多插件 | 增长中，API 更简洁 |
 
-如果你的项目是纯 Kotlin、使用 Compose、追求最小依赖体积，Coil 是更好的选择。如果项目历史较长、有大量 Java 代码、依赖 Glide 的特定功能（如自定义 ModelLoader），继续用 Glide 完全没问题。
+如果项目是纯 Kotlin、使用 Compose、追求最小依赖体积，Coil 是更好的选择。如果项目历史较长、有大量 Java 代码、依赖 Glide 的特定功能（如自定义 ModelLoader），继续用 Glide 完全没问题。
 
 [自动发现] 抖音的 BDFresco 框架在 Fresco 基础上做了多层优化，包括动静图缓存拆分、HEIF 软解码、按需缩放等。抖音的实验数据表明：动静图缓存拆分后，OOM 显著降低，大盘帧率正向提升；将不携带透明通道的图片从 ARGB_8888 降级为 RGB_565，内存占用减少近一半。这些是大型 App 在图片优化上的工程实践，思路值得借鉴。[来源：抖音 Android 端图片优化实践、抖音 Android 端图片优化最佳实践]
 
@@ -352,7 +378,7 @@ Coil 的缓存策略与 Glide 类似：
 
 ### BitmapFactory.decode* 的 Trace 表现
 
-图片解码本身不会自动产生 Perfetto trace event，除非你的 App 或图片库手动打了 trace。Glide 默认不对外暴露解码的 trace 点，但你可以通过以下方式在 Perfetto 中识别图片解码问题：
+图片解码本身不会自动产生 Perfetto trace event，除非你的 App 或图片库手动打了 trace。Glide 默认不对外暴露解码的 trace 点，但仍可以通过以下方式在 Perfetto 中识别图片解码问题：
 
 **方法 1：看主线程的 CPU 使用和调用栈**。如果主线程有长时间的 CPU 密集操作，展开调用栈后看到 `BitmapFactory.nativeDecodeAsset` / `BitmapFactory.nativeDecodeStream`，就是图片解码在主线程执行了。
 
@@ -368,7 +394,7 @@ Trace.endSection();
 
 ### 用 Perfetto SQL 查询解码耗时
 
-如果你在 App 中打了自定义 trace，可以用 Perfetto 的 SQL 接口查询所有图片解码事件：
+如果在 App 中打了自定义 trace，可以用 Perfetto 的 SQL 接口查询所有图片解码事件：
 
 ```sql
 -- 查询所有 Bitmap 解码事件及其耗时
@@ -387,7 +413,7 @@ LIMIT 50;
 
 ### GPU 内存压力的间接特征
 
-Hardware Bitmap 在 GPU 内存不足时会降级为普通 Bitmap。这个降级在 Perfetto 中没有直接的 trace 点，但你可以通过以下间接特征判断：
+Hardware Bitmap 在 GPU 内存不足时会降级为普通 Bitmap。这个降级在 Perfetto 中没有直接的 trace 点，但仍可以通过以下间接特征判断：
 
 - `GLES20.glTexImage2D` 或 `EGL` 相关调用耗时异常增加——说明 GPU 在忙于其他任务，纹理上传变慢。
 - 进程的 GPU 内存（`gfxinfo` 或 `procfs/gpu_mem`) 突然增加——说明有大量 Bitmap 从 Hardware 降级到了 Software。
@@ -397,7 +423,7 @@ Hardware Bitmap 在 GPU 内存不足时会降级为普通 Bitmap。这个降级�
 adb shell cat /sys/kernel/debug/gpu_mem /proc/<pid>/status | grep -i gpu
 ```
 
-[待补充：GPU 内存压力导致 hardware bitmap 降级的 Trace 截图]
+[图：GPU 内存压力场景下的观察点，待补真实 Trace 截图]
 
 ## 优化实践总结
 
