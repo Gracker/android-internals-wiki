@@ -6164,5 +6164,62 @@
     "added_at": "2026-04-13T03:12:00+08:00",
     "status": "pending",
     "original_review_log": "logs/review/2026-04-13-03-review.md"
+  },
+  {
+    "section": "1.4",
+    "section_title": "Binder IPC 机制与性能影响",
+    "priority": 95,
+    "reason": "[Deep Tech Review] P0：AIDL 示例伪装成 IWindowManager、Binder 线程名后缀语义写错、Binder freezer 行为与版本口径错误；P1：HAL AIDL 时间线、线程池饱和判定和调度优先级链需回写",
+    "material_paths": [
+      "intake/research-gaps.md",
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "L111-L143，AIDL 接口与 Proxy 示例",
+        "detail": "正文把示例写成 `IWindowManager.aidl` 的 `addView()`，并继续展开 `IWindowManager.Stub.Proxy.addView()`。AOSP android-16.0.0_r1 的 `android/view/IWindowManager.aidl` 并不存在 `addView()`；窗口添加相关入口在 `IWindowSession.aidl` 的 `addToDisplay*()`。当前写法把真实系统接口名和自造方法签名混在一起，读者按源码核对时会直接找不到。",
+        "suggestion": "如果只是演示 AIDL 生成模式，改成自定义 `IExampleService`；如果要沿用窗口管理案例，就切换到 `IWindowSession.addToDisplay*()` 的真实接口与调用链。"
+      },
+      {
+        "type": "源码错误",
+        "location": "L154，Binder 线程命名规则",
+        "detail": "正文把 `Binder:1234_B` 解释成“处理从驱动侧到来的请求的线程”。AOSP android-16.0.0_r1 `ProcessState::makeBinderThreadName()` 实际用 `%s:%d_%X` 生成线程名，后缀是十六进制序号；`_B` 只表示第 11 个线程，不带额外语义。这个解释会误导 Perfetto 读线程池时对线程角色的判断。",
+        "suggestion": "改成“后缀是线程池中的十六进制序号”，不要给 `_B` 追加不存在的角色含义。"
+      },
+      {
+        "type": "原理错误",
+        "location": "L308，Binder Freeze 版本演进",
+        "detail": "这里写“Android 12 引入 Binder Freeze，同步调用会快速失败”。source.android 的 cached apps freezer / binder-freezer 文档给出的实际语义是：Android 11 QPR3+ 支持 cached apps freezer；当进程向 frozen app 发起同步（非 oneway）Binder 事务时，系统会 kill remote process，异步事务则缓冲到解冻或因 async buffer 溢出而崩溃。当前“Android 12 + 快速失败”的说法同时写错了版本口径和运行结果。",
+        "suggestion": "把这段改成 cached apps freezer / binder-freezer 的条件化描述，明确 Android 11 QPR3+、同步调用 kill remote process、异步调用缓冲/溢出三件事。"
+      },
+      {
+        "type": "版本差异",
+        "location": "L307、L320-L322，AIDL/HIDL 演进时间线",
+        "detail": "正文写“Android 10 开始把 HAL 从 HIDL 迁回 Stable AIDL”“到 Android 13 所有新 HAL 接口统一使用 AIDL”。source.android `AIDL for HALs` 页面明确写的是 Android 11 才引入 HAL AIDL，并要求“where possible”迁到 AIDL；如果上游 HAL 仍是 HIDL，则仍需继续使用 HIDL。当前时间线和约束条件都写得过满。",
+        "suggestion": "把转折点改到 Android 11，并补上“when upstream HALs use HIDL, HIDL must be used”的限制，不要把迁移写成 Android 10 起的无条件统一事实。"
+      },
+      {
+        "type": "原理断裂",
+        "location": "L160-L164，线程池饱和判定",
+        "detail": "这段先把“所有 Binder 工作线程处于忙碌状态（Running 或 Uninterruptible Sleep）”定义为饱和，后面又给出“数 Running 状态 Binder 线程”的判定法。两句标准彼此不一致，会漏掉正在等锁、等 IO、处于 D/S 状态但已经占住 worker 的 Binder 线程，而这些恰恰是排队和 ANR 的常见根因。",
+        "suggestion": "把判定拆成两层：先确认 worker 数量是否接近上限，再结合 thread_state、binder reply latency、锁竞争/IO 等状态判断“线程忙”而不是只数 Running。"
+      },
+      {
+        "type": "版本差异",
+        "location": "L310，Binder Heavy Hitter Watcher",
+        "detail": "正文把 Binder Heavy Hitter Watcher 写成 Android 15 的变化。但 `com/android/internal/os/BinderCallHeavyHitterWatcher.java` 在 android-12.0.0_r1 就已经存在，版权头也是 2020。把它归到 Android 15 新能力会把版本演进表带偏。",
+        "suggestion": "删掉“Android 15 新增”这句，改成“Android 12 之前已存在的内部监控能力”，或者给出真正在 Android 15 新增的 Binder 观测项。"
+      },
+      {
+        "type": "知识盲区",
+        "location": "正文整体，性能分析缺少调度优先级链",
+        "detail": "章节讲了线程池、锁竞争和 oneway，但完全没有交代 Binder priority inheritance / scheduler 传播。对于性能定位，这会留下一个黑盒：为什么某些同步调用能跟着前台线程优先级跑，为什么另一些调用仍然被后台线程或锁竞争拖慢。少了这块，读者很难把 Binder 延迟和 CPU 调度章节连起来。",
+        "suggestion": "补一个小节说明同步 Binder 的 priority inheritance、何时会失效或被锁/IO 吞掉，以及在 Perfetto 里该看哪些 sched/thread_state 证据。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-13T04:20:00+08:00",
+    "status": "pending"
   }
 ]
