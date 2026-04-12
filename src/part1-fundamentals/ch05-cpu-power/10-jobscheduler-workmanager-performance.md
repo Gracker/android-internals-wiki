@@ -8,36 +8,43 @@ polish_count: 1
 polish_date: "2026-04-09"
 polish_by: "task2b-polish"
 applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37)"
-last_verified: "2026-04-06"
+last_verified: "2026-04-12"
 reviewed_date: "2026-04-12"
-reviewed_by: openclaw-task6
-last_verified_against: "AOSP android-17-beta3"
+reviewed_by: "openclaw-task6"
+last_verified_against: "AOSP android-16.0.0_r1, developer.android.com reference, perfetto.dev stdlib docs"
 confidence: medium
 sources:
   - type: official
     path: "https://developer.android.com/reference/android/app/job/JobScheduler"
   - type: official
-    path: "https://developer.android.com/topic/libraries/architecture/workmanager"
+    path: "https://developer.android.com/reference/android/app/job/JobInfo.Builder"
+  - type: official
+    path: "https://developer.android.com/reference/android/app/usage/UsageStatsManager"
+  - type: official
+    path: "https://developer.android.com/topic/libraries/architecture/workmanager/how-to/define-work"
   - type: official
     path: "https://developer.android.com/about/versions/17/features#job-debugging"
+  - type: official
+    path: "https://perfetto.dev/docs/analysis/stdlib-docs"
   - type: aosp
-    path: "frameworks/base/services/core/java/com/android/server/job/JobSchedulerService.java"
-  - type: aosp
-    path: "frameworks/base/core/java/android/app/job/JobInfo.java"
+    path: "frameworks/base/apex/jobscheduler/service/java/com/android/server/job/JobSchedulerService.java"
   - type: aosp
     path: "frameworks/base/apex/jobscheduler/service/java/com/android/server/job/JobStore.java"
   - type: aosp
-    path: "frameworks/base/services/core/java/com/android/server/job/controllers/"
-  - type: blog
-    path: "https://android-developers.googleblog.com/ (Play Store Wake Lock Policy 2026)"
+    path: "frameworks/base/apex/jobscheduler/service/java/com/android/server/job/controllers/"
+  - type: aosp
+    path: "frameworks/base/apex/jobscheduler/framework/java/android/app/job/JobInfo.java"
+  - type: aosp
+    path: "frameworks/base/apex/jobscheduler/framework/java/android/app/job/JobScheduler.java"
 tags: [jobscheduler, workmanager, background-scheduling, power, doze, battery, wakelock, app-standby, quota]
 related_chapters: ["5.6", "5.8", "1.5", "11.2", "15.5"]
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
+task2b_state: fixed
 task6_result: needs-rework
-task9_state: reviewed
-task2b_state: pending
 task9_result: needs-rework
+task2b_result: fixed
 ---
 
 # JobScheduler/WorkManager 调度与后台任务性能
@@ -91,7 +98,7 @@ JobScheduler 和 WorkManager 是 Google 推荐的后台任务方案。JobSchedul
 
 ### JobScheduler 的内部架构
 
-JobScheduler 的实现在 `frameworks/base/services/core/java/com/android/server/job/` 目录下。核心组件有三个：
+JobScheduler 在 Android 16 的代码已经搬到 `frameworks/base/apex/jobscheduler/service/java/com/android/server/job/`。核心组件有三个：
 
 **JobSchedulerService** 是中枢。当 App 调用 `JobScheduler.schedule(JobInfo)` 时，JobInfo 被包装成 `JobStatus` 对象，注册到 JobSchedulerService 中。JobStatus 记录了任务的所有约束条件、优先级、退避策略等信息。
 
@@ -110,8 +117,8 @@ JobScheduler 的实现在 `frameworks/base/services/core/java/com/android/server
 **JobStore** 负责任务的持久化。任务信息以 XML 格式存储在 `/data/system/job/jobs.xml` 中，设备重启后任务不会丢失。这一点是 AlarmManager + PendingIntent 方案的一个关键优势——PendingIntent 中的 BroadcastReceiver 在设备重启后会丢失。
 
 ```java
-// frameworks/base/services/core/java/com/android/server/job/JobSchedulerService.java
-// @ AOSP android-17-beta3
+// frameworks/base/apex/jobscheduler/service/java/com/android/server/job/JobSchedulerService.java
+// @ AOSP android-16.0.0_r1
 // 简化：当 Controller 报告状态变化时触发
 void onControllerStateChanged() {
     synchronized (mLock) {
@@ -150,30 +157,22 @@ JobInfo.Builder 允许开发者设置以下约束：
 
 从 Android Q（10）开始，可以调度无约束的任务（prior to Q 需要至少一个约束）。无约束任务可以在任何时候执行，但受 App Standby Bucket 配额限制。
 
-[已验证: AOSP android-17-beta3, frameworks/base/services/core/java/com/android/server/job/]
+[已验证: AOSP android-16.0.0_r1, frameworks/base/apex/jobscheduler/service/java/com/android/server/job/]
 
 ### 优先级与配额
 
-JobScheduler 的调度不是简单的"先到先得"。系统综合考虑任务的优先级、App 的 Standby Bucket、以及执行配额来决定执行顺序。
+JobScheduler 不是“先 schedule 先执行”。系统会同时看 job priority、Standby Bucket 和 quota。
 
-**优先级**通过 `JobInfo.Builder.setPriority()` 设置，有四个级别：`PRIORITY_DEFAULT`（0）、`PRIORITY_LOW`（-100）、`PRIORITY_HIGH`（100）、`PRIORITY_MAX`（200）。`PRIORITY_MAX` 预留给系统关键任务（如系统更新），普通 App 无法使用。Android 16 引入了 Priority Hints 机制，允许开发者标注任务是紧急（urgent）还是可延迟（deferrable），系统据此做更智能的批处理。
+`JobInfo.Builder.setPriority(int)` 是 API 33 引入的公开接口，可用值是 `PRIORITY_MIN`、`PRIORITY_LOW`、`PRIORITY_DEFAULT`、`PRIORITY_HIGH`、`PRIORITY_MAX`。这个 priority 只用于调用方内部的排序，不会跨 App 全局抢占。Android 14 开始，文档把范围收窄到同一 `job namespace` 内的排序。如果把所有 job 都设成 high 或 max，系统照样会按 quota、约束和重试历史做限制。
 
-**Prefetch Job** 是一个值得特别提到的类型。通过 `JobInfo.Builder.setPrefetch(true)` 设置，表示这个任务的目的是预取数据、为 App 下次启动做准备。系统会基于 App 使用频率的预测模型，在 App 下次可能被打开之前执行 prefetch 任务。这对于减少 App 冷启动时的网络等待时间很有帮助。
+`QuotaController` 负责把“这个 App 现在还能不能继续跑后台 job”这件事编码成可执行规则。它看的不是单个 job 的 CPU 时间，而是调用方在滚动时间窗口里的执行历史、所在 bucket，以及当前系统状态。
 
-**执行配额（QuotaController）**从 Android 9 开始引入，与 App Standby Bucket 直接挂钩。每个 App 在一个滚动时间窗口（通常是 24 小时）内的后台任务总执行时间有上限：
-
-- **Active**：配额最充裕（Android 16 中进一步放宽）
-- **Working Set**：中等配额
-- **Frequent**：较严格
-- **Rare**：非常严格（约 10 分钟/24 小时）
-- **Restricted**：极度受限，网络访问仅限前台
-
-配额耗尽后，即使约束条件满足，任务也不会被执行。用户主动操作 App（比如点击通知）可以临时提升 Bucket 等级，释放更多配额。
+App Standby Bucket 的时间线也要写清楚。Android 9（API 28）引入的起点是四档：`ACTIVE`、`WORKING_SET`、`FREQUENT`、`RARE`。`STANDBY_BUCKET_RESTRICTED` 是 API 30 新增常量，`UsageStatsManager` 文档还专门标注它在 Android 11（R）默认未启用。实践里可以把它理解成“系统已经开始明显收紧这个 App 的后台额度”，但不要把它回写到 Android 9 的起点表里。
 
 ```java
-// frameworks/base/services/core/java/com/android/server/job/controllers/QuotaController.java
-// @ AOSP android-17-beta3
-// 简化：检查 App 是否还有执行配额
+// frameworks/base/apex/jobscheduler/service/java/com/android/server/job/controllers/QuotaController.java
+// @ AOSP android-16.0.0_r1
+// 简化：检查调用方是否还在 quota 内
 boolean isWithinQuotaLocked(JobStatus job) {
     final int standbyBucket = job.getStandbyBucket();
     final long elapsed = getRemainingExecutionTime(job.getSourceUid());
@@ -182,16 +181,28 @@ boolean isWithinQuotaLocked(JobStatus job) {
 }
 ```
 
-[已验证: AOSP android-17-beta3, QuotaController.java]
-[待验证: Active bucket 具体配额数值在不同 OEM 上的差异]
+Bucket 越靠后，系统给后台 job 的窗口越紧。我们在排查“任务一直不跑”时，不能只看 `requiresCharging`、`requiresUnmeteredNetwork` 这类显式约束，还要同时看调用方是不是已经掉进了更严格的 bucket。
+
+[已验证: AOSP android-16.0.0_r1, frameworks/base/apex/jobscheduler/service/java/com/android/server/job/controllers/QuotaController.java; developer.android.com/reference/android/app/job/JobInfo.Builder; developer.android.com/reference/android/app/usage/UsageStatsManager]
 
 ### Expedited Job
 
-Android 12 引入了 Expedited Job（紧急任务），通过 `JobInfo.Builder.setExpedited(true)` 标记。这类任务享有独立的配额池，可以在系统负载较高时优先执行。
+Android 12 引入 Expedited Job，入口是 `JobInfo.Builder.setExpedited(true)`。这类 job 会争取更快启动，默认以 `PRIORITY_MAX` 运行，但它们仍然受单独的 expedited quota 约束。直接调用 JobScheduler 时，如果 quota 已经耗尽，`schedule()` 可能直接返回 `RESULT_FAILURE`。
 
-Expedited Job 的典型场景是用户触发的重要操作（比如用户在 IM 中发送一条带图片的消息，需要先压缩再上传）。它不是 Foreground Service 的替代品，但在不需要持续前台存在的场景下，比 Foreground Service 更轻量。
+WorkManager 对应的是 `OneTimeWorkRequestBuilder.setExpedited(OutOfQuotaPolicy)`。参数是 `OutOfQuotaPolicy`，不是 `ExistingWorkPolicy`。常见写法有两种：
 
-WorkManager 的 `setExpedited(ExistingWorkPolicy.APPEND)` 会尝试将任务标记为 Expedited Job。如果 Expedited 配额用尽，系统自动降级为普通 Job，不会丢失任务。
+```kotlin
+val request = OneTimeWorkRequestBuilder<SyncWorker>()
+    .setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
+    .build()
+```
+
+- `RUN_AS_NON_EXPEDITED_WORK_REQUEST`：没拿到 expedited quota 时，退回普通 work，任务不丢。
+- `DROP_WORK_REQUEST`：没拿到 quota 就直接取消。
+
+如果场景只是“用户刚点了一次同步，希望尽快开始”，Expedited Job 很合适。如果任务需要跑很久，或者用户必须一直看到明确的进行状态，还是要看 UIDT Job 或 Foreground Service。
+
+[已验证: developer.android.com/reference/android/app/job/JobInfo.Builder; developer.android.com/topic/libraries/architecture/workmanager/how-to/define-work]
 
 ## WorkManager 的架构与性能特征
 
@@ -266,27 +277,34 @@ WorkManager.getInstance(context)
 
 以上内容覆盖了 JobScheduler 和 WorkManager 的核心调度机制。在实际开发中，还有一个难点一直存在：任务提交后，怎么知道它为什么没执行？Android 17 在这方面补上了重要的一块拼图。
 
-## Android 17 新增调试能力
+## Android 16 / 17 的调试能力补强
 
-### JobDebugInfo API
+### API 36 / 37 的 pending 原因调试接口
 
-Android 17 引入了 `JobDebugInfo` API，这是后台任务调试能力的一个重要进步。在此之前，开发者只能通过 logcat 或 Perfetto 观察任务的执行状态，很难知道"我的任务为什么一直在 pending"。
+过去我们看到 job 长时间 pending，常用办法是 `dumpsys jobscheduler` 配合 logcat。API 36 开始，JobScheduler 直接给了两个面向“当前为什么没跑”的接口：
 
-核心方法是 `JobScheduler.getPendingJobReasonStats()`。它返回一个 Map，Key 是 pending 的原因（约束类型），Value 是该原因导致的累计等待时间。例如：
+- `getPendingJobReasons(int)` 返回当前可能阻塞这个 job 的 `PENDING_JOB_REASON_*` 数组。
+- `getPendingJobReasonsHistory(int)` 返回有限历史窗口，每条 `PendingJobReasonsInfo` 都带时间戳和当时的 reason 数组。
+
+API 37 在这个基础上又补了一层聚合统计：`getPendingJobReasonStats(int)` 返回 `Map<Integer, Duration>`。key 是 `PENDING_JOB_REASON_*`，value 是该 job 生命周期里因为这个 reason 处于 pending 的累计时长。
 
 ```java
-// Android 17 (API 37) 新增
-JobScheduler js = (JobScheduler) context.getSystemService(Context.JOB_SCHEDULER_SERVICE);
-Map<Integer, Long> reasons = js.getPendingJobReasonStats(jobId);
-// 可能的输出：
-// CONSTRAINT_CONNECTIVITY -> 3600000 (等待网络 1 小时)
-// CONSTRAINT_BATTERY_NOT_LOW -> 7200000 (等待电量恢复 2 小时)
-// QUOTA -> 1800000 (配额耗尽等待 30 分钟)
+JobScheduler js = context.getSystemService(JobScheduler.class);
+
+// API 36
+int[] currentReasons = js.getPendingJobReasons(jobId);
+List<PendingJobReasonsInfo> history = js.getPendingJobReasonsHistory(jobId);
+
+// API 37
+Map<Integer, Duration> stats = js.getPendingJobReasonStats(jobId);
+Duration quotaWait = stats.getOrDefault(
+        JobScheduler.PENDING_JOB_REASON_QUOTA,
+        Duration.ZERO);
 ```
 
-这个 API 直接回答了"任务为什么没执行"的问题。结合 Perfetto Trace 中的 JobScheduler track，我们可以建立完整的分析路径：从“看到任务 pending”到“知道具体原因”，再到“决定优化策略”。
+这三个接口放在一起用，信息层级很清楚：`getPendingJobReasons()` 看“现在卡在哪”，`getPendingJobReasonsHistory()` 看“刚才怎么变过”，`getPendingJobReasonStats()` 看“整个等待期里哪一种原因最耗时”。把 API 36 的方法全压到 Android 17，读者会误以为 Android 16 之前完全没有这条诊断路径。
 
-[已验证: 官方文档, developer.android.com/about/versions/17/features#job-debugging]
+[已验证: developer.android.com/reference/android/app/job/JobScheduler]
 
 ### ProfilingManager 新增触发器
 
@@ -307,16 +325,37 @@ Android 17 的 ProfilingManager 增加了三个新的系统触发器：
 
 ### 在 Perfetto 中分析 JobScheduler
 
-Perfetto 提供了多种方式观察 JobScheduler 的行为。
+先把两种数据来源分开。Perfetto 里和 JobScheduler 相关的结果，常见的是 statsd 和 atrace 两条路。
 
-**Jobs Track**：在 Perfetto UI 中，展开 system_server 进程，会看到 `JobScheduler` 相关的 track。每个 slice 代表一个 Job 的执行周期，从 `onStartJob()` 到 `jobFinished()`。Slice 的名称通常包含包名和 Job ID。
+**1. statsd：看 constraint / screen / charging / bucket 状态**
 
-**Device State 区域**：在 trace 顶部的 Device State 区域，有 `Jobs` 和 `Long Wake locks` track。Jobs track 显示当前正在执行的所有 Job（跨所有 App），Long Wake locks track 显示持有时长超过阈值的 WakeLock。如果看到 Jobs track 上频繁出现同一个 App 的 slice，说明该 App 的后台任务调度过于频繁。
-
-**SQL 分析**：对于需要量化分析的场景，可以使用 Perfetto 的 SQL 接口：
+如果 trace 打开了 StatsdTracingConfig，并包含 `ATOM_SCHEDULED_JOB_STATE_CHANGED` push atom，trace processor 可以通过 `android.job_scheduler_states` 模块生成 `android_job_scheduler_states` 表。这张表更适合回答“它为什么还在等”。
 
 ```sql
--- 查询所有 JobScheduler 任务及其执行时长
+INCLUDE PERFETTO MODULE android.job_scheduler_states;
+
+SELECT
+    ts,
+    dur,
+    package_name,
+    job_id,
+    standby_bucket,
+    has_charging_constraint,
+    has_connectivity_constraint,
+    is_requested_expedited_job,
+    is_running_as_expedited_job
+FROM android_job_scheduler_states
+WHERE package_name = 'com.example.app'
+ORDER BY ts;
+```
+
+`android_job_scheduler_states` 来自 `ScheduledJobStateChanged` atom。要看 pending 原因、screen/charging 变化、bucket 变化，这张表比 event slice 更完整。
+
+**2. atrace：看 system_server 里实际发生了哪些 schedule / execute 事件**
+
+如果 trace 采的是 `android.atrace`，并打开 system_server 类别 `ss`，`android.job_scheduler` 模块会生成 `android_job_scheduler_events`。它更适合看 job 什么时候进入 system_server、执行了多久。
+
+```sql
 INCLUDE PERFETTO MODULE android.job_scheduler;
 
 SELECT
@@ -324,36 +363,18 @@ SELECT
     dur,
     package_name,
     job_id,
-    state
-FROM android.job_scheduler_states
+    job_service_name
+FROM android_job_scheduler_events
 WHERE package_name = 'com.example.app'
 ORDER BY ts;
 ```
 
-也可以通过 `android.statsd` 数据源采集 `ATOM_SCHEDULED_JOB_STATE_CHANGED`（atom ID 10041）事件。
+Perfetto 官方文档写得很直接：`android_job_scheduler_events` 由 ATrace 的 `ss` 类别生成；`android_job_scheduler_states` 来自 `ScheduledJobStateChanged` atom。两者不要混着写，也不要把 `jobscheduler` 当成必须开启的标准 atrace 类别。如果还要对照 WakeLock，再额外打开 `power` 类别。
 
-抓取包含 JobScheduler 信息的 Perfetto Trace 时，需要启用 `jobscheduler` atrace category 和 `power` category（用于 WakeLock 信息）：
+一个够用的复现实验是：调度一个同时带 `setMinimumLatency()` 和 `setRequiredNetworkType()` 的 job，然后在断网、联网两种状态各抓一段 trace。statsd 视角会给出 constraint 状态切换；atrace 视角会给出 system_server 中实际的 schedule / run 事件。再把结果和 `dumpsys jobscheduler` 对照，通常就能判断是约束没满足、quota 用尽，还是 system_server 里根本还没开始跑。
 
-```bash
-adb shell perfetto -o /data/misc/perfetto-traces/trace.pb -t 60s \
-  --long-trace --perfetto-skip-flush \
-  --config - <<EOF
-buffers: { size_kb: 16384 }
-data_sources: {
-  config {
-    name: "android.atrace"
-    atrace_config {
-      categories: "jobscheduler"
-      categories: "power"
-      categories: "am"
-    }
-  }
-}
-EOF
-```
-
-[已验证: Perfetto 官方文档, perfetto.dev]
-[待补充: Perfetto 中 JobScheduler track 的实际截图]
+[待补充: Perfetto 中 JobScheduler state / event 对照截图]
+[已验证: perfetto.dev/docs/analysis/stdlib-docs]
 
 ### Battery Historian 分析
 
@@ -423,15 +444,18 @@ Play Console 的 Android Vitals 面板提供了与后台任务相关的监控指
 
 ### 合规方案
 
-面对 Play Store 的后台行为政策，推荐的技术路径：
+后台任务选型最容易混淆的地方，不在 API 名字，而在“是不是用户刚刚明确发起”“任务要跑多久”“系统会不会给它保留执行资格”。把几种常见入口放在一张表里看，判断会稳很多。
 
-1. **周期性后台任务** → WorkManager `PeriodicWorkRequest`
-2. **即时后台任务** → WorkManager `OneTimeWorkRequest`（需要快速响应时用 Expedited）
-3. **长时间数据传输（用户发起）** → UIDT API（`JobInfo.Builder.setUserInitiated(true)`）
-4. **需要持续运行的服务** → Foreground Service（声明正确的类型）
-5. **精确定时触发** → Android 17 的 `AlarmManager.setExactAndAllowWhileIdle(OnAlarmListener)`
+| 场景 | 推荐入口 | 使用前提 | 运行特点 | 常见失败方式 |
+|------|---------|---------|---------|-------------|
+| 可延期、可重试、需要持久化 | WorkManager `OneTimeWorkRequest` / `PeriodicWorkRequest` | 无需用户当场盯着结果 | 交给系统批处理，受 bucket、quota、约束影响 | 约束不满足、bucket 过低、周期 work 被批量延后 |
+| 用户刚触发，希望尽快开始，工作本身不长 | Expedited Job / Expedited Work | 任务要短，且确实需要更快开始 | 走单独的 expedited quota | 直接 `JobScheduler.schedule()` 可能因 quota 返回 `RESULT_FAILURE`；WorkManager 会按 `OutOfQuotaPolicy` 降级或取消 |
+| 用户发起的大文件上传 / 下载 | UIDT Job（`setUserInitiated(true)`） | Android 14+、声明 `RUN_USER_INITIATED_JOBS`、App 在前台或处于允许后台启动 Activity 的状态、必须声明 network 约束、运行时必须调用 `JobService.setNotification(...)` | 只用于 network data transfer，不走常规 job quota，条件满足时会尽快开始 | 用户从 Task Manager 停止后，App 不能直接把同一个 UIDT job 悄悄重新排回去 |
+| 用户可见、需要持续运行，而且不只是网络传输 | Foreground Service | 需要正确的 FGS type，满足后台启动限制 | 适合持续进行中的可见工作 | Android 12+ 启动限制、Android 14+ 类型约束、Android 15 某些类型有时长预算 |
 
-[来源: intake/research-feeds/2026-04-06-07-android17-power-management-wakelock-policy-aod-minmode.md]
+代入具体场景会更直观。用户点“上传 2GB 视频”时，UIDT 比 Expedited Job 更合适；用户点“立即同步一条记录”时，Expedited Job 更轻；任务能等几分钟甚至几个小时，而且希望系统自己挑时机，就回到 WorkManager。Foreground Service 留给“用户现在就能看到它在运行，而且它不只是一次网络传输”的工作。
+
+[已验证: developer.android.com/reference/android/app/job/JobInfo.Builder; developer.android.com/topic/libraries/architecture/workmanager/how-to/define-work]
 
 ## 最佳实践与优化策略
 
@@ -478,35 +502,44 @@ App 进入 Rare 或 Restricted Bucket 后，后台任务几乎无法执行。应
 - 必须使用 `startForegroundService()` 并在 5 秒内调用 `startForeground()`
 - JobScheduler 成为后台任务的推荐方案
 
-### Android 9.0（API 28）：App Standby Buckets
+### Android 9.0（API 28）：App Standby Buckets 起点
 
-- 引入五个优先级 Bucket，影响 JobScheduler 的执行配额
-- `QuotaController` 开始基于 Bucket 分配执行时间
-- Restricted Bucket 的 App 后台网络访问被禁止
+- 引入四档 standby bucket：`ACTIVE`、`WORKING_SET`、`FREQUENT`、`RARE`
+- JobScheduler 的 quota 管理开始和 bucket 直接挂钩
+- 后台 job、alarm、network 的限制开始更明显地按 bucket 分层
 
-### Android 12（API 31）：前台服务启动限制 + 精确 Alarm 限制
+### Android 11（API 30）：Restricted Bucket 常量补齐
 
-- 后台 App 无法启动 Foreground Service（少数豁免类型除外）
-- 精确 Alarm（`setExact()` / `setExactAndAllowWhileIdle()`）需要用户授权或白名单
-- Expedited Job 引入，作为部分 Foreground Service 场景的替代方案
+- `UsageStatsManager.STANDBY_BUCKET_RESTRICTED` 在 API 30 加入
+- 官方文档注明这个 bucket 在 Android 11（R）默认未启用
+- 写版本表时，不能把 Restricted 倒填回 Android 9 的起点
 
-### Android 14（API 34）：前台服务类型强制声明
+### Android 12（API 31）：Expedited Job
 
-- 所有 Foreground Service 必须声明类型（`camera`、`connectedDevice`、`dataSync` 等）
-- `dataSync` 类型在 Android 15+ 受 6 小时总时长限制
-- UIDT API（`setUserInitiated(true)`）引入，用于用户发起的长时间数据传输
+- `JobInfo.Builder.setExpedited(true)` 成为公开入口
+- 前台服务启动限制收紧，部分“需要快开始但不必长期前台驻留”的工作可以改走 Expedited Job
 
-### Android 16（API 36）：调度优化
+### Android 13（API 33）：公开 priority API
 
-- Priority Hints：标注任务紧急/可延迟，系统做更智能的批处理
-- Active Bucket 配额进一步放宽
-- JobScheduler throttle 机制增强，高频 schedule 调用被自动节流
+- `JobInfo.Builder.setPriority(int)` 在 API 33 加入
+- 可用常量是 `PRIORITY_MIN`、`PRIORITY_LOW`、`PRIORITY_DEFAULT`、`PRIORITY_HIGH`、`PRIORITY_MAX`
 
-### Android 17（API 37）：调试能力增强
+### Android 14（API 34）：UIDT 与 namespace 排序范围
 
-- `JobDebugInfo.getPendingJobReasonStats()`：诊断任务 pending 原因
-- `ProfilingManager` 新增 `TRIGGER_TYPE_COLD_START`、`TRIGGER_TYPE_OOM`、`TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE`
-- `AlarmManager.setExactAndAllowWhileIdle(OnAlarmListener)`：进程内回调，减少 WakeLock 时长
+- `JobInfo.Builder.setUserInitiated(true)` 引入，用于用户发起的 network data transfer
+- `setPriority(int)` 的文档说明收窄到同一 `job namespace` 内排序，不再暗示跨 namespace 的更大范围影响
+
+### Android 16（API 36）：pending 原因与历史
+
+- `getPendingJobReasons(int)` 返回当前 pending 原因数组
+- `getPendingJobReasonsHistory(int)` 返回有限历史窗口，元素类型是 `PendingJobReasonsInfo`
+
+### Android 17（API 37）：聚合统计
+
+- `getPendingJobReasonStats(int)` 返回 `Map<Integer, Duration>`
+- 适合统计一个 job 在整个等待期里，quota、network、battery 等原因各自占了多长时间
+
+[已验证: developer.android.com/reference/android/app/job/JobScheduler; developer.android.com/reference/android/app/job/JobInfo.Builder; developer.android.com/reference/android/app/usage/UsageStatsManager]
 
 ## 常见问题与误区
 
@@ -535,20 +568,21 @@ Expedited Job 有独立配额，但配额有限。大约每天几十分钟的量
 ## 参考资料
 
 ### AOSP 源码
-- `frameworks/base/services/core/java/com/android/server/job/JobSchedulerService.java`
-- `frameworks/base/services/core/java/com/android/server/job/controllers/`（BatteryController, ConnectivityController, QuotaController 等）
-- `frameworks/base/core/java/android/app/job/JobInfo.java`
-- `frameworks/base/core/java/android/app/job/JobScheduler.java`
+- `frameworks/base/apex/jobscheduler/service/java/com/android/server/job/JobSchedulerService.java`
+- `frameworks/base/apex/jobscheduler/service/java/com/android/server/job/controllers/`
 - `frameworks/base/apex/jobscheduler/service/java/com/android/server/job/JobStore.java`
+- `frameworks/base/apex/jobscheduler/framework/java/android/app/job/JobInfo.java`
+- `frameworks/base/apex/jobscheduler/framework/java/android/app/job/JobScheduler.java`
 
 ### 官方文档
 - [JobScheduler API Reference](https://developer.android.com/reference/android/app/job/JobScheduler)
-- [WorkManager Guide](https://developer.android.com/topic/libraries/architecture/workmanager)
+- [JobInfo.Builder（包含 setPriority / setUserInitiated）](https://developer.android.com/reference/android/app/job/JobInfo.Builder)
+- [UsageStatsManager API Reference](https://developer.android.com/reference/android/app/usage/UsageStatsManager)
+- [WorkManager expedited work](https://developer.android.com/topic/libraries/architecture/workmanager/how-to/define-work)
 - [Background Execution Limits](https://developer.android.com/about/versions/oreo/background)
 - [App Standby Buckets](https://developer.android.com/topic/performance/appstandby)
 - [Android 17 Job Debugging](https://developer.android.com/about/versions/17/features#job-debugging)
-- [User-Initiated Data Transfer](https://developer.android.com/guide/background/persistent/user-initiated-data-transfer)
 
 ### 性能分析工具
-- [Perfetto - JobScheduler Module](https://perfetto.dev/docs/analysis/sql-tables#android_job_scheduler)
+- [PerfettoSQL standard library: android.job_scheduler / android.job_scheduler_states](https://perfetto.dev/docs/analysis/stdlib-docs)
 - [Battery Historian](https://developer.android.com/topic/performance/power/setup-battery-historian)
