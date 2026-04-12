@@ -11,22 +11,36 @@ drafted_by: "openclaw-task2a"
 reviewed_date: "2026-04-11"
 reviewed_by: "openclaw-task6"
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
-last_verified: "2026-04-05"
-last_verified_against: "AOSP android-17-beta3"
+last_verified: "2026-04-12"
+last_verified_against: "AOSP android-16.0.0_r1 + Android Developers Baseline Profiles overview"
 confidence: medium
 sources:
   - type: aosp
-    path: "frameworks/base/services/core/java/com/android/server/pm/"
+    path: "frameworks/base/services/java/com/android/server/SystemServer.java"
   - type: aosp
-    path: "system/installd/"
-  - type: official
-    path: "https://source.android.com/docs/core/perf/vm/multidex"
+    path: "frameworks/base/services/core/java/com/android/server/pm/PackageManagerService.java"
+  - type: aosp
+    path: "frameworks/base/services/core/java/com/android/server/pm/Installer.java"
+  - type: aosp
+    path: "frameworks/base/services/core/java/com/android/server/pm/PackageManagerShellCommand.java"
+  - type: aosp
+    path: "frameworks/base/services/core/java/com/android/server/pm/PackageInstallerSession.java"
+  - type: aosp
+    path: "frameworks/base/services/core/java/com/android/server/pm/InstallingSession.java"
+  - type: aosp
+    path: "frameworks/base/services/core/java/com/android/server/pm/InstallPackageHelper.java"
+  - type: aosp
+    path: "frameworks/base/services/core/java/com/android/server/pm/DexOptHelper.java"
+  - type: aosp
+    path: "frameworks/native/cmds/installd/InstalldNativeService.cpp"
   - type: official
     path: "https://developer.android.com/topic/performance/baselineprofiles/overview"
-  - type: blog
-    path: "Android Authority: Android 16 Cloud Compilation"
+  - type: official
+    path: "https://source.android.com/docs/core/perf/vm"
   - type: official
     path: "https://source.android.com/docs/core/ota/apex"
+  - type: blog
+    path: "Android Authority: Android 16 Cloud Compilation"
   - type: blog
     path: "Google I/O 2025: What's new in Android performance"
 tags:
@@ -39,53 +53,71 @@ tags:
   - cloud-compilation
   - app-installation
   - compilation
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: needs-rework
-task9_state: reviewed
+task9_state: pending
 task9_result: needs-rework
-task2b_state: pending
+task2b_result: fixed
+task2b_state: fixed
 ---
 
 # 1.9 Package Manager Service 与应用安装性能
 
+<!-- outline-start -->
+## 本节要点大纲
+
+### 锚点（必须覆盖）
+- [PMS 在系统架构中的位置](#pms-在系统架构中的位置)：`SystemServer.startBootstrapServices()` 中的启动位置，以及它为什么要早于大多数系统服务。
+- [PMS 与 installd 的协作关系](#pms-与-installd-的协作关系)：`Installer`、`IInstalld`、`installd`、ART Service 在现代安装路径里的职责分工。
+- [应用安装全流程与性能关键路径](#应用安装全流程与性能关键路径)：从 session 写入到状态发布，哪些阶段吃 CPU，哪些阶段吃 I/O。
+- [Baseline Profiles 与安装时优化](#baseline-profiles-与安装时优化)：安装期编译覆盖、DEX 布局、首次启动收益如何落到实际行为上。
+- [版本演进](#版本演进)：Android 10 到 Android 17 里，包管理、编译调度、OTA 优化各自怎么变。
+
+### 导读
+本节把 PMS 放回 `system_server` 的启动现场，再顺着 `PackageInstallerSession`、`InstallPackageHelper`、`Installer`、`IInstalld` 这几层往下看。我们关心的是安装阶段的真实执行位置、首次启动前已经做完了哪些准备、Trace 里每一段耗时该怎么归因。
+<!-- outline-end -->
+
+
 ## 为什么要了解 Package Manager Service
 
-当我们在 Perfetto 中分析应用冷启动时，经常会看到一个很容易被忽略的阶段——`bindApplication`。这个阶段看起来只是"应用初始化"，但其中有一个耗时大户是跟 Package Manager Service（PMS）密切相关的：**系统需要为应用加载编译产物（OAT 文件）、验证 APK 签名、构建运行时包信息**。
+当我们在 Perfetto 里分析冷启动时，经常会看到 `bindApplication`、类加载、page fault、`dlopen` 这些运行期事件。它们的耗时表现，往往受安装期已经做过的工作影响，比如 APK 扫描、签名校验、DEX 布局、dexopt 编译产物是否可用。`bindApplication` 负责进程绑定和应用运行时初始化；APK 签名校验、包扫描、安装期 dexopt 发生在更早的安装或开机扫描阶段。
 
-另一个更直观的场景：用户从应用商店安装或更新一个 App，安装进度条转了十几秒甚至更久。很多人觉得这只是在下载，但实际上下载完成后，设备端还要经历 copy → verify → dexopt → 签名验证 → 通知的完整流水线。其中 dexopt（调用 dex2oat 编译 DEX 代码）可能是最耗时的环节——在低端设备上，一个大型应用的安装可能因为 dex2oat 花掉几分钟。
+另一个更直接的场景是安装和更新。用户看到下载完成，不等于应用已经可以流畅启动。设备端还要继续做 session 提交、包扫描、签名校验、数据目录准备、dexopt、状态发布等步骤。大型 APK、split 安装、低端闪存、首次 dexopt，都可能把这段时间拉长。
 
 了解 PMS 和安装流程，我们就能回答这些问题：
 
-- 安装耗时过长，瓶颈在哪里？是 I/O、dex2oat、还是签名验证？
-- 应用冷启动慢，有没有可能是安装时的编译策略不够优化？
-- 系统升级后所有应用都需要重新编译，这个过程对用户体验有什么影响？
-- 在 Perfetto 中怎么定位安装和编译相关的性能问题？
+- 安装耗时长，瓶颈在文件写入、签名校验，还是 dexopt？
+- 首次冷启动慢，是否和安装期的编译策略、Baseline Profiles、DEX 布局有关？
+- 系统 OTA 后，哪些应用需要重新校验或重新编译，用户为什么有时会看到“优化应用”变少？
+- 在 Perfetto 里，应该去 `system_server`、`installd`、`PackageInstallerSession`、`dex2oat` 的哪一段找证据？
 
-这篇文章从 PMS 的架构位置出发，把应用安装的完整流程走一遍，重点放在每个阶段的性能特征和调试方法上。关于 dex2oat 本身的编译机制和优化策略，我们在 §1.7 已经详细分析过，这里不再重复——本节聚焦的是 PMS 如何**调度** dex2oat、安装流水线的性能瓶颈在哪里、以及 Android 16 云端编译如何改变这套权衡。
+这篇文章从 PMS 的启动位置讲起，再把现代 Android 的安装提交路径拆开。重点放在三个地方：PMS 与 `installd` / ART Service 的职责边界、安装阶段的主要耗时点、安装期编译策略如何影响首次启动。
 
-[图：应用安装流水线全景——从用户点击"安装"到应用可启动的完整时序]
+[图：应用安装流水线全景——从用户点击“安装”到应用可启动的完整时序]
 
 ## PMS 在系统架构中的位置
 
-`PackageManagerService` 是 `system_server` 中的核心系统服务之一，和 ActivityManagerService（AMS）、WindowManagerService（WMS）并称 Android 系统服务的"三巨头"。它们之间的分工很清晰：PMS 管理**包信息**（哪些应用安装了、权限是什么、组件声明了哪些），AMS 管理**组件生命周期**（Activity、Service、ContentProvider 的调度），WMS 管理**窗口和显示**。
+`PackageManagerService` 是 `system_server` 里的基础服务。AMS 负责进程和组件调度，WMS 负责窗口与显示，PMS 负责包、权限、组件声明、共享库、安装状态这些元数据。很多系统服务在启动时都要查询这些信息，所以 PMS 要比大多数服务更早就绪。
 
-在系统启动流程中，PMS 的初始化时机非常早。`SystemServer.java` 通过三个阶段启动系统服务：`startBootstrapServices()` → `startCoreServices()` → `startOtherServices()`。PMS 在 `startCoreServices()` 阶段就被初始化了，因为它是一切应用运行的基础——AMS 启动 Activity 之前，必须先从 PMS 获取应用的包信息（PackageInfo）、组件声明（ActivityInfo、ServiceInfo）、权限列表。
+在 android-16.0.0_r1 的 `SystemServer.java` 里，`StartPackageManagerService` 出现在 `startBootstrapServices()`，随后调用 `PackageManagerService.main(...)`。它不在 `startCoreServices()`。启动顺序放得这么早，是因为 UserManager、Overlay、Permission、ContentProvider 解析、应用启动前的包查询都依赖 PMS 先把包状态准备好。
 
-```
-SystemServer 启动流程（简化）:
+```text
+SystemServer 启动阶段（简化）:
   startBootstrapServices()
-    → ActivityManagerService (引导服务)
+    → ActivityManagerService
     → DisplayManagerService
+    → Installer / DomainVerificationService
+    → PackageManagerService
   startCoreServices()
-    → PackageManagerService  ← 在这里初始化
     → BatteryService
+    → UsageStatsService
   startOtherServices()
     → WindowManagerService
     → InputManagerService
 ```
 
-PMS 初始化时做的事情很重：扫描 `/data/app/`（用户应用）、`/system/app/` 和 `/system/priv-app/`（系统应用）、`/vendor/app/`（厂商应用）等目录下所有 APK，验证签名，构建内存中的包状态数据结构。这个过程在 Perfetto 中对应 `system_server` 进程启动阶段的 PMS 初始化 Slice，在低端设备上可能耗时数秒。
+PMS 初始化时要扫描 `/system/app/`、`/system/priv-app/`、`/product/app/`、`/vendor/app/`、`/data/app/` 等目录，解析 Manifest，校验签名，恢复 `packages.xml` 和每个包的持久化状态。首次开机、OTA 后首启、包量很多的设备，这一段在 `system_server` 里会非常显眼。
 
 ### PMS 管理的核心数据结构
 
@@ -99,16 +131,18 @@ PMS 在内存中维护了几个关键的数据结构：
 
 ### PMS 与 installd 的协作关系
 
-PMS 负责高层逻辑（解析包、管理权限、维护状态），但涉及文件系统操作的底层工作交给了 `installd` 守护进程。这个分工的原因是权限隔离：PMS 运行在 `system_server` 中，虽然有系统权限，但不应该直接操作应用的私有数据目录。installd 是一个原生（C/C++）守护进程，以 elevated privileges 运行，专门负责：
+PMS 维护包状态和安装策略，真正落到文件系统和应用数据目录的操作由 `Installer` / `installd` 完成。android-16.0.0_r1 里的 `Installer.connect()` 已经不是连 `/dev/socket/installd`，而是通过 `ServiceManager.getService("installd")` 拿到 Binder 服务，再用 `IInstalld.Stub.asInterface(...)` 发起远程调用。
 
-- 创建和删除应用数据目录（`/data/data/{pkg}/`）
-- 设置目录的 UID/GID 和 SELinux 上下文
-- 调用 dex2oat 进行 DEX 编译
-- 管理 OAT/VDEX 编译产物文件
+这一层分工大致是这样：
 
-PMS 与 installd 之间通过 `/dev/socket/installd` 这个 Unix 域套接字通信，只有系统 UID 的进程才能访问这个 socket。在 Android 14+ 中，installd 还通过 Binder 与 `artd`（ART 守护进程）通信来执行编译任务。理解了 PMS 和 installd 的分工后，下面我们来看安装的完整流水线——每个阶段分别由谁负责、耗时在哪里。
+- PMS / `InstallPackageHelper`：包扫描、签名校验、权限与组件注册、安装状态提交
+- `Installer`：Java 侧的系统服务代理，把 PMS 需要的底层操作转给 `IInstalld`
+- `installd`：创建应用数据目录、设置 UID/GID 和 SELinux 上下文、处理编译产物相关的 native 操作
+- ART Service / `DexOptHelper`：负责 dexopt 调度、编译原因和过滤器选择
 
-[已验证: AOSP frameworks/base/services/core/java/com/android/server/pm/PackageManagerService.java, 系统服务初始化; system/installd/ 目录结构]
+如果我们在 Trace 里看到 `system_server` 很忙，却没有对应的 `installd` 或 `dex2oat` 开销，问题多半还停留在包扫描和状态提交；如果 `installd` / `dex2oat` 很重，瓶颈通常落在文件 I/O、数据目录准备或编译阶段。
+
+[已验证: AOSP android-16.0.0_r1 `Installer.java` / `IInstalld` Binder 服务；`frameworks/native/cmds/installd/InstalldNativeService.cpp`]
 
 ## 应用安装全流程与性能关键路径
 
@@ -116,56 +150,56 @@ PMS 与 installd 之间通过 `/dev/socket/installd` 这个 Unix 域套接字通
 
 ### 安装触发路径
 
-三种常见的安装触发方式：
+安装入口看起来不同，收敛点都是 session 提交和包状态更新。
 
-**adb install**：开发者最熟悉的方式。adb 客户端将 APK 推送到设备的临时目录（`/data/local/tmp/`），然后通过 Binder 调用 PMS 的 `installPackage()` 方法。整个安装过程是同步的——adb 会等到安装完成才返回。
+**adb install**：宿主机先把 APK 推到 `/data/local/tmp/` 一类的临时位置，设备侧 shell 再通过 `PackageManagerShellCommand` 执行 `install-create`、`install-write`、`install-commit`。adb 会一直等到 session commit 完成再返回。
 
-**Google Play / 应用商店**：通过系统级的 `PackageInstaller` 会话管理器。PackageInstaller 支持会话式安装（`PackageInstaller.Session`），允许分步提交 APK 数据（对 split APK 和大型应用很重要）。安装过程在后台进行，用户看到的是通知栏的进度条。
+**Google Play / 应用商店**：安装器 App 通过 `PackageInstaller` API 管理 session。对 split APK、staged install、多包安装，这条路径更常见。
 
-**系统预装**：系统镜像中的应用在首次开机时由 PMS 扫描并注册，不需要显式的安装流程。首次开机时 PMS 会扫描所有预装目录（`/system/app/`、`/system/priv-app/`、`/product/app/` 等），这是一个批量操作，在系统启动 Trace 中可以看到明显的 PMS 扫描耗时。
+**系统预装 / 开机扫描**：PMS 在系统启动或 OTA 后扫描预装目录，把镜像里的包注册进内存状态和持久化配置。它不走 `adb install` 的 shell 命令，但后续仍然要处理包解析、状态恢复、必要的 dexopt。
+
+### 现代安装控制路径
+
+以 `adb install` 为例，现代 AOSP 的入口在 `PackageManagerShellCommand`。它先创建 session，再写入 APK 或 split，提交时进入 `PackageInstallerSession.commit()`。session 封存后，`InstallingSession.installStage()` 把真正的安装工作投递给 PMS 侧逻辑；包扫描和状态提交主要在 `InstallPackageHelper`，dexopt 调度走 `DexOptHelper` / ART Service，底层目录和文件操作再经 `Installer` 转给 `IInstalld`。
+
+这套 session 模型解决了两个实际问题。一个是 split APK、多包安装、staged install 都能共用同一套提交协议；另一个是“写入文件”和“真正生效”被拆成两个阶段，失败回滚、重试、后台安装都更容易做。
 
 ### 安装阶段分解
 
-无论哪种触发方式，安装的核心阶段如下：
+从性能分析角度，安装过程可以拆成六段。
 
-**1. 传输（Transfer）**
+**1. 传输与写入 session**
 
-APK 从来源（USB/网络/本地）复制到设备。adb install 走的是 USB 传输，Google Play 走的是网络下载。传输完成后，APK 存放在临时目录。
+APK 从 USB、网络或本地来源写入 session。大包、split 多、闪存慢时，这一段会先被拉长。
 
-**2. 拷贝（Copy）**
+**2. commit 与文件落位**
 
-installd 将 APK 从临时目录复制到最终位置 `/data/app/{random-session-id}/base.apk`。这里的 `{random-session-id}` 是一个随机生成的目录名，用于隔离不同版本的应用。拷贝过程受存储 I/O 速度影响，在大 APK（>100MB）上可能比较明显。
+session commit 之后，安装器把 APK 放到 `/data/app/` 下的目标目录。这里主要看文件 copy / rename、fsync、校验和存储写入延迟。
 
-**3. 签名验证（Verification）**
+**3. 包扫描与签名校验**
 
-PMS 验证 APK 的数字签名，确保应用未被篡改。如果设备上已有同包名的应用，还需要验证新旧签名的兼容性（签名轮换的场景）。签名验证本身是 CPU 密集型的（RSA/ECDSA 验证），但通常不会成为主要瓶颈。
+PMS 解析 `AndroidManifest.xml`、校验签名、检查 sharedUserId / 权限 / ABI / split 关系，再决定能否把这个包正式纳入系统状态。升级安装还要检查新旧签名和 `versionCode` 规则。
 
-**4. DEX 编译（dexopt）**
+**4. 应用数据目录与 native 准备**
 
-这是安装流水线中**最可能成为性能瓶颈**的阶段。PMS 通过 installd（进而通过 artd）调用 dex2oat，将 APK 中的 DEX 字节码编译为设备架构的机器码。编译的级别由编译过滤器（compiler filter）决定：
+`IInstalld` 负责应用数据目录、权限、SELinux 上下文、编译产物目录等底层操作。多用户设备在这里还会处理 user 维度的数据准备。
 
-- 首次安装（无 Profile）：`speed-profile`，但没有 Profile 等效于 `verify`，几乎不编译
-- 有 Baseline Profiles 的应用：`speed-profile`，编译 Profile 中标记的方法
-- 系统预装应用：根据 OEM 配置，可能是 `speed`（全量编译）或 `speed-profile`
+**5. dexopt 调度**
 
-关于编译级别的详细说明和各级别的性能差异，我们在 §1.7 中有完整分析。这里的关键点是：**dex2oat 的编译级别直接决定了应用首次启动的代码执行效率**。
+现代 Android 把编译决策更多放到 `DexOptHelper` / ART Service。有没有 Baseline Profiles、Cloud Profiles、设备是否空闲、当前安装原因是什么，都会影响这里选用的编译过滤器。对 Android 12+ 的常见安装路径，没拿到可用 profile 时通常只做 `verify`；更早版本还存在 quicken 等历史行为，细节见 §1.7。
 
-**5. 权限与组件注册**
+**6. 状态发布与广播**
 
-PMS 解析 `AndroidManifest.xml`，提取应用声明的权限、Activity、Service、Provider 等组件信息，更新内存中的 PackageSetting 和 packages.xml。这个阶段很快，通常不超过几十毫秒。
-
-**6. 通知**
-
-安装完成后，PMS 发送 `ACTION_PACKAGE_ADDED` 广播，通知系统中其他组件（Launcher 需要显示图标、ContentService 需要更新等）。
+包状态写回 `packages.xml` 等持久化信息，PMS 更新内存结构，随后发出 `ACTION_PACKAGE_ADDED` 等广播，Launcher 和其他系统组件才能看到这个应用。
 
 ### 安装耗时分析方法
 
 在 Perfetto 中分析安装耗时，可以关注以下 Track 和 Slice：
 
-- **system_server 进程**：搜索 `installPackage`、`PackageInstallerSession` 相关 Slice
-- **installd 进程**：文件操作耗时
-- **dex2oat 进程**：编译耗时（通常是主要耗时）
-- **I/O Track**：`ext4` / `f2fs` 的写入延迟
+- **system_server 进程**：搜索 `PackageInstallerSession`、`installStage`、`commitPackagesLocked` 一类 Slice
+- **installd 进程**：应用目录准备、文件操作耗时
+- **`dex2oat` / `artd` 相关进程**：编译耗时，通常是安装期最重的一段 CPU 开销
+- **I/O Track**：`ext4` / `f2fs` 的写入延迟、fsync 抖动
 
 一个实用的 adb 命令来查看应用的编译状态：
 
@@ -181,7 +215,7 @@ adb shell dumpsys package dexopt
 
 [待补充：安装过程在 Perfetto 中的 Trace 截图，标注各阶段]
 
-[已验证: AOSP frameworks/base/services/core/java/com/android/server/pm/PackageInstallerSession.java, 安装会话管理]
+[已验证: AOSP android-16.0.0_r1 `PackageManagerShellCommand.java` / `PackageInstallerSession.java` / `InstallingSession.java`]
 
 ## dex2oat 编译对安装和启动的双重影响
 
@@ -191,7 +225,7 @@ adb shell dumpsys package dexopt
 
 关于这三种编译方式的机制和演进历史，我们在 §1.7 中已有深入分析。这里从 PMS 调度的角度做一个快速梳理：
 
-**安装时编译（install-time dexopt）**：PMS 在安装流程中触发，编译级别取决于是否有可用的 Profile（Baseline Profiles 或 Cloud Profiles）。没有 Profile 时，默认只做 `verify`，安装很快但冷启动全靠解释执行和 JIT。
+**安装时编译（install-time dexopt）**：安装提交阶段会根据可用 profile 和系统版本选择过滤器。Android 12+ 的常见路径里，没有可用 Baseline / Cloud / local profile 时通常只做 `verify`；较早版本还有 quicken 等历史差异，`speed-profile` 这个字符串本身不能单独说明编译覆盖。
 
 **后台编译（bg-dexopt）**：设备空闲充电时，ART Service 通过 JobScheduler 触发的后台优化。使用设备上积累的 JIT Profile，以 `speed-profile` 级别编译热点方法。这是安装后的补充优化环节。
 
@@ -220,7 +254,7 @@ adb shell cmd package compile -m speed-profile -f com.example.app
 
 | 安装场景 | 默认编译级别 | 原因 |
 |---------|------------|------|
-| 首次安装（无 Profile） | verify | 快速安装，牺牲初始性能 |
+| 首次安装（无可用 profile，Android 12+ 常见） | verify | 安装更快，首次启动更多依赖解释执行和 JIT |
 | 首次安装（有 Baseline Profiles） | speed-profile | 安装即有 AOT 覆盖 |
 | 首次安装（有 Cloud Profiles） | speed-profile | 聚合 Profile 覆盖更广 |
 | 系统预装 | speed 或 speed-profile | OEM 配置决定 |
@@ -266,30 +300,23 @@ adb shell cmd package bg-dexopt-job
 
 ## Baseline Profiles 与安装时优化
 
-Baseline Profiles 让应用在安装时就能获得 AOT 编译覆盖，不需要等用户先用几天积累 Profile。这是解决"安装后首次启动慢"这个问题的关键机制。
+Baseline Profiles 让应用在安装时就能获得一部分 AOT 编译覆盖，不必等用户先运行几天再积累本地 profile。对首次启动敏感的应用，这会直接影响“安装完立刻打开”的体验。
 
 ### 安装流程中 Baseline Profiles 的工作方式
 
-Baseline Profiles 的工作流从开发阶段就开始了：
+Baseline Profiles 从构建阶段就进入安装路径。开发者用 Macrobenchmark 录制关键路径，AGP 把 profile 元数据打进 APK 或 AAB；包安装提交后，Package Manager / ART 会把这些 profile 用到安装期 dexopt，让首发启动就拿到一部分 AOT 覆盖。
 
-1. **开发时**：开发者通过 Jetpack Macrobenchmark 录制关键路径（如冷启动、首页滑动），生成 `baseline-prof.txt`
-2. **构建时**：AGP 将 `baseline-prof.txt` 转换为二进制格式 `baseline.prof` + `baseline.profm`，打包进 APK/AAB
-3. **分发时**：Google Play 还会聚合大量用户的 Cloud Profiles，与 Baseline Profiles 合并
-4. **安装时**：PMS 从 APK 中读取 Baseline Profiles，交给 ART Service，以 `speed-profile` 级别编译其中标记的方法
+Android Developers 的《Baseline Profiles overview》给出的原始表述是：Baseline Profiles 可让应用从第一次启动开始，把代码执行速度提升约 30%。这对应的是安装期提前编译带来的收益，观察点落在编译产物是否已经准备好。
 
-关键点在于第 4 步：如果没有 Baseline Profiles，`speed-profile` 在没有 Profile 数据时等效于 `verify`——什么都不编译。有了 Baseline Profiles，安装时就能编译出有意义的 AOT 产物。Google 的数据是，正确配置 Baseline Profiles 可以提升约 30% 的代码执行速度。
-
-[需补充素材: 本节中的“约 30%”与“15-30%”量化数据需补充 Google 官方原始来源。]
+放到启动分析里，读法也要分清阶段。`bindApplication` 会消费这些编译产物，表现为类加载、page fault、OAT/VDEX 映射更顺；签名校验、包扫描、profile 驱动的 dexopt 发生在安装提交阶段。
 
 ### Startup Profiles 与 DEX 布局
 
-Startup Profiles 是 Baseline Profiles 的启动子集，但它影响的不是编译策略，而是 DEX 文件的物理布局。AGP 8.3 起默认启用 DEX 布局优化（`dexLayoutOptimization = true`），R8/D8 编译器会将启动关键类集中到 classes.dex 的前部，减少类加载时的 I/O 操作。
+Startup Profiles 作用在 DEX 布局。它们告诉构建工具哪些启动关键类应该更早放进主 DEX 的前部，减少启动期类加载时的随机 I/O 和 page fault。AGP 8.3 之后，这条路径已经是更成熟的主流配置。
 
-综合使用 Baseline Profiles + Startup Profiles 的效果：**冷启动速度比单独使用 Baseline Profiles 快 15-30%**。
+同一篇官方概述页给出的表述是：Startup Profiles 会在 Baseline Profiles 的基础上，再带来约 15% 的启动性能提升，大应用的收益可能更高。在本章语境里，Baseline Profiles 影响安装期编译覆盖，Startup Profiles 影响启动期 DEX 布局。
 
-关于 Baseline Profiles 和 Startup Profiles 的详细配置方法和量化数据，参见 §1.7 和 §8.3。
-
-[已验证: 官方文档 developer.android.com, Baseline Profiles 概述; AGP 8.3 发行说明]
+[已验证: https://developer.android.com/topic/performance/baselineprofiles/overview]
 
 ## Android 16 云端编译（Cloud Compilation）
 
@@ -357,7 +384,7 @@ SDM 文件使用与应用相同的签名密钥，确保只有应用开发者授�
 2. 如果已有可用的 VDEX 文件且 verify filter 可以容忍依赖不匹配，则跳过编译
 3. 不再在开机后立即运行后台 dexopt 补偿，避免与前台应用竞争
 
-**A/B（无缝）更新**：Android 10+ 的 A/B 分区设计进一步改善了 OTA 体验。更新在后台写入未使用的分区，dex2oat 也可以在后台提前完成，用户只经历一次重启，不再有"优化应用"的等待。
+**A/B / Virtual A/B 更新**：这套方案逐步改善了 OTA 体验。更新可以在后台写入另一套分区，用户可见的停机时间更短；是否还会出现“优化应用”界面或后台补偿编译，仍取决于 Android 版本、ART 策略和设备实现，不能概括成某一个版本之后全部消失。
 
 ```bash
 # 查看 OTA 后的编译状态
@@ -472,7 +499,7 @@ Package Manager Service 与全书多个章节有交叉：
 
 - **§1.7 ART 编译管线与 dex2oat 优化**：dex2oat 的编译机制、编译级别、Profile 体系的详细说明。本节聚焦 PMS 如何调度 dex2oat，§1.7 聚焦 dex2oat 本身的工作原理
 - **§1.8 Activity Manager Service**：AMS 启动 Activity 时需要从 PMS 获取 PackageInfo 和组件信息，PMS 的响应速度直接影响启动延迟
-- **§8.2 App 启动全流程**：冷启动时 `bindApplication` 阶段的编译产物加载（OAT 文件映射）与 PMS 的编译策略直接相关
+- **§8.2 App 启动全流程**：冷启动时 `bindApplication` 会消费安装期已经准备好的 OAT/VDEX/DEX 布局结果；签名校验和包扫描不在这一步发生
 - **§8.3 启动优化策略**：Baseline Profiles 和 Startup Profiles 是启动优化的关键手段，配置方法详见该节
 - **§4.3 ART 虚拟机内存管理**：dex2oat 编译过程的内存占用和 JIT 代码缓存在 ART 的内存预算中
 
@@ -483,7 +510,7 @@ Package Manager Service 与全书多个章节有交叉：
 | Android 7.0 | 混合编译模式（JIT + Profile-Guided AOT） | 安装速度大幅提升（不再全量 AOT） |
 | Android 8.0 | 后台 dexopt 改由 JobScheduler 调度 | 更智能的后台编译时机 |
 | Android 9.0 | 引入 Cloud Profiles（dex metadata） | 安装时有更全面的 Profile 覆盖 |
-| Android 10 | A/B 分区更新成为强制 | OTA 后不再有"优化应用"等待 |
+| Android 10 | APEX / Mainline 基础设施引入，OTA 与 ART 更新开始解耦 | 后续 OTA 优化和 Virtual A/B 路径有了继续演进的基础 |
 | Android 12 | ART 模块化（Mainline） | 编译优化可通过 Play 系统更新推送 |
 | Android 14 | ART Service 取代直接 dex2oat 调用 | 编译管理更统一，后台 dexopt 更智能 |
 | Android 16 | Cloud Compilation / SDM 格式 | 设备端 dex2oat 大幅减少，安装速度提升 |
@@ -509,20 +536,27 @@ JIT 在运行时动态编译，理论上可以覆盖更多热点方法。但 JIT
 
 **误区五："dumpsys package dexopt 显示 speed-profile，说明应用编译得很好"**
 
-`speed-profile` 只是编译级别，不代表实际编译了多少方法。如果 Profile 为空（首次安装且没有 Baseline Profiles），`speed-profile` 等效于 `verify`——什么都没编译。需要结合 `oatdump` 或 `profman` 来确认实际的编译覆盖率和 Profile 内容。
+`speed-profile` 只是编译级别，不代表实际编译了多少方法。对 Android 12+ 的常见安装路径，没有可用 profile 时它往往会退到 `verify`；更早版本还要看 quicken 等历史行为。要确认真实覆盖率，仍然要结合 `oatdump` 或 `profman`。
 
 ## 参考资料
 
 ### AOSP 源码路径
-- `frameworks/base/services/core/java/com/android/server/pm/`：PackageManagerService 实现
-- `frameworks/base/services/core/java/com/android/server/pm/PackageInstallerSession.java`：安装会话管理
-- `system/installd/`：installd 守护进程实现
+- `frameworks/base/services/java/com/android/server/SystemServer.java`：`StartPackageManagerService` 所在启动阶段
+- `frameworks/base/services/core/java/com/android/server/pm/PackageManagerService.java`：PMS 主实现
+- `frameworks/base/services/core/java/com/android/server/pm/Installer.java`：`IInstalld` Binder 客户端
+- `frameworks/base/services/core/java/com/android/server/pm/PackageManagerShellCommand.java`：`adb install` 的 shell 入口
+- `frameworks/base/services/core/java/com/android/server/pm/PackageInstallerSession.java`：session commit 与封存
+- `frameworks/base/services/core/java/com/android/server/pm/InstallingSession.java`：`installStage()` 调度
+- `frameworks/base/services/core/java/com/android/server/pm/InstallPackageHelper.java`：包扫描、校验、状态提交
+- `frameworks/base/services/core/java/com/android/server/pm/DexOptHelper.java`：dexopt 调度
+- `frameworks/native/cmds/installd/InstalldNativeService.cpp`：installd native 服务实现
 - `art/dex2oat/`：dex2oat 编译器
 - `frameworks/base/services/core/java/com/android/server/art/`：ART Service（Android 14+）
 
 ### 官方文档
 - [Baseline Profiles 概述](https://developer.android.com/topic/performance/baselineprofiles/overview)
 - [ART 与 Dalvik](https://source.android.com/docs/core/runtime)
+- [ART 性能与虚拟机](https://source.android.com/docs/core/perf/vm)
 - [dex2oat 编译选项](https://source.android.com/docs/core/runtime/dex2oat)
 - [Profile-Guided 代码优化](https://source.android.com/docs/core/runtime/pgodexopt)
 - [Package Manager API](https://developer.android.com/reference/android/content/pm/PackageManager)
@@ -531,4 +565,3 @@ JIT 在运行时动态编译，理论上可以覆盖更多热点方法。但 JIT
 - Android Authority: Android 16 Cloud Compilation
 - Google Blog: Android Performance Updates 2025（dex2oat 编译优化）
 - Google I/O 2025: What's new in Android performance（Cloud Compilation 详解）
-
