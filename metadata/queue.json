@@ -5168,5 +5168,50 @@
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-12T12:28:00+08:00",
     "status": "pending"
+  },
+  {
+    "section": "7.8",
+    "section_title": "RecyclerView 列表滑动性能深度优化",
+    "priority": 90,
+    "reason": "[review回炉] GapWorker/ARR/API 示例存在 3 处源码与版本边界待确认，Perfetto 小节缺真实 trace 案例，章节主线偏机制清单",
+    "material_paths": [
+      "intake/suggestions.md（含 review 意见）"
+    ],
+    "review_issues": [
+      {
+        "type": "需确认",
+        "location": "GapWorker 预取机制（“从 Android 5.0 开始引入”/“COMMIT 阶段触发”/代码注释）",
+        "detail": "预取引入时间、触发时机，以及注释里的 API 名需要按 RecyclerView 版本和实际源码调用路径再核对。",
+        "suggestion": "回看 recyclerview-1.4.0 的 GapWorker/RecyclerView/LayoutManager 相关源码，修正版本表述和注释。"
+      },
+      {
+        "type": "需确认",
+        "location": "RecycledViewPool 共享示例",
+        "detail": "`setRecycleChildrenOnDetach(true)` 的调用对象需要按实际 API 所属类核对，当前示例有直接复制后编译失败的风险。",
+        "suggestion": "核对 API 所属类与调用位置，再给出可编译的共享 Pool 示例。"
+      },
+      {
+        "type": "需确认",
+        "location": "RecyclerView 1.4 与 ARR 小节",
+        "detail": "`hasArrSupport()`、`getSuggestedFrameRate(int)`、`getSupportedRefreshRates()` 需要再核对实际 API 名、所属类和版本边界。",
+        "suggestion": "按官方文档和 AOSP 实现逐项核对，避免把不存在或仅内部使用的接口写成公开 API。"
+      },
+      {
+        "type": "需补充素材",
+        "location": "在 Perfetto 中分析 RecyclerView 性能",
+        "detail": "当前只有通用 SQL 和截图占位，还缺 1 个真实滑动 trace 案例，把 RV Layout、RV OnBindView、RV Prefetch 的观察顺序落到实际问题上。",
+        "suggestion": "补 1 个真实 trace，按“现象 → Trace → 定位 → 修复”串联本章的缓存、预取和布局分析。"
+      },
+      {
+        "type": "需重写",
+        "location": "全章主线（尤其是 Perfetto 分析段）",
+        "detail": "当前更像机制清单，L4 活人感偏弱，缺少一个完整排查案例把缓存、预取、嵌套滑动和 trace 观察路径串起来。",
+        "suggestion": "在保留现有机制说明的前提下，追加或重写 1 个完整实战案例，增强章节推进线。"
+      }
+    ],
+    "added_by": "task6-review",
+    "added_at": "2026-04-12T14:13:39+08:00",
+    "status": "pending",
+    "original_review_log": "logs/review/2026-04-12-14-review.md"
   }
 ]

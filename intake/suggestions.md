@@ -1619,3 +1619,34 @@
 - **位置**：`在 Perfetto 中的表现` → `三种数据源与三层架构的对应关系`
 - **问题**：正文把 Perfetto 数据源写成与“Android 的三层结构”一一对应，但本章前文定义的是五层架构，而且现代 Perfetto 还包含 FrameTimeline、track_event、heapprofd 等数据源。当前写法会让读者把观测层和系统分层混成一张一一映射表。
 - **建议**：改成“常见性能分析数据源的粗分类”，保留 ftrace / atrace / procfs 作为主线，同时注明 FrameTimeline / track_event 等补充来源，避免使用“一一对应”的硬表述。
+
+## [Task6 Review] 7.8 RecyclerView 列表滑动性能深度优化 — 2026-04-12
+- **类型**：需确认
+- **位置**：GapWorker 预取机制（“从 Android 5.0 开始引入”/“COMMIT 阶段触发”/代码注释）
+- **问题**：预取引入时间、触发时机，以及注释里的 API 名需要按 RecyclerView 版本和实际源码调用路径再核对。
+- **建议**：回看 recyclerview-1.4.0 的 GapWorker/RecyclerView/LayoutManager 相关源码，修正版本表述和注释。
+- **review 日志**：logs/review/2026-04-12-14-review.md
+
+- **类型**：需确认
+- **位置**：RecycledViewPool 共享示例
+- **问题**：`setRecycleChildrenOnDetach(true)` 的调用对象需要按实际 API 所属类核对，当前示例有直接复制后编译失败的风险。
+- **建议**：核对 API 所属类与调用位置，再给出可编译的共享 Pool 示例。
+- **review 日志**：logs/review/2026-04-12-14-review.md
+
+- **类型**：需确认
+- **位置**：RecyclerView 1.4 与 ARR 小节
+- **问题**：`hasArrSupport()`、`getSuggestedFrameRate(int)`、`getSupportedRefreshRates()` 需要再核对实际 API 名、所属类和版本边界。
+- **建议**：按官方文档和 AOSP 实现逐项核对，避免把不存在或仅内部使用的接口写成公开 API。
+- **review 日志**：logs/review/2026-04-12-14-review.md
+
+- **类型**：需补充素材
+- **位置**：在 Perfetto 中分析 RecyclerView 性能
+- **问题**：当前只有通用 SQL 和截图占位，还缺 1 个真实滑动 trace 案例，把 RV Layout、RV OnBindView、RV Prefetch 的观察顺序落到实际问题上。
+- **建议**：补 1 个真实 trace，按“现象 → Trace → 定位 → 修复”串联本章的缓存、预取和布局分析。
+- **review 日志**：logs/review/2026-04-12-14-review.md
+
+- **类型**：需重写
+- **位置**：全章主线（尤其是 Perfetto 分析段）
+- **问题**：当前更像机制清单，L4 活人感偏弱，缺少一个完整排查案例把缓存、预取、嵌套滑动和 trace 观察路径串起来。
+- **建议**：在保留现有机制说明的前提下，追加或重写 1 个完整实战案例，增强章节推进线。
+- **review 日志**：logs/review/2026-04-12-14-review.md

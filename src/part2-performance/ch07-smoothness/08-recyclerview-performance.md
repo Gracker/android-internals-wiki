@@ -4,7 +4,7 @@ chapter: "7.8"
 section: "7.8"
 status: ready-for-review
 applicable_versions: "Android 5.0 (API 21) - Android 17 (API 37)"
-tags: [recyclerview, scrolling, jank, prefetch, difftutil, nested-scrolling, arr, viewholder, viewcache, gapworker]
+tags: [recyclerview, scrolling, jank, prefetch, diffutil, nested-scrolling, arr, viewholder, viewcache, gapworker]
 related_chapters: ["7.1", "7.2", "7.4", "7.5", "2.4", "2.18", "9.4"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-04-06"
@@ -16,6 +16,9 @@ confidence: medium
 polish_count: 1
 polish_date: "2026-04-08"
 polish_by: "task2b-polish"
+reviewed_date: "2026-04-12"
+reviewed_by: "openclaw-task6"
+task6_result: needs-rework
 sources:
   - type: aosp
     path: "frameworks/support/recyclerview/src/main/java/androidx/recyclerview/widget/"
@@ -23,17 +26,40 @@ sources:
     path: "developer.android.com/reference/androidx/recyclerview/widget/RecyclerView"
   - type: blog
     path: "android-developers.googleblog.com - Adaptive Refresh Rate"
-pipeline_stage: task6_pending
-task6_state: pending
+pipeline_stage: task2b_pending
+task6_state: reviewed
 task9_state: pending
-task2b_state: idle
+task2b_state: pending
 ---
 
 # 7.8 RecyclerView 列表滑动性能深度优化
 
-列表滑动是 Android 用户最高频的操作之一，也是流畅性问题最集中的场景。RecyclerView 作为列表渲染的标准组件，其内部机制相当复杂——四级缓存、预取、嵌套滑动、Diff 增量更新——每一层都可能成为性能瓶颈，也可能成为优化手段。
+<!-- outline-start -->
+## 本节要点大纲
 
-这篇文章的目标是讲清楚 RecyclerView 内部那些影响滑动性能的关键机制，让我们在 Perfetto 中看到卡顿的时候，能快速定位到具体是哪一层出了问题。
+### 锚点（必须覆盖）
+
+- 🔹 RecyclerView 三阶段布局流程，以及 `dispatchLayoutStep1/2/3` 在 Trace 中的定位方式
+- 🔹 ViewHolder 四级缓存与 `onCreateViewHolder()` / `onBindViewHolder()` 的缓存命中判断
+- 🔹 GapWorker 预取、`setInitialPrefetchItemCount()` 与嵌套列表预取调优
+- 🔹 DiffUtil、`AsyncListDiffer` 与 payload 局部刷新
+- 🔹 嵌套滑动、共享 `RecycledViewPool` 与常见滑动卡顿根因
+- 🔹 在 Perfetto 中分析 RecyclerView 滑动卡顿的顺序和 SQL 查询
+
+### 扩展（可选深入）
+
+- 🔸 RecyclerView 1.4 与 Adaptive Refresh Rate
+- 🔸 自定义 LayoutManager、ItemDecoration、ItemAnimator 的性能代价
+
+### OpenClaw 加工指引
+
+> 锚点是最低覆盖要求，加工时必须逐条落实并标注验证状态。
+> 需要继续核对源码或版本边界的内容，保留 `[需确认]`，不要把猜测写成结论。
+<!-- outline-end -->
+
+列表滑动是 Android 用户最高频的操作之一，也是流畅性问题最集中的场景。RecyclerView 作为列表渲染的标准组件，内部涉及缓存复用、预取、嵌套滑动和增量更新，这几层机制都会直接影响滑动帧时间。
+
+这篇文章聚焦那些最容易在 Perfetto 里暴露出来的点，让我们在看到卡顿时，能更快判断问题落在布局、bind、缓存还是预取阶段。
 
 ## RecyclerView 的布局流程
 
@@ -45,7 +71,7 @@ RecyclerView 的每次布局都走 `onLayout()` → `dispatchLayoutStep1/2/3` �
 
 `dispatchLayoutStep3` 完成动画的启动和最终的清理工作。
 
-对性能分析来说，关键在于 step2——如果这一步耗时过长，在 Perfetto 中就会表现为 doFrame 内部有一个很长的 layout 时间段，对应的 track 通常是 `Choreographer#doFrame` → `RecyclerView` 下面的一长条。
+对性能分析来说，先盯住 step2。如果这一步耗时过长，在 Perfetto 中通常会表现为 doFrame 内部一段明显偏长的 layout 时间，对应 `Choreographer#doFrame` 下面的 RecyclerView 相关切片。
 
 RecyclerView 和传统的 ListView 相比，架构上有两个核心优势。第一，将布局逻辑完全委托给 LayoutManager，使得 LinearLayoutManager、GridLayoutManager、StaggeredGridLayoutManager 可以各自优化自己的布局策略。第二，ViewHolder 的回收复用体系（下面会详细讲），这是 RecyclerView 性能优势的根基。
 
@@ -59,7 +85,7 @@ RecyclerView 的缓存体系分为四级，理解每一级的工作方式，是�
 
 第二级是 **CachedViews**。这是一个默认大小为 2 的 ArrayList，存储刚滑出屏幕的 ViewHolder。CachedViews 的特点是：存在这里的 ViewHolder 不需要重新 bind——它们的 position 和数据都是有效的，直接拿来用就行。这就好比"刚放下的东西还没收起来"，拿起来最快。缓存大小可以通过 `setItemViewCacheSize()` 调整。对于频繁上下滑动的场景，适当增大这个值（比如设为 4-6）可以减少 bind 调用次数。
 
-第三级是 **ViewCacheExtension**。这是一个可选的、由开发者自定义的缓存层。Google 官方文档对它的定位是"给开发者留的扩展点"，但实际上大多数场景用不到它。如果确实需要这一层缓存，要特别注意它和 RecycledViewPool 的查找顺序——ViewCacheExtension 在 Pool 之前被查询。
+第三级是 **ViewCacheExtension**。这是一个可选的、由开发者自定义的缓存层。Google 官方文档对它的定位是"给开发者留的扩展点"，但多数项目里用不到它。如果确实需要这一层缓存，要特别注意它和 RecycledViewPool 的查找顺序——ViewCacheExtension 在 Pool 之前被查询。
 
 第四级是 **RecycledViewPool**。这是最终的缓存池，默认每个 ViewType 缓存 5 个 ViewHolder。Pool 中的 ViewHolder 会被清除绑定状态（resetInternal），再次使用时必须重新 bind。Pool 的一个重要特性是可以跨 RecyclerView 共享——对于嵌套 RecyclerView 的场景（比如外层列表中每个 item 内部都有一个水平滑动列表），共享 Pool 可以大幅减少 inflate 开销。
 
@@ -95,9 +121,10 @@ void prefetch(long deadlineNs) {
 }
 ```
 
-这段代码的关键在于：预取不是免费的。如果 `create + bind` 本身很慢（比如 item 布局过于复杂），预取会挤占 COMMIT 阶段的时间，影响下一帧的准备。在 Perfetto 中，如果一个 doFrame 的 COMMIT 阶段耗时异常长，可以检查是否有过多的预取活动。
+这段代码说明，预取不是免费的。如果 `create + bind` 本身很慢（比如 item 布局过于复杂），预取会挤占 COMMIT 阶段的时间，影响下一帧的准备。在 Perfetto 中，如果一个 doFrame 的 COMMIT 阶段耗时异常长，可以检查是否有过多的预取活动。
 
 [已验证: AOSP recyclerview-1.4.0, GapWorker.java — prefetch() 和 collectPrefetchPositions()]
+[需确认: "从 Android 5.0 开始引入"、"在 Choreographer.doFrame() 的 COMMIT 阶段触发" 这两处表述，以及注释里的 API 名，需要按 RecyclerView 版本和实际源码调用路径再核对。]
 
 ## DiffUtil 与增量更新
 
@@ -109,7 +136,7 @@ DiffUtil 的核心算法是 Eugene W. Myers 的差分算法。这个算法的时
 
 DiffUtil 有两个核心回调需要正确实现。`areItemsTheSame()` 判断两个 item 是否代表同一个对象（通常比较 id），`areContentsTheSame()` 判断同一个对象的内容是否完全一致。这两个方法的实现直接影响 diff 的性能和正确性。
 
-一个经常被忽略的优化是 Payload 机制。当 `areItemsTheSame()` 返回 true 但 `areContentsTheSame()` 返回 false 时，DiffUtil 会调用 `getChangePayload()` 来获取变化的详情。如果返回了非 null 的 payload，Adapter 会收到 `onBindViewHolder(holder, position, payloads)` 而不是完全的重新绑定。这意味着我们可以只更新变化的部分（比如一个文字标签），而不需要重新绑定整个 item 的所有数据。
+一个经常被忽略的优化是 Payload 机制。当 `areItemsTheSame()` 返回 true 但 `areContentsTheSame()` 返回 false 时，DiffUtil 会调用 `getChangePayload()` 来获取变化的详情。如果返回了非 null 的 payload，Adapter 会收到 `onBindViewHolder(holder, position, payloads)` 而不是完全的重新绑定。这样我们只更新变化的部分（比如一个文字标签），而不需要重新绑定整个 item 的所有数据。
 
 对于大列表的 diff 优化，几个实用的建议：
 
@@ -161,7 +188,9 @@ public void onBindViewHolder(@NonNull ParentViewHolder holder, int position) {
 }
 ```
 
-这里的关键参数是 `setMaxRecycledViews()` 的值。设置过小会导致频繁的 create/bind，设置过大则占用不必要的内存。经验值：内层列表同时可见的 item 数量 × 1.5 是一个合理的起点。
+这里需要先调 `setMaxRecycledViews()` 的值。设置过小会导致频繁的 create/bind，设置过大则占用不必要的内存。经验上，可以先从略高于同时可见 item 数量的值开始试。
+
+[需确认: 共享 Pool 示例里的 `setRecycleChildrenOnDetach(true)` 调用对象需要按实际 API 所属类核对，避免读者直接复制后编译失败。]
 
 ## 嵌套滑动的性能影响
 
@@ -180,7 +209,7 @@ public void onBindViewHolder(@NonNull ParentViewHolder holder, int position) {
 - `setMaxRecycledViews()` 调整 Pool 大小：根据可见 item 数量合理配置
 - 禁用 OverScroll 效果：`setOverScrollMode(View.OVER_SCROLL_NEVER)`，减少不必要的绘制开销
 
-这些优化手段的效果取决于具体的嵌套结构和数据量。在做了上述优化之后，如果嵌套滑动仍然导致明显的卡顿，需要进一步分析 doFrame 内的布局调用链路。
+这些优化手段的效果取决于具体的嵌套结构和数据量。在做了上述优化之后，如果嵌套滑动仍然导致明显的卡顿，需要进一步分析 doFrame 内的布局调用路径。
 
 [图：嵌套滑动协议的时序图，标注 preScroll 和 postScroll 的分发路径]
 
@@ -190,9 +219,9 @@ public void onBindViewHolder(@NonNull ParentViewHolder holder, int position) {
 
 在实际工作中，RecyclerView 滑动卡顿的根因通常集中在以下几个方向。
 
-**item 布局过深** 是最常见的性能杀手。如果每个 item 的 View 层级超过 4-5 层，measure 和 layout 的时间会呈指数级增长。用 Layout Inspector 检查 item 的 View 树，如果发现深层嵌套的 LinearLayout 或 RelativeLayout，用 ConstraintLayout 替换通常能带来显著改善。
+**item 布局过深** 是最常见的性能杀手。如果每个 item 的 View 层级超过 4-5 层，measure 和 layout 的时间会明显增加。用 Layout Inspector 检查 item 的 View 树，如果发现深层嵌套的 LinearLayout 或 RelativeLayout，用 ConstraintLayout 替换通常能带来显著改善。
 
-**onBindViewHolder 中的 IO 操作** 是另一个高频问题。图片加载的磁盘 IO、数据库查询、甚至 SharedPreference 的同步读取，都可能在 bind 路径上引入不可预测的延迟。解决方法是将这些操作全部异步化——图片用 Glide/Coil 等库自动异步加载，数据预加载到内存，bind 方法只做轻量的视图更新。
+**onBindViewHolder 中的 IO 操作** 是另一个高频问题。图片加载的磁盘 IO、数据库查询、甚至 SharedPreferences 的同步读取，都可能在 bind 路径上引入不可预测的延迟。解决方法是将这些操作全部异步化——图片用 Glide/Coil 等库自动异步加载，数据预加载到内存，bind 方法只做轻量的视图更新。
 
 **ItemAnimator 触发的额外布局** 是一个容易被忽略的问题。RecyclerView 的 ItemAnimator（特别是 DefaultItemAnimator）在执行变更动画时，需要对变化的 item 做两次布局 pass：一次记录旧位置，一次记录新位置。如果列表数据频繁更新（比如实时数据流），动画的额外开销会累积。解决方法是使用 `SimpleItemAnimator`（更轻量）或者在不需要动画的场景直接关闭 `setItemAnimator(null)`。
 
@@ -200,7 +229,7 @@ public void onBindViewHolder(@NonNull ParentViewHolder holder, int position) {
 
 **VSync 时间精度问题** 是一个更隐蔽的根因。这个问题的来源是 Android 列表滑动在计算每帧位移时，使用的不是 VSync 的纳秒时间戳，而是取整后的毫秒值。在 120Hz 设备上（VSync 周期约 8.33ms），±1ms 的取整误差意味着约 12% 的帧间时间差异。这种微小的时间波动传递到 OverScroller 的位移计算后，会导致列表每帧滚动的像素数不均匀。用户在快速滑动时感知到"一顿一顿"的效果，但 Perfetto 的 FrameTimeline 不会标记为 Jank——因为帧确实在预算时间内完成了，只是步幅不均匀。
 
-这是一种"无掉帧卡顿"，和我们在 §7.1 中讨论的帧率稳定性问题不同——帧率可能是稳定的 120fps，但步幅波动让用户感觉不流畅。
+这是一种"无掉帧卡顿"，和我们在 §7.1 中讨论的帧率稳定性问题不同。帧率可能稳定在 120fps，但步幅波动仍会让用户感觉不流畅。
 
 [来源: 高爷卡顿知识补充 2026-04-06，VSync 时间取整问题]
 
@@ -214,10 +243,11 @@ ARR 的工作流程是：RecyclerView 开始 fling → 通过 `setFrameContentVe
 
 ARR 相关的新 API 包括：`hasArrSupport()` 检测设备是否支持 ARR，`getSuggestedFrameRate(int)` 查询推荐帧率，`getSupportedRefreshRates()` 列出设备支持的刷新率。这些 API 在 §2.18 中有更详细的讲解。
 
-对于高刷新率设备（120Hz 及以上），RecyclerView 面临一个额外的挑战：帧预算从 16.67ms 缩短到 8.33ms 甚至更短。这意味着原来在 60Hz 下勉强能在 16ms 内完成的 bind 操作，在高刷新率下可能超时。如果发现高刷新率设备的滑动反而更卡，应该先检查 `onBindViewHolder` 的执行时间是否超过了一半的帧预算。
+对于高刷新率设备（120Hz 及以上），RecyclerView 面临一个额外的挑战：帧预算从 16.67ms 缩短到 8.33ms 甚至更短。原来在 60Hz 下勉强能在 16ms 内完成的 bind 操作，到了高刷新率设备上就可能超时。如果发现高刷新率设备的滑动反而更卡，应该先检查 `onBindViewHolder` 的执行时间是否超过了一半的帧预算。
 
 [已验证: 官方文档, developer.android.com/reference/android/view/View#setFrameContentVelocity()]
 [已验证: AOSP recyclerview-1.4.0, RecyclerView.java — ARR 集成实现]
+[需确认: 本节列出的 `hasArrSupport()`、`getSuggestedFrameRate(int)`、`getSupportedRefreshRates()` 需要再核对实际 API 名、所属类和版本边界。]
 
 ## 在 Perfetto 中分析 RecyclerView 性能
 
@@ -250,6 +280,7 @@ LIMIT 20;
 ```
 
 [图：Perfetto 中 RecyclerView 滑动 Trace 的典型截图，标注 layout/bind/prefetch 各阶段]
+[需补充素材: 最好补 1 个真实滑动 trace 案例，把 `RV Layout`、`RV OnBindView`、`RV Prefetch` 与掉帧或步幅波动的观察顺序串起来。]
 
 ## 常见问题与误区
 
@@ -275,7 +306,7 @@ LIMIT 20;
 
 `DefaultItemAnimator` 在执行 change 动画时需要两次布局 pass，代价较高。如果列表数据频繁更新且不需要复杂动画，使用 `SimpleItemAnimator` 或者关闭动画（`setItemAnimator(null)`）可以减少一半的布局开销。
 
-支持 change 动画（`supportsChangeAnimations()`）的额外代价是：RecyclerView 需要对变化的 item 创建一个新 ViewHolder（用于动画），然后在动画结束后回收旧的。这意味着一次 change 操作实际上创建了两个 ViewHolder，内存压力翻倍。如果不需要交叉淡入淡出的效果，重写 `supportsChangeAnimations()` 返回 false 可以避免这个开销。
+支持 change 动画（`supportsChangeAnimations()`）的额外代价是：RecyclerView 需要对变化的 item 创建一个新 ViewHolder（用于动画），然后在动画结束后回收旧的。一次 change 操作往往要同时保留旧、新两个 ViewHolder，内存压力也会更高。如果不需要交叉淡入淡出的效果，重写 `supportsChangeAnimations()` 返回 false 可以避免这个开销。
 
 ## 参考资料
 
@@ -287,8 +318,3 @@ LIMIT 20;
 - **Myers 差分算法**：Eugene W. Myers, "An O(ND) Difference Algorithm and Its Variations", 1986
 - **高爷补充素材**：VSync 时间精度与步幅波动（2026-04-06）
 
----
-
-### 🔸 Compose LazyColumn 与 RecyclerView 的性能对比
-
-[待补充：Compose LazyColumn 的性能特征与 RecyclerView 的对比，包括 recomposition 开销、prefetch 策略差异、LazyListState 的性能影响]
