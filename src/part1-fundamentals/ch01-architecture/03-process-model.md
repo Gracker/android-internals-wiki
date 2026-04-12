@@ -1,16 +1,17 @@
 ---
 title: "进程模型与生命周期管理"
 chapter: "1.3"
+section: "1.3"
 status: ready-for-review
+reviewed_date: "2026-04-12"
+reviewed_by: openclaw-task6
+review_type: task6-writing-quality-review
+task6_result: needs-rework
+review_round: 2
+drafted_date: "2026-03-31"
 applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
 last_verified: "2026-04-09"
 last_verified_against: "AOSP android-16.0.0_r1"
-drafted_date: "2026-03-31"
-reviewed_date: "2026-04-09"
-reviewed_by: "openclaw-task6"
-review_status: "needs-rewrite"
-reviewed_date: "2026-04-06"
-reviewed_by: openclaw-task6
 confidence: high
 polish_count: 1
 polish_date: "2026-04-05"
@@ -28,13 +29,38 @@ sources:
     path: "source.android.com/docs/core/memory"
 tags: [process, ams, oom_adj, lmkd, zygote, process-lifecycle, binder]
 related_chapters: ["1.1", "1.2", "1.4", "1.5"]
-pipeline_stage: task6_pending
-task6_state: pending
+pipeline_stage: task2b_pending
+task6_state: reviewed
 task9_state: pending
-task2b_state: idle
+task2b_state: pending
 ---
 
 # 进程模型与生命周期管理
+
+<!-- outline-start -->
+## 本节要点大纲
+
+### 锚点（必须覆盖）
+
+- 🔹 Zygote 如何通过 `fork()` 派生 App 进程，以及 Copy-on-Write 对启动速度的意义
+- 🔹 Android 进程优先级模型：Foreground / Visible / Service / Cached / Empty 与 `oom_adj` 的对应关系
+- 🔹 `lmkd` 的回收决策：`oom_score_adj`、`minfree` / PSI，以及 AMS 的动态调级
+- 🔹 四大组件、多进程配置与 Binder / LocalSocket / 共享内存等 IPC 方式
+- 🔹 进程模型在 Perfetto 中的表现：进程消失、优先级变化、常见误区与排查入口
+
+### 扩展（可选深入）
+
+- 🔸 Phantom Process Killer、App Standby Buckets 与后台限制
+- 🔸 Isolated Process、SDK Sandbox 对安全与资源隔离的影响
+
+### OpenClaw 加工指引
+
+> **锚点**是最低覆盖要求，加工时必须逐条落实并标注验证结果。
+> **扩展**视素材丰富程度选择性深入。
+> 如果从 Obsidian 素材或 AOSP 源码中发现大纲未列出但与本节强相关的知识点，
+> 可**就地插入**最相关的锚点之后，并用 `[自动发现]` 标注，方便后续 review。
+> 锚点内容需 L1/L2 验证，扩展内容至少 L2 验证，自动发现内容至少标注来源。
+<!-- outline-end -->
 
 ## 为什么要了解 Android 的进程模型
 
@@ -44,7 +70,7 @@ task2b_state: idle
 
 - App 进程什么时候会被系统回收，什么时候会安全地留在后台
 - 为什么有时候后台 Service 被杀了，有时候前台 Activity 也会被杀
-- 在 Perfetto 中看到某个进程消失，意味着什么、该怎么追查
+- 在 Perfetto 中看到某个进程消失，背后可能是哪类原因、该怎么追查
 - 不同 Android 版本上进程管理策略的差异，导致同一个 App 在不同设备上表现不同
 
 不理解进程模型，分析很多问题时就像在黑箱操作——现象看到了，但不知道背后的机制。
@@ -53,9 +79,9 @@ task2b_state: idle
 
 在讲进程优先级之前，我们先搞清楚一个前置问题：Android 的 App 进程是怎么来的？
 
-答案指向一个特殊的进程——Zygote。Zygote 在系统启动时由 init 进程创建（具体过程见 1.2 系统启动全流程），它在启动时会预加载大量的 Java 类和资源。之后，每当需要启动一个新的 App，系统并不是从零开始创建进程，而是让 Zygote 调用 `fork()` 系统调用，复制自身来产生子进程。
+答案指向一个特殊的进程——Zygote。Zygote 在系统启动时由 init 进程创建（具体过程见 1.2 系统启动全流程），它在启动时会预加载大量的 Java 类和资源。之后，每当需要启动一个新的 App，系统不会从零开始创建进程，而是让 Zygote 调用 `fork()` 系统调用，复制自身来产生子进程。
 
-这个设计有一个关键优势：**共享已加载的类和资源**。由于 Linux 的 fork 机制采用写时复制（Copy-on-Write），Zygote 预加载的所有 Java 类和 Framework 资源在 fork 之后被子进程共享（只要子进程不去修改它们）。这意味着每个 App 进程不需要重新加载几十 MB 的 Framework 代码——这也是 Android 冷启动通常在几百毫秒级完成的重要原因之一。
+这个设计有一个关键优势：**共享已加载的类和资源**。由于 Linux 的 fork 机制采用写时复制（Copy-on-Write），Zygote 预加载的所有 Java 类和 Framework 资源在 fork 之后被子进程共享（只要子进程不去修改它们）。因此每个 App 进程不需要重新加载几十 MB 的 Framework 代码，这也是 Android 冷启动通常能控制在几百毫秒级的重要原因之一。
 
 [已验证: 官方文档, source.android.com/docs/core/memory]
 
@@ -78,9 +104,9 @@ public static void main(String[] argv) {
 
 注意：这里展示的是简化后的主干流程，省略了异常处理和参数解析。实际的 socket accept 和 fork 操作不在 `main()` 中，而是在 `ZygoteServer.runSelectLoop()` 内部处理。当收到 AMS 的请求后，`ZygoteConnection.processCommand()` 负责解析参数并调用 `Zygote.forkAndSpecialize()` 创建子进程。
 
-这里有几个值得注意的细节。第一，Zygote 实际上有两个：Primary Zygote 和 Secondary Zygote（32 位和 64 位），系统会根据 App 的 ABI 选择对应的 Zygote 来 fork。第二，fork 之后子进程会调用 `ApplicationLoaders` 来加载 App 自己的 APK 代码，而 Framework 层的代码已经在 Zygote 阶段加载好了。
+这里先看两个细节。第一，在同时支持 32 位和 64 位 ABI 的设备上，系统通常会准备两个 Zygote，并根据 App 的 ABI 选择对应的进程来 fork。第二，fork 之后子进程会调用 `ApplicationLoaders` 来加载 App 自己的 APK 代码，而 Framework 层的代码已经在 Zygote 阶段加载好了。
 
-在 Perfetto 中，进程列表里可以看到 `zygote64`（或 `zygote`）进程，它的启动时间很早，内存占用较大（因为预加载了大量资源），但 CPU 使用率极低——因为它大部分时间都在等待 fork 请求。
+在 Perfetto 中，进程列表里会出现 `zygote64`（或 `zygote`）进程，它的启动时间很早，内存占用较大，但 CPU 使用率通常很低，因为它大部分时间都在等待 fork 请求。
 
 [已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/com/android/internal/os/ZygoteInit.java]
 
@@ -195,7 +221,7 @@ lmkd 并不是等到内存彻底用完才动手。它的回收策略基于 **min
 
 ## 四大组件与进程的对应关系
 
-一个常见的误解是"一个 App 就是一个进程"。实际上，Android 的进程模型是**组件驱动**的——进程的存在是因为它里面有组件在运行。
+一个常见的误解是"一个 App 就是一个进程"。更准确地说，Android 的进程模型是**组件驱动**的，进程的存在是因为里面有组件在运行。
 
 ### 默认情况：单进程
 
@@ -221,7 +247,7 @@ lmkd 并不是等到内存彻底用完才动手。它的回收策略基于 **min
 - 将推送服务放到独立进程，提高稳定性
 - 将后台同步放到独立进程，避免被杀时影响用户当前操作
 
-但要注意：每个进程有独立的 ART 虚拟机实例，这意味着单例对象、静态变量在不同进程之间是不共享的，跨进程通信必须通过 Binder 等机制。
+但要注意：每个进程都有独立的 ART 虚拟机实例，因此单例对象、静态变量在不同进程之间并不共享，跨进程通信必须通过 Binder 等机制。
 
 [已验证: 官方文档, developer.android.com/guide/topics/manifest/service-element]
 
@@ -321,7 +347,7 @@ Android 9 引入了 App Standby Buckets 机制，将 App 分为五个桶：
 4. **Rare**：很少使用的 App，严格限制后台作业、闹钟、网络
 5. **Restricted**（Android 12 新增）：极低优先级，最高限制等级
 
-Standby Bucket 影响的不是进程优先级（oom_adj），而是 **JobScheduler 的执行频率、Firebase Cloud Messaging 的传递优先级、闹钟的精确度**等。换句话说，它影响的是后台任务的执行时机，而不是进程本身的存亡。
+Standby Bucket 影响的是 **JobScheduler 的执行频率、Firebase Cloud Messaging 的传递优先级、闹钟的精确度**等后台能力，而不是进程优先级（oom_adj）。也就是说，它影响的是后台任务的执行时机，而不是进程本身的存亡。
 
 通过 `UsageStatsManager.getAppStandbyBucket()` 可以查询当前 Bucket，通过 `adb shell am set-standby-bucket <package> <bucket>` 可以手动测试不同 Bucket 下的行为。
 
@@ -361,7 +387,7 @@ Android 13 引入了 SDK Sandbox，允许广告 SDK 运行在一个独立的沙�
 
 ### 2. 进程状态变化
 
-在 CPU Slice 视图中，可以看到进程在不同 CPU 上的调度情况。当一个进程突然从 Perfetto 中消失（后续没有 CPU 活动），通常意味着：
+在 CPU Slice 视图中，能观察到进程在不同 CPU 上的调度情况。当一个进程突然从 Perfetto 中消失（后续没有 CPU 活动），通常意味着：
 
 - 被 lmkd 杀掉（内存回收）
 - 自身崩溃（crash）
@@ -369,7 +395,7 @@ Android 13 引入了 SDK Sandbox，允许广告 SDK 运行在一个独立的沙�
 
 ### 3. oom_adj 的实时查看
 
-虽然 Perfetto 默认不直接显示 oom_adj 值，但通过在抓 Trace 时添加 `atrace` 的 `am` category 可以获取 AMS 的活动日志，从中可以看到进程优先级变化的记录。
+虽然 Perfetto 默认不直接显示 oom_adj 值，但抓 Trace 时如果带上 `atrace` 的 `am` category，仍然可以从 AMS 相关日志里找到进程优先级变化的记录。
 
 [待补充：Perfetto 中 oom_adj 变化的具体 Trace 截图]
 
@@ -377,7 +403,7 @@ Android 13 引入了 SDK Sandbox，允许广告 SDK 运行在一个独立的沙�
 
 ### 误区 1：App 在前台就不会被回收
 
-**错误**。前台进程确实是最不容易被回收的，但在极端内存压力下（比如设备物理内存很小又运行了大型游戏），LMK 仍然可能杀掉前台进程。此外，"前台"的定义不是"屏幕上能看到这个 App"，而是"有前台 Activity 或前台 Service"。如果一个 App 的 Activity 在前台但进程意外被杀，系统会重建 Activity（如果有 savedInstanceState）。
+**错误**。前台进程确实是最不容易被回收的，但在极端内存压力下（比如设备物理内存很小又运行了大型游戏），LMK 仍然可能杀掉前台进程。此外，这里的“前台”指的是“有前台 Activity 或前台 Service”，不是单纯指“屏幕上能看到这个 App”。如果一个 App 的 Activity 在前台但进程意外被杀，系统会重建 Activity（如果有 savedInstanceState）。
 
 ### 误区 2：多进程方案能解决所有内存问题
 

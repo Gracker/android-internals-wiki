@@ -1897,3 +1897,22 @@
 - **位置**：正文多处相对链接（如 [2.4] / [2.8] / [1.4]）
 - **问题**：当前 Markdown 链接写成 `part1-fundamentals/...`，从 `src/part2-performance/ch07-smoothness/05-optimization.md` 出发会解析到错误路径，实际在仓库内不可达。
 - **建议**：改成正确的相对路径（如 `../../part1-fundamentals/...`），或统一改成 Obsidian wiki link，避免章节间跳转失效。
+
+## [Task6 Review] 1.3 进程模型与生命周期管理 — 2026-04-12
+- **类型**：需补充素材
+- **位置**：`Binder IPC（主力通道）`
+- **问题**："Binder 承担了系统中 90% 以上的跨进程调用"属于量化断言，但正文没有给出可追溯来源或适用范围。
+- **建议**：补官方文档、AOSP 统计依据或实测来源；如果暂时补不齐，改成不带百分比的定性表述。
+- **review 日志**：logs/review/2026-04-12-22-review.md
+
+- **类型**：需确认
+- **位置**：`Phantom Process Killer（Android 12+）`
+- **问题**："每个 App 最多允许 32 个子进程"以及 `settings_enable_monitor_phantom_procs` 开关的写法带有版本和设备边界，当前缺少精确来源。
+- **建议**：由 Task 9 对照官方文档和 AOSP 行为核对版本范围、默认值与设置项名称，再决定是否保留当前写法。
+- **review 日志**：logs/review/2026-04-12-22-review.md
+
+- **类型**：需补充素材
+- **位置**：`在 Perfetto 中的表现` / `进程死亡回调：DeathRecipient`
+- **问题**：当前只给了泛化描述，没有把 `lmkd` kill 事件、`oom_adj` 变化记录、`binderDied` 相关追踪方式落到可复现的 Trace / SQL / 截图锚点上。
+- **建议**：补 2-3 个真实 Perfetto 片段或等价图示，并明确对应的数据源、track 名称或查询方式。
+- **review 日志**：logs/review/2026-04-12-22-review.md
