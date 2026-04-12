@@ -1372,3 +1372,36 @@ Perfetto 段落没有给出可复现的观测路径。当前章节直接写 `pow
 
 ### 关联章节
 6.5、9.3、9.4、9.5
+
+## [2026-04-12] 5.12 Thermal 管控深度：从内核子系统到 ADPF 主动降频 — Thermal Headroom 数据契约
+
+### 盲区描述
+正文讨论了 `getThermalHeadroom()` 的预测思路，但没有把 HAL 侧的 `TemperatureThreshold`、`forecastSkinTemperature()`、skin sensor 多样本与 Framework `TemperatureWatcher` 的归一化逻辑串起来。结果是 HAL 一节、headroom 一节、ADPF 一节各说各的，读者看完仍然不知道 headroom 这个值到底建立在什么数据基础上。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 追 `hardware/interfaces/thermal/aidl/android/hardware/thermal/IThermal.aidl` 中 `getTemperatureThresholds*()` / `forecastSkinTemperature()` 的真实语义
+- 追 `ThermalManagerService.TemperatureWatcher` 的样本缓存、线性回归与 severe threshold 归一化流程
+- 说明 API 35 `getThermalHeadroomThresholds()` 与 API 36 `AThermal_HeadroomCallback` 如何改变 App 侧策略写法
+
+### 关联章节
+5.5、5.9、5.12、8.9、13.9
+
+## [2026-04-12] 5.12 Thermal 管控深度：从内核子系统到 ADPF 主动降频 — Android 17 Thermal 变化未落地
+
+### 盲区描述
+frontmatter 把章节适用范围写到 Android 17，但版本演进表对 Android 17 仍停留在“[待验证]”。如果不补齐 Android 17 thermal 改动，读者无法判断哪些 API / HAL / headroom 行为是 Android 16 结论，哪些已经在 Android 17 变化。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 用 Android 17 release notes / API diff / AOSP 代码比对确认 thermal、ADPF、headroom threshold 的新增或变更
+- 核对 `frameworks/base/services/core/java/com/android/server/power/` 与 `frameworks/native/include/android/thermal.h` 在 Android 16 vs 17 的差异
+- 若没有实质变化，也需要明确写出“Android 17 没有新增 thermal API，只沿用 Android 16 行为”而不是留占位符
+
+### 关联章节
+5.9、5.12、16.4
+
