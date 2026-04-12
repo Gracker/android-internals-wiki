@@ -5545,5 +5545,38 @@
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-12T17:27:00+08:00",
     "status": "pending"
+  },
+  {
+    "section": "6.3",
+    "section_title": "I/O 调度与性能",
+    "priority": 90,
+    "reason": "[review回炉] 调度器版本映射、Perfetto SQL 表名/字段、Trace 证据链仍需补齐",
+    "material_paths": [
+      "intake/suggestions.md（含 review 意见）"
+    ],
+    "review_issues": [
+      {
+        "type": "需确认",
+        "location": "Android 版本 / GKI / 默认调度器映射表",
+        "detail": "正文把 Android 版本、GKI 内核和默认调度器写成直接映射，但这件事会受厂商内核配置影响，当前缺少更精确的设备或配置证据。",
+        "suggestion": "请 Task 9 对照 GKI 配置和主流机型内核核一轮；如果覆盖不住，就改成更保守的版本说明。"
+      },
+      {
+        "type": "需确认",
+        "location": "Perfetto SQL 查询示例",
+        "detail": "正文直接使用 `block_io_events` 表名和对应字段；不同 Perfetto 版本、trace 配置、stdlib 预处理表是否存在，可能并不一致。",
+        "suggestion": "请 Task 9 按当前 trace processor schema 复核表名、字段和可运行查询，必要时换成实测可跑的 SQL。"
+      },
+      {
+        "type": "需补充素材",
+        "location": "Perfetto 观察章节",
+        "detail": "正文已经讲了主线程 D 状态、后台写入争抢和 fsync 拉长，但没有真实 trace 截图或等价图示，证据链还不完整。",
+        "suggestion": "请 Task 2B 补 2-3 个真实 Perfetto 片段，至少覆盖这三类典型信号。"
+      }
+    ],
+    "added_by": "task6-review",
+    "added_at": "2026-04-12T18:11:00+08:00",
+    "status": "pending",
+    "original_review_log": "logs/review/2026-04-12-18-review.md"
   }
 ]
