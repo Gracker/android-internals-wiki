@@ -1480,3 +1480,36 @@ frontmatter 把章节适用范围写到 Android 17，但版本演进表对 Andro
 ### 关联章节
 6.1、6.3、4.8、7.2
 
+
+
+## [2026-04-12] 7.9 感知流畅性：步幅波动与无掉帧卡顿 — 知识盲区
+
+### 盲区描述
+当前章节把 frame delta 当成步幅波动的主测量指标，但没有给出“位移级”采样方案。真实排障时，我们需要把 `Choreographer` 的 frame id / 时间戳和 `scrollY`、`translationX`、动画值、Layer bounds 这类实际位移量对齐，否则只能看到节奏抖动，无法证明画面位移是否真的抖动。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 用 `FrameCallback` + `RecyclerView.OnScrollListener` / 动画值采样建立逐帧 displacement variance 计算方式
+- 研究 Perfetto / trace processor 中 frame id 与滚动位移、Layer 变换的可关联字段
+- 区分 frame time variance 与 displacement variance 的适用边界，避免把两者混为一谈
+
+### 关联章节
+§7.8、§2.4、§2.17、§3.2
+
+## [2026-04-12] 7.9 感知流畅性：步幅波动与无掉帧卡顿 — 知识盲区（根因分型）
+
+### 盲区描述
+正文几乎把“无掉帧卡顿”归因到 OverScroller 的毫秒量化，缺少系统层根因分型。实际工作里，ARR 模式切换、buffer stuffing、SurfaceFlinger present-time jitter、输入重采样 / 预测漂移，都可能表现为 FrameTimeline 不红但主观感受发顿。如果不把这些分开，本章会把读者带向单因归因。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 梳理 ARR 模式切换和 refresh rate override 在 Perfetto / SurfaceFlinger 中的特征信号
+- 补 buffer stuffing、present-time drift、SurfaceFlinger 合成抖动的判别路径
+- 补 input resampling / MotionPredictor 与无掉帧卡顿之间的边界条件
+
+### 关联章节
+§7.1、§2.18、§2.19、§2.4、§3.2

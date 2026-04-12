@@ -5648,5 +5648,62 @@
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-12T18:39:04+08:00",
     "status": "pending"
+  },
+  {
+    "section": "7.9",
+    "section_title": "感知流畅性：步幅波动与无掉帧卡顿",
+    "priority": 95,
+    "reason": "[Deep Tech Review] OverScroller 物理模型、Choreographer/AnimationUtils 时间链、FrameTimeline/VsyncCallback 版本表和 AppJankStats 语义存在事实错误，需回炉修正。",
+    "material_paths": [
+      "intake/research-gaps.md",
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "行 135-143 OverScroller fling 物理模型",
+        "detail": "正文把 fling 路径写成 `position = start + velocity * time - friction * time ^ 2`，并据此推导 8ms/9ms 位移差。AOSP `SplineOverScroller.update()` 在正常 fling 路径使用 `SPLINE_POSITION` / `SPLINE_TIME` 样条表，不是二次公式；BALLISTIC/CUBIC 只覆盖越界回弹等状态。",
+        "suggestion": "改为基于 `SplineOverScroller.update()` 解释时间量化如何影响 `distanceCoef` / `velocityCoef`，或者把当前公式明确降级为示意模型，删除“这是 AOSP fling 行为”的推导。"
+      },
+      {
+        "type": "源码错误",
+        "location": "行 147-163 Choreographer → AnimationUtils → OverScroller 的时间链",
+        "detail": "正文说 OverScroller “自己重新调用 currentAnimationTimeMillis”，因此“动画引擎没有用到 Choreographer 的精确时间”。但 `Choreographer.doFrame()` 会调用 `AnimationUtils.lockAnimationClock(frameTimeNanos / NANOS_PER_MS, expectedPresentationTimeNanos)`，帧内读取到的是与当前 vsync 同步的线程本地动画时钟。真实问题是 ns→ms 量化，而不是完全绕开 Choreographer。",
+        "suggestion": "重写这段因果链，补 `lockAnimationClock()` / `expectedPresentationTimeNanos()` 的作用，把结论改成“时间源与 vsync 同步，但只有毫秒精度”。"
+      },
+      {
+        "type": "版本差异",
+        "location": "行 328-331 版本演进表",
+        "detail": "`FrameTimeline API` 被写成 Android 10 引入，`Choreographer.VsyncCallback` 被写成 Android 12。实际 FrameTimeline 数据源要求 Android 12(S)+，`VsyncCallback` 官方 API 是 API 33。当前表把平台分界线写错了。",
+        "suggestion": "按 Android 12(S)+ FrameTimeline、Android 13(API 33) VsyncCallback、Android 16(API 36) AppJankStats / RelativeFrameTimeHistogram 重新整理版本表。"
+      },
+      {
+        "type": "源码错误",
+        "location": "行 230-238 AppJankStats / RelativeFrameTimeHistogram",
+        "detail": "正文把 AppJankStats 写成“系统自动收集、零代码侵入”的平台级统计。官方 API 定义是：AppJankStats 存储单个 UI widget 的 jank stats，RelativeFrameTimeHistogram 用于帮助库组件把这些数据上报给系统；调用入口在 `View.reportAppJankStats()`。",
+        "suggestion": "把这段改成“上报接口 / 数据容器”，说明它面向 library/widget instrumentation，而不是 Perfetto 那样的被动系统追踪。"
+      },
+      {
+        "type": "原理断裂",
+        "location": "行 190-238 步幅波动量化方法",
+        "detail": "章节把“帧时间差”直接当成“步幅波动”的代理指标，但没有说明位移采样来自哪里。帧时间均匀 != 位移均匀，尤其在非线性插值、变速动画或 compositor phase drift 下，两者会分离。",
+        "suggestion": "新增一个可执行测量路径：在 `FrameCallback` 中同步采样 `scrollY` / `translationX` / 动画值 / layer bounds，计算相邻帧 displacement variance，再把 frame time variance 作为辅助指标。"
+      },
+      {
+        "type": "知识盲区",
+        "location": "行 91-165、240-246 问题归因与 Trace 特征",
+        "detail": "章节几乎把无掉帧卡顿收敛到 OverScroller 毫秒量化，缺少和 ARR 模式切换、buffer stuffing、SurfaceFlinger present-time jitter、input resampling / prediction mismatch 的区分。真实排障时，这些现象都可能表现为“FrameTimeline 不红但用户觉得顿”。",
+        "suggestion": "补一个“根因分型”小节，给出每类问题在 Perfetto / FrameTimeline / 输入链路里的区分信号。"
+      },
+      {
+        "type": "源码错误",
+        "location": "行 291-302 策略三 与 LinearSmoothScroller",
+        "detail": "正文把 `LinearSmoothScroller` 描述成“基于速度衰减、不是基于时间”的实现思路。实际 androidx `LinearSmoothScroller` 通过 distance→duration 计算，并配合 `LinearInterpolator` / `DecelerateInterpolator`，不是逐帧 `velocity *= friction_factor` 模型。",
+        "suggestion": "删除对 `LinearSmoothScroller` 的类比，或者替换为明确标注“自定义算法示意”，并给出真正的 `LinearSmoothScroller` 时间 / 插值公式。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-12T19:30:00+08:00",
+    "status": "pending"
   }
 ]

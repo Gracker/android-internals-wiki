@@ -1825,3 +1825,16 @@
 - **问题**：后半段从问题分析切成了方案清单，和前文的 Trace 观察、真实场景回扣不够，读起来更像提纲。
 - **建议**：Task 2B 收紧成 2-3 条有证据支撑的建议，最好每条都回扣到前面的症状或可观察信号。
 - **review 日志**：logs/review/2026-04-12-19-review.md
+
+
+## [Task9 Deep Review] 7.9 感知流畅性：步幅波动与无掉帧卡顿 — 2026-04-12
+- **类型**：源码准确性
+- **位置**：行 356-357 官方文档链接
+- **问题**：`https://developer.android.com/develop/ui/performance/jankstats` 和 `https://developer.android.com/reference/android/view/FrameTimeline` 当前返回 404，引用链已经断掉，和“已验证”/“官方文档”定位不一致。
+- **建议**：替换为可访问的 `android.app.jank.AppJankStats` / `RelativeFrameTimeHistogram` / `Choreographer.VsyncCallback` API 页面，以及 perfetto.dev 的 FrameTimeline 数据源文档。
+
+## [Task9 Deep Review] 7.9 感知流畅性：步幅波动与无掉帧卡顿 — 2026-04-12
+- **类型**：交叉引用
+- **位置**：frontmatter / 与其他章节的关联
+- **问题**：正文实际依赖 §7.1、§7.8、§2.4、§2.17、§3.2，但 frontmatter 没有 `related_chapters`。后续批量校验和知识图谱构建拿不到这些关联。
+- **建议**：补齐 `related_chapters`，并确保章节号与现有 `src/` 文件一一对应。
