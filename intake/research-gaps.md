@@ -1614,3 +1614,19 @@ AsyncLayoutInflater 一节缺少 AndroidX 当前实现的关键边界，尤其�
 ### 关联章节
 8.8、18.15、18.14、2.13、2.16、1.16
 
+
+## [2026-04-13] 4.4 Low Memory Killer — 知识盲区（modern reaper 与 App 侧观测边界）
+
+### 盲区描述
+正文把重点放在“根据 oom_score_adj 选谁来杀”，但没有覆盖现代 `lmkd` 在 kill 之后如何尽快回收内存，以及 App 侧在 Android 14+/API 34 之后还能依赖哪些低内存信号。AOSP android-16.0.0_r1 已经走 `reaper.cpp` 的 `pidfd_send_signal` + `process_mrelease()` 路径；同时 `TRIM_MEMORY_COMPLETE`、`TRIM_MEMORY_MODERATE`、`TRIM_MEMORY_RUNNING_LOW/CRITICAL` 已不再通知 App。少了这两块，读者很难把“杀进程策略”“内存真正何时回收”“App 还能看到什么前兆”串起来。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 读 `system/memory/lmkd/reaper.cpp`，梳理 `kill_one_process()`、`pidfd_send_signal()`、`process_mrelease()` 的执行链
+- 核实 Perfetto 中 userspace `lmkd` 的 ATrace / `mem.lmk` 事件长什么样，和 legacy `lowmemorykiller/lowmemory_kill` 做一张对照表
+- 梳理 Android 14+/API 34 之后 App 侧还能收到哪些 `onTrimMemory()` 级别，哪些旧级别已经不再通知
+
+### 关联章节
+4.4、1.3、10.4、8.3
