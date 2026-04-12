@@ -22,10 +22,13 @@ sources:
 tags: [SQLite, Room, database, ANR, CursorWindow, WAL, performance]
 related_chapters: ["1.10", "4.1", "9.1", "10.1", "10.6"]
 section: "10.7"
-pipeline_stage: task6_pending
-task6_state: pending
+pipeline_stage: task2b_pending
+task6_state: reviewed
 task9_state: pending
-task2b_state: idle
+task2b_state: pending
+reviewed_by: openclaw-task6
+reviewed_date: "2026-04-13"
+task6_result: needs-rework
 ---
 
 # 10.7 SQLite/Room 数据库性能优化
@@ -34,7 +37,16 @@ task2b_state: idle
 
 数据库操作之所以容易成为性能瓶颈，根源在于 SQLite 的并发模型：写操作会锁住整个数据库，而 Android 的 `SQLiteDatabase` 在这一层之上又加了自己的同步机制。理解这些机制的层级关系，是从 Perfetto trace 中准确判断「到底是哪一层锁导致了问题」的前提。
 
-本章我们从 SQLite 内部机制讲起，覆盖 CursorWindow 跨进程传输的瓶颈、Room 的线程模型与优化策略，最后给出数据库性能问题的系统分析方法。
+本章我们从 SQLite 内部机制讲起，覆盖 CursorWindow 跨进程传输的瓶颈、Room 的线程模型与优化策略，并给出数据库性能问题的系统分析方法。
+
+<!-- outline-start -->
+- 🔹 WAL 模式、锁层级与 `SQLiteDatabase` 同步机制
+- 🔹 CursorWindow、Binder 缓冲区与翻页重查
+- 🔹 Room 的线程模型、事务与 Paging 3
+- 🔹 索引、`WITHOUT ROWID` 与 PRAGMA 调优
+- 🔹 数据库与 ANR / Perfetto 的关联分析
+- 🔹 异步线程池、加密数据库与多进程访问
+<!-- outline-end -->
 
 ## 1. SQLite 内部机制与并发模型
 
@@ -44,7 +56,7 @@ SQLite 默认使用回滚日志（rollback journal）模式。在这种模式下
 
 [图：回滚日志模式下读写互斥的时序示意]
 
-WAL（Write-Ahead Logging）模式反转了这个模型。写操作不再直接修改数据库文件，而是将变更追加到一个独立的 WAL 文件（`.db-wal`）中。读操作可以从数据库文件和 WAL 文件中同时读取，但看到的是各自一致的快照。这意味着**一个写者可以持续追加变更，而多个读者可以同时读取——读写不再互斥**。
+WAL（Write-Ahead Logging）模式反转了这个模型。写操作不再直接修改数据库文件，而是将变更追加到一个独立的 WAL 文件（`.db-wal`）中。读操作可以从数据库文件和 WAL 文件中同时读取，但看到的是各自一致的快照。这样，一个写者可以持续追加变更，多个读者也能同时读取，读写不再互斥。
 
 ```sql
 -- 启用 WAL 模式
@@ -100,7 +112,7 @@ public long insertWithOnConflict(String table, String nullColumnHack,
 
 `acquireReference()` 和 `releaseReference()` 通过 `AtomicInteger` 引用计数管理数据库连接的生命周期。当引用计数归零且 `close()` 被调用时，数据库才会真正关闭。
 
-`SQLiteOpenHelper` 的 `getWritableDatabase()` 内部使用了 `synchronized` 关键字，确保 `onCreate()`、`onUpgrade()` 等回调只在一个线程上执行。这意味着如果升级脚本执行时间很长（比如大表 `ALTER TABLE`），其他所有等待数据库连接的线程都会被阻塞。
+`SQLiteOpenHelper` 的 `getWritableDatabase()` 内部使用了 `synchronized` 关键字，确保 `onCreate()`、`onUpgrade()` 等回调只在一个线程上执行。如果升级脚本执行时间很长（比如大表 `ALTER TABLE`），其他所有等待数据库连接的线程都会被阻塞。
 
 [已验证: AOSP android-17-beta3, frameworks/base/core/java/android/database/sqlite/SQLiteOpenHelper.java]
 
@@ -108,7 +120,7 @@ public long insertWithOnConflict(String table, String nullColumnHack,
 
 ### 2.1 CursorWindow 的内部结构
 
-CursorWindow 是 Android 跨进程数据库查询的核心载体。当 App 通过 ContentProvider 查询数据时，返回的 `Cursor` 实际上是对一个 `CursorWindow` 的封装。CursorWindow 底层使用 Binder 共享内存来传输数据，默认大小为 2MB（`CursorWindow.CURSOR_WINDOW_SIZE`）。
+CursorWindow 是 Android 跨进程数据库查询的核心载体。当 App 通过 ContentProvider 查询数据时，返回的 `Cursor` 通常封装了一个 `CursorWindow`。CursorWindow 底层使用 Binder 共享内存来传输数据，默认大小为 2MB（`CursorWindow.CURSOR_WINDOW_SIZE`）。
 
 这个 2MB 的限制不是随意设定的。CursorWindow 的数据需要在 App 进程和 ContentProvider 所在进程之间通过 Binder 传输。Binder 的事务缓冲区有上限（整个进程共享 1MB），加上 CursorWindow 自身的容量，2MB 是在内存占用和传输效率之间取的平衡。
 
@@ -130,7 +142,7 @@ CursorWindow 是 Android 跨进程数据库查询的核心载体。当 App 通�
 
 CursorWindow 的 2MB 限制只是表面。更隐蔽的问题来自 Binder 事务缓冲区。整个进程的 Binder 缓冲区默认只有 1MB，且所有并发的 Binder 事务共享这个额度。
 
-在实践中，这意味着：
+在实践中，通常会出现几种情况：
 
 - 如果一个 ContentProvider 查询返回了 1.5MB 的数据，仅这一次调用就超过了 Binder 缓冲区
 - 如果两个并发 ContentProvider 调用各返回 0.5MB，合计 1MB，后续的 Binder 调用可能触发 `TransactionTooLargeException`
@@ -174,7 +186,7 @@ SELECT * FROM messages WHERE id > 1000 ORDER BY id LIMIT 20;
 
 Room 在架构层面强制了"数据库操作不在主线程"的约束。默认情况下，Room 使用一个内部 `QueryExecutor`（通常是一个固定大小的线程池）来执行所有查询操作。Room 的 `@Dao` 方法如果是 `suspend` 函数，会在 Room 内部的 `QueryCoroutineScope` 上执行，自动管理线程切换。
 
-Room 默认在 API 16+ 设备上启用 WAL 模式（前提是非低内存设备）。这意味着使用 Room 的应用天然享有读写并发的优势，而不需要手动配置 `PRAGMA journal_mode=WAL`。
+Room 默认在 API 16+ 设备上启用 WAL 模式（前提是非低内存设备）。使用 Room 的应用天然享有读写并发的优势，而不需要手动配置 `PRAGMA journal_mode=WAL`。
 
 [已验证: 官方文档, developer.android.com/training/data-storage/room]
 
@@ -182,7 +194,7 @@ Room 默认在 API 16+ 设备上启用 WAL 模式（前提是非低内存设备�
 
 Room 的 `@Transaction` 注解确保方法在一个数据库事务中执行。对于 `suspend` 函数，Room 使用 `withTransaction` 扩展函数，它在内部维护了一个专用的事务线程。
 
-使用事务的关键收益不只是原子性——更重要的是性能。以下面的批量插入为例：
+使用事务的收益除了原子性，也体现在性能上。以下面的批量插入为例：
 
 ```kotlin
 // 不使用事务：1000 次插入 = 1000 次锁获取 + 1000 次 fsync
@@ -286,7 +298,7 @@ CREATE TABLE user_prefs (
 | `busy_timeout` | `3000` | 写冲突时等待 3 秒而非立即返回 `SQLITE_BUSY` |
 | `cache_size` | `-8000` | 页缓存 8MB（默认约 2MB），减少磁盘读取 |
 
-`synchronous=NORMAL` 在 WAL 模式下是安全的：正常使用时数据不会丢失，只有在系统崩溃（非应用崩溃）的极端情况下才可能丢失最后一个检查点之后的事务。对于绝大多数应用来说，这个风险可以接受。
+`synchronous=NORMAL` 在 WAL 模式下是安全的：正常使用时数据不会丢失，只有在系统崩溃（非应用崩溃）的极端情况下才可能丢失最近一次检查点之后的事务。对于绝大多数应用来说，这个风险可以接受。
 
 [已验证: sqlite.org/pragma.html]
 
@@ -324,7 +336,7 @@ ANR traces 中最常见的数据库相关模式：
 
 在 Perfetto trace 中定位数据库相关性能问题的步骤：
 
-**第一步**：找到主线程（ui-thread）上耗时超过一帧的 slice。如果看到 `SQLiteDatabase.execSQL` 或 `SQLiteStatement.execute` 出现在调用栈中，直接定位到具体的 SQL 操作。
+**第一步**：找到主线程（UI thread）上耗时超过一帧的 slice。如果看到 `SQLiteDatabase.execSQL` 或 `SQLiteStatement.execute` 出现在调用栈中，直接定位到具体的 SQL 操作。
 
 **第二步**：如果主线程处于 `Sleeping` 状态且调用栈包含 `Object.wait()` 或 `ReentrantLock`，检查它是否在等待 `SQLiteDatabase.mLock`。如果是，使用 Perfetto 的 `android.monitor_contention` SQL 查找谁持有这把锁：
 
@@ -366,7 +378,7 @@ StrictMode.setThreadPolicy(
 
 ### 6.1 单线程串行 vs 并发写入
 
-由于 SQLite 本质上只允许一个写者（即使在 WAL 模式下），数据库写操作的线程池设计有两条路径：
+由于 SQLite 在同一时刻只允许一个写者（即使在 WAL 模式下），数据库写操作的线程池设计有两条路径：
 
 **单线程串行写入**：所有写操作在一个专用线程上串行执行。优点是简单、无锁竞争、写操作顺序可预测。Room 的 `withTransaction` 内部就是这种模式。
 

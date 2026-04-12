@@ -1,40 +1,40 @@
 {
-  "generated_at": "2026-04-13T07:20:56+08:00",
+  "generated_at": "2026-04-13T07:32:25+08:00",
   "state_machine_version": "v2",
   "total_sections": 207,
   "metrics": {
     "total": 207,
-    "last_updated": "2026-04-13T07:20:56+08:00",
+    "last_updated": "2026-04-13T07:32:25+08:00",
     "unknown": 34,
     "ready-for-review": 173,
     "pipeline_unknown": 31,
-    "pipeline_task6_pending": 166,
-    "pipeline_task2b_pending": 8,
+    "pipeline_task6_pending": 165,
+    "pipeline_task2b_pending": 9,
     "pipeline_task9_pending": 2,
     "task6_unknown": 31,
     "task6_revisiting": 45,
-    "task6_reviewed": 10,
-    "task6_pending": 121,
+    "task6_reviewed": 11,
+    "task6_pending": 120,
     "task9_unknown": 31,
     "task9_pending": 173,
     "task9_reviewed": 3,
     "task2b_unknown": 31,
     "task2b_fixed": 45,
-    "task2b_pending": 8,
-    "task2b_idle": 123
+    "task2b_pending": 9,
+    "task2b_idle": 122
   },
   "pipeline": {
     "pipeline_stage_counts": {
       "unknown": 31,
-      "task6_pending": 166,
-      "task2b_pending": 8,
+      "task6_pending": 165,
+      "task2b_pending": 9,
       "task9_pending": 2
     },
     "task6_state_counts": {
       "unknown": 31,
       "revisiting": 45,
-      "reviewed": 10,
-      "pending": 121
+      "reviewed": 11,
+      "pending": 120
     },
     "task9_state_counts": {
       "unknown": 31,
@@ -44,8 +44,8 @@
     "task2b_state_counts": {
       "unknown": 31,
       "fixed": 45,
-      "pending": 8,
-      "idle": 123
+      "pending": 9,
+      "idle": 122
     }
   },
   "issues": {
@@ -1744,11 +1744,14 @@
       "title": "SQLite/Room 数据库性能优化",
       "path": "src/part2-performance/ch10-memory-perf/07-sqlite-room-performance.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "pending",
+      "pipeline_stage": "task2b_pending",
+      "task6_state": "reviewed",
       "task9_state": "pending",
-      "task2b_state": "idle",
-      "section": "10.7"
+      "task2b_state": "pending",
+      "section": "10.7",
+      "reviewed_date": "2026-04-13",
+      "reviewed_by": "openclaw-task6",
+      "task6_result": "needs-rework"
     },
     "src/part2-performance/ch10-memory-perf/README.md": {
       "chapter": null,
