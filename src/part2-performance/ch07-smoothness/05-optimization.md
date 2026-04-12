@@ -37,12 +37,12 @@ polish_by: "task2b-polish"
 rework_count: 1
 rework_date: "2026-04-09"
 rework_by: "task2b-rework"
-pipeline_stage: task9_pending
+pipeline_stage: task2b_pending
 task6_state: reviewed
-task9_state: pending
-task2b_state: idle
+task9_state: reviewed
+task9_result: needs-rework
+task2b_state: pending
 ---
-
 
 # 优化策略
 
