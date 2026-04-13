@@ -2825,3 +2825,17 @@
 - **位置**：行 126、301、344-374
 - **问题**：HTTP/2 复用、Radio State Machine、Perfetto 网络分阶段分析都写成了方法论，但没有配真实 Trace / EventListener 样例，读者无法验证“DNS 慢 / TLS 慢 / 主线程阻塞”在图上到底长什么样。
 - **建议**：至少补 1 个 OkHttp EventListener + Trace.beginSection 联合样例，外加 1 个 Perfetto/Trace 截图或文字版时间轴。
+
+## [Task6 Review] 13.1 Perfetto 简介与演进 — 2026-04-14
+- **类型**：需补充素材
+- **位置**：常见问题与误区｜抓 trace 会影响性能吗？
+- **问题**：`通常只开 CPU + gfx + view + input 这几个 tag，对性能的影响在 1-3% 以内` 给了量化结论，但正文没有补充实验条件、设备范围或来源。
+- **建议**：交给 Task 9 核实来源；如果拿不到来源，Task 2B 改成定性表述。
+- **review 日志**：logs/review/2026-04-14-03-review.md
+
+- **类型**：需重写
+- **位置**：为什么性能分析离不开 Perfetto｜收尾句
+- **问题**：`Perfetto 不是众多可选工具之一，它是唯一的工具` 语气过满，边界不清，容易把工程判断写成口号。
+- **建议**：交给 Task 2B 收紧语气，并补适用边界。
+- **review 日志**：logs/review/2026-04-14-03-review.md
+
