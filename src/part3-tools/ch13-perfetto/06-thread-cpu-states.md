@@ -491,3 +491,34 @@ LIMIT 20;
 - [高爷博客 - Systrace 线程 CPU 运行状态分析技巧 - Running 篇](https://www.androidperformance.com/2022/03/13/android-systrace-cpu-state-running/)
 - [高爷博客 - Systrace 线程 CPU 运行状态分析技巧 - Sleep 和 Uninterruptible Sleep 篇](https://www.androidperformance.com/2022/03/13/android-systrace-cpu-state-sleep/)
 - [Linux 内核 - TASK_UNINTERRUPTIBLE 定义](https://elixir.bootlin.com/linux/latest/ident/TASK_UNINTERRUPTIBLE)
+
+### SmartPerfetto AI Agent 实现 Android 性能分析自动化
+- 来源：https://androidperformance.com/2026/04/12/SmartPerfetto-Architecture-Deep-Dive/
+- 类型：blog
+- 摘要：SmartPerfetto AI Agent 通过 MCP 协议调用 trace_processor，实现 Android 性能分析自动化。包含 20 个 MCP 工具、164 个 YAML Skill 和三层验证体系。
+- 入库时间：2026-04-13
+
+### Perfetto v53.0 落地 Rust SDK，开启多语言追踪生态
+- 来源：https://github.com/perfetto/perfetto
+- 类型：release
+- 摘要：Perfetto v53.0 引入 Rust SDK（perfetto-sdk crate），提供完整封装，支持 perfetto-derive 宏自动追踪函数调用。Rust 应用性能追踪不再依赖 FFI 桥接层。
+- 入库时间：2026-04-13
+
+### Perfetto UI 原生集成 pprof 可视化，火焰图分析一体化
+- 来源：https://perfetto.dev/docs/next/how-to/profiling
+- 类型：documentation
+- 摘要：v53.0 在 Perfetto UI 中内置 pprof profile 导入和可视化，可与调度事件、帧渲染等统一分析，减少工具切换成本。
+- 入库时间：2026-04-13
+
+### JSON trace 解析速度提升 7x，大型 trace 加载不再卡顿
+- 来源：https://perfetto.dev/docs/next/release-notes
+- 类型：release
+- 摘要：v53.0 对 JSON trace 解析底层重写，实测速度提升 7 倍。trace processor 对损坏事件容忍处理，视觉错位问题基本消除。
+- 入库时间：2026-04-13
+
+### Perfetto MCP：用自然语言查询 Trace，SQL 零基础也能分析
+- 来源：https://github.com/mcp-servers/perfetto-mcp
+- 类型：tool
+- 摘要：基于 MCP 协议，允许用户用自然语言提问，自动转换为 PerfettoSQL 查询。降低 Trace 分析入门门槛，适用于团队内非专职性能工程师。
+- 入库时间：2026-04-13
+
