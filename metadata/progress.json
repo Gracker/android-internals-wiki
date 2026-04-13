@@ -1,50 +1,50 @@
 {
-  "generated_at": "2026-04-13T07:32:25+08:00",
+  "generated_at": "2026-04-13T08:07:41+08:00",
   "state_machine_version": "v2",
   "total_sections": 207,
   "metrics": {
     "total": 207,
-    "last_updated": "2026-04-13T07:32:25+08:00",
+    "last_updated": "2026-04-13T08:07:41+08:00",
     "unknown": 34,
     "ready-for-review": 173,
     "pipeline_unknown": 31,
-    "pipeline_task6_pending": 165,
-    "pipeline_task2b_pending": 9,
+    "pipeline_task6_pending": 166,
+    "pipeline_task2b_pending": 8,
     "pipeline_task9_pending": 2,
     "task6_unknown": 31,
-    "task6_revisiting": 45,
-    "task6_reviewed": 11,
+    "task6_revisiting": 46,
+    "task6_reviewed": 10,
     "task6_pending": 120,
     "task9_unknown": 31,
-    "task9_pending": 173,
-    "task9_reviewed": 3,
+    "task9_pending": 174,
+    "task9_reviewed": 2,
     "task2b_unknown": 31,
-    "task2b_fixed": 45,
-    "task2b_pending": 9,
+    "task2b_fixed": 46,
+    "task2b_pending": 8,
     "task2b_idle": 122
   },
   "pipeline": {
     "pipeline_stage_counts": {
       "unknown": 31,
-      "task6_pending": 165,
-      "task2b_pending": 9,
+      "task6_pending": 166,
+      "task2b_pending": 8,
       "task9_pending": 2
     },
     "task6_state_counts": {
       "unknown": 31,
-      "revisiting": 45,
-      "reviewed": 11,
+      "revisiting": 46,
+      "reviewed": 10,
       "pending": 120
     },
     "task9_state_counts": {
       "unknown": 31,
-      "pending": 173,
-      "reviewed": 3
+      "pending": 174,
+      "reviewed": 2
     },
     "task2b_state_counts": {
       "unknown": 31,
-      "fixed": 45,
-      "pending": 9,
+      "fixed": 46,
+      "pending": 8,
       "idle": 122
     }
   },
@@ -1369,15 +1369,16 @@
       "title": "WebView 渲染性能与优化",
       "path": "src/part2-performance/ch07-smoothness/11-webview-performance.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
-      "task6_state": "reviewed",
-      "task9_state": "reviewed",
-      "task2b_state": "pending",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
+      "task9_state": "pending",
+      "task2b_state": "fixed",
       "reviewed_date": "2026-04-12",
       "reviewed_by": "openclaw-task6",
       "task6_result": "needs-rework",
       "task9_result": "needs-rework",
-      "section": "7.11"
+      "section": "7.11",
+      "task2b_result": "fixed"
     },
     "src/part2-performance/ch07-smoothness/12-view-layout-performance.md": {
       "chapter": "7.12",
