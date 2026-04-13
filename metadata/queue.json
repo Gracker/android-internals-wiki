@@ -7642,5 +7642,50 @@
     "added_at": "2026-04-13T23:15:08+08:00",
     "status": "pending",
     "original_review_log": "logs/review/2026-04-13-23-review.md"
+  },
+  {
+    "section": "11.3",
+    "section_title": "系统级功耗优化",
+    "priority": 95,
+    "reason": "[Deep Tech Review] Android 16 源码锚点、后台启动 PendingIntent 语义、省电模式口径与 Perfetto 观察点存在事实错误",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "frontmatter sources / 参考资料（行 18-30, 420-425）",
+        "detail": "章节 frontmatter 标注 `last_verified_against: AOSP android-16.0.0_r1`，但 Doze / Standby / Job quota 仍锚定在旧的 `frameworks/base/services/core/...` 路径，并把 Standby 直接落到 `UsageStatsService.java`。Android 16 相关实现已迁移到 jobscheduler APEX，至少应补 `apex/jobscheduler/service/java/com/android/server/DeviceIdleController.java`、`.../usage/AppStandbyController.java`、`.../usage/UsageStatsService.java`、`.../job/JobSchedulerService.java`。当前引用会误导读者按错源码入口核对行为。",
+        "suggestion": "把 Doze / Standby / Job quota 的源码锚点改为 Android 16 的 APEX 路径，并明确 `AppStandbyController` 负责桶分配、`JobSchedulerService` 负责 quota 执行、`PowerManagerService` 负责 Battery Saver。"
+      },
+      {
+        "type": "原理断裂/版本差异",
+        "location": "Background Activity Starts（行 222, 389）",
+        "detail": "正文把 Android 14 的 PendingIntent 后台启动变化写成“需要显式声明权限”。官方变更点其实是显式 opt-in：发送方/创建方需要通过 `ActivityOptions.setPendingIntentBackgroundActivityStartMode(...)`（以及对应 creator API）授予后台启动能力，不是新增了一个 manifest/runtime 权限。",
+        "suggestion": "把“显式声明权限”改成“显式 opt-in 的 ActivityOptions 模式”，并补 Android 14+ 的具体 API 名称与 Android 16 更细粒度模式差异。"
+      },
+      {
+        "type": "原理断裂/版本差异",
+        "location": "省电模式的核心行为（行 269-279）",
+        "detail": "“所有 App 都被当作 Rare 桶对待”“高刷强制降到 60Hz”“Motion Sense / 车载碰撞检测被关闭”“GPU 可能被限频”等表述把 AOSP Battery Saver、Pixel 机型行为和 OEM 特例混写成同一层结论，并用 `developer.android.com/training/monitoring-device-state/doze-standby` 标成 [已验证]。官方开发者文档并没有把 Battery Saver 定义为“统一降到 Rare 桶”，60Hz / Motion Sense / crash detection 也不是 Android 通用基线。",
+        "suggestion": "拆成两层：AOSP Battery Saver 基线（更激进的 app standby、后台执行限制、定位/网络限制等）与 Pixel/OEM 设备特例（高刷、Motion Sense、Crash Detection）；每条都补各自来源，拿不稳的保留 `[待验证]`。"
+      },
+      {
+        "type": "数据缺失/原理断裂",
+        "location": "Perfetto 观察段（行 113-118, 289-296, 356）",
+        "detail": "章节把 `PowerManagerService Track`、`DeviceIdleController` 相关事件、`Process State` Track 写成可直接观察的稳定入口，但 Perfetto 官方并没有为这些服务承诺通用同名轨道。当前写法既没有 trace config，也没有已跑通 trace / SQL / dumpsys 对照，导致“Doze / Battery Saver / OEM 冻结如何取证”这条证据链不可复核。",
+        "suggestion": "把观测方法改成“trace config + 可见信号 + 补充 dumpsys/Battery Historian”的组合说明，例如区分 atrace、statsd atom、kernel suspend/resume、jobscheduler pending reason、procstate/freezer 等入口，再补 2-3 组真实 trace。"
+      },
+      {
+        "type": "知识盲区",
+        "location": "App Standby / Adaptive Battery / 参考资料（行 140-195, 420-425）",
+        "detail": "章节讲了 Bucket 定义和 Adaptive Battery，但没有建立 Android 13-16 Mainline 化后的职责图：`AppStandbyController` 负责 bucket 评估，`UsageStatsService` 负责 usage 统计与事件上报，`JobSchedulerService` 负责 runtime quota，`PowerManagerService` 负责 Battery Saver。少了这张图，读者很难判断一个限制到底来自 bucket、quota、device idle 还是 global power save。",
+        "suggestion": "补一张“机制 → 控制器 → AOSP 路径 → 开发者验证入口”的映射表，帮助后续章节和读者统一核对口径。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-13T23:36:03+08:00",
+    "status": "pending",
+    "review_log": "logs/deep-review/2026-04-13-23-deep-review.md"
   }
 ]
