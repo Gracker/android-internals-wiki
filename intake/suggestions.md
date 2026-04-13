@@ -2657,3 +2657,28 @@
 - **位置**：系统手势优先区域 vs App 的 WindowInsets
 - **问题**：正文只写了 `systemGestureInsets`，没有把 back edge 冲突和底部 Home / quick-switch 的 mandatory gesture 区域分开。官方 gesture navigation 文档对 `View.setSystemGestureExclusionRects()` 与 `WindowInsets.getMandatorySystemGestureInsets()` 的适用边界是分开的。
 - **建议**：补一小段区分 left/right back edge 与 bottom mandatory gesture，顺带注明 immersive mode / 游戏场景的特殊口径。
+
+## [Task6 Review] 13.10 Perfetto SQL 性能分析实战手册 — 2026-04-13
+- **类型**：需重写
+- **位置**：全文结构
+- **问题**：缺少 `<!-- outline-start -->` / `<!-- outline-end -->` 大纲块，Task 6 无法按锚点检查覆盖率，也无法确认各分析路径是否都落到明确小节。
+- **建议**：按现有一级/二级标题补结构化 outline 与 🔹 锚点，再回到 Task 6 做覆盖检查。
+- **review 日志**：logs/review/2026-04-13-22-review.md
+
+- **类型**：需确认
+- **位置**：Frame Timeline SQL（L160-L173）
+- **问题**：查询里直接使用 `expected.dur`，但正文没有 JOIN `expected_frame_timeline_slice` 或等价视图。读者直接执行有失败风险。
+- **建议**：交给 Task 9 按 Perfetto v54.0 schema / 标准库核对后，改成可直接运行的查询模板。
+- **review 日志**：logs/review/2026-04-13-22-review.md
+
+- **类型**：需确认
+- **位置**：冷启动全链路时间分解（L394-L412）
+- **问题**：`ZygoteInit.xxx`、`Application.onCreate`、`Activity.onCreate` 这一组 slice name 仍是占位式模板，正文也已自带 `[待验证]`，读者很难直接复用。
+- **建议**：用真实 trace 中可命中的 slice name 重写，或改成明确的参数化模板，并说明版本前提。
+- **review 日志**：logs/review/2026-04-13-22-review.md
+
+- **类型**：需补充素材
+- **位置**：ANR 前后主线程活动分析（L448-L465）
+- **问题**：SQL 里仍保留 `[待补充: 替换为 ANR 时间戳 ±5秒]` 占位，缺少一组真实时间窗样例，实操闭环不完整。
+- **建议**：补 1 组真实 ANR 时间窗，或改成明确的参数模板说明，再回到 Task 6 复检。
+- **review 日志**：logs/review/2026-04-13-22-review.md
