@@ -2787,3 +2787,29 @@
 - **位置**：行337（FBE 诊断路径）
 - **问题**：“检查 [待补充：sysfs 加密统计路径]”仍是占位符，导致“如何判断 FBE 是否成为瓶颈”这一句没有可执行落点。
 - **建议**：给出真实可观测路径，或删除这句诊断建议，避免读者按占位符排查。
+
+
+## [Task6 Review] 4.3 ART 虚拟机内存管理 — 2026-04-14
+- **类型**：需确认
+- **位置**：GC 策略演进 / 分代 GC
+- **问题**：正文把 Android 8.0-14 = CC、Android 15+ = CMC，以及 Young/Old Generation 的关系写成单一路径。collector 默认值、分代实现和 RegionSpace/BumpPointerSpace 的对应关系可能被简化过头。
+- **建议**：Task 9 核对各版本默认 collector、分代实现和 space 结构，Task 2B 再改成版本矩阵或带条件的表述。
+- **review 日志**：logs/review/2026-04-14-02-review.md
+
+- **类型**：需确认
+- **位置**：Android 15：CMC GC 与 UFFD
+- **问题**：userfaultfd 触发条件、"缺页异常（如 SIGBUS）" 和按需压缩流程的写法可能不准确，涉及 Linux UFFD 与 ART collector 的细节边界。
+- **建议**：Task 9 对照 AOSP collector 实现和 Linux userfaultfd 文档核对，Task 2B 再收紧原理描述。
+- **review 日志**：logs/review/2026-04-14-02-review.md
+
+- **类型**：需确认
+- **位置**：在 Perfetto 中观察 ART GC（关键 Track、SQL、正常/异常阈值）
+- **问题**：`art_gc` counter track、`AllocObject` trace point、SQL 中的 track/slice 过滤条件，以及 Young/Full GC 阈值都属于可执行断言，但当前缺少真实 trace 佐证，存在 schema 和版本风险。
+- **建议**：Task 9 核对当前 Perfetto schema 和可观测 slice，Task 2B 补真实 Trace 截图或把示例降级为待验证。
+- **review 日志**：logs/review/2026-04-14-02-review.md
+
+- **类型**：需确认
+- **位置**：Android 15/16 的 16KB Page Size 对 ART 的影响
+- **问题**：`TLAB 最小分配单位从 4KB 变为 16KB`、`5-10% 性能提升` 这两处断言缺少源码或官方量化条件，容易被读者理解成通用结论。
+- **建议**：Task 9 核对 ART allocator 与 16KB page size 官方文档，Task 2B 补条件/来源，或下调为定性表述。
+- **review 日志**：logs/review/2026-04-14-02-review.md

@@ -7,7 +7,7 @@ drafted_by: "openclaw-task2"
 status: ready-for-review
 applicable_versions: "Android 8.0 (API 26) - Android 17 (API 36)"
 last_verified: "2026-03-31"
-reviewed_date: "2026-04-06"
+reviewed_date: "2026-04-14"
 reviewed_by: "openclaw-task6"
 polish_count: 1
 polish_date: "2026-04-06"
@@ -27,10 +27,11 @@ sources:
     path: "https://developer.android.com/topic/performance/baselineprofiles"
 tags: ['art', 'gc', 'heap', 'tlab', 'aot', 'jit', 'cc-gc', 'cmc-gc', 'uffd', 'read-barrier', 'memory-allocation', 'generational-gc']
 related_chapters: ["4.1", "4.2", "4.4", "4.6", "4.7", "4.8", "7.1", "7.7"]
-pipeline_stage: task6_pending
-task6_state: pending
+pipeline_stage: task2b_pending
+task6_state: reviewed
 task9_state: pending
-task2b_state: idle
+task6_result: needs-rework
+task2b_state: pending
 ---
 
 # ART 虚拟机内存管理
@@ -65,7 +66,7 @@ task2b_state: idle
 
 我们在 Perfetto 中分析一个应用的卡顿问题时，经常会看到这样的现象：主线程突然被挂起几十毫秒，对应的时间片上标注着 `GC`。或者更隐蔽地，一个应用的帧率在持续滑动时逐渐下降，CPU 占用里 `HeapTaskDaemon` 线程的活跃时间越来越多。这些现象的背后，都是 ART 虚拟机的内存管理在工作。
 
-理解 ART 的堆结构、GC 策略和对象分配机制，并不是为了能写出一个更好的垃圾回收器——那是 Google 工程师的工作。真正的价值在于：当我们拿到一份 Trace，看到 GC 暂停或 Allocation Stall 时，我们能快速判断这是"正常的小波动"还是"应用存在内存抖动需要优化"，以及知道从哪些角度去排查和修复。读完这一节，我们应该能在 Perfetto 中识别 ART GC 的各类活动，理解它们对帧率和响应速度的影响，并掌握减少 GC 压力的基本方法。
+理解 ART 的堆结构、GC 策略和对象分配机制，不是为了自己去实现垃圾回收器。我们的目标，是在拿到一份 Trace、看到 GC 暂停或 Allocation Stall 时，能快速判断这是正常波动，还是应用已经出现内存抖动，并知道该从哪里排查。读完这一节，我们应该能在 Perfetto 中识别 ART GC 的主要活动，理解它们对帧率和响应速度的影响，并掌握减少 GC 压力的基本方法。
 
 [已验证: 官方文档, source.android.com/docs/core/perf/art-management]
 
@@ -78,11 +79,11 @@ ART 的 Heap 并不是一块单一的连续内存，而是由多个功能不同�
 
 ### Image Space：系统启动时就位的基础设施
 
-Image Space 是所有 Space 中最特殊的——它在应用进程启动之前就已经被填充好了。系统编译期间，构建工具会将启动类路径（bootclasspath）中的核心类预先实例化，并将完整的堆快照写入 `.art` 格式的镜像文件（如 `boot.art`）。Zygote 进程启动时，直接通过 `mmap` 将这些镜像文件映射到 Image Space 的地址空间。
+Image Space 是所有 Space 中最特殊的一块空间，它在应用进程启动之前就已经被填充好了。系统编译期间，构建工具会将启动类路径（bootclasspath）中的核心类预先实例化，并将完整的堆快照写入 `.art` 格式的镜像文件（如 `boot.art`）。Zygote 进程启动时，直接通过 `mmap` 将这些镜像文件映射到 Image Space 的地址空间。
 
-这个设计的意图很明确：让每个 fork 出来的应用进程都能直接使用已经创建好的核心类对象，而不需要重新加载和初始化。在 Perfetto 中，这部分内存体现为进程启动阶段极快的类加载速度——实际上它们根本不需要"加载"，只需要建立映射。
+这样做，是为了让每个 fork 出来的应用进程都能直接使用已经创建好的核心类对象，而不需要重新加载和初始化。在 Perfetto 中，这部分内存通常体现为进程启动阶段极快的类加载速度，因为这些对象并不需要重新加载，只是建立了映射关系。
 
-Image Space 中的对象永远不会被 GC 回收，也不会被移动。这意味着 ART 的 GC 在标记阶段可以直接跳过 Image Space，减少工作量。
+Image Space 中的对象永远不会被 GC 回收，也不会被移动，因此 ART 在标记阶段可以直接跳过 Image Space，减少工作量。
 
 AOSP 源码路径：`art/runtime/gc/space/image_space.cc`
 [已验证: AOSP android-15.0.0_r1, art/runtime/gc/space/image_space.cc]
@@ -115,14 +116,14 @@ Allocation Space 有一个重要的版本差异值得注意：在 Android 15 之
 
 ### Large Object Space：大对象的特殊处理
 
-当分配的对象满足两个条件——大小超过阈值（通常是 3 页，即 12KB），且类型是基本类型数组或 `String`——ART 会将它分配到 Large Object Space 而不是 Allocation Space。这样做的原因是：大对象如果在 Allocation Space 中被来回搬运（CC GC 会移动对象），拷贝的开销会非常高。独立出来后，GC 不需要移动这些大对象，只需要标记和清除。
+如果一个对象同时满足两个条件，大小超过阈值（通常是 3 页，即 12KB），并且类型是基本类型数组或 `String`，ART 会把它分配到 Large Object Space，而不是 Allocation Space。原因也很直接，CC GC 需要移动对象，大对象来回拷贝的成本太高。独立放入 Large Object Space 后，GC 只需要标记和清除，不必移动这些对象。
 
 Large Object Space 有两种实现：
 
 - **FreeListSpace**（arm64 设备）：在初始化时 `mmap` 一块与堆上限（`HeapGrowthLimit`）大小一致的内存，通过空闲链表管理页的分配和回收。相同大小的页可以被复用
 - **LargeObjectMapSpace**（非 arm64 设备）：每次分配时直接 `mmap` 一块新的匿名内存，释放时 `munmap`
 
-在 Perfetto 中观察到大对象分配频繁时，通常意味着应用在创建大量的 `byte[]` 或大 `String`——这在图片处理、网络数据解析等场景中比较常见。如果发现 Large Object Space 持续增长，需要关注是否有大对象泄漏。
+在 Perfetto 中，如果大对象分配很频繁，通常说明应用在持续创建大量 `byte[]` 或大 `String`。这种情况常见于图片处理、网络数据解析等场景。Large Object Space 持续增长时，要进一步检查是否存在大对象泄漏。
 
 AOSP 源码路径：`art/runtime/gc/space/large_object_space.cc`
 [已验证: AOSP android-15.0.0_r1, art/runtime/gc/space/large_object_space.cc]
@@ -158,7 +159,7 @@ ART 的垃圾回收策略经历了几次重大演进，每一次演进都显著�
 
 Dalvik 虚拟机使用的是基于 `dlmalloc` 的标记-清除（Mark-Sweep）GC。整个 GC 过程需要暂停所有应用线程（stop-the-world），在堆中扫描所有可达对象，然后清除不可达的。在早期 Android 设备（1GB 以下内存）上，一次 Full GC 可能暂停 50-100ms——这在 60fps 的标准下意味着丢掉 3-6 帧。
 
-Dalvik 时代分配器 `dlmalloc` 的另一个问题是全局内存锁：所有线程共享一个锁来分配内存。在多线程场景下，锁争用导致分配延迟，这是早期 Android 应用在多核设备上性能提升不明显的底层原因之一。
+Dalvik 时代分配器 `dlmalloc` 的另一层限制，是全局内存锁。所有线程共享同一把锁来分配内存。在多线程场景下，锁争用会拉长分配延迟，这也是早期 Android 应用在多核设备上性能提升不明显的底层原因之一。
 
 [已验证: 官方文档, source.android.com/docs/core/perf/art-management]
 
@@ -192,7 +193,7 @@ Object readReference(Object holder, Field field) {
 }
 ```
 
-这段伪代码展示的只是概念。实际上，Read Barrier 是由编译器在每次对象引用读取时自动插入的，开发者完全无感知。代价是每次引用读取多了一次条件判断，大约带来 1-3% 的性能开销。
+上面的伪代码只是概念示意。Read Barrier 由编译器在每次对象引用读取时自动插入，开发者通常无感知。代价是每次引用读取都会多一次条件判断，大约带来 1-3% 的性能开销。
 
 CC GC 引入后的关键性能提升：
 - **堆大小**：比 Android 7.0 平均减少 32%（不再需要预留碎片空间）
@@ -339,7 +340,7 @@ ART 的编译策略可以简化为以下流程：
 
 Baseline Profiles 是 Google 在 Android 13（正式推广）引入的机制，允许开发者在 APK/AAB 中预置一份"热点方法清单"。当用户从 Google Play 安装应用时，ART 会在安装阶段就对这些方法进行 AOT 编译。
 
-这意味着：即使是一个全新安装的应用，没有 Cloud Profile 数据，没有历史运行记录，用户在第一次启动时就能享受到接近 AOT 编译的性能。Google 的数据显示，使用 Baseline Profiles 可以将冷启动速度提升 20-30%。
+对于一个全新安装的应用，即使没有 Cloud Profile 数据，也没有历史运行记录，用户第一次启动时仍然可以拿到接近 AOT 编译的性能。Google 的数据显示，使用 Baseline Profiles 可以将冷启动速度提升 20-30%。
 
 对于开发者来说，Baseline Profiles 的使用方式很简单：通过 `BaselineProfileRule` 在自动化测试中生成 Profile 文件，然后打包到 APK 中。
 
@@ -374,7 +375,7 @@ Google 报告在部分工作负载上，16KB 页通过减少 TLB miss 带来了�
 
 ## 在 Perfetto 中观察 ART GC
 
-了解了原理后，让我们看看如何在 Perfetto 中实际观察 ART GC 的行为。
+了解原理后，接下来转到 Perfetto 中的实际观察路径。
 
 ### 关键 Track 和事件
 
@@ -382,7 +383,7 @@ Google 报告在部分工作负载上，16KB 页通过减少 TLB miss 带来了�
 
 - **`art_gc` counter track**：显示 GC 的整体活动。Young GC 在这个 track 上表现为短促的脉冲，Full GC 则是持续更长的波峰
 - **`HeapTaskDaemon` 线程**：ART 的后台 GC 线程，Concurrent GC 的主要执行者。这个线程的活跃区间对应并发标记和拷贝/压缩的时间
-- **`AllocObject` trace point**：当应用线程在分配对象时被阻塞（Allocation Stall），在对应线程的 track 上可以看到这个 slice
+- **`AllocObject` trace point**：当应用线程在分配对象时被阻塞（Allocation Stall），对应线程的 track 上会出现这个 slice
 
 对于需要量化分析的场景，可以使用 Perfetto 的 SQL 视图。以下查询统计一段时间内各类型 GC 的次数和平均耗时：
 
@@ -430,7 +431,15 @@ LIMIT 20;
 - GC 吞吐量：> 98%
 - Allocation Stall：几乎不可见
 
-需要警惕的异常信号有几类。如果 Young GC 频繁到每秒多次，通常是对象抖动——大量临时对象被快速创建又快速丢弃，需要检查循环内的对象分配。Full GC 每十几秒触发一次，则说明堆压力持续偏高，可能存在内存泄漏或数据结构选择不当（比如用 ArrayList 存储海量数据而不是按需分页）。Allocation Stall 明显出现在 Trace 中，意味着堆已经接近上限，需要减少峰值内存使用。如果 GC 线程的 CPU 占用持续较高，说明整体 GC 压力大，需要从源头减少对象分配，而不是寄希望于 GC 策略的优化。
+需要警惕的异常信号主要有四类。
+
+如果 Young GC 频繁到每秒多次，通常是对象抖动，大量临时对象被快速创建又快速丢弃，需要检查循环内的对象分配。
+
+如果 Full GC 每十几秒就触发一次，说明堆压力持续偏高，可能存在内存泄漏，或者数据结构选择不当（比如用 `ArrayList` 存储海量数据，而不是按需分页）。
+
+如果 Allocation Stall 已经明显出现在 Trace 中，说明堆接近上限，需要减少峰值内存使用。
+
+如果 GC 线程的 CPU 占用持续较高，说明整体 GC 压力偏大，应该从源头减少对象分配，而不是指望 GC 策略兜底。
 
 [待补充：Trace 截图展示正常和异常 GC 模式的对比]
 
