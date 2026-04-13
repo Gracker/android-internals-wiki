@@ -30,7 +30,8 @@ tags: ['memory', 'PSS', 'RSS', 'dumpsys', 'meminfo', 'procfs', 'ZRAM', 'cgroup']
 related_chapters: ["4.2", "4.3", "4.4", "4.5", "10.1"]
 pipeline_stage: task2b_pending
 task6_state: reviewed
-task9_state: pending
+task9_state: reviewed
+task9_result: needs-rework
 task2b_state: pending
 ---
 
