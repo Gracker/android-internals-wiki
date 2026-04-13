@@ -1,20 +1,20 @@
 {
-  "generated_at": "2026-04-13T08:07:41+08:00",
+  "generated_at": "2026-04-13T08:21:19+08:00",
   "state_machine_version": "v2",
   "total_sections": 207,
   "metrics": {
     "total": 207,
-    "last_updated": "2026-04-13T08:07:41+08:00",
+    "last_updated": "2026-04-13T08:21:19+08:00",
     "unknown": 34,
     "ready-for-review": 173,
     "pipeline_unknown": 31,
-    "pipeline_task6_pending": 166,
+    "pipeline_task6_pending": 165,
     "pipeline_task2b_pending": 8,
-    "pipeline_task9_pending": 2,
+    "pipeline_task9_pending": 3,
     "task6_unknown": 31,
     "task6_revisiting": 46,
-    "task6_reviewed": 10,
-    "task6_pending": 120,
+    "task6_reviewed": 11,
+    "task6_pending": 119,
     "task9_unknown": 31,
     "task9_pending": 174,
     "task9_reviewed": 2,
@@ -26,15 +26,15 @@
   "pipeline": {
     "pipeline_stage_counts": {
       "unknown": 31,
-      "task6_pending": 166,
+      "task6_pending": 165,
       "task2b_pending": 8,
-      "task9_pending": 2
+      "task9_pending": 3
     },
     "task6_state_counts": {
       "unknown": 31,
       "revisiting": 46,
-      "reviewed": 10,
-      "pending": 120
+      "reviewed": 11,
+      "pending": 119
     },
     "task9_state_counts": {
       "unknown": 31,
@@ -1769,13 +1769,14 @@
       "title": "Android 功耗模型",
       "path": "src/part2-performance/ch11-power/01-power-model.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "pending",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
       "task9_state": "pending",
       "task2b_state": "idle",
-      "reviewed_date": "2026-04-04",
+      "reviewed_date": "2026-04-13",
       "reviewed_by": "openclaw-task6",
-      "section": "11.1"
+      "section": "11.1",
+      "task6_result": "pass-light-edit"
     },
     "src/part2-performance/ch11-power/02-app-power-optimization.md": {
       "chapter": "11.2",

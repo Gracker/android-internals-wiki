@@ -3,8 +3,9 @@ title: "Android 功耗模型"
 section: "11.1"
 chapter: "11.1"
 status: ready-for-review
-reviewed_date: "2026-04-04"
+reviewed_date: "2026-04-13"
 reviewed_by: "openclaw-task6"
+task6_result: pass-light-edit
 drafted_date: "2026-04-03"
 drafted_by: "openclaw-task2a"
 polish_count: 1
@@ -27,8 +28,8 @@ sources:
     path: "https://developer.android.com/topic/performance/power"
 tags: ['power', 'battery', 'power_profile', 'BatteryStats', 'ODPM', 'Coulomb Counter', 'Fuel Gauge', 'IPowerStats', '功耗归属']
 related_chapters: ["5.4", "5.5", "5.6", "11.2", "11.3", "13.1"]
-pipeline_stage: task6_pending
-task6_state: pending
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task2b_state: idle
 ---
@@ -62,11 +63,11 @@ task2b_state: idle
 
 ## 为什么要了解 Android 功耗模型
 
-当用户抱怨"你的 App 太耗电了"的时候，开发者往往一脸茫然——我的 App 又没有做挖矿，怎么会耗电？问题在于，耗电不是一个 App 自己说了算的事。Android 系统通过一套精心设计的功耗模型，把电池消耗拆分到各个硬件模块，再按使用时间归属到每个 App。如果我们不了解这套模型的工作原理，就不知道"设置 → 电池 → 电池使用情况"里那个百分比是怎么算出来的，更不知道该怎么优化。
+当用户抱怨某个 App 太耗电时，开发者往往很难直接回答原因。App 本身没有显式的"耗电接口"，耗电也不是单个进程自己就能决定的事。Android 会把电池消耗拆到各个硬件模块，再按使用时间和资源占用归属到不同 App。不了解这套模型，我们就很难判断"设置 → 电池 → 电池使用情况"里的百分比是怎么来的，也很难判断该从哪里优化。
 
 理解功耗模型的核心价值在于：它决定了我们能获取到哪些功耗数据，以及这些数据有多可信。当我们打开 Battery Historian 看到一个 App 的 CPU 耗电占比异常时，我们需要知道这个数字是来自硬件实测还是软件估算，误差范围有多大，哪些场景下数据可信、哪些场景下需要额外验证。
 
-我们在前几章已经讨论了 CPU 调度（§5.1）、DVFS（§5.4）、热管理（§5.5）和 Android 功耗管理机制（§5.6）。那些章节讲的是系统如何"省电"，而本章要回答的问题是：系统怎么知道谁"费了电"，以及这个"知道"有多准确。
+我们在前几章已经讨论了 CPU 调度（§5.1）、DVFS（§5.4）、热管理（§5.5）和 Android 功耗管理机制（§5.6）。那些章节讲的是系统如何"省电"，本章讨论的是系统怎么判断谁"费了电"，以及这个判断有多准确。
 
 ## 功耗模型的基础：power_profile.xml
 
@@ -145,11 +146,11 @@ Android 功耗模型的核心是一个叫 `power_profile.xml` 的 XML 文件。�
 
 第二，蜂窝网络 Radio 的功耗按信号强度区分了多个等级。信号弱时，Radio 需要更大的发射功率来维持连接，电流消耗可能比信号强时高出两三倍。这就是在地铁里刷手机特别费电的原因之一。
 
-第三，AOSP 中默认的 `power_profile.xml` 包含的都是占位值（通常是 0.1mA）。OEM 厂商必须在出货前用实际硬件测量填充真实数据。如果厂商偷懒填了不准的值（或者直接用了默认值），那么整个功耗归属系统的准确性都会大打折扣。
+第三，AOSP 中默认的 `power_profile.xml` 包含的都是占位值（通常是 0.1mA）。OEM 厂商必须在出货前用实际硬件测量填充真实数据。如果厂商没有按实测结果更新这些参数，或者直接沿用了默认值，后续的功耗归属结果就会出现系统性偏差。
 
 ## 功耗组成拆解
 
-了解了 power_profile.xml 的结构之后，我们来看看 Android 设备的功耗到底由哪些部分组成。搞清楚这一点，才能理解为什么有些 App 看起来什么都没做却很费电，而有些 App 明明很忙却不怎么耗电。
+了解了 power_profile.xml 的结构之后，我们再拆开看 Android 设备的主要功耗组成。只有先看清这些模块，我们才能理解为什么有些 App 看起来什么都没做却很费电，而有些 App 明明很忙却不怎么耗电。
 
 ### CPU：功耗的大头
 
@@ -193,7 +194,7 @@ Radio 的状态切换不是瞬间完成的。从休眠态到连接态需要几�
 
 WiFi 和 GPS 的模式类似，但 WiFi 的活跃态功耗（约 100-150mA）通常低于蜂窝网络，GPS 的活跃态功耗约 50mA 但持续运行时的累计效果很可观。
 
-### Audio / Camera / Bluetooth：按使用场景计费
+### Audio / Camera / Bluetooth：按使用时长估算
 
 Audio、Camera 和 Bluetooth 的功耗模型比较简单——基本上就是"开启时间 × 对应电流"。Camera 是其中的耗电大户（300-600mA），所以持续调用 Camera 的 App（如视频通话、AR 应用）在电池统计中通常排名靠前。Bluetooth LE（低功耗蓝牙）的活跃态电流只有几 mA，远低于经典蓝牙，这也是为什么穿戴设备都使用 BLE 通信。
 
@@ -242,7 +243,7 @@ Coulomb Counter 是一个集成在设备主板上的专用芯片，通常位于 
 
 ### Fuel Gauge（电量计）
 
-Fuel Gauge 是 Coulomb Counter 的"上层建筑"。它不仅仅做电流积分，还会结合电池电压、温度、放电曲线等信息，综合计算出电池的 State of Charge（SoC，即电池剩余百分比）和 State of Health（SoH，即电池健康度）。
+Fuel Gauge 建立在 Coulomb Counter 之上。它不仅做电流积分，还会结合电池电压、温度、放电曲线等信息，综合计算出电池的 State of Charge（SoC，即电池剩余百分比）和 State of Health（SoH，即电池健康度）。
 
 现代 Fuel Gauge IC（如 TI 的 Impedance Track 系列）采用混合算法：用 Coulomb Counter 做实时的充放电跟踪，用开路电压（OCV）在电池静置时做校准，用温度传感器做补偿。三者结合，能在动态负载下保持较高的 SoC 精度。
 
@@ -258,7 +259,7 @@ Fuel Gauge 是 Coulomb Counter 的"上层建筑"。它不仅仅做电流积分�
 
 ## App 耗电量的归属算法
 
-这是功耗模型最核心的问题：系统怎么知道"你的 App 耗了 X% 的电"？
+这是功耗模型里最直接的问题：系统怎么判断某个 App 耗了 X% 的电？
 
 ### 归属的基本思路
 
@@ -299,7 +300,7 @@ GPS 部分：(120/3600) × 50  = 1.67 mAh
 总计：约 4.88 mAh
 ```
 
-假设设备电池容量为 4000mAh，该 App 在这 5 分钟内消耗了约 0.12% 的电量。看起来不多，但如果这种模式持续一小时，就是 1.4%——对于一个导航类 App 来说这是正常的，但对于一个后台 App 来说就很离谱了。
+假设设备电池容量为 4000mAh，该 App 在这 5 分钟内消耗了约 0.12% 的电量。看起来不多，但如果这种模式持续一小时，就是 1.4%。对于导航类 App，这个量级很常见；如果是后台 App，就需要继续排查。
 
 [待补充: 实际 BatteryStats 中的计算会考虑更多因素，包括电压、集群加权、Radio 状态机等]
 
@@ -321,7 +322,7 @@ Android 10 引入了一个重要的硬件抽象层接口——IPowerStats HAL（
 
 ODPM 利用设备 PMIC（Power Management IC）上的专用功耗计数器，直接测量各个电源轨（power rail）上的能量消耗。所谓"电源轨"，就是主板上一条为特定硬件模块供电的线路。比如 CPU 大核有自己的电源轨，GPU 有自己的，屏幕有自己的一条——每个轨的功耗都可以被独立测量。
 
-与电池端的 Coulomb Counter 不同，ODPM 的测量点在电池下游，直接在各个硬件模块的供电入口处。这意味着 ODPM 的读数不受设备充放电状态的影响——即使在充电时，ODPM 也能准确报告各模块的功耗。
+与电池端的 Coulomb Counter 不同，ODPM 的测量点在电池下游，直接位于各个硬件模块的供电入口处。因此，ODPM 的读数不受设备充放电状态的影响。即使设备正在充电，它也能报告各模块的功耗。
 
 ### IPowerStats HAL 接口
 
@@ -352,7 +353,7 @@ Android Studio 从 Hedgehog 版本开始，在 Power Profiler 中集成了 ODPM 
 
 ### ODPM 的局限
 
-ODPM 虽然强大，但目前有几个明显的局限：
+ODPM 目前也有几个比较明确的局限：
 
 第一，**设备覆盖有限**。ODPM 需要硬件支持（PMIC 上有功耗计数器），不是所有设备都具备这个能力。目前只有 Pixel 6+ 系列有完整支持，其他 OEM 厂商的实现参差不齐。
 
@@ -386,7 +387,7 @@ ODPM 虽然强大，但目前有几个明显的局限：
 
 功耗模型的数据在多个工具中都有对应的表现形式：
 
-**Battery Historian**：这是功耗分析的主力工具。通过解析 bugreport 中的 BatteryStats 数据，Battery Historian 提供了从系统级到 App 级的完整功耗时间线可视化。我们可以看到屏幕亮度变化、网络状态切换、WakeLock 持有、App 前后台切换等事件与电量下降的对应关系。[待补充: Battery Historian 截图示例]
+**Battery Historian**：这是常用的功耗分析工具。通过解析 bugreport 中的 BatteryStats 数据，Battery Historian 提供了从系统级到 App 级的功耗时间线可视化。我们能看到屏幕亮度变化、网络状态切换、WakeLock 持有、App 前后台切换等事件与电量下降之间的对应关系。[待补充: Battery Historian 截图示例]
 
 **dumpsys batterystats**：命令行工具，输出 BatteryStats 的原始统计数据。适合脚本化分析和自动化测试场景。常用命令组合：
 
@@ -446,7 +447,7 @@ Android 功耗模型不是一个孤立的系统，它与本书多个章节讨论
 | Android 10 (API 29) | **IPowerStats HAL 引入**，ODPM 硬件功耗监测能力；power_profile.xml 支持更多模块 |
 | Android 12 (API 31) | 功耗模型增强，支持更多传感器类型的功耗统计 |
 | Android 13 (API 33) | 后台限制进一步加强，前台服务类型影响功耗归属 |
-| Android 14 (API 34) | Battery Stats 改进，支持更精确的充电状态追踪 |
+| Android 14 (API 34) | BatteryStats 改进，支持更精确的充电状态追踪 |
 | Android 15 (API 35) | 功耗分析工具链持续改进 |
 | Android 16 (API 36) | IPowerStats AIDL 接口更新，ODPM 数据源集成进一步深化 |
 
