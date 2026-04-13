@@ -2085,3 +2085,21 @@ Android 10-16 的返回分发模型缺少一张统一矩阵。正文把 Gesture 
 
 ### 关联章节
 4.2、4.4、13.5、2.6、5.1、6.3
+
+
+## [2026-04-14] 5.1 Linux 进程调度基础 — 知识盲区
+
+### 盲区描述
+正文已经讲到 cpuset、SchedTune、UClamp，但没有把 Android userspace 到 kernel 的实际控制链讲完整：ActivityManager / Power HAL / Task Profiles → libprocessgroup → cpuset / cpu.uclamp.* / stune。缺少这一层，读者很难把 Perfetto 里的大核迁移、频率抬升和系统真实调度节点对应起来，也难以解释 Android 10（schedtune 主导）与 Android 12+/5.10+（uclamp 主导）的行为差异。
+
+### 重要程度
+高
+
+### 建议研究方向
+- `system/core/libprocessgroup/` 与 `task_profiles.json` 中 top-app / foreground / background 的 profile 定义
+- `set_sched_policy()`、task profile、cpuset、uclamp、schedtune 之间的职责边界
+- Android 10/11/12/14 在调度提示链上的版本分界（4.19 → 5.10 GKI）
+- Perfetto 可观察现象与 task profile 配置的映射方法
+
+### 关联章节
+5.2（EAS 能量感知调度）、5.3（大小核架构）、1.3（进程模型与生命周期管理）

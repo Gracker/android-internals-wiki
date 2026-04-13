@@ -30,11 +30,12 @@ polish_date: "2026-04-06"
 polish_by: "task2b-polish"
 review_type: post-polish-quality-gate
 review_round: 3
-pipeline_stage: task9_pending
+pipeline_stage: task2b_pending
 task6_state: reviewed
 task6_result: pass-light-edit
-task9_state: pending
-task2b_state: idle
+task9_state: reviewed
+task9_result: needs-rework
+task2b_state: pending
 ---
 
 <!-- outline-start -->

@@ -2886,3 +2886,15 @@
 - **位置**：frontmatter `related_chapters` 与正文“与其他机制的关系”
 - **问题**：正文明确关联了 5.1 CPU 调度和 6.3 存储 I/O，但 frontmatter 的 `related_chapters` 只列了 4.1 / 4.3 / 4.4 / 2.6。知识库跳转和后续检索会漏掉两个直接相关章节。
 - **建议**：把 5.1、6.3 补进 `related_chapters`，或在正文首次出现处加显式章节跳转。
+
+
+## [Task9 Deep Review] 5.1 Linux 进程调度基础 — 2026-04-14
+- **类型**：数据缺失
+- **位置**：L313-L330 Perfetto SQL 示例
+- **问题**：`SELECT utid FROM thread WHERE name = 'main' LIMIT 1` 和 `name = 'RenderThread'` 在多进程 Trace 中会匹配到错误线程，查询结果不稳定。
+- **建议**：补 `JOIN process` / `upid` / `tid` 过滤，至少把目标进程名作为条件写入示例。
+
+- **类型**：交叉引用
+- **位置**：L486 UClamp 迁移时间线；对照 5.2 的 L266 / L372
+- **问题**：5.1 写“Android 从 Android 12 开始逐步从 SchedTune 迁移到 UClamp”，但 5.2 写“Android 从 10 开始广泛使用 uclamp”，两章口径冲突。
+- **建议**：统一成“主线 uclamp 在 Linux 5.3 引入，Android 设备的实际采用受内核版本与厂商实现影响”，再分别标注 Android 10 / Android 12 / kernel 5.10 的边界。
