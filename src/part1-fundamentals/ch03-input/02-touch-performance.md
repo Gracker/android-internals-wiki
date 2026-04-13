@@ -25,14 +25,21 @@ sources:
     path: "source.android.com/docs/core/interaction/input"
   - type: official
     path: "developer.android.com/reference/android/view/MotionEvent"
+  - type: official
+    path: "developer.android.com/reference/android/view/MotionPredictor"
+  - type: official
+    path: "developer.android.com/develop/ui/views/touch-and-input/stylus-input/advanced-stylus-features"
+  - type: official
+    path: "developer.android.com/jetpack/androidx/releases/input"
 tags: [touch, input, latency, InputReader, InputDispatcher, sampling-rate, batching, Choreographer, responsiveness]
 related_chapters: ["3.1", "2.3", "2.4", "2.5", "8.1"]
-pipeline_stage: task2b_pending
+pipeline_stage: task6_pending
 task6_result: needs-rework
-task6_state: reviewed
-task9_state: reviewed
+task6_state: revisiting
+task9_state: pending
 task9_result: needs-rework
-task2b_state: pending
+task2b_state: fixed
+task2b_result: fixed
 ---
 
 # 触摸响应的性能分析
@@ -165,9 +172,9 @@ App 主线程被 Input 事件唤醒后，执行 `ViewRootImpl.deliverInputEvent(
 | 渲染上屏 | 8-50ms | GPU 负载、Buffer 状态、帧率 |
 | **总计** | **~15-75ms** | 诸多因素 |
 
-这也解释了为什么用户对"拖动跟手性"特别敏感。学术论文的研究结果表明，直接触摸拖动的可感知平均最小时延（Perceivable Average Minimum Time to Display, PAMTD）仅为 11ms，而点击的可接受时延约为 263ms。也就是说，拖动场景对延迟的容忍度远低于点击场景，优化拖动跟手性是触摸响应优化的重中之重。
+这也解释了为什么用户对拖动跟手性比点击更敏感。当前素材能确认的结论是，直接操作场景对时延的容忍度明显低于离散点击，拖动时延一旦跨过一两个刷新周期，手指位置和画面位置就更容易出现可感知的脱节。PAMTD 11ms、点击 263ms 这组数字目前还缺少可回溯的原始论文与实验条件，这里先不把它写成定值结论，后续补齐原始研究后再回填。
 
-[来源: obsidian/Personal-Knowlodge/source/2026-03-06_wechat_响应时延的科学研究.md] [待补充: PAMTD 11ms 数据的学术论文出处]
+[来源: obsidian/Personal-Knowlodge/source/2026-03-06_wechat_响应时延的科学研究.md] [待验证: 直接触摸拖动与点击时延阈值的原始论文与实验条件]
 
 搞清楚了延迟的组成，一个自然的问题就是：在硬件层面，采样率对这 15-75ms 的总延迟有多大影响？是不是采样率越高就越好？
 
@@ -184,44 +191,55 @@ App 主线程被 Input 事件唤醒后，执行 `ViewRootImpl.deliverInputEvent(
 
 ### 采样率和渲染帧率的匹配
 
-高爷在 Input 专题文章中做了清晰的分析：
+高采样率的价值，要放到"每一帧最终能显示多少新信息"这个前提下看。
 
-> 在屏幕刷新率和系统 FPS 都是 60 的时候，盲目提高触摸屏的采样率是没有太大的效果的。这期间如果有两个或者三个 Input 事件，那么必然有一个或者两个要被抛弃掉，只拿最新的那个。
+- **60fps 渲染 + 120Hz 采样**：一个 16.6ms 帧周期内通常会收集到约 2 个 MOVE 样本。系统常把它们批到同一个 `MotionEvent` 中，应用在这一帧里通常显示最新位置，前一个样本仍可通过 `getHistorySize()`、`getHistoricalX()`、`getHistoricalY()` 读取。
+- **60fps 渲染 + 240Hz 采样**：一个帧周期内可能收集到约 4 个样本。普通列表滑动和点击反馈仍然只会在下一帧呈现一次画面，因此可见收益有限；但对笔迹平滑、轨迹重建和预测算法，更多样本仍有价值。
+- **120fps 渲染 + 240Hz 采样**：一个 8.3ms 帧周期内大约 2 个样本，采样密度和显示频率更匹配，高刷屏的跟手感会更稳定。
+- **高采样率 + unbuffered dispatch / front-buffer**：如果 App 主动关闭 batching，或者采用 front-buffer 这类低延迟路径，高采样率才更容易转化为更密的可见反馈。
 
-具体来说：
+所以，触摸采样率不是单独看的指标。普通手指滑动场景下，采样率高于渲染帧率后收益会迅速下降；手写笔、绘图和预测渲染场景，则更容易吃到更高采样率的红利。
 
-- **60fps 渲染 + 120Hz 采样**：一个 VSync 周期（16.6ms）内产生约 2 个 MOVE 事件。系统会取最新的一个用于绘制，丢弃另一个。这是合理的搭配。
-- **60fps 渲染 + 240Hz 采样**：一个 VSync 周期内产生约 4 个 MOVE 事件，其中 3 个被丢弃。额外的采样没有带来视觉上的改善。
-- **120fps 渲染 + 240Hz 采样**：一个 VSync 周期（8.3ms）内产生约 2 个 MOVE 事件，与 60fps + 120Hz 的比例一致。这时 240Hz 采样才真正发挥了价值。
-
-结论是：**触摸采样率应该至少是渲染帧率的 2 倍**，更高的采样率在大多数场景下意义不大。不过，更高的采样率对预测算法（Motion Prediction）有间接帮助，数据点越密集，预测越准确。
-
-[来源: obsidian/Personal-Knowlodge/source/Android-Systrace-Input.md]
+[已验证: 官方文档, developer.android.com/reference/android/view/MotionEvent]
 
 ## 输入事件 Batching 与 Choreographer 的配合
 
 ### 为什么需要 Batching
 
-当触摸采样率高于渲染帧率时（这是常见情况），一个 VSync 周期内会产生多个 MOVE 事件。如果系统对每一个 MOVE 事件都触发一次完整的渲染流程，那 GPU 和 CPU 的工作量会翻倍，而用户最终只能看到每帧一个画面，中间的渲染工作都会白白消耗 CPU 和 GPU 时间。
+当触摸采样率高于渲染帧率时，一个 VSync 周期内会到达多个 `ACTION_MOVE` 样本。系统如果对每个样本都单独跑一次 measure/layout/draw，CPU 和 GPU 会做大量重复工作，而屏幕最终仍然只会在这一帧显示一个结果。
 
-Android 的解决方案是 **Input Batching**（输入事件批量处理）。Choreographer 的 `doFrame()` 方法在处理 `INPUT` 类型的 Callback 时，会一次性消费当前所有待处理的 Input 事件，只保留最后一个 MOVE 事件的位置信息用于绘制。
+Android 的 Input batching 做的是"合并交付"，不是把中间采样直接删掉。多个 MOVE 样本可以被打包进同一个 batched `MotionEvent`，当前坐标通过 `getX()` / `getY()` 读取，历史采样通过 `getHistorySize()`、`getHistoricalX()`、`getHistoricalY()` 读取。渲染结果通常按帧呈现最新状态，但如果应用需要更平滑的轨迹，也可以显式消费这些历史样本。
 
-在 Perfetto 中经常会看到这种现象：在 InputResponse 区域内，一个 VSync 周期中的多个 MOVE 事件被快速消费，只有最后到达 VSync 边界时才触发实际的绘制操作。
+```java
+final int historySize = event.getHistorySize();
+for (int h = 0; h < historySize; h++) {
+    float historicalX = event.getHistoricalX(0, h);
+    float historicalY = event.getHistoricalY(0, h);
+    // 处理 batched 历史样本
+}
+float latestX = event.getX();
+float latestY = event.getY();
+```
+
+在 Perfetto 里常见的现象是：一个 VSync 周期内先积累多个 MOVE 采样，App 在输入阶段一次性消费，然后这一帧的布局和绘制以最新状态为准。
 
 ### Choreographer 中 Input 的优先级
 
-Choreographer 的 `doFrame()` 按以下顺序处理四种 Callback：
+在 android-16.0.0_r1 的 `Choreographer#doFrame()` 里，回调顺序是：
 
-1. **CALLBACK_INPUT**：处理输入事件
-2. **CALLBACK_ANIMATION**：处理动画计算
-3. **CALLBACK_INSETS_ANIMATION**：处理窗口 Insets 动画
-4. **CALLBACK_TRAVERSAL**：执行 measure/layout/draw
+1. `CALLBACK_INPUT`
+2. `CALLBACK_ANIMATION`
+3. `CALLBACK_INSETS_ANIMATION`
+4. `CALLBACK_TRAVERSAL`
+5. `CALLBACK_COMMIT`
 
-Input 被安排在第一位。在一个 VSync 周期内，系统先处理输入事件，再计算动画，最后执行布局和绘制。这个顺序是刻意安排的，后续动画和绘制才能基于最新的输入状态。
+`CALLBACK_COMMIT` 运行在 traversal 之后，负责这一帧的 post-draw 工作和时间基准修正，不承担 measure/layout/draw。本节分析输入延迟时，重点还是前四段，其中输入处理排在最前面，后续动画和遍历都基于最新输入状态。
 
-不过，`CALLBACK_INPUT` 并不是在每次有 Input 事件时都注册的。对于 DOWN 事件，系统可能会直接唤醒主线程处理而不等待 VSync（这也是为什么 DOWN 事件的响应通常比 MOVE 更快）。对于连续的 MOVE 事件，系统倾向于等 VSync 到来后批量处理。
+连续 `MOVE` 事件默认走 buffered path。`ViewRootImpl.WindowInputEventReceiver#onBatchedInputEventPending()` 会先判断 `mUnbufferedInputDispatch` 和 `mUnbufferedInputSource`：如果当前序列请求了 unbuffered dispatch，就直接 `consumeBatchedInputEvents(-1)`；否则才 `scheduleConsumeBatchedInput()`，让事件贴着下一帧的输入阶段消费。
 
-[已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/view/Choreographer.java] [来源: obsidian/Personal-Knowlodge/source/Android-Systrace-Input.md]
+这条分叉决定了 MOVE 事件是立即送达还是贴着下一帧消费。普通滚动场景通常愿意用 batching 换吞吐；手写笔、绘图、签名这类低延迟场景，则经常在 `ACTION_DOWN` 后调用 `View.requestUnbufferedDispatch()`，把后续 MOVE 事件尽快送到应用，而不是统一等下一个 VSync。
+
+[已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/view/Choreographer.java; frameworks/base/core/java/android/view/ViewRootImpl.java] [已验证: 官方文档, developer.android.com/reference/android/view/MotionEvent]
 
 ### Batching 在 Perfetto 中的表现
 
@@ -348,7 +366,7 @@ Input 事件在 App 端的分发过程是从 DecorView 开始，逐层遍历 Vie
 
 如前文实战案例所述，触摸事件到来时如果 CPU 频率过低或 App 主线程被调度出去，即使代码本身没有问题，也会导致 Input 处理耗时增加。
 
-Android 系统有 **Input Boost** 机制：在检测到 Input 事件时，临时提升 CPU 频率（通常持续约 1 秒），以加速事件处理和后续的帧渲染。如果 Input Boost 没有正确触发（比如厂商定制 ROM 修改了调度策略），触摸响应就会明显变慢。
+Android 系统有 **Input Boost** 这类输入提频机制：在检测到 Input 事件时，短时间提高 CPU 频率，以加速事件处理和后续的帧渲染。持续时长、是否同时拉高 GPU，或者是否调整线程放置，都要看具体 SoC 和厂商策略。如果这类提频没有正确触发，触摸响应就会明显变慢。
 
 在 Perfetto 中可以通过 CPU Frequency Track 来验证：正常情况下，Input 事件到来后 CPU 频率应该在几毫秒内拉到高频；如果没有，说明 Boost 机制可能有问题。
 
@@ -377,37 +395,39 @@ Android 系统有 **Input Boost** 机制：在检测到 Input 事件时，临时
 
 [来源: obsidian/Personal-Knowlodge/source/android-systrace-Responsiveness-in-action-1.md]
 
-## Motion Prediction：降低感知延迟
+## Motion Prediction：面向笔迹/绘图的感知降延迟
 
-[自动发现: 来源 developer.android.com/reference/androidx/input/motionprediction]
+这里要把三个概念拆开：
 
-对于手写笔和绘图场景，Android 提供了 Motion Prediction 库（`androidx.input:input-motionprediction`）来降低感知延迟。它的原理是：基于已有的 MotionEvent 轨迹数据，使用卡尔曼滤波等算法预测用户接下来的手势路径，生成预测的 MotionEvent 并提前渲染。当真实的 MotionEvent 到达后，用真实数据替换预测数据。
+- **framework API**：`android.view.MotionPredictor`，开发者文档标注 `Added in API level 34`
+- **AndroidX 库**：`androidx.input:input-motionprediction`
+- **低延迟配套手段**：`requestUnbufferedDispatch()`、front-buffer / low-latency graphics
 
-这套方案不适用于普通的触摸交互（手指点击和滑动），因为预测不准确时会导致画面跳动。在拖动列表时一旦预测错方向，用户会立即察觉。它主要针对连续的、可预测的运动轨迹，如手写笔绘图。从 Android 4.4（API 19）开始支持，Android 13+ 的 `WindowManager` 也提供了系统级别的预测渲染支持。
+它们相关，但不是同一个版本能力。
 
-在实际工程中，如果 App 不涉及手写笔场景，这一节可以跳过。对于需要集成的项目，官方推荐使用 `Jetpack` 的 `androidx.input:input-motionprediction` 库，而非直接调用平台 API。
+`android.view.MotionPredictor` 是系统 API。调用前要先用 `isPredictionAvailable(deviceId, source)` 判断当前设备和输入源是否支持，再把系统收到的真实 `MotionEvent` 依次送入 `record(MotionEvent)`，按目标时间调用 `predict(long)` 取回预测事件。文档还特别提醒，预测结果里也要考虑 historical samples。
 
-[待验证: Jetpack motionprediction 库 minSdk=21, 非 API 19; 平台 API 为 Android 13+; "从 Android 4.4 开始"说法需确认]
+AndroidX `input-motionprediction` 更像兼容层和封装层。AndroidX release notes 显示，`1.0.0-beta06` 开始"系统 prediction API 可用时优先使用系统 API"，`1.0.0-rc01` 又把默认 `minSdk` 从 API 21 调整到 API 23。旧版 stylus 文档把 motion prediction 作为 API 19+ 的低延迟书写方案来介绍，但落到具体项目时，仍要以选用的 AndroidX 版本和当前构建配置为准，不能把这类文档表述直接写成 framework API 的起始版本。
+
+因此，本章把 Motion Prediction 限定在手写笔、绘图、签名这类连续轨迹场景。普通按钮点击和列表滑动通常不靠它解决延迟问题。对这类场景，更常见的主线仍是减少主线程阻塞、控制 batching 行为，以及缩短渲染上屏时间。
+
+[已验证: 官方文档, developer.android.com/reference/android/view/MotionPredictor] [已验证: 官方文档, developer.android.com/develop/ui/views/touch-and-input/stylus-input/advanced-stylus-features] [已验证: 官方文档, developer.android.com/jetpack/androidx/releases/input]
 
 ## 厂商触控优化方案
 
-[自动发现: 来源 web research]
-
-除了 AOSP 标准的 Input 系统实现，主流手机厂商在 HAL 层和内核层做了大量定制优化。这些方案直接影响实际的触摸响应体验，但在 Perfetto 中很难直接观察到：
+这一节只保留在系统行为里能验证的共性做法，不把某个厂商的 marketing 规格写成通用结论。
 
 ### 高刷新率屏幕
 
-从 Android 10 开始，越来越多的设备支持 90Hz、120Hz 甚至 144Hz 的屏幕刷新率。更高的刷新率意味着更短的 VSync 周期，从 16.6ms 降到 8.3ms 甚至更低，直接缩短了从"事件处理完成"到"画面上屏"的等待时间。Android 11 引入了自适应刷新率（Adaptive Refresh Rate），可以根据内容类型动态调整刷新率，在滑动时用高刷、静止时降到低刷以节省功耗。
+更高的刷新率会缩短 VSync 周期，60Hz 是 16.6ms，120Hz 是 8.3ms，144Hz 约 6.9ms。只要应用和系统能稳定跟上，高刷新率会直接缩短"事件处理完成后等待下一次显示刷新"的时间。Android 11 之后常见的自适应刷新率，会在滑动和动画时拉高刷新率，在静止场景再降下来，跟手性和功耗要一起看。
 
-### 低延迟触控芯片
+### 触控固件与控制器调校
 
-一些旗舰设备使用专用的低延迟触控 IC，采样率可达 480Hz 甚至更高，并且优化了从采样到上报的路径延迟。这些芯片通常还支持压力感应和悬停检测。
+很多设备会在触控固件、滤波参数、采样率和上报节奏上做定制。规格表里常见 240Hz、480Hz、720Hz 甚至更高的触控采样率，但它只能说明"采样机会更多"，不能单独推出最终触摸时延。真实体验还要叠加驱动处理、ViewRootImpl 的 batching 策略、应用是否消费历史样本，以及显示刷新过程的周期。
 
-### Input Boost 策略
+### 调度与提频策略
 
-厂商会定制 CPU 的 Input Boost 策略：在检测到触摸事件时，不仅提升 CPU 频率，还可能把 App 的主线程和 RenderThread 绑定到大核上执行，确保触摸响应的关键路径获得最高的 CPU 优先级。
-
-[待验证: 各厂商具体的 Input Boost 实现差异]
+厂商 ROM 常会在输入到来后短时间提高 CPU / GPU 频率，或者提高 UI 相关线程的调度优先级。不同平台把它叫 Input Boost、Touch Boost 或别的名字，但策略是否存在、持续多长、是否把线程放到大核，都必须以目标设备的 Trace 和内核 / ROM 实现为准，不能写成固定数值。排查时直接看 Perfetto 里的 CPU frequency、线程调度和 SurfaceFlinger / RenderThread 行为，比看规格表更靠谱。
 
 ## 与其他章节的关系
 
@@ -423,7 +443,7 @@ Android 系统有 **Input Boost** 机制：在检测到 Input 事件时，临时
 
 ### 误区：触摸采样率越高越好
 
-不是。触摸采样率应该与屏幕刷新率和渲染帧率匹配。在 60fps 渲染下，120Hz 采样率已经足够。过高的采样率只会产生更多被丢弃的事件，白白消耗触控 IC 和 InputReader 的算力，还可能导致事件分布不均匀引起 UI 抖动。
+不是。更高采样率不会自动变成更多可见帧。普通滚动场景里，多出来的 MOVE 样本通常会被 batching 到同一个 `MotionEvent`，或者在同一帧里一起消费；如果应用既不读取 historical samples，也没有走 unbuffered dispatch，视觉收益很快就会碰到上限。更高采样率更适合手写笔、绘图、预测渲染和高刷高帧场景。
 
 ### 误区：触摸卡顿一定是 App 的问题
 
@@ -442,7 +462,9 @@ Input ANR 的触发条件是：InputDispatcher 将事件派发给 App 后，5 �
   - `frameworks/base/core/java/android/view/Choreographer.java`
 - [已验证: 官方文档, source.android.com/docs/core/interaction/input]
 - [已验证: 官方文档, developer.android.com/reference/android/view/MotionEvent]
-- [待验证: Jetpack motionprediction 库 minSdk=21, 非 API 19; 平台 API 为 Android 13+; "从 Android 4.4 开始"说法需确认]
+- [已验证: 官方文档, developer.android.com/reference/android/view/MotionPredictor]
+- [已验证: 官方文档, developer.android.com/develop/ui/views/touch-and-input/stylus-input/advanced-stylus-features]
+- [已验证: 官方文档, developer.android.com/jetpack/androidx/releases/input]
 - [来源: obsidian/Personal-Knowlodge/source/Android-Systrace-Input.md]（高爷原创：Systrace 基础知识 - Input 解读）
 - [来源: obsidian/Personal-Knowlodge/source/android-systrace-Responsiveness-in-action-1.md]（高爷原创：Systrace 响应速度实战 1）
 - [来源: obsidian/Personal-Knowlodge/source/2026-03-06_wechat_从input响应性能差的issue演示perfetto_trace用法.md]
