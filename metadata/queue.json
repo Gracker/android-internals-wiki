@@ -6567,5 +6567,32 @@
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-13T09:56:54+08:00",
     "status": "pending"
+  },
+  {
+    "section": "11.2",
+    "section_title": "App 耗电优化",
+    "priority": 90,
+    "reason": "[review回炉] L3 仍有量化断言与验证链缺口，需 Task 9 / Task 2B 继续收口",
+    "material_paths": [
+      "intake/suggestions.md（含 review 意见）"
+    ],
+    "review_issues": [
+      {
+        "type": "需确认",
+        "location": "Android Vitals 对 WakeLock 的监控",
+        "detail": "文中保留了“2026 年 3 月起”这一生效时间，并和后台 PARTIAL_WAKE_LOCK 的门槛描述写在一起；当前只有 [待验证] 标记，没有把生效时间和门槛对应到明确版本的官方文档。",
+        "suggestion": "由 Task 9 核对 Android Vitals / Play 质量文档的最新版本；若日期或门槛拿不稳，Task 2B 将其降级为更保守的表述。"
+      },
+      {
+        "type": "需补充素材",
+        "location": "Camera/Audio 等硬件资源的功耗优化",
+        "detail": "Camera 30%+、200-500mA 等量化说法缺少明确来源，`[待验证: Camera2 FPS 设置对功耗的量化影响]` 也说明证据链还没闭合。",
+        "suggestion": "补官方文档、实验条件或真实测试来源；补不齐时把量化数字降级为定性描述，并保留可追溯的验证说明。"
+      }
+    ],
+    "added_by": "task6-review",
+    "added_at": "2026-04-13T10:28:00+08:00",
+    "status": "pending",
+    "original_review_log": "logs/review/2026-04-13-10-review.md"
   }
 ]

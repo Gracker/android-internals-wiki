@@ -2298,3 +2298,16 @@
 - **问题**：章节已经讨论 MessageQueue 内部实现，却没有回链 §1.13《MessageQueue 机制与 DeliQueue 无锁优化》，导致全书里“经典线程模型”和“android-16 MessageQueue 演进”被割裂。
 - **建议**：在 related_chapters 与 MessageQueue 小节各补一次 §1.13，并明确“本节讲经典线程模型，android-16 的队列实现演进详见 §1.13”。
 
+
+## [Task6 Review] 11.2 App 耗电优化 — 2026-04-13
+- **类型**：需确认
+- **位置**：Android Vitals 对 WakeLock 的监控
+- **问题**：文中保留了“2026 年 3 月起”这一生效时间，并和后台 `PARTIAL_WAKE_LOCK` 的门槛描述写在一起；当前只有 `[待验证]` 标记，还没有把生效时间和门槛对应到明确版本的官方文档。
+- **建议**：由 Task 9 核对 Android Vitals / Play 质量文档的最新版本；若日期或门槛拿不稳，Task 2B 将其降级为更保守的表述。
+- **review 日志**：logs/review/2026-04-13-10-review.md
+
+- **类型**：需补充素材
+- **位置**：Camera/Audio 等硬件资源的功耗优化
+- **问题**：Camera 30%+、200-500mA 等量化说法缺少明确来源，`[待验证: Camera2 FPS 设置对功耗的量化影响]` 也说明证据链还没闭合。
+- **建议**：补官方文档、实验条件或真实测试来源；补不齐时把量化数字降级为定性描述，并保留可追溯的验证说明。
+- **review 日志**：logs/review/2026-04-13-10-review.md
