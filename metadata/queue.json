@@ -8140,5 +8140,44 @@
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-14T04:42:31+08:00",
     "status": "pending"
+  },
+  {
+    "section": "5.1",
+    "section_title": "Linux 进程调度基础",
+    "priority": 95,
+    "reason": "[Deep Tech Review] Linux 6.6 调度源码锚点与调度策略优先级模型存在事实错误，且 Android 绑核 API 版本边界写错",
+    "material_paths": [
+      "intake/research-gaps.md",
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误/版本差异",
+        "location": "L110-L120 时间片与 fair.c 锚点",
+        "detail": "正文写“target_slice = sched_period × (weight / total_weight)”并标注已验证为“kernel/sched/fair.c, sched_period()”。但 Linux 6.6 fair.c 已无 sched_period()/sched_min_granularity 这组实现路径，当前 fair class 以 sysctl_sched_base_slice 与 EEVDF slice/deadline 逻辑为主。现有源码锚点和公式会把经典 CFS 说明误写成 6.6 现状。",
+        "suggestion": "要么把这段明确降级为“经典 CFS（EEVDF 之前）”并改用旧版本内核锚点，要么按 Linux 6.6+ 重写为 base_slice + eligible entity/virtual deadline 模型，并修正 [已验证] 引用。"
+      },
+      {
+        "type": "源码错误/版本差异",
+        "location": "L124-L136 调度类优先级体系",
+        "detail": "“SCHED_FIFO > SCHED_RR > SCHED_NORMAL > SCHED_IDLE”与后面的 0-98/99/100-139 表都不对。man7 与 include/linux/sched/prio.h 显示：SCHED_DEADLINE 高于 RT；SCHED_FIFO 与 SCHED_RR 是同一 RT 类里的不同策略，不是 FIFO 压 RR；MAX_RT_PRIO=100，对应 RT static priority 0..99，没有“99 保留”；fair(BATCH/OTHER) 才是 100..139。",
+        "suggestion": "把“策略层级”和“内核 static priority 编号”拆开讲，补 SCHED_DEADLINE、SCHED_BATCH、SCHED_IDLE，并明确用户态 sched_priority(1..99) 与内核 static prio(0..99 / 100..139) 的映射。"
+      },
+      {
+        "type": "源码错误/版本差异",
+        "location": "L249-L253 绑核 API",
+        "detail": "正文写“Android 上没有 pthread_setaffinity_np，必须使用 sched_setaffinity”。但 bionic mainline 的 libc/include/pthread.h 已声明 pthread_setaffinity_np(... ) __INTRODUCED_IN(36)。这在 Android 16/17 口径下已经不是绝对真。",
+        "suggestion": "改成“Android 16/API 36 起 bionic 提供 pthread_setaffinity_np；为兼容旧版本/NDK 目标，仍常见直接调用 sched_setaffinity(gettid(), ...)”，并补版本边界。"
+      },
+      {
+        "type": "原理断裂/知识盲区",
+        "location": "L484-L506 SchedTune/UClamp 与 Android 控制链",
+        "detail": "章节只讲了 SchedTune/UClamp 的概念，却没有把 Android userspace 实际如何把 top-app/foreground/background 状态转换成 cpuset / stune / cpu.uclamp.* 设置讲完整。缺少 task profiles/libprocessgroup 这一层，读者很难把 Perfetto 里的大核迁移、频率抬升和系统真实调度控制点对应起来。",
+        "suggestion": "补 ActivityManager/Power HAL → libprocessgroup task profiles → cpuset / stune / uclamp 的控制链，并标清 Android 10/11 的 schedtune 路径与 Android 12+/5.10+ 的 uclamp 路径差异。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-14T05:20:00+08:00",
+    "status": "pending"
   }
 ]
