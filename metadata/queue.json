@@ -7800,5 +7800,83 @@
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-14T00:20:00+08:00",
     "status": "pending"
+  },
+  {
+    "section": "6.1",
+    "section_title": "Android 存储架构",
+    "priority": 95,
+    "reason": "[Deep Tech Review] system-as-root / first-stage init 挂载链、metadata 分区职责、MediaStore-FUSE 路径、SQLite atomic write 机制存在高风险事实错误",
+    "material_paths": [
+      "intake/research-gaps.md",
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "版本差异",
+        "location": "行173（system 分区职责）",
+        "detail": "把“Android 8.0 开始采用 system-as-root，system 直接作为根文件系统挂载”写成通用结论，与 Android 官方 system-as-root / dynamic partitions 文档不符。官方文档明确区分 Android 9 与 Android 10 的 system-as-root 语义，且设备 launching with Android 10、以及使用 dynamic partitions 的设备 must not use system-as-root。",
+        "suggestion": "按 Android 9 / Android 10+ 拆开：Android 9 讲 system-as-root；Android 10+ 讲 dynamic partitions + ramdisk 中 first-stage init 挂载逻辑系统分区，不要把“Android 8.0 起 system 直接作为 rootfs”当成 Android 10+ 通用模型。"
+      },
+      {
+        "type": "原理断裂",
+        "location": "行179（metadata 分区职责）",
+        "detail": "正文写“metadata 分区在启动早期就需要被解密和挂载”。官方 metadata encryption 文档说明的是：metadata partition 用来存放保护 metadata encryption key 的 KeyMint blobs，需作为独立分区挂载到 /metadata；问题在于 /data 依赖该 key，并不是“先解密 metadata 分区本身”。",
+        "suggestion": "改成“/metadata 是独立小分区，通常 16MB，用于保存保护 metadata encryption key 的 KeyMint blobs；启动早期需先挂载 /metadata 并拉起 vold / wait_for_keymaster，再继续 /data 挂载流程”。"
+      },
+      {
+        "type": "原理断裂",
+        "location": "行183（挂载流程）",
+        "detail": "把“bootloader 挂载 super 并通过 dm-linear 激活 system/vendor，随后 vold 挂载 data”写反了。Android 官方 dynamic partitions / metadata encryption 文档给出的链路是：kernel 先起 ramdisk，first-stage init 解析 super metadata 并创建设备映射，system 由 first-stage init 挂载；metadata encryption 场景下 vold 必须先启动，但 /data 的 mount 发生在 init 的 mount_all 阶段。",
+        "suggestion": "重写启动链：bootloader → kernel + ramdisk → first-stage init 解析 super / 创建 dm-linear → 挂载 logical partitions → early-fs 启动 vold → late-fs wait_for_keymaster + mount_all 挂载 /data。"
+      },
+      {
+        "type": "版本差异",
+        "location": "行226-236（Scoped Storage / MediaStore / FUSE）",
+        "detail": "正文把“MediaStore 直接访问模式”写成“绕过 FUSE 的非 FUSE 路径”，机制不准。Android 11 官方文档强调的是 direct file paths for shared media；AOSP FUSE passthrough 文档说明“subsequent read/write requests can be directly forwarded to the lower file system”是 Android 12 + official kernel 的 FUSE passthrough 能力，不是“用了 MediaStore 就天然绕过 FUSE”。",
+        "suggestion": "把此段拆成两层：1) Android 11 允许 shared media direct file paths / File API / fopen()；2) Android 12+ 才有 FUSE passthrough 的版本边界。不要把 MediaStore API、direct file paths、FUSE passthrough 混成一个“非 FUSE 路径”。"
+      },
+      {
+        "type": "原理断裂",
+        "location": "行205（SQLite 原子写优化）",
+        "detail": "正文写“WAL 或 rollback journal 都可以借助 f2fs atomic_write 跳过写日志，将两次 fsync 减少到一次”。这和 SQLite / F2FS atomic write 文档不符。F2FS batch atomic write 的收益针对 rollback-journal 路径，SQLite 官方资料明确指出该能力对 WAL-mode database 不适用。",
+        "suggestion": "把结论收紧成“f2fs atomic write 主要优化 rollback journal / batch atomic write 场景”；如果要保留 Android / AOSP 侧结论，需要继续核对 external/sqlite 的编译宏与设备默认启用情况。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-14T01:20:00+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "6.1",
+    "section_title": "Android 存储架构",
+    "priority": 85,
+    "reason": "[Deep Tech Review] FBE / metadata encryption / dm-default-key 关系混写，版本演进未拆开，且缺少可执行的存储观测地图",
+    "material_paths": [
+      "intake/research-gaps.md",
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "原理断裂",
+        "location": "行148、179、248-284（dm-default-key / FBE / metadata partition）",
+        "detail": "章节把 dm-default-key、metadata encryption、FBE、/metadata 分区写成一条模糊主线，容易让读者误以为“dm-default-key = FBE 本体”或“/metadata 就是被解密的数据分区前置层”。实际上这里至少有三层：fscrypt/FBE（文件内容/文件名）、metadata encryption（通常依赖 dm-default-key / blk-crypto）、/metadata 分区（存 KeyMint blobs）。",
+        "suggestion": "单独补一张三层关系图，明确“谁负责加密什么、谁保存 key material、谁参与 /data mount 前置流程”，避免概念串台。"
+      },
+      {
+        "type": "版本差异",
+        "location": "行173、215-230",
+        "detail": "版本演进没有拆开几个关键断点：Android 9 的 system-as-root、Android 10 的 dynamic partitions + first-stage init、Android 11 的 scoped storage direct file paths、Android 12 的 FUSE passthrough、Android 15 的 MediaProvider/查询性能优化。当前写法把这些行为揉在一起，读者很难判断“哪条结论适用于哪个版本”。",
+        "suggestion": "增加一个版本表，至少按 Android 9 / 10 / 11 / 12 / 15 五列拆开挂载模型、shared storage 路径、FUSE 行为和 App 侧 API 建议。"
+      },
+      {
+        "type": "知识盲区",
+        "location": "行119、207、242、307、337（性能分析 / 待补充段）",
+        "detail": "章节多次强调“在 Perfetto 中判断 I/O 问题”，但没有给出最小可执行的观测路径：block layer 看哪些 tracepoint / track，FUSE 看哪些进程或分类，mount / encryption / OTA merge 看 init、vold、update_engine、snapshot merge 的哪类信号。几个核心位置还留着 [待补充]。对性能书读者来说，这会直接影响实战可用性。",
+        "suggestion": "补“存储问题观测地图”：block_rq_issue/complete、ext4/f2fs、fuse、vold/init/update_engine、dm-snapshot merge 各自怎么抓、怎么看、出现什么形态说明异常。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-14T01:20:00+08:00",
+    "status": "pending"
   }
 ]
