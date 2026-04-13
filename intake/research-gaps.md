@@ -1865,3 +1865,19 @@ AsyncLayoutInflater 一节缺少 AndroidX 当前实现的关键边界，尤其�
 
 ### 关联章节
 §8.2、§9.3、§13.7、§4.4
+
+## [2026-04-13] 9.7 ANR 非技术故障诊断 — 知识盲区
+
+### 盲区描述
+本章缺少“非 App 侧 ANR”最该讲的真实证据链：InputDispatcher / AMS / AnrHelper 的超时入口，system_server 全局锁与 Binder 线程池耗尽，冻结/PSI/存储 stall/thermal 等设备状态问题，以及它们在 traces.txt、Perfetto、logcat 中的对应信号。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 梳理 input / service / broadcast / provider 四类 timeout 到 AMS/AnrHelper 的真实调用链
+- 补 system_server 锁竞争、Binder 线程池耗尽、冻结/PSI/存储 stall 的可观测信号
+- 补一条完整证据链：traces.txt + Perfetto + logcat/EventLog 如何互相印证
+
+### 关联章节
+9.3、9.4、13.6、15.2

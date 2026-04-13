@@ -7183,5 +7183,71 @@
     "added_at": "2026-04-13T17:05:00+08:00",
     "status": "pending",
     "original_review_log": "logs/review/2026-04-13-17-review.md"
+  },
+  {
+    "section": "9.7",
+    "section_title": "ANR 非技术故障诊断",
+    "priority": 95,
+    "reason": "[Deep Tech Review] 9.7 多段 AOSP 代码块与诊断命令失真，ANR 根因链被写成伪机制，需整章技术回炉",
+    "material_paths": [
+      "intake/research-gaps.md",
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "severity": "P0",
+        "location": "L59-L84、L593-L605 AMS 状态异常 / 案例根因",
+        "detail": "文中把 `checkActivityState()`、`reportStateMismatchANR()`、`generateANRReport()`、`updateActivityState()`、`ActivityState.CREATED`、`Activity.getState()` 等伪接口写成了 AOSP / App 侧真实实现。AOSP `ActivityManagerService.java` 中不存在这些方法，App SDK 也没有 `Activity.getState()` 这类公开 API。",
+        "suggestion": "删除这两段伪源码，改用真实的 ANR 入口和状态链：input dispatch / service / broadcast / content provider timeout，以及对应的 AMS/ATMS/AnrHelper 或 traces 证据。若只能保留示意代码，必须明确标为“示意”，不能挂 AOSP 路径。"
+      },
+      {
+        "type": "源码错误",
+        "severity": "P0",
+        "location": "L94-L121 Binder 通信协议异常",
+        "detail": "代码块标成 `frameworks/native/libs/binder/Binder.cpp` 的 `Binder::transact()`，并引入 `mStatus`、`DEAD_BINDER`、`TIMED_OUT`。实际 AOSP 客户端事务主路径在 `BpBinder.cpp` 的 `BpBinder::transact()`；`Binder.cpp` 中没有这套状态字段和分支。当前写法会把 Binder 调用链和错误语义讲错。",
+        "suggestion": "改成真实的 `BpBinder::transact()` / `IPCThreadState` / binder driver 等待链，或收缩为“主线程同步 Binder 调用可能等待 system_server / 远端线程池”并给出可核对源码锚点。"
+      },
+      {
+        "type": "源码错误",
+        "severity": "P0",
+        "location": "L130-L158、L199-L279 MessageQueue / MemoryManagerService / BatteryManagerInternal",
+        "detail": "`Message.timeout`、`checkForTimeout()`、`adjustTimeDrift()`、`MemoryManagerService`、`BatteryManagerInternal.checkBatteryAnomaly()`、`PowerMode.ULTRA_SAVER` 等实现均无法和当前 AOSP 对上。尤其 `Message.java` 只有 `when` 没有 `timeout` 字段，`MemoryManagerService.java` 这一路径也不存在。",
+        "suggestion": "删除这些伪实现，分别替换成真实的证据源：ANR 超时由具体组件（InputDispatcher / service / broadcast / provider）触发，内存压力看 lmkd/PSI/kswapd，省电与热问题看 Battery Saver / thermal / Power HAL 的真实观测点。"
+      },
+      {
+        "type": "原理断裂",
+        "severity": "P1",
+        "location": "全文主线，尤其“核心机制”与“诊断方法”",
+        "detail": "章节把“非技术故障 ANR”主因写成 AMS 状态不一致、系统时间漂移、电池异常等伪机制，却没有交代真正的 ANR 触发链：input dispatch timeout、service/broadcast/provider timeout、traces.txt/Perfetto/系统日志之间怎么闭环。读者看完仍不知道该先看哪一类 timeout、再追哪条等待链。",
+        "suggestion": "按真实诊断链重写骨架：① 先判 ANR 类型；② 看 traces.txt 主线程 / Binder wait / blocked owner；③ 用 Perfetto 对齐 Runnable、binder、I/O、system_server；④ 最后再判断是 App 问题、系统服务问题还是设备状态问题。"
+      },
+      {
+        "type": "版本差异",
+        "severity": "P1",
+        "location": "L315-L359 日志与命令行诊断段",
+        "detail": "`/proc/binder/stats`、`atrace --cpu=9999`、`systrace.py` 转换链、`watch -n 1`、`logcat -s Binder | grep TIMED_OUT` 都不是 Android 8-17 的稳定可跑方案。binder 统计入口受 binderfs/debugfs 和 SELinux 影响，Systrace 时代命令与 Perfetto 时代工具链也混在了一起。",
+        "suggestion": "按版本和工具链拆开写：现代 Android 以 Perfetto / bugreport / traces / dumpsys 为主，binder / thermal / freq 的观测入口必须注明设备前提与版本条件；跑不通的命令删掉或降为“可能需要 root / eng userdebug”。"
+      },
+      {
+        "type": "知识盲区",
+        "severity": "P1",
+        "location": "全文范围定义与排查场景覆盖",
+        "detail": "真正高频的“不是 App 自己代码写错”类 ANR 没展开：system_server 全局锁、Binder 线程池耗尽、冻结/解冻、PSI/内存压力、存储 stall、vendor service 卡死。这些才是读者在实战中最容易误判的非 App 根因。",
+        "suggestion": "补一组高频非 App 根因的证据模板，每类至少给出 1 条 traces/Perfetto/logcat 观测路径，并和 9.3、13.6、15.2 形成交叉引用。"
+      },
+      {
+        "type": "数据缺失",
+        "severity": "P1",
+        "location": "L535-L607 Google 工程师案例",
+        "detail": "案例段没有原始 traces、Perfetto、logcat 或公开文章中的真实证据，只把“Google 工程师改 bug 改出 bug”的故事改写成一套虚构的 `ActivityStarter` / `ActivityState` 代码。这样既无法复核，也会把读者带到错误 API 上。",
+        "suggestion": "回到原始公开材料，至少保留 1 条真实日志/调用栈/时序描述；拿不到源码就用“现象 + 证据 + 推理链”写，不要发明 framework API。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-13T17:20:00+08:00",
+    "status": "pending",
+    "original_review_log": "logs/review/2026-04-13-17-review.md",
+    "deep_review_log": "logs/deep-review/2026-04-13-17-deep-review.md"
   }
 ]
