@@ -2330,3 +2330,25 @@
 - **问题**：`linux.heapprofd` 数据源名称、Java 堆追踪表述，以及 `block_rq_complete` SQL 示例都需要按当前 Perfetto 文档和 schema 复核。
 - **建议**：按当前 Perfetto 文档或 trace processor schema 重写配置与 SQL，并补一条已跑通的查询样例。
 - **review 日志**：logs/review/2026-04-13-11-review.md
+
+
+## [Task9 Deep Review] 7.1 卡顿的定义与分类 — 2026-04-13
+- **类型**：数据缺失
+- **位置**：L227、L331 掉帧率目标
+- **问题**：`5% 以下`、`复杂列表 3-5% 可接受` 仍然写成通用目标，没有交代刷新率、交互场景、统计窗口和来源。
+- **建议**：补 Android Vitals / 内部测试口径；补不齐就改成“需结合场景与刷新率设目标”的条件化表述。
+
+- **类型**：数据缺失
+- **位置**：L254-L266 Google Jank vs PerfDog Jank
+- **问题**：PerfDog 阈值现在只挂在二手博客素材上，正文没有给 PerfDog 官方文档、产品说明或可复核实验。
+- **建议**：补一手来源；补不齐就明确标注“来自某团队经验口径”，不要和 Google / Perfetto 的系统口径并列成同一等级事实。
+
+- **类型**：数据缺失
+- **位置**：L168 Buffer Stuffing 的 Trace 判读
+- **问题**：`BufferQueue` Track 的 `|queued| > 1` 规则没有给 Trace 截图、SQL 或官方文档来源，当前更像经验结论。
+- **建议**：补一张 Perfetto 图或 SQL 片段，明确 `BufferStuffing`、queue depth、input latency 三者如何对应。
+
+- **类型**：源码准确性
+- **位置**：L99、L131、L305-L317 验证来源
+- **问题**：正文里的 `swing-animations`、`source.android.com/.../frame-timeline`、`developer.android.com/develop/ui/views/performance/jankstats` 不能稳定支撑当前结论，验证链容易断。
+- **建议**：统一替换成可回查的稳定来源，例如 Perfetto FrameTimeline 文档、AndroidX `JankStats` API reference、Android vitals render 文档。

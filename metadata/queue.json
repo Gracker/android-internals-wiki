@@ -6629,5 +6629,62 @@
     "added_at": "2026-04-13T11:19:38+08:00",
     "status": "pending",
     "original_review_log": "logs/review/2026-04-13-11-review.md"
+  },
+  {
+    "section": "7.1",
+    "section_title": "卡顿的定义与分类",
+    "priority": 95,
+    "reason": "[Deep Tech Review] 7.1 把 SF Jank、ANR 分级和 JankStats 默认阈值写错，并遗漏高刷新率帧预算、Display HAL 证据链与完整 JankType 矩阵",
+    "material_paths": [
+      "intake/research-gaps.md",
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "L133-L142 SF Jank 分类",
+        "detail": "正文把 SurfaceFlinger 侧 Jank 直接等同于 `SurfaceFlingerCpuDeadlineMissed`。Perfetto FrameTimeline 文档还明确列出 `SurfaceFlingerGpuDeadlineMissed`，因此当前枚举映射会把 GPU 合成导致的 SF Jank 漏掉。",
+        "suggestion": "把 SF 侧至少拆成 CPU deadline miss、GPU deadline miss、DisplayHAL 三类，并说明各自对应的观察字段。"
+      },
+      {
+        "type": "源码错误",
+        "location": "L233-L242 Frozen Frame / ANR 分级表",
+        "detail": "正文把 ANR 写成“帧严重程度”的一档。Android vitals 的 render 文档是把 slow frame、frozen frame、ANR 放在对照表中比较可见影响，不是把 ANR 定义成一种 frame type。ANR 还涉及 input / broadcast / service 等不同超时。",
+        "suggestion": "把表拆成“渲染问题（slow/frozen frame）”和“响应性问题（ANR）”两部分，避免把 frame render time 和 ANR timeout 混为一谈。"
+      },
+      {
+        "type": "源码错误",
+        "location": "L309-L313 JankStats 默认阈值",
+        "detail": "正文写“默认是帧是否超过 VSync 周期”。AndroidX `JankStats` API 文档说明默认 `jankHeuristicMultiplier=2`，阈值是“当前 refresh period × 2”，不是“超过 1 个 VSync 就算 jank”。",
+        "suggestion": "改成“默认阈值是 2 × current refresh period，可通过 `setJankHeuristicMultiplier()` 调整”，并把 `frameOverrunNanos` 放在 Android 12+ 的补充指标位置。"
+      },
+      {
+        "type": "原理断裂",
+        "location": "L89-L97 高刷新率帧预算",
+        "detail": "正文把 MainThread、RenderThread 和 SurfaceFlinger 全部塞进同一个 8.33ms 框里，缺少 App/SF 两套 deadline、offset 和 pipeline overlap 的解释。读者会误以为“一帧端到端只能做 8.33ms 的所有工作”。",
+        "suggestion": "补 VSync-app / VSync-sf 的错峰关系，说明高刷新率缩短的是每阶段可用窗口，而不是把整条管线简单压成一个总预算。"
+      },
+      {
+        "type": "原理断裂",
+        "location": "L129、L214-L217 Perfetto 观察路径",
+        "detail": "正文把 `Expected Timeline` / `Actual Timeline` 和 `Choreographer#doFrame` / `RenderThread` 混成同一层级描述。Perfetto 文档里前者是主视图，后者是带 token 的调试 slice，用来回溯责任链，不应被写成“对应关系”。",
+        "suggestion": "重写“怎么看 Trace”一段，先讲 FrameTimeline 主轨道，再讲 token 如何回链到 doFrame、RenderThread、SurfaceFlinger onMessageReceived。"
+      },
+      {
+        "type": "原理断裂",
+        "location": "L148-L150 Display HAL Jank 诊断",
+        "detail": "正文把 Display HAL Jank 几乎写成“厂商 HAL / 驱动问题”。Perfetto 文档明确说明，这类 jank 既可能是 HAL 真正慢，也可能是 SurfaceFlinger 留给 HAL 的时间不够。当前结论把诊断方向写死了。",
+        "suggestion": "补 `Present Type`、`On time finish`、`GPU Composition` 等字段的判读方法，并把结论改成“优先看显示栈末端，但不能直接跳过 scheduler / SF timing”。"
+      },
+      {
+        "type": "知识盲区",
+        "location": "FrameTimeline JankType 矩阵",
+        "detail": "章节只覆盖了 AppDeadlineMissed / SurfaceFlingerCpuDeadlineMissed / DisplayHAL / Dropped Frame 的子集，遗漏 `SurfaceFlingerGpuDeadlineMissed`、`PredictionError`、`BufferStuffing` 与 high latency state 的判读边界。",
+        "suggestion": "补一张“颜色/枚举/责任方/用户感知/排查入口”对照表，并说明 `BufferStuffing` 是 high-latency state，不应和 dropped frame 混写。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-13T11:41:00+08:00",
+    "status": "pending"
   }
 ]

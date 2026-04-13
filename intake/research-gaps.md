@@ -1730,3 +1730,21 @@ AsyncLayoutInflater 一节缺少 AndroidX 当前实现的关键边界，尤其�
 ### 关联章节
 1.5、1.13、1.14、2.4
 
+
+
+## [2026-04-13] 7.1 卡顿的定义与分类 — 知识盲区
+
+### 盲区描述
+章节目前只覆盖了 `AppDeadlineMissed`、`SurfaceFlingerCpuDeadlineMissed`、`DisplayHAL` 与 Dropped Frame 的基础定义，但没有把 FrameTimeline 的完整判读矩阵讲透：`SurfaceFlingerGpuDeadlineMissed`、`PredictionError`、`BufferStuffing`、high latency state 与 dropped frame 的边界仍然缺失。读者很难把 Perfetto 里的颜色、`Jank Type`、`Present Type`、`On time finish`、`GPU Composition` 几个字段组合起来定位根因。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 结合 Perfetto FrameTimeline 官方文档，梳理 `JankType` 各枚举的责任边界与常见误判
+- 补一张“颜色 / JankType / 责任方 / 典型根因 / Trace 入口”的对照表
+- 研究 `PredictionError` 与真正用户可感知 jank 的区别，避免把 scheduler drift 当成 App 回归
+- 结合 BufferQueue / FrameTimeline / SurfaceFlinger token，补 BufferStuffing 与 dropped frame 的联合判读方法
+
+### 关联章节
+§2.3、§2.4、§2.5、§7.1、§7.2、§7.3
