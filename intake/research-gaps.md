@@ -2018,3 +2018,20 @@ Android 10-16 的返回分发模型缺少一张统一矩阵。正文把 Gesture 
 ### 关联章节
 4.1、4.4、1.3、13.5
 
+
+
+## [2026-04-14] 6.1 Android 存储架构 — 知识盲区
+
+### 盲区描述
+章节已经覆盖了器件、文件系统、分区、Scoped Storage、FBE、Virtual A/B，但没有给出“怎么在真实设备上验证这些层”的最小观测地图。尤其缺少三组关键边界：1）first-stage init / vold / mount_all 在挂载链中的角色分工；2）fscrypt/FBE、metadata encryption、dm-default-key、/metadata 分区之间的关系图；3）block / ext4-f2fs / FUSE / OTA snapshot merge 在 Perfetto / ftrace 里的对应观察点。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 整理 Android 9 / 10 / 11 / 12 / 15 的存储路径演进表：system-as-root、dynamic partitions、direct file paths、FUSE passthrough、MediaProvider 变化。
+- 补一张“/data 挂载前后链路图”：bootloader → kernel/ramdisk → first-stage init → vold/wait_for_keymaster → mount_all。
+- 整理存储问题观测地图：block_rq_issue/complete、ext4/f2fs、fuse、vold/init、update_engine / snapshot merge 的最小可抓集合。
+
+### 关联章节
+6.2（文件系统）、6.3（I/O 调度）、7.1（流畅性分析）

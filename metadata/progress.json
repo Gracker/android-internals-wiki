@@ -1,34 +1,34 @@
 {
-  "generated_at": "2026-04-14T01:05:00+08:00",
+  "generated_at": "2026-04-14T01:20:00+08:00",
   "state_machine_version": "v2",
   "total_sections": 207,
   "metrics": {
     "total": 207,
-    "last_updated": "2026-04-14T01:05:00+08:00",
+    "last_updated": "2026-04-14T01:20:00+08:00",
     "unknown": 34,
     "ready-for-review": 173,
     "pipeline_unknown": 31,
     "pipeline_task6_pending": 161,
-    "pipeline_task2b_pending": 12,
-    "pipeline_task9_pending": 3,
+    "pipeline_task2b_pending": 13,
+    "pipeline_task9_pending": 2,
     "task6_unknown": 31,
     "task6_revisiting": 59,
     "task6_pending": 102,
     "task6_reviewed": 15,
     "task9_unknown": 31,
-    "task9_pending": 171,
-    "task9_reviewed": 5,
+    "task9_pending": 170,
+    "task9_reviewed": 6,
     "task2b_unknown": 31,
     "task2b_fixed": 59,
-    "task2b_idle": 105,
-    "task2b_pending": 12
+    "task2b_idle": 104,
+    "task2b_pending": 13
   },
   "pipeline": {
     "pipeline_stage_counts": {
       "unknown": 31,
       "task6_pending": 161,
-      "task2b_pending": 12,
-      "task9_pending": 3
+      "task2b_pending": 13,
+      "task9_pending": 2
     },
     "task6_state_counts": {
       "unknown": 31,
@@ -38,14 +38,14 @@
     },
     "task9_state_counts": {
       "unknown": 31,
-      "pending": 171,
-      "reviewed": 5
+      "pending": 170,
+      "reviewed": 6
     },
     "task2b_state_counts": {
       "unknown": 31,
       "fixed": 59,
-      "idle": 105,
-      "pending": 12
+      "idle": 104,
+      "pending": 13
     }
   },
   "issues": {
@@ -1159,14 +1159,15 @@
       "title": "Android 存储架构",
       "path": "src/part1-fundamentals/ch06-storage/01-storage-architecture.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
-      "task9_state": "pending",
-      "task2b_state": "idle",
+      "task9_state": "reviewed",
+      "task2b_state": "pending",
       "reviewed_date": "2026-04-14",
       "reviewed_by": "openclaw-task6",
       "section": "6.1",
-      "task6_result": "pass-light-edit"
+      "task6_result": "pass-light-edit",
+      "task9_result": "needs-rework"
     },
     "src/part1-fundamentals/ch06-storage/02-filesystem.md": {
       "chapter": "6.2",
