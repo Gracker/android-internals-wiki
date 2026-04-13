@@ -7,8 +7,10 @@ drafted_date: "2026-03-31"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
 last_verified: "2026-04-06"
 last_verified_against: "AOSP android-16.0.0_r1"
-reviewed_date: "2026-04-06"
+reviewed_date: "2026-04-14"
 reviewed_by: "openclaw-task6"
+review_notes: "task2b-polish: 已做首轮润色；2026-04-14 Task6：L1/L2 小修，lmkd / cgroup / ZRAM 段落的技术风险已转 Task 9 / Task 2B"
+task6_result: needs-rework
 confidence: medium
 polish_count: 1
 polish_date: "2026-04-06"
@@ -26,10 +28,10 @@ sources:
     path: "https://juejin.cn/post/7530909474103296039"
 tags: ['memory', 'PSS', 'RSS', 'dumpsys', 'meminfo', 'procfs', 'ZRAM', 'cgroup']
 related_chapters: ["4.2", "4.3", "4.4", "4.5", "10.1"]
-pipeline_stage: task6_pending
-task6_state: pending
+pipeline_stage: task2b_pending
+task6_state: reviewed
 task9_state: pending
-task2b_state: idle
+task2b_state: pending
 ---
 
 # Android 内存模型全景
@@ -63,7 +65,7 @@ task2b_state: idle
 
 如果我们用 Perfetto 抓 Trace，可能注意过这样一个场景：一个列表滑得好好的，突然连续出现几帧耗时飙升，Trace 里对应的位置是几条长长的绿色 GC 条目。或者更隐蔽一些——App 没有明显的卡顿，但 `dumpsys meminfo` 显示 PSS 在几分钟内从 80MB 缓慢爬到了 200MB。
 
-这些现象的背后，是 Android 内存系统在工作。理解内存模型不是为了应付面试，而是为了在遇到内存相关的问题时——无论是 OOM 崩溃、GC 导致的卡顿、还是后台进程被杀——能知道从哪里入手排查。
+这些现象的背后，是 Android 内存系统在工作。理解内存模型，是为了在遇到内存相关的问题时，无论是 OOM 崩溃、GC 导致的卡顿，还是后台进程被杀，都知道从哪里入手排查。
 
 这一节我们要建立一个完整的内存认知框架：从物理内存到内核管理，再到进程的各个内存区域，最后到工具中的数字代表什么含义。有了这张全景图，后面关于内存优化、GC 机制、LMK 等章节才有落脚点。
 
@@ -71,7 +73,7 @@ task2b_state: idle
 
 ## 从物理内存到进程：Android 内存的整体架构
 
-Android 的内存体系可以分成三层来看：物理内存、内核管理、用户空间。这三层不是各自独立的，而是紧密耦合的——内核负责把物理内存分配给各个进程，进程之间的内存通过共享库和共享内存机制产生关联，而 Android 框架在内核之上又加了一层自己的管理策略。
+Android 的内存体系可以分成三层来看：物理内存、内核管理、用户空间。这三层彼此耦合。内核负责把物理内存分配给各个进程，进程之间的内存通过共享库和共享内存机制产生关联，Android 框架在内核之上又加了一层自己的管理策略。
 
 ### 物理内存：一切的基础
 
@@ -192,7 +194,7 @@ USS 的实用价值在于：**如果一个进程被杀掉，USS 就是被释放�
 
 [待补充：dumpsys meminfo 真机截图]
 
-输出看起来密密麻麻，但我们可以把它归类到几个大的区域来理解。
+输出看起来很多，但可以先按几个大类来拆解。
 
 ### Java Heap（Dalvik Heap）
 
@@ -326,7 +328,7 @@ Locked:             0 kB
 
 smaps 的实际使用场景通常是：**当发现进程的 PSS 异常高，但 `dumpsys meminfo` 的分类无法定位具体原因时，逐项查看 smaps 来找到那个异常大的映射区域。**
 
-需要注意的是，读取 `/proc/<pid>/smaps` 需要进程有足够的权限（通常是 root 或者目标 App 是 debuggable 的），且读取操作本身有性能开销（内核需要遍历所有页表），不建议在高频循环中调用。
+读取 `/proc/<pid>/smaps` 需要足够的权限（通常是 root，或者目标 App 是 debuggable 的），且读取操作本身有性能开销（内核需要遍历所有页表），不建议在高频循环中调用。
 
 [已验证: Linux kernel documentation, kernel.org/doc/Documentation/filesystems/proc.txt]
 
@@ -471,7 +473,7 @@ ZRAM:  123,456K physical used for 456,789K in swap (500,000K total swap)
 
 ## 在 Perfetto 中的表现
 
-理解了内存模型之后，我们来看看这些概念在 Perfetto Trace 中是怎么体现的。
+把前面的内存概念放到 Perfetto Trace 里，主要看下面几类数据。
 
 ### 内存相关的 Track
 

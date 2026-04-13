@@ -7689,5 +7689,38 @@
     "added_at": "2026-04-13T23:36:03+08:00",
     "status": "pending",
     "review_log": "logs/deep-review/2026-04-13-23-deep-review.md"
+  },
+  {
+    "section": "4.1",
+    "section_title": "Android 内存模型全景",
+    "priority": 90,
+    "reason": "[review回炉] lmkd / cgroup / ZRAM 段落存在技术边界风险，需核对 `oom_score_adj` 命名、trim memory 回调链、cgroup v1/v2 差异和 ZRAM 经验参数",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "需确认",
+        "location": "内核管理：分配、回收、保护",
+        "detail": "`oom_adj_score` 与 “`lmkd` 通过 `ActivityManager` 直接触发 `onTrimMemory()`” 的写法存在技术风险，命名和调用链都需要复核。",
+        "suggestion": "Task 9 按 AOSP `ProcessList` / `ActivityManagerService` / `lmkd` 文档核对；Task 2B 再统一改写。"
+      },
+      {
+        "type": "需确认",
+        "location": "cgroup 对 Android 内存控制的作用",
+        "detail": "`memory.high` / `memory.max` / `memory.pressure_level` 的描述缺少 Android 版本边界，也没有拆开 cgroup v1 / v2 差异。",
+        "suggestion": "Task 9 按 AOSP cgroups 文档和 task profile 实现核对；Task 2B 再回写正文。"
+      },
+      {
+        "type": "需确认",
+        "location": "ZRAM 的工作方式",
+        "detail": "`kswapd` 机制描述与 Qualcomm 75% 建议、2x-4x 压缩比被混写在一起，数字和执行主体都缺一手证据。",
+        "suggestion": "Task 9 先拆开机制与经验参数，再由 Task 2B 降级或删除未证实数字。"
+      }
+    ],
+    "added_by": "task6-review",
+    "added_at": "2026-04-14T00:07:00+08:00",
+    "status": "pending",
+    "original_review_log": "logs/review/2026-04-14-00-review.md"
   }
 ]

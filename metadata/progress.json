@@ -861,13 +861,14 @@
       "title": "Android 内存模型全景",
       "path": "src/part1-fundamentals/ch04-memory/01-memory-overview.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "pending",
+      "pipeline_stage": "task2b_pending",
+      "task6_state": "reviewed",
       "task9_state": "pending",
-      "task2b_state": "idle",
-      "reviewed_date": "2026-04-06",
+      "task2b_state": "pending",
+      "reviewed_date": "2026-04-14",
       "reviewed_by": "openclaw-task6",
-      "section": "4.1"
+      "section": "4.1",
+      "task6_result": "needs-rework"
     },
     "src/part1-fundamentals/ch04-memory/02-linux-memory.md": {
       "chapter": "4.2",
