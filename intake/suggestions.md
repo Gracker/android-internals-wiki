@@ -2575,3 +2575,16 @@
 - **问题**：正文没有 [图：...] 占位，也没有 Trace 截图描述。读者能拿到 SQL，但难以把查询结果和 Perfetto UI 中的具体位置对上。
 - **建议**：补 2-3 个 [图：...] 占位，至少覆盖队列堆积 counter、输入事件与 doFrame 对齐、SQL 定位后回到 UI 的工作流。
 - **review 日志**：logs/review/2026-04-13-18-review.md
+
+
+## [Task9 Deep Review] 10.7 SQLite/Room 数据库性能优化 — 2026-04-13
+- **类型**：交叉引用
+- **位置**：frontmatter `related_chapters`
+- **问题**：`related_chapters` 包含 `9.1`，但当前 `src/` 扫描未找到对应章节文件，交叉引用失效。
+- **建议**：核对目标章节号；如果目标其实是 9.x 其他小节，改成实际存在的 section；如果确实需要 9.1，则先补章节再保留引用。
+
+## [Task9 Deep Review] 10.7 SQLite/Room 数据库性能优化 — 2026-04-13
+- **类型**：数据缺失
+- **位置**：frontmatter `sources` + §3 Room 的性能特性与优化
+- **问题**：正文对 Room 内部执行器、事务协程、Paging 行为做了源码级判断，但 `sources` 只列了 developer.android.com 文档，没有补 `androidx.room` 源码锚点，后续核对和回炉都缺少直接证据。
+- **建议**：补 `androidx.room:room-runtime` / `androidx.room:room-paging` 的源码依据，例如 `RoomDatabase`、`DatabaseConfiguration`、`LimitOffsetPagingSource`、`RoomPagingUtil.kt`。

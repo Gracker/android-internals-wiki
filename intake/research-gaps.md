@@ -1881,3 +1881,21 @@ AsyncLayoutInflater 一节缺少 AndroidX 当前实现的关键边界，尤其�
 
 ### 关联章节
 9.3、9.4、13.6、15.2
+
+
+## [2026-04-13] 10.7 SQLite/Room 数据库性能优化 — 知识盲区
+
+### 盲区描述
+章节把 CursorWindow 翻页、跨进程 Cursor 传递、Room/Paging 3 分页三个层次揉在了一起，但没有把真实调用链拆开：SQLiteCursor.onMove() 如何触发 fillWindow()，跨进程时 CursorToBulkCursorAdaptor/BulkCursorDescriptor 如何把窗口交给客户端，Room Paging 又是如何单独生成 LIMIT/OFFSET 查询。这个盲区不补齐，读者很容易把 CursorWindow refill 误当成 SQL 分页机制本身。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 追 AOSP 调用链：SQLiteCursor.onMove() → fillWindow() → SQLiteQuery.fillWindow()
+- 追跨进程路径：CursorToBulkCursorAdaptor.getWindow() / BulkCursorDescriptor / CursorWindow::writeToParcel()
+- 对比 AndroidX Room Paging 实现：LimitOffsetPagingSource / RoomPagingUtil.kt 里的 LIMIT/OFFSET 生成逻辑
+- 区分“CursorWindow refill 成本”和“业务分页 SQL 成本”各自在哪一层出现
+
+### 关联章节
+10.7、1.10、1.4
