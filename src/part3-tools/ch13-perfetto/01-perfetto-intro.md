@@ -5,8 +5,9 @@ section: "13.1"
 status: ready-for-review
 drafted_date: "2026-04-03"
 drafted_by: "openclaw-task2a"
-reviewed_date: "2026-04-06"
+reviewed_date: "2026-04-14"
 reviewed_by: "openclaw-task6"
+task6_result: "needs-rework"
 polish_count: 2
 polish_date: "2026-04-10"
 polish_by: "task2b-polish"
@@ -23,10 +24,10 @@ sources:
     path: "https://www.androidperformance.com/2019/12/01/Android-Systrace(Perfetto)-Basic/"
 tags: ['perfetto', 'systrace', 'tracing', 'trace-processor', 'traced', 'ftrace', 'atrace', 'heapprofd', 'performance-analysis']
 related_chapters: ["13.2", "13.3", "2.1", "7.1"]
-pipeline_stage: task6_pending
-task6_state: pending
+pipeline_stage: task2b_pending
+task6_state: reviewed
 task9_state: pending
-task2b_state: idle
+task2b_state: pending
 ---
 
 # Perfetto 简介与演进
@@ -58,9 +59,9 @@ task2b_state: idle
 
 ## 为什么要了解 Perfetto
 
-做过 Android 性能优化的人一定遇到过这样的场景：App 明明卡了，但拿到的日志毫无头绪；滑动掉帧了，却不知道时间花在哪里；ANR 堆栈指向的是 Binder 调用，但我们不知道对端进程在做什么。这些问题有一个共同特征——它们跨越了多个进程、多个线程、甚至多个系统层级，单看任何一个进程的日志都无法拼出完整图景。
+做过 Android 性能优化的人一定遇到过这样的场景：App 明明卡了，但拿到的日志毫无头绪；滑动掉帧了，却不知道时间花在哪里；ANR 堆栈指向的是 Binder 调用，但我们不知道对端进程在做什么。这些问题有一个共同特征，它们跨越了多个进程、多个线程，甚至多个系统层级。单看任何一个进程的日志，都无法拼出完整图景。
 
-Perfetto 就是解决这类问题的工具。它提供的是整个系统的"上帝视角"：所有进程的 CPU 调度、所有线程的状态、内核的事件、图形管线的每一帧、内存的变化曲线——全部统一在同一根时间线上。有了这根时间线，我们可以像看监控录像一样，逐帧还原系统在任何一个时间窗口里发生了什么。
+Perfetto 就是解决这类问题的工具。它提供的是整个系统的"上帝视角"：所有进程的 CPU 调度、所有线程的状态、内核的事件、图形管线的每一帧、内存的变化曲线，全部统一在同一根时间线上。有了这根时间线，我们可以像看监控录像一样，逐帧还原系统在任何一个时间窗口里发生了什么。
 
 如果之前用的是 Systrace，那么 Perfetto 是它的继任者，能力是 Systrace 的严格超集。如果之前没有用过任何系统级 tracing 工具，那么 Perfetto 就是现在应该开始掌握的工具。
 
@@ -74,7 +75,7 @@ Perfetto 不是单一工具，而是一整套 tracing 基础设施，包含三�
 - **分析层**：基于 SQL 的 trace 分析引擎（Trace Processor），可以用结构化查询语言对 trace 数据做任意维度的分析。
 - **可视化层**：Web 端的 Perfetto UI（ui.perfetto.dev），支持打开数 GB 的大型 trace 文件，完全在浏览器本地运行，无需上传数据。
 
-这三层是解耦的——我们可以只用采集层把数据抓到文件里，用 Trace Processor 写 SQL 查询；也可以只用 UI 打开别人给的 trace 文件做可视化分析。
+这三层彼此解耦。我们可以只用采集层把数据抓到文件里，用 Trace Processor 写 SQL 查询；也可以只用 UI 打开别人给的 trace 文件做可视化分析。
 
 ## 从 Systrace 到 Perfetto：为什么要换
 
@@ -82,9 +83,9 @@ Systrace 是 Android 4.1（2012 年）引入的 tracing 工具，它基于 Linux
 
 但 Systrace 有几个根本性的限制，这些限制在实际工作中会让人非常难受。
 
-**采集时长严重受限。** Systrace 把所有数据先写进内存缓冲区，结束时一次性输出到文件。这意味着 trace 时长受限于内存大小——通常只能抓 10-30 秒。如果想复现一个需要操作好几分钟才会出现的问题，Systrace 根本帮不了忙。
+**采集时长严重受限。** Systrace 把所有数据先写进内存缓冲区，结束时一次性输出到文件。因此 trace 时长受限于内存大小，通常只能抓 10-30 秒。如果想复现一个需要操作好几分钟才会出现的问题，Systrace 根本帮不了忙。
 
-**数据源覆盖面窄。** Systrace 主要依赖 ftrace 和 atrace，覆盖的是 CPU 调度、Binder 调用、图形管线等基础事件。如果想看内存分配细节、Java 堆的使用情况、或者每个硬件子系统的功耗——对不起，Systrace 不支持。
+**数据源覆盖面窄。** Systrace 主要依赖 ftrace 和 atrace，覆盖的是 CPU 调度、Binder 调用、图形管线等基础事件。如果想看内存分配细节、Java 堆的使用情况，或者每个硬件子系统的功耗，Systrace 都不支持。
 
 **分析能力几乎为零。** Systrace 的 HTML 报告是一个"所见即所得"的视图，我们能做的操作就是缩放、点选、看信息面板。没有办法对数据做聚合、过滤、统计。面对一个包含几百个进程的 trace 文件，只能靠肉眼在时间线上来回滚动，效率极低。
 
@@ -106,13 +107,13 @@ Perfetto 从架构层面解决了这三个问题。它用一个后台守护进�
 
 [已验证: 官方文档, perfetto.dev/docs/#systrace-vs-perfetto]
 
-还有一个重要的兼容性细节：Perfetto UI 可以直接打开 Systrace 格式的 trace 文件。这意味着之前积累的 Systrace 文件不需要丢弃，全部可以在 Perfetto UI 中继续分析。反过来，Perfetto 也提供了 `traceconv` 工具，可以把 Perfetto 格式的 trace 转换为 Systrace 文本格式。
+还有一个重要的兼容性细节：Perfetto UI 可以直接打开 Systrace 格式的 trace 文件。之前积累的 Systrace 文件不需要丢弃，全部可以在 Perfetto UI 中继续分析。反过来，Perfetto 也提供了 `traceconv` 工具，可以把 Perfetto 格式的 trace 转换为 Systrace 文本格式。
 
 ## Perfetto 的架构
 
 理解 Perfetto 的架构，有助于在遇到问题时知道是哪个环节出了差错。Perfetto 的整体架构可以用一句话概括：**多个 Producer 往共享内存里写数据，一个 Service 管理调度和缓冲，一个或多个 Consumer 发起采集请求并读取结果。**
 
-[图：Perfetto 架构示意图——Producer → Shared Memory → traced (Service) → Trace Buffer → Consumer → 输出文件]
+[图：Perfetto 架构示意图，Producer → Shared Memory → traced (Service) → Trace Buffer → Consumer → 输出文件]
 
 ### traced：核心守护进程
 
@@ -127,7 +128,7 @@ Perfetto 从架构层面解决了这三个问题。它用一个后台守护进�
 
 ### traced_probes：系统数据源代理
 
-`traced_probes` 是另一个系统服务，它负责采集那些需要特权访问的系统级数据源——具体来说，是 ftrace（内核事件）和 /proc、/sys 文件系统的轮询数据。
+`traced_probes` 是另一个系统服务，它负责采集那些需要特权访问的系统级数据源，具体包括 ftrace（内核事件）和 /proc、/sys 文件系统的轮询数据。
 
 为什么不直接让 `traced` 来采集？因为 `traced` 以普通用户权限运行，而读取 ftrace 和某些 /proc、/sys 节点需要 root 或 system 权限。`traced_probes` 以更高的权限运行，专门负责这些特权数据源的采集，采集到的数据通过共享内存传递给 `traced`。
 
@@ -140,7 +141,7 @@ Perfetto 从架构层面解决了这三个问题。它用一个后台守护进�
 
 [已验证: 官方文档, perfetto.dev/docs/data-sources]
 
-这些数据源默认是空闲状态——只有在显式启动一次 trace 采集时才会激活。这和一直开着日志系统不同，Perfetto 不会在不需要的时候产生任何开销。
+这些数据源默认处于空闲状态，只有在显式启动一次 trace 采集时才会激活。这和一直开着日志系统不同，Perfetto 不会在不需要的时候产生任何开销。
 
 ### Perfetto UI：可视化界面
 
@@ -156,7 +157,7 @@ Perfetto UI 是一个纯前端的 Web 应用，托管在 ui.perfetto.dev，但�
 
 ### Trace Processor：SQL 分析引擎
 
-Trace Processor 是 Perfetto 的分析核心。它把二进制的 trace 文件解析后加载为一个 SQLite 数据库，我们可以用标准 SQL 对其中的数据进行查询。这比在 UI 上手动点选要强大得多——我们可以写脚本自动化分析流程，也可以批量处理大量 trace 文件。
+Trace Processor 是 Perfetto 的分析核心。它把二进制的 trace 文件解析后加载为一个 SQLite 数据库，我们可以用标准 SQL 对其中的数据进行查询。这比在 UI 上手动点选更适合复杂分析。我们可以写脚本自动化分析流程，也可以批量处理大量 trace 文件。
 
 例如，想统计某个 trace 中所有帧的耗时分布，一条 SQL 就能搞定：
 
@@ -185,9 +186,9 @@ Trace Processor 可以通过命令行工具（`trace_processor_shell`）使用�
 - **开启哪些数据源**：比如 ftrace 中要记录哪些事件（sched、power、freq...），atrace 中要启用哪些 tag（gfx、view、input...），是否开启堆 Profiling 等。
 - **缓冲区配置**：缓冲区大小、数量，以及每个数据源写入哪个缓冲区。
 - **采集时长**：持续多长时间，或者在什么条件下停止。
-- **输出方式**：数据写到哪里——文件、Dropbox（Android 的 dropbox 机制），还是通过 IPC 流式传递给 Consumer。
+- **输出方式**：数据写到哪里，例如文件、Dropbox（Android 的 dropbox 机制），或者通过 IPC 流式传递给 Consumer。
 
-通常不需要手写 TraceConfig 的 protobuf 文本。在 Android 设备上，通过开发者选项的"系统追踪"抓取时，系统会自动生成配置；使用 `perfetto` 命令行工具时，可以通过 JSON 配置文件或命令行参数来指定；Perfetto 官网也提供了一个交互式的配置生成器（[perfetto.h]: Record trace → Config Editor）。
+通常不需要手写 TraceConfig 的 protobuf 文本。在 Android 设备上，通过开发者选项的"系统追踪"抓取时，系统会自动生成配置；使用 `perfetto` 命令行工具时，可以通过 JSON 配置文件或命令行参数来指定；Perfetto 官网的 Record trace 页面也提供交互式 Config Editor。
 
 一个最小化的 TraceConfig JSON 示例：
 
@@ -202,7 +203,7 @@ Trace Processor 可以通过命令行工具（`trace_processor_shell`）使用�
 }
 ```
 
-这个配置开启了图形（gfx）、视图（view）、输入（input）和调度（sched）四个 atrace 类别，采集 10 秒，缓冲区 64MB——足够覆盖大部分流畅性和启动分析场景。
+这个配置开启了图形（gfx）、视图（view）、输入（input）和调度（sched）四个 atrace 类别，采集 10 秒，缓冲区 64 MB，足够覆盖大部分流畅性和启动分析场景。
 
 ### Data Source：数据的来源
 
@@ -217,7 +218,7 @@ Data Source 是 Perfetto 中数据采集的抽象单位。每个 Data Source 代
 
 ### Track：时间线上的一条轨道
 
-打开 Perfetto UI，我们会看到很多水平排列的轨道——每个进程一条、每个线程一条、每个 CPU 核心一条。这些轨道就是 Track。
+打开 Perfetto UI，我们会看到很多水平排列的轨道，每个进程一条、每个线程一条、每个 CPU 核心一条。这些轨道就是 Track。
 
 Track 是事件的容器。属于同一类上下文的事件被组织到同一个 Track 上。例如：
 
@@ -229,7 +230,7 @@ Track 的组织方式是分层的：进程 Track 是父 Track，线程 Track 是
 
 ### Slice：时间段内的事件
 
-Slice 是 Perfetto 中最常见的事件类型。它代表一个有开始、有结束的时间段操作。在 UI 中，Slice 显示为轨道上的色块——色块的长度代表持续时间，颜色和标注代表事件类型。
+Slice 是 Perfetto 中最常见的事件类型。它代表一个有开始、有结束的时间段操作。在 UI 中，Slice 显示为轨道上的色块，色块的长度代表持续时间，颜色和标注代表事件类型。
 
 一个典型的例子是 `Choreographer#doFrame`。当主线程执行一帧的渲染工作时，这个 Slice 从 VSync 回调开始，到渲染完成结束。它的内部可能包含多个子 Slice：`measure`、`layout`、`draw`、`syncAndDrawFrame` 等，形成嵌套结构。
 
@@ -246,7 +247,7 @@ Choreographer#doFrame (16.2ms)
 
 ### Counter：随时间变化的数值
 
-Counter 记录的是一个数值随时间的变化。和 Slice 不同，Counter 没有明确的开始和结束——它是对某个指标的连续采样。
+Counter 记录的是一个数值随时间的变化。和 Slice 不同，Counter 没有明确的开始和结束，它是对某个指标的连续采样。
 
 在 Perfetto UI 中，Counter 以折线图的形式显示。常见的 Counter 包括：
 
@@ -255,7 +256,7 @@ Counter 记录的是一个数值随时间的变化。和 Slice 不同，Counter 
 - 线程的 CPU 使用率
 - 硬件功耗计数器
 
-Counter 和 Slice 通常配合使用。比如发现某帧的 `doFrame` Slice 特别长（卡顿），同时看到对应的 CPU 频率 Counter 在那个时间段很低——原因很可能是 CPU 降频导致渲染超时。
+Counter 和 Slice 通常配合使用。比如发现某帧的 `doFrame` Slice 特别长（卡顿），同时看到对应的 CPU 频率 Counter 在那个时间段很低，原因很可能是 CPU 降频导致渲染超时。
 
 ## 为什么性能分析离不开 Perfetto
 
@@ -263,7 +264,7 @@ Counter 和 Slice 通常配合使用。比如发现某帧的 `doFrame` Slice 特
 
 具体来说，Perfetto 在以下场景中不可替代：
 
-**流畅性分析。** 掉帧、卡顿的本质是某帧的渲染超时。Perfetto 可以让我们看到每一帧从 VSync 到上屏的完整流程——Choreographer 的 doFrame 用了多久、RenderThread 耗时多少、SurfaceFlinger 合成是否及时。这些信息分散在 App 进程、system_server 进程和 SurfaceFlinger 进程中，只有系统级的 trace 才能把它们关联起来。
+**流畅性分析。** 掉帧、卡顿的本质是某帧的渲染超时。Perfetto 可以让我们看到每一帧从 VSync 到上屏的完整流程，Choreographer 的 doFrame 用了多久、RenderThread 耗时多少、SurfaceFlinger 合成是否及时。这些信息分散在 App 进程、system_server 进程和 SurfaceFlinger 进程中，只有系统级的 trace 才能把它们关联起来。
 
 **启动速度分析。** 冷启动涉及 Zygote fork → Application 创建 → ContentProvider 初始化 → Activity 创建 → 首帧渲染等十几个步骤，跨越多个进程。Perfetto 可以按时间线展示每个步骤的耗时和依赖关系，一眼看出瓶颈在哪。
 
@@ -273,7 +274,7 @@ Counter 和 Slice 通常配合使用。比如发现某帧的 `doFrame` Slice 特
 
 **内存分析。** 通过 heapprofd 和 java_hprof 数据源，Perfetto 可以在 trace 中同时记录内存分配行为和系统状态变化，帮助我们理解"什么时候分配了内存、分配了多少、触发了什么后续事件"。
 
-这些场景都有一个共同特征：问题跨越了单个进程、单个线程的边界。对于这种系统级问题，Perfetto 不是众多可选工具之一——它是唯一的工具。
+这些场景都有一个共同特征：问题跨越了单个进程、单个线程的边界。对于这种系统级问题，Perfetto 不是众多可选工具之一，它是唯一的工具。
 
 ## Perfetto 的跨平台能力
 
@@ -319,28 +320,23 @@ Perfetto 的引入和演进与 Android 版本紧密相关：
 
 **"Perfetto 需要 root 权限才能用。"** 不需要。通过开发者选项中的"系统追踪"抓取 trace 不需要 root，采集到的数据包含 CPU 调度、图形管线、内存轮询等常用数据源。只有 heapprofd（Native 内存 Profiling）和部分 ftrace 事件需要 root 或 adb shell 特权。
 
-**"Perfetto 和 Android Studio Profiler 是什么关系？"** Android Studio Profiler 底层使用的就是 Perfetto 的采集和解析基础设施。在 Android Studio 中看到的 CPU Profiler 时间线，本质上就是 Perfetto trace 的一种可视化呈现。两者不冲突——用 Perfetto UI 可以做更深度的分析，用 Android Studio 则更方便在日常开发中快速查看。
+**"Perfetto 和 Android Studio Profiler 是什么关系？"** Android Studio Profiler 底层使用的就是 Perfetto 的采集和解析基础设施。在 Android Studio 中看到的 CPU Profiler 时间线，本质上就是 Perfetto trace 的一种可视化呈现。两者不冲突。用 Perfetto UI 可以做更深度的分析，用 Android Studio 则更方便在日常开发中快速查看。
 
 **"Systrace 还能用吗？"** 技术上，Android 9 及以下设备仍然只能用 Systrace。但从 Android 10 开始，Perfetto 是官方推荐的替代方案，而且 Perfetto UI 可以直接打开 Systrace 格式的文件。新项目不应该再依赖 Systrace。
 
-**"抓 trace 会影响性能吗？"** 空闲状态下 Perfetto 几乎没有开销——`traced` 守护进程只在做采集时激活。采集期间的开销取决于开启的数据源数量和缓冲区大小。通常只开 CPU + gfx + view + input 这几个 tag，对性能的影响在 1-3% 以内。如果开启 heapprofd 或 java_hprof，则会产生额外开销，需要根据分析目标权衡。
+**"抓 trace 会影响性能吗？"** 空闲状态下 Perfetto 几乎没有开销，`traced` 守护进程只在做采集时激活。采集期间的开销取决于开启的数据源数量和缓冲区大小。通常只开 CPU + gfx + view + input 这几个 tag，对性能的影响在 1-3% 以内。如果开启 heapprofd 或 java_hprof，则会产生额外开销，需要根据分析目标权衡。
 
 ## 下一步
 
 到这里，我们对 Perfetto 的定位、架构、核心概念有了完整的认识。接下来的章节会逐步深入实操层面：13.2 节讲解如何在设备上抓取 trace，13.3 节讲解 Perfetto UI 的使用方法。如果对渲染管线还不熟悉，可以先回顾 2.1 节的渲染架构全景，那里介绍的每个组件在 Perfetto 中都有对应的 Track。
 
 ## 参考资料
-### 从 Trace 到洞察：SmartPerfetto AI Agent 的 Harness Engineering 实战
-- 来源：https://androidperformance.com/2026/04/10/SmartPerfetto-Architecture-Deep-Dive/
-- 类型：博客文章
-- 摘要：关键词: perfetto,agent,trace
-- 入库时间：2026-04-11
 
-
+- 《从 Trace 到洞察：SmartPerfetto AI Agent 的 Harness Engineering 实战》，博客文章，https://androidperformance.com/2026/04/10/SmartPerfetto-Architecture-Deep-Dive/（关键词：perfetto、agent、trace；入库时间：2026-04-11）
 - Perfetto 官方文档：https://perfetto.dev/docs/
 - Android 官方 Perfetto 指南：https://source.android.com/docs/core/debug/perfetto
 - Perfetto GitHub 仓库：https://github.com/google/perfetto
 - Perfetto UI：https://ui.perfetto.dev
-- AOSP traced 服务源码路径：`system/tracing/traced/`
-- AOSP traced_probes 服务源码路径：`system/tracing/traced_probes/`
-- 高爷 Systrace/Perfetto 系列教程：https://www.androidperformance.com/2019/12/01/Android-Systrace(Perfetto)-Basic/
+- AOSP `traced` 服务源码路径：`system/tracing/traced/`
+- AOSP `traced_probes` 服务源码路径：`system/tracing/traced_probes/`
+- 高爷 Systrace / Perfetto 系列教程：https://www.androidperformance.com/2019/12/01/Android-Systrace(Perfetto)-Basic/

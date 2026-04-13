@@ -7971,5 +7971,33 @@
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-14T02:20:00+08:00",
     "status": "pending"
+  },
+  {
+    "section": "13.1",
+    "section_title": "Perfetto 简介与演进",
+    "priority": 90,
+    "reason": "[review回炉] 需补充量化数据来源并收紧绝对化判断",
+    "material_paths": [
+      "intake/suggestions.md（含 review 意见）"
+    ],
+    "review_issues": [
+      {
+        "type": "需补充素材",
+        "location": "常见问题与误区｜抓 trace 会影响性能吗？",
+        "detail": "“通常只开 CPU + gfx + view + input 这几个 tag，对性能的影响在 1-3% 以内”给了量化结论，但正文没有对应实验条件或来源。",
+        "suggestion": "交给 Task 9 核实官方文档或实测依据；若拿不到来源，Task 2B 改成定性表述。"
+      },
+      {
+        "type": "需重写",
+        "location": "为什么性能分析离不开 Perfetto｜收尾句",
+        "detail": "“Perfetto 不是众多可选工具之一，它是唯一的工具”语气过满，边界不清，容易把方法选择写成口号。",
+        "suggestion": "交给 Task 2B 改成更克制的工程判断，并补充适用边界。"
+      }
+    ],
+    "added_by": "task6-review",
+    "added_at": "2026-04-14T03:09:00+08:00",
+    "status": "pending",
+    "original_review_log": "logs/review/2026-04-14-03-review.md",
+    "file": "src/part3-tools/ch13-perfetto/01-perfetto-intro.md"
   }
 ]
