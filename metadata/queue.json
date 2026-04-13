@@ -8179,5 +8179,38 @@
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-14T05:20:00+08:00",
     "status": "pending"
+  },
+  {
+    "section": "5.2",
+    "section_title": "EAS 能量感知调度",
+    "priority": 90,
+    "reason": "[review回炉] 量化结论缺证据，版本时间线与 Perfetto SQL 示例存在核对风险",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "需补充素材",
+        "location": "为什么要了解 EAS（约 L66）",
+        "detail": "“系统总功耗往往会比最优安排高出 20%~40%”给了量化结论，但正文没有实验条件、设备范围或官方出处。",
+        "suggestion": "补原始实验条件或权威来源；如果补不齐，改成定性描述。"
+      },
+      {
+        "type": "需确认",
+        "location": "WALT / uclamp / SchedTune 时间线与版本演进（约 L205-L207、L266-L273、L372-L404）",
+        "detail": "“Android 12 / Linux 5.10 开始统一回归 PELT”“Android 从 10 开始广泛使用 uclamp”“Linux 5.3 之后逐渐取代 SchedTune”等表述放在同一章里，和 5.1 已记录的时间线口径存在冲突。",
+        "suggestion": "交给 Task 9 统一主线内核版本、Android 设备采用时间和厂商差异，再由 Task 2B 回写统一口径。"
+      },
+      {
+        "type": "需确认",
+        "location": "Perfetto SQL 示例（约 L322-L343）",
+        "detail": "查询只按 thread name 取 `utid`，在多进程 Trace 中可能匹配到错误线程，示例稳定性不足。",
+        "suggestion": "补 `process` / `upid` / `tid` 过滤条件，或明确这是需要按目标进程改写的示例。"
+      }
+    ],
+    "added_by": "task6-review",
+    "added_at": "2026-04-14T06:05:00+08:00",
+    "status": "pending",
+    "original_review_log": "logs/review/2026-04-14-06-review.md"
   }
 ]

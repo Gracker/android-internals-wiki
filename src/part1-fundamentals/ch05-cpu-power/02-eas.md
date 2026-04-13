@@ -1,6 +1,7 @@
 ---
 title: "EAS 能量感知调度"
 chapter: "5.2"
+section: "5.2"
 status: ready-for-review
 applicable_versions: "Android 9 (API 28) - Android 16 (API 36)"
 last_verified: "2026-03-31"
@@ -20,17 +21,18 @@ sources:
 tags: ['EAS', 'energy-aware-scheduling', 'PELT', 'energy-model', 'OPP', 'task-placement', 'uclamp', 'schedutil']
 related_chapters: ["5.1", "5.3", "5.4", "2.5"]
 drafted_date: "2026-03-31"
-reviewed_date: "2026-04-06"
-reviewed_by: openclaw-task6
+reviewed_date: "2026-04-14"
+reviewed_by: "openclaw-task6"
 review2_date: "2026-04-06"
 review2_by: openclaw-task6
 polish_count: 1
 polish_date: "2026-04-06"
 polish_by: "task2b-polish"
-pipeline_stage: task6_pending
-task6_state: pending
+pipeline_stage: task2b_pending
+task6_state: reviewed
+task6_result: needs-rework
 task9_state: pending
-task2b_state: idle
+task2b_state: pending
 ---
 
 # EAS 能量感知调度
@@ -86,7 +88,7 @@ EAS 覆盖了 CFS 的默认唤醒逻辑。当 EAS 启用时，`select_task_rq_fa
 - 小核：capacity 200，当前空闲
 - 大核：capacity 1024，当前空闲
 
-传统 CFS 会发现大核更空闲，选择大核。但 EAS 会计算：这个任务放在小核上刚好能"装下"（util 200 ≤ capacity 200），不需要拉高大核的频率，整体能耗更低。于是 EAS 选择小核。这就是 EAS 的核心逻辑——**不是"找最空闲的核"，而是"找最省电且够用的核"**。
+传统 CFS 会发现大核更空闲，选择大核。但 EAS 会计算：这个任务放在小核上刚好能"装下"（util 200 ≤ capacity 200），不需要拉高大核的频率，整体能耗更低。于是 EAS 选择小核。这就是 EAS 的核心逻辑：**优先找一个既省电又够用的核，而不是单纯追求最空闲的核**。
 
 [图：EAS 选核对比示意 — 传统 CFS 选最空闲大核 vs EAS 选最省电小核，标注 util/capacity/energy delta]
 
@@ -108,7 +110,7 @@ EAS 并非在所有设备上都生效。它需要满足以下条件：
 
 ### OPP：频率-电压对的集合
 
-要理解 EAS 怎么做能耗预测，我们首先需要理解能量模型的数据来源——OPP（Operating Performance Points）。
+要理解 EAS 怎么做能耗预测，我们得先看能量模型的数据来源，即 OPP（Operating Performance Points）。
 
 一个 CPU 核心并不是只能跑一个固定频率。它可以在多个频率-电压对之间切换，每个频率-电压对就是一个 OPP。例如，一个小核可能有如下 OPP 表：
 
@@ -135,7 +137,7 @@ Linux 内核的 Energy Model（EM）框架是一个独立于调度器的子系�
 
 EM 框架的核心数据结构为每个性能域维护一张功耗表，记录了在每个 OPP 下的活跃功耗和不同 C-State（空闲状态）下的功耗。当 EAS 需要计算"把任务放在某个 CPU 上需要多少能耗"时，它就查询这张表。
 
-EM 框架是通用的——除了 EAS，thermal 管理（IPA 智能功率分配）和 power capping 等子系统也依赖它。这意味着 EAS 的能量预测和温控的功率预算用的是同一套数据源，保证了决策的一致性。
+EM 框架是通用的。除了 EAS，thermal 管理（IPA 智能功率分配）和 power capping 等子系统也依赖它。因此，EAS 的能量预测和温控的功率预算用的是同一套数据源，决策基线一致。
 
 [已验证: 官方文档, Documentation/power/energy-model.rst — EM framework standardizes power cost tables]
 
@@ -174,7 +176,7 @@ PELT 从 Linux 3.8 开始引入，它为每个调度实体（单个任务、任�
 
 ### PELT 的计算方式
 
-PELT 使用指数加权移动平均（EWMA）来平滑 utilization 信号。它的窗口大约为 32ms——最近 32ms 的实际运行时间贡献了信号总权重的一半，更早的历史贡献另一半。这意味着：
+PELT 使用指数加权移动平均（EWMA）来平滑 utilization 信号。它的窗口大约为 32ms，最近 32ms 的实际运行时间贡献了信号总权重的一半，更早的历史贡献另一半。具体表现为：
 
 - 如果一个任务突然变忙，它的 `util_avg` 会在约 32ms 内快速上升
 - 如果一个任务突然空闲，它的 `util_avg` 会在约 32ms 内缓慢下降
@@ -194,7 +196,7 @@ PELT 的 util 信号要能在大小核之间准确比较，需要满足两个"�
 
 2. **CPU 不变性（CPU Invariance）**：同一个任务在大核上跑 5ms 和小核上跑 5ms，由于大核 IPC（Instructions Per Cycle，每周期指令数）更高，实际完成的计算量不同。PELT 通过 `arch_scale_cpu_capacity()` 回调实现 CPU 归一化——将 utilization 信号按目标 CPU 的 capacity 进行缩放。
 
-没有这两个不变性，EAS 的选核决策就会出错。例如，如果一个任务在小核上跑了很长时间积累了较高的 raw utilization，不做 CPU 不变性归一化的话，EAS 会误以为这个任务很重而不敢放在小核上。实际上归一化后它的 util 可能并不高。
+没有这两个不变性，EAS 的选核决策就会出错。例如，如果一个任务在小核上跑了很长时间积累了较高的 raw utilization，不做 CPU 不变性归一化的话，EAS 会误以为这个任务很重而不敢放在小核上。归一化后，它的 util 可能并不高。
 
 [已验证: 官方文档, Documentation/scheduler/sched-energy.rst — EAS requires frequency-invariant and CPU-invariant PELT signals]
 
@@ -214,7 +216,7 @@ PELT 的 util 信号要能在大小核之间准确比较，需要满足两个"�
 
 当一个任务被唤醒（wake-up）或迁移（migration）时，EAS 通过 `find_energy_efficient_cpu()` 为它选择目标 CPU。这个函数的核心流程如下：
 
-**第一步：寻找每个性能域中 spare capacity 最大的 CPU。** Spare capacity = CPU capacity - 当前 utilization。它表示这个 CPU 还有多少"余力"。在大小核系统中，这意味着先在小核簇中找一个最空闲的小核，再在大核簇中找一个最空闲的大核。
+**第一步：寻找每个性能域中 spare capacity 最大的 CPU。** Spare capacity = CPU capacity - 当前 utilization。它表示这个 CPU 还有多少"余力"。在大小核系统中，也就是先在小核簇中找一个最空闲的小核，再在大核簇中找一个最空闲的大核。
 
 **第二步：检查 prev_cpu（上一次运行的 CPU）的 spare capacity。** 如果 prev_cpu 当前有足够的空闲容量来容纳这个任务，倾向于保持不变——因为迁移本身有开销（cache miss、TLB flush 等）。
 
@@ -251,7 +253,9 @@ EAS 对轻任务和重任务有不同的处理方式：
 
 ### uclamp 的作用
 
-到目前为止，EAS 的选核决策完全依赖 PELT 提供的 utilization 信号——调度器根据任务的历史行为来预测未来需求。但有时候，用户空间比调度器更清楚一个任务的重要程度：主线程需要低延迟响应，而后台同步任务可以慢慢跑。PELT 提供了任务的实际 utilization 信号，但用户空间还需要一种机制来告诉调度器："这个任务虽然 util 不高，但它很重要，请给它更多资源"或者"这个后台任务不重要，不要让它浪费太多电"。
+到目前为止，EAS 的选核决策完全依赖 PELT 提供的 utilization 信号，调度器据此预测未来需求。
+
+但有时候，用户空间比调度器更清楚一个任务的重要程度：主线程需要低延迟响应，而后台同步任务可以慢慢跑。PELT 提供了任务的实际 utilization 信号，用户空间还需要一种机制告诉调度器：“这个任务虽然 util 不高，但它很重要，请给它更多资源”或者“这个后台任务不重要，不要让它浪费太多电”。
 
 这就是 uclamp（Utilization Clamping）的作用——它允许用户空间为每个任务设置 utilization 的上下限：
 
@@ -287,7 +291,7 @@ uclamp 的效果可以直接在 Perfetto 中观察到：同样是 util=200 的�
 
 **1. CPU Frequency Track**
 
-在 Perfetto 界面最上方，每个 CPU 核心都有对应的频率条。鼠标悬停在频率区域上，可以看到当前的运行频率（MHz）。这是 EAS 与 schedutil 协作的结果——看到小核频率在 300MHz~600MHz 之间波动、大核在 800MHz~1.8GHz 之间波动，这就是 schedutil 根据 PELT utilization 信号在做 DVFS 决策。
+在 Perfetto 界面最上方，每个 CPU 核心都有对应的频率条。鼠标悬停在频率区域上，能直接读到当前的运行频率（MHz）。频率曲线随负载上下波动时，对应的就是 schedutil 根据 PELT utilization 信号做出的 DVFS 决策。
 
 重点关注：
 - 频率是否有突然的上限限制（scaling_max_freq 被压低）——这通常意味着温控介入了（详见 5.5 节）
@@ -303,7 +307,7 @@ CPU Scheduling Track 显示每个时刻哪个线程在哪个 CPU 核心上运行
 重点观察：
 - **关键线程是否在合适的核心上**：主线程和 RenderThread 是否被分配到了大核？如果被长时间限制在小核上，可能是 EAS 误判了任务的 util，或者系统处于 overutilized 状态
 - **迁移频率**：一个线程在大小核之间"反复横跳"（ping-pong）通常不是好现象——每次迁移都会带来 cache miss 开销
-- **唤醒关系**：通过点击一个 sched slice，可以看到是谁唤醒了这个线程（wakeup from），以及它被唤醒后的目标 CPU
+- **唤醒关系**：通过点击一个 sched slice，能追到是谁唤醒了这个线程（wakeup from），以及它被唤醒后的目标 CPU
 
 [来源: obsidian/Personal-Knowlodge/source/Android-Perfetto-09-CPU.md — 选核与迁移逻辑部分]
 
