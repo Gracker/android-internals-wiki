@@ -2713,3 +2713,15 @@
 - **问题**：文中建议“`traceconv` 先转文本、过滤后再转回 protobuf”，但没有给出受支持的 round-trip 工具链、命令或文档依据，存在方法不可执行的风险。
 - **建议**：交 Task 9 核对 `traceconv` 支持的格式转换边界；若不支持回转流程，Task 2B 改成受支持的处理路径，比如缩短抓取窗口、ring buffer、分批查询或 Bigtrace。
 - **review 日志**：logs/review/2026-04-13-23-review.md
+
+## [Task9 Deep Review] 11.3 系统级功耗优化 — 2026-04-13
+- **类型**：数据缺失
+- **位置**：行 96-100 维护窗口间隔
+- **问题**：正文把 Doze 维护窗口写成“大约每小时 → 2 小时 → 4 小时”，但官方开发者文档只给出“maintenance window 会越来越稀疏”的定性描述，没有把 1h/2h/4h 当作通用 API 契约。若保留这些数字，应明确它们来自 DeviceIdleController 常量/默认 backoff，而不是所有设备都稳定遵守的用户侧行为。
+- **建议**：若没有直接 AOSP 常量锚点，改成“间隔逐步拉长”；若保留具体数字，补 `DeviceIdleController` 常量或 `Settings.Global.DEVICE_IDLE_CONSTANTS` 的版本锚点。
+
+- **类型**：版本差异
+- **位置**：行 387 版本演进表（Android 12 Exact Alarm）
+- **问题**：表格把 Android 12 写成“Exact Alarm 需要声明权限”，口径过粗。实际是 Android 12 为 targetSdk 31+ 引入 `SCHEDULE_EXACT_ALARM` 特殊访问权限，但存在 allowlist / `OnAlarmListener` 等例外；Android 13 又新增 `USE_EXACT_ALARM` 并改变默认授予行为。
+- **建议**：把该行收窄为“Android 12 引入 `SCHEDULE_EXACT_ALARM` 特殊访问；Android 13 新增 `USE_EXACT_ALARM` 并调整默认授予策略”，避免读者误解为所有 exact alarm、所有 app 都走同一权限路径。
+

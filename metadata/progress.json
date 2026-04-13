@@ -1,10 +1,10 @@
 {
-  "generated_at": "2026-04-13T23:15:08+08:00",
+  "generated_at": "2026-04-13T23:36:03+08:00",
   "state_machine_version": "v2",
   "total_sections": 207,
   "metrics": {
     "total": 207,
-    "last_updated": "2026-04-13T23:15:08+08:00",
+    "last_updated": "2026-04-13T23:36:03+08:00",
     "ready-for-review": 173,
     "unknown": 34,
     "pipeline_task2b_pending": 13,
@@ -15,8 +15,8 @@
     "task6_reviewed": 15,
     "task6_revisiting": 57,
     "task6_unknown": 31,
-    "task9_pending": 172,
-    "task9_reviewed": 4,
+    "task9_pending": 171,
+    "task9_reviewed": 5,
     "task9_unknown": 31,
     "task2b_fixed": 57,
     "task2b_idle": 106,
@@ -37,8 +37,8 @@
       "unknown": 31
     },
     "task9_state_counts": {
-      "pending": 172,
-      "reviewed": 4,
+      "pending": 171,
+      "reviewed": 5,
       "unknown": 31
     },
     "task2b_state_counts": {
@@ -1838,12 +1838,13 @@
       "status": "ready-for-review",
       "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
-      "task9_state": "pending",
+      "task9_state": "reviewed",
       "task2b_state": "pending",
       "reviewed_date": "2026-04-13",
       "reviewed_by": "openclaw-task6",
       "section": "11.3",
-      "task6_result": "needs-rework"
+      "task6_result": "needs-rework",
+      "task9_result": "needs-rework"
     },
     "src/part2-performance/ch11-power/04-case-studies.md": {
       "chapter": "11.4",

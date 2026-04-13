@@ -1984,3 +1984,21 @@ Android 10-16 的返回分发模型缺少一张统一矩阵。正文把 Gesture 
 
 ### 关联章节
 11.2、11.3、5.6
+
+## [2026-04-13] 11.3 系统级功耗优化 — jobscheduler APEX 化后的控制器职责边界
+
+### 盲区描述
+当前章节把 Doze、Standby Bucket、Job quota、Battery Saver 基本串成一条连续叙述，但 Android 13-16 以后相关实现已经分散到多个控制器和 APEX 模块：`DeviceIdleController` 负责 device idle，`AppStandbyController` 负责 bucket 评估，`UsageStatsService` 负责 usage 统计与 standby 事件，`JobSchedulerService` 负责 runtime quota，`PowerManagerService` 负责 Battery Saver。若不把这几个控制器的职责边界和源码入口画清楚，读者很容易把“桶分配”“quota 执行”“全局省电”“OEM 冻结”混成同一个机制。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 对比 Android 12-16 中 `frameworks/base/services/core` 与 `apex/jobscheduler/service` 的路径迁移，确认 power/background 相关代码何时进入 Mainline APEX
+- 梳理 `AppStandbyController`、`UsageStatsService`、`JobSchedulerService`、`DeviceIdleController`、`PowerManagerService` 的职责边界
+- 做一张“机制 → 控制器 → AOSP 路径 → dumpsys / trace / settings 验证入口”的映射表
+- 结合 `dumpsys deviceidle`、`dumpsys usagestats appstandby`、`dumpsys jobscheduler`，验证同一限制在不同控制器中的落点
+
+### 关联章节
+11.3（本节）、5.8（后台执行限制）、5.10（JobScheduler/WorkManager 调度）、11.1（Android 功耗模型）
+
