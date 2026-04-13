@@ -23,22 +23,23 @@ sources:
 tags: ['scheduler', 'CFS', 'vruntime', 'nice', 'sched_setaffinity', 'cpuset', 'Perfetto']
 related_chapters: ["5.2", "5.3", "2.5", "7.3"]
 drafted_date: "2026-03-31"
-reviewed_date: "2026-04-06"
+reviewed_date: "2026-04-14"
 reviewed_by: openclaw-task6
 polish_count: 1
 polish_date: "2026-04-06"
 polish_by: "task2b-polish"
 review_type: post-polish-quality-gate
-review_round: 2
-pipeline_stage: task6_pending
-task6_state: pending
+review_round: 3
+pipeline_stage: task9_pending
+task6_state: reviewed
+task6_result: pass-light-edit
 task9_state: pending
 task2b_state: idle
 ---
 
 <!-- outline-start -->
 - 🔹 CFS（Completely Fair Scheduler）的基本原理：虚拟运行时间、红黑树、时间片
-- 🔹 调度类优先级：SCHED_FIFO > SCHED_RR > SCHED_OTHER(CFS) > SCHED_IDLE
+- 🔹 调度类优先级：SCHED_FIFO > SCHED_RR > SCHED_NORMAL（SCHED_OTHER，CFS）> SCHED_IDLE
 - 🔹 nice 值与权重的换算关系
 - 🔹 CPU Affinity 与 cpuset 对任务绑核的控制
 - 🔹 调度延迟（Scheduling Latency）：runqueue wait 在 Perfetto 中的观察
@@ -83,7 +84,7 @@ vruntime（虚拟运行时间）是 CFS 最重要的概念。它的名字中有"
 delta_vruntime = delta_exec × (NICE_0_LOAD / weight)
 ```
 
-其中 `NICE_0_LOAD` 是 nice 值为 0 时对应的权重（1024），`weight` 是当前进程的权重。这意味着：
+其中 `NICE_0_LOAD` 是 nice 值为 0 时对应的权重（1024），`weight` 是当前进程的权重。按这个公式看：
 
 - **权重越高的进程**（nice 值越低），vruntime 增长越慢，越容易被再次选中运行——它获得了更多的 CPU 份额
 - **权重越低的进程**（nice 值越高），vruntime 增长越快，更容易被调度器换下 CPU
@@ -114,7 +115,7 @@ target_slice = sched_period × (weight / total_weight)
 
 `sched_period` 有一个最小值（`sched_min_granularity`，通常为 0.75ms 到 3ms，取决于内核配置和 CPU 数量），确保即使有很多进程，每个进程也不会等太久。
 
-这意味着：系统负载越重，每个进程分到的"时间片"越短；优先级越高的进程，分到的时间片越长。这不是硬编码的规则，而是 CFS 追求 vruntime 公平的自然结果。
+对应到实际调度时，系统负载越重，每个进程分到的"时间片"越短；优先级越高的进程，分到的时间片越长。这不是硬编码的规则，而是 CFS 追求 vruntime 公平后得到的结果。
 
 [已验证: Linux kernel, kernel/sched/fair.c, sched_period()]
 
@@ -141,11 +142,11 @@ Linux 内核的调度并非由单一策略覆盖所有场景，而是按需求�
 - 被更高优先级的实时进程抢占
 - 阻塞等待 I/O 或锁
 
-SCHED_FIFO 没有"时间片用完"的概念。这意味着如果两个 SCHED_FIFO 进程优先级相同，先运行的进程不主动让出，另一个就永远得不到 CPU。
+SCHED_FIFO 没有"时间片用完"的概念。如果两个 SCHED_FIFO 进程优先级相同，先运行的进程不主动让出，另一个就永远得不到 CPU。
 
 **SCHED_RR**（Round-Robin）：与 SCHED_FIFO 类似，但加入了一个时间片（通常为 100ms）。时间片用完后，进程被放到同优先级队列的末尾，轮到下一个同优先级的 SCHED_RR 进程。
 
-在 Android 中，实时调度主要用于对时序要求极其严格的场景。从 Android 4.1 开始，音频处理线程（AudioFlinger 中的 FastMixer）使用 SCHED_FIFO 来保证音频处理的实时性——音频 underrun 会直接导致用户听到"咔嚓"声，这是不可接受的。
+在 Android 中，实时调度主要用于对时序要求极其严格的场景。从 Android 4.1 开始，音频处理线程（AudioFlinger 中的 FastMixer）使用 SCHED_FIFO 来保证音频处理的实时性。音频 underrun 会直接导致用户听到"咔嚓"声，这类场景对调度抖动非常敏感。
 
 [来源: Personal-Knowlodge/source/Android-Perfetto-09-CPU.md]
 [已验证: 官方文档, developer.android.com/ndk/guides/audio]
@@ -188,9 +189,9 @@ CFS 不直接使用 nice 值，而是通过一个查表将 nice 值映射为权�
 
 从这个表中我们可以看出几个关键信息：
 
-**每增加 1 个 nice 值，CPU 份额大约减少 10%。** 这不是巧合——内核设计者刻意选择了这个比例。nice 值 +1 意味着进程"更客气"（nice），愿意让出大约 10% 的 CPU 时间给其他进程。反过来说，nice 值 -1 的进程比默认进程多获得大约 10% 的 CPU 时间。
+**每增加 1 个 nice 值，CPU 份额大约减少 10%。** 这个比例是内核有意设计的。nice 值 +1 表示进程"更客气"（nice），愿意让出大约 10% 的 CPU 时间给其他进程。反过来，nice 值 -1 的进程比默认进程多获得大约 10% 的 CPU 时间。
 
-**极端值的差距巨大。** nice -20 的权重是 88761，而 nice +19 的权重只有 15。这意味着一个 nice -20 的进程获得的 CPU 时间是 nice +19 进程的将近 6000 倍。
+**极端值的差距巨大。** nice -20 的权重是 88761，而 nice +19 的权重只有 15。按这张表计算，一个 nice -20 的进程获得的 CPU 时间是 nice +19 进程的将近 6000 倍。
 
 ### Android 中的 nice 值实践
 
@@ -355,13 +356,17 @@ Perfetto 提供了线程唤醒关系的可视化：点击一个 Running 的线�
 
 需要注意 `wakeup from` 信息有时不够准确，需要结合代码和上下文综合判断。
 
-在实际分析中，调度延迟是否值得关注的判断标准是：**关键路径上的 Runnable 时间是否超过了帧周期的 10%**。以 120Hz 屏幕为例，一帧周期为 8.33ms，如果主线程在 `doFrame` 期间有超过 0.8ms 的 Runnable 等待，就需要深入分析调度原因。60Hz 屏幕的阈值则约为 1.6ms。
+在实际分析中，调度延迟是否值得关注，先看**关键路径上的 Runnable 时间是否超过了帧周期的 10%**。以 120Hz 屏幕为例，一帧周期为 8.33ms，如果主线程在 `doFrame` 期间有超过 0.8ms 的 Runnable 等待，就需要继续往下看。60Hz 屏幕下，这个阈值约为 1.6ms。
 
 [已验证: 高爷博客素材, Personal-Knowlodge/source/android-systrace-cpu-state-sleep.md]
 
 ## EEVDF：CFS 的下一代演进（Linux 6.6+）
 
-在深入调度延迟的分析方法之后，我们需要前瞻一个即将影响 Android 生态的调度器变革。2023 年，Linux 6.6 合入了一个重量级的调度器替换：EEVDF（Earliest Eligible Virtual Deadline First）正式取代 CFS 成为默认调度策略。这项工作由 Peter Zijlstra 主导，理论基础来自 1995 年发表的同名调度算法论文。对于做 Android 性能分析的工程师来说，理解 EEVDF 的意义不在于"立刻去分析 EEVDF 行为"——当前 Android 设备的大多数内核还停留在 5.x 或 6.1——而在于：当未来设备升级到 6.6+ 内核时，我们在 Perfetto 中观察到的调度行为会发生一些变化，需要知道原因。
+在看完调度延迟的分析方法后，我们再补一块正在进入 Android 生态的新变化。2023 年，Linux 6.6 将 EEVDF（Earliest Eligible Virtual Deadline First）并入默认调度路径，用它替代了原来的 CFS 调度逻辑。
+
+这项工作由 Peter Zijlstra 主导，理论基础来自 1995 年发表的同名调度算法论文。对 Android 性能分析来说，理解 EEVDF 的重点不在于立刻分析它的每个细节，因为当前大多数 Android 设备的内核还停留在 5.x 或 6.1。
+
+更实际的意义是，当设备升级到 6.6+ 内核后，我们在 Perfetto 中看到的 Runnable 分布、交互线程延迟和抢占行为都可能变化，分析时需要知道背后的原因。
 
 ### CFS 的局限性：为什么需要替换
 
@@ -498,7 +503,7 @@ echo 50 > /proc/<pid>/task/<tid>/util_clamp_max
 [已验证: Linux kernel 5.10+, kernel/sched/core.c, uclamp_eff_value()]
 [来源: source.android.com/docs/core/perf/uclamp]
 
-在 Android 中的实际使用模式是这样的：当应用切换到前台时，ActivityManagerService 通过 `Process.setThreadPriority()` 和底层的 cgroup 操作将该进程的 UCLAMP_MIN 提升到一定值（比如 20%），让 CPU 频率在应用启动和 UI 更新时保持较高水平。当应用退到后台时，UClamp_MIN 回到 0，同时 UCLAMP_MAX 可能被限制，确保后台任务不会拖慢前台。
+在 Android 中，常见做法是应用切换到前台时，ActivityManagerService 通过 `Process.setThreadPriority()` 和底层的 cgroup 操作将该进程的 UCLAMP_MIN 提升到一定值（比如 20%），让 CPU 频率在应用启动和 UI 更新时保持较高水平。应用退到后台后，UClamp_MIN 回到 0，同时 UCLAMP_MAX 可能被限制，避免后台任务拖慢前台。
 
 ### SchedTune vs UClamp：演进路线
 
