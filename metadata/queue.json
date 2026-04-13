@@ -6996,5 +6996,39 @@
     "added_at": "2026-04-13T14:20:00+08:00",
     "status": "completed",
     "completed_at": "2026-04-13T14:40:00+08:00"
+  },
+  {
+    "section": "8.8",
+    "section_title": "ProfilingManager 系统触发式性能追踪",
+    "priority": 90,
+    "reason": "[review回炉] ProfilingManager 章节的触发类型、SQL 示例与量化阈值缺少可核对证据，正文仍偏资料汇编口气",
+    "material_paths": [
+      "intake/suggestions.md（含 review 意见）"
+    ],
+    "review_issues": [
+      {
+        "type": "需确认",
+        "location": "核心机制 / 注册与配置 / 版本演进",
+        "detail": "触发类型常量、阈值、回调接口、权限模型和 AOSP 路径都缺少精确来源，正文直接给出 500ms、90%、5 分钟、30% 等结论，读者很难判断哪些是事实、哪些是推断。",
+        "suggestion": "先交给 Task 9 按官方文档和源码核对版本边界、接口名与数值，再由 Task 2B 回写相关段落。"
+      },
+      {
+        "type": "需补充素材",
+        "location": "在 Perfetto 中的表现",
+        "detail": "当前只有示意 SQL，没有能对上正文结论的真实 Trace 截图、[图：...] 说明或可直接复用的观测路径，Perfetto 段落的证据链没闭合。",
+        "suggestion": "补 2-3 个真实样例，至少覆盖冷启动、ANR、内存异常三类系统触发场景，并把查询前置条件写清楚。"
+      },
+      {
+        "type": "需重写",
+        "location": "核心机制 / 版本演进 / 常见问题与误区",
+        "detail": "章节主体仍偏资料汇编，表格和清单很多，但“现象 → 机制 → 观测 → 判断”的推进线不够稳，读起来更像功能说明，不像工程师拿着 Trace 复盘问题。",
+        "suggestion": "等 Task 9 先把事实核对完，再由 Task 2B 按写作规范重排叙述顺序，把具体场景和证据放到前面。"
+      }
+    ],
+    "added_by": "task6-review",
+    "added_at": "2026-04-13T15:05:00+08:00",
+    "status": "pending",
+    "original_review_log": "logs/review/2026-04-13-15-review.md",
+    "file": "src/part2-performance/ch08-responsiveness/08-system-triggered-profiling.md"
   }
 ]

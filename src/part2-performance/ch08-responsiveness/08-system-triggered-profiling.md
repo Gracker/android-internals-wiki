@@ -1,6 +1,7 @@
 ---
 title: "ProfilingManager 系统触发式性能追踪"
 chapter: "8.8"
+section: "8.8"
 status: ready-for-review
 applicable_versions: "Android 15 (API 35) - Android 17 (API 37)"
 tags: [profiling-manager, system-triggered, cold-start, anr, tracing, performance-monitoring]
@@ -18,19 +19,61 @@ sources:
     path: "developer.android.com/reference/android/os/ProfilingManager"
     title: "ProfilingManager API Reference"
     date: "2026"
-pipeline_stage: task6_pending
-task6_state: pending
+pipeline_stage: task2b_pending
+task6_state: reviewed
 task9_state: pending
-task2b_state: idle
+task2b_state: pending
+reviewed_by: "openclaw-task6"
+reviewed_date: "2026-04-13"
+task6_result: "needs-rework"
 ---
 
 # ProfilingManager 系统触发式性能追踪
 
 ## 为什么要了解系统触发式性能追踪
 
-在传统的性能分析中，工程师需要手动启动性能监控，既容易遗漏关键问题，又难以捕捉偶发性性能瓶颈。Android 16 引入的 ProfilingManager 系统触发式机制从根本上改变了这一局面——系统现在可以根据预设条件自动触发性能追踪，无需人工干预。
+传统性能分析往往要靠工程师手动启动监控，容易错过偶发问题，也很难在问题发生当下保留完整上下文。ProfilingManager 把一部分追踪时机交给系统条件触发，工程师不用每次都手动起 Trace。
 
-这种机制对启动速度优化和 ANR 分析特别有价值。系统可以在应用冷启动时自动抓取 `reportFullyDrawn` 时刻的完整 Trace，在 ANR 发生前记录相关线程状态，为性能问题提供更完整的上下文。
+对启动速度优化和 ANR 分析来说，这类能力的价值在于，它试图把 `reportFullyDrawn()` 前后的启动路径、ANR 附近的线程状态放进同一份诊断材料里。下面涉及的触发类型、阈值和回调细节，仍要结合官方文档或 AOSP 再核一次。
+
+<!-- outline-start -->
+## 要点
+
+### 🔹 ProfilingManager 的定位与版本演进
+- Android 15 先提供 ProfilingManager 基础能力，Android 16 / 17 再扩展系统条件触发
+- 这一节的重点不是 API 清单，而是哪些场景值得交给系统自动抓取
+
+### 🔹 系统触发类型与采集内容
+- 先按冷启动、ANR、OOM、过度 CPU 使用四类触发理解
+- 每类都要区分“触发时机”“期望拿到什么材料”“哪些字段仍待核对”
+
+### 🔹 注册监听与参数边界
+- 关注监听器注册方式、配置项和结果交付方式
+- API 名称、Builder 参数和默认值要回到当前 SDK 再核对
+
+### 🔹 在 Perfetto 中如何落地使用
+- 重点看系统触发 Trace 能否和冷启动、主线程阻塞、内存异常对应起来
+- SQL 片段只作为排查思路，表名、字段和时间窗口要按当前 schema 调整
+
+### 🔹 与手动抓取和生命周期埋点的关系
+- ProfilingManager 不是替代手动 Perfetto，而是补足偶发问题的自动抓取
+- 需要和 `ActivityLifecycleCallbacks`、现有监控链路配合使用
+
+### 🔹 版本差异、误区与验证边界
+- 版本演进要区分 API 能力、权限模型、触发类型和开销变化
+- 量化阈值、默认值、性能开销都不该直接当成结论，必须标注来源
+
+## 扩展
+
+### 🔸 适合交给 Task 9 继续核对的点
+- 触发类型常量、阈值、回调签名、AOSP 路径
+- Perfetto SQL 与 trace schema 的版本差异
+
+### 🔸 适合交给 Task 2B 回炉的点
+- 补真实 Trace 截图或 `[图：...]` 占位
+- 把版本演进和误区部分改成“证据 → 判断”的写法
+
+<!-- outline-end -->
 
 ## 核心机制
 
@@ -41,6 +84,8 @@ task2b_state: idle
 | **15** | 引入 ProfilingManager 基础 API | `registerProfilingListener()`，手动触发 heap dump / stack sample / system trace |
 | **16** | 系统触发式追踪（System-Triggered Profiling） | 自动触发 cold start `reportFullyDrawn` trace 和 ANR trace |
 | **17** | 扩展触发类型 | `TRIGGER_TYPE_COLD_START`、`TRIGGER_TYPE_OOM`、`TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE` |
+
+> [待验证] 上表里的触发类型和版本边界需要按当前 SDK / 官方文档再核对，尤其是 Android 16 / 17 的新增能力。
 
 ### 系统触发条件详解
 
@@ -61,7 +106,9 @@ public static final int TRIGGER_TYPE_COLD_START = 1;
 - CPU 使用率和线程调度情况
 - 内存分配和 GC 活动
 
-**实现原理**：系统通过 Instrumentation 监听 Activity 的 `onWindowFocusChanged()` 和 `reportFullyDrawn()` 调用，在确认 UI 完全绘制完成后自动开始 Trace 收集。
+**实现原理**：这里先按“围绕 `reportFullyDrawn()` 收集启动诊断材料”的思路理解，具体由哪个系统组件负责触发和落盘，还需要回到 AOSP 核对。
+
+> [待验证] 冷启动触发链路、开始采集时机，以及与 `reportFullyDrawn()` 的精确关系。
 
 #### 2. ANR 触发 (`TRIGGER_TYPE_ANR`)
 
@@ -78,7 +125,9 @@ public static final int TRIGGER_TYPE_ANR = 2;
 - Binder 通信队列情况
 - CPU 负载分布
 
-**实现原理**：SystemServer 中的 ANR 检测机制会在判定即将超时时，通过 ProfilingManager 提前收集诊断信息。
+**实现原理**：这一段先按“ANR 临近时补采诊断材料”的方式理解，具体阈值、回调时机和数据窗口需要再核对。
+
+> [待验证] “ANR 前 500ms”“阻塞前 2 秒”等时间窗口的来源，以及触发链路对应的系统服务实现。
 
 #### 3. OOM 触发 (`TRIGGER_TYPE_OOM`)
 
@@ -95,6 +144,8 @@ public static final int TRIGGER_TYPE_OOM = 3;
 - 内存回收活动
 - 相关内存页分配状态
 
+> [待验证] OOM 触发条件、采集窗口和产出字段需要补官方来源。
+
 #### 4. 过度 CPU 使用触发 (`TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE`)
 
 ```java
@@ -109,6 +160,8 @@ public static final int TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE = 4;
 - 热点函数调用
 - 线程 CPU 使用情况
 - 频繁的 JNI 调用
+
+> [待验证] CPU 阈值、持续时长和触发类型常量需要按 SDK 文档或系统源码核对。
 
 ### 注册与配置
 
@@ -135,68 +188,88 @@ profilingManager.registerProfilingListener(
         .addTriggerType(Profiling.TRIGGER_TYPE_ANR)
         .addTriggerType(Profiling.TRIGGER_TYPE_OOM)
         .addTriggerType(Profiling.TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE)
-        .setRetentionDuration(Duration.ofDays(7)) // 保留7天
+        .setRetentionDuration(Duration.ofDays(7)) // 保留 7 天
         .build(),
     listener
 );
 ```
 
+> [待验证] 代码里的 listener 类型、注册 API、Builder 方法名和结果字段键值，需要按当前 SDK 校对。
+
 #### 配置参数
+
+> [待验证] 下表的参数名与默认值需要按当前 SDK 核对。
 
 | 参数 | 类型 | 说明 | 默认值 |
 |---|---|---|---|
 | `addTriggerType()` | int | 触发类型组合 | 无（需手动指定） |
-| `setRetentionDuration()` | Duration | 数据保留时长 | 24小时 |
-| `setMaxFileSize()` | long | 单个Trace文件最大大小 | 100MB |
+| `setRetentionDuration()` | Duration | 数据保留时长 | 24 小时 |
+| `setMaxFileSize()` | long | 单个 Trace 文件最大大小 | 100 MB |
 | `setSamplingRate()` | int | 抽样率（百分比） | 100（不抽样） |
 
 ## 在 Perfetto 中的表现
 
 ### 冷启动触发
 
-在 Perfetto 中，系统触发的冷启动 Trace 会有特殊的标记：
+在 Perfetto 中，这类 Trace 更适合当成“对齐启动阶段和主线程活动”的诊断材料，而不是直接套一套固定查询。
 
-```
-# 查看 reportFullyDrawn 时刻的 Trace
-SELECT ts, name FROM sched WHERE name LIKE '%reportFullyDrawn%'
+> [待验证] 下列 SQL 片段主要展示排查思路，不保证能直接在当前 Perfetto schema 中运行。
 
-# 查看相关线程的活动
-SELECT ts, dur, name FROM slice 
+```sql
+-- 查看 `reportFullyDrawn()` 附近的 Trace 片段
+SELECT ts, name
+FROM sched
+WHERE name LIKE '%reportFullyDrawn%';
+
+-- 继续围绕目标时间窗口查看相关线程活动
+SELECT ts, dur, name
+FROM slice
 WHERE thread_id = (SELECT id FROM thread WHERE name = 'ui:com.example.app')
-AND ts BETWEEN cold_start_ts AND cold_start_ts + 1000ms
+  AND ts BETWEEN cold_start_ts AND cold_start_ts + 1000ms;
 ```
 
-**正常情况**：从 Application.onCreate() 到 reportFullyDrawn() 时间在 200-800ms 之间，主线程没有长时间阻塞
+[图：系统触发冷启动 Trace，标出 `Application.onCreate()` 到 `reportFullyDrawn()` 的时间段，以及主线程长任务位置]
 
-**异常情况**：时间超过 1.5s 或主线程存在明显阻塞
+> [待验证] 这里的 `200-800 ms` 和 `1.5 s` 只是待核对的经验阈值，不同设备和业务场景差异会很大。
+
+**正常情况**：从 `Application.onCreate()` 到 `reportFullyDrawn()` 的时间在 `200-800 ms` 之间，主线程没有长时间阻塞。
+
+**异常情况**：时间超过 `1.5 s`，或主线程存在明显阻塞。
 
 ### ANR 触发
 
-ANR 触发前会捕获到关键的阻塞信息：
+ANR 相关 Trace 的价值在于，把主线程阻塞区间、锁等待和 Binder 活动尽量放到同一个时间窗口里看。
 
-```
-# 查看 ANR 前的主线程调用栈
-SELECT name, dur FROM slice 
+```sql
+-- 伪变量 `anr_ts` 需要先由具体 Trace 定位
+SELECT name, dur
+FROM slice
 WHERE thread_id = (SELECT id FROM thread WHERE name = 'ui:com.example.app')
-AND ts BETWEEN anr_ts - 2000ms AND anr_ts
-ORDER BY ts DESC
+  AND ts BETWEEN anr_ts - 2000ms AND anr_ts
+ORDER BY ts DESC;
 ```
+
+[图：ANR 前 2 秒主线程、Binder 线程和锁等待的对照 Trace]
 
 **关键指标**：
-- 主线程 2 秒内是否有方法执行超过 100ms
-- 是否存在同步 Binder 调用超过 16ms
+- 主线程 2 秒内是否有方法执行超过 `100 ms`
+- 是否存在同步 Binder 调用超过 `16 ms`
 - UI 线程是否存在锁等待
+
+> [待验证] `100 ms` / `16 ms` 的阈值需要结合设备刷新率、场景类型和采样口径一起看。
 
 ### OOM 触发
 
-内存问题的 Trace 分析：
+内存问题更适合把分配热点、GC 活动和进程内存计数器放在一起看。
 
-```
-# 查看内存分配热点
-SELECT name, dur FROM slice 
+```sql
+SELECT name, dur
+FROM slice
 WHERE name LIKE '%alloc%'
-AND thread_id = (SELECT id FROM thread WHERE name = 'gc:/app')
+  AND thread_id = (SELECT id FROM thread WHERE name = 'gc:/app');
 ```
+
+[图：内存逼近阈值时的内存计数器、GC 活动和分配热点]
 
 ## 与其他机制的关系
 
@@ -242,7 +315,10 @@ public class App extends Application implements Application.ActivityLifecycleCal
 
 ## 版本演进
 
+> [待验证] 这一节里的权限模型、开销变化和回调能力需要回到 release note / API reference 逐条核对。
+
 ### Android 15 (API 35)
+
 - **基础功能**：引入 ProfilingManager，仅支持手动触发
 - **关键 API**：`registerProfilingListener()` 基础版本
 - **限制**：需要 root 权限，仅用于系统应用
@@ -263,7 +339,7 @@ public class App extends Application implements Application.ActivityLifecycleCal
 
 ### 误区 1：系统触发会严重影响应用性能
 
-**事实**：系统触发使用轻量级 tracing，仅在关键时间点收集数据，额外开销 < 1%
+**事实**：系统触发使用轻量级 tracing，仅在关键时间点收集数据，额外开销 < 1%。[待验证：量化来源]
 
 **验证方法**：
 ```bash
@@ -275,7 +351,7 @@ adb shell am start -W -n com.example.app/.MainActivity
 
 ### 误区 2：所有应用都会自动触发追踪
 
-**事实**：需要主动注册 `ProfilingListener` 才能接收系统触发事件
+**事实**：需要主动注册 `ProfilingListener` 才能接收系统触发事件。[待验证：API 与注册条件]
 
 **检查方法**：
 ```java
@@ -285,7 +361,7 @@ boolean isRegistered = profilingManager.isProfilingListenerRegistered(listener);
 
 ### 误区 3：系统触发的 Trace 无法区分正常和异常
 
-**事实**：系统会自动标记异常情况，如 ANR 触发时包含 "ANR-warning" 标记
+**事实**：系统会自动标记异常情况，如 ANR 触发时包含 "ANR-warning" 标记。[待验证：标记来源与字段]
 
 **分析技巧**：
 ```sql
