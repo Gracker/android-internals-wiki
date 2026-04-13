@@ -2352,3 +2352,29 @@
 - **位置**：L99、L131、L305-L317 验证来源
 - **问题**：正文里的 `swing-animations`、`source.android.com/.../frame-timeline`、`developer.android.com/develop/ui/views/performance/jankstats` 不能稳定支撑当前结论，验证链容易断。
 - **建议**：统一替换成可回查的稳定来源，例如 Perfetto FrameTimeline 文档、AndroidX `JankStats` API reference、Android vitals render 文档。
+
+## [Task6 Review] 7.13 SystemUI 性能分析 — 2026-04-13
+- **类型**：需重写
+- **位置**：全文结构（frontmatter 后正文整体）
+- **问题**：缺少 `outline-start` / `outline-end` 大纲块，Task 6 无法按锚点检查覆盖率，也无法判断哪些小节仍有遗漏。
+- **建议**：按现有章节结构补齐 outline 与锚点后，再回到 Task 6 做覆盖检查。
+- **review 日志**：logs/review/2026-04-13-12-review.md
+
+- **类型**：需补充素材
+- **位置**：开头引入 / 常见 jank 模式 / 参考资料（原 L46、L246、L306）
+- **问题**：仍有 3 处 `[待补充]` 占位符，Perfetto Track 概览图、典型 jank Trace 截图和公开参考链接都还没落地，证据链不完整。
+- **建议**：至少补 2-3 张真实 Perfetto Trace 截图，并补 1 条可公开引用的分享或文档链接。
+- **review 日志**：logs/review/2026-04-13-12-review.md
+
+- **类型**：需重写
+- **位置**：`SystemUI 优化策略`（原 L248-L292）
+- **问题**：当前更像通用优化清单，和前文 4 类 jank 模式的对应关系还不够紧。读者知道有哪些招，但不容易建立“看到什么信号就该用哪一招”的映射。
+- **建议**：按“jank 模式 -> 观察信号 -> 对应优化动作”重组每个小节，至少给每类策略补 1 句回扣前文诊断信号的说明。
+- **review 日志**：logs/review/2026-04-13-12-review.md
+
+- **类型**：需确认
+- **位置**：`关键 Trace 点` 表 + 待验证断言（原 L119、L211-L226、L259）
+- **问题**：`StatusBar.updateNotificationIcons`、`NotificationInflater.inflate` 等 event 名称，以及 Android 17 手势导航 / Android 13+ 异步 inflate 默认启用的断言，当前缺少直接源码或 Trace 证据。
+- **建议**：交给 Task 9 逐项核对 AOSP / Perfetto 证据；补不上时改成更保守的描述或保留 `[待验证]`。
+- **review 日志**：logs/review/2026-04-13-12-review.md
+

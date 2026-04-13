@@ -1,6 +1,7 @@
 ---
 title: "SystemUI 性能分析"
 chapter: "7.13"
+section: "7.13"
 status: ready-for-review
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 tags: [systemui, jank, launcher, statusbar, navigationbar, notification-shade, perfetto]
@@ -19,15 +20,18 @@ sources:
     path: "packages/apps/Launcher3/"
   - type: official
     path: "https://source.android.com/docs/core/display"
-pipeline_stage: task6_pending
-task6_state: pending
+pipeline_stage: task2b_pending
+task6_state: reviewed
 task9_state: pending
-task2b_state: idle
+task2b_state: pending
+reviewed_by: "openclaw-task6"
+reviewed_date: "2026-04-13"
+task6_result: needs-rework
 ---
 
 # 7.13 SystemUI 性能分析
 
-我们在前面几节分析卡顿原因和方法论时，关注点主要在普通 App 进程内部。但 Android 设备上有一组特殊的 UI 组件——StatusBar、NavigationBar、Notification Shade、Recent Apps——它们运行在 SystemUI 进程中，永远占据屏幕的一部分。这些组件一旦出现 jank，用户感知比任何单个 App 的卡顿都强烈，因为 SystemUI 不在屏幕上的时候几乎没有。
+我们在前面几节分析卡顿原因和方法论时，关注点主要在普通 App 进程内部。Android 设备上还有一组特殊的 UI 组件，StatusBar、NavigationBar、Notification Shade、Recent Apps，它们运行在 SystemUI 进程中，几乎始终占据屏幕的一部分。这些组件一旦出现 jank，用户感知往往比单个 App 的卡顿更强，因为屏幕上几乎总能看到它们。
 
 对 OEM 系统性能团队来说，SystemUI 优化通常占用比任何单个 App 更多的工程资源。对 App 开发者而言，理解 SystemUI 的性能特征也很有必要——你发出的每一条 Notification，最终都是 SystemUI 在渲染。
 
@@ -49,15 +53,15 @@ SystemUI 的 jank 之所以影响更大，原因有三：
 
 ### 多 Surface 架构
 
-SystemUI 并不是一个统一的 Surface。StatusBar、NavigationBar、Notification Shade 各自拥有独立的 Surface，由 SurfaceFlinger 独立合成。这意味着：
+SystemUI 并不是一个统一的 Surface。StatusBar、NavigationBar、Notification Shade 各自拥有独立的 Surface，由 SurfaceFlinger 分别合成。可以把它拆成三块：
 
 - **StatusBar** 有自己的 Window（`StatusBarWindow`），在 SurfaceFlinger 中对应一个独立的 Layer。StatusBar 的布局变化不会触发 Notification Shade 的重绘，反之亦然。
-- **NavigationBar** 同样有独立的 Window。在gesture navigation 模式下，NavigationBar 的实际可见区域可能非常小（仅底部一条窄边），但它仍然拥有一个完整的 Surface。
+- **NavigationBar** 同样有独立的 Window。在 gesture navigation 模式下，NavigationBar 的实际可见区域可能非常小（仅底部一条窄边），但它仍然拥有一个完整的 Surface。
 - **Notification Shade** 是最复杂的部分。展开时它覆盖整个屏幕，内部是一个包含多个子 View 的 NotificationStackScrollLayout。Shade 从折叠到全屏展开的过程涉及 SurfaceControl 的事务操作——改变 Layer 的 z-order、alpha、position 等属性。
 
 [已验证: AOSP android-16.0.0_r1, frameworks/base/packages/SystemUI/src/com/android/systemui/shade/ — NotificationShadeWindowView 管理多个子 Window 的 Surface]
 
-理解多 Surface 架构对性能分析很重要。在 Perfetto 的 SurfaceFlinger Layers Track 中，我们可以看到 StatusBar、NavigationBar、Shade 各自的 Layer。如果某个 Layer 的合成时间异常，可以直接定位到对应的 SystemUI 子组件。
+理解多 Surface 架构对性能分析很重要。在 Perfetto 的 SurfaceFlinger Layers Track 中，会看到 StatusBar、NavigationBar、Shade 各自的 Layer。如果某个 Layer 的合成时间异常，我们就能直接定位到对应的 SystemUI 子组件。
 
 ### Shade 展开动画的渲染路径
 
@@ -167,7 +171,7 @@ Launcher 虽然是独立进程，但它的性能与 SystemUI 紧密关联——A
 
 Launcher 的桌面页面滑动使用的是自定义的 `Workspace` 组件（不是 RecyclerView）。每个页面（`CellLayout`）可能包含 App 快捷方式、文件夹、Widget 等多种元素。滑动的性能特征：
 
-- **双页面渲染**：滑动过程中，当前页和相邻页需要同时可见。这意味着两页的所有子 View 都需要 measure/layout。
+- **双页面渲染**：滑动过程中，当前页和相邻页需要同时可见，也就是两页的所有子 View 都需要 measure/layout。
 - **Widget 更新**：如果桌面有 App Widget（如天气、时钟），Widget 的 `RemoteViews` 更新通过 `AppWidgetHost` 在 Launcher 主线程上执行。Widget 更新频率高时，会挤占滑动帧的时间。
 - **Wallpaper 偏移**：桌面滑动通常伴随 Wallpaper 的视差偏移效果，这需要跨进程通知 WallpaperService 更新，开销很小但需要关注。
 
@@ -254,7 +258,7 @@ Launcher 中的关键 tracepoint：
 - 使用 `AsyncLayoutInflater` 或自定义的 inflate 线程池预加载 Notification 的 View 模板。
 - 对于 RemoteViews，SystemUI 可以在收到通知后先在后台线程调用 `RemoteViews.apply()` 的预计算步骤（测量布局参数），主线程只负责添加到 View 树。
 
-但这里有一个限制：`RemoteViews.apply()` 内部可能创建 Handler 等需要 Looper 的对象，必须在有 Looper 的线程上执行。实际上 AOSP 的 `NotificationInflater` 从 Android 13 开始支持 `inflateAsync()` 模式，使用一个单独的 HandlerThread 处理 inflate。
+但这里有一个限制：`RemoteViews.apply()` 内部可能创建 Handler 等需要 Looper 的对象，必须在有 Looper 的线程上执行。AOSP 的 `NotificationInflater` 从 Android 13 开始支持 `inflateAsync()` 模式，使用一个单独的 HandlerThread 处理 inflate。
 
 [待验证: Android 13+ NotificationInflater 的异步 inflate 模式在所有 OEM 设备上是否默认启用]
 

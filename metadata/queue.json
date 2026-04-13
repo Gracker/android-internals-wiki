@@ -1852,17 +1852,44 @@
   },
   {
     "section": "7.13",
+    "section_title": "SystemUI 性能分析",
     "title": "SystemUI 性能分析",
-    "priority": 80,
-    "status": "completed",
+    "priority": 90,
+    "reason": "[review回炉] 缺少 outline，Perfetto 证据占位未落地，优化策略与诊断链衔接弱，关键 Trace event/版本断言待核对",
     "material_paths": [
+      "intake/suggestions.md（含 review 意见）",
       "intake/research-feeds/2026-04-08-19-view-hierarchy-measure-layout-perfetto-jank-optimization.md"
     ],
-    "created_date": "2026-04-09",
-    "created_by": "task2a-knowledge-gap",
-    "gap_score": 18,
-    "completed_at": "2026-04-09T05:02:00+08:00",
-    "completed_by": "openclaw-task2a"
+    "review_issues": [
+      {
+        "type": "需重写",
+        "location": "全文结构（frontmatter 后正文整体）",
+        "detail": "缺少 `outline-start` / `outline-end` 大纲块，Task 6 无法按锚点检查覆盖率，也无法判断哪些小节仍有遗漏。",
+        "suggestion": "按现有章节结构补齐 outline 与锚点后，再回到 Task 6 做覆盖检查。"
+      },
+      {
+        "type": "需补充素材",
+        "location": "开头引入 / 常见 jank 模式 / 参考资料（原 L46、L246、L306）",
+        "detail": "仍有 3 处 `[待补充]` 占位符，Perfetto Track 概览图、典型 jank Trace 截图和公开参考链接都还没落地，证据链不完整。",
+        "suggestion": "至少补 2-3 张真实 Perfetto Trace 截图，并补 1 条可公开引用的分享或文档链接。"
+      },
+      {
+        "type": "需重写",
+        "location": "`SystemUI 优化策略`（原 L248-L292）",
+        "detail": "当前更像通用优化清单，和前文 4 类 jank 模式的对应关系还不够紧。读者知道有哪些招，但不容易建立“看到什么信号就该用哪一招”的映射。",
+        "suggestion": "按“jank 模式 -> 观察信号 -> 对应优化动作”重组每个小节，至少给每类策略补 1 句回扣前文诊断信号的说明。"
+      },
+      {
+        "type": "需确认",
+        "location": "`关键 Trace 点` 表 + 待验证断言（原 L119、L211-L226、L259）",
+        "detail": "`StatusBar.updateNotificationIcons`、`NotificationInflater.inflate` 等 event 名称，以及 Android 17 手势导航 / Android 13+ 异步 inflate 默认启用的断言，当前缺少直接源码或 Trace 证据。",
+        "suggestion": "交给 Task 9 逐项核对 AOSP / Perfetto 证据；补不上时改成更保守的描述或保留 `[待验证]`。"
+      }
+    ],
+    "added_by": "task6-review",
+    "added_at": "2026-04-13T12:09:00+08:00",
+    "status": "pending",
+    "original_review_log": "logs/review/2026-04-13-12-review.md"
   },
   {
     "section": "9.6",
