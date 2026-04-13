@@ -1,20 +1,20 @@
 {
-  "generated_at": "2026-04-13T18:40:00+08:00",
+  "generated_at": "2026-04-13T19:05:00+08:00",
   "state_machine_version": "v2",
   "total_sections": 207,
   "metrics": {
     "total": 207,
-    "last_updated": "2026-04-13T18:40:00+08:00",
+    "last_updated": "2026-04-13T19:05:00+08:00",
     "unknown": 34,
     "ready-for-review": 173,
     "pipeline_unknown": 31,
-    "pipeline_task6_pending": 164,
+    "pipeline_task6_pending": 163,
     "pipeline_task2b_pending": 11,
-    "pipeline_task9_pending": 1,
+    "pipeline_task9_pending": 2,
     "task6_unknown": 31,
     "task6_revisiting": 55,
-    "task6_pending": 109,
-    "task6_reviewed": 12,
+    "task6_pending": 108,
+    "task6_reviewed": 13,
     "task9_unknown": 31,
     "task9_pending": 173,
     "task9_reviewed": 3,
@@ -26,15 +26,15 @@
   "pipeline": {
     "pipeline_stage_counts": {
       "unknown": 31,
-      "task6_pending": 164,
+      "task6_pending": 163,
       "task2b_pending": 11,
-      "task9_pending": 1
+      "task9_pending": 2
     },
     "task6_state_counts": {
       "unknown": 31,
       "revisiting": 55,
-      "pending": 109,
-      "reviewed": 12
+      "pending": 108,
+      "reviewed": 13
     },
     "task9_state_counts": {
       "unknown": 31,
@@ -2185,13 +2185,14 @@
       "title": "Perfetto View 解读",
       "path": "src/part3-tools/ch13-perfetto/03-perfetto-view.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "pending",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
       "task9_state": "pending",
       "task2b_state": "idle",
-      "reviewed_date": "2026-04-05",
+      "reviewed_date": "2026-04-13",
       "reviewed_by": "openclaw-task6",
-      "section": "13.3"
+      "section": "13.3",
+      "task6_result": "pass-light-edit"
     },
     "src/part3-tools/ch13-perfetto/04-large-traces.md": {
       "chapter": "13.4",
