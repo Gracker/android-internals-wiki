@@ -2069,3 +2069,19 @@ Android 10-16 的返回分发模型缺少一张统一矩阵。正文把 Gesture 
 
 ### 关联章节
 §4.3、§4.7、§4.8、§1.7、§8.7
+
+## [2026-04-14] 4.2 Linux 内核内存管理 — 内核内存问题观测矩阵缺口
+
+### 盲区描述
+章节已经覆盖了 page fault、页面回收、compaction、DMA-BUF、16KB page size 等机制，但没有把这些概念落到 Android 实机上的最小观测入口。读者不知道 page fault 应该看 `exceptions/page_fault_user` / `exceptions/page_fault_kernel` 还是 software counter，不知道 reclaim / compaction 看哪些 `mm_vmscan_*` / compaction 事件，也不知道 DMA-BUF 该看 `/sys/kernel/dmabuf/buffers`、`libdmabufinfo`、`dmabuf_dump` 还是 Perfetto memory counter。机制层讲了，验证路径还没闭环。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 整理 page fault / kswapd / direct reclaim / compaction / CMA / dmabuf 的最小 trace config 与观察路径
+- 区分 Perfetto 能直接看到的信号、需要 sysfs/proc 补看的信号、以及不同 Android / GKI 版本下的差异
+- 补 4KB vs 16KB page size 在 trace / meminfo / page allocator 指标上的对照样例
+
+### 关联章节
+4.2、4.4、13.5、2.6、5.1、6.3

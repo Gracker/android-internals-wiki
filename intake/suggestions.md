@@ -2875,3 +2875,14 @@
 - **问题**：启动/功耗/相机改善数字与 Google Play 时间线缺精确官方链接，Perfetto 表现段仍是待验证占位，读者很难判断哪些是已证实结论，哪些只是方向判断。
 - **建议**：补 developer.android.com 原文链接和 Google Play 政策出处；Perfetto 小节要么补真实观测来源，要么降级成待验证问题单。
 - **review 日志**：logs/review/2026-04-14-04-review.md
+
+## [Task9 Deep Review] 4.2 Linux 内核内存管理 — 2026-04-14
+- **类型**：数据缺失
+- **位置**：行380-386（16KB Page Size 在 Perfetto 中的表现）
+- **问题**：这一段列了三条 Perfetto 影响，但结尾仍标 `[待验证]`，没有真实 trace、counter 或 benchmark。当前更像研究问题单，不像已验证结论。
+- **建议**：补 4KB vs 16KB 的实机 trace / benchmark；如果短期补不到，就把三条 bullet 明确降级成“待验证假设”。
+
+- **类型**：交叉引用
+- **位置**：frontmatter `related_chapters` 与正文“与其他机制的关系”
+- **问题**：正文明确关联了 5.1 CPU 调度和 6.3 存储 I/O，但 frontmatter 的 `related_chapters` 只列了 4.1 / 4.3 / 4.4 / 2.6。知识库跳转和后续检索会漏掉两个直接相关章节。
+- **建议**：把 5.1、6.3 补进 `related_chapters`，或在正文首次出现处加显式章节跳转。
