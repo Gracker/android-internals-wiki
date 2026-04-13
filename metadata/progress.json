@@ -1,51 +1,51 @@
 {
-  "generated_at": "2026-04-14T03:40:00+08:00",
+  "generated_at": "2026-04-14T04:06:00+08:00",
   "state_machine_version": "v2",
   "total_sections": 207,
   "metrics": {
-    "last_updated": "2026-04-14T03:40:00+08:00",
+    "last_updated": "2026-04-14T04:06:00+08:00",
     "total": 207,
     "unknown": 34,
     "ready-for-review": 173,
-    "pipeline_task2b_pending": 12,
-    "pipeline_task6_pending": 162,
-    "pipeline_task9_pending": 2,
     "pipeline_unknown": 31,
-    "task2b_fixed": 62,
-    "task2b_idle": 102,
-    "task2b_pending": 12,
+    "pipeline_task6_pending": 161,
+    "pipeline_task2b_pending": 13,
+    "pipeline_task9_pending": 2,
     "task2b_unknown": 31,
-    "task6_pending": 100,
-    "task6_reviewed": 14,
-    "task6_revisiting": 62,
+    "task2b_fixed": 62,
+    "task2b_idle": 101,
+    "task2b_pending": 13,
     "task6_unknown": 31,
+    "task6_revisiting": 62,
+    "task6_pending": 99,
+    "task6_reviewed": 15,
+    "task9_unknown": 31,
     "task9_pending": 171,
-    "task9_reviewed": 5,
-    "task9_unknown": 31
+    "task9_reviewed": 5
   },
   "pipeline": {
     "pipeline_stage_counts": {
-      "task2b_pending": 12,
-      "task6_pending": 162,
-      "task9_pending": 2,
-      "unknown": 31
+      "unknown": 31,
+      "task6_pending": 161,
+      "task2b_pending": 13,
+      "task9_pending": 2
     },
     "task2b_state_counts": {
+      "unknown": 31,
       "fixed": 62,
-      "idle": 102,
-      "pending": 12,
-      "unknown": 31
+      "idle": 101,
+      "pending": 13
     },
     "task6_state_counts": {
-      "pending": 100,
-      "reviewed": 14,
+      "unknown": 31,
       "revisiting": 62,
-      "unknown": 31
+      "pending": 99,
+      "reviewed": 15
     },
     "task9_state_counts": {
+      "unknown": 31,
       "pending": 171,
-      "reviewed": 5,
-      "unknown": 31
+      "reviewed": 5
     }
   },
   "issues": {
@@ -876,12 +876,14 @@
       "title": "Linux 内核内存管理",
       "path": "src/part1-fundamentals/ch04-memory/02-linux-memory.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "pending",
+      "pipeline_stage": "task2b_pending",
+      "task6_state": "reviewed",
       "task9_state": "pending",
-      "task2b_state": "idle",
-      "reviewed_date": "2026-04-06",
-      "reviewed_by": "openclaw-task6"
+      "task2b_state": "pending",
+      "reviewed_date": "2026-04-14",
+      "reviewed_by": "openclaw-task6",
+      "section": "4.2",
+      "task6_result": "needs-rework"
     },
     "src/part1-fundamentals/ch04-memory/03-art-memory.md": {
       "chapter": "4.3",

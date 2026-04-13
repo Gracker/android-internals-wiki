@@ -8033,5 +8033,44 @@
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-14T03:20:00+08:00",
     "status": "pending"
+  },
+  {
+    "section": "4.2",
+    "section_title": "Linux 内核内存管理",
+    "priority": 90,
+    "reason": "[review回炉] MGLRU / Silk / DMA-BUF / 16K Page Size 段落存在版本边界和量化证据缺口，需 Task 9 核对并由 Task 2B 回补来源/场景锚点",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "需确认",
+        "location": "MGLRU：下一代页面回收算法",
+        "detail": "MGLRU 收益、16GB 设备可用内存减少约 1GB 等判断缺设备条件、版本范围和原始出处。",
+        "suggestion": "核对主线版本、OEM 会议材料和量化数据来源，拆开官方结论与 OEM 经验。"
+      },
+      {
+        "type": "需补充素材",
+        "location": "Silk：GC 与内核页面回收的协同优化",
+        "detail": "论文量化结果只有二手素材路径，没有原文引用、DOI 和实验条件。",
+        "suggestion": "补论文原文与实验环境；补不到时先降级为研究环境结果。"
+      },
+      {
+        "type": "需确认",
+        "location": "ION / DMA-BUF 在 Android 图形内存中的角色",
+        "detail": "版本边界、Android 14 buffer 缓存回收说法和 Perfetto 可观测点都涉及实现差异。",
+        "suggestion": "核对 Android 12+ / GKI 2.0 边界、源码路径和实际可观测事件。"
+      },
+      {
+        "type": "需补充素材",
+        "location": "16K Page Size 数据表与 Perfetto 表现",
+        "detail": "量化数据与 Play 时间线缺精确官方链接，Perfetto 表现仍是占位。",
+        "suggestion": "补官方链接；没有来源时把结论降级并保留待验证标记。"
+      }
+    ],
+    "added_by": "task6-review",
+    "added_at": "2026-04-14T04:06:00+08:00",
+    "status": "pending",
+    "original_review_log": "logs/review/2026-04-14-04-review.md"
   }
 ]
