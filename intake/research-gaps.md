@@ -2052,3 +2052,20 @@ Android 10-16 的返回分发模型缺少一张统一矩阵。正文把 Gesture 
 
 ### 关联章节
 12.2、13.3、14.1、11.2
+
+## [2026-04-14] 4.3 ART 虚拟机内存管理 — CMC / UFFD / 分代 GC 版本矩阵
+
+### 盲区描述
+本章把 Android 15、Android 16 QPR2、Android 17 的 GC 演进压成了一条线，导致 CMC、Generational CMC、UFFD 和 CC/Generational CC 的边界混在一起。当前最缺的是一张可复核的版本矩阵：每个版本默认 collector 是什么，是否启用 userfaultfd，是否仍依赖 read barrier，分代能力挂在哪条实现分支上，Perfetto 里又能看到哪些稳定证据。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 对比 `android-15.0.0_r1`、Android 16 QPR2、Android 17 Beta 的 `art/runtime/gc/heap.cc`、`mark_compact.cc`、`concurrent_copying.cc`
+- 核实 `gUseUserfaultfd`、`use_generational_cc_`、`BumpPointerSpace`、`RegionSpace` 各自对应的 collector 路径
+- 补 Linux `userfaultfd` 在 ART CMC 中的精确工作流，区分 page-fault fd 事件、minor fault、SIGBUS feature mode
+- 为 §4.3 / §4.8 准备一套 trace-backed 观测口径，明确哪些 GC 事件能在 Perfetto 稳定看到，哪些只能作为概念说明
+
+### 关联章节
+§4.3、§4.7、§4.8、§1.7、§8.7

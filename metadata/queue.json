@@ -7999,5 +7999,38 @@
     "status": "pending",
     "original_review_log": "logs/review/2026-04-14-03-review.md",
     "file": "src/part3-tools/ch13-perfetto/01-perfetto-intro.md"
+  },
+  {
+    "section": "4.3",
+    "section_title": "ART 虚拟机内存管理",
+    "priority": 95,
+    "reason": "[Deep Tech Review] CMC/分代 GC 时间线、AOSP 路径和 Large Object 阈值存在事实错误",
+    "material_paths": [
+      "intake/suggestions.md",
+      "intake/research-gaps.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误/版本差异",
+        "location": "行 207-220、226-239、479",
+        "detail": "将 Android 15 写成 Generational CMC 的落地点，并引用了不存在的 `art/runtime/gc/collector/concurrent_mark_compact.cc`。官方 Android 16 QPR2 发布说明才明确写到 Generational Concurrent Mark-Compact；android-15.0.0_r1 的 collector 文件名为 `mark_compact.cc`，`heap.cc` 中 `use_generational_cc_` 也只接到了 CC 路径，不是 CMC。",
+        "suggestion": "按版本拆开：Android 8-14 讲 CC/Generational CC，Android 15 讲 UFFD-based Mark Compact/CMC，Android 16 QPR2/17 再讲 Generational CMC，并把源码路径改为 `art/runtime/gc/collector/mark_compact.cc`。"
+      },
+      {
+        "type": "源码错误",
+        "location": "行 119-124、317",
+        "detail": "Large Object Space 阈值写成“通常是 3 页，即 12KB”。android-15.0.0_r1 `art/runtime/gc/heap.h` 定义的是 `kMinLargeObjectThreshold = 12 * KB`；`heap-inl.h` 判断条件是 `byte_count >= large_object_threshold_ && (c->IsPrimitiveArray() || c->IsStringClass())`，不是页数换算。",
+        "suggestion": "改成“Android 15 AOSP 默认阈值是 12KB，适用于 primitive array 和 String”，如果要讲页大小关联，必须给版本/设备条件。"
+      },
+      {
+        "type": "版本差异/数据缺失",
+        "location": "行 341-345、368-373",
+        "detail": "Baseline Profiles 被写成“Android 13 正式推广引入”；16KB Page Size 被写成“替代传统 4KB 页”，并追加未给出处的 TLAB 4KB→16KB 与 5-10% TLB miss 收益。官方文档显示 Baseline Profile 的安装期 AOT 支持可追溯到 Android 9，或 Android 7 + ProfileInstaller；16KB page 官方公布的是 3.16% 启动、4.56% 功耗、4.48%/6.60% 相机、8% 开机等指标，不是本文当前这组断言。",
+        "suggestion": "重写为版本矩阵和官方指标；4.3 只保留与 ART 直接相关的结论，把页大小展开收回 §4.7，把 Baseline Profiles 版本细节与 §8.7 对齐。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-14T03:20:00+08:00",
+    "status": "pending"
   }
 ]
