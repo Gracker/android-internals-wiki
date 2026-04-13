@@ -1848,3 +1848,20 @@ AsyncLayoutInflater 一节缺少 AndroidX 当前实现的关键边界，尤其�
 ### 关联章节
 1.7、1.9、8.7
 
+
+
+## [2026-04-13] 8.8 ProfilingManager 系统触发式性能追踪 — 知识盲区
+
+### 盲区描述
+章节目前把 trigger 名称、触发时机和返回工件混成一团，没有建立“触发器 → 返回 artifact → 采集窗口/停止条件 → 结果回传方式”的统一模型。尤其是 `APP_FULLY_DRAWN` 与 `COLD_START`、`ANR` 与 `KILL_EXCESSIVE_CPU_USAGE`、`OOM` 与 LMK/lmkd 的边界没有拆开，读者很难把 ProfilingManager 放进启动、ANR、内存、退出原因四条分析路径里。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 梳理 `ProfilingTrigger` 各 trigger 的 artifact 类型（running system trace / stack sampling / Java heap dump）、开始时机、停止条件、结果 listener 和 rate limit 规则
+- 对齐 `ApplicationStartInfo`、`Activity.reportFullyDrawn()`、`ApplicationExitInfo` 与 ProfilingManager 的关系，明确哪些信号来自启动链、哪些来自退出链
+- 补 `packages/modules/Profiling` 模块源码路径与 AndroidX `androidx.core.os.Profiling` 包装层的关系，避免 framework API 与 wrapper API 混写
+
+### 关联章节
+§8.2、§9.3、§13.7、§4.4

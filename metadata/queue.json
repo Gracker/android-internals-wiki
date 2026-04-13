@@ -7086,5 +7086,63 @@
     "added_at": "2026-04-13T16:06:00+08:00",
     "status": "pending",
     "original_review_log": "logs/review/2026-04-13-16-review.md"
+  },
+  {
+    "section": "8.8",
+    "section_title": "ProfilingManager 系统触发式性能追踪",
+    "file": "src/part2-performance/ch08-responsiveness/08-system-triggered-profiling.md",
+    "priority": 95,
+    "reason": "[Deep Tech Review] 4 处 P0：ProfilingManager API/源码路径错误、触发类型/常量/版本边界错误、OOM 语义错误、ANR/CPU 触发条件错误；另有 3 处 P1 重要缺失",
+    "material_paths": [
+      "intake/research-gaps.md",
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "L84-L87 / L170-L208 / L323-L359 / L377-L378",
+        "detail": "正文使用了 `registerProfilingListener()`、`ProfilingListener`、`ProfilingConfig.Builder`、`isProfilingListenerRegistered()`、`Bundle[\"trace_path\"]`，并把源码路径写成 `frameworks/base/...`。当前公开 API 实际是 `ProfilingManager.registerForAllProfilingResults(Executor, Consumer<ProfilingResult>)` + `addProfilingTriggers(List<ProfilingTrigger>)`；结果通过 `ProfilingResult#getResultFilePath()` 返回；AOSP 代码位于 `packages/modules/Profiling/framework/java/android/os/{ProfilingManager,ProfilingTrigger,ProfilingResult}.java`，服务端在 `packages/modules/Profiling/service/java/com/android/os/profiling/ProfilingService.java`。",
+        "suggestion": "整段注册示例按真实 API 重写，并把参考资料改到 Profiling 模块路径；若想展示兼容封装，可单列 AndroidX `androidx.core.os.Profiling`，不要虚构 framework API。"
+      },
+      {
+        "type": "版本差异",
+        "location": "L82-L88 / L94-L111 / L326-L336",
+        "detail": "冷启动相关触发被混写。API 36 的公开触发是 `ProfilingTrigger.TRIGGER_TYPE_APP_FULLY_DRAWN = 1`，语义是“冷启动中调用 `Activity.reportFullyDrawn()` 之后给出运行中 system trace 快照”；`TRIGGER_TYPE_COLD_START` 是 API 37 新增，语义是“冷启动尽早开始录制 system trace + stack sampling，直到 `reportFullyDrawn()` 或默认 5 秒”。正文把两者合成一个事件，连常量值也写成了 `TRIGGER_TYPE_COLD_START = 1`。",
+        "suggestion": "把 API 36 `APP_FULLY_DRAWN` 与 API 37 `COLD_START` 拆成两节，分别写清开始时机、停止条件、返回工件和常量值。"
+      },
+      {
+        "type": "源码错误",
+        "location": "L132-L147",
+        "detail": "`TRIGGER_TYPE_OOM` 被写成“LMK 即将杀进程”完全错位。官方 API 定义是“应用发生 Out Of Memory Exception 时触发，系统返回 Java heap dump”；这和 lmkd/LMK 低内存杀进程不是一回事。",
+        "suggestion": "改成 Java 层 OOM 异常的 heap dump 触发，并补一句：LMK/lmkd 路径属于 §4.4 Low Memory Killer，不能混写到 ProfilingTrigger.OOM。"
+      },
+      {
+        "type": "源码错误",
+        "location": "L120-L130 / L149-L164",
+        "detail": "ANR 与 excessive CPU trigger 的触发条件写成了“ANR 前 500ms 预警”“CPU >90% 且持续 5 分钟”。官方定义并不是这些阈值：`TRIGGER_TYPE_ANR` 是“ANR 已被识别、系统尚未尝试杀进程时”返回 running system trace 快照；`TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE` 是“应用因 `ApplicationExitInfo.REASON_EXCESSIVE_RESOURCE_USAGE` 被杀后”返回 running system trace 快照。正文把内部策略阈值当成公开契约。",
+        "suggestion": "删除未公开阈值，改写为官方可验证语义；若保留阈值讨论，必须给出 system server / device_config 的明确源码或实验来源。"
+      },
+      {
+        "type": "原理断裂",
+        "location": "L92-L208",
+        "detail": "章节没有建立“trigger → artifact → 采集窗口/停止条件 → 结果回传方式”的完整矩阵。读者看完仍无法判断某个 trigger 返回的是 running system trace、heap dump 还是 stack sampling，也不知道何时停止、结果从哪里拿。",
+        "suggestion": "补一张核心矩阵：至少列出 APP_FULLY_DRAWN、ANR、COLD_START、OOM、KILL_EXCESSIVE_CPU_USAGE 的 artifact、stop condition、listener 路径和版本。"
+      },
+      {
+        "type": "知识盲区",
+        "location": "L166-L208",
+        "detail": "缺少 system-triggered profiling 的结果交付与限流模型。公开 API 明确要求结果只会送到 `registerForAllProfilingResults()` 注册的全局 listener；触发器通过 `ProfilingTrigger.Builder(triggerType).setRateLimitingPeriodHours(...)` 配置，每种 trigger 同时只能保留一个。正文完全没有这条操作主线。",
+        "suggestion": "补“注册全局结果监听 → addProfilingTriggers → 收到 ProfilingResult#getTriggerType()/getResultFilePath()”的最小可用流程，并说明 per-trigger rate limiting。"
+      },
+      {
+        "type": "版本差异",
+        "location": "L326-L336",
+        "detail": "版本演进表只写了 API 36/37，却漏掉了 extension 36.1 和 API 37 的其他 trigger。公开文档里还存在 `TRIGGER_TYPE_APP_REQUEST_RUNNING_TRACE`、`TRIGGER_TYPE_KILL_FORCE_STOP`、`TRIGGER_TYPE_KILL_RECENTS`、`TRIGGER_TYPE_KILL_TASK_MANAGER`（36.1），以及 `TRIGGER_TYPE_ANOMALY`、`TRIGGER_TYPE_APP_COMPAT`（37）。当前表格会误导读者以为 17 只增加 OOM/CPU 两类。",
+        "suggestion": "把平台 API level 与 extension 版本拆开写，至少区分 35 / 36 / 36.1 / 37 四层能力面。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-13T16:20:00+08:00",
+    "status": "pending"
   }
 ]

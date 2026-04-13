@@ -2506,3 +2506,22 @@
 - **问题**：`speed-profile` 无 Profile 时等于 `verify` 的表述仍有技术风险。Task 6 不负责裁决这类源码 / 版本问题。
 - **建议**：交 Task 9 按 ART 文档和 AOSP `compiler filter` 逻辑复核后，再由 Task 2B 回写正文。
 - **review 日志**：logs/review/2026-04-13-16-review.md
+
+
+## [Task9 Deep Review] 8.8 ProfilingManager 系统触发式性能追踪 — 2026-04-13
+- **类型**：数据缺失
+- **位置**：L218-L296 / L367-L371
+- **问题**：Perfetto SQL 基本都是不可直接运行的伪查询：`sched` 表并不适合按 `reportFullyDrawn` 查方法名，`thread_id` / `1000ms` / `manual_cold_traces` / `auto_cold_traces` / `flags & 0x1000000` 这几组写法也没有给出 schema 前提。
+- **建议**：改成“伪代码示意”并显式说明前置表，或替换成基于 `slice` / `thread_track` / `thread` 的可跑通查询和对应 Trace 截图。
+
+## [Task9 Deep Review] 8.8 ProfilingManager 系统触发式性能追踪 — 2026-04-13
+- **类型**：数据缺失
+- **位置**：L233-L237 / L254-L259 / L332-L342
+- **问题**：`200-800 ms`、`1.5 s`、`100 ms`、`16 ms`、`<1%`、`降低 30% 的性能开销` 都没有可追溯来源，且和公开 API 文档没有直接对应关系。
+- **建议**：保留就必须补 benchmark 条件、设备、采样口径和原始来源；补不齐就统一降级成定性表述。
+
+## [Task9 Deep Review] 8.8 ProfilingManager 系统触发式性能追踪 — 2026-04-13
+- **类型**：术语精度 / STYLE 附记
+- **位置**：L54-L60 / L111 / L130 / L214
+- **问题**：技术描述里出现了 STYLE.md 禁词 `落地`、`对齐`、`链路`。这些词在当前章节里没有指向具体 API、服务或 trace track，容易把本来应该精确说明的技术对象写虚。
+- **建议**：把 `落地` 换成“在 Perfetto 中如何观察/验证”，把 `链路` 换成具体调用路径或服务名，把 `对齐` 换成明确的时间窗口或事件锚点。
