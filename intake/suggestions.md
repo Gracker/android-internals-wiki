@@ -2311,3 +2311,22 @@
 - **问题**：Camera 30%+、200-500mA 等量化说法缺少明确来源，`[待验证: Camera2 FPS 设置对功耗的量化影响]` 也说明证据链还没闭合。
 - **建议**：补官方文档、实验条件或真实测试来源；补不齐时把量化数字降级为定性描述，并保留可追溯的验证说明。
 - **review 日志**：logs/review/2026-04-13-10-review.md
+
+## [Task6 Review] 13.5 专题解读 — 2026-04-13
+- **类型**：需补充素材
+- **位置**：13.5.1 / 13.5.4 / 13.5.7
+- **问题**：冷启动 CPU 状态、heapprofd 火焰图、多进程 Pin 场景仍只有占位符，专题工作流缺少关键 Trace 证据。
+- **建议**：补 2-3 组真实 Perfetto Trace 截图或等价图示，至少覆盖启动 CPU 状态、heapprofd 火焰图、多线程 Pin。
+- **review 日志**：logs/review/2026-04-13-11-review.md
+
+- **类型**：需确认
+- **位置**：13.5.3 排查锁竞争
+- **问题**：`android.java_hprof` 数据源与 Lock contention 轨道的对应关系存在技术风险，当前写法可能把锁竞争观测来源写错。
+- **建议**：由 Task 9 核对 Lock contention 轨道的数据源与采集配置，再决定正文表述。
+- **review 日志**：logs/review/2026-04-13-11-review.md
+
+- **类型**：需确认
+- **位置**：13.5.4 heapprofd / 13.5.5 I/O SQL
+- **问题**：`linux.heapprofd` 数据源名称、Java 堆追踪表述，以及 `block_rq_complete` SQL 示例都需要按当前 Perfetto 文档和 schema 复核。
+- **建议**：按当前 Perfetto 文档或 trace processor schema 重写配置与 SQL，并补一条已跑通的查询样例。
+- **review 日志**：logs/review/2026-04-13-11-review.md

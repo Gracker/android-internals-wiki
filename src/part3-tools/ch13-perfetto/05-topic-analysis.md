@@ -24,10 +24,13 @@ sources:
     path: "https://perfetto.dev/docs/analysis/sql-tables"
 tags: ['perfetto', 'cpu', 'vsync', 'surfaceflinger', 'binder', 'heapprofd', 'io', 'frame-timeline', 'jank']
 related_chapters: ["13.1", "13.2", "13.3", "13.4", "2.1", "2.4", "4.1", "5.1", "7.1", "8.1", "9.1"]
-pipeline_stage: task6_pending
-task6_state: pending
+pipeline_stage: task2b_pending
+task6_state: reviewed
 task9_state: pending
-task2b_state: idle
+task2b_state: pending
+reviewed_by: "openclaw-task6"
+reviewed_date: "2026-04-13"
+task6_result: "needs-rework"
 ---
 
 # 专题解读
@@ -57,15 +60,17 @@ task2b_state: idle
 > 锚点内容需 L1/L2 验证，扩展内容至少 L2 验证，自动发现内容至少标注来源。
 <!-- outline-end -->
 
-前面几节我们分别介绍了 Perfetto 的基本概念、Trace 抓取、界面操作和命令行工具。掌握了这些基础之后，真正考验能力的是：面对一个具体的性能问题，我们知道该看什么、怎么找、找到之后怎么判断。
+当一个 Trace 同时铺开 `system_server`、`zygote64`、App 主线程和 `RenderThread` 时，真正难的不是把 Perfetto 打开，而是知道先看哪里、看到什么算异常、下一步该追哪条线索。
 
-本节把日常工作中最常见的五大分析场景——启动、流畅性、Binder、内存、I/O——各整理成一个独立的专题工作流。每个专题按照"问题现象 → 抓取配置 → Trace 中的定位步骤 → 关键判读方法"的顺序展开，读完之后可以直接照着操作。
+本节把日常最常见的五类分析场景，即启动、流畅性、Binder、内存、I/O，整理成独立的专题工作流。每个专题都按“问题现象 → 抓取配置 → Trace 中的定位步骤 → 关键判读方法”的顺序展开，拿到问题后可以直接照着走一遍。
 
 ## 13.5.1 启动分析专题：从 Trace 中定位冷启动各阶段耗时
 
 ### 为什么要单独讲启动分析
 
-冷启动是 Android 性能优化中最复杂的分析场景之一，原因在于它横跨多个进程、涉及大量 Binder 调用、受到 Zygote fork 和类加载等底层机制的影响。我们在 Trace 中看到的不是"一个线程做了某件事"，而是"三个进程的十几个线程在几百毫秒内密集协作"。没有清晰的分析框架，很容易在 Trace 的信息洪流中迷失方向。
+冷启动是 Android 性能优化里最复杂的分析场景之一。它横跨多个进程，涉及大量 Binder 调用，还会叠加 Zygote fork、类加载和首帧渲染。
+
+Trace 里通常会同时铺开 `system_server`、`zygote64`、App 主线程和 `RenderThread` 在几百毫秒内的密集协作。没有一套清晰的分析顺序，很容易在信息洪流里迷路。
 
 在开始之前，建议先回顾 §1.2 系统启动全流程和 §8.1 响应速度原则，了解冷启动各阶段在系统层面的含义。本节的侧重点是如何用 Perfetto 把这些阶段拆开，逐一测量耗时。
 
@@ -227,7 +232,7 @@ Perfetto 为流畅性分析提供了几组核心轨道，理解它们各自的�
 
 **VSYNC-app 轨道**
 
-在 `SurfaceFlinger` 进程下方，可以看到 `VSYNC-app` 和 `VSYNC-sf` 两个信号轨道。`VSYNC-app` 的每一个上升沿代表一次 VSync 信号到达 App 进程，触发 `Choreographer` 的 `doFrame`。正常情况下，每个 VSync 周期应该对应一次 `doFrame` 执行；如果某个 VSync 周期内没有 `doFrame`，说明 App 没能及时响应——这通常是因为上一帧还没执行完。
+在 `SurfaceFlinger` 进程下方，通常会出现 `VSYNC-app` 和 `VSYNC-sf` 两个信号轨道。`VSYNC-app` 的每一个上升沿都代表一次 VSync 信号到达 App 进程，并触发 `Choreographer#doFrame()`。正常情况下，每个 VSync 周期都会对应一次 `doFrame`；如果某个周期没有出现，往往说明上一帧还没执行完。
 
 **FrameTimeline 轨道（Android 12+）**
 
@@ -243,7 +248,7 @@ Android 12 引入了更精确的帧时间线追踪机制。在 Trace 中，`Fram
 
 在 `Actual Timeline` 轨道上扫一遍，找到所有红色（超时）的帧。也可以用 `shift+m` 在这些位置插旗子标记，方便后续逐个分析。
 
-Perfetto 还提供了内置的 `Metrics` 功能来快速统计掉帧概况。在右侧面板点击 `Metrics`，搜索 `jank` 相关的指标，可以看到总帧数、掉帧数、掉帧率等汇总数据。
+Perfetto 还提供了内置的 `Metrics` 功能来快速统计掉帧概况。在右侧面板点击 `Metrics`，搜索 `jank` 相关指标，会显示总帧数、掉帧数、掉帧率等汇总数据。
 
 **第二步：定位超时帧的瓶颈阶段**
 
@@ -284,7 +289,7 @@ ORDER BY app_janks DESC;
 
 ### Binder 分析为什么重要
 
-Binder 是 Android 跨进程通信的核心机制。App 与 `system_server` 之间的几乎所有交互（启动 Activity、获取系统服务、窗口操作等）都通过 Binder 完成。这意味着：如果某个 Binder 调用变慢了，依赖它的所有操作都会被拖慢，极端情况下甚至触发 ANR。
+Binder 是 Android 跨进程通信的核心机制。App 与 `system_server` 之间的几乎所有交互，包括启动 Activity、获取系统服务、窗口操作等，都通过 Binder 完成。某个 Binder 调用一旦变慢，依赖它的整条路径都会被拖慢，严重时甚至会触发 ANR。
 
 Binder 分析的难点在于"跨进程"——一次调用涉及 Client 和 Server 两个进程，需要把两端的 Trace 拼在一起看。Perfetto 的 Flow 箭头功能正是为此而生。
 
@@ -330,7 +335,7 @@ data_sources {
 
 **步骤一：定位事务耗时**
 
-首先在 `android.binder` 的 Transactions 轨道中找到目标进程作为 Client 的区域。也可以按 `/` 键搜索具体的 AIDL 接口名（如 `IActivityTaskManager`）。
+先在 `android.binder` 的 Transactions 轨道中找到目标进程作为 Client 的区域。也可以按 `/` 键搜索具体的 AIDL 接口名（如 `IActivityTaskManager`）。
 
 选中一个 Transaction Slice 后，Details 面板会显示几个关键字段：
 
@@ -350,13 +355,13 @@ data_sources {
 
 1. **线程池耗尽**：所有 Binder 工作线程都在忙，新请求排队等待。在 Trace 中表现为 Client 线程长时间 `S` 状态，`blocked_function` 为 `binder_thread_read`
 2. **事务缓冲区耗尽**：每个进程在 Binder 驱动中约 1MB 的共享缓冲区被占满，可能触发 `TransactionTooLargeException`
-3. **引用表溢出**：Binder 引用对象数量超过上限，实际场景中很少首先撞到这里
+3. **引用表溢出**：Binder 引用对象数量超过上限，实际场景里很少先撞到这里
 
 **步骤三：排查锁竞争**
 
 如果 Server 线程在处理请求时长时间处于 `S` 状态但 `blocked_function` 包含 `futex` 相关符号，通常是在等 Java 层的 `synchronized` 锁。
 
-Perfetto 可以在 Trace 中直接显示锁竞争信息。在 `android.java_hprof` 数据源开启后（需注意性能开销），Lock contention 轨道会显示"谁在等锁"和"谁持有锁"的连接关系。点击 Contention Slice 可以看到锁对象的类名（如 `WindowManagerGlobalLock`）和等待时长。
+Perfetto 在 Trace 中会显示锁竞争信息。在 `android.java_hprof` 数据源开启后（需注意性能开销），Lock contention 轨道会显示“谁在等锁”和“谁持有锁”的连接关系。点击 Contention Slice 后，会显示锁对象的类名（如 `WindowManagerGlobalLock`）和等待时长。
 
 [图：Perfetto 中 Binder 事务的 Flow 箭头，从 Client 主线程到 Server Binder 线程的跨进程追踪]
 
@@ -439,13 +444,13 @@ data_sources {
 
 ### 进程级内存 Counter
 
-除了堆分析，Perfetto 的 `linux.process_stats` 数据源会定期（通常每秒一次）采集进程的内存指标。在 Trace 中展开进程轨道，可以看到 `RSS`（Resident Set Size）、`PSS`（Proportional Set Size）等 Counter 曲线。
+除了堆分析，Perfetto 的 `linux.process_stats` 数据源会定期（通常每秒一次）采集进程的内存指标。在 Trace 中展开进程轨道，会看到 `RSS`（Resident Set Size）、`PSS`（Proportional Set Size）等 Counter 曲线。
 
 这些 Counter 曲线对于以下场景特别有用：
 
 - **对比内存与性能的关联**：把内存 Counter 和掉帧时间点对齐看，判断是否是内存压力导致的 GC 暴发进而引起卡顿
 - **观察内存增长趋势**：在长时间使用的 Trace 中，看 RSS 是否在持续上涨而不回落——这是内存泄漏的典型信号
-- **量化 LMK 的影响**：结合 `oom_score_adj_update` 事件和内存 Counter，可以看到系统何时开始杀后台进程以回收内存
+- **量化 LMK 的影响**：结合 `oom_score_adj_update` 事件和内存 Counter，可以判断系统何时开始杀后台进程以回收内存
 
 ```sql
 -- 查询进程内存变化趋势
@@ -466,7 +471,7 @@ ORDER BY ts;
 
 ### I/O 问题为什么难查
 
-Android 上的 I/O 性能问题通常表现为线程进入 `D`（Uninterruptible Sleep）状态，即"不可中断的磁盘睡眠"。与普通的 `S` 状态不同，`D` 状态的线程不响应信号——这意味着即使 ANR 的超时炸弹在倒计时，线程也必须在 I/O 完成后才能恢复执行。这就是为什么主线程做磁盘 I/O 是性能优化的大忌。
+Android 上的 I/O 性能问题通常表现为线程进入 `D`（Uninterruptible Sleep）状态，即“不可中断的磁盘睡眠”。和普通的 `S` 状态不同，`D` 状态的线程不响应信号。即使 ANR 的超时计时已经开始，线程也只能等 I/O 完成后再恢复执行，这也是主线程做磁盘 I/O 特别危险的原因。
 
 I/O 分析的难点在于，"线程在等 I/O"只是表象，我们需要知道等的是什么 I/O、请求的扇区在哪里、排队等了多久。Perfetto 通过 ftrace 的 block 层事件提供了这些信息。
 
@@ -606,7 +611,7 @@ data_sources {
 
 ### 为什么需要多进程协同分析
 
-Android 的很多操作涉及多个进程的协作：App 发起请求 → `system_server` 处理 → `surfaceflinger` 合成 → 最终上屏。只看某一个进程的 Trace，很难理解完整的时序关系。Perfetto 的优势就在于它同时采集了所有进程的信息，可以让我们把多个进程的时间线对齐来看。
+Android 的很多操作涉及多个进程的协作：App 发起请求 → `system_server` 处理 → `surfaceflinger` 合成 → 最终上屏。只看某一个进程的 Trace，很难理解完整的时序关系。Perfetto 的优势就在于它同时采集了所有进程的信息，可以把多个进程的时间线对齐来看。
 
 ### Pin 功能的实战应用
 
@@ -631,7 +636,7 @@ Perfetto 的 Flow 箭头是跨进程分析的核心工具。当我们在 Trace �
 
 ### 分析技巧总结
 
-多进程协同分析的关键是建立"时间对齐"的意识：多个进程的 Trace 是基于同一个时间轴的，只要找到两个进程之间的关联点（如 Binder 调用、VSync 信号），就可以把它们的事件对齐起来。实战中推荐的做法是：
+多进程协同分析要先建立“时间对齐”的意识。多个进程的 Trace 共用同一条时间轴，只要找到 Binder 调用、VSync 信号这类关联点，就能把事件对齐起来。实战里更稳妥的做法是：
 
 1. 先在单一进程中定位到异常区域
 2. 通过 Binder Flow 箭头或 VSync 信号找到关联的进程
@@ -642,13 +647,13 @@ Perfetto 的 Flow 箭头是跨进程分析的核心工具。当我们在 Trace �
 
 ## 本节小结
 
-五个专题覆盖了 Android 性能分析中最常见的分析场景。它们共享一套核心方法论：**先定位异常（通过 Timeline、Counter 或 Metrics），再追溯根因（通过 thread_state、Flow 箭头、Critical Path），最后量化评估（通过 Perfetto SQL）**。
+五个专题覆盖了 Android 性能分析中最常见的场景。它们共享同一套分析顺序：**定位异常（通过 Timeline、Counter 或 Metrics）→ 追溯根因（通过 thread_state、Flow 箭头、Critical Path）→ 量化评估（通过 Perfetto SQL）**。
 
 几个贯穿各专题的通用技巧：
 
 - **CPU 状态占比**是快速判断瓶颈类型的利器：Running 过多说明 CPU 密集，Sleep 过多说明在等外部资源，D 状态过多说明在做磁盘 I/O
 - **Flow 箭头**是跨进程分析的桥梁，尤其在 Binder 分析和多进程协同分析中不可或缺
-- **Pin 功能**让我们把关注的线程集中到一起，对于时序关系的判断至关重要
+- **Pin 功能**可以把关注的线程集中到一起，对于时序关系的判断很有帮助
 - **Perfetto SQL** 在需要量化分析时提供了强大的编程能力，但对于日常的快速定位，界面操作已经足够
 
 本节内容与前面的基础章节形成了完整的分析工具链：§13.1-13.4 提供了工具基础，本节提供了分析框架。接下来 §13.6 和 §13.7 将进一步介绍线程 CPU 状态分析和 Perfetto 的高级用法。
