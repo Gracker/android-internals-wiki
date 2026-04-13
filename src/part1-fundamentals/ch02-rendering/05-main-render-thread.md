@@ -13,9 +13,9 @@ applicable_versions: "Android 5.0 (API 21) - Android 17 (API 37)"
 last_verified: "2026-04-08"
 last_verified_against: "AOSP android-16.0.0_r1"
 confidence: high
-reviewed_date: "2026-04-09"
+reviewed_date: "2026-04-14"
 reviewed_by: openclaw-task6
-review_note: "精修质检终审（task2b polish 后）：0个B类问题，2处A类修复（交叉引用+模糊形容词），晋升 ready-to-publish"
+review_note: "Task 6 复审：按 writing-guide / STYLE / content-quality-gate 完成 10 处 L1/L2 小修，未新增回炉项，转入 Task 9"
 sources:
   - type: aosp
     path: "platform/frameworks/base/libs/hwui/renderthread/RenderThread.cpp"
@@ -29,8 +29,9 @@ sources:
     path: "Cubox/结合源码和Perfetto分析Android渲染机制-2024-12-13.md"
 tags: ['renderthread', 'mainthread', 'displaylist', 'rendernode', 'syncframestate', 'hwui', '渲染流水线', 'GPU绘制']
 related_chapters: ["2.3", "2.4", "2.6", "2.15", "2.16", "3.1"]
-pipeline_stage: task6_pending
-task6_state: pending
+pipeline_stage: task9_pending
+task6_result: pass-light-edit
+task6_state: reviewed
 task9_state: pending
 task2b_state: idle
 ---
@@ -139,7 +140,7 @@ RenderThread 不主动轮询。它的大部分时间都在等待主线程发来�
 
 主线程和 RenderThread 之间的同步是理解渲染性能的核心。这个同步点叫做 **SyncFrameState**（对应 AOSP 中的 `DrawFrameTask::syncFrameState()`），它是一个阻塞操作。
 
-当主线程的 `performTraversals()` 完成了 measure、layout、draw 三步后，`ViewRootImpl` 调用 ` Choreographer` 注册的 TRAVERSAL 回调会进一步调用到 `RenderThread` 的同步逻辑：
+当主线程的 `performTraversals()` 完成了 measure、layout、draw 三步后，`ViewRootImpl` 会在 TRAVERSAL 回调里继续走到 `ThreadedRenderer.draw()`，再进入 `RenderThread` 的同步逻辑：
 
 ```java
 // frameworks/base/core/java/android/view/ViewRootImpl.java
@@ -208,7 +209,7 @@ GPU 命令的提交是**异步的**。CPU（RenderThread）把命令扔给 GPU �
 
 ### Fence 机制
 
-Fence 是 Android 图形系统中的核心同步原语，它本质上是一个文件描述符（file descriptor），可以跨进程、跨 CPU/GPU 传递。（关于 Fence 的底层实现与 DMA-BUF 的关系，我们在 [2.16 Sync Fence 框架与帧同步机制](16-sync-fence.md) 中有详细讨论。）这里最容易讲反的是方向，所以先把语义钉住。
+Fence 是 Android 图形系统里的核心同步原语，表现为一个文件描述符（file descriptor），可以跨进程、跨 CPU/GPU 传递。（关于 Fence 的底层实现与 DMA-BUF 的关系，我们在 [2.16 Sync Fence 框架与帧同步机制](16-sync-fence.md) 中有详细讨论。）这里最容易讲反的是方向，所以先把语义钉住。
 
 **`queueBuffer()` 输入的 fence（到 consumer 一侧叫 acquire fence）**：RenderThread 提交一帧时，会把“GPU 可能还没完全写完这个 buffer”的 fence 一起交给 BufferQueue。这个 fd 到了 SurfaceFlinger / HWC 一侧，就表示“读之前先等 producer 写完”，所以 consumer 会把它当 acquire fence。
 
@@ -251,6 +252,8 @@ VSync-app (0ms)
 └── VSync-sf (~11ms offset) → SurfaceFlinger 合成
 ```
 
+[说明：上面的毫秒数是 60Hz 设备上的示意值，用来说明时序关系，不是通用实测结果。]
+
 在 Perfetto 中，我们能在 UI Thread Track 上看到 `Choreographer#doFrame` 切片，其中包含 `performTraversals` 子切片；在 RenderThread Track 上看到 `DrawFrame` 切片，其中包含 `dequeueBuffer` 和 `queueBuffer` 子切片。
 
 ### 常见异常模式
@@ -263,7 +266,7 @@ VSync-app (0ms)
 
 **模式二：GPU 过载，主线程在 syncFrameState 等待**
 
-如果上一帧的 GPU 工作还没完成（比如画面过于复杂、使用了大量 shader 特效），主线程在 `syncFrameState` 时必须等 RenderThread 完成上一帧。这意味着主线程被 GPU 拖住了。
+如果上一帧的 GPU 工作还没完成（比如画面过于复杂、使用了大量 shader 特效），主线程在 `syncFrameState` 时必须等 RenderThread 完成上一帧。主线程此时是在等 GPU 把上一帧收尾。
 
 在 Perfetto 中的表现：UI Thread 上的 `syncFrameState` 切片明显变长，RenderThread 上的 `DrawFrame` 延续到下一个 VSync 周期。
 
@@ -352,7 +355,7 @@ GPU 过载的优化方向是"减少 GPU 的工作量"：降低过度绘制（在
 
 ## [自动发现] 多窗口场景下的线程争抢
 
-当同一个 App 进程同时显示两个窗口（比如 Activity 上弹出一个 Dialog），情况会更加复杂。Android 的 Choreographer 是线程单例的，而 RenderThread 也是——一个 App 进程只有一条 RenderThread。这意味着：
+当同一个 App 进程同时显示两个窗口（比如 Activity 上弹出一个 Dialog），情况会更复杂。Android 的 Choreographer 是线程单例，RenderThread 也是，一个 App 进程通常只有一条 RenderThread。因此：
 
 1. 两个窗口的 `performTraversals` 在主线程上**串行执行**。
 2. 两个窗口的 GPU 渲染在 RenderThread 上**串行执行**。
@@ -367,9 +370,9 @@ GPU 过载的优化方向是"减少 GPU 的工作量"：降低过度绘制（在
 
 RenderThread 并不是收到一条 DisplayList 命令就立即翻译成一条 GPU 命令。它采用了 **Deferred Rendering（延迟渲染）** 策略：
 
-1. 首先遍历整棵 DisplayList 树，收集所有的绘制命令。
+1. 先遍历整棵 DisplayList 树，收集所有的绘制命令。
 2. 对这些命令进行优化和重排序：相同类型的操作（如所有的 `drawRect`）被合并到一起执行，减少 GPU 状态切换。
-3. 最后一次性提交给 GPU（称为 **Pipeline Flush**）。
+3. 再一次性提交给 GPU（称为 **Pipeline Flush**）。
 
 这种策略的好处是减少了 GPU 的状态切换开销。GPU 从"画矩形"切换到"画圆弧"需要重新配置渲染状态（Shader、Blend 模式等），这是一笔不小的开销。通过重排序，把同类型的绘制操作集中处理，可以显著减少状态切换次数。
 
@@ -386,7 +389,7 @@ RenderThread 并不是收到一条 DisplayList 命令就立即翻译成一条 GP
 
 RenderThread 动画的工作原理是：在 `syncFrameState` 阶段，主线程将动画的当前状态（起始值、目标值、时间插值器）同步给 RenderThread。之后的每一帧，RenderThread 自己根据 VSync 时间计算动画值，直接更新 RenderNode 的变换矩阵，不需要主线程重新执行 `performTraversals`。
 
-这意味着，即使主线程很忙（比如在做复杂的布局计算），这些动画依然可以流畅运行。在 Perfetto 中，我们会看到 RenderThread 上的动画帧独立于主线程的 `doFrame` 执行。
+因此，即使主线程很忙（比如在做复杂的布局计算），这些动画依然可以流畅运行。在 Perfetto 中，我们会看到 RenderThread 上的动画帧独立于主线程的 `doFrame` 执行。
 
 ```java
 // 使用 RenderThread 动画的标准方式
@@ -454,7 +457,7 @@ SF:        ...    [Latch F0] [Latch F1] [Latch F2] ...
 
 MainThread 与 RenderThread 的协作构成了 Android 硬件加速渲染的核心流水线。主线程负责构建"图纸"（DisplayList），RenderThread 负责把图纸变成"实物"（GPU 渲染），两者通过 SyncFrameState 这个同步点衔接。
 
-理解这个协作机制后，我们在 Perfetto 中分析渲染性能问题就有了一个清晰的方法论：先看 doFrame 是否超时，再拆分主线程各阶段耗时，然后检查 syncFrameState 等待时间，最后看 RenderThread 的 GPU 渲染和 Buffer 等待情况。这套分析方法适用于从滑动卡顿到动画掉帧的各种渲染类性能问题。
+理解这个协作机制后，我们在 Perfetto 中分析渲染性能问题就有了一条更清晰的路径：先看 doFrame 是否超时，再拆分主线程各阶段耗时，然后检查 syncFrameState 等待时间，再看 RenderThread 的 GPU 渲染和 Buffer 等待情况。这套分析方法适用于从滑动卡顿到动画掉帧的各种渲染类性能问题。
 
 ## 参考资料
 
