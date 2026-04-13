@@ -1934,3 +1934,20 @@ AsyncLayoutInflater 一节缺少 AndroidX 当前实现的关键边界，尤其�
 ### 关联章节
 §2.6、§7.1、§13.3、§13.5
 
+
+
+## [2026-04-13] 3.3 手势导航与系统交互 — 知识盲区
+
+### 盲区描述
+Android 10-16 的返回分发模型缺少一张统一矩阵。正文把 Gesture Monitor 并行观察、`pilferPointers()` 抢占指针流、legacy `KEYCODE_BACK` 注入、Predictive Back ahead-of-time dispatch、observer-only 回调混在一条叙述里，读者很难把 Trace 现象和真实框架行为对上。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 追清 `EdgeBackGestureHandler` 阈值前后的行为分叉：并行观察、`pilferPointers()`、`ACTION_CANCEL` / `CANCEL_POINTER_EVENTS`。
+- 建一张 Android 10-12、13、14、15、16 的返回分发矩阵，覆盖回调 API、默认状态、manifest / targetSdk 条件、预览范围。
+- 对照 platform `OnBackInvokedCallback` / `OnBackAnimationCallback` 与 AndroidX `OnBackPressedDispatcher` / `OnBackPressedCallback` 的职责边界。
+
+### 关联章节
+§3.1、§3.2、§3.3、§13.5

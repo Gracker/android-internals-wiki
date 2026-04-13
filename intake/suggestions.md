@@ -2645,3 +2645,15 @@
 - **问题**：正文已经把 `trace_pipe_raw` 读数路径写成核心机制，但紧跟着仍是“[待补充：具体代码路径]”，证据链还没闭合。
 - **建议**：交给 Task 9 定位 `traced_probes` 对应 reader 的源码路径和配置链，再由 Task 2B 补齐精确文件/函数与验证标注。
 - **review 日志**：logs/review/2026-04-13-21-review.md
+
+
+## [Task9 Deep Review] 3.3 手势导航与系统交互 — 2026-04-13
+- **类型**：数据缺失
+- **位置**：在 Perfetto 中的表现
+- **问题**：`edge-swipe` monitor、`INJECT` 来源的 `KEYCODE_BACK`、`triggerBack` / `sendEvent`、Predictive Back 多窗口渲染都写成了可直接观察的确定结论，但正文没有真实 Trace、截图或抓取配置；其中注入 `KEYCODE_BACK` 也不是 Predictive Back 的通用现象。
+- **建议**：至少补 2 组真实 Trace 或 `[图：...]` 占位，分别覆盖 legacy 注入路径与 predictive back 动画路径；在证据齐全前，把具体 slice 名和来源改成 `[待验证]`。
+
+- **类型**：知识盲区/版本差异
+- **位置**：系统手势优先区域 vs App 的 WindowInsets
+- **问题**：正文只写了 `systemGestureInsets`，没有把 back edge 冲突和底部 Home / quick-switch 的 mandatory gesture 区域分开。官方 gesture navigation 文档对 `View.setSystemGestureExclusionRects()` 与 `WindowInsets.getMandatorySystemGestureInsets()` 的适用边界是分开的。
+- **建议**：补一小段区分 left/right back edge 与 bottom mandatory gesture，顺带注明 immersive mode / 游戏场景的特殊口径。
