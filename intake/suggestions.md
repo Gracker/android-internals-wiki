@@ -2725,3 +2725,23 @@
 - **问题**：表格把 Android 12 写成“Exact Alarm 需要声明权限”，口径过粗。实际是 Android 12 为 targetSdk 31+ 引入 `SCHEDULE_EXACT_ALARM` 特殊访问权限，但存在 allowlist / `OnAlarmListener` 等例外；Android 13 又新增 `USE_EXACT_ALARM` 并改变默认授予行为。
 - **建议**：把该行收窄为“Android 12 引入 `SCHEDULE_EXACT_ALARM` 特殊访问；Android 13 新增 `USE_EXACT_ALARM` 并调整默认授予策略”，避免读者误解为所有 exact alarm、所有 app 都走同一权限路径。
 
+
+
+## [Task6 Review] 4.1 Android 内存模型全景 — 2026-04-14
+- **类型**：需确认
+- **位置**：`内核管理：分配、回收、保护`
+- **问题**：正文把 `lmkd` 的决策字段写成 `oom_adj_score`，并把 `onTrimMemory()` 的触发链简化成 “`lmkd` 通过 `ActivityManager` 直接通知 App”。这里混用了命名和调用链，技术边界不够稳。
+- **建议**：交 Task 9 依据 `ProcessList` / `ActivityManagerService` / `lmkd` 文档核对 `oom_score_adj` / `adj` 口径，以及 trim memory 的实际分发路径；Task 2B 再统一改写。
+- **review 日志**：logs/review/2026-04-14-00-review.md
+
+- **类型**：需确认
+- **位置**：`cgroup 对 Android 内存控制的作用`
+- **问题**：正文把 `memory.high`、`memory.max`、`memory.pressure_level` 和 task profile 写成了通用稳定路径，但缺少 Android 版本边界，以及 cgroup v1 / v2 差异说明，容易让读者把特定实现当成通用结论。
+- **建议**：交 Task 9 按 AOSP cgroups 文档和 task profile 实现核对，明确哪些是 Android 通用机制，哪些依赖内核版本或设备配置；Task 2B 再回写正文。
+- **review 日志**：logs/review/2026-04-14-00-review.md
+
+- **类型**：需确认
+- **位置**：`ZRAM 的工作方式`
+- **问题**：`kswapd` 的换入换出表述、Qualcomm “物理内存 75%” 建议，以及 “2x-4x 压缩比” 被写在同一段里，其中机制、经验值和厂商建议没有拆开，且数字仍缺一手证据。
+- **建议**：交 Task 9 先拆开机制描述与经验参数，保留有据可依的部分；Task 2B 再把未证实数字降级、补来源或删除。
+- **review 日志**：logs/review/2026-04-14-00-review.md
