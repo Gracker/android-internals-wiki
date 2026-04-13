@@ -7279,5 +7279,38 @@
     "status": "pending",
     "original_review_log": "logs/review/2026-04-13-17-review.md",
     "deep_review_log": "logs/deep-review/2026-04-13-17-deep-review.md"
+  },
+  {
+    "section": "10.7",
+    "section_title": "SQLite/Room 数据库性能优化",
+    "priority": 95,
+    "reason": "[Deep Tech Review] SQLite 锁模型、CursorWindow/Binder 传输、fillWindow 调用链存在事实错误或断裂",
+    "material_paths": [
+      "intake/suggestions.md",
+      "intake/research-gaps.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "引言 + 1.3 Android SQLiteDatabase 的同步机制（行 36-38, 96-117）",
+        "detail": "把主线程阻塞解释为 SQLiteDatabase.lock() / Java 全局数据库锁不符合当前 AOSP。现行实现是 ThreadLocal SQLiteSession + SQLiteConnectionPool；mLock 只保护共享状态，源码明确要求执行 SQL 时不能持有该锁。",
+        "suggestion": "改为 SQLiteSession / SQLiteConnectionPool.waitForConnection 的模型，并把 trace 观测点改成 waitForConnection / beginTransaction / connection pool contention，不要再写 SQLiteDatabase.lock()."
+      },
+      {
+        "type": "源码错误",
+        "location": "2.1 / 2.3 CursorWindow 与 Binder（行 123-153）",
+        "detail": "把 CursorWindow 默认大小写成 CursorWindow.CURSOR_WINDOW_SIZE=2MB，且把 1.5MB 查询直接等同为 Binder buffer 溢出，不符合当前实现。CursorWindow.java 通过 config_cursorWindowSize 读取窗口大小，AOSP main 默认值是 2048KB；CursorWindow::writeToParcel 在窗口膨胀后传的是 ashmem FD，不是把整块窗口直接塞进 1MB Binder payload。",
+        "suggestion": "改成“窗口大小由系统资源配置决定；跨进程通常通过 BulkCursorDescriptor + CursorWindow parcel/ashmem 共享窗口”，并把 TransactionTooLargeException 场景和 CursorWindowAllocation / 大行查询场景拆开说明。"
+      },
+      {
+        "type": "原理断裂",
+        "location": "2.2 SQLiteCursor 的翻页重查机制（行 129-135）",
+        "detail": "把 fillWindow 过程写成 LIMIT/OFFSET 等价 SQL，跳过了 SQLiteCursor.onMove -> fillWindow -> SQLiteQuery.fillWindow，以及跨进程 CursorToBulkCursorAdaptor.getWindow 的真实调用链。现有写法会让读者把 CursorWindow refill 误解成 Room / SQL 分页语义。",
+        "suggestion": "补真实调用链，并把 LIMIT/OFFSET 改成“帮助理解的近似模型”或删除。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-13T18:20:00+08:00",
+    "status": "pending"
   }
 ]
