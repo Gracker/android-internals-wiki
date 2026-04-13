@@ -2555,3 +2555,23 @@
 - **位置**：`src/SUMMARY.md`
 - **问题**：目录在 `9.6 Notification 性能与 ANR` 后直接跳到第 10 章，`9.7 ANR 非技术故障诊断` 没有进入全书导航，目录结构与实际章节不一致。
 - **建议**：补入 `9.7 ANR 非技术故障诊断` 目录项，并在正文补显式回链到 `9.3 ANR 分析方法`、`13.6 线程 CPU 状态分析`、`15.2 如何区分系统问题和 App 问题`。
+
+
+## [Task6 Review] 13.8 Perfetto 输入延迟 SQL 深度分析 — 2026-04-13
+- **类型**：需确认
+- **位置**：延迟分布统计（健康系统表）
+- **问题**：dispatch / handling / total 的 P50/P95/P99 阈值给了具体毫秒门槛，但没有设备、刷新率、负载条件和样本来源，读者容易把它当成通用基线。
+- **建议**：补实验条件或官方/实测来源；如果补不齐，降级为示例口径或定性判断。
+- **review 日志**：logs/review/2026-04-13-18-review.md
+
+- **类型**：需确认
+- **位置**：Choreographer 与 Input 的时序关联（两段核心 SQL）
+- **问题**：doFrame / CALLBACK_INPUT / CALLBACK_TRAVERSAL 的 slice name 和 track 关联方式仍是 [待验证]，但当前这两段 SQL 已经承担本节核心方法论，存在跑不通或跨版本失效的风险。
+- **建议**：交给 Task 9 核对真实 slice name、track 选择和可运行查询，再由 Task 2B 重写这一节的示例 SQL。
+- **review 日志**：logs/review/2026-04-13-18-review.md
+
+- **类型**：需补充素材
+- **位置**：InputDispatcher 延迟分解 / Choreographer 与 Input 的时序关联 / 与 13.5 的衔接
+- **问题**：正文没有 [图：...] 占位，也没有 Trace 截图描述。读者能拿到 SQL，但难以把查询结果和 Perfetto UI 中的具体位置对上。
+- **建议**：补 2-3 个 [图：...] 占位，至少覆盖队列堆积 counter、输入事件与 doFrame 对齐、SQL 定位后回到 UI 的工作流。
+- **review 日志**：logs/review/2026-04-13-18-review.md

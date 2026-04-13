@@ -4,7 +4,7 @@
   "total_sections": 207,
   "metrics": {
     "total": 207,
-    "last_updated": "2026-04-13T17:05:00+08:00",
+    "last_updated": "2026-04-13T18:05:00+08:00",
     "unknown": 34,
     "ready-for-review": 173,
     "pipeline_unknown": 31,
@@ -12,15 +12,15 @@
     "pipeline_task2b_pending": 12,
     "pipeline_task9_pending": 1,
     "task6_unknown": 31,
-    "task6_revisiting": 53,
-    "task6_pending": 110,
+    "task6_revisiting": 54,
+    "task6_pending": 109,
     "task6_reviewed": 13,
     "task9_unknown": 31,
     "task9_pending": 172,
     "task9_reviewed": 4,
     "task2b_unknown": 31,
-    "task2b_fixed": 53,
-    "task2b_idle": 111,
+    "task2b_fixed": 54,
+    "task2b_idle": 110,
     "task2b_pending": 12
   },
   "pipeline": {
@@ -32,8 +32,8 @@
     },
     "task6_state_counts": {
       "unknown": 31,
-      "revisiting": 53,
-      "pending": 110,
+      "revisiting": 54,
+      "pending": 109,
       "reviewed": 13
     },
     "task9_state_counts": {
@@ -43,8 +43,8 @@
     },
     "task2b_state_counts": {
       "unknown": 31,
-      "fixed": 53,
-      "idle": 111,
+      "fixed": 54,
+      "idle": 110,
       "pending": 12
     }
   },
@@ -2247,11 +2247,14 @@
       "title": "Perfetto 输入延迟 SQL 深度分析",
       "path": "src/part3-tools/ch13-perfetto/08-input-latency-sql.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "pending",
+      "pipeline_stage": "task2b_pending",
+      "task6_state": "reviewed",
       "task9_state": "pending",
-      "task2b_state": "idle",
-      "section": "13.8"
+      "task2b_state": "pending",
+      "section": "13.8",
+      "task6_result": "needs-rework",
+      "reviewed_by": "openclaw-task6",
+      "reviewed_date": "2026-04-13"
     },
     "src/part3-tools/ch13-perfetto/09-tracing-infrastructure.md": {
       "chapter": "13.9",

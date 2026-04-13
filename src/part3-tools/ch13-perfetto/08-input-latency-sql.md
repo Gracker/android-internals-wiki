@@ -5,6 +5,8 @@ section: "13.8"
 status: ready-for-review
 drafted_date: "2026-04-06"
 drafted_by: "openclaw-task2a"
+reviewed_by: "openclaw-task6"
+reviewed_date: "2026-04-13"
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 last_verified: "2026-04-06"
 last_verified_against: "perfetto.dev/docs/analysis/sql-tables/android-input"
@@ -20,10 +22,11 @@ sources:
     path: "intake/research-feeds/2026-04-05-15-input-pipeline-latency-breakdown.md"
 tags: [Perfetto, SQL, input-latency, android.input, input-events, trace-analysis]
 related_chapters: ["3.1", "3.4", "13.3", "13.5"]
-pipeline_stage: task6_pending
-task6_state: pending
+pipeline_stage: task2b_pending
+task6_state: reviewed
+task6_result: needs-rework
 task9_state: pending
-task2b_state: idle
+task2b_state: pending
 ---
 
 # 13.8 Perfetto 输入延迟 SQL 深度分析
@@ -61,15 +64,13 @@ dispatching_latency、wait_connection_response 等指标的 SQL 提取；ANR 前
 
 ## 为什么需要专门的输入延迟 SQL 分析
 
-在 §3.4 中，我们从机制层面分析了输入延迟的六个阶段，并介绍了 `android.input` 模块的基本用法。那为什么还需要单独一个章节来讲 SQL 分析？
-
-因为实际排障时，我们面对的不是教科书上的"理想路径"，而是这样的场景：
+在 §3.4 中，我们已经从机制层面拆解了输入延迟的六个阶段，也介绍了 `android.input` 模块的基本用法。把 SQL 单独拉出来讲，是因为实际排障面对的往往不是教科书上的“理想路径”，而是下面这几类场景：
 
 - 用户反馈"滑动列表偶尔卡一下"，但 Perfetto UI 中滑动看起来正常，掉帧不明显
 - ANR traces 显示 InputDispatcher 超时，但不知道是哪个环节拖慢了
 - 需要对比优化前后的输入延迟，要求量化到毫秒级
 
-这些问题有一个共同特点：**需要在大量事件中找出异常值**。Perfetto UI 适合看单个事件的上下文，但要在一秒钟几百个输入事件中找出"最慢的那 10 个"、或者计算 P95 延迟分布，SQL 是唯一高效的手段。
+这些问题的共同点是，**需要在大量事件中找出异常值**。Perfetto UI 适合看单个事件的上下文，但要在一秒钟几百个输入事件里找出“最慢的那 10 个”，或者计算 P95 延迟分布，SQL 往往更高效。
 
 本节的目标是提供一套完整的 SQL 工具集：从基本查询到高级分析，从单次 Trace 到批量对比，覆盖输入延迟排障的绝大多数场景。
 
@@ -111,10 +112,10 @@ INCLUDE PERFETTO MODULE android.input;
 
 ```
 total_latency = dispatch_latency + handling_latency + ack_latency
-end_to_end_latency = InputReader读取时间 → 最终帧上屏时间
+end_to_end_latency = InputReader 读取时间 → 最终帧上屏时间
 ```
 
-前三个维度描述的是 InputDispatcher → App → InputDispatcher 的 IPC 往返，覆盖了系统侧和 App 侧的交互。`end_to_end_latency_dur` 把视角拉到了更完整的管线——从事件被 InputReader 读取开始，到对应的帧被提交上屏结束。但要注意，end_to_end 的值**需要有关联帧事件才能计算**，如果 Trace 中没有启用 FrameTimeline 或事件未关联到帧，这个字段会是 NULL。
+前三个维度描述的是 InputDispatcher → App → InputDispatcher 的 IPC 往返，覆盖了系统侧和 App 侧的交互。`end_to_end_latency_dur` 则把视角扩到更完整的管线，从事件被 InputReader 读取开始，一直到对应帧提交上屏结束。要读这个字段，前提是 Trace 里能把输入事件和帧事件关联起来；如果没有启用 FrameTimeline，或者事件没有关联到帧，这个字段就是 NULL。
 
 [已验证: perfetto.dev/docs/analysis/sql-tables/android-input]
 
@@ -227,7 +228,7 @@ WHERE total_latency_dur IS NOT NULL;
 | handling | < 2ms | < 8ms | < 16ms |
 | total | < 4ms | < 12ms | < 24ms |
 
-如果 P95 和 P99 之间的差距特别大（比如 P95 = 5ms 但 P99 = 50ms），说明存在偶发的极端延迟。这时需要结合时间戳回到 Perfetto UI 查看那个时间点的系统状态——通常伴随着 GC 暂停、Binder 调用阻塞或线程调度异常。
+如果 P95 和 P99 之间的差距特别大（比如 P95 = 5 ms，但 P99 = 50 ms），说明存在偶发的极端延迟。这时可以带着时间戳回到 Perfetto UI，看那个时间点前后的系统状态。常见伴生现象包括 GC 暂停、Binder 调用阻塞或线程调度异常。
 
 
 ## InputDispatcher 延迟分解
