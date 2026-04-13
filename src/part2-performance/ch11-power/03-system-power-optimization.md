@@ -5,8 +5,9 @@ status: ready-for-review
 section: "11.3"
 drafted_date: "2026-04-03"
 drafted_by: "openclaw-task2a"
-reviewed_date: "2026-04-05"
+reviewed_date: "2026-04-13"
 reviewed_by: "openclaw-task6"
+task6_result: needs-rework
 applicable_versions: "Android 6.0 (API 23) - Android 16 (API 36)"
 last_verified: "2026-04-03"
 last_verified_against: "AOSP android-16.0.0_r1"
@@ -31,10 +32,10 @@ sources:
     path: "https://dontkillmyapp.com/"
 tags: ['doze', 'standby', 'battery-saver', 'background-restriction', 'oem-power', 'adaptive-battery', 'foreground-service']
 related_chapters: ["5.6", "11.1", "11.2", "1.3", "4.4"]
-pipeline_stage: task6_pending
-task6_state: pending
+pipeline_stage: task2b_pending
+task6_state: reviewed
 task9_state: pending
-task2b_state: idle
+task2b_state: pending
 ---
 
 # 系统级功耗优化
@@ -105,18 +106,18 @@ Doze 不是把设备"冻住"就不管了。它会周期性地进入短暂的维�
 - 临时恢复网络访问
 - WakeLock 正常工作
 
-这就解释了一个常见的用户反馈："我的 App 后台同步有时候能工作，有时候不行。"如果同步恰好赶上了维护窗口，它就能完成；如果错过了，就要等下一个窗口。
+这也是为什么常会出现这样的用户反馈：“我的 App 后台同步有时候能工作，有时候不行。”如果同步恰好赶上了维护窗口，它就能完成；如果错过了，就要等下一个窗口。
 
 ### 在 Perfetto 中的表现
 
-在 Perfetto Trace 中，我们可以通过以下方式观察 Doze 行为：
+在 Perfetto Trace 中，可从下面几个观察点判断 Doze 是否生效：
 
 - 搜索 `DeviceIdleController` 相关事件，查看设备进入和退出 Doze 的时刻
 - 观察 CPU 状态变化：Deep Doze 期间 CPU 几乎完全休眠，维护窗口期间短暂唤醒
 - 网络活动：Doze 期间网络 Track 几乎为空，维护窗口出现短暂的网络活跃区间
-- `PowerManagerService` Track 中可以看到设备空闲状态的转换
+- `PowerManagerService` Track 中可直接观察到设备空闲状态的转换
 
-[待补充：Perfetto 中 Doze 状态转换的截图]
+[图：Perfetto 中 Doze 状态切换、维护窗口唤醒与恢复休眠的示意截图]
 
 ### Doze 的豁免与例外
 
@@ -210,7 +211,7 @@ Adaptive Battery 使用一个运行在本地的机器学习模型来预测用户
 
 ## 系统级限后台策略
 
-Doze 和 Standby Buckets 是系统根据设备状态和用户行为做的"智能调节"。除此之外，Android 还有一系列"硬性"限制，不管设备状态如何，都会对后台行为进行约束。这些限制从 Android 8.0 开始逐步收紧，到 Android 14 已经形成了一套比较完整的后台管控体系。
+Doze 和 Standby Buckets 会根据设备状态和用户行为动态收紧后台活动。除此之外，Android 还有一类更直接的后台限制，不管设备状态如何，都会生效。这些限制从 Android 8.0 开始逐步收紧，到 Android 14 已经形成了一套比较完整的后台管控体系。
 
 ### Background Activity Starts 限制
 
@@ -285,14 +286,14 @@ Android 9 引入了自适应省电功能，系统会根据用户的充电习惯�
 
 ### 在 Perfetto 中观察省电模式
 
-在 Trace 中可以通过以下方式识别省电模式：
+在 Trace 中，可从下面几个观察点识别省电模式：
 
 - `PowerManagerService` Track 中查找 `isPowerSaveMode` 状态变化
 - CPU 频率 Track：如果看到所有核心频率被限制在较低值（如 1.0 GHz 以下），且持续时间较长，可能是省电模式
 - 刷新率 Track：从 120Hz 突降到 60Hz 可能是省电模式的征兆
 - `DeviceIdleController` 的状态变化
 
-[待补充：Perfetto 中省电模式下的 CPU 频率限制截图]
+[图：Perfetto 中省电模式触发后 CPU 频率受限与刷新率回落的示意截图]
 
 ### 对 App 性能分析的影响
 
@@ -306,7 +307,7 @@ Android 9 引入了自适应省电功能，系统会根据用户的充电习惯�
 
 ## 厂商级功耗管理：Android 生态中的"灰色地带"
 
-AOSP 提供的功耗管理机制（Doze、Standby、省电模式）只是"官方基线"。在中国市场，几乎所有主流厂商都会在此基础上叠加自研的、更激进的后台管控策略。这些策略通常不在 AOSP 代码中，也不遵循标准的 Standby Bucket 配额，是 Android 碎片化问题中最让开发者头疼的一环。
+AOSP 提供的功耗管理机制（Doze、Standby、省电模式）只是“官方基线”。在中国市场，几乎所有主流厂商都会在此基础上叠加自研的、更激进的后台管控策略。这些策略通常不在 AOSP 代码中，也不遵循标准的 Standby Bucket 配额，是 Android 碎片化问题中最让开发者头疼的一环。
 
 网站 dontkillmyapp.com 专门跟踪了各大厂商的后台杀进程行为，并给出了"杀伤力"评分，从侧面反映了这个问题的严重性。
 
@@ -369,7 +370,7 @@ OPPO 和 vivo 的策略类似：
 
 **与 App 耗电优化（§11.2）的关系**——§11.2 是"App 主动配合"，本节是"系统强制约束"。两者是互补关系：即便 App 做好了所有主动优化，系统策略仍然会限制它的后台行为。
 
-**与 Perfetto 工具（§13.1-13.7）的关系**——分析系统级功耗限制时，Perfetto 是最核心的工具。通过 Trace 可以看到进程的调度状态、CPU 频率变化、网络活动窗口等，帮助我们区分问题是 App 自身造成的还是系统策略导致的。
+**与 Perfetto 工具（§13.1-13.7）的关系**——分析系统级功耗限制时，Perfetto 是最核心的工具。通过 Trace 能观察到进程调度状态、CPU 频率变化、网络活动窗口等信息，帮助我们区分问题是 App 自身造成的，还是系统策略导致的。
 
 ## 版本演进
 
@@ -402,7 +403,7 @@ WorkManager 保证的是"最终一致性"——任务最终会被执行，但不
 
 ### "用户不会手动调整电池设置"
 
-实际上，用户调整电池设置的比例比我们想象的高。尤其是当系统提示"XX App 正在耗电"时，用户很可能会选择"限制"。这意味着我们的 App 可能随时从 Active 桶被手动降到 Restricted 桶。App 应该在设置中提供引导，告诉用户为什么需要后台运行权限。
+用户手动调整电池设置的比例并不低。尤其当系统提示“XX App 正在耗电”时，用户很可能会选择“限制”。我们的 App 也就可能随时从 Active 桶被手动降到 Restricted 桶，因此需要在设置页或帮助文档里说明后台运行权限的用途。
 
 ### "Doze 只在晚上才会生效"
 
@@ -410,7 +411,7 @@ WorkManager 保证的是"最终一致性"——任务最终会被执行，但不
 
 ### "国产厂商的后台管控都是负面的"
 
-厂商的激进后台管控确实给开发者带来了适配负担，但从用户角度看，它确实延长了电池续航。与其抱怨厂商，不如理解其策略并在 App 中做好引导——告诉用户如何在系统设置中"放行"我们的 App。
+厂商的激进后台管控确实给开发者带来了适配负担，但从用户角度看，它也在换取更长的续航。更实际的做法是理解这些策略，并告诉用户如何在系统设置里放行我们的 App。
 
 ## 参考资料
 

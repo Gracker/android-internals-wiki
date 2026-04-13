@@ -6782,5 +6782,38 @@
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-13T12:26:00+08:00",
     "status": "pending"
+  },
+  {
+    "section": "11.3",
+    "section_title": "系统级功耗优化",
+    "priority": 90,
+    "reason": "[review回炉] App Standby Bucket 配额、Battery Saver 行为边界与 Perfetto 证据链需要补齐",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "需确认",
+        "location": "App Standby Buckets：五个桶的定义与调度差异 / 版本演进",
+        "detail": "多处 Job / Alarm 配额、Restricted 触发条件和 Android 16 Active 桶额度写得很实，但当前验证锚点主要落在总览文档，版本边界仍需核实。",
+        "suggestion": "Task 9 核对官方页面与版本边界，Task 2B 据实收窄或保留。"
+      },
+      {
+        "type": "需确认",
+        "location": "省电模式的核心行为",
+        "detail": "“所有 App 都被当作 Rare 桶对待”“高刷强制降到 60Hz”“Motion Sense / 车载碰撞检测被关闭”等表述覆盖面过大，设备差异和版本边界不足。",
+        "suggestion": "拆成 AOSP 基线与 Pixel / 厂商特例，再补对应来源。"
+      },
+      {
+        "type": "需补充素材",
+        "location": "Perfetto 相关段落（Doze / 省电模式 / 厂商策略）",
+        "detail": "关键观察点仍只有文字和占位，没有真实 Trace、截图或已跑通的观测样例。",
+        "suggestion": "补 2-3 组真实 Perfetto 片段，至少覆盖 DeviceIdle、低功耗模式和后台冻结/延迟信号。"
+      }
+    ],
+    "added_by": "task6-review",
+    "added_at": "2026-04-13T13:05:00+08:00",
+    "status": "pending",
+    "original_review_log": "logs/review/2026-04-13-13-review.md"
   }
 ]
