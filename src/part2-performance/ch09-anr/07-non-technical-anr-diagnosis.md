@@ -7,693 +7,317 @@ tags:
 - anr
 - non-technical
 - fault-diagnosis
-- system-bugs
-- google-engineer
+- system_server
+- binder
+- perfetto
 related_chapters:
 - '9.3'
-- '8.2'
-- '13.7'
+- '13.6'
+- '15.2'
+- '1.4'
 created_by: task2a-knowledge-gap
 created_date: '2026-04-10'
 gap_source: 研究素材
 confidence: medium
 sources:
 - type: blog
-  path: 有时候你 App 发生的 ANR 不是你的错
-  title: Google 工程师“改 bug 改出 bug”的案例
+  path: Cubox/有时候你APP发生的ANR不是你的错-分享 1个 Google 工程师没 bug 改出 bug 的一个案例-2025-04-21.md
+  title: 有时候你 APP 发生的 ANR 不是你的错
   date: '2025-04-21'
+- type: official
+  path: https://developer.android.com/topic/performance/anrs/diagnose-and-fix-anrs
+  title: Diagnose and fix ANRs
+  date: '2026-04-14'
+- type: official
+  path: https://developer.android.com/topic/performance/vitals/anr
+  title: Android vitals, ANR
+  date: '2026-04-14'
+- type: official
+  path: https://perfetto.dev/docs/data-sources/cpu-scheduling
+  title: Perfetto CPU scheduling
+  date: '2026-04-14'
 - type: aosp
-  path: frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java
-  title: Activity Manager Service ANR 处理
-  date: Android 17
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: pending
+  path: frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp
+  title: Input dispatch timeout tracking
+  date: android-16.0.0_r1
+- type: aosp
+  path: frameworks/base/services/core/java/com/android/server/am/AnrHelper.java
+  title: ANR reporting helper
+  date: android-16.0.0_r1
+- type: aosp
+  path: frameworks/base/services/core/java/com/android/server/am/ActivityManagerConstants.java
+  title: Service timeout constants
+  date: android-16.0.0_r1
+- type: aosp
+  path: frameworks/base/services/core/java/com/android/server/am/BroadcastQueueImpl.java
+  title: Broadcast timeout record
+  date: android-16.0.0_r1
+- type: aosp
+  path: frameworks/base/services/core/java/com/android/server/am/ContentProviderHelper.java
+  title: Content provider ANR entry
+  date: android-16.0.0_r1
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
+task2b_state: fixed
 section: '9.7'
 reviewed_by: openclaw-task6
 reviewed_date: '2026-04-13'
 task6_result: needs-rework
 task9_result: needs-rework
-
+task2b_result: fixed
+last_verified: '2026-04-14'
+last_verified_against: AOSP android-16.0.0_r1
 ---
 
 # ANR 非技术故障诊断
 
-## 为什么要了解非技术故障 ANR
+<!-- outline-start -->
+## 要点
 
-ANR 报告里看到主线程卡住，不等于问题一定在 App 自己。Google 工程师分享过一类更容易误判的场景，ANR 表面上发生在 App 侧，根因却可能落在系统服务行为异常或系统级 bug 上。
+### 🔹 锚点 1：按 ANR 类型确定超时预算与责任边界
+### 🔹 锚点 2：用 EventLog、traces 和 Perfetto 还原等待链
+### 🔹 锚点 3：识别 system_server、Binder、CPU/内存、存储 四类系统侧根因
+### 🔹 锚点 4：按 Android 8-17 的工具边界选择抓取手段
+### 🔹 锚点 5：用公开案例说明 App 如何被框架层 bug 连坐
+<!-- outline-end -->
 
-这一节聚焦的，就是这类容易误判的场景。先把 App 侧根因和系统侧根因分开，我们才能决定下一步应该继续查业务线程，还是把证据收拢到 system_server、Binder、调度或设备状态变化这些更接近根因的位置。
+## 为什么要单独看“非技术故障” ANR
 
-## 核心机制
+ANR 报告把责任先落在“超时的进程”上，这一步只够告诉我们谁被系统判了无响应，不够回答根因在哪。很多线上 ANR 都是这个结构：App 主线程栈里看不到明显的长计算，业务代码也没有复现稳定规律，超时窗口里却冒出了 `system_server` 锁争用、Binder 对端停摆、CPU 饥饿、存储 stall，或者输入框架本身的历史 bug。
 
-### 系统服务异常 ANR 的类型
+9.7 这节要解决的就是这类场景。目标是把证据按“超时类型 → 等待对象 → 对端进程 → 系统状态”这条顺序收拢起来。这样我们才能判断下一步该继续看业务线程，还是把材料转给 Framework、OEM、驱动或内核同学。相关的基础分析动作在 [[ANR 分析方法|§9.3 ANR 分析方法]]，线程状态读取方法在 [[线程 CPU 状态分析|§13.6 线程 CPU 状态分析]]，归因边界在 [[如何区分系统问题和 App 问题|§15.2 如何区分系统问题和 App 问题]]。
 
-#### 1. ActivityManagerService 状态异常
+## 第 1 步：先判 ANR 类型，不要先猜业务代码
 
-**现象**：应用正常调用 Activity 相关 API，但 AMS 内部状态不一致导致超时。
+不同类型的 ANR，超时预算、触发线程和排查入口都不一样。拿到 `am_anr` 或 Play Vitals 的 subject 后，先把类型钉住。
+
+| 类型 | 典型 subject / reason | 常见预算 | 排查入口 | 容易误判成“App 写错”的系统侧场景 |
+|---|---|---:|---|---|
+| Input dispatch | `Input dispatching timed out` | 5s | InputDispatcher + traces + Perfetto | `system_server` 卡死、`no focused window`、输入框架回归、Binder 对端阻塞 |
+| Service | `executing service ...` | 前台 20s，后台 200s | `ActiveServices` + traces + Perfetto | 冷启动过慢、主线程被别的组件占住、系统负载高 |
+| Broadcast | `Broadcast of Intent ...` | 前台 10s，后台 60s；Android 14+ CPU-starved 场景可拉长到 10-20s / 60-120s | `BroadcastQueueImpl` + EventLog + Perfetto | CPU 饥饿、进程冷启动、共享 worker 线程被别的任务占住 |
+| ContentProvider | Provider publish / provider call timeout | 常见预算 10s | `ContentProviderHelper` + traces + Perfetto | Provider 进程冷启动、Binder 线程池耗尽、系统存储路径卡顿 |
+
+[已验证: 官方文档, https://developer.android.com/topic/performance/anrs/diagnose-and-fix-anrs]
+
+原稿把这些超时都写成 AMS 内部状态错乱、`Message.timeout`、电池异常之类的伪机制，这会把读者直接带偏。真实入口在 timeout record 和等待队列里，不在虚构的 framework API 里。
+
+### Input ANR 的真实入口在 inputflinger
+
+Input ANR 的超时检测发生在 native input pipeline。AOSP android-16 的 `InputDispatcher.cpp` 里，默认 budget 来自 `DEFAULT_INPUT_DISPATCHING_TIMEOUT`，调度循环里会周期性执行 `processAnrsLocked()`：
+
+```cpp
+// frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp
+const std::chrono::duration DEFAULT_INPUT_DISPATCHING_TIMEOUT = std::chrono::milliseconds(
+        android::os::IInputConstants::UNMULTIPLIED_DEFAULT_DISPATCHING_TIMEOUT_MILLIS *
+        HwTimeoutMultiplier());
+...
+const nsecs_t nextAnrCheck = processAnrsLocked();
+```
+
+这里的判断对象是输入等待队列，不是某个“AMS 状态不一致”回调。输入事件发出去之后，目标窗口迟迟不给 ack，InputDispatcher 才会把超时上报到 system_server 的 ANR 处理路径。[已验证: AOSP android-16.0.0_r1, frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp]
+
+### Service、Broadcast、Provider 也都有各自的 timeout record
+
+Service 预算不是拍脑袋来的，AOSP 常量写在 `ActivityManagerConstants.java`：
 
 ```java
-// frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java
-public class ActivityManagerService {
-    // AMS 内部状态检查
-    private void checkActivityState(ActivityRecord activity) {
-        // 检查 AMS 内部状态一致性
-        if (activity.mState == ActivityState.PAUSED) {
-            // 但 Activity 实际认为自己在 RUNNING 状态
-            if (activity.app.thread.getActivityInfo().state == ActivityInfo.STATE_RUNNING) {
-                // 状态不一致，可能导致 ANR
-                Log.wtf("AMS", "State mismatch: PAUSED but RUNNING");
-                reportStateMismatchANR(activity);
-            }
-        }
-    }
-    
-    // 状态不一致导致的 ANR 报告
-    private void reportStateMismatchANR(ActivityRecord activity) {
-        // 模拟 AMS 超时逻辑
-        long timeout = System.currentTimeMillis() - activity.mLastPauseTime;
-        if (timeout > ANR_TIMEOUT) {
-            // 即使应用代码没有问题，也会触发 ANR
-            generateANRReport(activity, "AMS state mismatch");
-        }
-    }
-}
+// frameworks/base/services/core/java/com/android/server/am/ActivityManagerConstants.java
+private static final long DEFAULT_SERVICE_TIMEOUT = 20 * 1000 * Build.HW_TIMEOUT_MULTIPLIER;
+private static final long DEFAULT_SERVICE_BACKGROUND_TIMEOUT = DEFAULT_SERVICE_TIMEOUT * 10;
 ```
 
-**触发条件**：
-- AMS 内部状态更新延迟
-- 多进程竞争导致状态覆盖
-- 系统服务重启后的状态恢复不完全
-
-#### 2. Binder 通信协议异常
-
-**现象**：应用调用系统 API 时，Binder 通信层出现协议错误，导致调用被挂起。
-
-```c
-// frameworks/native/libs/binder/Binder.cpp
-status_t Binder::transact(uint32_t code, const Parcel& data, Parcel* reply, uint32_t flags) {
-    // 检查 Binder 状态
-    if (mStatus != STATUS_OK) {
-        // Binder 驱动异常状态
-        ALOGE("Binder in error state: %d", mStatus);
-        
-        // 即使应用代码正确，也会导致调用失败
-        if (mStatus == DEAD_BINDER) {
-            // 进程已经死亡，但 AMS 还在等待响应
-            return DEAD_OBJECT;
-        }
-        
-        if (mStatus == TIMED_OUT) {
-            // Binder 超时，可能由系统资源竞争引起
-            return TIMED_OUT;
-        }
-    }
-    
-    // 正常处理
-    return IPCThreadState::self()->transact(mObject, code, data, reply, flags);
-}
-```
-
-**常见场景**：
-- Binder 线程池耗尽
-- 进程间同步机制失效
-- 低内存情况下的 Binder 降级
-
-#### 3. 系统定时器异常
-
-**现象**：系统的超时检测机制本身出现故障，导致误判 ANR。
+Broadcast 的 ANR 会在 `BroadcastQueueImpl` 里生成 `TimeoutRecord` 再回到 `appNotResponding()`：
 
 ```java
-// frameworks/base/core/java/android/os/MessageQueue.java
-public class MessageQueue {
-    // 超时检测逻辑异常
-    private boolean checkForTimeout(long now) {
-        // 系统时间异常
-        if (System.currentTimeMillis() != now) {
-            // 时间不同步，可能导致超时计算错误
-            Log.w("MessageQueue", "System time mismatch detected");
-            adjustTimeDrift(now);
-            return false;
-        }
-        
-        // 检查主线程消息
-        for (Message msg = mMessages; msg != null; msg = msg.next) {
-            if (now - msg.when > msg.timeout) {
-                // 超时判定，但可能是系统时间问题
-                if (isSystemTimeDrift()) {
-                    // 系统时间漂移，重新计算超时
-                    resetTimeoutCalculation();
-                    continue;
-                }
-                return true; // 真正超时
-            }
-        }
-        return false;
-    }
-}
+// frameworks/base/services/core/java/com/android/server/am/BroadcastQueueImpl.java
+TimeoutRecord tr = TimeoutRecord.forBroadcastReceiver(r.intent, packageName, className)
+        .setExpiredTimer(timer);
+mService.appNotResponding(queue.app, tr);
 ```
 
-**诊断指标**：
-- 系统时间与设备时间不一致
-- 定时器精度下降
-- 进程睡眠时间异常
-
-### 系统资源竞争 ANR
-
-#### 1. CPU 份额异常分配
-
-**现象**：系统在关键时刻将过多 CPU 资源分配给系统进程，导致应用无法及时响应。
-
-```c
-// kernel/sched/fair.c
-void scheduler_tick(void) {
-    // CPU 调度异常检测
-    if (system_critical_mode) {
-        // 系统关键模式，可能剥夺应用 CPU 份额
-        if (task->policy == SCHED_NORMAL) {
-            // 降低应用优先级
-            task->se.vruntime += boost_factor;
-            
-            // 检查是否导致应用饥饿
-            if (task->vruntime > max_acceptable_vruntime) {
-                reportCPUStarvation(task);
-            }
-        }
-    }
-}
-
-void reportCPUStarvation(struct task_struct *task) {
-    // CPU 饥饿可能导致 ANR
-    if (task->anr_count > threshold) {
-        log_anr_event(task, "CPU starvation detected");
-    }
-}
-```
-
-#### 2. 内存压力异常
-
-**现象**：系统内存管理器在异常情况下过度回收应用内存，导致应用无法正常运行。
+ContentProvider 这条线也有独立入口：
 
 ```java
-// frameworks/base/services/core/java/com/android/server/am/MemoryManagerService.java
-public class MemoryManagerService {
-    // 内存回收策略异常
-    private void enforceMemoryPressure() {
-        long memoryPressure = getCurrentMemoryPressure();
-        
-        // 检查压力异常
-        if (memoryPressure > NORMAL_PRESSURE && memoryPressure < CRITICAL_PRESSURE) {
-            // 中等压力下异常回收
-            if (isPressureSpike(memoryPressure)) {
-                // 压力异常突增
-                logMemoryAnomaly(memoryPressure);
-                
-                // 可能导致应用内存不足
-                triggerAppTrimming();
-            }
-        }
-    }
-    
-    private void triggerAppTrimming() {
-        // 过度回收可能导致应用崩溃或 ANR
-        for (ProcessRecord app : mProcessList) {
-            if (app.importance != ProcessImportance.FOREGROUND) {
-                trimAppMemory(app, AGGRESSIVE_TRIM);
-            }
-        }
-    }
+// frameworks/base/services/core/java/com/android/server/am/ContentProviderHelper.java
+void appNotRespondingViaProvider(IBinder connection) {
+    ...
 }
 ```
 
-### 硬件异常触发的 ANR
+这些代码足够说明一件事，Service、Broadcast、Provider 的超时都有清晰的系统入口，排查时要顺着真实入口走，不要把全部 ANR 都折叠成“主线程某条 Message 超时”。[已验证: AOSP android-16.0.0_r1, frameworks/base/services/core/java/com/android/server/am/ActivityManagerConstants.java] [已验证: AOSP android-16.0.0_r1, frameworks/base/services/core/java/com/android/server/am/BroadcastQueueImpl.java] [已验证: AOSP android-16.0.0_r1, frameworks/base/services/core/java/com/android/server/am/ContentProviderHelper.java]
 
-#### 1. 热节流效应
+## 第 2 步：把证据拆成三层
 
-**现象**：设备过热时系统自动降频，导致应用响应延迟。
+### 第 2.1 层：EventLog 负责定时点
 
-```c
-// kernel/drivers/thermal/thermal_core.c
-void thermal_zone_device_update(struct thermal_zone_device *tz) {
-    // 温度检测和节流
-    int temp = thermal_zone_get_temp(tz);
-    
-    if (temp > CRITICAL_TEMP) {
-        // 高温下的系统行为改变
-        adjust_cpu_freq_limits(freq_down_ratio);
-        adjust_gpu_freq_limits(gpu_down_ratio);
-        
-        // 可能导致应用 ANR
-        if (temp > ANR_TEMP_THRESHOLD) {
-            reportThermalANR(temp);
-        }
-    }
-}
+排查 ANR 时，`am_anr` 往往比后续 traces 更接近“超时被系统认定”的时间点。我们先拿到这三个字段：
 
-void reportThermalANR(int temperature) {
-    // 热节流导致的 ANR
-    log_anr_event(NULL, "Thermal throttling ANR, temp: %d°C", temperature);
-}
-```
+- ANR 类型和 reason
+- 进程名、pid、组件名
+- 发生时间
 
-#### 2. 电池管理异常
+如果 traces 的输出时间比 `am_anr` 晚很多，说明当时系统已经很忙，dump 下来的栈不一定还是第一案发现场。这种场景里，Perfetto 和 EventLog 的对时比单看一份 traces 更有价值。这个判断在 [[ANR 分析方法|§9.3 ANR 分析方法]] 已经给出详细流程，这里只保留与“非技术故障”直接相关的一步：拿 `am_anr` 锁住时间，再看对端和系统状态。
 
-**现象**：电池管理系统异常，导致系统过度省电策略影响应用性能。
+### 第 2.2 层：traces 负责定等待对象
 
-```java
-// frameworks/base/core/java/android/os/BatteryManagerInternal.java
-public class BatteryManagerInternal {
-    // 电池状态异常检测
-    private void checkBatteryAnomaly() {
-        BatteryStatus status = getBatteryStatus();
-        
-        // 异常的电池状态
-        if (status.status == BatteryManager.STATUS_UNKNOWN) {
-            // 电池状态未知，可能触发异常省电
-            applyAggressivePowerSaving();
-            
-            // 检查是否影响应用性能
-            checkPerformanceImpact();
-        }
-    }
-    
-    private void applyAggressivePowerSaving() {
-        // 过度省电可能导致 CPU/GPU 降频
-        setPowerMode(PowerMode.ULTRA_SAVER);
-        
-        // 可能导致应用 ANR
-        if (isCriticalAppActive()) {
-            logANRRisk("Aggressive power saving");
-        }
-    }
-}
-```
+traces 最有用的地方，是把线程正在等什么暴露出来。
 
-## 诊断方法
+| traces / 栈形态 | 优先怀疑的对象 | 后续动作 |
+|---|---|---|
+| `BinderProxy.transactNative` / `IPCThreadState::waitForResponse` | 远端 Binder 服务、`system_server`、vendor daemon | 去看对端进程的 Binder 线程、锁和 CPU 状态 |
+| `waiting to lock <...>` | Java 锁竞争或死锁 | 找持锁线程，再看持锁线程在等谁 |
+| `nativePollOnce` | dump 瞬间线程空闲，不能直接免责 | 回到 `am_anr` 时间点，看历史消息和 Perfetto 轨迹 |
+| `D` 状态、文件系统或块层调用 | 存储 stall、page fault、系统 reclaim | 看全局 I/O、`kswapd`、多进程是否同时卡住 |
+| 主线程没有长栈，Perfetto 里长时间 Runnable | CPU 饥饿、优先级不利、系统负载高 | 看 CPU 调度、频率、前后台进程竞争 |
 
-### 系统日志分析
+这一层的任务是找“等待对象”，不是急着定责。App 主线程卡在同步 Binder 上，根因可能在远端；App 主线程 dump 到 `nativePollOnce`，也不代表它前一秒没堵过队。
 
-#### 1. AMS 状态异常检测
+### 第 2.3 层：Perfetto 负责定根因
+
+Perfetto 把单点 traces 变成时间线。做 9.7 这类问题时，建议至少把下面四条轨放到同一个时间窗口：
+
+- App 进程主线程的 slice 和 `thread_state`
+- `system_server` 里相关 Binder 线程或主线程
+- CPU Scheduling / CPU Frequency
+- Binder transaction 或能代表阻塞对象的 slice
+
+[图：Perfetto 中 App 主线程、system_server 线程、CPU Scheduling 与 Binder 事务放到同一时间窗口]
+
+看到的模式通常只有几种：
+
+- 主线程 Running 很长，Wall≈CPU，问题更像 App 自己在做重活。
+- 主线程 Runnable 很长，CPU 一直满，问题更像调度竞争。
+- 主线程 Sleep 在 Binder wait 上，远端线程被锁住或 CPU 抢不到，问题在对端。
+- 多个进程都出现 D 状态，块层或文件系统轨迹一起变长，问题更像系统存储路径。
+
+线程状态的读法和颜色含义，统一以 [[线程 CPU 状态分析|§13.6 线程 CPU 状态分析]] 为准。[已验证: 官方文档, https://perfetto.dev/docs/data-sources/cpu-scheduling]
+
+## 高发的四类“App 躺枪”场景
+
+### 1. `system_server` 锁争用或服务端卡死
+
+这类场景里，App 只是同步等系统服务返回。ANR 栈常见形态是 `BinderProxy.transactNative`、`IActivityTaskManager`、`IPackageManager`、`IAccessibilityManager` 之类的 Binder 调用。对端如果是 `system_server`，下一步就去看它的主线程或 Binder 线程有没有锁争用、长 Runnable、长 Running。
+
+输入侧的 `(server) is not responding` 和 `no focused window`，都很容易落到这一类。它们看上去是“某个前台 App 的 Input ANR”，证据链却常常指向 `system_server` 的窗口管理、输入回调、焦点切换、手势监控。遇到这种 subject，别只盯着 App trace。
+
+### 2. Binder 线程池耗尽或远端进程卡死
+
+主线程同步发起 Binder 调用时，只要远端线程池空不出来，或者远端线程拿到请求后又被锁、I/O、CPU 饥饿卡住，调用方就会一起等。ContentProvider、媒体服务、定位、厂商服务都可能落进这条链。
+
+这类问题的识别方式很朴素：
+
+- App 主线程卡在 Binder wait。
+- 远端进程没有空闲 Binder 线程，或者 Binder 线程都在做长事务。
+- 把调用挪到子线程后，ANR 消失，功能仍然慢。
+
+旧资料里常出现 `cat /proc/binder/stats` 这类命令。现在不能把它当通用入口。很多商用设备没有对 user build 开放 binder debug 节点，路径也可能是 binderfs 或 debugfs，需要 root / eng / userdebug 前提。它能作为辅证，不能当默认第一手资料。
+
+### 3. CPU 饥饿、reclaim、freezer
+
+如果 Perfetto 里主线程长时间 Runnable，CPU 区域又一直满载，问题就从“线程做了什么”转成“线程为什么排不上”。这种场景下，系统负载、后台重活、频率受限、reclaim 都会放大超时风险。Broadcast、Service、冷启动型 ContentProvider ANR 特别容易被这类系统状态拖垮。
+
+`kswapd` 活跃、major fault 飙升、主线程或对端线程出现 D 状态，都说明系统在为内存或存储付账。Android 12+ 还多了一类 freezer 证据：事件本来该送达，目标进程却被冻结了，EventLog 里能看到 `am_freeze` / `unfreeze`。这类现象在手势监控、截图、后台辅助进程里并不罕见。
+
+高负载不等于 App 自动免责。更稳妥的写法是：高负载会放大 App 侧耗时，也可能单独构成系统侧根因。要不要定成“系统问题”，回到 Wall/CPU、等待对象和对端状态一起看。这个归因边界在 [[如何区分系统问题和 App 问题|§15.2 如何区分系统问题和 App 问题]] 有完整展开。
+
+### 4. 存储 stall 与 Provider / 冷启动路径
+
+ContentProvider 这条线最容易被写错。Provider 的 CRUD 工作通常跑在 Provider 进程的 Binder 线程池，不是天然跑在主线程；会直接把调用方拖进 ANR 的，往往是下面两种情况：
+
+- Provider 进程冷启动或 publish 太慢，调用方一直等远端 ready。
+- Provider 端 Binder 线程池被慢查询、SQLite open、文件 I/O 或系统存储 stall 堵住了。
+
+这一类如果只盯调用方的 UI 线程，很容易得出“主线程没干重活却超时”的假象。把调用方和 Provider 进程一起放进 Perfetto，看有没有多线程同步掉进 D 状态、有没有 SQLite open / 文件系统调用拉长，才知道根因是在 App 自己的数据路径，还是整个系统存储路径都在抖。
+
+## Android 8-17 的工具边界
+
+原稿把 `systrace.py`、`atrace`、`/proc/binder/stats`、`watch -n 1` 混成一套，读者照抄很容易跑不通。更实用的边界如下：
+
+| Android 版本 | 主抓取手段 | 适合做什么 | 不要默认假设 |
+|---|---|---|---|
+| 8-9 | bugreport、`/data/anr/traces.txt`、必要时 legacy `atrace` / Systrace | 先拿 ANR 时间点、主线程栈、基础调度信息 | Perfetto UI/trace 能力与新版本完全等价 |
+| 10-11 | bugreport、`/data/anr/`、Perfetto | traces + 调度 + Binder + CPU | 旧的 `systrace.py` 仍是主入口 |
+| 12-17 | bugreport、`/data/anr/anr_*`、Perfetto | 以 Perfetto 为主线，同时观察 `thread_state`、Binder、CPU、系统服务 | `/proc/binder/stats`、debugfs 节点在所有量产机都可读 |
+
+一套稳妥的最小抓取组合是：
 
 ```bash
-# 检查 AMS 状态日志
-adb logcat -s ActivityManagerService | grep "State mismatch"
-adb logcat -s ActivityManagerService | grep "ANR.*timeout"
-
-# 分析 AMS 状态变化
-adb logcat -s ActivityManagerService | grep ".*Activity.*State.*"
+adb logcat -b events | grep am_anr
+adb bugreport
+adb shell ls /data/anr
 ```
 
-**关键日志模式**：
-```
-W/ActivityManagerService(1234): State mismatch: PAUSED but RUNNING
-E/ActivityManagerService(1234): AMS internal ANR detected
-W/ActivityManagerService(1234): Binder timeout in system call
-```
+设备允许抓 trace 时，再补一份 Perfetto。对系统服务型 ANR，bugreport 和 Perfetto 的组合价值通常高过单独看一份主线程 trace。
 
-#### 2. Binder 异常检测
+## 公开案例：InputTransport 历史 bug 让王者荣耀背锅
 
-```bash
-# 检查 Binder 异常
-adb logcat -s Binder | grep "DEAD_BINDER"
-adb logcat -s Binder | grep "TIMED_OUT"
-adb logcat -s Binder | grep "transaction failed"
+原始公开材料里有一条很典型的“App 躺枪”案例。手机上概率性出现王者荣耀 Input ANR，EventLog 是这样写的：
 
-# 检查线程池状态
-adb shell "cat /proc/binder/stats"
+```text
+am_anr : [0,22222,com.tencent.tmgp.sgame,448932,Input dispatching timed out
+(Waiting to send non-key event because the touched window has not finished
+processing certain input events that were delivered to it over 500.0ms ago.
+Wait queue length: 27. Wait queue head age: 5504.1ms.)]
 ```
 
-**关键指标**：
-- `transaction`: 事务总数
-- `delivered_transaction`: 成功事务数
-- `dead_transaction`: 失败事务数
+同一时刻的 InputDispatcher 日志也给出了相同的等待队列信息：
 
-### 性能分析工具
-
-#### 1. SystemTrace 诊断
-
-```bash
-# 捕获系统 Trace
-adb shell "atrace --cpu=9999 -t 10s sched freq binder > system_trace.tracing"
-
-# 转换为可读格式
-python3 systrace.py system_trace.tracing -o system_trace.html
-
-# 分析关键调度事件
-grep "ANR\|timeout\|state.*change" system_trace.trace
+```text
+InputDispatcher: Application is not responding:
+Window{927f72 u0 com.tencent.tmgp.sgame/com.tencent.tmgp.sgame.SGameActivity}.
+It has been 5004.8ms since event, 5004.4ms since wait started.
+Reason: Waiting to send non-key event because the touched window has not finished
+processing certain input events that were delivered to it over 500.0ms ago.
+Wait queue length: 27. Wait queue head age: 5504.1ms.
 ```
 
-#### 2. 内存分析
+[来源: Cubox/有时候你APP发生的ANR不是你的错-分享 1个 Google 工程师没 bug 改出 bug 的一个案例-2025-04-21.md]
 
-```java
-// 检查内存使用模式
-public class MemoryPatternAnalyzer {
-    public void analyzeMemoryPattern() {
-        // 监控内存压力变化
-        long memoryPressure = getMemoryPressure();
-        long memoryTrend = getMemoryTrend();
-        
-        if (memoryPressure > 0.8 && memoryTrend > 0.1) {
-            // 内存压力异常增加
-            logMemoryAnomaly(memoryPressure, memoryTrend);
-        }
-    }
-}
-```
+这条案例最有价值的地方，是它没有停在“主线程 ANR”四个字上。公开材料继续给了两条关键证据：
 
-### 硬件状态检查
+1. **Looper trace 没看到长消息阻塞。** 这说明 App 主线程没有明显的单条消息跑满 5 秒。
+2. **动态 input log 把问题收敛到 `InputTransport.cpp`。** 文中定位到 2015 年 Google 一次为 `fsanitize=integer` 重构输入序列链表的提交，`seqChain` 在某些 `chainIndex` 路径下漏记，后续由手机厂商在 2017 年提交补丁修复。
 
-#### 1. 温度监控
+原始材料给出的 Gerrit 链接如下：
 
-```bash
-# 检查设备温度
-adb shell "cat /sys/class/thermal/thermal_zone*/temp"
+- `[引用: https://android-review.googlesource.com/c/platform/frameworks/native/+/172237/4/libs/input/InputTransport.cpp]`
+- `[引用: https://android-review.googlesource.com/c/platform/frameworks/native/+/396876]`
 
-# 监控温度变化
-adb shell "watch -n 1 cat /sys/class/thermal/thermal_zone*/temp"
-```
+这份材料留下的结论很直接：ANR 的表象落在游戏 App，根因却在输入传输层的历史 bug。读者该记住的是下面这套证据顺序：
 
-#### 2. CPU 频率监控
+- Input ANR 的 reason 明确写着 wait queue 积压。
+- App looper 没有对应的长消息。
+- 动态 input log 把问题收敛到 InputTransport。
+- 框架补丁能稳定解释和修复问题。
 
-```bash
-# 检查 CPU 频率
-adb shell "cat /sys/devices/system/cpu/cpu*/cpufreq/scaling_cur_freq"
+[图：原始公开材料中的动态 input log 截图，定位到 InputTransport.cpp 的 `seqChain` 漏记]
 
-# 分析频率变化模式
-adb shell "cat /proc/stat | grep cpu"
-```
-
-## 预防策略
-
-### 系统级防护
-
-#### 1. 状态一致性检查
-
-```java
-// 实现状态监控服务
-public class StateConsistencyMonitor {
-    private Map<String, Object> systemStates = new ConcurrentHashMap<>();
-    
-    public void monitorSystemStates() {
-        // 监控 AMS 状态
-        monitorAMSState();
-        
-        // 监控 Binder 状态
-        monitorBinderState();
-        
-        // 监控内存状态
-        monitorMemoryState();
-    }
-    
-    private void monitorAMSState() {
-        ActivityManager am = (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
-        
-        // 检查应用进程状态
-        List<ActivityManager.RunningAppProcessInfo> processes = am.getRunningAppProcesses();
-        
-        for (ActivityManager.RunningAppProcessInfo process : processes) {
-            // 检查状态一致性
-            if (!isProcessStateConsistent(process)) {
-                logStateInconsistency(process);
-            }
-        }
-    }
-}
-```
-
-#### 2. 异常检测和恢复
-
-```java
-// 实现系统异常恢复
-public class SystemRecoveryManager {
-    public void handleSystemAnomaly(AnomalyType type) {
-        switch (type) {
-            case BINDER_ERROR:
-                recoverBinderError();
-                break;
-            case MEMORY_PRESSURE:
-                recoverMemoryPressure();
-                break;
-            case CPU_STARVATION:
-                recoverCPUStarvation();
-                break;
-        }
-    }
-    
-    private void recoverBinderError() {
-        // 重启 Binder 服务
-        restartSystemService("binder");
-        
-        // 通知应用重试操作
-        notifyAppToRetry("binder_operation");
-    }
-}
-```
-
-### 应用级防护
-
-#### 1. 操作重试机制
-
-```java
-// 实现智能重试
-public class RetryManager {
-    private static final int MAX_RETRIES = 3;
-    private static final long RETRY_DELAY_MS = 1000;
-    
-    public void executeWithRetry(Runnable operation, String operationType) {
-        int attempt = 0;
-        boolean success = false;
-        
-        while (attempt < MAX_RETRIES && !success) {
-            try {
-                operation.run();
-                success = true;
-            } catch (SystemException e) {
-                if (isSystemError(e)) {
-                    // 系统错误，需要等待
-                    attempt++;
-                    if (attempt < MAX_RETRIES) {
-                        SystemClock.sleep(RETRY_DELAY_MS * attempt);
-                    }
-                } else {
-                    // 应用错误，立即失败
-                    throw e;
-                }
-            }
-        }
-        
-        if (!success) {
-            logRetryFailure(operationType, attempt);
-        }
-    }
-    
-    private boolean isSystemError(Exception e) {
-        // 判断是否为系统错误
-        return e instanceof BinderException || 
-               e instanceof ServiceNotFoundException;
-    }
-}
-```
-
-#### 2. 性能监控和预警
-
-```java
-// 实现性能监控
-public class PerformanceMonitor {
-    private List<PerformanceMetric> metrics = new ArrayList<>();
-    
-    public void monitorPerformance() {
-        // 监控关键性能指标
-        monitorResponseTime();
-        monitorMemoryUsage();
-        monitorCPUUsage();
-    }
-    
-    private void monitorResponseTime() {
-        long responseTime = getSystemResponseTime();
-        long baseline = getBaselineResponseTime();
-        
-        if (responseTime > baseline * 2) {
-            // 响应时间异常
-            logPerformanceAnomaly("response_time", responseTime, baseline);
-            
-            // 触发预警
-            triggerAlert("System response time degraded");
-        }
-    }
-}
-```
-
-## 真实案例分析
-
-### 案例：Google 工程师“改 bug 改出 bug”
-
-#### 背景
-Google 工程师在修一个 ANR 时，尝试调整 Activity 启动流程，结果旧问题还没完全收住，新 ANR 又冒了出来。
-
-#### 问题分析
-
-**原始问题**：
-```
-用户报告：应用启动时偶尔出现 ANR，耗时 > 5 s
-```
-
-**工程师的"修复"**：
-```java
-// 优化前的启动流程
-public class ActivityStarter {
-    public void startActivity(Activity activity) {
-        // 直接启动 Activity
-        activity.startActivity(intent);
-        // 没有状态检查
-    }
-}
-```
-
-**修改后的代码**：
-```java
-// "优化"后的启动流程
-public class ActivityStarter {
-    public void startActivity(Activity activity) {
-        // 添加状态检查"优化"
-        if (activity.getState() == ActivityState.CREATED) {
-            activity.startActivity(intent);
-        } else {
-            // 状态不匹配，抛出异常
-            throw new IllegalStateException("Activity already started");
-        }
-    }
-}
-```
-
-#### 新问题出现
-
-**ANR 现象**：
-- 应用启动时间正常（2 到 3 s）
-- 但在特定操作时出现 ANR
-- ANR 发生时没有明显的阻塞调用
-
-**深入分析**：
-```java
-// 检查系统状态
-adb shell dumpsys activity top | grep "State"
-adb shell dumpsys activity processes | grep "ANR"
-```
-
-发现：
-- AMS 内部状态不一致
-- Activity 状态更新延迟
-- 导致新的异常触发
-
-#### 根本原因
-
-```java
-// AMS 内部状态管理问题
-public class ActivityManagerService {
-    // 状态更新延迟
-    private void updateActivityState(ActivityRecord activity, ActivityState newState) {
-        // 状态更新被阻塞
-        if (mStateUpdateLock.isLocked()) {
-            // 状态更新等待，导致超时
-            logStateUpdateTimeout();
-            return;
-        }
-        
-        // 正常状态更新
-        activity.mState = newState;
-    }
-}
-```
-
-**解决方案**：
-```java
-// 修正后的状态管理
-public class ActivityStarter {
-    public void startActivity(Activity activity) {
-        // 使用状态锁避免竞争
-        synchronized (mStateLock) {
-            if (activity.getState() == ActivityState.CREATED) {
-                activity.startActivity(intent);
-            } else {
-                // 记录状态但不抛出异常
-                logStateWarning(activity.getState());
-                // 继续执行，由 AMS 内部处理
-                activity.startActivity(intent);
-            }
-        }
-    }
-}
-```
+这类案例写进技术书时，不该再发明 `ActivityState.CREATED`、`generateANRReport()` 这类不存在的 framework API。保留“现象 + 证据 + 推理链”就够了，而且更能复核。
 
 ## 常见误区
 
-### 误区 1：所有 ANR 都需要立即修复代码
+### `nativePollOnce` 就能证明主线程没问题
 
-**事实**：需要先判断是否为系统级问题
+不能。它只说明 dump 的那一刻主线程在等消息。超时真正发生时，主线程可能刚好把重活做完，也可能一直在等远端 Binder 返回。
 
-**检查流程**：
-```java
-public class ANRDiagnostic {
-    public void diagnoseANR(ANRReport report) {
-        // 1. 检查是否为系统异常
-        if (isSystemRelatedANR(report)) {
-            // 系统问题，需要联系厂商或 Google
-            escalateToSystemTeam();
-            return;
-        }
-        
-        // 2. 检查是否为资源竞争
-        if (isResourceCompetingANR(report)) {
-            // 资源问题，优化资源使用
-            optimizeResourceUsage();
-            return;
-        }
-        
-        // 3. 确实是应用代码问题
-        fixApplicationCode();
-    }
-}
-```
+### Input ANR 都是前台 App 自己慢
 
-### 误区 2：ANR 只与主线程相关
+不能这么写。`(server) is not responding`、`Application does not have a focused window`、输入框架历史回归，都能把前台 App 放到 ANR subject 上。
 
-**事实**：系统级 ANR 可能涉及多进程和系统服务
+### 一条 Binder 命令能解决所有定位
 
-**全面检查**：
-```bash
-# 检查所有相关进程
-adb shell "ps | grep -E '(system|server|media)'"
-adb shell "dumpsys cpuinfo"
-
-# 检查 Binder 通信
-adb shell "cat /proc/binder/stats"
-```
-
-### 误区 3：重启应用就能解决所有 ANR
-
-**事实**：系统级问题会重复出现
-
-**持久性检查**：
-```java
-public class ANRPersistenceChecker {
-    public void checkANRPersistence(String packageName) {
-        List<ANRReport> reports = getHistoricalANRs(packageName);
-        
-        if (reports.size() > 5) {
-            // 多次发生，可能是系统问题
-            if (areANRsSystemRelated(reports)) {
-                reportSystemIssue();
-            }
-        }
-    }
-}
-```
+也不成立。量产机上的 binder debug 节点经常受 SELinux、binderfs、build type 限制。EventLog、traces、Perfetto 才是跨设备更稳定的主线。
 
 ## 参考资料
 
-- **AOSP 源码**：`frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java`
-- **Binder 机制**：`frameworks/native/libs/binder/Binder.cpp`
-- **系统调度**：`kernel/sched/fair.c`
-- **Google 工程师案例**：[有时你 App 发生的 ANR 不是你的错](https://cubox.pro/web/card/7150379012982837004)
-- **ANR 诊断指南**：[Android ANR Analysis Guide](https://developer.android.com/topic/performance/vitals/anr)
+- `https://developer.android.com/topic/performance/anrs/diagnose-and-fix-anrs`
+- `https://developer.android.com/topic/performance/vitals/anr`
+- `https://perfetto.dev/docs/data-sources/cpu-scheduling`
+- `frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp`
+- `frameworks/base/services/core/java/com/android/server/am/AnrHelper.java`
+- `frameworks/base/services/core/java/com/android/server/am/ActivityManagerConstants.java`
+- `frameworks/base/services/core/java/com/android/server/am/BroadcastQueueImpl.java`
+- `frameworks/base/services/core/java/com/android/server/am/ContentProviderHelper.java`
+- `Cubox/有时候你APP发生的ANR不是你的错-分享 1个 Google 工程师没 bug 改出 bug 的一个案例-2025-04-21.md`
