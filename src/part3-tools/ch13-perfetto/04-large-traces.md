@@ -5,7 +5,7 @@ section: "13.4"
 status: ready-for-review
 drafted_date: "2026-04-03"
 drafted_by: "openclaw-task2a"
-reviewed_date: "2026-04-05"
+reviewed_date: "2026-04-13"
 reviewed_by: "openclaw-task6"
 applicable_versions: "Android 8.0 (API 26) - Android 16 (API 36)"
 last_verified: "2026-04-03"
@@ -22,10 +22,11 @@ sources:
     path: "external/perfetto/src/trace_processor/"
 tags: [perfetto, trace_processor, sql, python, cli, large-traces]
 related_chapters: ["13.1", "13.2", "13.3", "13.5"]
-pipeline_stage: task6_pending
-task6_state: pending
+pipeline_stage: task2b_pending
+task6_state: reviewed
+task6_result: needs-rework
 task9_state: pending
-task2b_state: idle
+task2b_state: pending
 ---
 
 # 命令行打开超大 Trace
@@ -38,12 +39,12 @@ task2b_state: idle
 - 🔹 大 Trace 的挑战：几百 MB 到 GB 级别，浏览器内存不足
 - 🔹 trace_processor：命令行交互式查询工具
 - 🔹 Perfetto SQL 查询基础：tables、views、常用查询模式
-- 🔹 trace_processor_shell 批量分析脚本编写
+- 🔹 用 trace_processor 批量跑 SQL 脚本
 - 🔹 用 Python 的 perfetto.trace_processor 库做自动化分析
 
 ### 扩展（可选深入）
 
-- 🔸 trace_to_text 转换工具
+- 🔸 traceconv 转换工具
 - 🔸 自建 Perfetto 分析 Pipeline 的实践
 
 ### OpenClaw 加工指引
@@ -61,21 +62,21 @@ task2b_state: idle
 
 更常见的一个场景是：我们需要对一批 Trace 做批量分析，比如每天自动抓取 50 个冷启动 Trace，统计 P95 启动时间。手动一个个打开 UI 不现实，我们需要一个可以用脚本驱动、不依赖浏览器的分析工具。
 
-Perfetto 官方为我们准备的就是 `trace_processor`——一个 C++ 实现的命令行工具，它能把 Trace 文件当作数据库来查询。我们写 SQL，它返回结果。更准确地说，它把 Trace 中的每一类事件都解析成结构化的表（`slice`、`sched`、`counter`……），然后我们用标准 SQL 查这些表就行了。
+Perfetto 官方为我们准备的就是 `trace_processor`——一个 C++ 实现的命令行工具，它能把 Trace 文件当作数据库来查询。我们写 SQL，它返回结果。它会把 Trace 中的每一类事件解析成结构化的表（`slice`、`sched`、`counter`……），然后我们直接用 SQL 去查。
 
-还有一个经常被忽略的好处是**隐私**。`trace_processor` 是本地工具，Trace 文件完全在本地解析，不需要上传到任何云端。对于包含敏感信息的系统级 Trace，这一点很重要。
+还有一个经常被忽略的好处是**隐私**。`trace_processor` 是本地工具，Trace 文件完全在本地解析，不需要上传到任何云端。对于包含敏感信息的系统级 Trace，这种本地解析方式更稳妥。
 
 ## 大 Trace 的挑战：浏览器为什么扛不住
 
 [已验证: 官方文档, perfetto.dev/docs/analysis/trace-processor]
 
-Perfetto UI（ui.perfetto.dev）本质上是在浏览器里跑一个 C++ 编译成的 WebAssembly 模块。这个模块负责解析 protobuf 格式的 Trace 数据，构建内存中的 SQL 数据库，然后在 UI 上渲染各种 Track。
+Perfetto UI（ui.perfetto.dev）是在浏览器里运行一个由 C++ 编译成的 WebAssembly 模块。这个模块负责解析 protobuf 格式的 Trace 数据，构建内存中的 SQL 数据库，然后在 UI 上渲染各种 Track。
 
 当 Trace 文件在几十 MB 以内时，这套流程工作得很好。但当 Trace 超过 200MB，问题开始出现：
 
 浏览器对单个标签页的内存有限制（Chrome 通常是 2-4GB），而解析一个大 Trace 本身就需要大量内存——原始 protobuf 数据、解析后的 SQL 表、UI 渲染用的数据结构，加起来往往是原始文件大小的 3-5 倍。一个 500MB 的 Trace 轻松就能吃掉 1.5GB 以上的浏览器内存。
 
-另外，Perfetto UI 加载 Trace 时是先把整个文件读入内存，再逐步解析。这意味着在加载完成之前，UI 是完全冻结的——我们看到的只是一个转圈圈的进度条。
+另外，Perfetto UI 加载 Trace 时是先把整个文件读入内存，再逐步解析。加载完成之前，UI 通常会冻结，我们看到的往往只是一个转圈圈的进度条。
 
 而 `trace_processor` 作为原生 C++ 二进制文件，没有浏览器的内存沙箱限制，可以直接使用操作系统的全部可用内存。同样的 500MB Trace，在命令行下通常能更快速、更稳定地完成解析和查询。
 
@@ -131,7 +132,7 @@ sql> .schema slice
 
 ### 两种工作模式
 
-`trace_processor` 有两种工作模式值得区分。
+`trace_processor` 主要有两种工作模式。
 
 **交互模式**就是上面说的，直接启动 shell 手动查询，适合探索性的分析——我们对 Trace 里有什么还不太确定，想先看看。
 
@@ -155,7 +156,7 @@ PerfettoSQL 建立在 SQLite 引擎之上，语法与标准 SQL 基本一致。�
 
 在写查询之前，我们需要理解 Perfetto 对 Trace 数据的抽象方式。
 
-所有时间戳都以**纳秒**为单位。这不是 wall clock time，而是从某个起始点开始的单调递增值（通常是 BOOTTIME 时钟）。这意味着我们可以直接对时间戳做减法得到持续时长，但无法直接转换成"几点几分"这样的时间。
+所有时间戳都以**纳秒**为单位。这不是 wall clock time，而是从某个起始点开始的单调递增值（通常是 BOOTTIME 时钟）。所以我们可以直接对时间戳做减法得到持续时长，但不能把它直接当成“几点几分”这样的时钟时间。
 
 **Slice** 是一个时间段，表示"某个操作从什么时候开始、持续了多久"。比如主线程上一次 `measure` 操作、一个 Binder 调用的耗时、一次 GC 过程，在 Perfetto 中都是一个 Slice。
 
@@ -253,13 +254,13 @@ LIMIT 10;
 
 需要注意 `EXTRACT_ARG` 在大表上性能不如显式 JOIN——它每行都要执行一次子查询。对探索性分析没问题，但在批量脚本中如果性能敏感，建议改用 JOIN。
 
-## trace_processor_shell 批量分析脚本编写
+## 用 trace_processor 批量跑 SQL 脚本
 
 当我们确定了查询逻辑后，下一步通常是把它固化成脚本，实现自动化分析。
 
-### 用 .read 命令执行 SQL 文件
+### 用 `-q` 执行 SQL 文件
 
-最简单的方式是准备一个 `.sql` 文件，然后用 `trace_processor` 的 `-q` 参数执行：
+如果已经进入交互式 shell，可以用 `.read` 执行外部 SQL 文件。脚本场景里，更常用的是 `-q`：
 
 ```bash
 ./trace_processor -q my_analysis.sql < trace.perfetto-trace
@@ -277,7 +278,7 @@ cat trace.perfetto-trace | ./trace_processor -q my_analysis.sql
 
 假设我们需要对每个 Trace 统计：主线程总运行时长、GC 次数、ANR 数量。我们可以这样组织：
 
-首先是 SQL 文件 `analyze_trace.sql`：
+SQL 文件 `analyze_trace.sql` 如下：
 
 ```sql
 -- 主线程 CPU 占用
@@ -348,7 +349,7 @@ done
 
 [已验证: 官方文档, perfetto.dev/docs/analysis/batch-trace-processor]
 
-当分析逻辑变得复杂——比如需要多步查询、结果需要进一步计算、要生成图表——shell 脚本就开始力不从心了。这时候我们应该切换到 Python，使用 Perfetto 官方提供的 Python API。
+当分析逻辑变得复杂——比如需要多步查询、结果需要进一步计算、要生成图表——shell 脚本就开始力不从心了。这时更适合切到 Python，用 Perfetto 官方提供的 Python API 组织查询和后处理。
 
 ### 安装
 
@@ -381,7 +382,7 @@ df = tp.query('SELECT ts, dur, name FROM slice').as_pandas_dataframe()
 print(df.head())
 ```
 
-这里有个细节值得注意：`tp.query()` 返回的是一个迭代器，不是一次性加载所有结果的列表。这是为了处理可能很大的查询结果集。如果我们确定结果不大（比如 LIMIT 10），直接迭代就行。如果结果可能很大，用 `as_pandas_dataframe()` 会一次性加载到内存中。
+`tp.query()` 返回的是迭代器，不是一次性加载所有结果的列表。这样设计，是为了处理可能很大的查询结果集。结果不大时，直接迭代就行；如果准备交给 Pandas 做后续分析，再用 `as_pandas_dataframe()` 一次性转成 DataFrame。
 
 ### 实战：冷启动分析脚本
 
@@ -482,7 +483,7 @@ tp = TraceProcessor(trace='trace.perfetto-trace', config=config)
 
 [已验证: 官方文档, perfetto.dev/docs/analysis/trace-processor#python-api]
 
-## trace_to_text：格式转换工具
+## traceconv：格式转换工具
 
 [已验证: 官方文档, perfetto.dev/docs/analysis/traceconv]
 
@@ -520,7 +521,7 @@ chmod +x traceconv
 
 ### 结果存储与趋势追踪
 
-每次分析的结果应该持久化存储（SQLite、CSV、或者时序数据库），这样才能做趋势对比。一个简单的做法是每次分析结果写入一个 CSV 文件，带日期列，然后用 Pandas 做趋势分析：
+每次分析的结果应该持久化存储（SQLite、CSV、或者时序数据库），这样才能做趋势对比。最省事的做法，是每次分析结果写入带日期列的 CSV，再用 Pandas 看趋势：
 
 ```python
 import pandas as pd
@@ -569,7 +570,7 @@ print(recent.groupby('date')['oncreate_ms'].describe())
 
 **"trace_processor 能完全替代 Perfetto UI 吗？"**
 
-不能，也不应该。两者是互补关系。`trace_processor` 擅长精确的数值查询和批量分析，Perfetto UI 擅长可视化——看 Track 上的时间分布、看 Slice 的嵌套关系、看多个 Track 的时间对齐。最佳实践是：用 `trace_processor` 做初步筛选和指标提取，发现可疑区域后，再用 UI 上的 HTTP 守护进程模式打开同一个 Trace 做深入可视化分析。
+不能，也不应该。两者是互补关系。`trace_processor` 擅长精确的数值查询和批量分析，Perfetto UI 擅长可视化——看 Track 上的时间分布、看 Slice 的嵌套关系、看多个 Track 的时间对齐。实际工作里，通常先用 `trace_processor` 做初步筛选和指标提取，发现可疑区域后，再用 UI 上的 HTTP 守护进程模式打开同一个 Trace 做深入可视化分析。
 
 **"Python API 是不是比命令行慢？"**
 

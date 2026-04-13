@@ -1,38 +1,38 @@
 {
-  "generated_at": "2026-04-13T22:47:09+08:00",
+  "generated_at": "2026-04-13T23:15:08+08:00",
   "state_machine_version": "v2",
   "total_sections": 207,
   "metrics": {
     "total": 207,
-    "last_updated": "2026-04-13T22:47:09+08:00",
+    "last_updated": "2026-04-13T23:15:08+08:00",
     "ready-for-review": 173,
     "unknown": 34,
-    "pipeline_task2b_pending": 12,
-    "pipeline_task6_pending": 162,
+    "pipeline_task2b_pending": 13,
+    "pipeline_task6_pending": 161,
     "pipeline_task9_pending": 2,
     "pipeline_unknown": 31,
-    "task6_pending": 105,
-    "task6_reviewed": 14,
+    "task6_pending": 104,
+    "task6_reviewed": 15,
     "task6_revisiting": 57,
     "task6_unknown": 31,
     "task9_pending": 172,
     "task9_reviewed": 4,
     "task9_unknown": 31,
     "task2b_fixed": 57,
-    "task2b_idle": 107,
-    "task2b_pending": 12,
+    "task2b_idle": 106,
+    "task2b_pending": 13,
     "task2b_unknown": 31
   },
   "pipeline": {
     "pipeline_stage_counts": {
-      "task2b_pending": 12,
-      "task6_pending": 162,
+      "task2b_pending": 13,
+      "task6_pending": 161,
       "task9_pending": 2,
       "unknown": 31
     },
     "task6_state_counts": {
-      "pending": 105,
-      "reviewed": 14,
+      "pending": 104,
+      "reviewed": 15,
       "revisiting": 57,
       "unknown": 31
     },
@@ -43,8 +43,8 @@
     },
     "task2b_state_counts": {
       "fixed": 57,
-      "idle": 107,
-      "pending": 12,
+      "idle": 106,
+      "pending": 13,
       "unknown": 31
     }
   },
@@ -2203,13 +2203,14 @@
       "title": "命令行打开超大 Trace",
       "path": "src/part3-tools/ch13-perfetto/04-large-traces.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "pending",
+      "pipeline_stage": "task2b_pending",
+      "task6_state": "reviewed",
       "task9_state": "pending",
-      "task2b_state": "idle",
-      "reviewed_date": "2026-04-05",
+      "task2b_state": "pending",
+      "reviewed_date": "2026-04-13",
       "reviewed_by": "openclaw-task6",
-      "section": "13.4"
+      "section": "13.4",
+      "task6_result": "needs-rework"
     },
     "src/part3-tools/ch13-perfetto/05-topic-analysis.md": {
       "chapter": "13.5",
