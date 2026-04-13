@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-13T12:09:00+08:00",
+  "generated_at": "2026-04-13T12:26:00+08:00",
   "state_machine_version": "v2",
   "total_sections": 207,
   "metrics": {
@@ -1408,11 +1408,12 @@
       "status": "ready-for-review",
       "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
-      "task9_state": "pending",
+      "task9_state": "reviewed",
       "task2b_state": "pending",
       "reviewed_date": "2026-04-13",
       "reviewed_by": "openclaw-task6",
-      "task6_result": "needs-rework"
+      "task6_result": "needs-rework",
+      "task9_result": "needs-rework"
     },
     "src/part2-performance/ch07-smoothness/14-gaps-dynamic-analysis.md": {
       "chapter": "7.14",
