@@ -20,7 +20,17 @@ sources:
   - type: aosp
     path: "frameworks/base/core/res/res/xml/power_profile.xml"
   - type: aosp
-    path: "frameworks/base/core/java/android/os/BatteryStats.java"
+    path: "services/core/java/com/android/server/power/stats/BatteryStatsImpl.java"
+  - type: aosp
+    path: "services/core/java/com/android/server/power/stats/BatteryUsageStatsProvider.java"
+  - type: aosp
+    path: "services/core/java/com/android/server/power/stats/CpuPowerCalculator.java"
+  - type: aosp
+    path: "services/core/java/com/android/server/power/stats/ScreenPowerCalculator.java"
+  - type: aosp
+    path: "services/core/java/com/android/server/am/BatteryStatsService.java"
+  - type: aosp
+    path: "hardware/interfaces/power/stats/1.0/IPowerStats.hal"
   - type: aosp
     path: "hardware/interfaces/power/stats/aidl/android/hardware/power/stats/IPowerStats.aidl"
   - type: official
@@ -29,10 +39,11 @@ sources:
     path: "https://developer.android.com/topic/performance/power"
 tags: ['power', 'battery', 'power_profile', 'BatteryStats', 'ODPM', 'Coulomb Counter', 'Fuel Gauge', 'IPowerStats', '功耗归属']
 related_chapters: ["5.4", "5.5", "5.6", "11.2", "11.3", "13.1"]
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: pending
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
+task2b_state: fixed
+task2b_result: fixed
 ---
 
 
@@ -156,25 +167,27 @@ Android 功耗模型的核心是一个叫 `power_profile.xml` 的 XML 文件。�
 
 ### CPU：功耗的大头
 
-CPU 几乎永远是功耗清单上的第一项。它的工作模式简单直接：频率越高越费电，核心越多越费电，持续运行越久越费电。我们在 §5.4 中讨论过 DVFS 机制，系统会根据负载动态调整 CPU 频率来平衡性能和功耗。从功耗模型的角度看，BatteryStats 会记录每个 App 在各个 CPU 频率上的运行时间，然后乘以 power_profile 中对应频率的电流值，得到该 App 的 CPU 耗电量。
+CPU 仍然是功耗统计里最敏感的一项，但 Android 16 的模型已经不是一句“频率时间 × 电流”能讲清的。`CpuPowerCalculator` 在 power-profile 模式下把 CPU 功耗拆成三层：`PowerProfile.POWER_CPU_ACTIVE` 表示 CPU 只要处于 active 状态就会产生的基础电量；`getAveragePowerForCpuScalingPolicy()` 表示某个 cluster 被点亮时的附加电量；`getAveragePowerForCpuScalingStep()` 表示具体频点带来的增量。对应的时间来源也分成 `getCpuActiveTime()`、cluster running time 和 `getCpuFreqTimes()`。源码注释直接写着这是“CPU active + per cluster + per frequency”三层模型。[已验证: AOSP android-16.0.0_r1, services/core/java/com/android/server/power/stats/CpuPowerCalculator.java]
 
-计算公式如下：
+如果设备接了 `EnergyConsumer` 硬件计量，`CpuPowerCalculator` 会优先读取 `u.getCpuEnergyConsumptionUC()`，直接走 `POWER_MODEL_ENERGY_CONSUMPTION`。只有没有硬件能量数据时，才回退到 power-profile 估算。我们看设置页里 CPU 百分比时，先要分清设备落在哪种模式。
+
+把这套模型写成近似公式，会更接近源码：
 
 ```
-App CPU 耗电量 (mAh) = Σ (频率i的运行时间 (秒) / 3600 × 频率i的电流 (mA))
+CPU charge ≈ cpu.active × activeTime
+          + Σ(clusterPower × clusterRunningTime)
+          + Σ(freqStepPower × freqStepTime)
 ```
 
-对于需要计算能量消耗（mWh）的场景，还需要乘以对应频率下的标称电压（`cpu.voltage` 数组中的值）。但在 BatteryStats 的 App 归属统计中，计算单位是电荷量 mAh，不涉及电压。
+这里故意写成 charge，而不是 mWh。`power_profile.xml` 里没有 `cpu.voltage` 数组，当前 AOSP 也不是靠一个 `cpu.voltage` 表把 CPU 时间换成能量。HAL 侧如果提供实测值，常见原始单位是 uWs；Framework 在 `BatteryStatsImpl` 和 `BatteryConsumer` 侧再转换成 uC、mAh 等更适合归属和展示的单位。把 HAL 原始单位、Framework 内部统计单位、设置页展示单位混在一层，公式就容易写错。
 
-这里有一个容易忽略的细节：CPU 空闲时的功耗（cpu.idle）被算作系统级开销，不会归属到任何 App。只有 CPU active 状态的时间才会被分配给对应的进程。
-
-[已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/os/BatteryStats.java — getCpuEnergyConsumptionUC()]
+这套三层模型解释了一个常见现象：两个进程的 CPU 总时长接近，耗电量仍然可能差很多。差异不只来自“跑了多久”，还来自跑在哪个 cluster、跑在哪些频点、有没有直接拿到硬件能量数据。
 
 ### Display：最直观的耗电源
 
-屏幕是另一个功耗大户，而且它的耗电模式很直观——亮度越高越费电，刷新率越高越费电。power_profile 中定义了 `screen.on`（屏幕开启、最低亮度）和 `screen.full`（屏幕开启、最高亮度）两个锚点值，系统根据实际亮度在这两个值之间线性插值。
+屏幕依然是大头，但“屏幕功耗不归属到 App”已经不是完整表述。`ScreenPowerCalculator` 先看 `batteryStats.getScreenOnEnergyConsumptionUC()` 是否可用。如果设备有屏幕 `EnergyConsumer` 数据，就能直接给每个 `UidBatteryConsumer` 写入 `POWER_COMPONENT_SCREEN`。如果没有，Framework 才回退到 `POWER_GROUP_DISPLAY_SCREEN_ON` 和 `POWER_GROUP_DISPLAY_SCREEN_FULL` 这套 power-profile 估算，再按前台 activity 时间把总屏幕耗电分摊到各个 UID。源码里的 `smearScreenBatteryDrain()` 还要求总前台活动时间至少 10 分钟才开始分摊。[已验证: AOSP android-16.0.0_r1, services/core/java/com/android/server/power/stats/ScreenPowerCalculator.java]
 
-屏幕功耗通常被算作系统级开销，不会直接归属到某个 App。但在 Battery Historian 中，我们可以通过"屏幕开启时段"和"电量下降速度"的对应关系，间接判断亮屏时的耗电趋势。结合 §2.2 中讨论的刷新率机制，120Hz 屏幕在高亮度下的耗电可能比 60Hz 屏幕高出 50% 以上。
+所以，旧 batterystats 视角里常见的“屏幕是系统项”只说对了一半。到了 `BatteryUsageStats` 这层，屏幕既可能以 smear 的方式分摊到前台 UID，也可能在有硬件计量时直接带着 UID 归属结果出现。我们看设置页、电池 bugreport 和 Power Profiler 时，要先分清设备走的是哪条路径。
 
 ### GPU：隐藏的耗电源
 
@@ -265,77 +278,78 @@ Fuel Gauge 建立在 Coulomb Counter 之上。它不仅做电流积分，还会�
 
 ### 归属的基本思路
 
-BatteryStats 的归属算法基于一个简洁的公式：
+`BatteryStatsImpl` 先记账，再由 `BatteryUsageStatsProvider` 调各个 `*PowerCalculator` 做归属。`CpuPowerCalculator`、`ScreenPowerCalculator`、`WifiPowerCalculator` 等计算结果会写进 `BatteryUsageStats.Builder`，产出 `BatteryUsageStats` 和 `UidBatteryConsumer` 快照。Settings 电池页、`adb bugreport` 里的电池摘要，消费的就是这层数据；它们看的是归属后的结果，不是 HAL 原始读数。[已验证: AOSP android-16.0.0_r1, services/core/java/com/android/server/power/stats/BatteryStatsImpl.java; services/core/java/com/android/server/power/stats/BatteryUsageStatsProvider.java; services/core/java/com/android/server/am/BatteryStatsService.java]
 
-```
-App 某模块耗电量 = 该模块活跃时间归属到该 App 的部分 × power_profile 中该状态的电流值
-```
+[图：BatteryStatsImpl 记录时长、计数器和能量桶，BatteryUsageStatsProvider 调用 CpuPowerCalculator、ScreenPowerCalculator 等生成 BatteryUsageStats 和 UidBatteryConsumer，随后供 Settings 电池页和 bugreport 展示]
 
-对不同模块，归属策略不同：
+对不同模块，归属方式并不一样。
 
-**CPU**：直接按进程的 CPU 时间归属。进程 A 在 1.5GHz 上跑了 500ms，就归属 500ms × 210mA 的电量。BatteryStats 通过 `/proc/stat` 和 `process_cpu_time` 来追踪每个进程在各个 CPU 频率上的运行时间。
+**CPU**：如果 UID 已有 `getCpuEnergyConsumptionUC()`，`CpuPowerCalculator` 直接使用硬件能量数据。没有时才按 active、cluster、freq step 三层模型估算。
 
-[已验证: AOSP android-16.0.0_r1, BatteryStats.java — processCpuUsage tracking]
+**WiFi / 蓝牙 / Radio**：按 UID 的网络活动、扫描、连接时长和流量做归属。多个 App 并发时通常需要分摊。
 
-**WiFi / 蓝牙 / Radio**：按网络活动归属。系统通过 UID（每个 App 的唯一标识）来追踪网络流量和连接活跃时间。当 App A 发起网络请求导致 WiFi 模块被唤醒时，这段活跃时间就被记在 App A 的账上。对于多个 App 同时使用网络的场景，活跃时间会按比例分摊。
+**GPS / Sensor**：按注册者和活跃时间归属。谁持有请求，谁承担对应时段的成本。
 
-**GPS**：按注册的 LocationListener 归属。哪个 App 注册了 GPS 监听，GPS 活跃时间就归属给哪个 App。如果多个 App 同时请求 GPS，同样按比例分摊。
+**WakeLock**：按持有者归属。它影响的不只是 CPU 忙碌时间，还会把本来可以进入休眠的时间变成可计费的耗电窗口。
 
-**WakeLock**：按持有者归属。App 持有 WakeLock 阻止 CPU 进入休眠的时间，会导致额外的 CPU idle 功耗，这部分会被加到该 App 的账上。这是后台 App 被标记为"高耗电"的常见原因之一。
+**Screen**：可能是 smear，也可能直接按 UID 归属，取决于设备有没有屏幕 `EnergyConsumer` 数据。
 
-**Screen**：屏幕功耗通常不归属到特定 App，而是作为系统级开销。在某些实现中，如果前台 App 强制设置了特定的亮度或刷新率，这部分增量可能会被归属到该 App。
+### 现代功耗归属流程
+
+我们在排查“设置页百分比”“Battery Historian 统计”和“Perfetto 看到的 rail 数据”为什么对不上时，先把三层对象分开：
+
+- `BatteryStatsImpl` 记录的是原始时长、计数器、能量桶。
+- `BatteryUsageStatsProvider` 和 `*PowerCalculator` 负责把这些原始数据折成组件耗电和 UID 耗电。
+- `BatteryUsageStats` 和 `UidBatteryConsumer` 是 Framework 对外给 Settings、bugreport、系统服务用的归属结果。
+
+Perfetto Power rails 和 Android Studio Power Profiler 更靠近硬件计量层；Settings 电池页更靠近 Framework 归属层。两边能互相校对，但不需要逐列完全相等，因为一个看的是 meter 或 rail，另一个看的是归属后的 consumer 或 UID。
 
 ### 计算示例
 
-假设一个 App 在 5 分钟内的活动如下：
+下面这个例子只适合解释 power-profile 回退路径，不代表所有设备的最终统计结果。
 
-- CPU：1.2GHz 运行 30 秒（power_profile 中对应 145mA）
-- WiFi 活跃传输 60 秒（power_profile 中对应 120mA）
-- GPS 定位 120 秒（power_profile 中对应 50mA）
+假设某台没有 CPU `EnergyConsumer` 数据的设备，在 5 分钟窗口内记录到：
 
-那么该 App 的估算耗电量为：
+- CPU active 30 秒，其中大核 cluster 运行 12 秒，1.2GHz scaling step 占 18 秒
+- WiFi 活跃传输 60 秒
+- GPS 定位 120 秒
 
-```
-CPU 部分：(30/3600) × 145 = 1.21 mAh
-WiFi 部分：(60/3600) × 120 = 2.00 mAh
-GPS 部分：(120/3600) × 50  = 1.67 mAh
-总计：约 4.88 mAh
-```
-
-假设设备电池容量为 4000mAh，该 App 在这 5 分钟内消耗了约 0.12% 的电量。看起来不多，但如果这种模式持续一小时，就是 1.4%。对于导航类 App，这个量级很常见；如果是后台 App，就需要继续排查。
-
-[待补充: 实际 BatteryStats 中的计算会考虑更多因素，包括电压、集群加权、Radio 状态机等]
+Framework 会把 CPU 的 active 基础功耗、cluster 附加功耗、freq step 附加功耗分别累加，再和 WiFi、GPS 的组件结果合并。真正落到设置页时，数值还会继续受共享资源分摊、UID 前后台状态、是否拿到硬件能量数据影响。这里看重点就够了：现代 CPU 归属不是单独抓一段“1.2GHz × 30 秒”就结束。
 
 ### 归属的精度问题
 
-归属算法最大的不确定性来自两个地方：
+归属算法最大的不确定性来自两个地方。
 
-第一，**共享资源分摊**。当 App A 和 App B 同时使用 WiFi 时，WiFi 模块只开启一次，活跃时间如何分配？Android 的策略是按比例分摊，但实际的功耗并不是线性的——两个 App 同时传输和单个 App 传输的总 WiFi 功耗可能差不多。这会导致每个 App 被低估。
+第一，共享资源分摊。当 App A 和 App B 同时使用 WiFi 时，WiFi 模块只开启一次，但两个 UID 都会分到一部分成本。这个分摊结果适合做定位，不适合拿来当实验室级仪表。
 
-第二，**间接功耗**。App A 的大量网络请求可能触发 TCP 协议栈、内核网络软中断、Radio 状态切换等一系列系统级行为，这些间接功耗很难精确归属到发起者。系统只能尽量近似，但无法做到完全精确。
+第二，间接功耗。App 发起一次网络请求，后面可能连着内核网络栈、Radio 状态切换、DMA、内存带宽变化。Framework 能归到发起者的一部分，但不会把所有底层副作用都精确切干净。
 
 ## ODPM：从估算到实测的跨越
 
-Android 10 引入了一个重要的硬件抽象层接口——IPowerStats HAL（`hardware/interfaces/power/stats/`），配合 Google Pixel 6 及后续 Pixel 设备上的 ODPM（On-Device Power Monitor）子系统，意味着 Android 功耗模型开始从纯估算向估算与实测混合模式演进。
-
-[已验证: AOSP android-16.0.0_r1, hardware/interfaces/power/stats/aidl/android/hardware/power/stats/IPowerStats.aidl]
+Android 10 把 PowerStats 放进独立 HAL 之后，功耗分析开始同时依赖两类数据：一类是 `BatteryStatsImpl` 里按 UID 记的统计账，一类是来自硬件计量器的实测能量。读源码、看 Perfetto、对照设置页时，最容易混掉的就是这两层。
 
 ### ODPM 的工作原理
 
-ODPM 利用设备 PMIC（Power Management IC）上的专用功耗计数器，直接测量各个电源轨（power rail）上的能量消耗。所谓"电源轨"，就是主板上一条为特定硬件模块供电的线路。比如 CPU 大核有自己的电源轨，GPU 有自己的，屏幕有自己的一条——每个轨的功耗都可以被独立测量。
+ODPM 利用 PMIC 上的电量计或 vendor power meter，从硬件侧读取模块或 rail 的累积能量。它看到的是“某条供电通道从开机到现在消耗了多少能量”，不是“某个 App 精确消耗了多少电”。所以它天然更接近校准层和模块层，不是 Settings 那种 App 归属层。
 
-与电池端的 Coulomb Counter 不同，ODPM 的测量点在电池下游，直接位于各个硬件模块的供电入口处。因此，ODPM 的读数不受设备充放电状态的影响。即使设备正在充电，它也能报告各模块的功耗。
+### IPowerStats HAL：HIDL 和 AIDL 是两套接口族
 
-### IPowerStats HAL 接口
+Android 10 和 Android 11 常见的是 HIDL `android.hardware.power.stats@1.0::IPowerStats`。这套接口的对象是 rail：
 
-IPowerStats HAL 提供两个核心 API：
+- `getRailInfo()` 返回 `RailInfo`
+- `getEnergyData()` 返回 `EnergyData`
+- `EnergyData.energy` 的单位是 microwatt-seconds，也就是 uWs
 
-- `getRailInfo()`：返回设备上所有可测量的电源轨列表及其元数据（名称、子系统的对应关系）。
-- `getEnergyData()`：返回每个电源轨自开机以来的累积能量消耗（单位 μJ 或 mAh）。
+到了 Android 12+，AOSP 在 `power/stats/aidl` 下加入 AIDL `android.hardware.power.stats.IPowerStats`。这时要分成两组 API 看：
 
-系统通过定期轮询这些接口，计算两次采样之间的差值，得到各模块的实时功耗。
+- `getEnergyConsumerInfo()` 和 `getEnergyConsumed()` 面向 `EnergyConsumer`，结果是 `EnergyConsumerResult.energyUWs`，可选带 `attribution[]` 按 UID 归属
+- `getEnergyMeterInfo()` 和 `readEnergyMeter()` 面向 `Channel` / `EnergyMeasurement`，看的是 meter 读数，`EnergyMeasurement.energyUWs` 也是 uWs
 
-[已验证: AOSP android-16.0.0_r1, hardware/interfaces/power/stats/]
+这里最容易写错的地方有两个。第一，AIDL 不再用 HIDL 的 `getRailInfo()` 和 `getEnergyData()` 命名；第二，HAL 原始返回单位是 uWs，不是 mAh。mAh 通常是 Framework 或工具为了展示再换算出来的值。[已验证: AOSP android-10.0.0_r1, hardware/interfaces/power/stats/1.0/IPowerStats.hal; AOSP android-16.0.0_r1, hardware/interfaces/power/stats/aidl/android/hardware/power/stats/IPowerStats.aidl; EnergyConsumerResult.aidl; EnergyMeasurement.aidl]
+
+### EnergyConsumer 和 rail / Channel 的区别
+
+`EnergyConsumer` 是 Framework 关心的逻辑耗电对象，例如 CPU、Display、WiFi、GNSS 这类组件；`Rail` / `Channel` 更接近硬件计量点，名字和分组完全可以是 vendor 私有实现。Perfetto power rails、Power Profiler 常直接展示 rail / channel 视角；Settings 电池页看的是 `BatteryUsageStats` 里的 consumer / UID 视角。两边能互相校对，但不是同一张表。
 
 ### Pixel 设备的实际应用
 
@@ -359,7 +373,7 @@ ODPM 目前也有几个比较明确的局限：
 
 第一，**设备覆盖有限**。ODPM 需要硬件支持（PMIC 上有功耗计数器），不是所有设备都具备这个能力。目前只有 Pixel 6+ 系列有完整支持，其他 OEM 厂商的实现参差不齐。
 
-第二，**粒度仍然是模块级**。ODPM 可以展示"CPU 大核消耗了 X mAh"，但无法展示"App A 在 CPU 大核上消耗了 Y mAh"。App 级归属仍然依赖 BatteryStats 的软件算法，ODPM 只是提供了一个更准确的校准基准。
+第二，**粒度仍然是模块级**。ODPM 可以展示某个 CPU cluster、display rail 或 modem channel 累积消耗了多少 uWs，工具界面也可能再换算成 mAh，但它无法直接回答某个 App 在这个模块上消耗了多少电。App 级归属仍然依赖 BatteryStats 的软件算法，ODPM 只是提供了一个更准确的校准基准。
 
 第三，**采样间隔有限**。IPowerStats HAL 的轮询间隔通常在秒级，无法捕捉毫秒级的功耗毛刺。对于分析瞬间功耗峰值（如 Camera 启动时的功耗飙升），还是需要外接功耗仪。
 
@@ -446,14 +460,13 @@ Android 功耗模型不是一个孤立的系统，它与本书多个章节讨论
 | Android 7.0 (API 24) | 后台优化限制，影响 WakeLock 统计方式 |
 | Android 8.0 (API 26) | 后台执行限制，后台服务功耗归属调整 |
 | Android 9 (API 28) | App Standby Buckets 引入，功耗统计按 bucket 分组展示 |
-| Android 10 (API 29) | **IPowerStats HAL 引入**，ODPM 硬件功耗监测能力；power_profile.xml 支持更多模块 |
-| Android 12 (API 31) | 功耗模型增强，支持更多传感器类型的功耗统计 |
-| Android 13 (API 33) | 后台限制进一步加强，前台服务类型影响功耗归属 |
-| Android 14 (API 34) | BatteryStats 改进，支持更精确的充电状态追踪 |
-| Android 15 (API 35) | 功耗分析工具链持续改进 |
-| Android 16 (API 36) | IPowerStats AIDL 接口更新，ODPM 数据源集成进一步深化 |
-
-[待验证: Android 15/16 的具体变化需要查证 release notes]
+| Android 10 (API 29) | `android.hardware.power.stats@1.0::IPowerStats` 引入，HIDL rail API 使用 `getRailInfo()` / `getEnergyData()` 读取实测能量 |
+| Android 11 (API 30) | HIDL rail 视角继续沿用，Power rails 仍然是工具侧常见观测对象 |
+| Android 12 (API 31) | AIDL `android.hardware.power.stats.IPowerStats` 加入，拆成 `EnergyConsumer` 与 `Channel` / `EnergyMeasurement` 两组对象 |
+| Android 13 (API 33) | Framework 侧继续通过 `BatteryUsageStats` / `UidBatteryConsumer` 输出归属结果，方便 Settings 和 bugreport 读取 |
+| Android 14 (API 34) | `CpuPowerCalculator`、`ScreenPowerCalculator` 等继续优先使用 hardware energy data，缺失时回退到 power-profile 估算 |
+| Android 15 (API 35) | 功耗分析工具继续围绕 `BatteryUsageStats`、Perfetto、Power Profiler 演进 |
+| Android 16 (API 36) | 以 `android-16.0.0_r1` 为例，Framework 仍是 `BatteryStatsImpl -> BatteryUsageStatsProvider -> *PowerCalculator -> BatteryUsageStats / UidBatteryConsumer` 这套归属结构 |
 
 ## 常见问题与误区
 
@@ -480,8 +493,12 @@ ODPM 提供了模块级的实测功耗数据，但它不解决 App 级归属问�
 ## 参考资料
 
 - AOSP power_profile.xml: `frameworks/base/core/res/res/xml/power_profile.xml`
-- AOSP BatteryStats: `frameworks/base/core/java/android/os/BatteryStats.java`
-- AOSP BatteryStatsManager: `frameworks/base/core/java/android/os/BatteryStatsManager.java`
+- AOSP BatteryStatsImpl: `services/core/java/com/android/server/power/stats/BatteryStatsImpl.java`
+- AOSP BatteryUsageStatsProvider: `services/core/java/com/android/server/power/stats/BatteryUsageStatsProvider.java`
+- AOSP CpuPowerCalculator: `services/core/java/com/android/server/power/stats/CpuPowerCalculator.java`
+- AOSP ScreenPowerCalculator: `services/core/java/com/android/server/power/stats/ScreenPowerCalculator.java`
+- AOSP BatteryStatsService: `services/core/java/com/android/server/am/BatteryStatsService.java`
+- IPowerStats HAL (HIDL 1.0): `hardware/interfaces/power/stats/1.0/IPowerStats.hal`
 - IPowerStats HAL (AIDL): `hardware/interfaces/power/stats/aidl/android/hardware/power/stats/IPowerStats.aidl`
 - Android 电源概览: https://source.android.com/docs/core/power
 - Battery Historian 工具: https://github.com/google/battery-historian
