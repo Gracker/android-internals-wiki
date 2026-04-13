@@ -1696,3 +1696,20 @@ AsyncLayoutInflater 一节缺少 AndroidX 当前实现的关键边界，尤其�
 ### 关联章节
 3.2、3.4、2.4
 
+
+
+## [2026-04-13] 11.1 Android 功耗模型 — 现代功耗归属链路与 EnergyConsumer / Channel 双模型
+
+### 盲区描述
+正文从 BatteryStats 直接跳到 App 百分比和 ODPM power rails，但没有交代 Android 12+ 的实际归属链：`BatteryStatsImpl` 采集底层计数，`services/core/java/com/android/server/power/stats/*PowerCalculator` 做组件级估算或实测归属，最后由 `BatteryUsageStats` / `UidBatteryConsumer` 暴露给设置页、bugreport 和工具层。与此同时，`IPowerStats` AIDL 同时暴露 `EnergyConsumer` 与 `Channel` 两套对象，前者更接近 framework attribution，后者更接近 rail / meter 调试。缺少这层说明，读者很难把“设置里的耗电百分比”和“Perfetto 里的 power rails”对应起来。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 梳理 `BatteryStatsImpl`、`CpuPowerCalculator`、`ScreenPowerCalculator`、`MobileRadioPowerCalculator` 到 `BatteryUsageStats` 的调用链
+- 对比 Android 10/11 HIDL `getRailInfo()/getEnergyData()` 与 Android 12+ AIDL `EnergyConsumer` / `Channel` 双模型
+- 补一张 “BatteryStats / BatteryUsageStats / Battery Historian / Power Profiler / Perfetto” 关系图
+
+### 关联章节
+11.1、11.2、14.11、13.1、5.6

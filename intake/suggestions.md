@@ -2227,3 +2227,31 @@
 - **问题**：§3.2 单独展开了 Motion Prediction，但没有显式回链 §3.4，而且当前术语和版本口径已经与 §3.4 不一致，后续容易双写漂移。
 - **建议**：在本节只保留摘要并明确回链 §3.4，统一使用“AndroidX MotionEventPredictor / platform MotionPredictor(API 34+)”口径。
 
+
+
+## [Task9 Deep Review] 11.1 Android 功耗模型 — 2026-04-13
+- **类型**：源码准确性
+- **位置**：L211 Push 机制示例
+- **问题**：示例写成 `LocationManagerService -> BatteryStats.noteGpsOn()`，当前 Android 16 Framework 里对应入口是 `BatteryStatsService.noteGpsChanged()` / `noteGpsSignalQuality()`，不是 `noteGpsOn()`。
+- **建议**：把 GPS 示例改成当前服务调用路径，或明确这是旧版本 / 简化示意。
+
+
+## [Task9 Deep Review] 11.1 Android 功耗模型 — 2026-04-13
+- **类型**：数据缺失
+- **位置**：L175 Display 段落
+- **问题**：“120Hz 屏幕在高亮度下的耗电可能比 60Hz 高出 50% 以上”没有设备、亮度档位、面板类型和测试来源。
+- **建议**：补官方文档或实测条件；如果拿不出统一口径，降级为定性描述。
+
+
+## [Task9 Deep Review] 11.1 Android 功耗模型 — 2026-04-13
+- **类型**：数据缺失
+- **位置**：L191 Radio Active Timeout
+- **问题**：“通常 5 秒”缺少 RAT（LTE/NR）、运营商配置、机型和版本条件。移动网络 active timeout 受 modem / carrier config 影响很大。
+- **建议**：补来源或把数字改成“由 modem / carrier config 决定，常见为秒级”。
+
+
+## [Task9 Deep Review] 11.1 Android 功耗模型 — 2026-04-13
+- **类型**：交叉引用
+- **位置**：工具段落 / frontmatter related_chapters
+- **问题**：正文讲 Battery Historian 和 Power Profiler，但正文只回链 §13.1，frontmatter 也缺少 §14.11 Battery Historian。
+- **建议**：补 `related_chapters: 14.11`，并在工具段落显式区分 Perfetto、Battery Historian、Power Profiler 的职责边界。

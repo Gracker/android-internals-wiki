@@ -6436,5 +6436,55 @@
     "added_at": "2026-04-13T06:24:00+08:00",
     "status": "pending",
     "original_review_log": "logs/review/2026-04-13-06-review.md"
+  },
+  {
+    "section": "11.1",
+    "section_title": "Android 功耗模型",
+    "priority": 95,
+    "reason": "[Deep Tech Review] 11.1 混用 Android 10/11 HIDL 与 Android 12+ AIDL 功耗接口，CPU / Screen / Perfetto 口径与当前 AOSP 不符",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "L327-L334 IPowerStats HAL 接口",
+        "detail": "正文引用 Android 16 AIDL `hardware/interfaces/power/stats/aidl/.../IPowerStats.aidl`，却使用旧 HIDL 1.0 的 `getRailInfo()` / `getEnergyData()` 命名。当前 Android 12+ AIDL 接口实际是 `getEnergyMeterInfo()` / `readEnergyMeter()` 与 `getEnergyConsumerInfo()` / `getEnergyConsumed()`。",
+        "suggestion": "拆开 Android 10/11 HIDL rail API 与 Android 12+ AIDL EnergyConsumer / EnergyMeter API，按版本分别讲。"
+      },
+      {
+        "type": "源码错误",
+        "location": "L332-L334 能量单位",
+        "detail": "正文写“单位 μJ 或 mAh”。AOSP Android 10 HIDL `EnergyData.energy` 和 Android 16 AIDL `EnergyMeasurement.energyUWs` / `EnergyConsumerResult.energyUWs` 都是 microwatt-seconds (uWs)，不是 HAL 直接返回 mAh。",
+        "suggestion": "统一改成 uWs（或说明上层如何换算为 mAh），不要把 HAL 返回值和展示层单位混在一起。"
+      },
+      {
+        "type": "源码错误",
+        "location": "L165 CPU 电量换算",
+        "detail": "正文引用 `cpu.voltage` 数组，但 AOSP android-16 `frameworks/base/core/res/res/xml/power_profile.xml` 并没有这个字段。",
+        "suggestion": "删除 `cpu.voltage` 断言，改成“BatteryUsageStats 侧通常直接使用 charge/energy 结果或 PowerProfile 估算，不靠 power_profile.xml 中的 voltage 数组”。"
+      },
+      {
+        "type": "原理断裂",
+        "location": "L157-L169、L266-L276 CPU 功耗与归属算法",
+        "detail": "正文把 CPU 功耗简化成“频率时间 × 电流”。当前 AOSP `PowerProfile.java` / `services/core/java/com/android/server/power/stats/CpuPowerCalculator.java` 的 modeled power 实际由 `cpu.active` + per-cluster + per-scaling-step estimator 组成，并结合 `getCpuActiveTime()` / `getCpuFreqTimes()` / energy consumer 数据。",
+        "suggestion": "重写 CPU 小节的公式和源码锚点，至少补上 `PowerProfile.POWER_CPU_ACTIVE`、cluster、freq step 三层。"
+      },
+      {
+        "type": "版本差异",
+        "location": "L284 Screen 归属、L447-L452 版本演进表",
+        "detail": "正文写“Screen 通常不归属到特定 App”。当前 AOSP `ScreenPowerCalculator` 在 power-profile 模式会 smear 到各 UID，在 energy-consumption 模式可直接使用 `getScreenOnEnergyConsumptionUC()`。版本表也没有拆出 Android 10/11 HIDL 到 Android 12+ AIDL 的接口迁移。",
+        "suggestion": "补“旧 batterystats 视角 vs 现代 BatteryUsageStats 视角”的版本边界，并把 Screen 改成“可 smear / 可按 UID 归属的组件”。"
+      },
+      {
+        "type": "知识盲区",
+        "location": "App 耗电量归属算法 / ODPM / 工具章节",
+        "detail": "缺少现代归属链：`BatteryStatsImpl -> *PowerCalculator -> BatteryUsageStats / UidBatteryConsumer -> Settings / bugreport`，也没有讲清 `EnergyConsumer` 与 `Channel/rail` 是两套不同对象。读者很难把设置页百分比、Perfetto power rails、Power Profiler 三者对应起来。",
+        "suggestion": "补一节“现代功耗归属链路”，并明确区分 EnergyConsumer breakdown 与 rail/channel meter。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-13T08:51:15+08:00",
+    "status": "pending"
   }
 ]

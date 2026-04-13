@@ -6,6 +6,7 @@ status: ready-for-review
 reviewed_date: "2026-04-13"
 reviewed_by: "openclaw-task6"
 task6_result: pass-light-edit
+task9_result: needs-rework
 drafted_date: "2026-04-03"
 drafted_by: "openclaw-task2a"
 polish_count: 1
@@ -28,11 +29,12 @@ sources:
     path: "https://developer.android.com/topic/performance/power"
 tags: ['power', 'battery', 'power_profile', 'BatteryStats', 'ODPM', 'Coulomb Counter', 'Fuel Gauge', 'IPowerStats', '功耗归属']
 related_chapters: ["5.4", "5.5", "5.6", "11.2", "11.3", "13.1"]
-pipeline_stage: task9_pending
+pipeline_stage: task2b_pending
 task6_state: reviewed
-task9_state: pending
-task2b_state: idle
+task9_state: reviewed
+task2b_state: pending
 ---
+
 
 # Android 功耗模型
 
