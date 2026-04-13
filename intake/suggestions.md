@@ -2396,4 +2396,25 @@
 - **类型**：交叉引用
 - **位置**：frontmatter `related_chapters` + 正文 `§7.4`
 - **问题**：当前仓库里 `ch07` 的 `03-jank-methodology.md` / `04-typical-scenarios.md` 没有可解析的 `section: "7.3"` / `section: "7.4"` frontmatter，导致本章引用在自动索引侧是断的。
-- **建议**：补齐 7.3 / 7.4 的章节号元数据，或把本章引用改成仓库里当前真实可解析的章节号。 
+- **建议**：补齐 7.3 / 7.4 的章节号元数据，或把本章引用改成仓库里当前真实可解析的章节号。
+
+## [Task6 Review] 11.3 系统级功耗优化 — 2026-04-13
+- **类型**：需确认
+- **位置**：App Standby Buckets：五个桶的定义与调度差异 / 版本演进
+- **问题**：Active / Working Set / Frequent / Rare / Restricted 的 Job、Alarm 配额，以及 Android 16 Active 桶 `20min/60min`、Restricted 桶触发条件等多处数字和版本线写得很实，但当前验证锚点主要落在总览文档，证据链还不够精确。
+- **建议**：交给 Task 9 核对官方页面与版本边界，再由 Task 2B 把能确认的数字保留，不能确认的部分收窄到条件化表述。
+- **review 日志**：logs/review/2026-04-13-13-review.md
+
+## [Task6 Review] 11.3 系统级功耗优化 — 2026-04-13
+- **类型**：需确认
+- **位置**：省电模式的核心行为
+- **问题**："所有 App 都被当作 Rare 桶对待"、"高刷设备会被强制降到 60Hz"、"Motion Sense / 车载碰撞检测被关闭" 这类表述覆盖面过大，设备差异和版本边界没有交代清楚。
+- **建议**：交给 Task 9 拆开 AOSP 基线、Pixel 特性和厂商差异，再由 Task 2B 回写更稳妥的工程表述。
+- **review 日志**：logs/review/2026-04-13-13-review.md
+
+## [Task6 Review] 11.3 系统级功耗优化 — 2026-04-13
+- **类型**：需补充素材
+- **位置**：Perfetto 相关段落（Doze / 省电模式 / 厂商策略）
+- **问题**：DeviceIdle、低功耗模式和后台冻结相关段落已经给出观察思路，但关键位置仍只有文字和占位，没有真实 Trace、截图或已跑通的观测样例，实操闭环偏弱。
+- **建议**：交给 Task 2B 补 2-3 组真实 Perfetto 片段，至少覆盖 Doze 状态切换、低功耗模式触发和后台冻结/延迟的可观测信号。
+- **review 日志**：logs/review/2026-04-13-13-review.md
