@@ -28,12 +28,15 @@ related_chapters: ["13.1", "13.3", "13.5", "13.8", "7.1", "7.9", "8.2", "9.3", "
 section: "13.10"
 created_by: "task2a-knowledge-gap"
 created_date: "2026-04-09"
-gap_source: "官方文档+读者需求+AOSP结构"
+gap_source: "官方文档 + 读者需求 + AOSP 结构"
 gap_score: "19/20"
-pipeline_stage: task6_pending
-task6_state: pending
+pipeline_stage: task2b_pending
+task6_state: reviewed
 task9_state: pending
-task2b_state: idle
+task2b_state: pending
+reviewed_by: "openclaw-task6"
+reviewed_date: "2026-04-13"
+task6_result: "needs-rework"
 ---
 
 # 13.10 Perfetto SQL 性能分析实战手册
@@ -149,7 +152,7 @@ GROUP BY bucket_name
 ORDER BY MIN(dur);
 ```
 
-如果 jank 和 big jank 桶里的帧数超过总帧数的 5%，就需要关注了。这个分布也可以作为优化前后的对比基准——优化做得好不好，跑一遍这个查询就知道了。
+如果 jank 和 big jank 桶里的帧数超过总帧数的 5%，就需要关注了。这个分布也可以作为优化前后的对比基准。分别跑一遍这个查询，就能看到各个桶的帧数变化。
 
 ### Frame Timeline：系统视角的帧分析
 
@@ -441,7 +444,7 @@ ORDER BY total_ms DESC;
 
 ## ANR 分析
 
-ANR（Application Not Responding）是用户最直接感知的性能问题。ANR 发生时，系统会dump 当前线程堆栈到 `/data/anr/` 目录。但堆栈只能看到 ANR 时刻的快照，无法看到"导致 ANR 的 5 秒里主线程到底在做什么"。Perfetto SQL 可以补全这个时间窗口。
+ANR（Application Not Responding）是用户最直接感知的性能问题。ANR 发生时，系统会 dump 当前线程堆栈到 `/data/anr/` 目录。但堆栈只能看到 ANR 时刻的快照，无法看到"导致 ANR 的 5 秒里主线程到底在做什么"。Perfetto SQL 可以补全这个时间窗口。
 
 ### ANR 前后主线程活动分析
 
@@ -525,7 +528,7 @@ LIMIT 10;
 
 ### 锁竞争与帧时间关联
 
-锁竞争本身不是问题，问题是锁竞争发生在帧渲染期间。下面的查询找出所有发生在 `doFrame` 期间的锁等待：
+锁竞争本身并不直接等于卡顿。只有它落在帧渲染期间，才会拉长这一帧的耗时。下面的查询找出所有发生在 `doFrame` 期间的锁等待：
 
 ```sql
 -- 帧期间的锁竞争

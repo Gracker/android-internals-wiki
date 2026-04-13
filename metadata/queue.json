@@ -7505,5 +7505,44 @@
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-13T21:20:00+08:00",
     "status": "pending"
+  },
+  {
+    "section": "13.10",
+    "section_title": "Perfetto SQL 性能分析实战手册",
+    "priority": 90,
+    "reason": "[review回炉] 缺少结构化大纲，Frame Timeline / 启动 / ANR SQL 模板存在可运行性与素材闭环问题",
+    "material_paths": [
+      "intake/suggestions.md（含 review 意见）"
+    ],
+    "review_issues": [
+      {
+        "type": "需重写",
+        "location": "全文结构",
+        "detail": "缺少 outline-start / outline-end 和锚点块，Task 6 无法按章节结构做覆盖检查。",
+        "suggestion": "按现有正文补齐结构化大纲与锚点后，再回到 Task 6。"
+      },
+      {
+        "type": "需确认",
+        "location": "Frame Timeline SQL（L160-L173）",
+        "detail": "查询直接引用 expected.dur，但正文没有给出 expected_frame_timeline_slice 或等价视图的 JOIN。",
+        "suggestion": "交给 Task 9 按 Perfetto v54.0 schema / 标准库核对后重写。"
+      },
+      {
+        "type": "需确认",
+        "location": "冷启动全链路时间分解（L394-L412）",
+        "detail": "ZygoteInit.xxx 等 slice name 仍是占位式模板，读者难以直接运行。",
+        "suggestion": "用真实 trace 中可命中的 slice name 重写，或改成参数化模板。"
+      },
+      {
+        "type": "需补充素材",
+        "location": "ANR 前后主线程活动分析（L448-L465）",
+        "detail": "SQL 中仍保留 ANR 时间戳占位，没有真实时间窗样例。",
+        "suggestion": "补 1 组真实 ANR 时间窗，或改成明确的参数模板说明。"
+      }
+    ],
+    "added_by": "task6-review",
+    "added_at": "2026-04-13T22:12:40+08:00",
+    "status": "pending",
+    "original_review_log": "logs/review/2026-04-13-22-review.md"
   }
 ]
