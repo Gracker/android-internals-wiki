@@ -11,8 +11,8 @@ created_date: "2026-04-08"
 gap_source: "AOSP结构+官方文档+读者需求"
 drafted_date: "2026-04-08"
 drafted_by: "openclaw-task2a"
-last_verified: "2026-04-08"
-last_verified_against: "AOSP android-17-beta3 + developer.android.com"
+last_verified: "2026-04-13"
+last_verified_against: "AOSP android-17-beta3 + developer.android.com + Chromium android_webview docs"
 confidence: medium
 sources:
   - type: official
@@ -26,11 +26,12 @@ sources:
 reviewed_date: "2026-04-12"
 reviewed_by: "openclaw-task6"
 task6_result: needs-rework
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task9_result: needs-rework
-task9_state: reviewed
-task2b_state: pending
+task9_state: pending
+task2b_state: fixed
+task2b_result: fixed
 ---
 
 # 7.11 WebView 渲染性能与优化
@@ -78,69 +79,71 @@ Blink 负责 HTML/CSS 解析、DOM 构建、JavaScript 执行、布局计算和�
 
 ### 双层渲染架构
 
-WebView 内部有自己的线程模型。关键线程有三个：
+WebView 确实带着一套 Chromium 渲染管线进入 App，但它不是“App 外面另起一个完整浏览器进程”。按照 Chromium `android_webview/docs/architecture.md` 的定义，WebView 的 browser code 运行在宿主 App 进程里，和 App 共享地址空间、权限与 data directory。GPU service、Network Service 这类非沙箱服务也在宿主进程内运行。只有 renderer 侧是否独立，要看当前设备和 WebView provider 的 multiprocess 配置。
 
-**Browser 线程**（在 App 进程中）：WebView 的 Java 层入口，负责处理 Android View 体系的事件分发、生命周期管理、JS Bridge 调用。
+因此，分析 WebView 性能时，至少要分清两层：
 
-**Renderer 线程**（Android 8.0+ 为独立进程）：Blink 引擎运行在这里，执行 HTML 解析、JavaScript 执行、布局计算。从 Android 8.0（Oreo）开始，Renderer 运行在独立的沙箱进程中，崩溃不会影响 App 主进程。
+- **宿主 App 进程**：MainThread、RenderThread，以及 WebView browser-side 代码、Java Bridge、GPU service 等线程都在这里。
+- **Renderer 侧**：Blink 主线程、Compositor 线程、Raster Worker 等负责 HTML/CSS/JS、布局、合成与光栅化。它既可能在独立沙箱进程里，也可能在旧版或低内存配置上以内嵌线程方式存在。
 
-**GPU 线程**：Chromium 的 GPU 进程，负责将 cc 合成器的输出转换为 OpenGL/Vulkan 指令，生成最终的 GPU 纹理。
+从 Android 8.0 开始，WebView 引入了 out-of-process renderer。但这个默认值不能写成“8.0+ 全量设备都独立进程”。Chromium 文档给出的边界更细：Android 8.0 到 10 上的低内存 32-bit 设备仍可能使用 in-process renderer；Android 11 起，out-of-process renderer 才成为全部设备的默认路径。
 
-这三条线程和 App 原有的 MainThread、RenderThread 形成双层架构：
-
-```
-App 进程
+```text
+宿主 App 进程
 ├── MainThread（Android UI 线程）
-│   └── WebView Java API 调用、JS Bridge 回调
+│   ├── WebView Java API 调用
+│   └── 与 View / 输入 / 生命周期的交互
 ├── RenderThread（Android 原生渲染）
-│   └── 原生 View 的 GPU 渲染
-└── WebViewChromium 线程组
-    ├── Browser 线程（WebView 内部管理）
-    ├── Renderer 进程（独立进程，Android 8+）
-    │   ├── Blink 主线程（HTML/JS/Layout）
-    └── cc 合成线程（滚动/动画合成）
-    └── GPU 线程（OpenGL/Vulkan 指令）
+├── Browser-side 线程
+│   ├── WebViewChromium / JavaBridge 等工作线程
+│   └── GPU Service / Network Service（通常仍在宿主进程）
+└── 可选：Renderer 以内嵌线程存在（O-Q 低内存 32-bit 场景）
+
+可选：独立 Renderer 沙箱进程
+├── CrRendererMain（HTML / JS / Layout）
+├── Compositor / Viz 线程
+└── Raster Worker / Tile 光栅化
 ```
 
-[图：WebView 双层渲染架构示意图，标出 App MainThread、Browser 线程、Renderer 进程、cc 合成线程、GPU 线程，以及最终提交到 SurfaceFlinger 的路径]
+[图：WebView 进程与线程模型示意图，区分宿主 App 进程内的 browser code、GPU service，以及可选的 renderer 沙箱进程]
 
-关键认知：**WebView 的滚动和动画主要由 cc 合成线程处理，不沿用原生 View 那套 Choreographer / VSync 调度方式**。因此，排查 WebView 滚动流畅度时，重点要先放在 Chromium 内部调度，而不是直接套用 Android 的 VSync-app 分析方法。
+WebView 可以把一部分滚动、动画和合成工作留在 Chromium compositor 线程，但它仍然嵌在 Android 的 View、draw 和显示同步路径里。输入先经过 Android InputDispatcher / View 分发到 WebView，最终内容也要通过 WebView 的绘制路径或独立 Layer 提交给 SurfaceFlinger。排查卡顿时，Chromium 线程、App MainThread / RenderThread、SurfaceFlinger 这三处都要一起看。
 
-[已验证：来源见 chromium.googlesource.com/android_webview/docs/ 和 developer.android.com]
+[已验证：来源见 Chromium `android_webview/docs/architecture.md`、`threading.md`、`legacy-os-behavior.md`]
 
 ### 初始化开销
 
-WebView 首次创建时需要初始化 Chromium 引擎。这个过程包括：
+WebView 首次创建时，要先完成 WebView provider 装载和 Chromium 基础设施初始化。典型步骤包括：
 
-1. 加载 `libwebviewchromium.so`（约 30-50MB 的 native 库）
-2. 创建 Browser 主线程、GPU 线程
-3. 初始化 Blink 引擎（Skia/GPU 资源）
-4. 在 Android 8.0+ 上，还需要启动 Renderer 子进程
+1. `WebViewFactory` 选择并装载当前 provider 的 native 库
+2. 建立 browser-side 基础线程和必要 service
+3. 准备 Blink / compositor / GPU 相关资源
+4. 在 multiprocess 模式下拉起 renderer，并在首次 `loadUrl()` 或 `loadData()` 后开始真正的页面解析与首帧构建
 
-在 Perfetto 中，这个初始化过程通常表现为 MainThread 上的一段长时间 slice，对应的线程名称以 `WebViewChromium` 开头。冷启动增加的开销在 200-500ms 之间，取决于设备性能和 Android 版本。
+这个阶段一定会增加主线程工作量，也常伴随 native / graphics 内存的第一次阶跃，但具体时长和内存增量强依赖设备 ABI、provider 版本、是否首次冷开、是否启用独立 renderer。这里不直接给固定毫秒数和 MB 数，实际分析要以同机同版本的首开 / 次开对比为准。
 
-[待验证：精确的初始化时间在不同设备/版本上的分布]
+[图：首次实例化 WebView 的 Perfetto 片段，标出 MainThread 上的 provider 初始化、随后出现的 `WebViewChromium*` 与 `CrRendererMain`，并对比第二次创建的差异]
 
 ## WebView 冷启动与预热优化
 
 ### 冷启动的完整时间线
 
-一个 WebView 从创建到可以渲染内容，经历以下阶段：
+一个 WebView 从首次实例化到可以渲染内容，通常会经历下面这条路径：
 
-```
-WebView.onCreate()
-  → WebViewFactory.loadWebViewNativeLibrary()   // 加载 ~50MB 的 so 库
-  → AwBrowserProcess.start()                      // 启动 Chromium 进程基础设施
-  → 创建 Browser 线程 + GPU 线程
-  → [Android 8+] 启动 Renderer 子进程
-  → WebView.loadData() / loadUrl()
+```text
+new WebView(context) / inflate 包含 WebView 的布局
+  → WebViewFactory 选择并装载 provider
+  → AwBrowserProcess.start()
+  → 建立 browser-side 基础线程与 service
+  → [multiprocess] 拉起 renderer 进程
+  → WebView.loadUrl() / loadData()
   → Blink 解析 HTML → 构建渲染树 → 首次布局
-  → cc 合成 → GPU 光栅化 → 首帧提交
+  → compositor 提交 → GPU service / RenderThread / SurfaceFlinger 完成显示
 ```
 
-其中，native library 加载和 Chromium 进程初始化只在第一次创建 WebView 时发生。后续创建 WebView 实例会复用已初始化的引擎，开销从几百毫秒降到几十毫秒。
+只有首次实例化才会把 provider 装载、browser-side 初始化和 renderer 拉起这些成本叠在一起。后续再创建 WebView，通常只需要复用已装载的 provider 和既有基础设施。
 
-[已验证：来源见 AOSP frameworks/base/core/java/android/webkit/WebViewFactory.java]
+[已验证：来源见 AOSP `frameworks/base/core/java/android/webkit/WebViewFactory.java`、Chromium `android_webview/docs/how-does-loading-work.md`]
 
 ### 预热策略
 
@@ -148,15 +151,17 @@ WebView.onCreate()
 
 **方案一：不可见 WebView 实例**
 
-在 Application.onCreate() 或首屏 Activity 的空闲时机创建一个不可见的 WebView 实例，保持在内存中。后续真正需要 WebView 时直接复用。
+在 Application.onCreate() 或首屏空闲时机创建一个不挂到窗口上的 WebView，用公开 API 提前完成 provider / renderer 初始化。后续真正需要页面时，再创建正式实例；如果确实验证过复用策略稳定，也可以复用这个预热实例。
 
 ```java
-// 在 Application.onCreate() 或合适时机
-WebView webView = new WebView(applicationContext);
-webView.setData(null, null);  // 不加载内容，仅触发 Chromium 初始化
+// 运行在主线程，调用方自己负责后续销毁
+WebView warmupView = new WebView(applicationContext);
+warmupView.loadUrl("about:blank");   // 公开 API，可触发基础初始化和空白页加载
 ```
 
-注意这里应该使用 `applicationContext` 而非 Activity Context，否则可能导致 Activity 泄漏。
+如果目标只是尽早装载 WebView provider，而不是提前拉起一个完整页面，`WebSettings.getDefaultUserAgent(context)` 更轻，只会完成一部分初始化工作。这两种做法要分开看，不要混成同一条优化结论。
+
+这里的 `applicationContext` 只适合“预热但不展示”的场景。真正要加入 View 树显示的 WebView，仍然要由宿主页面自己管理 Context、attach 和销毁时机。
 
 **方案二：Chrome Custom Tabs 替代**
 
@@ -179,13 +184,13 @@ CCT 还支持预热 API（`CustomTabsClient.warmup()`）和预加载（`CustomTa
 
 ### 在 Perfetto 中观察
 
-WebView 初始化在 Perfetto 中的特征：
+WebView 初始化在 Perfetto 中，通常有三类观察点：
 
-- MainThread 上出现 `WebViewFactory.loadNativeLibrary` slice，持续几十到几百毫秒
-- 新线程出现：以 `WebViewChromium`、`Chrome_ProcessHost` 命名的线程
-- 内存占用出现一次阶跃（30-80MB）
+- MainThread 上首次实例化阶段比第二次明显更长，常见为 `WebView.<init>`、provider 装载或 browser-side 初始化相关 slice
+- multiprocess 模式下，会新增 `CrRendererMain`、`Compositor`、`CrGpuMain` 等 Chromium 线程或对应子进程
+- 内存计数器里的 `rss` / `native heap` / graphics 类指标在首次创建后出现一阶跳升，第二次打开页面的增量通常更小
 
-如果冷启动期间 MainThread 上有大段的 `WebView.<init>` slice，就说明 WebView 初始化阻塞了主线程，需要考虑预热策略。
+如果想验证“预热到底值不值”，最稳妥的办法是抓两份同条件 trace：一份冷开首个 WebView，一份在预热后再打开同一页面，然后只比较首个页面可交互之前的主线程阻塞段和 renderer 拉起时机。
 
 ## JS Bridge 与主线程阻塞
 
@@ -193,19 +198,21 @@ WebView 初始化在 Perfetto 中的特征：
 
 JavaScript Interface 是 WebView 和 App 原生代码之间的桥梁。通过 `@JavascriptInterface` 注解的方法可以从 JS 调用 Native 代码。理解这些方法运行在哪个线程上，是避免 ANR 的关键。
 
-**`@JavascriptInterface` 方法运行在 WebView 的私有后台线程上**，不是 App 的 MainThread，也不是 JS 执行线程。这里要注意三点：
+**`@JavascriptInterface` 方法运行在 WebView 的私有后台线程上**，这一点没有问题，但不能据此得出“不会挡住 MainThread”的结论。Chromium `java-bridge.md` 写得很直白：页面发起的这次 bridge 交互要在这个后台线程上完成，同时 main application thread（browser UI thread）会等待结果返回。执行线程不是 UI thread，调用期间 browser UI thread 仍可能被桥接方法拖住。
 
-- Native 方法中的耗时操作不会直接阻塞 MainThread
-- 但如果需要在 Native 方法中操作 UI，必须通过 `runOnUiThread()` 或 Handler 切回 MainThread
-- Native 方法如果执行时间过长，会阻塞 WebView 的 JS-Java 通信管道，导致后续的 JS→Native 调用排队等待
+这里至少要分清三件事：
+
+- 桥接方法本身不在 UI thread 执行
+- 如果桥接方法里要操作 View 或调用大部分 WebView API，仍然要切回 UI thread
+- 桥接方法一旦执行过长，JS 侧等待会变长，browser UI thread 也可能持续处于等待状态，最终表现为卡顿甚至 ANR
 
 ```java
 class WebAppInterface(private val activity: Activity) {
     @JavascriptInterface
     fun getUserInfo(): String {
-        // 这个方法运行在 WebView 后台线程，不是 MainThread
-        // 耗时操作不会阻塞 UI，但会阻塞后续 JS→Native 调用
-        return fetchUserInfo() // 如果这里有 IO 操作，建议用异步模式
+        // 运行线程不是 UI thread
+        // 但这次 JS → Java 调用结束前，browser UI thread 仍可能在等待结果
+        return fetchUserInfo() // 不要在这里做同步 IO、锁等待或长计算
     }
 
     @JavascriptInterface
@@ -218,7 +225,7 @@ class WebAppInterface(private val activity: Activity) {
 }
 ```
 
-[已验证：来源见 developer.android.com/reference/android/webkit/JavascriptInterface 和 AOSP frameworks/base/core/java/android/webkit/]
+[已验证：来源见 developer.android.com/reference/android/webkit/JavascriptInterface 与 Chromium `android_webview/docs/java-bridge.md`]
 
 ### evaluateJavascript() 的同步陷阱
 
@@ -261,11 +268,11 @@ WebView 相关的 ANR 通常有以下几种模式：
 
 **模式二：JS Bridge 回调堆积**
 
-`@JavascriptInterface` 方法虽然运行在后台线程，但 WebView 内部的 JS→Native 通道是串行的。如果一个 Native 方法执行耗时操作（如同步 IO），后续的 JS→Native 调用全部排队，JS 侧超时等待。
+`@JavascriptInterface` 方法在 bridge 专用后台线程执行，但页面发起的这次调用在返回前会占住 JS→Java 通道，browser UI thread 也可能等待它结束。如果 Native 方法里做同步 IO、数据库锁等待或跨线程 join，后续 bridge 调用会排队，页面交互和宿主线程都会一起变差。
 
 **模式三：WebView 初始化阻塞**
 
-在 MainThread 上首次创建 WebView，Chromium 引擎初始化耗时 200-500ms。如果此时 MainThread 还有其他工作（如 Activity 的 onCreate 中做了很多初始化），容易触发 ANR。
+在 MainThread 上首次创建 WebView，provider 装载和基础初始化本身就可能占住一段可见的主线程时间。如果此时 MainThread 还有其他工作（如 Activity 的 onCreate 中做了很多初始化），就更容易触发 ANR。
 
 **模式四：页面内 JS 长任务**
 
@@ -275,16 +282,14 @@ WebView 相关的 ANR 通常有以下几种模式：
 
 ### Chromium 的内存模型
 
-WebView 基于 Chromium 引擎，内存管理方式和普通 Android 组件有本质区别。核心事实：所有 WebView 实例共享同一个 Chromium 引擎进程（Browser Process + GPU Process），但每个页面的渲染资源是独立的。
+WebView 的内存不能简单理解成“一个 WebView = 一个独立 Chromium 进程”。更准确的说法是：同一宿主 App 中的多个 WebView 共享同一份 browser-side provider 代码、data directory 和一部分 service 状态；页面自己的 DOM、JavaScript heap、图层和 tile 资源则可能分布在宿主进程与 renderer 进程两侧，具体取决于当前是否启用 multiprocess renderer。
 
-一个 WebView 实例的内存开销在 30-80MB 之间，主要来自：
+因此，查 WebView 内存时，至少要同时看两类对象：
 
-- **Blink 渲染树**：DOM 节点、CSS 样式、布局信息
-- **GPU 纹理**：页面内容的 tile 纹理（由 cc 合成器分配）
-- **JavaScript 堆**：V8 引擎为 JS 对象分配的堆内存
-- **网络缓存**：HTTP 缓存、图片解码缓存
+- **宿主 App 进程**：browser code、GPU service、网络缓存、Java 对象、部分 graphics 资源
+- **Renderer 侧**：DOM、V8 heap、layout tree、compositor / raster 产生的页面资源
 
-在 Android 8.0+ 上，Renderer 进程是独立的，因此渲染内存（DOM + JS 堆 + GPU 纹理）的归属在 `dumpsys meminfo` 中可能分布在多个进程中。
+常见开销来自 Blink 渲染树、V8 heap、图片解码缓存、tile 纹理和网络缓存。首次实例化后的内存增量没有脱离设备条件的固定值。32-bit / 64-bit、provider 版本、页面复杂度、是否启用独立 renderer，都会让结果差很多。写结论时最好直接附设备、provider 版本和抓取方式；拿不出这些条件时，用“会出现明显阶跃”比写固定 MB 数更稳。
 
 ### 内存泄漏的常见原因
 
@@ -348,15 +353,14 @@ WebView 内存分析需要结合多个工具：
 
 ### Chromium 合成器处理滚动
 
-WebView 的滚动不是由 Android 的 View 体系处理的，而是由 Chromium 内部的 cc 合成器（compositor）负责。cc 合成器运行在独立的合成线程上，它的工作方式是：
+WebView 的滚动可以受益于 Chromium compositor 的 off-main-thread scrolling，但它不是一条完全绕开 Android View 体系的独立高速路。更准确的处理过程是：
 
-1. Blink 完成页面布局后，将页面内容分层（compositing layers）
-2. 每一层生成一个 GPU 纹理（tile）
-3. 滚动时，cc 合成器只需要调整各层的偏移量，重新合成即可——不需要重新执行 Blink 的布局和绘制
+1. 输入事件先经过 Android 的输入分发和 WebView Java / native 层，再交给 Chromium
+2. Blink 完成 layout / paint 后，compositor 把页面内容组织成 compositing layers / tiles
+3. 当页面只发生 compositor-friendly 的变换（如 `transform`、`opacity`）时，部分滚动与动画可以在 compositor 线程推进，减少 Blink 主线程参与
+4. 最终帧仍要通过 WebView 的绘制路径或独立 Layer 提交给 Android 显示系统，并与 SurfaceFlinger 的合成节奏同步
 
-也就是说，**如果页面的 CSS 只修改了 `transform` 和 `opacity` 属性，滚动和动画可以完全在 cc 合成线程完成，不需要经过 Blink 主线程**。这就是所谓的「合成器驱动滚动」（compositor-driven scrolling）。
-
-但如果 JavaScript 在滚动事件处理器中触发了布局变化（修改了 width、height、top、left 等），cc 合成器就不得不回到 Blink 主线程重新计算布局，这就是所谓的「主线程命中」（main thread hit），在 Perfetto 中表现为滚动期间的帧延迟。
+如果当前 provider 走 GL Functor 路径，我们会在 App RenderThread 里看到 WebView 的 draw / functor 工作；如果走独立 Layer 路径，瓶颈会更多落在 compositor 与 SurfaceFlinger 的交界处。分析 WebView 滚动时，Chromium compositor 和 App / SurfaceFlinger 两边都要一起看。
 
 ### 导致滚动掉帧的常见原因
 
@@ -405,43 +409,43 @@ element.addEventListener('touchmove', handler, { passive: true });
 
 | 版本 | 变化 | 性能影响 |
 |------|------|---------|
-| Android 5.0 (API 21) | WebView 从系统固件独立，通过 Google Play 更新 | 可以不依赖系统 OTA 获得性能修复 |
-| Android 7.0 (API 24) | WebView 实现合并到 Chrome APK 中 | 减少安装体积，共享 Chromium 引擎 |
-| Android 8.0 (API 26) | 多进程 WebView：Renderer 运行在独立沙箱进程 | 渲染崩溃不影响 App，但增加了进程间通信开销 |
-| Android 10 (API 29) | 引入 Trichrome 架构 | WebView、Chrome、Chrome Custom Tabs 共享 `TrichromeLibrary`（包含 `libmonochrome.so`），减少内存和安装体积 |
-| Android 12 (API 31) | SameSite cookie 行为更新；安全增强 | 对性能无直接影响，但旧的 Cookie 处理方式可能需要适配 |
-| Android 14 (API 34) | WebView 升级到最新 Chromium 版本 | 渲染性能持续改善，Blink/V8 引擎优化自动获得 |
-| Android 16 (API 36) | WebView User-Agent 字符串精简（UA-CH） | 减少请求头大小，对性能影响微小 |
+| Android 5.0 (API 21) | WebView 改为可独立更新的 provider 包 | 性能修复不再完全依赖 OTA |
+| Android 7-9 (API 24-28) | 部分设备使用 Monochrome / Chrome-provider；AOSP / TV / car 设备仍可能是 standalone WebView | packaging 形态与 provider 来源开始分化，排查问题时要先确认设备实际 provider |
+| Android 8-10 (API 26-29) | 引入 multiprocess renderer，但 O-Q 的低内存 32-bit 设备仍可能保留 in-process renderer | 同一章节在不同设备上会出现不同进程模型，内存和崩溃隔离行为不能一概而论 |
+| Android 10 (API 29) | 在支持设备上引入 Trichrome packaging | WebView / Chrome / shared library 的安装与更新方式分离，减少重复库体积 |
+| Android 11+ (API 30+) | out-of-process renderer 成为全部设备默认路径 | renderer 崩溃隔离和优先级控制更稳定，Perfetto 中更常看到独立 renderer 进程 |
+| Android 12 (API 31) | SameSite cookie 行为更新；安全模型继续收紧 | 直接性能收益有限，但兼容性问题会影响页面行为和排查路径 |
+| Android 14 (API 34) | provider 跟随 Chromium 持续迭代 | 页面渲染、V8 和安全修复继续通过 provider 更新获得 |
+| Android 16 (API 36) | User-Agent / UA-CH 等行为继续演进 | 对首包和兼容性有影响，纯渲染收益通常不是主因 |
 
-Trichrome 架构值得单独展开。Android 10 之前，WebView 和 Chrome 各自包含完整的 Chromium 引擎副本，浪费存储和内存。Trichrome 将共享代码提取到 `TrichromeLibrary` 中（核心是 `libmonochrome.so`），三个组件（TrichromeWebView、TrichromeChrome、TrichromeLibrary）只安装一份共享库，各自保留差异化代码。
+Trichrome 和 Monochrome 这两段历史最好分开记。Android 7-9 不能简单写成“WebView 并入 Chrome APK”，因为是否使用 Chrome-provider 取决于设备形态和 provider packaging；Android 10 开始，支持设备才转向 Trichrome，把共享 native library 拆到 `TrichromeLibrary`。遇到兼容性或体积问题时，先确认设备实际 provider 包名，再谈架构差异。
 
-[已验证：来源见 chromium.googlesource.com 和 developer.android.com]
+[已验证：来源见 Chromium `android_webview/docs/architecture.md`、`legacy-os-behavior.md`]
 
 ## WebView 在 Perfetto 中的分析
 
 ### 线程命名规律
 
-在 Perfetto 中识别 WebView 相关的线程：
+在 Perfetto 中，WebView 相关线程要先分清“宿主侧”与“renderer 侧”，否则很容易把管理线程当成真正渲染线程。
 
-| 线程名模式 | 含义 | 关注点 |
-|-----------|------|--------|
-| `WebViewChromium*` | WebView Java 层管理线程 | JS Bridge 调用、初始化 |
-| `Chrome_ProcessHost` | Browser 主线程 | WebView 生命周期 |
-| `Chrome_InProcRenderer` | Renderer 线程（旧版，Android 7-） | JS 执行、布局 |
-| `Chrome_ChildProcessHost` | Renderer 进程（Android 8+） | JS 执行、布局（独立进程） |
-| `CrRendererMain` | Renderer 主线程 | Blink 解析、JS 执行、布局 |
-| `Compositor` / `cc` | Chromium 合成线程 | 滚动、动画合成 |
-| `CrGpuMain` | GPU 线程 | GPU 命令提交、纹理生成 |
+| 线程名模式 | 更稳妥的解释 | 关注点 |
+|-----------|--------------|--------|
+| `WebViewChromium*` | 宿主进程里的 WebView provider / browser-side 工作线程 | 初始化、Java Bridge、browser-side 调度 |
+| `Chrome_InProcRenderer` | 单进程模式下的 renderer 线程，常见于旧 provider 或 O-Q 低内存 32-bit 设备 | JS 执行、布局、paint |
+| `CrRendererMain` | multiprocess renderer 的主线程 | HTML 解析、JS 执行、布局 |
+| `Compositor` / `VizCompositorThread` | Chromium 合成线程 | BeginFrame、layer 提交、滚动动画 |
+| `CrGpuMain` | GPU service 主线程，通常仍在宿主 App 进程内 | 纹理上传、GPU 命令提交 |
+| `Chrome_ChildProcessHost*` / `Launcher*` | browser-side 的子进程管理线程，不等于 renderer 主线程本身 | renderer 拉起、崩溃恢复、进程管理 |
 
-### GPU 进程的 Track
+### GPU service 的 Track
 
-WebView 的 GPU 操作运行在独立的 GPU 线程中（`CrGpuMain`）。在 Perfetto 中可以观察到：
+WebView 的 GPU 相关工作不应该再写成“独立 GPU 进程”这个固定事实。按照 Chromium WebView 架构文档，GPU service 在各 Android 版本里都通常 in-process 运行，所以 `CrGpuMain` 更适合理解为宿主进程内的 GPU service 线程。Perfetto 里重点看三类现象：
 
-- GPU 纹理上传（tile 光栅化后的纹理提交）
-- OpenGL/Vulkan 命令执行
-- 和 App 的 RenderThread 共享 GPU 资源时的竞争
+- tile / texture 上传是否和 App RenderThread 争抢 GPU 时间
+- compositor 提交后，GPU service 是否持续积压
+- 混合渲染场景下，SurfaceFlinger 合成时长是否同步抬高
 
-如果 GPU 线程持续忙碌，可能说明页面内容过于复杂（大量 CSS 动画、大尺寸图片、复杂的 compositing layers）。
+如果 `CrGpuMain` 很忙，而 App RenderThread 和 SurfaceFlinger 也同步变长，多半不是“单独的 GPU 进程卡住了”，而是 WebView 页面复杂度、宿主 UI 叠加和最终合成一起把 GPU 压满了。
 
 ### JS 执行在主线程的表现
 
@@ -462,7 +466,7 @@ WebView 发起的网络请求可以在 Perfetto 的 Network Track 中观察到�
 ## 与其他机制的关系
 
 - **渲染架构（§2.1）**：WebView 的渲染管线是 Android 原生渲染管线的「并行版本」，两者最终都通过 SurfaceFlinger 合成。理解 §2.1 的整体架构有助于定位 WebView 渲染问题是出在 Chromium 内部还是与 Android 体系的交互上。
-- **MainThread 与 RenderThread（§2.5）**：WebView 的 Browser 线程运行在 App 的 MainThread 上下文中，但 WebView 的 GPU 线程与 App 的 RenderThread 是独立的，两者可能竞争 GPU 资源。
+- **MainThread 与 RenderThread（§2.5）**：WebView 的 Java API 和一部分 browser-side 调度发生在宿主 App 进程里，最终显示又会和 App RenderThread、SurfaceFlinger 竞争 GPU 与合成时间。
 - **渲染机制版本演进（§2.10）**：WebView 的架构演进（单进程→多进程→Trichrome）与 Android 整体渲染演进并行，了解 §2.10 有助于理解 WebView 各版本的差异。
 - **卡顿原因体系（§7.2）**：WebView 相关的卡顿可以归类到 §7.2 的卡顿原因中：JS 长任务对应「主线程耗时操作」，GPU 合成竞争对应「GPU 渲染超时」，BufferQueue 竞争对应「缓冲区管理」。
 - **功耗管理（§8.1）**：WebView 的 GPU 线程持续活跃会导致 GPU 功耗上升。复杂的 CSS 动画和频繁的页面重绘是 WebView 场景下功耗问题的常见原因。
@@ -480,7 +484,7 @@ Custom Tabs 适合展示外部 URL 的场景（如打开一个帮助页面、展
 
 ### 「WebView destroy() 会释放所有内存」
 
-`destroy()` 会释放 WebView 的 Java 层资源和大部分 native 资源，但 Chromium 引擎的共享部分（Browser Process、GPU Process）只有在所有 WebView 实例都被销毁后才会完全释放。如果 App 中还有其他 WebView 实例存活，Chromium 引擎进程不会退出。
+`destroy()` 会释放当前 WebView 的 Java 层资源和大部分与实例绑定的 native 资源，但 browser-side 的共享 provider 状态不会因为销毁单个实例就完全回到“未初始化”状态。App 中只要还有其他 WebView 实例或共享资源存活，宿主进程里的 WebView provider / service 状态就会继续保留。
 
 ### 「evaluateJavascript() 是同步的」
 
@@ -497,7 +501,10 @@ Custom Tabs 适合展示外部 URL 的场景（如打开一个帮助页面、展
 - **官方文档**：
   - [developer.android.com — WebView 概览](https://developer.android.com/develop/ui/views/layout/webapps/webview)
   - [developer.android.com — WebView 渲染性能](https://developer.android.com/develop/ui/views/layout/webapps/rendering-performance)
-  - [chromium.googlesource.com — Android WebView Quick Start](https://chromium.googlesource.com/chromium/src/+/HEAD/android_webview/docs/quick-start.md)
+  - [chromium.googlesource.com — Android WebView Architecture](https://chromium.googlesource.com/chromium/src/+/HEAD/android_webview/docs/architecture.md)
+  - [chromium.googlesource.com — WebView Java Bridge](https://chromium.googlesource.com/chromium/src/+/HEAD/android_webview/docs/java-bridge.md)
+  - [chromium.googlesource.com — WebView Threading](https://chromium.googlesource.com/chromium/src/+/HEAD/android_webview/docs/threading.md)
+  - [chromium.googlesource.com — Legacy OS Behavior](https://chromium.googlesource.com/chromium/src/+/HEAD/android_webview/docs/legacy-os-behavior.md)
   - [source.android.com — Android 图形架构](https://source.android.com/docs/core/graphics/architecture)
 
 - **交叉引用**：
