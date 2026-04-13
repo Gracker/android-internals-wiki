@@ -30,13 +30,21 @@ sources:
   - type: aosp
     path: "frameworks/base/core/java/android/os/Looper.java"
   - type: aosp
-    path: "frameworks/base/core/java/android/os/MessageQueue.java"
+    path: "frameworks/base/core/java/android/os/LegacyMessageQueue/MessageQueue.java"
+  - type: aosp
+    path: "frameworks/base/core/java/android/os/CombinedMessageQueue/MessageQueue.java"
+  - type: aosp
+    path: "frameworks/base/core/java/android/os/ConcurrentMessageQueue/MessageQueue.java"
   - type: aosp
     path: "frameworks/base/core/java/android/os/Handler.java"
   - type: aosp
     path: "frameworks/base/core/java/android/app/ActivityThread.java"
   - type: aosp
+    path: "frameworks/base/graphics/java/android/graphics/HardwareRenderer.java"
+  - type: aosp
     path: "frameworks/base/libs/hwui/renderthread/RenderThread.cpp"
+  - type: aosp
+    path: "frameworks/native/libs/binder/ProcessState.cpp"
   - type: aosp
     path: "frameworks/base/core/java/android/os/Process.java"
   - type: official
@@ -44,12 +52,13 @@ sources:
   - type: official
     path: "developer.android.com/reference/android/os/Process#setThreadPriority(int,int)"
 tags: [thread, handler, looper, messagequeue, renderthread, coroutine, workmanager, thread-priority]
-related_chapters: ["1.2", "1.4", "2.4", "2.5", "5.1"]
-pipeline_stage: task2b_pending
-task6_state: reviewed
+related_chapters: ["1.2", "1.4", "1.13", "2.4", "2.5", "5.1"]
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
-task9_state: reviewed
-task2b_state: pending
+task9_state: pending
+task2b_state: fixed
+task2b_result: fixed
 ---
 
 # 线程模型
@@ -132,7 +141,7 @@ Android 主线程的运行模型可以用一句话概括：**一个线程，一�
 
 **Looper** 是线程的消息循环引擎。它的核心工作就是一个无限循环：不断从 MessageQueue 中取出下一条 Message，分发给对应的 Handler 去处理。每个线程最多只能有一个 Looper，它通过 `ThreadLocal` 存储在线程本地（后面我们会展开讲 ThreadLocal 的妙用）。
 
-**MessageQueue** 是消息队列，严格来说是一个按时间排序的单链表。消息按照 `when` 字段（即期望执行的时间戳）排列，越早执行的排在越前面。当没有消息需要处理时，线程不会空转，而是通过 `nativePollOnce()` 进入 native 层的 `epoll_wait` 阻塞等待——这就是为什么我们在 Perfetto 中看到主线程处于 Sleep 状态时 CPU 占用几乎为零。
+**MessageQueue** 对外暴露的语义一直没变，仍然是“按到期时间取下一条消息，再交给对应 Handler 处理”。如果只看经典实现，它可以理解成一个按 `when` 排序的链式队列，很多 Handler / Looper 教程也是按这个模型展开的。这里要补一个版本边界：章节适用范围已经覆盖到 Android 16，而 android-16 源树里已经并存 `LegacyMessageQueue`、`CombinedMessageQueue`、`ConcurrentMessageQueue` 三套实现。经典链表这套理解方式仍然有用，但它只准确描述 legacy 路径；android-16 的队列实现演进和锁策略变化放到 §1.13《MessageQueue 机制与 DeliQueue 无锁优化》展开。
 
 **Handler** 是消息的发送者和处理者。任何一个 Handler 实例在创建时都会绑定到当前线程的 Looper（也可以指定 Looper）。调用 `handler.sendMessage()` 时，消息被插入到 Looper 的 MessageQueue 中；当 Looper 循环到这条消息时，回调到 `handler.dispatchMessage()` 进行处理。
 
@@ -152,6 +161,7 @@ public static void loop() {
 ```
 
 [已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/os/Looper.java]
+[已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/os/LegacyMessageQueue/MessageQueue.java、frameworks/base/core/java/android/os/CombinedMessageQueue/MessageQueue.java、frameworks/base/core/java/android/os/ConcurrentMessageQueue/MessageQueue.java]
 
 这里有一个容易被忽略的设计：`msg.target` 就是发送这条消息的 Handler。因此，同一条 MessageQueue 可以被多个 Handler 共享。不同 Handler 发送的消息都会进入同一个队列，但每条消息都会被自己的 Handler 处理。主线程上，ActivityThread 的内部类 `H` 就是最核心的 Handler，它处理 BIND_APPLICATION、CREATE_SERVICE、RECEIVER、BIND_SERVICE 等消息，驱动四大组件的生命周期。
 
@@ -192,7 +202,7 @@ IdleHandler 的典型用途包括：
 
 但要注意：IdleHandler 的执行会延迟后续消息的处理。如果在 IdleHandler 中执行了耗时操作，等同于在主线程上做了阻塞。实战中应该把 IdleHandler 中的工作控制在 1-2ms 以内。
 
-[已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/os/MessageQueue.java 的 addIdleHandler/removeIdleHandler]
+[已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/os/LegacyMessageQueue/MessageQueue.java 的 addIdleHandler/removeIdleHandler]
 
 ## RenderThread：渲染工作的分离
 
@@ -229,21 +239,21 @@ mAttachInfo.mThreadedRenderer.initializeIfNeeded(
 主线程和 RenderThread 之间的核心交互点是 `syncAndDrawFrame()`。这个调用发生在主线程的 `Choreographer.doFrame()` 流程的最后阶段——Traversal（measure/layout/draw）完成之后。
 
 ```java
-// frameworks/base/core/graphics/java/android/graphics/HardwareRenderer.java
+// frameworks/base/graphics/java/android/graphics/HardwareRenderer.java
 // @ AOSP android-16.0.0_r1
 int syncResult = syncAndDrawFrame(choreographer.mFrameInfo);
 ```
 
-`syncAndDrawFrame` 做的事情不是阻塞地等待渲染完成，而是把主线程构建好的 RenderNode 树（包含 DisplayList）同步给 RenderThread，然后立即返回。同步完成后，主线程就可以去处理其他消息（比如下一条 Message 或 IdleHandler），而 RenderThread 在自己的线程上执行以下工作：
+`syncAndDrawFrame()` 不是简单的 fire-and-forget。主线程调用它之后，会先把本帧的 `RenderNode` 树和 `FrameInfo` 同步给 RenderThread，并在 `DrawFrameTask::postAndWait()` 这一段同步等待 RenderThread 接管本帧。RenderThread 完成 `syncFrameState`、判断本帧是否需要真正绘制之后，会通过 `unblockUiThread()` 让主线程继续往前跑。
 
-1. 从 BlastBufferQueue 获取一个可用 Buffer（`dequeueBuffer`）
-2. 处理 DisplayList 中的渲染指令，调用 OpenGL/Vulkan API
-3. 将渲染结果 flush 到 GPU
-4. 提交 Buffer 回 BlastBufferQueue（`queueBuffer`）
-5. 通过 Transaction 通知 SurfaceFlinger
+因此，主线程和 RenderThread 的配合要拆成两个阶段看：
 
-在 Perfetto 中，我们可以清楚地看到这个分工：主线程上的 `syncAndDrawFrame` 通常非常短暂（大部分时间花在 Traversal 上），而 RenderThread 上的 `DrawFrame` 持续时间反映了 GPU 渲染的实际开销。
+1. **同步阶段**：主线程在 `syncAndDrawFrame()` 内等待 RenderThread 完成帧状态同步，并拿到 `syncResult`。
+2. **异步阶段**：主线程解阻塞后，RenderThread 继续执行真正的 `DrawFrame`，包括申请 Buffer、提交 GPU 命令、`queueBuffer()` 和通知 SurfaceFlinger。
 
+在 Perfetto 里，主线程上的 `syncAndDrawFrame` 不是“纯异步发包”的零成本 slice，它包含一段可见的同步等待；RenderThread 上更长的 `DrawFrame` slice 则对应后半段渲染开销。把这两段分开看，才能判断瓶颈是在主线程卡住，还是 RenderThread / GPU 把一帧拖长了。
+
+[已验证: AOSP android-16.0.0_r1, frameworks/base/graphics/java/android/graphics/HardwareRenderer.java 和 frameworks/base/libs/hwui/renderthread/RenderProxy.cpp]
 [已验证: 来源见 obsidian/Personal-Knowlodge/source/Android-Perfetto-07-MainThread-And-RenderThread.md]
 
 ### 软件绘制：没有 RenderThread 的世界
@@ -290,10 +300,11 @@ Linux 提供了多种调度策略，Android 中最常用的有两种：
 
 **SCHED_OTHER**（也叫 SCHED_NORMAL）是默认的调度策略，使用完全公平调度器（CFS）。所有使用 nice 值的线程都属于这个策略。CFS 会根据 nice 值动态调整线程的 CPU 份额，确保所有线程在长期内获得公平的 CPU 时间。
 
-**SCHED_FIFO** 是实时调度策略，使用固定优先级。SCHED_FIFO 线程一旦开始运行，就会一直运行直到它主动让出 CPU（比如阻塞在 I/O 上）或者被更高优先级的实时线程抢占。Android 中，音频播放线程和部分 UI/RenderThread 的高优先级场景会使用 SCHED_FIFO，以保证低延迟。
+**SCHED_FIFO** 是实时调度策略，使用固定优先级。SCHED_FIFO 线程一旦开始运行，就会一直运行直到它主动让出 CPU（比如阻塞在 I/O 上）或者被更高优先级的实时线程抢占。Android 里更典型的例子是 AudioFlinger 这类对 deadline 敏感的实时音频线程。App 侧 RenderThread 在 AOSP 常见路径下并不会切到 `SCHED_FIFO`，而是在 `RenderThread::threadLoop()` 里通过 `setpriority(PRIO_PROCESS, 0, PRIORITY_DISPLAY)` 提升到 display nice priority，调度策略仍然属于 `SCHED_OTHER`。
 
-在 Perfetto 中，如果一个线程长时间占据 CPU 不释放，而且它不是 SCHED_FIFO 策略，那很可能是一个 bug——比如一个后台线程没有正确设置优先级，或者有一个无限循环。如果它确实是 SCHED_FIFO 线程，那说明系统设计上认为这个任务比其他所有 SCHED_OTHER 任务都重要。
+在 Perfetto 中，如果一个线程长时间占据 CPU 不释放，而且它不是 `SCHED_FIFO`，那通常说明它只是拿到了较高的 nice priority，或者代码路径本身有问题。只有在明确看到实时调度线程时，我们才应该按 `SCHED_FIFO` / `SCHED_RR` 的思路去解释它的行为。
 
+[已验证: AOSP android-16.0.0_r1, frameworks/base/libs/hwui/renderthread/RenderThread.cpp]
 [已验证: 官方文档, source.android.com/docs/core/performance]
 
 ### 实战：绑定 RenderThread 到大核 CPU
@@ -452,8 +463,9 @@ Choreographer 也使用了同样的模式：通过 `ThreadLocal` 为每个线程
 
 4. **内存压力**：每个线程的栈空间加起来可能达到几十甚至上百 MB，在内存紧张的设备上会加速 LMK 回收。
 
-Android Framework 对线程数量的控制体现在多个层面：Binder 线程池默认最多 16 个线程（含主线程，共 15 个可 Spawn 的 Binder 线程）；`Dispatchers.IO` 的线程池上限为 64；`Dispatchers.Default` 的线程数等于 CPU 核心数。这些限制不是随意的，而是经过实践验证的平衡点。
+Android Framework 对线程数量的控制体现在多个层面：Binder pool 默认是 1 个已经启动的 pool thread，再加上内核按需追加的最多 15 个 pool threads，上限是 16 个 Binder pool threads。这里不把 App 主线程算进去，因为主线程不是这个 pool 的常驻 worker。`Dispatchers.IO` 和 `Dispatchers.Default` 也各自有并行度上限，目的都是在吞吐量和调度开销之间取平衡。
 
+[已验证: AOSP android-16.0.0_r1, frameworks/native/libs/binder/ProcessState.cpp]
 [已验证: 官方文档, developer.android.com/topic/performance]
 
 ## 常见问题与误区
@@ -478,6 +490,7 @@ Android Framework 对线程数量的控制体现在多个层面：Binder 线程�
 
 - **1.2 系统启动全流程**：Zygote fork 出进程后，通过 ActivityThread.main() 初始化主线程消息循环
 - **1.4 Binder IPC 机制与性能影响**：Binder 线程池是 App 进程中另一组重要线程，处理跨进程调用
+- **1.13 MessageQueue 机制与 DeliQueue 无锁优化**：本章先用经典 Looper / Handler 理解方式讲清主线，android-16 以后队列内部实现的演进在 1.13 展开
 - **2.4 Choreographer 与渲染流水线**：Choreographer 通过主线程的 Handler 监听 VSync 信号，驱动每帧的渲染
 - **2.5 MainThread 与 RenderThread 协作**：本章的 RenderThread 部分在 2.5 中有更详细的工作流程分析
 - **5.1 Linux 进程调度基础**：nice 值、cgroup、调度策略的底层原理在 CPU 章节中深入展开
@@ -486,11 +499,15 @@ Android Framework 对线程数量的控制体现在多个层面：Binder 线程�
 
 - AOSP 源码路径：
   - `frameworks/base/core/java/android/os/Looper.java` — Looper 核心，消息循环引擎
-  - `frameworks/base/core/java/android/os/MessageQueue.java` — MessageQueue，消息队列与 native epoll 桥接
+  - `frameworks/base/core/java/android/os/LegacyMessageQueue/MessageQueue.java` — android-16 中保留经典链式语义的 MessageQueue 实现
+  - `frameworks/base/core/java/android/os/CombinedMessageQueue/MessageQueue.java` — android-16 并存的 MessageQueue 实现之一
+  - `frameworks/base/core/java/android/os/ConcurrentMessageQueue/MessageQueue.java` — android-16 并存的 MessageQueue 实现之一
   - `frameworks/base/core/java/android/os/Handler.java` — Handler，消息发送与处理
   - `frameworks/base/core/java/android/app/ActivityThread.java` — 主线程入口，四大组件消息处理
+  - `frameworks/base/graphics/java/android/graphics/HardwareRenderer.java` — `syncAndDrawFrame()` Java 入口
   - `frameworks/base/libs/hwui/renderthread/RenderThread.cpp` — RenderThread native 实现
   - `frameworks/base/libs/hwui/renderthread/RenderProxy.cpp` — 主线程与 RenderThread 的同步桥接
+  - `frameworks/native/libs/binder/ProcessState.cpp` — Binder pool 默认线程上限
   - `frameworks/base/core/java/android/os/Process.java` — 线程优先级设置
   - `system/core/libutils/Looper.cpp` — Native Looper，epoll 实现
 - 官方文档：
