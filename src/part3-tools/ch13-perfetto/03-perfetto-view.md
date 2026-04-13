@@ -5,9 +5,9 @@ section: "13.3"
 status: ready-for-review
 drafted_date: "2026-04-03"
 drafted_by: "openclaw-task2a"
-applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
-last_verified: "2026-04-03"
-last_verified_against: "perfetto.dev docs"
+applicable_versions: "Android 10 (API 29) - Android 16 (API 35)"
+last_verified: "2026-04-14"
+last_verified_against: "perfetto.dev docs + source.android FrameTimeline + AOSP android-16.0.0_r1"
 confidence: medium-high
 reviewed_date: "2026-04-13"
 reviewed_by: "openclaw-task6"
@@ -19,6 +19,14 @@ sources:
     path: "https://perfetto.dev/docs/visualization/lifecycle"
   - type: official
     path: "https://perfetto.dev/docs/analysis/trace-protractor"
+  - type: official
+    path: "https://perfetto.dev/docs/quickstart/traceconv"
+  - type: official
+    path: "https://source.android.com/docs/core/display/frame_timeline"
+  - type: aosp
+    path: "frameworks/native/services/surfaceflinger/SurfaceFlinger.cpp"
+  - type: aosp
+    path: "frameworks/native/services/surfaceflinger/Scheduler/Scheduler.cpp"
   - type: blog
     path: "https://mp.weixin.qq.com/s?__biz=MzAxMDM0NjExNA==&mid=2247487984&idx=1&sn=713bdccc885ef503b2f691fbd6e8f93"
 tags:
@@ -33,10 +41,11 @@ related_chapters: ["13.1", "13.2", "13.4", "2.6", "14.2", "14.3"]
 polish_count: 1
 polish_date: "2026-04-10"
 polish_by: "task2b-polish"
-pipeline_stage: task9_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task9_state: pending
-task2b_state: idle
+task2b_state: fixed
+task2b_result: fixed
 ---
 
 
@@ -87,7 +96,7 @@ Perfetto Trace 文件在 [ui.perfetto.dev](https://ui.perfetto.dev/) 中打开�
 
 如果使用的是 13.2 节介绍的官方脚本抓取，脚本会在抓取结束后自动在浏览器中打开这个页面并加载 Trace。
 
-需要注意，Perfetto UI 对浏览器内存有要求。如果 Trace 文件超过 500 MB，浏览器加载可能会很慢甚至失败。这种情况下可以参考 13.4 节介绍的命令行方案，用 Trace Processor Shell 直接做 SQL 分析，或者通过 `trace_to_text` 工具将 Trace 转换为文本格式后再处理。
+Perfetto UI 对浏览器内存有要求。如果 Trace 文件超过 500 MB，浏览器加载可能会很慢甚至失败。这种情况下可以参考 13.4 节介绍的命令行方案，用 Trace Processor Shell 直接做 SQL 分析，或者用官方 `traceconv text <input> <output>` 把 `.perfetto-trace` 转成文本再查。`traceconv` 是 Perfetto 对外公开的 CLI，`trace_to_text` 更接近仓库内部脚本名，不适合写成读者默认入口。
 
 [已验证: 官方文档, perfetto.dev/docs/visualization/lifecycle]
 
@@ -180,24 +189,34 @@ CPU Track 下面是以进程为单位组织的 Track 区域。每个进程有一
 
 ### FrameTimeline Track
 
-FrameTimeline 是 Android 12（API 31）引入的 Track，位于 App 进程的线程 Track 上方。它有两行：上面一行是 Expected Timeline（预期帧时间线），下面一行是 Actual Timeline（实际帧时间线）。
+FrameTimeline 是 Android 12（API 31）引入的轨道，位于 App 进程的线程 Track 上方。它通常分成两行：上面是 Expected Timeline，下面是 Actual Timeline。
 
-Expected Timeline 用灰色色块表示系统为每一帧分配的时间窗口。在 60 Hz 设备上，每个色块宽度约 16.6ms；在 120 Hz 设备上约 8.3ms。
+Expected Timeline 表示系统为这一帧预留的完成窗口。60 Hz 设备上一格约 16.6ms，120 Hz 设备上一格约 8.3ms。Actual Timeline 表示这帧最终的实际结果。把两行放在同一时间轴下比较，超时帧会直接冒出来。
 
-Actual Timeline 用不同颜色表示实际渲染结果：绿色表示按时完成，红色表示超时（掉帧）。点击红色的 Actual Timeline Slice，底部面板会显示掉帧的原因分类——是 App 自身渲染超时（`app_missed`），还是 SurfaceFlinger 合成超时（`sf_missed`），还是两者都有。
+选中 Actual Timeline 里的单帧后，先看 Details 面板里的 `Jank Type`。公开口径里常见的值包括 `App Deadline Missed`、`Buffer Stuffing`、`SurfaceFlinger CPU Deadline Missed`、`SurfaceFlinger GPU Deadline Missed`、`SurfaceFlinger Scheduling`、`Prediction Error`、`Display HAL`、`Dropped Frame`。颜色只适合快速扫异常，精确归因以 `Jank Type` 字段为准。
 
-通过 Expected 和 Actual 两行的对比，我们可以一眼看出哪些帧超时了、超了多少。这在分析流畅性问题时是最高效的入口：不需要逐个检查 `doFrame` 的耗时，直接看 FrameTimeline 的红色区域就行。
+| Android 版本 | 主入口 | 回看哪些轨道 | 归因方式 |
+| --- | --- | --- | --- |
+| Android 10-11 | `Choreographer#doFrame` | `VSYNC-app`、`VSYNC-sf`、主线程、`RenderThread`、`SurfaceFlinger` | 没有 FrameTimeline 主表，靠时间轴和线程态手工判断 |
+| Android 12-13 | `Expected Timeline` + `Actual Timeline` | `doFrame`、`DrawFrame`、`surfaceflinger` 主线程 | 先看 `Jank Type`，再回到线程级 slice |
+| Android 14+ | `Expected Timeline` + `Actual Timeline` | `doFrame`、`DrawFrame`、`commit` / `composite` / `present` | 主入口不变，但 SurfaceFlinger 侧要按新主循环读 |
 
-[图：FrameTimeline Track 示例——Expected（灰色）与 Actual（绿色/红色）对比，标注 app_missed 掉帧]
+这样读，Android 10/11 不会被误导去找不存在的 FrameTimeline，Android 12+ 也不用再靠旧的 `app_missed` / `sf_missed` 私有口径猜原因。
+
+[图：FrameTimeline Track 示例——Expected（灰色）与 Actual（绿色/黄色/红色/蓝色）对比，标注 `Jank Type` 查看位置]
 
 [已验证: 官方文档, source.android.com/docs/core/display/frame_timeline]
 [来源: https://www.androidperformance.com/2024/05/21/Android-Perfetto-03-how-to-analysis-perfetto/]
 
 ### SurfaceFlinger Track
 
-SurfaceFlinger 是 Android 系统的合成服务（详见 2.6 节），它在 Trace 中有独立的进程分组。SurfaceFlinger 的主线程 Track 上，最关键的 Slice 是 `onMessageReceived`，它表示一次合成（Composition）操作。每次 VSync-sf 信号到来时，SurfaceFlinger 都会执行一次合成：收集所有 App 提交的 Buffer，决定使用 GPU 合成还是 HWC（Hardware Composer）合成，然后将结果提交给显示硬件。
+SurfaceFlinger 是 Android 系统的合成服务（详见 2.6 节），读这条 Track 一定要按版本拆开。
 
-在分析掉帧问题时，SurfaceFlinger Track 是 App Track 的下游验证点：如果 App 的 Actual Timeline 显示红色，我们需要进一步检查 SurfaceFlinger 在对应时间段是否及时完成了合成——如果 SurfaceFlinger 本身也有延迟，问题可能不只是 App 渲染慢。
+Android 12-13 的主线程更常见 `onMessageReceived`、`INVALIDATE`、`REFRESH`。这组 slice 对应旧的消息模型：先收事务、检查 Buffer，再组织本帧合成。
+
+Android 14+ 的主流程更适合直接看 `commit`、`composite`、`present`。`commit` 更接近事务收敛和 Buffer latch，`composite` 对应合成决策与执行，`present` 对应向显示设备提交结果。到了 Android 14-16，再把 `onMessageReceived` 当成默认观察入口，读 trace 时就会跑偏。
+
+分析掉帧时，App Track 只是入口，SurfaceFlinger Track 是下游验证点。Android 12-13 上先对照 `REFRESH` 是否跨了当前刷新窗口；Android 14+ 上更该看 `commit` / `composite` / `present` 有没有明显拉长，再判断是事务处理、Client composition 还是显示提交拖慢了这一帧。
 
 [来源: https://www.androidperformance.com/2024/05/21/Android-Perfetto-03-how-to-analysis-perfetto/]
 
@@ -394,19 +413,19 @@ Android Studio Profiler 也提供了 CPU Trace 的可视化视图，很多开发
 
 假设我们拿到了一个用户反馈"滑动时偶尔卡一下"的 Trace。按照以下步骤可以在几分钟内定位到原因：
 
-**第一步：看 FrameTimeline**。在 App 进程的 Track 中找到 FrameTimeline 行，快速扫描红色色块，标记所有掉帧点。
+**第一步：按版本选入口**。Android 12+ 先在 App 进程里看 `Actual Timeline`，扫描异常颜色的帧。Android 10/11 没有 FrameTimeline 主表，就从 `Choreographer#doFrame`、`VSYNC-app` / `VSYNC-sf` 和 `SurfaceFlinger` 轨道开始，先圈出超时窗口。
 
-**第二步：定位掉帧的 doFrame**。点击红色的 Actual Timeline 色块，确认掉帧原因是 `app_missed`（App 渲染超时）。然后按 `Shift+M` 给这个掉帧区间打一个持久标记。
+**第二步：看归因字段或 fallback 线索**。Android 12+ 选中异常帧后，先看 `Jank Type`。如果是 `App Deadline Missed`，继续回到 `doFrame` 和 `RenderThread`；如果是 `SurfaceFlinger CPU Deadline Missed`、`SurfaceFlinger GPU Deadline Missed`、`SurfaceFlinger Scheduling` 或 `Display HAL`，直接把视线切到 `surfaceflinger` 进程。Android 10/11 则要靠 `doFrame`、`DrawFrame`、主线程 `thread_state` 和 SurfaceFlinger 时间窗手工拆分责任。
 
-**第三步：看主线程**。向下滚动到 MainThread Track，找到对应时间段的 `Choreographer#doFrame` Slice。看它的 Wall Duration 是否超过了 VSync 周期（60 Hz 设备上超过 16.6ms）。按 `F` 放大这个 Slice。
+**第三步：看主线程**。向下滚动到 MainThread Track，找到同一时间窗里的 `Choreographer#doFrame` Slice。放大之后，先看 `CALLBACK_INPUT`、`CALLBACK_ANIMATION`、`CALLBACK_TRAVERSAL`、`CALLBACK_COMMIT` 哪一段最长。
 
-**第四步：看线程状态颜色**。观察 `doFrame` Slice 上方的线程状态条。如果主要是绿色，说明是计算量大，需要看子 Slice 里哪个步骤耗时最多（measure? layout? draw?）。如果灰色段很长，检查是不是在等锁（锁竞争）。如果有橙色段，检查是不是在做 I/O。
+**第四步：看线程状态颜色**。如果主线程大段是绿色，说明主要在执行 CPU 工作；灰色长，优先排查锁或 Binder 等待；深橙色长，优先排查 I/O。再结合 Wall Duration、CPU Duration、Self Time 判断瓶颈是计算、等待还是磁盘。
 
-**第五步：看子 Slice drill-down**。利用 Self Time 逐层深入。比如 `doFrame` 的子 Slice 中 `draw` 最耗时，`draw` 中 `RenderThread:DrawFrame` 最耗时——那问题在渲染端。进一步看 RenderThread 的 Track，确认是 GPU 执行慢还是 Fence 等待久。
+**第五步：继续看 RenderThread**。如果 `doFrame` 本身不长，但 `DrawFrame`、GPU work 或 fence wait 明显拉长，就把同一时间窗切到 `RenderThread`。这里要区分是 App 侧 GPU 提交慢，还是下游消费慢。
 
-**第六步：看 SurfaceFlinger**。如果 App 端没有明显超时，切换到 SurfaceFlinger 进程，检查对应时间段 `onMessageReceived` 的耗时是否正常。如果 SF 合成也超时了，可能是 HWC 合成失败回退到了 GPU 合成，或者是 Layer 数量过多。
+**第六步：按版本看 SurfaceFlinger**。Android 12-13 重点检查 `onMessageReceived` / `REFRESH`；Android 14+ 重点检查 `commit` / `composite` / `present`。如果 SurfaceFlinger 侧也超时，再判断是 Client composition 增多、事务处理变重，还是显示提交阶段晚了。
 
-通过这个流程，大部分掉帧问题都能在 5-10 分钟内定位到根因层级。剩下的是深入代码层面的优化，那就需要结合 AS Profiler 的方法级 Trace 或者直接看源码了。
+通过这个流程，大部分掉帧问题都能在 5-10 分钟内定位到根因层级。剩下的是继续结合 13.5 节的专题 SQL、Android Studio Profiler 或源码做深挖。
 
 [图：实战示例完整 Trace 片段——从 FrameTimeline 红色区域定位到 doFrame，展示各子 Slice drill-down 过程]
 
@@ -426,6 +445,7 @@ Android Studio Profiler 也提供了 CPU Trace 的可视化视图，很多开发
 
 - Perfetto UI 官方文档：[https://perfetto.dev/docs/visualization/lifecycle](https://perfetto.dev/docs/visualization/lifecycle)
 - Perfetto 键盘快捷键：[https://perfetto.dev/docs/visualization/keyboard-shortcuts](https://perfetto.dev/docs/visualization/keyboard-shortcuts)
+- traceconv 官方文档：[https://perfetto.dev/docs/quickstart/traceconv](https://perfetto.dev/docs/quickstart/traceconv)
 - FrameTimeline 官方文档：[https://source.android.com/docs/core/display/frame_timeline](https://source.android.com/docs/core/display/frame_timeline)
 - Android Performance — Perfetto 系列 3：[https://www.androidperformance.com/2024/05/21/Android-Perfetto-03-how-to-analysis-perfetto/](https://www.androidperformance.com/2024/05/21/Android-Perfetto-03-how-to-analysis-perfetto/)
 - Perfetto 分析进阶（内核工匠）：[https://mp.weixin.qq.com/s?__biz=MzAxMDM0NjExNA==&mid=2247487984](https://mp.weixin.qq.com/s?__biz=MzAxMDM0NjExNA==&mid=2247487984)
