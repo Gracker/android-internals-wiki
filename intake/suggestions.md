@@ -2418,3 +2418,17 @@
 - **问题**：DeviceIdle、低功耗模式和后台冻结相关段落已经给出观察思路，但关键位置仍只有文字和占位，没有真实 Trace、截图或已跑通的观测样例，实操闭环偏弱。
 - **建议**：交给 Task 2B 补 2-3 组真实 Perfetto 片段，至少覆盖 Doze 状态切换、低功耗模式触发和后台冻结/延迟的可观测信号。
 - **review 日志**：logs/review/2026-04-13-13-review.md
+
+
+## [Task9 Deep Review] 9.6 Notification 性能与 ANR — 2026-04-13
+- **类型**：交叉引用
+- **位置**：行 439
+- **问题**：正文写“Perfetto SQL 分析（§13.7）”，但全书真正承载 SQL cookbook 的章节是 §13.10《Perfetto SQL 性能分析实战手册》。§13.7 更偏高级用法，不是 SQL 主章节。
+- **建议**：将 SQL 深入分析的交叉引用改到 §13.10，§13.7 保留给 trace 配置/高级使用场景。
+
+## [Task9 Deep Review] 9.6 Notification 性能与 ANR — 2026-04-13
+- **类型**：数据缺失
+- **位置**：行 199-215
+- **问题**：RemoteViews 嵌套层级的 1-2ms / 10-20ms，以及 Bitmap 传输的 10-50ms / 100ms+ 都没有设备、版本、图片尺寸、SystemUI 负载或 trace 条件。
+- **建议**：补设备型号、Android 版本、图片尺寸、是否冷/热路径、trace 截图或 benchmark 条件；拿不到就统一降级为定性表述。
+

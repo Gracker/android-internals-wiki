@@ -6815,5 +6815,82 @@
     "added_at": "2026-04-13T13:05:00+08:00",
     "status": "pending",
     "original_review_log": "logs/review/2026-04-13-13-review.md"
+  },
+  {
+    "section": "9.6",
+    "section_title": "Notification 性能与 ANR",
+    "priority": 95,
+    "reason": "[Deep Tech Review] notify() 同步边界、FGS 超时语义、POST_NOTIFICATIONS 版本与 RemoteViews 源码片段存在事实错误",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "原理断裂/源码错误",
+        "location": "行 74-101, 140-142, 193-194, 332-338, 460-462",
+        "detail": "正文把 NotificationManager.notify() 的同步 Binder 调用扩展成“等待 NMS 排名、监听器回调、SystemUI inflate 全部完成”，并把 NMS 主线程写成 notif-handler。AOSP android-16 中 enqueueNotificationInternal() 的注释明确说它只是“processed ... and handed off ... to a background thread”；实现是 mHandler.post(new EnqueueNotificationRunnable(...)) 后立即返回。INotificationListener 仍是 oneway，SystemUI/NLS 回调不在这次调用方同步等待里。",
+        "suggestion": "重写发布路径，区分 App 侧同步段（Binder 入站与入队前校验）和异步段（WorkerHandler 入队、listener fan-out、SystemUI 渲染）；撤掉 notif-handler 这一线程命名与“SystemUI inflate 会直接拖住 notify() 返回”的表述。"
+      },
+      {
+        "type": "版本差异/原理断裂",
+        "location": "行 107, 281-307, 435",
+        "detail": "前台服务超时被写成“调用 startForeground() 后，App 必须在 5 秒内再 notify()”。官方 troubleshooting 文档的异常文案是 “Context.startForegroundService() did not then call Service.startForeground()”。超时窗口发生在 startForegroundService() 到 Service.startForeground() 之间，不是 startForeground() 之后。",
+        "suggestion": "改写为：复杂通知构造会消耗 startForegroundService() 到 startForeground() 的预算；保留“两步式简单通知→完整版更新”作为规避策略，但不要把超时语义写反。"
+      },
+      {
+        "type": "版本差异",
+        "location": "版本演进表行 445",
+        "detail": "把 POST_NOTIFICATIONS 写到 Android 12。官方文档明确它是 Android 13 (API 33) 新增的 runtime permission。",
+        "suggestion": "把 POST_NOTIFICATIONS 挪到 Android 13；Android 12 只保留 rate limiting / FGS 相关变化。"
+      },
+      {
+        "type": "源码错误/版本差异",
+        "location": "行 132-166, 464-466",
+        "detail": "通知限流被写成“每个通知渠道上限”并引用 isRateLimitingBlockedLocked()。AOSP android-16 当前实现使用的是包级 enqueue rate：mUsageStats.getAppEnqueueRate(pkg) > mMaxPackageEnqueueRate，默认阈值 DEFAULT_MAX_NOTIFICATION_ENQUEUE_RATE = 5f；章节引用的方法名在当前源码中不存在。",
+        "suggestion": "改成“包级通知更新速率限制（重点在 update path）”，并补上适用条件 isUpdate && !hasCompletedProgress() && !isAutogroup；删除不存在的方法名。"
+      },
+      {
+        "type": "源码错误",
+        "location": "行 176-190",
+        "detail": "标注为 AOSP 的 RemoteViews 代码片段不是当前源码：android-16 中 mActions 是 ArrayList<Action>，apply() 走 inflateView() + performApply()；文中 private final Parcel mActions 与 applyStandardTemplate() 组合会把示意代码误写成真实 AOSP。",
+        "suggestion": "若保留示意代码，明确标成“概念化伪代码”；若标 AOSP 片段，则替换成 android-16 的真实字段与方法名。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-13T13:20:00+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "9.6",
+    "section_title": "Notification 性能与 ANR",
+    "priority": 85,
+    "reason": "[Deep Tech Review] 版本演进、Perfetto 可观测性与 ProgressStyle 边界仍有关键缺口",
+    "material_paths": [
+      "intake/research-gaps.md",
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "版本差异/知识盲区",
+        "location": "行 150, 336-338, 344-362, 447-450",
+        "detail": "Android 14 并行分发、Android 15 排名增量更新、Android 17 后台 NLS 限频都被写成确定结论，但章节没有给出对应 AOSP tag / 官方文档。android-16 现有实现仍能看到 listenerCalls 列表和 mRankingHelper.sort(mNotificationList) 全量 sort path，不能直接反推 14/15 的版本叙述。",
+        "suggestion": "逐版本补一手证据；拿不到 commit / release note 时，下调成 [待验证] 或删除具体版本断言。"
+      },
+      {
+        "type": "知识盲区/原理断裂",
+        "location": "行 348-360, 449",
+        "detail": "ProgressStyle 被直接解释成“不需要跨进程 inflate RemoteViews、更新频率由系统控制”。官方文档只能确认它 Added in API level 36；live update / promoted ongoing 的资格约束是 no customContentView、requestPromotedOngoing 等，不等于“系统自动节流所有更新”或“完全没有模板渲染路径”。",
+        "suggestion": "把 ProgressStyle 与 live update / promoted ongoing 分开写：一个是 API/模板能力，一个是 promotion 资格；性能收益只能保守表述为“避免自定义通知视图”。"
+      },
+      {
+        "type": "知识盲区/数据缺失",
+        "location": "行 364-413",
+        "detail": "Perfetto 章节没有给出可复现的 trace config 和经验证的表/track。notif-handler 线程、enqueueNotificationInternal slice、onNotificationPosted slice 在默认 trace 下通常不能稳定直接搜到；SQL 也把 Binder wait 过度简化成 slice.name LIKE \"%binder%\"。",
+        "suggestion": "补一份最小可运行 trace 配置，区分 thread_state/sched、android.binder 数据源、App 自定义 trace section 三种证据来源；拿不到真实 trace 前把当前 SQL 下调为示意。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-13T13:20:00+08:00",
+    "status": "pending"
   }
 ]

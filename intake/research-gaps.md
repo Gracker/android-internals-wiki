@@ -1781,3 +1781,22 @@ AsyncLayoutInflater 一节缺少 AndroidX 当前实现的关键边界，尤其�
 
 ### 关联章节
 3.2、7.13、13.3
+
+
+## [2026-04-13] 9.6 Notification 性能与 ANR — 通知发布同步边界与可观测性
+
+### 盲区描述
+章节缺少一条可复核的通知发布证据链：App 侧 notify() 的同步边界到底到哪里结束，NMS 的 WorkerHandler / RankingHandler / listener dispatch 在不同 Android 版本中的职责如何切分，SystemUI 渲染和第三方 NotificationListenerService 回调又该如何在 Perfetto 中被稳定观察。没有这条证据链，版本演进、Perfetto SQL 和 ANR 归因都会持续漂移。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 对比 android-13 / 14 / 15 / 16 中 enqueueNotificationInternal、EnqueueNotificationRunnable、NotificationListeners 的实现，确认同步段与异步段的边界
+- 核实 Android 14 并行分发、Android 15 排名优化、Android 17 后台监听器限制是否有公开 AOSP / 官方文档依据
+- 产出一份最小可运行的 Perfetto 抓取方案，覆盖 App notify Binder wait、system_server 通知处理、listener callback、SystemUI 渲染四段证据
+- 补清 ProgressStyle、live update、promoted ongoing 的 API 与资格边界，避免把“标准模板能力”写成“系统自动节流机制”
+
+### 关联章节
+§9.6、§1.4、§13.7、§13.10
+
