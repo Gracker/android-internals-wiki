@@ -6,12 +6,13 @@ status: ready-for-review
 drafted_date: "2026-04-06"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
-last_verified: "2026-04-06"
-last_verified_against: "AOSP android-17.0.0_r1"
+last_verified: "2026-04-13"
+last_verified_against: "AOSP android-17.0.0_r1 + androidx/media release"
 reviewed_date: "2026-04-13"
 reviewed_by: "openclaw-task6"
 task6_result: needs-rework
 task9_result: needs-rework
+task2b_result: fixed
 confidence: medium
 sources:
   - type: official
@@ -20,6 +21,8 @@ sources:
     path: "https://developer.android.com/ndk/guides/audio/aaudio/low-latency-audio"
   - type: blog
     path: "https://android-developers.googleblog.com/ (Media3 1.10 Release)"
+  - type: source
+    path: "https://github.com/androidx/media/blob/release/libraries/exoplayer/src/main/java/androidx/media3/exoplayer/DefaultLoadControl.java"
   - type: aosp
     path: "frameworks/av/media/libstagefright/"
   - type: aosp
@@ -30,10 +33,10 @@ created_by: "task2a-knowledge-gap"
 created_date: "2026-04-06"
 gap_source: "AOSP结构+官方文档+读者需求"
 gap_score: "16/20"
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: pending
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
+task2b_state: fixed
 ---
 
 # 8.8 Android 多媒体管线性能
@@ -78,7 +81,15 @@ Android 的多媒体处理围绕 MediaCodec 这个核心 API 展开。从数据�
 
 [已验证: 官方文档, developer.android.com/reference/android/media/MediaCodec]
 
-这条管线的关键设计理念是**零拷贝**。从 MediaCodec 解码器输出的帧，不会经过 Java 层的 `ByteBuffer` 拷贝，而是直接通过 native 的 `BufferQueue` 共享给 SurfaceFlinger。`Surface` 在这个模型中扮演的是 producer-consumer 接口——MediaCodec 作为 producer 填充 buffer，SurfaceFlinger 作为 consumer 消费 buffer 进行合成显示。buffer 本身通常是由 Gralloc 分配的 DMA-BUF 内存（参见 §2.15），可以被 GPU 和显示控制器直接访问，不需要在进程间拷贝。
+这类输出路径都尽量避免 CPU 逐像素拷贝。MediaCodec 解码后的帧通常放在由 Gralloc 分配的 `GraphicBuffer` / DMA-BUF 中，通过 `BufferQueue` 或 sideband handle 交给后续消费者。`Surface` 只是统一的配置入口，真正的消费者会因为 `SurfaceView`、`TextureView` 和 tunneled mode 分成三条路径。
+
+| 输出方式 | producer → consumer | App / GPU 参与方式 | Overlay / 合成条件 | 排查观察点 |
+|------|------|------|------|------|
+| `SurfaceView` | `MediaCodec` → `BufferQueue` → `SurfaceFlinger` / HWC | 像素不回到 App；通常不需要 App 再做纹理采样 | 独立 video layer 满足格式、缩放、遮挡等约束时可走 HWC overlay，否则由 `SurfaceFlinger` 合成 | Perfetto 看 `SurfaceFlinger`、FrameTimeline；`dumpsys SurfaceFlinger` 看 layer / composition |
+| `TextureView` | `MediaCodec` → `BufferQueue` → `SurfaceTexture` → App `RenderThread` / GPU → `SurfaceFlinger` | App 进程要把外部纹理并入 UI 场景，多一次纹理采样和 GPU 合成 | 一般不会走独立 video overlay；效果、裁剪、变换更灵活 | Perfetto 同时看 App `RenderThread`、`SurfaceFlinger`、FrameTimeline |
+| tunneled sideband | Decoder / Codec2 → sideband handle → `SurfaceView` layer → HWC | App 仍要提供 `SurfaceView` 作为显示目标，但不再接触每帧像素 | 依赖解码器、HWC 和设备产品化配置；常见于 TV / 机顶盒 | `dumpsys SurfaceFlinger` 看 sideband layer / HWC composition；Perfetto 主看 `SurfaceFlinger` / HWC |
+
+三条路径的共同点是都尽量不把像素搬回 Java 层，差异在于消费者是谁、App 是否还要参与逐帧合成，以及由 `SurfaceFlinger` 还是 HWC 完成最终显示。
 
 [已验证: 官方文档, developer.android.com/reference/android/media/MediaCodec — Surface 数据路径]
 
@@ -101,7 +112,7 @@ codec.configure(format, surface, null, 0);  // surface 参数开启 Surface 输�
 codec.start();
 ```
 
-这段代码的关键在于 `configure()` 的第二个参数。传入了 `surface` 之后，解码器的 output buffer 就不再是 `ByteBuffer` 形式，而是直接作为 `GraphicBuffer` 进入 BufferQueue。这样 SurfaceFlinger 可以直接拿到解码后的帧进行合成，不需要经过 App 进程中转。
+这段代码里真正决定输出模型的是 `configure()` 的第二个参数。传入 `surface` 之后，解码器的 output buffer 不再以 `ByteBuffer` 暴露给 App，而是作为 `GraphicBuffer` 进入对应的图形队列。后续由谁消费，取决于这个 `surface` 来自哪里：`SurfaceView` 通常把帧交给 `SurfaceFlinger` / HWC，`TextureView` 背后则是 `SurfaceTexture`，帧会先被 App 的 `RenderThread` 当作外部纹理采样，再并入 UI 场景。
 
 [已验证: 官方文档, developer.android.com/reference/android/media/MediaCodec — Buffer Management]
 
@@ -149,20 +160,17 @@ codec.setCallback(new MediaCodec.Callback() {
 
 这条 fence 链确保了从硬件解码器到 GPU 合成再到显示控制器的整个流程不会出现竞态条件，同时也不引入额外的 CPU 等待开销，因为 fence 是在内核中以文件描述符的形式传递的，GPU 和显示控制器可以直接在硬件层面等待 fence signal，不需要 CPU 自旋。
 
-### Tunneled Video Playback：直通模式减少一帧延迟
+### Tunneled Video Playback：sideband 模式把显示交给 HWC
 
-普通的视频播放流程是：解码器输出帧 → BufferQueue → App 进程处理（如字幕叠加）→ SurfaceFlinger 合成 → 显示。这个过程中，帧至少要经过一次 App 进程的中转。
+普通视频播放并不只有一条显示路径。若 App 把解码器输出绑定到 `SurfaceView`，解码后的帧会通过 `BufferQueue` 交给 `SurfaceFlinger`，再由 `SurfaceFlinger` 或 HWC 合成显示。若绑定到 `TextureView`，consumer 则是 App 进程内的 `SurfaceTexture`，`RenderThread` 还要做一次纹理采样和 GPU 合成。tunneled playback 是第三条路径，它通常仍然要求 App 提供一个来自 `SurfaceView` 的 `Surface`，这样系统才有一个可放置的视频 layer；不同的是，App 不再接触每帧像素，解码器会把 sideband handle 绑定到这个 layer，后续由 HWC 直接取帧并按音频时钟显示。
 
-Tunneled（直通）模式可以让压缩视频数据绕过 App 和 Android 框架层，直接从硬件解码器送到显示控制器。在这个模式下，App 甚至不需要创建 Surface，硬件解码器通过一个 sideband handle 直接与 Hardware Composer (HWC) 通信，HWC 负责将解码帧与音频时间戳同步后显示。
+[图：`SurfaceView` / `TextureView` / tunneled sideband 三路径时序图。标出 `MediaCodec`、`BufferQueue` 或 sideband handle、`SurfaceTexture`、`SurfaceFlinger`、HWC，以及像素是否回到 App 进程。]
 
-直通模式的优势：
-- **减少一帧延迟**：帧不需要经过 BufferQueue 和 App 进程中转
-- **更精确的音视频同步**：HWC 直接使用音频的 presentation timestamp 进行同步
-- **更低的 CPU/GPU 开销**：App 进程不参与每帧的处理
+这种模式常见于 Android TV、机顶盒或特定 SoC 的低延迟播放场景。收益通常来自两点：少掉 App `RenderThread` / GPU 的逐帧参与，以及由 HWC 直接完成 A/V sync。代价也很明确：一般只适合 `SurfaceView`，对复杂 UI 变换、叠加特效、截图录屏等场景的支持更受限制。
 
-Android 11 开始通过 Codec2 框架支持直通模式，解码器组件需要配置 `C2PortTunneledModeTuning` 并查询 `C2_PARAMKEY_OUTPUT_TUNNEL_HANDLE` 来获取 HWC 的 sideband handle。
+从 Codec2 / OMX 的实现看，组件会为 tunneled 输出准备 sideband stream handle，对应的 `SurfaceView` layer 在 `SurfaceFlinger` / HWC 中以 sideband layer 的方式存在。排查时可以把它理解成“保留了一个窗口位置，但像素不再经由普通 `BufferQueue` 逐帧送到 App 或 GPU”。
 
-[已验证: 官方文档, source.android.com/docs/core/media — Tunneled Video Playback]
+[已验证: AOSP 文档与实现, tunneled playback / sideband stream 机制]
 [待验证: 具体哪些 SoC/设备支持 tunneled mode，不同设备的支持情况差异较大]
 
 ### HDR 与杜比视界的渲染开销
@@ -205,20 +213,18 @@ Media3 近期版本在带宽估算上做了改进，引入了更主动的预测�
 
 ### LoadControl 缓冲策略
 
-`DefaultLoadControl` 控制着 ExoPlayer 的缓冲行为，有四个关键参数：
+`DefaultLoadControl` 控制着 ExoPlayer 的缓冲行为。以 androidx/media `release` 分支中 `libraries/exoplayer/src/main/java/androidx/media3/exoplayer/DefaultLoadControl.java` 的当前常量为准，默认参数如下：
 
 | 参数 | 作用 | 默认值 | 性能影响 |
 |------|------|--------|----------|
-| `minBufferMs` | 最小缓冲时长 | 50,000ms (50s) | 越大越不容易 rebuffer，但启动加载时间和内存占用更高 |
-| `maxBufferMs` | 最大缓冲时长 | 50,000ms | 限制内存使用上限 |
-| `bufferForPlaybackMs` | 首次播放启动所需缓冲 | 2,500ms | 越小启动越快，但 rebuffer 风险更高 |
-| `bufferForPlaybackAfterRebufferMs` | rebuffer 后恢复播放所需缓冲 | 5,000ms | 越小恢复越快，但可能再次 rebuffer |
+| `minBufferMs` | 最小缓冲时长 | 50,000ms (50s) | 越大越不容易 rebuffer，但启动等待和内存占用也会增加 |
+| `maxBufferMs` | 最大缓冲时长 | 50,000ms (50s) | 限制缓冲上限，避免缓存无限增长 |
+| `bufferForPlaybackMs` | 首次播放启动所需缓冲 | 1,000ms | 越小启动越快，但弱网下更容易刚播就卡 |
+| `bufferForPlaybackAfterRebufferMs` | rebuffer 后恢复播放所需缓冲 | 2,000ms | 越小恢复越快，但恢复后再次卡住的风险更高 |
 
-[已验证: Media3 源码, DefaultLoadControl.java — 默认参数值]
+[已验证: androidx/media release, `DefaultLoadControl.java` 默认参数]
 
-在实际优化中，需要根据场景调整这些参数。短视频 Feed 场景追求快速启动，可以把 `bufferForPlaybackMs` 降到 500-1000ms；长视频场景追求播放稳定性，应该保持较大的 `minBufferMs`。Reddit 的工程团队分享过一个实用策略：将 `minBufferMs` 和 `maxBufferMs` 设为相同值（如 50s），配合 `bufferForPlaybackMs=1000ms`，在保证启动速度的同时维持稳定的缓冲水位。
-
-[引用: Reddit Engineering Blog — ExoPlayer buffer tuning]
+在实际优化中，需要根据场景调整这些参数。短视频 Feed 场景常把 `bufferForPlaybackMs` 压到 500-1000ms 量级，以缩短首帧前的等待；长视频或弱网场景更看重 `minBufferMs` 和 `bufferForPlaybackAfterRebufferMs`，避免恢复播放后马上再次卡住。
 
 ### Media3 1.10：动态调度与 Player 池化
 
@@ -242,7 +248,7 @@ Media3 1.10（2026-03-30 发布）引入了几个对性能有重要影响的新�
 
 ### AudioFlinger 架构
 
-AudioFlinger 是 Android 音频系统的核心服务，运行在 mediaserver 进程中，负责混合（mix）多个 App 的音频流并输出到 HAL（硬件抽象层）。它的源码位于 `frameworks/av/services/audioflinger/`。
+在本章覆盖的 Android 8-17 范围里，AudioFlinger 运行在 `audioserver` 进程中，负责混合（mix）多个 App 的音频流并输出到 HAL（硬件抽象层）。Android 7 起媒体服务从单体 `mediaserver` 拆成了 `audioserver`、`cameraserver`、`mediacodec` 等多个进程；如果追溯更早版本，Android 6 及更早才是 `mediaserver` 承载 AudioFlinger。启动入口是 `frameworks/av/media/audioserver/main_audioserver.cpp`，服务实现位于 `frameworks/av/services/audioflinger/AudioFlinger.cpp`。
 
 AudioFlinger 内部有两种 mixer thread：
 
@@ -270,7 +276,7 @@ AAudio 的核心使用模式是**异步回调**：App 注册一个回调函数�
 
 ### AAudio MMAP 路径：极致低延迟
 
-Android 8.1 进一步引入了 MMAP（Memory Mapped）数据路径，可以将延迟降到最低。在 MMAP EXCLUSIVE 模式下，App 直接写入一块与 ALSA 驱动共享的内存映射 buffer，完全绕过了 AudioFlinger 的 mixer——这意味着零额外延迟。
+Android 8.1 进一步引入了 MMAP（Memory Mapped）数据路径，可以将延迟降到最低。在 MMAP EXCLUSIVE 模式下，App 直接写入一块与 ALSA 驱动共享的内存映射 buffer，数据不会再经过 AudioFlinger 的 normal mixer，因此额外排队开销最小。
 
 MMAP 的两种模式：
 - **EXCLUSIVE**：App 独占音频设备，直接写 MMAP buffer，延迟最低
