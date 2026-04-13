@@ -36,19 +36,24 @@ sources:
   - type: official
     path: "https://developer.android.com/reference/android/os/PowerManager.WakeLock"
   - type: official
-    path: "https://firebase.google.com/docs/cloud-messaging"
+    path: "https://developer.android.com/reference/android/hardware/camera2/CameraDevice"
   - type: official
-    path: "https://developer.android.com/about/versions/14/changes/fgs-types"
+    path: "https://developer.android.com/topic/performance/vitals/wakelock"
   - type: official
-    path: "https://developer.android.com/about/versions/15/changes"
+    path: "https://firebase.google.com/docs/cloud-messaging/android/message-priority"
+  - type: official
+    path: "https://developer.android.com/about/versions/14/changes/fgs-types-required"
+  - type: official
+    path: "https://developer.android.com/develop/background-work/services/fgs/timeout"
 tags: ['wakelock', 'jobscheduler', 'workmanager', 'doze', 'location', 'alarm', 'power', 'fgs', 'foreground-service', 'fcm', 'alarmmanager', 'geofencing', 'battery-historian', 'camera']
 related_chapters: ["11.1", "11.3", "5.6", "5.4", "5.10", "11.5"]
 task9_result: needs-rework
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: needs-rework
-task9_state: reviewed
-task2b_state: pending
+task9_state: pending
+task2b_state: fixed
+task2b_result: fixed
 ---
 
 # App 耗电优化
@@ -134,11 +139,11 @@ try {
 
 ### Android Vitals 对 WakeLock 的监控
 
-Google Play 已开始把 WakeLock 滥用纳入应用质量评估。[待验证: 2026 年 3 月是否为正式生效时间，需与最新 Android Vitals 文档交叉确认] 文档当前给出的口径是，如果一个 App 在 24 小时内后台持有的 PARTIAL_WAKE_LOCK 累计超过 2 小时，并且这种情况影响了超过 5% 的用户，App 在 Play Store 中的可见性会降低。
+Android Vitals 会把 excessive partial wake locks 单独统计出来。局部判定条件是：一个 App 在 24 小时窗口内，后台或前台服务期间持有的非豁免 partial wake lock 累计达到 2 小时。平台侧再看 28 天滚动窗口，如果这类问题出现在超过 5% 的 app sessions 中，Play 可能在该指标脱离 beta 后影响可见性。音频、位置和 JobScheduler 的部分场景属于文档列出的豁免项。
 
 [已验证: 官方文档, developer.android.com/topic/performance/vitals/wakelock]
 
-在 Battery Historian 中，WakeLock 持有期会以条形图显示在 "Partial Wakelock" 行中。如果我们看到某个 App 的 WakeLock 条横跨了很长时间且没有间断，基本上就是释放逻辑有问题。在 Perfetto 中，WakeLock 的持有可以通过 `power/wakelock` track 观察。
+在 Battery Historian 中，WakeLock 持有期会以条形图显示在 `Partial Wakelock` 行。如果 trace 配置打开了 power data source，Perfetto 里可能看到 `power/wakelock` 轨道；标准 user build 上这条轨道并不保证存在，所以排查时通常先看 bugreport、Battery Historian 和 `dumpsys batterystats --history`，再决定是否补抓 Perfetto。
 
 ## 后台任务省电策略：WorkManager 与 JobScheduler
 
@@ -178,7 +183,7 @@ WorkManager 的几个关键省电配置：
 
 **最小间隔 15 分钟**。周期性任务（PeriodicWorkRequest）的最小间隔是 15 分钟，这不是随便设的，而是系统 JobScheduler 的最小调度窗口。不要试图绕过这个限制。
 
-**避免使用 Expedited Work**。`setExpedited()` 会让任务绕过部分系统优化立即执行，只有处理用户可见的高优先级 FCM 消息等场景才应该使用。滥用 Expedited Work 的功耗影响等同于手动 WakeLock。
+**谨慎使用 Expedited Work**。`setExpedited()` 会争取更快启动，但它仍受 quota 和 `OutOfQuotaPolicy` 约束。它适合用户刚触发、需要尽快开始且执行时间较短的任务；如果只是常规同步或周期性工作，继续用普通 WorkRequest。更细的配额和 fallback 语义可对照 §5.10。
 
 **合理安排任务顺序**。多个有依赖关系的任务可以用 WorkManager 的 `then()` 接在一起，系统更容易把它们放进同一批执行窗口，减少额外唤醒。
 
@@ -196,7 +201,7 @@ WorkManager 和 JobScheduler 的选择不需要纠结：新项目用 WorkManager
 
 ## 位置服务功耗优化
 
-位置服务是 Android 中功耗最高的硬件子系统之一。GPS 模块启动后持续搜索卫星信号，功耗可达 50-100mA；即使只用网络定位（WiFi + 基站），频繁的扫描也会拉高功耗。
+位置服务是 Android 中较高功耗的硬件子系统之一。持续 GNSS 定位通常比只用 WiFi 和基站的粗定位更耗电，但具体电流与 SoC、GNSS 芯片、屏幕状态和采样窗口强相关，不能把某个机型的数值当成通用结论。
 
 [已验证: 官方文档, developer.android.com/training/location]
 
@@ -233,7 +238,7 @@ val locationRequest = LocationRequest.Builder(
 
 ### Geofencing 的省电优势
 
-Geofencing（地理围栏）是位置服务中最省电的模式之一。它不要求 App 持续运行，而是在设备进入或离开指定区域时由系统通知 App。从 Android 8.0（API 26）开始，Geofencing 的响应性从数十秒放宽到约两分钟，功耗降低了约 10 倍。
+Geofencing（地理围栏）仍然是位置场景里相对省电的入口，因为 App 不必自己保活轮询。设备进入或离开指定区域时，系统再通过 PendingIntent 或 BroadcastReceiver 通知 App。从 Android 8.0（API 26）开始，后台 geofence 事件的响应频率会放宽到 every couple of minutes，这是系统用延迟换电量的明确策略。
 
 ```kotlin
 // Geofencing：系统级省电
@@ -245,19 +250,15 @@ val geofence = Geofence.Builder()
     .build()
 ```
 
-Geofencing 省电的原理在于，系统在硬件层面管理围栏检测，不需要持续唤醒 App。只有当设备确实进入围栏范围时，系统才会通过 PendingIntent 唤醒 App。这种"只在事件发生时才工作"的模式，比"每隔 N 秒检查一次位置"省电几个数量级。
+Geofencing 省电的关键，在于围栏判断由 FLP、Play services 和系统位置栈统一调度，而不是 App 每隔几秒自己请求一次定位。是否进一步下沉到 hardware offload，要看设备和 vendor capability，API 本身没有给出统一保证。更稳妥的结论是：Geofencing 适合低频、事件驱动的位置需求；如果业务要秒级连续轨迹，就该回到显式定位请求，并单独评估功耗。
 
 [已验证: 官方文档, developer.android.com/training/location/geofencing]
 
 ### 在 Perfetto 中的表现
 
-位置服务的功耗问题可以在 Perfetto 中通过以下 track 观察：
+位置相关问题先从 bugreport、`dumpsys location` 和 Battery Historian 入手。标准 user build 不保证公开 `Location Manager` 或 `GPS` 轨道；有些设备会提供 vendor-specific location data source，有些不会。排查时先确认谁在请求定位、请求是否已经跨到后台，再决定要不要补抓 Perfetto。
 
-- **Location Manager** track：显示位置请求的注册和注销。如果看到一个 App 持续有位置请求而没有对应的注销操作，很可能是生命周期管理有问题。
-- **GPS** track：GPS 芯片的活动状态。持续活跃的 GPS track 意味着高功耗。
-- **Network** track：如果 App 使用网络定位，频繁的网络扫描也会反映在网络 track 中。
-
-[待补充: Perfetto 截图展示正常和异常的位置服务使用模式]
+[待补充: `dumpsys location`、Battery Historian 与 vendor trace 的对照图]
 
 ## 网络请求功耗优化
 
@@ -277,11 +278,11 @@ Firebase Cloud Messaging（FCM）是 Android 推荐的消息推送方案。它�
 
 FCM 分为两种优先级：
 
-**高优先级消息**（high priority）会立即唤醒设备，适用于需要立即显示通知的场景。但 Google 对高优先级消息有配额限制——如果 App 频繁发送高优先级消息但用户没有与之交互，系统会将后续消息降级为普通优先级。这个机制是为了防止 App 借"通知"之名行"保活"之实。
+**高优先级消息**（high priority）会争取立即送达，适合需要马上展示用户可见通知的场景。但如果 FCM 在 7 天行为窗口里发现这些消息没有带来 user-facing notifications，后续消息可能被降级为 normal priority，也可能改由 Google Play services 代理展示通知。高优先级不是通用保活通道，它只适合确实要打到用户面前的事件。
 
 **普通优先级消息**（normal priority）会在设备下次活跃时才送达，不会额外唤醒设备。用于数据同步、内容更新等不需要立即处理的场景。
 
-[已验证: 官方文档, firebase.google.com/docs/cloud-messaging]
+[已验证: 官方文档, firebase.google.com/docs/cloud-messaging/android/message-priority]
 
 ### 网络约束与 WorkManager 配合
 
@@ -313,9 +314,9 @@ AlarmManager 是 Android 最早的定时机制，也是被滥用最多的 API �
 
 Android 的闹钟分为两种：精确闹钟（exact alarm）和不精确闹钟（inexact alarm）。
 
-精确闹钟（`setExact()`、`setExactAndAllowWhileIdle()`）会在指定时间精确触发，系统无法合并或延迟。如果 10 个 App 各设了一个精确闹钟，设备就可能被唤醒 10 次。
+精确闹钟（`setExact()`、`setExactAndAllowWhileIdle()`、`setAlarmClock()`）会在接近指定时间触发，系统能做的合并空间很小。如果 10 个 App 各设了一个精确闹钟，设备就可能被唤醒 10 次。
 
-不精确闹钟（`set()`、`setWindow()`、`setAndAllowWhileIdle()`）由系统在合适的时间窗口内调度，可以与其他闹钟合并执行，功耗更低。
+不精确闹钟（`set()`、`setWindow()`、`setAndAllowWhileIdle()`）由系统在更宽的时间窗口里调度，可以与其他闹钟合并执行，功耗更低。
 
 [已验证: 官方文档, developer.android.com/reference/android/app/AlarmManager]
 
@@ -329,11 +330,13 @@ Android 的闹钟分为两种：精确闹钟（exact alarm）和不精确闹钟�
 
 ### setAndAllowWhileIdle 的使用限制
 
-`setAndAllowWhileIdle()` 和 `setExactAndAllowWhileIdle()` 是唯二能在 Doze 模式下触发的闹钟 API。但它们有限制：
+`setAndAllowWhileIdle()` 和 `setExactAndAllowWhileIdle()` 确实能在 Doze 中触发，但它们不是仅有的例外，`setAlarmClock()` 也会正常触发，系统会在闹钟到点前退出 Doze。实际排查时，按下面三类理解更清楚：
 
-每个 App 在 Doze 模式下，使用这些 API 触发的闹钟大约每 9 分钟只能触发一次。如果 App 设置了多个 AllowWhileIdle 闹钟，系统会合并执行。
+- `setAlarmClock()`：面向用户可见闹钟，正常触发。
+- allow-while-idle alarms：可以穿过 Doze，但受频率限制，文档给出的节流口径大约是每个 App 每 9 分钟一次。
+- 普通 `set()`、`setWindow()`、`setExact()`：Doze 期间会被推迟到 maintenance window。
 
-这个限制告诉我们：**不要把 AllowWhileIdle 闹钟当作保活手段**。它的设计初衷是让闹钟类 App 在 Doze 下也能正常响铃，而不是让所有 App 都能在 Doze 下持续运行。
+这几类能力的设计目标都是让必要事件发生，不给 App 提供高频保活通道。
 
 ### 在 Battery Historian 中的表现
 
@@ -343,7 +346,7 @@ AlarmManager 的使用情况在 Battery Historian 的 "Alarm" 行中显示。如
 
 ## 前台服务的功耗考量与 Android 14+ 的限制
 
-前面讨论的后台任务调度和 Alarm 优化，核心思路都是"尽量让系统决定什么时候执行"。但有些场景 App 确实需要持续在后台运行——音乐播放、导航、位置追踪。前台服务就是为这些场景设计的，它通过通知栏告知用户"这个 App 正在后台工作"，换取系统不会因为后台限制而杀死它。问题在于，FGS 一旦启动就不受 Doze 限制，如果滥用，功耗影响比 WakeLock 更严重——WakeLock 至少还会在 Doze 中被延迟，FGS 则完全不受约束。
+前面讨论的后台任务调度和 Alarm 优化，核心思路都是"尽量让系统决定什么时候执行"。但有些场景 App 确实需要持续在后台运行，比如音乐播放、导航、位置追踪。前台服务会通过持续通知告诉用户"这个 App 还在工作"，同时提高进程优先级，降低因后台限制被回收的概率。它解决的是 app-level background limits 问题，本身不提供 device-level Doze 豁免。设备进入 Doze 后，网络、Job、普通 Alarm 等限制仍然存在，wake lock 也会被忽略。
 
 Android 14（API 34）对 FGS 的治理经历了重大变革，系统从"信任开发者声明"转向"强制类型分类 + 运行时权限验证"。
 
@@ -355,41 +358,46 @@ Android 14 要求所有前台服务必须声明一个具体类型（如 `locatio
 
 **shortService**：专为短时间（约 3 分钟）的关键工作设计。如果超时未完成，系统会停止服务。这个类型适合一次性文件加密、紧急数据保存等场景——它的功耗上限是明确的，不会无限持有。
 
-**dataSync**：已标记为未来弃用（deprecated），Google 建议迁移到 WorkManager 或 DownloadManager。对于系统开发者来说，如果一个 App 声明了 dataSync 类型的 FGS 并长时间运行，在功耗分析中应该标记为可优化项。
+**dataSync**：`dataSync` 仍是有效的 foreground service type，但官方已经给出替代方向，例如 WorkManager、user-initiated data transfer jobs 和 DownloadManager。对于系统开发者来说，长时间运行的 `dataSync` FGS 仍然应该被视为优先优化对象，只是不能把它写成“已经 deprecated”。
 
-[已验证: 官方文档, developer.android.com/about/versions/14/changes/fgs-types]
+[已验证: 官方文档, developer.android.com/about/versions/14/changes/fgs-types-required]
 
 ### Android 15 的进一步限制
 
-Android 15（API 35）对 `dataSync` 和新增的 `mediaProcessing` 类型引入了 6 小时的时间上限。超过限制后服务会被系统降级为普通服务并停止。这个限制是跨实例共享的——同一 App 的所有 dataSync 类型的 FGS 共享一个 6 小时计时器。
+Android 15（API 35）对 `dataSync` 和新增的 `mediaProcessing` 类型引入了 6 小时 / 24 小时的后台预算。这个 budget 按 service type 统计，同一 App 的多个 `dataSync` 实例共享同一个窗口；用户把 App 带回前台后，对应计时器才会重置。
 
-对功耗分析来说，FGS 已经不再是"一旦启动就一直运行"的后台常驻方案。系统在强制它回到短时间工作的定位上。
+到点后，系统会回调 `Service.onTimeout(int, int)`；服务有几秒钟调用 `stopSelf()` 自行结束。若没有及时停止，它不再被视为 foreground service，Logcat 会记录 `RemoteServiceException`，继续拖住主线程或 Binder 回调时还可能演化为 ANR。
 
-[已验证: 官方文档, developer.android.com/about/versions/15/changes]
+[已验证: 官方文档, developer.android.com/develop/background-work/services/fgs/timeout]
 
 ### FGS 的功耗分析方法
 
-在分析 App 的 FGS 功耗时，我们关注两个层面。
+分析 App 的功耗时，先分清楚问题落在哪个对象上。WakeLock、定位、FGS 和 Camera 的证据入口并不相同，标准 user build 也不保证每一类都有稳定的 Perfetto 轨道。
 
-第一，**FGS 是否真的需要**。很多 App 启动 FGS 只是为了避免后台执行限制，但实际工作用 WorkManager 就能完成。在 Perfetto 中，可以通过 `Svc` track 观察前台服务的生命周期。如果 FGS 长时间运行但没有对应的 CPU 活动，说明 FGS 可能只是为了保活。
+| 问题类型 | 推荐抓取方式 | 主要观察面（轨道/表） | 适用版本 / 前提 |
+| --- | --- | --- | --- |
+| WakeLock 长持有 | bugreport → Battery Historian，必要时补抓 Perfetto power data source | Battery Historian `Partial Wakelock`、`dumpsys batterystats --history`、Perfetto `power/wakelock` | Android 6+；Perfetto 轨道依赖 trace config 和设备支持 |
+| 定位请求过密 | bugreport + `dumpsys location`，有厂商 / userdebug 数据源时再补 Perfetto | `dumpsys location` active requests、Battery Historian 的位置 / 网络活动、vendor-specific location/GNSS 轨道 | Android 8+ 背景限制更明显；标准 user build 不保证公开 `GPS` 轨道 |
+| FGS 跑太久 | bugreport + Perfetto + `dumpsys activity services` | `dumpsys activity services`、Perfetto app/service slices、Battery Historian 前后台状态 | Android 14+ 重点看 service type；Android 15+ 额外看 timeout |
+| Camera 后台未释放 | bugreport + `dumpsys media.camera`，设备支持时补抓 camera / vendor trace | `dumpsys media.camera` 活跃 client、Battery Historian Camera 使用、camera/cameraserver/vendor 轨道 | Camera HAL 轨道依赖厂商实现，user build 常常没有公共轨道 |
 
-第二，**FGS 是否在正确的场景启动**。Android 14+ 对 FGS 的启动时机有限制，比如不能从 `BOOT_COMPLETED` 广播中启动 `camera`、`mediaPlayback` 等类型的 FGS。
+判断 FGS 是否真的需要时，要把服务存活时间放到和 CPU、network、Binder 活动同一时间轴上看。如果服务长时间存在，但对应线程几乎不工作，问题通常不在 FGS API 本身，而在业务把它当成常驻后台容器。
 
-[待补充: Perfetto 截图展示 FGS 的 CPU 活动与持续时间]
+如果 Perfetto 里刚好能看到 `power/wakelock`、location、camera 这些轨道，它们适合拿来和 CPU、Binder、network 活动看先后关系。看不到也不代表问题不存在，先回到 bugreport、Battery Historian 和 `dumpsys`，通常更稳。
 
 ## Camera/Audio 等硬件资源的功耗优化
 
-除了 CPU、网络、GPS 这些"大头"，Camera 和 Audio 也是不少 App 的功耗盲区。视频通话类 App 的 Camera 传感器持续运行、音乐类 App 的 Audio 后台播放，都属于"用户能感知到但开发者很少主动优化"的功耗来源。它们的优化空间不如 WakeLock 或网络请求那么大，但在特定场景下（比如直播、视频会议），Camera 的功耗可以占到整机的 30% 以上。
+除了 CPU、网络、GPS 这些常见入口，Camera 和 Audio 也经常把功耗问题藏在业务路径里。视频通话、扫码、直播、持续录音这类场景里，真正持续耗电的是 sensor、ISP、codec 和 display 这一整条流程，不只是 App 自己的代码。
 
 ### Camera
 
-Camera 传感器启动后的功耗在 200-500mA 量级（取决于分辨率和帧率），是所有传感器中最高的之一。优化方向主要有：
+Camera 往往是高功耗器件，实际开销和分辨率、帧率、HDR、EIS/OIS、编码路径、ISP pipeline 都强相关，不能把某个机型的电流值直接外推到所有设备。优化时先看三个动作：缩短打开时长、降低不必要的预览负载、离开场景后立刻释放资源。
 
-**降低预览帧率**。如果 App 只需要拍照，不需要持续的 60fps 预览，将预览帧率降到 30fps 甚至 15fps 可以显著降低 Camera 的功耗。在 Camera2 API 中，可以通过 `setRepeatingRequest()` 配合 `CaptureRequest.CONTROL_AE_TARGET_FPS_RANGE` 设置目标帧率范围。
+**降低预览负载**。如果业务只需要扫码或拍照预览，没有必要长期维持最高分辨率和最高帧率。Camera2 可以通过 `CaptureRequest.CONTROL_AE_TARGET_FPS_RANGE` 配合 `setRepeatingRequest()` 控制目标预览帧率，但实际收益要按设备实测，因为 sensor mode 和 ISP 策略并不统一。
 
-**及时释放 Camera 资源**。这是最基本的但也是最常被忽视的。Camera 在不使用时必须调用 `cameraManager.closeCamera()` 完整释放。在 Perfetto 中，可以通过 Camera HAL 的 track 观察 Camera 的活跃时间——如果 App 退到后台后 Camera 仍然活跃，就是资源泄漏。
+**及时释放 Camera 资源**。Camera2 的关闭链应以 `CameraCaptureSession.close()` 和 `CameraDevice.close()` 为核心，同时回收不再使用的 Surface。`CameraManager` 负责枚举和打开设备，不提供 `closeCamera()` 这类 API。若 App 退到后台后 `dumpsys media.camera` 里仍能看到活跃 client，就应该先排查资源泄漏。
 
-[待验证: Camera2 FPS 设置对功耗的量化影响]
+[已验证: 官方文档, developer.android.com/reference/android/hardware/camera2/CameraDevice]
 
 ### Audio
 
@@ -423,7 +431,7 @@ App 耗电优化不是孤立的话题，它与全书的多个章节形成上下�
 
 ### 误区四："前台服务有通知就不会被系统杀"
 
-Android 14 的 FGS Task Manager 让用户可以直接看到并停止前台服务。如果用户发现某个 FGS 持续运行且耗电高，会主动停止它。而且 Android 15 对 dataSync 类型引入了 6 小时上限，系统会强制回收。依赖 FGS 保活的时代已经过去了。
+Android 14 的 FGS Task Manager 让用户可以直接看到并停止前台服务。Android 15 又给 `dataSync` 和 `mediaProcessing` 加了 6 小时 / 24 小时 budget，到点后系统会回调 `Service.onTimeout(int, int)`。如果服务没有及时 `stopSelf()`，后面常见的是 `RemoteServiceException` 或 ANR；单靠通知栏常驻并不能换来无限时运行。
 
 ### 误区五："用了 WorkManager 就不用关心功耗了"
 
@@ -433,14 +441,17 @@ WorkManager 确实比手动调度更省电，但它不是银弹。如果 App 注
 
 - [Android 官方：优化电池寿命](https://developer.android.com/topic/performance/power)
 - [Android 官方：Doze 和 App Standby](https://developer.android.com/training/monitoring-device-state/doze-standby)
+- [Android 官方：Excessive partial wake locks](https://developer.android.com/topic/performance/vitals/wakelock)
 - [Android 官方：后台执行指南](https://developer.android.com/guide/background)
 - [Android 官方：WorkManager 指南](https://developer.android.com/develop/background-work/background-tasks/persistent)
 - [Android 官方：位置服务功耗优化](https://developer.android.com/training/location)
-- [Android 官方：前台服务类型（Android 14）](https://developer.android.com/about/versions/14/changes/fgs-types)
+- [Android 官方：Foreground service types are required](https://developer.android.com/about/versions/14/changes/fgs-types-required)
+- [Android 官方：Foreground service timeout behavior](https://developer.android.com/develop/background-work/services/fgs/timeout)
+- [Android 官方：CameraDevice API](https://developer.android.com/reference/android/hardware/camera2/CameraDevice)
 - [AOSP PowerManager.java](https://cs.android.com/android/platform/superproject/+/master:frameworks/base/core/java/android/os/PowerManager.java)
 - [AOSP PowerManagerService.java](https://cs.android.com/android/platform/superproject/+/master:frameworks/base/services/core/java/com/android/server/power/PowerManagerService.java)
 - [Android 官方：位置服务 Geofencing](https://developer.android.com/training/location/geofencing)
-- [Android 官方：Firebase Cloud Messaging](https://firebase.google.com/docs/cloud-messaging)
+- [Firebase 官方：Set and manage Android message priority](https://firebase.google.com/docs/cloud-messaging/android/message-priority)
 - [Android 官方：Battery Historian 使用指南](https://developer.android.com/topic/performance/power/setup-battery-historian)
 - [来源: Obsidian Cubox - 借助 Android Studio 中的功耗性能分析器进行 A-B 测试]
 - [来源: Obsidian Cubox - 谈功耗是什么]
