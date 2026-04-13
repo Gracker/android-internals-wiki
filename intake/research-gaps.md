@@ -2120,3 +2120,21 @@ Android 10-16 的返回分发模型缺少一张统一矩阵。正文把 Gesture 
 
 ### 关联章节
 5.1、5.2、5.4、11.2
+
+
+## [2026-04-14] 13.1 Perfetto 简介与演进 — 知识盲区
+
+### 盲区描述
+章节把 Traceur、adb shell perfetto、record_android_trace、Android Studio Profiler、TraceConfig / --txt / binary proto、data source 权限门槛分散提及，但没有形成一张“版本 × consumer × data source × 权限”能力矩阵。结果是 Android P / Q / R 的 enablement 差异、profileable / userdebug / root 边界、android.log / heapprofd / android.java_hprof 的可用性都被揉成一句话，读者很难判断某个采集方案在自己设备上是否真的可用。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 梳理 Android P / Q / R+ 的 traced enablement、`persist.traced.enable`、`--txt` / binary proto 支持边界
+- 梳理 Traceur、adb shell perfetto(simple/normal mode)、record_android_trace、Android Studio Profiler 的 consumer 与配置输入差异
+- 整理 heapprofd / android.java_hprof / android.log / android.power 的最小版本、build 类型、manifest / privilege gate
+- 补一张 capability matrix，供 13.1 / 13.2 / 13.5 共用
+
+### 关联章节
+13.1、13.2、13.5、9.1

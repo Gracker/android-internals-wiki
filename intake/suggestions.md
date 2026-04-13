@@ -2930,3 +2930,15 @@
 - **位置**：L322-L352 Perfetto SQL 与 overutilized 判读
 - **问题**：SQL 只按线程名取 `utid`，第二个查询还使用与当前 Perfetto stdlib 不一致的 `cpu_frequency` / `freq_value` 口径；“小核几乎没有 idle 就说明 overutilized”也只是启发式，不能直接当结论。
 - **建议**：改成按 `process` / `upid` / `tid` 过滤的可运行查询，频率统计改用 `cpu_frequency_counters(freq, cpu, dur)` 或明确 raw schema 依赖，同时补一个“如何近似验证 overutilized”的边界说明。
+
+
+## [Task9 Deep Review] 13.1 Perfetto 简介与演进 — 2026-04-14
+- **类型**：源码准确性
+- **位置**：行100 Systrace vs Perfetto 对比表
+- **问题**：把 Systrace 数据格式写成“压缩文本（JSON）”过于绝对。Perfetto supported trace formats 文档将 Android Systrace 描述为 legacy HTML 报告内嵌 text-based trace 数据；这和后文“Perfetto UI 可直接打开 Systrace HTML”也不完全一致。
+- **建议**：改成“HTML 报告内嵌 legacy systrace 文本 trace 数据”，必要时再补“Chrome JSON 是另一种相关但不同的 legacy format”。
+
+- **类型**：源码准确性
+- **位置**：行160 Trace Processor 段
+- **问题**：把 Trace Processor 说成“把 trace 文件加载为一个 SQLite 数据库”容易把实现细节说死。官方文档强调的是 SQL analysis engine / trace processor tables，而不是对外承诺生成独立 SQLite 数据库文件。
+- **建议**：收紧成“解析 trace packet 后暴露 SQL tables / virtual tables，可用 SQLite 风格语法查询”。

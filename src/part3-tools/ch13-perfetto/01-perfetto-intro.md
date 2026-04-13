@@ -26,7 +26,8 @@ tags: ['perfetto', 'systrace', 'tracing', 'trace-processor', 'traced', 'ftrace',
 related_chapters: ["13.2", "13.3", "2.1", "7.1"]
 pipeline_stage: task2b_pending
 task6_state: reviewed
-task9_state: pending
+task9_state: reviewed
+task9_result: needs-rework
 task2b_state: pending
 ---
 

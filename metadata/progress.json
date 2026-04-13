@@ -1,9 +1,9 @@
 {
-  "generated_at": "2026-04-14T07:05:00+08:00",
+  "generated_at": "2026-04-14T07:20:00+08:00",
   "state_machine_version": "v2",
   "total_sections": 207,
   "metrics": {
-    "last_updated": "2026-04-14T07:05:00+08:00",
+    "last_updated": "2026-04-14T07:20:00+08:00",
     "total": 207,
     "unknown": 34,
     "ready-for-review": 173,
@@ -19,8 +19,8 @@
     "task6_reviewed": 16,
     "task6_revisiting": 64,
     "task6_unknown": 31,
-    "task9_pending": 169,
-    "task9_reviewed": 7,
+    "task9_pending": 168,
+    "task9_reviewed": 8,
     "task9_unknown": 31
   },
   "pipeline": {
@@ -44,8 +44,8 @@
     },
     "task9_state_counts": {
       "unknown": 31,
-      "pending": 169,
-      "reviewed": 7
+      "pending": 168,
+      "reviewed": 8
     }
   },
   "issues": {
@@ -2189,12 +2189,13 @@
       "status": "ready-for-review",
       "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
-      "task9_state": "pending",
+      "task9_state": "reviewed",
       "task2b_state": "pending",
       "reviewed_date": "2026-04-14",
       "reviewed_by": "openclaw-task6",
       "section": "13.1",
-      "task6_result": "needs-rework"
+      "task6_result": "needs-rework",
+      "task9_result": "needs-rework"
     },
     "src/part3-tools/ch13-perfetto/02-trace-capture.md": {
       "chapter": "13.2",
@@ -2746,6 +2747,21 @@
       "last_updated": "2026-04-13",
       "new_references_count": 5,
       "notes": "Added 5 Perfetto-related references from daily intake"
+    }
+  },
+  "research": {
+    "research-2026-04-14": {
+      "date": "2026-04-14",
+      "time": "07:04",
+      "theme": "14 - Profiling 工具",
+      "source": "固定轮转（20260414 % 20 = 14）",
+      "candidates": 5,
+      "passed_score": 2,
+      "delivered": 2,
+      "feeds": [
+        "intake/research-feeds/2026-04-14-07-perfetto-v54-data-explorer-jank-cuj-heap-graph-stats.md",
+        "intake/research-feeds/2026-04-14-07-perfetto-v53-rust-sdk-pprof-simpleperf-custom-sorting.md"
+      ]
     }
   }
 }
