@@ -2619,3 +2619,9 @@
 - **问题**：Gesture Monitor、SystemUI MainThread、Back 注入和 Predictive Back 多窗口渲染都写成了可直接观察的结论，但当前只有文字，没有真实 Trace 截图或 `[图：...]` 占位，证据链偏弱。
 - **建议**：补 2-3 个真实 Perfetto 片段或等价图示，至少覆盖 `edge-swipe` 分发、SystemUI 手势处理、Predictive Back 动画三类观察点。
 - **review 日志**：logs/review/2026-04-13-20-review.md
+
+## [Task9 Deep Review] 13.3 Perfetto View 解读 — 2026-04-13
+- **类型**：版本差异 / 发布信息
+- **位置**：`颜色编码：线程状态色` 末尾 + `Perfetto 近期版本更新要点`
+- **问题**：正文称“暗色主题从 Perfetto v52 起成为一等公民功能（不再是实验性的）”。但 v52 release notes 仍把它标成 `[Experimental] UI Theme`。
+- **建议**：改成“v52 引入实验性 dark mode；是否视为正式默认能力，需要按更高版本 release notes 再确认”。

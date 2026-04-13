@@ -1916,3 +1916,21 @@ AsyncLayoutInflater 一节缺少 AndroidX 当前实现的关键边界，尤其�
 
 ### 关联章节
 13.2、13.3、13.6、13.10、1.4、4.1、6.3
+
+## [2026-04-13] 13.3 Perfetto View 解读 — 跨版本判读矩阵缺失
+
+### 盲区描述
+章节把 Perfetto UI 的主观察路径基本写成一套固定流程，但 Android 10/11、Android 12/13、Android 14+ 的关键判读入口并不相同。Android 10/11 没有 FrameTimeline，需要回到 `Choreographer#doFrame`、`VSYNC-app` / `VSYNC-sf`、`thread_state` 与 SurfaceFlinger 合成轨；Android 12/13 可以用 FrameTimeline + `onMessageReceived`；Android 14+ 又要把 SurfaceFlinger 观察面切到 `commit()` / `composite()`。这张跨版本矩阵不补，读者很容易把不同版本的 UI 读法混成一套。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 梳理 Android 10/11 的 Perfetto fallback 观察面：`doFrame`、`RenderThread`、`VSYNC-app` / `VSYNC-sf`、SurfaceFlinger 合成轨
+- 梳理 Android 12/13 的 FrameTimeline + `jank_type` + `onMessageReceived` 对照关系
+- 梳理 Android 14+ 的 `commit` / `composite` / `present` 在 Perfetto 中的实际 slice 名与读法
+- 做一张“版本 × Track × 入口字段 × 典型问题”的速查矩阵
+
+### 关联章节
+§2.6、§7.1、§13.3、§13.5
+

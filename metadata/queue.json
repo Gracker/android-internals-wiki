@@ -7402,5 +7402,44 @@
     "added_at": "2026-04-13T20:10:00+08:00",
     "status": "pending",
     "original_review_log": "logs/review/2026-04-13-20-review.md"
+  },
+  {
+    "section": "13.3",
+    "section_title": "Perfetto View 解读",
+    "priority": 95,
+    "reason": "[Deep Tech Review] Perfetto View 章节存在 FrameTimeline / SurfaceFlinger 跨版本口径错误，且命令与字段名有误，需技术回炉",
+    "material_paths": [
+      "intake/research-gaps.md",
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误/版本差异",
+        "location": "“SurfaceFlinger Track” 小节",
+        "detail": "正文把 `onMessageReceived` 写成 Android 10-16 的主入口，并称其代表一次合成操作。现有 §2.6 已明确区分：Android 12-13 主要看 `onMessageReceived` / `INVALIDATE` / `REFRESH`，Android 14+ 主流程已经切到 `commit()` / `composite()`。按现在写法，读者在 Android 14-16 trace 上会直接看错主 slice。",
+        "suggestion": "按版本拆开：Android 12-13 保留 `onMessageReceived` 口径；Android 14+ 改成 `commit` / `composite` / `present` 观察面，并与 §2.6 保持一致。"
+      },
+      {
+        "type": "源码错误",
+        "location": "“FrameTimeline Track” 小节 + “实战示例：快速定位掉帧原因”",
+        "detail": "正文把掉帧原因写成 `app_missed` / `sf_missed`。但 §13.5 与 §7.1 已使用公开 `jank_type` 口径：`App Deadline Missed`、`SurfaceFlinger CPU Deadline Missed`、`SurfaceFlinger GPU Deadline Missed`、`SurfaceFlinger Scheduling`、`Buffer Stuffing` 等。当前写法会让读者在 details 面板里找不到对应字段值。",
+        "suggestion": "统一改成公开 `jank_type` 名称，并补一句：颜色只做提示，精确归因以 details 面板里的 `Jank Type` 为准。"
+      },
+      {
+        "type": "版本差异",
+        "location": "frontmatter `applicable_versions` + “FrameTimeline Track” / “实战示例”",
+        "detail": "frontmatter 标成 `Android 10 (API 29) - Android 16 (API 36)`，但正文的主定位流程几乎完全依赖 FrameTimeline，没有给 Android 10/11 的 fallback。现有 §13.5 已明确：Android 10/11 需要回到 `Choreographer#doFrame`、`VSYNC-app` / `VSYNC-sf`、`thread_state` 与 SurfaceFlinger 合成轨。",
+        "suggestion": "补一张“Android 10/11 fallback vs Android 12+ FrameTimeline”矩阵，或者收窄本节适用范围，避免把 12+ 口径写成 10+ 通用结论。"
+      },
+      {
+        "type": "源码错误/工具准确性",
+        "location": "“打开 Trace 文件” 小节",
+        "detail": "正文建议用 `trace_to_text` 把 trace 转成文本。公开 Perfetto 文档与工具链主入口是 `traceconv text`，`trace_to_text` 更像仓库内部脚本/目录名，不是面向读者的稳定 CLI。",
+        "suggestion": "改成 `traceconv text <input> <output>`，如果要保留 `trace_to_text`，必须明确它不是官方公开 CLI 入口，并给出来源。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-13T20:22:00+08:00",
+    "status": "pending"
   }
 ]
