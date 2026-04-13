@@ -2625,3 +2625,23 @@
 - **位置**：`颜色编码：线程状态色` 末尾 + `Perfetto 近期版本更新要点`
 - **问题**：正文称“暗色主题从 Perfetto v52 起成为一等公民功能（不再是实验性的）”。但 v52 release notes 仍把它标成 `[Experimental] UI Theme`。
 - **建议**：改成“v52 引入实验性 dark mode；是否视为正式默认能力，需要按更高版本 release notes 再确认”。
+
+
+## [Task6 Review] 13.9 Android Tracing 基础设施：atrace、ftrace 与 Perfetto 数据采集原理 — 2026-04-13
+- **类型**：需确认
+- **位置**：用户空间 Data Source 注册 / traced 架构（`android.os.TracingManager`、Java `DataSource.register(...)` 示例）
+- **问题**：这一组 API 名称和示例代码看起来没有和 Android 暴露给应用/SDK 的真实接口严格对齐，读者很可能照着写也跑不通。
+- **建议**：交给 Task 9 核对 Perfetto SDK 与 Android 公开 API，确认 consumer 入口和 Java 注册示例，再由 Task 2B 改成可运行或可验证的写法。
+- **review 日志**：logs/review/2026-04-13-21-review.md
+
+- **类型**：需确认
+- **位置**：App 层 tracing 段（`section` 所在 Track、`androidx.tracing` 能力说明）
+- **问题**：`Trace.beginSection()` 的显示位置和 `androidx.tracing` 的 API 说明写得偏满，`LazyThreadSafetyMode` 这处表述尤其像混入了无关概念，存在误导风险。
+- **建议**：交给 Task 9 核对 `androidx.tracing` 公开 API 与 Perfetto 展示行为，再由 Task 2B 收紧这段表述。
+- **review 日志**：logs/review/2026-04-13-21-review.md
+
+- **类型**：需补充素材
+- **位置**：`traced_probes` 采集 ftrace 数据（核心步骤 1-7）
+- **问题**：正文已经把 `trace_pipe_raw` 读数路径写成核心机制，但紧跟着仍是“[待补充：具体代码路径]”，证据链还没闭合。
+- **建议**：交给 Task 9 定位 `traced_probes` 对应 reader 的源码路径和配置链，再由 Task 2B 补齐精确文件/函数与验证标注。
+- **review 日志**：logs/review/2026-04-13-21-review.md
