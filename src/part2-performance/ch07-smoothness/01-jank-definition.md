@@ -8,8 +8,8 @@ drafted_by: "openclaw-task2"
 reviewed_date: "2026-04-13"
 reviewed_by: "openclaw-task6"
 applicable_versions: "Android 4.1 (API 16) - Android 16 (API 36)"
-last_verified: "2026-03-31"
-last_verified_against: "AOSP android-16.0.0_r1"
+last_verified: "2026-04-13"
+last_verified_against: "AOSP android-16.0.0_r1 + Perfetto docs / Android Developers docs"
 polish_count: 2
 review_type: "post-polish-quality-gate"
 polish_date: "2026-04-05"
@@ -21,25 +21,30 @@ sources:
   - type: aosp
     path: "frameworks/native/services/surfaceflinger/FrameTimeline/JankInfo.h"
   - type: official
-    path: "developer.android.com/topic/performance/vitals/anr"
+    path: "https://perfetto.dev/docs/data-sources/frametimeline"
   - type: official
-    path: "developer.android.com/reference/android/view/FrameMetrics"
+    path: "https://developer.android.com/topic/performance/vitals/render"
+  - type: official
+    path: "https://developer.android.com/topic/performance/vitals/anr"
+  - type: official
+    path: "https://developer.android.com/reference/kotlin/androidx/metrics/performance/JankStats"
+  - type: official
+    path: "https://developer.android.com/reference/android/view/FrameMetrics"
   - type: blog
     path: "Personal-Knowlodge/source/2026-03-07_wechat_Android深入卡顿分析与实践.md"
-  - type: blog
-    path: "Personal-Knowlodge/source/2026-03-07_wechat_Android卡顿监测的方方面面.md"
   - type: blog
     path: "Personal-Knowlodge/source/Android-Perfetto-06-Why-120Hz.md"
   - type: blog
     path: "Personal-Knowlodge/source/Android-Perfetto-05-Chorergrapher.md"
 tags: [jank, smoothness, FrameTimeline, Choreographer, 掉帧, 渲染性能]
 related_chapters: ["2.1", "2.3", "2.4", "2.5", "7.2", "7.3"]
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: needs-rework
-task9_state: reviewed
+task9_state: pending
 task9_result: needs-rework
-task2b_state: pending
+task2b_state: fixed
+task2b_result: fixed
 ---
 
 # 卡顿的定义与分类
@@ -71,7 +76,7 @@ task2b_state: pending
 
 ## 为什么要搞清楚"卡顿"的定义
 
-在 Perfetto 中打开一段 Trace，我们会在 Expected Timeline 和 Actual Timeline 之间看到不对齐的帧——有些帧的实际渲染时间比预期的长，系统把这些帧标记成了红色或黄色。这些颜色不是装饰，而是系统在告诉你：这一帧出了问题。但"出了问题"具体是什么问题？是 App 渲染太慢？是 SurfaceFlinger 合成太慢？还是屏幕显示出了延迟？
+在 Perfetto 中打开一段 Trace，我们会在 Expected Timeline 和 Actual Timeline 之间看到时间错位的帧——有些帧的实际渲染时间比预期的长，系统把这些帧标记成了红色或黄色。这些颜色不是装饰，而是系统在告诉你：这一帧出了问题。但"出了问题"具体是什么问题？是 App 渲染太慢？是 SurfaceFlinger 合成太慢？还是屏幕显示出了延迟？
 
 如果我们对"卡顿"只有一个模糊的感觉——"滑动不够流畅"、"动画有卡顿感"——那优化就只能靠试。明确卡顿的定义和分类，是系统性优化流畅性的起点。它决定了我们用什么指标衡量问题、用什么工具定位问题、以及优化后怎么验证效果。读完本节，我们应该能在 Perfetto 中准确识别每一帧的状态（正常/卡顿/掉帧），并知道该去哪个 Track 找原因。
 
@@ -87,18 +92,18 @@ Android 系统的渲染管线是围绕 VSync 信号构建的。在 60Hz 屏幕�
 
 ### 不同刷新率下的帧预算
 
-屏幕刷新率决定了每一帧的"预算时间"——系统必须在这么长时间内完成从 App 渲染到屏幕显示的全过程：
+| 刷新率 | 单个刷新周期 |
+|--------|--------------|
+| 60Hz | 16.67ms |
+| 90Hz | 11.11ms |
+| 120Hz | 8.33ms |
 
-| 刷新率 | VSync 周期 | 帧预算 |
-|--------|-----------|--------|
-| 60Hz | 16.67ms | 16.67ms |
-| 90Hz | 11.11ms | 11.11ms |
-| 120Hz | 8.33ms | 8.33ms |
+这个周期表示相邻两次硬件刷新之间的间隔，不等于“MainThread、RenderThread、SurfaceFlinger 的全部工作都要串行塞进同一个窗口”。Android 的显示栈是流水线化的。App 侧围绕 VSync-app 准备下一帧，SurfaceFlinger 围绕随后到来的 VSync-sf 做合成，两边靠 offset 错峰推进。
 
-刷新率越高，留给每一帧的时间窗口越窄。在 120Hz 设备上，一帧只有 8.33ms。App 的主线程渲染（measure/layout/draw）、RenderThread 的 GPU 执行，以及 SurfaceFlinger 的合成，都得压在这 8.33ms 里。任何环节超时，都会导致 Jank。
+到了 120Hz，变紧的是每个阶段各自的 deadline。App 侧如果晚于自己的 expected timeline，FrameTimeline 会记成 App jank；SurfaceFlinger 或显示末端晚了，则会落到 SurfaceFlinger 或 DisplayHAL 一侧。分析高刷 trace 时，先分清“谁错过了谁的 deadline”，再去看具体线程，不要把整条流程粗暴压成一个 8.33ms 总包预算。
 
-[已验证: 官方文档, developer.android.com/develop/ui/views/layout/swing-animations]
-[已验证: 来源见 obsidian/Personal-Knowlodge/source/Android-Perfetto-06-Why-120Hz.md]
+[已验证: Perfetto 文档, https://perfetto.dev/docs/data-sources/frametimeline]
+[已验证: 官方文档, https://developer.android.com/topic/performance/vitals/render]
 
 ### 一个关键区分：FPS ≠ 流畅度
 
@@ -112,159 +117,130 @@ Android 系统的渲染管线是围绕 VSync 信号构建的。在 60Hz 屏幕�
 
 ## Google 的 Jank 分类体系
 
-从 Android 12 开始，SurfaceFlinger 内部引入了 **FrameTimeline** 模块，它负责追踪每一帧从 App 渲染到最终上屏的完整生命周期，并判断 Jank 的责任归属。FrameTimeline 将 Jank 分为几个明确的类型，让我们不仅能知道"有没有卡顿"，还能知道"卡顿是谁的责任"。
+Android 12 之后，FrameTimeline 会给每一帧写下责任归因。我们在 Perfetto 里先看 `Jank Type`，再决定回链到 App、SurfaceFlinger 还是显示末端。把这些类型拆开，排查路径才不会跑偏。
 
-[已验证: AOSP android-16.0.0_r1, frameworks/native/services/surfaceflinger/FrameTimeline/JankInfo.h]
+[已验证: Perfetto 文档, https://perfetto.dev/docs/data-sources/frametimeline]
 
-### App Jank（AppDeadlineMissed）
+### AppDeadlineMissed
 
-这是最常见的 Jank 类型。当 App 侧的渲染工作（主线程的 measure/layout/draw + RenderThread 的 GPU 执行）超过了系统分配给这一帧的截止时间（deadline），就会产生 App Jank。
+`AppDeadlineMissed` 表示 App 一侧没有按时交帧。Perfetto 文档把 App frame 的时间范围定义为：起点是 `Choreographer` 回调计划运行后的 App 开工时刻，终点取 `max(gpu time, post time)`。`post time` 是 App 把 frame 交给 SurfaceFlinger 的时间，所以这类 jank 既可能来自 MainThread，也可能来自 RenderThread 或 GPU 工作未及时结束。
 
-在 Perfetto 中，我们可以在 App 的 Expected Timeline 和 Actual Timeline 之间看到不对齐——Actual Timeline 的帧结束时间超出了 Expected Timeline 的截止线。FrameTimeline 会将这类 Jank 标记为 **AppDeadlineMissed**。
+Trace 里先点 App 的 `Actual Timeline` slice，再顺 token 回到 `Choreographer#doFrame` 和 `RenderThread`。如果 `On time finish` 为 `false`，而 `Jank Type` 是 `AppDeadlineMissed`，说明问题就在 App 自己这一段。
 
-导致 App Jank 的典型原因：
-- 主线程在 draw 阶段做了耗时操作（复杂布局、大量自定义绘制）
-- RenderThread 等待 GPU 完成超时（过度绘制、复杂 shader）
-- 主线程被其他消息阻塞（Binder 调用、IO 操作、锁等待）
+### SurfaceFlingerCpuDeadlineMissed
 
-在 Perfetto 中的 Track 名称是 `Choreographer#doFrame`（主线程侧）和 `RenderThread`（渲染线程侧），对应 Perfetto 中的 Expected Timeline / Actual Timeline Slice。
+`SurfaceFlingerCpuDeadlineMissed` 表示 SurfaceFlinger 主线程的 CPU 工作超了自己的 deadline。device composition 走硬件合成时，主线程会把合成相关工作算在这段 CPU time 里；如果主线程本身就没收住，这类 jank 会直接落到 CPU deadline miss。
 
-[已验证: 官方文档, source.android.com/docs/core/graphics/frame-timeline]
+这种情况的入口不是 App `doFrame`，而是 SurfaceFlinger 侧的 `Actual Timeline` 与 `onMessageReceived`。App 侧通常只会显示“这帧 janky，但责任不在 App”。
 
-### SF Jank（SurfaceFlingerCpuDeadlineMissed）
+### SurfaceFlingerGpuDeadlineMissed
 
-SurfaceFlinger 负责将各个 App 的图层合成为最终的画面。如果 SurfaceFlinger 的主线程在合成阶段超过了它的 deadline（即 VSYNC-SF 到来后没有在规定时间内完成合成），就会产生 SF Jank。
+`SurfaceFlingerGpuDeadlineMissed` 说明 SurfaceFlinger 主线程本身还在 deadline 内，但 GPU composition 没有按时准备好，frame 被推迟到下一个 vsync。它和 CPU miss 的分界点，正好在 Perfetto details 面板里的 `GPU Composition`、`On time finish` 以及 SurfaceFlinger 侧 token 回链上。
 
-SF Jank 的典型原因包括：
-- 图层过多，HWC（Hardware Composer）无法全部处理，回退到 GPU 合成
-- Device State 变更（分辨率切换、屏幕旋转）期间合成逻辑被打乱
-- SurfaceFlinger 主线程被其他耗时操作阻塞
+遇到黄色 frame 时，如果只盯着 MainThread，很容易把 GPU 合成拖慢误判成 App jank。这里要回到 SurfaceFlinger 轨道看 GPU/client composition 这一段。
 
-在 Perfetto 中，SF Jank 体现在 SurfaceFlinger 进程的 Expected Timeline 和 Actual Timeline 之间的不对齐。FrameTimeline 会将其标记为 **SurfaceFlingerCpuDeadlineMissed**，明确告诉我们问题不在 App 侧，而在系统合成侧。
+### DisplayHAL
 
-[已验证: AOSP android-16.0.0_r1, frameworks/native/services/surfaceflinger/FrameTimeline/FrameTimeline.cpp]
+`DisplayHAL` 表示 SurfaceFlinger 已经按时把 frame 往下交了，但 frame 没在预测的那个 vsync 上真正显示出来。Perfetto 文档写得很明确，这类问题有两种常见解释：一种是 HAL / 显示末端自己慢，另一种是 SurfaceFlinger 留给 HAL 的时间不够。两种情况都要看证据，不能直接写成“厂商 HAL 慢”。
 
-### Display HAL Jank
+排查时先看 details 面板里的 `Present Type`、`On time finish`、`GPU Composition`。如果 App 和 SurfaceFlinger 都按时完成，frame 还是 late，才有理由继续怀疑 Display HAL / display pipeline 末端。
 
-这是比较少见但确实存在的一类 Jank。SurfaceFlinger 已经按时完成了合成工作，把帧交给了 Display HAL（显示硬件抽象层），但 Display HAL 没有在预期的 VSync 周期内完成上屏——帧被延迟到了下一个 VSync 才显示出来。
+### PredictionError
 
-这种情况通常与硬件驱动或 SoC 平台的显示子系统实现有关，App 开发者基本无法控制。遇到这类 Jank 时，排查方向应转向 Display HAL 驱动和 SoC 厂商的实现，而非 App 侧代码。在 Perfetto 中，这类 Jank 在 SurfaceFlinger 的 Actual Timeline 中表现为"SurfaceFlinger 侧的工作按时完成了，但帧的最终 present 时间比预期晚了一个 VSync"。
+`PredictionError` 不是 App 或 SurfaceFlinger 真正“干慢了”，而是 scheduler 对 hardware vsync 的预测漂移了。Perfetto 文档里的例子是：系统预计 20ms present，实际硬件 vsync 到了 23ms，预测自己偏了 3ms。scheduler 会周期性修正，所以这类 jank 往往成片出现后又自己收敛。
 
-### Dropped Frame（掉帧）
+碰到 `PredictionError`，先看 `Present Type` 和 `Valid Prediction`，判断是不是调度预测漂移，不要直接把责任记到 App 线程上。
 
-掉帧和 Jank 虽然都表现为"帧没有按时呈现"，但它们的机制不同。Jank 是"帧渲染太慢，没赶上截止时间"；掉帧是"帧直接被丢弃了"。
+### BufferStuffing
 
-掉帧有两种场景：
-1. **SurfaceFlinger 侧掉帧**：SurfaceFlinger 在合成时发现有一个更新的帧已经到了，就跳过当前帧直接用更新的帧。这对用户来说通常是不可感知的——因为显示的是更新的内容。
-2. **App 侧掉帧**：App 的 UI 线程没能及时将最新的状态更新推送到 RenderThread。RenderThread 只好用旧的状态绘制了一帧，导致用户看到的内容"卡"在了旧状态。
+`BufferStuffing` 在 Perfetto 文档里被写成“more of a state than a jank”。它指的是 App 在上一帧还没 present 时，又继续往 SurfaceFlinger 塞新 buffer，队列里堆了多帧待显示内容。结果不是帧率立刻掉光，而是画面还能持续刷新，但输入反馈越来越晚，严重时 App 还会卡在 dequeue 等待 buffer 归还。
 
-[已验证: 官方文档, perfetto.dev/docs/data-sources/frametimeline]
+这类问题先看 FrameTimeline 的 `Jank Type` 和 high latency state，再用 BufferQueue 轨道、dequeue blocking、SurfaceFlinger 侧 flow event 做佐证。不要把 `queued > 1` 这类经验信号写成唯一判据。
 
-### Buffer Stuffing
+### Dropped Frame
 
-Buffer Stuffing 是一种容易被忽略的状态：App 持续不断地向 SurfaceFlinger 发送新帧，速度比屏幕能显示的还快。结果是缓冲区队列被"塞满"了——App 在不断渲染新帧，但中间的很多帧永远不会被显示。
+`Dropped Frame` 表示这一帧被直接跳过了。Perfetto 文档把两侧含义分开写得很清楚：
 
-这不会直接导致 Jank（帧率可能看起来很高甚至超过刷新率），但会导致**输入延迟（Input Latency）显著增加**——用户的触摸操作要等好几帧之后才能在屏幕上看到反馈。用户的主观感受是"画面很流畅但不跟手"，这在竞速类游戏等持续渲染场景中尤其明显。
+- 对 SurfaceFlinger 来说，是跳过当前 frame，优先显示更新的 frame。
+- 对 App 来说，是 UI 线程的 state update 没来得及推到 RenderThread，RenderThread 用旧状态把这一帧画完了。
 
-在 Perfetto 中，Buffer Stuffing 的典型特征是 BufferQueue 中有多个已入队（queued）但未被消费的 Buffer。在 `BufferQueue` Track 中，会看到 `|queued|` 计数持续大于 1。修复思路通常是用 `Choreographer.postFrameCallback` 替代无节制的 `invalidate()` 循环，让渲染节奏回到 VSync 驱动。
+用户看到的结果都是“内容跳了一下”，但根因路径不同。
 
-### Jank 类型在 Perfetto 中的颜色编码
+### FrameTimeline 里的颜色和枚举怎么看
 
-FrameTimeline 在 Perfetto 中使用颜色来区分不同的帧状态：
+Perfetto 的颜色是 UI 层面的归因提示，不是 `JankType` 到颜色的一一映射。精确类型要看 details 面板里的 `Jank Type`。
 
-| 颜色 | JankType | 含义 |
-|------|----------|------|
-| 绿色 | None | 正常帧，没有 Jank |
-| 浅绿色 | High Latency State | 帧率稳定但帧呈现延迟较高 |
-| 红色 | AppDeadlineMissed | App 侧导致的 Jank |
-| 黄色 | SurfaceFlinger Jank | SurfaceFlinger 侧导致的 Jank |
-| 蓝色 | Dropped Frame | 帧被丢弃 |
-
-[已验证: 官方文档, perfetto.dev/docs/data-sources/frametimeline]
+| Perfetto 颜色 | 常见归因 | 读法 | 第一观察点 |
+|---------------|----------|------|------------|
+| 绿色 | `None` | 正常 frame | 无需回溯 |
+| 浅绿色 | High latency state，常见于 `BufferStuffing` 一类状态 | 画面节奏还算平，但输入延迟在涨 | `Present Type`、`Jank Type`、BufferQueue / dequeue 佐证 |
+| 红色 | `AppDeadlineMissed` | App 自己没按时交帧 | `Actual Timeline` → `doFrame` / `RenderThread` |
+| 黄色 | `SurfaceFlingerCpuDeadlineMissed`、`SurfaceFlingerGpuDeadlineMissed`、`DisplayHAL`、`PredictionError` 等 App 非责任侧问题 | App 看到了 jank，但责任不在 App | SurfaceFlinger `Actual Timeline`、`onMessageReceived`、details 面板 |
+| 蓝色 | `Dropped Frame` | 这一帧被跳过 | App / SurfaceFlinger 两侧都要看 |
 
 ## FrameTimeline：Android 12+ 的 Jank 追踪核心
 
-理解了 Jank 的分类之后，我们需要了解 FrameTimeline 是怎么工作的，因为它是我们分析 Jank 的主要工具。
-
 ### Expected Timeline vs Actual Timeline
 
-FrameTimeline 在 Perfetto 中引入了两条关键的 Track：
+Perfetto 给每个出现在屏幕上的应用加两条 track。
 
-- **Expected Timeline**：系统预期这一帧的生命周期——从 Choreographer 唤醒开始，到预期被呈现（present）到屏幕上为止。这条线代表的是"计划"。
-- **Actual Timeline**：这一帧实际的生命周期——从 App 实际开始渲染，到实际被呈现到屏幕上。这条线代表的是"现实"。
+- `Expected Timeline` 表示系统给这帧分配的时间窗口。它的起点是 `Choreographer` 回调计划开始执行的时刻。
+- `Actual Timeline` 表示 App 真正花掉的时间。它从 `Choreographer#doFrame` 或 `AChoreographer_vsyncCallback` 开始，结束点取 `max(gpu time, post time)`。
 
-当 Expected 和 Actual 对齐时，帧没有问题；当 Actual 超出了 Expected 的截止时间，就产生了 Jank。
+两条线贴得住，说明 App 这一段按时完成。`Actual Timeline` 晚于 `Expected Timeline`，再结合 `Jank Type` 才能知道迟到是 App、SurfaceFlinger 还是显示末端造成的。
 
-### FrameTimeline 的工作原理
+### Token 怎么把一帧串起来
 
-FrameTimeline 的核心思路是"端到端追踪"：它给每一帧分配一个唯一的标识（Token），这个 Token 从 App 的 Choreographer 发出，经过 RenderThread、BufferQueue、SurfaceFlinger，一直到达 Display HAL。每个环节在处理这一帧时都会记录时间戳，FrameTimeline 通过 Token 把这些时间戳串联起来，就能看到一帧在整条渲染管线中的完整旅程。
+FrameTimeline 会给每一帧分配一个 token。这个 token 会同时出现在 App 的 `doFrame` / `RenderThread` slice 和 SurfaceFlinger 的 `onMessageReceived` slice 上。点中 App 的 `Actual Timeline` slice 时，Perfetto 还会画 flow event，把这一帧连到对应的 SurfaceFlinger timeline slice；点中 DisplayFrame，还能看到多个 layer frame 是怎么合到同一帧屏幕上的。
 
-```
-[Choreographer 唤醒] → [App 渲染] → [GPU 执行] → [提交 BufferQueue] 
-    → [SurfaceFlinger 合成] → [Display HAL 上屏] → [Present]
-```
+排查顺序最好是这样：
 
-每个环节都有自己的 deadline，任何一个环节超时都可能导致最终的 Jank。FrameTimeline 的价值在于：它能精确定位是哪个环节超时了，而不是让开发者去猜。
+1. 在 `Actual Timeline` 选中 janky frame。
+2. 看 details 面板里的 `Jank Type`、`Present Type`、`On time finish`、`GPU Composition`、`Layer Name`。
+3. 沿 token 回到 App 的 `doFrame` / `RenderThread`，或 SurfaceFlinger 的 `onMessageReceived`。
+4. 再决定继续看 MainThread、RenderThread、SurfaceFlinger CPU、GPU composition，还是 display 末端。
 
-[已验证: AOSP android-16.0.0_r1, frameworks/native/services/surfaceflinger/FrameTimeline/]
+`Choreographer#doFrame` 和 `RenderThread` 很有用，但它们是回溯锚点，不是 FrameTimeline 主视图的替代品。主视图还是 `Expected Timeline` / `Actual Timeline`。
 
-### 在 Perfetto 中的具体位置
+### Android 12 之前怎么看
 
-在 Perfetto UI 中，FrameTimeline 的数据展示在以下位置：
+Android 12 之前没有 FrameTimeline。那时只能靠 `Choreographer#doFrame`、`DrawFrame`、SurfaceFlinger 轨道和 VSync 时序关系手动判断是否超时。能抓到 FrameTimeline 的设备，优先用 FrameTimeline；老设备再回退到传统方法。
 
-1. **App 进程下**：我们会看到 `Expected Timeline` 和 `Actual Timeline` 两个 Track，分别对应系统预期和实际的帧时间线。点击某一个帧的 Slice，可以在详情面板中看到 `Jank Type` 字段。
-2. **SurfaceFlinger 进程下**：同样有 Expected/Actual Timeline，展示 SurfaceFlinger 侧的帧处理情况。
-
-在 Android 12 之前的设备上，没有 FrameTimeline 数据。此时只能通过观察主线程的 `Choreographer#doFrame` Slice 和 RenderThread 的 `DrawFrame` Slice 来手动判断帧是否超时。
-
-[已验证: 官方文档, perfetto.dev/docs/data-sources/frametimeline]
+[已验证: Perfetto 文档, https://perfetto.dev/docs/data-sources/frametimeline]
 
 ## 掉帧率、连续掉帧与卡顿率
 
-前面我们了解了 FrameTimeline 如何标注每一帧的 Jank 类型，但在实际项目交付中，产品经理和测试团队需要的不是"第 137 帧是 AppDeadlineMissed"这样的逐帧数据，而是可量化的聚合指标：整体掉帧率是多少？有没有 Frozen Frame？卡顿严重程度如何？这一节梳理行业内常用的几类流畅性指标。
+逐帧归因回答的是“这一帧为什么晚了”；项目交付还要回答“整体体验差到什么程度”。这时会用到慢帧、Frozen Frame、Janky Frame Rate 一类聚合指标。
 
-### 掉帧率（Janky Frame Rate）
+### 慢帧、Frozen Frame、ANR 不是同一套类型
 
-掉帧率 = Janky 帧数 / 总帧数 × 100%。它衡量的是"有多大比例的帧出了问题"。Google 推荐的 AndroidX JankStats 库会统计这个指标。一般的优化目标是将掉帧率控制在 5% 以下。
+Android vitals 把 slow frames、frozen frames 和 ANRs 放在一张对照表里，便于理解用户感知，但它们不是 FrameTimeline 的同一条 severity ladder。前两者是渲染问题，ANR 是响应性问题。
 
-### 连续掉帧（Frozen Frame）
+| 类型 | 典型时间范围 | 主要现象 | 归属 |
+|------|--------------|----------|------|
+| Slow Frame | 16ms - 700ms | 滑动、动画不顺 | 渲染问题 |
+| Frozen Frame | 700ms - 5s | 画面像停住了一样 | 渲染问题 |
+| ANR | > 5s | 系统弹出无响应对话框，或输入 / 广播 / 服务超时 | 响应性问题 |
 
-Frozen Frame（也称为 Big Jank）指的是渲染时间超过 700ms 的帧。在这 700ms 内，用户看到的是完全冻结的画面，没有任何更新。这种体验非常糟糕——用户可能会以为 App 崩溃了。
+Android vitals 对 Frozen Frame 的要求更硬，文档直接写了：应用里不应该出现任何一帧超过 700ms。
 
-Google 对帧的严重程度有一个分级：
+### Janky Frame Rate 怎么设目标
 
-| 指标 | 时间范围 | 用户感知 |
-|------|---------|---------|
-| 正常帧 | < 1 个 VSync 周期 | 流畅 |
-| 慢帧（Slow Frame） | 16ms - 700ms | 轻微卡顿感 |
-| 冻结帧（Frozen Frame） | 700ms - 5s | 画面冻结，用户焦虑 |
-| ANR | > 5s | 系统弹窗 |
+`Janky Frame Rate = janky frames / total frames` 这个公式没问题，但目标值不能写成一个跨场景通用数字。连续滑动、页面切换、冷启动首帧、120Hz 高刷列表，它们的刷新率、统计窗口和用户容忍度都不同。Android vitals 也没有给“所有 App 都用 5%”这一类统一门槛。
 
-[已验证: 官方文档, developer.android.com/topic/performance/vitals/anr]
+更稳的做法是按场景建目标：
 
-### Stutter（卡顿率）
+- 持续滑动和跟手交互，优先压慢帧比例和 high latency state。
+- 页面切换、冷启动首帧，单独看过渡阶段，不把初始化的特例混进常态滚动指标。
+- 高刷设备按 90Hz / 120Hz 的 frame period 单独统计，不拿 60Hz 口径混算。
 
-Stutter 是性能测试工具 PerfDog 提出的一个指标，它不只是数有多少帧 Jank，而是把所有 Jank 帧的"延迟时间"加起来，除以测试总时长。Stutter = ∑JankTime / TotalTime。这个指标的优点是它能反映卡顿的"严重程度"——一次 50ms 的 Jank 和一次 200ms 的 Jank 在掉帧率中都算 1 帧，但对用户体验的影响完全不同，Stutter 会把它们区分开。
+### Stutter、方差和工具私有指标
 
-[已验证: 来源见 obsidian/Personal-Knowlodge/source/2026-03-07_wechat_Android深入卡顿分析与实践.md]
+很多工具还会给 `stutter`、帧时间方差、连续掉帧段落等聚合指标。这些指标对横向对比版本回归很有用，但公式和阈值常常是工具私有实现。只要工具版本、统计窗口或刷新率口径一变，数字就会跟着变。
 
-### Google Jank vs PerfDog Jank
+所以在工程实践里，FrameTimeline / Android vitals 负责给系统级归因口径；PerfDog、内部脚本、自动化平台负责给团队自己的回归阈值。两类数字可以并用，不要直接混写成同一级“标准定义”。
 
-值得一提的是，不同工具对 Jank 的判定标准不同：
-
-**Google 的 Jank 判定**：基于 VSync 对齐——如果连续一次 VSync 没有新画面刷新，就认为是一次 Jank。这个标准比较严格。
-
-**PerfDog 的 Jank 判定**：需要同时满足两个条件：
-1. 当前帧耗时 > 前三帧平均耗时的 2 倍
-2. 当前帧耗时 > 两帧电影帧耗时（约 84ms）
-
-PerfDog 的 BigJank 则要求：
-1. 当前帧耗时 > 前三帧平均耗时的 2 倍
-2. 当前帧耗时 > 三帧电影帧耗时（约 125ms）
-
-Google 的标准从系统底层出发，关注 VSync 对齐；PerfDog 的标准从用户感知出发，关注帧耗时突变。两者各有优势，在不同场景下选择合适的标准来衡量。
-
-[已验证: 来源见 obsidian/Personal-Knowlodge/source/2026-03-07_wechat_Android深入卡顿分析与实践.md]
+[已验证: 官方文档, https://developer.android.com/topic/performance/vitals/render]
 
 ## 用户感知与技术指标的映射
 
@@ -303,19 +279,17 @@ Google 的标准从系统底层出发，关注 VSync 对齐；PerfDog 的标准�
 
 ## [自动发现] JankStats：Google 官方的 Jank 监测库
 
-来源：developer.android.com/develop/ui/views/performance/jankstats
+来源：https://developer.android.com/reference/kotlin/androidx/metrics/performance/JankStats
 
-AndroidX JankStats 库是 Google 提供的用于在运行时监测 Jank 的工具。它基于 `FrameMetrics` API（Android 7.0+）构建，在 Android 12+ 设备上还能获取 `frameOverrunNanos`（帧超时了多少纳秒），提供更精确的 Jank 判定。
+JankStats 适合在测试环境或线上埋点里回答“哪一段 UI 状态更容易出 jank”。它基于 `FrameMetrics` / 平台帧信息收集每帧数据，能够把 Activity、页面状态、交互上下文一起带出来。FrameTimeline 更适合离线 trace 里做单帧归因，两者分工不同。
 
-JankStats 的工作原理：
-1. 通过 `OnFrameListener` 监听每一帧的渲染时间
-2. 将帧耗时与预设阈值比较（默认是帧是否超过 VSync 周期）
-3. 如果判定为 Jank，记录当前的状态信息（Activity 名称、当前 UI 状态等）
-4. 将 Jank 报告回调给开发者
+JankStats 里有一个 `jankHeuristicMultiplier`。官方 reference 写得很直接：阈值等于 `current refresh period × multiplier`，默认 multiplier 是 `2`。所以默认口径不是“超过 1 个 VSync 就算 jank”，而是“超过当前刷新周期的 2 倍才报告为 jank”。
 
-开发者可以自定义 Jank 的判定阈值，也可以通过 `PerformanceMetricsState` 在 Jank 发生时附加上下文信息（比如"用户正在滑动首页列表"），方便后续分析。
+在 Android 12+ 上，`frameOverrunNanos` 可以补“超了多少时间”；在旧版本上，JankStats 仍然能给出较粗的运行时 jank 统计，但归因粒度不如 FrameTimeline。用法上，JankStats 用来找“哪里经常卡”；Perfetto / FrameTimeline 用来查“这一帧为什么卡”。
 
-[已验证: 官方文档, developer.android.com/develop/ui/views/performance/jankstats]
+如果要把 JankStats 结果接回章节前面的分类体系，最稳的方式是：线上先用 JankStats 标出高风险页面，再抓 Perfetto trace，用 `Expected Timeline` / `Actual Timeline` 和 token 回到 App、SurfaceFlinger、Display 责任链。
+
+[已验证: AndroidX API reference, https://developer.android.com/reference/kotlin/androidx/metrics/performance/JankStats]
 
 ## 常见问题与误区
 
@@ -329,7 +303,7 @@ JankStats 的工作原理：
 
 ### 误区 3：「掉帧率必须做到 0%」
 
-工程实践里，追求 0% 的掉帧率既不现实，也不经济。Google 的 Android Vitals 将"慢帧"阈值设在 16ms，但实际项目中的优化目标通常是将掉帧率控制在 5% 以下，并确保没有 Frozen Frame（>700ms）。极端场景（如复杂列表快速滑动）掉帧率 3-5% 是可接受的。优化的 ROI（投入产出比）比绝对数字更重要。
+工程上真正要清理的是稳定重现的 jank 峰值、Frozen Frame 和高延迟状态，不是盯着一个抽象的 0%。列表高速滑动、复杂动画、启动首帧、高刷设备，容忍区间都不同。把所有场景压成一个全局掉帧率数字，既不利于定位，也不利于版本回归。更实用的做法是按交互路径、刷新率和统计窗口分别设预算。
 
 ### 误区 4：「120Hz 设备不需要优化，因为帧预算变小了」
 
@@ -347,17 +321,18 @@ JankStats 的工作原理：
 ## 参考资料
 
 - AOSP 源码路径：
-  - `frameworks/native/services/surfaceflinger/FrameTimeline/FrameTimeline.cpp` — FrameTimeline 核心逻辑
-  - `frameworks/native/services/surfaceflinger/FrameTimeline/JankInfo.h` — JankType 枚举定义
-  - `frameworks/base/core/java/android/view/Choreographer.java` — VSync 驱动渲染
-  - `frameworks/base/core/java/android/view/FrameMetrics.java` — 帧性能指标
+  - `frameworks/native/services/surfaceflinger/FrameTimeline/FrameTimeline.cpp` — FrameTimeline 归因逻辑
+  - `frameworks/native/services/surfaceflinger/FrameTimeline/JankInfo.h` — JankType 定义
+  - `frameworks/base/core/java/android/view/Choreographer.java` — App 侧 frame 调度入口
+  - `frameworks/base/core/java/android/view/FrameMetrics.java` — UI frame 指标接口
 - 官方文档：
-  - [FrameTimeline | Perfetto Docs](https://perfetto.dev/docs/data-sources/frametimeline)
-  - [JankStats | Android Developers](https://developer.android.com/develop/ui/views/performance/jankstats)
+  - [Android Jank detection with FrameTimeline | Perfetto Docs](https://perfetto.dev/docs/data-sources/frametimeline)
+  - [Slow rendering | Android Developers](https://developer.android.com/topic/performance/vitals/render)
+  - [Diagnose and fix ANRs | Android Developers](https://developer.android.com/topic/performance/vitals/anr)
+  - [JankStats | Android Developers](https://developer.android.com/reference/kotlin/androidx/metrics/performance/JankStats)
   - [FrameMetrics API | Android Developers](https://developer.android.com/reference/android/view/FrameMetrics)
   - [Response Time Limits | Nielsen Norman Group](https://www.nngroup.com/articles/response-times-3-important-limits/)
 - 博客与文章：
   - [来源: obsidian/Personal-Knowlodge/source/2026-03-07_wechat_Android深入卡顿分析与实践.md]（腾讯音乐：Android 深入卡顿分析与实践）
-  - [来源: obsidian/Personal-Knowlodge/source/2026-03-07_wechat_Android卡顿监测的方方面面.md]（鸿洋：Android 卡顿监测的方方面面）
   - [来源: obsidian/Personal-Knowlodge/source/Android-Perfetto-06-Why-120Hz.md]（高爷：Android Perfetto 系列 6 - 为什么是 120Hz）
   - [来源: obsidian/Personal-Knowlodge/source/Android-Perfetto-05-Chorergrapher.md]（高爷：Android Perfetto 系列 5 - Choreographer 渲染流程）
