@@ -1899,3 +1899,20 @@ AsyncLayoutInflater 一节缺少 AndroidX 当前实现的关键边界，尤其�
 
 ### 关联章节
 10.7、1.10、1.4
+
+
+## [2026-04-13] 13.5 专题解读 — 知识盲区
+
+### 盲区描述
+章节同时覆盖 Android 10-16，但把 FrameTimeline、Binder、monitor contention、heapprofd、block I/O 的采集入口和 SQL 口径混写在一起。当前正文没有回答三个关键问题：哪些能力属于公开 data source，哪些只是 trace processor 标准库；哪些 UI 轨道只在 Android 12+ 或更高版本可见；当某个数据源不可用时，应该退回哪条 fallback 分析路径。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 梳理 Android 10-11 / 12-13 / 14+ 三个阶段的 Perfetto 能力矩阵：FrameTimeline、android.heapprofd、android.java_hprof、monitor contention、Binder 分析入口
+- 明确每项能力对应的公开 trace config、UI 轨道名、SQL 表 / stdlib 模块（如 `actual_frame_timeline_slice`、`android_binder_txns`、`android_monitor_contention`、`linux.block_io`）
+- 补一节“数据源 → 轨道 → SQL → 适用版本”总表，避免后续章节继续混用口径
+
+### 关联章节
+13.2、13.3、13.6、13.10、1.4、4.1、6.3

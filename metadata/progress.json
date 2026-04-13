@@ -1,10 +1,10 @@
 {
-  "generated_at": "2026-04-13T19:05:00+08:00",
+  "generated_at": "2026-04-13T19:36:57+08:00",
   "state_machine_version": "v2",
   "total_sections": 207,
   "metrics": {
     "total": 207,
-    "last_updated": "2026-04-13T19:05:00+08:00",
+    "last_updated": "2026-04-13T19:36:57+08:00",
     "unknown": 34,
     "ready-for-review": 173,
     "pipeline_unknown": 31,
@@ -16,8 +16,8 @@
     "task6_pending": 108,
     "task6_reviewed": 13,
     "task9_unknown": 31,
-    "task9_pending": 173,
-    "task9_reviewed": 3,
+    "task9_pending": 172,
+    "task9_reviewed": 4,
     "task2b_unknown": 31,
     "task2b_fixed": 55,
     "task2b_idle": 110,
@@ -25,27 +25,27 @@
   },
   "pipeline": {
     "pipeline_stage_counts": {
-      "unknown": 31,
-      "task6_pending": 163,
       "task2b_pending": 11,
-      "task9_pending": 2
+      "task6_pending": 163,
+      "task9_pending": 2,
+      "unknown": 31
     },
     "task6_state_counts": {
-      "unknown": 31,
-      "revisiting": 55,
       "pending": 108,
-      "reviewed": 13
+      "reviewed": 13,
+      "revisiting": 55,
+      "unknown": 31
     },
     "task9_state_counts": {
-      "unknown": 31,
-      "pending": 173,
-      "reviewed": 3
+      "pending": 172,
+      "reviewed": 4,
+      "unknown": 31
     },
     "task2b_state_counts": {
-      "unknown": 31,
       "fixed": 55,
       "idle": 110,
-      "pending": 11
+      "pending": 11,
+      "unknown": 31
     }
   },
   "issues": {
@@ -2214,12 +2214,13 @@
       "status": "ready-for-review",
       "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
-      "task9_state": "pending",
+      "task9_state": "reviewed",
       "task2b_state": "pending",
       "section": "13.5",
       "reviewed_by": "openclaw-task6",
       "reviewed_date": "2026-04-13",
-      "task6_result": "needs-rework"
+      "task6_result": "needs-rework",
+      "task9_result": "needs-rework"
     },
     "src/part3-tools/ch13-perfetto/06-thread-cpu-states.md": {
       "chapter": "13.6",

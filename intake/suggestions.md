@@ -2588,3 +2588,14 @@
 - **位置**：frontmatter `sources` + §3 Room 的性能特性与优化
 - **问题**：正文对 Room 内部执行器、事务协程、Paging 行为做了源码级判断，但 `sources` 只列了 developer.android.com 文档，没有补 `androidx.room` 源码锚点，后续核对和回炉都缺少直接证据。
 - **建议**：补 `androidx.room:room-runtime` / `androidx.room:room-paging` 的源码依据，例如 `RoomDatabase`、`DatabaseConfiguration`、`LimitOffsetPagingSource`、`RoomPagingUtil.kt`。
+
+
+## [Task9 Deep Review] 13.5 专题解读 — 2026-04-13
+- **类型**：交叉引用
+- **位置**：L330、L665 参考资料
+- **问题**：引用的 `https://perfetto.dev/docs/data-sources/android-binder` 当前返回 404，正文又把它当作 Binder 配置依据，读者无法按链接复核。
+- **建议**：改成可访问的公开资料，或直接引用 Perfetto 主仓 `protos/perfetto/config/data_source_config.proto` 与 `src/trace_processor/perfetto_sql/stdlib/android/binder.sql`。
+- **类型**：数据缺失
+- **位置**：L223、L443、L629 图示占位
+- **问题**：FrameTimeline、heapprofd、多线程 Pin 三个专题都只有占位图，没有任一已跑通的 Trace 截图或查询结果，专题步骤缺少证据闭环。
+- **建议**：至少补 3 组真实截图或导出的 query result，分别覆盖掉帧定位、heapprofd flamegraph、跨进程 Pin 场景。
