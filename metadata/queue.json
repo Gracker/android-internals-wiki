@@ -7615,5 +7615,32 @@
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-13T22:20:00+08:00",
     "status": "pending"
+  },
+  {
+    "section": "13.4",
+    "section_title": "命令行打开超大 Trace",
+    "priority": 90,
+    "reason": "[review回炉] CLI 参数与 traceconv 文本回转流程存在工具链风险，需按当前 Perfetto 文档复核",
+    "material_paths": [
+      "intake/suggestions.md（含 review 意见）"
+    ],
+    "review_issues": [
+      {
+        "type": "需确认",
+        "location": "trace_processor 的高级参数",
+        "detail": "`-W/--wait` 在正文里作为可用参数展开，但章节同时保留 `[待验证]`，CLI 版本边界未核实。",
+        "suggestion": "交 Task 9 按当前 Perfetto CLI 帮助与官方文档核对该参数，再由 Task 2B 决定保留或删除。"
+      },
+      {
+        "type": "需确认",
+        "location": "常见问题与误区 / Trace 文件太大怎么办",
+        "detail": "“traceconv 转文本后过滤，再转回 protobuf” 缺少受支持的命令链和文档依据，存在方法不可执行的风险。",
+        "suggestion": "交 Task 9 核对 traceconv 的格式转换边界；若不支持回转，Task 2B 改成缩短抓取窗口、ring buffer、分批查询或 Bigtrace 等受支持方案。"
+      }
+    ],
+    "added_by": "task6-review",
+    "added_at": "2026-04-13T23:15:08+08:00",
+    "status": "pending",
+    "original_review_log": "logs/review/2026-04-13-23-review.md"
   }
 ]

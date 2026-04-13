@@ -2699,3 +2699,17 @@
 - **位置**：行 273-281 FCM 高优先级消息
 - **问题**：正文把高优先级 FCM 写成“有配额限制，后续会降级为普通优先级”，但官方说明还存在 delegated / proxied by Google Play services 的分支，且依据是 7 天内的 user-visible notification 行为。
 - **建议**：补“deprioritized or delegated”这层语义，避免把它简化成单一路径的“配额降级”。
+
+
+## [Task6 Review] 13.4 命令行打开超大 Trace — 2026-04-13
+- **类型**：需确认
+- **位置**：`trace_processor` 的高级参数（约 L336-L344）
+- **问题**：`-W/--wait` 在正文里作为可用参数展开介绍，但紧跟着仍保留 `[待验证: --W 参数在最新版本中是否仍然支持]`。当前章节缺少对 CLI 版本边界的最终核对。
+- **建议**：交 Task 9 按当前 Perfetto CLI 帮助和官方文档复核该参数；若已移除或行为变化，Task 2B 删除或改写这一节。
+- **review 日志**：logs/review/2026-04-13-23-review.md
+
+- **类型**：需确认
+- **位置**：常见问题与误区 / “Trace 文件太大，trace_processor 也吃不下怎么办？”（约 L579-L581）
+- **问题**：文中建议“`traceconv` 先转文本、过滤后再转回 protobuf”，但没有给出受支持的 round-trip 工具链、命令或文档依据，存在方法不可执行的风险。
+- **建议**：交 Task 9 核对 `traceconv` 支持的格式转换边界；若不支持回转流程，Task 2B 改成受支持的处理路径，比如缩短抓取窗口、ring buffer、分批查询或 Bigtrace。
+- **review 日志**：logs/review/2026-04-13-23-review.md
