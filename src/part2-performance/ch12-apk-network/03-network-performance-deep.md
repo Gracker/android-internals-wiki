@@ -17,20 +17,52 @@ sources:
     path: "https://developer.android.com/reference/android/net/TrafficStats"
   - type: official
     path: "https://developer.android.com/reference/android/net/ConnectivityManager"
-tags: [network, okhttp, retrofit, tls, http2, connection-pooling, dns, battery]
+  - type: official
+    path: "https://developer.android.com/training/monitoring-device-state"
+  - type: official
+    path: "https://perfetto.dev/docs/instrumentation/tracing-sdk"
+tags: [network, okhttp, retrofit, tls, http2, http3, quic, connection-pooling, dns, battery, perfetto]
 related_chapters: ["12.2", "8.2", "11.2", "5.8", "14.1"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-04-07"
 gap_source: "AOSP结构+官方文档+读者需求"
 gap_score: 14
 drafted_by: "openclaw-task2a"
-pipeline_stage: task6_pending
-task6_state: pending
+reviewed_by: "openclaw-task6"
+reviewed_date: "2026-04-13"
+task6_result: needs-rework
+pipeline_stage: task2b_pending
+task6_state: reviewed
 task9_state: pending
-task2b_state: idle
+task2b_state: pending
 ---
 
 # 12.3 网络性能深入：连接池、TLS 与传输优化
+
+<!-- outline-start -->
+## 本节要点大纲
+
+### 锚点（必须覆盖）
+
+- 🔹 Android 网络栈全景：请求从 OkHttp 到内核协议栈的路径与耗时拆分
+- 🔹 OkHttp 连接池与复用机制：ConnectionPool、HTTP/2 多路复用、EventListener 时序
+- 🔹 TLS 握手性能与优化：TLS 1.2 / TLS 1.3、Conscrypt、证书校验开销
+- 🔹 DNS 解析性能：系统 DNS resolver、DoT / DoH、OkHttp 自定义 DNS
+- 🔹 网络请求对电池的影响：Radio State Machine、批量请求、JobScheduler 调度
+- 🔹 在 Perfetto 中分析网络性能：自定义 Trace Event、主线程阻塞、指标基线
+
+### 扩展（可选深入）
+
+- 🔸 HTTP/3 与 QUIC
+- 🔸 WebSocket 性能
+- 🔸 Retrofit 与 Coroutine 集成性能
+
+### OpenClaw 加工指引
+
+> **锚点**是最低覆盖要求，加工时必须逐条落实并标注验证结果。
+> **扩展**视素材丰富程度选择性深入。
+> 如果后续补到了 HTTP/2 复用、Radio State Machine 或网络请求分阶段 Trace 的图示，优先插入对应锚点后并补验证来源。
+<!-- outline-end -->
 
 在 §12.2 中我们从宏观角度梳理了网络性能优化的策略和工具：HTTP/2 与 HTTP/3 的选择、弱网应对方案、OkHttp EventListener 监控等。那些内容回答了"应该做什么"。
 
@@ -46,12 +78,12 @@ task2b_state: idle
 
 这条链路上的每个环节都有可能成为性能瓶颈。一个典型 HTTPS 请求的完整时间分解如下：
 
-1. **DNS 解析**：将域名解析为 IP 地址。局域网环境下 <1ms，公网解析通常 20-120ms。
-2. **TCP 连接建立**：三次握手，取决于网络 RTT（Round-Trip Time），通常 30-100ms（4G网络）。
+1. **DNS 解析**：将域名解析为 IP 地址。局域网环境下 < 1 ms，公网解析通常 20-120 ms。
+2. **TCP 连接建立**：三次握手，取决于网络 RTT（Round-Trip Time），通常 30-100 ms（4G 网络）。
 3. **TLS 握手**：密钥协商和证书验证。TLS 1.2 需要 2 个 RTT，TLS 1.3 减少到 1 个 RTT。
 4. **HTTP 请求/响应**：发送请求头和 body、等待服务端处理、接收响应。首字节时间（TTFB）取决于服务端处理能力。
 
-可以看到，对于首次连接，前三步可能消耗 100-300ms 才开始真正传输数据。连接池和 keep-alive 的价值就在于：第二次请求可以跳过前三步，直接进入第 4 步。
+对于首次连接，前三步可能先消耗 100-300 ms，真正的数据传输要到第 4 步才开始。连接池和 keep-alive 的价值就在这里，第二次请求可以直接跳到第 4 步。
 
 ### 网络操作与主线程性能
 
@@ -79,13 +111,13 @@ public ConnectionPool() {
 }
 ```
 
-这段代码告诉我们一个重要的默认值：OkHttp 最多保持 5 条空闲连接，每条最多存活 5 分钟。对于大多数 App 来说，这意味着如果在 5 分钟内再次访问同一个域名，可以直接复用连接。如果 App 需要同时与超过 5 个不同的后端域名保持长连接，空闲连接数可能不够，需要适当调大这个参数。
+这段代码告诉我们一个重要的默认值：OkHttp 最多保持 5 条空闲连接，每条最多存活 5 分钟。对于大多数 App 来说，如果在 5 分钟内再次访问同一个域名，通常可以直接复用连接。如果 App 需要同时与超过 5 个不同的后端域名保持长连接，空闲连接数可能不够，需要适当调大这个参数。
 
 ### HTTP/2 多路复用 vs HTTP/1.1 连接池
 
 HTTP/1.1 的连接复用是串行的：一个 TCP 连接上，必须等上一个请求完成后才能发送下一个请求。如果浏览器或 App 需要并发请求同一个域名的多个资源，就需要建立多条 TCP 连接。
 
-HTTP/2 引入了多路复用（multiplexing）：一个 TCP 连接上可以同时承载多个请求和响应，通过 stream ID 区分不同的请求。这意味着只需要一条 TCP 连接就能满足所有并发需求。
+HTTP/2 引入了多路复用（multiplexing）：一个 TCP 连接上可以同时承载多个请求和响应，通过 stream ID 区分不同的请求。同一域名的并发请求通常可以压到一条 TCP 连接上。
 
 在 OkHttp 中，当服务端支持 HTTP/2 时（通过 ALPN 协商），连接池的行为会发生变化：同一个地址只需要维持一条连接，所有请求复用这条连接。这大大减少了连接池的压力，也降低了服务端的资源消耗。
 
@@ -136,7 +168,7 @@ TLS 1.2 的完整握手需要 2 个 RTT（Round-Trip Time），流程如下：
 
 **第二次往返**：客户端验证服务端证书，发送密钥交换完成消息。服务端确认后，双方开始加密通信。
 
-在一个 RTT 约 50ms 的 4G 网络上，TLS 1.2 完整握手至少需要 100ms。加上 CPU 做非对称加密运算（RSA/ECDHE）的时间，实际握手耗时通常在 150-300ms。
+在一个 RTT 约 50 ms 的 4G 网络上，TLS 1.2 完整握手至少需要 100 ms。加上 CPU 做非对称加密运算（RSA/ECDHE）的时间，实际握手耗时通常在 150-300 ms。
 
 ### TLS 1.3 的性能提升
 
@@ -146,11 +178,11 @@ TLS 1.3（Android 10+ 默认启用）将握手从 2-RTT 减少到 1-RTT。它通
 2. 简化了密码套件协商，只保留基于 ECDHE 的前向保密密钥交换。
 3. 移除了不安全的旧算法（RSA 密钥交换、CBC 模式加密、SHA-1 签名等）。
 
-从性能角度看，1-RTT 意味着在 50ms RTT 的网络上，TLS 握手从至少 100ms 降到约 50ms，加上 CPU 计算时间，总耗时约 80-150ms——大约是 TLS 1.2 的一半。
+从性能角度看，1-RTT 让 50 ms RTT 网络上的 TLS 握手从至少 100 ms 降到约 50 ms。再算上 CPU 计算时间，总耗时约 80-150 ms，大约是 TLS 1.2 的一半。
 
 [已验证: 官方文档, developer.android.com — TLS 1.3 在 Android 10 (API 29) 起默认启用]
 
-TLS 1.3 还定义了 0-RTT 恢复模式，允许客户端在恢复会话时直接携带加密数据发送，跳过握手过程。但需要注意：Android 原生的 TLS 1.3 实现目前不支持 0-RTT，这是出于安全考虑——0-RTT 数据存在重放攻击的风险。
+TLS 1.3 还定义了 0-RTT 恢复模式，允许客户端在恢复会话时直接携带加密数据发送，跳过握手过程。Android 原生的 TLS 1.3 实现目前不支持 0-RTT，这主要是出于安全考虑，0-RTT 数据存在重放攻击风险。
 
 ### Conscrypt 与 Android TLS 实现
 
@@ -171,7 +203,7 @@ Security.insertProviderAt(Conscrypt.newProvider(), 1);
 
 TLS 握手中的证书验证涉及证书链的签名校验，在性能敏感场景下值得关注。Certificate Pinning（证书固定）是一种安全策略，它要求服务端证书必须匹配预设的公钥哈希。OkHttp 提供了 `CertificatePinner` 来实现这一点。
 
-需要注意的是，Certificate Pinning 本身不会增加额外的网络往返，但错误的配置（比如 pin 过期后没有更新）会导致所有请求直接失败。从性能角度看，更大的影响来自于 OCSP（Online Certificate Status Protocol）和 CRL（Certificate Revocation List）检查——如果 App 或系统在 TLS 握手过程中去查询证书的吊销状态，会额外增加一次或多次网络请求。Android 默认不执行 OCSP stapling 之外的在线证书状态检查，这是一个合理的性能与安全的平衡。
+Certificate Pinning 本身不会增加额外的网络往返，但错误的配置（比如 pin 过期后没有更新）会导致所有请求直接失败。从性能角度看，更大的影响来自于 OCSP（Online Certificate Status Protocol）和 CRL（Certificate Revocation List）检查——如果 App 或系统在 TLS 握手过程中去查询证书的吊销状态，会额外增加一次或多次网络请求。Android 默认不执行 OCSP stapling 之外的在线证书状态检查，这是一个合理的性能与安全的平衡。
 
 ## DNS 解析性能
 
@@ -189,9 +221,9 @@ DNS 解析是网络请求链路的第一步，也是最容易被忽视的性能�
 
 DNS 解析的耗时差异很大，取决于缓存命中情况和网络环境：
 
-- **本地缓存命中**：<1ms，几乎可以忽略
-- **局域网 DNS 服务器响应**：1-10ms
-- **公网 DNS 服务器响应**：20-120ms（国内运营商 DNS 可能更长）
+- **本地缓存命中**：< 1 ms，几乎可以忽略
+- **局域网 DNS 服务器响应**：1-10 ms
+- **公网 DNS 服务器响应**：20-120 ms（国内运营商 DNS 可能更长）
 - **DNS 解析失败/超时**：通常 3-30 秒（取决于系统超时配置）
 
 一个容易被忽视的问题是：DNS 解析是同步阻塞操作。如果 DNS 查询发生在主线程上（哪怕是通过 OkHttp 发起），在解析完成之前线程会被阻塞。OkHttp 默认在自己的线程池中执行网络请求，但自定义的 `Dns` 实现如果不注意异步化，可能把 DNS 查询带回调用线程。
@@ -226,7 +258,7 @@ public class HttpDns implements Dns {
 
 国内运营商的 DNS 劫持和解析延迟是一个现实问题。HTTPDNS（通过 HTTP 接口直接向 DNS 服务商查询）绕过了运营商的 Local DNS，可以直接拿到域名对应的 IP，同时避免 DNS 劫持导致的 CDN 调度不准。
 
-使用自定义 DNS 有一个需要注意的陷阱：OkHttp 只在建立新连接时才做 DNS 解析。如果连接池中已有到该域名的连接，即使 DNS 记录发生了变化（比如服务端 IP 切换），已缓存的连接仍然使用旧 IP。解决方案是在网络状态变化时主动清理连接池：
+使用自定义 DNS 时有一个常见陷阱：OkHttp 只在建立新连接时才做 DNS 解析。如果连接池中已有到该域名的连接，即使 DNS 记录发生了变化（比如服务端 IP 切换），已缓存的连接仍然使用旧 IP。解决方案是在网络状态变化时主动清理连接池：
 
 ```java
 // 网络切换时清理连接池
@@ -247,13 +279,13 @@ connectivityManager.registerDefaultNetworkCallback(
 
 移动设备的无线电模块（基带芯片 + 射频前端）遵循一个状态机模型运行。以 4G LTE 为例，它有三个主要状态：
 
-**全功率状态（RRC_CONNECTED）**：数据传输中，基带芯片全速运行，功耗最高。一个典型的 4G 基带在全功率状态下可能消耗 500-1000mA 电流。
+**全功率状态（RRC_CONNECTED）**：数据传输中，基带芯片全速运行，功耗最高。一个典型的 4G 基带在全功率状态下可能消耗 500-1000 mA 电流。
 
 **低功率状态（DRX/IDLE）**：数据传输完成后的过渡状态，基带降低时钟频率和射频功率，功耗约为全功率状态的 50%。
 
-**待机状态**：基带进入深度休眠，仅监听寻呼消息，功耗极低（约 10-20mA）。
+**待机状态**：基带进入深度休眠，仅监听寻呼消息，功耗极低（约 10-20 mA）。
 
-关键在于状态转换的延迟（tail time）。基带不会在数据传输完成后立刻进入待机状态——它会在低功率状态停留一段时间（4G 网络通常 10-20 秒），以防还有后续数据需要传输。这意味着即使一个网络请求只用了 100ms，基带可能会在全功率和低功率状态维持额外 10-20 秒。
+关键在于状态转换的延迟（tail time）。基带不会在数据传输完成后立刻进入待机状态，它会在低功率状态停留一段时间（4G 网络通常 10-20 秒），以防还有后续数据需要传输。所以即使一个网络请求只用了 100 ms，基带也可能在全功率和低功率状态维持额外 10-20 秒。
 
 ### 批量请求 vs 分散请求
 
@@ -302,7 +334,7 @@ class TracingInterceptor : Interceptor {
 }
 ```
 
-添加这个 Interceptor 后，在 Perfetto 中可以看到每个网络请求在 OkHttp 线程上占用的精确时间。结合 OkHttp 的 `EventListener`，还可以分别标记 DNS、连接、TLS、请求/响应各阶段：
+添加这个 Interceptor 后，Perfetto 中会直接出现每个网络请求在 OkHttp 线程上占用的精确时间。结合 OkHttp 的 `EventListener`，还可以分别标记 DNS、连接、TLS、请求/响应各阶段：
 
 ```kotlin
 override fun connectStart(call: Call, inetSocketAddress: InetSocketAddress, proxy: Proxy) {
@@ -345,7 +377,7 @@ override fun secureConnectEnd(call: Call, handshake: Handshake?) {
 - **内容传输时间**：`responseBodyEnd - responseBodyStart`
 - **总耗时**：`callEnd - callStart`
 
-这些指标的 P50 和 P95 分布是评估网络性能健康度的关键基线。如果 TTFB 的 P95 从 200ms 涨到 800ms，大概率是服务端处理能力出了问题；如果 DNS 时间的 P95 从 50ms 涨到 500ms，可能是 DNS 配置或运营商网络出了问题。
+这些指标的 P50 和 P95 分布是评估网络性能健康度的关键基线。如果 TTFB 的 P95 从 200 ms 涨到 800 ms，大概率是服务端处理能力出了问题；如果 DNS 时间的 P95 从 50 ms 涨到 500 ms，可能是 DNS 配置或运营商网络出了问题。
 
 ## 扩展
 
@@ -369,9 +401,9 @@ WebSocket 提供了全双工的持久连接，适合实时通信场景（聊天�
 
 Retrofit 是 Android 上最常用的 HTTP 客户端封装，它将 OkHttp 的 Call 对象映射为 Kotlin suspend 函数。从性能角度看，Retrofit 的适配层开销很小——它本质上是在 OkHttp Call 之上加了一层接口代理和类型转换。
 
-使用 `suspend` 函数后，网络请求的线程模型变得更清晰：请求在 OkHttp 的内部线程池中执行，结果通过 Kotlin 协程的 Continuation 机制回调到调用方的调度器（通常是 `Dispatchers.Main`）。对比 RxJava 的 Observable 链式调用，协程版本减少了一层 Observable 包装和调度器切换的开销，但这部分开销在整体网络请求耗时中占比很小（通常 <1ms），不是性能优化的重点。
+使用 `suspend` 函数后，网络请求的线程模型变得更清晰：请求在 OkHttp 的内部线程池中执行，结果通过 Kotlin 协程的 Continuation 机制回调到调用方的调度器（通常是 `Dispatchers.Main`）。对比 RxJava 的 Observable 链式调用，协程版本减少了一层 Observable 包装和调度器切换的开销，但这部分开销在整体网络请求耗时中占比很小（通常 < 1 ms），不是性能优化的重点。
 
-真正需要注意的性能问题是大批量并发请求的线程模型。OkHttp 默认的 Dispatcher 配置是最大 64 个并发请求、每个域名最多 5 个并发请求。如果 App 需要大量并发请求（比如图片列表预加载），需要根据实际情况调整 Dispatcher 的配置，否则请求会排队等待，表现为 TTFB 虚高。
+更实际的瓶颈是大批量并发请求的线程模型。OkHttp 默认的 Dispatcher 配置是最大 64 个并发请求、每个域名最多 5 个并发请求。如果 App 需要大量并发请求（比如图片列表预加载），需要根据实际情况调整 Dispatcher 的配置，否则请求会排队等待，表现为 TTFB 虚高。
 
 ## 参考资料
 

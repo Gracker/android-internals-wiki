@@ -1406,18 +1406,44 @@
   {
     "section": "12.3",
     "section_title": "网络性能深入：连接池、TLS 与传输优化",
-    "priority": 80,
-    "reason": "知识缺口挖掘：全书网络性能仅12.2一节且偏概述，缺少连接池/TLS/DNS/Radio State Machine等底层机制的深度分析",
+    "priority": 90,
+    "reason": "[review回炉] 量化数据缺少来源，HTTP/3/QUIC 与 Android 版本实现表述存在技术风险，扩展段落与主线衔接偏弱",
     "material_paths": [
       "https://developer.android.com/training/basics/network-ops/managing",
       "https://square.github.io/okhttp/",
-      "https://developer.android.com/reference/android/net/TrafficStats"
+      "https://developer.android.com/reference/android/net/TrafficStats",
+      "intake/suggestions.md（含 review 意见）"
     ],
-    "added_by": "task2a-knowledge-gap",
-    "added_at": "2026-04-07T19:06:00+08:00",
-    "status": "completed",
-    "completed_at": "2026-04-07T22:18:29.780941",
-    "completed_by": "openclaw-task2a"
+    "review_issues": [
+      {
+        "type": "需确认",
+        "location": "HTTP/2 多路复用 / DNS over HTTPS / 网络功耗量化段落",
+        "detail": "20-40%、24%/47%、500-1000 mA、3-4 倍等量化结论缺少原始来源与测试条件。",
+        "suggestion": "补官方文档、实验条件或原始测试链接；补不齐就降级为定性描述。"
+      },
+      {
+        "type": "需确认",
+        "location": "TLS / Conscrypt / QUIC 扩展段落",
+        "detail": "0-RTT、Conscrypt Mainline 更新、DoH3 支持版本、HttpEngine/QUIC 支持及 `crazy_things_` 扩展写法存在实现与版本风险。",
+        "suggestion": "交 Task 9 核对 Android 版本与 API 支持边界，删除占位式表述并补准确来源。"
+      },
+      {
+        "type": "需补充素材",
+        "location": "HTTP/2 多路复用 / Radio State Machine / Perfetto 分析",
+        "detail": "正文两处明确标注待补图，但当前没有 Trace 截图或等价图示，写作规范要求这些位置配图。",
+        "suggestion": "至少补 2 张图或文字版图示，覆盖 HTTP/2 复用、Radio State Machine、请求分阶段 Trace。"
+      },
+      {
+        "type": "需重写",
+        "location": "扩展章节（HTTP/3 与 QUIC / WebSocket / Retrofit）",
+        "detail": "后三个扩展小节更像资料卡片，和前文“网络链路耗时 + Perfetto 分析”主线回扣不够，收尾略散。",
+        "suggestion": "回到“实际分析中什么时候该看这几个方向”，压缩词条式说明，补一段工程判断。"
+      }
+    ],
+    "added_by": "task6-review",
+    "added_at": "2026-04-13T09:28:00+08:00",
+    "status": "pending",
+    "original_review_log": "logs/review/2026-04-13-09-review.md"
   },
   {
     "section": "5.7",

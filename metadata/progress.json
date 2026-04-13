@@ -1,51 +1,51 @@
 {
-  "generated_at": "2026-04-13T09:05:00+08:00",
+  "generated_at": "2026-04-13T09:28:00+08:00",
   "state_machine_version": "v2",
   "total_sections": 207,
   "metrics": {
     "total": 207,
-    "last_updated": "2026-04-13T09:05:00+08:00",
-    "unknown": 34,
+    "last_updated": "2026-04-13T09:28:00+08:00",
     "ready-for-review": 173,
-    "pipeline_unknown": 31,
-    "pipeline_task6_pending": 166,
-    "pipeline_task2b_pending": 8,
+    "unknown": 34,
+    "pipeline_task2b_pending": 9,
+    "pipeline_task6_pending": 165,
     "pipeline_task9_pending": 2,
-    "task6_unknown": 31,
+    "pipeline_unknown": 31,
+    "task6_pending": 118,
+    "task6_reviewed": 11,
     "task6_revisiting": 47,
-    "task6_reviewed": 10,
-    "task6_pending": 119,
-    "task9_unknown": 31,
+    "task6_unknown": 31,
     "task9_pending": 174,
     "task9_reviewed": 2,
-    "task2b_unknown": 31,
+    "task9_unknown": 31,
     "task2b_fixed": 47,
-    "task2b_pending": 8,
-    "task2b_idle": 121
+    "task2b_idle": 120,
+    "task2b_pending": 9,
+    "task2b_unknown": 31
   },
   "pipeline": {
     "pipeline_stage_counts": {
-      "unknown": 31,
-      "task6_pending": 166,
-      "task2b_pending": 8,
-      "task9_pending": 2
+      "task2b_pending": 9,
+      "task6_pending": 165,
+      "task9_pending": 2,
+      "unknown": 31
     },
     "task6_state_counts": {
-      "unknown": 31,
+      "pending": 118,
+      "reviewed": 11,
       "revisiting": 47,
-      "reviewed": 10,
-      "pending": 119
+      "unknown": 31
     },
     "task9_state_counts": {
-      "unknown": 31,
       "pending": 174,
-      "reviewed": 2
+      "reviewed": 2,
+      "unknown": 31
     },
     "task2b_state_counts": {
-      "unknown": 31,
       "fixed": 47,
-      "pending": 8,
-      "idle": 121
+      "idle": 120,
+      "pending": 9,
+      "unknown": 31
     }
   },
   "issues": {
@@ -1870,11 +1870,14 @@
       "title": "网络性能深入：连接池、TLS 与传输优化",
       "path": "src/part2-performance/ch12-apk-network/03-network-performance-deep.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "pending",
+      "pipeline_stage": "task2b_pending",
+      "task6_state": "reviewed",
       "task9_state": "pending",
-      "task2b_state": "idle",
-      "section": "12.3"
+      "task2b_state": "pending",
+      "section": "12.3",
+      "reviewed_date": "2026-04-13",
+      "reviewed_by": "openclaw-task6",
+      "task6_result": "needs-rework"
     },
     "src/part2-performance/ch12-apk-network/04-network-security-tls-performance.md": {
       "chapter": "12.4",
