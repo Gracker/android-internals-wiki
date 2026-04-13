@@ -1816,3 +1816,35 @@ AsyncLayoutInflater 一节缺少 AndroidX 当前实现的关键边界，尤其�
 ### 关联章节
 1.1、1.11、8.2、8.3、13.5
 
+## [2026-04-13] 8.7 Baseline Profiles 与编译优化实践 - Baseline Profile 安装来源与编译触发矩阵
+
+### 盲区描述
+正文把 Baseline Profile 的消费流程写成单一路径，缺少不同安装来源的差异：Android Studio / Gradle 本地安装、Google Play 分发、其他 installer + Jetpack ProfileInstaller、后台 bg-dexopt 的触发点都不一样。缺这张矩阵，读者很难判断为什么同一个 APK 会出现 `install-dm`、`bg-dexopt`、`cmdline` 三种 reason。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 整理 Play、Android Studio / Gradle、adb / 第三方 installer 三类安装来源的编译触发差异
+- 用 `ProfileVerifier`、`adb shell cmd package compile -r bg-dexopt`、`adb shell dumpsys package dexopt` 建一套可复现验证手册
+- 补 Android 版本与 AGP 版本对自动编译行为的影响矩阵
+
+### 关联章节
+1.7、1.9、8.3
+
+## [2026-04-13] 8.7 Baseline Profiles 与编译优化实践 - Cloud Compilation / SDM 官方证据链
+
+### 盲区描述
+正文把 Cloud Compilation / Secure Dex Metadata 的若干关键判断写成了既成事实，但当前主证据仍偏媒体报道与二手整理。对“设备端是否完全跳过本地 dex2oat”“SDM 与 APK 同签名”“哪些渠道会下发 SDM”这些问题，本书还缺可回溯的官方文档或 AOSP 锚点。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 搜集 Android 官方文档、Android Developers Blog、AOSP / Play 分发侧正式材料
+- 分清“Baseline Profile”“Cloud Profiles”“Cloud Compilation / SDM”三个概念各自解决的问题
+- 明确 Google Play 分发与 sideload / 国内应用商店的行为边界
+
+### 关联章节
+1.7、1.9、8.7
+

@@ -7030,5 +7030,82 @@
     "status": "pending",
     "original_review_log": "logs/review/2026-04-13-15-review.md",
     "file": "src/part2-performance/ch08-responsiveness/08-system-triggered-profiling.md"
+  },
+  {
+    "section": "8.7",
+    "section_title": "Baseline Profiles 与编译优化实践",
+    "priority": 95,
+    "reason": "[Deep Tech Review] Android 7/9 编译时间线、AAB/产物路径、Macrobenchmark API/adb 命令、AutoFDO 采样基础、profileable 版本口径与 Cloud Compilation 证据链都存在高风险误导",
+    "material_paths": [
+      "intake/research-gaps.md",
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "版本差异",
+        "location": "L50-L52 ART 编译演进",
+        "detail": "把 Profile-Guided 编译起点写成 Android 9，与全书 1.7 节已经建立的“Android 7 引入 JIT + profile + 后台 dex2oat”时间线冲突。Cloud Profiles 可以放到 Android 9，但 profile-guided AOT 不能。",
+        "suggestion": "拆成两条时间线：Android 7 引入 profile-guided 编译，Android 9 再补 Google Play Cloud Profiles。"
+      },
+      {
+        "type": "源码错误",
+        "location": "L96 / L344 Baseline Profile 打包路径",
+        "detail": "AAB 中 baseline.prof 被写成“对应 dex 分片内 / dex-metadata 目录”。官方调试文档给出的检查路径是 `/BUNDLE-METADATA/com.android.tools.build.profiles/baseline.prof`，APK 才是 `/assets/dexopt/baseline.prof`。",
+        "suggestion": "统一按官方打包路径改写 AAB 与 APK 的检查口径，并把“Play 分发后进入 APK assets”与“构建产物在 AAB 中的位置”分开写。"
+      },
+      {
+        "type": "源码错误",
+        "location": "L104-L109 安装产物存放位置",
+        "detail": "把 `.odex` / `.vdex` / `.art` 写成落在 `/data/misc/profiles/`，混淆了 profile 数据目录与应用 oat 产物目录。官方 `dumpsys package dexopt` 示例显示编译后的 `base.odex` 位于 `/data/app/.../oat/arm64/`。",
+        "suggestion": "把 `/data/misc/profiles` 改回 profile 数据目录，把应用 oat 产物目录与 `dumpsys package dexopt` 观测路径写清楚。"
+      },
+      {
+        "type": "源码错误",
+        "location": "L117-L123 / L285-L287 adb 命令",
+        "detail": "当前 `cmd package compile --dump`、`--set-compilation-state -m verify` 与官方 Baseline Profiles 调试文档不匹配。官方给出的强制编译路径是 `adb shell cmd package compile -r bg-dexopt PACKAGE_NAME`，状态检查用 `adb shell dumpsys package dexopt | grep -A 2 PACKAGE_NAME`。",
+        "suggestion": "把命令示例替换成官方调试文档的 compile / dumpsys 路径，并明确这些命令依赖设备状态与安装来源。"
+      },
+      {
+        "type": "源码错误",
+        "location": "L193-L219 生成示例与产物路径",
+        "detail": "示例把 startup 标记参数写成 `includeInStartupFilter`，官方文档是 `includeInStartupProfile`；生成结果路径也写成 `src/main/generated/baseline-prof.txt`，官方是 `src/<variant>/generated/baselineProfiles/baseline-prof.txt`。",
+        "suggestion": "按最新官方文档改示例参数名与输出路径；如果要保留多 variant 说明，顺手补 `generate<Variant>BaselineProfile` 任务名。"
+      },
+      {
+        "type": "源码错误",
+        "location": "L258-L260 AutoFDO 对比段",
+        "detail": "把 Android/ARM 场景下的 AutoFDO 采样基础写成 CPU 的 LBR，与 1.12 节已经校验过的 ETM / Coresight 路径冲突。LBR 是 x86 术语，不能当 Android 主路径。",
+        "suggestion": "把这段改成“Android ARM64 侧通常依赖 ETM / Coresight / simpleperf branch-list”，如果只想给泛化概念，就写“硬件分支追踪 / 采样信息”不要点 LBR。"
+      },
+      {
+        "type": "版本差异",
+        "location": "L379-L390 profileable",
+        "detail": "把 `<profileable>` 写成 Android 13 引入。官方 manifest 文档显示元素本身引入于 API 29，`android:shell` 属性是在 API 30 增加。",
+        "suggestion": "把版本边界拆开写：API 29 引入 `<profileable>`，API 30 增加 `android:shell`。"
+      },
+      {
+        "type": "原理断裂",
+        "location": "L102-L128 编译消费流程",
+        "detail": "正文把所有安装来源折叠成单一路径，漏掉 Android Studio / Gradle、Google Play、其他 installer + ProfileInstaller、bg-dexopt 的差异，读者会把 install-time compile、queued compile、background compile 混成同一件事。",
+        "suggestion": "补一张“安装来源 × 编译触发 × 观测命令”的矩阵，至少拆出 Play、Studio/Gradle、其他 installer 三条路径。"
+      },
+      {
+        "type": "知识盲区",
+        "location": "L146-L171 Cloud Compilation / SDM",
+        "detail": "“与 APK 同签名”“设备端无需本地编译”这些关键判断目前主要沿用二手材料，本书 1.9 节已经把这块标成证据链不足。这里直接写成确定结论，技术风险仍然高。",
+        "suggestion": "补 Android 官方文档、AOSP 或正式发布材料；拿不到一手来源前，把关键句降级成 `[待验证]`，并明确它是 Google Play 分发侧能力。"
+      },
+      {
+        "type": "数据缺失",
+        "location": "L308-L326 Perfetto 验证",
+        "detail": "`app_speed_index`、`JIT compiling`、`dex2oat` 被写成固定验证指标，但正文没有给出当前 Perfetto schema / metric 依据。即使 `verify` / `speed-profile` 状态能查，主验证入口也更接近 `dumpsys package dexopt` + Macrobenchmark，而不是硬编码一张 SQL 表。",
+        "suggestion": "把验证段重写成“编译状态验证”和“启动收益验证”两部分：前者用 `ProfileVerifier` / `dumpsys package dexopt`，后者用 Macrobenchmark 的 TTID / TTFD 或明确版本前提的 trace 查询。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-13T15:20:00+08:00",
+    "status": "pending",
+    "original_review_log": "logs/review/2026-04-13-14-review.md",
+    "deep_review_log": "logs/deep-review/2026-04-13-15-deep-review.md"
   }
 ]
