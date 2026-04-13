@@ -1,40 +1,40 @@
 {
-  "generated_at": "2026-04-13T11:41:00+08:00",
+  "generated_at": "2026-04-13T12:09:00+08:00",
   "state_machine_version": "v2",
   "total_sections": 207,
   "metrics": {
     "total": 207,
-    "last_updated": "2026-04-13T11:41:00+08:00",
+    "last_updated": "2026-04-13T12:09:00+08:00",
     "ready-for-review": 173,
     "unknown": 34,
     "pipeline_unknown": 31,
-    "pipeline_task6_pending": 165,
-    "pipeline_task2b_pending": 10,
+    "pipeline_task6_pending": 164,
+    "pipeline_task2b_pending": 11,
     "pipeline_task9_pending": 1,
     "task6_unknown": 31,
     "task6_revisiting": 49,
-    "task6_reviewed": 11,
-    "task6_pending": 116,
+    "task6_reviewed": 12,
+    "task6_pending": 115,
     "task9_unknown": 31,
     "task9_pending": 173,
     "task9_reviewed": 3,
     "task2b_unknown": 31,
     "task2b_fixed": 49,
-    "task2b_pending": 10,
-    "task2b_idle": 117
+    "task2b_pending": 11,
+    "task2b_idle": 116
   },
   "pipeline": {
     "pipeline_stage_counts": {
       "unknown": 31,
-      "task6_pending": 165,
-      "task2b_pending": 10,
+      "task6_pending": 164,
+      "task2b_pending": 11,
       "task9_pending": 1
     },
     "task6_state_counts": {
       "unknown": 31,
       "revisiting": 49,
-      "reviewed": 11,
-      "pending": 116
+      "reviewed": 12,
+      "pending": 115
     },
     "task9_state_counts": {
       "unknown": 31,
@@ -44,8 +44,8 @@
     "task2b_state_counts": {
       "unknown": 31,
       "fixed": 49,
-      "pending": 10,
-      "idle": 117
+      "pending": 11,
+      "idle": 116
     }
   },
   "issues": {
@@ -1402,13 +1402,17 @@
     },
     "src/part2-performance/ch07-smoothness/13-systemui-performance.md": {
       "chapter": "7.13",
+      "section": "7.13",
       "title": "SystemUI 性能分析",
       "path": "src/part2-performance/ch07-smoothness/13-systemui-performance.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "pending",
+      "pipeline_stage": "task2b_pending",
+      "task6_state": "reviewed",
       "task9_state": "pending",
-      "task2b_state": "idle"
+      "task2b_state": "pending",
+      "reviewed_date": "2026-04-13",
+      "reviewed_by": "openclaw-task6",
+      "task6_result": "needs-rework"
     },
     "src/part2-performance/ch07-smoothness/14-gaps-dynamic-analysis.md": {
       "chapter": "7.14",
