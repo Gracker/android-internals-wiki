@@ -5,7 +5,7 @@ section: "4.1"
 status: ready-for-review
 drafted_date: "2026-03-31"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
-last_verified: "2026-04-06"
+last_verified: "2026-04-14"
 last_verified_against: "AOSP android-16.0.0_r1"
 reviewed_date: "2026-04-14"
 reviewed_by: "openclaw-task6"
@@ -20,19 +20,30 @@ sources:
     path: "https://developer.android.com/topic/performance/memory-management"
   - type: official
     path: "https://source.android.com/docs/core/perf/lmkd"
+  - type: official
+    path: "https://source.android.com/docs/core/perf/cgroups"
+  - type: aosp
+    path: "frameworks/base/services/core/java/com/android/server/am/ProcessList.java"
+  - type: aosp
+    path: "frameworks/base/core/java/android/content/ComponentCallbacks2.java"
+  - type: aosp
+    path: "system/core/libprocessgroup/profiles/task_profiles.json"
+  - type: aosp
+    path: "system/memory/lmkd/lmkd.cpp"
+  - type: official
+    path: "https://docs.kernel.org/admin-guide/blockdev/zram.html"
   - type: blog
     path: "https://androidperformance.com/"
-  - type: aosp
-    path: "frameworks/base/core/java/android/app/ActivityManager.java"
   - type: blog
     path: "https://juejin.cn/post/7530909474103296039"
 tags: ['memory', 'PSS', 'RSS', 'dumpsys', 'meminfo', 'procfs', 'ZRAM', 'cgroup']
 related_chapters: ["4.2", "4.3", "4.4", "4.5", "10.1"]
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
 task9_result: needs-rework
-task2b_state: pending
+task2b_state: fixed
+task2b_result: fixed
 ---
 
 # Android 内存模型全景
@@ -90,13 +101,13 @@ Linux 内核是内存管理的核心执行者。它通过页表把虚拟地址�
 
 Android 在 Linux 内核的基础上做了几件特别的事情：
 
-**进程优先级与内存回收绑定。** Android 的 `lmkd`（Low Memory Killer Daemon）会根据进程的 `oom_adj_score` 决定在内存不足时先杀谁。前台 App 的分数最低（最不容易被杀），后台缓存的空进程分数最高。这个机制我们在 [4.4 Low Memory Killer](04-lmk.md) 中会详细展开。
+**进程优先级与内存回收绑定。** Framework 在 `ProcessList.java` 里维护 `adj` / procstate 这一组进程重要性分层，最终会映射到 `/proc/<pid>/oom_score_adj`。`lmkd` 处理内存回收时，先看系统是否进入压力区间，再结合 `oom_score_adj` 选择更容易被杀的进程。前台进程的 `oom_score_adj` 更低，缓存进程更高。这个机制我们在 [4.4 Low Memory Killer](04-lmk.md) 中会详细展开。
 
-**内存压力通知。** 当内核检测到内存压力时，`lmkd` 会通过 `ActivityManager` 向 App 发送 `onTrimMemory()` 回调，给 App 一个主动释放内存的机会。这是 App 层面能做的最重要的内存优化手段之一。
+**App 侧 trim 回调和系统侧杀进程是两条路径。** `onTrimMemory()` 属于 `ComponentCallbacks2` 回调，由 framework 在合适的生命周期和内存压力点通知 `Application`、`Activity`、`Service` 等组件，让 App 主动释放缓存。`lmkd` 不会直接向 App 调 `onTrimMemory()`；当回收压力继续升高时，它会按 kill 策略直接结束目标进程。API 34 起，`TRIM_MEMORY_RUNNING_MODERATE`、`TRIM_MEMORY_RUNNING_LOW`、`TRIM_MEMORY_RUNNING_CRITICAL`、`TRIM_MEMORY_MODERATE`、`TRIM_MEMORY_COMPLETE` 这些等级已经不再投递给 App。
 
-**cgroup 约束。** Android 10 引入了 cgroup 抽象层（支持 cgroup v1 和 v2），可以通过 task profile 对进程或线程施加内存限制。比如 `memory.high` 设置软限制（超过后触发回收压力），`memory.max` 设置硬限制（超过后触发 OOM）。
+**cgroup 约束。** Android 10 起把 cgroup 配置收口到 `cgroups.json` / `task_profiles.json` 这层抽象。具体 memory controller 字段要分 v1 / v2 看：`MemLimit` 映射 v1 `memory.limit_in_bytes`、v2 `memory.max`；`MemSoftLimit` 映射 v1 `memory.soft_limit_in_bytes`、v2 `memory.low`。`memory.pressure_level` 仍是 v1 接口，不能和 `memory.max` / `memory.low` 当成同一条 v2 路径。
 
-[已验证: 官方文档, source.android.com/docs/core/perf/lmkd]
+[已验证: source.android.com/docs/core/perf/lmkd；frameworks/base/services/core/java/com/android/server/am/ProcessList.java；frameworks/base/core/java/android/content/ComponentCallbacks2.java；system/core/libprocessgroup/profiles/task_profiles.json]
 
 ### 用户空间：进程看到的世界
 
@@ -140,9 +151,11 @@ RSS 比 VSS 有用得多，因为它反映的是"实实在在占用了多少物�
 
 PSS 的计算方式和 RSS 不同：对于共享页面，PSS 会按共享进程数均摊。比如一个 4KB 的页面被 4 个进程共享，每个进程的 PSS 只增加 1KB。
 
-PSS 是 Android 系统用来评估进程内存"重量"的**首选指标**。`dumpsys meminfo` 默认显示的就是 PSS，`lmkd` 在决策时看的也是 PSS。把所有进程的 PSS 加起来，就能得到系统实际使用的物理内存总量（误差很小）。
+PSS 是 `dumpsys meminfo`、`/proc/<pid>/smaps` 汇总和人工分析最常用的口径，因为共享页会按比例分摊。把所有进程的 PSS 加起来，可以比较接近系统实际占用的物理内存总量。
 
-**在 Perfetto 的内存面板中，看到的内存使用量也是基于 PSS 的。** 当发现一个进程的 PSS 在持续增长，那就是内存泄漏的信号。
+`lmkd` 的判断口径不是逐进程看 PSS 再排序。现代 userspace `lmkd` 先看 PSI、vmpressure、file cache、thrashing 等压力信号，再按 `oom_score_adj` 选择候选；如果启用了 `kill_heaviest_task`，它还会读取 `/proc/<pid>/statm` 的 RSS 来挑更重的进程。PSS 更适合人做分析，不是 `lmkd` 的主排序字段。
+
+**在 Perfetto 中看内存趋势时，也要先确认数据源。** 如果抓的是 `android.process_meminfo` 或 `dumpsys meminfo` 等价口径，PSS 很适合判断共享页分摊后的变化；如果抓的是 RSS / anon / file cache 计数器，就要按对应口径解释，不能把所有曲线都当成 PSS。
 
 ### USS（Unique Set Size）——进程独有的物理内存
 
@@ -161,7 +174,7 @@ USS 的实用价值在于：**如果一个进程被杀掉，USS 就是被释放�
 | 单个进程内追踪内存分配趋势 | RSS | 变化更明显，计算开销更小 |
 | 大致了解进程地址空间规模 | VSS | 仅作参考，实际用途有限 |
 
-[已验证: 官方文档, developer.android.com/topic/performance/memory-management]
+[已验证: developer.android.com/topic/performance/memory-management；system/memory/lmkd/lmkd.cpp]
 [已验证: 官方文档, source.android.com/devices/tech/debug/mm]
 
 ## 进程内存组成详解
@@ -437,13 +450,13 @@ cgroup（Control Group）是 Linux 内核提供的资源隔离机制。Android �
 
 在内存管理方面，cgroup 的核心作用是：
 
-**按进程组施加内存限制。** Android 定义了一系列 task profile（如 `ProcessProfileHigh`、`ProcessProfileLow`），不同优先级的进程对应不同的内存限制策略。当某个 cgroup 的内存使用超过 `memory.high`（软限制）时，内核会对该组进程施加回收压力；超过 `memory.max`（硬限制）时，触发 OOM killer。
+**按进程组施加内存约束。** Android 10 之后，framework 通过 `cgroups.json` / `task_profiles.json` 给进程或线程套 profile。内存字段要分 controller 版本看：v1 的硬限制是 `memory.limit_in_bytes`，v2 对应 `memory.max`；v1 的软限制是 `memory.soft_limit_in_bytes`，v2 对应 `memory.low`。`memory.high` 是 cgroup v2 的回收节流阈值，但不是 Android 10+ 所有设备都统一使用的字段。
 
-**配合 lmkd 实现分级回收。** `lmkd` 通过监听 cgroup 的内存压力事件（`memory.pressure_level`）来判断系统内存状态，再根据进程的 `oom_adj_score` 决定先回收谁。cgroup v2 还提供了 `memory.swap.max` 来控制每个进程组可以使用多少 ZRAM 空间，实现更精细的 Swap 管理。
+**配合 lmkd 观察压力。** `lmkd` 的压力输入来自 PSI 或 vmpressure。`memory.pressure_level` 是 cgroup v1 memory controller 的接口，通常和 `cgroup.event_control` 配合使用；在 v2 场景，更常见的是 `memory.events` 一类统计接口和 PSI 监控。`lmkd` 拿到压力信号后，再结合 `oom_score_adj` 和 heaviest-task 策略决定回收对象。
 
-**ActivityManager 与 cgroup 的协作。** 当 App 进入后台时，`ActivityManager` 会调整其 cgroup 归属和 oom_adj 值，使其内存更容易被回收。同时，对于后台进程，系统可以标记其内存页为"更容易被换出到 ZRAM"，减少前台进程的内存压力。
+**ActivityManager 与 cgroup 的协作。** App 前后台切换时，framework 会通过 libprocessgroup / task profile 调整进程所属 cgroup、CPU/内存属性和 `oom_score_adj`。这里改变的是系统回收优先级与资源保护程度，不是给某个 App 单独发一个“更容易换出到 ZRAM”的开关。
 
-[已验证: 官方文档, source.android.com/docs/core/perf/cgroups]
+[已验证: source.android.com/docs/core/perf/cgroups；system/core/libprocessgroup/profiles/task_profiles.json]
 
 ## ZRAM：在内存中做 Swap
 
@@ -451,7 +464,7 @@ Android 不使用传统磁盘 Swap，原因很简单：闪存的写入寿命有�
 
 ### ZRAM 的工作方式
 
-当系统内存紧张时，内核的 `kswapd` 线程被唤醒，它会把进程的匿名页面（Anonymous Pages，比如 Heap 中分配但尚未写入文件的数据）压缩后存入 ZRAM。当这些页面再次被访问时，`kswapd` 会解压并恢复到正常内存中。
+当系统内存紧张时，后台回收路径会把匿名页面换出到 swap 设备；如果设备启用了 ZRAM，这些页会先被压缩后写进 ZRAM。`kswapd` 负责后台回收和换出，但页被再次访问时，解压和换入发生在 page fault 触发的 swapin 路径，不是 `kswapd` 主动把页搬回内存。
 
 ZRAM 的核心参数是压缩磁盘的最大大小（由 OEM 配置）。Qualcomm 的调优指南建议将 ZRAM 大小设置为物理内存的 75%。[待验证: Qualcomm 调优指南 ZRAM 75% 建议，未找到一手来源]在实际设备上，ZRAM 的有效压缩比通常在 2x-4x 之间——2GB 的 ZRAM 空间可以容纳约 4-8GB 的原始数据。
 
@@ -469,8 +482,8 @@ ZRAM:  123,456K physical used for 456,789K in swap (500,000K total swap)
 
 压缩和解压需要 CPU 周期。在低端设备上，频繁的 ZRAM 换入换出可能导致 UI 卡顿——因为前台进程在访问被压缩的页面时需要等待解压完成。这在 Perfetto 中表现为意外的 CPU 占用和短暂的非预期延迟。
 
-[已验证: 官方文档, source.android.com/docs/core/perf/lmkd]
-[已验证: Linux kernel documentation, kernel.org/doc/Documentation/blockdev/zram]
+[已验证: source.android.com/docs/core/perf/lmkd]
+[已验证: docs.kernel.org/admin-guide/blockdev/zram.html]
 
 ## 在 Perfetto 中的表现
 

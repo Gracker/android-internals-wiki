@@ -1,51 +1,51 @@
 {
-  "generated_at": "2026-04-14T06:20:00+08:00",
+  "generated_at": "2026-04-14T06:44:00+08:00",
   "state_machine_version": "v2",
   "total_sections": 207,
   "metrics": {
-    "last_updated": "2026-04-14T06:20:00+08:00",
+    "last_updated": "2026-04-14T06:44:00+08:00",
     "total": 207,
     "unknown": 34,
     "ready-for-review": 173,
-    "pipeline_task2b_pending": 15,
-    "pipeline_task6_pending": 160,
+    "pipeline_task2b_pending": 14,
+    "pipeline_task6_pending": 161,
     "pipeline_task9_pending": 1,
     "pipeline_unknown": 31,
-    "task2b_fixed": 63,
+    "task2b_fixed": 64,
     "task2b_idle": 98,
-    "task2b_pending": 15,
+    "task2b_pending": 14,
     "task2b_unknown": 31,
     "task6_pending": 97,
-    "task6_reviewed": 16,
-    "task6_revisiting": 63,
+    "task6_reviewed": 15,
+    "task6_revisiting": 64,
     "task6_unknown": 31,
-    "task9_pending": 168,
-    "task9_reviewed": 8,
+    "task9_pending": 169,
+    "task9_reviewed": 7,
     "task9_unknown": 31
   },
   "pipeline": {
     "pipeline_stage_counts": {
       "unknown": 31,
-      "task6_pending": 160,
-      "task2b_pending": 15,
+      "task6_pending": 161,
+      "task2b_pending": 14,
       "task9_pending": 1
     },
     "task2b_state_counts": {
       "unknown": 31,
-      "fixed": 63,
+      "fixed": 64,
       "idle": 98,
-      "pending": 15
+      "pending": 14
     },
     "task6_state_counts": {
       "unknown": 31,
-      "revisiting": 63,
+      "revisiting": 64,
       "pending": 97,
-      "reviewed": 16
+      "reviewed": 15
     },
     "task9_state_counts": {
       "unknown": 31,
-      "pending": 168,
-      "reviewed": 8
+      "pending": 169,
+      "reviewed": 7
     }
   },
   "issues": {
@@ -861,15 +861,16 @@
       "title": "Android 内存模型全景",
       "path": "src/part1-fundamentals/ch04-memory/01-memory-overview.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
-      "task6_state": "reviewed",
-      "task9_state": "reviewed",
-      "task2b_state": "pending",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
+      "task9_state": "pending",
+      "task2b_state": "fixed",
       "reviewed_date": "2026-04-14",
       "reviewed_by": "openclaw-task6",
       "section": "4.1",
       "task6_result": "needs-rework",
-      "task9_result": "needs-rework"
+      "task9_result": "needs-rework",
+      "task2b_result": "fixed"
     },
     "src/part1-fundamentals/ch04-memory/02-linux-memory.md": {
       "chapter": "4.2",
