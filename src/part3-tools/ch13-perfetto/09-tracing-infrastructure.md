@@ -24,19 +24,43 @@ sources:
     path: "intake/research-feeds/2026-04-07-19-android17-ebpf-sched-ext-uprobestats-observability.md"
 tags: [tracing, atrace, ftrace, tracepoint, perfetto, kernel, observability]
 related_chapters: ["13.1", "13.2", "13.5", "14.10", "1.5"]
-pipeline_stage: task6_pending
-task6_state: pending
+pipeline_stage: task2b_pending
+task6_state: reviewed
 task9_state: pending
-task2b_state: idle
+task2b_state: pending
+reviewed_by: openclaw-task6
+reviewed_date: '2026-04-13'
+task6_result: needs-rework
 ---
 
 # 13.9 Android Tracing 基础设施：atrace、ftrace 与 Perfetto 数据采集原理
 
-前面几节我们一直在用 Perfetto 做分析：看 CPU 调度、看渲染管线、看 Binder 调用、看内存变化。但我们从未追问一个根本问题——这些数据是怎么被采集出来的？
+当 Perfetto 里某个 Track 突然不出数，或者自定义 tag 没进 Trace 时，只会看 UI 已经不够了。我们得知道这些数据是从哪一层采上来，又是沿着什么路径写进 Trace 文件的。
 
-这个问题并非"知道了也没什么用"。当我们在 Perfetto 中发现某个 Track 的数据突然消失、当自定义的追踪点没有出现在 Trace 中、当需要给团队内部的模块添加性能埋点时，理解底层采集机制就变成了前提条件。对于系统开发和 OEM 团队来说，这更是日常工作中绕不过去的一环。
+这一节拆开 Android Tracing 的整条数据链：Linux 内核的 ftrace 如何提供基础事件，atrace 如何把用户空间 tag 接到这条链上，Perfetto 的 `traced` / `traced_probes` 如何把内核和用户空间数据汇到同一个 Trace 中，以及 App、Framework、Kernel 三层分别怎么扩展自定义追踪点。
 
-这一节我们从最底层讲起：Linux 内核的 ftrace 框架如何工作，Android 的 atrace 如何在 ftrace 之上封装出面向应用的追踪接口，Perfetto 的 traced 守护进程如何把内核和用户空间的数据汇总到同一个 Trace 文件中，以及我们如何在不同层级自定义追踪点。
+<!-- outline-start -->
+## 本节要点大纲
+
+### 锚点（必须覆盖）
+
+- 🔹 ftrace 的三种模式，以及 tracefs 如何暴露控制接口
+- 🔹 atrace category、`trace_marker` 与用户空间 trace tag 的写入路径
+- 🔹 `traced` / `traced_probes` 的职责分工，以及 ftrace 数据进入 Perfetto 的路径
+- 🔹 App、Framework、Kernel 三层自定义 tracing 的入口与适用场景
+- 🔹 tracing 开销、buffer 溢出和生产环境抓取约束
+
+### 扩展（可选深入）
+
+- 🔸 eBPF 与静态 tracepoint 的互补关系
+- 🔸 boot trace 的启用方式与适用场景
+
+### OpenClaw 加工指引
+
+> **锚点**是最低覆盖要求，加工时必须逐条落实并标注验证结果。
+> **扩展**视素材丰富程度选择性深入。
+> 如果从 AOSP 源码或官方文档中发现更精确的数据流细节，可在对应锚点后补充，并标注验证来源。
+<!-- outline-end -->
 
 ## Linux 内核 ftrace 框架
 
@@ -48,7 +72,7 @@ ftrace 提供了三种工作模式，各有适用场景：
 
 **function tracer**——在内核编译时通过 `-mfentry`（x86）或 `-pg`（ARM）GCC 选项，在几乎每个内核函数入口插入一条 `fentry_call` 指令。默认情况下这条指令是 `nop`，开销为零。当启用 function tracer 时，运行时动态将 `nop` 替换为对追踪回调函数的调用。
 
-这意味着 function tracer 可以记录内核中**所有被追踪函数的调用序列**，粒度极细，但开销也最大。在 ARM64 上，function tracer 的典型开销约为 10-15% 的系统性能下降，因此不适合在性能测试中使用，主要用于调试和代码理解。
+function tracer 因而可以记录内核中**所有被追踪函数的调用序列**，粒度极细，但开销也最大。在 ARM64 上，function tracer 的典型开销约为 10-15% 的系统性能下降，因此不适合在性能测试中使用，主要用于调试和代码理解。
 
 **function_graph tracer**——在 function tracer 的基础上进一步记录函数的调用和返回，可以输出类似代码缩进的调用图。开销比 function tracer 还要高一些，因为它需要在函数入口和出口都插入钩子。
 
@@ -149,6 +173,8 @@ ftrace tracepoints ──┐
 用户空间 tag ─────────┘ (通过 trace_marker)
 ```
 
+[图：ftrace tracepoint、trace_marker、traced_probes、traced service 到 Trace 文件的数据流示意图]
+
 [已验证: AOSP android-17-beta3, external/perfetto/src/traced/]
 
 ### traced 如何采集 ftrace 数据
@@ -184,7 +210,9 @@ DataSource.register(new DataSource.InstanceDescriptor<MyDataSource>("my.custom.d
 
 ## 自定义 Tracing 实战
 
-理解了底层机制后，我们来看看在不同层级如何添加自定义追踪点。
+理解了这条数据链后，就可以按层次添加自定义追踪点。
+
+[图：App、Framework、Kernel 三层 tracing 入口与数据汇合位置示意图]
 
 ### App 层：android.os.Trace 和 androidx.tracing
 

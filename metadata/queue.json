@@ -1880,20 +1880,35 @@
   {
     "section": "13.9",
     "section_title": "Android Tracing 基础设施：atrace、ftrace 与 Perfetto 数据采集原理",
-    "priority": 80,
-    "reason": "知识缺口挖掘：全书使用 Perfetto 分析性能但从未解释追踪数据的底层采集机制。atrace/ftrace/tracepoint 是系统开发者和 OEM 的日常基础设施，缺少此节意味着读者只能\"会用\"而不能\"理解和扩展\"",
+    "priority": 90,
+    "reason": "[review回炉] 用户空间 Data Source / App tracing API 表述存在技术风险，traced_probes 的 ftrace 读取证据链未补齐",
     "material_paths": [
-      "https://source.android.com/docs/core/debug/atrace",
-      "https://source.android.com/docs/core/debug/trace",
-      "intake/research-feeds/2026-04-07-19-android17-ebpf-sched-ext-uprobestats-observability.md"
+      "intake/suggestions.md（含 review 意见）"
     ],
-    "added_by": "task2a-knowledge-gap",
-    "added_at": "2026-04-08T20:15:40.334326",
-    "gap_score": "16/20",
-    "gap_source": "AOSP结构+章节深挖",
-    "status": "completed",
-    "completed_at": "2026-04-08T23:10:32+08:00",
-    "completed_by": "openclaw-task2a"
+    "review_issues": [
+      {
+        "type": "需确认",
+        "location": "用户空间 Data Source 注册 / traced 架构",
+        "detail": "`android.os.TracingManager` 和 Java `DataSource.register(...)` 示例可能没有对齐 Android 公开 API，读者照着做存在跑不通风险。",
+        "suggestion": "交给 Task 9 核对 Perfetto SDK 与 Android 公开 API，再由 Task 2B 改成可运行或可验证的示例。"
+      },
+      {
+        "type": "需确认",
+        "location": "App 层 tracing 段",
+        "detail": "`Trace.beginSection()` 的展示位置写得过满，`androidx.tracing` 的 `LazyThreadSafetyMode` 表述疑似混入无关概念。",
+        "suggestion": "交给 Task 9 核对 `androidx.tracing` 公开 API 与 Perfetto 展示行为，再由 Task 2B 收紧表述。"
+      },
+      {
+        "type": "需补充素材",
+        "location": "`traced_probes` 采集 ftrace 数据",
+        "detail": "正文把 `trace_pipe_raw` 读数路径写成核心机制，但没有补上精确源码路径和验证链。",
+        "suggestion": "交给 Task 9 定位 reader 的源码路径和配置链，再由 Task 2B 补齐文件/函数与验证标注。"
+      }
+    ],
+    "added_by": "task6-review",
+    "added_at": "2026-04-13T21:10:00+08:00",
+    "status": "pending",
+    "original_review_log": "logs/review/2026-04-13-21-review.md"
   },
   {
     "section": "7.13",
