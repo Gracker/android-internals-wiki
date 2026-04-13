@@ -1,10 +1,10 @@
 {
-  "generated_at": "2026-04-13T11:19:38+08:00",
+  "generated_at": "2026-04-13T11:41:00+08:00",
   "state_machine_version": "v2",
   "total_sections": 207,
   "metrics": {
     "total": 207,
-    "last_updated": "2026-04-13T11:21:00+08:00",
+    "last_updated": "2026-04-13T11:41:00+08:00",
     "ready-for-review": 173,
     "unknown": 34,
     "pipeline_unknown": 31,
@@ -16,8 +16,8 @@
     "task6_reviewed": 11,
     "task6_pending": 116,
     "task9_unknown": 31,
-    "task9_pending": 174,
-    "task9_reviewed": 2,
+    "task9_pending": 173,
+    "task9_reviewed": 3,
     "task2b_unknown": 31,
     "task2b_fixed": 49,
     "task2b_pending": 10,
@@ -38,8 +38,8 @@
     },
     "task9_state_counts": {
       "unknown": 31,
-      "pending": 174,
-      "reviewed": 2
+      "pending": 173,
+      "reviewed": 3
     },
     "task2b_state_counts": {
       "unknown": 31,
@@ -1233,12 +1233,13 @@
       "status": "ready-for-review",
       "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
-      "task9_state": "pending",
+      "task9_state": "reviewed",
       "task2b_state": "pending",
       "reviewed_date": "2026-04-13",
       "reviewed_by": "openclaw-task6",
       "task6_result": "needs-rework",
-      "section": "7.1"
+      "section": "7.1",
+      "task9_result": "needs-rework"
     },
     "src/part2-performance/ch07-smoothness/02-jank-causes.md": {
       "chapter": "7.2",
