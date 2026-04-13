@@ -2917,3 +2917,16 @@
 - **问题**：查询只按 thread name 取 `utid`，在多进程 Trace 中可能匹配到错误线程，示例稳定性不足。
 - **建议**：补 `process` / `upid` / `tid` 过滤条件，或明确这是需要按目标进程改写的示例。
 - **review 日志**：logs/review/2026-04-14-06-review.md
+
+
+## [Task9 Deep Review] 5.2 EAS 能量感知调度 · 2026-04-14
+- **类型**：数据缺失
+- **位置**：L68-L70 为什么要了解 EAS
+- **问题**："最优安排高出 20%~40%" 直接给了量化结论，但没有设备型号、负载类型、功耗计量方法和原始来源。
+- **建议**：补官方论文、厂商 whitepaper 或自测条件；补不到就改成定性描述。
+
+## [Task9 Deep Review] 5.2 EAS 能量感知调度 · 2026-04-14
+- **类型**：工具示例 / 数据支撑
+- **位置**：L322-L352 Perfetto SQL 与 overutilized 判读
+- **问题**：SQL 只按线程名取 `utid`，第二个查询还使用与当前 Perfetto stdlib 不一致的 `cpu_frequency` / `freq_value` 口径；“小核几乎没有 idle 就说明 overutilized”也只是启发式，不能直接当结论。
+- **建议**：改成按 `process` / `upid` / `tid` 过滤的可运行查询，频率统计改用 `cpu_frequency_counters(freq, cpu, dur)` 或明确 raw schema 依赖，同时补一个“如何近似验证 overutilized”的边界说明。

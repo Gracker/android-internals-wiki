@@ -8183,34 +8183,49 @@
   {
     "section": "5.2",
     "section_title": "EAS 能量感知调度",
-    "priority": 90,
-    "reason": "[review回炉] 量化结论缺证据，版本时间线与 Perfetto SQL 示例存在核对风险",
+    "priority": 95,
+    "reason": "[Deep Tech Review] EM 数据模型写错，WALT/uclamp/SchedTune 时间线混乱，Android 用户态调度提示控制路径缺失，Perfetto 观测示例需校正",
     "material_paths": [
-      "intake/suggestions.md"
+      "intake/suggestions.md",
+      "intake/research-gaps.md"
     ],
     "review_issues": [
       {
+        "type": "源码错误",
+        "location": "L136-L140 能量模型框架",
+        "detail": "把 EM 写成同时维护 OPP 活跃功耗和不同 C-State 空闲功耗。Linux EM 文档只定义 performance level 的 power cost table；idle state 应由 CPUIdle/idle governor 解释。",
+        "suggestion": "拆开 EM 与 CPUIdle：EM 负责 active performance states，idle state 另放到 CPUIdle/C-state 小节解释。"
+      },
+      {
+        "type": "版本差异",
+        "location": "L203-L209、L270-L282、L374-L408 WALT/uclamp/SchedTune 时间线",
+        "detail": "“Android 12 / Linux 5.10 开始统一回归 PELT”“Android 从 10 开始广泛使用 uclamp”“Android 14+ 厂商定制收敛”把 Linux mainline、Android common kernel 和厂商实现混成一条线。AOSP task_profiles 也显示 Android 10 仍是 schedtune + cpu.util.min/max，Android 11 才切到 cpu.uclamp.min/max 命名。",
+        "suggestion": "按 mainline 内核、Android common/AOSP、厂商设备三条时间线重写，并明确 Android 10/11/12 的 task profile 与 cgroup 接口差异。"
+      },
+      {
+        "type": "原理断裂",
+        "location": "L268-L280 Android 中的 uclamp 使用",
+        "detail": "正文直接从“任务重要性”跳到 cgroup 结果，缺了 Android Framework/AMS -> task profiles -> libprocessgroup -> cgroup 文件 -> scheduler clamp 这一层。",
+        "suggestion": "补控制路径和可观察入口，至少说明 top-app / foreground / background 怎样落到 task profile、cgroup 文件和 `/proc/<tid>/sched`。"
+      },
+      {
         "type": "需补充素材",
-        "location": "为什么要了解 EAS（约 L66）",
-        "detail": "“系统总功耗往往会比最优安排高出 20%~40%”给了量化结论，但正文没有实验条件、设备范围或官方出处。",
-        "suggestion": "补原始实验条件或权威来源；如果补不齐，改成定性描述。"
+        "location": "L68-L70 为什么要了解 EAS",
+        "detail": "“系统总功耗往往会比最优安排高出 20%~40%”给了量化结论，但缺实验设备、负载类型、计量方法和原始来源。",
+        "suggestion": "补官方论文、厂商白皮书或自测条件；补不到就降级为定性结论。"
       },
       {
-        "type": "需确认",
-        "location": "WALT / uclamp / SchedTune 时间线与版本演进（约 L205-L207、L266-L273、L372-L404）",
-        "detail": "“Android 12 / Linux 5.10 开始统一回归 PELT”“Android 从 10 开始广泛使用 uclamp”“Linux 5.3 之后逐渐取代 SchedTune”等表述放在同一章里，和 5.1 已记录的时间线口径存在冲突。",
-        "suggestion": "交给 Task 9 统一主线内核版本、Android 设备采用时间和厂商差异，再由 Task 2B 回写统一口径。"
-      },
-      {
-        "type": "需确认",
-        "location": "Perfetto SQL 示例（约 L322-L343）",
-        "detail": "查询只按 thread name 取 `utid`，在多进程 Trace 中可能匹配到错误线程，示例稳定性不足。",
-        "suggestion": "补 `process` / `upid` / `tid` 过滤条件，或明确这是需要按目标进程改写的示例。"
+        "type": "工具示例",
+        "location": "L322-L352 Perfetto 观测",
+        "detail": "SQL 只按线程名取 utid，频率统计又使用与当前 Perfetto stdlib 不一致的 `cpu_frequency` / `freq_value` 口径；“小核几乎没有 idle 就说明 overutilized”也只是启发式。",
+        "suggestion": "给出按 process/upid/tid 过滤的可运行查询，频率统计改用 `cpu_frequency_counters(freq, cpu, dur)` 或明确 raw schema 依赖，并补 overutilized 的验证边界。"
       }
     ],
     "added_by": "task6-review",
     "added_at": "2026-04-14T06:05:00+08:00",
     "status": "pending",
-    "original_review_log": "logs/review/2026-04-14-06-review.md"
+    "original_review_log": "logs/review/2026-04-14-06-review.md",
+    "updated_at": "2026-04-14T06:20:00+08:00",
+    "updated_by": "task9-deep-tech-review"
   }
 ]

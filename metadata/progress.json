@@ -1,9 +1,9 @@
 {
-  "generated_at": "2026-04-14T06:05:00+08:00",
+  "generated_at": "2026-04-14T06:20:00+08:00",
   "state_machine_version": "v2",
   "total_sections": 207,
   "metrics": {
-    "last_updated": "2026-04-14T06:05:00+08:00",
+    "last_updated": "2026-04-14T06:20:00+08:00",
     "total": 207,
     "unknown": 34,
     "ready-for-review": 173,
@@ -19,8 +19,8 @@
     "task6_reviewed": 16,
     "task6_revisiting": 63,
     "task6_unknown": 31,
-    "task9_pending": 169,
-    "task9_reviewed": 7,
+    "task9_pending": 168,
+    "task9_reviewed": 8,
     "task9_unknown": 31
   },
   "pipeline": {
@@ -44,8 +44,8 @@
     },
     "task9_state_counts": {
       "unknown": 31,
-      "pending": 169,
-      "reviewed": 7
+      "pending": 168,
+      "reviewed": 8
     }
   },
   "issues": {
@@ -1004,12 +1004,13 @@
       "status": "ready-for-review",
       "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
-      "task9_state": "pending",
+      "task9_state": "reviewed",
       "task2b_state": "pending",
       "reviewed_date": "2026-04-14",
       "reviewed_by": "openclaw-task6",
       "section": "5.2",
-      "task6_result": "needs-rework"
+      "task6_result": "needs-rework",
+      "task9_result": "needs-rework"
     },
     "src/part1-fundamentals/ch05-cpu-power/03-big-little.md": {
       "chapter": "5.3",

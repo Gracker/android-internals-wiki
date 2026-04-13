@@ -2103,3 +2103,20 @@ Android 10-16 的返回分发模型缺少一张统一矩阵。正文把 Gesture 
 
 ### 关联章节
 5.2（EAS 能量感知调度）、5.3（大小核架构）、1.3（进程模型与生命周期管理）
+
+
+## [2026-04-14] 5.2 EAS 能量感知调度 · 知识盲区
+
+### 盲区描述
+章节把 uclamp / SchedTune 写成“用户空间给调度器一个提示”，但没有展开 Android 是如何把这个提示真正落到内核的：AMS、task profile、libprocessgroup 写哪些 cgroup 文件，top-app / foreground / background 分别落到哪些 `cpu.uclamp.*`、`cpu.util.*` 或 `schedtune.*` 节点。少了这层，我们很难把 Framework 行为、`/proc/<tid>/sched`、cgroup 文件和 Perfetto 现象对应起来。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 梳理 `system/core/libprocessgroup/profiles/task_profiles.json` 在 Android 10/11/12 的差异，拆开 `cpu.util.*`、`cpu.uclamp.*` 和 `schedtune.*`
+- 补 `ActivityManagerService` / task profiles / cgroup 写入之间的调用路径
+- 给出 top-app、foreground、background 三类线程的可观察入口：task profile、cgroup 文件、`/proc/<tid>/sched`、Perfetto 代理信号
+
+### 关联章节
+5.1、5.2、5.4、11.2
