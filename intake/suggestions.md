@@ -2745,3 +2745,28 @@
 - **问题**：`kswapd` 的换入换出表述、Qualcomm “物理内存 75%” 建议，以及 “2x-4x 压缩比” 被写在同一段里，其中机制、经验值和厂商建议没有拆开，且数字仍缺一手证据。
 - **建议**：交 Task 9 先拆开机制描述与经验参数，保留有据可依的部分；Task 2B 再把未证实数字降级、补来源或删除。
 - **review 日志**：logs/review/2026-04-14-00-review.md
+
+## [Task9 Deep Review] 4.1 Android 内存模型全景 — 2026-04-14
+- **类型**：版本差异
+- **位置**：L108、L211、L502 Bitmap 像素存储历史
+- **问题**：把“Android 8.0 之前”一概写成 Java Heap / External 区域，忽略 Android 2.3 及更早版本像素数据在 native memory 的旧历史，版本叙述过粗。
+- **建议**：改成“Android 3.0-7.1 在 Dalvik / ART heap，Android 8.0+ 回到 native heap”；如果不展开旧史，至少把范围收窄到 3.0-7.1。
+
+## [Task9 Deep Review] 4.1 Android 内存模型全景 — 2026-04-14
+- **类型**：数据缺失
+- **位置**：L455-L465 ZRAM 75% 与 2x-4x 压缩比
+- **问题**：Qualcomm 75% 建议已自标 [待验证]，2x-4x 压缩比也没有设备、页类型和压缩算法条件，读者容易误认成通用结论。
+- **建议**：删除无一手来源数字，或改成“取决于页类型和压缩算法，需要以目标设备实测为准”。
+
+## [Task9 Deep Review] 4.1 Android 内存模型全景 — 2026-04-14
+- **类型**：数据缺失
+- **位置**：L480-L490 Perfetto 内存压力观察
+- **问题**：`am_proc_died` / `lmkd kill events` 的观察口径没有写 trace config、事件源和 SQL / track 条件，默认 trace 未必直接可见。
+- **建议**：补一组最小可跑通的抓取配置，或明确回链到 §13.5 / §13.x 的具体抓取方法。
+
+## [Task9 Deep Review] 4.1 Android 内存模型全景 — 2026-04-14
+- **类型**：交叉引用
+- **位置**：L92-L96、L142、L433-L445 与 §4.4 / §1.3
+- **问题**：本节把 lmkd 写成 PSS + trim callback + cgroup v2 soft-limit 模型，但 §4.4 和 §1.3 已拆成 `oom_score_adj` + PSI / vmpressure + v1/v2 分支，口径不一致。
+- **建议**：按 §4.4 的模型统一 4.1 的基础章节表述，避免全书内部自相矛盾。
+

@@ -1,51 +1,51 @@
 {
-  "generated_at": "2026-04-14T00:05:23+08:00",
+  "generated_at": "2026-04-14T00:20:00+08:00",
   "state_machine_version": "v2",
   "total_sections": 207,
   "metrics": {
     "total": 207,
-    "last_updated": "2026-04-14T00:05:23+08:00",
+    "last_updated": "2026-04-14T00:20:00+08:00",
     "ready-for-review": 173,
     "unknown": 34,
-    "pipeline_task2b_pending": 12,
-    "pipeline_task6_pending": 162,
+    "pipeline_task2b_pending": 13,
+    "pipeline_task6_pending": 161,
     "pipeline_task9_pending": 2,
     "pipeline_unknown": 31,
-    "task6_pending": 104,
-    "task6_reviewed": 14,
+    "task6_pending": 103,
+    "task6_reviewed": 15,
     "task6_revisiting": 58,
     "task6_unknown": 31,
-    "task9_pending": 171,
-    "task9_reviewed": 5,
+    "task9_pending": 170,
+    "task9_reviewed": 6,
     "task9_unknown": 31,
     "task2b_fixed": 58,
-    "task2b_idle": 106,
-    "task2b_pending": 12,
+    "task2b_idle": 105,
+    "task2b_pending": 13,
     "task2b_unknown": 31
   },
   "pipeline": {
     "pipeline_stage_counts": {
-      "task2b_pending": 12,
-      "task6_pending": 162,
-      "task9_pending": 2,
-      "unknown": 31
+      "unknown": 31,
+      "task6_pending": 161,
+      "task2b_pending": 13,
+      "task9_pending": 2
     },
     "task6_state_counts": {
-      "pending": 104,
-      "reviewed": 14,
+      "unknown": 31,
       "revisiting": 58,
-      "unknown": 31
+      "pending": 103,
+      "reviewed": 15
     },
     "task9_state_counts": {
-      "pending": 171,
-      "reviewed": 5,
-      "unknown": 31
+      "unknown": 31,
+      "pending": 170,
+      "reviewed": 6
     },
     "task2b_state_counts": {
+      "unknown": 31,
       "fixed": 58,
-      "idle": 106,
-      "pending": 12,
-      "unknown": 31
+      "idle": 105,
+      "pending": 13
     }
   },
   "issues": {
@@ -863,12 +863,13 @@
       "status": "ready-for-review",
       "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
-      "task9_state": "pending",
+      "task9_state": "reviewed",
       "task2b_state": "pending",
       "reviewed_date": "2026-04-14",
       "reviewed_by": "openclaw-task6",
       "section": "4.1",
-      "task6_result": "needs-rework"
+      "task6_result": "needs-rework",
+      "task9_result": "needs-rework"
     },
     "src/part1-fundamentals/ch04-memory/02-linux-memory.md": {
       "chapter": "4.2",

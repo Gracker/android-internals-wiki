@@ -2002,3 +2002,19 @@ Android 10-16 的返回分发模型缺少一张统一矩阵。正文把 Gesture 
 ### 关联章节
 11.3（本节）、5.8（后台执行限制）、5.10（JobScheduler/WorkManager 调度）、11.1（Android 功耗模型）
 
+## [2026-04-14] 4.1 Android 内存模型全景 — memcg v1/v2 运行时观测路径缺口
+
+### 盲区描述
+章节提到了 cgroup 抽象层、task profile 和 memcg，但没有把概念落到 Android 10-17 的实际观测路径。读者不知道该去哪里读 `memory.stat`、`memory.current`、`memory.events`、`memory.low`、`memory.max`，也不知道 `/dev/memcg/apps/uid_%d/pid_%d/` 与 cgroup v2 节点在不同版本上的对应关系，因此很难验证 task profile 是否真的影响了进程内存行为。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 梳理 `system/core/libprocessgroup/profiles/task_profiles.json` 与 `cgroups.json` 中 memory controller 的 v1/v2 对照
+- 补 Android 10-17 常见设备上 `memory.pressure_level`、`memory.low`、`memory.max`、`memory.current`、`memory.stat` 的实际节点位置和读取方式
+- 说明 `per_app_memcg`、`/dev/memcg/apps/uid_%d/pid_%d/`、PSI 与 Perfetto / adb 联合验证的最小路径
+
+### 关联章节
+4.1、4.4、1.3、13.5
+

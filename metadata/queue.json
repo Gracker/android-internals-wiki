@@ -7722,5 +7722,77 @@
     "added_at": "2026-04-14T00:07:00+08:00",
     "status": "pending",
     "original_review_log": "logs/review/2026-04-14-00-review.md"
+  },
+  {
+    "section": "4.1",
+    "section_title": "Android 内存模型全景",
+    "priority": 95,
+    "reason": "[Deep Tech Review] `oom_score_adj` 命名、lmkd 决策口径、cgroup v1/v2 memory controller 字段、ZRAM swapin 执行主体都存在事实错误，容易误导内存分析",
+    "material_paths": [
+      "intake/research-gaps.md",
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "L92 `内核管理：分配、回收、保护`",
+        "detail": "正文把进程回收排序字段写成 `oom_adj_score`。AOSP / 内核接口实际是 `/proc/<pid>/oom_score_adj`，Framework 侧维护的是 `adj` 常量并最终映射到 `oom_score_adj`。",
+        "suggestion": "统一改为 `oom_score_adj`，并补 `ProcessList.java` 与 `/proc/<pid>/oom_score_adj` 的对应关系。"
+      },
+      {
+        "type": "原理错误",
+        "location": "L94 `内存压力通知`",
+        "detail": "正文把 `lmkd` 写成会通过 `ActivityManager` 直接向 App 发送 `onTrimMemory()`。`lmkd` 是杀进程守护进程；`onTrimMemory()` 属于 `ComponentCallbacks2` 回调，不应写成 lmkd 的直接预警链。",
+        "suggestion": "拆开“App 侧 trim 回调”和“system-side lmkd kill”两条路径，并补 API 34+ trim level 变化。"
+      },
+      {
+        "type": "源码错误",
+        "location": "L142 `PSS`",
+        "detail": "正文写成“`lmkd` 在决策时看的也是 PSS”。现代 userspace lmkd 的 kill 时机看 PSI / vmpressure / file cache / thrashing 等压力信号，候选排序看 `oom_score_adj`，`kill_heaviest_task` 路径也看 RSS/回收收益，不是逐进程 PSS。",
+        "suggestion": "改为“PSS 是 `dumpsys meminfo` 与人工分析常用口径；lmkd 直接决策看 `oom_score_adj` + 压力信号，必要时结合 RSS/heaviest-task 策略”。"
+      },
+      {
+        "type": "版本差异",
+        "location": "L439-L441 `cgroup 对 Android 内存控制的作用`",
+        "detail": "把 `memory.high` / `memory.max` / `memory.pressure_level` 写成同一条 Android 10+ 路径，混淆了 cgroup v1/v2。android-16 `task_profiles.json` 里 `MemSoftLimit` 对应 v1 `memory.soft_limit_in_bytes`、v2 `memory.low`；`memory.pressure_level` 仍是 v1 文件。",
+        "suggestion": "按 v1 / v2 分开写 memory controller 字段，并补 `cgroups.json` / `task_profiles.json` 的真实映射。"
+      },
+      {
+        "type": "源码错误",
+        "location": "L453 `ZRAM 的工作方式`",
+        "detail": "正文把 swap-in / 解压执行主体写成 `kswapd`。`kswapd` 负责后台回收；被换出的页再次访问时的解压与换入发生在 page fault / swapin 路径，不是 `kswapd` 主动恢复。",
+        "suggestion": "改成“回收路径可能把页写入 zram，后续访问触发 page fault，再由 swapin 路径解压回内存”。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-14T00:20:00+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "4.1",
+    "section_title": "Android 内存模型全景",
+    "priority": 85,
+    "reason": "[Deep Tech Review] 新发现2个P1：1) `onTrimMemory()` 的 API 34+ 版本边界没有拆开；2) cgroup / task profile 缺少 memcg v1/v2 运行时观测路径，读者无法验证配置是否生效",
+    "material_paths": [
+      "intake/research-gaps.md",
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "版本差异",
+        "location": "L94 + L417 + `常见问题` 段落",
+        "detail": "章节没有交代 API 34 起 `TRIM_MEMORY_COMPLETE` / `TRIM_MEMORY_MODERATE` / `TRIM_MEMORY_RUNNING_*` 已不再通知 App，导致 trim 回调仍被写成当前版本通用的实时压力机制。",
+        "suggestion": "补 Android 14/15/16 的 trim level 版本边界，区分仍可收到的回调与已停发的级别。"
+      },
+      {
+        "type": "知识盲区",
+        "location": "L433-L445 `cgroup 对 Android 内存控制的作用`",
+        "detail": "只有概念，没有运行时可验证路径。读者无法从 `task_profiles.json` / `cgroups.json` 落到 `/dev/memcg/apps/.../memory.stat`、v2 `memory.current` / `memory.events` / `memory.low` / `memory.max`，也无法把 memcg 观察与 lmkd / Perfetto 联起来。",
+        "suggestion": "补一小节“如何验证 memcg 配置是否生效”，给出 adb / cat 路径和 Android 10-17 的 v1/v2 对照。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-14T00:20:00+08:00",
+    "status": "pending"
   }
 ]
