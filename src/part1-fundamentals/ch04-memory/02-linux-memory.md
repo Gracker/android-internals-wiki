@@ -1,6 +1,7 @@
 ---
 title: "Linux 内核内存管理"
 chapter: "4.2"
+section: "4.2"
 status: ready-for-review
 drafted_date: "2026-03-30"
 polish_count: 1
@@ -8,8 +9,9 @@ polish_date: "2026-04-06"
 polish_by: "task2b-polish"
 applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
 last_verified: "2026-03-31"
-reviewed_date: "2026-04-06"
+reviewed_date: "2026-04-14"
 reviewed_by: "openclaw-task6"
+task6_result: needs-rework
 last_verified_against: "Linux kernel 6.6 (android14-6.6-lts)"
 confidence: medium
 sources:
@@ -31,10 +33,10 @@ sources:
     path: "Cubox/LPC2025-Android MC主题-2026-01-10.md"
 tags: ['kernel', 'memory', 'buddy', 'slab', 'kswapd', 'page-reclaim', 'compaction', 'ION', 'DMA-BUF', 'LRU', 'MGLRU', '16K-page']
 related_chapters: ["4.1", "4.3", "4.4", "2.6"]
-pipeline_stage: task6_pending
-task6_state: pending
+pipeline_stage: task2b_pending
+task6_state: reviewed
 task9_state: pending
-task2b_state: idle
+task2b_state: pending
 ---
 
 # Linux 内核内存管理
@@ -69,7 +71,7 @@ task2b_state: idle
 
 我们在 Perfetto 中分析 Android 性能问题时，经常会遇到一些"看不见的瓶颈"：应用卡顿但主线程没有耗时操作，启动变慢但 CPU 利用率并不高，滑动掉帧但渲染管线一切正常。这类问题的根因，往往藏在 Linux 内核的内存管理子系统里。
 
-内核的内存管理就像城市的水管网络——平时看不到，但它出了问题，整栋楼都会停水。当系统内存紧张时，kswapd 线程开始工作，大量 CPU 时间花在页面回收上；当物理内存碎片化严重时，大块连续内存分配变慢，导致相机启动、游戏加载这类需要大块图形内存的操作出现明显延迟。在 Perfetto 中，我们可能看到的就是 kswapd 线程占用了不正常的 CPU 时间，或者某个进程在 `io_uring` / `page fault` 上阻塞。
+内核内存管理平时不显眼，但一旦出问题，整条性能链都会被拖慢。当系统内存紧张时，kswapd 线程开始工作，大量 CPU 时间花在页面回收上；当物理内存碎片化严重时，大块连续内存分配变慢，相机启动、游戏加载这类需要大块图形内存的操作就会被拖慢。在 Perfetto 中，我们更可能看到的是 kswapd 线程占用了异常的 CPU 时间，或者某个进程在缺页处理、内存分配相关路径上阻塞。
 
 理解内核内存管理的机制，我们就能从 Perfetto 中读出更多信号：为什么 kswapd 突然活跃了？为什么 direct reclaim 导致了卡顿？为什么图形缓冲区分配失败？这些都是做 Android 性能分析时绕不开的问题。
 
@@ -111,8 +113,8 @@ Page Fault 在 Android 上有几类典型场景：
 
 在 Perfetto Trace 中，与虚拟内存相关的信号主要体现在：
 
-- **Page Fault 计数**：通过 `ftrace` 的 `mm_page_fault` 事件，可以看到进程的 page fault 频率。启动阶段密集的 page fault 是正常的，但如果运行期间出现突发的大量 page fault，可能意味着内存被过度回收。
-- **kswapd 线程活动**：在 Perfetto 的进程列表中可以看到 `kswapd0`（每个 NUMA 节点一个），它的 CPU 使用率直接反映了系统的内存压力。
+- **Page Fault 计数**：通过 `ftrace` 的 `mm_page_fault` 事件，能看到进程的 page fault 频率。启动阶段密集的 page fault 是正常的，但如果运行期间出现突发的大量 page fault，可能意味着内存被过度回收。
+- **kswapd 线程活动**：在 Perfetto 的进程列表中能看到 `kswapd0`（每个 NUMA 节点一个），它的 CPU 使用率直接反映了系统的内存压力。
 - **Direct Reclaim 延迟**：当进程在内存分配路径上被迫同步回收页面时，在 Trace 中表现为该进程的长时间不可中断睡眠（`D` 状态）。
 
 [待补充: Perfetto 中 page fault 和 kswapd 活动的 Trace 截图]
@@ -125,7 +127,7 @@ Linux 内核管理物理内存采用三级分配体系：Buddy System → Slab A
 
 Buddy 分配器是 Linux 物理内存管理的基础。它以页（通常 4KB）为最小单位，管理所有物理内存页。
 
-Buddy 的核心思想简单而优雅：将空闲内存按 2 的幂次方组织成不同的阶（order）。order-0 对应 1 个页（4KB），order-1 对应 2 个连续页（8KB），order-2 对应 4 个连续页（16KB），依此类推，最高到 order-10（1024 个连续页，4MB）。
+Buddy 的核心思想很直接：将空闲内存按 2 的幂次方组织成不同的阶（order）。order-0 对应 1 个页（4KB），order-1 对应 2 个连续页（8KB），order-2 对应 4 个连续页（16KB），依此类推，最高到 order-10（1024 个连续页，4MB）。
 
 分配时，如果请求的大小对应的 order 没有空闲块，就从更大的 order 拆分。比如请求 8KB（order-1），但 order-1 空闲列表为空，就从 order-2（16KB）拆成两个 8KB 的"伙伴"（buddy），分配一个，另一个放入 order-1 空闲列表。释放时反过来——如果被释放的块和它的"伙伴"都空闲，就合并成更大的块。这就是"伙伴"这个名字的由来：每一对相邻且大小相同的空闲块都是伙伴，它们可以合并。
 
@@ -180,7 +182,7 @@ Linux 内核使用 LRU（Least Recently Used）链表来跟踪页面的"热度"�
 - **文件页（File-backed Page）**：对应磁盘上的文件内容。如果页面是干净的（没有被修改过），可以直接丢弃——下次需要时从文件重新读取即可。如果页面是脏的（被修改过但还没写回磁盘），需要先写回磁盘再回收。
 - **匿名页（Anonymous Page）**：没有对应磁盘文件的页面，如堆内存、栈内存。回收匿名页需要将其内容压缩后存入 zRAM（Android 没有 swap 分区，使用 zRAM 替代）。
 
-Android 上通常没有传统意义上的 swap 分区，所以匿名页的回收依赖 zRAM 压缩。这意味着回收匿名页的 CPU 开销比回收干净文件页高得多。
+Android 上通常没有传统意义上的 swap 分区，所以匿名页的回收依赖 zRAM 压缩。因此，回收匿名页的 CPU 开销通常比回收干净文件页更高。
 
 [已验证: 官方文档, kernel.org — LRU 双链表机制，active/inactive 页面分类]
 
@@ -194,7 +196,7 @@ kswapd 是内核为每个 NUMA 节点创建的后台线程。它的工作方式�
 
 kswapd 被唤醒后，会持续回收页面，直到空闲内存恢复到 High Watermark 以上。这个过程的 CPU 开销和耗时直接影响了前台应用的性能——kswapd 虽然在后台运行，但它需要扫描 LRU 链表、处理页面、可能触发 I/O，这些都会占用 CPU 和 I/O 带宽。
 
-在 Android 上，kswapd 过度活跃是一个常见的性能问题。Nubia 曾分享过一个案例：三方应用唯品会在内存不足时滑动严重掉帧，Perfetto 中可以看到 kswapd 线程大量占用 CPU，同时把前台应用的 Page Cache 也回收了，导致前台应用读写文件时产生更多 page fault，形成恶性循环。
+在 Android 上，kswapd 过度活跃是一个常见的性能问题。Nubia 曾分享过一个案例：三方应用唯品会在内存不足时滑动严重掉帧，Perfetto 中能看到 kswapd 线程大量占用 CPU，同时把前台应用的 Page Cache 也回收了，导致前台应用读写文件时产生更多 page fault，形成恶性循环。
 
 针对这类问题，一些 OEM 厂商采用了"冷热文件分离"策略：区分前台应用的热文件和后台应用的冷文件，优先回收后台冷文件的页面，保护前台应用的 Page Cache。
 
@@ -207,7 +209,7 @@ kswapd 被唤醒后，会持续回收页面，直到空闲内存恢复到 High W
 
 当内存分配请求发现空闲内存已经低于 Min Watermark 时，分配请求的进程会被迫自己执行页面回收——这就是 Direct Reclaim。与 kswapd 的异步回收不同，Direct Reclaim 是同步的：发出内存分配请求的进程必须等待回收完成才能继续执行。
 
-这对性能的影响是直接的——如果前台应用在渲染帧的过程中触发了 Direct Reclaim，这一帧的渲染时间就会显著增加，可能导致掉帧。在 Perfetto 中，Direct Reclaim 表现为进程长时间处于不可中断睡眠状态（`D` 状态），调用栈中可以看到 `__alloc_pages_direct_reclaim` 相关函数。
+如果前台应用在渲染帧的过程中触发 Direct Reclaim，这一帧的渲染时间就会被拉长，掉帧风险也会随之上升。在 Perfetto 中，Direct Reclaim 通常表现为进程长时间处于不可中断睡眠状态（`D` 状态），调用栈中可以看到 `__alloc_pages_direct_reclaim` 相关函数。
 
 [已验证: 官方文档, kernel.org — Direct reclaim 在内存分配路径中同步执行]
 
@@ -342,7 +344,7 @@ Android 15 开始支持 16KB 页面大小（之前一直是 4KB），这是一�
 
 增大页面大小的主要动机来自硬件和性能两个方面：
 
-- **减少 TLB miss**：更大的页面意味着同等地址空间需要更少的页表项，TLB 的覆盖范围更大。对于内存密集型应用，TLB miss 率可以显著降低。
+- **减少 TLB miss**：更大的页面意味着同等地址空间需要更少的页表项，TLB 的覆盖范围更大。对于内存密集型应用，TLB miss 率会下降。
 - **减少页表内存开销**：每个页表项本身也占内存。页面越大，相同内存量需要的页表项越少，页表占用的内存也越少。
 - **减少 Page Fault 次数**：每次 Page Fault 可以映射更大的地址范围，减少总的 Page Fault 次数。
 
@@ -385,7 +387,7 @@ Google 在 LPC 2025 上分享了为 16KB 页面适配旧 ELF 库的技术探索�
 
 ## 扩展方向：内存安全与大页面
 
-本节覆盖了 Linux 内核内存管理的核心机制。还有两个与性能相关的扩展方向值得关注：
+本节先覆盖 Linux 内核内存管理的主干机制。后面还有两个与性能直接相关的扩展方向：
 
 **内存安全机制**：KASAN（Kernel Address SANitizer）通过 shadow memory 检测内核空间的越界访问，但会带来约 2-3 倍的内存开销和可感知的性能下降，通常只在调试版本启用。MTE（Memory Tagging Extension）是 ARMv8.5+ 引入的硬件级内存标签机制，开销远低于 KASAN——快手在 2023 年分享了 MTE 在 Android 上的探索，标签检查的额外延迟约 1-2%。GWP-ASan 采用采样策略，在生产环境中以极低概率（约千分之一）分配带毒标记的内存块，能在几乎零开销的前提下捕获部分内存安全漏洞。
 
