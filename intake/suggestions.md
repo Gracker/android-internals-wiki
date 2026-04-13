@@ -2599,3 +2599,23 @@
 - **位置**：L223、L443、L629 图示占位
 - **问题**：FrameTimeline、heapprofd、多线程 Pin 三个专题都只有占位图，没有任一已跑通的 Trace 截图或查询结果，专题步骤缺少证据闭环。
 - **建议**：至少补 3 组真实截图或导出的 query result，分别覆盖掉帧定位、heapprofd flamegraph、跨进程 Pin 场景。
+
+
+## [Task6 Review] 3.3 手势导航与系统交互 — 2026-04-13
+- **类型**：需确认
+- **位置**：Predictive Back 架构 / 常见误区 1
+- **问题**：正文把传统返回手势的 `KEYCODE_BACK` 注入链路和 Android 13+ `OnBackInvokedCallback` / Predictive Back 回调模型写在同一条叙述里，读者容易理解成现代返回仍然统一靠按键注入完成。
+- **建议**：交给 Task 9 核对 Android 10-12 与 Android 13-16 的返回分发路径，再由 Task 2B 拆成 legacy 和 Predictive Back 两条链。
+- **review 日志**：logs/review/2026-04-13-20-review.md
+
+- **类型**：需确认
+- **位置**：版本演进的时间线
+- **问题**：Android 13/14/15/16 对 Predictive Back 的启用条件、默认状态、manifest / targetSdk 约束写得偏满，当前缺少逐项版本锚点。
+- **建议**：由 Task 9 对照官方文档和 API diff 收紧版本边界，避免把开发者选项、默认启用和 API 可用性混为一层。
+- **review 日志**：logs/review/2026-04-13-20-review.md
+
+- **类型**：需补充素材
+- **位置**：在 Perfetto 中的表现
+- **问题**：Gesture Monitor、SystemUI MainThread、Back 注入和 Predictive Back 多窗口渲染都写成了可直接观察的结论，但当前只有文字，没有真实 Trace 截图或 `[图：...]` 占位，证据链偏弱。
+- **建议**：补 2-3 个真实 Perfetto 片段或等价图示，至少覆盖 `edge-swipe` 分发、SystemUI 手势处理、Predictive Back 动画三类观察点。
+- **review 日志**：logs/review/2026-04-13-20-review.md
