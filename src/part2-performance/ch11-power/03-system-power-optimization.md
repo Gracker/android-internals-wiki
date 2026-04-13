@@ -9,7 +9,7 @@ reviewed_date: "2026-04-13"
 reviewed_by: "openclaw-task6"
 task6_result: needs-rework
 applicable_versions: "Android 6.0 (API 23) - Android 16 (API 36)"
-last_verified: "2026-04-03"
+last_verified: "2026-04-14"
 last_verified_against: "AOSP android-16.0.0_r1"
 polish_count: 1
 polish_date: "2026-04-05"
@@ -19,24 +19,37 @@ sources:
   - type: official
     path: "https://developer.android.com/training/monitoring-device-state/doze-standby"
   - type: official
+    path: "https://developer.android.com/topic/performance/appstandby"
+  - type: official
+    path: "https://developer.android.com/topic/performance/power/power-details#app-stdby-bucket"
+  - type: official
+    path: "https://developer.android.com/guide/components/activities/background-starts"
+  - type: official
     path: "https://source.android.com/docs/core/power"
   - type: aosp
-    path: "frameworks/base/services/core/java/com/android/server/DeviceIdleController.java"
+    path: "apex/jobscheduler/service/java/com/android/server/DeviceIdleController.java"
   - type: aosp
-    path: "frameworks/base/services/core/java/com/android/server/usage/UsageStatsService.java"
+    path: "apex/jobscheduler/service/java/com/android/server/usage/AppStandbyController.java"
+  - type: aosp
+    path: "apex/jobscheduler/service/java/com/android/server/usage/UsageStatsService.java"
+  - type: aosp
+    path: "apex/jobscheduler/service/java/com/android/server/job/JobSchedulerService.java"
   - type: aosp
     path: "frameworks/base/services/core/java/com/android/server/power/PowerManagerService.java"
+  - type: aosp
+    path: "frameworks/base/core/java/android/app/ActivityOptions.java"
   - type: aosp
     path: "frameworks/base/core/java/android/os/PowerManager.java"
   - type: official
     path: "https://dontkillmyapp.com/"
 tags: ['doze', 'standby', 'battery-saver', 'background-restriction', 'oem-power', 'adaptive-battery', 'foreground-service']
 related_chapters: ["5.6", "11.1", "11.2", "1.3", "4.4"]
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
 task9_result: needs-rework
-task2b_state: pending
+task2b_state: fixed
+task2b_result: fixed
 ---
 
 # 系统级功耗优化
@@ -94,13 +107,9 @@ Android 7.0（API 24）将 Doze 拆分为两个层级：
 
 Doze 不是把设备"冻住"就不管了。它会周期性地进入短暂的维护窗口（Maintenance Window），在这个窗口内临时解除大部分限制，让 App 有机会完成积压的工作。
 
-维护窗口的关键特征是**间隔递增**。随着设备空闲时间变长，两次维护窗口之间的间隔也越来越大：
+维护窗口的关键特征是**间隔递增**。设备刚进入 Doze 时，维护窗口相对更密；空闲时间继续拉长后，窗口之间的间隔会逐步变长，后期可能相隔数小时。具体数值受 Android 版本、设备配置和白名单状态影响，不适合把 1 小时、2 小时、4 小时写成固定常量。
 
-- 刚进入 Doze 后，大约每小时唤醒一次
-- 随后间隔逐渐拉长到 2 小时、4 小时甚至更长
-- 维护窗口本身持续的时间也从几秒到几十秒不等
-
-在维护窗口内，系统会临时恢复以下能力：
+在维护窗口内，系统会短暂放开一部分限制，集中处理被延后的工作：
 
 - 执行被推迟的 JobScheduler 任务和 SyncAdapter 同步
 - 允许被延迟的 AlarmManager 闹钟触发
@@ -111,14 +120,21 @@ Doze 不是把设备"冻住"就不管了。它会周期性地进入短暂的维�
 
 ### 在 Perfetto 中的表现
 
-在 Perfetto Trace 中，可从下面几个观察点判断 Doze 是否生效：
+Doze 的取证不要依赖某个固定名字的 Track。更稳的做法，是把 Trace、`dumpsys deviceidle`、`dumpsys jobscheduler` 和 Battery Historian 对在一起看。
 
-- 搜索 `DeviceIdleController` 相关事件，查看设备进入和退出 Doze 的时刻
-- 观察 CPU 状态变化：Deep Doze 期间 CPU 几乎完全休眠，维护窗口期间短暂唤醒
-- 网络活动：Doze 期间网络 Track 几乎为空，维护窗口出现短暂的网络活跃区间
-- `PowerManagerService` Track 中可直接观察到设备空闲状态的转换
+抓取 Trace 时，至少打开这几类信号：
 
-[图：Perfetto 中 Doze 状态切换、维护窗口唤醒与恢复休眠的示意截图]
+- ftrace：`sched/*`、`power/suspend_resume`、`power/cpu_frequency`、`power/cpu_idle`
+- framework atrace category：`power`、`am`、`wm`、`view`
+- 如果要看任务延迟，再补 `dumpsys jobscheduler`、`dumpsys alarm` 和 Battery Historian
+
+一组可复核的 Doze 证据通常有三步：
+
+1. 用 `adb shell dumpsys deviceidle` 确认设备已经进入 `LIGHT`、`IDLE` 或 `IDLE_MAINTENANCE`，必要时用 `force-idle` / `step` / `unforce` 主动驱动状态迁移。
+2. 非维护窗口阶段，后台线程几乎没有 runnable slice，网络与 Job 分发明显收缩，`suspend_resume` 和 `cpu_idle` 驻留时间上升。
+3. 进入维护窗口后，系统会出现一小段批量唤醒，被延后的 Job、Alarm 或网络 I/O 集中执行；窗口结束后，又回到低活跃状态。
+
+[图：Doze 进入后 CPU idle 驻留抬升，`IDLE_MAINTENANCE` 窗口内出现一段集中唤醒和网络恢复的 Perfetto 片段]
 
 ### Doze 的豁免与例外
 
@@ -140,43 +156,19 @@ Android 9（API 28）引入了 App Standby Buckets 机制，根据用户对每�
 
 ### 五个桶的定义与调度差异
 
-**Active（活跃）**——用户当前正在使用或刚刚使用过的 App。这是最自由的桶：
+五个桶的作用，是把“最近是否真的被用户用到”翻译成后台资源预算。官方文档把这些额度当作近似指导值，不保证实际执行时长，设备是否充电、进程是否可见、前台服务、用户手动 unrestricted 都会覆盖桶限制。
 
-- 常规 Job 运行配额：60 分钟滚动窗口内最多 20 分钟（Android 16 起开始限制，此前无限制）
-- 加速 Job（Expedited Job）：24 小时内最多 30 分钟
-- 闹钟：无限制
-- 网络：不受限制
+| Bucket | 典型场景 | Regular jobs | Expedited jobs | Alarms | Network |
+|------|------|------|------|------|------|
+| Active | 正在使用、刚用过、或用户刚点过通知的 App | Android 16 起约 `20 min / 60 min`，Android 15 及更早没有这条显式上限 | 约 `30 min / 24h` | 不限 | 不限 |
+| Working set | 经常使用，但当前不在前台 | 约 `10 min / 4h` | 约 `15 min / 24h` | `10 次 / 小时` | 不限 |
+| Frequent | 会规律使用，但不是每天都打开 | 约 `10 min / 12h` | 约 `10 min / 24h` | `2 次 / 小时` | 不限 |
+| Rare | 很少打开 | 约 `10 min / 24h` | 约 `10 min / 24h` | `1 次 / 小时` | 后台禁用 |
+| Restricted | Android 12 引入，系统认为资源消耗异常或长期不互动 | 每天 1 次，最多 10 分钟，且与其他 Job 合批 | `5 min / 24h` | `1 次 / 天` | 后台禁用 |
 
-**Working Set（工作集）**——用户经常使用但当前不在前台的 App：
+Restricted 桶的触发条件要按版本拆开。Android 12 / 12L 的“不互动”阈值是 45 天，Android 13 起缩短到 8 天；设备关机的时长不计入这段天数。Android 13 以后，高优先级 FCM 配额也不再由桶直接决定。
 
-- 常规 Job：4 小时滚动窗口内最多 10 分钟
-- 加速 Job：24 小时内最多 15 分钟
-- 闹钟：每小时最多 10 次
-- 网络：不受限制
-
-**Frequent（常用）**——用户定期使用但不是每天都会打开的 App：
-
-- 常规 Job：12 小时滚动窗口内最多 10 分钟
-- 加速 Job：24 小时内最多 10 分钟
-- 闹钟：每小时最多 2 次
-- 网络：不受限制
-
-**Rare（极少使用）**——用户很少打开的 App：
-
-- 常规 Job：24 小时滚动窗口内最多 10 分钟
-- 加速 Job：显著受限
-- 闹钟：每天最多 1 次
-- 网络：受限（后台不允许访问网络）
-
-**Restricted（受限）**——Android 12（API 31）新增的最低优先级桶。App 被放入这个桶的原因包括：用户手动限制了它的后台活动、App 消耗了过多系统资源、或者用户已经超过 8 天（Android 13 起，Android 12 为 45 天）没有与之交互：
-
-- 常规 Job：每天一次，以 10 分钟批次运行，且与其他 App 的 Job 合并执行
-- 加速 Job：进一步受限
-- 闹钟：每天最多 1 次（精确或不精确）
-- 网络：后台不允许访问
-- 这些限制即使在设备充电时也部分生效（充电 + 空闲 + 非计费网络时会放宽）
-
-[已验证: 官方文档, developer.android.com/topic/performance/appstandby]
+[已验证: 官方文档, developer.android.com/topic/performance/appstandby; developer.android.com/topic/performance/power/power-details#app-stdby-bucket]
 
 ### 桶的动态分配：Adaptive Battery 的角色
 
@@ -194,6 +186,20 @@ Adaptive Battery 使用一个运行在本地的机器学习模型来预测用户
 这解释了一个常见的开发困惑："我的 App 昨天后台任务还正常，今天就执行不了了。"原因可能是 Adaptive Battery 根据用户几天的使用模式，将 App 从 Working Set 降到了 Rare 桶。
 
 [已验证: 官方文档, source.android.com/docs/core/power]
+
+### 机制归属图：Bucket、Quota、Power Saver 分别由谁负责
+
+Android 13 到 Android 16 这组策略已经分散到不同控制器里。把职责拆开，排查时才不会把 bucket、quota、device idle 和 global power save 混成一件事。
+
+| 机制 | 控制器 | Android 16 入口 | 开发者验证入口 |
+|------|--------|-----------------|----------------|
+| Doze / Device Idle | `DeviceIdleController` | `apex/jobscheduler/service/java/com/android/server/DeviceIdleController.java` | `adb shell dumpsys deviceidle`，再和 Trace 的 `suspend_resume` / `cpu_idle` 对时 |
+| App Standby Bucket 评估 | `AppStandbyController` | `apex/jobscheduler/service/java/com/android/server/usage/AppStandbyController.java` | `adb shell am get-standby-bucket <pkg>`，`adb shell dumpsys usagestats appstandby` |
+| Usage 统计与事件上报 | `UsageStatsService` | `apex/jobscheduler/service/java/com/android/server/usage/UsageStatsService.java` | `adb shell dumpsys usagestats` |
+| Job quota 执行 | `JobSchedulerService` | `apex/jobscheduler/service/java/com/android/server/job/JobSchedulerService.java` | `adb shell dumpsys jobscheduler <pkg>`，Android 16 可再看 `getPendingJobReasons()` |
+| Battery Saver / low power mode | `PowerManagerService` | `frameworks/base/services/core/java/com/android/server/power/PowerManagerService.java` | `adb shell settings get global low_power`，`adb shell dumpsys power`，App 侧用 `PowerManager.isPowerSaveMode()` |
+
+看到后台任务没跑时，先分清是 bucket 变低、quota 用完、device idle 命中，还是全局 Battery Saver 打开；四种情况的证据入口并不相同。
 
 ### 如何在开发中应对 Standby Buckets
 
@@ -216,18 +222,20 @@ Doze 和 Standby Buckets 会根据设备状态和用户行为动态收紧后台�
 
 ### Background Activity Starts 限制
 
-从 Android 10（API 29）开始，系统限制后台 App 启动 Activity。这是一个容易引发"我的页面弹不出来"投诉的策略。
+从 Android 10（API 29）开始，后台 App 不能随意 `startActivity()`。Android 14 之后，这条限制对 `PendingIntent` 也从“默认沿用例外场景”改成了“显式 opt-in”。
 
-核心规则很简单：**当 App 不在前台时，它不能调用 `startActivity()` 显示新页面**（有少数例外）。这是为了防止 App 在后台突然弹出广告或干扰用户当前操作。
+如果后台 App 作为 `PendingIntent` 的发送方想拉起 Activity，targetSdk 34+ 需要在 `PendingIntent.send()` 时附带 `ActivityOptions`，并调用 `setPendingIntentBackgroundActivityStartMode(...)`。Android 14 和 Android 15 使用 `MODE_BACKGROUND_ACTIVITY_START_ALLOWED`；Android 16 把它拆成 `MODE_BACKGROUND_ACTIVITY_START_ALLOW_IF_VISIBLE` 和 `MODE_BACKGROUND_ACTIVITY_START_ALLOW_ALWAYS`，默认仍是不授予这项能力。
 
-在 Android 14（API 34）中，这个限制进一步收紧：即使通过 `PendingIntent` 启动 Activity，也需要显式声明权限。App 在后台时应该通过通知（Notification）来传递信息，让用户主动点击打开，而不是直接弹页面。
+如果 App 是 `PendingIntent` 的创建方，targetSdk 35+ 也不能再默认把这项能力连同 `PendingIntent` 一起交出去。需要在 `PendingIntent.getActivity()` 等创建点通过 `setPendingIntentCreatorBackgroundActivityStartMode(...)` 明确授予。
+
+这里没有新增 manifest 权限，也不是 runtime permission。变化点是 `ActivityOptions` 的显式授权模式。
 
 豁免场景包括：
 
-- App 有一个正在运行的前台服务（且该服务与通知关联）
+- App 有一个正在运行的前台服务，且该服务与通知关联
 - App 刚刚收到高优先级 FCM 消息
-- 用户刚刚与 App 的通知交互（如点击通知）
-- App 是设备的当前输入法、VoiceInteractionService 等
+- 用户刚刚与 App 的通知交互，如点击通知
+- App 是设备的当前输入法、`VoiceInteractionService` 等
 
 [已验证: 官方文档, developer.android.com/guide/components/activities/background-starts]
 
@@ -263,21 +271,18 @@ Android 14 对前台服务进一步增加了限制：某些类型的前台服务
 
 ### 省电模式的核心行为
 
-当省电模式激活时，系统层面会发生以下变化：
+Battery Saver 是全局 low power mode，由 `PowerManagerService` 统一发布状态，各子系统再决定要不要收紧自己的策略。它不会把所有 App 的桶标签改写成 Rare，也不等于“后台一律断网”。
 
-**CPU 降频**——处理器的最大频率被限制，部分实现甚至会禁用大核。这直接降低了 CPU 功耗，但也意味着计算密集型任务（如图片处理、列表渲染）会变慢，可能出现掉帧。
+在 AOSP 这层，能稳定确认的影响主要有四类：
 
-**后台活动收紧**——省电模式下，所有 App 都被当作"Rare"桶对待，即使它本来是 Active。JobScheduler 的配额被进一步压缩，闹钟被推迟，后台网络访问受限。
+- **后台执行更保守**：Job、Alarm、网络和同步会把 low power mode、standby bucket、设备是否充电、进程重要性一起算进去。排查时要把这几层分开看。
+- **位置策略会变化**：App 可以用 `PowerManager.getLocationPowerSaveMode()` 查看系统当前采用的节电位置策略。常见模式是屏幕熄灭后限制定位，而不是所有设备都完全关掉定位。
+- **App 能收到显式状态信号**：App 可通过 `PowerManager.isPowerSaveMode()` 和 `ACTION_POWER_SAVE_MODE_CHANGED` 调整自己的轮询、上报和动画策略。
+- **厂商可以继续加码**：刷新率、GPU 频率、传感器、Motion Sense、Crash Detection 这类行为取决于设备实现，不能当成 Android 通用基线。
 
-**屏幕与显示**——屏幕亮度降低，屏幕超时时间缩短，动画可能被简化或禁用。在高刷设备上，刷新率可能被强制降到 60Hz 甚至更低。
+涉及 Pixel 或 OEM 机型的显示降频、传感器关闭、特殊安全功能收缩时，最好把机型、ROM 版本和来源写在同一段；拿不到来源，就保留 `[待验证]`。
 
-**网络限制**——后台 App 的网络访问被大幅限制。移动数据连接被当作计费网络处理，系统会推迟非必要的网络请求。
-
-**定位服务**——GPS 模块的工作频率降低，后台 App 的位置更新进一步减少。
-
-**其他**——GPU 可能被限频，振动反馈被禁用，某些设备特性（如 Pixel 的 Motion Sense、车载碰撞检测）被关闭。
-
-[已验证: 官方文档, developer.android.com/training/monitoring-device-state/doze-standby]
+[已验证: 官方文档, developer.android.com/training/monitoring-device-state/doze-standby; AOSP, PowerManager.java / PowerManagerService.java]
 
 ### 自适应省电（Adaptive Battery Saver）
 
@@ -287,14 +292,17 @@ Android 9 引入了自适应省电功能，系统会根据用户的充电习惯�
 
 ### 在 Perfetto 中观察省电模式
 
-在 Trace 中，可从下面几个观察点识别省电模式：
+省电模式也不要靠“PowerManagerService Track”这种名字判断。更稳的取证方式，是把 `low_power` 状态、CPU / 调度变化和任务延迟放到同一时间线上。
 
-- `PowerManagerService` Track 中查找 `isPowerSaveMode` 状态变化
-- CPU 频率 Track：如果看到所有核心频率被限制在较低值（如 1.0 GHz 以下），且持续时间较长，可能是省电模式
-- 刷新率 Track：从 120Hz 突降到 60Hz 可能是省电模式的征兆
-- `DeviceIdleController` 的状态变化
+建议的组合是：
 
-[图：Perfetto 中省电模式触发后 CPU 频率受限与刷新率回落的示意截图]
+- 先记一份状态快照，至少保留 `adb shell settings get global low_power` 和 `adb shell dumpsys power`
+- Trace 打开 `sched/*`、`power/cpu_frequency`、`power/cpu_idle`、`power/suspend_resume`，再补 `am`、`wm`、`view`、`power` 这些 framework 侧 category
+- 如果怀疑是后台任务被压缩，再把 `dumpsys jobscheduler`、`dumpsys alarm`、Battery Historian 一起留档
+
+一段能说明问题的证据，通常包含三部分：`low_power` 从 0 变 1 的时间点；CPU 频率上限和后台 runnable slice 密度同时下降；Job / Alarm 触发节奏变稀或被合批。
+
+[图：Battery Saver 打开前后，同一进程的 CPU 频率上限、后台 Job 密度和 `low_power` 状态放在同一时间线里的 Perfetto 片段]
 
 ### 对 App 性能分析的影响
 
@@ -354,10 +362,12 @@ OPPO 和 vivo 的策略类似：
 
 **分析建议**：
 
-- 在 Perfetto/Battery Historian 中关注进程状态变化（`Process State` Track），判断进程是被正常调度还是被强制冻结
-- 测试覆盖主流厂商设备（至少包括小米、华为、OPPO/vivo）
-- 在性能测试报告中注明设备型号和厂商 ROM 版本
-- 参考各厂商的开发者文档了解其后台管控策略的细节
+- Trace 里优先看 `sched/*`、`power/cpu_frequency`、`binder_driver`、`am`，确认进程是单纯没拿到 quota，还是进入了长时间不被调度的冻结状态。
+- 同步保存 `dumpsys activity processes`、`dumpsys jobscheduler <pkg>`、`dumpsys alarm` 和厂商电池策略设置页。只有把系统状态和 Trace 对起来，才能分清是 AOSP bucket / quota 触发，还是 ROM 额外的后台冻结。
+- 如果 Trace 中只剩 Binder / epoll wait，几乎没有 runnable slice，而同一时间窗口又看到了 pending job 或 delayed alarm，更像是厂商冻结或延迟分发，不要直接归因到 WorkManager。
+- `Process State` 只能当辅助信号，不要把它当成所有设备都存在的固定 Track。
+
+[图：后台冻结导致 WorkManager 延迟的示意 trace，前半段进程几乎没有 runnable slice，解除限制后出现一段集中执行]
 
 [已验证: 官方文档, dontkillmyapp.com; 厂商策略基于公开资料整理，具体行为可能因 ROM 版本而异]
 
@@ -387,8 +397,8 @@ OPPO 和 vivo 的策略类似：
 | Android 11 (API 30) | 前台服务也不能无权限获取后台位置 |
 | Android 12 (API 31) | 新增 Restricted 桶、Exact Alarm 需要声明权限 |
 | Android 13 (API 33) | Restricted 桶触发条件从 45 天缩短到 8 天、FCM 配额不再与桶绑定 |
-| Android 14 (API 34) | PendingIntent 启动 Activity 需要显式权限、前台服务类型强制声明 |
-| Android 16 (API 36) | Active 桶也开始有 Job 运行配额限制（20min/60min） |
+| Android 14 (API 34) | PendingIntent 后台启动改为显式 opt-in API、前台服务类型强制声明 |
+| Android 16 (API 36) | Active 桶开始引入 regular job 指导额度（约 20 min / 60 min），并补充 Job pending reason introspection |
 
 [已验证: 官方文档, developer.android.com/about/versions]
 
@@ -418,15 +428,19 @@ WorkManager 保证的是"最终一致性"——任务最终会被执行，但不
 
 ### AOSP 源码路径
 
-- `frameworks/base/services/core/java/com/android/server/DeviceIdleController.java` — Doze 模式控制
-- `frameworks/base/services/core/java/com/android/server/usage/UsageStatsService.java` — 使用统计与 Standby Bucket 分配
-- `frameworks/base/services/core/java/com/android/server/power/PowerManagerService.java` — 省电模式管理
-- `frameworks/base/core/java/android/os/PowerManager.java` — PowerManager API
-- `frameworks/base/services/core/java/com/android/server/job/JobSchedulerService.java` — Job 配额管理
+- `apex/jobscheduler/service/java/com/android/server/DeviceIdleController.java` — Doze / Device Idle 状态机
+- `apex/jobscheduler/service/java/com/android/server/usage/AppStandbyController.java` — App Standby Bucket 评估
+- `apex/jobscheduler/service/java/com/android/server/usage/UsageStatsService.java` — usage 统计与事件上报
+- `apex/jobscheduler/service/java/com/android/server/job/JobSchedulerService.java` — Job quota 与 pending reason
+- `frameworks/base/services/core/java/com/android/server/power/PowerManagerService.java` — Battery Saver / low power mode
+- `frameworks/base/core/java/android/app/ActivityOptions.java` — PendingIntent 后台启动 opt-in API
+- `frameworks/base/core/java/android/os/PowerManager.java` — `isPowerSaveMode()` / `getLocationPowerSaveMode()`
 
 ### 官方文档
 
 - [Optimize for Doze and App Standby](https://developer.android.com/training/monitoring-device-state/doze-standby)
+- [About App Standby Buckets](https://developer.android.com/topic/performance/appstandby)
+- [Power management resource limits](https://developer.android.com/topic/performance/power/power-details#app-stdby-bucket)
 - [Power usage optimization](https://developer.android.com/topic/performance/power)
 - [Background execution limits](https://developer.android.com/about/versions/oreo/background)
 - [Restrictions on starting activities from the background](https://developer.android.com/guide/components/activities/background-starts)
@@ -436,4 +450,3 @@ WorkManager 保证的是"最终一致性"——任务最终会被执行，但不
 ### 其他参考
 
 - [Don't kill my app!](https://dontkillmyapp.com/) — 各厂商后台管控策略追踪
-- Android 16 Developer Preview 文档 — Active 桶 Job 配额变更
