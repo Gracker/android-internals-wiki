@@ -2255,3 +2255,29 @@
 - **位置**：工具段落 / frontmatter related_chapters
 - **问题**：正文讲 Battery Historian 和 Power Profiler，但正文只回链 §13.1，frontmatter 也缺少 §14.11 Battery Historian。
 - **建议**：补 `related_chapters: 14.11`，并在工具段落显式区分 Perfetto、Battery Historian、Power Profiler 的职责边界。
+
+
+## [Task6 Review] 12.3 网络性能深入：连接池、TLS 与传输优化 — 2026-04-13
+- **类型**：需确认
+- **位置**：HTTP/2 多路复用 / DNS over HTTPS / 网络功耗量化段落
+- **问题**：20-40%、24%/47%、500-1000 mA、3-4 倍等量化结论缺少原始来源与测试条件。
+- **建议**：补官方文档、实验条件或原始测试链接，补不齐就降级为定性描述。
+- **review 日志**：logs/review/2026-04-13-09-review.md
+
+- **类型**：需确认
+- **位置**：TLS / Conscrypt / QUIC 扩展段落
+- **问题**：0-RTT、Conscrypt Mainline 更新、DoH3 支持版本、HttpEngine/QUIC 支持及 `crazy_things_` 扩展写法存在实现与版本风险。
+- **建议**：交 Task 9 核对 Android 版本与 API 支持边界，删除占位式表述并补准确来源。
+- **review 日志**：logs/review/2026-04-13-09-review.md
+
+- **类型**：需补充素材
+- **位置**：HTTP/2 多路复用 / Radio State Machine / Perfetto 分析
+- **问题**：正文两处明确标注待补图，但当前没有 Trace 截图或等价图示，写作规范要求这些位置配图。
+- **建议**：至少补 2 张图或文字版图示，覆盖 HTTP/2 复用、Radio State Machine、请求分阶段 Trace。
+- **review 日志**：logs/review/2026-04-13-09-review.md
+
+- **类型**：需重写
+- **位置**：扩展章节（HTTP/3 与 QUIC / WebSocket / Retrofit）
+- **问题**：后三个扩展小节更像资料卡片，和前文“网络链路耗时 + Perfetto 分析”主线回扣不够，收尾略散。
+- **建议**：回到“实际分析中什么时候该看这几个方向”，压缩词条式说明，补一段工程判断。
+- **review 日志**：logs/review/2026-04-13-09-review.md
