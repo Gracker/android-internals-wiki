@@ -9,43 +9,76 @@ review_type: task6-writing-quality-review
 task6_result: needs-rework
 drafted_date: "2026-03-30"
 drafted_by: openclaw-task2a
-review_v2_fix: "误区 section boot_completed 事件描述修正 + 事件排序对齐"
+review_v2_fix: "误区 section boot_completed 事件描述修正 + 事件排序修正"
 polish_count: 1
 polish_date: "2026-04-05"
 review_round: 2
 polish_by: task2b-polish
-applicable_versions: "Android 8 (API 26) - Android 16 (API 36)"
-last_verified: "2026-04-10"
-last_verified_against: "AOSP android-16.0.0_r1, 官方文档"
+applicable_versions: "Android 8 (API 26) - Android 16 (API 35)"
+last_verified: "2026-04-13"
+last_verified_against: "AOSP android-16.0.0_r1, source.android.com 官方文档"
 confidence: high
 sources:
   - type: aosp
+    path: "system/core/init/first_stage_init.cpp @ android-16.0.0_r1"
+  - type: aosp
     path: "system/core/init/init.cpp @ android-16.0.0_r1"
+  - type: aosp
+    path: "system/core/rootdir/init.rc @ android-16.0.0_r1"
+  - type: aosp
+    path: "frameworks/base/config/preloaded-classes @ android-16.0.0_r1"
   - type: aosp
     path: "frameworks/base/core/java/com/android/internal/os/ZygoteInit.java @ android-16.0.0_r1"
   - type: aosp
+    path: "frameworks/base/core/java/android/os/TimingsTraceAndSlog.java @ android-16.0.0_r1"
+  - type: aosp
     path: "frameworks/base/services/java/com/android/server/SystemServer.java @ android-16.0.0_r1"
+  - type: aosp
+    path: "frameworks/base/services/core/java/com/android/server/EventLogTags.logtags @ android-16.0.0_r1"
+  - type: aosp
+    path: "frameworks/base/services/core/java/com/android/server/am/EventLogTags.logtags @ android-16.0.0_r1"
+  - type: aosp
+    path: "frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java @ android-16.0.0_r1"
+  - type: aosp
+    path: "frameworks/base/services/core/java/com/android/server/am/UserController.java @ android-16.0.0_r1"
+  - type: aosp
+    path: "frameworks/base/services/core/java/com/android/server/wm/ActivityTaskManagerService.java @ android-16.0.0_r1"
+  - type: aosp
+    path: "system/core/bootstat/bootstat.cpp @ android-16.0.0_r1"
+  - type: aosp
+    path: "hardware/interfaces/cas/aidl/default/cas-default-lazy.rc @ android-16.0.0_r1"
   - type: official
     path: "https://source.android.com/docs/core/architecture"
   - type: official
     path: "https://source.android.com/docs/core/boot"
-  - type: blog
+  - type: official
     path: "https://source.android.com/docs/core/perf/boot-times"
   - type: blog
     path: "obsidian/Cubox/Android 启动系列之我是 init 进程 - 掘金-2024-01-27.md"
-  - type: aosp
-    path: "frameworks/base/core/java/com/android/internal/os/ZygoteInit.java @ android-16.0.0_r1 (BootTimingsTraceLog)"
-  - type: aosp
-    path: "frameworks/base/core/java/android/os/TimingsTraceAndSlog.java @ android-16.0.0_r1"
-  - type: blog
-    path: "Android 16 Parallel Module Loading + AutoFDO (AOSP Gerrit/9to5Google)"
-tags: ['boot', 'init', 'zygote', 'SystemServer', '启动优化', 'bootchart', 'bootloader', 'preloaded-classes', 'boot-timings']
-related_chapters: ["1.1", "1.3", "1.4", "1.5", "1.7", "8.2", "8.3"]
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
+tags:
+  - boot
+  - init
+  - zygote
+  - SystemServer
+  - 启动优化
+  - bootchart
+  - bootloader
+  - preloaded-classes
+  - boot-timings
+related_chapters:
+  - "1.1"
+  - "1.3"
+  - "1.4"
+  - "1.5"
+  - "1.7"
+  - "8.2"
+  - "8.3"
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
 task9_result: needs-rework
-task2b_state: pending
+task2b_result: fixed
+task2b_state: fixed
 ---
 
 # 系统启动全流程
@@ -55,12 +88,12 @@ task2b_state: pending
 
 ### 锚点（必须覆盖）
 
-- 🔹 完整启动链：Bootloader → Linux Kernel → init → Zygote → SystemServer → Launcher
+- 🔹 完整启动链：Bootloader → Linux Kernel → first-stage init → second-stage init → Zygote → SystemServer → Home / boot completed
 - 🔹 init 进程的职责：解析 init.rc、启动关键 native 服务（servicemanager、surfaceflinger 等）
 - 🔹 Zygote 预加载机制：preloadClasses / preloadResources，对首次 App 启动的影响
 - 🔹 SystemServer 启动的核心服务顺序及依赖关系（AMS、WMS、PMS 等）
 - 🔹 启动时间的度量：boot_completed 广播、BootTimingsTraceLog
-- 🔹 开机性能优化的常见手段（并行启动、延迟加载、cgroup 优先级）
+- 🔹 开机性能优化的常见手段（task_profiles、lazy HAL、odsign / dexpreopt、启动长尾治理）
 
 ### 扩展（可选深入）
 
@@ -81,455 +114,234 @@ task2b_state: pending
 
 当我们按下手机电源键，到看到桌面图标可点击，中间经历了一条长长的时间线。这条时间线涉及硬件初始化、内核启动、用户空间构建、Java 运行时准备、系统服务启动，最终才把一个可用的 Android 桌面呈现在我们面前。
 
-了解这条链路的意义远不止"知道就行"。在实际的性能优化工作中，启动流程中的每一个环节都可能成为瓶颈：
+了解这条启动流程的意义远不止"知道就行"。在实际的性能优化工作中，启动流程中的每一个环节都可能成为瓶颈：
 
 - 开机时间太长——用户抱怨"等半天才能用"。这可能是 init 阶段挂载分区慢了，也可能是 SystemServer 启动了太多不必要的服务。
 - 冷启动 App 慢——这和 Zygote 的预加载机制直接相关。了解预加载了什么、没预加载什么，才能判断 App 启动时哪些类需要重新加载。
 - OTA 升级后首次开机特别慢——这与 dm-verity 校验和 AB 分区切换有关。
 
-在 Perfetto 中，我们可以抓取开机阶段的 Trace，看到 init、Zygote、SystemServer 各自消耗了多少时间。但如果不了解这条链路的来龙去脉，面对 Trace 中的那些色块，只会一头雾水。读完本节后，我们就能打开一份开机 Trace，准确地找到每个阶段对应的区间，并定位到耗时异常的环节。
+在 Perfetto 中，我们可以抓取开机阶段的 Trace，看到 init、Zygote、SystemServer 各自消耗了多少时间。但如果不了解这条启动时间线的来龙去脉，面对 Trace 中的那些色块，只会一头雾水。读完本节后，我们就能打开一份开机 Trace，准确地找到每个阶段对应的区间，并定位到耗时异常的环节。
 
 ## 完整启动链：从按下电源到桌面可见
 
-Android 的启动是一个严格的有序过程，前一阶段为后一阶段准备运行环境。我们用一个完整的时序图来梳理这条链路：
+把 Android 开机过程画成一条直线时，最容易丢掉三个节点：first-stage init、Home 首帧可见、boot completed 广播。节点丢了，Trace、logcat 和 bootstat 就对不上。按 android-16.0.0_r1 的实现，主链更接近下面这样：
 
 ```
 [图：Android 启动全流程时序图]
-Boot ROM → Bootloader → Linux Kernel → init → Zygote → SystemServer → Launcher
-   │            │             │          │        │          │            │
-   │            │             │          │        │          │            └─ 显示桌面
-   │            │             │          │        │          └─ 启动核心系统服务
-   │            │             │          │        └─ 预加载类/资源 → fork App 进程
-   │            │             │          └─ 解析 init.rc，启动 native 服务
-   │            │             └─ 硬件驱动、内存管理、进程调度
-   │            └─ 加载 Kernel、 recovery/OTA 相关
-   └─ 芯片内置 ROM 代码
+Boot ROM → Bootloader → Linux Kernel → first-stage init → second-stage init
+→ zygote-start → Zygote → SystemServer → ActivityManagerService.systemReady()
+→ startHomeOnAllDisplays() → Home 首帧可见 → LOCKED_BOOT_COMPLETED → BOOT_COMPLETED
 ```
 
-下面我们逐阶段深入。
+### Boot ROM 与 Bootloader：硬件引导的前两跳
 
-### Boot ROM 与 Bootloader：硬件的"第一口气"
+按下电源键后，CPU 先执行芯片内置的 Boot ROM。它负责做最小硬件初始化，并把控制权交给 Bootloader。Bootloader 再完成更完整的板级初始化，装载 kernel、ramdisk、device tree，处理 Verified Boot / 分区选择，然后跳入 Linux Kernel。
 
-当我们按下电源键的那一刻，CPU 从芯片内置的 Boot ROM 中开始执行代码。这段代码是出厂时固化在芯片中的，它的任务非常简单：初始化最基本的硬件（时钟、RAM 控制器），然后找到并加载 Bootloader。
+这一段通常不在 Perfetto 里直接可见。要分析 Bootloader 本身的耗时，更多还是依赖厂商日志、串口和 bootstat 的外围里程碑。
 
-Bootloader（Android 设备上通常是 U-Boot 或厂商自研的引导程序）接管后，负责更完整的硬件初始化：配置显示器、设置 USB、加载设备树（Device Tree）。Bootloader 最重要的工作是**加载 Linux Kernel**。
+### Linux Kernel：把调度器、驱动和最小用户态入口拉起来
 
-在 Bootloader 阶段，如果设备处于 OTA 升级状态，Bootloader 还需要决定从哪个分区启动（A 分区还是 B 分区）。这就是 Android 的无缝更新机制的基础。[待补充：Bootloader 阶段的 Perfetto Trace 截图]
+Kernel 阶段负责建立页表、初始化调度器、内存管理和关键驱动，然后创建 PID 1 的 `/init`。这里要把边界拆清楚：Kernel 会准备 rootfs / ramdisk 和最小设备节点，但 system、vendor、product 这些启动必需分区的 early mount，在现代 Android 里属于 first-stage init，不该写进 Kernel 阶段。
 
-### Linux Kernel：搭建操作系统的地基
+Linux 侧最早的进程关系仍然成立：PID 0 是 swapper，`rest_init()` 会拉起 PID 1 的 init 和 PID 2 的 kthreadd。对启动分析来说，Kernel 阶段的结束标志更适合看“控制权何时进入 `/init`”，而不是“system 分区何时挂好”。
 
-Bootloader 将 Linux Kernel 加载到内存后，内核开始执行。这个阶段的工作包括：
+### init：分 first-stage 和 second-stage 两段看
 
-1. **硬件驱动初始化**：GPU、Display、Audio、Modem 等底层驱动逐一加载
-2. **内存管理初始化**：建立页表、启动内存分配器
-3. **文件系统挂载**：挂载 rootfs 和关键分区（system、vendor 等）
-4. **内核线程启动**：创建 kthreadd（内核线程的鼻祖）、kworker 等内核线程
+现代 Android 的 init 不能只写成一句“解析 init.rc”。android-16.0.0_r1 的 `init/first_stage_init.cpp` 在早期用户空间会先做几件事：
 
-内核启动的最后一步是启动 **swapper/idle 进程**（PID 0）——这是 Linux 系统中所有进程的真正起点。swapper 进程通过 `kernel_thread()` 创建两个子进程 [已验证: AOSP goldfish/init/main.c, `rest_init()`]：
+- 挂载 `/dev`、`/proc`、`/sys` 和 `selinuxfs`
+- 建最小设备节点和日志环境
+- 调用 `FirstStageMount::DoFirstStageMount()` 挂载启动必需分区
+- `SwitchRoot()` 到新根文件系统，再进入 second-stage init
 
-```c
-// init/main.c
-noinline void __ref rest_init(void)
-{
-    int pid;
-    // 创建 init 进程 (PID 1) - 用户空间所有进程的鼻祖
-    pid = kernel_thread(kernel_init, NULL, CLONE_FS);
-    // 创建 kthreadd 进程 (PID 2) - 内核空间所有线程的鼻祖
-    pid = kernel_thread(kthreadd, NULL, CLONE_FS | CLONE_FILES);
-    ...
-}
-```
+这一段完成后，second-stage init 才会开始解析 rc 配置。`init.cpp` 默认读取 `/system/etc/init/hw/init.rc`，并继续解析 `/system/etc/init`、`/system_ext/etc/init`、`/vendor/etc/init`、`/odm/etc/init`。随后 action queue 依次推进 `early-init`、`init`、`late-init`、`post-fs-data`、`zygote-start`、`boot` 等阶段。
 
-这里有一个关键的转换：init 进程最初是内核线程，通过调用 `do_execve()` 执行 `/sbin/init`（或 `/init`），从内核态切换到用户态，正式成为**用户空间第一个进程**。
+`zygote-start` 也是一个独立节点。AOSP `rootdir/init.rc` 会在这个触发点先等待 `odsign.verification.done=1`，再执行 `start zygote` / `start zygote_secondary`。把 `post-fs-data`、`zygote-start`、`boot` 混写成一个“init 阶段”后，很多启动长尾问题就没法定位了。
 
-### init 进程：用户空间的"总指挥"
+### Zygote：把 Java 世界的公共准备工作提前做好
 
-init 进程是 Android 用户空间所有进程的鼻祖，PID 永远是 1。如果说 swapper（PID 0）是内核空间的起点，那 init 就是用户空间的起点。它的核心职责可以归纳为四件事：
+Zygote 的目标还是老问题，减少每个 App 冷启动都重复做的基础工作。它会预加载类、资源、共享库，再通过 fork 把这份运行时状态复制给 SystemServer 和 App 进程。
 
-1. **解析和执行 init.rc 脚本**，建立整个用户空间的运行环境
-2. **启动关键的 native 服务**（servicemanager、surfaceflinger、lmkd 等）
-3. **管理属性系统**（property service），为系统范围内的配置提供读写机制
-4. **监听和服务生命周期管理**——如果关键进程崩溃，init 负责重启它们
+有一个常见旧说法需要修正。老文章常把 preloaded classes 写成“3000-4000 个常用类”。android-16.0.0_r1 的 `frameworks/base/config/preloaded-classes` 去掉注释和空行后有 18431 条，打包产物会进入 ART APEX 提供的 preloaded-classes 文件。老数字放在 Android 8/9 的上下文里还勉强能看，直接拿到新分支会偏差很大。
 
-#### init.rc：Android Init Language
+fork 之后依赖的仍然是 Copy-on-Write。共享页不写就不复制，所以 SystemServer 和 App 进程能复用 Zygote 已经装好的大量类与资源。启动慢到 `Application.onCreate()` 之前时，先看 Zygote 预加载、dexpreopt / odsign 产物是否命中，再看业务进程自己的初始化。
 
-init 进程不会硬编码"我要启动哪些服务"。它采用了一套声明式的脚本语言——**Android Init Language**（文件后缀为 `.rc`），把"启动什么、什么时候启动、怎么启动"全部外置到配置文件中。[来源: obsidian/Cubox/Android 启动系列之我是 init 进程 - 掘金-2024-01-27.md]
+### SystemServer：按真实阶段看服务归属
 
-init.rc 的核心语法只有几个关键字：
+`SystemServer.run()` 在入口先写 `BOOT_PROGRESS_SYSTEM_RUN`，然后依次执行：
 
-```rc
-# 定义一个服务
-service servicemanager /system/bin/servicemanager
-    class core animation
-    user system
-    critical
-    onrestart restart apexd
+- `startBootstrapServices(t)`
+- `startCoreServices(t)`
+- `startOtherServices(t)`
+- `startApexServices(t)`
 
-# 在特定阶段触发动作
-on init
-    # 执行命令
-    mkdir /cache/recovery 0770 system cache
-    # 启动服务
-    start servicemanager
-```
+这四段的服务归属要按 AOSP 代码来写。
 
-`on` 关键字定义了触发条件（也叫 action），常见的触发阶段有严格的先后顺序 [已验证: AOSP system/core/init/init.cpp]：
+**Bootstrap services** 里有最重的一批基础框架服务，包括 `ActivityTaskManagerService`、`ActivityManagerService`、`PowerManagerService`、`LightsService`、`DisplayManagerService`、`PackageManagerService`。AMS / ATMS 属于这里，不属于 other。
 
-```
-early-init → init → late-init → early-fs → fs → post-fs → late-fs → early-boot → boot → late-boot
-```
+**Core services** 里是第二层基础服务，典型例子有 `BatteryService`、`UsageStatsService`、`WebViewUpdateService`。这些服务依赖前面的基座，但还没到窗口和输入这一层。
 
-这个顺序至关重要。比如，servicemanager 必须在 `init` 阶段启动，因为后续几乎所有进程都依赖 binder 通信；而 surfaceflinger 的启动可以稍晚一些。
+**Other services** 里才会启动 `InputManagerService`、`WindowManagerService`、`AlarmManagerService`、`JobSchedulerService`、`NotificationManagerService` 等更大一包服务。WMS 和 InputManagerService 属于这一段。`SensorService` 也不是这里直接 new 出来的 Java service，SystemServer 只是通过 `PHASE_WAIT_FOR_SENSOR_SERVICE` 等待相关前置条件，再继续启动 WMS。
 
-#### 关键 native 服务的启动顺序
+`startApexServices(t)` 也别写成“Android 16 新增”。APEX 模块化从 Android 10 就开始了，独立的 `startApexServices()` 阶段在更早分支已经存在。写文章时最好直接注明“本文按 android-16.0.0_r1 观察到的阶段顺序”，少做未经核对的版本断言。
 
-init 启动的 native 服务中，最重要的几个及其作用：
+### Home 首帧可见、LOCKED_BOOT_COMPLETED、BOOT_COMPLETED 要拆开
 
-| 服务 | 启动阶段 | 核心作用 |
-|------|----------|----------|
-| **servicemanager** | `on init` | Binder 通信的"名字服务"，管理所有 Binder 服务的注册与查找 |
-| **surfaceflinger** | `class core`（boot 阶段由 `class_start core` 触发） | 图形合成引擎，负责将多个图层的渲染结果合成为最终显示画面 |
-| **lmkd** | `on init` | Low Memory Killer Daemon，在内存不足时杀掉低优先级进程 |
-| **logd** | `on init` | 系统日志守护进程 |
-| **hwservicemanager** | `on init` | HIDL 服务的注册管理（用于 HAL 层通信） |
+系统服务就绪后，`ActivityManagerService.systemReady()` 会在 system user 路径里调用 `mAtmInternal.startHomeOnAllDisplays(currentUserId, "systemReady")`，把 Home Activity 拉起来。这个节点对应“系统开始尝试显示桌面”。
 
-其中，**servicemanager 必须最先启动**。因为它为整个 Binder 通信体系提供名字服务——所有后续进程（包括 Zygote 和 SystemServer）要进行 IPC 通信，都需要先到 servicemanager 注册或查找服务。
+Home 真正首帧可见，要再往后看 Launcher 自己的渲染和 SurfaceFlinger 合成。用户此时已经能看到桌面，但广播尾声还没结束。
 
-[自动发现: 来源 obsidian/Cubox/Android 启动系列之我是 init 进程 - 掘金-2024-01-27.md] init 进程采用"被动创建"模式——它不关心要创建哪些子进程，而是让各模块自己通过 .rc 文件声明。这种设计使得 Android 的启动配置高度模块化，每个模块（比如 Wi-Fi、蓝牙）可以有自己的 .rc 文件，通过 `import` 指令引入主配置。
+`ACTION_LOCKED_BOOT_COMPLETED` 和 `ACTION_BOOT_COMPLETED` 都由 `UserController` 负责发。前者发生在用户进入 running locked 阶段，适合 Direct Boot aware 组件；后者要等用户解锁、CE storage 可用之后才发。它们都不等同于 Launcher 首帧，更不等同于“SystemServer 启动完自动同步收尾”。
 
-[待补充：init 阶段在 Perfetto 中的表现截图]
-
-### Zygote：Java 世界的"孵化器"
-
-init 完成用户空间的搭建后，接下来的工作交给 Zygote。init 进程通过 init.rc 中的配置启动 Zygote。Zygote 是 Android 中最巧妙的进程设计之一，它解决了一个核心问题：**如何让 App 启动既快又省内存？**
-
-如果没有 Zygote，每次启动一个 App 都需要：
-1. fork 一个新进程
-2. 启动 ART 虚拟机
-3. 加载几千个基础类（Activity、View、Context 等）
-4. 加载资源（图片、字符串、布局等）
-
-这个过程可能需要数秒。Zygote 的方案是：**提前把这些工作做一次，之后所有 App 进程通过 fork 复用这些成果。**
-
-#### Zygote 的预加载机制
-
-Zygote 进程启动后，会执行一系列预加载操作 [已验证: AOSP frameworks/base/core/java/com/android/internal/os/ZygoteInit.java]：
-
-1. **preloadClasses()**：加载预定义的 Java 类列表。这些类定义在 `/apex/com.android.art/etc/preloaded-classes` 文件中（Android 10+ 使用 APEX 模块管理），通常包含 3000-4000 个常用类——Activity、Fragment、View、TextView 等全部在其中。
-   
-2. **preloadResources()**：预加载常用资源，包括系统主题、默认字体、常用图片等。
-   
-3. **preloadDexCaches()**：预热 DEX 文件的方法调用缓存，让后续 App 不需要重新解析这些方法。
-   
-4. **preloadSharedLibraries()**：加载常用的 native 库（如 androidhwui、skia 等）。
-
-Zygote 完成预加载后，就进入"等待"状态，监听 Unix 域套接字上的请求。当 SystemServer 或 AMS 需要创建新的 App 进程时，会通过这个套接字通知 Zygote，Zygote 调用 `fork()` 创建子进程。
-
-#### fork() 与 Copy-on-Write
-
-fork 的妙处在于 **Copy-on-Write（CoW）** 机制。新 fork 出来的子进程和父进程（Zygote）共享同一块物理内存，只有在子进程试图修改某个内存页时，内核才会为子进程创建该页的独立副本。
-
-结果是：
-- 所有 App 进程共享 Zygote 预加载的那几千个类和资源，内存开销极小
-- App 进程启动时不需要重新加载这些类，启动速度大幅提升
-- 在 Perfetto 中，App 进程启动后会很快进入 `Application.onCreate()`，不需要再为基础类加载单独付出一段明显的启动时间
-
-但这也带来了一个限制：**Zygote 预加载之后，不能再加载新的 class 或资源到共享区域**。这就是为什么 Zygote 启动后的类加载都只影响当前进程。
-
-[待补充：Zygote 预加载阶段在 Perfetto 中的 Trace 表现]
-
-### SystemServer：系统服务的"大管家"
-
-Zygote 预加载完成后，第一件事就是 **fork 出 SystemServer**。这是一个硬编码的行为，定义在 `ZygoteInit.java` 中 [已验证: AOSP frameworks/base/core/java/com/android/internal/os/ZygoteInit.java, `startSystemServer()` 方法]：
-
-```java
-// ZygoteInit.java
-private static boolean startSystemServer(...)
-        throws MethodAndArgsCaller, RuntimeException {
-    // 硬编码参数，启动 SystemServer
-    String args[] = {
-        "--setuid=1000",
-        "--setgid=1000",
-        "--setgroups=...",
-        "--capabilities=...",
-        "--runtime-args",
-        "com.android.server.SystemServer",
-    };
-    // fork SystemServer 进程
-    pid = Zygote.forkSystemServer(...);
-    ...
-}
-```
-
-SystemServer 启动后，会在自己的进程中按顺序启动 Android Framework 的核心服务。这些服务分为三个阶段 [已验证: AOSP frameworks/base/services/java/com/android/server/SystemServer.java]：
-
-#### 第一阶段：Bootstrap Services
-
-最基础的服务，后续所有服务都依赖它们：
-
-- **ActivityManagerService (AMS)**：管理所有 Activity 的生命周期、进程调度
-- **PackageManagerService (PMS)**：管理已安装应用的信息
-- **PowerManagerService**：电源管理
-- **DisplayManagerService**：显示管理
-- **SensorService**：传感器服务
-
-其中 AMS 尤为关键——它不仅管 Activity，还负责整个进程级别的调度。在 Perfetto 中，如果看到某个 App 进程被创建或被杀，那背后都是 AMS 在操作。
-
-#### 第二阶段：Core Services
-
-基础服务就位后，启动核心服务：
-
-- **WindowManagerService (WMS)**：窗口管理，决定哪个窗口显示在最前面
-- **InputManagerService**：输入事件管理（触摸、按键）
-- **BatteryService**：电池状态管理
-- **StorageManagerService**：存储管理
-- **NetworkManagementService**：网络管理
-
-WMS 是性能分析中的"老朋友"。在 Perfetto 中，当分析 ANR 或者界面切换卡顿时，经常需要看 WMS 的状态——它决定了 Input 事件的分发和窗口的可见性。
-
-#### 第三阶段：Other Services
-
-最后启动的是其他服务，数量最多，重要性相对较低：
-
-- **NotificationManagerService**
-- **LocationManagerService**
-- **AudioService**
-- **VibratorService**
-- 等等...
-
-这三个阶段有严格的依赖关系。比如 WMS 依赖 AMS 来知道哪个 Activity 处于前台，InputManagerService 依赖 WMS 来决定把触摸事件分发给哪个窗口。
-
-[待补充：SystemServer 各阶段启动时间在 Perfetto 中的表现]
-
-### Launcher：最后的临门一脚
-
-SystemServer 启动完成后，AMS 会发送 `ACTION_BOOT_COMPLETED` 广播（实际流程更复杂，先发送 `ACTION_LOCKED_BOOT_COMPLETED`，用户解锁后再发送 `ACTION_BOOT_COMPLETED`）。同时，SystemServer 启动 Launcher App，桌面显示出来，整个开机过程完成。
-
-在 Perfetto 中，我们可以追踪到这条完整的时间线：从 Kernel 启动，到 init 执行各阶段脚本，到 Zygote 预加载，到 SystemServer 启动各类服务，最后 Launcher 渲染出第一帧——这就是从按下电源键到看到桌面的完整旅程。
+[待补充：一张同时标出 systemReady、Home 首帧、LOCKED_BOOT_COMPLETED、BOOT_COMPLETED 的 Trace / logcat 对照图]
 
 ## 启动时间的度量
 
-上面完整梳理了从按下电源键到桌面可见的全链路。接下来的问题是：每个阶段到底花了多长时间？瓶颈在哪里？
+开机时间排查最好同时看 event log、bootstat、Perfetto 和 dmesg。四种信号关注的里程碑不同，混成一个数字后，问题会越看越乱。
 
-"不能优化无法度量的东西。"Android 提供了多种工具来度量启动时间。
+### boot completed 广播
 
-### boot_completed 广播
+`ACTION_LOCKED_BOOT_COMPLETED` 和 `ACTION_BOOT_COMPLETED` 都是 UserController 这一侧的用户生命周期广播，不是 Launcher 的 UI 里程碑。
 
-`ACTION_BOOT_COMPLETED` 是最常用的开机完成标志。它表示系统已完成启动，用户已解锁设备。在代码中，AMS 负责在合适时机发送这个广播 [已验证: 官方文档 developer.android.com]。
+- `ACTION_LOCKED_BOOT_COMPLETED`：用户进入 running locked 阶段后发送，Direct Boot aware 组件可以在这里开始工作。
+- `ACTION_BOOT_COMPLETED`：用户真正解锁、CE storage 可用后发送。
 
-但要注意两个细节：
-
-1. 在 Android 7.0+（Nougat，API 24+），先发送 `ACTION_LOCKED_BOOT_COMPLETED`（设备启动完成但处于锁屏状态），用户解锁后再发送 `ACTION_BOOT_COMPLETED`。
-2. 现代 Android 版本对 `BOOT_COMPLETED` 广播做了限流——如果 App 从未被用户打开过，可能收不到这个广播。
+所以“桌面已经出现”并不等于 `BOOT_COMPLETED`。如果我们关心的是用户第一次看到可操作桌面，应该盯 Home 首帧和 `boot_progress_enable_screen` 附近的事件；如果我们关心的是系统广播长尾和应用收尾初始化，才去看 `LOCKED_BOOT_COMPLETED` / `BOOT_COMPLETED`。
 
 ### bootstat 工具
 
-`bootstat` 是 AOSP 内置的启动时间记录工具，定义在 `system/core/bootstat/` 目录下 [已验证: AOSP system/core/bootstat/bootstat.cpp]。它记录了启动过程中各个关键节点的时间戳：
+`bootstat` 仍然是快速看分段耗时的第一入口，源码在 `system/core/bootstat/bootstat.cpp`。它的价值不在“给一个总耗时”，而在于把关键节点打散成可比较的时间戳。
 
 ```bash
-# 查看启动记录
 adb shell bootstat -l
-# 输出示例：
-# firmware_loaded: 2.3s
-# bootloader_complete: 3.1s
-# kernel_loaded: 5.8s
-# boot_complete: 18.2s
 ```
 
-这些时间戳是相对于系统启动的 uptime（秒），可以直接看出哪个阶段最耗时。
+这一步适合先做粗定位：Bootloader / Kernel 慢，还是 Framework 慢，还是用户解锁后的广播尾部长。
 
-### BootTimingsTraceLog 与 TimingsTraceAndSlog：框架内置的追踪体系
+### BootTimingsTraceLog 与 TimingsTraceAndSlog：框架内置的两套秒表
 
-上面提到的 bootstat 是一个"外挂"式的度量工具——它从外部观察启动过程，记录关键节点的时间戳。但 Android 框架本身还内置了一套更精细的追踪机制，直接嵌入到启动代码的关键路径中，让我们能精确到每个内部阶段看耗时。
+#### BootTimingsTraceLog：盯 Zygote 预加载
 
-这套追踪体系由两个工具类组成，分别覆盖启动链的不同阶段。
+ZygoteInit 在预加载阶段会写 BootTimingsTraceLog。常见 slice 包括 `PreloadClasses`、`PreloadResources`、`PreloadSharedLibraries`、`PreloadOpenGL` 等。分析“开机还没到 SystemServer 就已经拖很久”的问题时，先看这里。
 
-#### BootTimingsTraceLog：Zygote 预加载阶段的"秒表"
+如果 `PreloadClasses` 明显变宽，就去核对 preloaded-classes、ART APEX、odsign / dexpreopt 产物；如果 `PreloadResources` 变宽，再查资源包和字体加载。
 
-BootTimingsTraceLog 是一个轻量级的追踪工具，主要在 ZygoteInit 中使用。它的工作方式很直接：在 Zygote 预加载过程的关键节点调用 `Trace.traceBegin()` 和 `Trace.traceEnd()`，将耗时信息写入 atrace/ftrace 子系统。
+#### TimingsTraceAndSlog：盯 SystemServer 各阶段
 
-[已验证: AOSP frameworks/base/core/java/com/android/internal/os/ZygoteInit.java @ android-16.0.0_r1]
+SystemServer 用的是 `TimingsTraceAndSlog`。在 Perfetto 里，`StartServices` 会包住四个大阶段：
 
-它追踪的预加载阶段包括：
+- `startBootstrapServices`
+- `startCoreServices`
+- `startOtherServices`
+- `startApexServices`
 
-- **BeginIcuCachePinning**：ICU（国际化组件）数据锁定到内存的耗时
-- **PreloadClasses**：预加载常用 Java 类到 ART 运行时的耗时。这通常是 Zygote 预加载中最耗时的阶段，因为要加载 3000-4000 个类
-- **PreloadResources**：预加载常用资源（主题、字体等）的耗时
-- **PreloadOpenGL**：OpenGL 相关资源预加载
-- **PreloadSharedLibraries**：共享库预加载
-- **PreloadTextResources**：文本资源预加载
-
-在 Perfetto 中，这些事件显示在 Zygote 进程（zygote64 或 zygote）的 track 上，每个预加载阶段呈现为一个独立的 slice。如果发现 Zygote 预加载阶段异常耗时，可以通过这些 slice 精确定位是哪个环节拖了后腿。
-
-[待补充：Perfetto 中 Zygote 预加载各阶段的 Trace 截图]
-
-#### TimingsTraceAndSlog：SystemServer 启动阶段的"审计员"
-
-SystemServer 使用的是另一个追踪工具——TimingsTraceAndSlog。它和 BootTimingsTraceLog 的区别在于：TimingsTraceAndSlog 不仅通过 `Trace.traceBegin()/traceEnd()` 写入 Perfetto 追踪，还会同步通过 `Slog` 输出日志。这样我们既可以在 Perfetto 中查看各阶段耗时，也可以通过 logcat 快速检索。
-
-[已验证: AOSP frameworks/base/core/java/android/os/TimingsTraceAndSlog.java @ android-16.0.0_r1]
-
-TimingsTraceAndSlog 覆盖 SystemServer 的四个核心启动阶段：
-
-1. **startBootstrapServices()**：启动相互依赖的关键服务（ATMS、PMS 等），这些服务是后续一切的基石
-2. **startCoreServices()**：启动无直接依赖的核心服务（BatteryService、UsageStatsService 等）
-3. **startOtherServices()**：启动其余系统服务（AMS、WMS 等），这是最耗时的阶段，因为服务数量最多
-4. **startApexServices()**：启动 APEX 模块中包含的服务，这是 Android 模块化架构演进的产物 [待验证: startApexServices 从 Android 10 引入，此处作为 TimingsTraceAndSlog 追踪阶段列出，确认为 Android 16 新增追踪还是此前已有]
-
-在 Perfetto 的 system_server 进程 track 中，这四个阶段呈现为嵌套的 slice，每个 slice 内部又能看到各服务自身的初始化耗时。当分析 SystemServer 启动慢的问题时，先看这四个 slice 中哪个最宽，再钻进去看具体哪个服务拖了后腿——这是一套非常高效的分析路径。
+排查方法很直接：先看哪一段最宽，再钻进那一段找具体服务。AMS / PMS 拉长，问题多半在 bootstrap；WMS / InputManagerService 拉长，通常在 other；APEX service 拉长，就去看主线模块化服务和 updatable 组件。
 
 #### boot_progress 里程碑事件
 
-除了 Perfetto 追踪，Android 还通过 logcat 输出一系列 `boot_progress` 里程碑事件，为快速定位启动瓶颈提供了一条"捷径"：
+`boot_progress_*` 事件要按源码语义解释，不要拿名字脑补。
 
-```bash
-adb logcat | grep boot_progress
-```
+- `boot_progress_system_run`：`SystemServer.run()` 入口写入，表示 system_server 已进入主运行流程，不表示“SystemServer 全部准备就绪”。
+- `boot_progress_pms_start` / `boot_progress_pms_ready`：PMS 启动与就绪。
+- `boot_progress_ams_ready`：`ActivityManagerService.systemReady()` 开始。
+- `boot_progress_enable_screen`：`ActivityTaskManagerService` 调用 `enableScreenAfterBoot()`，随后让 WMS 去 enable screen。它不等于 Launcher 首帧完成。
 
-常见的里程碑事件及其含义：
-
-- `boot_progress_preload_start` / `boot_progress_preload_end`：Zygote 预加载的起止时间
-- `boot_progress_system_run`：SystemServer 准备就绪
-- `boot_progress_pms_start` / `boot_progress_pms_ready`：PackageManagerService 启动与就绪
-- `boot_progress_ams_ready`：ActivityManagerService 就绪
-- `boot_progress_enable_screen`：屏幕点亮，用户可见
-
-[已验证: 官方文档 source.android.com/docs/core/perf/boot-times]
-
-这些里程碑的价值在于"快速排查"。如果只需要知道"开机慢在哪里"，不需要抓 Perfetto Trace，只需一条 logcat 命令就能看到各阶段的时间分布。如果发现某个阶段耗时异常（比如 PMS 启动超过 2 秒），再配合 Perfetto Trace 深入分析——是 CPU 调度延迟、I/O 等待、还是锁竞争。
-
-[来源: intake/research-feeds/2026-03-31-15-ch01-boot-timings-tracelog.md]
+因此，`boot_progress_enable_screen` 到桌面真正稳定可交互之间，仍然可能隔着 Launcher 绑定、首帧渲染、Widget 恢复和广播尾部处理。
 
 ### dmesg 与 logcat
 
-在 Kernel 阶段，`dmesg` 会显示内核启动的时间线：
+Kernel 和 early userspace 的问题，先看 `dmesg`；Framework 里程碑和广播尾部，更多靠 `logcat -b events`。
 
 ```bash
-adb shell dmesg | head -50
-# 可查看各驱动的加载时间
+adb shell dmesg | head -80
+adb logcat -b events | grep boot_progress
 ```
 
-在用户空间阶段，`logcat` 过滤 `boot` 相关 tag。特别是上面提到的 `boot_progress` 系列事件，可以通过 logcat 快速查看各阶段耗时分布：
+这组命令适合和 bootstat 对照着看。dmesg 里 I/O、dm-verity、驱动初始化拖长，通常早于 Framework；events buffer 里 `boot_progress_*` 拉长，则更多是 system_server 之后的问题。
+
+### Perfetto：区分“开机后抓取”和“重启全过程抓取”
+
+直接在 adb shell 里启动 perfetto，tracing 会从 adb 会话建立之后才开始。用这种方式抓 Trace，目标应该写成“second-stage init 之后，尤其是 Zygote / SystemServer / Launcher 这段”，不要把它写成覆盖 Boot ROM、Bootloader 和整个 Kernel early boot 的完整开机 Trace。
 
 ```bash
-# 查看 boot_progress 里程碑
-adb logcat | grep boot_progress
-
-# 查看所有启动相关事件
-adb logcat -b events | grep boot
-```
-
-### Perfetto / Systrace
-
-最直观的方式是用 Perfetto 抓取开机 Trace：
-
-```bash
-# 抓取开机 Trace
-adb shell perfetto \
-  -c - --txt \
-  -o /data/misc/perfetto-traces/trace.pb <<EOF
+adb shell perfetto   -c - --txt   -o /data/misc/perfetto-traces/boot-userspace.pftrace <<'EOF'
 buffers: {
-    size_kb: 63488
+  size_kb: 65536
 }
 data_sources: {
-    config {
-        name: "linux.ftrace"
-        ftrace_config {
-            ftrace_events: "sched/sched_switch"
-            ftrace_events: "power/cpu_frequency"
-            ftrace_events: "sched/sched_wakeup"
-            ftrace_events: "sched/sched_wakeup_new"
-            atrace_categories: "am"
-            atrace_categories: "sm"
-            atrace_categories: "wm"
-            atrace_categories: "view"
-            atrace_categories: "dalvik"
-            atrace_categories: "gfx"
-        }
+  config {
+    name: "linux.ftrace"
+    ftrace_config {
+      ftrace_events: "sched/sched_switch"
+      ftrace_events: "sched/sched_wakeup"
+      ftrace_events: "sched/sched_wakeup_new"
+      atrace_categories: "am"
+      atrace_categories: "wm"
+      atrace_categories: "view"
+      atrace_categories: "gfx"
+      atrace_categories: "dalvik"
     }
+  }
 }
 duration_ms: 30000
 EOF
+adb pull /data/misc/perfetto-traces/boot-userspace.pftrace .
 ```
 
-在 Perfetto UI 中，我们可以清晰地看到：
-- **init 进程**的各阶段（early-init → init → boot）
-- **Zygote 进程**的预加载区间，其中 BootTimingsTraceLog 标记的 PreloadClasses、PreloadResources 等 slice 清晰可见
-- **SystemServer 进程**的服务启动时间线，TimingsTraceAndSlog 标记的 startBootstrapServices、startCoreServices、startOtherServices 三个 slice 层层嵌套
-- **Launcher 进程**的首帧渲染时间
-
-[待补充：一份真实的开机 Perfetto Trace 截图，标注各阶段]
+如果目标是完整 reboot trace，就要在重启前准备专门的 boot tracing 方案，或者结合 bootstat、dmesg、事件日志来拼接时间线。单靠上面这条 adb 命令，结论只能覆盖用户态后半段。
 
 ## 开机性能优化的常见手段
 
-理解了启动链路，我们来看看如何优化开机时间。优化的核心思路是：**减少串行等待，增加并行执行，推迟非必要工作。**
+开机优化别从“招数列表”开始。更稳的做法是先把慢点钉在具体阶段，再决定动作。对启动链来说，常见的慢点大致分成四段。
 
-### 并行启动
+### 1. first-stage init / second-stage init：先看装载链和 early I/O
 
-init.rc 中，同一个 `on` 触发条件下的命令是串行执行的。但不同触发条件之间，init 可以通过 `trigger` 命令来控制并行度。现代 Android 设备上，init 已经做了大量并行化：
+如果 bootstat、dmesg 或 init 相关日志显示慢点出现在 early mount、`post-fs-data`、`load_all_props` 之前后，排查方向通常是分区装载、文件系统、verity 校验和启动期 I/O。
 
-- 多个相同 `class` 的服务可以同时启动（通过 `class_start` 命令批量启动）
-- 不相互依赖的服务放在不同的触发阶段，并行执行
+这个阶段更有效的动作包括：
 
-### 延迟加载（Lazy Loading）
+- 把非启动必需的数据准备，从 `post-fs-data` 往后挪到 `zygote-start` 或更晚的 boot phase
+- 检查 OTA 后首启是否卡在 APEX 激活、odsign 校验、dexpreopt 产物缺失、snapshot merge 抢 I/O
+- 减少必须在 early boot 读取的大文件和目录扫描
 
-不是所有服务都需要在开机时立即可用。比如：
-- NFC 服务：用户不用 NFC 的时候不需要启动
-- 打印服务：很少用到的功能
-- 一些 OEM 特定的服务
+如果 trace 上 system_server 还没起来，先别急着改 Framework Java 代码，问题大概率在更早的装载链上。
 
-Android 提供了 `bind` 类型的服务——只有当 App 绑定时才启动。这是一种"按需启动"的策略，可以显著减少开机时间。
+### 2. Zygote：预加载和编译产物命中率
 
-### cgroup 优先级调整
+Zygote 慢时，观察点是 `PreloadClasses`、`PreloadResources`、shared libraries 这些 slice。
 
-init.rc 中可以为服务设置 cgroup（Control Group），控制其 CPU 和 I/O 优先级。关键服务（如 SystemServer）应该获得更高的 CPU 份额和 I/O 优先级：
+这里常见的动作有两类：
+
+- 预加载治理：不要把 OEM / 业务侧 jar 轻率塞进 preloaded-classes；加进去会缩短部分进程启动，但会抬高整机开机基线，还会增加常驻内存压力。
+- 编译产物治理：核对 odsign、dexpreopt、profile 指导编译是否已经完成。OTA 后首启变慢，很多时候是编译产物尚未就绪，不是 Zygote 逻辑本身退化。
+
+### 3. SystemServer：按服务依赖切割，能 lazy 就 lazy
+
+如果 `StartServices` 很宽，下一步就看是 bootstrap、core、other 还是 apex services 拉长。定位到子阶段后，再决定是拆依赖、改启动时机，还是改服务形态。
+
+lazy service 是这里最常见也最有效的一类动作。AOSP 的 `hardware/interfaces/cas/aidl/default/cas-default-lazy.rc` 就用了这套模式：
 
 ```rc
-on boot
-    # 为系统服务设置更高的 CPU 优先级
-    write /dev/cpuset/system-background/cpus 0-3
-    write /dev/cpuset/foreground/cpus 4-7
+service vendor.cas-default-lazy /vendor/bin/hw/android.hardware.cas-service.example-lazy
+    interface aidl android.hardware.cas.IMediaCasService/default
+    class hal
+    oneshot
+    disabled
 ```
 
-### Zygote 优化
+`interface ...` + `disabled` 说明它不是开机就常驻的服务，而是由 servicemanager 在客户端首次查找时拉起。这里没有所谓的“bind 类型服务”。写 HAL / AIDL 启动策略时，优先用 lazy service 这个真实机制来描述。
 
-Zygote 的预加载时间直接影响开机时间。优化手段包括：
+CPU 和 I/O 调度也别只盯着老文章里的 cpuset。新分支更常见的入口是 `task_profiles`，它把调度、uclamp、cpuset 等策略组合成 profile，再分配给具体服务。分析启动回归时，raw cpuset 写法和 task_profiles 都要查。
 
-1. **精简预加载类列表**：移除不常用的类。但这需要权衡——减少预加载意味着 App 启动时可能需要重新加载这些类。
-2. **并行预加载**：Android 已经将一些预加载工作并行化。
-3. **预加载缓存**：通过 `--enable-preload-dex2oat` 等选项，在系统更新后后台预先编译预加载类的 OAT 文件。
+### 4. Home 首帧之后还有一段长尾
 
-### 厂商优化黑科技
+桌面可见只是“用户已经能看到东西”，还不是“启动链已经全部结束”。`LOCKED_BOOT_COMPLETED` / `BOOT_COMPLETED`、Widget 恢复、首次账号同步、包扫描补尾都可能拖在后面。
 
-各手机厂商在开机优化上有自己的手段：
+如果用户主观感知已经变快，但 boot completed 相关指标仍然长，就把这段单独看：哪些工作必须跟着广播走，哪些可以延到用户第一次真正点开某个功能时再做。
 
-- **小米**：MIUI 的"光速启动"——通过在关机前保存系统状态，开机时快速恢复
-- **华为**：EROFS 文件系统优化——通过改进文件系统布局，减少启动时的 I/O 时间
-- **三星**：Galaxy App Booster——在首次开机后后台优化 App 的 dex2oat 编译
+### 厂商经验单独写，不要冒充平台事实
 
-[待验证：各厂商具体优化方案的细节]
-
-### Android 16 的启动优化
-
-Android 16 在系统启动方面引入了两项值得关注的优化，分别从内核模块加载和编译优化两个层面缩短启动时间。
-
-[来源: intake/research-feeds/2026-03-31-15-ch01-android16-boot-optimization.md]
-
-#### 并行内核模块加载（Performance Mode）
-
-传统上，Linux 内核启动后需要串行加载各个内核模块。Android 16 引入的"Performance Mode"将这个串行过程改为并行——在模块间无依赖关系时，同时发起多个模块的加载请求，充分利用多核 CPU 的并行能力。
-
-实测效果 [待验证: 仅基于 Pixel 设备数据]：Pixel 10 上模块加载时间减少约 30%，2023 Pixel Fold 上减少约 25%。这个优化预期惠及所有 Android 设备，不限于 Pixel 系列。
-
-在 Perfetto 中，可以观察到变化：内核模块加载阶段，原本一条串行的 slice 变为多条并行的 slice，整体宽度（时间）明显缩短。
-
-#### AutoFDO：基于真实数据的内核编译优化
-
-AutoFDO（Automatic Feedback-Directed Optimization）是 Google 将编译器优化技术引入 Android 内核构建流程的成果。核心思路是：收集 Pixel 设备上最常用的 100 个 Android 应用的真实运行数据，分析这些应用与内核的交互模式，识别出内核中频繁执行的"热"代码路径，然后在编译内核时对这些路径做针对性优化。
-
-[待验证: AOSP Gerrit 相关 commit]
-
-实测效果：整体启动时间减少约 2.1%。这个数字看起来不大，但考虑到内核操作约占 Android 设备 CPU 时间的 40%，内核级优化的收益是全方位的——不仅启动更快，应用响应和续航也同步改善。AutoFDO 在 Android 15、16、17 beta 版本上均有测试验证。
+厂商常见动作无非是调整分区布局、延后非关键服务、把 HAL 改成 lazy、优化预编译命中率、降低 OTA 首启的 I/O 冲突。没有公开配置、设备条件和测试口径时，文章里最好写成“某机型实测”或“厂商 release note 提到”，别直接写成 Android 平台统一事实，更别给一个孤立百分比。
 
 ## 扩展：AB 分区与 dm-verity 的影响
 
@@ -563,51 +375,58 @@ dm-verity（Device Mapper Verity）是 Android 用于验证系统分区完整性
 
 ## 在 Perfetto 中识别启动各阶段
 
-当拿到一份开机阶段的 Perfetto Trace 时，以下是快速定位各阶段的指南：
+| 阶段 | 在 Perfetto / 日志里的观察点 | 该去哪里继续查 |
+|------|------------------------------|----------------|
+| Kernel / first-stage init | Trace 往往不完整，更多靠 `dmesg`、bootstat、串口 | 驱动初始化、early mount、verity、分区 I/O |
+| second-stage init | init 进程活跃，`post-fs-data`、`zygote-start` 等 action 依次推进 | init rc、属性、服务装配 |
+| Zygote 预加载 | zygote / zygote64 上出现 `PreloadClasses`、`PreloadResources` 等 slice | preloaded-classes、ART APEX、odsign / dexpreopt |
+| SystemServer 启动 | `StartServices` 下嵌套 bootstrap / core / other / apex services | 具体 service 的初始化和依赖 |
+| Home 首帧 | Launcher bindApplication、首帧提交、SurfaceFlinger 合成 | Launcher 自身初始化、WMS、SF |
+| 广播长尾 | UI 已经稳定，events buffer 里还在推进 `LOCKED_BOOT_COMPLETED` / `BOOT_COMPLETED` | UserController、广播接收器、后台收尾任务 |
 
-| 阶段 | 在 Perfetto 中的表现 | 关键 Track |
-|------|---------------------|-----------|
-| Kernel 启动 | Trace 的最前面，通常有几个空白区域（Kernel 启动前无法 trace） | cpu track |
-| init 进程 | init 进程的 CPU 活动，通常会出现多个阶段性的执行区间 | init 进程 track |
-| Zygote 预加载 | zygote64/zygote 进程的 CPU 使用高峰期，持续数秒 | zygote 进程 track |
-| SystemServer 启动 | system_server 进程中出现密集的 CPU 活动 | system_server track |
-| Launcher 首帧 | launcher 进程开始渲染，到第一帧提交完成 | launcher / SurfaceFlinger track |
-
-[待补充：完整的开机 Trace 标注截图]
+[待补充：一张按阶段标注的开机 Trace，总结从 init 到 Home 首帧的关键 slice]
 
 ## 常见问题与误区
 
-### 误区："init 进程是 Android 所有进程的鼻祖"
+### 误区：“init 进程是 Android 所有进程的鼻祖”
 
-准确地说，init 是**用户空间所有进程**的鼻祖。真正的起点是 swapper（PID 0），它还创建了 kthreadd（PID 2）——内核线程的鼻祖。
+更准确的说法是：init 是用户空间所有进程的鼻祖。PID 0 的 swapper 才是 Linux 侧最早的起点，PID 2 的 kthreadd 则是内核线程的起点。
 
-### 误区："开机时间就是到桌面显示的时间"
+### 误区：“开机时间就是到桌面显示的时间”
 
-Android 定义了多个"开机完成"节点，按时间顺序：
-- `locked_boot_completed`：设备启动完成，但仍处于 Direct Boot 模式（锁屏状态）——这是最先发出的
-- `boot_completed`：用户解锁后发出，表示系统完全就绪
-- `user_setup_complete`：用户完成首次设置向导
+至少要把下面几类里程碑分开：
 
-不同场景关注不同的节点。对于性能优化，通常关注从开机到 `boot_completed` 的总时间。
+- `boot_progress_system_run`
+- `boot_progress_enable_screen`
+- Home 首帧可见
+- `ACTION_LOCKED_BOOT_COMPLETED`
+- `ACTION_BOOT_COMPLETED`
 
-### 误区："App 冷启动慢是因为 Zygote 预加载不够"
+如果把它们全都算成“开机完成”，不同版本、不同机型、不同测试脚本的结果根本没法比较。
 
-Zygote 预加载了 3000+ 个常用类，但**App 自己的类**不在预加载列表中。冷启动慢更可能的原因是：
-- App 自身的 Application.onCreate() 做了太多初始化
-- App 的 Dex 文件需要 dex2oat 编译（特别是首次启动）
-- 主线程做了 I/O 或网络操作
+### 误区：“App 冷启动慢，只要多预加载一点类就行”
+
+Zygote 预加载能解决的是公共运行时准备工作，解决不了业务进程自己的 `Application.onCreate()`、主线程 I/O、首次 profile / dex2oat、网络初始化。把更多业务类塞进预加载列表，很可能会把整机开机时间和常驻内存一起抬高。
 
 ## 参考资料
 
-- AOSP 源码路径（精确到文件和关键函数）：
-  - `system/core/init/init.cpp` — init 进程主流程
-  - `system/core/init/init.rc` — 主 init.rc 配置文件
-  - `frameworks/base/core/java/com/android/internal/os/ZygoteInit.java` — Zygote 启动和预加载
-  - `frameworks/base/services/java/com/android/server/SystemServer.java` — SystemServer 服务启动
-  - `system/core/bootstat/bootstat.cpp` — 启动时间记录
+- AOSP 源码路径：
+  - `system/core/init/first_stage_init.cpp` — first-stage init、`DoFirstStageMount()`、`SwitchRoot()`
+  - `system/core/init/init.cpp` — second-stage init、rc 解析与 action queue
+  - `system/core/rootdir/init.rc` — `zygote-start` 触发点与默认启动动作
+  - `frameworks/base/config/preloaded-classes` — 当前分支预加载类列表
+  - `frameworks/base/core/java/com/android/internal/os/ZygoteInit.java` — Zygote 预加载与 `startSystemServer()`
+  - `frameworks/base/services/java/com/android/server/SystemServer.java` — `BOOT_PROGRESS_SYSTEM_RUN`、四段 StartServices
+  - `frameworks/base/services/core/java/com/android/server/EventLogTags.logtags` — `boot_progress_system_run` / PMS 相关里程碑
+  - `frameworks/base/services/core/java/com/android/server/am/EventLogTags.logtags` — `boot_progress_ams_ready` / `boot_progress_enable_screen`
+  - `frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java` — `systemReady()`、`startHomeOnAllDisplays()` 调用路径
+  - `frameworks/base/services/core/java/com/android/server/am/UserController.java` — `ACTION_LOCKED_BOOT_COMPLETED` / `ACTION_BOOT_COMPLETED`
+  - `frameworks/base/services/core/java/com/android/server/wm/ActivityTaskManagerService.java` — `enableScreenAfterBoot()`
+  - `hardware/interfaces/cas/aidl/default/cas-default-lazy.rc` — lazy AIDL service 的 rc 示例
 - 官方文档：
   - [Android Boot Time](https://source.android.com/docs/core/perf/boot-times)
   - [Android Architecture](https://source.android.com/docs/core/architecture)
+  - [Android Boot](https://source.android.com/docs/core/boot)
   - [Verified Boot](https://source.android.com/docs/security/features/verifiedboot)
-- 其他高质量参考：
+- 其他参考：
   - [Android 启动系列之我是 init 进程 - 掘金](https://juejin.cn/post/7287913415804370955)
