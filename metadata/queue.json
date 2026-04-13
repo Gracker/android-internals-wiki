@@ -6717,5 +6717,68 @@
     "status": "completed",
     "completed_at": "2026-04-13T12:05:42+08:00",
     "completed_by": "task2b-content-processing-rework"
+  },
+  {
+    "section": "7.13",
+    "section_title": "SystemUI 性能分析",
+    "priority": 95,
+    "reason": "[Deep Tech Review] SystemUI/Launcher 窗口拓扑、通知 inflate 流程、关键 trace tag 与输入路径均存在高风险误导",
+    "material_paths": [
+      "intake/research-gaps.md",
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "L56-L64 多 Surface 架构",
+        "detail": "正文把 StatusBar、NavigationBar、Notification Shade 写成三个相互独立的 Surface，并引用了当前分支不存在的 `StatusBarWindow`。但 android-16 的 `super_notification_shade.xml` 把 `status_bar_expanded` 包在同一个 `NotificationShadeWindowView` 里，独立窗口只对 NavigationBar 成立。",
+        "suggestion": "改成“NotificationShadeWindow（状态栏 + Shade）+ NavigationBarWindow”两层模型，并用真实 Layer 名或窗口名重新映射 Perfetto / SurfaceFlinger 视图。"
+      },
+      {
+        "type": "源码错误",
+        "location": "L96-L104 通知图标更新流程",
+        "detail": "文中写成 `StatusBarNotificationPresenter -> NotificationIconController.updateNotificationIcons()`，并引用 `statusbar/phone/StatusBarIconController.java`。当前 android-16 树中该路径不存在，`StatusBarNotificationPresenter` 里也未找到这个方法链。",
+        "suggestion": "按当前 SystemUI notification icon pipeline 重新核对类名和方法名，不要把旧版控制器路径当成 Android 12-17 的现行实现。"
+      },
+      {
+        "type": "源码错误",
+        "location": "L145-L154 RemoteViews inflate 流程",
+        "detail": "这里仍按 `NotificationEntryManager` + `NotificationInflater` + 主线程 `RemoteViews.apply()` 来写。android-16 当前实现是 `NotificationContentInflater` / `NotifInflater`，正常路径通过 executor 走 `applyAsync()` / `reapplyAsync()`，同步 apply 只在 `inflateSynchronously` 测试路径下触发。",
+        "suggestion": "重写通知内容绑定链，明确“当前主路径是异步 apply/reapply，主线程兜底只在失败回退或测试场景出现”，并把类路径改成当前分支真实文件。"
+      },
+      {
+        "type": "源码错误",
+        "location": "L217-L230 关键 Trace 点表",
+        "detail": "表中的多个 trace tag 与公开 AOSP 对应类中的实际 Trace 名不符。android-16 可直接看到的示例更接近 `NotificationShadeWindowView#onMeasure`、`NotificationStackScrollLayout#onMeasure`、`RecentsView.applyLoadPlan*`，而不是 `StatusBar.updateNotificationIcons`、`NotificationInflater.inflate`、`Workspace.snapToPage`、`QuickStep.appTransition` 这些写法。",
+        "suggestion": "只保留已在源码里核对过的 trace 名；核对不出的条目改成“关注某类 Track / 某个类的 slice”，不要伪造 event 名。"
+      },
+      {
+        "type": "版本差异",
+        "location": "L34 开头定义 + L168 Launcher 性能分析",
+        "detail": "开头把 `Recent Apps` 归到 SystemUI 进程，但后文又写“Android 12+ 的 QuickStep 把 Recents 移到了 Launcher”。frontmatter 适用范围本来就是 Android 12-17，因此开头这句在当前章节范围内直接失真。",
+        "suggestion": "开头改为：Android 12-17 下 StatusBar / Notification Shade / NavigationBar 在 SystemUI，Recents / Overview 在 Launcher3 Quickstep；若要保留历史演进，单独补一段版本说明。"
+      },
+      {
+        "type": "原理断裂",
+        "location": "L77-L86、L178-L189 启动动画协作链",
+        "detail": "正文从 Launcher `startActivity` 直接跳到 “system_server 通知 SystemUI 准备动画 / SurfaceFlinger 合成”，中间缺了 Android 12-17 真正关键的 WM Shell / QuickStep / StartingWindow / transition 协调层。少了这段，读者很难把 Perfetto 里的 Launcher、Shell、SurfaceFlinger slice 对起来。",
+        "suggestion": "补一段现代转场链：Launcher3 Quickstep → WM Shell / transition organizer → StartingWindow / SplashScreen → App 第一帧 → SurfaceFlinger 合成，并标出各自该看哪条 Track。"
+      },
+      {
+        "type": "原理断裂",
+        "location": "L119-L123、L133-L137 NavigationBar / 手势输入路径",
+        "detail": "这里把 3-button NavigationBar、gestural navigation、`InputConsumer`、SystemUI 主线程揉成一条路径，还顺手猜到了 Android 17 迁到 system_server。没有区分 `NavigationBarView` 点击路径和手势返回/边缘手势的输入监视路径，容易把真正的输入瓶颈看错。",
+        "suggestion": "拆成两条链分别写：三按钮导航点击事件路径，以及 gestural navigation 的 input monitor / gesture handler 路径；补清版本边界，补不上就不要提前写 Android 17 结论。"
+      },
+      {
+        "type": "版本差异",
+        "location": "L261-L263 异步 inflate 版本口径",
+        "detail": "正文写成“Android 13 开始支持 `inflateAsync()`，使用 HandlerThread 处理 inflate”。当前 android-16 实现是 executor 驱动的异步 apply / reapply；至于究竟从哪一版引入，文中没有 commit 或版本证据。",
+        "suggestion": "把版本口径降级为“当前 AOSP 使用异步 apply/reapply，具体引入版本待查”，等 git 历史核实后再补 Android 版本边界。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-13T12:26:00+08:00",
+    "status": "pending"
   }
 ]

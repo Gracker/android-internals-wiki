@@ -1748,3 +1748,36 @@ AsyncLayoutInflater 一节缺少 AndroidX 当前实现的关键边界，尤其�
 
 ### 关联章节
 §2.3、§2.4、§2.5、§7.1、§7.2、§7.3
+
+
+## [2026-04-13] 7.13 SystemUI 性能分析 — SystemUI / Launcher / WM Shell 转场协作链
+
+### 盲区描述
+章节已经谈到 Launcher、SystemUI 和 App 三方协作，但没有把 Android 12-17 的现代转场链写完整：Launcher3 Quickstep、WM Shell transition / recents animation、StartingWindow / SplashScreen、SurfaceFlinger 合成之间到底谁在什么时机接力。缺了这段，读者只能看到“多进程协作”这个结论，却不知道 Perfetto 里该把哪些 track 连起来看。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 梳理 Launcher3 Quickstep → WM Shell transition organizer → StartingWindowController → App first frame 的调用链
+- 确认 Android 12-17 中 Recents / Overview、SplashScreen、RemoteAnimation / Shell transition 的版本演进
+- 找一份可公开引用的 Perfetto Trace，把 Launcher、Shell、SurfaceFlinger、目标 App 四组轨道放在一起讲
+
+### 关联章节
+2.12、7.13、13.3
+
+## [2026-04-13] 7.13 SystemUI 性能分析 — 手势导航输入路径与主线程边界
+
+### 盲区描述
+当前章节把三按钮导航点击、手势返回、SystemUI 主线程、`InputConsumer` 混成一条路径，没有区分 `NavigationBarView` 的点击处理和 gestural navigation 的 input monitor / gesture handler 链。对性能分析来说，这会直接影响“延迟到底发生在 SystemUI 主线程、InputDispatcher，还是手势检测链”这件事的判断。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 分开梳理 3-button NavigationBar 与 gestural navigation 的输入接收、分发、回调线程
+- 核对 `EdgeBackGestureHandler`、InputMonitor / InputChannel、NavigationBarView 在 Android 12-17 的实现边界
+- 补一份 Perfetto / traces.txt 对照，说明输入延迟分别会落在哪些线程或 slice 上
+
+### 关联章节
+3.2、7.13、13.3
