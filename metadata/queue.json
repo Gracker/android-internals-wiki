@@ -179,16 +179,35 @@
   {
     "section": "8.7",
     "section_title": "Baseline Profiles 与编译优化实践",
-    "priority": 80,
-    "reason": "知识缺口挖掘：Baseline Profiles 是启动优化最有效的单点手段，Google 官方量化 30% 提升，与 1.7 ART 编译/1.12 AutoFDO 构成完整编译优化链",
+    "priority": 90,
+    "reason": "[review回炉] 缺少 outline 结构，Perfetto 验证段与 OEM 系统镜像级编译优化存在技术风险",
     "material_paths": [
-      "intake/research-feeds/2026-04-07-11-android16-cloud-compilation-baseline-startup-profiles.md"
+      "intake/suggestions.md（含 review 意见）"
     ],
-    "added_by": "task2a-knowledge-gap",
-    "added_at": "2026-04-05T19:10:00+08:00",
-    "status": "completed",
-    "completed_at": "2026-04-09T07:03:00+08:00",
-    "completed_by": "task2a-stale-cleanup"
+    "review_issues": [
+      {
+        "type": "需重写",
+        "location": "全文结构",
+        "detail": "缺少 outline-start / outline-end 大纲块，Task 6 无法按锚点检查覆盖率。",
+        "suggestion": "按现有正文补齐结构化大纲与锚点后，再回到 Task 6 做覆盖检查。"
+      },
+      {
+        "type": "需确认",
+        "location": "在 Perfetto 中验证 Baseline Profiles 的效果",
+        "detail": "`app_speed_index`、`JIT compiling` / `dex2oat` 观测口径与命令示例存在工具链和版本风险。",
+        "suggestion": "交给 Task 9 核对 Perfetto schema / metric 与可观测 slice，再决定保留哪组验证路径。"
+      },
+      {
+        "type": "需确认",
+        "location": "OEM 系统镜像级别的编译优化",
+        "detail": "`/system/etc/sysconfig/`、`WITH_DEXPREOPT_*` 与 System Baseline Profiles 的关系缺少 AOSP build 证据，容易和系统 dexpreopt 混写。",
+        "suggestion": "交给 Task 9 核实 AOSP build / ART 文档，再由 Task 2B 重写系统镜像级表述。"
+      }
+    ],
+    "added_by": "task6-review",
+    "added_at": "2026-04-13T14:05:00+08:00",
+    "status": "pending",
+    "original_review_log": "logs/review/2026-04-13-14-review.md"
   },
   {
     "section": "2.15",

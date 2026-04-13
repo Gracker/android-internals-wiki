@@ -2432,3 +2432,23 @@
 - **问题**：RemoteViews 嵌套层级的 1-2ms / 10-20ms，以及 Bitmap 传输的 10-50ms / 100ms+ 都没有设备、版本、图片尺寸、SystemUI 负载或 trace 条件。
 - **建议**：补设备型号、Android 版本、图片尺寸、是否冷/热路径、trace 截图或 benchmark 条件；拿不到就统一降级为定性表述。
 
+
+
+## [Task6 Review] 8.7 Baseline Profiles 与编译优化实践 — 2026-04-13
+- **类型**：需重写
+- **位置**：全文结构
+- **问题**：章节缺少 `<!-- outline-start -->` / `<!-- outline-end -->` 大纲块，Task 6 无法按锚点检查覆盖率，当前也缺少“为什么要了解这个 / 工作机制 / 生成维护 / Perfetto 观测 / 渠道差异”等结构化锚点。
+- **建议**：先补齐 outline 和锚点，再回到 Task 6 做覆盖率检查；正文可沿现有 6 个一级小节整理，不需要重写技术观点。
+- **review 日志**：logs/review/2026-04-13-14-review.md
+
+- **类型**：需确认
+- **位置**：`在 Perfetto 中验证 Baseline Profiles 的效果`
+- **问题**：`app_speed_index` 表、`JIT compiling` / `dex2oat` 观测口径、安装前后的 compile 命令都带有工具链与版本风险，当前段落缺少可复核的 Perfetto schema / 文档依据。
+- **建议**：交给 Task 9 核对当前 Perfetto metrics/schema 与可观测 slice；如果证据不够，把结论降级为“可选验证路径”并补 [待验证] 来源。
+- **review 日志**：logs/review/2026-04-13-14-review.md
+
+- **类型**：需确认
+- **位置**：`OEM 系统镜像级别的编译优化`
+- **问题**：`/system/etc/sysconfig/`、`WITH_DEXPREOPT_*` 与 “System Baseline Profiles” 的对应关系缺少 AOSP 构建路径支撑，容易把系统 dexpreopt 和 App Baseline Profiles 写混。
+- **建议**：交给 Task 9 对照 AOSP build / ART 文档核实，再由 Task 2B 重写这节的系统镜像表述。
+- **review 日志**：logs/review/2026-04-13-14-review.md

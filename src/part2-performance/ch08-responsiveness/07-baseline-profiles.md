@@ -1,12 +1,16 @@
 ---
 title: "Baseline Profiles 与编译优化实践"
 chapter: "8.7"
+section: "8.7"
 status: ready-for-review
 drafted_date: "2026-04-06"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 9 (API 28) - Android 17 (API 37)"
 last_verified: "2026-04-06"
 last_verified_against: "AOSP android-17-beta3"
+reviewed_date: "2026-04-13"
+reviewed_by: "openclaw-task6"
+task6_result: needs-rework
 confidence: medium
 sources:
   - type: official
@@ -18,10 +22,10 @@ sources:
 tags:
   - android
   - research
-pipeline_stage: task6_pending
-task6_state: pending
+pipeline_stage: task2b_pending
+task6_state: reviewed
 task9_state: pending
-task2b_state: idle
+task2b_state: pending
 ---
 
 
@@ -41,7 +45,7 @@ Baseline Profiles 就是 Google 给出的解决方案：**让开发者在 APK �
 
 Android 5.0（Lollipop）引入 ART 时，采用了全量 AOT（Ahead-Of-Time）编译策略：在应用安装时，dex2oat 将整个 DEX 文件编译为机器码。这种策略运行时性能最好（没有 JIT 开销），但安装时间过长、存储占用巨大。在低端设备上，一个大型应用的安装可能需要几分钟。
 
-Android 7.0（Nougat）做了彻底的转向：默认只做解释执行，配合 JIT 编译器在运行时动态优化热点代码。安装速度大幅提升，但代价是**首次运行时性能较差**——那些还没被 JIT 编译到的代码只能走解释器，速度比机器码慢一个数量级。
+Android 7.0（Nougat）做了彻底的转向：默认只做解释执行，配合 JIT 编译器在运行时动态优化热点代码。安装速度更快，但代价是**首次运行时性能较差**，那些还没被 JIT 编译到的代码只能走解释器，速度比机器码慢一个数量级。
 
 从 Android 9.0（Pie）开始，ART 引入了 Profile-Guided 编译：在设备上收集运行时 profile（哪些方法被频繁调用），然后交给 dex2oat 做针对性的 AOT 编译。这套机制后来扩展为 Cloud Profiles——Google Play 聚合大量用户的使用数据，生成一个"群体热点清单"随应用分发。
 
@@ -51,7 +55,7 @@ Android 7.0（Nougat）做了彻底的转向：默认只做解释执行，配合
 
 Baseline Profiles 填补的就是这个空白。它由开发者在构建时生成，随 APK 一起分发，不需要等待任何用户数据。安装时 dex2oat 根据 profile 中的规则，将指定的方法和类直接编译为机器码。
 
-换句话说：
+可以把它们分成两类：
 - **Cloud Profiles** 是群体智慧，需要时间积累
 - **Baseline Profiles** 是开发者判断，即时生效
 - 两者可以合并使用，效果叠加
@@ -102,7 +106,7 @@ Landroidx/compose/runtime/ComposerKt;
 3. **dex2oat 编译**：ART 使用 `speed-profile` 编译过滤器调用 dex2oat，只编译 profile 中列出的方法。相比全量编译（`speed` 过滤器），这种方式编译时间短得多
 4. **产物存储**：编译产物（`.odex`、`.vdex`、`.art` 文件）存储在 `/data/misc/profiles/` 或 `/data/dalvik-cache/` 目录下
 
-关键点在于编译过滤器的选择。没有 profile 时，dex2oat 默认使用 `verify` 过滤器（只做验证不编译）；有 profile 时使用 `speed-profile`（编译 profile 中指定的方法）。这个差异直接决定了首次启动的性能。
+真正影响首次启动的是编译过滤器。没有 profile 时，dex2oat 默认使用 `verify` 过滤器（只做验证不编译）；有 profile 时使用 `speed-profile`（编译 profile 中指定的方法）。两者的差别会直接反映到首启耗时上。
 
 ### ART Service 与 Profile 管理
 
@@ -125,7 +129,7 @@ ART Service 管理 profile 的生命周期：应用更新时清除旧 profile，
 
 ### Cloud Profiles 的配合
 
-Cloud Profiles 和 Baseline Profiles 的关系不是竞争，而是互补：
+Cloud Profiles 和 Baseline Profiles 是互补关系：
 
 | 维度 | Baseline Profiles | Cloud Profiles |
 |------|-------------------|----------------|
@@ -135,7 +139,7 @@ Cloud Profiles 和 Baseline Profiles 的关系不是竞争，而是互补：
 | 更新频率 | 随 APK 更新 | 持续优化 |
 | 适用场景 | 所有渠道 | 仅 Google Play |
 
-当两者同时存在时，ART 会合并 profile 并按合并后的完整列表做 AOT 编译。这意味着即使开发者遗漏了某些热点路径，Cloud Profiles 也能在后续补上。
+当两者同时存在时，ART 会合并 profile 并按合并后的完整列表做 AOT 编译。即使开发者漏掉了某些热点路径，Cloud Profiles 也可能在后续补上。
 
 [待验证: 非 Google Play 渠道是否也有类似的云端 profile 机制]
 
@@ -147,7 +151,7 @@ Android 16 引入了 **Cloud Compilation**（云端编译），将编译过程�
 2. 产物以 **SDM（Secure Dex Metadata）** 格式下发，使用与 APK 相同的密钥签名
 3. 设备端下载 SDM 后直接使用，无需本地编译
 
-这意味着安装过程完全跳过了 dex2oat 编译步骤，安装速度大幅提升（尤其低端设备），应用更新时的"冻结"时间降到毫秒级。
+在这条链路里，安装阶段不再依赖设备侧 dex2oat。低端设备对这类变化通常更敏感，应用更新时的“冻结”时间也会更短。
 
 Cloud Compilation 的完整优化链路：
 
@@ -161,7 +165,7 @@ Startup Profiles            Cloud Compilation            dex2oat AOT
 (AGP 8.3 DEX 重排)  →       (预编译 SDM)         →       本地安装
                                                         ↓
 R8/D8 优化                  AutoFDO (GKI)                内核级 PGO
-(代码收缩/DEX布局)   →       (内核 hot path)      →       CPU 效率提升
+(代码收缩/DEX 布局)  →       (内核 hot path)      →       CPU 效率提升
 ```
 
 [来源: intake/research-feeds/2026-04-06-11-baseline-profiles-compilation-optimization.md]
@@ -304,7 +308,7 @@ EOF
 对比两次 trace 的关键指标：
 - **`ActivityManager: Start proc` 到 `Choreographer doFrame` 的时间差**：这是冷启动到首帧的完整时间
 - **dex2oat 编译 slice 的出现**：有 profile 时应该看到 `dex2oat` 的编译活动更早完成
-- **JIT 编译活动**：无 profile 时启动阶段会出现大量 `JIT compiling` slice；有 profile 时应该显著减少
+- **JIT 编译活动**：无 profile 时启动阶段会出现更多 `JIT compiling` slice；有 profile 时通常会更少
 
 ### app-speed-index 指标
 
@@ -327,7 +331,7 @@ WHERE package_name = 'com.example.app';
 
 ### Profile 过大导致编译时间增加
 
-一个常见误区是"profile 越大越好"。实际上，profile 中列出的每个方法都需要 dex2oat 编译。如果 profile 列了数千个方法，安装时的编译时间反而会成为瓶颈——用户看到的"安装优化中..."提示会持续很久。
+一个常见误区是“profile 越大越好”。profile 中列出的每个方法都需要 dex2oat 编译。如果 profile 列了数千个方法，安装时的编译时间反而会成为瓶颈——用户看到的"安装优化中..."提示会持续很久。
 
 最佳实践是**只覆盖启动和核心 CUJ 的代码路径**，而不是整个应用的方法列表。Google 建议保持 profile 在合理的行数范围内（通常不超过几千条规则）。
 
@@ -343,7 +347,7 @@ WHERE package_name = 'com.example.app';
 
 这是国内开发者最关心的问题。Baseline Profiles 本身**不依赖 Google Play**——它打包在 APK 中，安装时直接被 dex2oat 消费。无论用户通过什么渠道安装（侧载、国内应用商店），只要设备的 ART 支持 speed-profile 编译过滤器（Android 9+），Baseline Profiles 都会生效。
 
-但是，Cloud Profiles 和 Cloud Compilation **依赖 Google Play 服务**。非 Google Play 渠道无法获得这两个优化。这意味着在国内市场，Baseline Profiles 是唯一的 profile 优化手段，更加重要。
+但是，Cloud Profiles 和 Cloud Compilation **依赖 Google Play 服务**。非 Google Play 渠道拿不到这两类优化时，Baseline Profiles 往往就是最现实的 profile 优化手段。
 
 [待验证: 国内主流应用商店是否有类似的云端 profile 基础设施]
 
@@ -405,6 +409,6 @@ Baseline Profiles 不只适用于第三方应用。在系统镜像中，预装�
 ### Android 16 云端编译 + Baseline/Startup Profiles DEX Layout 优化
 - 来源：https://android-developers.googleblog.com/cloud-compilation-baseline-profiles
 - 类型：research
-- 摘要：云编译替代设备端dex2oat。Startup Profiles DEX Layout额外+15-30%启动速度。Baseline Profiles + Startup Profiles组合：首次launch即可30%执行提速，已深度集成CI/CD。
+- 摘要：云编译替代设备侧 dex2oat。Startup Profiles 的 DEX Layout 可额外带来 15-30% 启动收益。Baseline Profiles + Startup Profiles 组合后，首次 launch 就能拿到约 30% 的执行提速，已深度集成到 CI/CD。
 - 入库时间：2026-04-08
 
