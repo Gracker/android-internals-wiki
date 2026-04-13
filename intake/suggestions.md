@@ -2898,3 +2898,22 @@
 - **位置**：L486 UClamp 迁移时间线；对照 5.2 的 L266 / L372
 - **问题**：5.1 写“Android 从 Android 12 开始逐步从 SchedTune 迁移到 UClamp”，但 5.2 写“Android 从 10 开始广泛使用 uclamp”，两章口径冲突。
 - **建议**：统一成“主线 uclamp 在 Linux 5.3 引入，Android 设备的实际采用受内核版本与厂商实现影响”，再分别标注 Android 10 / Android 12 / kernel 5.10 的边界。
+
+## [Task6 Review] 5.2 EAS 能量感知调度 — 2026-04-14
+- **类型**：需补充素材
+- **位置**：为什么要了解 EAS（约 L66）
+- **问题**：`20%~40%` 的功耗差值已经写成量化结论，但正文没有实验条件、设备范围或官方出处。
+- **建议**：补原始实验条件或权威来源；如果补不齐，就降级为定性描述。
+- **review 日志**：logs/review/2026-04-14-06-review.md
+
+- **类型**：需确认
+- **位置**：WALT / uclamp / SchedTune 时间线与版本演进（约 L205-L207、L266-L273、L372-L404）
+- **问题**：本章同时写了“Android 12 / Linux 5.10 开始统一回归 PELT”“Android 从 10 开始广泛使用 uclamp”“Linux 5.3 之后逐渐取代 SchedTune”，和 5.1 已记录的时间线口径存在冲突。
+- **建议**：交给 Task 9 统一主线内核版本、Android 设备采用时间和厂商差异，再由 Task 2B 回写统一口径。
+- **review 日志**：logs/review/2026-04-14-06-review.md
+
+- **类型**：需确认
+- **位置**：Perfetto SQL 示例（约 L322-L343）
+- **问题**：查询只按 thread name 取 `utid`，在多进程 Trace 中可能匹配到错误线程，示例稳定性不足。
+- **建议**：补 `process` / `upid` / `tid` 过滤条件，或明确这是需要按目标进程改写的示例。
+- **review 日志**：logs/review/2026-04-14-06-review.md
