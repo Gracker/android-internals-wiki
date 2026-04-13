@@ -1,36 +1,48 @@
 ---
-title: "ANR 非技术故障诊断"
-chapter: "9.7"
+title: ANR 非技术故障诊断
+chapter: '9.7'
 status: ready-for-review
-applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
-tags: [anr, non-technical, fault-diagnosis, system-bugs, google-engineer]
-related_chapters: ["9.3", "8.2", "13.7"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-04-10"
-gap_source: "研究素材"
+applicable_versions: Android 8 (API 26) - Android 17 (API 37)
+tags:
+- anr
+- non-technical
+- fault-diagnosis
+- system-bugs
+- google-engineer
+related_chapters:
+- '9.3'
+- '8.2'
+- '13.7'
+created_by: task2a-knowledge-gap
+created_date: '2026-04-10'
+gap_source: 研究素材
 confidence: medium
 sources:
-  - type: blog
-    path: "有时候你APP发生的ANR不是你的错"
-    title: "Google 工程师没 bug 改出 bug 的案例"
-    date: "2025-04-21"
-  - type: aosp
-    path: "frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java"
-    title: "Activity Manager Service ANR 处理"
-    date: "Android 17"
-pipeline_stage: task6_pending
-task6_state: pending
+- type: blog
+  path: 有时候你 App 发生的 ANR 不是你的错
+  title: Google 工程师“改 bug 改出 bug”的案例
+  date: '2025-04-21'
+- type: aosp
+  path: frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java
+  title: Activity Manager Service ANR 处理
+  date: Android 17
+pipeline_stage: task2b_pending
+task6_state: reviewed
 task9_state: pending
-task2b_state: idle
+task2b_state: pending
+section: '9.7'
+reviewed_by: openclaw-task6
+reviewed_date: '2026-04-13'
+task6_result: needs-rework
 ---
 
 # ANR 非技术故障诊断
 
 ## 为什么要了解非技术故障 ANR
 
-在传统的 ANR 分析中，工程师通常会从应用代码、线程同步、资源竞争等技术角度寻找问题根源。然而，在 Google 工程师的实际案例中发现，**高达 15% 的 ANR 问题并非由应用代码本身引起，而是由系统服务的行为异常或系统级别的 bug 导致**。
+ANR 报告里看到主线程卡住，不等于问题一定在 App 自己。Google 工程师分享过一类更容易误判的场景，ANR 表面上发生在 App 侧，根因却可能落在系统服务行为异常或系统级 bug 上。
 
-了解这些非技术故障的识别和诊断方法，可以帮助工程师快速定位真正的问题源头，避免浪费时间在应用层面的优化上，从而更高效地解决 ANR 问题。
+这一节聚焦的，就是这类容易误判的场景。先把 App 侧根因和系统侧根因分开，我们才能决定下一步应该继续查业务线程，还是把证据收拢到 system_server、Binder、调度或设备状态变化这些更接近根因的位置。
 
 ## 核心机制
 
@@ -513,16 +525,16 @@ public class PerformanceMonitor {
 
 ## 真实案例分析
 
-### 案例：Google 工程师的"bug 改出 bug"
+### 案例：Google 工程师“改 bug 改出 bug”
 
 #### 背景
-Google 工程师在修复一个 ANR 问题时，尝试通过优化 Activity 启动流程来解决卡顿问题，但反而引入了新的 ANR。
+Google 工程师在修一个 ANR 时，尝试调整 Activity 启动流程，结果旧问题还没完全收住，新 ANR 又冒了出来。
 
 #### 问题分析
 
 **原始问题**：
 ```
-用户报告：应用启动时偶尔出现 ANR，耗时 > 5s
+用户报告：应用启动时偶尔出现 ANR，耗时 > 5 s
 ```
 
 **工程师的"修复"**：
@@ -556,7 +568,7 @@ public class ActivityStarter {
 #### 新问题出现
 
 **ANR 现象**：
-- 应用启动时间正常（2-3s）
+- 应用启动时间正常（2 到 3 s）
 - 但在特定操作时出现 ANR
 - ANR 发生时没有明显的阻塞调用
 
@@ -681,5 +693,5 @@ public class ANRPersistenceChecker {
 - **AOSP 源码**：`frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java`
 - **Binder 机制**：`frameworks/native/libs/binder/Binder.cpp`
 - **系统调度**：`kernel/sched/fair.c`
-- **Google 工程师案例**：[有时你APP发生的ANR不是你的错](https://cubox.pro/web/card/7150379012982837004)
+- **Google 工程师案例**：[有时你 App 发生的 ANR 不是你的错](https://cubox.pro/web/card/7150379012982837004)
 - **ANR 诊断指南**：[Android ANR Analysis Guide](https://developer.android.com/topic/performance/vitals/anr)
