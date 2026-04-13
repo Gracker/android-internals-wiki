@@ -206,8 +206,11 @@
     ],
     "added_by": "task6-review",
     "added_at": "2026-04-13T14:05:00+08:00",
-    "status": "pending",
-    "original_review_log": "logs/review/2026-04-13-14-review.md"
+    "status": "completed",
+    "original_review_log": "logs/review/2026-04-13-14-review.md",
+    "file": "src/part2-performance/ch08-responsiveness/07-baseline-profiles.md",
+    "completed_at": "2026-04-14T00:56:50+08:00",
+    "completed_by": "task2b-rework"
   },
   {
     "section": "2.15",
@@ -7151,9 +7154,12 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-13T15:20:00+08:00",
-    "status": "pending",
+    "status": "completed",
     "original_review_log": "logs/review/2026-04-13-14-review.md",
-    "deep_review_log": "logs/deep-review/2026-04-13-15-deep-review.md"
+    "deep_review_log": "logs/deep-review/2026-04-13-15-deep-review.md",
+    "file": "src/part2-performance/ch08-responsiveness/07-baseline-profiles.md",
+    "completed_at": "2026-04-14T00:56:50+08:00",
+    "completed_by": "task2b-rework"
   },
   {
     "section": "1.7",
