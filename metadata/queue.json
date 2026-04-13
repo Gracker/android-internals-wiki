@@ -6514,5 +6514,56 @@
     "status": "completed",
     "completed_at": "2026-04-13T09:05:00+08:00",
     "completed_by": "task2b-rework"
+  },
+  {
+    "section": "1.5",
+    "section_title": "线程模型",
+    "priority": 95,
+    "reason": "[Deep Tech Review] P0源码错误：MessageQueue / HardwareRenderer 路径失准，syncAndDrawFrame 阻塞语义写反；P1版本差异：android-16 MessageQueue 演进与 RenderThread/Binder 线程模型表述失准",
+    "material_paths": [
+      "intake/suggestions.md",
+      "intake/research-gaps.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "frontmatter sources / 正文引用 / 参考资料（L32, L188, L488）",
+        "detail": "章节把 android-16 的 MessageQueue 源码路径写成 frameworks/base/core/java/android/os/MessageQueue.java，但 android-16 源树已拆成 LegacyMessageQueue/MessageQueue.java、CombinedMessageQueue/MessageQueue.java、ConcurrentMessageQueue/MessageQueue.java，根目录下并不存在这个文件。",
+        "suggestion": "把源码引用改成 android-16 实际路径，并在正文明确“经典单链表实现”与 android-16 多实现并存的版本边界。"
+      },
+      {
+        "type": "源码错误",
+        "location": "syncAndDrawFrame 源码片段（L231-L233）",
+        "detail": "源码路径写成 frameworks/base/core/graphics/java/android/graphics/HardwareRenderer.java；android-16 实际路径是 frameworks/base/graphics/java/android/graphics/HardwareRenderer.java。当前路径会直接 404。",
+        "suggestion": "修正为 frameworks/base/graphics/java/android/graphics/HardwareRenderer.java，并按该文件中的 syncAndDrawFrame(FrameInfo) 更新注释。"
+      },
+      {
+        "type": "原理断裂",
+        "location": "主线程与 RenderThread 的同步点（L236-L244）",
+        "detail": "正文把 syncAndDrawFrame() 写成“不会阻塞、立即返回”。但 android-16 中 HardwareRenderer.syncAndDrawFrame -> RenderProxy::syncAndDrawFrame -> DrawFrameTask::drawFrame/postAndWait，会等待 RenderThread 调用 unblockUiThread()；它不是 fire-and-forget。",
+        "suggestion": "重写这一段，解释“主线程会同步等待到 syncFrameState 完成，随后可能提前解阻塞；完整 DrawFrame 仍在 RenderThread 继续执行”的两阶段语义。"
+      },
+      {
+        "type": "版本差异",
+        "location": "Looper → MessageQueue → Handler（L134-L169）",
+        "detail": "正文把 MessageQueue 定义为“按时间排序的单链表”，但章节 frontmatter 又声明适用到 Android 16。android-16 源树已经出现 Legacy/Combined/Concurrent 三套 MessageQueue 实现，这个口径只适用于经典实现。",
+        "suggestion": "把这段改成“经典实现是按 when 排序的单链表”，并补一句 android-16 的 MessageQueue 实现已经演进，详见 §1.13。"
+      },
+      {
+        "type": "源码错误",
+        "location": "SCHED_OTHER vs SCHED_FIFO（L292-L294）",
+        "detail": "正文把“部分 UI/RenderThread 的高优先级场景会使用 SCHED_FIFO”写成通用结论，但 android-16 AOSP RenderThread::threadLoop() 直接调用 setpriority(PRIO_PROCESS, 0, PRIORITY_DISPLAY)，并没有把 App RenderThread 设成 SCHED_FIFO。",
+        "suggestion": "将这段改为“App RenderThread 在 AOSP 常见路径下主要体现为 display nice priority；实时调度线程应单独举音频/专门 RT 线程的例子，不要混成 RenderThread 常态”。"
+      },
+      {
+        "type": "源码错误",
+        "location": "线程数量对性能的影响（L454-L454）",
+        "detail": "“Binder 线程池默认最多 16 个线程（含主线程，共 15 个可 Spawn 的 Binder 线程）”表述不准确。android-16 libbinder 的 DEFAULT_MAX_BINDER_THREADS=15，startThreadPool() 先起 1 个 pool 线程，内核最多再起 15 个 binder pool 线程；App 主线程不在这个统计里。",
+        "suggestion": "改成“binder pool 默认是 1 个已启动 pool thread + 最多 15 个内核追加线程（总计 16 个 pool threads 上限），不要把 App 主线程算进去”。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-13T09:56:54+08:00",
+    "status": "pending"
   }
 ]

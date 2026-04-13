@@ -1713,3 +1713,20 @@ AsyncLayoutInflater 一节缺少 AndroidX 当前实现的关键边界，尤其�
 
 ### 关联章节
 11.1、11.2、14.11、13.1、5.6
+
+## [2026-04-13] 1.5 线程模型 — Android 16 MessageQueue 多实现与主线程可观测性
+
+### 盲区描述
+章节仍把 MessageQueue 讲成单一路径、单一实现的经典模型，没有解释为什么 android-16 源树里会同时出现 LegacyMessageQueue、CombinedMessageQueue、ConcurrentMessageQueue，也没有把这个变化和 §1.13《MessageQueue 机制与 DeliQueue 无锁优化》、§1.14《锁竞争与同步性能分析》串起来。读者看到 android-16 源码目录或 Perfetto 中的 wakeup / lock contention 现象时，会缺一层“实现演进导致可观测行为变化”的背景。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 对比 android-15 与 android-16 `frameworks/base/core/java/android/os/` 目录结构，确认 Legacy / Combined / Concurrent 三套实现的选择条件
+- 梳理不同 MessageQueue 实现对 `next()`、`enqueueMessage()`、IdleHandler、sync barrier 语义的影响范围
+- 解释这些实现变化对主线程锁竞争、`nativePollOnce` 唤醒模式、Perfetto 线程状态解读的影响
+
+### 关联章节
+1.5、1.13、1.14、2.4
+

@@ -2281,3 +2281,20 @@
 - **问题**：后三个扩展小节更像资料卡片，和前文“网络链路耗时 + Perfetto 分析”主线回扣不够，收尾略散。
 - **建议**：回到“实际分析中什么时候该看这几个方向”，压缩词条式说明，补一段工程判断。
 - **review 日志**：logs/review/2026-04-13-09-review.md
+
+## [Task9 Deep Review] 1.5 线程模型 — 2026-04-13
+- **类型**：数据缺失
+- **位置**：L282-L284 cgroup CPU 份额
+- **问题**：正文直接给出“前台 cgroup 和后台 cgroup 大约 95:5”这个量化比例，但没有贴 cpuctl / cgroup 参数样例、设备条件或内核口径。对不同内核版本和 cgroup v1/v2 设备，这个数字并不稳定。
+- **建议**：补一个真实设备上的 `cpu.shares` / `cpu.weight` 示例，或降级成“后台组 CPU 份额显著更低，具体比例依设备配置而定”。
+
+- **类型**：源码准确性
+- **位置**：L325-L327 Coroutine Dispatcher 映射
+- **问题**：`Dispatchers.IO` 被写成“默认最多 64 个线程”、`Dispatchers.Default` 被写成“线程数等于 CPU 核心数”、`Dispatchers.Unconfined` 被写成“在调用者所在线程执行”，这三个说法都过度简化了 kotlinx.coroutines 当前文档口径。
+- **建议**：改成“IO 默认并行度取 max(64, cores) 且与 Default 共享底层线程；Default 最大线程数等于 cores 且至少 2；Unconfined 只保证初始 continuation 在当前 call-frame，恢复线程由 suspending function 决定”。
+
+- **类型**：交叉引用错误
+- **位置**：frontmatter related_chapters / MessageQueue 小节
+- **问题**：章节已经讨论 MessageQueue 内部实现，却没有回链 §1.13《MessageQueue 机制与 DeliQueue 无锁优化》，导致全书里“经典线程模型”和“android-16 MessageQueue 演进”被割裂。
+- **建议**：在 related_chapters 与 MessageQueue 小节各补一次 §1.13，并明确“本节讲经典线程模型，android-16 的队列实现演进详见 §1.13”。
+
