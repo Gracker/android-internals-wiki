@@ -2952,66 +2952,6 @@
     "status": "pending"
   },
   {
-    "section": "1.7",
-    "section_title": "ART 编译管线与 dex2oat 优化",
-    "priority": 85,
-    "reason": "[Deep Tech Review] speed-profile 无 Profile 时等效 verify 的描述不准确；实际该 filter 仍编译所有方法（空 Profile），非 verify-only",
-    "material_paths": [
-      "intake/suggestions.md"
-    ],
-    "review_issues": [
-      {
-        "type": "原理描述错误",
-        "location": "L188",
-        "detail": "speed-profile 在无 Baseline Profile 且无 JIT Profile 时，实际行为是编译所有方法（使用空/默认 Profile），而非什么都不编译的 verify 模式",
-        "suggestion": "修正为：'speed-profile 在没有 Profile 数据时，会退化为编译所有方法（以 speed 策略），而非什么都不编译。真正的 verify 只做验证不做任何 AOT 编译'"
-      }
-    ],
-    "added_by": "task9-deep-tech-review",
-    "added_at": "2026-04-10T12:34:50",
-    "status": "pending"
-  },
-  {
-    "section": "1.7",
-    "section_title": "ART 编译管线与 dex2oat 优化",
-    "priority": 85,
-    "reason": "[Deep Tech Review] 版本演进表中 Android 9.0 'Profile 引导的后台编译优化' 描述可能不准确；该机制在 Android 7.0 已引入",
-    "material_paths": [
-      "intake/research-gaps.md"
-    ],
-    "review_issues": [
-      {
-        "type": "版本差异",
-        "location": "L415（版本演进表）",
-        "detail": "Profile-Guided 后台编译（bg-dexopt）在 Android 7.0 (Nougat) 已引入。Android 9.0 可能为改进版本，非 origin",
-        "suggestion": "核实 Android 7.0 vs 9.0 的具体差异，修正版本演进表中的描述"
-      }
-    ],
-    "added_by": "task9-deep-tech-review",
-    "added_at": "2026-04-10T12:34:50",
-    "status": "pending"
-  },
-  {
-    "section": "1.7",
-    "section_title": "ART 编译管线与 dex2oat 优化",
-    "priority": 85,
-    "reason": "[Deep Tech Review] JIT 部分缺少解释执行到 JIT 编译的切换机制（trampoline）和 OatWriter OAT 文件内部结构",
-    "material_paths": [
-      "intake/research-gaps.md"
-    ],
-    "review_issues": [
-      {
-        "type": "原理断裂",
-        "location": "L85-127（JIT 编译器章节）",
-        "detail": "缺少：1) 方法首次调用时解释执行如何触发 JIT 编译（trampoline 的作用）；2) OatWriter 如何在 OAT 文件中组织编译后的机器码（按类 vs 按方法）",
-        "suggestion": "补充：1) JIT trampoline 机制（art/runtime/jit/jit_trampoline.cc 或 OatTrampoline）；2) OatWriter oat file layout 说明（ArtMethod/ArtField 数组的排列方式）"
-      }
-    ],
-    "added_by": "task9-deep-tech-review",
-    "added_at": "2026-04-10T12:34:50",
-    "status": "pending"
-  },
-  {
     "section": "16.1",
     "section_title": "Google 官方的性能优化思路",
     "priority": 90,
@@ -7107,5 +7047,44 @@
     "status": "pending",
     "original_review_log": "logs/review/2026-04-13-14-review.md",
     "deep_review_log": "logs/deep-review/2026-04-13-15-deep-review.md"
+  },
+  {
+    "section": "1.7",
+    "section_title": "ART 编译管线与 dex2oat 优化",
+    "priority": 90,
+    "reason": "[review回炉] 编译级别表述、版本演进、JIT/OAT 解释与 Perfetto 素材仍需 Task 9 / Task 2B 处理",
+    "material_paths": [
+      "intake/suggestions.md（含 review 意见）"
+    ],
+    "review_issues": [
+      {
+        "type": "原理描述错误",
+        "location": "L188",
+        "detail": "speed-profile 在无 Baseline Profile 且无 JIT Profile 时，实际行为是编译所有方法（使用空/默认 Profile），而非什么都不编译的 verify 模式",
+        "suggestion": "修正为：'speed-profile 在没有 Profile 数据时，会退化为编译所有方法（以 speed 策略），而非什么都不编译。真正的 verify 只做验证不做任何 AOT 编译'"
+      },
+      {
+        "type": "版本差异",
+        "location": "L415（版本演进表）",
+        "detail": "Profile-Guided 后台编译（bg-dexopt）在 Android 7.0 (Nougat) 已引入。Android 9.0 可能为改进版本，非 origin",
+        "suggestion": "核实 Android 7.0 vs 9.0 的具体差异，修正版本演进表中的描述"
+      },
+      {
+        "type": "原理断裂",
+        "location": "L85-127（JIT 编译器章节）",
+        "detail": "缺少：1) 方法首次调用时解释执行如何触发 JIT 编译（trampoline 的作用）；2) OatWriter 如何在 OAT 文件中组织编译后的机器码（按类 vs 按方法）",
+        "suggestion": "补充：1) JIT trampoline 机制（art/runtime/jit/jit_trampoline.cc 或 OatTrampoline）；2) OatWriter oat file layout 说明（ArtMethod/ArtField 数组的排列方式）"
+      },
+      {
+        "type": "需补充素材",
+        "location": "JIT 在 Perfetto 中的表现 / 在 Perfetto 和工具中的表现",
+        "detail": "JIT 编译活动仍是占位符，dex2oat 观测段也缺少配套 Trace 截图或图示。",
+        "suggestion": "补 2 张真实 Perfetto 片段，至少覆盖启动阶段 JIT 编译和后台 dex2oat 进程。"
+      }
+    ],
+    "added_by": "task6-review",
+    "added_at": "2026-04-13T16:06:00+08:00",
+    "status": "pending",
+    "original_review_log": "logs/review/2026-04-13-16-review.md"
   }
 ]

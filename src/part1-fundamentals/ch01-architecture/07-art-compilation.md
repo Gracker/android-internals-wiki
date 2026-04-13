@@ -12,8 +12,9 @@ confidence: medium
 polish_count: 1
 polish_date: "2026-04-08"
 polish_by: "task2b-polish"
-reviewed_date: "2026-04-09"
+reviewed_date: "2026-04-13"
 reviewed_by: "openclaw-task6"
+task6_result: needs-rework
 sources:
   - type: official
     path: "https://developer.android.com/topic/performance/baselineprofiles/overview"
@@ -27,19 +28,43 @@ sources:
     path: "https://android-developers.googleblog.com/ (AutoFDO GKI Kernel)"
 tags: [ART, dex2oat, JIT, AOT, Baseline-Profiles, Startup-Profiles, PGO, compilation, cold-start]
 related_chapters: ["1.6", "4.3", "8.2", "8.3", "16.1"]
-pipeline_stage: task6_pending
-task6_state: pending
+pipeline_stage: task2b_pending
+task6_state: reviewed
 task9_state: pending
-task2b_state: idle
+task2b_state: pending
 ---
 
 # 1.7 ART 编译管线与 dex2oat 优化
+
+<!-- outline-start -->
+## 本节要点大纲
+
+### 锚点（必须覆盖）
+
+- 🔹 **ART 编译策略的演进**：[已验证: source.android.com/docs/core/runtime]
+  从 Dalvik 时代的解释执行 / JIT，到 ART 全量 AOT，再到 Android 7.0 之后的混合编译模式，核心取舍围绕安装时间、存储占用和运行时性能展开。
+
+- 🔹 **JIT 编译器的工作原理**：[已验证: AOSP art/runtime/jit/]
+  包括方法热度追踪、JIT code cache、Profile 收集与持久化，以及这些行为对冷启动路径的影响。
+
+- 🔹 **dex2oat 的编译流程与 compiler filter**：[已验证: AOSP art/dex2oat/ + source.android.com/docs/core/runtime/dex2oat]
+  说明 DEX 到 OAT / VDEX 的转换链路，以及 `verify`、`speed`、`speed-profile` 等编译级别的取舍。
+
+- 🔹 **PGO / Baseline Profiles / Startup Profiles 的分工**：[已验证: developer.android.com/topic/performance/baselineprofiles/overview]
+  区分本地 JIT Profile、Baseline Profiles、Cloud Profiles 和 Startup Profiles 分别解决的启动与运行时问题。
+
+- 🔹 **在 Perfetto 和命令行工具中的观测方式**：[待补充: 真实 Trace 截图]
+  说明 `art::jit::*`、`dex2oat` 进程、`oatdump`、`profman` 等观测入口，帮助我们判断编译是否成为性能瓶颈。
+
+- 🔹 **应用侧实践与常见误区**：[已验证: developer.android.com + source.android.com]
+  结合 Baseline Profiles、Startup Profiles、CI 自动生成流程和常见误区，把编译知识落到启动优化实践中。
+<!-- outline-end -->
 
 ## 为什么要了解 ART 编译管线
 
 我们在 Perfetto 中分析冷启动时，经常会看到应用进程的 `bindApplication` 阶段耗时几百毫秒甚至几秒，其中一个容易被忽略的变量是：**这段代码是以解释执行的方式跑的，还是已经编译成了机器码？**
 
-同一个 APK，在首次安装（没有 Profile）和经过几天使用后（积累了 JIT Profile），冷启动速度可能差距 30% 以上。[待验证: 此数据需与官方基准测试或实测数据核对] 这不是因为代码变了，而是因为**编译策略**变了。ART 编译管线决定了你的应用代码从 DEX 字节码到机器指令走哪条路——解释执行、JIT 即时编译、还是 AOT 预编译。了解这个管线，我们就能回答这些问题：
+同一个 APK，在首次安装（没有 Profile）和经过几天使用后（积累了 JIT Profile），冷启动速度可能差距 30% 以上。[待验证: 此数据需与官方基准测试或实测数据核对] 这不是因为代码变了，而是因为**编译策略**变了。ART 编译管线决定了应用代码从 DEX 字节码到机器指令走哪条路，也就是解释执行、JIT 即时编译，还是 AOT 预编译。了解这条管线后，我们就能回答这些问题：
 
 - 冷启动慢，有没有可能是编译策略不够优化？
 - 安装耗时过长，跟 dex2oat 有什么关系？
@@ -78,7 +103,7 @@ Android 7.0 引入了当前架构的基石——**混合编译模式**。核心�
 
 ### Android 12+：ART 模块化与持续优化
 
-从 Android 12 开始，ART 成为 Mainline 模块（com.android.art），编译优化可以通过 Google Play 系统更新推送，不再需要等系统 OTA。这意味着 Google 可以在 2025 年推一个 dex2oat 编译时间缩减 18% 的优化，Android 12+ 的设备都能收到。
+从 Android 12 开始，ART 成为 Mainline 模块（com.android.art），编译优化可以通过 Google Play 系统更新推送，不再需要等系统 OTA。这样一来，Google 在 2025 年推送的 dex2oat 编译时间缩减 18% 优化，就可以直接覆盖 Android 12+ 设备。
 
 ### Android 16/17：编译体系的最新演进
 
@@ -105,7 +130,7 @@ bool Jit::MaybeDoJitCompilation(ArtMethod* method) {
 }
 ```
 
-这里的关键信息是：JIT 不是立刻编译所有代码。首次执行的方法都是解释执行的，只有被"反复调用"的方法才值得 JIT 编译。这意味着应用的冷启动路径上，第一次跑的代码都是解释执行——这也是为什么 Profile-Guided AOT 对冷启动如此重要。
+这里的关键信息是：JIT 不会立刻编译所有代码。首次执行的方法仍是解释执行，只有被"反复调用"的方法才值得 JIT 编译。应用冷启动路径上的首轮执行，因此往往要先经过解释执行，这也是 Profile-Guided AOT 对冷启动很关键的原因。
 
 ### JIT 代码缓存
 
@@ -127,7 +152,7 @@ JIT 编译器在编译单个方法时，会进行一系列优化：
 - **循环优化**：循环不变量外提、强度削减等
 - **类型推导与内联缓存（Inline Cache）**：记录虚方法的实际调用目标，后续可以将虚调用去虚化（devirtualize）为直接调用
 
-需要指出的是，JIT 的优化深度通常不及 dex2oat 的 AOT 编译——JIT 受限于编译时间预算（不能让用户感觉卡顿），而 dex2oat 在后台编译时有充足的时间做更激进的优化。
+JIT 的优化深度通常不及 dex2oat 的 AOT 编译。JIT 受限于编译时间预算，不能让用户在前台感到卡顿；而 dex2oat 在后台编译时有更充足的时间做激进优化。
 
 ### JIT Profile 的收集与持久化
 
@@ -189,7 +214,7 @@ dex2oat 通过编译过滤器（compiler filter）控制编译的深度和范围
 
 [已验证: AOSP art/dex2oat/dex2oat_options.cc, 编译过滤器定义]
 
-关键点是 **`speed-profile` 是 Android 12+ 的默认编译级别**。这意味着如果应用没有提供 Baseline Profiles、没有积累本地 JIT Profile，`speed-profile` 实际上等于 `verify`——什么都不会编译。这解释了为什么首次安装的应用启动特别慢。
+**`speed-profile` 是 Android 12+ 的默认编译级别**。如果应用没有提供 Baseline Profiles、没有积累本地 JIT Profile，`speed-profile` 实际上等于 `verify`，也就是不会产生 AOT 编译结果。这也解释了为什么首次安装的应用启动特别慢。
 
 ### dex2oat 的多线程编译
 
@@ -299,7 +324,7 @@ dex2oat 编译在以下场景可见：
 - **后台优化**：`bg-dexopt` 守护进程
 - **OTA 后**：系统更新后的批量 recompile
 
-在 Perfetto 中，dex2oat 作为一个独立进程出现，可以看到其 CPU 使用率和线程活动。
+在 Perfetto 中，dex2oat 会作为一个独立进程出现，我们可以直接观察它的 CPU 使用率和线程活动。
 
 ### art::jit::* 相关 Slice 含义
 

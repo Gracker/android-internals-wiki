@@ -2492,3 +2492,17 @@
 - **问题**：技术描述里出现 STYLE.md 禁词“链路”，不是主技术问题，但会影响后续统一审校。
 - **建议**：回炉时顺手改成“流程”或“路径”，不要影响技术判断。
 
+
+
+## [Task6 Review] 1.7 ART 编译管线与 dex2oat 优化 — 2026-04-13
+- **类型**：需补充素材
+- **位置**：JIT 在 Perfetto 中的表现 / 在 Perfetto 和工具中的表现
+- **问题**：`[待补充：JIT 编译活动在 Perfetto 中的 Trace 截图]` 仍是占位符，dex2oat 观测段也缺少配套图示。写作规范要求这类机制段落给出真实 Trace 截图，或至少补齐可执行的 `[图：...]` 说明。
+- **建议**：补 2 张真实 Perfetto 片段，至少覆盖启动阶段 JIT 编译和后台 `dex2oat` 进程。
+- **review 日志**：logs/review/2026-04-13-16-review.md
+
+- **类型**：需确认
+- **位置**：dex2oat 编译级别（Compiler Filter）
+- **问题**：`speed-profile` 无 Profile 时等于 `verify` 的表述仍有技术风险。Task 6 不负责裁决这类源码 / 版本问题。
+- **建议**：交 Task 9 按 ART 文档和 AOSP `compiler filter` 逻辑复核后，再由 Task 2B 回写正文。
+- **review 日志**：logs/review/2026-04-13-16-review.md
