@@ -1,36 +1,57 @@
 ---
-title: "专题解读"
-chapter: "13.5"
-section: "13.5"
+title: 专题解读
+chapter: '13.5'
+section: '13.5'
 status: ready-for-review
-drafted_date: "2026-04-03"
-drafted_by: "openclaw-task2a"
-applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
-last_verified: "2026-04-03"
-last_verified_against: "perfetto.dev docs, AOSP android-16.0.0_r1, 高爷博客原创"
+drafted_date: '2026-04-03'
+drafted_by: openclaw-task2a
+applicable_versions: Android 10 (API 29) - Android 16 (API 36)
+last_verified: '2026-04-03'
+last_verified_against: perfetto.dev docs, AOSP android-16.0.0_r1, 高爷博客原创
 confidence: medium
 sources:
-  - type: blog
-    path: "https://www.androidperformance.com/2024/05/21/Android-Perfetto-03-how-to-analysis-perfetto/"
-  - type: blog
-    path: "https://www.androidperformance.com/2025/03/26/Android-Perfetto-05-Chorergrapher/"
-  - type: blog
-    path: "https://www.androidperformance.com/2025/11/16/Android-Perfetto-10-Binder/"
-  - type: official
-    path: "https://perfetto.dev/docs/data-sources/android-binder"
-  - type: official
-    path: "https://perfetto.dev/docs/data-sources/native-heap-profiler"
-  - type: official
-    path: "https://perfetto.dev/docs/analysis/sql-tables"
-tags: ['perfetto', 'cpu', 'vsync', 'surfaceflinger', 'binder', 'heapprofd', 'io', 'frame-timeline', 'jank']
-related_chapters: ["13.1", "13.2", "13.3", "13.4", "2.1", "2.4", "4.1", "5.1", "7.1", "8.1", "9.1"]
+- type: blog
+  path: https://www.androidperformance.com/2024/05/21/Android-Perfetto-03-how-to-analysis-perfetto/
+- type: blog
+  path: https://www.androidperformance.com/2025/03/26/Android-Perfetto-05-Chorergrapher/
+- type: blog
+  path: https://www.androidperformance.com/2025/11/16/Android-Perfetto-10-Binder/
+- type: official
+  path: https://perfetto.dev/docs/data-sources/android-binder
+- type: official
+  path: https://perfetto.dev/docs/data-sources/native-heap-profiler
+- type: official
+  path: https://perfetto.dev/docs/analysis/sql-tables
+tags:
+- perfetto
+- cpu
+- vsync
+- surfaceflinger
+- binder
+- heapprofd
+- io
+- frame-timeline
+- jank
+related_chapters:
+- '13.1'
+- '13.2'
+- '13.3'
+- '13.4'
+- '2.1'
+- '2.4'
+- '4.1'
+- '5.1'
+- '7.1'
+- '8.1'
+- '9.1'
 pipeline_stage: task2b_pending
 task6_state: reviewed
-task9_state: pending
+task9_state: reviewed
 task2b_state: pending
-reviewed_by: "openclaw-task6"
-reviewed_date: "2026-04-13"
-task6_result: "needs-rework"
+reviewed_by: openclaw-task6
+reviewed_date: '2026-04-13'
+task6_result: needs-rework
+task9_result: needs-rework
 ---
 
 # 专题解读

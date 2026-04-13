@@ -6625,10 +6625,12 @@
   {
     "section": "13.5",
     "section_title": "专题解读",
-    "priority": 90,
-    "reason": "[review回炉] 关键 Trace 素材缺失，且 lock contention / heapprofd / block I/O 的数据源与 SQL 表述存在技术风险",
+    "priority": 95,
+    "reason": "[Deep Tech Review] FrameTimeline/Binder/heapprofd/block I/O 存在可复现配置与 SQL 错误，且缺少版本矩阵与关键证据",
     "material_paths": [
-      "intake/suggestions.md（含 review 意见）"
+      "intake/suggestions.md（含 review 意见）",
+      "intake/research-gaps.md",
+      "intake/suggestions.md"
     ],
     "review_issues": [
       {
@@ -6648,12 +6650,63 @@
         "location": "13.5.4 heapprofd / 13.5.5 I/O SQL",
         "detail": "`linux.heapprofd` 数据源名称、Java 堆追踪表述，以及 `block_rq_complete` SQL 示例都需要按当前 Perfetto 文档和 schema 复核。",
         "suggestion": "按当前 Perfetto 文档或 trace processor schema 重写配置与 SQL，并补一条已跑通的查询样例。"
+      },
+      {
+        "type": "源码错误",
+        "location": "L231、L276-L277 FrameTimeline 原因分类与 SQL",
+        "detail": "正文把掉帧原因写成 `Slow UI thread` / `Slow bitmap uploads` / `Slow issue draw commands`，并用 `jank_type GLOB \"*AppJank*\"` / `\"*SFJank*\"` 统计。Perfetto 主仓 `actual_frame_timeline_slice` 使用的是 `App Deadline Missed`、`Buffer Stuffing`、`SurfaceFlinger CPU/GPU Deadline Missed` 等枚举，这个查询在当前 schema 下无法正确匹配。",
+        "suggestion": "改成基于 `jank_type` / `present_type` / `on_time_finish` 的真实枚举，并补一条已跑通的 SQL 示例。"
+      },
+      {
+        "type": "源码错误",
+        "location": "L317-L344 Binder 抓取配置与字段",
+        "detail": "Perfetto `DataSourceConfig` 没有 `android.binder` / `android_binder_config` 字段，正文引用的 `https://perfetto.dev/docs/data-sources/android-binder` 当前也返回 404；后文依赖的 `latency_ns`、`server_latency_ns`、`blocking_dur_ns`、`queue_len` 因此无法按公开文档复现。",
+        "suggestion": "删除该配置块，改成公开可跑通的 `linux.ftrace` + Binder/AIDL slice/标准库路径，或明确标注为内部定制 trace 能力。"
+      },
+      {
+        "type": "源码错误",
+        "location": "L364 Lock contention 数据源",
+        "detail": "把 Lock contention 归因到 `android.java_hprof` 是错误的。`android.java_hprof` 是 Java heap dump 数据源；Perfetto 的 monitor contention 分析对应的是 monitor contention slices / `android.monitor_contention` 标准库，不是 heap dump。",
+        "suggestion": "拆开“锁竞争”和“Java 堆”两条链路，补采集前提、UI 轨道和 SQL 模块。"
+      },
+      {
+        "type": "源码错误",
+        "location": "L383-L418 heapprofd / Java 堆配置",
+        "detail": "正文把 Java managed heap 写成 `heapprofd` 支持的对象创建调用栈，并给出 `name: \"linux.heapprofd\"` + `target_process` 配置，和 Perfetto 主仓不符。公开配置是 `name: \"android.heapprofd\"`，字段为 `process_cmdline` / `pid`；Java managed heap 应使用 `android.java_hprof` heap dump，展示 retention graph，而不是 call-site flamegraph。",
+        "suggestion": "重写内存专题的数据源矩阵，区分 native heap profiling 与 Java heap dump。"
+      },
+      {
+        "type": "源码错误",
+        "location": "L538-L558 Block I/O SQL",
+        "detail": "把 `block_rq_complete` 当成 `thread_track` 上的普通 slice 统计进程耗时是错误的。Perfetto 解析 block I/O 后生成的是 `track.type='block_io'`、`slice.name='block_io'` 的设备级切片，或通过 `linux.block_io` 标准库分析，当前 SQL 既不符合 schema，也会把设备级 I/O 错映射成进程级归因。",
+        "suggestion": "按 `block_io` track / `linux.block_io` 标准库重写查询，并明确它是设备级视角，需要再结合线程状态或文件系统事件做进程归因。"
+      },
+      {
+        "type": "原理断裂",
+        "location": "L298-L365 Binder 三步工作流",
+        "detail": "正文从 raw binder ftrace 直接跳到不存在的 `android.binder` 轨道字段，缺少“公开 trace 中如何从 binder transaction → Flow → server thread state / AIDL slice”的可执行链路，读者按文中步骤很难复现。",
+        "suggestion": "补一条 `ftrace only` 工作流和一条“含 AIDL slice / 标准库 `android_binder_txns`”工作流，分别给出点击路径或 SQL。"
+      },
+      {
+        "type": "版本差异",
+        "location": "L223-L286 FrameTimeline 工作流 / frontmatter applicable_versions",
+        "detail": "章节适用版本标成 Android 10-16，但 Expected/Actual Timeline + FrameTimeline 的主体分析只覆盖 Android 12+。Android 10/11 的 fallback 轨道和判读入口没有交代，版本口径前后不一致。",
+        "suggestion": "补一张 Android 10-11 / 12-13 / 14+ 的采集与判读矩阵，明确哪些结论只适用于 FrameTimeline 可用的版本。"
+      },
+      {
+        "type": "知识盲区",
+        "location": "13.5.2-13.5.5 跨专题共用方法",
+        "detail": "章节缺少“数据源 → UI 轨道/SQL 表 → 适用 Android 版本”的统一映射表，导致 FrameTimeline、Binder、monitor contention、heapprofd、block I/O 的口径混用。",
+        "suggestion": "新增总表，列出公开 trace config、UI 轨道名、trace processor 表/stdlib 模块，以及各自的版本边界。"
       }
     ],
     "added_by": "task6-review",
     "added_at": "2026-04-13T11:19:38+08:00",
     "status": "pending",
-    "original_review_log": "logs/review/2026-04-13-11-review.md"
+    "original_review_log": "logs/review/2026-04-13-11-review.md",
+    "updated_by": "task9-deep-tech-review",
+    "updated_at": "2026-04-13T19:36:57+08:00",
+    "deep_review_log": "logs/deep-review/2026-04-13-19-deep-review.md"
   },
   {
     "section": "7.1",
