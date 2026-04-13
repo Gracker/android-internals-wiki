@@ -1,38 +1,38 @@
 {
-  "generated_at": "2026-04-13T10:22:57+08:00",
+  "generated_at": "2026-04-13T10:28:00+08:00",
   "state_machine_version": "v2",
   "total_sections": 207,
   "metrics": {
     "total": 207,
-    "last_updated": "2026-04-13T10:22:57+08:00",
+    "last_updated": "2026-04-13T10:28:00+08:00",
     "ready-for-review": 173,
     "unknown": 34,
-    "pipeline_task2b_pending": 9,
-    "pipeline_task6_pending": 166,
-    "pipeline_task9_pending": 1,
     "pipeline_unknown": 31,
-    "task6_pending": 118,
-    "task6_reviewed": 10,
-    "task6_revisiting": 48,
+    "pipeline_task6_pending": 165,
+    "pipeline_task2b_pending": 10,
+    "pipeline_task9_pending": 1,
     "task6_unknown": 31,
+    "task6_revisiting": 48,
+    "task6_reviewed": 11,
+    "task6_pending": 117,
+    "task9_unknown": 31,
     "task9_pending": 174,
     "task9_reviewed": 2,
-    "task9_unknown": 31,
+    "task2b_unknown": 31,
     "task2b_fixed": 48,
-    "task2b_idle": 119,
-    "task2b_pending": 9,
-    "task2b_unknown": 31
+    "task2b_pending": 10,
+    "task2b_idle": 118
   },
   "pipeline": {
     "pipeline_stage_counts": {
-      "task2b_pending": 9,
-      "task6_pending": 166,
+      "task2b_pending": 10,
+      "task6_pending": 165,
       "task9_pending": 1,
       "unknown": 31
     },
     "task6_state_counts": {
-      "pending": 118,
-      "reviewed": 10,
+      "pending": 117,
+      "reviewed": 11,
       "revisiting": 48,
       "unknown": 31
     },
@@ -43,8 +43,8 @@
     },
     "task2b_state_counts": {
       "fixed": 48,
-      "idle": 119,
-      "pending": 9,
+      "idle": 118,
+      "pending": 10,
       "unknown": 31
     }
   },
@@ -1787,13 +1787,14 @@
       "title": "App 耗电优化",
       "path": "src/part2-performance/ch11-power/02-app-power-optimization.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "pending",
+      "pipeline_stage": "task2b_pending",
+      "task6_state": "reviewed",
       "task9_state": "pending",
-      "task2b_state": "idle",
-      "reviewed_date": "2026-04-04",
+      "task2b_state": "pending",
+      "reviewed_date": "2026-04-13",
       "reviewed_by": "openclaw-task6",
-      "section": "11.2"
+      "section": "11.2",
+      "task6_result": "needs-rework"
     },
     "src/part2-performance/ch11-power/03-system-power-optimization.md": {
       "chapter": "11.3",

@@ -5,7 +5,7 @@ status: ready-for-review
 section: "11.2"
 drafted_date: "2026-04-03"
 drafted_by: "openclaw-task2a"
-reviewed_date: "2026-04-04"
+reviewed_date: "2026-04-13"
 reviewed_by: "openclaw-task6"
 polish_count: 1
 polish_date: "2026-04-07"
@@ -43,10 +43,11 @@ sources:
     path: "https://developer.android.com/about/versions/15/changes"
 tags: ['wakelock', 'jobscheduler', 'workmanager', 'doze', 'location', 'alarm', 'power', 'fgs', 'foreground-service', 'fcm', 'alarmmanager', 'geofencing', 'battery-historian', 'camera']
 related_chapters: ["11.1", "11.3", "5.6", "5.4", "5.10", "11.5"]
-pipeline_stage: task6_pending
-task6_state: pending
+pipeline_stage: task2b_pending
+task6_state: reviewed
+task6_result: needs-rework
 task9_state: pending
-task2b_state: idle
+task2b_state: pending
 ---
 
 # App 耗电优化
@@ -132,7 +133,7 @@ try {
 
 ### Android Vitals 对 WakeLock 的监控
 
-Google Play 从 2026 年 3 月起，会将 WakeLock 滥用纳入应用质量评估。[待验证: 2026年3月生效日期需与最新 Android Vitals 文档交叉确认]具体标准是：如果一个 App 在 24 小时内后台持有的 PARTIAL_WAKE_LOCK 累计超过 2 小时，并且这种情况影响了超过 5% 的用户，App 在 Play Store 中的可见性会降低。
+Google Play 已开始把 WakeLock 滥用纳入应用质量评估。[待验证: 2026 年 3 月是否为正式生效时间，需与最新 Android Vitals 文档交叉确认] 文档当前给出的口径是，如果一个 App 在 24 小时内后台持有的 PARTIAL_WAKE_LOCK 累计超过 2 小时，并且这种情况影响了超过 5% 的用户，App 在 Play Store 中的可见性会降低。
 
 [已验证: 官方文档, developer.android.com/topic/performance/vitals/wakelock]
 
@@ -144,9 +145,9 @@ Android 的后台任务调度经历了多轮演进，从最初的 Service + Alar
 
 ### 为什么不推荐自己管理后台任务
 
-手动管理后台任务最大的问题是**无法感知系统状态**。App 用 AlarmManager 设了一个 5 分钟的定时器，系统没法把它跟其他 App 的定时器合并，结果是设备每隔几分钟就被唤醒一次——每个 App 都觉得"我只唤醒了一小下"，但 10 个 App 叠加起来，设备就没法好好休眠。
+手动管理后台任务的短板，在于它看不到系统当前的省电策略。App 用 AlarmManager 设了一个 5 分钟的定时器，系统很难把它和其他 App 的定时任务统一安排，结果是设备隔几分钟就被唤醒一次。单看一个 App，代价不大；多个 App 叠加后，设备就很难稳定进入休眠。
 
-Doze 模式的设计思路正是解决这个叠加效应：设备静止、屏幕关闭一段时间后，系统进入 Doze，所有非豁免的后台活动被延迟到维护窗口集中执行。这意味着 App 自己设的闹钟、注册的 JobScheduler 任务、网络请求，在 Doze 下都会被系统统一调度。
+Doze 模式就是拿来处理这种叠加效应的。设备静止、屏幕关闭一段时间后，系统会把非豁免的后台活动延后到维护窗口集中执行。App 自己设的闹钟、注册的 JobScheduler 任务和后台网络请求，都会一起受这个调度策略约束。
 
 ### WorkManager：后台任务的首选方案
 
@@ -168,7 +169,7 @@ val uploadWork = OneTimeWorkRequestBuilder<UploadWorker>()
 WorkManager.getInstance(context).enqueue(uploadWork)
 ```
 
-这段代码定义了一个上传任务，但不会立即执行。系统会等待设备在充电且连接 WiFi 时再调度执行。对于用户来说，这种延迟几乎无感知；对于电池来说，省下的电是实打实的——网络模块在充电时使用不消耗电池，WiFi 比移动数据功耗低。
+这段代码定义了一个上传任务，但不会立即执行。系统会等待设备在充电且连接 WiFi 时再调度执行。对用户来说，这种延迟通常无感；对电池来说，收益也很直接，因为任务会尽量落在更适合的网络和供电条件下。
 
 [已验证: 官方文档, developer.android.com/topic/libraries/architecture/workmanager]
 
@@ -178,7 +179,7 @@ WorkManager 的几个关键省电配置：
 
 **避免使用 Expedited Work**。`setExpedited()` 会让任务绕过部分系统优化立即执行，只有处理用户可见的高优先级 FCM 消息等场景才应该使用。滥用 Expedited Work 的功耗影响等同于手动 WakeLock。
 
-**合理使用链式任务**。多个有依赖关系的任务用 WorkManager 的链式调用（`then()`）串联，系统可以优化它们的执行窗口，避免多次唤醒设备。
+**合理安排任务顺序**。多个有依赖关系的任务可以用 WorkManager 的 `then()` 接在一起，系统更容易把它们放进同一批执行窗口，减少额外唤醒。
 
 ### JobScheduler 的定位
 
@@ -271,7 +272,7 @@ Geofencing 省电的原理在于，系统在硬件层面管理围栏检测，不
 
 ### Push 替代 Pull
 
-Firebase Cloud Messaging（FCM）是 Android 推荐的消息推送方案。它的核心省电优势在于：所有 App 的推送通道复用同一条 TCP 长连接，系统只需要维护一个网络连接就能为所有 App 传递消息。而每个 App 各自维护长连接轮询，等于每增加一个 App 就多一条持续消耗能量的网络链路。
+Firebase Cloud Messaging（FCM）是 Android 推荐的消息推送方案。它的省电优势在于，多个 App 可以复用同一条 TCP 长连接，系统不必为每个 App 各养一条常驻连接。相反，如果每个 App 都自己维护长连接轮询，随着 App 数量增加，常驻网络连接也会跟着变多。
 
 FCM 分为两种优先级：
 
@@ -299,19 +300,19 @@ val syncWork = OneTimeWorkRequestBuilder<SyncWorker>()
     .build()
 ```
 
-这里 `UNMETERED` 指定只在 WiFi 下执行，比 `CONNECTED`（任何网络）更省电。同时 `setBackoffCriteria()` 设置了指数退避——如果网络请求失败，不会立即重试，而是按指数增长间隔重试，避免在网络不稳定时反复唤醒射频模块。
+这里 `UNMETERED` 指定只在 WiFi 下执行，比 `CONNECTED`（任何网络）更省电。同时 `setBackoffCriteria()` 设置了指数退避。如果网络请求失败，任务不会立即重试，而是按指数增长的间隔重试，避免在网络不稳定时反复唤醒射频模块。
 
 [已验证: 官方文档, developer.android.com/reference/androidx/work/NetworkType]
 
 ## Alarm 使用规范
 
-AlarmManager 是 Android 最早的定时机制，也是被滥用最多的 API之一。在 WorkManager 和 JobScheduler 已经成熟的今天，AlarmManager 的合理使用场景已经非常有限。
+AlarmManager 是 Android 最早的定时机制，也是被滥用最多的 API 之一。在 WorkManager 和 JobScheduler 已经成熟的今天，AlarmManager 的合理使用场景已经非常有限。
 
 ### 精确闹钟与功耗
 
 Android 的闹钟分为两种：精确闹钟（exact alarm）和不精确闹钟（inexact alarm）。
 
-精确闹钟（`setExact()`、`setExactAndAllowWhileIdle()`）会在指定时间精确触发，系统无法合并或延迟。这意味着如果 10 个 App 各设了一个精确闹钟，设备可能被唤醒 10 次。
+精确闹钟（`setExact()`、`setExactAndAllowWhileIdle()`）会在指定时间精确触发，系统无法合并或延迟。如果 10 个 App 各设了一个精确闹钟，设备就可能被唤醒 10 次。
 
 不精确闹钟（`set()`、`setWindow()`、`setAndAllowWhileIdle()`）由系统在合适的时间窗口内调度，可以与其他闹钟合并执行，功耗更低。
 
@@ -361,7 +362,7 @@ Android 14 要求所有前台服务必须声明一个具体类型（如 `locatio
 
 Android 15（API 35）对 `dataSync` 和新增的 `mediaProcessing` 类型引入了 6 小时的时间上限。超过限制后服务会被系统降级为普通服务并停止。这个限制是跨实例共享的——同一 App 的所有 dataSync 类型的 FGS 共享一个 6 小时计时器。
 
-对于功耗分析来说，这意味着 FGS 不再是"一旦启动就一直运行"的后台常驻方案。系统在强制 FGS 回归短时间工作。
+对功耗分析来说，FGS 已经不再是"一旦启动就一直运行"的后台常驻方案。系统在强制它回到短时间工作的定位上。
 
 [已验证: 官方文档, developer.android.com/about/versions/15/changes]
 
