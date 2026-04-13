@@ -1,9 +1,9 @@
 {
-  "generated_at": "2026-04-14T02:14:08+08:00",
+  "generated_at": "2026-04-14T02:20:00+08:00",
   "state_machine_version": "v2",
   "total_sections": 207,
   "metrics": {
-    "last_updated": "2026-04-14T02:14:08+08:00",
+    "last_updated": "2026-04-14T02:20:00+08:00",
     "total": 207,
     "ready-for-review": 173,
     "unknown": 34,
@@ -19,8 +19,8 @@
     "task6_reviewed": 15,
     "task6_revisiting": 60,
     "task6_unknown": 31,
-    "task9_pending": 171,
-    "task9_reviewed": 5,
+    "task9_pending": 170,
+    "task9_reviewed": 6,
     "task9_unknown": 31
   },
   "pipeline": {
@@ -43,8 +43,8 @@
       "unknown": 31
     },
     "task9_state_counts": {
-      "pending": 171,
-      "reviewed": 5,
+      "pending": 170,
+      "reviewed": 6,
       "unknown": 31
     }
   },
@@ -1921,12 +1921,13 @@
       "status": "ready-for-review",
       "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
-      "task9_state": "pending",
+      "task9_state": "reviewed",
       "task2b_state": "pending",
       "section": "12.3",
       "reviewed_date": "2026-04-13",
       "reviewed_by": "openclaw-task6",
-      "task6_result": "needs-rework"
+      "task6_result": "needs-rework",
+      "task9_result": "needs-rework"
     },
     "src/part2-performance/ch12-apk-network/04-network-security-tls-performance.md": {
       "chapter": "12.4",

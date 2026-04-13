@@ -7922,5 +7922,50 @@
     "status": "pending",
     "original_review_log": "logs/review/2026-04-14-02-review.md",
     "file": "src/part1-fundamentals/ch04-memory/03-art-memory.md"
+  },
+  {
+    "section": "12.3",
+    "section_title": "网络性能深入：连接池、TLS 与传输优化",
+    "priority": 95,
+    "reason": "[Deep Tech Review] 4 处事实错误 + 1 处高优版本矩阵缺口：主线程网络检测、Conscrypt 更新路径、DoH3 数据、HttpEngine 时间线、QUIC 支持边界需要回炉。",
+    "material_paths": [
+      "intake/suggestions.md",
+      "intake/research-gaps.md"
+    ],
+    "review_issues": [
+      {
+        "type": "原理错误",
+        "location": "行 90-92（主线程网络阻塞判据）",
+        "detail": "把主线程网络检测归因于 StrictMode 默认行为，并把 pread64 当成网络阻塞的典型 blocked_function。官方 NetworkOnMainThreadException 在 targetSdk >= 11 时就会对主线程网络抛异常；StrictMode 需要显式开启；pread64 不是 socket 读调用。",
+        "suggestion": "改成 NetworkOnMainThreadException + 可选 StrictMode 辅助诊断；Perfetto 例子用 poll/recvmsg/epoll_wait 等网络相关等待，并结合线程上下文或 socket fd 交叉验证。"
+      },
+      {
+        "type": "版本差异",
+        "location": "行 189-200（Conscrypt 与 Android TLS 实现）",
+        "detail": "把 Android 10+ Conscrypt Mainline 的分发渠道写成了 Google Play Services。Mainline APEX 实际通过 Google Play system updates 下发；ProviderInstaller 则是另一套面向旧设备/兼容场景的 Play services 方案。",
+        "suggestion": "拆开写 Android 10+ Mainline APEX 与旧设备 ProviderInstaller / 外部 Conscrypt provider，避免把两种更新路径混为一谈。"
+      },
+      {
+        "type": "版本差异",
+        "location": "行 233-237（DNS over HTTPS 与性能）",
+        "detail": "DoT / DoH / DoH3 的版本与 rollout 机制被混写，且 Google 官方 DoH3 数据是中位数 -24%、P95 -44%，正文写成了 -47%。",
+        "suggestion": "拆分 DoT、DoH、DoH3 的概念与版本门槛；把 DoH3 的 rollout 机制写清楚，并把 P95 数据修正为 44% 或给出准确来源。"
+      },
+      {
+        "type": "版本差异",
+        "location": "行 390（HTTP/3 与 QUIC）",
+        "detail": "“从 Android 11 开始，系统默认的 HttpEngine（API 34+ 推荐）也支持 QUIC”时间线自相矛盾。android.net.http.HttpEngine 是 API 34 新增类，不可能自 Android 11 起以该 API 形态存在。",
+        "suggestion": "改成“Android 14 / API 34 新增 HttpEngine”，并单列 Cronet、HttpEngine、OkHttp 在 HTTP/3/QUIC 上的能力差异。"
+      },
+      {
+        "type": "知识盲区",
+        "location": "行 384-392（HTTP/3 / QUIC 扩展）",
+        "detail": "章节没有给出 Cronet / HttpEngine / OkHttp / DoT / DoH3 / 0-RTT 的版本矩阵，`crazy_things_` 也无法映射到公开官方接口，读者无法判断哪些能力来自系统、哪些来自库、哪些仍属实验态。",
+        "suggestion": "补一张“协议能力 × Android 版本 × API level × 客户端库”矩阵；非官方桥接方案必须给出具体项目名、版本和维护状态。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-14T02:20:00+08:00",
+    "status": "pending"
   }
 ]

@@ -2035,3 +2035,20 @@ Android 10-16 的返回分发模型缺少一张统一矩阵。正文把 Gesture 
 
 ### 关联章节
 6.2（文件系统）、6.3（I/O 调度）、7.1（流畅性分析）
+
+
+## [2026-04-14] 12.3 网络性能深入：连接池、TLS 与传输优化 — 加密 DNS / QUIC / HttpEngine 版本矩阵缺失
+
+### 盲区描述
+章节把 DoT / DoH / DoH3、Cronet / HttpEngine / OkHttp、TLS 1.3 1-RTT / QUIC 0-RTT 这些处于不同层级的能力写在了一起，但没有给出“最小 Android 版本、API level、交付方式、客户端库归属”的对照表。读者容易把系统网络栈能力、Google Play system update rollout、App 侧库能力和实验性桥接方案混成一件事，进而得出错误的兼容性判断。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 梳理 Android 9-17 的 DoT / DoH / DoH3 支持矩阵，区分平台能力与 Google Play system update rollout。
+- 梳理 Cronet、android.net.http.HttpEngine、OkHttp 在 HTTP/3 / QUIC / 0-RTT 上的官方支持边界和最小版本。
+- 补一张“协议能力 → Android 版本/API → 客户端库 → 观测入口（Perfetto / TrafficStats / 日志）”映射表。
+
+### 关联章节
+12.2、13.3、14.1、11.2
