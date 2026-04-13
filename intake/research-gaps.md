@@ -1800,3 +1800,19 @@ AsyncLayoutInflater 一节缺少 AndroidX 当前实现的关键边界，尤其�
 ### 关联章节
 §9.6、§1.4、§13.7、§13.10
 
+## [2026-04-13] 1.2 系统启动全流程 — first-stage init 与启动里程碑断层
+
+### 盲区描述
+正文把 Android 8-16 的启动主链压成了 Kernel → init → Zygote → SystemServer → Launcher，缺少 first-stage init / first-stage mount / switch_root / post-fs-data / zygote-start 这些真正决定启动边界的节点，也没有把 Home 可见、enable screen、LOCKED_BOOT_COMPLETED、BOOT_COMPLETED 区分开。这样会直接影响我们在 boot_progress、Perfetto 和 bootstat 中做阶段归因。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 追 `init/first_stage_init.cpp`、`rootdir/init.rc`、`SystemServer.java`、`UserController.java`，补出 Android 16 的完整启动时间线
+- 梳理 `boot_progress_system_run`、`boot_progress_ams_ready`、`boot_progress_enable_screen`、Home 首帧、`LOCKED_BOOT_COMPLETED`、`BOOT_COMPLETED` 的对应关系
+- 补 first-stage mount、AVB 2.0、Virtual A/B snapshot merge 对 OTA 首次开机慢路径的影响
+
+### 关联章节
+1.1、1.11、8.2、8.3、13.5
+

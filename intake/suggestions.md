@@ -2452,3 +2452,10 @@
 - **问题**：`/system/etc/sysconfig/`、`WITH_DEXPREOPT_*` 与 “System Baseline Profiles” 的对应关系缺少 AOSP 构建路径支撑，容易把系统 dexpreopt 和 App Baseline Profiles 写混。
 - **建议**：交给 Task 9 对照 AOSP build / ART 文档核实，再由 Task 2B 重写这节的系统镜像表述。
 - **review 日志**：logs/review/2026-04-13-14-review.md
+
+## [Task9 Deep Review] 1.2 系统启动全流程 — 2026-04-13
+- **类型**：数据缺失
+- **位置**：行 503-531 厂商优化黑科技 + Android 16 的启动优化
+- **问题**：MIUI“关机前保存系统状态”、Pixel 10/Pixel Fold 模块加载提速、AutoFDO 2.1% 启动收益、内核占 CPU 40% 等结论都没有一手来源、测试设备、构建版本和测量口径。
+- **建议**：补 Google / AOSP / 厂商原始链接和实验条件；补不齐时统一降级为定性描述，并把 Pixel-only 数据显式标成机型特例。
+

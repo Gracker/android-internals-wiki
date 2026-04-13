@@ -6917,5 +6917,81 @@
     "status": "completed",
     "completed_at": "2026-04-13T13:53:10+08:00",
     "completed_by": "task2b-rework"
+  },
+  {
+    "section": "1.2",
+    "section_title": "系统启动全流程",
+    "priority": 95,
+    "reason": "[Deep Tech Review] 启动链关键里程碑、SystemServer 阶段划分与 lazy service 机制存在事实错误，需按 AOSP android-16 纠正",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "行 120-125（Linux Kernel 阶段）",
+        "detail": "把 system/vendor 等关键分区挂载写成内核阶段工作。android-16 实际由 first-stage init 在 init/first_stage_init.cpp 中调用 DoFirstStageMount() 完成，随后才切换 root 并进入 second-stage init。",
+        "suggestion": "把主链改成 Bootloader → Kernel → first-stage init → second-stage init → zygote-start，并明确 rootfs 与 system/vendor 挂载的责任边界。"
+      },
+      {
+        "type": "源码错误",
+        "location": "行 263-299，371-376（SystemServer 服务阶段）",
+        "detail": "SystemServer 三阶段/四阶段服务归类和 AOSP android-16 不符。AMS 属于 startBootstrapServices()，WMS 与 InputManagerService 在 startOtherServices()，SensorService 也不是这里直接 start 的 Java service。",
+        "suggestion": "按 SystemServer.java 的实际方法重写阶段表，并给出 AMS/ATMS、PMS、BatteryService、InputManagerService、WMS 的真实归属。"
+      },
+      {
+        "type": "源码错误",
+        "location": "行 303-321，583-590（Launcher / BOOT_COMPLETED）",
+        "detail": "把“桌面可见”“Launcher 启动”“LOCKED_BOOT_COMPLETED/BOOT_COMPLETED 广播”压成一个同步收尾。实际 home 启动发生在 systemReady() 后的 startHomeOnAllDisplays 路径，两个 boot completed 广播由 UserController 在用户启动/解锁阶段发送。",
+        "suggestion": "拆成“systemReady → Home Activity 可见 → LOCKED_BOOT_COMPLETED → BOOT_COMPLETED”四个独立里程碑，并标明发送主体。"
+      },
+      {
+        "type": "源码错误",
+        "location": "行 388-394（boot_progress 里程碑）",
+        "detail": "boot_progress_system_run 被解释成“SystemServer 准备就绪”，但 EventLogTags 明确它在 SystemServer.run() 入口打点；boot_progress_enable_screen 也只是 AMS/ATMS enableScreenAfterBoot 节点，不等于 Launcher 首帧完成。",
+        "suggestion": "按 EventLogTags.logtags 逐个修正里程碑语义，并补充它们和用户可见里程碑之间的差异。"
+      },
+      {
+        "type": "源码错误",
+        "location": "行 473-480（延迟加载）",
+        "detail": "“Android 提供 bind 类型的服务”这一说法不成立。init.rc 没有 bind 服务类型；系统侧常见的是 disabled + interface 的 lazy HAL / lazy AIDL 服务，由 servicemanager 或 hwservicemanager 按需拉起。",
+        "suggestion": "删除 bind 类型表述，改写为 lazy HAL / lazy service 的真实启动机制，并补出 init.rc 示例。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-13T14:20:00+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "1.2",
+    "section_title": "系统启动全流程",
+    "priority": 85,
+    "reason": "[Deep Tech Review] first-stage init、冷启动 Trace 抓取路径和现代 boot 优化机制缺失，原理链不完整",
+    "material_paths": [
+      "intake/research-gaps.md"
+    ],
+    "review_issues": [
+      {
+        "type": "原理断裂",
+        "location": "行 97-103，175-179，545-561",
+        "detail": "章节把 Android 8-16 的启动主链简化成 Kernel → init → Zygote，遗漏了 first-stage init、post-fs-data、zygote-start、SELinux/restorecon、AVB 2.0 与 first-stage mount 的关键桥段。",
+        "suggestion": "补一段“现代 Android 启动时间线”，明确 first-stage init / fs_mgr / switch_root / second-stage init / zygote-start 的先后关系。"
+      },
+      {
+        "type": "数据缺失",
+        "location": "行 421-458（Perfetto / Systrace）",
+        "detail": "当前 adb shell perfetto 示例没有说明如何在 reboot 前 arm tracing。按现有写法，它无法覆盖 Boot ROM、Bootloader、Kernel 和 early-init，不能支撑“抓取开机 Trace”的目标。",
+        "suggestion": "补充可跑通的 boot tracing 路径，比如预置 boot trace config 后 reboot，或明确这里只能抓 system_server 之后的用户空间阶段。"
+      },
+      {
+        "type": "知识盲区",
+        "location": "行 482-531（开机性能优化）",
+        "detail": "优化段落停留在旧式 cpuset / 预加载描述，缺少 task_profiles、lazy HAL、APEX/odsign/dexpreopt、Virtual A/B snapshot merge 等现代 Android 启动优化与瓶颈点。",
+        "suggestion": "按“阶段 → 主要瓶颈 → 可观测指标 → 常见优化动作”重写，并区分平台通用机制和 OEM / Pixel 特例。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-13T14:20:00+08:00",
+    "status": "pending"
   }
 ]
