@@ -1,4 +1,5 @@
 ---
+task9_result: needs-rework
 title: "线程模型"
 chapter: "1.5"
 section: "1.5"
@@ -44,11 +45,11 @@ sources:
     path: "developer.android.com/reference/android/os/Process#setThreadPriority(int,int)"
 tags: [thread, handler, looper, messagequeue, renderthread, coroutine, workmanager, thread-priority]
 related_chapters: ["1.2", "1.4", "2.4", "2.5", "5.1"]
-pipeline_stage: task9_pending
+pipeline_stage: task2b_pending
 task6_state: reviewed
 task6_result: pass-light-edit
-task9_state: pending
-task2b_state: idle
+task9_state: reviewed
+task2b_state: pending
 ---
 
 # 线程模型
