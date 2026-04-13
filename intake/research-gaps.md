@@ -1951,3 +1951,36 @@ Android 10-16 的返回分发模型缺少一张统一矩阵。正文把 Gesture 
 
 ### 关联章节
 §3.1、§3.2、§3.3、§13.5
+
+
+## [2026-04-13] 11.2 App 耗电优化 — App 侧功耗问题的可复现观测矩阵
+
+### 盲区描述
+正文多处承诺“在 Perfetto / Battery Historian 中可以看到”，但没有明确 WakeLock、Alarm、WorkManager/JobScheduler、FGS、Location、Camera 各自的可复现观测路径：需要开什么 trace config，最终看哪些 UI track / SQL table / bugreport 指标。这样读者知道概念，却不能独立验证。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 为 WakeLock、Allow-While-Idle Alarm、JobScheduler/WorkManager、FGS、Location、Camera 分别列出 trace config / batterystats / Battery Historian / SQL 表 / 适用版本。
+- 核对哪些是 AOSP 标准轨道，哪些依赖 OEM vendor 实现或 userdebug build，避免把设备特有轨道写成通用结论。
+- 补 2-3 组真实 trace 或 `[图：...]`，至少覆盖 wakelock 持有、AllowWhileIdle 闹钟、FGS timeout、location batching 四类观察点。
+
+### 关联章节
+11.1、11.2、5.10、13.1、13.3、13.5
+
+## [2026-04-13] 11.2 App 耗电优化 — Geofencing / FLP 省电机制的实现边界
+
+### 盲区描述
+正文把 Geofencing 的省电原理概括成“硬件层面管理围栏检测”，但没有拆开 Google Play services Fused Location Provider、可能存在的 hardware geofence offload、以及 Android 8+ 背景位置响应频率限制。这会让读者误以为所有设备都具备相同的实现和功耗曲线。
+
+### 重要程度
+中
+
+### 建议研究方向
+- 核对 FLP、GeofencingClient 与 framework LocationManager / GNSS HAL 的真实分工。
+- 区分“API 行为保证”和“硬件 offload 能力”两层，不把 vendor capability 写成 Android 通用行为。
+- 若需要量化收益，补设备型号、场景、采样窗口和对照组；拿不稳就只保留定性结论。
+
+### 关联章节
+11.2、11.3、5.6

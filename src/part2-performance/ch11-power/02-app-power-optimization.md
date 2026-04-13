@@ -43,10 +43,11 @@ sources:
     path: "https://developer.android.com/about/versions/15/changes"
 tags: ['wakelock', 'jobscheduler', 'workmanager', 'doze', 'location', 'alarm', 'power', 'fgs', 'foreground-service', 'fcm', 'alarmmanager', 'geofencing', 'battery-historian', 'camera']
 related_chapters: ["11.1", "11.3", "5.6", "5.4", "5.10", "11.5"]
+task9_result: needs-rework
 pipeline_stage: task2b_pending
 task6_state: reviewed
 task6_result: needs-rework
-task9_state: pending
+task9_state: reviewed
 task2b_state: pending
 ---
 

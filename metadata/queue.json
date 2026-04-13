@@ -7544,5 +7544,74 @@
     "added_at": "2026-04-13T22:12:40+08:00",
     "status": "pending",
     "original_review_log": "logs/review/2026-04-13-22-review.md"
+  },
+  {
+    "section": "11.2",
+    "section_title": "App 耗电优化",
+    "priority": 95,
+    "reason": "[Deep Tech Review] App 侧功耗章节存在 Doze/FGS、exact alarm、FGS timeout 与 Camera API 事实错误，且观测链缺失，需技术回炉",
+    "material_paths": [
+      "intake/research-gaps.md",
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "Alarm 使用规范 / setAndAllowWhileIdle 的使用限制（行 329-335）",
+        "detail": "正文把 `setAndAllowWhileIdle()` 和 `setExactAndAllowWhileIdle()` 写成“唯二能在 Doze 模式下触发的闹钟 API”。官方 Doze 文档明确说明 `setAlarmClock()` 也会正常触发，系统会在闹钟触发前退出 Doze。",
+        "suggestion": "改成三类入口差异：`setAlarmClock()` 正常触发；Allow-While-Idle alarms 可以触发但受频率限制；普通 `setExact()` / `setWindow()` 会被延后到 maintenance window。"
+      },
+      {
+        "type": "源码错误/原理断裂",
+        "location": "前台服务的功耗考量开头（行 343-346）",
+        "detail": "把 FGS 写成“启动后不受 Doze 限制”，把 WakeLock 写成“在 Doze 中被延迟”，与官方 Doze 规则相反。Doze 会 suspend network access、ignore wake locks、defer jobs/alarms；FGS 不是 blanket exemption。",
+        "suggestion": "改为区分 device-level Doze 与 app-level background limits。FGS 提高进程优先级并保留用户可见性，但不直接豁免 Doze 的网络 / Job / Alarm 限制。"
+      },
+      {
+        "type": "源码错误/版本差异",
+        "location": "FGS 类型与权限 / `dataSync`（行 353-359）",
+        "detail": "将 `dataSync` 写成“已标记为未来弃用（deprecated）”不符官方 current service types 文档。Android 14/15 文档仅提供 alternatives 和 BOOT_COMPLETED 限制，没有把 `dataSync` 标为 deprecated。",
+        "suggestion": "删掉 deprecated 断言，改成“`dataSync` 仍是有效 FGS type，但 Google 建议优先评估 WorkManager / DownloadManager 等替代方案”。"
+      },
+      {
+        "type": "源码错误/版本差异",
+        "location": "Android 15 的进一步限制 + 误区四（行 361-365, 423-425）",
+        "detail": "把 Android 15 的 6h budget 写成“降级为普通服务并停止 / 系统强制回收”不准确。实际行为是累计 6h/24h 预算；超时后调用 `Service.onTimeout(int, int)`，服务不再被视为 foreground service，若未及时 `stopSelf()` 会记录 `RemoteServiceException` 或触发 ANR。",
+        "suggestion": "按 Android 15 行为重写 timeout 链，说明 budget 是 same-type shared quota，并补 `Service.onTimeout(int, int)` / `stopSelf()` / 异常日志这条闭环。"
+      },
+      {
+        "type": "源码错误",
+        "location": "Camera 资源释放（行 383-389）",
+        "detail": "`CameraManager` 没有 `closeCamera()` API。Camera2 释放链应以 `CameraDevice.close()` 为核心，并配合 `CameraCaptureSession.close()` / Surface 资源回收。",
+        "suggestion": "把示例改成 CameraDevice/CameraCaptureSession 的真实关闭路径，避免读者照抄不存在的方法。"
+      },
+      {
+        "type": "原理断裂/知识盲区",
+        "location": "Perfetto 观测段（WakeLock/位置/FGS/Camera，行 140, 251-259, 369-389）",
+        "detail": "多个“在 Perfetto 中可以看到”缺少 trace config / data source / UI track / SQL table 对应，且 `power/wakelock`、`Location Manager`、`GPS`、`Camera HAL` 并非所有设备上的标准可见轨道。正文目前给不出可复现的观测链。",
+        "suggestion": "补一张“问题类型 → 抓取方式 → 轨道/表 → 适用版本”的矩阵；若标准 user build 没有对应轨道，退回到 bugreport / Battery Historian / batterystats / statsd 的观测路径。"
+      },
+      {
+        "type": "版本差异/数据缺失",
+        "location": "Android Vitals 对 WakeLock 的监控（行 134-140）",
+        "detail": "正文把 2h/24h 阈值与“影响超过 5% 的用户就降权”合并表述，遗漏了官方的 28-day app sessions 聚合口径，以及“visibility impact once the metric is out of beta”的前提。",
+        "suggestion": "拆成两层：局部阈值（2h/24h background or FGS-held partial wakelocks）与平台指标（>5% app sessions / 28 days）。如果拿不稳 Play 生效时间，删掉“2026 年 3 月”日期。"
+      },
+      {
+        "type": "交叉引用错误/原理断裂",
+        "location": "WorkManager 省电配置（行 176-182）",
+        "detail": "把 `setExpedited()` 写成“功耗影响等同于手动 WakeLock”，与本书 §5.10 已建立的 quota / fallback / short-task 模型不一致，也会误导读者把 Expedited Work 当成绝对禁用项。",
+        "suggestion": "与 §5.10 统一：说明 expedited work 仍受 quota / `OutOfQuotaPolicy` 控制，只适用于用户在意、需尽快启动且较短的任务，不要用“等同 WakeLock”这种结论句。"
+      },
+      {
+        "type": "原理断裂/知识盲区",
+        "location": "Geofencing 的省电优势（行 233-247）",
+        "detail": "把 Geofencing 省电直接归因为“硬件层面管理围栏检测”，并给出“功耗降低约 10 倍”的断言，但官方 geofencing 文档只明确 Android 8+ 背景响应频率会放宽到 every couple of minutes，没有给出通用 10x 量化，也没有保证所有设备都使用 hardware offload。",
+        "suggestion": "补 FLP / Play services / hardware offload 的实现边界，区分 API behavior 与 vendor capability；没有可信来源的量化数字要降级。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-13T22:20:00+08:00",
+    "status": "pending"
   }
 ]
