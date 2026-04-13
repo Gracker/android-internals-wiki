@@ -1,38 +1,38 @@
 {
-  "generated_at": "2026-04-13T10:28:00+08:00",
+  "generated_at": "2026-04-13T11:19:38+08:00",
   "state_machine_version": "v2",
   "total_sections": 207,
   "metrics": {
     "total": 207,
-    "last_updated": "2026-04-13T10:28:00+08:00",
+    "last_updated": "2026-04-13T11:19:38+08:00",
     "ready-for-review": 173,
     "unknown": 34,
     "pipeline_unknown": 31,
-    "pipeline_task6_pending": 165,
-    "pipeline_task2b_pending": 10,
+    "pipeline_task6_pending": 164,
+    "pipeline_task2b_pending": 11,
     "pipeline_task9_pending": 1,
     "task6_unknown": 31,
     "task6_revisiting": 48,
-    "task6_reviewed": 11,
-    "task6_pending": 117,
+    "task6_reviewed": 12,
+    "task6_pending": 116,
     "task9_unknown": 31,
     "task9_pending": 174,
     "task9_reviewed": 2,
     "task2b_unknown": 31,
     "task2b_fixed": 48,
-    "task2b_pending": 10,
-    "task2b_idle": 118
+    "task2b_pending": 11,
+    "task2b_idle": 117
   },
   "pipeline": {
     "pipeline_stage_counts": {
-      "task2b_pending": 10,
-      "task6_pending": 165,
+      "task2b_pending": 11,
+      "task6_pending": 164,
       "task9_pending": 1,
       "unknown": 31
     },
     "task6_state_counts": {
-      "pending": 117,
-      "reviewed": 11,
+      "pending": 116,
+      "reviewed": 12,
       "revisiting": 48,
       "unknown": 31
     },
@@ -43,8 +43,8 @@
     },
     "task2b_state_counts": {
       "fixed": 48,
-      "idle": 118,
-      "pending": 10,
+      "idle": 117,
+      "pending": 11,
       "unknown": 31
     }
   },
@@ -2179,11 +2179,14 @@
       "title": "专题解读",
       "path": "src/part3-tools/ch13-perfetto/05-topic-analysis.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "pending",
+      "pipeline_stage": "task2b_pending",
+      "task6_state": "reviewed",
       "task9_state": "pending",
-      "task2b_state": "idle",
-      "section": "13.5"
+      "task2b_state": "pending",
+      "section": "13.5",
+      "reviewed_by": "openclaw-task6",
+      "reviewed_date": "2026-04-13",
+      "task6_result": "needs-rework"
     },
     "src/part3-tools/ch13-perfetto/06-thread-cpu-states.md": {
       "chapter": "13.6",
