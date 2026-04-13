@@ -8230,5 +8230,77 @@
     "original_review_log": "logs/review/2026-04-14-06-review.md",
     "updated_at": "2026-04-14T06:20:00+08:00",
     "updated_by": "task9-deep-tech-review"
+  },
+  {
+    "section": "13.1",
+    "section_title": "Perfetto 简介与演进",
+    "priority": 95,
+    "reason": "[Deep Tech Review] 长时录制缓冲模型、lightweight mode、TraceConfig 输入格式、Android P/Q/R 版本线、heapprofd 权限边界存在高风险事实错误",
+    "material_paths": [
+      "intake/research-gaps.md",
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "原理断裂",
+        "location": "行92-99、123、189（长时录制与写盘模型）",
+        "detail": "正文把 Perfetto 写成“traced 边采集边写盘，因此 trace 时长几乎没有上限”。官方 Trace configuration / Service model 文档说明的是：Producer 先写共享内存，traced 再汇聚到中心 trace buffers；默认仍是内存 ring buffer，只有显式开启 write_into_file / file_write_period_ms 才会周期性落盘。把默认模型写成自动流式写盘，会直接误导 buffer sizing 和长时 trace 策略。",
+        "suggestion": "重写为“Producer shared memory → traced central buffers → 可选 write_into_file 周期性落盘”三层模型；把“长时 trace”收紧成需要 long-trace 配置，而不是 Perfetto 的默认行为。"
+      },
+      {
+        "type": "原理断裂",
+        "location": "行125（normal mode / lightweight mode）",
+        "detail": "章节把 lightweight mode 写成 traced 不在时的自动回退路径。官方 perfetto CLI 文档把 lightweight mode 定义为 perfetto 命令的简化配置模式，只接受命令行参数，且只覆盖 ftrace / atrace 子集；System backend / normal mode 依赖 traced 守护进程，并不存在“traced 被 kill 后系统自动退回 lightweight mode”的官方语义。",
+        "suggestion": "改成“traced 不可用时，normal mode / system backend 无法工作；若要采集受限的 ftrace / atrace 子集，需要显式使用 perfetto simple(lightweight) mode 或 legacy systrace 类流程”。"
+      },
+      {
+        "type": "源码错误",
+        "location": "行191-204（TraceConfig 输入格式与示例）",
+        "detail": "正文声称 perfetto 命令行可以直接使用 JSON 配置，并给出 JSON TraceConfig 示例。官方 Trace configuration / perfetto CLI 文档要求 normal mode 输入 TraceConfig protobuf，文本形式是 PBTX（需要 --txt），老版本 Android P 只支持 binary protobuf。当前 JSON 示例不能直接作为 perfetto CLI 配置使用。",
+        "suggestion": "把示例改成官方 pbtx / binary protobuf 形式，例如 `perfetto --txt -c config.pbtx -o trace.perfetto-trace`；如果要保留命令行 flags，单独标注那是 simple / lightweight mode。"
+      },
+      {
+        "type": "版本差异",
+        "location": "行98、307-315、325（Android P / Q / R 版本线）",
+        "detail": "同章同时写了“Perfetto Android 10 引入”“Android 9 基础设施开始集成但默认未启用”“Android 9 及以下仍然只能用 Systrace”。官方 Android Version Notes / Advanced System Tracing on Android 明确给出：Perfetto 已包含在 Android P system image 中；P/Q 非 Pixel 设备常见前置条件是 `persist.traced.enable=1`；R 起默认启用；P 不支持 `--txt`。当前版本线互相矛盾，且会把 Android 9 的可用能力直接讲错。",
+        "suggestion": "增加 P / Q / R+ 版本矩阵，拆开“何时进入 system image”“何时默认 enable”“何时支持 --txt / binary proto”“何时引入 heapprofd / java_hprof”，并删除“Android 9 及以下只能用 Systrace”这类错误合并口径。"
+      },
+      {
+        "type": "版本差异",
+        "location": "行321（heapprofd 权限边界）",
+        "detail": "把 heapprofd 写成“需要 root 或 adb shell 特权”不成立。官方 Heap profiler 文档明确说明：Android 10+ 的 user build 上，带 debuggable 或 profileable manifest flag 的 App 可以在无 root 条件下被 heapprofd 采样；root / userdebug 只是把可观测范围扩大到更多进程和系统服务。",
+        "suggestion": "把 FAQ 收紧成“普通系统追踪不需要 root；heapprofd 在 Android 10+ 对 profileable/debuggable App 可无 root 使用；root / userdebug 主要影响系统进程和非 profileable 目标”。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-14T07:20:00+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "13.1",
+    "section_title": "Perfetto 简介与演进",
+    "priority": 85,
+    "reason": "[Deep Tech Review] 缺少版本-权限-Consumer 能力矩阵，Data Source 可用边界没有形成可执行地图",
+    "material_paths": [
+      "intake/research-gaps.md",
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "知识盲区",
+        "location": "行212-215、321（Data Source 可用性边界）",
+        "detail": "数据源列表只给了名字，没有交代 build 类型、最小 Android 版本、manifest gate、root / adb shell 需求。对于入门章节，这会让读者误以为 heapprofd、android.java_hprof、android.log、android.power 在 Android 10-17 设备上都能等价开启。",
+        "suggestion": "补一张 availability matrix，至少覆盖 data source 名称、最小版本、user/userdebug 限制、profileable/debuggable 要求、典型使用场景。"
+      },
+      {
+        "type": "知识盲区",
+        "location": "行191-206、303-315（Consumer / capture 路径）",
+        "detail": "正文同时提到“系统追踪”、adb shell perfetto、Record trace 页面、Android Studio Profiler，但没有形成一张 consumer/capture 路径图。读者很难判断 Traceur、perfetto simple mode、perfetto normal mode、record_android_trace、Android Studio Profiler 分别对应什么输入格式、版本限制和 traced 依赖。",
+        "suggestion": "补一张 capture matrix：Traceur、adb shell perfetto(simple)、adb shell perfetto(normal)、record_android_trace、Android Studio Profiler、tracebox 的适用平台、配置格式、输出格式与权限门槛。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-14T07:20:00+08:00",
+    "status": "pending"
   }
 ]
