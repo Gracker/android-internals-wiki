@@ -7369,5 +7369,38 @@
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-13T18:20:00+08:00",
     "status": "pending"
+  },
+  {
+    "section": "3.3",
+    "section_title": "手势导航与系统交互",
+    "priority": 90,
+    "reason": "[review回炉] Predictive Back 返回链路与版本边界需要技术核对，Perfetto 观察段缺少真实 Trace 证据",
+    "material_paths": [
+      "intake/suggestions.md（含 review 意见）"
+    ],
+    "review_issues": [
+      {
+        "type": "需确认",
+        "location": "Predictive Back 架构 / 常见误区 1",
+        "detail": "正文把传统返回手势的 `KEYCODE_BACK` 注入链路和 Android 13+ `OnBackInvokedCallback` / Predictive Back 回调模型写在同一条叙述里，读者容易理解成现代返回仍然统一靠按键注入完成。",
+        "suggestion": "交给 Task 9 核对 Android 10-12 与 Android 13-16 的返回分发路径，再由 Task 2B 拆成 legacy 和 Predictive Back 两条链。"
+      },
+      {
+        "type": "需确认",
+        "location": "版本演进的时间线",
+        "detail": "Android 13/14/15/16 对 Predictive Back 的启用条件、默认状态、manifest / targetSdk 约束写得偏满，当前缺少逐项版本锚点。",
+        "suggestion": "由 Task 9 对照官方文档和 API diff 收紧版本边界，避免把开发者选项、默认启用和 API 可用性混为一层。"
+      },
+      {
+        "type": "需补充素材",
+        "location": "在 Perfetto 中的表现",
+        "detail": "Gesture Monitor、SystemUI MainThread、Back 注入和 Predictive Back 多窗口渲染都写成了可直接观察的结论，但当前只有文字，没有真实 Trace 截图或 `[图：...]` 占位，证据链偏弱。",
+        "suggestion": "补 2-3 个真实 Perfetto 片段或等价图示，至少覆盖 `edge-swipe` 分发、SystemUI 手势处理、Predictive Back 动画三类观察点。"
+      }
+    ],
+    "added_by": "task6-review",
+    "added_at": "2026-04-13T20:10:00+08:00",
+    "status": "pending",
+    "original_review_log": "logs/review/2026-04-13-20-review.md"
   }
 ]
