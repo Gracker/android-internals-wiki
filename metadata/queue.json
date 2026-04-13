@@ -1256,7 +1256,7 @@
     ],
     "added_by": "task6-review",
     "added_at": "2026-04-13T07:32:25+08:00",
-    "status": "pending",
+    "status": "completed",
     "review_issues": [
       {
         "type": "需确认",
@@ -1289,7 +1289,8 @@
         "suggestion": "在技术问题核实后，用一个真实排查场景把结尾收回来。"
       }
     ],
-    "original_review_log": "logs/review/2026-04-13-07-review.md"
+    "original_review_log": "logs/review/2026-04-13-07-review.md",
+    "completed_at": "2026-04-14T00:05:23+08:00"
   },
   {
     "section": "8.6",
@@ -7389,7 +7390,8 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-13T18:20:00+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-14T00:05:23+08:00"
   },
   {
     "section": "3.3",

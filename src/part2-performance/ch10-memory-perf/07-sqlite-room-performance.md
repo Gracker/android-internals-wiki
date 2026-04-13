@@ -10,23 +10,50 @@ last_verified_against: "AOSP android-17-beta3"
 confidence: medium
 sources:
   - type: aosp
-    path: "frameworks/base/core/java/android/database/sqlite/"
+    path: "frameworks/base/core/java/android/database/sqlite/SQLiteDatabase.java"
+  - type: aosp
+    path: "frameworks/base/core/java/android/database/sqlite/SQLiteConnectionPool.java"
+  - type: aosp
+    path: "frameworks/base/core/java/android/database/sqlite/SQLiteSession.java"
+  - type: aosp
+    path: "frameworks/base/core/java/android/database/sqlite/SQLiteCursor.java"
+  - type: aosp
+    path: "frameworks/base/core/java/android/database/sqlite/SQLiteQuery.java"
   - type: aosp
     path: "frameworks/base/core/java/android/database/CursorWindow.java"
+  - type: aosp
+    path: "frameworks/base/core/java/android/database/CursorToBulkCursorAdaptor.java"
+  - type: aosp
+    path: "frameworks/base/core/java/android/database/BulkCursorDescriptor.java"
+  - type: aosp
+    path: "frameworks/base/core/res/res/values/config.xml"
+  - type: aosp
+    path: "libs/androidfw/CursorWindow.cpp"
+  - type: official
+    path: "androidx.room:room-runtime:2.8.4 sources.jar (RoomDatabase / DatabaseConfiguration)"
+  - type: official
+    path: "androidx.room:room-paging:2.8.4 sources.jar (LimitOffsetPagingSource / RoomPagingUtil.kt)"
   - type: official
     path: "developer.android.com/training/data-storage/room"
-  - type: blog
-    path: "intake/research-feeds/2026-04-05-07-cursorwindow-binder-performance.md"
+  - type: official
+    path: "developer.android.com/topic/libraries/architecture/paging/v3-paged-data"
   - type: official
     path: "developer.android.com/reference/android/database/sqlite/SQLiteDatabase"
+  - type: official
+    path: "perfetto.dev/docs/analysis/stdlib-docs#androidmonitor_contention"
+  - type: blog
+    path: "intake/research-feeds/2026-04-05-07-cursorwindow-binder-performance.md"
+  - type: blog
+    path: "intake/research-feeds/2026-04-06-15-perfetto-monitor-contention-art-lock-analysis.md"
 tags: [SQLite, Room, database, ANR, CursorWindow, WAL, performance]
 related_chapters: ["1.10", "4.1", "9.1", "10.1", "10.6"]
 section: "10.7"
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
 task9_result: needs-rework
-task2b_state: pending
+task2b_state: fixed
+task2b_result: fixed
 reviewed_by: openclaw-task6
 reviewed_date: "2026-04-13"
 task6_result: needs-rework
@@ -34,15 +61,15 @@ task6_result: needs-rework
 
 # 10.7 SQLite/Room 数据库性能优化
 
-在分析 ANR 和卡顿问题时，我们经常发现主线程在等一把锁——不是 Java 层的 synchronized，也不是 Binder 调用，而是 `SQLiteDatabase` 内部的数据库锁。一个耗时 200ms 的查询，如果发生在主线程，就是一次用户可感知的卡顿；如果它还阻塞了其他线程对同一数据库的访问，就可能引发连锁反应，最终在 ANR traces 中看到一整排线程卡在 `SQLiteDatabase.lock()` 上。
+在分析 ANR 和卡顿问题时，我们经常看到线程停在数据库路径上。一个耗时 200ms 的查询，如果发生在主线程，就是一次用户可感知的卡顿；如果它又把其他线程拖进同一条数据库路径，ANR traces 和 Perfetto 里就会出现一串线程一起等待连接、事务或远端 Provider 回复。
 
-数据库操作之所以容易成为性能瓶颈，根源在于 SQLite 的并发模型：写操作会锁住整个数据库，而 Android 的 `SQLiteDatabase` 在这一层之上又加了自己的同步机制。理解这些机制的层级关系，是从 Perfetto trace 中准确判断「到底是哪一层锁导致了问题」的前提。
+数据库操作之所以容易成为性能瓶颈，根源在于 SQLite 的并发模型和 Android 在其上叠加的 connection pool。SQLite 在同一时刻只允许一个写者，Android 侧再用 `SQLiteSession`、`SQLiteConnectionPool` 和 helper open 流程把查询、事务、Migration 组织起来。把这几层分清楚，才能判断慢点究竟出在 SQL、本地窗口 refill、跨进程 Cursor 传输，还是连接池争用。
 
 本章我们从 SQLite 内部机制讲起，覆盖 CursorWindow 跨进程传输的瓶颈、Room 的线程模型与优化策略，并给出数据库性能问题的系统分析方法。
 
 <!-- outline-start -->
 - 🔹 WAL 模式、锁层级与 `SQLiteDatabase` 同步机制
-- 🔹 CursorWindow、Binder 缓冲区与翻页重查
+- 🔹 CursorWindow、跨进程 Cursor 与翻页重查
 - 🔹 Room 的线程模型、事务与 Paging 3
 - 🔹 索引、`WITHOUT ROWID` 与 PRAGMA 调优
 - 🔹 数据库与 ANR / Perfetto 的关联分析
@@ -62,17 +89,13 @@ WAL（Write-Ahead Logging）模式反转了这个模型。写操作不再直接�
 ```sql
 -- 启用 WAL 模式
 PRAGMA journal_mode=WAL;
--- Android 9 (API 28) 引入 Compatibility WAL，自动在单连接场景下启用
--- Room 默认在 API 16+ 设备上启用完整 WAL
 ```
 
-WAL 模式的性能优势主要体现在两个方面：
+WAL 模式的收益主要来自两个更稳定的事实。
 
-第一，减少了 `fsync()` 调用次数。回滚日志模式下，每次事务提交都需要 `fsync()` 来确保数据持久化，而 WAL 模式将多个事务批量追加到日志文件，只在检查点（checkpoint）时才需要 `fsync()`。在 ext4 文件系统上，WAL 模式可以带来约 4 倍的写入速度提升。
+第一，事务提交路径里的 `fsync()` 次数通常更少。回滚日志模式需要先回写原页，再提交事务；WAL 把改动追加到 `-wal` 文件，检查点再把脏页并回主库。收益幅度会受文件系统、闪存控制器、检查点策略和事务大小影响，这里更适合写成定性结论，不写固定倍数。
 
-[已验证: 官方文档, developer.android.com/reference/android/database/sqlite/SQLiteDatabase]
-
-第二，WAL 的写入是顺序 I/O（append-only），而回滚日志的写入是随机 I/O。在现代闪存存储上，虽然随机 I/O 和顺序 I/O 的差距不如传统硬盘那么大，但 WAL 仍然减少了写入放大——它不需要在写入前先复制原始数据页。
+第二，WAL 把大部分写入变成 append-only I/O。它少了一次“先复制旧页再覆盖新页”的往返，对频繁小事务和批量写入都更友好。Room 在默认 `JournalMode.AUTOMATIC` 配置下，通常也会优先选择 WAL；最终行为仍然取决于 API 级别、低内存设备判定和具体打开配置。
 
 WAL 模式也有限制需要注意：只有一个写者可以活跃（写操作仍然串行），WAL 文件如果不及时做检查点可能无限增长，以及它不适用于网络文件系统（需要共享内存）。
 
@@ -94,102 +117,108 @@ WAL 模式改善了这个问题。写操作在 RESERVED 状态后直接写入 WA
 
 ### 1.3 Android SQLiteDatabase 的同步机制
 
-Android 的 `SQLiteDatabase` 在 SQLite 原生锁之上又加了一层 Java 层同步。`SQLiteDatabase` 内部使用引用计数和锁机制来协调所有数据库操作的访问：
+当前 AOSP 用的是“每个线程拿自己的 `SQLiteSession`，再向 `SQLiteConnectionPool` 申请连接”这套模型。执行 SQL 时并不存在一个覆盖所有查询的 Java 全局锁，`SQLiteDatabase` 里维护的是 `ThreadLocal<SQLiteSession>`，事务、`prepare()` 和 `executeForCursorWindow()` 最终都沿着这条路径往下走。
 
 ```java
 // frameworks/base/core/java/android/database/sqlite/SQLiteDatabase.java
-// @ AOSP android-17-beta3
-public long insertWithOnConflict(String table, String nullColumnHack,
-        ContentValues initialValues, int conflictAlgorithm) {
-    acquireReference();  // 引用计数 +1
-    try {
-        // 实际执行 SQL
-        return stmt.executeInsert();
-    } finally {
-        releaseReference();  // 引用计数 -1
+private final ThreadLocal<SQLiteSession> mThreadSession = ThreadLocal
+        .withInitial(this::createSession);
+
+// frameworks/base/core/java/android/database/sqlite/SQLiteConnectionPool.java
+public SQLiteConnection acquireConnection(String sql, int connectionFlags,
+        CancellationSignal cancellationSignal) {
+    SQLiteConnection con = waitForConnection(sql, connectionFlags, cancellationSignal);
+    synchronized (mLock) {
+        ...
     }
+    return con;
 }
 ```
 
-`acquireReference()` 和 `releaseReference()` 通过 `AtomicInteger` 引用计数管理数据库连接的生命周期。当引用计数归零且 `close()` 被调用时，数据库才会真正关闭。
+要分清两个层次。`mLock` 保护的是连接池元数据，真正让线程睡下去的位置是 `waitForConnection()`；长事务、独占写连接或连接池规模过小，都会让后续线程在这里排队。Perfetto 和 ANR trace 里更值得找的是 `beginTransaction`、`executeForCursorWindow()`、`waitForConnection()` 这条链。
 
-`SQLiteOpenHelper` 的 `getWritableDatabase()` 内部使用了 `synchronized` 关键字，确保 `onCreate()`、`onUpgrade()` 等回调只在一个线程上执行。如果升级脚本执行时间很长（比如大表 `ALTER TABLE`），其他所有等待数据库连接的线程都会被阻塞。
+`SQLiteOpenHelper` 的数据库打开路径仍然是串行的。`getWritableDatabase()` 会把 `onCreate()`、`onUpgrade()`、`onDowngrade()` 串在一次 open 流程里，所以慢 Migration 一样会把后续打开者挡在门外。这里的阻塞点更接近 helper open 和 connection acquisition。
 
-[已验证: AOSP android-17-beta3, frameworks/base/core/java/android/database/sqlite/SQLiteOpenHelper.java]
-
-## 2. CursorWindow 与 Binder 传输瓶颈
+## 2. CursorWindow 与跨进程 Cursor 传输
 
 ### 2.1 CursorWindow 的内部结构
 
-CursorWindow 是 Android 跨进程数据库查询的核心载体。当 App 通过 ContentProvider 查询数据时，返回的 `Cursor` 通常封装了一个 `CursorWindow`。CursorWindow 底层使用 Binder 共享内存来传输数据，默认大小为 2MB（`CursorWindow.CURSOR_WINDOW_SIZE`）。
+CursorWindow 是一块“装查询结果片段”的窗口，不是“整条查询结果”的镜像。窗口大小不是写死在某个 `CURSOR_WINDOW_SIZE` 常量里的固定 2MB，当前 AOSP 通过 `config_cursorWindowSize` 资源读取，AOSP main 默认值是 2048KB。
 
-这个 2MB 的限制不是随意设定的。CursorWindow 的数据需要在 App 进程和 ContentProvider 所在进程之间通过 Binder 传输。Binder 的事务缓冲区有上限（整个进程共享 1MB），加上 CursorWindow 自身的容量，2MB 是在内存占用和传输效率之间取的平衡。
-
-### 2.2 SQLiteCursor 的翻页重查机制
-
-当查询结果超过 CursorWindow 的容量时，`SQLiteCursor` 的行为值得深入了解。它不是一次性加载所有数据——当 App 请求某一行数据，而该行不在当前 CursorWindow 中时，`SQLiteCursor` 会：
-
-1. 清空当前 CursorWindow
-2. 从头重新执行查询
-3. 逐行跳过已读的行，直到目标行进入窗口
-
-这相当于对每"页"数据执行了 `SELECT ... LIMIT windowSize OFFSET (N * windowSize / 3)` 的操作。偏移量越大，跳过的行数越多，性能越差。一个 10 万行的表，翻到第 50 页时的查询成本可能是第一页的 50 倍。
-
-[来源: intake/research-feeds/2026-04-05-07-cursorwindow-binder-performance.md]
-
-[图：SQLiteCursor 翻页重查的时序——每次翻页都从头查询]
-
-### 2.3 Binder 事务缓冲区与 TransactionTooLargeException
-
-CursorWindow 的 2MB 限制只是表面。更隐蔽的问题来自 Binder 事务缓冲区。整个进程的 Binder 缓冲区默认只有 1MB，且所有并发的 Binder 事务共享这个额度。
-
-在实践中，通常会出现几种情况：
-
-- 如果一个 ContentProvider 查询返回了 1.5MB 的数据，仅这一次调用就超过了 Binder 缓冲区
-- 如果两个并发 ContentProvider 调用各返回 0.5MB，合计 1MB，后续的 Binder 调用可能触发 `TransactionTooLargeException`
-- Binder 的头部和元数据也占空间，实际可用于数据的载荷小于 1MB
-
-[来源: intake/research-feeds/2026-04-05-07-cursorwindow-binder-performance.md]
-
-这就是为什么实践中数据载荷达到 0.5MB 时就可能触发 `TransactionTooLargeException`——不是 CursorWindow 太小，而是 Binder 缓冲区已经见底。
-
-### 2.4 分页策略：Limit/Offset vs Keyset Pagination
-
-了解了翻页重查机制后，分页策略的选择就变得明确了。
-
-**Limit/Offset 分页**（传统的 `SELECT ... LIMIT 20 OFFSET 1000`）：
-
-- 简单直观，但 SQLite 需要扫描并跳过前 1000 行，然后返回 20 行
-- 随着页数增长，性能线性下降
-- 与 SQLiteCursor 的 fillWindow 行为叠加，实际开销可能翻倍
-
-**Keyset 分页**（`SELECT ... WHERE id > :last_id ORDER BY id LIMIT 20`）：
-
-- 利用索引直接定位到起始位置，无需跳过任何行
-- 性能与页数无关——第 100 页和第 1 页的查询成本几乎相同
-- Room 的 Paging 3 内部使用 Keyset 分页
-
-```sql
--- Limit/Offset: 第 50 页，需要扫描 1000 行
-SELECT * FROM messages ORDER BY id LIMIT 20 OFFSET 1000;
-
--- Keyset: 利用索引直接定位
-SELECT * FROM messages WHERE id > 1000 ORDER BY id LIMIT 20;
+```java
+// frameworks/base/core/java/android/database/CursorWindow.java
+private static int getCursorWindowSize() {
+    if (sCursorWindowSize < 0) {
+        sCursorWindowSize = Resources.getSystem().getInteger(
+                com.android.internal.R.integer.config_cursorWindowSize) * 1024;
+    }
+    return sCursorWindowSize;
+}
 ```
 
-在 `EXPLAIN QUERY PLAN` 中，Keyset 分页会显示 `USING INDEX`，而 Limit/Offset 会显示 `SCAN` 并带有 `OFFSET` 标记。
+当查询发生在同一进程时，`SQLiteCursor` 直接在这块窗口里填充数据。查询跨进程穿过 ContentProvider 时，客户端先拿到 `BulkCursorDescriptor`，后续再通过 `CursorToBulkCursorAdaptor` / `IBulkCursor` 请求窗口。窗口本体通过 `CursorWindow.writeToParcel()` 序列化，底层走的是 ashmem FD 共享，不是把整块窗口直接塞进一次 Binder payload。
 
-[已验证: 官方文档, sqlite.org/queryplanner.html]
+### 2.2 SQLiteCursor 的 refill 调用链
+
+Cursor refill 和业务分页 SQL 是两件事。当前 AOSP 的 in-process 路径是：
+
+```java
+// frameworks/base/core/java/android/database/sqlite/SQLiteCursor.java
+public boolean onMove(int oldPosition, int newPosition) {
+    if (mWindow == null || newPosition < mWindow.getStartPosition()
+            || newPosition >= (mWindow.getStartPosition() + mWindow.getNumRows())) {
+        fillWindow(newPosition);
+    }
+    return true;
+}
+```
+
+`fillWindow(newPosition)` 之后会进入 `SQLiteQuery.fillWindow()`，再由 `SQLiteSession.executeForCursorWindow()` 把结果写进当前窗口。跨进程时，Provider 侧的 `CursorToBulkCursorAdaptor.getWindow(position)` 会先看已有窗口是否覆盖目标位置，不够再调用 `mCursor.fillWindow(position, window)`。CursorWindow refill 发生在 Cursor / Provider 这一层，Room Paging 是另一层更高的装载协议。
+
+[图：`SQLiteCursor.onMove()` → `fillWindow()` → `SQLiteQuery.fillWindow()`，以及跨进程 `CursorToBulkCursorAdaptor.getWindow()` 的对照示意]
+
+### 2.3 CursorWindow、ashmem 与 TransactionTooLargeException
+
+把“大查询”直接等同为“Binder buffer 溢出”太粗。跨进程 Cursor 返回时，常见路径是 `BulkCursorDescriptor` 携带窗口描述信息，窗口内容通过 ashmem FD 共享。真正容易混在一起的有三类问题：
+
+- **CursorWindowAllocationException / row too big**：单行太宽，或者窗口分配失败，数据根本塞不进当前窗口。
+- **频繁 refill 带来的卡顿**：窗口本身能创建，但因为 projection 过宽、目标位置太深或跨进程往返太多，列表滚动时不断触发 refill。
+- **TransactionTooLargeException**：更常见于同一次 Binder 事务里还夹带了大 `Bundle`、大 `Cursor` extras、多个并发事务共享 buffer，或者把非 Cursor 数据一起塞进回复包。
+
+看到 `TransactionTooLargeException` 时，先区分“Binder reply 负载过大”还是“CursorWindow 太大 / 单行太宽”；看到滚动卡顿时，再去判断是不是 refill 次数过多。
+
+### 2.4 分页策略：Room Paging 与 Keyset 要分开看
+
+Paging 3 负责“什么时候加载下一页”，SQL 负责“这一页怎么取”。这两层不要混在一起。
+
+**Room + Paging 3 的默认集成**，通常走的是 `PagingSource<Int, T>` + `LimitOffsetPagingSource`，底层由 `RoomPagingUtil.kt` 生成 `LIMIT / OFFSET` 查询。它解决了列表装载、失效通知和预取协同，但没有把深翻页自动变成 Keyset。
+
+```sql
+-- Limit/Offset: Room Paging 默认更接近这一类
+SELECT * FROM messages ORDER BY id LIMIT 20 OFFSET 1000;
+
+-- Keyset: 需要业务自己设计查询条件
+SELECT * FROM messages
+WHERE id > :last_id
+ORDER BY id
+LIMIT 20;
+```
+
+如果列表会翻到很深的位置，Offset 成本仍然会随页数增长。Keyset 的优势在于利用索引直接定位起点，但它要求业务提供稳定排序键和游标条件。Paging 3 可以承载这两种查询，真正决定成本的是 DAO SQL，不是 Paging 3 这个框架名字本身。
 
 ## 3. Room 的性能特性与优化
 
 ### 3.1 Room 的线程模型
 
-Room 在架构层面强制了"数据库操作不在主线程"的约束。默认情况下，Room 使用一个内部 `QueryExecutor`（通常是一个固定大小的线程池）来执行所有查询操作。Room 的 `@Dao` 方法如果是 `suspend` 函数，会在 Room 内部的 `QueryCoroutineScope` 上执行，自动管理线程切换。
+Room 不是“自动把所有数据库操作搬到后台线程”的魔法层，API 形态决定执行模型。
 
-Room 默认在 API 16+ 设备上启用 WAL 模式（前提是非低内存设备）。使用 Room 的应用天然享有读写并发的优势，而不需要手动配置 `PRAGMA journal_mode=WAL`。
+- **同步 DAO 方法**：就在调用线程执行。如果发生在主线程，Room 会直接抛异常；只有显式 `allowMainThreadQueries()` 才会关掉这层保护。
+- **`suspend` DAO / `withTransaction`**：走 Room 的 coroutine / executor 适配层，在 query executor 或 transaction executor 上执行。
+- **`Flow` / `LiveData` / Rx 返回类型**：Room 负责生成观察与重查逻辑，真正的 SQL 仍然落到它配置的 executor 上。
 
-[已验证: 官方文档, developer.android.com/training/data-storage/room]
+这个区分直接影响排查路径：主线程卡在数据库上，不一定是 Room 失效，更常见的是调用点本身选了同步 API，或者数据库第一次 open / migration 就发生在主线程。
+
+在日志与 trace 里，我们更应该找三件事：DAO 是同步还是异步、第一次 open 发生在哪个线程、事务和查询各自用了哪个 executor。至于 WAL，Room 的 `JournalMode.AUTOMATIC` 通常会在 API 16+ 且非低内存设备上选择 WAL，这给读写并发提供了更好的默认起点，但不改变“只有一个写者”的基本约束。
 
 ### 3.2 Room 的 @Transaction 与 suspend 函数
 
@@ -214,27 +243,26 @@ suspend fun insertAll(items: List<Item>) {
 
 ### 3.3 Paging 3 的懒加载与预取策略
 
-Room 对 Paging 3 的支持通过 `PagingSource<Int, T>` 实现。Paging 3 内部使用 Keyset 分页，避免了前面讨论的 OFFSET 性能陷阱。
+Room 对 Paging 3 的支持通常通过 `PagingSource<Int, T>` 暴露，但默认实现不等于 Keyset。AndroidX `room-paging` 当前提供的是 `LimitOffsetPagingSource`，`RoomPagingUtil.kt` 会基于 DAO 查询生成 `LIMIT / OFFSET` 形式的分页 SQL。
 
-Paging 3 还会根据列表滑动方向预取相邻页面。如果用户正在向下快速滑动，Paging 3 会提前加载下一页，减少用户感知的加载延迟。预取的数量由 `PagingConfig.prefetchDistance` 控制，默认为页面大小。
+这套实现的好处是和失效通知、预取、刷新锚点配合得很顺，代价也很直接：如果 Offset 很深，数据库仍然要跳过前面的记录，查询成本不会因为用了 Paging 3 就自动消失。只有当业务自己把 SQL 设计成 `WHERE id > :lastId ORDER BY id LIMIT N` 这类游标条件时，才是在做 Keyset pagination。
 
-但需要注意 `loadSize`（每页大小）的设置。过大的 `loadSize` 会增加每次查询的数据量，在宽表（列多、含大文本）场景下可能导致 CursorWindow 频繁翻页重查。
+`prefetchDistance` 和 `loadSize` 仍然值得调。过大的 `loadSize` 会让单次查询返回更多列和更多行，在宽表、大文本列或跨进程 Cursor 场景下，更容易把 refill 成本放大。
 
 ### 3.4 Migration 的性能风险
 
-Room 的数据库 Migration 在主线程上执行（如果 `allowMainThreadQueries()` 被启用或在 ContentProvider 的 `onCreate` 中触发）。大型表的 `ALTER TABLE` 或 `CREATE INDEX` 可能耗时数秒：
+Migration 发生在数据库 open 过程中。Room 最终还是通过 `SupportSQLiteOpenHelper` / `SQLiteOpenHelper` 打开数据库，所以谁触发第一次 open，谁就承担 Migration 的时间成本。
+
+如果首次 open 出现在主线程，例如 App 启动早期直接调用同步 DAO，或者 ContentProvider / Application 初始化链里提前访问数据库，大型 `ALTER TABLE`、回填脚本和 `CREATE INDEX` 就会直接卡住当前线程。`allowMainThreadQueries()` 只会关闭 Room 的主线程访问检查，不会让 Migration 变快。
 
 ```kotlin
-// 危险：大表 Migration 可能耗时很长
-val MIGRATION_3_4 = object : Migration(3, 4) {
-    override fun migrate(db: SupportSQLiteDatabase) {
-        // 百万行表添加索引可能耗时数秒
-        db.execSQL("CREATE INDEX idx_message_date ON messages(date)")
-    }
-}
+// 危险：首次 open 发生在 UI 路径，Migration 成本会直接落在当前线程
+val db = Room.databaseBuilder(context, AppDb::class.java, "app.db")
+    .addMigrations(MIGRATION_3_4)
+    .build()
 ```
 
-最佳实践是将耗时的 Migration 拆分为多个小步骤，或者在应用首次启动时使用 Jetpack App Startup 在后台线程预执行。
+更稳妥的做法是把“首次 open + migration”提前到可控的后台时机，例如启动前置预热、冷启动后的 dedicated executor，或者由 App Startup 触发一次后台 prewarm。App Startup 在这里是调度手段，不是 Room 的专用优化开关。
 
 [待补充: Migration 耗时在不同数据量级下的基准测试数据]
 
@@ -307,56 +335,64 @@ CREATE TABLE user_prefs (
 
 ### 5.1 主线程数据库操作的连锁反应
 
-ANR traces 中最常见的数据库相关模式：
+ANR traces 中更常见的数据库相关模式是：
 
-1. 主线程执行了一个慢查询（可能只有 200ms，但超过了输入事件超时窗口）
-2. 主线程尝试获取 `SQLiteDatabase.mLock`，但锁被后台线程持有
-3. 后台线程在执行一个长事务，持有 SQLite 写锁
-4. 其他线程也在等待同一把锁，形成排队效应
+1. 主线程或 Binder 调用线程触发了一次慢查询、慢事务，或者首次 open 命中了 Migration。
+2. 后续线程在 `SQLiteConnectionPool.waitForConnection()` 上排队，或者客户端主线程在 `ContentResolver.query()` 的 Binder reply 上等待远端 Provider。
+3. Provider / 后台线程继续执行长事务、`CREATE INDEX`、大 projection 查询或频繁 refill。
+4. 同一路径上的其他线程也被拖住，最终形成连锁阻塞。
 
-在 ANR traces 中，我们会看到类似这样的调用栈：
+在 ANR traces 中，我们更可能看到下面这种栈形态：
 
 ```
-"main" prio=5 tid=1 SUSPENDED
-  at java.lang.Object.wait(Native Method)
-  at android.database.sqlite.SQLiteDatabase.yieldIfContendedSucceeded(...)
-  at android.database.sqlite.SQLiteDatabase.beginTransaction(...)
+"main" prio=5 tid=1 Native
+  at android.database.sqlite.SQLiteConnectionPool.waitForConnection(...)
+  at android.database.sqlite.SQLiteSession.executeForCursorWindow(...)
+  at android.database.sqlite.SQLiteQuery.fillWindow(...)
 ```
 
-### 5.2 ContentProvider + SQLiteDatabase 的组合死锁
+### 5.2 ContentProvider + SQLiteConnectionPool 的组合阻塞
 
-这是一个经典但不易察觉的死锁模式：
+这是比“单进程慢查询”更难查的一类问题。
 
-1. ContentProvider 的 `query()` 方法被调用，持有 `SQLiteDatabase` 的读锁
-2. 应用代码的 `insert()` 尝试获取写锁，被阻塞在 `DatabaseConnectionPool`
-3. ContentProvider 的 `query()` 需要应用代码释放某个资源才能继续，形成循环等待
+1. 客户端进程在主线程调用 `ContentResolver.query()`，等待远端 Provider 的 Binder reply。
+2. Provider 进程里的工作线程已经被一个长事务或 Migration 占住了可用连接。
+3. 新的 `query()` / `insert()` 在 Provider 侧排队到 `SQLiteConnectionPool.waitForConnection()`。
+4. 客户端主线程表面上像卡在 Binder，根因却在 Provider 侧数据库连接池。
 
-解决方案：确保 ContentProvider 和应用代码共享同一个 `SQLiteOpenHelper` 单例。
+如果 Provider 里又夹着应用自定义锁或回调，问题才可能进一步演变成严格意义上的循环等待。线上更常见的是“Binder 等远端，远端等数据库连接”这类组合阻塞。
+
+解决方向有三个：Provider 和 App 共享同一套 helper / open 策略，避免冷启动时重复 open；把长事务、Migration、批量导入移出高频 query 路径；跨进程查询尽量缩 projection，减少 refill 和 Binder 往返。
 
 ### 5.3 在 Perfetto 中定位数据库问题
 
-在 Perfetto trace 中定位数据库相关性能问题的步骤：
+在 Perfetto 里看数据库问题，先分三层：调用线程是不是直接执行 SQL、是不是在等 Java monitor、是不是在等远端 Provider 或连接池。
 
-**第一步**：找到主线程（UI thread）上耗时超过一帧的 slice。如果看到 `SQLiteDatabase.execSQL` 或 `SQLiteStatement.execute` 出现在调用栈中，直接定位到具体的 SQL 操作。
+**第一步**：找主线程或 Binder 调用线程上的长 slice。调用栈如果直接落在 `SQLiteQuery`、`executeForCursorWindow()`、`beginTransaction()` 或 DAO 生成代码，先看 SQL 本身和事务时长。
 
-**第二步**：如果主线程处于 `Sleeping` 状态且调用栈包含 `Object.wait()` 或 `ReentrantLock`，检查它是否在等待 `SQLiteDatabase.mLock`。如果是，使用 Perfetto 的 `android.monitor_contention` SQL 查找谁持有这把锁：
+**第二步**：如果线程卡在 Java monitor 竞争上，先加载 Perfetto stdlib 的 `android.monitor_contention` 模块，再查表 `android_monitor_contention`：
 
 ```sql
+INCLUDE PERFETTO MODULE android.monitor_contention;
+
 SELECT
-  blocking_method,
-  blocked_method,
-  blocking_thread,
-  blocked_thread,
-  duration / 1e6 as duration_ms
+  process_name,
+  blocked_thread_name,
+  blocking_thread_name,
+  short_blocked_method,
+  short_blocking_method,
+  dur / 1e6 AS wait_ms
 FROM android_monitor_contention
-WHERE blocked_thread = 'main'
-ORDER BY duration DESC
+WHERE process_name = 'your.process'
+ORDER BY dur DESC
 LIMIT 20;
 ```
 
-**第三步**：如果怀疑是 SQLite 内部锁（而非 Java 层锁），检查 `sched` track 中线程的等待原因。在 WAL 模式下，读操作不应该被写操作阻塞；如果看到读线程被阻塞，检查是否有其他进程同时访问同一个数据库文件。
+模块名是 `android.monitor_contention`，表名是 `android_monitor_contention`。这组数据只覆盖 Java monitor 竞争，不会直接告诉我们 SQLite 原生文件锁或 connection pool 等待。
 
-[待补充: Perfetto 中 SQLite 相关 track 和 slice 的截图示例]
+**第三步**：如果主线程停在 Binder reply、Provider query 或 `Object.wait()`，而 `android_monitor_contention` 没给出明显的 owner / waiter 关系，就回到 `sched`、Binder slices 和 Provider 侧线程看有没有长事务、Migration 或 `waitForConnection()` 排队。对数据库问题来说，这一步通常更贴近当前实现，因为主要热点往往出在连接池争用。
+
+[图：Perfetto 中“主线程等 Binder reply，Provider 侧卡在长事务 / waitForConnection()”的对照示意]
 
 ### 5.4 StrictMode 检测
 
@@ -398,16 +434,16 @@ PRAGMA busy_timeout=3000;
 
 在 WAL 模式下，读操作可以与写操作并发执行，因此读操作的线程池可以适当增加并发度。但写操作仍然推荐串行化。
 
-### 6.2 Room 的最佳实践总结
+### 6.2 把排查路径收成一个真实场景
 
-1. **永远不要使用 `allowMainThreadQueries()`**——它只是关闭了 Room 的主线程检查，不解决任何实际问题
-2. **使用 `suspend` 函数或 `Flow`**——Room 会自动管理线程切换
-3. **批量操作使用 `@Transaction`**——避免多次锁获取和 fsync
-4. **大数据集使用 Paging 3**——Keyset 分页避免 OFFSET 性能陷阱
-5. **BLOB/大文本走文件存储**——减轻 CursorWindow 压力
-6. **指定 projection**——避免 `SELECT *`，减少 CursorWindow 数据量
-7. **共享 `SQLiteOpenHelper` 单例**——避免多实例导致的锁冲突
-8. **预填充数据库**——首次启动时减少 Migration 和数据导入耗时
+假设首页冷启动后立即查消息列表，主线程在 `ContentResolver.query()` 等 Binder reply，Provider 侧同时在做一次大 Migration。这个场景里，排查顺序通常是：
+
+1. 先确认数据库 first open / Migration 落在哪个线程。
+2. 再看 Provider 侧有没有长事务、`CREATE INDEX` 或大 projection 导致 `executeForCursorWindow()` 太慢。
+3. 如果列表使用 Room + Paging 3，确认 DAO SQL 到底是 `LIMIT / OFFSET` 还是业务自定义 Keyset，不要把 Paging 3 的框架名当成性能担保。
+4. 再回到数据设计：projection 是否过宽、BLOB 是否外置、写操作是否串行化、跨进程查询是否真的有必要。
+
+沿着这条线往下走，前面各节的建议会自然落位：同步 DAO 避免进主线程，批量写入放进事务，长 Migration 提前预热，深翻页场景改成稳定排序键 + Keyset，跨进程 Cursor 缩小窗口压力。收束到 ANR / Perfetto 场景时，读者可以直接拿去排查，而不是对着一串 checklist 打勾。
 
 ## 扩展
 
