@@ -29,9 +29,10 @@ tags: ['art', 'gc', 'heap', 'tlab', 'aot', 'jit', 'cc-gc', 'cmc-gc', 'uffd', 're
 related_chapters: ["4.1", "4.2", "4.4", "4.6", "4.7", "4.8", "7.1", "7.7"]
 pipeline_stage: task2b_pending
 task6_state: reviewed
-task9_state: pending
+task9_state: reviewed
 task6_result: needs-rework
 task2b_state: pending
+task9_result: needs-rework
 ---
 
 # ART 虚拟机内存管理
