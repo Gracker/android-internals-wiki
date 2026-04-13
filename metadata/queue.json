@@ -7460,5 +7460,50 @@
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-13T20:22:00+08:00",
     "status": "pending"
+  },
+  {
+    "section": "3.3",
+    "section_title": "手势导航与系统交互",
+    "priority": 95,
+    "reason": "[Deep Tech Review] 返回分发链、回调 API 与源码锚点存在事实错误，且缺少 pilfer/cancel 关键步骤，需技术回炉",
+    "material_paths": [
+      "intake/research-gaps.md",
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "frontmatter `sources` / 文内 `[已验证]` / 参考资料",
+        "detail": "`EdgeBackGestureHandler` 被写成 `frameworks/base/packages/SystemUI/src/com/android/systemui/navigationbar/gestures/EdgeBackGestureHandler.java`。当前 AOSP SystemUI 路径是 `packages/SystemUI/src/com/android/systemui/navigationbar/gestural/EdgeBackGestureHandler.java`；现有路径无法直接定位源码，`[已验证]` 标记因此站不住。",
+        "suggestion": "把 `gestures` 改成 `gestural`，并逐项复核 `NavigationBarEdgePanel` 等相关引用后再保留 `[已验证]` 标记。"
+      },
+      {
+        "type": "源码错误/原理断裂",
+        "location": "“InputMonitor 的工作原理” + “从边缘滑动到返回事件的完整流程” + “误区 1”",
+        "detail": "正文把返回手势统一写成“注入 `KEYCODE_BACK` → 分发给焦点 Window → 最终到 `Activity.onBackPressed()`”。但 `EdgeBackGestureHandler.triggerBack()` 只有在 `mBackAnimation == null` 时才注入按键；启用 ahead-of-time back dispatch / Predictive Back 时走的是 `mBackAnimation.setTriggerBack(true)`，不是统一的按键注入链。",
+        "suggestion": "拆成两条链：Android 10-12 legacy back gesture（按键注入）与 Android 13-16 Predictive Back / ahead-of-time back dispatch（回调与动画驱动）。同时把 App 侧入口改写成 `OnBackInvokedDispatcher` / AndroidX `OnBackPressedDispatcher` 口径。"
+      },
+      {
+        "type": "源码错误/原理断裂",
+        "location": "“InputMonitor 的工作原理” 第 3 段 + 完整流程第 2-6 步",
+        "detail": "正文写成“Touch 事件始终同时发送给 App”。这漏掉了关键的 `pilferPointers()` 阶段。`EdgeBackGestureHandler` 在越过阈值后会调用 `mInputMonitor.pilferPointers()`；`InputDispatcher::pilferPointersLocked()` 随后会向被夺走指针流的通道发送 `CANCEL_POINTER_EVENTS`。如果不写这一步，读者会误解 App 为何在手势中途不再继续收到整条 MotionEvent 流。",
+        "suggestion": "明确区分两个阶段：阈值前是 monitor 与 App 并行观察；阈值后是 pilfer pointer stream + 向原目标发送 cancel，再进入 legacy back 或 predictive back 后续路径。"
+      },
+      {
+        "type": "源码错误/版本差异",
+        "location": "Predictive Back 架构段 + 代码示例后 1 段",
+        "detail": "正文写成“系统检查 `OnBackInvokedCallback`，并调用 `onBackStarted()` / `onBackProgressed()`”。官方 API 口径不是这样：`OnBackInvokedCallback`（API 33）只有 `onBackInvoked()`；进度回调属于 `OnBackAnimationCallback`（API 34），如果走 AndroidX，则是 `OnBackPressedCallback.handleOnBackStarted()` / `handleOnBackProgressed()`。当前类名和方法名混写了。",
+        "suggestion": "把 platform API 和 AndroidX API 分开列一张表，逐项写清类名、方法名和 API level，避免把 `OnBackInvokedCallback`、`OnBackAnimationCallback`、`OnBackPressedCallback` 混成同一层。"
+      },
+      {
+        "type": "版本差异/知识盲区",
+        "location": "“版本演进的时间线” + “误区 3”",
+        "detail": "Android 13/14/15/16 的启用条件、开发者选项、manifest opt-in、targetSdk 约束、回调类型和 API 36 的 observer-only 能力被压成了一段平铺叙述。读者看不出“哪一版支持 home preview、哪一版支持 cross-activity preview、哪一版开始有 progress callback、哪一版才有 `PRIORITY_SYSTEM_NAVIGATION_OBSERVER`”。",
+        "suggestion": "补一张版本矩阵，至少包含：API level、默认状态、是否需要开发者选项、manifest / targetSdk 条件、回调 API、预览范围、observer-only 支持。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-13T21:20:00+08:00",
+    "status": "pending"
   }
 ]
