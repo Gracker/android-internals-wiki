@@ -86,11 +86,11 @@ void SkiaCanvas::drawGlyphs(...) {
 这段代码说明两件事。第一，Unicode 到 glyph 的整形主要发生在更早的 `Layout` / Minikin 阶段，HWUI 这一层负责把已经算好的 glyph run 组装后提交给 Skia。第二，当前更稳的描述层级应该是“Java Canvas / TextLine / Layout → HWUI `drawGlyphs()` → Skia `drawTextBlob()`”，不要把已经退场的内部函数名写成今天的真实实现。
 
 Glyph atlas 仍然存在，首次出现的字形也仍可能触发 atlas miss、CPU 光栅化和纹理上传。但这些属于 Skia / HWUI 的内部实现细节，具体函数名会随版本变化；写到书里时保留到可直接核对的层级更稳。
-[待补充：文字渲染管线架构图，展示 TextView → Layout → Minikin → Skia → GPU 的完整路径]
+[图：文字渲染管线架构图 — 展示 TextView.setText() → Layout 选择（BoringLayout / StaticLayout / DynamicLayout）→ Minikin 整形 + LineBreaker 换行 → HWUI drawGlyphs() → Skia drawTextBlob() → GPU glyph atlas 的完整路径，标注 measure 和 draw 两个瓶颈区间]
 
 这条管线的性能瓶颈集中在两个地方：
 
-1. **measure 阶段**（CPU 密集）：StaticLayout 的构建涉及 Minikin 文字整形和换行计算，复杂文本（CJK、阿拉伯语、Span 混排）的耗时可能是简单文本的 5-10 倍。
+1. **measure 阶段**（CPU 密集）：StaticLayout 的构建涉及 Minikin 文字整形和换行计算，复杂文本（CJK、阿拉伯语、Span 混排）的耗时远高于简单文本。[待验证：具体倍数需要 benchmark 数据支撑]
 2. **draw 阶段的首次渲染**（GPU texture upload）：当 glyph 不在 atlas 中时，需要 CPU 光栅化 + GPU 上传，这可能在一帧内引入数毫秒的额外开销。
 
 ## Minikin 与文字测量性能
@@ -113,9 +113,7 @@ FontCollection（字体集合）
 
 - 拉丁文字（英文、数字）：整形规则简单，通常 1 个 Unicode = 1 个 glyph，整形开销很低。
 - CJK 文字（中文、日文、韩文）：整形规则比拉丁复杂，且字符集庞大（CJK Unified Ideographs 有数万个字符），字体查找开销更高。
-- 复杂文字（阿拉伯语、印地语、泰语）：整形规则极度复杂，字符形态取决于上下文位置和连字规则。一个 Unicode 码点可能对应多个 glyph，也可能多个码点合并为一个 glyph。整形开销是拉丁文字的 5-10 倍。
-
-[待验证：CJK 整形开销相对拉丁文字的倍数，需要实际 benchmark 数据]
+- 复杂文字（阿拉伯语、印地语、泰语）：整形规则极度复杂，字符形态取决于上下文位置和连字规则。一个 Unicode 码点可能对应多个 glyph，也可能多个码点合并为一个 glyph。整形开销显著高于拉丁文字。[待验证：具体倍数需要 benchmark 数据支撑，当前无法给出可靠范围]
 
 **LineBreaker** 负责多行文字的换行计算。它调用 ICU 的换行算法，根据语言规则决定在哪里断行。换行算法的复杂度与文本长度线性相关，但 ICU 的实现中涉及大量的字典查找（特别是 CJK，因为中文没有空格作为天然断点），所以 CJK 文本的换行开销明显高于拉丁文本。
 
@@ -174,7 +172,7 @@ StaticLayout layout = StaticLayout.Builder.obtain(text, 0, text.length(), paint,
 - **MetricAffectingSpan**（如 `AbsoluteSizeSpan`、`RelativeSizeSpan`）：改变文字尺寸的 Span。每次遇到这种 Span，都需要创建一个新的 Paint 副本并重新计算字形。
 - **ClickableSpan**：虽然本身不影响测量，但设置了 ClickableSpan 的 TextView 通常需要设置 `movementMethod`，这会使 TextView 每次触摸事件都触发 `Spanned` 文本的遍历查找。
 
-对于聊天 App 中常见的富文本消息（带表情、链接、@用户），一次 StaticLayout 构建的耗时可能是纯文本的 2-3 倍。
+对于聊天 App 中常见的富文本消息（带表情、链接、@用户），一次 StaticLayout 构建的耗时通常比纯文本高出数倍。[待验证：具体倍数与 Span 类型和数量相关，需要实测数据]
 
 ### StaticLayout 的缓存命中
 
@@ -262,7 +260,7 @@ textView.setTextFuture(future);
 textView.setSingleLine(true);
 ```
 
-BoringLayout 的测量只调用一次 `Paint.measureText()`，耗时通常是 StaticLayout 的 1/10 以下。
+BoringLayout 的测量只调用一次 `Paint.measureText()`，开销远低于 StaticLayout 的多行整形与换行计算。[待验证：具体耗时比需要 benchmark 数据]
 
 ### 避免误开 Hyphenation
 
@@ -298,7 +296,7 @@ textView.setIncludeFontPadding(false);
 
 除了 Minikin 内部的缓存，还有两个与文字缓存相关的机制：
 
-1. **TextLine cache**：Android 8.0 引入。`TextLine` 是绘制单行文字的内部类，系统会缓存 TextLine 对象（对象池模式），避免每次 drawText 都创建新对象。
+1. **TextLine cache**：`TextLine` 是绘制单行文字的内部类（引入版本待核对），系统会缓存 TextLine 对象（对象池模式），避免每次 drawText 都创建新对象。
 
 2. **Skia TextBlob cache**：Skia 维护的 glyph 批量绘制缓存。当多个连续的 drawText 调用被合并为一个 TextBlob 时，Skia 可以一次性提交给 GPU，减少 draw call 数量。Android 的 RenderThread 在某些条件下会自动将文字绘制合并为 TextBlob。
 
@@ -312,9 +310,9 @@ textView.setIncludeFontPadding(false);
 
 在主线程 track 上找到 `Choreographer#doFrame` slice，展开后找到 `performTraversals` → `measure`。如果 measure 的子 slice 中大量出现 `TextView.onMeasure()`，且单次耗时超过 1ms，说明文字测量是瓶颈。
 
-当一条聊天消息有多个 Span（用户名、链接、表情）时，单个 TextView 的 onMeasure 可能耗时 2-5ms。在 120Hz 设备上（8.33ms 帧预算），一个 Item 有 3 个 TextView 就可能吃掉整个帧预算。
+当一条聊天消息有多个 Span（用户名、链接、表情）时，单个 TextView 的 onMeasure 可能耗时数毫秒（与文本长度、Span 复杂度和设备性能相关）。[待验证：具体耗时需要结合设备与负载条件 benchmark]在 120Hz 设备上（8.33ms 帧预算），一个 Item 有 3 个 TextView 就可能吃掉整个帧预算。
 
-[待补充：Perfetto 截图，展示文字 measure 导致的 jank 帧]
+[图：Perfetto Trace 截图 — 主线程 doFrame 展开，measure 子 slice 中多个 TextView.onMeasure() 累计耗时超过帧预算，对应 FrameTimeline 标记的红色 jank 帧。标注关键区域：performTraversals → measure → TextView.onMeasure()]
 
 ### 文字渲染在 Perfetto 中的可观测面
 
@@ -328,6 +326,8 @@ RenderThread / HWUI 侧当然也可能有文字相关成本，但要分清“能
 如果你在某台设备上观察到首次 emoji / 生僻字渲染伴随 RenderThread 或 GPU 侧的 upload 突刺，那是一个需要结合 trace 配置和机型继续核实的现象，不是所有设备都会露出的固定 slice。
 
 ### 定位建议
+
+[图：Perfetto Trace 对比截图 — 左侧为正常帧（measure 耗时 < 1ms），右侧为文字测量 jank 帧（measure 耗时 > 5ms），标注 FrameTimeline 颜色差异和 VSYNC-app 间隔]
 
 如果怀疑文字渲染是 jank 根因，推荐的分析路径：
 
