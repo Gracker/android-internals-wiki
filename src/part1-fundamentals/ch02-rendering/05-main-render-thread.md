@@ -29,12 +29,13 @@ sources:
     path: "Cubox/结合源码和Perfetto分析Android渲染机制-2024-12-13.md"
 tags: ['renderthread', 'mainthread', 'displaylist', 'rendernode', 'syncframestate', 'hwui', '渲染流水线', 'GPU绘制']
 related_chapters: ["2.3", "2.4", "2.6", "2.15", "2.16", "3.1"]
-pipeline_stage: task2b_pending
+pipeline_stage: task6_pending
 task6_result: pass-light-edit
-task6_state: reviewed
+task6_state: revisiting
 task9_result: needs-rework
-task9_state: reviewed
-task2b_state: pending
+task9_state: pending
+task2b_state: fixed
+task2b_result: fixed
 ---
 
 # MainThread 与 RenderThread 协作
@@ -117,66 +118,71 @@ RenderThread 是一个在 App 进程内运行的后台线程，它拥有独立�
 
 **提交（QueueBuffer）**——将渲染完成的帧通过 BLAST 机制提交给 SurfaceFlinger。
 
-RenderThread 是一个 Looper 驱动的线程，但与普通 Handler 消息循环不同，它使用了一个更轻量的事件循环：
+RenderThread 由 `RenderThread::getInstance()` 在进程内按单例启动。`threadLoop()` 先完成线程优先级、Looper 绑定和线程本地对象初始化，再进入 `waitForWork()` → `processQueue()` 的循环。android-16 的真实骨架如下：
 
 ```cpp
 // frameworks/base/libs/hwui/renderthread/RenderThread.cpp
 // @ AOSP android-16.0.0_r1
-// [简化示意：实际 threadLoop 包含更复杂的事件分发逻辑]
-void RenderThread::threadLoop() {
-    setupThreadLocator();
-    // 初始化 GPU 上下文（EGL / Vulkan）
-    mEglManager = new EglManager(*this);
-    
-    while (!mStopped) {
-        waitForWork();  // 等待主线程的同步信号
-        processDisplayUpdate();  // 处理帧渲染
+bool RenderThread::threadLoop() {
+    setpriority(PRIO_PROCESS, 0, PRIORITY_DISPLAY);
+    Looper::setForThread(mLooper);
+    initThreadLocals();
+
+    while (true) {
+        waitForWork();
+        processQueue();
+        mCacheManager->onThreadIdle();
     }
+    return false;
 }
 ```
 
-RenderThread 不主动轮询。它的大部分时间都在等待主线程发来的"帧数据已准备好"信号。一旦收到信号，它会立即开始工作，形成 CPU（主线程构建下一帧）和 GPU（RenderThread 渲染当前帧）的流水线并行。
+这里有两个观察点。`mEglManager = new EglManager()` 不在 `threadLoop()` 里，而在 `initThreadLocals()`。RenderThread 处理的也不是某个固定的“显示更新函数”，而是投递到内部 queue 的 draw、texture upload、layer update 等任务。
+
+RenderThread 不主动轮询。它大部分时间都在等主线程或系统其它模块把工作投进 queue。收到任务后，它会和 UI Thread 形成一条流水线，UI Thread 继续准备下一帧，RenderThread 负责把当前帧推向 GPU。
 
 ## 同步栅栏：SyncFrameState
 
-主线程和 RenderThread 之间的同步是理解渲染性能的核心。这个同步点叫做 **SyncFrameState**（对应 AOSP 中的 `DrawFrameTask::syncFrameState()`），它是一个阻塞操作。
-
-当主线程的 `performTraversals()` 完成了 measure、layout、draw 三步后，`ViewRootImpl` 会在 TRAVERSAL 回调里继续走到 `ThreadedRenderer.draw()`，再进入 `RenderThread` 的同步逻辑：
+主线程侧的阻塞点来自 `syncAndDrawFrame()`，但这段等待不该直接解释成“上一帧 GPU 还没跑完”。按 android-16 的真实路径，UI Thread 先走 `ViewRootImpl.performDraw()` 和 `ThreadedRenderer.draw()`，再通过 `syncAndDrawFrame(frameInfo)` 进入 native。JNI 入口在 `frameworks/base/libs/hwui/jni/android_graphics_HardwareRenderer.cpp`，后面再落到 `RenderProxy::syncAndDrawFrame()` 和 `DrawFrameTask::drawFrame()`。
 
 ```java
-// frameworks/base/core/java/android/view/ViewRootImpl.java
-// @ AOSP android-16.0.0_r1
-private void performDraw() {
-    // ...
-    boolean canUseAsync = draw(fullRedrawNeeded);
-    // draw() 内部最终调用 mAttachInfo.mThreadedRenderer.draw()
-    // 即 ThreadedRenderer.draw()
-}
-
 // frameworks/base/core/java/android/view/ThreadedRenderer.java
+// @ AOSP android-16.0.0_r1
 void draw(View view, AttachInfo attachInfo, DrawCallbacks callbacks) {
-    // ...
-    // 核心同步调用：将 DisplayList 同步给 RenderThread
+    final FrameInfo frameInfo = attachInfo.mViewRootImpl.getUpdatedFrameInfo();
     int syncResult = syncAndDrawFrame(frameInfo);
-    // syncAndDrawFrame 是 @CriticalNative JNI 方法，Java 层仅为 thin wrapper
-    // 实际实现位于 frameworks/base/core/jni/android_view_ThreadedRenderer.cpp
-    // 最终调用 RenderThread.cpp 中的 DrawFrameTask::syncFrameState()
-    // 这是一个阻塞调用：等待 RenderThread 完成上一帧的 GPU 工作，
-    // 然后将当前帧的 DisplayList 数据同步过去
 }
 ```
 
-同步过程中，具体发生了以下几件事：
+```cpp
+// frameworks/base/libs/hwui/jni/android_graphics_HardwareRenderer.cpp
+// frameworks/base/libs/hwui/renderthread/RenderProxy.cpp
+// frameworks/base/libs/hwui/renderthread/DrawFrameTask.cpp
+// @ AOSP android-16.0.0_r1
+static int android_view_ThreadedRenderer_syncAndDrawFrame(...) {
+    return proxy->syncAndDrawFrame();
+}
 
-1. **等待上一帧完成**：如果 RenderThread 还在渲染上一帧（GPU 工作尚未结束），主线程会在这里阻塞等待。这个等待时间在 Perfetto 中会显示为主线程上的 `syncFrameState` 切片。
+int RenderProxy::syncAndDrawFrame() {
+    return mDrawFrameTask.drawFrame();
+}
 
-2. **DisplayList 数据同步**：将 View 树中所有标记为 dirty 的 RenderNode 的 DisplayList 数据从主线程"移交"给 RenderThread。这里不是简单的复制，而是通过引用计数和资源所有权转移来实现的。
+int DrawFrameTask::drawFrame() {
+    mSyncQueued = systemTime(SYSTEM_TIME_MONOTONIC);
+    postAndWait();
+    return mSyncResult;
+}
+```
 
-3. **Bitmap 上传到 GPU 纹理内存**：如果有新的 Bitmap 需要被 GPU 使用，这一步会把它们上传为 GPU 纹理。从 Android 8.0 开始，Bitmap 的像素数据直接在 Native 堆分配（而非 Java 堆），减少了 GC 压力和 GPU 上传开销。
+`postAndWait()` 会把任务投到 RenderThread 的 queue 里，然后 UI Thread 等待 `syncFrameState()` 跑完后被唤醒。RenderThread 在这一段做的是三类工作。
 
-4. **释放主线程**：同步完成后，主线程被释放，可以继续处理下一个 VSync 周期的 Input、Animation 等回调。而 RenderThread 开始独立的 GPU 渲染工作。
+1. **UI Thread 阻塞点**：主线程等的是 RenderThread 把本帧同步阶段做完，这段时间落在主线程的 `syncFrameState` slice 上。
+2. **RenderThread 同步阶段**：`syncFrameState()` 会刷新 VSync 信息、`makeCurrent()`、应用 layer update、执行 `prepareTree()`，把本帧需要的 RenderNode 状态、脏区和纹理准备好。
+3. **GPU / buffer 反压**：真正会把 RenderThread 后续 `draw()` 拖慢的，常见是 `dequeueBuffer()`、release fence 和 GPU command submit 之后的消费节奏。这部分主要发生在 `CanvasContext::draw()`，不该和主线程上的 `syncFrameState` 画等号。
 
-这个同步设计有一个重要的含义：**主线程的 draw 越重（DisplayList 越复杂），同步的数据量越大，SyncFrameState 耗时越长。**在极端情况下（比如 View 层级非常深且有大量 invalidate），同步本身就能成为性能瓶颈。
+同步完成后，UI Thread 就能继续处理输入、动画和下一轮 traversal，RenderThread 再独立进入 `draw()`。所以 `syncFrameState` 很长时，含义通常是“RenderThread 还在处理本帧同步，或者前面的 buffer / fence 反压已经把它拖慢”，范围比“上一帧 GPU 没结束”更宽。
+
+数据传递层面，同步过去的是 RenderNode 树的最新状态、脏区和相关资源引用。这里更接近共享对象的状态同步，不是把整棵 DisplayList 的所有权直接交给 RenderThread。
 
 ## RenderThread 的 GPU 渲染与 Fence 等待
 
@@ -356,16 +362,22 @@ GPU 过载的优化方向是"减少 GPU 的工作量"：降低过度绘制（在
 
 ## [自动发现] 多窗口场景下的线程争抢
 
-当同一个 App 进程同时显示两个窗口（比如 Activity 上弹出一个 Dialog），情况会更复杂。Android 的 Choreographer 是线程单例，RenderThread 也是，一个 App 进程通常只有一条 RenderThread。因此：
+当同一进程里同时有多个可见 Surface，排队关系会多一层。`RenderThread::getInstance()` 是进程内单例，同一进程的多个窗口共用一条 RenderThread。因此同进程的 Dialog、PopupWindow、同应用 PiP 宿主窗口这类场景里，`performTraversals` 仍在一条 UI Thread 上串行，`DrawFrame` 也会在同一条 RenderThread 上串行。一个窗口在 `syncFrameState`、纹理上传或 `dequeueBuffer` 上拖长，后面的窗口就会一起晚。
 
-1. 两个窗口的 `performTraversals` 在主线程上**串行执行**。
-2. 两个窗口的 GPU 渲染在 RenderThread 上**串行执行**。
+分屏还要再区分一次。如果左右两个窗口来自不同进程，每个进程各有自己的 UI Thread 和 RenderThread，App 侧不再互相串行；竞争点会上移到 SurfaceFlinger、HWC 和 GPU。Trace 上常见的现象是两个 App 的 RenderThread 都按时提交，但 SurfaceFlinger 合成、GPU busy 或 release fence 变长，结果是两边都会错过同一个 display frame deadline。
 
-在 Perfetto 中，我们会看到一个 `doFrame` 内连续出现两个 `performTraversals`，以及 RenderThread 上连续的两个 `DrawFrame`。如果第一个窗口的渲染很重，第二个窗口会被直接拖累。这在 Dialog 弹出动画、分屏模式、悬浮窗等场景中尤其需要注意。
+内存压力场景会把问题继续放大。纹理缓存被回收、GraphicBuffer 复用变慢，或者旧 buffer 迟迟没有释放时，RenderThread 的 `dequeueBuffer`、fence wait、纹理重新上传都会拉长。排查时别只盯 UI Thread，最好同时看：
 
-**优化建议**：尽量使用 Fragment/View 方式实现弹层（如 DialogFragment），而非真正的 Window Dialog，这样可以将两次 Traversal 合并为一次。
+- 相关窗口的 `DrawFrame`、`dequeueBuffer`、`queueBuffer`
+- SurfaceFlinger layer / transaction 轨道
+- GPU counter 或 GPU busy track
+- 是否伴随 `trimMemory`、buffer 重新分配、纹理上传突增
 
-[已验证: Obsidian 素材, Android/rendering_pipelines/presentation.md "Multi-Window AOSP Rendering Pipeline"]
+**优化建议**：同进程弹层优先用 Fragment / View 复用同一棵 View 树，减少真正的多 Window；分屏和 PiP 场景则要把观察面扩到 SurfaceFlinger 和 GPU，别把所有锅都甩给主线程。
+
+[图：同进程双窗口与跨进程分屏的 RenderThread 时序对比。上半部分显示同进程两个窗口共用一条 UI Thread 和一条 RenderThread；下半部分显示双进程各自渲染，竞争汇合到 SurfaceFlinger、GPU 和 fence。]
+
+[已验证: AOSP android-16.0.0_r1 `frameworks/base/libs/hwui/renderthread/RenderThread.cpp` 单例 `getInstance()`；Obsidian 素材 `Android/rendering_pipelines/presentation.md`]
 
 ## 扩展：Deferred GPU Commands 与 Pipeline Flush
 
@@ -383,35 +395,30 @@ RenderThread 并不是收到一条 DisplayList 命令就立即翻译成一条 GP
 
 ## 扩展：RenderThread 里的动画（RenderThread Animations）
 
-从 Android 7.0（Nougat）开始，某些类型的动画可以直接在 RenderThread 上执行，无需经过主线程。这类动画被称为 **RenderThread Animations**，主要包括：
+RenderThread 动画不是一个“Android 7.0 才突然出现”的单点能力。AOSP 在 Android 5.0 的 `RenderNodeAnimator.java` 和 `ViewPropertyAnimatorRT.java` 里就已经有 RT 动画基础，核心思路是把 alpha、translation、scale、rotation 这类能直接映射到 RenderNode 属性的动画下放到 RenderThread。后续版本继续扩展窗口动画、矢量动画等覆盖面，所以工程上更稳的判断方式是：看当前动画能不能落到 RenderNode / RenderThread 后端，不要只记一个版本号。
 
-- **ViewPropertyAnimator** 产生的平移、缩放、旋转、透明度动画
-- Window 动画（如 Activity 切换动画）
+对普通 App 最常见的场景仍然是 `view.animate()` 这类几何变换。如果 `ViewPropertyAnimatorRT#canHandleAnimator()` 判定可处理，动画参数会在同步阶段交给 RenderThread，后续每一帧直接更新 RenderNode 属性，不必重新走整套 `performTraversals`。一旦动画里夹杂 layout 变化、内容重绘，或者 `UpdateListener` 里又改了 UI，主线程就会重新参与。
 
-RenderThread 动画的工作原理是：在 `syncFrameState` 阶段，主线程将动画的当前状态（起始值、目标值、时间插值器）同步给 RenderThread。之后的每一帧，RenderThread 自己根据 VSync 时间计算动画值，直接更新 RenderNode 的变换矩阵，不需要主线程重新执行 `performTraversals`。
-
-因此，即使主线程很忙（比如在做复杂的布局计算），这些动画依然可以流畅运行。在 Perfetto 中，我们会看到 RenderThread 上的动画帧独立于主线程的 `doFrame` 执行。
+Window 动画也有一部分会走 RenderThread / RenderNode 路径，但它更依赖 WindowManager 和转场实现，覆盖面是逐步扩展出来的，写成单个 Android 版本开关很容易写反。
 
 ```java
-// 使用 RenderThread 动画的标准方式
+// 纯属性动画更容易落到 RenderThread 后端
 view.animate()
     .translationX(100f)
+    .alpha(0.5f)
     .setDuration(300)
     .start();
-// 这会在 RenderThread 上执行，不阻塞主线程
 ```
 
-**注意事项**：不是所有动画都能在 RenderThread 上执行。如果在动画的 UpdateListener 中做了 UI 修改（如改变 View 内容），动画会退回到主线程执行。只有纯粹的几何变换（translate、scale、rotate、alpha）才能享受 RenderThread 加速。
-
-[已验证: 官方文档, developer.android.com/reference/android/view/ViewPropertyAnimator]
+[已验证: AOSP android-5.0.2_r1 `core/java/android/view/ViewPropertyAnimatorRT.java`、`core/java/android/view/RenderNodeAnimator.java`; 官方文档 `developer.android.com/reference/android/view/ViewPropertyAnimator`]
 
 ## [自动发现] BLAST 模式下的提交流程
 
-从 Android 10 开始，Buffer 的提交通过了 **BLAST（Buffer Layer State Transition）** 模式，取代了之前的 Legacy BufferQueue 模式。（关于 BufferQueue 的完整机制，参见 [2.15 DMA-BUF、Gralloc 与跨进程图形内存共享](15-dmabuf-gralloc.md)。）
+BLAST 不是 Android 10 就已经进入主线的新提交流程。就 AOSP 代码树看，`frameworks/native/libs/gui/BLASTBufferQueue.cpp` 出现在 `android-11.0.0_r1`，`android-10.0.0_r1` 里还没有这个文件。更准确的说法是：Android 11 开始，窗口状态更新和 buffer 提交通常会收敛到 `SurfaceControl.Transaction` / BLASTBufferQueue 这条路径里，resize、裁剪和 buffer latch 更容易一起提交并保持同步；底层的 BufferQueue、GraphicBufferProducer / Consumer 机制仍然在。
 
-在 BLAST 模式下，RenderThread 的 `queueBuffer` 不再直接通过 Binder 通知 SurfaceFlinger，而是将 Buffer 封装进一个 `SurfaceControl.Transaction`，通过异步 Binder 调用提交给 SurfaceFlinger。这个 Transaction 可以原子性地同时包含 Buffer 更新和窗口属性变更（如位置、大小变化），彻底解决了旧架构中画面撕裂和尺寸不同步的问题。
+放到 RenderThread 视角，`queueBuffer()` 交出去的仍然是 GraphicBuffer 及其同步信息。变化点在于窗口几何信息、buffer 更新和 transaction 合并得更紧，启动窗口切换、窗口 resize、多窗口动画这类场景里，buffer 和窗口状态错位的概率更低。
 
-Triple Buffering 在这种模式下表现得更有效：App 可以继续 dequeue 下一个 Buffer 进行渲染，而不需要等待上一个 Buffer 被 SurfaceFlinger 完全消费。
+Triple Buffering 的复用模型也没有因为 BLAST 消失。App 端还是循环使用 buffer slot，SurfaceFlinger 还是按 acquire / release fence 决定何时 latch 和回收。
 
 ```
 Triple Buffer 时间线：
@@ -422,19 +429,18 @@ Buffer: slot[0]    slot[1]    slot[2]    slot[0]  ← 循环复用
 SF:        ...    [Latch F0] [Latch F1] [Latch F2] ...
 ```
 
-[已验证: Obsidian 素材, Android/rendering_pipelines/presentation.md "Standard AOSP Rendering Pipeline"]
+[已验证: AOSP android-11.0.0_r1 `frameworks/native/libs/gui/BLASTBufferQueue.cpp`; AOSP android-10.0.0_r1 同路径不存在]
 
 ## 版本演进
 
 | Android 版本 | 变化 | 影响 |
 |:---|:---|:---|
-| **Android 5.0 (API 21)** | 引入 RenderThread | 主线程的渲染工作被拆分，CPU/GPU 可以并行 |
-| **Android 6.0 (API 23)** | RenderThread 动画支持扩展 | 更多动画类型可以在 RenderThread 上执行 |
-| **Android 7.0 (API 24)** | FrameMetrics API | 开发者可以获取精确的帧耗时分解 |
+| **Android 5.0 (API 21)** | 引入 RenderThread、`RenderNodeAnimator`、`ViewPropertyAnimatorRT` 基础 | 主线程渲染工作被拆分，部分属性动画可以下放到 RenderThread |
+| **Android 7.0 (API 24)** | FrameMetrics API | 开发者可以获取更细的帧耗时分解 |
 | **Android 8.0 (API 26)** | Bitmap Native 分配 | Bitmap 像素直接在 Native 堆分配，减少 GPU 上传开销 |
-| **Android 10 (API 29)** | BLAST 模式引入 | Buffer 提交从同步 Binder 改为异步 Transaction |
-| **Android 12 (API 31)** | Frame Timeline | 系统级的帧预期/实际时间对比，精确的 Jank 检测 |
-| **Android 15 (API 35)** | ANGLE 推广加速 | ANGLE（将 GLES 翻译为 Vulkan）的采用范围进一步扩大，RenderThread 底层渲染路径逐步向 Vulkan 迁移 [待验证：ANGLE 在 Android 15 中是否对所有 GPU 厂商强制启用] |
+| **Android 11 (API 30)** | BLASTBufferQueue 进入 AOSP 主线 | 窗口状态与 buffer 提交更容易一起提交并保持同步，底层 BufferQueue 机制仍保留 |
+| **Android 12 (API 31)** | Frame Timeline | 系统级的帧预期/实际时间对比，Jank 检测更直接 |
+| **Android 15 (API 35)** | ANGLE 推广加速 | ANGLE（将 GLES 翻译为 Vulkan）的采用范围继续扩大，RenderThread 底层渲染路径逐步向 Vulkan 迁移 [待验证：ANGLE 在 Android 15 中是否对所有 GPU 厂商强制启用] |
 
 ## 常见误区
 
@@ -464,9 +470,14 @@ MainThread 与 RenderThread 的协作构成了 Android 硬件加速渲染的核�
 
 1. **AOSP 源码**：
    - [RenderThread.cpp](https://android.googlesource.com/platform/frameworks/base/+/android-16.0.0_r1/libs/hwui/renderthread/RenderThread.cpp)
+   - [DrawFrameTask.cpp](https://android.googlesource.com/platform/frameworks/base/+/android-16.0.0_r1/libs/hwui/renderthread/DrawFrameTask.cpp)
+   - [RenderProxy.cpp](https://android.googlesource.com/platform/frameworks/base/+/android-16.0.0_r1/libs/hwui/renderthread/RenderProxy.cpp)
    - [CanvasContext.cpp](https://android.googlesource.com/platform/frameworks/base/+/android-16.0.0_r1/libs/hwui/renderthread/CanvasContext.cpp)
-   - [ViewRootImpl.java](https://android.googlesource.com/platform/frameworks/base/+/android-16.0.0_r1/core/java/android/view/ViewRootImpl.java)
+   - [android_graphics_HardwareRenderer.cpp](https://android.googlesource.com/platform/frameworks/base/+/android-16.0.0_r1/libs/hwui/jni/android_graphics_HardwareRenderer.cpp)
    - [ThreadedRenderer.java](https://android.googlesource.com/platform/frameworks/base/+/android-16.0.0_r1/core/java/android/view/ThreadedRenderer.java)
+   - [ViewPropertyAnimatorRT.java](https://android.googlesource.com/platform/frameworks/base/+/android-5.0.2_r1/core/java/android/view/ViewPropertyAnimatorRT.java)
+   - [RenderNodeAnimator.java](https://android.googlesource.com/platform/frameworks/base/+/android-5.0.2_r1/core/java/android/view/RenderNodeAnimator.java)
+   - [BLASTBufferQueue.cpp](https://android.googlesource.com/platform/frameworks/native/+/android-11.0.0_r1/libs/gui/BLASTBufferQueue.cpp)
 
 2. **官方文档**：
    - [Hardware Acceleration](https://developer.android.com/topic/performance/hardware-accel)

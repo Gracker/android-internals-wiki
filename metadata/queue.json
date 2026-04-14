@@ -3034,7 +3034,11 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-10T11:31:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-14T19:53:41+08:00",
+    "completed_by": "task2b-rework",
+    "file": "src/part1-fundamentals/ch02-rendering/05-main-render-thread.md",
+    "notes": "修复 RenderThread/threadLoop 与 syncAndDrawFrame 调用链源码锚点，补多窗口/分屏竞争与 BLAST Android 11 边界，统一 RT 动画版本表述"
   },
   {
     "section": "16.1",
