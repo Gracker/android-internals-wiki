@@ -27,13 +27,14 @@ related_chapters: ["2.1", "2.6", "3.1", "8.2", "8.4"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-04-04"
 gap_source: "AOSP结构+官方文档+读者需求"
-pipeline_stage: task9_pending
+pipeline_stage: task6_pending
 task6_state: reviewed
-task9_state: pending
+task9_state: reviewed
 task2b_state: idle
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-04-11"
 task6_result: "pass-light-edit"
+task9_result: "needs-rework"
 review_log: "logs/review/2026-04-11-11-review.md"
 ---
 

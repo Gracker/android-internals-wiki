@@ -3339,3 +3339,33 @@
 - **问题**：当前只有命令和流程说明，缺少真实输出、Trace 截图或等价图示，读者很难照着走完整个分析闭环。
 - **建议**：补 1 组真实 simpleperf 或 bpftrace 输出，以及 1-2 张对应的 Trace/示意图，至少覆盖“抓取 → 观察 → 得结论”。
 - **review 日志**：logs/review/2026-04-14-23-review.md
+
+## [Task9 Deep Review] 2.12 Window Manager Service 与窗口管理 — 2026-04-14
+- **类型**：原理断裂
+- **位置**：全文（WindowContainer 层级）
+- **问题**：WindowContainer 树形结构完全缺失，读者无法理解 performLayout() 遍历逻辑
+- **建议**：补一节 WMS 的窗口组织架构，说明 WindowContainer 层级和 performLayout 的遍历方式
+
+## [Task9 Deep Review] 2.12 Window Manager Service 与窗口管理 — 2026-04-14
+- **类型**：源码准确性
+- **位置**：L170-188 relayoutWindow 代码块
+- **问题**：IWindowSession.relayout() 参数签名疑似使用 Android 11 及更早版本
+- **建议**：核实 android-17 真实签名并更新代码块
+
+## [Task9 Deep Review] 2.12 Window Manager Service 与窗口管理 — 2026-04-14
+- **类型**：原理断裂
+- **位置**：L56 + L259（mGlobalLock）
+- **问题**：mGlobalLock 作用范围未在正文解释
+- **建议**：在 relayoutWindow 章节补锁机制说明
+
+## [Task9 Deep Review] 2.12 Window Manager Service 与窗口管理 — 2026-04-14
+- **类型**：需验证
+- **位置**：L224-229 Perfetto Slice 名称 + SQL
+- **问题**：wm.relayout_window 等 Slice 名称未用真实 Trace 验证
+- **建议**：用真实 Perfetto Trace 核对并更新
+
+## [Task9 Deep Review] 2.12 Window Manager Service 与窗口管理 — 2026-04-14
+- **类型**：数据缺失
+- **位置**：L50、L150、L206（Trace 截图占位）
+- **问题**：3 处 [待补充] Trace 截图/图示占位未落地
+- **建议**：补至少 1 张 StartingWindow Trace 截图和 1 张 relayoutWindow 流程图

@@ -2326,3 +2326,19 @@ Perfetto 用户态 tracing 在正文里被混成了一条线：`android.os.Trace
 ### 关联章节
 §12.2、§12.3、§13.7
 
+
+## [2026-04-14] 2.12 Window Manager Service 与窗口管理 — 知识盲区
+
+### 盲区描述
+WMS 的 BLAST BufferQueue 集成方式未被覆盖。Android 12 引入 BLAST 后，App 端直接管理 BufferQueue，WMS 的 relayoutWindow 在创建/更新 Surface 时如何与 BLAST 模型交互，是连接本章与 2.13 BufferQueue 的关键桥梁。
+
+### 重要程度
+中
+
+### 建议研究方向
+- AOSP android-12+ BLAST BufferQueue 与 WMS Surface 创建的交互流程
+- ViewRootImpl 中 BLASTBufferQueue 的初始化和使用方式
+- relayoutWindow 返回给 App 的 Surface 如何与 BLASTBufferQueue 关联
+
+### 关联章节
+2.12、2.13、2.5
