@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-14T21:08:47+08:00",
+  "generated_at": "2026-04-14T21:29:46+08:00",
   "state_machine_version": "v2",
   "total_sections": 207,
   "metrics": {
@@ -7,40 +7,40 @@
     "unknown": 34,
     "ready-for-review": 173,
     "pipeline_unknown": 31,
-    "pipeline_task6_pending": 161,
+    "pipeline_task6_pending": 160,
     "pipeline_task9_pending": 1,
-    "pipeline_task2b_pending": 14,
+    "pipeline_task2b_pending": 15,
     "task2b_unknown": 31,
-    "task2b_idle": 85,
-    "task2b_pending": 14,
+    "task2b_idle": 84,
+    "task2b_pending": 15,
     "task2b_fixed": 77,
     "task6_unknown": 31,
-    "task6_pending": 84,
-    "task6_reviewed": 15,
+    "task6_pending": 83,
+    "task6_reviewed": 16,
     "task6_revisiting": 77,
     "task9_unknown": 31,
     "task9_pending": 170,
     "task9_reviewed": 6,
-    "last_updated": "2026-04-14T21:08:47+08:00"
+    "last_updated": "2026-04-14T21:29:46+08:00"
   },
   "pipeline": {
     "pipeline_stage_counts": {
       "unknown": 31,
-      "task6_pending": 161,
-      "task2b_pending": 14,
+      "task6_pending": 160,
+      "task2b_pending": 15,
       "task9_pending": 1
     },
     "task2b_state_counts": {
       "unknown": 31,
       "fixed": 77,
-      "pending": 14,
-      "idle": 85
+      "pending": 15,
+      "idle": 84
     },
     "task6_state_counts": {
       "unknown": 31,
       "revisiting": 77,
-      "reviewed": 15,
-      "pending": 84
+      "reviewed": 16,
+      "pending": 83
     },
     "task9_state_counts": {
       "unknown": 31,
@@ -2313,10 +2313,14 @@
       "title": "Perfetto 的高级用法",
       "path": "src/part3-tools/ch13-perfetto/07-advanced-usage.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "pending",
+      "pipeline_stage": "task2b_pending",
+      "task6_state": "reviewed",
       "task9_state": "pending",
-      "task2b_state": "idle"
+      "task2b_state": "pending",
+      "task6_result": "needs-rework",
+      "reviewed_by": "openclaw-task6",
+      "reviewed_date": "2026-04-14",
+      "section": "13.7"
     },
     "src/part3-tools/ch13-perfetto/08-input-latency-sql.md": {
       "chapter": "13.8",

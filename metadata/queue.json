@@ -9177,5 +9177,32 @@
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-14T19:20:00+08:00",
     "status": "pending"
+  },
+  {
+    "section": "13.7",
+    "section_title": "Perfetto 的高级用法",
+    "priority": 90,
+    "reason": "[review回炉] 自定义 Trace Point 锚点未完成，冷启动回归 SQL 示例的 slice 名称需核对",
+    "material_paths": [
+      "intake/suggestions.md（含 review 意见）"
+    ],
+    "review_issues": [
+      {
+        "type": "需重写",
+        "location": "13.7.5 自定义 Trace Point 的最佳实践",
+        "detail": "正文在 `Trace.endSection()` 示例后直接收尾，缺少 `atrace_begin / TRACE_EVENT`、Native 场景和命名规范，必需锚点未完整覆盖。",
+        "suggestion": "补齐 Java / NDK / `TRACE_EVENT` 三类用法的边界、成对规则和异步 Trace 点最佳实践。"
+      },
+      {
+        "type": "需确认",
+        "location": "13.7.4 冷启动回归检测 SQL 示例",
+        "detail": "示例把 `activityStart` 和 `FirstFrame` 直接当成通用 slice 名称，当前写法存在版本和项目观测口径风险。",
+        "suggestion": "交给 Task 9 核对当前 Perfetto 可观测 slice / marker，再决定保留通用 SQL 还是改成项目自定义标记范式。"
+      }
+    ],
+    "added_by": "task6-review",
+    "added_at": "2026-04-14T21:28:20+08:00",
+    "status": "pending",
+    "original_review_log": "logs/review/2026-04-14-21-review.md"
   }
 ]

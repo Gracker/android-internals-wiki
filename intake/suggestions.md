@@ -3263,3 +3263,16 @@
 - **问题**：15%、4%、7.7%-9.1%、9.1%、5000x 都没有设备、负载、并发度或 benchmark 口径；同时 frontmatter 的博客 URL 当前 404，现有 [已验证] 标注证据链不完整。
 - **建议**：把这组数字明确降到“官方披露数据”，补设备/场景边界；如果拿不到公开条件，就不要写成可泛化结论。
 
+## [Task6 Review] 13.7 Perfetto 的高级用法 — 2026-04-14
+- **类型**：需重写
+- **位置**：13.7.5 自定义 Trace Point 的最佳实践
+- **问题**：正文在 `Trace.endSection()` 示例后直接收尾，`atrace_begin / TRACE_EVENT`、Native 场景和命名规范都没有展开，5 个必需锚点实际只覆盖了 4/5。
+- **建议**：补齐 Java / NDK / `TRACE_EVENT` 三类用法的边界、成对规则、异步 Trace 点与命名规范，再回到 Task 6 做最终质检。
+- **review 日志**：logs/review/2026-04-14-21-review.md
+
+- **类型**：需确认
+- **位置**：13.7.4 冷启动回归检测 SQL 示例
+- **问题**：示例把 `activityStart` 和 `FirstFrame` 直接当成通用 slice 名称，正文虽然对 `FirstFrame` 做了 `[待验证]` 提示，但当前写法仍然像可直接复用的通用 SQL，存在观测口径风险。
+- **建议**：交给 Task 9 核对当前 Perfetto 可观测 slice / marker，再决定保留通用 SQL 还是改成“项目自定义标记”范式。
+- **review 日志**：logs/review/2026-04-14-21-review.md
+
