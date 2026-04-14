@@ -3400,3 +3400,67 @@
 - **位置**：参考资料 vs 正文
 - **问题**：参考资料列出 Perfetto v52/v54 新功能（android_anrs.anr_type、slice_self_dur、regexp_extract）但正文未使用。
 - **建议**：在正文相关小节引用这些新功能，或从参考资料中移除。
+
+## [Task9 Deep Review] 3.1 Input 事件分发全流程 — 2026-04-15
+
+- **类型**：源码准确性
+- **位置**：EventHub 构造函数代码片段
+- **问题**：代码仅展示 epoll_create 和 inotify_init 两行，缺少 epoll_ctl(mEpollFd, EPOLL_CTL_ADD, mINotifyFd, ...) 的提及。inotify fd 需要注册到 epoll 实例才能被统一监听，这是理解 EventHub 单线程多 fd 统一监听机制的关键步骤。
+- **建议**：在注释中补充 `// 将 inotify fd 注册到 epoll，统一监听设备变化和输入事件`，或添加一行 `epoll_ctl(mEpollFd, EPOLL_CTL_ADD, mINotifyFd, &eventItem);`
+
+## [Task9 Deep Review] 3.1 Input 事件分发全流程 — 2026-04-15 (2)
+
+- **类型**：源码准确性
+- **位置**：InputFlinger 目录结构图
+- **问题**：目录树显示 EventHub.cpp 直接在 inputflinger/ 下，但文中源码路径标注为 reader/EventHub.cpp。两处不一致。
+- **建议**：将目录树中 EventHub.cpp 移到 reader/ 子目录下，或改为 `reader/EventHub.cpp # 实际位于 reader/ 下`
+
+## [Task9 Deep Review] 3.1 Input 事件分发全流程 — 2026-04-15 (3)
+
+- **类型**：原理链完整性
+- **位置**：InputReader → InputDispatcher 交接
+- **问题**：文中说 InputReader "交给" InputDispatcher 并提及 notifyMotion()，但未解释这是直接函数调用（InputReader 在自己线程中调用 mDispatcher->notifyMotion()），调用过程中 NotifyMotionArgs 被转换为 MotionEntry 放入 InboundQueue。
+- **建议**：补充 1-2 段解释 InputReader → InputDispatcher 的同步函数调用关系，以及 NotifyMotionArgs → MotionEntry 的类型转换。
+
+## [Task9 Deep Review] 3.1 Input 事件分发全流程 — 2026-04-15 (4)
+
+- **类型**：原理链完整性
+- **位置**：ANR 超时机制 / mAnrTracker
+- **问题**：文中提到 mAnrTracker.insert() 但未解释 mAnrTracker 的实现原理。它是一个按超时时间排序的数据结构，InputDispatcher 主循环每次唤醒时检查是否有超时项到期。
+- **建议**：补充 2-3 句解释 mAnrTracker 的实现：排序集合，key 为超时时间，InputDispatcher::processAnrsLocked() 在主循环中检查并触发超时回调。
+
+## [Task9 Deep Review] 3.1 Input 事件分发全流程 — 2026-04-15 (5)
+
+- **类型**：原理链完整性
+- **位置**：InputStage 责任链
+- **问题**：提到了 FINISH_HANDLED 和 FORWARD 两种返回值，但遗漏了 FINISH_NOT_HANDLED（事件未被任何 Stage 处理）。
+- **建议**：在返回值说明中补充 FINISH_NOT_HANDLED，完整描述三种返回值语义。
+
+## [Task9 Deep Review] 3.1 Input 事件分发全流程 — 2026-04-15 (6)
+
+- **类型**：版本差异覆盖
+- **位置**：版本演进表 "Android 12 Input ANR 增加 no focused window 类型"
+- **问题**：此断言缺少 [待验证] 标记。"No focused window" ANR 类型是否确实是 Android 12 新增需要对照 AOSP git log 确认。
+- **建议**：添加 [待验证] 标记，或在可信来源确认后补充依据。
+
+## [Task9 Deep Review] 3.1 Input 事件分发全流程 — 2026-04-15 (7)
+
+- **类型**：数据缺失
+- **位置**：Perfetto 表现节
+- **问题**：描述了各 Track 含义但缺少典型基准数据。如：正常 EventHub 读取耗时、InputDispatcher 分发耗时、socketpair 跨进程传递 round-trip 延迟。
+- **建议**：补充典型数值范围（可在后续精修中从实际 Trace 或文档中获取），或标注 [待补充：典型延迟基准数据]。
+
+## [Task9 Deep Review] 3.1 Input 事件分发全流程 — 2026-04-15 (8)
+
+- **类型**：数据缺失
+- **位置**：ANR 示例
+- **问题**：No Focus Window ANR 示例仅给了代码片段（Thread.sleep(10000)），缺少对应 Perfetto Trace 的描述。
+- **建议**：补充 Trace 表现描述："InputDispatcher 线程持续等待焦点窗口，oq 为 0，wq 为 0（事件尚未发送出去），5s 后触发 ANR"。
+
+## [Task9 Deep Review] 3.1 Input 事件分发全流程 — 2026-04-15 (9)
+
+- **类型**：知识盲区
+- **位置**：App 侧接收节
+- **问题**：未提及 native 层 InputConsumer（InputTransport.cpp），它负责从 socketpair 读取并反序列化事件，是 Java 层 WindowInputEventReceiver 的底层依赖。
+- **建议**：在 App 侧分发节开头补充 1-2 段描述 InputConsumer 的角色，或至少添加一个注释说明 native 层存在反序列化步骤。
+

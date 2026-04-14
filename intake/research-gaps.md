@@ -2362,3 +2362,38 @@ Native 层自定义 Trace（atrace_begin / Perfetto SDK TRACE_EVENT）完全未�
 
 ### 关联章节
 13.1, 13.2, 13.3, 13.5, 13.8, 13.10
+
+## [2026-04-15] 3.1 Input 事件分发全流程 — 知识盲区
+
+### 盲区描述 1：Untrusted Touch Blocking 机制
+Android 12+ 引入了针对不可信 overlay 窗口的触摸阻断机制（MotionEvent.FLAG_WINDOW_IS_UNTRUSTED）。InputDispatcher 在分发触摸事件时会检查目标窗口的可信度，不可信窗口的触摸事件会被限制或丢弃。这在分发策略节中完全未提及。
+
+### 重要程度
+高
+
+### 建议研究方向
+- AOSP android-12 InputDispatcher 中 `isTrustedOverlay` / `isWallpaper` 的判断逻辑
+- `MotionEvent.FLAG_WINDOW_IS_UNTRUSTED` 的标记时机和传播路径
+- 对 System Alert Window 权限窗口的实际影响
+
+### 关联章节
+3.1, 3.5
+
+---
+
+## [2026-04-15] 3.1 Input 事件分发全流程 — 知识盲区
+
+### 盲区描述 2：Input Event Batching 机制
+InputReader 在处理连续 MOVE 事件时会进行批量合并（batch），在合适的时机一次性提交给 InputDispatcher。这种机制直接影响 Perfetto 中观察到的 deliverInputEvent 间隔和 wq 行为。性能分析时，理解 batching 对延迟计算的影响至关重要。
+
+### 重要程度
+中
+
+### 建议研究方向
+- AOSP InputReader::batch / InputMapper 中 batching 的触发条件和合并策略
+- batching 对 Perfetto counter track（iq/oq/wq）表现的影响
+- 与 VSync 对齐的 batch 提交时机
+
+### 关联章节
+3.1, 3.2, 2.4
+
