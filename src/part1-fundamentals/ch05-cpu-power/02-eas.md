@@ -28,12 +28,13 @@ review2_by: openclaw-task6
 polish_count: 1
 polish_date: "2026-04-06"
 polish_by: "task2b-polish"
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: needs-rework
-task9_state: reviewed
+task9_state: pending
 task9_result: needs-rework
-task2b_state: pending
+task2b_state: fixed
+task2b_result: fixed
 ---
 
 # EAS 能量感知调度
@@ -66,7 +67,7 @@ task2b_state: pending
 
 在上一节中，我们讲了 CFS 的基本原理：它通过 vruntime 保证所有进程公平地获得 CPU 时间。但公平只是调度器的一个目标——在手机这样的移动设备上，还有一个同样重要的目标：**省电**。
 
-现代手机 SoC（System on Chip，片上系统）普遍采用大小核架构（我们会在 5.3 节详细展开），一个四小核加四大核的八核处理器，在安排任务时面临一个核心问题：**一个任务应该放在小核还是大核？** 放小核省电但可能不够快，放大核够快但功耗高。如果每个任务都由调度器盲目地"找最空闲的核"来放，系统的总功耗往往会比最优安排高出 20%~40%。
+现代手机 SoC（System on Chip，片上系统）普遍采用大小核架构（我们会在 5.3 节详细展开），一个四小核加四大核的八核处理器，在安排任务时面临一个核心问题：**一个任务应该放在小核还是大核？** 放小核省电但可能不够快，放大核够快但功耗高。如果调度器只看当前空闲程度，轻任务就可能被放到大核上，频率和电压都会被抬高，系统会多花电，也更容易把热量堆在前台交互阶段。
 
 EAS（Energy Aware Scheduling）就是为了解决这个问题而生的。它在 Linux 5.0 中被合入主线内核，是 Android 设备上最重要的调度增强之一。EAS 的核心能力是：**在任务唤醒时，预测把任务放在不同 CPU 核心上分别需要消耗多少能量，然后选择一个既满足性能需求又最省电的核**。
 
@@ -134,13 +135,13 @@ OPP 数据通常定义在 Device Tree（设备树）中，使用 `operating-poin
 
 ### 能量模型框架
 
-Linux 内核的 Energy Model（EM）框架是一个独立于调度器的子系统，它的职责是管理和提供各性能域的功耗数据。`CONFIG_ENERGY_MODEL` 编译选项控制是否启用 EM 框架。
+Linux 内核的 Energy Model（EM）是一个独立于调度器的子系统。它给每个 performance domain 维护一张 active power cost table，表项对应不同的 performance state / OPP，调度器通过 `em_pd_energy()` 这类接口估算“把任务放进这个簇后，活跃运行态大概要花多少能量”。
 
-EM 框架的核心数据结构为每个性能域维护一张功耗表，记录了在每个 OPP 下的活跃功耗和不同 C-State（空闲状态）下的功耗。当 EAS 需要计算"把任务放在某个 CPU 上需要多少能耗"时，它就查询这张表。
+这里有个边界要拆开。EM 只描述活跃运行态的功耗成本，不负责 CPU idle state。C-State 进入多深、停留多久，属于 CPUIdle governor 和 driver 的职责，观测时要看 `cpu_idle` 轨、平台 idle 统计或内核 idle 数据。把 EM 和 CPUIdle 写成一张表，会把“频率点功耗”和“空闲驻留功耗”混成同一层概念。
 
-EM 框架是通用的。除了 EAS，thermal 管理（IPA 智能功率分配）和 power capping 等子系统也依赖它。因此，EAS 的能量预测和温控的功率预算用的是同一套数据源，决策基线一致。
+EM 之所以重要，是因为 EAS、thermal IPA、powercap 这类子系统都能复用同一套 active power 基线。EAS 负责把任务放到合适的簇，CPUIdle 负责在空闲时选 C-State，两个方向都会影响整机功耗，但读取的不是同一组接口。
 
-[已验证: 官方文档, Documentation/power/energy-model.rst — EM framework standardizes power cost tables]
+[已验证: 官方文档, https://docs.kernel.org/power/energy-model.html；https://docs.kernel.org/admin-guide/pm/cpuidle.html]
 
 ### 能耗计算的核心公式
 
@@ -201,15 +202,13 @@ PELT 的 util 信号要能在大小核之间准确比较，需要满足两个"�
 
 [已验证: 官方文档, Documentation/scheduler/sched-energy.rst — EAS requires frequency-invariant and CPU-invariant PELT signals]
 
-### WALT：PELT 的替代方案
+### WALT 与设备差异
 
-在早期 Android 设备上，Google 曾尝试过另一种负载追踪机制——WALT（Window Assisted Load Tracking），在部分 Pixel 设备上使用。WALT 基于固定时间窗口（而非 PELT 的指数衰减）来计算负载，对突发负载的响应更快。
+Linux mainline 的 EAS 文档建立在 PELT 及其 frequency / CPU invariance 之上，并没有把 WALT 当成前提。WALT（Window Assisted Load Tracking）更像是部分 Android common kernel 或厂商内核使用过的负载跟踪扩展，常见于追求更快突发响应的设备内核。它会改变 util 信号的形成方式，但不会改掉 EAS 仍需依据 util、capacity、EM 做选核这一点。
 
-但从 Android 12 / Linux 5.10 开始，WALT 已被弃用，统一回归 PELT。PELT 的内核主线支持更完善，与 EAS 的集成也更紧密。在分析老设备的 Trace 数据时遇到与负载追踪相关的问题，可能需要考虑设备当时用的是 WALT 还是 PELT。
+时间线最好拆成三层看。主线内核这条线是 PELT → EAS → uclamp；AOSP 用户态这条线是 task profile、cgroup 和 Power HAL 怎样把提示送进调度器；厂商设备这条线才是 WALT、boost hook、额外迁核策略。把三条线压成“Android 12 统一回归 PELT”，很容易把 mainline、AOSP 和 vendor 内核混成一件事。分析具体设备时，要按内核版本和厂商树确认它到底是纯 PELT、WALT，还是两者混用。
 
-[待验证: WALT 的弃用时间线在所有厂商设备上是否一致]
-
-无论设备使用哪种负载追踪机制，PELT 还是 WALT，EAS 的核心决策逻辑不变：基于 utilization 信号做能耗最优的选核。下文讨论的 Task Placement 策略，均以 PELT 作为输入信号。
+[已验证: 官方文档, https://docs.kernel.org/scheduler/sched-energy.html — EAS 依赖 frequency-invariant / CPU-invariant utilization signals]
 
 ## Task Placement：EAS 的选核策略
 
@@ -268,19 +267,23 @@ EAS 对轻任务和重任务有不同的处理方式：
 
 ### Android 中的 uclamp 使用
 
-Android 从 10（API 29）开始广泛使用 uclamp 来区分不同优先级任务：
+在 Android 里，调度提示不是应用自己去写 cgroup 文件。AMS / OomAdjuster 先根据进程状态给进程或线程分配 sched group，随后 `android.os.Process.setThreadGroup()`、`setThreadGroupAndCpuset()`、`setProcessGroup()` 进 JNI，JNI 再调用 `SetTaskProfiles()` / `SetProcessProfiles()`。libprocessgroup 读取 `system/core/libprocessgroup/profiles/task_profiles.json`，把 profile 展开成“加入哪个 cgroup”和“往哪个属性文件写值”两类动作。
 
-- **Top-app（前台应用）**：通过 cgroup 设置较高的 UCLAMP_MIN，确保关键线程（如主线程、RenderThread）能快速获得 CPU 资源，减少启动和交互延迟
-- **Background（后台应用）**：设置较低的 UCLAMP_MAX，限制后台任务对 CPU 的占用，防止它们抢夺前台应用的资源
-- **Foreground service**：介于两者之间，获得适度的资源保障
+把 Android 10、11、12 的路径拆开看，更稳：
 
-uclamp 的效果可以直接在 Perfetto 中观察到：同样是 util=200 的任务，一个 top-app 的线程会被分配到大核上、频率拉到中高 OPP；而一个 background 的线程则被稳稳地"按"在小核低频上运行。
+- **Android 10**：task profile 已经能操作 `cpu.util.min` / `cpu.util.max`，但默认的性能档位还是大量依赖 `/dev/stune/{background,foreground,top-app}` 和 `schedtune.boost` / `schedtune.prefer_idle`；cpuset 这条线单独决定线程允许跑在哪组 CPU 上。
+- **Android 11**：AOSP 把 cpu controller 的接口名切到 `cpu.uclamp.min` / `cpu.uclamp.max`，默认 profile 仍保留 `schedtune` 分组，属于“uclamp 文件名到位了，默认性能档位还没完全离开 schedtune”的阶段。
+- **Android 12 及以后**：AOSP 默认的 `HighEnergySaving` / `HighPerformance` / `MaxPerformance` 直接加入 `cpu/{background,foreground,top-app}`，`cpuset` 继续负责 CPU 集约束，freezer 迁到 cgroup v2。到这时，top-app / foreground / background 这三档才真正把 uclamp 提示纳入默认用户态路径。
 
-[来源: obsidian/Personal-Knowlodge/source/Android-Perfetto-09-CPU.md — schedutil 与 uclamp 部分]
+落到设备上排查时，我们至少看三处：
 
-[自动发现: 来源 obsidian/Personal-Knowlodge/source/Android-Perfetto-09-CPU.md — SchedTune/cgroup 对调度策略的影响]
+1. `/proc/<tid>/cgroup`，确认线程落在哪个 `cpu` / `cpuset` / `schedtune` 分组。
+2. 对应 cgroup 目录里的 `cpu.uclamp.min`、`cpu.uclamp.max`，旧设备再补看 `cpu.util.min` / `cpu.util.max` 和 `/dev/stune/*/schedtune.boost`。
+3. `/proc/<tid>/sched`，核对该线程最终暴露给调度器的 util / clamp 相关字段；字段名会随内核版本变化，通常要连同 `schedutil`、频率轨和 CPU 迁移一起看。
 
-> **注意**: 在 Linux 6.6+ / Android 15+ 中，部分设备开始使用 `schedutil` 的替代方案（如基于 EAS+EM 的混合调频），核心逻辑不变，但 governor 名称可能不同。
+把这条控制链看完整，就能解释同一条 RenderThread 为什么在 top-app 状态被推到大核，而切回后台后又被压回小核。
+
+[已验证: AOSP, `platform/system/core/libprocessgroup/profiles/task_profiles.json` @ android10-release/android11-release/android12-release；`frameworks/base/core/jni/android_util_Process.cpp` @ android12-release]
 
 ## EAS 在 Perfetto 中的观察
 
@@ -320,39 +323,67 @@ CPU Scheduling Track 显示每个时刻哪个线程在哪个 CPU 核心上运行
 
 ### 使用 SQL 分析 EAS 行为
 
-Perfetto 的 SQL 引擎可以帮我们量化 EAS 的决策效果。以下是几个实用的查询：
+Perfetto 更适合拿来回答三个问题：线程到底跑在哪些 CPU 上、这些 CPU 当时跑到什么频率、空闲驻留有没有被打碎。SQL 最好同时带进程名和线程名，避免多进程 Trace 里只按 thread name 取到错误 `utid`。
 
-**查看线程在各 CPU 核心上的时间分布**（判断 EAS 是否合理分配任务）：
+**统计目标线程在各 CPU 上的运行时间**：
 
 ```sql
+WITH target_thread AS (
+  SELECT t.utid, t.tid
+  FROM thread t
+  JOIN process p USING (upid)
+  WHERE p.name = 'com.example.app'
+    AND t.name = 'RenderThread'
+  LIMIT 1
+)
 SELECT
   cpu,
-  sum(dur) / 1e6 AS time_on_cpu_ms
+  round(sum(dur) / 1e6, 2) AS running_ms
 FROM sched
-WHERE utid = (SELECT utid FROM thread WHERE name = '你的线程名' LIMIT 1)
+WHERE utid = (SELECT utid FROM target_thread)
 GROUP BY cpu
 ORDER BY cpu;
 ```
 
-如果主线程在 CPU 0-3（小核）上的时间远多于 CPU 4-7（大核），就值得调查 EAS 为什么没有把它分配到大核。
+如果 RenderThread 绝大多数时间都留在小核，我们再回去看当时的 `uclamp.min/max`、前台状态和 thermal 约束，判断这是正常节能放置，还是提示链断了。
 
-**查看 CPU 频率分布**（判断 schedutil 的调频是否合理）：
+**统计各 CPU 的频率驻留时间**：
 
 ```sql
+INCLUDE PERFETTO MODULE linux.cpu.frequency;
+
 SELECT
   cpu,
-  freq_value / 1000 AS freq_mhz,
-  sum(dur) / 1e9 AS time_at_freq_s
-FROM cpu_frequency
-GROUP BY cpu, freq_value
-ORDER BY cpu, freq_value;
+  freq / 1000.0 AS freq_mhz,
+  round(sum(dur) / 1e9, 3) AS time_s
+FROM cpu_frequency_counters
+GROUP BY cpu, freq
+ORDER BY cpu, freq;
 ```
 
-**判断系统是否处于 overutilized 状态**：
+`cpu_frequency_counters` 是 Perfetto stdlib 里的标准表，列名是 `freq`、`cpu`、`dur`。如果当前环境没有加载 stdlib，再退回原始 `counter` / `counter_track` 方案。
 
-Perfetto 没有直接的 overutilized Track，但我们可以通过观察是否有某个 CPU 的 utilization 长期超过其 capacity 的 80% 来间接判断。如果 CPU Scheduling Track 上某个小核几乎全是 Running 状态（没有 idle），很可能触发了 overutilized。
+**统计 CPU idle 驻留**：
 
-[来源: obsidian/Personal-Knowlodge/source/Android-Perfetto-09-CPU.md — 实战与 SQL 部分]
+```sql
+INCLUDE PERFETTO MODULE linux.cpu.idle;
+
+SELECT
+  cpu,
+  idle,
+  round(sum(dur) / 1e9, 3) AS time_s
+FROM cpu_idle_counters
+GROUP BY cpu, idle
+ORDER BY cpu, idle;
+```
+
+`idle = -1` 表示 CPU 正在运行，数值越大通常代表越深的 idle state。大核长期停不进深 idle，通常说明前台线程、binder 回调或后台唤醒把它反复拉醒。
+
+**怎么判断 overutilized**
+
+官方文档里的 over-utilized 阈值是“CPU 使用量超过其 compute capacity 的 80%”。Perfetto 没有统一的 `sched_overutilized` 轨，所以 SQL 只能给排查线索，不能只凭“小核几乎没有 idle”就下结论。更稳妥的做法是把这几项一起看：小核 running ratio 是否持续偏高、同簇频率是否长期贴顶、关键线程是否被推向大核，再结合设备内核导出的 scheduler debug 信息确认。
+
+[已验证: 官方文档, https://perfetto.dev/docs/analysis/stdlib-docs#linux-cpu-frequency；https://perfetto.dev/docs/analysis/stdlib-docs#linux-cpu-idle；https://docs.kernel.org/scheduler/sched-energy.html]
 
 ## 与其他机制的关系
 
@@ -374,9 +405,9 @@ EAS 的能耗预测依赖于 schedutil governor 的 DVFS 行为。5.4 节会详�
 
 ### EAS 与 UClamp/SchedTune
 
-在 Linux 5.3 之前，Android 使用 SchedTune（一个 Android 特有的 cgroup controller）来实现类似 uclamp 的功能。从 Linux 5.3 开始，主线内核的 uclamp 逐渐取代了 SchedTune。两者的核心思想相同：通过 cgroup 为不同优先级的任务设置 util clamp，影响 EAS 的选核和调频决策。部分厂商（如 OPPO 的蜂鸟引擎、小米的 MiBrain）在此基础上做了更多定制化，加入了更精细的场景感知。
+把 SchedTune 和 uclamp 写成“Linux 5.3 之后完全替换”会丢掉 Android 用户态这层历史。对 mainline 来说，uclamp 是 Linux 5.3 引入、5.4 提供 cgroup 接口的标准机制；对 AOSP 来说，Android 10/11 的默认性能 profile 仍大量依赖 `schedtune` 分组，Android 12 的默认 profile 才开始直接加入 `cpu/{background,foreground,top-app}`。厂商设备是否继续保留 WALT hook、boost path 或自定义 schedtune 行为，要按设备 kernel tree 和 task profile 再核实。
 
-[来源: obsidian/Personal-Knowlodge/source/Android-Perfetto-09-CPU.md — 厂商定制化部分]
+EAS 看的是“有效 util 信号 + capacity + EM”。SchedTune 或 uclamp 只是给这个 util 加提示，让 top-app 更容易上核，background 更容易被封顶。它们会改 EAS 的输入，但不会单独决定 EAS 的全部结果。
 
 ## 常见问题与误区
 
@@ -400,24 +431,29 @@ EAS 的能耗预测依赖于 schedutil governor 的 DVFS 行为。5.4 节会详�
 
 ## 版本演进
 
-| 时间节点 | 变化 | 影响 |
-|---------|------|------|
-| Linux 3.8 | PELT 引入 | 为后续 EAS 提供 per-entity utilization 信号基础 |
-| Linux 5.0 | EAS 合入主线 | `find_energy_efficient_cpu()` 成为大小核系统的默认唤醒选核路径 |
-| Linux 5.3 | uclamp 合入主线 | 取代 Android 特有的 SchedTune，提供标准化的 util clamping 接口 |
-| Android 12 | WALT 弃用 | 统一回归主线 PELT，EAS 行为在所有设备上趋于一致 |
-| Android 14+ | 厂商定制收敛 | Google 通过 GKI 限制内核定制空间，EAS 核心逻辑趋于统一 |
-
-[待验证: Android 14 GKI 对厂商 EAS 定制的具体限制范围]
+| 维度 | 时间节点 | 变化 | 读这一段时要抓住什么 |
+|------|----------|------|----------------------|
+| 主线内核 | Linux 3.8 | PELT 引入 | 给 EAS 提供 per-entity utilization 信号 |
+| 主线内核 | Linux 5.0 | EAS 合入主线 | `find_energy_efficient_cpu()` 基于 EM 做唤醒放置 |
+| 主线内核 | Linux 5.3 | uclamp 合入主线 | 任务可以声明最小 / 最大性能点 |
+| 主线内核 | Linux 5.4 | uclamp cgroup 接口合入 | 用户态可以通过 cgroup 统一下发 clamp |
+| AOSP 用户态 | Android 10 | task_profiles 成型，cpu controller 暴露 `cpu.util.min/max`，默认性能档位仍大量依赖 `schedtune` + `cpuset` | 看 `/dev/stune/*` 和 `/dev/cpuset/*` |
+| AOSP 用户态 | Android 11 | `cpu.uclamp.min/max` 命名到位，默认 profile 仍保留 `schedtune` 分组 | 同时核对 `schedtune` 与 `cpu.uclamp.*` |
+| AOSP 用户态 | Android 12+ | 默认 `HighEnergySaving` / `HighPerformance` / `MaxPerformance` 直接进入 `cpu/{background,foreground,top-app}`，cpuset 继续控制可运行 CPU 集 | top-app / foreground / background 的默认提示链更直观 |
+| 设备实现 | 厂商分支 | WALT、Power HAL boost、额外迁核策略按 SoC / kernel tree 变化 | Trace 结论必须落回具体设备 |
 
 ## 参考资料
 
 - Linux 内核文档：[Energy Aware Scheduling](https://docs.kernel.org/scheduler/sched-energy.html)
+- Linux 内核文档：[Utilization Clamping](https://docs.kernel.org/scheduler/sched-util-clamp.html)
 - Linux 内核文档：[Energy Model framework](https://docs.kernel.org/power/energy-model.html)
+- Linux 内核文档：[CPU Idle Time Management](https://docs.kernel.org/admin-guide/pm/cpuidle.html)
 - Linux 内核文档：[Operating Performance Points (OPP)](https://docs.kernel.org/power/opp.html)
 - Perfetto 官方文档：[CPU Scheduling](https://perfetto.dev/docs/data-sources/cpu-scheduling)
+- Perfetto 官方文档：[Perfetto stdlib docs](https://perfetto.dev/docs/analysis/stdlib-docs)
+- AOSP 源码：`platform/system/core/libprocessgroup/profiles/task_profiles.json`（android10/11/12-release）
+- AOSP 源码：`frameworks/base/core/jni/android_util_Process.cpp`（`SetTaskProfiles()` / `SetProcessProfiles()` 调用链）
 - AOSP 源码：`kernel/sched/fair.c`（`find_energy_efficient_cpu()`）
-- AOSP 源码：`kernel/sched/pelt.c`（PELT 实现）
 - AOSP 源码：`kernel/power/energy_model.c`（EM 框架）
 - [高爷 - Android Perfetto 系列 9：CPU 信息解读](https://www.androidperformance.com/2025/11/12/Android-Perfetto-09-CPU/)
 - ARM 社区：[EAS 设计与实现](https://www.linuxplumbersconf.org/event/2/contributions/133/)
