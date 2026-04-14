@@ -8306,5 +8306,57 @@
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-14T07:20:00+08:00",
     "status": "pending"
+  },
+  {
+    "section": "6.4",
+    "section_title": "存储相关的版本演进",
+    "priority": 95,
+    "reason": "[Deep Tech Review] FUSE 时间线、Photo Picker 版本线和 UFS dd 测速示例存在高风险事实错误",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "版本差异",
+        "location": "行79（FUSE 首次采用时间线）",
+        "detail": "正文写成“从 Android 4.4 开始，Google 使用 FUSE”。官方存储版本线把 emulated storage 的 FUSE 归在 Android 7 及更早版本，Android 8-10 才切到 SDCardFS。当前写法会把“本节从 4.4 切入”和“FUSE 首次采用”混成一件事。",
+        "suggestion": "改成“本节从 Android 4.4 切入，但 emulated storage 的 FUSE 更早已存在；Android 8-10 使用 SDCardFS，Android 11 回到改进版 FUSE”。同时把 4.4 真正的新变化单独落在存储权限拆分。"
+      },
+      {
+        "type": "版本差异",
+        "location": "行139-164（Photo Picker / 媒体访问权限时间线）",
+        "detail": "正文把 Photo Picker 写成 Android 14 特性。开发者文档对应的真实版本线是：Android 13 引入系统 Photo Picker，并通过模块更新回推到 Android 11/12；Android 14 新增的是 Selected Photos Access / READ_MEDIA_VISUAL_USER_SELECTED。",
+        "suggestion": "把时间线拆成“Android 13：Photo Picker”“Android 14：Selected Photos Access / READ_MEDIA_VISUAL_USER_SELECTED”，并同步修正文中的表格。"
+      },
+      {
+        "type": "示例命令错误",
+        "location": "行287-288（UFS 顺序读测速命令）",
+        "detail": "`dd if=/dev/block/by-name/userdata of=/dev/null ... conv=fsync` 不能“排除缓存影响”。`conv=fsync` 只影响输出端刷盘，而输出目标是 `/dev/null`；它既不绕过输入侧 page cache，也不能给出稳定的顺序读基线。",
+        "suggestion": "改成 fio，或至少使用 `iflag=direct` / 先 drop_caches 再测，并注明直接读取 live userdata block device 只适合受控测试环境。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-14T08:21:00+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "6.4",
+    "section_title": "存储相关的版本演进",
+    "priority": 85,
+    "reason": "[Deep Tech Review] Android 11-14 外部存储访问矩阵缺失，FUSE 回归后的性能与权限链条未闭合",
+    "material_paths": [
+      "intake/research-gaps.md"
+    ],
+    "review_issues": [
+      {
+        "type": "原理断裂",
+        "location": "行109-119、135-164（FUSE 回归后的性能解释）",
+        "detail": "正文只写到 Android 11 回归 FUSE 和 Android/data、Android/obb 的绕行优化，但没有补上 Android 12 FUSE passthrough、Android 13 Photo Picker、Android 14 Selected Photos Access 的后续演进。结果“为什么 Android 11+ 外部存储开销可控”这条因果链停在半路，读者无法判断 direct path、MediaStore、SAF、Photo Picker 分别落在哪条访问路径上。",
+        "suggestion": "补一张 Android 11-14 外部存储访问矩阵，明确 direct file path / MediaStore / SAF / Photo Picker / READ_MEDIA_VISUAL_USER_SELECTED 的版本边界、权限前提、是否命中 MediaProvider、以及何时能走 FUSE passthrough。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-14T08:21:00+08:00",
+    "status": "pending"
   }
 ]
