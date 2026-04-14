@@ -25,13 +25,18 @@ sources:
     path: "【Android ART】Heap的内存布局 (微信技术文章)"
   - type: official
     path: "https://developer.android.com/topic/performance/baselineprofiles"
+  - type: official
+    path: "https://developer.android.com/guide/practices/page-sizes"
+  - type: official
+    path: "https://android-developers.googleblog.com/2025/12/android-16-qpr2-is-released.html"
 tags: ['art', 'gc', 'heap', 'tlab', 'aot', 'jit', 'cc-gc', 'cmc-gc', 'uffd', 'read-barrier', 'memory-allocation', 'generational-gc']
 related_chapters: ["4.1", "4.2", "4.4", "4.6", "4.7", "4.8", "7.1", "7.7"]
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
 task6_result: needs-rework
-task2b_state: pending
+task2b_state: fixed
+task2b_result: fixed
 task9_result: needs-rework
 ---
 
@@ -110,14 +115,18 @@ Allocation Space 的具体实现取决于当前使用的 GC 策略：
 
 这两种策略在后续的 GC 策略演进部分会详细展开。
 
-Allocation Space 有一个重要的版本差异值得注意：在 Android 15 之前，ART 使用分代策略（Young/Old Generation），Allocation Space 包含了 Nursery（新生代）和 Tenured（老年代）。Android 15 的 CMC GC 改变了这一模型，但分代假说仍然在影响着 GC 的触发策略。
+Allocation Space 的实现和分代策略要按版本拆开看。Android 8.0-14 的主线是基于 `RegionSpace` 的 CC 路径，年轻对象优先在更小的工作集里回收。到了 Android 15，AOSP 源码里已经能看到 `BumpPointerSpace` 和 UFFD 驱动的 Mark Compact 路径，但这还不等于可以直接把整条路线写成 Generational CMC。公开发布材料把 Generational CMC 明确讲清楚，是 Android 16 QPR2 之后的事情。
 
 [已验证: AOSP android-15.0.0_r1, art/runtime/gc/space/region_space.cc]
 [已验证: AOSP android-15.0.0_r1, art/runtime/gc/space/bump_pointer_space.cc]
+[已验证: Android Developers Blog, Android 16 QPR2 is Released]
 
 ### Large Object Space：大对象的特殊处理
 
-如果一个对象同时满足两个条件，大小超过阈值（通常是 3 页，即 12KB），并且类型是基本类型数组或 `String`，ART 会把它分配到 Large Object Space，而不是 Allocation Space。原因也很直接，CC GC 需要移动对象，大对象来回拷贝的成本太高。独立放入 Large Object Space 后，GC 只需要标记和清除，不必移动这些对象。
+如果一个对象同时满足两个条件，大小达到大对象阈值，并且类型是基本类型数组或 `String`，ART 会把它分配到 Large Object Space，而不是 Allocation Space。以 `android-15.0.0_r1` 为例，`Heap::kMinLargeObjectThreshold` 的默认值是 `12 * KB`。`Heap::IsLargeObject(...)` 还明确要求对象类型是 primitive array 或 `String`。这里的 12KB 是 ART 的阈值常量，不应直接写成“3 页换算”。
+
+[已验证: AOSP android-15.0.0_r1, art/runtime/gc/heap.h]
+[已验证: AOSP android-15.0.0_r1, art/runtime/gc/heap-inl.h]
 
 Large Object Space 有两种实现：
 
@@ -205,39 +214,40 @@ AOSP 源码路径：`art/runtime/gc/collector/concurrent_copying.cc`
 [已验证: 官方文档, source.android.com/docs/core/perf/art-management]
 [已验证: AOSP android-15.0.0_r1, art/runtime/gc/collector/concurrent_copying.cc]
 
-### Android 15：CMC GC 与 UFFD 的巧妙结合
+### Android 15：UFFD 驱动的 Mark Compact / CMC 路径
 
-CC GC 虽然解决了碎片问题，但引入了两个新问题：第一，GC 过程中 FromSpace 和 ToSpace 同时存在，物理内存需求会短暂翻倍；第二，Read Barrier 对所有引用读取都有额外开销，即使没有 GC 在运行。
+CC GC 解决了碎片问题，但代价也很具体。拷贝式回收需要同时保留 from-space 和 to-space，回收窗口里的物理内存压力更高。Read Barrier 还会插入到对象引用读取路径上，GC 不运行时这层开销也在。
 
-Android 15 引入的 Concurrent Mark-Compact（CMC）GC 解决了这两个问题。CMC 的核心创新是利用 Linux 的 **UFFD（User Fault FD）** 特性：
+到了 `android-15.0.0_r1`，ART 源码里已经能看到基于 `userfaultfd` 的 Mark Compact 实现。对应文件是 `art/runtime/gc/collector/mark_compact.cc`，`heap.cc` 里也能看到 `kCollectorTypeCMC` 和 `MarkCompact::GetUffdAndMinorFault()` 相关逻辑。这个阶段更稳妥的写法是：Android 15 引入了 UFFD 驱动的 Mark Compact / CMC 路径，不要直接写成 Generational CMC。
 
-UFFD 允许用户空间程序注册一段虚拟内存范围的访问监控。当这段内存出现缺页异常（如 SIGBUS）时，内核不会直接处理，而是将异常交给用户空间程序处理。CMC GC 利用这个机制实现了"按需压缩"：GC 线程从后向前逐页压缩对象，如果应用线程访问到了一个尚未被压缩的页面，UFFD 会触发异常，VM 优先压缩这个页面然后返回给应用线程。
+UFFD 允许用户空间监听一段虚拟内存的缺页事件。GC 压缩对象时，如果应用线程访问到尚未整理完成的页，内核会把 fault 交给 ART 处理，ART 先把这一页整理到位，再把控制权交还给应用线程。这样做的目的，是把对象迁移和应用继续运行拆到页级别协调，而不是在每次引用读取时都依赖 Read Barrier。
 
-这样就不需要 Read Barrier 了——应用线程要么访问到已经压缩好的页面（直接可用），要么触发 UFFD 异常（等待当前页压缩完成）。GC 不运行时，没有任何额外开销。
-
-CMC 的分配器也从 `RegionSpace` 切换为 `BumpPointerSpace`，结构更简单：分配时只需移动一个 top 指针（bump pointer），不需要维护 Region 的管理结构。
+CMC 的另一处变化，是主分配路径可以配合 `BumpPointerSpace` 这类更简单的线性分配结构。对我们做性能分析来说，重点是知道 Android 15 这里的关键词已经从拷贝式 CC 扩展到 UFFD 加 Mark Compact。
 
 [来源: Cubox/ART虚拟机CMC GC算法核心实现介绍-2023-06-24.md]
-[已验证: AOSP android-15.0.0_r1, art/runtime/gc/collector/concurrent_mark_compact.cc]
+[已验证: AOSP android-15.0.0_r1, art/runtime/gc/collector/mark_compact.cc]
+[已验证: AOSP android-15.0.0_r1, art/runtime/gc/heap.cc]
+
+### Android 16 QPR2 / Android 17：官方对外明确 Generational CMC
+
+Android 16 QPR2 的官方发布说明直接写到：ART now includes a Generational Concurrent Mark-Compact (CMC) Garbage Collector。这个版本分界会直接影响我们怎么描述 GC 路线。写 Android 16 QPR2 和 Android 17 时，可以把 Generational CMC 当成正式能力来讨论；写 Android 15 时，表述应收在 Mark Compact / CMC 路径本身。
+
+这也能避开两个常见误判。不要因为 `mark_compact.cc` 已经出现在 Android 15 源码里，就把 Android 15 写成已经正式对外明确的 Generational CMC。也不要把 Android 8.0-14 的 generational CC 经验，原样套到 Android 16 QPR2 之后的 Generational CMC 上。两者都体现了优先回收年轻对象，但底层 collector 已经不是同一套实现。
+
+[已验证: Android Developers Blog, Android 16 QPR2 is Released]
 
 ### 分代 GC：Young Generation 的快速回收
 
 [已验证: 官方文档, source.android.com/docs/core/perf/art-management]
 
-无论底层是 CC 还是 CMC，ART 都采用了分代垃圾回收策略。分代假说（Generational Hypothesis）告诉我们：绝大多数对象都是短命的——在一个典型的应用中，超过 90% 的对象在创建后很快就会变成垃圾。
+分代回收这件事，本身比底层 collector 更稳定。它依赖的判断很朴素：新分配对象大多活不久，先把回收工作集中在年轻对象上，通常能用更短的暂停时间拿到更高的回收收益。
 
-ART 将 Allocation Space 划分为 Young Generation（新生代/Nursery）和 Old Generation（老年代/Tenured）。新对象首先进入 Young Generation。当 Young Generation 空间不足时，触发一次 Young GC（也叫 Partial GC）：
+在 Android 8.0-14 的 CC 路径里，我们可以把它理解为 generational CC。新对象先进入年轻工作集，Young GC 主要扫描这部分对象，暂停时间通常只有 1-3ms；只有年轻对象晋升、老年代压力上来，才会触发更重的 full-heap 回收。到了 Android 16 QPR2 之后，官方开始把这一思路明确表述为 Generational CMC，但先回收年轻对象、再尽量少碰老对象的观察口径没有变。
 
-- Young GC 只扫描 Young Generation 中的对象，不扫描整个堆
-- 暂停时间通常只有 1-3ms
-- 仍然存活的对象被提升（promote）到 Old Generation
-
-只有当 Old Generation 空间也不足时，才触发 Full GC（也叫 Full-Heap GC），扫描整个堆。Full GC 的代价比 Young GC 大得多，但在分代策略下，Full GC 的频率被大大降低。
-
-在 Perfetto 中，我们可以通过以下方式观察分代 GC 的行为：
-- **Young GC**：在 GC 线程上表现为短暂的、频繁的活动（通常每秒 1-2 次或更少）
-- **Full GC**：表现为较长的、低频的 GC 活动，通常与堆增长或内存压力相关
-- **如果一个应用的 Young GC 每秒超过 2-3 次**，通常意味着存在严重的对象抖动（object churn）
+在 Perfetto 中，我们仍然可以用相同的观察方式区分这两类活动：
+- **Young / minor collection**：持续时间短、频率更高，通常出现在对象快速创建和销毁的场景
+- **Full-heap collection / full GC**：持续时间更长，常和堆增长、老年代压力或内存泄漏一起出现
+- **如果一个应用的 minor collection 已经频繁到每秒多次**，通常说明对象抖动已经开始影响前台体验
 
 [图：Perfetto 中 Young GC vs Full GC 的典型表现对比]
 
@@ -328,7 +338,7 @@ ART 的内存管理不仅仅涉及堆和 GC，还包括编译策略对内存的�
 
 ART 的编译策略可以简化为以下流程：
 
-1. **首次运行**：方法首先被解释执行（最慢，但无需编译时间和空间）
+1. **首次运行**：方法先被解释执行（最慢，但无需编译时间和空间）
 2. **JIT 编译**：频繁执行的方法被 JIT 编译为机器码，存入 Code Cache（在内存中）
 3. **Profile 收集**：ART 在运行过程中记录哪些方法被频繁执行，生成 Profile 文件
 4. **AOT 编译**：设备空闲且充电时，编译守护进程（`dex2oat`）根据 Profile 对热点代码进行 AOT 编译，结果持久化到磁盘
@@ -337,13 +347,17 @@ ART 的编译策略可以简化为以下流程：
 
 [已验证: 官方文档, developer.android.com/topic/performance/baselineprofiles]
 
-### Baseline Profiles：安装时就优化
+### Baseline Profiles：安装期优化要按版本拆开看
 
-Baseline Profiles 是 Google 在 Android 13（正式推广）引入的机制，允许开发者在 APK/AAB 中预置一份"热点方法清单"。当用户从 Google Play 安装应用时，ART 会在安装阶段就对这些方法进行 AOT 编译。
+Baseline Profiles 的时间线要拆成两段，不能收在 Android 13 一个节点里。
 
-对于一个全新安装的应用，即使没有 Cloud Profile 数据，也没有历史运行记录，用户第一次启动时仍然可以拿到接近 AOT 编译的性能。Google 的数据显示，使用 Baseline Profiles 可以将冷启动速度提升 20-30%。
+对 Android 7-8.1（API 24-27），如果应用集成了 `androidx.profileinstaller`，Baseline Profile 会在首次启动时安装到设备上，ART 后续再结合空闲期编译继续优化。
 
-对于开发者来说，Baseline Profiles 的使用方式很简单：通过 `BaselineProfileRule` 在自动化测试中生成 Profile 文件，然后打包到 APK 中。
+对 Android 9（API 28）及以上，Google Play 在安装阶段就会使用 Baseline Profiles 优化 APK；如果后续还有 Cloud Profiles，可继续把真实用户的热点路径分发给后续安装者。所以更准确的版本线是：Android 7-8.1 有 ProfileInstaller 驱动的 Baseline Profile，Android 9+ 进入 Baseline + Cloud Profile 的安装期 AOT 路径，而不是把这件事压成 Android 13 才出现。
+
+官方文档给出的直接表述是，Baseline Profiles 可以让包含的代码路径从第一次启动开始提速约 30%。这类收益描述适合放在安装期和启动过程里理解，和 §8.7 的编译优化实践要保持同一口径。
+
+[已验证: 官方文档, developer.android.com/topic/performance/baselineprofiles]
 
 ### Cloud Profiles：聚合真实用户数据
 
@@ -366,13 +380,13 @@ AOT 编译后的机器码存储在 `.oat` 和 `.vdex` 文件中，运行时通�
 
 [来源: intake/research-feeds/2026-03-31-11-ch04-art-16kb-page-memory.md]
 
-Android 15 引入了 16KB 内存页大小的支持（替代传统的 4KB 页），这对 ART 有以下影响：
+16KB page size 是 Android 15 开始支持的系统能力，但这一节要把 ART 直接受到的影响和系统级收益拆开写。
 
-ART 的 RegionSpace 默认使用 256KB 的 Region，恰好是 16KB 的整数倍（256 / 16 = 16），所以 Region 级别的布局几乎不受影响。但 TLAB 的最小分配单位从 4KB 变为 16KB，如果应用创建了大量线程但每个线程分配量很小，会有更多的内存被 TLAB 预占但未使用。
+对 ART 来说，页大小变化会影响 `mmap` 粒度、堆页管理和 native 库兼容性边界。它当然会反映到运行时内存行为，但官方页面公开的数字是整机测试结果，不是 ART 内部某个分配器的单独 benchmark。
 
-Google 报告在部分工作负载上，16KB 页通过减少 TLB miss 带来了约 5-10% 的性能提升。Android 16 为未适配 16KB 页的应用提供了兼容模式。
+官方文档当前给出的平均结果是：内存压力下的应用启动时间降低 3.16%，启动期功耗降低 4.56%，相机热启动快 4.48%，相机冷启动快 6.60%，开机时间改善 8%。这些数据更适合放在 §4.7《16KB Page Size 与 Android 性能》里展开。本节只保留一个结论：如果讨论 16KB page 对 TLAB、Region 或 TLB miss 的具体影响，必须给出设备、版本和实验条件，不能把它直接写成 ART 的默认事实。
 
-[待验证: 16KB Page Size 在不同 SoC 平台上的实际性能差异]
+[已验证: 官方文档, developer.android.com/guide/practices/page-sizes]
 
 ## 在 Perfetto 中观察 ART GC
 
@@ -477,7 +491,7 @@ ART 的堆大小受到系统限制（由 `ActivityManager.getMemoryClass()` 返�
 ### AOSP 源码路径
 - ART Heap 管理：`art/runtime/gc/heap.cc`
 - Concurrent Copying GC：`art/runtime/gc/collector/concurrent_copying.cc`
-- Concurrent Mark-Compact GC：`art/runtime/gc/collector/concurrent_mark_compact.cc`
+- Concurrent Mark-Compact / Mark Compact：`art/runtime/gc/collector/mark_compact.cc`
 - RegionSpace（CC GC 的分配器）：`art/runtime/gc/space/region_space.cc`
 - BumpPointerSpace（CMC GC 的分配器）：`art/runtime/gc/space/bump_pointer_space.cc`
 - RosAlloc：`art/runtime/gc/allocator/rosalloc.cc`
@@ -490,6 +504,7 @@ ART 的堆大小受到系统限制（由 `ActivityManager.getMemoryClass()` 返�
 - [Manage device memory | source.android.com](https://source.android.com/docs/core/perf/art-management)
 - [Baseline Profiles | developer.android.com](https://developer.android.com/topic/performance/baselineprofiles)
 - [16KB Page Size | developer.android.com](https://developer.android.com/guide/practices/page-sizes)
+- [Android 16 QPR2 is Released | Android Developers Blog](https://android-developers.googleblog.com/2025/12/android-16-qpr2-is-released.html)
 
 ### 素材来源
 - [ART虚拟机内存分配原理浅析](https://cubox.pro/web/card/7169016886301033688)
