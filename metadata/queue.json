@@ -9442,5 +9442,27 @@
     "added_at": "2026-04-15T00:25:58+08:00",
     "status": "pending",
     "original_review_log": "logs/deep-review/2026-04-15-00-deep-review.md"
+  },
+  {
+    "section": "16.2",
+    "section_title": "各 Android 版本性能变更追踪",
+    "priority": 75,
+    "reason": "applicable_versions 截至 API 36，Android 17 Beta 3 已达平台稳定（3/26），应更新至 API 37",
+    "added_by": "task3-freshness-check",
+    "added_at": "2026-04-15T02:05:00+08:00",
+    "status": "pending",
+    "type": "metadata_update",
+    "action": "Update applicable_versions from 'Android 12 (API 31) - Android 16 (API 36)' to include API 37"
+  },
+  {
+    "section": "16.3",
+    "section_title": "AOSP 源码编译与调试环境",
+    "priority": 70,
+    "reason": "AOSP build 相关文件仅覆盖至 Android 16，应增加 android-17 分支编译说明",
+    "added_by": "task3-freshness-check",
+    "added_at": "2026-04-15T02:05:00+08:00",
+    "status": "pending",
+    "type": "metadata_update",
+    "action": "Update applicable_versions and add android-17 build instructions"
   }
 ]
