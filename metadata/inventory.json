@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-12 06:00",
+  "generated_at": "2026-04-15 06:00",
   "documents": [
     {
       "path": "Cubox/#01 创始人解密 Discord-2023-02-20.md",
@@ -44377,6 +44377,10 @@
         "ch10",
         "ch14",
         "ch16"
+      ],
+      "total_score": 100,
+      "mapped_chapters": [
+        "ch02"
       ]
     },
     {
@@ -44400,6 +44404,10 @@
         "ch05",
         "ch10",
         "ch16"
+      ],
+      "total_score": 100,
+      "mapped_chapters": [
+        "ch02"
       ]
     },
     {
@@ -44435,6 +44443,10 @@
         "ch05",
         "ch10",
         "ch16"
+      ],
+      "total_score": 100,
+      "mapped_chapters": [
+        "ch02"
       ]
     },
     {
@@ -44551,6 +44563,10 @@
         "ch09",
         "ch11",
         "ch16"
+      ],
+      "total_score": 100,
+      "mapped_chapters": [
+        "ch05"
       ]
     },
     {
@@ -44691,6 +44707,10 @@
         "ch08",
         "ch10",
         "ch16"
+      ],
+      "total_score": 100,
+      "mapped_chapters": [
+        "ch01"
       ]
     },
     {
@@ -45095,6 +45115,10 @@
         "ch07",
         "ch08",
         "ch16"
+      ],
+      "total_score": 100,
+      "mapped_chapters": [
+        "ch04"
       ]
     },
     {
@@ -45177,7 +45201,11 @@
         "可用度": 20,
         "total": 87
       },
-      "applicable_versions": "Android 12 (API 31) - Android 16 (API 36)"
+      "applicable_versions": "Android 12 (API 31) - Android 16 (API 36)",
+      "total_score": 100,
+      "mapped_chapters": [
+        "ch03"
+      ]
     },
     {
       "path": "src/part1-fundamentals/ch03-input/README.md",
@@ -45797,6 +45825,10 @@
         "ch07",
         "ch10",
         "ch16"
+      ],
+      "total_score": 100,
+      "mapped_chapters": [
+        "ch07"
       ]
     },
     {
@@ -46835,7 +46867,11 @@
         "可用度": 18,
         "total": 81
       },
-      "applicable_versions": "Android 5.0 (API 21) - Android 17 (API 37)"
+      "applicable_versions": "Android 5.0 (API 21) - Android 17 (API 37)",
+      "total_score": 100,
+      "mapped_chapters": [
+        "ch02"
+      ]
     },
     {
       "path": "intake/research-feeds/2026-04-06-07-android17-power-management-wakelock-policy-aod-minmode.md",
@@ -47322,6 +47358,10 @@
         "ch10",
         "ch12",
         "ch16"
+      ],
+      "total_score": 100,
+      "mapped_chapters": [
+        "ch12"
       ]
     },
     {
@@ -47400,6 +47440,10 @@
         "ch07",
         "ch14",
         "ch16"
+      ],
+      "total_score": 100,
+      "mapped_chapters": [
+        "ch14"
       ]
     },
     {
@@ -48344,6 +48388,10 @@
         "ch02",
         "ch05",
         "ch16"
+      ],
+      "total_score": 100,
+      "mapped_chapters": [
+        "ch02"
       ]
     },
     {
@@ -48391,6 +48439,10 @@
         "ch10",
         "ch11",
         "ch16"
+      ],
+      "total_score": 100,
+      "mapped_chapters": [
+        "ch02"
       ]
     },
     {
@@ -48441,6 +48493,10 @@
         "ch08",
         "ch10",
         "ch16"
+      ],
+      "total_score": 100,
+      "mapped_chapters": [
+        "ch02"
       ]
     },
     {
@@ -49053,6 +49109,10 @@
         "ch08",
         "ch10",
         "ch16"
+      ],
+      "total_score": 100,
+      "mapped_chapters": [
+        "ch14"
       ]
     },
     {
@@ -49154,6 +49214,10 @@
         "ch13",
         "ch14",
         "ch16"
+      ],
+      "total_score": 100,
+      "mapped_chapters": [
+        "ch13"
       ]
     },
     {
@@ -49180,6 +49244,10 @@
         "ch10",
         "ch14",
         "ch16"
+      ],
+      "total_score": 100,
+      "mapped_chapters": [
+        "ch13"
       ]
     },
     {

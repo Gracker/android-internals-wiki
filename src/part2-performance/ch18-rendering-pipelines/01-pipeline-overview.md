@@ -1,16 +1,20 @@
 ---
 title: "渲染链路分类与选择矩阵"
 chapter: "18.1"
+section: "18.1"
 status: ready-for-review
 applicable_versions: "Android 9 (API 28) - Android 16 (API 36)"
 tags: ["rendering-pipeline", "BLAST", "SurfaceFlinger", "HWUI", "SurfaceView", "TextureView", "Vulkan", "OpenGL ES"]
 related_chapters: ["2.1", "2.5", "2.6", "2.7", "2.14", "18.2", "18.3", "18.4", "18.5", "18.6", "18.7", "18.8", "18.9", "18.10"]
 created_by: "rendering-pipelines-merge"
 created_date: "2026-04-09"
-pipeline_stage: task6_pending
-task6_state: pending
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task2b_state: idle
+reviewed_by: openclaw-task6
+reviewed_date: "2026-04-15"
+task6_result: pass-light-edit
 ---
 
 <!-- outline-start -->
@@ -126,7 +130,7 @@ Flutter 在 Android 上的渲染架构有其独特的线程模型。Flutter 3.29
 - **Flutter SurfaceView**：走 SurfaceView 直出链路（见 [18.6](06-surfaceview.md)），适合全屏 Flutter 页面
 - **Flutter TextureView**：走 App 侧合成链路（见 [18.7](07-textureview.md)），适合需要与原生 View 混合的场景
 
-两者的性能差异与原生 SurfaceView / TextureView 的对比一致，核心在于是否多了一次纹理拷贝。
+两者的性能差异与原生 SurfaceView / TextureView 的对比一致，差异来自是否多了一次纹理拷贝。
 
 ---
 
