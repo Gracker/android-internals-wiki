@@ -1,6 +1,7 @@
 ---
 title: "Perfetto 的高级用法"
 chapter: "13.7"
+section: "13.7"
 status: ready-for-review
 drafted_date: "2026-04-03"
 applicable_versions: "Android 8.0 (API 26) - Android 16 (API 36)"
@@ -24,10 +25,13 @@ tags:
   - android
   - perfetto
   - research
-pipeline_stage: task6_pending
-task6_state: pending
+pipeline_stage: task2b_pending
+task6_state: reviewed
+task6_result: needs-rework
 task9_state: pending
-task2b_state: idle
+task2b_state: pending
+reviewed_by: "openclaw-task6"
+reviewed_date: "2026-04-14"
 ---
 
 
@@ -42,7 +46,7 @@ task2b_state: idle
 - 🔹 Perfetto 宏（Macros）与仪表板
 - 🔹 Trace Processor Python API 的高级用法
 - 🔹 将 Perfetto 集成到 CI/CD 的自动化性能测试中
-- 🔹 custom trace point 的最佳实践（atrace_begin / TRACE_EVENT）
+- 🔹 自定义 Trace Point 的最佳实践（atrace_begin / TRACE_EVENT）
 
 ### 扩展（可选深入）
 
@@ -58,31 +62,31 @@ task2b_state: idle
 > 锚点内容需 L1/L2 验证，扩展内容至少 L2 验证，自动发现内容至少标注来源。
 <!-- outline-end -->
 
-前面六章我们讲了 Perfetto 是什么、怎么抓 Trace、怎么看 Trace、怎么打开超大 Trace、几个专题怎么分析、线程 CPU 状态怎么看。掌握了这些，你已经能应对大部分日常性能分析场景了。
+前面六章已经覆盖了 Perfetto 的基础操作，包括抓 Trace、读 Trace、打开超大 Trace、做专题分析，以及看线程 CPU 状态。掌握这些之后，我们已经能应对大部分日常性能分析场景。
 
-但 Perfetto 的能力远不止"打开网页看 Trace"。这一章，我们来看 Perfetto 的进阶能力：当你需要把分析从"人眼对着 Trace 看"升级到"机器自动化分析"时，你需要什么。具体来说，我们要解决五个问题：怎么用 SQL 定义自己的指标、怎么用 Python API 批量处理 Trace、怎么把分析固化成可复用的仪表板宏、怎么把 Perfetto 接入 CI/CD 做性能回归检测、以及怎么在你的代码里插入自定义的 Trace 点。
+但 Perfetto 的能力不止于“打开网页看 Trace”。当分析要从单次排障走向批量处理、团队复用和自动回归检测时，重点就变成了自定义 Metric、Python API、宏、CI/CD 集成，以及代码里的自定义 Trace 点。
 
 ## 自定义 Perfetto Metric：用 SQL 把 Trace 变成结构化指标
 
 ### 为什么需要自定义 Metric
 
-Perfetto 自带了 `android_cpu`、`android_mem`、`android_startup` 等内置 Metric，用 `--run-metrics` 参数就能跑。这些覆盖了最常见的需求。但当你需要回答一些特定问题时，内置的就不够用了。比如：
+Perfetto 自带了 `android_cpu`、`android_mem`、`android_startup` 等内置 Metric，用 `--run-metrics` 参数就能跑。这些覆盖了最常见的需求。但当我们要回答一些特定问题时，内置 Metric 就不够用了。比如：
 
 - "我们 App 的首页冷启动，从 `activityStart` 到第一帧上屏，平均耗时是多少？P90 是多少？"
 - "RecyclerView 的每个 `onBindViewHolder` 调用耗时，有没有超过 16ms 的？"
 - "相机预览的帧间隔抖动程度如何？有多少帧的 capture-to-delivery 超过了阈值？"
 
-这些问题本质上都是对 Trace 中特定 Slice 的过滤、聚合和统计。Perfetto 提供的机制让你用 SQL 表达这些逻辑，然后把结果输出成结构化的 protobuf 消息——这就是自定义 Metric。
+这些问题都是对 Trace 中特定 Slice 的过滤、聚合和统计。Perfetto 提供的机制允许我们用 SQL 表达这些逻辑，再把结果输出成结构化的 protobuf 消息，这就是自定义 Metric。
 
 ### Trace Processor 的核心数据模型
 
-在写 SQL 之前，我们需要理解 Trace Processor 把 Trace 数据组织成了什么样的表。Trace Processor 是一个 C++ 库，它把各种格式的 Trace 文件解析后暴露出 SQL 接口。你在 Perfetto UI 的 Query 页面、命令行的 `trace_processor` shell、以及 Python API 中，查的都是同一套表。
+在写 SQL 之前，我们需要理解 Trace Processor 把 Trace 数据组织成了什么样的表。Trace Processor 是一个 C++ 库，它把各种格式的 Trace 文件解析后暴露出 SQL 接口。无论是在 Perfetto UI 的 Query 页面、命令行的 `trace_processor` shell，还是 Python API 中，查的都是同一套表。
 
 核心表有这几类。**Track 类**：`track`（基表）、`thread_track`（线程级 Track）、`process_track`（进程级 Track）、`process_counter_track`（进程级计数器 Track）等。**Event 类**：`slice`（时间片，比如一次 `doFrame` 就是一个 slice）、`counter`（计数器值，比如 CPU 频率）、`sched`（CPU 调度事件）。**实体类**：`process`（进程信息）、`thread`（线程信息）。
 
 Track 和 Event 之间的关系是通过 `track_id` 关联的。每个 slice 或 counter 都有一个 `track_id`，指向它所属的 Track。Track 又通过 `thread_track` 或 `process_track` 中的 `utid`/`upid` 关联到具体的线程或进程。
 
-这里有个细节值得注意：Trace Processor 没有直接用 PID/TID 做标识，而是引入了 `utid`（unique tid）和 `upid`（unique pid）。原因是 Android/Linux 系统中 PID/TID 会被复用——一个进程退出后，它的 PID 可能被另一个完全不相干的进程拿走。如果直接用 PID 做 JOIN，可能会把不同进程的数据错误地关联到一起。`utid`/`upid` 是 Trace Processor 分配的单调递增 ID，保证了唯一性。
+这里有个细节：Trace Processor 没有直接用 PID/TID 做标识，而是引入了 `utid`（unique tid）和 `upid`（unique pid）。原因是 Android/Linux 系统中 PID/TID 会被复用，一个进程退出后，它的 PID 可能被另一个完全不相干的进程拿走。如果直接用 PID 做 JOIN，可能会把不同进程的数据错误地关联到一起。`utid`/`upid` 是 Trace Processor 分配的单调递增 ID，保证了唯一性。
 
 查看当前 Trace 有哪些表，可以执行：
 
@@ -131,7 +135,7 @@ extend TraceMetrics {
 }
 ```
 
-这里有几个要点。`extend TraceMetrics` 是把你的 Metric 注册到 Perfetto 的 Metric 体系中，字段号在 450–500 范围内用于本地开发。字段名 `cold_start_metric` 会作为 SQL 输出表的表名和最终 proto 中的字段名。
+这里有几个要点。`extend TraceMetrics` 用来把自定义 Metric 注册到 Perfetto 的 Metric 体系中，字段号在 450–500 范围内用于本地开发。字段名 `cold_start_metric` 会作为 SQL 输出表的表名和最终 proto 中的字段名。
 
 **第二步：编写 SQL 查询。**
 
@@ -166,7 +170,7 @@ SELECT
 FROM startup_phases;
 ```
 
-实际工程中，SQL 会比这个示例复杂得多——你可能需要处理多次启动、区分冷启动和热启动、排除异常值等。但核心思路不变：用 SQL 从 Trace 的表中提取你关心的数据，按 proto 定义的结构组织输出。
+实际工程里，这段 SQL 往往会更复杂，比如要处理多次启动、区分冷启动和热启动、排除异常值等。但核心思路不变，用 SQL 从 Trace 的表中提取关注的数据，再按 proto 定义的结构组织输出。
 
 **第三步：运行 Metric。**
 
@@ -213,21 +217,21 @@ Perfetto 自带的 Metric 涵盖了常见场景。一些常用的：
 
 [已确认：内置 Metric 列表来源于 perfetto.dev 官方文档]
 
-当内置 Metric 不满足需求时，你可以用 `--metric-extension` 在运行时覆盖内置 Metric 的 SQL 逻辑，或者完全自定义新的 Metric。
+当内置 Metric 不满足需求时，可以用 `--metric-extension` 在运行时覆盖内置 Metric 的 SQL 逻辑，或者完全自定义新的 Metric。
 
 ### 旧版 Metric vs Trace Summarization
 
 Perfetto 的 Metric 系统正在经历一次代际更替。上面讲的基于 `.sql` + `.proto` + `--run-metrics` 的工作方式是旧版（v1）Metric 系统。Perfetto 官方推荐新项目使用 **Trace Summarization** API——它是对旧版 Metric 的封装和升级，提供了更稳定的接口和更好的工具链支持。Trace Summarization 通过 Python API 的 `tp.trace_summary()` 调用，返回结构化的 protobuf 消息。在 Python API 一节中我们会详细讲到。
 
-如果你已经在维护旧版 Metric，它们仍然完全可用，不需要立即迁移。但如果是新写的 Metric，建议直接基于 Trace Summarization 的框架来组织。
+如果团队已经在维护旧版 Metric，它们仍然完全可用，不需要立即迁移。但新写的 Metric 更适合直接基于 Trace Summarization 的框架来组织。
 
 ## Perfetto 宏（Macros）与仪表板
 
 ### 什么是宏
 
-Perfetto UI 的宏（Macros）是一种可复用的分析自动化脚本。简单来说，它是一组命名的命令序列，可以在 Perfetto UI 中一键执行，用于完成那些你每次分析都要手动重复的操作。
+Perfetto UI 的宏（Macros）是一种可复用的分析自动化脚本。简单来说，它是一组命名的命令序列，可以在 Perfetto UI 中一键执行，用来完成那些每次分析都要重复的操作。
 
-举个例子：每次分析启动性能时，你都要做这几件事——找到 main 线程、缩放到启动阶段、显示 CPU 频率 Track、隐藏不相关的进程。如果把这些操作固化成一个宏，下次打开 Trace 后一个命令就能完成所有准备工作。
+举个例子：每次分析启动性能时，通常都要先找到 main 线程、缩放到启动阶段、显示 CPU 频率 Track，再隐藏不相关的进程。如果把这些操作固化成一个宏，下次打开 Trace 后一个命令就能完成准备工作。
 
 ### 宏的配置方式
 
@@ -250,7 +254,7 @@ Perfetto UI 的宏（Macros）是一种可复用的分析自动化脚本。简�
 - **卡顿分析宏**：自动查找 `doFrame` 中耗时超过阈值的帧、展开 RenderThread Track、显示 GPU 渲染阶段
 - **功耗分析宏**：自动显示 CPU 频率、集群状态、wakelock 持有时长
 
-这样做的价值不只是省时间。更重要的是，它把团队中资深工程师的分析思路固化下来——新同学拿到一个 Trace，运行团队的标准分析宏，就能看到老手会看的东西。
+这样做的价值不只是省时间。更实际的价值，是把团队里资深工程师的分析思路固化下来，新同学拿到一个 Trace，运行标准分析宏，就能先看到老手会看的东西。
 
 [待高爷补充：Perfetto UI 命令面板执行宏的截图]
 
@@ -258,7 +262,7 @@ Perfetto UI 的宏（Macros）是一种可复用的分析自动化脚本。简�
 
 ### 为什么需要 Python API
 
-命令行 `trace_processor` 适合一次性查询和脚本，但当你需要做以下事情时，Python API 就不可或缺了：
+命令行 `trace_processor` 适合一次性查询和脚本，但遇到下面这些场景时，Python API 就不可或缺了：
 
 - **批量分析**：一次性跑几百个 Trace，统计 P50/P90/P99 延迟分布
 - **与数据科学生态集成**：把 Trace 数据转成 Pandas DataFrame，用 matplotlib 画图，甚至用机器学习模型做异常检测
@@ -294,11 +298,11 @@ df = result.as_pandas_dataframe()
 print(df.describe())
 ```
 
-这一行转换是 Python API 的关键优势之一。一旦你有了 DataFrame，Pandas 的全部能力都可以用上——过滤、分组、统计、可视化，全部在 Python 生态内完成。
+这一行转换是 Python API 的关键优势之一。有了 DataFrame，Pandas 的过滤、分组、统计和可视化能力就都能直接用上。
 
 ### BatchTraceProcessor：批量分析多个 Trace
 
-当你需要分析一批 Trace 时（比如 CI/CD 中每次构建产出的 Trace），`BatchTraceProcessor` 比循环调用 `TraceProcessor` 高效得多：
+当我们需要分析一批 Trace 时（比如 CI/CD 中每次构建产出的 Trace），`BatchTraceProcessor` 比循环调用 `TraceProcessor` 高效得多：
 
 ```python
 from perfetto.batch_trace_processor import BatchTraceProcessor
@@ -321,7 +325,7 @@ results = batch.query_and_flatten(
 print(results)
 ```
 
-`BatchTraceProcessor` 会并行加载和查询所有 Trace。对于统计类分析特别有用——比如你想看最近 100 次构建的冷启动时间分布，用 `query_and_flatten` 一条 SQL 搞定。
+`BatchTraceProcessor` 会并行加载和查询所有 Trace。它特别适合统计类分析，比如要看最近 100 次构建的冷启动时间分布，用 `query_and_flatten` 一条 SQL 就够了。
 
 需要注意的是，每个 Trace 加载后会完全驻留在内存中。如果 Trace 很大（几百 MB），同时加载几十个可能会撑爆内存。Perfetto 官方建议对于超大规模分析（数千个 Trace）使用 Bigtrace 方案，通过 Kubernetes 集群来分布式处理。
 
@@ -345,7 +349,7 @@ if summary.HasField('android_cpu'):
         print(f'{process.name}: {process.cpu_time_ms} ms')
 ```
 
-如果你有自定义 Metric（SQL + proto 文件），可以通过 `TraceProcessorConfig` 加载：
+如果要加载自定义 Metric（SQL + proto 文件），可以通过 `TraceProcessorConfig` 加载：
 
 ```python
 from perfetto.trace_processor import TraceProcessor, TraceProcessorConfig
@@ -357,7 +361,7 @@ tp = TraceProcessor(trace='trace.perfetto-trace', config=config)
 summary = tp.trace_summary()
 ```
 
-`add_sql_packages` 选项会加载指定目录下的 SQL 和 proto 文件，目录名会作为包名。这样你的自定义 Metric 就可以像内置 Metric 一样通过 `trace_summary()` 调用了。
+`add_sql_packages` 选项会加载指定目录下的 SQL 和 proto 文件，目录名会作为包名。这样自定义 Metric 就可以像内置 Metric 一样通过 `trace_summary()` 调用了。
 
 ### 一个实用的自动化示例：冷启动回归检测
 
@@ -410,7 +414,7 @@ def analyze_startup(trace_path, baseline_ms=800, threshold_pct=10):
 
 ### 为什么要把 Perfetto 放进 CI/CD
 
-性能问题有一个很讨厌的特性：它是渐进恶化的。每次提交代码增加 10ms 的启动延迟，单个 commit 看不出来，但一个季度下来就是 500ms 的退步。等到用户投诉时，你已经不知道是哪次提交引入的问题了。
+性能问题有一个很讨厌的特性，它往往是渐进恶化的。每次提交代码增加 10ms 的启动延迟，单个 commit 看不出来，但一个季度下来就是 500ms 的退步。等到用户投诉时，团队往往已经不知道是哪次提交引入的问题了。
 
 把 Perfetto 分析接入 CI/CD，就是为了在每次代码提交时自动检测这种渐进回归。核心思路是：每次构建或合入时自动运行性能测试 → 抓取 Trace → 用 SQL/Python 自动分析 → 与历史基线对比 → 超过阈值就告警或阻塞合并。
 
@@ -420,7 +424,7 @@ def analyze_startup(trace_path, baseline_ms=800, threshold_pct=10):
 
 **1. 触发**：代码提交（PR / merge to main）、定时任务（每日构建）、或手动触发。
 
-**2. 测试执行**：在稳定的设备或模拟器上运行性能测试。AndroidX Macrobenchmark 库是一个不错的选择——它在底层就是用 Perfetto 抓 Trace 的，提供了标准的 benchmark 框架。如果你的测试场景比较特殊（比如需要特定的硬件环境），也可以自己写脚本通过 `adb shell perfetto` 抓 Trace。
+**2. 测试执行**：在稳定的设备或模拟器上运行性能测试。AndroidX Macrobenchmark 库是一个不错的选择，它在底层就是用 Perfetto 抓 Trace 的，提供了标准的 benchmark 框架。如果测试场景比较特殊（比如需要特定的硬件环境），也可以自己写脚本通过 `adb shell perfetto` 抓 Trace。
 
 **3. Trace 收集**：从设备拉取 `.perfetto-trace` 文件到 CI 环境的存储中。建议按构建号和时间戳组织目录结构，方便回溯。
 
@@ -488,7 +492,7 @@ jobs:
 
 ### 降低误报率的几个实践
 
-性能数据天然有噪声。同一台设备上连续跑三次同样的测试，结果可能有 5-10% 的波动。如果阈值设得太紧，你会被误报淹没；太松又放过了真回归。几个实用的建议：
+性能数据天然有噪声。同一台设备上连续跑三次同样的测试，结果可能有 5-10% 的波动。如果阈值设得太紧，团队会被误报淹没；太松又会放过真回归。几个实用的建议：
 
 **稳定测试环境**：使用相同的设备型号、相同的系统版本、关闭后台应用、固定屏幕亮度和音量。如果是物理设备，考虑使用制冷夹防止温控降频。Firebase Test Lab 等 cloud 方案也能提供相对稳定的环境。
 
@@ -498,11 +502,11 @@ jobs:
 
 **分层告警**：设置两级阈值。超过一级阈值（比如 5%）发告警但不阻塞，超过二级阈值（比如 15%）阻塞合并。给团队一个缓冲区间，避免每次 5% 的波动都卡住流程。
 
-## Custom Trace Point 的最佳实践
+## 自定义 Trace Point 的最佳实践
 
 ### 为什么需要自定义 Trace 点
 
-Perfetto 默认抓取的是系统级事件——CPU 调度、Binder 调用、渲染管线各阶段等。这些信息对于分析系统层面的性能问题已经足够。但当你需要分析 App 内部特定逻辑的耗时（比如"图片解码"、"数据库查询"、"JSON 解析"）时，系统级 Trace 看不到这些细节。
+Perfetto 默认抓取的是系统级事件，比如 CPU 调度、Binder 调用、渲染管线各阶段等。这些信息对于分析系统层面的性能问题已经足够。但当我们需要分析 App 内部特定逻辑的耗时，比如“图片解码”“数据库查询”“JSON 解析”时，系统级 Trace 看不到这些细节。
 
 这时候就需要在代码里手动插入 Trace 点。当 Perfetto 抓 Trace 时，这些自定义的点会和系统事件一起被记录下来，在 Perfetto UI 中以 Slice 的形式出现在对应线程的 Track 上。
 
@@ -524,7 +528,7 @@ try {
 }
 ```
 
-注意 `beginSection` 和 `endSection` 必须在同一
+注意 `beginSection` 和 `endSection` 必须在同一线程内成对出现，否则 Trace 会断裂。
 
 ## 参考资料
 
