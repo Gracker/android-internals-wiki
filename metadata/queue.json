@@ -9023,5 +9023,45 @@
     "added_at": "2026-04-14T18:05:00+08:00",
     "status": "pending",
     "original_review_log": "logs/review/2026-04-14-18-review.md"
+  },
+  {
+    "section": "14.8",
+    "section_title": "GPU 图形调试与分析工具",
+    "priority": 90,
+    "reason": "[review回炉] 图示证据、版本口径和主线收束仍需补强",
+    "material_paths": [
+      "intake/suggestions.md（含 review 意见）"
+    ],
+    "review_issues": [
+      {
+        "type": "需补充素材",
+        "location": "图示占位 + 实战案例",
+        "detail": "正文仍有 4 处关键图示占位，3 个案例里的量化数据和工具操作也大多停留在经验描述或文档推演，缺少真实 Trace、截图、设备条件和测试上下文。",
+        "suggestion": "补 3-4 张真实图示或等价图示，至少覆盖 Perfetto GPU busy、AGI System Profiler、CPU 提交 vs GPU 执行、RenderDoc Overdraw；案例补设备、刷新率、trace 证据。"
+      },
+      {
+        "type": "需确认",
+        "location": "AGI 路线图 / GLES via ANGLE / profileable 限制",
+        "detail": "AGI 2025-2026 路线图、Android 17 下 GLES 经 ANGLE 运行的表述，以及 profileable/debuggable 对帧捕获的限制都写得较满，当前缺少逐项可追溯的一手版本依据。",
+        "suggestion": "交给 Task 9 逐条核对官方文档、发布说明和 API 限制，再决定哪些结论保留为硬断言。"
+      },
+      {
+        "type": "需确认",
+        "location": "GPU 核心指标与 Draw Call 阈值",
+        "detail": "UI < 100、2D 游戏 < 500、3D 游戏 > 2000 这组 Draw Call 阈值没有设备级上下文和来源，容易被读者误读成通用硬标准。",
+        "suggestion": "补 benchmark 条件或明确这是经验范围；补不齐时改成按设备级别、渲染复杂度分类的保守表述。"
+      },
+      {
+        "type": "需重写",
+        "location": "全文主线",
+        "detail": "全章已经补齐了工具地图，但主线仍偏“工具图鉴”，Trace 现象、工具选择和下钻动作之间的工程判断不够紧，活人感和 Gracker 式诊断姿态偏弱。",
+        "suggestion": "Task 2B 回炉时收紧为“先用 Perfetto 判定 GPU bound，再按系统级、帧级、厂商工具继续下钻”的统一诊断链，每个工具只保留关键场景和限制。"
+      }
+    ],
+    "added_by": "task6-review",
+    "added_at": "2026-04-14T19:05:00+08:00",
+    "status": "pending",
+    "original_review_log": "logs/review/2026-04-14-19-review.md",
+    "file": "src/part3-tools/ch14-other-tools/08-gpu-debug-tools.md"
   }
 ]

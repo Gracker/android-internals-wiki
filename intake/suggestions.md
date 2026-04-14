@@ -3194,3 +3194,28 @@
 - **位置**：L409 BLAST 模式下的提交流程
 - **问题**：这里说“关于 BufferQueue 的完整机制，参见 2.15 DMA-BUF、Gralloc…”，但全书真正系统讲 BufferQueue 的章节是 2.13《图形缓冲区管理 (BufferQueue)》。当前跳转会把 BufferQueue 机制和 dma-buf / gralloc 物理内存层混在一起。
 - **建议**：将该处交叉引用改到 2.13，2.15 保留给 GraphicBuffer / dma-buf / gralloc 的共享内存层。
+
+## [Task6 Review] 14.8 GPU 图形调试与分析工具 — 2026-04-14
+- **类型**：需补充素材
+- **位置**：图示占位 + 实战案例
+- **问题**：正文仍有 4 处关键图示占位，3 个案例的量化数据和操作流程也大多停留在经验描述或文档推演，缺少真实 Trace、截图、设备条件和测试上下文。
+- **建议**：补 3-4 张真实图示或等价图示，至少覆盖 Perfetto GPU busy、AGI System Profiler、CPU 提交 vs GPU 执行、RenderDoc Overdraw；案例补设备、刷新率、trace 证据。
+- **review 日志**：logs/review/2026-04-14-19-review.md
+
+- **类型**：需确认
+- **位置**：AGI 路线图 / GLES via ANGLE / profileable 限制
+- **问题**：AGI 2025-2026 路线图、Android 17 下 GLES 经 ANGLE 运行的表述，以及 profileable/debuggable 对帧捕获的限制都写得较满，当前缺少逐项可追溯的一手版本依据。
+- **建议**：交给 Task 9 逐条核对官方文档、发布说明和 API 限制，再决定哪些结论保留为硬断言。
+- **review 日志**：logs/review/2026-04-14-19-review.md
+
+- **类型**：需确认
+- **位置**：GPU 核心指标与 Draw Call 阈值
+- **问题**：UI < 100、2D 游戏 < 500、3D 游戏 > 2000 这组 Draw Call 阈值没有设备级上下文和来源，容易被读者误读成通用硬标准。
+- **建议**：补 benchmark 条件或明确这是经验范围；补不齐时改成按设备级别、渲染复杂度分类的保守表述。
+- **review 日志**：logs/review/2026-04-14-19-review.md
+
+- **类型**：需重写
+- **位置**：全文主线
+- **问题**：全章已经补齐了工具地图，但主线仍偏“工具图鉴”，Trace 现象、工具选择和下钻动作之间的工程判断不够紧，活人感和 Gracker 式诊断姿态偏弱。
+- **建议**：Task 2B 回炉时收紧为“先用 Perfetto 判定 GPU bound，再按系统级、帧级、厂商工具继续下钻”的统一诊断链，每个工具只保留关键场景和限制。
+- **review 日志**：logs/review/2026-04-14-19-review.md
