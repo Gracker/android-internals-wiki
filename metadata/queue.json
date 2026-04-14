@@ -9328,5 +9328,50 @@
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-14T22:07:00+08:00",
     "status": "pending"
+  },
+  {
+    "section": "2.12",
+    "section_title": "Window Manager Service 与窗口管理",
+    "priority": 85,
+    "reason": "[Deep Tech Review] WindowContainer 层级缺失、relayoutWindow 代码签名可能过时、mGlobalLock 未解释、Perfetto Slice 名称未验证、Desktop Windowing GA 范围不精确",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "原理断裂",
+        "location": "全文",
+        "detail": "WindowContainer 层级结构完全缺失，performLayout() 遍历逻辑成黑盒",
+        "suggestion": "补一节 WindowContainer 树形结构，解释 WMS 如何组织窗口，以及 performLayout 如何在这个树上遍历"
+      },
+      {
+        "type": "源码存疑",
+        "location": "L170-188 relayoutWindow 代码块",
+        "detail": "ViewRootImpl 中的 mWindowSession.relayout() 使用了 Android 11 及更早的参数签名，Android 12 BLAST 模型下参数结构已变更",
+        "suggestion": "核实 android-17 IWindowSession.relayout() 的实际签名并更新代码块"
+      },
+      {
+        "type": "原理断裂",
+        "location": "L56 + L259（mGlobalLock）",
+        "detail": "mGlobalLock 在误区 1 中被提到是 WMS 的锁，但正文从未解释其作用范围和持有时机",
+        "suggestion": "在正文 relayoutWindow 章节中补一节锁机制说明"
+      },
+      {
+        "type": "需验证",
+        "location": "L224-229 Perfetto Slice 名称表 + SQL",
+        "detail": "wm.relayout_window 等 Slice 名称未经 Perfetto Trace 验证",
+        "suggestion": "用真实 Perfetto Trace 核对 Slice 名称，更新表格和 SQL 查询"
+      },
+      {
+        "type": "版本差异",
+        "location": "L310-314 Desktop Windowing GA",
+        "detail": "未区分 Desktop Windowing GA 在大屏设备 vs 手机端的可用性差异",
+        "suggestion": "明确 Desktop Windowing GA 首先面向大屏设备/外接显示器，手机端通过 feature flag 开启"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-14T23:27:30",
+    "status": "pending",
+    "deep_review_log": "logs/deep-review/2026-04-14-23-deep-review.md"
   }
 ]
