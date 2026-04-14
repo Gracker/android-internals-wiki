@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-14T22:07:00+08:00",
+  "generated_at": "2026-04-14T22:31:24+08:00",
   "state_machine_version": "v2",
   "total_sections": 207,
   "metrics": {
@@ -7,40 +7,40 @@
     "unknown": 34,
     "ready-for-review": 173,
     "pipeline_unknown": 31,
-    "pipeline_task6_pending": 160,
+    "pipeline_task6_pending": 159,
     "pipeline_task9_pending": 1,
-    "pipeline_task2b_pending": 15,
+    "pipeline_task2b_pending": 16,
     "task2b_unknown": 31,
-    "task2b_idle": 84,
-    "task2b_pending": 15,
+    "task2b_idle": 83,
+    "task2b_pending": 16,
     "task2b_fixed": 77,
     "task6_unknown": 31,
-    "task6_pending": 83,
-    "task6_reviewed": 16,
+    "task6_pending": 82,
+    "task6_reviewed": 17,
     "task6_revisiting": 77,
     "task9_unknown": 31,
     "task9_pending": 169,
     "task9_reviewed": 7,
-    "last_updated": "2026-04-14T22:07:00+08:00"
+    "last_updated": "2026-04-14T22:31:24+08:00"
   },
   "pipeline": {
     "pipeline_stage_counts": {
       "unknown": 31,
-      "task6_pending": 160,
-      "task2b_pending": 15,
+      "task6_pending": 159,
+      "task2b_pending": 16,
       "task9_pending": 1
     },
     "task2b_state_counts": {
       "unknown": 31,
       "fixed": 77,
-      "pending": 15,
-      "idle": 84
+      "pending": 16,
+      "idle": 83
     },
     "task6_state_counts": {
       "unknown": 31,
       "revisiting": 77,
-      "reviewed": 16,
-      "pending": 83
+      "reviewed": 17,
+      "pending": 82
     },
     "task9_state_counts": {
       "unknown": 31,
@@ -2483,11 +2483,14 @@
       "title": "Android Camera 性能与 Perfetto 分析",
       "path": "src/part3-tools/ch14-other-tools/09-camera-performance-analysis.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "pending",
+      "pipeline_stage": "task2b_pending",
+      "task6_state": "reviewed",
       "task9_state": "pending",
-      "task2b_state": "idle",
-      "section": "14.9"
+      "task2b_state": "pending",
+      "section": "14.9",
+      "task6_result": "needs-rework",
+      "reviewed_date": "2026-04-14",
+      "reviewed_by": "openclaw-task6"
     },
     "src/part3-tools/ch14-other-tools/10-ebpf-performance-analysis.md": {
       "chapter": "14.10",

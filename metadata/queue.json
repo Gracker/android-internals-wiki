@@ -344,9 +344,42 @@
   {
     "section": "14.9",
     "section_title": "Android Camera 性能与 Perfetto 分析",
-    "priority": 80,
-    "reason": "知识缺口挖掘：2 篇高质量素材未映射，Camera 是未被覆盖的主要 Android 子系统，14/20",
-    "created_date": "2026-04-05"
+    "priority": 90,
+    "reason": "[review回炉] 缺少 outline 结构，关键验证来源过泛，CameraX/功耗/Metadata 相关表述需核对",
+    "material_paths": [
+      "intake/suggestions.md（含 review 意见）"
+    ],
+    "review_issues": [
+      {
+        "type": "需重写",
+        "location": "全文结构",
+        "detail": "缺少 `outline-start / outline-end` 大纲块和锚点，Task 6 无法按锚点检查覆盖率，当前只能得到 0/0。",
+        "suggestion": "按现有正文补齐结构化大纲与锚点后，再回到 Task 6 做覆盖检查。"
+      },
+      {
+        "type": "需确认",
+        "location": "抓取配置 / 关键 Slice / 验证标注",
+        "detail": "`[已验证: 官方文档, developer.android.com]` 等来源过泛，`connectDevice`、`frame capture`、`first full buffer`、`BufferTX - SurfaceView`、`android_cpu` Metric 等关键口径缺少精确文档或 AOSP 依据。",
+        "suggestion": "交给 Task 9 核对 Perfetto schema、track/slice 名称和 metric 口径，再由 Task 2B 回填精确来源。"
+      },
+      {
+        "type": "需补充素材",
+        "location": "Camera 功耗优化 / HAL3 管线延迟",
+        "detail": "`60fps` 功耗接近两倍、不同 Sensor 模式功耗差异、不同 SoC 平台 HAL3 延迟典型值仍是占位或待验证，量化结论还不够稳。",
+        "suggestion": "补充官方资料或实测条件，补不齐就降级为定性描述。"
+      },
+      {
+        "type": "需确认",
+        "location": "Camera2 API vs CameraX API / 内存压力段",
+        "detail": "CameraX 自动优化收益、`requestStreamBuffers` / `returnStreamBuffers` 的收益表述，以及 `CameraMetaData` / `CameraMetaDataNative` / `CameraMetadataNative` 命名与 `close()` 回收接口存在技术风险。",
+        "suggestion": "交给 Task 9 核对 API、版本边界和 AOSP/JNI 类型名，再由 Task 2B 统一术语与结论。"
+      }
+    ],
+    "added_by": "task6-review",
+    "added_at": "2026-04-14T22:31:24+08:00",
+    "status": "pending",
+    "original_review_log": "logs/review/2026-04-14-22-review.md",
+    "file": "src/part3-tools/ch14-other-tools/09-camera-performance-analysis.md"
   },
   {
     "section": "1.14",
