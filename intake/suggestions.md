@@ -3011,3 +3011,15 @@
 - **问题**：`20-30MB`、`200MB`、`1-3%`、`5-10%` 这些量化结论没有设备型号、Trace 配置、采样频率和测试条件，读者很容易把它们当成通用基线。
 - **建议**：补最小实验上下文和来源；如果短期补不齐，就降级成定性描述。
 - **review 日志**：logs/review/2026-04-14-11-review.md
+
+## [Task9 Deep Review] 13.2 Trace 抓取 — 2026-04-14
+- **类型**：数据缺失
+- **位置**：常见问题与误区（L691-L695）
+- **问题**：`20-30MB`、`200MB`、`1-3%`、`5-10%` 等量化结论没有给出设备型号、Android 版本、trace categories、buffer / file_write_period、采样频率、build type 与测试轮次，证据链不完整。
+- **建议**：补最少一组可复现实验条件和来源；如果补不齐，统一降级为定性表述，例如“数据量会显著膨胀”“开销会明显上升”。
+
+## [Task9 Deep Review] 13.2 Trace 抓取 — 2026-04-14
+- **类型**：交叉引用
+- **位置**：Heap Profiling 与 Callstack Sampling 引用 / 参考资料 4（L556, L715）
+- **问题**：`https://perfetto.dev/docs/data-sources/callstack-sampling` 当前返回 404，却被正文当作“已验证”的官方来源使用。
+- **建议**：替换为当前有效的官方依据，例如 `protos/perfetto/config/profiling/perf_event_config.proto` 或对应的 trace-config-proto/autogen 页面，并同步修正文内引用与参考资料。

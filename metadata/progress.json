@@ -1,51 +1,51 @@
 {
-  "generated_at": "2026-04-14T11:05:00+08:00",
+  "generated_at": "2026-04-14T11:20:00+08:00",
   "state_machine_version": "v2",
   "total_sections": 207,
   "metrics": {
     "total": 207,
-    "ready-for-review": 173,
     "unknown": 34,
-    "pipeline_task2b_pending": 14,
-    "pipeline_task6_pending": 160,
-    "pipeline_task9_pending": 2,
+    "ready-for-review": 173,
     "pipeline_unknown": 31,
+    "pipeline_task6_pending": 160,
+    "pipeline_task2b_pending": 14,
+    "pipeline_task9_pending": 2,
+    "task2b_unknown": 31,
     "task2b_fixed": 68,
     "task2b_idle": 94,
     "task2b_pending": 14,
-    "task2b_unknown": 31,
+    "task6_unknown": 31,
+    "task6_revisiting": 68,
     "task6_pending": 92,
     "task6_reviewed": 16,
-    "task6_revisiting": 68,
-    "task6_unknown": 31,
-    "task9_pending": 169,
-    "task9_reviewed": 7,
     "task9_unknown": 31,
-    "last_updated": "2026-04-14T11:05:00+08:00"
+    "task9_pending": 168,
+    "task9_reviewed": 8,
+    "last_updated": "2026-04-14T11:20:00+08:00"
   },
   "pipeline": {
     "pipeline_stage_counts": {
-      "task2b_pending": 14,
+      "unknown": 31,
       "task6_pending": 160,
-      "task9_pending": 2,
-      "unknown": 31
+      "task2b_pending": 14,
+      "task9_pending": 2
     },
     "task2b_state_counts": {
+      "unknown": 31,
       "fixed": 68,
       "idle": 94,
-      "pending": 14,
-      "unknown": 31
+      "pending": 14
     },
     "task6_state_counts": {
-      "pending": 92,
-      "reviewed": 16,
+      "unknown": 31,
       "revisiting": 68,
-      "unknown": 31
+      "pending": 92,
+      "reviewed": 16
     },
     "task9_state_counts": {
-      "pending": 169,
-      "reviewed": 7,
-      "unknown": 31
+      "unknown": 31,
+      "pending": 168,
+      "reviewed": 8
     }
   },
   "issues": {
@@ -2215,12 +2215,13 @@
       "status": "ready-for-review",
       "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
-      "task9_state": "pending",
+      "task9_state": "reviewed",
       "task2b_state": "pending",
       "reviewed_date": "2026-04-14",
       "reviewed_by": "openclaw-task6",
       "section": "13.2",
-      "task6_result": "needs-rework"
+      "task6_result": "needs-rework",
+      "task9_result": "needs-rework"
     },
     "src/part3-tools/ch13-perfetto/03-perfetto-view.md": {
       "chapter": "13.3",

@@ -8541,28 +8541,44 @@
   {
     "section": "13.2",
     "section_title": "Trace 抓取",
-    "priority": 90,
-    "reason": "[review回炉] Heap Profiling 配置示例和误区段量化结论存在技术/证据风险，需 Task 9 核对后由 Task 2B 回炉",
+    "priority": 95,
+    "reason": "[Deep Tech Review] heapprofd 数据源名/字段名与 Trace 异步 API 示例存在 P0 事实错误，record_android_trace 与 Native trace API 用法也有边界偏差，需 Task 2B 回炉",
     "material_paths": [
-      "intake/suggestions.md"
+      "intake/suggestions.md",
+      "logs/deep-review/2026-04-14-11-deep-review.md"
     ],
     "review_issues": [
       {
-        "type": "需确认",
-        "location": "Heap Profiling 与 Callstack Sampling",
-        "detail": "`linux.heapprof` / `heapprof_config` 示例和 Java Heap Sampling 说明需要按当前 Perfetto 文档核对数据源名、字段名和版本支持边界。",
-        "suggestion": "Task 9 先做官方文档核对，Task 2B 再统一回写配置示例和叙述。"
+        "type": "源码错误",
+        "location": "L564-L603, L659-L667 Heap Profiling / Java Heap Sampling / 组合配置示例",
+        "detail": "章节把 heapprofd 数据源写成 `linux.heapprof`，配置块写成 `heapprof_config`。当前 Perfetto `DataSourceConfig` 中 Android 10+ 的正式名称是 `android.heapprofd`，字段名是 `heapprofd_config`；`heaps` 字段本身又是 Android 12+ 才引入。现有 3 处配置示例都会把读者带到错误配置。",
+        "suggestion": "把所有 heapprofd 示例统一改为 `name: \"android.heapprofd\"` + `heapprofd_config { ... }`，并在 Java Heap Sampling 段明确“数据源 Android 10+ 可用，但 `heaps: \"com.android.art\"` 仅 Android 12+”。"
       },
       {
-        "type": "需补充素材",
-        "location": "常见问题与误区",
-        "detail": "`20-30MB`、`200MB`、`1-3%`、`5-10%` 等量化结论缺少设备、配置和测试条件。",
-        "suggestion": "补实验上下文与来源；补不齐时改成定性描述。"
+        "type": "源码错误",
+        "location": "L458-L468 异步 Trace API 示例",
+        "detail": "`Trace.beginAsyncSection()` / `Trace.endAsyncSection()` 的签名是 `(String, int)`，当前示例把 `cookie` 声明成 `long` 并直接传入，Java 代码无法通过编译。",
+        "suggestion": "示例改成 `int cookie`，或显式转换并解释 cookie 需要在 begin/end 两端保持同一个 int 值。"
+      },
+      {
+        "type": "工具行为错误",
+        "location": "L346-L369, L409-L413 record_android_trace 用法",
+        "detail": "官方脚本帮助文本写明 `-t` 的默认值是 `0s`（trace until stopped），且 `-t/-b/-a` 属于“only when not using -c/--config”的 short options。当前正文一方面把无参调用写成“默认 10 秒”，另一方面又给出 `-c config.pbtxt -t 30s` 的示例，会让读者误以为配置文件模式下还能用 `-t` 覆盖 `duration_ms`。",
+        "suggestion": "把无参行为改成“默认持续到手动停止，除非显式传 `-t`”；使用 `-c` 时，把 duration/buffer/app 相关参数放回 pbtxt 中，不再与 `-t/-b/-a` 混写。"
+      },
+      {
+        "type": "源码边界错误",
+        "location": "L473-L485 Native 自定义标记",
+        "detail": "正文把 JNI / Native 库场景直接示例为 `<cutils/trace.h>` + `ATRACE_BEGIN`，并称其为“Perfetto 提供的 C++ Trace API”。这会把普通 app/NDK 读者带向平台私有头文件。",
+        "suggestion": "把示例拆清楚：app/NDK 场景使用 public NDK `android/trace.h`；`cutils/trace.h` 仅在平台内部代码中使用；若要讲 Perfetto SDK，则单列 `TRACE_EVENT` 路径。"
       }
     ],
     "added_by": "task6-review",
     "added_at": "2026-04-14T11:05:00+08:00",
     "status": "pending",
-    "original_review_log": "logs/review/2026-04-14-11-review.md"
+    "original_review_log": "logs/review/2026-04-14-11-review.md",
+    "updated_by": "task9-deep-tech-review",
+    "updated_at": "2026-04-14T11:20:00+08:00",
+    "deep_review_log": "logs/deep-review/2026-04-14-11-deep-review.md"
   }
 ]
