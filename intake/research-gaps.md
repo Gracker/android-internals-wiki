@@ -2276,3 +2276,19 @@ Perfetto 输入分析的采集前提和真实实体模型没有讲透。当前�
 
 ### 关联章节
 2.4、2.5、2.9
+
+## [2026-04-14] 13.9 Android Tracing 基础设施：atrace、ftrace 与 Perfetto 数据采集原理 — 知识盲区
+
+### 盲区描述
+Perfetto 用户态 tracing 在正文里被混成了一条线：`android.os.Trace` / `androidx.tracing` 的 trace_marker 路径、Perfetto SDK 的 track_event / custom data source 路径、以及 `atrace_apps` / `atrace_categories_prefer_sdk` / `atrace_userspace_only` 等采集开关没有拆开。读者最容易遇到的“埋点已经加了，但 Perfetto 里没有数据”正是由这些边界决定的。
+
+### 重要程度
+高
+
+### 建议研究方向
+- Perfetto SDK / track_event 与 legacy atrace trace_marker 的数据面差异
+- `FtraceConfig` 里的 `atrace_apps`、`atrace_categories`、`atrace_categories_prefer_sdk`、`atrace_userspace_only` 的适用边界
+- `traced_probes` producer 到 `traced` service 的共享内存 / IPC 汇聚路径
+
+### 关联章节
+§13.1、§13.2、§13.5、§14.10

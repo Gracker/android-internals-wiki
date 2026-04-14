@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-14T19:05:00+08:00",
+  "generated_at": "2026-04-14T19:20:00+08:00",
   "state_machine_version": "v2",
   "total_sections": 207,
   "metrics": {
@@ -2332,12 +2332,13 @@
       "status": "ready-for-review",
       "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
-      "task9_state": "pending",
+      "task9_state": "reviewed",
       "task2b_state": "pending",
       "section": "13.9",
       "reviewed_date": "2026-04-13",
       "reviewed_by": "openclaw-task6",
-      "task6_result": "needs-rework"
+      "task6_result": "needs-rework",
+      "task9_result": "needs-rework"
     },
     "src/part3-tools/ch13-perfetto/10-perfetto-sql-cookbook.md": {
       "chapter": "13.10",

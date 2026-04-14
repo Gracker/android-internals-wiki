@@ -3219,3 +3219,20 @@
 - **问题**：全章已经补齐了工具地图，但主线仍偏“工具图鉴”，Trace 现象、工具选择和下钻动作之间的工程判断不够紧，活人感和 Gracker 式诊断姿态偏弱。
 - **建议**：Task 2B 回炉时收紧为“先用 Perfetto 判定 GPU bound，再按系统级、帧级、厂商工具继续下钻”的统一诊断链，每个工具只保留关键场景和限制。
 - **review 日志**：logs/review/2026-04-14-19-review.md
+
+## [Task9 Deep Review] 13.9 Android Tracing 基础设施：atrace、ftrace 与 Perfetto 数据采集原理 — 2026-04-14
+
+- **类型**：数据缺失
+- **位置**：L75, L320-L324, L352 开销量化表述
+- **问题**：`10-15%`、`100-500ns`、`< 3%`、`200-500ns`、`< 1%` 都没有设备、内核版本、trace config 和采样条件，当前写法会把经验数说成通用结论。
+- **建议**：补设备型号、CPU 架构、内核版本、事件集和 trace 时长；如果补不齐，就降级为定性描述。
+
+- **类型**：交叉引用
+- **位置**：L103 sched tracepoint 说明
+- **问题**：`sched_switch` / `sched_wakeup` 后面引用“§13.3 中大量使用”，但 §13.3 是 `Perfetto View 解读`，真正集中讲线程状态/CPU 调度的是 §13.6。
+- **建议**：把交叉引用改到 §13.6 `线程 CPU 状态分析`，避免把读者带到错误章节。
+
+- **类型**：源码准确性
+- **位置**：frontmatter sources / 官方来源
+- **问题**：frontmatter 里的 `https://source.android.com/docs/core/debug/atrace` 当前返回 404，`system/traced/` 也不是本章主要引用的实际源码目录，会让“已验证”来源链不完整。
+- **建议**：把官方来源替换为仍可访问的 atrace / Perfetto 文档页面，并把源码路径统一到 `external/perfetto/src/traced/`、`src/traced/probes/ftrace/` 等真实目录。

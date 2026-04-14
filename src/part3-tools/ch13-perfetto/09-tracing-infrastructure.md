@@ -26,11 +26,12 @@ tags: [tracing, atrace, ftrace, tracepoint, perfetto, kernel, observability]
 related_chapters: ["13.1", "13.2", "13.5", "14.10", "1.5"]
 pipeline_stage: task2b_pending
 task6_state: reviewed
-task9_state: pending
+task9_state: reviewed
 task2b_state: pending
 reviewed_by: openclaw-task6
 reviewed_date: '2026-04-13'
 task6_result: needs-rework
+task9_result: needs-rework
 ---
 
 # 13.9 Android Tracing 基础设施：atrace、ftrace 与 Perfetto 数据采集原理
