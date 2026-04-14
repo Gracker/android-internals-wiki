@@ -1359,21 +1359,36 @@
   {
     "section": "14.10",
     "section_title": "eBPF/BPF 在 Android 性能分析中的应用",
-    "priority": 80,
-    "reason": "知识缺口挖掘：eBPF 在 Android 性能分析中的角色日益重要，sched_ext 6.12 合并，OEM 和系统开发者高频使用",
+    "priority": 90,
+    "reason": "[review回炉] 缺少 outline，且多处量化/版本断言与实战素材仍需补证据",
     "material_paths": [
-      "intake/research-feeds/2026-04-07-09-android17-gki-kernel-6-12-performance-quantification.md",
-      "Cubox/基于eBPF的CPU利用率精准计算小工具开发-2022-03-13.md",
-      "Cubox/探索Android动态埋点的新视界：UprobeStats深度解析-2025-02-21.md",
-      "Cubox/基于eBPF的sched-ext会在产品成功的底层逻辑是什么-2025-10-18.md",
-      "Cubox/如何在产品中引入eBPF以增加可观察性-2022-01-29.md",
-      "intake/research-feeds/2026-04-07-19-android17-ebpf-sched-ext-uprobestats-observability.md"
+      "intake/suggestions.md（含 review 意见）"
     ],
-    "added_by": "task2a-knowledge-gap",
-    "added_at": "2026-04-07T11:09:00+08:00",
-    "status": "completed",
-    "completed_at": "2026-04-09T07:03:00+08:00",
-    "completed_by": "task2a-stale-cleanup"
+    "review_issues": [
+      {
+        "type": "需重写",
+        "location": "全文结构",
+        "detail": "缺少 `outline-start / outline-end` 大纲块，Task 6 无法按锚点检查覆盖率。",
+        "suggestion": "按现有正文补齐结构化大纲与锚点后，再回到 Task 6 做覆盖检查。"
+      },
+      {
+        "type": "需确认",
+        "location": "引言 / sched_ext / 常见问题与限制",
+        "detail": "多处量化与版本边界缺少精确出处，例如 `CPU 开销通常 <5%`、`单次执行 <100ns`、`10 万次/秒以下 <3%`、`Android 17 GKI 6.12`，以及 `Perfetto` 与 eBPF 的依赖关系。",
+        "suggestion": "交给 Task 9 核对官方文档、AOSP 或实测来源，再决定保留具体数字还是降级为定性表述。"
+      },
+      {
+        "type": "需补充素材",
+        "location": "Simpleperf / bpftrace / UprobeStats 实战段",
+        "detail": "当前只有命令和流程说明，缺少真实输出、Trace 截图或等价图示，读者很难照着走完整个分析闭环。",
+        "suggestion": "补 1 组真实 simpleperf 或 bpftrace 输出，以及 1-2 张对应的 Trace/示意图，至少覆盖“抓取 → 观察 → 得结论”。"
+      }
+    ],
+    "added_by": "task6-review",
+    "added_at": "2026-04-14T23:05:00+08:00",
+    "status": "pending",
+    "original_review_log": "logs/review/2026-04-14-23-review.md",
+    "file": "src/part3-tools/ch14-other-tools/10-ebpf-performance-analysis.md"
   },
   {
     "section": "16.4",

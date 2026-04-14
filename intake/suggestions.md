@@ -3319,3 +3319,23 @@
 - **问题**：CameraX 自动优化收益、`requestStreamBuffers` / `returnStreamBuffers` 的收益表述，以及 `CameraMetaData` / `CameraMetaDataNative` / `CameraMetadataNative` 命名与 `close()` 回收接口存在技术风险。
 - **建议**：交给 Task 9 核对 API、版本边界和 AOSP/JNI 类型名，再由 Task 2B 统一术语与结论。
 - **review 日志**：logs/review/2026-04-14-22-review.md
+
+
+## [Task6 Review] 14.10 eBPF/BPF 在 Android 性能分析中的应用 — 2026-04-14
+- **类型**：需重写
+- **位置**：全文结构
+- **问题**：缺少 `outline-start / outline-end` 大纲块，Task 6 无法按锚点检查覆盖率。
+- **建议**：按现有正文补齐结构化大纲与锚点后，再回到 Task 6 做覆盖检查。
+- **review 日志**：logs/review/2026-04-14-23-review.md
+
+- **类型**：需确认
+- **位置**：引言 / sched_ext / 常见问题与限制
+- **问题**：多处量化与版本边界缺少精确出处，例如 `CPU 开销通常 <5%`、`单次执行 <100ns`、`10 万次/秒以下 <3%`、`Android 17 GKI 6.12`，以及 `Perfetto` 与 eBPF 的依赖关系。
+- **建议**：交给 Task 9 核对官方文档、AOSP 或实测来源，再决定保留具体数字还是降级为定性表述。
+- **review 日志**：logs/review/2026-04-14-23-review.md
+
+- **类型**：需补充素材
+- **位置**：Simpleperf / bpftrace / UprobeStats 实战段
+- **问题**：当前只有命令和流程说明，缺少真实输出、Trace 截图或等价图示，读者很难照着走完整个分析闭环。
+- **建议**：补 1 组真实 simpleperf 或 bpftrace 输出，以及 1-2 张对应的 Trace/示意图，至少覆盖“抓取 → 观察 → 得结论”。
+- **review 日志**：logs/review/2026-04-14-23-review.md
