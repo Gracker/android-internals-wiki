@@ -30,15 +30,16 @@ tags: ['memory-optimization', 'bitmap', 'memory-leak', 'onTrimMemory', 'native-m
 related_chapters: ["4.1", "4.2", "4.3", "4.4", "7.2", "7.3"]
 drafted_date: "2026-03-31"
 drafted_by: "openclaw-task2"
-reviewed_date: "2026-04-08"
+reviewed_date: "2026-04-15"
 reviewed_by: "openclaw-task6"
-review_type: "post-polish-quality-gate"
-review_round: 2
+review_type: "draft-review"
+review_round: 3
 polish_count: 1
 polish_date: "2026-04-08"
 polish_by: "task2b-polish"
-pipeline_stage: task6_pending
-task6_state: pending
+pipeline_stage: task9_pending
+task6_state: reviewed
+task6_result: pass-light-edit
 task9_state: pending
 task2b_state: idle
 ---
@@ -83,7 +84,7 @@ task2b_state: idle
 
 ## 内存优化的分层思路
 
-我们来看一个内存优化实践的层次模型。它不是一个清单，而是一套有先后顺序的策略——每一层都是下一层的前提。
+我们来看一个内存优化实践的层次模型。这是一套有严格先后顺序的策略——每一层都是下一层的前提。
 
 ### 第一层：减少分配
 
@@ -149,7 +150,7 @@ task2b_state: idle
 
 内存抖动是指**短时间内大量临时对象的创建与销毁**。在 Android Studio 的 Memory Profiler 中看到一个上下剧烈波动的"锯齿图"——内存曲线快速上升又快速下降，反复循环——那就是内存抖动的典型表现。
 
-锯齿的上升沿是对象分配，下降沿是 GC 回收。问题不在于 GC 回收了这些对象（GC 的本职工作），而在于 GC 触发的频率。
+锯齿的上升沿是对象分配，下降沿是 GC 回收。GC 触发的频率才是问题所在（回收本身是 GC 的本职工作）。
 
 ### 为什么内存抖动会导致卡顿
 
@@ -224,7 +225,7 @@ Bitmap 是 Android App 中最大的内存消费者之一。一张 1080×1920 的
 
 [已验证: 官方文档, developer.android.com/topic/performance/graphics/manage-memory — Bitmap 内存管理]
 
-这意味着在 Android 8.0+ 上，不能仅凭 Java 堆的使用量来判断 App 的真实内存占用。一个 App 可能 Java 堆只用了一半，但 Native 堆被大量 Bitmap 填满了。
+所以在 Android 8.0+ 上，不能仅凭 Java 堆的使用量来判断 App 的真实内存占用。一个 App 可能 Java 堆只用了一半，但 Native 堆被大量 Bitmap 填满了。
 
 ### inBitmap：复用 Bitmap 的内存
 
@@ -670,7 +671,7 @@ override fun onCreate() {
 
 [已验证: 研究素材, research-feed 2026-03-31-19-ch04-app-memory-16kb-migration.md]
 
-2025-2026 年 Android 平台最大的平台级内存变更是 **16KB Page Size 的强制迁移**。这不是一个"可选优化"，而是 Google Play 对所有应用的强制要求。
+2025-2026 年 Android 平台最大的平台级内存变更是 **16KB Page Size 的强制迁移**。Google Play 已将 16KB 页对齐作为对所有应用的强制要求。
 
 ### 为什么 16KB Page Size 能提升性能
 
@@ -792,7 +793,7 @@ Bitmap 像素数据存储在 Native 堆。在 16KB 页模式下，每个 Bitmap 
 
 这个误解导致了很多 App 在收到 `onTrimMemory` 回调时反应过度——清空所有缓存、停止所有后台任务、甚至弹窗提示用户"内存不足"。
 
-实际上，`onTrimMemory` 有多个级别，大部分是**预警**而非"死刑通知"。我们在前面详细列出了每个级别的含义，这里我们用一个简化的判断框架来帮助理解：
+`onTrimMemory` 有多个级别，大部分是**预警**而非"死刑通知"。我们在前面详细列出了每个级别的含义，这里我们用一个简化的判断框架来帮助理解：
 
 - **前台回调**（`TRIM_MEMORY_RUNNING_LOW/MODERATE/CRITICAL`）：App 仍在前台运行，系统只是说"整个设备的内存有点紧了"。这时候应释放非关键缓存（比如预加载的数据），但不要影响用户正在使用的核心功能——不要清空当前列表的图片缓存，不要停止正在播放的视频。
 - **`TRIM_MEMORY_UI_HIDDEN`**：App 的 UI 不可见（比如用户按了 Home 键）。这是最常见的前后台切换回调，和"即将被杀"没有关系。只需释放 UI 相关的资源（比如大的 View 缓存）。
