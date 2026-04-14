@@ -8366,5 +8366,38 @@
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-14T08:21:00+08:00",
     "status": "pending"
+  },
+  {
+    "section": "7.6",
+    "section_title": "案例集",
+    "priority": 90,
+    "reason": "[review回炉] 锚点覆盖不完整，多数案例缺少 Trace 证据，扩展节与案例体裁不一致",
+    "material_paths": [
+      "intake/suggestions.md（含 review 意见）"
+    ],
+    "review_issues": [
+      {
+        "type": "需补充素材",
+        "location": "案例一至案例五 · 抓取与定位",
+        "detail": "5 个主案例里有 4 处 `[待补充：Trace 截图]` 占位，案例集目前主要靠文字转述，证据层偏薄。",
+        "suggestion": "至少补 3 组真实 Perfetto Trace 截图或等价图示，优先覆盖 Measure/Layout 超时、Binder 阻塞、RenderThread sync 或低内存系统视图。"
+      },
+      {
+        "type": "需补充素材",
+        "location": "本节要点大纲第 2 条 / 主体案例分布",
+        "detail": "大纲要求覆盖主线程阻塞、GC、调度、SurfaceFlinger 合成、温控。正文 5 个主案例主要覆盖布局、Binder、GC、RenderThread、低内存，调度 / SurfaceFlinger 合成 / 温控 还没有以完整案例落地。",
+        "suggestion": "补 1 到 2 个完整案例，至少覆盖 SurfaceFlinger 合成或温控其一；如果短期补不齐，就先收紧大纲承诺。"
+      },
+      {
+        "type": "需重写",
+        "location": "厂商级流畅性优化案例 / 特殊硬件条件下的 Jank 案例",
+        "detail": "前 5 个主案例都按“现象 → 定位 → 根因 → 修复”展开，后 2 节突然切成概览式短条目，阅读节奏和体裁明显断开。",
+        "suggestion": "如果保留扩展节，就按案例模板补到“现象 / 观察 / 结论 / 建议”；否则收进前文案例的“举一反三”或单列到扩展章节。"
+      }
+    ],
+    "added_by": "task6-review",
+    "added_at": "2026-04-14T09:08:00",
+    "status": "pending",
+    "original_review_log": "logs/review/2026-04-14-09-review.md"
   }
 ]
