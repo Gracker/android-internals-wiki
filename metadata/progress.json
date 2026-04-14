@@ -1,34 +1,34 @@
 {
-  "generated_at": "2026-04-14T09:48:00+08:00",
+  "generated_at": "2026-04-14T10:16:00+08:00",
   "state_machine_version": "v2",
   "total_sections": 207,
   "metrics": {
-    "last_updated": "2026-04-14T09:48:00+08:00",
     "total": 207,
-    "ready-for-review": 173,
     "unknown": 34,
+    "ready-for-review": 173,
     "pipeline_unknown": 31,
-    "pipeline_task6_pending": 161,
+    "pipeline_task6_pending": 160,
     "pipeline_task2b_pending": 13,
-    "pipeline_task9_pending": 2,
+    "pipeline_task9_pending": 3,
     "task2b_unknown": 31,
     "task2b_fixed": 67,
     "task2b_idle": 96,
     "task2b_pending": 13,
     "task6_unknown": 31,
     "task6_revisiting": 67,
-    "task6_pending": 94,
-    "task6_reviewed": 15,
+    "task6_pending": 93,
+    "task6_reviewed": 16,
     "task9_unknown": 31,
     "task9_pending": 169,
-    "task9_reviewed": 7
+    "task9_reviewed": 7,
+    "last_updated": "2026-04-14T10:16:00+08:00"
   },
   "pipeline": {
     "pipeline_stage_counts": {
       "unknown": 31,
-      "task6_pending": 161,
+      "task6_pending": 160,
       "task2b_pending": 13,
-      "task9_pending": 2
+      "task9_pending": 3
     },
     "task2b_state_counts": {
       "unknown": 31,
@@ -39,8 +39,8 @@
     "task6_state_counts": {
       "unknown": 31,
       "revisiting": 67,
-      "pending": 94,
-      "reviewed": 15
+      "pending": 93,
+      "reviewed": 16
     },
     "task9_state_counts": {
       "unknown": 31,
@@ -1297,12 +1297,14 @@
       "title": "典型场景分析",
       "path": "src/part2-performance/ch07-smoothness/04-typical-scenarios.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "pending",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
       "task9_state": "pending",
       "task2b_state": "idle",
-      "reviewed_date": "2026-04-06",
-      "reviewed_by": "openclaw-task6"
+      "reviewed_date": "2026-04-14",
+      "reviewed_by": "openclaw-task6",
+      "section": "7.4",
+      "task6_result": "pass-light-edit"
     },
     "src/part2-performance/ch07-smoothness/05-optimization.md": {
       "chapter": "7.5",
