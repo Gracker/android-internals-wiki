@@ -3073,3 +3073,20 @@
 - **问题**：`dumpsys package / alarm / jobscheduler` 和自定义 Service dump 两段仍保留 `[待补充]` 占位，厂商 `perfboost` 例子也没有来源。主体 6 个核心锚点已覆盖，但扩展部分还没到可直接出版的程度。
 - **建议**：补 1 组真实输出示例或代码片段，并给 `perfboost` 例子补来源；做不到就降级为简短提示，避免占位符遗留。
 - **review 日志**：logs/review/2026-04-14-13-review.md
+
+
+## [Task9 Deep Review] 13.8 Perfetto 输入延迟 SQL 深度分析 — 2026-04-14
+- **类型**：源码准确性
+- **位置**：行 92, 120, 165, 664-667
+- **问题**：`perfetto.dev/docs/analysis/sql-tables/android-input` 和 `perfetto.dev/docs/analysis/batch-traces` 当前都返回 404，但正文和 frontmatter 仍把它们标成 [已验证] 官方来源；Python 示例也更适合指向 `trace-processor-python` 文档而不是 C++ `trace-processor` 页面。
+- **建议**：把输入模块文档统一改成 `https://perfetto.dev/docs/analysis/stdlib-docs#android-input`，Python API 改引 `https://perfetto.dev/docs/analysis/trace-processor-python`，并重做一次链接可达性检查。
+
+- **类型**：源码准确性
+- **位置**：行 606-610
+- **问题**：批量脚本使用 `<< 'SQL'` 的 quoted heredoc，`'${filename}' AS trace_file` 不会做 shell 变量展开，最终每个结果文件里都会写入字面量 `${filename}`。
+- **建议**：去掉 heredoc 定界符上的单引号，或改成先用 shell 生成 SQL 文件再喂给 trace_processor_shell；同时补一条示例输出，确认文件名列真的展开成功。
+
+- **类型**：交叉引用
+- **位置**：与 §3.4 的衔接（相关章节 / 文中交叉引用）
+- **问题**：§3.4 目前复用了同一套过时标识符和文档链接（`android_input_id`、404 的 `sql-tables/android-input`）。如果只修 §13.8，不同步 §3.4，前后章节会出现同一模块两套术语。
+- **建议**：把 §3.4 和 §13.8 作为同一批回炉项处理，统一改成 `input_event_id` / `frame_id` / `dispatch_ts` 这一套真实列名和同一组官方来源。

@@ -8695,5 +8695,65 @@
     "added_at": "2026-04-14T13:05:00+08:00",
     "status": "pending",
     "original_review_log": "logs/review/2026-04-14-13-review.md"
+  },
+  {
+    "section": "13.8",
+    "section_title": "Perfetto 输入延迟 SQL 深度分析",
+    "priority": 95,
+    "reason": "[Deep Tech Review] android_input_events 表模型、android_input_connections 表述与核心 SQL 示例均与当前 Perfetto stdlib 不符",
+    "material_paths": [
+      "intake/suggestions.md",
+      "intake/research-gaps.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误/示例错误",
+        "location": "行 94-165, 264-345",
+        "detail": "正文把 android_input_events 写成 ts/dur/utid/android_input_id 这一套字段，并在 Top100、ANR 前 5 秒、input→frame 查询中直接使用 input.ts / input.android_input_id / JOIN thread USING (utid)。当前 Perfetto stdlib 的真实列是 dispatch_ts、dispatch_dur、tid、input_event_id、dispatch_track_id、receive_track_id、process_name 等，这几段 SQL 按现文无法运行。",
+        "suggestion": "以 perfetto stdlib `android_input_events` 的真实 schema 为准，重写表结构说明和全部示例 SQL；统一把时间基准切到 dispatch_ts/read_time/event_time，把标识符切到 input_event_id/event_seq/event_channel。"
+      },
+      {
+        "type": "源码错误",
+        "location": "行 122-136",
+        "detail": "正文引入了 android_input_connections(connection_id/window_name/channel_name/status) 这一张表，但当前 `android.input` 模块并不存在该表。当前可用的相关视图是 android_input_event_dispatch(id/event_id/arg_set_id/vsync_id/window_id)。",
+        "suggestion": "删除虚构表述，改成 android_input_event_dispatch 的真实能力边界，并说明如果要把 window_id 还原成窗口名，还需要额外的窗口侧表或 trace 上下文。"
+      },
+      {
+        "type": "原理断裂/示例错误",
+        "location": "行 308-380",
+        "detail": "章节把“输入事件与帧渲染对齐”写成“取同线程上 50ms 窗口内第一个 Choreographer#doFrame”，并继续使用不存在的 input.utid / android_input_id，以及未证实的 `Choreographer#doFrame|CALLBACK_INPUT`、`...|CALLBACK_TRAVERSAL` slice name。Perfetto stdlib 已经提供 frame_id、is_speculative_frame 和 `_android_input_lifecycle_by_slice_id()`，当前写法会在 batched motion、多输入同帧、无关联帧场景下错配。",
+        "suggestion": "重写这一节，优先使用 stdlib 已经给出的 frame_id / is_speculative_frame / input_event_id / dispatch_ts / receive_ts；如果确实要落到 slice 层，先给出可验证的真实 slice 名称，再说明 heuristic 与 exact match 的边界。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-14T13:20:00+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "13.8",
+    "section_title": "Perfetto 输入延迟 SQL 深度分析",
+    "priority": 85,
+    "reason": "[Deep Tech Review] 采集前提、真实表族和 frame association 边界没有讲清，当前章节缺少可复现实操前提",
+    "material_paths": [
+      "intake/research-gaps.md",
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "版本差异/知识盲区",
+        "location": "行 521-579",
+        "detail": "TraceConfig 段把查询模块名 `android.input` 和采集 data source 混在一起，并写成“android.input 数据源不需要额外参数”。但 `AndroidInputEventConfig` 明确对应 `android.input.inputevent`，而且 input traces 只支持 debuggable(userdebug/eng) build，还带 TraceMode/TraceRule/脱敏级别等约束。正文没有交代这些前提，读者很难复现。",
+        "suggestion": "补一小节专门说明 query module vs trace data source 的区别，列出 debuggable-build 限制、默认 redacted/rules 行为，以及何时需要 AndroidInputEventConfig。"
+      },
+      {
+        "type": "知识盲区/原理断裂",
+        "location": "行 94-136, 306-350, 521-579",
+        "detail": "章节把输入 SQL 分析压缩成一张 android_input_events 表，但没有把真实表族拆开讲：android_input_events、android_motion_events、android_key_events、android_input_event_dispatch，以及 frame_id/is_speculative_frame 代表的 exact vs speculative 关联。这样读者拿到 trace 后不知道该先看哪张表，也不知道 end_to_end_latency_dur 为 NULL 时该怎么判断是采集问题还是确实没关联到帧。",
+        "suggestion": "补“表族地图 + 关联边界”小节，先讲每张表负责什么，再讲 read_time/event_time/dispatch_ts/frame_id 的关系，最后给一个 end_to_end_latency_dur 为 NULL 的排查路径。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-14T13:20:00+08:00",
+    "status": "pending"
   }
 ]

@@ -2188,3 +2188,20 @@ Android 10-16 的返回分发模型缺少一张统一矩阵。正文把 Gesture 
 ### 关联章节
 §7.4、§8.2、§9.6、§13.1、§13.3、§13.10
 
+
+
+## [2026-04-14] 13.8 Perfetto 输入延迟 SQL 深度分析 — 知识盲区
+
+### 盲区描述
+Perfetto 输入分析的采集前提和真实实体模型没有讲透。当前章节没有把 `android.input` 查询模块、`android.input.inputevent` 采集数据源、`AndroidInputEventConfig` 的 debuggable/userdebug/eng 限制、TraceMode/TraceRule 脱敏规则，以及 `android_input_events` / `android_motion_events` / `android_key_events` / `android_input_event_dispatch` 这几张核心表的职责边界拆开讲。读者即使照着 SQL 写，也不知道什么时候该看 `input_event_id`，什么时候该看 `frame_id` / `is_speculative_frame`，更不知道 `end_to_end_latency_dur` 为 NULL 时到底是没有关联帧，还是 trace 根本没采到需要的数据。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 追源码核实 `android.input.inputevent` 的采集前提、默认规则与 redacted/complete 两档 trace level
+- 整理 `android_input_events` / `android_motion_events` / `android_key_events` / `android_input_event_dispatch` 的最小可用查询模板
+- 补一组“无 frame_id / speculative frame / batched motion event”示例 trace，验证输入到帧的关联边界
+
+### 关联章节
+§3.4、§13.3、§13.5、§13.8
