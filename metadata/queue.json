@@ -8662,5 +8662,38 @@
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-14T12:22:00+08:00",
     "status": "pending"
+  },
+  {
+    "section": "14.4",
+    "section_title": "dumpsys 系列命令",
+    "priority": 90,
+    "reason": "[review回炉] activity/meminfo/SurfaceFlinger 口径存在版本风险，进阶用法仍有占位符和无来源厂商示例",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "需确认",
+        "location": "dumpsys activity / dumpsys meminfo",
+        "detail": "Activity 进程段直接使用 `oom_adj`、`VISIBLE_APP_LVL`、`FOREGROUND_APP` 和固定数值解释当前系统输出；Private Dirty 段又写成“Android 默认不用 swap”。这两处都带有明显的版本与实现口径风险，容易把旧术语当成 Android 16 仍然适用的结论。",
+        "suggestion": "按当前 `dumpsys activity processes` 实际输出、`ProcessList` / `oom_score_adj` 口径和官方内存文档重核，再决定正文保留哪些字段。"
+      },
+      {
+        "type": "需确认",
+        "location": "dumpsys SurfaceFlinger / Android 15+ 的输出变化",
+        "detail": "正文把 Android 15+ 输出格式变化、`--list` 适用版本和“额外参数或权限”写成确定结论，但当前只挂了 Obsidian 素材，缺少对 AOSP android-15/16 `SurfaceFlinger::dump` 与设备实测输出的交叉验证。",
+        "suggestion": "交给 Task 9 核对 Android 15/16 的实际 dumpsys 输出结构、参数边界和 Winscope 替代关系，再由 Task 2B 回写。"
+      },
+      {
+        "type": "需补充素材",
+        "location": "进阶用法",
+        "detail": "`dumpsys package / alarm / jobscheduler` 和自定义 Service dump 两段仍保留 `[待补充]` 占位，厂商 `perfboost` 例子也没有来源。主体 6 个核心锚点已覆盖，但扩展部分还没到可直接出版的程度。",
+        "suggestion": "补 1 组真实输出示例或代码片段，并给 `perfboost` 例子补来源；做不到就降级为简短提示，避免占位符遗留。"
+      }
+    ],
+    "added_by": "task6-review",
+    "added_at": "2026-04-14T13:05:00+08:00",
+    "status": "pending",
+    "original_review_log": "logs/review/2026-04-14-13-review.md"
   }
 ]

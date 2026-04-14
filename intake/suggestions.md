@@ -3054,3 +3054,22 @@
 - **位置**：L71-L79 大 Trace 的挑战
 - **问题**：`Chrome 通常是 2-4GB`、`500MB Trace 会吃掉 1.5GB+`、`3-5 倍内存放大` 这组量化判断没有给浏览器版本、平台、trace 类型或实测来源。
 - **建议**：补浏览器版本、宿主平台、trace 样本与测量方式；如果短期补不齐，降级为“可能显著放大内存占用”的定性描述。
+
+## [Task6 Review] 14.4 dumpsys 系列命令 — 2026-04-14
+- **类型**：需确认
+- **位置**：dumpsys activity / dumpsys meminfo
+- **问题**：Activity 进程段直接使用 `oom_adj`、`VISIBLE_APP_LVL`、`FOREGROUND_APP` 和固定数值解释当前系统输出；Private Dirty 段又写成“Android 默认不用 swap”。这两处都带有明显的版本与实现口径风险，容易把旧术语当成 Android 16 仍然适用的结论。
+- **建议**：按当前 `dumpsys activity processes` 实际输出、`ProcessList` / `oom_score_adj` 口径和官方内存文档重核，再决定正文保留哪些字段。
+- **review 日志**：logs/review/2026-04-14-13-review.md
+
+- **类型**：需确认
+- **位置**：dumpsys SurfaceFlinger / Android 15+ 的输出变化
+- **问题**：正文把 Android 15+ 输出格式变化、`--list` 适用版本和“额外参数或权限”写成确定结论，但当前只挂了 Obsidian 素材，缺少对 AOSP android-15/16 `SurfaceFlinger::dump` 与设备实测输出的交叉验证。
+- **建议**：交给 Task 9 核对 Android 15/16 的实际 dumpsys 输出结构、参数边界和 Winscope 替代关系，再由 Task 2B 回写。
+- **review 日志**：logs/review/2026-04-14-13-review.md
+
+- **类型**：需补充素材
+- **位置**：进阶用法
+- **问题**：`dumpsys package / alarm / jobscheduler` 和自定义 Service dump 两段仍保留 `[待补充]` 占位，厂商 `perfboost` 例子也没有来源。主体 6 个核心锚点已覆盖，但扩展部分还没到可直接出版的程度。
+- **建议**：补 1 组真实输出示例或代码片段，并给 `perfboost` 例子补来源；做不到就降级为简短提示，避免占位符遗留。
+- **review 日志**：logs/review/2026-04-14-13-review.md
