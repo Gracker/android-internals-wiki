@@ -3569,3 +3569,18 @@
 - **位置**：内存分区策略
 - **问题**：30%/40%/20%/10% 分区百分比的来源"公开技术分享, 货拉拉 Android 端内存治理实践等"过于模糊，无法追溯。
 - **建议**：补充具体分享标题和链接，或改为"一种典型的分区方案示例"并标注为经验值。
+
+
+## [Task9 Deep Review] 3.1 Input 事件分发全流程 — 2026-04-15
+
+- **类型**：源码准确性
+- **位置**：InputDispatcher.dispatchMotionLocked 代码块
+- **问题**：方法签名写成 `std::shared_ptr<MotionEntry> entry`，android-14.0.0_r1 实际使用原始指针 `MotionEntry* entry`。代码块作为源码引用应与验证版本一致。
+- **建议**：改为 `MotionEntry* entry`，或标注代码为简化示意
+
+## [Task9 Deep Review] 3.1 Input 事件分发全流程 — 版本演进表 — 2026-04-15
+
+- **类型**：版本差异
+- **位置**：版本演进表 "Android 12 (API 31): Input ANR 增加 'no focused window' 类型"
+- **问题**：no-focus-window ANR 在 Android 12 之前已存在，`findFocusedWindowTargetsLocked` 对无焦点窗口的处理不是 Android 12 新增的能力
+- **建议**：修正为 Android 12 对 Input ANR 处理的改进（如更精确的 ANR 时间记录或 mAnrTracker 相关变化），或删除该条目

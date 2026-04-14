@@ -2462,3 +2462,20 @@ Android 16 引入 `android.app.MemoryManager` API，提供 `getMemoryAdvisory()`
 
 ### 关联章节
 4.3, 4.4, 7.10, 16.5
+
+
+## [2026-04-15] 3.1 Input 事件分发全流程 — 知识盲区
+
+### 盲区描述
+InputDispatcher 的 unresponsive connection 检测与 throttle 机制。当 App 持续不响应 Input 事件时，InputDispatcher 不仅触发 ANR，还会在 ANR 之前将 connection 标记为 unresponsive 并跳过后续事件分发。当前章节只覆盖了 ANR 触发（5秒超时），没有讲解 unresponsive → skip → ANR 的完整状态机。此外 Android 12+ 引入的 Motion Predictor 机制（预测性触摸补偿输入延迟）也未被提及。
+
+### 重要程度
+高
+
+### 建议研究方向
+- AOSP InputDispatcher::dispatchEventLocked 中 connection->responsive 检查逻辑
+- InputDispatcher 中 ANR 前的 drop 事件策略
+- MotionPredictor (Android 12+) 的启用条件和 Trace 表现
+
+### 关联章节
+3.2, 3.4, 9.1, 9.2, 13.8

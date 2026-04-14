@@ -14283,6 +14283,178 @@
       "chapter": "技术调研",
       "date": "2026-04-12",
       "scored_at": "2026-04-12T05:27:00.416589"
+    },
+    {
+      "title": "安卓内核Hook技术实现分析与应用",
+      "path": "Cubox/安卓内核Hook技术实现分析与应用-2026-04-14.md",
+      "source": "Cubox",
+      "type": "technical_article",
+      "relevance": 5,
+      "technical_depth": 5,
+      "timeliness": 5,
+      "verifiability": 5,
+      "score": 20,
+      "quality": "high",
+      "scored_at": "2026-04-15T05:00:00Z",
+      "chapters": [
+        "05",
+        "05-cpu-power"
+      ],
+      "keywords": [
+        "内核Hook",
+        "Android安全",
+        "性能优化",
+        "ARM64",
+        "内核函数Hook"
+      ],
+      "summary": "深度分析安卓内核Hook技术实现，基于知名Root框架APatch的KernelHook项目源码，涵盖接口设计、指令重定位、中转桩、内存管理等技术实现细节。"
+    },
+    {
+      "title": "Linux Deadline 调度器实现机制",
+      "path": "Cubox/Linux Deadline 调度器实现机制-2026-04-14.md",
+      "source": "Cubox",
+      "type": "technical_article",
+      "relevance": 4,
+      "technical_depth": 5,
+      "timeliness": 5,
+      "verifiability": 5,
+      "score": 19,
+      "quality": "high",
+      "scored_at": "2026-04-15T05:00:00Z",
+      "chapters": [
+        "05",
+        "05-cpu-power"
+      ],
+      "keywords": [
+        "Linux调度器",
+        "Deadline调度器",
+        "I/O调度",
+        "内核调度算法",
+        "性能优化"
+      ],
+      "summary": "详细解析Linux Deadline I/O调度器的实现机制，包括设计目标、数据结构、核心算法，以及在高负载环境下的延迟保证机制。"
+    },
+    {
+      "title": "浏览器自动化：从GUI到OpenCLI",
+      "path": "Cubox/浏览器自动化：从GUI到OpenCLI-2026-04-14.md",
+      "source": "Cubox",
+      "type": "technical_article",
+      "relevance": 3,
+      "technical_depth": 4,
+      "timeliness": 5,
+      "verifiability": 4,
+      "score": 16,
+      "quality": "medium",
+      "scored_at": "2026-04-15T05:00:00Z",
+      "chapters": [
+        "03"
+      ],
+      "keywords": [
+        "浏览器自动化",
+        "OpenCLI",
+        "GUI测试",
+        "API复现",
+        "运维自动化"
+      ],
+      "summary": "介绍从传统GUI浏览器自动化到基于API解析的OpenCLI方法的转变，提供更稳定高效的浏览器自动化解决方案。"
+    },
+    {
+      "title": "2026 年，AI 编程 Agent 的真正分水岭——Harness 详解",
+      "path": "Cubox/2026 年，AI 编程 Agent 的真正分水岭——Harness 详解-2026-04-14.md",
+      "source": "Cubox",
+      "type": "ai_research",
+      "relevance": 3,
+      "technical_depth": 4,
+      "timeliness": 5,
+      "verifiability": 4,
+      "score": 16,
+      "quality": "medium",
+      "scored_at": "2026-04-15T05:00:00Z",
+      "chapters": [
+        "03"
+      ],
+      "keywords": [
+        "AI Agent",
+        "Harness",
+        "编程助手",
+        "智能编程",
+        "技术演进"
+      ],
+      "summary": "分析2026年AI编程Agent的发展趋势，深入探讨Harness技术在AI编程中的关键作用，以及开源项目oh-my-pi的实践经验。"
+    },
+    {
+      "title": "深度拆解 Claude Code：12 个可复用的 Agentic Harness 设计模式",
+      "path": "Cubox/深度拆解 Claude Code：12 个可复用的 Agentic Harness 设计模式-2026-04-14.md",
+      "source": "Cubox",
+      "type": "ai_research",
+      "relevance": 4,
+      "technical_depth": 5,
+      "timeliness": 5,
+      "verifiability": 5,
+      "score": 19,
+      "quality": "high",
+      "scored_at": "2026-04-15T05:00:00Z",
+      "chapters": [
+        "03"
+      ],
+      "keywords": [
+        "Claude Code",
+        "Harness设计模式",
+        "AI编程",
+        "工程实践",
+        "设计模式"
+      ],
+      "summary": "深度拆解Claude Code源码，总结12个可复用的Agentic Harness设计模式，涵盖记忆与上下文、工作流与编排、工具与权限等四个方面。"
+    },
+    {
+      "title": "Linux folio 内存管理架构：page cache 的下一代设计",
+      "path": "Cubox/Linux folio 内存管理架构：page cache 的下一代设计-2026-04-14.md",
+      "source": "Cubox",
+      "type": "technical_article",
+      "relevance": 5,
+      "technical_depth": 5,
+      "timeliness": 5,
+      "verifiability": 5,
+      "score": 20,
+      "quality": "high",
+      "scored_at": "2026-04-15T05:00:00Z",
+      "chapters": [
+        "04",
+        "04-memory"
+      ],
+      "keywords": [
+        "Linux folio",
+        "page cache",
+        "内存管理",
+        "NUMA",
+        "内核优化"
+      ],
+      "summary": "深度解析Linux内核folio内存管理架构，分析传统page cache的局限性，folio设计理念、数据结构、文件系统优化，以及在高性能I/O场景下的优势。"
+    },
+    {
+      "title": "Linux 内存回收机制解析：LRU 链表如何工作",
+      "path": "Cubox/Linux 内存回收机制解析：LRU 链表如何工作-2026-04-14.md",
+      "source": "Cubox",
+      "type": "technical_article",
+      "relevance": 5,
+      "technical_depth": 5,
+      "timeliness": 5,
+      "verifiability": 5,
+      "score": 20,
+      "quality": "high",
+      "scored_at": "2026-04-15T05:00:00Z",
+      "chapters": [
+        "04",
+        "04-memory"
+      ],
+      "keywords": [
+        "Linux内存管理",
+        "LRU链表",
+        "Buddy分配器",
+        "内存碎片",
+        "内存回收"
+      ],
+      "summary": "深入分析Linux内存回收机制，包括buddy allocator的拓扑约束、外部碎片度量、LRU链表工作原理，以及高阶分配的数学模型。"
     }
   ]
 }
