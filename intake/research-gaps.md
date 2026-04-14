@@ -2261,3 +2261,18 @@ Perfetto 输入分析的采集前提和真实实体模型没有讲透。当前�
 ### 关联章节
 5.8, 11.1, 13.5
 
+## [2026-04-14] 2.5 MainThread 与 RenderThread 协作 — RenderThread Animations 能力矩阵
+
+### 盲区描述
+正文把 `ViewPropertyAnimator` API 可用性、`RenderNodeAnimator` 的引入、Window 动画是否走 RenderThread，以及“什么情况下会退回主线程”混在一起写。当前章节同时存在“Android 7.0 开始”与版本表“Android 6.0 支持扩展”的冲突，但没有给出一张按 API 版本划分的能力矩阵。读者很难判断 API 21-37 上哪些动画真能绕开主线程，哪些只是普通属性动画 API。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 核对 API 21 起 `RenderNodeAnimator`、`ThreadedRenderer.registerAnimatingRenderNode()`、Window 动画相关路径的版本边界
+- 区分 `ViewPropertyAnimator` API 本身、RenderThread-backed property animations、Window / VectorDrawable 动画三类机制
+- 补一张“动画类型 × Android 版本 × 是否可在 RenderThread 独立推进 × 退回主线程条件”的矩阵
+
+### 关联章节
+2.4、2.5、2.9

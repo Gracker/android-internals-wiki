@@ -2994,8 +2994,8 @@
   {
     "section": "2.5",
     "section_title": "MainThread 与 RenderThread 协作",
-    "priority": 85,
-    "reason": "[Deep Tech Review] 新发现3个P1：1)正文(L380)与版本演进表(L424)对RenderThread Animations API版本描述矛盾；2)ViewPropertyAnimator可用性(API 12)与RenderThread执行能力(API 24)混为一谈；3)多窗口/PiP场景RenderThread调度机制未覆盖",
+    "priority": 95,
+    "reason": "[Deep Tech Review] 新增 2 个 P0：RenderThread / syncFrameState 源码与调用链写错、BLAST 引入版本误写为 Android 10；未修 P1：RenderThread Animations 版本边界仍矛盾",
     "material_paths": [
       "intake/research-gaps.md",
       "intake/suggestions.md"
@@ -3012,6 +3012,24 @@
         "location": "L298-313（多窗口场景）",
         "detail": "仅提及两窗口串行执行。未覆盖：1)并发多Surface时RenderThread的调度策略；2)系统内存压力导致GPU资源被抢占时的影响机制",
         "suggestion": "补充PiP/分屏模式下RenderThread渲染时序图；补充内存压力场景排查方法"
+      },
+      {
+        "type": "源码错误",
+        "location": "L121-L133 RenderThread.cpp 代码块",
+        "detail": "标注为 `frameworks/base/libs/hwui/renderthread/RenderThread.cpp @ android-16.0.0_r1` 的代码块使用了不存在的 `processDisplayUpdate()`，并把 `mEglManager = new EglManager(*this)` 写进 `threadLoop()`。android-16 实际 `RenderThread::threadLoop()` 是 `initThreadLocals(); while (true) { waitForWork(); processQueue(); ... }`，`mEglManager = new EglManager()` 位于 `initThreadLocals()`。",
+        "suggestion": "如果继续保留源码引用，请改成真实 `threadLoop()` / `initThreadLocals()` 片段；如果只想表达概念，请明确写成伪代码，不要挂 AOSP 路径。"
+      },
+      {
+        "type": "源码错误",
+        "location": "L159-L176 syncAndDrawFrame / syncFrameState 段",
+        "detail": "JNI 路径写成 `frameworks/base/core/jni/android_view_ThreadedRenderer.cpp`，android-16 实际实现位于 `frameworks/base/libs/hwui/jni/android_graphics_HardwareRenderer.cpp`，调用链是 `ThreadedRenderer.syncAndDrawFrame()` -> `nSyncAndDrawFrame()` -> `RenderProxy::syncAndDrawFrame()` -> `DrawFrameTask::drawFrame()`。正文还把 `syncFrameState` 解释成“等待上一帧 GPU 完成后再同步”，这和 `DrawFrameTask::postAndWait()` / `syncFrameState()` / `CanvasContext::draw()` 的真实分工不符。",
+        "suggestion": "把“UI 线程阻塞点”“RenderThread 同步阶段”“GPU / fence / dequeueBuffer backpressure”三层语义拆开写，避免把长 `syncFrameState` 直接等同于上一帧 GPU 未完成。"
+      },
+      {
+        "type": "版本差异",
+        "location": "L409-L434 BLAST 段 + 版本演进表",
+        "detail": "正文称“从 Android 10 开始，BLAST 取代 Legacy BufferQueue”。但 `frameworks/native/libs/gui/BLASTBufferQueue.cpp` 在 `android-10.0.0_r1` 不存在，在 `android-11.0.0_r1` 才可见。把 BLAST 写成 Android 10 的既成事实，会把版本边界和架构迁移过程讲反。",
+        "suggestion": "修正为 Android 11+ 引入 / 落地 BLASTBufferQueue，并说明 BufferQueue 仍是底层 buffer 机制，变化的是窗口状态与 buffer 提交路径的组织方式。"
       }
     ],
     "added_by": "task9-deep-tech-review",

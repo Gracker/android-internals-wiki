@@ -3183,3 +3183,14 @@
 - **问题**：误区部分的信息是对的，但四段问答排下来节奏很像模板，收尾也停在资料列表，少了一段工程判断，活人感偏弱。
 - **建议**：补一小段经验性判断，例如哪些 Trace 现象值得先怀疑 MessageQueue 锁竞争，哪些情况不要先怪它。
 - **review 日志**：logs/review/2026-04-14-18-review.md
+
+## [Task9 Deep Review] 2.5 MainThread 与 RenderThread 协作 — 2026-04-14
+- **类型**：数据缺失
+- **位置**：L344 DisplayList 过大，同步耗时增加
+- **问题**：正文把 `adb shell dumpsys gfxinfo <package>` 写成“会列出每个 View 的 DisplayList 大小和命令数量（command count）”的首要定位手段。现代 `gfxinfo` 主要给帧统计 / 内存 / View 层级信息，不直接提供可复现的 per-View DisplayList command count，读者按文中命令跑不出同样结论。
+- **建议**：改成可验证的工具链，例如 `gfxinfo framestats` 看帧分解，Layout Inspector 看层级，Perfetto / Skia trace 看 `DrawFrame` / `flush commands` / `dequeueBuffer`，如果确实要看 DisplayList memory，请写明具体输出项和 Android 版本。
+
+- **类型**：交叉引用
+- **位置**：L409 BLAST 模式下的提交流程
+- **问题**：这里说“关于 BufferQueue 的完整机制，参见 2.15 DMA-BUF、Gralloc…”，但全书真正系统讲 BufferQueue 的章节是 2.13《图形缓冲区管理 (BufferQueue)》。当前跳转会把 BufferQueue 机制和 dma-buf / gralloc 物理内存层混在一起。
+- **建议**：将该处交叉引用改到 2.13，2.15 保留给 GraphicBuffer / dma-buf / gralloc 的共享内存层。
