@@ -18,10 +18,13 @@ sources:
     path: "source.android.com/docs/core/graphics/surfaceflinger-windowmanager"
 tags: [dumpsys, meminfo, gfxinfo, activity, window, batterystats, SurfaceFlinger, debugging]
 related_chapters: ["4.1", "4.5", "7.3", "13.1", "14.1"]
-pipeline_stage: task6_pending
-task6_state: pending
+pipeline_stage: task2b_pending
+task6_state: reviewed
 task9_state: pending
-task2b_state: idle
+task2b_state: pending
+reviewed_by: "openclaw-task6"
+reviewed_date: "2026-04-14"
+task6_result: needs-rework
 ---
 
 # dumpsys 系列命令
@@ -56,11 +59,13 @@ task2b_state: idle
 
 在分析 Android 性能问题的过程中，我们经常需要快速了解系统某一时刻的"状态快照"——比如某个进程占用了多少内存、当前屏幕上叠加了多少个 Layer、哪个窗口持有焦点、最近 120 帧的渲染耗时分布如何。Perfetto 可以告诉我们"过程"（事情是怎么一步步发生的），但如果我们需要的是一个"截面"（此刻系统长什么样），dumpsys 就是最趁手的工具。
 
-dumpsys 本质上是一个桥梁：它遍历 Android 系统中所有注册到 ServiceManager 的系统服务，调用每个服务的 `dump()` 方法，把服务的内部状态以文本形式输出到终端。因为每个系统服务都实现了自己的 `dump()` 方法，所以 dumpsys 的输出覆盖了 Android 系统的方方面面——从 Activity 栈到电池统计，从内存分配到图形合成，几乎你能想到的系统状态都能通过它获取。
+可以把 dumpsys 看成一个桥梁。它会遍历 Android 系统中所有注册到 ServiceManager 的系统服务，调用每个服务的 `dump()` 方法，再把服务内部状态以文本形式输出到终端。
 
-本章不打算穷举 dumpsys 支持的所有子命令（在设备上运行 `adb shell dumpsys -l` 可以看到完整列表），而是聚焦于性能分析中最常用的六个子命令，逐个讲清楚它的用途、输出结构、关键指标的含义，以及在实际性能分析中怎么用。
+因为每个系统服务都实现了自己的 `dump()` 方法，dumpsys 的输出覆盖了 Android 系统的多个关键面向，从 Activity 栈到电池统计，从内存分配到图形合成，都能拿到对应的状态快照。
 
-`[已验证: AOSP android-16.0.0_r1, frameworks/native/cmds/dumpsys/dumpsys.cpp]`
+本章不打算穷举 dumpsys 支持的所有子命令（在设备上运行 `adb shell dumpsys -l` 就能列出完整列表），而是聚焦于性能分析中最常用的六个子命令，逐个讲清楚它的用途、输出结构、关键指标的含义，以及在实际性能分析中怎么用。
+
+[已验证: AOSP android-16.0.0_r1, frameworks/native/cmds/dumpsys/dumpsys.cpp]
 
 ## dumpsys activity：Activity 栈、进程与 ANR 信息
 
@@ -88,7 +93,7 @@ dumpsys 本质上是一个桥梁：它遍历 Android 系统中所有注册到 Se
 
 `dumpsys activity lastanr` 输出最近一次 ANR 发生时的调用栈和系统状态。当我们拿到一个用户反馈的 ANR 问题，但手头没有完整的 Trace 文件时，先看看 `lastanr` 里是否还有残留信息，有时可以直接定位到阻塞主线程的代码行。
 
-`[已验证: AOSP android-16.0.0_r1, frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java: dump()]`
+[已验证: AOSP android-16.0.0_r1, frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java: dump()]
 
 ## dumpsys meminfo：系统和进程内存全景
 
@@ -111,7 +116,7 @@ adb shell dumpsys meminfo --slab
 
 在 meminfo 的输出中，最核心的三个指标是 PSS、USS 和 Private Dirty。理解它们的区别，是用好这个命令的前提。
 
-**PSS（Proportional Set Size）** 是我们最关注的指标。它衡量的是一个进程"实际占用"的物理内存。PSS 的特殊之处在于，对于被多个进程共享的内存页（比如共享库的代码段），它会按比例分摊：如果一张 4KB 的内存页被两个进程共享，每个进程的 PSS 只计入 2KB。这意味着把所有进程的 PSS 加起来，就等于系统实际使用的总物理内存。在判断一个 App "占了多少内存"时，PSS 是最准确的标准。
+**PSS（Proportional Set Size）** 是我们最关注的指标。它衡量的是一个进程"实际占用"的物理内存。PSS 的特殊之处在于，对于被多个进程共享的内存页（比如共享库的代码段），它会按比例分摊：如果一张 4KB 的内存页被两个进程共享，每个进程的 PSS 只计入 2KB。把所有进程的 PSS 加起来，结果就接近系统实际使用的总物理内存。在判断一个 App "占了多少内存"时，PSS 是最准确的标准。
 
 **USS（Unique Set Size）** 是进程独占的物理内存，不被任何其他进程共享。如果这个进程被杀掉，USS 这部分内存会被完全释放。USS 帮助我们评估一个进程的"可回收价值"——LMK 在选择杀谁时，会参考这个值。
 
@@ -134,24 +139,24 @@ meminfo 输出把进程的内存使用分为多个类别。在性能分析中，
 单次 dumpsys meminfo 只是一个快照。要发现内存泄漏，我们需要追踪趋势：
 
 ```bash
-# 重置 gfxinfo 计数器（可选，同时重置 meminfo 的统计）
+# 第一次抓取，记录基线
 adb shell dumpsys meminfo <package_name>
 
 # 执行一轮操作（如反复进出某个界面 20 次）
 
-# 再次抓取
+# 第二次抓取，对比变化
 adb shell dumpsys meminfo <package_name>
 ```
 
 比较两次输出的 `TOTAL PSS` 和 `Private Dirty`，如果数值持续上升且不回落，就是泄漏的信号。对于更精确的趋势分析，建议使用 Android Studio Memory Profiler（§14.1）连续采样，它可以把 PSS 随时间的变化画成曲线。
 
-`[来源: Obsidian Personal-Knowledge/source/Android-Jank-Debug.md]`
+[来源: Obsidian Personal-Knowledge/source/Android-Jank-Debug.md]
 
 ## dumpsys gfxinfo：帧渲染统计与 Jank 定位
 
 ### 基本用法
 
-`dumpsys gfxinfo` 是 Android 提供的帧渲染性能快照工具。它有两种使用模式：
+`dumpsys gfxinfo` 是 Android 提供的帧渲染性能快照工具。它最常见的三种用法如下：
 
 ```bash
 # 聚合统计（Janky frames 百分比、百分位耗时等）
@@ -229,7 +234,7 @@ adb shell dumpsys window windows | grep -E 'mCurrentFocus|mFocusedApp'
 
 `dumpsys window` 的输出还包含 Z-order 信息，窗口从上到下排列。在排查覆盖层问题时（比如 Dialog 没有正确 dismiss 导致遮挡了底下的 Activity），Z-order 列表可以直观看到哪些窗口叠加在目标窗口上面。
 
-`[已验证: AOSP android-16.0.0_r1, frameworks/base/services/core/java/com/android/server/wm/WindowManagerService.java: dump()]`
+[已验证: AOSP android-16.0.0_r1, frameworks/base/services/core/java/com/android/server/wm/WindowManagerService.java: dump()]
 
 ## dumpsys batterystats：电池使用与功耗分析
 
@@ -268,7 +273,7 @@ dumpsys batterystats 本身输出的是原始数据，真正发挥威力需要�
 
 `Battery Historian` 的图表中有一个专门的 `wake_lock` 行，用彩色条段标记 wakelock 被持有的时段。结合 `running` 行（CPU 是否在运行）一起看，可以快速判断"CPU 被谁唤醒了"和"为什么没有重新入睡"。
 
-需要注意的是，Battery Historian 工具本身已经不再积极维护（Google 已将重点转向 Android Studio Energy Profiler），但它对于分析 wakelock 和系统级功耗事件仍然是最直观的工具之一。
+Battery Historian 工具本身已经不再积极维护（Google 已将重点转向 Android Studio Energy Profiler），但它对于分析 wakelock 和系统级功耗事件仍然是最直观的工具之一。
 
 ## dumpsys SurfaceFlinger：Layer 信息与合成状态
 
@@ -285,7 +290,7 @@ adb shell dumpsys SurfaceFlinger --list
 adb shell dumpsys SurfaceFlinger --latency <layer_name>
 ```
 
-`[已验证: AOSP android-16.0.0_r1, frameworks/native/services/surfaceflinger/SurfaceFlinger.cpp: dump()]`
+[已验证: AOSP android-16.0.0_r1, frameworks/native/services/surfaceflinger/SurfaceFlinger.cpp: dump()]
 
 ### Layer 列表与合成方式
 
@@ -301,7 +306,7 @@ dumpsys SurfaceFlinger 的核心输出是当前屏幕上所有可见 Layer 的�
 
 如果在 Android 15+ 设备上执行 dumpsys SurfaceFlinger 后看不到 Layer 信息，通常是因为新架构需要额外的参数或权限。在实际调试中，Winscope 工具（Android Studio 集成）通常是查看 Layer 层次结构更好的选择——它提供可视化的时间线视图，比文本输出更容易理解。
 
-`[来源: Obsidian Personal-Knowledge/source/2026-03-05_wechat_aosp15上SurfaceFlinger的dump部分新特性]`
+[来源: Obsidian Personal-Knowledge/source/2026-03-05_wechat_aosp15上SurfaceFlinger的dump部分新特性]
 
 ### 帧延迟信息
 
@@ -327,7 +332,7 @@ dumpsys 不只是系统服务的专利。任何应用或服务都可以实现自
 
 对于系统服务，在 AOSP 中实现 dump 只需要重写 `Binder.dump()` 方法。对于应用内部的 Service，可以通过 `adb shell dumpsys activity service <package_name>/<service_class>` 触发 Service 的 `dump()` 回调。
 
-[自动发现] 这个机制在 MTK/高通等厂商的定制系统服务中广泛使用。例如 MTK 的 `perfboost` 服务就实现了 dump 接口，可以通过 `adb shell dumpsys perfboost` 查看当前的 CPU/GPU 频率策略和 boost 配置。在做平台级性能调试时，这是不可或缺的信息来源。
+[自动发现] 这个机制在 MTK/高通等厂商的定制系统服务中广泛使用。例如 MTK 的 `perfboost` 服务就实现了 dump 接口，可以通过 `adb shell dumpsys perfboost` 查看当前的 CPU/GPU 频率策略和 boost 配置。在做平台级性能调试时，这类厂商自定义 dump 往往能直接给出关键线索。
 
 [待补充: 自定义 dump 接口的代码示例和最佳实践]
 

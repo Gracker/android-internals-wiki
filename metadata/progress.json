@@ -2392,11 +2392,14 @@
       "title": "dumpsys 系列命令",
       "path": "src/part3-tools/ch14-other-tools/04-dumpsys.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "pending",
+      "pipeline_stage": "task2b_pending",
+      "task6_state": "reviewed",
       "task9_state": "pending",
-      "task2b_state": "idle",
-      "section": "14.4"
+      "task2b_state": "pending",
+      "section": "14.4",
+      "reviewed_by": "openclaw-task6",
+      "reviewed_date": "2026-04-14",
+      "task6_result": "needs-rework"
     },
     "src/part3-tools/ch14-other-tools/05-third-party-libs.md": {
       "chapter": "14.5",
