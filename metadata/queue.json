@@ -8022,9 +8022,11 @@
     ],
     "added_by": "task6-review",
     "added_at": "2026-04-14T03:09:00+08:00",
-    "status": "pending",
+    "status": "completed",
     "original_review_log": "logs/review/2026-04-14-03-review.md",
-    "file": "src/part3-tools/ch13-perfetto/01-perfetto-intro.md"
+    "file": "src/part3-tools/ch13-perfetto/01-perfetto-intro.md",
+    "completed_at": "2026-04-14T10:52:46+08:00",
+    "completed_by": "task2b-rework"
   },
   {
     "section": "4.3",
@@ -8294,7 +8296,9 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-14T07:20:00+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-14T10:52:46+08:00",
+    "completed_by": "task2b-rework"
   },
   {
     "section": "13.1",
@@ -8321,7 +8325,9 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-14T07:20:00+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-14T10:52:46+08:00",
+    "completed_by": "task2b-rework"
   },
   {
     "section": "6.4",
