@@ -32,11 +32,12 @@ tags: ['perfetto', 'trace', 'atrace', 'trace-capture', 'heapprofd']
 related_chapters: ["13.1", "13.3", "13.4", "14.1", "15.1"]
 
 re-review-result: "审查 2 条素材，无需修改（素材内容为 Trace Processor SQL 分析，与 Trace 抓取阶段不匹配，更适合 §13.3/§13.5）"
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
 task9_result: needs-rework
-task2b_state: pending
+task2b_state: fixed
+task2b_result: fixed
 ---
 
 # Trace 抓取
@@ -350,26 +351,26 @@ chmod u+x record_android_trace
 python3 record_android_trace -o trace.perfetto-trace
 ```
 
-这会启动一个默认 10 秒的 Trace，使用默认配置。更多时候，我们会指定时长、buffer 大小和 atrace categories：
+如果不传 `-t`，脚本会持续抓取，直到我们手动停止。更多时候，我们会显式给出时长、buffer 大小和 atrace categories：
 
 ```bash
 python3 record_android_trace -o trace.perfetto-trace -t 20s -b 64mb \
   sched freq idle am wm gfx view binder_driver hal dalvik input res memory
 ```
 
-这里 `-t 20s` 表示 20 秒，`-b 64mb` 表示 64MB buffer，后面的参数是 atrace category 列表。
+这里 `-t 20s` 表示 20 秒，`-b 64mb` 表示 64MB buffer，后面的参数是 atrace category 列表。`-t`、`-b`、`-a` 这一组 short options 只适用于不带 `-c/--config` 的快速抓取。
 
 ### 为什么推荐这个脚本
 
 相比直接在设备上运行 `perfetto` 命令，`record_android_trace` 把最繁琐的几个步骤自动化了。脚本会自动从设备 pull Trace 文件到本地当前目录，省去了手动 `adb pull`。抓取完成后还会自动在浏览器中打开 Perfetto UI 并加载 Trace，不需要手动拖文件。ADB 连接和权限问题也由脚本处理——对于需要频繁抓取 Trace 的日常分析，这些自动化能省下不少时间。
 
-如果需要更精细的配置，可以通过 `-c` 参数传入 `.pbtxt` 配置文件：
+如果需要更精细的配置，可以通过 `-c` 参数传入 `.pbtxt` 配置文件。这时 `duration_ms`、buffer 大小、`atrace_apps` 等参数也写回 `config.pbtxt`，不再和 `-t`、`-b`、`-a` 混用：
 
 ```bash
-python3 record_android_trace -c config.pbtxt -o trace.perfetto-trace -t 30s
+python3 record_android_trace -c config.pbtxt -o trace.perfetto-trace
 ```
 
-对于日常的快速分析场景，`record_android_trace` 脚本是最推荐的抓取方式。
+对于日常的快速分析场景，`record_android_trace` 脚本依然是最省事的抓取入口。
 
 ## 通过 Perfetto UI 在线抓取
 
@@ -407,10 +408,10 @@ Perfetto UI 有个很实用的功能：在 UI 上配好参数后，切到 "Recor
 
 这样我们就能把 UI 上的可视化配置直接转成可重复执行的脚本命令。在团队协作中，可以把这份配置文件提交到代码仓库，确保所有人使用相同的 Trace 配置。
 
-操作方式是：在 "Recording command" Tab 中，复制两个 EOF 标记之间的内容，保存为 `config.pbtxt` 文件。之后团队成员就可以用这个配置文件来抓取 Trace：
+操作方式是：在 "Recording command" Tab 中，复制两个 EOF 标记之间的内容，保存为 `config.pbtxt` 文件。之后团队成员就可以直接用这个配置文件来抓取 Trace，抓取时长和 buffer 参数也统一由 `config.pbtxt` 控制：
 
 ```bash
-python3 record_android_trace -c config.pbtxt -o trace.perfetto-trace -t 20s
+python3 record_android_trace -c config.pbtxt -o trace.perfetto-trace
 ```
 
 ## 在 App 中添加自定义 Trace 标记
@@ -460,7 +461,7 @@ try {
 import android.os.Trace;
 
 // 在一个线程中开始
-long cookie = Thread.currentThread().getId();  // 使用线程 ID 作为 cookie
+int cookie = 1001;  // 同一次异步操作在 begin / end 两端保持同一个 int 值
 Trace.beginAsyncSection("networkRequest", cookie);
 
 // ... 网络请求 ...
@@ -469,21 +470,25 @@ Trace.beginAsyncSection("networkRequest", cookie);
 Trace.endAsyncSection("networkRequest", cookie);
 ```
 
-`beginAsyncSection` 和 `endAsyncSection` 通过一个 `cookie` 值关联同一次操作。这解决了异步操作（如网络请求、Handler 回调）中无法使用同步 `beginSection`/`endSection` 的问题。
+`beginAsyncSection` 和 `endAsyncSection` 通过同一个 `int cookie` 关联一次异步操作。这解决了异步操作（如网络请求、Handler 回调）中无法使用同步 `beginSection`/`endSection` 的问题。如果业务里原本用的是 `long` 请求 ID，需要先做显式转换或映射，再传给这组 API。
 
 ### Native 代码中的自定义标记
 
-对于 C/C++ 代码（如 JNI 层、Native 库），可以使用 Perfetto 提供的 C++ Trace API：
+对于普通 App 的 C/C++ 代码（JNI 层、NDK so），用 public NDK 头文件 `android/trace.h`：
 
 ```c
-#include <cutils/trace.h>
+#include <android/trace.h>
 
-ATRACE_BEGIN("nativeInit");
+ATrace_beginSection("nativeInit");
 // ... 初始化代码 ...
-ATRACE_END();
+ATrace_endSection();
 ```
 
-或者使用更现代的 Perfetto Trace SDK（C++17）来定义自定义数据源。Perfetto SDK 通过头文件注入的方式集成，需要在项目的 `CMakeLists.txt` 或 `Android.bp` 中添加 SDK 源码依赖，然后使用 `TRACE_EVENT` 宏来标记自定义事件。集成方式详见 Perfetto 官方文档的 [Instrumentation SDK](https://perfetto.dev/docs/instrumentation/tracing-sdk) 章节。[待补充: 完整的 CMake 集成示例]
+这组 API 和 `android.os.Trace` 一样，底层都走 app tracing tag，抓取时仍然需要把目标包名放进 `atrace_apps` 或 `record_android_trace -a`。
+
+如果代码运行在平台内部模块里，AOSP 代码里还会看到 `<cutils/trace.h>` 和 `ATRACE_BEGIN` / `ATRACE_END`。这套头文件不面向普通 App / NDK 工程，这里只把它当作 framework / system code 的实现路径，不把它当成通用示例。
+
+如果要讲 Perfetto SDK，则是另一条集成路径。Perfetto SDK 通过头文件注入的方式集成，需要在项目的 `CMakeLists.txt` 或 `Android.bp` 中添加 SDK 源码依赖，然后使用 `TRACE_EVENT` 宏来标记自定义事件。集成方式详见 Perfetto 官方文档的 [Instrumentation SDK](https://perfetto.dev/docs/instrumentation/tracing-sdk) 章节。[待补充: 完整的 CMake 集成示例]
 
 ### 在 Perfetto 中的表现
 
@@ -554,7 +559,7 @@ Long Trace 在降低内存要求的同时引入了新的 trade-off。
 
 ## Heap Profiling 与 Callstack Sampling
 
-[已验证: 官方文档, perfetto.dev/docs/data-sources/native-heap-profiler; perfetto.dev/docs/data-sources/callstack-sampling]
+[已验证: 官方文档, perfetto.dev/docs/data-sources/native-heap-profiler; perfetto.dev/docs/reference/trace-config-proto#perfeventconfig]
 
 Perfetto 不只能做时间线追踪。它还集成了内存剖析（Heap Profiling）和 CPU 调用栈采样（Callstack Sampling），可以在同一个 Trace 会话中同时收集这些数据。
 
@@ -562,13 +567,13 @@ Perfetto 不只能做时间线追踪。它还集成了内存剖析（Heap Profil
 
 `heapprofd`（Heap Profiling Daemon）是 Android 10+ 内置的采样式堆内存分析器，运行在目标进程中。它通过 hook `malloc`/`free`（以及 C++ 的 `operator new`/`delete`）来追踪 Native 堆分配，生成按调用栈聚合的分配统计。
 
-在 TraceConfig 中启用 heapprofd：
+在 TraceConfig 中启用 heapprofd 时，`data_sources.config.name` 从 Android 10 起就是 `android.heapprofd`：
 
 ```
 data_sources {
   config {
-    name: "linux.heapprof"
-    heapprof_config {
+    name: "android.heapprofd"
+    heapprofd_config {
       sampling_interval_bytes: 4096
       process_cmdline: "com.example.myapp"
       continuous_dump_config {
@@ -589,13 +594,13 @@ data_sources {
 
 ### Java Heap Sampling（Android 12+）
 
-从 Android 12 开始，heapprofd 也支持 Java 堆的采样分析。配置中设置 `heaps: "com.android.art"` 即可：
+从 Android 12 开始，heapprofd 也支持 Java 堆的采样分析。这里要分清两层边界：`android.heapprofd` 这个数据源 Android 10+ 就有了，但 `heaps: "com.android.art"` 这类 Java heap selector 是 Android 12 才引入的字段。配置示例：
 
 ```
 data_sources {
   config {
-    name: "linux.heapprof"
-    heapprof_config {
+    name: "android.heapprofd"
+    heapprofd_config {
       sampling_interval_bytes: 4096
       heaps: "com.android.art"
       process_cmdline: "com.example.myapp"
@@ -659,8 +664,8 @@ data_sources {
 
 data_sources {
   config {
-    name: "linux.heapprof"
-    heapprof_config {
+    name: "android.heapprofd"
+    heapprofd_config {
       sampling_interval_bytes: 4096
       heaps: "com.android.art"
       process_cmdline: "com.example.myapp"
@@ -685,15 +690,15 @@ data_sources {
 duration_ms: 20000
 ```
 
-注意当同时开启 Heap Profiling 时，buffer 建议设为 128MB 或更大，因为调用栈数据的体积比单纯的 ftrace 事件大得多。
+注意这里的 heapprofd 配置默认按 Android 12+ 写法展示了 `heaps: "com.android.art"`。如果目标设备是 Android 10/11，需要删掉 `heaps` 字段，只保留 Native Heap Profiling。与此同时，当同时开启 Heap Profiling 时，buffer 建议设为 128MB 或更大，因为调用栈数据的体积比单纯的 ftrace 事件大得多。
 
 ## 常见问题与误区
 
-**"atrace categories 选得越多越好"**——但每个 category 都会产生一定量的 Trace 数据。选太多会导致 buffer 快速填满，真正需要的数据反而被覆盖丢失。一份只包含 `sched freq gfx view` 的 10 秒 Trace（约 20-30MB），如果加上所有 category，数据量可能膨胀到 200MB 以上，buffer 很快就会溢出。正确的做法是根据分析目标选择针对性的 category 组合，参考前面「按分析场景选择 Categories」的推荐表。
+**"atrace categories 选得越多越好"**——不对。每个 category 都会持续产生额外事件，数据量会很快膨胀，buffer 也更容易被写满。真正需要的数据被覆盖后，后面的分析就失去了定位依据。更稳妥的做法是根据分析目标选一组最小 category 组合，再按需要逐步加项，参考前面「按分析场景选择 Categories」的推荐表。
 
 **"Trace 文件越大，信息越丰富"**——也不对。信息丰富度取决于数据源的选择和配置是否精准，而不是文件大小。一份 20MB 的精准 Trace 通常比一份 200MB 的冗余 Trace 更容易定位问题。
 
-**"抓 Trace 影响性能，测出来的数据不准"**——Perfetto 的设计目标是低开销。在常规配置下（只开 sched/gfx/view 等核心 category），Trace 的性能开销通常在 1-3% 以内。但开启 Heap Profiling 或高频率 CPU 采样时，开销会明显增大（可能达到 5-10%）。做精确性能测量时（如 Benchmark），建议只保留最核心的 category。
+**"抓 Trace 影响性能，测出来的数据不准"**——要看配置。只开 `sched`、`gfx`、`view` 这类核心 category 时，Perfetto 通常适合日常定位问题；但 Heap Profiling、Long Trace 持续刷盘、高频 CPU 采样都会明显抬高开销。做严格 Benchmark 时，最好把“测性能”和“抓 Trace”拆成两轮，或者只保留最小数据源。
 
 **"beginSection 忘了 endSection 没关系"**——这会导致 Trace 数据混乱。未配对的 section 会被 Perfetto 解析器丢弃，浪费了 instrumentation 的努力。强烈建议用 try/finally 包裹，确保 `endSection` 总是被调用。
 
@@ -713,7 +718,7 @@ duration_ms: 20000
 1. Perfetto 官方文档 - Quickstart: Android Tracing: https://perfetto.dev/docs/quickstart/android-tracing
 2. Perfetto 官方文档 - TraceConfig 配置: https://perfetto.dev/docs/concepts/config
 3. Perfetto 官方文档 - Native Heap Profiler: https://perfetto.dev/docs/data-sources/native-heap-profiler
-4. Perfetto 官方文档 - Callstack Sampling: https://perfetto.dev/docs/data-sources/callstack-sampling
+4. Perfetto 官方文档 - TraceConfig Proto Reference（PerfEventConfig）: https://perfetto.dev/docs/reference/trace-config-proto#perfeventconfig
 5. Android Developers - Trace API: https://developer.android.com/reference/android/os/Trace
 6. AOSP Trace.java 源码: frameworks/base/core/java/android/os/Trace.java
 7. 高爷博客 - Android Perfetto 系列 2：Perfetto Trace 抓取: https://www.androidperformance.com/2024/05/21/Android-Perfetto-02-how-to-get-perfetto/
