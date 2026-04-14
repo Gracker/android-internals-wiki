@@ -24,10 +24,10 @@ sources:
     path: "intake/research-feeds/2026-04-07-19-android17-ebpf-sched-ext-uprobestats-observability.md"
 tags: [tracing, atrace, ftrace, tracepoint, perfetto, kernel, observability]
 related_chapters: ["13.1", "13.2", "13.5", "14.10", "1.5"]
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: pending
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
+task2b_state: fixed
 reviewed_by: openclaw-task6
 reviewed_date: '2026-04-13'
 task6_result: needs-rework
@@ -93,7 +93,7 @@ Perfetto Trace 中我们看到的 `sched_switch`、`sched_wakeup`、`cpu_frequen
 
 [已验证: AOSP android-17-beta3, kernel/trace/trace.c]
 
-当我们用 Perfetto 抓取 Trace 时，traced 守护进程本质上就是通过读写这些文件来控制 ftrace 的启停和数据采集。Perfetto 的 `TraceConfig` 中 `ftrace_events` 字段列出的每一个事件名，最终都会被写入 `set_event` 文件。
+当我们用 Perfetto 抓取 Trace 时，traced 守护进程通过读写这些文件来控制 ftrace 的启停和数据采集。Perfetto 的 `TraceConfig` 中 `ftrace_events` 字段列出的每一个事件名，最终都会被写入 `set_event` 文件。
 
 ### Android 常用 tracepoint 分类
 
@@ -127,7 +127,7 @@ ftrace 是内核层的机制。Android 应用和 Framework 代码运行在用户
 
 [已验证: AOSP android-17-beta3, frameworks/native/cmds/atrace/atrace.cpp]
 
-Perfetto 的 `TraceConfig.ftrace_events` 本质上是绕过 atrace 的分类，直接操作 ftrace 的 event 名称。这也是为什么 Perfetto 比 atrace 更灵活——我们可以精确指定需要哪些 tracepoint，而不受 atrace 预设分类的限制。
+Perfetto 的 `TraceConfig.ftrace_events` 直接绕过 atrace 的分类，直接操作 ftrace 的 event 名称。这也是为什么 Perfetto 比 atrace 更灵活——我们可以精确指定需要哪些 tracepoint，而不受 atrace 预设分类的限制。
 
 ### 用户空间 Trace tag 的底层实现
 
@@ -196,18 +196,46 @@ traced_probes 采集 ftrace 数据的核心步骤：
 - `ftrace_buffer_size_kb`：per-CPU ring buffer 大小。设备 8 核时设 32KB 意味着总共 256KB 的内核缓冲区，高负载场景下很容易溢出
 - `ftrace_events`：要启用的 tracepoint 列表。Perfetto 文档有完整的事件列表
 
-[待补充：traced_probes 读取 ring buffer 的具体代码路径]
+traced_probes 读取 ftrace 数据的源码路径：
+
+- `FtraceController`（`external/perfetto/src/traced_probes/ftrace_controller.cc`）是核心调度器，`ReadTick()` 方法按 `ftrace_drain_period_ms` 周期读取各 CPU 的 ring buffer
+- `FtraceReader`（`external/perfetto/src/traced_probes/ftrace_reader/`）负责打开 per-CPU 的 `/sys/kernel/tracing/per_cpu/cpu<N>/trace_pipe_raw` 文件描述符并循环 read
+- 读取到的原始二进制数据通过 `FtraceEventFilter` 过滤后，序列化为 Perfetto protobuf 流交给 traced service
+- `trace_pipe_raw` 与 `trace`（文本格式）的区别：前者输出二进制 ftrace event 结构体，由 traced_probes 直接解析，避免了一次文本序列化和反序列化的开销
+
+[待验证: 具体文件名在不同 Perfetto 版本中的变化，以及 GKI kernel 下 tracefs 挂载路径差异]
 
 ### 用户空间 Data Source 注册
 
-除了 ftrace，Perfetto 还支持用户空间自定义 Data Source。通过 Perfetto SDK（C++/Java），开发者可以注册自定义的数据源：
+除了 ftrace，Perfetto 还支持用户空间自定义 Data Source。这里需要区分两条路径：
 
-```java
-// 通过 Perfetto SDK 注册自定义 data source
-DataSource.register(new DataSource.InstanceDescriptor<MyDataSource>("my.custom.data"));
+**路径一：App 层时间片（最常用）。** 通过 `android.os.Trace` / `androidx.tracing` 写入 `trace_marker`，traced 会自动采集。适合绝大多数场景，不需要引入额外依赖。
+
+**路径二：Perfetto C++ SDK 自定义 Data Source。** 如果你需要发射结构化的自定义数据（不是简单的时间片），可以使用 Perfetto C++ SDK 注册自定义数据源。这是纯 C++ API，Java/Kotlin 应用需要通过 JNI 调用：
+
+```cpp
+// Perfetto C++ SDK — 注册自定义 Data Source
+#include "perfetto.h"
+
+class MyDataSource : public perfetto::DataSource<MyDataSource> {
+ public:
+  void OnSetup(const SetupArgs&) override {}
+  void OnStart(const StartArgs&) override {}
+  void OnStop(const StopArgs&) override {}
+};
+
+PERFETTO_DECLARE_DATA_SOURCE_STATIC_MEMBERS(MyDataSource);
+PERFETTO_DEFINE_DATA_SOURCE_STATIC_MEMBERS(MyDataSource);
+
+// 注册时：
+perfetto::DataSourceDescriptor dsd;
+dsd.set_name("my.custom.data");
+MyDataSource::Register(dsd);
 ```
 
-或通过 `android.os.Trace` / `androidx.tracing` 写入 trace_marker，这些数据会被 traced 自动采集。
+注册后，在 `TraceConfig` 中通过 `data_sources` 字段指定名称即可启用。
+
+[待验证: Android 16+ TracingManager API 是否提供 Java 层直接注册 Perfetto Data Source 的能力]
 
 ## 自定义 Tracing 实战
 
@@ -229,12 +257,16 @@ try {
 }
 ```
 
-在 Perfetto 中，这些 section 会出现在主线程 Track 中，名称为 `loadUserData`。需要注意：
+在 Perfetto 中，这些 section 会出现在**调用该方法的线程 Track** 中（不限于主线程），名称为 `loadUserData`。需要注意：
 - `beginSection` 和 `endSection` 必须在同一线程配对调用
 - section 可以嵌套，但不能交叉
 - section 名称在 Perfetto SQL 的 `slice` 表中，可按名称过滤
 
-`androidx.tracing` 库提供了兼容性封装和额外的 `LazyThreadSafetyMode` 控制参数。如果 minSdk 低于 18，它会自动降级为空操作。
+如果需要跨线程追踪异步操作，API 29+ 提供了 `Trace.beginAsyncSection()` / `Trace.endAsyncSection()`，用 cookie 关联起止端。
+
+`androidx.tracing` 库（`androidx.tracing:tracing`）提供了两个价值：一是向后兼容（API < 18 时自动降级为空操作）；二是通过 `TraceCompat`（已 deprecated，新代码直接用 `androidx.tracing.Trace`）统一 `beginSection` / `beginAsyncSection` 的调用入口。1.x 版本主要做兼容封装；2.0.0-alpha 引入了新的低开销 in-process tracing API，支持 Coroutine context 传播和可插拔 backend。
+
+[已验证: developer.android.com/reference/androidx/tracing/Trace, androidx.tracing:tracing:1.2.0]
 
 ### Framework 层：ATRACE 宏
 

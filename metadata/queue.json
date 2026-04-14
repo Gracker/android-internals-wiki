@@ -1992,8 +1992,12 @@
     ],
     "added_by": "task6-review",
     "added_at": "2026-04-13T21:10:00+08:00",
-    "status": "pending",
-    "original_review_log": "logs/review/2026-04-13-21-review.md"
+    "status": "completed",
+    "original_review_log": "logs/review/2026-04-13-21-review.md",
+    "completed_at": "2026-04-15T04:43:25+08:00",
+    "completed_by": "task2b-rework",
+    "result": "fixed",
+    "notes": "Task 2B 回炉修复：1) DataSource.register() Java 示例重写为准确的 C++ SDK 注册模式 + 区分 App 层/SDK 层两条路径；2) App 层 tracing 段修正：主线程 Track→调用线程 Track，移除 LazyThreadSafetyMode，补 beginAsyncSection 和 androidx.tracing TraceCompat→Trace 演进说明；3) traced_probes ftrace 读取路径补 FtraceController::ReadTick()、trace_pipe_raw per-CPU fd 源码链。STYLE.md 禁用词扫描通过。"
   },
   {
     "section": "7.13",
