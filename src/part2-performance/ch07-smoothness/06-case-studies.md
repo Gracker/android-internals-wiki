@@ -4,7 +4,7 @@ chapter: "7.6"
 section: "7.6"
 drafted_date: "2026-04-01"
 drafted_by: "openclaw-task2a"
-reviewed_date: "2026-04-06"
+reviewed_date: "2026-04-14"
 reviewed_by: "openclaw-task6"
 status: ready-for-review
 applicable_versions: "Android 8.0 (API 26) - Android 16 (API 36)"
@@ -31,10 +31,11 @@ sources:
     path: "https://developer.android.com/reference/android/content/ComponentCallbacks2"
 tags: ['case-study', 'jank', 'smoothness', 'GC', 'layout', 'binder', 'render-thread', 'low-memory', 'perfetto', 'recycler-view', 'bitmap-cache', 'vendor-optimization']
 related_chapters: ["7.1", "7.2", "7.3", "7.4", "2.5", "2.7", "4.4"]
-pipeline_stage: task6_pending
-task6_state: pending
+pipeline_stage: task2b_pending
+task6_state: reviewed
+task6_result: needs-rework
 task9_state: pending
-task2b_state: idle
+task2b_state: pending
 ---
 
 # 案例集
@@ -45,7 +46,7 @@ task2b_state: idle
 ### 锚点（必须覆盖）
 
 - 🔹 提供 3-5 个真实 Jank 案例的完整分析过程（从现象到根因到修复）
-- 🔹 案例需覆盖不同原因类型：主线程阻塞、GC、调度、SF 合成、温控
+- 🔹 案例需覆盖不同原因类型：主线程阻塞、GC、调度、SurfaceFlinger（SF）合成、温控
 - 🔹 每个案例包含：问题描述、Trace 截图/关键数据、分析过程、修复方案、效果对比
 
 ### 扩展（可选深入）
@@ -61,9 +62,9 @@ task2b_state: idle
 
 ## 为什么要用案例来学分析
 
-前面四章讲了卡顿的定义、原因体系、分析方法论和典型场景。但"会分析"和"分析得准"之间隔着一道鸿沟——真实世界的问题从来不按教科书出牌。一个看似简单的列表滑动卡顿，根因可能是主线程里的 Binder 调用碰上了系统服务繁忙；一个偶发的掉帧，可能追踪到内存压力导致的 GC 暂停。
+前面四章已经把卡顿的定义、原因体系、分析方法和典型场景拆开讲过了。真正难的部分，是把这些知识放回真实问题里，判断哪一层先出手，哪一层只是结果。一个看似简单的列表滑动卡顿，根因可能是主线程里的 Binder 调用碰上系统服务繁忙；一个偶发掉帧，也可能一路追到内存压力带来的 GC 暂停。
 
-这一节我们用五个真实案例来演示完整的分析链路。每个案例都从用户感知到的现象出发，走一遍"抓取 Trace → 定位异常 → 逐层分析 → 找到根因 → 验证修复"的全过程。重点是看分析思路，不是看结论——下次遇到类似的 Trace 截图，脑子里应该能自动启动同样的推理链条。
+这一节用五个真实案例把这套分析过程走一遍。每个案例都从用户感知到的现象出发，沿着“抓取 Trace → 定位异常 → 逐层分析 → 找到根因 → 验证修复”的顺序推进。读这五个案例时，先盯分析过程。下次再遇到类似 Trace，能直接复用同一套排查顺序。
 
 五个案例的难度递进排列：案例一和案例二是 App 端最常见的两类卡顿（布局与数据绑定）；案例三引入时间维度，展示"随使用劣化"的内存问题；案例四切换到渲染管线视角，看 RenderThread 如何反过来拖住主线程；案例五放大到系统级，分析低内存如何让所有 App 同时卡顿。建议按顺序阅读，因为后面的案例会引用前面讲过的分析方法。
 
@@ -81,11 +82,11 @@ task2b_state: idle
 
 ### 抓取与定位
 
-使用 Perfetto 抓取滑动场景的 Trace，关注主线程（ui_thread）的时间线。
+使用 Perfetto 抓取滑动场景的 Trace，关注主线程（`ui_thread`）的时间线。
 
 [待补充：Trace 截图 — 主线程 measure/layout 超时的 Perfetto 视图]
 
-在 Perfetto 中我们看到：主线程在某些帧的 traversal 阶段耗时超过 16ms（一个 VSync 周期）。展开这些帧的 detail，发现 measure 阶段反复执行，单次耗时 8-12ms。
+Perfetto 显示，主线程在某些帧的 traversal 阶段耗时超过 16ms（一个 VSync 周期）。展开这些帧的 slice 详情，发现 measure 阶段反复执行，单次耗时 8-12ms。
 
 ### 逐步分析
 
@@ -120,7 +121,7 @@ task2b_state: idle
 - `dumpsys activity top` 显示 View 层级过深
 - 多个需要两遍 measure 的 ViewGroup 叠加使用
 
-遇到列表滑动卡顿，**第一步就看 item 布局的层级和复杂度**，而不是去怀疑渲染管线或系统调度。
+遇到列表滑动卡顿，先看 item 布局的层级和复杂度，再决定要不要继续往渲染管线或系统调度方向深挖。
 
 ---
 
@@ -185,7 +186,7 @@ override fun onBindViewHolder(holder: ViewHolder, position: Int) {
 
 ### 举一反三
 
-**判断标准：onBindViewHolder 中不应该出现任何可能阻塞的操作。** 如果以下任何一项出现在 onBind 的调用栈中，就是问题：
+**判断标准：`onBindViewHolder()` 里不要放任何可能阻塞的操作。** 如果下面这些调用出现在它的调用栈里，就要继续往下查：
 
 - `ContentResolver.query()` / `ContentResolver.insert()` 等
 - `PackageManager.getPackageInfo()` 等系统服务查询
@@ -221,7 +222,7 @@ override fun onBindViewHolder(holder: ViewHolder, position: Int) {
 
 **第一步：确认是 GC 导致主线程暂停。** 在 Perfetto 中搜索 "GC" 事件，发现主线程频繁出现 `GC For Alloc`（因内存分配触发）和 `Concurrent GC`（后台并发回收）。其中 `GC For Alloc` 会暂停所有线程（包括主线程），暂停时间与堆大小成正比。
 
-**第二步：定位内存增长来源。** 通过 Android Studio Profiler 抓取 Heap Dump，发现大量 `Bitmap` 对象没有被回收。追踪引用链，找到是自定义的图片缓存 `LruCache<String, Bitmap>` 没有正确设置 size limit，导致缓存无限制增长。
+**第二步：定位内存增长来源。** 通过 Android Studio Profiler 抓取 Heap Dump，发现大量 `Bitmap` 对象没有被回收。追踪引用链，找到是自定义的图片缓存 `LruCache<String, Bitmap>` 没有正确设置容量上限，导致缓存无限制增长。
 
 **第三步：确认因果关系。** 缓存增长 → 堆压力增大 → GC 频率升高 → `GC For Alloc` 暂停主线程 → 帧超时 → 卡顿。这个链条在低内存设备上会被放大，因为系统整体内存紧张时 lmkd 会杀后台进程，进一步增加内存分配压力。
 
@@ -282,7 +283,7 @@ GC 导致卡顿的 Perfetto 特征：
 [待补充：Trace 截图 — RenderThread sync 阻塞主线程的 Perfetto 视图]
 
 Perfetto 中同时观察主线程和 RenderThread：
-- 主线程在某些帧的 draw 结束后，不是立刻进入下一个 VSync 的等待，而是被一个 `syncAndDrawFrame` 操作阻塞了 8-15ms
+- 主线程在某些帧的 draw 结束后，会在 `syncAndDrawFrame` 停 8-15ms，然后才进入下一个 VSync 的等待
 - RenderThread 在同一时间段正在进行 `DrawFrame` 操作
 
 ### 逐步分析
@@ -330,7 +331,7 @@ RenderThread 相关卡顿的 Perfetto 特征：
 - RenderThread 的 `DrawFrame` slice 明显延长
 - `uploadBitmap` 操作频繁出现
 
-**判断技巧：** 如果主线程卡顿但业务代码不耗时，看 RenderThread 是否是瓶颈——主线程在等 RenderThread。
+**判断技巧：** 如果主线程卡顿，但业务代码本身不耗时，就先看 RenderThread 是否成了瓶颈。主线程很多时候是在等它。
 
 ---
 
@@ -444,7 +445,7 @@ OPPO 在 ColorOS 中引入了"极光引擎"，核心思路是将渲染管线从�
 
 ### vivo X200 系列：多维度性能优化
 
-vivo 在 X200 系列中采用了从 SoC 调度到应用层全链路的优化策略，包括：
+vivo 在 X200 系列中采用了从 SoC 调度到应用层的多层优化策略，包括：
 - 智能刷新率调度：根据内容类型动态调整屏幕刷新率
 - 游戏场景的 CPU/GPU 协同调频
 - 基于 AI 的帧率预测和提前渲染
@@ -457,7 +458,7 @@ vivo 在 X200 系列中采用了从 SoC 调度到应用层全链路的优化策�
 
 ## 特殊硬件条件下的 Jank 案例
 
-前面的分析默认了一个前提：60Hz 屏幕、中等配置设备。但现实中 Android 生态的硬件差异极大——从 90Hz/120Hz 高刷屏到 4 核 4GB 的入门机，硬件条件本身就会制造独特的卡顿模式。了解这些模式，有助于在分析时快速排除或确认硬件因素。
+前面的分析默认了一个前提：60Hz 屏幕、中等配置设备。现实中的 Android 设备差异很大，从 90Hz / 120Hz 高刷屏到 4 核 4GB 的入门机，硬件条件本身就会制造独特的卡顿模式。了解这些模式，有助于在分析时更快排除或确认硬件因素。
 
 ### 高刷新率屏幕的"帧预算压缩"问题
 
@@ -504,7 +505,7 @@ vivo 在 X200 系列中采用了从 SoC 调度到应用层全链路的优化策�
 
 **第四步：验证假设。** 定位到可疑原因后，用代码修改或配置调整验证（如降低布局层级、移除 Binder 调用、限制缓存大小等），对比修改前后的 Trace 和指标。
 
-[自动发现: 通用分析方法论综合自高爷多个博客文章和 Perfetto 系列的分析思路]
+[待验证: 这一节的方法论综合自高爷多篇博客与 Perfetto 系列，后续可补逐条出处]
 
 ---
 
