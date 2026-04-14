@@ -8970,5 +8970,38 @@
     "added_at": "2026-04-14T16:46:00+08:00",
     "status": "pending",
     "file": "src/part2-performance/ch11-power/05-wakelock.md"
+  },
+  {
+    "section": "1.13",
+    "section_title": "MessageQueue 机制与 DeliQueue 无锁优化",
+    "priority": 90,
+    "reason": "[review回炉] 3 个问题：缺少 Trace 证据、量化数据缺实验条件、收尾段活人感偏弱",
+    "material_paths": [
+      "intake/suggestions.md（含 review 意见）"
+    ],
+    "review_issues": [
+      {
+        "type": "需补充素材",
+        "location": "与 Choreographer 的协作关系 / 在 Perfetto 中观察锁竞争变化",
+        "detail": "正文仍停在 [待补充] 占位和通用 SQL 层面，缺少至少一组 Android 16 vs 17 的实际 Trace 截图或等价图示，读者很难把“锁竞争减少”落到具体观察路径。",
+        "suggestion": "补 1 组 Android 16 vs 17 的对比 Trace 或等价图示，至少标出 VSync-app、doFrame、主线程 lock contention slice 的对应位置。"
+      },
+      {
+        "type": "需补充素材",
+        "location": "DeliQueue 的性能实测数据",
+        "detail": "15%、4%、7.7%-9.1%、9.1% 和 5000 倍这些数字都来自官方博客，但缺少设备、负载、测试场景的说明，读者知道结论，却不知道这些数字在什么条件下成立。",
+        "suggestion": "补一段测试条件说明；如果拿不到条件，就把量化结论改成“官方博客披露数据”，避免读者把它当成通用结论。"
+      },
+      {
+        "type": "需重写",
+        "location": "常见问题与误区 / 参考资料前的收尾",
+        "detail": "误区部分的信息是对的，但四段问答排下来节奏很像模板，收尾也停在资料列表，少了一段工程判断，活人感偏弱。",
+        "suggestion": "补一小段经验性判断，例如哪些 Trace 现象值得先怀疑 MessageQueue 锁竞争，哪些情况不要先怪它。"
+      }
+    ],
+    "added_by": "task6-review",
+    "added_at": "2026-04-14T18:05:00+08:00",
+    "status": "pending",
+    "original_review_log": "logs/review/2026-04-14-18-review.md"
   }
 ]

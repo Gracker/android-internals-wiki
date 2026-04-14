@@ -1,10 +1,11 @@
 ---
 title: "MessageQueue 机制与 DeliQueue 无锁优化"
 chapter: "1.13"
+section: "1.13"
 status: ready-for-review
 applicable_versions: "Android 1.0 (API 1) - Android 17 (API 37)"  # MessageQueue 自 API 1 存在; DeliQueue 为 Android 17 新增
 drafted_date: "2026-04-04"
-reviewed_date: "2026-04-08"
+reviewed_date: "2026-04-14"
 reviewed_by: openclaw-task6
 last_verified: "2026-04-09"
 last_verified_against: "AOSP android-16.0.0_r1"
@@ -22,23 +23,50 @@ sources:
     path: "https://en.wikipedia.org/wiki/Treiber_Stack"
 tags:
   - android
-  - binder
-  - research
+  - looper
+  - messagequeue
+  - deliqueue
 related_chapters: ["1.5", "1.14", "2.4", "2.5", "7.1"]
-pipeline_stage: task6_pending
-task6_state: pending
+pipeline_stage: task2b_pending
+task6_state: reviewed
+task6_result: needs-rework
 task9_state: pending
-task2b_state: idle
+task2b_state: pending
 ---
 
 
 # 1.13 MessageQueue 机制与 DeliQueue 无锁优化
 
+<!-- outline-start -->
+## 本节要点大纲
+
+### 锚点（必须覆盖）
+
+- 🔹 MessageQueue 在主线程事件循环中的角色
+- 🔹 传统 `synchronized` 链表为什么会带来锁竞争和优先级反转
+- 🔹 `Looper.next()` 的工作机制，包括 epoll、同步屏障与唤醒
+- 🔹 Android 17 `DeliQueue` 的结构，包括 Treiber 栈、最小堆与 tombstoning
+- 🔹 我们如何在 Perfetto 中识别 MessageQueue 锁竞争，并判断 DeliQueue 带来的变化
+
+### 扩展（可选深入）
+
+- 🔸 DeliQueue 对冷启动、FrameTimeline 和 Choreographer 调度的影响
+- 🔸 兼容性与迁移时需要关注的反射、测试框架与版本边界
+
+### OpenClaw 加工指引
+
+> **锚点**是最低覆盖要求，加工时必须逐条落实并标注验证结果。
+> **扩展**视素材丰富程度选择性深入。
+> 如果从官方博客、AOSP 或 Perfetto 素材里发现与锁竞争观测直接相关的新证据，
+> 可**就地插入**最相关的锚点之后，并用 `[自动发现]` 标注，方便后续 review。
+> 涉及 Android 17 DeliQueue 的表述，优先补源码或 Trace 证据，再给结论。
+<!-- outline-end -->
+
 ## 为什么要了解 MessageQueue
 
-我们在 Perfetto 中分析主线程卡顿时，经常会看到一些奇怪的现象：明明 doFrame 执行得很快，但还是掉帧了。展开掉帧区域的 Trace，发现主线程有一段被标记为 "locked"——它在等锁。这个锁不是 App 代码主动加的，而是系统内部的 MessageQueue 在做消息入队时产生的竞争。
+我们在 Perfetto 中分析主线程卡顿时，经常会看到一些奇怪的现象：明明 doFrame 执行得很快，但还是掉帧了。展开掉帧区域的 Trace，发现主线程有一段被标记为 "locked"——它在等锁。这个锁来自系统内部的 MessageQueue 消息入队路径。
 
-MessageQueue 是 Android 主线程任务调度的核心。UI 线程上几乎所有工作——Input 事件分发、Choreographer 的 VSync 回调、Handler 发送的消息——最终都通过 MessageQueue 排队执行。这意味着，如果 MessageQueue 本身存在性能瓶颈，它会直接影响渲染帧率、启动速度和响应延迟。
+MessageQueue 是 Android 主线程任务调度的核心。UI 线程上几乎所有工作——Input 事件分发、Choreographer 的 VSync 回调、Handler 发送的消息——最终都通过 MessageQueue 排队执行。一旦 MessageQueue 本身出现性能瓶颈，它会直接影响渲染帧率、启动速度和响应延迟。
 
 Android 17（API 37）引入了 DeliQueue，用无锁数据结构替代了传统 MessageQueue 的 monitor lock 实现（本章前半部分介绍传统 MessageQueue 机制，后半部分聚焦 Android 17 的 DeliQueue 变化）。这不是一个小优化——Google 内部测试数据显示，主线程锁竞争时间减少了 15%，App 掉帧减少了 4%，SystemUI 和 Launcher 掉帧甚至减少了 7.7% 到 9.1%。了解这个机制的变化，不仅能帮我们在 Trace 中正确理解锁竞争的来源，还能理解为什么 Android 17 的 UI 流畅度有了系统性提升。
 
@@ -48,7 +76,7 @@ Android 17（API 37）引入了 DeliQueue，用无锁数据结构替代了传统
 
 ### MessageQueue 在主线程中的角色
 
-Android 的主线程本质上是一个事件循环。Looper.loop() 不断从 MessageQueue 中取出消息并分发处理，整个 UI 线程的工作都建立在这个循环之上。
+Android 的主线程就是一个事件循环。Looper.loop() 不断从 MessageQueue 中取出消息并分发处理，整个 UI 线程的工作都建立在这个循环之上。
 
 ```java
 // frameworks/base/core/java/android/os/Looper.java
@@ -115,7 +143,7 @@ boolean enqueueMessage(Message msg, long when) {
 }
 ```
 
-关键在于 synchronized(this)——这意味着任何时候只有一个线程能操作这个链表。当后台线程通过 Handler 向主线程发送消息时，它必须先拿到 MessageQueue 的锁。如果此时主线程的 Looper 正在处理消息（也会涉及 next() 中的锁操作），后台线程就会被阻塞。反之亦然：如果后台线程持有锁，主线程在调用 next() 时也会被卡住。
+这里的限制来自 synchronized(this)。同一时刻只有一个线程能操作这条链表。当后台线程通过 Handler 向主线程发送消息时，它必须先拿到 MessageQueue 的锁。如果此时主线程的 Looper 正在处理消息（也会涉及 next() 中的锁操作），后台线程就会被阻塞。反之亦然：如果后台线程持有锁，主线程在调用 next() 时也会被卡住。
 
 这种场景下就会出现**优先级反转**：低优先级的后台线程持有 MessageQueue 的锁，而高优先级的 UI 线程在等这个锁。UI 线程被阻塞的每一毫秒，都在增加掉帧的风险。
 
@@ -219,7 +247,7 @@ push(msg):
 
 ### 最小堆与 drain 过程
 
-Looper 线程在调用 next() 时，首先将 Treiber 栈中的所有消息转移到自己的最小堆：
+Looper 线程在调用 next() 时，会先将 Treiber 栈中的所有消息转移到自己的最小堆：
 
 ```
 drain():
@@ -248,8 +276,6 @@ DeliQueue 使用了一种 **tombstoning** 机制来解决同步问题。具体�
 
 [已验证: Google Android Developers Blog, 2026-02-17 — tombstoning technique 描述]
 
-[已验证: Google Android Developers Blog, 2026-02-17 — tombstoning technique 描述]
-
 ### 为什么 Treiber 栈 + 最小堆的组合有效
 
 这个组合能够工作，是因为 Android 的消息模型有一个重要特性：**消息的处理顺序由 when 决定，而不是先到先得。** 即使消息 B 在消息 A 之后被 push 进栈，只要 B.when < A.when，B 就应该先被处理。
@@ -272,7 +298,7 @@ Google 在 Android 17 Beta 阶段公布了 DeliQueue 的内部测试数据：
 
 几个值得关注的点：
 
-**5000 倍的插入提速**不是 App 实际能感受到的——这是合成基准测试（synthetic benchmark）的极端场景，大量线程同时高频插入。但它说明了一个事实：旧实现的 monitor lock 在高竞争场景下退化非常严重，而 CAS 无锁方案在高竞争下依然表现稳定。
+**5000 倍的插入提速**来自合成基准测试（synthetic benchmark）的极端场景，大量线程同时高频插入。它不直接对应 App 体感，但能说明一件事：旧实现的 monitor lock 在高竞争场景下退化很严重，而 CAS 无锁方案在高竞争下更稳定。
 
 **SystemUI 和 Launcher 的掉帧改善比普通 App 更大**（7.7%-9.1% vs 4%），原因是系统组件的消息交互更频繁——壁纸、通知栏、导航栏、最近任务都在频繁向 SystemUI 的主线程发消息。锁竞争越激烈的场景，DeliQueue 的收益越明显。
 
@@ -284,7 +310,7 @@ Google 在 Android 17 Beta 阶段公布了 DeliQueue 的内部测试数据：
 
 理解 DeliQueue 对渲染管线的影响，需要先看清 Choreographer 是如何融入消息循环的。
 
-Choreographer 的 doFrame() 本质上就是主线程 MessageQueue 的一个 Callback。当 VSync-app 信号到来时，Choreographer 通过 FrameDisplayEventReceiver 接收信号，然后以异步 Message 的形式投递到 MessageQueue，最终触发 doFrame()。
+Choreographer 的 doFrame() 可以看作主线程 MessageQueue 上的一个 Callback。当 VSync-app 信号到来时，Choreographer 通过 FrameDisplayEventReceiver 接收信号，然后以异步 Message 的形式投递到 MessageQueue，最终触发 doFrame()。
 
 ```
 VSync-app 信号 → FrameDisplayEventReceiver.onVsync()
@@ -296,7 +322,7 @@ VSync-app 信号 → FrameDisplayEventReceiver.onVsync()
 
 在旧架构中，如果后台线程恰好在 enqueueMessage() 中持有了 MessageQueue 的锁，VSync 回调消息的入队就会被阻塞。即使只阻塞了 2-3ms，在 120Hz 设备上（每帧预算 8.33ms），这已经占了帧预算的 24%-36%。如果主线程此时还在处理上一帧的消息（涉及 next() 中的锁操作），VSync 消息的延迟会更大。
 
-DeliQueue 消除了这个瓶颈。VSync 回调消息通过 Treiber 栈无锁入队，不需要等任何其他线程释放锁。这意味着从 VSync 信号到 doFrame() 的调度延迟更可预测、更稳定。
+DeliQueue 消除了这个瓶颈。VSync 回调消息通过 Treiber 栈无锁入队，不需要等任何其他线程释放锁。从 VSync 信号到 doFrame() 的调度延迟也会更可预测、更稳定。
 
 这种改善在 Trace 中表现为：对比 Android 16 和 17 的相同 App，Android 17 上 VSync-app 到 doFrame 开始之间的间隔更短、更一致（方差更小）。
 
@@ -308,7 +334,11 @@ DeliQueue 的 API 完全兼容——Handler.sendMessage()、post()、postDelayed
 
 但有几种边缘情况需要注意：
 
-**反射访问 MessageQueue 内部字段会失效。** 最关键的是 mMessages 字段——在 DeliQueue 中，消息的存储从 mMessages 链表迁移到了 Treiber 栈和最小堆。mMessages 字段在 DeliQueue 模式下虽然仍存在于对象布局中（保持 JNI 层和其他二进制兼容），但不再作为消息的主存储，通过反射读取它得到的是空值。[待验证: DeliQueue 内部 mMessages 字段的具体处理方式——是否置 null、是否保留最后一条消息引用，需 AOSP android-17 正式 tag 发布后确认]Espresso 需要升级到 3.7.0+ 以使用新的 TestLooperManager API。Robolectric 也在新版本中做了相应适配。
+**反射访问 MessageQueue 内部字段会失效。** 最关键的是 mMessages 字段。在 DeliQueue 中，消息的存储从 mMessages 链表迁移到了 Treiber 栈和最小堆。mMessages 字段在 DeliQueue 模式下虽然仍存在于对象布局中（保持 JNI 层和其他二进制兼容），但不再作为消息的主存储，通过反射读取它得到的是空值。
+
+[待验证: DeliQueue 内部 mMessages 字段的具体处理方式，是否置 null、是否保留最后一条消息引用，需 AOSP android-17 正式 tag 发布后确认]
+
+Espresso 需要升级到 3.7.0+ 以使用新的 TestLooperManager API。Robolectric 也在新版本中做了相应适配。
 
 **调试开关。** 如果需要临时禁用 DeliQueue（比如排查兼容性问题），可以通过系统属性设置。具体属性名和值请参考 Android 17 的开发者文档。
 
@@ -377,8 +407,8 @@ DeliQueue 只解决了 MessageQueue 自身的锁竞争问题。主线程上还�
 | Android 版本 | MessageQueue 变化 |
 |-------------|------------------|
 | Android 1.0 | 初始实现：synchronized 链表 |
-| Android 5.0 (API 21) | IdleHandler 支持 |
 | Android 4.1 (API 16) | 同步屏障用于 Choreographer VSync 优先级 |
+| Android 5.0 (API 21) | IdleHandler 支持 |
 | Android 6.0 (API 23) | Message 回收池优化 |
 | Android 17 (API 37) | **DeliQueue：无锁 Treiber 栈 + 最小堆** |
 

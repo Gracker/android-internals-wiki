@@ -3164,3 +3164,22 @@
 - **问题**：SQL 直接按 `track.name GLOB "*wakelock*"` 聚合，缺少“这些 slice 实际来自哪类表/轨道”的说明；读者照抄后很可能因为 track 命名不同而查不到结果。
 - **建议**：补 `linux.ftrace` power tracepoints 进入 trace processor 后的具体表名 / track 命名示例，或给一个能在当前 trace config 下直接跑通的查询。
 
+
+## [Task6 Review] 1.13 MessageQueue 机制与 DeliQueue 无锁优化 — 2026-04-14
+- **类型**：需补充素材
+- **位置**：与 Choreographer 的协作关系 / 在 Perfetto 中观察锁竞争变化
+- **问题**：正文仍停在 `[待补充]` 占位和通用 SQL 层面，缺少至少一组 Android 16 vs 17 的实际 Trace 截图或等价图示，读者很难把“锁竞争减少”落到具体观察路径。
+- **建议**：补 1 组 Android 16 vs 17 的对比 Trace 或等价图示，至少标出 VSync-app、doFrame、主线程 lock contention slice 的对应位置。
+- **review 日志**：logs/review/2026-04-14-18-review.md
+
+- **类型**：需补充素材
+- **位置**：DeliQueue 的性能实测数据
+- **问题**：15%、4%、7.7%-9.1%、9.1% 和 5000 倍这些数字都来自官方博客，但缺少设备、负载、测试场景的说明，读者知道结论，却不知道这些数字在什么条件下成立。
+- **建议**：补一段测试条件说明；如果拿不到条件，就把量化结论改成“官方博客披露数据”，避免读者把它当成通用结论。
+- **review 日志**：logs/review/2026-04-14-18-review.md
+
+- **类型**：需重写
+- **位置**：常见问题与误区 / 参考资料前的收尾
+- **问题**：误区部分的信息是对的，但四段问答排下来节奏很像模板，收尾也停在资料列表，少了一段工程判断，活人感偏弱。
+- **建议**：补一小段经验性判断，例如哪些 Trace 现象值得先怀疑 MessageQueue 锁竞争，哪些情况不要先怪它。
+- **review 日志**：logs/review/2026-04-14-18-review.md
