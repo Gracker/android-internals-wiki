@@ -3,7 +3,7 @@ title: "内存相关的版本演进"
 chapter: "4.6"
 status: ready-for-review
 section: "4.6"
-reviewed_date: "2026-04-08"
+reviewed_date: "2026-04-15"
 reviewed_by: "openclaw-task6"
 polish_count: 1
 polish_date: "2026-04-07"
@@ -39,9 +39,10 @@ tags: ['memory-evolution', 'art', 'dalvik', 'gc', 'bitmap', 'scudo', 'mte', 'lar
 related_chapters: ["4.1", "4.2", "4.3", "4.4", "4.5", "2.9"]
 drafted_date: "2026-03-31"
 drafted_by: "openclaw-subagent"
-review_count: 2
-pipeline_stage: task6_pending
-task6_state: pending
+review_count: 3
+pipeline_stage: task9_pending
+task6_state: reviewed
+task6_result: pass-light-edit
 task9_state: pending
 task2b_state: idle
 ---
@@ -55,7 +56,7 @@ task2b_state: idle
 
 - 🔹 Android 5.0 ART 替代 Dalvik，GC 效率大幅提升
 - 🔹 Android 8.0 Bitmap 内存从 Java Heap 移至 Native Heap
-- 🔹 Android 10 GC 改为 Concurrent Copying，暂停时间降至亚毫秒
+- 🔹 Android 8.0 引入 Concurrent Copying GC；Android 10 完善分代 GC，Young GC 暂停降至 1-3ms
 - 🔹 Android 11+ malloc 切换到 Scudo allocator
 - 🔹 各版本对进程内存限制、大堆(largeHeap)策略的变化
 
@@ -133,7 +134,7 @@ AOSP 源码路径：
 
 ### 迁移带来的关键变化
 
-**Java 堆的"天花板"变了。** 之前 Bitmap 像素数据计入 `dalvikHeapSize`，受 `Runtime.getRuntime().maxMemory()` 限制。迁移后，Bitmap 不再占用 Java 堆配额。这意味着同样大小的 Java 堆，可以容纳更多的 Java 对象（或者说，不容易因为 Bitmap 而触发 Java OOM）。
+**Java 堆的"天花板"变了。** 之前 Bitmap 像素数据计入 `dalvikHeapSize`，受 `Runtime.getRuntime().maxMemory()` 限制。迁移后，Bitmap 不再占用 Java 堆配额。同样大小的 Java 堆，可以容纳更多的 Java 对象（或者说，不容易因为 Bitmap 而触发 Java OOM）。
 
 **内存统计的"作弊"问题。** 虽然 Bitmap 不在 Java 堆了，但它仍然占用进程的 PSS（Proportional Set Size）。通过 `dumpsys meminfo` 查看，我们会发现 `Native Heap` 部分增大了。一个常见的错误是：开发者通过 `Runtime.getRuntime().freeMemory()` 判断内存是否紧张，但在 Android 8.0+ 上，这个方法只反映 Java 堆的情况，完全不包含 Bitmap 占用的 Native 内存。如果 App 有大量图片，可能 Java 堆看起来还很充裕，但进程整体内存已经接近系统限制。
 
@@ -307,7 +308,7 @@ Android 系统为每个进程设定了 Java 堆的大小上限。这个上限不
 
 Android 在 Manifest 中提供了 `android:largeHeap="true"` 选项，允许 App 请求更大的堆空间。这个设计的初衷是为少数确实需要大量内存的 App（如图片编辑器、地图应用）提供一个"逃生出口"。
 
-但 largeHeap 有一个经常被误解的点：**它不是免费的**。更大的堆意味着：
+但 largeHeap 有一个经常被误解的点：**它不是免费的**。更大的堆带来三个直接影响：
 
 - **GC 暂停时间更长**。GC 需要扫描更多的对象，标记和回收的时间与堆大小正相关。一个 512MB 堆上的 Full GC 可能暂停 50ms 以上。
 - **其他进程的可用内存减少**。Android 设备的物理内存是所有进程共享的。一个 App 占用过多的 Java 堆，会挤压其他进程的可用空间，触发更频繁的 lmkd 进程回收。
@@ -325,7 +326,7 @@ Google 在不同版本中对 largeHeap 的策略做了一些调整：
 
 除了 Java 堆限制外，Android 还对进程的整体内存使用有软性约束。系统通过 `lmkd`（Low Memory Killer Daemon）监控所有进程的内存使用，当系统内存紧张时按优先级杀进程。关于 lmkd 的详细机制，见 4.4 节「Low Memory Killer」。
 
-Android 8.0 Bitmap 迁移到 Native 堆后，进程整体内存的构成发生了变化。之前 Bitmap 占 Java 堆，现在占 Native 堆。这意味着即使 Java 堆还有空闲，如果 Native 堆（包含 Bitmap 像素数据、JNI 分配、Scudo 管理的内存等）过大，进程仍然可能被 lmkd 选中杀掉。开发者在做内存优化时，需要同时关注 Java 堆和 Native 堆的使用情况。
+Android 8.0 Bitmap 迁移到 Native 堆后，进程整体内存的构成发生了变化。之前 Bitmap 占 Java 堆，现在占 Native 堆。即使 Java 堆还有空闲，如果 Native 堆（包含 Bitmap 像素数据、JNI 分配、Scudo 管理的内存等）过大，进程仍然可能被 lmkd 选中杀掉。开发者在做内存优化时，需要同时关注 Java 堆和 Native 堆的使用情况。
 
 ### 如何查看设备的内存配置
 
@@ -354,7 +355,7 @@ MTE（Memory Tagging Extension）是 ARMv8.5 引入的硬件级内存安全特�
 
 [图：MTE Tag 比对机制示意（指针顶部 4-bit Tag 与内存 Tag Storage 中的 Tag 比对流程）]
 
-MTE 的核心思想是给每块内存和一个指针都打上一个 4-bit 的 Tag（标签，取值 0-15）。当 CPU 访问内存时，硬件自动比较指针的 Tag 和内存的 Tag：如果匹配，正常执行；如果不匹配，触发异常。由于 Tag 只有 4 bit（16 个值），随机 Tag 的碰撞概率是 1/16，这意味着大约 93.75% 的错误访问会被检测到。
+MTE 的核心思想是给每块内存和一个指针都打上一个 4-bit 的 Tag（标签，取值 0-15）。当 CPU 访问内存时，硬件自动比较指针的 Tag 和内存的 Tag：如果匹配，正常执行；如果不匹配，触发异常。由于 Tag 只有 4 bit（16 个值），随机碰撞概率是 1/16，约 93.75% 的错误访问会被检测到。
 
 内存的 Tag 存储在独立的物理空间中（Tag Storage），对软件透明。每 16 字节的内存对应 4 bit 的 Tag，所以 Tag Storage 占总物理内存的 1/32（约 3%）。对于一台 8GB 内存的设备，约 256MB 的物理空间被预留给 Tag Storage。
 
@@ -391,7 +392,7 @@ MTE 提供三种检测模式，在安全性和性能之间提供不同的权衡�
 
 Scudo 作为 Android 的默认 Native 内存分配器，是 MTE 在堆上检测的核心载体。当 MTE 启用时，Scudo 会在每次 `malloc` 时生成随机 Tag 并写入内存，在 `free` 时擦除 Tag。这样任何对已释放内存的访问（use-after-free）都会因为 Tag 不匹配而被检测到。
 
-一个巧妙的设计细节：Android 配置 GCR_EL1 寄存器排除 Tag 0，只允许生成 Tag 1-15。而 Scudo 的 Chunk Header 使用 Tag 0。这意味着任何溢出踩踏到 Chunk Header 的行为都会因为 Tag 不匹配被当场捕获。
+一个巧妙的设计细节：Android 配置 GCR_EL1 寄存器排除 Tag 0，只允许生成 Tag 1-15。而 Scudo 的 Chunk Header 使用 Tag 0。任何溢出踩踏到 Chunk Header 的行为都会因为 Tag 不匹配被当场捕获。
 
 ### 对 App 开发者的影响
 
@@ -415,14 +416,14 @@ Android 在不同版本中对 Graphics 内存的计量和归属做了几次调�
 
 ### Hardware Bitmap 与 GPU 内存
 
-Android 8.0 引入了 `Bitmap.Config.HARDWARE`。硬件 Bitmap 的像素数据存储在 GPU 内存中，而不是系统 RAM 中。这意味着：
+Android 8.0 引入了 `Bitmap.Config.HARDWARE`。硬件 Bitmap 的像素数据存储在 GPU 内存中，而不是系统 RAM 中。具体表现：
 
 - **不计入 App 的 PSS**：从 `dumpsys meminfo` 的角度看，这张 Bitmap "不占内存"。
 - **渲染更快**：GPU 直接使用自己的显存绘制，不需要从系统 RAM 拷贝到 GPU。
 - **不能修改**：硬件 Bitmap 是只读的，不能用 Canvas 绘制。
 - **不能跨进程**：不能通过 Binder 传递给 Remote Views。
 
-Glide 和 Coil 等图片加载库默认在 API 26+ 上使用硬件 Bitmap。这解释了一个常见困惑：为什么 App 在 Android 8.0+ 上看起来"内存占用更少"——不是真的少了，是一部分内存转移到了 GPU 侧。
+Glide 和 Coil 等图片加载库默认在 API 26+ 上使用硬件 Bitmap。这解释了一个常见困惑：为什么 App 在 Android 8.0+ 上看起来"内存占用更少"——一部分内存转移到了 GPU 侧，总量并没有减少。
 
 ### EGL/GL 内存的跟踪
 
@@ -454,7 +455,7 @@ Google 官方测试的量化数据相当可观：
 - **相机冷启动**快 6.6%，热启动快 4.48%
 - **系统启动**快约 8%（约节省 950ms）
 
-这些性能提升的代价是**内部碎片**：原本只需要 4KB 的小内存分配（如 `mmap` 映射），现在实际占用 16KB。对于内存分配密集的应用，这意味着更高的内存占用。不过在 8GB+ 的大内存设备上，这个代价相对 TLB 收益来说是可以接受的。
+这些性能提升的代价是**内部碎片**：原本只需要 4KB 的小内存分配（如 `mmap` 映射），现在实际占用 16KB。对于内存分配密集的应用，实际内存占用会更高。不过在 8GB+ 的大内存设备上，这个代价相对 TLB 收益来说是可以接受的。
 
 对于开发者的适配要求：纯 Java/Kotlin 应用自动兼容，无需修改；但使用 NDK/C++ 的应用需要用 NDK r28+ 重新编译，确保 ELF 段对齐到 16KB。硬编码 `PAGE_SIZE = 4096` 的代码必须改为 `sysconf(_SC_PAGESIZE)` 动态获取。可以通过 `adb shell getconf PAGE_SIZE` 检查设备当前的页面大小。
 
@@ -492,7 +493,7 @@ largeHeap 只是提高了 Java 堆的上限，它不能增加 Native 堆或进�
 
 ### 误区三：Scudo 让 Native 内存更安全了，不用再关心内存问题
 
-Scudo 能检测很多内存安全错误，但它是"检测"而不是"预防"。它能在错误发生后报告（crash），但不能阻止错误的发生。而且 Quarantine 默认是禁用的，这意味着 use-after-free 在生产环境中可能仍然检测不到。Scudo 是一道防线，但不是万能药。
+Scudo 能检测很多内存安全错误，但它是"检测"而不是"预防"。它能在错误发生后报告（crash），但不能阻止错误的发生。而且 Quarantine 默认是禁用的，所以 use-after-free 在生产环境中可能仍然检测不到。Scudo 是一道防线，但不是万能药。
 
 ### 误区四：MTE 开销太大，应该关闭
 
