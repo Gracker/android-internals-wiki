@@ -2517,14 +2517,16 @@
       "status": "ready-for-review",
       "pipeline_stage": "task6_pending",
       "task6_state": "revisiting",
-      "task9_state": "pending",
+      "task9_state": "reviewed",
       "task2b_state": "fixed",
       "section": "14.9",
       "task6_result": "needs-rework",
       "reviewed_date": "2026-04-14",
       "reviewed_by": "openclaw-task6",
       "task2b_result": "partial-fixed",
-      "last_updated": "2026-04-14T23:58:21"
+      "last_updated": "2026-04-14T23:58:21",
+      "task9_result": "needs-rework",
+      "task9_reviewed_date": "2026-04-15"
     },
     "src/part3-tools/ch14-other-tools/10-ebpf-performance-analysis.md": {
       "chapter": "14.10",
