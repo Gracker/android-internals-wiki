@@ -9,8 +9,9 @@ applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
 last_verified: "2026-04-03"
 last_verified_against: "perfetto.dev docs, AOSP android-16.0.0_r1"
 confidence: high
-reviewed_date: "2026-04-06"
+reviewed_date: "2026-04-14"
 reviewed_by: "openclaw-task6"
+task6_result: needs-rework
 polish_count: 1
 polish_date: "2026-04-06"
 polish_by: "task2b-polish"
@@ -31,10 +32,10 @@ tags: ['perfetto', 'trace', 'atrace', 'trace-capture', 'heapprofd']
 related_chapters: ["13.1", "13.3", "13.4", "14.1", "15.1"]
 
 re-review-result: "审查 2 条素材，无需修改（素材内容为 Trace Processor SQL 分析，与 Trace 抓取阶段不匹配，更适合 §13.3/§13.5）"
-pipeline_stage: task6_pending
-task6_state: pending
+pipeline_stage: task2b_pending
+task6_state: reviewed
 task9_state: pending
-task2b_state: idle
+task2b_state: pending
 ---
 
 # Trace 抓取
@@ -70,7 +71,7 @@ task2b_state: idle
 
 更关键的是，Trace 抓取不是只有一种方式。不同场景需要不同的抓取策略：快速复现一个卡顿问题，用 `record_android_trace` 脚本几行命令就能搞定；分析启动性能，需要在 App 代码中插入自定义标记来精确度量各个阶段；排查内存泄漏，则需要额外开启 Heap Profiling。了解这些方式的差异和适用场景，能让我们在最短时间内拿到最有价值的 Trace 数据。
 
-本节按照从简单到复杂的顺序，逐一介绍 Perfetto Trace 的各种抓取方式，最后给出一份覆盖常见分析场景的推荐配置。
+本节按从简单到复杂的顺序，逐一介绍 Perfetto Trace 的几种常见抓取方式，并给出一份覆盖常见分析场景的推荐配置。
 
 ## 命令行抓取：perfetto 命令
 
@@ -301,7 +302,7 @@ atrace categories 是 Android 系统预定义的事件分类，每一个 categor
 
 ### Binder 与 IPC
 
-- **binder_driver**：Binder 驱动事件，包括 Binder 事务的开始和完成。分析跨进程调用的耗时、Binder 调用阻塞主线程导致的 ANR 时，这个 category 至关重要。
+- **binder_driver**：Binder 驱动事件，包括 Binder 事务的开始和完成。分析跨进程调用的耗时、Binder 调用阻塞主线程导致的 ANR 时，通常都要带上这个 category。
 
 ### 运行时与资源
 
@@ -379,7 +380,7 @@ Perfetto UI（<https://ui.perfetto.dev>）不仅是一个 Trace 分析工具，�
 
 使用 USB 线连接设备和电脑后，Perfetto UI 会自动检测到连接的 Android 设备。在 "Target platform" 下拉框中选择对应设备。
 
-如果设备没有被检测到，需要确认 ADB 连接正常（`adb devices` 可以看到设备），并且浏览器支持 WebUSB。
+如果设备没有被检测到，需要确认 ADB 连接正常（`adb devices` 能列出设备），并且浏览器支持 WebUSB。
 
 ### 配置抓取参数
 
@@ -401,9 +402,9 @@ Perfetto UI 把配置分成了几个直观的 Tab：
 
 ### 导出配置为命令行
 
-Perfetto UI 最实用的一个功能是：在 UI 上配置好所有参数后，切换到 "Recording command" Tab，可以看到对应的命令行和 `.pbtxt` 配置文件。
+Perfetto UI 有个很实用的功能：在 UI 上配好参数后，切到 "Recording command" Tab，就会显示对应的命令行和 `.pbtxt` 配置文件。
 
-这意味着我们可以把 UI 上的可视化配置直接转化为可重复执行的脚本命令。在团队协作中，可以把这份配置文件提交到代码仓库，确保所有人使用相同的 Trace 配置。
+这样我们就能把 UI 上的可视化配置直接转成可重复执行的脚本命令。在团队协作中，可以把这份配置文件提交到代码仓库，确保所有人使用相同的 Trace 配置。
 
 操作方式是：在 "Recording command" Tab 中，复制两个 EOF 标记之间的内容，保存为 `config.pbtxt` 文件。之后团队成员就可以用这个配置文件来抓取 Trace：
 
@@ -438,7 +439,7 @@ try {
 
 抓取 Trace 时，只要在 atrace categories 中包含了 App 的包名（通过 `atrace_apps` 或命令行参数 `-a com.example.myapp`），这些自定义标记就会出现在 Perfetto UI 中 App 进程的主线程 track 上，显示为带有标签名的彩色切片。
 
-`Trace.beginSection` 和 `Trace.endSection` 使用的底层标签是 `ATRACE_TAG_APP`。这意味着所有通过 `android.os.Trace` API 添加的标记都会归类在同一个 tag 下。
+`Trace.beginSection` 和 `Trace.endSection` 使用的底层标签是 `ATRACE_TAG_APP`。因此，所有通过 `android.os.Trace` API 添加的标记都会归类到同一个 tag 下。
 
 ### 使用约束
 
@@ -552,7 +553,7 @@ Long Trace 在降低内存要求的同时引入了新的 trade-off。
 
 ## Heap Profiling 与 Callstack Sampling
 
-[已验证: 官方文档, perfetto.docs/data-sources/native-heap-profiler; perfetto.dev/docs/data-sources/callstack-sampling]
+[已验证: 官方文档, perfetto.dev/docs/data-sources/native-heap-profiler; perfetto.dev/docs/data-sources/callstack-sampling]
 
 Perfetto 不只能做时间线追踪。它还集成了内存剖析（Heap Profiling）和 CPU 调用栈采样（Callstack Sampling），可以在同一个 Trace 会话中同时收集这些数据。
 
@@ -687,7 +688,7 @@ duration_ms: 20000
 
 ## 常见问题与误区
 
-**"atrace categories 选得越多越好"**——实际上，每个 category 都会产生一定量的 Trace 数据。选太多会导致 buffer 快速填满，真正需要的数据反而被覆盖丢失。一份只包含 `sched freq gfx view` 的 10 秒 Trace（约 20-30MB），如果加上所有 category，数据量可能膨胀到 200MB 以上，buffer 很快就会溢出。正确的做法是根据分析目标选择针对性的 category 组合，参考前面「按分析场景选择 Categories」的推荐表。
+**"atrace categories 选得越多越好"**——但每个 category 都会产生一定量的 Trace 数据。选太多会导致 buffer 快速填满，真正需要的数据反而被覆盖丢失。一份只包含 `sched freq gfx view` 的 10 秒 Trace（约 20-30MB），如果加上所有 category，数据量可能膨胀到 200MB 以上，buffer 很快就会溢出。正确的做法是根据分析目标选择针对性的 category 组合，参考前面「按分析场景选择 Categories」的推荐表。
 
 **"Trace 文件越大，信息越丰富"**——也不对。信息丰富度取决于数据源的选择和配置是否精准，而不是文件大小。一份 20MB 的精准 Trace 通常比一份 200MB 的冗余 Trace 更容易定位问题。
 

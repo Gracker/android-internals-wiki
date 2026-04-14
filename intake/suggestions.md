@@ -2998,3 +2998,16 @@
 - **问题**：只给到进程级观察建议，没有可跑通的 track/layer 名称、trace config 或自定义 trace 点，读者很难按文中步骤独立复现。
 - **建议**：至少补 1 组最小抓取 recipe，例如 FrameTimeline + SurfaceFlinger layer + wm/app/launcher trace config，或明确标注 [待补充：trace config / 图示]。
 
+
+## [Task6 Review] 13.2 Trace 抓取 — 2026-04-14
+- **类型**：需确认
+- **位置**：Heap Profiling 与 Callstack Sampling
+- **问题**：`linux.heapprof` / `heapprof_config` 示例和 Java Heap Sampling 说明都把配置写得比较死，Android 10-16 的真实数据源名、字段名和支持边界需要按当前 Perfetto 文档再核一遍。
+- **建议**：先交 Task 9 对照 Perfetto 官方文档和版本支持矩阵核对；Task 2B 再统一回写 heapprofd / Java Heap Sampling / callstack sampling 的配置示例。
+- **review 日志**：logs/review/2026-04-14-11-review.md
+
+- **类型**：需补充素材
+- **位置**：常见问题与误区
+- **问题**：`20-30MB`、`200MB`、`1-3%`、`5-10%` 这些量化结论没有设备型号、Trace 配置、采样频率和测试条件，读者很容易把它们当成通用基线。
+- **建议**：补最小实验上下文和来源；如果短期补不齐，就降级成定性描述。
+- **review 日志**：logs/review/2026-04-14-11-review.md
