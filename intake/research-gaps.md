@@ -2309,3 +2309,20 @@ Perfetto 用户态 tracing 在正文里被混成了一条线：`android.os.Trace
 ### 关联章节
 1.13、2.4、2.5、1.14
 
+## [2026-04-14] 12.4 Android 网络安全与 TLS 性能优化 — ECH / TLS 客户端能力矩阵
+
+### 盲区描述
+正文没有拆清 Android 17 下 HttpEngine、WebView、OkHttp、原始 SSLSocket 在 ECH、Certificate Transparency、TLS resumption/0-RTT 上的能力边界。官方文档已经明确 ECH 是否生效取决于网络库是否接入，但章节仍把它近似写成“平台自动透明支持”。这会直接影响读者对性能成本、回退行为和排查路径的判断。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 按客户端栈拆出 ECH / CT / TLS 1.3 resumption 的支持矩阵
+- 核对 Android 默认 TLS 1.3 与 0-RTT 的真实关系，给出官方来源
+- 设计观测方案：Perfetto、OkHttp EventListener、抓包 / Network Inspector 分别能看到什么
+- 补 ECH fallback 条件与 HTTPS/SVCB / echconfig 获取路径
+
+### 关联章节
+§12.2、§12.3、§13.7
+

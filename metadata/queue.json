@@ -9204,5 +9204,77 @@
     "added_at": "2026-04-14T21:28:20+08:00",
     "status": "pending",
     "original_review_log": "logs/review/2026-04-14-21-review.md"
+  },
+  {
+    "section": "12.4",
+    "section_title": "Android 网络安全与 TLS 性能优化",
+    "priority": 95,
+    "reason": "[Deep Tech Review] 12.4 的 0-RTT、ECH 能力边界和 Network Security Configuration 示例存在事实级错误，当前版本会误导读者判断 Android 客户端能力与配置方式。",
+    "material_paths": [
+      "intake/suggestions.md",
+      "intake/research-gaps.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "行63 TLS 1.3 0-RTT / OkHttp",
+        "detail": "正文称“OkHttp 从 4.x 版本开始支持 TLS 1.3，但默认不启用 0-RTT，需要开发者手动配置”。Android 官方资料明确说明 Android 上 TLS 1.3 的 0-RTT 不支持，当前写法会把不存在的 Android 客户端开关写成可配置能力。",
+        "suggestion": "删掉“手动配置 0-RTT”的指导，改成“Android 默认 TLS 1.3 不等于可用 0-RTT；若要讨论 early data，必须单列客户端栈与平台支持边界，并给出官方来源”。"
+      },
+      {
+        "type": "源码错误",
+        "location": "行95 ECH 定义 / RFC",
+        "detail": "把 ECH 写成“RFC 9180 相关扩展”。RFC 9180 实际是 HPKE 标准，不是 ECH 规范。",
+        "suggestion": "ECH 段落改引 Android 17 行为变更文档或 ECH 对应 IETF 文档，把 RFC 9180 保留给 HPKE 章节。"
+      },
+      {
+        "type": "源码错误",
+        "location": "行99-114 ECH 启用条件",
+        "detail": "正文写成“平台会自动尝试使用 ECH”“预计 Android 17 平台级实现对上层 HTTP 客户端透明”。官方 Android 17 文档明确写的是：只有当网络库（如 HttpEngine、WebView、OkHttp）已集成 ECH 支持时，ECH 才会生效。",
+        "suggestion": "把表述收窄为“平台提供 ECH 能力，但是否生效取决于网络库是否接入”；同时补一张 HttpEngine/WebView/OkHttp/原始 SSLSocket 的能力矩阵。"
+      },
+      {
+        "type": "源码错误",
+        "location": "行178-183 Network Security Configuration 示例",
+        "detail": "注释写“调试模式允许 localhost 明文”，但示例里的 `debug-overrides` 只是在 debug build 下信任 user CA，并没有任何 `cleartextTrafficPermitted=\"true\"` 的 localhost 配置。示例和注释行为不一致。",
+        "suggestion": "如果想演示 localhost 明文例外，改成 `domain-config cleartextTrafficPermitted=\"true\"` 的示例；如果想演示 debug CA，注释就应改为“调试模式信任用户证书”。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-14T22:07:00+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "12.4",
+    "section_title": "Android 网络安全与 TLS 性能优化",
+    "priority": 85,
+    "reason": "[Deep Tech Review] 12.4 的 ECH 原理链、Provider 更新前提和客户端观测矩阵没有闭合，当前版本缺少工程上可验证的判断路径。",
+    "material_paths": [
+      "intake/research-gaps.md",
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "原理断裂",
+        "location": "行101-109 ECH 获取配置与性能开销",
+        "detail": "正文把 ECH 工作流程和 DoH/DoT 强绑定，并把额外成本写成“如果使用 DoH，这是一次额外的 HTTPS 请求”。ECH 需要区分 HTTPS/SVCB 记录获取、resolver cache miss 和 DNS 传输层加密，这三层在原理上不是一回事。",
+        "suggestion": "把“获取 echconfig / HTTPS 记录”“DNS 是否加密传输”“首次 cache miss 的延迟”拆开写，避免把 ECH 讲成必须依赖 DoH/DoT 的协议。"
+      },
+      {
+        "type": "版本差异",
+        "location": "行89 Conscrypt 更新路径；行238-244 DoH / Private DNS",
+        "detail": "一处把 Google Play Services 的 provider 更新写成近似系统默认行为，另一处把 Android 11 的 DoH 支持直接当成既定事实，但正文没有交代 ProviderInstaller 前提，也没有给 DoH 版本边界的官方来源。",
+        "suggestion": "明确“Provider 更新”是否需要 ProviderInstaller / 特定网络栈接入；DoH 版本边界若没有官方口径，降级为 [待验证]，不要在主叙述里写成已定论。"
+      },
+      {
+        "type": "知识盲区",
+        "location": "全文，尤其行99-114、212-257",
+        "detail": "章节在谈性能代价，但缺少 HttpEngine / WebView / OkHttp / 原始 SSLSocket 的能力矩阵，也缺少 Perfetto、OkHttp EventListener、抓包等观测路径。读者看完仍无法判断“某个客户端到底能不能用 ECH / CT / resumption，以及该怎么验证”。",
+        "suggestion": "补一节“客户端栈能力矩阵 + 观测路径”，至少回答：能力是否存在、触发条件是什么、在工具里怎么看、失败回退长什么样。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-14T22:07:00+08:00",
+    "status": "pending"
   }
 ]

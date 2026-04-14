@@ -3276,3 +3276,21 @@
 - **建议**：交给 Task 9 核对当前 Perfetto 可观测 slice / marker，再决定保留通用 SQL 还是改成“项目自定义标记”范式。
 - **review 日志**：logs/review/2026-04-14-21-review.md
 
+## [Task9 Deep Review] 12.4 Android 网络安全与 TLS 性能优化 — 2026-04-14
+- **类型**：数据缺失
+- **位置**：行73、105-109、152-160
+- **问题**：TLS 握手拆分、ECH 首次 cache miss、HTTP→HTTPS 重定向的延迟代价都只有文字判断，没有 Trace、抓包时序或真实案例，唯一的图仍停在占位符。
+- **建议**：至少补 2 组证据：一组握手分段图（DNS / TCP / TLS / 首包），一组 HTTP→HTTPS 重定向 vs 直连 HTTPS 的时延对比。
+
+## [Task9 Deep Review] 12.4 Android 网络安全与 TLS 性能优化 — 2026-04-14
+- **类型**：数据缺失
+- **位置**：行132-155
+- **问题**：“SCT 验证微秒级”“500KB 以上 TLS 能量开销可忽略”都给了量化判断，但正文没有给来源、测试条件或设备范围。
+- **建议**：补来源或降级成定性表述，并标注适用条件。
+
+## [Task9 Deep Review] 12.4 Android 网络安全与 TLS 性能优化 — 2026-04-14
+- **类型**：源码准确性
+- **位置**：行158 混合内容（Mixed Content）
+- **问题**：mixed content 阻塞/告警是浏览器与 WebView 的安全语义，不适用于所有 native HTTP 客户端。当前写法把 Web 内容场景外推成通用 App 网络行为。
+- **建议**：把这一条明确限定到 WebView/浏览器场景，或改成 native 客户端真正会遇到的 cleartext block / redirect / cert chain 问题。
+
