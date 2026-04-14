@@ -1722,8 +1722,12 @@
     ],
     "added_by": "task6-review",
     "added_at": "2026-04-14T20:14:24+08:00",
-    "status": "pending",
-    "original_review_log": "logs/review/2026-04-14-20-review.md"
+    "status": "completed",
+    "original_review_log": "logs/review/2026-04-14-20-review.md",
+    "completed_at": "2026-04-15T03:45:33",
+    "completed_by": "task2b-rework",
+    "result": "fixed",
+    "notes": "Task 2B 回炉修复：1) 版本边界 5 处 [待验证] 注释补强（ECH/CT/cleartext/HPKE/Conscrypt）；2) 补 3 处 [图：...] 占位（TLS 时序对比、ECH 握手位置、HTTP→HTTPS 重定向）；3) CT/Cleartext/HPKE/最佳实践 重排为工程叙述（场景→机制→代价→排查），减少资料汇编感；4) 总结表改为排查对照表。STYLE.md 禁用词扫描通过。"
   },
   {
     "section": "14.7",
