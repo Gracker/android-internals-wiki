@@ -8605,7 +8605,11 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-14T09:45:00+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-15T02:42:42",
+    "completed_by": "task2b-rework",
+    "result": "fixed",
+    "notes": "Task 2B P95 回炉修复：1) RecyclerView 绑定路径从 onDraw 改为 onBindViewHolder 滚动/预取关键路径；2) ContentResolver.query 补充同进程 Provider 场景；3) LruCache 示例补 sizeOf() 覆写；4) RenderThread sync 改用 §2.5 已验证调用链 (syncFrameState)；5) AnimatedVectorDrawable 瓶颈从 uploadBitmap 改为 DisplayList 重录制+GPU 栅格化；6) onTrimMemory 示例收敛到 UI_HIDDEN 并补 Android 14 变更说明。STYLE.md 禁用词扫描通过。"
   },
   {
     "section": "7.6",
