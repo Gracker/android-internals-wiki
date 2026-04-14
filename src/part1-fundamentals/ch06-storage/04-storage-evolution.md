@@ -4,8 +4,8 @@ chapter: "6.4"
 section: "6.4"
 status: ready-for-review
 applicable_versions: "Android 4.4 (API 19) - Android 15 (API 35)"
-last_verified: "2026-04-01"
-last_verified_against: "Android 15 / UFS 4.0 spec / AOSP android-15.0.0_r1"
+last_verified: "2026-04-14"
+last_verified_against: "Android storage docs / Photo Picker docs / Android 14 partial photo access docs / UFS 4.0 spec"
 confidence: medium
 polish_count: 1
 polish_date: "2026-04-05"
@@ -17,6 +17,10 @@ sources:
     path: "https://developer.android.com/about/versions/11/privacy/storage"
   - type: blog
     path: "https://developer.android.com/training/data-storage/shared/media"
+  - type: official
+    path: "https://developer.android.com/training/data-storage/shared/photopicker"
+  - type: official
+    path: "https://developer.android.com/about/versions/14/changes/partial-photo-video-access"
   - type: aosp
     path: "fs/f2fs/ in kernel"
   - type: blog
@@ -30,11 +34,12 @@ drafted_by: "openclaw-task2a"
 reviewed_date: "2026-04-14"
 reviewed_by: "openclaw-task6"
 task6_result: "pass-light-edit"
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
 task9_result: needs-rework
-task2b_state: pending
+task2b_result: fixed
+task2b_state: fixed
 ---
 
 
@@ -45,7 +50,7 @@ task2b_state: pending
 
 ### 锚点（必须覆盖）
 
-- 🔹 Android 4.4 FUSE → 8.0 SDCardFS → 11 回归 FUSE 的演进
+- 🔹 Android 7 及更早的 FUSE → 8.0-10 SDCardFS → 11 回归 FUSE 的演进
 - 🔹 Scoped Storage 的引入（Android 10+）与 MediaStore API
 - 🔹 EROFS 在 Android 12+ system 分区的启用
 - 🔹 UFS 规格演进对 Android 存储性能的影响
@@ -78,7 +83,9 @@ task2b_state: pending
 
 ### FUSE 的最初选择与性能代价
 
-Android 的外部存储（/sdcard 或 /storage/emulated/0）对应的是一个建立在 /data/media 之上的模拟层。从 Android 4.4（KitKat）开始，Google 使用 FUSE（Filesystem in Userspace，用户空间文件系统）来模拟一个 FAT32 文件系统，挂载在 /data/media 之上。之所以选择 FUSE，是因为 Android 需要在 Linux 的 ext4/f2fs 文件系统之上，对外暴露一个符合传统 FAT32 行为的接口——支持不区分大小写的文件名、兼容 Windows 文件操作习惯，同时还能在底层实现基于 UID 的文件权限控制。
+Android 的外部存储（/sdcard 或 /storage/emulated/0）对应的是一个建立在 /data/media 之上的模拟层。本节从 Android 4.4（KitKat）切入，但 emulated storage 的 FUSE 并不是 4.4 才第一次出现。按照官方存储版本线，Android 7 及更早版本的共享外部存储都依赖 FUSE 守护进程把底层文件系统包装成接近 FAT 的访问语义；Android 8.0 到 Android 10 才切到 SDCardFS，Android 11 再回到改进版 FUSE。Android 4.4 在这条时间线上的新变化，主要是把 `READ_EXTERNAL_STORAGE` 从原先的写权限模型中拆出来，为后面的 Scoped Storage 铺路。
+
+FUSE 当年会成为 emulated storage 的基础方案，是因为 Android 需要在 Linux 的 ext4/f2fs 文件系统之上，对外暴露一个符合传统 FAT32 行为的接口，支持不区分大小写的文件名、兼容 Windows 文件操作习惯，同时还能在底层实现基于 UID 的文件权限控制。
 
 但 FUSE 的架构决定了它的性能上限。每次文件操作（open、read、write、stat）都需要从内核态切换到用户态的 FUSE 守护进程（sdcard 进程），处理完再切回内核。代价也很直接：
 
@@ -108,17 +115,18 @@ Android 11 做了一个出人意料的决定：弃用 SDCardFS，重新回归 FU
 
 SDCardFS 虽然性能好，但它有两个致命的局限性：它工作在内核态，很难与用户空间的权限检查逻辑深度集成；它的设计目标是模拟 FAT32 语义，而不是实现精细的文件访问控制。
 
-回归后的 FUSE 不是 Android 4.4 那个原始版本。Google 重写了 libfuse 实现，做了大量优化：
+回归后的 FUSE 不是 Android 7 及更早版本那套原始实现。Google 在 Android 11 里重做了用户态 FUSE 路径，主要有几层变化：
 
-- **MediaProvider 集成**：新的 FUSE 实现允许 MediaProvider 模块在用户空间拦截文件操作，根据 Scoped Storage 的策略决定是否放行。文件访问会先经过权限检查，App 只能访问自己创建的文件或者用户授权的媒体文件。
-- **性能关键路径绕过**：对于性能敏感的目录（如 Android/data、Android/obb），FUSE 层直接放行，不再经过 MediaProvider 检查。
-- **仅限内核 5.4+**：Android 11 要求内核版本 5.4 及以上的设备必须使用新的 FUSE 实现，SDCardFS 不再被支持。
+- **MediaProvider 集成**：新的 FUSE 实现允许 MediaProvider 在用户空间拦截文件操作，根据 Scoped Storage 规则决定是否放行。共享媒体访问会先经过权限检查，App 只能访问自己创建的文件或者用户授权的媒体文件。
+- **App 自身目录直通**：对于性能敏感的目录（如 `Android/data/<package>`、`Android/obb/<package>`），系统保留了更短的访问路径，不把每次 I/O 都变成一次完整的 MediaProvider 判定。
+- **Android 12 的 FUSE passthrough**：当文件已经完成权限判定，并且访问条件允许 direct access 时，后续 read/write 可以绕过用户态 FUSE 守护进程，尽量接近底层文件系统性能。
+- **内核门槛**：对 Android 11 起步、且内核为 5.4+ 的新设备，SDCardFS 已经被弃用，官方路径回到 FUSE。
 
 [已验证: 官方文档, source.android.com/docs/core/storage + developer.android.com/about/versions/11/privacy/storage]
 
-在 Perfetto 中，如果我们在 Android 11+ 设备上观察文件操作，通常会看到 sdcard FUSE 进程的 CPU 活动比旧版 FUSE 设备更多。但通过优化后的路径，App 直接访问自身目录的开销是可控的。
+在 Perfetto 中，如果我们在 Android 11+ 设备上观察文件操作，通常会看到 sdcard FUSE 进程的 CPU 活动比 Android 8-10 时代更明显。Android 12+ 如果命中了 FUSE passthrough，持续 read/write 的额外开销会比 Android 11 首版实现更低。
 
-**性能分析的启示**：面对存储性能异常，先确认 Android 版本。Android 8-10 使用 SDCardFS，文件操作路径短、延迟低；Android 11+ 使用新 FUSE，外部存储的文件访问会经过额外的权限检查层。但 App 私有目录（`getExternalFilesDir()`）和媒体文件路径有专门的优化处理，开销可控。
+**性能分析的启示**：面对存储性能异常，先确认 Android 版本和访问路径。Android 8-10 使用 SDCardFS；Android 11 回到 FUSE，并把权限判定前移到 MediaProvider；Android 12+ 在满足条件时可以把一部分后续 I/O 送进 FUSE passthrough。App 私有外部目录、共享媒体 direct path、`MediaStore`、SAF、Photo Picker 的成本并不在同一层。
 
 ## Scoped Storage：外部存储权限的全面重构
 
@@ -134,13 +142,13 @@ Google 没有一步到位地强制 Scoped Storage，而是用了多个版本分�
 
 **Android 10（API 29）：引入但可退出。** App 默认启用 Scoped Storage，但可以通过 `requestLegacyExternalStorage=true` 临时退出，保持旧行为。这给了开发者一个过渡期。
 
-**Android 11（API 30）：强制执行。** `requestLegacyExternalStorage` 被忽略，所有面向 API 30+ 的 App 必须遵守 Scoped Storage 规则。引入了 `MANAGE_EXTERNAL_STORAGE` 特殊权限（仅限文件管理器等特殊 App），同时恢复了通过文件路径直接访问媒体文件的能力——这是对 Android 10 中过度限制的修正。
+**Android 11（API 30）：强制执行。** `requestLegacyExternalStorage` 被忽略，所有面向 API 30+ 的 App 必须遵守 Scoped Storage 规则。引入了 `MANAGE_EXTERNAL_STORAGE` 特殊权限（仅限文件管理器等特殊 App），同时恢复了通过文件路径直接访问媒体文件的能力。
 
-**Android 13（API 33）：细粒度媒体权限。** 将 `READ_EXTERNAL_STORAGE` 拆分为 `READ_MEDIA_IMAGES`、`READ_MEDIA_VIDEO`、`READ_MEDIA_AUDIO` 三个独立权限。App 只能申请它真正需要的媒体类型权限。
+**Android 13（API 33）：细粒度媒体权限 + 系统 Photo Picker。** `READ_EXTERNAL_STORAGE` 被拆分为 `READ_MEDIA_IMAGES`、`READ_MEDIA_VIDEO`、`READ_MEDIA_AUDIO`。同一版本还把系统级 Photo Picker 作为正式能力提供出来，App 可以在不申请存储权限的前提下让用户只选择特定照片或视频；Android 11/12 设备可以通过模块更新拿到这套选择器能力。
 
-**Android 14（API 34）：照片选择器。** 引入系统级 Photo Picker，App 可以只请求用户选中的特定照片和视频，而不需要整个媒体库的访问权限。
+**Android 14（API 34）：Selected Photos Access。** 对还在使用自定义媒体选择器的 App，系统新增 `READ_MEDIA_VISUAL_USER_SELECTED`，让用户只授权选中的照片和视频，不再一次性开放整类媒体库。
 
-[已验证: 官方文档, developer.android.com/about/versions/11/privacy/storage + developer.android.com/training/data-storage/shared/media]
+[已验证: 官方文档, developer.android.com/about/versions/11/privacy/storage + developer.android.com/training/data-storage/shared/photopicker + developer.android.com/about/versions/14/changes/partial-photo-video-access]
 
 ### MediaStore API 的角色变化
 
@@ -159,11 +167,21 @@ MediaStore 是 Android 提供的媒体文件索引数据库，它扫描外部存
 | Android 版本 | App 默认可访问范围 | 特殊权限 | 变化要点 |
 |:---:|:---:|:---:|:---:|
 | 9 及以前 | 外部存储全部文件 | READ/WRITE_EXTERNAL_STORAGE | 无限制 |
-| 10 | App 私有目录 + 自创建媒体 | 可选 requestLegacyExternalStorage | 引入 Scoped Storage |
-| 11 | App 私有目录 + 媒体文件 | MANAGE_EXTERNAL_STORAGE | 强制执行，恢复媒体路径访问 |
+| 10 | App 私有目录 + 自创建媒体 | 可选 `requestLegacyExternalStorage` | 引入 Scoped Storage |
+| 11 | App 私有目录 + 媒体文件 | `MANAGE_EXTERNAL_STORAGE` | 强制执行，恢复媒体 direct path |
 | 12 | 同 11，SAF 受限 | 同 11 | 限制 SAF 访问的目录范围 |
-| 13 | App 私有目录 + 授权类型媒体 | READ_MEDIA_IMAGES/VIDEO/AUDIO | 细粒度媒体权限 |
-| 14 | 同 13 + Photo Picker | 同 13 | 系统照片选择器 |
+| 13 | App 私有目录 + 授权类型媒体，或通过 Photo Picker 访问用户所选媒体 | `READ_MEDIA_IMAGES/VIDEO/AUDIO`（Photo Picker 可不申请存储权限） | 细粒度媒体权限；系统 Photo Picker 首次提供 |
+| 14 | 同 13，并支持“仅所选照片和视频”授权 | `READ_MEDIA_VISUAL_USER_SELECTED`（自定义图库）；Photo Picker 仍可无权限使用 | 引入 Selected Photos Access |
+
+从 Android 11 到 Android 14，常见外部存储访问路径可以整理成下表：
+
+| 访问路径 | 主要版本 | 权限前提 | 是否经过 MediaProvider / Provider 裁决 | Android 12+ 是否可能走 FUSE passthrough | 备注 |
+| --- | --- | --- | --- | --- | --- |
+| direct file path（`File` / `fopen()`） | 11-14 | 自身目录无需广义存储权限；共享媒体需要 `READ_EXTERNAL_STORAGE`（11-12）或 `READ_MEDIA_*`（13-14），或者文件归属 | 共享媒体会；自身目录通常不会 | 是 | Android 11 恢复共享媒体 direct path，自身目录仍是最短路径 |
+| `MediaStore`（`ContentResolver`） | 10-14 | 媒体权限或文件归属 | 会 | 视文件打开后的访问条件而定 | 共享媒体的推荐入口仍是 `MediaStore` |
+| SAF（`ACTION_OPEN_DOCUMENT` / tree URI） | 11-14 | 用户授予 document/tree URI | 经 `DocumentsProvider`，不走 `MediaStore` 主路径 | 否 | 适合跨目录文档访问 |
+| Photo Picker URI | 13-14；11/12 可通过模块更新回推 | 无需存储权限 | 经 Photo Picker / Provider | 否 | 只开放用户选中的照片或视频 |
+| 自定义图库 + `READ_MEDIA_VISUAL_USER_SELECTED` | 14 | `READ_MEDIA_VISUAL_USER_SELECTED` | 会 | 默认按 `MediaStore` / provider 路径理解 | 用于仍保留自定义相册界面的 App |
 
 ## EROFS：system 分区的只读革命
 
@@ -286,9 +304,14 @@ UFS 4.0 还引入了多循环队列（Multi-Circular Queue，MCQ），可以类�
 adb shell cat /sys/devices/platform/soc/*.ufshc/string_descriptors/manufacturer_name 2>/dev/null
 adb shell cat /sys/devices/platform/soc/*.ufshc/string_descriptors/product_name 2>/dev/null
 
-# 简易顺序读测速（排除缓存影响）
-adb shell dd if=/dev/block/by-name/userdata of=/dev/null bs=1M count=100 conv=fsync 2>&1
+# 受控测试环境下，先准备一个顺序读测试文件
+adb shell dd if=/dev/zero of=/data/local/tmp/storage-bench.bin bs=1M count=256 conv=fsync 2>/dev/null
+
+# 顺序读基线测试（绕过输入侧 page cache）
+adb shell dd if=/data/local/tmp/storage-bench.bin of=/dev/null bs=1M count=256 iflag=direct 2>&1
 ```
+
+如果需要直接读取 live userdata block device，只建议在 rooted / userdebug 实验机上操作，并在测试前单独处理 page cache。`conv=fsync` 只影响输出端刷盘，不能拿来判断输入侧读缓存。
 
 ## [自动发现] 文件系统迁移：从 ext4 到 f2fs
 

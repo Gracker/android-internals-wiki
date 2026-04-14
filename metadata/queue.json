@@ -8386,7 +8386,9 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-14T08:21:00+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-14T17:40:00+08:00",
+    "completed_by": "task2b-rework"
   },
   {
     "section": "6.4",
@@ -8406,7 +8408,9 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-14T08:21:00+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-14T17:40:00+08:00",
+    "completed_by": "task2b-rework"
   },
   {
     "section": "7.6",
