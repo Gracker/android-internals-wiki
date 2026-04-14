@@ -3513,3 +3513,59 @@
 - **位置**：版本演进 小节
 - **问题**：Android 8 Treble 对 Gralloc HAL 的重构未提及，影响 GraphicBuffer 分配路径
 - **建议**：在版本表中增加 Android 8 行（Gralloc HIDL 化），或标注为 [待验证]
+
+## [Task9 Deep Review] 4.5 App 内存优化 — 2026-04-15
+
+- **类型**：源码准确性
+- **位置**：malloc debug 命令示例
+- **问题**：`LIBC_DEBUG_MALLOC_OPTIONS=backtrace_tracker android.app.ActivityThread` 中 `android.app.ActivityThread` 不是有效 malloc debug 选项。应删除或改用标准 wrap 属性写法。
+- **建议**：改为 `adb shell setprop wrap.com.example.app '"LIBC_DEBUG_MALLOC_OPTIONS=backtrace_tracker"'`
+
+## [Task9 Deep Review] 4.5 App 内存优化 — 2026-04-15
+
+- **类型**：源码准确性
+- **位置**：Bitmap Native 回收机制（多处）
+- **问题**：正文称"Native 层的 finalize 机制"回收 Bitmap 像素数据。实际 AOSP 使用 `NativeAllocationRegistry`（API 26 引入），通过 phantom reference 机制在 GC 回收 Java Bitmap 对象时自动释放 native 内存。`Bitmap.finalize()` 仅作兜底。
+- **建议**：将"Native 层的 finalize 机制"改为"通过 NativeAllocationRegistry 注册到 GC 的自动回收机制"，并简要说明与 `Object.finalize()` 的区别。
+
+## [Task9 Deep Review] 4.5 App 内存优化 — 2026-04-15
+
+- **类型**：原理链
+- **位置**：onTrimMemory 章节 → LMK 联动
+- **问题**：onTrimMemory 级别升级与 lmkd 杀进程策略之间的因果链缺失。读者无法建立"回调级别 → 进程 adj → lmkd 杀决策"的完整映射。
+- **建议**：在 onTrimMemory 章节末尾补一段与 §4.4 LMK 的衔接，说明 TRIM_MEMORY_COMPLETE 对应的 oom_score_adj 区间和 lmkd 行为。
+
+## [Task9 Deep Review] 4.5 App 内存优化 — 2026-04-15
+
+- **类型**：版本差异
+- **位置**：全文
+- **问题**：缺少覆盖 Android 8-17 的完整版本演进表。
+- **建议**：补一张版本演进表，至少包含：API 26 Bitmap→Native、API 26 NativeAllocationRegistry、API 28 Hardware Bitmap、API 31+ heapprofd --java、API 35 16KB page、API 36 MemoryManager、API 37 新增内存 API。
+
+## [Task9 Deep Review] 4.5 App 内存优化 — 2026-04-15
+
+- **类型**：版本差异
+- **位置**：onTrimMemory 章节
+- **问题**：缺少 Android 16/17 新增的 `MemoryManager` API（`getMemoryAdvisory` / `isLowMemory`），App 端主动感知内存压力的能力未讨论。
+- **建议**：补一节"现代内存感知 API"或至少在 onTrimMemory 章节末尾加一段"Android 16+ 的 MemoryManager API 提供了更主动的内存压力查询能力"，交叉引用 §16.5。
+
+## [Task9 Deep Review] 4.5 App 内存优化 — 2026-04-15
+
+- **类型**：数据缺失
+- **位置**：inBitmap 复用收益
+- **问题**："inBitmap 可以将 Bitmap 相关的内存分配减少 80% 以上"无 benchmark 来源和测试条件。
+- **建议**：补充 benchmark 来源或改为"在列表滑动场景中可显著减少 Bitmap 内存分配"的定性表述。
+
+## [Task9 Deep Review] 4.5 App 内存优化 — 2026-04-15
+
+- **类型**：数据缺失
+- **位置**：GC 暂停时间
+- **问题**："GC 暂停 3-5ms"无设备/版本/堆大小/负载等测试条件。
+- **建议**：补充测试条件或改为"Young GC 暂停通常在毫秒级"的定性表述，并交叉引用 §4.8（ART 分代 GC）的具体暂停数据。
+
+## [Task9 Deep Review] 4.5 App 内存优化 — 2026-04-15
+
+- **类型**：数据缺失
+- **位置**：内存分区策略
+- **问题**：30%/40%/20%/10% 分区百分比的来源"公开技术分享, 货拉拉 Android 端内存治理实践等"过于模糊，无法追溯。
+- **建议**：补充具体分享标题和链接，或改为"一种典型的分区方案示例"并标注为经验值。

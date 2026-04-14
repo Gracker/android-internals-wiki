@@ -2429,3 +2429,36 @@ dequeueBuffer() 在所有 slot 被占用时会阻塞 producer 线程。AOSP 使�
 
 ### 关联章节
 2.13, 2.6, 2.9
+
+## [2026-04-15] 4.5 App 内存优化 — 知识盲区
+
+### 盲区一：Jetpack Compose 内存特性
+
+#### 盲区描述
+章节扩展大纲提到"Compose 的内存特点与注意事项"但正文未展开。Compose 的 recomposition 会频繁创建临时对象（remember / derivedStateOf / lambda 分配），compose runtime 的 SlotTable 管理、以及 Compose 对 Bitmap 缓存的影响是 Compose App 内存优化的核心关注点。
+
+#### 重要程度
+高 — Compose 已成为 Android 现代 UI 开发的主流方案，缺少 Compose 内存特性的讨论，覆盖面不足。
+
+#### 建议研究方向
+- Compose recomposition 的对象分配模式（lambda / SnapshotStateList / derivedStateOf）
+- Compose 对 Bitmap/图片缓存的影响（AsyncImage / rememberAsyncImagePainter 内存管理）
+- Compose 的 LazyColumn vs RecyclerView 内存对比
+- `remember` 与 `rememberSaveable` 的内存管理差异
+
+### 盲区二：Android 16+ MemoryManager API
+
+#### 盲区描述
+Android 16 引入 `android.app.MemoryManager` API，提供 `getMemoryAdvisory()` 和 `isLowMemory()` 等方法，App 端可以主动查询内存压力而不仅依赖 onTrimMemory 被动回调。当前章节只覆盖 onTrimMemory 一种机制。
+
+#### 重要程度
+高 — 这是 Android 16+ 的新官方推荐方案，与现有 onTrimMemory 形成互补。
+
+#### 建议研究方向
+- AOSP `android.app.MemoryManager` 的 API 文档和实现
+- `MemoryAdvisory` 的状态级别和推荐响应策略
+- 与 onTrimMemory 的互补关系和使用场景区分
+- 交叉引用 §16.5（Android 17 性能行为变更）
+
+### 关联章节
+4.3, 4.4, 7.10, 16.5

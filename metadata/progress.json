@@ -21,7 +21,7 @@
     "task9_unknown": 31,
     "task9_pending": 170,
     "task9_reviewed": 6,
-    "last_updated": "2026-04-15T01:05:00+08:00",
+    "last_updated": "2026-04-15T04:22:00+08:00",
     "task2b_state_counts": {
       "unknown": 31,
       "fixed": 78,
@@ -36,8 +36,8 @@
     },
     "task9_state_counts": {
       "unknown": 31,
-      "pending": 170,
-      "reviewed": 6
+      "pending": 169,
+      "reviewed": 7
     },
     "pipeline_stage_counts": {
       "unknown": 31,
@@ -966,13 +966,15 @@
       "status": "ready-for-review",
       "pipeline_stage": "task9_pending",
       "task6_state": "reviewed",
-      "task9_state": "pending",
+      "task9_state": "reviewed",
       "task2b_state": "idle",
       "reviewed_date": "2026-04-15",
       "reviewed_by": "openclaw-task6",
       "section": "4.5",
       "task6_result": "pass-light-edit",
-      "review_round": 3
+      "review_round": 3,
+      "task9_result": "pass-tech-review",
+      "task9_reviewed_date": "2026-04-15"
     },
     "src/part1-fundamentals/ch04-memory/06-memory-evolution.md": {
       "chapter": "4.6",
