@@ -3023,3 +3023,23 @@
 - **位置**：Heap Profiling 与 Callstack Sampling 引用 / 参考资料 4（L556, L715）
 - **问题**：`https://perfetto.dev/docs/data-sources/callstack-sampling` 当前返回 404，却被正文当作“已验证”的官方来源使用。
 - **建议**：替换为当前有效的官方依据，例如 `protos/perfetto/config/profiling/perf_event_config.proto` 或对应的 trace-config-proto/autogen 页面，并同步修正文内引用与参考资料。
+
+
+## [Task6 Review] 2.2 帧率与刷新率 — 2026-04-14
+- **类型**：需补充素材
+- **位置**：刷新率演进 / SurfaceFlinger 刷新率选择 / 掉帧量化（L165、L245、L475）
+- **问题**：3 处关键位置仍是 `[待补充]` 占位，缺少 LTPO 刷新率变化、Display Refresh Rate Track、Frame Timeline 颜色示例等真实 Trace / 图示，证据链不完整。
+- **建议**：补 2-3 组真实 Perfetto 截图或等价图示，至少覆盖 LTPO 档位变化、60Hz/120Hz 切换、Frame Timeline 正常/异常帧。
+- **review 日志**：logs/review/2026-04-14-12-review.md
+
+- **类型**：需确认
+- **位置**：Android 对多刷新率的支持时间线 / Frame Rate Override / LTPO 适配（L167-L245、L516-L581）
+- **问题**：Android 14-16 的 Frame Rate Override、ARR、LTPO 适配和间接检测路径写得较满，但当前章节没有把版本边界、公开 API 和可观测路径钉到足够精确的一手来源。
+- **建议**：交给 Task 9 对照官方文档、AOSP 和 trace processor schema 复核；补不齐时改成更保守的版本说明。
+- **review 日志**：logs/review/2026-04-14-12-review.md
+
+- **类型**：需重写
+- **位置**：扩展：LTPO 面板的工作原理与 Android 的适配 / 120Hz 场景的功耗权衡与智能降帧策略（L558-L626）
+- **问题**：两段扩展信息量不少，但和前文“帧率、刷新率、Frame Timeline、Perfetto 判读”的主线回扣偏弱，更像资料卡片，不够像工程师带着读者分析问题。
+- **建议**：Task 2B 回炉时收紧为“什么时候这部分信息会影响排查判断”，把扩展内容回扣到 Perfetto 观察和工程取舍。
+- **review 日志**：logs/review/2026-04-14-12-review.md

@@ -2476,12 +2476,37 @@
   {
     "section": "2.2",
     "section_title": "帧率与刷新率",
-    "priority": 95,
-    "reason": "[Deep Tech Review] API 33 FrameTimeline 代码示例将 FrameData 与 FrameTimeline 两个不同类的 API 混用，实为错误引用",
+    "priority": 90,
+    "reason": "[review回炉] 关键 Perfetto 证据缺失，扩展段落回扣主线不足，多处版本/API/量化断言需技术复核",
     "material_paths": [
-      "intake/suggestions.md"
+      "intake/suggestions.md（含 review 意见）"
     ],
     "review_issues": [
+      {
+        "type": "需补充素材",
+        "location": "刷新率演进 / SurfaceFlinger 刷新率选择 / 掉帧量化",
+        "detail": "3 处关键位置仍是 [待补充] 占位，缺少 LTPO 刷新率变化、Display Refresh Rate Track、Frame Timeline 颜色示例等真实 Trace / 图示，证据链不完整。",
+        "suggestion": "补 2-3 组真实 Perfetto 截图或等价图示，至少覆盖 LTPO 档位变化、60Hz/120Hz 切换、Frame Timeline 正常/异常帧。"
+      },
+      {
+        "type": "需确认",
+        "location": "Android 对多刷新率的支持时间线 / Frame Rate Override / LTPO 适配",
+        "detail": "Android 14-16 的 Frame Rate Override、ARR、LTPO 适配和间接检测路径写得较满，但当前章节没有把版本边界、公开 API 和可观测路径钉到足够精确的一手来源。",
+        "suggestion": "交给 Task 9 对照官方文档、AOSP 和 trace processor schema 复核；补不齐时改成更保守的版本说明。"
+      },
+      {
+        "type": "需重写",
+        "location": "扩展：LTPO 面板的工作原理与 Android 的适配 / 120Hz 场景的功耗权衡与智能降帧策略",
+        "detail": "两段扩展信息量不少，但和前文“帧率、刷新率、Frame Timeline、Perfetto 判读”的主线回扣偏弱，更像资料卡片，不够像工程师带着读者分析问题。",
+        "suggestion": "Task 2B 回炉时收紧为“什么时候这部分信息会影响排查判断”，把扩展内容回扣到 Perfetto 观察和工程取舍。"
+      }
+    ],
+    "added_by": "task6-review",
+    "added_at": "2026-04-14T12:05:00+08:00",
+    "status": "pending",
+    "notes": "Task 9 review 误报: Choreographer.FrameData 在 API 33 确实有 getPreferredFrameTimeline() 和 getFrameTimelines() 方法（经 web search 验证 developer.android.com），当前代码正确无需修改\n2026-04-14 Task6 复审：旧的 FrameData API 误报已结案，本次回炉仅保留新的证据链、版本口径和结构收束问题。",
+    "previous_reason": "[Deep Tech Review] API 33 FrameTimeline 代码示例将 FrameData 与 FrameTimeline 两个不同类的 API 混用，实为错误引用",
+    "previous_review_issues": [
       {
         "type": "源码错误",
         "location": "API 33+ Frame Timeline 代码示例（FrameData.getPreferredFrameTimeline() / getFrameTimelines()）",
@@ -2489,12 +2514,13 @@
         "suggestion": "修正代码示例：getPreferredFrameTimeline() 和 getFrameTimelines() 应该是通过 Choreographer.getInstance().getFrameTimelines() 获取 FrameTimeline 列表，而不是通过 frameData 实例调用。需要重新查阅 AOSP android-13 API 33 的 FrameTimeline 类定义并修正代码。"
       }
     ],
-    "added_by": "task9-deep-tech-review",
-    "added_at": "2026-04-09T08:31:00",
-    "status": "completed",
-    "completed_at": "2026-04-09T07:50:55",
-    "completed_by": "task2b-rework",
-    "notes": "Task 9 review 误报: Choreographer.FrameData 在 API 33 确实有 getPreferredFrameTimeline() 和 getFrameTimelines() 方法（经 web search 验证 developer.android.com），当前代码正确无需修改"
+    "previous_completed_at": "2026-04-09T07:50:55",
+    "previous_completed_by": "task2b-rework",
+    "original_review_log": "logs/review/2026-04-14-12-review.md",
+    "reopened_at": "2026-04-14T12:05:00+08:00",
+    "reopened_by": "task6-review",
+    "updated_at": "2026-04-14T12:05:00+08:00",
+    "updated_by": "task6-review"
   },
   {
     "section": "2.5",
