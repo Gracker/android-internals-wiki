@@ -10,7 +10,7 @@ drafted_date: "2026-03-30"
 polish_count: 2
 polish_date: "2026-04-09"
 polish_by: "task2b-polish"
-reviewed_date: "2026-04-10"
+reviewed_date: "2026-04-15"
 reviewed_by: "openclaw-task6"
 sources:
   - type: official
@@ -25,8 +25,9 @@ sources:
     path: "AOSP 源码分析 frameworks/base/core/java/android/view"
 tags: ['rendering', 'hwui', 'skia', 'surfaceflinger', 'gpu', 'triple-buffering', 'rendering-pipeline', 'bufferqueue', 'vsync', 'displaylist', 'rendernode']
 related_chapters: ["2.2", "2.3", "2.4", "2.5", "2.6", "2.10"]
-pipeline_stage: task6_pending
-task6_state: pending
+pipeline_stage: task9_pending
+task6_state: reviewed
+task6_result: pass-light-edit
 task9_state: pending
 task2b_state: idle
 ---
@@ -63,7 +64,7 @@ task2b_state: idle
 
 打开一份 Perfetto Trace，我们会看到屏幕上密密麻麻的 Track 和色块：主线程上一段橘黄色的 doFrame、RenderThread 上一条绿色的 drawFrame、SurfaceFlinger 进程里周期性的 handleMessageRefresh、底部 GPU 的忙碌区间。这些色块就是 Android 渲染架构在 Trace 中的"可视化"——如果我们不理解它们之间的协作关系，Trace 就只是一堆花花绿绿的色条，无法告诉我们问题出在哪里。
 
-我们遇到的大多数 UI 性能问题，本质上都可以归结为渲染管线的某一个环节出了状况：卡顿可能是因为主线程 Measure/Layout 耗时过长，也可能是因为 GPU 渲染跟不上 VSync 节拍；掉帧可能是因为 BufferQueue 没有可用的缓冲区，也可能是因为 SurfaceFlinger 合成时被 HWC 阻塞。了解渲染架构全景，就是给自己建一张"问题定位地图"——看到现象，就能沿着管线找到具体的瓶颈环节。
+我们遇到的大多数 UI 性能问题，都可以归结为渲染管线的某一个环节出了状况：卡顿可能是因为主线程 Measure/Layout 耗时过长，也可能是因为 GPU 渲染跟不上 VSync 节拍；掉帧可能是因为 BufferQueue 没有可用的缓冲区，也可能是因为 SurfaceFlinger 合成时被 HWC 阻塞。了解渲染架构全景，就是给自己建一张"问题定位地图"——看到现象，就能沿着管线找到具体的瓶颈环节。
 
 ## 渲染管线全景：Measure → Layout → Draw → Sync → GPU Render → Composite → Display
 
@@ -88,7 +89,7 @@ Measure 过程的执行方式是自顶向下的：从 DecorView 开始，逐级�
 
 Android 在某些情况下会执行两轮 Measure。第一轮中，父 View 根据自身约束给子 View 一个初步大小；但如果子 View 在 onMeasure 中表明它实际需要的空间与初步分配不一致（比如一个wrap_content 的子 View 内部有更复杂的需求），父 View 就会根据子 View 的反馈调整约束，发起第二轮测量。在 Perfetto 中，如果我们看到 performTraversals 中 Measure 阶段出现了两次耗时尖峰，很可能就是这种重测量在发生——常见的原因是嵌套的 RelativeLayout 或使用了 weights 的 LinearLayout。
 
-View.onMeasure 的默认实现只做一件事：通过 getDefaultSize 把 measureSpec 解析为实际的像素值，然后调用 setMeasuredDimension 记录结果。getDefaultSize 的逻辑非常直观——EXACTLY 模式直接使用约束值，AT_MOST 取约束值和建议值的较小者，UNSPECIFIED 直接使用 View 自身的建议大小：
+View.onMeasure 的默认实现只做一件事：通过 getDefaultSize 把 measureSpec 解析为实际的像素值，然后调用 setMeasuredDimension 记录结果。getDefaultSize 的逻辑很简单——EXACTLY 模式直接使用约束值，AT_MOST 取约束值和建议值的较小者，UNSPECIFIED 直接使用 View 自身的建议大小：
 
 ```java
 // frameworks/base/core/java/android/view/View.java
@@ -171,7 +172,7 @@ RenderThread.drawFrame()
 
 GPU 渲染管线是一条高度并行的流水线。首先是顶点着色器处理顶点位置，把 View 的二维坐标转换为 GPU 可理解的归一化坐标；接着图元装配把顶点组装成三角形——因为 GPU 最擅长处理的基本图元就是三角形，一个矩形会被拆成两个三角形来渲染；光栅化阶段把这些几何图元转换为实际的像素片段（fragment），每个片段对应屏幕上的一个或多个像素；片段着色器为每个片段计算最终的颜色值，这里会应用纹理、混合模式、抗锯齿等效果；最后经过深度测试、模板测试和颜色混合，像素被写入帧缓冲区。
 
-在 Perfetto 中，我们可以通过 GPU Track 观察这条管线的执行时间。如果 GPU Track 上的忙碌区间持续超过了 VSync 周期（比如在 60Hz 设备上超过了 16.67ms），就意味着 GPU 成了瓶颈——下一帧的渲染会被延迟，用户感知到的就是掉帧。
+在 Perfetto 中，我们可以通过 GPU Track 观察这条管线的执行时间。如果 GPU Track 上的忙碌区间持续超过了 VSync 周期（比如在 60Hz 设备上超过了 16.67ms），GPU 就是瓶颈——下一帧的渲染会被延迟，用户感知到的就是掉帧。
 
 ### 第三阶段：合成与显示阶段
 
@@ -189,7 +190,7 @@ SurfaceFlinger.threadLoop()
 
 SurfaceFlinger 合成的核心逻辑是按 Z-Order（Z 轴顺序）从后到前逐层叠加各个 Layer 的内容。想象一摞透明玻璃板，每一块玻璃上画着不同 App 的界面：状态栏是一层、导航栏是一层、当前 App 是一层、如果有个悬浮窗又是一层。SurfaceFlinger 就像是在上方俯瞰这摞玻璃板，把它们叠在一起形成最终的画面。
 
-合成过程中需要处理层与层之间的混合模式——完全覆盖的区域直接替换，半透明的区域需要 Alpha 混合，部分重叠的区域需要裁剪计算。这些操作如果交给 CPU 来做会非常慢，所以 Android 优先使用 HWC（Hardware Composer）进行硬件合成。HWC 是 SoC 上的专用硬件单元，可以高效地完成多 Layer 叠加、缩放、旋转等操作，几乎不消耗 CPU 或 GPU 资源。只有在 Layer 数量超过 HWC 的处理能力或使用了 HWC 不支持的混合模式时，SurfaceFlinger 才会回退到 GPU 合成（通过 RenderEngine）。
+合成过程中需要处理层与层之间的混合模式——完全覆盖的区域直接替换，半透明的区域需要 Alpha 混合，部分重叠的区域需要裁剪计算。这些操作如果交给 CPU 来做会很慢，所以 Android 优先使用 HWC（Hardware Composer）进行硬件合成。HWC 是 SoC 上的专用硬件单元，可以高效地完成多 Layer 叠加、缩放、旋转等操作，几乎不消耗 CPU 或 GPU 资源。只有在 Layer 数量超过 HWC 的处理能力或使用了 HWC 不支持的混合模式时，SurfaceFlinger 才会回退到 GPU 合成（通过 RenderEngine）。
 
 #### 7. 显示输出：最终呈现到屏幕
 
@@ -226,7 +227,7 @@ T4: VSync 3 → 显示缓冲区 3
 T5: GPU 开始填充缓冲区 1（已经完成上一次填充）
 ```
 
-三缓冲的核心优势在于 GPU 始终有一个空闲缓冲区可用，不再需要等待显示端释放缓冲区。这意味着即使某一帧的渲染稍微超时，GPU 也可以立即开始下一帧的工作，而不是空转等待。从帧率曲线来看，三缓冲让帧率的波动更加平滑，避免了双缓冲下帧率从 60fps 突然跌到 30fps 的阶梯式下降。
+三缓冲的核心优势在于 GPU 始终有一个空闲缓冲区可用，不再需要等待显示端释放缓冲区。即使某一帧的渲染稍微超时，GPU 也能立即开始下一帧的工作，不需要空转等待。从帧率曲线来看，三缓冲让帧率的波动更加平滑，避免了双缓冲下帧率从 60fps 突然跌到 30fps 的阶梯式下降。
 
 ### 在 Android 中的实现
 
@@ -283,7 +284,7 @@ App进程                 系统进程           SurfaceFlinger/HWC
 
 BufferQueue 的核心职责是管理缓冲区池和协调生产者-消费者的同步。缓冲区池采用重用策略——已经显示完的缓冲区不会被销毁，而是回到空闲池中等待下次 dequeueBuffer() 时复用，这避免了 GraphicBuffer 频繁分配/释放带来的内存抖动和性能开销。
 
-同步控制通过 Fence（栅栏）机制实现。Fence 本质上是一个内核级的同步原语，它确保"生产者写完"这个事件能被消费者可靠地感知到。由于 GPU 的操作是异步的（App 提交了绘制命令后不会等 GPU 执行完毕就继续往下走），Fence 就成了跨进程、跨硬件模块的"完成通知单"。maxDequeuedBuffers 参数控制生产者可以同时持有的缓冲区数量，间接地限制了生产者的速度，防止它跑得太快导致消费者跟不上。
+同步控制通过 Fence（栅栏）机制实现。Fence 是一个内核级的同步原语，它确保"生产者写完"这个事件能被消费者可靠地感知到。由于 GPU 的操作是异步的（App 提交了绘制命令后不会等 GPU 执行完毕就继续往下走），Fence 就成了跨进程、跨硬件模块的"完成通知单"。maxDequeuedBuffers 参数控制生产者可以同时持有的缓冲区数量，间接地限制了生产者的速度，防止它跑得太快导致消费者跟不上。
 
 #### 3. 消费者
 
@@ -329,7 +330,7 @@ consumerReleaseFence->signal();
 
 软件渲染通常出现在三种场景下：调试模式中开发者主动通过 `setLayerType(LAYER_TYPE_SOFTWARE)` 关闭硬件加速、设备 GPU 驱动存在兼容性问题导致系统回退到软件渲染、或者在极少数需要复杂 2D 图形操作（如精细的 Path 绘制）且不希望引入 GPU 开销的场景。
 
-软件渲染的实现完全依赖 Skia 的 CPU 光栅化器——它在 CPU 上逐像素地完成所有计算，全程不涉及 GPU。这意味着所有绘制操作都同步执行在 UI 线程上，耗时会直接体现在 Trace 的主线程 CPU slice 中。
+软件渲染的实现完全依赖 Skia 的 CPU 光栅化器——它在 CPU 上逐像素地完成所有计算，全程不涉及 GPU。所有绘制操作都同步执行在 UI 线程上，耗时会直接体现在 Trace 的主线程 CPU slice 中。
 
 ```cpp
 // Skia 软件渲染示例
@@ -545,7 +546,7 @@ void RenderNode::draw(RenderProperties& props, RenderThread& renderThread) {
 
 ### DisplayList 的结构
 
-DisplayList 本质上是一个绘制指令的有序序列，记录了 View 在 onDraw 中发出的所有 drawXXX 调用。它支持分层嵌套——每个 ViewGroup 的 DisplayList 既包含自身的绘制指令，也持有子 View 的 RenderNode 引用，形成一棵与 View 树同构的 DisplayList 树。回放时，变换和裁剪等属性会沿着树形结构向下传递，子节点自动继承父节点的变换矩阵和裁剪区域。
+DisplayList 是一个绘制指令的有序序列，记录了 View 在 onDraw 中发出的所有 drawXXX 调用。它支持分层嵌套——每个 ViewGroup 的 DisplayList 既包含自身的绘制指令，也持有子 View 的 RenderNode 引用，形成一棵与 View 树同构的 DisplayList 树。回放时，变换和裁剪等属性会沿着树形结构向下传递，子节点自动继承父节点的变换矩阵和裁剪区域。
 
 [待验证: DisplayList / DisplayListData 在 AOSP android-16.0.0_r1 中可能有重构]
 
@@ -565,7 +566,7 @@ DisplayList 本质上是一个绘制指令的有序序列，记录了 View 在 o
 // - 子 RenderNode 引用（支持树形嵌套）
 ```
 
-DisplayList 的分层嵌套结构与 View 树一一对应：每个 ViewGroup 的 DisplayList 包含自身的绘制指令和子 View 的 RenderNode 引用。回放时，RenderThread 递归遍历这棵 DisplayList 树，先应用父节点的变换和裁剪，再执行子节点的绘制指令。这种设计意味着如果某个 View 调用了 invalidate()，只需要重新录制该 View 对应的 RenderNode 的 DisplayList，而不需要重录整棵树——这是硬件加速渲染比软件渲染高效的一个关键原因。
+DisplayList 的分层嵌套结构与 View 树一一对应：每个 ViewGroup 的 DisplayList 包含自身的绘制指令和子 View 的 RenderNode 引用。回放时，RenderThread 递归遍历这棵 DisplayList 树，先应用父节点的变换和裁剪，再执行子节点的绘制指令。因此如果某个 View 调用了 invalidate()，只需要重新录制该 View 对应的 RenderNode 的 DisplayList，而不需要重录整棵树——这是硬件加速渲染比软件渲染高效的一个关键原因。
 
 ### UI 线程与 RenderThread 的协作
 
@@ -612,7 +613,7 @@ void OpenGLRenderer::draw(const Frame& frame) {
 
 ### Vulkan 在 Android 中的采用
 
-Vulkan 从 Android 7.0 开始被引入，但直到 Android 12 才作为主要渲染后端开始大规模推广，逐步替代 OpenGL ES。与 OpenGL ES 相比，Vulkan 最核心的设计差异是"显式"——开发者需要自己管理 GPU 资源的分配、同步和生命周期，而不是像 OpenGL ES 那样由驱动层自动处理。这带来了更高的 CPU 效率：OpenGL ES 的驱动层为了自动管理资源，需要在每次 API 调用时进行状态检查和验证，这个开销在复杂场景中相当显著；而 Vulkan 的显式设计省去了这些检查，CPU 可以用更少的时间提交同样数量的绘制命令。
+Vulkan 从 Android 7.0 开始被引入，但直到 Android 12 才作为主要渲染后端开始大规模推广，逐步替代 OpenGL ES。与 OpenGL ES 相比，Vulkan 最核心的设计差异是"显式"——开发者需要自己管理 GPU 资源的分配、同步和生命周期，而不是像 OpenGL ES 那样由驱动层自动处理。这带来了更高的 CPU 效率：OpenGL ES 的驱动层为了自动管理资源，需要在每次 API 调用时进行状态检查和验证，这个开销在复杂场景中可能占去数毫秒的帧时间；而 Vulkan 的显式设计省去了这些检查，CPU 可以用更少的时间提交同样数量的绘制命令。
 
 Vulkan 还原生支持多线程渲染——不同的线程可以并行构建命令缓冲区（Command Buffer），最后统一提交给 GPU 执行。这对 Android 来说尤为重要，因为 HWUI 的架构本身就是多线程的（主线程录制 + RenderThread 回放），Vulkan 的多线程能力可以更好地利用这个架构。此外，Vulkan 提供了对 GPU 资源的更精细控制，减少了不必要的内存拷贝和状态切换。
 
@@ -679,13 +680,13 @@ App 的 RenderThread 画的是"一个 App 的一帧"（"画一个按钮"、"绘�
 
 **Android 4.1（Jelly Bean，2012）** 通过 Project Butter 引入了 VSync 同步机制和三缓冲。在此之前，App 的渲染与屏幕刷新是不同步的，画面撕裂和卡顿频繁发生。VSync 和三缓冲的引入让帧率更加稳定，也催生了 Choreographer 组件来统一管理 VSync 回调。
 
-**Android 5.0（Lollipop，2014）** 引入了 RenderThread。在此之前，GPU 渲染操作也在主线程执行（虽然通过硬件加速，但同步调用 OpenGL 仍然会阻塞主线程）。RenderThread 将 GPU 渲染移到独立线程，主线程只负责录制 DisplayList，两者并行工作，大幅减少了主线程的渲染负担。
+**Android 5.0（Lollipop，2014）** 引入了 RenderThread。在此之前，GPU 渲染操作也在主线程执行（虽然通过硬件加速，但同步调用 OpenGL 仍然会阻塞主线程）。RenderThread 将 GPU 渲染移到独立线程，主线程只负责录制 DisplayList，两者并行工作，主线程不再同步等待 GPU 渲染完成。
 
 **Android 8.0（Oreo，2017）** 引入了 SurfaceFlinger 的预合成（Composition）重构，优化了 HWC 的使用策略。
 
 **Android 10（Q，2019）** 引入了 Skia 渲染后端统一，HWUI 的渲染管线完全基于 Skia，同时支持 OpenGL 和 Vulkan 后端。
 
-**Android 12（S，2021）** 引入了 BlastBufferQueue，替代了之前的 BufferQueue 通信方式，减少了 App 进程和 SurfaceFlinger 之间的 Binder IPC 开销。这对多窗口场景和游戏渲染的性能提升尤为明显。
+**Android 12（S，2021）** 引入了 BlastBufferQueue，替代了之前的 BufferQueue 通信方式，减少了 App 进程和 SurfaceFlinger 之间的 Binder IPC 开销。多窗口场景和游戏渲染因为涉及更频繁的跨进程缓冲区传递，受益最大。
 
 **Android 13（T，2022）** 进一步优化了 Vulkan 后端的支持，更多设备默认使用 Vulkan 进行 UI 渲染。
 
