@@ -28,6 +28,14 @@ sources:
     path: "kernel.org/doc/html/latest/scheduler/sched-ext.html"
   - type: official
     path: "source.android.com/docs/core/architecture/kernel/bpf"
+  - type: blog
+    path: "Cubox/ebpf在 Android 上的玩法示例-2025-12-22.md"
+  - type: blog
+    path: "Cubox/aosp15进程异常退出监控工具-ebpf监控signal的发送和接收-2025-12-25.md"
+  - type: research
+    path: "intake/research-feeds/2026-04-02-15-ch05-sched-ext-bpf-android.md"
+  - type: research
+    path: "intake/research-feeds/2026-04-03-07-sched-ext-bpf-scheduler.md"
 tags: [eBPF, BPF, observability, tracing, sched_ext, simpleperf, kernel, performance]
 related_chapters: ["14.2", "13.1", "5.1", "1.14"]
 created_by: "task2a-knowledge-gap"
@@ -36,19 +44,22 @@ gap_source: "AOSP结构+官方文档+研究素材"
 polish_count: 1
 polish_date: "2026-04-08"
 polish_by: "task2b-polish"
-pipeline_stage: task6_pending
-task6_state: pending
+pipeline_stage: task2b_pending
+task6_state: reviewed
 task9_state: pending
-task2b_state: idle
+task2b_state: pending
+reviewed_by: "openclaw-task6"
+reviewed_date: "2026-04-14"
+task6_result: needs-rework
 ---
 
 # 14.10 eBPF/BPF 在 Android 性能分析中的应用
 
 在 Android 上做深度性能分析时，经常会遇到这样的困境：想看某个系统调用的延迟分布，strace 的开销几乎无法接受；想追踪一个内核函数的执行路径，却发现设备上没有 ftrace 的权限；想统计 App 在各 CPU 频率上的真实停留时间，发现 `/proc/stat` 的精度只有 Tick 级别（通常 4ms 或 10ms），远远不够。
 
-eBPF（extended Berkeley Packet Filter）改变了这一切。它使我们能在内核中安全运行自定义追踪程序，CPU 开销通常 <5%，精度到纳秒级，而且不需要编译内核、不需要 root 权限（在 GKI 设备上）。Android 从 10 开始系统级使用 eBPF，到 Android 15 引入 UprobeStats 实现动态埋点，再到 Linux 6.12 的 sched_ext 将 eBPF 触角伸向调度器——eBPF 已经成为 Android 性能分析体系中增长最快的方向之一。
+eBPF（extended Berkeley Packet Filter）改变了这类分析方式。它让我们能在内核中安全运行自定义追踪程序，用更低的观测开销拿到更细粒度的数据。Android 从 10 开始在系统侧使用 eBPF，Android 15 引入 UprobeStats 做动态埋点，Linux 6.12 的 sched_ext 又把 eBPF 推进到调度器扩展。
 
-读完这一节，我们能够理解 eBPF 在 Android 上的基础设施、掌握用 eBPF 进行性能分析的实战方法、了解 sched_ext 对未来 Android 调度器定制的意义，并清楚 eBPF 分析的边界和限制。
+读完这一节，我们应该能回答四个问题：Android 上已经有哪些 eBPF 基础设施，哪些工具链现在就能用，sched_ext 对后续调度器演进意味着什么，以及 eBPF 分析的边界在哪里。
 
 ## eBPF 是什么，为什么 Android 性能分析需要它
 
@@ -90,9 +101,9 @@ Android 已经在系统级使用 eBPF 的场景包括：
 
 ### BPF CO-RE：一次编译，到处运行
 
-eBPF 程序的一个传统难题是内核版本兼容性。不同内核版本的结构体布局可能不同，直接硬编码偏移量会导致程序在新内核上崩溃。BPF CO-RE（Compile Once – Run Everywhere）通过 BTF（BPF Type Format）解决了这个问题：编译时记录"需要访问哪些字段"，运行时根据当前内核的 BTF 信息自动重定位。
+eBPF 程序的一个传统难题是内核版本兼容性。不同内核版本的结构体布局可能不同，直接硬编码偏移量会导致程序在新内核上崩溃。BPF CO-RE（Compile Once, Run Everywhere）通过 BTF（BPF Type Format）解决了这个问题：编译时记录"需要访问哪些字段"，运行时根据当前内核的 BTF 信息自动重定位。
 
-对 Android 来说，CO-RE 的意义特别重大：GKI 统一了核心内核，所以 CO-RE 程序可以在所有 GKI 设备上无缝运行，不需要为每个内核版本单独编译。不过目前 Android 上直接从 App 加载自定义 eBPF 程序仍然不顺畅——通常需要通过 adb shell 或编译自定义的可执行文件来运行。
+对 Android 来说，CO-RE 的意义特别重大：GKI 统一了核心内核，所以 CO-RE 程序可以在所有 GKI 设备上无缝运行，不需要为每个内核版本单独编译。不过目前 Android 上直接从 App 加载自定义 eBPF 程序仍然受限，通常需要通过 adb shell 或编译自定义的可执行文件来运行。
 
 [待验证: Android 17 是否开放了 App 级 eBPF 程序加载 API]
 
@@ -177,7 +188,7 @@ bpftrace 的 `stats()` 函数会自动计算均值、方差、最大值、最小
 
 ## UprobeStats 与动态埋点
 
-Android 15 引入的 UprobeStats 是 eBPF 在 Android 上的一个里程碑级应用。它利用 eBPF 的 uprobe 机制实现了"零代码侵入"的动态埋点——不需要在 Framework 代码中插入统计逻辑，只需编写一个配置文件指定要监控的 Java 方法，系统就会自动采集执行数据并上报给 StatsD。
+Android 15 引入的 UprobeStats 是 eBPF 在 Android 上的一个代表性落地场景。它利用 eBPF 的 uprobe 机制实现了"零代码侵入"的动态埋点——不需要在 Framework 代码中插入统计逻辑，只需编写一个配置文件指定要监控的 Java 方法，系统就会自动采集执行数据并上报给 StatsD。
 
 ### UprobeStats 的工作原理
 
@@ -207,7 +218,7 @@ AOSP 中 UprobeStats 预置了三类 BPF 程序模板：
 
 **GenericInstrumentation.c** 是最通用的模板，包含两个 BPF 程序。`call_detail` 程序捕获调用线程上下文的所有寄存器数据（包括 PC），通过配置中指定的寄存器位置提取 Java 方法参数；`call_timestamp` 程序获取当前系统时间（mono clock），用于精确测量方法执行时间。
 
-**BitmapAllocation.c** 用于追踪 Bitmap 分配行为。当 attach 的 Java 方法被调用时触发，RingBuf Map 保存一个固定标记（123），主要用于统计调用次数。
+**BitmapAllocation.c** 用于追踪 Bitmap 分配行为。当 attach 的 Java 方法被调用时触发，RINGBUF map 保存一个固定标记（123），主要用于统计调用次数。
 
 **ProcessManagement.c** 是专用程序，仅适用于 `OomAdjuster#setUidTempAllowlistStateLSP` 方法。BPF 程序通过 ART Native 调用约定的寄存器（x2 = uid，x3 = onAllowlist）直接读取方法参数。
 
@@ -262,7 +273,7 @@ sched_ext 在调度优先级栈中位于 SCHED_IDLE 和 SCHED_NORMAL 之间。�
 
 ### 对 Android 的意义
 
-Meta 和 Google 都已 fully committed to sched_ext。Meta 的 Oculus 团队已经在 Android 移植版上实验 sched_ext，Google 计划将 ghOSt 调度框架迁移到 sched_ext。
+Meta 和 Google 都在持续投入 sched_ext。Meta 的 Oculus 团队已经在 Android 移植版上实验 sched_ext，Google 也计划把 ghOSt 调度框架迁移到 sched_ext。
 
 一些已有的实验性调度器展示了 sched_ext 的潜力：
 
@@ -272,9 +283,9 @@ Meta 和 Google 都已 fully committed to sched_ext。Meta 的 Oculus 团队已�
 
 - **scx_chaos**：故意引入延迟和性能下降，帮助暴露应用中的竞态条件和时序依赖错误。
 
-对 Android 性能工程师来说，如果 sched_ext 在 Android 上可用（需要 GKI Kernel 6.12+），就可以针对特定场景编写定制调度器：UI 主线程的调度延迟优化、后台任务的 CPU 放置策略、游戏场景的帧率稳定性保障等。而且这一切不需要修改内核源码，只需要编写和加载 BPF 程序。
+对 Android 性能工程师来说，如果 sched_ext 在 Android 上可用（需要 GKI 内核 6.12+），就可以针对特定场景编写定制调度器，例如 UI 主线程的调度延迟优化、后台任务的 CPU 放置策略、游戏场景的帧率稳定性保障。而且这一切不需要修改内核源码，只需要编写和加载 BPF 程序。
 
-不过，Android 上的大规模部署"would take quite a while"——需要等待平台内核升级到 6.12，需要通过 Android 兼容性测试，需要 OEM 适配。
+不过，Android 上的大规模部署还需要时间，需要等待平台内核升级到 6.12，通过 Android 兼容性测试，再由 OEM 完成适配。
 
 [来源: intake/research-feeds/2026-04-03-07-sched-ext-bpf-scheduler.md]
 [待验证: Android 17 GKI 是否正式包含 Kernel 6.12]
@@ -364,7 +375,7 @@ Android 的 SELinux 策略严格控制 eBPF 相关操作。`bpf()` 系统调用�
 
 ### 调试的挑战
 
-eBPF 程序运行在内核态，调试手段有限。不能像用户态程序那样打断点、加 print。常用的调试方法：
+eBPF 程序运行在内核态，调试手段有限。不能像用户态程序那样打断点、插入打印日志。常用的调试方法：
 
 - `bpf_trace_printk()`：在 BPF 程序中输出调试信息到 `trace_pipe`（仅限开发调试）
 - bpftool：查看已加载的 BPF 程序和 maps
