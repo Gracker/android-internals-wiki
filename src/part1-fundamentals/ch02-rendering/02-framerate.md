@@ -1,40 +1,59 @@
 ---
-title: "帧率与刷新率"
-chapter: "2.2"
+title: 帧率与刷新率
+chapter: '2.2'
+section: '2.2'
 status: ready-for-review
-reviewed_date: 2026-04-07
+reviewed_date: '2026-04-14'
 reviewed_by: openclaw-task6
-rework_date: 2026-04-02
+review_note: Task 6 复审：按 writing-guide / STYLE / content-quality-gate 完成 9 处 L1/L2
+  小修；Perfetto 证据链、版本/API 口径与扩展收束已转 Task 9 / Task 2B
+rework_date: '2026-04-02'
 rework_by: openclaw-task2b
 polish_count: 1
-polish_date: "2026-04-06"
-polish_by: "task2b-polish"
-applicable_versions: "Android 4.1 (API 16) - Android 16 (API 36)"
-last_verified: "2026-03-30"
-last_verified_against: "AOSP android-16.0.0_r1, 官方文档最新版本"
+polish_date: '2026-04-06'
+polish_by: task2b-polish
+applicable_versions: Android 4.1 (API 16) - Android 16 (API 36)
+last_verified: '2026-03-30'
+last_verified_against: AOSP android-16.0.0_r1, 官方文档最新版本
 confidence: high
 sources:
-  - type: official
-    path: "https://developer.android.com/reference/android/view/Choreographer"
-  - type: official
-    path: "https://developer.android.com/games/sdk/frame-pacing"
-  - type: official
-    path: "https://developer.android.com/develop/ui/views/layout/swinging-area"
-  - type: official
-    path: "https://developer.android.com/reference/android/view/FrameMetrics"
-  - type: official
-    path: "https://developer.android.com/reference/android/os/FrameRateOverride"
-  - type: research
-    path: "Android-Internal-Wiki/intake/research-feeds/2026-03-30-15-arr-vsync-android15-16.md"
-  - type: aosp
-    path: "frameworks/native/services/surfaceflinger/SurfaceFlinger.cpp"
-tags: ['framerate', 'refresh-rate', 'frame-time', 'jank', 'frame-pacing', 'LTPO', 'VRR', 'ARR', 'SurfaceFlinger']
-related_chapters: ["2.1", "2.3", "2.4", "2.6", "2.9", "7.1"]
-re-review-result: "已纳入1条素材(部分纳入:OEM VSync修改误区+交叉引用),0处修正,待正常review质检"
-pipeline_stage: task6_pending
-task6_state: pending
+- type: official
+  path: https://developer.android.com/reference/android/view/Choreographer
+- type: official
+  path: https://developer.android.com/games/sdk/frame-pacing
+- type: official
+  path: https://developer.android.com/develop/ui/views/layout/swinging-area
+- type: official
+  path: https://developer.android.com/reference/android/view/FrameMetrics
+- type: official
+  path: https://developer.android.com/reference/android/os/FrameRateOverride
+- type: research
+  path: Android-Internal-Wiki/intake/research-feeds/2026-03-30-15-arr-vsync-android15-16.md
+- type: aosp
+  path: frameworks/native/services/surfaceflinger/SurfaceFlinger.cpp
+tags:
+- framerate
+- refresh-rate
+- frame-time
+- jank
+- frame-pacing
+- LTPO
+- VRR
+- ARR
+- SurfaceFlinger
+related_chapters:
+- '2.1'
+- '2.3'
+- '2.4'
+- '2.6'
+- '2.9'
+- '7.1'
+re-review-result: 已纳入1条素材(部分纳入:OEM VSync修改误区+交叉引用),0处修正,待正常review质检
+pipeline_stage: task2b_pending
+task6_result: needs-rework
+task6_state: reviewed
 task9_state: pending
-task2b_state: idle
+task2b_state: pending
 ---
 
 # 帧率与刷新率
@@ -69,7 +88,7 @@ task2b_state: idle
 
 打开 Perfetto，我们会看到主线程上一段一段的 `Choreographer#doFrame` 切片——有的短短几毫秒，有的却拖成了一条长长的红条。如果我们数一下这些切片之间的间距，可能会发现一个有趣的现象：大部分切片之间是等距的（比如每隔 16.6ms 一个），但偶尔会出现一个间距突然变成了 33ms 或更长。这个"突然变长"的间距，就是掉帧——用户感知到的卡顿。
 
-要理解为什么会掉帧、怎么分析掉帧，我们首先要搞清楚两个基本概念：**帧率**（App 画得多快）和**刷新率**（屏幕刷新得多快）。这两个东西听起来简单，但在现代 Android 设备上，它们之间的关系远比"画得快就显示得快"复杂得多。
+要理解为什么会掉帧、怎么分析掉帧，我们先得搞清楚两个基本概念：**帧率**（App 画得多快）和**刷新率**（屏幕刷新得多快）。这两个东西听起来简单，但在现代 Android 设备上，它们之间的关系远比"画得快就显示得快"复杂得多。
 
 原因在于，从 Android 11 开始，设备可以支持多种刷新率（60Hz、90Hz、120Hz 甚至动态 1-120Hz），而 App 的渲染帧率可以是任意的。当 App 的帧率和屏幕的刷新率不匹配时，就会出现画面不流畅、输入延迟增大、功耗浪费等问题。理解这两个维量的关系，是分析一切渲染性能问题的基础。
 
@@ -145,7 +164,7 @@ LIMIT 100;
 
 这对渲染管线提出了巨大的压力。在 60Hz 设备上表现良好的 App，在 120Hz 设备上可能频繁掉帧，因为它的帧时间本来就接近或超过 16.6ms，现在被要求在 8.3ms 内完成，自然力不从心。反过来，一些 App 即使能跑在 120Hz，也会因为持续满负荷渲染而导致功耗飙升。
 
-高刷新率引入的另一个问题是**帧率和刷新率的匹配**。一个 App 以 60 FPS 渲染，在 120Hz 屏幕上会怎样？答案是每一帧会被屏幕显示两次（repeating），画面依然是流畅的，因为 120 正好是 60 的整数倍。但如果 App 以 45 FPS 渲染，在 120Hz 屏幕上就会出现不均匀的帧显示——有的帧显示 2 次（16.6ms），有的帧显示 3 次（25ms），造成微卡顿（micro-jank）。
+高刷新率还带来一个新问题：**帧率和刷新率的匹配**。一个 App 以 60 FPS 渲染，在 120Hz 屏幕上会怎样？答案是每一帧会被屏幕显示两次（repeating），画面依然是流畅的，因为 120 正好是 60 的整数倍。但如果 App 以 45 FPS 渲染，在 120Hz 屏幕上就会出现不均匀的帧显示——有的帧显示 2 次（16.6ms），有的帧显示 3 次（25ms），造成微卡顿（micro-jank）。
 
 ### LTPO：从固定刷新率到动态刷新率
 
@@ -263,7 +282,7 @@ Choreographer 的核心设计就是基于 VSync 的帧对齐。当 App 调用 `i
 
 这个"等 VSync"的机制本身就是一种 Frame Pacing——它保证每帧的渲染都从 VSync 边界开始，与屏幕刷新同步。在 2.3 节（VSync 机制）中我们详细讲了 VSync-app 信号的来源和分发，这里我们关注的是这个同步机制对帧率的影响。
 
-关键的一点：**Choreographer 在一个 VSync 周期内只会触发一次 `doFrame()`**。这意味着即使 App 在一个 16.6ms 周期内多次调用 `invalidate()`，最终也只会渲染一帧。这个设计通过 `mFrameScheduled` 标志位实现：
+Choreographer 在一个 VSync 周期内只会触发一次 `doFrame()`。也就是说，即使 App 在一个 16.6ms 周期内多次调用 `invalidate()`，最终也只会渲染一帧。这个设计通过 `mFrameScheduled` 标志位实现：
 
 ```java
 // frameworks/base/core/java/android/view/Choreographer.java
@@ -322,7 +341,7 @@ Choreographer.getInstance().postVsyncCallback(new Choreographer.VsyncCallback() 
 
 这里有两个关键点值得注意：
 
-第一，`FrameData` 是 API 33 新增的类，它封装了 VSync 相关的全部信息。相比之前只有一个 `frameTimeNanos`，现在 App 可以看到多个候选的帧时间线（`FrameTimeline`），每个时间线包含预期的呈现时间和渲染截止时间。这让 App 可以更智能地选择"我这帧应该在哪个 VSync 时刻显示"——如果渲染比较重，可以选择一个稍晚的时间线，避免匆忙提交导致掉帧。
+第一，`FrameData` 是 API 33 新增的类，它封装了 VSync 相关的全部信息。相比之前只有一个 `frameTimeNanos`，现在 App 能拿到多个候选的帧时间线（`FrameTimeline`），每个时间线包含预期的呈现时间和渲染截止时间。这让 App 可以更智能地选择"我这帧应该在哪个 VSync 时刻显示"——如果渲染比较重，可以选择一个稍晚的时间线，避免匆忙提交导致掉帧。
 
 第二，`FrameTimeline` 中的 `deadlineNanos` 是这帧必须完成渲染的截止时间。如果 App 发现自己无法在系统推荐的时间线内完成，可以主动选择一个更晚的时间线，通过 `SurfaceControl.Transaction.setFrameTimeline()` 告知 SurfaceFlinger。这种"协商"机制比之前"死等 VSync"的方式灵活得多。
 
@@ -548,7 +567,7 @@ Choreographer.getInstance().postVsyncCallback(frameData -> {
 });
 ```
 
-需要注意的是，Android 目前没有提供直接的"帧率被覆盖"回调 API（如 `OnFrameRateOverrideListener`）。上面两种方法都是间接检测：第一种通过显示刷新率变化推断，第二种通过实际帧间隔推断。如果只需要知道当前的显示刷新率，`Display.getRefreshRate()` 是最简单可靠的方式。
+Android 目前没有提供直接的"帧率被覆盖"回调 API（如 `OnFrameRateOverrideListener`）。上面两种方法都是间接检测：第一种通过显示刷新率变化推断，第二种通过实际帧间隔推断。如果只需要知道当前的显示刷新率，`Display.getRefreshRate()` 是最简单可靠的方式。
 
 [已修正: 替换为 DisplayManager.DisplayListener + Choreographer.VsyncCallback 的实际可用的检测方式]
 
@@ -629,7 +648,7 @@ SurfaceFlinger 会根据前台 App 的类型自动决定是否使用高刷新率
 
 ### "高刷新率屏幕 = 更流畅"——不一定
 
-这是一个非常常见的误解。高刷新率屏幕只有在 App 的帧率能跟上时才更流畅，帧率跟不上时反而可能更卡。原因很简单：120Hz 屏幕每 8.3ms 就要刷新一次，如果 App 的帧时间是 12ms（在 60Hz 下完全够用），在 120Hz 下每帧都会超时，导致持续掉帧。用户看到的不是"更流畅"，而是"更卡了"。在 Perfetto 中，这种情况表现为 Frame Timeline 中大量红色帧。
+这是一个非常常见的误解。高刷新率屏幕只有在 App 的帧率能跟上时才更流畅，帧率跟不上时反而可能更卡。原因很简单：120Hz 屏幕每 8.3ms 就要刷新一次，如果 App 的帧时间是 12ms（在 60Hz 下完全够用），在 120Hz 下每帧都会超时，导致持续掉帧。用户看到的往往是卡顿更明显了。在 Perfetto 中，这种情况表现为 Frame Timeline 中大量红色帧。
 
 更反直觉的是，有些 App 在 60Hz 设备上流畅但在 120Hz 设备上反而卡顿——不是设备不行，是 App 的渲染能力在 8.3ms 的预算下力不从心。
 
@@ -670,7 +689,7 @@ FPS 是一个统计指标，60 FPS 只说明"一秒钟内渲染了 60 帧"，但
 
 1. **帧率（FPS）是 App 的指标**：App 每秒能渲染多少帧。它受 App 代码质量、布局复杂度、GPU 性能等因素影响。
 2. **刷新率是硬件的指标**：屏幕每秒刷新多少次。现代设备支持多档刷新率，SurfaceFlinger 会根据场景动态选择。
-3. **帧间隔一致性决定流畅度**：不是平均 FPS 高就流畅，而是每一帧之间的间隔要均匀。
+3. **帧间隔一致性决定流畅度**：平均 FPS 高并不够，每一帧之间的间隔还得均匀。
 4. **Frame Pacing 保证同步**：Choreographer 和 Frame Pacing Library 确保帧的提交与 VSync 对齐。
 5. **掉帧 = 帧时间超过预算**：量化掉帧需要看 Frame Time 分布，而不只是平均 FPS。
 
