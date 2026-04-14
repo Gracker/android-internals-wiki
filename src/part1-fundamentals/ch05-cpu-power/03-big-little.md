@@ -22,13 +22,14 @@ sources:
 tags: ['big.LITTLE', 'DynamIQ', 'schedutil', 'cpufreq', 'capacity', 'cluster', 'DVFS', 'PELT', 'RTG', 'core-migration', 'EAS', 'HMP']
 related_chapters: ["5.1", "5.2", "5.4", "5.5", "5.6", "2.5"]
 drafted_date: "2026-03-31"
-reviewed_date: "2026-04-07"
+reviewed_date: "2026-04-15"
 reviewed_by: openclaw-task6
+task6_result: pass-light-edit
 polish_count: 1
 polish_date: "2026-04-07"
 polish_by: "task2b-polish"
-pipeline_stage: task6_pending
-task6_state: pending
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task2b_state: idle
 ---
@@ -72,7 +73,7 @@ ARM 在 2011 年提出的 big.LITTLE 架构就是为了解决这个矛盾：在�
 
 2017 年 ARM 推出了 DynamIQ 技术，这是 big.LITTLE 的重大演进。核心变化在于：**大核和小核可以放在同一个集群（cluster）里**，由一个 DynamIQ Shared Unit（DSU）统一管理。
 
-DSU 提供了集群内的共享 L3 缓存（最高可达 32MB）和一致性的缓存管理。这意味着大核和小核之间的任务迁移不再需要跨集群搬运缓存数据——它们共享同一个 L3，迁移的开销大幅降低。
+DSU 提供了集群内的共享 L3 缓存（最高可达 32MB）和一致性的缓存管理。大核和小核之间的任务迁移不再需要跨集群搬运缓存数据——它们共享同一个 L3，迁移的开销大幅降低。
 
 DynamIQ 带来了几个关键优势：
 
@@ -183,7 +184,7 @@ Android 内核中有一个重要的客制化机制叫 **RTG（Related Thread Gro
 
 RTG 维护了一个 `preferred_cluster`（偏好集群）字段，根据组内所有线程的累计负载来决定应该优先使用哪个集群。当组内某个线程被设置了 `SCHED_BOOST_ON_BIG` 属性时，整个组都会被"boost"到大核集群上。
 
-RTG 还有一个重要功能是**负载聚合（Colocation Boost）**：当 RTG 组内的高负载线程被调度到大核上时，schedutil governor 在计算大核的频率时，会把 RTG 组的累计负载也纳入考虑，而不仅仅是当前核心上的单个任务负载。这意味着大核频率会被适当拉高，以更好地服务整组线程。
+RTG 还有一个重要功能是**负载聚合（Colocation Boost）**：当 RTG 组内的高负载线程被调度到大核上时，schedutil governor 在计算大核的频率时，会把 RTG 组的累计负载也纳入考虑，而不仅仅是当前核心上的单个任务负载。大核频率会被适当拉高，以更好地服务整组线程。
 
 [已验证: L2 — AOSP/Android kernel 源码, kernel/sched/ 相关文件]
 
@@ -197,7 +198,7 @@ RTG 还有一个重要功能是**负载聚合（Colocation Boost）**：当 RTG 
 
 **DVFS 延迟**
 
-同一集群内的核心通常共享电压/频率域。当任务从小核迁移到大核时，大核可能处于低频状态，需要 DVFS 把频率提上来。DVFS 的响应时间通常在几百微秒到几毫秒之间，取决于硬件和驱动实现。这意味着任务迁移到大核后，需要一小段时间才能达到全速运行。这也是为什么 Android 厂商在应用启动等场景会通过 Power HAL 预先把大核频率拉高——减少迁移后的"爬坡时间"。
+同一集群内的核心通常共享电压/频率域。当任务从小核迁移到大核时，大核可能处于低频状态，需要 DVFS 把频率提上来。DVFS 的响应时间通常在几百微秒到几毫秒之间，取决于硬件和驱动实现。任务迁移到大核后，需要一小段时间才能达到全速运行。这也是为什么 Android 厂商在应用启动等场景会通过 Power HAL 预先把大核频率拉高——减少迁移后的"爬坡时间"。
 
 [来源: Personal-Knowlodge/source/Android-Perfetto-09-CPU.md]
 
@@ -222,7 +223,7 @@ ORDER BY cpu;
 
 ## cpufreq governor：schedutil 的工作原理
 
-了解了核心迁移的机制后，下一个问题是：选定核心之后，这个核心应该跑多快？CPU 频率直接影响代码执行速度，也与功耗正相关。在 Perfetto 中，CPU Frequency 轨道显示了每个核心在不同时间的运行频率。但频率不是随便变化的——它由 **cpufreq governor** 决定。
+了解了核心迁移的机制后，自然要问：选定核心之后，这个核心应该跑多快？CPU 频率直接影响代码执行速度，也与功耗正相关。在 Perfetto 中，CPU Frequency 轨道显示了每个核心在不同时间的运行频率。但频率不是随便变化的——它由 **cpufreq governor** 决定。
 
 ### 从性能 governor 到 schedutil
 
@@ -256,7 +257,7 @@ static unsigned int sugov_get_util(struct sugov_cpu *sg_cpu)
 }
 ```
 
-这里值得注意的两点：第一，`cpu_util_cfs()` 和 `cpu_util_rt()` 分别获取普通任务和实时任务的利用率，两者累加后才是 schedutil 看到的总负载。第二，实时任务的利用率会被特殊处理——schedutil 在后面会为 RT 任务直接映射到最高频率，而不是按比例缩放。
+这段代码有两个要点：第一，`cpu_util_cfs()` 和 `cpu_util_rt()` 分别获取普通任务和实时任务的利用率，两者累加后才是 schedutil 看到的总负载。第二，实时任务的利用率会被特殊处理——schedutil 在后面会为 RT 任务直接映射到最高频率，而不是按比例缩放。
 
 [已验证: Linux kernel 源码, kernel/sched/cpufreq_schedutil.c @ linux-6.6]
 
@@ -294,7 +295,7 @@ schedutil 的决策并不是最终频率，还有几个约束会叠加在 schedu
 
 **微架构差异导致 IPC 不同**
 
-大核通常有更宽的乱序执行窗口、更多的执行端口、更大的 L1/L2 缓存、更激进的分支预测和预取。这意味着在同样的时钟周期内，大核能完成更多的指令（IPC 更高）。同频下，大核完成同样工作所需的时间更短，消耗的能量也更少。
+大核通常有更宽的乱序执行窗口、更多的执行端口、更大的 L1/L2 缓存、更激进的分支预测和预取。在同样的时钟周期内，大核能完成更多的指令（IPC 更高）。同频下，大核完成同样工作所需的时间更短，消耗的能量也更少。
 
 **缓存层次差异**
 
