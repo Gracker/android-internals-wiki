@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-14T12:54:28+08:00",
+  "generated_at": "2026-04-14T13:46:45+08:00",
   "state_machine_version": "v2",
   "total_sections": 207,
   "metrics": {
@@ -11,17 +11,17 @@
     "pipeline_task2b_pending": 13,
     "pipeline_task9_pending": 2,
     "task2b_unknown": 31,
-    "task2b_fixed": 70,
-    "task2b_idle": 93,
+    "task2b_fixed": 71,
+    "task2b_idle": 92,
     "task2b_pending": 13,
     "task6_unknown": 31,
-    "task6_revisiting": 70,
-    "task6_pending": 91,
+    "task6_revisiting": 71,
+    "task6_pending": 90,
     "task6_reviewed": 15,
     "task9_unknown": 31,
     "task9_pending": 169,
     "task9_reviewed": 7,
-    "last_updated": "2026-04-14T12:54:28+08:00"
+    "last_updated": "2026-04-14T13:46:45+08:00"
   },
   "pipeline": {
     "pipeline_stage_counts": {
@@ -32,14 +32,14 @@
     },
     "task2b_state_counts": {
       "unknown": 31,
-      "fixed": 70,
-      "idle": 93,
+      "fixed": 71,
+      "idle": 92,
       "pending": 13
     },
     "task6_state_counts": {
       "unknown": 31,
-      "revisiting": 70,
-      "pending": 91,
+      "revisiting": 71,
+      "pending": 90,
       "reviewed": 15
     },
     "task9_state_counts": {
@@ -881,15 +881,16 @@
       "title": "Linux 内核内存管理",
       "path": "src/part1-fundamentals/ch04-memory/02-linux-memory.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
-      "task6_state": "reviewed",
-      "task9_state": "reviewed",
-      "task2b_state": "pending",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
+      "task9_state": "pending",
+      "task2b_state": "fixed",
       "reviewed_date": "2026-04-14",
       "reviewed_by": "openclaw-task6",
       "section": "4.2",
       "task6_result": "needs-rework",
-      "task9_result": "needs-rework"
+      "task9_result": "needs-rework",
+      "task2b_result": "fixed"
     },
     "src/part1-fundamentals/ch04-memory/03-art-memory.md": {
       "chapter": "4.3",

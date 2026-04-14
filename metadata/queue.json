@@ -8159,7 +8159,12 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-14T04:42:31+08:00",
-    "status": "pending"
+    "status": "completed",
+    "file": "src/part1-fundamentals/ch04-memory/02-linux-memory.md",
+    "completed_at": "2026-04-14T13:46:45+08:00",
+    "completed_by": "task2b-rework",
+    "updated_at": "2026-04-14T13:46:45+08:00",
+    "updated_by": "task2b-rework"
   },
   {
     "section": "4.2",
