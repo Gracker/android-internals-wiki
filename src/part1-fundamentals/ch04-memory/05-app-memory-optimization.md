@@ -40,7 +40,8 @@ polish_by: "task2b-polish"
 pipeline_stage: task9_pending
 task6_state: reviewed
 task6_result: pass-light-edit
-task9_state: pending
+task9_state: reviewed
+task9_result: pass-tech-review
 task2b_state: idle
 ---
 
