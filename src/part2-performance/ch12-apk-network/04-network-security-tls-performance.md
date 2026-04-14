@@ -1,6 +1,7 @@
 ---
 title: "Android 网络安全与 TLS 性能优化"
 chapter: "12.4"
+section: "12.4"
 status: ready-for-review
 drafted_date: "2026-04-08"
 drafted_by: "openclaw-task2a"
@@ -21,17 +22,29 @@ created_by: "task2a-knowledge-gap"
 created_date: "2026-04-08"
 gap_source: "官方文档+AOSP结构"
 gap_score: 14
-pipeline_stage: task6_pending
-task6_state: pending
+pipeline_stage: task2b_pending
+task6_state: reviewed
 task9_state: pending
-task2b_state: idle
+task2b_state: pending
+reviewed_by: "openclaw-task6"
+reviewed_date: "2026-04-14"
+task6_result: "needs-rework"
 ---
 
 # 12.4 Android 网络安全与 TLS 性能优化
 
-当我们谈论网络性能时，通常会关注请求延迟、传输速率、连接池管理这些"纯性能"指标。但在 Android 的演进过程中，有一条主线始终在影响网络性能——安全。每次 HTTPS 连接都需要 TLS 握手，每个新增的安全机制（Certificate Transparency、Encrypted Client Hello、HPKE）都会在连接建立阶段增加开销。
+一次 API 请求只有几 KB，首包却要多等上百毫秒，瓶颈往往不在业务代码，而在连接建立阶段的 TLS 握手。Android 近几代把 TLS 1.3、Certificate Transparency、Encrypted Client Hello、HPKE 这些安全机制逐步推到默认路径里，网络延迟和安全策略也越来越耦合。
 
-这一节我们关注的是：Android 平台上的安全机制如何影响网络性能，以及我们怎么在安全和速度之间做合理的取舍。
+这一节关注两个问题：Android 平台上的安全机制会怎样影响网络性能，我们又该怎样在安全和连接成本之间做判断。
+
+<!-- outline-start -->
+## 本节导读
+- 🔹 TLS 握手与连接延迟：梳理 TLS 1.2、TLS 1.3、0-RTT 与 Session Resumption 对连接时延的影响。
+- 🔹 ECH、CT 与 Cleartext 迁移：说明 Android 17 相关安全默认值带来的延迟、兼容性与迁移成本。
+- 🔹 HPKE SPI：交代 Android 17 引入的 HPKE 能力、适用场景与性能边界。
+- 🔹 优化实践：从连接池、DNS、证书链和重定向配置出发，整理可执行的优化动作。
+- 🔹 版本演进与交叉引用：把网络安全策略放回 Android 版本演进和相关章节的上下文里。
+<!-- outline-end -->
 
 ## TLS 握手与连接延迟
 
@@ -39,13 +52,13 @@ TLS 握手是网络请求延迟中最容易被忽视的一环。对于一个小�
 
 ### TLS 1.2 vs TLS 1.3：握手次数的质变
 
-TLS 1.2 的完整握手需要 2 个 RTT（Round-Trip Time）。客户端先发 ClientHello，服务器回 ServerHello + Certificate + ServerHelloDone，客户端再发 ClientKeyExchange + ChangeCipherSpec + Finished，服务器最后回 ChangeCipherSpec + Finished。在移动网络下，一个 RTT 通常在 50-200ms（4G 网络），这意味着 TLS 1.2 的完整握手额外增加 100-400ms 延迟。
+TLS 1.2 的完整握手需要 2 个 RTT（Round-Trip Time）。客户端先发 ClientHello，服务器回 ServerHello + Certificate + ServerHelloDone，客户端再发 ClientKeyExchange + ChangeCipherSpec + Finished，服务器最后回 ChangeCipherSpec + Finished。在移动网络下，一个 RTT 通常在 50-200ms（4G 网络），完整的 TLS 1.2 握手会额外增加 100-400ms 延迟。
 
 TLS 1.3 把这个流程压缩到了 1-RTT。核心变化在于密钥交换机制：客户端在第一次握手时就带上 KeyShare，服务器可以在第一次回复时就推导出会话密钥并发送加密数据。相比 TLS 1.2，连接建立时间减少约 50%。
 
 Google 在 Android 10（API 29）上默认启用 TLS 1.3 后报告，相比 TLS 1.2 有最高 40% 的速度提升。[已验证: 官方文档, developer.android.com/about/versions/10/security]
 
-但这还没完——TLS 1.3 引入了 0-RTT（Zero Round-Trip Time）恢复模式。当客户端之前连接过某个服务器并获得了 session ticket 后，下次连接时可以直接在 ClientHello 中携带加密的"early data"，实现零延迟恢复。这意味着对于频繁请求同一 API 的场景，TLS 开销可以降到接近零。
+TLS 1.3 还引入了 0-RTT（Zero Round-Trip Time）恢复模式。当客户端之前连接过某个服务器并获得了 session ticket 后，下次连接时可以直接在 ClientHello 中携带加密的 "early data"，实现零延迟恢复。对于频繁请求同一 API 的场景，TLS 开销可以降到接近零。
 
 0-RTT 有一个安全代价：early data 不具备前向安全性（forward secrecy），而且可以被重放。因此只适用于幂等请求（如 GET），不能用于有副作用的操作（如 POST /transfer）。OkHttp 从 4.x 版本开始支持 TLS 1.3，但默认不启用 0-RTT，需要开发者手动配置。
 
@@ -57,7 +70,7 @@ Session ID 方式下，服务器在握手时分配一个 session ID，客户端�
 
 在实际应用中，session resumption 是降低 TLS 开销最有效的手段之一。一个良好的实践是确保连接池（ConnectionPool）的 keep-alive 时间足够长（OkHttp 默认 5 分钟），这样 TCP 连接保持期间内复用连接完全不需要 TLS 握手。只有连接断开后重新建立时，session resumption 才发挥作用。
 
-[待补充：Perfetto 中观察 TLS 握手耗时的 Trace 截图 — 可通过 network_trace_netdev 或自定义 atrace 埋点捕获]
+[图：Perfetto 中 TLS 握手耗时的观测示意，标出 DNS、TCP connect、TLS 握手与首包返回的时间段]
 
 ### Android 各版本的 TLS 默认行为
 
@@ -73,17 +86,17 @@ Android 平台的 TLS 行为随着版本演进持续收紧：
 
 [已验证: 官方文档, developer.android.com/training/articles/security-gms-provider]
 
-值得注意的是，Android 的 TLS 实现由 Conscrypt 安全提供者（基于 BoringSSL）负责，这个提供者可以通过 Google Play Services 更新，即使设备没有升级系统版本，也可能获得 TLS 安全补丁。
+Android 的 TLS 实现由 Conscrypt 安全提供者（基于 BoringSSL）负责。这个提供者可以通过 Google Play Services 更新，即使设备没有升级系统版本，也可能获得 TLS 安全补丁。
 
 ## Encrypted Client Hello (ECH) 的性能影响
 
-TLS 握手的一个长期隐私问题是：ClientHello 中的 SNI（Server Name Indication）字段是明文传输的。这意味着即使 TLS 加密了后续所有通信，网络中间人（ISP、企业网关）仍然可以知道你在访问哪个域名。
+TLS 握手的一个长期隐私问题是：ClientHello 中的 SNI（Server Name Indication）字段是明文传输的。即使 TLS 加密了后续所有通信，网络中间人（ISP、企业网关）仍然可以知道你在访问哪个域名。
 
 Encrypted Client Hello（ECH，RFC 9180 相关扩展）的目的是加密整个 ClientHello，包括 SNI。
 
 ### Android 17 的 ECH 支持
 
-Android 17（API 37）在平台级别引入了 ECH 支持，默认以"opportunistic"模式启用。这意味着当 DNS 查询返回 ECH 配置（HTTPS/SVCB 记录类型）时，平台会自动尝试使用 ECH。如果服务器不支持 ECH，连接会降级到普通 TLS，不会导致连接失败。
+Android 17（API 37）在平台级别引入了 ECH 支持，默认以 "opportunistic" 模式启用。当 DNS 查询返回 ECH 配置（HTTPS/SVCB 记录类型）时，平台会自动尝试使用 ECH。如果服务器不支持 ECH，连接会降级到普通 TLS，不会导致连接失败。
 
 ECH 的工作流程依赖 DNS-over-HTTPS（DoH）或 DNS-over-TLS（DoT）：客户端先通过加密 DNS 查询获取目标域名的 ECH 公钥配置，然后用这个公钥加密 ClientHello 中的 SNI 和其他敏感信息。
 
@@ -98,7 +111,7 @@ ECH 的额外开销来自两部分：
 在现代 Android 设备上，加密操作通常由硬件加速器（ARM CE 指令集）处理，TLS 相关的 CPU 开销在整体请求延迟中占比很小。真正影响延迟的始终是 RTT，而不是计算。
 
 [已验证: 官方文档, developer.android.com/about/versions/17/behavior-changes-17]
-[待验证: ECH 对 OkHttp/Cronet 的透明性——预计 Android 17 平台级实现对上层 HTTP 客户端透明]
+[待验证: ECH 对 OkHttp / Cronet 的透明性，预计 Android 17 平台级实现对上层 HTTP 客户端透明]
 
 ## Certificate Transparency 的开销
 
@@ -138,19 +151,19 @@ Android 对明文流量（HTTP）的限制是一个渐进过程：
 
 ### 迁移中的延迟变化
 
-从 HTTP 迁移到 HTTPS 的主要延迟影响来自 TLS 握手。但这个影响是一次性的——连接建立完成后，TLS 对数据传输的吞吐量影响很小。Google 的研究表明，当数据量超过 500KB 时，TLS 的能量开销相比传输 I/O 开销可以忽略。
+从 HTTP 迁移到 HTTPS 的主要延迟影响来自 TLS 握手。但这个影响是一次性的，连接建立完成后，TLS 对数据传输的吞吐量影响很小。Google 的研究表明，当数据量超过 500KB 时，TLS 的能量开销相比传输 I/O 开销可以忽略。
 
 迁移中真正需要关注的是：
 
 1. **混合内容（Mixed Content）**：如果 App 的部分请求走 HTTPS，部分走 HTTP，浏览器/WebView 会阻塞或警告混合内容。这不会增加延迟，但会导致请求失败，用户感知为"加载变慢"。
 
-2. **HTTP→HTTPS 重定向**：如果服务端只是做了 301/302 重定向，客户端先发 HTTP 请求再被重定向到 HTTPS，实际上是增加了 1-2 个 RTT 的延迟。正确的做法是在客户端直接使用 HTTPS URL。
+2. **HTTP→HTTPS 重定向**：如果服务端只是做了 301/302 重定向，客户端先发 HTTP 请求再被重定向到 HTTPS，等于额外增加了 1-2 个 RTT 的延迟。正确的做法是在客户端直接使用 HTTPS URL。
 
 3. **证书链过长**：如果服务器配置了过长的证书链（超过 4-5 层），TLS 握手时传输的证书数据量增加，在高延迟网络下会显著影响握手时间。最佳实践是服务器只发送必要的中间证书。
 
 ### Network Security Configuration 的性能配置
 
-Network Security Configuration 是 Android 推荐的网络安全管理方式（取代 `usesCleartextTraffic`）。从性能角度，有几个值得注意的配置：
+Network Security Configuration 是 Android 推荐的网络安全管理方式（取代 `usesCleartextTraffic`）。从性能角度，有几个和性能直接相关的配置：
 
 ```xml
 <!-- res/xml/network_security_config.xml -->
@@ -194,7 +207,7 @@ HPKE 适合以下需要公钥加密的场景：
 Android 17 的 HPKE 实现目前只支持 base mode（最基本的加密解密模式），不支持 PSK 或 auth mode。`HpkeSpi` 作为 JCA（Java Cryptography Architecture）的一部分，允许第三方安全提供者提供自己的 HPKE 实现。
 
 [已验证: 官方文档, developer.android.com/reference/android/net/ssl/HPKE]
-[待验证: Android 17 HPKE 的具体性能基准数据——目前 Beta 阶段尚无公开 benchmark]
+[待验证: Android 17 HPKE 的具体性能基准数据，目前 Beta 阶段尚无公开 benchmark]
 
 ## 网络安全性能优化最佳实践
 
@@ -251,9 +264,9 @@ Android 9（API 28）引入了 Private DNS（DoT）设置，Android 11 扩展支
 
 ## 参考资料
 
-- [Android 17 Behavior Changes](https://developer.android.com/about/versions/17/behavior-changes-17) — 官方行为变更文档
-- [Network Security Configuration](https://developer.android.com/training/articles/security-config) — 网络安全配置指南
-- [HPKE RFC 9180](https://www.rfc-editor.org/rfc/rfc9180) — HPKE 标准规范
-- [TLS 1.3 RFC 8446](https://www.rfc-editor.org/rfc/rfc8446) — TLS 1.3 标准规范
-- [Certificate Transparency RFC 6962](https://www.rfc-editor.org/rfc/rfc6962) — CT 标准规范
-- [Conscrypt Security Provider](https://developer.android.com/training/articles/security-gms-provider) — Android TLS 实现说明
+- [Android 17 Behavior Changes](https://developer.android.com/about/versions/17/behavior-changes-17)，官方行为变更文档
+- [Network Security Configuration](https://developer.android.com/training/articles/security-config)，网络安全配置指南
+- [HPKE RFC 9180](https://www.rfc-editor.org/rfc/rfc9180)，HPKE 标准规范
+- [TLS 1.3 RFC 8446](https://www.rfc-editor.org/rfc/rfc8446)，TLS 1.3 标准规范
+- [Certificate Transparency RFC 6962](https://www.rfc-editor.org/rfc/rfc6962)，CT 标准规范
+- [Conscrypt Security Provider](https://developer.android.com/training/articles/security-gms-provider)，Android TLS 实现说明

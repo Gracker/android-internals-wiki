@@ -3236,3 +3236,23 @@
 - **位置**：frontmatter sources / 官方来源
 - **问题**：frontmatter 里的 `https://source.android.com/docs/core/debug/atrace` 当前返回 404，`system/traced/` 也不是本章主要引用的实际源码目录，会让“已验证”来源链不完整。
 - **建议**：把官方来源替换为仍可访问的 atrace / Perfetto 文档页面，并把源码路径统一到 `external/perfetto/src/traced/`、`src/traced/probes/ftrace/` 等真实目录。
+
+
+## [Task6 Review] 12.4 Android 网络安全与 TLS 性能优化 — 2026-04-14
+- **类型**：需确认
+- **位置**：TLS 1.3 / ECH / CT / Cleartext / HPKE 相关版本与默认行为段落
+- **问题**：0-RTT、Conscrypt 更新路径、ECH 对上层 HTTP 客户端的透明性、CT 默认启用范围、`usesCleartextTraffic` 在 Android 17 的边界、HPKE SPI 适用范围等结论还混着多处 `[待验证]` 或只给了单一来源，Task 6 不做技术裁决。
+- **建议**：交给 Task 9 按官方文档与 AOSP / API 文档核对版本边界、默认行为和客户端差异，再由 Task 2B 回写正文。
+- **review 日志**：logs/review/2026-04-14-20-review.md
+
+- **类型**：需补充素材
+- **位置**：TLS 握手耗时 / ECH / Cleartext 迁移
+- **问题**：正文只有一处图示占位，后半段缺少 Trace、时序图或迁移案例，证据链偏薄。
+- **建议**：补 2-3 个 `[图：...]` 或真实截图，至少覆盖 TLS 握手阶段拆分、ECH / CT 所在握手位置、HTTP→HTTPS 重定向的额外 RTT。
+- **review 日志**：logs/review/2026-04-14-20-review.md
+
+- **类型**：需重写
+- **位置**：Certificate Transparency / Cleartext Traffic / HPKE / 最佳实践
+- **问题**：后半段逐渐滑向标准说明和列表卡片，工程场景、观测方法与判断路径没有持续回扣，活人感和主线都偏弱。
+- **建议**：交给 Task 2B 把这几节重排成“场景 → 机制 → 代价 → 排查 / 取舍”的工程叙述，减少资料汇编感。
+- **review 日志**：logs/review/2026-04-14-20-review.md
