@@ -3630,3 +3630,14 @@
 - **位置**：全文验证标注 + Perfetto 证据
 - **问题**：`[已验证: 官方文档, developer.android.com]` 缺少具体 URL；Cubox 为私有书签；缺少 [图：...] 占位
 - **建议**：为每个 [已验证] 补充具体 URL 或 AOSP 路径；补至少 3 处 [图：...] 占位覆盖管线架构图、预览帧间隔 Track、启动耗时拆解
+
+## [Task6 Review] 18.1 渲染链路分类与选择矩阵 — 2026-04-15
+- **类型**：需确认
+- **位置**：文末"交叉引用"段（约 L133）
+- **问题**：三个交叉引用链接路径全部指向不存在的 `part1-foundation/ch02-graphics-foundation/`。正确路径为 `part1-fundamentals/ch02-rendering/`。同时锚点文本中 BufferQueue 的章节号标注为 2.1（实为 2.13），SurfaceFlinger 标注为 2.5（实为 2.6）
+- **建议**：修正为：
+  - `[2.13 BufferQueue 机制](../../part1-fundamentals/ch02-rendering/13-buffer-queue.md)`
+  - `[2.6 SurfaceFlinger](../../part1-fundamentals/ch02-rendering/06-surfaceflinger.md)`
+  - `[2.14 图形 API 演进](../../part1-fundamentals/ch02-rendering/14-graphics-api-evolution.md)`
+- **review 日志**：logs/review/2026-04-15-07-review.md
+
