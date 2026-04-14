@@ -2292,3 +2292,20 @@ Perfetto 用户态 tracing 在正文里被混成了一条线：`android.os.Trace
 
 ### 关联章节
 §13.1、§13.2、§13.5、§14.10
+
+## [2026-04-14] 1.13 MessageQueue 机制与 DeliQueue 无锁优化 — 新 MessageQueue 中 barrier / async queue / tombstoning 的公开证据链
+
+### 盲区描述
+当前章节已经把 VSync 优先级解释建立在 sync barrier 上，但 android-16 ConcurrentMessageQueue 显示新实现至少存在普通 queue + async queue 双队列；Android 17 behavior page 又只公开了兼容性和 targetSdk 默认开启，并未给出完整 public tag 源码。缺少 barrier / async / tombstoning 在新实现中的一手证据链，正文很容易把 15 / 16 / 17 三个阶段混写。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 等 android-17 public tag 后核对 MessageQueue / Looper / CombinedMessageQueue 的最终路径和 barrier 处理
+- 对照 behavior-changes/messagequeue 与 public source，区分 app-facing default 与 system process 试点
+- 验证 VSync 异步消息在新实现中的真实调度路径，以及它与 removeMessages / tombstoning 的交互
+
+### 关联章节
+1.13、2.4、2.5、1.14
+

@@ -364,10 +364,11 @@
       "status": "ready-for-review",
       "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
-      "task9_state": "pending",
+      "task9_state": "reviewed",
       "task2b_state": "pending",
       "reviewed_date": "2026-04-14",
-      "reviewed_by": "openclaw-task6"
+      "reviewed_by": "openclaw-task6",
+      "task9_result": "needs-rework"
     },
     "src/part1-fundamentals/ch01-architecture/14-lock-contention.md": {
       "chapter": "1.14",
