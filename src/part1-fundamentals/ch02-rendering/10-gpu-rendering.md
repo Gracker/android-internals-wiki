@@ -22,7 +22,7 @@ tags: ['gpu', 'rendering', 'shader', 'vulkan', 'opengl', 'performance', 'memory'
 related_chapters: ["2.3", "2.4", "2.5", "2.6", "2.9", "3.2", "14.3"]
 drafted_date: 2026-03-30
 drafted_by: openclaw-task2a
-reviewed_date: 2026-04-10
+reviewed_date: 2026-04-15
 reviewed_by: openclaw-task6
 rework_date: 2026-04-03
 rework_by: openclaw-task2b
@@ -31,8 +31,9 @@ last_polish_notes: "第2轮出版级精修：修复applicable_versions范围、A
 polish_count: 2
 polish_date: "2026-04-10"
 polish_by: "task2b-polish"
-pipeline_stage: task6_pending
-task6_state: pending
+pipeline_stage: task9_pending
+task6_state: reviewed
+task6_result: pass-light-edit
 task9_state: pending
 task2b_state: idle
 ---
@@ -294,7 +295,7 @@ Vertex bound 在 Android UI 渲染中相对少见，但在某些场景下会出�
 
 ### Bandwidth Bound：内存带宽瓶颈
 
-Bandwidth bound 是三种瓶颈中最容易被忽略的一种。它的本质是 GPU 在等待数据——不是 GPU 计算能力不足，而是数据从内存传输到 GPU 计算单元的速度跟不上。在移动设备的统一内存架构中，CPU、GPU、显示控制器、相机 ISP 等模块共享同一块物理内存和总线，当多个模块同时高负载工作时，内存带宽就会成为瓶颈。
+Bandwidth bound 是三种瓶颈中最容易被忽略的一种。它的本质是 GPU 在等待数据——GPU 的计算能力足够，但数据从内存传输到 GPU 计算单元的速度跟不上。在移动设备的统一内存架构中，CPU、GPU、显示控制器、相机 ISP 等模块共享同一块物理内存和总线，当多个模块同时高负载工作时，内存带宽就会成为瓶颈。
 
 导致 bandwidth bound 的常见场景包括：大尺寸纹理没有使用压缩格式（一张未压缩的 2048×2048 RGBA8888 纹理需要 16MB 存储，每次采样都需要从内存读取数据）；没有生成 Mipmap（GPU 总是使用最高分辨率纹理，即使物体在屏幕上只占几个像素）；帧缓冲区位深度过高（RGBA8888 比 RGBA5551 多一倍的数据量）。
 
@@ -308,7 +309,7 @@ Bandwidth bound 是三种瓶颈中最容易被忽略的一种。它的本质是 
 
 Android 的 GPU 内存管理涉及多个层次。从上往下看：应用层通过 `GraphicBuffer` 类来引用和管理图形缓冲区；系统框架层通过 BufferQueue 机制协调生产者（应用）和消费者（SurfaceFlinger）对缓冲区的使用；HAL 层通过 Gralloc 模块负责实际的物理内存分配；硬件层的 GPU 则直接访问这些物理内存来执行渲染和合成操作。
 
-理解这个层次结构，有一点至关重要：在移动设备上，CPU 和 GPU 共享同一块物理内存（统一内存架构，UMA）。这与 PC 上 CPU 内存和 GPU 显存分离的架构有本质区别。在 UMA 架构下，"GPU 内存"并不是独立的物理存储，而是从系统内存中划分出来的、具有特定对齐和访问属性的内存区域。这意味着 GPU 的内存使用会直接影响系统的可用内存总量，在分析应用内存占用时不能只看 Java heap——GPU 占用的内存同样重要。
+理解这个层次结构，有一点至关重要：在移动设备上，CPU 和 GPU 共享同一块物理内存（统一内存架构，UMA）。这与 PC 上 CPU 内存和 GPU 显存分离的架构有本质区别。在 UMA 架构下，"GPU 内存"并不是独立的物理存储，而是从系统内存中划分出来的、具有特定对齐和访问属性的内存区域。GPU 的内存使用会直接影响系统的可用内存总量。在分析应用内存占用时，不能只看 Java heap——GPU 占用的内存同样重要。
 
 ```java
 // frameworks/base/core/java/android/graphics/GraphicBuffer.java
@@ -455,7 +456,7 @@ adb devices
 
 这个案例揭示了一个通用的 GPU 性能优化规律：**GPU 瓶颈往往是多个小问题叠加的结果，而不是单一的大问题。** 每个单独的因素（过度绘制、多次纹理采样、未压缩纹理）可能只贡献了几毫秒的开销，但加在一起就超过了 16.67ms 的帧预算。因此 GPU 优化的思路不是"找一个最大的问题解决它"，而是"逐一消除所有小的性能浪费"。
 
-另外，这个案例也说明了一个重要观点：GPU 性能优化不等于"减少代码"。很多时候，问题的根因不是代码写得不好，而是对 GPU 工作方式的理解不足——比如不理解纹理压缩可以减少带宽消耗，不理解过度绘制会让 GPU 做大量无用功，不理解多个半透明叠加层的性能代价。
+另外，这个案例也说明了一个重要观点：GPU 性能优化不等于"减少代码"。很多时候，问题的根因对 GPU 工作方式的理解不足——比如不理解纹理压缩可以减少带宽消耗，不理解过度绘制会让 GPU 做大量无用功，不理解多个半透明叠加层的性能代价。
 
 ## 与其他机制的关系
 
@@ -513,7 +514,7 @@ GPU 渲染并不是一个独立的环节，它是整个 Android 渲染管线中�
 
 ### "120Hz 屏幕需要 GPU 性能翻倍"？
 
-这是一个常见的误解。120Hz 屏幕意味着每帧的预算从 16.67ms 缩短到 8.33ms，但这并不意味着 GPU 的工作量翻倍了——GPU 每帧的工作量取决于画面复杂度，与刷新率无关。真正变化的是时间预算：GPU 必须在更短的时间内完成同样的工作。这意味着在 120Hz 下，原本在 60Hz 下不明显的 GPU 瓶颈会变得突出。反过来，如果一个应用在 60Hz 下有 10ms 的 GPU 余量（GPU 只需要 6.67ms 就能完成渲染），升级到 120Hz 后只要 GPU 能在 8.33ms 内完成就仍然流畅。
+这是一个常见的误解。120Hz 屏幕意味着每帧的预算从 16.67ms 缩短到 8.33ms，但这并不意味着 GPU 的工作量翻倍了——GPU 每帧的工作量取决于画面复杂度，与刷新率无关。真正变化的是时间预算：GPU 必须在更短的时间内完成同样的工作。在 120Hz 下，原本在 60Hz 下不明显的 GPU 瓶颈会变得突出。反过来，如果一个应用在 60Hz 下有 10ms 的 GPU 余量（GPU 只需要 6.67ms 就能完成渲染），升级到 120Hz 后只要 GPU 能在 8.33ms 内完成就仍然流畅。
 
 ## 参考资料
 
