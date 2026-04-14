@@ -9554,5 +9554,62 @@
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-15T02:29:01",
     "status": "pending"
+  },
+  {
+    "section": "2.13",
+    "section_title": "图形缓冲区管理 (BufferQueue)",
+    "priority": 85,
+    "reason": "[Deep Tech Review] 源码位置标注错误(onFirstRef vs 构造函数)、setBuffer 签本版本混淆、consumer 路径缺失、BufferQueue 四组件架构未提及、版本表仅覆盖 4.1 和 11 但声称覆盖到 17、阻塞唤醒机制未说明、不同 Surface 类型配置差异未覆盖",
+    "material_paths": [
+      "intake/research-gaps.md",
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "三缓冲通常怎么出现 小节",
+        "detail": "setMaxDequeuedBufferCount(2) 在构造函数中调用，不是 onFirstRef()",
+        "suggestion": "改为 'BLASTBufferQueue 构造函数中把 mProducer->setMaxDequeuedBufferCount(2) 设成安全默认值'"
+      },
+      {
+        "type": "源码错误",
+        "location": "BLASTBufferQueue 代码片段",
+        "detail": "Transaction::setBuffer() 7 参数签名是 Android 12+，与文中 'Android 11 开始出现' 的描述矛盾",
+        "suggestion": "标注代码片段来源版本，或拆分为 Android 11 (5参数) vs Android 12+ (7参数)"
+      },
+      {
+        "type": "原理断裂",
+        "location": "全文",
+        "detail": "Consumer 路径 (acquireBuffer -> releaseBuffer) 几乎完全缺失，与 producer 侧详述严重不对称",
+        "suggestion": "新增一个小节详述 consumer 三步流程，与 producer 三步对称"
+      },
+      {
+        "type": "原理断裂",
+        "location": "全文",
+        "detail": "BufferQueueCore / BufferQueueProducer / BufferQueueConsumer 四组件架构未提及，sources 引用了 BufferQueueCore.cpp 但正文从未解释",
+        "suggestion": "在 BufferQueue 基本角色小节中增加四组件架构说明"
+      },
+      {
+        "type": "版本差异",
+        "location": "版本演进 小节",
+        "detail": "版本表仅 2 行 (4.1 和 11)，但 applicable_versions 声称覆盖到 17。Android 12 强制 BLAST、13 帧率覆盖等关键里程碑缺失",
+        "suggestion": "补充 Android 12 (BLAST 成为唯一路径) 和 Android 13+ 的关键变化，无法确认的标注 [待验证]"
+      },
+      {
+        "type": "知识盲区",
+        "location": "全文",
+        "detail": "dequeueBuffer 阻塞时的 ConditionVariable 等待/唤醒机制未说明，直接关联 RenderThread 卡在 dequeueBuffer 的根因分析",
+        "suggestion": "新增 'BufferQueue 阻塞机制' 小节或并入现有小节"
+      },
+      {
+        "type": "知识盲区",
+        "location": "全文",
+        "detail": "不同 Surface 类型 (普通窗口 / SurfaceView / 媒体) 的 BufferQueue 配置差异未覆盖",
+        "suggestion": "新增 '不同 Surface 类型的 BufferQueue 差异' 小节或表格"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-15T03:32:00",
+    "status": "pending"
   }
 ]
