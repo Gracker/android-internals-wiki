@@ -3152,3 +3152,15 @@
 - **问题**：API 行为、阈值和 policy 规则写得很具体，但当前验证标注没有给到可追溯的官方路径。
 - **建议**：交给 Task 9 核对 Android 17 AlarmManager 文档与 Play policy 原文；保留不了精确证据时改成带条件的保守表述。
 - **review 日志**：logs/review/2026-04-14-16-review.md
+## [Task9 Deep Review] 11.5 Wakelock 机制与功耗分析 — 2026-04-14
+- **类型**：数据缺失
+- **位置**：L77、L195（1mA / 10→30→60 分钟）
+- **问题**：“整机功耗可以降到 1mA 以下”和“Doze maintenance window 初始约 10 分钟、随后 30/60 分钟”都给了很具体的数值，但正文没有设备条件、AOSP 常量来源或实验环境。
+- **建议**：如果没有可追溯来源，改成定性表述，或补设备型号、Android 版本、测量方式与配置条件。
+
+## [Task9 Deep Review] 11.5 Wakelock 机制与功耗分析 — 2026-04-14
+- **类型**：交叉引用
+- **位置**：L382-L391（Perfetto SQL 示例）
+- **问题**：SQL 直接按 `track.name GLOB "*wakelock*"` 聚合，缺少“这些 slice 实际来自哪类表/轨道”的说明；读者照抄后很可能因为 track 命名不同而查不到结果。
+- **建议**：补 `linux.ftrace` power tracepoints 进入 trace processor 后的具体表名 / track 命名示例，或给一个能在当前 trace config 下直接跑通的查询。
+

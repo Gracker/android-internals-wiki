@@ -2239,3 +2239,25 @@ Perfetto 输入分析的采集前提和真实实体模型没有讲透。当前�
 
 ### 关联章节
 14.5
+
+
+## [2026-04-14] 11.5 Wakelock 机制与功耗分析 — 知识盲区
+
+### 盲区描述
+正文没有把现代 Android 的两条主线拆开讲清楚：
+1. `PowerManager.WakeLock -> PowerManagerService -> SuspendBlocker/SystemSuspend -> suspend` 这条“为什么设备还没睡”的主线；
+2. `App Standby / JobScheduler / AlarmManager / Foreground Service` 这条“设备被唤醒后还能做多少后台工作”的主线。
+
+两条线混在一起后，读者会把显式 partial wakelock、alarm delivery、FGS、后台 job quota 当成同一种机制。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 核对 Android 10+ `SystemSuspend service`、`SuspendBlocker` 与 PMS `WakeLock` 记录的关系
+- 核对 App Standby Buckets 在 Android 16 的公开 quota 口径，区分 jobs / alarms / network 与显式 wakelock
+- 补一张“App 显式 wakelock vs Alarm 唤醒 vs WorkManager/JobScheduler vs FGS”的边界图
+
+### 关联章节
+5.8, 11.1, 13.5
+

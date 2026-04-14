@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-14T16:13:33+08:00",
+  "generated_at": "2026-04-14T16:46:00+08:00",
   "state_machine_version": "v2",
   "total_sections": 207,
   "metrics": {
@@ -19,9 +19,9 @@
     "task6_reviewed": 17,
     "task6_revisiting": 72,
     "task9_unknown": 31,
-    "task9_pending": 169,
-    "task9_reviewed": 7,
-    "last_updated": "2026-04-14T16:13:33+08:00"
+    "task9_pending": 168,
+    "task9_reviewed": 8,
+    "last_updated": "2026-04-14T16:46:00+08:00"
   },
   "pipeline": {
     "pipeline_stage_counts": {
@@ -44,8 +44,8 @@
     },
     "task9_state_counts": {
       "unknown": 31,
-      "pending": 169,
-      "reviewed": 7
+      "pending": 168,
+      "reviewed": 8
     }
   },
   "issues": {
@@ -1905,12 +1905,13 @@
       "status": "ready-for-review",
       "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
-      "task9_state": "pending",
+      "task9_state": "reviewed",
       "task2b_state": "pending",
       "section": "11.5",
       "reviewed_date": "2026-04-14",
       "reviewed_by": "openclaw-task6",
-      "task6_result": "needs-rework"
+      "task6_result": "needs-rework",
+      "task9_result": "needs-rework"
     },
     "src/part2-performance/ch11-power/README.md": {
       "chapter": null,
