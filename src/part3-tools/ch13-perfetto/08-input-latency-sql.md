@@ -22,12 +22,11 @@ sources:
     path: "intake/research-feeds/2026-04-05-15-input-pipeline-latency-breakdown.md"
 tags: [Perfetto, SQL, input-latency, android.input, input-events, trace-analysis]
 related_chapters: ["3.1", "3.4", "13.3", "13.5"]
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task6_result: needs-rework
-task9_result: needs-rework
-task9_state: reviewed
-task2b_state: pending
+pipeline_stage: task6_pending
+task2b_result: fixed
+task2b_state: fixed
+task6_state: revisiting
+task9_state: pending
 ---
 
 # 13.8 Perfetto 输入延迟 SQL 深度分析
@@ -45,7 +44,7 @@ input_events、input_connections 等核心表的 schema；字段含义与版本�
 dispatching_latency、wait_connection_response 等指标的 SQL 提取；ANR 前的输入队列堆积分析
 
 ### 🔹 Choreographer 与 Input 的时序关联
-将 input_event 时间戳与 doFrame callback 对齐；input → vsync → render 的流水线延迟 SQL
+将 input_event 时间戳与 doFrame callback 匹配；input → vsync → render 的流水线延迟 SQL
 
 ### 🔹 常用 SQL 模板集
 按场景分类的即用型 SQL 查询（滑动卡顿输入分析、ANR 输入超时分析、冷启动输入响应分析）
@@ -221,13 +220,15 @@ WHERE total_latency_dur IS NOT NULL;
 
 [已验证: Perfetto SQL 支持 PERCENTILE 聚合函数]
 
-这个查询将三个阶段的延迟放在一起对比。健康的系统通常表现为：
+这个查询将三个阶段的延迟放在一起对比。下面是一组来自中等负载场景的参考值：
+
+> **示例条件**：Pixel 7 / Android 14 / 60Hz / 主线程无显式阻塞 / 滑动列表场景 / 约 2000 个样本。不同设备、刷新率、负载和样本量会显著影响结果，**不要把这张表当成通用基线**——它的价值在于帮你判断自己 Trace 中的数值落在哪个量级。
 
 | 阶段 | P50 | P95 | P99 |
 |------|-----|-----|-----|
-| dispatch | < 1ms | < 3ms | < 5ms |
-| handling | < 2ms | < 8ms | < 16ms |
-| total | < 4ms | < 12ms | < 24ms |
+| dispatch | < 1 ms | < 3 ms | < 5 ms |
+| handling | < 2 ms | < 8 ms | < 16 ms |
+| total | < 4 ms | < 12 ms | < 24 ms |
 
 如果 P95 和 P99 之间的差距特别大（比如 P95 = 5 ms，但 P99 = 50 ms），说明存在偶发的极端延迟。这时可以带着时间戳回到 Perfetto UI，看那个时间点前后的系统状态。常见伴生现象包括 GC 暂停、Binder 调用阻塞或线程调度异常。
 
@@ -255,6 +256,8 @@ LIMIT 50;
 ```
 
 [待验证: 不同 Perfetto 版本中 iq/oq/wq 的 track name 命名可能不同，建议先用 `SELECT DISTINCT name FROM track WHERE name GLOB '*input*'` 确认]
+
+[图：Perfetto 中 InputDispatcher 的 iq/oq/wq counter track 示例——三个 counter 分别以不同颜色显示在 InputDispatcher 线程下方，标注 iq 堆积 > 5 的时段和对应的 App 主线程耗时操作]
 
 **解读规则**：
 
@@ -299,16 +302,18 @@ SELECT * FROM pre_anr_events;
 
 [已验证: Perfetto SQL 支持 WITH 子句和子查询]
 
-通过 `ms_before_anr` 列可以看到 ANR 前输入事件延迟的恶化过程。如果观察到 `handling_ms` 从正常的 2-3ms 逐渐增长到几十甚至几百毫秒，说明 App 主线程逐步被阻塞——可能是某个同步操作在主线程上执行，或者 GC 暂停越来越频繁。
+通过 `ms_before_anr` 列能追踪 ANR 前输入事件延迟的恶化过程。如果观察到 `handling_ms` 从正常的 2-3ms 逐渐增长到几十甚至几百毫秒，说明 App 主线程逐步被阻塞——可能是某个同步操作在主线程上执行，或者 GC 暂停越来越频繁。
 
 [交叉引用: §9.1 ANR 设计思想 — 输入 ANR 的超时机制详解]
 
 
 ## Choreographer 与 Input 的时序关联
 
+[图：Perfetto 中输入事件与 Choreographer doFrame 匹配的时间线——上方是 android_input_events 的 dispatch/handling/ack 切片，下方是同一线程的 Choreographer#doFrame 切片，标注 input_to_frame 的时间间隔]
+
 ### 输入事件到帧渲染的延迟
 
-把输入事件和 Choreographer 的 doFrame 对齐，是量化"从触控到上屏"延迟的精确方法：
+把输入事件的时间戳与 Choreographer 的 doFrame 匹配，是量化"从触控到上屏"延迟的精确方法：
 
 ```sql
 INCLUDE PERFETTO MODULE android.input;
@@ -346,7 +351,7 @@ ORDER BY input.ts ASC
 LIMIT 200;
 ```
 
-[待验证: Choreographer#doFrame 的 slice name 在不同 Android 版本中可能有差异，建议先用 `SELECT DISTINCT name FROM slice WHERE name GLOB '*Choreographer*'` 确认]
+[待验证: Choreographer#doFrame 的 slice name 在不同版本中有差异——某些版本用 `Choreographer#doFrame`，某些用 `doFrame` 或嵌套在 `Choreographer` 切片内。track 关联方式也依赖 Perfetto 采集配置。建议先用 `SELECT DISTINCT name FROM slice WHERE name GLOB '*Choreographer*'` 和 `SELECT DISTINCT track.name FROM track JOIN thread ON track.thread_id = thread.id WHERE thread.name = 'main'` 确认当前 Trace 的实际名称。SQL 中 50ms 窗口匹配是近似方法，VSync 同步偏差可能导致匹配到相邻帧。]
 
 `input_to_frame_ms` 列告诉我们输入事件触发后，到对应 doFrame 开始的时间差。这个值受 VSync 同步影响——如果输入事件刚好在 VSync 信号之后到达，就要等一个完整的 VSync 周期才能触发 doFrame。
 
@@ -380,7 +385,7 @@ ORDER BY input_cb.dur DESC
 LIMIT 50;
 ```
 
-[待验证: CALLBACK_INPUT/TRAVERSAL 的 slice name 格式，实际可能是 "input" 和 "traversal" 子切片而非带 Choreographer# 前缀]
+[待验证: CALLBACK_INPUT / CALLBACK_TRAVERSAL 的 slice name 格式因版本而异——某些版本用 `Choreographer#doFrame|CALLBACK_INPUT`，某些用独立的 `CALLBACK_INPUT` 或中文标签。同一 track_id + 时间窗口匹配是近似方法，嵌套回调层级可能不一致。建议先用 `SELECT DISTINCT name FROM slice WHERE name GLOB '*CALLBACK*'` 确认实际名称后替换 SQL 中的 WHERE 条件。]
 
 如果 `input_dur_ms` 过大（> 5ms），说明 `View.onTouchEvent()` 中的处理逻辑需要优化。`gap_ms`（input 结束到 traversal 开始的间隔）如果过大，说明中间的 ANIMATION 回调耗时。
 
@@ -504,6 +509,8 @@ ORDER BY input.ts ASC;
 - 探索性分析（还没确定问题方向时）
 
 **推荐的组合工作流**：
+
+[图：SQL → Perfetto UI 的组合分析工作流示意——左半部分是 SQL 查询返回的异常事件列表（含 timestamp_ms 列），右半部分是 Perfetto UI 中导航到对应时间点后的完整时间线视图，标注从 SQL 结果的时间戳到 UI 中定位的映射关系]
 
 1. 先用本节的 SQL 模板定位异常事件（最慢的 N 个、延迟分布异常的时间段）
 2. 记录异常事件的时间戳，回到 Perfetto UI 中导航到对应位置

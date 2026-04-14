@@ -297,8 +297,12 @@
     ],
     "added_by": "task6-review",
     "added_at": "2026-04-13T18:05:00+08:00",
-    "status": "pending",
-    "original_review_log": "logs/review/2026-04-13-18-review.md"
+    "status": "completed",
+    "original_review_log": "logs/review/2026-04-13-18-review.md",
+    "completed_at": "2026-04-15T00:43:33.133532",
+    "completed_by": "task2b-rework",
+    "result": "fixed",
+    "notes": "Task 2B 回炉修复：1) 健康系统阈值表降级为示例口径+补实验条件说明；2) Choreographer/Input SQL 强化待验证注释并补排查指引；3) 补 3 处 [图：...] 占位覆盖关键视觉锚点。STYLE.md 禁用词扫描通过。"
   },
   {
     "section": "4.8",
