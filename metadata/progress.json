@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-14T15:05:00+08:00",
+  "generated_at": "2026-04-14T15:40:00+08:00",
   "state_machine_version": "v2",
   "total_sections": 207,
   "metrics": {
@@ -7,45 +7,45 @@
     "unknown": 34,
     "ready-for-review": 173,
     "pipeline_unknown": 31,
-    "pipeline_task6_pending": 159,
+    "pipeline_task6_pending": 160,
     "pipeline_task9_pending": 2,
-    "pipeline_task2b_pending": 15,
+    "pipeline_task2b_pending": 14,
     "task2b_unknown": 31,
     "task2b_idle": 90,
-    "task2b_pending": 15,
-    "task2b_fixed": 71,
+    "task2b_pending": 14,
+    "task2b_fixed": 72,
     "task6_unknown": 31,
     "task6_pending": 88,
-    "task6_reviewed": 17,
-    "task6_revisiting": 71,
+    "task6_reviewed": 16,
+    "task6_revisiting": 72,
     "task9_unknown": 31,
-    "task9_pending": 168,
-    "task9_reviewed": 8,
-    "last_updated": "2026-04-14T15:05:00+08:00"
+    "task9_pending": 169,
+    "task9_reviewed": 7,
+    "last_updated": "2026-04-14T15:40:00+08:00"
   },
   "pipeline": {
     "pipeline_stage_counts": {
-      "unknown": 31,
-      "task6_pending": 159,
+      "task2b_pending": 14,
+      "task6_pending": 160,
       "task9_pending": 2,
-      "task2b_pending": 15
+      "unknown": 31
     },
     "task2b_state_counts": {
-      "unknown": 31,
+      "fixed": 72,
       "idle": 90,
-      "pending": 15,
-      "fixed": 71
+      "pending": 14,
+      "unknown": 31
     },
     "task6_state_counts": {
-      "unknown": 31,
       "pending": 88,
-      "reviewed": 17,
-      "revisiting": 71
+      "reviewed": 16,
+      "revisiting": 72,
+      "unknown": 31
     },
     "task9_state_counts": {
-      "unknown": 31,
-      "pending": 168,
-      "reviewed": 8
+      "pending": 169,
+      "reviewed": 7,
+      "unknown": 31
     }
   },
   "issues": {
@@ -997,15 +997,16 @@
       "title": "Linux 进程调度基础",
       "path": "src/part1-fundamentals/ch05-cpu-power/01-linux-scheduling.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
-      "task6_state": "reviewed",
-      "task9_state": "reviewed",
-      "task2b_state": "pending",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
+      "task9_state": "pending",
+      "task2b_state": "fixed",
       "reviewed_date": "2026-04-14",
       "reviewed_by": "openclaw-task6",
       "section": "5.1",
       "task6_result": "pass-light-edit",
-      "task9_result": "needs-rework"
+      "task9_result": "needs-rework",
+      "task2b_result": "fixed"
     },
     "src/part1-fundamentals/ch05-cpu-power/02-eas.md": {
       "chapter": "5.2",
