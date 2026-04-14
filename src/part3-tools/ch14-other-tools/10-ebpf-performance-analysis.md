@@ -44,10 +44,10 @@ gap_source: "AOSP结构+官方文档+研究素材"
 polish_count: 1
 polish_date: "2026-04-08"
 polish_by: "task2b-polish"
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task9_state: pending
-task2b_state: pending
+task2b_state: fixed
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-04-14"
 task6_result: needs-rework
@@ -61,15 +61,53 @@ eBPF（extended Berkeley Packet Filter）改变了这类分析方式。它让我
 
 读完这一节，我们应该能回答四个问题：Android 上已经有哪些 eBPF 基础设施，哪些工具链现在就能用，sched_ext 对后续调度器演进意味着什么，以及 eBPF 分析的边界在哪里。
 
+<!-- outline-start -->
+<!--
+本节大纲与锚点
+
+1. eBPF 是什么，为什么 Android 性能分析需要它
+   - 传统工具的局限（strace / perf / ftrace）
+   - eBPF 的核心优势：内核态安全小程序
+   - GKI 让 eBPF 在 Android 上可用
+2. Android eBPF 基础设施
+   - BPF Loader 与系统级 eBPF 程序（网络统计 / CPU 频率 / GPU 内存 / 能耗）
+   - BPF CO-RE：一次编译，到处运行
+   - AOSP 中 eBPF 程序的位置
+3. Simpleperf 与 eBPF 的结合
+   - uprobe：追踪用户态函数
+   - kprobe：追踪内核函数
+   - 实战示例：追踪 RenderThread 帧耗时
+4. UprobeStats 与动态埋点
+   - 工作原理（StatsD → 配置 → uprobe attach → RingBuf → 上报）
+   - 预置 BPF 程序（GenericInstrumentation / BitmapAllocation / ProcessManagement）
+   - 安全限制（user 版本仅允许特定类前缀）
+5. sched_ext 与可扩展调度器
+   - 为什么需要可扩展调度器
+   - sched_ext 架构（BPF 驱动 / 安全兜底 / 部分切换）
+   - 对 Android 的意义与实验性调度器
+6. eBPF 实战场景
+   - CPU 利用率精准计算
+   - 系统调用延迟追踪
+   - I/O 延迟分布统计
+   - 进程异常退出监控
+   - Binder 调用追踪
+7. 常见问题与误区
+8. 限制与注意事项（权限 / 开销 / SELinux / 调试）
+9. 与其他章节的关联
+10. 参考资料
+-->
+<!-- outline-end -->
+
+
 ## eBPF 是什么，为什么 Android 性能分析需要它
 
 eBPF 是 Linux 内核中的一个轻量级虚拟机。它的核心思想很简单：在内核中运行一段经过验证的安全小程序，这段程序可以挂载到内核的各种事件点（系统调用、内核函数、网络包、硬件事件等），在事件触发时执行自定义的逻辑——比如记录时间戳、统计计数、收集调用栈。
 
-eBPF 与传统的性能分析工具（perf、strace、ftrace）有本质区别：
+eBPF 与传统的性能分析工具（perf、strace、ftrace）工作机制完全不同：
 
-**strace** 基于 ptrace，会在每次系统调用时暂停目标进程、收集信息、再恢复执行。这种"断点式"的追踪方式开销很高——开启 strace 后，程序性能可能下降 10 倍以上，而且很多应用会检测 ptrace 环境并拒绝运行。
+**strace** 基于 ptrace，会在每次系统调用时暂停目标进程、收集信息、再恢复执行。这种"断点式"的追踪方式开销很高——开启 strace 后，程序性能可能下降数倍甚至一个数量级，而且很多应用会检测 ptrace 环境并拒绝运行。
 
-**perf** 基于 `perf_event_open` 系统调用，通过硬件 PMU 采样来统计 CPU 热点。它的优势是开销低（通常 <5%），但只能看到"采样到"的函数，无法追踪特定事件的发生次数和精确时间。
+**perf** 基于 `perf_event_open` 系统调用，通过硬件 PMU 采样来统计 CPU 热点。它的优势是开销较低（通常 <5% [待验证: 来源为 perf 社区经验数据，实际取决于采样频率和事件类型]），但只能看到"采样到"的函数，无法追踪特定事件的发生次数和精确时间。
 
 **ftrace** 是内核的内置追踪框架，功能强大但需要 root 权限和 debugfs 访问，在用户设备上基本不可用。
 
@@ -142,6 +180,8 @@ simpleperf record --app com.example.app -g \
 
 这段命令在 `libc.so` 的 `kill` 函数入口处设置了一个 uprobe 探针。每当 App 调用 `kill` 时，Simpleperf 就会记录一次采样，包含完整的调用栈。
 
+[图：Simpleperf uprobe 追踪 libc.so:kill 的输出示例——展示调用栈和采样热点分布]
+
 实际应用场景：追踪 App 的线程创建（pthread_create）、追踪 Binder 调用（binder 相关函数）、追踪特定 JNI 函数的调用频率和耗时。
 
 [来源: Cubox/simpleperf的使用技巧-2025-11-18.md]
@@ -184,6 +224,8 @@ bpftrace -e 'uprobe:/system/lib64/libEGL.so:eglSwapBuffers
 
 bpftrace 的 `stats()` 函数会自动计算均值、方差、最大值、最小值。比起用 Systrace 手动标记每一帧，这种方式更高效，而且每次 uprobe 触发只执行几条指令。
 
+[图：bpftrace stats() 输出示例——展示 eglSwapBuffers 调用间隔的均值 / 方差 / 分位数]
+
 [来源: Cubox/ebpf在 Android 上的玩法示例-2025-12-22.md]
 
 ## UprobeStats 与动态埋点
@@ -208,6 +250,8 @@ UprobeStats 以 APEX 模块形式集成（`/system/apex/com.android.uprobestats.
 5. 对每个目标方法调用 `bpfPerfEventOpen()` attach BPF 程序并启用 uprobe
 6. 启动 collector 线程，在 RINGBUF map 上 poll，读取 BPF 程序写入的数据
 7. 将采集到的数据组装成 `AStatsEvent` 原子埋点上报给 StatsD
+
+[图：UprobeStats 端到端数据流——StatsD 订阅触发 → 配置解析 → BPF attach → RingBuf 读取 → StatsD 上报]
 
 [来源: Cubox/探索Android动态埋点的新视界：UprobeStats深度解析-2025-02-21.md]
 [已验证: AOSP, packages/modules/UprobeStats/src/]
@@ -246,7 +290,7 @@ sched_ext 是 Linux 6.12 合并的可扩展调度器类，它可能是 eBPF 对 
 
 Linux 内核的默认调度器（从 CFS 到 EEVDF）追求通用性——在各种工作负载下都"还行"。但"还行"和"最优"之间有巨大的差距。一个具体的例子：
 
-在 big.LITTLE 架构上，如果进程 A 频繁通过 pipe 唤醒进程 B，默认调度器可能把它们放在不同的 cluster 上。跨 cluster 的 cache 同步开销远高于 cluster 内部，导致通信性能下降。如果把 A 和 B 手动放在同一个 cluster，pipe 吞吐量会有显著提升（取决于 cache 大小和 cluster 拓扑，实测中可能有 20-40% 的差异）。
+在 big.LITTLE 架构上，如果进程 A 频繁通过 pipe 唤醒进程 B，默认调度器可能把它们放在不同的 cluster 上。跨 cluster 的 cache 同步开销远高于 cluster 内部，导致通信性能下降。如果把 A 和 B 手动放在同一个 cluster，pipe 吞吐量会有显著提升（取决于 cache 大小和 cluster 拓扑，实测中可能有显著差异 [待验证: 来源为 sched_ext 社区实验数据，具体取决于 cache 大小和 cluster 拓扑]）。
 
 这种"针对特定场景的手动调度优于通用调度器"的情况在实践中反复出现。但在 sched_ext 之前，定制调度策略只有两条路：向内核打补丁（SCHED_CLUSTER 从提交到合入主线花了 2 年），或者让应用开发者用 `sched_setattr()` 表达需求（开发者往往不知道怎么表达，甚至乱表达）。
 
@@ -300,6 +344,8 @@ eBPF 通过挂载到 `sched_switch` tracepoint，在每次上下文切换时精�
 
 实际效果：在 120Hz 屏幕上，一帧只有 8.33ms。Tick 级精度可能把 2-3 帧的 CPU 时间混在一起，而 eBPF 可以精确区分每一帧的 CPU 使用量。
 
+[图：/proc/stat Tick 级精度 vs eBPF sched_switch 纳秒级精度的对比——同一 workload 下两种方式给出的 CPU 使用率差异]
+
 [来源: Cubox/基于eBPF的CPU利用率精准计算小工具开发-2022-03-13.md]
 
 ### 系统调用延迟追踪
@@ -321,6 +367,8 @@ simpleperf record -a -g -c 1 \
 ### I/O 延迟分布统计
 
 通过 eBPF 挂载到 block 层的 tracepoint（如 `block:block_rq_issue` 和 `block:block_rq_complete`），可以统计每次 I/O 请求的延迟，生成延迟分布直方图。这对分析存储性能（特别是 eMMC/UFS 的随机 I/O 性能）非常有用。
+
+[图：eBPF I/O 延迟直方图——block_rq_issue 到 block_rq_complete 的延迟分布，区分读/写/Sync]
 
 ### 进程异常退出监控
 
@@ -365,9 +413,9 @@ simpleperf record -a -g --exclude-perf \
 
 ### 性能开销
 
-虽然 eBPF 程序经过 JIT 编译为本机指令、单次执行开销通常在 100ns 以内，但每次事件触发都会执行一次 BPF 程序，如果事件频率极高（如每秒百万次的内存分配），累积开销仍然不可忽略。在 Perfetto 中，过度密集的 eBPF 事件可能导致 trace 文件膨胀。
+虽然 eBPF 程序经过 JIT 编译为本机指令、单次执行开销通常在纳秒级（社区基准测试约 100ns [待验证: 来源为 eBPF.io 社区数据]），但每次事件触发都会执行一次 BPF 程序，如果事件频率极高（如每秒百万次的内存分配），累积开销仍然不可忽略。在 Perfetto 中，过度密集的 eBPF 事件可能导致 trace 文件膨胀。
 
-一般经验：uprobe/kprobe 触发频率在每秒 10 万次以下时，CPU 开销通常 <3%；超过百万次/秒时需要评估开销。
+一般经验：uprobe/kprobe 触发频率较低时（如每秒万次级别），CPU 开销可以忽略；频率越高（百万次/秒），累积开销越需要评估。
 
 ### 与 SELinux 的交互
 
