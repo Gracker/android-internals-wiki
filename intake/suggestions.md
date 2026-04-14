@@ -3584,3 +3584,49 @@
 - **位置**：版本演进表 "Android 12 (API 31): Input ANR 增加 'no focused window' 类型"
 - **问题**：no-focus-window ANR 在 Android 12 之前已存在，`findFocusedWindowTargetsLocked` 对无焦点窗口的处理不是 Android 12 新增的能力
 - **建议**：修正为 Android 12 对 Input ANR 处理的改进（如更精确的 ANR 时间记录或 mAnrTracker 相关变化），或删除该条目
+
+## [Task9 Deep Review] 14.9 Android Camera 性能与 Perfetto 分析 — 2026-04-15
+
+### P1 问题
+
+- **类型**：源码准确性
+- **位置**：全文多处 — CameraMetaDataNative / CameraMetadataNative 命名
+- **问题**：AOSP 实际类名为 `CameraMetadataNative`（小写 d），文中"CameraMetaDataNative 对象积累到 6658 个"和"CameraMetaDataNative 的内存泄漏是 App 的锅"使用了大写 D 的错误拼写
+- **建议**：全文统一为 `CameraMetadataNative`
+
+- **类型**：源码准确性
+- **位置**：参考资料 — Camera Metadata JNI 路径
+- **问题**：`frameworks/base/core/jni/android_hardware_camera2_CameraMetadata.cpp` 路径错误，缺少 Native 后缀
+- **建议**：修正为 `frameworks/base/core/jni/android_hardware_camera2_CameraMetadataNative.cpp`
+
+- **类型**：原理链完整性
+- **位置**：Camera 管线的 Buffer 流转 — "通过 `returnStreamBuffers` 归还"
+- **问题**：将帧数据输出和 Buffer 归还混为一谈。`processCaptureResult()` 负责输出帧数据和 Result metadata，`returnStreamBuffers()` 是独立 API 仅用于归还 Stream Buffer
+- **建议**：改成"HAL 通过 `processCaptureResult()` 回调输出处理完的帧，通过 `returnStreamBuffers()` 归还不再使用的 Stream Buffer"
+
+- **类型**：版本差异
+- **位置**：frontmatter `applicable_versions`
+- **问题**：标注 `Android 12-17`，但正文引用 Android 5.0 Camera2 API 和 Android 10 requestStreamBuffers API
+- **建议**：改为 `Android 5.0 (API 21) - Android 17 (API 37)`，或在正文中明确标注各特性的引入版本
+
+### P2 问题
+
+- **类型**：源码准确性
+- **位置**：Buffer 管理段落 — "Camera3OutputStream 继承自 camera3_stream 结构体"
+- **问题**：Camera3OutputStream 是 C++ 类，内部持有 `camera3_stream_t` 指针，不是"继承自"的关系
+- **建议**：改成"Camera3OutputStream 内部封装了 camera3_stream_t 结构体"
+
+- **类型**：知识盲区
+- **位置**：全文 — Camera 输出 Surface 选型
+- **问题**：缺少 ImageReader vs SurfaceTexture 的性能对比讨论，这是 Camera 工程选型的关键决策点
+- **建议**：在 Buffer 流转或 Camera2 vs CameraX 章节中补充一段 ImageReader vs SurfaceTexture 的性能对比
+
+- **类型**：知识盲区
+- **位置**：Camera 启动拆解表
+- **问题**：Slice 名称基于 AOSP 参考 HAL / Pixel 实现，其他厂商 HAL 可能有不同的 ATrace tag
+- **建议**：加注释说明 Slice 名称的来源和适用范围
+
+- **类型**：数据缺失
+- **位置**：全文验证标注 + Perfetto 证据
+- **问题**：`[已验证: 官方文档, developer.android.com]` 缺少具体 URL；Cubox 为私有书签；缺少 [图：...] 占位
+- **建议**：为每个 [已验证] 补充具体 URL 或 AOSP 路径；补至少 3 处 [图：...] 占位覆盖管线架构图、预览帧间隔 Track、启动耗时拆解
