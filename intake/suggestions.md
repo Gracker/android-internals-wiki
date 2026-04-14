@@ -3464,3 +3464,22 @@
 - **问题**：未提及 native 层 InputConsumer（InputTransport.cpp），它负责从 socketpair 读取并反序列化事件，是 Java 层 WindowInputEventReceiver 的底层依赖。
 - **建议**：在 App 侧分发节开头补充 1-2 段描述 InputConsumer 的角色，或至少添加一个注释说明 native 层存在反序列化步骤。
 
+
+
+## [Task9 Deep Review] 2.11 Flutter 渲染管线与性能 — 2026-04-15
+- **类型**：源码准确性
+- **位置**：Surface 的使用方式 → ANativeWindow_queueBuffer
+- **问题**：验证标注写'通过 ANativeWindow_queueBuffer 提交帧'，但这是 framework 内部符号不是 NDK 公开 API。Flutter Engine 实际使用 eglSwapBuffers / vkQueuePresentKHR。
+- **建议**：改为'通过 eglSwapBuffers（OpenGL ES）或 vkQueuePresentKHR（Vulkan）提交帧到 SurfaceFlinger 的 BufferQueue'
+
+## [Task9 Deep Review] 2.11 Flutter 渲染管线与性能 — 2026-04-15
+- **类型**：数据缺失
+- **位置**：PlatformView 线程合并开销
+- **问题**：'每帧大约会增加 2ms 的额外开销'缺少测试条件和来源。
+- **建议**：补来源或降级为'社区实测通常观察到 1-3ms 额外开销'
+
+## [Task9 Deep Review] 2.11 Flutter 渲染管线与性能 — 2026-04-15
+- **类型**：数据缺失
+- **位置**：Impeller tile-based 渲染
+- **问题**：'通常是 256×256 像素'缺少源码验证。
+- **建议**：补 [待验证] 标注，或改为'固定大小的 Tile'不给具体像素值

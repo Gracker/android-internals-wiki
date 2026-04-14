@@ -9464,5 +9464,91 @@
     "status": "pending",
     "type": "metadata_update",
     "action": "Update applicable_versions and add android-17 build instructions"
+  },
+  {
+    "section": "2.11",
+    "section_title": "Flutter 渲染管线与性能",
+    "priority": 85,
+    "reason": "[Deep Tech Review] Flutter VSync/Choreographer 关系描述失真，Impeller 版本里程碑与 AOT shader 工作流缺失，线程合并触发条件不完整",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "原理错误",
+        "severity": "P1",
+        "location": "与 Android 原生渲染的差异 → 渲染管线的根本区别",
+        "detail": "正文称 Flutter '不经过 Choreographer'，但 Flutter Engine 的 Android embedder 实际通过 FlutterView.requestRender() → Choreographer.postFrameCallback() 获取 VSync 时序。Engine 内部用 VsyncWaiter 封装了 Choreographer 的 VSync 回调，把时间戳传给 Dart 层的 handleBeginFrame。说'不经过 Choreographer'会让读者误以为 Flutter 完全绕开了 Android 的 VSync 基础设施。准确说法是：Flutter 不使用 Choreographer 的 doFrame 回调做渲染调度，但 VSync 时序仍来自 Choreographer。",
+        "suggestion": "改为'Flutter 的 VSync 时序仍来自 Android Choreographer（通过 Engine 的 VsyncWaiter 封装），但帧调度逻辑由 Engine 自管理，不走 Choreographer.doFrame → Traversal 的分发链路'。并在 Perfetto 表现段补充：开启 atrace gfx category 后可以看到 Choreographer 的 VSYNC-app 回调触发 Flutter Engine 的 BeginFrame。",
+        "dimension": "原理链完整性"
+      },
+      {
+        "type": "原理断裂",
+        "severity": "P1",
+        "location": "PlatformView → Hybrid Composition 线程合并",
+        "detail": "正文说 Hybrid Composition 下'Flutter 的渲染会退回到 Platform 线程执行'，但未解释线程合并的触发条件和范围：(1) 只有 Flutter 内容与 PlatformView 在 Z 轴上重叠时才合并；(2) 合并的是 Raster 线程的光栅化工作到 Platform 线程，而非 UI 线程的工作；(3) 合并期间 Flutter 的 Surface 被切换到 Android 的 HardwareRenderer 路径。缺少这些边界条件，读者可能认为使用任何 PlatformView 都会触发线程合并。",
+        "suggestion": "补充线程合并的三条前提：(1) Flutter 层 content 与 PlatformView 在同一帧有 Z 轴重叠；(2) 合并发生时 Raster 线程的工作被代理到 Platform 线程执行；(3) 无重叠的纯 PlatformView 区域不触发合并。并在 Perfetto 段给出合并态 vs 非合并态的 Track 差异描述。",
+        "dimension": "原理链完整性"
+      },
+      {
+        "type": "原理断裂",
+        "severity": "P1",
+        "location": "Impeller → Impeller 的架构 → AOT shader 编译",
+        "detail": "正文只说了'在 Flutter 应用的构建过程中，Impeller 会预编译所有可能用到的 shader'，但没有解释构建时如何确定'所有可能用到的 shader'。实际流程是：构建阶段运行一个 test run（flutter drive），收集运行时产生的 shader key，生成 SkSL JSON 或 SPIR-V bundle，然后打包进 engine。这个 collect→bundle→embed 的闭环是理解 Impeller AOT 设计的关键，跳过了就变成了一个黑盒声明。",
+        "suggestion": "补一段 Impeller AOT shader 的收集流程：(1) 构建期通过测试运行收集 shader key → (2) 生成目标平台编译产物 → (3) 打包进 App 的 flutter_assets。说明这个流程与 Skia 的 SkSL warm-up 在思路上相似，但 Impeller 把编译时机从 App 运行时提前到了 engine build 阶段。",
+        "dimension": "原理链完整性"
+      },
+      {
+        "type": "版本差异",
+        "severity": "P1",
+        "location": "Impeller 在 Android 上的默认启用版本",
+        "detail": "正文写'从 Flutter 3.27 开始在 Android API 29+ 上默认启用'。但 Impeller 在 Android 上默认启用的里程碑实际上是 Flutter 3.22（2024 年 5 月发布），并非 3.27。Flutter 3.22 release notes 明确说明 Impeller 成为 Android 上 Vulkan 设备的默认渲染器。3.27 可能是进一步稳定化的版本，但不应写成 Impeller Android 默认启用的起点。",
+        "suggestion": "核对 Flutter 3.22 和 3.27 的 release notes。如果 3.22 是 Android 默认启用里程碑，改为'从 Flutter 3.22 开始在支持 Vulkan 的 Android 设备上默认启用，3.27 进一步扩展了 OpenGL ES 回退的支持范围和稳定性'。如果确认 3.27 才是 Android 默认起点，补一个 [已验证] 标注指向具体 release note URL。",
+        "dimension": "版本差异覆盖"
+      },
+      {
+        "type": "源码错误",
+        "severity": "P2",
+        "location": "Surface 的使用方式 → ANativeWindow_queueBuffer",
+        "detail": "验证标注写'Flutter Engine 使用 Skia/Impeller 直接在 Surface 上绘制并通过 ANativeWindow_queueBuffer 提交帧'。ANativeWindow_queueBuffer 不是 NDK 公开 API，而是 framework 内部符号。Flutter Engine 实际通过 EGL（eglSwapBuffers）或 Vulkan（vkQueuePresentKHR）提交帧，底层再由 SurfaceFlinger 的 BufferQueue 机制处理。用内部符号名写 [已验证] 会误导读者以为这是可调用的公开接口。",
+        "suggestion": "改为'Flutter Engine 通过 Skia/Impeller 在 Surface 上绘制，通过 eglSwapBuffers（OpenGL ES）或 vkQueuePresentKHR（Vulkan）提交帧到 SurfaceFlinger 的 BufferQueue'。删除 ANativeWindow_queueBuffer 这个内部符号。",
+        "dimension": "源码引用准确性"
+      },
+      {
+        "type": "知识盲区",
+        "severity": "P1",
+        "location": "Impeller 在 Android 上的 Vulkan 后端与 OpenGL ES 回退策略",
+        "detail": "outline 将此列为扩展锚点，正文仅在一段中简单提及'优先使用 Vulkan 后端'和'回退到 OpenGL ES'。但未说明：(1) Vulkan 支持的判定条件不是 API level，而是设备的 Vulkan capability flags 和 driver compliance；(2) OpenGL ES 回退路径的性能特征与 Vulkan 路径的差异；(3) 在不支持的设备上 Impeller 会完全 fallback 到 Skia（在早期版本）还是仍用 Impeller 的 GLES backend。读者无法判断目标设备集群上 Impeller 的实际覆盖率和行为。",
+        "suggestion": "补 Vulkan capability 判定逻辑：Impeller 通过 vulkaninfo/instance creation 检测设备能力，不满足要求时走 GLES backend。说明 GLES backend 的 shader AOT 机制是否与 Vulkan 一致。并标注 Android API 28 及以下设备可能仍需 Skia。",
+        "dimension": "知识盲区"
+      },
+      {
+        "type": "知识盲区",
+        "severity": "P1",
+        "location": "Flutter 的 BufferQueue 配置与 SurfaceFlinger 交互",
+        "detail": "章节提到 Flutter 通过 Surface 提交帧给 SurfaceFlinger，但完全没有讨论 Flutter 的 BufferQueue 配置（buffer count、usage flags、swap behavior）。Flutter 通常使用 triple buffering（3 个 buffer），这与原生 App 的行为类似但配置参数不同。不提 BufferQueue 配置会让读者无法理解 Flutter 在 SurfaceFlinger 中的合成延迟特征。",
+        "suggestion": "补一小节或段落：Flutter Engine 配置 Surface/BufferQueue 时的关键参数（buffer count、format、usage），以及这些参数如何影响帧延迟和 backpressure。交叉引用 §2.13 BufferQueue。",
+        "dimension": "知识盲区"
+      },
+      {
+        "type": "数据缺失",
+        "severity": "P2",
+        "location": "PlatformView 线程合并开销",
+        "detail": "正文称线程合并'每帧大约会增加 2ms 的额外开销'，但没有标注来源或测试条件。2ms 在 60Hz 设备上占帧预算的 12%，在 120Hz 上占 25%——这个数字如果准确，对读者判断是否使用 PlatformView 非常重要。但缺少设备型号、Android 版本、Flutter 版本等条件。",
+        "suggestion": "补测试条件或来源；如果是 Flutter 官方数据，标注文档链接；如果是社区测试，降级为'社区实测通常观察到 1-3ms 额外开销'这类经验区间。",
+        "dimension": "数据与案例支撑"
+      },
+      {
+        "type": "数据缺失",
+        "severity": "P2",
+        "location": "Impeller tile-based 渲染",
+        "detail": "正文称 Impeller '将一帧的画面划分为多个 Tile（通常是 256×256 像素）'。256×256 这个具体数值缺少源码或文档验证。Impeller 的 tile 大小可能因设备/后端而异，写成固定值有误导风险。",
+        "suggestion": "补 [待验证] 标注，或改为'划分多个固定大小的 Tile'，不给具体像素值。",
+        "dimension": "数据与案例支撑"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-15T02:29:01",
+    "status": "pending"
   }
 ]
