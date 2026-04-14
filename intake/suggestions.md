@@ -3294,3 +3294,28 @@
 - **问题**：mixed content 阻塞/告警是浏览器与 WebView 的安全语义，不适用于所有 native HTTP 客户端。当前写法把 Web 内容场景外推成通用 App 网络行为。
 - **建议**：把这一条明确限定到 WebView/浏览器场景，或改成 native 客户端真正会遇到的 cleartext block / redirect / cert chain 问题。
 
+
+## [Task6 Review] 14.9 Android Camera 性能与 Perfetto 分析 — 2026-04-14
+- **类型**：需重写
+- **位置**：全文结构
+- **问题**：缺少 `outline-start / outline-end` 大纲块和锚点，Task 6 无法按锚点检查覆盖率（当前 0/0）。
+- **建议**：按现有正文补齐结构化大纲与锚点后，再回到 Task 6 做覆盖检查。
+- **review 日志**：logs/review/2026-04-14-22-review.md
+
+- **类型**：需确认
+- **位置**：抓取配置 / 关键 Slice / 验证标注
+- **问题**：`[已验证: 官方文档, developer.android.com]` 等来源过泛，`connectDevice`、`frame capture`、`first full buffer`、`BufferTX - SurfaceView`、`android_cpu` Metric 等关键口径缺少精确文档或 AOSP 依据。
+- **建议**：交给 Task 9 核对 Perfetto schema、track/slice 名称和 metric 口径，再由 Task 2B 回填精确来源。
+- **review 日志**：logs/review/2026-04-14-22-review.md
+
+- **类型**：需补充素材
+- **位置**：Camera 功耗优化 / HAL3 管线延迟
+- **问题**：`60fps` 功耗接近两倍、不同 Sensor 模式功耗差异、不同 SoC 平台 HAL3 延迟典型值仍是占位或待验证，量化结论还不够稳。
+- **建议**：补充官方资料或实测条件，补不齐就降级为定性描述。
+- **review 日志**：logs/review/2026-04-14-22-review.md
+
+- **类型**：需确认
+- **位置**：Camera2 API vs CameraX API / 内存压力段
+- **问题**：CameraX 自动优化收益、`requestStreamBuffers` / `returnStreamBuffers` 的收益表述，以及 `CameraMetaData` / `CameraMetaDataNative` / `CameraMetadataNative` 命名与 `close()` 回收接口存在技术风险。
+- **建议**：交给 Task 9 核对 API、版本边界和 AOSP/JNI 类型名，再由 Task 2B 统一术语与结论。
+- **review 日志**：logs/review/2026-04-14-22-review.md
