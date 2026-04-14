@@ -1634,13 +1634,36 @@
   },
   {
     "section": "12.4",
-    "title": "Android 网络安全与 TLS 性能优化",
-    "priority": 80,
-    "status": "completed",
-    "file": "src/part2-performance/ch12-apk-network/04-network-security-tls-performance.md",
-    "notes": "gap-mining 2026-04-08, score 14/20",
-    "completed_at": "2026-04-08T04:23:26.785301",
-    "completed_by": "openclaw-task2a"
+    "section_title": "Android 网络安全与 TLS 性能优化",
+    "priority": 90,
+    "reason": "[review回炉] 版本边界与客户端行为仍需核对，后半段证据链和工程叙述也不够稳",
+    "material_paths": [
+      "intake/suggestions.md（含 review 意见）"
+    ],
+    "review_issues": [
+      {
+        "type": "需确认",
+        "location": "TLS 1.3 / ECH / CT / Cleartext / HPKE 相关版本与默认行为段落",
+        "detail": "0-RTT、Conscrypt 更新路径、ECH 对上层 HTTP 客户端的透明性、CT 默认启用范围、`usesCleartextTraffic` 在 Android 17 的边界、HPKE SPI 适用范围等结论还混着多处 [待验证] 或只给了单一来源。",
+        "suggestion": "交给 Task 9 按官方文档与 AOSP / API 文档核对版本边界、默认行为和客户端差异，再由 Task 2B 回写正文。"
+      },
+      {
+        "type": "需补充素材",
+        "location": "TLS 握手耗时 / ECH / Cleartext 迁移",
+        "detail": "正文只有一处图示占位，后半段缺少 Trace、时序图或迁移案例，证据链偏薄。",
+        "suggestion": "补 2-3 个 [图：...] 或真实截图，至少覆盖 TLS 握手阶段拆分、ECH / CT 所在握手位置、HTTP→HTTPS 重定向的额外 RTT。"
+      },
+      {
+        "type": "需重写",
+        "location": "Certificate Transparency / Cleartext Traffic / HPKE / 最佳实践",
+        "detail": "后半段逐渐滑向标准说明和列表卡片，工程场景、观测方法与判断路径没有持续回扣，活人感和主线都偏弱。",
+        "suggestion": "交给 Task 2B 把这几节重排成“场景 → 机制 → 代价 → 排查/取舍”的工程叙述，减少资料汇编感。"
+      }
+    ],
+    "added_by": "task6-review",
+    "added_at": "2026-04-14T20:14:24+08:00",
+    "status": "pending",
+    "original_review_log": "logs/review/2026-04-14-20-review.md"
   },
   {
     "section": "14.7",
