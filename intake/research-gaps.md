@@ -2397,3 +2397,35 @@ InputReader 在处理连续 MOVE 事件时会进行批量合并（batch），在
 ### 关联章节
 3.1, 3.2, 2.4
 
+
+## [2026-04-15] 2.13 图形缓冲区管理 (BufferQueue) — BufferQueue 阻塞与唤醒机制
+
+### 盲区描述
+dequeueBuffer() 在所有 slot 被占用时会阻塞 producer 线程。AOSP 使用 mDequeueCondition（ConditionVariable）实现等待/唤醒。消费者 releaseBuffer() 后通过 mDequeueCondition.notify_all() 唤醒等待的 producer。这个机制直接关联 RenderThread 卡在 dequeueBuffer() 的根因分析，当前章节完全缺失。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 在 AOSP main 中确认 mDequeueCondition 的定义位置（BufferQueueCore.cpp）
+- 确认 waitForDequeueCondition / notify_all 的完整调用链
+- 抓取一个 dequeueBuffer 阻塞场景的 Perfetto trace，标出 ConditionVariable 等待时间
+
+### 关联章节
+2.13, 2.5, 7.2
+
+## [2026-04-15] 2.13 图形缓冲区管理 (BufferQueue) — 不同 Surface 类型的 BufferQueue 配置差异
+
+### 盲区描述
+普通窗口、SurfaceView、视频播放器使用不同的 BufferQueue 配置（async mode、buffer count、消费者类型）。普通窗口走 BLASTBufferQueue，SurfaceView 有独立的 BufferQueue 且消费者可能是 SurfaceFlinger 直接合成，视频路径的消费者可能是 MediaPlayerService。当前章节只讲了普通窗口路径。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 对比 BLASTBufferQueue vs SurfaceTexture/SurfaceTextureClient 的配置差异
+- 确认 SurfaceView 的 BufferQueue 是否仍使用旧路径（非 BLAST）
+- 确认 Android 12+ 是否所有 Surface 类型都走 BLAST
+
+### 关联章节
+2.13, 2.6, 2.9

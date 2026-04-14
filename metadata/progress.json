@@ -644,16 +644,17 @@
       "title": "图形缓冲区管理 (BufferQueue)",
       "path": "src/part1-fundamentals/ch02-rendering/13-buffer-queue.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "revisiting",
-      "task9_state": "pending",
-      "task2b_state": "fixed",
+      "task9_state": "reviewed",
+      "task2b_state": "pending",
       "reviewed_date": "'2026-04-11'",
       "reviewed_by": "openclaw-task6",
       "task6_result": "needs-rework",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
-      "section": "'2.13'"
+      "section": "'2.13'",
+      "task9_reviewed_date": "2026-04-15"
     },
     "src/part1-fundamentals/ch02-rendering/14-graphics-api-evolution.md": {
       "chapter": "2.14",
@@ -2873,5 +2874,9 @@
       "issues": 0,
       "log": "logs/review/2026-04-15-02-review.md"
     }
-  ]
+  ],
+  "stats": {
+    "task9_reviewed": 1,
+    "task9_pending": 169
+  }
 }

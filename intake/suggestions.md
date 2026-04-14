@@ -3483,3 +3483,33 @@
 - **位置**：Impeller tile-based 渲染
 - **问题**：'通常是 256×256 像素'缺少源码验证。
 - **建议**：补 [待验证] 标注，或改为'固定大小的 Tile'不给具体像素值
+
+## [Task9 Deep Review] 2.13 图形缓冲区管理 (BufferQueue) — 2026-04-15
+- **类型**：源码准确性
+- **位置**：BufferSlot::BufferState 代码片段
+- **问题**：uint32_t 计数器（mDequeueCount 等）可能在部分 AOSP 版本中实际为 bool 标志，未标注具体适用版本
+- **建议**：标注代码片段对应的 AOSP tag，或加注 [待验证]
+
+## [Task9 Deep Review] 2.13 图形缓冲区管理 (BufferQueue) — 2026-04-15
+- **类型**：源码准确性
+- **位置**：dequeueBuffer() 签名代码片段
+- **问题**：签名来自 Android 10-11 时期，Android 13+ 有额外参数。标注为 AOSP main 但签名已过时
+- **建议**：标注具体版本或改为简化签名说明
+
+## [Task9 Deep Review] 2.13 图形缓冲区管理 (BufferQueue) — 2026-04-15
+- **类型**：原理断裂
+- **位置**：全文 - GraphicBuffer 跨进程共享
+- **问题**：文中说"不复制像素"但未解释 Gralloc 分配 -> handle 传递 -> mmap 的零拷贝机制
+- **建议**：增加 1-2 段解释 GraphicBuffer 句柄跨进程映射原理，或交叉引用 §2.15（如有覆盖）
+
+## [Task9 Deep Review] 2.13 图形缓冲区管理 (BufferQueue) — 2026-04-15
+- **类型**：数据缺失
+- **位置**：Sync Fence 决定... 小节
+- **问题**：Fence timing 完全没有量化参考值
+- **建议**：补充典型 GPU fence signal 时间范围（如 1-8ms），帮助读者建立基准认知
+
+## [Task9 Deep Review] 2.13 图形缓冲区管理 (BufferQueue) — 2026-04-15
+- **类型**：版本差异
+- **位置**：版本演进 小节
+- **问题**：Android 8 Treble 对 Gralloc HAL 的重构未提及，影响 GraphicBuffer 分配路径
+- **建议**：在版本表中增加 Android 8 行（Gralloc HIDL 化），或标注为 [待验证]

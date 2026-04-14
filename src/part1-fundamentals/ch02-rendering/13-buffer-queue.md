@@ -50,11 +50,11 @@ sources:
   path: frameworks/base/core/java/android/view/ViewRootImpl.java
 - type: official
   path: https://source.android.com/docs/core/graphics/architecture
-pipeline_stage: task6_pending
+pipeline_stage: task2b_pending
 task6_result: needs-rework
 task6_state: revisiting
-task9_state: pending
-task2b_state: fixed
+task9_state: reviewed
+task2b_state: pending
 task9_result: needs-rework
 task2b_result: fixed
 ---
