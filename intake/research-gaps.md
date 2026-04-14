@@ -2138,3 +2138,19 @@ Android 10-16 的返回分发模型缺少一张统一矩阵。正文把 Gesture 
 
 ### 关联章节
 13.1、13.2、13.5、9.1
+
+## [2026-04-14] 6.4 存储相关的版本演进 — Android 11-14 外部存储访问矩阵
+
+### 盲区描述
+正文把 Android 11 回归 FUSE、Android 13 Photo Picker、Android 14 媒体权限收紧拆成了几个孤立结论，但缺少“访问方式 → 权限 → 框架/内核路径 → 性能特征”的统一矩阵。没有讲清 direct file path、MediaStore、SAF、Photo Picker、READ_MEDIA_VISUAL_USER_SELECTED 各自在哪个版本可用、是否会命中 MediaProvider、以及 Android 12 FUSE passthrough 对 launch 设备和 upgrade 设备的差异。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 对照 source.android 的 FUSE / FUSE passthrough 文档，梳理 Android 11 与 Android 12 在 launch 设备、kernel 版本、MediaProvider 路径上的差异
+- 对照 developer.android.com 的 Photo Picker、Selected Photos Access、READ_MEDIA_VISUAL_USER_SELECTED 文档，拆开 Android 13 与 Android 14 的权限模型
+- 补一张 direct path、MediaStore、SAF、Photo Picker、Android/data/obb passthrough 的版本/权限/性能矩阵
+
+### 关联章节
+6.4、1.10、6.5

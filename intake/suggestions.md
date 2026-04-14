@@ -2942,3 +2942,15 @@
 - **位置**：行160 Trace Processor 段
 - **问题**：把 Trace Processor 说成“把 trace 文件加载为一个 SQLite 数据库”容易把实现细节说死。官方文档强调的是 SQL analysis engine / trace processor tables，而不是对外承诺生成独立 SQLite 数据库文件。
 - **建议**：收紧成“解析 trace packet 后暴露 SQL tables / virtual tables，可用 SQLite 风格语法查询”。
+
+## [Task9 Deep Review] 6.4 存储相关的版本演进 — 2026-04-14
+- **类型**：数据缺失
+- **位置**：行 186-190 EROFS 压缩率与启动收益
+- **问题**：`24%`、`45%`、`22.9%` 都是强量化结论，但正文没有给设备型号、system 镜像大小、压缩配置、负载条件和原始链接。当前写法更像单次厂商 case study，而不是可直接外推的通用基线。
+- **建议**：补 LPC 2019 原始 slide / paper 链接和测试条件；如果补不齐，就降级为“公开案例曾报告”而不是直接当通用结论。
+
+## [Task9 Deep Review] 6.4 存储相关的版本演进 — 2026-04-14
+- **类型**：数据缺失
+- **位置**：行 249-278 UFS 代际性能表
+- **问题**：表中的 MB/s 和 IOPS 数字属于 vendor benchmark 风格数据，但缺少容量、队列深度、SLC cache、控制器/NAND 代际、测试工具等条件。读者容易把这些值误读成 JEDEC 标准或 Android 设备通用表现。
+- **建议**：标注“典型公开样本”，补具体来源与测试条件；或者改成区间/倍数比较，不把数值写死。
