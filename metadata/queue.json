@@ -8820,5 +8820,45 @@
     "added_at": "2026-04-14T15:05:00+08:00",
     "status": "pending",
     "original_review_log": "logs/review/2026-04-14-15-review.md"
+  },
+  {
+    "section": "14.5",
+    "section_title": "三方性能库",
+    "priority": 95,
+    "reason": "[Deep Tech Review] ByteHook/ShadowHook 引用颠倒，Trace Canary 帧阈值写死 16.6ms，AppInit 身份与工具兼容矩阵未校实",
+    "material_paths": [
+      "intake/research-gaps.md",
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误/交叉引用错误",
+        "location": "L249-L251, L301 Hook 机制对比 / 参考资料",
+        "detail": "正文把 ByteHook 说成“结合了 PLT Hook 和 Inline Hook 的特点”，参考资料又把 `https://github.com/bytedance/android-inline-hook` 标成 ByteHook。按 ByteHook 官方 README，ByteHook 对应 `bytedance/bhook`，定位是 Android PLT hook library；`bytedance/android-inline-hook` 对应的是 ShadowHook，定位是 inline hook library。当前写法把两套库的能力边界和仓库指向都写反了。",
+        "suggestion": "把 ByteHook 与 ShadowHook 拆成两个条目，分别给出仓库、Hook 类型、支持架构与适用场景；Rhea 实际依赖哪套库，需补可验证来源后再下结论。"
+      },
+      {
+        "type": "版本差异/数据错误",
+        "location": "L91 Trace Canary：卡顿与 ANR 的精准定位",
+        "detail": "正文把“一帧超过 16.6ms”当成通用卡顿阈值，但本章 frontmatter 覆盖 Android 5.0-16，90Hz/120Hz 设备的单帧预算分别是 11.1ms/8.33ms。把 16.6ms 写成默认事实会误导高刷新率设备上的卡顿判断，也把主线程 block tracer 与帧截止时间两个概念混在了一起。",
+        "suggestion": "把帧阈值改成“取决于显示刷新率的 frame deadline”，至少列 60/90/120Hz 三个基线；同时区分 Matrix 的 slow message / evil method 检测与 frame-jank 检测。"
+      },
+      {
+        "type": "知识盲区/原理断裂",
+        "location": "L187-L205 启动优化框架：Anchors、AppInit 与任务调度",
+        "detail": "章节把 Anchors、AppInit、Alpha 并列，但 AppInit 没有仓库、版本、依赖坐标或源码路径，`@AppInit` 注解式 API 也没有可核对来源。当前描述无法确认是在写某个具体开源项目，还是把 AndroidX App Startup 与别的启动框架混写了。读者无法复现，也无法判断依赖建模能力来自哪套实现。",
+        "suggestion": "明确 AppInit 指向的具体项目与版本；如果实际想写的是 AndroidX App Startup，就应按 `Initializer<T>`、`InitializationProvider`、manifest meta-data 的真实模型重写，并与 Anchors/Alpha 按依赖声明方式做对比。"
+      },
+      {
+        "type": "版本差异",
+        "location": "L89-L95, L157-L185 以及 frontmatter applicable_versions",
+        "detail": "本章只给了 Android API 维度的 applicable_versions，但 Matrix Trace Canary 与 Booster 的可用性还强依赖 AGP/Gradle 版本。Matrix README 明确写 matrix-gradle-plugin 仅声明支持 AGP 3.5.0/4.0.0/4.1.0；Booster README 则给出从 AGP 3.3 到 8.5 的兼容矩阵。当前章节没把 Android API、AGP、ABI 这三条兼容轴拆开，读者容易把“Android 16 可用”误读成“现代工具链可直接接入”。",
+        "suggestion": "补一个兼容矩阵表，至少区分 Android API、AGP/Gradle、ABI/架构、维护状态四列；Trace Canary、Booster、KOOM、xHook/ByteHook/ShadowHook 分开列。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-14T15:25:00+08:00",
+    "status": "pending",
+    "review_log": "logs/deep-review/2026-04-14-15-deep-review.md"
   }
 ]

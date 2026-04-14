@@ -2223,3 +2223,19 @@ Perfetto 输入分析的采集前提和真实实体模型没有讲透。当前�
 ### 关联章节
 §1.1、§1.4、§1.6
 
+
+## [2026-04-14] 14.5 三方性能库 — 工具兼容矩阵与启动框架身份缺口
+
+### 盲区描述
+本章目前只按 Android API 版本描述适用范围，没有把 **Android API / AGP+Gradle / ABI+Hook 方案** 三条兼容轴拆开。对 Matrix、Booster、KOOM 这类工具，这会直接影响可接入性判断。另一个缺口是 AppInit 没有绑定具体仓库和 API 形态，启动框架比较段当前不可复现。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 补 Matrix / KOOM / Booster / xHook / ByteHook / ShadowHook 的兼容矩阵，至少覆盖 Android API、AGP、ABI、维护状态
+- 确认“AppInit”具体指向的开源项目；如果没有稳定公共指代，改写为已验证的 AndroidX App Startup 或其他可核对框架
+- 为启动任务调度补一个“依赖声明方式对比”表，区分注解驱动、接口声明、代码式 DAG 建模
+
+### 关联章节
+14.5
