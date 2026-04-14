@@ -377,9 +377,13 @@
     ],
     "added_by": "task6-review",
     "added_at": "2026-04-14T22:31:24+08:00",
-    "status": "pending",
+    "status": "completed",
     "original_review_log": "logs/review/2026-04-14-22-review.md",
-    "file": "src/part3-tools/ch14-other-tools/09-camera-performance-analysis.md"
+    "file": "src/part3-tools/ch14-other-tools/09-camera-performance-analysis.md",
+    "completed_at": "2026-04-14T23:57:07",
+    "completed_by": "task2b-rework",
+    "result": "partial-fixed",
+    "notes": "Task 2B 第三道修复：补齐 outline 结构锚点，功耗 60fps 量化断言降级为定性描述。剩余 2 项'需确认'（验证来源过泛、Camera2/CameraX 命名）已标记待 Task 9 核对后再回填。"
   },
   {
     "section": "1.14",

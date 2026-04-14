@@ -20,11 +20,12 @@ sources:
     path: "Cubox/一文N张图带你理解Android Camera Native Framework架构-2023-08-13.md"
 tags: ['camera', 'perfetto', 'buffer-queue', 'preview-stutter', 'hal3']
 related_chapters: ["2.13", "13.5", "11.2", "4.3"]
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: needs-rework
 task9_state: pending
-task2b_state: pending
+task2b_state: fixed
+task2b_result: fixed
 ---
 
 # 14.9 Android Camera 性能与 Perfetto 分析
@@ -34,6 +35,55 @@ Camera 是 Android 设备上最复杂的子系统之一。它横跨 App 层、Fr
 这一节聚焦三件事：先把 Camera 性能问题分成几类，再梳理 Camera 管线里的 Buffer 流转，再用 Perfetto Trace Processor 把关键指标量化出来。读完之后，面对一个 Camera 性能问题，我们应该知道从哪里入手、用什么 SQL 查询、怎么定位具体瓶颈。
 
 [已验证: 来源见 Cubox/如何利用 Perfetto 自动化分析 Android Camera 性能-2023-12-15.md]
+
+<!-- outline-start
+# 14.9 Android Camera 性能与 Perfetto 分析
+
+## 🎯 为什么需要了解 Camera 性能分析  <!-- anchor: why-camera-perf -->
+- Camera 子系统复杂度和性能问题频次
+- 读完能做什么：分类问题、定位瓶颈、量化指标
+
+## 📐 Camera 性能问题的四大分类  <!-- anchor: problem-categories -->
+- 预览卡顿
+- 拍照延迟
+- 录像丢帧
+- 内存压力
+
+## 🔄 Camera 管线的 Buffer 流转  <!-- anchor: buffer-pipeline -->
+- HAL3 管线架构（Sensor → ISP → HAL → BufferQueue → SurfaceFlinger）
+- Camera 管线 vs App 渲染管线的时序差异
+- cameraserver 进程结构
+- Buffer 管理与 Camera3OutputStream
+
+## 🔍 在 Perfetto 中分析 Camera 性能  <!-- anchor: perfetto-analysis -->
+### 抓取配置  <!-- anchor: trace-config -->
+### 关键 Track 和 Slice 识别  <!-- anchor: key-tracks -->
+### SQL 查询：量化帧率和帧间隔  <!-- anchor: sql-framerate -->
+### SQL 查询：定位 Event 所属的进程和线程  <!-- anchor: sql-process -->
+### Python SDK 自动化分析  <!-- anchor: python-sdk -->
+
+## 🎬 Camera 预览卡顿分析  <!-- anchor: preview-stutter -->
+### 预览帧率不达标  <!-- anchor: preview-fps -->
+### Buffer 耗尽导致卡顿  <!-- anchor: buffer-exhaustion -->
+### Camera 启动性能的量化拆解  <!-- anchor: camera-launch -->
+
+## ⚡ Camera 功耗优化  <!-- anchor: power-optimization -->
+- 帧率与分辨率权衡
+- Sensor 模式选择
+- HAL Buffer 管理策略
+- 功耗度量方法
+
+## 🔗 与其他机制的关系  <!-- anchor: related-mechanisms -->
+
+## 🆚 Camera2 API vs CameraX API 的性能差异  <!-- anchor: camera2-vs-camerax -->
+
+## 📊 HAL3 管线延迟的深度分析  <!-- anchor: hal3-latency -->
+
+## ⚠️ 常见问题与误区  <!-- anchor: common-mistakes -->
+
+## 📚 参考资料  <!-- anchor: references -->
+outline-end -->
+
 
 ## Camera 性能问题的四大分类
 
@@ -329,7 +379,7 @@ Camera 是移动设备上功耗最高的模块之一。Sensor 持续采集、ISP
 
 功耗优化的核心思路是**减少不必要的工作**：
 
-**帧率和分辨率的权衡**：预览不需要 4K 分辨率，1080p 甚至 720p 在手机屏幕上差异不大。降低预览分辨率意味着 ISP 处理的数据量减少，GraphicBuffer 变小，GPU 纹理上传也更快。帧率方面，30fps 预览对于大多数场景足够，60fps 预览的功耗代价是 30fps 的接近两倍（Sensor 采集频率翻倍、ISP 处理频率翻倍）。
+**帧率和分辨率的权衡**：预览不需要 4K 分辨率，1080p 甚至 720p 在手机屏幕上差异不大。降低预览分辨率意味着 ISP 处理的数据量减少，GraphicBuffer 变小，GPU 纹理上传也更快。帧率方面，30fps 预览对于大多数场景足够，60fps 预览的功耗会明显高于 30fps——Sensor 采集和 ISP 处理频率翻倍，GPU 纹理上传量也相应增加。[待量化: 具体增幅因 SoC 和 Sensor 而异，暂缺通用基线]
 
 **Sensor 模式选择**：Camera Sensor 通常支持多种输出模式（不同分辨率、不同帧率上限）。选择最匹配使用场景的 Sensor 模式可以减少 ISP 的处理负担。例如预览时使用低分辨率模式，拍照时临时切换到全分辨率模式。
 
