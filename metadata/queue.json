@@ -9063,5 +9063,77 @@
     "status": "pending",
     "original_review_log": "logs/review/2026-04-14-19-review.md",
     "file": "src/part3-tools/ch14-other-tools/08-gpu-debug-tools.md"
+  },
+  {
+    "section": "13.9",
+    "section_title": "Android Tracing 基础设施：atrace、ftrace 与 Perfetto 数据采集原理",
+    "priority": 95,
+    "reason": "[Deep Tech Review] 用户空间 tracing API、boottrace 版本线、Perfetto ftrace 配置项与自定义 tracepoint/SQL 示例存在事实错误",
+    "material_paths": [
+      "logs/deep-review/2026-04-14-19-deep-review.md",
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "L138-L145 用户空间 Trace tag 的底层实现",
+        "detail": "正文把 JNI 终点写成 `system/core/libcutils/Trace.cpp` / `libcutils/Trace.cpp`，但当前 AOSP system/core 的实现文件是 `libcutils/trace-dev.cpp`；这一段的“已验证”源码路径本身就是错的。",
+        "suggestion": "把源码证据改成 `frameworks/base/core/jni/android_os_Trace.cpp` → `system/core/libcutils/trace-dev.cpp`，并按实际文件名与路径重新标注验证来源。"
+      },
+      {
+        "type": "版本差异",
+        "location": "L150-L152 atrace 在启动过程中的角色",
+        "detail": "正文写成 `persist.sys.atrace.boot=1` 且输出到 `/data/misc/trace/`，这套口径已经过时。AOSP 近年的 boottrace 使用 `persist.debug.atrace.boottrace` 和 `/data/misc/boottrace/`；Perfetto boottrace 另有 `persist.debug.perfetto.boottrace` 与 `/data/misc/perfetto-traces/boottrace.perfetto-trace`。",
+        "suggestion": "把 boot trace 拆成“legacy atrace boottrace”和“modern Perfetto boottrace”两条版本线，分别给出属性名、配置文件位置和输出目录。"
+      },
+      {
+        "type": "源码错误",
+        "location": "L164-L209, L236 用户空间 Data Source / App tracing API",
+        "detail": "`android.os.TracingManager` 的公开 SDK 入口、Java `DataSource.register(new DataSource.InstanceDescriptor...)` 示例，以及 `androidx.tracing` 的 `LazyThreadSafetyMode` 都对不上公开 API。Perfetto 官方 custom data source 文档给的是 C++ `perfetto::DataSource<CustomDataSource>`，Jetpack Trace API 公开方法也没有 `LazyThreadSafetyMode`。",
+        "suggestion": "把 App 侧分成两条：`android.os.Trace` / `androidx.tracing.Trace` 的 trace_marker 路径，以及 Perfetto SDK/track_event 的独立 producer 路径；删除不存在的 Java `DataSource.register(...)` 和 `LazyThreadSafetyMode`。"
+      },
+      {
+        "type": "源码错误",
+        "location": "L194-L196 traced ftrace 配置项",
+        "detail": "正文使用了不存在的字段名 `ftrace_drain_period_ms`、`ftrace_buffer_size_kb`，并把 drain 默认值写成 250ms。Perfetto `FtraceConfig` 实际字段是 `drain_period_ms` 和 `buffer_size_kb`；当前 `FtraceController` 在未显式设置时使用 100ms 的默认 tick。",
+        "suggestion": "按 `protos/perfetto/config/ftrace/ftrace_config.proto` 和 `src/traced/probes/ftrace/ftrace_controller.cc` 重写字段名与默认行为，删除 250ms 的错误断言。"
+      },
+      {
+        "type": "源码错误",
+        "location": "L292-L309 内核自定义 tracepoint 与 SQL 查询",
+        "detail": "“在 `kernel/trace/Makefile` 中注册”不是标准 tracepoint 接入流程；Perfetto SQL 示例 `SELECT ts, value, name FROM ftrace WHERE name = ...` 也跑不通。Linux tracepoint 需要 `CREATE_TRACE_POINTS` / `trace/define_trace.h` 等生成链，Perfetto 通用 ftrace 事件应从 `ftrace_event` + `args` / `EXTRACT_ARG()` 取字段。",
+        "suggestion": "把内核 tracepoint 章节改成标准头文件/宏/生成流程，并把 SQL 示例改成 `ftrace_event` 查询，字段通过 `arg_set_id` 或 `EXTRACT_ARG()` 提取。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-14T19:20:00+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "13.9",
+    "section_title": "Android Tracing 基础设施：atrace、ftrace 与 Perfetto 数据采集原理",
+    "priority": 85,
+    "reason": "[Deep Tech Review] 用户空间 tracing 采集配置链与 traced/traced_probes 数据通路解释不完整",
+    "material_paths": [
+      "logs/deep-review/2026-04-14-19-deep-review.md",
+      "intake/research-gaps.md"
+    ],
+    "review_issues": [
+      {
+        "type": "原理断裂",
+        "location": "L131-L146, L217-L236 trace_marker 到 App 可见性的配置链",
+        "detail": "正文只写了 `Trace.beginSection()` 最终落到 `trace_marker`，但没有补 `debug.atrace.tags.enableflags`、`atrace_apps`、`atrace_categories` / `atrace_categories_prefer_sdk` 这些真正决定“为什么 tag 进不进 Trace”的开关链。读者照着埋点后，最常见的排障点反而缺席。",
+        "suggestion": "补“埋点存在 ≠ 一定被采集”的配置链：tags enableflags、app allowlist、atrace categories 与 track_event prefer-sdk 的关系，并给一组最小可跑通 config。"
+      },
+      {
+        "type": "知识盲区",
+        "location": "L166-L209 traced / traced_probes 数据流",
+        "detail": "数据流图把 `traced_probes -> traced service -> Trace 文件` 画成一条直线，但没有说明 producer 与 service 之间的共享内存 / IPC 边界，也没有给出 ftrace per-cpu pipe 的精确 reader 路径。结果是“采集失败该看哪个源文件”这一层仍然是黑盒。",
+        "suggestion": "补 `src/traced/probes/ftrace/ftrace_controller.cc`、`cpu_reader.cc` 等 reader 入口，以及 producer 写 SMB / service 汇聚 trace packet 的边界图。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-14T19:20:00+08:00",
+    "status": "pending"
   }
 ]
