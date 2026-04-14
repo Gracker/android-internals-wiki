@@ -33,11 +33,12 @@ reviewed_date: "2026-04-14"
 reviewed_by: "openclaw-task6"
 review_notes: "task9 P90 rework: 寄存器描述修正(翻倍→精确), Dalvik/Zygote已验证正确；2026-04-14 task6 轻量精修：文风、间距、图示占位"
 task9_result: needs-rework
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
-task9_state: reviewed
-task2b_state: pending
+task9_state: pending
+task2b_state: fixed
+task2b_result: fixed
 ---
 
 # Android 版本演进中的架构变化
@@ -93,7 +94,7 @@ Android 5.0（2014 年）是 Android 历史上架构变动最大的版本之一�
 
 **64 位支持。** Android 5.0 正式支持 64 位 ARMv8 架构。这不只是为了寻址更大的内存空间。ARMv8 的指令集设计比 ARMv7 更高效，通用整数寄存器从 ARMv7 的 16 个（r0-r15）增加到 31 个（x0-x30），SIMD/NEON 寄存器也从 16 个 Q 寄存器增加到 32 个 V 寄存器，编译器因此能生成质量更高的本地代码。
 
-Zygote 也因此有了 zygote64 和 zygote_secondary 两个进程，分别用于 fork 64 位和 32 位的应用进程。[已验证: AOSP init.zygote64_32.rc, ARM Architecture Reference Manual]
+Zygote 的双进程形态也从这里开始固定下来。在 init 脚本里，64 位主 Zygote 的 service 名称是 `zygote`，32 位辅 Zygote 是 `zygote_secondary`。`init.zygote64.rc` 启动 `/system/bin/app_process64 --socket-name=zygote`，`init.zygote64_32.rc` 再补一个 `/system/bin/app_process32 --socket-name=zygote_secondary`。因此，引用 init/service 语义时应写 `zygote` / `zygote_secondary`；在 `ps`、Trace 或 cmdline 中看到 `zygote64`，说的是 64 位主 zygote 的进程形态。[已验证: AOSP init.zygote64.rc, init.zygote64_32.rc, ARM Architecture Reference Manual]
 
 ### Android 8.0 Oreo（API 26）：Project Treble——模块化的起点
 
@@ -125,12 +126,12 @@ Treble 的解决方案简洁而彻底：在 Android Framework 和厂商实现（
 
 Android 10（2019 年）在 Treble 的基础上更进一步，引入了 **Project Mainline**（也叫 Mainline modules）。[已验证: 官方文档 source.android.com/docs/core/ota/modular-system]
 
-如果说 Treble 是让 Framework 可以独立升级，那 Mainline 就是让 Framework **内部的特定组件**可以通过 Google Play 独立升级。想象一下：ART 虚拟机、媒体编解码器、DNS 解析器——这些核心组件不再需要等待完整的 OTA 更新，而是像 App 一样通过 Play Store 后台更新。
+Treble 让 Framework 可以独立于 Vendor 升级，Mainline 又把 Framework 内部的一部分系统组件拆成可独立发布的模块。Android 10 首发的 Mainline 模块包括 DNS Resolver（`com.android.resolv`）、Conscrypt（`com.android.conscrypt`）、Media 组件（`com.android.media` / `com.android.media.swcodec`）、PermissionController 等。这些模块可以通过 Google Play 更新，不必等待整机 OTA。
 
-为了实现这一点，Google 设计了 **APEX**（Android Pony EXpress）——一种类似于 APK 但可以包含本地库和服务的打包格式。APEX 模块可以在启动早期（比常规 APK 更早）被加载，因此适合承载像 ART 这样的底层组件。Android 10 首次发布时包含 13 个 Mainline 模块，后续版本中数量持续增加。
+为了做到这一点，Google 设计了 **APEX**（Android Pony EXpress）——一种类似于 APK、但可以携带本地库和系统服务的打包格式。APEX 模块能在启动早期挂载，所以适合承载运行时和系统组件。Android 10 发布时已经有一批 Mainline 模块进入 APEX / APK 体系，不过 ART 还不在这批首发名单里。
 
 [自动发现：来源 obsidian/Personal-Knowlodge/source/2026-03-07_wechat_Android_运行时更新_为数十亿设备提高内存.md]
-ART 作为 Mainline 模块的特别意义在于，ART 的性能优化（如写入屏障消除、隐式挂起检查等编译器改进）可以通过 Play Store 推送到 Android 12+ 的设备上，无需完整系统更新。Google 称这些优化为全球超过 10 亿台设备节省了约 47-95 PB 的存储空间。[待验证：具体数值需对照原文；Android 12+ ART Mainline 模块通过 Play Store 更新的编译器优化具体包含哪些]
+官方 Mainline 模块表把 `com.android.art` 的 Release introduced 标成 Android 12。也就是说，Android 10/11 已经有 Mainline 架构，但 ART 作为可独立更新的运行时模块要到 Android 12 才成立。把这两段时间线分开之后，我们在分析编译器、Profile-Guided Compilation 或 dex2oat 行为时，就不会把 Android 10/11 的设备误判成“ART 已可通过 Play Store 单独更新”。Google 在介绍 ART Mainline 更新时提到，运行时和编译器优化已经覆盖超过 10 亿台设备，并给出了 PB 级存储节省数据；精确数值仍需回到原始博客核对。[待验证：47-95 PB 的精确出处]
 
 ### Android 12（API 31）：GKI 与 Material You
 
@@ -190,6 +191,14 @@ VINTF（Vendor Interface）是 Treble 架构中定义 HAL 接口版本和兼容�
 
 这种设计保证了一个老设备的 Vendor 分区可以和新版本的 Framework 正常配合工作。
 
+### VNDK 与 linker namespace：把 ABI 边界固定下来
+
+HIDL / AIDL 解决的是跨进程接口版本问题，native 共享库的依赖边界还要靠 VNDK（Vendor Native Development Kit）和 linker namespace。VNDK 提供一组允许 vendor 进程在运行时依赖的稳定库，Framework 内部库则继续留在 system 一侧。这样，vendor 模块不会因为 framework 私有库的符号变化被一起打断。
+
+动态链接器会为 Framework 进程、vendor 进程、Same-Process HAL 准备不同的 namespace。比如 SP-HAL 只能看到 LL-NDK 和 VNDK-SP 指定的库，看不到 Framework 内部实现细节。Treble 真正建立起来的是两层隔离：一层是 HAL 接口版本由 VINTF 约束，另一层是 native ABI 可见范围由 VNDK + namespace 约束。
+
+为支持不同 vendor image 的组合，Android 还引入过 VNDK snapshot / VNDK APEX，把某个版本的稳定库集合固定下来，供 vendor 构建和 GSI 运行时复用。Android 15 开始官方逐步淡出 VNDK 机制，但在 Treble 建立期，它承担的是“冻结 vendor 可见 ABI”这件事。
+
 ### GSI：Treble 的"试金石"
 
 GSI（Generic System Image）是 Treble 架构的一个副产品——如果 Treble 的接口定义足够完善，那么一个纯 AOSP 编译出来的 System Image 理论上应该能在任何 Treble 兼容的设备上运行。GSI 就是这个"通用系统镜像"，主要用于：
@@ -198,7 +207,9 @@ GSI（Generic System Image）是 Treble 架构的一个副产品——如果 Tre
 2. **开发调试**：开发者可以在自己的设备上刷入 GSI 来测试纯 AOSP 的行为
 3. **Project Treble 合规性检查**：确保厂商的 Vendor 实现确实遵循了 Treble 接口
 
-[来源: obsidian/Cubox/谈Android架构创新性-2022-04-02.md] 从系统工程师的视角看，Android 架构设计的核心要素可以归纳为：接口定义（IDL）、接口约束（VINTF/CTS）、接口调用约束（namespace/linker namespace），以及配套的测试套件。Treble 和 GKI 都遵循了这个模式。
+GSI 能成为 Treble 合规性的试金石，有两个前提：HAL 版本匹配，以及 vendor 分区对 system 镜像的 native 依赖已经被压缩到 VNDK / LL-NDK / namespace 允许的范围内。设备能启动纯 AOSP GSI，再通过 CTS-on-GSI / VTS，说明这台设备同时满足了接口兼容和 ABI 隔离两项约束。
+
+[来源: obsidian/Cubox/谈Android架构创新性-2022-04-02.md] 从系统工程师的视角看，Android 架构设计离不开四个对象：接口定义（IDL）、接口约束（VINTF / CTS）、ABI 可见范围（VNDK / linker namespace），以及配套的测试套件。Treble 和 GKI 都沿着这条思路演进。
 
 ## 从 Dalvik 到 ART：编译策略的演进
 
@@ -345,11 +356,11 @@ Android 16 增加了兼容模式，让部分为 4KB 页面构建的 App 能在 1
 | 特征 | Android 8 之前 | Android 8-10 | Android 11+ |
 |------|----------------|-------------|-------------|
 | Binder 类型 | 只有 binder | binder + hwbinder | binder + hwbinder |
-| Zygote | zygote + zygote64 | zygote64 + zygote | zygote64 + zygote |
+| Zygote（init service） | zygote（32-bit-only 设备）或 zygote + zygote_secondary（64-bit 设备） | zygote + zygote_secondary | zygote + zygote_secondary |
 | 编译产物 | 完整 OAT（全量 AOT） | VDEX + ODEX（Profile-AOT） | VDEX + ODEX（Profile-AOT） |
 | 后台进程 | 可长期存活 | 受限但仍可后台服务 | 配额制 + 网络限制 |
 
-> **表格阅读提示**：Android 8-10 和 11+ 的编译产物格式看起来相同（VDEX + ODEX），但 Android 11+ 由于 ART 已成为 Mainline 模块，编译器的行为和优化策略可能已经通过 Play Store 更新发生了变化。因此在分析 11+ 设备的 Trace 时，不能简单假设编译行为与 8-10 一致。同样，Zygote 行中顺序的变化反映了 64 位成为主架构的演进，Android 8.0 之后 zygote64 优先启动，32 位 zygote 按需启动。
+> **表格阅读提示**：Android 8-10 和 11+ 的编译产物格式看起来相同（VDEX + ODEX），但 Android 11+ 由于 ART 已成为 Mainline 模块，编译器行为和优化策略可能已经通过 Play Store 更新发生变化。因此分析 11+ 设备的 Trace 时，不能直接把 8-10 的 ART 行为当成默认前提。表格里的 Zygote 一行按 init service 名称统一写成 `zygote` / `zygote_secondary`；在 `ps` 或 Trace 里常看到的 `zygote64`，说的是 64 位主 zygote 的进程形态。
 
 [图：Android 8、Android 11+、Android 16 在 Perfetto 中的典型 Trace 对比，重点标出 binder/hwbinder、zygote 形态与编译产物差异]
 
