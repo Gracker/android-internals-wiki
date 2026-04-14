@@ -1,6 +1,7 @@
 ---
 title: "Android 版本演进中的架构变化"
 chapter: "1.6"
+section: "1.6"
 status: ready-for-review
 polish_count: 1
 polish_date: "2026-04-06"
@@ -28,11 +29,12 @@ sources:
     path: "https://developer.android.com/about/versions"
 tags: ['treble', 'mainline', 'apex', 'gki', 'art', 'dalvik', 'privacy', 'background-restrictions', '16k-page', 'compilation', 'profile-guided', 'background-execution']
 related_chapters: ["1.1", "1.4", "1.7", "2.9", "4.4", "4.6", "5.6", "8.7"]
-reviewed_date: "2026-04-10"
+reviewed_date: "2026-04-14"
 reviewed_by: "openclaw-task6"
-review_notes: "task9 P90 rework: 寄存器描述修正(翻倍→精确), Dalvik/Zygote已验证正确"
-pipeline_stage: task6_pending
-task6_state: pending
+review_notes: "task9 P90 rework: 寄存器描述修正(翻倍→精确), Dalvik/Zygote已验证正确；2026-04-14 task6 轻量精修：文风、间距、图示占位"
+pipeline_stage: task9_pending
+task6_state: reviewed
+task6_result: pass-light-edit
 task9_state: pending
 task2b_state: idle
 ---
@@ -44,7 +46,7 @@ task2b_state: idle
 
 ### 锚点（必须覆盖）
 
-- 🔹 关键版本的架构里程碑：4.4 ART / 5.0 Lollipop 64-bit / 8.0 Treble / 10 Mainline / 12 MaterialYou
+- 🔹 关键版本的架构里程碑：4.4 ART / 5.0 Lollipop 64-bit / 8.0 Treble / 10 Mainline / 12 Material You
 - 🔹 Android 16 (Baklava) 最新架构变化与性能相关特性
 - 🔹 Project Treble → VINTF → GSI → GKI 对系统碎片化的改善
 - 🔹 从 Dalvik 到 ART 的演进：JIT → AOT → Profile-Guided Compilation
@@ -68,7 +70,7 @@ task2b_state: idle
 
 打开 Perfetto 抓一份 Trace，那些进程、线程、Binder 调用、渲染管线的形态并非一成不变。Android 从 2008 年的 1.0 到今天的 Android 16，每一次大版本的架构变更都在重塑这些行为。不了解这些变化，分析问题时容易犯经验主义的错误：用 Android 8 的经验去解释 Android 15 的 Trace，得出错误结论。
 
-Android 的版本演进不是随意的功能堆叠——它有一条清晰的主线：**模块化**。从 Project Treble 到 Project Mainline，从 GKI 到 APEX，Google 一直在把 Android 从一个"铁板一块"的操作系统拆解为可独立升级的模块。理解这条主线，不仅能帮你看懂系统架构的设计意图，还能帮你在实际工作中判断"这个问题是系统层面的还是厂商层面的"——这在 OEM 和 App 开发者的日常工作中至关重要。
+Android 的版本演进不是随意的功能堆叠，它有一条清晰的主线：**模块化**。从 Project Treble 到 Project Mainline，从 GKI 到 APEX，Google 一直在把 Android 从一个"铁板一块"的操作系统拆解为可独立升级的模块。理解这条主线，不仅能帮你看懂系统架构的设计意图，还能帮你在实际工作中判断"这个问题是系统层面的还是厂商层面的"。这在 OEM 和 App 开发者的日常工作中很关键。
 
 本节会梳理 Android 版本演进中那些对性能分析有直接影响的架构变化，而不是事无巨细地罗列每个版本的新功能。
 
@@ -86,15 +88,17 @@ Android 4.4（2013 年）是一个特殊的过渡版本。它首次将 ART（And
 
 Android 5.0（2014 年）是 Android 历史上架构变动最大的版本之一，两件事同时发生：
 
-**ART 完全取代 Dalvik。** 从 Android 5.0 开始，Dalvik 被完全移除，ART 成为唯一的运行时。[已验证: Android 5.0 Release Notes, Wikipedia]所有应用在安装时都会被 dex2oat 编译为本地代码。这意味着安装时间变长了，但运行时性能显著提升。垃圾回收器也做了重大改进，GC 暂停时间从 Dalvik 时代的上百毫秒降低到了几毫秒。
+**ART 完全取代 Dalvik。** 从 Android 5.0 开始，Dalvik 被完全移除，ART 成为唯一的运行时。[已验证: Android 5.0 Release Notes, Wikipedia] 所有应用在安装时都会被 dex2oat 编译为本地代码。安装时间因此变长了，但运行时性能更稳定。垃圾回收器也做了重大改进，GC 暂停时间从 Dalvik 时代的上百毫秒降低到了几毫秒。
 
-**64 位支持。** Android 5.0 正式支持 64 位 ARMv8 架构。这不仅仅是为了寻址更大的内存空间——ARMv8 的指令集设计比 ARMv7 更高效，通用整数寄存器从 ARMv7 的 16 个（r0-r15）增加到 31 个（x0-x30），SIMD/NEON 寄存器也从 16 个 Q 寄存器翻倍到 32 个 V 寄存器，编译器因此能生成质量更高的本地代码。Zygote 也因此有了 zygote64 和 zygote_secondary 两个进程，分别用于 fork 64 位和 32 位的应用进程。[已验证: AOSP init.zygote64_32.rc, ARM Architecture Reference Manual]
+**64 位支持。** Android 5.0 正式支持 64 位 ARMv8 架构。这不只是为了寻址更大的内存空间。ARMv8 的指令集设计比 ARMv7 更高效，通用整数寄存器从 ARMv7 的 16 个（r0-r15）增加到 31 个（x0-x30），SIMD/NEON 寄存器也从 16 个 Q 寄存器增加到 32 个 V 寄存器，编译器因此能生成质量更高的本地代码。
+
+Zygote 也因此有了 zygote64 和 zygote_secondary 两个进程，分别用于 fork 64 位和 32 位的应用进程。[已验证: AOSP init.zygote64_32.rc, ARM Architecture Reference Manual]
 
 ### Android 8.0 Oreo（API 26）：Project Treble——模块化的起点
 
 Android 8.0（2017 年）引入了 **Project Treble**，这是 Android 架构演进中最重要的一次重构。[已验证: 官方文档 source.android.com/docs/core/architecture]
 
-在 Treble 之前，每次升级 Android 版本，芯片厂商（高通、MTK、三星LSI）都需要先更新他们底层驱动代码以适配新的 Framework API，然后设备厂商再基于芯片厂商的适配做整机集成。整个升级链动辄需要半年以上，这也是 Android 设备系统更新缓慢的根本原因。
+在 Treble 之前，每次升级 Android 版本，芯片厂商（高通、MTK、三星 LSI）都需要先更新他们底层驱动代码以适配新的 Framework API，然后设备厂商再基于芯片厂商的适配做整机集成。整个升级链动辄需要半年以上，这也是 Android 设备系统更新缓慢的根本原因。
 
 Treble 的解决方案简洁而彻底：在 Android Framework 和厂商实现（HAL）之间插入一层稳定的接口（HIDL（HAL Interface Definition Language）/AIDL（Android Interface Definition Language）），将系统分为 **System 分区**（Google 控制）和 **Vendor 分区**（芯片/设备厂商控制）。这样，Framework 可以独立于 Vendor 进行升级。
 
@@ -114,7 +118,7 @@ Treble 的解决方案简洁而彻底：在 Android Framework 和厂商实现（
 
 [来源: obsidian/Cubox/谈Android架构创新性-2022-04-02.md] 从系统架构的角度看，Treble 的核心思想是**接口依赖倒置**——Google 定义接口，下层去实现，而不是下层定义接口，上层来适配。这让 Google 牢牢控制了 Android 的演进方向。
 
-对性能分析的影响：Treble 之后，Binder IPC 中出现了两类通信——传统的 `binder`（Framework 层）和新增的 `hwbinder`（HAL 层）。在 Perfetto 中你可以看到这两种 Binder 调用，它们的行为特征有所不同。hwbinder 调用通常涉及硬件操作（如相机、传感器），延迟更高。
+对性能分析的影响：Treble 之后，Binder IPC 中出现了两类通信，传统的 `binder`（Framework 层）和新增的 `hwbinder`（HAL 层）。Perfetto 中会出现这两种 Binder 调用，它们的行为特征有所不同。hwbinder 调用通常涉及硬件操作（如相机、传感器），延迟更高。
 
 ### Android 10（API 29）：Project Mainline 与 APEX
 
@@ -124,7 +128,8 @@ Android 10（2019 年）在 Treble 的基础上更进一步，引入了 **Projec
 
 为了实现这一点，Google 设计了 **APEX**（Android Pony EXpress）——一种类似于 APK 但可以包含本地库和服务的打包格式。APEX 模块可以在启动早期（比常规 APK 更早）被加载，因此适合承载像 ART 这样的底层组件。Android 10 首次发布时包含 13 个 Mainline 模块，后续版本中数量持续增加。
 
-[自动发现: 来源 obsidian/Personal-Knowlodge/source/2026-03-07_wechat_Android_运行时更新_为数十亿设备提高内存.md] ART 作为 Mainline 模块的特别意义在于：ART 的性能优化（如写入屏障消除、隐式挂起检查等编译器改进）可以通过 Play Store 推送到 Android 12+ 的设备上，无需完整系统更新。Google 称这些优化为全球超过 10 亿台设备节省了约 47-95 PB 的存储空间。[待验证: 具体数值需对照原文; Android 12+ ART Mainline 模块通过 Play Store 更新的编译器优化具体包含哪些]
+[自动发现：来源 obsidian/Personal-Knowlodge/source/2026-03-07_wechat_Android_运行时更新_为数十亿设备提高内存.md]
+ART 作为 Mainline 模块的特别意义在于，ART 的性能优化（如写入屏障消除、隐式挂起检查等编译器改进）可以通过 Play Store 推送到 Android 12+ 的设备上，无需完整系统更新。Google 称这些优化为全球超过 10 亿台设备节省了约 47-95 PB 的存储空间。[待验证：具体数值需对照原文；Android 12+ ART Mainline 模块通过 Play Store 更新的编译器优化具体包含哪些]
 
 ### Android 12（API 31）：GKI 与 Material You
 
@@ -132,7 +137,7 @@ Android 12（2021 年）在模块化道路上又迈了一步：**GKI（Generic K
 
 GKI 将模块化的边界推进到了 Linux 内核。在 GKI 之前，每个设备都有一个定制的内核（SoC 厂商 + 设备厂商的各种补丁），导致内核碎片化严重。GKI 的思路与 Treble 一脉相承：定义一个稳定的 **KMI（Kernel Module Interface）**，将 SoC 和设备特定的代码从核心内核中移出到可加载的厂商模块中。
 
-搭载 Android 12 且使用 Linux 5.10+ 内核的设备被要求使用 GKI 内核。这意味着同一个 GKI 内核镜像可以运行在不同 SoC 的设备上——这在以前是不可想象的。
+搭载 Android 12 且使用 Linux 5.10+ 内核的设备被要求使用 GKI 内核。同一个 GKI 内核镜像因此可以运行在不同 SoC 的设备上，这在以前是不可想象的。
 
 对性能分析的影响：GKI 意味着内核行为更加标准化。在做跨设备的性能对比时，内核层面的差异会越来越小，更多差异集中在 HAL 和 Vendor 层。
 
@@ -148,13 +153,13 @@ Android 16（2025 年 6 月发布，代号 Baklava）延续了模块化和性能
 
 **更严格的后台限制。** Android 16 将前台服务启动的后台 Job 也纳入了运行时配额管理，进一步收紧了后台执行的自由度。
 
-**性能监控 API 增强。** 新增了 system-triggered profiling（系统触发的性能分析）和 ApplicationStartInfo 中的组件启动信息，为开发者提供了更精细的性能分析能力。[待验证: 具体API在 android-16.0.0_r1 中的实现细节]
+**性能监控 API 增强。** 新增了 system-triggered profiling（系统触发的性能分析）和 ApplicationStartInfo 中的组件启动信息，为开发者提供了更精细的性能分析能力。[待验证：具体 API 在 android-16.0.0_r1 中的实现细节]
 
 **修订的 SDK 发布节奏。** Android 16 引入了新的 SDK 发布结构——2025 年内发布两个 API 版本。第一个包含新 API 和行为变更，第二个只增加 API 不改变行为。这对 App 开发者意味着更平滑的适配周期。
 
 ## Project Treble → VINTF → GSI → GKI：模块化的完整链条
 
-上面我们按时间线梳理了各个里程碑。现在让我们把这些变化串起来，看看它们是如何形成一条完整的模块化链条的。
+上面我们按时间线梳理了各个里程碑。下面把这些变化串起来，看它们如何形成一条完整的模块化链条。
 
 这条链条的目标只有一个：**让 Android 的每一层都可以独立更新。**
 
@@ -340,12 +345,12 @@ Android 16 增加了兼容模式，让部分为 4KB 页面构建的 App 能在 1
 |------|----------------|-------------|-------------|
 | Binder 类型 | 只有 binder | binder + hwbinder | binder + hwbinder |
 | Zygote | zygote + zygote64 | zygote64 + zygote | zygote64 + zygote |
-| 编译产物 | 完整 OAT（全量AOT） | VDEX+ODEX（Profile-AOT） | VDEX+ODEX（Profile-AOT） |
+| 编译产物 | 完整 OAT（全量 AOT） | VDEX + ODEX（Profile-AOT） | VDEX + ODEX（Profile-AOT） |
 | 后台进程 | 可长期存活 | 受限但仍可后台服务 | 配额制 + 网络限制 |
 
-> **表格阅读提示**：Android 8-10 和 11+ 的编译产物格式看起来相同（VDEX+ODEX），但 Android 11+ 由于 ART 已成为 Mainline 模块，编译器的行为和优化策略可能已经通过 Play Store 更新发生了变化。因此在分析 11+ 设备的 Trace 时，不能简单假设编译行为与 8-10 一致。同样，Zygote 行中顺序的变化反映了 64 位成为主架构的演进——Android 8.0 之后 zygote64 优先启动，32 位 zygote 按需启动。
+> **表格阅读提示**：Android 8-10 和 11+ 的编译产物格式看起来相同（VDEX + ODEX），但 Android 11+ 由于 ART 已成为 Mainline 模块，编译器的行为和优化策略可能已经通过 Play Store 更新发生了变化。因此在分析 11+ 设备的 Trace 时，不能简单假设编译行为与 8-10 一致。同样，Zygote 行中顺序的变化反映了 64 位成为主架构的演进，Android 8.0 之后 zygote64 优先启动，32 位 zygote 按需启动。
 
-[待补充：不同版本 Perfetto Trace 的对比截图]
+[图：Android 8、Android 11+、Android 16 在 Perfetto 中的典型 Trace 对比，重点标出 binder/hwbinder、zygote 形态与编译产物差异]
 
 ## 常见问题与误区
 
