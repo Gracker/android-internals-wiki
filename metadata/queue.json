@@ -1394,9 +1394,13 @@
     ],
     "added_by": "task6-review",
     "added_at": "2026-04-14T23:05:00+08:00",
-    "status": "pending",
+    "status": "completed",
     "original_review_log": "logs/review/2026-04-14-23-review.md",
-    "file": "src/part3-tools/ch14-other-tools/10-ebpf-performance-analysis.md"
+    "file": "src/part3-tools/ch14-other-tools/10-ebpf-performance-analysis.md",
+    "completed_at": "2026-04-15T01:44:27+08:00",
+    "completed_by": "task2b-rework",
+    "result": "fixed",
+    "notes": "Task 2B 回炉修复：1) 补齐 outline 结构锚点；2) 6 处量化断言降级或补 [待验证]；3) 补 5 处 [图：...] 占位覆盖 Simpleperf/bpftrace/UprobeStats/CPU/I/O 实战段；4) 修正 STYLE.md 违禁词（本质区别→工作机制完全不同）。STYLE.md 禁用词扫描通过。"
   },
   {
     "section": "16.4",
