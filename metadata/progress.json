@@ -21,7 +21,7 @@
     "task9_unknown": 31,
     "task9_pending": 170,
     "task9_reviewed": 6,
-    "last_updated": "2026-04-14T23:05:00+08:00",
+    "last_updated": "2026-04-15T01:05:00+08:00",
     "task2b_state_counts": {
       "unknown": 31,
       "fixed": 78,
@@ -31,8 +31,8 @@
     "task6_state_counts": {
       "unknown": 31,
       "revisiting": 78,
-      "reviewed": 17,
-      "pending": 81
+      "reviewed": 18,
+      "pending": 80
     },
     "task9_state_counts": {
       "unknown": 31,
@@ -41,9 +41,9 @@
     },
     "pipeline_stage_counts": {
       "unknown": 31,
-      "task6_pending": 159,
+      "task6_pending": 158,
       "task2b_pending": 16,
-      "task9_pending": 1
+      "task9_pending": 2
     },
     "total_sections": 207
   },
@@ -797,12 +797,13 @@
       "title": "Input 事件分发全流程",
       "path": "src/part1-fundamentals/ch03-input/01-input-dispatch.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "pending",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
       "task9_state": "pending",
       "task2b_state": "idle",
-      "reviewed_date": "2026-04-07",
-      "reviewed_by": "openclaw-task6"
+      "reviewed_date": "2026-04-15",
+      "reviewed_by": "openclaw-task6",
+      "task6_result": "pass-light-edit"
     },
     "src/part1-fundamentals/ch03-input/02-touch-performance.md": {
       "chapter": "3.2",

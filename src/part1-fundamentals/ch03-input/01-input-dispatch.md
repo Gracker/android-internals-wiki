@@ -26,8 +26,12 @@ sources:
     path: "https://mp.weixin.qq.com/s/Analyze-AOSP-input-architecture"
 tags: ['input', 'inputdispatcher', 'inputreader', 'eventhub', 'inputchannel', 'anr', 'inputflinger', 'socketpair', 'touch', 'view-hierarchy']
 related_chapters: ["3.2", "3.3", "2.5", "9.1", "9.2"]
-pipeline_stage: task6_pending
-task6_state: pending
+reviewed_by: openclaw-task6
+reviewed_date: "2026-04-15"
+task6_result: pass-light-edit
+pipeline_stage: task9_pending
+task6_state: reviewed
+task9_state: pending
 task9_state: pending
 task2b_state: idle
 ---
@@ -414,6 +418,18 @@ static final long DEFAULT_INPUT_DISPATCHING_TIMEOUT_NANOS = 5000 * 1000000L; // 
 
 [待补充：Perfetto 截图——展示 iq/oq/wq Track 和 deliverInputEvent 的对应关系]
 
+## Pointer Event 与 Motion Event
+
+Android 的 Input 系统区分两种基本的指针类事件：
+
+**Motion Event** 是 View 体系（`android.view.MotionEvent`）中的标准事件类型。所有通过 `InputChannel` 传递到 App 的触摸、轨迹球、鼠标事件，在 Java 层都表现为 `MotionEvent`，通过 `OnTouchListener.onTouch(view, event)` 或 `View.onTouchEvent(event)` 分发。
+
+**Pointer Event** 是 Compose 和部分新 API 中对 `MotionEvent` 的封装。Jetpack Compose 的 `pointerInput` 修饰符使用的是 `PointerInputChange` 和 `PointerEvent`，底层仍然来自同一个 `MotionEvent`，但 Compose 层做了额外的变换（pointer id 追踪、相对位移计算、事件消费标记）。
+
+从性能分析角度，两者在 Perfetto 中的表现完全一致——都通过同一个 `deliverInputEvent` → `dispatchTouchEvent` 路径，Trace 中看到的耗时没有区别。
+
+> [来源: AOSP android-14.0.0_r1, frameworks/base/core/java/android/view/MotionEvent.java]
+
 ## InputFlinger 的角色与演进
 
 在 Android 12 之前，`InputReader` 和 `InputDispatcher` 直接运行在 `system_server` 进程中。从 Android 12 开始，Google 将它们抽取到独立的 `InputFlinger` 服务中（虽然仍然运行在 `system_server` 进程），代码路径也重新组织为 `frameworks/native/services/inputflinger/`。
@@ -436,11 +452,11 @@ frameworks/native/services/inputflinger/
 
 ### 误区一：Input 事件通过 Binder 传递
 
-实际上 Input 事件是通过 `socketpair` 传递的，不是 `Binder`。这一点在面试中经常被问到，原因我们在前面已经详细分析过。
+Input 事件通过 `socketpair` 传递，不是 `Binder`。这一点在面试中经常被问到，原因我们在前面已经详细分析过。
 
 ### 误区二：事件分发是从 Activity 开始的
 
-不少文章把 `Activity.dispatchTouchEvent()` 作为事件分发的起点，但实际上在这之前，事件已经经历了 `ViewRootImpl` 的 `InputStage` 责任链处理。`Activity` 只是 DecorView 通过 `Window.Callback` 给到的一个拦截机会。
+不少文章把 `Activity.dispatchTouchEvent()` 作为事件分发的起点，但在这之前，事件已经经历了 `ViewRootImpl` 的 `InputStage` 责任链处理。`Activity` 只是 DecorView 通过 `Window.Callback` 给到的一个拦截机会。
 
 ### 误区三：Input ANR 是 App 主线程卡了 5 秒
 
