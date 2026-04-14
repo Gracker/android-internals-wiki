@@ -22,12 +22,13 @@ sources:
     path: "external/perfetto/src/trace_processor/"
 tags: [perfetto, trace_processor, sql, python, cli, large-traces]
 related_chapters: ["13.1", "13.2", "13.3", "13.5"]
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: needs-rework
-task9_state: reviewed
+task9_state: pending
 task9_result: needs-rework
-task2b_state: pending
+task2b_state: fixed
+task2b_result: fixed
 ---
 
 # 命令行打开超大 Trace
@@ -177,6 +178,20 @@ PerfettoSQL 建立在 SQLite 引擎之上，语法与标准 SQL 基本一致。�
 
 `counter` 表存储了所有 Counter 事件，通过 `track_id` 关联到具体的 Counter Track。
 
+### 使用前必做：验证事件是否存在
+
+在写任何针对具体 Slice 名称的查询之前，先用一个简单查询确认目标事件在当前 Trace 中确实存在：
+
+```sql
+-- 查看当前 Trace 中有哪些 Slice 名称（采样前 50 条）
+SELECT DISTINCT name FROM slice ORDER BY name LIMIT 50;
+
+-- 或者在 EXTRACT_ARG 之前，先确认目标 Slice 存在
+SELECT COUNT(*) FROM slice WHERE name = 'inflate';
+```
+
+这是因为很多 Slice 名称（如 `inflate`、`Application.onCreate`、`ActivityThread.handleBindApplication`、`ANR`）是否出现在 Trace 中，取决于采集时开启了哪些 atrace category 和应用是否打了自定义 Trace marker。如果查询返回空结果，多半不是 SQL 写错了，而是采集配置没有覆盖对应事件。
+
 ### 几个典型查询
 
 让我们用几个实际的查询来感受 PerfettoSQL 的使用方式。
@@ -242,18 +257,20 @@ PerfettoSQL 查询中最容易出错的部分是表之间的 JOIN 路径。一�
 
 记住这条路径就够了：`slice → thread_track → thread → process`。绝大多数分析查询都是这条路径的变体。
 
-[自动发现] Perfetto 还提供了一组辅助函数来简化 JOIN 操作。`EXTRACT_ARG(arg_set_id, key)` 可以直接从 `args` 表中提取某个 Slice 的自定义属性，而不需要显式 JOIN `args` 表。比如获取 `inflate` 操作使用的布局资源名：
+[自动发现] Perfetto 还提供了一组辅助函数来简化 JOIN 操作。`EXTRACT_ARG(arg_set_id, key)` 可以直接从 `args` 表中提取某个 Slice 的自定义属性，而不需要显式 JOIN `args` 表。比如查看 `sched_switch` ftrace 事件中被换出的前一个进程名：
 
 ```sql
 SELECT
   name,
-  EXTRACT_ARG(arg_set_id, 'layout') AS layout_name
-FROM slice
-WHERE name = 'inflate'
+  EXTRACT_ARG(arg_set_id, 'prev_comm') AS prev_comm
+FROM ftrace_event
+WHERE name = 'sched_switch'
 LIMIT 10;
 ```
 
-需要注意 `EXTRACT_ARG` 在大表上性能不如显式 JOIN——它每行都要执行一次子查询。对探索性分析没问题，但在批量脚本中如果性能敏感，建议改用 JOIN。
+> **注意**：`EXTRACT_ARG` 可用的 key 取决于对应事件的 `args` 表内容。使用前建议先查看 schema：`.schema args` 或 `SELECT DISTINCT key FROM args LIMIT 50`。
+>
+> 另外 `EXTRACT_ARG` 在大表上性能不如显式 JOIN——它每行都要执行一次子查询。对探索性分析没问题，但在批量脚本中如果性能敏感，建议改用 JOIN。
 
 ## 用 trace_processor 批量跑 SQL 脚本
 
@@ -264,14 +281,10 @@ LIMIT 10;
 如果已经进入交互式 shell，可以用 `.read` 执行外部 SQL 文件。脚本场景里，更常用的是 `-q`：
 
 ```bash
-./trace_processor -q my_analysis.sql < trace.perfetto-trace
+./trace_processor -q my_analysis.sql trace.perfetto-trace
 ```
 
-或者用 shell 重定向：
-
-```bash
-cat trace.perfetto-trace | ./trace_processor -q my_analysis.sql
-```
+[已修正: 2026-04-15, 原文使用 stdin 管道喂 trace 文件，但 trace_processor CLI 要求提供位置参数，stdin-only 模式会直接打印 usage 并退出]
 
 `-q` 模式下，`trace_processor` 不会进入交互式 shell，而是执行完 SQL 文件后直接退出，结果输出到 stdout。这使得它可以方便地集成到 shell pipeline 中。
 
@@ -328,23 +341,37 @@ done
 
 `trace_processor` 默认用制表符分隔的文本格式输出查询结果。如果需要 JSON 格式（方便 Python/JavaScript 处理），可以在启动时加 `--json` 参数：
 
+`trace_processor` 默认用制表符分隔的文本格式输出。如果需要结构化输出，有三种方案：
+
+**方案一：Python API**（推荐，灵活性最高）
+
+前面介绍的 Python `TraceProcessor.query().as_pandas_dataframe()` 可以直接拿到结构化数据，导出为 CSV、JSON 或 Parquet 都很方便。
+
+**方案二：导出为 SQLite 数据库**
+
 ```bash
-./trace_processor --json -q analysis.sql < trace.perfetto-trace
+./trace_processor -q analysis.sql -e result.sqlite trace.perfetto-trace
 ```
 
-[已验证: 官方文档, perfetto.dev/docs/analysis/trace-processor]
+`-e` 参数会把 trace_processor 的内存数据库导出为 SQLite 文件，之后可以用任意 SQLite 工具查询，也可以用 `sqlite3` 命令行的 `.mode json` 输出 JSON。
+
+**方案三：shell 脚本后处理**
+
+默认的文本输出格式本身是制表符分隔的，可以直接用 `awk`/`sed` 转换为 CSV。
+
+[已修正: 2026-04-15, 原文使用 `--json` 参数，但 trace_processor CLI 不存在该选项。JSON 输出仅在 `--run-metrics` 搭配 `--metrics-output=json` 时可用，不适用于自由 SQL 查询]
 
 ### trace_processor 的高级参数
 
 一些实用的启动参数：
 
-`--httpd` 启动 HTTP 守护进程模式，配合 Perfetto UI 使用。前面已经讲过。
+`--httpd` 启动 HTTP 守护进程模式，配合 Perfetto UI 使用。前面已经讲过。可以通过 `--http-port` 和 `--http-ip-address` 指定监听端口和地址。
 
-`-D` 或 `--debug` 开启调试模式，输出更多内部日志。当我们遇到查询结果与预期不符时，可以用这个模式排查。
+`-W` 或 `--wide` 加宽输出列宽，让长字符串（如完整 Slice 名称）不被截断。在交互式查询中查看长名称时很有用。
 
-`-W` 或 `--wait` 在 HTTP 模式下等待客户端连接后才开始解析 Trace。这样可以避免在 UI 连接之前就完成了大量计算。
+`-e <path>` 将内存中的数据库导出为 SQLite 文件。分析完成后可以把整个 Trace 数据库持久化，后续用 `sqlite3` 命令行或其他工具继续分析，不用重新加载原始 Trace。
 
-[待验证: --W 参数在最新版本中是否仍然支持]
+[已修正: 2026-04-15, 原文将 -D 写成 --debug、-W 写成 --wait，但 trace_processor CLI 中 -D 实际是 --httpd 的短选项，-W 是 --wide（加宽输出）。--debug 和 --wait 不存在。当前参数列表基于 perfetto.dev v48.x 文档]
 
 ## 用 Python 的 perfetto.trace_processor 库做自动化分析
 
@@ -397,7 +424,9 @@ def analyze_cold_start(trace_path):
     """分析单个 Trace 的冷启动指标"""
     tp = TraceProcessor(trace=trace_path)
 
-    # 1. 找到 Application.onCreate 的耗时
+    # 1. 找到启动阶段关键 Slice 的耗时
+    # 注意：这些 slice name 来自 atrace 的 gfx/input/view category + 应用自定义 Trace marker，
+    # 采集时必须开启对应 category 才能查到
     oncreate = tp.query("""
         SELECT dur / 1e6 AS dur_ms
         FROM slice
@@ -406,17 +435,44 @@ def analyze_cold_start(trace_path):
     """).as_pandas_dataframe()
 
     # 2. 统计主线程在启动期间的 D 状态时长
-    d_state = tp.query("""
-        SELECT SUM(dur) / 1e6 AS d_state_ms
-        FROM thread_state
-        JOIN thread USING (utid)
-        WHERE thread.is_main_thread = 1
-          AND state = 'D'
-          AND ts < (SELECT MIN(ts) FROM slice
-                    WHERE name = 'ActivityThread.handleBindApplication')
+    # 先定位启动起点（handleBindApplication 通常是系统侧标记），
+    # 如果该 slice 不存在，可以退而用 trace 开头时间作为起点
+    startup_start = tp.query("""
+        SELECT COALESCE(
+          (SELECT MIN(ts) FROM slice WHERE name = 'ActivityThread.handleBindApplication'),
+          (SELECT MIN(ts) FROM slice LIMIT 1)
+        ) AS ts
     """).as_pandas_dataframe()
 
     # 3. 统计启动期间主线程的 Binder 调用次数
+    binder_count = tp.query("""
+        SELECT COUNT(*) AS cnt
+        FROM slice
+        JOIN thread_track ON slice.track_id = thread_track.id
+        JOIN thread USING (utid)
+        WHERE thread.is_main_thread = 1
+          AND slice.name LIKE 'binder%'
+          AND slice.ts < (SELECT MIN(ts) + 5e9 FROM slice
+                          WHERE name = 'ActivityThread.handleBindApplication')
+    """).as_pandas_dataframe()
+
+    # 2b. 用 startup_start 计算 D 状态时长
+    if len(startup_start) > 0 and startup_start['ts'].iloc[0] is not None:
+        start_ts = startup_start['ts'].iloc[0]
+        d_state = tp.query(f"""
+            SELECT SUM(dur) / 1e6 AS d_state_ms
+            FROM thread_state
+            JOIN thread USING (utid)
+            WHERE thread.is_main_thread = 1
+              AND state = 'D'
+              AND ts >= {start_ts}
+              AND ts < {start_ts} + 5e9
+        """).as_pandas_dataframe()
+    else:
+        d_state = None
+
+    # 3. 统计启动阶段主线程的 Binder 调用次数
+    # 注意：binder slice name 格式取决于 atrace 配置，不同版本可能有差异
     binder_count = tp.query("""
         SELECT COUNT(*) AS cnt
         FROM slice
@@ -432,7 +488,7 @@ def analyze_cold_start(trace_path):
 
     return {
         'oncreate_ms': oncreate['dur_ms'].iloc[0] if len(oncreate) > 0 else None,
-        'd_state_ms': d_state['d_state_ms'].iloc[0] if len(d_state) > 0 else 0,
+        'd_state_ms': d_state['d_state_ms'].iloc[0] if d_state is not None and len(d_state) > 0 else 0,
         'binder_calls': binder_count['cnt'].iloc[0] if len(binder_count) > 0 else 0,
     }
 
@@ -579,7 +635,7 @@ print(recent.groupby('date')['oncreate_ms'].describe())
 
 **"Trace 文件太大，trace_processor 也吃不下怎么办？"**
 
-可以尝试几种方法：一是抓 Trace 时缩小时间范围（只在需要分析的时段开启 trace）；二是用 ring buffer 模式抓取，只保留最近的数据；三是用 `traceconv` 先转换为文本格式，用文本工具做初步过滤，截取需要的部分，再转回 protobuf 用 `trace_processor` 分析。
+可以尝试几种方法：一是抓 Trace 时缩小时间范围（只在需要分析的时段开启 trace）；二是用 ring buffer 模式抓取，只保留最近的数据；三是用 Bigtrace 方案（Perfettto 官方提供的分布式分析能力，适用于需要分析数百个 Trace 的场景）；四是用 Python API 分段加载，只加载需要的 track。
 
 **"PerfettoSQL 和标准 SQL 有什么区别？"**
 
