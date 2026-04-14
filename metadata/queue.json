@@ -8892,5 +8892,77 @@
     "status": "pending",
     "original_review_log": "logs/review/2026-04-14-16-review.md",
     "file": "src/part2-performance/ch11-power/05-wakelock.md"
+  },
+  {
+    "section": "11.5",
+    "section_title": "Wakelock 机制与功耗分析",
+    "priority": 95,
+    "reason": "[Deep Tech Review] WakeLock token 归属、现代 suspend 路径、Perfetto 数据源、Alarm listener API 与 FGS 语义存在事实错误",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "L116-L119（acquire 调用链）",
+        "detail": "正文写成“PowerManagerService 在服务端创建 WakeLockToken（IBinder）”。AOSP `PowerManager.WakeLock` 的 `mToken` 实际在客户端构造时就由 `new Binder()` 创建，再随 `mService.acquireWakeLock(mToken, ...)` 传给服务端；PMS 侧保存的是 `WakeLock(lock, ...)` 记录并对这个传入 binder 执行 `linkToDeath()`。",
+        "suggestion": "把调用链改成“客户端创建 binder token → Binder 调到 PMS → PMS 以传入 token 建立 WakeLock 记录并注册 DeathRecipient”，不要把 token 说成服务端生成。"
+      },
+      {
+        "type": "版本差异",
+        "location": "L240-L245（用户态 wakelock 到内核的映射）",
+        "detail": "正文把 `PowerManagerService -> /sys/power/wake_lock -> wakeup_source` 写成 Android 8-17 的通用现状。当前 AOSP/Source Android 对现代路径的公开口径是 PMS 持有 `SuspendBlocker`，system_suspend 维护 suspend counter 并协调 `/sys/power/wakeup_count` 与 `/sys/power/state`；这和旧时代直接写 `/sys/power/wake_lock` 不是一回事。",
+        "suggestion": "按版本拆开旧内核 wakelock 接口与 Android 10+ system_suspend / suspend blocker 模型，正文主线以现代实现为准。"
+      },
+      {
+        "type": "工具链错误",
+        "location": "L356-L380（Perfetto 数据源与轨道说明）",
+        "detail": "配置里同时启用了 `android.power` 和 `power/wakeup_source_*` ftrace 事件，但正文却写“`android.power` track 显示 wakelock activate/deactivate”。Perfetto 文档里 `android.power` 对应的是 battery counters / power rails 采样；wakelock activate/deactivate 事件来自 `linux.ftrace` 的 `power/wakeup_source_activate|deactivate`。",
+        "suggestion": "把数据源职责拆开，说明 battery/rail 采样看 `android.power`，内核级 wakelock 事件看 ftrace power tracepoints，并给出对应表或 track 名。"
+      },
+      {
+        "type": "版本差异",
+        "location": "L415-L431、L556（Android 17 的 OnAlarmListener 回调变体）",
+        "detail": "正文把 `setExactAndAllowWhileIdle()` 的 `OnAlarmListener` 变体写成 Android 17 面向普通应用的新能力。当前 AOSP main 中“while idle + OnAlarmListener”重载是 `@SystemApi`，而公开 SDK 里基于 `OnAlarmListener` 的 `set()` / `setExact()` 直回调形态早已存在。现有表述把“API 可见性”“是否 public SDK”“版本引入时点”混在了一起。",
+        "suggestion": "拆成两层：一层说明公开 SDK 早已有 listener-based exact alarm；另一层再交代 Android 14+/17 文档或 system API 的变化边界，避免把隐藏/system API 说成普通 App API。"
+      },
+      {
+        "type": "原理错误",
+        "location": "L475-L482（Foreground Service 与 Wakelock）",
+        "detail": "正文写“Foreground Service 本身会持有 wakelock（由 AMS 管理），不需要 App 手动获取”。官方文档与 AlarmManager 文档的口径都不是这样，FGS 解决的是进程优先级与用户可见性，不等于 CPU suspend blocker；如果业务要求灭屏后 CPU 继续运行，仍可能需要显式 partial wakelock 或改用由系统代持 wakelock 的调度 API。",
+        "suggestion": "把 FGS 改写成“提高存活与执行优先级，但默认不替代 partial wakelock”，并补“何时仍需要显式 wakelock / WorkManager / exact alarm”判断。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-14T16:46:00+08:00",
+    "status": "pending",
+    "file": "src/part2-performance/ch11-power/05-wakelock.md"
+  },
+  {
+    "section": "11.5",
+    "section_title": "Wakelock 机制与功耗分析",
+    "priority": 85,
+    "reason": "[Deep Tech Review] App Standby / Android 16 quota 与现代 suspend 主链没有拆开，章节边界仍然混写",
+    "material_paths": [
+      "intake/research-gaps.md"
+    ],
+    "review_issues": [
+      {
+        "type": "版本差异",
+        "location": "L199-L207、L551（App Standby Bucket 段落与版本表）",
+        "detail": "正文把 Rare / Restricted 写成“含 wakelock 配额”“App 持有 wakelock 的能力被大幅削减”。官方 App Standby 文档的公开口径集中在 jobs、alarms、network 等资源限制，没有给出独立的 wakelock quota 说法；这也和 §5.8 当前对 bucket 行为的描述不一致。",
+        "suggestion": "把该段收紧为“bucket 会限制后台执行窗口，间接影响能否频繁把设备唤醒做事”，不要直接下结论说系统按 bucket 发放 wakelock 配额。"
+      },
+      {
+        "type": "原理断裂",
+        "location": "L238-L255、L512-L519、L555（现代 suspend / quota 体系）",
+        "detail": "章节缺少 Android 10+ `SuspendBlocker/SystemSuspend` 主链，也缺少 Android 16 文档已明确的“active bucket 背景 job runtime quota”与正文自称的“wakelock/网络多维配额”之间的边界。结果读者看不清现代 Android 到底限制的是“显式 wakelock”还是“唤醒后能做多少后台工作”。",
+        "suggestion": "补一节“显式 wakelock、Alarm 唤醒、Job/WorkManager quota、FGS 存活”的边界图，把 suspend blocker 和后台执行配额拆成两条线讲。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-14T16:46:00+08:00",
+    "status": "pending",
+    "file": "src/part2-performance/ch11-power/05-wakelock.md"
   }
 ]
