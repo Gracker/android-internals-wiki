@@ -3074,6 +3074,12 @@
         "location": "§5 秒超时的来源（line 370-372）",
         "detail": "源码注释标注 'AOSP android-14.0.0_r1, frameworks/base/services/core/java/com/android/server/wm/WindowManagerService.java'，但 DEFAULT_INPUT_DISPATCHING_TIMEOUT_NANOS 常量实际定义在 InputManagerService.java（或其常量定义类），WMS 只是引用方。",
         "suggestion": "修正源码注释指向 InputManagerService.java 中的常量定义位置。"
+      },
+      {
+        "type": "版本差异",
+        "location": "版本演进表第一行",
+        "detail": "Android 4.1 (API 16) 引入 InputFlinger 框架——事实错误。AOSP InputDispatcher.cpp 版权声明始于 2010 年。services/inputflinger 目录自 Android 4.x 早期即存在。Android 4.1 (Project Butter) 引入的是 VSync-driven 渲染管线和 Choreographer，不是 InputFlinger。",
+        "suggestion": "删除此行，或改为更准确的描述（如 'Android 4.1 (API 16) Input 系统配合 Project Butter 的 VSync 渲染管线进行了优化'）。InputFlinger 的引入时间应标注 [待验证] 或改为 '自 Android 早期版本即存在，持续演进'。"
       }
     ],
     "added_by": "task9-deep-tech-review",
