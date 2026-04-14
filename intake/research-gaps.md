@@ -2154,3 +2154,19 @@ Android 10-16 的返回分发模型缺少一张统一矩阵。正文把 Gesture 
 
 ### 关联章节
 6.4、1.10、6.5
+
+## [2026-04-14] 7.6 案例集 — 调度 / SurfaceFlinger / 温控案例缺口
+
+### 盲区描述
+本节大纲明确承诺覆盖主线程阻塞、GC、调度、SurfaceFlinger 合成、温控，但当前正文只有布局、数据绑定、GC、RenderThread、低内存五类。方法论部分却把 `thread_state` / `sched`、SurfaceFlinger、CPU 频率与调度列为关键观测点，读者会知道“要看这些 Track”，却拿不到一套完整的真实案例模板。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 补 1 个 `Runnable` 等待 / runqueue delay 案例，至少给出 `thread_state` + `sched` + CPU freq 的联合证据
+- 补 1 个 SurfaceFlinger / HWC / release fence backpressure 案例，明确 `dequeueBuffer`、`queueBuffer`、release fence 与 App 端卡顿的时序
+- 补 1 个 thermal throttling 案例，展示温度、频率封顶、帧时长恶化之间的因果关系
+
+### 关联章节
+7.3、2.5、2.6、4.4、5.5、11.3

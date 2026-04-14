@@ -2973,3 +2973,14 @@
 - **问题**：前 5 个主案例都按“现象 → 定位 → 根因 → 修复”展开，后 2 节突然切成概览式短条目，阅读节奏和体裁明显断开。
 - **建议**：如果保留扩展节，就按案例模板补到“现象 / 观察 / 结论 / 建议”；否则收进前文案例的“举一反三”或单列到扩展章节。
 - **review 日志**：logs/review/2026-04-14-09-review.md
+
+## [Task9 Deep Review] 7.6 案例集 — 2026-04-14
+- **类型**：数据缺失
+- **位置**：行 111, 115, 185, 216-219, 325, 356-383, 420, 497-504
+- **问题**：章节用了大量量化结论（如 ConstraintLayout 快约 40%、Jank 12%→3%、onBind 5-20ms、sync 8-15ms、低内存场景各阶段耗时表），但没有给出设备型号、刷新率、Android 版本、系统负载、Trace 配置或原始 benchmark 条件。
+- **建议**：补“设备/版本/刷新率/负载/抓取方式/样本量”这组最小实验上下文；短期补不齐时，把数字降级成定性趋势或示意值。
+
+- **类型**：交叉引用
+- **位置**：行 279, 436
+- **问题**：文中的两个相对路径链接在当前文件目录下都解析不到目标：`part1-fundamentals/ch02-rendering/05-main-render-thread.md` 和 `part4-system/ch17-oem/01-oem-overview.md` 都是坏链接。
+- **建议**：改成 `../../part1-fundamentals/ch02-rendering/05-main-render-thread.md` 与 `../../part4-system/ch17-oem/01-oem-overview.md`，或统一换成 Obsidian wiki link。
