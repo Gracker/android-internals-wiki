@@ -8399,5 +8399,70 @@
     "added_at": "2026-04-14T09:08:00",
     "status": "pending",
     "original_review_log": "logs/review/2026-04-14-09-review.md"
+  },
+  {
+    "section": "7.6",
+    "section_title": "案例集",
+    "priority": 95,
+    "reason": "[Deep Tech Review] RecyclerView 绑定路径、Bitmap 缓存示例、RenderThread 同步链与 trim 回调存在事实错误",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "原理断裂/源码错误",
+        "location": "行 138-153, 166-175",
+        "detail": "正文把列表绑定路径写成 “Choreographer → doFrame → Traversal → RecyclerView.onDraw → onBind”，并把 ContentResolver.query() 直接等同为稳定的跨进程 Binder 延迟。RecyclerView 的 bind 发生在布局/滚动/预取关键路径（Adapter.bindViewHolder 一侧），不是 onDraw 回调；ContentResolver.query() 也不必然跨进程，同进程 Provider 会直接落到本地实现。当前写法会把诊断方向误导到 draw 和 Binder 上。",
+        "suggestion": "重写为“onBindViewHolder() 位于列表滚动关键路径，问题可能来自 Provider/数据库/I/O，也可能叠加远程 Provider 的 Binder 往返”；如果案例确实依赖远程 Provider，请补 authority、线程栈和远程进程边界。"
+      },
+      {
+        "type": "源码错误/示例错误",
+        "location": "行 238-249",
+        "detail": "Bitmap 缓存示例把 LruCache(maxSize) 直接当成“按内存大小限制”。但 LruCache 默认以“条目数”计量，若不覆写 sizeOf()，(Runtime.getRuntime().maxMemory() / 8).toInt() 只是在限制 entry count，不是在限制 Bitmap 字节数，示例本身仍可能造成失控的内存占用。",
+        "suggestion": "改成 object : LruCache<String, Bitmap>(cacheSizeKb) { override fun sizeOf(key: String, value: Bitmap) = value.byteCount / 1024 }，或明确建议直接交给 Glide/Coil。"
+      },
+      {
+        "type": "原理断裂/源码错误",
+        "location": "行 286-302, 329-332",
+        "detail": "RenderThread 案例把主线程等待点写成 DrawProfiler::sync() / RenderThread::sync。当前书内 2.5 节已经核对过的主路径是 ViewRootImpl.performDraw() → ThreadedRenderer.syncAndDrawFrame() → native DrawFrameTask::syncFrameState()。同时，AnimatedVectorDrawable 的瓶颈不应被直接归结为 uploadBitmap；向量动画更常见的是 DisplayList 重录制、RenderThread 绘制和 GPU tessellation/overdraw，而不是“每帧上传 Bitmap”。",
+        "suggestion": "按 2.5 的已验证调用链重写 sync 阶段，区分“位图序列/贴图上传”与“向量动画重录制/栅格化”两类负载，不要用不存在的 API 名称解释 Perfetto slice。"
+      },
+      {
+        "type": "版本差异/事实错误",
+        "location": "行 398-404",
+        "detail": "onTrimMemory() 示例把 TRIM_MEMORY_RUNNING_LOW 和 TRIM_MEMORY_MODERATE 当成当前版本仍会收到的压力信号。但 4.4 节已明确写明，从 Android 14 / API 34 起，App 不再收到这些 running/moderate/complete 级别。把它们作为现代设备上的主要处置逻辑，会给读者错误的实现预期。",
+        "suggestion": "把 App 侧示例收敛到 TRIM_MEMORY_UI_HIDDEN 等仍可收到的回调，并明确“LMK 诊断以 Perfetto / logcat / statsd / 冷启动证据为主，不能依赖 running_* trim level”。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-14T09:45:00+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "7.6",
+    "section_title": "案例集",
+    "priority": 85,
+    "reason": "[Deep Tech Review] 调度/SurfaceFlinger/温控案例缺口，以及现代 lmkd 版本边界仍未补齐",
+    "material_paths": [
+      "intake/research-gaps.md",
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "知识盲区",
+        "location": "行 43-50, 433-478, 482-504",
+        "detail": "大纲承诺案例要覆盖主线程阻塞、GC、调度、SurfaceFlinger 合成、温控，但正文只有布局、bind、GC、RenderThread、低内存五类。后半段“厂商级流畅性优化”和“特殊硬件条件”只是概览，没有真正给出 Runnable wait、SurfaceFlinger/HWC backpressure、thermal throttling 的完整案例，导致方法论里提到的关键 Track 没有样例支撑。",
+        "suggestion": "至少补两类完整案例：1) thread_state/sched/CPU freq 视角的调度延迟或温控降频；2) SurfaceFlinger/HWC/release fence 视角的合成背压。若短期补不齐，就收紧大纲承诺。"
+      },
+      {
+        "type": "版本差异/原理断裂",
+        "location": "行 412-416",
+        "detail": "系统侧建议直接写“调整 lmkd 水位线、minfree 和 adj 水位”，但本章 applicable_versions 是 Android 8-16，而现代 Android 10+ 默认路径是 PSI 驱动的 userspace lmkd。minfree / 水位线调优只适用于 legacy `ro.lmk.use_minfree_levels=true` 路径，不能当成 Android 10+ 的默认建议。",
+        "suggestion": "把系统侧建议拆成两套：legacy minfree/vmpressure 路径 vs Android 10+ PSI 路径，并交叉引用 4.4 对 ro.lmk.use_minfree_levels、psi_partial/complete stall 的说明。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-14T09:45:00+08:00",
+    "status": "pending"
   }
 ]
