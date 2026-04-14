@@ -964,13 +964,15 @@
       "title": "App 内存优化",
       "path": "src/part1-fundamentals/ch04-memory/05-app-memory-optimization.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "pending",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
       "task9_state": "pending",
       "task2b_state": "idle",
-      "reviewed_date": "2026-04-08",
+      "reviewed_date": "2026-04-15",
       "reviewed_by": "openclaw-task6",
-      "section": "4.5"
+      "section": "4.5",
+      "task6_result": "pass-light-edit",
+      "review_round": 3
     },
     "src/part1-fundamentals/ch04-memory/06-memory-evolution.md": {
       "chapter": "4.6",
