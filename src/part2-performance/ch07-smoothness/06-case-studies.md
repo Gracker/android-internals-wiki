@@ -31,11 +31,11 @@ sources:
     path: "https://developer.android.com/reference/android/content/ComponentCallbacks2"
 tags: ['case-study', 'jank', 'smoothness', 'GC', 'layout', 'binder', 'render-thread', 'low-memory', 'perfetto', 'recycler-view', 'bitmap-cache', 'vendor-optimization']
 related_chapters: ["7.1", "7.2", "7.3", "7.4", "2.5", "2.7", "4.4"]
-pipeline_stage: task2b_pending
+pipeline_stage: task6_pending
 task6_state: reviewed
 task6_result: needs-rework
 task9_state: reviewed
-task2b_state: pending
+task2b_state: fixed
 task9_result: needs-rework
 ---
 
@@ -136,7 +136,7 @@ Perfetto 显示，主线程在某些帧的 traversal 阶段耗时超过 16ms（�
 
 ### 分析思路
 
-滑动场景卡顿，但布局层级已经优化过，measure/layout 耗时正常。问题可能出在数据绑定阶段。列表滑动的关键路径：Choreographer → doFrame → Traversal → RecyclerView.onDraw → onBind（如果需要绑定新的 ViewHolder）。
+滑动场景卡顿，但布局层级已经优化过，measure/layout 耗时正常。问题可能出在数据绑定阶段。RecyclerView 在滚动、布局和预取时触发 `onBindViewHolder()`——这个回调位于列表滑动的关键路径上，如果绑定时执行了耗时操作，会直接吃掉帧预算。
 
 ### 抓取与定位
 
@@ -148,7 +148,7 @@ Perfetto 中看到：主线程在某些帧的执行过程中出现了 Binder 调
 
 **第一步：定位 Binder 调用来源。** 展开主线程的调用栈，发现 `onBindViewHolder()` → `loadUserInfo()` → `ContentResolver.query()`。每次绑定 item 都查询 ContentProvider 获取用户头像和昵称。
 
-**第二步：确认 ContentResolver.query 的本质。** `ContentResolver.query()` 是一次跨进程调用（通过 Binder），目标是 App 的数据提供进程。系统空闲时 0.5-1ms，繁忙时可能 10-20ms 甚至更高。
+**第二步：确认 ContentResolver.query 的本质。** `ContentResolver.query()` 如果目标是其他进程的 ContentProvider，就是一次跨进程 Binder 调用。系统空闲时 0.5-1ms，繁忙时可能 10-20ms 甚至更高。同进程的 Provider 虽然不走 Binder，但在主线程执行数据库查询仍然会阻塞帧处理。
 
 **第三步：量化影响。** 滑动时每个新可见的 item 触发一次 `onBindViewHolder`，滑动速度越快触发越频繁。一帧中如果有 2-3 个 item 需要绑定，仅 Binder 调用就可能消耗 10-60ms——远超 16ms 的帧预算。
 
@@ -157,7 +157,7 @@ Perfetto 中看到：主线程在某些帧的执行过程中出现了 Binder 调
 
 ### 根因
 
-`onBindViewHolder()` 中执行了跨进程调用（ContentResolver.query）。Binder 调用的延迟不可预测——系统空闲时很快，但后台繁忙时可能阻塞主线程数十毫秒。将 Binder 调用放在滑动路径上是严重的架构错误。
+`onBindViewHolder()` 中执行了数据库查询（ContentResolver.query）。如果目标是远程 Provider，这是一次跨进程 Binder 调用，延迟不可预测——系统空闲时很快，但后台繁忙时可能阻塞主线程数十毫秒；即使是同进程 Provider，主线程上的数据库 I/O 同样会吃掉帧预算。将这类操作放在滑动路径上是严重的架构错误。
 
 ### 修复方案
 
@@ -238,16 +238,20 @@ override fun onBindViewHolder(holder: ViewHolder, position: Int) {
 
 1. **限制 LruCache 大小**：根据设备可用内存设置合理的缓存上限（如可用内存的 1/8）
 2. **使用 `inSampleSize` 降采样**：不需要原图的场合降低 Bitmap 分辨率
-3. **使用 Glide/Coil 等成熟图片库**：它们内置了内存缓存管理和生命周期感知
+3. **直接使用 Glide/Coil**：成熟的图片库内置了内存缓存管理、生命周期感知和降采样，不需要自己手写 LruCache
 
 ```kotlin
 // 错误：无限制缓存
 val imageCache = LruCache<String, Bitmap>(Int.MAX_VALUE)
 
-// 正确：限制缓存大小
-val imageCache = LruCache<String, Bitmap>(
-    (Runtime.getRuntime().maxMemory() / 8).toInt()
-)
+// 正确：限制缓存大小（覆写 sizeOf 按字节计量）
+val cacheSizeKb = (Runtime.getRuntime().maxMemory() / 1024 / 8).toInt()
+val imageCache = object : LruCache<String, Bitmap>(cacheSizeKb) {
+    override fun sizeOf(key: String, value: Bitmap): Int {
+        return value.byteCount / 1024  // 以 KB 为单位
+    }
+}
+// 或直接使用 Glide/Coil 等成熟图片库，它们内置了内存缓存管理和生命周期感知
 ```
 
 [已验证: 官方文档, developer.android.com/topic/performance/graphics/cache-bitmap — Bitmap 缓存应基于可用内存动态设置]
@@ -289,9 +293,9 @@ Perfetto 中同时观察主线程和 RenderThread：
 
 ### 逐步分析
 
-**第一步：理解 sync 机制。** 主线程在完成 draw 阶段后，需要调用 `DrawProfiler::sync()` 将绘制命令同步给 RenderThread。这个 sync 操作涉及等待 RenderThread 完成上一帧的渲染工作。
+**第一步：理解 sync 机制。** 主线程在 `performDraw()` 中通过 `ThreadedRenderer.syncAndDrawFrame()` 将本帧的绘制命令同步给 RenderThread。native 层对应 `DrawFrameTask::syncFrameState()`，它会等待 RenderThread 完成上一帧的渲染工作后，再把新的 DisplayList 数据交给 RenderThread。
 
-**第二步：为什么 sync 会耗时。** 当有多个动态表情（AnimatedVectorDrawable）同时在播放时，每一帧都需要上传大量的绘制数据。如果 RenderThread 正在处理上一帧的 GPU 工作（特别是 `uploadBitmap` —— 将 Bitmap 上传到 GPU 纹理），主线程的 sync 就需要等待。
+**第二步：为什么 sync 会耗时。** 当有多个动态表情（AnimatedVectorDrawable）同时在播放时，每一帧都会触发 DisplayList 重录制——向量动画的路径数据每帧变化，导致 RenderThread 需要重新执行绘制指令并提交给 GPU。如果 RenderThread 正在处理上一帧的工作（向量动画的栅格化、GPU tessellation 和 overdraw），主线程在 `syncFrameState()` 阶段就需要等待。
 
 **第三步：确认根因。** 动态表情的每一帧都在变化，导致 Bitmap 频繁重新上传 GPU。正常情况下 RenderThread 可以快速完成 sync，但多表情叠加时 GPU 工作量激增，sync 等待时间从正常的 <1ms 增加到 8-15ms。
 
@@ -300,7 +304,7 @@ Perfetto 中同时观察主线程和 RenderThread：
 
 ### 根因
 
-多个动画表情同时播放，导致每帧需要上传大量变化的 Bitmap 到 GPU。RenderThread 的 GPU 工作量增大，主线程在 sync 阶段等待 RenderThread 完成上一帧，等待时间 8-15ms，直接导致帧超时。
+多个动画表情同时播放，每帧触发 DisplayList 重录制，向量路径数据变化导致 RenderThread 承担了大量的绘制和 GPU 栅格化工作。RenderThread 处理变慢后，主线程在 `syncFrameState()` 阶段等待时间从正常的 <1ms 增加到 8-15ms，直接导致帧超时。
 
 ### 修复方案
 
@@ -328,9 +332,9 @@ fun onViewHolderDetached(holder: EmojiViewHolder) {
 ### 举一反三
 
 RenderThread 相关卡顿的 Perfetto 特征：
-- 主线程出现 `syncAndDrawFrame` 耗时（调用栈包含 `RenderThread::sync`）
+- 主线程出现 `syncAndDrawFrame` 耗时（调用栈包含 `DrawFrameTask::syncFrameState`）
 - RenderThread 的 `DrawFrame` slice 明显延长
-- `uploadBitmap` 操作频繁出现
+- 向量动画场景下 DisplayList 重录制操作频繁
 
 **判断技巧：** 如果主线程卡顿，但业务代码本身不耗时，就先看 RenderThread 是否成了瓶颈。主线程很多时候是在等它。
 
@@ -399,9 +403,12 @@ App 开发者无法直接解决系统内存不足的问题，但可以减少自�
 ```kotlin
 override fun onTrimMemory(level: Int) {
     when (level) {
-        TRIM_MEMORY_UI_HIDDEN -> imageCache.evictAll()
-        TRIM_MEMORY_RUNNING_LOW -> imageCache.trimToSize(cacheSize / 2)
-        TRIM_MEMORY_MODERATE -> imageCache.evictAll()
+        // TRIM_MEMORY_UI_HIDDEN: UI 不可见时，可释放与显示相关的资源
+        ComponentCallbacks2.TRIM_MEMORY_UI_HIDDEN -> imageCache.evictAll()
+        // 注意：从 Android 14 (API 34) 起，App 不再收到 TRIM_MEMORY_RUNNING_*
+        // 和 TRIM_MEMORY_MODERATE/COMPLETE 级别回调（参见 §4.4）。
+        // 低内存诊断以 Perfetto / logcat / statsd / 冷启动证据为主，
+        // 不要依赖 running_* trim level 做为运行时缓存回收的主要手段。
     }
 }
 ```
