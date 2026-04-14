@@ -4,8 +4,8 @@ chapter: "5.1"
 section: "5.1"
 status: ready-for-review
 applicable_versions: "Android 6.0 (API 23) - Android 17 (API 37, EEVDF 部分需 6.6+ 内核)"
-last_verified: "2026-04-02"
-last_verified_against: "AOSP android-16.0.0_r1, Linux kernel 6.6"
+last_verified: "2026-04-14"
+last_verified_against: "Linux kernel 6.6 sched-design-CFS/EEVDF + sched priority headers, bionic pthread.h mainline, libprocessgroup task profiles"
 confidence: high
 sources:
   - type: blog
@@ -20,6 +20,12 @@ sources:
     path: "https://perfetto.dev/docs/data-sources/cpu-scheduling"
   - type: official
     path: "https://docs.kernel.org/scheduler/sched-design-CFS.html"
+  - type: official
+    path: "https://docs.kernel.org/scheduler/sched-eevdf.html"
+  - type: official
+    path: "https://man7.org/linux/man-pages/man7/sched.7.html"
+  - type: official
+    path: "https://source.android.com/docs/core/perf/uclamp"
 tags: ['scheduler', 'CFS', 'vruntime', 'nice', 'sched_setaffinity', 'cpuset', 'Perfetto']
 related_chapters: ["5.2", "5.3", "2.5", "7.3"]
 drafted_date: "2026-03-31"
@@ -30,24 +36,25 @@ polish_date: "2026-04-06"
 polish_by: "task2b-polish"
 review_type: post-polish-quality-gate
 review_round: 3
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
-task9_state: reviewed
+task9_state: pending
 task9_result: needs-rework
-task2b_state: pending
+task2b_result: fixed
+task2b_state: fixed
 ---
 
 <!-- outline-start -->
-- 🔹 CFS（Completely Fair Scheduler）的基本原理：虚拟运行时间、红黑树、时间片
-- 🔹 调度类优先级：SCHED_FIFO > SCHED_RR > SCHED_NORMAL（SCHED_OTHER，CFS）> SCHED_IDLE
+- 🔹 CFS / EEVDF 的基本原理：vruntime、红黑树、base_slice、eligible entity、virtual deadline
+- 🔹 调度策略分层：SCHED_DEADLINE → RT（SCHED_FIFO / SCHED_RR）→ fair（SCHED_OTHER / SCHED_BATCH）→ SCHED_IDLE
 - 🔹 nice 值与权重的换算关系
-- 🔹 CPU Affinity 与 cpuset 对任务绑核的控制
+- 🔹 CPU Affinity、cpuset 与 task profiles 对可用核心的控制
 - 🔹 调度延迟（Scheduling Latency）：runqueue wait 在 Perfetto 中的观察
 
 - 🔸 EEVDF 调度器对 CFS 的改进（Linux 6.6+）
 - 🔸 Real-time 线程在 Android 中的使用场景（Audio、SurfaceFlinger）
-- 🔸 SchedTune / UClamp 对 Android 调度的增强
+- 🔸 SchedTune / UClamp 与 libprocessgroup task profiles 的 Android 控制路径
 <!-- outline-end -->
 
 ## 为什么要了解 Linux 进程调度
@@ -106,66 +113,81 @@ CFS 使用一棵红黑树（Red-Black Tree）来管理所有可运行进程。�
 
 [已验证: 官方文档, https://docs.kernel.org/scheduler/sched-design-CFS.html]
 
-### 时间片不再是"固定值"
+### Linux 6.6 基线下怎么看“时间片”
 
-CFS 没有传统意义上的固定时间片。它通过 `sched_period`（调度周期）来动态计算每个进程应该运行多久：
+很多资料会用 `target_slice = sched_period × (weight / total_weight)` 解释经典 CFS。拿它说明“权重越高，分到的 CPU 份额越大”没有问题，但它不是 Linux 6.6 fair class 的当前源码锚点。
 
+Linux 官方 CFS 文档明确写了两件事。第一，CFS 不再按旧调度器那样讨论固定 timeslice。第二，当前只保留 `base_slice_ns` 这个中心 tunable。到了 Linux 6.6，fair class 的选人逻辑已经按 EEVDF 路径运行，源码里真正参与决策的是 `entity_eligible()`、`pick_eevdf()` 和 `update_deadline()` 这一组函数。
+
+```c
+// kernel/sched/fair.c, Linux 6.6
+static void update_deadline(struct cfs_rq *cfs_rq, struct sched_entity *se)
+{
+    se->slice = sysctl_sched_base_slice;
+    se->deadline = se->vruntime + calc_delta_fair(se->slice, se);
+}
 ```
-target_slice = sched_period × (weight / total_weight)
-```
 
-`sched_period` 有一个最小值（`sched_min_granularity`，通常为 0.75ms 到 3ms，取决于内核配置和 CPU 数量），确保即使有很多进程，每个进程也不会等太久。
+沿着 6.6 源码看，任务先按 vruntime 记账，再用 `base_slice` 和权重换算出 virtual deadline；调度器只在 eligible task 里，通过 `pick_eevdf()` 选择 virtual deadline 最早的实体。拿 6.6 Trace 或源码做核对时，应该沿着这条路径看，不要再把 `sched_period()` 当成现行实现。
 
-对应到实际调度时，系统负载越重，每个进程分到的"时间片"越短；优先级越高的进程，分到的时间片越长。这不是硬编码的规则，而是 CFS 追求 vruntime 公平后得到的结果。
+如果这里是为了说明经典 CFS 的直觉，保留“权重决定 CPU 份额”这层解释就够了，但要明确它服务于原理理解，不是 6.6 fair.c 的现状描述。
 
-[已验证: Linux kernel, kernel/sched/fair.c, sched_period()]
+[已验证: Linux kernel docs `sched-design-CFS.html` / `sched-eevdf.html`；Linux v6.6 `kernel/sched/fair.c` `update_deadline()` / `entity_eligible()` / `pick_eevdf()`]
 
-## 调度类优先级体系
+## 调度策略与优先级体系
 
-Linux 内核的调度并非由单一策略覆盖所有场景，而是按需求划分为多个"调度类"（scheduling class），每个类有自己的优先级和调度逻辑。它们之间的优先级关系是：
+Linux 内核不是只靠一种策略调度所有线程。对用户空间可见的普通策略，可以把层级关系概括成：
 
-**SCHED_FIFO > SCHED_RR > SCHED_NORMAL（CFS）> SCHED_IDLE**
+**SCHED_DEADLINE → RT 类（SCHED_FIFO / SCHED_RR）→ fair 类（SCHED_OTHER / SCHED_BATCH）→ SCHED_IDLE**
 
-在内核内部，所有调度策略被映射到一个统一的优先级范围（0-139），数值越小优先级越高：
+如果把内核内部的 `stop_sched_class` 也算上，它还在最上面。但那不是用户空间可以直接设置的策略，这里先不展开。
 
-| 优先级范围 | 调度策略 | 说明 |
-|-----------|---------|------|
-| 0-98 | SCHED_FIFO / SCHED_RR | 实时进程，优先级最高 |
-| 99 | — | 保留 |
-| 100-139 | SCHED_NORMAL | 普通进程，nice -20 到 +19 映射到此范围 |
+### 先分“策略层级”，再分“static priority 编号”
 
-[已验证: 官方文档, https://man7.org/linux/man-pages/man7/sched.7.html]
+这里最容易混淆的是两套概念：
+
+1. **策略层级**，决定不同调度类谁先拿到 CPU。
+2. **static priority**，是内核给 RT / fair 线程分配的内部编号。
+
+把两套概念拆开后，规则就清楚了：
+
+| 层级 | 用户态策略 | `sched_priority` | 内核编号 / 备注 |
+| --- | --- | --- | --- |
+| Deadline | `SCHED_DEADLINE` | 不使用 `sched_priority`，而是 `sched_runtime` / `sched_deadline` / `sched_period` | deadline class 高于 RT |
+| Real-time | `SCHED_FIFO`、`SCHED_RR` | 1..99，数值越大优先级越高 | 内核把 RT 区间预留为 0..99，数值越小优先级越高 |
+| Fair | `SCHED_OTHER`、`SCHED_BATCH` | 固定为 0 | `NICE_TO_PRIO(nice)`，范围 100..139，对应 nice -20..19 |
+| Idle | `SCHED_IDLE` | 固定为 0 | `sched_priority` 仍为 0，由 idle sched class 排在 fair 之后 |
+
+把用户态参数和内核编号对起来看，Linux 6.6 `__normal_prio()` 的规则很直接：RT 线程走 `MAX_RT_PRIO - 1 - rt_prio`，所以 `sched_priority=99` 落在 RT 区间最前端；fair 线程走 `NICE_TO_PRIO(nice)`，也就是 Perfetto 里常见的 `priority = 120 + nice`。这两套编号方向相反，混着看最容易把表写错。
+
+`SCHED_FIFO` 和 `SCHED_RR` 也不是“谁永远压谁”的关系。它们都属于 RT 类，先比较 `sched_priority`。只有两个线程的 RT 优先级相同，策略差异才开始生效：`SCHED_FIFO` 不做同级轮转，`SCHED_RR` 会按 quantum 在同优先级队列里轮转。
+
+[已验证: man7 `sched(7)`；Linux v6.6 `include/linux/sched/prio.h`、`kernel/sched/core.c::__normal_prio()`、`include/linux/sched/deadline.h`]
+
+### SCHED_DEADLINE：按截止时间调度
+
+`SCHED_DEADLINE` 通过 `sched_runtime`、`sched_deadline`、`sched_period` 描述任务预算和周期，内核实现采用 GEDF + CBS。它的层级高于 RT 类，通常需要 `CAP_SYS_NICE`。普通 Android App 几乎不会直接碰到它，但在讲“Linux 调度策略总表”时不能把它漏掉。
 
 ### SCHED_FIFO 和 SCHED_RR：实时调度
 
-**SCHED_FIFO**（First-In, First-Out）：一旦一个 SCHED_FIFO 进程获得了 CPU，它会一直运行直到：
-- 主动让出 CPU（调用 `sched_yield()`）
-- 被更高优先级的实时进程抢占
-- 阻塞等待 I/O 或锁
+**`SCHED_FIFO`**：线程一旦拿到 CPU，就会一直运行到主动让出、阻塞，或者被更高 RT 优先级线程抢占为止。
 
-SCHED_FIFO 没有"时间片用完"的概念。如果两个 SCHED_FIFO 进程优先级相同，先运行的进程不主动让出，另一个就永远得不到 CPU。
+**`SCHED_RR`**：和 `SCHED_FIFO` 同属 RT 类，但同优先级线程之间会按 round-robin quantum 轮转。
 
-**SCHED_RR**（Round-Robin）：与 SCHED_FIFO 类似，但加入了一个时间片（通常为 100ms）。时间片用完后，进程被放到同优先级队列的末尾，轮到下一个同优先级的 SCHED_RR 进程。
-
-在 Android 中，实时调度主要用于对时序要求极其严格的场景。从 Android 4.1 开始，音频处理线程（AudioFlinger 中的 FastMixer）使用 SCHED_FIFO 来保证音频处理的实时性。音频 underrun 会直接导致用户听到"咔嚓"声，这类场景对调度抖动非常敏感。
+在 Android 中，实时调度主要出现在对时序非常敏感的线程里。最典型的是 AudioFlinger 的 FastMixer。音频周期通常只有几毫秒，一次调度抖动就可能变成 audible glitch。
 
 [来源: Personal-Knowlodge/source/Android-Perfetto-09-CPU.md]
 [已验证: 官方文档, developer.android.com/ndk/guides/audio]
 
-### SCHED_NORMAL（CFS）：绝大多数进程的归宿
+### SCHED_OTHER / SCHED_BATCH：绝大多数线程的归宿
 
-Android 上几乎所有的应用进程和系统服务进程都属于 SCHED_NORMAL，由 CFS 调度。包括：
+Android 上绝大多数应用线程和系统服务线程都落在 fair 类里，也就是 `SCHED_OTHER` 或 `SCHED_BATCH`。资料里经常把 `SCHED_OTHER` 写成 `SCHED_NORMAL`，讲的是同一档默认普通线程。
 
-- 应用的主线程（main）
-- 渲染线程（RenderThread）
-- Binder 线程
-- SystemServer 的各种服务线程
-
-这些进程通过 nice 值来调节优先级，而不是实时优先级。CFS 保证它们之间的公平性，同时允许通过 nice 值进行差异化。
+`SCHED_OTHER` 是默认策略，受 nice 值和 CFS / EEVDF 逻辑影响。`SCHED_BATCH` 也走 fair class，但更偏向批处理工作负载，不给交互式唤醒额外偏置。Android 设备上直接把线程设成 `SCHED_BATCH` 的场景并不多，但它在策略层级上和 `SCHED_OTHER` 属于同一档。
 
 ### SCHED_IDLE：最低优先级
 
-SCHED_IDLE 的优先级比 nice +19 还要低。在 Android 中很少直接使用，但某些后台维护任务（如日志轮转、统计数据收集）可能会被设置为 SCHED_IDLE，确保它们在任何有负载的情况下都不会影响前台性能。
+`SCHED_IDLE` 的优先级低于其他普通策略，连 nice +19 都压不过它。Android 产品代码里不常直接设置 `SCHED_IDLE`，但极低优先级的后台维护任务会采用类似思路，尽量把资源让给前台和实时线程。
 
 ## nice 值与权重的换算关系
 
@@ -243,36 +265,34 @@ sched_setaffinity(tid, sizeof(mask), &mask);
 
 **绑核的典型应用场景**是把 RenderThread 固定到大核上。RenderThread 负责将主线程生成的 DisplayList 转换为 GPU 指令，这个过程中的 OpenGL/Vulkan 调用（尤其是 draw call 的准备阶段）是 CPU 密集的。如果 RenderThread 被调度到小核，帧的提交时间就会变长，导致掉帧。
 
-### Android 中绑核的实现方式
+### Android 中绑核和 CPU 可用范围的几条路径
 
-在 Android 上，可以通过以下几种方式实现绑核：
+Android 里要区分两件事：**线程 affinity mask** 和 **进程组 cpuset mask**。线程最终能跑在哪些 CPU 上，取的是两者的交集。只盯着 `sched_setaffinity()`，会漏掉系统层的 cpuset 限制。
 
-**1. 直接调用 sched_setaffinity（Native 层）**
+**1. `sched_setaffinity()`：最常见的线程级接口**
 
-通过 JNI 或直接在 Native 代码中调用。需要注意：
-- 参数 `pid` 实际上传入的是线程的 tid（通过 `gettid()` 获取）
-- Android 上没有 `pthread_setaffinity_np`，必须使用 `sched_setaffinity`
+Native 层最常见的做法还是直接调用 `sched_setaffinity()`。这里传入的是 Linux TID，也就是线程 ID，通常用 `gettid()` 取得。
 
-**2. 通过 /proc 接口（Java 层间接方式）**
+**2. `pthread_setaffinity_np()`：Android 16 / API 36 起可用的 pthread 封装**
 
-读取 `/sys/devices/system/cpu/` 下的信息获取 CPU 核心拓扑和频率，然后通过 native 方法设置亲和性。
+bionic mainline 的 `libc/include/pthread.h` 已经声明了 `pthread_getaffinity_np()` 和 `pthread_setaffinity_np()`，并标成 `__INTRODUCED_IN(36)`，注释里也写了 “Available since API level 36”。所以“Android 上没有 `pthread_setaffinity_np()`”这句话只适用于旧版本。面向 API 36 之前的设备或旧 NDK target 时，兼容写法仍然是 `sched_setaffinity(gettid(), ...)`；面向新平台时，直接按 `pthread_t` 调 `pthread_setaffinity_np()` 也成立。
 
-**3. cpuset cgroup（系统级方式）**
+**3. cpuset / task profiles：系统级 CPU 可用范围**
 
-Android 使用 cpuset cgroup 来管理不同进程组的 CPU 亲和性。系统定义了几个预设的 cpuset：
+Android 更常见的控制入口其实是 task profiles。Framework 通过 `libprocessgroup` 的 `SetTaskProfiles()` / `SetProcessProfiles()` 把逻辑状态写进 cgroup controller。AOSP mainline 的 `task_profiles.json` 里，`ProcessCapacityHigh` 会加入 `cpuset/foreground`，`ProcessCapacityMax` 会加入 `cpuset/top-app`；`HighPerformance` / `MaxPerformance` 则映射到 `cpu/foreground` / `cpu/top-app`。
 
 ```
 /dev/cpuset/
-├── foreground/    # 前台应用，可使用所有核心
-├── background/    # 后台应用，限制在小核
-├── system-background/ # 系统后台进程
-├── top-app/       # 顶部应用（最高优先级）
-└── restricted/    # 受限进程
+├── foreground/
+├── foreground_window/
+├── background/
+├── system-background/
+└── top-app/
 ```
 
-当应用从后台切换到前台时，系统会将其进程从 `background` cpuset 移动到 `top-app` cpuset，允许其使用大核。这个切换过程在 Perfetto 中可以观察到——线程突然从 CPU 0-3（小核）跳到 CPU 4-7（大核）。
+当应用从后台切到前台时，Perfetto 里看到线程从小核迁到大核，很多时候不是某个线程手工调用了 `sched_setaffinity()`，而是它所在进程组的 cpuset / cpu profile 变了。分析这类问题时，要同时看 thread affinity、cpuset 和调频策略。
 
-[已验证: AOSP android-16.0.0_r1, system/core/libprocessgroup/cpuset.cpp]
+[已验证: bionic mainline `libc/include/pthread.h`；AOSP mainline `system/core/libprocessgroup/include/processgroup/processgroup.h`、`profiles/task_profiles.json`]
 
 ### 绑核的注意事项
 
@@ -311,11 +331,19 @@ Perfetto 的 SQL 引擎让我们可以精确地量化调度延迟。以下是几
 **查找主线程调度延迟最严重的时刻：**
 
 ```sql
+WITH target_thread AS (
+  SELECT t.utid
+  FROM thread t
+  JOIN process p USING (upid)
+  WHERE p.name = 'com.example.app'
+    AND t.name = 'main'
+  LIMIT 1
+)
 SELECT
   ts,
   dur / 1e6 AS runnable_time_ms
 FROM thread_state
-WHERE utid = (SELECT utid FROM thread WHERE name = 'main' LIMIT 1)
+WHERE utid = (SELECT utid FROM target_thread)
   AND state = 'R'
 ORDER BY dur DESC
 LIMIT 20;
@@ -324,11 +352,19 @@ LIMIT 20;
 **统计线程在各 CPU 核心上的运行时间分布：**
 
 ```sql
+WITH target_thread AS (
+  SELECT t.utid
+  FROM thread t
+  JOIN process p USING (upid)
+  WHERE p.name = 'com.example.app'
+    AND t.name = 'RenderThread'
+  LIMIT 1
+)
 SELECT
   cpu,
-  sum(dur) / 1e6 AS time_on_cpu_ms
+  SUM(dur) / 1e6 AS time_on_cpu_ms
 FROM sched
-WHERE utid = (SELECT utid FROM thread WHERE name = 'RenderThread' LIMIT 1)
+WHERE utid = (SELECT utid FROM target_thread)
 GROUP BY cpu
 ORDER BY cpu;
 ```
@@ -416,6 +452,14 @@ CFS 的调度标准只有一个维度——vruntime 谁最小，不区分任务�
 ```sql
 -- 观察特定线程的调度延迟分布
 -- 用于对比 CFS 和 EEVDF 内核下主线程的 Runnable 等待时间分布
+WITH target_thread AS (
+  SELECT t.utid
+  FROM thread t
+  JOIN process p USING (upid)
+  WHERE p.name = 'com.example.app'
+    AND t.name = 'main'
+  LIMIT 1
+)
 SELECT
   CASE
     WHEN dur / 1e6 < 1 THEN '< 1ms'
@@ -425,7 +469,7 @@ SELECT
   END AS latency_bucket,
   COUNT(*) AS count
 FROM thread_state
-WHERE utid = (SELECT utid FROM thread WHERE name = 'main' LIMIT 1)
+WHERE utid = (SELECT utid FROM target_thread)
   AND state = 'R'
 GROUP BY latency_bucket
 ORDER BY latency_bucket;
@@ -434,7 +478,7 @@ ORDER BY latency_bucket;
 如果未来在 EEVDF 内核上观察到调度延迟分布明显向左移（更多 < 1ms），说明 EEVDF 的延迟优化正在生效。
 
 [已验证: Linux kernel 6.6, kernel/sched/fair.c（EEVDF 实现已合入 fair.c 替代原 CFS 独立逻辑）]
-[来源: docs.kernel.org/scheduler/sched-design-EEVDF.html; LWN "EEVDF scheduling" 系列]
+[来源: docs.kernel.org/scheduler/sched-eevdf.html; LWN "EEVDF scheduling" 系列]
 [待验证: Android 17 (2026 Q3) 是否默认启用 EEVDF —— 需关注 AOSP GKI 内核版本公告]
 
 ## Real-time 线程在 Android 中的使用
@@ -484,38 +528,53 @@ boost 的效果体现在两个层面：
 
 ### UClamp：上游化的通用方案
 
-UClamp（Utilization Clamping）从 Linux 5.3 开始进入主线内核，功能定位与 SchedTune 类似，但设计更加通用和规范。Android 从 Android 12 开始逐步从 SchedTune 迁移到 UClamp。
+UClamp（Utilization Clamping）从 Linux 5.3 进入主线。它和 SchedTune 的目标接近，都是把“这个任务至少/至多需要多强的 CPU 性能”这个提示交给调度器和 `schedutil`。
 
-UClamp 为每个任务（或任务组）提供两个可调参数：
+UClamp 为任务或任务组提供两个核心参数：
 
-**`UCLAMP_MIN`**：利用率的下限。即使任务的实际利用率很低，调度器也会将其视为至少达到 `UCLAMP_MIN`。效果等效于 SchedTune 的 boost——让调频器选择更高的频率，让选核器倾向大核。
+**`UCLAMP_MIN`**：利用率下限。即使任务实际 util 很低，调度器也会把它当成至少达到这个值。结果通常是更高频率、更偏向高 capacity CPU。
 
-**`UCLAMP_MAX`：利用率的**上限**。即使任务的实际利用率很高，调度器也不会认为它超过 `UCLAMP_MAX`。这是一个 SchedTune 没有提供的能力——它可以"限流"后台任务，防止它们把 CPU 频率拉高或抢占大核。
+**`UCLAMP_MAX`**：利用率上限。任务再忙也不会被视为超过这个值。后台工作常用它来限制频率和大核占用。
 
-```
-# 示例：Android 中 UClamp 的设置路径
-# 前台应用设置较高的 UCLAMP_MIN
-echo 20 > /proc/<pid>/task/<tid>/util_clamp_min
+Linux 既支持按任务接口设置，也支持按 cgroup controller 设置。单线程实验时，内核通常会暴露类似下面的 per-task 接口：
 
-# 后台服务设置较低的 UCLAMP_MAX，防止干扰前台
-echo 50 > /proc/<pid>/task/<tid>/util_clamp_max
+```bash
+echo 256 > /proc/<pid>/task/<tid>/util_clamp_min
+echo 512 > /proc/<pid>/task/<tid>/util_clamp_max
 ```
 
-[已验证: Linux kernel 5.10+, kernel/sched/core.c, uclamp_eff_value()]
-[来源: source.android.com/docs/core/perf/uclamp]
+Android 产品机更常见的入口不是手写 `/proc`，而是 task profiles。
 
-在 Android 中，常见做法是应用切换到前台时，ActivityManagerService 通过 `Process.setThreadPriority()` 和底层的 cgroup 操作将该进程的 UCLAMP_MIN 提升到一定值（比如 20%），让 CPU 频率在应用启动和 UI 更新时保持较高水平。应用退到后台后，UClamp_MIN 回到 0，同时 UCLAMP_MAX 可能被限制，避免后台任务拖慢前台。
+### Android userspace 到 cpuset / schedtune / uclamp 的控制链
 
-### SchedTune vs UClamp：演进路线
+把 Android 的控制链顺着 userspace 往内核拆开，Perfetto 里的调度结果会更容易解释：
 
-SchedTune 和 UClamp 在功能上有大量重叠，Android 的演进方向很明确：**UClamp 是未来，SchedTune 在逐步退出**。原因有几个：
+1. **ActivityManagerService / WindowManager / Power HAL 改变场景状态。** 例如应用进入 `top-app`、退到后台，或者收到 touch / launch / animation 这类性能提示。
+2. **`libprocessgroup` 应用 task profile。** Framework 通过 `SetTaskProfiles()` / `SetProcessProfiles()` 把逻辑状态翻译成 cgroup 操作。
+3. **task profile 写入 cpuset / schedtune / cpu controller。** 这里才是 Android 真正落到内核的控制点。
+4. **调度器和调频器执行结果。** 最终表现为线程可用 CPU 集合变化、选核偏好变化，以及 CPU frequency 更快拉起。
 
-- SchedTune 是 Android out-of-tree 补丁，需要厂商自行维护和合并到内核，增加了碎片化风险
-- UClamp 在主线 Linux 内核中，所有使用标准内核的设备都能直接受益
-- UClamp 的 MIN/MAX 双向控制比 SchedTune 单向 boost 更灵活
-- Android 的 `prefer_idle` 等 SchedTune 特有功能正在被 UClamp 等价替代
+把版本差异展开后，这条链会清楚很多。
 
-实际设备上，MTK 和高通平台目前处于过渡期：部分功能仍使用 SchedTune，部分已迁移到 UClamp。分析 Trace 时需要确认目标设备使用的是哪种机制。
+**Android 10-11 的常见路径**
+
+- `ProcessCapacityHigh` / `ProcessCapacityMax` 把进程放进 `cpuset/foreground` / `cpuset/top-app`
+- `HighPerformance` / `MaxPerformance` 把进程放进 `schedtune/foreground` / `schedtune/top-app`
+- 同一份 `task_profiles.json` 里已经同时声明了 `schedtune.boost`、`schedtune.prefer_idle` 和 `cpu.uclamp.min` / `cpu.uclamp.max`，所以 11 时代设备很容易出现 `cpuset + schedtune + uclamp` 混用
+
+**Android 12+ / GKI 5.10+ 的常见路径**
+
+- `ProcessCapacityHigh` / `ProcessCapacityMax` 继续控制 `cpuset/foreground` / `cpuset/top-app`
+- `HighPerformance` / `MaxPerformance` 改为进入 `cpu/foreground` / `cpu/top-app`
+- `UClampMin`、`UClampMax`、`UClampLatencySensitive` 再落到 `cpu.uclamp.min`、`cpu.uclamp.max`、`cpu.uclamp.latency_sensitive`
+
+沿着这条链看 Perfetto，主线程或 RenderThread 从小核迁到大核、CPU frequency 一起抬升时，先查进程组 profile 有没有从 `foreground` 切到 `top-app`，再看对应 cpuset / cpu controller 文件有没有变化。只盯线程自己有没有调 `sched_setaffinity()`，很容易漏掉真正的控制点。
+
+### SchedTune 与 UClamp 的版本边界
+
+主线 Linux 的 `uclamp` 从 5.3 合入。Android 11 的 AOSP `task_profiles.json` 还能同时看到 `schedtune` controller 和 `cpu.uclamp.*` 属性；到了 Android 12 的 AOSP `task_profiles.json`，`schedtune` controller 已经退场，前台 / top-app 的性能提示主要通过 `cpu` cgroup 和 `cpu.uclamp.*` 表达。厂商内核是否还保留 `stune`，要以目标设备实际 cgroup 布局为准。
+
+[已验证: AOSP `android11-release` / `android12-release` / `main` `system/core/libprocessgroup/profiles/task_profiles.json`；AOSP mainline `system/core/libprocessgroup/include/processgroup/processgroup.h`]
 
 ### 在 Perfetto 中的观察方法
 
@@ -530,12 +589,20 @@ UClamp/SchedTune 的效果在 Perfetto 中不是以独立 Track 呈现的，而�
 ```sql
 -- 对比线程在大核（big）与小核（LITTLE）上的运行时间分布
 -- 注意：cpu >= 4 的阈值因设备而异，需根据实际 CPU 拓扑调整
+WITH target_thread AS (
+  SELECT t.utid
+  FROM thread t
+  JOIN process p USING (upid)
+  WHERE p.name = 'com.example.app'
+    AND t.name = 'RenderThread'
+  LIMIT 1
+)
 SELECT
   cpu,
   CASE WHEN cpu >= 4 THEN 'big' ELSE 'LITTLE' END AS core_type,
   SUM(dur) / 1e6 AS time_ms
 FROM sched
-WHERE utid = (SELECT utid FROM thread WHERE name = 'RenderThread' LIMIT 1)
+WHERE utid = (SELECT utid FROM target_thread)
 GROUP BY core_type
 ORDER BY core_type;
 ```
@@ -565,8 +632,11 @@ ORDER BY core_type;
 
 ## 参考资料
 
-- AOSP 源码：`kernel/sched/fair.c`（CFS 实现）、`kernel/sched/core.c`（调度核心）
+- AOSP 源码：`kernel/sched/fair.c`、`kernel/sched/core.c`、`system/core/libprocessgroup/profiles/task_profiles.json`、`bionic/libc/include/pthread.h`
 - [Linux CFS 设计文档](https://docs.kernel.org/scheduler/sched-design-CFS.html)
+- [Linux EEVDF 调度文档](https://docs.kernel.org/scheduler/sched-eevdf.html)
+- [Linux 调度策略总览 `sched(7)`](https://man7.org/linux/man-pages/man7/sched.7.html)
+- [Android UClamp 文档](https://source.android.com/docs/core/perf/uclamp)
 - [Perfetto CPU Scheduling 官方文档](https://perfetto.dev/docs/data-sources/cpu-scheduling)
 - [高爷 - Android Perfetto 系列 9：CPU 信息解读](https://www.androidperformance.com/2025/11/12/Android-Perfetto-09-CPU/)（本节核心素材来源）
 - [高爷 - Systrace 线程 CPU 运行状态分析：Sleep 和 Uninterruptible Sleep 篇](https://www.androidperformance.com/2022/03/13/android-systrace-cpu-state-sleep/)
