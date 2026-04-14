@@ -24,9 +24,10 @@ sources:
     path: "https://github.com/flutter/flutter/wiki/Impeller"
 tags: [flutter, rendering, impeller, skia, cross-platform, shader-compilation, jank]
 related_chapters: ["2.1", "2.3", "2.4", "2.5", "7.1", "7.7"]
-pipeline_stage: task6_pending
+pipeline_stage: task2b_pending
 task6_state: revisiting
-task9_state: pending
+task9_state: reviewed
+task9_result: needs-rework
 task2b_state: fixed
 task2b_result: fixed
 ---
