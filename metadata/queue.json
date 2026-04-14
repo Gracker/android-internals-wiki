@@ -1182,16 +1182,6 @@
     "completed_date": "2026-04-06T15:10:00+08:00"
   },
   {
-    "section": "11.5",
-    "title": "Wakelock 机制与功耗分析",
-    "priority": 80,
-    "status": "completed",
-    "created_date": "2026-04-06",
-    "created_by": "task2a-knowledge-gap",
-    "completed_at": "2026-04-07T08:12:35.622539",
-    "completed_by": "openclaw-task2a"
-  },
-  {
     "section": "7.8",
     "section_title": "RecyclerView 列表滑动性能深度优化",
     "priority": 80,
@@ -8862,5 +8852,45 @@
     "added_at": "2026-04-14T15:25:00+08:00",
     "status": "pending",
     "review_log": "logs/deep-review/2026-04-14-15-deep-review.md"
+  },
+  {
+    "section": "11.5",
+    "section_title": "Wakelock 机制与功耗分析",
+    "priority": 90,
+    "reason": "[review回炉] 内核映射、Foreground Service、Android 16+ 配额与 Android 17 Alarm 回调等技术断言需要核对",
+    "material_paths": [
+      "intake/suggestions.md（含 review 意见）"
+    ],
+    "review_issues": [
+      {
+        "type": "需确认",
+        "location": "用户态 wakelock 到内核的映射",
+        "detail": "正文把 `PowerManagerService` 写入 `/sys/power/wake_lock`、再映射到 `wakeup_source` 的链路写成通用现状，但现代 Android / GKI 版本上的接口路径和实现边界可能不同。",
+        "suggestion": "交给 Task 9 对照 AOSP 内核与 PowerManagerService 实现核对用户态 `WakeLock` 到内核 `wakeup_source` 的实际映射，再决定正文保留哪条链路。"
+      },
+      {
+        "type": "需确认",
+        "location": "`Foreground Service` 与 `WakeLock`",
+        "detail": "“Foreground Service 本身会持有 wakelock，不需要 App 手动获取”这一句写得过满，容易把前台服务保活、调度窗口和显式 wakelock 机制混成一件事。",
+        "suggestion": "交给 Task 9 核对 AMS / FGS 生命周期中的实际唤醒保障机制；如果无法给出直接证据，改成更保守的工程建议。"
+      },
+      {
+        "type": "需确认",
+        "location": "Android 16+ 后台执行配额",
+        "detail": "本节把 wakelock、Alarm、Job、网络配额写成确定结论，但只有一句泛化的 `[待验证]`，缺少具体版本边界、阈值来源和控制器证据。",
+        "suggestion": "交给 Task 9 对照官方文档、AOSP 控制器和 `dumpsys` 口径补证；补不齐时下调为原则性描述。"
+      },
+      {
+        "type": "需确认",
+        "location": "Android 17 的 `OnAlarmListener` 回调变体 + Play Store 惩罚政策",
+        "detail": "API 名称、行为差异、阈值和“2 小时 / 24 小时 + 5% session”这组规则写得很具体，但当前验证标注没有给到可追溯的官方路径。",
+        "suggestion": "交给 Task 9 核对 Android 17 AlarmManager 文档与 Play policy 原文；保留不了精确证据时，改成带条件的保守表述。"
+      }
+    ],
+    "added_by": "task6-review",
+    "added_at": "2026-04-14T16:13:33+08:00",
+    "status": "pending",
+    "original_review_log": "logs/review/2026-04-14-16-review.md",
+    "file": "src/part2-performance/ch11-power/05-wakelock.md"
   }
 ]
