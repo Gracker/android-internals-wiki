@@ -8680,7 +8680,11 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-14T10:25:00+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-15T06:47:14",
+    "completed_by": "task2b-rework",
+    "result": "fixed",
+    "notes": "Task 2B P95 修复：1) setHasFixedSize(true) 语义修正——拆开 RecyclerView 容器稳定性和 item 内部 layout 两个层面；2) SplashScreen 进程错误→改成 launching app 首帧+starting window+SurfaceFlinger Layer；3) QuickStep 路径修正为 packages/apps/Launcher3/quickstep/，缩略图介质从 SharedMemory 改为 HardwareBuffer/GraphicBuffer。STYLE.md 禁用词扫描通过。"
   },
   {
     "section": "7.4",

@@ -34,10 +34,11 @@ sources:
     path: "perfetto.dev/docs/analysis/trace-processor"
 tags: ['scrolling', 'animation', 'RecyclerView', 'transition', 'jank', 'Perfetto']
 related_chapters: ["7.1", "7.2", "7.3", "2.4", "2.5"]
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: pending
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
+task2b_state: fixed
+task2b_result: fixed
 task6_result: pass-light-edit
 task9_result: needs-rework
 ---
@@ -146,7 +147,9 @@ RecyclerView 虽然设计为复用 ViewHolder，但在某些场景下仍需要�
 
 图片是列表滑动中最常见的卡顿源之一。问题不是图片加载本身——现代图片库（Glide、Coil、Fresco）都做了异步加载——而是图片加载完成后的回调处理。如果 ImageView 没有预设固定尺寸，图片解码后需要重新触发 requestLayout，导致整棵 View 树重新 measure/layout。在快速滑动中，多个图片几乎同时回调，每一帧都可能叠加多次 layout 计算。
 
-在 Perfetto 中，这种问题的特征是主线程频繁出现 measure/layout 的长 slice，且时间与图片回调的时机吻合。解决方案是为列表中的 ImageView 设置固定宽高（或使用 `setHasFixedSize(true)`），避免图片加载完成后触发重新布局。
+在 Perfetto 中，这种问题的特征是主线程频繁出现 measure/layout 的长 slice，且时间与图片回调的时机吻合。解决方案是为列表中的 ImageView 设置固定宽高（或使用 `match_parent` + 固定高度 / `setFixedDimension` 等），这样图片解码完成后 ImageView 不需要重新 requestLayout，避免了整棵 View 树的重新 measure/layout。
+
+另外，如果 RecyclerView 自身的尺寸在 adapter 内容变化时不会改变（比如 RecyclerView 是 `match_parent`），可以调用 `setHasFixedSize(true)` 告知框架跳过 RecyclerView 自身的 requestLayout 调用。[待验证: RecyclerView.setHasFixedSize() 官方文档定义为「RecyclerView 自身尺寸不受 adapter 内容变化影响时为 true」，不等于 item 内部 View 的尺寸固定，也不能阻止单个 item 的 requestLayout()]
 
 [已验证: 官方文档, developer.android.com/topic/performance/recycler-view — 官方推荐设置固定尺寸避免重新测量]
 
@@ -244,7 +247,7 @@ Fragment 切换比 Activity 切换轻量，因为都在同一个进程和同一�
 [已验证: 官方文档, developer.android.com/develop/ui/views/launch/splash-screen — SplashScreen API 说明]
 
 在 Perfetto 中分析启动窗口卡顿：
-- 关注 `SplashScreen` 进程（或 SystemUI 中对应的 Window Token）
+- 关注 launching app 的首帧渲染时间、WindowManager 中 starting window 的创建与绘制、以及 SurfaceFlinger 对应 Layer 的合成情况。Android 12+ 的 SplashScreen 是系统管理的 starting window，由 StartingWindowController / StartingSurfaceController 负责，不存在独立的 SplashScreen 进程
 - 查看 SurfaceFlinger 在过渡动画期间的合成耗时
 - 检查 App 主进程的 `ActivityThread.handleBindApplication` → `Activity.onCreate` 调用路径是否过长
 
@@ -331,7 +334,7 @@ PopupWindow 的情况类似，但 PopupWindow 使用的是 App 进程自己的 W
 3. **用户滑动选择**：用户在卡片列表中左右滑动
 4. **目标 App 放大动画**：选中的 App 卡片放大回全屏
 
-[已验证: AOSP android-16.0.0_r1, frameworks/base/packages/SystemUI/quickstep/ — QuickStep 的多阶段动画实现]
+[已验证: AOSP android-16.0.0_r1, packages/apps/Launcher3/quickstep/ — QuickStep 的多阶段动画主实现位于 Launcher3，SystemUI/shared 目录有辅助类]
 
 [图：多任务切换 QuickStep 动画的 Perfetto 时序，标注四个动画阶段和 Launcher/SurfaceFlinger 的对应帧]
 
@@ -339,7 +342,7 @@ PopupWindow 的情况类似，但 PopupWindow 使用的是 App 进程自己的 W
 
 **动画启动阶段**：Launcher 需要在短时间内完成多个 TaskView 的布局计算。如果 Recents 列表中有大量 Task（比如用户很久没清理），布局开销会线性增长。
 
-**缩略图加载**：每个 TaskView 需要显示对应 App 的缩略图（Thumbnail）。这些缩略图通过 SharedMemory 从 SystemServer 传递给 Launcher，解码和上传纹理都需要时间。如果缩略图分辨率高且数量多，GPU 负载会明显增大。
+**缩略图加载**：每个 TaskView 需要显示对应 App 的缩略图（Thumbnail）。这些缩略图由 SystemServer 通过 `android.window.TaskSnapshot` 以 HardwareBuffer（GraphicBuffer）形式传递给 Launcher，解码和上传纹理都需要时间。[待验证: AOSP TaskSnapshot 使用 HardwareBuffer 而非 SharedMemory 传递截图数据，具体路径为 TaskSnapshotController → TaskSnapshotPersister → ThumbnailData] 如果缩略图分辨率高且数量多，GPU 负载会明显增大。
 
 **手势冲突**：多任务手势（从底部上滑并停顿）和 App 内的滑动手势容易冲突。如果手势识别耗时，会导致动画的起始帧延迟。
 
@@ -408,7 +411,7 @@ PopupWindow 的情况类似，但 PopupWindow 使用的是 App 进程自己的 W
 
 **"用了 Glide/Coil 加载图片，图片就不会导致卡顿了"**
 
-图片库解决的是"异步加载"问题，但加载完成后的回调仍然在主线程上执行。如果 ImageView 没有固定尺寸，每一张图片回调都会触发 `requestLayout()`，导致整棵 View 树重新 measure/layout。在快速滑动中，多个图片回调叠加，每一帧可能都有 layout 计算。解决方案是设置 `setHasFixedSize(true)` 或给 ImageView 固定宽高。
+图片库解决的是"异步加载"问题，但加载完成后的回调仍然在主线程上执行。如果 ImageView 没有固定尺寸，每一张图片回调都会触发 `requestLayout()`，导致整棵 View 树重新 measure/layout。在快速滑动中，多个图片回调叠加，每一帧可能都有 layout 计算。解决方案是给 ImageView 设置固定宽高，让图片回调不再触发 requestLayout。如果 RecyclerView 自身尺寸不受 adapter 变化影响，可以额外调用 `setHasFixedSize(true)` 跳过 RecyclerView 容器级别的重新测量（但这不等于解决 item 内部的 layout 问题）。
 
 **"黄帧就是掉帧"**
 
