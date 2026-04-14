@@ -2170,3 +2170,21 @@ Android 10-16 的返回分发模型缺少一张统一矩阵。正文把 Gesture 
 
 ### 关联章节
 7.3、2.5、2.6、4.4、5.5、11.3
+
+## [2026-04-14] 7.4 典型场景分析 — 系统级卡顿场景的版本化观测锚点
+
+### 盲区描述
+章节覆盖了 Splash Screen、Notification、Launcher/Recents 等系统级场景，但 Android 8-11 与 Android 12+ 的实现边界没有拆开：启动窗口只写了 SplashScreen API，没有回到 legacy starting window；Recents 只写 QuickStep 动画，没有把 Launcher3 Quickstep、RecentsAnimation、TaskSnapshot/HardwareBuffer 与 OEM 差异串成一条可验证链。结果是读者知道“要看系统侧”，却不知道不同版本到底该看哪个进程、哪个 layer、哪个类和哪个 trace event。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 梳理 Android 8-11 legacy starting window 与 Android 12+ SplashScreen API 的实现差异，确认 StartingWindowController / StartingSurfaceController / launching app 首帧的观测边界
+- 梳理 Launcher3 Quickstep、RecentsAnimation、TaskSnapshot、HardwareBuffer、SurfaceFlinger layer 在 Recents 动画中的职责分工
+- 为系统级场景补一组可跑通的 Perfetto 观测模板：进程、线程、layer、FrameTimeline、必要 trace config
+- 记录常见 OEM 改动点，例如将起始窗口或手势动画落到 SystemUI/Launcher 私有实现时该如何改追踪路径
+
+### 关联章节
+§7.4、§8.2、§9.6、§13.1、§13.3、§13.10
+

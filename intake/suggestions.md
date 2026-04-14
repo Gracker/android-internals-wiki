@@ -2984,3 +2984,17 @@
 - **位置**：行 279, 436
 - **问题**：文中的两个相对路径链接在当前文件目录下都解析不到目标：`part1-fundamentals/ch02-rendering/05-main-render-thread.md` 和 `part4-system/ch17-oem/01-oem-overview.md` 都是坏链接。
 - **建议**：改成 `../../part1-fundamentals/ch02-rendering/05-main-render-thread.md` 与 `../../part4-system/ch17-oem/01-oem-overview.md`，或统一换成 Obsidian wiki link。
+
+## [Task9 Deep Review] 7.4 典型场景分析 — 2026-04-14
+- **类型**：交叉引用
+- **位置**：行 268-295 Notification 展开/折叠的 Jank
+- **问题**：这一段与 §9.6《Notification 性能与 ANR》主题高度重叠，但正文没有回链，后续维护容易出现两套通知渲染路径描述。
+- **建议**：在 4.1 或 4.2 首段补“Notification 发布/渲染完整路径详见 §9.6”，本节只保留通知栏展开/折叠的 Perfetto 特征。
+
+
+## [Task9 Deep Review] 7.4 典型场景分析 — 2026-04-14
+- **类型**：数据缺失
+- **位置**：行 274-295, 345-349 SystemUI/Recents 场景 Perfetto 定位
+- **问题**：只给到进程级观察建议，没有可跑通的 track/layer 名称、trace config 或自定义 trace 点，读者很难按文中步骤独立复现。
+- **建议**：至少补 1 组最小抓取 recipe，例如 FrameTimeline + SurfaceFlinger layer + wm/app/launcher trace config，或明确标注 [待补充：trace config / 图示]。
+

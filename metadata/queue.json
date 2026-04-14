@@ -8472,5 +8472,64 @@
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-14T09:45:00+08:00",
     "status": "pending"
+  },
+  {
+    "section": "7.4",
+    "section_title": "典型场景分析",
+    "priority": 95,
+    "reason": "[Deep Tech Review] 7.4 存在 P0 事实错误：RecyclerView setHasFixedSize 用途写错，启动窗口观测目标写成 SplashScreen 进程，QuickStep/thumbnail 源码路径与介质描述失真",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "API 语义错误",
+        "location": "行 146-150, 408-410 RecyclerView 图片加载优化",
+        "detail": "把 RecyclerView.setHasFixedSize(true) 写成“避免图片回调触发重新布局”的方案。官方文档对 setHasFixedSize() 的定义是 RecyclerView 自身尺寸不受 adapter 内容变化影响，不等于 item/ImageView 固定尺寸，也不能阻止单个 item 的 requestLayout().",
+        "suggestion": "删除 setHasFixedSize(true) 与固定尺寸 ImageView 的并列表述。保留“ImageView 固定宽高/占位尺寸减少 relayout”，另把 setHasFixedSize(true) 单独说明为 RecyclerView 容器尺寸稳定时的额外优化。"
+      },
+      {
+        "type": "观测目标错误",
+        "location": "行 245-248 启动窗口 Perfetto 观察点",
+        "detail": "写成“关注 SplashScreen 进程（或 SystemUI 中对应的 Window Token）”。Android 12+ SplashScreen 对应的是 system-managed starting window；AOSP android-16.0.0_r1 的起始窗口由 StartingWindowController / StartingSurfaceController 管理，没有独立的 SplashScreen 进程。",
+        "suggestion": "改成“看 launching app 首帧、WindowManager/WM Shell 的 starting window、SurfaceFlinger layer/transaction”。只有 OEM 明确把这段实现放到 SystemUI 时，再单独标注 SystemUI。"
+      },
+      {
+        "type": "源码路径/实现介质错误",
+        "location": "行 333, 341-349 多任务切换（Recents）",
+        "detail": "QuickStep 源码路径写成 frameworks/base/packages/SystemUI/quickstep/，但 android-16.0.0_r1 下该路径不存在；主实现位于 packages/apps/Launcher3/quickstep/。同时把 task snapshot/thumbnail 描述成 SharedMemory 传递也不准确，AOSP android.window.TaskSnapshot 以 HardwareBuffer/GraphicBuffer 表示截图。",
+        "suggestion": "把路径拆成 Launcher3 Quickstep 主实现 + SystemUI/shared 辅助类；把缩略图链改成 TaskSnapshot -> HardwareBuffer/GraphicBuffer -> ThumbnailData/TaskView，并补 RecentsAnimation / TaskSnapshot 的观测点。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-14T10:25:00+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "7.4",
+    "section_title": "典型场景分析",
+    "priority": 85,
+    "reason": "[Deep Tech Review] 7.4 存在 P1 重要缺失：Fragment 事务调度解释与系统级场景的版本化 trace 入口不完整",
+    "material_paths": [
+      "intake/research-gaps.md",
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "API 行为解释不完整",
+        "location": "行 211-212 Fragment transaction 优化",
+        "detail": "commitNow() 与 commit() 的差异被解释成“是否等到下一个 Choreographer 周期”。官方文档只保证 commit() 异步调度到主线程、commitNow() 同步执行，与 Choreographer 帧边界没有直接语义绑定；“ViewPager2 内部页面切换”例子在本节也没有一手证据。",
+        "suggestion": "改成“commit 是主线程异步调度，commitNow 是立即执行”；是否能减少一帧延迟，要结合调用时机、主线程消息队列和动画状态验证，不要直接绑定到 Choreographer 周期。"
+      },
+      {
+        "type": "版本差异/知识盲区",
+        "location": "行 237-248, 324-349 系统级场景的版本化分析",
+        "detail": "章节 applicable_versions 覆盖 Android 8-16，但启动窗口只写 Android 12+ SplashScreen API，没有交代 Android 8-11 legacy starting window；Recents 只写 Android 12+ Launcher QuickStep，也没有把 RecentsAnimation / TaskSnapshot / OEM 差异拆开，导致系统级场景的版本演进和实际 trace 入口不完整。",
+        "suggestion": "补一张 8-11 vs 12+ 的起始窗口/Recents 差异表，并给出每种路径下应看的进程、layer、关键类和 trace event。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-14T10:25:00+08:00",
+    "status": "pending"
   }
 ]

@@ -34,11 +34,12 @@ sources:
     path: "perfetto.dev/docs/analysis/trace-processor"
 tags: ['scrolling', 'animation', 'RecyclerView', 'transition', 'jank', 'Perfetto']
 related_chapters: ["7.1", "7.2", "7.3", "2.4", "2.5"]
-pipeline_stage: task9_pending
+pipeline_stage: task2b_pending
 task6_state: reviewed
-task9_state: pending
-task2b_state: idle
+task9_state: reviewed
+task2b_state: pending
 task6_result: pass-light-edit
+task9_result: needs-rework
 ---
 
 # 典型场景分析
