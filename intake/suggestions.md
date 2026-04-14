@@ -3127,3 +3127,28 @@
 - **位置**：L129-L131, L279
 - **问题**：文中给出了多组强断言但没有实验条件，包括“阈值如 80%”“Hprof 压缩到 10%~20%”“Dump 期间用户感知不到监控本身存在”“Matrix 约 2~5% 开销”。这些数字涉及模块版本、采样率、设备档位、ABI 和业务负载，不加条件会让读者误以为是通用结论。
 - **建议**：每个数字补版本、设备、采样率和测试场景；如果暂时没有可追溯实验，删掉百分比与绝对化结论，只保留定性描述。
+
+## [Task6 Review] 11.5 Wakelock 机制与功耗分析 — 2026-04-14
+- **类型**：需确认
+- **位置**：用户态 wakelock 到内核的映射
+- **问题**：正文把 `PowerManagerService` → `/sys/power/wake_lock` → `wakeup_source` 写成通用链路，但现代 Android / GKI 上的接口和版本边界可能不同。
+- **建议**：交给 Task 9 对照 AOSP 内核与 PowerManagerService 核对真实映射，再决定正文保留哪条链路。
+- **review 日志**：logs/review/2026-04-14-16-review.md
+
+- **类型**：需确认
+- **位置**：`Foreground Service` 与 `WakeLock`
+- **问题**："Foreground Service 本身会持有 wakelock，不需要 App 手动获取" 这句写得过满，容易把前台服务保活和显式 wakelock 机制混为一谈。
+- **建议**：交给 Task 9 核对 AMS / FGS 生命周期中的实际唤醒保障机制，补不齐证据时改成更保守的工程建议。
+- **review 日志**：logs/review/2026-04-14-16-review.md
+
+- **类型**：需确认
+- **位置**：Android 16+ 后台执行配额
+- **问题**：本节把 wakelock、Alarm、Job、网络配额写成确定结论，但只有一句泛化的 `[待验证]`，缺少具体阈值、版本边界和控制器证据。
+- **建议**：交给 Task 9 对照官方文档、AOSP 控制器和 `dumpsys` 口径补证；补不齐时下调为原则性描述。
+- **review 日志**：logs/review/2026-04-14-16-review.md
+
+- **类型**：需确认
+- **位置**：Android 17 的 `OnAlarmListener` 回调变体 + Play Store 惩罚政策
+- **问题**：API 行为、阈值和 policy 规则写得很具体，但当前验证标注没有给到可追溯的官方路径。
+- **建议**：交给 Task 9 核对 Android 17 AlarmManager 文档与 Play policy 原文；保留不了精确证据时改成带条件的保守表述。
+- **review 日志**：logs/review/2026-04-14-16-review.md

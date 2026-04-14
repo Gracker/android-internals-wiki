@@ -1,5 +1,6 @@
 ---
 title: "Wakelock 机制与功耗分析"
+section: "11.5"
 chapter: "11.5"
 status: ready-for-review
 applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37)"
@@ -26,19 +27,50 @@ sources:
     path: "frameworks/base/core/java/android/os/PowerManager.java"
   - type: official
     path: "https://developer.android.com/topic/libraries/workmanager"
-pipeline_stage: task6_pending
-task6_state: pending
+reviewed_date: "2026-04-14"
+reviewed_by: "openclaw-task6"
+task6_result: needs-rework
+pipeline_stage: task2b_pending
+task6_state: reviewed
 task9_state: pending
-task2b_state: idle
+task2b_state: pending
 ---
 
 # 11.5 Wakelock 机制与功耗分析
 
 当我们在 Perfetto 中看到一条横跨数秒甚至数分钟的 `WakeLock` 条目时，它背后通常藏着一个让电池加速耗尽的问题。Wakelock 是 Android 功耗分析中最常遇到的"嫌疑人"——它设计上是为了让 CPU 在需要时保持工作，但一旦使用不当（忘记释放、异常路径泄漏、在后台长期持有），就会成为电池消耗的头号来源。
 
-Google 显然也意识到了这个问题的严重性：2026 年 3 月，Play Store 正式上线了 wakelock 惩罚政策，对过度持有 wakelock 的 App 实施搜索降权和耗电警告标签。这已经不是"建议优化"的级别了，而是直接影响 App 的分发和用户信任。
+2026 年 3 月，Play Store 正式上线了 wakelock 惩罚政策，对过度持有 wakelock 的 App 实施搜索降权和耗电警告标签。这已经不只是优化建议，而是会直接影响 App 的分发和用户信任。
 
 这篇文章我们要搞清楚几件事：Wakelock 的底层机制是什么？App 层的 wakelock 怎么映射到内核？出了问题怎么诊断？以及最重要的——怎么避免 wakelock 变成功耗灾难。
+
+<!-- outline-start -->
+## 本节要点大纲
+
+### 锚点（必须覆盖）
+
+- 🔹 wakelock 为什么存在，以及 `PARTIAL_WAKE_LOCK` 为什么是功耗分析的重点
+- 🔹 `PowerManager.WakeLock` 的获取、引用计数、`WorkSource` 与服务端处理
+- 🔹 wakelock 在 Android 电源状态机中的位置，以及 Doze / App Standby 对它的约束
+- 🔹 用户态 wakelock 与内核 `wakeup_source` 的关系
+- 🔹 常见泄漏模式，以及用 Battery Historian、`dumpsys batterystats`、Perfetto 排查的方法
+- 🔹 `AlarmManager`、`WorkManager`、`Foreground Service` 等调度框架与 wakelock 的关系
+- 🔹 版本演进、常见误区与 Play Store 合规要求
+
+### 扩展（可选深入）
+
+- 🔸 Android 16+ 后台执行配额与 wakelock 的交互
+- 🔸 Android 17 `OnAlarmListener` 回调变体的适用场景
+- 🔸 内核 `wakeup_source` 观测与 `wakeup_sources` 文件解读
+
+### OpenClaw 加工指引
+
+> **锚点**是最低覆盖要求，加工时必须逐条落实并标注验证结果。
+> **扩展**视素材丰富程度选择性深入。
+> 如果从 AOSP 或研究素材里发现与本节强相关、但大纲未列出的点，
+> 可插入到最相关的锚点之后，并用 `[自动发现]` 标注来源。
+> 涉及版本差异、内核接口、功耗策略阈值的表述，优先保守表述，拿不准就标 `[待验证]`。
+<!-- outline-end -->
 
 ## Wakelock 的本质：为什么 Android 需要"阻止睡眠"
 
@@ -90,7 +122,7 @@ wl.release();
 
 ### 引用计数模式：一个常见的坑
 
-`WakeLock` 默认使用引用计数模式（reference-counted）。这意味着：
+`WakeLock` 默认启用引用计数模式（reference-counted）：
 
 ```java
 wl.acquire();  // 计数 = 1
@@ -154,7 +186,7 @@ Sleep / Suspend（CPU 停止，功耗极低）
 
 Android 6.0（API 23）引入了 Doze 模式，它的核心思想是：设备静止不动 + 屏幕关闭 + 未充电 → 逐步限制后台活动。
 
-在 Doze 的 maintenance window（维护窗口）之外，系统会**忽略大部分 wakelock**。这意味着即使 App 持有 partial wakelock，CPU 也不会被唤醒。只有以下情况例外：
+在 Doze 的 maintenance window（维护窗口）之外，系统会**忽略大部分 wakelock**。因此即使 App 持有 partial wakelock，CPU 也不会被唤醒。只有以下情况例外：
 
 - `setAndAllowWhileIdle()` / `setExactAndAllowWhileIdle()` 触发的 Alarm
 - 来自高优先级 Firebase Cloud Message 的推送
@@ -540,7 +572,7 @@ Wakelock 不是一个孤立的话题，它与全书多个章节紧密关联：
 
 **误区 4："PowerManagerService 持有的 wakelock 是系统问题"**
 
-`dumpsys batterystats` 中看到 `PowerManagerService` 持有大量 wakelock 时间，常常被误认为是系统 bug。实际上 PowerManagerService 是代理——它代替其他 App 持有 wakelock（通过 WorkSource 归因）。需要进一步查看是哪个 App 的 wakelock 代理到了 PMS。
+`dumpsys batterystats` 中看到 `PowerManagerService` 持有大量 wakelock 时间，常常会被误认为是系统 bug。很多时候 PowerManagerService 只是代理，它通过 WorkSource 代表其他 App 记账。需要进一步查看是哪个 App 的 wakelock 归因到了 PMS。
 
 ## 参考资料
 
