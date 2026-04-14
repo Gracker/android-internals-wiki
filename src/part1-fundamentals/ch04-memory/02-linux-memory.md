@@ -33,11 +33,12 @@ sources:
     path: "Cubox/LPC2025-Android MC主题-2026-01-10.md"
 tags: ['kernel', 'memory', 'buddy', 'slab', 'kswapd', 'page-reclaim', 'compaction', 'ION', 'DMA-BUF', 'LRU', 'MGLRU', '16K-page']
 related_chapters: ["4.1", "4.3", "4.4", "2.6"]
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
 task9_result: needs-rework
-task2b_state: pending
+task2b_state: fixed
+task2b_result: fixed
 ---
 
 # Linux 内核内存管理
@@ -114,7 +115,7 @@ Page Fault 在 Android 上有几类典型场景：
 
 在 Perfetto Trace 中，与虚拟内存相关的信号主要体现在：
 
-- **Page Fault 计数**：通过 `ftrace` 的 `mm_page_fault` 事件，能看到进程的 page fault 频率。启动阶段密集的 page fault 是正常的，但如果运行期间出现突发的大量 page fault，可能意味着内存被过度回收。
+- **Page Fault 计数**：通过 `ftrace` 的 `exceptions/page_fault_user` 和 `exceptions/page_fault_kernel` tracepoint，能分别观察用户态与内核态的缺页异常。抓 trace 时要在 `exceptions` 类下启用这两个事件，不要写成 `mm_page_fault`。如果要统计总 fault 数，还要区分 ftrace tracepoint 与 perf software counter 的口径。
 - **kswapd 线程活动**：在 Perfetto 的进程列表中能看到 `kswapd0`（每个 NUMA 节点一个），它的 CPU 使用率直接反映了系统的内存压力。
 - **Direct Reclaim 延迟**：当进程在内存分配路径上被迫同步回收页面时，在 Trace 中表现为该进程的长时间不可中断睡眠（`D` 状态）。
 
@@ -136,7 +137,7 @@ Buddy 分配器的优势是能快速分配和释放连续的物理页，且能�
 
 为了进一步减少碎片，现代 Linux 内核还把页面按迁移类型（Migration Type）分组：不可移动页（Unmovable，如内核使用的页）、可回收页（Reclaimable，如文件缓存）、可移动页（Movable，如用户进程的匿名页）。把相同类型的页放在一起，使得在需要大块连续内存时，可以通过移动可移动页来腾出空间。
 
-[已验证: L1 AOSP, kernel/mm/page_alloc.c — Buddy allocator 实现，支持 migration type 分组]
+[已验证: L1 Linux kernel, mm/page_alloc.c — Buddy allocator 实现，支持 migration type 分组]
 
 ### Slab 分配器：内核对象的高效复用
 
@@ -310,13 +311,13 @@ ION 是 Android 4.0（Ice Cream Sandwich）引入的内存分配器，目的是�
 
 ### DMA-BUF 的工作机制
 
-DMA-BUF 是 Linux 内核中用于跨设备/跨进程共享大块内存的框架。在 Android 图形管线中，几乎所有的图形缓冲区都通过 DMA-BUF 来管理：
+DMA-BUF 是 Linux 内核中用于跨设备、跨进程共享大块内存的框架。在 Android 图形系统里，Gralloc 分配出的图形缓冲区通常会以 dma-buf fd 或 handle 的形式在 App、SurfaceFlinger、GPU 和 HWC 之间传递。
 
-1. **Gralloc（Graphics Allocator）**：Android 的图形内存分配器，底层通过 DMA-BUF Heaps 分配物理连续的内存。分配结果是一个 DMA-BUF 文件描述符（fd）。
-2. **BufferQueue 传递**：App 生产图形数据后，通过 BufferQueue 将 buffer 的 fd（而不是数据本身）传递给 SurfaceFlinger。SurfaceFlinger 通过 `mmap()` 访问同一块物理内存。
-3. **Hardware Composer（HWC）**：SurfaceFlinger 将需要合成的 buffer fd 传递给 HWC，HWC 的硬件直接通过 DMA 访问这些物理内存进行合成和显示。
+1. **Gralloc（Graphics Allocator）**：Gralloc 底层从 DMA-BUF Heaps 申请 buffer，并拿到一个 dma-buf fd。这里不能把所有 heap 都写成“物理连续”。`/dev/dma_heap/system` 提供的是虚拟连续 buffer，只有 CMA 类型 heap（例如 `default_cma_region`）才保证物理连续。设备是否需要物理连续，还取决于 IOMMU 和具体硬件能力。
+2. **BufferQueue 传递**：App 通过 BufferQueue 传递的是 dma-buf fd 或其封装句柄，不是像素数据本身。SurfaceFlinger 导入同一个 dma-buf 对象。CPU 侧调试或软件访问可以通过 `mmap()` 建立映射，但合成阶段更常见的是驱动侧导入，而不是所有参与方都去访问同一段 CPU 虚拟地址。
+3. **GPU / HWC 导入**：SurfaceFlinger、GPU 和 HWC 会按各自驱动模型导入 dma-buf。支持 IOMMU 的设备可以导入非物理连续 buffer，缺少这类映射能力的硬件才更依赖 CMA 这类物理连续分配。
 
-这个 fd 传递机制是 Android 图形管线高效的关键——零拷贝。整个渲染管线中，图形数据始终在同一块物理内存中，不同的组件（App → RenderThread → SurfaceFlinger → HWC → Display）只是拿到这块内存的"引用"（fd），不需要复制数据。
+这个 fd 传递机制减少了数据副本。各组件共享的是同一个 dma-buf 对象，但 CPU 访问方式、GPU/HWC 的导入方式、是否要求物理连续，取决于 heap 类型和硬件内存映射能力，不能压成“始终共享同一块物理连续内存”。
 
 在 `/proc/meminfo` 中，`DMA-BUF` 相关的字段（如 `DmaBufTotal`、`DmaBufMapped`、`DmaBufUnmapped`）反映了图形缓冲区的内存使用情况。在 Perfetto 的内存分析视图中，DMA-BUF 通常占据了设备总内存的相当大比例（在高端设备上可能达到数百 MB 甚至超过 1GB）。
 
@@ -428,14 +429,13 @@ Android 使用 zRAM 替代 swap。回收匿名页时，内核需要将其压缩�
 
 ## 参考资料
 
-- AOSP 源码路径：
-  - `kernel/mm/page_alloc.c` — Buddy 分配器实现
-  - `kernel/mm/slub.c` — SLUB 分配器实现
-  - `kernel/mm/vmscan.c` — 页面回收（kswapd / direct reclaim）
-  - `kernel/mm/compaction.c` — 内存压缩
-  - `kernel/mm/mglru.c` — MGLRU 实现（Linux 6.1+）
-  - `kernel/drivers/dma-buf/` — DMA-BUF 框架
-  - `kernel/drivers/dma-buf/heaps/` — DMA-BUF Heaps 实现
+- Linux kernel / Android common kernel 路径：
+  - `mm/page_alloc.c` — Buddy 分配器实现
+  - `mm/slub.c` — SLUB 分配器实现
+  - `mm/vmscan.c` — 页面回收主流程（kswapd / direct reclaim / MGLRU 相关入口）
+  - `mm/compaction.c` — 内存压缩
+  - `drivers/dma-buf/` — DMA-BUF 框架
+  - `drivers/dma-buf/heaps/` — DMA-BUF Heaps 实现
 - 官方文档：
   - developer.android.com — 16KB page size 支持
   - source.android.com — Graphics buffer 管理与 DMA-BUF
