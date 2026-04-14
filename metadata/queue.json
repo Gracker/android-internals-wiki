@@ -8608,5 +8608,57 @@
     "deep_review_log": "logs/deep-review/2026-04-14-11-deep-review.md",
     "completed_at": "2026-04-14T11:55:42+08:00",
     "completed_by": "task2b-rework"
+  },
+  {
+    "section": "13.4",
+    "section_title": "命令行打开超大 Trace",
+    "priority": 95,
+    "reason": "[Deep Tech Review] trace_processor CLI 用法有 3 处事实错误，会导致命令直接报错或不可执行",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "事实错误",
+        "location": "L266-L272 批量跑 SQL 脚本",
+        "detail": "正文把 `./trace_processor -q my_analysis.sql < trace.perfetto-trace` 和 `cat trace.perfetto-trace | ./trace_processor -q my_analysis.sql` 当成合法调用。但当前 `trace_processor --help` 要求提供位置参数 `trace_file.pb`；仅通过 stdin 喂 trace 会直接打印 usage 并退出。",
+        "suggestion": "改成 `./trace_processor -q my_analysis.sql trace.perfetto-trace` 一类带位置参数的写法，并删除 stdin-only 示例。"
+      },
+      {
+        "type": "事实错误",
+        "location": "L328-L331 查询结果的格式控制",
+        "detail": "正文写 `./trace_processor --json -q analysis.sql < trace.perfetto-trace`。当前 CLI 不存在 `--json` 选项，直接报 `unrecognized option --json`。JSON 仅在 `--run-metrics` 搭配 `--metrics-output=json` 时可用。",
+        "suggestion": "删除 `--json` 查询示例，改成默认文本输出 / `-e out.sqlite` / Python API 三种受支持方案。"
+      },
+      {
+        "type": "事实错误",
+        "location": "L342-L346 trace_processor 的高级参数",
+        "detail": "正文把 `-D/--debug` 和 `-W/--wait` 解释成调试与等待连接。当前 CLI 中 `-D` 实际是 `--httpd`，`-W` 实际是 `--wide`，而 `--debug`、`--wait` 都不存在。",
+        "suggestion": "按当前 CLI 帮助重写参数说明，只保留真实存在的 `--httpd`、`--http-port`、`--http-ip-address`、`-W/--wide` 等参数。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-14T12:22:00+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "13.4",
+    "section_title": "命令行打开超大 Trace",
+    "priority": 85,
+    "reason": "[Deep Tech Review] SQL 示例缺少事件名与 args schema 的前置验证，多个样例把非通用 slice 当成默认事实",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "原理断裂",
+        "location": "L247-L252 EXTRACT_ARG 示例；L299-L302 / L399-L425 批量与 Python 实战示例",
+        "detail": "章节先讲了 `.tables` / `.schema`，后面却直接把 `name = 'inflate'`、`EXTRACT_ARG(arg_set_id, 'layout')`、`Application.onCreate`、`ActivityThread.handleBindApplication`、`ANR` 当成默认可查询事件。它们并不是 Perfetto 的通用内建 schema，是否存在取决于 trace 配置、atrace category 或应用自定义 trace marker。读者照抄时很容易得到空结果，却不知道是采集条件不满足还是 SQL 写错。",
+        "suggestion": "在所有示例前加“先验证事件是否存在”的步骤（如 `SELECT DISTINCT name FROM slice LIMIT ...` / `.schema args`），并把 EXTRACT_ARG 示例换成官方文档可复现的 `ftrace_event + sched_switch + prev_comm`；对启动/ANR 样例明确要求的采集前提与 fallback 查询路径。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-14T12:22:00+08:00",
+    "status": "pending"
   }
 ]

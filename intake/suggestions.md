@@ -3043,3 +3043,14 @@
 - **问题**：两段扩展信息量不少，但和前文“帧率、刷新率、Frame Timeline、Perfetto 判读”的主线回扣偏弱，更像资料卡片，不够像工程师带着读者分析问题。
 - **建议**：Task 2B 回炉时收紧为“什么时候这部分信息会影响排查判断”，把扩展内容回扣到 Perfetto 观察和工程取舍。
 - **review 日志**：logs/review/2026-04-14-12-review.md
+
+## [Task9 Deep Review] 13.4 命令行打开超大 Trace — 2026-04-14
+- **类型**：交叉引用
+- **位置**：frontmatter `sources` / L488 / 参考资料
+- **问题**：`https://perfetto.dev/docs/analysis/trace-analysis-with-sql` 与 `https://perfetto.dev/docs/analysis/traceconv` 当前均返回 404，不能继续作为“已验证”来源。
+- **建议**：分别改为 `https://perfetto.dev/docs/analysis/perfetto-sql-getting-started` 和 `https://perfetto.dev/docs/quickstart/traceconv`，并同步核对正文中的引用文字。
+
+- **类型**：数据缺失
+- **位置**：L71-L79 大 Trace 的挑战
+- **问题**：`Chrome 通常是 2-4GB`、`500MB Trace 会吃掉 1.5GB+`、`3-5 倍内存放大` 这组量化判断没有给浏览器版本、平台、trace 类型或实测来源。
+- **建议**：补浏览器版本、宿主平台、trace 样本与测量方式；如果短期补不齐，降级为“可能显著放大内存占用”的定性描述。
