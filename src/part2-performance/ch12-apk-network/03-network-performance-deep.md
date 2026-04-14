@@ -5,14 +5,30 @@ section: "12.3"
 status: ready-for-review
 drafted_date: "2026-04-07"
 applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37)"
-last_verified: "2026-04-07"
-last_verified_against: "OkHttp 4.12.x / AOSP android-17-beta3"
+last_verified: "2026-04-14"
+last_verified_against: "Android Developers docs / source.android / OkHttp 5.x docs / Google Security Blog 2022-07"
 confidence: medium
 sources:
   - type: official
     path: "https://developer.android.com/training/basics/network-ops/managing"
   - type: official
-    path: "https://square.github.io/okhttp/"
+    path: "https://developer.android.com/reference/android/os/NetworkOnMainThreadException"
+  - type: official
+    path: "https://developer.android.com/reference/android/os/StrictMode.ThreadPolicy.Builder#detectNetwork()"
+  - type: official
+    path: "https://developer.android.com/reference/android/net/http/HttpEngine"
+  - type: official
+    path: "https://developer.android.com/reference/android/net/http/HttpEngine.Builder"
+  - type: official
+    path: "https://developer.android.com/develop/connectivity/cronet"
+  - type: official
+    path: "https://developers.google.com/android/reference/com/google/android/gms/security/ProviderInstaller"
+  - type: official
+    path: "https://source.android.com/docs/core/ota/modular-system/conscrypt"
+  - type: official
+    path: "https://security.googleblog.com/2022/07/dns-over-http3-in-android.html"
+  - type: official
+    path: "https://square.github.io/okhttp/5.x/okhttp/okhttp3/-ok-http-client/-builder/protocols.html"
   - type: official
     path: "https://developer.android.com/reference/android/net/TrafficStats"
   - type: official
@@ -31,11 +47,12 @@ drafted_by: "openclaw-task2a"
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-04-13"
 task6_result: needs-rework
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
 task9_result: needs-rework
-task2b_state: pending
+task2b_state: fixed
+task2b_result: fixed
 ---
 
 # 12.3 网络性能深入：连接池、TLS 与传输优化
@@ -77,7 +94,7 @@ task2b_state: pending
 
 应用层是 OkHttp（或者 Cronet、HttpEngine 等网络库），负责 HTTP 协议的处理——构建请求、解析响应、管理连接池。往下是 Java 层的 `java.net` 和 `javax.net.ssl`，提供 Socket 和 TLS 抽象。再往下进入系统层，Android 的 DNS resolver 模块负责域名解析，`libcore` 中的 `Conscrypt` 安全提供者处理 TLS 加解密。最终通过内核的 TCP/IP 协议栈、网卡驱动，经由无线电模块发送出去。
 
-这条链路上的每个环节都有可能成为性能瓶颈。一个典型 HTTPS 请求的完整时间分解如下：
+这条路径上的每个环节都有可能成为性能瓶颈。一个典型 HTTPS 请求的完整时间分解如下：
 
 1. **DNS 解析**：将域名解析为 IP 地址。局域网环境下 < 1 ms，公网解析通常 20-120 ms。
 2. **TCP 连接建立**：三次握手，取决于网络 RTT（Round-Trip Time），通常 30-100 ms（4G 网络）。
@@ -88,9 +105,13 @@ task2b_state: pending
 
 ### 网络操作与主线程性能
 
-在 Perfetto 中，如果看到主线程上有长时间的网络相关等待（比如 `Socket` read/write 的 I/O 阻塞），这通常意味着网络操作被错误地放在了主线程。Android 的 `StrictMode` 默认会检测主线程上的网络 I/O 操作（`penaltyDeath` 或 `penaltyLog`），但很多 App 在 Release 版本中关闭了 StrictMode，导致这类问题在测试阶段被忽略。
+Android 在主线程直接做网络操作时，通常先抛 `NetworkOnMainThreadException`。这个异常对 `targetSdk >= 11` 的应用生效。`StrictMode` 是另一层开发期诊断机制，只有显式启用 `detectNetwork()` 才会把主线程网络访问记成违规；`permitAll()` 会关闭这类检测。两条机制职责不同，不能混写。
 
-从启动速度的角度看，冷启动过程中的同步网络请求是常见的"首帧延迟"原因。App 在 `Application.onCreate()` 或首个 Activity 的 `onCreate()` 中发起同步网络请求，整个启动流程被阻塞在等待网络响应上。在 Perfetto 中，这类问题表现为 MainThread 上一个长时间处于 `Sleeping` 或 `I/O wait` 状态的 segment，对应的 `blocked_function` 通常是 `pread64` 或 `poll`。
+冷启动里更常见的风险是主线程同步等待网络结果。App 在 `Application.onCreate()` 或首屏初始化中发起后台请求后，又在主线程用 `Future.get()`、`CountDownLatch.await()`、`runBlocking` 等方式等结果，首帧就会被卡住。直接在主线程做 Java 网络调用，通常会更早触发 `NetworkOnMainThreadException`。
+
+在 Perfetto 里排查这类问题时，主线程上的 `blocked_function` 要和线程上下文一起看。若 MainThread 直接落在 `poll`、`recvmsg`、`epoll_wait` 这类 socket 相关等待上，要继续核对调用栈或 fd 归属，确认是否真的把网络 I/O 放到了 UI 线程。若主线程落在 `futex` 等同步原语上，而 OkHttp / Cronet 工作线程同时处于 DNS、connect、TLS 或 response body read 阶段，根因通常是主线程在等网络结果。
+
+[已验证: Android SDK reference — NetworkOnMainThreadException / StrictMode.ThreadPolicy.Builder.detectNetwork()]
 
 ## OkHttp 连接池与复用机制
 
@@ -122,9 +143,9 @@ HTTP/2 引入了多路复用（multiplexing）：一个 TCP 连接上可以同�
 
 在 OkHttp 中，当服务端支持 HTTP/2 时（通过 ALPN 协商），连接池的行为会发生变化：同一个地址只需要维持一条连接，所有请求复用这条连接。这大大减少了连接池的压力，也降低了服务端的资源消耗。
 
-从性能数据上看，HTTP/2 多路复用在并发请求场景下优势明显。一个典型的 Web 页面可能需要加载 30-50 个资源，HTTP/1.1 下浏览器需要 6-8 条 TCP 连接并发请求（浏览器对同一域名的并发连接数有限制），而 HTTP/2 只需要 1 条。减少了 TCP 连接数意味着减少了 DNS 解析次数、TCP 握手次数、TLS 握手次数，整体页面加载时间可以缩短 20-40%。
+HTTP/2 的收益来自把同域名并发请求压到一条已建立的连接上。DNS、TCP、TLS 这些固定成本通常只付一次，后续多个 stream 直接复用现有连接。收益大小取决于资源数量、RTT、服务端实现和丢包情况，正文不固定写成单一百分比。
 
-[待补充：HTTP/2 多路复用在 Perfetto 中的具体 Trace 表现截图]
+[图：同一域名 8 个资源在 HTTP/1.1 多连接与 HTTP/2 单连接下的阶段对比，标出 DNS/TCP/TLS 只发生一次，以及多个 stream 并发返回的位置]
 
 ### 连接建立的完整流程
 
@@ -159,7 +180,7 @@ callEnd()             // 请求完成
 
 ## TLS 握手性能与优化
 
-TLS 握手是 HTTPS 请求中耗时最长的步骤之一，理解它的流程和优化手段对分析网络性能至关重要。
+TLS 握手是 HTTPS 请求中耗时最长的步骤之一，理解它的流程和优化手段会直接影响我们对网络耗时的判断。
 
 ### TLS 1.2 握手流程
 
@@ -183,22 +204,24 @@ TLS 1.3（Android 10+ 默认启用）将握手从 2-RTT 减少到 1-RTT。它通
 
 [已验证: 官方文档, developer.android.com — TLS 1.3 在 Android 10 (API 29) 起默认启用]
 
-TLS 1.3 还定义了 0-RTT 恢复模式，允许客户端在恢复会话时直接携带加密数据发送，跳过握手过程。Android 原生的 TLS 1.3 实现目前不支持 0-RTT，这主要是出于安全考虑，0-RTT 数据存在重放攻击风险。
+TLS 1.3 还定义了 0-RTT 恢复模式，允许客户端在恢复会话时直接携带应用数据。这个能力能不能生效，取决于客户端栈、服务端配置和反重放策略。分析 trace 时，不要把“用了 TLS 1.3”直接等同于“请求一定走了 0-RTT”。
 
 ### Conscrypt 与 Android TLS 实现
 
-Android 的 TLS 实现在底层使用的是 Google 的 Conscrypt 库，它构建在 BoringSSL（Google 维护的 OpenSSL 分支）之上。从 Android 10 开始，Conscrypt 通过 Project Mainline 以 APEX 模块的形式更新，Google 可以通过 Google Play Services 推送 TLS 相关的安全补丁，不再依赖 OEM 的系统更新。
+Android 平台默认的 TLS 实现来自 Conscrypt，它构建在 BoringSSL 之上。Android 10 起，Conscrypt 模块 `com.android.conscrypt` 以 Mainline APEX 形式分发，更新路径是 Google Play system updates，不是 Google Play services。
 
-对于需要支持 Android 10 以下设备的 App，可以通过 Jetpack 方式引入 Conscrypt：
+Google Play services 提供的是另一条兼容路径：`ProviderInstaller.installIfNeeded()` 可以在运行时安装可动态更新的 security provider。这个能力更适合旧系统或兼容场景，职责和 Mainline APEX 不同。
+
+如果 App 需要在旧设备上显式切换到外部 Conscrypt provider，可以自己插入 provider：
 
 ```java
-// 在 Application.onCreate() 中插入 Conscrypt 作为安全提供者
+// 需要显式依赖 org.conscrypt:conscrypt-android
 Security.insertProviderAt(Conscrypt.newProvider(), 1);
 ```
 
-插入后，OkHttp 等网络库会自动使用 Conscrypt 的 TLS 实现，从而在旧设备上也获得 TLS 1.3 的性能提升。
+这段代码属于“应用自己插入 provider”的方案。工程上可以按设备能力分三档：Android 10+ 先信任系统 Conscrypt；旧设备优先尝试 ProviderInstaller；还不满足时再显式引入外部 Conscrypt provider。
 
-[已验证: 官方文档, android.com — Conscrypt 自 API 16 起集成，Android 10+ 通过 Mainline 更新]
+[已验证: source.android Conscrypt Mainline / Google Play services ProviderInstaller]
 
 ### 证书验证的性能开销
 
@@ -208,7 +231,7 @@ Certificate Pinning 本身不会增加额外的网络往返，但错误的配置
 
 ## DNS 解析性能
 
-DNS 解析是网络请求链路的第一步，也是最容易被忽视的性能瓶颈。
+DNS 解析是网络请求过程的第一步，也是最容易被忽视的性能瓶颈。
 
 ### Android DNS 解析流程
 
@@ -227,15 +250,19 @@ DNS 解析的耗时差异很大，取决于缓存命中情况和网络环境：
 - **公网 DNS 服务器响应**：20-120 ms（国内运营商 DNS 可能更长）
 - **DNS 解析失败/超时**：通常 3-30 秒（取决于系统超时配置）
 
-一个容易被忽视的问题是：DNS 解析是同步阻塞操作。如果 DNS 查询发生在主线程上（哪怕是通过 OkHttp 发起），在解析完成之前线程会被阻塞。OkHttp 默认在自己的线程池中执行网络请求，但自定义的 `Dns` 实现如果不注意异步化，可能把 DNS 查询带回调用线程。
+还有一个常被忽视的点：DNS 解析是同步阻塞操作。如果 DNS 查询发生在主线程上（哪怕是通过 OkHttp 发起），在解析完成之前线程会被阻塞。OkHttp 默认在自己的线程池中执行网络请求，但自定义的 `Dns` 实现如果不注意异步化，可能把 DNS 查询带回调用线程。
 
 ### DNS over HTTPS 与性能
 
-Android 9 引入了 DNS-over-TLS (DoT) 的"私有 DNS"设置，Android 13 新增了 DNS-over-HTTPS (DoH) 的原生支持。从 Android 11 开始，Android 还支持 DNS-over-HTTP/3 (DoH3)，Google 的测试数据显示：相比 DoT，DoH3 的中位查询时间缩短 24%，P95 分位缩短 47%。
+DoT、DoH、DoH3 容易被写混。DoT 是 DNS over TLS，对应 Android 9 引入的 Private DNS。DoH 是把 DNS 报文封装到 HTTP 里的协议族，底层可以跑在 HTTP/2 或 HTTP/3 上。DoH3 则是 DoH over HTTP/3，底层传输是 QUIC。
 
-DoH3 之所以更快，是因为它将每个 DNS 查询放在独立的 QUIC stream 中，避免了 DoT 在单一 stream 上的队头阻塞。
+Android 系统 resolver 的公开入口，长期稳定的是 Private DNS 这条 DoT 路径。Google 在 2022 年披露，DoH3 作为 Google Play system update 向 Android 11 及以上设备 rollout。对支持的 well-known DNS servers，系统会把原来的 DoT transport 升级为 DoH3；用户使用的 DNS 服务本身不变。
 
-[已验证: 官方文档, android.com — DoT 从 Android 9 支持，DoH3 从 Android 11 支持]
+Google 给出的初始 rollout 数据是：成功查询上，DoH3 相比 DoT 的 median query time 下降 24%，95th percentile 下降 44%。这组数据出自 Google Online Security Blog。
+
+对性能分析来说，这段版本线的价值在于分清瓶颈落点。若 DNS P95 偏高，要继续区分是 resolver 选择、解析协议、运营商网络，还是单个 DNS 服务实现的问题。DoT 单流上的 head-of-line blocking，和 DoH3 / QUIC 的多 stream 行为，对尾延迟的影响不同。
+
+[已验证: Google Online Security Blog 2022-07 / Android Private DNS 文档]
 
 ### OkHttp 自定义 DNS 解析
 
@@ -278,28 +305,11 @@ connectivityManager.registerDefaultNetworkCallback(
 
 ### Radio State Machine
 
-移动设备的无线电模块（基带芯片 + 射频前端）遵循一个状态机模型运行。以 4G LTE 为例，它有三个主要状态：
+移动网络功耗看的是基带状态切换，不是单个 HTTP 包本身用了多少 CPU。以蜂窝网络为例，调制解调器会在高功耗传输态、较低功耗的维持态和空闲态之间切换。传输结束后，modem 往往不会立刻回到最省电的空闲态，而是保留一段 tail time 等后续流量。
 
-**全功率状态（RRC_CONNECTED）**：数据传输中，基带芯片全速运行，功耗最高。一个典型的 4G 基带在全功率状态下可能消耗 500-1000 mA 电流。
+这个 tail time 决定了网络请求为何适合批量发送。若请求零散分布，系统会反复把 modem 拉回高功耗态；若能把同一时间窗口内的请求合并，尾巴成本就能被多次请求共同摊掉。具体收益和 RAT 类型、运营商参数、设备基带实现直接相关，正文不固定写成统一毫安值或统一倍数。
 
-**低功率状态（DRX/IDLE）**：数据传输完成后的过渡状态，基带降低时钟频率和射频功率，功耗约为全功率状态的 50%。
-
-**待机状态**：基带进入深度休眠，仅监听寻呼消息，功耗极低（约 10-20 mA）。
-
-关键在于状态转换的延迟（tail time）。基带不会在数据传输完成后立刻进入待机状态，它会在低功率状态停留一段时间（4G 网络通常 10-20 秒），以防还有后续数据需要传输。所以即使一个网络请求只用了 100 ms，基带也可能在全功率和低功率状态维持额外 10-20 秒。
-
-### 批量请求 vs 分散请求
-
-理解了 Radio State Machine 的行为，我们就能理解为什么"批量请求"比"分散请求"省电。
-
-假设 App 需要在 1 分钟内发送 6 次网络请求：
-
-- **分散请求**（每 10 秒 1 次）：每次请求都会唤醒基带到全功率状态，基带在 1 分钟内几乎无法进入待机。总功耗约为基带全功率持续 60 秒。
-- **批量请求**（1 次发送 6 个请求）：基带只唤醒一次，传输完成后 10-20 秒回到待机。总功耗约为基带全功率持续 15-20 秒。
-
-两者功耗差异可能达到 3-4 倍。
-
-[待补充：Radio State Machine 状态转换时序图]
+[图：蜂窝网络状态机示意，标出一次短请求后的 tail time，以及连续小请求导致 modem 多次停留在高功耗态的对比]
 
 ### JobScheduler 与网络请求时机优化
 
@@ -357,15 +367,13 @@ override fun secureConnectEnd(call: Call, handshake: Handshake?) {
 
 这样在 Perfetto 中，我们就能看到一次网络请求被拆分为多个嵌套的 slice：`OkHttp-TLS` 在 `OkHttp-connect` 内部，`OkHttp-connect` 在整个请求 slice 内部。每个 slice 的长度就是对应阶段的耗时。
 
-### 定位主线程网络阻塞
+### 定位主线程等待网络结果
 
-在 Perfetto 中识别主线程上的网络阻塞，最直接的信号是：
+Perfetto 里更常见的现象是主线程等待网络线程，而不是主线程直接执行 socket I/O。排查时先看 MainThread 是否长时间停在 `futex`、`poll`、`epoll_wait` 等等待点，再看同一时间窗口里 OkHttp Dispatcher、Cronet 或 Binder 线程是否正处于 DNS、connect、TLS、response body read 阶段。
 
-1. 主线程出现长时间 `Sleeping` 或 `I/O wait` 的 segment。
-2. 对应的 `blocked_function` 是 `poll`、`pread64` 或 `recvmsg`。
-3. 在该 segment 期间，如果系统有 `binder_driver` 活动，可能是 `ConnectivityManager` 或 `TrafficStats` 等系统服务的调用。
+如果 MainThread 自己落在 `recvmsg`、`sendto`、`poll` 这类 socket 调用上，再去核对 `targetSdk`、调用栈和 native 层代码，确认是否真的存在主线程网络 I/O。若 MainThread 停在 `futex`，而后台网络线程正忙于建连或收包，根因通常是同步等待网络结果。
 
-严格来说，OkHttp 默认不会在主线程执行网络操作（除非调用 `execute()` 而非 `enqueue()`）。但在某些场景下——比如启动时同步等待关键配置数据——App 会故意在主线程做同步网络请求。这种情况下，Perfetto 中看到的表现就是 MainThread 上一个长达数百毫秒到数秒的阻塞 segment。
+[图：一次 HTTPS 请求的阶段切片示意，主线程等待点与 OkHttp Dispatcher 上的 dns/connect/tls/ttfb/body slice 对照]
 
 ### 网络性能监控的最佳实践
 
@@ -384,35 +392,42 @@ override fun secureConnectEnd(call: Call, handshake: Handshake?) {
 
 ### 🔸 HTTP/3 与 QUIC
 
-HTTP/3 基于 Google 设计的 QUIC 协议，运行在 UDP 之上。它解决的核心问题是 TCP 的队头阻塞（Head-of-Line Blocking）：在 HTTP/2 over TCP 中，一个 TCP 包的丢失会阻塞该连接上所有 stream 的数据传输；而 QUIC 中每个 stream 独立处理丢包恢复，一个 stream 的丢包不会影响其他 stream。
+当 DNS、TCP、TLS、TTFB 都已经拆开看过，弱网或网络切换时尾延迟仍然抖动，再看 HTTP/3 / QUIC 这一层。QUIC 跑在 UDP 上，把丢包恢复放到 stream 级别处理，能减轻 HTTP/2 over TCP 在单连接上的 head-of-line blocking。移动端分析里，更常见的收益点是连接恢复、弱网恢复和高 RTT 下的尾延迟，而不是单纯背协议名。
 
-从连接建立性能看，QUIC 支持真正的 0-RTT 连接恢复：如果客户端之前连接过该服务端，可以在第一个包中就携带加密数据，完全跳过握手过程。这比 TLS 1.3 的 1-RTT 更快。
+| 能力 | Android / API | Cronet | HttpEngine | OkHttp | 备注 |
+| --- | --- | --- | --- | --- | --- |
+| HTTP/2 | 不绑定单一系统 API，取决于库版本 | 原生支持 | API 34+，`setEnableHttp2(true)` | 原生支持 | 常规默认路径 |
+| HTTP/3 over QUIC | 不绑定单一系统 API，取决于库版本 | 原生支持 | API 34+，`setEnableQuic(true)`，可配 `addQuicHint()` | `OkHttpClient.Builder.protocols()` 文档当前只列 `http/1.1`、`h2`、`h2 prior knowledge` | 需要区分系统 API 与客户端库能力 |
+| 0-RTT / 会话恢复 | 依赖服务端和客户端栈 | 可能使用 | 可能使用 | 无公开原生入口 | 不要把每次恢复连接都当成 0-RTT |
+| DoT | Android 9+ / API 28+ | - | - | - | 公开系统入口是 Private DNS |
+| DoH3（系统 resolver） | Android 11+，经 Google Play system update 对 well-known DNS servers rollout | - | - | - | 这是系统解析器能力，不是通用 App API |
 
-Android 对 QUIC 的支持主要通过 Cronet（Chromium 网络栈的 Android 封装）。从 Android 11 开始，系统默认的 `HttpEngine`（API 34+ 推荐）也支持 QUIC。OkHttp 目前不原生支持 QUIC，但可以通过 `crazy_things_` 等实验性扩展来桥接 Cronet。
+`android.net.http.HttpEngine` 是 Android 14 / API 34 新增类。`HttpEngine.Builder` 暴露了 `setEnableQuic(true)` 和 `addQuicHint(host, port, alternatePort)` 这类 QUIC 入口。时间线写法要和 API 形态保持一致，不能写成“Android 11 起以 HttpEngine 形式默认支持”。
 
-[待验证：OkHttp 对 QUIC 的官方支持计划]
+OkHttp 的 `Protocol` 枚举里能看到 `QUIC` 常量，但 `OkHttpClient.Builder.protocols()` 的公开文档当前列出的可配置协议集合只有 `http/1.1`、`h2` 和 `h2 prior knowledge`。工程判断以公开 Builder 入口为准，当前不要把 OkHttp 当成稳定的原生 HTTP/3 客户端。
 
 ### 🔸 WebSocket 性能
 
-WebSocket 提供了全双工的持久连接，适合实时通信场景（聊天、推送、行情数据）。与 HTTP long-polling 相比，WebSocket 在建立连接后只需要 2-14 字节的帧头开销，而 long-polling 每次请求都有完整的 HTTP 头部开销（通常数百字节）。
-
-从功耗角度看，WebSocket 的长连接会持续占用基带资源——只要连接活跃，基带就无法进入待机状态。对于频繁的小消息推送，WebSocket 的功耗效率好于 long-polling（减少了重复的连接建立开销）；但对于低频推送（比如每分钟一条），用 Firebase Cloud Messaging（FCM）等系统级推送通道更省电，因为 FCM 复用了系统与 Google 服务器的已有连接。
+WebSocket 值不值得看，取决于消息节奏。高频小消息、聊天室、行情推送这类场景，握手成本摊薄后，WebSocket 往往比重复 HTTP 请求更稳。低频推送先看 FCM 或系统推送通道，因为它们复用了系统连接，基带不会被单个 App 的心跳频繁唤醒。分析 trace 时，WebSocket 重点看心跳间隔、重连频率和网络切换后的恢复时间。
 
 ### 🔸 Retrofit 与 Coroutine 集成性能
 
-Retrofit 是 Android 上最常用的 HTTP 客户端封装，它将 OkHttp 的 Call 对象映射为 Kotlin suspend 函数。从性能角度看，Retrofit 的适配层开销很小——它本质上是在 OkHttp Call 之上加了一层接口代理和类型转换。
-
-使用 `suspend` 函数后，网络请求的线程模型变得更清晰：请求在 OkHttp 的内部线程池中执行，结果通过 Kotlin 协程的 Continuation 机制回调到调用方的调度器（通常是 `Dispatchers.Main`）。对比 RxJava 的 Observable 链式调用，协程版本减少了一层 Observable 包装和调度器切换的开销，但这部分开销在整体网络请求耗时中占比很小（通常 < 1 ms），不是性能优化的重点。
-
-更实际的瓶颈是大批量并发请求的线程模型。OkHttp 默认的 Dispatcher 配置是最大 64 个并发请求、每个域名最多 5 个并发请求。如果 App 需要大量并发请求（比如图片列表预加载），需要根据实际情况调整 Dispatcher 的配置，否则请求会排队等待，表现为 TTFB 虚高。
+Retrofit 通常不是网络慢的第一嫌疑人。若 `EventListener` 显示 DNS、TCP、TLS、TTFB 都正常，但业务层拿到结果仍然晚，再去看 converter、JSON 解析、协程调度和主线程切换。列表页预加载场景还要同时核对 OkHttp Dispatcher 的 `maxRequests` 与 `maxRequestsPerHost`，确认没有把请求排队时间误判成服务端慢。
 
 ## 参考资料
 
-- [OkHttp 官方文档](https://square.github.io/okhttp/)
 - [Android Network Operations](https://developer.android.com/training/basics/network-ops)
+- [NetworkOnMainThreadException](https://developer.android.com/reference/android/os/NetworkOnMainThreadException)
+- [StrictMode.ThreadPolicy.Builder.detectNetwork()](https://developer.android.com/reference/android/os/StrictMode.ThreadPolicy.Builder#detectNetwork())
+- [HttpEngine](https://developer.android.com/reference/android/net/http/HttpEngine)
+- [HttpEngine.Builder](https://developer.android.com/reference/android/net/http/HttpEngine.Builder)
+- [Cronet 文档](https://developer.android.com/develop/connectivity/cronet)
+- [ProviderInstaller](https://developers.google.com/android/reference/com/google/android/gms/security/ProviderInstaller)
+- [Conscrypt Mainline 模块](https://source.android.com/docs/core/ota/modular-system/conscrypt)
+- [DNS-over-HTTP/3 in Android](https://security.googleblog.com/2022/07/dns-over-http3-in-android.html)
+- [OkHttp Builder protocols](https://square.github.io/okhttp/5.x/okhttp/okhttp3/-ok-http-client/-builder/protocols.html)
 - [Android TrafficStats](https://developer.android.com/reference/android/net/TrafficStats)
 - [Android ConnectivityManager](https://developer.android.com/reference/android/net/ConnectivityManager)
 - [Android Optimizing Battery Life](https://developer.android.com/training/monitoring-device-state)
 - [OkHttp EventListener API](https://square.github.io/okhttp/4.x/okhttp/okhttp3/-event-listener/)
-- [Conscrypt 安全提供者](https://github.com/google/conscrypt)
 - [Perfetto 自定义 Trace Event](https://perfetto.dev/docs/instrumentation/tracing-sdk)
