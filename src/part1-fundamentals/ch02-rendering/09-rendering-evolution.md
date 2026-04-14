@@ -5,7 +5,7 @@ section: "2.9"
 status: ready-for-review
 drafted_date: 2026-03-30
 drafted_by: "openclaw-task2a"
-reviewed_date: 2026-04-10
+reviewed_date: 2026-04-15
 reviewed_by: openclaw-task6
 applicable_versions: "Android 3.0 (API 11) ~ Android 16 (API 36)"
 last_verified: "2026-03-30"
@@ -29,8 +29,9 @@ sources:
     path: "intake/research-feeds/2026-03-30-ch02-skia-surfaceflinger.md"
 tags: ['frametimeline', 'vulkan', 'rendering-evolution', 'blastBufferQueue', 'hwui', 'skia', 'choreographer', 'FrameMetrics']
 related_chapters: ["2.1", "2.3", "2.6", "2.10", "3.1", "8.2"]
-pipeline_stage: task6_pending
-task6_state: pending
+pipeline_stage: task9_pending
+task6_state: reviewed
+task6_result: pass-light-edit
 task9_state: pending
 task2b_state: idle
 ---
@@ -55,7 +56,7 @@ Android 3.0（API 11，2011 年）引入了基于 OpenGL ES 2.0 的硬件加速�
 
 HWUI 带来了三个核心概念：
 
-1. **DisplayList（后更名为 RenderNode）**：将 `View` 的绘制操作录制为一份命令列表，而非直接执行。这意味着如果一个 `View` 只有位置变化（平移、旋转、缩放），无需重新录制所有 draw 命令，只需修改变换矩阵即可。这在 Perfetto 中体现为：同一个 `View` 的连续帧，主线程 `draw` 阶段的耗时会明显减少——因为只需修改矩阵参数，跳过了整个命令录制过程。
+1. **DisplayList（后更名为 RenderNode）**：将 `View` 的绘制操作录制为一份命令列表，而非直接执行。当一个 `View` 只有位置变化（平移、旋转、缩放）时，无需重新录制所有 draw 命令，只需修改变换矩阵即可。这在 Perfetto 中体现为：同一个 `View` 的连续帧，主线程 `draw` 阶段的耗时会明显减少——因为只需修改矩阵参数，跳过了整个命令录制过程。
 
 2. **硬件层（Hardware Layer）**：将复杂的 `View` 内容缓存为 GPU 纹理，后续帧只需做纹理合成，不再重复光栅化。适合频繁做动画但内容不变的 `View`。
 
@@ -67,7 +68,7 @@ HWUI 带来了三个核心概念：
 
 ### Android 4.0 ICS：默认开启
 
-Android 4.0 Ice Cream Sandwich（API 14，2011 年）将硬件加速设为 **所有 targetSdk ≥ 14 应用的默认行为**。这意味着开发者不再需要手动添加 `android:hardwareAccelerated="true"`，GPU 渲染成为 Android UI 的标准路径。
+Android 4.0 Ice Cream Sandwich（API 14，2011 年）将硬件加速设为 **所有 targetSdk ≥ 14 应用的默认行为**。开发者不再需要手动添加 `android:hardwareAccelerated="true"`，GPU 渲染成为 Android UI 的标准路径。
 
 同时，Android 4.0 **强制要求** 所有搭载该版本的设备支持硬件加速的 2D 绘制，将 GPU 加速从"可选特性"升级为"平台基线"。
 
@@ -145,8 +146,8 @@ Android Oreo（8.0）开始测试将 Skia 作为统一的渲染后端，通过 S
 Skia 同时实现了 Vulkan GPU 后端。从 Android Q（10.0）开始，开发者可以通过调试参数启用 `SkiaVulkan` 管线。到 2024 年，新芯片组开始默认使用 SkiaVulkan 后端。
 
 Vulkan 后端相比 OpenGL ES 的具体改进：
-- **CPU 开销降低约 30–50%**：Vulkan 的命令缓冲区（Command Buffer）允许多线程并行构建和提交 GPU 命令，省去了 OpenGL ES 驱动层大量的隐式状态验证和同步开销
-- **显式内存管理**：应用可以精确控制 GPU 内存的分配时机（通过 `VkAllocateMemory`）、绑定和释放，而非依赖 GL 驱动的隐式管理。这意味着内存生命周期与帧调度可以精确对齐，减少显存浪费
+- **CPU 开销降低约 30–50%** [待验证：需补充 benchmark 来源]：Vulkan 的命令缓冲区（Command Buffer）允许多线程并行构建和提交 GPU 命令，省去了 OpenGL ES 驱动层大量的隐式状态验证和同步开销
+- **显式内存管理**：应用可以精确控制 GPU 内存的分配时机（通过 `VkAllocateMemory`）、绑定和释放，而非依赖 GL 驱动的隐式管理。内存生命周期与帧调度因此可以精确对齐，减少显存浪费
 - **扩展图形特性集**：Vulkan 1.1+ 提供计算着色器（Compute Shader）、多通道渲染（Multi-pass Rendering）、异步计算队列等 OpenGL ES 3.x 不具备或受限的能力
 
 > [已验证: L2 — developer.android.com/ndk/guides/graphics, skia.org, XDA-developers.com]
@@ -184,7 +185,7 @@ Android 12（API 31，2021 年）引入了 **BLASTBufferQueue**（BLAST = Buffer
 
 Android 16 带来一个实质性的转变：**Vulkan 正式成为 Android 的官方图形 API**。OpenGL ES 不再接受新特性开发，进入维护模式。
 
-但 App 不需要改代码。Android 16 集成了 **ANGLE**（Almost Native Graphics Layer Engine）作为系统级驱动，将 OpenGL ES 调用翻译为 Vulkan 调用。这意味着：
+但 App 不需要改代码。Android 16 集成了 **ANGLE**（Almost Native Graphics Layer Engine）作为系统级驱动，将 OpenGL ES 调用翻译为 Vulkan 调用。结果：
 - 使用 OpenGL ES 的 App 自动获得 ANGLE 翻译层带来的优化
 - 游戏和图形密集型应用应直接使用 Vulkan API 以获得最佳性能
 - 开发者可以使用 `Android Vulkan Profile 2025` 确保跨设备兼容性
@@ -209,7 +210,7 @@ canvas.drawRect(rect, paint);
 
 Android 15 引入、Android 16 进一步完善的 **自适应刷新率**（Adaptive Refresh Rate, ARR）是渲染管线的又一次重大变革。
 
-ARR 将**显示刷新率与内容帧率解耦**：当内容以 30 FPS 渲染时，屏幕刷新率可以同步降低到 30Hz（而非维持 120Hz），降低功耗（在低帧率场景下，屏幕刷新率从 120Hz 降到 30Hz，GPU 和显示驱动的功耗可下降约 40–60%，具体取决于面板和 SoC）；当用户开始滑动时，刷新率可以无缝提升到 120Hz，消除卡顿。
+ARR 将**显示刷新率与内容帧率解耦**：当内容以 30 FPS 渲染时，屏幕刷新率可以同步降低到 30Hz（而非维持 120Hz），降低功耗（在低帧率场景下，屏幕刷新率从 120Hz 降到 30Hz，GPU 和显示驱动的功耗可下降约 40–60% [待验证：需补充实测来源]，具体取决于面板和 SoC）；当用户开始滑动时，刷新率可以无缝提升到 120Hz，消除卡顿。
 
 实现要求：
 - 硬件：支持离散 VSync 步进的显示面板
@@ -240,7 +241,7 @@ RecyclerView 1.4 已内置 ARR 支持，在 fling 和 smooth scroll 操作时自
 
 当我们分析卡顿时，最常面对的问题是"这帧为什么超了 16.67ms"。FrameMetrics 就是回答这个问题的工具——它把一帧的完整生命周期拆解为多个阶段，告诉我们时间究竟花在了哪里。
 
-FrameMetrics 在 Android 7.0（API 24）引入，通过 `Window.addOnFrameMetricsAvailableListener()` 注册回调，系统会在每帧渲染完成后回调一次，附带该帧各阶段的精确耗时。这意味着我们不需要在代码里手动打点，就能拿到完整的帧耗时分布。
+FrameMetrics 在 Android 7.0（API 24）引入，通过 `Window.addOnFrameMetricsAvailableListener()` 注册回调，系统会在每帧渲染完成后回调一次，附带该帧各阶段的精确耗时。开发者不需要在代码里手动打点，就能拿到完整的帧耗时分布。
 
 FrameMetrics 将一帧的渲染拆解为以下阶段：
 
@@ -346,6 +347,6 @@ FrameMetrics 是 per-window、per-process 的 API，只能报告当前 App 进�
 
 最初，CPU 包揽了从 Measure/Layout/Draw 到像素生成的全部工作。OpenGL ES 硬件加速把像素生成交给了 GPU；RenderThread 把 GPU 命令提交从主线程剥离出去；SkiaGL/SkiaVulkan 统一了 GPU 后端；BLASTBufferQueue 让 Buffer 提交变成异步操作。每一步都在减轻主线程的负担——这也是为什么在 Perfetto 中，现代 Android 的主线程 `performTraversals` 可以非常短：它只需要录制 RenderNode，GPU 工作全部在 `RenderThread` Track 上执行。
 
-另一条线索是**渲染节奏从固定到自适应**。Project Butter 确立了 VSync 驱动 60 FPS 的模型，但固定刷新率在高帧率设备上浪费功耗。ARR 让刷新率跟随内容帧率动态调整，`VSYNC-app` 不再是均匀的节拍器。这意味着 Perfetto 分析也需要进化：不能只看 VSync 间隔是否均匀，还要结合 `FrameTimeline` 判断帧是否在预期时间内完成。
+另一条线索是**渲染节奏从固定到自适应**。Project Butter 确立了 VSync 驱动 60 FPS 的模型，但固定刷新率在高帧率设备上浪费功耗。ARR 让刷新率跟随内容帧率动态调整，`VSYNC-app` 不再是均匀的节拍器。Perfetto 分析也需要相应调整：不能只看 VSync 间隔是否均匀，还要结合 `FrameTimeline` 判断帧是否在预期时间内完成。
 
 理解这些版本差异，是分析 Perfetto Trace 的前提条件。`RenderThread` Track 从 Android 5.0 才存在；`BLASTBufferQueue` 从 Android 12 开始取代 `BufferQueue`；ARR 设备上的 `VSYNC-app` 间隔会动态变化——每一个 Track 都带着版本烙印，忽略了这一点，就可能对着正确的 Trace 得出错误的结论。
