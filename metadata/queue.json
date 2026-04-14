@@ -2084,8 +2084,12 @@
     ],
     "added_by": "task6-review",
     "added_at": "2026-04-11T23:06:00+08:00",
-    "status": "pending",
-    "original_review_log": "logs/review/2026-04-11-23-review.md"
+    "status": "completed",
+    "original_review_log": "logs/review/2026-04-11-23-review.md",
+    "completed_at": "2026-04-15T05:43:09",
+    "completed_by": "task2b-rework",
+    "result": "fixed",
+    "notes": "Task 2B 回炉修复：1) 5处量化断言降级为定性表述+补 [待验证]（5-10倍→远高于、1/10以下→远低于、2-3倍→数倍、2-5ms→数毫秒）；2) TextLine cache 版本引入标注降级为'待核对'；3) 补 3 处 [图：...] 占位覆盖架构图、jank帧Trace、正常vs jank对比。STYLE.md 禁用词扫描通过。"
   },
   {
     "section": "1.13",
