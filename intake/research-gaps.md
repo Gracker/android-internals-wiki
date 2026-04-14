@@ -2205,3 +2205,21 @@ Perfetto 输入分析的采集前提和真实实体模型没有讲透。当前�
 
 ### 关联章节
 §3.4、§13.3、§13.5、§13.8
+
+## [2026-04-14] 1.6 Android 版本演进中的架构变化 — 知识盲区
+
+### 盲区描述
+章节把 Treble、VINTF、GSI、GKI 串成了“模块化链条”，但中间缺了 VNDK、linker namespace、VNDK snapshot 这组真正负责 system/vendor ABI 隔离的机制。现在的表述只能解释“HAL 接口稳定”，解释不了“为什么新 System image 可以不重编 vendor 直接运行”，读者会把 Treble 误解成纯 HAL IDL 工程，而看不到它对动态链接边界和系统升级模型的约束。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 梳理 VNDK、llndk、linker namespace、vendor_available 与 VNDK snapshot 在 Treble 架构中的职责边界
+- 用一条从 system 分区到 vendor 分区的动态链接路径，说明“稳定 HAL 接口”和“ABI 隔离”分别解决什么问题
+- 补 GSI / VTS / CTS-on-GSI 的关系，解释 GSI 为什么能成为 Treble 合规性验证工具
+- 若章节继续覆盖 GKI，补 Treble 到 GKI 的共性设计模式：接口定义、ABI/KMI 约束、测试套件、可更新单元
+
+### 关联章节
+§1.1、§1.4、§1.6
+

@@ -8760,5 +8760,38 @@
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-14T13:20:00+08:00",
     "status": "pending"
+  },
+  {
+    "section": "1.6",
+    "section_title": "Android 版本演进中的架构变化",
+    "priority": 95,
+    "reason": "[Deep Tech Review] Android 10 Mainline/ART 时间线写错，zygote 命名与所引 init 脚本不符，Treble 模块化链条缺少 VNDK/linker namespace 关键环节",
+    "material_paths": [
+      "intake/suggestions.md",
+      "intake/research-gaps.md"
+    ],
+    "review_issues": [
+      {
+        "type": "版本差异",
+        "location": "L123-L132 Android 10（Project Mainline 与 APEX）",
+        "detail": "正文把 ART 与 DNS resolver、媒体模块并列为 Android 10 就能经由 Google Play 更新的 Mainline 组件，但官方 Mainline 模块表明确 `com.android.art` 的 Release introduced 是 Android 12。当前写法会误导读者把 Android 10/11 与 Android 12+ 的 ART 更新能力混成一条时间线。",
+        "suggestion": "拆开 Android 10 Mainline 首发模块与 Android 12+ ART Mainline 两段时间线。Android 10 例子可保留 DNS Resolver / Conscrypt / Media 等模块，ART 需要明确标注为 Android 12 起。"
+      },
+      {
+        "type": "源码错误",
+        "location": "L95；L347-L351 Zygote 命名与 Perfetto 对照表",
+        "detail": "文中标注“已验证: AOSP init.zygote64_32.rc”，但该脚本与 `init.zygote64.rc` 中的 service 名称是 `zygote` 与 `zygote_secondary`。正文却写成 `zygote64` / `zygote_secondary`，表格又写成 `zygote64 + zygote`，章节内部与所引源码都对不上。",
+        "suggestion": "区分 init service name、socket name 与 trace/ps 中可能出现的 process cmdline。若继续引用 `init.zygote64_32.rc`，应先按源码口径写 `zygote` / `zygote_secondary`，再单独解释 64-bit 主 zygote 在进程列表中的显示差异。"
+      },
+      {
+        "type": "原理断裂",
+        "location": "L160-L200 Project Treble → VINTF → GSI → GKI",
+        "detail": "这段把“Framework 能独立于 Vendor 升级”的原因几乎全部压在 HAL 接口稳定性上，但缺了 VNDK、linker namespace、vendor/system ABI 隔离这些真正让 system/vendor 依赖解耦的机制。标题写“完整链条”，正文却没有把 ABI 边界闭合。",
+        "suggestion": "补一段 VNDK / linker namespace / VNDK snapshot 的职责，把“稳定 HAL 接口”与“二进制依赖隔离”串成完整链路，再解释 GSI 为什么能作为 Treble 合规性的试金石。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-14T14:20:00+08:00",
+    "status": "pending"
   }
 ]
