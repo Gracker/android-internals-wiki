@@ -23,10 +23,13 @@ sources:
 tags:
   - android
   - research
-pipeline_stage: task6_pending
-task6_state: pending
+pipeline_stage: task2b_pending
+task6_state: reviewed
 task9_state: pending
-task2b_state: idle
+task2b_state: pending
+reviewed_by: "openclaw-task6"
+reviewed_date: "2026-04-14"
+task6_result: needs-rework
 ---
 
 
@@ -61,11 +64,11 @@ task2b_state: idle
 
 我们在前面几章介绍了 Perfetto、Simpleperf、Android Studio Profiler 等官方工具。这些工具能力强大，但有一个共同的局限：它们主要服务于线下分析场景。当我们需要在线上（生产环境）监控真实用户的性能数据、在灰度阶段快速定位特定用户的卡顿问题、或者在编译期自动扫描潜在性能陷阱时，就需要借助三方性能库了。
 
-本章介绍的工具不是 Perfetto 的替代品，而是补充。它们解决的是不同场景下的问题：线上监控、自动检测、编译期预防。理解每个工具的核心原理和适用场景，能帮助我们在合适的时机选择合适的武器。
+本章介绍的工具和 Perfetto 互补，覆盖的是线上监控、自动检测、编译期预防这些场景。理解每个工具的核心原理和适用场景，能帮助我们在合适的时机选对工具组合。
 
 ## Matrix：微信的全链路性能监控
 
-Matrix 是腾讯微信团队开源的 Android 性能监控框架，也是目前国内覆盖面最广、集成度最高的性能监控方案之一。它不是一个单一工具，而是一套完整的 APM（Application Performance Monitoring）体系，包含多个子模块，每个模块针对一个特定的性能维度。
+Matrix 是腾讯微信团队开源的 Android 性能监控框架，也是目前国内覆盖面最广、集成度最高的性能监控方案之一。它是一套完整的 APM（Application Performance Monitoring）体系，包含多个子模块，每个模块针对一个特定的性能维度。
 
 ### 整体架构
 
@@ -157,7 +160,7 @@ KOOM 还提供了线程泄漏检测能力。它通过 Hook pthread_create 和 pt
 
 要理解 Booster，我们先要知道它在构建流程中的位置。Android 应用的构建流程大致是：源码 → Java/Kotlin 编译 → .class 文件 → **Transform 阶段** → .dex 文件 → APK 打包。Booster 就工作在 Transform 阶段，拿到所有 .class 文件后、生成 .dex 之前。
 
-这意味着 Booster 能做的事情非常广泛：它可以看到整个应用的字节码，可以做静态分析、可以做代码注入、可以做代码优化。而且这些操作都是编译期完成的，对运行时性能没有任何额外开销。
+因此，Booster 能做的事情非常广泛：它可以看到整个应用的字节码，可以做静态分析、代码注入和代码优化。而且这些操作都在编译期完成，对运行时性能没有额外开销。
 
 [已验证: github.com/didi/Booster]
 
@@ -167,7 +170,7 @@ Booster 的功能以模块化形式提供，我们可以按需引入。
 
 **性能检测模块**通过静态分析所有 .class 文件构建全局调用图（Call Graph），找出在主线程调用了 I/O 操作、SharedPreferences 读写、网络请求等可能阻塞的 API。它生成可视化报告帮助我们快速定位问题代码。这和 Trace Canary 的运行时检测形成互补——Trace Canary 发现的是实际发生了的卡顿，Booster 发现的是潜在可能卡顿的代码。
 
-**资源索引内联与常量清除**模块针对的是 Android 构建系统中一个经典的冗余问题。编译后，R 类（如 R.id.xxx、R.layout.xxx）本质上就是一组 static final int 常量。运行时访问这些字段需要一次字段查找（虽然 JIT 会优化，但首次访问仍有开销）。Booster 直接将这些字段访问替换为字面值常量，并从类中删除不再需要的常量字段，既减少了包体积，也略微提升了运行时性能。
+**资源索引内联与常量清除**模块针对的是 Android 构建系统中一个经典的冗余问题。编译后，R 类（如 R.id.xxx、R.layout.xxx）其实就是一组 static final int 常量。运行时访问这些字段需要一次字段查找（虽然 JIT 会优化，但首次访问仍有开销）。Booster 直接将这些字段访问替换为字面值常量，并从类中删除不再需要的常量字段，既减少了包体积，也略微提升了运行时性能。
 
 **系统 Bug 修复**模块展现了编译期优化的另一个优势。比如 Android API 25 中 Toast 的 BadTokenException 问题（在 Toast.show() 时如果 NotificationManagerService 还未来得及处理，会抛出异常导致崩溃）。Booster 通过字节码注入，在所有 Toast.show() 调用前后包裹 try-catch，一次性解决全局问题，而不需要每个调用点手动处理。
 
@@ -177,7 +180,7 @@ Booster 的功能以模块化形式提供，我们可以按需引入。
 
 ### Booster 的局限性
 
-Booster 基于 Transform API 的方案也有局限。首先，Transform API 在 AGP 7.0+ 中已被标记为 deprecated，AGP 8.0 中虽然仍可使用但推荐迁移到 Instrumentation API。新项目如果使用较新的 AGP 版本，可能需要考虑替代方案。其次，编译期分析无法覆盖运行时行为——Booster 能发现"这段代码在主线程调用了 I/O"，但无法判断"这个 I/O 在实际运行中到底耗时多久"。
+Booster 基于 Transform API 的方案也有局限。Transform API 在 AGP 7.0+ 中已被标记为 deprecated，AGP 8.0 中虽然仍可使用，但官方更推荐迁移到 Instrumentation API。新项目如果使用较新的 AGP 版本，通常要同步评估替代方案。另一个限制是编译期分析无法覆盖运行时行为，Booster 能发现"这段代码在主线程调用了 I/O"，但无法判断"这个 I/O 在实际运行中到底耗时多久"。
 
 [待验证: Booster 在 AGP 8.x 上的兼容性状态]
 
@@ -217,7 +220,7 @@ Rhea 是字节跳动抖音团队开发的 Trace 工具，虽然它不是一个�
 
 **第二阶段是自研 Method Trace**。Rhea 2.0 摒弃了 Systrace，改为在 Java 层记录方法的首末时间戳，异步写入文件，然后转换为 Systrace 可视化格式。性能损耗从 11.5% 降到了约 3%。但它只能覆盖 Java 方法级信息，无法看到锁等待、I/O 耗时、Binder 调用等系统级行为。
 
-**第三阶段是动态一体化 Trace**。Rhea 3.0 宁弃了前面的方案，重新设计了一套完整架构：不限层级插桩获取函数耗时 + Hook atrace_marker_fd 拦截用户态 Trace + Hook libc 的 open/read/write/fsync 收集 I/O 信息 + Hook libbinder.so 的 IPCThreadState.transact 收集 Binder 耗时 + 运行时动态打开 ART 虚拟机的轻锁日志。最终将用户态 atrace 和内核态 ftrace 合并为一个完整的 Trace 文件，兼容 Systrace/Perfetto 可视化格式。
+**第三阶段是动态一体化 Trace**。Rhea 3.0 放弃了前面的方案，重新设计了一套完整架构：不限层级插桩获取函数耗时 + Hook atrace_marker_fd 拦截用户态 Trace + Hook libc 的 open/read/write/fsync 收集 I/O 信息 + Hook libbinder.so 的 IPCThreadState.transact 收集 Binder 耗时 + 运行时动态打开 ART 虚拟机的轻锁日志。最终将用户态 atrace 和内核态 ftrace 合并为一个完整的 Trace 文件，兼容 Systrace/Perfetto 可视化格式。
 
 Rhea 的一个关键优化是将直接写入内核态 trace_marker 文件的 Trace 在用户态拦截、缓存，再异步转储。这避免了大量线程同时向同一文件写入导致的 pos 锁竞争问题——这个问题在实际优化中非常容易误导方向，因为工具本身的性能开销表现为 I/O Wait，很容易误判为业务代码的 I/O 问题。
 
@@ -249,13 +252,13 @@ Inline Hook 直接修改目标函数的机器码（通常是将函数入口处�
 
 ### Transform（编译期字节码修改）
 
-Booster 使用的 Transform 不是运行时 Hook，而是编译期方案。它在 .class 文件阶段对字节码进行修改，修改后的代码直接编译进 APK 中。
+Booster 使用的 Transform 属于编译期方案。它在 .class 文件阶段对字节码进行修改，修改后的代码直接编译进 APK 中。
 
 优势是零运行时开销——修改在编译期完成，运行时不存在任何 Hook 成本。劣势是只能在编译期看到静态信息，无法根据运行时状态做动态决策。
 
 ## 工具选型指南
 
-理解了每个工具的原理之后，我们来看看在实际项目中如何选择和组合使用。
+理解了每个工具的原理之后，实际项目里可以按下面几个场景选择和组合使用。
 
 ### 按场景选择
 
@@ -263,7 +266,7 @@ Booster 使用的 Transform 不是运行时 Hook，而是编译期方案。它�
 
 **编译期预防**需要 Booster。它在每次构建时自动扫描潜在问题，不依赖线上数据就能发现问题。特别是对第三方 SDK 的行为约束（线程数控制、主线程 I/O 检测），Booster 在编译期就能拦截。
 
-**启动任务管理**需要 Anchors / AppInit 等调度框架。但更重要的是理解 DAG 调度的思路，而不是绑定到某个具体框架上。如果项目规模不大，完全可以自建一个轻量的任务调度器。
+**启动任务管理**可以用 Anchors / AppInit 等调度框架。重点还是把 DAG 调度的思路落到任务拆分和依赖编排上，而不是绑定某个具体框架。如果项目规模不大，完全可以自建一个轻量的任务调度器。
 
 **线下深度 Trace**中 Perfetto 仍然是首选，Rhea 的价值在于：当我们需要在真实用户环境中远程抓取 Trace（比如灰度用户反馈的特定场景卡顿），Rhea 可以不依赖 PC、不依赖 adb 就在 App 侧完成 Trace 抓取。
 
@@ -271,7 +274,9 @@ Booster 使用的 Transform 不是运行时 Hook，而是编译期方案。它�
 
 ### 组合使用的注意事项
 
-同时接入多个性能库时需要注意几个问题。一是**性能开销叠加**。每个运行时监控工具都有一定的性能开销（Matrix 约 2~5%，KOOM 的 Native Hook 也有少量开销），多个工具叠加可能导致低端机上用户可感知的卡顿。通常的做法是对监控工具本身做采样——只对部分用户开启完整监控。
+同时接入多个性能库时，通常会遇到三类额外成本。
+
+一是**性能开销叠加**。每个运行时监控工具都有一定的性能开销（Matrix 约 2~5%，KOOM 的 Native Hook 也有少量开销），多个工具叠加后，低端机更容易出现用户可感知的卡顿。通常的做法是对监控工具本身做采样，只对部分用户开启完整监控。
 
 二是**Hook 冲突**。如果 Matrix 和 KOOM 都 Hook 了 libc 的 open/write，可能出现 Hook 链冲突。实际上 xHook 本身支持 Hook 链（多个 Hook 函数按序执行），但不同工具使用不同的 Hook 库时可能冲突。建议统一使用同一个底层 Hook 库。
 
@@ -283,7 +288,7 @@ Booster 使用的 Transform 不是运行时 Hook，而是编译期方案。它�
 
 **"KOOM 的 Native 泄漏检测可以替代 ASan"**。KOOM 的 Mark-and-Sweep 方案是"不精确"的——它只能检测到"不可达"的内存块，但"不可达"不等于"泄漏"（某些长期存活的内存块可能在扫描瞬间没有被任何栈变量引用）。AddressSanitizer (ASan) 是更精确的工具，但它需要特殊编译且开销大，不适合生产环境。KOOM 适合生产环境的持续监控，ASan 适合开发阶段的问题定位。
 
-**"Booster 的 Transform API 已经过时了"**。虽然 AGP 8.0 将 Transform API 标记为 deprecated 并推荐 Instrumentation API，但 Transform API 在当前版本仍然可用。更重要的是，Booster 的核心价值不在 Transform API 这个入口，而在于它提供的各种优化模块的实现逻辑。即使需要迁移到新 API，这些优化逻辑本身是不过时的。
+**"Booster 的 Transform API 已经过时了"**。虽然 AGP 8.0 将 Transform API 标记为 deprecated 并推荐 Instrumentation API，但 Transform API 在当前版本仍然可用。Booster 的核心价值在它提供的优化模块和字节码处理思路，即使入口 API 迁移，这些优化逻辑本身也不会过时。
 
 **"启动框架能自动优化启动速度"**。启动调度框架只是帮你更好地组织任务——把可以并行的任务并行化、把非关键路径的任务延迟化。它本身不会让任何单个任务执行得更快。如果每个初始化任务本身就很慢，用了框架也不会有质的变化。优化启动的根本还是减少启动路径上的工作量。
 
@@ -297,15 +302,3 @@ Booster 使用的 Transform 不是运行时 Hook，而是编译期方案。它�
 - 抖音 Android 性能优化系列：Rhea Trace 工具: https://mp.weixin.qq.com/s/vkBeZ6hmVn_RaXS5Xv_L2g
 - Android PLT Hook 概述（xHook 文档）: https://github.com/iqiyi/xHook/blob/master/docs/overview/android_plt_hook_overview.zh-CN.md
 - Alpha 启动调度框架: https://github.com/alibaba/alpha
-### Luban 2：简洁高效的Android图片压缩库
-- 来源：https://juejin.cn/post/7592241336290033715
-- 类型：工具/库
-- 摘要：Luban 2图片压缩库：Kotlin协程重构，流式处理避免OOM，压缩速度提升3倍，内存占用降低60%。
-- 入库时间：2026-04-06
-
-
-### Android 16 AppJankStats + RelativeFrameTimeHistogram API
-- 来源：https://developer.android.com/reference/android/os/AppJankStats
-- 类型：research
-- 摘要：平台级零侵入jank统计API，无需集成第三方库。帧时间分布直方图(RelativeFrameTimeHistogram)。与JankStats库互补，适合无法修改代码的场景。
-- 入库时间：2026-04-08
