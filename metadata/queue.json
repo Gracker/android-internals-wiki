@@ -9377,5 +9377,56 @@
     "added_at": "2026-04-14T23:27:30",
     "status": "pending",
     "deep_review_log": "logs/deep-review/2026-04-14-23-deep-review.md"
+  },
+  {
+    "section": "13.7",
+    "section_title": "Perfetto 的高级用法",
+    "priority": 85,
+    "reason": "[Deep Tech Review] Python API 名称未验证（trace_summary/query_and_flatten/add_sql_packages），自定义 Trace Point 节严重不完整（outline 承诺 atrace_begin/TRACE_EVENT），PerfettoSQL 高级语法缺失，Native 层 Perfetto SDK 未覆盖",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "需确认",
+        "location": "Trace Summarization API（trace_summary/query_and_flatten/add_sql_packages）",
+        "detail": "三个 Python API 名称全部未经验证：tp.trace_summary()、BatchTraceProcessor.query_and_flatten()、TraceProcessorConfig(add_sql_packages)。Perfetto Python 包的公开 API 可能使用不同的方法名或参数名。",
+        "suggestion": "对照 perfetto Python 包的 __init__.py 和官方文档，逐个核实 API 名称和签名。不确定的改为 [待验证] 或降级为定性描述。"
+      },
+      {
+        "type": "原理断裂",
+        "location": "自定义 Trace Point（全文，outline 锚点）",
+        "detail": "outline 明确承诺覆盖 atrace_begin / TRACE_EVENT，但正文只写了 Java Trace.beginSection() 一个示例就结束。Native 层 atrace_begin()/atrace_end()、Perfetto SDK 的 TRACE_EVENT/TRACE_COUNTER/TrackEvent、async trace point 全部缺失。",
+        "suggestion": "补齐：(1) Native atrace API 用法与性能特征；(2) Perfetto SDK C++ TRACE_EVENT 宏；(3) Kotlin 协程中的 Trace 实践。这是 outline 的必覆盖锚点。"
+      },
+      {
+        "type": "知识盲区",
+        "location": "自定义 Metric 段",
+        "detail": "缺少 PerfettoSQL 高级语法：CREATE_FUNCTION（自定义 SQL 函数）、CREATE_TABLE（持久化中间表）、INCLUDE（模块化 SQL）。编写生产级 Metric 必须用到这些。",
+        "suggestion": "补一节 PerfettoSQL 高级语法，至少覆盖 CREATE_FUNCTION 和 CREATE_TABLE 的用法与示例。"
+      },
+      {
+        "type": "知识盲区",
+        "location": "全文",
+        "detail": "Perfetto SDK Native 层使用（outline 扩展锚点）完全未覆盖。C++ tracing API（TrackEvent、DebugAnnotation）是 Native 性能工程师的核心入口。",
+        "suggestion": "补一节 Perfetto SDK Native 层使用，至少覆盖 TRACE_EVENT、TRACE_COUNTER 的基本用法和集成方式。"
+      },
+      {
+        "type": "需确认",
+        "location": "冷启动 SQL — slice name",
+        "detail": "activityStart、activityResume、Choreographer#doFrame、DrawFrame 四个 slice name 全部未验证，和 FirstFrame 一样存在跑不通的风险。",
+        "suggestion": "用真实 Perfetto Trace 验证 slice name，或改为读者可根据自己项目 atrace 标记替换的说明。"
+      },
+      {
+        "type": "版本差异",
+        "location": "Python perfetto 包版本",
+        "detail": "perfetto Python 包本身的版本差异（API 签名变化、新增功能）完全没有提到。读者安装的版本与正文不一致时代码可能跑不通。",
+        "suggestion": "补一节版本说明，至少标注当前示例基于哪个版本的 perfetto 包，以及已知的主要 API 变化。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-15T00:25:58+08:00",
+    "status": "pending",
+    "original_review_log": "logs/deep-review/2026-04-15-00-deep-review.md"
   }
 ]

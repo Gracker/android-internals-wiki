@@ -2342,3 +2342,23 @@ WMS 的 BLAST BufferQueue 集成方式未被覆盖。Android 12 引入 BLAST 后
 
 ### 关联章节
 2.12、2.13、2.5
+
+## [2026-04-15] 13.7 Perfetto 的高级用法 — 知识盲区
+
+### 盲区描述
+Native 层自定义 Trace（atrace_begin / Perfetto SDK TRACE_EVENT）完全未覆盖。
+这是 Android 系统/OEM 性能工程师的高频需求，outline 已将 atrace_begin / TRACE_EVENT 列为必覆盖锚点。
+此外 PerfettoSQL 高级语法（CREATE_FUNCTION / CREATE_TABLE / INCLUDE）在正文和 outline 中均未提及，
+但编写生产级自定义 Metric 必须用到这些。
+
+### 重要程度
+高
+
+### 建议研究方向
+- Perfetto SDK C++ tracing API：TRACE_EVENT、TRACE_COUNTER、TrackEvent、DebugAnnotation
+- Native atrace API：atrace_begin/atrace_end 的用法、性能特征、与 Perfetto 的关系
+- PerfettoSQL 高级语法：CREATE_FUNCTION、CREATE_TABLE、INCLUDE 的官方文档与示例
+- Python perfetto 包的版本 API 变化
+
+### 关联章节
+13.1, 13.2, 13.3, 13.5, 13.8, 13.10
