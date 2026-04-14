@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-14T22:31:24+08:00",
+  "generated_at": "2026-04-14T22:49:52+08:00",
   "state_machine_version": "v2",
   "total_sections": 207,
   "metrics": {
@@ -7,21 +7,45 @@
     "unknown": 34,
     "ready-for-review": 173,
     "pipeline_unknown": 31,
-    "pipeline_task6_pending": 159,
+    "pipeline_task6_pending": 160,
     "pipeline_task9_pending": 1,
-    "pipeline_task2b_pending": 16,
+    "pipeline_task2b_pending": 15,
     "task2b_unknown": 31,
     "task2b_idle": 83,
-    "task2b_pending": 16,
-    "task2b_fixed": 77,
+    "task2b_pending": 15,
+    "task2b_fixed": 78,
     "task6_unknown": 31,
     "task6_pending": 82,
-    "task6_reviewed": 17,
-    "task6_revisiting": 77,
+    "task6_reviewed": 16,
+    "task6_revisiting": 78,
     "task9_unknown": 31,
-    "task9_pending": 169,
-    "task9_reviewed": 7,
-    "last_updated": "2026-04-14T22:31:24+08:00"
+    "task9_pending": 170,
+    "task9_reviewed": 6,
+    "last_updated": "2026-04-14T22:50:38+08:00",
+    "task2b_state_counts": {
+      "unknown": 31,
+      "fixed": 78,
+      "pending": 15,
+      "idle": 83
+    },
+    "task6_state_counts": {
+      "unknown": 31,
+      "revisiting": 78,
+      "reviewed": 16,
+      "pending": 82
+    },
+    "task9_state_counts": {
+      "unknown": 31,
+      "pending": 170,
+      "reviewed": 6
+    },
+    "pipeline_stage_counts": {
+      "unknown": 31,
+      "task6_pending": 160,
+      "task2b_pending": 15,
+      "task9_pending": 1
+    },
+    "total_sections": 207
   },
   "pipeline": {
     "pipeline_stage_counts": {
@@ -1911,15 +1935,16 @@
       "title": "Wakelock 机制与功耗分析",
       "path": "src/part2-performance/ch11-power/05-wakelock.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
-      "task6_state": "reviewed",
-      "task9_state": "reviewed",
-      "task2b_state": "pending",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
+      "task9_state": "pending",
+      "task2b_state": "fixed",
       "section": "11.5",
       "reviewed_date": "2026-04-14",
       "reviewed_by": "openclaw-task6",
       "task6_result": "needs-rework",
-      "task9_result": "needs-rework"
+      "task9_result": "needs-rework",
+      "task2b_result": "fixed"
     },
     "src/part2-performance/ch11-power/README.md": {
       "chapter": null,

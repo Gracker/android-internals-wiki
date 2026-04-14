@@ -11,7 +11,7 @@ created_date: "2026-04-06"
 drafted_date: "2026-04-07"
 drafted_by: "openclaw-task2a"
 gap_source: "研究素材+AOSP结构+官方文档+读者需求"
-last_verified: "2026-04-07"
+last_verified: "2026-04-14"
 last_verified_against: "AOSP android-17-beta3"
 confidence: medium
 sources:
@@ -30,18 +30,19 @@ sources:
 reviewed_date: "2026-04-14"
 reviewed_by: "openclaw-task6"
 task6_result: needs-rework
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: pending
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
+task2b_state: fixed
 task9_result: needs-rework
+task2b_result: fixed
 ---
 
 # 11.5 Wakelock 机制与功耗分析
 
-当我们在 Perfetto 中看到一条横跨数秒甚至数分钟的 `WakeLock` 条目时，它背后通常藏着一个让电池加速耗尽的问题。Wakelock 是 Android 功耗分析中最常遇到的"嫌疑人"——它设计上是为了让 CPU 在需要时保持工作，但一旦使用不当（忘记释放、异常路径泄漏、在后台长期持有），就会成为电池消耗的头号来源。
+Wakelock 是 Android 功耗分析中最常见的"嫌疑人"——它设计上是让 CPU 在需要时保持工作，但使用不当（忘记释放、异常路径泄漏、后台长期持有）就会直接导致电池快速耗尽。
 
-2026 年 3 月，Play Store 正式上线了 wakelock 惩罚政策，对过度持有 wakelock 的 App 实施搜索降权和耗电警告标签。这已经不只是优化建议，而是会直接影响 App 的分发和用户信任。
+2026 年 3 月起，Play Store 对过度持有 wakelock 的 App 实施搜索降权和耗电警告标签。这个惩罚政策已把 wakelock 优化从"建议"变成了"合规要求"。
 
 这篇文章我们要搞清楚几件事：Wakelock 的底层机制是什么？App 层的 wakelock 怎么映射到内核？出了问题怎么诊断？以及最重要的——怎么避免 wakelock 变成功耗灾难。
 
@@ -112,14 +113,17 @@ wl.acquire();
 wl.release();
 ```
 
-这行 `acquire()` 背后的调用链是：
+`WakeLock.acquire()` 的调用链是：
 
-1. `PowerManager.WakeLock.acquire()` → 通过 Binder 调用到 `PowerManagerService.acquireWakeLock()`
-2. `PowerManagerService` 在内部为这个 wakelock 创建一个 `WakeLockToken`（`IBinder` 对象），用于标识这个 wakelock 的持有者
-3. 同时注册 `IBinder.DeathRecipient`：如果持有者的进程意外死亡，系统会自动释放对应的 wakelock，防止泄漏
-4. `PowerManagerService` 更新全局电源状态，根据所有活跃 wakelock 的类型决定系统是否可以进入 suspend
+1. 客户端 `WakeLock`（`PowerManager.WakeLock`）在构造时就创建了 `mToken = new Binder()`，这个 IBinder token 代表本地 wakelock 对象
+2. 客户端调用 `mService.acquireWakeLock(mToken, ...)` 将 token 传入 PowerManagerService
+3. PowerManagerService 构造服务端 `WakeLock` 记录：`new WakeLock(lock, displayId, flags, tag, packageName, ws, ...)`
+4. 在构造函数中执行 `linkToDeath()`：对客户端传入的 lock（Biner）注册 DeathRecipient
+5. PowerManagerService 更新全局电源状态，根据所有活跃 wakelock 类型决定是否允许系统进入 suspend
 
-[已验证: AOSP android-17-beta3, frameworks/base/services/core/java/com/android/server/power/PowerManagerService.java]
+注意区分两个角色：客户端 `WakeLock` 的 `mToken` 在客户端创建后传入服务端；服务端的 `WakeLock`（PMS 内部类）才是 PMS 持有的记录，它对客户端传入的 IBinder 执行 linkToDeath()，从而在客户端进程死亡时自动清理记录。
+
+[已验证: AOSP android-17-beta3, frameworks/base/core/java/android/os/PowerManager.java WakeLock 类构造函数；frameworks/base/services/core/java/com/android/server/power/PowerManagerService.java WakeLock 内部类（line 5383-5438）+ acquireWakeLockInternal（line 1615-1659）]
 
 ### 引用计数模式：一个常见的坑
 
@@ -179,7 +183,7 @@ Sleep / Suspend（CPU 停止，功耗极低）
 
 - `Screen On/Off` track：屏幕亮灭
 - `CPU Idle` track：CPU 是否进入低功耗 idle 状态
-- `PowerManagerService` track：可以看到 wakelock 的 acquire/release 事件
+- `PowerManagerService` track：这里会记录 wakelock 的 acquire/release 事件
 
 [待补充：Perfetto 中 PowerManagerService wakelock track 的截图]
 
@@ -238,14 +242,25 @@ alarmtimer      890              890              890              0            
 
 ### 用户态 wakelock 到内核的映射
 
-当 App 调用 `PowerManager.WakeLock.acquire()` 时，调用链经过 PowerManagerService 最终到达内核：
+用户态 wakelock 到内核 wakeup_source 的映射路径随 Android 版本发生了变化，需要分开讨论：
 
-1. `PowerManagerService` 将 wakelock 信息写入 `/sys/power/wake_lock`
-2. 内核创建对应的 wakeup_source
-3. `release()` 时，PowerManagerService 写入 `/sys/power/wake_unlock`
-4. 内核注销对应的 wakeup_source
+**Android 10 之前（旧版路径）：**
 
-所以用户态的每个 wakelock 在内核中都有对应的 wakeup_source。但反过来不成立——内核中很多 wakeup_source 是内核组件自己创建的，与用户态 wakelock 无关：
+`PowerManagerService` 直接通过 `libpower` 库向 `/sys/power/wake_lock` 写入 wakelock 名称，内核在 `kernel/power/wakelock.c` 中根据写入的字符串创建对应的 wakeup_source。`release()` 时向 `/sys/power/wake_unlock` 写入同一名称，内核注销对应的 wakeup_source。
+
+**Android 10 起（现代路径）：**
+
+Android 10 引入 `SystemSuspend` 服务（`system_suspend` HIDL/AIDL 服务），完全替代了旧的 libsuspend 实现。用户态进程不再直接读写 `/sys/power/wake_lock`，而是通过 `libpower` 与 `system_suspend` 服务通信。`system_suspend` 内部维护一个 suspend counter，只有当 counter 归零时才会进入真正的 suspend：
+
+- `system_suspend` 的主线程处理来自各客户端的 wakelock 请求，递增/递减 suspend counter
+- susupend 线程循环读取 `/sys/power/wakeup_count`，等待 counter 归零后写入 `"mem"` 到 `/sys/power/state` 进入 suspend
+- 内核 wakeup_source 仍然存在，但由 `system_suspend` 服务通过 `/sys/power/wake_lock` 接口（debug 路径）或内部 reference counter 管理
+
+因此，现代 Android（Android 10+）中，用户态 wakelock 通过 `system_suspend` 服务间接管理内核 wakeup_source，不存在 App 直接调用 `/sys/power/wake_lock` 的路径。
+
+**不需要 wakelock 的内核 wakeup_source：**
+
+内核中许多 wakeup_source 由内核组件自行创建，与用户态 wakelock 完全无关：
 
 - **Binder 驱动**：等待 IPC 事务时持有
 - **Alarm 驱动**：alarmtimer 触发时持有
@@ -346,22 +361,23 @@ UID u0a123:
 
 ### Perfetto 中的 wakelock 分析
 
-Perfetto 可以捕获 wakelock 事件，提供比 Battery Historian 更精确的时间维度分析：
+Perfetto 可以从两个不同维度捕获电源相关事件，分别对应不同的数据源：
+
+**数据源职责对比：**
+
+| 数据源 | 用途 | 轨道/事件 |
+|--------|------|-----------|
+| `android.power` | 电池计数器与 power rail 功耗采样 | power rails 采样值（电压/电流/功率） |
+| `linux.ftrace` + `power/wakeup_source_*` | 内核级 wakelock activate/deactivate 事件 | `power.wakeup_source_activate` / `power.wakeup_source_deactivate` |
+| `linux.ftrace` + `power/wake_lock` | 内核 wakelock 直接操作（旧版路径） | `power.wake_lock` / `power.wake_unlock` ftrace 事件 |
+
+wakelock activate/deactivate 事件（谁在什么时间持有/释放 wakelock）来自 `linux.ftrace` 的 ftrace 事件，不是 `android.power`。`android.power` 对应的是 battery counters / power rails 采样。
 
 ```bash
-# 抓取包含 wakelock 事件的 trace
+# 抓取内核 wakelock 事件 + power rail 采样的配置
 adb shell perfetto -c - --txt <<EOF
 buffers: {
     size_kb: 63488
-}
-data_sources: {
-    config {
-        name: "android.power"
-        android_power_config {
-            battery_polls_ms: 1000
-            collect_power_rails: true
-        }
-    }
 }
 data_sources: {
     config {
@@ -369,6 +385,16 @@ data_sources: {
         ftrace_config {
             ftrace_events: "power/wakeup_source_activate"
             ftrace_events: "power/wakeup_source_deactivate"
+            buffer_size_kb: 4096
+        }
+    }
+}
+data_sources: {
+    config {
+        name: "android.power"
+        android_power_config {
+            battery_polls_ms: 1000
+            collect_power_rails: true
         }
     }
 }
@@ -380,20 +406,13 @@ EOF
 - `android.power` track 显示 wakelock 的 activate/deactivate 事件
 - 可以用 SQL 查询精确分析持有时间：
 
-```sql
--- 查询所有 wakelock 的持有时长
-SELECT
-    name,
-    COUNT(*) as acquire_count,
-    SUM(dur) / 1e6 as total_ms
-FROM track t
-JOIN slice s ON s.track_id = t.id
-WHERE t.name GLOB '*wakelock*'
-GROUP BY name
-ORDER BY total_ms DESC;
-```
+在 Perfetto UI 中：
+- `linux.ftrace` 的 `power.wakeup_source_activate` / `power.wakeup_source_deactivate` 事件出现在 ftrace 事件面板中，对应内核级 wakelock 的持有/释放时间
+- `android.power` 的 battery poll 数据出现在 Power Rails 轨道中，显示各硬件模块的实时功耗
 
-[待验证: Perfetto android.power data source 在 Android 17 中的完整支持情况]
+wakelock activate/deactivate 事件不会出现在 named slice track 中，而是作为 ftrace 原始事件存在。如果需要在 SQL 中分析，需要直接 join ftrace_event 表而不是 slice 表。
+
+[已验证: perfetto.dev/docs/data-sources/android-power-energy 等官方文档；android.power 对应 power rails 而非 wakelock 事件]
 
 ## AlarmManager 与 Wakelock 的关系
 
@@ -415,36 +434,52 @@ AlarmManager 是 wakelock 的一个重要间接来源。当 Alarm 触发时：
 
 ### Android 17 的 OnAlarmListener 回调变体
 
-Android 17 引入了 `AlarmManager.setExactAndAllowWhileIdle()` 的 `OnAlarmListener` 回调变体，与传统 `PendingIntent` 方式有本质区别：
+关于 `OnAlarmListener` 和 `setExact` 的公开 SDK 历史，需要拆开两层理解：
 
-| 维度 | PendingIntent | OnAlarmListener |
-|------|--------------|-----------------|
-| 调用方式 | 跨进程 IPC → 启动 Receiver/Service | 进程内直接回调 |
-| 组件生命周期 | 需要 instantiate BroadcastReceiver 或 Service | 无组件启动开销 |
-| Wakelock 时长 | 从 IPC 到 onReceive() 返回 | 仅回调函数执行期间 |
-| 持久化 | 进程被杀后仍可触发（系统持有 PendingIntent） | 不持久化，进程被杀则丢失 |
-| 实例规则 | 无限制 | 每个 OnAlarmListener 同一时刻只能关联一个 alarm |
+**第一层：OnAlarmListener 作为公开 SDK API 的历史**
 
-OnAlarmListener 的功耗收益主要来自两点：
-- 省去了跨进程 IPC 的开销（Binder 调用 + Intent 解析 + 组件实例化）
-- 缩短了 wakelock 的持有窗口（只有回调执行期间，而不是整个组件生命周期）
+`AlarmManager.OnAlarmListener` 接口和 `setExact(int, long, String, Executor, WorkSource, OnAlarmListener)` 方法在 Android 14（API 34）中已作为公开 SDK API 存在，并非 Android 17 新引入。更早的版本（Android 12/13）SDK 31+ 也通过 `@SystemApi` 的形式存在。
 
-适用场景：配合长期运行的 Foreground Service 使用（确保进程存活），如即时通讯的心跳、医疗设备的定时上报。
+**第二层：SCHEDULE_EXACT_ALARM 权限与 OnAlarmListener 的关系**
 
-[已验证: 官方文档, android.com — AlarmManager OnAlarmListener API Android 17]
+关键区别在于：`setExact()` + `OnAlarmListener` 组合不需要 `SCHEDULE_EXACT_ALARM` 权限，而 `setExact()` + `PendingIntent` 或 `setExactAndAllowWhileIdle()` + `PendingIntent` 从 Android 12 起需要此权限。这是 Android 12 引入精确闹钟权限后的一个重要例外：
+
+> If the exact alarm is set using an `OnAlarmListener` object, the `SCHEDULE_EXACT_ALARM` permission isn't required.
+
+——[已验证: developer.android.com/about/versions/14/changes/schedule-exact-alarms]
+
+**setExactAndAllowWhileIdle + OnAlarmListener（@SystemApi）：**
+
+`setExactAndAllowWhileIdle(int, long, String, Executor, WorkSource, OnAlarmListener)` 在 Android 14/17 中是 `@SystemApi`（`@RequiresPermission(UPDATE_DEVICE_STATS)`），面向系统应用，普通 App 无法直接使用。这个重载的特别之处是：结合了 `allowWhileIdle` 和 `OnAlarmListener` 两个特性，且不需要 `SCHEDULE_EXACT_ALARM`（因为是 system API）。
+
+**与 PendingIntent 方式的核心区别：**
+
+| 维度 | PendingIntent | OnAlarmListener（公开 API） | setExactAndAllowWhileIdle + OnAlarmListener（@SystemApi） |
+|------|--------------|----------------------------|--------------------------------------------------------|
+| 调用方式 | 跨进程 IPC → 启动 Receiver/Service | 进程内直接回调 | 进程内直接回调 |
+| 组件生命周期 | 需要 instantiate BroadcastReceiver 或 Service | 无组件启动开销 | 无组件启动开销 |
+| 持久化 | 进程被杀后仍可触发（系统持有 PendingIntent） | 不持久化，进程被杀则丢失 | 不持久化，进程被杀则丢失 |
+| SCHEDULE_EXACT_ALARM | Android 12+ 需要 | 不需要 | system API，不需要（但需要 UPDATE_DEVICE_STATS） |
+| 公开 SDK 引入 | Android 1.5 | Android 14（SDK 34） | Android 14/17（@SystemApi） |
+
+适用场景（公开 API）：即时通讯心跳、设备传感器定时采样。
+
+适用场景（@SystemApi）：系统级定时任务、医疗应用。
+
+[已验证: AOSP android-17 AlarmManager.java OnAlarmListener 接口（line 336）、setExact（line 839）+ setExactAndAllowWhileIdle @SystemApi（line 1341）；官方文档 developer.android.com/about/versions/14/changes/schedule-exact-alarms]
 
 ### Play Store 的 Wakelock 惩罚政策
 
-2026 年 3 月 1 日生效，Google 与 Samsung 联合制定。核心规则：
+2026 年 3 月正式生效。核心规则（来源：Android Vitals 官方文档）：
 
-- **阈值**：非豁免 partial wake lock 累计 > 2 小时/24 小时 AND 影响 > 5% 用户 session（28 天窗口）
+- **阈值**：非豁免 partial wake lock 在 24 小时内累计超过 2 小时，且超过 5% 的用户 session（28 天窗口）
 - **惩罚**：Play Store 搜索/推荐降权 + App 详情页显示「可能加速耗电」警告标签
-- **豁免类型**：音频播放、位置访问、用户主动发起的数据传输（通过 UIDT API 声明）
-- **开发者工具**：Play Console → Android Vitals → Wake Lock 指标
+- **豁免类型**：音频播放、位置访问、用户主动发起的数据传输（JobScheduler 等系统管理的 wakelock 自动豁免）
+- **开发者工具**：Play Console → Android Vitals → Wake Lock 指标，可看各 wakelock 名称的 P90/P99 时长
 
-这个政策的实质是：Google 从"建议最佳实践"转向"强制执行配额"。对于开发者来说，要么优化 wakelock 使用，要么面临分发量下降。
+这里"非豁免"的含义是：系统持有的 wakelock（如音频、位置导航、JobScheduler 代持的 wakelock）不计入阈值。App 自己通过 `PowerManager.WakeLock` 持有的 partial wakelock 才受此约束。
 
-[已验证: googleblog.com + android.com — Play Store wakelock policy 2026-03-01]
+[已验证: developer.android.com/topic/performance/vitals/wakelock（Android Vitals excessive wake lock 定义）；googleblog.com（Play Store 政策公告）]
 
 ## Wakelock 的替代方案与最佳实践
 
@@ -480,7 +515,17 @@ Android 12+ 对 Foreground Service 引入了严格的限制：
 - 从后台启动 Foreground Service 受到严格限制
 - Android 14+ 进一步限制了前台服务类型
 
-Foreground Service 本身会持有 wakelock（由 ActivityManagerService 管理），不需要 App 手动获取。如果在 Foreground Service 中又手动 acquire 了 partial wakelock，属于重复持有，反而增加了泄漏风险。
+关于 Foreground Service 是否持有 CPU wakelock，官方文档的表述是：Foreground Service 本身并不等同于持有 CPU wakelock。Foreground Service 向系统声明"有重要的用户可见任务在运行"，这提升了进程的存活优先级，但**不等同于阻止 CPU 进入 suspend**。
+
+官方文档明确指出：
+
+> If your app is running a foreground service and needs to keep the device awake, use a `PARTIAL_WAKE_LOCK` in conjunction with the foreground service.
+
+即：如果 Foreground Service 需要在屏幕关闭后继续保持 CPU 运行，仍然需要显式获取 `PARTIAL_WAKE_LOCK`。两者解决的是不同问题——Foreground Service 解决的是进程被杀死的问题，wakelock 解决的是 CPU suspend 的问题。
+
+因此，"Foreground Service 本身会持有 wakelock" 这个说法是不准确的。常见的使用方式是：Foreground Service + 通知 + 必要时显式获取 `PARTIAL_WAKE_LOCK`。
+
+[已验证: developer.android.com — "Use wake locks" best practices: "If your app is running a foreground service and needs to keep the device awake, use a PARTIAL_WAKE_LOCK"]
 
 ### Coroutine + Lifecycle-aware 封装
 
