@@ -3672,3 +3672,27 @@
 - **位置**："对内存使用的影响" 节
 - **问题**：讨论了内部碎片和 LMK 交互，但未提及 ART GC 的 card table / remembered set / marking bitmap 等结构在 16KB 页下的行为变化
 - **建议**：加一段简短说明，指出 ART 内部已适配 16KB 页，但 GC 相关性能分析者需注意此变量。可标注 [待验证]
+
+## [Task9 Deep Review] 5.3 大小核架构 — 2026-04-15
+- **类型**：源码准确性
+- **位置**：Perfetto SQL 查询（识别核心类型 + 迁移次数分布）
+- **问题**：使用 thread_state_slice 表名，Perfetto trace processor 标准表为 thread_state
+- **建议**：全局替换 thread_state_slice → thread_state
+
+## [Task9 Deep Review] 5.3 大小核架构 — 2026-04-15
+- **类型**：版本差异
+- **位置**：版本演进表
+- **问题**：使用日历年而非 Android 版本号，与全书惯例不一致
+- **建议**：补 Android 版本映射（如 Android 9 大规模采用 schedutil、Android 10 引入 EAS）
+
+## [Task9 Deep Review] 5.3 大小核架构 — 2026-04-15
+- **类型**：数据缺失
+- **位置**：Cortex-X925 性能提升、IKS 迁移延迟、L2 差距性能数据
+- **问题**："36% Geekbench 6 提升""30μs 迁移延迟""2-3 倍性能差距"均无来源标注和实验条件
+- **建议**：补具体来源和测试条件；短期补不齐的降级为定性描述
+
+## [Task9 Deep Review] 5.3 大小核架构 — 2026-04-15
+- **类型**：交叉引用
+- **位置**：related_chapters 含 "5.5"
+- **问题**：05-thermal.md 的 chapter 字段为 null，该章节尚未纳入编号体系
+- **建议**：确认 5.5 是否有正式编号，无则从 related_chapters 移除或改为文件路径引用

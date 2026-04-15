@@ -9660,5 +9660,50 @@
     "completed_by": "task2b-rework",
     "result": "fixed",
     "notes": "Task 2B 回炉修复：THP 大页大小从 2MB 修正为 32MB（ARM64 16KB base page PMD_SIZE），补 ARM64 不同 base page 下 THP 大小差异说明。STYLE.md 禁用词扫描通过（修改段落无新增违规）。"
+  },
+  {
+    "section": "5.3",
+    "section_title": "大小核架构",
+    "priority": 95,
+    "reason": "[Deep Tech Review] schedutil sugov_get_util() 代码片段签名/返回值/实现均与 Linux 6.6 不符；Perfetto SQL 使用不存在的 thread_state_slice 表名",
+    "material_paths": [
+      "intake/research-gaps.md",
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "sugov_get_util() 代码块",
+        "detail": "返回类型 unsigned int 应为 void，缺少 boost 参数，函数体简化与实际 effective_cpu_util() 不符",
+        "suggestion": "按 linux-6.6 实际签名重写或标为伪代码"
+      },
+      {
+        "type": "源码错误",
+        "location": "Perfetto SQL（2处）",
+        "detail": "thread_state_slice 不存在于 Perfetto schema，标准表为 thread_state",
+        "suggestion": "改成 thread_state"
+      },
+      {
+        "type": "知识盲区",
+        "location": "uclamp",
+        "detail": "Android 影响 schedutil/EAS 的核心机制完全未提及",
+        "suggestion": "补 uclamp 机制小节"
+      },
+      {
+        "type": "原理断裂",
+        "location": "PELT",
+        "detail": "多次引用但未解释计算方式",
+        "suggestion": "补 PELT 原理段落"
+      },
+      {
+        "type": "原理断裂",
+        "location": "CPU capacity",
+        "detail": "未解释 capacity 在内核中如何确定",
+        "suggestion": "补 capacity 推导和 sysfs 入口"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-15T09:27:46",
+    "status": "pending"
   }
 ]

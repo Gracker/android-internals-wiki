@@ -2500,3 +2500,20 @@ zRAM 与 16KB 页大小的交互未被讨论。Android 设备普遍使用 zRAM �
 
 ### 关联章节
 4.2, 4.4, 4.5
+
+## [2026-04-15] 5.3 大小核架构 — uclamp (Utilization Clamping) 机制
+
+### 盲区描述
+章节详细讨论了 schedutil 调频和 EAS 选核，但完全缺失 uclamp（Utilization Clamping）机制。uclamp 是 Android 11+ 影响 schedutil 目标频率和 EAS 选核的核心手段，通过 per-task clamp 值（min/max）对 PELT util 信号进行修正。Android Framework 通过 ScheduleGroup / TaskProfile 为前台线程设置 boost uclamp.min，使调度器在选核和调频时把这些线程当作比实际 util 更重的任务对待。
+
+### 重要程度
+高
+
+### 建议研究方向
+- Linux kernel uclamp 框架：kernel/sched/core.c (uclamp_eff_get / uclamp_rq_util_with)
+- Android TaskProfile uclamp 配置：system/libprocessgroup/task_profiles.json
+- schedutil 中 uclamp 对 target_freq 的影响路径
+- schedtune → uclamp 的历史迁移（Android 9-10 schedtune → Android 11+ uclamp）
+
+### 关联章节
+5.1, 5.2, 5.4
