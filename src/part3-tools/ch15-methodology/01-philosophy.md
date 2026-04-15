@@ -35,10 +35,11 @@ related_chapters:
 - '15.2'
 - '15.3'
 - '15.7'
-pipeline_stage: task9_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task9_state: pending
-task2b_state: idle
+task2b_result: fixed
+task2b_state: fixed
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
 reviewed_date: '2026-04-15'
@@ -113,6 +114,21 @@ Brendan Gregg 把性能问题描述为「主观的」，正因如此，我们更
 
 第三步，**量化收益**。优化完成后，用相同的方法和条件重新测量，与基线对比。Jeff Dean 在他的 Performance Hints 文档中反复强调这一点：性能优化不是靠直觉判断的，而是靠数据说话 [已验证: 来源见 abseil.io/fast/hints.html, Jeff Dean & Sanjay Ghemawat, 2025]。如果一个优化在数据上看不到改善，那它就不是有效的优化，无论代码看起来多么「巧妙」。
 
+### 测量本身会影响被测系统
+
+上面三步建立了一个完整的「度量→定位→验证」循环，但有一个前提容易被忽略：**测量本身会影响被测系统**。
+
+Perfetto 的 trace event 插桩会给每个被追踪的函数增加微秒级开销；Simpleperf 的采样频率越高，对目标线程的干扰越大；Macrobenchmark 连续跑几十次冷启动，设备可能因发热触发降频，导致后几轮数据偏低。这些影响在单次测量中往往可以忽略，但在精确到毫秒级的性能对比中就可能引入偏差。
+
+减少测量偏差的常见做法：
+
+- **预热轮次（warm-up）**：正式测量前先跑几轮，让 JIT 编译、缓存、CPU 调频都稳定下来再开始计时。
+- **控制热降频**：长时 benchmark 注意设备温度，必要时在两次采样之间加入冷却间隔，或者用 `adb shell settings put global always_finish_activities 1` 配合固定屏幕亮度减少变量。
+- **对比不同采样率**：如果 Simpleperf 在 99Hz 和 999Hz 下给出一致的热点排名，说明采样干扰在可接受范围内。
+- **多次测量取分布**：不要只测一次。多次测量取中位数或 P50/P90/P99 分布，才能区分「真实性能差异」和「测量噪声」。
+
+这一原则在 Brendan Gregg 的《Systems Performance》中有专门讨论——他称之为「观察者效应（Observer Effect）」：任何观察行为都会改变被观察系统的行为 [已验证: Brendan Gregg, Systems Performance, Chapter 2]。
+
 ### 持续优化：性能优化不是一次性的项目
 
 很多团队对性能优化的认知是「做一次，然后就可以不管了」。这是一种非常危险的误解。
@@ -126,6 +142,9 @@ Android 系统在持续演进，每一代新版本都可能引入新的性能特
 **定期巡检**是更主动的做法。即使没有新功能发布，也应该定期（比如每周或每两周）用 Perfetto 抓取一次 Trace，检查关键路径上有没有新增的耗时操作。就像身体健康需要定期体检一样，App 的性能也需要定期「体检」。
 
 **版本跟进**是长期投入。每当 Android 发布新版本，都应该评估新版本对既有优化策略的影响。比如 Android 12 引入了 BlastBufferQueue 替代 BufferQueue，这改变了渲染管线的行为（详见第 2 章和第 2.6 节）。如果我们的优化策略依赖于旧的行为模型，就需要及时调整。
+从工具演进看，Android 性能分析方法在不同阶段有明显的代际差异。Android 4.x - 7.x 时代，systrace 是主力，只能抓取系统预定义的 trace point，App 侧需要手动插入 `Trace.beginSection()`。Android 8 引入 ProfilingManager 并开始支持更多动态 trace point。Android 9-10 期间 Perfetto 逐步取代 systrace，提供了更丰富的数据源和 SQL 查询能力。Android 11-13 引入了 BlastBufferQueue 替代 BufferQueue、FrameMetrics API 暴露逐帧渲染耗时、以及 Baseline Profiles 等新机制——分析方法也需随之更新，比如 BlastBufferQueue 改变了 buffer 流转时序，基于旧 BufferQueue 模型的分析就不再准确。Android 14-16 继续扩展 Perfetto 的 Track 覆盖（Jobscheduler Track、App Startup Track），并强化了后台执行限制，后台任务的分析需要额外关注系统级的调度约束。
+
+了解这些代际变化，有助于在阅读旧版技术文章或分析老版本设备的 Trace 时，正确理解工具和数据含义的差异。
 
 ## 性能优化之「术」
 
@@ -290,7 +309,7 @@ Google 对性能的重视可以追溯到公司成立之初。两个经典的案�
 
 这种「工具 + 意识」的组合，是把性能从「事后补救」变成「开发过程中的基本素养」。Google 还通过 Play Console 的 Vitals 面板，把性能数据直接暴露给开发者，让「用户在实际设备上的体验」成为开发流程的一部分。
 
-Android 16 进一步强化了这一方向。Baseline Profiles 可以让 App 从首次安装就获得接近 AOT 编译的性能，JankStats 库帮助开发者在生产环境中自动收集帧率数据，Macrobenchmark 则让自动化性能测试成为 CI/CD 的标准环节 [已验证: 官方文档, developer.android.com]。这些工具的演进方向是一致的：**让性能优化从专家的「手艺活」变成工程师的「日常操作」**。
+从 Android 12 开始，Google 持续丰富 Jetpack 中的性能工具链。Baseline Profiles（2022，随 Jetpack 从 Android 13 起分发）让 App 从首次安装就获得接近 AOT 编译的性能；JankStats 库（2022 alpha）帮助开发者在生产环境中自动收集帧率数据；Macrobenchmark（2021-2022）让自动化性能测试成为 CI/CD 的标准环节 [已验证: 官方文档, developer.android.com]。到 Android 16，这些工具已迭代多个版本趋于成熟，Google 同时在 Perfetto 中加入了更多系统级 Track（如 Jobscheduler Track、Frame Timeline 改进），并强化了 Play Console Vitals 的性能指标覆盖。工具链的演进方向始终一致：**让性能优化从专家的「手艺活」变成工程师的「日常操作」**。
 
 ## 扩展：性能工程师的能力模型
 
