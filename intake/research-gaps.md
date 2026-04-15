@@ -95,3 +95,38 @@ dm-verity 与 EROFS 的配合机制未在章节中讨论。文中提到"配合 d
 
 ### 关联章节
 6.2（文件系统）、1.2（系统启动）、16.x（AOSP 安全机制）
+
+
+## [2026-04-15] 1.3 进程模型与生命周期管理 — 知识盲区
+
+### 盲区 1：CachedAppOptimizer / Freezer 机制（Android 12+）
+
+#### 描述
+章节在 Cached Process 部分只提到了 oom_adj 值（900-999），但完全未展开 Android 12 引入的 CachedAppOptimizer 机制。该机制使用 cgroup v2 freezer 冻结 cached 进程，使其线程完全停止执行（不是降优先级，是冻结）。对 Perfetto 分析的影响：冻结进程的线程 slice 彻底消失，与被 LMK 杀死的进程在 Trace 中的表现不同（被杀是进程消失，被冻结是线程消失但进程仍在）。
+
+#### 重要程度
+高
+
+#### 建议研究方向
+- AOSP `frameworks/base/services/core/java/com/android/server/am/CachedAppOptimizer.java` 实现
+- `system/core/libprocessgroup/profiles/task_profiles.json` 中 freezer 相关 profile
+- Google 官方文档关于 cached app freezer 的说明
+- Perfetto 中冻结 vs 被杀的区分方法
+
+#### 关联章节
+1.3, 4.4, 5.8
+
+### 盲区 2：adj 值版本演进历史
+
+#### 描述
+章节给出 android-16 的完整 adj 值表，但缺少版本演进说明。中间档位 PERCEPTIBLE_MEDIUM_APP_ADJ (225) 和 PERCEPTIBLE_LOW_APP_ADJ (250) 的引入版本不明确。SERVICE_A_ADJ 的移除版本也未标注。对于 applicable_versions 覆盖 Android 10-16 的章节，读者需要知道这些值在不同版本上的差异。
+
+#### 重要程度
+中
+
+#### 建议研究方向
+- 逐版本对比 ProcessList.java 中的 adj 常量变化（Android 10 → 11 → 12 → 13 → 14 → 15 → 16）
+- 特别关注 PERCEPTIBLE 细分档位和 SERVICE_A 的引入/移除节点
+
+#### 关联章节
+1.3, 4.4

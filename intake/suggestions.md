@@ -168,3 +168,36 @@
 - **位置**：ext4 ordered 模式 fsync 行为描述
 - **问题**：文中说"日志只记录元数据（metadata），但保证在元数据提交到日志之前，对应的数据块已经写入磁盘"。实际上在 ordered 模式下，数据块直接写入最终位置（不是写入日志），然后在 journal 中记录元数据。这个区别虽然细微但对理解 fsync 延迟很重要。
 - **建议**：明确说明"数据块直接写入其最终磁盘位置（不经过 journal），然后 journal 记录元数据变更"，以避免读者误以为数据也经过 journal
+
+
+## [Task9 Deep Review] 1.3 进程模型与生命周期管理 — 2026-04-15
+
+- **类型**：源码准确性
+- **位置**：「AMS 入口和真正的计算路径不在同一层」小节，`mProcessStateController.runUpdate(...)` 委托链
+- **问题**：`mProcessStateController` 确认存在（用于 setMaxAdj），但 `.runUpdate()` 方法未在公开 AOSP 中找到明确匹配。实际路径可能是 `AMS.updateOomAdjLocked()` 直接委托 `OomAdjuster.updateOomAdjLSP()`。
+- **建议**：对照 AOSP android-16.0.0_r1 的 `ActivityManagerService.java` 确认确切委托链，修正中间环节。
+
+- **类型**：源码准确性
+- **位置**：DeathRecipient 代码示例
+- **问题**：使用 `binderDied()` 无参形式。API 34 新增 `binderDied(IBinder who)` 重载。
+- **建议**：标注 API 34+ 有更精确的重载可用，或更新代码示例使用新形式。
+
+- **类型**：数据缺失
+- **位置**：Perfetto SQL 查询部分
+- **问题**：缺少 `oom_score_adj` 随时间变化的查询。判断进程是否在被推向可杀区，最直接的证据是 adj 值抬升轨迹。
+- **建议**：补充查询 `linux.process_stats` 中的 `oom_score_adj` 变化，与 RSS、MemAvailable 放在同一时间窗分析。
+
+- **类型**：数据缺失
+- **位置**：Zygote COW 共享描述
+- **问题**：「几十 MB Framework 代码」缺少精确数据支撑。
+- **建议**：给出典型 Android 16 设备上 Zygote 预加载的 class 数量或内存占用参考值。
+
+- **类型**：交叉引用
+- **位置**：「与其他章节的关系」，"9.1 ANR 设计思想"
+- **问题**：需确认该章节在项目实际文件结构中存在且标题匹配。
+- **建议**：核实 9.1 的存在性和正确标题。
+
+- **类型**：版本差异
+- **位置**：后台限制时间线
+- **问题**：遗漏 Android 11（后台位置限制）和 Android 15（前台 Service 类型收紧）。
+- **建议**：补充这两个版本的要点。
