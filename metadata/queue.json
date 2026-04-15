@@ -51,5 +51,25 @@
     "added_at": "2026-04-15T17:11:08.496083",
     "status": "pending",
     "original_review_log": "logs/review/2026-04-15-17-review.md"
+  },
+  {
+    "section": "2.2",
+    "section_title": "帧率与刷新率",
+    "priority": 95,
+    "reason": "[Deep Tech Review] P0 事实错误：FrameMetrics 常量名错误（INPUT_HANDLE_DURATION 应为 INPUT_EVENT_HANDLING_DURATION；GPU_DURATION 不存在）",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "FrameMetrics 度量维度列表",
+        "detail": "1) INPUT_HANDLE_DURATION 不是有效的 FrameMetrics 常量，正确名称为 INPUT_EVENT_HANDLING_DURATION（API 31+）。2) GPU_DURATION 不是有效的 FrameMetrics 常量。GPU 渲染耗时通过 COMMAND_ISSUE_DURATION 间接衡量。",
+        "suggestion": "修正为 INPUT_EVENT_HANDLING_DURATION 和 COMMAND_ISSUE_DURATION。标注各常量引入的 API level。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-15T18:20:00",
+    "status": "pending"
   }
 ]

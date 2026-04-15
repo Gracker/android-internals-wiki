@@ -52,7 +52,9 @@ re-review-result: 已纳入1条素材(部分纳入:OEM VSync修改误区+交叉�
 pipeline_stage: task2b_pending
 task6_result: needs-rework
 task6_state: reviewed
-task9_state: pending
+task9_state: reviewed
+task9_result: needs-rework
+task9_reviewed_date: "2026-04-15"
 task2b_state: pending
 ---
 
