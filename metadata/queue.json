@@ -115,5 +115,37 @@
     "status": "completed",
     "completed_at": "2026-04-15T19:43:46.384293",
     "completed_by": "task2b-rework"
+  },
+  {
+    "section": "15.1",
+    "section_title": "性能优化的术、道、器",
+    "priority": 85,
+    "reason": "[Deep Tech Review] P1 重要缺失：Android 16 工具归档错误 + profiling overhead 方法论盲区",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "事实错误",
+        "location": "L293「Android 16 进一步强化了这一方向」段",
+        "detail": "Baseline Profiles（2022-01）、JankStats（2022-02 alpha）、Macrobenchmark（2021-2022）均为 Jetpack/AndroidX 库，远早于 Android 16。归入 Android 16 是事实错误。",
+        "suggestion": "改为按工具演进时间线描述，或明确标注 Android 16 具体新增了什么。例如：「这些工具从 Android 12-13 时代开始陆续推出，Android 16 进一步完善了……」"
+      },
+      {
+        "type": "知识盲区",
+        "location": "全文「数据驱动」方法论",
+        "detail": "性能分析的开销（profiling overhead）完全未提及。Perfetto trace、Simpleperf 采样、长时 benchmark 都有额外开销。作为方法论章节，不讨论测量本身如何影响被测系统是重要遗漏。",
+        "suggestion": "在「数据驱动」节或「误区」节补充 profiling overhead 的讨论，包括：工具选择对测量结果的影响、如何降低测量偏差、热降频对 benchmark 的影响。"
+      },
+      {
+        "type": "版本差异",
+        "location": "全文方法论描述",
+        "detail": "applicable_versions 声明 Android 5.0 - Android 16，但正文未讨论性能方法论随版本的演变（systrace→Perfetto、后台限制变化、渲染管线变化等）。",
+        "suggestion": "在「持续优化」节或新增「版本演进对方法论的影响」小节，简要说明工具和方法论在不同 Android 时代的变化。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-15T23:30:14",
+    "status": "pending"
   }
 ]

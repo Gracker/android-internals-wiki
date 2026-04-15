@@ -21,12 +21,12 @@
     "task9_unknown": 31,
     "task9_pending": 170,
     "task9_reviewed": 6,
-    "last_updated": "2026-04-15T18:06:00+08:00",
+    "last_updated": "2026-04-15T23:30:14",
     "task2b_state_counts": {
       "unknown": 31,
       "fixed": 78,
-      "pending": 16,
-      "idle": 82
+      "pending": 17,
+      "idle": 81
     },
     "task6_state_counts": {
       "unknown": 31,
@@ -36,14 +36,14 @@
     },
     "task9_state_counts": {
       "unknown": 31,
-      "pending": 169,
-      "reviewed": 7
+      "pending": 168,
+      "reviewed": 8
     },
     "pipeline_stage_counts": {
       "unknown": 31,
       "task6_pending": 157,
-      "task2b_pending": 16,
-      "task9_pending": 3
+      "task2b_pending": 17,
+      "task9_pending": 2
     },
     "total_sections": 207
   },
@@ -2574,11 +2574,13 @@
       "title": "性能优化的术、道、器",
       "path": "src/part3-tools/ch15-methodology/01-philosophy.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "pending",
-      "task9_state": "pending",
-      "task2b_state": "idle",
-      "section": "15.1"
+      "task9_state": "reviewed",
+      "task2b_state": "pending",
+      "section": "15.1",
+      "task9_result": "needs-rework",
+      "task9_reviewed_date": "2026-04-15"
     },
     "src/part3-tools/ch15-methodology/02-system-vs-app.md": {
       "chapter": "15.2",
