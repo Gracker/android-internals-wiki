@@ -9,7 +9,7 @@ last_verified_against: "AOSP android-16.0.0_r1, android-17-beta3"
 confidence: medium
 drafted_date: "2026-04-01"
 drafted_by: openclaw-task2a
-reviewed_date: "2026-04-08"
+reviewed_date: "2026-04-15"
 reviewed_by: openclaw-task6
 related_chapters:
   - "5.1"
@@ -44,8 +44,9 @@ tags:
   - suspend
   - jobscheduler
   - powermanager
-pipeline_stage: task6_pending
-task6_state: pending
+pipeline_stage: task9_pending
+task6_state: reviewed
+task6_result: pass-light-edit
 task9_state: pending
 task2b_state: idle
 ---
@@ -373,7 +374,7 @@ JobScheduler 的一个重要特性是：**Job 执行完必须调用 jobFinished(
 
 WorkManager 是 Jetpack 组件库中的后台任务调度方案，在底层根据 API level 自动选择使用 JobScheduler（API 23+）或 AlarmManager + BroadcastReceiver（旧版本）。相比直接使用 JobScheduler，WorkManager 提供了几个额外的好处：
 
-**保证执行**：即使 App 进程被杀掉或设备重启，任务也会被重新调度执行。这对于需要可靠完成的后台任务（如数据上传）至关重要。
+**保证执行**：即使 App 进程被杀掉或设备重启，任务也会被重新调度执行。数据上传这类必须可靠完成的后台任务，正是 WorkManager 相比手动管理 WakeLock 的核心优势所在。
 
 **约束条件组合**：可以灵活组合网络、充电、存储、电池状态等多种约束条件。
 

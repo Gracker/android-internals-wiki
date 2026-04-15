@@ -1102,13 +1102,15 @@
       "title": "Android 功耗管理",
       "path": "src/part1-fundamentals/ch05-cpu-power/06-android-power.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "pending",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
       "task9_state": "pending",
       "task2b_state": "idle",
       "reviewed_date": "2026-04-08",
       "reviewed_by": "openclaw-task6",
-      "section": "5.6"
+      "section": "5.6",
+      "task6_result": "pass-light-edit",
+      "task6_reviewed_date": "2026-04-15"
     },
     "src/part1-fundamentals/ch05-cpu-power/07-cpu-evolution.md": {
       "chapter": "5.7",
