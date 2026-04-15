@@ -5,6 +5,9 @@ section: "17.1"
 status: ready-for-review
 drafted_date: "2026-04-04"
 drafted_by: "openclaw-task2a"
+reviewed_by: openclaw-task6
+reviewed_date: "2026-04-16"
+task6_result: pass-light-edit
 applicable_versions: "Android 8.0 (API 26) - Android 16 (API 36)"
 last_verified: "2026-04-04"
 last_verified_against: "AOSP android-16.0.0_r1"
@@ -20,8 +23,8 @@ sources:
     path: "developer.android.com/topic/performance/background-optimization"
 tags: ['oem', 'performance', 'freezer', 'preloading', 'background-management']
 related_chapters: ["5.1", "5.5", "5.6", "4.4", "8.3", "17.2"]
-pipeline_stage: task6_pending
-task6_state: pending
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task2b_state: idle
 ---
@@ -59,13 +62,13 @@ task2b_state: idle
 
 这不是你的 App 有问题——是厂商在 AOSP 基础上做了一整套自己的性能优化，而这些优化的策略和力度，每家都不一样。
 
-了解 OEM 的优化思路，不是要我们去逐个适配厂商的 ROM。而是让我们在分析 Trace 时，能区分「这是我的代码问题」还是「这是厂商策略导致的现象」。这种判断能力在定位线上问题时尤其关键——当你看到 Perfetto 里某段调度行为异常，脑子里要有这根弦：可能是厂商在干预。
+了解 OEM 的优化思路，目的是在分析 Trace 时能区分「这是我的代码问题」还是「这是厂商策略导致的现象」，而非逐个适配厂商的 ROM。这种判断能力在定位线上问题时尤其关键——当你看到 Perfetto 里某段调度行为异常，脑子里要有这根弦：可能是厂商在干预。
 
 从更宏观的角度看，OEM 的优化方向代表了一类系统性思维：在资源受限的移动设备上，如何通过全栈手段让用户体验变好。这种思维对我们做 App 层优化同样有启发——很多在 App 层难以解决的问题，从系统角度往往有更优雅的解法。
 
 ## OEM 优化的五大方向
 
-厂商做系统优化，归根结底是围绕用户体验的五个维度展开的。我们可以把这五个维度想象成一个金字塔：底部是稳定性和功耗，这是基本盘；中间是流畅性和启动速度，这是差异化竞争的核心；顶部是温控，它像一个天花板，限制了性能的极限。
+厂商做系统优化，核心围绕用户体验的五个维度展开。我们可以把这五个维度想象成一个金字塔：底部是稳定性和功耗，这是基本盘；中间是流畅性和启动速度，这是差异化竞争的核心；顶部是温控，它像一个天花板，限制了性能的极限。
 
 **启动速度**是用户对手机的第一印象。冷启动从按下图标到第一帧渲染，中间涉及 Zygote fork、ClassLoader 加载、Application 初始化、Activity 创建到渲染——整条链路上的每个环节都是优化点。厂商会在系统层面做预加载（让 Zygote 提前初始化常用类）、dex2oat 编译策略调整、甚至直接在 init 阶段预创建进程。我们在 §8.3 中详细讲过 App 层的启动优化思路，厂商的做法是把同样的思路往系统层推。
 
@@ -209,7 +212,7 @@ OPPO/vivo（ColorOS/OriginOS）的策略相对平衡，近年来通过 AI 学习
 
 这种厂商策略的差异对开发者最直接的影响体现在两个方面：**通知可靠性**和**后台任务执行**。
 
-通知可靠性方面，在国内环境下，开发者通常需要接入厂商自己的推送通道（小米推送、华为推送、OPPO 推送等）来保证通知送达率。这不是因为开发者想做，而是因为不这么做通知就会被厂商的后台管理策略吞掉。
+通知可靠性方面，在国内环境下，开发者通常需要接入厂商自己的推送通道（小米推送、华为推送、OPPO 推送等）来保证通知送达率。开发者这么做，是因为不接入厂商推送通道，通知就会被后台管理策略吞掉。
 
 后台任务方面，WorkManager 和 JobScheduler 的行为在不同厂商设备上可能不一致。一个在 Pixel 上正常执行的后台同步任务，在某厂商设备上可能被延迟数小时甚至完全跳过。开发者能做的最可靠的方案是使用 Foreground Service，但这会显示一个常驻通知栏——又是一个用户体验的权衡。
 

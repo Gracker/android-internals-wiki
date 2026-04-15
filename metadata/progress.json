@@ -3018,5 +3018,12 @@
     }
   ],
   "last_task2b_run": "2026-04-16T03:42:38.885909",
-  "task2b_fixed": 1
+  "task2b_fixed": 1,
+  "17.1": {
+    "task6_review_date": "2026-04-16",
+    "task6_result": "pass-light-edit",
+    "task6_state": "reviewed",
+    "task9_state": "pending",
+    "pipeline_stage": "task9_pending"
+  }
 }
