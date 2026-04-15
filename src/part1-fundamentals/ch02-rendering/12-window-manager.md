@@ -28,9 +28,10 @@ created_by: "task2a-knowledge-gap"
 created_date: "2026-04-04"
 gap_source: "AOSP结构+官方文档+读者需求"
 pipeline_stage: task6_pending
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: idle
+task6_state: revisiting
+task9_state: pending
+task2b_state: fixed
+task2b_result: fixed
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-04-11"
 task6_result: "pass-light-edit"
@@ -167,29 +168,24 @@ StartingWindow 的移除时机是一个性能调优的关键点：
 
 ```java
 // frameworks/base/core/java/android/view/ViewRootImpl.java
-// relayout 的发起端
-public int relayoutWindow(WindowManager.LayoutParams params, int requestedVisibility) {
-    // ... 参数准备
-    int relayoutResult = mWindowSession.relayout(
-        mWindow, params,
-        (int) (mView.getMeasuredWidth() * appScale + 0.5f),
-        (int) (mView.getMeasuredHeight() * appScale + 0.5f),
-        requestedVisibility,
-        0, 0,
-        mTmpFrames.mPendingContentInsets,
-        mTmpFrames.mPendingVisibleInsets,
-        mTmpFrames.mPendingStableInsets,
-        mTmpFrames.mPendingOutsets,
-        mTmpFrames.mPendingBackInsets,
-        mPendingMergedConfiguration,
-        mSurfaceControl,
-        mTempInsets
-    );
-    // ... 处理结果
+// @ AOSP android-16.0.0_r1 / android-17-beta3
+private int relayoutWindow(WindowManager.LayoutParams params, int viewVisibility,
+        boolean insetsPending) throws RemoteException {
+    // ...
+    int relayoutResult = mWindowSession.relayout(mWindow, mSeq, params,
+            (int) (mView.getMeasuredWidth() * appScale + 0.5f),
+            (int) (mView.getMeasuredHeight() * appScale + 0.5f),
+            viewVisibility,
+            insetsPending ? WindowManagerGlobal.RELAYOUT_INSETS_PENDING : 0,
+            frameNumber, mTmpFrame, mTmpRect, mTmpRect, mTmpRect,
+            mPendingBackDropFrame, mPendingDisplayCutout,
+            mPendingMergedConfiguration, mSurfaceControl, mTempInsets,
+            mTempControls, mSurfaceSize, mBlastSurfaceControl);
+    // ...
 }
 ```
 
-注意这里的 `mWindowSession` 是 App 进程到 WMS 的 Binder 通道。每个 App 进程有一个 Session 对象（`IWindowSession`），所有 Window 操作都通过这个通道完成。这意味着一个 App 中多个 Window 的 relayout 请求在 WMS 端是串行处理的。
+注意这里的 `mWindowSession` 是 App 进程到 WMS 的 Binder 通道。每个 App 进程有一个 Session 对象（`IWindowSession`），所有 Window 操作都通过这个通道完成。一个 App 中多个 Window 的 relayout 请求在 WMS 端是串行处理的。
 
 ### relayoutWindow 内部流程
 
