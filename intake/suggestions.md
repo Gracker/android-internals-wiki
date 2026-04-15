@@ -3696,3 +3696,33 @@
 - **位置**：related_chapters 含 "5.5"
 - **问题**：05-thermal.md 的 chapter 字段为 null，该章节尚未纳入编号体系
 - **建议**：确认 5.5 是否有正式编号，无则从 related_chapters 移除或改为文件路径引用
+
+## [Task9 Deep Review] 2.3 VSync 机制 — 2026-04-15
+- **类型**：源码准确性
+- **位置**：源码引用部分
+- **问题**：Choreographer.java路径可能存在混淆，需要核实android/view/目录下的实际路径是否准确
+- **建议**：检查frameworks/base/core/java/android/view/Choreographer.java在Android 16.0.0_r1中的实际存在性
+
+## [Task9 Deep Review] 2.3 VSync 机制 — 2026-04-15
+- **类型**：版本差异
+- **位置**：版本演进部分
+- **问题**：Android 17相关内容标记为[自动发现]，缺乏具体的源码支撑
+- **建议**：等待Android 17正式源码公开后补充具体路径验证，或明确标注为[待验证]
+
+## [Task9 Deep Review] 2.3 VSync 机制 — 2026-04-15
+- **类型**：知识盲区
+- **位置**：整体内容
+- **问题**：缺少低帧率模式(Low Frame Rate Mode)下的VSync行为分析
+- **建议**：补充省电模式下的VSync调度策略差异，包括不同帧率模式的转换逻辑
+
+## [Task9 Deep Review] 2.3 VSync 机制 — 2026-04-15
+- **类型**：数据支撑
+- **位置**：工具使用部分
+- **问题**："heapprofd开销<5%"缺少具体采样配置
+- **建议**：补充具体的采样配置参数、测试设备和负载条件
+
+## [Task9 Deep Review] 2.3 VSync 机制 — 2026-04-15
+- **类型**：交叉引用
+- **位置**：Frontmatter相关章节
+- **问题**：related_chapters缺少引用§2.4(Choreographer)和§2.5(RenderThread)
+- **建议**：在related_chapters中添加"2.4", "2.5"，并核实[2.6 SurfaceFlinger与合成]的章节编号
