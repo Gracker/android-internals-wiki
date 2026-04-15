@@ -2,7 +2,7 @@
 title: "卡顿分析方法论"
 chapter: "7.3"
 status: ready-for-review
-reviewed_date: "2026-04-08"
+reviewed_date: "2026-04-15"
 reviewed_by: openclaw-task6
 rework_date: "2026-04-04"
 rework_by: openclaw-task2b
@@ -33,8 +33,9 @@ sources:
     path: "https://developer.android.com/reference/android/view/FrameMetrics"
 tags: ['jank', 'methodology', 'Perfetto', 'Systrace', 'FrameTimeline', 'FrameMetrics', 'CPU', 'checklist']
 related_chapters: ["7.1", "7.2", "2.4", "2.5", "2.6", "1.5", "13.3"]
-pipeline_stage: task6_pending
-task6_state: pending
+pipeline_stage: task9_pending
+task6_state: reviewed
+task6_result: pass-light-edit
 task9_state: pending
 task2b_state: idle
 ---
@@ -119,7 +120,7 @@ data_sources: {
 
 ### 第三步：在 Trace 中定位问题帧
 
-打开 Trace 后的第一件事，不是去找红色的帧，而是先看全局环境 [来源: obsidian/Personal-Knowlodge/source/android-systrace-smooth-in-action-2.md]。
+打开 Trace 后的第一件事，先看全局环境 [来源: obsidian/Personal-Knowlodge/source/android-systrace-smooth-in-action-2.md]，不要急着找红色帧 [来源: obsidian/Personal-Knowlodge/source/android-systrace-smooth-in-action-2.md]。
 
 在 Perfetto 顶部的 CPU 区域扫一眼：CPU 频率是否正常（有没有被温控压低），整体负载是否很高（是不是高负载场景），有没有频繁的 CPU 迁移。这些信息能帮助快速判断是"App 自己慢"还是"系统环境差导致 App 被拖累"。
 
@@ -229,7 +230,7 @@ Uninterruptible Sleep 状态（在 Perfetto 中显示为深橙色）表示线程
 
 ## 标准化 Jank 分析 Checklist
 
-经过前面的拆解，我们把卡顿分析浓缩成一个可执行的分析模板。这不是一个死板的流程图，而是一个有经验的工程师面对卡顿问题时的思考框架。每次分析都可以沿着这个框架走一遍，确保不遗漏关键环节。
+经过前面的拆解，我们把卡顿分析浓缩成一个可执行的分析模板。它是一个有经验的工程师面对卡顿问题时的思考框架——每次分析都可以沿着走一遍，确保不遗漏关键环节。
 
 ### 第一阶段：环境排查（1-2 分钟）
 
