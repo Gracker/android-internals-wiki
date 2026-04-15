@@ -28,11 +28,11 @@ task6_result: pass-light-edit
 polish_count: 1
 polish_date: "2026-04-07"
 polish_by: "task2b-polish"
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
-task9_result: needs-rework
-task2b_state: pending
+task2b_result: fixed
+task2b_state: fixed
+task6_state: revisiting
+task9_state: pending
+pipeline_stage: task6_pending
 ---
 
 # 大小核架构
@@ -165,8 +165,8 @@ $ cat /sys/devices/system/cpu/cpu7/cpufreq/cpuinfo_max_freq
 
 当线程从 Sleep 状态被唤醒时，调度器需要为它选择一个目标 CPU。EAS 调度器会：
 
-- 评估线程的 `util`（利用率），反映它需要多少计算资源。这个值是通过 PELT（Per-Entity Load Tracking）机制持续追踪的，基于线程历史上的 CPU 占用时间计算得出。
-- 遍历所有可用的 CPU 核心，比较线程的 `util` 和每个核心的 `capacity`（容量，即最大计算能力）。大核的 capacity 远高于小核。
+- 评估线程的 `util`（利用率），反映它需要多少计算资源。这个值是通过 PELT（Per-Entity Load Tracking）机制持续追踪的——PELT 使用指数衰减移动平均来计算每个调度实体（线程、cgroup、CPU rq）的最近负载，时间常数约 32ms（一个 PELT 窗口的 1024us × 32），确保近期活跃的权重远大于历史活跃。
+- 遍历所有可用的 CPU 核心，比较线程的 `util` 和每个核心的 `capacity`（容量）。capacity 是内核在启动时根据每个核心的最高频率和微架构 IPC 差异计算出的归一化算力值（以同 SoC 中最强核心为 1024 基准），可以通过 `/sys/devices/system/cpu/cpu<N>/cpu_capacity` 读取。大核的 capacity 远高于小核。
 - 在所有满足 `capacity > util` 的核心中，利用内核中预置的**能量模型（Energy Model）**选择一个让系统总功耗最低的核心。
 
 唤醒时选核是最常见的迁移时机，因为它天然就是一个"需要做决策"的时刻。
@@ -213,11 +213,12 @@ RTG 还有一个重要功能是**负载聚合（Colocation Boost）**：当 RTG 
 
 ```sql
 -- 查看某线程的迁移次数和分布
-SELECT cpu, COUNT(*) as slices
-FROM thread_state_slice
-WHERE tid = <target_tid> AND state = 'Running'
-GROUP BY cpu
-ORDER BY cpu;
+SELECT ts.cpu, COUNT(*) as slices
+FROM thread_state ts
+JOIN thread t ON ts.utid = t.utid
+WHERE t.tid = <target_tid> AND ts.state = 'Running'
+GROUP BY ts.cpu
+ORDER BY ts.cpu;
 ```
 
 [来源: Personal-Knowlodge/source/Android-Perfetto-09-CPU.md]
@@ -243,22 +244,27 @@ schedutil 的调频决策可以简化为以下步骤：
    - **实时任务（RT/DL）**：schedutil 对 SCHED_FIFO 和 SCHED_RR 类型的任务直接使用最高频率，不按利用率缩放。这是因为实时任务对延迟极其敏感，不能冒频率不够的风险。
    - **I/O Boost**：当线程在进行 I/O 操作时（比如从磁盘读取数据），schedutil 会临时抬升其利用率估计，让频率更快地提上去。这是因为 I/O 操作通常与用户体验直接相关（比如加载页面、读取文件），需要更快的响应。
 
-schedutil 的核心调频函数是 `sugov_get_util()`，它负责汇总目标 CPU 上所有调度类的利用率：
+schedutil 的核心调频函数是 `sugov_get_util()`，它负责汇总目标 CPU 上所有调度类的利用率。Linux 6.6 中的实际签名如下（简化展示关键逻辑）：
 
-```
+```c
 // Linux kernel: kernel/sched/cpufreq_schedutil.c
-// 核心调频函数（简化）
-static unsigned int sugov_get_util(struct sugov_cpu *sg_cpu)
+// @ linux-6.6
+static void sugov_get_util(struct sugov_cpu *sg_cpu)
 {
     struct rq *rq = cpu_rq(sg_cpu->cpu);
-    unsigned long util = cpu_util_cfs(rq);    // CFS 任务的利用率
-    util += cpu_util_rt(rq);                    // RT 任务的利用率
-    // ...
-    return util;
+    unsigned long util = cpu_util_cfs(rq);
+    unsigned long max = arch_scale_cpu_capacity(sg_cpu->cpu);
+
+    sg_cpu->max = max;
+    sg_cpu->bw_dl = cpu_bw_dl(rq);
+    // effective_cpu_util() 内部会合并 CFS util + RT util + DL util，
+    // 并根据 FREQUENCY_UTIL 类型应用 uclamp 的 clamp 范围
+    sg_cpu->util = effective_cpu_util(sg_cpu->cpu, util,
+                                      FREQUENCY_UTIL, NULL);
 }
 ```
 
-这段代码有两个要点：第一，`cpu_util_cfs()` 和 `cpu_util_rt()` 分别获取普通任务和实时任务的利用率，两者累加后才是 schedutil 看到的总负载。第二，实时任务的利用率会被特殊处理——schedutil 在后面会为 RT 任务直接映射到最高频率，而不是按比例缩放。
+这段代码有三个要点：第一，函数返回 `void`，结果直接写入 `sg_cpu` 结构体的 `max`、`bw_dl`、`util` 字段，而不是返回一个数值。第二，实际利用率汇总由 `effective_cpu_util()` 完成——它内部会把 CFS、RT、deadline 三类调度实体的利用率合并，并根据传入的 `FREQUENCY_UTIL` 类型应用 uclamp（utility clamping）的约束范围。第三，RT 任务的频率映射在 `sugov_update_single_freq()` / `sugov_update_shared()` 中处理：当检测到 RT/DL 任务有带宽需求时，schedutil 会直接映射到最高频率，而不是按比例缩放。
 
 [已验证: Linux kernel 源码, kernel/sched/cpufreq_schedutil.c @ linux-6.6]
 
@@ -271,6 +277,10 @@ static unsigned int sugov_get_util(struct sugov_cpu *sg_cpu)
 
 这就是为什么在 Perfetto 中看到"高频 + 小核 + 仍慢"时，不应该简单地认为"频率不够"，而应该优先考虑**选核问题**——任务是否应该被迁移到大核上。
 
+### uclamp：约束调度器和 governor 的利用率先验
+
+[待补充：uclamp（utility clamping）机制详解。uclamp 是 Linux 5.3 引入的框架，允许从用户空间或内核为任务设置 util 的上下限（UCLAMP_MIN / UCLAMP_MAX）。Android 从 Android 12 开始通过 task profile（如 `TaskProfileCpuBoost`）利用 uclamp 来告诉 schedutil 和 EAS：“即使这个线程当前的 PELT util 很低，也请至少按照某个下限来分配 CPU 频率或选核”。这直接解释了应用启动等场景下大核频率会“提前拉高”的现象——不是 PELT 算出了高 util，而是 uclamp_min 把 util 钳位到了一个较高的地板值。uclamp 是理解现代 Android 调度行为的关键前提，需补完其工作原理、Android 集成方式和 Perfetto 观测入口。]
+
 ### 影响频率的其他因素
 
 schedutil 的决策并不是最终频率，还有几个约束会叠加在 schedutil 的选择之上：
@@ -281,7 +291,7 @@ schedutil 的决策并不是最终频率，还有几个约束会叠加在 schedu
 
 3. **省电模式**：低电量或手动开启省电模式时，系统同样会压低天花板频。
 
-在 Perfetto 中，CPU Frequency 轨道上可以看到频率的上下限变化。如果频率被压在某个较低值不变，且不受负载变化影响，大概率是温控或省电模式在起作用。
+在 Perfetto 中，CPU Frequency 轨道上能直接看到频率的上下限变化。如果频率被压在某个较低值不变，且不受负载变化影响，大概率是温控或省电模式在起作用。
 
 [来源: Personal-Knowlodge/source/Android-Perfetto-09-CPU.md]
 [已验证: 官方文档, perfetto.dev/docs/data-sources/cpu-scheduling]
@@ -342,7 +352,7 @@ SELECT
   cpu,
   COUNT(*) as num_slices,
   SUM(dur) / 1e6 as total_running_ms
-FROM thread_state_slice
+FROM thread_state
 WHERE state = 'Running'
   AND dur > 0
 GROUP BY cpu

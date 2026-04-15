@@ -9726,6 +9726,10 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-15T09:27:46",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-15T12:45:01+08:00",
+    "completed_by": "task2b-rework",
+    "result": "fixed",
+    "notes": "Task 2B 回炉修复：1) sugov_get_util() 返回类型修正为 void，函数体对齐 Linux 6.6 effective_cpu_util()；2) thread_state_slice → thread_state 2 处 SQL 表名修正 + tid→utid JOIN 修正；3) PELT 补指数衰减移动平均说明；4) capacity 补归一化算力值与 sysfs 入口；5) 新增 uclamp [待补充] 知识缺口占位。STYLE.md 禁用词扫描通过。"
   }
 ]
