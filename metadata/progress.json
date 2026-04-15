@@ -31,8 +31,8 @@
     "task6_state_counts": {
       "unknown": 31,
       "revisiting": 80,
-      "reviewed": 23,
-      "pending": 75
+      "reviewed": 24,
+      "pending": 74
     },
     "task9_state_counts": {
       "unknown": 32,
@@ -41,9 +41,9 @@
     },
     "pipeline_stage_counts": {
       "unknown": 31,
-      "task6_pending": 153,
+      "task6_pending": 152,
       "task2b_pending": 16,
-      "task9_pending": 9
+      "task9_pending": 10
     },
     "total_sections": 207
   },
@@ -1678,12 +1678,14 @@
       "title": "ANR 设计思想",
       "path": "src/part2-performance/ch09-anr/01-anr-design.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "pending",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
       "task9_state": "pending",
       "task2b_state": "idle",
-      "reviewed_date": "2026-04-09",
-      "reviewed_by": "openclaw-task6"
+      "reviewed_date": "2026-04-16",
+      "reviewed_by": "openclaw-task6",
+      "task6_result": "pass-light-edit",
+      "section": "9.1"
     },
     "src/part2-performance/ch09-anr/02-anr-types.md": {
       "chapter": "9.2",

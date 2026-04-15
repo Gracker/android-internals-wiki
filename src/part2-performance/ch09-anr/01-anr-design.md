@@ -1,6 +1,7 @@
 ---
 title: "ANR 设计思想"
 chapter: "9.1"
+section: "9.1"
 status: ready-for-review
 drafted_date: "2026-04-02"
 polish_count: 1
@@ -9,7 +10,7 @@ polish_by: "task2b-polish"
 applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37)"
 last_verified: "2026-04-02"
 last_verified_against: "AOSP android-14.0.0_r1"
-reviewed_date: "2026-04-09"
+reviewed_date: "2026-04-16"
 reviewed_by: openclaw-task6
 confidence: medium
 sources:
@@ -27,8 +28,9 @@ sources:
     path: "https://developer.android.com/topic/performance/vitals/anr"
 tags: [anr, watchdog, traces, dropbox, activitymanagerservice, input-dispatcher, anrhelper, sigquit]
 related_chapters: ["9.2", "9.3", "1.5", "8.1"]
-pipeline_stage: task6_pending
-task6_state: pending
+pipeline_stage: task9_pending
+task6_state: reviewed
+task6_result: pass-light-edit
 task9_state: pending
 task2b_state: idle
 ---
@@ -66,7 +68,7 @@ task2b_state: idle
 
 ANR（Application Not Responding）机制就是 Android 对这个问题的系统性回答。它不是事后诊断工具，而是一道运行时的防线：在应用失去响应能力的瞬间介入，给用户选择权——继续等待，或者杀掉它。
 
-理解 ANR 的设计思想之所以重要，不仅因为它是 Android 性能优化的核心课题之一，更因为它直接决定了我们分析 ANR 问题时的思路。如果不了解系统"为什么这样设计"，拿到一份 traces.txt 时很容易陷入"看堆栈猜原因"的盲人摸象——而事实上，ANR trace 的堆栈经常是"替罪羊"，真正导致超时的代码可能早已执行完毕。
+理解 ANR 的设计思想之所以重要，不仅因为它是 Android 性能优化的核心课题之一，更因为它直接决定了我们分析 ANR 问题时的思路。如果不了解系统"为什么这样设计"，拿到一份 traces.txt 时很容易陷入"看堆栈猜原因"的盲人摸象——ANR trace 的堆栈经常是"替罪羊"，真正导致超时的代码可能早已执行完毕。
 
 [来源: Personal-Knowlodge/source/2026-03-07_wechat_钉钉_ANR_治理最佳实践_定位_ANR_不再雾里看花.md]
 
@@ -94,7 +96,7 @@ ANR 机制在这个场景中介入的方式是：设置一个超时计时器，�
 
 当某个需要应用响应的操作开始时，system_server 会在一个后台线程上设置一个延迟消息。以 BroadcastReceiver 为例：当 AMS 将一个广播分发给目标应用时，它会同时通过 Handler 发送一个延迟消息，延迟时间就是该类型广播的超时阈值（前台广播 10 秒，后台广播 60 秒）。
 
-```
+```java
 // 概念流程（简化）
 // frameworks/base/services/core/java/com/android/server/am/BroadcastQueue.java
 // @ AOSP android-14.0.0_r1
@@ -119,7 +121,7 @@ scheduleBroadcastsDispatchAndCheckTimeout(r, BROADCAST_FG_TIMEOUT);
 
 当延迟消息到期时，system_server 进入 ANR 处理流程。在 Android 14 中，这个入口是 `AnrHelper.appNotResponding()`（早期版本直接在 `ActivityManagerService` 或 `BroadcastQueue` 中处理）。
 
-```
+```java
 // 概念流程（简化）
 // frameworks/base/services/core/java/com/android/server/am/AnrHelper.java
 // @ AOSP android-14.0.0_r1
@@ -304,7 +306,7 @@ ANR 触发后，系统会产出多种诊断信息，这些是我们分析 ANR �
 
 在 Android 10 及以上版本中，ANR trace 文件不再统一写入 `/data/anr/traces.txt`，而是以 `anr_*` 命名存放在 `/data/anr/` 目录下。可以通过 `adb pull /data/anr/` 获取。
 
-需要注意的是，**traces.txt 中的主线程堆栈不一定是 ANR 的根因**。正如前面提到的"刻舟求剑"问题，堆栈捕获时真正导致超时的代码可能已经执行完毕了。如果主线程堆栈显示 `Native (nativePollOnce)`，那说明 ANR 发生时主线程实际上处于空闲状态——真正的问题在更早的消息处理中。
+**traces.txt 中的主线程堆栈不一定是 ANR 的根因**。正如前面提到的"刻舟求剑"问题，堆栈捕获时真正导致超时的代码可能已经执行完毕了。如果主线程堆栈显示 `Native (nativePollOnce)`，那说明 ANR 发生时主线程处于空闲状态——真正的问题在更早的消息处理中。
 
 ### Event Log
 
@@ -386,7 +388,7 @@ Play Console 中可以看到的 ANR 信息包括：
 
 在这整个过程中，应用的主线程并没有停止工作。真正导致超时的"长耗时消息"很可能已经执行完毕，主线程已经开始处理下一个消息，甚至进入了空闲状态（`nativePollOnce`）。
 
-钉钉团队在分析一个 ANR 问题时发现：BugReport 中的 traces.txt 显示主线程在处理传感器事件，而实际上真正导致 ANR 的是硬件渲染阶段的锁等待（耗时 68 秒）。传感器事件处理只用了 12 毫秒，但因为发生在超时检测之后，成了 traces.txt 中的"替罪羊"。
+钉钉团队在分析一个 ANR 问题时发现：BugReport 中的 traces.txt 显示主线程在处理传感器事件，真正导致 ANR 的是硬件渲染阶段的锁等待（耗时 68 秒）。传感器事件处理只用了 12 毫秒，但因为发生在超时检测之后，成了 traces.txt 中的"替罪羊"。
 
 这个认知直接决定了我们分析 ANR 的方式——不能简单地把 traces.txt 堆栈当作根因，而需要结合时间线和多种信息源交叉验证。这正是 9.3 节要讨论的核心主题。
 
@@ -397,7 +399,7 @@ Play Console 中可以看到的 ANR 信息包括：
 
 ### 误区一："主线程堆栈就是 ANR 的根因"
 
-这是最常见的误区。拿到一份 traces.txt，看到主线程堆栈在某个方法上，就认定这个方法是 ANR 的罪魁祸首。但实际上，traces.txt 中的堆栈是超时检测之后才 dump 的，真正导致超时的代码很可能已经执行完毕。我们在前面的"替罪羊"现象中已经详细解释了这个时序问题。正确的做法是：traces.txt 是线索之一，但必须结合 event log 中的时间戳、systrace/perfetto 中的主线程时间线来交叉验证。
+这是最常见的误区。拿到一份 traces.txt，看到主线程堆栈在某个方法上，就认定这个方法是 ANR 的罪魁祸首。但 traces.txt 中的堆栈是超时检测之后才 dump 的，真正导致超时的代码很可能已经执行完毕。我们在前面的"替罪羊"现象中已经详细解释了这个时序问题。正确的做法是：traces.txt 是线索之一，但必须结合 event log 中的时间戳、systrace/perfetto 中的主线程时间线来交叉验证。
 
 ### 误区二："ANR = CPU 高负载"
 
@@ -409,7 +411,7 @@ ANR 的触发条件是"主线程在超时时间内没有响应"，而不是"CPU 
 
 ### 误区四："ANR 率低就不需要关注"
 
-Google Play Console 的 ANR 率阈值（0.38% 标记为"差"）是全局统计值。对于一个日活 100 万的应用，0.38% 意味着每天有 3800 个用户遇到 ANR。更重要的是，ANR 率是按会话计算的，一个用户可能在同一天遇到多次 ANR，但只计算一次。所以即使 ANR 率在"可接受"范围内，频繁 ANR 的用户很可能已经流失了。
+Google Play Console 的 ANR 率阈值（0.38% 标记为"差"）是全局统计值。对于一个日活 100 万的应用，0.38% 意味着每天有 3800 个用户遇到 ANR。而且，ANR 率是按会话计算的，一个用户可能在同一天遇到多次 ANR，但只计算一次。所以即使 ANR 率在"可接受"范围内，频繁 ANR 的用户很可能已经流失了。
 
 ## 参考资料
 
