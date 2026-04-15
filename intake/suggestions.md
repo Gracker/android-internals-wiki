@@ -409,3 +409,38 @@
 - **位置**：章节 frontmatter vs metadata/progress.json
 - **问题**：frontmatter 标记 task9_state=reviewed/pipeline_stage=task6_pending，progress.json 标记 task9_state=pending/pipeline_stage=task9_pending。不同步。
 - **建议**：同步 frontmatter 和 progress.json 的 pipeline 状态。
+
+## [Task9 Deep Review] 1.1 Android 分层架构 — 2026-04-16
+
+- **类型**：原理断裂
+- **位置**：「Binder 跨层调用」小节
+- **问题**：提及 Binder 线程池"内核唤醒空闲线程"但未解释线程池大小（默认 16 线程）和饱和行为。SystemServer 所有 Binder 线程忙时新请求排队，直接导致调用方阻塞——这是实际分析中常见但容易被忽略的瓶颈场景。
+- **建议**：补充 Binder 线程池大小说明，增加一个"所有 Binder 线程忙导致 App 主线程阻塞"的 Trace 描述案例。
+
+## [Task9 Deep Review] 1.1 Android 分层架构 — 2026-04-16
+
+- **类型**：原理断裂
+- **位置**：「Zygote：应用进程的孵化器」小节
+- **问题**：描述了 fork 机制和 COW 但跳过了 fork 之后子进程如何从 native 进程进入 Java 世界的桥梁——`app_process` 二进制。读者无法理解从 fork 到 `ZygoteInit.main()` 之间发生了什么。
+- **建议**：在 Zygote fork 段落后补充简短的 app_process 说明（1-2 句），或添加交叉引用到 1.2 系统启动全流程。
+
+## [Task9 Deep Review] 1.1 Android 分层架构 — 2026-04-16
+
+- **类型**：数据缺失
+- **位置**：全文性能数据声明
+- **问题**：Binder 延迟（10-100μs）、JNI 延迟（100-200ns / 1-5μs）、Zygote fork 时间（20-50ms）三项基础性能数据均标记 `[待验证]`。作为全书开篇章节，这些基线数据的可信度直接影响后续章节。
+- **建议**：为每项数据至少提供一个具体来源（设备型号 + Android 版本 + 测量方法的引用），或将验证任务分配给下一个 research cycle。
+
+## [Task9 Deep Review] 1.1 Android 分层架构 — 2026-04-16
+
+- **类型**：交叉引用
+- **位置**：全文
+- **问题**：正文缺少对 1.2（系统启动全流程）的明确交叉引用。Zygote fork 和 SystemServer 启动流程与 1.2 高度相关，但读者只能通过 frontmatter 的 related_chapters 发现关联。
+- **建议**：在 Zygote 和 SystemServer 段落后添加"详见 1.2 系统启动全流程"的交叉引用链接。
+
+## [Task9 Deep Review] 1.1 Android 分层架构 — 2026-04-16
+
+- **类型**：一致性
+- **位置**：outline 扩展部分
+- **问题**：outline 声明"与 iOS / HarmonyOS 分层架构的对比"为扩展内容，但正文完全未涉及。这属于 outline 与正文不一致。
+- **建议**：如果不计划展开（合理选择），从 outline 扩展列表中移除该项；如果后续有素材，可补充简要对比表。

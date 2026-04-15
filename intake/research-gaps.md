@@ -226,3 +226,41 @@ Traversal vs Relayout 的触发条件区分缺失。App 侧 requestLayout() 触�
 
 ### 关联章节
 2.12, 2.4, 2.5, 3.1, 8.2
+
+## [2026-04-16] 1.1 Android 分层架构 — 知识盲区
+
+### 盲区 1：SELinux 开销对 Binder 性能的影响
+#### 描述
+SELinux/MAC 对每次 Binder transaction 执行权限检查，在高频调用场景下累积效应显著。本章多处讨论 Binder 瓶颈但未提及 SELinux 因素。
+#### 重要程度
+高
+#### 建议研究方向
+- 测量不同 Android 版本上 SELinux 对 Binder 延迟的贡献
+- 分析 enforced vs permissive 模式下的性能差异
+- 研究 Android 14+ 中 SELinux 策略优化的趋势
+#### 关联章节
+1.1, 1.4 (Binder IPC)
+
+### 盲区 2：APEX 模块内部机制与性能影响
+#### 描述
+讨论了 Project Mainline 但未解释 APEX 工作机制（zip + loop device mount），也未说明模块更新对运行时性能的影响。
+#### 重要程度
+中
+#### 建议研究方向
+- APEX 容器格式和加载机制
+- 模块更新时服务重启的性能影响
+- Mainline 模块版本对 Trace 分析的影响（已在文中提及但未深入）
+#### 关联章节
+1.1, 1.6 (版本演进), 16.2 (版本变更追踪)
+
+### 盲区 3：Android 8-16 版本差异覆盖不足
+#### 描述
+applicable_versions 声明 Android 8-16，但遗漏了多项版本级架构变化：Android 10 的 /dev/vndbinder、Android 12 的 cached process frozen state、ART 编译策略演进（cloud profiles）。
+#### 重要程度
+高
+#### 建议研究方向
+- 梳理 Android 8-16 每个版本在架构层面的关键变化
+- 重点关注影响 Binder 延迟、进程管理、编译策略的变更
+- 为每个变化标注对性能分析的具体影响
+#### 关联章节
+1.1, 1.6, 16.2
