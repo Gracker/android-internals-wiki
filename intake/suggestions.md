@@ -3726,3 +3726,15 @@
 - **位置**：Frontmatter相关章节
 - **问题**：related_chapters缺少引用§2.4(Choreographer)和§2.5(RenderThread)
 - **建议**：在related_chapters中添加"2.4", "2.5"，并核实[2.6 SurfaceFlinger与合成]的章节编号
+
+## [Task9 Deep Review] 5.4 DVFS 与功耗管理 — 2026-04-15
+- **类型**：源码准确性
+- **位置**：SQL 查询分析频率变化（行 305-323）
+- **问题**：两段 SQL 直接引用 `cpu_frequency_slices` 表，Perfetto trace processor 没有此内置表。CPU 频率数据在 `counter` + `cpu_counter_track` 中，需通过 LEAD 窗口函数计算 duration。当前 SQL 会直接报错。
+- **建议**：用 `counter c JOIN cpu_counter_track t ON c.track_id = t.id WHERE t.name = 'cpufreq'` 配合 `LEAD(c.ts) OVER (PARTITION BY c.track_id ORDER BY c.ts) - c.ts AS dur` 重写两段 SQL，确保可直接在 Perfetto UI 的 SQL 面板运行。
+
+## [Task9 Deep Review] 5.4 DVFS 与功耗管理 — 2026-04-15
+- **类型**：数据缺失
+- **位置**：行 241-252（DVFS 升频延迟）
+- **问题**：正文把 "governor 升频可能需要约 200ms" 标为 [已验证: 官方文档]，但公开 ADPF 文档中未找到明确的 "200ms" 数值。这个断言的来源可能是内部培训材料或旧版文档，不应标为 [已验证]。
+- **建议**：将 [已验证] 改为 [待验证]，或补充具体来源（如 Google I/O 演讲、Android Performance Summit 视频的时间戳、或 CTS/VTS 文档编号）。如果来源不确定，建议改为更保守的表述如 "可能需要数十到上百毫秒"。
