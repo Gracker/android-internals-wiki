@@ -3,15 +3,15 @@ title: "Input 事件分发全流程"
 chapter: "3.1"
 status: ready-for-review
 applicable_versions: "Android 12 (API 31) - Android 16 (API 36)"
-last_verified: "2026-04-10"
+last_verified: "2026-04-15"
 last_verified_against: "AOSP android-14.0.0_r1"
 version_note: "正文以 android-14 验证为主；Android 12 InputFlinger 分离和 Android 13 ANR Tracker 变更基于官方文档和社区素材，标注 [待验证]。建议后续补充 android-12/13 源码级验证"
 confidence: high
 reviewed_date: "2026-04-07"
 reviewed_by: openclaw-task6
-rework2_date: "2026-04-10"
+rework2_date: "2026-04-15"
 rework2_by: "openclaw-task2b"
-rework2_reason: "Task9 Deep Tech Review: applicable_versions 补充版本验证说明; DEFAULT_INPUT_DISPATCHING_TIMEOUT_NANOS 经 web search 验证确在 WMS.java(Task9误报); §9.2 交叉引用经查实存在(Task9误报)"
+rework2_reason: "Task9 Deep Tech Review: 修正 DEFAULT_INPUT_DISPATCHING_TIMEOUT 常量源码路径（frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp）"
 polish_count: 1
 polish_date: "2026-04-05"
 polish_by: "task2b-polish"
@@ -30,11 +30,12 @@ reviewed_by: openclaw-task6
 reviewed_date: "2026-04-15"
 task6_result: pass-light-edit
 pipeline_stage: task9_pending
-task6_state: reviewed
-task9_state: reviewed
+task6_state: revisiting
+task9_state: pending
 task9_result: pass-tech-review
 task9_result: pass-tech-review
-task2b_state: idle
+task2b_state: fixed
+pipeline_stage: task6_pending
 ---
 
 # Input 事件分发全流程
@@ -377,12 +378,12 @@ if (connection->responsive) {
 
 ### 5 秒超时的来源
 
-默认超时时间定义在 `WindowManagerService` 中：
+默认超时时间在 InputDispatcher 中定义：
 
-```java
-// frameworks/base/services/core/java/com/android/server/wm/WindowManagerService.java
-// [已验证: AOSP android-14.0.0_r1; android-16 经 web search 确认常量仍在 WMS.java 中定义]
-static final long DEFAULT_INPUT_DISPATCHING_TIMEOUT_NANOS = 5000 * 1000000L; // 5 sec
+```cpp
+// frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp
+// [已验证: AOSP android-14.0.0_r1]
+static const nsecs_t DEFAULT_INPUT_DISPATCHING_TIMEOUT = 5 * 1000000000LL; // 5 sec
 ```
 
 这个值可以通过 `InputWindowHandle.dispatchingTimeoutNanos` 覆盖。系统窗口（如状态栏、导航栏）可能使用不同的超时值，但 App 窗口默认是 5 秒。
