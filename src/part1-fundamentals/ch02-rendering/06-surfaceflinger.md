@@ -104,6 +104,16 @@ SurfaceFlinger 和应用之间通过 BufferQueue 传递画面数据。最常见�
 
 [图：Perfetto 对照示意。上方是应用进程中的 dequeueBuffer 和 queueBuffer，下方是 surfaceflinger 进程中的 acquireBuffer 和 releaseBuffer，旁边再标出 VSYNC-sf。正常节奏下，queueBuffer 出现在应用完成 GPU 渲染之后，acquireBuffer 通常跟在下一次或后续一次 VSYNC-sf 的 latch 之后，releaseBuffer 要等 present 完成并且 release fence signal，Buffer 才能重新进入空闲池。]
 
+### SF 慢 → dequeueBuffer 阻塞：backpressure 的完整路径
+
+SurfaceFlinger 合成慢不只是自己的问题——它会沿着 BufferQueue 链向上传递 backpressure，最终堵死 App 的渲染线程。
+
+完整路径是确定的（已验证 AOSP `BufferQueueProducer.cpp` 行 297–399、`BufferQueueConsumer.cpp` 行 480–591）：SurfaceFlinger / HWC 持有 Buffer 进行合成时，App 侧 `releaseBuffer()` 不会被调用，`mFreeBuffers` 保持为空；此时 App 的 RenderThread 调用 `dequeueBuffer()` → `waitForFreeSlotThenRelock()` → `mDequeueCondition.wait(lock)` 主动阻塞，等 SurfaceFlinger 完成 present 后 `releaseBuffer()` → `mDequeueCondition.notify_all()` 才会被唤醒。
+
+所以在 Trace 里看到 RenderThread `dequeueBuffer()` 阻塞，根因不一定在 App 侧。顺着往上看：如果 SurfaceFlinger 主线程的 `commit` / `composite` / `present` 耗时异常，或者 HWC 持有 Buffer 时间变长，那 `dequeueBuffer()` 等待只是结果，不是原因。反过来，如果 SurfaceFlinger 并不忙，但 dequeue 依然持续阻塞，那就该查 slot 数量配置、shared buffer mode、或 buffer count 约束这些上层设置。
+
+[已验证：AOSP android-main `BufferQueueProducer::waitForFreeSlotThenRelock`、`BufferQueueConsumer::releaseBuffer::mDequeueCondition.notify_all`]
+
 ## 合成方式：Client 合成与 Device 合成
 
 SurfaceFlinger 有两种合成方式：Client 合成（也叫 GPU 合成）和 Device 合成（也叫 HWC 硬件合成）。区分两者，才能读懂合成耗时和功耗变化。
