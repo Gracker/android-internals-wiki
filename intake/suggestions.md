@@ -249,3 +249,53 @@
 - **位置**：数据驱动方法论
 - **问题**：缺少统计严谨性讨论（方差、置信区间、最小运行次数）
 - **建议**：补充一段讨论性能测量的统计方法，或引用 Android 官方 Macrobenchmark 文档中关于多次运行取中位数的建议
+
+## [Task9 Deep Review] 8.3 启动优化策略 — 2026-04-16
+
+### [P1] 首帧定义缺失：TTID vs TTFD
+- **类型**：原理断裂 + 知识盲区
+- **位置**：全文多处使用"首帧"，以及"效果量化"小节
+- **问题**：全文未区分 TTID（Time to Initial Display，am start -W 的 TotalTime）和 TTFD（Time to Full Display，需要 reportFullyDrawn()）。不同定义影响优化策略方向——TTID 侧重减少 Activity 创建到第一帧的路径耗时，TTFD 侧重减少数据加载和内容就绪的耗时。
+- **建议**：在"为什么要了解启动优化策略"小节后增加一段定义 TTID/TTFD，说明本节同时覆盖两者但侧重 TTID；在 Baseline Profile 效果量化部分区分展示两个指标；在总结部分提及 `reportFullyDrawn()` API 的使用。
+
+### [P1] BaselineProfileRule API 版本未标注
+- **类型**：源码准确性
+- **位置**：Baseline Profile 制作 → 编写生成测试用例
+- **问题**：`includeInStartupProfile = true` 参数在早期版本的 `benchmark-macro-junit4` 中不存在（该参数在 1.2.0+ 引入）。读者使用旧版本库会导致编译错误。
+- **建议**：在代码示例旁标注最低依赖版本，或在 `build.gradle` 依赖声明后加注释说明版本要求。
+
+### [P2] installSplashScreen() 调用时机说明不精确
+- **类型**：源码准确性
+- **位置**：SplashScreen API 核心使用小节
+- **问题**：正文说"必须在 setContentView() 之前调用"，但 `installSplashScreen()` 实际要求在 `super.onCreate()` 之前调用。代码示例顺序正确，但文字说明可能导致读者遗漏。
+- **建议**：修正为"installSplashScreen() 必须在 super.onCreate() 之前调用"。
+
+### [P2] DAG 到自研框架的实现路径跳跃
+- **类型**：原理断裂
+- **位置**：多线程并行初始化框架 → DAG 模型与拓扑排序 → 自研框架
+- **问题**：DAG 概念解释清楚后，直接跳到 App Startup 的 Initializer 接口，然后自研框架列出设计要点但没有展示"如何从 DAG 构建可执行调度计划"的实现路径。
+- **建议**：在自研框架部分补充一段简要说明拓扑排序的实现思路（如 Kahn 算法或 DFS），或引用一个开源启动框架（如 Alibaba Alpha）作为实现参考。
+
+### [P2] "某内容类应用"案例数据不透明
+- **类型**：数据缺失
+- **位置**：延迟初始化策略 → 懒加载小节
+- **问题**："将冷启动耗时从 2800ms 降到了 1800ms"来源于微信公众号文章，具体条件（设备、Android 版本、SDK 组成）不透明。
+- **建议**：标注为"行业公开案例，来自 XX 文章"，或改为更通用的表述"实践中，通过合理的任务分类通常可减少 30-50% 的 Application 初始化耗时"。
+
+### [P2] Baseline Profile 20-40% 提升无具体引用
+- **类型**：数据缺失
+- **位置**：效果量化小节
+- **问题**：归因于"Google 官方数据"但未给出具体来源（I/O 演讲？文档？case study？）。
+- **建议**：引用具体来源，如 "根据 Google I/O 2022 演讲数据，XX 应用通过 Baseline Profile 实现了 XX% 的启动速度提升"。
+
+### [P2] AsyncLayoutInflater 收益 50-200ms 无来源
+- **类型**：数据缺失
+- **位置**：布局优化 → AsyncLayoutInflater 小节
+- **问题**："收益通常在 50-200ms 之间"为具体量化断言但无 benchmark 或引用支撑。
+- **建议**：补充来源，或改为"根据布局复杂度，收益通常在数十到数百毫秒级别"并标注为经验估算。
+
+### [P2] 8.8 ProfilingManager 交叉引用缺失
+- **类型**：交叉引用
+- **位置**：启动速度线上监控 → 在 Perfetto 中定位启动耗时瓶颈；以及 frontmatter related_chapters
+- **问题**：章节提到 Method Trace 追加分析但未交叉引用 8.8 节（ProfilingManager 系统触发式性能追踪）。frontmatter related_chapters 也未包含 8.8。另外 ch08 目录中存在两个 08 前缀文件（08-media-pipeline.md 和 08-system-triggered-profiling.md），后者未出现在 SUMMARY.md 中，可能存在章节号冲突。
+- **建议**：在 Method Trace 相关段落添加交叉引用 8.8；在 related_chapters 中添加 "8.8"；与高爷确认 08-system-triggered-profiling.md 的章节归属。

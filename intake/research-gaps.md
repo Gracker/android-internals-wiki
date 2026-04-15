@@ -151,3 +151,20 @@ dm-verity 与 EROFS 的配合机制未在章节中讨论。文中提到"配合 d
 
 ### 关联章节
 15.1, 13.1, 13.2, 14.5
+
+## [2026-04-16] 8.3 启动优化策略 — 知识盲区
+
+### 盲区描述
+章节 applicable_versions 标注覆盖 Android 8-17，但正文内容在 Android 12 SplashScreen 之后未涉及任何版本差异。Android 13-17 中的启动优化相关行为变更完全空白，包括：per-app language 对 SplashScreen 的影响、Cloud Profile Mainline 化、AutoFDO 协同、profileable 标记要求变化、reportFullyDrawn() 行为变更等。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 查证 Android 13/14/15/16/17 中与启动优化相关的 Behavior Changes
+- 整理 SplashScreen API 在各版本的兼容行为差异
+- 梳理 Baseline Profile + Cloud Profile + AutoFDO 在 Android 15/16 中的协同机制
+- 验证 `reportFullyDrawn()` 在 Android 15+ 的变更（`androidx.activity:activity:1.8.0` 引入的自动 TTFD 追踪）
+
+### 关联章节
+8.1, 8.7, 1.12, 5.10

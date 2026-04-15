@@ -149,5 +149,38 @@
     "status": "completed",
     "completed_at": "2026-04-15T23:51:07.242058",
     "completed_by": "task2b-rework"
+  },
+  {
+    "section": "8.3",
+    "section_title": "启动优化策略",
+    "priority": 85,
+    "reason": "[Deep Tech Review] P1：TTID/TTFD 未区分、Android 13-17 版本差异缺失、BaselineProfileRule API 版本未标注",
+    "material_paths": [
+      "intake/suggestions.md",
+      "intake/research-gaps.md"
+    ],
+    "review_issues": [
+      {
+        "type": "原理断裂+知识盲区",
+        "location": "全文'首帧'相关描述",
+        "detail": "TTID 和 TTFD 未区分。am start -W 的 TotalTime 对应 TTID；TTFD 需要 reportFullyDrawn()。不同指标影响优化策略方向。reportFullyDrawn() API 在全篇未出现。",
+        "suggestion": "在开头定义 TTID/TTFD，在效果量化部分分别展示两个指标，在总结部分提及 reportFullyDrawn() 使用"
+      },
+      {
+        "type": "版本差异",
+        "location": "全文，尤其 SplashScreen 和 Baseline Profile 章节",
+        "detail": "applicable_versions 标注 8.0-17，但正文只覆盖到 Android 12 SplashScreen。Android 13-17 的启动优化相关行为变更完全空白（per-app language 对 SplashScreen 影响、Cloud Profile Mainline 化、AutoFDO 协同、profileable 要求变化等）",
+        "suggestion": "添加版本差异小节或嵌入各主题中。优先覆盖：Android 15 Cloud Profile 变化、Android 16 AutoFDO 交叉引用"
+      },
+      {
+        "type": "源码准确性",
+        "location": "Baseline Profile 制作 → 生成测试用例代码",
+        "detail": "includeInStartupProfile 参数未标注最低依赖版本（benchmark-macro-junit4 1.2.0+）",
+        "suggestion": "在代码示例旁标注版本要求"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-16T01:25:00",
+    "status": "pending"
   }
 ]
