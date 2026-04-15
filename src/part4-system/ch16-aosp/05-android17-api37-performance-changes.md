@@ -1,5 +1,5 @@
 ---
-title: "Android 17 (API 37) 性能行为变更与适配指南"
+title: "Android 17 (API 37) 性能行为变更与适配方法"
 chapter: "16.5"
 status: ready-for-review
 drafted_date: "2026-04-08"
@@ -22,10 +22,13 @@ created_by: "task2a-knowledge-gap"
 created_date: "2026-04-08"
 gap_source: "官方文档+研究素材+AOSP结构+读者需求"
 gap_score: 20
-pipeline_stage: task6_pending
-task6_state: pending
+pipeline_stage: task9_pending
+task6_state: reviewed
+task6_result: pass-light-edit
 task9_state: pending
 task2b_state: idle
+reviewed_by: openclaw-task6
+reviewed_date: 2026-04-15
 ---
 
 # 16.5 Android 17 (API 37) 性能行为变更与适配指南
@@ -36,7 +39,7 @@ task2b_state: idle
 
 从 Perfetto 的角度看，这些变更会在 Trace 中留下清晰的痕迹。DeliQueue 的无锁队列改变了主线程的锁等待模式；分代 GC 让你在 Memory Track 中看到的 GC 切片特征发生变化；ProfilingManager 的新触发器让你无需手动埋点就能抓取冷启动和 OOM 时刻的 Trace。了解这些变更，意味着你在面对 Android 17 设备上的性能问题时，知道去哪里找线索。
 
-这一节覆盖的范围是：**与性能直接相关的行为变更**（不是全部 API 37 变更的罗列）。我们按影响范围和适配紧迫程度排列。
+这一节覆盖的范围是：**与性能直接相关的行为变更**（不是全部 API 37 变更的罗列）。我们按影响范围和适配紧迫程度排序。
 
 ---
 
@@ -283,7 +286,7 @@ Android 17 引入了 ECH（Encrypted Client Hello）的平台级支持。ECH 是
 
 ECH 对 App 透明，前提是你使用的网络库支持。`HttpEngine`（Android 内置）和 `WebView` 已支持；`OkHttp` 需要等待上游库更新。
 
-从性能角度看，ECH 在握手阶段增加了极少量的额外开销（一次额外的 DNS 查询和几字节的握手数据），对实际请求延迟的影响可以忽略。
+从性能角度看，ECH 在握手阶段增加了极少量的额外开销（一次额外的 DNS 查询和几字节的握手数据），对实际请求延迟的影响极小。
 
 ### Certificate Transparency 默认启用
 
@@ -306,7 +309,7 @@ Android 16 引入了 Cloud Compilation：App 安装时不再需要在设备上�
 Android 17 在此基础上增强了以下几个方面：
 
 1. **Cloud Profiles 的更新频率**：从用户设备上聚合的运行时 profile 数据更频繁地上传到云端，使得云端编译的代码优化更贴近真实使用模式
-2. **与 Baseline Profiles 的协同**：开发者定义的 Baseline Profiles 在安装时提供基础优化，Cloud Profiles 在后续使用中逐步补充优化。两者叠加，部分 App 的启动时间平均提升 **15%**，最高 **30%**
+2. **与 Baseline Profiles 的协同**：开发者定义的 Baseline Profiles 在安装时提供基础优化，Cloud Profiles 在后续使用中逐步补充优化。两者叠加，部分 App 的启动时间平均提升达到 **15%**，最高提升可达 **30%**
 3. **与 Startup Profiles 的整合**：Startup Profiles（Baseline Profiles 的子集，专注于冷启动路径）与 Cloud Profiles 合并，影响 DEX 文件布局优化
 
 ### AutoFDO 的内核级优化

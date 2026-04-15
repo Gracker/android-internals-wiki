@@ -1,18 +1,55 @@
-{
-  "section": "3.1",
-  "section_title": "Input 事件分发全流程",
-  "priority": 95,
-  "reason": "[Deep Tech Review] P0 事实错误：DEFAULT_INPUT_DISPATCHING_TIMEOUT_NANOS 常量源码路径错误",
-  "material_paths": ["intake/suggestions.md"],
-  "review_issues": [
-    {
-      "type": "源码错误",
-      "location": "文中引用 DEFAULT_INPUT_DISPATCHING_TIMEOUT_NANOS 常量定义路径",
-      "detail": "错误路径：frameworks/base/services/core/java/com/android/server/wm/WindowManagerService.java\n正确路径：frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp",
-      "suggestion": "修正源码路径引用，更新章节中的常量定义位置"
-    }
-  ],
-  "added_by": "task9-deep-tech-review",
-  "added_at": "2026-04-15T15:20:00",
-  "status": "completed"
-}
+[
+  {
+    "section": "3.1",
+    "section_title": "Input 事件分发全流程",
+    "priority": 95,
+    "reason": "[Deep Tech Review] P0 事实错误：DEFAULT_INPUT_DISPATCHING_TIMEOUT_NANOS 常量源码路径错误",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "文中引用 DEFAULT_INPUT_DISPATCHING_TIMEOUT_NANOS 常量定义路径",
+        "detail": "错误路径：frameworks/base/services/core/java/com/android/server/wm/WindowManagerService.java\n正确路径：frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp",
+        "suggestion": "修正源码路径引用，更新章节中的常量定义位置"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-15T15:20:00",
+    "status": "completed"
+  },
+  {
+    "section": "16.5",
+    "section_title": "Android 17 (API 37) 性能行为变更与适配方法",
+    "priority": 90,
+    "reason": "[review回炉] 多项技术细节需要验证和补充素材支持",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "需验证",
+        "location": "ProfilingManager触发器",
+        "detail": "三个触发器名称可能与 AOSP android-17-beta3 中的常量名不一致。早期 beta 中的触发器名称可能变化",
+        "suggestion": "需检查 frameworks/base/core/java/android/app/ProfilingManager.java 中的常量定义"
+      },
+      {
+        "type": "需补充素材",
+        "location": "DeliQueue部分",
+        "detail": "缺少 Perfetto 中旧 MessageQueue 锁争用的 Trace 截图描述，无法证明性能改善",
+        "suggestion": "需要添加真实的 Perfetto Trace 片段，展示旧实现下的锁等待和新实现的性能改善"
+      },
+      {
+        "type": "需确认",
+        "location": "16KB页面大小部分",
+        "detail": "关于某些原生库内部假设了 4KB 页面大小的断言，过于笼统",
+        "suggestion": "需要提供具体的原生库名称和 AOSP 中的相关 issue 或文档链接"
+      }
+    ],
+    "added_by": "task6-review",
+    "added_at": "2026-04-15T17:11:08.496083",
+    "status": "pending",
+    "original_review_log": "logs/review/2026-04-15-17-review.md"
+  }
+]
