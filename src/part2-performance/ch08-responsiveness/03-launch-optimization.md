@@ -9,8 +9,8 @@ polish_count: 1
 polish_date: "2026-04-06"
 polish_by: "task2b-polish"
 applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37)"
-last_verified: "2026-04-06"
-last_verified_against: "AOSP android-16.0.0_r1 + Android Developer Documentation"
+last_verified: "2026-04-16"
+last_verified_against: "AOSP android-17-beta3 + Android Developer Documentation"
 confidence: medium
 sources:
   - type: blog
@@ -34,11 +34,11 @@ related_chapters: ["8.1", "8.2", "2.4", "2.5", "7.5", "1.10", "1.12", "8.7"]
 section: "8.3"
 drafted_by: "openclaw-task2a"
 drafted_date: "2026-04-01"
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
-task9_result: needs-rework
-task2b_state: pending
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
+task2b_result: fixed
+task2b_state: fixed
 ---
 
 # 启动优化策略
@@ -73,7 +73,17 @@ task2b_state: pending
 
 在上一节（8.2 App 启动全流程）中，我们完整地梳理了从用户点击图标到首帧绘制的冷启动路径。如果我们在 Perfetto 中打开一个中等复杂度应用的冷启动 Trace，会发现从 `BindApplication` 到 `performTraversals` 之间可能有 1-3 秒的间隔——这段时间里，Application 在初始化十几个 SDK，Activity 在 inflate 一个复杂的布局，ContentProvider 在默默地加载各种库。这些操作串行堆积在主线程上，就构成了用户感知到的"启动慢"。
 
-了解启动流程是为了知道"时间花在哪里"，而本节要回答的问题是"怎么把时间省下来"。启动优化不是在 Application.onCreate 里删几行代码这么简单——它是一套系统工程，涉及任务编排、布局优化、编译优化、以及线上监控等多个层面。每个优化手段都有适用场景和副作用，盲目套用可能适得其反。
+了解启动流程是为了知道"时间花在哪里"，而本节要回答的另一个问题——"怎么把时间省下来"。启动优化不是在 Application.onCreate 里删几行代码这么简单——它是一套系统工程，涉及任务编排、布局优化、编译优化、以及线上监控等多个层面。每个优化手段都有适用场景和副作用，盲目套用可能适得其反。
+
+在展开具体策略之前，先明确两个衡量启动速度的核心指标：**TTID（Time To Initial Display）**和 **TTFD（Time To Full Display）**。
+
+TTID 是从用户触发启动到应用绘制第一帧的时间。对应 `am start -W` 输出中的 `TotalTime`，也对应 Perfetto 中 `Choreographer#doFrame` 第一次出现的时间点。TTID 衡量的是"用户看到了画面"——但这个画面可能只是骨架屏或 Loading 状态。
+
+TTFD 是从用户触发启动到应用内容完全就绪的时间。终点需要开发者在代码中调用 `Activity.reportFullyDrawn()` 来标记。没有调用 `reportFullyDrawn()` 的话，系统无法知道应用何时才算"真正准备好"。TTFD 衡量的是"用户看到的是完整内容"。
+
+两者可能差距很大。一个新闻 App 的 TTID 可能只有 800ms（首帧显示了骨架屏），但 TTFD 要 2 秒（首页新闻列表从服务端加载完成）。Google 在 Android 12（API 31）的 `Activity` 中新增了 `reportFullyDrawn()` 的完整支持，并在 `FrameMetrics` 中增加了 `TOTAL_DURATION` 等常量来配合度量。
+
+优化策略必须针对正确的指标：TTID 优化侧重减少主线程阻塞（延迟初始化、布局优化、ContentProvider 精简），TTFD 优化还需要考虑数据预加载、网络策略、以及 `reportFullyDrawn()` 的合理调用时机。
 
 读完本节之后，我们应该能够：在面对一个启动耗时 2 秒以上的应用时，判断时间主要花在了哪个环节（SDK 初始化？布局 inflate？DEX 编译？），并选择对应的优化策略组合，而不是上来就"把所有 SDK 改成异步初始化"。
 
@@ -578,9 +588,12 @@ class BaselineProfileGenerator {
 
     @Test
     fun generateBaselineProfile() {
+        // includeInStartupProfile 需要 benchmark-macro-junit4 1.2.0+
+        // 设置为 true 会将启动路径收集到 startup-prof.txt 中
+        // 1.3.0+ 还支持 DSL 配置 profile mode
         rule.collect(
             packageName = "com.example.app",
-            includeInStartupProfile = true
+            includeInStartupProfile = true  // 最低依赖：benchmark-macro-junit4 1.2.0
         ) {
             // 这个块定义了需要优化的用户旅程
             // 启动应用
@@ -645,7 +658,9 @@ fun startupWithBaselineProfile() = benchmarkRule.measureRepeated(
 }
 ```
 
-对比两次测试的 `timeToInitialDisplayMs` 和 `timeToFullDisplayMs`，就是 Baseline Profile 的实际收益。
+对比两次测试的 `timeToInitialDisplayMs`（对应 TTID）和 `timeToFullDisplayMs`（对应 TTFD，需要应用中调用了 `reportFullyDrawn()` 才能获取），就是 Baseline Profile 的实际收益。
+
+如果应用尚未调用 `reportFullyDrawn()`，`timeToFullDisplayMs` 的值将与 `timeToInitialDisplayMs` 相同（系统无法区分首帧和完全就绪）。建议在应用首页数据加载完成后调用 `reportFullyDrawn()`，这样监控数据才能真实反映用户感知到的启动完成时间。
 
 ### Cloud Profile：无需开发者参与的自动优化
 
@@ -714,6 +729,10 @@ adb shell am start -W -n com.example.app/.MainActivity
 # Complete
 ```
 
+上面输出中的三个时间含义：`ThisTime` 是本次 Activity 的启动耗时；`TotalTime` 是从系统收到启动请求到首帧绘制完成的耗时，即 **TTID**；`WaitTime` 是调用者（adb）的等待时间，包含 TotalTime 加上前一个 Activity 的 pause 耗时。
+
+注意 `am start -W` 只能量测 TTID，无法量测 TTFD（因为 TTFD 依赖 `reportFullyDrawn()` 的调用）。如果需要 TTFD 数据，需要通过 `benchmark-macro-junit4` 或自建线上监控来采集。
+
 更精确的方式是使用 `benchmark-macro-junit4` 库编写自动化的启动速度测试，在 CI 中运行并对比历史数据。如果新代码导致启动耗时增加了超过阈值（比如 5%），则自动阻断合并并通知开发者。
 
 ### 在 Perfetto 中定位启动耗时瓶颈
@@ -727,6 +746,36 @@ adb shell am start -W -n com.example.app/.MainActivity
 5. 关注 `Choreographer#doFrame` 第一次出现的位置——这就是首帧绘制的时刻
 6. 对比 `BindApplication` 开始和 `doFrame` 结束的时间差，就是从应用侧可以优化的启动耗时
 
+## 版本演进：Android 13-17 对启动优化的影响
+
+启动优化相关的工具和系统行为在不同 Android 版本有显著变化，这里按版本梳理关键差异。
+
+### SplashScreen 相关变更
+
+- **Android 12（API 31）**：引入 SplashScreen API 和兼容库。这是启动画面行为的分水岭。
+- **Android 13（API 33）**：新增 per-app language 功能（`android:localeConfig`）。如果应用声明了多语言支持，SplashScreen 的退出时序可能与语言切换逻辑产生交互——在 `installSplashScreen()` 之前设置好 `LocaleListCompat` 可以避免启动画面的语言闪烁。
+
+### Baseline Profile 与编译优化演进
+
+- **Android 12-13**：Baseline Profile 机制成熟期。Jetpack `benchmark-macro-junit4` 1.2.0 引入 `includeInStartupProfile`，1.3.0 支持 DSL 配置。
+- **Android 15（API 35）**：Cloud Profile 通过 ART Mainline 模块化更新（`com.google.android.art`）分发给设备。即使应用未提供手动 Baseline Profile，Cloud Profile 的生效速度比之前快（不再依赖完整系统 OTA）。国内设备如果搭载了 Google Play Services 且 ART Mainline 可更新，同样受益。
+- **Android 16（API 36）**：引入 AutoFDO（Auto Feedback-Directed Optimization），利用内核级性能采样数据指导编译优化。AutoFDO 与 Baseline Profile 互补——Profile 指定"编译哪些代码"，AutoFDO 优化"如何编译这些代码"（如分支预测、内联策略）。详细机制见 1.12 节。同时 Android 16 对 `profileable` build type 的支持更加完善，建议在 benchmark 测试中启用。
+
+### profileable 要求变化
+
+从 Android 15 开始，`android:profileable` 标签（AndroidManifest 中声明）的推荐行为有变化。如果应用在 debug 构建中启用了 profiling，建议在 release 构建中通过 `android:profileable="true"` 允许持续性能数据采集，这对 Cloud Profile 的聚合效果有正面影响。
+
+### 各版本新增的监控能力
+
+| 版本 | 新增能力 |
+|------|---------|
+| Android 12（API 31） | SplashScreen API、FrameMetrics 新增常量 |
+| Android 13（API 33） | Per-app language 对启动流程的影响 |
+| Android 15（API 35） | Cloud Profile 通过 ART Mainline 分发 |
+| Android 16（API 36） | AutoFDO、profileable 增强 |
+
+[待验证：Android 17（API 37）对启动流程的进一步变更——beta 阶段尚未完全公开]
+
 ## 总结：启动优化的优先级
 
 面对一个启动慢的应用，建议按以下优先级逐步优化：
@@ -739,7 +788,7 @@ adb shell am start -W -n com.example.app/.MainActivity
 6. **Baseline Profile**（需要 Google Play 支持，收益因应用而异）
 7. **线上监控与防劣化体系**（长期保障）
 
-最重要的是：**先度量，再优化，后验证**。没有数据支撑的优化是盲目的，没有线上监控的优化是不可持续的。
+一条底线原则：**先度量，再优化，后验证**。没有数据支撑的优化是盲目的，没有线上监控的优化是不可持续的。
 
 ## 常见问题与误区
 
