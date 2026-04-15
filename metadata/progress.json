@@ -2933,6 +2933,18 @@
         "framestats 时间戳补充纳秒单位说明",
         "新增 dumpsys cpuinfo 子章节"
       ]
+    },
+    {
+      "date": "2026-04-16",
+      "section": "8.3",
+      "section_title": "启动优化策略",
+      "issues_fixed": [
+        "TTID/TTFD 定义与区分 + reportFullyDrawn() 使用说明",
+        "Android 13-17 版本演进（Cloud Profile ART Mainline、AutoFDO、profileable、per-app language）",
+        "BaselineProfileRule includeInStartupProfile 最低依赖版本标注"
+      ],
+      "source": "task9-deep-tech-review",
+      "priority": 85
     }
   ],
   "reviews": {
