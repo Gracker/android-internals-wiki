@@ -130,3 +130,24 @@ dm-verity 与 EROFS 的配合机制未在章节中讨论。文中提到"配合 d
 
 #### 关联章节
 1.3, 4.4
+
+## [2026-04-15] 15.1 性能优化的术、道、器 — 知识盲区
+
+### 盲区描述
+性能分析的开销（Profiling Overhead）在方法论章节中完全未提及。包括：
+1. Perfetto trace 的 CPU 开销和 buffer 对内存的影响
+2. Simpleperf 采样频率对测量精度的 trade-off
+3. Benchmark 工具运行时的热降频对结果的影响
+4. 如何设计实验来隔离和量化测量开销本身
+
+### 重要程度
+高 — 方法论章节强调「数据驱动」但不讨论「测量本身如何影响数据」，是一个结构性缺陷。
+
+### 建议研究方向
+- 收集 Perfetto 不同 config（ftrace buffer size、atrace categories）对被测 App 性能的影响数据
+- 收集 Simpleperf 不同采样频率（99Hz vs 999Hz vs 9999Hz）对目标进程执行时间的影响
+- 研究 Android Benchmark 库的 warmup 机制如何应对热降频
+- 参考 Brendan Gregg 对 profiling overhead 的讨论（Systems Performance Chapter 2）
+
+### 关联章节
+15.1, 13.1, 13.2, 14.5
