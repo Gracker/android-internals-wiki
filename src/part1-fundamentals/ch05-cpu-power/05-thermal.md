@@ -1,14 +1,4 @@
 ---
-tags:
-  - android
-  - power
-  - research
-pipeline_stage: task6_pending
-task6_state: pending
-task9_state: pending
-task2b_state: idle
----
----
 title: "Thermal 管控"
 section: "5.5"
 chapter: "5.5"
@@ -37,18 +27,24 @@ sources:
 related_chapters: ["5.1", "5.2", "5.3", "5.4", "5.6", "7.3"]
 drafted_date: "2026-04-01"
 drafted_by: "openclaw-task2"
-reviewed_date: "2026-04-08"
-reviewed_by: "openclaw-task6"
 polish_count: 2
 polish_date: "2026-04-08"
 polish_by: "task2b-polish"
 tags:
   - android
   - power
+  - research
   - thermal
   - throttling
   - dvfs
   - cpu-frequency
+reviewed_date: "2026-04-15"
+reviewed_by: "openclaw-task6"
+task6_state: reviewed
+task6_result: pass-light-edit
+task9_state: pending
+pipeline_stage: task9_pending
+---
 
 
 # Thermal 管控
@@ -136,7 +132,7 @@ Linux 内核自带一套 thermal management 框架，位于 `drivers/thermal/`�
 
 Cooling Device 不一定是物理设备——更常见的"降温设备"就是 CPU 本身。内核通过限制 CPU 的最高运行频率来实现降温，这被称为 **cpufreq cooling**。在 `drivers/thermal/cpu_cooling.c` 中，cpufreq cooling 会动态调整 CPU 的最大允许频率：当温度升高时，逐步降低 `max_freq`；温度回落后，再逐步恢复。
 
-这就是为什么我们在 Perfetto 中看到 CPU 频率下降时，往往伴随着温度的上升——这不是 governor（如 schedutil）主动降频，而是 thermal cooling 在强制压低频率上限。
+这就是为什么我们在 Perfetto 中看到 CPU 频率下降时，往往伴随着温度的上升——与 governor（如 schedutil）基于 utilization 的主动调频不同，thermal cooling 是在强制压低频率上限。
 
 [已验证: Linux kernel drivers/thermal/cpu_cooling.c, of-thermal.c]
 
@@ -195,7 +191,7 @@ struct Temperature {
 2. **将 severity 广播给系统组件和 App**。内部组件通过 `IThermalEventListener` 接收；App 通过 `IThermalStatusListener`（封装为 `PowerManager.OnThermalStatusChangedListener`）接收。
 3. **执行系统级降温动作**。当 severity 升高到一定程度时，ThermalManagerService 会触发一系列系统级行为，比如限制 JobScheduler 的执行、降低屏幕亮度、甚至触发 Framework 层的关机流程。
 
-这条链路可以用一句话概括：**传感器感知温度 → 内核 thermal core 做第一道硬件级保护 → Thermal HAL 将温度状态抽象为 severity 级别 → ThermalManagerService 协调系统响应 → App 通过 API 感知并自适应。**
+整条链路可以概括为：**传感器感知温度 → 内核 thermal core 做第一道硬件级保护 → Thermal HAL 将温度状态抽象为 severity 级别 → ThermalManagerService 协调系统响应 → App 通过 API 感知并自适应。**
 
 ## Android Thermal API：应用如何感知温度
 
@@ -306,7 +302,7 @@ float headroom5s = pm.getThermalHeadroom(5); // 预测5秒后的状态
 
 **1. 查看 CPU Frequency Track**
 
-这是最直观的证据。在 Perfetto 中展开 CPU 区域，每个核心下方都有一条「CPU Frequency」轨迹。如果这条线在高负载期间反而向下走——不是正常的 DVFS 波动，而是持续性的频率下探——大概率是 thermal throttling。
+这是最直观的证据。在 Perfetto 中展开 CPU 区域，每个核心下方都有一条「CPU Frequency」轨迹。如果这条线在高负载期间反而向下走——区别于正常的 DVFS 波动，这种持续性的频率下探——大概率是 thermal throttling。
 
 **2. 启用 thermal 数据源**
 
@@ -481,7 +477,7 @@ int statusAfter = pm.getCurrentThermalStatus();
 
 [待验证：具体机型的温度阈值参数因厂商私有配置，难以从公开资料中精确验证]
 
-这种差异对性能工程师意味着：**同一份 benchmark 数据在不同厂商的设备上可能反映的不是代码性能差异，而是温控策略差异**。做跨设备对比时，务必关注 thermal status 的变化。
+这种差异对性能工程师意味着：**同一份 benchmark 数据在不同厂商的设备上可能反映的未必是代码性能差异，更可能是温控策略差异**。做跨设备对比时，务必关注 thermal status 的变化。
 
 ## Sustained Performance Mode API
 
@@ -563,7 +559,7 @@ Thermal 管控在 Android 各版本中有几项关键变化，这里做一个梳
 
 ### 误区 4："Sustained Performance Mode 会降低性能"
 
-不完全准确。Sustained Performance Mode 降低的是**峰值性能**，但提升了**持续性能**。对于长时间运行的场景（30 分钟+），它实际上提供了更稳定的体验。只有短时间 burst 场景（如应用启动）才会感觉到峰值性能的损失。
+不完全准确。Sustained Performance Mode 降低的是**峰值性能**，但提升了**持续性能**。对于长时间运行的场景（30 分钟+），它提供了更稳定的体验。只有短时间 burst 场景（如应用启动）才会感觉到峰值性能的损失。
 
 ## 与其他章节的关联
 
