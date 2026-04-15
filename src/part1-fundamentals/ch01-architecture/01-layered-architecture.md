@@ -33,8 +33,9 @@ review_notes: "2026-04-11 task6 review: pass-light-edit。小修14处（禁用�
 pipeline_stage: task6_pending
 task6_state: revisiting
 task6_result: pass-light-edit
-task9_state: pending
-task9_result: needs-rework
+task9_state: reviewed
+task9_result: pass-with-p1-notes
+task9_reviewed_date: "2026-04-16"
 task2b_state: fixed
 task2b_result: fixed
 ---
