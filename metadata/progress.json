@@ -2973,6 +2973,22 @@
         "知识盲区：补充 profiling overhead 段落（测量影响被测系统、减少偏差的做法）",
         "版本差异：补充 Android 4.x - 16 工具代际演进段落（systrace → Perfetto → 现代工具链）"
       ]
+    },
+    {
+      "date": "2026-04-16",
+      "time": "02:43",
+      "section": "8.4",
+      "section_title": "其他响应速度场景",
+      "source": "task9-deep-tech-review",
+      "priority": 95,
+      "issues_fixed": [
+        "源码错误: InputDispatcher.java 路径 → InputDispatcher.cpp + InputManagerService.java",
+        "源码错误: offscreenPageLimit 默认值 1 → OFFSCREEN_PAGE_LIMIT_DEFAULT(-1)",
+        "源码错误: FragmentManager.java 路径 frameworks/base → AndroidX 仓库",
+        "版本差异: ActivityTaskManager Android 10+ vs ActivityManager Android 8-9",
+        "禁用词修复: 需要注意的是"
+      ],
+      "status": "completed"
     }
   ]
 }
