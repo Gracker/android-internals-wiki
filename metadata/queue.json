@@ -9731,5 +9731,32 @@
     "completed_by": "task2b-rework",
     "result": "fixed",
     "notes": "Task 2B 回炉修复：1) sugov_get_util() 返回类型修正为 void，函数体对齐 Linux 6.6 effective_cpu_util()；2) thread_state_slice → thread_state 2 处 SQL 表名修正 + tid→utid JOIN 修正；3) PELT 补指数衰减移动平均说明；4) capacity 补归一化算力值与 sysfs 入口；5) 新增 uclamp [待补充] 知识缺口占位。STYLE.md 禁用词扫描通过。"
+  },
+  {
+    "section": "5.6",
+    "section_title": "Android 功耗管理",
+    "priority": 85,
+    "reason": "[Deep Tech Review] Suspend 机制原理链简化过度（PMS 不直接写 /sys/power/state，未区分 WakeLock 与 suspend blocker），Power HAL 关键组件完全未提及",
+    "material_paths": [
+      "intake/suggestions.md",
+      "intake/research-gaps.md"
+    ],
+    "review_issues": [
+      {
+        "type": "原理断裂",
+        "location": "PMS → Suspend 流程（正文 L87-L102）",
+        "detail": "正文说\"PMS 会通过写 /sys/power/state 节点通知内核进入 Suspend\"，实际路径是 PMS → JNI → native autosuspend 模块 → 内核。同时未区分 Java 层 WakeLock（App API）和 native 层 suspend blocker（Display、user activity 等系统组件也持有），读者会误以为只有 WakeLock 阻止 Suspend。",
+        "suggestion": "补一段 native 层说明：PMS 通过 JNI 调用 native autosuspend 模块管理 suspend；suspend blocker 是更底层的概念，WakeLock 只是其中一种来源。补 Power HAL 的角色：PMS 通过 Power HAL 向内核传递性能 hint（如 INTERACTIVE 模式切换）。"
+      },
+      {
+        "type": "知识盲区",
+        "location": "全文",
+        "detail": "Power HAL（Hardware Abstraction Layer）是 PMS 与内核之间的关键抽象层，负责 CPU 性能 hint、INTERACTIVE 模式切换、低功耗模式控制等。对于系统开发者，理解 Power HAL 是功耗调优的必备知识，但本章完全未提及。",
+        "suggestion": "新增一个\"Power HAL 与 native 层\"小节，至少说明：(1) Power HAL 在 AOSP 中的位置和接口（IPower.hal）；(2) PMS 如何通过 Power HAL 传递 hint；(3) OEM 厂商如何通过 Power HAL 实现差异化功耗策略。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-15T13:28:24",
+    "status": "pending"
   }
 ]

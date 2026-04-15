@@ -1104,13 +1104,15 @@
       "status": "ready-for-review",
       "pipeline_stage": "task9_pending",
       "task6_state": "reviewed",
-      "task9_state": "pending",
+      "task9_state": "reviewed",
       "task2b_state": "idle",
       "reviewed_date": "2026-04-08",
       "reviewed_by": "openclaw-task6",
       "section": "5.6",
       "task6_result": "pass-light-edit",
-      "task6_reviewed_date": "2026-04-15"
+      "task6_reviewed_date": "2026-04-15",
+      "task9_result": "needs-rework",
+      "task9_reviewed_date": "2026-04-15"
     },
     "src/part1-fundamentals/ch05-cpu-power/07-cpu-evolution.md": {
       "chapter": "5.7",

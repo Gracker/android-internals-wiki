@@ -3738,3 +3738,32 @@
 - **位置**：行 241-252（DVFS 升频延迟）
 - **问题**：正文把 "governor 升频可能需要约 200ms" 标为 [已验证: 官方文档]，但公开 ADPF 文档中未找到明确的 "200ms" 数值。这个断言的来源可能是内部培训材料或旧版文档，不应标为 [已验证]。
 - **建议**：将 [已验证] 改为 [待验证]，或补充具体来源（如 Google I/O 演讲、Android Performance Summit 视频的时间戳、或 CTS/VTS 文档编号）。如果来源不确定，建议改为更保守的表述如 "可能需要数十到上百毫秒"。
+
+
+## [Task9 Deep Review] 5.6 Android 功耗管理 — 2026-04-15
+
+- **类型**：数据缺失
+- **位置**：Adaptive Battery 段落
+- **问题**："Google 声称 Adaptive Battery 帮助减少了约 30% 的 CPU 唤醒次数"缺少可追溯来源（应为 Google I/O 2018 演讲，需补链接或改写为"根据 Google 在 2018 年开发者大会上的分享"）
+- **建议**：补 Google I/O 2018 "Adaptive Battery" 演讲引用，或改为更保守的定性表述
+
+## [Task9 Deep Review] 5.6 Android 功耗管理 — 2026-04-15
+
+- **类型**：数据缺失
+- **位置**：WakeLock 滥用检测段落
+- **问题**："持 PARTIAL_WAKE_LOCK 超过 1 分钟就会被系统标记为 Long Wakelock"——阈值随 Android 版本变化，且"系统标记"的具体含义（batterystats 记录 vs 系统主动限制 vs 通知用户）需要澄清
+- **建议**：补版本差异说明，或改为更保守的"超过一定时长（通常约 1 分钟）会被 batterystats 记录为 Long WakeLock"
+
+## [Task9 Deep Review] 5.6 Android 功耗管理 — 2026-04-15
+
+- **类型**：数据缺失
+- **位置**：全文（尤其 Suspend/WakeLock/Doze 段落）
+- **问题**：缺少整机功耗量化参考数据——如 Suspend 电流典型值（数 mA）、Wake-from-suspend 代价（mA × ms）、screen-on/off 功耗比（约 5-10 倍）、PARTIAL_WAKE_LOCK 灭屏功耗（约 50-150mA vs Suspend 的 2-5mA）。缺少这些基准数据，读者难以建立功耗量级直觉
+- **建议**：在"为什么要了解 Android 功耗管理"或 Suspend 段落中补一小组典型功耗量级参考值（标注设备/SoC 条件）
+
+## [Task9 Deep Review] 5.6 Android 功耗管理 — 2026-04-15
+
+- **类型**：版本差异
+- **位置**：版本演进表 Android 17 条目
+- **问题**："DeliQueue 无锁优化 → 间接降低持锁期间的 CPU 尾迹功耗"——DeliQueue 减少的是主线程 MessageQueue 的锁竞争，对整机功耗的实际影响极小（微秒级锁竞争减少不会显著改变 mAh 级功耗），放在功耗管理章节的版本表里过于牵强
+- **建议**：删除或降级为脚注级提及，改用 Android 17 中真正与功耗相关的新增变更（如有）替代

@@ -2536,3 +2536,21 @@ zRAM 与 16KB 页大小的交互未被讨论。Android 设备普遍使用 zRAM �
 - 2.3 VSync 机制
 - 8.1 响应速度原理（涉及延迟分析）
 - 16.2 Android性能优化基础（涉及热管理）
+
+## [2026-04-15] 5.6 Android 功耗管理 — Power HAL 与 FCM 功耗影响
+
+### 盲区描述
+1. **Power HAL 完全未提及**：Power HAL 是 PMS 与内核之间的关键抽象层（AIDL: hardware/google/pixel/power/），负责 CPU 性能 hint（INTERACTIVE / HINT）、低功耗模式控制。系统开发者理解 Power HAL 是功耗调优的必备知识，但本节和全书（§5.6, §11.1-11.5）均未覆盖。
+2. **FCM 高/普通优先级消息对功耗的影响**：高优先级 FCM 消息可在 Doze 中唤醒设备，这是后台推送策略的核心功耗决策点，本节仅提及"推荐使用 FCM"但未解释不同优先级的功耗差异。
+
+### 重要程度
+高（Power HAL）/ 中（FCM 功耗影响）
+
+### 建议研究方向
+- AOSP Power HAL AIDL 接口文档（hardware/interfaces/power/）
+- PMS 与 Power HAL 的交互路径（PowerManagerService → PowerHalDelegate）
+- Google 官方 FCM 消息优先级与 Doze 交互文档
+- OEM Power HAL 实现案例（如 Pixel 的 PowerHintManager）
+
+### 关联章节
+5.6, 11.1, 11.2, 11.5
