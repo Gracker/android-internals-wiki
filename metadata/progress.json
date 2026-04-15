@@ -2917,5 +2917,20 @@
       "major_issues": 1
     }
   },
-  "last_updated": "2026-04-15T06:07:00"
+  "last_updated": "2026-04-15T06:07:00",
+  "rework_log": [
+    {
+      "date": "2026-04-15T19:44:09.836904",
+      "section": "14.4",
+      "section_title": "dumpsys 系列命令",
+      "source": "task9-deep-tech-review",
+      "issues_fixed": 4,
+      "fixes": [
+        "oom_adj值修正: FOREGROUND_APP_ADJ=0, VISIBLE_APP_ADJ=100",
+        "SurfaceFlinger --latency 补充 refresh period 和纳秒单位",
+        "framestats 时间戳补充纳秒单位说明",
+        "新增 dumpsys cpuinfo 子章节"
+      ]
+    }
+  ]
 }
