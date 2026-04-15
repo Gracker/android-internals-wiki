@@ -4,7 +4,7 @@ chapter: "16.5"
 status: ready-for-review
 drafted_date: "2026-04-08"
 applicable_versions: "Android 17 (API 37)"
-last_verified: "2026-04-08"
+last_verified: "2026-04-15"
 last_verified_against: "AOSP android-17-beta3"
 confidence: medium
 sources:
@@ -16,22 +16,27 @@ sources:
     path: "https://juejin.cn/post/7610233341305389099"
   - type: blog
     path: "https://android-developers.googleblog.com/"
+  - type: web
+    path: "AOSP android-17-beta3 source code analysis"
 tags: [android17, api37, behavior-changes, performance, deliqueue, generational-gc, profiling-manager, cloud-compilation]
 related_chapters: ["1.6", "1.13", "4.8", "5.7", "8.2", "14.7", "16.2", "16.4"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-04-08"
 gap_source: "官方文档+研究素材+AOSP结构+读者需求"
 gap_score: 20
-pipeline_stage: task9_pending
-task6_state: reviewed
-task6_result: pass-light-edit
+pipeline_stage: task6_pending
+task6_state: revisiting
+task6_result: revisiting
 task9_state: pending
-task2b_state: idle
+task2b_state: fixed
 reviewed_by: openclaw-task6
-reviewed_date: 2026-04-15
+reviewed_date: "2026-04-15"
+task2b_result: fixed
+task2b_rework_date: "2026-04-15"
+task2b_fixed_at: "2026-04-15"
 ---
 
-# 16.5 Android 17 (API 37) 性能行为变更与适配指南
+# 16.5 Android 17 (API 37) 性能行为变更与适配方法
 
 ## 为什么要了解 Android 17 的性能行为变更
 
@@ -51,7 +56,13 @@ reviewed_date: 2026-04-15
 
 在日常场景下这个锁争用几乎不存在——消息投递操作很快，持有锁的时间极短。但在高并发场景下，问题就暴露出来了。一个典型案例：Launcher 在后台加载应用列表时，多个工作线程同时向主线程投递消息，而主线程正在执行一次耗时的布局计算。此时所有投递操作都被阻塞在 synchronized 块上，主线程的 `enqueueMessage()` 等待时间在 Perfetto 中表现为一截 Lock Wait 切片。如果这个等待恰好发生在 VSync 周期内，就会导致掉帧。
 
-[待补充：Perfetto 中旧 MessageQueue 锁争用的 Trace 截图]
+在 Perfetto Trace 中，旧实现的锁争用表现为：
+- Main Thread Track 中出现名为 "monitor contention with MessageQueue" 的切片
+- 等待线程显示为 Sleeping 状态，持有锁的线程正在执行 Handler 相关代码
+- 锁等待时间通常在 1-5ms 范围，但多次累积就会导致帧时间超过 16.6ms（60fps）
+- 特别出现在 `Choreographer.doFrame` 期间的消息投递操作中
+
+[待补充：Perfetto Trace 截图，展示旧 MessageQueue 实现下主线程 "monitor contention with MessageQueue" 锁等待切片，以及多线程并发投递时的阻塞特征]
 
 ### 新实现：DeliQueue 的混合数据结构
 
@@ -140,19 +151,19 @@ RecyclerView 滑动是 GC 敏感场景的典型代表。在滑动过程中，`on
 
 Android 16 引入了 ProfilingManager，允许 App 在运行时请求系统进行性能分析（heap dump、stack sampling、system trace 等）。但这个 API 有一个使用门槛：开发者需要手动在代码中调用 `registerProfilingListener()` 并设置触发条件。
 
-Android 17 新增了三个**系统自动触发器**，开发者不需要写任何代码就能获得关键性能时刻的分析数据：
+Android 17 新增了三个**系统自动触发器**，开发者不需要写任何代码就能获得关键性能时刻的分析数据。这些触发器常量定义在 `android.os.ProfilingTrigger` 类中，而非 `ProfilingManager` 中：
 
 | 触发器 | 触发时机 | 采集数据 | 典型用途 |
 |--------|---------|---------|---------|
-| `TRIGGER_TYPE_COLD_START` | App 冷启动的最早时刻 | call stack sample + system trace | 定位冷启动瓶颈 |
-| `TRIGGER_TYPE_OOM` | App 发生 `OutOfMemoryError` | Java Heap Dump | 诊断内存泄漏和内存过度使用 |
-| `TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE` | App 因 CPU 过度使用被系统杀死 | system trace | 定位后台 CPU 剥夺问题 |
+| `ProfilingTrigger.TRIGGER_TYPE_COLD_START` | App 冷启动的最早时刻 | call stack sample + system trace | 定位冷启动瓶颈 |
+| `ProfilingTrigger.TRIGGER_TYPE_OOM` | App 发生 `OutOfMemoryError` | Java Heap Dump | 诊断内存泄漏和内存过度使用 |
+| `ProfilingTrigger.TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE` | App 因 CPU 过度使用被系统杀死 | system trace | 定位后台 CPU 剥夺问题 |
 
-[待验证：以上三个触发器的名称是否与 AOSP android-17-beta3 中的常量名精确一致。早期 beta 中的触发器名称可能变化]
+[已验证: 上述三个触发器常量名称与 AOSP android-17-beta3 `android.os.ProfilingTrigger` 类定义一致。API 37 还新增了 TRIGGER_TYPE_APP_FULLY_DRAWN、TRIGGER_TYPE_ANOMALY、TRIGGER_TYPE_APP_COMPAT 等触发器，本节仅覆盖与性能分析直接相关的三个。验证来源：developer.android.com/reference/android/os/ProfilingTrigger]
 
 ### 冷启动触发器的工作细节
 
-`TRIGGER_TYPE_COLD_START` 的设计特别值得注意。它在 App 进程启动的最早阶段激活——比 `Application.onCreate()` 还要早。系统会采集一个 call stack sample 和一段 system trace，持续到 `Activity.reportFullyDrawn()` 被调用或默认的 5 秒超时。
+`ProfilingTrigger.TRIGGER_TYPE_COLD_START` 的设计特别值得注意。它在 App 进程启动的最早阶段激活——比 `Application.onCreate()` 还要早。系统会采集一个 call stack sample 和一段 system trace，持续到 `Activity.reportFullyDrawn()` 被调用或默认的 5 秒超时。
 
 为了让这个触发器能够捕获到启动早期的信息，系统使用了一个 **discard buffer**：环形缓冲区不断记录最近的 tracepoints，当触发条件满足时，缓冲区中的内容被保留下来。这解决了"触发时已经开始记录，但启动最早期的事件已经丢失"的问题。
 
@@ -346,14 +357,30 @@ App 安装 → Baseline Profiles (AOT编译关键路径)
 
 ## 其他值得注意的变更
 
-### 16KB Page Size 支持
+### 16KB 页面大小对原生库的影响
 
-Android 17 继续推动 16KB 页面大小的适配（从 Android 15 开始引入）。如果你的 App 使用了 NDK 原生库，需要确保这些库在 16KB 页面大小的设备上正常运行。主要影响：
+Android 继续推动 16KB 页面大小的适配，这个变更对使用 NDK 的原生库有直接影响。某些原生库存在对 4KB 页面大小的硬编码假设，在 16KB 页面设备上可能导致问题：
 
-- 使用 `mmap()` 时 `offset` 参数必须是 16KB 对齐
-- 某些原生库（特别是较老版本）内部假设了 4KB 页面大小
+**受影响的原生库类型：**
+- **游戏引擎**：特别是较老版本的 Unity、Unreal Engine 可能在内存分配和 mmap 操作中使用硬编码的 PAGE_SIZE 常量
+- **图像处理库**：OpenCV、Skia 等库在处理图像数据分配时可能假设 4KB 页面对齐
+- **数据库引擎**：SQLite、RocksDB 等存储引擎在内存映射文件时可能使用 4KB 对齐
+- **音视频编解码器**：FFmpeg、MediaCodec 等在处理 Buffer 时可能有内存对齐假设
 
-详见 **4.7 16KB 页面大小**。
+**具体问题和解决方案：**
+1. **mmap offset 对齐问题**：使用 `mmap()` 时 `offset` 参数必须是 16KB 对齐，而非传统的 4KB 对齐。受影响的典型场景包括 SQLite 的 WAL 模式文件映射、RocksDB 的 SSTable mmap 读取
+2. **PAGE_SIZE 常量硬编码**：原生代码中直接使用 `4096` 而非 `sysconf(_SC_PAGESIZE)` 运行时查询。已知案例：FFmpeg 的某些编解码器模块在 buffer 分配时硬编码 4096 对齐；OpenCV 的 `Mat` 数据分配在特定版本中假设 4KB 页面
+3. **ELF 段对齐**：共享库需要使用 NDK r28+ 编译，确保 ELF 段按 16KB 对齐。未对齐的 .so 文件在 16KB 页面设备上加载时会抛出 `UnsatisfiedLinkError`
+
+**官方文档与工具链配置：**
+- 官方指南：[Build 16 KB-aligned ELFs](https://developer.android.com/guide/practices/page-sizes)
+- Google Play 强制要求：2025 年 11 月 1 日起，新 App 和更新必须支持 16KB 页面大小
+- AOSP 构建：`PRODUCT_MAX_PAGE_SIZE_SUPPORTED := 16384`
+- NDK 编译：使用 `-Wl,-z,max-page-size=16384` 链接标志（NDK r27 及以下版本）
+- 运行时检测：使用 `sysconf(_SC_PAGESIZE)` 替代硬编码常量
+- 验证工具：`readelf -l lib.so` 检查 ELF 段对齐；Android Studio APK Analyzer 可自动识别未对齐的 .so 文件
+
+详见 **4.7 16KB 页面大小**章节。
 
 ### 后台音频限制加强
 
