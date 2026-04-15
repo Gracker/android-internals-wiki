@@ -5,15 +5,15 @@ section: "14.1"
 status: ready-for-review
 polish_count: 1
 drafted_date: "2026-04-03"
-reviewed_date: "2026-04-07"
-reviewed_by: "openclaw-task6"
+reviewed_date: 2026-04-15
+reviewed_by: openclaw-task6
 polish_date: "2026-04-08"
 polish_by: "task2b-polish"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 8.0 (API 26) - Android 16 (API 36)"
 last_verified: "2026-04-03"
 last_verified_against: "official documentation + AOSP android-16"
-confidence: medium
+confidence: high
 sources:
   - type: blog
     path: "Obsidian Cubox: Android Studio 中 CPU Profiler 系统性能分析工具的使用 - 掘金"
@@ -27,10 +27,11 @@ tags:
   - android
   - profiling
   - research
-pipeline_stage: task6_pending
-task6_state: pending
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task2b_state: idle
+task6_result: pass-light-edit
 ---
 
 
@@ -65,7 +66,7 @@ task2b_state: idle
 
 当我们遇到一个性能问题——App 滑动卡顿、启动慢、内存泄漏、耗电快——脑子里冒出的第一个问题往往是："问题出在哪里？"在不知道问题位置的情况下，所有的优化方案都是盲猜。Android Studio Profiler 就是帮我们从"不知道"到"知道"的第一个工具。
 
-它不是一个全新的工具，而是把 Google 已有的多个性能分析工具（Perfetto、Simpleperf、JVMTI 等）集成到 Android Studio 的 IDE 中，提供统一的界面和交互方式。理解它的价值在于：当能在 IDE 里直接看到 CPU、内存、网络、功耗的实时数据，并在同一个窗口中点击跳转到源码，分析效率会比在命令行和网页工具之间来回切换高得多。
+它不是一个全新的工具，而是把 Google 已有的多个性能分析工具（Perfetto、Simpleperf、JVMTI 等）集成到 Android Studio 的 IDE 中，提供统一的界面和交互方式。它的优势在于：当能在 IDE 里直接看到 CPU、内存、网络、功耗的实时数据，并在同一个窗口中点击跳转到源码，分析效率会比在命令行和网页工具之间来回切换高得多。
 
 但 Profiler 有它的局限性——它主要关注单个 App 的视角，看不到系统全局的状态。当需要理解 App 和系统服务之间的交互、多个进程之间的竞争、或者整个渲染管线的调度情况，Perfetto 的全局视野是不可替代的。所以 Profiler 和 Perfetto 不是互相替代的关系，而是互补的：Profiler 适合快速定位 App 侧的瓶颈，Perfetto 适合深入分析系统侧的上下文。
 
@@ -137,8 +138,8 @@ System Trace 定位到大致范围后，如果需要进一步看某个方法内�
 
 | 模式 | 底层工具 | 开销 | 精度 | 适用场景 |
 |------|---------|------|------|---------|
-| System Trace | Perfetto/atrace | ~5μs/事件 | 事件级 | UI卡顿、线程调度、渲染管线 |
-| Callstack Sample | Simpleperf | 中等 | 统计级 | CPU热点定位 |
+| System Trace | Perfetto/atrace | ~5μs/事件 | 事件级 | UI 卡顿、线程调度、渲染管线 |
+| Callstack Sample | Simpleperf | 中等 | 统计级 | CPU 热点定位 |
 | Java Method Trace | ART 插桩 | 很高 | 方法级 | 调用链全量分析 |
 
 [已验证: 官方文档, developer.android.com/studio/profile/cpu-profiler]
@@ -243,7 +244,7 @@ Power Profiler 的设备要求比较严格：目前只有 Pixel 6 及以后的 P
 ### Android Studio Panda 1 正式版来了：JDK 终于不用手动配了，内存泄漏也有原生方案了
 - 来源：https://juejin.cn/post/7605097326727266350
 - 类型：技术文章
-- 摘要：介绍Android Studio Panda 1正式版更新：内置JDK管理功能和新的内存泄漏检测工具，提升开发效率和问题排查能力。
+- 摘要：介绍 Android Studio Panda 1 正式版更新：内置 JDK 管理功能和新的内存泄漏检测工具，提升开发效率和问题排查能力。
 - 入库时间：2026-04-09
 
 
@@ -259,5 +260,5 @@ Power Profiler 的设备要求比较严格：目前只有 Pixel 6 及以后的 P
 ### Android Studio supports Gemma 4：本地代理编程模型
 - 来源：http://android-developers.googleblog.com/2026/04/android-studio-supports-gemma-4-local.html
 - 类型：article
-- 摘要：Google宣布Android Studio正式支持Gemma 4，为Android平台设计的本地代理编程模型，支持设备上高级推理和代码生成，无需云端连接。
+- 摘要：Google 宣布 Android Studio 正式支持 Gemma 4，为 Android 平台设计的本地代理编程模型，支持设备上高级推理和代码生成，无需云端连接。
 - 入库时间：2026-04-08
