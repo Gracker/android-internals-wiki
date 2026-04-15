@@ -1,35 +1,47 @@
 ---
-title: "性能优化的术、道、器"
-chapter: "15.1"
-section: "15.1"
+title: 性能优化的术、道、器
+chapter: '15.1'
+section: '15.1'
 status: ready-for-review
-drafted_date: "2026-04-04"
-drafted_by: "openclaw-task2a"
-applicable_versions: "Android 5.0 (API 21) - Android 16 (API 36)"
-last_verified: "2026-04-04"
-last_verified_against: "AOSP android-16.0.0_r1"
+drafted_date: '2026-04-04'
+drafted_by: openclaw-task2a
+applicable_versions: Android 5.0 (API 21) - Android 16 (API 36)
+last_verified: '2026-04-04'
+last_verified_against: AOSP android-16.0.0_r1
 confidence: high
 sources:
-  - type: blog
-    path: "androidperformance.com/2024/05/21/Android-Perfetto-01-What-is-perfetto/"
-  - type: blog
-    path: "abseil.io/fast/hints.html (Jeff Dean Performance Hints)"
-  - type: blog
-    path: "kernel工匠 - 为什么要建立性能工程团队 (Brendan Gregg 2025)"
-  - type: blog
-    path: "androidperformance.com - OS 设计之性能设计 (Yingyun)"
-  - type: blog
-    path: "androidperformance.com/2015/04/19/Android-Performance-Patterns/"
-  - type: book
-    path: "Brendan Gregg - Systems Performance (性能之巅)"
-  - type: official
-    path: "developer.android.com/topic/performance"
-tags: ['methodology', 'philosophy', 'tools', 'best-practices']
-related_chapters: ["13.1", "13.2", "15.2", "15.3", "15.7"]
-pipeline_stage: task6_pending
-task6_state: pending
+- type: blog
+  path: androidperformance.com/2024/05/21/Android-Perfetto-01-What-is-perfetto/
+- type: blog
+  path: abseil.io/fast/hints.html (Jeff Dean Performance Hints)
+- type: blog
+  path: kernel工匠 - 为什么要建立性能工程团队 (Brendan Gregg 2025)
+- type: blog
+  path: androidperformance.com - OS 设计之性能设计 (Yingyun)
+- type: blog
+  path: androidperformance.com/2015/04/19/Android-Performance-Patterns/
+- type: book
+  path: Brendan Gregg - Systems Performance (性能之巅)
+- type: official
+  path: developer.android.com/topic/performance
+tags:
+- methodology
+- philosophy
+- tools
+- best-practices
+related_chapters:
+- '13.1'
+- '13.2'
+- '15.2'
+- '15.3'
+- '15.7'
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task2b_state: idle
+task6_result: pass-light-edit
+reviewed_by: openclaw-task6
+reviewed_date: '2026-04-15'
 ---
 
 # 性能优化的术、道、器
@@ -75,13 +87,13 @@ Brendan Gregg 在《Systems Performance（性能之巅）》中对性能工程�
 
 ### 用户体验驱动：性能优化的起点是用户感受
 
-性能优化的终极目标不是让跑分更好看，不是让某个指标数字更漂亮，而是让用户的操作感受更流畅。这个看似理所当然的原则，在实际工作中却经常被遗忘。
+性能优化的终极目标是让用户的操作感受更流畅——跑分更好看或某个指标数字更漂亮，只是副产品。这个看似理所当然的原则，在实际工作中却经常被遗忘。
 
 我们常常看到这样的场景：团队花了大量精力优化了某个方法的执行时间，从 50ms 降到了 30ms，自认为做了一次很棒的优化。但如果这个方法只在后台同步数据时被调用，用户根本感知不到这次优化带来的变化，那这 40% 的性能提升实际上等于零。
 
 反过来，一个 App 的冷启动时间从 2 秒降到 1.5 秒，数字上看只快了 500ms，但这 500ms 直接影响了用户每次打开 App 的第一印象——用户对「快」和「慢」的感知往往集中在几个关键节点上：启动、页面切换、列表滚动、按钮点击后的响应。这些就是性能优化的高价值战场。
 
-Google 早在 2015 年推出 Android Performance Patterns 系列视频时，就明确表达了这一理念：这些视频的核心目的不是教你具体的优化手法，而是帮你建立正确的性能意识——**知道该用什么工具，该采取什么样的步骤，需要达到什么样的目标** [已验证: 来源见 androidperformance.com/2015/04/19/Android-Performance-Patterns/]。这正是用户体验驱动思维的体现。
+Google 早在 2015 年推出 Android Performance Patterns 系列视频时，就明确表达了这一理念：这些视频的核心目的在于帮你建立正确的性能意识——**知道该用什么工具，该采取什么样的步骤，需要达到什么样的目标** [已验证: 来源见 androidperformance.com/2015/04/19/Android-Performance-Patterns/]。这正是用户体验驱动思维的体现。
 
 关于性能对用户体验的影响，业界的量化数据已经很充分了。Amazon 在 2006 年发现，页面加载时间每增加 100ms，销售额就会下降 1% [已验证: 来源见 Greg Linden, Amazon, 2006]。Google 的研究则表明，搜索结果页生成时间每增加 0.5 秒，流量会下降 20% [已验证: 来源见 Google Search performance research, 2006]。在移动端，53% 的用户会放弃加载时间超过 3 秒的网页 [已验证: 来源见 Google/SOASTA research, 2017/2018; developer.android.com]。这些数字翻译成收入，可能是数百万甚至数十亿美元的差别。
 
@@ -128,8 +140,6 @@ Android 系统在持续演进，每一代新版本都可能引入新的性能特
 第二层，**确定影响范围**。问题是全局性的还是特定场景的？只在低端设备上出现还是在所有设备上都有？是偶发的还是必现的？这些信息决定了分析的策略和优先级。一个影响 10% 用户的必现问题，优先级通常高于一个影响 0.1% 用户的偶发问题。
 
 第三层，**定位瓶颈**。在正确的工具和正确的场景下，定位具体的耗时操作或资源瓶颈。这一步需要结合本书前面各章的知识——比如看到主线程有一段很长的 binder call，就需要知道 Binder IPC 的机制（第 1.4 节）来判断是正常等待还是异常阻塞。
-
-[来源: obsidian/Personal-Knowlodge/source/Android-Perfetto-01-What-is-perfetto.md]
 
 这种从宏观到微观的分析方法，与 Gracker 在 Perfetto 系列文章中提倡的「上帝视角」是一致的。Perfetto 之所以是 Android 性能分析的核心工具，正是因为它能在一个视图里展示 App、Framework、内核、硬件的协同运作。我们不需要一开始就知道问题出在哪，只需要先看全局，然后逐步聚焦到有异常的区域。
 
@@ -179,11 +189,11 @@ Android 性能分析工具很多，但它们各有定位。选择工具的关键
 
 ### 工具的组合策略
 
-单用一个工具往往不够。在实际分析中，我们通常需要组合使用多个工具，形成一条「分析链路」。
+单用一个工具往往不够。在实际分析中，我们通常需要组合使用多个工具，形成一套「分析流程」。
 
-典型的流畅性分析链路：先用 Perfetto 抓取一次滑动场景的 Trace，定位到哪一帧超时了、超时发生在哪个阶段（measure/layout/draw/GPU）；如果瓶颈在主线程的某个方法，再用 Android Studio Profiler 的 CPU 分析器或者代码插桩来确定具体是哪一行代码导致的；如果瓶颈在 GPU，用 GPU 渲染分析工具或 Perfetto 的 gpu_render_stages Track 来深入分析。
+典型的流畅性分析流程：先用 Perfetto 抓取一次滑动场景的 Trace，定位到哪一帧超时了、超时发生在哪个阶段（measure/layout/draw/GPU）；如果瓶颈在主线程的某个方法，再用 Android Studio Profiler 的 CPU 分析器或者代码插桩来确定具体是哪一行代码导致的；如果瓶颈在 GPU，用 GPU 渲染分析工具或 Perfetto 的 gpu_render_stages Track 来深入分析。
 
-典型的启动速度分析链路：先用 Macrobenchmark 建立冷启动时间的基线；然后用 Perfetto 抓取启动过程的 Trace，从 Application.onCreate() 开始，沿着初始化链路逐步检查每个阶段的耗时；如果发现某个 SDK 初始化特别慢，再针对性地优化或延迟加载。
+典型的启动速度分析流程：先用 Macrobenchmark 建立冷启动时间的基线；然后用 Perfetto 抓取启动过程的 Trace，从 Application.onCreate() 开始，沿着初始化链路逐步检查每个阶段的耗时；如果发现某个 SDK 初始化特别慢，再针对性地优化或延迟加载。
 
 这种「Perfetto 定位 → 专项工具深入 → 优化 → 验证」的模式，是 Android 性能分析的标准工作流。本书第 13 章到第 14 章介绍的所有工具，都可以嵌入到这条工作流中使用。
 
@@ -195,7 +205,7 @@ Android 性能分析工具很多，但它们各有定位。选择工具的关键
 
 ## 性能优化的投入产出思维
 
-工程学本质上是资源分配的艺术。性能优化也是如此——我们的时间和精力是有限的，不可能同时优化所有东西。所以，我们需要一套判断优先级的方法。
+工程学就是资源分配的艺术。性能优化也是如此——我们的时间和精力是有限的，不可能同时优化所有东西。所以，我们需要一套判断优先级的方法。
 
 ### 优先高频场景
 
@@ -247,7 +257,7 @@ Jeff Dean 对此有更深入的分析。他指出，完全不关注性能的开�
 
 「我觉得优化有效果」——这是性能优化中最危险的一句话。
 
-没有度量支撑的优化判断，本质上是猜测。而猜测在复杂的系统中几乎是不可靠的。一个优化在开发者的旗舰设备上「感觉更快了」，可能在低端设备上完全没有效果，甚至因为增加了代码路径的复杂度反而变慢了。
+没有度量支撑的优化判断，就是猜测。而猜测在复杂的系统中几乎是不可靠的。一个优化在开发者的旗舰设备上「感觉更快了」，可能在低端设备上完全没有效果，甚至因为增加了代码路径的复杂度反而变慢了。
 
 忽视度量还有另一种表现形式：只度量了平均值，忽略了长尾。如果 95% 的帧都在 8ms 内完成，但剩下 5% 的帧耗时超过 50ms，用户感知到的依然是「卡」。这种问题只有看 P99（第 99 百分位）帧时间才能发现。平均帧时间 8ms 和 P99 帧时间 50ms 同时存在，这就是为什么我们强调要看分布而不是只看均值。
 
@@ -278,7 +288,7 @@ Google 对性能的重视可以追溯到公司成立之初。两个经典的案�
 
 **Android Performance Patterns**：2015 年 Google 推出的这个系列视频，虽然每集只有 3-5 分钟，但覆盖了 Android 性能优化最核心的知识点：渲染性能、过度绘制、VSync、GPU 分析、内存管理。它的定位不是教具体的优化技巧，而是帮助开发者建立正确的性能意识——了解系统是怎么工作的，知道该用什么工具，该关注什么指标 [已验证: 来源见 androidperformance.com/2015/04/19/Android-Performance-Patterns/; YouTube Android Performance Patterns playlist]。
 
-这种「工具 + 意识」的组合，本质上是把性能从「事后补救」变成「开发过程中的基本素养」。Google 还通过 Play Console 的 Vitals 面板，把性能数据直接暴露给开发者，让「用户在实际设备上的体验」成为开发流程的一部分。
+这种「工具 + 意识」的组合，是把性能从「事后补救」变成「开发过程中的基本素养」。Google 还通过 Play Console 的 Vitals 面板，把性能数据直接暴露给开发者，让「用户在实际设备上的体验」成为开发流程的一部分。
 
 Android 16 进一步强化了这一方向。Baseline Profiles 可以让 App 从首次安装就获得接近 AOT 编译的性能，JankStats 库帮助开发者在生产环境中自动收集帧率数据，Macrobenchmark 则让自动化性能测试成为 CI/CD 的标准环节 [已验证: 官方文档, developer.android.com]。这些工具的演进方向是一致的：**让性能优化从专家的「手艺活」变成工程师的「日常操作」**。
 
@@ -294,9 +304,9 @@ Android 16 进一步强化了这一方向。Baseline Profiles 可以让 App 从�
 
 **代码洞察力**：能从代码层面理解性能问题的根源。不是所有的性能问题都能从 Trace 中看出来，有时候需要读代码才能理解为什么某个操作会那么慢。
 
-**沟通影响力**：性能优化往往涉及多个团队——App 团队、系统团队、SDK 团队。推动优化落地需要清晰地表达问题、量化影响、说服利益相关者。
+**沟通影响力**：性能优化往往涉及多个团队——App 团队、系统团队、SDK 团队。推动优化实施需要清晰地表达问题、量化影响、说服利益相关者。
 
-Brendan Gregg 在讨论性能工程团队的价值时，特别强调了性能工程师的一个独特作用：他们不只是「修 bug 的人」，而是**帮助整个团队建立性能意识和能力的人** [已验证: 来源见 Brendan Gregg, Performance Engineering Teams, 2025]。Netflix 的火焰图自助服务工具就是一个成功的例子——它不是一个团队关起门来优化性能，而是把性能分析的能力赋能给所有开发者，让每个人都能在自己的代码中找到优化机会。
+Brendan Gregg 在讨论性能工程团队的价值时，特别强调了性能工程师的一个独特作用：他们的作用远不止修 bug——更重要的价值在于帮助整个团队建立性能意识和能力 [已验证: 来源见 Brendan Gregg, Performance Engineering Teams, 2025]。Netflix 的火焰图自助服务工具就是一个成功的例子——它不是一个团队关起门来优化性能，而是把性能分析的能力交给所有开发者，让每个人都能在自己的代码中找到优化机会。
 
 ## 小结
 
