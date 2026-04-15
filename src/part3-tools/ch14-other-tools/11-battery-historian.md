@@ -23,9 +23,13 @@ sources:
   - type: official
     path: "https://developer.android.com/topic/performance/batterystats-historian"
 pipeline_stage: task6_pending
-task6_state: pending
+task6_state: reviewed
+task6_result: pass-light-edit
+reviewed_by: openclaw-task6
+reviewed_date: "2026-04-16"
 task9_state: pending
 task2b_state: idle
+pipeline_stage: task9_pending
 ---
 
 # 14.11 Battery Historian 与功耗分析工具
@@ -99,7 +103,7 @@ go run cmd/battery-historian/battery-historian.go --port 9999
 
 ### 时间线视图解读
 
-上传 bugreport 后，Battery Historian 会展示一张交互式时间线图。理解这张图的关键是认识它的"行"：
+上传 bugreport 后，Battery Historian 会展示一张交互式时间线图。要读懂这张图，先认识它的"行"：
 
 | 行名称 | 含义 | 关注点 |
 |--------|------|--------|
@@ -135,7 +139,7 @@ Battery Historian 提供的信息需要我们主动去"读"。以下是几个最
 
 > 后台 Partial Wakelock 累计持有时长在 24 小时内达到 2 小时以上。
 
-这个阈值是 Google 定义的，但实际上任何超过预期的 Wakelock 持有时间都值得关注。在 Battery Historian 的 System Stats 面板中，可以看到每个 UID 的 Wakelock 统计：
+这个阈值是 Google 定义的，但任何超过预期的 Wakelock 持有时间都值得关注。在 Battery Historian 的 System Stats 面板中，可以看到每个 UID 的 Wakelock 统计：
 
 ```
 Wake lock u0a123:my_wakelock_tag  2h 15m 30s (held)
@@ -152,7 +156,7 @@ Wake lock u0a123:another_tag      45m 12s
 
 ### GPS 和传感器
 
-GPS 是功耗最高的传感器之一。持续定位请求（`requestLocationUpdates` 配合短间隔）会在 GPS 行产生持续的绿色区域。如果 App 不需要实时定位，使用 `FusedLocationProvider` 的被动模式或者 `GeofencingClient` 可以大幅降低 GPS 功耗。
+GPS 是功耗最高的传感器之一。持续定位请求（`requestLocationUpdates` 配合短间隔）会在 GPS 行产生持续的绿色区域。如果 App 不需要实时定位，使用 `FusedLocationProvider` 的被动模式或者 `GeofencingClient` 能减少 GPS 模块的活跃时间，降低功耗。
 
 ### Top App CPU 时间
 
@@ -166,7 +170,7 @@ GPS 是功耗最高的传感器之一。持续定位请求（`requestLocationUpd
 
 ## 从 Battery Historian 到根因定位
 
-有了工具和数据，关键是怎么从"看到异常"到"找到根因"。这里介绍几种常见的功耗问题模式及其分析方法。
+有了工具和数据，就要从"看到异常"推进到"找到根因"。这里介绍几种常见的功耗问题模式及其分析方法。
 
 ### 模式 1：后台 Wakelock 持有时间过长
 
@@ -255,7 +259,7 @@ ODPM 测量的 Power Rail 包括：
 | UFS | 存储功耗 |
 | Sensor Core | 传感器子系统功耗 |
 
-这些数据可以在 Power Profiler 的 System Trace 视图中直接查看，与 CPU 调度、线程活动在同一个时间线上对齐——这对关联"代码行为→功耗变化"至关重要。
+这些数据可以在 Power Profiler 的 System Trace 视图中直接查看，与 CPU 调度、线程活动在同一个时间线上对齐——可以在同一个视图里同时看到代码行为和功耗变化的对应关系。
 
 ### Power Profiler vs Energy Profiler
 
@@ -347,7 +351,7 @@ class PowerBenchmark {
 
 对于需要高精度功耗数据的场景（如 OEM 的系统级优化），硬件电流表是终极方案：
 
-- **Monsoon Power Monitor**：高精度（微安级）的外部功耗测量设备，直接串联在电池供电线路上
+- **Monsoon Power Monitor**：高精度（微安级）的外部功耗测量设备，直接连接在电池供电线路上
 - **华为功耗仪/其他厂商工具**：部分手机厂商提供自己的功耗分析工具
 
 硬件测量的精度远高于任何软件方案，但设备成本高、操作复杂，通常只在系统级功耗调优时使用。对大多数 App 开发者来说，Battery Historian + Power Profiler 的组合已经足够定位功耗问题。
