@@ -49,13 +49,14 @@ related_chapters:
 - '2.9'
 - '7.1'
 re-review-result: 已纳入1条素材(部分纳入:OEM VSync修改误区+交叉引用),0处修正,待正常review质检
-pipeline_stage: task2b_pending
+pipeline_stage: task6_pending
 task6_result: needs-rework
-task6_state: reviewed
-task9_state: reviewed
+task6_state: revisiting
+task9_state: pending
 task9_result: needs-rework
 task9_reviewed_date: "2026-04-15"
-task2b_state: pending
+task2b_state: fixed
+task2b_rework_date: "2026-04-15"
 ---
 
 # 帧率与刷新率
@@ -419,13 +420,12 @@ if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
 FrameMetrics 提供的度量维度包括：
 
 - `TOTAL_DURATION`：从 VSync 到帧显示完成的总耗时
-- `INPUT_HANDLE_DURATION`：Input 事件处理耗时
+- `INPUT_EVENT_HANDLING_DURATION`（API 31+）：Input 事件处理耗时
 - `ANIMATION_DURATION`：动画计算耗时
 - `LAYOUT_MEASURE_DURATION`：measure/layout 耗时
 - `DRAW_DURATION`：draw 耗时
 - `SYNC_DURATION`：同步阶段耗时（将绘制命令同步给 RenderThread）
-- `GPU_DURATION`：GPU 渲染耗时
-- `COMMAND_ISSUE_DURATION`：GPU 命令下发耗时
+- `COMMAND_ISSUE_DURATION`：GPU 命令下发与执行耗时（FrameMetrics 没有独立的 `GPU_DURATION` 常量，GPU 渲染耗时通过此项间接衡量）
 
 [已验证: 官方文档, developer.android.com/reference/android/view/FrameMetrics]
 
