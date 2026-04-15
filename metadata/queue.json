@@ -224,5 +224,43 @@
     "status": "completed",
     "completed_at": "2026-04-16T02:43:30",
     "completed_by": "task2b-rework"
+  },
+  {
+    "section": "13.10",
+    "section_title": "Perfetto SQL 性能分析实战手册",
+    "priority": 95,
+    "reason": "[Deep Tech Review] P0: Frame Timeline SQL查询中expected别名未定义导致SQL报错 + P1: 多处SQL与原理描述不匹配(调度延迟/Binder三维度/CPU利用率分母)",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "SQL语法错误",
+        "location": "Frame Timeline节 '查询所有jank帧' SQL",
+        "detail": "WHERE actual.dur > expected.dur 引用了未定义的 expected 别名。FROM 子句只定义了 actual（actual_frame_timeline_slice）和 thread_track/thread，没有 JOIN expected_frame_timeline_slice。该 SQL 会直接报错。",
+        "suggestion": "JOIN expected_frame_timeline_slice AS expected ON actual.frame_number = expected.frame_number（或使用 android.frames 模块提供的预建视图）。同时去掉手动 JOIN thread_track，因为 Frame Timeline slice 可能不在 thread_track 上。"
+      },
+      {
+        "type": "原理断裂",
+        "location": "Binder分析节 client_dur/server_dur/dispatch_dur 描述",
+        "detail": "声称可以分析 Binder 事务的三个时间维度，但所有 SQL 只查 slice.name GLOB '*binder*' 的总持续时间，无法区分 client/server/dispatch 阶段。",
+        "suggestion": "要么用 ftrace 的 binder_transaction 事件通过时间戳关联来提取三阶段耗时，要么修改描述承认当前 SQL 只能量化总耗时。"
+      },
+      {
+        "type": "原理断裂",
+        "location": "调度延迟节标题和SQL不匹配",
+        "detail": "标题说'Runnable → Running 的时间'，但 SQL 只列出主线程的 sched 条目，完全没有计算调度延迟。",
+        "suggestion": "重写 SQL：找到 end_state IN ('R', 'R+') 的 sched 记录，计算到同一 utid 下一条 sched.ts 的时间差，即为调度延迟。"
+      },
+      {
+        "type": "事实错误",
+        "location": "线程CPU时间统计 SQL",
+        "detail": "CPU利用率分母用 MAX(ts+dur)-MIN(ts)，这是线程从首次被调度到最后一次被调度的跨度，不是整个Trace时长。线程空闲时间被排除在外，利用率偏高。",
+        "suggestion": "分母改为 (SELECT end_ts - start_ts FROM trace_bounds) 获取完整Trace时长。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-16T03:20:00",
+    "status": "pending"
   }
 ]

@@ -186,3 +186,27 @@ dm-verity 与 EROFS 的配合机制未在章节中讨论。文中提到"配合 d
 
 ### 关联章节
 8.1, 8.2, 8.3, 3.1
+
+
+## [2026-04-16] 13.10 Perfetto SQL 性能分析实战手册 — 知识盲区
+
+### 盲区描述
+1. 完全未提及 PerfettoSQL 的核心扩展操作符：`SPAN_JOIN`、`LEFT_JOIN_SPAN`、`PARTITIONED_JOIN`。这些是 Perfetto 特有的时间区间 JOIN 操作符，是实现"帧期间的 GC/Binder/锁"这类交叉分析的正确工具。当前章节的交叉分析 SQL 使用普通 JOIN + 时间范围条件，在大 Trace 上性能差且逻辑不精确。
+2. 未提及窗口函数（LEAD/LAG/FIRST_VALUE）用于帧节奏时序分析。
+3. 未提及 `dur = -1`（未结束 slice）和 `dur = 0`（即时事件）的过滤——新手常见坑。
+4. 未提及 PERCENTILE/QUANTILES 函数用于帧时间 P50/P90/P99 分布——行业标准做法。
+5. 未提及 `trace_bounds` 表用于获取 Trace 起止时间。
+
+### 重要程度
+高（SPAN_JOIN 是 PerfettoSQL 的核心差异化特性）
+中（窗口函数和百分位统计）
+中（dur=-1 过滤是实战常见坑）
+
+### 建议研究方向
+- 梳理 Perfetto v54.0 中所有标准库模块（android.frames、android.monitor、android.input、android.startup 等）提供的视图和函数
+- 整理 SPAN_JOIN / LEFT_JOIN_SPAN 的典型用法模式（特别是帧×Binder、帧×GC 交叉分析）
+- 收集 Perfetto SQL 性能优化技巧（大 Trace 查询加速）
+- 汇总 PerfettoSQL 与标准 SQLite 的差异点（哪些函数不可用、哪些扩展可用）
+
+### 关联章节
+13.1, 13.3, 13.5, 13.8

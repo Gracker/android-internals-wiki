@@ -327,3 +327,38 @@
 - **位置**：点击响应段 RAIL 模型引用
 - **问题**：RAIL 模型是 Chrome 团队的 Web 性能模型（web.dev/rail），但链接指向 developer.android.com/topic/performance/vitals（Android Vitals）。两个概念不应混为一谈。
 - **建议**：分别引用——RAIL 模型引用 web.dev/rail，Android 点击响应阈值引用 Android Vitals 的冻帧/慢帧定义
+
+## [Task9 Deep Review] 13.10 Perfetto SQL 性能分析实战手册 — 2026-04-16
+
+- **类型**：原理断裂
+- **位置**：Binder 分析节"Binder 事务按耗时排序"SQL
+- **问题**：声称分析 client_dur/server_dur/dispatch_dur 三个维度，但 SQL 只查 slice 总 dur，无法区分。三个维度的描述和实际查询能力脱节。
+- **建议**：要么通过 ftrace binder_transaction 事件关联提取三阶段耗时（需要启用对应 ftrace event），要么修改文字描述，明确当前 SQL 只能查总耗时。
+
+## [Task9 Deep Review] 13.10 Perfetto SQL 性能分析实战手册 — 2026-04-16
+
+- **类型**：原理断裂
+- **位置**：「调度延迟：Runnable → Running 的时间」节
+- **问题**：标题描述调度延迟（Runnable 到获得 CPU 的时间），但 SQL 只列出主线程的 sched 记录。完全没有计算调度延迟。
+- **建议**：重写 SQL，计算逻辑：找到 end_state IN ('R','R+') 的 sched 条目，到同一 utid 下一条 sched.ts 的差值即为调度延迟。示例：SELECT (next_sched.ts - curr_sched.ts) AS latency_ns FROM sched curr_sched JOIN sched next_sched ON curr_sched.utid = next_sched.utid AND next_sched.ts > curr_sched.ts WHERE curr_sched.end_state IN ('R','R+') ...
+
+## [Task9 Deep Review] 13.10 Perfetto SQL 性能分析实战手册 — 2026-04-16
+
+- **类型**：事实错误
+- **位置**：「线程 CPU 时间统计」SQL
+- **问题**：CPU 利用率分母使用 MAX(ts+dur)-MIN(ts)，这是该线程首次调度到末次调度的跨度，不是 Trace 总时长。空闲时间被排除，结果偏高。
+- **建议**：分母改为 (SELECT end_ts - start_ts FROM trace_bounds)
+
+## [Task9 Deep Review] 13.10 Perfetto SQL 性能分析实战手册 — 2026-04-16
+
+- **类型**：版本差异
+- **位置**：全文各 SQL 查询
+- **问题**：章节声明 applicable_versions Android 10-17，但未标注各查询的最低版本要求。Frame Timeline (Android 12+)、android.frames 模块 (Perfetto v38+)、android.monitor 模块、Java Heap counter track 名称等在不同版本有差异。
+- **建议**：在每个主要查询模板旁添加版本标注。如：「Frame Timeline 查询需要 Android 12+ 且 Trace 配置包含 track_event」。
+
+## [Task9 Deep Review] 13.10 Perfetto SQL 性能分析实战手册 — 2026-04-16
+
+- **类型**：源码不精确
+- **位置**：冷启动查询中 'ZygoteInit.xxx'
+- **问题**：'ZygoteInit.xxx' 是占位符不是实际 slice 名称。AOSP 实际名称为 'ZygoteInit.main' 或 'ZygoteInit.native'。章节标注 [已验证] 但实际未验证。
+- **建议**：改为具体名称 'ZygoteInit.main'，并标注该名称对应 Android 10+ 的 ART 实现。去掉 [已验证] 标记或改为 [待验证]。
