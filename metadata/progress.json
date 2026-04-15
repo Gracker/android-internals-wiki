@@ -2948,6 +2948,29 @@
       ],
       "source": "task9-deep-tech-review",
       "priority": 85
+    },
+    {
+      "section": "2.12",
+      "section_title": "Window Manager Service 与窗口管理",
+      "date": "2026-04-16",
+      "time": "04:40",
+      "added_by": "task9-deep-tech-review",
+      "issues_fixed": [
+        {
+          "type": "源码错误",
+          "location": "relayoutWindow 代码片段",
+          "detail": "mPendingBackInsets 不存在，参数列表为多版本混合体",
+          "fix": "基于 AOSP android-16.0.0_r1 重写代码片段，使用 mSeq、frameNumber、mTmpFrame、mPendingBackDropFrame 等正确参数名"
+        },
+        {
+          "type": "禁用词清理",
+          "location": "relayoutWindow 节",
+          "detail": "「这意味着」触发 STYLE.md 禁用词规则",
+          "fix": "移除冗余引导词，直接陈述因果关系"
+        }
+      ],
+      "verification": "L2 — AOSP android-16.0.0_r1 源码签名验证",
+      "queue_status": "completed"
     }
   ],
   "reviews": {
