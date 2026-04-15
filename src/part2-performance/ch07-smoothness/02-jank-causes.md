@@ -5,7 +5,7 @@ status: ready-for-review
 applicable_versions: "Android 5.0 (API 21) - Android 17 (API 37)"
 last_verified: "2026-04-08"
 last_verified_against: "AOSP android-15.0.0_r1"
-reviewed_date: "2026-04-08"
+reviewed_date: "2026-04-15"
 reviewed_by: openclaw-task6
 polish_count: 1
 polish_date: "2026-04-08"
@@ -36,8 +36,9 @@ tags:
   - smoothness
 related_chapters: ["7.1", "2.3", "2.4", "2.5", "1.4", "1.5", "3.1", "4.3"]
 re-review-result: "审查 0 条素材，无需修改"
-pipeline_stage: task6_pending
-task6_state: pending
+pipeline_stage: task9_pending
+task6_state: reviewed
+task6_result: pass-light-edit
 task9_state: pending
 task2b_state: idle
 ---
@@ -73,13 +74,13 @@ task2b_state: idle
 
 ## 为什么要系统化地理解卡顿原因
 
-在 7.1 节中，我们定义了什么是卡顿，也知道了卡顿的本质是「一帧的渲染没能在一个 VSync 周期内完成」。但知道「掉帧了」只是第一步——真正的问题是，这一帧为什么没画完？
+在 7.1 节中，我们定义了什么是卡顿，也知道了卡顿的本质是「一帧的渲染没能在一个 VSync 周期内完成」。但知道「掉帧了」只是第一步——这一帧为什么没画完？
 
-这个问题看似简单，实际上答案分散在整个渲染管线的各个环节中。一次卡顿可能源于 App 侧的代码写法（比如在滑动回调里做了太多计算），也可能源于系统侧的调度问题（比如 CPU 把时间片给了别的进程），甚至还可能源于硬件合成的限制。如果我们没有一套系统化的原因分类体系，面对 Perfetto Trace 里密密麻麻的时间线，很容易陷入「到处看看、碰运气」的低效模式。
+这个问题看似简单，答案却分散在整个渲染管线的各个环节中。一次卡顿可能源于 App 侧的代码写法（比如在滑动回调里做了太多计算），也可能源于系统侧的调度问题（比如 CPU 把时间片给了别的进程），甚至还可能源于硬件合成的限制。如果我们没有一套系统化的原因分类体系，面对 Perfetto Trace 里密密麻麻的时间线，很容易陷入「到处看看、碰运气」的低效模式。
 
 本节的目标，就是把「一帧为什么没画完」这个问题的所有可能原因，按照渲染管线的阶段整理成一个清晰的原因体系。读完这一节，当我们再在 Perfetto 中看到一帧超时，应该能快速判断问题出在渲染管线的哪个环节、是 App 的问题还是系统的问题、下一步该往哪个方向深挖。
 
-在进入具体原因之前，我们需要先回顾一下一帧的渲染在 Perfetto 中的完整链路，因为后面的原因分类就是按照这个链路的阶段来组织的：
+在进入具体原因之前，我们需要先回顾一下一帧的渲染在 Perfetto 中的完整路径，因为后面的原因分类就是按照这条路径的阶段来组织的：
 
 ```
 VSync-app 信号到达
@@ -94,7 +95,7 @@ VSync-app 信号到达
   → 显示上屏
 ```
 
-在这条链路上，任何一个环节超时，后续环节都会被顺延，最终导致这一帧错过 VSync-app 的截止时间，表现为掉帧。接下来我们就按环节逐一分析。
+在这条路径上，任何一个环节超时，后续环节都会被顺延，最终导致这一帧错过 VSync-app 的截止时间，表现为掉帧。接下来我们就按环节逐一分析。
 
 [已验证: 官方文档, developer.android.com/topic/performance/vitals/render]
 
@@ -343,7 +344,7 @@ Binder 是 Android 进程间通信（IPC）的核心机制（详见 1.4 节）�
 [已验证: AOSP android-15.0.0_r1, frameworks/native/services/surfaceflinger/SurfaceFlinger.cpp]
 [来源: Personal-Knowlodge/source/Android-Systrace-Binder.md]
 
-**在 Perfetto 中的表现：** 在主线程的 Track 中，可以看到 Binder 调用的 Slice（标记为 `binder txn` 或显示具体的接口方法名）。开启 Flow Events（在 Perfetto UI 中选择"Flow events"）可以看到 Binder 调用从 App 到目标进程的完整链路。如果 Binder Slice 的持续时间异常长，且目标进程当时有锁竞争或其他耗时操作，基本可以确认是 Binder 阻塞导致的卡顿。
+**在 Perfetto 中的表现：** 在主线程的 Track 中，可以看到 Binder 调用的 Slice（标记为 `binder txn` 或显示具体的接口方法名）。开启 Flow Events（在 Perfetto UI 中选择"Flow events"）可以看到 Binder 调用从 App 到目标进程的完整路径。如果 Binder Slice 的持续时间异常长，且目标进程当时有锁竞争或其他耗时操作，基本可以确认是 Binder 阻塞导致的卡顿。
 
 [待补充：Trace 截图 — Binder 阻塞导致的主线程卡顿 Perfetto 片段]
 
@@ -432,7 +433,7 @@ Binder 是 Android 进程间通信（IPC）的核心机制（详见 1.4 节）�
 FPS 是一个平均值指标，不能直接反映卡顿。如 7.1 节所述，稳定的 40fps 比在 60fps 和 30fps 之间频繁波动体验更好。衡量卡顿应该关注帧与帧之间的耗时波动（Jank）和掉帧率，而不是平均 FPS。
 
 **误区二：「卡顿都是 App 代码的问题」**  
-很多卡顿实际上是系统层面的原因——CPU 调度延迟、温控限频、SurfaceFlinger 合成瓶颈、系统服务的锁竞争。在分析卡顿时，不要只盯着 App 的代码，一定要从 Perfetto Trace 的全局视角来看。
+很多卡顿根源在系统层面——CPU 调度延迟、温控限频、SurfaceFlinger 合成瓶颈、系统服务的锁竞争。在分析卡顿时，不要只盯着 App 的代码，一定要从 Perfetto Trace 的全局视角来看。
 
 **误区三：「主线程 CPU 占用低就不会卡顿」**  
 CPU 占用率低不代表没有卡顿。如果主线程频繁处于 Runnable 但未执行的状态（调度延迟），或者频繁被 GC 暂停，CPU 占用率可能很低，但帧渲染时间仍然超标。
