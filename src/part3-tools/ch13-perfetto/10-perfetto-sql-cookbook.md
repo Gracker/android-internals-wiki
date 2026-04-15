@@ -30,10 +30,11 @@ created_by: "task2a-knowledge-gap"
 created_date: "2026-04-09"
 gap_source: "官方文档 + 读者需求 + AOSP 结构"
 gap_score: "19/20"
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: pending
-task2b_state: pending
+pipeline_stage: "task6_pending"
+task6_state: "revisiting"
+task9_state: "pending"
+task2b_state: "fixed"
+task2b_result: "fixed"
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-04-13"
 task6_result: "needs-rework"
@@ -156,23 +157,24 @@ ORDER BY MIN(dur);
 
 ### Frame Timeline：系统视角的帧分析
 
-`Choreographer#doFrame` 只反映主线程视角。Android 12（API 31）引入的 Frame Timeline 提供了系统视角：它同时记录"期望上屏时间"和"实际上屏时间"，两者之差直接反映帧是否准时到达。
+`Choreographer#doFrame` 只反映主线程视角。Android 12（API 31）引入的 Frame Timeline 提供了系统视角：它同时记录"期望上屏时间"和"真实上屏时间"，两者之差直接反映帧是否准时到达。
 
 在 Perfetto 中，Frame Timeline 数据存储在 `actual_frame_timeline_slice` 和 `expected_frame_timeline_slice` 两张表中。Perfetto 标准库提供了 `android.frames` 模块，封装了这些表的查询逻辑：
 
 ```sql
 INCLUDE PERFETTO MODULE android.frames;
 
--- 查询所有 jank 帧（实际上屏时间晚于期望时间）
+-- 查询所有 jank 帧（actual_dur 超过 expected_dur）
 SELECT
   CAST((actual.ts - trace_start()) / 1e6 AS INTEGER) AS time_ms,
   CAST(actual.dur / 1e6 AS FLOAT) AS actual_dur_ms,
-  actual.name,
-  thread.name AS thread_name
+  CAST(expected.dur / 1e6 AS FLOAT) AS expected_dur_ms,
+  actual.name
 FROM actual_frame_timeline_slice AS actual
-JOIN thread_track ON actual.track_id = thread_track.id
-JOIN thread USING (utid)
-WHERE actual.dur > expected.dur  -- 实际超过期望
+JOIN expected_frame_timeline_slice AS expected
+  ON actual.track_id = expected.track_id
+  AND ABS(actual.ts - expected.ts) < 1e6
+WHERE actual.dur > expected.dur
 ORDER BY actual.dur DESC;
 ```
 
@@ -194,7 +196,7 @@ SELECT
   thread.name AS thread_name,
   SUM(sched.dur) / 1e6 AS total_cpu_ms,
   COUNT(*) AS schedule_count,
-  CAST(SUM(sched.dur) * 100.0 / (MAX(ts + dur) - MIN(ts)) AS FLOAT) AS cpu_pct
+  CAST(SUM(sched.dur) * 100.0 / (SELECT end_ts - start_ts FROM trace_bounds) AS FLOAT) AS cpu_pct
 FROM sched
 JOIN thread USING (utid)
 WHERE thread.name = 'main'
@@ -209,19 +211,30 @@ WHERE thread.name = 'main'
 
 ```sql
 -- 主线程调度延迟 Top 20
+-- 计算方式：线程以 Runnable 状态离开 CPU 后，到重新获得 CPU 的时间差
 SELECT
-  CAST((sched.ts - trace_start()) / 1e6 AS INTEGER) AS time_ms,
-  CAST(sched.dur / 1e6 AS FLOAT) AS running_ms,
-  sched.cpu,
-  sched.end_state
-FROM sched
-JOIN thread USING (utid)
-WHERE thread.name = 'main'
-ORDER BY sched.ts
+  CAST((run_start - trace_start()) / 1e6 AS INTEGER) AS time_ms,
+  CAST(delay_ns / 1e6 AS FLOAT) AS delay_ms,
+  left_cpu,
+  run_cpu
+FROM (
+  SELECT
+    ts, dur, end_state,
+    ts + dur AS left_at,
+    LEAD(ts) OVER (PARTITION BY utid ORDER BY ts) AS run_start,
+    LEAD(cpu) OVER (PARTITION BY utid ORDER BY ts) AS run_cpu,
+    LEAD(ts) OVER (PARTITION BY utid ORDER BY ts) - (ts + dur) AS delay_ns,
+    cpu AS left_cpu
+  FROM sched
+  WHERE utid IN (SELECT utid FROM thread WHERE name = 'main')
+)
+WHERE end_state IN ('R', 'R+')   -- 只看被抢占后仍为 Runnable 的记录
+  AND delay_ns > 0
+ORDER BY delay_ns DESC
 LIMIT 20;
 ```
 
-如果 `running_ms` 中频繁出现极短的时间片（< 1ms），说明主线程在和其他线程争抢 CPU，被频繁抢占。这种情况在高负载设备上很常见，可以通过提升主线程优先级或减少后台线程数来缓解。
+这个查询的核心逻辑：从 `sched` 表中找到主线程以 `R`（Runnable）或 `R+`（Runnable preempted）状态离开 CPU 的记录，然后用 `LEAD()` 窗口函数取同一 utid 的下一条调度记录，两者的时间差就是调度延迟。如果 `delay_ms` 频繁超过 5ms，说明系统 CPU 负载很重，主线程在排队等 CPU。可以通过提升主线程优先级（`sched_setscheduler` 设为 SCHED_FIFO）或减少后台线程数来缓解。
 
 ### 线程状态分布
 
@@ -255,13 +268,15 @@ Binder 是 Android 进程间通信的核心机制。一次 Binder 调用涉及�
 
 ### Binder 事务耗时统计
 
-Perfetto 通过 linux.ftrace 的 `binder_transaction` / `binder_transaction_received` / `binder_reply` 三个 tracepoint 追踪 Binder 活动。关键指标有三个维度：
+Perfetto 通过 linux.ftrace 的 `binder_transaction` / `binder_transaction_received` / `binder_reply` 三个 tracepoint 追踪 Binder 活动。一次 Binder 调用涉及三个时间维度：
 
 - **client_dur**：客户端总等待时间（从发起调用到收到回复）
 - **server_dur**：服务端实际处理时间
 - **dispatch_dur**：服务端排队等待时间（从收到请求到开始处理）
 
 当 `dispatch_dur` 持续大于 `server_dur` 时，说明服务端 Binder 线程池饱和（默认上限 16 线程），新来的请求在排队等待空闲线程。
+
+> **注意**：下面的 SQL 通过 `slice.name GLOB '*binder*'` 筛选 Binder 相关 slice，能量化单次调用的总耗时。但要精确分离 client/server/dispatch 三阶段，需要通过 ftrace 的 `binder_transaction` 事件按时间戳关联客户端和服务端的 tracepoint。本节先聚焦总耗时的定位和排序，三阶段拆分需要更复杂的 JOIN 逻辑。
 
 ```sql
 -- Binder 事务按耗时排序 Top 20
