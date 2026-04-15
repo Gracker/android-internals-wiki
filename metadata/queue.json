@@ -75,5 +75,43 @@
     "status": "completed",
     "completed_at": "2026-04-15T18:43:09.365572",
     "completed_by": "task2b-rework"
+  },
+  {
+    "section": "14.4",
+    "section_title": "dumpsys 系列命令",
+    "priority": 95,
+    "reason": "[Deep Tech Review] P0 事实错误：oom_adj 值标注错误（FOREGROUND_APP=0 非字号 100，VISIBLE_APP=100 非字号 200）",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "「进程优先级与 ANR」小节，oom_adj 值举例",
+        "detail": "章节称 FOREGROUND_APP（优先级 100）、VISIBLE_APP_LVL（优先级 200）。AOSP ProcessList.java 实际值：FOREGROUND_APP_ADJ=0, VISIBLE_APP_ADJ=100, PERCEPTIBLE_APP_ADJ=200。且场景逻辑反了——从 VISIBLE(100) 变为 FOREGROUND(0) 是优先级升高",
+        "suggestion": "修正为 FOREGROUND_APP_ADJ=0, VISIBLE_APP_ADJ=100。场景改为：本应 FOREGROUND(0) 的进程显示为 VISIBLE(100) 才是降级"
+      },
+      {
+        "type": "原理断裂",
+        "location": "SurfaceFlinger --latency 输出说明",
+        "detail": "缺少首行 refresh period 说明（纳秒单位），读者无法正确计算帧延迟基准",
+        "suggestion": "补充说明首行 refresh period 和三列数据的单位均为纳秒，给出计算公式：actual - desired > refresh_period 即为掉帧"
+      },
+      {
+        "type": "原理断裂",
+        "location": "framestats 时间值",
+        "detail": "未说明所有时间值为纳秒，读者可能误以为是毫秒",
+        "suggestion": "明确标注时间单位为纳秒（ns），给出典型值参考（如 16.67ms = 16667000ns）"
+      },
+      {
+        "type": "知识盲区",
+        "location": "工具覆盖范围",
+        "detail": "完全未提及 dumpsys cpuinfo，这是 CPU 占用快速排查的基本工具",
+        "suggestion": "在进阶用法或基础部分补充 dumpsys cpuinfo 的用法和关键指标"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-15T19:25:18",
+    "status": "pending"
   }
 ]
