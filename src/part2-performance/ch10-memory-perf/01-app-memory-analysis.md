@@ -1,13 +1,15 @@
 ---
 title: "App 内存分析"
 chapter: "10.1"
-section: "10.1"
+section: "10
+
+.1"
 status: ready-for-review
 drafted_date: "2026-04-02"
 drafted_by: "openclaw-task2"
 applicable_versions: "Android 8.0 (API 26) - Android 16 (API 36)"
 last_verified: "2026-04-02"
-reviewed_date: "2026-04-08"
+reviewed_date: "2026-04-15"
 reviewed_by: "openclaw-task6"
 last_verified_against: "AOSP android-16.0.0_r1"
 polish_count: 1
@@ -28,9 +30,10 @@ sources:
 tags: [memory, pss, rss, mat, heapprofd, memtrack, memory-analysis]
 related_chapters: ["4.1", "4.3", "4.5", "13.1", "14.3"]
 pipeline_stage: task6_pending
-task6_state: pending
+task6_state: reviewed
 task9_state: pending
 task2b_state: idle
+task6_result: pass-light-edit
 ---
 
 # App 内存分析
@@ -86,7 +89,7 @@ App 内存分析的工具可以分为三层，每一层解决不同粒度的问�
 
 [已验证: 来源见 obsidian/Personal-Knowlodge/source/AndroidMemory-Usage-Of-MAT-Pro.md]
 
-**选择策略**：实际工作中，我们通常按照 `dumpsys meminfo` → Memory Profiler → MAT 的顺序递进分析。先用 `dumpsys meminfo` 定位问题类型，再用 Memory Profiler 观察动态行为，最后用 MAT 精确定位引用链。对于 Native 内存问题，这个工具链会替换为 `dumpsys meminfo` → heapprofd/malloc debug 的组合。
+**选择策略**：工作中通常按照 `dumpsys meminfo` → Memory Profiler → MAT 的顺序递进分析。先用 `dumpsys meminfo` 定位问题类型，再用 Memory Profiler 观察动态行为，用 MAT 精确定位引用链。对于 Native 内存问题，这个工具链会替换为 `dumpsys meminfo` → heapprofd/malloc debug。
 
 ### dumpsys meminfo：内存的全景地图
 
@@ -103,7 +106,9 @@ RSS 则更粗粒度，它统计进程占用的所有物理内存，不做共享�
 `dumpsys meminfo` 的输出按内存类别展示了进程的完整内存布局：
 
 ```
-** MEMINFO in pid 12345 [com.example.app] **
+** MEMINFO in pid 12345 [com.example
+
+.app] **
                    Pss    Private  Private     Swap     Heap     Heap     Heap
                  Total    Dirty    Clean    Dirty     Size    Alloc     Free
                 ------   ------   ------   ------   ------   ------   ------
@@ -122,7 +127,7 @@ RSS 则更粗粒度，它统计进程占用的所有物理内存，不做共享�
 
 [待验证: 上述输出格式是否与 Android 16 的 dumpsys meminfo 完全一致，各列名可能因版本而异]
 
-分析 `dumpsys meminfo` 输出的关键是看**哪一行的 PSS 异常偏高**。如果 Native Heap 很高，说明 Native 代码有分配泄漏或大对象；如果 Java Heap 很高，说明 Java 层有泄漏或对象未释放；如果 Graphics 很高，可能存在 Bitmap 未回收或 Surface 管理问题。
+分析 `dumpsys meminfo` 输出时重点看**哪一行的 PSS 异常偏高**。如果 Native Heap 很高，说明 Native 代码有分配泄漏或大对象；如果 Java Heap 很高，说明 Java 层有泄漏或对象未释放；如果 Graphics 很高，可能存在 Bitmap 未回收或 Surface 管理问题。
 
 实际操作中，可以在操作 App 前后各抓一次 `dumpsys meminfo` 对比差异。比如打开一个页面、返回、触发 GC 后再抓一次，如果 PSS 没有回到操作前的水平，说明有内存没有被正确释放。
 
@@ -388,7 +393,7 @@ benchmarkRule.measureRepeated(
 
 **异常触发**：当检测到内存使用率超过阈值（如 PSS > `largeHeap` 的 80%）时，触发一次完整的内存快照采集（包括 Heap Dump），上报到服务端分析。
 
-[已验证: 来源见 obsidian/Personal-Knowlodge/source/2026-03-06_wechat_货拉拉司机Android端内存治理实践.md]
+[已验证: 来源见 obsidian/Personal-Knowlodge/source/2026-03-06-wechat_货拉拉司机Android端内存治理实践.md]
 
 ## 工具速查表
 
@@ -399,7 +404,9 @@ benchmarkRule.measureRepeated(
 | Java 对象分配追踪 | Memory Profiler | Allocation Tracking | 开发 |
 | Java 泄漏引用链 | MAT | Heap Dump → Dominator Tree → GC Roots | 开发/测试 |
 | Native 内存分析 | heapprofd | Perfetto UI / `heap_profile` | 开发/测试 |
-| Native 内存调试 | malloc debug | `setprop libc.debug.malloc.*` | 开发 |
+| Native 内存调试 | malloc debug | `setprop libc.debug
+
+.malloc.*` | 开发 |
 | Native 内存错误 | ASan/HWASan | 编译选项 + wrap.sh | 开发 |
 | GPU/ Graphics 内存 | dumpsys gpu | `adb shell dumpsys gpu` | 开发/测试 |
 | 自动泄漏检测 | LeakCanary | 依赖集成 + UI 测试 | 开发/CI |
@@ -423,7 +430,7 @@ Java Heap 使用量大不一定等于泄漏。可能是正常的内存需求（�
 
 **误区二："Native Heap 不用管，系统会处理"**
 
-Native 内存没有 GC，分配了不释放就是真的泄漏。随着 App 使用 JNI、音视频 SDK、Flutter 等，Native 内存占比越来越高。线上很多 OOM 实际上是 Native 内存耗尽了 Java Heap 的预算空间。
+Native 内存没有 GC，分配了不释放就是真的泄漏。随着 App 使用 JNI、音视频 SDK、Flutter 等，Native 内存占比越来越高。线上很多 OOM 崩溃实际上是 Native 内存耗尽了 Java Heap 的预算空间。
 
 **误区三："MAT 中 Retained Size 最大的一定是泄漏"**
 
@@ -439,7 +446,9 @@ PSS 是必要的但不够。它只能告诉你"内存高了"，但不知道是 J
 
 ## 参考资料
 
-- [Android Studio Memory Profiler 官方文档](https://developer.android.com/studio/profile/memory-profiler)
+- [Android Studio Memory Profiler 官方文档](https://developer.android
+
+.com/studio/profile/memory-profiler)
 - [Perfetto Native Heap Profiling 文档](https://perfetto.dev/docs/data-sources/native-heap-profiling)
 - [MAT (Memory Analyzer Tool) 官方文档](https://eclipse.dev/mat/)
 - [malloc debug 官方文档](https://source.android.com/docs/core/debug/native-crash)
@@ -448,4 +457,4 @@ PSS 是必要的但不够。它只能告诉你"内存高了"，但不知道是 J
 - [Jetpack Macrobenchmark](https://developer.android.com/studio/profile/benchmark)
 - [已验证: 来源见 obsidian/Personal-Knowlodge/source/AndroidMemory-Usage-Of-MAT-Pro.md]
 - [已验证: 来源见 obsidian/Personal-Knowlodge/source/2026-03-08_wechat_RTC_性能自动化工具在内存优化场景下的实践.md]
-- [已验证: 来源见 obsidian/Personal-Knowlodge/source/2026-03-06_wechat_货拉拉司机Android端内存治理实践.md]
+- [已验证: 来源见 obsidian/Personal-Knowlodge/source/2026-03-06-wechat_货拉拉司机Android端内存治理实践.md]
