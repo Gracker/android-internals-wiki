@@ -3641,3 +3641,34 @@
   - `[2.14 图形 API 演进](../../part1-fundamentals/ch02-rendering/14-graphics-api-evolution.md)`
 - **review 日志**：logs/review/2026-04-15-07-review.md
 
+
+## [Task9 Deep Review] 4.7 16KB Page Size 与 Android 性能 — 2026-04-15
+
+### S1: 交叉引用错误（5 处）
+- **类型**：交叉引用一致性
+- **位置**：全文（blockquote 引用块和正文引用）
+- **问题**：
+  1. §4.1 引用标题应为「Android 内存模型全景」（非"Android 内存管理架构"）
+  2. §4.3 引用标题应为「ART 虚拟机内存管理」（非"ART 内存管理"）
+  3. §4.5 引用指向 lmkd 内容，但 §4.5 实际是「App 内存优化」，lmkd 在 §4.4「Low Memory Killer」
+  4. §8.1 引用标题应为「响应速度原理」（非"响应速度优化原则"）
+  5. §8.3 引用标题应为「启动优化策略」（非"启动优化实战"）
+- **建议**：逐一核对 src/ 目录下对应章节的 title 字段，更新引用
+
+### S2: Perfetto SQL 查询缺少前置条件和聚合说明
+- **类型**：数据缺失
+- **位置**："在 Perfetto 中的表现 > Page Fault 频率变化"
+- **问题**：使用 mem.mm.min_flt counter 但未说明需启用 mm_event ftrace category；SUM 聚合方式的正确性取决于 counter 存储格式（cumulative vs delta）
+- **建议**：加注释 "需要在 trace config 中启用 mm_event category（仅部分 Pixel 内核支持）"；确认聚合方式后加 SQL 注释
+
+### S3: Google 性能数据缺少测试条件
+- **类型**：数据缺失
+- **位置**："量化性能数据"表格
+- **问题**：冷启动 +3.16%、功耗 -4.56% 等数据缺少设备型号、Android 版本、样本集信息。末尾有 [待验证] 但距表格较远
+- **建议**：在表格下方紧接标注测试条件来源，如"数据来源：Google Pixel 设备测试，具体设备型号与 Android 版本详见 [待验证]"
+
+### S4: ART GC 与 16KB 页的交互
+- **类型**：知识盲区（建议改进）
+- **位置**："对内存使用的影响" 节
+- **问题**：讨论了内部碎片和 LMK 交互，但未提及 ART GC 的 card table / remembered set / marking bitmap 等结构在 16KB 页下的行为变化
+- **建议**：加一段简短说明，指出 ART 内部已适配 16KB 页，但 GC 相关性能分析者需注意此变量。可标注 [待验证]

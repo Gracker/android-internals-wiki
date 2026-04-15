@@ -29,10 +29,11 @@ tags:
   - tlb
   - compatibility
   - research
-pipeline_stage: task9_pending
+pipeline_stage: task2b_pending
 task6_state: reviewed
-task9_state: pending
-task2b_state: idle
+task9_state: reviewed
+task9_result: needs-rework
+task2b_state: pending
 ---
 # 4.7 16KB Page Size 与 Android 性能
 

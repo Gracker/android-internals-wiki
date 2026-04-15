@@ -2479,3 +2479,24 @@ InputDispatcher 的 unresponsive connection 检测与 throttle 机制。当 App 
 
 ### 关联章节
 3.2, 3.4, 9.1, 9.2, 13.8
+
+## [2026-04-15] 4.7 16KB Page Size 与 Android 性能 — 知识盲区
+
+### 盲区描述
+zRAM 与 16KB 页大小的交互未被讨论。Android 设备普遍使用 zRAM 作为 swap 空间（典型配置为物理内存的 50-100%）。页大小从 4KB 增加到 16KB 后，每个压缩单元从 4KB 变为 16KB，直接影响：
+1. 压缩比：16KB 块的压缩比可能低于 4KB 块（取决于数据局部性）
+2. 压缩/解压 CPU 开销：处理 4x 大的数据块
+3. 有效内存节省量：zRAM 整体效率变化
+4. LMK 触发频率：尤其影响 6GB 以下设备
+
+### 重要程度
+高
+
+### 建议研究方向
+- Android 16KB 页设备上 zRAM 的实际压缩比数据
+- zram disksize 与 page size 的关系
+- Google 是否提供了 16KB 页下的 zRAM 配置建议
+- MTK/高通 BSP 中 16KB 页设备的 zRAM 默认配置
+
+### 关联章节
+4.2, 4.4, 4.5
