@@ -6,7 +6,7 @@ status: ready-for-review
 polish_count: 1
 polish_date: "2026-04-05"
 polish_by: "task2b-polish"
-reviewed_date: "2026-04-08"
+reviewed_date: "2026-04-15"
 reviewed_by: "openclaw-task6"
 applicable_versions: "Android 12 (API 31) - Android 16 (API 36)"
 last_verified: "2026-03-30"
@@ -29,8 +29,9 @@ sources:
     path: "https://web.dev/articles/rail"
 tags: [responsiveness, TTID, TTFD, RAIL, input-latency, perceived-performance]
 related_chapters: ["2.3", "2.4", "3.1", "8.2", "9.1"]
-pipeline_stage: task6_pending
-task6_state: pending
+pipeline_stage: task9_pending
+task6_state: reviewed
+task6_result: pass-light-edit
 task9_state: pending
 task2b_state: idle
 ---
@@ -44,7 +45,7 @@ task2b_state: idle
 
 - 🔹 响应速度的定义：用户操作到视觉反馈的完整延迟
 - 🔹 RAIL 模型在 Android 场景的应用：Response < 100ms, Animation < 16ms, Idle, Load < 1000ms
-- 🔹 系统级响应链路：Input → App 处理 → 渲染 → 上屏
+- 🔹 系统级响应路径：Input → App 处理 → 渲染 → 上屏
 - 🔹 Android Vitals 中的响应速度指标
 - 🔹 感知速度 vs 实际速度：骨架屏、占位图、过渡动画的视觉优化
 
@@ -70,7 +71,7 @@ task2b_state: idle
 
 用户也许无法区分 500ms 和 600ms 的启动时间，但对触摸响应的延迟极其敏感。一个设备启动再快，如果触摸之后画面纹丝不动，用户会觉得这台机器"卡"。这就是为什么 Google 认为，在性能优先级排序中，**UI 渲染管线的流畅性高于一切**——包括应用启动速度。
 
-了解响应速度的完整链路之后，我们就能在 Perfetto 中精准定位：延迟到底发生在 Input 分发阶段、App 主线程处理阶段、还是渲染合成阶段。每一种瓶颈的优化方向完全不同，搞清楚"慢在哪里"是解决问题的第一步。
+了解响应速度的完整路径之后，我们就能在 Perfetto 中精准定位：延迟到底发生在 Input 分发阶段、App 主线程处理阶段、还是渲染合成阶段。每一种瓶颈的优化方向完全不同，搞清楚"慢在哪里"是解决问题的第一步。
 
 ## 响应速度的完整定义
 
@@ -107,7 +108,7 @@ RAIL 是 Google 提出的以用户感知为中心的性能模型，最初用于 
 
 动画和滚动场景下，每一帧的渲染必须在 16ms 内完成（60Hz 屏幕）或 8ms 内完成（120Hz 屏幕）。这个时间包括 Input 事件处理、业务逻辑更新、measure/layout/draw 整套流程。
 
-Android 通过 Choreographer 机制来同步 VSync 信号，如果某一帧的处理时间超过了 VSync 周期，就会产生"掉帧"（jank），用户会感知到画面卡顿。关于 Choreographer 的详细机制，我们在 [2.4 Choreographer 与渲染流水线](../part1-fundamentals/ch02-rendering/04-choreographer.md) 中专门讨论。
+Android 通过 Choreographer 机制来同步 VSync 信号，如果某一帧的处理时间超过了 VSync 周期，就会产生"掉帧"（jank），用户会感知到画面卡顿。关于 Choreographer 的详细机制，我们在 [2.4 Choreographer 与渲染流水线](../../part1-fundamentals/ch02-rendering/04-choreographer.md) 中专门讨论。
 
 ### Idle——空闲
 
@@ -121,9 +122,9 @@ Android 通过 Choreographer 机制来同步 VSync 信号，如果某一帧的�
 
 [图：RAIL 模型四个阶段及其性能目标]
 
-## 系统级响应链路：从触摸到像素
+## 系统级响应路径：从触摸到像素
 
-理解响应速度的关键，是搞清楚用户一次触摸操作经历了哪些环节。我们从头到尾拆解这条链路。
+理解响应速度的关键，是搞清楚用户一次触摸操作经历了哪些环节。我们从头到尾拆解这条路径。
 
 ### 第一步：Input 事件的捕获与分发
 
@@ -133,7 +134,7 @@ InputDispatcher 通过 Binder IPC 将事件发送给目标 App 进程。App 进�
 
 这条路径在 Perfetto 中对应的是 Input Track 和对应 App 主线程上的 Input 事件处理 slice。从 InputDispatcher 发出到 App 收到，通常耗时在 1-2ms；如果主线程被阻塞（比如正在执行长时间的 measure/layout），这个时间会显著增加。
 
-关于 Input 分发的完整机制，我们在 [3.1 Input 事件分发全流程](../part1-fundamentals/ch03-input/01-input-dispatch.md) 中详细讨论。
+关于 Input 分发的完整机制，我们在 [3.1 Input 事件分发全流程](../../part1-fundamentals/ch03-input/01-input-dispatch.md) 中详细讨论。
 
 ### 第二步：App 主线程处理
 
@@ -156,9 +157,9 @@ VSync-app 信号到来后，Choreographer.doFrame() 被触发，主线程依次�
 
 在 Perfetto 中，我们可以在对应的 App 进程里看到主线程的 "Choreographer#doFrame" slice，以及 RenderThread 的 GPU 渲染工作。SurfaceFlinger 进程中可以看到 "Commit" 和各 Layer 的合成操作。
 
-[图：完整的响应链路时序图：触摸 → InputReader → InputDispatcher → Binder → App主线程 → Choreographer → RenderThread → SurfaceFlinger → 屏幕]
+[图：完整的响应路径时序图：触摸 → InputReader → InputDispatcher → Binder → App主线程 → Choreographer → RenderThread → SurfaceFlinger → 屏幕]
 
-### 链路中的瓶颈分布
+### 路径中的瓶颈分布
 
 根据 AOSP 官方文档的分析框架，性能问题可以归结为两类：**Capacity（容量）不足**和 **Jitter（抖动）过大**。[已验证: 官方文档, source.android.google.cn/docs/core/tests/debug/eval_perf]
 
@@ -256,19 +257,19 @@ Android 目前没有直接采用 INP 这个概念，但有功能等价的指标�
 
 **Step 1：找到用户的操作时间点**。在 Perfetto 中打开 Input Track，定位触摸事件的 dispatch 时间。如果不确定事件发生的精确位置，可以先用搜索功能查找 `InputDispatcher` 关键词，从搜索结果跳转到对应时间轴位置。
 
-**Step 2：追踪 App 主线程的处理**。从 App 主线程的 Input 事件 slice 开始，看 onClick() → invalidate() → scheduleVsync() 这条链路是否顺畅。如果主线程上有长时间的 binder 调用、锁等待、或者 GC，这里就能看到。
+**Step 2：追踪 App 主线程的处理**。从 App 主线程的 Input 事件 slice 开始，看 onClick() → invalidate() → scheduleVsync() 这个流程是否顺畅。如果主线程上有长时间的 binder 调用、锁等待、或者 GC，这里就能看到。
 
 **Step 3：检查渲染管线**。从 Choreographer#doFrame 开始，看 performTraversals（measure/layout/draw）的耗时，以及 RenderThread 的 GPU 工作是否在 VSync 周期内完成。
 
 **Step 4：检查 SurfaceFlinger 合成**。看 SurfaceFlinger 的 Commit 和合成操作是否按时完成。
 
-关于 Perfetto 的使用方法，我们在 [第 13 章 Perfetto 工具链](../part3-tools/ch13-perfetto/01-perfetto-intro.md) 中详细讨论。
+关于 Perfetto 的使用方法，我们在 [第 13 章 Perfetto 工具链](../../part3-tools/ch13-perfetto/01-perfetto-intro.md) 中详细讨论。
 
 ## 常见问题与误区
 
 **误区 1："响应速度就是主线程不卡"**
 
-不全对。响应速度涉及整条链路：Input 分发 → 主线程处理 → 渲染 → 合成 → 显示。主线程只是其中一个环节。即使主线程处理很快，如果 RenderThread 的 GPU 工作太重、SurfaceFlinger 的合成太慢、或者 Input 事件在 system_server 侧就排队了，响应速度照样会差。
+不全对。响应速度涉及整条流程：Input 分发 → 主线程处理 → 渲染 → 合成 → 显示。主线程只是其中一个环节。即使主线程处理很快，如果 RenderThread 的 GPU 工作太重、SurfaceFlinger 的合成太慢、或者 Input 事件在 system_server 侧就排队了，响应速度照样会差。
 
 **误区 2："只要把操作放到后台线程就行了"**
 
@@ -291,6 +292,6 @@ RAIL 的核心思想——根据用户的感知阈值设定性能目标——是
 
 ---
 
-> **验证状态**：本节核心内容（RAIL 模型、Android Vitals 指标、系统级响应链路）已通过 L2 官方文档验证。响应链路中的源码路径已通过 L1 AOSP 源码确认。Android 16 的具体 VSync 优化细节标注为待验证，不做不确定的描述。
+> **验证状态**：本节核心内容（RAIL 模型、Android Vitals 指标、系统级响应路径）已通过 L2 官方文档验证。响应路径中的源码路径已通过 L1 AOSP 源码确认。Android 16 的具体 VSync 优化细节标注为待验证，不做不确定的描述。
 >
 > **术语约定**：全文统一使用"响应速度"（Responsiveness）作为核心术语。"响应延迟"仅在引用外部指标定义时作为时间度量值使用，不作为独立术语。
