@@ -5,8 +5,8 @@ section: "8.4"
 status: ready-for-review
 drafted_date: "2026-04-02"
 drafted_by: "openclaw-task2a"
-reviewed_date: "2026-04-08"
-reviewed_by: "openclaw-task6 (post-polish)"
+reviewed_date: "2026-04-16"
+reviewed_by: "openclaw-task6"
 applicable_versions: "Android 8.0 (API 26) - Android 16 (API 36)"
 last_verified: "2026-04-02"
 last_verified_against: "AOSP android-16.0.0_r1, developer.android.com"
@@ -29,8 +29,9 @@ sources:
     path: "https://developer.android.com/reference/androidx/viewpager2/widget/ViewPager2"
 tags: ['responsiveness', 'page-switch', 'click-response', 'search', 'viewpager2', 'fragment', 'debounce']
 related_chapters: ["8.1", "8.2", "8.3", "3.1", "3.2", "7.4"]
-pipeline_stage: task6_pending
-task6_state: pending
+pipeline_stage: task9_pending
+task6_state: reviewed
+task6_result: pass-light-edit
 task9_state: pending
 task2b_state: idle
 ---
@@ -109,7 +110,7 @@ Fragment 的切换比 Activity 轻量得多——它不需要跨进程通信，�
 
 **转场动画会放大感知延迟。** Fragment 支持通过 `setCustomAnimations()` 设置转场动画。如果动画时长设为 300ms，但 Fragment 的布局膨胀只需要 50ms，总感知时间就是 300ms。更危险的是，如果在转场动画期间做了太多 View 操作（如 RecyclerView 数据加载），动画可能掉帧，造成视觉上的卡顿。
 
-**回退栈（Back Stack）的生命周期开销。** 当使用 `addToBackStack()` 并执行 `replace()` 时，旧 Fragment 会走到 `onDestroyView()`（View 被销毁但 Fragment 实例保留）。用户按返回键时，旧 Fragment 需要重新走 `onCreateView()` → `onDestroyView()` 之间的所有回调，这意味着布局要重新 inflate。
+**回退栈（Back Stack）的生命周期开销。** 当使用 `addToBackStack()` 并执行 `replace()` 时，旧 Fragment 会走到 `onDestroyView()`（View 被销毁但 Fragment 实例保留）。用户按返回键时，旧 Fragment 需要重新走 `onCreateView()` → `onDestroyView()` 之间的所有回调——布局要重新 inflate。
 
 在 Perfetto 中，Fragment 的切换可以通过 `FragmentManager` 相关的 trace tag 观察到，但需要注意的是 Fragment 事务的 trace 点不如 Activity 那么完整，我们可能需要在代码中手动添加 `Trace.beginSection("FragmentTransaction")` 来获得更精确的度量。
 
@@ -157,11 +158,11 @@ Tab 切换是移动端最常见的交互模式之一。新闻 App 的频道切�
 
 ### ViewPager2 的工作机制
 
-ViewPager2 内部使用 `RecyclerView` 实现，这意味着它天然继承了 RecyclerView 的缓存机制。`offscreenPageLimit` 参数控制着屏幕外保留的页面数量，默认值为 1（左右各保留 1 页）。
+ViewPager2 内部使用 `RecyclerView` 实现，天然继承了 RecyclerView 的缓存机制。`offscreenPageLimit` 参数控制着屏幕外保留的页面数量，默认值为 1（左右各保留 1 页）。
 
 这个默认值是一个平衡点：设为 0 时，每次切换 Tab 都要从零开始创建 Fragment（慢），设为 2 或更高时，会同时持有更多 Fragment 实例和它们的 View 层级（内存压力）。对于 3-4 个 Tab 的常见场景，默认值 1 通常就够了。
 
-ViewPager2 对 Fragment 生命周期管理的核心变化在于：它通过 `setMaxLifecycle()` 控制不可见 Fragment 的最高生命周期状态。当前可见的 Fragment 生命周期被设为 `RESUMED`，而 `offscreenPageLimit` 范围内但不可见的 Fragment 被设为 `STARTED`。这意味着这些 Fragment 的 `onResume()` 不会被调用——这正是懒加载的切入点。
+ViewPager2 对 Fragment 生命周期管理的核心变化在于：它通过 `setMaxLifecycle()` 控制不可见 Fragment 的最高生命周期状态。当前可见的 Fragment 生命周期被设为 `RESUMED`，而 `offscreenPageLimit` 范围内但不可见的 Fragment 被设为 `STARTED`——这些 Fragment 的 `onResume()` 不会被调用，正是懒加载的切入点。
 
 ### 懒加载的正确实现
 
@@ -268,9 +269,9 @@ viewPager2.registerOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback
 
 Android 的 Material Design 引入了 Ripple Drawable 作为点击的视觉反馈。Ripple 的一个关键设计优势是：**它不需要等 onClick 回调执行完就能显示。** 当 `onTouchEvent()` 收到 `ACTION_DOWN` 时，Ripple 动画就会立即开始，给用户一个「系统已经收到点击」的即时信号。
 
-这意味着即使 onClick 回调里做了 50ms 的数据操作，用户感知到的「响应」仍然是即时的——因为 Ripple 在 16ms 内就已经开始扩散了。
+即使 onClick 回调里做了 50ms 的数据操作，用户感知到的「响应」仍然是即时的——Ripple 在 16ms 内就已经开始扩散了。
 
-但 Ripple 也不是万能的。如果自定义 View 没有正确设置 `android:clickable="true"` 和 `android:background="?attr/selectableItemBackground"`，或者父 ViewGroup 拦截了触摸事件，Ripple 可能不会显示。这种情况下，用户点击后看不到任何视觉反馈，就会觉得「没有响应」——即使 onClick 回调实际上已经执行了。
+但 Ripple 也不是万能的。如果自定义 View 没有正确设置 `android:clickable="true"` 和 `android:background="?attr/selectableItemBackground"`，或者父 ViewGroup 拦截了触摸事件，Ripple 可能不会显示。这种情况下，用户点击后看不到任何视觉反馈，就会觉得「没有响应」——即使 onClick 回调已经执行了。
 
 ### 点击响应优化的实战策略
 
@@ -414,7 +415,7 @@ debounce 的目的是减少无效搜索，不是加快搜索速度。设太短�
 
 **误区 4：「Ripple 效果会让点击变慢」**
 
-不会。Ripple 是在 `onTouchEvent(ACTION_DOWN)` 时就开始的异步动画，它和 onClick 回调并行执行。Ripple 的开销主要体现在 GPU 渲染上，但现代设备的 GPU 完全能胜任。事实上，没有 Ripple 效果的点击反而会让用户觉得「没响应」。
+不会。Ripple 是在 `onTouchEvent(ACTION_DOWN)` 时就开始的异步动画，它和 onClick 回调并行执行。Ripple 的开销主要体现在 GPU 渲染上，但现代设备的 GPU 完全能胜任。没有 Ripple 效果的点击反而会让用户觉得「没响应」。
 
 **误区 5：「onClick 里做少量 IO 没关系」**
 

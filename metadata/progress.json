@@ -21,29 +21,29 @@
     "task9_unknown": 31,
     "task9_pending": 170,
     "task9_reviewed": 6,
-    "last_updated": "2026-04-16T01:11:53",
+    "last_updated": "2026-04-16T02:11:40.664860",
     "task2b_state_counts": {
-      "unknown": 31,
-      "fixed": 78,
-      "pending": 17,
+      "unknown": 33,
+      "fixed": 79,
+      "pending": 16,
       "idle": 81
     },
     "task6_state_counts": {
       "unknown": 31,
-      "revisiting": 78,
-      "reviewed": 19,
-      "pending": 79
+      "revisiting": 80,
+      "reviewed": 23,
+      "pending": 75
     },
     "task9_state_counts": {
-      "unknown": 31,
-      "pending": 168,
-      "reviewed": 8
+      "unknown": 32,
+      "pending": 167,
+      "reviewed": 10
     },
     "pipeline_stage_counts": {
       "unknown": 31,
-      "task6_pending": 157,
-      "task2b_pending": 17,
-      "task9_pending": 2
+      "task6_pending": 153,
+      "task2b_pending": 16,
+      "task9_pending": 9
     },
     "total_sections": 207
   },
@@ -1564,8 +1564,8 @@
       "title": "其他响应速度场景",
       "path": "src/part2-performance/ch08-responsiveness/04-other-scenarios.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "pending",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
       "task9_state": "pending",
       "task2b_state": "idle",
       "reviewed_date": "2026-04-08",
