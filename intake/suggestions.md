@@ -362,3 +362,50 @@
 - **位置**：冷启动查询中 'ZygoteInit.xxx'
 - **问题**：'ZygoteInit.xxx' 是占位符不是实际 slice 名称。AOSP 实际名称为 'ZygoteInit.main' 或 'ZygoteInit.native'。章节标注 [已验证] 但实际未验证。
 - **建议**：改为具体名称 'ZygoteInit.main'，并标注该名称对应 Android 10+ 的 ART 实现。去掉 [已验证] 标记或改为 [待验证]。
+
+## [Task9 Deep Review] 2.12 Window Manager Service 与窗口管理 — 2026-04-16
+
+- **类型**：源码准确性
+- **位置**：SurfaceControl.Transaction 伪代码段
+- **问题**：`t.setSize(surfaceControl, width, height)` 方法不存在于 Transaction API。Surface 尺寸通过 Builder.setSize() 创建时设置，运行时用 setCrop() 或 setMatrix()。
+- **建议**：改为 `t.setCrop(surfaceControl, new Rect(0, 0, width, height))` 或改用 setMatrix()，并加注说明哪些是简化。
+
+- **类型**：原理断裂
+- **位置**：WMS 定位节 → relayoutWindow 内部流程
+- **问题**：缺少 DisplayContent → DisplayArea → WindowToken → WindowState 层级结构说明。读者无法理解 performLayout 如何遍历窗口树、Z-order 如何确定。
+- **建议**：新增 1-2 段解释 WMS 的窗口组织树结构，配图说明层级关系。
+
+- **类型**：原理断裂
+- **位置**：StartingWindow 工作原理节（步骤 3）
+- **问题**："WMS 立即创建 StartingWindow"跳过了关键中间对象 StartingData/SplashScreenStartingData/StartingSurfaceDrawer。读者无法理解为什么 StartingWindow 不需要 App 进程参与。
+- **建议**：展开 StartingWindow 的创建链路，引用 StartingData、SplashScreenStartingData 类。
+
+- **类型**：原理断裂
+- **位置**：Window 动画与过渡性能节
+- **问题**：缺少动画值计算原理——transform 值从哪来？WindowAnimator 使用 Animation 对象？SpringAnimation？Choreographer frame callback？
+- **建议**：补充 WindowAnimator 如何获取每帧的 transform 值，引用 AppWindowAnimator 或 WindowContainerAnimator。
+
+- **类型**：版本差异
+- **位置**：版本演进表 Android 12 行
+- **问题**：SurfaceControl.Transaction "成为标准 API" 描述不精确。公开 API 从 Android 9 开始，Transaction 从 Android 10 可用。
+- **建议**：修正为"SurfaceControl.Transaction API 完善（合并、批量操作增强）"，并将"首次公开 API"前移到 Android 9/10 行。
+
+- **类型**：版本差异
+- **位置**：Surface 创建流程节
+- **问题**：缺少 Android 12 BLASTBufferQueue 引入对 Surface 创建/传递方式的影响。章节标注 applicable_versions 为 12-17，此差异应覆盖。
+- **建议**：在 Surface 创建流程后增加版本差异注释，说明 Android 12+ 使用 BLASTBufferQueue 替代传统 BufferQueue 的变化。
+
+- **类型**：交叉引用
+- **位置**：关键 Slice 和 Track 表
+- **问题**：`wm.pause_timeout` 是 AMS 的 Activity pause 超时机制，不是 WMS 的核心操作。放在 WMS Slice 表中容易误导。
+- **建议**：移除此行，或在描述中标注"AMS 触发，间接影响 WMS 窗口切换"。
+
+- **类型**：数据缺失
+- **位置**：relayoutWindow 性能分析相关段落
+- **问题**：缺少 relayoutWindow 的典型耗时数据（正常范围、异常阈值、不同类型的耗时差异）。
+- **建议**：补充典型数据：纯属性更新型 1-5ms、Surface 创建型 10-50ms、performLayout 密集型 5-20ms。标注数据来源和测试条件。
+
+- **类型**：元数据不一致
+- **位置**：章节 frontmatter vs metadata/progress.json
+- **问题**：frontmatter 标记 task9_state=reviewed/pipeline_stage=task6_pending，progress.json 标记 task9_state=pending/pipeline_stage=task9_pending。不同步。
+- **建议**：同步 frontmatter 和 progress.json 的 pipeline 状态。

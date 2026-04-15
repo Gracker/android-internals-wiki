@@ -210,3 +210,19 @@ dm-verity 与 EROFS 的配合机制未在章节中讨论。文中提到"配合 d
 
 ### 关联章节
 13.1, 13.3, 13.5, 13.8
+
+## [2026-04-16] 2.12 Window Manager Service 与窗口管理 — 知识盲区
+
+### 盲区描述
+Traversal vs Relayout 的触发条件区分缺失。App 侧 requestLayout() 触发 in-app traversal（measure/layout/draw，不涉及 Binder），而 Window 属性变化触发 relayoutWindow（Binder 调用 WMS）。读者无法判断"什么情况下 App 自己处理就行，什么情况下必须走 WMS"。这是 Perfetto 分析中的常见困惑——看到 relayoutWindow Slice 时不知道它为什么被触发。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 整理 ViewRootImpl 中触发 relayoutWindow vs scheduleTraversals 的条件矩阵
+- 常见 UI 操作（setVisibility、setBackground、invalidate、requestLayout）分别走哪条路径
+- 在 Perfetto 中如何区分 WMS 侧的 relayout 和 App 侧的 traversal
+
+### 关联章节
+2.12, 2.4, 2.5, 3.1, 8.2
