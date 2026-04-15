@@ -6,13 +6,14 @@ applicable_versions: "Android 8.0 (API 26) - Android 16 (API 36)"
 last_verified: "2026-04-01"
 last_verified_against: "Android 16 Developer Preview"
 confidence: medium
-reviewed_date: "2026-04-07"
+reviewed_date: "2026-04-15"
 reviewed_by: "openclaw-task6"
+task6_result: pass-light-edit
 polish_count: 1
 polish_date: "2026-04-04"
 polish_by: "task2b-polish"
 review_type: post-polish-quality-gate
-review_round: 2
+review_round: 3
 sources:
   - type: blog
     path: "Personal-Knowlodge/source/2026-03-08_wechat_沉思录_如何优化_Compose_的性能_通过_底层原理_寻找答案.md"
@@ -33,8 +34,8 @@ related_chapters: ["7.1", "7.2", "7.3", "2.4", "2.5", "2.11"]
 drafted_date: "2026-04-01"
 drafted_by: "openclaw-task2a"
 section: "7.7"
-pipeline_stage: task6_pending
-task6_state: pending
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task2b_state: idle
 ---
@@ -68,7 +69,7 @@ task2b_state: idle
 
 ## 为什么要关注 Compose 的性能
 
-如果我们在 Perfetto 中看到一个 Compose 应用的主线程出现了异常的长帧——比如一帧花了 30ms 而预期的 16.6ms——我们打开那一帧的 slice，看到的不是传统 View 体系里熟悉的 measure/layout/draw，而是一堆以 "CM"（Compose Manager）开头的标记。这意味着什么？这一帧的开销来自 Compose 的重组（Recomposition），而不是传统的布局计算。
+如果我们在 Perfetto 中看到一个 Compose 应用的主线程出现了异常的长帧——比如一帧花了 30ms 而预期的 16.6ms——我们打开那一帧的 slice，看到的不是传统 View 体系里熟悉的 measure/layout/draw，而是一堆以 "CM"（Compose Manager）开头的标记。这代表什么？这一帧的开销来自 Compose 的重组（Recomposition），而不是传统的布局计算。
 
 这就是我们需要理解 Compose 性能模型的原因。Compose 不是"换了种写 UI 的语法"那么简单，它的渲染管线、状态管理、重组机制都和传统 View 体系有着根本性的差异。如果我们用分析传统 View 那套思路来分析 Compose，很容易走偏——比如看到掉帧就怀疑是布局层级太深，但实际原因可能是某个参数不稳定导致整个页面被无意义地重组了一遍。
 
@@ -78,13 +79,13 @@ task2b_state: idle
 
 [已验证: 官方文档, developer.android.com/develop/ui/compose/mental-model]
 
-传统 View 体系的渲染过程，我们在前面章节已经讲过了：measure → layout → draw，由 Choreographer 驱动，每个 VSync 周期最多执行一轮。Compose 的渲染过程本质上也是这三个阶段，但在前面多了一个"Composition"阶段。
+传统 View 体系的渲染过程，我们在前面章节已经讲过了：measure → layout → draw，由 Choreographer 驱动，每个 VSync 周期最多执行一轮。Compose 的渲染过程同样是这三个阶段，但在前面多了一个"Composition"阶段。
 
 **Composition（组合）** 是 Compose 独有的阶段，也是它和传统 View 体系最大的区别。在这个阶段，Compose 运行时会执行所有的 @Composable 函数，生成一棵"虚拟的"UI 树——注意，这棵树不是 View 对象的树，而是一个描述 UI 结构的数据结构（SlotTable）。每个 @Composable 函数的执行，相当于在这棵树上挂一个节点。
 
 Composition 之后就是 **Layout** 阶段。这个阶段和传统 View 体系的 layout 非常类似：Compose 会遍历 UI 树，测量每个节点的尺寸，确定它们在屏幕上的位置。具体来说，Compose 的 Layout 阶段会调用每个节点的 measure 方法，完成尺寸协商。
 
-最后是 **Drawing** 阶段。Compose 的 UI 元素最终会通过 Android 的 Canvas 进行绘制。这意味着虽然 Jetpack Compose 是全新的 UI 框架，但它的底层并没有脱离 Android 的范畴——最终还是要把像素画到 Canvas 上。
+最后是 **Drawing** 阶段。Compose 的 UI 元素最终会通过 Android 的 Canvas 进行绘制。虽然 Jetpack Compose 是全新的 UI 框架，底层并没有脱离 Android 的范畴——最终还是要把像素画到 Canvas 上。
 
 关键的区别在于：传统 View 体系只在 UI 结构发生变化时才重新创建 View 对象（比如 addView/removeView），而 **Compose 的 Composition 阶段在每次状态变化时都可能重新执行**。这就是所谓的"Recomposition"（重组）。
 
@@ -112,7 +113,7 @@ fun Greeting(msg: String) {
 
 所以当我们说"某个 Composable 发生了重组"，准确的意思是：Compose 运行时重新调用了一次这个 @Composable 函数。重组的范围取决于状态读取发生在哪个 Scope——**状态读取发生在哪个 Scope，状态更新时哪个 Scope 就发生重组**。
 
-这个原则非常重要，因为它是所有 Compose 性能优化策略的理论基础。后面我们讲到的 derivedStateOf、延迟读取、Lambda 包装等优化手段，本质上都是通过改变状态读取的 Scope 来缩小重组范围。
+这个原则非常重要，因为它是所有 Compose 性能优化策略的理论基础。后面我们讲到的 derivedStateOf、延迟读取、Lambda 包装等优化手段，核心都是通过改变状态读取的 Scope 来缩小重组范围。
 
 ### 与传统 View 体系的性能对比
 
@@ -275,7 +276,7 @@ Title(snack) { scroll.value }  // scroll.value 被包装在 Lambda 中
 
 [来源: obsidian/Personal-Knowlodge/source/2026-03-07_wechat_提升Jetpack_Compose_性能.md]
 
-LazyColumn 默认用 item 在列表中的位置（index）作为标识。这意味着如果我们在列表头部插入一个新 item，Compose 会认为所有 item 都变了（因为它们的 index 都变了），导致整列表重组。
+LazyColumn 默认用 item 在列表中的位置（index）作为标识。所以当我们在列表头部插入一个新 item，Compose 会认为所有 item 都变了（因为它们的 index 都变了），导致整列表重组。
 
 解决方案是给每个 item 提供一个稳定的 key：
 
@@ -429,9 +430,9 @@ fun WebViewScreen(url: String) {
 
 我们在本章讨论的 Compose 性能问题，与本书其他章节有密切的关联。
 
-从卡顿的定义来看（7.1），Compose 的卡顿在本质上仍然是"某帧耗时超限"，只是卡顿的来源从传统的 measure/layout/draw 变成了 Composition/Recomposition。从分析方法论来看（7.3），通用的分析框架同样适用——先定位到掉帧的时间段，再分析是什么导致了长帧，只是在 Compose 场景下需要额外检查重组次数。
+从卡顿的定义来看（7.1），Compose 的卡顿仍然是"某帧耗时超限"，只是卡顿的来源从传统的 measure/layout/draw 变成了 Composition/Recomposition。从分析方法论来看（7.3），通用的分析框架同样适用——先定位到掉帧的时间段，再分析是什么导致了长帧，只是在 Compose 场景下需要额外检查重组次数。
 
-在底层渲染链路上，Compose 的渲染同样由 Choreographer 驱动（2.4），VSync → doFrame → Composition/Layout/Draw 的链路和传统 View 一致。Composition 和 Layout 阶段在主线程执行，Draw 阶段可能涉及 RenderThread（2.5）。值得一提的是，Jetpack Compose 与 Flutter（2.11）的渲染模型有相似的思路——都采用了组合式的 UI 树和差异化的更新策略，但两者的运行时实现完全不同。
+在底层渲染管线上，Compose 的渲染同样由 Choreographer 驱动（2.4），VSync → doFrame → Composition/Layout/Draw 的链路和传统 View 一致。Composition 和 Layout 阶段在主线程执行，Draw 阶段可能涉及 RenderThread（2.5）。值得一提的是，Jetpack Compose 与 Flutter（2.11）的渲染模型有相似的思路——都采用了组合式的 UI 树和差异化的更新策略，但两者的运行时实现完全不同。
 
 ## 常见问题与误区
 

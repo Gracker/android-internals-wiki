@@ -2932,5 +2932,18 @@
         "新增 dumpsys cpuinfo 子章节"
       ]
     }
-  ]
+  ],
+  "reviews": {
+    "7.7": {
+      "section": "7.7",
+      "title": "Jetpack Compose 性能优化",
+      "last_review": "2026-04-15",
+      "review_round": 3,
+      "result": "pass-light-edit",
+      "fixes": 7,
+      "issues": 0,
+      "reviewer": "openclaw-task6",
+      "log": "logs/review/2026-04-15-22-review.md"
+    }
+  }
 }
