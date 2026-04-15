@@ -59,3 +59,40 @@
 - **位置**：Perfetto SQL 查询刷新率变化事件
 - **问题**：track_event 表名和 refreshRate 事件名可能与当前 Perfetto 版本不匹配
 - **建议**：验证并更新 SQL 查询，或使用 Perfetto 的 display_refresh_rate track
+
+
+## [Task9 Deep Review] 14.4 dumpsys 系列命令 — 2026-04-15
+- **类型**：数据缺失
+- **位置**：全章节
+- **问题**：作为工具使用章节，没有一处真实的 dumpsys 输出样例。读者无法对照自己的输出判断是否正常，也无法理解关键字段在实际输出中的位置和格式
+- **建议**：每个核心子命令（activity、meminfo、gfxinfo、window、batterystats、SurfaceFlinger）至少添加一个精简的真实输出片段（10-20 行），标注关键字段
+
+## [Task9 Deep Review] 14.4 dumpsys 系列命令 — 2026-04-15
+- **类型**：源码准确性
+- **位置**：framestats 逐帧时间线说明
+- **问题**：列名列表不完整，缺少 Flags、OldestInputEvent、NewestInputEvent、DequeueBufferDuration、QueueBufferDuration、GpuCompleted 等列。这些列在实战分析中都有用途（Flags 区分正常帧和异常帧，DequeueBufferDuration 反映 BufferQueue 等待时间）
+- **建议**：补全列名列表，或至少标注"此处列出最关键的列，完整列表参见 AOSP Choreographer.java"
+
+## [Task9 Deep Review] 14.4 dumpsys 系列命令 — 2026-04-15
+- **类型**：版本差异
+- **位置**：batterystats --enable full-wake-history
+- **问题**：该参数在 Android 13+ 可能已不工作或行为变更，章节未提及版本限制
+- **建议**：标注该参数适用的 Android 版本范围，Android 13+ 推荐替代方案
+
+## [Task9 Deep Review] 14.4 dumpsys 系列命令 — 2026-04-15
+- **类型**：版本差异
+- **位置**：batterystats 功耗分析工作流
+- **问题**：导出 bugreport 命令只提到 adb bugreport > bugreport.zip，未提及 Android 12+ 推荐使用 adb bugreportz（生成标准 zip 文件，速度更快）
+- **建议**：补充 bugreportz 的用法说明和版本差异
+
+## [Task9 Deep Review] 14.4 dumpsys 系列命令 — 2026-04-15
+- **类型**：知识盲区
+- **位置**：进阶用法
+- **问题**：未提及 dumpsys --proto 输出格式（protobuf），该格式在自动化性能测试 CI/CD 中广泛使用
+- **建议**：在进阶用法或实战部分补充 --proto 的用法和典型场景（如自动解析 meminfo 数据入库）
+
+## [Task9 Deep Review] 14.4 dumpsys 系列命令 — 2026-04-15
+- **类型**：交叉引用
+- **位置**：gfxinfo 部分 JankStats 库提及
+- **问题**：提到 JankStats 库（AndroidX）但未交叉引用 7.1 节（卡顿定义）或 7.5 节（优化策略），读者找不到后续阅读入口
+- **建议**：添加"详见 §7.1 卡顿的定义与分类"和"§7.5 优化策略中 JankStats 的集成方法"

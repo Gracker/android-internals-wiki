@@ -39,3 +39,24 @@
 - 2.3 VSync 机制
 - 2.6 SurfaceFlinger 与合成
 - 2.18 Adaptive Refresh Rate 与动态帧率控制
+
+
+## [2026-04-15] 14.4 dumpsys 系列命令 — 知识盲区
+
+### 盲区描述
+1. **dumpsys cpuinfo 缺失** — 作为 CPU 占用快速排查的基本工具，在性能分析章节中完全未提及。cpuinfo 可以查看每个进程的 CPU 使用率、负载因子，是 dumpsys 工具链中与 meminfo 同等重要的诊断命令。
+2. **framestats/gfxinfo 版本行为差异** — gfxinfo reset 在某些版本清除全局统计、framestats 列定义在不同 API level 有变化、聚合统计字段（如 Number Slow bitmap uploads）有引入版本要求。这些版本差异在实战中是高频踩坑点。
+
+### 重要程度
+高（cpuinfo）/ 中（版本差异）
+
+### 建议研究方向
+- 补充 dumpsys cpuinfo 的输出结构、关键字段（CPU usage per process、load averages）和使用场景
+- 梳理 gfxinfo 各字段在不同 Android 版本的变化矩阵
+- 确认 gfxinfo reset 在 Android 12+ 是否已修复为仅清除指定进程
+
+### 关联章节
+- 5.1 Linux 进程调度基础
+- 7.3 卡顿分析方法论
+- 13.1 Perfetto 简介与演进
+

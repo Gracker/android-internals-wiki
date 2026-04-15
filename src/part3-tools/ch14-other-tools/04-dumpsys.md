@@ -20,7 +20,8 @@ tags: [dumpsys, meminfo, gfxinfo, activity, window, batterystats, SurfaceFlinger
 related_chapters: ["4.1", "4.5", "7.3", "13.1", "14.1"]
 pipeline_stage: task2b_pending
 task6_state: reviewed
-task9_state: pending
+task9_state: reviewed
+task9_result: needs-rework
 task2b_state: pending
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-04-14"
