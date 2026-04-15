@@ -24,15 +24,16 @@ tags: ['dvfs', 'cpufreq', 'schedutil', 'opp', 'power', 'frequency-scaling', 'adp
 related_chapters: ["5.1", "5.2", "5.3", "5.5", "5.6", "7.3"]
 drafted_date: "2026-04-01"
 drafted_by: "openclaw-task2"
-reviewed_date: "2026-04-07"
-reviewed_by: "openclaw-task6"
 polish_count: 1
 polish_date: "2026-04-07"
 polish_by: "task2b-polish"
-pipeline_stage: task6_pending
-task6_state: pending
 task9_state: pending
 task2b_state: idle
+task6_state: reviewed
+task6_result: pass-light-edit
+pipeline_stage: task9_pending
+reviewed_date: "2026-04-15"
+reviewed_by: openclaw-task6
 ---
 
 # DVFS 与功耗管理
