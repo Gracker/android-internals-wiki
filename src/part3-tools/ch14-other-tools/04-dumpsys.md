@@ -6,7 +6,7 @@ status: ready-for-review
 drafted_date: "2026-04-03"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 6.0 (API 23) - Android 16 (API 36)"
-last_verified: "2026-04-03"
+last_verified: "2026-04-15"
 last_verified_against: "AOSP android-16.0.0_r1"
 confidence: medium
 sources:
@@ -18,14 +18,14 @@ sources:
     path: "source.android.com/docs/core/graphics/surfaceflinger-windowmanager"
 tags: [dumpsys, meminfo, gfxinfo, activity, window, batterystats, SurfaceFlinger, debugging]
 related_chapters: ["4.1", "4.5", "7.3", "13.1", "14.1"]
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
-task9_result: needs-rework
-task2b_state: pending
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
+task9_result: rework-done
+task2b_state: fixed
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-04-14"
-task6_result: needs-rework
+task6_result: rework-done
 ---
 
 # dumpsys 系列命令
@@ -90,7 +90,9 @@ task6_result: needs-rework
 
 ### 进程优先级与 ANR
 
-`dumpsys activity processes` 会列出所有进程的 `oom_adj` 值和调度优先级。当分析 Low Memory Killer 误杀问题时，这里的 `oom_adj` 值就是最直接的证据：一个本应处于 `VISIBLE_APP_LVL`（优先级 200）的进程，如果显示为 `FOREGROUND_APP`（优先级 100），说明系统的进程优先级计算可能出了问题。
+`dumpsys activity processes` 会列出所有进程的 `oom_adj` 值和调度优先级。当分析 Low Memory Killer 误杀问题时，这里的 `oom_adj` 值就是最直接的证据。AOSP `ProcessList.java` 中定义了各级别的 `adj` 值：`FOREGROUND_APP_ADJ=0`（前台进程，优先级最高）、`VISIBLE_APP_ADJ=100`（可见但非前台）、`PERCEPTIBLE_APP_ADJ=200`（可感知但不可见）。`oom_adj` 值越低，进程优先级越高，越不容易被 LMK 杀掉。
+
+举个例子：如果一个 App 当前在前台展示界面，本应处于 `adj=0`（FOREGROUND），但 dumpsys 显示它的 `oom_adj=100`（VISIBLE），说明系统的进程优先级计算出了问题——进程被错误降级，LMK 在内存紧张时会优先杀掉它。
 
 `dumpsys activity lastanr` 输出最近一次 ANR 发生时的调用栈和系统状态。当我们拿到一个用户反馈的 ANR 问题，但手头没有完整的 Trace 文件时，先看看 `lastanr` 里是否还有残留信息，有时可以直接定位到阻塞主线程的代码行。
 
@@ -188,6 +190,8 @@ adb shell dumpsys gfxinfo <package_name> reset
 
 `framestats` 输出最近 120 帧的逐帧时间戳。每一行是一帧，各列代表渲染管线中的关键时间节点：`IntendedVsync`、`Vsync`、`HandleInputStart`、`AnimationStart`、`PerformTraversalsStart`、`DrawStart`、`SyncQueued`、`SyncStart`、`IssueDrawCommandsStart`、`SwapBuffers`、`FrameCompleted`。
 
+所有时间戳均为纳秒（ns）。60Hz 设备上一个 VSync 周期为 16667000ns（约 16.67ms），120Hz 设备上为 8333000ns（约 8.33ms），这些是判断帧耗时的基准值。
+
 通过计算相邻时间点的差值，我们可以精确知道每一帧的时间花在了哪里。例如 `PerformTraversalsStart` 到 `DrawStart` 的差值就是主线程 `measure`/`layout` 的耗时；`SyncStart` 到 `IssueDrawCommandsStart` 是 RenderThread 执行 OpenGL 命令的时间。
 
 在实践中，我们通常不会手动解析这些数字，而是借助工具：Android Studio 的 System Trace 可以可视化这些时间线，JankStats 库（AndroidX）可以在运行时监控并上报 Jank。
@@ -209,6 +213,38 @@ adb shell dumpsys gfxinfo com.example.app
 如果输出显示 `Number Slow UI thread` 很高，说明是主线程做了太多工作（比如 `onBindViewHolder` 中有耗时操作）。如果 `Number Slow bitmap uploads` 很高，说明图片解码阻塞了渲染。如果 `Number Slow RenderThread` 高但 UI thread 正常，可能是因为视图层次太复杂导致 GPU 合成压力过大。
 
 确认了阶段之后，再用 Perfetto 抓 Trace 做精确定位——gfxinfo 帮我们缩小了排查范围。
+
+## dumpsys cpuinfo：CPU 占用快速排查
+
+### 基本用法
+
+`dumpsys cpuinfo` 提供系统当前各进程的 CPU 使用率快照，是快速判断"谁在吃 CPU"的第一步：
+
+```bash
+# 查看所有进程的 CPU 占用
+adb shell dumpsys cpuinfo
+
+# 持续监控（每秒刷新）
+adb shell top -H -p <pid>
+```
+
+### 关键指标
+
+输出中每行是一个进程的 CPU 占用百分比，分为几个部分：
+
+- **User**：用户态 CPU 时间占比（应用代码执行）
+- **System**：内核态 CPU 时间占比（系统调用、I/O 等待）
+- **IRQ / SoftIRQ**：中断处理时间占比（硬件中断和软中断）
+
+在性能排查中，如果一个后台进程的 CPU 占用持续超过 5%，就值得调查。常见的异常模式：
+
+- User 占用高 → 应用层在做密集计算（如 JSON 解析、图片解码）
+- System 占用高 → 大量系统调用（如频繁的 IPC、文件 I/O）
+- IRQ 占用高 → 硬件中断频繁（可能是驱动问题）
+
+`dumpsys cpuinfo` 的局限在于它只提供瞬时快照，无法看到趋势。如果需要持续监控 CPU 占用随时间的变化，建议使用 Perfetto 的 CPU 采样功能（通过 `perfetto` 命令抓取 `cpu` track），或者在终端使用 `adb shell top` 做持续观察。
+
+[待验证: Android 16 中 dumpsys cpuinfo 的输出格式是否有变化]
 
 ## dumpsys window：窗口层级与焦点
 
@@ -311,7 +347,19 @@ dumpsys SurfaceFlinger 的核心输出是当前屏幕上所有可见 Layer 的�
 
 ### 帧延迟信息
 
-`dumpsys SurfaceFlinger --latency <layer_name>` 输出三列数据：`desired_present_time`、`actual_present_time` 和 `frame_ready_time`。通过对比 desired 和 actual 的差值，可以判断这个 Layer 是否存在掉帧。如果 actual 频繁晚于 desired 超过一个 VSync 周期，说明这个 Layer 的生产者（App 端渲染线程）跟不上显示刷新率。
+`dumpsys SurfaceFlinger --latency <layer_name>` 的输出需要特别注意格式。第一行是 **refresh period**（刷新周期），单位为纳秒，表示屏幕的 VSync 间隔——60Hz 设备上为 16666666ns（约 16.67ms），120Hz 设备上为 8333333ns（约 8.33ms）。
+
+从第二行开始，每行是一帧的三个时间戳（均为纳秒）：
+
+| 列 | 字段 | 含义 |
+|---|---|---|
+| 第一列 | `desired_present_time` | 该帧期望的呈现时间 |
+| 第二列 | `actual_present_time` | 该帧实际呈现时间 |
+| 第三列 | `frame_ready_time` | 帧数据准备完成的时间 |
+
+判断掉帧的方法：计算 `actual_present_time - desired_present_time`，如果差值大于 refresh period（第一行的值），说明这一帧被延迟了至少一个 VSync 周期。如果 actual 频繁晚于 desired 超过一个 refresh period，说明这个 Layer 的生产者（App 端渲染线程）跟不上显示刷新率。
+
+当 desired_present_time 为 0 时，表示该帧没有期望呈现时间（通常是未使用的缓冲区槽位），应跳过不计。
 
 这个数据在分析滑动流畅度时非常有用。结合 gfxinfo 的帧统计一起看，可以区分"是 App 没画完"还是"是 SurfaceFlinger 合成慢了"。
 
