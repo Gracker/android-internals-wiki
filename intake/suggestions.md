@@ -96,3 +96,75 @@
 - **位置**：gfxinfo 部分 JankStats 库提及
 - **问题**：提到 JankStats 库（AndroidX）但未交叉引用 7.1 节（卡顿定义）或 7.5 节（优化策略），读者找不到后续阅读入口
 - **建议**：添加"详见 §7.1 卡顿的定义与分类"和"§7.5 优化策略中 JankStats 的集成方法"
+
+## [Task9 Deep Review] 6.2 文件系统 — 2026-04-15
+
+- **类型**：源码准确性
+- **位置**：参考资料 AOSP 源码路径
+- **问题**：f2fs ioctl 定义路径 `kernel/linux/fs/f2fs/f2fs.h` 不准确。`F2FS_IOC_START_ATOMIC_WRITE` 等 ioctl 常量定义在 `include/uapi/linux/f2fs.h`（用户空间 API 头文件），`fs/f2fs/f2fs.h` 是内核内部实现头文件。两者应区分。
+- **建议**：修正为 `include/uapi/linux/f2fs.h`（ioctl 定义）+ `fs/f2fs/f2fs.h`（内核内部结构），分别说明用途
+
+- **类型**：源码准确性
+- **位置**：参考资料 VFS 层路径
+- **问题**：`kernel/linux/fs/vfs.c` 过于简化。VFS 实现分散在 `fs/open.c`、`fs/read_write.c`、`fs/namei.c` 等多个文件中。
+- **建议**：改为 `fs/*.c` + `include/linux/fs.h`，或直接引用 kernel.org VFS 文档链接（已存在）
+
+- **类型**：源码准确性
+- **位置**：参考资料 AOSP 源码路径前缀
+- **问题**：所有内核源码路径使用 `kernel/linux/fs/` 前缀，非标准 AOSP 内核路径格式。
+- **建议**：统一为 `fs/f2fs/`、`fs/ext4/` 等标准 Linux 内核路径格式（读者在 kernel.org 或 AOSP kernel 分支中查找时使用的路径）
+
+- **类型**：源码准确性
+- **位置**：参考资料 SQLite 编译选项路径
+- **问题**：`external/sqlite/dist/Android.mk` 可能在 Android 14+ 中已迁移到 `Android.bp`（Soong 构建系统）。
+- **建议**：标注"以实际 AOSP 版本构建系统为准，较新版本可能为 Android.bp"
+
+- **类型**：原理断裂
+- **位置**：SQLite 原子写优化章节
+- **问题**：描述了 rollback journal 模式下的 atomic write 流程，但未提及 `SQLITE_ENABLE_BATCH_ATOMIC_WRITE` 在 WAL 模式下不生效这一关键限制。Android 上大量 App 使用 WAL 模式。
+- **建议**：补充说明：batch atomic write 仅对 rollback journal 模式有效。WAL 模式下 SQLite 不走 journal + fsync 路径，因此不使用此优化。对大多数使用 WAL 模式的 App，f2fs 的优势主要体现在 fsync 本身的优化（逻辑日志 + CoW）而非 atomic write。
+
+- **类型**：原理断裂
+- **位置**：f2fs 的 fsync 优化章节
+- **问题**：f2fs 的 fsync 优化描述为"logical logging"过于简化。实际是 roll-forward recovery 机制——fsync 时标记 direct node blocks，崩溃后通过 roll-forward 恢复。
+- **建议**：将"逻辑日志（logical logging）"改为更精确的描述，如"f2fs 的 fsync 优化采用 roll-forward recovery 机制：fsync 时只需将数据块和 direct node 块写入，并通过特殊标记记录 fsync 意图。崩溃恢复时，f2fs 先回滚到最近 checkpoint，再通过标记的 node 块前滚恢复 fsync 的数据"
+
+- **类型**：数据缺失
+- **位置**：EROFS 性能提升数据
+- **问题**："某些场景下可达 300%"的随机读性能提升数据来源不明确且过于夸张。华为官方数据约 25%，Google 测试为"much better"。
+- **建议**：将"约 20%，某些场景下可达 300%"修正为"约 20%-25%"，并标注来源（如华为 EMUI 9.0.1 发布数据）。删除或修正 300% 数据。
+
+- **类型**：数据缺失
+- **位置**：SQLite batch atomic write "3 倍"性能数据
+- **问题**："事务提交速度约为 ext4 上的 3 倍"缺乏测试条件说明。
+- **建议**：补充测试条件（设备、存储类型、数据库大小、事务类型）或标注数据来源
+
+- **类型**：数据缺失
+- **位置**：ext4 fsync 延迟范围
+- **问题**："几百毫秒甚至超过一秒"的 fsync 延迟描述缺少具体测试数据或 Trace 截图描述。
+- **建议**：补充典型的 P99 延迟数据范围（如"在 Pixel 4 (ext4+UFS 2.1) 上实测，高负载场景下 SQLite fsync P99 延迟可达 200-500ms"）
+
+- **类型**：数据缺失
+- **位置**：碎片化性能退化数据
+- **问题**："4KB 随机写延迟从 0.1ms 增加到 1-5ms"缺少使用时长、存储空间占用率、设备型号等条件。
+- **建议**：补充条件说明（如"在 128GB UFS 3.1 设备上使用 18 个月、存储占用 90% 的情况下"）
+
+- **类型**：版本差异
+- **位置**：applicable_versions 覆盖范围
+- **问题**：章节标注 `applicable_versions: "Android 10+"`，但内容从 Android 4.0 开始覆盖，且未覆盖 Android 15+ 的 16KB Page Size 对 f2fs 的影响细节。
+- **建议**：在"版本演进"章节补充 Android 15 的 16KB Page Size 变更对 f2fs segment 管理和 GC 策略的影响（目前只有一行 [待验证] 标注）
+
+- **类型**：知识盲区
+- **位置**：f2fs Adaptive Logging
+- **问题**：f2fs 在存储空间不足时从 normal logging 切换到 threaded logging，性能特征会显著不同，但章节未提及。
+- **建议**：在"f2fs 的代价：垃圾回收"章节后补充 Adaptive Logging 的介绍，说明 f2fs 如何根据空间使用情况动态切换日志策略
+
+- **类型**：版本差异
+- **位置**：非 GMS 设备的 EROFS 采用情况
+- **问题**：章节提到"不搭载 GMS 的设备 EROFS 不是强制要求"，但未进一步讨论中国市场的实际情况。
+- **建议**：在"EROFS 与 OTA 升级"或厂商选型章节中补充：中国市场主流厂商（华为/Honor/小米/OPPO/vivo）在 EROFS 采用上的实际状态
+
+- **类型**：源码准确性
+- **位置**：ext4 ordered 模式 fsync 行为描述
+- **问题**：文中说"日志只记录元数据（metadata），但保证在元数据提交到日志之前，对应的数据块已经写入磁盘"。实际上在 ordered 模式下，数据块直接写入最终位置（不是写入日志），然后在 journal 中记录元数据。这个区别虽然细微但对理解 fsync 延迟很重要。
+- **建议**：明确说明"数据块直接写入其最终磁盘位置（不经过 journal），然后 journal 记录元数据变更"，以避免读者误以为数据也经过 journal

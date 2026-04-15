@@ -60,3 +60,38 @@
 - 7.3 卡顿分析方法论
 - 13.1 Perfetto 简介与演进
 
+
+
+## [2026-04-15] 6.2 文件系统 — 知识盲区
+
+### 盲区描述
+f2fs 的 Adaptive Logging 机制（在 normal logging 和 threaded logging 之间动态切换）对性能行为有重大影响，但在 6.2 章节中完全未提及。当存储空间不足时，f2fs 从 normal logging（copy-and-compaction）切换到 threaded logging（在 dirty segment 中复用空间），性能特征会发生质变——这直接关系到"手机存储快满时为什么突然变卡"的用户体验问题。
+
+### 重要程度
+高
+
+### 建议研究方向
+- f2fs 源码中 `fs/f2fs/segment.c` 的日志策略选择逻辑
+- f2fs 官方文档中关于 adaptive logging 的说明
+- 在不同空间占用率下 f2fs I/O 延迟的 benchmark 数据
+- 对 Perfetto Trace 中识别 threaded logging 模式的方法
+
+### 关联章节
+6.2（文件系统）、6.3（I/O 调度）、7.1（流畅性）
+
+## [2026-04-15] 6.2 文件系统 — 知识盲区
+
+### 盲区描述
+dm-verity 与 EROFS 的配合机制未在章节中讨论。文中提到"配合 dm-verity 的完整性校验"但未展开。读者需要理解：EROFS 只读 + dm-verity 校验如何协同保护 system 分区完整性，以及这一机制对启动时间的影响（dm-verity 验证需要读取哈希树）。
+
+### 重要程度
+中
+
+### 建议研究方向
+- dm-verity 工作原理（哈希树、Verified Boot 流程）
+- EROFS + dm-verity 的挂载时间开销
+- Android 启动过程中 dm-verity 验证的 Perfetto Trace 表现
+- dm-verity 对 EROFS 压缩读取路径的影响
+
+### 关联章节
+6.2（文件系统）、1.2（系统启动）、16.x（AOSP 安全机制）
