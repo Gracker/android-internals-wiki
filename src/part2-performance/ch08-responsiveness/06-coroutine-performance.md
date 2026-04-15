@@ -4,7 +4,7 @@ chapter: "8.6"
 status: ready-for-review
 drafted_date: "2026-04-02"
 drafted_by: "openclaw-task2a"
-reviewed_date: "2026-04-09"
+reviewed_date: "2026-04-16"
 reviewed_by: "openclaw-task6"
 reworked_date: "2026-04-06"
 reworked_by: "openclaw-task2b"
@@ -13,7 +13,7 @@ polish_date: "2026-04-08"
 polish_by: "task2b-polish"
 polish_review_date: "2026-04-09"
 polish_review_by: "openclaw-task6"
-review_cycle: 2
+review_cycle: 3
 applicable_versions: "Android 8 (API 26) - Android 16 (API 36)"
 last_verified: "2026-04-02"
 last_verified_against: "kotlinx.coroutines 1.9.x / Kotlin 2.1.x / Kotlin 2.2"
@@ -27,9 +27,9 @@ sources:
     path: "https://kotlinlang.org/docs/coroutines-context-and-dispatchers.html"
 tags: ['coroutine', 'performance', 'dispatcher', 'structured-concurrency', 'flow', 'backpressure']
 related_chapters: ["1.5", "7.7", "8.1", "8.2"]
-pipeline_stage: task6_pending
-task6_state: pending
-task9_state: pending
+pipeline_stage: "task9_pending"
+task6_state: "reviewed"
+task9_state: "pending"
 task2b_state: idle
 ---
 
@@ -74,9 +74,9 @@ Coroutine 不自己运行代码，它需要 Dispatcher 来决定"这段代码在
 
 ### Dispatchers.Main：主线程的"排队窗口"
 
-在 Android 上，`Dispatchers.Main` 并不是一个线程池，而是对主线程 Looper 的一层封装。用 `launch(Dispatchers.Main)` 启动一个 coroutine 时，它做的事情和 `Handler.postMessage()` 本质上相同——把一个 Runnable 投递到主线程的消息队列里，等 Looper 轮到它时执行。
+在 Android 上，`Dispatchers.Main` 并不是一个线程池，而是对主线程 Looper 的一层封装。用 `launch(Dispatchers.Main)` 启动一个 coroutine 时，它做的事情和 `Handler.postMessage()` 没有区别——把一个 Runnable 投递到主线程的消息队列里，等 Looper 轮到它时执行。
 
-这意味着两件事：第一，所有在 `Dispatchers.Main` 上的 coroutine 都是串行执行的，因为主线程只有一个；第二，每个 coroutine 的 dispatch 都要排队等主线程 MessageQueue 中前面的消息处理完。
+有两个直接后果：第一，所有在 `Dispatchers.Main` 上的 coroutine 都是串行执行的，因为主线程只有一个；第二，每个 coroutine 的 dispatch 都要排队等主线程 MessageQueue 中前面的消息处理完。
 
 在 Perfetto 中，`Dispatchers.Main` 上的 coroutine 执行表现为 MainThread track 上的普通 CPU slice。我们无法直接区分"这是 coroutine 在执行"还是"这是普通 Handler 消息在执行"——除非开启了 coroutine debug 追踪（后面会讲）。
 
@@ -150,7 +150,7 @@ Dispatcher 的选择逻辑如下：
 
 先厘清概念。当我们说"线程切换"时，指的是操作系统级别的 context switch——内核介入，保存当前线程的寄存器/栈指针/程序计数器，加载另一个线程的状态，然后做 TLB flush 等缓存操作。这个过程通常在 **1-10 微秒** 量级。
 
-而"coroutine 切换"（suspend + resume）是在用户空间完成的。它保存的是协程的 continuation（本质上是一个状态机对象），然后通过 Dispatcher 把后续执行投递到目标线程。这个过程的调度部分（dispatching）大约在 **几十到几百纳秒** 量级，而实际执行取决于目标线程的负载。
+而"coroutine 切换"（suspend + resume）是在用户空间完成的。它保存的是协程的 continuation（一个状态机对象），然后通过 Dispatcher 把后续执行投递到目标线程。这个过程的调度部分（dispatching）大约在 **几十到几百纳秒** 量级，而实际执行取决于目标线程的负载。
 
 但这里有一个关键区别：coroutine 的"切换"并不总是意味着线程切换。如果两个 coroutine 运行在同一个 Dispatcher 的同一个线程上，那么从 A 切换到 B 只是"把 A 的 continuation 挂起，把 B 的 continuation 放到队列头部"的操作，不涉及任何 OS 级别的线程调度。
 
@@ -467,7 +467,7 @@ fun testDataLoad() = runTest {
 
 Coroutine 的性能与本书其他章节有紧密联系：
 
-- **1.5 线程模型**：Coroutine 的 Dispatcher 本质上是对线程的调度封装。理解 Android 的线程模型是理解 coroutine 性能的前提。
+- **1.5 线程模型**：Coroutine 的 Dispatcher 是对线程的调度封装。理解 Android 的线程模型是理解 coroutine 性能的前提。
 - **8.1 响应速度原理**：Coroutine 是实现"主线程不阻塞"的核心手段，但错误的 Dispatcher 选择或过度调度也会成为响应慢的原因。
 - **8.2 App 启动全流程**：启动阶段大量使用 coroutine 做初始化任务。Dispatcher 选择不当会导致启动时的线程竞争。
 - **7.7 Jetpack Compose 性能**：Compose 的副作用 API（`LaunchedEffect`、`rememberCoroutineScope`）底层都是 coroutine。选错 Dispatcher 会影响 Compose 重组性能，在高频重组场景中尤为明显。
