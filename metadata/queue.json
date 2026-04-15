@@ -264,5 +264,25 @@
     "status": "completed",
     "completed_at": "2026-04-16T03:42:38.885909",
     "completed_by": "task2b-rework"
+  },
+  {
+    "section": "2.12",
+    "section_title": "Window Manager Service 与窗口管理",
+    "priority": 95,
+    "reason": "[Deep Tech Review] P0 事实错误：ViewRootImpl.relayoutWindow() 代码片段参数 mPendingBackInsets 不存在于 AOSP，参数列表为旧版/新版混合体，不具备参考价值",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "relayoutWindow 代码片段（约第 150-170 行）",
+        "detail": "mTmpFrames.mPendingBackInsets 不存在。ViewRootImpl 的 WindowFrames 包含 mPendingContentInsets、mPendingVisibleInsets、mPendingStableInsets、mPendingOutsets，无 mPendingBackInsets。整个参数列表混合了不同版本的 API 签名。",
+        "suggestion": "基于 AOSP android-17-beta3 的 ViewRootImpl.relayoutWindow() 重写代码片段，确保参数名与实际源码一致。同时标注适用的 Android 版本。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-16T04:20:00",
+    "status": "pending"
   }
 ]
