@@ -3901,6 +3901,24 @@
         "location": "frontmatter applicable_versions/confidence + §9.5-§9.6（行 10-13, 545-680）",
         "detail": "章节写成 `Android 4.1 - Android 17` 且 `confidence: high`，但 `last_verified_against` 只到 android-16；§9.6 DeliQueue 仍依赖 preview/blog/research feed，且其对 VSync/Choreographer 的直接收益与量化数据没有公开源码/trace 闭环。",
         "suggestion": "把正文已验证范围收敛到 Android 4.1-16；Android 17 改成 preview appendix 或 `[待验证]` 版本演进附录，待公开 tag/trace 后再恢复强断言。"
+      },
+      {
+        "type": "版本差异",
+        "location": "版本演进部分",
+        "detail": "Android 17相关内容标记为[自动发现]，缺乏具体的源码支撑",
+        "suggestion": "等待Android 17正式源码公开后补充具体路径验证"
+      },
+      {
+        "type": "知识盲区",
+        "location": "整体内容",
+        "detail": "缺少VSync与热管理(Thermal Throttling)的交互分析",
+        "suggestion": "补充热降频对VSync模型精度的影响分析"
+      },
+      {
+        "type": "交叉引用错误",
+        "location": "Frontmatter相关章节",
+        "detail": "related_chapters缺少引用§2.4(Choreographer)和§2.5(RenderThread)",
+        "suggestion": "补充相关章节的交叉引用"
       }
     ],
     "added_by": "task9-deep-tech-review",
