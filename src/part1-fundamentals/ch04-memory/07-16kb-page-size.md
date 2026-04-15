@@ -4,7 +4,7 @@ chapter: "4.7"
 section: "4.7"
 status: ready-for-review
 drafted_date: "2026-04-06"
-reviewed_date: "2026-04-08"
+reviewed_date: "2026-04-15"
 reviewed_by: openclaw-task6
 polish_count: 1
 polish_date: "2026-04-08"
@@ -29,8 +29,8 @@ tags:
   - tlb
   - compatibility
   - research
-pipeline_stage: task6_pending
-task6_state: pending
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task2b_state: idle
 ---
@@ -111,11 +111,11 @@ Google 的测试表明，16KB 页大小下系统平均内存使用量增加约 5
 
 ### 纯 Java/Kotlin App
 
-如果App 没有任何 Native 代码（C/C++），好消息是：通常不需要修改。ART 运行时和 Android 框架已经适配了 16KB 页，Java/Kotlin 层的内存分配由 ART 堆管理器处理，不需要关心底层页大小。
+如果 App 没有任何 Native 代码（C/C++），好消息是：通常不需要修改。ART 运行时和 Android 框架已经适配了 16KB 页，Java/Kotlin 层的内存分配由 ART 堆管理器处理，不需要关心底层页大小。
 
 ### Native 代码（NDK）
 
-如果App 包含 `.so` 文件——无论是自己写的还是通过第三方 SDK 引入的——就需要确保这些 `.so` 文件的 ELF 段（segment）按 16KB 边界对齐。
+如果 App 包含 `.so` 文件——无论是自己写的还是通过第三方 SDK 引入的——就需要确保这些 `.so` 文件的 ELF 段（segment）按 16KB 边界对齐。
 
 为什么？Linux 加载 ELF 共享库时，通过 `mmap()` 将文件映射到内存。`mmap()` 按页大小对齐映射区域。如果 `.so` 文件的 ELF 段只按 4KB 对齐，在 16KB 页系统上，一个段可能跨越两个页——加载器需要额外处理跨页对齐，甚至可能导致段内容被部分截断或错误映射，引发 SIGBUS 或 SIGSEGV 崩溃。
 
@@ -141,7 +141,7 @@ long page_size = sysconf(_SC_PAGESIZE);
 - **2025 年 11 月 1 日**：新 App 和现有 App 更新，targetSdk ≥ 35（Android 15），必须支持 16KB
 - **2026 年 5 月 1 日**：所有现有 App 的更新必须支持 16KB
 
-这意味着 2026 年 5 月之后，如果App 还有 4KB 对齐的 `.so` 文件，将无法在 Google Play 上发布更新。
+这意味着 2026 年 5 月之后，如果 App 还有 4KB 对齐的 `.so` 文件，将无法在 Google Play 上发布更新。
 
 [已验证: 来源见 Google Play Console 公告及 developer.android.com]
 
@@ -179,7 +179,7 @@ Play Console 的 App Bundle Explorer 也提供了自动化的对齐检查。上�
 
 ### 常见迁移问题
 
-**第三方 SDK 的 `.so` 文件**：这是最常见的阻塞点。如果App 依赖的第三方 SDK 还没有适配 16KB，你需要联系 SDK 提供方获取更新版本。在此期间，可以用 NDK r28+ 的 `llvm-objcopy` 工具手动重新对齐（但这不能修复代码中的硬编码 PAGE_SIZE 问题）。
+**第三方 SDK 的 `.so` 文件**：这是最常见的阻塞点。如果 App 依赖的第三方 SDK 还没有适配 16KB，你需要联系 SDK 提供方获取更新版本。在此期间，可以用 NDK r28+ 的 `llvm-objcopy` 工具手动重新对齐（但这不能修复代码中的硬编码 PAGE_SIZE 问题）。
 
 **构建缓存问题**：升级 AGP/NDK 后，记得 clean build。Gradle 的增量编译缓存可能保留旧的 4KB 对齐产物。
 
