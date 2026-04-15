@@ -22,13 +22,14 @@ related_chapters: ["8.1", "1.2", "1.10", "2.4", "2.5", "7.1"]
 section: "8.2"
 drafted_date: "2026-04-01"
 drafted_by: "openclaw-task2a"
-reviewed_date: "2026-04-08"
+reviewed_date: "2026-04-16"
 reviewed_by: "openclaw-task6"
 polish_count: 1
 polish_date: "2026-04-06"
 polish_by: "task2b-polish"
-pipeline_stage: task6_pending
-task6_state: pending
+pipeline_stage: task9_pending
+task6_state: reviewed
+task6_result: pass-light-edit
 task9_state: pending
 task2b_state: idle
 ---
@@ -151,7 +152,7 @@ fork 出来的子进程从 ActivityThread.main() 开始执行。这个 main() �
 
 **通知 system_server 进程已就绪**。通过 Binder 调用 ATMS 的 attachApplication() 和 AMS 的 attachApplication()。ATMS 收到通知后，会继续后续的 Activity 启动流程。注意，这个时候主线程的 Looper.loop() 还没真正开始循环（或者刚开始），因为 attachApplication 的调用是在 main() 函数中同步完成的，而后续的消息处理要等 loop() 跑起来才行。
 
-AMS 的 attachApplication 会触发 bindApplication，这会向主线程发送一个 BIND_APPLICATION 消息。当 Looper 开始循环后，处理这个消息时，会创建 Application 对象。如果我们在 AndroidManifest.xml 中声明了自定义的 Application 类，系统会通过反射创建 Application 实例，然后依次调用：
+AMS 的 attachApplication 会触发 bindApplication，这会向主线程发送一条 BIND_APPLICATION 消息。Looper 开始循环后处理这条消息时，创建 Application 对象。如果我们在 AndroidManifest.xml 中声明了自定义的 Application 类，系统会通过反射创建 Application 实例，然后依次调用：
 
 1. Application.attachBaseContext()——这是我们能最早介入的回调
 2. Application.onCreate()——大多数 SDK 初始化代码放在这里
@@ -401,7 +402,7 @@ Android 5.0+ 使用 ART 运行时，原生支持多 DEX，这个问题基本消�
 
 ## 首帧绘制的关键路径
 
-首帧绘制是从 Activity.onResume 到用户看到画面的最后一段旅程。理解这段路径对优化启动感知至关重要。
+首帧绘制是从 Activity.onResume 到用户看到画面的最后一段旅程。理解这段路径，是优化启动感知的前提。
 
 ### inflate：布局文件的解析
 
@@ -505,7 +506,7 @@ Zygote preload 的局限性在于：它只预加载系统级的类和资源，�
 - **1.2 系统启动全流程**：1.2 讲的是设备开机到桌面就绪的全过程，其中 Zygote 的启动和预加载为本节的冷启动奠定了基础。
 - **2.4 Choreographer 与渲染流水线**：首帧绘制中的 VSync 等待和 performTraversals 由 Choreographer 驱动，详细机制在 2.4 中讲解。
 - **2.5 MainThread 与 RenderThread 协作**：首帧绘制的 draw 阶段涉及主线程记录 DisplayList 和 RenderThread 执行渲染，这是 2.5 中讨论的协作模式。
-- **7.1 卡顿的定义与分类**：启动超时本质上是一种特殊的卡顿——首帧耗时超过了用户可接受的范围。
+- **7.1 卡顿的定义与分类**：启动超时是卡顿的一种特殊形式——首帧耗时超过了用户可接受的范围。
 
 ## 常见问题与误区
 
