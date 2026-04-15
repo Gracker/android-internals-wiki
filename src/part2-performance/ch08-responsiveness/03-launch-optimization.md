@@ -2,8 +2,9 @@
 title: "启动优化策略"
 chapter: "8.3"
 status: ready-for-review
-reviewed_date: "2026-04-08"
-reviewed_by: "openclaw-task6"
+reviewed_date: "2026-04-16"
+reviewed_by: openclaw-task6
+task6_result: pass-light-edit
 polish_count: 1
 polish_date: "2026-04-06"
 polish_by: "task2b-polish"
@@ -33,8 +34,8 @@ related_chapters: ["8.1", "8.2", "2.4", "2.5", "7.5", "1.10", "1.12", "8.7"]
 section: "8.3"
 drafted_by: "openclaw-task2a"
 drafted_date: "2026-04-01"
-pipeline_stage: task6_pending
-task6_state: pending
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task2b_state: idle
 ---
@@ -97,13 +98,13 @@ task2b_state: idle
 
 ### 核心思路：区分"必须同步完成"和"可以延后"
 
-启动阶段主线程上执行的每一行代码都在消耗启动时间。而事实上，很多在 Application.onCreate 和 Activity.onCreate 中执行的初始化逻辑，并不需要在首帧绘制前完成。
+启动阶段主线程上执行的每一行代码都在消耗启动时间。而很多在 Application.onCreate 和 Activity.onCreate 中执行的初始化逻辑，并不需要在首帧绘制前完成。
 
 以一个典型的内容类应用为例，启动阶段可能执行了 20-30 个 SDK 的初始化。仔细分析下来，真正影响首帧显示的只有 UI 框架、网络库（用于加载首页数据）、图片加载库这几个。其他如推送 SDK、统计 SDK、热修复 SDK、广告 SDK 等，完全可以等到首页显示后再初始化。
 
 这背后的分类逻辑是这样的：
 
-**必须同步初始化的任务**：首帧绘制链路上的依赖——UI 框架、主题系统、首页必需的网络请求和数据加载。这些任务如果延迟，用户看到的首页会是空白的或者出错的。
+**必须同步初始化的任务**：首帧绘制路径上的依赖——UI 框架、主题系统、首页必需的网络请求和数据加载。这些任务如果延迟，用户看到的首页会是空白的或者出错的。
 
 **可以异步初始化的任务**：不影响首帧显示的后台服务——推送、统计、热修复等。这些任务可以立即提交到后台线程执行，不阻塞主线程。
 
@@ -491,7 +492,7 @@ ApplicationScope.launch(Dispatchers.IO) {
 
 ### ViewStub：延迟加载不可见的布局
 
-ViewStub 是一种轻量级的 View，它本身不参与绘制，尺寸为 0。只有当调用 `setVisibility(VISIBLE)` 或 `inflate()` 时，ViewStub 才会被替换为实际的布局。这意味着在首帧时，ViewStub 对应的布局不会被 inflate，减少了首帧的工作量。
+ViewStub 是一种轻量级的 View，它本身不参与绘制，尺寸为 0。只有当调用 `setVisibility(VISIBLE)` 或 `inflate()` 时，ViewStub 才会被替换为实际的布局。首帧时 ViewStub 对应的布局不会被 inflate，减少了首帧的工作量。
 
 ```xml
 <!-- 首页布局中，错误提示页面只在出错时才显示 -->
@@ -549,7 +550,7 @@ AsyncLayoutInflater 的局限性需要了解：
 
 Android 应用的代码在安装后并不会全部编译成机器码。ART 运行时采用的是"解释执行 + JIT 编译 + AOT 编译"的混合策略：首次执行时解释执行，频繁执行的代码（热点代码）会被 JIT 编译器编译成机器码并缓存。在设备空闲时，系统可能会将部分热点代码 AOT 编译。
 
-这意味着应用首次启动时，大量代码处于"解释执行"状态，执行效率远低于编译后的机器码。对于启动路径上的代码（从 Application.onCreate 到首帧绘制），这种性能损失可能贡献了几百毫秒甚至更多的额外耗时。
+应用首次启动时，大量代码仍处于"解释执行"状态，执行效率远低于编译后的机器码。对于启动路径上的代码（从 Application.onCreate 到首帧绘制），这种性能损失可能贡献了几百毫秒甚至更多的额外耗时。
 
 Baseline Profile 是一个由开发者提供的"热点代码列表"（以 human-readable 的文本格式描述哪些类和方法需要在安装时 AOT 编译）。当应用通过 Google Play 安装时，系统会在安装过程中读取 Baseline Profile，提前编译列表中的代码。这样应用首次启动时，这些代码就已经是机器码了，执行效率提升 20%-40%（具体数据取决于应用复杂度，后面"效果量化"小节有详细分析）。
 
@@ -649,7 +650,7 @@ fun startupWithBaselineProfile() = benchmarkRule.measureRepeated(
 
 除了开发者手动提供的 Baseline Profile，Google Play 还有 Cloud Profile 机制。当大量用户使用应用后，Google Play 会收集匿名化的运行时 Profile 数据（哪些代码被频繁执行），将聚合后的 Profile 分发给后续安装该应用的用户。
 
-这意味着即使开发者没有手动提供 Baseline Profile，应用也能从 Cloud Profile 中受益。但 Cloud Profile 的生效周期较长（需要足够多的用户数据），而且对于新发布的应用或更新版本，在 Cloud Profile 生效之前有一段时间的"无优化期"。手动提供 Baseline Profile 可以覆盖这段空白期，让应用在发布后第一天就有良好的启动性能。
+即使开发者没有手动提供 Baseline Profile，应用也能从 Cloud Profile 中受益。但 Cloud Profile 的生效周期较长（需要足够多的用户数据），而且对于新发布的应用或更新版本，在 Cloud Profile 生效之前有一段时间的"无优化期"。手动提供 Baseline Profile 可以覆盖这段空白期，让应用在发布后第一天就有良好的启动性能。
 
 关于 Baseline Profile 的制作流程、Cloud Profile 的分发机制以及与 AutoFDO（Android 16 引入的内核级反馈编译优化）的协同关系，我们在 8.7 节（Baseline Profiles 与编译优化实践）和 1.12 节（AutoFDO 反馈导向编译优化）中有更详细的讨论。
 
