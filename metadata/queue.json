@@ -9636,5 +9636,25 @@
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-15T03:32:00",
     "status": "pending"
+  },
+  {
+    "section": "4.7",
+    "section_title": "16KB Page Size 与 Android 性能",
+    "priority": 95,
+    "reason": "[Deep Tech Review] THP huge page size 事实错误（16KB base → 32MB 非 2MB），zRAM 交互缺失，5 处交叉引用错误",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "事实错误",
+        "location": "与 Linux THP 的关系",
+        "detail": "16KB 基础页 + THP 合并为 32MB 大页（ARM64 PMD_SIZE），非 2MB。2MB 是 4KB base page 的 THP 大小",
+        "suggestion": "将 '2MB 大页' 改为 '32MB 大页'，并说明 ARM64 不同 base page size 下 THP 大页大小的差异"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-15T08:32:00",
+    "status": "pending"
   }
 ]
