@@ -168,3 +168,21 @@ dm-verity 与 EROFS 的配合机制未在章节中讨论。文中提到"配合 d
 
 ### 关联章节
 8.1, 8.7, 1.12, 5.10
+
+## [2026-04-16] 8.4 其他响应速度场景 — 知识盲区
+
+### 盲区描述
+1. Jetpack Navigation Component 完全未提及。Navigation 是现代 Android 页面导航的标准方案，其性能特征（NavGraph inflate 开销、deep link 解析延迟、Fragment swap 优化、shared element transition）与本章「页面跳转速度」主题高度相关。
+2. Compose Navigation 未提及。Compose 的页面切换性能（relocate 节点复用 vs 传统 inflate）是 applicable_versions 涵盖 Android 16 时的必要话题。
+
+### 重要程度
+高（Navigation Component）/ 中（Compose Navigation）
+
+### 建议研究方向
+- Navigation Component 的 NavGraph inflate 耗时及 lazy inflation
+- Navigation deep link vs 普通 startActivity 的额外 Binder 开销
+- Compose Navigation 的性能对比数据（Compose vs View 体系的页面切换延迟）
+- Activity Transition API / shared element transition 对感知延迟的优化
+
+### 关联章节
+8.1, 8.2, 8.3, 3.1

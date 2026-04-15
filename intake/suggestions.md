@@ -299,3 +299,31 @@
 - **位置**：启动速度线上监控 → 在 Perfetto 中定位启动耗时瓶颈；以及 frontmatter related_chapters
 - **问题**：章节提到 Method Trace 追加分析但未交叉引用 8.8 节（ProfilingManager 系统触发式性能追踪）。frontmatter related_chapters 也未包含 8.8。另外 ch08 目录中存在两个 08 前缀文件（08-media-pipeline.md 和 08-system-triggered-profiling.md），后者未出现在 SUMMARY.md 中，可能存在章节号冲突。
 - **建议**：在 Method Trace 相关段落添加交叉引用 8.8；在 related_chapters 中添加 "8.8"；与高爷确认 08-system-triggered-profiling.md 的章节归属。
+
+## [Task9 Deep Review] 8.4 其他响应速度场景 — 2026-04-16
+
+- **类型**：原理描述不准确
+- **位置**：「页面跳转优化策略」FragmentFactory 代码示例
+- **问题**：PreloadFragmentFactory.instantiate() 中调用 fetchPreloadData() 是同步操作，如果涉及 IO 会阻塞主线程。代码示例没有说明该方法必须是非阻塞的。
+- **建议**：在代码注释中明确标注 fetchPreloadData() 应从内存缓存读取，或改为在 Application.onCreate() 阶段预加载到静态变量中
+
+## [Task9 Deep Review] 8.4 其他响应速度场景 — 2026-04-16
+
+- **类型**：原理描述不准确
+- **位置**：「页面跳转优化策略」setReorderingAllowed(true) 说明
+- **问题**：描述为「让系统并行处理多个 Fragment 操作」，实际 setReorderingAllowed(true) 的作用是允许 FragmentManager 重排操作顺序（如将 remove+add 优化为 replace），不是并行执行。
+- **建议**：修正描述为「允许 FragmentManager 重新排列事务中的操作顺序，将多个操作合并优化（如 remove(A)+add(B) 合并为 replace），减少不必要的生命周期回调」
+
+## [Task9 Deep Review] 8.4 其他响应速度场景 — 2026-04-16
+
+- **类型**：版本差异
+- **位置**：版本演进段
+- **问题**：1) ViewPager2 归入「Android 9.0」条目是误导，它是 AndroidX 库不与 OS 版本绑定。2) setMaxLifecycle() 在 Fragment 1.1.0 引入，非 1.2.0。
+- **建议**：1) 将 ViewPager2 条目改为独立行「2019-02：ViewPager2 首个 alpha 发布（AndroidX），2019-11 稳定版 1.0.0」。2) 修正为「Fragment 1.1.0：引入 setMaxLifecycle()」
+
+## [Task9 Deep Review] 8.4 其他响应速度场景 — 2026-04-16
+
+- **类型**：交叉引用
+- **位置**：点击响应段 RAIL 模型引用
+- **问题**：RAIL 模型是 Chrome 团队的 Web 性能模型（web.dev/rail），但链接指向 developer.android.com/topic/performance/vitals（Android Vitals）。两个概念不应混为一谈。
+- **建议**：分别引用——RAIL 模型引用 web.dev/rail，Android 点击响应阈值引用 Android Vitals 的冻帧/慢帧定义

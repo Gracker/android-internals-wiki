@@ -184,5 +184,43 @@
     "status": "completed",
     "completed_at": "2026-04-16T01:45:25.543944",
     "completed_by": "task2b-rework"
+  },
+  {
+    "section": "8.4",
+    "section_title": "其他响应速度场景",
+    "priority": 95,
+    "reason": "[Deep Tech Review] P0 事实错误：InputDispatcher.java 路径不存在 + ViewPager2 offscreenPageLimit 默认值错误",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "参考资料：InputDispatcher.java 路径",
+        "detail": "引用路径 frameworks/base/services/core/java/com/android/server/input/InputDispatcher.java 不存在。InputDispatcher 是 C++ 类，位于 frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp。Java 侧入口为 InputManagerService.java。",
+        "suggestion": "修正路径为 frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp，并补充 Java 侧入口 InputManagerService.java"
+      },
+      {
+        "type": "源码错误",
+        "location": "「ViewPager2 的工作机制」段",
+        "detail": "称 offscreenPageLimit 默认值为 1（左右各保留 1 页）。实际 OFFSCREEN_PAGE_LIMIT_DEFAULT = -1，使用 RecyclerView 自身缓存策略，不显式保留页面。",
+        "suggestion": "修正为「默认值为 OFFSCREEN_PAGE_LIMIT_DEFAULT(-1)，使用 RecyclerView 自身的缓存和预取策略，不显式保留屏幕外页面。设为 1 时才会在左右各保留 1 页。」"
+      },
+      {
+        "type": "源码错误",
+        "location": "验证标记 FragmentManager.java 路径",
+        "detail": "声称 AOSP 路径 frameworks/base/fragment/java/androidx/fragment/app/FragmentManager.java。AndroidX Fragment 不在 frameworks/base 树中。",
+        "suggestion": "移除 frameworks/base 前缀，标注为 AndroidX 仓库路径"
+      },
+      {
+        "type": "版本差异",
+        "location": "Activity 启动路径描述",
+        "detail": "描述使用 ActivityTaskManager.getService().startActivity()，但 ActivityTaskManager 从 Android 10 引入。章节 applicable_versions 声明 8.0-16。",
+        "suggestion": "添加版本差异说明：Android 8-9 使用 ActivityManager.getService()，Android 10+ 使用 ActivityTaskManager.getService()"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-16T02:26:07",
+    "status": "pending"
   }
 ]
