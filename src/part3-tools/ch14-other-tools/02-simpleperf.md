@@ -1,31 +1,40 @@
 ---
-title: "Simpleperf"
-chapter: "14.2"
-section: "14.2"
+title: Simpleperf
+chapter: '14.2'
+section: '14.2'
 status: ready-for-review
-reviewed_date: "2026-04-10"
-reviewed_by: "openclaw-task6"
-drafted_date: "2026-04-03"
-drafted_by: "openclaw-task2a"
-applicable_versions: "Android 5.0 (API 21) - Android 16 (API 36)"
-last_verified: "2026-04-03"
-last_verified_against: "AOSP NDK simpleperf + official documentation"
+reviewed_date: '2026-04-15'
+reviewed_by: openclaw-task6
+drafted_date: '2026-04-03'
+drafted_by: openclaw-task2a
+applicable_versions: Android 5.0 (API 21) - Android 16 (API 36)
+last_verified: '2026-04-03'
+last_verified_against: AOSP NDK simpleperf + official documentation
 confidence: medium
 sources:
-  - type: official
-    path: "android.googlesource.com/platform/system/extras/+/master/simpleperf/README.md"
-  - type: official
-    path: "developer.android.com/ndk/guides/simpleperf"
-  - type: blog
-    path: "Web research: simpleperf usage guide 2025-2026"
-tags: ['simpleperf', 'pmu', 'cpu-profiling', 'flamegraph', 'native-profiling']
-related_chapters: ["13.1", "13.2", "13.6", "14.1"]
-pipeline_stage: task6_pending
-task6_state: pending
+- type: official
+  path: android.googlesource.com/platform/system/extras/+/master/simpleperf/README.md
+- type: official
+  path: developer.android.com/ndk/guides/simpleperf
+- type: blog
+  path: 'Web research: simpleperf usage guide 2025-2026'
+tags:
+- simpleperf
+- pmu
+- cpu-profiling
+- flamegraph
+- native-profiling
+related_chapters:
+- '13.1'
+- '13.2'
+- '13.6'
+- '14.1'
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task2b_state: idle
+task6_result: pass-light-edit
 ---
-
 # Simpleperf
 
 <!-- outline-start -->

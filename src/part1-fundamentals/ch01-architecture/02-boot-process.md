@@ -408,6 +408,48 @@ dm-verity（Device Mapper Verity）是 Android 用于验证系统分区完整性
 
 Zygote 预加载能解决的是公共运行时准备工作，解决不了业务进程自己的 `Application.onCreate()`、主线程 I/O、首次 profile / dex2oat、网络初始化。把更多业务类塞进预加载列表，很可能会把整机开机时间和常驻内存一起抬高。
 
+<!-- AIW-源码调研-2026-04-15 -->
+### Zygote fork SystemServer 的触发机制（源码级补充）
+
+正文描述"Zygote 预加载完成后 fork SystemServer"，这里补充 fork 触发的精确机制。
+
+**forkSystemServer 是 ZygoteInit.main() 的主动行为，不是被动等待 IPC。** `--start-system-server` 参数由 `init.zygote64.rc` 传入 `app_process64`，在 ZygoteInit.main() 中解析为布尔标志后直接决定是否调用 forkSystemServer()。不需要 AMS 或任何外部信号触发。
+
+完整调用链（基于 android-16.0.0_r1）：
+
+```
+init.zygote64.rc:  service zygote /system/bin/app_process64 ... --start-system-server
+  └─ app_main.cpp main() → AndroidRuntime.start("com.android.internal.os.ZygoteInit", args)
+      └─ ZygoteInit.main(argv)
+            ├─ 解析 argv: "start-system-server" → startSystemServer = true  (行 849-850)
+            ├─ preload()          // 预加载 classes / resources / graphics driver
+            ├─ gcAndFinalize()   // fork 前 GC，减少 COW 页
+            ├─ new ZygoteServer(isPrimaryZygote)  // 创建 zygote socket
+            ├─ if (startSystemServer) forkSystemServer(...)  // 行 904-912
+            │    ├─ [父进程 Zygote]   pid > 0 → 返回 null → runSelectLoop() 永久等待 AMS
+            │    └─ [子进程 system_server] pid == 0 → handleSystemServerProcess() → SystemServer.main()
+            └─ runSelectLoop(abiList)  // Zygote 仅在父进程执行
+```
+
+关键源码锚点：
+
+| 位置 | 行号 | 内容 |
+|------|------|------|
+| `ZygoteInit.java` | 844-850 | `startSystemServer` 参数解析 |
+| `ZygoteInit.java` | 902-912 | `if (startSystemServer)` 分支判断 |
+| `ZygoteInit.java` | 693-801 | `forkSystemServer()` 完整实现 |
+| `ZygoteInit.java` | 780 | `Zygote.forkSystemServer()` JNI 调用 |
+| `ZygoteInit.java` | 792-798 | 子进程分支：closeServerSocket + handleSystemServerProcess |
+| `ZygoteServer.java` | 394 | `runSelectLoop()` — Zygote 仅在此响应 AMS fork 请求 |
+
+补充说明：
+
+1. **fork system_server 与 fork app 进程是不同路径**：前者在 main() 中直接调用，后者通过 Zygote socket 由 AMS 发起 IPC 请求后由 runSelectLoop() 处理。
+2. **system_server 不进入 Zygote 事件循环**：子进程 fork 后直接执行 handleSystemServerProcess() → SystemServer.main()，然后 return 退出 ZygoteInit.main()，与 runSelectLoop() 无关。
+3. **fork 前 GC 的目的**：`gcAndFinalize()`（行 893）在 fork 前回收软可达对象，减少 fork 后 COW 页数量。
+
+<!-- /AIW-源码调研-2026-04-15 -->
+
 ## 参考资料
 
 - AOSP 源码路径：

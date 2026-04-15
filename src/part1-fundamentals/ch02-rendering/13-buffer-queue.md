@@ -239,6 +239,21 @@ t->setBuffer(mSurfaceControl, buffer, fence, bufferItem.mFrameNumber, mProducerI
 
 [需补充素材：异常场景 Perfetto 截图 1 张，要求标出 `dequeueBuffer()` 长等待，以及与上一帧 release / present 的关系。]
 
+### 阻塞根因：mDequeueCondition 与 releaseBuffer 唤醒链
+
+`dequeueBuffer()` 等待不是玄学，它是一条确定的条件变量路径。
+
+AOSP 源码里，Producer 线程在 `waitForFreeSlotThenRelock()` 中通过 `mCore->mDequeueCondition.wait(lock)` 主动阻塞（`BufferQueueProducer.cpp` 行 398）。触发这个等待有两个充分条件：
+
+- **条件一**：已 dequeue 的 buffer 数量 `dequeuedCount >= mMaxDequeuedBufferCount`（默认值为 1）。一旦 producer 已经持有一个正在渲染的 buffer，第二次 `dequeueBuffer()` 就会触发等待。
+- **条件二**：队列积压 `mQueue.size() > maxBufferCount`。Consumer 来不及消费时，Producer 也必须等，防止内存溢出。
+
+唤醒路径只有一条：`BufferQueueConsumer::releaseBuffer()` 执行 `mCore->mDequeueCondition.notify_all()`（`BufferQueueConsumer.cpp` 行 568）。Consumer 把 buffer 状态从 ACQUIRED 改回 FREE，同时把 slot 放回 `mFreeBuffers`，然后 broadcast condition variable。等待中的 Producer 线程被唤醒，再次尝试获取 free slot。
+
+**Jank 场景的 backpressure 链**：SurfaceFlinger / HWC 合成耗时 > 16ms（或其他刷新周期）→ `releaseBuffer()` 延迟 → `mFreeBuffers` 为空 → Producer（RenderThread）在 `waitForFreeSlotThenRelock()` 中阻塞 → 本帧无法开始渲染。这整条链的根因在上游（SF/HWC 慢），`dequeueBuffer()` 阻塞只是下游症状。
+
+[已验证：AOSP android-main `BufferQueueProducer.cpp` 行 297–399、`BufferQueueConsumer.cpp` 行 480–591、`BufferQueueCore.h` 行 302–304]
+
 ### 异常 2：`queueBuffer()` 之后很久才被消费
 
 另一类问题是 producer 已经把这一帧交出去了，但 consumer 很久才真正消费。BLAST 路径下，这时要重点看两件事：一是 `QueuedBuffer - ...BLAST#...` 到实际呈现之间隔了几帧，二是这段时间里有没有 geometry transaction 一起排队，等着同一个 `frameNumber` 被 apply。
