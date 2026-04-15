@@ -29,11 +29,11 @@ tags:
   - tlb
   - compatibility
   - research
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
-task9_result: needs-rework
-task2b_state: pending
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
+task2b_result: fixed
+task2b_state: fixed
 ---
 # 4.7 16KB Page Size 与 Android 性能
 
@@ -220,11 +220,11 @@ TLB Miss 减少后，CPU 在内核态处理 Page Table Walk 的时间也相应�
 
 16KB 页大小和 THP 是两种不同的优化路径，但它们解决的是同一个问题——减少 TLB Miss。
 
-**THP** 在 4KB 基础页大小上工作，将连续的 4KB 页合并为 2MB 的大页（ARM64 上）。优点是不需要修改 App，内核自动管理；缺点是需要物理连续的 2MB 内存，长时间运行后碎片化严重，khugepaged 的后台整理本身也有 CPU 开销。
+**THP** 在 4KB 基础页大小上工作，将连续的 4KB 页合并为 2MB 的大页（ARM64 PMD_SIZE）。优点是不需要修改 App，内核自动管理；缺点是需要物理连续的大块内存（4KB base 时为 2MB），长时间运行后碎片化严重，khugepaged 的后台整理本身也有 CPU 开销。
 
 **16KB 基础页** 是更底层的改变。它不需要物理连续内存（每个 16KB 页独立分配），没有 khugepaged 的开销，收益更确定。缺点是需要重新编译 Native 代码。
 
-两者**可以叠加使用**：16KB 基础页 + THP 合并为 2MB 大页。这意味着 TLB entry 可以覆盖 16KB（普通页）或 2MB（大页），TLB Reach 进一步扩大。不过在实际的 Android 设备上，THP 默认配置通常是 `madvise` 模式（只对显式请求的内存区域启用），对大多数 App 的实际影响有限。
+两者**可以叠加使用**：16KB 基础页 + THP 合并为 32MB 大页。ARM64 的 PMD_SIZE（PMD 级别的 block size）随基础页大小变化：4KB base → 2MB THP，16KB base → 32MB THP。这意味着 TLB entry 可以覆盖 16KB（普通页）或 32MB（大页），TLB Reach 进一步扩大。不过在实际的 Android 设备上，THP 默认配置通常是 `madvise` 模式（只对显式请求的内存区域启用），对大多数 App 的实际影响有限。
 
 对于性能分析来说，16KB 基础页的收益比 THP 更直接、更稳定。在分析 App 的 TLB 相关性能问题时，优先确认设备是否启用了 16KB 页。
 

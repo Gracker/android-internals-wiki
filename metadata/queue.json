@@ -9655,6 +9655,10 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-15T08:32:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-15T08:43:53+08:00",
+    "completed_by": "task2b-rework",
+    "result": "fixed",
+    "notes": "Task 2B 回炉修复：THP 大页大小从 2MB 修正为 32MB（ARM64 16KB base page PMD_SIZE），补 ARM64 不同 base page 下 THP 大小差异说明。STYLE.md 禁用词扫描通过（修改段落无新增违规）。"
   }
 ]
