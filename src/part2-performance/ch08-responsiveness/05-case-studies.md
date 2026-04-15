@@ -4,11 +4,11 @@ chapter: "8.5"
 section: "8.5"
 status: ready-for-review
 drafted_date: "2026-04-02"
-reviewed_date: "2026-04-09"
+reviewed_date: "2026-04-16"
 rework_date: "2026-04-08"
 rework_by: "task2b-rework"
 reviewed_by: openclaw-task6
-review_cycle: 2
+review_cycle: 3
 re_review_date: "2026-04-09"
 applicable_versions: "Android 8.0 (API 26) - Android 16 (API 36)"
 last_verified: "2026-04-08"
@@ -32,8 +32,9 @@ sources:
     path: "性能优化日报/2026-03-15-Baseline-Profiles-启动优化标配.md"
 tags: ['case-study', 'cold-start', 'response-optimization', 'baseline-profile', 'r8-full-mode', 'page-switch', 'macrobenchmark', 'auto-fdo', '16kb-page', 'dag-scheduler', 'aot-compilation']
 related_chapters: ["8.1", "8.2", "8.3", "8.4", "3.2"]
-pipeline_stage: task6_pending
-task6_state: pending
+pipeline_stage: task9_pending
+task6_state: reviewed
+task6_result: pass-light-edit
 task9_state: pending
 task2b_state: idle
 ---
@@ -91,7 +92,7 @@ Reddit 采用了"Baseline Profiles + R8 Full Mode"的组合策略，整个集成
 
 **Baseline Profiles 方面**，他们使用 Macrobenchmark 库自动生成了覆盖冷启动、首页浏览、帖子详情页三个关键用户路径（CUJ）的 profile 文件。生成的 `baseline-prof.txt` 经过编译后大小控制在 1.2MB 以内（Google 建议不超过 1.5MB）。
 
-在安装时，ART 会根据这个 profile 对关键代码路径做 AOT（Ahead-of-Time）编译。这意味着用户首次打开 App 时，启动路径上的热点代码已经是机器码而非字节码，省去了 JIT 编译的延迟。
+在安装时，ART 会根据这个 profile 对关键代码路径做 AOT（Ahead-of-Time）编译。用户首次打开 App 时，启动路径上的热点代码已经是机器码而非字节码，省去了 JIT 编译的延迟。
 
 ```groovy
 // Reddit 项目中 Baseline Profile 模块的配置示意
@@ -138,7 +139,7 @@ Reddit 在 Google Play 上线后的 A/B 测试结果 [已验证: developer.andro
 | 帧渲染时间 | 基线 | — | **改善 25%** |
 | APK 体积 | 基线 | — | **-14%** |
 
-投入产出比极高：整个集成不到两周，代码改动量小（主要是配置和 Profile 生成脚本），但对核心指标的改善非常显著。冷启动 40% 的提升中，Baseline Profiles 和 R8 full mode 各自贡献了多少？Reddit 没有单独披露拆分数据，但根据 Google 的基准测试，Baseline Profiles 单独通常能带来 20-30% 的冷启动改善 [已验证: developer.android.com/topic/performance/baselineprofiles]。这意味着 R8 full mode 的深度优化（代码缩减 + 方法内联）额外贡献了约 10-20%。
+投入产出比极高：整个集成不到两周，代码改动量小（主要是配置和 Profile 生成脚本），但对核心指标的改善非常显著。冷启动 40% 的提升中，Baseline Profiles 和 R8 full mode 各自贡献了多少？Reddit 没有单独披露拆分数据，但根据 Google 的基准测试，Baseline Profiles 单独通常能带来 20-30% 的冷启动改善 [已验证: developer.android.com/topic/performance/baselineprofiles]。R8 full mode 的深度优化（代码缩减 + 方法内联）额外贡献了约 10-20%。
 
 ### 本案例的关键启示
 
@@ -264,7 +265,7 @@ ANR 率降低 25% 是一个附带收益。分析原因，R8 的代码缩减移�
 
 开发团队使用 Perfetto 抓取了点击后的完整 trace，在时间线上标注了从 onClick 回调到详情页第一帧渲染完成的区间。分析发现 500ms 的时间被分配在以下几个阶段：
 
-**主线程消息处理（约 50ms）**：从用户点击到 `Activity.startActivity()` 被调用，中间经过了 View 的事件分发链路和 onClick 回调执行。这部分本身不慢，但 onClick 回调中做了商品 ID 的参数校验和埋点上报，消耗了约 20ms。
+**主线程消息处理（约 50ms）**：从用户点击到 `Activity.startActivity()` 被调用，中间经过了 View 的事件分发过程和 onClick 回调执行。这部分本身不慢，但 onClick 回调中做了商品 ID 的参数校验和埋点上报，消耗了约 20ms。
 
 **Binder IPC（约 30ms）**：`startActivity()` 通过 Binder 调用 AMS（ActivityManagerService），AMS 需要检查目标 Activity 是否已注册、权限是否合法、目标进程是否已创建等。在目标进程已存在的情况下，这个 Binder 调用通常在 10-30ms。
 
