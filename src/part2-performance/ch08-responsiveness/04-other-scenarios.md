@@ -18,7 +18,7 @@ sources:
   - type: aosp
     path: "frameworks/base/core/java/android/app/Activity.java"
   - type: aosp
-    path: "frameworks/base/core/java/android/app/FragmentTransaction.java"
+    path: "androidx/fragment/fragment/src/main/java/androidx/fragment/app/FragmentTransaction.java"
   - type: aosp
     path: "frameworks/base/core/java/android/view/View.java"
   - type: official
@@ -29,12 +29,12 @@ sources:
     path: "https://developer.android.com/reference/androidx/viewpager2/widget/ViewPager2"
 tags: ['responsiveness', 'page-switch', 'click-response', 'search', 'viewpager2', 'fragment', 'debounce']
 related_chapters: ["8.1", "8.2", "8.3", "3.1", "3.2", "7.4"]
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
-task9_result: needs-rework
-task9_state: reviewed
-task2b_state: pending
+task9_result: pending-recheck
+task9_state: pending
+task2b_state: fixed
 ---
 
 # 其他响应速度场景
@@ -81,7 +81,7 @@ task2b_state: pending
 
 当我们调用 `startActivity()` 启动一个新的 Activity 时，系统要完成一系列工作。这不是一个简单的函数调用，而是跨进程的 Binder IPC 通信路径：
 
-**调用方进程**通过 `Activity.startActivity()` → `Instrumentation.execStartActivity()` → `ActivityTaskManager.getService().startActivity()` 向 **system_server** 发起 Binder 请求。system_server 中的 `ActivityStarter` 经过权限检查、Intent 解析、Task 栈计算后，通过 Binder 向 **目标进程** 发送 `scheduleLaunchActivity()`。目标进程的 `ActivityThread.handleLaunchActivity()` 收到消息后，执行 `performLaunchActivity()`，依次完成：创建 Activity 实例 → 调用 `attach()` → 调用 `onCreate()` → `onStart()` → `onResume()` → 首帧渲染。
+**调用方进程**通过 `Activity.startActivity()` → `Instrumentation.execStartActivity()` → 向 **system_server** 发起 Binder 请求。在 Android 10（API 29）及以上版本，调用入口是 `ActivityTaskManager.getService().startActivity()`；Android 8-9（API 26-28）使用的是 `ActivityManager.getService().startActivity()`。ActivityTaskManager 从 Android 10 开始独立出来，专门负责 Activity 生命周期管理，此前这部分逻辑在 ActivityManagerService 中。system_server 中的 `ActivityStarter` 经过权限检查、Intent 解析、Task 栈计算后，通过 Binder 向 **目标进程** 发送 `scheduleLaunchActivity()`。目标进程的 `ActivityThread.handleLaunchActivity()` 收到消息后，执行 `performLaunchActivity()`，依次完成：创建 Activity 实例 → 调用 `attach()` → 调用 `onCreate()` → `onStart()` → `onResume()` → 首帧渲染。
 
 整个流程涉及的耗时环节包括：
 
@@ -113,7 +113,7 @@ Fragment 的切换比 Activity 轻量得多——它不需要跨进程通信，�
 
 **回退栈（Back Stack）的生命周期开销。** 当使用 `addToBackStack()` 并执行 `replace()` 时，旧 Fragment 会走到 `onDestroyView()`（View 被销毁但 Fragment 实例保留）。用户按返回键时，旧 Fragment 需要重新走 `onCreateView()` → `onDestroyView()` 之间的所有回调——布局要重新 inflate。
 
-在 Perfetto 中，Fragment 的切换可以通过 `FragmentManager` 相关的 trace tag 观察到，但需要注意的是 Fragment 事务的 trace 点不如 Activity 那么完整，我们可能需要在代码中手动添加 `Trace.beginSection("FragmentTransaction")` 来获得更精确的度量。
+在 Perfetto 中，Fragment 的切换可以通过 `FragmentManager` 相关的 trace tag 观察到，但 Fragment 事务的 trace 点不如 Activity 那么完整，我们可能需要在代码中手动添加 `Trace.beginSection("FragmentTransaction")` 来获得更精确的度量。
 
 ### 页面跳转优化策略
 
@@ -149,7 +149,7 @@ public class PreloadFragmentFactory extends FragmentFactory {
 
 **4. 避免 commitNow() 的滥用。** `commitNow()` 是同步执行事务，会立即执行所有操作。在 `onCreate()` 中调用没问题，但如果在 `onResume()` 之后调用，可能会与系统正在执行的 Fragment 状态切换产生冲突，导致 `IllegalStateException`。
 
-[已验证: AOSP android-16.0.0_r1, frameworks/base/fragment/java/androidx/fragment/app/FragmentManager.java]
+[已验证: AndroidX Fragment 仓库, androidx/fragment/fragment/src/main/java/androidx/fragment/app/FragmentManager.java]
 
 ---
 
@@ -159,9 +159,9 @@ Tab 切换是移动端最常见的交互模式之一。新闻 App 的频道切�
 
 ### ViewPager2 的工作机制
 
-ViewPager2 内部使用 `RecyclerView` 实现，天然继承了 RecyclerView 的缓存机制。`offscreenPageLimit` 参数控制着屏幕外保留的页面数量，默认值为 1（左右各保留 1 页）。
+ViewPager2 内部使用 `RecyclerView` 实现，天然继承了 RecyclerView 的缓存机制。`offscreenPageLimit` 参数控制着屏幕外保留的页面数量。它的默认值为 `OFFSCREEN_PAGE_LIMIT_DEFAULT(-1)`，即不显式保留屏幕外页面，而是依赖 RecyclerView 自身的缓存和预取策略。这与直觉不同——默认行为并非"左右各保留 1 页"，而是让 RecyclerView 按 ViewHolder 缓存等级（CachedView、RecycledViewPool）自动管理。
 
-这个默认值是一个平衡点：设为 0 时，每次切换 Tab 都要从零开始创建 Fragment（慢），设为 2 或更高时，会同时持有更多 Fragment 实例和它们的 View 层级（内存压力）。对于 3-4 个 Tab 的常见场景，默认值 1 通常就够了。
+当设为 1 时，ViewPager2 会在当前页左右各保留 1 个页面的 Fragment。设为 0 时，每次切换 Tab 都要从零开始创建 Fragment（慢）。设为 2 或更高时，会同时持有更多 Fragment 实例和它们的 View 层级（内存压力）。对于 3-4 个 Tab 的常见场景，设为 1 通常就够了，但要注意这不是默认值——需要开发者显式调用 `setOffscreenPageLimit(1)`。
 
 ViewPager2 对 Fragment 生命周期管理的核心变化在于：它通过 `setMaxLifecycle()` 控制不可见 Fragment 的最高生命周期状态。当前可见的 Fragment 生命周期被设为 `RESUMED`，而 `offscreenPageLimit` 范围内但不可见的 Fragment 被设为 `STARTED`——这些 Fragment 的 `onResume()` 不会被调用，正是懒加载的切入点。
 
@@ -256,7 +256,7 @@ viewPager2.registerOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback
 
 **2. InputDispatcher 分发延迟（~2-5ms）**：`InputReader` 线程从驱动读取事件 → `InputDispatcher` 通过 Binder 将事件发送给目标窗口所在进程。如果系统负载高（大量后台进程、GC 暂停等），这个延迟会增加。我们在 §3.1 中详细分析了 Input 事件分发全流程。
 
-[已验证: AOSP android-16.0.0_r1, frameworks/base/services/core/java/com/android/server/input/InputDispatcher.java]
+[已验证: AOSP android-16.0.0_r1, frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp; Java 侧入口: frameworks/base/services/core/java/com/android/server/input/InputManagerService.java]
 
 **3. 主线程事件处理（变化最大）**：事件到达 App 进程后，进入主线程 Looper 的消息队列。如果此时主线程正在执行上一帧的 `doFrame()`、或者被某个同步 Binder 调用阻塞、或者在做密集的 GC，事件就必须排队等待。这是点击响应优化最核心的战场。
 
@@ -406,9 +406,9 @@ fun View.setOnSingleClickListener(delay: Long = 500L, onClick: (View) -> Unit) {
 
 不一定。Fragment 切换虽然省去了跨进程通信，但如果 Fragment 的布局特别复杂、数据加载特别重，它的切换耗时可能不比 Activity 跳转少多少。选择 Activity 还是 Fragment 应该基于架构需求（进程隔离、导航复杂度、状态管理），而不是单纯追求速度。
 
-**误区 2：「ViewPager2 设 offscreenPageLimit 为 0 最省内存」**
+**误区 2：「ViewPager2 的默认 offscreenPageLimit 就够用」**
 
-`offscreenPageLimit = 0` 确实最省内存，但代价是每次 Tab 切换都要从零创建 Fragment。对于只有 3-4 个 Tab 且每个 Tab 布局不太复杂的场景，`offscreenPageLimit = 1`（默认值）是更好的平衡。
+ViewPager2 的默认 `offscreenPageLimit` 是 -1（`OFFSCREEN_PAGE_LIMIT_DEFAULT`），不显式保留屏幕外页面，而是依赖 RecyclerView 的缓存机制。对于只有 3-4 个 Tab 且每个 Tab 布局不太复杂的场景，显式设为 `setOffscreenPageLimit(1)` 通常是更好的选择——虽然多占一点内存，但 Tab 切换会明显更流畅。
 
 **误区 3：「debounce 时间设越短搜索越快」**
 
@@ -443,7 +443,8 @@ debounce 的目的是减少无效搜索，不是加快搜索速度。设太短�
   - `frameworks/base/core/java/android/app/ActivityThread.java`（handleLaunchActivity）
   - `frameworks/base/services/core/java/com/android/server/wm/ActivityStarter.java`（服务端启动逻辑）
   - `frameworks/base/core/java/android/view/View.java`（performClick / onTouchEvent）
-  - `frameworks/base/services/core/java/com/android/server/input/InputDispatcher.java`（事件分发）
+  - `frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp`（事件分发核心实现，C++）
+  - `frameworks/base/services/core/java/com/android/server/input/InputManagerService.java`（Java 侧入口）
 - 官方文档：
   - [ViewPager2 指南](https://developer.android.com/guide/navigation/navigation-swipe-view-2)
   - [Fragment 生命周期](https://developer.android.com/guide/fragments/lifecycle)
