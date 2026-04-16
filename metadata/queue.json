@@ -449,5 +449,50 @@
     "status": "completed",
     "completed_at": "2026-04-16T13:43:00",
     "completed_by": "task2b-rework"
+  },
+  {
+    "section": "10.4",
+    "section_title": "低内存对系统性能的影响",
+    "priority": 95,
+    "reason": "[Deep Tech Review] P0: min_score_adj=201 被描述为 PREVIOUS_APP_ADJ+1, 实际 PREVIOUS_APP_ADJ=201; P1: PSI版本边界模糊/CC collector版本表述/compactd缺失/onTrimMemory映射缺失",
+    "material_paths": [
+      "intake/suggestions.md",
+      "intake/research-gaps.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "lmkd 杀进程策略段, min_score_adj 描述",
+        "detail": "称 min_score_adj=201 即 PREVIOUS_APP_ADJ+1. AOSP ProcessList.java 中 PREVIOUS_APP_ADJ=201, 所以 201=PREVIOUS_APP_ADJ 本身, 不是 PREVIOUS_APP_ADJ+1(=202).",
+        "suggestion": "改为: min_score_adj 通常设置为 201 (即 PREVIOUS_APP_ADJ)"
+      },
+      {
+        "type": "版本差异",
+        "location": "PSI 信号与 lmkd 的触发机制段",
+        "detail": "在 Android 高版本上 表述模糊. PSI 从 Android 10 开始作为 lmkd 默认信号源.",
+        "suggestion": "改为: 从 Android 10 开始, PSI 已取代 vmpressure 成为 lmkd 的主要信号来源"
+      },
+      {
+        "type": "版本差异",
+        "location": "ART GC 在低内存下的触发策略段",
+        "detail": "在 Android 8.0 之后 应改为从 Android 8.0 开始. CC collector 从 8.0 起引入.",
+        "suggestion": "改为: 从 Android 8.0 开始"
+      },
+      {
+        "type": "知识盲区",
+        "location": "全文",
+        "detail": "Compact Daemon (compactd, Android 10+ 用户空间内存规整守护进程) 未提及. onTrimMemory 级别体系未与内存压力信号关联.",
+        "suggestion": "补充 compactd 机制说明和 onTrimMemory trim level 与 PSI 压力等级的映射关系"
+      },
+      {
+        "type": "数据缺失",
+        "location": "多处",
+        "detail": "(1) Qualcomm 75% 调优指南缺少引用. (2) 后台进程上限 32->8-12 缺少来源. (3) Android 16 Go 扩展到 4GB 需验证. (4) MGLRU 段末尾推测性结论.",
+        "suggestion": "补充具体引用和数据来源, 删除推测性结论"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-16T20:31:46",
+    "status": "pending"
   }
 ]
