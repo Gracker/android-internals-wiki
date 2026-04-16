@@ -1,7 +1,7 @@
 ---
 section: "2.10"
 title: "GPU 渲染深入"
-chapter: "2"
+chapter: "2.10"
 status: ready-for-review
 applicable_versions: "Android 5.0 - Android 16 (API 21-36)"
 last_verified: "2026-04-09"
@@ -34,7 +34,10 @@ polish_by: "task2b-polish"
 pipeline_stage: task9_pending
 task6_state: reviewed
 task6_result: pass-light-edit
-task9_state: pending
+task9_state: reviewed
+task9_result: needs-rework
+task9_reviewed_date: "2026-04-17"
+task9_reviewed_by: "openclaw-task9"
 task2b_state: idle
 ---
 
