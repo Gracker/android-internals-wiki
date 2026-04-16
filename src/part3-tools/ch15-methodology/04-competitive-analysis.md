@@ -20,10 +20,13 @@ sources:
     path: "https://developer.android.com/reference/android/view/FrameMetrics"
 tags: ['competitive-analysis', 'benchmark', 'startup', 'fps', 'apk-size', 'methodology']
 related_chapters: ["7.3", "8.3", "12.1", "13.2", "14.1", "15.3"]
-pipeline_stage: task6_pending
-task6_state: pending
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task2b_state: idle
+reviewed_by: openclaw-task6
+reviewed_date: "2026-04-17"
+task6_result: pass-light-edit
 ---
 
 # 竞品分析方法
@@ -137,7 +140,7 @@ Complete.
 
 **TotalTime** 是我们最应该关注的值。它代表从系统接收到启动请求、创建进程、初始化 Application、创建 Activity 并执行到 `onResume()` 的总耗时。对于只有一个 Activity 的冷启动场景，TotalTime 反映的就是 App 自身的启动性能。
 
-**ThisTime** 记录的是最后一个 Activity 的启动耗时。如果 App 的启动链路中有中间 Activity（比如一个透明的路由 Activity 跳转到真正的首页），ThisTime 只计最后一段，TotalTime 则包含整个链路。所以竞品对比用 TotalTime，不要用 ThisTime。
+**ThisTime** 记录的是最后一个 Activity 的启动耗时。如果 App 的启动路径中有中间 Activity（比如一个透明的路由 Activity 跳转到真正的首页），ThisTime 只计最后一段，TotalTime 则包含整个路径。所以竞品对比用 TotalTime，不要用 ThisTime。
 
 **WaitTime** 是从 `am` 命令发起时刻到系统返回结果的总时间，包含了 Pause 前一个 Activity 的开销。这个值受系统状态影响较大，不适合做精确的竞品对比。
 
@@ -268,7 +271,7 @@ activity.getWindow().addOnFrameMetricsAvailableListener(
 );
 ```
 
-线上对比的关键是确保两个 App 上报的指标口径一致。FrameMetrics 的 `TOTAL_DURATION` 从 `performTraversals()` 开始到帧提交到 BufferQueue 结束，这个定义在不同 App 间是统一的。
+线上对比时，必须确保两个 App 上报的指标口径一致。FrameMetrics 的 `TOTAL_DURATION` 从 `performTraversals()` 开始到帧提交到 BufferQueue 结束，这个定义在不同 App 间是统一的。
 
 [待补充: 不同 APM 平台（Firebase Performance / 自建 APM）的流畅性指标口径对比]
 
@@ -355,7 +358,7 @@ done
 
 ### 误区二：不同量级的场景放在一起比
 
-冷启动和热启动的耗时差一个数量级。如果把竞品 A 的冷启动时间和竞品 B 的温启动时间放在一起比，结论毫无意义。同样道理，首页信息流滑动和设置页面滑动的流畅性也不可同日而语。对比的前提是场景可对齐。
+冷启动和热启动的耗时差一个数量级。如果把竞品 A 的冷启动时间和竞品 B 的温启动时间放在一起比，结论毫无意义。同样道理，首页信息流滑动和设置页面滑动的流畅性也不可同日而语。对比的前提是场景定义一致。
 
 ### 误区三：忽略版本差异和编译状态
 
@@ -369,7 +372,7 @@ done
 
 ### 误区五：忽略 SoC 平台差异的影响
 
-在不同品牌手机上测试同一个 App，性能数据可能差别很大。高通骁龙和联发科天玑的 CPU 调度策略不同，GPU 能力不同，内存带宽不同。如果我们在骁龙 8 Gen 3 上测了竞品 A，在天玑 9300 上测了竞品 B，然后得出"A 比 B 流畅"的结论，实际上我们比较的可能是两个 SoC 而不是两个 App。
+在不同品牌手机上测试同一个 App，性能数据可能差别很大。高通骁龙和联发科天玑的 CPU 调度策略不同，GPU 能力不同，内存带宽不同。如果我们在骁龙 8 Gen 3 上测了竞品 A，在天玑 9300 上测了竞品 B，然后得出"A 比 B 流畅"的结论，我们比较的可能是两个 SoC 而不是两个 App。
 
 [自动发现: 手机厂商的性能模式（如"性能模式"或"游戏模式"）会改变 CPU 调频策略和温控阈值。在竞品对比前，确保设备的性能模式设置一致，或统一使用默认模式。]
 
@@ -412,7 +415,7 @@ adb bugreport > bugreport.txt
 battery-historian --port 9998
 ```
 
-软件方案的问题是精度有限，只能看到"相对耗电"而非"绝对耗电"。如果两个 App 的功耗差异在 5% 以内，软件方案很难可靠地分辨。
+软件方案的精度有限，只能看到"相对耗电"而非"绝对耗电"。如果两个 App 的功耗差异在 5% 以内，软件方案很难可靠地分辨。
 
 ### 硬件测量方案
 
