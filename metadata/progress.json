@@ -21,7 +21,7 @@
     "task9_unknown": 31,
     "task9_pending": 170,
     "task9_reviewed": 6,
-    "last_updated": "2026-04-16T12:07:00",
+    "last_updated": "2026-04-17T03:09:00",
     "task2b_state_counts": {
       "unknown": 33,
       "fixed": 79,
@@ -29,9 +29,10 @@
       "idle": 81
     },
     "task6_state_counts": {
-      "revisiting": 80,
-      "reviewed": 26,
-      "pending": 69
+      "pending": 69,
+      "reviewed": 29,
+      "revisiting": 81,
+      "unknown": 33
     },
     "task9_state_counts": {
       "unknown": 32,
@@ -39,18 +40,19 @@
       "reviewed": 10
     },
     "pipeline_stage_counts": {
-      "task6_pending": 147,
+      "unknown": 32,
+      "task6_pending": 148,
       "task2b_pending": 17,
-      "task9_pending": 11
+      "task9_pending": 15
     },
     "total_sections": 207
   },
   "pipeline": {
     "pipeline_stage_counts": {
-      "unknown": 31,
-      "task6_pending": 157,
-      "task2b_pending": 16,
-      "task9_pending": 3
+      "unknown": 32,
+      "task6_pending": 148,
+      "task2b_pending": 17,
+      "task9_pending": 15
     },
     "task2b_state_counts": {
       "unknown": 31,
@@ -59,10 +61,10 @@
       "idle": 82
     },
     "task6_state_counts": {
-      "unknown": 31,
-      "revisiting": 78,
-      "reviewed": 19,
-      "pending": 79
+      "pending": 69,
+      "reviewed": 29,
+      "revisiting": 81,
+      "unknown": 33
     },
     "task9_state_counts": {
       "unknown": 31,
@@ -471,12 +473,14 @@
       "title": "Android 渲染架构全景",
       "path": "src/part1-fundamentals/ch02-rendering/01-rendering-overview.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "pending",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
       "task9_state": "pending",
       "task2b_state": "idle",
-      "reviewed_date": "2026-04-10",
-      "reviewed_by": "openclaw-task6"
+      "reviewed_date": "2026-04-17",
+      "reviewed_by": "openclaw-task6",
+      "task6_result": "pass-light-edit",
+      "review_round": 2
     },
     "src/part1-fundamentals/ch02-rendering/02-framerate.md": {
       "chapter": "2.2",
