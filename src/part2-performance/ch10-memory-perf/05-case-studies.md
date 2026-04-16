@@ -6,8 +6,9 @@ status: ready-for-review
 drafted_date: "2026-04-02"
 applicable_versions: "Android 8.0 (API 26) - Android 16 (API 36)"
 last_verified: "2026-04-02"
-reviewed_date: "2026-04-09"
+reviewed_date: "2026-04-16"
 reviewed_by: openclaw-task6
+task6_result: pass-light-edit
 last_verified_against: "AOSP android-16.0.0_r1"
 confidence: medium
 sources:
@@ -29,8 +30,8 @@ polish_count: 1
 polish_date: "2026-04-09"
 polish_by: "task2b-polish"
 related_chapters: ["10.1", "10.2", "10.3", "10.4", "10.6"]
-pipeline_stage: task6_pending
-task6_state: pending
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task2b_state: idle
 ---
@@ -123,7 +124,7 @@ task2b_state: idle
 
 ### 举一反三
 
-这个案例的核心规律是：**低内存不是一个单一问题，而是一个系统性连锁反应**。内存不足 → kswapd 频繁回收 → page cache 被清空 → I/O 增加 → 进程被杀又拉起 → CPU 和 I/O 竞争加剧 → 前台应用卡顿。
+这个案例的核心规律是：**低内存会引发系统性连锁反应**。内存不足 → kswapd 频繁回收 → page cache 被清空 → I/O 增加 → 进程被杀又拉起 → CPU 和 I/O 竞争加剧 → 前台应用卡顿。
 
 当我们在 Perfetto 中看到主线程有大量 Uninterruptible Sleep - Block I/O 时，不要只关注 I/O 本身——往上看一眼系统内存水位（Perfetto 中的 `meminfo` track），往往能找到更根本的原因。
 
@@ -139,7 +140,7 @@ task2b_state: idle
 
 ### 分析思路
 
-治理 OOM 的第一步不是看崩溃堆栈，而是搞清楚**内存被谁占着**。这个案例中，团队采用了基于 Hprof 内存快照的线上归因方案：在 OOM 发生时（或接近发生时），抓取一份 Java 堆的 Hprof 快照，然后在服务端分析各对象的引用链。
+治理 OOM 的第一步是搞清楚**内存被谁占着**。这个案例中，团队采用了基于 Hprof 内存快照的线上归因方案：在 OOM 发生时（或接近发生时），抓取一份 Java 堆的 Hprof 快照，然后在服务端分析各对象的引用链。
 
 分析 Hprof 快照时，最关键的是找到 **Dominator Tree**（支配者树）中的大节点。所谓"支配者"，就是某个对象如果被 GC 回收，它直接或间接持有的所有对象都会被回收。找到几个最大的 Dominator，通常就能定位到内存泄漏的源头。
 
@@ -163,7 +164,7 @@ task2b_state: idle
 
 **方案二：生命周期感知的资源清理**。在 Activity/Fragment 的 `onDestroy()` 中，主动释放大对象（Bitmap、大数组等），并清空与该页面相关的静态引用。对于异步回调，使用 WeakReference 包装，或者在页面销毁时取消未完成的异步任务。
 
-**方案三：线上 Hprof 归因持续监控**。不是一次性排查，而是将 Hprof 快照的自动化分析集成到 APM 平台中，持续监控线上内存分配的大户。当某个版本的内存分布发生异常变化时，自动告警。
+**方案三：线上 Hprof 归因持续监控**。将 Hprof 快照的自动化分析持续集成到 APM 平台中，监控线上内存分配的大户。当某个版本的内存分布发生异常变化时，自动告警。
 
 **效果**：上线优化后，该 App 的 Java OOM 崩溃率在两个版本周期内下降了约 **80%**。其中收益最大的改动是 LruCache 替换 HashMap，贡献了约 60% 的降幅。
 
@@ -189,7 +190,7 @@ Java 堆泄漏有一个典型特征：**崩溃堆栈分散，但根因集中**�
 
 ### 分析思路
 
-这是一个典型的"问题在 App 侧，根因在系统侧"的案例。团队的分析路径非常值得学习：
+这是一个典型的"问题在 App 侧，根因在系统侧"的案例。团队的分析路径可以复用到其他“App 侧问题、系统侧根因”的场景：
 
 **第一步：稳定复现**。通过对历史触发 MR 的分析，团队找到了一种可稳定复现的方法：给 View 设置透明度（`setAlpha(0.5)`）。测试发现，**每增加一个设置了 alpha 的 View，renderD128 内存增加约 25MB**。不设 alpha 的对照组则没有变化。这立刻将排查范围缩小到了"硬件加速渲染管线中与 alpha 合成相关的路径"。
 
