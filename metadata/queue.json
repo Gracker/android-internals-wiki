@@ -543,5 +543,100 @@
     "status": "completed",
     "completed_at": "2026-04-16T16:00:56",
     "completed_by": "task2b-rework"
+  },
+  {
+    "section": "ch02-rendering/18",
+    "section_title": "2.18 Adaptive Refresh Rate 与动态帧率控制",
+    "priority": 75,
+    "reason": "[时效性巡检] 缺少 Android 17 更新：Adaptive Refresh Rate 在 Android 17 中的新变化",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "版本差异",
+        "location": "全文",
+        "detail": "当前覆盖到 Android 16，但 Android 17 中 Adaptive Refresh Rate 可能有新变化",
+        "suggestion": "添加 Android 17 中 Adaptive Refresh Rate 的更新内容"
+      }
+    ],
+    "added_by": "task3-freshness-check",
+    "added_at": "2026-04-17T02:00:00"
+  },
+  {
+    "section": "ch06-storage/03",
+    "section_title": "I/O 调度与性能",
+    "priority": 70,
+    "reason": "[时效性巡检] 缺少 Android 16/17 更新",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "版本差异",
+        "location": "全文",
+        "detail": "当前覆盖到 Android 14，缺少 Android 15/16/17 的 I/O 调度变化",
+        "suggestion": "补充 Android 15-17 的 I/O 调度相关变更"
+      }
+    ],
+    "added_by": "task3-freshness-check",
+    "added_at": "2026-04-17T02:00:00"
+  },
+  {
+    "section": "ch06-storage/01",
+    "section_title": "存储架构",
+    "priority": 70,
+    "reason": "[时效性巡检] 缺少 Android 16 更新",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "版本差异",
+        "location": "全文",
+        "detail": "当前覆盖到 Android 15，缺少 Android 16 的存储相关变化",
+        "suggestion": "补充 Android 16 存储相关变更"
+      }
+    ],
+    "added_by": "task3-freshness-check",
+    "added_at": "2026-04-17T02:00:00"
+  },
+  {
+    "section": "ch06-storage/02",
+    "section_title": "文件系统",
+    "priority": 70,
+    "reason": "[时效性巡检] 缺少 Android 17 更新",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "版本差异",
+        "location": "全文",
+        "detail": "当前覆盖到 Android 16，但缺少 Android 17 的文件系统相关变化",
+        "suggestion": "补充 Android 17 文件系统相关变更"
+      }
+    ],
+    "added_by": "task3-freshness-check",
+    "added_at": "2026-04-17T02:00:00"
+  },
+  {
+    "section": "ch08-responsiveness/08-startup-optimization",
+    "section_title": "启动优化策略",
+    "priority": 80,
+    "reason": "[时效性巡检] 缺少 Android 16/17 更新 + last_verified 为空",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "版本差异",
+        "location": "全文",
+        "detail": "当前覆盖到 Android 15，缺少 Android 16/17 的启动优化相关变化；AutoFDO 性能数据需更新",
+        "suggestion": "补充 Android 16/17 启动优化变更，添加 AutoFDO 最新性能数据（26.4% benchmark 改善，15-30% 冷启动提升）"
+      }
+    ],
+    "added_by": "task3-freshness-check",
+    "added_at": "2026-04-17T02:00:00"
   }
 ]
