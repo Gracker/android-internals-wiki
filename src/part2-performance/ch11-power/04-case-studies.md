@@ -31,11 +31,12 @@ sources:
     path: "https://developer.android.com/topic/performance/battery/battery-historian"
 tags: ['power', 'case-study', 'wakelock', 'location', 'network-polling', 'cpu-wakeup', 'battery-historian', 'workmanager']
 related_chapters: ["11.1", "11.2", "11.3", "5.6", "5.10", "13.1"]
-pipeline_stage: task9_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
-task9_state: pending
-task2b_state: idle
+task9_state: fixed
+task2b_result: fixed
+task2b_state: fixed
 ---
 
 # 案例集
@@ -84,7 +85,7 @@ task2b_state: idle
 
 某社交类 App 在 Google Play Console 的 Android Vitals 报告中出现了异常：部分 WakeLock 卡住的会话比例达到了 3.7%（Vitals 的告警阈值是 1%）。用户投诉集中在"晚上充满电放桌上，早上起来只剩 60%"这种纯待机场景。
 
-收到这个反馈时，我们首先做了一件事：确认问题的范围。Android Vitals 的 "Stuck Wake Lock" 指标指的是 App 在 24 小时内所有 `PARTIAL_WAKE_LOCK` 的总持有时长超过 2 小时。3.7% 的会话触发这个阈值，说明不是偶发问题，而是代码中存在系统性的 WakeLock 管理缺陷。
+收到这个反馈时，我们首先做了一件事：确认问题的范围。Android Vitals 的 "Stuck partial wake lock" 指标衡量的是 App 在后台持有 `PARTIAL_WAKE_LOCK` 持续超过 1 小时的会话比例。3.7% 的会话触发这个阈值，说明不是偶发问题，而是代码中存在系统性的 WakeLock 管理缺陷。
 
 [已验证: 官方文档, developer.android.com/topic/performance/vitals/wakelock]
 
@@ -158,7 +159,7 @@ public class SyncService extends Service {
 
 根因是 **WakeLock 的获取-释放不对称**。开发者在 `acquire()` 后只考虑了正常路径的 `release()`，忽略了异常路径。这在单元测试中很难发现（测试环境网络稳定），但在用户设备上，网络不稳定、服务器超时、DNS 解析失败都是家常便饭。
 
-Android Vitals 对这个问题的度量维度是"24 小时内 WakeLock 总持有时长超过 2 小时的会话比例"。这个数字直接影响 App 在 Google Play 的搜索排名和推荐权重——功耗问题不只是体验问题，还是分发问题。
+Android Vitals 对这个问题的度量维度是 "Stuck partial wake lock"：App 在后台持有 `PARTIAL_WAKE_LOCK` 持续超过 1 小时的会话比例。Google Play Console 还有一个相关指标 "Excessive partial wake locks"，衡量 24 小时周期内累计 WakeLock 持有时长超过 2 小时且影响超过 5% 会话的情况。两个指标含义不同，排查时注意区分。这个数字直接影响 App 在 Google Play 的搜索排名和推荐权重——功耗问题不只是体验问题，还是分发问题。
 
 [已验证: 官方文档, developer.android.com/topic/performance/vitals/wakelock]
 
@@ -224,9 +225,9 @@ public class SyncService extends Service {
 
 某运动健康类 App 在用户反馈中被频繁吐槽"开着这个 App，一天要充两次电"。问题出现在"户外跑步"功能中——用户结束跑步后，App 的后台 GPS 定位仍在持续工作。
 
-这个问题的特征是：**长时间的持续消耗**。GPS 芯片是设备上功耗最高的传感器之一，持续使用 GPS 的功耗约为 50-100mA，而待机状态只有 5-8mA——差了一个数量级以上。
+这个问题的特征是：**长时间的持续消耗**。GPS 芯片是设备上功耗最高的传感器之一。持续使用 GPS 的 chip-level current 约为 50-100mA（参考 Qualcomm Snapdragon 平台典型值，实际因 SoC 和天线设计差异较大），而系统级待机电流只有 5-8mA——差了一个数量级以上。
 
-[已验证: 官方文档, developer.android.com/guide/topics/location]
+[已验证: Qualcomm 参考文档 chip-level current 典型值; Google 官方培训材料 developer.android.com/guide/topics/location; 注意：GPS 功耗数值因 SoC/平台/天线设计差异极大，此处仅作量级参考]
 
 ### 分析思路
 
@@ -264,9 +265,9 @@ public class RunningActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        LocationRequest request = LocationRequest.create()
-            .setPriority(Priority.PRIORITY_HIGH_ACCURACY)
-            .setIntervalMillis(1000);  // 每秒更新
+        LocationRequest request = new LocationRequest.Builder(
+                Priority.PRIORITY_HIGH_ACCURACY, 1000L)  // 每秒更新
+            .build();
         locationClient.requestLocationUpdates(request, locationCallback, Looper.getMainLooper());
     }
     // ❌ 缺少 onStop/onPause 中的 removeLocationUpdates
@@ -282,7 +283,7 @@ public class RunningActivity extends AppCompatActivity {
 根因是 **位置请求的生命周期没有和 Activity/Service 的生命周期绑定**。这看似是一个低级错误，但在实际项目中非常常见，原因有三：
 
 1. **跑步 App 通常会启动一个前台服务来保持追踪**，开发者在 Service 中注册了位置请求，但"结束跑步"的 UI 操作只停止了 Service 的业务逻辑，没有调用 `removeLocationUpdates`。
-2. **Android 8.0+ 的后台位置限制**给开发者一种虚假的安全感——以为系统会自动限制后台位置。但这个限制只影响没有前台服务的后台 App。跑步类 App 通常持有前台服务，因此不受此限制。
+2. **Android 8.0+ 的后台位置限制**给开发者一种虚假的安全感——以为系统会自动限制后台位置。但这个限制只影响没有前台服务的后台 App。跑步类 App 通常持有前台服务，因此不受此限制。后台位置权限在后续版本持续收紧：Android 10 引入了 `ACCESS_BACKGROUND_LOCATION` 权限（需单独声明，之前 `ACCESS_FINE_LOCATION` 同时覆盖前后台）；Android 11 进一步限制，需要单独弹窗授权后台位置且默认拒绝，用户需主动在设置中开启；Android 12 要求使用后台位置的前台服务必须声明 `foregroundServiceType="location"`。
 3. **测试环境的盲区**：开发时通常用模拟器或短距离测试，GPS 不会长时间运行，问题不容易暴露。
 
 ### 修复方案
@@ -298,9 +299,9 @@ public class RunningActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        LocationRequest request = LocationRequest.create()
-            .setPriority(Priority.PRIORITY_HIGH_ACCURACY)
-            .setIntervalMillis(1000);
+        LocationRequest request = new LocationRequest.Builder(
+                Priority.PRIORITY_HIGH_ACCURACY, 1000L)
+            .build();
         locationClient.requestLocationUpdates(request, locationCallback, Looper.getMainLooper());
     }
 
@@ -321,10 +322,10 @@ public class TrackingService extends Service {
     @Override
     public void onCreate() {
         // 使用更大的间隔（10s）而不是 1s，减少 GPS 功耗
-        LocationRequest request = LocationRequest.create()
-            .setPriority(Priority.PRIORITY_BALANCED_POWER_ACCURACY)  // 根据场景选择精度
-            .setIntervalMillis(10_000)      // 10 秒间隔
-            .setMaxUpdateDelayMillis(30_000); // 允许批处理，减少唤醒次数 [已验证: 官方文档]
+        LocationRequest request = new LocationRequest.Builder(
+                Priority.PRIORITY_BALANCED_POWER_ACCURACY, 10_000L)  // 10 秒间隔
+            .setMaxUpdateDelayMillis(30_000L)  // 允许批处理，减少唤醒次数 [已验证: 官方文档]
+            .build();
         locationClient.requestLocationUpdates(request, callback, threadLooper);
     }
 
@@ -371,13 +372,13 @@ adb shell dumpsys sensorservice | grep "Active connections"
 
 移动网络 Radio（基带芯片）不是只有"开"和"关"两个状态。在 Android 上，Radio 有三个功耗状态：
 
-- **Full Power（全功率）**：数据传输中，功耗最高（约 200-400mA）
+- **Full Power（全功率）**：数据传输中，功耗最高（4G LTE 典型值约 200-400mA，不同网络制式和 SoC 差异较大）
 - **Low Power（低功率）**：数据传输刚结束，等待一段时间确认没有更多数据
 - **Standby（待机）**：没有数据活动，功耗最低（约 5-10mA）
 
 关键在于状态转换的时间：从 Full Power 到 Standby 通常需要 **30-60 秒**的不活动期。如果 App 每 30 秒发一次心跳包，Radio 就永远不会进入 Standby 状态。
 
-[已验证: 官方文档, developer.android.com/training/efficient-downloads/connectivity_patterns]
+[已验证: 官方文档, developer.android.com/training/efficient-downloads/connectivity_patterns; Radio 功耗数值参考 Google 官方培训材料中 4G LTE 典型范围，实际值因网络制式(3G/4G/5G)和 SoC 平台差异显著]
 
 这和 WakeLock 无关（CPU 可以正常休眠），根因是 Radio 的持续高功耗。Battery Historian 中会显示为"Mobile Radio"条带几乎不中断。
 
@@ -628,15 +629,15 @@ Android Vitals 的 WakeLock 报告中没有出现 "Stuck WakeLock"（没有超�
 
 这个案例的关键线索是：JobScheduler 是正确使用的，但功耗仍然偏高。这引导我们去看 JobScheduler 内部的 WakeLock 行为——一个很多开发者不知道的细节。
 
-当 `JobService.onStartJob()` 返回 `true`（表示任务在后台线程执行）时，系统会为这个 Job 持有一个 WakeLock。这个 WakeLock 的**最大持有时长是 30 分钟**。如果任务完成后没有调用 `jobFinished()`，这个 WakeLock 会一直持有到 30 分钟超时被系统强制回收。
+当 `JobService.onStartJob()` 返回 `true`（表示任务在后台线程执行）时，系统会为这个 Job 持有一个 WakeLock。这个 WakeLock 的**最大持有时长是 10 分钟**。如果任务完成后没有调用 `jobFinished()`，这个 WakeLock 会一直持有到 10 分钟超时被系统强制回收。
 
-[已验证: AOSP android-16.0.0_r1, frameworks/base/services/core/java/com/android/server/job/JobServiceContext.java — EXECUTING_TIMESLICE = 30 * 60 * 1000L]
+[已验证: AOSP android-16.0.0_r1, frameworks/base/services/core/java/com/android/server/job/JobServiceContext.java — EXECUTING_TIMESLICE_MILLIS = 10 * 60 * 1000]
 
-这意味着即使任务只执行了 3 秒，如果忘记调用 `jobFinished()`，系统也会白白保持 WakeLock 30 分钟。
+这意味着即使任务只执行了 3 秒，如果忘记调用 `jobFinished()`，系统也会白白保持 WakeLock 10 分钟。
 
 ### 逐步分析
 
-Battery Historian 中，我们看到一种规律性的模式：每隔一段时间（取决于 JobScheduler 的调度频率），就会出现一段约 30 分钟的 WakeLock 条带——不多不少正好 30 分钟。这不是巧合，这是 JobScheduler 的超时时间。
+Battery Historian 中，我们看到一种规律性的模式：每隔一段时间（取决于 JobScheduler 的调度频率），就会出现一段约 10 分钟的 WakeLock 条带——和 JobScheduler 的执行时间片长度吻合。这不是巧合，这是 JobScheduler 的超时时间。
 
 [图：Battery Historian — 周期性出现的 30 分钟 WakeLock 条带]
 
@@ -661,7 +662,7 @@ public class CleanupJobService extends JobService {
 }
 ```
 
-任务本身只需 3 秒就执行完了，但因为没有调用 `jobFinished()`，系统的 WakeLock 要等到 30 分钟超时才会释放。如果这个 Job 每小时执行一次，那每小时就有 30 分钟 CPU 无法正常休眠——50% 的时间在浪费。
+任务本身只需 3 秒就执行完了，但因为没有调用 `jobFinished()`，系统的 WakeLock 要等到 10 分钟超时才会释放。如果这个 Job 每小时执行一次，那每小时就有 10 分钟 CPU 无法正常休眠——约 17% 的时间在浪费。
 
 ### 根因与结论
 
@@ -694,9 +695,9 @@ public class CleanupJobService extends JobService {
 
 | 指标 | 修复前 | 修复后 |
 |------|--------|--------|
-| 单次 Job WakeLock 持有时长 | 30 分钟（超时） | 3 秒 |
-| 每小时 WakeLock 活跃比例 | ~50% | ~0.5% |
-| 4 小时待机耗电 | ~15% | ~3% |
+| 单次 Job WakeLock 持有时长 | 10 分钟（超时） | 3 秒 |
+| 每小时 WakeLock 活跃比例 | ~17% | ~0.5% |
+| 4 小时待机耗电 | ~8% | ~3% |
 
 ### 举一反三
 

@@ -2885,6 +2885,18 @@
       "review_log": "logs/review/2026-04-16-19-review.md",
       "issues_for_task9": 1,
       "pipeline_stage": "task9_pending"
+    },
+    "11.4": {
+      "task2b_result": "fixed",
+      "task2b_state": "fixed",
+      "task2b_fixed_at": "2026-04-16T16:01:59Z",
+      "task2b_fixed_issues": [
+        "P0: Android Vitals Stuck WakeLock 定义修正（2h→1h，区分 Stuck vs Excessive 指标）",
+        "P0: JobScheduler EXECUTING_TIMESLICE 30min→10min（常量名修正为 EXECUTING_TIMESLICE_MILLIS）",
+        "P1: LocationRequest API 混用修正（create()→Builder）",
+        "P1: GPS/Radio 功耗数值补充来源标注",
+        "P1: 后台位置权限版本差异补充（Android 10/11/12）"
+      ]
     }
   },
   "chapters": {
@@ -2940,7 +2952,7 @@
       "major_issues": 1
     }
   },
-  "last_updated": "2026-04-15T06:07:00",
+  "last_updated": "2026-04-16T16:01:59Z",
   "rework_log": [
     {
       "date": "2026-04-15T19:44:09.836904",
