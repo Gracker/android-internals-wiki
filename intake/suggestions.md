@@ -500,3 +500,46 @@
 - **问题**：Android 13-15 的 ANR 分析机制变化描述为"以上基于公开 Release Notes 推断"，缺乏具体验证
 - **建议**：确认版本差异是否真实影响 ANR 分析流程，如影响较大需补充具体案例；如无影响可简化描述
 - **review 日志**：logs/review/2026-04-16-10-review.md
+
+
+## [Task9 Deep Review] 9.4 特殊场景的 ANR — 2026-04-16
+- **类型**：源码准确性
+- **位置**：ART GC 关键源码路径代码片段
+- **问题**：CollectGarbageInternal() 代码是伪代码但标注为 AOSP 源码。实际 ART 不直接调用 collector->PausePhase()/ConcurrentPhase()，而是通过 collector->Run() 分阶段执行。且标注 @ android-15 但 frontmatter 声明 verified against android-14
+- **建议**：替换为实际 AOSP 代码，或在代码注释中明确标注「简化示意，非实际 AOSP 代码」
+
+## [Task9 Deep Review] 9.4 特殊场景的 ANR — 2026-04-16
+- **类型**：数据缺失
+- **位置**：「STW 停顿的累积效应」段，「实测平均约 1.83ms」
+- **问题**：GC STW 暂停数据缺少测量条件（设备型号、Android 版本、Heap 大小、GC 负载类型）
+- **建议**：补充测量条件，或标注数据来源（如 Android 官方性能数据、某设备实测等）
+
+## [Task9 Deep Review] 9.4 特殊场景的 ANR — 2026-04-16
+- **类型**：源码准确性
+- **位置**：「Binder 线程池耗尽」段
+- **问题**："Android 默认为每个进程分配最多 16 个 Binder 线程"无引用
+- **建议**：补充引用 AOSP ProcessState.cpp 中 DEFAULT_MAX_BINDER_THREADS 定义
+
+## [Task9 Deep Review] 9.4 特殊场景的 ANR — 2026-04-16
+- **类型**：原理断裂
+- **位置**：「SQLite WAL 模式的四级锁」
+- **问题**：称"四级文件锁"但实际描述了五个状态（UNLOCKED/SHARED/RESERVED/PENDING/EXCLUSIVE）。PENDING 在 SQLite 文档中是正式的锁状态，不是"过渡态"。SQLite 官方文档明确列出 5 个 locking levels
+- **建议**：修正为"五级文件锁机制"，将 PENDING 作为正式锁级别描述而非过渡态
+
+## [Task9 Deep Review] 9.4 特殊场景的 ANR — 2026-04-16
+- **类型**：原理断裂
+- **位置**：「从 apply() 到 ANR 的完整链路」段
+- **问题**：只提到 handlePauseActivity() 触发 waitToFinish()，未提及 handleStopActivity() 和 handleSleeping() 也会触发
+- **建议**：补充其他触发点，帮助读者理解 apply() ANR 不仅发生在 Activity 切换时
+
+## [Task9 Deep Review] 9.4 特殊场景的 ANR — 2026-04-16
+- **类型**：版本差异
+- **位置**：版本演进节
+- **问题**：Android 14 后台 broadcast 超时变化描述过于笼统（"后台 Broadcast 超时缩短"），实际 Android 14 引入了 CPU-starved 分级机制，60s 可扩展到 120s
+- **建议**：补充 Android 14 的具体超时变化细节
+
+## [Task9 Deep Review] 9.4 特殊场景的 ANR — 2026-04-16
+- **类型**：知识盲区
+- **位置**：全文缺失
+- **问题**：未提及 InputConnection ANR（5s 超时）和 Trampoline ANR 场景
+- **建议**：在「常见问题与误区」中补充提及，或在扩展阅读中引用

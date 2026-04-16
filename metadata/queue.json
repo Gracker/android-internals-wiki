@@ -327,5 +327,44 @@
     "status": "completed",
     "completed_at": "2026-04-16T00:49:11",
     "completed_by": "task2b-rework"
+  },
+  {
+    "section": "9.4",
+    "section_title": "特殊场景的 ANR",
+    "priority": 95,
+    "reason": "[Deep Tech Review] P0: THREAD_PRIORITY_FOREGROUND 常量值错误(-1→-2); P1: Broadcast连锁ANR机制描述错误(超时是per-receiver非累计), QueuedWork源码字段名过时, startForeground()超时ANR场景缺失",
+    "material_paths": [
+      "intake/suggestions.md",
+      "intake/research-gaps.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "「CPU 饱和：调度器来不及调度」段",
+        "detail": "THREAD_PRIORITY_FOREGROUND 写为 -1，实际值为 -2（android.os.Process.THREAD_PRIORITY_FOREGROUND = -2）",
+        "suggestion": "修正为 -2"
+      },
+      {
+        "type": "原理断裂",
+        "location": "「连锁 ANR 的形成过程」段",
+        "detail": "称\"累计等待时间已经远超 10 秒，于是从第 7 个开始全部触发 ANR\"。实际上 AOSP BroadcastQueue 对每个 receiver 独立设置超时（setBroadcastTimeoutLocked），每个 receiver 有自己的 10s/60s 窗口。\"累计超时\"机制不存在。广播风暴导致多 ANR 的真正原因是系统资源争抢导致各 receiver 各自超时",
+        "suggestion": "重写连锁 ANR 的形成过程：每个 receiver 独立超时，广播风暴导致的是系统级资源争抢（CPU/IO/Binder线程），使原本轻量的 receiver 也因调度延迟而超时"
+      },
+      {
+        "type": "源码错误",
+        "location": "「关键源码路径」QueuedWork.waitToFinish()",
+        "detail": "代码使用 sPendingWorkFinishers 字段名，Android 8.0+ 已更名为 sFinishers，且实际实现包含额外 wait 循环和 tracing 逻辑",
+        "suggestion": "基于 android-14.0.0_r1 更新代码片段，使用 sFinishers 字段名，补充实际实现的等待逻辑"
+      },
+      {
+        "type": "知识盲区",
+        "location": "全文缺失场景",
+        "detail": "完全未提及 startForeground() 超时 ANR（Android 12+ 5s），这是现代 Android 最高频 Service ANR 类型之一。作为\"特殊场景\"章节，此遗漏显著",
+        "suggestion": "新增「startForeground() 超时导致的 ANR」小节，或至少在常见问题中提及"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-16T12:20:00",
+    "status": "pending"
   }
 ]

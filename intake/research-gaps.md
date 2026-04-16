@@ -297,3 +297,36 @@ InputConnection ANR（InputMethodManagedService timeout）未提及。当 App �
 
 ### 关联章节
 9.2, 3.1, 3.4
+
+
+## [2026-04-16] 9.4 特殊场景的 ANR — 知识盲区
+
+### 盲区描述
+Broadcast 风暴的连锁 ANR 真实机制需要深入研究。当前章节描述的"累计超时"机制不存在，但广播风暴确实会导致多 App 同时 ANR。需要明确真正的原因链条：系统资源争抢（CPU 调度延迟、Binder 线程池竞争、I/O 压力）如何使多个独立 receiver 各自超时。同时需要区分有序广播的串行分发延迟和并行广播的并发资源竞争两种情况。
+
+### 重要程度
+高
+
+### 建议研究方向
+- AOSP BroadcastQueue.processNextBroadcastLocked() 中 setBroadcastTimeoutLocked() 的调用时机和参数
+- Android 14 新增的 CPU-starved 超时分级机制（60s→120s）对广播风暴 ANR 模式的影响
+- 有序广播串行分发中，前序 receiver 耗时对后序 receiver 调度延迟的影响量化
+
+### 关联章节
+9.1, 9.2
+
+## [2026-04-16] 9.4 特殊场景的 ANR — 知识盲区
+
+### 盲区描述
+ART GC 代码片段验证不足。当前 CollectGarbageInternal() 代码是伪代码，需要基于实际 AOSP（android-14 或 android-15）提供准确的阶段调用代码。特别关注：ConcurrentCopying collector 的实际 Run() 方法中 PausePhase/ConcurrentPhase 的调用模式，以及 CMC（Concurrent Mark-Compact，Android 15+）是否有不同的暂停模式。
+
+### 重要程度
+中
+
+### 建议研究方向
+- art/runtime/gc/collector/concurrent_copying.cc 中 Run() 方法的实际实现
+- art/runtime/gc/heap.cc 中 CollectGarbageInternal() 的实际代码
+- Android 15 CMC collector 的暂停模式变化
+
+### 关联章节
+4.3, 4.8
