@@ -9,8 +9,8 @@ applicable_versions: "Android 8.0 (API 26) - Android 16 (API 36)"
 last_verified: "2026-04-02"
 last_verified_against: "AOSP android-16.0.0_r1"
 confidence: high
-reviewed_date: "2026-04-09"
-reviewed_by: "openclaw-task6 (quality-gate)"
+reviewed_date: 2026-04-16
+reviewed_by: openclaw-task6
 polish_count: 1
 polish_date: "2026-04-08"
 polish_by: "task2b-polish"
@@ -27,8 +27,8 @@ sources:
     path: "perfetto.dev/docs/data-sources/native-heap-profiler"
 tags: ['memory-leak', 'leakcanary', 'mat', 'heapprofd', 'heap-dump', 'gc-root', 'native-memory']
 related_chapters: ["4.1", "4.3", "4.5", "10.1", "10.6"]
-pipeline_stage: task6_pending
-task6_state: pending
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task2b_state: idle
 ---
@@ -60,7 +60,7 @@ task2b_state: idle
 
 ## 为什么要了解内存泄漏
 
-做过 Android 性能优化的工程师，大概率遇到过这样的场景：应用用着用着就越来越卡，最终 OOM 崩溃；打开 Android Studio 的 Memory Profiler，看到内存曲线像台阶一样只升不降。尝试分析 OOM 时的堆栈日志，却发现堆栈指向的可能只是一次普通的字符串分配——真正"吃掉"内存的那些泄漏对象，早已在之前无数次的页面跳转和配置变更中悄悄积累。
+做过 Android 性能优化的工程师，大概率都遇到过这样的场景：应用用着用着就越来越卡，最终 OOM 崩溃；打开 Android Studio 的 Memory Profiler，看到内存曲线像台阶一样只升不降。尝试分析 OOM 时的堆栈日志，却发现堆栈指向的可能只是一次普通的字符串分配——真正"吃掉"内存的那些泄漏对象，早已在之前无数次的页面跳转和配置变更中悄悄积累。
 
 内存泄漏的可怕之处在于：它不是"轰"的一声炸掉应用，而是像水龙头漏水一样，一滴一滴地耗尽可用内存。等到问题暴露时，面前是一堆积累了几十分钟的泄漏，从中找出第一个"凶手"极其困难。
 
@@ -122,7 +122,7 @@ if (isLeaking) { /* 触发 Heap Dump */ }
 
 ### 分析报告的阅读方法
 
-LeakCanary 输出的分析报告中，最重要的信息是**引用链**（Reference Chain）：
+LeakCanary 输出的分析报告中，最关键的信息是**引用链**（Reference Chain）：
 
 ```
 ┬───
@@ -224,7 +224,7 @@ adb shell setprop libc.debug.malloc.program com.example.myapp
 
 AddressSanitizer 和 Hardware ASan 不仅能检测泄漏，还能检测越界读写、Use-After-Free 等内存安全问题。通过编译器插桩实现，需要重新编译且增加内存占用和运行开销。
 
-[适用版本: ASan 支持 Android 8.0+, HWASan 需要 Android 10+ 和硬件支持]
+[适用版本]：ASan 支持 Android 8.0+，HWASan 需要 Android 10+ 且硬件支持
 
 Native 泄漏排查依赖系统工具（heapprofd、Malloc Debug），而 Java 泄漏的终极分析手段是 Heap Dump——拿到进程某一时刻的完整堆快照，然后逐层追踪引用链。LeakCanary 在检测到泄漏后会自动触发 Heap Dump，但当需要在生产环境或手动排查时，我们需要独立完成这个过程。
 

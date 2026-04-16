@@ -164,6 +164,136 @@ Service process 指后台 `startService()` 挂着，但这项工作既不直接�
 
 Cached process 没有前台组件，只是保留在内存里加快下一次切回。android-16 把这段区间放在 `CACHED_APP_MIN_ADJ = 900` 到 `CACHED_APP_MAX_ADJ = 999`。`HOME_APP_ADJ = 600` 和 `PREVIOUS_APP_ADJ = 700` 也属于介于 service 与 cached 之间的保留档位，排查 Home 切换或最近任务回切时经常会碰到。
 
+<!-- AIW-源码调研-2026-04-17 -->
+
+## CachedAppOptimizer / Freezer 机制（Android 12+）
+
+Android 12 引入了 `CachedAppOptimizer` 机制，通过 cgroup v2 freezer 技术冻结缓存的进程，这是比传统优先级调整更彻底的进程管理方式。
+
+### 架构设计
+
+**源码位置**：`frameworks/base/services/core/java/com/android/server/am/CachedAppOptimizer.java`
+
+**关键类/方法**：`CachedAppOptimizer` 类及其构造函数
+
+**调用链**：
+1. `ActivityManagerService` 实例化 `CachedAppOptimizer` →
+2. `CachedAppOptimizer` 创建专用线程 `CachedAppOptimizerThread` →
+3. 后台执行优化任务，包括进程冻结/解冻
+
+```java
+// 文件: frameworks/base/services/core/java/com/android/server/am/CachedAppOptimizer.java
+public class CachedAppOptimizer {
+    private final ActivityManagerService mAm;
+    private CachedAppOptimizerThread mCachedAppOptimizerThread;
+    
+    public CachedAppOptimizer(ActivityManagerService am) {
+        mAm = am;
+        mCachedAppOptimizerThread = new CachedAppOptimizerThread();
+        mCachedAppOptimizerThread.start();
+    }
+    
+    private class CachedAppOptimizerThread extends ServiceThread {
+        public CachedAppOptimizerThread() {
+            super("CachedAppOptimizerThread", Process.THREAD_PRIORITY_BACKGROUND);
+        }
+    }
+}
+```
+
+### Freezer 实现机制
+
+**源码位置**：`task_profiles.json` + cgroup v2 freezer 控制器
+
+**关键函数/类**：`enableFreezer()`, `setProcessFrozen()`, `FreezerState`
+
+**调用链**：
+1. `ActivityManagerService.enableFreezer()` →
+2. `CachedAppOptimizer.handleMessage()` 处理冻结消息 →
+3. 通过 cgroup freezer 控制器执行实际冻结操作
+
+```java
+// 文件: frameworks/base/services/core/java/com/android/server/am/CachedAppOptimizer.java
+private static final int FREEZER_ENABLE_MSG = 1;
+private static final int FREEZER_DISABLE_MSG = 2;
+
+public void handleMessage(Message msg) {
+    switch (msg.what) {
+        case FREEZER_ENABLE_MSG:
+            enableFreezer();
+            break;
+        case FREEZER_DISABLE_MSG:
+            disableFreezer();
+            break;
+        case DEADLOCK_WATCHDOG_MSG:
+            handleFreezerDeadlock();
+            break;
+    }
+}
+
+private native void enableFreezer();
+private native void disableFreezer();
+```
+
+**cgroup 配置**：
+
+```json
+// 文件: system/core/libprocessgroup/profiles/task_profiles.json
+{
+  "FreezerState": {
+    "controller": "freezer",
+    "file": "cgroup.freeze",
+    "action": "write",
+    "value": {
+      "frozen": "1",
+      "thawed": "0"
+    }
+  }
+}
+```
+
+### 在 Perfetto 中的表现
+
+被冻结进程的线程 slice 会彻底消失，与被 LMK 杀死的进程表现完全不同：
+- **被杀进程**：进程直接消失，所有线程停止
+- **被冻结进程**：进程仍然存在，但线程 slice 消失，CPU 占用率为 0
+
+**诊断方法**：
+- 使用 `adb shell dumpsys activity | grep "Apps frozen:"` 查看冻结进程
+- 通过 `adb logcat | grep -i "\(freezing\|froze\)"` 监控冻结事件
+- 在 Perfetto v49+ 中，`android.freezer` 模块提供 `android_freezer_events` 表
+
+```sql
+-- Perfetto 查询冻结进程事件
+SELECT
+  ts,
+  pid,
+  uid,
+  duration,
+  reason
+FROM android_freezer_events
+ORDER BY ts DESC
+LIMIT 20;
+```
+
+### 性能影响
+
+- **CPU 消耗**：被冻结进程完全停止执行，CPU 占用率降为 0
+- **内存使用**：保持内存占用但避免频繁页面交换，减少内存碎片
+- **启动延迟**：解冻过程需要时间，可能影响应用恢复速度
+- **Binder 交互**：同步 Binder 调用会被终止，需要异步处理机制
+- **通知延迟**：后台服务冻结可能导致推送通知延迟
+
+### 版本演进
+
+- **Android 11 QPR3**: 引入 CachedAppOptimizer 概念，但 cgroup v1 实现
+- **Android 12**: 全面迁移到 cgroup v2 freezer
+- **Android 13**: 重构 `enableFreezer()` API，从 `Process` 类迁移到 `ActivityManagerService`
+- **Android 14**: 引入 "Frozen-callee callback policy" for Binder
+- **Perfetto v49**: 新增 `frozen` 布尔字段和 `android.freezer` 事件表
+
+<!-- AIW-源码调研-2026-04-17 -->
+
 ### Empty Process
 
 Empty process 连缓存 Activity 都没有，只剩一个已经建好的 Linux 进程和 ART 虚拟机外壳。它仍然可能留在 999 档，方便下一次快速启动，但内存一紧张就会优先被回收。

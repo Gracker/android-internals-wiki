@@ -1,4 +1,5 @@
 ---
+
 title: "ANR 设计思想"
 chapter: "9.1"
 section: "9.1"
@@ -28,12 +29,15 @@ sources:
     path: "https://developer.android.com/topic/performance/vitals/anr"
 tags: [anr, watchdog, traces, dropbox, activitymanagerservice, input-dispatcher, anrhelper, sigquit]
 related_chapters: ["9.2", "9.3", "1.5", "8.1"]
-pipeline_stage: task6_pending
+pipeline_stage: task2b_pending
 task6_state: revisiting
 task6_result: pass-light-edit
-task9_state: pending
-task2b_state: fixed
+task9_state: reviewed
+task2b_state: pending
 task2b_result: fixed
+
+task9_result: needs-rework
+last_task9_at: 2026-04-16T17:25:51.813647
 ---
 
 # ANR 设计思想
