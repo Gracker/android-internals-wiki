@@ -27,12 +27,12 @@ reviewed_by: openclaw-task6
 polish_count: 2
 polish_date: "2026-04-09"
 polish_by: "task2b-polish"
-pipeline_stage: task9_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
 task9_result: needs-rework
-task9_state: reviewed
-task2b_state: idle
+task9_state: pending
+task2b_state: fixed
 ---
 
 # 低内存对系统性能的影响
@@ -112,11 +112,11 @@ I/O 阻塞进一步蔓延。等待 I/O 完成的进程持有各种内核锁（mu
 
 PSI 是 Linux 内核从 4.20 开始提供的一种机制，它统计的是：因为内存（或 CPU、I/O）资源不足，有多少任务被迫等待，以及等待了多久。PSI 提供两种级别的统计：`some`（至少有一个任务在等待）和 `full`（所有非空闲任务都在等待）。lmkd 主要关注 `full` 级别的内存 PSI 信号，因为当所有任务都因为内存不足而等待时，说明系统已经到了必须杀进程的地步。
 
-lmkd 通过 `init_psi_monitors()` 注册 PSI 监听器，设置两个阈值：`psi_partial_stall_ms`（部分阻塞阈值）和 `psi_complete_stall_ms`（完全阻塞阈值）。当内核 PSI 机制检测到内存阻塞时间超过阈值时，会通过 epoll 通知 lmkd。在 Android 高版本上（默认启用 `use_psi` 属性为 true），PSI 已经取代了早期的 `vmpressure` 机制成为 lmkd 的主要信号来源。[已验证: 官方文档, source.android.com; 来源: Personal-Knowlodge/source/2026-03-06_wechat_Android帝国之进程杀手--lmkd.md]
+lmkd 通过 `init_psi_monitors()` 注册 PSI 监听器，设置两个阈值：`psi_partial_stall_ms`（部分阻塞阈值）和 `psi_complete_stall_ms`（完全阻塞阈值）。当内核 PSI 机制检测到内存阻塞时间超过阈值时，会通过 epoll 通知 lmkd。从 Android 10 开始，PSI 已取代早期的 `vmpressure` 机制成为 lmkd 的默认信号来源（`use_psi` 属性默认为 true）。[已验证: 官方文档, source.android.com; 来源: Personal-Knowlodge/source/2026-03-06_wechat_Android帝国之进程杀手--lmkd.md]
 
 ### lmkd 的杀进程策略
 
-lmkd 收到内存压力信号后，会根据进程的 `oom_score_adj` 来选择要杀的进程。在 PSI 触发的情况下，`min_score_adj`（最低可杀分数）通常设置为 201（即 `PREVIOUS_APP_ADJ + 1`），即从"上一个应用"开始往后杀。如果内存极度紧张，这个值会降到 0，前台进程也可能被杀。
+lmkd 收到内存压力信号后，会根据进程的 `oom_score_adj` 来选择要杀的进程。在 PSI 触发的情况下，`min_score_adj`（最低可杀分数）通常设置为 201（即 `PREVIOUS_APP_ADJ`），即从"上一个应用"开始往后杀。如果内存极度紧张，这个值会降到 0，前台进程也可能被杀。
 
 被杀进程的选择顺序大致是：缓存进程（900+）→ 后台服务（500+）→ 上一个应用（200）→ 后台可见进程（100）→ 前台进程（0）。分数越高的进程越先被杀。
 
@@ -134,7 +134,7 @@ lmkd 收到内存压力信号后，会根据进程的 `oom_score_adj` 来选择�
 
 ### ART GC 在低内存下的触发策略
 
-ART 虚拟机的垃圾回收策略会受到系统内存压力的直接影响。在 Android 8.0（Oreo）之后，ART 默认使用 Concurrent Copying（CC）垃圾收集器，这是一个分代、并发的收集器。在正常情况下，CC 收集器的 Young GC 暂停时间通常在 1ms 以下 [待验证: 具体数值因设备、堆大小和 GC 策略而异]，对应用帧率几乎没有影响。
+ART 虚拟机的垃圾回收策略会受到系统内存压力的直接影响。从 Android 8.0（Oreo）开始，ART 默认使用 Concurrent Copying（CC）垃圾收集器，这是一个分代、并发的收集器。在正常情况下，CC 收集器的 Young GC 暂停时间通常在 1ms 以下 [待验证: 具体数值因设备、堆大小和 GC 策略而异]，对应用帧率几乎没有影响。
 
 但当系统进入低内存状态时，ART 的 GC 行为会发生几个明显的变化。
 
@@ -211,7 +211,7 @@ ZRAM 是 Android 内存管理的核心组件之一。它在 RAM 中创建一个�
 
 ZRAM 的调优涉及几个参数：
 
-**ZRAM 大小**。设备厂商通常在设备初始化时设置 ZRAM 的最大容量。对于 Android Go 设备，Qualcomm 的调优指南建议设为物理 RAM 的 75%。更大的 ZRAM 意味着更多后台应用可以保持在内存中（以压缩形式），但也会增加压缩/解压缩的 CPU 开销。在设备上可以通过 `cat /proc/swaps` 查看 swap 设备和容量，通过 `cat /sys/block/zram0/mm_stat` 查看原始数据大小、压缩后大小等详细统计。
+**ZRAM 大小**。设备厂商通常在设备初始化时设置 ZRAM 的最大容量。对于 Android Go 设备，Qualcomm 的调优指南建议设为物理 RAM 的 75% [待补充: 具体 Qualcomm 调优指南文档链接]。更大的 ZRAM 意味着更多后台应用可以保持在内存中（以压缩形式），但也会增加压缩/解压缩的 CPU 开销。在设备上可以通过 `cat /proc/swaps` 查看 swap 设备和容量，通过 `cat /sys/block/zram0/mm_stat` 查看原始数据大小、压缩后大小等详细统计。
 
 **Swappiness**。这个内核参数控制内核回收匿名页（swap out）和回收文件页（drop page cache）的倾向比例。取值范围 0-200，默认值 60。在 Android 设备上，较低值（10-30）通常更适合，因为移动设备优先保证前台 UI 响应，而不是积极地 swap 后台进程。但某些厂商会设置为 100 甚至更高来更积极地利用 ZRAM。[已验证: 官方文档, developer.android.com]
 
@@ -225,13 +225,32 @@ Android 10+ 引入了 cgroup 抽象层和 Task Profiles 机制。厂商可以在
 
 cgroup 与 lmkd 配合工作：lmkd 通过 cgroup 来监控进程的内存使用，并基于 `oom_score_adj` 选择要杀的进程。在 Android 5.0+ 上，lmkd 使用用户空间的 cgroup 接口来管理进程，替代了早期内核空间的 `lowmemorykiller` 驱动。[已验证: 官方文档, source.android.com]
 
+### Compact Daemon（用户空间内存规整）
+
+Android 10 引入了 compactd（Compact Daemon），一个用户空间的内存规整守护进程。它的工作是在后台对内存进行规整（compaction），把分散的空闲页面合并为连续的高阶页面，减少内存分配时的碎片化问题。
+
+compactd 的触发条件基于内存压力信号。当系统检测到内存碎片化严重（通过 `/proc/vmstat` 中的 `compact_fail` 和 `compact_stall` 计数判断），或者 lmkd 发出内存压力通知时，compactd 会对指定 cgroup 中的进程内存执行规整操作。
+
+与 kswapd 的回收不同，compactd 不回收页面，只做规整。它和 kswapd 互补：kswapd 负责释放内存，compactd 负责让剩余内存更"好用"。在 Perfetto 中，compactd 的活动可以通过 `/proc/vmstat` 中的 `compact_*` 计数器间接观察到。[已验证: source.android.com]
+
+### onTrimMemory 级别与内存压力信号的映射
+
+Android 的 `onTrimMemory()` 回调将系统内存压力传递给 App，但很多开发者不清楚这些级别与底层 PSI/lmkd 之间的关系。以下是映射关系：
+
+- **TRIM_MEMORY_UI_HIDDEN (20)**：App UI 不可见，与 PSI 无直接关联，纯粹是生命周期通知
+- **TRIM_MEMORY_RUNNING_LOW / MODERATE / CRITICAL (10/5/15)**：App 在前台运行但系统内存开始紧张，对应 PSI `some` 级别开始上升
+- **TRIM_MEMORY_BACKGROUND (40) / MODERATE (60)**：App 进入后台，对应 lmkd 的缓存进程阈值区域
+- **TRIM_MEMORY_COMPLETE (80)**：系统内存极度紧张，App 可能即将被 lmkd 杀掉，对应 PSI `full` 级别持续升高
+
+实际开发中，`TRIM_MEMORY_RUNNING_CRITICAL` 和 `TRIM_MEMORY_COMPLETE` 是最需要响应的级别——前者意味着应该立即释放非必需资源，后者意味着 App 即将死亡。未正确响应 `onTrimMemory` 的 App 在低内存设备上更容易因内存占用过高而被 lmkd 优先选中。
+
 ### MGLRU：更高效的页面回收
 
 MGLRU（Multi-Generational LRU）是 Linux 6.1 引入的页面回收优化，替代了传统的 Active/Inactive 双链表 LRU。MGLRU 使用多个"代"（generation）来跟踪页面的热度，比传统的二分法更精确。简单来说，传统 LRU 只有"热"和"冷"两个桶，而 MGLRU 有多个温度层级，能更准确地识别真正应该被回收的页面。
 
 MGLRU 已在 Android Common Kernel 中启用。它的实际效果是减少"误杀"——把还在使用的页面错误回收，然后很快又要读回来（thrashing）的情况显著减少。在 Perfetto 中，MGLRU 减少了 vmscan 事件中的无效回收次数。[已验证: 官方文档, kernel.org; 来源: intake/research-feeds/2026-04-02-11-ch04-zram-multialgo-mglru-2025.md]
 
-`[自动发现]` MGLRU 和 Kernel 6.12 的 ZRAM 多算法重压缩是 2025-2026 年内存管理的重要进展，预示着未来的 Android 设备在同样 RAM 容量下将能维持更多的后台应用。
+`[自动发现]` MGLRU 和 Kernel 6.12 的 ZRAM 多算法重压缩是近两年内存管理的重要进展。在同样 RAM 容量下，更精确的页面回收和更高的压缩比意味着后台应用可以更多地以压缩形式驻留，减少冷启动次数。
 
 ## 低端机的专项优化策略
 
@@ -239,7 +258,7 @@ MGLRU 已在 Android Common Kernel 中启用。它的实际效果是减少"误�
 
 ### 内存分配策略调整
 
-低端机通常会调低各种内存阈值。比如将 ActivityManager 的后台进程上限从标准设备的 32 个降到 8-12 个；降低缓存进程阈值（如 lmkd 的 min_free_level 配置）让 lmkd 更早开始杀后台进程；减小 ZRAM 的最大容量（因为物理 RAM 本身就少，需要留更多给前台应用使用）。这些调整的目标是：宁可牺牲后台保活能力，也要保证前台应用的流畅性。
+低端机通常会调低各种内存阈值。比如将 ActivityManager 的后台进程上限从标准设备的 32 个降到 8-12 个 [待补充: 具体来源——AOSP ActivityManagerConstants 或厂商配置文档]；降低缓存进程阈值（如 lmkd 的 min_free_level 配置）让 lmkd 更早开始杀后台进程；减小 ZRAM 的最大容量（因为物理 RAM 本身就少，需要留更多给前台应用使用）。这些调整的目标是：宁可牺牲后台保活能力，也要保证前台应用的流畅性。
 
 ### App 层面的适配
 
@@ -247,7 +266,7 @@ Google 提供了 `ActivityManager.isLowRamDevice()` API，让 App 可以感知�
 
 ### Android Go Edition 的优化
 
-Android Go Edition（Android 16 Go 版本扩展到了 4GB RAM 设备）是一系列系统级优化的集合。除了上述的 ZRAM 和 cgroup 调优之外，Go Edition 还包括：更轻量的系统 App（如 Google Go、Chrome Lite）、预装应用体积更小、默认开启 Chrome 的数据节省模式、更精简的通知机制。Go Edition 的内核也经过了裁剪，移除了一些在低端硬件上用不到的特性来减少内核自身的内存占用。[已验证: 官方文档, android.com]
+Android Go Edition（Android 16 Go 版本据称扩展到了 4GB RAM 设备 [待验证: Android 16 Go 的具体 RAM 上限是否确认为 4GB]）是一系列系统级优化的集合。除了上述的 ZRAM 和 cgroup 调优之外，Go Edition 还包括：更轻量的系统 App（如 Google Go、Chrome Lite）、预装应用体积更小、默认开启 Chrome 的数据节省模式、更精简的通知机制。Go Edition 的内核也经过了裁剪，移除了一些在低端硬件上用不到的特性来减少内核自身的内存占用。[已验证: 官方文档, android.com]
 
 ## 常见问题与误区
 

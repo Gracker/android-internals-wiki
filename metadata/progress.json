@@ -1825,12 +1825,13 @@
       "path": "src/part2-performance/ch10-memory-perf/04-low-memory-impact.md",
       "status": "ready-for-review",
       "pipeline_stage": "task6_pending",
-      "task6_state": "pending",
+      "task6_state": "revisiting",
       "task9_state": "pending",
-      "task2b_state": "idle",
+      "task2b_state": "fixed",
       "reviewed_date": "2026-04-10",
       "reviewed_by": "openclaw-task6",
-      "section": "10.4"
+      "section": "10.4",
+      "task2b_result": "fixed"
     },
     "src/part2-performance/ch10-memory-perf/05-case-studies.md": {
       "chapter": "10.5",
@@ -2986,6 +2987,20 @@
       ],
       "verification": "L2 — AOSP android-16.0.0_r1 源码签名验证",
       "queue_status": "completed"
+    },
+    {
+      "section": "10.4",
+      "date": "2026-04-16T20:53:01",
+      "issues_fixed": [
+        "min_score_adj=201 描述修正为 PREVIOUS_APP_ADJ",
+        "PSI 版本表述从模糊改为\"从 Android 10 开始\"",
+        "ART GC 版本表述统一为\"从 Android 8.0 开始\"",
+        "补充 compactd 机制和 onTrimMemory 与 PSI 映射",
+        "Qualcomm 75%/后台进程上限/Go 4GB 标注待验证",
+        "MGLRU 推测性结论改为描述性表述"
+      ],
+      "added_by": "task9-deep-tech-review",
+      "completed_by": "task2b-rework"
     }
   ],
   "reviews": {
