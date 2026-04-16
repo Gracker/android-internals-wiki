@@ -4,7 +4,7 @@ title: "GPU 渲染深入"
 chapter: "2.10"
 status: ready-for-review
 applicable_versions: "Android 5.0 - Android 16 (API 21-36)"
-last_verified: "2026-04-09"
+last_verified: "2026-04-17"
 last_verified_against: "AOSP android-16.0.0_r1, developer.android.com"
 confidence: medium-high
 sources:
@@ -24,21 +24,21 @@ drafted_date: 2026-03-30
 drafted_by: openclaw-task2a
 reviewed_date: 2026-04-15
 reviewed_by: openclaw-task6
-rework_date: 2026-04-03
+rework_date: 2026-04-17
 rework_by: openclaw-task2b
 review_round: 5
 last_polish_notes: "第2轮出版级精修：修复applicable_versions范围、ANGLE URL拼写、叙述过渡、口语化表达"
 polish_count: 2
 polish_date: "2026-04-10"
 polish_by: "task2b-polish"
-pipeline_stage: task9_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
-task9_state: reviewed
+task9_state: pending
 task9_result: needs-rework
 task9_reviewed_date: "2026-04-17"
 task9_reviewed_by: "openclaw-task9"
-task2b_state: idle
+task2b_state: fixed
 ---
 
 # GPU 渲染深入
@@ -99,8 +99,8 @@ Vertex Shader 是 GPU 渲染管线的第一个可编程阶段，它负责处理�
 // @ AOSP android-16.0.0_r1
 public void drawRect(float left, float top, float right, float bottom, Paint paint) {
     if (paint != null) {
-        native_drawRect(mNativeCanvasWrapper, left, top, right, bottom, 
-                       paint.mNativePaint, paint.mShaderDensity, paint.mAlpha); 
+        native_drawRect(mNativeCanvasWrapper, left, top, right, bottom,
+                       paint.getNativeInstance()); 
     }
 }
 ```
@@ -265,13 +265,34 @@ vkAllocateMemory(device, &allocInfo, nullptr, &memory);
 
 > [已验证: 官方文档, developer.android.com/guide/topics/graphics/opengl]
 
+### Vulkan 与 OpenGL ES 的版本演进
+
+从 Android 7.0 引入 Vulkan 到 Android 16 将其定为默认 API，这条演进线跨越了近十年。下表梳理了关键节点：
+
+| Android 版本 | API Level | GPU 图形栈变化 |
+|:---|:---|:---|
+| 7.0 | 24 | Vulkan 1.0 可选支持。应用可使用 Vulkan API，但 OpenGL ES 仍为默认 |
+| 7.0+ | 24+ | NDK 引入 Vulkan 支持，游戏引擎开始实验性接入 |
+| 8.0 | 26 | Vulkan 驱动成为 CTS 必测项，设备必须提供合规的 Vulkan 实现 |
+| 9.0 | 28 | 引入 Baseline Profiles 机制（与 Vulkan 无直接关系，但影响渲染性能基线） |
+| 10 | 29 | ANGLE 开始作为可选的 OpenGL ES 兼容层提供，仍需手动启用 |
+| 12 | 31 | ANGLE 扩展到更多设备。引入 Game Mode API，可针对游戏调整 GPU 调度策略 |
+| 13 | 33 | ANGLE 覆盖更多 OpenGL ES 场景。Vulkan 1.1 成为设备要求 |
+| 14 | 34 | 引入图形内存优化（缓冲区缓存清除）。Vulkan 1.3 支持更广泛 |
+| 15 | 35 | ANGLE 正式作为部分设备的默认 OpenGL ES 后端。Vulkan 1.3 要求进入 Preview |
+| 16 | 36 | **Vulkan 成为默认图形 API**。OpenGL ES 应用默认通过 ANGLE 转换到 Vulkan 后端 |
+
+> [待验证: Android 15/16 的具体 ANGLE 覆盖范围可能因设备厂商配置而异]
+
 ## GPU 性能瓶颈分析：fillrate bound vs vertex bound vs bandwidth bound
 
 ### 瓶颈分析的基本方法
 
 GPU 性能分析的第一步不是直接跳到优化，而是先搞清楚瓶颈在哪里。GPU 渲染的瓶颈大致可以分为三类：fillrate bound（像素处理能力不足）、vertex bound（顶点处理能力不足）和 bandwidth bound（内存带宽不足）。不同类型的瓶颈需要完全不同的优化方向，如果判断错了方向，优化努力就会白费。
 
-判断瓶颈类型有一个简单实用的方法：将渲染分辨率降低到 720p，观察帧率变化。如果帧率提升超过 30%，说明瓶颈在像素处理阶段（fillrate bound），因为降低分辨率直接减少了需要处理的像素数量；如果帧率几乎没有变化（低于 10%），说明瓶颈在顶点处理阶段（vertex bound），因为分辨率降低不影响顶点数量；如果介于两者之间，瓶颈可能在内存带宽上（bandwidth bound）。
+判断瓶颈类型需要结合 Perfetto 和 AGI 两层分析。第一步，在 Perfetto 的 GPU track 上确认 GPU 渲染时间是否超过帧预算。第二步，用 Android GPU Inspector (AGI) 对具体帧做深度分析：如果 Fragment Shader 执行时间占 GPU 总时间超过 60%，且帧的渲染时间与界面可见像素数量正相关，是 fillrate bound；如果 Vertex Shader 时间占比异常高，且帧时间与界面几何复杂度（Path 数量、三角形数量）正相关，是 vertex bound；如果着色器执行时间不长但整体帧时间仍超标，同时 Perfetto 的内存带宽计数器显示高负载，是 bandwidth bound。
+
+> 注意：PC 端常用的"降低渲染分辨率判断瓶颈类型"方法不适用于标准 Android UI 渲染。Android UI 没有独立的渲染分辨率设置（除非使用 SurfaceView 自行控制渲染缓冲区），应依赖 AGI 的 GPU 性能计数器来做定量判断。
 
 ### Fillrate Bound：像素处理瓶颈
 
@@ -304,6 +325,28 @@ Bandwidth bound 是三种瓶颈中最容易被忽略的一种。它的本质是 
 
 优化带宽的核心策略是减少数据传输量：使用 ASTC 或 ETC2 纹理压缩格式（在保持视觉质量的前提下将纹理大小压缩 4-8 倍）；为所有 3D 纹理生成 Mipmap（让 GPU 根据物体大小选择合适的分辨率级别）；在视觉允许的情况下使用更低精度的帧缓冲区格式。
 
+## 移动 GPU 的 TBR 架构
+
+分析 GPU 性能瓶颈之前，需要先理解一个硬件架构前提：几乎所有移动 GPU 都采用 Tile-Based Rendering（TBR）架构。TBR 直接影响了带宽消耗模式、驱动策略，以及很多看似"反直觉"的性能现象。
+
+### TBR 的核心思路
+
+传统桌面 GPU 采用 Immediate Mode Rendering（IMR）：逐个处理 draw call，每个 draw call 直接向主显存写入像素数据。移动 GPU 不这样做。TBR 将一帧的渲染区域划分为若干个瓦片（tile，通常 16×16 或 32×32 像素），每个瓦片独立处理：先把该瓦片内所有 draw call 的几何数据收集起来，然后在 GPU 片上缓存（on-chip tile buffer）中完成该瓦片所有像素的着色计算，最后一次性写回主显存。
+
+这样做的原因是功耗和带宽。移动 GPU 的片上缓存访问速度接近寄存器，功耗极低；而访问主显存（即使是统一内存架构中的 LPDDR）需要经过总线，功耗和延迟都高一个量级。TBR 通过尽量减少主显存访问来降低功耗——这是移动设备的第一优先级。
+
+### TBR 对性能分析的影响
+
+理解了 TBR 架构，以下几个现象就有了技术解释：
+
+**带宽消耗集中在 Tile 写回阶段。** 在 Perfetto 中看到的 GPU 活动，大部分时间 GPU 在片上缓存中计算，主显存访问发生在每个瓦片完成后。减少 overdraw 不只是减少"重复计算"，更是在减少 tile buffer 的写回次数。
+
+**RenderTarget 切换代价高。** 每个 RenderTarget（在 Vulkan 中称为 RenderPass）需要先从主显存加载（load）现有内容到 tile buffer，处理完再写回（store）。如果一个 RenderPass 只做了很少的工作，load 和 store 的开销可能比实际渲染还大。这就是 Vulkan 中强调"合并 RenderPass"的原因。
+
+**部分清除是免费的。** 在 Vulkan 中，使用 `VK_ATTACHMENT_LOAD_OP_CLEAR` 比 `VK_ATTACHMENT_LOAD_OP_LOAD` 更高效，因为 clear 操作不需要从主显存加载数据到 tile buffer——直接在片上缓存中填充即可。OpenGL ES 中调用 `glClear()` 也有类似的性能优势。
+
+> ARM Mali 和 Qualcomm Adreno 都使用 TBR 架构，但在瓦片大小、缓存策略上有差异。分析具体设备的 GPU 行为时，建议参考对应厂商的优化指南（ARM GPU Best Practices / Qualcomm Adreno GPU Guide）。
+
 ## GPU 内存管理：GraphicBuffer / Gralloc / GPU Memory 归属与追踪
 
 ### Android GPU 内存管理架构
@@ -317,14 +360,20 @@ Android 的 GPU 内存管理涉及多个层次。从上往下看：应用层通�
 ```java
 // frameworks/base/core/java/android/graphics/GraphicBuffer.java
 // @ AOSP android-16.0.0_r1
-public class GraphicBuffer {
-    private native final long getNativeBuffer();
-    private int mWidth;
-    private int mHeight;
-    private int mFormat;
-    private int mUsage;
-    private int mRefCount;
+// [简化示意] 实际类通过 long mNativeObject 持有 native 侧的完整缓冲区描述
+public class GraphicBuffer implements Parcelable {
+    // 唯一的字段：指向 native GraphicBuffer 对象的指针
+    // 宽度、高度、格式、usage 等属性通过 JNI 从 native 对象读取
+    long mNativeObject;
+
+    // 便捷方法：从 native 对象获取属性
+    public native int getWidth();
+    public native int getHeight();
+    public native int getFormat();
+    public native int getUsage();
+    // ...
 }
+```
 ```
 
 ### Gralloc：图形内存分配器
