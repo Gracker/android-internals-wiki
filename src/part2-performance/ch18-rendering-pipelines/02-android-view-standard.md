@@ -7,10 +7,13 @@ tags: ["BLAST", "RenderThread", "HWUI", "DisplayList", "FrameTimeline", "Triple-
 related_chapters: ["2.1", "2.5", "2.6", "2.7", "18.1"]
 created_by: "rendering-pipelines-merge"
 created_date: "2026-04-09"
-pipeline_stage: task6_pending
-task6_state: pending
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task2b_state: idle
+reviewed_by: openclaw-task6
+reviewed_date: 2026-04-17
+task6_result: pass-light-edit
 ---
 
 <!-- outline-start -->
@@ -35,7 +38,7 @@ task2b_state: idle
 
 ### 第一阶段：UI Thread — 生产蓝图
 
-`Vsync-App` 信号到达时，主线程被 `Choreographer` 唤醒，开始构建这一帧的绘制蓝图。这个过程是纯 CPU 操作，不产生任何像素：
+`VSync-App` 信号到达时，主线程被 `Choreographer` 唤醒，开始构建这一帧的绘制蓝图。这个过程是纯 CPU 操作，不产生任何像素：
 
 1. **Input**：处理触摸/按键事件。用户点击了按钮，View 状态改变（如 `setPressed(true)`），触发 `invalidate()` 请求重绘。
 2. **Animation**：`ValueAnimator` 在这里计算当前帧的动画值（如按钮缩放比例从 1.0 到 1.1 的中间值）。
@@ -66,7 +69,7 @@ RenderThread 拿到蓝图后，开始将它翻译为 GPU 能理解的指令：
 1. **acquireNextBuffer**：BBQ 在 App 进程内作为消费者，从队列中取出刚画好的 Buffer。
 2. **Build Transaction**：创建一个 `SurfaceControl.Transaction`，包含 Buffer 指针、acquireFence、以及窗口几何信息。
 3. **apply Transaction**：通过 Binder 将 Transaction 发送给 SurfaceFlinger。这个调用通常是**异步的**——RenderThread 不等 SF 完成处理就返回。
-4. **Vsync-SF 到达**：SurfaceFlinger 被唤醒，等待所有 acquireFence signal（确保 GPU 画完了），执行 `latchBuffer`，将所有 App 的 Layer 按 Z-Order 叠加，交给 HWC 硬件合成，最终上屏。
+4. **VSync-SF 到达**：SurfaceFlinger 被唤醒，等待所有 acquireFence signal（确保 GPU 画完了），执行 `latchBuffer`，将所有 App 的 Layer 按 Z-Order 叠加，交给 HWC 硬件合成，最终上屏。
 
 ## BLAST Buffer 生命周期
 
@@ -217,9 +220,9 @@ Android 12 引入了 FrameTimeline 机制，彻底改变了 Jank 的判定方式
 
 ### 核心机制
 
-1. **VsyncId**：每个 VSync 信号携带唯一 ID。`Choreographer` 收到 `VsyncId`（比如 1001）后，在 `doFrame` 开始时根据这个 ID 计算预期上屏时间（`ExpectedPresentTime`）。
-2. **Propagation**：RenderThread 在 `queueBuffer` 时将 VsyncId 传递给 SurfaceFlinger。
-3. **Matching**：SF 收到 Buffer 后，检查当前实际时间是否超过了 VsyncId=1001 对应的预期时间。如果超过，标记为 Jank。
+1. **VSyncId**：每个 VSync 信号携带唯一 ID。`Choreographer` 收到 `VSyncId`（比如 1001）后，在 `doFrame` 开始时根据这个 ID 计算预期上屏时间（`ExpectedPresentTime`）。
+2. **Propagation**：RenderThread 在 `queueBuffer` 时将 VSyncId 传递给 SurfaceFlinger。
+3. **Matching**：SF 收到 Buffer 后，检查当前实际时间是否超过了 VSyncId=1001 对应的预期时间。如果超过，标记为 Jank。
 
 ### Perfetto 中的表现
 
@@ -229,12 +232,12 @@ Android 12 引入了 FrameTimeline 机制，彻底改变了 Jank 的判定方式
 - **Actual Timeline（实心条）**：表示"这帧实际在什么时间点上屏"
 - **Jank Tag**：Actual 超过 Expected 时自动标记。分为 `Jank`（轻微）和 `BigJank`（严重）
 
-这种基于 VsyncId 的判定方式比传统的 "16.6ms 阈值" 精确得多。一个 30fps 渲染的页面，每两帧才有一个 VSync，FrameTimeline 能正确识别这不是掉帧——而简单的周期判定会把它标记为 Jank。
+这种基于 VSyncId 的判定方式比传统的 "16.6ms 阈值" 精确得多。一个 30fps 渲染的页面，每两帧才有一个 VSync，FrameTimeline 能正确识别这不是掉帧——而简单的周期判定会把它标记为 Jank。
 
 ---
 
 > **交叉引用**：
-> - BufferQueue 的内部机制（Producer/Consumer 双端、Buffer Slot 管理）详见 [2.1 BufferQueue 机制](../../part1-foundation/ch02-graphics-foundation/)
-> - SurfaceFlinger 的合成策略（GPU 合成 vs HWC 合成）详见 [2.5 SurfaceFlinger](../../part1-foundation/ch02-graphics-foundation/)
-> - Fence 同步原理详见 [2.6 同步机制](../../part1-foundation/ch02-graphics-foundation/)
+> - BufferQueue 的内部机制（Producer/Consumer 双端、Buffer Slot 管理）详见 [2.1 BufferQueue 机制](../../part1-fundamentals/ch02-rendering/13-buffer-queue.md)
+> - SurfaceFlinger 的合成策略（GPU 合成 vs HWC 合成）详见 [2.5 SurfaceFlinger](../../part1-fundamentals/ch02-rendering/06-surfaceflinger.md)
+> - Fence 同步原理详见 [2.6 同步机制](../../part1-fundamentals/ch02-rendering/16-sync-fence.md)
 > - SurfaceControl 与 Transaction 的底层实现详见 [18.10 SurfaceControl API 深入](10-surface-control-api.md)
