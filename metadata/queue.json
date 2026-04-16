@@ -496,5 +496,50 @@
     "status": "completed",
     "completed_at": "2026-04-16T20:53:01",
     "completed_by": "task2b-rework"
+  },
+  {
+    "section": "11.4",
+    "section_title": "功耗案例集",
+    "priority": 95,
+    "reason": "[Deep Tech Review] P0: JobScheduler超时值错误(30min→实际10min); P0: Android Vitals Stuck WakeLock定义错误(2h→1h); P1: 后台位置权限版本差异缺失/GPS+Radio功耗数值无来源/LocationRequest API混用",
+    "material_paths": [
+      "intake/suggestions.md",
+      "intake/research-gaps.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "案例五「JobScheduler 的 WakeLock 超时」— EXECUTING_TIMESLICE 常量值",
+        "detail": "章节称 EXECUTING_TIMESLICE = 30 * 60 * 1000L（30 分钟）。AOSP 新版本（含 android-16.0.0_r1）中常量名已改为 EXECUTING_TIMESLICE_MILLIS，值为 10 * 60 * 1000（10 分钟）。整个案例的定量分析（30分钟 WakeLock、50% 时间浪费、效果对比表）均基于错误数值。",
+        "suggestion": "修正为 10 分钟。更新效果对比表中所有 30 分钟相关的数值和推论。同时更新 Battery Historian 描述中的「不多不少正好 30 分钟」为 10 分钟。标注常量名为 EXECUTING_TIMESLICE_MILLIS。"
+      },
+      {
+        "type": "源码错误",
+        "location": "案例一「Android Vitals Stuck Wake Lock 定义」",
+        "detail": "章节称「App 在 24 小时内所有 PARTIAL_WAKE_LOCK 的总持有时长超过 2 小时」。实际 Android Vitals 有两个不同指标：(1) Stuck partial wake lock = 后台持续持有 ≥1 小时（per session）；(2) Excessive partial wake locks = 累计 ≥2 小时（24h 周期内，影响 >5% 会话）。章节混淆了这两个指标。",
+        "suggestion": "修正定义为：「Stuck partial wake lock 指的是 App 在后台持有 PARTIAL_WAKE_LOCK 持续超过 1 小时的会话比例。」如需提及 Excessive 指标，应明确区分两者。"
+      },
+      {
+        "type": "版本差异",
+        "location": "案例二「后台位置持续请求」— 后台位置限制描述",
+        "detail": "章节只提到 Android 8.0 后台位置节流，未覆盖：Android 10 引入 ACCESS_BACKGROUND_LOCATION 权限；Android 11 进一步限制（需单独弹窗授权后台位置，默认拒绝）；Android 12 前台服务类型中 location 的要求变化。",
+        "suggestion": "在案例二或举一反三中补充 Android 10/11/12 后台位置权限的关键变化，帮助读者理解不同版本的合规要求。"
+      },
+      {
+        "type": "数据缺失",
+        "location": "案例二 GPS 功耗 50-100mA；案例三 Radio 功耗 200-400mA",
+        "detail": "GPS 功耗 50-100mA 和 Radio Full Power 200-400mA 缺少具体来源标注。不同网络技术（3G/4G/5G）和不同 SoC 的数值差异极大。GPS 数值对比的是 chip-level current 与 system-level standby current，测量范围不一致。",
+        "suggestion": "标注数据来源（如 Qualcomm 参考文档或 Google 官方培训材料），注明适用条件（如 4G LTE 典型值），或改为相对比例描述（如「GPS 持续功耗约为纯待机的 10-20 倍」）。"
+      },
+      {
+        "type": "源码准确性",
+        "location": "案例二代码 — LocationRequest API",
+        "detail": "代码使用已 deprecated 的 LocationRequest.create() 搭配新版 Priority.PRIORITY_HIGH_ACCURACY 和 setIntervalMillis()。旧 API 的 setPriority() 接受 LocationRequest.PRIORITY_HIGH_ACCURACY，新版应使用 LocationRequest.Builder。",
+        "suggestion": "统一使用新 API：new LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, 1000).build()，或明确标注代码基于旧版 Google Play Services API。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-16T23:20:00",
+    "status": "pending"
   }
 ]
