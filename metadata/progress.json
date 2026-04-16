@@ -2492,11 +2492,13 @@
       "status": "ready-for-review",
       "pipeline_stage": "task9_pending",
       "task6_state": "reviewed",
-      "task9_state": "pending",
+      "task9_state": "reviewed",
       "task2b_state": "idle",
       "task6_result": "pass-light-edit",
       "reviewed_by": "openclaw-task6",
-      "reviewed_date": "2026-04-16"
+      "reviewed_date": "2026-04-16",
+      "task9_result": "needs-rework",
+      "last_task9_at": "2026-04-16T09:23:00+08:00"
     },
     "src/part3-tools/ch14-other-tools/07-profiling-manager.md": {
       "chapter": null,
