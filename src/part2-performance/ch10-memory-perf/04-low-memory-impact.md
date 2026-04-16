@@ -22,13 +22,14 @@ sources:
     path: "source.android.com - mm_events, PSI, lmkd"
 tags: ['low-memory', 'kswapd', 'direct-reclaim', 'lmkd', 'GC', 'memory-pressure', 'PSI', 'ZRAM', 'Perfetto', 'MGLRU', 'cgroup', 'mm-events', 'vmscan', 'oom-score-adj']
 related_chapters: ["4.1", "4.2", "4.4", "4.5", "4.8", "10.1", "10.6"]
-reviewed_date: "2026-04-10"
+reviewed_date: "2026-04-16"
 reviewed_by: openclaw-task6
 polish_count: 2
 polish_date: "2026-04-09"
 polish_by: "task2b-polish"
-pipeline_stage: task6_pending
-task6_state: pending
+pipeline_stage: task9_pending
+task6_state: reviewed
+task6_result: pass-light-edit
 task9_state: pending
 task2b_state: idle
 ---
@@ -82,7 +83,7 @@ kswapd 的核心工作函数是 `balance_pgdat()`。它会根据 `scan_control` 
 
 当内存进一步紧张，空闲页面降到 MIN 水位线以下时，异步的 kswapd 已经来不及了。此时，发起内存分配的那个进程会被迫亲自执行内存回收——这就是 Direct Reclaim。
 
-Direct Reclaim 和 kswapd 走的是同一条回收路径（最终都调用 `shrink_node()`），但有一个关键区别：Direct Reclaim 是同步的。发起分配的进程会被阻塞，直到回收完成。这意味着当 App 在主线程上分配内存时触发 Direct Reclaim，主线程就被阻塞了——在 Perfetto 中表现为进入 D 状态（Uninterruptible Sleep），调用栈中可见 `__alloc_pages_slowpath` → `__perform_reclaim` 路径。
+Direct Reclaim 和 kswapd 走的是同一条回收路径（最终都调用 `shrink_node()`），但有一个关键区别：Direct Reclaim 是同步的。发起分配的进程会被阻塞，直到回收完成。因此，当 App 在主线程上分配内存时触发 Direct Reclaim，主线程就被阻塞了——在 Perfetto 中表现为进入 D 状态（Uninterruptible Sleep），调用栈中可见 `__alloc_pages_slowpath` → `__perform_reclaim` 路径。
 
 Direct Reclaim 的执行过程是：扫描 LRU 链表 → 根据 swappiness 参数决定回收匿名页还是文件页 → 对脏文件页执行回写 → 释放页面。其中脏页回写会触发磁盘 I/O，而这个 I/O 是同步等待的。
 
@@ -114,7 +115,7 @@ lmkd 通过 `init_psi_monitors()` 注册 PSI 监听器，设置两个阈值：`p
 
 ### lmkd 的杀进程策略
 
-lmkd 收到内存压力信号后，会根据进程的 `oom_score_adj` 来选择要杀的进程。在 PSI 触发的情况下，`min_score_adj`（最低可杀分数）通常设置为 201（即 `PREVIOUS_APP_ADJ + 1`），这意味着从"上一个应用"开始往后杀。如果内存极度紧张，这个值会降到 0，意味着前台进程也可能被杀。
+lmkd 收到内存压力信号后，会根据进程的 `oom_score_adj` 来选择要杀的进程。在 PSI 触发的情况下，`min_score_adj`（最低可杀分数）通常设置为 201（即 `PREVIOUS_APP_ADJ + 1`），即从"上一个应用"开始往后杀。如果内存极度紧张，这个值会降到 0，前台进程也可能被杀。
 
 被杀进程的选择顺序大致是：缓存进程（900+）→ 后台服务（500+）→ 上一个应用（200）→ 后台可见进程（100）→ 前台进程（0）。分数越高的进程越先被杀。
 
@@ -124,7 +125,7 @@ lmkd 收到内存压力信号后，会根据进程的 `oom_score_adj` 来选择�
 
 当用户切换到一个之前被 lmkd 杀掉的 App 时，这个 App 需要完整地走一遍冷启动流程：Zygote fork 新进程 → 加载 Application 类 → 执行 ContentProvider 初始化 → Activity 的 onCreate/onStart/onResume。整个流程可能需要数百毫秒甚至数秒。
 
-这个问题的用户体验非常直接：用户之前打开过的 App，再切回去时不是直接恢复，而是重新走了一遍启动流程——闪屏页可能出现、列表需要重新加载、之前的状态丢失。用户会感觉"这个手机很卡"、"App 总是被杀"。
+这个问题的用户体验非常直接：用户之前打开过的 App，再切回去时需要重新走一遍启动流程——闪屏页可能出现、列表需要重新加载、之前的状态丢失。用户会感觉"这个手机很卡"、"App 总是被杀"。
 
 更严重的是，如果系统持续低内存，lmkd 会反复杀进程，而用户又反复打开被杀的 App，形成"杀进程→冷启动→内存又不够→再杀"的恶性循环。在 Perfetto 中表现为频繁的进程启动和 `ProcessKilled` 事件交替出现。
 
@@ -161,7 +162,7 @@ ART 虚拟机的垃圾回收策略会受到系统内存压力的直接影响。�
 
 ### mm_events：内核内存事件的快照
 
-mm_events 是 Android 12+ 引入的内存压力追踪机制。它的工作方式比较特别——不是持续记录，而是在检测到内存压力时自动启动一段时间的追踪。具体来说，当 kswapd 被唤醒、Direct Reclaim 被触发或内存规整（compaction）开始时，mm_events 会开始收集内存统计数据，包括 vmstat 字段（如 `nr_free_pages`、`pgpgin`、`pgsteal`）和 ftrace 内存事件。
+mm_events 是 Android 12+ 引入的内存压力追踪机制。它的工作方式比较特别——不会持续记录，只在检测到内存压力时自动启动一段时间的追踪。具体来说，当 kswapd 被唤醒、Direct Reclaim 被触发或内存规整（compaction）开始时，mm_events 会开始收集内存统计数据，包括 vmstat 字段（如 `nr_free_pages`、`pgpgin`、`pgsteal`）和 ftrace 内存事件。
 
 mm_events 的配置文件通常位于 `/vendor/etc/mm_events.cfg`。在 Perfetto 中，我们可以在 `linux.ftrace` 或 `mem.mm_events` 相关的 track 中找到这些数据。[已验证: 官方文档, source.android.com]
 
@@ -213,7 +214,7 @@ ZRAM 的调优涉及几个参数：
 
 **Swappiness**。这个内核参数控制内核回收匿名页（swap out）和回收文件页（drop page cache）的倾向比例。取值范围 0-200，默认值 60。在 Android 设备上，较低值（10-30）通常更适合，因为移动设备优先保证前台 UI 响应，而不是积极地 swap 后台进程。但某些厂商会设置为 100 甚至更高来更积极地利用 ZRAM。[已验证: 官方文档, developer.android.com]
 
-**压缩算法**。Android 通常使用 LZ4 作为 ZRAM 的压缩算法，在压缩速度和压缩比之间取得平衡。Kernel 6.12 引入了 `CONFIG_ZRAM_MULTI_COMP`（多算法重压缩），允许先用 LZ4 快速压缩，后台再用 ZSTD 进一步压缩提升压缩比。这意味着同样的物理 RAM 可以容纳更多压缩后的页面。[已验证: 官方文档, kernel.org; 来源: intake/research-feeds/2026-04-02-11-ch04-zram-multialgo-mglru-2025.md]
+**压缩算法**。Android 通常使用 LZ4 作为 ZRAM 的压缩算法，在压缩速度和压缩比之间取得平衡。Kernel 6.12 引入了 `CONFIG_ZRAM_MULTI_COMP`（多算法重压缩），允许先用 LZ4 快速压缩，后台再用 ZSTD 进一步压缩提升压缩比。同样的物理 RAM 就可以容纳更多压缩后的页面。[已验证: 官方文档, kernel.org; 来源: intake/research-feeds/2026-04-02-11-ch04-zram-multialgo-mglru-2025.md]
 
 ### cgroup 内存限制
 
