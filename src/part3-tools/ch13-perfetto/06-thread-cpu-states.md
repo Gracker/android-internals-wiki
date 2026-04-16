@@ -5,7 +5,7 @@ chapter: "13.6"
 status: ready-for-review
 drafted_date: "2026-04-03"
 drafted_by: "openclaw-task2a"
-reviewed_date: "2026-04-10"
+reviewed_date: "2026-04-17"
 reviewed_by: "openclaw-task6"
 applicable_versions: "Android 8.0 (API 26) - Android 16 (API 36)"
 last_verified: "2026-04-03"
@@ -24,8 +24,8 @@ sources:
     path: "https://perfetto.dev/docs/data-sources/cpu-scheduling"
 tags: ['perfetto', 'thread-state', 'sched-switch', 'running', 'runnable', 'sleep', 'uninterruptible-sleep', 'cpu-scheduling']
 related_chapters: ["5.1", "13.1", "13.5"]
-pipeline_stage: task6_pending
-task6_state: pending
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task2b_state: idle
 ---
@@ -193,7 +193,7 @@ Runnable 状态的出现是正常的——毕竟 CPU 核心数量有限，不可
 
 当关键线程（特别是 UI 线程、RenderThread 这类对时序敏感的线程）长时间处于 Runnable 状态，意味着它在排队等 CPU，任务无法及时完成，直接表现为卡顿或掉帧。
 
-**原因一：优先级设置错误。** 线程的优先级决定了它在运行队列中的排队顺序。如果关键线程的优先级被设置得太低，它会被其他线程反复抢先，始终拿不到 CPU 时间。更隐蔽的情况是，某些应用或系统服务把无关线程的优先级设得太高，反而抢占了关键线程的 CPU 时间。从 Perfetto 中可以看到线程被哪个线程抢占：点击 Runnable 色块旁边的 Running 色块，查看正在占用该 CPU 的是哪个线程。
+**原因一：优先级设置错误。** 线程的优先级决定了它在运行队列中的排队顺序。如果关键线程的优先级被设置得太低，它会被其他线程反复抢先，始终拿不到 CPU 时间。更隐蔽的情况是，某些应用或系统服务把无关线程的优先级设得太高，反而抢占了关键线程的 CPU 时间。从 Perfetto 中可以追踪线程被哪个线程抢占：点击 Runnable 色块旁边的 Running 色块，查看正在占用该 CPU 的是哪个线程。
 
 三方应用开发者一般不建议直接调用优先级相关的 API。不同厂商对调度器有各自的客制化改动（如 OPPO 的蜂鸟引擎），应用设置的优先级在某些厂商的调度策略下可能出现"水土不服"，弄巧成拙。更靠谱的方式是合理安排自己的任务模型，不要把对实时性要求很高的任务放到 worker 线程上。
 
@@ -270,7 +270,7 @@ Sleeping 本身不是问题。问题在于关键线程在不该等的时候等�
 
 原因在于数据一致性。当一个线程与硬件设备打交道时——比如正在执行磁盘 I/O 操作——内核不希望这个过程中被信号打断，因为中断可能导致设备状态和内存状态不一致。TASK_UNINTERRUPTIBLE 就是内核为这种场景设计的保护机制：线程进入这个状态后，只有它等待的资源就绪了才能被唤醒，信号（包括 `kill -9`）都不起作用。
 
-这个设计思路在内核中很常见。Linux 处理硬件调度时会临时关闭中断控制器，调度时也会临时关闭抢占功能，本质上都是"防止程序流程进入不可控的状态"。TASK_KILLABLE 是一个变种，等同于 `TASK_WAKEKILL` | `TASK_UNINTERRUPTIBLE`，可以接受 Kill 类型的 Signal。
+这个设计思路在内核中很常见。Linux 处理硬件调度时会临时关闭中断控制器，调度时也会临时关闭抢占功能，目的都是"防止程序流程进入不可控的状态"。TASK_KILLABLE 是一个变种，等同于 `TASK_WAKEKILL` | `TASK_UNINTERRUPTIBLE`，可以接受 Kill 类型的 Signal。
 
 Linux 内核中很多路径使用了 Uninterruptible Sleep：Swap 读数据、信号量机制、某些 mutex 锁的慢路径、内存回收的慢路径等。
 
@@ -286,7 +286,7 @@ Linux 内核中很多路径使用了 Uninterruptible Sleep：Swap 读数据、�
 
 **应用主动 I/O 操作。** 在主线程上执行频繁或大量的文件读写操作。多应用同时下发 I/O 也会互相加剧等待。低端设备上磁盘碎片化、器件老化、剩余空间少都会放大这个问题。文件系统特性（某些文件系统的内部操作也会表现为 I/O 等待）和 Swap 读取也是来源。
 
-**低内存导致 I/O 变多。** 内存紧张时，系统的 PageCache 命中率下降，原本可以从内存中读取的数据不得不去磁盘读取。同时，Swap 机制的引入会让数据从 Swap 分区中读取，这本质上是高频的磁盘 I/O。内存和 I/O 之间存在紧密的耦合关系：内存越多，PageCache 越大，I/O 越少；反之亦然。
+**低内存导致 I/O 变多。** 内存紧张时，系统的 PageCache 命中率下降，原本可以从内存中读取的数据不得不去磁盘读取。同时，Swap 机制的引入会让数据从 Swap 分区中读取，这就是高频的磁盘 I/O。内存和 I/O 之间存在紧密的耦合关系：内存越多，PageCache 越大，I/O 越少；反之亦然。
 
 ### 非 I/O 等待的常见原因
 
@@ -491,34 +491,3 @@ LIMIT 20;
 - [高爷博客 - Systrace 线程 CPU 运行状态分析技巧 - Running 篇](https://www.androidperformance.com/2022/03/13/android-systrace-cpu-state-running/)
 - [高爷博客 - Systrace 线程 CPU 运行状态分析技巧 - Sleep 和 Uninterruptible Sleep 篇](https://www.androidperformance.com/2022/03/13/android-systrace-cpu-state-sleep/)
 - [Linux 内核 - TASK_UNINTERRUPTIBLE 定义](https://elixir.bootlin.com/linux/latest/ident/TASK_UNINTERRUPTIBLE)
-
-### SmartPerfetto AI Agent 实现 Android 性能分析自动化
-- 来源：https://androidperformance.com/2026/04/12/SmartPerfetto-Architecture-Deep-Dive/
-- 类型：blog
-- 摘要：SmartPerfetto AI Agent 通过 MCP 协议调用 trace_processor，实现 Android 性能分析自动化。包含 20 个 MCP 工具、164 个 YAML Skill 和三层验证体系。
-- 入库时间：2026-04-13
-
-### Perfetto v53.0 落地 Rust SDK，开启多语言追踪生态
-- 来源：https://github.com/perfetto/perfetto
-- 类型：release
-- 摘要：Perfetto v53.0 引入 Rust SDK（perfetto-sdk crate），提供完整封装，支持 perfetto-derive 宏自动追踪函数调用。Rust 应用性能追踪不再依赖 FFI 桥接层。
-- 入库时间：2026-04-13
-
-### Perfetto UI 原生集成 pprof 可视化，火焰图分析一体化
-- 来源：https://perfetto.dev/docs/next/how-to/profiling
-- 类型：documentation
-- 摘要：v53.0 在 Perfetto UI 中内置 pprof profile 导入和可视化，可与调度事件、帧渲染等统一分析，减少工具切换成本。
-- 入库时间：2026-04-13
-
-### JSON trace 解析速度提升 7x，大型 trace 加载不再卡顿
-- 来源：https://perfetto.dev/docs/next/release-notes
-- 类型：release
-- 摘要：v53.0 对 JSON trace 解析底层重写，实测速度提升 7 倍。trace processor 对损坏事件容忍处理，视觉错位问题基本消除。
-- 入库时间：2026-04-13
-
-### Perfetto MCP：用自然语言查询 Trace，SQL 零基础也能分析
-- 来源：https://github.com/mcp-servers/perfetto-mcp
-- 类型：tool
-- 摘要：基于 MCP 协议，允许用户用自然语言提问，自动转换为 PerfettoSQL 查询。降低 Trace 分析入门门槛，适用于团队内非专职性能工程师。
-- 入库时间：2026-04-13
-
