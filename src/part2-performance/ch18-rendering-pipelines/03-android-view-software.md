@@ -7,8 +7,11 @@ tags: ["software-rendering", "CPU-rasterization", "Skia", "Canvas", "lockCanvas"
 related_chapters: ["2.1", "2.5", "18.2"]
 created_by: "rendering-pipelines-merge"
 created_date: "2026-04-09"
-pipeline_stage: task6_pending
-task6_state: pending
+pipeline_stage: task9_pending
+task6_state: reviewed
+reviewed_by: openclaw-task6
+reviewed_date: 2026-04-17
+task6_result: pass-light-edit
 task9_state: pending
 task2b_state: idle
 ---
@@ -190,5 +193,5 @@ sequenceDiagram
 
 > **交叉引用**：
 > - 标准 BLAST 硬件加速链路详见 [18.2 Android View 标准链路](02-android-view-standard.md)
-> - BufferQueue 机制详见 [2.1 BufferQueue](../../part1-foundation/ch02-graphics-foundation/)
-> - Skia 渲染引擎的内部机制详见 [2.14 图形 API 演进](../../part1-foundation/ch02-graphics-foundation/)
+> - BufferQueue 机制详见 [2.13 BufferQueue](../../part1-fundamentals/ch02-rendering/13-buffer-queue.md)
+> - Skia 渲染引擎的内部机制详见 [2.14 图形 API 演进](../../part1-fundamentals/ch02-rendering/14-graphics-api-evolution.md)

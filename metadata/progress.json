@@ -2910,6 +2910,14 @@
       "task6_result": "pass-light-edit",
       "task6_reviewed_date": "2026-04-17",
       "pipeline_stage": "task9_pending"
+    },
+    "18.3": {
+      "status": "ready-for-review",
+      "task6_state": "reviewed",
+      "task6_result": "pass-light-edit",
+      "task6_reviewed_date": "2026-04-17",
+      "task9_state": "pending",
+      "pipeline_stage": "task9_pending"
     }
   },
   "chapters": {
