@@ -36,8 +36,8 @@
     },
     "task9_state_counts": {
       "unknown": 32,
-      "pending": 167,
-      "reviewed": 10
+      "pending": 166,
+      "reviewed": 11
     },
     "pipeline_stage_counts": {
       "unknown": 32,
@@ -218,14 +218,15 @@
       "status": "ready-for-review",
       "pipeline_stage": "task6_pending",
       "task6_state": "revisiting",
-      "task9_state": "pending",
+      "task9_state": "reviewed",
       "task2b_state": "fixed",
       "reviewed_date": "2026-04-12",
       "reviewed_by": "openclaw-task6",
       "task6_result": "needs-rework",
       "section": "1.2",
       "task9_result": "needs-rework",
-      "task2b_result": "fixed"
+      "task2b_result": "fixed",
+      "last_task9_at": "2026-04-17T03:20:00+08:00"
     },
     "src/part1-fundamentals/ch01-architecture/03-process-model.md": {
       "chapter": "1.3",
@@ -3027,6 +3028,21 @@
       ],
       "added_by": "task9-deep-tech-review",
       "completed_by": "task2b-rework"
+    },
+    {
+      "section": "1.2",
+      "section_title": "系统启动全流程",
+      "rework_date": "2026-04-17T03:44:28.959981",
+      "rework_by": "task2b-rework",
+      "source": "task9-deep-tech-review",
+      "priority": 95,
+      "fixes": [
+        "源码错误：UserController.java 路径 am/ → user/（frontmatter + 参考资料共2处）",
+        "交叉引用：related_chapters 补充 1.11（Zygote 机制章节）",
+        "知识盲区：first-stage init 段补充 SELinux 策略加载对开机时间的影响",
+        "版本差异：startApexServices() 标注 Android 12 引入；新增 Android 12-16 启动流程版本差异小节",
+        "数据缺失：新增 Pixel 8 / Android 16 参考基线数据表（分段耗时+占比）"
+      ]
     }
   ],
   "reviews": {

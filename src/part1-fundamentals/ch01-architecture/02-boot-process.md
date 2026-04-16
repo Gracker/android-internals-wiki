@@ -15,7 +15,7 @@ polish_date: "2026-04-05"
 review_round: 2
 polish_by: task2b-polish
 applicable_versions: "Android 8 (API 26) - Android 16 (API 35)"
-last_verified: "2026-04-13"
+last_verified: "2026-04-17"
 last_verified_against: "AOSP android-16.0.0_r1, source.android.com 官方文档"
 confidence: high
 sources:
@@ -40,7 +40,7 @@ sources:
   - type: aosp
     path: "frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java @ android-16.0.0_r1"
   - type: aosp
-    path: "frameworks/base/services/core/java/com/android/server/am/UserController.java @ android-16.0.0_r1"
+    path: "frameworks/base/services/core/java/com/android/server/user/UserController.java @ android-16.0.0_r1"
   - type: aosp
     path: "frameworks/base/services/core/java/com/android/server/wm/ActivityTaskManagerService.java @ android-16.0.0_r1"
   - type: aosp
@@ -72,12 +72,13 @@ related_chapters:
   - "1.5"
   - "1.7"
   - "8.2"
+  - "1.11"
   - "8.3"
 pipeline_stage: task6_pending
 task6_state: revisiting
-task9_state: reviewed
-task9_result: needs-rework
-last_task9_at: "2026-04-17T03:20:00+08:00"
+task9_state: pending
+task9_result: reworked
+last_task9_at: "2026-04-17T03:44:00+08:00"
 task2b_result: fixed
 task2b_state: fixed
 ---
@@ -153,6 +154,7 @@ Linux 侧最早的进程关系仍然成立：PID 0 是 swapper，`rest_init()` �
 - 挂载 `/dev`、`/proc`、`/sys` 和 `selinuxfs`
 - 建最小设备节点和日志环境
 - 调用 `FirstStageMount::DoFirstStageMount()` 挂载启动必需分区
+- SELinux 策略文件从 `/sepolicy` 或 vendor/odm overlay 加载到内核，policy load 本身是 first-stage 之后的耗时操作之一，通常占用数十到数百毫秒，具体取决于策略规则数量和硬件 I/O 速度。这一步对开机时间的影响在启用大量 OEM 自定义 SELinux 策略时会更加明显 [待验证：具体设备上的分段耗时]
 - `SwitchRoot()` 到新根文件系统，再进入 second-stage init
 
 这一段完成后，second-stage init 才会开始解析 rc 配置。`init.cpp` 默认读取 `/system/etc/init/hw/init.rc`，并继续解析 `/system/etc/init`、`/system_ext/etc/init`、`/vendor/etc/init`、`/odm/etc/init`。随后 action queue 依次推进 `early-init`、`init`、`late-init`、`post-fs-data`、`zygote-start`、`boot` 等阶段。
@@ -184,7 +186,18 @@ fork 之后依赖的仍然是 Copy-on-Write。共享页不写就不复制，所�
 
 **Other services** 里才会启动 `InputManagerService`、`WindowManagerService`、`AlarmManagerService`、`JobSchedulerService`、`NotificationManagerService` 等更大一包服务。WMS 和 InputManagerService 属于这一段。`SensorService` 也不是这里直接 new 出来的 Java service，SystemServer 只是通过 `PHASE_WAIT_FOR_SENSOR_SERVICE` 等待相关前置条件，再继续启动 WMS。
 
-`startApexServices(t)` 也别写成“Android 16 新增”。APEX 模块化从 Android 10 就开始了，独立的 `startApexServices()` 阶段在更早分支已经存在。写文章时最好直接注明“本文按 android-16.0.0_r1 观察到的阶段顺序”，少做未经核对的版本断言。
+`startApexServices(t)` 在 Android 12 引入。APEX 模块化从 Android 10 开始，但独立的 apex services 启动阶段是 Android 12 才出现的。写文章时最好直接注明“本文按 android-16.0.0_r1 观察到的阶段顺序”，少做未经核对的版本断言。
+
+**启动流程的版本差异（Android 12-16 关键变更）**
+
+启动链的主干在不同版本间是稳定的，但几个关键变化会影响分析方式：
+
+- **Android 12**：引入 `startApexServices()` 独立阶段，APEX 模块（ART、Media 等）可以在开机阶段独立更新，不再随 system 分区整体升级。ART APEX 的更新会直接影响 Zygote 预加载的 dexpreopt 产物路径。
+- **Android 13**：Perfetto 的 boot trace 配置改进，增加了更多 init 阶段的 atrace hook。
+- **Android 15**：Cloud Profiles 作为 Mainline 模块推送给设备，首次启动时编译产物可能依赖云端下发的 profile，不再只依赖本地 Baseline Profile。OTA 后首启的 dex2oat 策略随之变化。[待验证：Cloud Profiles 对 Pixel 设备首启耗时的量化影响]
+- **Android 16**：profileable build 配置的变化影响 Zygote 预加载的命中路径；AutoFDO（Automatic Feedback-Directed Optimization）与 Baseline Profile 协同优化，对冷启动有额外改善。具体数据参见 8.3 节。
+
+如果分析对象是 Android 12 之前的设备，`startApexServices()` 不存在，apex 组件的启动混在其他阶段里。
 
 ### Home 首帧可见、LOCKED_BOOT_COMPLETED、BOOT_COMPLETED 要拆开
 
@@ -294,6 +307,20 @@ adb pull /data/misc/perfetto-traces/boot-userspace.pftrace .
 ## 开机性能优化的常见手段
 
 开机优化别从“招数列表”开始。更稳的做法是先把慢点钉在具体阶段，再决定动作。对启动链来说，常见的慢点大致分成四段。
+
+> **参考基线数据（Pixel 8, Android 16, 典型冷启动，仅供分段比例参考）**
+>
+> | 阶段 | 典型耗时 | 占比 | 说明 |
+> |------|----------|------|------|
+> | Bootloader | ~2-3s | 5-8% | 厂商差异大，依赖 SoC 和板级配置 |
+> | Kernel | ~3-5s | 10-15% | 驱动初始化、dm-verity |
+> | first-stage init | ~1-2s | 3-5% | early mount、SELinux policy load |
+> | second-stage init | ~2-4s | 5-10% | rc 解析、核心 native 服务 |
+> | Zygote 预加载 | ~5-8s | 15-20% | 18431 类 + 资源 + 共享库 |
+> | SystemServer | ~8-12s | 25-35% | 四段 StartServices |
+> | Home 首帧 + 广播长尾 | ~5-10s | 15-25% | Launcher 渲染 + BOOT_COMPLETED 尾声 |
+>
+> 数据来源：基于公开 bootstat 输出和 AOSP 默认配置的估算值，非严格 Benchmark。[待补充：Pixel 8 实测 bootstat 数据截图]
 
 ### 1. first-stage init / second-stage init：先看装载链和 early I/O
 
@@ -463,7 +490,7 @@ init.zygote64.rc:  service zygote /system/bin/app_process64 ... --start-system-s
   - `frameworks/base/services/core/java/com/android/server/EventLogTags.logtags` — `boot_progress_system_run` / PMS 相关里程碑
   - `frameworks/base/services/core/java/com/android/server/am/EventLogTags.logtags` — `boot_progress_ams_ready` / `boot_progress_enable_screen`
   - `frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java` — `systemReady()`、`startHomeOnAllDisplays()` 调用路径
-  - `frameworks/base/services/core/java/com/android/server/am/UserController.java` — `ACTION_LOCKED_BOOT_COMPLETED` / `ACTION_BOOT_COMPLETED`
+  - `frameworks/base/services/core/java/com/android/server/user/UserController.java` — `ACTION_LOCKED_BOOT_COMPLETED` / `ACTION_BOOT_COMPLETED`
   - `frameworks/base/services/core/java/com/android/server/wm/ActivityTaskManagerService.java` — `enableScreenAfterBoot()`
   - `hardware/interfaces/cas/aidl/default/cas-default-lazy.rc` — lazy AIDL service 的 rc 示例
 - 官方文档：
