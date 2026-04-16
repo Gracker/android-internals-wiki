@@ -1,9 +1,10 @@
 {
-  "current_issue": 2,
+  "current_issue": 3,
   "completed_issues": [
     0,
-    1
+    1,
+    2
   ],
-  "indexed_links": 2,
-  "skipped_links": 42
+  "indexed_links": 909,
+  "skipped_links": 17
 }

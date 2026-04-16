@@ -14455,6 +14455,259 @@
         "内存回收"
       ],
       "summary": "深入分析Linux内存回收机制，包括buddy allocator的拓扑约束、外部碎片度量、LRU链表工作原理，以及高阶分配的数学模型。"
+    },
+    {
+      "title": "Android 运行时资源的访问 | 开发者说·DTalk",
+      "path": "AndroidWeekly/#2/Android 运行时资源的访问 | 开发者说·DTalk",
+      "source_url": "https://mp.weixin.qq.com/s/HI3Bg7o0iAibxaEB0Xby0Q",
+      "weekly_issue": "#2",
+      "weekly_date": "2020-09-09",
+      "score": 12,
+      "quality": "medium",
+      "scores": {
+        "relevance": 3,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Android 运行时资源的访问...",
+      "scored_at": "2026-04-16T09:02:33.016658"
+    },
+    {
+      "title": "Android Material 组件 1.2.0 现已发布",
+      "path": "AndroidWeekly/#2/Android Material 组件 1.2.0 现已发布",
+      "source_url": "https://mp.weixin.qq.com/s/PZD8RxrqP7_RAjXIo345aQ",
+      "weekly_issue": "#2",
+      "weekly_date": "2020-09-09",
+      "score": 12,
+      "quality": "medium",
+      "scores": {
+        "relevance": 3,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Android Material 组件 1.2.0...",
+      "scored_at": "2026-04-16T09:02:33.016668"
+    },
+    {
+      "title": "解读 Kotlin 1.4 - 工作忙，莫催稿",
+      "path": "AndroidWeekly/#2/解读 Kotlin 1.4 - 工作忙，莫催稿",
+      "source_url": "https://rarnu.xyz/archives/%E8%A7%A3%E8%AF%BBkotlin14",
+      "weekly_issue": "#2",
+      "weekly_date": "2020-09-09",
+      "score": 12,
+      "quality": "medium",
+      "scores": {
+        "relevance": 3,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch02-编译",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "解读 Kotlin 1.4...",
+      "scored_at": "2026-04-16T09:02:33.016672"
+    },
+    {
+      "title": "王晓振：U4 内核团队再出发，打造全新 Flutter 引擎 —— Hummer",
+      "path": "AndroidWeekly/#2/王晓振：U4 内核团队再出发，打造全新 Flutter 引擎 —— Hummer",
+      "source_url": "https://zhuanlan.zhihu.com/p/189411332?utm_source=wechat_session&utm_medium=social&utm_oi=27871238160384",
+      "weekly_issue": "#2",
+      "weekly_date": "2020-09-09",
+      "score": 12,
+      "quality": "medium",
+      "scores": {
+        "relevance": 3,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "王晓振：U4 内核团队再出发...",
+      "scored_at": "2026-04-16T09:02:33.016674"
+    },
+    {
+      "title": "Android加载图片占用内存分析",
+      "path": "AndroidWeekly/#2/Android加载图片占用内存分析",
+      "source_url": "https://mp.weixin.qq.com/s/aRDzmMlkqB14Ty67GJs9vg",
+      "weekly_issue": "#2",
+      "weekly_date": "2020-09-09",
+      "score": 12,
+      "quality": "medium",
+      "scores": {
+        "relevance": 3,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch03-内存",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Android加载图片占用内存分析...",
+      "scored_at": "2026-04-16T09:02:33.016675"
+    },
+    {
+      "title": "浅谈 Android 内存监控（中）",
+      "path": "AndroidWeekly/#2/浅谈 Android 内存监控（中）",
+      "source_url": "https://juejin.im/post/6867335105322188813",
+      "weekly_issue": "#2",
+      "weekly_date": "2020-09-09",
+      "score": 12,
+      "quality": "medium",
+      "scores": {
+        "relevance": 3,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch03-内存",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "浅谈 Android 内存监控（中）...",
+      "scored_at": "2026-04-16T09:02:33.016677"
+    },
+    {
+      "title": "宋宝华：当Linux内核遭遇鲨鱼—kernelshark",
+      "path": "AndroidWeekly/#2/宋宝华：当Linux内核遭遇鲨鱼—kernelshark",
+      "source_url": "https://mp.weixin.qq.com/s/CRYcai2mCFyGL0ZJ9gwN6w",
+      "weekly_issue": "#2",
+      "weekly_date": "2020-09-09",
+      "score": 12,
+      "quality": "medium",
+      "scores": {
+        "relevance": 3,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch01-系统",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "宋宝华：当Linux内核遭遇鲨鱼...",
+      "scored_at": "2026-04-16T09:02:33.016678"
+    },
+    {
+      "title": "编译运行Linux内核源码中的BPF示例代码 - 云+社区 - 腾讯云",
+      "path": "AndroidWeekly/#2/编译运行Linux内核源码中的BPF示例代码 - 云+社区 - 腪讯云",
+      "source_url": "https://cloud.tencent.com/developer/article/1644458",
+      "weekly_issue": "#2",
+      "weekly_date": "2020-09-09",
+      "score": 12,
+      "quality": "medium",
+      "scores": {
+        "relevance": 3,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch01-系统",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "编译运行Linux内核源码中的BPF示例代码...",
+      "scored_at": "2026-04-16T09:02:33.016680"
+    },
+    {
+      "title": "Linux内核虚拟内存管理之匿名映射缺页异常分析",
+      "path": "AndroidWeekly/#2/Linux内核虚拟内存管理之匿名映射缺页异常分析",
+      "source_url": "https://mp.weixin.qq.com/s/2cQ_7mZNc8MnCOk7F3mc9Q",
+      "weekly_issue": "#2",
+      "weekly_date": "2020-09-09",
+      "score": 12,
+      "quality": "medium",
+      "scores": {
+        "relevance": 3,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch01-系统",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Linux内核虚拟内存管理之匿名映射缺页异常...",
+      "scored_at": "2026-04-16T09:02:33.016681"
+    },
+    {
+      "title": "Android 11 正式发布 | 开发者们的舞台已就绪",
+      "path": "AndroidWeekly/#2/Android 11 正式发布 | 开发者们的舞台已就绪",
+      "source_url": "https://mp.weixin.qq.com/s/XF6yOGUdwngWzMQ54hS9kw",
+      "weekly_issue": "#2",
+      "weekly_date": "2020-09-09",
+      "score": 12,
+      "quality": "medium",
+      "scores": {
+        "relevance": 3,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch01-系统",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Android 11 正式发布 | 开发者们的舞台...",
+      "scored_at": "2026-04-16T09:02:33.016682"
+    },
+    {
+      "title": "小技巧 | 在 Android Studio 调试应用（下）",
+      "path": "AndroidWeekly/#2/小技巧 | 在 Android Studio 调试应用（下）",
+      "source_url": "https://mp.weixin.qq.com/s/vAi1R8hkWqJpwYTHuFkmBw",
+      "weekly_issue": "#2",
+      "weekly_date": "2020-09-09",
+      "score": 12,
+      "quality": "medium",
+      "scores": {
+        "relevance": 3,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch04-开发",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "小技巧 | 在 Android Studio 调试应用...",
+      "scored_at": "2026-04-16T09:02:33.016683"
     }
   ]
 }
