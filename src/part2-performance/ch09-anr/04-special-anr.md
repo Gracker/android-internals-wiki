@@ -30,14 +30,16 @@ sources:
     note: "高爷原创 ANR 分析系列"
 tags: ['anr', 'sharedpreferences', 'contentprovider', 'binder', 'broadcast', 'io-blocking', 'system-load']
 related_chapters: ['9.1', '9.2', '9.3', '1.4', '4.3', '4.4', '6.3']
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
-task9_result: needs-rework
-task2b_state: idle
-task6_result: pass-light-edit
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
+task9_result: reworked
+task2b_state: fixed
+task2b_result: fixed
 reviewed_by: openclaw-task6
 reviewed_date: "2026-04-16"
+rework_date: "2026-04-16"
+rework_by: "task2b-rework"
 ---
 
 # 特殊场景的 ANR
@@ -71,7 +73,7 @@ Bug report 里的 ANR traces 显示主线程要么在 `nativePollOnce()`（idle 
 
 ### CPU 饱和：调度器来不及调度
 
-在正常情况下，Android 的主线程优先级（`THREAD_PRIORITY_FOREGROUND`，-1）足以让调度器在几毫秒内把 CPU 分配给它。但当整机 CPU 饱和时，情况就不同了。
+在正常情况下，Android 的主线程优先级（`THREAD_PRIORITY_FOREGROUND`，-2）足以让调度器在几毫秒内把 CPU 分配给它。但当整机 CPU 饱和时，情况就不同了。
 
 CPU 饱和通常由以下因素造成：后台有大量进程同时运行（比如刚开机、批量安装应用）、某个进程的 worker 线程池全部跑满、系统服务的 Binder 线程池被打满导致请求排队。
 
@@ -101,11 +103,11 @@ Android 的广播机制中，AMS 是**串行分发**有序广播的——必须�
 
 ### 连锁 ANR 的形成过程
 
-Broadcast 超时的阈值是：前台广播 10 秒、后台广播 60 秒。[待验证: Android 16 中后台广播超时是否进一步调整]
+AOSP 的 `BroadcastQueue` 对每个 receiver 独立设置超时（`setBroadcastTimeoutLocked`），前台广播 10 秒、后台广播 60 秒。不存在"累计超时"机制——每个 receiver 有自己的超时窗口。[待验证: Android 16 中后台广播超时是否进一步调整]
 
-当一个广播风暴发生时，AMS 需要依次分发给所有目标 App。如果某个 App 在 `onReceive()` 中做了耗时操作，就会阻塞整个分发链。排在后面的 App 即使 `onReceive()` 实现得很轻量，也会因为等待前面的 App 处理完毕而超时。
+那为什么广播风暴还会导致连锁 ANR？关键在于系统级资源争抢。当一个广播风暴发生时，AMS 串行分发有序广播。如果某个 App 在 `onReceive()` 中做了耗时操作（比如数据库写入、网络请求），它会阻塞后续分发，让排在后面的 App 的分发开始时间推迟。同时，大量 App 几乎同时被唤醒处理广播，引发 CPU、I/O、Binder 线程池等系统资源的激烈竞争。
 
-更麻烦的是，这种超时会形成连锁反应。假设有 10 个 App 注册了 `BOOT_COMPLETED`，第 3 个 App 的 `onReceive()` 跑了 8 秒，第 5 个跑了 6 秒。当 AMS 分发到第 7 个 App 时，累计等待时间已经远超 10 秒，于是从第 7 个开始全部触发 ANR。
+这种竞争会导致原本轻量的 receiver 也因调度延迟或 Binder 调用排队而无法在各自的 10 秒窗口内完成。结果就是多个 App 几乎同时触发 ANR——不是累计超时，而是系统资源被耗尽后，各 receiver 各自超时。
 
 ### Trace 特征
 
@@ -154,17 +156,20 @@ Google 推出了 Jetpack App Startup 库。核心思路是用一个 ContentProvi
 ```java
 // frameworks/base/core/java/android/app/QueuedWork.java
 // @ AOSP android-14.0.0_r1
+private static final LinkedList<Runnable> sFinishers = new LinkedList<>();
+
 public static void waitToFinish() {
     Runnable toFinish;
-    while ((toFinish = sPendingWorkFinishers.poll()) != null) {
-        toFinish.run(); // 在主线程上同步执行写入任务
+    // 主线程同步遍历队列，逐个执行写入任务
+    while ((toFinish = sFinishers.poll()) != null) {
+        toFinish.run();
     }
 }
 ```
 
 [待验证: Android 14+ 是否已将 waitToFinish 优化为带超时的等待]
 
-注意：`toFinish.run()` 是在主线程上同步执行的。如果 `sPendingWorkFinishers` 队列里积累了大量任务，主线程就要逐个执行完。
+注意：`toFinish.run()` 是在主线程上同步执行的。`sFinishers` 是一个 `LinkedList<Runnable>`，每次 `apply()` 调用都会向其中追加一个写入任务。如果队列里积累了大量任务，主线程就要逐个执行完。
 
 ### 解决方案
 
@@ -241,6 +246,30 @@ void Heap::CollectGarbageInternal(gc::collector::GcType gc_type,
 这一节讨论的 GC 机制在 §4.3（ART 虚拟机内存管理）中有完整的原理分析。这里聚焦的是 GC 在极端情况下如何成为 ANR 的间接推手——问题本质不在 GC 本身，而在于 App 的内存抖动或系统内存压力导致 GC 频率失控。
 
 [已验证: 来源见 ART GC 机制分析 + AOSP art/runtime/gc/heap.cc] [已验证: AOSP android-14.0.0_r1 + android-15.0.0_r1] [待验证: Android 17 CMC GC 在极端内存压力下的暂停时间是否有进一步优化]
+
+## startForeground() 超时导致的 ANR
+
+### 从 Android 12 开始的新约束
+
+Android 12 引入了一项严格约束：如果 App 调用了 `startForegroundService()`，必须在 **5 秒内** 调用 `startForeground()`（Android 11 及之前为 10 秒）。超时后系统会抛出 `ForegroundServiceStartNotAllowedException` 并触发 ANR。
+
+这个 ANR 的特殊性在于：它不是 Service 本身的 20 秒超时，而是一个独立的、更短的超时窗口。很多开发者把两者混为一谈，导致优化方向错误——以为改 `onStartCommand()` 的执行时间就行，问题出在 `startForeground()` 调用不及时。
+
+### 典型触发场景
+
+最常见的原因是 `onCreate()` 或 `onStartCommand()` 中做了耗时操作（数据库查询、文件 I/O、等待网络响应），导致 `startForeground()` 的调用被推迟。有些 App 的 `startForeground()` 调用被放在了异步回调里（比如等一个网络请求完成后再通知），如果网络请求本身耗时超过 5 秒，ANR 就不可避免。
+
+另一个隐蔽场景：Android 12+ 对后台启动 Service 有严格限制。如果 App 不在前台，调用 `startForegroundService()` 本身就可能失败。开发者为了绕过限制，在各种生命周期回调里调用，但时机不当导致 5 秒窗口不够用。
+
+### 在 Perfetto 中怎么识别
+
+ANR traces 中主线程堆栈不在 `onStartCommand()` 里，而在更早的位置——比如 `Application.onCreate()` 或者某个 ContentProvider 的初始化中。系统日志（logcat）中搜索 `ForegroundServiceStartNotAllowedException` 可以快速确认这个类型。
+
+在 Perfetto 中，能看到 Service 的 `onCreate()` 或 `onStartCommand()` 开始执行后，5 秒内没有 `startForeground()` 对应的 `NotificationManager.notify()` 调用。
+
+### 预防方案
+
+`startForeground()` 必须放在 `onCreate()` 或 `onStartCommand()` 的最前面，在任何耗时操作之前。如果确实需要在 `onStartCommand()` 中做异步工作，先调用 `startForeground()` 建立前台通知，再开始异步处理。
 
 ## 文件锁竞争导致的 ANR
 
