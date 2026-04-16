@@ -724,3 +724,33 @@
 - **位置**：Android 16 节 ANGLE 描述
 - **问题**：称 Android 16 集成了 ANGLE 作为系统级驱动。实际上 ANGLE 在 Android 12 已可选集成，13 成部分 App 默认 OpenGL ES 实现，15 大幅扩展覆盖范围。Android 16 是进一步扩大而非首次集成。
 - **建议**：改为「Android 12 开始可选集成 ANGLE 作为 OpenGL ES 到 Vulkan 的翻译层，此后逐步扩大覆盖范围。Android 16 将 ANGLE 作为所有 OpenGL ES 应用的默认实现，OpenGL ES 进入维护模式。」
+
+## [Task9 Deep Review] 1.2 系统启动全流程 — 2026-04-17
+- **类型**：原理断裂
+- **位置**：first-stage init 段 — FirstStageMount 机制
+- **问题**：提到 FirstStageMount::DoFirstStageMount() 挂载启动必需分区，但未解释它如何决定挂载哪些分区（A/B slot 选择逻辑、分区决策依据）。读者无法理解为什么某些设备 init 阶段特别慢（如 A/B slot 切换后需要验证新分区）。
+- **建议**：补充 FirstStageMount 的决策逻辑简述：读取 boot control HAL 确定当前 active slot → 构建分区挂载列表 → 挂载 system/vendor/product 等分区。
+
+## [Task9 Deep Review] 1.2 系统启动全流程 — 2026-04-17
+- **类型**：原理断裂
+- **位置**：开机性能优化段 — task_profiles
+- **问题**：提到 task_profiles 替代了 raw cpuset 写法，但未解释 task_profiles 的机制（它组合了调度策略、uclamp、cpuset 等）和与旧方式的对比。读者可能不清楚为什么新方案更好。
+- **建议**：补充 task_profiles 的核心机制一句话说明（将调度相关策略组合为命名 profile，在 init rc 中通过 task_profiles 字段指定），或者标注交叉引用到 5.1 节（Linux 进程调度基础）。
+
+## [Task9 Deep Review] 1.2 系统启动全流程 — 2026-04-17
+- **类型**：知识盲区
+- **位置**：boot_progress 里程碑事件列表
+- **问题**：列出的 boot_progress_* 事件不完整。缺少：boot_progress_preload_start / boot_progress_preload_end（Zygote 预加载起止）；boot_progress_pms_data_scan_start / boot_progress_pms_data_scan_end（PMS 数据扫描）。这些事件在 event log 中常见，用于定位 Zygote 和 PMS 阶段的子环节耗时。
+- **建议**：在 boot_progress 事件列表中补充 preload_start/end 和 pms_data_scan 事件。
+
+## [Task9 Deep Review] 1.2 系统启动全流程 — 2026-04-17
+- **类型**：源码准确性
+- **位置**：「Zygote fork SystemServer 的触发机制」段 — ZygoteInit.java 行号
+- **问题**：引用了非常具体的行号（行 844-850、行 902-912、行 693-801、行 780、行 792-798、行 893）。这些行号标注了 @ android-16.0.0_r1 但未实际验证，且代码行号在不同补丁版本间容易偏移。ZygoteServer.java 行 394 同样需要验证。
+- **建议**：将行号标注改为范围描述（如「main() 方法后半段」）或在每处行号旁加 [待验证] 标注。已标注 last_verified_against android-16.0.0_r1，但行号级别的精度需要二次确认。
+
+## [Task9 Deep Review] 1.2 系统启动全流程 — 2026-04-17
+- **类型**：知识盲区
+- **位置**：开机性能优化段 — APEX 激活
+- **问题**：OTA 后首启卡在 APEX 激活的排查建议仅一笔带过（"检查 APEX 激活"），未解释 APEX 激活机制（apexd 在 first-stage init 后半段激活新 APEX 模块，涉及 dm-verity 校验和 loop 设备挂载）及对启动时间的具体影响路径。
+- **建议**：在 init 阶段或扩展部分补充 apexd 激活的简要机制和典型耗时影响，或标注交叉引用到 1.7（ART 编译管线）的 APEX 相关内容。

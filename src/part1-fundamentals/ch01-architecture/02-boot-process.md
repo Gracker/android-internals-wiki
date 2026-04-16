@@ -75,8 +75,9 @@ related_chapters:
   - "8.3"
 pipeline_stage: task6_pending
 task6_state: revisiting
-task9_state: pending
+task9_state: reviewed
 task9_result: needs-rework
+last_task9_at: "2026-04-17T03:20:00+08:00"
 task2b_result: fixed
 task2b_state: fixed
 ---
