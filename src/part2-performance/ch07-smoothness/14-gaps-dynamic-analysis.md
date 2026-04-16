@@ -17,16 +17,20 @@ sources:
     authors: "arXiv 2025"
     date: "2025-11"
 pipeline_stage: task6_pending
-task6_state: pending
+task6_state: reviewed
+task6_result: pass-light-edit
 task9_state: pending
 task2b_state: idle
+reviewed_date: "2026-04-16"
+reviewed_by: "openclaw-task6"
+review_type: "task6-writing-quality-review"
 ---
 
 # 7.14 GAPS：Android 动态分析目标可达性路径重建
 
 ## 开篇：为什么了解这个
 
-动态分析（Dynamic Analysis）是 Android 性能分析与测试的核心手段：通过在真机上运行 App，观察其行为来推断系统状态。但传统动态分析有一个根本性瓶颈——**目标方法的可达性（Method Reachability）问题**。
+动态分析通过在真机上运行 App，实时观察其行为来推断系统状态——这是发现运行时问题的唯一手段。但传统动态分析有一个根本性瓶颈——**目标方法的可达性（Method Reachability）问题**。
 
 当我们想要分析某个特定方法（比如 `View.draw()`）对流畅性的影响时，纯动态分析只能被动等待该方法被触发。如果这个方法只在特定条件下执行（比如列表滑动到第 50 项时），工程师可能需要反复操作几分钟甚至几小时才能触达。AndroTest 基准上，纯动态分析的触达率只有 9.69%（GoalExplorer）到 17.12%（Guardian+LLM）。
 

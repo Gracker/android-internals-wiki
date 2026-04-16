@@ -1,5 +1,38 @@
 [
   {
+    "section": "7.14",
+    "section_title": "GAPS：Android 动态分析目标可达性路径重建",
+    "priority": 90,
+    "reason": "[review回炉] 多项技术细节需要补充素材支持",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "需补充素材",
+        "location": "技术数据基准",
+        "detail": "AnodTest基准测试的具体定义和数据来源缺失",
+        "suggestion": "需要补充AnodTest基准测试的详细定义、测试方法、数据来源链接"
+      },
+      {
+        "type": "需补充素材",
+        "location": "测试环境",
+        "detail": "GAPS测试的具体环境和配置参数不明确",
+        "suggestion": "需要补充GAPS测试的具体设备、Android版本、测试配置等环境参数"
+      },
+      {
+        "type": "需补充素材",
+        "location": "数据对比",
+        "detail": "动态触达率57.44%缺少对比基线说明",
+        "suggestion": "需要补充动态触达率的对比基线，说明与之前方案的对比关系"
+      }
+    ],
+    "added_by": "task6-review",
+    "added_at": "2026-04-16T17:00:00",
+    "status": "pending",
+    "original_review_log": "logs/review/2026-04-16-17-review.md"
+  },
+  {
     "section": "3.1",
     "section_title": "Input 事件分发全流程",
     "priority": 95,
