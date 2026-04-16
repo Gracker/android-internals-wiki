@@ -2,11 +2,13 @@
 title: "VSync 机制"
 chapter: "2.3"
 status: ready-for-review
-reviewed_date: 2026-04-11
+reviewed_date: 2026-04-16
 reviewed_by: openclaw-task6
 polish_count: 1
 polish_date: "2026-04-04"
 polish_by: "task2b-polish" 
+task6_result: pass-light-edit
+task6_state: reviewed
 applicable_versions: "Android 4.1 (API 16) - Android 16 (API 36)"
 last_verified: "2026-04-11"
 last_verified_against: "AOSP android-16.0.0_r1"
