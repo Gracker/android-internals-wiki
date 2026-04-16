@@ -685,5 +685,49 @@
     "status": "completed",
     "completed_at": "2026-04-16T18:43:26.229871+00:00",
     "completed_by": "task2b-rework"
+  },
+  {
+    "section": "1.2",
+    "section_title": "系统启动全流程",
+    "priority": 95,
+    "reason": "[Deep Tech Review] P0: UserController.java 源码路径错误(am/→user/); P1: related_chapters缺少1.11 Zygote章节/SELinux策略加载未提及/版本覆盖缺口(Android 12-16启动变更)/缺少量化基线数据",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "参考资料列表 — UserController.java 路径",
+        "detail": "引用路径 frameworks/base/services/core/java/com/android/server/am/UserController.java 不正确。AOSP 中 UserController.java 位于 frameworks/base/services/core/java/com/android/server/user/UserController.java（com.android.server.user 包），不在 am 包下。",
+        "suggestion": "修正路径为 frameworks/base/services/core/java/com/android/server/user/UserController.java"
+      },
+      {
+        "type": "交叉引用错误",
+        "location": "frontmatter related_chapters",
+        "detail": "related_chapters 列出 1.1, 1.3, 1.4, 1.5, 1.7, 8.2, 8.3，但缺少 1.11（Zygote 机制与启动性能优化）。本章大量讨论 Zygote 预加载、fork SystemServer 的源码级细节，与 1.11 直接相关。",
+        "suggestion": "在 related_chapters 中添加 '1.11'"
+      },
+      {
+        "type": "知识盲区",
+        "location": "init 阶段 — first-stage init 描述",
+        "detail": "章节提到挂载 selinuxfs 但完全未讨论 SELinux 策略加载对启动时间的影响。SELinux policy load 是 first-stage init 之后的耗时操作之一，对开机时间有可测量的影响（通常数十到数百毫秒）。",
+        "suggestion": "在 first-stage init 阶段补充 SELinux 策略加载的时间点和影响，或标注 [待验证] 由 1.11 章节覆盖"
+      },
+      {
+        "type": "版本差异",
+        "location": "全文 — applicable_versions 声明 8.0-16",
+        "detail": "applicable_versions 声明 Android 8-16，但正文对 Android 12-16 的启动相关行为变更覆盖不足：startApexServices() 的引入版本（Android 12）未明确标注；ART APEX 对 Zygote 预加载和 dexpreopt 产物管理的影响未讨论；Android 15+ 的启动优化变化（如 profileable 改变、Cloud Profiles 对首次启动的影响）未提及。",
+        "suggestion": "在正文或版本演进段中补充关键版本里程碑。至少标注 startApexServices() 引入版本（Android 12）。"
+      },
+      {
+        "type": "数据缺失",
+        "location": "全文 — 开机性能优化部分",
+        "detail": "全文讨论启动优化策略但没有任何量化基线数据。缺少：典型 Pixel 设备的开机时间分布（Bootloader/Kernel/init/Zygote/SystemServer 各占比）；preloaded-classes 数量（已给出 18431）对应的 PreloadClasses 耗时参考值；lazy service 的典型节省时间。",
+        "suggestion": "补充一组参考基线数据（如 Pixel 8 Android 16 的分段耗时），标注设备和版本条件。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-17T03:25:57",
+    "status": "pending"
   }
 ]
