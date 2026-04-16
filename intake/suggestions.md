@@ -819,3 +819,36 @@
 - **位置**：frontmatter
 - **问题**：related_chapters 字段完全缺失。正文引用了 §5.4、§13.5、§14.2、第 13 章但未在 frontmatter 声明。
 - **建议**：添加 related_chapters: ["5.4", "13.3", "13.5", "13.7", "14.2", "14.11"]
+
+
+## [Task9 Deep Review] 18.2 Android View 标准链路（BLAST 深入）— 2026-04-17
+
+- **类型**：交叉引用错误
+- **位置**：文末交叉引用段
+- **问题**：三处交叉引用的章节编号与实际内容不匹配：(1) "2.1 BufferQueue 机制"应为"2.13 图形缓冲区管理(BufferQueue)"；(2) "2.5 SurfaceFlinger"应为"2.6 SurfaceFlinger 与合成"；(3) "2.6 同步机制"应为"2.16 Sync Fence 框架与帧同步机制"。链接文件路径正确，仅显示文字中的章节号错误
+- **建议**：将交叉引用文字修正为正确章节号+标题：(1) [2.13 图形缓冲区管理 (BufferQueue)]；(2) [2.6 SurfaceFlinger 与合成]；(3) [2.16 Sync Fence 框架与帧同步机制]
+
+- **类型**：源码准确性
+- **位置**：全文
+- **问题**：涉及 Choreographer、RenderThread、BLASTBufferQueue、FrameTimeline 等核心类，但未标注任何 AOSP 源码路径（如 frameworks/base/libs/hwui/renderthread/RenderThread.cpp）或关键方法签名
+- **建议**：在关键机制描述处补充 AOSP 路径和方法名。优先补充：RenderThread.syncFrameState()、BLASTBufferQueue.acquireNextBufferLocked()、SurfaceFlinger::latchBuffer
+
+- **类型**：数据缺失
+- **位置**："Trace 视角"段落中的耗时表格
+- **问题**：表格中所有"正常耗时"值（doFrame < 8ms 等）隐含 60Hz 假设，90Hz 帧预算 11.1ms、120Hz 仅 8.3ms。未标注适用刷新率
+- **建议**：表格增加"适用刷新率"列，或按 60/90/120Hz 分别给出参考值
+
+- **类型**：原理断裂
+- **位置**："第四阶段：BLAST 提交与 SurfaceFlinger 合成"小节
+- **问题**：文章将 BLAST Transaction 称为"BLAST 模型的核心变化点"，但从未解释变化前的 Legacy 模型。读者无法理解"变了什么"
+- **建议**：在第四阶段之前（或章节开头）增加一段"BLAST 之前的 Legacy 模型"作为背景铺垫：Legacy 模式下 BufferQueue 的 Consumer 端在 SF 进程，BLAST 将 Consumer 移入 App 进程（BBQ），App 直接构造 Transaction 异步发给 SF
+
+- **类型**：版本差异
+- **位置**：全文（frontmatter 标注 Android 11-16）
+- **问题**：正文仅提到 FrameTimeline（Android 12）一个版本变化点。Android 11 的 BLAST 引入、Android 13 的渲染预测改进、Android 14 的 120Hz 优化和 FrameRateOverride 变更均未涉及
+- **建议**：增加"版本演进"小节或在各阶段中穿插版本标注。最低要求：标注 BLAST 引入版本（Android 11）和 FrameTimeline 引入版本（Android 12）
+
+- **类型**：数据缺失
+- **位置**："第二阶段：Sync — 移交蓝图"
+- **问题**："syncFrameState 正常情况下耗时在 1-2ms"无数据来源标注
+- **建议**：补充数据来源（如"在 Pixel 7 Android 14 的实测中..."）或改为范围描述并标注 [待补充：实测数据]

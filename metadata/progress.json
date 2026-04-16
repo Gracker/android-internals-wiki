@@ -2909,7 +2909,11 @@
       "task6_state": "reviewed",
       "task6_result": "pass-light-edit",
       "task6_reviewed_date": "2026-04-17",
-      "pipeline_stage": "task9_pending"
+      "pipeline_stage": "task2b_pending",
+      "task9_state": "reviewed",
+      "task9_result": "needs-rework",
+      "task9_reviewed_date": "2026-04-17",
+      "task2b_state": "pending"
     },
     "18.3": {
       "status": "ready-for-review",

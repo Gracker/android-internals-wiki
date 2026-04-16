@@ -467,3 +467,21 @@ Debug 构建与 Release 构建在 profiling 时的系统性行为差异：ART JI
 
 ### 关联章节
 14.1, 15.6, 13.1
+
+
+## [2026-04-17] 18.2 Android View 标准链路（BLAST 深入）— 知识盲区
+
+### 盲区描述
+BLAST vs Legacy BufferQueue 的架构对比缺失。章节多次提到"BLAST 模型的核心变化点"但从未解释 Legacy 模式的架构（Consumer 端在 SF 进程的 BufferQueue 模型），读者无法理解 BLAST 解决了什么问题、为什么需要迁移。这是理解整个 18.2 章节的前提知识。
+
+### 重要程度
+高
+
+### 建议研究方向
+- AOSP 中 BLASTBufferQueue 替换 Legacy BufferQueue 的 commit 历史（Android 11 R）
+- Legacy 模式下 BufferQueue 的 Consumer 在 SurfaceFlinger 进程中的工作方式
+- BLAST 模式下 BBQ 在 App 进程内作为 Consumer 的架构变化
+- SurfaceControl.Transaction 的引入时机和动机
+
+### 关联章节
+18.2, 2.1, 2.6, 2.13, 2.16, 18.10
