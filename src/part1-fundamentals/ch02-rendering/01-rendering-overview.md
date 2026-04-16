@@ -25,13 +25,14 @@ sources:
     path: "AOSP 源码分析 frameworks/base/core/java/android/view"
 tags: ['rendering', 'hwui', 'skia', 'surfaceflinger', 'gpu', 'triple-buffering', 'rendering-pipeline', 'bufferqueue', 'vsync', 'displaylist', 'rendernode']
 related_chapters: ["2.2", "2.3", "2.4", "2.5", "2.6", "2.10"]
-pipeline_stage: task9_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
-task9_state: reviewed
+task9_state: pending
 task9_result: needs-rework
 task9_reviewed_date: "2026-04-16"
-task2b_state: idle
+task2b_result: fixed
+task2b_state: fixed
 ---
 
 # Android 渲染架构全景
@@ -87,11 +88,11 @@ ViewRootImpl.performTraversals()
 │       └── 递归调用子 View.measure()
 ```
 
-Measure 过程的执行方式是自顶向下的：从 DecorView 开始，逐级向子 View 传递尺寸约束。每对父子之间传递的是一个 32 位整数 measureSpec，其中高 16 位编码模式（EXACTLY 表示父 View 给了精确值、AT_MOST 表示不能超过某个上限、UNSPECIFIED 表示不限制），低 16 位编码具体数值。这个紧凑的设计避免了对象的频繁分配——在一个包含几百个 View 的布局中，measureSpec 的分配开销几乎为零。
+Measure 过程的执行方式是自顶向下的：从 DecorView 开始，逐级向子 View 传递尺寸约束。每对父子之间传递的是一个 32 位整数 measureSpec，其中高 2 位编码模式（EXACTLY 表示父 View 给了精确值、AT_MOST 表示不能超过某个上限、UNSPECIFIED 表示不限制），低 30 位编码具体数值。这个紧凑的设计避免了对象的频繁分配——在一个包含几百个 View 的布局中，measureSpec 的分配开销几乎为零。
 
 Android 在某些情况下会执行两轮 Measure。第一轮中，父 View 根据自身约束给子 View 一个初步大小；但如果子 View 在 onMeasure 中表明它实际需要的空间与初步分配不一致（比如一个wrap_content 的子 View 内部有更复杂的需求），父 View 就会根据子 View 的反馈调整约束，发起第二轮测量。在 Perfetto 中，看到 performTraversals 中 Measure 阶段出现两次耗时尖峰，很可能就是这种重测量在发生——常见原因是嵌套的 RelativeLayout 或使用了 weights 的 LinearLayout。
 
-View.onMeasure 的默认实现只做一件事：通过 getDefaultSize 把 measureSpec 解析为实际的像素值，然后调用 setMeasuredDimension 记录结果。getDefaultSize 的逻辑很简单——EXACTLY 模式直接使用约束值，AT_MOST 取约束值和建议值的较小者，UNSPECIFIED 直接使用 View 自身的建议大小：
+View.onMeasure 的默认实现只做一件事：通过 getDefaultSize 把 measureSpec 解析为实际的像素值，然后调用 setMeasuredDimension 记录结果。getDefaultSize 的逻辑很简单——EXACTLY 和 AT_MOST 模式都直接使用约束值（specSize），UNSPECIFIED 使用 View 自身的建议大小（size 参数）：
 
 ```java
 // frameworks/base/core/java/android/view/View.java
@@ -101,15 +102,17 @@ public static int getDefaultSize(int size, int measureSpec) {
     int specMode = MeasureSpec.getMode(measureSpec);
     int specSize = MeasureSpec.getSize(measureSpec);
     switch (specMode) {
-        case MeasureSpec.EXACTLY: result = specSize; break;
-        case MeasureSpec.AT_MOST: result = Math.min(size, specSize); break;
+        case MeasureSpec.EXACTLY:
+        case MeasureSpec.AT_MOST:
+            result = specSize;
+            break;
         case MeasureSpec.UNSPECIFIED: result = size; break;
     }
     return result;
 }
 ```
 
-这段代码之所以重要，是因为它解释了一个常见的性能坑：如果一个自定义 View 不重写 onMeasure，它在 AT_MOST 模式下会占据与建议大小相同的空间，这在 ScrollView 等可滚动容器中可能导致布局反复测量。
+这段代码之所以重要，是因为它解释了一个常见的性能坑：如果一个自定义 View 不重写 onMeasure，它在 AT_MOST 模式下会直接使用父 View 给出的约束值（specSize），即使 View 自身的建议大小更小也会被忽略，这在 ScrollView 等可滚动容器中可能导致布局反复测量。
 
 #### 2. Layout 过程：确定每个 View 的位置
 
