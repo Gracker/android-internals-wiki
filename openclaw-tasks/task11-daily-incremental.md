@@ -50,6 +50,25 @@ python3 source_index_helper.py search --query '<文件名关键词>'
 ### Step 4：写入
 一次性写入结果（通过 helper 脚本）。
 
+### Step 4b：追加到 AIW 每日漏斗（daily-info）
+
+对每个评分 ≥ 10 的增量文件，读取文件内容，判断是否与 Android/Linux 相关（关键词：Android、Linux、Framework、Perfetto、SurfaceFlinger、Choreographer、内存、功耗、渲染、ANR、启动、Perfetto、Binder、Zygote、AMS、WMS、Surface 等）。
+
+如果相关，在 `intake/daily-info/YYYY-MM-DD.md` 末尾按 FUNNEL 格式追加：
+
+```markdown
+## [增量扫描] {文件名（不含.md）}
+- **来源**：Task 11 增量扫描
+- **时间**：{YYYY-MM-DD HH:mm}
+- **链接**：{Obsidian 文件绝对路径}
+- **摘要**：{文件内容前200字摘要}
+- **推荐映射章节**：{根据关键词匹配章节}
+- **内容类型**：素材扫描
+- **相关标签**：{#Android #系统开发}
+```
+
+使用 `exec + python3 + pathlib + 绝对路径` 追加写入。
+
 ### Step 5：输出报告
 
 📅 每日增量扫描 | {日期}
@@ -65,8 +84,18 @@ python3 source_index_helper.py search --query '<文件名关键词>'
 如无增量文件：
 今天没有新增素材文件需要索引。
 
-## AIW 章节关键词映射
-与 Task 7 相同（省略，参见 task7-incremental-index.md）。
+### AIW 章节关键词映射
+- 渲染/SurfaceFlinger/VSync/Choreographer → ch02
+- 输入/InputDispatcher/触摸 → ch03
+- 内存/LMK/zRAM/memcg → ch04
+- CPU/EAS/调度/freq → ch05
+- 存储/f2fs/ext4/I/O → ch06
+- 流畅度/jank/卡顿/fps → ch07
+- 启动/响应速度 → ch08
+- ANR/Watchdog → ch09
+- 功耗/battery/doze → ch11
+- Perfetto/Trace → ch13
+- 其他 → ch16（待分类）
 
 ## 约束
 - 只处理 24 小时内修改的文件
