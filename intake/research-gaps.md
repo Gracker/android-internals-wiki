@@ -347,3 +347,30 @@ HWUI RenderThread 的 Bitmap 纹理上传（texture upload）机制。在 Draw �
 
 ### 关联章节
 2.1, 2.5, 7.10 (图片加载与 Bitmap 性能优化)
+
+## [2026-04-16] 10.4 低内存对系统性能的影响 — 知识盲区
+
+### 盲区 1：Compact Daemon（compactd）机制
+#### 描述
+章节讨论了 kswapd 和 Direct Reclaim，但完全未提及 Compact Daemon（Android 10+ 引入的用户空间内存规整守护进程）。compactd 在低内存时主动做 memory compaction 减少碎片，与 kswapd 并列的重要低内存缓解机制。
+#### 重要程度
+高
+#### 建议研究方向
+- Android 10 compactd 源码路径和触发条件
+- compactd 与 kswapd 的协作关系
+- Perfetto 中 compactd 的 track 表现
+- compactd 对减少 Direct Reclaim 的实际效果数据
+#### 关联章节
+4.2, 10.4
+
+### 盲区 2：onTrimMemory() 级别与内存压力信号的映射
+#### 描述
+章节多次提及 onTrimMemory() 回调（"正确的做法是响应 onTrimMemory() 回调"），但从未解释 trim level 体系（TRIM_MEMORY_UI_HIDDEN=20, TRIM_MEMORY_RUNNING_LOW=10, TRIM_MEMORY_MODIFYING=60 等）如何映射到 PSI/vmpressure 压力等级。读者无法理解"系统通知 App 释放内存"的具体机制和时机。
+#### 重要程度
+高
+#### 建议研究方向
+- AOSP ActivityThread.handleTrimMemory 的触发链
+- AMS 如何根据内存压力级别计算 trimLevel
+- trimLevel 与 lmkd 杀进程策略的对应关系
+#### 关联章节
+4.5, 10.4

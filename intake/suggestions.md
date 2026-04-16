@@ -620,3 +620,40 @@
 - **问题**：动态触达率57.44%缺少对比基线说明
 - **建议**：需要补充动态触达率的对比基线，说明与之前方案的对比关系
 - **review 日志**：logs/review/2026-04-16-17-review.md
+
+## [Task9 Deep Review] 10.4 低内存对系统性能的影响 — 2026-04-16
+
+- **类型**：源码准确性
+- **位置**：「lmkd 的杀进程策略」段，min_score_adj 描述
+- **问题**：称"min_score_adj 通常设置为 201（即 PREVIOUS_APP_ADJ + 1）"。AOSP ProcessList.java 中 PREVIOUS_APP_ADJ = 201。201 就是 PREVIOUS_APP_ADJ 本身，不是 PREVIOUS_APP_ADJ + 1（那应该是 202）。数学关系错误。
+- **建议**：改为"min_score_adj 通常设置为 201（即 PREVIOUS_APP_ADJ）"
+
+- **类型**：版本差异
+- **位置**：「PSI 信号与 lmkd 的触发机制」段
+- **问题**：「在 Android 高版本上（默认启用 use_psi 属性为 true）」中"高版本"模糊。PSI 从 Android 10 开始作为 lmkd 默认信号源。
+- **建议**：改为"从 Android 10 开始，PSI 已取代了早期的 vmpressure 机制成为 lmkd 的主要信号来源（ro.lmk.use_psi 默认为 true）"
+
+- **类型**：版本差异
+- **位置**：「ART GC 在低内存下的触发策略」段
+- **问题**：「在 Android 8.0（Oreo）之后」表述模糊。"之后"通常不含 8.0 本身。CC collector 从 Android 8.0 起引入。
+- **建议**：改为"从 Android 8.0 开始"
+
+- **类型**：版本差异
+- **位置**：mm_events 段 + frontmatter applicable_versions
+- **问题**：mm_events 仅在 Android 12+ 可用，但 applicable_versions 声明 Android 10-16。未讨论 Android 10/11 如何追踪内存压力（这两版本依赖 vmscan ftrace + 自定义 mem_event，无 mm_events）。
+- **建议**：在 mm_events 段开头添加版本适用说明，并在"综合判断"段中区分 10/11 和 12+ 的可用信号源
+
+- **类型**：数据缺失
+- **位置**：MGLRU 段末尾 [自动发现] 段落
+- **问题**：「预示着未来的 Android 设备在同样 RAM 容量下将能维持更多的后台应用」是推测性结论，非可验证技术事实。
+- **建议**：删除推测句，保留 MGLRU + ZRAM multi-comp 的具体技术收益（如减少 thrashing 比例、压缩比提升数据）
+
+- **类型**：数据缺失
+- **位置**：ZRAM 调优段 + 低端机优化段
+- **问题**：(1) "Qualcomm 的调优指南建议设为物理 RAM 的 75%"缺少引用链接。(2) "后台进程上限从标准设备的 32 个降到 8-12 个"缺少来源和具体配置项名称。(3) "Android 16 Go 版本扩展到了 4GB RAM 设备"需要官方文档验证。
+- **建议**：补充 Qualcomm 文档链接和年份；标注后台上限来源（ActivityManager 常量还是厂商自定义配置）；验证 Android 16 Go 的 RAM 上限变更并提供链接
+
+- **类型**：交叉引用
+- **位置**：lmkd 段落 vs §4.4 Low Memory Killer
+- **问题**：本章节 lmkd 段落包含较多 lmkd 工作机制细节（PSI 监听、oom_score_adj 杀进程策略），与 §4.4 内容重叠。本章节应侧重"低内存的影响"而非 lmkd 机制。
+- **建议**：精简本章节的 lmkd 机制描述，侧重"杀进程后的影响"（冷启动代价、恶性循环），机制细节指向 §4.4
