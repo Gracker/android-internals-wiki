@@ -26,10 +26,11 @@ sources:
 tags: ['memory', 'gc', 'churn', 'object-pool', 'tlab', 'autoboxing', 'heapprofd']
 related_chapters: ["4.3", "7.1", "7.2", "10.1", "10.4"]
 word_count: "~7500"
-reviewed_date: "2026-04-09"
-reviewed_by: "openclaw-task6"
-pipeline_stage: task6_pending
-task6_state: pending
+reviewed_date: "2026-04-16"
+reviewed_by: openclaw-task6
+task6_result: pass-light-edit
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task2b_state: idle
 ---
@@ -91,9 +92,9 @@ GC 本身并不一定是问题。ART 的 CC 收集器是并发的（concurrent�
 
 内存抖动对性能的影响可以从三个层面来理解：
 
-**GC 暂停直接抢占帧时间。** 在 60Hz 设备上，一帧的预算是 16.6ms；在 120Hz 设备上，这个预算缩减到 8.3ms。一次 Young GC 暂停 1-3ms，如果恰好发生在帧渲染期间，就意味着这一帧被 GC 吃掉了 12%-36% 的时间预算（120Hz 场景）。如果主线程的渲染工作本身就需要 6-7ms，加上 GC 暂停，帧总耗时轻松突破 8.3ms 的上限。
+**GC 暂停直接抢占帧时间。** 在 60Hz 设备上，一帧的预算是 16.6ms；在 120Hz 设备上，这个预算缩减到 8.3ms。一次 Young GC 暂停 1-3ms，如果恰好发生在帧渲染期间，这一帧就被 GC 吃掉了 12%-36% 的时间预算（120Hz 场景）。如果主线程的渲染工作本身就需要 6-7ms，加上 GC 暂停，帧总耗时轻松突破 8.3ms 的上限。
 
-**Allocation Stall：分配线程被阻塞。** 当 Eden 区已满、GC 正在进行时，试图分配新对象的线程会被阻塞（称为 Allocation Stall），直到 GC 完成回收。这意味着即使 GC 是"并发"的，在特定时刻分配线程仍然可能被卡住。在 Perfetto 中，我们可以观察到主线程突然出现一段"无法解释"的等待时间，实际原因就是 Allocation Stall。
+**Allocation Stall：分配线程被阻塞。** 当 Eden 区已满、GC 正在进行时，试图分配新对象的线程会被阻塞（称为 Allocation Stall），直到 GC 完成回收。即使 GC 标记为"并发"，在特定时刻分配线程仍然可能被卡住。在 Perfetto 中，我们可以观察到主线程突然出现一段"无法解释"的等待时间，实际原因就是 Allocation Stall。
 
 **CPU 竞争导致间接影响。** GC 线程执行标记、拷贝等工作需要消耗 CPU。在 Perfetto 的 CPU 视图中， `HeapTaskDaemon` 线程在某些时段占据了显著的 CPU 时间片。这些 CPU 时间本可以用来执行主线程或 RenderThread 的工作——也就是说，即使 GC 暂停没有直接发生在主线程上，CPU 竞争也会导致主线程的执行变慢。
 
@@ -120,7 +121,7 @@ UI Thread   | GC Pause!       | UI Thread
 
 ### onDraw / onMeasure 中创建对象
 
-这是最经典的内存抖动来源。`onDraw()` 在每一帧都可能被调用，如果在这里面创建对象，就意味着每帧都在分配——60Hz 设备上每秒就是 60 次，120Hz 设备上每秒 120 次。
+这是最经典的内存抖动来源。`onDraw()` 在每一帧都可能被调用，如果在这里面创建对象，每帧都在分配——60Hz 设备上每秒就是 60 次，120Hz 设备上每秒 120 次。
 
 常见的错误模式包括在 `onDraw()` 中创建 `Paint` 对象、`Path` 对象、`Rect` 对象、`Shader` 对象等。这些对象应该作为成员变量在构造函数中初始化一次，之后复用。
 
@@ -339,7 +340,7 @@ Kotlin 的内联类（从 Kotlin 1.5 开始称为 value class）可以在类型�
 value class UserId(val id: Long)
 ```
 
-当 `UserId` 在编译期可以被内联时，Kotlin 编译器会直接使用底层类型 `Long`（JVM 上的 `long`），不会在堆上创建包装对象。这意味着：
+当 `UserId` 在编译期可以被内联时，Kotlin 编译器会直接使用底层类型 `Long`（JVM 上的 `long`），不会在堆上创建包装对象：
 
 - `UserId` 作为函数参数传递时 → 不分配对象
 - `UserId` 存入 `Array<UserId>` 时 → 仍会装箱（因为泛型擦除为 `Object[]`）
@@ -357,7 +358,7 @@ ART 从 Android 8.0 开始默认使用 Concurrent Copying（CC）收集器。CC 
 
 TLAB 的工作方式是这样的：当线程需要分配一个小对象时，不需要获取堆的全局锁，只需在自己的 TLAB 中执行一次"指针前进"操作。这个过程极快，不涉及任何同步。只有当 TLAB 空间不足、或者分配的对象太大无法放入 TLAB 时，线程才需要向堆申请更多空间（这时才需要同步）。
 
-这意味着并非所有的内存分配都同样"昂贵"。在 TLAB 中分配的小对象代价极低，而触发 TLAB 补充或大对象分配的代价较高。因此，内存抖动的严重程度取决于分配模式：
+不同的分配模式代价差异很大。在 TLAB 中分配的小对象代价极低，而触发 TLAB 补充或大对象分配的代价较高。因此，内存抖动的严重程度取决于分配模式：
 
 - **大量小对象、均匀分配**：大部分分配在 TLAB 中完成，GC 压力较小
 - **大对象或突发式分配**：更容易触发 TLAB 补充和同步 GC，性能影响更大
