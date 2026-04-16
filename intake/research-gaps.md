@@ -264,3 +264,36 @@ applicable_versions 声明 Android 8-16，但遗漏了多项版本级架构变�
 - 为每个变化标注对性能分析的具体影响
 #### 关联章节
 1.1, 1.6, 16.2
+
+
+## [2026-04-16] 9.1 ANR 设计思想 — 知识盲区
+
+### 盲区描述
+startForeground() 超时机制（Android 12+ 5 秒，之前 10 秒）是现代 Android 最常见的 Service ANR 类型之一，但本章未提及。此超时与 Service 启动超时是独立的两个计时器：startForeground() 要求 Service 在 onCreate()/onStartCommand() 后必须在规定时间内调用 startForeground()，否则触发 ANR。
+
+### 重要程度
+高
+
+### 建议研究方向
+- AOSP ActivityManagerService.java 中 SERVICE_START_FOREGROUND_TIMEOUT 和 SERVICE_START_FOREGROUND_TIMEOUT_SHORT 的定义和版本变化
+- Android 12 将超时从 10 秒缩短到 5 秒的 commit 和官方说明
+- Android 14 新增的 foreground service type 对 startForeground 超时的影响
+
+### 关联章节
+9.2, 5.8
+
+## [2026-04-16] 9.1 ANR 设计思想 — 知识盲区
+
+### 盲区描述
+InputConnection ANR（InputMethodManagedService timeout）未提及。当 App 的 InputConnection 在 5 秒内未响应 IME 的输入事件请求时，系统会触发 ANR。这在输入法相关应用和自定义 View 中比较常见。
+
+### 重要程度
+中
+
+### 建议研究方向
+- AOSP InputMethodManagerService.java 中 INPUT_METHOD_NOT_RESPONDING_TIMEOUT 的定义
+- InputConnection ANR 与 InputDispatcher ANR 的触发路径差异
+- 在 Perfetto 中的表现特征
+
+### 关联章节
+9.2, 3.1, 3.4

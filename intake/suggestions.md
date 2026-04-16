@@ -444,3 +444,21 @@
 - **位置**：outline 扩展部分
 - **问题**：outline 声明"与 iOS / HarmonyOS 分层架构的对比"为扩展内容，但正文完全未涉及。这属于 outline 与正文不一致。
 - **建议**：如果不计划展开（合理选择），从 outline 扩展列表中移除该项；如果后续有素材，可补充简要对比表。
+
+
+## [Task9 Deep Review] 9.1 ANR 设计思想 — 2026-04-16
+
+- **类型**：数据缺失
+- **位置**：「ANR 在 Google Play Console 中的统计与影响」节，ANR 率阈值 0.38%/0.10%
+- **问题**：Google Play Console 的 ANR 率阈值数字缺乏可追溯的官方来源链接。Android Vitals 的具体阈值可能随时间调整，需要标注数据来源和时效。
+- **建议**：补充 Android Vitals 官方文档链接（https://developer.android.com/topic/performance/vitals/anr），并标注阈值查询日期。
+
+- **类型**：交叉引用一致性
+- **位置**：ContentProvider ANR 超时（1000ms）与 9.2 节的 ANR 触发条件
+- **问题**：9.1 声称 ContentProvider 超时为 1000ms（已标记为 P0 错误），需确保 9.2 节不重复此错误。两节需要对 ContentProvider 超时的描述一致。
+- **建议**：9.2 的 deep review 时重点检查 ContentProvider ANR 超时值是否准确。
+
+- **类型**：知识盲区（低优先）
+- **位置**：全文未提及 App 冷启动阶段 ContentProvider 初始化导致的 ANR
+- **问题**：App 冷启动时 ContentProvider 的 onCreate() 在 Application.onCreate() 之前同步执行。如果 ContentProvider 初始化耗时，会阻塞应用启动，间接导致后续组件的 ANR。这是一个常见的实战场景。
+- **建议**：在「常见问题与误区」节或版本演进节补充此场景的简要说明，交叉引用 8.2（App 启动全流程）。
