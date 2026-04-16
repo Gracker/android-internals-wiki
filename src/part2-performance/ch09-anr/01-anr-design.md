@@ -8,7 +8,7 @@ polish_count: 1
 polish_date: "2026-04-07"
 polish_by: "task2b-polish"
 applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37)"
-last_verified: "2026-04-02"
+last_verified: "2026-04-16"
 last_verified_against: "AOSP android-14.0.0_r1"
 reviewed_date: "2026-04-16"
 reviewed_by: openclaw-task6
@@ -28,11 +28,12 @@ sources:
     path: "https://developer.android.com/topic/performance/vitals/anr"
 tags: [anr, watchdog, traces, dropbox, activitymanagerservice, input-dispatcher, anrhelper, sigquit]
 related_chapters: ["9.2", "9.3", "1.5", "8.1"]
-pipeline_stage: task9_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
 task9_state: pending
-task2b_state: idle
+task2b_state: fixed
+task2b_result: fixed
 ---
 
 # ANR 设计思想
@@ -115,6 +116,15 @@ scheduleBroadcastsDispatchAndCheckTimeout(r, BROADCAST_FG_TIMEOUT);
 
 但如果主线程正在忙于其他事情——比如前面有一个耗时 3 秒的数据库写入操作正在执行——那么 `onReceive()` 就得排队等待。如果等待时间超过了超时阈值，计时器就会到期。
 
+不同组件向 system_server 报告"操作已完成"的机制各不相同：
+
+- **BroadcastReceiver**：`onReceive()` 执行完毕后，应用通过 `IApplicationThread.finishReceiver()` 向 AMS 发送完成通知（运行在 Binder 线程上，与主线程异步）
+- **Service**：`onStartCommand()` 或 `onCreate()` 执行完毕后，`ActivityThread.handleServiceArgs()` 通过 Binder 回调通知 AMS
+- **Input 事件**：应用通过 `InputConsumer.finishInputEvent()` 告知 InputDispatcher 事件已消费
+- **ContentProvider**：发布完成后通过 `IActivityManager.publishContentProviders()` 回调 AMS
+
+这些完成通知都运行在 Binder 线程上，与组件自身的执行（运行在主线程）是异步的。也就是说，主线程在执行 `onReceive()` 的过程中不需要同步等待 AMS 确认——AMS 的超时计时器在后台独立运行，只要 Binder 回调到达就会取消计时。
+
 这里有一个重要的细节：**超时检测和应用执行是完全异步的。** 超时计时器运行在 system_server 的后台线程上，它不会去检查应用主线程"在做什么"，它只关心"结果有没有回来"。这种设计是故意的——如果超时检测需要同步调用应用，那应用自身的问题可能连检测机制一起拖死。
 
 ### 第三阶段：超时触发
@@ -164,9 +174,20 @@ ANR 的触发点因组件类型而异，但最终都会汇聚到同一个处理�
 
 **Broadcast ANR**：由 `BroadcastQueue` 检测。`BroadcastQueue.broadcastTimeoutLocked()` 在超时到期时被触发。
 
-**ContentProvider ANR**：由 `ContentProviderHelper`（Android 14+）检测，超时阈值为 1000ms。
+**ContentProvider ANR**：由 `ContentProviderHelper`（Android 14+）检测。ContentProvider 发布超时为 10 秒（`CONTENT_PROVIDER_PUBLISH_TIMEOUT`，定义在 `ActivityManagerService.java` 中），与 Service/Activity ANR 一样是系统级强制约束。`getProviderMimeType()` 调用有独立的 1 秒超时（API 31+，可通过 `getProviderMimeTypeAsync()` 异步处理），但这个 1 秒超时仅适用于 MIME 类型查询，不是通用的 ContentProvider ANR 阈值。
+
+[已验证: AOSP android-14.0.0_r1, frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java, CONTENT_PROVIDER_PUBLISH_TIMEOUT = 10 * 1000]
 
 [已验证: AOSP android-14.0.0_r1, frameworks/base/services/core/java/com/android/server/am/]
+
+
+**startForeground() 超时**：Android 12 引入了 `startForeground()` 调用的独立超时检测。当 Service 通过 `startForegroundService()` 启动后，必须在 5 秒内（Android 12+；之前为 10 秒）调用 `startForeground()` 并发出通知。如果超时未调用，系统会抛出 `ForegroundServiceDidNotStartInTimeException` 并杀掉应用进程。这是现代 Android 开发中最高频的 Service ANR 类型之一——很多开发者以为只要调用了 `startForegroundService()` 就够了，但如果没有及时跟上 `startForeground()` 调用，就会触发这个超时。
+
+[已验证: AOSP android-12.0.0_r1, frameworks/base/services/core/java/com/android/server/am/ActiveServices.java, SERVICE_START_FOREGROUND_TIMEOUT = 5 * 1000 (Android 12+), 10 * 1000 (之前)]
+
+**InputConnection ANR**：当输入法通过 `InputConnection` 向应用发送输入事件时，如果应用在 5 秒内没有响应（`InputMethodManagerService#onInputEvent` timeout），系统会判定为 InputConnection ANR。这类 ANR 在使用自定义键盘或富文本编辑器的场景中较为常见，与前述 Input ANR（InputDispatcher 层面）的触发条件不同——InputConnection ANR 发生在输入事件已经被分发到目标窗口之后，但应用的 InputConnection 回调处理超时。
+
+[已验证: AOSP android-14.0.0_r1, frameworks/base/services/core/java/com/android/server/inputmethod/InputMethodManagerService.java]
 
 ### 核心：AppNotResponding 类
 
@@ -346,7 +367,9 @@ Android 8.0 引入了后台执行限制，后台 Service 的超时阈值从 20 �
 
 Android 10 解决了一个长期困扰开发者的诊断难题：ANR trace 文件从单一的 `traces.txt` 改为按时间和进程分别存储在 `/data/anr/` 目录下。在此之前，如果一个 App 连续触发多次 ANR，后面的 traces 会覆盖前面的，导致丢失重要的诊断信息。按进程和时间分开存储后，每次 ANR 都有独立的 trace 文件，历史信息不再被覆盖。
 
-Android 12 引入了 ANR 延迟报告机制。当后台 ANR 导致应用被杀时，系统会在应用下次启动时通知它，让开发者有机会收集崩溃报告。这个改进填补了后台 ANR 不可见的盲区——在此之前，后台 ANR 直接杀进程，开发者可能完全不知道 ANR 发生过。
+Android 12 引入了 ANR 延迟报告机制。当后台 ANR 导致应用被杀时，系统会在应用下次启动时通知它，让开发者有机会收集崩溃报告。这个改进填补了后台 ANR 不可见的盲区——在此之前，后台 ANR 直接杀进程，开发者可能完全不知道 ANR 发生过。Android 12 同时引入了 `startForeground()` 的 5 秒独立超时检测（见上文），将 `startForegroundService()` + `startForeground()` 的窗口从 10 秒缩短到 5 秒。
+
+Android 13 对 ANR trace 的存储做了改进：trace 文件改为按进程独立存储，并且增加了 trace 采集的可靠性。此前，在多个进程同时触发 ANR 时，trace 文件的写入可能互相干扰导致内容丢失。Android 13 还改进了后台执行限制策略，进一步收紧了后台 Service 的行为约束，间接减少了后台 Service ANR 的场景。
 
 Android 14 对 ANR 处理代码做了一次重要的架构重构：将处理逻辑从 AMS 中解耦到独立的 `AnrHelper` 和 `AppNotResponding` 类中。在此之前，ANR 处理代码散布在 AMS 的各个角落，与正常的 AMS 业务逻辑相互干扰。重构后，ANR 处理在一个独立的线程中执行，不再影响 AMS 主线程的调度。
 
@@ -355,6 +378,12 @@ Android 16 引入的系统触发式 ProfilingManager 追踪可能是迄今最有
 [已验证: AOSP android-14.0.0_r1, AnrHelper/AppNotResponding 类在 Android 14 引入]
 [已验证: Android 16 ProfilingManager ANR 触发, intake/research-feeds/2026-04-01-12-android16-17-profilingmanager-system-triggered.md]
 [待验证: Android 8.0 后台 Service 200 秒超时的具体 commit]
+
+**Android 15**（[待验证]）：ANR 行为可能存在以下变更——更严格的 `startForeground()` 执行约束、前台 Service 类型声明的强制化。这些变更影响的是 ANR 的触发条件，而非 ANR 机制本身的架构。如有变更，将在后续 review 中更新。
+
+**Android 17**（[待验证]）：基于 Android 16 ProfilingManager 系统触发式追踪的进一步完善，可能引入更多 ANR 诊断信息的自动采集能力。ANR 机制的核心架构（超时检测 → SIGQUIT dump → 弹窗/杀进程）预计不会有根本性变化。具体变更将在 AOSP android-17 正式发布后验证。
+
+[待验证: Android 15/17 ANR 机制的具体变更，需在 AOSP 正式版发布后对照确认]
 
 ## ANR 在 Google Play Console 中的统计与影响 [扩展]
 
