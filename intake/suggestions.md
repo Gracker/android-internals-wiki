@@ -462,3 +462,33 @@
 - **位置**：全文未提及 App 冷启动阶段 ContentProvider 初始化导致的 ANR
 - **问题**：App 冷启动时 ContentProvider 的 onCreate() 在 Application.onCreate() 之前同步执行。如果 ContentProvider 初始化耗时，会阻塞应用启动，间接导致后续组件的 ANR。这是一个常见的实战场景。
 - **建议**：在「常见问题与误区」节或版本演进节补充此场景的简要说明，交叉引用 8.2（App 启动全流程）。
+
+## [Task9 Deep Review] 14.6 自动化测试工具 — 2026-04-16
+- **类型**：源码准确性
+- **位置**：「在 Perfetto 中的表现」段 → RenderThread 的首次 DrawQL
+- **问题**："DrawQL" 不是 AOSP 或 Perfetto 中的标准术语。RenderThread 的 Trace slice 名为 "DrawFrame"，子操作为 syncFrameData/computeOrdering/flush commands。
+- **建议**：改为 "RenderThread 的首次 DrawFrame slice" 或描述具体的子操作名。
+
+## [Task9 Deep Review] 14.6 自动化测试工具 — 2026-04-16
+- **类型**：知识盲区（高）
+- **位置**：全文
+- **问题**：android:profileable 清单属性（Android 12+）完全未提及。此属性对基准测试准确性至关重要——未设置的 release 构建无法被完整追踪。
+- **建议**：在 CI/CD 构建配置或 FAQ 中补充 profileable 属性说明
+
+## [Task9 Deep Review] 14.6 自动化测试工具 — 2026-04-16
+- **类型**：原理断裂
+- **位置**：CompilationMode.Partial 讨论
+- **问题**：BaselineProfileRule 完全未提及。缺少生成环节，原理链断裂。
+- **建议**：补充 BaselineProfileRule 使用方法，或至少添加对 8.7 节的显式交叉引用
+
+## [Task9 Deep Review] 14.6 自动化测试工具 — 2026-04-16
+- **类型**：原理断裂
+- **位置**：「在 Perfetto 中的表现」段
+- **问题**：Macrobenchmark 如何捕获 Perfetto Trace 的机制未解释
+- **建议**：补充说明 Macrobenchmark 通过 Perfetto SDK 配置 Trace 数据源
+
+## [Task9 Deep Review] 14.6 自动化测试工具 — 2026-04-16
+- **类型**：数据缺失
+- **位置**：CompilationMode 节 + FAQ
+- **问题**：Baseline Profile "30% 改善"无具体来源；"5-15% 波动"无数据支撑。全文无真实 benchmark 数值
+- **建议**：补充数据来源链接，添加典型 benchmark 数值案例
