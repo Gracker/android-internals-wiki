@@ -3094,6 +3094,15 @@
       "by": "task2b-rework",
       "issues_fixed": 4,
       "source": "task9-deep-tech-review"
+    },
+    {
+      "section": "1.7",
+      "section_title": "ART 编译管线与 dex2oat 优化",
+      "rework_date": "2026-04-16T20:45:37.848906+00:00",
+      "rework_by": "task2b-rework",
+      "source": "task9-deep-tech-review",
+      "issues_fixed": 5,
+      "result": "fixed"
     }
   ],
   "last_task2b_run": "2026-04-16T03:42:38.885909",

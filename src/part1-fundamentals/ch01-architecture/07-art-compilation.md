@@ -27,12 +27,13 @@ sources:
   - type: blog
     path: "https://android-developers.googleblog.com/ (AutoFDO GKI Kernel)"
 tags: [ART, dex2oat, JIT, AOT, Baseline-Profiles, Startup-Profiles, PGO, compilation, cold-start]
-related_chapters: ["1.6", "4.3", "8.2", "8.3", "16.1"]
+related_chapters: ["1.6", "1.12", "4.3", "8.2", "8.3", "16.1"]
 task9_result: needs-rework
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: pending
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
+task2b_result: fixed
+task2b_state: fixed
 ---
 
 # 1.7 ART 编译管线与 dex2oat 优化
@@ -120,12 +121,13 @@ Android 16 引入了云编译（Cloud Compilation）系统，Google Play 可以�
 
 ART 为每个方法维护一个"热度计数器"（hotness counter）。这个计数器跟踪方法的调用次数和后向分支（循环）次数。当计数器超过阈值时，该方法成为 JIT 编译候选。阈值通过系统属性 `dalvik.vm.jitthreshold` 配置，默认值为 10000。注意：这个属性的 `dalvik.vm.` 前缀是 Dalvik 时代的遗留命名，但 ART 运行时仍然读取它——`AndroidRuntime.cpp` 将其解析为 `-Xjitthreshold:` 运行时参数，最终设置到 ART 内部的 `hot_method_threshold_`（art/runtime/jit/jit.cc）。
 
-```java
-// AOSP art/runtime/jit/jit.cc（简化示意）
-// 实际的热度追踪在 interpreter 中通过计数器实现
-bool Jit::MaybeDoJitCompilation(ArtMethod* method) {
-    if (method->GetCounter() > jit_threshold_) {
-        return CompileMethod(method);  // 触发 JIT 编译
+```cpp
+// [伪代码示意，非 AOSP 原始实现]
+// 实际入口：art/runtime/jit/jit.cc -> Jit::MaybeCompileMethod(ArtMethod*, Thread*)
+// 热度追踪在 interpreter 中通过计数器实现（hotness_count_）
+bool MaybeCompileMethod(ArtMethod* method) {
+    if (method->GetHotnessCount() > hot_method_threshold_) {
+        return jit_code_cache->CompileMethod(method, thread);
     }
     return false;
 }
@@ -154,6 +156,21 @@ JIT 编译器在编译单个方法时，会进行一系列优化：
 - **类型推导与内联缓存（Inline Cache）**：记录虚方法的实际调用目标，后续可以将虚调用去虚化（devirtualize）为直接调用
 
 JIT 的优化深度通常不及 dex2oat 的 AOT 编译。JIT 受限于编译时间预算，不能让用户在前台感到卡顿；而 dex2oat 在后台编译时有更充足的时间做激进优化。
+
+
+### 去优化机制（Deoptimization）
+
+AOT 编译的前提是编译时能确定类型和调用关系。但运行时类加载可能引入新的子类，使编译阶段的内联和去虚化决策失效。这时 ART 需要**去优化**（deoptimize）——将已编译的机器码回退到解释执行。
+
+去优化的典型触发场景：
+
+- **类加载导致内联失效**：编译时 A 方法内联了 B 类的实现，运行时加载了 B 的子类 C，内联假设不再成立
+- **调试器附加**：`jdwp` 调试器附加时，所有 JIT 编译代码需要去优化，以支持单步执行和断点
+- **Proxy 类动态创建**：运行时通过 `java.lang.reflect.Proxy` 创建的类，可能使已有的去虚化决策失效
+
+去优化后，受影响的方法回到解释执行，直到 JIT 重新编译或下一次后台 dex2oat 生成新的 AOT 代码。
+
+在 Perfetto 中，去优化活动表现为 `Deoptimization` Slice。如果在 Trace 中看到大量 Deoptimization，说明运行时的类加载行为与编译阶段的假设不一致，可能需要检查是否有运行时字节码操作（如插件化框架）或动态代理使用过重。
 
 ### JIT Profile 的收集与持久化
 
@@ -299,7 +316,7 @@ AutoFDO 在 Pixel 设备上的量化效果：
 - HwBinder 提升 11.7%-20%
 - 开机时间缩短 2%
 
-目前 AutoFDO 优化已合入 `android16-6.12` 和 `android15-6.6` 两个 GKI 内核分支，覆盖 Pixel 6 及更新设备。非 Pixel 设备需要 OEM 自行集成（依赖 perf 事件采集和 LLVM AutoFDO 工具链）。
+目前 AutoFDO 优化已合入 `android16-6.12` 和 `android15-6.6` 两个 GKI 内核分支，覆盖 Pixel 6 及更新设备。非 Pixel 设备需要 OEM 自行集成（依赖 perf 事件采集和 LLVM AutoFDO 工具链）。关于 AutoFDO 的内核实现细节和 OEM 集成方法，详见 §1.12 AutoFDO 反馈导向编译优化。
 
 [已验证: Google Blog, AutoFDO GKI 内核级优化, Pixel 8 量化数据]
 
@@ -322,7 +339,7 @@ AutoFDO 在 Pixel 设备上的量化效果：
 dex2oat 编译在以下场景可见：
 
 - **安装时**：`system_server` 进程中的 `dex2oat` 子进程
-- **后台优化**：`bg-dexopt` 守护进程
+- **后台优化**：后台编译服务（Android 13 及以下为 `bg-dexopt`，Android 14+ 为 ART Service `MaintenanceJobs`）
 - **OTA 后**：系统更新后的批量 recompile
 
 在 Perfetto 中，dex2oat 会作为一个独立进程出现，我们可以直接观察它的 CPU 使用率和线程活动。
@@ -356,7 +373,7 @@ dex2oat 编译在以下场景可见：
 1. **检查安装时的编译级别**：通过 `dumpsys package dexopt` 查看应用当前的编译状态
 2. **对比首次安装 vs 使用后的启动 Trace**：首次安装应该能看到更多 JIT 活动
 3. **检查 Baseline Profiles 是否生效**：编译状态应该是 `speed-profile` 而非 `verify`
-4. **观察后台编译时间线**：空闲充电时 `bg-dexopt` 是否正常运行
+4. **观察后台编译时间线**：空闲充电时后台编译服务（`bg-dexopt` / ART Service `MaintenanceJobs`）是否正常运行
 
 ## 实战：优化 App 的编译性能
 
@@ -442,9 +459,12 @@ ART 编译管线与全书多个章节有交叉：
 | Android 4.4 | ART 引入，全量 AOT | 安装慢、存储大、运行快 |
 | Android 5.0-6.0 | 全量 AOT 为默认 | OTA 后批量 recompile 痛点 |
 | Android 7.0 | 混合编译（JIT + Profile-Guided AOT） | 安装快、存储小、渐进式性能提升 |
+| Android 8.0 | JIT code cache 从 2MB 扩展到 64MB；多 dex 支持优化 | JIT 覆盖率大幅提升 |
 | Android 9.0 | Profile 引导的后台编译优化 | 后台 dex2oat 覆盖率提升 |
+| Android 10 | Hidden API 限制开始执行，影响反射调用编译路径 | 运行时兼容性约束增加 |
 | Android 12 | ART 模块化（Mainline） | 编译优化可独立推送 |
-| Android 14 | ART Service 统一管理编译调度（dex2oat 仍为底层编译器） | 编译管理更统一 |
+| Android 13 | Baseline Profiles 通过 Mainline 推送到设备 | 首次安装 AOT 覆盖率提升 |
+| Android 14 | ART Service 统一管理编译调度（取代 BackgroundDexOptService） | 编译管理更统一 |
 | Android 16 | Cloud Compilation / SDM 格式 / AutoFDO 内核 | 安装体验改善、内核性能提升 |
 | Android 17 | static final 不可变 → 更激进的常量折叠 + 分代 GC | 编译优化深度提升、GC 暂停减少 |
 
