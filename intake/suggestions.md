@@ -699,3 +699,28 @@
 - **位置**："为什么是 5 秒"一节
 - **问题**：ANR 超时机制一节纯原理描述，缺少 Perfetto Trace 数据支撑。缺少 wq 从正常值增长到触发 ANR 的数值描述。
 - **建议**：补充一个 Perfetto Trace 场景描述：正常情况下 wq 在 0-2 波动；ANR 前兆时 wq 持续 >5 超过 5 秒；最终触发 ANR 时 wq 值突然归零并出现 ANR trace tag。给出具体数值范围。
+
+
+## [Task9 Deep Review] 2.9 渲染机制的版本演进 — 2026-04-17
+- **类型**：源码准确性+版本差异
+- **位置**：Project Butter 节 Choreographer 回调序列
+- **问题**：Android 4.1 段列出 INPUT→ANIMATION→INSETS_ANIMATION→TRAVERSAL→COMMIT 完整回调序列。INSETS_ANIMATION 为 API 30 新增，COMMIT 为 API 24 新增。Android 4.1 原始回调仅为 INPUT→ANIMATION→TRAVERSAL。
+- **建议**：在 Android 4.1 段只列出 INPUT→ANIMATION→TRAVERSAL，在后续版本（如 Android 7.0 段和 Android 11 段）分别说明 COMMIT 和 INSETS_ANIMATION 的引入。
+
+## [Task9 Deep Review] 2.9 渲染机制的版本演进 — 2026-04-17
+- **类型**：原理断裂
+- **位置**：RenderThread 段的 eglSwapBuffers/glFinish 描述
+- **问题**：将 Android 4.x 主线程卡顿的核心原因归结为 glFinish 阻塞，但更根本的问题是 drawDisplayList() 整个 GPU 命令执行过程在主线程同步调用。
+- **建议**：重写该段的因果链：Android 4.x 中 drawDisplayList() 在主线程同步执行 GPU 命令（包括命令提交和等待完成），这使得整个 GPU 工作时间都计入主线程。RenderThread 将全部 GPU 命令提交和执行移到独立线程，主线程只需录制 RenderNode。
+
+## [Task9 Deep Review] 2.9 渲染机制的版本演进 — 2026-04-17
+- **类型**：版本差异
+- **位置**：版本演进时间线表
+- **问题**：完全跳过 Android 6.0、11、14 三个大版本。Android 6.0 有 DisplayListCanvas→RecordingCanvas 更名和嵌套滑动机制；Android 11 有 BufferQueue 行为变更（BLASTBufferQueue 预演）；Android 14 有渲染行为变更。
+- **建议**：补充 Android 6.0、11、14 三个版本的渲染相关关键变更到时间线表中。
+
+## [Task9 Deep Review] 2.9 渲染机制的版本演进 — 2026-04-17
+- **类型**：版本差异
+- **位置**：Android 16 节 ANGLE 描述
+- **问题**：称 Android 16 集成了 ANGLE 作为系统级驱动。实际上 ANGLE 在 Android 12 已可选集成，13 成部分 App 默认 OpenGL ES 实现，15 大幅扩展覆盖范围。Android 16 是进一步扩大而非首次集成。
+- **建议**：改为「Android 12 开始可选集成 ANGLE 作为 OpenGL ES 到 Vulkan 的翻译层，此后逐步扩大覆盖范围。Android 16 将 ANGLE 作为所有 OpenGL ES 应用的默认实现，OpenGL ES 进入维护模式。」

@@ -408,3 +408,20 @@ InputDispatcher 的 stale event 丢弃机制在 Android 12+ 中引入。当 App 
 
 ### 关联章节
 3.1, 3.2, 9.1, 9.2
+
+
+## [2026-04-17] 2.9 渲染机制的版本演进 — 知识盲区
+
+### 盲区描述
+FrameTimeline 机制（Android 12 引入）在本章多次引用但从未解释。FrameTimeline 是 Perfetto 中最重要的渲染性能 Track 之一，提供「预期帧时间 vs 实际帧时间」的对比数据。缺少其数据来源（SurfaceFlinger 的 FrameTimeline 层）、工作原理（App 报告 vs SF 报告 vs HWC 报告的分层机制）和在 Perfetto 中的正确阅读方法。
+
+### 重要程度
+高
+
+### 建议研究方向
+- AOSP frameworks/native/services/surfaceflinger/FrameTimeline 模块源码
+- perfetto.dev 关于 Frame Timeline 的文档
+- Android 12 FrameTimeline Jank 追踪的官方博客
+
+### 关联章节
+2.1, 2.4, 2.6, 13.10

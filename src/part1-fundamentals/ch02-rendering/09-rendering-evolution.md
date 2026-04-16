@@ -32,7 +32,10 @@ related_chapters: ["2.1", "2.3", "2.6", "2.10", "3.1", "8.2"]
 pipeline_stage: task9_pending
 task6_state: reviewed
 task6_result: pass-light-edit
-task9_state: pending
+task9_state: reviewed
+task9_result: needs-rework
+task9_reviewed_date: "2026-04-17"
+task9_reviewed_by: "openclaw-task9"
 task2b_state: idle
 ---
 
