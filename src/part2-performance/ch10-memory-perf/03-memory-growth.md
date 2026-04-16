@@ -8,7 +8,7 @@ drafted_by: "openclaw-task2a"
 applicable_versions: "Android 8.0 (API 26) - Android 16 (API 36)"
 last_verified: "2026-04-02"
 last_verified_against: "AOSP android-16.0.0_r1"
-reviewed_date: "2026-04-08"
+reviewed_date: "2026-04-16"
 reviewed_by: "openclaw-task6"
 polish_count: 1
 polish_date: "2026-04-08"
@@ -28,8 +28,9 @@ sources:
     path: "https://perfetto.dev/docs/data-sources/native-heap-profiling"
 tags: [memory, pss, memory-growth, fragmentation, lru-cache, bitmap, native-heap]
 related_chapters: ["10.1", "10.2", "4.1", "4.3", "4.5"]
-pipeline_stage: task6_pending
-task6_state: pending
+pipeline_stage: task9_pending
+task6_state: reviewed
+task6_result: pass-light-edit
 task9_state: pending
 task2b_state: idle
 ---
@@ -123,7 +124,7 @@ Bitmap 累积的典型路径有两条：一是前面说的缓存无淘汰，图�
 
 ## 与内存泄漏的区分方法
 
-内存持续增长和内存泄漏在 Perfetto 或 `dumpsys meminfo` 中的表现非常相似——都是 PSS 持续增长。但区分它们对选择正确的治理策略至关重要。
+内存持续增长和内存泄漏在 Perfetto 或 `dumpsys meminfo` 中的表现非常相似——都是 PSS 持续增长。但区分它们是选择正确治理策略的前提。
 
 ### GC 行为是关键判据
 
@@ -151,7 +152,7 @@ Bitmap 累积的典型路径有两条：一是前面说的缓存无淘汰，图�
 
 如果不确定是泄漏还是非泄漏性增长，最直接的方法是用 LeakCanary 做一次检测。LeakCanary 通过监控 Activity、Fragment 和 View 的生命周期，能自动检测到这些组件的泄漏。如果 LeakCanary 没有报告泄漏，但内存仍在增长，那基本可以确认是非泄漏性的增长问题。
 
-需要注意的是，LeakCanary 主要检测 Java 层的泄漏，对于 Native 层的泄漏（如 C/C++ 层分配后未释放的内存）无法检测。如果怀疑 Native 泄漏，需要使用 heapprofd 进行 Native Heap Profiling。
+LeakCanary 主要检测 Java 层的泄漏，对于 Native 层的泄漏（如 C/C++ 层分配后未释放的内存）无法检测。如果怀疑 Native 泄漏，需要使用 heapprofd 进行 Native Heap Profiling。
 
 ## LRU Cache 策略的正确实现
 
