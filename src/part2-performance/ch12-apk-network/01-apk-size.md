@@ -7,6 +7,8 @@ drafted_date: "2026-04-03"
 drafted_by: "openclaw-task2a"
 reviewed_date: "2026-04-10"
 reviewed_by: "openclaw-task6"
+task6_result: pass-light-edit
+task6_reviewed_date: "2026-04-16"
 polish_count: 1
 polish_date: "2026-04-10"
 polish_by: "task2b-polish"
@@ -27,8 +29,8 @@ sources:
     path: "得物技术《包体积：Layout 二进制文件裁剪优化》2023-09"
 tags: [apk, r8, proguard, app-bundle, resource-optimization, native-libs, dex, code-shrinking, webp, abi-filter, dynamic-feature, apk-analyzer]
 related_chapters: ["8.3", "14.1", "15.6"]
-pipeline_stage: task6_pending
-task6_state: pending
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task2b_state: idle
 ---
@@ -47,7 +49,7 @@ task2b_state: idle
 
 [已验证: 官方文档, developer.android.com/topic/performance/reduce-apk-size]
 
-一个标准的 release APK 本质上是一个 ZIP 压缩包。解压之后，我们通常会看到以下几类文件：
+一个标准的 release APK 就是一个 ZIP 压缩包。解压之后，我们通常会看到以下几类文件：
 
 **Dex 文件（classes.dex, classes2.dex, ...）** 是编译后的 Dalvik 字节码。所有 Kotlin/Java 代码——包括业务代码、AndroidX 库、第三方 SDK——最终都会编译进 dex 文件。一个中等规模的 App，dex 通常占总大小的 30%-50%。当方法数超过 65536（即一个 dex 文件的理论上限）时，Gradle 会自动进行多 dex 分包，产生 classes2.dex、classes3.dex 等文件。
 
@@ -57,7 +59,7 @@ task2b_state: idle
 
 **assets/ 目录**存放原始文件——字体、WebView 加载的 HTML、配置文件等。这些文件不会被编译，原样打包进 APK。如果 App 内置了字体文件或大型 JSON 配置，assets 可能成为体积大户。
 
-**lib/ 目录**是 native libraries（.so 文件）的存放位置。这个目录按 ABI（Application Binary Interface）分子目录——`arm64-v8a/`、`armeabi-v7a/`、`x86/`、`x86_64/`。每一个 ABI 子目录下都是一份完整的 so 库副本。这意味着如果 Gradle 里没有配置 `ndk.abiFilters`，APK 里可能同时包含了 4 个架构的 native 库——arm64 设备只需要其中 1 份，另外 3 份全是浪费。
+**lib/ 目录**是 native libraries（.so 文件）的存放位置。这个目录按 ABI（Application Binary Interface）分子目录——`arm64-v8a/`、`armeabi-v7a/`、`x86/`、`x86_64/`。每一个 ABI 子目录下都是一份完整的 so 库副本。所以如果 Gradle 里没有配置 `ndk.abiFilters`，APK 里可能同时包含了 4 个架构的 native 库——arm64 设备只需要其中 1 份，另外 3 份全是浪费。
 
 **META-INF/ 目录**包含签名信息。这个目录下的文件（CERT.SF、CERT.RSA、MANIFEST.MF）在 APK 安装时用于验证完整性，体积通常不大。
 
@@ -173,7 +175,7 @@ Android Studio 提供了批量转换功能：右键点击 `res/drawable` 目录�
 
 ### 资源混淆：AndResGuard
 
-资源混淆工具（如腾讯的 AndResGuard、字节跳动的 ResShrinker）通过缩短资源路径和文件名来减小 APK 体积。把 `res/drawable-hdpi/icon_background_launch_screen.png` 重命名为 `r/d/a.png`，看似只省了几个字符，但当App 有上千个资源文件时，这种优化累积起来可以节省数百 KB 到数 MB。
+资源混淆工具（如腾讯的 AndResGuard、字节跳动的 ResShrinker）通过缩短资源路径和文件名来减小 APK 体积。把 `res/drawable-hdpi/icon_background_launch_screen.png` 重命名为 `r/d/a.png`，看似只省了几个字符，但当 App 有上千个资源文件时，这种优化累积起来可以节省数百 KB 到数 MB。
 
 资源混淆的核心操作包括：将资源文件路径缩短为 `r/a/a.png` 这样的短路径，将 `resources.arsc` 中的字符串条目缩短为无意义的短字符串，合并重复的资源文件（同名同内容的资源只保留一份）。
 
@@ -276,7 +278,7 @@ android {
 
 ### App Bundle 解决了什么问题
 
-传统 APK 分发模式有一个根本性的问题：**一个 APK 必须适配所有设备**。这意味着同一个 APK 里同时装着 hdpi 和 xxxhdpi 的图片、arm64 和 x86 的 so 库、中文和斯瓦希里语的字符串。用户在 arm64 设备上下载了这个 APK，其中 70% 的资源对他毫无用处——但他不得不下载。
+传统 APK 分发模式有一个根本性的问题：**一个 APK 必须适配所有设备**。结果是，同一个 APK 里同时装着 hdpi 和 xxxhdpi 的图片、arm64 和 x86 的 so 库、中文和斯瓦希里语的字符串。用户在 arm64 设备上下载了这个 APK，其中 70% 的资源对他毫无用处——但他不得不下载。
 
 Android App Bundle（AAB）是 Google 在 2018 年推出的发布格式，它改变了这个模型。开发者上传一个 AAB 到 Google Play，Play 的服务器会根据每个用户的设备配置（屏幕密度、CPU 架构、语言）自动生成一个**最小化的 APK**（称为 Split APK）。结果是：用户只下载他设备真正需要的那部分资源。
 
@@ -354,7 +356,7 @@ bundletool get-size total --apks=app.apks \
 
 **「开启 minifyEnabled 就够了」**——这是最常见的误区。R8 的代码缩减只能删掉静态不可达的代码。如果项目里有大量通过反射调用的代码、插件化框架、或者 Gson/Jackson 反序列化的 Model 类，没有配置正确的 keep 规则，R8 要么删错（运行时 ClassNotFoundException），要么不敢删（keep 范围过大）。正确的做法是：开启 R8 后跑一遍完整的回归测试，结合 APK Analyzer 检查每个库的保留比例，逐步收窄 keep 规则。
 
-**「应该支持所有屏幕密度」**——实际上，Android 的资源缩放机制可以在缺失某一密度资源时自动从最近的高密度资源缩放。对于大多数 App，提供 xxhdpi 资源即可覆盖主流设备，系统会自动处理其他密度的缩放。在 Gradle 中配置 `resConfigs` 过滤掉不需要的密度，可以显著减小资源体积。
+**「应该支持所有屏幕密度」**——Android 的资源缩放机制可以在缺失某一密度资源时自动从最近的高密度资源缩放。对于大多数 App，提供 xxhdpi 资源即可覆盖主流设备，系统会自动处理其他密度的缩放。在 Gradle 中配置 `resConfigs` 过滤掉不需要的密度，可以减小资源体积。
 
 **「WebP 不如 PNG 清晰」**——这是过时的观念。对于照片类图片，WebP 有损压缩在 80% 质量以上时，人眼几乎无法察觉与 PNG 的差异；对于图标类图片，WebP 无损模式的压缩率也优于 PNG。唯一需要注意的是 alpha 通道——某些带半透明效果的复杂图标，WebP 有损可能产生 artifact，这种情况用 WebP 无损即可。
 
