@@ -4,13 +4,16 @@ chapter: "18.4"
 status: ready-for-review
 applicable_versions: "Android 11 (API 30) - Android 16 (API 36)"
 tags: ["hybrid-composition", "SurfaceView", "mixed-rendering", "parallel-pipeline", "video-playback"]
-related_chapters: ["2.1", "2.5", "18.2", "18.6"]
+related_chapters: ["2.1", "2.6", "18.2", "18.6"]
 created_by: "rendering-pipelines-merge"
 created_date: "2026-04-09"
-pipeline_stage: task6_pending
-task6_state: pending
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task2b_state: idle
+reviewed_by: openclaw-task6
+reviewed_date: "2026-04-17"
+task6_result: pass-light-edit
 ---
 
 <!-- outline-start -->
@@ -200,5 +203,5 @@ SurfaceView 的缩放、旋转等变换需要 SurfaceFlinger 在合成时处理�
 > **交叉引用**：
 > - 标准 BLAST 链路详见 [18.2 Android View 标准链路](02-android-view-standard.md)
 > - SurfaceView 的独立 Surface 机制详见 [18.6 SurfaceView 直出链路](06-surfaceview.md)
-> - SurfaceFlinger 的 Layer 合成策略详见 [2.5 SurfaceFlinger](../../part1-foundation/ch02-graphics-foundation/)
-> - HWC 硬件合成原理详见 [2.7 Hardware Composer](../../part1-foundation/ch02-graphics-foundation/)
+> - SurfaceFlinger 的 Layer 合成策略详见 [2.6 SurfaceFlinger](../../part1-fundamentals/ch02-rendering/06-surfaceflinger.md)
+> - HWC 硬件合成原理详见 [2.7 Hardware Layer](../../part1-fundamentals/ch02-rendering/07-hardware-layer.md)
