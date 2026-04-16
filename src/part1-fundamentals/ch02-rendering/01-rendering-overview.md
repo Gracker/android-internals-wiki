@@ -10,7 +10,7 @@ drafted_date: "2026-03-30"
 polish_count: 2
 polish_date: "2026-04-09"
 polish_by: "task2b-polish"
-reviewed_date: "2026-04-15"
+reviewed_date: "2026-04-17"
 reviewed_by: "openclaw-task6"
 sources:
   - type: official
@@ -25,9 +25,10 @@ sources:
     path: "AOSP 源码分析 frameworks/base/core/java/android/view"
 tags: ['rendering', 'hwui', 'skia', 'surfaceflinger', 'gpu', 'triple-buffering', 'rendering-pipeline', 'bufferqueue', 'vsync', 'displaylist', 'rendernode']
 related_chapters: ["2.2", "2.3", "2.4", "2.5", "2.6", "2.10"]
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task6_result: pass-light-edit
+review_round: 2
 task9_state: pending
 task9_result: needs-rework
 task9_reviewed_date: "2026-04-16"
@@ -175,7 +176,7 @@ RenderThread.drawFrame()
 │   └── RenderNode.draw()
 ```
 
-GPU 渲染管线是一条高度并行的流水线。首先是顶点着色器处理顶点位置，把 View 的二维坐标转换为 GPU 可理解的归一化坐标；接着图元装配把顶点组装成三角形——因为 GPU 最擅长处理的基本图元就是三角形，一个矩形会被拆成两个三角形来渲染；光栅化阶段把这些几何图元转换为实际的像素片段（fragment），每个片段对应屏幕上的一个或多个像素；片段着色器为每个片段计算最终的颜色值，这里会应用纹理、混合模式、抗锯齿等效果；最后经过深度测试、模板测试和颜色混合，像素被写入帧缓冲区。
+GPU 渲染管线是一条高度并行的流水线。管线的起点是顶点着色器，它处理顶点位置，把 View 的二维坐标转换为 GPU 可理解的归一化坐标；接着图元装配把顶点组装成三角形——因为 GPU 最擅长处理的基本图元就是三角形，一个矩形会被拆成两个三角形来渲染；光栅化阶段把这些几何图元转换为实际的像素片段（fragment），每个片段对应屏幕上的一个或多个像素；片段着色器为每个片段计算最终的颜色值，这里会应用纹理、混合模式、抗锯齿等效果；经过深度测试、模板测试和颜色混合后，像素被写入帧缓冲区。
 
 在 Perfetto 中，我们可以通过 GPU Track 观察这条管线的执行时间。如果 GPU Track 上的忙碌区间持续超过了 VSync 周期（比如在 60Hz 设备上超过了 16.67ms），GPU 就是瓶颈——下一帧的渲染会被延迟，用户感知到的就是掉帧。
 
@@ -670,7 +671,7 @@ App 的 RenderThread 画的是"一个 App 的一帧"（"画一个按钮"、"绘�
 本节介绍的是渲染架构的全景图，渲染管线中的每个环节在后续章节中都有深入展开：
 
 - **VSync 机制**（2.3 节）是渲染管线的节拍器，决定了 Measure/Layout/Draw 何时开始。本节提到的 VSYNC_APP 和 VSYNC_SF 两个信号的生成逻辑、offset 的计算方式、DispSync 模型的工作原理，都在 2.3 节中详细拆解。
-- **Choreographer**（2.4 节）是 VSync 信号到实际渲染工作的桥梁——它接收 VSYNC_APP 信号，依次触发 Input 回调、Animation 回调和 Traversal 回调（即 performTraversals）。理解 Choreographer 的工作机制对分析主线程调度问题至关重要。
+- **Choreographer**（2.4 节）是 VSync 信号到实际渲染工作的桥梁——它接收 VSYNC_APP 信号，依次触发 Input 回调、Animation 回调和 Traversal 回调（即 performTraversals）。理解 Choreographer 的工作机制，是分析主线程调度问题的前提。
 - **MainThread 与 RenderThread 协作**（2.5 节）深入拆解了主线程录制 DisplayList 和 RenderThread 执行 GPU 渲染之间的同步机制，包括 syncFrameState、DrawOp 的传递、帧之间的依赖关系等。
 - **SurfaceFlinger 与合成**（2.6 节）详细讲解了 SurfaceFlinger 的内部工作流程，包括 Layer 管理、HWC 合成策略、GPU 合成回退条件、VSYNC_SF 触发的合成时机等。
 - **GPU 渲染深入**（2.10 节）从硬件层面分析 GPU 的渲染原理，包括 Vulkan 后端的性能优化、Shader 编译对渲染性能的影响等。
