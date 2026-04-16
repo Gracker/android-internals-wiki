@@ -392,3 +392,19 @@ HWUI RenderThread 的 Bitmap 纹理上传（texture upload）机制。在 Draw �
 
 ### 关联章节
 11.1, 11.2, 11.3, 12.2
+
+## [2026-04-17] 3.1 Input 事件分发全流程 — 知识盲区
+
+### 盲区描述
+InputDispatcher 的 stale event 丢弃机制在 Android 12+ 中引入。当 App 从后台恢复或长时间未处理 Input 事件时，InputDispatcher 会计算事件的"年龄"，超过阈值的事件会被直接丢弃而不分发给 App。这个机制解释了"为什么后台切换回来时有些触摸事件丢失"的现象，在 Perfetto 中可以看到 wq 中的事件被批量移除（不触发 ANR）。
+
+### 重要程度
+高——直接影响"为什么后台切换后触摸事件丢失"的分析能力，且本章覆盖 Android 12-16，stale event 机制在目标版本范围内已生效。
+
+### 建议研究方向
+- 在 AOSP android-14 中搜索 `isStale` 或 `STALE_EVENT_TIMEOUT` 相关常量和逻辑
+- 在 InputDispatcher.cpp 中找到 stale event 丢弃的具体阈值和判断逻辑
+- 在 Perfetto 中验证 stale event 丢弃的 Trace 表现（wq 值突然归零但无 ANR）
+
+### 关联章节
+3.1, 3.2, 9.1, 9.2

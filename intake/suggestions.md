@@ -681,3 +681,21 @@
 - **位置**：案例三 Radio 状态机描述
 - **问题**：描述基于 3G/LTE 模型（30-60秒不活动期进入 Standby）。5G NR 使用 DRX/CDRX 机制，状态转换时间和功耗特征不同，但未提及。
 - **建议**：补充说明 Radio 状态机模型因网络技术而异，5G NR 场景下需要额外关注 CDRX 配置对功耗的影响。
+
+## [Task9 Deep Review] 3.1 Input 事件分发全流程 — 2026-04-17
+- **类型**：版本差异
+- **位置**：版本演进表 Android 4.1 条目
+- **问题**：声称"Android 4.1 (API 16) 引入 InputFlinger 框架"，但 InputManager/InputReader/InputDispatcher 的分层设计在 Android 1.0 就存在。Android 4.1（Project Butter）引入的是 Choreographer 和 VSync 机制，不是 InputFlinger 重构。InputFlinger 的代码目录重组发生在更晚的版本。
+- **建议**：核实此条目。如果指 InputManagerService 重构，明确标注；如果不确定来源，标注 [待验证] 或删除。
+
+## [Task9 Deep Review] 3.1 Input 事件分发全流程 — 2026-04-17
+- **类型**：版本差异
+- **位置**：版本演进表 Android 15 条目
+- **问题**："输入法与 Input 系统交互优化，改善 IME 切换时的输入延迟"过于模糊，缺少具体 AOSP 变更或功能名称。
+- **建议**：补充具体的 commit hash 或功能名称，或标注 [待验证]。
+
+## [Task9 Deep Review] 3.1 Input 事件分发全流程 — 2026-04-17
+- **类型**：数据缺失
+- **位置**："为什么是 5 秒"一节
+- **问题**：ANR 超时机制一节纯原理描述，缺少 Perfetto Trace 数据支撑。缺少 wq 从正常值增长到触发 ANR 的数值描述。
+- **建议**：补充一个 Perfetto Trace 场景描述：正常情况下 wq 在 0-2 波动；ANR 前兆时 wq 持续 >5 超过 5 秒；最终触发 ANR 时 wq 值突然归零并出现 ANR trace tag。给出具体数值范围。
