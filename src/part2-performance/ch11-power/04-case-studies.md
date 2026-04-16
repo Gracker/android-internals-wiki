@@ -12,7 +12,7 @@ confidence: medium-high
 polish_count: 1
 polish_date: "2026-04-09"
 polish_by: "task2b-polish"
-reviewed_date: "2026-04-09"
+reviewed_date: "2026-04-16"
 reviewed_by: "openclaw-task6"
 sources:
   - type: aosp
@@ -31,8 +31,9 @@ sources:
     path: "https://developer.android.com/topic/performance/battery/battery-historian"
 tags: ['power', 'case-study', 'wakelock', 'location', 'network-polling', 'cpu-wakeup', 'battery-historian', 'workmanager']
 related_chapters: ["11.1", "11.2", "11.3", "5.6", "5.10", "13.1"]
-pipeline_stage: task6_pending
-task6_state: pending
+pipeline_stage: task9_pending
+task6_state: reviewed
+task6_result: pass-light-edit
 task9_state: pending
 task2b_state: idle
 ---
@@ -115,7 +116,7 @@ adb bugreport > bugreport_wakelock_case.zip
 
 [图：Battery Historian 时间线视图，展示 WakeLock 持续 4.5 小时的深蓝色条带]
 
-**应用级数据表格**中，选择目标 App 后，"Wake Locks" 行显示：Partial WakeLock 总持有时长 4.2 小时，获取次数 3 次。这意味着 3 次 `acquire()` 调用，但只有 2 次对应的 `release()`——有一次没释放。
+**应用级数据表格**中，选择目标 App 后，"Wake Locks" 行显示：Partial WakeLock 总持有时长 4.2 小时，获取次数 3 次。3 次 `acquire()` 调用，但只有 2 次对应的 `release()`——有一次没释放。
 
 [待补充：Battery Historian 应用级 WakeLock 统计表截图]
 
@@ -163,7 +164,7 @@ Android Vitals 对这个问题的度量维度是"24 小时内 WakeLock 总持有
 
 ### 修复方案
 
-修复分两层：首先是确保 WakeLock 在所有路径上都能释放，其次是引入超时机制作为安全网。
+修复分两层保护：一层确保 WakeLock 在所有路径上都能释放，另一层引入超时机制作为安全网。
 
 ```java
 // 修复后 — 两层保护
@@ -223,7 +224,7 @@ public class SyncService extends Service {
 
 某运动健康类 App 在用户反馈中被频繁吐槽"开着这个 App，一天要充两次电"。问题出现在"户外跑步"功能中——用户结束跑步后，App 的后台 GPS 定位仍在持续工作。
 
-这个问题的特征是：**不是某个瞬间的高耗电，而是长时间的持续消耗**。GPS 芯片是设备上功耗最高的传感器之一，持续使用 GPS 的功耗约为 50-100mA，而待机状态只有 5-8mA——差了一个数量级以上。
+这个问题的特征是：**长时间的持续消耗**。GPS 芯片是设备上功耗最高的传感器之一，持续使用 GPS 的功耗约为 50-100mA，而待机状态只有 5-8mA——差了一个数量级以上。
 
 [已验证: 官方文档, developer.android.com/guide/topics/location]
 
@@ -241,7 +242,7 @@ Battery Historian 报告中，"GPS" 行在整个时间线上都是绿色的—�
 
 [图：Battery Historian GPS 行——持续绿色条带 vs 正常的间歇性条带]
 
-同时，在 "Network" 行也可以看到对应的网络活动——App 在持续将位置数据上传到服务器。这意味着后台不仅有 GPS 定位，还有持续的网络请求，两个高功耗组件叠加。
+同时，在 "Network" 行也可以看到对应的网络活动——App 在持续将位置数据上传到服务器。后台不仅有 GPS 定位，还有持续的网络请求，两个高功耗组件叠加。
 
 通过 `adb shell dumpsys location` 可以确认是哪个 App 在请求位置：
 
@@ -378,7 +379,7 @@ adb shell dumpsys sensorservice | grep "Active connections"
 
 [已验证: 官方文档, developer.android.com/training/efficient-downloads/connectivity_patterns]
 
-这不是 WakeLock 的问题（CPU 可以正常休眠），而是 Radio 的持续高功耗。Battery Historian 中会显示为"Mobile Radio"条带几乎不中断。
+这和 WakeLock 无关（CPU 可以正常休眠），根因是 Radio 的持续高功耗。Battery Historian 中会显示为"Mobile Radio"条带几乎不中断。
 
 ### 抓取与定位
 
@@ -434,7 +435,7 @@ class GroupSyncManager {
 
 ### 根因与结论
 
-根因是 **多个模块独立轮询，没有合并网络请求窗口**。Radio 功耗的关键不在于传输了多少数据，而在于触发了多少次 Radio 唤醒。即使每次只发 100 字节的心跳包，如果每 30 秒触发一次，Radio 就永远无法回到 Standby 状态。
+根因是 **多个模块独立轮询，没有合并网络请求窗口**。Radio 功耗取决于唤醒次数而非传输数据量——即使每次只发 100 字节的心跳包，如果每 30 秒触发一次，Radio 就永远无法回到 Standby 状态。
 
 ### 修复方案
 
