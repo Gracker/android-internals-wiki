@@ -286,5 +286,44 @@
     "status": "completed",
     "completed_at": "2026-04-15T20:44:21",
     "completed_by": "task2b-rework"
+  },
+  {
+    "section": "9.1",
+    "section_title": "ANR 设计思想",
+    "priority": 95,
+    "reason": "[Deep Tech Review] P0: ContentProvider ANR超时值严重错误(1000ms→实际10s); P1: startForeground超时/InputConnection ANR类型缺失, 版本覆盖不全(Android 11/13/15/17)",
+    "material_paths": [
+      "intake/suggestions.md",
+      "intake/research-gaps.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "「入口：不同组件的 ANR 触发点」→ ContentProvider ANR 超时阈值",
+        "detail": "章节称「ContentProvider ANR 超时阈值为 1000ms」。AOSP ActivityManagerService.java 中 CONTENT_PROVIDER_PUBLISH_TIMEOUT = 10 * 1000 = 10秒。1000ms 仅适用于 getProviderMimeType() 调用（API 31+），不是通用 ContentProvider ANR 超时。将两者混为一谈会导致开发者严重误判 ANR 触发条件。",
+        "suggestion": "修正为：ContentProvider 发布超时为 10 秒（CONTENT_PROVIDER_PUBLISH_TIMEOUT），与 Service/Activity ANR 一样是系统级强制约束。补充说明 getProviderMimeType() 有独立的 1 秒超时（API 31+，通过 getProviderMimeTypeAsync() 可异步处理）。"
+      },
+      {
+        "type": "知识盲区",
+        "location": "「入口：不同组件的 ANR 触发点」— 缺失的 ANR 类型",
+        "detail": "未提及 startForeground() 超时（Android 12+ 5 秒，之前 10 秒），这是现代 Android 开发中最高频的 Service ANR 类型之一。也未提及 InputConnection ANR（5 秒超时，IMM#onInputEvent timout）。作为「设计思想」章节，ANR 类型体系必须完整。",
+        "suggestion": "补充 startForeground timeout 和 InputConnection timeout 两种 ANR 类型。startForeground 在 9.2（ANR 类型与触发条件）中也应完整覆盖，此处至少要点名。"
+      },
+      {
+        "type": "原理断裂",
+        "location": "「第一阶段：注册超时」和「第二阶段：主线程处理」之间",
+        "detail": "章节说「如果应用在规定时间内完成了 onReceive() 的执行并通知了 AMS，这个计时器就会被取消」——但从未解释「通知 AMS」的具体机制。不同组件完成通知方式不同：BroadcastReceiver 通过 IApplicationThread.finishReceiver()；Service 通过 ActivityThread.handleServiceArgs() 回调；Input 通过 InputConsumer.finishInputEvent()。读者无法理解闭环是如何形成的。",
+        "suggestion": "在第二阶段补充各组件完成通知的关键方法名（finishReceiver / handleServiceArgs / finishInputEvent），并标注这些调用运行在 Binder 线程上，与主线程执行异步。"
+      },
+      {
+        "type": "版本差异",
+        "location": "「各版本 ANR 机制的微调与改进」节",
+        "detail": "applicable_versions 声明 8.0-17，但版本演进只覆盖 8.0/10/12/14/16，遗漏 Android 11（AppOps 对后台 Service 启动的限制变更）、13（ANR trace 改为按进程独立存储改进）、15（可能的 ANR 行为变更）、17。last_verified_against 仅为 android-14.0.0_r1，Android 15-17 的声明缺乏验证。",
+        "suggestion": "1) 补充 Android 11/13 的 ANR 相关变更；2) 明确标注 Android 15-17 的 ANR 变更为 [待验证]；3) 考虑将 applicable_versions 修正为 8.0-14（已验证部分）加上 15-17（待验证部分）。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-16T08:23:00",
+    "status": "pending"
   }
 ]
