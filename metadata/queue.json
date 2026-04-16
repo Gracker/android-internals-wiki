@@ -29,8 +29,10 @@
     ],
     "added_by": "task6-review",
     "added_at": "2026-04-16T17:00:00",
-    "status": "pending",
-    "original_review_log": "logs/review/2026-04-16-17-review.md"
+    "status": "completed",
+    "original_review_log": "logs/review/2026-04-16-17-review.md",
+    "completed_at": "2026-04-16T10:43:58.463733",
+    "completed_by": "task2b-rework"
   },
   {
     "section": "3.1",
@@ -353,6 +355,24 @@
         "location": "「各版本 ANR 机制的微调与改进」节",
         "detail": "applicable_versions 声明 8.0-17，但版本演进只覆盖 8.0/10/12/14/16，遗漏 Android 11（AppOps 对后台 Service 启动的限制变更）、13（ANR trace 改为按进程独立存储改进）、15（可能的 ANR 行为变更）、17。last_verified_against 仅为 android-14.0.0_r1，Android 15-17 的声明缺乏验证。",
         "suggestion": "1) 补充 Android 11/13 的 ANR 相关变更；2) 明确标注 Android 15-17 的 ANR 变更为 [待验证]；3) 考虑将 applicable_versions 修正为 8.0-14（已验证部分）加上 15-17（待验证部分）。"
+      },
+      {
+        "type": "源码错误",
+        "location": "「CPU 饱和：调度器来不及调度」段",
+        "detail": "THREAD_PRIORITY_FOREGROUND 写为 -1，实际值为 -2（android.os.Process.THREAD_PRIORITY_FOREGROUND = -2）",
+        "suggestion": "修正为 -2"
+      },
+      {
+        "type": "原理断裂",
+        "location": "「连锁 ANR 的形成过程」段",
+        "detail": "称\"累计等待时间已经远超 10 秒，于是从第 7 个开始全部触发 ANR\"。实际上 AOSP BroadcastQueue 对每个 receiver 独立设置超时（setBroadcastTimeoutLocked），每个 receiver 有自己的 10s/60s 窗口。\"累计超时\"机制不存在。广播风暴导致多 ANR 的真正原因是系统资源争抢导致各 receiver 各自超时",
+        "suggestion": "重写连锁 ANR 的形成过程：每个 receiver 独立超时，广播风暴导致的是系统级资源争抢（CPU/IO/Binder线程），使原本轻量的 receiver 也因调度延迟而超时"
+      },
+      {
+        "type": "源码错误",
+        "location": "「关键源码路径」QueuedWork.waitToFinish()",
+        "detail": "代码使用 sPendingWorkFinishers 字段名，Android 8.0+ 已更名为 sFinishers，且实际实现包含额外 wait 循环和 tracing 逻辑",
+        "suggestion": "基于 android-14.0.0_r1 更新代码片段，使用 sFinishers 字段名，补充实际实现的等待逻辑"
       }
     ],
     "added_by": "task9-deep-tech-review",
