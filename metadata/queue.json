@@ -777,5 +777,205 @@
     "status": "completed",
     "completed_at": "2026-04-16T20:45:37.848906+00:00",
     "completed_by": "task2b-rework"
+  },
+  {
+    "section": "ch14-other-tools",
+    "section_title": "AI每日素材 - Google 发布 Android CLI：让 AI Age...",
+    "priority": 74,
+    "reason": "[素材注入] 新增参考文章，建议补充到章节",
+    "material_paths": [
+      "http://android-developers.googleblog.com/2026/04/build-android-apps-3x-faster-using-any-agent.html"
+    ],
+    "review_issues": [
+      {
+        "type": "新增参考",
+        "location": "参考资料小节",
+        "detail": "Google 发布 Android CLI：让 AI Agent 3 倍速构建 Android 应用 — Google发布全新Android CLI工具集，包括Android skills和Android Knowledge Base，让AI Agent能在Android开发环境中更高效工作，任务完成速度",
+        "suggestion": "判断是否适合作为章节参考，如适合请补充"
+      }
+    ],
+    "added_by": "task8-classifier",
+    "added_at": "2026-04-17T05:32:35.177443",
+    "status": "pending"
+  },
+  {
+    "section": "ch01-architecture",
+    "section_title": "AI每日素材 - Android 17正式发布：Cinnamon Bin带来革...",
+    "priority": 72,
+    "reason": "[素材注入] 新增参考文章，建议补充到章节",
+    "material_paths": [
+      "https://techradar.com/android-17-cinnamon-bin-ai-features-2026"
+    ],
+    "review_issues": [
+      {
+        "type": "新增参考",
+        "location": "参考资料小节",
+        "detail": "Android 17正式发布：Cinnamon Bin带来革命性AI体验 — Google正式发布Android 17，代号为Cinnamon Bin，重点强化了AI驱动的智能体验。新系统整合了Gemini Nano模型，实现设备端AI推理，支持实时翻译、图像识别和跨应用智能代",
+        "suggestion": "判断是否适合作为章节参考，如适合请补充"
+      }
+    ],
+    "added_by": "task8-classifier",
+    "added_at": "2026-04-17T05:32:35.177455",
+    "status": "pending"
+  },
+  {
+    "section": "ch17-oem",
+    "section_title": "AI每日素材 - Android性能优化进入AI时代：系统级智能代理引领交互革...",
+    "priority": 72,
+    "reason": "[素材注入] 新增参考文章，建议补充到章节",
+    "material_paths": [
+      "https://juejin.cn/android-performance-ai-optimization-2026"
+    ],
+    "review_issues": [
+      {
+        "type": "新增参考",
+        "location": "参考资料小节",
+        "detail": "Android性能优化进入AI时代：系统级智能代理引领交互革命 — Android性能优化正经历从传统方法向AI驱动的根本性转变。系统级AI代理通过像素级UI语义解析与事件注入技术，实现跨应用自动化任务执行，突破传统AI助手对API的依赖限制。",
+        "suggestion": "判断是否适合作为章节参考，如适合请补充"
+      }
+    ],
+    "added_by": "task8-classifier",
+    "added_at": "2026-04-17T05:32:35.177461",
+    "status": "pending"
+  },
+  {
+    "section": "ch16-aosp",
+    "section_title": "AI每日素材 - 端侧AI模型规模化落地：设备端推理成本降至零...",
+    "priority": 69,
+    "reason": "[素材注入] 新增参考文章，建议补充到章节",
+    "material_paths": [
+      "https://android.com/nano-model-cost-reduction-2026"
+    ],
+    "review_issues": [
+      {
+        "type": "新增参考",
+        "location": "参考资料小节",
+        "detail": "端侧AI模型规模化落地：设备端推理成本降至零 — Google宣布端侧AI模型规模化落地取得重大突破，3B参数级多模态模型通过4-bit量化和Lora训练等技术，将设备端AI推理成本降至零元。实时语音转写延迟低于200ms。",
+        "suggestion": "判断是否适合作为章节参考，如适合请补充"
+      }
+    ],
+    "added_by": "task8-classifier",
+    "added_at": "2026-04-17T05:32:35.177466",
+    "status": "pending"
+  },
+  {
+    "section": "ch14-other-tools",
+    "section_title": "AI每日素材 - Android开发者工具革命：AI助手重构开发流程...",
+    "priority": 72,
+    "reason": "[素材注入] 新增参考文章，建议补充到章节",
+    "material_paths": [
+      "https://developer.android.com/studio-ai-assistant-2026"
+    ],
+    "review_issues": [
+      {
+        "type": "新增参考",
+        "location": "参考资料小节",
+        "detail": "Android开发者工具革命：AI助手重构开发流程 — Android Studio推出革命性AI助手功能，彻底重构移动应用开发流程。新AI助手能自动生成代码、提供实时代码建议、智能调试错误，甚至根据自然语言描述直接生成完整UI界面。",
+        "suggestion": "判断是否适合作为章节参考，如适合请补充"
+      }
+    ],
+    "added_by": "task8-classifier",
+    "added_at": "2026-04-17T05:32:35.177470",
+    "status": "pending"
+  },
+  {
+    "section": "ch17-oem",
+    "section_title": "AI每日素材 - 聊聊2026年Android开发会是什么样...",
+    "priority": 70,
+    "reason": "[素材注入] 新增参考文章，建议补充到章节",
+    "material_paths": [
+      "https://juejin.cn/post/7589903499599347766"
+    ],
+    "review_issues": [
+      {
+        "type": "新增参考",
+        "location": "参考资料小节",
+        "detail": "聊聊2026年Android开发会是什么样 — N/A",
+        "suggestion": "判断是否适合作为章节参考，如适合请补充"
+      }
+    ],
+    "added_by": "task8-classifier",
+    "added_at": "2026-04-17T05:32:35.177474",
+    "status": "pending"
+  },
+  {
+    "section": "ch17-oem",
+    "section_title": "AI每日素材 - 什么 AI 写 Android 最好用？官方做了一个基准测试...",
+    "priority": 72,
+    "reason": "[素材注入] 新增参考文章，建议补充到章节",
+    "material_paths": [
+      "https://juejin.cn/post/7614897667961143347"
+    ],
+    "review_issues": [
+      {
+        "type": "新增参考",
+        "location": "参考资料小节",
+        "detail": "什么 AI 写 Android 最好用？官方做了一个基准测试排名 — N/A",
+        "suggestion": "判断是否适合作为章节参考，如适合请补充"
+      }
+    ],
+    "added_by": "task8-classifier",
+    "added_at": "2026-04-17T05:32:35.177479",
+    "status": "pending"
+  },
+  {
+    "section": "ch14-other-tools",
+    "section_title": "AI每日素材 - Android Studio Panda 1 正式版来了：J...",
+    "priority": 70,
+    "reason": "[素材注入] 新增参考文章，建议补充到章节",
+    "material_paths": [
+      "https://juejin.cn/post/7605097326727266350"
+    ],
+    "review_issues": [
+      {
+        "type": "新增参考",
+        "location": "参考资料小节",
+        "detail": "Android Studio Panda 1 正式版来了：JDK 终于不用手动配了，内存泄漏也有原生方案了 — N/A",
+        "suggestion": "判断是否适合作为章节参考，如适合请补充"
+      }
+    ],
+    "added_by": "task8-classifier",
+    "added_at": "2026-04-17T05:32:35.177482",
+    "status": "pending"
+  },
+  {
+    "section": "ch17-oem",
+    "section_title": "AI每日素材 - 用 AI 写 Android 需求：少踩坑的实战心得...",
+    "priority": 72,
+    "reason": "[素材注入] 新增参考文章，建议补充到章节",
+    "material_paths": [
+      "https://juejin.cn/post/7604964464690184255"
+    ],
+    "review_issues": [
+      {
+        "type": "新增参考",
+        "location": "参考资料小节",
+        "detail": "用 AI 写 Android 需求：少踩坑的实战心得 — N/A",
+        "suggestion": "判断是否适合作为章节参考，如适合请补充"
+      }
+    ],
+    "added_by": "task8-classifier",
+    "added_at": "2026-04-17T05:32:35.177485",
+    "status": "pending"
+  },
+  {
+    "section": "ch01-architecture",
+    "section_title": "AI每日素材 - Android 17 有什么需要适配的？2026 Andro...",
+    "priority": 70,
+    "reason": "[素材注入] 新增参考文章，建议补充到章节",
+    "material_paths": [
+      "https://juejin.cn/post/7610233341305389099"
+    ],
+    "review_issues": [
+      {
+        "type": "新增参考",
+        "location": "参考资料小节",
+        "detail": "Android 17 有什么需要适配的？2026 Android 禁止侧载又是什么？ — N/A",
+        "suggestion": "判断是否适合作为章节参考，如适合请补充"
+      }
+    ],
+    "added_by": "task8-classifier",
+    "added_at": "2026-04-17T05:32:35.177488",
+    "status": "pending"
   }
 ]
