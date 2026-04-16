@@ -5,11 +5,12 @@ section: "12.2"
 status: ready-for-review
 drafted_date: "2026-04-03"
 drafted_by: openclaw-task2a
-reviewed_date: "2026-04-10"
+reviewed_date: "2026-04-17"
 polish_count: 1
 polish_date: "2026-04-10"
 polish_by: "task2b-polish"
 reviewed_by: openclaw-task6
+task6_result: pass-light-edit
 applicable_versions: "Android 8 (API 26) - Android 16 (API 36)"
 last_verified: "2026-04-03"
 last_verified_against: "OkHttp 4.12.x / Android 16"
@@ -23,8 +24,8 @@ sources:
     path: "https://developer.android.com/training/basics/network-ops"
 tags: [network, OkHttp, HTTP/2, HTTP/3, QUIC, weak-network, performance]
 related_chapters: ["12.1", "6.1", "8.1"]
-pipeline_stage: task6_pending
-task6_state: pending
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task2b_state: idle
 ---
@@ -266,7 +267,7 @@ OkHttp 本身有一定的内置重试逻辑（`RetryOnConnectionFailure` 默认�
 
 ## 网络性能监控：OkHttp EventListener 与 NetworkCallback
 
-"无法度量就无法优化。"要系统化地改善网络性能，首先需要建立两个层面的感知能力：应用层面，精确度量每个请求各阶段的耗时；系统层面，感知当前网络环境的质量变化。前者由 OkHttp EventListener 承担，后者由 ConnectivityManager.NetworkCallback 承担。两者配合，才能实现“感知→度量→调整”的闭环。
+"无法度量就无法优化。"要系统化地改善网络性能，首先需要建立两个层面的感知能力：应用层面，精确度量每个请求各阶段的耗时；系统层面，感知当前网络环境的质量变化。前者由 OkHttp EventListener 承担，后者由 ConnectivityManager.NetworkCallback 承担。两者配合，才能实现“感知→度量→调整”的自适应循环。
 
 ### OkHttp EventListener：请求全生命周期埋点
 
@@ -380,7 +381,7 @@ public class NetworkMonitor {
 
 [已验证: 官方文档, developer.android.com/reference/android/net/ConnectivityManager]
 
-NetworkCallback 的信息可以用来驱动网络策略的自适应调整：带宽高时预加载高清图片；带宽低时只加载缩略图；完全离线时切换到本地缓存。结合 EventListener 的指标数据，可以构建一个"感知→度量→调整"的闭环。
+NetworkCallback 的信息可以用来驱动网络策略的自适应调整：带宽高时预加载高清图片；带宽低时只加载缩略图；完全离线时切换到本地缓存。结合 EventListener 的指标数据，可以构建一个"感知→度量→调整"的自适应循环。
 
 ## 与其他机制的关系
 
