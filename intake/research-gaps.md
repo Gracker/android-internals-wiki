@@ -374,3 +374,21 @@ HWUI RenderThread 的 Bitmap 纹理上传（texture upload）机制。在 Draw �
 - trimLevel 与 lmkd 杀进程策略的对应关系
 #### 关联章节
 4.5, 10.4
+
+## [2026-04-16] 11.4 功耗案例集 — 知识盲区
+
+### 盲区描述
+1. **5G Radio 状态机未覆盖**：案例三 Radio 状态机描述基于 3G/LTE 模型（Full Power → Low Power → Standby），5G NR 的 DRX/CDRX 机制和功耗特征有显著差异，未提及。
+2. **FCM 中国大陆可用性**：案例三长期方案推荐 FCM 替代轮询，但中国大陆无法使用 Google 服务。需补充自建 WebSocket 或厂商推送通道（小米推送、华为推送、OPPO 推送等）的替代方案。
+3. **线上功耗监控体系缺失**：章节末尾已标注 [待补充]，需要一个完整的线上功耗监控体系搭建案例。
+
+### 重要程度
+中（5G 差异和 FCM 可用性影响读者在特定场景下的方案选择）
+
+### 建议研究方向
+- 5G NR Radio 状态机（DRX/CDRX）与 4G LTE 的功耗模型差异
+- 国内主流厂商推送通道的接入方式和功耗对比
+- BatteryStats + UsageStatsManager 在 App 内采集功耗数据的方案
+
+### 关联章节
+11.1, 11.2, 11.3, 12.2

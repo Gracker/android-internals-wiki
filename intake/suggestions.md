@@ -657,3 +657,27 @@
 - **位置**：lmkd 段落 vs §4.4 Low Memory Killer
 - **问题**：本章节 lmkd 段落包含较多 lmkd 工作机制细节（PSI 监听、oom_score_adj 杀进程策略），与 §4.4 内容重叠。本章节应侧重"低内存的影响"而非 lmkd 机制。
 - **建议**：精简本章节的 lmkd 机制描述，侧重"杀进程后的影响"（冷启动代价、恶性循环），机制细节指向 §4.4
+
+## [Task9 Deep Review] 11.4 功耗案例集 — 2026-04-16
+- **类型**：版本差异
+- **位置**：案例四 AlarmManager 代码 — PendingIntent.FLAG_IMMUTABLE
+- **问题**：代码使用 PendingIntent.FLAG_IMMUTABLE，但章节 applicable_versions 从 Android 8.0 开始。FLAG_IMMUTABLE 从 Android 12 (API 31) 起为必需标志，Android 8-11 可使用 FLAG_MUTABLE 或不设 flag。
+- **建议**：在代码旁标注「Android 12 起必需 FLAG_IMMUTABLE」注释，或使用条件判断。
+
+## [Task9 Deep Review] 11.4 功耗案例集 — 2026-04-16
+- **类型**：数据缺失
+- **位置**：案例一/二/三/五的效果对比表
+- **问题**：多处效果对比数据缺少实验来源。如案例一「4h 待机耗电 40%→3%」、案例二「25%→3%」、案例三「15%→5%/3%」、案例五「15%→3%」。这些数据看起来是估算值而非实际测试结果。
+- **建议**：标注为「典型值（基于 X 设备 Y 系统测试）」或改为定性描述（「从严重异常降至系统待机水平」）。
+
+## [Task9 Deep Review] 11.4 功耗案例集 — 2026-04-16
+- **类型**：知识盲区
+- **位置**：案例三「长期：Push 替代 Pull」
+- **问题**：推荐 FCM 作为长期方案，但未讨论 FCM 的局限性（消息大小限制 4KB、需要 Google Play Services、中国大陆不可用）以及何时选择 WebSocket 长连接替代。
+- **建议**：补充 FCM 的适用场景和限制，提及国内需使用厂商推送通道或自建 WebSocket。
+
+## [Task9 Deep Review] 11.4 功耗案例集 — 2026-04-16
+- **类型**：知识盲区
+- **位置**：案例三 Radio 状态机描述
+- **问题**：描述基于 3G/LTE 模型（30-60秒不活动期进入 Standby）。5G NR 使用 DRX/CDRX 机制，状态转换时间和功耗特征不同，但未提及。
+- **建议**：补充说明 Radio 状态机模型因网络技术而异，5G NR 场景下需要额外关注 CDRX 配置对功耗的影响。
