@@ -638,5 +638,50 @@
     ],
     "added_by": "task3-freshness-check",
     "added_at": "2026-04-17T02:00:00"
+  },
+  {
+    "section": "2.10",
+    "section_title": "GPU 渲染深入",
+    "priority": 95,
+    "reason": "[Deep Tech Review] P0: Canvas.drawRect() native_drawRect 方法签名错误(mShaderDensity/mAlpha参数不存在); P1: GraphicBuffer代码与AOSP不符/TBR架构缺失/版本时间线错误/分辨率降低方法不适用UI",
+    "material_paths": [
+      "intake/suggestions.md",
+      "intake/research-gaps.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "Canvas.drawRect() 代码片段（Vertex Shader 节）",
+        "detail": "native_drawRect 方法签名包含 mShaderDensity 和 mAlpha 两个不存在的参数。AOSP 实际签名为 native_drawRect(long, float, float, float, float, long)。",
+        "suggestion": "修正为 native_drawRect(mNativeCanvasWrapper, left, top, right, bottom, paint.getNativeInstance())"
+      },
+      {
+        "type": "源码错误",
+        "location": "GraphicBuffer.java 代码片段",
+        "detail": "标注 @ AOSP android-16.0.0_r1 但展示的 mWidth/mHeight/mFormat/mUsage/mRefCount 字段并非实际结构。实际 GraphicBuffer 只有一个 long mNativeObject 字段。",
+        "suggestion": "改为 [简化示意] 标注，或替换为实际 AOSP 结构"
+      },
+      {
+        "type": "知识盲区",
+        "location": "全文缺失 TBR 移动 GPU 架构",
+        "detail": "Tile-Based Rendering 是所有移动 GPU 的核心架构特征。仅在 [待验证] 笔记中一笔带过。",
+        "suggestion": "新增 TBR 架构小节"
+      },
+      {
+        "type": "原理断裂",
+        "location": "GPU 瓶颈分析节「降低分辨率到 720p」方法",
+        "detail": "此方法不适用于标准 Android UI 渲染，Android UI 无法独立改变渲染分辨率。",
+        "suggestion": "改为 Perfetto/AGI 瓶颈判断方法"
+      },
+      {
+        "type": "版本差异",
+        "location": "Vulkan vs OpenGL ES 节",
+        "detail": "缺少 Vulkan/ANGLE 从 Android 7.0 到 16 的完整版本演进线。",
+        "suggestion": "添加版本演进表"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-17T02:29:17",
+    "status": "pending"
   }
 ]
