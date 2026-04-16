@@ -30,10 +30,13 @@ sources:
     note: "高爷原创 ANR 分析系列"
 tags: ['anr', 'sharedpreferences', 'contentprovider', 'binder', 'broadcast', 'io-blocking', 'system-load']
 related_chapters: ['9.1', '9.2', '9.3', '1.4', '4.3', '4.4', '6.3']
-pipeline_stage: task6_pending
-task6_state: pending
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task2b_state: idle
+task6_result: pass-light-edit
+reviewed_by: openclaw-task6
+reviewed_date: "2026-04-16"
 ---
 
 # 特殊场景的 ANR
