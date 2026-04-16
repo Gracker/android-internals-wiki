@@ -28,7 +28,9 @@ related_chapters: ["2.2", "2.3", "2.4", "2.5", "2.6", "2.10"]
 pipeline_stage: task9_pending
 task6_state: reviewed
 task6_result: pass-light-edit
-task9_state: pending
+task9_state: reviewed
+task9_result: needs-rework
+task9_reviewed_date: "2026-04-16"
 task2b_state: idle
 ---
 
@@ -62,13 +64,13 @@ task2b_state: idle
 
 ## 开头：为什么了解 Android 渲染架构
 
-打开一份 Perfetto Trace，我们会看到屏幕上密密麻麻的 Track 和色块：主线程上一段橘黄色的 doFrame、RenderThread 上一条绿色的 drawFrame、SurfaceFlinger 进程里周期性的 handleMessageRefresh、底部 GPU 的忙碌区间。这些色块就是 Android 渲染架构在 Trace 中的"可视化"——如果我们不理解它们之间的协作关系，Trace 就只是一堆花花绿绿的色条，无法告诉我们问题出在哪里。
+打开一份 Perfetto Trace，我们会看到屏幕上密密麻麻的 Track 和色块：主线程上一段橘黄色的 doFrame、RenderThread 上一条绿色的 drawFrame、SurfaceFlinger 进程里周期性的 handleMessageRefresh、底部 GPU 的忙碌区间。这些色块就是 Android 渲染架构在 Trace 中的"可视化"——要是不理解它们之间的协作关系，Trace 就只是一堆花花绿绿的色条，无法告诉我们问题出在哪里。
 
-我们遇到的大多数 UI 性能问题，都可以归结为渲染管线的某一个环节出了状况：卡顿可能是因为主线程 Measure/Layout 耗时过长，也可能是因为 GPU 渲染跟不上 VSync 节拍；掉帧可能是因为 BufferQueue 没有可用的缓冲区，也可能是因为 SurfaceFlinger 合成时被 HWC 阻塞。了解渲染架构全景，就是给自己建一张"问题定位地图"——看到现象，就能沿着管线找到具体的瓶颈环节。
+我们遇到的大多数 UI 性能问题，都可以归结为渲染管线的某一个环节出了状况：卡顿可能是因为主线程 Measure/Layout 耗时过长，也可能是 GPU 渲染跟不上 VSync 节拍；掉帧可能是因为 BufferQueue 没有可用的缓冲区，也可能是 SurfaceFlinger 合成时被 HWC 阻塞。了解渲染架构全景，就是给自己建一张"问题定位地图"——看到现象，就能沿着管线找到具体的瓶颈环节。
 
 ## 渲染管线全景：Measure → Layout → Draw → Sync → GPU Render → Composite → Display
 
-Android 渲染管线是一条从 View 树到屏幕像素的完整流水线——XML 布局经过 Measure、Layout、Draw 转化为绘制指令，再经 GPU 渲染为像素，最终由 SurfaceFlinger 合成并输出到屏幕。下面我们从这条流水线的起点开始，逐阶段拆解。[已验证: 官方文档, Android渲染管线概述]
+Android 渲染管线是一条从 View 树到屏幕像素的完整流水线。XML 布局经过 Measure、Layout、Draw 转化为绘制指令，再经 GPU 渲染为像素，最终由 SurfaceFlinger 合成并输出到屏幕。下面我们从这条流水线的起点开始，逐阶段拆解。[已验证: 官方文档, Android 渲染管线概述]
 
 ### 第一阶段：UI 线程准备阶段
 
@@ -87,7 +89,7 @@ ViewRootImpl.performTraversals()
 
 Measure 过程的执行方式是自顶向下的：从 DecorView 开始，逐级向子 View 传递尺寸约束。每对父子之间传递的是一个 32 位整数 measureSpec，其中高 16 位编码模式（EXACTLY 表示父 View 给了精确值、AT_MOST 表示不能超过某个上限、UNSPECIFIED 表示不限制），低 16 位编码具体数值。这个紧凑的设计避免了对象的频繁分配——在一个包含几百个 View 的布局中，measureSpec 的分配开销几乎为零。
 
-Android 在某些情况下会执行两轮 Measure。第一轮中，父 View 根据自身约束给子 View 一个初步大小；但如果子 View 在 onMeasure 中表明它实际需要的空间与初步分配不一致（比如一个wrap_content 的子 View 内部有更复杂的需求），父 View 就会根据子 View 的反馈调整约束，发起第二轮测量。在 Perfetto 中，如果我们看到 performTraversals 中 Measure 阶段出现了两次耗时尖峰，很可能就是这种重测量在发生——常见的原因是嵌套的 RelativeLayout 或使用了 weights 的 LinearLayout。
+Android 在某些情况下会执行两轮 Measure。第一轮中，父 View 根据自身约束给子 View 一个初步大小；但如果子 View 在 onMeasure 中表明它实际需要的空间与初步分配不一致（比如一个wrap_content 的子 View 内部有更复杂的需求），父 View 就会根据子 View 的反馈调整约束，发起第二轮测量。在 Perfetto 中，看到 performTraversals 中 Measure 阶段出现两次耗时尖峰，很可能就是这种重测量在发生——常见原因是嵌套的 RelativeLayout 或使用了 weights 的 LinearLayout。
 
 View.onMeasure 的默认实现只做一件事：通过 getDefaultSize 把 measureSpec 解析为实际的像素值，然后调用 setMeasuredDimension 记录结果。getDefaultSize 的逻辑很简单——EXACTLY 模式直接使用约束值，AT_MOST 取约束值和建议值的较小者，UNSPECIFIED 直接使用 View 自身的建议大小：
 
@@ -138,7 +140,7 @@ ViewRootImpl.performTraversals()
 │       └── View.drawForeground()
 ```
 
-这里有两个关键的触发机制值得区分。当我们调用 `invalidate()` 时，只是标记 View 的视觉外观需要更新，下一帧会重新执行 Draw 过程，但不会触发 Measure 和 Layout——这适用于 View 的大小和位置没变、只是颜色或内容变了的情况。而 `requestLayout()` 则标记 View 的尺寸或位置可能发生变化，下一帧会从头开始执行 Measure → Layout → Draw 的完整流程。在实际优化中，我们应该优先使用 `invalidate()` 而非 `requestLayout()`，因为后者会触发整棵 View 树的重新测量，代价大得多。
+这里有两个关键的触发机制值得区分。当我们调用 `invalidate()` 时，只是标记 View 的视觉外观需要更新，下一帧会重新执行 Draw 过程，但不会触发 Measure 和 Layout——这适用于 View 的大小和位置没变、只是颜色或内容变了的情况。而 `requestLayout()` 则标记 View 的尺寸或位置可能发生变化，下一帧会从头开始执行 Measure → Layout → Draw 的完整流程。在实际优化中，优先使用 `invalidate()` 而非 `requestLayout()`，因为后者会触发整棵 View 树的重新测量，代价大得多。
 
 ### 第二阶段：同步与 GPU 渲染阶段
 
