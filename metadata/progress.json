@@ -21,7 +21,7 @@
     "task9_unknown": 31,
     "task9_pending": 170,
     "task9_reviewed": 6,
-    "last_updated": "2026-04-16T00:11:00",
+    "last_updated": "2026-04-16T12:07:00",
     "task2b_state_counts": {
       "unknown": 33,
       "fixed": 79,
@@ -30,8 +30,8 @@
     },
     "task6_state_counts": {
       "revisiting": 80,
-      "reviewed": 25,
-      "pending": 70
+      "reviewed": 26,
+      "pending": 69
     },
     "task9_state_counts": {
       "unknown": 32,
@@ -39,9 +39,9 @@
       "reviewed": 10
     },
     "pipeline_stage_counts": {
-      "task6_pending": 148,
+      "task6_pending": 147,
       "task2b_pending": 17,
-      "task9_pending": 10
+      "task9_pending": 11
     },
     "total_sections": 207
   },
@@ -1716,13 +1716,14 @@
       "title": "特殊场景的 ANR",
       "path": "src/part2-performance/ch09-anr/04-special-anr.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "pending",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
       "task9_state": "pending",
       "task2b_state": "idle",
-      "reviewed_date": "2026-04-09",
+      "reviewed_date": "2026-04-16",
       "reviewed_by": "openclaw-task6",
-      "section": "9.4"
+      "section": "9.4",
+      "task6_result": "pass-light-edit"
     },
     "src/part2-performance/ch09-anr/05-case-studies.md": {
       "chapter": "9.5",
