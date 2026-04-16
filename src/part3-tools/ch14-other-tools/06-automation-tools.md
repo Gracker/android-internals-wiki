@@ -15,11 +15,14 @@ sources:
   - type: official
     path: "developer.android.com/topic/performance/benchmarking/benchmarking-in-ci"
 tags: [macrobenchmark, microbenchmark, espresso, uiautomator, ci/cd, baseline-profiles]
-related_chapters: ["13.1", "13.2", "14.1", "8.3"]
-pipeline_stage: task6_pending
-task6_state: pending
+related_chapters: ["13.1", "13.2", "14.1", "8.3", "8.7"]
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task2b_state: idle
+reviewed_by: openclaw-task6
+reviewed_date: "2026-04-16"
+task6_result: pass-light-edit
 ---
 
 # 自动化测试工具
@@ -55,7 +58,7 @@ task2b_state: idle
 
 自动化性能测试解决的就是这个问题。它让性能指标变成一个**可量化、可追踪、可回归**的工程信号，而不是依赖主观感受。Google 从 2020 年开始陆续推出 Jetpack Benchmark 库（Macrobenchmark 和 Microbenchmark），就是要把性能测试从"高级工程师的直觉"变成"CI 管线里的一行命令"。
 
-在本章中，我们会把自动化性能测试工具分成几个层次来介绍：先从 Google 官方的基准测试库入手，理解 Macrobenchmark 和 Microbenchmark 各自的定位和用法；然后看看 UI Automator 和 Espresso 在性能测试中扮演什么角色；最后讨论如何把这一切串联到 CI/CD 管线中，实现真正的性能守护。
+在本章中，我们会把自动化性能测试工具分成几个层次来介绍：先从 Google 官方的基准测试库入手，理解 Macrobenchmark 和 Microbenchmark 各自的定位和用法；然后看看 UI Automator 和 Espresso 在性能测试中扮演什么角色；最后讨论如何把这一切接入 CI/CD 管线，实现真正的性能守护。
 
 [已验证: 官方文档, developer.android.com/topic/performance/benchmarking]
 
@@ -65,7 +68,7 @@ Google 为 Android 提供了两个互补的基准测试库。它们不是互相�
 
 ### Macrobenchmark：端到端的用户体验测量
 
-Macrobenchmark 的设计目标是测量**用户能感知到的性能**——启动时间、页面滚动流畅度、动画帧率。它不是在代码内部插桩测量某个函数的执行时间，而是从外部操控应用，模拟用户的真实操作，然后测量整个交互链路的耗时。
+Macrobenchmark 的设计目标是测量**用户能感知到的性能**——启动时间、页面滚动流畅度、动画帧率。它不是在代码内部插桩测量某个函数的执行时间，而是从外部操控应用，模拟用户的真实操作，然后测量整个操作流程的耗时。
 
 Macrobenchmark 运行在一个独立的测试模块（`com.android.test`）中，与被测应用完全分离。这种外部测量的方式意味着测试结果反映的是用户实际体验到的性能，而不是某个优化过的代码路径的理想表现。
 
@@ -171,7 +174,7 @@ fun scrollList() = benchmarkRule.measureRepeated(
 
 `FrameTimingMetric` 会收集每一帧的渲染时间。Macrobenchmark 会统计帧时间分布——P50、P90、P95 和 P99 分位数。P50 代表典型帧的渲染时间，而 P95/P99 则揭示了极端情况下的掉帧。如果 P95 超过了 16.67ms（60fps）或 8.33ms（120fps），就意味着有可感知的卡顿。
 
-值得注意的是，这里的滑动操作使用了 `UiDevice.drag()`，这是 UI Automator 的 API。Macrobenchmark 在底层依赖 UI Automator 来驱动 UI 操作——这一点我们在后面会详细讨论。
+这里的滑动操作使用了 `UiDevice.drag()`，这是 UI Automator 的 API。Macrobenchmark 在底层依赖 UI Automator 来驱动 UI 操作——后面会详细讨论。
 
 ### CompilationMode：量化编译优化效果
 
@@ -234,13 +237,13 @@ com.example.macrobenchmark.StartupBenchmark#coldStartup
 
 ## UI Automator 与 Espresso：在性能测试中的角色
 
-UI Automator 和 Espresso 都是 Android 的 UI 测试框架，但它们在性能测试中扮演的角色截然不同。理解这个区别对于正确使用 Macrobenchmark 至关重要。
+UI Automator 和 Espresso 都是 Android 的 UI 测试框架，但它们在性能测试中扮演的角色截然不同。理解这个区别是正确使用 Macrobenchmark 的前提。
 
 ### UI Automator：Macrobenchmark 的底层驱动
 
 UI Automator 是一个**黑盒测试框架**——它通过 Android 的无障碍服务（Accessibility Service）与 UI 交互，不需要知道应用的内部实现。它运行在独立进程中，可以跨应用操作（比如先打开设置修改配置，再回到被测应用）。
 
-Macrobenchmark 在底层直接使用 UI Automator 的 API 来驱动应用。当我们调用 `startActivityAndWait()`、`pressHome()` 或 `device.findObject(By.res("..."))` 时，实际上都是在调用 UI Automator 的 `UiDevice` 接口。这意味着 Macrobenchmark 测试天然具备黑盒特性——它测试的是用户真实感知到的性能，而不是开发者注入的探针。
+Macrobenchmark 在底层直接使用 UI Automator 的 API 来驱动应用。当我们调用 `startActivityAndWait()`、`pressHome()` 或 `device.findObject(By.res("..."))` 时，底层调用的都是 UI Automator 的 `UiDevice` 接口。这意味着 Macrobenchmark 测试天然具备黑盒特性——它测试的是用户真实感知到的性能，而不是开发者注入的探针。
 
 UI Automator 在性能测试中的优势是它不干扰被测应用：因为它运行在独立进程中，不会占用被测应用的 CPU 时间片或内存空间。但它也有代价——通过无障碍服务交互有 IPC 开销，操作速度比 Espresso 慢。不过对于性能测试来说，这个"慢"反而是优势——它更接近真实用户的操作节奏。
 

@@ -21,7 +21,7 @@
     "task9_unknown": 31,
     "task9_pending": 170,
     "task9_reviewed": 6,
-    "last_updated": "2026-04-16T02:11:40.664860",
+    "last_updated": "2026-04-16T00:11:00",
     "task2b_state_counts": {
       "unknown": 33,
       "fixed": 79,
@@ -29,10 +29,9 @@
       "idle": 81
     },
     "task6_state_counts": {
-      "unknown": 31,
       "revisiting": 80,
-      "reviewed": 24,
-      "pending": 74
+      "reviewed": 25,
+      "pending": 70
     },
     "task9_state_counts": {
       "unknown": 32,
@@ -40,9 +39,8 @@
       "reviewed": 10
     },
     "pipeline_stage_counts": {
-      "unknown": 31,
-      "task6_pending": 152,
-      "task2b_pending": 16,
+      "task6_pending": 148,
+      "task2b_pending": 17,
       "task9_pending": 10
     },
     "total_sections": 207
@@ -2492,10 +2490,13 @@
       "title": "自动化测试工具",
       "path": "src/part3-tools/ch14-other-tools/06-automation-tools.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "pending",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
       "task9_state": "pending",
-      "task2b_state": "idle"
+      "task2b_state": "idle",
+      "task6_result": "pass-light-edit",
+      "reviewed_by": "openclaw-task6",
+      "reviewed_date": "2026-04-16"
     },
     "src/part3-tools/ch14-other-tools/07-profiling-manager.md": {
       "chapter": null,
