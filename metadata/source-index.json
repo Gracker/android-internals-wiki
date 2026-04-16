@@ -14708,6 +14708,166 @@
       ],
       "summary": "小技巧 | 在 Android Studio 调试应用...",
       "scored_at": "2026-04-16T09:02:33.016683"
+    },
+    {
+      "path": "http://android-developers.googleblog.com/2026/04/build-android-apps-3x-faster-using-any-agent.html",
+      "title": "Google 发布 Android CLI：让 AI Agent 3 倍速构建 Android 应用",
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 5,
+        "verifiability": 4
+      },
+      "total_score": 16,
+      "matched_chapters": [
+        "ch14-other-tools"
+      ],
+      "first_chars": "# Google 发布 Android CLI：让 AI Agent 3 倍速构建 Android 应用\n\n[来源：2026-04-17]\n[链接：http://android-developers.googleblog.com/2026/04/build-android-apps-3x-faster-using-any-agent.html]",
+      "date_added": "2026-04-17"
+    },
+    {
+      "path": "https://techradar.com/android-17-cinnamon-bin-ai-features-2026",
+      "title": "Android 17正式发布：Cinnamon Bin带来革命性AI体验",
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 5,
+        "verifiability": 4
+      },
+      "total_score": 16,
+      "matched_chapters": [
+        "ch01-architecture"
+      ],
+      "first_chars": "# Android 17正式发布：Cinnamon Bin带来革命性AI体验\n\n[来源：2026-04-17]\n[链接：https://techradar.com/android-17-cinnamon-bin-ai-features-2026]",
+      "date_added": "2026-04-17"
+    },
+    {
+      "path": "https://juejin.cn/android-performance-ai-optimization-2026",
+      "title": "Android性能优化进入AI时代：系统级智能代理引领交互革命",
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 5,
+        "verifiability": 4
+      },
+      "total_score": 16,
+      "matched_chapters": [
+        "ch17-oem"
+      ],
+      "first_chars": "# Android性能优化进入AI时代：系统级智能代理引领交互革命\n\n[来源：2026-04-17]\n[链接：https://juejin.cn/android-performance-ai-optimization-2026]",
+      "date_added": "2026-04-17"
+    },
+    {
+      "path": "https://android.com/nano-model-cost-reduction-2026",
+      "title": "端侧AI模型规模化落地：设备端推理成本降至零",
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 5,
+        "verifiability": 4
+      },
+      "total_score": 16,
+      "matched_chapters": [
+        "ch16-aosp"
+      ],
+      "first_chars": "# 端侧AI模型规模化落地：设备端推理成本降至零\n\n[来源：2026-04-17]\n[链接：https://android.com/nano-model-cost-reduction-2026]",
+      "date_added": "2026-04-17"
+    },
+    {
+      "path": "https://developer.android.com/studio-ai-assistant-2026",
+      "title": "Android开发者工具革命：AI助手重构开发流程",
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 5,
+        "verifiability": 4
+      },
+      "total_score": 16,
+      "matched_chapters": [
+        "ch17-oem"
+      ],
+      "first_chars": "# Android开发者工具革命：AI助手重构开发流程\n\n[来源：2026-04-17]\n[链接：https://developer.android.com/studio-ai-assistant-2026]",
+      "date_added": "2026-04-17"
+    },
+    {
+      "path": "https://juejin.cn/post/7589903499599347766",
+      "title": "聊聊2026年Android开发会是什么样",
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 5,
+        "verifiability": 4
+      },
+      "total_score": 16,
+      "matched_chapters": [
+        "ch17-oem"
+      ],
+      "first_chars": "# 聊聊2026年Android开发会是什么样\n\n[来源：2026-04-17]\n[链接：https://juejin.cn/post/7589903499599347766]",
+      "date_added": "2026-04-17"
+    },
+    {
+      "path": "https://juejin.cn/post/7614897667961143347",
+      "title": "什么 AI 写 Android 最好用？官方做了一个基准测试排名",
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 5,
+        "verifiability": 4
+      },
+      "total_score": 16,
+      "matched_chapters": [
+        "ch17-oem"
+      ],
+      "first_chars": "# 什么 AI 写 Android 最好用？官方做了一个基准测试排名\n\n[来源：2026-04-17]\n[链接：https://juejin.cn/post/7614897667961143347]",
+      "date_added": "2026-04-17"
+    },
+    {
+      "path": "https://juejin.cn/post/7605097326727266350",
+      "title": "Android Studio Panda 1 正式版来了：JDK 终于不用手动配了，内存泄漏也有原生方案了",
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 5,
+        "verifiability": 4
+      },
+      "total_score": 16,
+      "matched_chapters": [
+        "ch14-other-tools"
+      ],
+      "first_chars": "# Android Studio Panda 1 正式版来了：JDK 终于不用手动配了，内存泄漏也有原生方案了\n\n[来源：2026-04-17]\n[链接：https://juejin.cn/post/7605097326727266350]",
+      "date_added": "2026-04-17"
+    },
+    {
+      "path": "https://juejin.cn/post/7604964464690184255",
+      "title": "用 AI 写 Android 需求：少踩坑的实战心得",
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 5,
+        "verifiability": 4
+      },
+      "total_score": 16,
+      "matched_chapters": [
+        "ch17-oem"
+      ],
+      "first_chars": "# 用 AI 写 Android 需求：少踩坑的实战心得\n\n[来源：2026-04-17]\n[链接：https://juejin.cn/post/7604964464690184255]",
+      "date_added": "2026-04-17"
+    },
+    {
+      "path": "https://juejin.cn/post/7610233341305389099",
+      "title": "Android 17 有什么需要适配的？2026 Android 禁止侧载又是什么？",
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 5,
+        "verifiability": 4
+      },
+      "total_score": 16,
+      "matched_chapters": [
+        "ch01-architecture"
+      ],
+      "first_chars": "# Android 17 有什么需要适配的？2026 Android 禁止侧载又是什么？\n\n[来源：2026-04-17]\n[链接：https://juejin.cn/post/7610233341305389099]",
+      "date_added": "2026-04-17"
     }
   ]
 }

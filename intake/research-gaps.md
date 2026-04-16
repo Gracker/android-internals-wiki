@@ -450,3 +450,20 @@ Deoptimization（去优化）机制在 ART 编译管线章节中完全缺失。�
 ### 关联章节
 1.7, 4.3
 
+
+
+## [2026-04-17] 14.1 Android Studio Profiler — 知识盲区
+
+### 盲区描述
+Debug 构建与 Release 构建在 profiling 时的系统性行为差异：ART JIT 优化策略差异、GC 行为差异、锁实现差异（debug 构建使用可调试锁）、Scheduler 钩子差异等。这些差异导致在 debug 构建上观察到的性能问题可能不是 release 构建上的实际问题，反之亦然。作为工具使用章节，这是一个高价值的补充方向。
+
+### 重要程度
+高
+
+### 建议研究方向
+- AOSP 中 `art/runtime/debugger.cc` 和 `art/runtime/jit/jit.cc` 对 debuggable 标志的处理
+- Android 官方文档中关于 debuggable vs profileable vs release 构建的 profiling 行为差异
+- Google I/O 2019/2020 关于 profileable 构建的演讲内容
+
+### 关联章节
+14.1, 15.6, 13.1

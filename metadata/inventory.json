@@ -47483,16 +47483,37 @@
     },
     {
       "path": "part2-performance/ch10-memory-perf/06-memory-churn.md",
-      "mtime": "2026-04-09T05:42:35",
-      "word_count": 1156,
       "title": "内存抖动与频繁 GC",
-      "source": "quote",
-      "mapped_chapters": [
+      "mtime": "2026-04-16T22:16:26",
+      "size_kb": 22.2,
+      "wc": 1255,
+      "tags": [
+        "['memory'",
+        " 'gc'",
+        " 'churn'",
+        " 'object-pool'",
+        " 'tlab'",
+        " 'autoboxing'",
+        " 'heapprofd']"
+      ],
+      "is_original": false,
+      "is_quicknote": false,
+      "has_reprint": false,
+      "chapters": [
         "ch04",
-        "ch07",
+        "ch08",
         "ch13"
       ],
-      "quality_score": 58
+      "total_score": 68,
+      "source_type": "一般参考",
+      "quality_score": {
+        "篇幅分": 20,
+        "新鲜度": 25,
+        "准确性线索": 23,
+        "可用度": 0,
+        "total": 68
+      },
+      "content_hash": "8d951d83c94200bbabcdd0d45791ff0f"
     },
     {
       "path": "part4-system/ch17-oem/03-industry-cases.md",
@@ -47540,14 +47561,38 @@
     },
     {
       "path": "part2-performance/ch09-anr/01-anr-design.md",
-      "mtime": "2026-04-09T04:24:22",
-      "word_count": 1274,
       "title": "ANR 设计思想",
-      "source": "quote",
-      "mapped_chapters": [
-        "ch09"
+      "mtime": "2026-04-16T17:25:51",
+      "size_kb": 31.3,
+      "wc": 1856,
+      "tags": [
+        "[anr",
+        " watchdog",
+        " traces",
+        " dropbox",
+        " activitymanagerservice",
+        " input-dispatcher",
+        " anrhelper",
+        " sigquit]"
       ],
-      "quality_score": 58
+      "is_original": false,
+      "is_quicknote": false,
+      "has_reprint": false,
+      "chapters": [
+        "ch01",
+        "ch09",
+        "ch16"
+      ],
+      "total_score": 68,
+      "source_type": "高爷原创文章",
+      "quality_score": {
+        "篇幅分": 20,
+        "新鲜度": 25,
+        "准确性线索": 23,
+        "可用度": 0,
+        "total": 68
+      },
+      "content_hash": "395ec06dd1ce78e80a1bd0d9424334f6"
     },
     {
       "path": "part1-fundamentals/ch01-architecture/16-audio-pipeline-performance.md",
@@ -47565,33 +47610,79 @@
     },
     {
       "path": "part2-performance/ch10-memory-perf/05-case-studies.md",
-      "mtime": "2026-04-09T03:42:18",
-      "word_count": 949,
       "title": "案例集",
-      "source": "quote",
-      "mapped_chapters": [
-        "ch04",
-        "ch05",
-        "ch07",
-        "ch08",
-        "ch10",
-        "ch13",
-        "ch15"
+      "mtime": "2026-04-16T21:26:07",
+      "size_kb": 26.6,
+      "wc": 1564,
+      "tags": [
+        "['case-study'",
+        " 'memory-leak'",
+        " 'native-memory'",
+        " 'low-memory'",
+        " 'oom'",
+        " 'cache'",
+        " 'gc']"
       ],
-      "quality_score": 53
+      "is_original": false,
+      "is_quicknote": false,
+      "has_reprint": false,
+      "chapters": [
+        "ch04",
+        "ch08",
+        "ch10"
+      ],
+      "total_score": 68,
+      "source_type": "高爷原创文章",
+      "quality_score": {
+        "篇幅分": 20,
+        "新鲜度": 25,
+        "准确性线索": 23,
+        "可用度": 0,
+        "total": 68
+      },
+      "content_hash": "bddca099803a7d4f12ded29ccaea8cb6"
     },
     {
       "path": "part2-performance/ch10-memory-perf/04-low-memory-impact.md",
-      "mtime": "2026-04-09T02:43:48",
-      "word_count": 1171,
       "title": "低内存对系统性能的影响",
-      "source": "quote",
-      "mapped_chapters": [
-        "ch04",
-        "ch08",
-        "ch13"
+      "mtime": "2026-04-16T20:53:01",
+      "size_kb": 27.3,
+      "wc": 1883,
+      "tags": [
+        "['low-memory'",
+        " 'kswapd'",
+        " 'direct-reclaim'",
+        " 'lmkd'",
+        " 'GC'",
+        " 'memory-pressure'",
+        " 'PSI'",
+        " 'ZRAM'",
+        " 'Perfetto'",
+        " 'MGLRU'",
+        " 'cgroup'",
+        " 'mm-events'",
+        " 'vmscan'",
+        " 'oom-score-adj']"
       ],
-      "quality_score": 58
+      "is_original": false,
+      "is_quicknote": false,
+      "has_reprint": false,
+      "chapters": [
+        "ch01",
+        "ch04",
+        "ch07",
+        "ch08"
+      ],
+      "total_score": 68,
+      "source_type": "高爷原创文章",
+      "quality_score": {
+        "篇幅分": 20,
+        "新鲜度": 25,
+        "准确性线索": 23,
+        "可用度": 0,
+        "total": 68
+      },
+      "content_hash": "673d65ef3d10a3956def52f405bc900b"
     },
     {
       "path": "part1-fundamentals/ch02-rendering/05-main-render-thread.md",
@@ -47609,16 +47700,40 @@
     },
     {
       "path": "part2-performance/ch09-anr/05-case-studies.md",
-      "mtime": "2026-04-09T01:42:08",
-      "word_count": 1414,
       "title": "案例集",
-      "source": "quote",
-      "mapped_chapters": [
+      "mtime": "2026-04-16T19:12:53",
+      "size_kb": 22.6,
+      "wc": 1388,
+      "tags": [
+        "['anr'",
+        " 'case-study'",
+        " 'input-dispatching'",
+        " 'sharedpreferences'",
+        " 'system-load'",
+        " 'binder'",
+        " 'process-freeze'",
+        " 'deadlock'",
+        " 'lock-ordering'",
+        " 'synchronized']"
+      ],
+      "is_original": false,
+      "is_quicknote": false,
+      "has_reprint": false,
+      "chapters": [
         "ch01",
-        "ch08",
+        "ch03",
         "ch09"
       ],
-      "quality_score": 58
+      "total_score": 68,
+      "source_type": "一般参考",
+      "quality_score": {
+        "篇幅分": 20,
+        "新鲜度": 25,
+        "准确性线索": 23,
+        "可用度": 0,
+        "total": 68
+      },
+      "content_hash": "48de85de1f21498101a03d4915cf7304"
     },
     {
       "path": "part1-fundamentals/ch02-rendering/21-text-rendering-performance.md",
@@ -47704,16 +47819,37 @@
     },
     {
       "path": "part2-performance/ch10-memory-perf/03-memory-growth.md",
-      "mtime": "2026-04-08T21:54:06",
-      "word_count": 1291,
       "title": "内存持续增长",
-      "source": "quote",
-      "mapped_chapters": [
+      "mtime": "2026-04-16T18:10:58",
+      "size_kb": 28.4,
+      "wc": 1540,
+      "tags": [
+        "[memory",
+        " pss",
+        " memory-growth",
+        " fragmentation",
+        " lru-cache",
+        " bitmap",
+        " native-heap]"
+      ],
+      "is_original": false,
+      "is_quicknote": false,
+      "has_reprint": false,
+      "chapters": [
         "ch04",
         "ch10",
-        "ch16"
+        "ch14"
       ],
-      "quality_score": 58
+      "total_score": 68,
+      "source_type": "高爷原创文章",
+      "quality_score": {
+        "篇幅分": 20,
+        "新鲜度": 25,
+        "准确性线索": 23,
+        "可用度": 0,
+        "total": 68
+      },
+      "content_hash": "4a155b913836517bf848642069275f5e"
     },
     {
       "path": "part2-performance/ch08-responsiveness/09-game-performance.md",
@@ -47733,15 +47869,38 @@
     },
     {
       "path": "part1-fundamentals/ch01-architecture/07-art-compilation.md",
-      "mtime": "2026-04-08T20:52:22",
-      "word_count": 1472,
       "title": "ART 编译管线与 dex2oat 优化",
-      "source": "quote",
-      "mapped_chapters": [
-        "ch08",
-        "ch13"
+      "mtime": "2026-04-17T04:45:37",
+      "size_kb": 29.5,
+      "wc": 1955,
+      "tags": [
+        "[ART",
+        " dex2oat",
+        " JIT",
+        " AOT",
+        " Baseline-Profiles",
+        " Startup-Profiles",
+        " PGO",
+        " compilation",
+        " cold-start]"
       ],
-      "quality_score": 58
+      "is_original": false,
+      "is_quicknote": false,
+      "has_reprint": false,
+      "chapters": [
+        "ch07",
+        "ch14"
+      ],
+      "total_score": 68,
+      "source_type": "高爷原创文章",
+      "quality_score": {
+        "篇幅分": 20,
+        "新鲜度": 25,
+        "准确性线索": 23,
+        "可用度": 0,
+        "total": 68
+      },
+      "content_hash": "118ff734c2e5e424888aa984ec552817"
     },
     {
       "path": "part2-performance/ch07-smoothness/02-jank-causes.md",
@@ -49435,6 +49594,768 @@
         "18"
       ],
       "total_score": 45
+    },
+    {
+      "path": "appendix/version-changelog.md",
+      "title": "version-changelog.md",
+      "mtime": "2026-04-17T02:06:03",
+      "size_kb": 2.7,
+      "wc": 216,
+      "tags": [],
+      "is_original": false,
+      "is_quicknote": false,
+      "has_reprint": false,
+      "chapters": [
+        "ch01",
+        "ch02",
+        "ch04",
+        "ch05",
+        "ch06",
+        "ch07",
+        "ch08",
+        "ch11",
+        "ch14"
+      ],
+      "total_score": 35,
+      "source_type": "一般参考",
+      "quality_score": {
+        "篇幅分": 5,
+        "新鲜度": 25,
+        "准确性线索": 5,
+        "可用度": 0,
+        "total": 35
+      },
+      "content_hash": "4a4be7c87ca5be06731804741f9b3c32"
+    },
+    {
+      "path": "part1-fundamentals/ch02-rendering/03-vsync.md",
+      "title": "VSync 机制",
+      "mtime": "2026-04-16T14:17:28",
+      "size_kb": 40.0,
+      "wc": 2554,
+      "tags": [
+        "[vsync",
+        " dispsync",
+        " choreographer",
+        " surfaceflinger",
+        " phase-offset",
+        " arr",
+        " rendering]"
+      ],
+      "is_original": false,
+      "is_quicknote": false,
+      "has_reprint": false,
+      "chapters": [
+        "ch02"
+      ],
+      "total_score": 73,
+      "source_type": "高爷原创文章",
+      "quality_score": {
+        "篇幅分": 25,
+        "新鲜度": 25,
+        "准确性线索": 23,
+        "可用度": 0,
+        "total": 73
+      },
+      "content_hash": "e6e2db21263fff2e4fd2cbeb422cf497"
+    },
+    {
+      "path": "part1-fundamentals/ch02-rendering/10-gpu-rendering.md",
+      "title": "GPU 渲染深入",
+      "mtime": "2026-04-17T02:44:17",
+      "size_kb": 51.2,
+      "wc": 2741,
+      "tags": [
+        "['gpu'",
+        " 'rendering'",
+        " 'shader'",
+        " 'vulkan'",
+        " 'opengl'",
+        " 'performance'",
+        " 'memory']"
+      ],
+      "is_original": false,
+      "is_quicknote": false,
+      "has_reprint": false,
+      "chapters": [
+        "ch02",
+        "ch08",
+        "ch13"
+      ],
+      "total_score": 73,
+      "source_type": "高爷原创文章",
+      "quality_score": {
+        "篇幅分": 25,
+        "新鲜度": 25,
+        "准确性线索": 23,
+        "可用度": 0,
+        "total": 73
+      },
+      "content_hash": "44c11099689ff91854e77bc7d249aaaf"
+    },
+    {
+      "path": "part1-fundamentals/ch02-rendering/09-rendering-evolution.md",
+      "title": "渲染机制的版本演进",
+      "mtime": "2026-04-17T01:27:32",
+      "size_kb": 24.8,
+      "wc": 1882,
+      "tags": [
+        "['frametimeline'",
+        " 'vulkan'",
+        " 'rendering-evolution'",
+        " 'blastBufferQueue'",
+        " 'hwui'",
+        " 'skia'",
+        " 'choreographer'",
+        " 'FrameMetrics']"
+      ],
+      "is_original": false,
+      "is_quicknote": false,
+      "has_reprint": false,
+      "chapters": [
+        "ch02",
+        "ch13"
+      ],
+      "total_score": 68,
+      "source_type": "高爷原创文章",
+      "quality_score": {
+        "篇幅分": 20,
+        "新鲜度": 25,
+        "准确性线索": 23,
+        "可用度": 0,
+        "total": 68
+      },
+      "content_hash": "18c8fa12c5cb8af94eebade0d0a3cf1b"
+    },
+    {
+      "path": "part1-fundamentals/ch02-rendering/01-rendering-overview.md",
+      "title": "Android 渲染架构全景",
+      "mtime": "2026-04-17T03:14:30",
+      "size_kb": 48.1,
+      "wc": 2497,
+      "tags": [
+        "['rendering'",
+        " 'hwui'",
+        " 'skia'",
+        " 'surfaceflinger'",
+        " 'gpu'",
+        " 'triple-buffering'",
+        " 'rendering-pipeline'",
+        " 'bufferqueue'",
+        " 'vsync'",
+        " 'displaylist'",
+        " 'rendernode']"
+      ],
+      "is_original": false,
+      "is_quicknote": false,
+      "has_reprint": false,
+      "chapters": [
+        "ch02"
+      ],
+      "total_score": 73,
+      "source_type": "高爷原创文章",
+      "quality_score": {
+        "篇幅分": 25,
+        "新鲜度": 25,
+        "准确性线索": 23,
+        "可用度": 0,
+        "total": 73
+      },
+      "content_hash": "6f47227d479addc513c2030e4f7b8c1c"
+    },
+    {
+      "path": "part1-fundamentals/ch01-architecture/02-boot-process.md",
+      "title": "系统启动全流程",
+      "mtime": "2026-04-17T03:44:00",
+      "size_kb": 30.2,
+      "wc": 2027,
+      "tags": [],
+      "is_original": false,
+      "is_quicknote": false,
+      "has_reprint": false,
+      "chapters": [
+        "ch01",
+        "ch07"
+      ],
+      "total_score": 73,
+      "source_type": "高爷原创文章",
+      "quality_score": {
+        "篇幅分": 25,
+        "新鲜度": 25,
+        "准确性线索": 23,
+        "可用度": 0,
+        "total": 73
+      },
+      "content_hash": "695e8db3c1beed428e63e1918be5f0c0"
+    },
+    {
+      "path": "part1-fundamentals/ch01-architecture/03-process-model.md",
+      "title": "进程模型与生命周期管理",
+      "mtime": "2026-04-16T21:02:47",
+      "size_kb": 39.5,
+      "wc": 2720,
+      "tags": [
+        "[process",
+        " ams",
+        " oom_adj",
+        " lmkd",
+        " zygote",
+        " process-lifecycle",
+        " binder]"
+      ],
+      "is_original": false,
+      "is_quicknote": false,
+      "has_reprint": false,
+      "chapters": [
+        "ch01",
+        "ch04"
+      ],
+      "total_score": 73,
+      "source_type": "高爷原创文章",
+      "quality_score": {
+        "篇幅分": 25,
+        "新鲜度": 25,
+        "准确性线索": 23,
+        "可用度": 0,
+        "total": 73
+      },
+      "content_hash": "f9515148c8a9f6ae6620e063db1bd8b0"
+    },
+    {
+      "path": "part2-performance/ch12-apk-network/02-network-performance.md",
+      "title": "网络性能优化",
+      "mtime": "2026-04-17T00:16:50",
+      "size_kb": 26.8,
+      "wc": 1302,
+      "tags": [
+        "[network",
+        " OkHttp",
+        " HTTP/2",
+        " HTTP/3",
+        " QUIC",
+        " weak-network",
+        " performance]"
+      ],
+      "is_original": false,
+      "is_quicknote": false,
+      "has_reprint": false,
+      "chapters": [
+        "ch02",
+        "ch08",
+        "ch09",
+        "ch12"
+      ],
+      "total_score": 68,
+      "source_type": "一般参考",
+      "quality_score": {
+        "篇幅分": 20,
+        "新鲜度": 25,
+        "准确性线索": 23,
+        "可用度": 0,
+        "total": 68
+      },
+      "content_hash": "f80b4d3eb9218033a5c3bfb07586e21f"
+    },
+    {
+      "path": "part2-performance/ch12-apk-network/01-apk-size.md",
+      "title": "APK 体积优化",
+      "mtime": "2026-04-16T22:22:45",
+      "size_kb": 24.8,
+      "wc": 1532,
+      "tags": [
+        "[apk",
+        " r8",
+        " proguard",
+        " app-bundle",
+        " resource-optimization",
+        " native-libs",
+        " dex",
+        " code-shrinking",
+        " webp",
+        " abi-filter",
+        " dynamic-feature",
+        " apk-analyzer]"
+      ],
+      "is_original": false,
+      "is_quicknote": false,
+      "has_reprint": false,
+      "chapters": [
+        "ch12",
+        "ch16"
+      ],
+      "total_score": 58,
+      "source_type": "高爷原创文章",
+      "quality_score": {
+        "篇幅分": 20,
+        "新鲜度": 25,
+        "准确性线索": 13,
+        "可用度": 0,
+        "total": 58
+      },
+      "content_hash": "27ffa53c6d2e5e89d2ef402a918449fe"
+    },
+    {
+      "path": "part2-performance/ch11-power/04-case-studies.md",
+      "title": "案例集",
+      "mtime": "2026-04-17T00:00:43",
+      "size_kb": 39.7,
+      "wc": 2077,
+      "tags": [
+        "['power'",
+        " 'case-study'",
+        " 'wakelock'",
+        " 'location'",
+        " 'network-polling'",
+        " 'cpu-wakeup'",
+        " 'battery-historian'",
+        " 'workmanager']"
+      ],
+      "is_original": false,
+      "is_quicknote": false,
+      "has_reprint": false,
+      "chapters": [
+        "ch05",
+        "ch11"
+      ],
+      "total_score": 73,
+      "source_type": "高爷原创文章",
+      "quality_score": {
+        "篇幅分": 25,
+        "新鲜度": 25,
+        "准确性线索": 23,
+        "可用度": 0,
+        "total": 73
+      },
+      "content_hash": "d22b55dc562c2a13145beac1daba5de5"
+    },
+    {
+      "path": "part2-performance/ch08-responsiveness/08-startup-optimization.md",
+      "title": "08-startup-optimization.md",
+      "mtime": "2026-04-16T08:56:11",
+      "size_kb": 14.0,
+      "wc": 306,
+      "tags": [],
+      "is_original": false,
+      "is_quicknote": false,
+      "has_reprint": false,
+      "chapters": [
+        "ch01",
+        "ch07"
+      ],
+      "total_score": 45,
+      "source_type": "一般参考",
+      "quality_score": {
+        "篇幅分": 5,
+        "新鲜度": 25,
+        "准确性线索": 15,
+        "可用度": 0,
+        "total": 45
+      },
+      "content_hash": "b00bb38c7eed8126031809366785f40c"
+    },
+    {
+      "path": "part2-performance/ch10-memory-perf/02-memory-leak.md",
+      "title": "内存泄漏",
+      "mtime": "2026-04-16T10:14:57",
+      "size_kb": 17.9,
+      "wc": 1097,
+      "tags": [
+        "['memory-leak'",
+        " 'leakcanary'",
+        " 'mat'",
+        " 'heapprofd'",
+        " 'heap-dump'",
+        " 'gc-root'",
+        " 'native-memory']"
+      ],
+      "is_original": false,
+      "is_quicknote": false,
+      "has_reprint": false,
+      "chapters": [
+        "ch04",
+        "ch10"
+      ],
+      "total_score": 68,
+      "source_type": "一般参考",
+      "quality_score": {
+        "篇幅分": 20,
+        "新鲜度": 25,
+        "准确性线索": 23,
+        "可用度": 0,
+        "total": 68
+      },
+      "content_hash": "03c2e82811b8e1225224beab8fef1d70"
+    },
+    {
+      "path": "part2-performance/ch07-smoothness/14-gaps-dynamic-analysis.md",
+      "title": "Mind the GAPS: Automated Path Reconstruction for Android Method Reachability",
+      "mtime": "2026-04-16T18:43:32",
+      "size_kb": 6.2,
+      "wc": 330,
+      "tags": [
+        "[dynamic-analysis",
+        " gui-testing",
+        " static-analysis",
+        " perfetto",
+        " jank",
+        " android-testing]"
+      ],
+      "is_original": false,
+      "is_quicknote": false,
+      "has_reprint": false,
+      "chapters": [
+        "ch08"
+      ],
+      "total_score": 30,
+      "source_type": "一般参考",
+      "quality_score": {
+        "篇幅分": 5,
+        "新鲜度": 25,
+        "准确性线索": 0,
+        "可用度": 0,
+        "total": 30
+      },
+      "content_hash": "858c14dca53121ac4c982a8e610aa806"
+    },
+    {
+      "path": "part2-performance/ch09-anr/02-anr-types.md",
+      "title": "ANR 类型与触发条件",
+      "mtime": "2026-04-16T09:15:29",
+      "size_kb": 18.2,
+      "wc": 1103,
+      "tags": [
+        "[anr",
+        " input-dispatching",
+        " broadcast",
+        " service",
+        " contentprovider",
+        " timeout]"
+      ],
+      "is_original": false,
+      "is_quicknote": false,
+      "has_reprint": false,
+      "chapters": [
+        "ch03",
+        "ch09"
+      ],
+      "total_score": 68,
+      "source_type": "一般参考",
+      "quality_score": {
+        "篇幅分": 20,
+        "新鲜度": 25,
+        "准确性线索": 23,
+        "可用度": 0,
+        "total": 68
+      },
+      "content_hash": "fdf2ec6189eb8dba4451fd5f4a997a9b"
+    },
+    {
+      "path": "part2-performance/ch09-anr/03-anr-analysis.md",
+      "title": "ANR 分析方法",
+      "mtime": "2026-04-16T10:13:28",
+      "size_kb": 22.8,
+      "wc": 1609,
+      "tags": [
+        "['anr'",
+        " 'traces'",
+        " 'perfetto'",
+        " 'analysis'",
+        " 'cpu-usage']"
+      ],
+      "is_original": false,
+      "is_quicknote": false,
+      "has_reprint": false,
+      "chapters": [
+        "ch01",
+        "ch08",
+        "ch09",
+        "ch13"
+      ],
+      "total_score": 68,
+      "source_type": "高爷原创文章",
+      "quality_score": {
+        "篇幅分": 20,
+        "新鲜度": 25,
+        "准确性线索": 23,
+        "可用度": 0,
+        "total": 68
+      },
+      "content_hash": "93fbf5cc6938285f74e0955cfe8e0cc5"
+    },
+    {
+      "path": "part2-performance/ch09-anr/04-special-anr.md",
+      "title": "特殊场景的 ANR",
+      "mtime": "2026-04-16T12:43:36",
+      "size_kb": 27.4,
+      "wc": 1761,
+      "tags": [
+        "['anr'",
+        " 'sharedpreferences'",
+        " 'contentprovider'",
+        " 'binder'",
+        " 'broadcast'",
+        " 'io-blocking'",
+        " 'system-load']"
+      ],
+      "is_original": false,
+      "is_quicknote": false,
+      "has_reprint": false,
+      "chapters": [
+        "ch01",
+        "ch03",
+        "ch09"
+      ],
+      "total_score": 68,
+      "source_type": "高爷原创文章",
+      "quality_score": {
+        "篇幅分": 20,
+        "新鲜度": 25,
+        "准确性线索": 23,
+        "可用度": 0,
+        "total": 68
+      },
+      "content_hash": "0b6764726fd08193d939e06460c9b592"
+    },
+    {
+      "path": "part2-performance/ch18-rendering-pipelines/02-android-view-standard.md",
+      "title": "Android View 标准链路（BLAST 深入）",
+      "mtime": "2026-04-17T02:09:39",
+      "size_kb": 12.4,
+      "wc": 832,
+      "tags": [
+        "[\"BLAST\"",
+        " \"RenderThread\"",
+        " \"HWUI\"",
+        " \"DisplayList\"",
+        " \"FrameTimeline\"",
+        " \"Triple-Buffering\"]"
+      ],
+      "is_original": false,
+      "is_quicknote": false,
+      "has_reprint": false,
+      "chapters": [
+        "ch01",
+        "ch02",
+        "ch03",
+        "ch08",
+        "ch13"
+      ],
+      "total_score": 45,
+      "source_type": "一般参考",
+      "quality_score": {
+        "篇幅分": 15,
+        "新鲜度": 25,
+        "准确性线索": 5,
+        "可用度": 0,
+        "total": 45
+      },
+      "content_hash": "55764c5597b66459aeb1660bc571c6b8"
+    },
+    {
+      "path": "part3-tools/ch14-other-tools/03-memory-tools.md",
+      "title": "内存分析工具",
+      "mtime": "2026-04-17T04:16:32",
+      "size_kb": 35.1,
+      "wc": 2193,
+      "tags": [
+        "[mat",
+        " leakcanary",
+        " heapprofd",
+        " meminfo",
+        " showmap",
+        " procrank",
+        " memory-tools]"
+      ],
+      "is_original": false,
+      "is_quicknote": false,
+      "has_reprint": false,
+      "chapters": [
+        "ch04",
+        "ch10",
+        "ch14"
+      ],
+      "total_score": 73,
+      "source_type": "高爷原创文章",
+      "quality_score": {
+        "篇幅分": 25,
+        "新鲜度": 25,
+        "准确性线索": 23,
+        "可用度": 0,
+        "total": 73
+      },
+      "content_hash": "d3fef401c47c9310aed22862e96f181d"
+    },
+    {
+      "path": "part3-tools/ch14-other-tools/11-battery-historian.md",
+      "title": "Battery Historian 与功耗分析工具",
+      "mtime": "2026-04-16T07:10:14",
+      "size_kb": 20.0,
+      "wc": 1124,
+      "tags": [
+        "[Battery Historian",
+        " bugreport",
+        " 功耗分析",
+        " Wakelock",
+        " 电池",
+        " Power Profiler",
+        " ODPM",
+        " Energy Profiler]"
+      ],
+      "is_original": false,
+      "is_quicknote": false,
+      "has_reprint": false,
+      "chapters": [
+        "ch05",
+        "ch11",
+        "ch14",
+        "ch16"
+      ],
+      "total_score": 68,
+      "source_type": "一般参考",
+      "quality_score": {
+        "篇幅分": 20,
+        "新鲜度": 25,
+        "准确性线索": 23,
+        "可用度": 0,
+        "total": 68
+      },
+      "content_hash": "525e58b9e49562b90ad7f180a91565a6"
+    },
+    {
+      "path": "part3-tools/ch14-other-tools/06-automation-tools.md",
+      "title": "自动化测试工具",
+      "mtime": "2026-04-16T08:18:07",
+      "size_kb": 23.7,
+      "wc": 1194,
+      "tags": [
+        "[macrobenchmark",
+        " microbenchmark",
+        " espresso",
+        " uiautomator",
+        " ci/cd",
+        " baseline-profiles]"
+      ],
+      "is_original": false,
+      "is_quicknote": false,
+      "has_reprint": false,
+      "chapters": [
+        "ch02",
+        "ch07",
+        "ch08",
+        "ch14",
+        "ch16"
+      ],
+      "total_score": 68,
+      "source_type": "一般参考",
+      "quality_score": {
+        "篇幅分": 20,
+        "新鲜度": 25,
+        "准确性线索": 23,
+        "可用度": 0,
+        "total": 68
+      },
+      "content_hash": "b52342df34ee0f70c3c50309d87869f6"
+    },
+    {
+      "path": "part3-tools/ch15-methodology/02-system-vs-app.md",
+      "title": "如何区分系统问题和 App 问题",
+      "mtime": "2026-04-16T13:13:45",
+      "size_kb": 24.3,
+      "wc": 1571,
+      "tags": [
+        "['methodology'",
+        " 'system-vs-app'",
+        " 'trace-analysis'",
+        " 'attribution']"
+      ],
+      "is_original": false,
+      "is_quicknote": false,
+      "has_reprint": false,
+      "chapters": [
+        "ch01",
+        "ch05",
+        "ch08",
+        "ch13"
+      ],
+      "total_score": 68,
+      "source_type": "高爷原创文章",
+      "quality_score": {
+        "篇幅分": 20,
+        "新鲜度": 25,
+        "准确性线索": 23,
+        "可用度": 0,
+        "total": 68
+      },
+      "content_hash": "a98edc1a3b049733d03bfa94d775209f"
+    },
+    {
+      "path": "part3-tools/ch15-methodology/04-competitive-analysis.md",
+      "title": "竞品分析方法",
+      "mtime": "2026-04-17T05:10:28",
+      "size_kb": 27.4,
+      "wc": 1408,
+      "tags": [
+        "['competitive-analysis'",
+        " 'benchmark'",
+        " 'startup'",
+        " 'fps'",
+        " 'apk-size'",
+        " 'methodology']"
+      ],
+      "is_original": false,
+      "is_quicknote": false,
+      "has_reprint": false,
+      "chapters": [
+        "ch12",
+        "ch13",
+        "ch14",
+        "ch15"
+      ],
+      "total_score": 68,
+      "source_type": "一般参考",
+      "quality_score": {
+        "篇幅分": 20,
+        "新鲜度": 25,
+        "准确性线索": 23,
+        "可用度": 0,
+        "total": 68
+      },
+      "content_hash": "bcba57da33fb6972c94063930b83e014"
+    },
+    {
+      "path": "part3-tools/ch13-perfetto/06-thread-cpu-states.md",
+      "title": "线程 CPU 状态分析",
+      "mtime": "2026-04-17T01:10:50",
+      "size_kb": 34.4,
+      "wc": 2092,
+      "tags": [
+        "['perfetto'",
+        " 'thread-state'",
+        " 'sched-switch'",
+        " 'running'",
+        " 'runnable'",
+        " 'sleep'",
+        " 'uninterruptible-sleep'",
+        " 'cpu-scheduling']"
+      ],
+      "is_original": false,
+      "is_quicknote": false,
+      "has_reprint": false,
+      "chapters": [
+        "ch05",
+        "ch13",
+        "ch15"
+      ],
+      "total_score": 65,
+      "source_type": "高爷原创文章",
+      "quality_score": {
+        "篇幅分": 25,
+        "新鲜度": 25,
+        "准确性线索": 15,
+        "可用度": 0,
+        "total": 65
+      },
+      "content_hash": "570bd73fdd8b991f6aeb94b99635755b"
     }
   ],
   "stats": {
@@ -49458,7 +50379,7 @@
     "updated": 116,
     "scan_time": "2026-04-09T14:03:53.463769"
   },
-  "last_scan": "2026-04-16T06:00:00.000000",
+  "last_scan": "2026-04-17T06:05:46.547098",
   "total_documents": 7602,
   "scan_metadata": {
     "last_scan": "2026-04-12 06:00",

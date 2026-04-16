@@ -786,3 +786,36 @@
 - **问题**：默认 64KB/64MB 缺少版本和设备条件标注。不同 SoC 和 Android 版本可能有不同默认值。
 - **建议**：标注验证版本（如"基于 android-17-beta3 默认配置"），或改为"典型配置值"并说明来源。
 
+
+
+## [Task9 Deep Review] 14.1 Android Studio Profiler — 2026-04-17
+
+- **类型**：版本差异
+- **位置**：CPU Profiler 三模式对比表
+- **问题**：Callstack Sample 底层工具标注为"Simpleperf"，缺少 ART Java frame unwinding 的语境说明。读者可能误以为 Simpleperf 只能做 native profiling。
+- **建议**：将表格中 Callstack Sample 的底层工具改为"Simpleperf（含 ART Java frame unwinding）"，或在正文补充说明 Simpleperf 在 Android Studio 中的集成方式。
+
+- **类型**：版本差异
+- **位置**：全文 applicable_versions
+- **问题**：applicable_versions 统一为 API 26-36，但各功能对最低 API 要求不同（System Trace 从 API 16+、JVMTI 从 API 26+、profileable 从 API 29+、Power Profiler 需要 Android 10+且硬件支持）。
+- **建议**：在各模块描述处标注最低 API 要求，或在前言中用一个表格汇总各功能的最低版本。
+
+- **类型**：版本差异
+- **位置**：全文缺少 AS 版本维度覆盖
+- **问题**：作为工具类章节，只提到 Koala 和 Hedgehog 两个 AS 版本，遗漏了多个重要 Profiler 变更。
+- **建议**：新增"版本演进"小节或嵌入各模块中，覆盖至少 Flamingo/Giraffe/Iguana/Jellyfish/Koala 的 Profiler 关键变更。
+
+- **类型**：数据缺失
+- **位置**：「Profiler 的整体结构」段，"启动速度提升了约 60%"
+- **问题**：60% 这个数字未标注来源。
+- **建议**：补充引用来源（如 AS release notes 或 Google 官方博客），或改为更保守的"显著提升"并标注 [待验证]。
+
+- **类型**：数据缺失
+- **位置**：「各 Profiler 模式的性能开销」段，"约 28% 的性能提升"
+- **问题**：表述为"根据 Google 的测试数据"过于笼统。
+- **建议**：补充具体引用来源（如 Google I/O 2019 演讲或 Android Developers Blog 文章）。
+
+- **类型**：交叉引用
+- **位置**：frontmatter
+- **问题**：related_chapters 字段完全缺失。正文引用了 §5.4、§13.5、§14.2、第 13 章但未在 frontmatter 声明。
+- **建议**：添加 related_chapters: ["5.4", "13.3", "13.5", "13.7", "14.2", "14.11"]
