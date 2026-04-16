@@ -731,5 +731,49 @@
     "status": "completed",
     "completed_at": "2026-04-17T03:44:17.984655",
     "completed_by": "task2b-rework"
+  },
+  {
+    "section": "1.7",
+    "section_title": "ART 编译管线与 dex2oat 优化",
+    "priority": 85,
+    "reason": "[Deep Tech Review] P1: JIT代码片段虚构方法名 + bg-dexopt术语过时(Android 14+) + 缺少去优化机制 + 版本表空白 + AutoFDO交叉引用缺失",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码准确性",
+        "location": "JIT 编译器工作原理节 — MaybeDoJitCompilation 代码片段",
+        "detail": "MaybeDoJitCompilation 方法在 AOSP 中不存在。实际方法为 Jit::MaybeCompileMethod(ArtMethod*, Thread*)。method->GetCounter() 非标准 API，应为 method->GetHotnessCount() 或 interpreter 内部计数器。标注'简化示意'不能掩盖方法名完全虚构的问题。",
+        "suggestion": "修正为实际 AOSP 方法名 MaybeCompileMethod，或将注释改为 [伪代码示意，非 AOSP 原始实现]"
+      },
+      {
+        "type": "版本差异",
+        "location": "全文 bg-dexopt 引用",
+        "detail": "bg-dexopt 是 Android 13 及以下的术语。Android 14+ 由 ART Service (com.android.art 模块) 的 MaintenanceJobs 管理后台编译。章节 applicable_versions 声明 7.0-17，必须区分架构差异。",
+        "suggestion": "在提到 bg-dexopt 处补充版本说明：Android 13 及以下由 BackgroundDexOptService 管理，Android 14+ 由 ART Service 的 MaintenanceJobs 调度。"
+      },
+      {
+        "type": "原理断裂",
+        "location": "全文缺少 Deoptimization 机制",
+        "detail": "ART 编译管线中 AOT 代码因类加载变化等原因失效时，需要去优化回解释执行。这是编译管线的核心闭环环节，在 Perfetto 中可观测为 Deoptimization Slice。作为'编译管线'章节完全缺失此概念。",
+        "suggestion": "在 dex2oat 编译器深入节后或 JIT 节中新增'去优化机制'小节，解释触发条件、流程和 Perfetto 观测方法。"
+      },
+      {
+        "type": "版本差异",
+        "location": "版本演进表",
+        "detail": "版本表只有 7 个条目但 applicable_versions 声明 7.0-17。遗漏 Android 8（JIT code cache 调整）、10（hidden API 限制）、11（R8 全模式）、13（Baseline Profiles 通过 Mainline 推送）、15 的关键变更。",
+        "suggestion": "补充至少 Android 8/10/13 的关键编译相关变更。"
+      },
+      {
+        "type": "交叉引用错误",
+        "location": "frontmatter related_chapters",
+        "detail": "related_chapters 列表缺少 1.12（AutoFDO 反馈导向编译优化）。本章有整个小节讨论 AutoFDO。",
+        "suggestion": "在 related_chapters 中添加 '1.12'，在正文 AutoFDO 小节末尾添加交叉引用链接。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-17T04:28:14",
+    "status": "pending"
   }
 ]

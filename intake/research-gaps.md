@@ -425,3 +425,28 @@ FrameTimeline 机制（Android 12 引入）在本章多次引用但从未解释�
 
 ### 关联章节
 2.1, 2.4, 2.6, 13.10
+
+
+## [2026-04-17] 1.7 ART 编译管线与 dex2oat 优化 — 知识盲区
+
+### 盲区描述
+Deoptimization（去优化）机制在 ART 编译管线章节中完全缺失。当 AOT 编译代码因以下原因失效时，ART 必须去优化回解释执行：
+- 类加载发生变化（新类被加载导致内联假设失效）
+- JIT Profile 反馈与 AOT 假设矛盾
+- 调试器附加（debugger attach）
+- 部分 Android 版本中动态代理类变化
+
+去优化是编译管线的核心闭环，没有它 JIT→AOT→解释执行的循环不完整。在 Perfetto 中可通过 `Deoptimization` Slice 观测。
+
+### 重要程度
+高——编译管线章节不讨论去优化，等同于 GC 章节不讨论 GC 触发条件。
+
+### 建议研究方向
+- AOSP art/runtime/deoptimization.cc 去优化实现
+- art/runtime/jit/jit_code_cache.cc 中的去优化触发逻辑
+- Perfetto 中 Deoptimization 相关 Slice 的观测方法
+- 不同 Android 版本中去优化策略的差异
+
+### 关联章节
+1.7, 4.3
+

@@ -28,9 +28,10 @@ sources:
     path: "https://android-developers.googleblog.com/ (AutoFDO GKI Kernel)"
 tags: [ART, dex2oat, JIT, AOT, Baseline-Profiles, Startup-Profiles, PGO, compilation, cold-start]
 related_chapters: ["1.6", "4.3", "8.2", "8.3", "16.1"]
+task9_result: needs-rework
 pipeline_stage: task2b_pending
 task6_state: reviewed
-task9_state: pending
+task9_state: reviewed
 task2b_state: pending
 ---
 

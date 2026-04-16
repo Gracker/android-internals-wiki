@@ -754,3 +754,35 @@
 - **位置**：开机性能优化段 — APEX 激活
 - **问题**：OTA 后首启卡在 APEX 激活的排查建议仅一笔带过（"检查 APEX 激活"），未解释 APEX 激活机制（apexd 在 first-stage init 后半段激活新 APEX 模块，涉及 dm-verity 校验和 loop 设备挂载）及对启动时间的具体影响路径。
 - **建议**：在 init 阶段或扩展部分补充 apexd 激活的简要机制和典型耗时影响，或标注交叉引用到 1.7（ART 编译管线）的 APEX 相关内容。
+
+
+## [Task9 Deep Review] 1.7 ART 编译管线与 dex2oat 优化 — 2026-04-17
+- **类型**：源码准确性
+- **位置**：JIT 代码片段 — MaybeDoJitCompilation 方法名
+- **问题**：`MaybeDoJitCompilation` 在 AOSP 中不存在。实际方法为 `Jit::MaybeCompileMethod(ArtMethod*, Thread*)`，位于 `art/runtime/jit/jit.cc`。`method->GetCounter()` 非标准 API。即使标注"简化示意"，方法名虚构仍会误导读者。
+- **建议**：修正为 `MaybeCompileMethod`，或将注释改为 `[伪代码示意]`。
+
+## [Task9 Deep Review] 1.7 ART 编译管线与 dex2oat 优化 — 2026-04-17
+- **类型**：版本差异
+- **位置**：全文 bg-dexopt 引用（至少 3 处）
+- **问题**：bg-dexopt 是 Android 13 及以下的术语。Android 14+ 后台编译由 ART Service 的 MaintenanceJobs 管理。applicable_versions 声明 7.0-17。
+- **建议**：首次出现 bg-dexopt 处加版本说明，后续使用保持一致。
+
+## [Task9 Deep Review] 1.7 ART 编译管线与 dex2oat 优化 — 2026-04-17
+- **类型**：版本差异
+- **位置**：版本演进表
+- **问题**：版本表仅 7 条但 applicable_versions 覆盖 7.0-17。遗漏 Android 8/10/11/13/15。
+- **建议**：至少补充 Android 8（JIT code cache 调整）、10（hidden API 限制影响编译假设）、13（Baseline Profiles Mainline 推送能力）。
+
+## [Task9 Deep Review] 1.7 ART 编译管线与 dex2oat 优化 — 2026-04-17
+- **类型**：数据缺失
+- **位置**：多个 [待验证] 标注处
+- **问题**：冷启动差距 30%、Baseline Profiles 提升 30% 代码执行速度、JIT 代码缓存 4MB 三个核心量化断言均 [待验证]。这些数据支撑文章核心论点，不应长期悬置。
+- **建议**：定位 Google 官方基准测试报告出处，替换 [待验证] 为具体引用。如确实无法找到精确来源，改为定性描述。
+
+## [Task9 Deep Review] 1.7 ART 编译管线与 dex2oat 优化 — 2026-04-17
+- **类型**：源码准确性
+- **位置**：JIT 代码缓存默认值 — dalvik.vm.jitinitialsize/jitmaxsize
+- **问题**：默认 64KB/64MB 缺少版本和设备条件标注。不同 SoC 和 Android 版本可能有不同默认值。
+- **建议**：标注验证版本（如"基于 android-17-beta3 默认配置"），或改为"典型配置值"并说明来源。
+
