@@ -5,7 +5,7 @@ section: "9.5"
 status: ready-for-review
 drafted_date: "2026-04-02"
 drafted_by: "openclaw-task2a"
-reviewed_date: "2026-04-09"
+reviewed_date: "2026-04-16"
 reviewed_by: "openclaw-task6"
 applicable_versions: "Android 8.0 (API 26) - Android 16 (API 36)"
 last_verified: "2026-04-02"
@@ -30,8 +30,9 @@ sources:
     path: "frameworks/native/libs/binder/ProcessState.cpp"
 tags: ['anr', 'case-study', 'input-dispatching', 'sharedpreferences', 'system-load', 'binder', 'process-freeze', 'deadlock', 'lock-ordering', 'synchronized']
 related_chapters: ["9.1", "9.2", "9.3", "9.4", "1.4"]
-pipeline_stage: task6_pending
-task6_state: pending
+pipeline_stage: task9_pending
+task6_state: reviewed
+task6_result: pass-light-edit
 task9_state: pending
 task2b_state: idle
 ---
@@ -65,7 +66,7 @@ task2b_state: idle
 
 前四节我们分别讲了 ANR 的设计思想、类型分类、分析方法论和特殊场景。这些是分析 ANR 的"工具箱"。但真实世界中，ANR 很少按照教科书的方式出现——trace 中的主线程堆栈可能指向 `nativePollOnce`（看起来什么都没做），负载可能处于正常范围，甚至 ANR 发生的进程本身没有任何问题。
 
-案例集存在的意义就在这里：我们用五个从真实产品环境中提取的案例，带你走一遍完整的分析过程。每个案例的原始数据（trace、event log、AnrManager 信息）都保留了关键部分，你可以在阅读时尝试自己先判断原因，再对照后面的分析。
+案例集存在的意义就在这里：我们用六个从真实产品环境中提取的案例，带你走一遍完整的分析过程。每个案例的原始数据（trace、event log、AnrManager 信息）都保留了关键部分，你可以在阅读时尝试自己先判断原因，再对照后面的分析。
 
 这六个案例覆盖了 ANR 中最常见的根因类型：
 
@@ -346,7 +347,7 @@ Service 的 `onBind()` 超时，触发了 Service ANR（前台 Service 20 秒超
 
 **第一步：看 trace。** 主线程堆栈：
 
-``'
+```
 "main" prio=5 tid=1 BLOCKED
   | waiting to lock <0x0f3c2a81> (a com.example.app.data.DatabaseHelper)
   | held by thread "SyncWorker-2"
@@ -358,7 +359,7 @@ Service 的 `onBind()` 超时，触发了 Service ANR（前台 Service 20 秒超
 
 **第二步：看 SyncWorker-2 的堆栈。**
 
-``'
+```
 "SyncWorker-2" prio=5 tid=23 BLOCKED
   | waiting to lock <0x0a1b7d43> (a com.example.app.data.DataManager)
   | held by thread "main"
@@ -412,7 +413,7 @@ public synchronized Cursor query(String table, String selection) {
 1. **统一锁获取顺序** — 规定所有代码路径必须先获取 `DataManager` 的锁，再获取 `DatabaseHelper` 的锁。将 `DatabaseHelper.query()` 中的 `synchronized` 改为在方法入口先获取 `DataManager` 锁或改用细粒度锁
 2. **缩小锁的范围** — `DatabaseHelper.query()` 不需要在持有锁的情况下回调 `DataManager`，可以将结果先缓存到局部变量，释放锁后再回调
 3. **使用 `tryLock` 替代阻塞等待** — 将 `synchronized` 替换为 `ReentrantLock.tryLock(timeout)`，在超时后记录告警并走降级路径，而不是无限等待
-4. **静态检测** — 启用 Android Lint 的 `"DuplicateIds"/"NestedScrolling"/` 等资源竞争检测规则，配合 `-extra-check` 自定义锁顺序检查
+4. **静态检测** — 启用 Android Lint 的 `"DuplicateIds"/"NestedScrolling"/` 等资源竞争检测规则，[存疑: "DuplicateIds"/"NestedScrolling" Lint 规则分别检查 XML 重复 ID 和嵌套滚动，与 synchronized 锁顺序/死锁检测无关，引用疑似错误] 配合 `-extra-check` 自定义锁顺序检查
 
 ### 举一反三
 
