@@ -2873,6 +2873,15 @@
       "task9_state": "pending",
       "pipeline_stage": "task9_pending",
       "last_review_log": "logs/review/2026-04-15-09-review.md"
+    },
+    "9.5": {
+      "title": "案例集",
+      "last_review": "2026-04-16T19:06",
+      "review_result": "pass-light-edit",
+      "review_by": "openclaw-task6",
+      "review_log": "logs/review/2026-04-16-19-review.md",
+      "issues_for_task9": 1,
+      "pipeline_stage": "task9_pending"
     }
   },
   "chapters": {
