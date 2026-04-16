@@ -7,7 +7,7 @@ drafted_date: "2026-04-02"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 36)"
 last_verified: "2026-04-02"
 last_verified_against: "AOSP android-16.0.0_r1"
-reviewed_date: "2026-04-09"
+reviewed_date: 2026-04-16
 reviewed_by: openclaw-task6
 polish_count: 1
 polish_date: "2026-04-05"
@@ -24,8 +24,8 @@ sources:
     path: "developer.android.com/topic/performance/anrs"
 tags: ['anr', 'traces', 'perfetto', 'analysis', 'cpu-usage']
 related_chapters: ["9.1", "9.2", "9.4", "9.5", "1.4", "2.4"]
-pipeline_stage: task6_pending
-task6_state: pending
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task2b_state: idle
 ---
@@ -75,7 +75,7 @@ ANR 问题是 Android 性能分析中最棘手的类别之一。和卡顿不同�
 
 一份典型的 traces.txt 以 ANR 进程的 PID 和触发原因开头，后面跟着进程中每一个线程的详细信息。我们最关心的是主线程（通常名为 `"main"`）的段落。
 
-下面是一段正常的主线程 trace：
+下面是一段主线程处于空闲等待状态的 trace（这是正常的）：
 
 ```
 "main" prio=5 tid=1 Native
@@ -224,13 +224,13 @@ binder_sample: [android.view.accessibility.IAccessibilityManager,6,2010,com.xxx.
 
 [来源: Personal-Knowlodge/source/Android-ANR-02-How-to-analysis-ANR.md]
 
-有时候主线程代码没有问题，但它就是拿不到 CPU 时间。在 Perfetto 中表现为：主线程处于 Runnable 状态（已经准备好运行了），但长时间没有被调度到 CPU 上执行。
+有些 ANR 场景下，主线程代码本身没有耗时操作，但拿不到 CPU 时间。在 Perfetto 中表现为：主线程处于 Runnable 状态（已经准备好运行了），但长时间没有被调度到 CPU 上执行。
 
 CPU 饥饿的判断需要结合 CPU 使用率信息和 Perfetto 的全局视图。如果在 ANR 时间窗口内，整体 CPU 使用率接近饱和（比如 8 核全满），而应用 CPU 占比很低，那就可以判定是 CPU 饥饿导致的 ANR。
 
 ### 系统负载高
 
-有时候应用和系统都没有明显的 Bug，但系统整体负载过高，导致主线程拿不到足够的 CPU 时间。这种情况下，关注几个关键系统进程的 CPU 占用往往能快速定位瓶颈来源：
+还有一种情况：应用和系统都没有明显的 Bug，但系统整体负载过高，导致主线程拿不到足够的 CPU 时间。这种情况下，关注几个关键系统进程的 CPU 占用往往能快速定位瓶颈来源：
 
 以下几种系统进程的异常是重要的信号：
 - **system_server CPU 占用异常高**：可能是内部有死循环或锁竞争
