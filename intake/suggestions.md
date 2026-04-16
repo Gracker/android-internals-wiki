@@ -543,3 +543,59 @@
 - **位置**：全文缺失
 - **问题**：未提及 InputConnection ANR（5s 超时）和 Trampoline ANR 场景
 - **建议**：在「常见问题与误区」中补充提及，或在扩展阅读中引用
+
+## [Task9 Deep Review] 2.1 Android 渲染架构全景 — 2026-04-16
+
+### [P1] 源码路径错误：OpenGLRenderer.cpp
+- **类型**：源码准确性
+- **位置**：参考资料段 "frameworks/base/libs/hwui/renderthread/OpenGLRenderer.cpp"
+- **问题**：Android 10+ HWUI 统一 Skia Pipeline 后，OpenGLRenderer 类已不存在。android-16.0.0_r1 中应引用 SkiaOpenGLPipeline 相关路径
+- **建议**：更新为 frameworks/base/libs/hwui/pipeline/skia/ 或标注该路径适用于 Android 9 及之前版本
+
+### [P1] Fence 伪代码误导
+- **类型**：原理断裂
+- **位置**："同步机制" 小节 Fence 伪代码
+- **问题**：consumerReleaseFence->signal() 暗示 Fence 由消费者手动 signal。实际 Fence 由 GPU/驱动在操作完成时自动 signal，消费者只负责创建和等待
+- **建议**：重写伪代码，体现 Fence 的创建者（生产者创建 acquire fence，消费者创建 release fence）和自动 signal 语义
+
+### [P1] BufferQueue 节未区分 BlastBufferQueue
+- **类型**：版本差异
+- **位置**："BufferQueue 生产者-消费者模型" 全节
+- **问题**：描述基于 Legacy BufferQueue 模型。Android 12+ 引入 BlastBufferQueue 后，App 与 SurfaceFlinger 间不再通过 Binder IPC 传递 buffer，改为共享内存 + fence。这是近 4 个版本最重要的图形架构变更
+- **建议**：在节开头添加版本说明，描述 BlastBufferQueue 的关键差异（减少 Binder 开销），并在数据流图中区分两个版本
+
+### [P1] SurfaceFlinger 惰性合成机制缺失
+- **类型**：知识盲区
+- **位置**："SurfaceFlinger 合成" 小节
+- **问题**：未解释 SurfaceFlinger 只在有新 buffer 时才触发合成（vs. 每个 VSync 都合成）。这解释了 Trace 中 SurfaceFlinger 合成间隔不均匀的现象
+- **建议**：补充 SurfaceFlinger 的合成触发条件（有 queued frame / VSync-sf 到来 + dirty region）
+
+### [P2] 主线程-RenderThread syncFrameState 缺失
+- **类型**：原理断裂
+- **位置**："UI 线程与 RenderThread 的协作" 小节
+- **问题**：未提及 syncFrameState 同步点，这是主线程可能阻塞等待 RenderThread 的关键位置
+- **建议**：补充 syncFrameState 的作用和 Trace 中的表现
+
+### [P2] 色域转换描述位置不当
+- **类型**：原理断裂
+- **位置**："显示输出" 小节最后一段
+- **问题**：色域转换主要发生在 GPU 渲染或 SurfaceFlinger 合成阶段，不是显示硬件的最后一步
+- **建议**：移至 SurfaceFlinger 合成节或删除，避免误导
+
+### [P2] 量化断言缺乏数据支撑
+- **类型**：数据缺失
+- **位置**：HWUI 概述段 "复杂 2D 图形渲染性能相比纯 CPU 软件渲染提升 5-10 倍"
+- **问题**：无引用来源、无测量条件
+- **建议**：补充引用或标注为[待验证：需实测数据]
+
+### [P2] 版本演进节对核心机制版本差异覆盖不足
+- **类型**：版本差异
+- **位置**："版本演进" 节 + BufferQueue 节
+- **问题**：三缓冲 maxBufferCount 在不同版本的默认值变化未说明；BlastBufferQueue 对 BufferQueue 接口的改变未在正文中体现
+- **建议**：在 BufferQueue 节添加版本标注，说明 Android 12 前后的架构差异
+
+### [P2] 总结段过于简化 SurfaceFlinger 合成
+- **类型**：交叉引用
+- **位置**：总结段 "SurfaceFlinger 把多个 App 的缓冲区按 Z-Order 叠加后交给 HWC 输出到屏幕"
+- **问题**：忽略了 GPU 合成回退路径，与正文合成节描述不一致
+- **建议**：改为 "SurfaceFlinger 优先通过 HWC 合成，必要时回退 GPU 合成，最终输出到屏幕"

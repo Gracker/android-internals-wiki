@@ -330,3 +330,20 @@ ART GC 代码片段验证不足。当前 CollectGarbageInternal() 代码是伪�
 
 ### 关联章节
 4.3, 4.8
+
+## [2026-04-16] 2.1 Android 渲染架构全景 — 知识盲区
+
+### 盲区描述
+HWUI RenderThread 的 Bitmap 纹理上传（texture upload）机制。在 Draw 阶段，如果 View 包含 Bitmap（如 ImageView 加载的图片、RecyclerView 中的列表项图片），需要将 Bitmap 像素数据从 CPU 内存上传到 GPU 纹理。这个 upload 操作在 RenderThread 上执行，可能导致 RenderThread drawFrame 耗时异常，是列表滑动场景中常见的掉帧根因。当前 2.1 章节完全未提及此机制。
+
+### 重要程度
+中
+
+### 建议研究方向
+- RenderThread 中 uploadTextures_IfNeeded() 的实现和触发条件
+- Bitmap 像素格式（ARGB_8888 vs HARDWARE）对上传开销的影响
+- 在 Perfetto 中识别 texture upload 导致的 RenderThread 耗时
+- 与 2.5 节（MainThread 与 RenderThread 协作）的交叉引用
+
+### 关联章节
+2.1, 2.5, 7.10 (图片加载与 Bitmap 性能优化)
