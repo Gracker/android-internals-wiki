@@ -3,7 +3,7 @@ title: "内存分析工具"
 chapter: "14.3"
 section: "14.3"
 status: ready-for-review
-reviewed_date: "2026-04-10"
+reviewed_date: "2026-04-17"
 reviewed_by: "openclaw-task6"
 drafted_date: "2026-04-03"
 drafted_by: "openclaw-task2a"
@@ -30,8 +30,9 @@ sources:
     path: "system/extras/malloc_debug"
 tags: [mat, leakcanary, heapprofd, meminfo, showmap, procrank, memory-tools]
 related_chapters: ["10.1", "10.2", "10.3", "14.1", "13.1"]
-pipeline_stage: task6_pending
-task6_state: pending
+pipeline_stage: task9_pending
+task6_state: reviewed
+task6_result: pass-light-edit
 task9_state: pending
 task2b_state: idle
 ---
@@ -65,7 +66,7 @@ task2b_state: idle
 
 ## 为什么需要这么多种内存分析工具
 
-做过 Android 内存优化的工程师大概都有这样的体会：内存问题的排查路径特别长，而且每种问题的"入口"不一样。有时候用户反馈"应用越用越卡"，打开 Perfetto 一看，GC 事件密集得像心电图——这可能是 Java 堆泄漏。有时候 `crashlytics` 报了一堆 Native crash，信号是 SIGSEGV——这可能是 Native 内存越界访问。还有时候系统日志里 LMK 频繁杀后台，但我们不清楚是哪个进程吃掉了内存。
+做过 Android 内存优化的工程师大概都有这样的体会：内存问题的排查路径特别长，而且每种问题的"入口"不一样。有时候用户反馈"应用越用越卡"，打开 Perfetto 一看，GC 事件密集得像心电图——这可能是 Java 堆泄漏。有时候 Crashlytics 报了一堆 Native crash，信号是 SIGSEGV——这可能是 Native 内存越界访问。还有时候系统日志里 LMK 频繁杀后台，但我们不清楚是哪个进程吃掉了内存。
 
 没有哪一个工具能覆盖所有场景。`LeakCanary` 擅长自动发现 Activity/Fragment 级别的 Java 泄漏，但它对 Native 堆和系统级内存占用无能为力。`MAT` 可以深入分析 hprof 文件中的引用链，找出"谁持有了不该持有的引用"，但它需要你先抓到堆转储，而且是离线分析。`heapprofd` 能实时采样 Native 堆的分配行为，但它给出的不是"谁泄漏了"，而是"谁在分配"。`dumpsys meminfo` 则是全局视角的入口——告诉你这个进程总共占了多少内存、各分多少，但它不会告诉你为什么。
 
@@ -77,7 +78,7 @@ task2b_state: idle
 
 在所有内存分析工具中，LeakCanary 的定位最明确：它是一个开发阶段的自动泄漏检测器。我们不需要手动抓堆转储、不需要打开 MAT 分析引用链——LeakCanary 会在 Activity、Fragment、ViewModel、Service 等组件被销毁后，自动检查它们是否还被 GC 回收。如果没有被回收，它会抓取堆转储、分析引用链，并通过系统通知把泄漏路径展示给开发者。
 
-这个工具解决的核心痛点是"泄漏的早期发现"。很多内存泄漏在开发阶段根本不会触发 OOM——设备内存够大，测试时间不够长。但 LeakCanary 能在泄漏还很小的时候就抓住它，让开发者在代码提交前就修复问题，而不是等到线上用户反馈"应用卡死了"才去排查。
+这个工具解决的主要问题是"泄漏的早期发现"。很多内存泄漏在开发阶段根本不会触发 OOM——设备内存够大，测试时间不够长。但 LeakCanary 能在泄漏还很小的时候就抓住它，让开发者在代码提交前就修复问题，而不是等到线上用户反馈"应用卡死了"才去排查。
 
 ### 工作原理
 
@@ -200,7 +201,7 @@ heapprofd 是 Perfetto 内置的 Native 堆采样分析器。它的工作方式�
 
 ### 工作机制
 
-heapprofd 的核心思路是"采样分配调用栈"。当被监控的进程调用 `malloc` 时，heapprofd 按照可配置的采样间隔（默认 4096 字节）选择性地记录这次分配。对于被选中的分配，它会捕获完整的调用栈，并记录分配的地址和大小。当这块内存被 `free` 时，heapprofd 也会记录释放事件。
+heapprofd 的基本思路是"采样分配调用栈"。当被监控的进程调用 `malloc` 时，heapprofd 按照可配置的采样间隔（默认 4096 字节）选择性地记录这次分配。对于被选中的分配，它会捕获完整的调用栈，并记录分配的地址和大小。当这块内存被 `free` 时，heapprofd 也会记录释放事件。
 
 这样在采集结束后，heapprofd 就能告诉你：哪些调用栈路径分配了最多内存、哪些分配没有被释放（可能是泄漏）、内存分配的时间趋势是什么。
 
@@ -270,7 +271,7 @@ data_sources: {
 
 `dumpsys meminfo` 不分析引用链，不抓取堆转储，也不展示调用栈。它做的事情更简单也更基础：给我们一个进程的内存使用概览，告诉你这个进程总共占了多少内存，分别花在了哪里。
 
-这个命令在性能优化的日常工作中有两个核心用途。第一，快速判断"内存是否正常"。如果某个应用的 PSS（Proportional Set Size）明显高于同类型应用，或者 Java Heap 接近了 `dalvik.vm.heapsize` 上限，那内存可能有问题。第二，周期性地执行这个命令，可以观察到内存的长期趋势——如果 PSS 持续增长且不回落，几乎可以确定存在泄漏。
+这个命令在性能优化的日常工作中有两个主要用途。第一，快速判断"内存是否正常"。如果某个应用的 PSS（Proportional Set Size）明显高于同类型应用，或者 Java Heap 接近了 `dalvik.vm.heapsize` 上限，那内存可能有问题。第二，周期性地执行这个命令，可以观察到内存的长期趋势——如果 PSS 持续增长且不回落，几乎可以确定存在泄漏。
 
 ### 输出结构详解
 
@@ -370,7 +371,7 @@ procrank 在排查系统级内存压力时特别有用。当我们需要评估"�
 
 `libmeminfo` 不是一个直接面向用户的命令行工具，而是 Android 系统内部用于收集内存信息的 C++ 库。它的源码位于 `system/core/libmeminfo/`。
 
-libmeminfo 提供了以下核心能力：
+libmeminfo 提供了以下能力：
 
 - 读取 `/proc/<pid>/smaps` 并解析为结构化的内存区域信息
 - 读取 `/proc/<pid>/pagemap` 获取页面级别的映射详情
@@ -510,7 +511,7 @@ Android 12+ 的系统组件已经启用了 MTE。对于应用开发者来说，�
 
 本章介绍的工具分别对应了不同章节中讨论的内存问题。
 
-- 第 10.1 节（App 内存分析）中讨论的内存分析方法论，就是用本节工具来落地的
+- 第 10.1 节（App 内存分析）中讨论的内存分析方法论，就是用本节工具来执行的
 - 第 10.2 节（内存泄漏）中的 Java 泄漏检测，直接依赖 LeakCanary 和 MAT
 - 第 10.3 节（内存持续增长）中的排查流程，第一步就是 `dumpsys meminfo` 趋势对比
 - 第 14.1 节（Android Studio Profiler）中的 Memory Profiler，是 MAT 之外的另一种 hprof 分析方式
