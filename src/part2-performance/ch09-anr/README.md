@@ -9,3 +9,5 @@
 - ANR 分析方法
 - 特殊场景的 ANR
 - 案例集
+- Notification 性能与 ANR
+- ANR 非技术故障诊断

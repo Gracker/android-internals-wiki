@@ -67,6 +67,7 @@ tags:
   - [3.3 手势导航与系统交互](part1-fundamentals/ch03-input/03-gesture-navigation.md)
   - [3.4 输入延迟与预测输入技术](part1-fundamentals/ch03-input/04-input-latency-prediction.md)
   - [3.5 输入事件拦截与安全机制](part1-fundamentals/ch03-input/05-input-interception-security.md)
+  - [3.6 手势识别算法与性能优化](part1-fundamentals/ch03-input/06-gesture-recognition-performance.md)
 
 - [第 4 章：内存管理](part1-fundamentals/ch04-memory/README.md)
   - [4.1 Android 内存模型全景](part1-fundamentals/ch04-memory/01-memory-overview.md)
@@ -129,6 +130,7 @@ tags:
   - [8.7 Baseline Profiles 与编译优化实践](part2-performance/ch08-responsiveness/07-baseline-profiles.md)
   - [8.8 Android 多媒体管线性能](part2-performance/ch08-responsiveness/08-media-pipeline.md)
   - [8.9 Android 游戏性能与 Game Mode/State API](part2-performance/ch08-responsiveness/09-game-performance.md)
+  - [8.10 ProfilingManager 系统触发式性能追踪](part2-performance/ch08-responsiveness/08-system-triggered-profiling.md)
 
 - [第 9 章：ANR](part2-performance/ch09-anr/README.md)
   - [9.1 ANR 设计思想](part2-performance/ch09-anr/01-anr-design.md)
@@ -137,6 +139,7 @@ tags:
   - [9.4 特殊场景的 ANR](part2-performance/ch09-anr/04-special-anr.md)
   - [9.5 案例集](part2-performance/ch09-anr/05-case-studies.md)
   - [9.6 Notification 性能与 ANR](part2-performance/ch09-anr/06-notification-performance-anr.md)
+  - [9.7 ANR 非技术故障诊断](part2-performance/ch09-anr/07-non-technical-anr-diagnosis.md)
 
 - [第 10 章：内存性能](part2-performance/ch10-memory-perf/README.md)
   - [10.1 App 内存分析](part2-performance/ch10-memory-perf/01-app-memory-analysis.md)
@@ -175,6 +178,7 @@ tags:
   - [18.18 PIP 与自由窗口渲染](part2-performance/ch18-rendering-pipelines/18-pip-freeform.md)
   - [18.19 可变刷新率渲染管线](part2-performance/ch18-rendering-pipelines/19-variable-refresh-rate.md)
   - [18.20 链路分析方法论](part2-performance/ch18-rendering-pipelines/20-pipeline-analysis-methodology.md)
+  - [18.21 EyeDropper API 与跨设备协作性能](part2-performance/ch18-rendering-pipelines/21-eyedropper-crossdevice.md)
 
 - [第 12 章：包体积与其他](part2-performance/ch12-apk-network/README.md)
   - [12.1 APK 体积优化](part2-performance/ch12-apk-network/01-apk-size.md)
