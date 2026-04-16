@@ -3038,5 +3038,11 @@
     "task6_state": "reviewed",
     "task9_state": "pending",
     "pipeline_stage": "task9_pending"
+  },
+  "15.2": {
+    "task6_reviewed_date": "2026-04-16",
+    "task6_result": "pass-light-edit",
+    "task6_state": "reviewed",
+    "task9_state": "pending"
   }
 }
