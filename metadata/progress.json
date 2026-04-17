@@ -29,30 +29,30 @@
       "idle": 81
     },
     "task6_state_counts": {
-      "pending": 68,
-      "reviewed": 30,
+      "unknown": 33,
       "revisiting": 81,
-      "unknown": 33
+      "reviewed": 32,
+      "pending": 67
     },
     "task9_state_counts": {
-      "unknown": 32,
-      "pending": 166,
-      "reviewed": 11
+      "unknown": 34,
+      "pending": 164,
+      "reviewed": 15
     },
     "pipeline_stage_counts": {
       "unknown": 32,
-      "task6_pending": 147,
-      "task2b_pending": 17,
-      "task9_pending": 16
+      "task6_pending": 146,
+      "task2b_pending": 18,
+      "task9_pending": 17
     },
     "total_sections": 207
   },
   "pipeline": {
     "pipeline_stage_counts": {
       "unknown": 32,
-      "task6_pending": 148,
-      "task2b_pending": 17,
-      "task9_pending": 15
+      "task6_pending": 146,
+      "task2b_pending": 18,
+      "task9_pending": 17
     },
     "task2b_state_counts": {
       "unknown": 31,
@@ -61,15 +61,15 @@
       "idle": 82
     },
     "task6_state_counts": {
-      "pending": 69,
-      "reviewed": 29,
+      "unknown": 33,
       "revisiting": 81,
-      "unknown": 33
+      "reviewed": 32,
+      "pending": 67
     },
     "task9_state_counts": {
-      "unknown": 31,
-      "pending": 170,
-      "reviewed": 6
+      "unknown": 34,
+      "pending": 164,
+      "reviewed": 15
     }
   },
   "issues": {
@@ -2660,8 +2660,8 @@
       "title": "AOSP 代码阅读",
       "path": "src/part3-tools/ch15-methodology/07-aosp-reading.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "pending",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
       "task9_state": "pending",
       "task2b_state": "idle"
     },
@@ -3183,5 +3183,16 @@
       "issues_fixed": 9,
       "by": "task2b-rework"
     }
-  ]
+  ],
+  "reviewed_chapters": [
+    {
+      "chapter": "18.7",
+      "title": "TextureView 合成链路",
+      "review_date": "2026-04-17",
+      "status": "task6_reviewed"
+    }
+  ],
+  "total_chapters": 0,
+  "reviewed_count": 1,
+  "last_review": "2026-04-17"
 }
