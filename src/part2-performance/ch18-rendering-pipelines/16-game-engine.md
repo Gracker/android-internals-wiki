@@ -7,10 +7,13 @@ tags: ["Unity", "Unreal", "Game-Engine", "Swappy", "Frame-Pacing", "Vulkan", "GL
 related_chapters: ["2.5", "8.9", "18.6", "18.8", "18.9"]
 created_by: "rendering-pipelines-merge"
 created_date: "2026-04-09"
-pipeline_stage: task6_pending
-task6_state: pending
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task2b_state: idle
+reviewed_by: openclaw-task6
+reviewed_date: "2026-04-18"
+task6_result: pass-light-edit
 ---
 
 <!-- outline-start -->
@@ -33,7 +36,7 @@ task2b_state: idle
 
 普通 App 的渲染是事件驱动的——用户操作触发 `invalidate()`，Choreographer 在 VSync 时回调 `doFrame()`，UI 线程执行 Measure/Layout/Draw。但游戏引擎不是这样工作的：它有一个**自主运行的 Game Loop**，不管有没有用户输入，都会按照固定节奏持续更新和渲染。
 
-这意味着游戏引擎的渲染链路需要解决一个普通 App 不存在的问题：**如何让游戏逻辑帧率与屏幕刷新率对齐**。跑 40fps 的游戏在 60Hz 屏幕上如果不做帧节奏控制，会导致部分帧显示 16ms、部分显示 33ms，视觉抖动非常明显。[已验证: Android Game SDK 文档]
+游戏引擎渲染链路面临一个普通 App 不存在的问题：**如何让游戏逻辑帧率与屏幕刷新率对齐**。跑 40fps 的游戏在 60Hz 屏幕上如果不做帧节奏控制，会导致部分帧显示 16ms、部分显示 33ms，视觉抖动非常明显。[已验证: Android Game SDK 文档]
 
 ## Game Loop 模型
 
@@ -100,7 +103,7 @@ Unity 和 Unreal 都采用了**逻辑线程与渲染线程分离**的架构。�
 
 ## Swappy Frame Pacing
 
-**Swappy** 是 Google 官方的帧节奏库（属于 Android Game SDK），解决游戏引擎的核心痛点：
+**Swappy** 是 Google 官方的帧节奏库（属于 Android Game SDK），解决游戏引擎帧节奏控制的核心问题：
 
 ### 问题
 
