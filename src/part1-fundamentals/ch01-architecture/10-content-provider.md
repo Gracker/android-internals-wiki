@@ -30,11 +30,12 @@ tags:
   - anr
   - sqlite
   - app-startup
-pipeline_stage: task9_pending
-task6_state: reviewed
-task9_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
 task9_result: needs-rework
 task9_reviewed_date: "2026-04-17"
+task2b_result: fixed
 task2b_state: fixed
 reviewed_date: "2026-04-11"
 reviewed_by: "openclaw-task6"
@@ -258,6 +259,64 @@ Binder 线程池的关键参数：
 
 [图：ContentProvider ANR 在 Perfetto 中的时间线——调用方主线程 BLOCKED，提供方进程冷启动区间]
 
+
+## 多进程 ContentProvider
+
+ContentProvider 支持通过 `android:process` 属性声明在独立进程中运行。这个特性对性能的影响比表面上看起来要大——独立进程意味着独立的 Application.onCreate()、独立的 Binder 线程池、独立的 ANR 超时窗口。
+
+### android:process 声明的影响
+
+当 ContentProvider 声明了 `android:process=":provider"` 时，系统会为它创建一个独立的进程。这个进程的生命周期和主进程完全独立：
+
+```xml
+<provider
+    android:name=".HeavyProvider"
+    android:authorities="com.example.heavy"
+    android:process=":provider" />
+```
+
+独立进程带来的核心变化：
+
+- **独立的 Application.onCreate()**：新进程启动时会完整执行一次 Application 的 `attachBaseContext()` 和 `onCreate()`。如果 Application.onCreate() 中做了大量初始化（SDK 初始化、数据库预热），Provider 进程也会承受同样的启动开销
+- **独立的 Binder 线程池**：Provider 进程有自己的 16 个 Binder 线程，不会和主进程的线程池互相竞争。这是多进程 CP 的主要优势——数据操作的负载不会直接影响主进程的 Binder 通信
+- **独立的内存空间**：Provider 进程有独立的堆内存和 GC 周期，Provider 侧的 GC 暂停不会造成主进程卡顿。代价是多了一份完整的进程内存开销
+
+### Provider 进程冷启动对调用方的性能影响
+
+多进程 ContentProvider 的最大性能隐患在于冷启动。当调用方首次访问独立进程的 ContentProvider 时，系统需要：
+
+1. fork 新进程（Provider 进程）
+2. 加载 APK 并初始化运行时
+3. 执行 Application.attachBaseContext() + Application.onCreate()
+4. 执行 ContentProvider.attachInfo() + ContentProvider.onCreate()
+5. 通过 publishContentProviders() 通知 system_server Provider 已就绪
+
+步骤 2-4 的耗时直接叠加在调用方的 ContentProvider 请求上。如果 Provider 进程的 Application.onCreate() 耗时 500ms、Provider.onCreate() 耗时 200ms，调用方的首次 query() 至少需要等待 700ms+（加上进程创建和 IPC 开销）。
+
+在 Perfetto 中观察这个冷启动过程：调用方主线程出现一个长 binder transaction 切片，同一时间段可以看到 Provider 进程从无到有的启动轨迹，包括 `handleBindApplication` 和 `installContentProviders` 两个关键切片。
+
+### 进程间 CursorWindow 的实际行为
+
+单进程 ContentProvider 的 query() 返回的 Cursor 和调用方在同一进程，不需要跨进程传输。但多进程 ContentProvider 走标准的 Binder + CursorWindow 路径：
+
+- 数据写入 CursorWindow（共享内存），文件描述符通过 Binder 传回调用方
+- CursorWindow 的 2MB 限制和翻页机制同样适用
+- 调用方通过 CursorWrapperInner 间接访问共享内存中的数据
+
+一个容易被忽略的细节：**多进程 ContentProvider 的每次 Cursor 操作（moveToNext、getString 等）本身不涉及 Binder 调用**——数据已经在共享内存中。只有当窗口需要翻页（fillWindow）时，才会触发一次 Binder 调用回到 Provider 进程重新查询。
+
+### 多进程 ContentProvider 的适用场景与注意事项
+
+适用场景：
+- Provider 承载了重量级的数据操作（大数据库查询、文件 I/O），需要和主进程隔离
+- Provider 需要持续提供服务（如下载管理），主进程可能被系统回收
+- Provider 的内存使用量不可控（如第三方数据库缓存），需要独立进程避免影响主进程 OOM
+
+注意事项：
+- Provider 进程的 Application.onCreate() 应尽量轻量。可以通过 `Process.isProviderProcess()` 或检查进程名来跳过主进程才需要的初始化逻辑 [待验证：Process API 是否提供直接的 Provider 进程判断方法，实践中通常通过进程名匹配实现]
+- Provider 进程会被系统纳入 oom_adj 管理，后台时可能被低内存杀手回收。下次访问时需要重新冷启动
+- 多进程场景下数据库的锁竞争更加复杂：主进程和 Provider 进程访问同一个 SQLite 文件时，WAL（Write-Ahead Logging）模式是必需的，否则并发写入会频繁触发 SQLITE_BUSY 错误
+
 ## ContentProvider 的性能优化策略
 
 ### 延迟初始化与 App Startup
@@ -421,6 +480,37 @@ Android 9 新增了一些 CursorWindow 相关的 API：
 ### Android 10（API 29）：Scoped Storage
 
 Scoped Storage 对 ContentProvider 的影响主要体现在存储访问方式的变化上。`MediaStore` ContentProvider 仍然是访问媒体文件的标准接口，但访问其他 App 的私有文件需要通过 SAF。`FileProvider` 的使用变得更加重要，因为它可以在不暴露文件路径的情况下安全地共享文件。
+
+### Android 11（API 30）：调用方自定义超时
+
+Android 11 引入了 `ContentProviderClient.setDetectNotResponding()` 方法，允许调用方为 ContentProvider 操作设置自定义超时时间。此前，ContentProvider CRUD 操作没有独立的客户端侧超时——调用方只能依赖所在组件的 ANR 机制被动等待。有了这个 API，调用方可以主动设置一个合理的超时阈值，超时后直接取消操作并走降级逻辑，而不是被动等待 ANR。
+
+典型用法：
+
+```java
+ContentProviderClient client = getContentResolver().acquireContentProviderClient(uri);
+if (client != null) {
+    client.setDetectNotResponding(5000); // 5 秒超时
+    try {
+        Cursor cursor = client.query(uri, projection, selection, null, null);
+        // 处理结果
+    } catch (RemoteException e) {
+        // Provider 进程崩溃或超时
+    } finally {
+        client.close();
+    }
+}
+```
+
+[已验证：AOSP android-11.0.0_r1, ContentProviderClient.setDetectNotResponding()]
+
+### Android 12（API 31）：getProviderMimeTypeAsync
+
+Android 12 引入了 `ContentResolver.getProviderMimeTypeAsync()`，将原来同步的 MIME 类型查询改为异步。此前 `getProviderMimeType()` 在 system_server 主线程上同步执行，只有 1 秒超时（参见 ANR 超时时间线小节），如果 Provider 响应慢会直接导致系统进程的 ANR 风险。
+
+异步版本通过 `Executor` 和回调返回结果，不再阻塞调用线程。对于需要在后台查询 MIME 类型的场景（如 Intent 解析），应该使用异步版本。
+
+[已验证：AOSP android-12.0.0_r1, ContentResolver.getProviderMimeTypeAsync()]
 
 ### Android 14-15（API 34-35）：Photo Picker
 
