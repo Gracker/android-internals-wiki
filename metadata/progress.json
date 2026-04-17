@@ -2965,6 +2965,16 @@
       "fixes": 6,
       "issues": 0,
       "log": "logs/review/2026-04-15-02-review.md"
+    },
+    {
+      "section": "18.11",
+      "title": "ANGLE（GLES-over-Vulkan 翻译层）",
+      "reviewed_date": "2026-04-18",
+      "reviewed_by": "openclaw-task6",
+      "result": "pass-light-edit",
+      "log": "logs/review/2026-04-18-00-review.md",
+      "issues_found": 6,
+      "fixes_applied": 4
     }
   ],
   "stats": {
@@ -2975,7 +2985,8 @@
       "task2b_pending": 15,
       "task9_pending": 5
     },
-    "last_updated": "2026-04-15T09:07:00"
+    "last_updated": "2026-04-15T09:07:00",
+    "total_reviewed": 1
   },
   "4.6": {
     "task6_review": {
