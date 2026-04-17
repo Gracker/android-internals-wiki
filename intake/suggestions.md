@@ -852,3 +852,27 @@
 - **位置**："第二阶段：Sync — 移交蓝图"
 - **问题**："syncFrameState 正常情况下耗时在 1-2ms"无数据来源标注
 - **建议**：补充数据来源（如"在 Pixel 7 Android 14 的实测中..."）或改为范围描述并标注 [待补充：实测数据]
+
+## [Task6 Review] 18.5 Android View 多窗口链路 — 2026-04-17
+
+- **类型**：需确认 + 需补充素材
+- **位置**：优化策略 > 策略一：合并窗口
+- **问题**：代码示例推荐 `BottomSheetDialogFragment`，注释称其为"View 级别的 BottomSheet"，但 `BottomSheetDialogFragment` 实际仍创建独立 Window（继承自 AppCompatDialogFragment → AppCompatDialog → Dialog），并不会合并到 Activity 的 Surface。真正 View 级别无额外 Window 的方案应使用 `BottomSheetBehavior` + `CoordinatorLayout`，或直接在 Activity 布局内用 View 实现。
+- **建议**：将推荐方案改为使用 `BottomSheetBehavior` 绑定到 Activity 布局内的 View，或标注 `BottomSheetDialogFragment` 仍会创建独立 Window 但比普通 Dialog 轻量。
+- **review 日志**：logs/review/2026-04-17-08-review.md
+
+## [Task6 Review] 18.5 Android View 多窗口链路 — 2026-04-17
+
+- **类型**：需确认
+- **位置**：全链路执行流程 > 阶段三
+- **问题**：文中描述"UI Thread 在 Sync A 时被阻塞（`syncFrameState`），直到 RenderThread 完成同步。这意味着 Window B 的 Traversal 可能需要等 Window A 的 Sync 完成后才能开始"。`syncFrameState` 的阻塞行为在不同 Android 版本中有差异——在某些版本中 UI Thread 仅短暂阻塞以交换 DisplayList 引用即返回，不会等到 DrawFrame 完成。需确认具体版本下的行为。
+- **建议**：标注 `[待验证：syncFrameState 阻塞粒度在不同 Android 版本的表现]`，或明确说明此处描述适用于哪个 Android 版本范围。
+- **review 日志**：logs/review/2026-04-17-08-review.md
+
+## [Task6 Review] 18.5 Android View 多窗口链路 — 2026-04-17
+
+- **类型**：需补充素材
+- **位置**：全文
+- **问题**：章节 applicable_versions 标注为 Android 9-16，但正文未讨论任何版本间的行为差异。例如：(1) Android 12 对 `BufferQueue` 和 `syncFrameState` 的改动；(2) Android 10 引入 Multi-resume 后 Choreographer 分发行为的变化；(3) Android 14+ 对分屏模式的渲染管线调整。
+- **建议**：增加"版本演进"小节，或在各关键段落中补充版本差异标注。至少覆盖 Android 10（Multi-resume）、Android 12（RenderThread 改动）两个关键版本节点。
+- **review 日志**：logs/review/2026-04-17-08-review.md

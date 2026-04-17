@@ -977,5 +977,38 @@
     "added_by": "task8-classifier",
     "added_at": "2026-04-17T05:32:35.177488",
     "status": "pending"
+  },
+  {
+    "section": "18.5",
+    "section_title": "Android View 多窗口链路",
+    "priority": 90,
+    "reason": "[review回炉] 3个B类问题：(1) BottomSheetDialogFragment优化建议技术不准确 (2) syncFrameState阻塞行为需版本确认 (3) 缺少版本演进讨论",
+    "material_paths": [
+      "intake/suggestions.md（含 review 意见）"
+    ],
+    "review_issues": [
+      {
+        "type": "需确认",
+        "location": "优化策略 > 策略一",
+        "detail": "BottomSheetDialogFragment仍创建独立Window，注释'View级别的BottomSheet'不准确",
+        "suggestion": "改为BottomSheetBehavior或标注仍为独立Window"
+      },
+      {
+        "type": "需确认",
+        "location": "全链路执行流程 > 阶段三",
+        "detail": "syncFrameState阻塞粒度描述需按Android版本确认",
+        "suggestion": "标注待验证或明确适用版本"
+      },
+      {
+        "type": "需补充素材",
+        "location": "全文",
+        "detail": "applicable_versions为9-16但无版本差异讨论",
+        "suggestion": "增加版本演进小节"
+      }
+    ],
+    "added_by": "task6-review",
+    "added_at": "2026-04-17T08:20:00",
+    "status": "pending",
+    "original_review_log": "logs/review/2026-04-17-08-review.md"
   }
 ]
