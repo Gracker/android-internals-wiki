@@ -29,8 +29,8 @@ pipeline_stage: task9_pending
 task6_state: reviewed
 task6_result: pass-light-edit
 review_round: 2
-task9_state: pending
-task9_result: needs-rework
+task9_state: reviewed
+task9_result: needs-rework-v2
 task9_reviewed_date: "2026-04-16"
 task2b_result: fixed
 task2b_state: fixed
