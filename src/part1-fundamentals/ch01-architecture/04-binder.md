@@ -35,8 +35,9 @@ related_chapters: ["1.1", "2.5", "7.2", "8.2", "9.1"]
 pipeline_stage: task6_pending
 task6_state: revisiting
 task6_result: pass-light-edit
-task9_result: needs-rework
-task9_state: pending
+task9_result: pass-with-notes
+last_task9_at: 2026-04-17T13:20:00
+task9_state: reviewed
 task2b_result: fixed
 task2b_state: fixed
 ---
