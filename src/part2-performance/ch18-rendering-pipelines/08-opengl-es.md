@@ -7,10 +7,13 @@ tags: ["OpenGL-ES", "EGL", "GLThread", "GLSurfaceView", "eglSwapBuffers", "fence
 related_chapters: ["2.1", "2.6", "2.14", "18.6", "18.9"]
 created_by: "rendering-pipelines-merge"
 created_date: "2026-04-09"
-pipeline_stage: task6_pending
-task6_state: pending
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task2b_state: idle
+task6_result: pass-light-edit
+reviewed_by: openclaw-task6
+reviewed_date: 2026-04-17
 ---
 
 <!-- outline-start -->
@@ -81,7 +84,7 @@ GLThread 的生命周期：
 4. **Surface 销毁**：`onDetachedFromWindow()` 或 Surface 变化时触发
 5. **GLThread 终止**：清理 EGL 资源
 
-需要强调的是，`GLSurfaceView` 本身基于 `SurfaceView`。所以 GLES 链路在底层走的是 SurfaceView 的独立 Surface 直出路径——GLThread 向 SurfaceView 的 BufferQueue 提交 Buffer，SurfaceFlinger 直接消费。这意味着 GLES 链路天然拥有 SurfaceView 的所有性能优势。
+`GLSurfaceView` 基于 `SurfaceView`。所以 GLES 链路在底层走的是 SurfaceView 的独立 Surface 直出路径——GLThread 向 SurfaceView 的 BufferQueue 提交 Buffer，SurfaceFlinger 直接消费。GLES 链路因此拥有 SurfaceView 的所有性能优势。
 
 ## 渲染循环时序
 
@@ -237,7 +240,7 @@ Android 14+ / 15+ 上，部分设备会更多地采用 **ANGLE**（Almost Native
 
 ### ANGLE 解决什么问题
 
-GLES 最大的痛点不是性能，而是**驱动碎片化**。不同 GPU 厂商（Qualcomm Adreno、ARM Mali、Imagination PowerVR）的 GLES 驱动行为差异巨大，同一个 GL 调用在不同设备上可能产生不同的结果。ANGLE 通过将 GLES 翻译为 Vulkan 来统一底层——因为 Vulkan 驱动的正确性要求更高，行为更一致。
+GLES 链路最大的痛点是**驱动碎片化**。不同 GPU 厂商（Qualcomm Adreno、ARM Mali、Imagination PowerVR）的 GLES 驱动行为差异巨大，同一个 GL 调用在不同设备上可能产生不同的结果。ANGLE 通过将 GLES 翻译为 Vulkan 来统一底层——因为 Vulkan 驱动的正确性要求更高，行为更一致。
 
 ### Trace 差异
 
@@ -277,7 +280,7 @@ GLES 最大的痛点不是性能，而是**驱动碎片化**。不同 GPU 厂商
 
 ### Buffer 压力分析
 
-分析 GLES 链路的性能，关键在于理解 Buffer 压力：
+分析 GLES 链路性能，重点是理解 Buffer 压力：
 
 - `dequeueBuffer` 快 + `eglSwapBuffers` 快 → 流水线健康
 - `dequeueBuffer` 慢 → Buffer 不足，可能是 Triple Buffer 不够用或 release fence 回收慢
