@@ -1323,3 +1323,16 @@
 - **位置**：profileable / HWASAN / MTE 说明
 - **问题**：`android:profileable="true"` 语法错误，且 HWASAN、MTE 的版本/设备边界写得过满。
 - **建议**：改为 `<profileable android:shell="true"/>`，分别标注 HWASAN 的 Android 14+ wrap.sh 边界、MTE 的设备支持列表与 heap/stack 检测差异。
+## [Task6 Review] 18.14 Camera 渲染管线 — 2026-04-18
+
+- **类型**：需补充素材 + 需重写
+- **位置**：多处
+- **问题**：
+  1. 「常见性能问题」仅 4 条 1-2 句列表，缺少根因分析、Perfetto 表现、修复方案
+  2. 「在 Perfetto 中识别 Camera 管线」仅 3 行 track 表，无具体分析方法
+  3. 「关键组件」3 条项目符号无叙述展开，CameraService/HAL3/CaptureRequest 角色不清
+  4. 缺少版本演进（Camera1→Camera2→CameraX、HAL 版本变化），applicable_versions 跨 5-16 但无差异说明
+  5. 参考资料仅目录级路径，缺关键函数名和分支标注
+- **建议**：参考 writing-guide.md 类型A（机制原理篇）模板，将列表式内容转为叙述体，补充 Trace 分析方法和版本演进
+- **review 日志**：logs/review/2026-04-18-03-review.md
+
