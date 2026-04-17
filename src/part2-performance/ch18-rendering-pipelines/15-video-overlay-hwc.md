@@ -7,14 +7,15 @@ tags: ["HWC", "Hardware-Composer", "Overlay", "Video", "GPU-Composition", "DRM",
 related_chapters: ["2.6", "2.10", "18.6"]
 created_by: "rendering-pipelines-merge"
 created_date: "2026-04-09"
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
 task9_result: needs-rework
-task2b_state: pending
+task2b_state: fixed
 reviewed_by: openclaw-task6
 reviewed_date: "2026-04-18"
 task6_result: pass-light-edit
+task2b_result: fixed
 ---
 
 <!-- outline-start -->
@@ -41,39 +42,46 @@ task6_result: pass-light-edit
 
 ## HWC 的核心职责
 
-HWC（Hardware Composer）是 Android 图形栈中 SurfaceFlinger 与显示硬件之间的桥梁。它的核心职责只有一件事：**告诉 SurfaceFlinger 哪些 Layer 可以走硬件合成，哪些必须走 GPU 合成**。
+HWC（Hardware Composer）是 SurfaceFlinger 与显示硬件之间的合成协商层。它回答的是两件事：这一帧哪些 Layer 可以由显示硬件直接处理，哪些 Layer 必须先交给 GPU；如果存在 `CLIENT` Layer，GPU 合成出来的 client target 应该怎样再交回显示硬件完成送显。
 
 ```mermaid
 graph LR
     subgraph "SurfaceFlinger"
-        Layers[Layer Stack]
-        Decision[合成决策]
-        GPU[GPU Composition]
+        Latch[layer latch]
+        V[validateDisplay]
+        GPU[RenderEngine / GPU composition]
+        CT[setClientTarget]
     end
-    
-    subgraph "HWC"
-        Validate[validate]
-        HWCComp[硬件合成]
-        Present[present]
+
+    subgraph "Composer HAL / HWC"
+        Change[getChangedCompositionTypes<br/>acceptDisplayChanges]
+        P[presentDisplay]
     end
-    
+
     Display[Display Panel]
-    
-    Layers --> Decision
-    Decision -->|CLIENT| GPU
-    Decision -->|DEVICE| Validate
-    Validate -->|Overlay OK| HWCComp
-    Validate -->|Fallback| GPU
-    GPU --> Present
-    HWCComp --> Present
-    Present --> Display
+
+    Latch --> V
+    V --> Change
+    Change -->|CLIENT layer| GPU
+    GPU --> CT
+    CT --> P
+    Change -->|DEVICE layer| P
+    P --> Display
 ```
 
-每次合成前，SurfaceFlinger 调用 `HWC::validate()`，把所有 Layer 的信息（位置、大小、格式、Transform）交给 HWC。HWC 检查自己的硬件能力（有多少个硬件 Plane、支持哪些格式和 Transform），然后返回每个 Layer 的合成类型：
+一帧的常见协商顺序是：
 
-- **HWC2::Composition::DEVICE**（Overlay）：HWC 硬件直接合成此 Layer
-- **HWC2::Composition::CLIENT**（GPU）：SurfaceFlinger 需要用 GPU 合成此 Layer
-- **HWC2::Composition::SIDEBAND**（Tunnel）：直接绕过 BufferQueue，数据路径完全由硬件处理
+1. SurfaceFlinger 先完成 layer latch，得到本帧参与合成的 Layer 集合。
+2. 通过 Composer HAL 调用 `validateDisplay()`，让 HWC 判断每个 Layer 是 `DEVICE`、`CLIENT` 还是 `SIDEBAND`。
+3. 如果 HWC 改写了 Layer 的合成类型，SurfaceFlinger 再通过 `getChangedCompositionTypes()` / `acceptDisplayChanges()` 接受这轮协商结果。
+4. 只要存在 `CLIENT` Layer，SurfaceFlinger 就先用 RenderEngine/GPU 合成这些 Layer，再通过 `setClientTarget()` 把 client target 交回 HWC。
+5. 随后调用 `presentDisplay()`，把 `DEVICE` Layer 和 client target 一起提交给显示硬件。
+
+文中常写的 `HWC::validate()` / `HWC::present()` 是 SurfaceFlinger 包装层里的名字。HAL 真正暴露的是 `validateDisplay()`、`getChangedCompositionTypes()`、`acceptDisplayChanges()`、`setClientTarget()`、`presentDisplay()`。HWC3 把接口迁到 AIDL，但这套协商流程没有变成“纯 HWC 直出”，SurfaceFlinger 仍然负责 layer latch、client composition 和 fence 协调。
+
+- **HWC2::Composition::DEVICE**：该 Layer 由显示硬件直接处理，常见于视频 YUV Layer。
+- **HWC2::Composition::CLIENT**：该 Layer 先由 SurfaceFlinger / GPU 合成，再作为 client target 交回 HWC。
+- **HWC2::Composition::SIDEBAND**：数据不走普通 BufferQueue buffer，更接近 sideband / tunneled playback 这类可选能力。
 
 ## GPU Path vs Overlay Path
 
@@ -88,16 +96,26 @@ Decoder → SurfaceTexture → GPU Shader (Sample) → FrameBuffer → SurfaceFl
 - 每帧都消耗内存带宽（即使是静态画面）
 - **功耗高**
 
-### Overlay Path（SurfaceView + HWC 路线）
+### Overlay Path（SurfaceView + DEVICE composition）
 
 ```
-Decoder → SurfaceView BufferQueue → HWC Overlay Plane → Display
+Decoder → BufferQueue / BLASTBufferQueue → SurfaceFlinger layer latch → HWC DEVICE composition → Display
 ```
 
-- 视频帧直接从 BufferQueue 送入 HWC 的硬件 Plane
-- GPU 完全不参与
-- 只消耗 DPU 的少量带宽
+- Decoder 仍然把帧写入 Surface 对应的队列，常见实现是 BufferQueue 或 BLASTBufferQueue
+- SurfaceFlinger 仍然要 latch 这层 buffer，并把它带进本帧的合成规划
+- 如果 HWC 把该 Layer 判成 `DEVICE`，视频像素不会再经过 GPU 采样，但 SurfaceFlinger 和 HWC 仍然要一起完成时序、fence 和送显协调
 - **功耗低**
+
+### Sideband / tunneled playback（可选能力）
+
+```
+Decoder / Video Pipeline → Sideband Stream / Tunnel → HWC / Display
+```
+
+- 这不是普通 SurfaceView 视频播放的默认数据路径
+- SurfaceFlinger 仍然参与 Layer 管理和时序协调，但不经手普通 BufferQueue 中的像素 buffer
+- 更常见于 Android TV 或特定 SoC 的低功耗视频播放场景
 
 ```mermaid
 graph LR
@@ -109,54 +127,74 @@ graph LR
         SF1 --> HWC1[HWC]
         HWC1 --> Disp1[Display]
     end
-    
-    subgraph "Overlay Path"
-        D2[Decoder] --> BQ[BufferQueue]
-        BQ --> HWC2[HWC Overlay]
+
+    subgraph "DEVICE Composition"
+        D2[Decoder] --> BQ[BufferQueue / BLAST]
+        BQ --> SF2[SurfaceFlinger latch]
+        SF2 --> HWC2[HWC DEVICE composition]
         HWC2 --> Disp2[Display]
+    end
+
+    subgraph "Sideband / Tunnel"
+        D3[Decoder / DSP] --> SB[Sideband Stream]
+        SB --> HWC3[HWC]
+        HWC3 --> Disp3[Display]
     end
 ```
 
 ## SurfaceFlinger 的合成决策流程
 
-SurfaceFlinger 收到所有 App 的 Transaction 后，进入合成阶段：
+SurfaceFlinger 收到本帧 Transaction 后，真正的合成流程一般是：
 
-1. **收集所有可见 Layer**：遍历所有 Layer，裁剪不可见区域。
-2. **调用 HWC::validate()**：将 Layer 信息交给 HWC。
-3. **HWC 返回合成类型**：每个 Layer 标记为 DEVICE（硬件）或 CLIENT（GPU）。
-4. **GPU 合成 CLIENT Layer**：如果存在 CLIENT Layer，SF 用 GPU 将它们合成到一个临时 Buffer。
-5. **HWC::present()**：将所有 DEVICE Layer + GPU 合成结果交给 HWC 输出到屏幕。
+1. **layer latch**：收集本帧可见 Layer，更新几何信息、裁剪区域和 acquire fence。
+2. **`validateDisplay()`**：把 Layer 栈交给 HWC，让它返回本轮 `DEVICE` / `CLIENT` / `SIDEBAND` 决策。
+3. **`getChangedCompositionTypes()` / `acceptDisplayChanges()`**：如果 HWC 改写了某些 Layer 的合成类型，SurfaceFlinger 先接受这轮变更。
+4. **GPU 合成 client target**：只对 `CLIENT` Layer 做 GPU 合成。这个结果不是直接上屏，而是一个 client target buffer。
+5. **`setClientTarget()`**：把 client target 交回 HWC，让 HWC 把它和仍保留为 `DEVICE` 的 Layer 一起完成最终合成。
+6. **`presentDisplay()`**：提交本帧到 display。
 
-### Overlay 回退的常见触发条件
+Mixed composition 的重点就在这里：`CLIENT` 和 `DEVICE` 可以同时存在。GPU 不是“接管整帧”，而是只负责 HWC 接不住的那部分 Layer。
 
-HWC Overlay 不是总能成功的。以下情况会导致回退到 GPU 合成：
+### Overlay 回退的常见原因（能力依赖平台）
 
-| 触发条件 | 说明 |
+HWC 是否接受某个 Layer，取决于 SoC、DPU plane 数量、HWC HAL 代际和厂商实现。下面这些条件经常触发回退，但它们都不是绝对规则。
+
+| 常见原因 | 为什么容易回退 |
 |:---|:---|
-| **硬件 Plane 用完** | HWC 硬件 Plane 数量有限（通常 3-6 个）[待验证: 具体数量因 SoC 而异，需补充主流平台数据]，用完后只能 GPU |
-| **格式不支持** | 某些 HWC 不支持 RGBA_8888 Overlay，只支持 YUV |
-| **Transform 不支持** | 旋转 90°、缩放比例超出范围等 |
-| **透明度混合** | `setAlpha(0.5)` 或复杂混合模式 |
-| **圆角/裁剪** | 很多旧 HWC 不支持 Overlay 图层的圆角裁剪 |
-| **Secure Buffer** | DRM 内容的 secure 路径限制 |
+| **硬件 Plane 用完** | 视频层、System UI、client target 可能同时抢同一批 plane，plane 数量不足时只能把一部分 Layer 改成 `CLIENT` |
+| **格式与颜色能力不匹配** | YUV 往往最容易走 `DEVICE`，RGBA、10-bit HDR、特定色域组合则更依赖平台能力 |
+| **Crop / scale / rotation 超出范围** | 大比例缩放、90°/270° 旋转、复杂裁剪都可能超出 DPU 的限制 |
+| **Alpha / 圆角 / 模糊 / 复杂混合** | 这类效果需要额外的 blending 或 post-process，很多平台会直接回退到 GPU |
+| **受保护内容与当前安全路径不匹配** | 设备如果没有可用的 secure plane 或 protected GPU path，就只能换到别的受支持路径 |
+| **多层 UI 叠加在视频上方** | 浮层、字幕、动画控件会改变 HWC 的 composition budget，视频层原本能走 `DEVICE`，叠加后可能改判为 `CLIENT` |
 
-**关键性能影响**：一旦某个本应 Overlay 的 Layer 回退到 GPU 合成，不仅该 Layer 的功耗增加，还可能影响其他 Layer 的合成策略（因为 GPU 合成结果本身也需要一个 HWC Plane）。
+**性能影响**：一个视频 Layer 从 `DEVICE` 回退到 `CLIENT` 后，GPU 带宽和 client target 开销会上来，还可能挤掉别的 plane，让更多 Layer 一起回退。
 
-## DRM 与 Secure Video Path
+### 常见能力对照表
 
-对于 Netflix、Disney+ 等受保护的高清内容（Widevine L1），视频数据经过 TrustZone 解密后落在 Secure Buffer 中。CPU 和 GPU 均无法读取 Secure Buffer（防止录屏和内存 dump），因此：
+| 能力维度 | HWC2.x / 常见旧平台 | HWC3 / 较新平台常见情况 | 结论 |
+|:---|:---|:---|:---|
+| **YUV 视频 Layer** | 常见支持 1-2 路 `DEVICE` composition | 仍然是最容易走 `DEVICE` 的类型 | 视频 YUV Layer 通常是 Overlay 首选 |
+| **RGBA / UI Layer** | 简单不透明场景有时能上 plane，复杂 blending 经常回退 | 部分平台支持更多 RGBA plane，但接口升级不保证能力升级 | 不能把“RGBA 一定 GPU”写成通用规则 |
+| **Plane alpha / rounded corner** | per-layer alpha、圆角、阴影常受限 | 一些新平台支持更强，但仍经常回退 | 半透明和圆角是高频触发点 |
+| **Crop / scale / rotation** | 支持范围因 DPU 而异，90°/270° 更敏感 | 约束仍在，只是范围通常更宽 | 大变换先怀疑 plane 能力不足 |
+| **HDR / protected content** | 依赖 secure plane、vendor 扩展或受保护 GPU 路径 | 新平台更常见 protected texture / secure GPU path | protected 不等于 tunneled，Overlay 也不是唯一答案 |
 
-- **Overlay 是最安全的路径**：HWC/DPU 的硬件通路是唯一能显示 Secure Buffer 的路径
-- **GPU Path 可能无法播放**：GPU 无法采样 Secure Buffer
-- 但 Android 7.0 起支持 secure texture video playback，是否要求 Overlay 取决于内容级别和设备能力，不能一概而论
+## 受保护内容、Overlay 与 Tunnel 的关系
 
-## Tunnel Mode（极致优化）
+这三个概念经常一起出现，但它们不是同一层东西。
 
-在 Android TV 和高端手机上，还存在 **Tunnel Mode（隧道模式）**：
+### 1. 标准 Overlay / DEVICE composition
 
-1. **Sideband Stream**：解码器输出的 Buffer 句柄直接传给 HWC/Display，**绕过 BufferQueue 的数据路径**（SurfaceFlinger 仍参与 Layer 管理但不经手 Buffer 数据）。
-2. **Audio Sync**：HWC 直接根据 Audio DSP 时钟驱动视频帧显示，实现硬件级音画同步。
-3. **功耗最优**：几乎零 CPU/GPU 参与，功耗最低。
+这是普通 SurfaceView 视频播放最常见的低功耗路径。视频 buffer 仍然经由 BufferQueue / SurfaceFlinger 进入本帧合成，只是 HWC 最终把该 Layer 标成 `DEVICE`，像素不再经过 GPU 采样。
+
+### 2. Protected texture / secure GPU path
+
+受保护内容不等于“GPU 一定不能碰”。从 Android 7.0 开始，设备如果支持 `EGL_EXT_protected_content`、`GL_EXT_protected_textures` 等扩展，就可以建立 protected GL/EGL path，用于 secure texture video playback。能不能走这条路径，取决于 codec、gralloc、GPU 驱动和内容安全级别；很多设备仍然把 Overlay 当作更稳妥的首选。
+
+### 3. Tunneled playback / sideband
+
+Tunnel / sideband 是更窄的可选能力，常见于 Android TV 或特定高端 SoC。它的目标是把解码、音画同步和显示尽量留在硬件通路里，进一步减少 CPU/GPU 参与。它不是所有受保护视频都会自动进入的默认模式，也不是普通 App 可以假定一定存在的能力。
 
 ## 在 Perfetto 和 dumpsys 中识别 Overlay
 
@@ -175,7 +213,7 @@ adb shell dumpsys SurfaceFlinger | grep -A5 "SurfaceView"
 | Track | 说明 |
 |:---|:---|
 | HWC | HWC 合成耗时 |
-| SurfaceFlinger | `validate` / `present` 调用 |
+| SurfaceFlinger | `validateDisplay` / `setClientTarget` / `presentDisplay` 对应的包装调用 |
 | GPU | GPU 合成任务（如果存在 CLIENT Layer） |
 
 如果 HWC Track 显示合成耗时很短且 GPU Track 没有额外合成任务，说明 Overlay 成功。如果 GPU 有合成任务且 HWC validate 后有 CLIENT Layer，说明发生了回退。
@@ -195,5 +233,9 @@ adb shell dumpsys SurfaceFlinger | grep -A5 "SurfaceView"
 ## 参考资料
 
 - AOSP `frameworks/native/services/surfaceflinger/`
-- AOSP `hardware/interfaces/graphics/composer/`
+- AOSP `frameworks/native/services/surfaceflinger/DisplayHardware/HWC2.h`
+- AOSP `frameworks/native/services/surfaceflinger/DisplayHardware/ComposerHal.cpp`
+- AOSP `hardware/interfaces/graphics/composer/2.4/`
+- AOSP `hardware/interfaces/graphics/composer/aidl/`
 - Android 官方文档：Hardware Composer
+- Android 官方文档：`SurfaceView`（Android N 起位置同步更新，叠加 View 的行为边界）

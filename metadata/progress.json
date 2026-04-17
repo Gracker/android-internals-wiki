@@ -1,74 +1,74 @@
 {
-  "generated_at": "2026-04-18T04:01:17.099279+08:00",
+  "generated_at": "2026-04-18T05:49:19.348728+08:00",
   "state_machine_version": "v2",
-  "total_sections": 207,
+  "total_sections": 214,
   "metrics": {
-    "total": 213,
+    "total": 214,
     "unknown": 36,
-    "ready-for-review": 177,
-    "last_updated": "2026-04-18T04:01:17.099279+08:00",
+    "ready-for-review": 178,
+    "last_updated": "2026-04-18T05:49:19.348728+08:00",
     "task2b_state_counts": {
       "unknown": 35,
-      "fixed": 85,
+      "fixed": 87,
       "pending": 19,
-      "idle": 74
+      "idle": 73
     },
     "task6_state_counts": {
       "unknown": 33,
-      "revisiting": 85,
-      "reviewed": 34,
+      "revisiting": 87,
+      "reviewed": 33,
       "pending": 61
     },
     "task9_state_counts": {
       "unknown": 34,
-      "pending": 162,
+      "pending": 163,
       "reviewed": 17
     },
     "pipeline_stage_counts": {
       "unknown": 32,
-      "task6_pending": 144,
+      "task6_pending": 146,
       "task2b_pending": 19,
-      "task9_pending": 18
+      "task9_pending": 17
     },
-    "total_sections": 213,
+    "total_sections": 214,
     "pipeline_unknown": 32,
-    "pipeline_task6_pending": 144,
-    "pipeline_task2b_pending": 20,
+    "pipeline_task6_pending": 146,
+    "pipeline_task2b_pending": 19,
     "pipeline_task9_pending": 17,
     "task2b_unknown": 35,
-    "task2b_fixed": 84,
-    "task2b_pending": 20,
-    "task2b_idle": 74,
+    "task2b_fixed": 87,
+    "task2b_pending": 19,
+    "task2b_idle": 73,
     "task6_unknown": 33,
-    "task6_revisiting": 85,
+    "task6_revisiting": 87,
     "task6_reviewed": 33,
-    "task6_pending": 62,
+    "task6_pending": 61,
     "task9_unknown": 34,
-    "task9_pending": 161,
-    "task9_reviewed": 18
+    "task9_pending": 163,
+    "task9_reviewed": 17
   },
   "pipeline": {
     "pipeline_stage_counts": {
       "unknown": 32,
-      "task6_pending": 144,
+      "task6_pending": 146,
       "task2b_pending": 19,
-      "task9_pending": 18
+      "task9_pending": 17
     },
     "task2b_state_counts": {
       "unknown": 35,
-      "fixed": 85,
+      "fixed": 87,
       "pending": 19,
-      "idle": 74
+      "idle": 73
     },
     "task6_state_counts": {
       "unknown": 33,
-      "revisiting": 85,
-      "reviewed": 34,
+      "revisiting": 87,
+      "reviewed": 33,
       "pending": 61
     },
     "task9_state_counts": {
       "unknown": 34,
-      "pending": 162,
+      "pending": 163,
       "reviewed": 17
     }
   },
@@ -2209,12 +2209,14 @@
       "title": "视频叠加与 HWC",
       "path": "src/part2-performance/ch18-rendering-pipelines/15-video-overlay-hwc.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
-      "task6_state": "reviewed",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
       "task9_state": "pending",
-      "task2b_state": "idle",
+      "task2b_state": "fixed",
       "task6_result": "pass-light-edit",
-      "reviewed_date": "2026-04-18"
+      "reviewed_date": "2026-04-18",
+      "task9_result": "needs-rework",
+      "task2b_result": "fixed"
     },
     "src/part2-performance/ch18-rendering-pipelines/16-game-engine.md": {
       "chapter": "18.16",
