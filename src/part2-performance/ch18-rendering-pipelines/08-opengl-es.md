@@ -7,10 +7,10 @@ tags: ["OpenGL-ES", "EGL", "GLThread", "GLSurfaceView", "eglSwapBuffers", "fence
 related_chapters: ["2.1", "2.6", "2.14", "18.6", "18.9"]
 created_by: "rendering-pipelines-merge"
 created_date: "2026-04-09"
-pipeline_stage: task9_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task9_state: pending
-task2b_state: idle
+task2b_state: fixed
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
 reviewed_date: 2026-04-17
@@ -94,10 +94,10 @@ GLThread 有两种唤醒方式，对应不同的使用场景：
 
 | 模式 | 触发条件 | 功耗 | 适用场景 |
 |:---|:---|:---|:---|
-| **Continuous** | 依赖 VSync 持续唤醒 | 高 | 游戏、动画 |
+| **Continuous** | 紧凑循环持续渲染 | 高 | 游戏、动画 |
 | **Dirty / On-demand** | 依赖 `requestRender()` 调用 | 低 | 静态渲染、需要手动控制帧率 |
 
-Continuous 模式下，GLThread 会在每次 VSync-App 时自动醒来执行 `onDrawFrame()`，适合需要持续渲染的场景（如 3D 游戏）。Dirty 模式下，线程在没有任务时会 `wait()`，只在 App 调用 `requestRender()` 时才被唤醒，适合静态或事件驱动的渲染（如数据图表更新）。
+Continuous 模式下，GLThread 在紧凑循环中持续执行 `onDrawFrame()` + `eglSwapBuffers()`，不等待 VSync 信号。帧率受 `eglSwapBuffers` 内部 `dequeueBuffer` 的 BufferQueue 可用性限制，而非 VSync 驱动。适合需要持续渲染的场景（如 3D 游戏）。Dirty 模式下，线程在没有任务时会 `wait()`，只在 App 调用 `requestRender()` 时才被唤醒，适合静态或事件驱动的渲染（如数据图表更新）。
 
 ### 完整时序图
 
@@ -109,8 +109,8 @@ sequenceDiagram
     participant SF as SurfaceFlinger
     participant HWC as HWC
 
-    Note over HW, GL: 1. VSync-App / requestRender
-    HW->>GL: Wakeup / RequestRender
+    Note over HW, GL: 1. Continuous loop / requestRender
+    GL->>GL: Continuous loop (or RequestRender)
     
     rect rgb(230, 240, 250)
         activate GL
@@ -120,7 +120,7 @@ sequenceDiagram
         GL->>EGL: eglSwapBuffers
         EGL->>EGL: dequeueBuffer (获取空闲 Buffer)
         EGL->>EGL: queueBuffer (提交画好的 Buffer)
-        EGL->>SF: BLAST Transaction
+        EGL->>SF: BLAST / BufferQueue (12+ / 9-11)
         deactivate GL
     end
 
@@ -144,7 +144,7 @@ sequenceDiagram
 
 #### 步骤 1：等待（Idle/Wait）
 
-GLThread 在没有任务时 `wait()` 休眠。Continuous 模式下 VSync 信号唤醒，Dirty 模式下 `requestRender()` 唤醒。在 Perfetto 中，你会看到 GL Thread 在两帧之间有一段空白——这就是等待时间。
+GLThread 在 Dirty 模式下没有任务时会 `wait()` 休眠，等待 `requestRender()` 唤醒。Continuous 模式下不存在这个等待步骤——线程在紧凑循环中持续执行渲染和提交。在 Perfetto 中，Dirty 模式下你会看到 GL Thread 在两帧之间有一段空白；Continuous 模式下帧间的短暂间隔来自 `eglSwapBuffers` 内部 `dequeueBuffer` 等待空闲 Buffer 的耗时。
 
 #### 步骤 2：eglMakeCurrent
 
@@ -171,9 +171,9 @@ glDrawArrays(GL_TRIANGLES, 0, vertexCount);
 这是 GLES 渲染链路中最重要的函数调用，没有之一。它在 Perfetto 中通常占据了单帧最大时间片，但**大部分时间不是它在做事，而是它在等待 Buffer**。具体做了两件事：
 
 1. **Flush**：强制将所有 GL 指令发送给 GPU（`glFlush` 的等价操作）
-2. **Buffer 交换**：将画好的帧（Back Buffer）提交给 BLAST Adapter，同时获取一个新的空闲 Buffer
+2. **Buffer 交换**：将画好的帧（Back Buffer）提交给 SurfaceFlinger，同时获取一个新的空闲 Buffer
 
-在现代 Android 上，`eglSwapBuffers` 内部最终会走 BLAST Transaction 路径将 Buffer 提交给 SurfaceFlinger。[已验证: Android EGL 实现源码]
+**版本差异**：Android 12+ 的 `eglSwapBuffers` 内部走 BLAST Transaction 路径，通过 `BLASTBufferQueue` 将 Buffer 提交给 SurfaceFlinger。Android 9-11 走传统 `BufferQueueProducer` 路径，由 SurfaceFlinger 主动 `acquireBuffer`。两条路径的最终效果相同——Buffer 都会到达 SurfaceFlinger 进行合成——但在 Perfetto 中看到的调用栈不同。[已验证: Android EGL 实现源码]
 
 ## Buffer 流转与 Triple Buffering
 
@@ -240,7 +240,7 @@ Android 14+ / 15+ 上，部分设备会更多地采用 **ANGLE**（Almost Native
 
 ### ANGLE 解决什么问题
 
-GLES 链路最大的痛点是**驱动碎片化**。不同 GPU 厂商（Qualcomm Adreno、ARM Mali、Imagination PowerVR）的 GLES 驱动行为差异巨大，同一个 GL 调用在不同设备上可能产生不同的结果。ANGLE 通过将 GLES 翻译为 Vulkan 来统一底层——因为 Vulkan 驱动的正确性要求更高，行为更一致。
+GLES 链路最大的挑战是**驱动碎片化**。不同 GPU 厂商（Qualcomm Adreno、ARM Mali、Imagination PowerVR）的 GLES 驱动行为差异巨大，同一个 GL 调用在不同设备上可能产生不同的结果。ANGLE 通过将 GLES 翻译为 Vulkan 来统一底层——因为 Vulkan 驱动的正确性要求更高，行为更一致。
 
 ### Trace 差异
 
@@ -323,5 +323,5 @@ eglSwapBuffers(display, surface);
 > **交叉引用**：
 > - Vulkan 原生链路详见 [18.9 Vulkan 原生渲染链路](09-vulkan-native.md)
 > - SurfaceView 直出链路详见 [18.6 SurfaceView 直出链路](06-surfaceview.md)
-> - 图形 API 演进历史详见 [2.14 图形 API 演进](../../part1-foundation/ch02-graphics-foundation/)
-> - BufferQueue 与 Fence 机制详见 [2.1 BufferQueue](../../part1-foundation/ch02-graphics-foundation/)
+> - 图形 API 演进历史详见 [2.14 图形 API 演进](../../part1-fundamentals/ch02-rendering/)
+> - BufferQueue 与 Fence 机制详见 [2.1 BufferQueue](../../part1-fundamentals/ch02-rendering/)
