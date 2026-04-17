@@ -7,10 +7,18 @@ tags: ["multi-window", "Dialog", "RenderThread-contention", "Choreographer", "se
 related_chapters: ["2.1", "18.2"]
 created_by: "rendering-pipelines-merge"
 created_date: "2026-04-09"
-pipeline_stage: task6_pending
-task6_state: pending
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task2b_state: idle
+reviewed_by: openclaw-task6
+reviewed_date: "2026-04-17"
+task6_result: needs-rework
+sources:
+  - "AOSP frameworks/base/core/java/android/view/Choreographer.java"
+  - "AOSP frameworks/base/core/java/android/view/ViewRootImpl.java"
+  - "AOSP frameworks/base/libs/hwui/renderthread/RenderThread.cpp"
+  - "EGL 1.5 Specification"
 ---
 
 <!-- outline-start -->
