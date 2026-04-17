@@ -7,10 +7,13 @@ tags: ["SurfaceControl", "ASurfaceControl", "ASurfaceTransaction", "NDK", "layer
 related_chapters: ["2.1", "2.5", "2.6", "18.2", "18.6", "18.9"]
 created_by: "rendering-pipelines-merge"
 created_date: "2026-04-09"
-pipeline_stage: task6_pending
-task6_state: pending
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task2b_state: idle
+reviewed_by: openclaw-task6
+reviewed_date: 2026-04-17
+task6_result: needs-rework
 ---
 
 <!-- outline-start -->
@@ -45,7 +48,7 @@ task2b_state: idle
 - **Color Layer**：纯色背景（通过 `setColor` 设置）
 - **Container Layer**：纯容器，用于组织层级结构，不显示内容
 
-和 Java 层的 `SurfaceControl`（`View.SurfaceControl`）不同，NDK 的 `ASurfaceControl` 给了 App 更底层的控制权——可以直接创建、销毁、配置 Layer，而不必依赖 View 系统。这意味着你可以在没有 View 树的情况下直接操控图层。
+和 Java 层的 `SurfaceControl`（`View.SurfaceControl`）不同，NDK 的 `ASurfaceControl` 给了 App 更底层的控制权——可以直接创建、销毁、配置 Layer，而不必依赖 View 系统。App 可以在没有 View 树的情况下直接操控图层。
 
 ### ASurfaceTransaction
 
@@ -64,7 +67,7 @@ NDK 的 SurfaceControl API 与 BLAST 共享同一个"事务式更新 Surface / L
 - **BLAST**：现代 Android 图形栈里围绕 Buffer + Transaction 协同更新的一条常见路径；是底层机制
 - **ASurfaceControl / ASurfaceTransaction**：App 直接操控 Layer/事务的低级接口；是应用层的 API
 
-理解这一点很重要：当你用 ASurfaceControl 创建子 Layer 并提交 Transaction 时，底层走的正是 BLAST 的事务处理流程。但你获得了比 Java SurfaceView 更精细的控制能力——可以创建任意层级的 Layer 树、动态 Reparent、精确控制每帧的着陆时间。
+当你用 ASurfaceControl 创建子 Layer 并提交 Transaction 时，底层走的正是 BLAST 的事务处理流程。但你获得了比 Java SurfaceView 更精细的控制能力——可以创建任意层级的 Layer 树、动态 Reparent、精确控制每帧的着陆时间。
 
 ### Sync 语义
 
