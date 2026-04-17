@@ -3127,7 +3127,7 @@
       "fixed_by": "task2b-rework"
     }
   ],
-  "last_task2b_run": "2026-04-16T03:42:38.885909",
+  "last_task2b_run": "2026-04-17T18:41:59.592318",
   "task2b_fixed": 1,
   "17.1": {
     "task6_review_date": "2026-04-16",
@@ -3194,5 +3194,6 @@
   ],
   "total_chapters": 0,
   "reviewed_count": 1,
-  "last_review": "2026-04-17"
+  "last_review": "2026-04-17",
+  "last_task2b_section": "15.7"
 }

@@ -17,12 +17,12 @@ sources:
     path: "https://mp.weixin.qq.com/s?__biz=MzI4NTk1NzYwNg==&mid=2247483668"
 tags: ['aosp', 'code-reading', 'cs.android.com', 'methodology']
 related_chapters: ["1.1", "2.4", "2.5", "13.1"]
-pipeline_stage: task9_pending
-task6_state: reviewed
-task9_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
 task9_result: needs-rework
 task9_reviewed_date: "2026-04-17"
-task2b_state: idle
+task2b_state: fixed
 ---
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-04-17"
@@ -158,7 +158,7 @@ ART 虚拟机的完整实现。这个目录结构比较独立和完整：
 | 应用启动 | frameworks/base/core/java/android/app/ActivityThread.java |
 | 系统启动 | system/core/init/ |
 | 内存管理 / GC | art/runtime/ |
-| 输入事件分发 | frameworks/base/core/java/android/view/InputEventReceiver.java |
+| 输入事件分发 | frameworks/native/services/inputflinger/dispatcher/（C++ 分发核心） + frameworks/base/core/java/android/view/InputEventReceiver.java（Java 接收端） |
 | Binder 通信 | frameworks/native/libs/binder/ |
 | 功耗 / WakeLock | frameworks/base/services/core/.../PowerManagerService.java |
 
@@ -296,9 +296,9 @@ SurfaceFlinger 是 Android 图形系统的核心服务，负责将各个 Layer �
 关键源码入口：
 
 - `SurfaceFlinger::onMessageRefresh()` — 合成一帧的入口
-- `SurfaceFlinger::composeSurfaces()` — 实际的合成操作
+- 合成流程入口 — Android 9 及以下为 `SurfaceFlinger::composeSurfaces()`；Android 10+ 重构后由 `CompositionEngine`/`Output` 类管理（调用链入口仍经过 `onMessageRefresh()`）
 - `Layer::onDraw()` — 单个 Layer 的绘制
-- `HWComposer::setClientTarget()` / `prepare()` / `set()` — 与 HWC 的交互
+- `HWComposer::validateDisplay()` / `presentDisplay()` — 与 HWC2 的协商接口（Android 8+ 使用 HWC2 协议）
 
 SurfaceFlinger 的源码量大且复杂，建议从 `onMessageRefresh()` 开始，沿着调用链往下追踪。本书第 2.6 节有更详细的机制分析。
 
