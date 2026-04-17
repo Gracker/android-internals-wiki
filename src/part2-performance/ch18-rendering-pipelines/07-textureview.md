@@ -3,14 +3,17 @@ title: "TextureView 合成链路"
 chapter: "18.7"
 status: ready-for-review
 applicable_versions: "Android 4.0 (API 14) - Android 16 (API 36)"
-tags: ["TextureView", "SurfaceTexture", "App侧合成", "纹理采样", "OES", "BLAST", "渲染链路"]
+tags: ["TextureView", "SurfaceTexture", "App 侧合成", "纹理采样", "OES", "BLAST", "渲染链路"]
 related_chapters: ["2.1", "2.6", "2.13", "18.6", "18.8"]
 created_by: "rendering-pipelines-merge"
 created_date: "2026-04-09"
 pipeline_stage: task6_pending
-task6_state: pending
+task6_state: reviewed
 task9_state: pending
 task2b_state: idle
+reviewed_by: openclaw-task6
+reviewed_date: 2026-04-17
+task6_result: pass-light-edit
 ---
 
 <!-- outline-start -->
@@ -204,7 +207,7 @@ texture.setOnFrameAvailableListener(listener, new Handler(ht.getLooper()));
 ### 回调延迟的来源
 
 1. **线程切换**：如果回调在非 UI 线程触发，最终需要 post 到 UI 线程执行 `invalidate()`
-2. **VSync 对齐**：`invalidate()` 只是请求重绘，真正的 `updateTexImage` 要等到下一个 VSync-App 唤醒 RenderThread
+2. **VSync 同步**：`invalidate()` 只是请求重绘，真正的 `updateTexImage` 要等到下一个 VSync-App 唤醒 RenderThread
 3. **Producer → Consumer → App → RenderThread → SF**：至少 2-3 帧的管线延迟
 
 ### 帧丢弃行为
@@ -215,7 +218,7 @@ SurfaceTexture 默认只保留最新的一帧。如果 Producer 生产了 3 帧�
 
 ### 识别 TextureView 链路
 
-识别 TextureView 链路的关键是确认**帧数据经过了 App RenderThread**：
+识别 TextureView 链路的前提是确认**帧数据经过了 App RenderThread**：
 
 1. **App RenderThread 中的 TextureView 绘制**：在 RenderThread 的 Track 中，你会看到 `DrawFrame` 包含了 TextureView 的纹理采样操作
 2. **updateTexImage 耗时**：如果 SurfaceTexture 的 acquireFence 还未 signal（GPU 还在画），`updateTexImage` 可能阻塞等待
