@@ -7,10 +7,10 @@ tags: ["multi-window", "Dialog", "RenderThread-contention", "Choreographer", "se
 related_chapters: ["2.1", "18.2"]
 created_by: "rendering-pipelines-merge"
 created_date: "2026-04-09"
-pipeline_stage: task9_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task9_state: pending
-task2b_state: idle
+task2b_state: fixed
 reviewed_by: openclaw-task6
 reviewed_date: "2026-04-17"
 task6_result: needs-rework
@@ -130,7 +130,9 @@ graph LR
 3. **Sync B**：RenderThread 同步 Window B 的 DisplayList 和资源（**此时 UI Thread 才被释放**）
 4. **Draw B**：生成 Window B 的 GPU 指令，`eglSwapBuffers` → `queueBuffer`（提交 Surface B 的 Buffer）
 
-注意：UI Thread 在 Sync A 时被阻塞（`syncFrameState`），直到 RenderThread 完成同步。这意味着 Window B 的 Traversal 可能需要等 Window A 的 Sync 完成后才能开始——形成了更深的串行依赖链。
+注意：UI Thread 在 Sync A 时会被 `syncFrameState` 阻塞，直到 RenderThread 完成同步。Window B 的 Traversal 需要等 Window A 的 Sync 完成后才能开始——形成了更深的串行依赖链。
+
+`syncFrameState` 的阻塞粒度在不同 Android 版本中有差异。在 Android 9-10 中，UI Thread 会在 `syncFrameState` 处阻塞到 RenderThread 完成 DisplayList 同步和资源更新后才释放；从 Android 12 开始，RenderThread 引入了更轻量的 "push" 模式，UI Thread 只需短暂等待 DisplayList 引用交换即可返回，实际阻塞时间通常在 1-2ms 以内。如果需要精确判断阻塞时长，直接看 Trace 中 `syncFrameState` slice 的持续时间 [待验证: Android 13-16 具体优化细节]。
 
 ### 时序图
 
@@ -209,14 +211,20 @@ RenderThread:  |--Sync A--|--Draw A (4ms)--|--Sync B--|--Draw B (3ms)--|
 **最有效的优化**。如果可能，用 View 的方式实现（如 Fragment、BottomSheetBehavior），而不是真正的 Window Dialog。这样两个窗口会合并到同一个 Surface，`doFrame` 中只有一次 Traversal、一次 SyncFrameState、一次 DrawFrame。
 
 ```java
-// 避免：真正的 Window Dialog
+// 避免：真正的 Window Dialog（创建独立 Window/Surface）
 Dialog dialog = new Dialog(this);
 dialog.setContentView(R.layout.dialog_layout);
 dialog.show();
 
-// 推荐：View 级别的 BottomSheet
-BottomSheetDialogFragment fragment = new MyBottomSheet();
-fragment.show(getSupportFragmentManager(), "tag");
+// 注意：BottomSheetDialogFragment 继承自 AppCompatDialogFragment，
+// 仍然创建独立 Window 和 Surface，只是布局上模拟了 BottomSheet 效果
+
+// 推荐：真正无额外 Window 的方案——BottomSheetBehavior + CoordinatorLayout
+// 在 Activity 的布局 XML 中嵌入 BottomSheet 容器
+// <CoordinatorLayout>
+//   <FrameLayout android:id="@+id/bottom_sheet"
+//     app:layout_behavior="com.google.android.material.bottomsheet.BottomSheetBehavior" />
+// </CoordinatorLayout>
 ```
 
 ### 策略二：冻结背景窗口
