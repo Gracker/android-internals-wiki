@@ -1401,6 +1401,9 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-17T22:20:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-17T14:43:47.648878",
+    "completed_by": "task2b-rework",
+    "completion_reason": "Fixed 2/2 issues: multi-process ContentProvider section added (android:process, cold start, CursorWindow cross-process, applicable scenarios) + Android 11/12 version evolution entries (setDetectNotResponding, getProviderMimeTypeAsync)"
   }
 ]
