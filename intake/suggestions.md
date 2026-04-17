@@ -1361,3 +1361,17 @@
 - **位置**：frontmatter related_chapters
 - **问题**：正文多次依赖 BufferQueue、fence 和 Overlay/CLIENT 的判定，但 related_chapters 只列了 2.6 / 2.10 / 18.6，缺少最直接的 2.13（BufferQueue）和 2.16（Sync Fence）。
 - **建议**：在 related_chapters 中补充 `2.13`、`2.16`，必要时增加 `18.10`（SurfaceControl / layer 管理）。
+
+## [Task6 Review] 18.16 游戏引擎渲染链路 — 2026-04-18
+
+- **类型**：需验证 + 需补充素材
+- **位置**：Swappy 代码块 + 参考资料 + Perfetto 描述
+- **问题**：
+  1. SwappyVk_setSwapIntervalNS 参数签名需验证（Android Game SDK 版本差异）
+  2. 参考资料缺少 URL，AOSP 路径过于笼统
+  3. Perfetto 中 Swappy Track/Slice 描述笼统，缺少具体名称
+- **建议**：
+  1. Task 9 验证 Swappy Vulkan API 最新签名
+  2. 补充官方文档 URL
+  3. 补充具体 Swappy Track/Slice 名称或 Trace 截图
+- **review 日志**：logs/review/2026-04-18-05-review.md

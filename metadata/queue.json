@@ -1696,5 +1696,38 @@
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-18T04:53:00+08:00",
     "status": "pending"
+  },
+  {
+    "section": "18.16",
+    "section_title": "游戏引擎渲染链路",
+    "priority": 90,
+    "reason": "[review回炉] Swappy API 需验证、参考资料 URL 缺失、Perfetto 描述粒度不足",
+    "material_paths": [
+      "intake/suggestions.md（含 review 意见）"
+    ],
+    "review_issues": [
+      {
+        "type": "需验证",
+        "location": "Swappy Frame Pacing 代码块",
+        "detail": "SwappyVk_setSwapIntervalNS 参数签名需验证",
+        "suggestion": "Task 9 确认 Swappy Vulkan API 最新签名"
+      },
+      {
+        "type": "需补充素材",
+        "location": "参考资料章节",
+        "detail": "4 条参考资料缺少 URL，AOSP 路径笼统",
+        "suggestion": "补充 Android Game SDK、Unity、Unreal 文档 URL"
+      },
+      {
+        "type": "需补充素材",
+        "location": "Swappy Frame Pacing 节末段",
+        "detail": "Perfetto 中 Swappy Track/Slice 描述笼统",
+        "suggestion": "补充具体 Track 名称或 Trace 截图"
+      }
+    ],
+    "added_by": "task6-review",
+    "added_at": "2026-04-18T05:07:00",
+    "status": "pending",
+    "original_review_log": "logs/review/2026-04-18-05-review.md"
   }
 ]
