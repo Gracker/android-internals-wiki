@@ -7,10 +7,14 @@ tags: ["Flutter", "Impeller", "Skia", "SurfaceView", "TextureView", "Merged-Thre
 related_chapters: ["2.5", "2.11", "18.6", "18.7"]
 created_by: "rendering-pipelines-merge"
 created_date: "2026-04-09"
-pipeline_stage: task6_pending
-task6_state: pending
+section: "18.12"
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task2b_state: idle
+reviewed_by: openclaw-task6
+reviewed_date: "2026-04-18"
+task6_result: pass-light-edit
 ---
 
 <!-- outline-start -->
@@ -58,7 +62,7 @@ graph TD
     Platform -->|MethodChannel| Main
 ```
 
-合并后，Dart 代码和 Android 平台代码（如 Activity 生命周期回调、MethodChannel 调用）运行在同一线程上，减少了跨线程切换开销。但需要注意的是：Raster Thread 始终是独立的——它是 Flutter 唯一与 GPU 交互的线程。
+合并后，Dart 代码和 Android 平台代码（如 Activity 生命周期回调、MethodChannel 调用）运行在同一线程上，减少了跨线程切换开销。但 Raster Thread 始终是独立的——它是 Flutter 唯一与 GPU 交互的线程。
 
 | 线程 | 职责 | Trace 标签 |
 |:---|:---|:---|
@@ -188,6 +192,12 @@ sequenceDiagram
 | Raster Thread | `Rasterizer::DrawToSurfaces`, `EntityPass::*` | 光栅化阶段 |
 | IO Thread | `ImageDecoder` | 图片解码 |
 | SurfaceFlinger | Flutter 独立 Layer | SurfaceView mode |
+
+**Trace 截图参考**：
+
+[待补充：Flutter SurfaceView mode 下 Perfetto 截图 — 标注 Dart Runner、Raster Thread、SurfaceFlinger 的对应轨道]
+
+[待补充：Flutter TextureView mode 下 Perfetto 截图 — 标注 Raster Thread、宿主 RenderThread、SurfaceTexture 的交互时序]
 
 **诊断思路**：
 - Dart 阶段慢 → 优化 Widget 树、减少 rebuild
