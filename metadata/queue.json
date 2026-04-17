@@ -1563,5 +1563,50 @@
     "status": "completed",
     "completed_at": "2026-04-18T02:52:00+08:00",
     "review_log": "logs/deep-review/2026-04-18-02-deep-review.md"
+  },
+  {
+    "section": "18.14",
+    "section_title": "Camera 渲染管线",
+    "priority": 90,
+    "reason": "[review回炉] 多个章节内容深度不足，需扩展",
+    "material_paths": [
+      "intake/suggestions.md（含 review 意见）"
+    ],
+    "review_issues": [
+      {
+        "type": "需补充素材",
+        "location": "常见性能问题",
+        "detail": "仅 4 条 1-2 句列表项，作为性能书核心章节深度不够。每类问题需展开：根因分析链路、Perfetto 中的具体表现、典型修复方案",
+        "suggestion": "参考 writing-guide.md 类型A模板的「常见问题与误区」要求扩展"
+      },
+      {
+        "type": "需补充素材",
+        "location": "在 Perfetto 中识别 Camera 管线",
+        "detail": "仅 3 行 track 表，缺少具体的 Trace 分析方法、正常/异常对比描述、截图占位",
+        "suggestion": "补充 Camera 相关 Trace 的典型分析方法，包括 buffer 状态、帧间隔判断"
+      },
+      {
+        "type": "需重写",
+        "location": "关键组件（多消费者架构小节内）",
+        "detail": "3 条项目符号各仅一句话，CameraService/HAL3/CaptureRequest 缺少角色和交互关系的叙述",
+        "suggestion": "转为叙述体，解释每个组件在管线中的角色及其与上下游的交互"
+      },
+      {
+        "type": "需补充素材",
+        "location": "版本演进",
+        "detail": "applicable_versions 跨 Android 5-16 但全文未讨论任何版本差异（如 Camera→Camera2→CameraX API 演进、HAL 版本变化）",
+        "suggestion": "补充 Camera API 版本演进（Camera1→Camera2→CameraX）及 HAL 版本变化对性能的影响"
+      },
+      {
+        "type": "需补充素材",
+        "location": "参考资料",
+        "detail": "参考资料缺少具体函数名和版本分支，仅有目录级路径",
+        "suggestion": "补充关键函数（如 CameraService::connect、Camera3Device::processCaptureRequest 等）和 AOSP 分支标注"
+      }
+    ],
+    "added_by": "task6-review",
+    "added_at": "2026-04-18T03:20:12",
+    "status": "pending",
+    "original_review_log": "logs/review/2026-04-18-03-review.md"
   }
 ]

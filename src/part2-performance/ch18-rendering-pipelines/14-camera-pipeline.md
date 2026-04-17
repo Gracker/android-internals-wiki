@@ -7,10 +7,13 @@ tags: ["Camera", "Camera2", "HAL3", "ZSL", "多流并发", "SurfaceView", "Image
 related_chapters: ["2.13", "2.15", "14.9", "18.6"]
 created_by: "rendering-pipelines-merge"
 created_date: "2026-04-09"
-pipeline_stage: task6_pending
-task6_state: pending
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task2b_state: idle
+reviewed_by: "openclaw-task6"
+reviewed_date: "2026-04-18"
+task6_result: "needs-rework"
 ---
 
 <!-- outline-start -->
@@ -29,7 +32,7 @@ task2b_state: idle
 
 <!-- outline-end -->
 
-## 为什么 Camera 的渲染链路与众不同
+## 为什么 Camera 的渲染管线与众不同
 
 Camera 是 Android 系统中数据量最大、实时性要求最高的子系统之一。与普通 View 渲染"一产一销"的模型不同，Camera 天生就是**多消费者**的——同一个 Sensor 帧可能同时需要送到屏幕预览、视频编码器和 AI 分析模块，而且通常要求**零拷贝**。[已验证: Camera2 API 文档]
 
@@ -56,7 +59,7 @@ graph TD
 - **HAL3 / ISP**：硬件图像信号处理器，产生 YUV/RAW 数据
 - **CaptureRequest**：App 下发的请求，包含 ISO、曝光等参数
 
-## 完整渲染链路
+## 完整渲染管线
 
 ### 阶段一：配置流（Configure）
 
@@ -160,7 +163,7 @@ ZSL 是解决"按下快门到真正拍照"延迟的核心机制：
 3. **Binder Congestion**：CameraService 与 App 之间的 IPC 拥塞。`binder transaction` 耗时异常。
 4. **内存抖动**：在 `onImageAvailable` 中频繁 `new byte[]` 拷贝数据。应直接处理 ByteBuffer 或使用 NDK/GPU 路径。
 
-## 在 Perfetto 中识别 Camera 链路
+## 在 Perfetto 中识别 Camera 管线
 
 | Track | 说明 |
 |:---|:---|
