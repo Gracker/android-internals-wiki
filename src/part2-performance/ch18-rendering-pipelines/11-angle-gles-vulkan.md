@@ -5,10 +5,17 @@ status: ready-for-review
 applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
 tags: ["ANGLE", "GLES", "Vulkan", "翻译层", "SPIR-V", "图形驱动", "渲染链路"]
 related_chapters: ["2.14", "18.8", "18.9"]
+sources:
+  - "Google ANGLE 项目文档 (chromium.googlesource.com/angle)"
+  - "Android 官方文档: ANGLE on Android"
+  - "AOSP external/angle/"
 created_by: "rendering-pipelines-merge"
 created_date: "2026-04-09"
-pipeline_stage: task6_pending
-task6_state: pending
+pipeline_stage: task9_pending
+task6_state: reviewed
+reviewed_by: openclaw-task6
+reviewed_date: 2026-04-18
+task6_result: pass-light-edit
 task9_state: pending
 task2b_state: idle
 ---
@@ -31,11 +38,11 @@ task2b_state: idle
 
 ## 为什么需要 ANGLE
 
-Android 图形生态有一个长期痛点：GLES（OpenGL ES）驱动的碎片化。高通、联发科、三星、ARM……每家 GPU 厂商都有自己的 GLES 驱动实现，质量参差不齐。同一个 `glDrawArrays` 调用，在不同设备上可能产生不同的渲染结果，甚至触发驱动 Bug 导致 Crash。
+Android 图形生态长期面临一个问题：GLES（OpenGL ES）驱动的碎片化。高通、联发科、三星、ARM……每家 GPU 厂商都有自己的 GLES 驱动实现，质量参差不齐。同一个 `glDrawArrays` 调用，在不同设备上可能产生不同的渲染结果，甚至触发驱动 Bug 导致 Crash。
 
 **ANGLE**（Almost Native Graphics Layer Engine）是 Google 开发的开源图形翻译层，核心思路是：**让所有 GLES 调用都先经过 ANGLE 翻译成 Vulkan 指令，再交给 GPU 执行**。这样 App 仍然调用 GLES API，但底层走的是统一维护的翻译层，而不是各家厂商的闭源驱动。
 
-Android 10 起支持手动启用 ANGLE，Android 15+ 将其纳入重要生态方向。但需要注意的是：**是否默认启用取决于设备、OEM 和 provider 配置**，不是所有 Android 15+ 设备都会自动走 ANGLE。[已验证: Android 官方文档]
+Android 10 起支持手动启用 ANGLE，Android 15+ 将其纳入重要生态方向。但**是否默认启用取决于设备、OEM 和 provider 配置**，不是所有 Android 15+ 设备都会自动走 ANGLE。[已验证: Android 官方文档]
 
 ## 核心架构
 
@@ -124,7 +131,7 @@ ANGLE 不是免费的午餐——翻译层本身有开销，但它带来的好�
 - **首次 Shader 编译稍慢**：GLSL → SPIR-V → GPU Binary 的编译链比直接编译 GLSL 多一步
 - **内存略高**：需要维护翻译状态
 
-总体而言，对于 Draw Call 密集的场景（如地图、游戏），ANGLE 的收益通常大于开销；对于 Draw Call 很少的简单场景，翻译开销可能更明显。[已验证: Google ANGLE 官方文档]
+对于 Draw Call 密集的场景（如地图、游戏），ANGLE 的收益通常大于开销；对于 Draw Call 很少的简单场景，翻译开销可能更明显。[已验证: Google ANGLE 官方文档]
 
 ## 在 Perfetto 中识别 ANGLE
 
