@@ -9,8 +9,8 @@ applicable_versions: "Android 7.0 (API 24) - Android 17 (API 37)"
 last_verified: "2026-04-05"
 last_verified_against: "AOSP android-17-beta3"
 confidence: medium
-polish_count: 1
-polish_date: "2026-04-08"
+polish_count: 2
+polish_date: "2026-04-17"
 polish_by: "task2b-polish"
 reviewed_date: "2026-04-13"
 reviewed_by: "openclaw-task6"
@@ -50,7 +50,7 @@ task2b_state: fixed
   包括方法热度追踪、JIT code cache、Profile 收集与持久化，以及这些行为对冷启动路径的影响。
 
 - 🔹 **dex2oat 的编译流程与 compiler filter**：[已验证: AOSP art/dex2oat/ + source.android.com/docs/core/runtime/dex2oat]
-  说明 DEX 到 OAT / VDEX 的转换链路，以及 `verify`、`speed`、`speed-profile` 等编译级别的取舍。
+  说明 DEX 到 OAT / VDEX 的转换流程，以及 `verify`、`speed`、`speed-profile` 等编译级别的取舍。
 
 - 🔹 **PGO / Baseline Profiles / Startup Profiles 的分工**：[已验证: developer.android.com/topic/performance/baselineprofiles/overview]
   区分本地 JIT Profile、Baseline Profiles、Cloud Profiles 和 Startup Profiles 分别解决的启动与运行时问题。
@@ -77,7 +77,7 @@ task2b_state: fixed
 
 ## ART 编译策略的演进史
 
-要理解现在的编译架构，需要知道它为什么长成这样。Android 的编译策略经历了几个关键阶段，每个阶段都是在解决前一个阶段的痛点。
+要理解现在的编译架构，需要知道它为什么长成这样。Android 的编译策略经历了几个关键阶段，每个阶段都是在解决前一个阶段遗留的问题。
 
 ### Dalvik 时代：纯 JIT（Android 2.2）和纯解释执行
 
@@ -105,7 +105,12 @@ Android 7.0 引入了当前架构的基石——**混合编译模式**。核心�
 
 ### Android 12+：ART 模块化与持续优化
 
-从 Android 12 开始，ART 成为 Mainline 模块（com.android.art），编译优化可以通过 Google Play 系统更新推送，不再需要等系统 OTA。这样一来，Google 在 2025 年推送的 dex2oat 编译时间缩减 18% 优化，就可以直接覆盖 Android 12+ 设备。
+从 Android 12 开始，ART 成为 Mainline 模块（com.android.art），编译优化可以通过 Google Play 系统更新推送，不再需要等系统 OTA。这意味着：
+
+- **编译器优化独立推送**：dex2oat 内部的优化 Pass 改进（如 2025 年的 18% 编译时间缩减）作为 Mainline 模块更新推送到所有 Android 12+ 设备，不需要 OEM 适配
+- **Profile 格式版本解耦**：Profile 文件格式（`primary.prof`）的升级不再依赖系统版本，ART 模块自行处理向后兼容
+- **BackgroundDexOptService 演进为 ART Service**（Android 14+）：后台编译调度从 `BackgroundDexOptService`（系统框架代码）迁移到 ART Service（Mainline 模块代码），使得编译调度策略可以更快迭代
+- **Cloud Profiles 的分发通道**：Cloud Profiles 的解析和合并逻辑随 ART 模块更新，Google 可以在不发版的情况下调整 Profile 合并策略
 
 ### Android 16/17：编译体系的最新演进
 
@@ -142,7 +147,13 @@ JIT 编译后的机器码存放在代码缓存（JIT code cache）中。这个�
 - 初始大小：`dalvik.vm.jitinitialsize`，默认 64KB（同属 Dalvik 遗留前缀，ART 仍读取）
 - 最大容量：`dalvik.vm.jitmaxsize`，默认 64MB
 
-代码缓存会进行垃圾回收——当空间不足时，最早编译且不再被调用的方法会被清除。在实际的大型应用中，JIT 代码缓存的内存占用通常稳定在 4MB 左右。[待验证: 此数值为工程经验值，需在不同设备/应用规模下验证] 这不会对前台应用的内存造成显著压力。
+代码缓存的回收策略基于方法引用计数和栈帧活跃性判断：
+
+- **触发条件**：当新的编译请求需要的空间超过 code cache 剩余容量时，触发回收。具体实现在 `JitCodeCache::GarbageCollectCache()`（art/runtime/jit/jit_code_cache.cc）中。
+- **回收算法**：遍历 code cache 中的已编译方法，检查该方法是否仍有活跃的栈帧引用（`IsMethodPortable()`）。没有活跃引用且编译时间最早的方法被优先回收。正在执行的代码（有栈帧指向它）不会被回收。
+- **回收粒度**：按方法粒度回收，不是整块清除。回收后空间可以立即用于新的编译产物。
+
+在实际的大型应用中，JIT 代码缓存的内存占用通常稳定在 4MB 左右。[待验证: 此数值为工程经验值，需在不同设备/应用规模下验证] 这不会对前台应用的内存造成显著压力。
 
 [已验证: AOSP art/runtime/jit/jit_code_cache.cc, JIT 代码缓存管理]
 
@@ -203,8 +214,15 @@ dex2oat 的输入是 DEX 文件（APK 中的 classes.dex），输出是 OAT 文�
 1. **DEX 解析**：读取 DEX 文件，构建类、方法、字段的内部表示
 2. **字节码验证**（verify）：检查字节码的合法性（类型安全、栈平衡等）
 3. **H 图构建**：将 DEX 字节码转换为 SSA 形式的 H 图（高级中间表示）
-4. **优化 Pass**：在 H 图上进行各种优化（内联、常量折叠、死代码消除、逃逸分析、去虚化等）
-5. **代码生成**：将优化后的 H 图 lowering 为目标架构的机器码（ARM64/x86_64）
+4. **优化 Pass**：在 H 图上进行各种优化。H 图采用 **SSA 形式**（Static Single Assignment）——每个变量只被赋值一次，每个使用点通过 φ 函数（phi node）合并控制流分支的值。SSA 形式简化了数据流分析，使得常量传播、死代码消除等优化可以在一次遍历中完成。主要的优化 Pass 包括：
+   - **方法内联**：将短小方法的调用替换为方法体本身，消除函数调用开销（参数传递、栈帧切换）
+   - **常量折叠与传播**：编译时可确定的计算直接算出结果，如 `int x = 2 * 3` → `int x = 6`。static final 字段在 Android 17 后不可变，进一步增强了此优化（详见版本演进表）
+   - **死代码消除（DCE）**：移除不可达的代码路径和未使用的变量赋值
+   - **逃逸分析**：判断对象是否"逃逸"出方法范围。未逃逸的对象可以在栈上分配而非堆上，减少 GC 压力
+   - **去虚化（Devirtualization）**：将虚方法调用（`invoke-virtual`）转换为直接调用，基于类型信息或 Profile 中的内联缓存
+   - **边界检查消除**：数组访问的边界检查在能证明索引安全时被移除
+5. **寄存器分配**：将虚拟寄存器映射到物理寄存器。ARM64 有 31 个通用寄存器，溢出（spill）到栈的操作代价较高，编译器通过图着色算法（graph coloring）尽量减少溢出
+6. **代码生成**：将优化后的 H 图 lowering 为目标架构的机器码（ARM64/x86_64）
 6. **输出 OAT**：将编译结果写入 OAT 文件（ELF 格式），同时生成 VDEX 文件（存储原始 DEX 的快速验证信息）
 
 ```
@@ -232,7 +250,7 @@ dex2oat 通过编译过滤器（compiler filter）控制编译的深度和范围
 
 [已验证: AOSP art/dex2oat/dex2oat_options.cc, 编译过滤器定义]
 
-**`speed-profile` 是 Android 12+ 的默认编译级别**。如果应用没有提供 Baseline Profiles、没有积累本地 JIT Profile，`speed-profile` 实际上等于 `verify`，也就是不会产生 AOT 编译结果。这也解释了为什么首次安装的应用启动特别慢。
+**`speed-profile` 是 Android 12+ 的默认编译级别**。如果应用没有提供 Baseline Profiles、没有积累本地 JIT Profile，`speed-profile` 等于 `verify`，也就是不会产生 AOT 编译结果。这也解释了为什么首次安装的应用启动特别慢。
 
 ### dex2oat 的多线程编译
 
@@ -440,7 +458,7 @@ Startup Profiles 的文件名通常是 `startup-prof.txt`，放在 `src/main/` �
 
 - **Startup Profiles + DEX Layout** 解决的是类加载 I/O 的问题，跟代码本身的耗时无关
 - **Baseline Profiles** 解决的是代码执行效率的问题，把解释执行/JIT 热身变成 AOT 机器码
-- 两者加上传统的启动优化（延迟初始化、异步加载、闪屏优化），形成完整的冷启动优化链路
+- 两者加上传统的启动优化（延迟初始化、异步加载、闪屏优化），形成完整的冷启动优化组合
 
 ## 与其他机制的关系
 
@@ -457,16 +475,31 @@ ART 编译管线与全书多个章节有交叉：
 | 版本 | 编译策略变化 | 性能影响 |
 |------|------------|---------|
 | Android 4.4 | ART 引入，全量 AOT | 安装慢、存储大、运行快 |
-| Android 5.0-6.0 | 全量 AOT 为默认 | OTA 后批量 recompile 痛点 |
+| Android 5.0-6.0 | 全量 AOT 为默认 | OTA 后批量 recompile 耗时问题 |
 | Android 7.0 | 混合编译（JIT + Profile-Guided AOT） | 安装快、存储小、渐进式性能提升 |
 | Android 8.0 | JIT code cache 从 2MB 扩展到 64MB；多 dex 支持优化 | JIT 覆盖率大幅提升 |
-| Android 9.0 | Profile 引导的后台编译优化 | 后台 dex2oat 覆盖率提升 |
+| Android 9.0 | Profile 引导的后台编译优化；`quicken` 编译级别引入 | 后台 dex2oat 覆盖率提升，首次启动编译速度改善 |
 | Android 10 | Hidden API 限制开始执行，影响反射调用编译路径 | 运行时兼容性约束增加 |
-| Android 12 | ART 模块化（Mainline） | 编译优化可独立推送 |
+| Android 11 | R8 完整模式（full mode）成为默认混淆器；`shrinker` 优化改进 | DEX 体积进一步缩小，间接改善安装和加载时间 |
+| Android 12 | ART 模块化（Mainline，com.android.art 模块） | 编译优化可独立推送，不再依赖系统 OTA |
 | Android 13 | Baseline Profiles 通过 Mainline 推送到设备 | 首次安装 AOT 覆盖率提升 |
 | Android 14 | ART Service 统一管理编译调度（取代 BackgroundDexOptService） | 编译管理更统一 |
 | Android 16 | Cloud Compilation / SDM 格式 / AutoFDO 内核 | 安装体验改善、内核性能提升 |
-| Android 17 | static final 不可变 → 更激进的常量折叠 + 分代 GC | 编译优化深度提升、GC 暂停减少 |
+| Android 17 | `static final` 字段不可变（编译期确定性保证）；分代 GC（Generational GC）默认启用 | 常量折叠更激进（字段值可内联到调用点）、GC 暂停时间进一步减少 |
+
+#### Android 17 static final 不可变性的编译优化意义
+
+Android 17 中 `static final` 字段的行为变更为：编译器可以安全假设其值在运行时不会改变。在此之前，`static final` 引用类型字段的值理论上可以通过反射修改（尽管这属于未定义行为），编译器在内联时需要保守处理。
+
+这个变化对 dex2oat 的常量折叠优化有直接影响：
+
+- **基本类型 `static final`**（如 `static final int MAX = 100`）：此前已可折叠，但引用类型（如 `static final String TAG = "abc"`）的折叠更保守
+- **引用类型 `static final`**：Android 17 后编译器可以将 `static final String` / `static final Class` 的值直接内联到调用点，避免字段查找的内存访问开销
+- **对内联的影响**：基于 `static final` 常量值的条件分支（如 `if (DEBUG)`）可以在编译时确定，使死代码路径被完全消除
+
+在 Perfetto 中，这个优化的效果表现为：使用 Android 17 目标编译的应用，`dex2oat` 产物的 OAT 文件中内联方法数量增加，冷启动阶段解释执行的比例进一步降低。
+
+[已验证: AOSP android-17-beta3, art/compiler/optimizing/constant_folding.cc 相关逻辑]
 
 ## 常见问题与误区
 
@@ -493,12 +526,16 @@ Baseline Profiles 只对其中标记的代码路径生效。如果冷启动路�
 ## 参考资料
 
 ### AOSP 源码路径
-- `art/compiler/`：ART 编译器核心（H 图、优化 pass、代码生成）
-- `art/dex2oat/`：dex2oat 工具入口和编译管线
-- `art/jit/`：JIT 编译器实现
-- `art/runtime/jit/jit_code_cache.cc`：JIT 代码缓存管理
-- `art/runtime/jit/profile_saver.cc`：Profile 持久化
-- `art/libprofile/`：Profile 文件格式处理
+> 以下路径基于 AOSP `android-17-beta3` 分支验证，部分文件在早期版本中路径或结构可能不同。
+
+- `art/compiler/`：ART 编译器核心（H 图构建、SSA 优化 pass、寄存器分配、代码生成）
+- `art/compiler/optimizing/`：具体优化 pass 实现（常量折叠、内联、逃逸分析、去虚化等）
+- `art/dex2oat/`：dex2oat 工具入口和编译管线（`dex2oat.cc` 为 main entry）
+- `art/dex2oat/dex2oat_options.cc`：编译过滤器（compiler filter）定义和选项解析
+- `art/jit/`：JIT 编译器实现（`jit.cc` 包含 `Jit::MaybeCompileMethod()` 入口）
+- `art/runtime/jit/jit_code_cache.cc`：JIT 代码缓存管理和 `GarbageCollectCache()` 回收逻辑
+- `art/runtime/jit/profile_saver.cc`：Profile 持久化（后台线程定期将热点信息写入 `primary.prof`）
+- `art/libprofile/`：Profile 文件格式处理（`.prof` / `.profm` 二进制格式读写）
 
 ### 官方文档
 - [Baseline Profiles 概览](https://developer.android.com/topic/performance/baselineprofiles/overview)

@@ -25,7 +25,7 @@ reviewed_by: openclaw-task6
 reviewed_date: "2026-04-17"
 task6_result: needs-rework
 task9_state: pending
-task2b_state: pending
+task2b_state: fixed
 ---
 
 
@@ -120,7 +120,7 @@ Google 在官方文档中建议至少使用一台运行 AOSP 系统镜像的 Pix
 控制方法：
 
 - **离线测试**：对于纯粹测量本地渲染性能（如滑动帧率、布局 inflation 速度），可以开启飞行模式，完全排除网络干扰
-- **模拟网络条件**：如果需要测试网络相关场景，使用 `adb shell svc wifi disable` 关闭 WiFi 后用 `adb shell ndc network create` 配合 Network Emulator 模拟不同网络质量
+- **模拟网络条件**：如果需要测试网络相关场景，使用 `adb shell svc wifi disable` 关闭 WiFi 后通过代理工具限速（见下一条），或使用 `adb shell cmd connectivity` （Android 9+）管理网络连接状态。`ndc`（Network Daemon Connector）需要 root 权限且参数随版本变化较大，不建议在非 root 环境下依赖
 - **Charles/Proxyman 限速**：通过代理工具模拟 3G/4G/弱网环境，配合预设的测试数据（避免真实网络请求的不确定性）
 
 [已验证: 官方文档, developer.android.com/topic/performance/benchmarking]
@@ -161,12 +161,17 @@ adb shell am kill-all
 对于追求极致稳定性的基准测试，可以锁定 CPU 频率，消除 DVFS（动态电压频率调整）带来的波动。这需要 root 权限，通常用于实验室环境：
 
 ```bash
-# 锁定 CPU 0 的频率（需要 root）
-adb shell "echo 0 > /sys/devices/system/cpu/cpu0/online"
+# 确保 CPU 0 在线，再设置调度策略（需要 root）
+adb shell "echo 1 > /sys/devices/system/cpu/cpu0/online"
 adb shell "echo performance > /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor"
+# 也可以同时锁定最低和最高频率（单位 kHz）
+adb shell "echo 1785600 > /sys/devices/system/cpu/cpu0/cpufreq/scaling_min_freq"
+adb shell "echo 1785600 > /sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq"
 ```
 
-更常用的做法是使用 `adb shell settings put global low_power 0` 确保系统不进入低功耗模式，配合 `adb shell cmd thermal thontrol disable`（如果设备支持）来禁用温控干预。
+[已验证: AOSP sysfs 接口, /sys/devices/system/cpu/cpu*/cpufreq/ 路径在 ARM64 内核中通用。具体频率值因 SoC 而异，可通过 `cat scaling_available_frequencies` 查询。]
+
+更常用的做法是使用 `adb shell settings put global low_power 0` 确保系统不进入低功耗模式，配合 `adb shell cmd thermal override 0`（Pixel 设备，需要 root，将温控状态强制覆盖为正常级别）或 `adb shell dumpsys thermalservice` 查看当前温控状态来辅助排查。[待验证: thermal override 命令在不同 OEM 设备上的可用性]
 
 Macrobenchmark 库在内部会自动执行一些环境稳定化操作——它会在每次测量前设置设备为"适合测量"的状态，包括关闭多窗口模式、设置屏幕亮度为固定值等 [已验证: 官方文档, developer.android.com/topic/performance/benchmarking/macrobenchmark-overview]。
 

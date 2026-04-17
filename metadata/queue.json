@@ -1142,7 +1142,10 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-17T10:32:13.241780",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-17T13:48:07",
+    "completed_by": "task2b-rework",
+    "completion_reason": "Fixed 6/7 issues (JIT GC algorithm, SSA/register allocation detail, static final optimization, ART modularization, version table, AOSP paths); Issue 1 (Startup Profiles) already covered"
   },
   {
     "section": "15.6",
@@ -1174,7 +1177,10 @@
     ],
     "added_by": "task6-review",
     "added_at": "2026-04-17T13:05:00",
-    "status": "pending",
-    "original_review_log": "logs/review/2026-04-17-13-review.md"
+    "status": "completed",
+    "original_review_log": "logs/review/2026-04-17-13-review.md",
+    "completed_at": "2026-04-17T13:48:07",
+    "completed_by": "task2b-rework",
+    "completion_reason": "Fixed 3/3 issues (CPU offline→online, thermal command typo, ndc network command clarification)"
   }
 ]
