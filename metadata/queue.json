@@ -1049,8 +1049,8 @@
   {
     "section": "15.3",
     "section_title": "性能指标体系",
-    "priority": 85,
-    "reason": "[review回炉] L4活人感缺失 + L3内容深度不足（2处）",
+    "priority": 95,
+    "reason": "[Deep Tech Review] P0 事实错误：system-triggered profiling 版本描述自相矛盾",
     "material_paths": [
       "intake/suggestions.md"
     ],
@@ -1072,11 +1072,73 @@
         "location": "TTFD 节 — reportFullyDrawn() 代码示例",
         "detail": "if-else 两分支执行完全相同的 reportFullyDrawn() 调用，版本分支无实际差异。注释提到 API 31+ 可传更精确时间戳，但代码未使用",
         "suggestion": "补充 reportFullyDrawn(long duration) API 31+ 用法，或简化为单行调用"
+      },
+      {
+        "type": "版本差异-自相矛盾",
+        "location": "TTFD 节，两处 system-triggered profiling 版本描述",
+        "detail": "位置 A 写'Android 14+ 的 system-triggered profiling'，位置 B 写'Android 16 引入了 system-triggered profiling'。同一特性给出不同版本号，至少一处错误",
+        "suggestion": "确认 system-triggered profiling 引入版本（应为 Android 16），统一修正全文中所有引用"
       }
     ],
     "added_by": "task6-review",
     "added_at": "2026-04-17T10:09:00",
     "status": "pending",
     "original_review_log": "logs/review/2026-04-17-10-review.md"
+  },
+  {
+    "section": "src/part1-fundamentals/ch01-architecture/07-art-compilation.md",
+    "section_title": "1.7 ART 编译管线与 dex2oat 优化",
+    "priority": 95,
+    "reason": "[Deep Tech Review] 多项重要技术缺失和原理断裂",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "原理断裂",
+        "location": "Startup Profiles 与 DEX 布局",
+        "detail": "文档大纲中列出但正文未见该章节内容，缺乏关键的 DEX 布局优化机制说明",
+        "suggestion": "补充 Startup Profiles 工作原理和 DEX 布局优化技术细节"
+      },
+      {
+        "type": "原理断裂",
+        "location": "JIT 代码缓存垃圾回收",
+        "detail": "提到代码缓存会进行垃圾回收，但未说明具体的触发条件和算法",
+        "suggestion": "补充 JIT 代码缓存的 GC 策略和内存管理机制"
+      },
+      {
+        "type": "版本差异",
+        "location": "Android 4.4-17 版本演进",
+        "detail": "版本表格过于简略，缺少关键版本的技术演进细节",
+        "suggestion": "详细说明各版本编译策略的核心变化和性能影响"
+      },
+      {
+        "type": "版本差异",
+        "location": "Android 12+ ART 模块化",
+        "detail": "Mainline 更新对编译优化的实际影响缺乏具体说明",
+        "suggestion": "补充 ART 模块化带来的编译优化独立推送能力说明"
+      },
+      {
+        "type": "版本差异",
+        "location": "Android 17 static final 不可变性",
+        "detail": "新特性带来的编译优化变化未详细展开",
+        "suggestion": "说明 static final 不可变性如何影响常量折叠和内联优化"
+      },
+      {
+        "type": "源码错误",
+        "location": "AOSP 源码路径验证",
+        "detail": "源码路径需要具体版本验证，需确认在 android-17-beta3 中确实存在描述的变量名",
+        "suggestion": "精确标注 AOSP 版本和源码文件路径"
+      },
+      {
+        "type": "知识盲区",
+        "location": "编译器优化 Pass 详细机制",
+        "detail": "SSA 形式、寄存器分配等核心优化算法缺失",
+        "suggestion": "补充编译器内部的优化算法详解"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-17T10:32:13.241780",
+    "status": "pending"
   }
 ]

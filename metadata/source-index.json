@@ -14868,6 +14868,63 @@
       ],
       "first_chars": "# Android 17 有什么需要适配的？2026 Android 禁止侧载又是什么？\n\n[来源：2026-04-17]\n[链接：https://juejin.cn/post/7610233341305389099]",
       "date_added": "2026-04-17"
+    },
+    {
+      "title": "王晓振：U4 内核团队再出发，打造全新 Flutter 渲染引擎 —— Hummer",
+      "path": "AndroidWeekly/#2/王晓振：U4 内核团队再出发，打造全新 Flutter 渲染引擎 —— Hummer",
+      "source_url": "https://zhuanlan.zhihu.com/p/189411332?utm_source=wechat_session&utm_medium=social&utm_oi=27871238160384",
+      "weekly_issue": "#2",
+      "weekly_date": "2020-09-09",
+      "score": 0,
+      "quality": "unknown",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiability": 0
+      },
+      "mapped_chapters": [],
+      "summary": "Content not accessible from current environment",
+      "accessibility_issue": "Blocked or not accessible from current location",
+      "scored_at": "2026-04-17T09:17:29.530133"
+    },
+    {
+      "title": "编译运行Linux内核源码中的BPF示例代码 - 云+社区 - 腬讯云",
+      "path": "AndroidWeekly/#2/编译运行Linux内核源码中的BPF示例代码 - 云+社区 - 腾讯云",
+      "source_url": "https://cloud.tencent.com/developer/article/1644458",
+      "weekly_issue": "#2",
+      "weekly_date": "2020-09-09",
+      "score": 0,
+      "quality": "unknown",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiability": 0
+      },
+      "mapped_chapters": [],
+      "summary": "Content not accessible from current environment",
+      "accessibility_issue": "Blocked or not accessible from current location",
+      "scored_at": "2026-04-17T09:17:29.530145"
+    },
+    {
+      "title": "小技巧 | 在 Android Studio 调试应用 (下)",
+      "path": "AndroidWeekly/#2/小技巧 | 在 Android Studio 调试应用 (下)",
+      "source_url": "https://mp.weixin.qq.com/s/vAi1R8hkWqJpwYTHuFkmBw",
+      "weekly_issue": "#2",
+      "weekly_date": "2020-09-09",
+      "score": 0,
+      "quality": "unknown",
+      "scores": {
+        "relevance": 0,
+        "depth": 0,
+        "timeliness": 3,
+        "verifiability": 0
+      },
+      "mapped_chapters": [],
+      "summary": "Content not accessible from current environment",
+      "accessibility_issue": "Blocked or not accessible from current location",
+      "scored_at": "2026-04-17T09:17:29.530149"
     }
   ]
 }

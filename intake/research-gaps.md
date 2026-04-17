@@ -501,3 +501,25 @@ BLAST vs Legacy BufferQueue 的架构对比缺失。章节多次提到"BLAST 模
 
 ### 关联章节
 2.1, 2.6, 18.2
+
+
+## [2026-04-17] 15.3 性能指标体系 — 知识盲区
+
+### 盲区描述
+TTID/TTFD 讨论未区分冷启动（Cold Start）、温启动（Warm Start）、热启动（Hot Start）三种启动类型。Google 官方文档（developer.android.com/topic/performance/launch-time）明确区分三种类型：
+- Cold Start：进程从头创建，最慢
+- Warm Start：进程存活但 Activity 需重建
+- Hot Start：Activity 存活，最快
+
+缺少此分类会导致：线上监控数据混杂不同启动类型，无法区分"启动慢是因为冷启动多还是真的有回归"。
+
+### 重要程度
+高
+
+### 建议研究方向
+- Google 官方文档中 cold/warm/hot start 的精确定义和度量方法
+- 各启动类型下 TTID/TTFD 的典型基线数据
+- 线上监控如何区分三种启动类型（通过 Activity.onCreate 是否被调用等信号）
+
+### 关联章节
+15.3, 8.1, 8.2

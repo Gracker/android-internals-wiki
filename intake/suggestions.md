@@ -998,3 +998,53 @@
 - **建议**：补充 `reportFullyDrawn(long duration)` API 31+ 用法，或简化为单行调用并调整注释
 - **review 日志**：logs/review/2026-04-17-10-review.md
 
+
+
+
+## [Task9 Deep Review] 15.3 性能指标体系 — 2026-04-17
+
+- **类型**：源码准确性（API 归属错误）
+- **位置**：流畅性指标 — Frame Time 与分位数节
+- **问题**：FrameMetricsAggregator 被描述为"Android 9.0+, API 28"的平台 API，但实际是 AndroidX Jetpack 库（`androidx.metrics:metrics-performance`），最低支持 API 16。描述可能误导读者认为这是平台内置 API
+- **建议**：修正为"Jetpack 的 FrameMetricsAggregator（需引入 `androidx.metrics:metrics-performance` 依赖，最低 API 16，API 24+ 可获取详细分阶段数据）"
+- **review 日志**：logs/deep-review/2026-04-17-12-deep-review.md
+
+---
+
+- **类型**：源码准确性（适用版本不一致）
+- **位置**：Frontmatter applicable_versions
+- **问题**：applicable_versions 声明 "Android 8.0 (API 26) - Android 16 (API 36)"，但文中引用的 FrameMetrics API 自 API 24 (Android 7.0) 起可用
+- **建议**：将下界调整为 API 24，或在文中注明 FrameMetrics 是 API 24+ 特性，章节主要讨论的内容适用 API 26+
+- **review 日志**：logs/deep-review/2026-04-17-12-deep-review.md
+
+---
+
+- **类型**：原理链不完整
+- **位置**：稳定性指标 — ANR Rate 节
+- **问题**：ANR 触发条件仅提到"输入事件 5 秒超时"和"Service 规定时间"。缺少完整触发类型及对应超时值：Service（前台 20s/后台 200s）、BroadcastReceiver（前台 10s/后台 60s）、ContentProvider（10s）
+- **建议**：列出完整 ANR 触发类型表格，或明确交叉引用 ch09.1 作为详细参考
+- **review 日志**：logs/deep-review/2026-04-17-12-deep-review.md
+
+---
+
+- **类型**：数据支撑缺失
+- **位置**：指标体系设计原则 — 分位数 vs 均值节 + 各指标节
+- **问题**：缺少 Perfetto SQL 查询示例。同书 ch05.4 提供了频率分析 SQL，但本节作为指标体系章节反而没有。缺少从 Perfetto 计算 Frame Time P50/P90/P99、ANR 统计等常用 SQL
+- **建议**：在"在 Perfetto 中观察"类段落或附录中补充核心指标的 Trace Processor SQL 查询示例
+- **review 日志**：logs/deep-review/2026-04-17-12-deep-review.md
+
+---
+
+- **类型**：数据支撑缺失
+- **位置**：全文各指标节
+- **问题**：缺少统一的"指标-推荐目标值"速查表。Google Play 不良行为阈值已给出，但业界推荐基准（如 P99 Frame Time < 2x frame budget、TTID < 2s、TTFD < 5s 等）分散在各段中，不易查阅
+- **建议**：在"指标体系设计原则"节或独立小节中增加一个速查表，按指标类别列出推荐目标值和 Google Play 不良行为阈值
+- **review 日志**：logs/deep-review/2026-04-17-12-deep-review.md
+
+---
+
+- **类型**：知识盲区
+- **位置**：全文
+- **问题**：缺少网络性能指标（TTFB、下载吞吐量、连接延迟等）。对网络密集型 App（信息流、视频、社交），网络指标是性能体系的重要组成
+- **建议**：补充一节"网络性能指标"，覆盖 TTFB、throughput、connection latency，或标注为扩展内容并交叉引用 ch12
+- **review 日志**：logs/deep-review/2026-04-17-12-deep-review.md
