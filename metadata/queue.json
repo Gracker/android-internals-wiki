@@ -1292,5 +1292,38 @@
     "completed_at": "2026-04-17T19:42:58",
     "completed_by": "task2b-rework",
     "completion_reason": "6个P0/P1问题全部修复：源码路径×2、厂商中间层新增、交叉引用补全、版本置信度降级、thermal governor原理补充"
+  },
+  {
+    "section": "18.8",
+    "section_title": "OpenGL ES 渲染链路",
+    "priority": 85,
+    "reason": "[Deep Tech Review] P1: Continuous模式VSync误述(GLThread不等待VSync-App, 而是紧凑循环) + BLAST版本边界缺失(Android 12前不走BLAST) + 全文无版本演进 + 交叉引用路径错误(part1-foundation→part1-fundamentals)",
+    "material_paths": [
+      "intake/suggestions.md",
+      "intake/research-gaps.md"
+    ],
+    "review_issues": [
+      {
+        "type": "原理误述",
+        "location": "Continuous vs Dirty 模式节 + 时序图",
+        "detail": "称 Continuous 模式下 GLThread '会在每次 VSync-App 时自动醒来执行 onDrawFrame()'。AOSP GLSurfaceView.RENDERMODE_CONTINUOUSLY 的实际行为是紧凑循环调用 onDrawFrame + eglSwapBuffers，不等待 VSync-App。帧率节流来自 eglSwapBuffers → dequeueBuffer 的 BufferQueue 阻塞，不是 VSync 驱动。Mermaid 时序图中 'HW VSync → GL Thread: Wakeup' 也呼应了这个错误。",
+        "suggestion": "修正描述：Continuous 模式下 GLThread 在紧凑循环中持续渲染，不等待 VSync。帧率受 eglSwapBuffers 内部 dequeueBuffer 的 BufferQueue 可用性限制。时序图去掉 VSync → GLThread 的直接唤醒箭头，改为 GLThread 自主循环。"
+      },
+      {
+        "type": "版本差异",
+        "location": "eglSwapBuffers 详解节 + Buffer 流转节",
+        "detail": "章节称 eglSwapBuffers '将画好的帧提交给 BLAST Adapter'，暗示所有版本都走 BLAST。BLAST BufferQueue 从 Android 12 才成为 SurfaceView 默认路径。Android 9-11 走传统 BufferQueueProducer 路径。applicable_versions 声明 9-16，但只有 12+ 的行为被正确描述。",
+        "suggestion": "在 eglSwapBuffers 节添加版本边界说明：Android 12+ 走 BLAST Transaction，Android 9-11 走传统 BufferQueueProducer。新增版本演进小节覆盖 Android 9-16 的关键变化。"
+      },
+      {
+        "type": "交叉引用错误",
+        "location": "章节底部交叉引用链接",
+        "detail": "两条链接使用 ../../part1-foundation/ch02-graphics-foundation/ 路径，实际目录结构为 part1-fundamentals/ch02-rendering/。链接指向不存在的路径。",
+        "suggestion": "修正为 ../../part1-fundamentals/ch02-rendering/。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-17T20:21:00",
+    "status": "pending"
   }
 ]

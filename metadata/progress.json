@@ -21,12 +21,12 @@
     "task9_unknown": 31,
     "task9_pending": 170,
     "task9_reviewed": 6,
-    "last_updated": "2026-04-17T10:09:00",
+    "last_updated": "2026-04-17T20:21:00",
     "task2b_state_counts": {
       "unknown": 33,
       "fixed": 79,
-      "pending": 16,
-      "idle": 81
+      "pending": 17,
+      "idle": 80
     },
     "task6_state_counts": {
       "unknown": 33,
@@ -36,14 +36,14 @@
     },
     "task9_state_counts": {
       "unknown": 34,
-      "pending": 164,
-      "reviewed": 15
+      "pending": 163,
+      "reviewed": 16
     },
     "pipeline_stage_counts": {
       "unknown": 32,
       "task6_pending": 146,
-      "task2b_pending": 18,
-      "task9_pending": 17
+      "task2b_pending": 19,
+      "task9_pending": 16
     },
     "total_sections": 207
   },
@@ -2121,13 +2121,15 @@
       "title": "OpenGL ES 渲染链路",
       "path": "src/part2-performance/ch18-rendering-pipelines/08-opengl-es.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
-      "task9_state": "pending",
-      "task2b_state": "idle",
+      "task9_state": "reviewed",
+      "task2b_state": "pending",
       "task6_result": "pass-light-edit",
       "reviewed_by": "openclaw-task6",
-      "reviewed_date": "2026-04-17"
+      "reviewed_date": "2026-04-17",
+      "task9_result": "needs-rework",
+      "last_task9_at": "2026-04-17T20:21:00+08:00"
     },
     "src/part2-performance/ch18-rendering-pipelines/09-vulkan-native.md": {
       "chapter": "18.9",
