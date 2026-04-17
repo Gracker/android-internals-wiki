@@ -3138,5 +3138,9 @@
     "task6_result": "pass-light-edit",
     "task6_state": "reviewed",
     "task9_state": "pending"
-  }
+  },
+  "task2b_last_run": "2026-04-17T01:43:47.889454+00:00",
+  "task2b_last_result": "no-rework-tasks",
+  "task2b_task8_processed": 3,
+  "task2b_note": "All task6/task9 items completed. Processed 3 task8 fallback items (all skipped: 1 not relevant, 2 URL blocked)."
 }
