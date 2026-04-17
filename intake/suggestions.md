@@ -1089,3 +1089,42 @@
 - **问题**：`adb shell ndc network create` 作为网络模拟方案，需要验证ndc（Native Daemon Connector）是否支持该子命令。
 - **建议**：验证ndc命令族的实际可用参数，或替换为更通用的网络模拟方案。
 - **review 日志**：logs/review/2026-04-17-13-review.md
+
+## [Task9 Deep Review] 1.4 Binder IPC 机制与性能影响 — 2026-04-17
+
+### P1：Binder mmap 缓冲区生命周期缺失
+- **类型**：原理断裂
+- **位置**：「为什么 Binder 只需要"一次拷贝"」小节及 TransactionTooLargeException 相关段落
+- **问题**：章节提到 ~1MB mmap 缓冲区限制和 TransactionTooLargeException，但未解释缓冲区的分配/回收机制。每次 Binder 事务从 mmap pool 动态分配 buffer，事务完成后释放；并发事务共享同一 pool。这导致 TransactionTooLargeException 的最常见原因并非单次数据过大，而是并发事务累积超限
+- **建议**：在"一次拷贝"小节或新增"缓冲区管理"小节中补充：(1) binder_alloc 机制 — 从 mmap pool 分配 binder_buffer；(2) 并发事务共享 pool 的竞争关系；(3) 诊断 TransactionTooLargeException 时需关注并发事务数而非仅看单次数据量
+
+### P2-1：oneway "Lazy Async" 术语需验证
+- **类型**：源码准确性
+- **位置**：「oneway 调用」小节，"调用方仍然可能阻塞"段落
+- **问题**："Android 14+ 引入 Lazy Async" 的术语未在 AOSP 官方文档中确认
+- **建议**：标注 [待验证]，或改为描述性说法（如"Android 14+ 对 oneway 投递策略的优化"）
+
+### P2-2：Binder 线程名格式小差异
+- **类型**：源码准确性
+- **位置**：「线程池是怎么工作的」小节
+- **问题**：文中引用 `"%.*s:%d_%X"` 格式，AOSP 实际为 `String8::format("%s:%d_%X", driver, getpid(), seq)`
+- **建议**：核对 ProcessState.cpp 原始代码，统一格式描述
+
+### P2-3：scatter-gather 拷贝数描述可能引起混淆
+- **类型**：原理断裂
+- **位置**：「为什么 Binder 只需要"一次拷贝"」小节末尾
+- **问题**："将原来需要三次拷贝的流程减少到一次"中的"三次拷贝"包含用户态序列化/反序列化，而前文刚说 Binder 是"一次拷贝"（指内核态），两种说法放在同一段会困惑读者
+- **建议**：明确区分"内核态 IPC 拷贝"（Binder mmap 一直是单次）和"用户态数据整理"（scatter-gather 优化的是这一层），避免读者认为 Binder 从 3-copy 变成了 1-copy
+
+### P2-4：冷启动 Binder 调用次数缺乏数据支撑
+- **类型**：数据缺失
+- **位置**：「为什么要了解 Binder」段落
+- **问题**："主线程可能发起 30-50 次同步 Binder 调用"为估计值，无来源
+- **建议**：标注 [待验证] 或引用 Perfetto 实测数据
+
+### P2-5：缺少 Binder death notification 讨论
+- **类型**：知识盲区
+- **位置**：全文
+- **问题**：linkToDeath/unlinkToDeath 机制未提及。高频进程崩溃场景下 death notification 风暴是生产环境偶发卡顿的来源
+- **建议**：在"常见问题与误区"或"版本演进"节补充 brief 讨论
+
