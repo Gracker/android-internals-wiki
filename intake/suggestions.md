@@ -1342,3 +1342,22 @@
 - **问题**：关于“HWC overlay 名额通常只有少数几个”“WebView 独立 SurfaceControl 后宿主 RenderThread 会明显减负”等判断都停留在经验描述，没有给出至少一组 Perfetto / dumpsys SurfaceFlinger 的真实观察样本。读者知道方向，但拿不到可验证的基线。
 - **建议**：补一组最小证据链，至少包含 child layer 树、setTransactionState/latchBuffer 观察点，以及宿主 RenderThread 前后对比或 HWC/GPU 合成变化。
 
+
+
+## [Task9 Deep Review] 18.15 视频叠加与 HWC — 2026-04-18
+- **类型**：数据缺失
+- **位置**：L39 开头段的“2-3x 内存带宽”“10-20% 功耗差异”
+- **问题**：关键量化结论没有设备、分辨率、codec、刷新率或测试方法上下文，读者容易把它当成跨平台通用基线。
+- **建议**：补至少一组具备条件说明的样本（设备 / Android 版本 / 1080p or 4K / 60Hz or 120Hz / 播放器实现），或者把这两句降级成定性表述。
+
+## [Task9 Deep Review] 18.15 视频叠加与 HWC — 2026-04-18
+- **类型**：源码准确性
+- **位置**：L162-L180「在 Perfetto 和 dumpsys 中识别 Overlay」
+- **问题**：当前诊断方法过于粗糙。`grep SurfaceView` 和“GPU Track 没额外任务”不能稳定证明 Overlay 成功，因为 App UI 本身仍可能在用 GPU。章节缺少真正的证据链：layer 的 composition type、client target 是否存在、presentDisplay / setClientTarget 的关系、sideband / DEVICE layer 的可观察字段。
+- **建议**：补充更可执行的检查项，至少区分“App GPU 绘制”和“SurfaceFlinger client composition”，给出 dumpsys 字段名或一段更精确的 Perfetto 观察方法。
+
+## [Task9 Deep Review] 18.15 视频叠加与 HWC — 2026-04-18
+- **类型**：交叉引用
+- **位置**：frontmatter related_chapters
+- **问题**：正文多次依赖 BufferQueue、fence 和 Overlay/CLIENT 的判定，但 related_chapters 只列了 2.6 / 2.10 / 18.6，缺少最直接的 2.13（BufferQueue）和 2.16（Sync Fence）。
+- **建议**：在 related_chapters 中补充 `2.13`、`2.16`，必要时增加 `18.10`（SurfaceControl / layer 管理）。

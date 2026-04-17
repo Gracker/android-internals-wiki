@@ -709,3 +709,30 @@ SurfaceControl NDK 的 FrameTimeline 小节缺少“如何从 AChoreographerFram
 ### 关联章节
 18.10, 18.2, 2.9
 
+
+
+## [2026-04-18] 18.15 视频叠加与 HWC — Overlay 能力矩阵与受保护视频路径
+
+### 盲区描述
+章节把 Overlay、Secure Buffer、SIDEBAND、Tunnel Mode 压成了一条“统一硬件直出链路”，但真实情况是三套机制叠在一起：
+1. **标准 DEVICE composition / Overlay**：Buffer 仍经 SurfaceFlinger layer latch，再由 HWC 规划 plane。
+2. **受保护内容路径**：是否允许 protected texture / secure GPU post-processing，取决于设备扩展、内容级别和实现策略。
+3. **Tunneled playback / sideband stream**：更偏 Android TV / 特定 SoC 的特例路径，音画同步和数据流都与普通 Overlay 不同。
+
+此外，Overlay eligibility 还高度依赖 SoC 与 HWC 代际，YUV/RGBA、plane alpha、rotation、crop、HDR、protected content 的支持矩阵并不统一。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 梳理 HWC2.x（HIDL）到 composer3（AIDL）的关键差异，以及对 Overlay / client target 的影响
+- 建立主流 SoC（Qualcomm / MTK / Tensor）在 YUV/RGBA、alpha、rotation、HDR、protected composition 上的能力矩阵
+- 补 Tunneled playback / sideband stream 的标准链路，与普通 SurfaceView Overlay 做并列图
+- 给出 dumpsys SurfaceFlinger / Perfetto 中识别 DEVICE composition、client target、sideband layer 的证据链
+
+### 关联章节
+- 2.6 SurfaceFlinger 与合成
+- 2.13 图形缓冲区管理（BufferQueue）
+- 2.16 Sync Fence 框架与帧同步机制
+- 18.6 SurfaceView 直出链路
+- 18.10 SurfaceControl API 深入
