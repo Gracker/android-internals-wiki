@@ -820,7 +820,10 @@
     ],
     "added_by": "task8-classifier",
     "added_at": "2026-04-17T05:32:35.177443",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-17T01:43:24.235983",
+    "completed_by": "task2b-rework",
+    "completion_reason": "与章节内容无关（文章主题为 agentic 开发工具，非性能分析工具），跳过"
   },
   {
     "section": "ch01-architecture",
@@ -940,7 +943,10 @@
     ],
     "added_by": "task8-classifier",
     "added_at": "2026-04-17T05:32:35.177479",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-17T01:43:24.235983",
+    "completed_by": "task2b-rework",
+    "completion_reason": "URL 不可访问（掘金被网络策略拦截），跳过"
   },
   {
     "section": "ch14-other-tools",
@@ -980,7 +986,10 @@
     ],
     "added_by": "task8-classifier",
     "added_at": "2026-04-17T05:32:35.177485",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-17T01:43:24.235983",
+    "completed_by": "task2b-rework",
+    "completion_reason": "URL 不可访问（掘金被网络策略拦截），跳过"
   },
   {
     "section": "ch01-architecture",
