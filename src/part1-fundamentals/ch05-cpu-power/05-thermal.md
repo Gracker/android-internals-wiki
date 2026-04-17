@@ -4,9 +4,10 @@ section: "5.5"
 chapter: "5.5"
 status: ready-for-review
 applicable_versions: "Android 7.0 (API 24) - Android 17 (API 37)"
+applicable_versions_note: "已验证范围 Android 7-14；Android 15-17 为待验证"
 last_verified: "2026-04-01"
 last_verified_against: "AOSP android-14.0.0_r1"
-confidence: high
+confidence: medium
 sources:
   - type: aosp
     path: "frameworks/base/services/core/java/com/android/server/power/ThermalManagerService.java"
@@ -24,7 +25,7 @@ sources:
     path: "developer.android.com/games/optimize/thermal"
   - type: official
     path: "developer.android.com/games/optimize/adpf"
-related_chapters: ["5.1", "5.2", "5.3", "5.4", "5.6", "7.3"]
+related_chapters: ["5.1", "5.2", "5.3", "5.4", "5.6", "5.9", "5.12", "7.3"]
 drafted_date: "2026-04-01"
 drafted_by: "openclaw-task2"
 polish_count: 2
@@ -42,11 +43,11 @@ reviewed_date: "2026-04-15"
 reviewed_by: "openclaw-task6"
 task6_state: reviewed
 task6_result: pass-light-edit
-task9_state: reviewed
-task9_result: needs-rework
+task9_state: pending
+task9_result: reworked
 task9_reviewed_date: "2026-04-17"
 task9_reviewed_by: "openclaw-task9"
-pipeline_stage: task2b_pending
+pipeline_stage: task6_pending
 ---
 
 
@@ -133,11 +134,23 @@ Linux 内核自带一套 thermal management 框架，位于 `drivers/thermal/`�
 | hot | 65°C | 激进降频 |
 | critical | 85°C | 触发硬件关机保护 |
 
-Cooling Device 不一定是物理设备——更常见的"降温设备"就是 CPU 本身。内核通过限制 CPU 的最高运行频率来实现降温，这被称为 **cpufreq cooling**。在 `drivers/thermal/cpu_cooling.c` 中，cpufreq cooling 会动态调整 CPU 的最大允许频率：当温度升高时，逐步降低 `max_freq`；温度回落后，再逐步恢复。
+Cooling Device 不一定是物理设备——更常见的"降温设备"就是 CPU 本身。内核通过限制 CPU 的最高运行频率来实现降温，这被称为 **cpufreq cooling**。在 `drivers/thermal/cpufreq_cooling.c` 中，cpufreq cooling 会动态调整 CPU 的最大允许频率：当温度升高时，逐步降低 `max_freq`；温度回落后，再逐步恢复。
+
+### Thermal Governor：从 trip crossing 到 cooling state
+
+Trip point 被触发后，内核不会立刻把频率拉到最低——频率的变化幅度由 **thermal governor** 决定。Linux 内核提供了多种 governor 算法（`step_wise`、`fair_share`、`bang_bang`），Android 设备默认使用 **step_wise**。
+
+step_wise 的工作方式：每次温度采样周期，检查当前温度是否跨越了某个 trip point。如果温度上升并越过了 trip point，对应的 cooling device 的 cooling state 增加 1 级（每级对应一个频率档位）；如果温度下降并离开了 trip point，cooling state 减少 1 级。这意味着频率是阶梯式变化的——温度每上升一个采样周期，频率下降一档，而不是直接跳到极值。
+
+这个"渐进式降频"的设计是有意为之的。温度变化本身是连续的，如果温度刚过阈值就直接拉到最低频率，用户体验会出现断崖式下跌（帧率从 120fps 直接掉到 30fps）。step_wise 的单步调整让降频过程相对平滑，给用户一个"逐渐变慢"而非"突然卡死"的感知。
+
+在 Perfetto 中，这种阶梯式降频表现为 CPU frequency 曲线的"台阶"形态——每次下降一个固定的频率档位，而不是直线跌落。这与 DVFS governor（如 schedutil）基于 utilization 的连续调频形成对比。
+
+[已验证: Linux kernel drivers/thermal/step_wise.c, Documentation/thermal/sysfs-api.rst]
 
 这就是为什么我们在 Perfetto 中看到 CPU 频率下降时，往往伴随着温度的上升——与 governor（如 schedutil）基于 utilization 的主动调频不同，thermal cooling 是在强制压低频率上限。
 
-[已验证: Linux kernel drivers/thermal/cpu_cooling.c, of-thermal.c]
+[已验证: Linux kernel drivers/thermal/cpufreq_cooling.c, thermal_of.c (Linux 5.13+)]
 
 ### Thermal HAL：硬件抽象层
 
@@ -146,6 +159,18 @@ Cooling Device 不一定是物理设备——更常见的"降温设备"就是 CP
 **Thermal HAL 1.0（Android 9 及更低版本）** 采用轮询（polling）方式获取温度，这是最早的标准化 Thermal HAL 版本。Framework 定期调用 HAL 的 `getTemperatures()` 方法来读取各传感器数据。这种方式简单但效率低，而且延迟大——两次轮询之间可能错过了温度的快速上升。
 
 **Thermal HAL 2.0（Android 10+）** 引入了事件驱动的接口。当温度跨越阈值时，HAL 主动向 Framework 上报 `ThrottlingSeverity` 变化，而不是等 Framework 来问。从 Android 14 开始，HAL 接口从 HIDL 迁移到 AIDL（`android.hardware.thermal.IThermal`），但核心模型不变。
+
+### 厂商 Thermal 中间层：温控策略的实际执行者
+
+AOSP 定义的 Thermal HAL 是一套标准接口，但不同厂商的设备在同样的 SoC、同样的负载下，温控行为可能截然不同。差异来自 HAL 层下方各厂商实现的 vendor-specific thermal engine。
+
+**Qualcomm** 平台上，`thermal-engine` 是一个用户态守护进程（`/vendor/bin/thermal-engine`），它读取内核 thermal zone 的温度数据，运行 PID 控制算法，然后通过 sysfs 和 Thermal HAL 配置来调节频率上限、CPU 核心数、充电电流等参数。OEM 可以通过 `/vendor/etc/thermal-engine.conf` 配置文件定义自己的温控策略——温度阈值、降频步进、每个 severity 级别对应的频率限制等。这意味着同一款 Snapdragon 8 Gen 3，在不同厂商的手机上 thermal-engine 的配置可能完全不同。
+
+**MediaTek** 平台有类似的组件（thermal manager / thermal daemon），同样负责将温度传感器数据映射为具体的限频/限核动作。MTK 的温控配置通常在 `/vendor/etc/thermal.conf` 中定义。
+
+这些厂商 thermal engine 的存在解释了一个现象：即使 Framework 层的 `ThermalManagerService` 报告的 severity 是 `LIGHT`，实际的限频幅度可能因为 thermal engine 的 PID 控制策略而比 AOSP 默认行为更激进或更保守。性能工程师在做跨设备对比时，需要意识到这个"隐藏层"的存在。
+
+[待验证：thermal-engine 配置参数属于厂商私有信息，具体阈值和算法因 OEM 而异]
 
 HAL 层定义的关键数据结构在 `hardware/interfaces/thermal/2.0/types.hal` 中：
 
@@ -578,8 +603,8 @@ Thermal 管控在 Android 各版本中有几项关键变化，这里做一个梳
 - `hardware/interfaces/thermal/2.0/IThermal.hal` — Thermal HAL 2.0 接口定义 [已验证]
 - `hardware/interfaces/thermal/2.0/types.hal` — TemperatureType, ThrottlingSeverity 等类型定义 [已验证]
 - `hardware/interfaces/thermal/aidl/android/hardware/thermal/` — AIDL 版本的 Thermal HAL（Android 14+）[已验证]
-- `drivers/thermal/cpu_cooling.c` — 内核 cpufreq cooling 实现 [已验证]
-- `drivers/thermal/of-thermal.c` — 内核 thermal zone 设备树支持 [已验证]
+- `drivers/thermal/cpufreq_cooling.c` — 内核 cpufreq cooling 实现（Linux 5.x+，旧名 cpu_cooling.c）[已验证]
+- `drivers/thermal/thermal_of.c` — 内核 thermal zone 设备树支持（Linux 5.13+，旧名 of-thermal.c 已移除）[已验证]
 
 ### 官方文档
 - [Android Thermal Management](https://source.android.com/docs/core/thermal) — 系统级温控架构文档 [已验证]
