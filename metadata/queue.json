@@ -1203,5 +1203,37 @@
     "completed_at": "2026-04-17T13:48:07",
     "completed_by": "task2b-rework",
     "completion_reason": "Fixed 3/3 issues (CPU offline→online, thermal command typo, ndc network command clarification)"
+  },
+  {
+    "section": "15.7",
+    "section_title": "AOSP 代码阅读",
+    "priority": 85,
+    "reason": "[Deep Tech Review] P1: HWComposer API 名称为 HWC1 时代( Android 8 前),与 applicable_versions 8-16 矛盾; SurfaceFlinger::composeSurfaces() 在 Android 10+ 已移至 CompositionEngine",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "版本差异+事实错误",
+        "location": "「SurfaceFlinger — 系统级合成器」节 — HWComposer 方法名",
+        "detail": "列出 HWComposer::prepare() / set() 为 HWC1 API(Android 7 及以下)。Android 8+ 全面使用 HWC2，接口为 validateDisplay() / presentDisplay()。applicable_versions 声明 Android 8-16，但引用的方法名在声明范围内不存在。读者在 cs.android.com 中搜索这些方法名会找不到或找到已废弃代码。",
+        "suggestion": "更新为 HWC2 API：HWComposer::validateDisplay() / presentDisplay()。或改为描述性说明（如「与 HWC 的协商接口」），引导读者自行搜索当前版本的方法名。同时标注 API 版本边界。"
+      },
+      {
+        "type": "版本差异",
+        "location": "「SurfaceFlinger — 系统级合成器」节 — composeSurfaces()",
+        "detail": "SurfaceFlinger::composeSurfaces() 在 Android 10 重构后已移至 CompositionEngine/Output 类。在 android-16.0.0_r1 中，合成入口仍经过 SurfaceFlinger 但实际方法名和调用链已不同。",
+        "suggestion": "改为更通用的描述（如「合成流程入口」），或标注「Android 10+ 合成逻辑由 CompositionEngine 管理」。建议引导读者从 onMessageRefresh() 开始沿调用链追踪，而非直接引用具体方法名。"
+      },
+      {
+        "type": "源码准确性",
+        "location": "速查表 — 输入事件分发行",
+        "detail": "输入事件分发指向 frameworks/base/core/java/android/view/InputEventReceiver.java。这只是 Java 侧的接收端。实际分发逻辑的核心是 C++ 层的 InputDispatcher（frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp）。作为「性能问题对应源码目录」的速查表，指向 Java 接收端而非 C++ 分发核心可能误导分析方向。",
+        "suggestion": "改为 frameworks/native/services/inputflinger/dispatcher/，或同时列出两处（Java 接收端 + C++ 分发核心）并说明各自的适用场景。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-17T18:20:00",
+    "status": "pending"
   }
 ]

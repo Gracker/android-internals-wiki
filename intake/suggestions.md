@@ -1128,3 +1128,25 @@
 - **问题**：linkToDeath/unlinkToDeath 机制未提及。高频进程崩溃场景下 death notification 风暴是生产环境偶发卡顿的来源
 - **建议**：在"常见问题与误区"或"版本演进"节补充 brief 讨论
 
+
+## [Task9 Deep Review] 15.7 AOSP 代码阅读 — 2026-04-17
+
+- **类型**：交叉引用错误
+- **位置**：related_chapters 列表
+- **问题**：正文中引用「本书第 2.6 节」讨论 SurfaceFlinger，但 related_chapters 中未包含「2.6」
+- **建议**：在 related_chapters 中添加「2.6」
+
+- **类型**：知识盲区
+- **位置**：全文
+- **问题**：完全未提及 AndroidX/Compose 代码不在 AOSP 中（在 GitHub google/design compose 仓库）。现代 Android 性能分析中 RecyclerView、Compose Runtime 等都在 AndroidX，而非 AOSP。方法论章节教人读源码却不告知这一分叉，可能导致读者在 AOSP 中找不到关键类。
+- **建议**：在「AOSP 关键目录结构」节后或速查表中补充一段，说明 AndroidX 代码的定位方式（GitHub + cs.android.com 限定 androidx 目录）
+
+- **类型**：知识盲区
+- **位置**：全文
+- **问题**：AOSP 分支命名规则未解释。读者不知道 android-16.0.0_r1 vs master vs android-16-release 的区别，这对版本精确分析至关重要。
+- **建议**：在 cs.android.com 使用建议中补充一段分支命名规则说明（release tag vs development branch vs master）
+
+- **类型**：数据缺失
+- **位置**：全文
+- **问题**：缺少一个端到端的实战示例，展示「在 Perfetto 中看到 X → 在 cs.android.com 搜索 Y → 找到源码 Z → 理解了问题」的完整链路。现有内容只有方法和工具介绍，没有串联的案例。
+- **建议**：新增一个小节或扩展某个路径，给出一个 200-300 字的端到端示例（如从 Choreographer#doFrame 的长耗时追溯到 scheduleVsync 的具体源码）
