@@ -11,28 +11,28 @@
     "pipeline_task9_pending": 4,
     "pipeline_task2b_pending": 16,
     "task2b_unknown": 31,
-    "task2b_idle": 82,
+    "task2b_idle": 81,
     "task2b_pending": 16,
-    "task2b_fixed": 78,
+    "task2b_fixed": 79,
     "task6_unknown": 31,
-    "task6_pending": 77,
+    "task6_pending": 76,
     "task6_reviewed": 21,
-    "task6_revisiting": 78,
+    "task6_revisiting": 79,
     "task9_unknown": 31,
     "task9_pending": 170,
     "task9_reviewed": 6,
-    "last_updated": "2026-04-17T20:21:00",
+    "last_updated": "2026-04-18T00:11:39+08:00",
     "task2b_state_counts": {
       "unknown": 33,
-      "fixed": 79,
+      "fixed": 80,
       "pending": 17,
-      "idle": 80
+      "idle": 79
     },
     "task6_state_counts": {
       "unknown": 33,
-      "revisiting": 81,
+      "revisiting": 82,
       "reviewed": 32,
-      "pending": 67
+      "pending": 66
     },
     "task9_state_counts": {
       "unknown": 34,
@@ -56,15 +56,15 @@
     },
     "task2b_state_counts": {
       "unknown": 31,
-      "fixed": 78,
+      "fixed": 79,
       "pending": 16,
-      "idle": 82
+      "idle": 81
     },
     "task6_state_counts": {
       "unknown": 33,
-      "revisiting": 81,
+      "revisiting": 82,
       "reviewed": 32,
-      "pending": 67
+      "pending": 66
     },
     "task9_state_counts": {
       "unknown": 34,
@@ -2072,9 +2072,10 @@
       "path": "src/part2-performance/ch18-rendering-pipelines/03-android-view-software.md",
       "status": "ready-for-review",
       "pipeline_stage": "task6_pending",
-      "task6_state": "pending",
+      "task6_state": "revisiting",
       "task9_state": "pending",
-      "task2b_state": "idle"
+      "task2b_state": "fixed",
+      "task2b_result": "fixed"
     },
     "src/part2-performance/ch18-rendering-pipelines/04-android-view-mixed.md": {
       "chapter": "18.4",
