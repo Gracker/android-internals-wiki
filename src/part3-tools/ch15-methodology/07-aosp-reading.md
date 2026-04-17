@@ -17,11 +17,16 @@ sources:
     path: "https://mp.weixin.qq.com/s?__biz=MzI4NTk1NzYwNg==&mid=2247483668"
 tags: ['aosp', 'code-reading', 'cs.android.com', 'methodology']
 related_chapters: ["1.1", "2.4", "2.5", "13.1"]
-pipeline_stage: task6_pending
-task6_state: pending
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task2b_state: idle
 ---
+reviewed_by: "openclaw-task6"
+reviewed_date: "2026-04-17"
+task6_result: pass-light-edit
+---
+
 
 # AOSP 代码阅读
 
@@ -56,7 +61,7 @@ task2b_state: idle
 
 博客、文档、Stack Overflow 能帮我们回答"是什么"，但只有源码能回答"为什么"和"怎么改"。对于做性能优化的工程师来说，AOSP 源码阅读不是锦上添花的技能，而是定位根因的基本功。
 
-问题是，AOSP 不是一个 Git 仓库，而是几百个仓库通过 `repo` 工具拼接起来的巨型项目。传统的 GitHub 浏览方式在这里几乎不可用——我们无法像浏览一个普通开源项目那样在仓库之间跳转。没有专门的工具和方法，面对几百万行代码，很容易迷失。
+问题是，AOSP 由几百个 Git 仓库通过 `repo` 工具拼接而成。传统的 GitHub 浏览方式在这里几乎不可用——我们无法像浏览一个普通开源项目那样在仓库之间跳转。面对几百万行代码，没有专门的工具和方法，很容易迷失。
 
 本节的目标很实际：读完之后，我们拿到一行日志、一个 Trace 中的 tag，或者一个类名，能快速定位到对应的 AOSP 源码，理解它的上下文，追踪它的调用链。
 
@@ -411,7 +416,7 @@ git blame core/java/android/view/Choreographer.java | grep "scheduleVsync"
 
 **"读源码要先读完再动手"**
 
-这是新手最常见的误区。AOSP 有几百万行代码，没有人能"读完"。正确的方式是带着问题读：遇到了一个具体问题，从日志或 Trace 出发，定位到相关代码，读通这一条链路就够了。随着解决的问题越来越多，我们对代码的理解会自然扩展。
+这是新手最常见的误区。AOSP 有几百万行代码，没有人能"读完"。正确的方式是带着问题读：遇到了一个具体问题，从日志或 Trace 出发，定位到相关代码，读通这一条调用链就够了。随着解决的问题越来越多，我们对代码的理解会自然扩展。
 
 **"cs.android.com 够用了，不需要本地代码"**
 
