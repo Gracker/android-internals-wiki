@@ -1865,6 +1865,14 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-18T06:24:00+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-18T07:08:29.661998+08:00",
+    "completed_by": "task2b-rework",
+    "fix_summary": [
+      "Java 示例改为 setContentRoot(RenderNode) + RenderRequest.draw() + SurfaceControl.Transaction.setBuffer(...)",
+      "删除虚构 NDK API，改成 AHardwareBuffer_allocate + 图形 API 渲染 + ASurfaceTransaction_setBuffer / setBufferWithRelease",
+      "主流程改成 direct SurfaceControl buffer 提交，并把 BLAST / BufferQueue 限定为可选连接点",
+      "补齐 release fence / release callback、RenderRequest 非线程安全、RGBA_FP16 与 HDR capability 边界"
+    ]
   }
 ]
