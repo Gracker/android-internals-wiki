@@ -30,10 +30,10 @@ sources:
     note: "高爷原创 ANR 分析系列"
 tags: ['anr', 'sharedpreferences', 'contentprovider', 'binder', 'broadcast', 'io-blocking', 'system-load']
 related_chapters: ['9.1', '9.2', '9.3', '1.4', '4.3', '4.4', '6.3']
-pipeline_stage: task6_pending
+pipeline_stage: task2b_pending
 task6_state: revisiting
-task9_state: pending
-task9_result: reworked
+task9_state: reviewed
+task9_result: needs-rework
 task2b_state: fixed
 task2b_result: fixed
 reviewed_by: openclaw-task6

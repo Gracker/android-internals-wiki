@@ -385,7 +385,7 @@
     "section": "9.4",
     "section_title": "特殊场景的 ANR",
     "priority": 95,
-    "reason": "[Deep Tech Review] P0: THREAD_PRIORITY_FOREGROUND 常量值错误(-1→-2); P1: Broadcast连锁ANR机制描述错误(超时是per-receiver非累计), QueuedWork源码字段名过时, startForeground()超时ANR场景缺失",
+    "reason": "[Deep Tech Review] P0: ForegroundServiceStartNotAllowedException 归属版本错误 + P1: QueuedWork/Heap.cc 代码片段不准确 + P1: waitToFinish() 行为描述错误",
     "material_paths": [
       "intake/suggestions.md",
       "intake/research-gaps.md"
@@ -414,6 +414,30 @@
         "location": "全文缺失场景",
         "detail": "完全未提及 startForeground() 超时 ANR（Android 12+ 5s），这是现代 Android 最高频 Service ANR 类型之一。作为\"特殊场景\"章节，此遗漏显著",
         "suggestion": "新增「startForeground() 超时导致的 ANR」小节，或至少在常见问题中提及"
+      },
+      {
+        "type": "版本归属错误",
+        "location": "版本演进段 — Android 14 条目",
+        "detail": "ForegroundServiceStartNotAllowedException 在 Android 12（API 31）引入，非 Android 14。Android 14 对 targetSdk 34+ 强化了限制，但首次引入版本是 12。",
+        "suggestion": "将该异常的引入版本从 Android 14 改为 Android 12。Android 14 条目改为描述对前台服务类型的强制声明等实际变更。"
+      },
+      {
+        "type": "源码错误",
+        "location": "QueuedWork.java 代码片段",
+        "detail": "使用 sFinishers（LinkedList），但 AOSP android-14 中实际为 sPendingFinishers（ConcurrentLinkedQueue）。",
+        "suggestion": "更新代码片段，使用 sPendingFinishers 和正确的队列类型。"
+      },
+      {
+        "type": "源码错误",
+        "location": "Heap.cc 代码片段",
+        "detail": "PausePhase() 和 ConcurrentPhase() 不是 AOSP 中的实际方法名。",
+        "suggestion": "更新为实际方法名：InitializePhase() / MarkingPhase() / ReclaimPhase() / FinishPhase()。"
+      },
+      {
+        "type": "原理断裂",
+        "location": "SharedPreferences apply() → ANR 完整链路",
+        "detail": "waitToFinish() 描述为'逐个执行写入任务'，实际是等待后台线程的写入完成（writtenToDiskLatch.await()）。同时缺少 apply() → QueuedWork.addFinisher(awaitCommit) 的注册步骤。",
+        "suggestion": "修正描述：主线程是'等待'而非'执行'磁盘写入。补充 awaitCommit Runnable 的注册机制。"
       }
     ],
     "added_by": "task9-deep-tech-review",

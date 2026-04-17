@@ -928,3 +928,46 @@
 - **位置**：版本演进段（L660 区域）
 - **问题**：Android 8.0 "预合成重构"表述模糊；缺少 Android 7.0 Vulkan 引入和 Android 14/15 变更
 - **建议**：将 Android 8.0 改为具体描述 HWC2 HAL 引入；补充 Android 7.0 Vulkan 引入里程碑
+
+
+## [Task9 Deep Review] 9.4 特殊场景的 ANR — 2026-04-17
+
+- **类型**：源码准确性
+- **位置**：SQLite 锁级别描述段
+- **问题**：PENDING 锁被描述为"RESERVED 到 EXCLUSIVE 的过渡态"，实际上 PENDING 是独立锁级别，用于防止 writer starvation（阻塞新读者但不阻塞现有读者）。
+- **建议**：明确 PENDING 为 SQLite 五级锁中的独立一级，强调其防止写饥饿的作用。
+
+- **类型**：交叉引用
+- **位置**：frontmatter related_chapters
+- **问题**：§9.3 列在 related_chapters 中但正文中未被引用。
+- **建议**：在正文中适当位置添加对 §9.3 的引用，或将 §9.3 从 related_chapters 移除。
+
+- **类型**：数据缺失
+- **位置**：低内存 GC 段 — "STW 1-3ms（实测平均约 1.83ms）"
+- **问题**：定量数据无测量条件（设备、堆大小、GC 类型、Android 版本、样本数）。
+- **建议**：补充测量条件，或改为定性描述（"通常在 1-5ms 范围内"）并标注来源。
+
+- **类型**：版本差异
+- **位置**：版本演进段
+- **问题**：缺少 Android 13 对 SCHEDULE_EXACT_ALARM 权限的收紧（从默认授予改为需用户授权或声明 USE_EXACT_ALARM）。
+- **建议**：在 Android 12 条目后补充 Android 13 的权限收紧变更。
+
+- **类型**：知识盲区
+- **位置**：SharedPreferences apply() 段
+- **问题**：缺少多进程 SharedPreferences ANR 场景。Google 已明确不建议多进程使用 SP，但实际项目中仍常见。
+- **建议**：补充一段"多进程 SP 的额外风险"，并指向 Jetpack DataStore 作为替代方案。
+
+- **类型**：知识盲区
+- **位置**：缺失
+- **问题**：缺少 StrictMode 作为 ANR 预防工具的提及。
+- **建议**：在"预防方案"或"常见问题与误区"中添加 StrictMode 开发期检测的推荐。
+
+- **类型**：数据缺失
+- **位置**：Binder 线程池段
+- **问题**："默认最多 16 个 Binder 线程"缺少典型使用模式数据和观察方法。
+- **建议**：补充如何在 Perfetto 中观察 Binder 线程数（Binder thread track），以及正常 App 的典型占用范围。
+
+- **类型**：原理断裂
+- **位置**：SharedPreferences apply() → waitToFinish() 链路
+- **问题**：未解释 WHY handlePauseActivity() 会调用 waitToFinish()。设计意图是确保 Activity 进入后台前数据持久化（进程可能被杀）。
+- **建议**：补充一句设计意图说明，让读者理解这不是 bug 而是有意为之的数据安全机制。

@@ -21,7 +21,7 @@
     "task9_unknown": 31,
     "task9_pending": 170,
     "task9_reviewed": 6,
-    "last_updated": "2026-04-17T07:05:00",
+    "last_updated": "2026-04-17T09:12:30",
     "task2b_state_counts": {
       "unknown": 33,
       "fixed": 79,
@@ -29,8 +29,8 @@
       "idle": 81
     },
     "task6_state_counts": {
-      "pending": 69,
-      "reviewed": 29,
+      "pending": 68,
+      "reviewed": 30,
       "revisiting": 81,
       "unknown": 33
     },
@@ -41,9 +41,9 @@
     },
     "pipeline_stage_counts": {
       "unknown": 32,
-      "task6_pending": 148,
+      "task6_pending": 147,
       "task2b_pending": 17,
-      "task9_pending": 15
+      "task9_pending": 16
     },
     "total_sections": 207
   },
