@@ -30,9 +30,11 @@ tags:
   - anr
   - sqlite
   - app-startup
-pipeline_stage: task6_pending
+pipeline_stage: task9_pending
 task6_state: reviewed
-task9_state: pending
+task9_state: reviewed
+task9_result: needs-rework
+task9_reviewed_date: "2026-04-17"
 task2b_state: fixed
 reviewed_date: "2026-04-11"
 reviewed_by: "openclaw-task6"

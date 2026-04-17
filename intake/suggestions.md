@@ -1234,3 +1234,20 @@
 - **位置**：Sokatoa 开源计划
 - **问题**：声称"Samsung 计划在 2026 年内开源 Sokatoa"，当前已是 2026 年 4 月中旬，应确认最新开源状态。
 - **建议**：检查 Samsung 开发者网站最新信息，更新开源状态描述（已开源/已发布时间表/延期）。
+
+## [Task9 Deep Review] 1.10 ContentProvider 性能与优化 — 2026-04-17
+
+- **类型**：数据缺失
+- **位置**：App Startup 优化策略段
+- **问题**：「冷启动时间可减少 35% 到 42%」「每合并一个 ContentProvider 约节省 2ms」均无数据来源。虽已标注 [待验证]，但百分比过于精确却无出处，可能误导读者当作官方数据引用。
+- **建议**：补充具体测试来源（如 Google I/O 演讲、Android 官方博客、或内部 A/B 测试数据），或改为范围表述（如「实测可减少 20-40%」）并注明条件。
+
+- **类型**：版本差异
+- **位置**：版本演进 → Android 9 CursorWindow 段
+- **问题**：「可以通过 CursorWindow(int) 构造函数指定窗口大小，不再强制 2MB」——CursorWindow(String, int) 构造函数在 API 1 即已存在，非 Android 9 新增。需确认 Android 9 实际新增的是什么（可能是 fillWindowForwardOnly 或其他行为变更）。
+- **建议**：核实 Android 9 CursorWindow API 实际变更内容，修正描述。
+
+- **类型**：交叉引用
+- **位置**：frontmatter
+- **问题**：frontmatter 缺少 related_chapters 字段，但正文引用了 §1.3、§1.4、§8.3、§9.1-9.4。
+- **建议**：添加 related_chapters: ['1.3', '1.4', '8.3', '9.1', '9.2', '9.3', '9.4']。

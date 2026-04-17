@@ -608,3 +608,20 @@ EGLConfig 的选择（color buffer depth、stencil buffer、MSAA、depth buffer 
 
 ### 关联章节
 14.8, 2.10, 13.3
+
+## [2026-04-17] 1.10 ContentProvider 性能与优化 — 知识盲区
+
+### 盲区描述
+多进程 ContentProvider (android:process) 的性能特征完全未覆盖。ContentProvider 声明为独立进程时，初始化、IPC、ANR 行为与单进程场景有重大差异。
+
+### 重要程度
+高
+
+### 建议研究方向
+- android:process 声明对 ContentProvider 初始化时序的影响
+- 独立 Provider 进程的 Binder 线程池与主进程的关系
+- ContentProviderClient.setDetectNotResponding() (Android 11+) 在多进程场景的用法
+- Provider 进程冷启动对调用方 ANR 的级联影响
+
+### 关联章节
+1.10, 9.1, 9.2
