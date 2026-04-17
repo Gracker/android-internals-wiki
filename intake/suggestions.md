@@ -1251,3 +1251,18 @@
 - **位置**：frontmatter
 - **问题**：frontmatter 缺少 related_chapters 字段，但正文引用了 §1.3、§1.4、§8.3、§9.1-9.4。
 - **建议**：添加 related_chapters: ['1.3', '1.4', '8.3', '9.1', '9.2', '9.3', '9.4']。
+
+## [Task6 Review] 18.10 SurfaceControl API 深入 — 2026-04-17
+
+- **类型**：需修正 + 需补充素材
+- **位置**：文末交叉引用 + §实战场景 + 全文验证标注 + frontmatter related_chapters
+- **问题**：
+  1. 交叉引用路径指向不存在的 `part1-foundation/ch02-graphics-foundation/`，正确路径为 `part1-fundamentals/ch02-rendering/`；且章节编号错误（2.1 是渲染概述非 BufferQueue，2.5 是主线程渲染线程非 SurfaceFlinger）
+  2. 实战场景（WebView OOP / PiP / 自绘引擎）各仅 2-4 句话约 300 字，writing-guide 要求 1500-3000 字
+  3. 全文仅 2 处 [已验证]，大量 API 版本引入、fence 语义、HWC 限制等技术断言缺少验证标注
+  4. frontmatter related_chapters 编号与实际章节不匹配
+- **建议**：
+  1. 修正交叉引用路径和编号，同步修正 frontmatter
+  2. 至少展开 WebView OOP 为完整实战案例
+  3. 逐段补充验证标注
+- **review 日志**：logs/review/2026-04-17-23-review.md

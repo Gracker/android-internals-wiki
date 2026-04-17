@@ -1405,5 +1405,38 @@
     "completed_at": "2026-04-17T14:43:47.648878",
     "completed_by": "task2b-rework",
     "completion_reason": "Fixed 2/2 issues: multi-process ContentProvider section added (android:process, cold start, CursorWindow cross-process, applicable scenarios) + Android 11/12 version evolution entries (setDetectNotResponding, getProviderMimeTypeAsync)"
+  },
+  {
+    "section": "18.10",
+    "section_title": "SurfaceControl API 深入",
+    "priority": 90,
+    "reason": "[review回炉] 交叉引用路径错误+实战场景内容薄弱+验证标注不足+related_chapters编号错误",
+    "material_paths": [
+      "intake/suggestions.md（含 review 意见）"
+    ],
+    "review_issues": [
+      {
+        "type": "需修正",
+        "location": "文末交叉引用块 + frontmatter related_chapters",
+        "detail": "交叉引用指向不存在的 part1-foundation 路径，且章节编号错误（2.1≠BufferQueue, 2.5≠SurfaceFlinger）",
+        "suggestion": "修正路径为 part1-fundamentals/ch02-rendering/，修正编号为 2.13 BufferQueue、2.6 SurfaceFlinger"
+      },
+      {
+        "type": "需补充素材",
+        "location": "§实战场景",
+        "detail": "三个实战场景各仅 2-4 句话约 300 字，远低于 writing-guide 要求的 1500-3000 字",
+        "suggestion": "至少展开一个场景为完整实战案例（WebView OOP 推荐），其余至少补充到 300-500 字"
+      },
+      {
+        "type": "需补充素材",
+        "location": "全文",
+        "detail": "仅 2 处 [已验证] 标注，大量技术断言（API 版本、fence 语义、HWC 限制、Layer 数量建议）缺少验证状态",
+        "suggestion": "逐段扫描补充 [已验证]/[待验证] 标注"
+      }
+    ],
+    "added_by": "task6-review",
+    "added_at": "2026-04-17T23:05:00",
+    "status": "pending",
+    "original_review_log": "logs/review/2026-04-17-23-review.md"
   }
 ]
