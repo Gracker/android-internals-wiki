@@ -1238,5 +1238,56 @@
     "completed_at": "2026-04-17T18:41:59.592318",
     "completed_by": "task2b-rework",
     "completion_reason": "Fixed 3/3 issues (HWC1→HWC2 API, composeSurfaces→CompositionEngine, InputDispatcher C++ path)"
+  },
+  {
+    "section": "5.5",
+    "section_title": "Thermal 管控",
+    "priority": 95,
+    "reason": "[Deep Tech Review] P0: 内核源码路径错误(cpu_cooling.c→cpufreq_cooling.c, of-thermal.c→thermal_of.c); P1: 缺少厂商thermal-engine中间层/缺少ADPF和5.12交叉引用/版本验证声明过高",
+    "material_paths": [
+      "intake/suggestions.md",
+      "intake/research-gaps.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "参考资料 — drivers/thermal/cpu_cooling.c",
+        "detail": "该文件在 Linux 5.x+ 已更名为 drivers/thermal/cpufreq_cooling.c。章节 last_verified_against 为 android-14.0.0_r1（kernel 5.15），在该版本中旧路径不存在。",
+        "suggestion": "修正路径为 drivers/thermal/cpufreq_cooling.c"
+      },
+      {
+        "type": "源码错误",
+        "location": "参考资料 — drivers/thermal/of-thermal.c",
+        "detail": "该文件在 Linux 5.13 被移除，功能合并入 drivers/thermal/thermal_of.c。android-14.0.0_r1 使用 kernel 5.15，旧路径不存在。",
+        "suggestion": "修正路径为 drivers/thermal/thermal_of.c，或在描述中改为更通用的表述"
+      },
+      {
+        "type": "知识盲区",
+        "location": "Thermal 管控链路 — HAL 和 kernel 之间的中间层",
+        "detail": "Qualcomm thermal-engine 用户态守护进程、MediaTek thermal manager 等厂商特定的温控中间层完全未提及。这些组件实现了实际的 PID 控制策略和 OEM 定制的降温算法，是 Android 温控架构的关键环节。跳过这一层，读者无法理解为什么不同厂商的设备温控行为差异巨大。",
+        "suggestion": "在 Thermal HAL 和 ThermalManagerService 之间新增一段，说明厂商通常在 HAL 层下方实现 vendor-specific 的 thermal engine/daemon，负责实际的控制策略。简要说明 Qualcomm thermal-engine 和 MediaTek thermal manager 的存在和作用。"
+      },
+      {
+        "type": "交叉引用错误",
+        "location": "frontmatter related_chapters",
+        "detail": "related_chapters 列表缺少 5.9（ADPF 自适应性能框架）和 5.12（Thermal 管控深度：从内核子系统到 ADPF 主动降频）。本章多处讨论 ADPF 与温控的交互，5.12 是同一主题的深度展开章节。",
+        "suggestion": "在 related_chapters 中添加 '5.9' 和 '5.12'"
+      },
+      {
+        "type": "版本差异",
+        "location": "frontmatter — applicable_versions 和 confidence",
+        "detail": "applicable_versions 声明 Android 7.0-17，但 last_verified_against 仅为 android-14.0.0_r1。版本演进表中 Android 15 和 16 的条目标注为 [待验证]，但 frontmatter confidence 为 'high'，存在自相矛盾。",
+        "suggestion": "将 confidence 从 'high' 降为 'medium'；或明确标注 'Android 15-17 为 [待验证]，已验证范围为 Android 7-14'。"
+      },
+      {
+        "type": "原理断裂",
+        "location": "内核 Thermal Core 节 — trip point 触发后的决策算法",
+        "detail": "章节介绍了 trip point 和 cooling device，但未解释内核的 thermal governor 如何将 trip crossing 映射为具体的 cooling state 变化。Linux 内核提供了多种 thermal governor（step_wise、fair_share、bang_bang），默认使用 step_wise。不了解 governor 算法，读者无法理解为什么温度上升时频率是渐进降低而非立即降到最低。",
+        "suggestion": "在内核 Thermal Core 节补充 step_wise governor 的工作方式：每次 trip crossing 时 cooling state 增加/减少一级（而非直接跳到极值），因此频率是阶梯式下降的。简要提及其他 governor 的存在。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-17T19:26:16",
+    "status": "pending"
   }
 ]
