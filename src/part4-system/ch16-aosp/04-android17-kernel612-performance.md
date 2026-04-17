@@ -5,17 +5,18 @@ chapter: "16.4"
 status: ready-for-review
 drafted_date: "2026-04-07"
 drafted_by: "openclaw-task2a"
-reviewed_date: "2026-04-10"
+reviewed_date: "2026-04-17"
 reviewed_by: "openclaw-task6"
+task6_result: pass-light-edit
+task6_state: reviewed
+task9_state: pending
+task2b_state: idle
+pipeline_stage: task9_pending
 applicable_versions: "Android 17 (API 37)"
 tags:
   - android
   - linux
   - research
-pipeline_stage: task6_pending
-task6_state: pending
-task9_state: pending
-task2b_state: idle
 ---
 
 
@@ -23,7 +24,7 @@ task2b_state: idle
 
 ## 为什么要了解 Android 17 + Kernel 6.12 的性能变化
 
-如果你在做 Android 性能优化，大概率会碰到一些"莫名其妙"的改善：同一套代码，升级系统版本后冷启动快了、滑动更丝滑了、App 安装更快了。这些改善背后，有一部分来自 Google 通过 GKI（Generic Kernel Image）Kernel 6.12 推送到底层的优化——它们不需要你改一行代码，也不需要 OEM 做适配，只要设备在 GKI Mainline 覆盖范围内就自动生效。
+如果你在做 Android 性能优化，大概率会碰到一些"难以解释"的改善：同一套代码，升级系统版本后冷启动快了、滑动更丝滑了、App 安装更快了。这些改善背后，有一部分来自 Google 通过 GKI（Generic Kernel Image）Kernel 6.12 推送到底层的优化——它们不需要你改一行代码，也不需要 OEM 做适配，只要设备在 GKI Mainline 覆盖范围内就自动生效。
 
 Android 17 Beta 3 搭载了 GKI Kernel 6.12，Google 发布了系统级性能量化数据。这些数据来自真实设备（Pixel 8/9、Samsung Galaxy S25 系列）的 A/B 测试，不是实验室里的微基准。理解这些优化意味着两件事：第一，在分析 Trace 时能识别出这些新机制的表现；第二，在做版本间性能对比时能把系统层面的贡献剥离出来。
 
@@ -57,7 +58,7 @@ Kernel 6.6 引入 EEVDF（Earliest Eligible Virtual Deadline First）作为可�
 
 EEVDF 的工作方式：每个任务有一个 lag 值（正值表示"欠了 CPU 时间"，负值表示"多占了 CPU 时间"）。只有 lag ≥ 0 的任务才"符合条件"（eligible），调度器在这些符合条件的任务中选择虚拟截止时间最早的那个执行。
 
-这个改变带来的直接效果：短任务（比如 UI 线程的 doFrame 回调）天然获得更低的延迟。因为短任务执行时间短、lag 容易保持正值，截止时间更容易排到前面。而长任务（比如后台编译 dex2oat）执行时间长、lag 容易变成负值，暂时被排除在候选列表之外，等 lag 恢复后再获得调度机会。
+这个改变带来的直接效果：短任务（比如 UI 线程的 doFrame 回调）更容易获得更低的延迟。因为短任务执行时间短、lag 容易保持正值，截止时间更容易排到前面。而长任务（比如后台编译 dex2oat）执行时间长、lag 容易变成负值，暂时被排除在候选列表之外，等 lag 恢复后再获得调度机会。
 
 Google 的量化数据：系统调用效率整体提升 9.3%，EEVDF 是主要贡献者。
 
@@ -71,7 +72,7 @@ sched_ext 是 Kernel 6.12 合并的另一个调度器相关框架。它允许开
 
 [已验证: AOSP android16-6.12, kernel/sched/ext/]
 
-在 Android 17 中，sched_ext 提供给 OEM 使用，但 Google 官方构建使用的是 EEVDF。Google 不官方支持自定义 sched_ext 调度器。实测中一些示例调度器（如 scx_simple）在部分场景下性能不如默认的 EEVDF，所以如果 OEM 使用了自定义 sched_ext 调度器导致性能回退，排查方向是确认 sched_ext tracepoint 是否存在并检查自定义调度器的行为。
+在 Android 17 中，sched_ext 提供给 OEM 使用，但 Google 官方构建使用的是 EEVDF。Google 不官方支持自定义 sched_ext 调度器。实际测试中一些示例调度器（如 scx_simple）在部分场景下性能不如默认的 EEVDF，所以如果 OEM 使用了自定义 sched_ext 调度器导致性能回退，排查方向是确认 sched_ext tracepoint 是否存在并检查自定义调度器的行为。
 
 与我们已有的知识关联：在第 5 章（5.1 Linux 进程调度基础）中我们讨论过 CFS 的调度延迟模型。EEVDF 不是一个全新的调度器，它继承了 CFS 的虚拟时间概念，但改变了调度的决策逻辑——从"谁最该运行"变成了"谁的截止时间最近"。
 
@@ -142,7 +143,7 @@ Google 在 Pixel 9 Pro 上实测的 AutoFDO 覆盖 GKI 内核后的收益：
 - **binder-addints**：优化 37.7%
 - **HwBinder**：优化 20%
 
-Binder 调用的优化幅度尤其值得关注。Android 的跨进程通信几乎全部走 Binder（1.4 节），冷启动过程中一个典型 App 会发起数百次 Binder 调用。AutoFDO 将内核中 Binder 热路径的代码布局优化后，每次调用的开销降低 20%+，累积效果就是整体冷启动延迟的降低。
+Binder 调用的优化幅度显著。Android 的跨进程通信几乎全部走 Binder（1.4 节），冷启动过程中一个典型 App 会发起数百次 Binder 调用。AutoFDO 将内核中 Binder 热路径的代码布局优化后，每次调用的开销降低 20%+，累积效果就是整体冷启动延迟的降低。
 
 ### 工作机制
 
