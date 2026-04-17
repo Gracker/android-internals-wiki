@@ -1207,3 +1207,30 @@
 - **建议**：删除无关参考条目；补充 Samsung Max Boost 官方文档链接；核实 Rhea 开源状态后更新措辞
 - **review 日志**：logs/review/2026-04-17-21-review.md
 
+
+## [Task9 Deep Review] 14.8 GPU 图形调试与分析工具 — 2026-04-17
+
+- **类型**：源码准确性
+- **位置**：Perfetto GPU counter 配置示例
+- **问题**：textproto 示例使用 `counter_ids: [1, 2, 3, ...]` 数组语法，这不是标准 protobuf text format。标准格式应为重复字段：`counter_ids: 1` / `counter_ids: 2`。
+- **建议**：修正为标准 protobuf text format，或注明这是简化示意、实际配置建议通过 Perfetto UI 勾选生成。
+
+- **类型**：数据缺失
+- **位置**：全文（三个实战案例）
+- **问题**：三个实战案例全部标注 [待验证]，缺少真实 Perfetto 数据/截图支撑。案例中的具体数值（如"Overdraw 从 4x 降到 1.5x"、"GPU 功耗降低约 40%"）无实测来源。
+- **建议**：至少补充一个有 Perfetto SQL 查询或 GPU counter 截图的真实案例，其余可保留 [待补充：Trace 截图] 标记。
+
+- **类型**：数据缺失
+- **位置**：Perfetto GPU 分析能力节
+- **问题**：缺少 Perfetto SQL 查询示例用于 GPU 性能分析。与 §13.10 的深度 SQL 教程风格不匹配。
+- **建议**：补充至少 1-2 个 GPU 相关的 Perfetto SQL 查询（如查询 GPU frequency 变化、GPU utilization 均值、GPU activity slice 时长分布）。
+
+- **类型**：交叉引用
+- **位置**：related_chapters 和"与其他章节的关系"节
+- **问题**：§2.10 GPU 渲染深入在 progress.json 中不存在（文件存在但未跟踪），引用可达性不确定。此外缺少与 §18.8 OpenGL ES 渲染链路、§18.6 SurfaceView 直出链路的交叉引用——这两个章节涉及 GPU profiling 的实际应用场景。
+- **建议**：确认 §2.10 的跟踪状态；在 related_chapters 中补充 18.8、18.6 的引用。
+
+- **类型**：源码准确性
+- **位置**：Sokatoa 开源计划
+- **问题**：声称"Samsung 计划在 2026 年内开源 Sokatoa"，当前已是 2026 年 4 月中旬，应确认最新开源状态。
+- **建议**：检查 Samsung 开发者网站最新信息，更新开源状态描述（已开源/已发布时间表/延期）。

@@ -589,3 +589,22 @@ EGLConfig 的选择（color buffer depth、stencil buffer、MSAA、depth buffer 
 
 ### 关联章节
 18.8, 2.10, 18.6
+
+## [2026-04-17] 14.8 GPU 图形调试与分析工具 — GPU 计数器跨厂商映射与工具版本矩阵
+
+### 盲区描述
+章节多次提到不同 GPU 厂商的计数器 ID 不同（Adreno/Mali/PowerVR），但未提供任何具体的计数器名称映射或获取方法。开发者无法从文中得知：(1) 如何获取自己设备的可用 GPU 计数器列表；(2) 同一指标（如 GPU Utilization）在不同厂商计数器中的名称和语义差异；(3) 跨设备对比时需要注意的陷阱。
+
+此外，章节缺少工具版本矩阵——各工具支持的最低 Android 版本、GPU 厂商、API（Vulkan/GLES）和功能（系统级/帧级）的交叉对照。
+
+### 重要程度
+中
+
+### 建议研究方向
+- Adreno/Mali/PowerVR 三大移动 GPU 的常用计数器名称和语义对比
+- Perfetto `gpu.counters` 在各厂商驱动中的可用性差异
+- 各 GPU profiling 工具的版本支持矩阵（Android 版本 × GPU 厂商 × API × 功能层级）
+- 如何通过 adb shell 或 AGI 查询设备支持的 GPU 计数器列表
+
+### 关联章节
+14.8, 2.10, 13.3

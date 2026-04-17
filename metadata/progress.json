@@ -2531,12 +2531,13 @@
       "status": "ready-for-review",
       "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
-      "task9_state": "pending",
+      "task9_state": "reviewed",
       "task2b_state": "pending",
       "section": "14.8",
       "reviewed_date": "2026-04-14",
       "reviewed_by": "openclaw-task6",
-      "task6_result": "needs-rework"
+      "task6_result": "needs-rework",
+      "task9_result": "needs-rework"
     },
     "src/part3-tools/ch14-other-tools/09-camera-performance-analysis.md": {
       "chapter": "14.9",

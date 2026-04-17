@@ -1328,5 +1328,49 @@
     "completed_at": "2026-04-17T20:51:37.133180",
     "completed_by": "task2b-rework",
     "completion_reason": "Fixed 3/3 issues: Continuous VSync misstatement → tight loop, BLAST version boundary (12+/9-11), cross-ref paths part1-foundation→part1-fundamentals. Bonus: pre-existing 痛点→挑战."
+  },
+  {
+    "section": "14.8",
+    "section_title": "GPU 图形调试与分析工具",
+    "priority": 95,
+    "reason": "[Deep Tech Review] P0 事实错误（profileable版本、Snapdragon Profiler定位）+ P1 重要缺失（AGI前置条件、版本边界、无版本演进）",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "事实错误",
+        "location": "profileable vs debuggable 节",
+        "detail": "声称 'Android 14 引入了 profileable 属性'。实际 profileable 从 API 29 (Android 10) 引入，API 30 增加 enabled 属性。Android 14 只是增强了 profileable 应用的 profiling 能力。",
+        "suggestion": "修正为：'profileable 属性从 Android 10 (API 29) 引入，Android 14 增强了标记为 profileable 的应用的 Perfetto GPU counter 采集能力。'"
+      },
+      {
+        "type": "事实错误",
+        "location": "Snapdragon Profiler 描述",
+        "detail": "声称 '已被 AGI 逐渐替代'。Snapdragon Profiler 仍在活跃维护，提供比 AGI 更全面的 profiling 能力。",
+        "suggestion": "修正为互补关系描述"
+      },
+      {
+        "type": "版本差异",
+        "location": "applicable_versions 和各工具最低版本",
+        "detail": "applicable_versions 下限 Android 8.0 与 AGI 要求 Android 11+ 不匹配",
+        "suggestion": "在工具全景表中增加最低版本列"
+      },
+      {
+        "type": "原理断裂",
+        "location": "AGI 使用步骤",
+        "detail": "缺少 debuggable 和 Vulkan validation layer 前置要求",
+        "suggestion": "增加前置条件段落"
+      },
+      {
+        "type": "版本差异",
+        "location": "全文",
+        "detail": "applicable_versions 声明 Android 8.0-17 但全文无版本演进讨论。缺少 GAPID→AGI 演进、profileable 在各版本的能力增强、ANGLE denylist 对 GLES 帧分析的影响等版本差异",
+        "suggestion": "增加版本演进节或在各工具描述中嵌入版本里程碑"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-17T21:30:10",
+    "status": "pending"
   }
 ]
