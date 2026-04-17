@@ -7,10 +7,14 @@ tags: ["HardwareBufferRenderer", "离屏渲染", "GPU", "RenderNode", "HDR", "BL
 related_chapters: ["2.5", "2.10", "18.2"]
 created_by: "rendering-pipelines-merge"
 created_date: "2026-04-09"
-pipeline_stage: task6_pending
-task6_state: pending
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task2b_state: idle
+reviewed_by: "openclaw-task6"
+reviewed_date: "2026-04-18"
+task6_result: "needs-rework"
+task2b_state: pending
 ---
 
 <!-- outline-start -->
@@ -39,6 +43,8 @@ task2b_state: idle
 **HardwareBufferRenderer**（Android 14 / API 34 引入）是 `lockCanvas()` 的现代替代方案：它利用 RenderNode 和 GPU 进行硬件加速光栅化，GPU 直接渲染到 HardwareBuffer，**跳过 CPU 拷贝**。[已验证: Android 14 API 文档]
 
 ## 核心架构
+
+下图展示了 HardwareBufferRenderer 的端到端流程，从 App 记录绘制指令到 SurfaceFlinger 合成输出：
 
 ```mermaid
 graph LR
@@ -69,6 +75,8 @@ graph LR
 
 ### Java API
 
+完整的渲染流程分为创建 HardwareBufferRenderer、配置 RenderRequest、执行异步渲染、提交结果四步：
+
 ```java
 // 1. 创建
 HardwareBufferRenderer renderer = new HardwareBufferRenderer(
@@ -94,6 +102,8 @@ request.draw(executor, result -> {
 
 ### NDK API
 
+C 层接口提供了等价的功能，适用于需要原生渲染的场景。Fence 通过文件描述符传递，需要调用方管理生命周期：
+
 ```c
 AHardwareBufferRenderer* renderer;
 AHardwareBufferRenderer_create(hardwareBuffer, &renderer);
@@ -112,13 +122,15 @@ ASurfaceTransaction_setBuffer(transaction, sc, hardwareBuffer, fenceFd);
 
 | 场景 | lockCanvas() | HardwareBufferRenderer |
 |:---|:---|:---|
-| 1080p 全屏绘制 | ~15ms (CPU) | ~8ms (GPU) |
+| 1080p 全屏绘制 | ~15ms (CPU) | ~8ms (GPU) | [待验证: 需补充测试设备与场景条件]
 | 内存带宽 | 2x (渲染 + 拷贝) | 1x (GPU 直写) |
 | HDR 内容 | ❌ 不支持 | ✅ RGBA_F16 原生支持 |
 | 多线程 | 需要锁同步 | 完全线程安全 |
 | Fence 控制 | 隐式 | 显式 |
 
 ## 渲染时序
+
+一帧 HardwareBufferRenderer 渲染的完整时序如下，重点在于 GPU 光栅化和 Fence 同步的异步衔接：
 
 ```mermaid
 sequenceDiagram
@@ -163,6 +175,8 @@ if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
 
 ## 在 Perfetto 中识别
 
+[待补充：需补充实际 Perfetto Trace 截图描述和具体的 Track 名称]
+
 | 位置 | 说明 |
 |:---|:---|
 | GPU Track | 看到 GPU 光栅化到特定 Buffer（非主窗口 Buffer） |
@@ -170,8 +184,7 @@ if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
 
 ## 与其他章节的关系
 
-- **18.2 Android View 标准链路**：标准链路也使用 RenderNode + GPU 渲染，但通过 RenderThread
-- **2.10 GPU 渲染深入**：GPU 光栅化的底层机制
+HardwareBufferRenderer 的底层机制与标准 Android View 渲染链路（18.2）共享 RenderNode + GPU 光栅化的基础设施，区别在于标准链路通过 RenderThread 自动管理，而 HardwareBufferRenderer 需要调用方手动控制 HardwareBuffer 的生命周期和提交时机。GPU 光栅化的底层工作原理详见 2.10 GPU 渲染深入。
 
 ## 参考资料
 

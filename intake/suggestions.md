@@ -1386,3 +1386,21 @@
 - **位置**：L78 Pipeline B 节奏描述
 - **问题**：`帧率取决于视频源和解码速度，而不是系统的 VSync 频率` 说得过满。Producer cadence 的确独立于 Choreographer，但最终 present 仍受 SurfaceFlinger / HWC 的 VSync 节奏约束。
 - **建议**：改成“生产节奏独立，显示节奏仍由 VSync-SF 驱动”，避免把 producer cadence 和 display cadence 混为一谈。
+
+
+## [Task6 Review] 18.17 Hardware Buffer Renderer — 2026-04-18
+- **类型**：需重写 + 需补充内容
+- **位置**：全文风格 + 多个章节
+- **问题**：
+  1. 文体问题：整体读起来像API参考文档（列表堆砌+代码片段），不符合writing-guide.md要求的engineer-to-engineer叙述风格。适用场景、核心架构、性能对比等章节都是列表/表格，缺少因果解释和连贯叙述。
+  2. Perfetto识别章节（## 在 Perfetto 中识别）内容极薄，仅两行表格，缺少实际Track名称和Trace截图描述。
+  3. 性能对比表的数据（15ms/8ms等）缺少测试条件（设备、Android版本、渲染场景）。
+  4. 缺少writing-guide类型A模板要求的"常见问题与误区"章节。
+  5. 缺少与RenderThread的关系说明（标准View渲染路径自动管理RenderThread，HBR需要手动管理）。
+- **建议**：
+  1. 将列表式章节改写为连贯叙述，参考writing-guide.md中"正确写法"示例。
+  2. 为Perfetto章节补充实际Track定位方法。
+  3. 性能数据补充测试条件，或改为定性描述。
+  4. 新增"常见问题与误区"小节。
+  5. 补充与RenderThread的对比说明。
+- **review 日志**：logs/review/2026-04-18-06-review.md
