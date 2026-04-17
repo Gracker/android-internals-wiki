@@ -4,6 +4,13 @@ chapter: "16.3"
 status: ready-for-review
 drafted_date: "2026-04-04"
 drafted_by: "openclaw-task2a"
+reviewed_date: "2026-04-17"
+reviewed_by: "openclaw-task6"
+task6_result: pass-light-edit
+task6_state: reviewed
+task9_state: pending
+task2b_state: idle
+pipeline_stage: task9_pending
 applicable_versions: "Android 11 (API 30) - Android 16 (API 36)"
 last_verified: "2026-04-04"
 last_verified_against: "AOSP android-16.0.0_r1 + source.android.com"
@@ -20,10 +27,6 @@ sources:
 section: "16.3"
 tags: ['aosp', 'build', 'soong', 'ninja', 'emulator', 'cuttlefish', 'debug']
 related_chapters: ["16.1", "16.2", "15.7", "14.7"]
-pipeline_stage: task6_pending
-task6_state: pending
-task9_state: pending
-task2b_state: idle
 ---
 
 # AOSP 源码编译与调试环境
@@ -53,7 +56,7 @@ task2b_state: idle
 > 锚点内容需 L1/L2 验证，扩展内容至少 L2 验证，自动发现内容至少标注来源。
 <!-- outline-end -->
 
-当我们想要理解 Android 系统的某个行为——比如为什么 Zygote fork 之后主线程会卡 200ms，或者 SurfaceFlinger 在什么条件下会走 GPU 合成——光看 AOSP 源码不够，得自己改代码、编模块、跑起来看效果。这一节就是搭建这条路：从下载源码到编译、模拟器运行、修改验证，形成一条完整的「改 Framework → 验证假设」工作流。
+当我们想要理解 Android 系统的某个行为——比如为什么 Zygote fork 之后主线程会卡 200ms，或者 SurfaceFlinger 在什么条件下会走 GPU 合成——光看 AOSP 源码不够，得自己改代码、编模块、跑起来看效果。这一节就是搭建这条路：从下载源码到编译、模拟器运行、修改验证，形成一条完整的「修改Framework代码并验证假设」工作流。
 
 ## 环境准备与源码下载
 
@@ -183,7 +186,7 @@ ARM64 主机（如 Apple Silicon Mac 上的 Linux 虚拟机）也可以运行 Cu
 
 ## 修改 Framework 代码并验证
 
-现在到了最关键的部分：修改 Framework 代码，然后验证效果。典型的调试循环是这样的：
+现在到了最关键的部分：修改 Framework 代码，然后验证效果。调试循环是这样的：
 
 **第一步：定位要修改的文件。** AOSP 的 Framework 层源码主要分布在 `frameworks/base/` 下。System Server 的代码在 `frameworks/base/services/`，核心类如 ActivityManagerService、WindowManagerService 都在这里。对于性能分析相关的调试，我们经常需要修改的地方包括：
 
@@ -221,7 +224,7 @@ adb shell killall surfaceflinger   # surfaceflinger 会自动重启
 
 ## 常用 Debug 手段
 
-Framework 调试有三把「瑞士军刀」：加 Log、改 SystemProperties、用 dumpsys。
+Framework 调试有三种重要手段：加 Log、改 SystemProperties、用 dumpsys。
 
 ### 增加 Log
 
@@ -252,7 +255,7 @@ adb shell setprop log.tag.Choreographer VERBOSE
 
 这个设置在重启后会失效。如果需要持久化，使用 `persist.log.tag.XXX` 前缀。
 
-一个实战技巧：在 Perfetto Trace 中看到某个系统服务的 binder 调用耗时异常，但不确定瓶颈在哪。在对应服务的方法入口和出口各加一行 `Log.d()` 打印时间戳，然后对比 logcat 时间线和 Perfetto Trace 的时间线，就能精确到是哪个内部步骤在耗时。
+一个实用技巧：在 Perfetto Trace 中看到某个系统服务的 binder 调用耗时异常，但不确定瓶颈在哪。在对应服务的方法入口和出口各加一行 `Log.d()` 打印时间戳，然后对比 logcat 时间线和 Perfetto Trace 的时间线，就能精确到是哪个内部步骤在耗时。
 
 ### SystemProperties
 
@@ -327,7 +330,7 @@ adb remount    # 将 /system 分区重新挂载为可读写
 
 [已验证: 官方文档, source.android.com/docs/setup/build/adb]
 
-典型的快速调试流程：
+快速调试流程：
 
 ```bash
 # 1. 增量编译单个模块
