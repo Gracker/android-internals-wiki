@@ -7,15 +7,16 @@ tags: ["SurfaceControl", "ASurfaceControl", "ASurfaceTransaction", "NDK", "layer
 related_chapters: ["2.6", "2.13", "2.16", "18.2", "18.6", "18.9", "18.13"]
 created_by: "rendering-pipelines-merge"
 created_date: "2026-04-09"
-pipeline_stage: task2b_pending
+pipeline_stage: task6_pending
 task6_state: revisiting
-task9_state: reviewed
-task2b_state: pending
+task9_state: pending
+task2b_state: fixed
 reviewed_by: openclaw-task6
 reviewed_date: 2026-04-17
 last_task9_at: "2026-04-18T03:45:00+08:00"
-task9_result: needs-rework
+task9_result: reworked
 task6_result: needs-rework
+task2b_result: fixed
 ---
 
 <!-- outline-start -->
@@ -93,31 +94,29 @@ ASurfaceControl* child = ASurfaceControl_createFromWindow(window, "MyOverlay");
 
 ### 步骤 2：配置 Transaction
 
-创建并配置一个事务，设置各种属性：
+创建并配置一个事务，设置各种属性。`ASurfaceTransaction_setBuffer()`、`ASurfaceTransaction_setZOrder()`、`ASurfaceTransaction_setVisibility()`、`ASurfaceTransaction_setBufferAlpha()` 从 API 29 可用；`ASurfaceTransaction_setPosition()`、`ASurfaceTransaction_setCrop()`、`ASurfaceTransaction_setScale()` 从 API 31 可用。
 
 ```c
 ASurfaceTransaction* transaction = ASurfaceTransaction_create();
 
-// 设置 Buffer（来自 AHardwareBuffer）
+// API 29: 绑定待显示的 buffer
 ASurfaceTransaction_setBuffer(transaction, child, hardwareBuffer, fence_fd);
 
-// 设置位置
+// API 31: 用裁剪区域 + 缩放表达目标矩形
+ARect crop = {0, 0, bufferWidth, bufferHeight};
+ASurfaceTransaction_setCrop(transaction, child, &crop);
 ASurfaceTransaction_setPosition(transaction, child, x, y);
+ASurfaceTransaction_setScale(transaction, child,
+    (float)targetWidth / bufferWidth,
+    (float)targetHeight / bufferHeight);
 
-// 设置大小
-ASurfaceTransaction_setSize(transaction, child, width, height);
-
-// 设置层级
+// API 29: 层级、可见性、buffer alpha
 ASurfaceTransaction_setZOrder(transaction, child, 10);
-
-// 设置可见性
 ASurfaceTransaction_setVisibility(transaction, child, ASURFACE_TRANSACTION_VISIBILITY_SHOW);
-
-// 设置透明度
-ASurfaceTransaction_setAlpha(transaction, child, 0.8f);
+ASurfaceTransaction_setBufferAlpha(transaction, child, 0.8f);
 ```
 
-不同 NDK 版本也可以通过 crop / geometry 相关 API 控制显示区域。上面的代码块只演示一组常见事务组合，真实项目要以当前编译环境里的 `android/surface_control.h` 为准。[待验证: 具体函数可用性和最小 API 级别需按项目使用的 NDK 版本确认]
+NDK 公开头文件里没有 `ASurfaceTransaction_setSize()` 和 `ASurfaceTransaction_setAlpha()`。目标区域的控制要拆成 crop、position、scale；透明度要落在 `ASurfaceTransaction_setBufferAlpha()`。如果业务已经在 Java 层持有 `SurfaceControl.Transaction`，绝对目标矩形也可以交给 Java 封装层处理。[已验证: `android/surface_control.h` 函数签名与 API level 注释]
 
 ### 步骤 3：提交 Transaction
 
@@ -164,7 +163,8 @@ ASurfaceTransaction_setBuffer(
 `setBuffer` / `setBufferWithRelease` 把 `AHardwareBuffer` 和 acquire fence 绑定到某个 Layer 上。[已验证: Android NDK surface_control 文档] acquire fence 表示“生产者对这个 buffer 的写入何时完成”；SurfaceFlinger 只有在 fence signal 后才会读取它。[已验证: Android sync fence 文档]
 
 - **`AHardwareBuffer` 来源**：可以来自 `AHardwareBuffer_allocate()`、Vulkan Image 导出、MediaCodec 输出 buffer，或者其他本地图形组件
-- **release callback 的作用**：如果目标是知道“这块 buffer 何时可以复用”，优先使用 `ASurfaceTransaction_setBufferWithRelease()` 提供 release callback。回调给出的 release fence fd 由调用方负责关闭；它比 `OnComplete` 更适合做 buffer 复用判断。[已验证: Android NDK OnBufferRelease 文档]
+- **release callback 的作用**：`ASurfaceTransaction_setBufferWithRelease()` 从 API 36 可用。它会在 buffer 可复用时触发 `ASurfaceTransaction_OnBufferRelease` 回调，回调给出的 release fence fd 由调用方负责等待并关闭；这条路径适合直接接 buffer pool 回收逻辑。[已验证: `android/surface_control.h` 中 `ASurfaceTransaction_setBufferWithRelease()` 的 API level 注释]
+- **Android 10-15 的处理方式**：这几个版本只有 `ASurfaceTransaction_setBuffer()`。调用方需要继续维护自己的 in-flight buffer 计数或额外同步；`OnComplete` 只能说明事务完成，不直接等价于 buffer 已释放。[已验证: Android NDK OnComplete / OnBufferRelease 回调语义]
 - **不要把 `apply()` 当成释放信号**：只调用 `setBuffer` 时，`apply()` 返回不能代表 buffer 已经安全可写。[已验证: Android NDK transaction apply 语义]
 
 ### Hierarchy Management
@@ -183,12 +183,19 @@ ASurfaceTransaction_reparent(transaction, sc, newParent);
 ### Color Layer
 
 ```c
-// 创建一个纯色 Layer（不需要应用自己提供 Buffer）
-ASurfaceTransaction_setColor(transaction, sc,
-    &(ASurfaceTransaction_Color){r, g, b, a});
+// API 29: 直接设置背景色层的颜色、alpha 和 dataspace
+ASurfaceTransaction_setColor(
+    transaction,
+    sc,
+    r,
+    g,
+    b,
+    alpha,
+    ADATASPACE_SRGB
+);
 ```
 
-Color Layer 不需要应用自己填充 `GraphicBuffer`。它适合做背景、遮罩、调试标记这类“属性变化多、像素内容简单”的场景。最终是由 HWC 直接处理还是退回 GPU 合成，仍取决于设备能力和当前组合条件。[待验证: 受旋转、alpha、裁剪、HDR 等条件影响]
+`setColor()` 直接写入背景色层的 `r/g/b/alpha/dataspace`。`dataspace` 决定颜色解释方式，普通 SDR UI 一般用 `ADATASPACE_SRGB`；如果 Layer 需要和 HDR 或广色域内容混合，dataspace 要和上游 buffer 的色域保持一致。[已验证: `android/surface_control.h` 中 `ASurfaceTransaction_setColor()` 的真实签名]
 
 ### Callback
 
@@ -231,55 +238,100 @@ Layer 数量增加会直接抬高 SurfaceFlinger 的工作量。每多一个独�
 
 实战里不建议给出“5 个以内”这种固定阈值。更稳妥的做法是：先用 `dumpsys SurfaceFlinger` 和 Perfetto 看当前场景到底需要几个独立 buffer layer，再判断哪些层必须异步更新，哪些层可以并回同一个 buffer，或者改成只承担结构关系的 Container Layer。[已验证: SurfaceFlinger 合成决策思路；待验证: 具体阈值需按目标设备验证]
 
-## FrameTimeline API（Android 12+）
+## FrameTimeline API（完整 NDK 用法需 Android 13+）
 
-从 Android 12 开始，SurfaceControl NDK 提供了 FrameTimeline 相关接口，用于把某一帧的事务和特定的 `vsyncId` 绑定起来。[已验证: `ASurfaceTransaction_setFrameTimeline` 文档] 这套机制用于告诉 SurfaceFlinger 这帧打算落在哪个显示节拍上。它描述的是目标节拍，不是“立刻显示”的强制指令。
+Android 12 把 FrameTimeline 机制带进了 SurfaceFlinger 和 Perfetto，但 NDK 侧真正可用的两步接口，`AChoreographer_postVsyncCallback()` 和 `ASurfaceTransaction_setFrameTimeline()`，都在 API 33 才公开。[已验证: `android/choreographer.h`、`android/surface_control.h` API level 注释] 对 native-only 应用来说，完整的“拿 callbackData → 选 timeline → 把 vsyncId 绑进 transaction”流程从 Android 13 才成立。Android 12 上可以观察 FrameTimeline 结果，也可以继续使用 `ASurfaceTransaction_setDesiredPresentTime()`（API 29），但如果要在 NDK 侧主动传入 `vsyncId`，还需要 Java 层或引擎层做额外桥接。
 
 ### 核心 API
 
 ```c
-// 通过 Choreographer 获取 VSync ID（Android 12+）
-// App 在 AChoreographer_postVsyncCallback 回调中获取 vsyncId
-// 然后传给 ASurfaceTransaction_setFrameTimeline
+typedef struct {
+    ASurfaceTransaction* transaction;
+    int64_t desiredPresentTimeNanos;
+} FrameContext;
 
-ASurfaceTransaction_setFrameTimeline(
-    transaction,
-    vsyncId
-);
+static size_t chooseFrameTimeline(
+        const AChoreographerFrameCallbackData* data,
+        int64_t desiredPresentTimeNanos) {
+    size_t count = AChoreographerFrameCallbackData_getFrameTimelinesLength(data);
+    size_t preferred =
+            AChoreographerFrameCallbackData_getPreferredFrameTimelineIndex(data);
+
+    for (size_t i = preferred; i < count; ++i) {
+        int64_t expected =
+                AChoreographerFrameCallbackData_getFrameTimelineExpectedPresentationTimeNanos(
+                        data, i);
+        if (expected >= desiredPresentTimeNanos) {
+            return i;
+        }
+    }
+    return preferred;
+}
+
+static void onVsync(const AChoreographerFrameCallbackData* data, void* userData) {
+    FrameContext* ctx = (FrameContext*)userData;
+    size_t index = chooseFrameTimeline(data, ctx->desiredPresentTimeNanos);
+    AVsyncId vsyncId =
+            AChoreographerFrameCallbackData_getFrameTimelineVsyncId(data, index);
+    int64_t expectedPresentTime =
+            AChoreographerFrameCallbackData_getFrameTimelineExpectedPresentationTimeNanos(
+                    data, index);
+    int64_t deadline =
+            AChoreographerFrameCallbackData_getFrameTimelineDeadlineNanos(data, index);
+
+    // 用 expectedPresentTime 推进动画时钟，用 deadline 判断本帧是否来得及。
+    ASurfaceTransaction_setFrameTimeline(ctx->transaction, vsyncId);
+    ASurfaceTransaction_setDesiredPresentTime(ctx->transaction, expectedPresentTime);
+    ASurfaceTransaction_apply(ctx->transaction);
+}
 ```
 
+实际接入时，还要先在带 `ALooper` 的线程上调用 `AChoreographer_getInstance()`，再用 `AChoreographer_postVsyncCallback(choreographer, onVsync, &frameContext)` 注册下一帧回调。连续渲染场景通常会在 `onVsync()` 末尾再次注册回调。
+
+上面这组接口的最小 API level 都是明确的：`AChoreographer_postVsyncCallback()`、`AChoreographerFrameCallbackData_*()`、`ASurfaceTransaction_setFrameTimeline()` 是 API 33；`ASurfaceTransaction_setDesiredPresentTime()` 是 API 29。[已验证: `android/choreographer.h`、`android/surface_control.h`]
+
 ### 工作原理
+
+`AChoreographer_postVsyncCallback()` 交回的是一组 candidate frame timelines，`vsyncId` 只是其中一个字段。每条 timeline 都带 3 个关键信息：
+
+1. `expectedPresentTimeNanos`，这条 timeline 预计真正上屏的时间
+2. `deadlineNanos`，应用最晚需要在这个时间前把内容准备好
+3. `vsyncId`，提交给 `ASurfaceTransaction_setFrameTimeline()` 的标识符
+
+平台会给出一个 preferred timeline，它对应当前调度器默认希望应用追上的那一拍。应用如果只是尽快提交下一帧，直接用 preferred index 就够了。应用如果有自己的目标节奏，例如 24fps 视频、30fps 阅读器、或主动降帧的省电模式，就要先根据 `desiredPresentTime` 选择一个 `expectedPresentTime` 不早于目标时间的 timeline，再把这条 timeline 的 `vsyncId` 填进 transaction。[已验证: `AChoreographerFrameCallbackData_getFrameTimelinesLength()`、`getPreferredFrameTimelineIndex()`、`getFrameTimelineExpectedPresentationTimeNanos()`、`getFrameTimelineDeadlineNanos()`、`getFrameTimelineVsyncId()` 的头文件注释]
+
+`setDesiredPresentTime()` 和 `setFrameTimeline()`负责的是两个不同层面的信息。前者描述“应用希望这帧何时展示”，后者描述“这帧绑定到哪一个候选显示节拍”。二者一起使用时，SurfaceFlinger 才能区分“应用主动晚一点交帧”和“应用错过了原本该赶上的节拍”。
 
 ```mermaid
 sequenceDiagram
     participant App
-    participant Choreo as AChoreographer
+    participant Choreo as AChoreographer(API 33)
     participant SC as SurfaceControl
     participant SF as SurfaceFlinger
 
-    Choreo->>App: VSync Callback → vsyncId=42
-    App->>App: Draw (耗时 8ms)
-    App->>SC: setFrameTimeline(vsyncId=42)
+    Choreo->>App: callbackData{preferred + candidate timelines}
+    App->>App: 结合 desiredPresentTime 选择 timeline index
+    App->>SC: setFrameTimeline(vsyncId[index])
+    App->>SC: setDesiredPresentTime(expectedPresentTime[index])
     App->>SC: apply()
 
-    SC->>SF: Transaction (vsyncId=42)
-    SF->>SF: 当前节拍尚未到达
-    SF->>SF: 到达目标 vsync 后再决定 latch / present
+    SC->>SF: Transaction(vsyncId, desiredPresentTime)
+    SF->>SF: 按绑定的 timeline 决定 latch / present
 ```
 
 ### 性能优势
 
-1. **减少帧节拍误判**：当应用主动按 30fps 或 24fps 提交内容时，SurfaceFlinger 能区分“有意降低频率”和“无意超时”。[已验证: Android 12 FrameTimeline 文档]
-2. **方便做动态帧率控制**：游戏、视频、阅读器可以把自己的产帧节奏和显示节拍对应起来
-3. **Perfetto 可观察**：FrameTimeline track 能看到 expected / actual present time，方便判断问题出在应用产帧、SurfaceFlinger 调度，还是显示侧
+1. **低帧率内容不会被误判成掉帧**：24fps / 30fps 内容只要绑定了正确 timeline，SurfaceFlinger 和 Perfetto 能识别这是目标节奏，不会把每个空档都当成 missed frame。
+2. **动态帧率控制更稳**：游戏、视频、阅读器可以在提交事务时明确告诉系统本帧想赶哪一个节拍。
+3. **Perfetto 证据更完整**：expected present、actual present、deadline、vsyncId 可以放到同一时间线上观察，定位时能分清是应用产帧慢、SurfaceFlinger 调度慢，还是显示侧节拍变化。
 
 ### 使用场景
 
-| 场景 | 作用 | 帧率策略 |
+| 场景 | 作用 | 关键接口 |
 |:---|:---|:---|
-| **视频播放器** | 让 24fps / 30fps 内容按目标节拍展示，减少节奏抖动 | 固定帧率，匹配内容源 |
-| **游戏引擎** | 在负载变化时主动调整提交节奏 | 动态帧率，根据负载调整 |
-| **省电模式** | 主动降低非关键动画的提交频率 | 固定低帧率 |
+| **视频播放器** | 让 24fps / 30fps 内容匹配目标显示节拍 | `setDesiredPresentTime()` + `setFrameTimeline()` |
+| **游戏引擎** | 按负载在多个 timeline 间切换 | preferred timeline + deadline 判断 |
+| **省电模式** | 主动拉低非关键动画的提交频率 | 延后 desiredPresentTime，绑定较晚的 timeline |
 
 ## Fence 处理与生命周期
 
@@ -315,7 +367,9 @@ ASurfaceControl_release(sc);
 
 ### AHardwareBuffer 生命周期
 
-如果应用自己管理 `AHardwareBuffer` 池，安全做法是把“何时可复用”绑定到 `ASurfaceTransaction_setBufferWithRelease()` 的 release callback。回调拿到的 release fence fd 如果大于等于 0，表示系统还没彻底放开这块 buffer；调用方负责等待并关闭这个 fd。返回 `-1` 时，buffer 已经可直接复用。[已验证: Android NDK OnBufferRelease 文档]
+如果应用自己管理 `AHardwareBuffer` 池，API 36 起可以把“何时可复用”直接绑定到 `ASurfaceTransaction_setBufferWithRelease()` 的 release callback。回调拿到的 release fence fd 如果大于等于 0，表示系统还没彻底放开这块 buffer；调用方负责等待并关闭这个 fd。返回 `-1` 时，buffer 已经可直接复用。[已验证: `android/surface_control.h` 中 `ASurfaceTransaction_setBufferWithRelease()` 的说明]
+
+Android 10-15 没有 NDK 级 release callback 时，应用仍然要靠 `ASurfaceTransaction_setBuffer()`、自己的 in-flight buffer 记账、或更高层封装维护复用时机。`OnComplete` 可以观察事务完成状态，但不能直接替代 release fence。
 
 实际工程里通常不会在 callback 里立刻销毁 buffer，而是把它归还到 buffer pool。这样既能保证时序安全，也能避免频繁分配 / 释放硬件 buffer 带来的额外抖动。
 

@@ -1646,6 +1646,14 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-18T03:45:00+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-18T04:01:17.099279+08:00",
+    "completed_by": "task2b-rework",
+    "fix_summary": [
+      "事务示例改为 setCrop + setPosition + setScale + setBufferAlpha，并补最小 API level",
+      "Color Layer 示例按 ASurfaceTransaction_setColor(transaction, sc, r, g, b, alpha, dataspace) 重写",
+      "FrameTimeline 小节改为 Android 13+ NDK 用法，补 callbackData 多 timeline 选择规则",
+      "bufferWithRelease API 36 限定补充到 Buffer 与 AHardwareBuffer 生命周期说明"
+    ]
   }
 ]
