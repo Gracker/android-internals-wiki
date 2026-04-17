@@ -16,8 +16,8 @@
     "task6_state_counts": {
       "unknown": 33,
       "revisiting": 84,
-      "reviewed": 33,
-      "pending": 63
+      "reviewed": 34,
+      "pending": 62
     },
     "task9_state_counts": {
       "unknown": 34,
@@ -26,9 +26,9 @@
     },
     "pipeline_stage_counts": {
       "unknown": 32,
-      "task6_pending": 145,
+      "task6_pending": 144,
       "task2b_pending": 19,
-      "task9_pending": 17
+      "task9_pending": 18
     },
     "total_sections": 213,
     "pipeline_unknown": 32,
@@ -50,9 +50,9 @@
   "pipeline": {
     "pipeline_stage_counts": {
       "unknown": 32,
-      "task6_pending": 145,
+      "task6_pending": 144,
       "task2b_pending": 19,
-      "task9_pending": 17
+      "task9_pending": 18
     },
     "task2b_state_counts": {
       "unknown": 35,
@@ -63,8 +63,8 @@
     "task6_state_counts": {
       "unknown": 33,
       "revisiting": 84,
-      "reviewed": 33,
-      "pending": 63
+      "reviewed": 34,
+      "pending": 62
     },
     "task9_state_counts": {
       "unknown": 34,
@@ -2204,10 +2204,12 @@
       "title": "视频叠加与 HWC",
       "path": "src/part2-performance/ch18-rendering-pipelines/15-video-overlay-hwc.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "pending",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
       "task9_state": "pending",
-      "task2b_state": "idle"
+      "task2b_state": "idle",
+      "task6_result": "pass-light-edit",
+      "reviewed_date": "2026-04-18"
     },
     "src/part2-performance/ch18-rendering-pipelines/16-game-engine.md": {
       "chapter": "18.16",

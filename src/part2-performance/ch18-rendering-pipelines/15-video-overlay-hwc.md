@@ -7,10 +7,13 @@ tags: ["HWC", "Hardware-Composer", "Overlay", "Video", "GPU-Composition", "DRM",
 related_chapters: ["2.6", "2.10", "18.6"]
 created_by: "rendering-pipelines-merge"
 created_date: "2026-04-09"
-pipeline_stage: task6_pending
-task6_state: pending
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task2b_state: idle
+reviewed_by: openclaw-task6
+reviewed_date: "2026-04-18"
+task6_result: pass-light-edit
 ---
 
 <!-- outline-start -->
@@ -92,7 +95,7 @@ Decoder → SurfaceView BufferQueue → HWC Overlay Plane → Display
 
 - 视频帧直接从 BufferQueue 送入 HWC 的硬件 Plane
 - GPU 完全不参与
-- 只消耗 DPU 的一点点带宽
+- 只消耗 DPU 的少量带宽
 - **功耗低**
 
 ```mermaid
@@ -129,7 +132,7 @@ HWC Overlay 不是总能成功的。以下情况会导致回退到 GPU 合成：
 
 | 触发条件 | 说明 |
 |:---|:---|
-| **硬件 Plane 用完** | HWC 硬件 Plane 数量有限（通常 3-6 个），用完后只能 GPU |
+| **硬件 Plane 用完** | HWC 硬件 Plane 数量有限（通常 3-6 个）[待验证: 具体数量因 SoC 而异，需补充主流平台数据]，用完后只能 GPU |
 | **格式不支持** | 某些 HWC 不支持 RGBA_8888 Overlay，只支持 YUV |
 | **Transform 不支持** | 旋转 90°、缩放比例超出范围等 |
 | **透明度混合** | `setAlpha(0.5)` 或复杂混合模式 |
