@@ -27,9 +27,13 @@ sources:
 tags: ['qualcomm', 'mediatek', 'samsung', 'exynos', 'tensor', 'adreno', 'mali', 'xclipse', 'soc', 'cpu', 'gpu']
 related_chapters: ["5.1", "5.3", "5.4", "2.10", "17.1"]
 pipeline_stage: task6_pending
-task6_state: pending
+task6_state: reviewed
 task9_state: pending
 task2b_state: idle
+reviewed_by: openclaw-task6
+reviewed_date: 2026-04-17
+task6_result: pass-light-edit
+pipeline_stage: task9_pending
 ---
 
 # SoC 平台差异
@@ -61,7 +65,7 @@ task2b_state: idle
 
 ## 为什么要了解 SoC 平台差异
 
-如果你做过 Android 性能优化，一定遇到过这种情况：同一款 App 在骁龙设备上流畅运行，到了天玑或 Exynos 设备上却莫名其妙掉帧。打开 Perfetto 一看，同样的代码路径，CPU 调度行为不一样了，GPU 渲染耗时也不一样了，甚至内存带宽的瓶颈出现在不同的位置。
+如果你做过 Android 性能优化，一定遇到过这种情况：同一款 App 在骁龙设备上流畅运行，到了联发科 Dimensity 或 Exynos 设备上却莫名其妙掉帧。打开 Perfetto 一看，同样的代码路径，CPU 调度行为不一样了，GPU 渲染耗时也不一样了，甚至内存带宽的瓶颈出现在不同的位置。
 
 这不是你的 App 有 bug，而是不同 SoC 平台在硬件架构上存在根本差异——CPU 核心的拓扑结构不同、GPU 的渲染管线不同、内存控制器的带宽和延迟不同、厂商的调度策略更不同。这些差异会直接影响我们在 Perfetto 中看到的现象，如果不了解它们，就很容易把平台特性误判为代码问题。
 
@@ -111,7 +115,7 @@ CPU 是我们做性能分析时最关注的组件。不同 SoC 在 CPU 核心的
 
 高通的 Oryon 核心是自研微架构，与苹果 M 系列同源（都来自 Nuvia 团队）。它的特点是超大 L1 Cache（192KB 指令缓存 + 96KB 数据缓存）和共享的 L2 Cache 设计（四核共享 12MB）。这种设计的好处是缓存容量大、命中率好，但 L1 到 L2 的访问延迟（15-20 cycles）比 ARM 公版核心的私有 L2 延迟（约 8-12 cycles）更高。在 Perfetto 中，这意味着 Oryon 核心在缓存不命中的工作负载上可能会有偶尔的延迟尖峰，但整体吞吐量很好。
 
-ARM 的 Cortex-X925 是 ARM 最高性能的公版核心，10 宽度解码器、384 项 ROB、最大 2MB L2。相比前代 X4 有约 15% 的 IPC 提升。Cortex-A720 作为性能-能效核心，IPC 虽然不如 X 系列，但能效比非常出色。联发科将 A720 作为全大核设计中的「能效核心」使用，其基础性能仍远超传统的 A5xx 小核心。
+ARM 的 Cortex-X925 是 ARM 最高性能的公版核心，10 宽度解码器、384 项 ROB、最大 2MB L2。相比前代 X4 有约 15% 的 IPC 提升。Cortex-A720 作为性能-能效核心，IPC 虽然不如 X 系列，但能效比非常出色。联发科将 A720 作为全大核设计中的「能效核心」使用，其基础性能仍远超传统的 A5xx 系列小核心。
 
 Google Tensor 使用的通常是三星定制的 ARM 核心，微架构上可能与同时期的 Cortex-A7xx 系列接近，但频率设置更为保守。这意味着在 Perfetto 中，同一时间段内 Tensor 的 CPU 利用率数值可能看起来更高（因为频率低、单周期处理能力低），但这不代表性能差，只是基准不同。
 
