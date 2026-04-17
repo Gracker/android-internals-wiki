@@ -1305,3 +1305,21 @@
 - **位置**：L342 / L368 NetworkCapabilities 带宽描述
 - **问题**：把 getLinkDownstreamBandwidthKbps() 近似写成“LinkSpeed/下行带宽”，但它是系统给出的能力估计值，不是实际下载吞吐。若直接拿它驱动画质切换，读者容易把“估计容量”误用成“实时测速结果”。
 - **建议**：补一句“这是网络 agent 的估算值，不等于真实吞吐”，并说明需要结合 EventListener 或样本下载结果做校准。
+
+## [Task9 Deep Review] 14.3 内存分析工具 — 2026-04-18
+- **类型**：源码准确性
+- **位置**：heapprofd 配置示例
+- **问题**：`name: "linux.heapprof"`、`heapprof_config`、`target_cmdline` 三处字段都与 Perfetto 官方 proto 不一致。
+- **建议**：改为 `android.heapprofd`、`heapprofd_config`、`process_cmdline`，并把官方链接修正为 `https://perfetto.dev/docs/data-sources/native-heap-profiler`
+
+## [Task9 Deep Review] 14.3 内存分析工具 — 2026-04-18
+- **类型**：实操错误
+- **位置**：MAT 抓取 hprof / malloc_debug 命令示例
+- **问题**：`kill -SIGHUP` 不能触发 GC；`backtrace_enable_on_signal` 使用的是 `SIGRTMAX - 19`，不是 `SIGUSR1`。
+- **建议**：Java heap dump 示例改为 `adb shell am dumpheap -g <pid> ...`；malloc_debug 按 bionic README 使用实时信号。
+
+## [Task9 Deep Review] 14.3 内存分析工具 — 2026-04-18
+- **类型**：版本差异
+- **位置**：profileable / HWASAN / MTE 说明
+- **问题**：`android:profileable="true"` 语法错误，且 HWASAN、MTE 的版本/设备边界写得过满。
+- **建议**：改为 `<profileable android:shell="true"/>`，分别标注 HWASAN 的 Android 14+ wrap.sh 边界、MTE 的设备支持列表与 heap/stack 检测差异。

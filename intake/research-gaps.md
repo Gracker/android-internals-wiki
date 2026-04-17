@@ -671,3 +671,24 @@ HTTP/3 / Cronet 的 Android 落地矩阵缺失。当前章节只把 HTTP/3 描�
 - 12.1 APK 体积优化
 - 16.2 各 Android 版本性能变更追踪
 - 17.2 SoC 平台差异
+
+## [2026-04-18] 14.3 内存分析工具 — 知识盲区
+
+### 盲区描述
+1. **HWASAN / MTE 开销数据缺少官方量化来源** — 章节给出了“HWASAN 约 1.5 倍内存开销”“MTE 约 1-5% 性能开销”这类数字，但当前未找到可追溯的官方量化文档。
+2. **procrank 在新版本设备上的可用性矩阵缺失** — Android 14+ 的 user / userdebug 设备是否默认提供 `procrank`、是否需要 root 或额外推送二进制，当前没有系统性结论。
+3. **malloc hooks 的公开稳定性边界不够清晰** — 已确认 bionic `malloc.h` 中存在 API 28+ 的 hook 声明，但其是否适合作为对外建议能力、不同版本的兼容性与限制仍需进一步梳理。
+
+### 重要程度
+中高
+
+### 建议研究方向
+- 搜集官方文档、AOSP 提交记录或 Google/ARM 演讲材料，给出 HWASAN/MTE 开销的可追溯表述。
+- 建立 `procrank` / `showmap` / `libmeminfo` 在 Android 10-16、user/userdebug、root/非 root 下的可用性矩阵。
+- 补做 malloc hooks 的 API 稳定性审计，确认是否适合在正文中作为“推荐方案”出现。
+
+### 关联章节
+- 10.1 App 内存分析
+- 10.3 内存持续增长
+- 13.1 Perfetto 简介与演进
+- 14.4 dumpsys 系列命令
