@@ -555,3 +555,37 @@ Linux 内核的 thermal governor 算法（step_wise、fair_share、bang_bang）�
 
 ### 关联章节
 5.5, 5.4
+
+
+## [2026-04-17] 18.8 OpenGL ES 渲染链路 — Frame Pacing 控制机制
+
+### 盲区描述
+GLES 链路的帧节奏控制（Frame Pacing）完全未讨论。Continuous 模式下 GLThread 紧凑循环渲染，帧率仅受 BufferQueue 限制，无法精确控制。Swappy / Frame Pacing Library 在 GLES 中的集成方式、如何与 Choreographer 协调、如何设置目标帧率等关键话题缺失。这是游戏和地图应用开发者最关心的 GLES 性能话题之一。
+
+### 重要程度
+高
+
+### 建议研究方向
+- Android Frame Pacing Library（Swappy）源码和 GLES 集成方式
+- Choreographer + requestRender() 实现 VSync 对齐的方案
+- EGL_EXT_swap_buffers_with_damage 扩展对帧节奏的影响
+- 不同 GLES 帧率控制策略的 Perfetto 表现对比
+
+### 关联章节
+18.8, 2.17, 18.6
+
+## [2026-04-17] 18.8 OpenGL ES 渲染链路 — EGL Config 选择对性能的影响
+
+### 盲区描述
+EGLConfig 的选择（color buffer depth、stencil buffer、MSAA、depth buffer size）直接决定 GPU 渲染带宽和帧缓冲内存占用，但章节完全未提及。在移动设备上，16-bit vs 32-bit color buffer 的选择可以影响 30-50% 的渲染带宽；MSAA 的开启会显著增加 GPU 负载。作为渲染链路章节，这些参数选择是连接「机制理解」和「性能实战」的关键桥梁。
+
+### 重要程度
+中
+
+### 建议研究方向
+- EGLConfig 选择对移动 GPU 渲染性能的影响
+- MSAA 在 Adreno/Mali/PowerVR 上的实际开销
+- GLSurfaceView.setEGLConfigChooser() 的默认行为和性能影响
+
+### 关联章节
+18.8, 2.10, 18.6

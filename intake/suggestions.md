@@ -1167,3 +1167,31 @@
 - **位置**：frontmatter confidence 字段
 - **问题**：confidence 声明为 'high'，但 applicable_versions 覆盖到 Android 17 而 last_verified_against 仅为 android-14.0.0_r1。版本表中 Android 15-16 的条目标注为 [待验证]。
 - **建议**：将 confidence 从 'high' 改为 'medium'，或在 frontmatter 中明确区分已验证版本范围（Android 7-14）和待验证范围（Android 15-17）
+
+
+## [Task9 Deep Review] 18.8 OpenGL ES 渲染链路 — 2026-04-17
+
+- **类型**：原理断裂
+- **位置**：「核心架构」→ GLThread 生命周期
+- **问题**：缺少 Surface 生命周期管理（onPause/onResume 时 EGL Surface 的销毁和重建）和 EGL Context Lost 处理。GLSurfaceView 的 onSurfaceCreated 回调就是为了处理 GPU context 丢失，这在实战中是最常见的 GLES 性能陷阱之一。
+- **建议**：在 GLThread 生命周期节补充 Surface 重建和 Context Lost 的说明，标注在 Perfetto 中如何识别（GLThread 重建 EGL 时会有一段明显的初始化耗时）。
+
+- **类型**：数据缺失
+- **位置**：全文
+- **问题**：无任何量化数据。缺少：典型 eglSwapBuffers 耗时分布、dequeueBuffer 等待时间参考值、Continuous vs Dirty 模式帧率差异、EGL Context switch 开销数据。
+- **建议**：补充一组参考数据（如某设备上 eglSwapBuffers 典型耗时 1-8ms，其中 dequeueBuffer 占比 70-90%），标注设备和版本条件。
+
+- **类型**：数据缺失
+- **位置**：「Trace 视角」节
+- **问题**：Trace 视角节只有文字描述，缺少具体的 Perfetto SQL 查询示例（对比 13.10 章有大量 SQL）。
+- **建议**：补充至少一个 GLES 链路识别查询（如筛选 GLThread 的 eglSwapBuffers slice 并统计帧耗时分布）。
+
+- **类型**：知识盲区
+- **位置**：related_chapters
+- **问题**：缺少 18.7（TextureView 合成链路）的交叉引用。GLSurfaceView 基于 SurfaceView 走独立 Surface，但 TextureView 也能承载 GLES 渲染。两者的性能差异是架构选型的关键判断。
+- **建议**：在 related_chapters 中添加 '18.7'，在 GLSurfaceView vs 原生 EGL 节中提及 TextureView 的替代方案和性能权衡。
+
+- **类型**：版本差异
+- **位置**：「ANGLE 路径」节
+- **问题**：ANGLE 描述说"Android 14+ / 15+ 上部分设备会更多采用 ANGLE"，未给出具体的版本里程碑。ANGLE 从 Android 12 开始可选，每个版本扩大覆盖设备范围。
+- **建议**：补充 ANGLE 推进时间线（Android 12 可选 → 13 扩大 → 14/15 进一步推进），或引用 Google 的 ANGLE roadmap。
