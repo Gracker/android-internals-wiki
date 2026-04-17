@@ -1324,6 +1324,9 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-17T20:21:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-17T20:51:37.133180",
+    "completed_by": "task2b-rework",
+    "completion_reason": "Fixed 3/3 issues: Continuous VSync misstatement → tight loop, BLAST version boundary (12+/9-11), cross-ref paths part1-foundation→part1-fundamentals. Bonus: pre-existing 痛点→挑战."
   }
 ]
