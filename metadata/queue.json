@@ -1528,5 +1528,40 @@
     "original_review_log": "logs/deep-review/2026-04-18-01-deep-review.md",
     "completed_at": "2026-04-18T01:51:03+08:00",
     "completed_by": "task2b-rework"
+  },
+  {
+    "section": "14.3",
+    "section_title": "内存分析工具",
+    "priority": 95,
+    "reason": "[Deep Tech Review] P0 事实错误：Perfetto/heapprofd 配置名、GC 触发方式、malloc_debug 信号均有错误",
+    "material_paths": [
+      "intake/suggestions.md",
+      "intake/research-gaps.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "heapprofd 配置示例",
+        "detail": "`linux.heapprof`、`heapprof_config`、`target_cmdline` 三处字段均与 Perfetto proto 不一致，正确应为 `android.heapprofd`、`heapprofd_config`、`process_cmdline`。",
+        "suggestion": "按 AOSP perfetto proto 修正配置块，并更新 Perfetto 官方链接到 native-heap-profiler。"
+      },
+      {
+        "type": "实操错误",
+        "location": "Java heap dump / malloc_debug 命令示例",
+        "detail": "`kill -SIGHUP` 不能触发 GC；`backtrace_enable_on_signal` 使用的是 `SIGRTMAX - 19`，不是 `SIGUSR1`。",
+        "suggestion": "将 Java heap dump 示例改为 `am dumpheap -g`，将 malloc_debug 信号改为 README 中的实时信号编号，并删除错误命令。"
+      },
+      {
+        "type": "版本差异",
+        "location": "profileable / HWASAN / MTE 说明",
+        "detail": "`android:profileable=\"true\"` 语法错误；HWASAN、MTE 的设备/版本/重编译边界表述过于宽泛。",
+        "suggestion": "改为 `<profileable android:shell=\"true\"/>`，并分别标注 HWASAN、MTE 的设备能力和版本边界。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-18T02:50:00+08:00",
+    "status": "completed",
+    "completed_at": "2026-04-18T02:52:00+08:00",
+    "review_log": "logs/deep-review/2026-04-18-02-deep-review.md"
   }
 ]
