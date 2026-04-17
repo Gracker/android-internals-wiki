@@ -1920,5 +1920,44 @@
     "added_at": "2026-04-18T07:24:41",
     "status": "pending",
     "original_review_log": "logs/review/2026-04-18-07-review.md"
+  },
+  {
+    "section": "18.16",
+    "section_title": "游戏引擎渲染链路",
+    "priority": 95,
+    "reason": "[Deep Tech Review] P0 可观测性描述错误 + P1 Vulkan 接入链/BLAST 版本边界缺失",
+    "material_paths": [
+      "intake/suggestions.md",
+      "intake/research-gaps.md"
+    ],
+    "review_issues": [
+      {
+        "type": "事实错误",
+        "location": "Swappy Frame Pacing / 在 Perfetto 中识别游戏引擎链路（L146-L180）",
+        "detail": "把 `SwappyTracer` callback 直接写成 Perfetto 默认 `preWait/postWait/preSwapBuffers/postSwapBuffers` Slice，并在识别表中写成固定存在的 `Swappy` Track。官方 API 只是 callback injection，本身不会自动向 Perfetto 发 slice；只有应用在回调里主动调用 ATrace/TrackEvent，或额外开启图形 tracing 时，才可能看到对应轨道。正文同时把 `Choreographer#doFrame` 写成默认反馈回路，这和 Swappy 的 NDK/Java/no-Choreographer 回退链不一致。",
+        "suggestion": "把观测口径拆成『默认可见』『需自定义埋点』『需额外 graphics tracing/AGI』三类，删除固定存在的 `Swappy` Track / `doFrame` 表述，改写为条件性说明。"
+      },
+      {
+        "type": "原理断裂",
+        "location": "Swappy Vulkan 代码块（L137-L143）",
+        "detail": "代码块只保留 `initAndGetRefreshCycleDuration`、`queuePresent`、`setSwapIntervalNS` 三步，遗漏了 Vulkan 接入前置步骤，例如 `SwappyVk_determineDeviceExtensions()`、queue family index 绑定，以及 `SwappyVk_queuePresent()` 对 `vkQueuePresentKHR()` 的包裹语义。读者按当前示例无法直接完成可运行接入。",
+        "suggestion": "补一段最小可运行初始化顺序，明确区分 OpenGL 与 Vulkan 两条接入链，并说明 `SwappyVk_queuePresent()` 会代替应用直接调用 `vkQueuePresentKHR()`。"
+      },
+      {
+        "type": "版本差异",
+        "location": "SurfaceView + BLAST（L96-L102） + applicable_versions",
+        "detail": "章节声明覆盖 Android 5.0-16，但正文把 `SurfaceView + BLAST` 写成统一通路，没有交代 pre-BLAST SurfaceView 路径与现代 BLAST 路径的分界。这样会把 API 21-30 的读者直接带到 Android 11+/12+ 的模型里。",
+        "suggestion": "拆出版本边界：旧版 SurfaceView/BufferQueue 路径 vs 现代 BLASTBufferQueue 路径，并与 §18.6 SurfaceView 直出链路互相引用。"
+      },
+      {
+        "type": "知识盲区",
+        "location": "Perfetto 观测章节（L146-L189）",
+        "detail": "缺少『游戏引擎在 Perfetto 中的可观测性矩阵』：Unity 默认 markers、Unreal trace、SwappyTracer+Atrace、自定义 TrackEvent、graphics tracing、AGI/GPU counter 各自能看到什么没有分层说明。",
+        "suggestion": "新增一张 observability matrix，并给出至少一个启用 Swappy 前后、60Hz/120Hz 下的最小 trace case。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-18T07:37:00+08:00",
+    "status": "pending"
   }
 ]

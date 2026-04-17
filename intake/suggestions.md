@@ -1451,3 +1451,16 @@
 - **问题**：PIP 从 Android 8.0 引入、BLAST 从 Android 12 引入的关键变化未梳理
 - **建议**：添加版本演进表格，标注各版本中 PIP/Freeform/BLAST 的关键变更
 - **review 日志**：logs/review/2026-04-18-07-review.md
+
+
+## [Task9 Deep Review] 18.16 游戏引擎渲染链路 — 2026-04-18
+- **类型**：交叉引用
+- **位置**：frontmatter `related_chapters` / 正文“与其他章节的关系”
+- **问题**：正文显式引用了 `2.17 Frame Pacing Library`，但 `related_chapters` 没有包含 `2.17`，导航链会漏掉帧节奏主线。
+- **建议**：在 `related_chapters` 中补上 `2.17`；如果要强化诊断路径，可再考虑补 `13.1 Perfetto 简介与演进`。
+
+## [Task9 Deep Review] 18.16 游戏引擎渲染链路 — 2026-04-18
+- **类型**：知识盲区
+- **位置**：Unity / Unreal 线程模型表（L80-L94）
+- **问题**：表格把 `UnityGfx` / `RHIThread` 写成固定拓扑，未标注 multithreaded rendering、graphics jobs、RHIThread 受引擎版本、后端和项目配置控制。读者可能因为某条线程在 trace 中缺席而误判“不是 Unity/Unreal”。
+- **建议**：把表述改成“典型线程模型”，补一句线程是否存在取决于渲染后端和引擎配置。

@@ -784,3 +784,24 @@ SurfaceControl NDK 的 FrameTimeline 小节缺少“如何从 AChoreographerFram
 - 2.10
 - 2.16
 
+
+
+## [2026-04-18] 18.16 游戏引擎渲染链路 — 知识盲区
+
+### 盲区描述
+游戏引擎在 Perfetto 中的可观测性前提没有系统展开。当前章节把 `SwappyTracer` callback、FrameTimeline、graphics tracing、Unity/Unreal 自定义 marker 混在一起，读者不知道哪些是默认可见，哪些需要 ATrace/TrackEvent，哪些要启用 Vulkan/GLES graphics tracing 或切到 AGI。这个矩阵直接决定 trace 诊断能否真正落地。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 梳理 Unity 默认 markers、Unreal trace/Insights、SwappyTracer callback 与 ATrace/TrackEvent 的对应关系
+- 梳理 Perfetto 默认数据源、graphics tracing、GPU render stage、AGI 的覆盖边界
+- 给出 60Hz / 90Hz / 120Hz 下启用 Swappy 前后的最小 trace case
+
+### 关联章节
+- 2.17 Frame Pacing Library 与帧节奏控制
+- 8.9 Android 游戏性能与 Game Mode/State API
+- 13.1 Perfetto 简介与演进
+- 18.8 OpenGL ES 渲染链路
+- 18.9 Vulkan 原生渲染链路
