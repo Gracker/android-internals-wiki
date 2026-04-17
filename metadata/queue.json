@@ -1438,5 +1438,44 @@
     "added_at": "2026-04-17T23:05:00",
     "status": "pending",
     "original_review_log": "logs/review/2026-04-17-23-review.md"
+  },
+  {
+    "section": "18.3",
+    "section_title": "Android View 软件渲染链路",
+    "priority": 95,
+    "reason": "[Deep Tech Review] P0 事实错误：硬件加速判断 API 错误 + fence/BufferQueue 同步模型描述错误",
+    "material_paths": [
+      "intake/suggestions.md",
+      "intake/research-gaps.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "L45 硬件加速判断方法",
+        "detail": "章节要求用 View.isHardwareAccelerated() 判断“当前 Canvas 是否启用硬件加速”。Android Developer 文档明确区分了 View.isHardwareAccelerated()（窗口级）和 Canvas.isHardwareAccelerated()（Canvas 级）；一个挂在硬件加速窗口上的 View 仍可能被绘制到 software Canvas。",
+        "suggestion": "把“判断当前 Canvas”改为 Canvas.isHardwareAccelerated()；如果只是判断窗口是否开启硬件加速，再单独说明 View.isHardwareAccelerated() 的语义。"
+      },
+      {
+        "type": "源码错误",
+        "location": "L77-L79 提交阶段 + L165 卡顿归因",
+        "detail": "“软件渲染没有 GPU 参与，因此不需要 acquireFence 等待”“没有 Buffer 瓶颈”表述不成立。AOSP frameworks/native/libs/gui/Surface.cpp 中，Surface::lock() 会从 dequeueBuffer() 取回 fenceFd，并传给 GraphicBuffer::lockAsync()；Surface::unlockAndPost() 再把 unlockAsync() 产出的 fd 传给 queueBuffer()。软件路径仍然遵守 BufferQueue/fence 协议，也可能在 dequeueBuffer 上遭遇背压。",
+        "suggestion": "改为“没有 GPU 渲染栅栏，不等于没有 fence/背压”。补充软件路径仍有 dequeueBuffer/queueBuffer、acquire/release fence、BufferQueue 槽位占满等等待点。"
+      },
+      {
+        "type": "版本差异",
+        "location": "L77-L78、时序图、对比表",
+        "detail": "正文把 unlockCanvasAndPost() → BLASTBufferQueue → Transaction 当成 Android 9-16 的统一路径，但章节 applicable_versions 为 Android 9-16。ch18.1 版本矩阵已经说明 Android 9 是 Legacy BufferQueue，Android 10-11 是过渡期，Android 12+ 才是成熟 BLAST 视角。当前写法会把老版本读者带偏。",
+        "suggestion": "增加版本分流说明：Android 9 走 Legacy BufferQueue；Android 10-11 标注 BLAST/SurfaceControl 过渡；Android 12+ 再单独讲 BLAST 事务提交。时序图和对比表也要同步加版本脚注。"
+      },
+      {
+        "type": "原理断裂",
+        "location": "L175-L179 Dirty Rect 机制",
+        "detail": "章节只说“只重绘变化区域”，但没有解释 dirty region 为什么能成立。AOSP Surface.cpp 的 Surface::lock() 会根据 mDirtyRegion 计算 copyback 区域，并通过 copyBlt() 回拷前一帧未失效区域；若前一帧内容不可用或尺寸/格式变化，则会强制扩大为全量重绘。缺少这段机制，读者不知道 Dirty Rect 何时有效、何时退化。",
+        "suggestion": "补上 Surface::lock() 中的 mDirtyRegion/copyBlt/full redraw fallback 机制，并说明这也是 Dirty Rect 在 resize、buffer 丢失、格式变化场景下收益骤降的原因。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-17T23:32:04+08:00",
+    "status": "pending"
   }
 ]

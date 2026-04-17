@@ -625,3 +625,24 @@ EGLConfig 的选择（color buffer depth、stencil buffer、MSAA、depth buffer 
 
 ### 关联章节
 1.10, 9.1, 9.2
+
+
+## [2026-04-17] 18.3 Android View 软件渲染链路 — 知识盲区
+
+### 盲区描述
+1. **Dirty Rect 的真实实现机制缺失** —— 章节把 Dirty Rect 简化成“只重绘变化区域”，但 AOSP Surface::lock() 实际还包含旧前台 Buffer 的 copyback、dirty region 扩张、前帧内容不可用时的全量回退。这决定了 Dirty Rect 什么时候真的省事，什么时候反而退化成整帧拷贝 + 局部重绘。
+2. **软件渲染仍然受 BufferQueue 背压约束** —— 章节把软件路径描述成“没有复杂同步问题”，但软件 producer 依然会经过 dequeueBuffer()/queueBuffer()，在槽位被 SurfaceFlinger 占住时同样可能卡在 BufferQueue。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 研究 frameworks/native/libs/gui/Surface.cpp 中 Surface::lock()/unlockAndPost() 的 dirty region 与 copyBlt 流程
+- 梳理 software producer 的 fence 传递链：dequeue fence → lockAsync → unlockAsync → queueBuffer
+- 对比 Android 9 Legacy BufferQueue 与 Android 12+ BLAST 下 software path 的实际差异
+
+### 关联章节
+- 2.13 图形缓冲区管理
+- 18.1 Android 图形渲染链路全景
+- 18.2 Android View 标准链路
+- 18.6 SurfaceView 直出链路
