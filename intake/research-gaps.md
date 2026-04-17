@@ -485,3 +485,19 @@ BLAST vs Legacy BufferQueue 的架构对比缺失。章节多次提到"BLAST 模
 
 ### 关联章节
 18.2, 2.1, 2.6, 2.13, 2.16, 18.10
+
+## [2026-04-17] 2.1 Android 渲染架构全景 — 知识盲区
+
+### 盲区描述
+章节 L699 声称 "Android 16 中引入了 AsyncBufferQueue"，但无法在 AOSP android-16.0.0_r1 源码或官方 changelog 中确认。需要验证此组件是否真实存在、具体功能是什么、以及引入的确切版本。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 搜索 AOSP android-16.0.0_r1 中是否存在 AsyncBufferQueue 类
+- 检查 Android 16 Developer Preview / Beta 的官方 release notes
+- 如果不存在，修正为正确的缓冲区管理变更描述
+
+### 关联章节
+2.1, 2.6, 18.2

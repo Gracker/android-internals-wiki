@@ -876,3 +876,55 @@
 - **问题**：章节 applicable_versions 标注为 Android 9-16，但正文未讨论任何版本间的行为差异。例如：(1) Android 12 对 `BufferQueue` 和 `syncFrameState` 的改动；(2) Android 10 引入 Multi-resume 后 Choreographer 分发行为的变化；(3) Android 14+ 对分屏模式的渲染管线调整。
 - **建议**：增加"版本演进"小节，或在各关键段落中补充版本差异标注。至少覆盖 Android 10（Multi-resume）、Android 12（RenderThread 改动）两个关键版本节点。
 - **review 日志**：logs/review/2026-04-17-08-review.md
+
+## [Task9 Deep Review] 2.1 Android 渲染架构全景 — 2026-04-17
+
+- **类型**：源码错误
+- **位置**：L124-126 Layout 调用树
+- **问题**：`ViewGroup.dispatchDraw()` 出现在 Layout 阶段调用树中。dispatchDraw() 是 Draw 阶段方法，不属于 Layout 流程。Layout 实际流程：View.layout() → View.onLayout() → ViewGroup.onLayout() 遍历子 View 调用 child.layout()
+- **建议**：移除 dispatchDraw()，替换为 ViewGroup.onLayout() → child.layout() 的正确调用链
+
+- **类型**：源码错误
+- **位置**：L157-159 Choreographer 调用树
+- **问题**：方法名 callInputCallbacks/callAnimationCallbacks/callTraversalCallbacks 不是 AOSP 实际方法名
+- **建议**：修正为 doCallbacks(CALLBACK_INPUT, ...) / doCallbacks(CALLBACK_ANIMATION, ...) / doCallbacks(CALLBACK_TRAVERSAL, ...)
+
+- **类型**：源码错误
+- **位置**：L190-194, L204-205, L241-242 SurfaceFlinger DisplayHardware
+- **问题**：DisplayHardware.composerCallback() / DisplayHardware.vsync() / DisplayHardware.flip() 不是现代 AOSP 中的标准方法。SurfaceFlinger 通过 HWComposer 和内部 MessageQueue 处理 VSync，不存在 DisplayHardware 类
+- **建议**：替换为正确的 SurfaceFlinger 内部调用链：HWComposer::vsync() → SurfaceFlinger::onVsyncReceived() → MessageQueue::invalidate() → handleMessageRefresh()
+
+- **类型**：源码错误
+- **位置**：L367-368 OpenGLRenderer.cpp
+- **问题**：Android 10+ HWUI 统一走 Skia Pipeline，OpenGLRenderer 独立类在 Android 16 中不存在
+- **建议**：标注为历史版本代码示例，或更新为 SkiaOpenGLPipeline / SkiaVulkanPipeline 路径
+
+- **类型**：原理断裂
+- **位置**：BufferQueue 章节（L280-340 区域）
+- **问题**：未说明 SurfaceFlinger 如何被通知有新帧可用
+- **建议**：补充通知链：queueBuffer() → ConsumerListener.onFrameAvailable() → Layer::onFrameAvailable() → SurfaceFlinger::signalLayerUpdate()
+
+- **类型**：原理断裂
+- **位置**：BufferQueue 章节
+- **问题**：缺少缓冲区状态转换说明
+- **建议**：补充 Free → Dequeued → Queued → Acquired → Released → Free 的状态机描述
+
+- **类型**：原理断裂
+- **位置**：Draw 过程到 VSync 同步之间的衔接
+- **问题**：未说明 invalidate() 如何最终触发 Choreographer 申请 VSync
+- **建议**：补充 invalidate() → ViewRootImpl.scheduleTraversals() → Choreographer.postCallback() → scheduleFrameLocked() → scheduleVsync() 的完整链路
+
+- **类型**：数据缺失
+- **位置**：HWUI 概述段（L448 区域）
+- **问题**："复杂 2D 图形渲染性能相比纯 CPU 软件渲染提升 5-10 倍"无数据来源
+- **建议**：补充 benchmark 来源（官方博客/Google I/O 演讲），或改为更保守的定性描述
+
+- **类型**：知识盲区
+- **位置**：BufferQueue 与 App 之间的接口
+- **问题**：缺少 Surface / SurfaceControl / SurfaceTexture 的介绍
+- **建议**：在 BufferQueue 章节前或后增加一段说明这些 API 层封装与 BufferQueue 的关系
+
+- **类型**：版本差异
+- **位置**：版本演进段（L660 区域）
+- **问题**：Android 8.0 "预合成重构"表述模糊；缺少 Android 7.0 Vulkan 引入和 Android 14/15 变更
+- **建议**：将 Android 8.0 改为具体描述 HWC2 HAL 引入；补充 Android 7.0 Vulkan 引入里程碑
