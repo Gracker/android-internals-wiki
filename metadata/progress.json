@@ -9,15 +9,15 @@
     "last_updated": "2026-04-18T04:01:17.099279+08:00",
     "task2b_state_counts": {
       "unknown": 35,
-      "fixed": 84,
+      "fixed": 85,
       "pending": 19,
-      "idle": 75
+      "idle": 74
     },
     "task6_state_counts": {
       "unknown": 33,
-      "revisiting": 84,
+      "revisiting": 85,
       "reviewed": 34,
-      "pending": 62
+      "pending": 61
     },
     "task9_state_counts": {
       "unknown": 34,
@@ -36,13 +36,13 @@
     "pipeline_task2b_pending": 20,
     "pipeline_task9_pending": 17,
     "task2b_unknown": 35,
-    "task2b_fixed": 83,
+    "task2b_fixed": 84,
     "task2b_pending": 20,
-    "task2b_idle": 75,
+    "task2b_idle": 74,
     "task6_unknown": 33,
-    "task6_revisiting": 84,
+    "task6_revisiting": 85,
     "task6_reviewed": 33,
-    "task6_pending": 63,
+    "task6_pending": 62,
     "task9_unknown": 34,
     "task9_pending": 161,
     "task9_reviewed": 18
@@ -56,15 +56,15 @@
     },
     "task2b_state_counts": {
       "unknown": 35,
-      "fixed": 84,
+      "fixed": 85,
       "pending": 19,
-      "idle": 75
+      "idle": 74
     },
     "task6_state_counts": {
       "unknown": 33,
-      "revisiting": 84,
+      "revisiting": 85,
       "reviewed": 34,
-      "pending": 62
+      "pending": 61
     },
     "task9_state_counts": {
       "unknown": 34,
@@ -2195,9 +2195,14 @@
       "path": "src/part2-performance/ch18-rendering-pipelines/14-camera-pipeline.md",
       "status": "ready-for-review",
       "pipeline_stage": "task6_pending",
-      "task6_state": "pending",
+      "task6_state": "revisiting",
       "task9_state": "pending",
-      "task2b_state": "idle"
+      "task2b_state": "fixed",
+      "reviewed_date": "2026-04-18",
+      "reviewed_by": "openclaw-task6",
+      "task6_result": "needs-rework",
+      "task2b_result": "fixed",
+      "section": "18.14"
     },
     "src/part2-performance/ch18-rendering-pipelines/15-video-overlay-hwc.md": {
       "chapter": "18.15",
@@ -2941,6 +2946,17 @@
       "task6_reviewed_date": "2026-04-17",
       "task9_state": "pending",
       "pipeline_stage": "task9_pending"
+    },
+    "18.14": {
+      "title": "Camera 渲染管线",
+      "status": "ready-for-review",
+      "task6_state": "revisiting",
+      "task6_result": "needs-rework",
+      "task6_reviewed_date": "2026-04-18",
+      "task9_state": "pending",
+      "task2b_state": "fixed",
+      "task2b_result": "fixed",
+      "pipeline_stage": "task6_pending"
     }
   },
   "chapters": {
@@ -3016,7 +3032,7 @@
       "major_issues": 1
     }
   },
-  "last_updated": "2026-04-18T04:01:17.099279+08:00",
+  "last_updated": "2026-04-18T04:50:38.437762+08:00",
   "rework_log": [
     {
       "date": "2026-04-15T19:44:09.836904",
@@ -3131,6 +3147,22 @@
       ],
       "verification": "AOSP headers: surface_control.h + choreographer.h；新增段落禁用词扫描=0",
       "queue_status": "completed"
+    },
+    {
+      "date": "2026-04-18T04:50:38.437762+08:00",
+      "section": "18.14",
+      "section_title": "Camera 渲染管线",
+      "source": "task6-review",
+      "issues_fixed": 5,
+      "fixes": [
+        "关键组件改为叙述体，补 CameraService / HAL3 / CaptureRequest 角色与交互关系",
+        "Perfetto 小节补配置阶段、稳态预览、Buffer / IPC 压力三组观察点，并加入正常 / 异常对照表",
+        "常见性能问题扩展为根因、Perfetto 表现、修复动作完整说明",
+        "新增 Camera1 → Camera2 → CameraX 与 HAL 3.5 buffer management 版本演进",
+        "参考资料补 AOSP android-16.0.0_r1 路径、关键函数名和官方文档链接"
+      ],
+      "verification": "禁用词扫描=0，queue=completed",
+      "queue_status": "completed"
     }
   ],
   "reviews": [
@@ -3228,9 +3260,17 @@
       "by": "task2b-rework",
       "source": "task9-deep-tech-review",
       "issues_fixed": 4
+    },
+    {
+      "section": "18.14",
+      "section_title": "Camera 渲染管线",
+      "date": "2026-04-18T04:50:38.437762+08:00",
+      "by": "task2b-rework",
+      "source": "task6-review",
+      "issues_fixed": 5
     }
   ],
-  "last_task2b_run": "2026-04-18T04:01:17.099279+08:00",
+  "last_task2b_run": "2026-04-18T04:50:38.437762+08:00",
   "task2b_fixed": 2,
   "17.1": {
     "task6_review_date": "2026-04-16",
@@ -3245,10 +3285,10 @@
     "task6_state": "reviewed",
     "task9_state": "pending"
   },
-  "task2b_last_run": "2026-04-18T04:01:17.099279+08:00",
+  "task2b_last_run": "2026-04-18T04:50:38.437762+08:00",
   "task2b_last_result": "fixed",
   "task2b_task8_processed": 3,
-  "task2b_note": "All task6/task9 items completed. Processed 3 task8 fallback items (all skipped: 1 not relevant, 2 URL blocked).",
+  "task2b_note": "Processed 18.14 task6-review rework. No pending task6/task9 rework items remain.",
   "15.5": {
     "task6_review_date": "2026-04-17",
     "task6_result": "pass-light-edit",
@@ -3298,7 +3338,7 @@
   "total_chapters": 0,
   "reviewed_count": 1,
   "last_review": "2026-04-17",
-  "last_task2b_section": "18.10",
+  "last_task2b_section": "18.14",
   "1.10": {
     "section": "1.10",
     "title": "ContentProvider 性能与优化",
