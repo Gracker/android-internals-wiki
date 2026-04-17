@@ -1,75 +1,75 @@
 {
-  "generated_at": "2026-04-14T23:05:00+08:00",
+  "generated_at": "2026-04-18T01:51:03+08:00",
   "state_machine_version": "v2",
   "total_sections": 207,
   "metrics": {
     "total": 213,
     "unknown": 36,
     "ready-for-review": 177,
-    "pipeline_unknown": 32,
-    "pipeline_task6_pending": 144,
-    "pipeline_task9_pending": 17,
-    "pipeline_task2b_pending": 20,
-    "task2b_unknown": 35,
-    "task2b_idle": 75,
-    "task2b_pending": 20,
-    "task2b_fixed": 83,
-    "task6_unknown": 33,
-    "task6_pending": 63,
-    "task6_reviewed": 34,
-    "task6_revisiting": 83,
-    "task9_unknown": 34,
-    "task9_pending": 161,
-    "task9_reviewed": 18,
-    "last_updated": "2026-04-18T01:20:00",
+    "last_updated": "2026-04-18T01:51:03+08:00",
     "task2b_state_counts": {
       "unknown": 35,
-      "fixed": 83,
-      "pending": 20,
+      "fixed": 84,
+      "pending": 19,
       "idle": 75
     },
     "task6_state_counts": {
       "unknown": 33,
-      "revisiting": 83,
-      "reviewed": 34,
+      "revisiting": 84,
+      "reviewed": 33,
       "pending": 63
     },
     "task9_state_counts": {
       "unknown": 34,
-      "pending": 161,
-      "reviewed": 18
+      "pending": 162,
+      "reviewed": 17
     },
     "pipeline_stage_counts": {
       "unknown": 32,
-      "task6_pending": 144,
-      "task2b_pending": 20,
+      "task6_pending": 145,
+      "task2b_pending": 19,
       "task9_pending": 17
     },
-    "total_sections": 213
+    "total_sections": 213,
+    "pipeline_unknown": 32,
+    "pipeline_task6_pending": 145,
+    "pipeline_task2b_pending": 19,
+    "pipeline_task9_pending": 17,
+    "task2b_unknown": 35,
+    "task2b_fixed": 84,
+    "task2b_pending": 19,
+    "task2b_idle": 75,
+    "task6_unknown": 33,
+    "task6_revisiting": 84,
+    "task6_reviewed": 33,
+    "task6_pending": 63,
+    "task9_unknown": 34,
+    "task9_pending": 162,
+    "task9_reviewed": 17
   },
   "pipeline": {
     "pipeline_stage_counts": {
       "unknown": 32,
-      "task6_pending": 144,
-      "task2b_pending": 20,
+      "task6_pending": 145,
+      "task2b_pending": 19,
       "task9_pending": 17
     },
     "task2b_state_counts": {
       "unknown": 35,
-      "fixed": 83,
-      "pending": 20,
+      "fixed": 84,
+      "pending": 19,
       "idle": 75
     },
     "task6_state_counts": {
       "unknown": 33,
-      "revisiting": 83,
-      "reviewed": 34,
+      "revisiting": 84,
+      "reviewed": 33,
       "pending": 63
     },
     "task9_state_counts": {
       "unknown": 34,
-      "pending": 161,
-      "reviewed": 18
+      "pending": 162,
+      "reviewed": 17
     }
   },
   "issues": {
@@ -1997,14 +1997,15 @@
       "title": "网络性能优化",
       "path": "src/part2-performance/ch12-apk-network/02-network-performance.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
-      "task6_state": "reviewed",
-      "task9_state": "reviewed",
-      "task2b_state": "pending",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
+      "task9_state": "pending",
+      "task2b_state": "fixed",
       "reviewed_date": "2026-04-18",
       "reviewed_by": "openclaw-task9",
       "section": "12.2",
-      "task9_result": "needs-rework"
+      "task9_result": "needs-rework",
+      "task2b_result": "fixed"
     },
     "src/part2-performance/ch12-apk-network/03-network-performance-deep.md": {
       "chapter": "12.3",
