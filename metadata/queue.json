@@ -1809,5 +1809,62 @@
     "added_at": "2026-04-18T06:11:08",
     "status": "pending",
     "original_review_log": "logs/review/2026-04-18-06-review.md"
+  },
+  {
+    "section": "18.17",
+    "section_title": "Hardware Buffer Renderer",
+    "priority": 95,
+    "reason": "[Deep Tech Review] P0: Java/NDK API 示例包含不存在调用与错误常量；P1: 将 HBR 误写成 BLAST/queueBuffer 链路且遗漏 release fence / HDR 条件",
+    "material_paths": [
+      "intake/suggestions.md",
+      "intake/research-gaps.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "§18.17.3 Java API 代码块（L80-L99）",
+        "detail": "示例把 content root 配置写成 request.setContentRoot(rootRenderNode)，但官方 API / AOSP 实际方法是 renderer.setContentRoot(RenderNode)。同时使用了不存在的常量 HardwareBuffer.USAGE_CPU_WRITE；HardwareBuffer 只有 USAGE_CPU_WRITE_OFTEN/RARELY，而 GPU 渲染目标至少需要 USAGE_GPU_COLOR_OUTPUT。当前示例按文中写法无法编译，也没有满足 render target 的 usage 语义。",
+        "suggestion": "按真实 API 重写：先创建并录制 RenderNode，再调用 renderer.setContentRoot(root)；HardwareBuffer.create() 至少使用 USAGE_GPU_COLOR_OUTPUT，按消费场景再组合 USAGE_GPU_SAMPLED_IMAGE 等 flag。"
+      },
+      {
+        "type": "源码错误",
+        "location": "§18.17.3 NDK API 代码块（L107-L119）",
+        "detail": "文中给出的 AHardwareBufferRenderer_create()/getCanvas()/submit()、ACanvas_drawRect() 并不是公开 NDK API。公开 NDK 侧只有 AHardwareBuffer、ASurfaceTransaction_setBuffer() 等基础能力，离屏 GPU 渲染通常要经 EGL/OpenGL ES、Vulkan 或其他真实图形库实现。",
+        "suggestion": "删除伪 NDK 包装层示例，改写为“AHardwareBuffer 分配/导入 + 图形 API 渲染 + ASurfaceTransaction_setBuffer 提交”的真实流程，并标注最小 API level。"
+      },
+      {
+        "type": "源码错误",
+        "location": "§18.17.4 性能对比表（L123-L129）",
+        "detail": "表格把 HardwareBufferRenderer 写成“完全线程安全”，但 AOSP/官方文档明确说明 HardwareBufferRenderer.RenderRequest not thread-safe，且只应用于单次 request。这个结论会误导读者把 HBR 当成可跨线程随意复用的无锁对象。",
+        "suggestion": "把线程模型改成“RenderRequest 非线程安全；需要调用方自行管理 request 生命周期、buffer/fence 复用和跨线程同步边界”。"
+      },
+      {
+        "type": "原理断裂",
+        "location": "§18.17.2 核心架构图 + §18.17.5 渲染时序（L49-L72, L135-L155）",
+        "detail": "章节把 HBR 主链路画成 HB → queueBuffer → BLAST Adapter → SurfaceFlinger，但官方 HBR 用法是 RenderNode 渲染到 HardwareBuffer 后，通过 SurfaceControl.Transaction.setBuffer() 直接把 buffer 交给 system compositor。queueBuffer/acquireNextBuffer/BBQ 是标准 BufferQueue/BLAST 路径，不是文中这条 direct setBuffer path 的默认形态。",
+        "suggestion": "拆成两条链路：1) direct SurfaceControl.setBuffer(HardwareBuffer, acquireFence)；2) 如果目标对象本身挂在 BLAST/BufferQueue 后，再单独说明与标准窗口链路的连接点。"
+      },
+      {
+        "type": "原理断裂 / 知识盲区",
+        "location": "§18.17.2 核心流程 + §18.17.3 Java API + §18.17.5 渲染时序（L68-L72, L93-L99, L150-L155）",
+        "detail": "文中只讲了 RenderResult 返回的 acquire fence，没有讲 consumer 读完之后 buffer 何时可以安全复用。对于 direct setBuffer 模式，release fence / release callback 是调用方维护 buffer 池的关键；缺这一环，读者会误以为单个 HardwareBuffer 可以每帧无条件覆写。",
+        "suggestion": "补上 SurfaceControl.Transaction.setBuffer(..., fence, releaseCallback) 或等价 release-fence 语义，说明单 buffer、双 buffer、buffer pool 的复用边界，以及 HBR 不会自动清空旧内容。"
+      },
+      {
+        "type": "交叉引用错误 / 原理断裂",
+        "location": "§18.17.1 开头对 lockCanvas() 的对比（L38-L43）",
+        "detail": "这里把软件路径写成“CPU 先画，再拷贝到 GraphicBuffer”。但 §18.3 已经明确说明 Surface.lockCanvas() 是先 dequeue 一个 GraphicBuffer，再直接把 Canvas 映射到这块像素内存，unlockCanvasAndPost() 后 queueBuffer；只有 dirty-region 保留这类场景才可能出现额外 copy。当前说法把 HBR 的优势错误归因为“省掉必然存在的一次拷贝”。",
+        "suggestion": "改成“省掉 CPU 光栅化，并在 direct buffer path 下避免 CPU 侧像素搬运/dirty-region 保留成本”；同时交叉引用 §18.3 的 lockCanvas 链路。"
+      },
+      {
+        "type": "知识盲区",
+        "location": "§18.17.4 HDR 内容 + §18.17.6 适用场景（L127, L160）",
+        "detail": "章节把 HDR 简化成“RGBA_F16 原生支持”和 DISPLAY_P3 配置，没有解释真正的 HDR 输出还取决于 buffer format、dataspace/color mode、consumer/SurfaceFlinger/HWC 支持链。wide color 离屏渲染与 HDR composition 不是同一层能力。",
+        "suggestion": "补一节把 HardwareBuffer.RGBA_FP16、ColorSpace/DataSpace、显示链 capability 和 fallback 分开写，避免把 wide color 与 HDR 混为一谈。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-18T06:24:00+08:00",
+    "status": "pending"
   }
 ]
