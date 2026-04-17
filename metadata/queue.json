@@ -1143,5 +1143,38 @@
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-17T10:32:13.241780",
     "status": "pending"
+  },
+  {
+    "section": "15.6",
+    "section_title": "性能测试最佳实践",
+    "priority": 90,
+    "reason": "[review回炉] 3处ADB命令需技术验证",
+    "material_paths": [
+      "intake/suggestions.md（含review意见）"
+    ],
+    "review_issues": [
+      {
+        "type": "需确认",
+        "location": "§消除测试干扰 > 固定CPU频率",
+        "detail": "echo 0 > cpu0/online 是下线CPU，与\"固定频率\"说明矛盾",
+        "suggestion": "删除offline命令或改为echo 1确保在线"
+      },
+      {
+        "type": "需确认",
+        "location": "§消除测试干扰 > 固定CPU频率",
+        "detail": "cmd thermal thontrol disable 中thontrol疑似拼写错误",
+        "suggestion": "验证cmd thermal子命令的实际拼写"
+      },
+      {
+        "type": "需确认",
+        "location": "§测试环境标准化 > 网络环境",
+        "detail": "ndc network create 命令可用性需验证",
+        "suggestion": "验证ndc命令族参数或替换为更通用的网络模拟方案"
+      }
+    ],
+    "added_by": "task6-review",
+    "added_at": "2026-04-17T13:05:00",
+    "status": "pending",
+    "original_review_log": "logs/review/2026-04-17-13-review.md"
   }
 ]

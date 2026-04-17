@@ -3162,5 +3162,15 @@
       "blocked_reason": "活人感/实战叙述需要Gracker亲自补充",
       "status": "partial-fixed"
     }
-  ]
+  ],
+  "15.6": {
+    "task6_reviewed": true,
+    "task6_reviewed_date": "2026-04-17",
+    "task6_result": "needs-rework",
+    "task6_issues": {
+      "light_edits": 4,
+      "b_class_issues": 3,
+      "anchors_covered": "7/7"
+    }
+  }
 }
