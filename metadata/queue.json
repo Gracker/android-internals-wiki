@@ -1764,5 +1764,50 @@
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-18T05:23:00+08:00",
     "status": "pending"
+  },
+  {
+    "section": "18.17",
+    "section_title": "Hardware Buffer Renderer",
+    "priority": 90,
+    "reason": "[review回炉] 文体需从API文档式转为工程师叙述风格；多个章节内容不充分",
+    "material_paths": [
+      "intake/suggestions.md（含 review 意见）"
+    ],
+    "review_issues": [
+      {
+        "type": "需重写",
+        "location": "全文风格",
+        "detail": "整体读起来像API文档（列表+代码堆砌），需转为engineer-to-engineer叙述风格",
+        "suggestion": "参考writing-guide.md的正确/错误写法对比重写"
+      },
+      {
+        "type": "需补充内容",
+        "location": "## 适用场景",
+        "detail": "列表式描述，缺少每个场景的具体使用经验",
+        "suggestion": "为每个场景补充因果解释和实际案例"
+      },
+      {
+        "type": "需补充内容",
+        "location": "## 在 Perfetto 中识别",
+        "detail": "内容极薄，仅两行表格",
+        "suggestion": "补充Track定位方法和Trace特征描述"
+      },
+      {
+        "type": "需补充内容",
+        "location": "## 性能对比",
+        "detail": "数据缺少测试条件和来源",
+        "suggestion": "补充测试条件或改为定性描述"
+      },
+      {
+        "type": "需补充内容",
+        "location": "全文",
+        "detail": "缺少常见问题与误区章节",
+        "suggestion": "补充常见陷阱和调试经验"
+      }
+    ],
+    "added_by": "task6-review",
+    "added_at": "2026-04-18T06:11:08",
+    "status": "pending",
+    "original_review_log": "logs/review/2026-04-18-06-review.md"
   }
 ]
