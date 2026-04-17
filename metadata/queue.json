@@ -1375,5 +1375,32 @@
     "completed_at": "2026-04-17T21:45:50.973145",
     "completed_by": "task2b-rework",
     "completion_reason": "5个review issues全部修复：profileable版本修正、Snapdragon Profiler互补关系、工具表增加最低版本列、AGI前置条件补充、版本演进节新增"
+  },
+  {
+    "section": "1.10",
+    "section_title": "ContentProvider 性能与优化",
+    "priority": 85,
+    "reason": "[Deep Tech Review] P1: 多进程ContentProvider知识盲区 + Android 11-13版本演进缺失",
+    "material_paths": [
+      "intake/suggestions.md",
+      "intake/research-gaps.md"
+    ],
+    "review_issues": [
+      {
+        "type": "知识盲区",
+        "location": "全文",
+        "detail": "多进程 ContentProvider (android:process) 完全未讨论。独立进程有自己的 Application.onCreate()、独立 Binder 线程池、独立 ANR 行为。Provider 进程冷启动、内存占用、进程间锁竞争都是实际性能分析重要场景。",
+        "suggestion": "新增「多进程 ContentProvider」小节，讨论：1) android:process 声明的影响 2) 独立进程的初始化时序 3) Provider 进程冷启动对调用方的性能影响 4) 进程间 CursorWindow 的实际行为"
+      },
+      {
+        "type": "版本差异",
+        "location": "版本演进节",
+        "detail": "版本演进跳过 Android 11-13。Android 11 引入 ContentProviderClient.setDetectNotResponding()（调用方自定义超时）；Android 12 引入 getProviderMimeTypeAsync()（解决 1 秒同步超时的异步方案）。这些与本章 ANR 机制讨论直接相关。",
+        "suggestion": "在版本演进节补充 Android 11/12 的 ContentProvider 相关变更。至少提及 setDetectNotResponding 和 getProviderMimeTypeAsync。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-17T22:20:00",
+    "status": "pending"
   }
 ]
