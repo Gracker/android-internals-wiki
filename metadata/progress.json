@@ -3115,6 +3115,13 @@
       "source": "task9-deep-tech-review",
       "issues_fixed": 5,
       "result": "fixed"
+    },
+    {
+      "section": "18.5",
+      "section_title": "Android View 多窗口链路",
+      "date": "2026-04-17",
+      "issues_fixed": 3,
+      "fixed_by": "task2b-rework"
     }
   ],
   "last_task2b_run": "2026-04-16T03:42:38.885909",
