@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-18T05:49:19.348728+08:00",
+  "generated_at": "2026-04-18T07:09:48.060271+08:00",
   "state_machine_version": "v2",
   "total_sections": 214,
   "metrics": {
@@ -2233,10 +2233,10 @@
       "title": "Hardware Buffer Renderer",
       "path": "src/part2-performance/ch18-rendering-pipelines/17-hardware-buffer-renderer.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
-      "task6_state": "reviewed",
-      "task9_state": "reviewed",
-      "task2b_state": "pending",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
+      "task9_state": "pending",
+      "task2b_state": "fixed",
       "task6_reviewed": true,
       "task6_review_date": "2026-04-18",
       "task6_result": "needs-rework",
@@ -2246,7 +2246,8 @@
       "task9_reviewed_date": "2026-04-18",
       "task9_reviewed_by": "openclaw-task9",
       "section": "18.17",
-      "last_task9_at": "2026-04-18T06:24:00+08:00"
+      "last_task9_at": "2026-04-18T06:24:00+08:00",
+      "task2b_result": "fixed"
     },
     "src/part2-performance/ch18-rendering-pipelines/18-pip-freeform.md": {
       "chapter": "18.18",
