@@ -1375,3 +1375,14 @@
   2. 补充官方文档 URL
   3. 补充具体 Swappy Track/Slice 名称或 Trace 截图
 - **review 日志**：logs/review/2026-04-18-05-review.md
+
+## [Task9 Deep Review] 18.4 Android View 混合渲染链路 — 2026-04-18
+- **类型**：数据缺失
+- **位置**：L183 Overlay 数量判断
+- **问题**：`HWC 支持的最大 Overlay 数量通常 4-8 个` 没有 SoC、Display Engine、HWC HAL 代际或 dumpsys / vendor 文档上下文，容易被读者误读成跨平台通用上限。
+- **建议**：补一张 capability matrix，或者至少把表述降级为“Overlay 名额依平台而异”，再给一组设备级样本。
+
+- **类型**：原理完整性
+- **位置**：L78 Pipeline B 节奏描述
+- **问题**：`帧率取决于视频源和解码速度，而不是系统的 VSync 频率` 说得过满。Producer cadence 的确独立于 Choreographer，但最终 present 仍受 SurfaceFlinger / HWC 的 VSync 节奏约束。
+- **建议**：改成“生产节奏独立，显示节奏仍由 VSync-SF 驱动”，避免把 producer cadence 和 display cadence 混为一谈。

@@ -1729,5 +1729,38 @@
     "added_at": "2026-04-18T05:07:00",
     "status": "pending",
     "original_review_log": "logs/review/2026-04-18-05-review.md"
+  },
+  {
+    "section": "18.4",
+    "section_title": "Android View 混合渲染链路",
+    "priority": 85,
+    "reason": "[Deep Tech Review] P1: SurfaceView 同步定位与 BLAST 归因混用，hole-punch / alpha 版本语义缺失",
+    "material_paths": [
+      "intake/suggestions.md",
+      "intake/research-gaps.md"
+    ],
+    "review_issues": [
+      {
+        "type": "版本差异/原理断裂",
+        "location": "L177-L179 视频“飘移”与解法",
+        "detail": "当前把位置同步改善几乎全部归因于 Android 12+ BLAST / Transaction。官方 SurfaceView API 说明从 Android N 起，SurfaceView 的 window position 已与其他 View 同步更新；BLAST 属于后续减少 buffer 与几何竞态的改进，两者不是同一层问题。",
+        "suggestion": "拆开写两层机制：1) Android N 起的位置同步，解决 translate/scale artifact；2) Android 11/12 时代的 BLAST / Transaction 协调，减少 buffer 与几何更新错拍。"
+      },
+      {
+        "type": "原理断裂",
+        "location": "L84-L91 挖洞（Hole Punching）",
+        "detail": "章节只列了几种“可能实现”，但缺少官方可验证的约束：透明区域基于 view hierarchy 的 layout position，post-layout transform 的 sibling overlay 可能与 SurfaceView 不能正确合成。没有这层规则，读者无法判断哪些动画/叠加会出错。",
+        "suggestion": "补 SurfaceView 官方行为边界，至少说明 visible region 基于 layout position，post-layout transform sibling 可能合成异常，并给出与动画/圆角/浮层相关的排查建议。"
+      },
+      {
+        "type": "知识盲区/版本差异",
+        "location": "全文视觉融合与透明语义",
+        "detail": "章节适用版本写到 Android 11-16，但完全没覆盖 SurfaceView alpha / composition order 的关键版本边界。官方 API 说明直到 Android 14（UPSIDE_DOWN_CAKE）才支持 arbitrary alpha blending；更早版本会忽略 0~1 alpha，且 composition order < 0 时 alpha 作用在 hole punch 而不是 surface content。",
+        "suggestion": "新增版本差异小节，单列 Android 14+ arbitrary alpha、composition order >=0/<0 的差异，以及 overlapping SurfaceViews 可能无法正确混合的限制。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-18T05:23:00+08:00",
+    "status": "pending"
   }
 ]

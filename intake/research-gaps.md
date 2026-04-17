@@ -736,3 +736,28 @@ SurfaceControl NDK 的 FrameTimeline 小节缺少“如何从 AChoreographerFram
 - 2.16 Sync Fence 框架与帧同步机制
 - 18.6 SurfaceView 直出链路
 - 18.10 SurfaceControl API 深入
+
+## [2026-04-18] 18.4 Android View 混合渲染链路 — SurfaceView 位置同步与 alpha/hole-punch 版本行为
+
+### 盲区描述
+当前章节把“视频飘移”的改善主要归因到 Android 12+ BLAST / Transaction，但混合渲染真正容易混淆的是三层机制：
+1. **位置同步**：SurfaceView 官方文档说明从 Android N 起，window position 已与其他 View 同步更新。
+2. **Buffer / 几何协同**：BLAST / Transaction 在后续版本里进一步减少 buffer 更新与几何变化错拍。
+3. **透明与挖洞语义**：Android 14+ 才支持 arbitrary alpha blending；更早版本的 alpha 与 composition order 作用点不同，overlapping SurfaceViews 也可能无法正确混合。
+
+同时，官方文档还明确指出 SurfaceView 的可见透明区域基于 layout position，post-layout transform 的 sibling overlay 可能与 surface 不能正确合成。这个约束和章节中的动画/飘移/几何变换话题直接相关，但正文未覆盖。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 对照 SurfaceView 官方 API，梳理 Android N、Android 11/12、Android 14+ 三个关键版本的行为差异
+- 建立“位置同步 vs buffer 同步 vs alpha/composition-order”三层模型，避免把不同层的问题混成一个 BLAST 故事
+- 补充 post-layout transform、overlay、rounded corner、overlapping SurfaceView 的可用性边界与排查方法
+
+### 关联章节
+- 18.4 Android View 混合渲染链路
+- 18.6 SurfaceView 直出链路
+- 18.10 SurfaceControl API 深入
+- 2.6 SurfaceFlinger 与合成
+
