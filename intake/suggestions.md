@@ -971,3 +971,30 @@
 - **位置**：SharedPreferences apply() → waitToFinish() 链路
 - **问题**：未解释 WHY handlePauseActivity() 会调用 waitToFinish()。设计意图是确保 Activity 进入后台前数据持久化（进程可能被杀）。
 - **建议**：补充一句设计意图说明，让读者理解这不是 bug 而是有意为之的数据安全机制。
+
+
+## [Task6 Review] 15.3 性能指标体系 — 2026-04-17
+- **类型**：L4 活人感（无个人经验痕迹）
+- **位置**：全文多处
+- **问题**：章节整体为教科书/参考手册风格，无 Gracker 个人经验痕迹，缺少"我/我们曾经"的实战叙述
+- **建议**：在关键位置穿插实战案例（如"我在分析 XX App 时，用 P99 而不是均值发现了..."），增强工程师经验感
+- **review 日志**：logs/review/2026-04-17-10-review.md
+
+---
+
+## [Task6 Review] 15.3 性能指标体系 — 2026-04-17
+- **类型**：L3 内容深度（Active/Idle Power 节单薄）
+- **位置**：功耗指标 — Active/Idle Power 节
+- **问题**：Active/Idle Power 功耗分析节内容单薄，全文有 `[待补充: Perfetto Power track 的具体使用方法和截图示例]` 标注
+- **建议**：补充 Perfetto Power track 的使用方法，说明如何观察电流曲线和子系统功耗分布，给出实际 Trace 截图描述或标注 `[待补充：Trace 截图]`
+- **review 日志**：logs/review/2026-04-17-10-review.md
+
+---
+
+## [Task6 Review] 15.3 性能指标体系 — 2026-04-17
+- **类型**：L3 代码准确性（reportFullyDrawn 示例冗余）
+- **位置**：TTFD 节 — reportFullyDrawn() 代码示例
+- **问题**：if-else 两分支执行完全相同的 `reportFullyDrawn()` 调用，版本分支无实际差异。注释提到 API 31+ 可传更精确时间戳，但代码未使用
+- **建议**：补充 `reportFullyDrawn(long duration)` API 31+ 用法，或简化为单行调用并调整注释
+- **review 日志**：logs/review/2026-04-17-10-review.md
+

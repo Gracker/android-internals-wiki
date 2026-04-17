@@ -1045,5 +1045,38 @@
     "original_review_log": "logs/review/2026-04-17-08-review.md",
     "completed_at": "2026-04-17T08:59:39.624185",
     "completed_by": "task2b-rework"
+  },
+  {
+    "section": "15.3",
+    "section_title": "性能指标体系",
+    "priority": 85,
+    "reason": "[review回炉] L4活人感缺失 + L3内容深度不足（2处）",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "需重写",
+        "location": "全文多处（活人感）",
+        "detail": "章节整体为教科书/参考手册风格，无 Gracker 个人经验痕迹，缺少'我/我们曾经'的实战叙述",
+        "suggestion": "在关键位置穿插实战案例（如'我在分析 XX App 时，用 P99 而不是均值发现了...'），增强工程师经验感"
+      },
+      {
+        "type": "需补充素材",
+        "location": "功耗指标 — Active/Idle Power 节",
+        "detail": "Active/Idle Power 节内容单薄，有 [待补充: Perfetto Power track 使用方法和截图示例] 标注",
+        "suggestion": "补充 Perfetto Power track 使用方法，说明如何观察电流曲线和子系统功耗分布，给出实际 Trace 截图描述"
+      },
+      {
+        "type": "需重写",
+        "location": "TTFD 节 — reportFullyDrawn() 代码示例",
+        "detail": "if-else 两分支执行完全相同的 reportFullyDrawn() 调用，版本分支无实际差异。注释提到 API 31+ 可传更精确时间戳，但代码未使用",
+        "suggestion": "补充 reportFullyDrawn(long duration) API 31+ 用法，或简化为单行调用"
+      }
+    ],
+    "added_by": "task6-review",
+    "added_at": "2026-04-17T10:09:00",
+    "status": "pending",
+    "original_review_log": "logs/review/2026-04-17-10-review.md"
   }
 ]
