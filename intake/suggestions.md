@@ -1048,3 +1048,23 @@
 - **问题**：缺少网络性能指标（TTFB、下载吞吐量、连接延迟等）。对网络密集型 App（信息流、视频、社交），网络指标是性能体系的重要组成
 - **建议**：补充一节"网络性能指标"，覆盖 TTFB、throughput、connection latency，或标注为扩展内容并交叉引用 ch12
 - **review 日志**：logs/deep-review/2026-04-17-12-deep-review.md
+
+
+---
+
+[Task2B 回炉失败] 15.3 性能指标体系 — 原因：需要高爷确认
+
+**Issue**: 活人感不足 — 章节整体为教科书/参考手册风格，缺少 Gracker 个人经验痕迹和实战叙述。
+
+**已修复的其他 3 个 issue**：
+1. ✅ system-triggered profiling 版本自相矛盾（Android 14+ → 16）
+2. ✅ reportFullyDrawn() 代码 if-else 两分支相同 → 简化为单行调用
+3. ✅ Active/Idle Power 缺 Perfetto Power track 使用说明 → 已补充
+
+**需要 Gracker 做的事情**：
+在以下关键位置补充实战经验（1-2 句即可）：
+- FPS/Frame Time 节：一个用 P99 发现均值掩盖问题的真实案例
+- TTID/TTFD 节：一次实际启动优化的经历
+- 指标体系设计原则节：线上监控建设中的踩坑经验
+
+标记时间：2026-04-17 12:44

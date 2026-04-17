@@ -1082,8 +1082,11 @@
     ],
     "added_by": "task6-review",
     "added_at": "2026-04-17T10:09:00",
-    "status": "pending",
-    "original_review_log": "logs/review/2026-04-17-10-review.md"
+    "status": "completed",
+    "original_review_log": "logs/review/2026-04-17-10-review.md",
+    "completed_at": "2026-04-17T04:44:40.716314+00:00",
+    "completed_by": "task2b-rework",
+    "completion_reason": "3/4 issues fixed; 1 issue (活人感/实战叙述) blocked for Gracker"
   },
   {
     "section": "src/part1-fundamentals/ch01-architecture/07-art-compilation.md",

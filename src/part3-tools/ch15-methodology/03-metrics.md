@@ -19,12 +19,13 @@ sources:
 tags:
   - android
   - research
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task9_state: reviewed
 task9_result: needs-rework
 task9_reviewed_date: "2026-04-17"
-task2b_state: pending
+task2b_state: fixed
+task2b_result: partial-fixed
 reviewed_by: openclaw-task6
 reviewed_date: 2026-04-17
 task6_result: pass-light-edit
@@ -155,17 +156,12 @@ TTFD 度量的是 App 从启动到"内容完全可用"的时间。和 TTID 的�
 @Override
 public void onDataLoaded(List<Item> items) {
     recyclerView.setAdapter(new ItemAdapter(items));
-    // 确保这帧渲染完成后标记 Fully Drawn
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-        // API 31+ 可以传递更精确的时间戳
-        reportFullyDrawn();
-    } else {
-        reportFullyDrawn();
-    }
+    // 数据就绪后立即标记 Fully Drawn
+    reportFullyDrawn();
 }
 ```
 
-这个调用时机需要斟酌：太早则 TTFD 失去意义（内容还没加载完），太晚则会干扰系统的启动优化策略（Android 14+ 的 system-triggered profiling 会根据 `reportFullyDrawn` 来决定何时停止 trace）。
+这个调用时机需要斟酌：太早则 TTFD 失去意义（内容还没加载完），太晚则会干扰系统的启动优化策略（Android 16 的 system-triggered profiling 会根据 `reportFullyDrawn` 调用时机来决定何时停止 trace）。
 
 Android 16 引入了 system-triggered profiling，可以在 `reportFullyDrawn` 被调用时自动启动和停止 Perfetto trace，这让 TTFD 的调试变得更容易——开发者不需要手动抓 trace，系统会自动捕获启动过程。
 
@@ -281,7 +277,16 @@ Active Power 是 App 在前台活跃使用时的功耗，主要由 CPU 计算、
 
 做功耗分析时，一个有效的思路是"归因分析"：把总功耗拆解到各个子系统的消耗（CPU/GPU/屏幕/网络/传感器），找出占比最高的那个子系统，然后针对性地优化。在 Perfetto 的 Power track 中，你可以看到电流曲线和各子系统的功耗分布。
 
-[待补充: Perfetto Power track 的具体使用方法和截图示例]
+在 Perfetto 中观察功耗数据，主要使用以下 Track：
+
+- **Power Rails track**：显示各电源轨（如 VDD_CPU、VDD_GPU、VDD_DDR）的实时电流和电压数据，单位为 mW。通过它可以定位功耗峰值对应的子系统。
+- **Battery track**：显示电池电量和充放电状态的变化曲线。
+- **CPU Frequency track**：与 Power track 对照查看，可以确认功耗上升是否对应 CPU 频率提升。
+- **Energy Consumer track**（Android 12+）：按子系统（CPU cluster、Display、GPU、Radio 等）拆分能量消耗，直接给出各子系统的功耗占比。
+
+使用方法：在 Perfetto UI 中搜索 `power` 或 `energy`，即可找到相关 Track。将功耗曲线与 CPU/GPU 活动时间对齐，就能看到哪个子系统在什么时间段消耗了最多电量。
+
+[待补充: Perfetto Power track 截图示例]
 
 ## 指标体系设计原则
 
