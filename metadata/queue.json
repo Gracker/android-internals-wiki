@@ -1480,5 +1480,51 @@
     "added_at": "2026-04-17T23:32:04+08:00",
     "status": "completed",
     "completed_at": "2026-04-18T00:10:42+08:00"
+  },
+  {
+    "section": "12.2",
+    "section_title": "网络性能优化",
+    "priority": 95,
+    "reason": "[Deep Tech Review] 网络缓存语义、NetworkCallback 在线判定、Cronet 接入矩阵等存在事实错误与重要缺失",
+    "material_paths": [
+      "intake/suggestions.md",
+      "intake/research-gaps.md"
+    ],
+    "review_issues": [
+      {
+        "type": "行为语义错误",
+        "location": "L262 离线缓存描述",
+        "detail": "把 OkHttp 描述成“离线或弱网时可以使用缓存数据（即使已经过期）”。默认 OkHttp 仍遵守 HTTP 缓存语义，除非服务端缓存头允许，或客户端显式使用 CacheControl.FORCE_CACHE / onlyIfCached + maxStale / 自定义拦截器，否则不会无条件返回 stale response。",
+        "suggestion": "补充 OkHttp 缓存命中与 stale cache 的真实条件，给出 FORCE_CACHE、onlyIfCached、maxStale 和离线拦截器的实现边界。"
+      },
+      {
+        "type": "行为语义错误",
+        "location": "L340-L378 NetworkCallback 在线判定示例",
+        "detail": "正文先说明 onAvailable() 不等于“有互联网”，但示例代码仍在 onAvailable() 中直接把 isConnected 置为 true，并且 NetworkRequest 只要求 NET_CAPABILITY_INTERNET。这样会把 captive portal、未验证网络等场景误判为“在线”。另外示例里的 final ConnectivityManager 字段在 start() 里赋值，Java 代码本身也无法编译。",
+        "suggestion": "把“在线”判定改为 onCapabilitiesChanged() 中检查 NET_CAPABILITY_VALIDATED（必要时同时检查 NET_CAPABILITY_INTERNET），并修正代码示例的字段初始化方式。"
+      },
+      {
+        "type": "客户端实现差异",
+        "location": "L103-L105 HTTP/1.1 并发限制描述",
+        "detail": "把“同域名通常 6 个并发请求”写成浏览器和 HTTP 客户端的共同限制，容易让读者误以为这是 Android App/OkHttp 的协议级上限。对 OkHttp 而言，并发限制主要取决于 Dispatcher.maxRequestsPerHost（异步默认 5）和连接池/协议协商，而不是 HTTP/1.1 固有的“6 条”规则。",
+        "suggestion": "把这里改成“浏览器常见策略”和“Android 客户端实现策略”两层，并明确 OkHttp 的 Dispatcher/ConnectionPool 才是 App 侧真正可调的限制点。"
+      },
+      {
+        "type": "原理断裂",
+        "location": "L181-L209 预连接（Preconnect）实现",
+        "detail": "章节直接把 preconnect 落到“发一个 HEAD 或空 GET 请求即可”，但没有解释这种做法的边界：HEAD 可能仍然命中业务逻辑或缓存统计；连接是否可复用还取决于 authority、TLS/ALPN、HTTP/2 coalescing 条件；HTTP/3 的 warmup 还涉及 0-RTT/连接迁移等前提。",
+        "suggestion": "补充“预解析 DNS / 预热 TCP+TLS / 预热 HTTP/2/3 会话”三层目标的差异，并说明生产实践里通常需要 no-op endpoint、连接复用条件和失败回退策略。"
+      },
+      {
+        "type": "版本差异",
+        "location": "L125-L130 Cronet 体积与接入方式",
+        "detail": "把引入 Cronet 的成本概括成“APK 增加约 1-2MB”不准确。Cronet by Play Services 的 APK 增量通常只有几十 KB，但依赖 GMS；Standalone Cronet 则是数 MB 级，且在无 GMS 设备上才是常见路径。当前写法把 provider 模式、部署环境和体积成本混成了一件事。",
+        "suggestion": "拆开写 Play Services provider、standalone/bundled provider、GMS 与非 GMS 设备三种差异，并把 APK 体积、更新路径、可用性和 fallback 策略分别说明。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-18T01:20:00",
+    "status": "pending",
+    "original_review_log": "logs/deep-review/2026-04-18-01-deep-review.md"
   }
 ]
