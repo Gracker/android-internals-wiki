@@ -523,3 +523,35 @@ TTID/TTFD 讨论未区分冷启动（Cold Start）、温启动（Warm Start）�
 
 ### 关联章节
 15.3, 8.1, 8.2
+
+## [2026-04-17] 5.5 Thermal 管控 — 知识盲区
+
+### 盲区描述
+厂商特定的温控中间层（Qualcomm thermal-engine、MediaTek thermal manager）未提及。这些用户态守护进程在 Thermal HAL 和内核之间实现了实际的 PID 控制策略和 OEM 定制算法，是决定设备温控行为的关键组件。不了解这一层，读者无法理解：(1) 为什么同样 SoC 的不同设备温控行为差异巨大；(2) 在 Perfetto 中看到的某些温控行为可能来自 vendor daemon 而非 Android 框架。
+
+### 重要程度
+高
+
+### 建议研究方向
+- Qualcomm thermal-engine 开源代码（codeaurora.org / git.codelinaro.org）中的控制策略实现
+- MediaTek thermal manager 的公开文档或源码
+- 如何在 Perfetto 中区分 Android 框架温控和厂商温控的行为
+
+### 关联章节
+5.5, 5.12
+
+## [2026-04-17] 5.5 Thermal 管控 — 内核 thermal governor 算法
+
+### 盲区描述
+Linux 内核的 thermal governor 算法（step_wise、fair_share、bang_bang）未讨论。章节介绍了 trip point 和 cooling device 的概念，但未解释 governor 如何决定 cooling state 的变化。Android 设备默认使用 step_wise governor，它决定了温度上升时频率是渐进降低的（阶梯式），这对理解 Perfetto 中频率变化的模式至关重要。
+
+### 重要程度
+中
+
+### 建议研究方向
+- Linux kernel Documentation/thermal/sysfs-api.rst 中 governor 的说明
+- step_wise governor 源码：drivers/thermal/step_wise.c
+- Android GKI 默认 governor 配置
+
+### 关联章节
+5.5, 5.4

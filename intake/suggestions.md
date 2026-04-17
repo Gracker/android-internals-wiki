@@ -1150,3 +1150,20 @@
 - **位置**：全文
 - **问题**：缺少一个端到端的实战示例，展示「在 Perfetto 中看到 X → 在 cs.android.com 搜索 Y → 找到源码 Z → 理解了问题」的完整链路。现有内容只有方法和工具介绍，没有串联的案例。
 - **建议**：新增一个小节或扩展某个路径，给出一个 200-300 字的端到端示例（如从 Choreographer#doFrame 的长耗时追溯到 scheduleVsync 的具体源码）
+
+## [Task9 Deep Review] 5.5 Thermal 管控 — 2026-04-17
+
+- **类型**：数据缺失
+- **位置**：「Thermal Mitigation 策略」节 — Severity → 频率上限对照表
+- **问题**：表格使用了具体的频率值（如大核 3.0GHz → 2.6GHz → 2.0GHz → 1.4GHz），但未标注这些数值适用于哪款 SoC。不同 SoC 的频率范围差异极大（如 Snapdragon 8 Gen 3 大核最高 3.3GHz，Dimensity 9300 大核最高 2.6GHz），读者可能误将这些示例值当作通用标准。
+- **建议**：在表格标题或注释中明确标注「以下为某高端 SoC 的典型示例，具体数值因 SoC 和 OEM 配置而异」，或改为相对比例描述（如「NONE 时为最高频率的 100%，SEVERE 时降至约 45%」）
+
+- **类型**：数据缺失
+- **位置**：全文 — 缺少实际 Perfetto Trace 数据
+- **问题**：章节多次描述 Perfetto 中的温控表现（频率下降、帧渲染时间上升等），但全部为文字描述，没有实际 Trace 截图或 SQL 查询结果。与其他章节（如 5.4 DVFS）相比，缺少具体的量化数据支撑。
+- **建议**：至少补充一处 Perfetto SQL 查询示例，展示如何量化 thermal throttling 对帧率的影响（如统计 THERMAL_STATUS_SEVERE 期间的帧渲染时间 vs NONE 期间）
+
+- **类型**：版本差异
+- **位置**：frontmatter confidence 字段
+- **问题**：confidence 声明为 'high'，但 applicable_versions 覆盖到 Android 17 而 last_verified_against 仅为 android-14.0.0_r1。版本表中 Android 15-16 的条目标注为 [待验证]。
+- **建议**：将 confidence 从 'high' 改为 'medium'，或在 frontmatter 中明确区分已验证版本范围（Android 7-14）和待验证范围（Android 15-17）
