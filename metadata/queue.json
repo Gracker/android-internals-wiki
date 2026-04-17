@@ -1608,5 +1608,44 @@
     "added_at": "2026-04-18T03:20:12",
     "status": "pending",
     "original_review_log": "logs/review/2026-04-18-03-review.md"
+  },
+  {
+    "section": "18.10",
+    "section_title": "SurfaceControl API 深入",
+    "priority": 95,
+    "reason": "[Deep Tech Review] P0: NDK 示例使用不存在的 API（setSize/setAlpha）+ setColor 签名错误；P1: FrameTimeline 与最小 API 级别说明不准确",
+    "material_paths": [
+      "intake/suggestions.md",
+      "intake/research-gaps.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "§18.10.3 典型使用流程 / 事务配置代码块（约 L97-L116）",
+        "detail": "示例调用 ASurfaceTransaction_setSize() 与 ASurfaceTransaction_setAlpha()。android/surface_control.h 并不存在这两个 NDK API。公开 NDK 接口是 setScale / setCrop / setGeometry（已废弃）以及 setBufferAlpha()。当前代码示例无法按文中方式编译。",
+        "suggestion": "把“大小”改成 setCrop + setScale（或明确说明 Java SurfaceControl.Transaction 的对应 API），透明度改成 ASurfaceTransaction_setBufferAlpha()；同时标注相关 API 的最小 API level。"
+      },
+      {
+        "type": "源码错误",
+        "location": "§18.10.4 Color Layer 代码块（约 L184-L188）",
+        "detail": "示例使用虚构的 ASurfaceTransaction_Color 结构体。实际签名是 ASurfaceTransaction_setColor(transaction, sc, r, g, b, alpha, dataspace)，没有该结构体类型。",
+        "suggestion": "按 android/surface_control.h 的真实函数签名重写示例，并补充 dataspace 参数含义。"
+      },
+      {
+        "type": "版本差异",
+        "location": "§18.10.3 / §18.10.6 / §18.10.7",
+        "detail": "章节 frontmatter 声明适用 Android 10-16，但未标注关键 API 的最小版本：ASurfaceTransaction_setPosition()/setScale()/setCrop() 为 API 31，ASurfaceTransaction_setFrameTimeline() 与 AChoreographer_postVsyncCallback() 为 API 33，ASurfaceTransaction_setBufferWithRelease() 为 API 36。FrameTimeline 小节写“Android 12+”会误导 NDK 读者。",
+        "suggestion": "为所有示例补最小 API level；把 NDK 完整 FrameTimeline 链路改成 Android 13+，并单独说明 Android 12 只有 FrameTimeline 机制本身，NDK 侧获取 vsyncId 需要额外桥接。"
+      },
+      {
+        "type": "原理断裂 / 知识盲区",
+        "location": "§18.10.6 FrameTimeline API",
+        "detail": "章节把 vsyncId 写成单个“从回调拿到的值”，但 AChoreographer_postVsyncCallback() 返回的是 AChoreographerFrameCallbackData，其中包含多条 candidate frame timelines。文中没有解释如何根据 deadline 和 desiredPresentTime 选择 timeline，也没有交代 setDesiredPresentTime() 与 setFrameTimeline() 的配合关系。",
+        "suggestion": "补充 callbackData 中多 timeline 的选择规则，至少说明 frame timeline count / preferred timeline / desiredPresentTime 的关系，并给出最小可运行示例。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-18T03:45:00+08:00",
+    "status": "pending"
   }
 ]
