@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-18T07:09:48.060271+08:00",
+  "generated_at": "2026-04-18T07:21:20.098726+08:00",
   "state_machine_version": "v2",
   "total_sections": 214,
   "metrics": {
@@ -2223,10 +2223,11 @@
       "title": "游戏引擎渲染链路",
       "path": "src/part2-performance/ch18-rendering-pipelines/16-game-engine.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "pending",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "revisiting",
       "task9_state": "pending",
-      "task2b_state": "idle"
+      "task2b_state": "fixed",
+      "task2b_result": "fixed"
     },
     "src/part2-performance/ch18-rendering-pipelines/17-hardware-buffer-renderer.md": {
       "chapter": "18.17",

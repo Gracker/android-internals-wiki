@@ -1729,8 +1729,15 @@
     ],
     "added_by": "task6-review",
     "added_at": "2026-04-18T05:07:00",
-    "status": "pending",
-    "original_review_log": "logs/review/2026-04-18-05-review.md"
+    "status": "completed",
+    "original_review_log": "logs/review/2026-04-18-05-review.md",
+    "completed_at": "2026-04-18T07:21:20.095611+08:00",
+    "completed_by": "task2b-rework",
+    "fix_summary": [
+      "Swappy API 验证：SwappyVk_setSwapIntervalNS(device, swapchain, swap_ns) 正确，补 SWAPPY_SWAP_60FPS 宏说明",
+      "Perfetto Track：补充 SwappyTracer 回调 Slice（preWait/postWait/preSwapBuffers/postSwapBuffers）、FrameTimeline Track、Choreographer 反馈回路及常见 Trace 表现表",
+      "参考链接：全部 4 条补充 URL（Android Game SDK / SwappyVk API / Unity Player Settings / Unreal Engine Frame Pacing）"
+    ]
   },
   {
     "section": "18.4",

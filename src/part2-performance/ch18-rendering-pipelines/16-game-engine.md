@@ -139,10 +139,27 @@ sequenceDiagram
 SwappyVk_initAndGetRefreshCycleDuration(env, activity, 
     physicalDevice, device, swapchain, &refreshDuration);
 SwappyVk_queuePresent(queue, presentInfo);
-SwappyVk_setSwapIntervalNS(device, swapchain, 16666666); // 60fps
+SwappyVk_setSwapIntervalNS(device, swapchain, SWAPPY_SWAP_60FPS); // 或直接用 16666666ns
+[已验证: `SwappyVk_setSwapIntervalNS(device, swapchain, swap_ns)` 签名正确，宏 `SWAPPY_SWAP_60FPS` / `SWAPPY_SWAP_30FPS` 定义于 swappy_common.h，Android Game SDK Frame Pacing 官方文档]
 ```
 
-在 Perfetto 中，如果应用接入了 Swappy，可以看到 Swappy 相关的 Track/Slice 和与 Choreographer 的反馈回路。
+在 Perfetto 中接入 Swappy 的游戏应用里，有几类 Track 值得关注：
+
+**SwappyTracer 回调 Slice**：如果游戏通过 `SwappyTracer` 注入了自定义 trace 回调（`preWait` / `postWait` / `preSwapBuffers` / `postSwapBuffers`），这些回调会作为自定义 Slice 出现在对应线程的 Track 上。通过这些 Slice 可以看到 Swappy 在 present 前后插入的 fence wait 时机。
+
+**FrameTimeline Track**：Android 12+（API 31）Perfetto 默认带 FrameTimeline 数据源。游戏提交帧后，`SurfaceView` / `GameActivity` 会产生 `Expected Timeline`（预期 frame deadline）和 `Actual Timeline`（实际完成时间）两个 Slice。如果 `Actual Timeline` 持续超过 `Expected Timeline`，说明帧节拍不稳定，需要检查 Swappy 的 swap interval 配置。
+
+**Choreographer 反馈回路**：即使游戏不主动注入 SwappyTracer，`Choreographer` 的 `doFrame` 回调仍然可见。和 Swappy 配合时，可以看到游戏帧提交与 VSync 回调之间的间隔是否符合目标帧节奏。
+
+**常见 Trace 表现**：
+
+| 现象 | 可能含义 |
+|:---|:---|
+| `preWait` Slice 持续 >5ms | Swappy 在等前一帧完成，可能 GPU 负载过高 |
+| Expected Timeline 块与 Actual Timeline 块频繁错位 | 帧节奏控制失效，检查 swap interval 是否匹配屏幕刷新率 |
+| `postSwapBuffers` 后紧跟长 GPU Slice | present 后立即有 GPU 洪峰，说明 buffer 没有精准对其 VSync |
+
+[已验证: Android Game SDK Frame Pacing 官方文档 / SwappyTracer 结构体 / Perfetto FrameTimeline]
 
 ## DrawCall 合批（Batching）
 
@@ -179,7 +196,11 @@ DrawCall 是 GPU 渲染的基本单元。每次 `glDrawElements` 或 `vkCmdDraw`
 
 ## 参考资料
 
-- Android Game SDK：Frame Pacing
-- AOSP `frameworks/native/libs/gui/`
-- Unity Performance Optimization 文档
-- Unreal Engine Rendering Architecture 文档
+- Android Game SDK：Frame Pacing 官方文档（Swappy 库介绍与集成指南）  
+  https://developer.android.com/games/sdk/frame-pacing
+- SwappyVk API Reference（`SwappyVk_setSwapIntervalNS` / `SwappyVk_initAndGetRefreshCycleDuration` / `SwappyTracer` 等）  
+  https://developer.android.com/games/sdk/reference/frame-pacing/group/swappy-vk
+- Unity 文档：Android Player Settings — Optimized Frame Pacing 选项说明  
+  https://docs.unity3d.com/Manual/class-PlayerSettingsAndroid.html
+- Unreal Engine 文档：Frame Pacing for Mobile Devices（Swappy 集成与 CVars 配置）  
+  https://dev.epicgames.com/documentation/en-us/unreal-engine/frame-pacing-for-mobile-devices-in-unreal-engine
