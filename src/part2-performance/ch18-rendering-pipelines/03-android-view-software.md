@@ -7,16 +7,17 @@ tags: ["software-rendering", "CPU-rasterization", "Skia", "Canvas", "lockCanvas"
 related_chapters: ["2.1", "2.5", "18.2"]
 created_by: "rendering-pipelines-merge"
 created_date: "2026-04-09"
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 reviewed_by: openclaw-task6
 reviewed_date: 2026-04-17
 task6_result: pass-light-edit
-task9_state: reviewed
+task9_state: pending
 task9_result: needs-rework
 task9_reviewed_date: "2026-04-17"
 task9_reviewed_by: "openclaw-task9"
-task2b_state: pending
+task2b_state: fixed
+task2b_result: fixed
 ---
 
 <!-- outline-start -->
@@ -45,7 +46,7 @@ task2b_state: pending
 3. **系统降级**：极少数情况下，GPU 驱动崩溃或设备不支持硬件加速时，系统会自动降级到软件渲染。
 4. **小型 Overlay/Widget**：部分系统组件（如 Toast、部分 Notification）出于兼容性考虑使用软件渲染。
 
-**判断方法**：在代码中通过 `View.isHardwareAccelerated()` 检查当前 Canvas 是否启用了硬件加速。返回 `false` 即走软件链路。
+**判断方法**：如果要判断当前这次 `draw()` 拿到的是不是硬件 Canvas，看 `Canvas.isHardwareAccelerated()`；`View.isHardwareAccelerated()` 只说明这个 View 所在窗口是否开启了硬件加速。官方文档写得很直接，挂在硬件加速窗口上的 View 仍可能被绘制到 software Canvas，例如绘制到 Bitmap 缓存时。[已验证: Android hardware acceleration 文档]
 
 ## 全链路执行流程
 
@@ -53,7 +54,7 @@ task2b_state: pending
 
 ### 第一阶段：Lock — 锁定画布
 
-1. **`Surface.lockCanvas()`**：App 向系统请求一块可写的内存区域。底层调用 `dequeueBuffer` 获取一个 GraphicBuffer，然后通过 `mmap` 将其内存地址映射到 App 进程空间。
+1. **`Surface.lockCanvas()`**：App 向系统请求一块可写的内存区域。底层先调用 `dequeueBuffer()` 取回一个可写的 `GraphicBuffer`，同时拿到 consumer 侧返回的 `fenceFd`；随后 `Surface::lock()` 再调用 `GraphicBuffer::lockAsync(..., fenceFd)`，等这块 buffer 真正可写之后才把地址映射给 App。软件渲染没有 GPU 指令提交，但这里仍然会受 BufferQueue 槽位和 fence 等待影响。[已验证: `Surface.cpp::lock()`]
 2. **返回 Canvas**：这个 Canvas 直接指向 GraphicBuffer 的像素内存。你在上面调用的每一个 `draw` 方法，都会**立即**写入像素数据。
 
 在 Trace 中你会看到 `lockCanvas` slice，正常耗时很短（< 1ms），因为它只是内存映射操作。
@@ -77,11 +78,13 @@ graph LR
 
 ### 第三阶段：Unlock & Post — 提交
 
-1. **`unlockCanvasAndPost()`**：通知系统"这块内存我写好了"。底层执行 `queueBuffer`，将 GraphicBuffer 提交给 BLASTBufferQueue。
-2. **Transaction 提交**：在现代 Android 上，软件渲染的 Buffer 提交同样走 BLAST Transaction 路径。BBQ 在 App 进程内构造 Transaction，通过 Binder 异步发送给 SurfaceFlinger。
-3. **无 GPU Fence**：软件渲染没有 GPU 参与，因此不需要 acquireFence 等待。Buffer 的内容在 `unlockCanvasAndPost` 返回时已经是完整的。
+1. **`unlockCanvasAndPost()`**：通知系统"这块内存我写好了"。底层先执行 `GraphicBuffer::unlockAsync()`，拿到一个表示 CPU 写入完成的 fd，再把它交给 `queueBuffer()`。[已验证: `Surface.cpp::unlockAndPost()`]
+2. **提交路径要按版本看**：Android 9 仍是 Legacy BufferQueue 视角，`queueBuffer()` 把 buffer 交给传统 consumer 路径；Android 10-11 进入 BLAST / SurfaceControl 过渡期，设备上可能同时看到旧模型和新事务模型；Android 12+ 再把 BLASTBufferQueue + `SurfaceControl.Transaction` 当成主视角。
+3. **没有 GPU 渲染 fence，不等于没有 fence**：软件渲染不会生成 GPU completion fence，但 `dequeueBuffer()` 取回 buffer 时仍要接收 consumer 侧的 acquire fence，`unlockAsync()` 产出的 fd 也会继续传给 `queueBuffer()`。BufferQueue 槽位占满时，App 一样可能卡在 `dequeueBuffer()` 上。
 
 ### 时序图
+
+下图以 Android 12+ 的 BLAST 视角为主。分析 Android 9 时，需要把 `BLASTBufferQueue` / `Transaction` 替换成 Legacy BufferQueue；Android 10-11 处在过渡期，两类观测点都可能出现。
 
 ```mermaid
 sequenceDiagram
@@ -99,13 +102,13 @@ sequenceDiagram
         Note over UI, CPU: 2. CPU 软件光栅化（全部在 UI Thread）
         activate UI
         UI->>BBQ: lockCanvas() → dequeueBuffer
-        BBQ-->>UI: GraphicBuffer 内存指针
+        BBQ-->>UI: GraphicBuffer + acquire fence
         
         UI->>CPU: Canvas.drawXxx()
         CPU->>CPU: 逐像素计算并写入内存
         
         UI->>BBQ: unlockCanvasAndPost()
-        Note right of BBQ: 无 GPU Fence
+        Note right of BBQ: 传递 release fence
         BBQ->>SF: Transaction(Buffer)
         deactivate UI
     end
@@ -133,15 +136,15 @@ sequenceDiagram
 | **执行线程** | 全程 UI Thread | UI Thread + RenderThread |
 | **绘制机制** | 立即产生像素 | 先记录 DisplayList，再翻译为 GPU 指令 |
 | **光栅化** | CPU（Skia） | GPU（OpenGL / Vulkan） |
-| **同步开销** | 无（串行） | SyncFrameState 阻塞 |
-| **Buffer 提交** | unlockCanvasAndPost → BLAST | queueBuffer → BLAST |
-| **Fence** | 无 acquireFence | 需要 acquireFence（GPU 完成信号） |
+| **同步开销** | 没有 RenderThread，同步点集中在 `dequeueBuffer()` / fence / BufferQueue 槽位 | `SyncFrameState` + GPU / BufferQueue 同步 |
+| **Buffer 提交** | Android 9: `unlockCanvasAndPost()` → Legacy BufferQueue；Android 10-11: 过渡期；Android 12+: `unlockCanvasAndPost()` → BLAST | `queueBuffer()` → BLAST |
+| **Fence** | 没有 GPU 渲染 fence，但仍有 acquire/release fence | GPU fence + BufferQueue fence |
 | **部分更新** | 支持 Dirty Rect | Android 12+ 逐步废弃 |
 | **复杂图形** | 极慢（阴影、模糊、大图） | GPU 并行计算，快几个数量级 |
 
 最核心的差异在于"谁在做光栅化"。GPU 天生适合并行计算——一张 1080p 的图片有 207 万个像素，GPU 可以同时在成百上千个核心上计算；CPU 只能串行处理，哪怕主频再高，像素数摆在那里。
 
-另一个关键差异是**同步模型**。软件渲染没有 RenderThread，不需要 `SyncFrameState` 这个阻塞点。但这个"优势"毫无意义——因为它省下来的同步开销，被 CPU 光栅化的巨大耗时远远覆盖了。
+同步模型也不同。软件渲染没有 RenderThread，因此看不到 `SyncFrameState`；等待点主要落在 `dequeueBuffer()`、`lockAsync()`、`queueBuffer()` 和 BufferQueue 槽位背压上。分析 Trace 时，不能因为没有 GPU slice 就把所有卡顿都归到 CPU 计算。先看 UI Thread 的 `draw` 段，再看 `lockCanvas` / `unlockCanvasAndPost` 前后有没有等待。
 
 ## Trace 视角
 
@@ -165,7 +168,7 @@ sequenceDiagram
 
 ### 与卡顿的关联
 
-软件渲染场景下的卡顿根因通常非常直接：**CPU 光栅化太慢**。没有什么复杂的同步问题、Buffer 瓶颈或 GPU 竞争——就是像素算不过来。解决方案也不是在软件渲染链路内优化，而是**切到硬件加速**。
+软件渲染场景下，首要矛盾通常是 **CPU 光栅化太慢**，但不能把所有卡顿都归成"像素算不过来"。如果 `lockCanvas` 或 `unlockCanvasAndPost` 被拉长，还要继续检查 `dequeueBuffer()` 背压、BufferQueue 槽位是否被占满，以及 fence 返回是否滞后。定位完等待点之后，再决定是改绘制逻辑、减小脏区，还是切回硬件加速。
 
 ## 性能特征与适用场景
 
@@ -175,11 +178,13 @@ sequenceDiagram
 2. **内存带宽瓶颈**：1080p 屏幕的 GraphicBuffer 约 8MB。每次 `lockCanvas` / `unlockCanvasAndPost` 都涉及数据搬运。更高分辨率（2K/4K）下这个问题更严重。
 3. **主线程阻塞**：所有绘制都在 UI Thread，直接挤压输入事件和动画的执行时间。
 
-### 软件渲染唯一的优势：Dirty Rect
+### 软件渲染里的 Dirty Rect 为什么能成立
 
-软件渲染支持"脏矩形"（Dirty Rect）优化——只重绘屏幕上发生变化的那一小块区域。如果只有一个按钮改变了颜色，软件渲染只处理那个按钮对应的矩形区域，而硬件加速通常需要重绘整个 Surface [已验证: Android Graphics 源码]。
+Dirty Rect 不是简单地"只画变化区域"。`Surface::lock()` 会先比较当前 back buffer 和上一帧 `mPostedBuffer` 的尺寸、格式；如果可以复用，就把本轮未失效但又不会重画的区域算成 `copyback`，再通过 `copyBlt()` 从上一帧拷回当前 buffer。App 只需要重画新的 dirty region，其余像素沿用上一帧的结果。[已验证: `Surface.cpp::lock()` / `copyBlt()`]
 
-但在实际开发中，这个优势已经被现代硬件加速的各种优化（硬件层缓存、RenderNode 复用等）所覆盖。Android 12+ 更是进一步弱化了 Dirty Rect 的作用。
+一旦前一帧 buffer 不可用、尺寸变化、像素格式变化，或者 buffer 被丢弃，`Surface::lock()` 就会把 dirty region 扩成整屏，直接回到 full redraw。resize、surface 重建、buffer discard 之后 Dirty Rect 收益会明显下降。
+
+放到今天的系统里，Dirty Rect 仍然是 software Canvas 的一个能力，但它已经不是默认优化手段。现代硬件加速路径更常依赖 layer cache、RenderNode 复用和更稳定的 GPU 合成。
 
 ### 什么时候会遇到软件渲染？
 
