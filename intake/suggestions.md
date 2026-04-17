@@ -1195,3 +1195,15 @@
 - **位置**：「ANGLE 路径」节
 - **问题**：ANGLE 描述说"Android 14+ / 15+ 上部分设备会更多采用 ANGLE"，未给出具体的版本里程碑。ANGLE 从 Android 12 开始可选，每个版本扩大覆盖设备范围。
 - **建议**：补充 ANGLE 推进时间线（Android 12 可选 → 13 扩大 → 14/15 进一步推进），或引用 Google 的 ANGLE roadmap。
+
+## [Task6 Review] 17.3 行业案例 — 2026-04-17
+
+- **类型**：需清理 + 需补充素材 + 需确认
+- **位置**：参考资料 section 末尾 / Samsung Max Boost 描述 / Rhea 开源状态描述
+- **问题**：
+  1. 参考资料末尾 5 条条目与本章节主题无关（豆包手机/Flutter适配鸿蒙/Android15适配/2026年Android趋势/AI写Android排名），疑似 intake 误关联
+  2. Samsung Max Boost 模式缺少可验证的官方来源链接
+  3. Rhea 工具的"开源社区发布了核心框架"描述不够准确，需确认实际开源范围
+- **建议**：删除无关参考条目；补充 Samsung Max Boost 官方文档链接；核实 Rhea 开源状态后更新措辞
+- **review 日志**：logs/review/2026-04-17-21-review.md
+
