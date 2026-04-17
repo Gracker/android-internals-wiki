@@ -18,10 +18,16 @@ sources:
 tags:
   - android
   - research
-pipeline_stage: task6_pending
-task6_state: pending
+  - code-review
+  - performance-patterns
+  - empirical-study
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task2b_state: idle
+reviewed_by: openclaw-task6
+reviewed_date: "2026-04-17"
+task6_result: pass-light-edit
 ---
 
 
@@ -51,13 +57,13 @@ task2b_state: idle
 
 用户最受不了的是"点了没反应"和"滑起来卡"，开发者最头疼的是"App 又 OOM 了"，而学术界 81% 的精力花在能耗问题上。三者几乎不重叠。
 
-更具体的数字：**57.14% 的真实根因从未被学术研究涉及**，**63.41% 的根因没有对应的检测工具**（另一项研究给出的数字更极端——76.39% 的因素无工具覆盖）[引用: ResearchGate/IEEE]. 这意味着，大量真实性能问题既没有被系统研究过，也没有现成的工具能自动发现。
+更具体的数字：**57.14% 的真实根因从未被学术研究涉及**，**63.41% 的根因没有对应的检测工具**（另一项研究给出的数字更极端——76.39% 的因素无工具覆盖）[引用: ResearchGate/IEEE]. 也就是说，大量真实性能问题既没有被系统研究过，也没有现成的工具能自动发现。
 
 这组数据告诉我们一件事：**如果你的性能优化策略只来自学术文献或工具推荐，你可能遗漏了用户最关心的问题。**
 
 ## 七类 Android 性能问题：一个实证分类体系
 
-同一项研究提出了一个七类分类法，覆盖了 82 个贡献因素。这不是拍脑袋想出来的分类，而是从六万多条用户反馈和十几万个开发者 issue 中归纳出来的。
+同一项研究提出了一个七类分类法，覆盖了 82 个贡献因素。这个分类从六万多条用户反馈和十几万个开发者 issue 中归纳出来。
 
 ### 响应性（Responsiveness）
 
@@ -105,7 +111,7 @@ task2b_state: idle
 
 ### 模式一：API 误用（API Misuse）
 
-最常见的性能代码模式。不是 API 本身有问题，而是调用方式不对。几个典型例子：
+最常见的性能代码模式。API 本身没有问题，问题出在调用方式上。几个典型例子：
 
 **在主线程执行耗时操作**——在 onClick() 里直接调用网络请求、数据库查询、大文件读取。Android 的主线程负责所有 UI 渲染和事件处理，在上面做 I/O 或计算密集操作，直接后果就是卡顿或 ANR。
 
