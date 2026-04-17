@@ -1068,3 +1068,24 @@
 - 指标体系设计原则节：线上监控建设中的踩坑经验
 
 标记时间：2026-04-17 12:44
+
+## [Task6 Review] 15.6 性能测试最佳实践 — 2026-04-17
+- **类型**：需确认
+- **位置**：§消除测试干扰 > 固定CPU频率（进阶）
+- **问题**：代码示例 `echo 0 > /sys/devices/system/cpu/cpu0/online` 是将CPU0下线（offline），而非锁定频率。下线CPU与"固定频率"的目的矛盾。
+- **建议**：删除offline命令，保留governor设置命令；或改为 `echo 1 > online` 确保在线后再设governor。
+- **review 日志**：logs/review/2026-04-17-13-review.md
+
+## [Task6 Review] 15.6 性能测试最佳实践 — 2026-04-17
+- **类型**：需确认
+- **位置**：§消除测试干扰 > 固定CPU频率（进阶）
+- **问题**：`adb shell cmd thermal thontrol disable` 中"thontrol"疑似拼写错误，正确可能是"control"或其他子命令。
+- **建议**：验证 `cmd thermal` 的子命令列表，确认正确拼写。
+- **review 日志**：logs/review/2026-04-17-13-review.md
+
+## [Task6 Review] 15.6 性能测试最佳实践 — 2026-04-17
+- **类型**：需确认
+- **位置**：§测试环境标准化 > 网络环境
+- **问题**：`adb shell ndc network create` 作为网络模拟方案，需要验证ndc（Native Daemon Connector）是否支持该子命令。
+- **建议**：验证ndc命令族的实际可用参数，或替换为更通用的网络模拟方案。
+- **review 日志**：logs/review/2026-04-17-13-review.md

@@ -19,10 +19,13 @@ tags:
   - android
   - benchmark
   - research
-pipeline_stage: task6_pending
-task6_state: pending
+pipeline_stage: task2b_pending
+task6_state: reviewed
+reviewed_by: openclaw-task6
+reviewed_date: "2026-04-17"
+task6_result: needs-rework
 task9_state: pending
-task2b_state: idle
+task2b_state: pending
 ---
 
 
@@ -303,7 +306,7 @@ Macrobenchmark 库输出的是 JSON 格式的结果数据，可以通过 `./grad
 
 ## 测试报告的撰写规范
 
-性能测试的产出不是一堆数字，而是一份让读者**能快速理解当前性能状态**的报告。好的性能报告应该让读者在 30 秒内回答三个问题：现在性能怎么样？有没有退化？退化的原因是什么？
+性能测试的最终产出是一份让读者**能快速理解当前性能状态**的报告。好的性能报告应该让读者在 30 秒内回答三个问题：现在性能怎么样？有没有退化？退化的原因是什么？
 
 ### 报告结构
 
@@ -336,7 +339,7 @@ Macrobenchmark 库输出的是 JSON 格式的结果数据，可以通过 `./grad
 
 **4. 异常分析与根因**
 
-对于退化的指标，给出初步的根因分析。比如："首页帧率 P90 退化主要由详情页图片加载引起——新版本将图片缓存策略从 LRU 改为 FIFO，导致在大图场景下缓存命中率降低，频繁触发 Bitmap 解码阻塞主线程。在 Perfetto Trace 中可以看到 RenderThread 的 drawBitmap 耗时从 2ms 上升到 8ms。"
+对于退化的指标，给出初步的根因分析。比如："首页帧率 P90 退化主要由详情页图片加载引起——新版本将图片缓存策略从 LRU 改为 FIFO，导致在大图场景下缓存命中率降低，频繁触发 Bitmap 解码阻塞主线程。在 Perfetto Trace 中，RenderThread 的 drawBitmap 耗时从 2ms 上升到 8ms。"
 
 **5. 建议与下一步**
 
@@ -393,7 +396,7 @@ CI 命令：
 ./gradlew :benchmark:pixel8Api36BenchmarkAndroidTest
 ```
 
-需要注意的是，GMD 使用的是模拟器，性能数据与真机有较大差异（特别是 GPU 和存储性能）。因此 CI 中的基准数据更适合用于**回归检测**（对比变化趋势），而不是**绝对性能评估**（判断是否达到目标）。绝对性能评估还是要在真机上进行 [已验证: 官方文档, developer.android.com/topic/performance/benchmarking/benchmarking-in-ci]。
+GMD 使用的是模拟器，性能数据与真机有较大差异（特别是 GPU 和存储性能）。因此 CI 中的基准数据更适合用于**回归检测**（对比变化趋势），而不是**绝对性能评估**（判断是否达到目标）。绝对性能评估还是要在真机上进行 [已验证: 官方文档, developer.android.com/topic/performance/benchmarking/benchmarking-in-ci]。
 
 ### 结果的自动分析
 
@@ -449,7 +452,7 @@ Firebase Performance Monitoring（FPM）是 Google 提供的线上性能监控�
 
 - **启动时间验证**：在 Trace 中定位目标进程的启动时间点（搜索 `proc_start` 或 `ActivityManager: Start proc`），到首帧绘制完成（搜索 `Choreographer#doFrame` 或 `firstDraw`）之间的时间差，应该与 Macrobenchmark 报告的 `timeToInitialDisplay` 基本一致
 - **帧率验证**：在 RenderThread track 中检查 `DrawFrame` 切片的耗时分布。正常情况下 60fps 设备的 DrawFrame 应该在 16ms 以内，120fps 设备应该在 8ms 以内。超过阈值的 DrawFrame 就是掉帧
-- **内存占用验证**：在 Trace 的 `memtrack` track 或 `Process Stats` 中可以看到目标进程的内存使用情况，与测试报告中的内存数据做交叉验证
+- **内存占用验证**：在 Trace 的 `memtrack` track 或 `Process Stats` 中查看目标进程的内存使用情况，与测试报告中的内存数据做交叉验证
 
 如果在 Trace 中发现的数据与基准测试报告不一致，通常意味着测试环境存在未被控制的变量——比如后台有大量 I/O 活动、系统正在进行 dex2oat 编译等。这时需要回到环境标准化步骤，排查干扰源。
 
