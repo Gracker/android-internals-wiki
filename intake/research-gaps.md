@@ -761,3 +761,26 @@ SurfaceControl NDK 的 FrameTimeline 小节缺少“如何从 AChoreographerFram
 - 18.10 SurfaceControl API 深入
 - 2.6 SurfaceFlinger 与合成
 
+## [2026-04-18] 18.17 Hardware Buffer Renderer — 知识盲区
+
+### 盲区描述
+1. **direct `SurfaceControl.Transaction.setBuffer()` 与 BLAST/BufferQueue 的分层关系** —— 章节把 direct buffer path 与标准 queueBuffer/BBQ 路径混在一起，没有说明两者的连接条件，也没有告诉读者在 Perfetto 里该看哪类证据。
+2. **acquire fence / release fence / buffer pool 生命周期** —— 文中只讲 producer 侧的 acquire fence，没有覆盖 release callback、buffer 复用时机、以及 HBR 不自动清空旧内容的语义。
+3. **HDR 输出链前提** —— 只提到了 DISPLAY_P3 和“RGBA_F16”，没有展开 `HardwareBuffer.RGBA_FP16`、dataspace/color mode、SurfaceFlinger/HWC 支持链及其 fallback。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 验证官方文档与 AOSP 中 HardwareBufferRenderer / SurfaceControl.Transaction 的 direct buffer 语义
+- 补一段 direct setBuffer 路径的真实 Trace 案例，区分它与 BLASTBufferQueue 路径的可观测点
+- 总结单 buffer / 双 buffer / buffer pool 的 release fence 复用模式
+- 梳理 wide color 离屏渲染与真实 HDR composition 的条件矩阵
+
+### 关联章节
+- 18.2
+- 18.3
+- 18.10
+- 2.10
+- 2.16
+

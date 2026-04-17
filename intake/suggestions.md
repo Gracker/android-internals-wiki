@@ -1404,3 +1404,22 @@
   4. 新增"常见问题与误区"小节。
   5. 补充与RenderThread的对比说明。
 - **review 日志**：logs/review/2026-04-18-06-review.md
+
+## [Task9 Deep Review] 18.17 Hardware Buffer Renderer — 2026-04-18
+- **类型**：数据缺失
+- **位置**：性能对比表（L123-L129）
+- **问题**：`1080p 全屏绘制 ~15ms vs ~8ms`、`内存带宽 2x vs 1x`、`120fps 离屏渲染` 都没有设备型号、Android 版本、渲染后端、绘制内容复杂度或 Trace/benchmark 依据。当前数字更像口径占位，不足以支撑章节核心判断。
+- **建议**：补充至少一组真实设备 + API level + workload + Trace/benchmark 条件；如果暂时没有数据，就改成定性结论并保留 `[待验证]`。
+
+## [Task9 Deep Review] 18.17 Hardware Buffer Renderer — 2026-04-18
+- **类型**：数据缺失
+- **位置**：在 Perfetto 中识别（L176-L183）
+- **问题**：当前只写了“GPU Track”“SurfaceFlinger 额外 Layer”，没有给出 direct `setBuffer()` 路径在 App/SF 两侧的具体观察点，读者很容易把 §18.2 的 BLAST 轨迹生搬过来。
+- **建议**：补一段真实 Trace 描述，至少说明 render callback 完成、`setTransactionState`/`latchBuffer`/present fence 这些证据分别出现在什么进程和什么 slice 上；如果还没抓到，就明确标 `[待补充：direct setBuffer Trace]`。
+
+## [Task9 Deep Review] 18.17 Hardware Buffer Renderer — 2026-04-18
+- **类型**：源码准确性
+- **位置**：Java API 代码块（L92-L99）
+- **问题**：示例拿到 `RenderResult` 后直接 `setBuffer()`，没有检查 `result.getStatus()`，也没有交代 `HardwareBufferRenderer.close()` 与 `HardwareBuffer.close()` 的生命周期边界。对读者来说，这会把错误处理和资源回收都隐掉。
+- **建议**：在代码示例中先判断 `result.getStatus() == SUCCESS`，并补一句说明 renderer 关闭不会替调用方关闭 `HardwareBuffer`。
+

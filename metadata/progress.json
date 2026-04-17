@@ -2233,13 +2233,20 @@
       "title": "Hardware Buffer Renderer",
       "path": "src/part2-performance/ch18-rendering-pipelines/17-hardware-buffer-renderer.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "pending",
-      "task9_state": "pending",
-      "task2b_state": "idle",
+      "pipeline_stage": "task2b_pending",
+      "task6_state": "reviewed",
+      "task9_state": "reviewed",
+      "task2b_state": "pending",
       "task6_reviewed": true,
       "task6_review_date": "2026-04-18",
-      "task6_result": "needs-rework"
+      "task6_result": "needs-rework",
+      "reviewed_by": "openclaw-task6",
+      "reviewed_date": "2026-04-18",
+      "task9_result": "needs-rework",
+      "task9_reviewed_date": "2026-04-18",
+      "task9_reviewed_by": "openclaw-task9",
+      "section": "18.17",
+      "last_task9_at": "2026-04-18T06:24:00+08:00"
     },
     "src/part2-performance/ch18-rendering-pipelines/18-pip-freeform.md": {
       "chapter": "18.18",
@@ -3037,7 +3044,7 @@
       "major_issues": 1
     }
   },
-  "last_updated": "2026-04-18T04:50:38.437762+08:00",
+  "last_updated": "2026-04-18T06:24:00+08:00",
   "rework_log": [
     {
       "date": "2026-04-15T19:44:09.836904",
@@ -3342,7 +3349,7 @@
   ],
   "total_chapters": 0,
   "reviewed_count": 1,
-  "last_review": "2026-04-17",
+  "last_review": "18.17",
   "last_task2b_section": "18.14",
   "1.10": {
     "section": "1.10",
