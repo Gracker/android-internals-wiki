@@ -7,13 +7,15 @@ tags: ["hybrid-composition", "SurfaceView", "mixed-rendering", "parallel-pipelin
 related_chapters: ["2.1", "2.6", "18.2", "18.6"]
 created_by: "rendering-pipelines-merge"
 created_date: "2026-04-09"
-pipeline_stage: task9_pending
+pipeline_stage: task2b_pending
 task6_state: reviewed
-task9_state: pending
-task2b_state: idle
+task9_state: reviewed
+task2b_state: pending
 reviewed_by: openclaw-task6
 reviewed_date: "2026-04-17"
 task6_result: pass-light-edit
+task9_result: needs-rework
+task9_reviewed_date: "2026-04-18"
 ---
 
 <!-- outline-start -->
