@@ -7,8 +7,10 @@ tags: ["SurfaceView", "BLAST", "SurfaceFlinger", "HWC", "Direct-Producer", "独�
 related_chapters: ["2.1", "2.6", "2.13", "2.14", "18.1", "18.7", "18.8", "18.9"]
 created_by: "rendering-pipelines-merge"
 created_date: "2026-04-09"
-pipeline_stage: task6_pending
-task6_state: pending
+pipeline_stage: task9_pending
+task6_state: reviewed
+task6_result: pass-light-edit
+task6_reviewed_date: "2026-04-17"
 task9_state: pending
 task2b_state: idle
 ---
@@ -40,7 +42,7 @@ SurfaceView 是 Android 历史上最高效的视图组件之一，它的核心�
 
 SurfaceView 打破了这个限制。它拥有独立的 Surface，渲染线程直接与 SurfaceFlinger 交互，完全不经过 App 主线程。这就是为什么视频播放器、游戏引擎、Camera 预览几乎清一色使用 SurfaceView。[已验证: AOSP SurfaceView 实现]
 
-但 SurfaceView 不是没有代价。它不支持动画变换、不能设置圆角、不能调整透明度——因为它本质上是独立于 View 树的一个"洞"。理解这个权衡是选型的关键。
+但 SurfaceView 不是没有代价。它不支持动画变换、不能设置圆角、不能调整透明度——因为它从架构上就独立于 View 树，是一个"洞"。理解这个权衡是选型的关键。
 
 ## 独立 Surface 与挖洞机制
 
@@ -236,7 +238,7 @@ SurfaceView 能走 Overlay 需要满足以下条件：
 
 ```bash
 # 查看 SurfaceView 是否走 Overlay
-adb shell dumpsys SurfacefFlinger | grep -A 5 "SurfaceView"
+adb shell dumpsys SurfaceFlinger | grep -A 5 "SurfaceView"
 # 输出中寻找 "Composition type: DEVICE" 即 Overlay
 ```
 
@@ -244,7 +246,7 @@ adb shell dumpsys SurfacefFlinger | grep -A 5 "SurfaceView"
 
 ### 识别 SurfaceView 链路
 
-识别 SurfaceView 链路的关键是确认**独立的 BufferQueue** 和 **Producer Thread 的独立性**：
+在 Perfetto 中确认 SurfaceView 链路，看两个信号：**独立的 BufferQueue** 和 **Producer Thread 的独立性**：
 
 1. **多个 BufferQueue Track**：在 SurfaceFlinger 进程中，你会看到至少两个 Layer——一个是 App 主窗口，一个是 SurfaceView 的独立 Layer
 2. **Producer Thread 不在 App 主线程**：视频播放场景下，Producer 可能是 MediaCodec 的解码线程；游戏场景下，可能是 Unity 的 RenderThread
@@ -314,6 +316,6 @@ adb shell dumpsys SurfacefFlinger | grep -A 5 "SurfaceView"
 > - TextureView 的 App 侧合成链路详见 [18.7 TextureView 合成链路](07-textureview.md)
 > - GLES 在 SurfaceView 上的集成详见 [18.8 OpenGL ES 渲染链路](08-opengl-es.md)
 > - Vulkan 在 SurfaceView 上的集成详见 [18.9 Vulkan 原生渲染链路](09-vulkan-native.md)
-> - BufferQueue 机制详解详见 [2.1 BufferQueue](../../part1-foundation/ch02-graphics-foundation/)
-> - SurfaceFlinger 合成策略详见 [2.6 SurfaceFlinger 与合成](../../part1-foundation/ch02-graphics-foundation/)
-> - 图形 API 演进历史详见 [2.14 图形 API 演进](../../part1-foundation/ch02-graphics-foundation/)
+> - BufferQueue 机制详解详见 [2.13 BufferQueue](../../part1-fundamentals/ch02-rendering/13-buffer-queue.md)
+> - SurfaceFlinger 合成策略详见 [2.6 SurfaceFlinger](../../part1-fundamentals/ch02-rendering/06-surfaceflinger.md)
+> - 图形 API 演进历史详见 [2.14 图形 API 演进](../../part1-fundamentals/ch02-rendering/14-graphics-api-evolution.md)
