@@ -3150,5 +3150,17 @@
     "task6_review_date": "2026-04-17",
     "task6_result": "pass-light-edit",
     "task6_review_log": "logs/review/2026-04-17-12-review.md"
-  }
+  },
+  "task2b_rework_log": [
+    {
+      "date": "2026-04-17T04:45:13Z",
+      "section": "15.3",
+      "section_title": "性能指标体系",
+      "source": "task6-review",
+      "issues_fixed": 3,
+      "issues_blocked": 1,
+      "blocked_reason": "活人感/实战叙述需要Gracker亲自补充",
+      "status": "partial-fixed"
+    }
+  ]
 }
