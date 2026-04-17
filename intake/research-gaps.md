@@ -646,3 +646,28 @@ EGLConfig 的选择（color buffer depth、stencil buffer、MSAA、depth buffer 
 - 18.1 Android 图形渲染链路全景
 - 18.2 Android View 标准链路
 - 18.6 SurfaceView 直出链路
+
+## [2026-04-18] 12.2 网络性能优化 — 知识盲区
+
+### 盲区描述
+HTTP/3 / Cronet 的 Android 落地矩阵缺失。当前章节只把 HTTP/3 描述成“引入 Cronet，APK 增加约 1-2MB”，但没有区分：
+1. Cronet by Play Services Provider（GMS 设备，APK 增量极小）
+2. Standalone / Bundled Cronet（无 GMS 或需自带内核，体积数 MB）
+3. 非 GMS 设备的 fallback 策略（退回 OkHttp HTTP/2、按机型灰度、按网络质量切换）
+
+缺少这一层，读者会把“协议选择”误解成单纯的网络优化问题，而忽略了 Android 生态里的分发、可用性和包体积约束。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 梳理 Cronet by Play Services 与 standalone Cronet 的包体积、更新路径、依赖条件差异
+- 补充 GMS / 非 GMS 设备的 HTTP/3 可用性判断与 fallback 方案
+- 研究连接迁移、0-RTT、provider 切换在 Android 真实设备上的验证方法
+- 给出适合 App 侧的“何时值得引入 HTTP/3”决策矩阵
+
+### 关联章节
+- 12.2 网络性能优化
+- 12.1 APK 体积优化
+- 16.2 各 Android 版本性能变更追踪
+- 17.2 SoC 平台差异

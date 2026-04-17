@@ -1,33 +1,44 @@
 ---
-title: "网络性能优化"
-chapter: "12.2"
-section: "12.2"
+title: 网络性能优化
+chapter: '12.2'
+section: '12.2'
 status: ready-for-review
-drafted_date: "2026-04-03"
+drafted_date: '2026-04-03'
 drafted_by: openclaw-task2a
-reviewed_date: "2026-04-17"
+reviewed_date: '2026-04-17'
 polish_count: 1
-polish_date: "2026-04-10"
-polish_by: "task2b-polish"
+polish_date: '2026-04-10'
+polish_by: task2b-polish
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
-applicable_versions: "Android 8 (API 26) - Android 16 (API 36)"
-last_verified: "2026-04-03"
-last_verified_against: "OkHttp 4.12.x / Android 16"
+applicable_versions: Android 8 (API 26) - Android 16 (API 36)
+last_verified: '2026-04-03'
+last_verified_against: OkHttp 4.12.x / Android 16
 confidence: medium
 sources:
-  - type: official
-    path: "https://developer.android.com/reference/android/net/ConnectivityManager"
-  - type: official
-    path: "https://square.github.io/okhttp/"
-  - type: official
-    path: "https://developer.android.com/training/basics/network-ops"
-tags: [network, OkHttp, HTTP/2, HTTP/3, QUIC, weak-network, performance]
-related_chapters: ["12.1", "6.1", "8.1"]
-pipeline_stage: task9_pending
+- type: official
+  path: https://developer.android.com/reference/android/net/ConnectivityManager
+- type: official
+  path: https://square.github.io/okhttp/
+- type: official
+  path: https://developer.android.com/training/basics/network-ops
+tags:
+- network
+- OkHttp
+- HTTP/2
+- HTTP/3
+- QUIC
+- weak-network
+- performance
+related_chapters:
+- '12.1'
+- '6.1'
+- '8.1'
+pipeline_stage: task2b_pending
 task6_state: reviewed
-task9_state: pending
-task2b_state: idle
+task9_state: reviewed
+task2b_state: pending
+task9_result: needs-rework
 ---
 
 # 网络性能优化

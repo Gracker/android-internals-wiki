@@ -1287,3 +1287,21 @@
 - **位置**：frontmatter related_chapters
 - **问题**：正文末尾显式交叉引用了 2.13 和 2.14，但 related_chapters 仅保留 2.1 / 2.5 / 18.2，元数据和正文不一致。
 - **建议**：把 2.13、2.14 加入 related_chapters，避免后续目录/索引工具漏链。
+
+## [Task9 Deep Review] 12.2 网络性能优化 — 2026-04-18
+- **类型**：源码准确性
+- **位置**：L89 / L332 验证标注
+- **问题**：两处 [已验证] 都把 OkHttp EventListener 指向 developer.android.com/reference/okhttp3/EventListener。OkHttp 不属于 Android SDK，该路径并不是官方 API 文档地址。
+- **建议**：改为 Square OkHttp EventListener 官方文档（events/ 或 API reference），避免把不存在的 Android 文档当成验证来源。
+
+## [Task9 Deep Review] 12.2 网络性能优化 — 2026-04-18
+- **类型**：数据缺失
+- **位置**：L121 HTTP/3 性能收益数据
+- **问题**：Google/Uber/Meta 的 15%、10-30%、20% 指标只给了公司名和博客域名，没有文章标题、年份、实验对象、网络条件或指标定义，读者无法追溯这些数字到底对应 buffering、tail latency 还是 error rate。
+- **建议**：补充精确出处和测试上下文，或统一降级为 [待验证]，避免把营销级数字当成可复用基线。
+
+## [Task9 Deep Review] 12.2 网络性能优化 — 2026-04-18
+- **类型**：数据缺失
+- **位置**：L342 / L368 NetworkCapabilities 带宽描述
+- **问题**：把 getLinkDownstreamBandwidthKbps() 近似写成“LinkSpeed/下行带宽”，但它是系统给出的能力估计值，不是实际下载吞吐。若直接拿它驱动画质切换，读者容易把“估计容量”误用成“实时测速结果”。
+- **建议**：补一句“这是网络 agent 的估算值，不等于真实吞吐”，并说明需要结合 EventListener 或样本下载结果做校准。
