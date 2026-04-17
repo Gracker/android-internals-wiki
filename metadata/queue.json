@@ -1657,5 +1657,44 @@
       "FrameTimeline 小节改为 Android 13+ NDK 用法，补 callbackData 多 timeline 选择规则",
       "bufferWithRelease API 36 限定补充到 Buffer 与 AHardwareBuffer 生命周期说明"
     ]
+  },
+  {
+    "section": "18.15",
+    "section_title": "视频叠加与 HWC",
+    "priority": 95,
+    "reason": "[Deep Tech Review] P0: Overlay 标准链路遗漏 SurfaceFlinger；P1: HWC2/HWC3 决策链、Secure/Tunnel 语义与能力矩阵缺失",
+    "material_paths": [
+      "intake/suggestions.md",
+      "intake/research-gaps.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "L90-L99 Overlay Path + L101-L117 路径图",
+        "detail": "章节把标准 Overlay 路径写成“Decoder → SurfaceView BufferQueue → HWC Overlay Plane → Display”，等于把 SurfaceFlinger 从链路里删掉了。标准 SurfaceView/Overlay 仍然要经过 SurfaceFlinger 的 layer latch、validateDisplay / presentDisplay 决策；只有 sideband / tunneled playback 才会走不同的数据路径。",
+        "suggestion": "把标准 Overlay 路径改成“Decoder → BufferQueue/BLASTBufferQueue → SurfaceFlinger layer latch → HWC DEVICE composition → Display”，并把 sideband / tunnel 单独拆成一条路径。"
+      },
+      {
+        "type": "原理断裂",
+        "location": "L71-L75 HWC 职责段 + L121-L127 合成决策流程",
+        "detail": "正文把 HWC 决策流程压缩成 validate → present，遗漏了 HWC2/HWC3 中最关键的 client target 回传步骤。实际在存在 CLIENT layer 时，SurfaceFlinger 需要先做 GPU 合成，再通过 setClientTarget() 把 client target 交还给 HWC，之后才是 presentDisplay。读者会看不懂 GPU 合成结果是怎么重新进入 HWC 的。",
+        "suggestion": "按“validateDisplay → changedCompositionTypes/acceptChanges → setClientTarget → presentDisplay”的顺序重写，并说明文中的 HWC::validate/HWC::present 只是 SurfaceFlinger 包装层，不是 HAL 对外 API 名。"
+      },
+      {
+        "type": "版本差异/术语混淆",
+        "location": "L73-L75 SIDEBAND 描述 + L146-L157 DRM / Tunnel Mode 段",
+        "detail": "章节把 SIDEBAND、Tunnel Mode、Secure Overlay、受保护纹理路径揉成一个概念：一边说 Overlay 是唯一能显示 Secure Buffer 的路径、GPU 无法采样 Secure Buffer，一边又说 Android 7.0 起支持 secure texture video playback。对 API 24-36 来说，这样的表述前后自相矛盾，也掩盖了设备能力和内容级别差异。",
+        "suggestion": "拆开三层概念：1) 标准 Overlay/DEVICE composition；2) 受保护内容的 protected texture / secure GPU path（能力依赖设备与扩展）；3) tunneled playback / sideband stream。明确哪条路径是“推荐”、哪条是“可选能力”、哪条是“Android TV/高端设备特例”。"
+      },
+      {
+        "type": "知识盲区",
+        "location": "L133-L140 Overlay 回退条件表",
+        "detail": "表格把 RGBA、alpha、圆角、裁剪、Secure Buffer 等条件写成近似绝对的“触发回退条件”，但真实 Overlay eligibility 高度依赖 SoC、DPU plane、HWC HAL 代际和厂商实现。对 Android 7-16 全范围章节来说，缺少能力矩阵会把“常见条件”误读成“通用规则”。",
+        "suggestion": "补一张 capability / version matrix，至少区分 HWC2.x/HWC3、YUV/RGBA、plane alpha、crop/scale/rotation、HDR/protected content 等能力，并把当前表格改成“常见回退原因（能力依赖平台）”。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-18T04:53:00+08:00",
+    "status": "pending"
   }
 ]
