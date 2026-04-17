@@ -8,9 +8,22 @@ related_chapters: ["2.1", "2.6", "2.14", "18.8", "18.10"]
 created_by: "rendering-pipelines-merge"
 created_date: "2026-04-09"
 pipeline_stage: task6_pending
-task6_state: pending
+task6_state: reviewed
+reviewed_by: openclaw-task6
+reviewed_date: "2026-04-17"
+task6_result: pass-light-edit
+pipeline_stage: task9_pending
 task9_state: pending
 task2b_state: idle
+sources:
+  - type: official
+    path: "developer.android.com/ndk/guides/graphics"
+  - type: official
+    path: "developer.android.com/games/sdk/frame-pacing"
+  - type: official
+    path: "developer.android.com/about/versions/15/features#vulkan"
+  - type: aosp
+    path: "frameworks/native/vulkan"
 ---
 
 <!-- outline-start -->
@@ -31,9 +44,9 @@ task2b_state: idle
 
 <!-- outline-end -->
 
-Vulkan 是 Android 的主低层图形 API，Android 15+ 进一步推进了 AVP（Android Vulkan Profile）等能力。[已验证: Android 15 Developer Preview 文档] 与 OpenGL ES 相比，Vulkan 的核心区别在于**"显式优于隐式"**——内存管理、同步原语、命令提交全部由 App 显式控制，驱动只做传达，不再替你猜。这意味着更低的 CPU 开销、更少的驱动 bug，以及更高的调试可控性。
+Vulkan 是 Android 的主低层图形 API，Android 15+ 进一步推进了 AVP（Android Vulkan Profile）等能力。[已验证: Android 15 Developer Preview 文档] 与 OpenGL ES 相比，Vulkan 的核心区别在于**"显式优于隐式"**——内存管理、同步原语、命令提交全部由 App 显式控制，驱动只做传达，不再替你猜。换来的是更低的 CPU 开销、更少的驱动 bug，以及更高的调试可控性。
 
-关于图形 API 的演进历史和 Vulkan 在 Android 上的引入过程，详见 [2.14 图形 API 演进](../../part1-foundation/ch02-graphics-foundation/)。本节聚焦 Vulkan 渲染链路的实战视角：从 Acquire 到 Present 的完整流程、Presentation Mode 的选择、以及如何在 Trace 中识别 Vulkan 链路。
+关于图形 API 的演进历史和 Vulkan 在 Android 上的引入过程，详见 [2.14 图形 API 演进](../../part1-fundamentals/ch02-rendering/14-graphics-api-evolution.md)。本节聚焦 Vulkan 渲染链路的实战视角：从 Acquire 到 Present 的完整流程、Presentation Mode 的选择、以及如何在 Trace 中识别 Vulkan 链路。
 
 ## 为什么选择 Vulkan
 
@@ -54,7 +67,7 @@ Vulkan 要求 App 对一切负责：
 | **CPU 开销** | 高（驱动猜测多） | 低（显式路径短路） |
 | **多线程** | 有限（Context 绑定线程） | 完全支持（Command Buffer 并行录制） |
 
-**实测优势**：Vulkan 的 CPU 开销比 GLES 低 20-40%，这对移动设备意义重大。更高的 CPU 效率意味着更多的 CPU 时间留给游戏逻辑、AI 计算、音频处理等。[已验证: Android Developer Vulkan 性能文档]
+**实测优势**：Vulkan 的 CPU 开销比 GLES 低 20-40%，省出的 CPU 时间可以留给游戏逻辑、AI 计算、音频处理等。[已验证: Android Developer Vulkan 性能文档]
 
 ### 代价
 
@@ -65,7 +78,7 @@ Vulkan 的代价是**开发复杂度**。你需要自己管理：
 - Image Layout 转换
 - 渲染 Pass 的显式定义
 
-如果这些做错了，结果不是"画面不对"，而是 Crash、黑屏或设备挂起。这就是为什么 Google 推出了 Swappy、AVP 等辅助工具——降低 Vulkan 的正确使用门槛。
+如果这些做错了，轻则花屏、黑屏，重则设备挂起。这就是为什么 Google 推出了 Swappy、AVP 等辅助工具——降低 Vulkan 的正确使用门槛。
 
 ## Android Vulkan Profile (AVP)
 
@@ -253,7 +266,7 @@ vkCmdPipelineBarrier(
 
 ## Presentation Mode
 
-Vulkan Swapchain 支持多种 Presentation Mode，直接影响帧率稳定性和输入延迟。理解这些模式对游戏和视频应用的帧率控制至关重要。
+Vulkan Swapchain 支持多种 Presentation Mode，直接影响帧率稳定性和输入延迟。理解这些模式对游戏和视频应用的帧率控制有直接影响。
 
 | Mode | 行为 | 延迟 | 撕裂风险 | 适用场景 |
 |:---|:---|:---|:---|:---|
@@ -289,7 +302,7 @@ vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface, &count, modes
 
 ### 核心原理
 
-Swappy 的核心思想是**精准控制 Present 时机**。它不是简单地在 `vkQueuePresentKHR` 外面包一层，而是结合 Choreographer 的 VSync 时间戳、presentation timestamp 和 sync fence 来计算最佳提交时机：
+Swappy 的核心思想是**精准控制 Present 时机**。它结合 Choreographer 的 VSync 时间戳、presentation timestamp 和 sync fence 来计算最佳提交时机：
 
 ```mermaid
 sequenceDiagram
@@ -379,5 +392,5 @@ adb shell setprop debug.vulkan.layers VK_LAYER_KHRONOS_validation
 > **交叉引用**：
 > - OpenGL ES 链路（对比参考）详见 [18.8 OpenGL ES 渲染链路](08-opengl-es.md)
 > - SurfaceControl API 与 FrameTimeline 详见 [18.10 SurfaceControl API 深入](10-surface-control-api.md)
-> - 图形 API 演进历史详见 [2.14 图形 API 演进](../../part1-foundation/ch02-graphics-foundation/)
-> - BufferQueue 与 Transaction 机制详见 [2.1 BufferQueue](../../part1-foundation/ch02-graphics-foundation/)
+> - 图形 API 演进历史详见 [2.14 图形 API 演进](../../part1-fundamentals/ch02-rendering/14-graphics-api-evolution.md)
+> - BufferQueue 与 Transaction 机制详见 [2.13 图形缓冲区管理](../../part1-fundamentals/ch02-rendering/13-buffer-queue.md)
