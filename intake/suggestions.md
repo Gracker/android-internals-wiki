@@ -1423,3 +1423,31 @@
 - **问题**：示例拿到 `RenderResult` 后直接 `setBuffer()`，没有检查 `result.getStatus()`，也没有交代 `HardwareBufferRenderer.close()` 与 `HardwareBuffer.close()` 的生命周期边界。对读者来说，这会把错误处理和资源回收都隐掉。
 - **建议**：在代码示例中先判断 `result.getStatus() == SUCCESS`，并补一句说明 renderer 关闭不会替调用方关闭 `HardwareBuffer`。
 
+
+## [Task6 Review] 18.18 PIP 与自由窗口渲染 — 2026-04-18
+- **类型**：需补充素材
+- **位置**：PIP 渲染流程（持续渲染 + 性能考量）
+- **问题**：PIP 模式渲染流程仅一句话带过，性能考量为纯列表缺少深度，缺少 BufferQueue 行为、帧率变化、内存占用的具体分析
+- **建议**：参照 writing-guide.md 类型A结构，将 PIP 渲染流程改写为连贯叙述，补充 BufferQueue 在 PIP 模式下的行为变化（如 min/max buffer count 变化、帧率限制策略）和 Perfetto Trace 对应表现
+- **review 日志**：logs/review/2026-04-18-07-review.md
+
+## [Task6 Review] 18.18 PIP 与自由窗口渲染 — 2026-04-18
+- **类型**：需补充素材
+- **位置**：全文 Perfetto Trace 描述
+- **问题**：除末尾一张表外，缺少 Perfetto Trace 截图描述或文字标注
+- **建议**：在 Trace 定位节补充具体 slice 名称（如 SurfaceFlinger 的 Transaction apply、wm_task_moved）、track 名称和 `[待补充：Trace 截图]` 占位标记
+- **review 日志**：logs/review/2026-04-18-07-review.md
+
+## [Task6 Review] 18.18 PIP 与自由窗口渲染 — 2026-04-18
+- **类型**：需补充素材
+- **位置**：BLAST Sync 解决方案
+- **问题**：缺少 AOSP 源码路径（BLASTBufferQueue.java 等）
+- **建议**：补充 frameworks/base/libs/gui/BLASTBufferQueue.cpp 及相关 Java 层路径
+- **review 日志**：logs/review/2026-04-18-07-review.md
+
+## [Task6 Review] 18.18 PIP 与自由窗口渲染 — 2026-04-18
+- **类型**：需补充素材
+- **位置**：版本演进（整体缺失）
+- **问题**：PIP 从 Android 8.0 引入、BLAST 从 Android 12 引入的关键变化未梳理
+- **建议**：添加版本演进表格，标注各版本中 PIP/Freeform/BLAST 的关键变更
+- **review 日志**：logs/review/2026-04-18-07-review.md

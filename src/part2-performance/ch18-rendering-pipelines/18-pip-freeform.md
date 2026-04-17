@@ -7,10 +7,14 @@ tags: ["PIP", "画中画", "Freeform", "多窗口", "SurfaceControl", "BLAST", "
 related_chapters: ["2.6", "2.12", "18.10"]
 created_by: "rendering-pipelines-merge"
 created_date: "2026-04-09"
-pipeline_stage: task6_pending
-task6_state: pending
+pipeline_stage: task2b_pending
+task6_state: reviewed
 task9_state: pending
-task2b_state: idle
+task2b_state: pending
+reviewed_date: "2026-04-18"
+reviewed_by: openclaw-task6
+task6_result: needs-rework
+review_round: 1
 ---
 
 <!-- outline-start -->
@@ -31,7 +35,7 @@ task2b_state: idle
 
 ## 为什么多窗口的渲染值得关注
 
-在 SurfaceFlinger 侧，所有的窗口都是 Layer Tree 的一部分。多窗口模式（PIP、Freeform、Split Screen）并没有引入新的渲染机制——它只是在 Layer Tree 中增加了更多 Layer。但多窗口引入了一个独特的性能问题：**窗口 Resize 的同步竞态**。
+在 SurfaceFlinger（下文简称 SF）侧，所有的窗口都是 Layer Tree 的一部分。多窗口模式（PIP、Freeform、Split Screen）并没有引入新的渲染机制——它只是在 Layer Tree 中增加了更多 Layer。但多窗口引入了一个独特的性能问题：**窗口 Resize 的同步竞态**。
 
 当用户拖拽 Freeform 窗口的边框时，窗口尺寸在变化，但 App 需要时间重新 Layout 和 Draw。如果 SF 合成时 App 还没画完新尺寸的内容，就会出现黑边或内容拉伸。理解这个竞态条件，是分析和修复多窗口渲染问题的关键。[已验证: AOSP WindowManagerService]
 
@@ -59,17 +63,17 @@ graph TD
 
 ### 进入 PIP
 
-1. App 调用 `enterPictureInPictureMode()`。
-2. WindowManagerService 使用 SurfaceControl 动画 API 将 App Surface 缩小并移动到角落。
-3. 动画过程中 App 仍在全分辨率渲染（或根据 Configuration Change 变为小分辨率）。
+App 调用 `enterPictureInPictureMode()` 后，WindowManagerService 通过 SurfaceControl 动画 API 将 App Surface 缩小并移动到屏幕角落。动画过程中，App 仍在全分辨率渲染（或根据 Configuration Change 切换为小分辨率）。
 
 ### 持续渲染
 
 PIP 模式下，App 的渲染循环与全屏模式完全一致：VSync → Draw → Submit → Composite。SF 将其作为一个小 Layer 合成到屏幕上。
 
+[需补充素材: PIP 模式下 BufferQueue 行为、帧率变化、内存占用的具体分析；缺少 Perfetto Trace 截图描述]
+
 ### 性能考量
 
-- **额外合成成本**：PIP 窗口悬浮在其他内容之上，HWC 是否能复用底层 Layer 取决于设备策略
+- **额外合成成本**：PIP 窗口悬浮在其他内容之上，Hardware Composer（HWC）是否能复用底层 Layer 取决于设备策略
 - **Resource Budget**：系统通常限制 PIP 窗口的 CPU/GPU 优先级，确保前台 App 流畅
 - **Touch Input**：输入事件分发到 PIP 窗口，App 需要处理小窗口下的点击逻辑
 
@@ -109,6 +113,8 @@ Android 12+ 通过 BLAST 事务模型显著缓解此问题：
 2. **App Barrier**：App 完成新尺寸渲染后，带着同一个 Token 提交 Buffer。
 3. **SF 等待**：SF 收到 Window Bounds Transaction 时，尝试等待对应 Token 的 Buffer。
 4. **原子应用**：两者更容易在同一提交边界内生效。
+
+[需补充素材: BLAST Sync 对应的 AOSP 源码路径（如 BLASTBufferQueue.java），以及 Android 12 前后该机制的版本差异]
 
 ### Trace 定位
 

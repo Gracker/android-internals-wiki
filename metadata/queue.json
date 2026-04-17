@@ -1881,5 +1881,44 @@
       "主流程改成 direct SurfaceControl buffer 提交，并把 BLAST / BufferQueue 限定为可选连接点",
       "补齐 release fence / release callback、RenderRequest 非线程安全、RGBA_FP16 与 HDR capability 边界"
     ]
+  },
+  {
+    "section": "18.18",
+    "section_title": "PIP 与自由窗口渲染",
+    "priority": 90,
+    "reason": "[review回炉] PIP节内容偏薄需扩充；缺少Perfetto Trace描述和AOSP源码路径",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "需补充素材",
+        "location": "PIP 持续渲染 + 性能考量",
+        "detail": "PIP 渲染流程仅一句话带过，性能考量为纯列表，缺少 BufferQueue 行为、帧率变化、内存占用的具体分析",
+        "suggestion": "参照 writing-guide.md 类型A结构扩充，补充 BufferQueue 在 PIP 模式下的行为变化、帧率影响"
+      },
+      {
+        "type": "需补充素材",
+        "location": "全文 Perfetto Trace 描述",
+        "detail": "除末尾一张表外，缺少 Perfetto Trace 截图描述或文字标注，无法指导读者实际操作",
+        "suggestion": "在 Trace 定位节补充具体 slice 名称、track 名称和截图占位"
+      },
+      {
+        "type": "需补充素材",
+        "location": "BLAST Sync 解决方案",
+        "detail": "缺少 AOSP 源码路径（BLASTBufferQueue.java 等），无法验证",
+        "suggestion": "补充 android-12+ BLASTBufferQueue 相关源码路径和关键函数"
+      },
+      {
+        "type": "需补充素材",
+        "location": "版本演进",
+        "detail": "PIP 从 Android 8.0 引入到 16 的变化、BLAST 从 12 引入的变化缺少梳理",
+        "suggestion": "补充版本演进小节或表格"
+      }
+    ],
+    "added_by": "task6-review",
+    "added_at": "2026-04-18T07:24:41",
+    "status": "pending",
+    "original_review_log": "logs/review/2026-04-18-07-review.md"
   }
 ]
