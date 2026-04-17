@@ -1,16 +1,16 @@
 {
-  "generated_at": "2026-04-18T03:45:00+08:00",
+  "generated_at": "2026-04-18T04:01:17.099279+08:00",
   "state_machine_version": "v2",
   "total_sections": 207,
   "metrics": {
     "total": 213,
     "unknown": 36,
     "ready-for-review": 177,
-    "last_updated": "2026-04-18T03:45:00+08:00",
+    "last_updated": "2026-04-18T04:01:17.099279+08:00",
     "task2b_state_counts": {
       "unknown": 35,
-      "fixed": 83,
-      "pending": 20,
+      "fixed": 84,
+      "pending": 19,
       "idle": 75
     },
     "task6_state_counts": {
@@ -21,13 +21,13 @@
     },
     "task9_state_counts": {
       "unknown": 34,
-      "pending": 161,
-      "reviewed": 18
+      "pending": 162,
+      "reviewed": 17
     },
     "pipeline_stage_counts": {
       "unknown": 32,
-      "task6_pending": 144,
-      "task2b_pending": 20,
+      "task6_pending": 145,
+      "task2b_pending": 19,
       "task9_pending": 17
     },
     "total_sections": 213,
@@ -50,14 +50,14 @@
   "pipeline": {
     "pipeline_stage_counts": {
       "unknown": 32,
-      "task6_pending": 144,
-      "task2b_pending": 20,
+      "task6_pending": 145,
+      "task2b_pending": 19,
       "task9_pending": 17
     },
     "task2b_state_counts": {
       "unknown": 35,
-      "fixed": 83,
-      "pending": 20,
+      "fixed": 84,
+      "pending": 19,
       "idle": 75
     },
     "task6_state_counts": {
@@ -68,8 +68,8 @@
     },
     "task9_state_counts": {
       "unknown": 34,
-      "pending": 161,
-      "reviewed": 18
+      "pending": 162,
+      "reviewed": 17
     }
   },
   "issues": {
@@ -2149,12 +2149,15 @@
       "title": "SurfaceControl API 深入",
       "path": "src/part2-performance/ch18-rendering-pipelines/10-surface-control-api.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
+      "pipeline_stage": "task6_pending",
       "task6_state": "revisiting",
-      "task9_state": "reviewed",
-      "task2b_state": "pending",
-      "task9_result": "needs-rework",
-      "last_task9_at": "2026-04-18T03:45:00+08:00"
+      "task9_state": "pending",
+      "task2b_state": "fixed",
+      "task9_result": "reworked",
+      "last_task9_at": "2026-04-18T03:45:00+08:00",
+      "task2b_result": "fixed",
+      "reviewed_by": "openclaw-task6",
+      "reviewed_date": "2026-04-17"
     },
     "src/part2-performance/ch18-rendering-pipelines/11-angle-gles-vulkan.md": {
       "chapter": "18.11",
@@ -2994,11 +2997,11 @@
     "total_sections": 213,
     "by_pipeline_stage": {
       "unknown": 32,
-      "task6_pending": 144,
-      "task2b_pending": 20,
+      "task6_pending": 145,
+      "task2b_pending": 19,
       "task9_pending": 17
     },
-    "last_updated": "2026-04-18T01:20:00",
+    "last_updated": "2026-04-18T04:01:17.099279+08:00",
     "total_reviewed": 18
   },
   "4.6": {
@@ -3011,7 +3014,7 @@
       "major_issues": 1
     }
   },
-  "last_updated": "2026-04-18T01:20:00",
+  "last_updated": "2026-04-18T04:01:17.099279+08:00",
   "rework_log": [
     {
       "date": "2026-04-15T19:44:09.836904",
@@ -3111,6 +3114,21 @@
       ],
       "verification": "禁用词扫描=0，交叉引用链接=ok",
       "queue_status": "completed"
+    },
+    {
+      "date": "2026-04-18T04:01:17.099279+08:00",
+      "section": "18.10",
+      "section_title": "SurfaceControl API 深入",
+      "source": "task9-deep-tech-review",
+      "priority": 95,
+      "fixes": [
+        "源码错误：事务示例删除不存在的 setSize/setAlpha，改为 setCrop + setPosition + setScale + setBufferAlpha，并标注 API 29/31",
+        "源码错误：Color Layer 示例按 setColor(transaction, sc, r, g, b, alpha, dataspace) 重写",
+        "版本差异：FrameTimeline 小节改为 Android 13+ NDK 用法；补 AChoreographer callbackData / preferred timeline / desiredPresentTime 关系",
+        "版本差异：setBufferWithRelease 标注为 API 36，并补 Android 10-15 的 buffer 复用处理方式"
+      ],
+      "verification": "AOSP headers: surface_control.h + choreographer.h；新增段落禁用词扫描=0",
+      "queue_status": "completed"
     }
   ],
   "reviews": [
@@ -3200,9 +3218,17 @@
       "source": "task6-review",
       "issues_fixed": 3,
       "status": "completed"
+    },
+    {
+      "section": "18.10",
+      "section_title": "SurfaceControl API 深入",
+      "date": "2026-04-18T04:01:17.099279+08:00",
+      "by": "task2b-rework",
+      "source": "task9-deep-tech-review",
+      "issues_fixed": 4
     }
   ],
-  "last_task2b_run": "2026-04-18T00:54:26.823035+08:00",
+  "last_task2b_run": "2026-04-18T04:01:17.099279+08:00",
   "task2b_fixed": 2,
   "17.1": {
     "task6_review_date": "2026-04-16",
@@ -3217,8 +3243,8 @@
     "task6_state": "reviewed",
     "task9_state": "pending"
   },
-  "task2b_last_run": "2026-04-17T01:43:47.889454+00:00",
-  "task2b_last_result": "no-rework-tasks",
+  "task2b_last_run": "2026-04-18T04:01:17.099279+08:00",
+  "task2b_last_result": "fixed",
   "task2b_task8_processed": 3,
   "task2b_note": "All task6/task9 items completed. Processed 3 task8 fallback items (all skipped: 1 not relevant, 2 URL blocked).",
   "15.5": {
@@ -3270,7 +3296,7 @@
   "total_chapters": 0,
   "reviewed_count": 1,
   "last_review": "2026-04-17",
-  "last_task2b_section": "15.7",
+  "last_task2b_section": "18.10",
   "1.10": {
     "section": "1.10",
     "title": "ContentProvider 性能与优化",
