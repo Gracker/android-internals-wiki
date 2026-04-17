@@ -23,8 +23,11 @@ sources:
     path: "perfetto.dev/docs/instrumentation/tracing-sdk"
 tags: [monitoring, APM, FrameMetrics, JankStats, ANR, startup, production]
 related_chapters: ["7.3", "9.3", "14.1", "14.6", "15.4"]
-pipeline_stage: task6_pending
-task6_state: pending
+pipeline_stage: task9_pending
+task6_state: reviewed
+reviewed_by: openclaw-task6
+reviewed_date: "2026-04-17"
+task6_result: pass-light-edit
 task9_state: pending
 task2b_state: idle
 ---
@@ -60,7 +63,7 @@ task2b_state: idle
 
 我们在第 7 章讲卡顿分析、第 9 章讲 ANR 分析时，讨论的都是"拿到了 Trace 怎么看"。那些分析工作有一个共同的前提：你得先知道出了问题。在开发阶段，我们靠 Systrace/Perfetto 手动抓 Trace、靠 StrictMode 拦截主线程 IO、靠开发者选项里的 GPU 呈现模式分析来发现异常。但这些手段都有一个根本性的局限：**它们只能覆盖开发者在实验室里主动测试的场景。**
 
-真实用户面对的情况远比测试环境复杂。不同 SoC 平台（高通、联发科、三星）的 GPU 驱动行为有差异；不同内存配置（4GB vs 12GB）下的后台压力不同；不同网络条件（弱网切换、VPN 链路）对数据加载的影响各异；不同 Android 版本（厂商 ROM 定制层）的系统调度策略也有出入。一个在 Pixel 上完全流畅的列表滚动，在某款低端机上可能频繁掉帧；一个在 WiFi 下秒开的页面，在 4G 弱信号下可能要等 3 秒。这些问题如果不在线上采集数据，开发者根本无从知晓。
+真实用户面对的情况远比测试环境复杂。不同 SoC 平台（高通、联发科、三星）的 GPU 驱动行为有差异；不同内存配置（4GB vs 12GB）下的后台压力不同；不同网络条件（弱网切换、VPN 连接）对数据加载的影响各异；不同 Android 版本（厂商 ROM 定制层）的系统调度策略也有出入。一个在 Pixel 上完全流畅的列表滚动，在某款低端机上可能频繁掉帧；一个在 WiFi 下秒开的页面，在 4G 弱信号下可能要等 3 秒。这些问题如果不在线上采集数据，开发者根本无从知晓。
 
 线上性能监控要解决的核心问题就三个：**感知**（知道出了问题）、**定位**（知道问题在哪）、**量化**（知道问题有多严重、影响多少用户）。三者缺一不可——只感知不定位等于废话，只定位不量化等于没有优先级。
 
@@ -124,7 +127,7 @@ Android 7.0（API 24）引入的 `FrameMetrics` API 解决了"只知道掉帧、
 
 [已验证: 官方文档, developer.android.com/reference/android/view/FrameMetrics]
 
-有了这些数据，我们就能区分"掉帧是因为布局太复杂"、"是因为 GPU 渲染太慢"、还是"是因为主线程消息队列堵塞"。这在归因分析中是至关重要的——没有拆解，性能优化就是盲人摸象。
+有了这些拆解数据，才能区分掉帧是因为布局太复杂、GPU 渲染太慢、还是主线程消息队列堵塞——没有这个粒度的拆解，性能优化就是盲人摸象。
 
 从 API 31 开始，FrameMetrics 还新增了 `DEADLINE` 指标，直接告诉你这一帧的 deadline 是多少（取决于当前屏幕刷新率）。有了 deadline，判断掉帧就不再需要硬编码 16ms，而是直接比较 `TOTAL_DURATION` 和 `DEADLINE`：
 
@@ -150,11 +153,11 @@ FrameMetrics 的数据通过 `Window.OnFrameMetricsAvailableListener` 回调获�
 
 ### JankStats：Google 官方的帧率监控库
 
-2022 年 Google 发布了 `JankStats` 库（AndroidX），它本质上是 FrameMetrics 的上层封装，解决了直接使用 FrameMetrics 时的几个工程痛点。
+2022 年 Google 发布了 `JankStats` 库（AndroidX），它是 FrameMetrics 的上层封装，解决了直接使用 FrameMetrics 时的几个工程问题。
 
-第一个痛点是**版本兼容**。FrameMetrics 从 API 24 才有，JankStats 在低版本上回退到 `ViewTreeObserver.OnPreDrawListener` 来近似监测帧率，对开发者屏蔽了版本差异。
+第一个问题是**版本兼容**。FrameMetrics 从 API 24 才有，JankStats 在低版本上回退到 `ViewTreeObserver.OnPreDrawListener` 来近似监测帧率，对开发者屏蔽了版本差异。
 
-第二个痛点是**UI 状态关联**。JankStats 提供了 `PerformanceMetricsState` API，允许你在代码中标记当前的 UI 状态（比如"正在滚动首页列表"、"详情页加载中"）。这样当掉帧事件上报时，就能直接知道"用户在做什么的时候掉帧了"。这个信息对于分析问题的复现路径至关重要。
+第二个问题是**UI 状态关联**。JankStats 提供了 `PerformanceMetricsState` API，允许你在代码中标记当前的 UI 状态（比如"正在滚动首页列表"、"详情页加载中"）。这样当掉帧事件上报时，就能直接知道"用户在做什么的时候掉帧了"。这是定位和复现掉帧问题的前提。
 
 ```java
 performanceMetricsState.putState("navigation", "HomeFragment");
@@ -163,7 +166,7 @@ performanceMetricsState.putState("user_action", "scrolling_feed");
 
 [已验证: 官方文档, developer.android.com/jetpack/androidx/releases/jankstats]
 
-第三个痛点是**掉帧判定策略的可配置性**。JankStats 默认将超过刷新率 2 倍的帧判定为"jank"，但你可以自定义阈值来适应不同的性能目标。
+第三个问题是**掉帧判定策略的可配置性**。JankStats 默认将超过刷新率 2 倍的帧判定为"jank"，但你可以自定义阈值来适应不同的性能目标。
 
 在实际项目中，如果你的 App 最低支持 API 24+，直接使用 FrameMetrics 就够用了；如果需要覆盖更低的版本，或者想要 UI 状态关联和开箱即用的掉帧判定逻辑，JankStats 是更省心的选择。
 
@@ -185,7 +188,7 @@ Android 把 App 启动分为三种类型，线上监控需要分别度量：
 
 启动监控中有两个核心指标：
 
-**TTID（Time To Initial Display）**：从 App 启动到第一帧渲染完成的时间。它反映的是"用户看到画面需要等多久"。系统会在 logcat 中输出 `Displayed` 日志记录这个时间，你也可以通过 `adb shell am start -W` 命令获取。但 TTID 有一个陷阱：第一帧可能是一个空白 loading 页面或闪屏，用户虽然"看到了东西"，但 App 实际上还不能交互。
+**TTID（Time To Initial Display）**：从 App 启动到第一帧渲染完成的时间。它反映的是"用户看到画面需要等多久"。系统会在 logcat 中输出 `Displayed` 日志记录这个时间，你也可以通过 `adb shell am start -W` 命令获取。但 TTID 有一个陷阱：第一帧可能是一个空白 loading 页面或闪屏，用户虽然"看到了东西"，但 App 还不能交互。
 
 **TTFD（Time To Full Display）**：从 App 启动到内容完全加载并可交互的时间。它反映的是"用户真正能开始使用需要等多久"。这个指标需要开发者自己定义"完全可交互"的时机，并通过调用 `Activity.reportFullyDrawn()` 来标记。
 
@@ -294,7 +297,7 @@ for (ApplicationExitInfo info : exitInfos) {
 
 **第一层：全量采集基础指标（低开销）**。每个用户会话都采集聚合数据：会话总帧数、掉帧总数、冷启动 TTID/TTFD、ANR 次数、崩溃次数。这些数据量很小（每次会话几十字节），但对建立性能基线至关重要。它能回答"我们的 App 整体性能怎么样"这个问题。
 
-**第二层：采样采集详细数据（中等开销）**。对一部分用户（通常 5%-10%）启用详细帧率监控（FrameMetrics 拆解数据）和启动子阶段埋点。采样比例可以根据用户量动态调整——日活 100 万的 App 采 5% 就够了，日活 1 万的 App 可能需要采 50% 才能获得统计意义。关键是要保证采样是随机的，不能只采高端设备。
+**第二层：采样采集详细数据（中等开销）**。对一部分用户（通常 5%-10%）启用详细帧率监控（FrameMetrics 拆解数据）和启动子阶段埋点。采样比例可以根据用户量动态调整——日活 100 万的 App 采 5% 就够了，日活 1 万的 App 可能需要采 50% 才能获得统计意义。要保证采样是随机的，不能只采高端设备。
 
 **第三层：定向全量采集（高开销）**。对于异常会话（发生 ANR、崩溃、或启动超过阈值），不受采样比例限制，全量采集所有数据。这是"发现问题"的关键——你不需要所有用户的详细数据，但你绝对需要出问题的那些用户的详细数据。
 
@@ -333,7 +336,7 @@ Perfetto SDK 的核心概念是 **Track Event**：你可以用 `TRACE_EVENT` 宏
 
 [已验证: 官方文档, perfetto.dev/docs/instrumentation/tracing-sdk]
 
-需要注意的是，Perfetto SDK 主要面向 C/C++ 代码。对于纯 Java/Kotlin 的 Android App，直接使用 FrameMetrics + JankStats + 自定义埋点通常更实用。Perfetto SDK 更适合有 Native 层的 App（比如游戏引擎、音视频处理、大厂的跨平台框架）。
+Perfetto SDK 主要面向 C/C++ 代码。对于纯 Java/Kotlin 的 Android App，直接使用 FrameMetrics + JankStats + 自定义埋点通常更实用。Perfetto SDK 更适合有 Native 层的 App（比如游戏引擎、音视频处理、大厂的跨平台框架）。
 
 ## 扩展：监控数据的可视化与归因分析平台
 
