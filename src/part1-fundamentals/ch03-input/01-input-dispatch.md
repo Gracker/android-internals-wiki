@@ -345,6 +345,91 @@ if (actionMasked == MotionEvent.ACTION_DOWN || mFirstTouchTarget != null) {
 
 > [已验证: AOSP android-14.0.0_r1, frameworks/base/core/java/android/view/ViewGroup.java]
 
+<!-- AIW-源码调研-2026-04-17 -->
+
+## Stale Event 丢弃机制（Android 12+）
+
+在 Android 12 中引入的 `InputDispatcher` stale event 丢弃机制是一个重要的系统级优化，用于处理后台应用恢复时的事件积压问题。当 App 长时间未处理输入事件时，系统会主动丢弃超过 10 秒未处理的事件，避免性能问题和 ANR。
+
+### 核心机制
+
+**STALE_EVENT_TIMEOUT 常量定义**
+- **源码位置**：`frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp`
+- **关键函数**：`isStale()` 检查逻辑
+- **调用链**：事件入队 → `dispatchOnce()` 检查 → `isStale()` 判断 → 丢弃处理
+
+```cpp
+// 常量定义
+constexpr std::chrono::nanoseconds STALE_EVENT_TIMEOUT = std::chrono::seconds(10) * HwTimeoutMultiplier();
+
+// isStale() 检查逻辑
+bool InputDispatcher::isStale(nsecs_t currentTime, const DispatchEntry* entry) {
+    return currentTime - entry->eventTime >= STALE_EVENT_TIMEOUT;
+}
+
+// dispatchOnce() 中的事件丢弃处理
+void InputDispatcher::dispatchOnce() {
+    nsecs_t currentTime = systemTime(SYSTEM_TIME_MONOTONIC);
+    
+    while (mInboundQueue.hasEvent()) {
+        DispatchEntry* entry = mInboundQueue.peekEvent();
+        
+        // 检查事件是否为 stale
+        if (isStale(currentTime, entry)) {
+            ALOGW("Dropped event because it is stale");
+            dropInboundConnection(currentTime, entry->connection);
+            mInboundQueue.removeEvent();
+            continue;
+        }
+        // ... 正常事件分发逻辑
+    }
+}
+```
+
+### 与 ANR 检测的协同工作
+
+Stale event 丢弃机制与传统的 ANR 检测机制并行运行：
+
+- **Stale event 丢弃**：事件时间超过 10 秒（`STALE_EVENT_TIMEOUT`），直接丢弃不触发 ANR
+- **ANR 检测**：事件超时时间（`timeoutTime`）到达，通常基于 5 秒 ANR 超时，触发 ANR
+
+### Perfetto 中的表现
+
+在 Perfetto 的 `android.input` Track 中，stale event 丢弃表现为：
+- `waitQueue` 计数突然归零（事件被批量移除）
+- 不会出现传统的 ANR Slice
+- 适合与 ANR 检测的 Track 对比分析
+
+### 性能影响
+
+**正面效果**：
+- 防止后台应用恢复时的事件积压
+- 减少系统负载和 ANR 风险
+- 提高整体系统响应性
+
+**用户感知**：
+- 可能导致后台切换后某些触摸事件丢失
+- 特别影响"切换后台后立即操作"的用户体验
+
+### 版本差异
+
+- **Android 12+**：首次引入 `isStale()` 机制
+- **Android 14+**：引入硬件超时乘数 `HwTimeoutMultiplier()`
+- **Android 16+**：增强 `AnrTracker` 性能，优化超时检测效率
+
+### 调试技巧
+
+在 Perfetto 中识别 stale event 丢弃：
+1. 观察 `wq:{windowName}` 计数突然归零
+2. 检查 `iq` 计数是否同时减少
+3. 确认没有 ANR Slice 出现
+4. 查看 logcat 中的 "Dropped event because it is stale" 消息
+
+这个机制解释了"为什么后台切换回来时有些触摸事件丢失"的现象，是理解现代 Android 输入系统行为的重要补充。
+
+<!-- AIW-源码调研-2026-04-17 -->
+
+
 ## ANR 超时机制：为什么是 5 秒
 
 Input ANR 的触发机制可以类比为一个"定时炸弹"：发送事件时埋下炸弹，收到 App 的 FINISHED 回调时拆除炸弹，5 秒没拆除就引爆。

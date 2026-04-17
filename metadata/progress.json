@@ -3172,5 +3172,16 @@
       "b_class_issues": 3,
       "anchors_covered": "7/7"
     }
-  }
+  },
+  "rework_completed": [
+    {
+      "date": "2026-04-17T13:48:07",
+      "sections": [
+        "1.7",
+        "15.6"
+      ],
+      "issues_fixed": 9,
+      "by": "task2b-rework"
+    }
+  ]
 }
