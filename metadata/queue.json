@@ -843,7 +843,10 @@
     ],
     "added_by": "task8-classifier",
     "added_at": "2026-04-17T05:32:35.177455",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-17T13:50:19",
+    "completed_by": "task2b-rework",
+    "completion_reason": "URL 不可访问（网络策略拦截），跳过"
   },
   {
     "section": "ch17-oem",
@@ -863,7 +866,10 @@
     ],
     "added_by": "task8-classifier",
     "added_at": "2026-04-17T05:32:35.177461",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-17T13:50:19",
+    "completed_by": "task2b-rework",
+    "completion_reason": "URL 不可访问（网络策略拦截），跳过"
   },
   {
     "section": "ch16-aosp",
@@ -883,7 +889,10 @@
     ],
     "added_by": "task8-classifier",
     "added_at": "2026-04-17T05:32:35.177466",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-17T13:50:19",
+    "completed_by": "task2b-rework",
+    "completion_reason": "URL 不可访问（网络策略拦截），跳过"
   },
   {
     "section": "ch14-other-tools",
@@ -903,7 +912,10 @@
     ],
     "added_by": "task8-classifier",
     "added_at": "2026-04-17T05:32:35.177470",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-17T13:50:19",
+    "completed_by": "task2b-rework",
+    "completion_reason": "URL 不可访问（网络策略拦截），跳过"
   },
   {
     "section": "ch17-oem",
@@ -923,7 +935,10 @@
     ],
     "added_by": "task8-classifier",
     "added_at": "2026-04-17T05:32:35.177474",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-17T13:50:19",
+    "completed_by": "task2b-rework",
+    "completion_reason": "URL 不可访问（网络策略拦截），跳过"
   },
   {
     "section": "ch17-oem",
@@ -966,7 +981,10 @@
     ],
     "added_by": "task8-classifier",
     "added_at": "2026-04-17T05:32:35.177482",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-17T13:50:19",
+    "completed_by": "task2b-rework",
+    "completion_reason": "URL 不可访问（网络策略拦截），跳过"
   },
   {
     "section": "ch17-oem",
@@ -1009,7 +1027,10 @@
     ],
     "added_by": "task8-classifier",
     "added_at": "2026-04-17T05:32:35.177488",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-17T13:50:19",
+    "completed_by": "task2b-rework",
+    "completion_reason": "URL 不可访问（网络策略拦截），跳过"
   },
   {
     "section": "18.5",
