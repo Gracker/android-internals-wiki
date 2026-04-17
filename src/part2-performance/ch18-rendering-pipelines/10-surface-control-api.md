@@ -7,13 +7,14 @@ tags: ["SurfaceControl", "ASurfaceControl", "ASurfaceTransaction", "NDK", "layer
 related_chapters: ["2.6", "2.13", "2.16", "18.2", "18.6", "18.9", "18.13"]
 created_by: "rendering-pipelines-merge"
 created_date: "2026-04-09"
-pipeline_stage: task6_pending
+pipeline_stage: task2b_pending
 task6_state: revisiting
-task9_state: pending
-task2b_state: fixed
-task2b_result: fixed
+task9_state: reviewed
+task2b_state: pending
 reviewed_by: openclaw-task6
 reviewed_date: 2026-04-17
+last_task9_at: "2026-04-18T03:45:00+08:00"
+task9_result: needs-rework
 task6_result: needs-rework
 ---
 

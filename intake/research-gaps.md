@@ -692,3 +692,20 @@ HTTP/3 / Cronet 的 Android 落地矩阵缺失。当前章节只把 HTTP/3 描�
 - 10.3 内存持续增长
 - 13.1 Perfetto 简介与演进
 - 14.4 dumpsys 系列命令
+
+## [2026-04-18] 18.10 SurfaceControl API 深入 — 知识盲区
+
+### 盲区描述
+SurfaceControl NDK 的 FrameTimeline 小节缺少“如何从 AChoreographerFrameCallbackData 的多条 candidate timelines 中选择 vsyncId”的关键解释，也没有说明 ASurfaceTransaction_setDesiredPresentTime() 与 ASurfaceTransaction_setFrameTimeline() 的配合关系。读者容易把 vsyncId 误解为单一回调值，无法建立稳定的帧节拍选择模型。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 核对 AChoreographer_postVsyncCallback() / AChoreographerFrameCallbackData_* 系列 NDK 文档和示例
+- 梳理 callbackData 中 frame timeline count、deadline、expectedPresentTime、preferred timeline 的选择规则
+- 补一段“desiredPresentTime + setFrameTimeline”的最小可运行范例，并说明 Android 12 与 Android 13+ 的 NDK 能力边界
+
+### 关联章节
+18.10, 18.2, 2.9
+

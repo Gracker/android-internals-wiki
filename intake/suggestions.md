@@ -1336,3 +1336,9 @@
 - **建议**：参考 writing-guide.md 类型A（机制原理篇）模板，将列表式内容转为叙述体，补充 Trace 分析方法和版本演进
 - **review 日志**：logs/review/2026-04-18-03-review.md
 
+## [Task9 Deep Review] 18.10 SurfaceControl API 深入 — 2026-04-18
+- **类型**：数据缺失
+- **位置**：§18.10.5 Layer 数量与性能 + §18.10.8 实战场景
+- **问题**：关于“HWC overlay 名额通常只有少数几个”“WebView 独立 SurfaceControl 后宿主 RenderThread 会明显减负”等判断都停留在经验描述，没有给出至少一组 Perfetto / dumpsys SurfaceFlinger 的真实观察样本。读者知道方向，但拿不到可验证的基线。
+- **建议**：补一组最小证据链，至少包含 child layer 树、setTransactionState/latchBuffer 观察点，以及宿主 RenderThread 前后对比或 HWC/GPU 合成变化。
+
