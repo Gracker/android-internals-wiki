@@ -34,10 +34,11 @@ related_chapters:
 - '12.1'
 - '6.1'
 - '8.1'
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: pending
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
+task2b_state: fixed
+task2b_result: fixed
 task9_result: needs-rework
 ---
 
@@ -111,7 +112,7 @@ DNS 查询 → TCP 连接 → TLS 握手 → 发送请求头 → 发送请求体
 
 ### HTTP/2：多路复用解决了 HTTP/1.1 的队头阻塞
 
-HTTP/1.1 时代，浏览器（和 HTTP 客户端）对同一域名的并发请求有数量限制（通常 6 个）。超过限制的请求需要排队等待，这就是著名的"队头阻塞"（Head-of-Line Blocking）。移动端 App 通常会为每个域名维护一个连接池来缓解这个问题，但根本性的限制依然存在。
+HTTP/1.1 时代，浏览器通常会对同一域名的并发连接数做策略性限制，常见值是 6 左右。这个经验值来自浏览器实现，不是 HTTP/1.1 协议写死的上限。Android App 侧用 OkHttp 时，并发行为主要受 `Dispatcher`、`ConnectionPool` 和协议协商结果影响。以异步请求为例，OkHttp 默认用 `Dispatcher.maxRequestsPerHost()` 控制同一 host 的并发上限，默认值是 5；如果已经协商到 HTTP/2，同一连接上的多个 stream 又会改变排队方式。
 
 HTTP/2 通过**多路复用**（Multiplexing）解决了这个问题。在 HTTP/2 下，一个 TCP 连接可以同时承载多个请求和响应，每个请求被分配一个独立的 Stream ID，数据被拆分为 Frame 在同一连接上交错传输。此外，HTTP/2 引入了 **HPACK 头部压缩**，减少了重复 Header 的传输开销。
 
@@ -133,12 +134,11 @@ HTTP/3 使用 QUIC 作为传输层协议，而 QUIC 基于 UDP 实现。这个�
 
 ### 在 Android 上的选择
 
-在 Android 开发中，协议选择受到库生态的制约。OkHttp 默认支持 HTTP/2，这是大多数 App 的默认选择。要使用 HTTP/3，需要引入 Google 的 Cronet 库（或 Chromium 网络栈的封装），这会增加 APK 体积约 1-2MB。
+在 Android 开发中，接入 HTTP/3 前要先选 Cronet 的 provider 形态。对有 GMS 的设备，`Cronet by Play Services` 是默认优先项，App 侧引入的是一层很薄的 Java 依赖，APK 增量通常是几十 KB，Cronet 内核跟随 Google Play services 更新。对无 GMS 设备，或者业务要求固定 Cronet 版本、离线也必须可用的产品，常见做法是打包 standalone 或 bundled provider，这时成本会变成数 MB 级的 native 库体积，以及随 APK 一起发布和回滚的运维成本。
 
-实际建议是：**HTTP/2 作为基线，在高丢包、频繁网络切换的场景考虑 HTTP/3**。如果 App 的用户群体中有大量移动网络用户，且对首屏加载时间敏感（如信息流、电商），HTTP/3 带来的收益是值得额外引入 Cronet 的。
+因此，“引入 Cronet 会让 APK 增加 1-2MB”不是通用结论。体积、更新路径和可用性要分开看。GMS 设备更看重 provider 是否已经安装、版本是否满足要求；非 GMS 设备更看重包体积、ABI 覆盖和发布节奏。生产实践里通常会先探测 Play Services provider，可用时优先走 Cronet；探测失败时回退到 bundled Cronet 或 OkHttp/HTTP/2。这样才能把性能收益、包体积和设备覆盖率放在同一个决策框架里。
 
-[已验证: 官方文档, square.github.io/okhttp — HTTP/2 default since 4.x]
-[待验证: OkHttp 5.x 对 HTTP/3 的支持计划]
+[已验证: Android Developers Cronet 文档 / Google Play services CronetProviderInstaller]
 
 ## 网络请求优化：连接复用、请求合并与预连接
 
@@ -189,35 +189,42 @@ OkHttp 默认的 ConnectionPool 配置是：最多 5 个空闲连接，每个连
 
 ### 预连接：在需要之前就准备好
 
-预连接（Preconnect）的思路是：在用户即将发起网络请求之前，提前完成 DNS 解析和 TCP/TLS 连接建立。当真正的请求到来时，直接复用已建立的连接，DNS 和连接时间接近于零。
+预连接（Preconnect）的目标可以分成三层。第一层是 DNS 预解析，只把域名解析成 IP，减少后续请求的 lookup 开销。第二层是预热 TCP + TLS，让真实请求直接复用已经握手完成的连接。第三层是预热 HTTP/2 或 HTTP/3 会话，让首个业务请求尽量避开 stream 建立、控制帧交换或 QUIC 会话恢复的冷启动成本。三层目标对应的收益和约束不同，设计时要分开看。
 
-典型的使用场景是：App 启动时预连接后端 API 域名，或用户进入某个功能页面前预连接该功能的数据域名。实现方式很简单——发起一个 HEAD 请求或空 GET 请求即可触发连接建立。
+工程上常见的做法是用 HEAD 或 no-op GET 主动触发连接建立，但它只是 warmup 手段，不是语义保证。HEAD 仍可能命中业务逻辑、鉴权流程、缓存统计或 WAF。后续请求能否复用这条连接，还取决于是否命中同一个 authority（scheme + host + port）、证书与 SNI 是否匹配、ALPN 是否协商到同一协议，以及 HTTP/2 connection coalescing 或 HTTP/3 session reuse 条件是否成立。
+
+更稳妥的做法是为预热准备一个 no-op endpoint，例如 `/generate_204`、`/healthz` 或专门的 warmup path，并把失败视为可静默回退的优化，不要把它做成功能前提。
 
 ```java
-// 预连接示例：App 启动时调用
-public class PreconnectManager {
+public final class PreconnectManager {
     private final OkHttpClient client;
 
-    public void preconnect(String url) {
+    public PreconnectManager(OkHttpClient client) {
+        this.client = client;
+    }
+
+    public void warmUp(String url) {
         Request request = new Request.Builder()
-            .url(url)
-            .head() // HEAD 请求不下载 body，开销最小
+            .url(url) // 建议指向 no-op endpoint，且与真实请求同 authority
+            .head()
             .build();
+
         client.newCall(request).enqueue(new Callback() {
             @Override public void onFailure(Call call, IOException e) {
-                // 预连接失败不影响业务，静默处理
+                // 预热失败时静默回退，真实请求仍按正常路径发起
             }
+
             @Override public void onResponse(Call call, Response response) {
-                response.close(); // 只需要建立连接，不关心响应内容
+                response.close();
             }
         });
     }
 }
 ```
 
-OkHttp 5.x 还引入了 `ConnectionPool.setPolicy()` API，允许为特定地址配置最小连接池大小，进一步系统化了预连接能力。不过截至 OkHttp 4.12.x 稳定版，手动触发 HEAD 请求仍然是最实用的方案。
+如果业务要覆盖 HTTP/3，还要额外验证 QUIC provider 是否可用、会话恢复是否命中，以及网络切换后连接迁移是否稳定。App 启动阶段不要为了“预连接”再额外制造一条关键路径，弱网下 warmup 本身也可能拖慢首屏。
 
-[待验证: OkHttp 5.0 ConnectionPool.setPolicy API 在稳定版中的可用性]
+[已验证: OkHttp 连接复用文档 / Cronet 官方说明]
 
 ## 弱网优化策略：超时、重试与降级
 
@@ -270,7 +277,7 @@ OkHttp 本身有一定的内置重试逻辑（`RetryOnConnectionFailure` 默认�
 
 降级策略是指在网络极差或完全不可用时，App 仍然能提供基本功能。核心思路有两个：
 
-**本地缓存**：OkHttp 内置 HTTP 缓存机制，只要服务端返回了合适的 Cache-Control 头，OkHttp 会自动缓存响应。在离线或弱网时，可以使用缓存数据（即使已经过期），配合 UI 上的"数据可能不是最新"提示。
+**本地缓存**：OkHttp 默认遵守 HTTP 缓存语义。服务端返回了合适的 `Cache-Control`、`Expires`、`ETag` 等头部后，客户端才会自动复用缓存；缓存过期后，默认行为是重新验证或回源，不会因为当前离线就无条件返回 stale response。离线读缓存通常有三种做法：请求侧显式使用 `CacheControl.FORCE_CACHE`，或 `onlyIfCached()` 配合 `maxStale()` 接受一定范围内的过期数据，或在离线拦截器里主动放宽缓存策略。如果本地没有可用缓存，`FORCE_CACHE` 和 `onlyIfCached()` 会直接返回 504 `Unsatisfiable Request`，不会自动联网。
 
 **功能降级**：对非核心功能，在网络差时主动降级。例如：图片加载从原图降级为缩略图甚至占位符；信息流从图文模式降级为纯文字；视频从高清降级为标清或仅显示封面。
 
@@ -344,55 +351,62 @@ OkHttpClient client = new OkHttpClient.Builder()
 
 ### ConnectivityManager.NetworkCallback：感知网络环境变化
 
-EventListener 解决了"度量单个请求"的问题，但我们还需要知道"当前网络环境好不好"。这是 ConnectivityManager.NetworkCallback 的职责。
+EventListener 解决的是单次请求的拆账问题，NetworkCallback 解决的是当前网络环境发生了什么。但这里至少有四层语义要拆开：有没有网络、有没有经过系统验证的公网访问、系统给出的网络能力估计值、请求实际跑出来的吞吐与时延。把这四层压成一个 `isConnected` 布尔值，后续的重试、降级和预加载策略很容易跑偏。
 
-NetworkCallback 提供了以下核心回调：
+NetworkCallback 提供的几个回调里，语义最容易混淆的是 `onAvailable()` 和 `onCapabilitiesChanged()`：
 
-- `onAvailable(Network)`：网络连接可用。注意这不等于有互联网访问——Wi-Fi 连上了但路由器没联网也会触发。
-- `onLost(Network)`：网络断开。这是触发离线模式、暂停网络请求的信号。
-- `onCapabilitiesChanged(Network, NetworkCapabilities)`：网络能力变化。可以查询下行带宽（`LinkSpeed`）、是否按流量计费（`NET_CAPABILITY_NOT_METERED`）等信息。
-- `onLinkPropertiesChanged(Network, LinkProperties)`：链路属性变化。可以获取 DNS 服务器地址、MTU 等信息。
+- `onAvailable(Network)`：系统拿到了一条可用网络。它说明 transport 已经可用，不说明这条网络一定能访问公网。
+- `onCapabilitiesChanged(Network, NetworkCapabilities)`：网络能力发生变化。在线判定、是否 metered、系统估计的上下行带宽，都应该在这里读取。
+- `onLost(Network)`：当前网络失效，可以触发离线模式或暂停非关键请求。
+- `onLinkPropertiesChanged(Network, LinkProperties)`：DNS、MTU、路由等网络属性变化。
 
-一个常见的最佳实践是：在 Application 层注册 NetworkCallback，维护一个全局的网络状态对象（当前是否在线、网络类型、预估带宽），供所有网络请求和 UI 层使用。
+在 Application 层维护全局网络状态时，`onAvailable()` 适合记录“有网络对象出现了”，真正的“在线”判定要放到 `onCapabilitiesChanged()`，同时检查 `NET_CAPABILITY_INTERNET` 和 `NET_CAPABILITY_VALIDATED`。`getLinkDownstreamBandwidthKbps()` 也只能当系统估计值，用来做粗粒度分档，不能把它当成真实吞吐。
 
 ```java
-public class NetworkMonitor {
+public final class NetworkMonitor {
     private final ConnectivityManager cm;
-    private boolean isConnected = false;
-    private int downstreamBandwidthKbps = 0; // 预估下行带宽
+    private volatile boolean hasValidatedInternet = false;
+    private volatile int estimatedDownstreamKbps = 0;
 
-    private final NetworkCallback callback = new NetworkCallback() {
+    public NetworkMonitor(Context context) {
+        cm = context.getSystemService(ConnectivityManager.class);
+    }
+
+    private final ConnectivityManager.NetworkCallback callback =
+            new ConnectivityManager.NetworkCallback() {
         @Override
         public void onAvailable(Network network) {
-            isConnected = true;
+            // 这里只表示网络可用，先不要宣布“已经联网”
+        }
+
+        @Override
+        public void onCapabilitiesChanged(
+                Network network, NetworkCapabilities caps) {
+            boolean internet = caps.hasCapability(
+                    NetworkCapabilities.NET_CAPABILITY_INTERNET);
+            boolean validated = caps.hasCapability(
+                    NetworkCapabilities.NET_CAPABILITY_VALIDATED);
+            hasValidatedInternet = internet && validated;
+            estimatedDownstreamKbps =
+                    caps.getLinkDownstreamBandwidthKbps();
         }
 
         @Override
         public void onLost(Network network) {
-            isConnected = false;
-            downstreamBandwidthKbps = 0;
-        }
-
-        @Override
-        public void onCapabilitiesChanged(Network network,
-                NetworkCapabilities caps) {
-            downstreamBandwidthKbps = caps.getLinkDownstreamBandwidthKbps();
+            hasValidatedInternet = false;
+            estimatedDownstreamKbps = 0;
         }
     };
 
-    public void start(Context context) {
-        cm = context.getSystemService(ConnectivityManager.class);
-        NetworkRequest request = new NetworkRequest.Builder()
-            .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
-            .build();
-        cm.registerNetworkCallback(request, callback);
+    public void start() {
+        cm.registerDefaultNetworkCallback(callback);
     }
 }
 ```
 
-[已验证: 官方文档, developer.android.com/reference/android/net/ConnectivityManager]
+这段代码给的是策略输入，不是最终网络质量结论。网络是否真的“快”，还要结合 EventListener 里的 DNS、connect、TTFB 和响应体传输时间一起看。`NET_CAPABILITY_VALIDATED` 为 true 只能说明系统探测到这条网络能访问公网；`getLinkDownstreamBandwidthKbps()` 很高，也不代表当前请求就一定能跑到这个速率。
 
-NetworkCallback 的信息可以用来驱动网络策略的自适应调整：带宽高时预加载高清图片；带宽低时只加载缩略图；完全离线时切换到本地缓存。结合 EventListener 的指标数据，可以构建一个"感知→度量→调整"的自适应循环。
+[已验证: Android ConnectivityManager / NetworkCapabilities 官方文档]
 
 ## 与其他机制的关系
 
