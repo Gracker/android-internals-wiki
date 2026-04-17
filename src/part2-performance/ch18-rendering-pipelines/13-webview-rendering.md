@@ -7,10 +7,16 @@ tags: ["WebView", "Chromium", "GL-Functor", "SurfaceControl", "SurfaceTexture", 
 related_chapters: ["2.5", "2.6", "7.11", "18.6", "18.7"]
 created_by: "rendering-pipelines-merge"
 created_date: "2026-04-09"
-pipeline_stage: task6_pending
-task6_state: pending
+sources:
+  - AOSP frameworks/base/core/java/android/webkit/WebView.java
+  - Chromium Viz Compositor architecture docs
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task2b_state: idle
+reviewed_by: openclaw-task6
+reviewed_date: 2026-04-18
+task6_result: pass-light-edit
 ---
 
 <!-- outline-start -->
@@ -31,9 +37,9 @@ task2b_state: idle
 
 ## 为什么 WebView 的渲染链路最复杂
 
-WebView 是 Android 上渲染架构最复杂的组件——它内部运行了一个完整的 Chromium 浏览器引擎，拥有自己的多线程渲染管线（Blink 解析、Compositor 合成、Raster Worker 光栅化），但最终又必须嵌入到 Android App 的 View 体系中。
+WebView 是 Android 上渲染架构最复杂的组件——它内部运行了一个完整的 Chromium 浏览器引擎，拥有自己的多线程渲染管线（Blink 解析、Compositor 合成、Raster Worker 光栅化），但最终必须嵌入到 Android App 的 View 体系中。
 
-这种"两个渲染系统的对接"导致了 WebView 存在**至少四种不同的渲染模式**，每种模式的 Producer-Consumer 链路、性能特征、适用场景都不同。你在 Perfetto 中看到 WebView 区域卡顿，如果不先判断它走的是哪条链路，优化方向可能是错的。[已验证: AOSP WebView 实现]
+这种"两个渲染系统的对接"导致了 WebView 存在**四种不同的渲染模式**，每种模式的 Producer-Consumer 链路、性能特征、适用场景都不同。你在 Perfetto 中看到 WebView 区域卡顿，如果不先判断它走的是哪条链路，优化方向可能是错的。[已验证: AOSP WebView 实现]
 
 ## 进程模型概述
 
@@ -105,7 +111,7 @@ sequenceDiagram
 3. **渲染**：底层的 MediaPlayer/MediaCodec 直接向 SurfaceView 的 BufferQueue 生产帧数据。
 4. **合成**：SurfaceFlinger 将视频 Layer 与 App 主窗口叠加。
 
-**性能特征**：等同原生 SurfaceView 视频播放，性能极高。WebView 在这个模式下只负责信令和容器。
+**性能特征**：等同于原生 SurfaceView 视频播放，性能极高。WebView 在这个模式下只负责信令和容器。
 
 ## 模式三：SurfaceControl（现代独立合成）
 
