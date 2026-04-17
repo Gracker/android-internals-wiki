@@ -3,7 +3,6 @@ title: "各 Android 版本性能变更追踪"
 chapter: "16.2"
 status: ready-for-review
 drafted_date: "2026-04-04"
-applicable_versions: "Android 12 (API 31) - Android 16 (API 36)"
 last_verified: "2026-04-04"
 last_verified_against: "developer.android.com behavior-changes + API reference"
 confidence: medium
@@ -29,9 +28,12 @@ sources:
 tags: ['version-changes', 'behavior-changes', 'api-evolution', 'migration', 'performance-api']
 related_chapters: ["1.6", "2.9", "4.6", "5.7", "6.4", "9.2", "13.1", "14.7"]
 pipeline_stage: task6_pending
-task6_state: pending
+task6_state: reviewed
+task6_result: pass-light-edit
 task9_state: pending
 task2b_state: idle
+reviewed_by: openclaw-task6
+reviewed_date: "2026-04-17"
 ---
 
 # 各 Android 版本性能变更追踪
@@ -71,7 +73,7 @@ task2b_state: idle
 
 ## Android 12（API 31）：后台执行开始收紧
 
-Android 12 在性能方面的影响，主要集中在**后台执行限制**和**前台服务约束**上。这些变化不会让你的 App 变快，但会改变它"在后台能做多少事"。
+Android 12 在性能方面的影响，主要集中在**后台执行限制**和**前台服务约束**上。这些变化通常不提升 App 运行速度，但会改变它"在后台能做多少事"。
 
 ### 后台启动前台服务被禁止
 
@@ -253,7 +255,9 @@ pm.addProfilingTriggers(
 );
 ```
 
-这个能力改变了性能分析的方法论——从"发现问题后手动抓取 trace"到"系统自动在问题发生时抓取 trace"。对于线上偶发的性能问题（如 ANR、冷启动慢），这是根本性的改进。
+这个能力改变了性能分析的方法论——从"发现问题后手动抓取 trace"到"系统自动在问题发生时抓取 trace"。
+
+对于线上偶发的性能问题（如 ANR、冷启动慢），这是根本性的改进。
 
 [已验证: 官方文档, developer.android.com/reference/android/os/ProfilingManager]
 [来源: intake/research-feeds/2026-04-01-12-android16-17-profilingmanager-system-triggered.md]
@@ -263,7 +267,11 @@ pm.addProfilingTriggers(
 
 Android 16 在 `ApplicationStartInfo` 上新增了 `getStartComponent()` 方法，返回触发进程启动的具体组件类型（Activity / BroadcastReceiver / ContentProvider / Service / Other）。
 
-这个信息对启动优化至关重要。多数开发者假设冷启动由 Activity 触发，但实际上 ContentProvider 初始化（多个 SDK 各自注册的 ContentProvider）和 BroadcastReceiver 也会触发进程创建。不同触发路径的初始化逻辑和优化策略差异很大。有了 `getStartComponent()`，你可以精确区分并分别优化每条启动路径。
+这个信息对启动优化至关重要。
+
+多数开发者假设冷启动由 Activity 触发，但实际上 ContentProvider 初始化（多个 SDK 各自注册的 ContentProvider）和 BroadcastReceiver 也会触发进程创建。不同触发路径的初始化逻辑和优化策略差异很大。
+
+有了 `getStartComponent()`，你可以精确区分并分别优化每条启动路径。
 
 [已验证: 官方文档, developer.android.com/reference/android/app/ApplicationStartInfo#getStartComponent()]
 [来源: intake/research-feeds/2026-04-04-07-ch08-application-startinfo-getstartcomponent.md]
