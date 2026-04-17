@@ -3,7 +3,7 @@ title: "GPU 图形调试与分析工具"
 chapter: "14.8"
 section: "14.8"
 status: ready-for-review
-applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37)"
+applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37) (AGI/Sokatoa 要求 Android 11+)"
 last_verified: "2026-04-05"
 last_verified_against: "developer.android.com/agi, perfetto.dev, renderdoc.org"
 confidence: medium
@@ -34,10 +34,10 @@ drafted_date: "2026-04-05"
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-04-14"
 task6_result: "needs-rework"
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task9_state: pending
-task2b_state: pending
+task2b_state: fixed
 ---
 
 # 14.8 GPU 图形调试与分析工具
@@ -108,7 +108,7 @@ GPU 分析工具和 CPU 分析工具不是替代关系，是互补关系。先�
 **厂商专用工具**：针对特定 GPU 提供更深度的分析。
 
 - **ARM Streamline Performance Analyzer**：Mali GPU 的官方分析工具，集成 CPU/GPU/内存的联合分析。
-- **Snapdragon Profiler**：高通 Adreno GPU 的分析工具（已被 AGI 逐渐替代）。
+- **Snapdragon Profiler**：高通 Adreno GPU 的专用分析工具，提供 Adreno 微架构级别的深度性能计数器和实时性能监控，与 AGI 互补。
 
 ### 工具选择决策
 
@@ -158,7 +158,23 @@ AGI 支持的 GPU 计数器因 GPU 厂商而异：
 
 ### Frame Profiler 的使用
 
-Frame Profiler 更强大也更复杂。使用步骤：
+Frame Profiler 更强大也更复杂。
+
+#### 使用 Frame Profiler 的前置条件
+
+在开始帧捕获之前，需要确认以下条件：
+
+1. **应用必须是 debuggable 的**。Frame Profiler 需要注入 Vulkan/GLES 拦截层来捕获 GPU 命令，这要求 `android:debuggable="true"`（或在 AndroidManifest 中声明）。Release 包无法使用 Frame Profiler，需要临时切换到 debuggable 构建。
+
+2. **目标 API 最低要求 Android 11 (API 30)**。AGI 的完整功能（包括 System Profiler 和 Frame Profiler）从 Android 11 开始支持。Android 10 及以下只能使用部分功能。
+
+3. **Vulkan 应用无需额外配置**。AGI 通过 Vulkan Layer 拦截 API 调用，Vulkan 应用开箱即用。
+
+4. **GLES 应用会通过 ANGLE 翻译为 Vulkan**。AGI 使用自定义 ANGLE 构建处理 GLES 命令。在 Android 17+ 上（ANGLE denylist 生效后），GLES 应用本就走 ANGLE 路径，AGI 的行为和系统一致；在更早版本上，AGI 的 ANGLE 翻译可能和系统原生的 GLES 实现有差异，分析时需要注意。
+
+5. **对于 Vulkan 应用，建议关闭 Vulkan Validation Layer**。Validation Layer 会改变 GPU 命令的执行时序，影响性能数据的准确性。调试阶段开 Validation Layer 确保正确性，性能分析阶段关掉它。
+
+使用步骤：
 
 1. 在 AGI 中选择 Frame Profiler 模式
 2. 选择目标应用
@@ -466,7 +482,7 @@ AGI 专为移动 GPU 优化，支持移动端特有的 GPU 计数器和渲染路
 
 ### 误区 4："profileable 和 debuggable 对 GPU 工具没有影响"
 
-Android 14 引入了 `profileable` 属性。标记为 `profileable` 的应用可以用 Perfetto 采集性能数据，包括 GPU counter，但不能用 AGI 做帧捕获，帧捕获需要 `debuggable`。这是一个很容易忽略的限制，Release 包想做 GPU 帧级分析，往往要先临时改成 debuggable。
+`profileable` 属性从 Android 10 (API 29) 引入，允许标记后的应用被 Perfetto 等工具采集性能数据而无需 debuggable。Android 11 (API 30) 增加了 `android:profileable enabled="true"` 写法，Android 14 进一步增强了 profileable 应用的 Perfetto GPU counter 采集能力。标记为 profileable 的应用可以用 Perfetto 采集 GPU counter，但不能用 AGI 做帧捕获，帧捕获仍然需要 `debuggable`。Release 包想做 GPU 帧级分析，往往需要临时改成 debuggable。
 
 ### 误区 5："GPU 分析工具本身不会影响性能"
 
@@ -486,7 +502,7 @@ Streamline 的独特价值在于 CPU-GPU 联合分析。它可以在同一个时
 
 ### Qualcomm Adreno：Snapdragon Profiler
 
-Snapdragon Profiler 是高通的 GPU 分析工具，专为 Adreno GPU 设计。随着 AGI 对 Adreno 的支持越来越完善，Snapdragon Profiler 的使用场景在减少。但在需要 Adreno 特有的深度分析（如 GPU 微架构级别的性能计数器）时，Snapdragon Profiler 仍然是更好的选择。
+Snapdragon Profiler 是高通的 GPU 分析工具，专为 Adreno GPU 设计。Snapdragon Profiler 仍在活跃维护，它和 AGI 的定位是互补的。AGI 擅长通用的 GPU 性能分析（跨 GPU 厂商），Snapdragon Profiler 擅长 Adreno 微架构级别的深度分析——比如 Adreno 专属的性能计数器、实时 GPU 频率/电压监控、Shader 编译器优化建议。在 Adreno 设备上做 GPU 深度优化时，两个工具配合使用效果最好。
 
 ### MediaTek
 
@@ -494,14 +510,26 @@ MediaTek 没有独立的 GPU 分析工具，但 AGI 对 Mali GPU（MediaTek SoC 
 
 ### 工具数据对比
 
-| 场景 | Perfetto GPU | AGI | RenderDoc | 厂商工具 |
-|------|-------------|-----|-----------|---------|
-| GPU 是否瓶颈 | ✅ 快速判断 | ✅ 更详细 | ❌ 不适合 | ✅ |
-| 哪个 Draw Call 慢 | ❌ 粒度太粗 | ✅ | ✅ | ✅ |
-| Shader 为什么慢 | ❌ | ⚠️ 有限 | ✅ 调试 | ✅ |
-| 间歇性 GPU 卡顿 | ⚠️ 需长时间采集 | ❌ 单帧 | ❌ 单帧 | ⚠️ |
-| 跨 GPU 对比 | ✅ 通用指标 | ✅ 通用 | ✅ GFXReconstruct | ❌ 厂商绑定 |
-| Release 包可用 | ✅ profileable | ⚠️ 需 debuggable | ❌ 需 debuggable | ⚠️ |
+| 工具 | 最低版本 | 系统级 | 帧级分析 | Release 包 | GPU 厂商 |
+|------|---------|--------|---------|-----------|----------|
+| Perfetto GPU | Android 8+ | ✅ | ❌ | ✅ (profileable) | 通用 |
+| AGI | Android 11+ | ✅ | ✅ | ⚠️ 需 debuggable | Adreno/Mali/PowerVR |
+| RenderDoc | Android 8+ | ❌ | ✅ | ❌ 需 debuggable | 通用 |
+| Sokatoa | Android 11+ | ❌ | ✅ 多帧 | ❌ 需 debuggable | Adreno/Mali/Xclipse |
+| Snapdragon Profiler | Android 7+ | ✅ | ✅ | ⚠️ 需 debuggable | Adreno 专用 |
+| ARM Streamline | Android 8+ | ✅ | ❌ | ✅ (部分功能) | Mali 专用 |
+| PerfDog | Android 5+ | ✅ | ❌ | ✅ | 通用 |
+
+按分析场景选型：
+
+| 场景 | 首选工具 | 备选 |
+|------|---------|------|
+| GPU 是否瓶颈 | Perfetto GPU | AGI System Profiler |
+| 哪个 Draw Call 慢 | AGI Frame Profiler | RenderDoc |
+| Shader 为什么慢 | RenderDoc | AGI |
+| 间歇性 GPU 卡顿 | Sokatoa | Perfetto 长时间采集 |
+| Adreno 深度分析 | Snapdragon Profiler + AGI | - |
+| Mali 深度分析 | ARM Streamline + AGI | - |
 
 [图：工具选型对比表，按分析场景和工具能力两个维度对照]
 
@@ -520,13 +548,14 @@ MediaTek 没有独立的 GPU 分析工具，但 AGI 对 Mali GPU（MediaTek SoC 
 [已验证：官方文档，developer.android.com/topic/performance/reasonable-profiling]
 
 - **debuggable**：AGI 帧捕获、RenderDoc 都需要。但 debuggable 应用会有性能损失（JIT 不做某些优化、运行时检查更多）
-- **profileable**：Perfetto 可以采集（包括 GPU counter），但 AGI 帧捕获不可用。性能损失更小
+- **profileable**：从 Android 10 (API 29) 引入。Perfetto 可以采集（包括 GPU counter），但 AGI 帧捕获不可用。Android 14 增强了 GPU counter 采集能力。性能损失比 debuggable 小得多
 - 建议：日常性能测试用 profileable 包 + Perfetto，深入 GPU 分析时临时切换到 debuggable
 
 ### GPU 工具在不同 Android 版本上的可用性
 
 - Android 11+：AGI 完整支持
-- Android 14+：profileable 属性支持 Perfetto GPU 采集
+- Android 10+ (API 29)：profileable 属性引入，支持基本 Perfetto 采集
+- Android 14+：profileable 应用的 Perfetto GPU counter 采集能力增强
 - Android 17+：ANGLE denylist 可能影响 GLES 应用的帧分析路径
 
 ### 不同设备的 GPU 计数器差异
@@ -534,6 +563,35 @@ MediaTek 没有独立的 GPU 分析工具，但 AGI 对 Mali GPU（MediaTek SoC 
 同一个"GPU Utilization"计数器，在 Adreno 和 Mali 上的含义不完全一样。Adreno 的 Utilization 可能只计算 ALU 活跃时间，而 Mali 的 Utilization 可能包含等待内存的时间。跨设备对比 GPU 计数器数据时，需要查阅对应 GPU 厂商的计数器文档。
 
 [来源：Cubox/移动平台的GPU性能分析-2024-12-07.md]
+
+## 版本演进
+
+GPU 分析工具在 Android 生态中经历了几个关键节点，了解这些变化有助于在不同版本上选择正确的工具和解读分析结果。
+
+### GAPID → AGI（2020 年）
+
+GAPID（Graphics API Debugger）是 Google 早期的图形调试工具，定位偏向图形 API 的调试（捕获和回放 GLES/Vulkan 调用）。2020 年，Google 将 GAPID 更名为 AGI（Android GPU Inspector），重心从"API 调试"转向"GPU 性能分析"。这次更名也伴随着功能的扩展：System Profiler 模式和硬件级 GPU 计数器支持是 GAPID 时代没有的。
+
+### profileable 的版本增强
+
+- **Android 10 (API 29)**：引入 `profileable` 属性，允许非 debuggable 应用被 Perfetto 采集 CPU 性能数据
+- **Android 11 (API 30)**：增加 `android:profileable enabled="true"` 写法，AGI 从此版本开始完整支持
+- **Android 14**：增强 profileable 应用的 Perfetto GPU counter 采集能力，不再需要 debuggable 即可获取 GPU 计数器数据
+- **实际影响**：Android 14 之前，采集 GPU counter 通常需要 debuggable 应用或 root 权限；Android 14 之后，profileable 应用配合 Perfetto 就能采集 GPU 计数器，降低了 Release 包 GPU 分析的门槛
+
+### ANGLE 对 GLES 帧分析的影响
+
+Android 从 12L 开始逐步扩大 ANGLE（将 GLES 翻译为 Vulkan 的兼容层）的应用范围。到 Android 17，ANGLE 从 allowlist 转向 denylist，绝大部分 GLES 应用已经通过 Vulkan 后端运行。
+
+这对 GPU 帧分析的影响：
+
+- **Android 12L-16**：GLES 应用可以选择走 ANGLE 或原生 GLES 驱动，AGI 的帧分析路径取决于应用是否启用 ANGLE
+- **Android 17+**：绝大多数 GLES 应用通过 ANGLE/Vulkan 运行，AGI 的 ANGLE 翻译路径与系统实际执行路径一致，分析结果更可靠。但需要注意，此时看到的 Vulkan 命令是 ANGLE 翻译后的结果，不是应用原始的 GLES 调用
+- **ANGLE denylist 例外**：被加入 denylist 的 GLES 应用（有兼容性问题的）仍然走原生 GLES 驱动，AGI 需要单独处理
+
+### AGI 2025-2026 演进
+
+AGI 在 2026 年有两次重大更新（上文已详述），核心变化：System Profiler 改进并开源、Frame Profiler 基于 GFXReconstruct 重建、新增 Frame Looping 和 Render Pass Graph。AGI 在此之后将覆盖从系统级到帧级的完整分析场景。
 
 ## 参考资料
 

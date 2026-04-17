@@ -3064,6 +3064,14 @@
         "版本差异：startApexServices() 标注 Android 12 引入；新增 Android 12-16 启动流程版本差异小节",
         "数据缺失：新增 Pixel 8 / Android 16 参考基线数据表（分段耗时+占比）"
       ]
+    },
+    {
+      "section": "14.8",
+      "section_title": "GPU 图形调试与分析工具",
+      "date": "2026-04-17T21:45:50.974615",
+      "source": "task9-deep-tech-review",
+      "issues_fixed": 5,
+      "status": "completed"
     }
   ],
   "reviews": [
