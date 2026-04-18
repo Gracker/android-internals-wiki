@@ -1,12 +1,12 @@
 {
-  "generated_at": "2026-04-18T22:20:00+08:00",
+  "generated_at": "2026-04-18T22:53:46+08:00",
   "state_machine_version": "v2",
   "total_sections": 216,
   "metrics": {
     "total": 216,
     "unknown": 37,
     "ready-for-review": 179,
-    "last_updated": "2026-04-18T22:20:00+08:00",
+    "last_updated": "2026-04-18T22:53:46+08:00",
     "task2b_state_counts": {
       "unknown": 37,
       "fixed": 92,
@@ -2281,16 +2281,10 @@
       "task6_state": "revisiting",
       "task9_state": "pending",
       "task2b_state": "fixed",
-      "task6_reviewed": true,
-      "task6_review_date": "2026-04-18",
-      "task6_result": "needs-rework",
-      "reviewed_by": "openclaw-task6",
       "reviewed_date": "2026-04-18",
+      "reviewed_by": "openclaw-task6",
+      "task6_result": "needs-rework",
       "task9_result": "needs-rework",
-      "task9_reviewed_date": "2026-04-18",
-      "task9_reviewed_by": "openclaw-task9",
-      "section": "18.17",
-      "last_task9_at": "2026-04-18T06:24:00+08:00",
       "task2b_result": "fixed"
     },
     "src/part2-performance/ch18-rendering-pipelines/18-pip-freeform.md": {
