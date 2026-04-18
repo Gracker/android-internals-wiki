@@ -203,7 +203,7 @@
       "path": "src/part1-fundamentals/ch01-architecture/01-layered-architecture.md",
       "status": "ready-for-review",
       "pipeline_stage": "task6_pending",
-      "task6_state": "revisiting",
+      "task6_state": "reviewed",
       "task9_state": "pending",
       "task2b_state": "fixed",
       "reviewed_date": "2026-04-11",
@@ -211,7 +211,8 @@
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
-      "section": "1.1"
+      "section": "1.1",
+      "task6_reviewed_date": "2026-04-18"
     },
     "src/part1-fundamentals/ch01-architecture/02-boot-process.md": {
       "chapter": "1.2",
