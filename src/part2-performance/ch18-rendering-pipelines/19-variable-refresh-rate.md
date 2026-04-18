@@ -7,10 +7,13 @@ tags: ["VRR", "ARR", "Variable-Refresh-Rate", "LTPO", "setFrameRate", "FrameTime
 related_chapters: ["2.3", "2.18", "2.19"]
 created_by: "rendering-pipelines-merge"
 created_date: "2026-04-09"
-pipeline_stage: task6_pending
-task6_state: pending
+pipeline_stage: task2b_pending
+reviewed_by: openclaw-task6
+reviewed_date: "2026-04-18"
+task6_result: needs-rework
+task6_state: reviewed
 task9_state: pending
-task2b_state: idle
+task2b_state: pending
 ---
 
 <!-- outline-start -->
@@ -48,7 +51,7 @@ VRR 允许屏幕刷新率在设备支持的模式集合内动态变化。当 App
 
 ### VSync 调度对比
 
-```
+```text
 固定 60Hz：
 VSync:  |----16.6ms----|----16.6ms----|----16.6ms----|
 Frame:  |    F1       |    F2       |    F3       |
