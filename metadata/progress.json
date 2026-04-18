@@ -1,75 +1,75 @@
 {
-  "generated_at": "2026-04-18T07:21:20.098726+08:00",
+  "generated_at": "2026-04-18T10:49:55.750131+08:00",
   "state_machine_version": "v2",
   "total_sections": 214,
   "metrics": {
     "total": 214,
     "unknown": 36,
     "ready-for-review": 178,
-    "last_updated": "2026-04-18T05:49:19.348728+08:00",
+    "last_updated": "2026-04-18T10:49:55.750131+08:00",
     "task2b_state_counts": {
       "unknown": 35,
-      "fixed": 87,
-      "pending": 19,
+      "fixed": 88,
+      "pending": 18,
       "idle": 73
     },
     "task6_state_counts": {
       "unknown": 33,
-      "revisiting": 87,
-      "reviewed": 33,
+      "revisiting": 88,
+      "reviewed": 32,
       "pending": 61
     },
     "task9_state_counts": {
       "unknown": 34,
-      "pending": 163,
-      "reviewed": 17
+      "pending": 164,
+      "reviewed": 16
     },
     "pipeline_stage_counts": {
       "unknown": 32,
-      "task6_pending": 146,
-      "task2b_pending": 19,
+      "task6_pending": 147,
+      "task2b_pending": 18,
       "task9_pending": 17
     },
     "total_sections": 214,
     "pipeline_unknown": 32,
-    "pipeline_task6_pending": 146,
-    "pipeline_task2b_pending": 19,
+    "pipeline_task6_pending": 147,
+    "pipeline_task2b_pending": 18,
     "pipeline_task9_pending": 17,
     "task2b_unknown": 35,
-    "task2b_fixed": 87,
-    "task2b_pending": 19,
+    "task2b_fixed": 88,
+    "task2b_pending": 18,
     "task2b_idle": 73,
     "task6_unknown": 33,
-    "task6_revisiting": 87,
-    "task6_reviewed": 33,
+    "task6_revisiting": 88,
+    "task6_reviewed": 32,
     "task6_pending": 61,
     "task9_unknown": 34,
-    "task9_pending": 163,
-    "task9_reviewed": 17
+    "task9_pending": 164,
+    "task9_reviewed": 16
   },
   "pipeline": {
     "pipeline_stage_counts": {
       "unknown": 32,
-      "task6_pending": 146,
-      "task2b_pending": 19,
+      "task6_pending": 147,
+      "task2b_pending": 18,
       "task9_pending": 17
     },
     "task2b_state_counts": {
       "unknown": 35,
-      "fixed": 87,
-      "pending": 19,
+      "fixed": 88,
+      "pending": 18,
       "idle": 73
     },
     "task6_state_counts": {
       "unknown": 33,
-      "revisiting": 87,
-      "reviewed": 33,
+      "revisiting": 88,
+      "reviewed": 32,
       "pending": 61
     },
     "task9_state_counts": {
       "unknown": 34,
-      "pending": 163,
-      "reviewed": 17
+      "pending": 164,
+      "reviewed": 16
     }
   },
   "issues": {
@@ -2224,7 +2224,7 @@
       "title": "游戏引擎渲染链路",
       "path": "src/part2-performance/ch18-rendering-pipelines/16-game-engine.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "pipeline_stage": "task6_pending",
       "task6_state": "revisiting",
       "task9_state": "pending",
       "task2b_state": "fixed",
@@ -3039,11 +3039,11 @@
     "total_sections": 213,
     "by_pipeline_stage": {
       "unknown": 32,
-      "task6_pending": 145,
-      "task2b_pending": 19,
+      "task6_pending": 146,
+      "task2b_pending": 18,
       "task9_pending": 17
     },
-    "last_updated": "2026-04-18T04:01:17.099279+08:00",
+    "last_updated": "2026-04-18T10:49:55.750131+08:00",
     "total_reviewed": 18
   },
   "4.6": {
@@ -3056,7 +3056,7 @@
       "major_issues": 1
     }
   },
-  "last_updated": "2026-04-18T06:24:00+08:00",
+  "last_updated": "2026-04-18T10:49:55.750131+08:00",
   "rework_log": [
     {
       "date": "2026-04-15T19:44:09.836904",
@@ -3187,6 +3187,21 @@
       ],
       "verification": "禁用词扫描=0，queue=completed",
       "queue_status": "completed"
+    },
+    {
+      "date": "2026-04-18T10:49:55.750131+08:00",
+      "section": "18.16",
+      "section_title": "游戏引擎渲染链路",
+      "source": "task9-deep-tech-review",
+      "priority": 95,
+      "fixes": [
+        "版本差异：拆分 Android 5-10 的传统 SurfaceView/BufferQueue 路径与 Android 11+ 的 BLASTBufferQueue 路径，并回连 18.6",
+        "原理断裂：补 Vulkan 最小接入顺序，加入 determineDeviceExtensions、setQueueFamilyIndex、queuePresent 包裹语义",
+        "事实错误：把 Swappy 观测口径拆成默认可见、自定义埋点、额外 graphics tracing/AGI 三类，删除固定 Swappy Track / doFrame 判据",
+        "知识盲区：补最小 trace case，覆盖 60Hz 未接 Swappy、60Hz 已接 Swappy、120Hz 锁 60fps 三种观察样例"
+      ],
+      "verification": "禁用词扫描=0，queue=completed",
+      "queue_status": "completed"
     }
   ],
   "reviews": [
@@ -3292,10 +3307,18 @@
       "by": "task2b-rework",
       "source": "task6-review",
       "issues_fixed": 5
+    },
+    {
+      "section": "18.16",
+      "section_title": "游戏引擎渲染链路",
+      "date": "2026-04-18T10:49:55.750131+08:00",
+      "by": "task2b-rework",
+      "source": "task9-deep-tech-review",
+      "issues_fixed": 4
     }
   ],
-  "last_task2b_run": "2026-04-18T04:50:38.437762+08:00",
-  "task2b_fixed": 2,
+  "last_task2b_run": "2026-04-18T10:49:55.750131+08:00",
+  "task2b_fixed": 3,
   "17.1": {
     "task6_review_date": "2026-04-16",
     "task6_result": "pass-light-edit",
@@ -3309,10 +3332,10 @@
     "task6_state": "reviewed",
     "task9_state": "pending"
   },
-  "task2b_last_run": "2026-04-18T04:50:38.437762+08:00",
+  "task2b_last_run": "2026-04-18T10:49:55.750131+08:00",
   "task2b_last_result": "fixed",
   "task2b_task8_processed": 3,
-  "task2b_note": "Processed 18.14 task6-review rework. No pending task6/task9 rework items remain.",
+  "task2b_note": "Processed 18.16 task9-deep-tech-review rework. Remaining pending: P95 1, P90 3, P85 1.",
   "15.5": {
     "task6_review_date": "2026-04-17",
     "task6_result": "pass-light-edit",
@@ -3362,7 +3385,7 @@
   "total_chapters": 0,
   "reviewed_count": 1,
   "last_review": "18.17",
-  "last_task2b_section": "18.14",
+  "last_task2b_section": "18.16",
   "1.10": {
     "section": "1.10",
     "title": "ContentProvider 性能与优化",

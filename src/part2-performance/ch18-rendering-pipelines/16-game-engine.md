@@ -7,14 +7,15 @@ tags: ["Unity", "Unreal", "Game-Engine", "Swappy", "Frame-Pacing", "Vulkan", "GL
 related_chapters: ["2.5", "8.9", "18.6", "18.8", "18.9"]
 created_by: "rendering-pipelines-merge"
 created_date: "2026-04-09"
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
 task9_result: needs-rework
-task2b_state: pending
+task2b_state: fixed
 reviewed_by: openclaw-task6
 reviewed_date: "2026-04-18"
 task6_result: pass-light-edit
+task2b_result: fixed
 ---
 
 <!-- outline-start -->
@@ -96,11 +97,12 @@ Unity 和 Unreal 都采用了**逻辑线程与渲染线程分离**的架构。�
 
 ## SurfaceView + BLAST
 
-游戏引擎几乎总是使用 **SurfaceView**（或 `GameActivity` 提供的 Surface），因此完全受益于 BLAST 架构：
+游戏引擎通常把画面输出到 `SurfaceView`，或 `GameActivity` 暴露的 `ANativeWindow`。共同点很稳定：游戏 Surface 独立于 App View 树，提交路径绕开 App RenderThread，SurfaceFlinger 直接消费游戏帧。
 
-1. **独立 Surface**：游戏画面不经过 App RenderThread，直接由 SF 合成。
-2. **Resize 同步**：折叠屏展开等窗口尺寸变化，通过 BLAST Transaction 原子同步。
-3. **HWC Overlay**：游戏 Surface 可能走 Overlay 路径，减少 GPU 合成开销。
+- **Android 5-10**：常见路径是 `eglSwapBuffers` / `vkQueuePresentKHR` → `BufferQueue` → `SurfaceFlinger` → `HWC`。窗口尺寸和位置变化仍按旧版 SurfaceView 机制处理，排查 resize 闪烁、几何不同步时要按 [18.6 SurfaceView 章节](06-surfaceview.md) 里的 pre-BLAST 路径去看。
+- **Android 11+**：SurfaceView 更常和 `BLASTBufferQueue`、`SurfaceControl.Transaction` 一起出现。折叠、分屏、自由窗口、分辨率切换这类几何变化会经过事务同步，Buffer 与几何信息更容易在同一批次提交。对应细节见 [18.6 SurfaceView 章节](06-surfaceview.md) 的现代 SurfaceView 路径。
+
+稳态渲染阶段，两条路径的判断方法一致：游戏线程负责生产帧，SurfaceFlinger 负责消费，App 主线程的 `doFrame()` 不是主提交流程里的提交点。
 
 ## Swappy Frame Pacing
 
@@ -116,51 +118,82 @@ Unity 和 Unreal 都采用了**逻辑线程与渲染线程分离**的架构。�
 
 ### 解决方案
 
-Swappy 在 Present 阶段注入 Fence Wait，确保每帧精准对齐到 VSync 边界：
+Frame Pacing library 在 present 路径里结合 Choreographer 节拍、presentation timestamp 和 sync fence 调整提交时机，目标是减少 queue stuffing，让每帧停留时间更接近目标刷新周期。[已验证: Android Game SDK Frame Pacing 文档说明使用 Choreographer、presentation timestamps、sync fences]
 
 ```mermaid
 sequenceDiagram
     participant App as Game Engine
-    participant Swappy as Swappy
+    participant Swappy as Frame Pacing
     participant GPU as GPU
     participant SF as SurfaceFlinger
 
-    App->>Swappy: swapBuffers()
-    Swappy->>Swappy: 计算目标 VSync (Frame Timeline)
-    Swappy->>App: 返回 (非阻塞)
-    App->>App: 继续下一帧逻辑
-    
-    Note over Swappy: 等待目标 VSync 前 xms
-    Swappy->>GPU: Inject Fence Wait
-    GPU->>SF: queueBuffer (精准时机)
+    App->>Swappy: eglSwapBuffers() / SwappyVk_queuePresent()
+    Swappy->>Swappy: 计算目标提交时刻
+    Swappy->>GPU: 按目标时刻安排 present
+    GPU->>SF: queueBuffer / vkQueuePresentKHR
+    SF->>SF: FrameTimeline + 合成
 ```
+
+### Vulkan 接入顺序
+
+Vulkan 接入不能只写 `init` 和 `queuePresent` 两个调用，顺序要和设备创建过程保持一致：
+
+1. 在创建 `VkDevice` 之前，先枚举设备扩展并调用 `SwappyVk_determineDeviceExtensions()`，把 Swappy 需要的扩展一并放进 `VkDeviceCreateInfo`。
+2. 创建 `VkQueue` 后，调用 `SwappyVk_setQueueFamilyIndex(device, queue, queueFamilyIndex)`，把 present queue 对应的 queue family index 告诉 Swappy。
+3. 创建 `VkSwapchainKHR` 后，调用 `SwappyVk_initAndGetRefreshCycleDuration(...)` 初始化 swapchain 级实例，再用 `SwappyVk_setSwapIntervalNS(device, swapchain, swap_ns)` 设置目标帧间隔。
+4. 提交帧时，应用调用 `SwappyVk_queuePresent(queue, &presentInfo)`，由 Swappy 代为调用 `vkQueuePresentKHR()`，并在需要时向 `VkPresentInfoKHR::pNext` 插入额外结构或补充命令。
+5. 销毁阶段按 swapchain / device 粒度调用 `SwappyVk_destroySwapchain()`、`SwappyVk_destroyDevice()` 释放资源。
 
 ```c
-// Swappy 核心用法 (Vulkan)
-SwappyVk_initAndGetRefreshCycleDuration(env, activity, 
+// Vulkan 最小接入顺序
+SwappyVk_determineDeviceExtensions(physicalDevice,
+    availableExtensionCount,
+    availableExtensions,
+    &requiredExtensionCount,
+    requiredExtensions);
+
+// vkCreateDevice(... requiredExtensions ...)
+SwappyVk_setQueueFamilyIndex(device, presentQueue, presentQueueFamilyIndex);
+SwappyVk_initAndGetRefreshCycleDuration(env, activity,
     physicalDevice, device, swapchain, &refreshDuration);
-SwappyVk_queuePresent(queue, presentInfo);
-SwappyVk_setSwapIntervalNS(device, swapchain, SWAPPY_SWAP_60FPS); // 或直接用 16666666ns
-[已验证: `SwappyVk_setSwapIntervalNS(device, swapchain, swap_ns)` 签名正确，宏 `SWAPPY_SWAP_60FPS` / `SWAPPY_SWAP_30FPS` 定义于 swappy_common.h，Android Game SDK Frame Pacing 官方文档]
+SwappyVk_setSwapIntervalNS(device, swapchain, 16666666);  // 60fps
+SwappyVk_queuePresent(presentQueue, &presentInfo);        // 不再直接调用 vkQueuePresentKHR()
 ```
 
-在 Perfetto 中接入 Swappy 的游戏应用里，有几类 Track 值得关注：
+### OpenGL ES 接入顺序
 
-**SwappyTracer 回调 Slice**：如果游戏通过 `SwappyTracer` 注入了自定义 trace 回调（`preWait` / `postWait` / `preSwapBuffers` / `postSwapBuffers`），这些回调会作为自定义 Slice 出现在对应线程的 Track 上。通过这些 Slice 可以看到 Swappy 在 present 前后插入的 fence wait 时机。
+OpenGL ES 仍然围绕 `eglSwapBuffers()` 接入。判断这条路径时，看 `eglSwapBuffers()` 所在渲染线程、FrameTimeline，以及 SurfaceFlinger / GPU 轨道，不要把 Vulkan 的 `SwappyVk_*` 调用模式套到 GLES 路径上。
 
-**FrameTimeline Track**：Android 12+（API 31）Perfetto 默认带 FrameTimeline 数据源。游戏提交帧后，`SurfaceView` / `GameActivity` 会产生 `Expected Timeline`（预期 frame deadline）和 `Actual Timeline`（实际完成时间）两个 Slice。如果 `Actual Timeline` 持续超过 `Expected Timeline`，说明帧节拍不稳定，需要检查 Swappy 的 swap interval 配置。
+### 在 Perfetto 中看 Swappy
 
-**Choreographer 反馈回路**：即使游戏不主动注入 SwappyTracer，`Choreographer` 的 `doFrame` 回调仍然可见。和 Swappy 配合时，可以看到游戏帧提交与 VSync 回调之间的间隔是否符合目标帧节奏。
+Swappy 没有一个默认必然出现的 `Swappy` Track。排查时把信号分成三类更稳妥：
+
+| 观测层级 | 默认是否可见 | 该看什么 |
+|:---|:---|:---|
+| 默认可见 | 通常可见 | 引擎线程上的 present 调用点，`eglSwapBuffers()`、`vkQueuePresentKHR()` 或引擎自己的 present 包装，Android 12+ 的 FrameTimeline `Expected` / `Actual`，以及 SurfaceFlinger 与 GPU 轨道 |
+| 自定义埋点 | 取决于应用 | 应用调用 `SwappyVk_injectTracer()` 或同类接口后，如果在 `preWait` / `postWait` / `preSwapBuffers` / `postSwapBuffers` 回调里主动写 `ATrace` / TrackEvent，Perfetto 才会出现对应 Slice |
+| 额外 graphics tracing / AGI | 需单独开启 | GPU driver queue、Vulkan present timing、更细的图形栈事件 |
+
+### 最小 trace case
+
+| 场景 | 期望表现 | 先查哪里 |
+|:---|:---|:---|
+| 60Hz 面板，同一段场景，未接 Swappy | 默认只看 present 调用点和 FrameTimeline。负载上来时，`Actual Timeline` 常会出现 16.6ms / 33.3ms 混合，重复帧偏多 | CPU 帧时间、GPU 帧时间、是否出现 queue stuffing |
+| 60Hz 面板，同一段场景，接入 Swappy，目标 60fps | `Expected` 与 `Actual` 更接近 16.6ms 节奏，重复帧减少。若应用埋了 tracer，`preWait` / `postWait` 会围绕帧提交点出现 | swap interval 设置、前一帧 release 时机、是否有长 GPU slice |
+| 120Hz 面板，游戏锁 60fps，Swappy `swap_ns=16666666` | FrameTimeline 表现为每两次显示刷新消费一帧，`Actual` 仍接近 16.6ms，不会去追 8.3ms | swap interval 是否写错，display mode / ARR / VRR 投票是否把游戏推到 120fps |
+
+`Choreographer#doFrame` 只能当辅助线索。Frame Pacing library 内部会用 Choreographer 做同步，但 trace 里是否出现 `doFrame()`，取决于引擎接入方式、线程模型和采集配置。只靠 `doFrame()` 判断是否接入 Swappy，很容易误判。
 
 **常见 Trace 表现**：
 
 | 现象 | 可能含义 |
 |:---|:---|
-| `preWait` Slice 持续 >5ms | Swappy 在等前一帧完成，可能 GPU 负载过高 |
-| Expected Timeline 块与 Actual Timeline 块频繁错位 | 帧节奏控制失效，检查 swap interval 是否匹配屏幕刷新率 |
-| `postSwapBuffers` 后紧跟长 GPU Slice | present 后立即有 GPU 洪峰，说明 buffer 没有精准对其 VSync |
+| `Expected Timeline` 与 `Actual Timeline` 持续错位 | 帧提交晚于目标时刻，先检查 swap interval、CPU 帧时间和 GPU 帧时间 |
+| 自定义 `preWait` / `postWait` Slice 很长 | 应用确实埋了 Swappy tracer，长等待多半指向 GPU 负载高或前一帧释放太晚 |
+| 只有 `vkQueuePresentKHR` / `eglSwapBuffers`，没有单独 `Swappy` Track | 这很常见，不能据此判断 Swappy 未接入 |
+| 需要看到 GPU queue 与 present timing 细节 | 额外打开 graphics tracing 或用 AGI 复查 |
 
-[已验证: Android Game SDK Frame Pacing 官方文档 / SwappyTracer 结构体 / Perfetto FrameTimeline]
+[已验证: Android Game SDK Frame Pacing 文档, SwappyVk API Reference 中 `SwappyVk_determineDeviceExtensions` / `SwappyVk_setQueueFamilyIndex` / `SwappyVk_queuePresent` / `SwappyVk_injectTracer` / `SwappyVk_setSwapIntervalNS`, Perfetto FrameTimeline]
 
 ## DrawCall 合批（Batching）
 
@@ -176,7 +209,8 @@ DrawCall 是 GPU 渲染的基本单元。每次 `glDrawElements` 或 `vkCmdDraw`
 |:---|:---|
 | `PlayerLoop`, `Physics.FixedUpdate` | Unity |
 | `GameThread::Tick`, `FRenderingThread` | Unreal |
-| `Swappy` Track | 接入了 Android Game SDK |
+| `Expected Timeline` / `Actual Timeline` 与游戏 Surface 同步波动 | 默认可见的帧节奏信号 |
+| 自定义 `preWait` / `postWait` Slice | 已接入 Swappy tracer 且应用主动埋点 |
 | `vkQueueSubmit` / `eglSwapBuffers` | Vulkan / GLES 后端 |
 | 密集的 `DrawCall` Slice | 游戏引擎渲染 |
 
@@ -201,6 +235,7 @@ DrawCall 是 GPU 渲染的基本单元。每次 `glDrawElements` 或 `vkCmdDraw`
   https://developer.android.com/games/sdk/frame-pacing
 - SwappyVk API Reference（`SwappyVk_setSwapIntervalNS` / `SwappyVk_initAndGetRefreshCycleDuration` / `SwappyTracer` 等）  
   https://developer.android.com/games/sdk/reference/frame-pacing/group/swappy-vk
+- SurfaceView API Reference（Android N 起位置同步，Android 14 起 arbitrary alpha）：https://developer.android.com/reference/android/view/SurfaceView
 - Unity 文档：Android Player Settings — Optimized Frame Pacing 选项说明  
   https://docs.unity3d.com/Manual/class-PlayerSettingsAndroid.html
 - Unreal Engine 文档：Frame Pacing for Mobile Devices（Swappy 集成与 CVars 配置）  
