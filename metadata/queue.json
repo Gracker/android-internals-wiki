@@ -3280,5 +3280,32 @@
     "original_review_log": "logs/deep-review/2026-04-19-02-deep-review.md",
     "completed_at": "2026-04-19T03:57:50+08:00",
     "completed_by": "task2b-rework"
+  },
+  {
+    "section": "1.15",
+    "section_title": "JNI/NDK 性能优化",
+    "priority": 95,
+    "reason": "[Deep Tech Review] AOSP 源码路径写法错误，且 attached native thread 的 `FindClass()` / ClassLoader 边界缺失",
+    "material_paths": [
+      "intake/research-gaps.md",
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "L26-L37 / L70 / L79 / L105 / L160-L178 / L261-L266",
+        "detail": "AOSP 源码路径统一写成 `platform/frameworks/...` / `platform/system/...`。这更像 googlesource 仓库 URL 前缀，不是 AOSP checkout-relative 路径；按 android-16.0.0_r1 树定位，实际应为 `frameworks/base/...`、`frameworks/native/...`、`system/core/...`。当前写法会让读者在源码树中无法直接定位 Binder.java / Parcel.java / trace.h 等锚点。",
+        "suggestion": "统一改成 checkout-relative 路径；若想引用 googlesource 仓库名，请直接写完整 URL，不要混用成伪路径。"
+      },
+      {
+        "type": "知识盲区",
+        "location": "L134-L152 / L186-L194",
+        "detail": "正文建议在 `JNI_OnLoad()` 缓存 `jclass` / `jmethodID`，也解释了 native thread attach/detach，但没补上 perf-jni 官方文档里的关键边界：natively-created attached thread 上 `FindClass()` 会从 system class loader 开始，App 类可能查找失败。读者知道“要缓存”，却不知道这也是为什么 late `FindClass()` 在 worker thread 上经常失效。",
+        "suggestion": "补一段 `FindClass()` / ClassLoader 失败模式说明，并给出 `JNI_OnLoad()` 缓存、Java 传入 `Class`/`ClassLoader`、或在 Java-started thread 执行查找三种规避方案。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-19T04:18:34",
+    "status": "pending"
   }
 ]
