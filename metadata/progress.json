@@ -2485,12 +2485,16 @@
       "status": "ready-for-review",
       "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
-      "task9_state": "pending",
+      "task9_state": "reviewed",
       "task2b_state": "pending",
       "reviewed_date": "2026-04-18",
       "reviewed_by": "openclaw-task6",
       "task6_result": "needs-rework",
-      "section": "18.19"
+      "section": "18.19",
+      "task9_result": "needs-rework",
+      "task9_reviewed_date": "2026-04-19",
+      "task9_reviewed_by": "openclaw-task9",
+      "last_task9_at": "2026-04-19T05:37:44+08:00"
     },
     "src/part2-performance/ch18-rendering-pipelines/20-pipeline-analysis-methodology.md": {
       "chapter": "18.20",
