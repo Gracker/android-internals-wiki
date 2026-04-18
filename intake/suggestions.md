@@ -1592,3 +1592,9 @@
 - **问题**：正文多次解释 Binder 与 zygote socket 的职责边界，但 related_chapters 没有回连 §1.4 Binder IPC 机制与性能影响 和 §1.17 IPC 全景；同时正文把 §8.2 写成“应用启动分析”，项目中的实际标题是“App 启动全流程”。
 - **建议**：related_chapters 补 `1.4`、`1.17`；正文把 §8.2 的标题回连到项目中的实际名称，避免交叉引用口径漂移。
 
+## [Task9 Deep Review] 1.11 Zygote 机制与启动性能优化 — 2026-04-18（异步补充）
+- **类型**：版本差异
+- **位置**：L257-L259
+- **问题**：正文把“Android 8 之后 WebViewZygote 成为重要角色”直接展开成“WebView 相关进程有自己的 child zygote 链路”。异步源码核验结果显示：android-8.0.0_r1 的 `android/webkit/WebViewZygote.java` 已存在 `webview_zygote32/64` 服务名，但未出现 `startChildZygote()`；android-9.0.0_r1 才出现 `startChildZygote()` 路径。当前表述把“专用 WebView zygote”与“child zygote 路由”压成了一个版本点。
+- **建议**：把版本叙述拆开写，至少区分“Android 8 引入专用 WebView zygote”与“Android 9 起明确走 child zygote 路径”；如果后续还要继续写 `preloadApp()`，再单独标注更高版本的变化。
+
