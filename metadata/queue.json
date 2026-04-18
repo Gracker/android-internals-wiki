@@ -3189,5 +3189,56 @@
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-19T00:54:00",
     "status": "pending"
+  },
+  {
+    "section": "7.2",
+    "section_title": "卡顿原因体系",
+    "priority": 95,
+    "reason": "[Deep Tech Review] P0 事实错误：RecyclerView 源码路径、HWC Device/Client Composition 术语、Binder 线程池默认值均有误",
+    "material_paths": [
+      "intake/suggestions.md",
+      "intake/research-gaps.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "L142 / L454 RecyclerView 源码引用",
+        "detail": "章节把 RecyclerView 标成 AOSP 路径 frameworks/base/core/java/android/widget/RecyclerView.java。RecyclerView 属于 AndroidX，不在 frameworks/base 树中。",
+        "suggestion": "改成 AndroidX 源码路径（如 androidx/recyclerview/widget/RecyclerView.java 或对应 AndroidX 仓库路径），并把“已验证”标签从 AOSP 改为 AndroidX/Jetpack。"
+      },
+      {
+        "type": "事实错误",
+        "location": "L224-L245 / L379-L382 HWC 合成类型",
+        "detail": "文中把 GPU 合成写成 Device Composition，并把“GPU Composition”与 Device Composition 混用。按照 HWC2 语义，Device Composition 是 HWC/overlay 硬件合成，Client Composition 才是 SurfaceFlinger/RenderEngine 的 GPU 合成。该表述也与 2.6 节现有定义冲突。",
+        "suggestion": "统一为 Device Composition = HWC 硬件合成，Client Composition = SurfaceFlinger/RenderEngine 的 GPU 合成，并同步修正文中的排查树和术语。"
+      },
+      {
+        "type": "事实错误",
+        "location": "L342 Binder 线程池说明",
+        "detail": "文中写“每个进程默认有 16 个 Binder 线程（max_threads）”。AOSP libbinder 的 DEFAULT_MAX_BINDER_THREADS 为 15；如果把调用方自己 join 线程池的线程也算进来，总服务线程数才可能到 16。当前写法把 max_threads 和总服务线程数混为一谈。",
+        "suggestion": "改成“libbinder 默认最多按需创建 15 个 Binder 线程，若再加上调用 joinThreadPool() 的线程，总服务线程数可能更多；具体进程还可显式覆写该上限”。"
+      },
+      {
+        "type": "原理断裂",
+        "location": "L172 / L405 主线程锁竞争诊断",
+        "detail": "章节把等待锁的主线程表现写成 Runnable/Sleeping，并建议开启 `-a lock`。这会把“调度延迟”和“锁等待”混在一起。Java/Kotlin monitor contention 更可靠的入口是 monitor contention / futex / owner-waiter 关系，抓取口径通常依赖 dalvik + sched（以及 Perfetto 的 android.monitor_contention 模块），不是泛化成 `-a lock`。",
+        "suggestion": "把锁竞争与 Runnable 调度延迟拆开，补一条专门的诊断口径：看 Blocked/monitor contention/futex wait、owner/waiter 关系，以及对应的 dalvik/sched 采集配置。"
+      },
+      {
+        "type": "原理断裂",
+        "location": "L188-L196 RenderThread GPU 过载",
+        "detail": "文中写“RenderThread 需要将图片解码后上传到 GPU 纹理”。图片 decode 主要发生在 CPU 侧（主线程或工作线程）；RenderThread / GPU 临界路径更常见的是首次 texture upload、重传或尺寸过大的纹理处理。把 decode 和 upload 混写，会误导排查入口。",
+        "suggestion": "拆成两个环节：CPU 侧 decode/缩放开销，以及 RenderThread 上的 texture upload / GPU 纹理带宽开销，并给出各自的 Perfetto 观察点。"
+      },
+      {
+        "type": "版本差异",
+        "location": "L357-L394 分析树入口",
+        "detail": "章节把 VSYNC-app / doFrame 作为统一入口，没有把 Android 12+ FrameTimeline 的 JankType 归因树并入本节。这样会漏掉 SurfaceFlingerCpuDeadlineMissed、SurfaceFlingerGpuDeadlineMissed、DisplayHAL、PredictionError、BufferStuffing 等现代归因路径，也与 7.1 节已有的 FrameTimeline 说明不一致。",
+        "suggestion": "按版本拆开入口：Android 5-11 保留 VSYNC/doFrame 路径，Android 12+ 先看 FrameTimeline JankType、On time finish、Present Type，再决定回链到 App、SurfaceFlinger 还是 Display HAL。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-19T01:44:00+08:00",
+    "status": "pending"
   }
 ]
