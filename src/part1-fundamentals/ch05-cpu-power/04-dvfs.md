@@ -70,7 +70,7 @@ reviewed_by: openclaw-task6
 
 在 Perfetto 中打开一段 Trace，我们会看到每个 CPU 下方都有一条「CPU Frequency」轨迹——它像一条心电图，忽高忽低。这条线的每一次跳动，背后都是 DVFS 子系统在决定：此刻的 CPU 应该跑多快。
 
-如果我们做过性能优化，一定遇到过这样的场景：明明代码逻辑没问题，但第一帧就是卡了一下。或者列表滑动时偶尔掉帧，抓 Trace 一看，发现掉帧那个瞬间 CPU 频率很低——原来 CPU 还没来得及升频，帧就被渲染了。这就是 DVFS 调频延迟导致的性能问题，和我们之前在 [5.1 Linux 进程调度基础](./01-linux-scheduling.md) 中讨论的调度问题不同：调度决定「哪个任务跑在哪个核上」，DVFS 决定「这个核跑多快」。
+如果我们做过性能优化，一定遇到过这样的场景：明明代码逻辑没问题，但第一帧就是卡了一下。或者列表滑动时偶尔掉帧，抓 Trace 一看，发现掉帧那个瞬间 CPU 频率很低——原来 CPU 还没来得及升频，帧就被渲染了。这就是 DVFS 调频延迟导致的性能问题，和我们之前在 [5.1 Linux 进程调度基础](01-linux-scheduling.md) 中讨论的调度问题不同：调度决定「哪个任务跑在哪个核上」，DVFS 决定「这个核跑多快」。
 
 理解 DVFS 机制，能让我们在分析 Trace 时准确判断：一个掉帧是代码问题，还是 CPU 没跑起来？在 Perfetto 中看到的频率曲线，哪些变化是正常的，哪些意味着 governor 的参数需要调优？
 
@@ -183,7 +183,7 @@ schedutil 从 Linux 4.7 开始引入，它的核心思路是：**既然调度器
 
 在 schedutil 出现之前，主流的 governor 是 ondemand。ondemand 的工作方式是定时采样（默认每 100ms 一次）CPU 的 idle 时间，如果发现利用率超过阈值（默认 80%），就提高频率。这种方式的缺点很明显：**采样有延迟**。在采样间隔内，CPU 可能已经在高负载运行了，但 governor 还不知道。
 
-schedutil 解决这个问题的方法是直接挂钩到调度器的负载追踪机制——PELT（Per-Entity Load Tracking）。PELT 我们在 [5.1 Linux 进程调度基础](./01-linux-scheduling.md) 中介绍过，它为每个调度实体（task、task group、CPU runqueue）维护一个指数加权移动平均（EWMA）的利用率值。schedutil 直接读取这个值来决定频率，无需额外的采样开销。
+schedutil 解决这个问题的方法是直接挂钩到调度器的负载追踪机制——PELT（Per-Entity Load Tracking）。PELT 我们在 [5.1 Linux 进程调度基础](01-linux-scheduling.md) 中介绍过，它为每个调度实体（task、task group、CPU runqueue）维护一个指数加权移动平均（EWMA）的利用率值。schedutil 直接读取这个值来决定频率，无需额外的采样开销。
 
 #### schedutil 的频率计算
 
@@ -209,7 +209,7 @@ schedutil 有一个 `rate_limit_us` 参数（通过 sysfs 可配置），控制�
 
 [已验证: 来源见 obsidian/Personal-Knowlodge/source/2026-03-08_wechat_调度器分支之RTG.md]
 
-我们在 [5.3 大小核架构](./03-big-little.md) 中提到过，Android 前台应用通常有多个线程协同工作（如 MainThread + RenderThread）。如果这些线程被分散到不同的 CPU 上运行，每个 CPU 的单独利用率可能都不高（比如只有 50%），schedutil 就不会积极升频。但实际上这些线程的**总负载**已经很高了。
+我们在 [5.3 大小核架构](03-big-little.md) 中提到过，Android 前台应用通常有多个线程协同工作（如 MainThread + RenderThread）。如果这些线程被分散到不同的 CPU 上运行，每个 CPU 的单独利用率可能都不高（比如只有 50%），schedutil 就不会积极升频。但实际上这些线程的**总负载**已经很高了。
 
 RTG 的「聚合调频」功能就是为了解决这个问题。当 Android 的 top-app cgroup 中的线程被标记为同一组后，RTG 会将这组线程在同一个 cluster 上的负载**累加计算**，再将累加后的负载反馈给 schedutil。这样即使线程分散在多个核上，调频决策也能反映真实的总需求。
 
@@ -362,11 +362,11 @@ GPU 频率变化同样可以通过 Perfetto 观察。如果设备支持，我们
 
 DVFS 不是独立运行的，它和本书中讨论的多个机制密切相关：
 
-- **[5.1 进程调度基础](./01-linux-scheduling.md)**：schedutil 直接依赖 PELT 的利用率数据，调度器的负载追踪精度决定了调频的质量
-- **[5.2 EAS 能量感知调度](./02-eas.md)**：EAS 在选核时需要考虑不同 CPU 的能效比，而能效比本身取决于当前的频率/电压（即 DVFS 状态）
-- **[5.3 大小核架构](./03-big-little.md)**：大小核的迁移策略和 DVFS 互相影响——迁核后频率可能需要重新调整，频率变化又可能影响迁核决策
-- **[5.5 Thermal 管控](./05-thermal.md)**：当温度过高时，thermal 机制会限制 DVFS 的最高频率（即降频限频），这是功耗管理与热管理的交汇点
-- **[7.3 卡顿分析方法论](../../part2-performance/ch07-smoothness/03-jank-methodology.md)**：在分析卡顿时，CPU 频率是需要首先排查的因素之一
+- **[5.1 进程调度基础](01-linux-scheduling.md)**：schedutil 直接依赖 PELT 的利用率数据，调度器的负载追踪精度决定了调频的质量
+- **[5.2 EAS 能量感知调度](02-eas.md)**：EAS 在选核时需要考虑不同 CPU 的能效比，而能效比本身取决于当前的频率/电压（即 DVFS 状态）
+- **[5.3 大小核架构](03-big-little.md)**：大小核的迁移策略和 DVFS 互相影响——迁核后频率可能需要重新调整，频率变化又可能影响迁核决策
+- **[5.5 Thermal 管控](05-thermal.md)**：当温度过高时，thermal 机制会限制 DVFS 的最高频率（即降频限频），这是功耗管理与热管理的交汇点
+- **[7.3 卡顿分析方法论](03-jank-methodology.md)**：在分析卡顿时，CPU 频率是需要首先排查的因素之一
 
 ## 常见问题与误区
 

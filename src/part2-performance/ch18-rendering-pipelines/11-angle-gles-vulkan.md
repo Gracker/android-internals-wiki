@@ -225,6 +225,147 @@ LIMIT 50;
 - **18.8 OpenGL ES 渲染链路**：原生 GLES 链路，与 ANGLE 形成对比
 - **18.9 Vulkan 原生渲染链路**：ANGLE 底层走的就是 Vulkan
 
+
+
+<!-- AIW-源码调研-2026-04-18 -->
+## Driver-Selection 机制：分层决策链
+
+> 以下内容基于 AOSP android-14.0.0_r1 源码深度调研补充。
+
+### 决策入口：GraphicsEnvironment.setup()
+
+ANGLE driver selection 的 Java 层决策集中在一个类：`android.os.GraphicsEnvironment`（`frameworks/base/core/java/android/os/GraphicsEnvironment.java`）。
+
+关键调用链：
+
+```
+ActivityThread.attach()
+  └─> GraphicsEnvironment.getInstance().setup(context, coreSettings)
+        ├─> setupGpuLayers()           — Debug layer 路径配置
+        ├─> setupAngle()                — ANGLE 包发现 + setAngleInfo() JNI
+        │     └─> shouldUseAngle() / shouldUseAngleInternal()
+        └─> chooseDriver()              — Updatable driver 选择
+```
+
+核心方法是 `shouldUseAngleInternal()`，其**优先级顺序**如下：
+
+**优先级 1**：`Settings.Global.ANGLE_GL_DRIVER_ALL_ANGLE`（ADB: `angle_gl_driver_all_angle`）
+- 值 `1`：全局强制所有进程走 ANGLE（进程启动后生效，重启清除）
+- 设备厂商可利用此机制在系统层面灰度切 ANGLE
+
+**优先级 2**：`angle_gl_driver_selection_pkgs` + `angle_gl_driver_selection_values`
+- 前者填包名（逗号分隔），后者填驱动选择（`angle` / `native` / `default`，逗号对应）
+- 两个列表必须等长；列表外的包不触发此规则
+
+**优先级 3**：Game Mode ANGLE（Android 12+）
+- `GameManager.isAngleEnabled(packageName)` — Game Mode API 的一部分
+- OEM 可通过 Game Mode 干预对游戏启用 ANGLE，无需用户手动开启 Developer Options
+- 在 GraphicsEnvironment 中通过 `isAngleEnabledByGameMode()` 查询
+
+**优先级 4**（兜底）：Platform allowlist — `a4a_rules.json`
+
+```java
+// GraphicsEnvironment.shouldUseAngleInternal() 简化逻辑
+private boolean shouldUseAngleInternal(Context context, Bundle bundle, String packageName) {
+    // 1. 全局开关
+    if (allUseAngle == ANGLE_GL_DRIVER_ALL_ANGLE_ON) return true;
+
+    // 2. 按包配置
+    int pkgIndex = getPackageIndex(packageName, optInPackages); // optInPackages 从 Settings.Global 读取
+    if (pkgIndex >= 0) {
+        String optInValue = optInValues.get(pkgIndex);
+        if (optInValue.equals("angle")) return true;
+        if (optInValue.equals("native")) return false;
+    }
+
+    // 3. Game Mode（Android 12+）
+    return isAngleEnabledByGameMode(context, packageName);
+}
+```
+
+### ANGLE 包发现：Debug Package vs System ANGLE
+
+`GraphicsEnvironment.setupAngle()` 负责找到可用的 ANGLE 库，有两条路径：
+
+**路径 A — Debug Package（用户通过 ADB 指定）**：
+```bash
+adb shell settings put global angle_debug_package org.chromium.angle
+```
+- 通过 `Settings.Global.ANGLE_DEBUG_PACKAGE` 读取
+- **仅对 debuggable 进程生效**（`isDebuggable()` 检查）
+- 不要求预装，可加载任意已安装 APK 中的 ANGLE 库
+
+**路径 B — System ANGLE（预装系统应用）**：
+- 通过 `ACTION_ANGLE_FOR_ANDROID` intent 在 PackageManager 中查询
+- 要求 `PackageManager.MATCH_SYSTEM_ONLY` — 必须是 system app
+- 通常对应 `org.chromium.angle` 系统 APK（在 Google 设备上预装）
+
+**关键约束**：ANGLE 只能用于 **Java 运行时启动的进程**；SurfaceFlinger 和 native executable 无法使用 ANGLE。
+
+### A4A Rules JSON：Platform Allowlist 机制
+
+ANGLE APK 内置 `a4a_rules.json`（Chromium 仓库路径：`src/feature_support_util/a4a_rules.json`），定义平台级 ANGLE 启用规则：
+
+```json
+{
+   "Rules":[
+      {
+         "Rule":"Default Rule (i.e. use native driver)",
+         "UseANGLE":false
+      },
+      {
+         "Rule":"Supported application(s)",
+         "UseANGLE":true,
+         "Applications":[{"AppName":"org.chromium.angle"}],
+         "Devices":[{"Manufacturer":"Google"}]
+      }
+   ]
+}
+```
+
+解读：
+- **默认规则**：使用 native driver，不自动启用 ANGLE
+- **规则 2**：仅允许 `org.chromium.angle` 包在 Google 设备上默认走 ANGLE
+- 临时 override：`adb shell setprop debug.angle.rules /path/to/temp_rules.json`（重启清除）
+
+### Debuggable/Dumpable 限制
+
+ANGLE driver selection 的多个机制有 dumpable 限制：
+
+| 机制 | 限制条件 |
+|------|---------|
+| `angle_debug_package` | 必须 debuggable（`isDebuggable()`）或 root |
+| Debug layer injection | 必须 debuggable 或 `canInjectLayers()`（metadata flag） |
+| `angle_gl_driver_selection_*` 全局设置 | debuggable App 或 root |
+| Game Mode ANGLE | 无特殊限制，通过 GameManager API 生效 |
+
+`isDebuggable()` 在 JNI 层对应 `GraphicsEnv::getInstance().isDebuggable()`，检查的是 `pr_get_dumpable()` 标志（Zygote fork 时设置）。
+
+### EGL Loader 实际加载顺序
+
+EGL Loader.cpp（`frameworks/native/opengl/libs/EGL/Loader.cpp`）接收 Java 层配置后的实际加载序列：
+
+1. **ANGLE namespace 已设置** → 加载 `libEGL.so`（ANGLE 版本）到 ANGLE namespace
+2. **Updatable driver path 已设置** → 从 APK 加载 vendor driver
+3. **`ro.hardware.egl`** 系统属性 → 加载对应厂商 GLES driver
+4. **Default** → 兜底加载默认 driver
+
+ANGLE namespace 隔离确保 ANGLE 库的加载不会污染 system 库命名空间，使得同一设备上不同 App 可以使用不同的 GLES driver。
+
+### ANGLE EGL Features：按包特性配置
+
+`Settings.Global.ANGLE_EGL_FEATURES` 允许为每个包单独配置 ANGLE EGL 扩展列表，通过冒号分隔：
+
+```java
+// GraphicsEnvironment.getAngleEglFeatures()
+final List<String> featuresLists = getGlobalSettingsString(
+    context.getContentResolver(), coreSettings, Settings.Global.ANGLE_EGL_FEATURES);
+return featuresLists.get(mAngleOptInIndex).split(":");
+```
+
+这些特性字符串（如 `angle_platform_angle`）最终通过 `setAngleInfo()` 传递给 ANGLE C++ 层，控制 ANGLE 启用哪些 EGL 扩展。
+
+
 ## 参考资料
 
 - Google ANGLE 项目：https://chromium.googlesource.com/angle/angle/

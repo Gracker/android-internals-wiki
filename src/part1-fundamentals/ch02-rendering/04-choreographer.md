@@ -647,5 +647,5 @@ Choreographer 不是孤立工作的，它位于 Android 渲染管线的中心节
    - [第 2.3 节：VSync 机制](03-vsync.md)
    - [第 2.5 节：MainThread 与 RenderThread 协作](05-main-render-thread.md)
    - [第 2.6 节：SurfaceFlinger 与合成](06-surfaceflinger.md)
-   - [第 3.1 节：Input 事件分发全流程](../ch03-input/01-input-dispatch.md)
-   - [第 8.2 节：App 启动全流程](../../part2-performance/ch08-responsiveness/02-app-launch.md)
+   - [第 3.1 节：Input 事件分发全流程](01-input-dispatch.md)
+   - [第 8.2 节：App 启动全流程](02-app-launch.md)

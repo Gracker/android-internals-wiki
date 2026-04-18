@@ -237,7 +237,7 @@ Android 12 引入了 FrameTimeline 机制，彻底改变了 Jank 的判定方式
 ---
 
 > **交叉引用**：
-> - BufferQueue 的内部机制（Producer/Consumer 双端、Buffer Slot 管理）详见 [2.1 BufferQueue 机制](../../part1-fundamentals/ch02-rendering/13-buffer-queue.md)
-> - SurfaceFlinger 的合成策略（GPU 合成 vs HWC 合成）详见 [2.5 SurfaceFlinger](../../part1-fundamentals/ch02-rendering/06-surfaceflinger.md)
-> - Fence 同步原理详见 [2.6 同步机制](../../part1-fundamentals/ch02-rendering/16-sync-fence.md)
+> - BufferQueue 的内部机制（Producer/Consumer 双端、Buffer Slot 管理）详见 [2.1 BufferQueue 机制](13-buffer-queue.md)
+> - SurfaceFlinger 的合成策略（GPU 合成 vs HWC 合成）详见 [2.5 SurfaceFlinger](06-surfaceflinger.md)
+> - Fence 同步原理详见 [2.6 同步机制](16-sync-fence.md)
 > - SurfaceControl 与 Transaction 的底层实现详见 [18.10 SurfaceControl API 深入](10-surface-control-api.md)

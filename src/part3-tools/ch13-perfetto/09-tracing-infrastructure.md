@@ -402,3 +402,12 @@ Android 16 引入的 UprobeStats 就是基于 eBPF uprobe 机制的动态埋点�
 - 需要自定义追踪点，我们知道在哪一层用什么 API
 - 想评估 Tracing 对测试结果的影响，我们知道不同模式的精确开销范围
 - 对于 OEM/系统开发者，我们知道了从内核到 Perfetto 的完整扩展路径
+
+## 延伸阅读
+
+### XTrace：字节跳动生产级 Android 动态追踪系统深度解析
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/XTrace：字节跳动生产级 Android 动态追踪系统深度解析.md
+- 类型：DeepResearch 调研结果
+- 摘要：XTrace 利用 ART Instrumentation 机制做非侵入式动态追踪，并通过改造 entry point 路径绕开全局方法注入与强制解释执行两大性能坑，还给出了线上 A/B 测试与故障诊断收益。
+- 注入时间：2026-04-18
+- 价值：能把 13.9 从基础设施层延伸到生产级动态追踪方案对比。

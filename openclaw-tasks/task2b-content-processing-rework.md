@@ -10,7 +10,7 @@
 2. 修复 Task 9 Deep Tech Review 发现的 P0/P1 技术问题（priority 95 / 85）
 3. 将 review / deep review 产出的具体问题单落地为可再次进入 review 的章节
 
-**绝不写新章节，不主动全书精修，不重新做 review 裁决。每轮处理 1-2 个章节，默认 1 个；仅当问题范围清晰且总工作量可控时处理 2 个。**
+**绝不写新章节，不主动全书精修，不重新做 review 裁决。每轮处理 1-3 个章节，默认 2 个；仅当问题范围清晰且总工作量可控时处理 3 个。若问题跨度大或存在重度源码修复，退回处理 1 个。**
 
 ## 本地环境
 - 项目目录：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/
@@ -18,6 +18,8 @@
 - 加工队列：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/metadata/queue.json
 - Review 意见：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/suggestions.md
 - Review 日志目录：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/logs/review/
+- 外部 Review 归档：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/logs/external-review/
+- 外部 Review 整合规范：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/external-ai-review-integration-spec.md
 - Obsidian 落盘：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/知识加工/YYYY-MM-DD-HH-知识加工(回炉).md
 
 ## ⚠️ 铁律：只修回炉/技术纠错章节
@@ -50,7 +52,7 @@
 - `pipeline_stage: task2b_pending`
 - `task2b_state: pending`
 
-每轮最多处理 2 个。
+每轮最多处理 3 个，默认目标 2 个。若命中的回炉项主要是轻中度修复（如局部源码勘误、版本差异补充、trace 观察点补强），优先尝试处理 2-3 个；若包含重度结构性返工，则降回 1 个。
 
 **对于 Task 9 Deep Tech Review 条目（priority 95 / 85）：**
 - 条目中包含 `review_issues` 数组，每个元素有 `type`、`location`、`detail`、`suggestion`
@@ -68,11 +70,28 @@
 **如果是 Task 6 条目（priority 90）：**
 - 根据 queue 条目中的 `original_review_log` 字段，找到对应的 review 日志文件
 
-### Step 3：读取 suggestions.md
+### Step 3：读取 suggestions.md 与 external-review 归档
 读取 intake/suggestions.md 中 Task 6 追加的 review 意见。
+
+如果当前章节存在对应的 external-review 活跃文件（优先检查 `logs/external-review/` 根目录下、且不在 `archive/` 中、文件名包含章节号的最新文件），必须一并读取，重点提取：
+- 可复用知识资产
+- 一手资料索引
+- 源码锚点
+- 版本差异摘要
+- Trace / Perfetto 观察点
+
+这些内容默认视为本轮回炉修复的高价值参考材料。不要只看问题单，external-review 中沉淀的新增知识也应优先利用。
 
 ### Step 4：针对性修复
 **只修复 Task 6 / Task 9 标注的问题，不做无关改动，不重新发明任务目标。**
+
+如果 external-review 归档中存在可直接支撑修复的高价值知识资产（如源码路径、关键方法、版本差异、一手资料链接、trace 观察点），优先把这些内容转化为：
+- 更准确的源码引用
+- 更完整的原理链
+- 更清晰的版本差异说明
+- 更扎实的 Perfetto / Trace 落地说明
+
+注意：这里只能把 external-review 资产用于修复当前问题单命中的范围，不要借机扩写成无关的大段新内容。
 
 对于每种问题类型：
 - **需重写**：根据 Task 6 的建议重新撰写相关段落
@@ -101,10 +120,20 @@
 3. 更新 queue.json：将该条目的 `status` 改为 `completed`
 4. 更新 progress.json
 
-### Step 7：Git 提交
+### Step 7：归档已消费 external-review（如适用）
+如果本轮明确消费了某个 external-review 活跃文件，且其核心结果已被写入章节 / queue / suggestions / research-gaps 中的任一位置，则在结束前执行：
+
 ```bash
 cd "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki"
-git add src/ metadata/
+python3 scripts/external_review_archive_helper.py archive
+```
+
+注意：该命令只会归档已被识别为 consumed 的 external-review 文件，不会误归档仍待处理的活跃文件。
+
+### Step 8：Git 提交
+```bash
+cd "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki"
+git add src/ metadata/ intake/ logs/external-review/
 git commit -m "[openclaw] rework: {章节号} {小节名} — review 回炉修复"
 ```
 
@@ -126,6 +155,7 @@ git commit -m "[openclaw] rework: {章节号} {小节名} — review 回炉修�
 
 ## 注意事项
 - **只修 Task 6/Task 9 标注的问题**，不做无关改动
+- 当 backlog 明显堆积时，优先选择问题范围清晰、可快速闭环的章节，以提高整体吞吐
 - 不凭空编造技术细节
 - 不改变高爷的技术观点和表述风格
 - 修完后必须把章节重新送回 Task 6 → Task 9 流水线，不要直接宣布出版终态

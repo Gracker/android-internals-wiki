@@ -69,11 +69,11 @@ mdbook serve
 | Part 4: 系统级优化 | 2 | 6 | ⏳ 待加工 |
 | 前言 + 附录 | - | 11 | ⏳ 待加工 |
 
-详细路线图见 [metadata/roadmap.md](metadata/roadmap.md)
+详细路线图见 [metadata/roadmap.md](roadmap.md)
 
 ## 贡献
 
-欢迎贡献！请阅读 [CONTRIBUTING.md](CONTRIBUTING.md) 了解贡献方式和规范。
+欢迎贡献！请阅读 [CONTRIBUTING.md](Obsidian/AgentOS/Android-Internal-Wiki/CONTRIBUTING.md) 了解贡献方式和规范。
 
 ## 关于 AI 辅助
 

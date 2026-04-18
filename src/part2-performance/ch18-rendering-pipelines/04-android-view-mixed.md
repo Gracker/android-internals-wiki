@@ -205,5 +205,5 @@ SurfaceView 的缩放、旋转等变换需要 SurfaceFlinger 在合成时处理�
 > **交叉引用**：
 > - 标准 BLAST 链路详见 [18.2 Android View 标准链路](02-android-view-standard.md)
 > - SurfaceView 的独立 Surface 机制详见 [18.6 SurfaceView 直出链路](06-surfaceview.md)
-> - SurfaceFlinger 的 Layer 合成策略详见 [2.6 SurfaceFlinger](../../part1-fundamentals/ch02-rendering/06-surfaceflinger.md)
-> - HWC 硬件合成原理详见 [2.7 Hardware Layer](../../part1-fundamentals/ch02-rendering/07-hardware-layer.md)
+> - SurfaceFlinger 的 Layer 合成策略详见 [2.6 SurfaceFlinger](06-surfaceflinger.md)
+> - HWC 硬件合成原理详见 [2.7 Hardware Layer](07-hardware-layer.md)

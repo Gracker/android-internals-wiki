@@ -13,6 +13,8 @@
 - 写作规范：writing-guide.md（项目根目录）
 - 加工队列：metadata/queue.json
 - 知识盲区：intake/research-gaps.md
+- 外部 Review 归档：logs/external-review/
+- 外部 Review 整合规范：external-ai-review-integration-spec.md
 - Review 日志：logs/deep-review/YYYY-MM-DD-HH-deep-review.md
 - 进度追踪：metadata/progress.json
 - Obsidian 落盘：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/知识加工/YYYY-MM-DD-HH-深度技术Review.md
@@ -20,7 +22,7 @@
 ## ⚠️ 铁律
 
 1. **只 Review 不修改**——发现问题标注并写入建议，不直接改章节内容；审计结论必须足够具体，能直接指导下一轮精修
-2. **每次 Review 1-2 个章节**，深度优先，默认 1 个；仅当两个章节都较短或问题较聚焦时才处理 2 个
+2. **每次 Review 1-2 个章节**，深度优先，默认 2 个；仅当两个章节都较短、问题较聚焦或属于同一主题簇时处理 2 个。若章节极长、源码链复杂，则退回处理 1 个
 3. **不重复 Task 6 的工作**——不管措辞、格式、中英文间距、段落流畅度等写作质量问题
 4. **只审技术，不做写作层结论**——源码、原理链、版本差异、数据支撑、知识盲区是你的边界
 5. **不编造技术事实**——如果不确定，标注 `[待验证]` 而不是给出错误判断
@@ -47,8 +49,25 @@
 3. 同优先级时按章节号顺序（1.1 → 1.2 → 2.1...）
 4. 追踪已 Review 章节：在日志中维护，避免重复（同一章节至少间隔 7 天才可重审）
 5. 如果没有可 Review 的章节 → 回复"当前无可 Review 章节"并结束
+6. 当 recent external-review backlog 较多时，优先处理已被 external-review 标记出明确高风险点、且可在 1 轮内完成技术审计闭环的章节
 
 ---
+
+## Step 1.5：读取 external-review（如存在）
+
+在正式 deep review 前，检查 `logs/external-review/` 根目录（不含 `archive/`）下是否已有该章节最近 7 天的 external-review 活跃文件。
+
+如果存在，必须读取并提取：
+- 一手资料索引
+- 源码锚点
+- 版本差异摘要
+- 知识盲区
+- Trace / Perfetto 观察点
+
+使用方式：
+- **它是高价值输入，不是最终裁决**
+- 你必须复核其中关键结论，不能盲信照搬
+- 如果 external-review 已指出高风险源码问题，本轮应优先验证这些点
 
 ## Step 2：深度技术审查
 
@@ -160,6 +179,11 @@
 
 ### 3b. P1 知识盲区 → 写入 intake/research-gaps.md
 
+如果某个知识盲区已经被 recent external-review 明确提出：
+- 不要重复机械新增同一条
+- 优先补充 / 合并 external-review 提供的一手资料线索、版本信息、研究方向
+- 在描述里保留“external-review 已命中”的事实，方便 Task 5 继续跟进
+
 格式：
 ```markdown
 ## [{日期}] {章节号} {章节名} — 知识盲区
@@ -262,11 +286,20 @@
 
 ---
 
-## Step 5：Git 提交
+## Step 5：归档已消费 external-review（如适用）
+
+如果本轮明确消费了某个 external-review 活跃文件，且其关键问题 / 盲区 / 线索已经被转写进 `queue.json`、`research-gaps.md`、`suggestions.md` 或 deep-review 结论中，则在结束前执行：
 
 ```bash
 cd "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki"
-git add metadata/ intake/ logs/deep-review/
+python3 scripts/external_review_archive_helper.py archive
+```
+
+## Step 6：Git 提交
+
+```bash
+cd "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki"
+git add metadata/ intake/ logs/deep-review/ logs/external-review/
 git commit -m "[openclaw] deep-review: {章节号} {小节名} — 技术审计（P0:{X} P1:{X} P2:{X}）"
 ```
 
@@ -300,6 +333,9 @@ P0 事实错误：{X} 处 | P1 重要缺失：{X} 处 | P2 建议：{X} 处
 
 ### 无可 Review 章节
 回复"当前无可 Review 章节"并结束。
+
+### external-review backlog 堆积
+如果 `logs/external-review/` 在最近 24 小时内新增较多归档，优先挑选其中问题最清晰、证据链最强、且适合一轮深审完成的 1-2 个章节，避免平均摊薄到太多章节导致每篇都审不深。
 
 ### 章节内容过短
 跳过（正文 < 100 行的章节技术审查价值有限），选下一个。

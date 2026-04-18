@@ -201,5 +201,5 @@ Dirty Rect 不是简单地"只画变化区域"。`Surface::lock()` 会先比较�
 
 > **交叉引用**：
 > - 标准 BLAST 硬件加速链路详见 [18.2 Android View 标准链路](02-android-view-standard.md)
-> - BufferQueue 机制详见 [2.13 BufferQueue](../../part1-fundamentals/ch02-rendering/13-buffer-queue.md)
-> - Skia 渲染引擎的内部机制详见 [2.14 图形 API 演进](../../part1-fundamentals/ch02-rendering/14-graphics-api-evolution.md)
+> - BufferQueue 机制详见 [2.13 BufferQueue](13-buffer-queue.md)
+> - Skia 渲染引擎的内部机制详见 [2.14 图形 API 演进](14-graphics-api-evolution.md)

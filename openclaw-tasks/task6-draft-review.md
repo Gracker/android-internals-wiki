@@ -18,6 +18,8 @@
 - 写作规范：writing-guide.md（项目根目录）
 - 验证记录：metadata/verification-log.json
 - 加工队列：metadata/queue.json
+- 外部 Review 归档：logs/external-review/
+- 外部 Review 整合规范：external-ai-review-integration-spec.md
 - Review 日志：logs/review/YYYY-MM-DD-HH-review.md
 - 进度追踪：metadata/progress.json
 
@@ -72,6 +74,18 @@
 #### 4a-2. 对比分析
 将新素材与章节现有内容逐项对比，判断以下三种情况：
 
+如果该章节存在 recent external-review 活跃文件（位于 `logs/external-review/` 根目录，不在 `archive/` 中），也必须一并读取，重点参考：
+- 外部 review 提供的一手资料索引
+- 源码锚点
+- 版本差异摘要
+- Trace / Perfetto 观察点
+- 可复用知识资产
+
+使用方式：
+- external-review 不是最终裁决，但可作为高价值参考输入
+- Task 6 不负责做源码真伪裁决，但可以利用 external-review 帮助判断哪些段落存在技术风险信号
+- 如果 external-review 明确指出某段存在技术高风险，Task 6 在重审时应优先把它标记为需要进入 Task 9 / Task 2B 的重点区域
+
 | 判断结果 | 含义 | 处理方式 |
 ---------|------|--------|
 | **应纳入** | 素材包含章节中完全缺失的重要知识点/数据/案例 | 直接补充到章节中 |
@@ -124,9 +138,10 @@ git commit -m "[openclaw] re-review: {章节号} {小节名} — 素材冲击重
 选择本次 review 目标：
 1. **优先选择尚未被 Task 6 review 过，或距上次 Task 6 review 已超过 7 天的章节**
 2. **同优先级时按章节号排序**（1.1 → 1.2 → 2.1 ...）
-3. **每次 review 1-2 个章节**（默认 1 个；仅当两个章节都较短、问题都偏轻量时才处理 2 个）
+3. **每次 review 1-2 个章节**（默认 2 个；仅当两个章节都较短、问题都偏轻量或 external-review 已提供高质量前置结论时优先处理 2 个；若章节较长或风险复杂则降回 1 个）
 4. **必须通过 Step 3 的内容充分性检查**
 5. **如果章节明显存在技术事实风险，不在 Task 6 内做技术裁决，只标记并交给 Task 9 / Task 2B**
+6. 如果 recent external-review 已经给出该章节的高风险信号，优先参考其结论来定位风险段落，但不要直接把 external-review 当最终裁决
 
 ### Step 5：逐维度 Review
 
@@ -193,6 +208,7 @@ git commit -m "[openclaw] re-review: {章节号} {小节名} — 素材冲击重
 - 缺少关键素材支撑（标注 `[需补充素材: 具体缺什么]`）
 - 与其他章节存在潜在矛盾（标注 `[需确认: 与 X.Y 章节可能矛盾]`）
 - 任何涉及源码准确性、原理链断裂、版本差异的问题（统一交由 Task 9 审核后，再由 Task 2B 修复）
+- external-review 已明确提示为高风险的技术段落（统一优先送入 Task 9 / Task 2B，而不是在 Task 6 中自行拍板）
 
 ### Step 7：更新文件
 1. 将小修后的内容写回 src/ 对应文件（使用 exec + python/pathlib + 绝对路径）
@@ -289,10 +305,18 @@ git commit -m "[openclaw] re-review: {章节号} {小节名} — 素材冲击重
 - 锚点覆盖：已覆盖/总数
 ```
 
-### Step 9：Git 提交（仅首次 review 模式）
+### Step 9：归档已消费 external-review（如适用）
+如果本轮首次 review 或重审明确消费了某个 external-review 活跃文件，且其高风险段落判断已经转写进 `suggestions.md`、`queue.json` 或 review 结论中，则在结束前执行：
+
 ```bash
 cd "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki"
-git add src/ metadata/ logs/review/
+python3 scripts/external_review_archive_helper.py archive
+```
+
+### Step 10：Git 提交（仅首次 review 模式）
+```bash
+cd "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki"
+git add src/ metadata/ logs/review/ logs/external-review/
 git commit -m "[openclaw] review: {章节号} {小节名} — 草稿 review 完成"
 ```
 
@@ -321,7 +345,7 @@ writing-guide 合规：✅ 合规 / ⚠️ N 处不合规（已修复/已标注�
 下一 review 候选：{章节号} {小节名}
 
 ## 注意事项
-- 每次 review 处理 1-2 个章节，默认 1 个；仅当两个章节都较短或问题较轻时才处理 2 个
+- 每次 review 处理 1-2 个章节，默认 2 个；仅当两个章节都较短、问题较轻或已有 external-review 作为前置信号时优先处理 2 个；若章节较长或存在复杂技术风险则降回 1 个
 - 不改变高爷的技术观点
 - 不删除已有的验证标注
 - 大问题只标注不改，留给高爷决策
@@ -329,6 +353,9 @@ writing-guide 合规：✅ 合规 / ⚠️ N 处不合规（已修复/已标注�
 - 先落盘再输出完整报告正文
 
 ## 异常处理
+
+### external-review backlog 堆积
+如果 recent external-review 已经给多个章节提供了高质量前置信号，Task 6 应优先选择其中写作层问题较轻、结构较完整的章节，加快把它们送入 Task 9 / Task 2B。
 
 ### 无 ready-for-review 章节
 如果扫描后发现没有 status=ready-for-review 的章节：

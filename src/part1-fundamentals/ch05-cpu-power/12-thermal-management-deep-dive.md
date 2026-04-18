@@ -77,9 +77,9 @@ task9_result: needs-rework
 > 锚点内容需 L1/L2 验证，扩展内容至少 L2 验证，自动发现内容至少标注来源。
 <!-- outline-end -->
 
-本章是 [5.5 Thermal 管控](./05-thermal.md) 的深度扩展。5.5 讲的是"温控系统从传感器到 App 的完整流程"，适合建立全局认知。如果你已经读完 5.5，并且需要回答这些问题——"内核的 thermal governor 具体怎么决策？""power_allocator 的 PID 参数怎么调？""为什么同一款 SoC 的两台手机 thermal 表现差这么多？""在 Perfetto 里怎么用 SQL 量化 thermal throttling 对帧率的影响？"——那么你在这篇文章里能找到答案。
+本章是 [5.5 Thermal 管控](05-thermal.md) 的深度扩展。5.5 讲的是"温控系统从传感器到 App 的完整流程"，适合建立全局认知。如果你已经读完 5.5，并且需要回答这些问题——"内核的 thermal governor 具体怎么决策？""power_allocator 的 PID 参数怎么调？""为什么同一款 SoC 的两台手机 thermal 表现差这么多？""在 Perfetto 里怎么用 SQL 量化 thermal throttling 对帧率的影响？"——那么你在这篇文章里能找到答案。
 
-[5.9 ADPF 自适应性能框架](./09-adpf.md) 讲了 Performance Hint API 和 Game Mode API 的使用方法。本章聚焦在 thermal 这一侧：内核子系统的内部机制、Thermal HAL 的接口演进、以及从被动降频到主动温控的范式变化。ADPF 作为"App 主动参与温控"的手段，在本章中从 thermal 的视角被重新审视。
+[5.9 ADPF 自适应性能框架](09-adpf.md) 讲了 Performance Hint API 和 Game Mode API 的使用方法。本章聚焦在 thermal 这一侧：内核子系统的内部机制、Thermal HAL 的接口演进、以及从被动降频到主动温控的范式变化。ADPF 作为"App 主动参与温控"的手段，在本章中从 thermal 的视角被重新审视。
 
 ## 为什么需要深挖 Thermal 子系统
 
@@ -644,11 +644,11 @@ thermal governor（尤其是 power_allocator）利用了这个非线性特性—
 
 ## 与其他机制的关系
 
-- **[5.5 Thermal 管控](./05-thermal.md)**：本章是 5.5 的深度扩展。5.5 建立全局认知，本章深入内核机制和工程实践。
-- **[5.4 DVFS](./04-dvfs.md)**：DVFS 是 thermal cooling 的执行手段。cpufreq cooling 通过限制 DVFS 的频率上限来降温。
-- **[5.9 ADPF](./09-adpf.md)**：ADPF 是 App 参与温控的桥梁。本章从 thermal 视角审视 ADPF，5.9 从性能优化视角审视 ADPF。
-- **[8.9 游戏性能](../../part2-performance/ch08-responsiveness/09-game-performance.md)**：游戏是 thermal 问题最集中的场景。本章的游戏策略可以直接应用于 8.9 中的案例。
-- **[11.1 功耗模型](../../part2-performance/ch11-power/01-power-model.md)**：thermal 和功耗是一体两面——功耗决定发热量，发热量触发 thermal throttling。理解功耗模型有助于从源头减少 thermal 压力。
+- **[5.5 Thermal 管控](05-thermal.md)**：本章是 5.5 的深度扩展。5.5 建立全局认知，本章深入内核机制和工程实践。
+- **[5.4 DVFS](04-dvfs.md)**：DVFS 是 thermal cooling 的执行手段。cpufreq cooling 通过限制 DVFS 的频率上限来降温。
+- **[5.9 ADPF](09-adpf.md)**：ADPF 是 App 参与温控的桥梁。本章从 thermal 视角审视 ADPF，5.9 从性能优化视角审视 ADPF。
+- **[8.9 游戏性能](09-game-performance.md)**：游戏是 thermal 问题最集中的场景。本章的游戏策略可以直接应用于 8.9 中的案例。
+- **[11.1 功耗模型](01-power-model.md)**：thermal 和功耗是一体两面——功耗决定发热量，发热量触发 thermal throttling。理解功耗模型有助于从源头减少 thermal 压力。
 
 ## 参考资料
 

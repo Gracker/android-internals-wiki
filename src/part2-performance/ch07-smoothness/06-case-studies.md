@@ -281,7 +281,7 @@ GC 导致卡顿的 Perfetto 特征：
 
 ### 分析思路
 
-有动画时卡顿、无动画时正常——问题一定跟动画渲染有关。在 Android 的渲染管线中，动画渲染涉及主线程（measure/layout/draw）和 RenderThread（GPU 指令提交）的协作（参见 [2.5 MainThread 与 RenderThread 协作](part1-fundamentals/ch02-rendering/05-main-render-thread.md)）。
+有动画时卡顿、无动画时正常——问题一定跟动画渲染有关。在 Android 的渲染管线中，动画渲染涉及主线程（measure/layout/draw）和 RenderThread（GPU 指令提交）的协作（参见 [2.5 MainThread 与 RenderThread 协作](05-main-render-thread.md)）。
 
 ### 抓取与定位
 
@@ -441,7 +441,7 @@ App 端优化后（响应 onTrimMemory + 减少自身内存占用 30%），在�
 
 ## 厂商级流畅性优化案例
 
-以上五个案例都是从 App 开发者视角出发的——拿到一个卡顿问题，分析根因，修复代码。但 Android 生态中还有一群人从完全不同的角度优化流畅性：设备厂商。他们在系统框架层和硬件协同层做的优化，往往能带来 App 层无法企及的提升。本节提供一个厂商视角的流畅性优化概览。详细的厂商级优化方法参见 [17.1 OEM 性能优化的通用思路](part4-system/ch17-oem/01-oem-overview.md)。
+以上五个案例都是从 App 开发者视角出发的——拿到一个卡顿问题，分析根因，修复代码。但 Android 生态中还有一群人从完全不同的角度优化流畅性：设备厂商。他们在系统框架层和硬件协同层做的优化，往往能带来 App 层无法企及的提升。本节提供一个厂商视角的流畅性优化概览。详细的厂商级优化方法参见 [17.1 OEM 性能优化的通用思路](01-oem-overview.md)。
 
 ### OPPO ColorOS 极光引擎：并行绘制架构
 

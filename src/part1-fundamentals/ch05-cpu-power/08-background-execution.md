@@ -433,3 +433,9 @@ Doze 的触发条件是灭屏 + 静止 + 未充电，与时间无关。白天如
 - [Perfetto Power Analysis](https://perfetto.dev/docs/quickstart/android-power)
 - [Perfetto trace 配置与数据源说明](https://perfetto.dev/docs/concepts/config)
 
+### Android 16 CachedAppOptimizer : Freezer 进程冻结机制源码级深度解析
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/Android 16 CachedAppOptimizer : Freezer 进程冻结机制源码级深度解析.md
+- 类型：DeepResearch 调研结果
+- 摘要：这篇源码级调研聚焦 Android 16 Freezer 演进，覆盖 10 秒 debounce、新拆分的 Freezer 类、FrozenStateChangeCallback API，以及 cgroup v2 freezer 与 Binder freeze driver 的协同约束。
+- 注入时间：2026-04-18
+- 价值：直接补到 5.8 的系统实现层，避免后台限制章节只停留在策略说明。

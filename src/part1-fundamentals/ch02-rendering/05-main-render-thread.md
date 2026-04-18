@@ -492,4 +492,4 @@ MainThread 与 RenderThread 的协作构成了 Android 硬件加速渲染的核�
    - [第 2.3 节：VSync 机制](03-vsync.md)
    - [第 2.4 节：Choreographer 与渲染流水线](04-choreographer.md)
    - [第 2.6 节：SurfaceFlinger 合成机制](06-surfaceflinger.md)
-   - [第 3.1 节：Input 事件分发全流程](../ch03-input/01-input-dispatch.md)
+   - [第 3.1 节：Input 事件分发全流程](01-input-dispatch.md)

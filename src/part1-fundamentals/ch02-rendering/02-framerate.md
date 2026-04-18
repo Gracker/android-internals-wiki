@@ -599,6 +599,62 @@ LTPO 面板的关键在于它的像素驱动电路中混合使用了两种 TFT �
 
 4. **Android 15 ARR 层**：自适应刷新率（Adaptive Refresh Rate）让刷新率切换更加平滑。ARR 通过"离散步进"（discrete VSync steps）来调整 VSync 周期，而不是做完整的 mode switch，这减少了切换时的视觉中断。
 
+[已验证: AOSP 源码 + 官方文档, 详见底部引用]
+
+<!-- AIW-源码调研-2026-04-18 -->
+### 源码深度：VRR vs ARR 分层 + RefreshRateSelector 评分算法
+
+**VRR（Variable Refresh Rate）≠ ARR（Adaptive Refresh Rate）**，两者是不同层级的概念：
+
+- **VRR**：硬件能力。LTPO 面板能够在 1Hz~120Hz+ 范围内连续变化刷新率，通过面板 TE（Tearing Effect）信号实现帧率与刷新率的动态匹配。VRR 是面板级特性，与 Android 系统无关。
+- **ARR**：Android 15 系统级策略。在 VRR 硬件之上，SurfaceFlinger 的 RefreshRateSelector 通过 HWC Composer3 HAL 接口，决策何时以及如何利用 VRR 能力。ARR 在**单一显示模式内**通过离散 VSync 步进来调整刷新率，不触发 DisplayMode 切换（避免 jank）。
+
+**分层关系**：硬件层（LTPO/VRR Panel）→ HWC HAL v3（Composer3 API）→ SurfaceFlinger RefreshRateSelector（ARR 策略决策）→ DisplayManager（Policy 边界）。
+
+**源码位置**：`frameworks/native/services/surfaceflinger/Scheduler/RefreshRateSelector.cpp`
+
+#### RefreshRateSelector 评分算法（比"整除"复杂得多）
+
+LayerVoteType 有 7 种类型，每种对应不同评分策略：
+
+| LayerVoteType | 含义 | 评分策略 |
+|---|---|---|
+| `NoVote` | 不关心刷新率 | 不参与评分 |
+| `Min` | 只要最低刷新率 | 最低刷新率满分 |
+| `Max` | 只要最高刷新率 | 与最大刷新率距离的平方 |
+| `Heuristic` | 平台内容检测帧率 | 非整除评分（0.95 penalty）|
+| `ExplicitDefault` | App 设置 Default | 计算实际渲染帧率（displayPeriod 最小倍数）|
+| `ExplicitExactOrMultiple` | App 设置 ExactOrMultiple | 整除=1.0；fractional pair=0.8 |
+| `ExplicitExact` | App 设置 Exact | 必须整除（divisor==1）|
+
+关键评分逻辑（`calculateLayerScoreLocked()`）：
+整除 → 满分 1.0；非整除 → 0.95 penalty；fractional pair（如 59.94fps@60Hz）→ 0.8 分。
+
+全局信号优先级（`getRankedFrameRatesLocked()`）：
+1. `powerOnImminent` → 最高刷新率
+2. `touch`（无 Explicit 层）→ 最高刷新率
+3. `idle`（主范围非单一刷新率）→ 最低刷新率
+4. 正常评分选择
+
+**LayerHistory 内容检测**：`services/surfaceflinger/Scheduler/LayerHistory.cpp`，通过分析 Buffer present timestamps 估算内容帧率。启用条件：`ro.surface_flinger.use_content_detection_for_refresh_rate`
+
+#### VSync 周期动态变化对 Choreographer 的影响
+
+SurfaceFlinger 切换刷新率后，**Choreographer 自动适应**，无需 App 侧干预。已在 Choreographer 中排队的 `FrameCallback` 会**自动按新周期重新调度**（基于绝对时间戳比较），不会丢弃已有订阅。
+
+| API | 引入 | 用途 |
+|---|---|---|
+| `AChoreographer_registerRefreshRateCallback` | API 30 NDK | 刷新率变化时收到 vsyncPeriodNanos |
+| `DisplayManager.DisplayListener.onDisplayChanged()` | API 21 | 刷新率变化通知 |
+| `Choreographer.VsyncCallback` | API 33 | 提供 FrameData 含多个候选时间线 |
+
+API 30 NDK callback 可能在回调触发后短时间内返回**过期的刷新率**值；API 31+ 保证一致性。
+
+[已验证: AOSP RefreshRateSelector.cpp + RefreshRateSelector.h 源码 + Android Developer 官方文档]
+
+<!-- AIW-源码调研-2026-04-18 end -->
+
+
 [已验证: 研究素材, Android-Internal-Wiki/intake/research-feeds/2026-03-30-15-arr-vsync-android15-16.md]
 
 ## 扩展：120Hz 场景的功耗权衡与智能降帧策略
