@@ -1,16 +1,16 @@
 {
-  "generated_at": "2026-04-18T17:17:59+08:00",
+  "generated_at": "2026-04-18T19:04:25+08:00",
   "state_machine_version": "v2",
   "total_sections": 216,
   "metrics": {
     "total": 216,
     "unknown": 37,
     "ready-for-review": 179,
-    "last_updated": "2026-04-18T17:17:59+08:00",
+    "last_updated": "2026-04-18T19:04:25+08:00",
     "task2b_state_counts": {
       "unknown": 37,
-      "fixed": 92,
-      "pending": 19,
+      "fixed": 93,
+      "pending": 18,
       "idle": 68
     },
     "task6_state_counts": {
@@ -21,45 +21,45 @@
     },
     "task9_state_counts": {
       "unknown": 35,
-      "pending": 164,
-      "reviewed": 17
+      "pending": 165,
+      "reviewed": 16
     },
     "pipeline_stage_counts": {
       "unknown": 32,
-      "task6_pending": 146,
-      "task2b_pending": 20,
+      "task6_pending": 147,
+      "task2b_pending": 19,
       "task9_pending": 18
     },
     "total_sections": 216,
     "pipeline_unknown": 32,
-    "pipeline_task6_pending": 146,
-    "pipeline_task2b_pending": 20,
+    "pipeline_task6_pending": 147,
+    "pipeline_task2b_pending": 19,
     "pipeline_task9_pending": 18,
     "task2b_unknown": 37,
-    "task2b_fixed": 92,
-    "task2b_pending": 19,
+    "task2b_fixed": 93,
+    "task2b_pending": 18,
     "task2b_idle": 68,
     "task6_unknown": 33,
     "task6_revisiting": 91,
     "task6_reviewed": 36,
     "task6_pending": 56,
     "task9_unknown": 35,
-    "task9_pending": 164,
-    "task9_reviewed": 17,
+    "task9_pending": 165,
+    "task9_reviewed": 16,
     "ready-to-publish": 0,
     "finalized": 0
   },
   "pipeline": {
     "pipeline_stage_counts": {
       "unknown": 32,
-      "task6_pending": 146,
-      "task2b_pending": 20,
+      "task6_pending": 147,
+      "task2b_pending": 19,
       "task9_pending": 18
     },
     "task2b_state_counts": {
       "unknown": 37,
-      "fixed": 92,
-      "pending": 19,
+      "fixed": 93,
+      "pending": 18,
       "idle": 68
     },
     "task6_state_counts": {
@@ -70,8 +70,8 @@
     },
     "task9_state_counts": {
       "unknown": 35,
-      "pending": 164,
-      "reviewed": 17
+      "pending": 165,
+      "reviewed": 16
     }
   },
   "issues": {
@@ -444,10 +444,10 @@
       "title": "Audio Pipeline 延迟与性能",
       "path": "src/part1-fundamentals/ch01-architecture/16-audio-pipeline-performance.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
+      "pipeline_stage": "task6_pending",
       "task6_state": "revisiting",
-      "task9_state": "reviewed",
-      "task2b_state": "pending",
+      "task9_state": "pending",
+      "task2b_state": "fixed",
       "reviewed_date": "2026-04-11",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
@@ -455,7 +455,9 @@
       "section": "1.16",
       "task9_reviewed_date": "2026-04-18",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-18T17:55:02+08:00"
+      "last_task9_at": "2026-04-18T17:55:02+08:00",
+      "task2b_result": "fixed",
+      "last_task2b_at": "2026-04-18T19:04:25+08:00"
     },
     "src/part1-fundamentals/ch01-architecture/17-ipc-panorama.md": {
       "chapter": "1.17",
@@ -3332,6 +3334,21 @@
       ],
       "verification": "technical-writing 禁用词扫描=0，queue=completed",
       "queue_status": "completed"
+    },
+    {
+      "date": "2026-04-18T19:04:25+08:00",
+      "section": "1.16",
+      "section_title": "Audio Pipeline 延迟与性能",
+      "source": "task9-deep-tech-review",
+      "priority": 95,
+      "fixes": [
+        "交叉引用错误：FAQ 中 LOW_LATENCY 改成“有机会进入 fast path”，并回连 output profile + PlaybackThread::createTrack_l() 条件",
+        "版本差异：Android 17 后台音频问题改成 app 侧 write/callback 停止、track inactive / teardown、AudioHardening + dumpsys audio 联动诊断",
+        "原理断裂：MMAP 段新增 control plane / data plane 对照，补 shared / exclusive 与 AAudioService / HAL 边界",
+        "版本差异：新增 Normal / Fast / MMAP / Direct-Offload 对照表，下调 AAudio offloaded playback 为 [待验证]"
+      ],
+      "verification": "technical-writing 禁用词扫描=0，queue=completed",
+      "queue_status": "completed"
     }
   ],
   "reviews": [
@@ -3477,10 +3494,18 @@
       "by": "task2b-rework",
       "source": "task9-deep-tech-review",
       "issues_fixed": 4
+    },
+    {
+      "section": "1.16",
+      "section_title": "Audio Pipeline 延迟与性能",
+      "date": "2026-04-18T19:04:25+08:00",
+      "by": "task2b-rework",
+      "source": "task9-deep-tech-review",
+      "issues_fixed": 4
     }
   ],
-  "last_task2b_run": "2026-04-18T16:03:14.102932+08:00",
-  "task2b_fixed": 7,
+  "last_task2b_run": "2026-04-18T19:04:25+08:00",
+  "task2b_fixed": 8,
   "17.1": {
     "task6_review_date": "2026-04-16",
     "task6_result": "pass-light-edit",
@@ -3494,10 +3519,10 @@
     "task6_state": "reviewed",
     "task9_state": "pending"
   },
-  "task2b_last_run": "2026-04-18T16:03:14.102932+08:00",
+  "task2b_last_run": "2026-04-18T19:04:25+08:00",
   "task2b_last_result": "fixed",
   "task2b_task8_processed": 3,
-  "task2b_note": "按 Task9 Deep Tech Review 修复 18.20 的 dumpsys 口径、Android 9-10/11+ 版本分界、TextureView/WebView/Camera 路径拆分与 VRR 查询入口",
+  "task2b_note": "按 Task9 Deep Tech Review 修复 1.16 的 LOW_LATENCY 选路口径、Android 17 后台音频可观测性、MMAP 控制面/数据面、Direct-Offload 对照表",
   "15.5": {
     "task6_review_date": "2026-04-17",
     "task6_result": "pass-light-edit",
@@ -3550,6 +3575,14 @@
       ],
       "issues_fixed": 4,
       "by": "task2b-rework"
+    },
+    {
+      "date": "2026-04-18T19:04:25+08:00",
+      "sections": [
+        "1.16"
+      ],
+      "issues_fixed": 4,
+      "by": "task2b-rework"
     }
   ],
   "reviewed_chapters": [
@@ -3563,7 +3596,7 @@
   "total_chapters": 0,
   "reviewed_count": 1,
   "last_review": "18.17",
-  "last_task2b_section": "18.20",
+  "last_task2b_section": "1.16",
   "1.10": {
     "section": "1.10",
     "title": "ContentProvider 性能与优化",
@@ -3621,12 +3654,19 @@
     "last_task9_at": "2026-04-18T16:41:43+08:00"
   },
   "1.16": {
-    "task9_reviewed_date": "2026-04-18",
-    "task9_reviewed_by": "openclaw-task9",
-    "task9_result": "needs-rework",
-    "task9_state": "reviewed",
-    "task2b_state": "pending",
-    "pipeline_stage": "task2b_pending",
-    "last_task9_at": "2026-04-18T17:55:02+08:00"
+    "section": "1.16",
+    "title": "Audio Pipeline 延迟与性能",
+    "last_rework_date": "2026-04-18T19:04:25+08:00",
+    "rework_count": 1,
+    "rework_source": "task9-deep-tech-review",
+    "rework_issues_fixed": 4,
+    "rework_details": [
+      "LOW_LATENCY 口径回收为“请求”，补 output profile 与 PlaybackThread::createTrack_l() 的筛选条件",
+      "Android 17 后台音频异常改成 app 写入停止、track inactive / teardown、AudioHardening + dumpsys audio 联动诊断",
+      "MMAP 段补 control plane / data plane 对照，解释 shared / exclusive 与 AAudioService / HAL 边界",
+      "新增 Normal / Fast / MMAP / Direct-Offload 表，AAudio offloaded playback 收敛到 [待验证] 边界"
+    ],
+    "current_status": "ready-for-review",
+    "pipeline_stage": "task6_pending"
   }
 }
