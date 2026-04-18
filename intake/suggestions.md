@@ -1553,3 +1553,21 @@
 - **位置**：L199-L201、L360-L362、L494-L496（3 处 Trace 占位图）
 - **问题**：章节把 `oom_score_adj` 变化、冷启动关键节点、ANR Trace 特征都写成了口头描述，但三处核心位置只有“待补截图”占位，没有一段真实 Perfetto 片段或 SQL 输出。作为“与性能分析”章节，读者无法据此建立可复现的观察基线。
 - **建议**：至少补 1 个冷启动 trace 和 1 个 ANR trace。每个例子给出 10-20 行 SQL 或关键 track 标注，包含 `android_logs` 的 `am_proc_start/am_anr` 与应用主线程 `bindApplication` / `doFrame` 的对照。
+
+## [Task9 Deep Review] 18.20 链路分析方法论 — 2026-04-18
+- **类型**：数据缺失 / 原理边界
+- **位置**：L123-L125，L140-L141
+- **问题**：`dur > 5000000` 与 `doFrame > 16.6ms` 被直接当作诊断阈值，但正文同时覆盖高刷与 VRR 场景。5ms/16.6ms 都缺少设备、刷新率和 Trace 版本边界，容易把 90Hz/120Hz 设备误判成“正常”。
+- **建议**：把阈值改成“按当前刷新率/expected timeline 预算计算”，或明确标注“仅适用于 60Hz 固定刷新率示例”。
+
+## [Task9 Deep Review] 18.20 链路分析方法论 — 2026-04-18
+- **类型**：知识盲区
+- **位置**：L176-L193「链路选型决策树」
+- **问题**：决策树把 SurfaceView vs TextureView 的分叉压缩成“是否需要动画/变换/圆角”，遗漏了裁剪、滚动同步、Z 序、Inset、窗口 resize 同步等高频约束，容易把本该走 TextureView / SurfaceControl 的场景误导成 SurfaceView。
+- **建议**：补一组“即使不要圆角也不该选 SurfaceView”的条件，或直接回连 §18.6 / §18.7 / §18.10 的选择矩阵。
+
+## [Task9 Deep Review] 18.20 链路分析方法论 — 2026-04-18
+- **类型**：交叉引用
+- **位置**：frontmatter `related_chapters` / L216-L218
+- **问题**：正文把 §18.1 写成“本章的索引和入口”，但 frontmatter `related_chapters` 未包含 18.1，元数据导航与正文关系不一致。
+- **建议**：在 `related_chapters` 中补入 `18.1`，必要时再补入 18.6 / 18.7 / 18.14 / 18.19 这些正文高频回连章节。
