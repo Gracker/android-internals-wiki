@@ -1959,5 +1959,44 @@
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-18T07:37:00+08:00",
     "status": "pending"
+  },
+  {
+    "section": "18.19",
+    "section_title": "可变刷新率渲染管线",
+    "priority": 90,
+    "reason": "[review回炉] Perfetto分析节过薄、叙述风格偏参考文档、Android 16 API待验证、缺少版本演进",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "需补充素材",
+        "location": "在 Perfetto 中分析 VRR",
+        "detail": "仅3行Track名表格，缺少VRR场景下Perfetto分析流程、SQL示例、正常vs异常Trace对比",
+        "suggestion": "参考 writing-guide 类型A 的 Perfetto 表现要求，补充具体分析流程"
+      },
+      {
+        "type": "需验证",
+        "location": "App 端 API - Enhanced ARR API（Android 16+）",
+        "detail": "REQUESTED_FRAME_RATE_CATEGORY_* 常量名和投票机制行为描述需标注待验证",
+        "suggestion": "标注 [待验证]，待 Android 16 API 37 定稿后确认"
+      },
+      {
+        "type": "需补充",
+        "location": "缺少版本演进段落",
+        "detail": "applicable_versions 跨 Android 11-16，正文无独立版本演进段落",
+        "suggestion": "补 Android 11(setFrameRate) / 13(ARR) / 15(LTPO优化) / 16(Enhanced ARR) 各版本 VRR 相关变更"
+      },
+      {
+        "type": "需重写",
+        "location": "全文叙述风格",
+        "detail": "核心章节以表格/代码/时序图为主骨架，缺少连贯技术叙述，常见问题和Perfetto分析两节纯表格无叙述",
+        "suggestion": "按 writing-guide '叙述为主，列表为辅' 要求重写关键段落，补充因果关系和技术叙述"
+      }
+    ],
+    "added_by": "task6-review",
+    "added_at": "2026-04-18T09:16:00",
+    "status": "pending",
+    "original_review_log": "logs/review/2026-04-18-09-review.md"
   }
 ]

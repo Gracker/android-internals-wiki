@@ -1464,3 +1464,20 @@
 - **位置**：Unity / Unreal 线程模型表（L80-L94）
 - **问题**：表格把 `UnityGfx` / `RHIThread` 写成固定拓扑，未标注 multithreaded rendering、graphics jobs、RHIThread 受引擎版本、后端和项目配置控制。读者可能因为某条线程在 trace 中缺席而误判“不是 Unity/Unreal”。
 - **建议**：把表述改成“典型线程模型”，补一句线程是否存在取决于渲染后端和引擎配置。
+
+
+## [Task6 Review] 18.19 可变刷新率渲染管线 — 2026-04-18
+
+- **类型**：需补充素材 + 需验证 + 需重写
+- **位置**：全文多处
+- **问题**：
+  1. Perfetto 分析节仅3行表格，缺少具体分析流程（B1）
+  2. Android 16 Enhanced ARR API 常量名/投票机制待验证（B2）
+  3. 缺少 Android 11-16 版本演进段落（B3）
+  4. 全文叙述风格偏参考文档，表格/代码为主骨架，缺少连贯技术叙述（B4）
+- **建议**：
+  - B1: 参考 writing-guide 类型A"在 Perfetto 中的表现"要求，补充 VRR 场景 Perfetto 分析流程、SQL 查询示例、Trace 片段描述
+  - B2: 标注 [待验证]，Android 16 API 37 定稿后确认
+  - B3: 补充 Android 11(setFrameRate) → 13(ARR) → 15(LTPO优化) → 16(Enhanced ARR) 版本演进
+  - B4: 按叙述为主、列表为辅重写常见问题和 Perfetto 分析节
+- **review 日志**：logs/review/2026-04-18-09-review.md

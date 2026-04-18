@@ -2971,6 +2971,15 @@
       "task2b_state": "fixed",
       "task2b_result": "fixed",
       "pipeline_stage": "task6_pending"
+    },
+    "18.19": {
+      "title": "可变刷新率渲染管线",
+      "status": "ready-for-review",
+      "task6_result": "needs-rework",
+      "task6_state": "reviewed",
+      "task6_reviewed_date": "2026-04-18",
+      "pipeline_stage": "task2b_pending",
+      "task6_review_log": "logs/review/2026-04-18-09-review.md"
     }
   },
   "chapters": {
