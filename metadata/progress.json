@@ -3287,6 +3287,18 @@
       "task9_state": "pending",
       "pipeline_stage": "task9_pending",
       "issues": 1
+    },
+    "2.11": {
+      "last_task6_review": "2026-04-19",
+      "task6_state": "reviewed",
+      "task6_result": "pass-light-edit",
+      "pipeline_stage": "task9_pending"
+    },
+    "16.1": {
+      "last_task6_review": "2026-04-19",
+      "task6_state": "reviewed",
+      "task6_result": "pass-light-edit",
+      "pipeline_stage": "task9_pending"
     }
   },
   "chapters": {
@@ -3372,12 +3384,12 @@
     "total_sections": 216,
     "by_pipeline_stage": {
       "unknown": 32,
-      "task6_pending": 145,
-      "task2b_pending": 21,
-      "task9_pending": 18
+      "task6_pending": 122,
+      "task9_pending": 51,
+      "task2b_pending": 13
     },
     "last_updated": "2026-04-18T16:03:14.102932+08:00",
-    "total_reviewed": 18
+    "total_reviewed": 71
   },
   "4.6": {
     "task6_review": {
@@ -3399,7 +3411,7 @@
     "task2b_state": "pending",
     "last_task9_at": "2026-04-19T00:54:00+08:00"
   },
-  "last_updated": "2026-04-19T00:54:00+08:00",
+  "last_updated": "2026-04-19T01:18:36.669056",
   "rework_log": [
     {
       "date": "2026-04-15T19:44:09.836904",
@@ -3947,5 +3959,6 @@
     "task2b_state": "pending",
     "pipeline_stage": "task2b_pending",
     "last_task9_at": "2026-04-18T17:55:02+08:00"
-  }
+  },
+  "total_reviewed": 0
 }
