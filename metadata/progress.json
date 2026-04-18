@@ -3985,5 +3985,15 @@
     "last_task9_at": "2026-04-19T04:18:34+08:00",
     "task2b_result": "fixed",
     "last_task2b_at": "2026-04-19T04:47:00+08:00"
+  },
+  "2.16": {
+    "task6_review_date": "2026-04-19",
+    "task6_result": "pass-light-edit",
+    "task6_state": "reviewed"
+  },
+  "2.20": {
+    "task6_review_date": "2026-04-19",
+    "task6_result": "pass-light-edit",
+    "task6_state": "reviewed"
   }
 }

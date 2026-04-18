@@ -26,13 +26,13 @@ sources:
     path: "https://source.android.com/docs/core/graphics/architecture"
 tags: [sync-fence, fence, hwui, rendering, synchronization, timeline]
 related_chapters: ["2.4", "2.5", "2.6", "2.13", "2.15"]
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task2b_state: fixed
 reviewed_by: openclaw-task6
-reviewed_date: "2026-04-11"
-task6_result: needs-rework
+reviewed_date: "2026-04-19"
+task6_result: pass-light-edit
 task9_result: needs-rework
 task2b_result: fixed
 ---
@@ -91,7 +91,7 @@ Android 图形栈的同步基础来自内核里的显式同步框架。官方文
 | `sync_file` / `sync_file_info` / `sync_fence_info` | modern userspace API，当前 libsync 调试与查询接口更常见 |
 | `dma-fence` | 内核里的通用同步原语，驱动实现显式同步时最终落到这一层 |
 
-把这三层拆开后，很多“资料和源码对不上”的困惑就消失了。旧文档在讲概念模型，libsync 在讲 userspace 查询接口，驱动代码则在讲内核对象本身，它们不是互相打架，而是站在不同抽象层。
+把这三层拆开后，很多“资料和源码对不上”的困惑就消失了。旧文档在讲概念模型，libsync 在讲 userspace 查询接口，驱动代码则在讲内核对象本身，它们站在不同抽象层。
 
 ### sw_sync 的边界：用户空间不是完全不能创建 fence
 
@@ -103,7 +103,7 @@ int sw_sync_timeline_inc(int fd, unsigned count);
 int sw_sync_fence_create(int fd, const char *name, unsigned value);
 ```
 
-这说明“用户空间完全不能创建或 signal fence”并不成立。更准确的说法是，**生产路径里的硬件 fence 由内核驱动或硬件 signal，以保证 forward progress；但 Android 同时保留 `sw_sync`，给测试和特定软件管线提供 userspace 的 software timeline 接口。** 这两件事必须分开说。
+这说明“用户空间完全不能创建或 signal fence”并不成立。**生产路径里的硬件 fence 由内核驱动或硬件 signal，以保证 forward progress；但 Android 同时保留 `sw_sync`，给测试和特定软件管线提供 userspace 的 software timeline 接口。** 这两件事必须分开说。
 
 所以我们在排查图形问题时，可以把 `sw_sync` 看成测试与 fallback 工具，而不是普通 App 随手控制生产 acquire / release fence 的入口。尤其是 App 正常渲染链路里的 GPU、HWC、display fence，仍然依赖驱动与硬件推进，不靠业务进程手动 `inc`。
 
@@ -111,7 +111,7 @@ int sw_sync_fence_create(int fd, const char *name, unsigned value);
 
 ## 渲染管线里的三类 Fence
 
-先把方向钉住。Fence 的名字经常让人绕晕，不是因为系统故意复杂，而是因为**同一个 fd 从 producer 这边传到 consumer 那边，语义会跟着观察角度变化**。
+先把方向钉住。Fence 的名字经常让人绕晕。**同一个 fd 从 producer 这边传到 consumer 那边，语义会跟着观察角度变化**。
 
 ```text
 Producer（App / RenderThread）
@@ -152,7 +152,7 @@ Error present(android::sp<android::Fence>* outRetireFence);
 
 release fence 的方向正好相反。官方文档对它的定义是：它表示 consumer 仍在读取上一个 buffer；只有当当前 buffer 已经取代旧 buffer 上屏后，旧 buffer 对应的 release fence 才会 signal。随后这个 fence 会跟着旧 buffer 一起回到 producer，producer 在再次写这个 buffer 之前必须先等它完成。
 
-这也是为什么我们不能把 producer 在 `queueBuffer()` 输入的那个 fence 写成 release fence。**更准确的说法是：producer `queueBuffer()` 输入的 fence，到 consumer 一侧叫 acquire fence；consumer 返回给 producer 的 fence，才是 release fence。** 两边说的是同一轮 buffer 交接的两个方向。
+这也是为什么我们不能把 producer 在 `queueBuffer()` 输入的那个 fence 写成 release fence。**producer `queueBuffer()` 输入的 fence，到 consumer 一侧叫 acquire fence；consumer 返回给 producer 的 fence，才是 release fence。** 两边说的是同一轮 buffer 交接的两个方向。
 
 如果把这两个方向说反，后面分析 `dequeueBuffer()` 阻塞和 `latchBuffer` 等待时就一定会乱。一个常见误判是把 App 侧等待旧 buffer 可重用的时间，写成“等待 acquire fence”；其实它等的是 consumer 返回来的 release fence，只是 producer 拿到的字段名未必总把这个语义写在脸上。
 
@@ -188,23 +188,23 @@ Fence wait 本身不是 bug。正常渲染里本来就会有同步等待。我�
 
 ### 不要背死阈值，要在同一条 trace 里做关联
 
-“60fps 时 `queued` 在 0-1 之间正常，持续到 2 就异常”这种口诀太容易误导。不同刷新率、BLAST 与非 BLAST、SurfaceView 与 TextureView、可用 slot 数量和厂商实现都可能改变这个形态。更可靠的做法是只在同一条 trace、同一个窗口类型、同一台设备上做关联判断：如果某个窗口连续多帧处于高占用状态，同时 App 侧 `dequeueBuffer()` 变长，或者 SurfaceFlinger `latchBuffer` wait 与 GPU busy 对齐，我们再把它当成 congestion signal。否则，单看一个数字没有太大意义。
+“60fps 时 `queued` 在 0-1 之间正常，持续到 2 就异常”这种口诀太容易误导。不同刷新率、BLAST 与非 BLAST、SurfaceView 与 TextureView、可用 slot 数量和厂商实现都可能改变这个形态。只在同一条 trace、同一个窗口类型、同一台设备上做关联判断：如果某个窗口连续多帧处于高占用状态，同时 App 侧 `dequeueBuffer()` 变长，或者 SurfaceFlinger `latchBuffer` wait 与 GPU busy 对齐，我们再把它当成 congestion signal。否则，单看一个数字没有太大意义。
 
-## 版本演进：真正变化的不是“有没有 Fence”，而是谁负责什么
+## 版本演进：真正变化的是谁负责什么
 
 ### Android 7：HWC2 已经把 acquire / release / present fence 语义钉清楚
 
-这一版最重要的变化，不是“第一次有 fence”，而是 HWC2 接口把每层 buffer 输入、release fence 回收、present fence 返回的职责分得更清楚。对排查来说，这意味着我们可以明确问：当前等待发生在 producer 交帧之前，还是 consumer 释放旧帧之后，而不是把所有等待都糊成一个“显示慢”。
+这一版最重要的变化，是 HWC2 接口把每层 buffer 输入、release fence 回收、present fence 返回的职责分得更清楚。对排查来说，这意味着我们可以明确问：当前等待发生在 producer 交帧之前，还是 consumer 释放旧帧之后，而不是把所有等待都糊成一个“显示慢”。
 
 ### Android 8+：userspace 已经能看到 modern `sync_file` API，legacy 名词继续保留
 
-`system/core/libsync/sync.c` 在 Android 8.1 就同时有 legacy 和 modern 两套查询 / merge 路径，所以“Android 10 才迁移到 libsync”也不准确。更贴近源码的说法是：Android 8+ 的 userspace 已经能看到 `sync_file_info`、`sync_fence_info` 这类 modern API，后续版本继续保留 legacy `sync_timeline` / `sync_pt` 命名的兼容层与历史文档语境。
+`system/core/libsync/sync.c` 在 Android 8.1 就同时有 legacy 和 modern 两套查询 / merge 路径，所以“Android 10 才迁移到 libsync”也不准确。Android 8+ 的 userspace 已经能看到 `sync_file_info`、`sync_fence_info` 这类 modern API，后续版本继续保留 legacy `sync_timeline` / `sync_pt` 命名的兼容层与历史文档语境。
 
-这也是我们今天读代码时经常会遇到的现象，文档还在讲 `sync_timeline`，调试工具却在打印 `sync_file_info`。不是一个新框架替换了另一个旧框架，而是同一套显式同步体系在不同层暴露出的命名不同。
+这也是我们今天读代码时经常会遇到的现象，文档还在讲 `sync_timeline`，调试工具却在打印 `sync_file_info`。同一套显式同步体系在不同层暴露出的命名不同。
 
 ### Android 14-16：变化重点在后端调度、FrameTimeline / ARR 配合，以及 release fence 路径
 
-Skia 并不是 Android 14-16 才突然出现。`frameworks/base/libs/hwui/pipeline/skia/SkiaOpenGLPipeline.cpp` 在 `android-8.1.0_r81` 就已经存在，所以不能把这段历史写成“Android 14-16 全面切到 Skia”。更贴近事实的说法是，Skia 管线早就存在，后续版本的变化更多在后端调度、FrameTimeline、ARR 配合，以及 fence 的生成和观测路径上。
+Skia 并不是 Android 14-16 才突然出现。`frameworks/base/libs/hwui/pipeline/skia/SkiaOpenGLPipeline.cpp` 在 `android-8.1.0_r81` 就已经存在，所以不能把这段历史写成“Android 14-16 全面切到 Skia”。Skia 管线早就存在，后续版本的变化更多在后端调度、FrameTimeline、ARR 配合，以及 fence 的生成和观测路径上。
 
 `android-16.0.0_r1` 的 `SkiaOpenGLPipeline.cpp` 里，GL 路径使用的是：
 
@@ -213,7 +213,7 @@ skgpu::ganesh::FlushAndSubmit(surface);
 mEglManager.createReleaseFence(true, &sync, &fence);
 ```
 
-旧稿把这里写成另一条 flush-and-signal 路径，这会把读者带到错误的源码位置。更贴近实际源码的写法是：“当前 Android 16 的 GL backend 通过 `FlushAndSubmit(surface)` 提交，再由 `EglManager::createReleaseFence()` 生成 release fence。” 这样读者才能在 AOSP 里直接对上号。
+旧稿把这里写成另一条 flush-and-signal 路径，这会把读者带到错误的源码位置。“当前 Android 16 的 GL backend 通过 `FlushAndSubmit(surface)` 提交，再由 `EglManager::createReleaseFence()` 生成 release fence。” 这样读者才能在 AOSP 里直接对上号。
 
 [已验证: AOSP android-8.1.0_r81 / android-16.0.0_r1, frameworks/base/libs/hwui/pipeline/skia/SkiaOpenGLPipeline.cpp]
 
