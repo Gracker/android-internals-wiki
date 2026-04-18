@@ -1651,3 +1651,17 @@
 - **位置**：L211 / frontmatter `related_chapters`
 - **问题**：正文把 WebView 相关章节写成“13.8 WebView 渲染性能”，仓内实际存在的是 `7.11 WebView 渲染性能与优化`；frontmatter `related_chapters` 也没有回连 `7.11`。
 - **建议**：把正文交叉引用修正为 `7.11 WebView 渲染性能与优化`，并在 `related_chapters` 补 `7.11`。
+
+## [Task9 Deep Review] 1.9 Package Manager Service 与应用安装性能 — 2026-04-18
+- **类型**：数据缺失
+- **位置**：L195-L216 / L404-L494
+- **问题**：安装耗时分析和 Perfetto 调试两节还停留在“待补充 Trace 截图”的占位状态，没有一份真实安装 trace 的线程名、slice 名、I/O 轨道或 SQL 闭环。读者知道要看 `system_server` / `installd` / `dex2oat`，但还不知道具体该抓到什么。
+- **建议**：补 1 份真实安装 trace，至少标出 `PackageInstallerSession`、`installStage`、`artd` / `dex2oat*`、关键 I/O 轨道，以及一组可直接复用的 Perfetto SQL 或检索关键词。
+
+
+## [Task9 Deep Review] 1.9 Package Manager Service 与应用安装性能 — 2026-04-18
+- **类型**：数据缺失
+- **位置**：L341-L343
+- **问题**：“2GB 内存设备上大型应用 dex2oat 可能需要几分钟”“SDM 通常比 APK 本身小”这两句没有设备、应用规模、网络条件或来源。当前写法会被读者当成通用量化结论。
+- **建议**：补实验条件和出处；如果暂时拿不到稳定数据，把这段降级成定性描述，不要保留具体量级。
+

@@ -2465,5 +2465,51 @@
     "completed_at": "2026-04-18T19:50:17.537515+08:00",
     "completed_by": "task2b-rework",
     "completion_reason": "Fixed 4/4 issues: merged model thread view, host main-thread caveat, version boundary split, Platform Views tradeoff matrix"
+  },
+  {
+    "section": "1.9",
+    "section_title": "Package Manager Service 与应用安装性能",
+    "priority": 95,
+    "reason": "[Deep Tech Review] P0 事实错误：ART Service 源码路径与 `cmd package compile --dump` 命令都不成立",
+    "material_paths": [
+      "intake/suggestions.md",
+      "intake/research-gaps.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "L204-L214 / L236-L249 / L466-L492",
+        "detail": "章节多处把 `adb shell cmd package compile --dump <package>` 当成 Android 16 的编译状态查询命令。android-16.0.0_r1 的 `PackageManagerShellCommand` 已把 `compile` 转发给 ART Service，`ArtShellCommand.printHelp()` 中 `compile` 仅支持 `-r/-m/-p/-f/--primary-dex/--secondary-dex/...`，并不存在 `--dump` 选项。",
+        "suggestion": "把“查看编译状态”改成 `adb shell cmd package art dump <package>` 或 `adb shell dumpsys package dexopt`；如果要看 profile，使用 `adb shell cmd package dump-profiles <package>` / `snapshot-profile`。"
+      },
+      {
+        "type": "源码错误",
+        "location": "L299 / L398 / L554",
+        "detail": "章节把 Android 14+ ART Service 的源码位置写成 `frameworks/base/services/core/java/com/android/server/art/`。android-16.0.0_r1 的实际实现位于 `platform/art/libartservice/service/java/com/android/server/art/`，例如 `ArtShellCommand.java`、`ArtManagerLocal.java`、`BackgroundDexoptJob.java`。",
+        "suggestion": "把所有 ART Service 路径统一修正到 `art/libartservice/service/java/com/android/server/art/`，并按主题补准确文件名，不要继续引用不存在的 `frameworks/base/.../server/art/` 目录。"
+      },
+      {
+        "type": "原理断裂",
+        "location": "L136-L143 / L163-L165 / L199-L202",
+        "detail": "安装控制路径写到了 `DexOptHelper / ART Service`，但没有把 Android 14+ 的执行链补完整。读者能看到 `dex2oat / artd` 这组进程名，却不知道 `PackageInstallerSession -> InstallPackageHelper -> DexOptHelper -> ART Service -> artd -> dex2oat` 这条控制面与执行面的分工。",
+        "suggestion": "新增一段“现代 dexopt 执行链”，把 PMS 决策、ART Service 调度、`artd` 守护进程和 `dex2oat` 工作进程拆开写，并在 Perfetto 小节里回连到具体可见进程名。"
+      },
+      {
+        "type": "版本差异",
+        "location": "L273-L280 / L457-L464",
+        "detail": "后台 dexopt 的触发条件被写成“AC/USB 充电、不是无线充电、通常 >30% 电量、通常凌晨 2-5 点”。android-16.0.0_r1 `BackgroundDexoptJob.schedule()` 只要求 `setRequiresDeviceIdle(true)`、`setRequiresCharging(true)`、`setRequiresBatteryNotLow(true)` 和周期调度，并没有 ART Service 级别的“仅有线充电”或“固定凌晨窗口”语义。",
+        "suggestion": "改成 JobScheduler 约束的真实口径：device idle + charging + battery-not-low + periodic job。把“无线不算”“凌晨 2-5 点”“>30%”这些实现外推删掉，若要保留 OEM 经验，需单独标注为设备策略差异。"
+      },
+      {
+        "type": "知识盲区",
+        "location": "L321-L361 / L516",
+        "detail": "Cloud Compilation / SDM 单列成一节，但当前只给出二手博客级材料，没有交代 PMS / ART / Play 侧的实际集成点、命中失败后的 fallback 路径，以及设备端如何判断本次安装命中了 cloud compilation 还是回落到本机 dexopt。",
+        "suggestion": "补官方或源码级资料后再保留这节的确定性结论，至少要说明：1) 哪一侧完成签名与校验，2) 设备端落盘与加载入口，3) Play 分发与侧载的 fallback 行为，4) 设备侧可观测信号。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-18T20:36:12+08:00",
+    "status": "pending",
+    "original_review_log": "logs/deep-review/2026-04-18-20-deep-review.md"
   }
 ]

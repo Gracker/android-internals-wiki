@@ -946,3 +946,20 @@ SurfaceControl NDK 的 FrameTimeline 小节缺少“如何从 AChoreographerFram
 - 18.6 SurfaceView 直出链路
 - 18.7 TextureView 合成链路
 - 7.11 WebView 渲染性能与优化
+
+## [2026-04-18] 1.9 Package Manager Service 与应用安装性能 — 知识盲区
+
+### 盲区描述
+章节已经单列 Android 16 Cloud Compilation / SDM，但当前没有把 PMS、ART Service、Play 分发之间的真实集成点讲清，也没有说明 cloud compilation 未命中时会如何回落到本机 dexopt。设备侧可观测信号同样缺失，读者无法判断一次安装到底走了哪条编译路径。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 回源 Android 16 的官方开发者博客、I/O 资料或 AOSP / Play 文档，确认 SDM 的签名、校验主体和加载入口
+- 补一条设备侧观测路径，说明如何用 `cmd package art dump`、logcat 或编译产物布局判断是否命中 cloud compilation
+- 对比 Play 分发、侧载、无可用 profile 三类场景下的 fallback 行为
+
+### 关联章节
+1.7, 1.9, 8.3, 16.5
+
