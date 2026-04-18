@@ -1,52 +1,49 @@
 {
-  "generated_at": "2026-04-19T06:24:00+08:00",
+  "generated_at": "2026-04-19T07:09:38+08:00",
   "state_machine_version": "v2",
   "total_sections": 218,
   "metrics": {
-    "total": 218,
-    "unknown": 38,
-    "ready-for-review": 180,
-    "last_updated": "2026-04-19T06:24:00+08:00",
+    "total": 174,
+    "unknown": 1,
+    "ready-for-review": 173,
+    "last_updated": "2026-04-19T07:09:38+08:00",
     "task2b_state_counts": {
-      "unknown": 38,
-      "fixed": 127,
-      "pending": 9,
-      "idle": 44
+      "idle": 41,
+      "fixed": 125,
+      "pending": 7,
+      "unknown": 1
     },
     "task6_state_counts": {
-      "unknown": 33,
-      "reviewed": 68,
-      "revisiting": 114,
-      "pending": 3
+      "pending": 1,
+      "reviewed": 64,
+      "revisiting": 109
     },
     "task9_state_counts": {
-      "unknown": 36,
-      "reviewed": 19,
-      "pending": 162,
+      "pending": 156,
+      "reviewed": 17,
       "fixed": 1
     },
     "pipeline_stage_counts": {
-      "unknown": 32,
-      "task6_pending": 125,
-      "task9_pending": 50,
-      "task2b_pending": 11
+      "task6_pending": 118,
+      "task9_pending": 48,
+      "task2b_pending": 8
     },
-    "total_sections": 218,
-    "pipeline_unknown": 32,
-    "pipeline_task6_pending": 125,
-    "pipeline_task2b_pending": 11,
-    "pipeline_task9_pending": 50,
-    "task2b_unknown": 38,
-    "task2b_fixed": 127,
-    "task2b_pending": 9,
-    "task2b_idle": 44,
-    "task6_unknown": 33,
-    "task6_revisiting": 114,
-    "task6_reviewed": 68,
-    "task6_pending": 3,
-    "task9_unknown": 36,
-    "task9_pending": 162,
-    "task9_reviewed": 19,
+    "total_sections": 174,
+    "pipeline_unknown": 0,
+    "pipeline_task6_pending": 118,
+    "pipeline_task2b_pending": 8,
+    "pipeline_task9_pending": 48,
+    "task2b_unknown": 1,
+    "task2b_fixed": 125,
+    "task2b_pending": 7,
+    "task2b_idle": 41,
+    "task6_unknown": 0,
+    "task6_revisiting": 109,
+    "task6_reviewed": 64,
+    "task6_pending": 1,
+    "task9_unknown": 0,
+    "task9_pending": 156,
+    "task9_reviewed": 17,
     "ready-to-publish": 0,
     "finalized": 0,
     "task9_fixed": 1
@@ -3432,7 +3429,7 @@
     "task2b_state": "pending",
     "last_task9_at": "2026-04-19T00:54:00+08:00"
   },
-  "last_updated": "2026-04-19T05:56:37.386035+08:00",
+  "last_updated": "2026-04-19T07:09:38+08:00",
   "rework_log": [
     {
       "date": "2026-04-15T19:44:09.836904",
@@ -3658,6 +3655,20 @@
       ],
       "verification": "technical-writing 禁用词扫描=0，queue=completed",
       "queue_status": "completed"
+    },
+    {
+      "date": "2026-04-19T07:09:38+08:00",
+      "section": "1.17",
+      "section_title": "IPC 全景：Android 进程间通信机制对比与性能选型",
+      "source": "task9-deep-tech-review",
+      "issues_fixed": 3,
+      "fixes": [
+        "原理断裂：把通用共享内存、图形 DMA-BUF、HAL FMQ 三条路线拆开，新增对照表和边界说明",
+        "源码错误：Signal 对照表改为 SIGQUIT / BIONIC_SIGNAL_DEBUGGER / SIGKILL / SIGABRT，并删除 SIGUSR1 默认 tombstone 说法",
+        "版本差异：版本表与小结改成 SharedMemory/MemoryFile、ION→dmabuf-heaps、HIDL→Stable AIDL 三条独立演进线"
+      ],
+      "verification": "technical-writing 禁用词扫描=0，SIGUSR1=0，ashmem→dmabuf 单线表述已清理",
+      "queue_status": "completed"
     }
   ],
   "reviews": [
@@ -3819,10 +3830,18 @@
       "by": "task2b-rework",
       "source": "task9-deep-tech-review + task6-review",
       "issues_fixed": 7
+    },
+    {
+      "section": "1.17",
+      "section_title": "IPC 全景：Android 进程间通信机制对比与性能选型",
+      "date": "2026-04-19T07:09:38+08:00",
+      "by": "task2b-rework",
+      "source": "task9-deep-tech-review",
+      "issues_fixed": 3
     }
   ],
-  "last_task2b_run": "2026-04-19T05:56:37.386035+08:00",
-  "task2b_fixed": 9,
+  "last_task2b_run": "2026-04-19T07:09:38+08:00",
+  "task2b_fixed": 10,
   "17.1": {
     "task6_review_date": "2026-04-16",
     "task6_result": "pass-light-edit",
@@ -3836,10 +3855,10 @@
     "task6_state": "reviewed",
     "task9_state": "pending"
   },
-  "task2b_last_run": "2026-04-19T05:56:37.386035+08:00",
+  "task2b_last_run": "2026-04-19T07:09:38+08:00",
   "task2b_last_result": "fixed",
   "task2b_task8_processed": 3,
-  "task2b_note": "修复 18.19 的 ARR API 时间线、VRR/ARR 边界、Perfetto SQL 与观察口径，并完成 technical-writing 禁用词复检",
+  "task2b_note": "修复 1.17 的共享内存 / dmabuf / FMQ 边界、debuggerd 信号表与版本演进表，并完成 technical-writing 禁用词复检",
   "15.5": {
     "task6_review_date": "2026-04-17",
     "task6_result": "pass-light-edit",
@@ -3855,6 +3874,14 @@
       "issues_blocked": 1,
       "blocked_reason": "活人感/实战叙述需要Gracker亲自补充",
       "status": "partial-fixed"
+    },
+    {
+      "date": "2026-04-19T07:09:38+08:00",
+      "section": "1.17",
+      "section_title": "IPC 全景：Android 进程间通信机制对比与性能选型",
+      "source": "task9-deep-tech-review",
+      "issues_fixed": 3,
+      "status": "fixed"
     }
   ],
   "15.6": {
@@ -3908,6 +3935,14 @@
       ],
       "issues_fixed": 7,
       "by": "task2b-rework"
+    },
+    {
+      "date": "2026-04-19T07:09:38+08:00",
+      "sections": [
+        "1.17"
+      ],
+      "issues_fixed": 3,
+      "by": "task2b-rework"
     }
   ],
   "reviewed_chapters": [
@@ -3921,7 +3956,7 @@
   "total_chapters": 0,
   "reviewed_count": 1,
   "last_review": "18.17",
-  "last_task2b_section": "18.19",
+  "last_task2b_section": "1.17",
   "1.10": {
     "section": "1.10",
     "title": "ContentProvider 性能与优化",
@@ -4040,5 +4075,27 @@
     ],
     "current_status": "ready-for-review",
     "pipeline_stage": "task6_pending"
+  },
+  "1.17": {
+    "section": "1.17",
+    "title": "IPC 全景：Android 进程间通信机制对比与性能选型",
+    "last_rework_date": "2026-04-19T07:09:38+08:00",
+    "rework_count": 1,
+    "rework_source": "task9-deep-tech-review",
+    "rework_issues_fixed": 3,
+    "rework_details": [
+      "共享内存章节拆分为通用共享内存、图形 DMA-BUF、HAL FMQ 三条路线，并补 API/底层对象/场景/版本节点/可观测点对照表",
+      "Signal 小节改为 SIGQUIT 与 BIONIC_SIGNAL_DEBUGGER 的职责分工，删除 SIGUSR1 默认 tombstone 说法",
+      "版本表和小结改写为独立演进线，避免把 SharedMemory / MemoryFile / CursorWindow 混进 dmabuf-heaps"
+    ],
+    "current_status": "ready-for-review",
+    "pipeline_stage": "task6_pending",
+    "task6_result": "pass-light-edit",
+    "task6_state": "revisiting",
+    "task9_state": "pending",
+    "task9_result": "needs-rework",
+    "task2b_state": "fixed",
+    "task2b_result": "fixed",
+    "last_task2b_at": "2026-04-19T07:09:38+08:00"
   }
 }
