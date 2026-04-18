@@ -6,7 +6,7 @@
     "total": 216,
     "unknown": 37,
     "ready-for-review": 179,
-    "last_updated": "2026-04-18T19:04:25+08:00",
+    "last_updated": "2026-04-18T18:52:00+08:00",
     "task2b_state_counts": {
       "unknown": 37,
       "fixed": 93,
@@ -314,18 +314,18 @@
       "title": "Activity Manager Service 与性能分析",
       "path": "src/part1-fundamentals/ch01-architecture/08-activity-manager.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "revisiting",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
       "task9_state": "pending",
       "task2b_state": "fixed",
-      "reviewed_date": "2026-04-10",
+      "reviewed_date": "2026-04-18",
       "reviewed_by": "openclaw-task6",
-      "task6_result": "needs-rework",
+      "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "last_task9_at": "2026-04-18T13:34:00+08:00",
       "task9_reviewed_date": "2026-04-18",
       "task9_reviewed_by": "openclaw-task9",
-      "review_round": 2,
+      "review_round": 3,
       "section": "1.8",
       "task2b_result": "fixed",
       "last_task2b_at": "2026-04-18T14:52:10.566766+08:00"
@@ -3103,6 +3103,15 @@
       "fixes": 0,
       "issues": 12,
       "log": "logs/deep-review/2026-04-18-16-deep-review.md"
+    },
+    {
+      "date": "2026-04-18T18:33:10",
+      "section": "15.8",
+      "task": "task2b-rework",
+      "result": "fixed",
+      "fixes": 7,
+      "issues": 12,
+      "log": "logs/deep-review/2026-04-18-16-deep-review.md"
     }
   ],
   "stats": {
@@ -3336,16 +3345,19 @@
       "queue_status": "completed"
     },
     {
-      "date": "2026-04-18T19:04:25+08:00",
-      "section": "1.16",
-      "section_title": "Audio Pipeline 延迟与性能",
+      "date": "2026-04-18T10:33:10.689932+00:00",
+      "section": "15.8",
+      "section_title": "Android 性能问题实证：真实世界的分类与代码模式",
       "source": "task9-deep-tech-review",
       "priority": 95,
       "fixes": [
-        "交叉引用错误：FAQ 中 LOW_LATENCY 改成“有机会进入 fast path”，并回连 output profile + PlaybackThread::createTrack_l() 条件",
-        "版本差异：Android 17 后台音频问题改成 app 侧 write/callback 停止、track inactive / teardown、AudioHardening + dumpsys audio 联动诊断",
-        "原理断裂：MMAP 段新增 control plane / data plane 对照，补 shared / exclusive 与 AAudioService / HAL 边界",
-        "版本差异：新增 Normal / Fast / MMAP / Direct-Offload 对照表，下调 AAudio offloaded playback 为 [待验证]"
+        "引用错误：arxiv 2407.00240→2407.05090",
+        "样本口径：补 Stack Overflow 749,067 + raw→keyword→manual 分母",
+        "63 vs 82 因素区分",
+        "invalidate()/requestLayout() 语义修正与 §7.12 对齐",
+        "Frame Timeline Android 12+ + 8-11 fallback",
+        "UI Operation 模式重写",
+        "禁用词扫描 0 hit"
       ],
       "verification": "technical-writing 禁用词扫描=0，queue=completed",
       "queue_status": "completed"
@@ -3496,15 +3508,15 @@
       "issues_fixed": 4
     },
     {
-      "section": "1.16",
-      "section_title": "Audio Pipeline 延迟与性能",
-      "date": "2026-04-18T19:04:25+08:00",
+      "section": "15.8",
+      "section_title": "Android 性能问题实证：真实世界的分类与代码模式",
+      "date": "2026-04-18T10:33:10.689932+00:00",
       "by": "task2b-rework",
       "source": "task9-deep-tech-review",
-      "issues_fixed": 4
+      "issues_fixed": 7
     }
   ],
-  "last_task2b_run": "2026-04-18T19:04:25+08:00",
+  "last_task2b_run": "2026-04-18T10:33:10.689932+00:00",
   "task2b_fixed": 8,
   "17.1": {
     "task6_review_date": "2026-04-16",
@@ -3519,10 +3531,10 @@
     "task6_state": "reviewed",
     "task9_state": "pending"
   },
-  "task2b_last_run": "2026-04-18T19:04:25+08:00",
+  "task2b_last_run": "2026-04-18T10:33:10.689932+00:00",
   "task2b_last_result": "fixed",
   "task2b_task8_processed": 3,
-  "task2b_note": "按 Task9 Deep Tech Review 修复 1.16 的 LOW_LATENCY 选路口径、Android 17 后台音频可观测性、MMAP 控制面/数据面、Direct-Offload 对照表",
+  "task2b_note": "按 Task9 Deep Tech Review 修复 15.8 的 arxiv 引用、Stack Overflow 数据源补全、63/82 因素区分、invalidate/requestLayout 语义、Frame Timeline 版本边界、UI Operation 模式重写、禁用词清除",
   "15.5": {
     "task6_review_date": "2026-04-17",
     "task6_result": "pass-light-edit",
@@ -3577,11 +3589,11 @@
       "by": "task2b-rework"
     },
     {
-      "date": "2026-04-18T19:04:25+08:00",
+      "date": "2026-04-18T10:33:10.689932+00:00",
       "sections": [
-        "1.16"
+        "15.8"
       ],
-      "issues_fixed": 4,
+      "issues_fixed": 7,
       "by": "task2b-rework"
     }
   ],
@@ -3596,7 +3608,7 @@
   "total_chapters": 0,
   "reviewed_count": 1,
   "last_review": "18.17",
-  "last_task2b_section": "1.16",
+  "last_task2b_section": "15.8",
   "1.10": {
     "section": "1.10",
     "title": "ContentProvider 性能与优化",
@@ -3645,28 +3657,31 @@
     "pipeline_stage": "task6_pending"
   },
   "15.8": {
+    "section": "15.8",
+    "title": "Android 性能问题实证：真实世界的分类与代码模式",
+    "last_rework_date": "2026-04-18T10:33:10.689932+00:00",
+    "rework_count": 1,
+    "rework_source": "task9-deep-tech-review",
+    "rework_issues_fixed": 7,
+    "rework_details": [
+      "引用错误：arxiv 2407.00240→2407.05090，frontmatter/sources/正文/参考资料统一修正",
+      "样本口径：补 Stack Overflow 749,067 条数据源，补 raw→keyword filter→manual checking 统计口径",
+      "63 vs 82：区分真实世界 63 个因素与综合 taxonomy 82 个因素（含文献独有的 19 个）",
+      "invalidate/requestLayout：修正语义边界，与 §7.12 已验证结论对齐",
+      "版本差异：Frame Timeline 标注 Android 12+，补 8-11 gfxinfo/framestats fallback",
+      "UI Operation 模式：重写为论文原文的 onDraw 重复绘制 + 布局配置不当",
+      "禁用词扫描：清除全部 banned phrases，最终 0 hit"
+    ],
+    "current_status": "ready-for-review",
+    "pipeline_stage": "task6_pending"
+  },
+  "1.16": {
     "task9_reviewed_date": "2026-04-18",
     "task9_reviewed_by": "openclaw-task9",
     "task9_result": "needs-rework",
     "task9_state": "reviewed",
     "task2b_state": "pending",
     "pipeline_stage": "task2b_pending",
-    "last_task9_at": "2026-04-18T16:41:43+08:00"
-  },
-  "1.16": {
-    "section": "1.16",
-    "title": "Audio Pipeline 延迟与性能",
-    "last_rework_date": "2026-04-18T19:04:25+08:00",
-    "rework_count": 1,
-    "rework_source": "task9-deep-tech-review",
-    "rework_issues_fixed": 4,
-    "rework_details": [
-      "LOW_LATENCY 口径回收为“请求”，补 output profile 与 PlaybackThread::createTrack_l() 的筛选条件",
-      "Android 17 后台音频异常改成 app 写入停止、track inactive / teardown、AudioHardening + dumpsys audio 联动诊断",
-      "MMAP 段补 control plane / data plane 对照，解释 shared / exclusive 与 AAudioService / HAL 边界",
-      "新增 Normal / Fast / MMAP / Direct-Offload 表，AAudio offloaded playback 收敛到 [待验证] 边界"
-    ],
-    "current_status": "ready-for-review",
-    "pipeline_stage": "task6_pending"
+    "last_task9_at": "2026-04-18T17:55:02+08:00"
   }
 }

@@ -74,10 +74,10 @@ gap_source: "AOSP结构+官方文档+研究素材+读者需求"
 rework_date: "2026-04-05"
 rework_by: "task2a"
 reviewed_by: openclaw-task6
-reviewed_date: "2026-04-10"
-task6_result: needs-rework
-pipeline_stage: task6_pending
-task6_state: revisiting
+reviewed_date: "2026-04-18"
+task6_result: pass-light-edit
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_result: needs-rework
 task9_state: pending
 task2b_state: fixed
@@ -85,7 +85,7 @@ task2b_result: fixed
 last_task9_at: "2026-04-18T13:34:00+08:00"
 task9_reviewed_date: 2026-04-18
 task9_reviewed_by: openclaw-task9
-review_round: 2
+review_round: 3
 ---
 
 
@@ -95,7 +95,7 @@ review_round: 2
 
 如果你做过 Android 性能优化，几乎不可能绕开 AMS。应用冷启动时，是 AMS 向 Zygote 发出 fork 请求来创建你的进程；用户按 Home 键时，是 AMS 调整你进程的 oom_adj，决定你在内存紧张时是第一个被杀还是最后一个；当你遇到 ANR，超时检测的"埋雷-爆雷"逻辑就住在 AMS 内部。
 
-更直白地说：**你用 Perfetto 分析启动耗时、进程被杀、ANR、前台服务超时这些问题时，Trace 里看到的 `am_proc_start`、`am_anr`、`am_crash` 这些事件，全部来自 AMS。** 不了解 AMS 的工作方式，这些事件就是 Trace 里的"黑盒"——你看到它发生了，但不知道为什么、怎么追。
+**用 Perfetto 分析启动耗时、进程被杀、ANR、前台服务超时这些问题时，Trace 里看到的 `am_proc_start`、`am_anr`、`am_crash` 这些事件，全部来自 AMS。** 不了解 AMS 的工作方式，这些事件就是 Trace 里的"黑盒"——你看到它发生了，但不知道为什么、怎么追。
 
 读完本节，我们将能够在 Perfetto 中识别 AMS 的关键 Track 和事件，理解进程优先级的动态调整逻辑，以及各类 ANR 的触发路径。这不是为了让你成为 AMS 的开发者，而是让你在分析性能问题时知道"该往哪里看"。
 
@@ -186,7 +186,7 @@ Android 不是"前台就活着、后台就杀掉"这么简单。系统维护了�
 
 AMS 调整 oom_adj 的核心方法是 `ActivityManagerService.updateOomAdjLocked()`。这个方法会遍历所有进程，根据每个进程中运行的组件（Activity、Service、Provider、广播接收器）的状态重新计算优先级。
 
-值得关注的细节是：一个进程可能同时持有多种组件。比如一个 App 进程可能既有前台 Activity，又有后台 Service 在跑。AMS 会取所有组件中最高的优先级作为进程的最终优先级——这个策略确保了"只要进程中有任何重要组件，就不会被轻易杀掉"。
+一个进程可能同时持有多种组件。比如一个 App 进程可能既有前台 Activity，又有后台 Service 在跑。AMS 会取所有组件中最高的优先级作为进程的最终优先级——这个策略确保了"只要进程中有任何重要组件，就不会被轻易杀掉"。
 
 ### 进程启动流程
 
@@ -270,7 +270,7 @@ InputDispatcher.processAnrsLocked()
 
 把现代广播模型直接写成 `BroadcastQueue.java` 里的两个固定队列，会把源码入口看错。AOSP android-16.0.0_r1 的做法是由 `ActivityManagerService` 组装广播参数，注入 `BroadcastConstants`，再由 `BroadcastQueueImpl` 执行分发、超时检查和 ANR 上报。
 
-对性能分析，10 秒 / 60 秒仍可作为工作记忆；但“前台队列 = `mFgBroadcastQueue`、后台队列 = `mBgBroadcastQueue`”更接近早期实现。放到现代版本，更稳妥的入口是 `ActivityManagerService.java`、`BroadcastConstants.java` 和 `BroadcastQueueImpl.java`。
+对性能分析，10 秒 / 60 秒仍可作为工作记忆；但“前台队列 = `mFgBroadcastQueue`、后台队列 = `mBgBroadcastQueue`”更接近早期实现。放到现代版本，入口应该看 `ActivityManagerService.java`、`BroadcastConstants.java` 和 `BroadcastQueueImpl.java`。
 
 > [已验证: AOSP android-16.0.0_r1，`frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java`、`BroadcastConstants.java`、`BroadcastQueueImpl.java`]
 
@@ -302,7 +302,7 @@ void scheduleServiceTimeoutLocked(ProcessRecord proc) {
 }
 ```
 
-"拆雷"并不发生在 `service.onCreate()` 之前。AOSP android-16.0.0_r1 的 `ActivityThread.handleCreateService()` 先执行 `service.onCreate()`，把 Service 真正创建出来，然后才通过 `ActivityManager.getService().serviceDoneExecuting()` 通知 AMS 本次执行结束。换句话说，`onCreate()` 本身就在 Service ANR 的计时窗口里；如果这里阻塞太久，AMS 会把这段时间直接算进超时。
+"拆雷"并不发生在 `service.onCreate()` 之前。AOSP android-16.0.0_r1 的 `ActivityThread.handleCreateService()` 先执行 `service.onCreate()`，把 Service 真正创建出来，然后才通过 `ActivityManager.getService().serviceDoneExecuting()` 通知 AMS 本次执行结束。`onCreate()` 本身就在 Service ANR 的计时窗口里；如果这里阻塞太久，AMS 会把这段时间直接算进超时。
 
 > [已验证: AOSP android-16.0.0_r1，`frameworks/base/core/java/android/app/ActivityThread.java` 的 `handleCreateService()` 与 `frameworks/base/services/core/java/com/android/server/am/ActiveServices.java` 的 `scheduleServiceTimeoutLocked()` / `serviceDoneExecutingLocked()`]
 
@@ -363,7 +363,7 @@ RootWindowContainer
 
 `RootWindowContainer` 是整台设备的顶层窗口容器；每个 `DisplayContent` 下面可以有一个或多个 `TaskDisplayArea`；`TaskDisplayArea` 的孩子既可以是 `Task`，也可以是嵌套的 `TaskDisplayArea`；`Task` 本身既可能是用户在 Recents 里看到的一张任务卡片，也可能继续包含子 `Task`。所以我们今天谈“Activity 落在哪个栈里”时，更准确的说法不是“AMS 把它塞进某个 TaskStack”，而是“ATMS / WindowManager 在目标 `TaskDisplayArea` 中选择或创建合适的 `Task`，再把 `ActivityRecord` 挂进去”。
 
-落实到启动链路，`ActivityStarter.startActivityInner()` 会先计算 `mPreferredTaskDisplayArea`，再通过 `TaskDisplayArea.getOrCreateRootTask()` 找到或创建目标 root task，最后把新的 `ActivityRecord` 放进目标 `Task`。这对性能分析有一个直接影响：我们不能再假设 Perfetto 里存在一个统一的 `am_activity_launch` EventLog 作为启动锚点。更稳妥的做法，是把 `android_logs` 里的 `am_proc_start` / `am_proc_bound`、`system_server` 侧的 ATMS / WindowManager slice，以及应用主线程的 `bindApplication`、Activity 生命周期和首帧 `doFrame` 串起来看。AMS 负责把进程和全局状态管起来，ATMS 负责把 Activity 放到正确的容器里，这两条线要放在一起看，启动链路才完整。
+落实到启动链路，`ActivityStarter.startActivityInner()` 会先计算 `mPreferredTaskDisplayArea`，再通过 `TaskDisplayArea.getOrCreateRootTask()` 找到或创建目标 root task，最后把新的 `ActivityRecord` 放进目标 `Task`。这对性能分析有一个直接影响：我们不能再假设 Perfetto 里存在一个统一的 `am_activity_launch` EventLog 作为启动锚点。应该把 `android_logs` 里的 `am_proc_start` / `am_proc_bound`、`system_server` 侧的 ATMS / WindowManager slice，以及应用主线程的 `bindApplication`、Activity 生命周期和首帧 `doFrame` 串起来看。AMS 负责把进程和全局状态管起来，ATMS 负责把 Activity 放到正确的容器里，这两条线要放在一起看，启动链路才完整。
 
 > [已验证: AOSP android-16.0.0_r1，`frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java` 中 `startActivity()` 委托给 `mActivityTaskManager.startActivity()`；`frameworks/base/services/core/java/com/android/server/wm/RootWindowContainer.java`、`TaskDisplayArea.java`、`Task.java` 定义了当前任务容器层级]
 
@@ -389,7 +389,7 @@ RootWindowContainer
 
 这一项不能写成“Android 17 新引入”。当前公开 AOSP 在 `frameworks/base/core/res/res/values/attrs_manifest.xml` 里已经定义了 `recreateOnConfigChanges`，而且注释写得很直白：从 Android O 开始，`mcc` 和 `mnc` 这两类配置变化默认不会再触发 Activity 重建；如果应用确实希望在这两种变化发生时重走一次 Activity 重建流程，需要在 manifest 里显式声明 `recreateOnConfigChanges`。
 
-这意味着我们分析配置变更带来的重启问题时，不能把 `recreateOnConfigChanges` 当成一个“通用的 Activity 重启开关”。就公开源码可验证的语义来看，它主要针对 `mcc` / `mnc` 这类运营商和区域配置变化。屏幕旋转、夜间模式、窗口尺寸变化这类更常见的场景，仍然应该先看 `android:configChanges`、`onConfigurationChanged()` 和实际生命周期回调，而不是先假设系统会因为 `recreateOnConfigChanges` 把 Activity 杀掉重建。
+因此我们分析配置变更带来的重启问题时，不能把 `recreateOnConfigChanges` 当成一个“通用的 Activity 重启开关”。就公开源码可验证的语义来看，它主要针对 `mcc` / `mnc` 这类运营商和区域配置变化。屏幕旋转、夜间模式、窗口尺寸变化这类更常见的场景，仍然应该先看 `android:configChanges`、`onConfigurationChanged()` 和实际生命周期回调，而不是先假设系统会因为 `recreateOnConfigChanges` 把 Activity 杀掉重建。
 
 从性能角度，这个属性影响的不是高频日常交互，而是少见但难查的区域 / 运营商切换场景。假如你在跨境 SIM、eSIM 切换或运营商配置更新后看到 Activity 没有按预期重建，先查 manifest 是否声明了 `mcc|mnc` 的 `recreateOnConfigChanges`，再决定是否继续沿着 AMS / ATMS 的重启链路追。至少就当前公开的 AOSP 与 Android Developers 文档，我们没有证据把它解释成 Android 17 的通用行为变更。
 
