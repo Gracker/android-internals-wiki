@@ -2275,5 +2275,44 @@
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-18T14:30:00+08:00",
     "status": "pending"
+  },
+  {
+    "section": "1.11",
+    "section_title": "Zygote 机制与启动性能优化",
+    "priority": 95,
+    "reason": "[Deep Tech Review] P0：把 specializeAppProcess() 写成 native fork；P1：launching trace 语义、secondary zygote / USAP 边界、版本范围仍未讲清",
+    "material_paths": [
+      "intake/research-gaps.md",
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "L162-L170「fork 之后到 Application.onCreate() 之前」",
+        "detail": "文中把 specializeAppProcess() 描述成 native fork 路径。AOSP android-16 的 Zygote.java 中，forkAndSpecialize() 才调用 nativeForkAndSpecialize()；specializeAppProcess() 调用的是 nativeSpecializeAppProcess()，用于把现成的 USAP 进程特化成目标应用进程，不发生新的 fork。两条路径都可能出现 PostFork trace，但语义不同。",
+        "suggestion": "拆开普通 zygote fork 路径和 USAP specialization 路径，明确 PostFork 不是“刚刚发生 fork”的充分证据。"
+      },
+      {
+        "type": "原理断裂",
+        "location": "L75-L76 / L193-L195 / L211-L227「可观测时序 / Perfetto 查询」",
+        "detail": "把 launching: <package> 当成 bindApplication 之后的顺序锚点。AOSP android-16 的 ActivityMetricsLogger.startLaunchTrace() 实际在启动开始时用 Trace.asyncTraceBegin() 创建 launching: <package>，它跨越整个启动窗口，与 am_proc_start、PostFork、bindApplication 等锚点重叠，而不是排在它们后面。",
+        "suggestion": "把 launching: <package> 改画成 span，并补一句如何把它和 am_proc_start、PostFork、bindApplication 做重叠对齐。"
+      },
+      {
+        "type": "知识盲区",
+        "location": "L241-L259「Primary / secondary zygote、版本演进」",
+        "detail": "章节点到了 secondary zygote，但没有解释 openZygoteSocketIfNeeded(abi) 的 primary/secondary ABI 匹配逻辑，也没交代 USAP pool 只在 primary/secondary zygote 可用，child zygote（含 App Zygote / WebViewZygote）不支持 USAP pool。读者难以判断不同进程类型走哪条创建路径。",
+        "suggestion": "补一张 primary/secondary ABI 选择矩阵，再补 USAP / App Zygote / WebViewZygote 的适用边界。"
+      },
+      {
+        "type": "版本差异",
+        "location": "frontmatter L10 / L128-L150 / L253-L261",
+        "detail": "章节声明 applicable_versions 覆盖 Android 5-16，但正文把 android-16 的 preload 阶段名和观察点直接当成通用默认值。对 Android 5-9/10 的读者来说，这些 trace 名和能力边界并不等价，容易把 android-16 结论套用到更老版本。",
+        "suggestion": "要么把正文范围收窄到 Android 10+ / Android 16 口径，要么补一个按版本分层的 preload / USAP / App Zygote 变化表。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-18T15:21:00+08:00",
+    "status": "pending"
   }
 ]

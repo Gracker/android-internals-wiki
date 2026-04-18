@@ -875,3 +875,24 @@ SurfaceControl NDK 的 FrameTimeline 小节缺少“如何从 AChoreographerFram
 - 3.1 Input 事件分发全流程
 - 9.1 ANR 设计思想
 - 9.2 ANR 类型与触发条件
+
+## [2026-04-18] 1.11 Zygote 机制与启动性能优化 — 知识盲区
+
+### 盲区描述
+1. **secondary zygote / ABI 路由缺失** — 章节提到 secondary zygote，但没有解释 `openZygoteSocketIfNeeded(abi)` 如何在 primary / secondary 之间选择，也没有说明 32 位 / 64 位应用在双 ABI 设备上的建进程入口差异。
+2. **USAP 与 child zygote 边界缺失** — 章节把 USAP、App Zygote、WebViewZygote 放在同一节，但没有点明 USAP pool 只适用于 primary / secondary zygote，child zygote 不支持 USAP pool。现代启动分析里，这会直接影响对 isolated service / WebView provider 启动路径的判断。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 对照 `ZygoteProcess.openZygoteSocketIfNeeded(abi)` 梳理 primary / secondary zygote 的 ABI 选择逻辑
+- 梳理 USAP pool 仅在 primary / secondary zygote 可用的源码依据和版本边界
+- 补一个 dual-ABI 设备的 Perfetto / event log 观察示例，说明普通 App、isolated service、WebView provider 各走哪条创建路径
+
+### 关联章节
+- 1.4
+- 1.17
+- 8.2
+- 8.3
+

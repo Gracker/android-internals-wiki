@@ -1579,3 +1579,16 @@
 - **问题**：代码示例中使用了 mInboundQueue.hasEvent()、peekEvent()、removeEvent()、dropInboundConnection() 等方法，这些方法名在 AOSP android-14 的 InputDispatcher 中可能不存在或名称不同。该代码段标记为 AIW-源码调研，可能是基于理解重写的简化版本而非实际源码摘录。
 - **建议**：Task 9 对照 AOSP android-14.0.0_r1 frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp，核实 STALE_EVENT_TIMEOUT 常量、isStale() 函数签名、以及 dispatchOnce() 中 stale event 的实际处理流程。如方法名不准确，由 Task 2B 更正为实际源码。
 - **review 日志**：logs/review/2026-04-18-15-review.md
+
+## [Task9 Deep Review] 1.11 Zygote 机制与启动性能优化 — 2026-04-18
+- **类型**：数据缺失
+- **位置**：L92-L94 / L197-L235
+- **问题**：章节把 preload + COW 共享和“如何区分 Zygote 问题 / App 初始化问题”作为核心判断，但正文没有任何真实 Trace、event log 或 PSS/smaps 数据。读者看不到 `am_proc_start → PostFork → am_proc_bound → bindApplication` 的真实耗时，也看不到 COW 共享在内存上的可观测证据。
+- **建议**：补 1 个真实冷启动案例，至少给出 `am_proc_start→PostFork`、`PostFork→am_proc_bound`、`bindApplication` 的耗时；再补 1 个 `smaps_rollup` / PSS / Shared_Clean 示例，证明 preload + COW 的收益。
+
+## [Task9 Deep Review] 1.11 Zygote 机制与启动性能优化 — 2026-04-18
+- **类型**：交叉引用
+- **位置**：frontmatter `related_chapters` / L283-L288
+- **问题**：正文多次解释 Binder 与 zygote socket 的职责边界，但 related_chapters 没有回连 §1.4 Binder IPC 机制与性能影响 和 §1.17 IPC 全景；同时正文把 §8.2 写成“应用启动分析”，项目中的实际标题是“App 启动全流程”。
+- **建议**：related_chapters 补 `1.4`、`1.17`；正文把 §8.2 的标题回连到项目中的实际名称，避免交叉引用口径漂移。
+
