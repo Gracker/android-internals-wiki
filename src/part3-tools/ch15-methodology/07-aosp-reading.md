@@ -1,6 +1,7 @@
 ---
 title: "AOSP 代码阅读"
 chapter: "15.7"
+section: "15.7"
 status: ready-for-review
 drafted_date: "2026-04-04"
 drafted_by: "openclaw-task2a"
@@ -17,18 +18,16 @@ sources:
     path: "https://mp.weixin.qq.com/s?__biz=MzI4NTk1NzYwNg==&mid=2247483668"
 tags: ['aosp', 'code-reading', 'cs.android.com', 'methodology']
 related_chapters: ["1.1", "2.4", "2.5", "13.1"]
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task9_result: needs-rework
 task9_reviewed_date: "2026-04-17"
 task2b_state: fixed
----
 reviewed_by: "openclaw-task6"
-reviewed_date: "2026-04-17"
+reviewed_date: "2026-04-18"
 task6_result: pass-light-edit
 ---
-
 
 # AOSP 代码阅读
 
@@ -71,7 +70,7 @@ task6_result: pass-light-edit
 
 [已验证: 官方文档, source.android.com/setup/contribute/code-search]
 
-Android Code Search（cs.android.com）是 Google 为 AOSP 专门构建的代码搜索和浏览工具，2019 年底正式上线。它解决了一个核心痛点：AOSP 由数百个 Git 仓库组成，在 android.googlesource.com 上逐个仓库翻看效率极低，而且无法跨仓库搜索和跳转。
+Android Code Search（cs.android.com）是 Google 为 AOSP 专门构建的代码搜索和浏览工具，2019 年底正式上线。它解决了一个核心问题：AOSP 由数百个 Git 仓库组成，在 android.googlesource.com 上逐个仓库翻看效率极低，而且无法跨仓库搜索和跳转。
 
 cs.android.com 将所有 AOSP 代码呈现在一个统一的视图中，与我们本地 checkout 出来的目录结构完全一致。这意味着我们搜索一个类名，就能直接看到它在整个 Android 系统中的定义、引用和调用者，不需要关心这个文件属于哪个底层 Git 仓库。
 
@@ -426,7 +425,7 @@ git blame core/java/android/view/Choreographer.java | grep "scheduleVsync"
 
 **"AOSP 代码太复杂，不适合应用开发者"**
 
-这种想法会让应用开发者永远停留在"用 API"的层面。实际上，阅读 AOSP 中 `frameworks/base/core/java/android/view/` 和 `frameworks/base/core/java/android/app/` 下的代码，能帮助应用开发者理解系统在做什么，从而写出更高效的代码。比如理解了 `Choreographer` 的 VSync 申请机制，就知道为什么在一个 VSync 周期内多次 `invalidate()` 只会触发一次 `doFrame()`。
+这种想法会让应用开发者永远停留在"用 API"的层面。阅读 AOSP 中 `frameworks/base/core/java/android/view/` 和 `frameworks/base/core/java/android/app/` 下的代码，能帮助应用开发者理解系统在做什么，从而写出更高效的代码。比如理解了 `Choreographer` 的 VSync 申请机制，就知道为什么在一个 VSync 周期内多次 `invalidate()` 只会触发一次 `doFrame()`。
 
 **"grep 搜索就够了，不需要专门工具"**
 
