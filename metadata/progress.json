@@ -1,52 +1,52 @@
 {
-  "generated_at": "2026-04-19T03:57:50+08:00",
+  "generated_at": "2026-04-19T06:24:00+08:00",
   "state_machine_version": "v2",
   "total_sections": 218,
   "metrics": {
     "total": 218,
     "unknown": 38,
     "ready-for-review": 180,
-    "last_updated": "2026-04-19T03:57:50+08:00",
+    "last_updated": "2026-04-19T06:24:00+08:00",
     "task2b_state_counts": {
-      "unknown": 39,
-      "fixed": 126,
+      "unknown": 38,
+      "fixed": 127,
       "pending": 9,
       "idle": 44
     },
     "task6_state_counts": {
       "unknown": 33,
-      "reviewed": 69,
-      "revisiting": 113,
+      "reviewed": 68,
+      "revisiting": 114,
       "pending": 3
     },
     "task9_state_counts": {
-      "unknown": 37,
-      "reviewed": 18,
+      "unknown": 36,
+      "reviewed": 19,
       "pending": 162,
       "fixed": 1
     },
     "pipeline_stage_counts": {
       "unknown": 32,
-      "task6_pending": 124,
+      "task6_pending": 125,
       "task9_pending": 50,
-      "task2b_pending": 12
+      "task2b_pending": 11
     },
     "total_sections": 218,
     "pipeline_unknown": 32,
-    "pipeline_task6_pending": 124,
-    "pipeline_task2b_pending": 12,
+    "pipeline_task6_pending": 125,
+    "pipeline_task2b_pending": 11,
     "pipeline_task9_pending": 50,
-    "task2b_unknown": 39,
-    "task2b_fixed": 126,
+    "task2b_unknown": 38,
+    "task2b_fixed": 127,
     "task2b_pending": 9,
     "task2b_idle": 44,
     "task6_unknown": 33,
-    "task6_revisiting": 113,
-    "task6_reviewed": 69,
+    "task6_revisiting": 114,
+    "task6_reviewed": 68,
     "task6_pending": 3,
-    "task9_unknown": 37,
+    "task9_unknown": 36,
     "task9_pending": 162,
-    "task9_reviewed": 18,
+    "task9_reviewed": 19,
     "ready-to-publish": 0,
     "finalized": 0,
     "task9_fixed": 1
@@ -54,25 +54,25 @@
   "pipeline": {
     "pipeline_stage_counts": {
       "unknown": 32,
-      "task6_pending": 124,
+      "task6_pending": 125,
       "task9_pending": 50,
-      "task2b_pending": 12
+      "task2b_pending": 11
     },
     "task2b_state_counts": {
-      "unknown": 39,
-      "fixed": 126,
+      "unknown": 38,
+      "fixed": 127,
       "pending": 9,
       "idle": 44
     },
     "task6_state_counts": {
       "unknown": 33,
-      "reviewed": 69,
-      "revisiting": 113,
+      "reviewed": 68,
+      "revisiting": 114,
       "pending": 3
     },
     "task9_state_counts": {
-      "unknown": 37,
-      "reviewed": 18,
+      "unknown": 36,
+      "reviewed": 19,
       "pending": 162,
       "fixed": 1
     }
@@ -490,13 +490,13 @@
       "title": "IPC 全景：Android 进程间通信机制对比与性能选型",
       "path": "src/part1-fundamentals/ch01-architecture/17-ipc-panorama.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "revisiting",
-      "task9_state": "pending",
-      "task2b_state": "fixed",
-      "reviewed_date": "2026-04-11",
+      "pipeline_stage": "task2b_pending",
+      "task6_state": "reviewed",
+      "task9_state": "reviewed",
+      "task2b_state": "pending",
+      "reviewed_date": "2026-04-19",
       "reviewed_by": "openclaw-task6",
-      "task6_result": "needs-rework",
+      "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
       "section": "1.17"

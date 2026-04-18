@@ -1581,3 +1581,21 @@ API 33+ 的公开帧时间线入口缺位。正文已经解释了框架内部 `d
 - 2.19 刷新率切换与帧率适配性能
 - 18.19 可变刷新率渲染管线
 
+## [2026-04-19] 1.17 IPC 全景：Android 进程间通信机制对比与性能选型 — 知识盲区
+
+### 盲区描述
+章节把 ashmem、SharedMemory、GraphicBuffer、FMQ 和 dmabuf-heaps 放进同一条“共享内存演进线”，但没有拆开三类完全不同的对象：1) 应用通用共享内存（ashmem / MemoryFile / SharedMemory，若追内核演进还要看 memfd）；2) 图形 / 媒体 DMA buffer allocator（ION → dmabuf-heaps）；3) HAL 高频零拷贝队列（FMQ）。缺少这层边界后，读者很难判断 CursorWindow、BufferQueue、AIDL/HIDL HAL 的 fd 传递到底各自落在哪条路径上。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 回源 `android/os/SharedMemory.java`、`android_os_SharedMemory.cpp`、`MemoryFile.java`，确认应用通用共享内存仍然走哪套实现
+- 梳理 ION → dmabuf-heaps 在 GraphicBuffer / Gralloc / BufferQueue 路线中的真实版本节点
+- 给出一张“对象类型 → fd 传递方式 → 典型场景 → Trace / dumpsys 观察点”的对照表
+
+### 关联章节
+- 1.10
+- 2.13
+- 2.15
+- 16.1

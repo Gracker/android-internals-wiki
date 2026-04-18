@@ -1881,3 +1881,14 @@
 - **问题**：Perfetto 观察点写成 `VSYNC` / `HW_VSYNC` / `FrameTimeline` 三行摘要，和 §2.3、§2.18 现有的 `VSYNC-app`、`VSYNC-sf`、`expected_frame_timeline_slice`、`actual_frame_timeline_slice` 口径不一致，读者无法直接按全书统一方法回溯
 - **建议**：统一术语口径，并在本节明确 surface_frame_token / display_frame_token / jank_type 的实际观察入口
 
+## [Task9 Deep Review] 1.17 IPC 全景：Android 进程间通信机制对比与性能选型 — 2026-04-19
+- **类型**：数据缺失
+- **位置**：L145-L150 / L184 / L210 / L247 / L355
+- **问题**：`90%+ 的 IPC 调用走 Binder` 以及多组延迟数字（Binder / socket / pipe / mmap）都没有给设备型号、负载条件、payload 大小或 Trace 样本。当前写法看起来像已验证的量化结论，但仓内没有对应 benchmark / Perfetto 证据。
+- **建议**：补 1 组可复现的基准条件和观测方法；如果暂时没有实测，把这些数字降级成定性描述或标成 `[待验证]`。
+
+## [Task9 Deep Review] 1.17 IPC 全景：Android 进程间通信机制对比与性能选型 — 2026-04-19
+- **类型**：交叉引用
+- **位置**：L202-L204 / L513
+- **问题**：正文已经明确 Android 8-17 的 Looper 唤醒路径应理解为 `eventfd + epoll`，但结尾交叉参考仍写成 `§1.13 MessageQueue 机制（Pipe + epoll 在 Looper 中的应用）`。这既和本章自己的结论冲突，也和项目中的实际章节名 `MessageQueue 机制与 DeliQueue 无锁优化` 不一致。另：L346 的“更准确的说法是”、L360 的“先别把”、L190/L310 的“本质上”仍命中 technical-writing SKILL 禁句式，但这不是本轮主审项。
+- **建议**：把交叉参考改成项目中的实际标题，或改写为 `§1.13 MessageQueue / Looper 唤醒路径（eventfd + epoll）`；顺手清掉上述禁句式。

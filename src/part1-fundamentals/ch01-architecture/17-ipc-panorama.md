@@ -32,12 +32,12 @@ reviewed_date: "2026-04-19"
 reviewed_by: "openclaw-task6"
 task6_result: pass-light-edit
 review_log: "logs/review/2026-04-11-09-review.md"
-pipeline_stage: task9_pending
+pipeline_stage: task2b_pending
 task6_state: reviewed
 task9_result: needs-rework
-task9_state: pending
+task9_state: reviewed
 task2b_result: fixed
-task2b_state: fixed
+task2b_state: pending
 ---
 
 # IPC 全景：Android 进程间通信机制对比与性能选型
