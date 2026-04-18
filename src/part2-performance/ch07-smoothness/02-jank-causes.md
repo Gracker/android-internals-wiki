@@ -36,11 +36,12 @@ tags:
   - smoothness
 related_chapters: ["7.1", "2.3", "2.4", "2.5", "1.4", "1.5", "3.1", "4.3"]
 re-review-result: "审查 0 条素材，无需修改"
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
-task9_state: reviewed
-task2b_state: pending
+task9_state: pending
+task2b_state: fixed
+task2b_result: fixed
 task9_result: needs-rework
 last_task9_at: "2026-04-19T01:44:00+08:00"
 ---
@@ -141,7 +142,7 @@ RecyclerView 是 Android 中最常用的列表组件，也是卡顿的高发地�
 
 **在 Perfetto 中的表现：** 在滑动场景的 Trace 中，可以看到主线程的 doFrame 内有一系列 `RV onBind` 或 `RV FullInflate` 的 Slice，如果这些 Slice 的总耗时加上 measure/layout 耗时超过了 VSync 周期，就会掉帧。
 
-[已验证: AOSP android-15.0.0_r1, frameworks/base/core/java/android/widget/RecyclerView.java]
+[已验证: AndroidX androidx-main, recyclerview/recyclerview/src/main/java/androidx/recyclerview/widget/RecyclerView.java]
 
 ### 主线程 I/O
 
@@ -171,9 +172,9 @@ RecyclerView 是 Android 中最常用的列表组件，也是卡顿的高发地�
 
 [来源: Personal-Knowlodge/source/2026-03-07_wechat_Android深入卡顿分析与实践.md — 2.4 懒加载优化 & 2.6 锁耗时优化]
 
-**在 Perfetto 中的表现：** 主线程出现一段蓝色的 Runnable 或灰色的 Sleeping Slice，查看唤醒源（waker）可以发现是等待某个锁。开启 `-a lock` trace 可以看到更详细的锁竞争信息。
+**在 Perfetto 中的表现：** Java / Kotlin monitor 竞争更稳的入口是线程状态里的 Blocked、Perfetto 的 Lock contention track，或 `android.monitor_contention` 模块给出的 owner / waiter 关系。native mutex 和 condition variable 往往都会落到 `futex_*` 等待上，但两者语义不同：mutex 等 owner 释放锁，condition variable 等谓词成立后的唤醒。Runnable 长时间不执行说明线程没有及时拿到 CPU，不等于它在等锁。
 
-[待验证: `-a lock` 在不同 Android 版本中的可用性]
+要抓 Java monitor，trace 至少带上 `sched` 和 `dalvik` 相关采集项，这样 Perfetto 才能产出 `android.monitor_contention` 所需的数据。native 锁继续结合 `thread_state.blocked_function`、调用栈和 owner 线程状态分析。
 
 ## RenderThread 瓶颈
 
@@ -187,7 +188,7 @@ RecyclerView 是 Android 中最常用的列表组件，也是卡顿的高发地�
 
 GPU 过载是最常见的 RenderThread 瓶颈。当一帧需要 GPU 执行的绘制命令太多或太复杂时，GPU 的执行时间会超过 VSync 周期的剩余时间（因为主线程的 measure/layout/draw 也消耗了一部分时间）。
 
-**大量图片的解码和上传。** 当一帧中包含多张大图时，RenderThread 需要将这些图片解码后上传到 GPU 纹理。特别是当图片未经过预处理（比如尺寸远大于显示区域），GPU 需要额外处理缩放。
+**大图首次纹理上传。** 图片 decode、缩放和格式转换通常先发生在主线程或后台线程。RenderThread 里更常见的是首次 texture upload、纹理重传，或超大纹理带来的带宽压力。列表滑动场景里，Bitmap 即使已经 decode 完成，只要这一帧才第一次进入可见区域，RenderThread 仍可能在上传纹理时被拖长。
 
 **复杂的 Shader 效果。** 高斯模糊、色彩滤镜、复杂的混合模式等 Shader 效果，会显著增加 GPU 的计算量。在 Perfetto 中表现为 RenderThread 的 draw Slice 很长。
 
@@ -195,7 +196,7 @@ GPU 过载是最常见的 RenderThread 瓶颈。当一帧需要 GPU 执行的绘
 
 [来源: Personal-Knowlodge/source/2026-03-08_wechat_干货_从47_到80_携程酒店APP流畅度提升实践.md — GPU 问题定位]
 
-**在 Perfetto 中的表现：** RenderThread 的 Slice 明显拉长，特别是其中与 GPU 命令提交相关的子 Slice（如 `flush`、`drawArray`）。在 120Hz 设备上，如果 RenderThread 的执行时间经常超过 4-5ms，就需要关注了。
+**在 Perfetto 中的表现：** 如果瓶颈在 CPU 侧 decode，长耗时更可能出现在主线程或工作线程的图片解码调用栈；如果瓶颈在 RenderThread 侧，`DrawFrame`、GPU busy 或 fence wait 会更长，掉帧常集中在图片第一次进入可见区域的几帧。120Hz 设备上，RenderThread 连续多个 4-5ms 以上的长帧就要继续细看。
 
 ### 复杂 Canvas 操作和大量 Path 计算
 
@@ -227,24 +228,17 @@ SurfaceFlinger 瓶颈导致的卡顿有一个特点：App 侧的 Trace 看起来
 
 **GPU 合成回退。** 当 HWC 无法处理某些 Layer（比如带有特定混合模式、圆角裁剪、或者超过 HWC 支持的最大 Layer 数），SurfaceFlinger 会回退到使用 GPU 进行合成。GPU 合成需要占用 GPU 资源，与 App 的 RenderThread 产生竞争，可能导致双方都变慢。
 
-**Layer 过多。** 每个 Activity、Dialog、PopupWindow、Toast 都会创建一个或多个 Layer。当同时可见的 Layer 数量过多时（比如多层 Dialog 叠加、或者分屏模式下两个 App 同时可见），SurfaceFlinger 的合成负担会显著增加。不同 SoC 的 HWC 支持的最大 Overlay Layer 数量不同，高端芯片通常支持 4-8 个 Overlay，超出部分必须走 GPU 合成。
+**Layer 过多。** 每个 Activity、Dialog、PopupWindow、Toast 都会创建一个或多个 Layer。当同时可见的 Layer 数量过多时（比如多层 Dialog 叠加、或者分屏模式下两个 App 同时可见），SurfaceFlinger 的合成负担会显著增加。不同 SoC 的 HWC 可处理 layer 数量和变换能力差异很大，具体上限取决于显示控制器、layer 属性和厂商实现，超出后才会退回 GPU 合成。
 
 **在 Perfetto 中的表现：** SurfaceFlinger 进程的 `mainLoop` 或 `doComposition` Slice 耗时过长。可以展开 SurfaceFlinger 的 Track 查看具体的合成阶段。
 
 ### HWC 能力限制
 
-不同 SoC 平台的 HWC（Hardware Composer）能力差异很大。某些低端平台的 HWC 只支持简单的 Layer 叠加（比如最多 3-4 个 Layer），且不支持缩放、旋转、圆角等操作。当 App 的窗口配置超出了 HWC 的能力范围，SurfaceFlinger 被迫使用 GPU 合成（称为 Device Composition 或 Client Composition），这会增加 GPU 负担和合成延迟。
+不同 SoC 平台的 HWC（Hardware Composer）能力差异很大。SurfaceFlinger 每一帧都会先把 layer 列表交给 HWC 评估，能直接由显示硬件叠加的 layer 标成 **Device Composition**，HWC 接不住的 layer 才退回 **Client Composition**，由 SurfaceFlinger 里的 RenderEngine 走 GPU 合成。常见触发条件包括 plane 数量不够、缩放或旋转超出硬件能力、圆角或复杂混合效果无法处理。
 
 [来源: Personal-Knowlodge/source/2026-03-08_wechat_Google_为何把_SurfaceView_设计的这么难用.md — HWC Overlay 与 Layer 类型]
 
-**在 Perfetto 中的表现：** 在 SurfaceFlinger 的 Track 中，可以看到 `GPU Composition` 相关的 Slice，或者通过 Perfetto SQL 查询 `Layer` 信息来查看哪些 Layer 走了 GPU 合成。
-
-```sql
--- 查询 SurfaceFlinger 合成方式
-SELECT name, composition_type FROM layer
-```
-
-[待验证: 上述 SQL 在 Perfetto 中的实际表名可能因版本而异]
+**在 Perfetto 中的表现：** 先看 SurfaceFlinger 的 `doComposition`、`composeSurfaces` 或 RenderEngine 相关 slice 是否拉长，再用 `adb shell dumpsys SurfaceFlinger` 做快照，检查对应 layer 是否出现 `DEVICE` / `CLIENT` 一类的 composition type 分配结果。厂商输出格式差异很大，这一步适合做复核，不要只凭一条未验证的 SQL 下结论。
 
 ## 系统级原因
 
@@ -341,7 +335,7 @@ Binder 是 Android 进程间通信（IPC）的核心机制（详见 1.4 节）�
 
 **SurfaceFlinger 的 Binder 瓶颈。** App 通过 Binder 与 SurfaceFlinger 通信来申请/提交缓冲区（dequeueBuffer、queueBuffer）。如果 SurfaceFlinger 的主线程正在处理耗时的合成操作，或者 SurfaceFlinger 本身有锁竞争，App 的 dequeueBuffer 调用可能被阻塞。
 
-**Binder 线程池耗尽。** 每个进程默认有 16 个 Binder 线程（`max_threads`）。如果主线程同时发起多个 Binder 调用，且这些调用的目标进程响应很慢，可能导致 Binder 线程池耗尽。此时新的 Binder 调用需要等待空闲线程，进一步加剧延迟。
+**Binder 线程池耗尽。** libbinder 默认最多按需创建 15 个 Binder 线程。如果再算上主动调用 `joinThreadPool()` 的线程，总服务线程数可能更多，具体进程也可以显式覆写这个上限。目标进程响应很慢时，这些 Binder worker 会被逐步占满，新的同步调用只能继续排队。
 
 [已验证: AOSP android-15.0.0_r1, frameworks/native/services/surfaceflinger/SurfaceFlinger.cpp]
 [来源: Personal-Knowlodge/source/Android-Systrace-Binder.md]
@@ -354,34 +348,35 @@ Binder 是 Android 进程间通信（IPC）的核心机制（详见 1.4 节）�
 
 前面按渲染管线的阶段，逐一梳理了主线程、RenderThread、SurfaceFlinger、系统级因素和 Binder 调用这五类卡顿原因。但在实际分析中，我们面对的不是「某个已知的原因」，而是一个掉帧的 Trace——需要从现象出发，逐步缩小范围，最终定位到具体的根因。这就需要一套系统化的分析决策路径——拿到一个掉帧的 Trace，应该从哪里开始看、按什么顺序排查、每一步看什么。这就是本节要建立的"分析树"。
 
-### 第一步：确认掉帧位置
+### 第一步：按系统版本选入口
 
-打开 Perfetto Trace，定位到掉帧的时间点。在 App 进程的 Track 中，找到 VSYNC-app 信号之间的间隔超过一个 VSync 周期的区域。
+打开 Perfetto Trace 后，先按系统版本选入口。
+
+**Android 5-11：** 先在 App 进程里看 VSYNC-app、`Choreographer#doFrame` 和 RenderThread 的 `DrawFrame`。这条入口适合旧版渲染节拍，能先判断 App 是不是在自己的预算里就已经超时。
+
+**Android 12+：** 先看 FrameTimeline。先找 `Actual Timeline` 里的红色条，再看同一帧的 JankType、`On-time finish` 和 `PresentType`。这一代系统已经把掉帧归因拆到 App、SurfaceFlinger 和 Display HAL，继续只盯 `doFrame` 很容易漏掉系统侧问题。
 
 ```
 掉帧的视觉线索：
-1. VSYNC-app 之间的间隔大于一个周期（120Hz 下 > 8.3ms, 60Hz 下 > 16.6ms）
-2. Actual Frame Timeline 中出现红色条（表示掉帧）
-3. MainThread 的 doFrame Slice 缺失或延迟
+1. Android 5-11：VSYNC-app 间隔异常，或 `Choreographer#doFrame` 明显延迟
+2. Android 12+：FrameTimeline 出现红色条、Late present 或异常 JankType
+3. 再回到对应进程的线程轨道，确认耗时发生在哪一段
 ```
 
-### 第二步：判断瓶颈在哪个线程
+### 第二步：按归因回到线程或进程
 
-找到掉帧区域后，按以下优先级检查各线程的耗时：
+**Android 5-11：** 先按线程分层排查。
+- `Choreographer#doFrame` 本身超时，继续拆主线程里的 measure、layout、draw 和其他业务 slice
+- 主线程按时完成，但 RenderThread `DrawFrame` 很长，继续看 GPU 过载、纹理上传、fence wait
+- App 侧都正常，再看 SurfaceFlinger 的合成阶段，确认有没有 Client Composition 回退、事务处理或 layer 过多
 
-**检查 MainThread：** doFrame Slice 的总耗时是多少？如果 doFrame 本身就超过了 VSync 周期的大部分时间，问题在主线程。进一步看 doFrame 内部的子 Slice：
-- `measure` / `layout` 占大头 → Layout/Measure 过重（→ 参考"主线程耗时过长"一节）
-- `draw` / `Record View#draw` 占大头 → 绘制命令过多
-- doFrame 之前有很长的非渲染 Slice → 主线程被其他任务阻塞
-
-**检查 RenderThread：** 如果 MainThread 的 doFrame 在预算内完成了，但整帧还是超时了，看 RenderThread。RenderThread 的 `DrawFrame` Slice 是否过长？
-- GPU 命令执行时间长 → GPU 过载
-- 等待 GPU 的 Slice（如 `fence wait`）较长 → GPU 被其他任务占用
-
-**检查 SurfaceFlinger：** 如果 App 侧的 MainThread 和 RenderThread 都正常，去看 SurfaceFlinger 进程：
-- SurfaceFlinger 的合成 Slice 是否超时？
-- 是否有大量 GPU 合成（Device Composition）？
-- 是否有 Layer 过多导致 HWC 无法处理？
+**Android 12+：** 先按 FrameTimeline 的 JankType 收敛范围。
+- `AppDeadlineMissed`：先回到 App 进程，再分主线程和 RenderThread
+- `SurfaceFlingerCpuDeadlineMissed`：回到 SurfaceFlinger 主线程，看事务处理、layer 准备和 HWC 协商
+- `SurfaceFlingerGpuDeadlineMissed`：回到 SurfaceFlinger 的 Client Composition / RenderEngine 路径，看 GPU 合成和 GPU 争抢
+- `DisplayHAL`：SurfaceFlinger 已按时提交，继续看 Display HAL / 驱动一侧的 present 延迟
+- `PredictionError`：先核对 expected present time 和实际 present time 的偏差，再判断是不是调度预测漂移
+- `BufferStuffing`：先看 BufferQueue 是否积压，再查 `dequeueBuffer`、release fence 和 present 节拍
 
 ### 第三步：排除系统级因素
 
@@ -404,8 +399,8 @@ Binder 是 Android 进程间通信（IPC）的核心机制（详见 1.4 节）�
 | 主线程 measure/layout 过重 | View 层级、requestLayout 调用频率 | 使用 Layout Inspector 检查层级，搜索代码中的 requestLayout |
 | 主线程 onBindViewHolder 耗时 | 查看 bind 中的数据转换、图片操作 | 使用 MethodTrace 定位具体耗时代码 |
 | 主线程 I/O | 搜索主线程的文件操作、SP commit | 改为异步或使用 apply() |
-| 主线程锁竞争 | 查看 Runnable/Blocked 状态的唤醒源 | 找到持锁线程和持锁原因 |
-| RenderThread GPU 过载 | 检查图片大小、Shader 效果、过度绘制 | 减小图片、简化效果、减少重叠 |
+| 主线程锁竞争 | 查看 Blocked、monitor contention、`futex_*` 等待 | 找到 owner 线程或唤醒源 |
+| RenderThread GPU 过载 | 检查纹理上传、图片大小、Shader 效果、过度绘制 | 减小图片、简化效果、减少重叠 |
 | SurfaceFlinger 合成超时 | 检查 Layer 数量、HWC 能力 | 减少 Layer 数、简化窗口层级 |
 | CPU 调度延迟 | 检查 Runnable Slice、线程数量 | 减少非必要线程、使用线程优先级 |
 | GC 频繁 | 检查内存分配、内存泄漏 | 使用 Memory Profiler 分析内存 |
@@ -453,7 +448,7 @@ CPU 占用率低不代表没有卡顿。如果主线程频繁处于 Runnable 但
 ### AOSP 源码
 - `frameworks/base/core/java/android/view/Choreographer.java` — Choreographer 渲染调度核心
 - `frameworks/base/core/java/android/view/ViewRootImpl.java` — View 树的渲染入口
-- `frameworks/base/core/java/android/widget/RecyclerView.java` — RecyclerView 缓存与绑定机制
+- `recyclerview/recyclerview/src/main/java/androidx/recyclerview/widget/RecyclerView.java` — RecyclerView 缓存与绑定机制（AndroidX / Jetpack）
 - `frameworks/native/services/surfaceflinger/SurfaceFlinger.cpp` — SurfaceFlinger 合成核心
 
 ### 官方文档
