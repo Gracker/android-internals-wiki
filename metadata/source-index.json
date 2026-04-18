@@ -14925,6 +14925,187 @@
       "summary": "Content not accessible from current environment",
       "accessibility_issue": "Blocked or not accessible from current location",
       "scored_at": "2026-04-17T09:17:29.530149"
+    },
+    {
+      "title": "Mobicom-26论文|移动和车载系统上大型应用冷启动的内存调度框架",
+      "path": "Cubox/Mobicom-26论文-移动和车载系统上大型应用冷启动的内存调度框架-2026-04-17.md",
+      "score": 20,
+      "quality": "high",
+      "mapping": "ch08",
+      "keywords": [
+        "Android",
+        "内存",
+        "冷启动",
+        "大型应用",
+        "性能优化"
+      ],
+      "date": "2026-04-17",
+      "source": "Task 11 增量扫描",
+      "scored_at": "2026-04-18T05:15:57.587819"
+    },
+    {
+      "title": "Google Android CLI 调研报告",
+      "path": "公众号文章/2026-04-17-Google-Android-CLI调研.md",
+      "score": 18,
+      "quality": "high",
+      "mapping": "ch16",
+      "keywords": [
+        "Android",
+        "CLI",
+        "工具链",
+        "AI Agent"
+      ],
+      "date": "2026-04-17",
+      "source": "Task 11 增量扫描",
+      "scored_at": "2026-04-18T05:15:57.587829"
+    },
+    {
+      "title": "精读笔记 · AppFlow: Memory Scheduling for Cold Launch of Large Apps",
+      "path": "论文/Android-2026-04-17-AppFlow-ColdLaunch/03-精读.md",
+      "score": 20,
+      "quality": "high",
+      "mapping": "ch08",
+      "keywords": [
+        "Android",
+        "内存",
+        "冷启动",
+        "大型应用",
+        "性能优化"
+      ],
+      "date": "2026-04-17",
+      "source": "Task 11 增量扫描",
+      "scored_at": "2026-04-18T05:15:57.587831"
+    },
+    {
+      "title": "POLARIS: Typed Planning and Governed Execution for Agentic AI in Back-Office Automation",
+      "path": "论文/AI-2026-04-17-POLARIS-Typed-Planning/03-精读.md",
+      "score": 18,
+      "quality": "high",
+      "mapping": "ch16",
+      "keywords": [
+        "AI Agent",
+        "企业自动化",
+        "治理框架"
+      ],
+      "date": "2026-04-17",
+      "source": "Task 11 增量扫描",
+      "scored_at": "2026-04-18T05:15:57.587833"
+    },
+    {
+      "title": "Google Android CLI 三件套：工具链的 agent-first 重构",
+      "path": "调研/2026-04-17-google-android-cli-skills-knowledge-base/references/2026-04-17-google-android-cli-skills-knowledge-base-深度调研.md",
+      "score": 20,
+      "quality": "high",
+      "mapping": "ch16",
+      "keywords": [
+        "Android",
+        "CLI",
+        "工具链",
+        "AI Agent"
+      ],
+      "date": "2026-04-17",
+      "source": "Task 11 增量扫描",
+      "scored_at": "2026-04-18T05:15:57.587834"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/AutoFDO：从数据中心到 Android 内核的编译优化革命.md",
+      "title": "AutoFDO：从数据中心到 Android 内核的编译优化革命",
+      "summary": "这篇调研把 AutoFDO 从 Google 数据中心一路串到 Android 内核，拆开 ETM/simpleperf 采样、profile 转换和 LLVM 应用闭环，并补上 Pixel 设备在 mmap、冷启动、Binder RPC 上的收益数据。",
+      "matched_chapters": [
+        "ch01",
+        "1.12"
+      ],
+      "section": "1.12",
+      "processed_at": "2026-04-18T06:18:00",
+      "processed_by": "task-deepresearch-injector",
+      "source_type": "DeepResearch 调研结果"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/Android 16 InputChannel 失败处理与 SurfaceFlinger 协作的系统运行机制.md",
+      "title": "Android 16 InputChannel 失败处理与 SurfaceFlinger 协作的系统运行机制",
+      "summary": "材料围绕 InputChannel 的 NORMAL/BROKEN/ZOMBIE 三态、socketpair+token 设计、Android 15/16 六级 InputListener 链，以及 WindowInfosListenerInvoker 以 vsyncId 维持输入拓扑与显示一致性的机制展开。",
+      "matched_chapters": [
+        "ch03",
+        "3.1"
+      ],
+      "section": "3.1",
+      "processed_at": "2026-04-18T06:18:00",
+      "processed_by": "task-deepresearch-injector",
+      "source_type": "DeepResearch 调研结果"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/Android 16 CachedAppOptimizer : Freezer 进程冻结机制源码级深度解析.md",
+      "title": "Android 16 CachedAppOptimizer : Freezer 进程冻结机制源码级深度解析",
+      "summary": "这篇源码级调研聚焦 Android 16 Freezer 演进，覆盖 10 秒 debounce、新拆分的 Freezer 类、FrozenStateChangeCallback API，以及 cgroup v2 freezer 与 Binder freeze driver 的协同约束。",
+      "matched_chapters": [
+        "ch05",
+        "5.8"
+      ],
+      "section": "5.8",
+      "processed_at": "2026-04-18T06:18:00",
+      "processed_by": "task-deepresearch-injector",
+      "source_type": "DeepResearch 调研结果"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/Android 16 ViewRootImpl Traversal 与 Relayout 内部机制深度解析.md",
+      "title": "Android 16 ViewRootImpl Traversal 与 Relayout 内部机制深度解析",
+      "summary": "调研从 scheduleTraversals、sync barrier、Choreographer CALLBACK_TRAVERSAL 讲到 performTraversals 和 relayoutWindow 判定条件，系统梳理了 ViewRootImpl 与 WMS 的协作边界及性能诊断切口。",
+      "matched_chapters": [
+        "ch02",
+        "2.12"
+      ],
+      "section": "2.12",
+      "processed_at": "2026-04-18T06:18:00",
+      "processed_by": "task-deepresearch-injector",
+      "source_type": "DeepResearch 调研结果"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/XTrace：字节跳动生产级 Android 动态追踪系统深度解析.md",
+      "title": "XTrace：字节跳动生产级 Android 动态追踪系统深度解析",
+      "summary": "XTrace 利用 ART Instrumentation 机制做非侵入式动态追踪，并通过改造 entry point 路径绕开全局方法注入与强制解释执行两大性能坑，还给出了线上 A/B 测试与故障诊断收益。",
+      "matched_chapters": [
+        "ch13",
+        "13.9"
+      ],
+      "section": "13.9",
+      "processed_at": "2026-04-18T06:18:00",
+      "processed_by": "task-deepresearch-injector",
+      "source_type": "DeepResearch 调研结果"
     }
-  ]
+  ],
+  "https://juejin.cn/post/7612812060795093002": {
+    "url": "https://juejin.cn/post/7612812060795093002",
+    "title": "Android17 为什么重写 MessageQueue",
+    "chapter": "ch04-binder-ipc（Handler/MessageQueue 机制）",
+    "added_date": "2026-04-18T05:55:14.769735",
+    "score": 16
+  },
+  "https://juejin.cn/post/7605097326727266350": {
+    "url": "https://juejin.cn/post/7605097326727266350",
+    "title": "Android Studio Panda 1 正式版来了",
+    "chapter": "ch01-architecture（开发工具链）",
+    "added_date": "2026-04-18T05:55:14.769746",
+    "score": 13
+  },
+  "https://juejin.cn/post/7614897667961143347": {
+    "url": "https://juejin.cn/post/7614897667961143347",
+    "title": "什么 AI 写 Android 最好用？官方做了一个基准测试排名",
+    "chapter": "ch01-architecture（AI 辅助开发）",
+    "added_date": "2026-04-18T05:55:14.769748",
+    "score": 14
+  },
+  "https://juejin.cn/post/7589903499599347766": {
+    "url": "https://juejin.cn/post/7589903499599347766",
+    "title": "聊聊2026年Android开发会是什么样",
+    "chapter": "ch01-architecture（生态趋势）",
+    "added_date": "2026-04-18T05:55:14.769749",
+    "score": 16
+  },
+  "https://juejin.cn/post/7610233341305389099": {
+    "url": "https://juejin.cn/post/7610233341305389099",
+    "title": "Android 17 适配与 2026 禁止侧载",
+    "chapter": "ch02-art（Android 版本变更）",
+    "added_date": "2026-04-18T05:55:14.769750",
+    "score": 16
+  }
 }

@@ -1,20 +1,20 @@
 ---
-title: "Input 事件分发全流程"
-chapter: "3.1"
-status: ready-for-review
-applicable_versions: "Android 12 (API 31) - Android 16 (API 36)"
-last_verified: "2026-04-15"
-last_verified_against: "AOSP android-14.0.0_r1"
-version_note: "正文以 android-14 验证为主；Android 12 InputFlinger 分离和 Android 13 ANR Tracker 变更基于官方文档和社区素材，标注 [待验证]。建议后续补充 android-12/13 源码级验证"
-confidence: high
-reviewed_date: "2026-04-07"
+title:"Input 事件分发全流程"
+chapter:"3.1"
+status:ready-for-review
+applicable_versions:"Android 12 (API 31) - Android 16 (API 36)"
+last_verified:"2026-04-15"
+last_verified_against:"AOSP android-14.0.0_r1"
+version_note:"正文以 android-14 验证为主；Android 12 InputFlinger 分离和 Android 13 ANR Tracker 变更基于官方文档和社区素材，标注 [待验证]。建议后续补充 android-12/13 源码级验证"
+confidence:high
+reviewed_date: "2026-04-18"
 reviewed_by: openclaw-task6
-rework2_date: "2026-04-15"
-rework2_by: "openclaw-task2b"
-rework2_reason: "Task9 Deep Tech Review: 修正 DEFAULT_INPUT_DISPATCHING_TIMEOUT 常量源码路径（frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp）"
-polish_count: 1
-polish_date: "2026-04-05"
-polish_by: "task2b-polish"
+rework2_date:"2026-04-15"
+rework2_by:"openclaw-task2b"
+rework2_reason:"Task9 Deep Tech Review: 修正 DEFAULT_INPUT_DISPATCHING_TIMEOUT 常量源码路径（frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp）"
+polish_count:1
+polish_date:"2026-04-05"
+polish_by:"task2b-polish"
 sources:
   - type: blog
     path: "https://utzcoz.github.io/2020/05/06/Analyze-AOSP-input-architecture.html"
@@ -24,18 +24,14 @@ sources:
     path: "https://source.android.com/docs/core/interaction/input"
   - type: blog
     path: "https://mp.weixin.qq.com/s/Analyze-AOSP-input-architecture"
-tags: ['input', 'inputdispatcher', 'inputreader', 'eventhub', 'inputchannel', 'anr', 'inputflinger', 'socketpair', 'touch', 'view-hierarchy']
-related_chapters: ["3.2", "3.3", "2.5", "9.1", "9.2"]
-reviewed_by: openclaw-task6
-reviewed_date: "2026-04-15"
-task6_result: pass-light-edit
+tags:['input', 'inputdispatcher', 'inputreader', 'eventhub', 'inputchannel', 'anr', 'inputflinger', 'socketpair', 'touch', 'view-hierarchy']
+related_chapters:["3.2", "3.3", "2.5", "9.1", "9.2"]
+task6_result: needs-rework
 pipeline_stage: task9_pending
-task6_state: revisiting
+task6_state: reviewed
 task9_state: pending
-task9_result: pass-tech-review
-task9_result: pass-tech-review
-task2b_state: fixed
-pipeline_stage: task6_pending
+task9_result:pass-tech-review
+task2b_state:fixed
 ---
 
 # Input 事件分发全流程
@@ -113,7 +109,7 @@ size_t EventHub::getEvents(int timeoutMillis, RawEvent* buffer, size_t bufferSiz
 }
 ```
 
-这里有两个值得注意的机制：
+这里有两个机制：
 
 **第一，`epoll` 机制**。`EventHub` 不是轮询，而是利用 Linux 的 `epoll` 在设备文件有数据可读时才被唤醒。这意味着在没有事件的时候，`InputReader` 线程会安静地休眠，不会消耗 CPU。
 
@@ -123,7 +119,7 @@ size_t EventHub::getEvents(int timeoutMillis, RawEvent* buffer, size_t bufferSiz
 
 ## InputReader：从原始数据到 Android 事件
 
-`InputReader` 的职责不仅是"读"，更重要的是"加工"（cook）。它把内核上报的原始 `struct input_event` 转换成 Android Framework 能理解的 `KeyEvent`、`MotionEvent` 对象。
+`InputReader` 的核心职责是"加工"（cook）——把内核上报的原始 `struct input_event` 转换成 Android Framework 能理解的 `KeyEvent`、`MotionEvent` 对象。
 
 ```cpp
 // frameworks/native/services/inputflinger/reader/InputReader.cpp
@@ -359,6 +355,7 @@ if (actionMasked == MotionEvent.ACTION_DOWN || mFirstTouchTarget != null) {
 - **调用链**：事件入队 → `dispatchOnce()` 检查 → `isStale()` 判断 → 丢弃处理
 
 ```cpp
+// [存疑: 以下 Stale Event 代码段中 mInboundQueue.hasEvent()/peekEvent()/removeEvent()/dropInboundConnection() 等方法名需与 AOSP 源码核实，可能为简化重写版本]
 // 常量定义
 constexpr std::chrono::nanoseconds STALE_EVENT_TIMEOUT = std::chrono::seconds(10) * HwTimeoutMultiplier();
 
@@ -596,3 +593,10 @@ Input 事件通过 `socketpair` 传递，不是 `Binder`。这一点在面试中
 - [从显示 Tap 原理一探 Android 12 的 Input 系统]（Show taps 功能的完整链路分析）
 - [ANR-实例分析-Input dispatching timed out]（Input ANR 实战案例）
 - [Android 图形系统（五）番外篇：触摸事件详解]（从硬件到 View 的完整分析）
+
+### Android 16 InputChannel 失败处理与 SurfaceFlinger 协作的系统运行机制
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/Android 16 InputChannel 失败处理与 SurfaceFlinger 协作的系统运行机制.md
+- 类型：DeepResearch 调研结果
+- 摘要：材料围绕 InputChannel 的 NORMAL/BROKEN/ZOMBIE 三态、socketpair+token 设计、Android 15/16 六级 InputListener 链，以及 WindowInfosListenerInvoker 以 vsyncId 维持输入拓扑与显示一致性的机制展开。
+- 注入时间：2026-04-18
+- 价值：能补强 3.1 里最容易缺失的失败处理语义和 Input-SF 协同链路。

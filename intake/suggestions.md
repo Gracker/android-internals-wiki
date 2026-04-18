@@ -1571,3 +1571,11 @@
 - **位置**：frontmatter `related_chapters` / L216-L218
 - **问题**：正文把 §18.1 写成“本章的索引和入口”，但 frontmatter `related_chapters` 未包含 18.1，元数据导航与正文关系不一致。
 - **建议**：在 `related_chapters` 中补入 `18.1`，必要时再补入 18.6 / 18.7 / 18.14 / 18.19 这些正文高频回连章节。
+
+
+## [Task6 Review] 3.1 Input 事件分发全流程 — 2026-04-18
+- **类型**：技术核实
+- **位置**：Stale Event 丢弃机制（AIW-源码调研-2026-04-17）代码段
+- **问题**：代码示例中使用了 mInboundQueue.hasEvent()、peekEvent()、removeEvent()、dropInboundConnection() 等方法，这些方法名在 AOSP android-14 的 InputDispatcher 中可能不存在或名称不同。该代码段标记为 AIW-源码调研，可能是基于理解重写的简化版本而非实际源码摘录。
+- **建议**：Task 9 对照 AOSP android-14.0.0_r1 frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp，核实 STALE_EVENT_TIMEOUT 常量、isStale() 函数签名、以及 dispatchOnce() 中 stale event 的实际处理流程。如方法名不准确，由 Task 2B 更正为实际源码。
+- **review 日志**：logs/review/2026-04-18-15-review.md
