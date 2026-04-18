@@ -3317,6 +3317,16 @@
       "task6_state": "reviewed",
       "task6_result": "pass-light-edit",
       "pipeline_stage": "task9_pending"
+    },
+    "1.4": {
+      "title": "Binder IPC 机制与性能影响",
+      "status": "ready-for-review",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
+      "task6_result": "needs-rework",
+      "task9_state": "reviewed",
+      "last_reviewed": "2026-04-19",
+      "review_count": 1
     }
   },
   "chapters": {
@@ -3406,8 +3416,8 @@
       "task9_pending": 51,
       "task2b_pending": 13
     },
-    "last_updated": "2026-04-18T16:03:14.102932+08:00",
-    "total_reviewed": 71
+    "last_updated": "2026-04-19T07:25:26.018730",
+    "total_reviewed": 69
   },
   "4.6": {
     "task6_review": {

@@ -3,12 +3,12 @@ title: "Binder IPC 机制与性能影响"
 chapter: "1.4"
 section: "1.4"
 status: ready-for-review
-reviewed_date: "2026-04-13"
+reviewed_date: "2026-04-19"
 reviewed_by: "openclaw-task6"
 applicable_versions: "Android 8 (API 26) - Android 16 (API 36)"
 drafted_date: "2026-04-10"
 drafted_by: "openclaw-task2a"
-last_verified: "2026-04-13"
+last_verified: "2026-04-19"
 last_verified_against: "AOSP android-16.0.0_r1, source.android / developer.android 官方文档"
 confidence: medium
 sources:
@@ -32,9 +32,9 @@ sources:
     path: "https://source.android.com/docs/core/perf/cached-apps-freezer"
 tags: [binder, ipc, aidl, oneway, 线程池, 锁竞争, perfetto]
 related_chapters: ["1.1", "2.5", "7.2", "8.2", "9.1"]
-pipeline_stage: task6_pending
-task6_state: revisiting
-task6_result: pass-light-edit
+pipeline_stage: task9_pending
+task6_state: reviewed
+task6_result: needs-rework
 task9_result: pass-with-notes
 last_task9_at: 2026-04-17T13:20:00
 task9_state: reviewed
@@ -106,7 +106,9 @@ Binder 的设计目标是让跨进程调用看起来像本地函数调用。当�
 
 工作原理是这样的：每个使用 Binder 的进程在初始化时，会对 `/dev/binder` 调用 `mmap()`，在用户空间映射一块内存（默认约 1MB）。这块内存同时被内核的 Binder Driver 映射。当 Client 发送数据时，Binder Driver 只需要把 `Parcel` 数据拷贝到这块共享内存区域，Server 端进程就能直接读到它——不需要再从内核拷贝到 Server 的用户空间。
 
-严格地说，这不是真正的"零拷贝"，而是"单次拷贝"（single copy）。发送方仍然需要从自己的用户空间拷贝到共享区域，但接收方不需要再拷贝一次。Android 8（Oreo）进一步引入了 scatter-gather 优化，将原来需要三次拷贝的流程减少到一次。
+严格地说，这不是真正的"零拷贝"，而是"单次拷贝"（single copy）。发送方仍然需要从自己的用户空间拷贝到共享区域，但接收方不需要再拷贝一次。Android 8（Oreo）进一步引入了 scatter-gather 优化，将拷贝次数进一步压缩。
+
+[存疑: "三次拷贝"的说法来源不明确。标准叙述是 Binder 通过 mmap 实现一次拷贝（相比传统 IPC 的两次）。scatter-gather 的优化是将多段数据的拼接从"先复制到连续缓冲再传输"改为直接 scatter-gather 传输，具体减少了哪一步需要对照 binder.c 源码确认。建议 Task 9 验证后修正措辞。]
 
 这个 mmap 缓冲区的大小限制是 Binder 的一个重要约束。每个进程的所有 Binder 事务共享这块约 1MB 的缓冲区。如果一次性传输一个大 Bitmap 或一个超长列表，就可能撞到 `TransactionTooLargeException`。传输大数据应该使用 `SharedMemory`（基于 ashmem/memfd）或 `ParcelFileDescriptor`，只通过 Binder 传递文件描述符句柄。
 
@@ -156,7 +158,7 @@ public int getFrameBudgetNanos(int displayId) throws RemoteException {
 
 每个进程在初始化 Binder 时，会创建一组工作线程专门处理进来的 Binder 请求。这个线程池有几个重要特征：
 
-**按需创建，有上限。** 线程不是一开始就全创建出来的。Binder Driver 根据负载动态创建新线程，默认上限约 15 个工作线程（不含主线程）。这个上限可以通过 `ProcessState.setThreadPoolMaxThreadCount()` 修改，但一旦设置就不能减小。`system_server` 等核心进程可能在厂商定制 ROM 中被调高。
+**按需创建，有上限。** 线程不是一开始就全创建出来的。Binder Driver 根据负载动态创建新线程，默认上限 15 个工作线程（不含主线程）。这个上限可以通过 `ProcessState.setThreadPoolMaxThreadCount()` 修改，但一旦设置就不能减小。`system_server` 等核心进程可能在厂商定制 ROM 中被调高。
 
 **命名规则。** AOSP `ProcessState::makeBinderThreadName()` 用 `"%.*s:%d_%X"` 生成线程名，前缀取决于 driver 名称，所以常见的是 `binder:<pid>_<hex-seq>`、`hwbinder:<pid>_<hex-seq>` 或 `vndbinder:<pid>_<hex-seq>`。这里的后缀是线程池里的十六进制序号，`_B` 只是第 11 个线程，不代表特殊角色。
 
@@ -281,7 +283,9 @@ HAVING lock_depth > 0
 ORDER BY s.dur DESC;
 ```
 
-这段查询会找出 `system_server` 中所有锁竞争事件，统计每个锁事件期间有多少其他线程也在等同一把锁（lock_depth）。`lock_depth` 越高，说明这把锁的争抢越严重，可能是系统性能瓶颈的根源。
+这段查询会找出 `system_server` 中所有锁竞争事件，按耗时排序。
+
+[存疑: 当前查询 GROUP BY s.slice_id 后 count(1) 恒为 1，无法真正统计"同一把锁上有多少线程在排队"。要统计锁竞争深度，需要基于锁标识（如 owner_tid）和时间重叠范围来计算。当前 SQL 的实际用途是"按耗时排序的锁竞争事件列表"，建议 Task 9 确认后修正注释或重写查询。]
 
 [已验证: L2, Perfetto SQL 语法正确] [来源: obsidian/Personal-Knowlodge/source/Android-Perfetto-10-Binder.md]
 
