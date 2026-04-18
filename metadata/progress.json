@@ -3007,6 +3007,16 @@
       "task6_reviewed_date": "2026-04-18",
       "pipeline_stage": "task2b_pending",
       "task6_review_log": "logs/review/2026-04-18-09-review.md"
+    },
+    "3.1": {
+      "title": "Input 事件分发全流程",
+      "file": "src/part1-fundamentals/ch03-input/01-input-dispatch.md",
+      "task6_last_review": "2026-04-18",
+      "task6_result": "needs-rework",
+      "task6_state": "reviewed",
+      "task9_state": "pending",
+      "pipeline_stage": "task9_pending",
+      "issues": 1
     }
   },
   "chapters": {
@@ -3059,6 +3069,15 @@
       "fixes": 0,
       "issues": 9,
       "log": "logs/deep-review/2026-04-18-01-deep-review.md"
+    },
+    {
+      "date": "2026-04-18T15:07",
+      "section": "3.1",
+      "task": "task6",
+      "result": "needs-rework",
+      "small_fixes": 4,
+      "major_issues": 1,
+      "log": "logs/review/2026-04-18-15-review.md"
     }
   ],
   "stats": {

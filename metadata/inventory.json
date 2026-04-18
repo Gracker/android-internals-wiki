@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-15 06:00",
+  "generated_at": "2026-04-18 06:04",
   "documents": [
     {
       "path": "Cubox/#01 创始人解密 Discord-2023-02-20.md",
@@ -50372,7 +50372,7 @@
     "total_chapters": 17,
     "last_scan": "2026-03-31"
   },
-  "last_scan_time": "2026-04-09T14:03:53.463766",
+  "last_scan_time": "2026-04-15T06:00:00",
   "scan_summary": {
     "previous_count": 7564,
     "added": 38,
@@ -50403,5 +50403,769 @@
     "inventory_doc_count": 7622,
     "docs_with_chapter_mapping": 126,
     "chapters_with_content": "12/17"
-  }
+  },
+  "total_content_docs": 206,
+  "last_scan_new_docs": [
+    {
+      "path": "src/SUMMARY.md",
+      "title": "SUMMARY",
+      "mtime": "2026-04-17T07:39:55.941195",
+      "size": 19300,
+      "first_2000_chars_hash": 7876947661964435803,
+      "scanned_at": "2026-04-18T06:04:29.216018"
+    },
+    {
+      "path": "src/part4-system/ch16-aosp/05-android17-api37-performance-changes.md",
+      "title": "Android 17 (API 37) 性能行为变更与适配方法",
+      "mtime": "2026-04-15T18:48:18.309360",
+      "size": 26456,
+      "first_2000_chars_hash": 7317021123711026175,
+      "scanned_at": "2026-04-18T06:04:29.216231"
+    },
+    {
+      "path": "src/part4-system/ch16-aosp/04-android17-kernel612-performance.md",
+      "title": "Android 17 + Kernel 6.12 系统级性能优化",
+      "mtime": "2026-04-17T14:11:22.871499",
+      "size": 18630,
+      "first_2000_chars_hash": -4627578944289977619,
+      "scanned_at": "2026-04-18T06:04:29.216336"
+    },
+    {
+      "path": "src/part4-system/ch16-aosp/03-aosp-build.md",
+      "title": "AOSP 源码编译与调试环境",
+      "mtime": "2026-04-17T14:15:05.152351",
+      "size": 19979,
+      "first_2000_chars_hash": -3295867469340927116,
+      "scanned_at": "2026-04-18T06:04:29.216430"
+    },
+    {
+      "path": "src/part4-system/ch16-aosp/02-version-changes.md",
+      "title": "各 Android 版本性能变更追踪",
+      "mtime": "2026-04-17T15:11:02.236492",
+      "size": 39320,
+      "first_2000_chars_hash": 748404081879573530,
+      "scanned_at": "2026-04-18T06:04:29.216515"
+    },
+    {
+      "path": "src/part4-system/ch17-oem/01-oem-overview.md",
+      "title": "OEM 性能优化的通用思路",
+      "mtime": "2026-04-16T05:11:09.844421",
+      "size": 26274,
+      "first_2000_chars_hash": 5588905255634521476,
+      "scanned_at": "2026-04-18T06:04:29.216622"
+    },
+    {
+      "path": "src/part4-system/ch17-oem/03-industry-cases.md",
+      "title": "行业案例",
+      "mtime": "2026-04-17T21:16:25.327814",
+      "size": 28953,
+      "first_2000_chars_hash": -8555639386091166638,
+      "scanned_at": "2026-04-18T06:04:29.216710"
+    },
+    {
+      "path": "src/part4-system/ch17-oem/02-soc-differences.md",
+      "title": "SoC 平台差异",
+      "mtime": "2026-04-17T16:14:02.237436",
+      "size": 28208,
+      "first_2000_chars_hash": -6172210630008854712,
+      "scanned_at": "2026-04-18T06:04:29.216786"
+    },
+    {
+      "path": "src/appendix/version-changelog.md",
+      "title": "version-changelog",
+      "mtime": "2026-04-17T02:06:03.854577",
+      "size": 2756,
+      "first_2000_chars_hash": -3462108598945444347,
+      "scanned_at": "2026-04-18T06:04:29.216907"
+    },
+    {
+      "path": "src/part1-fundamentals/ch02-rendering/03-vsync.md",
+      "title": "VSync 机制",
+      "mtime": "2026-04-16T14:17:28.494019",
+      "size": 40950,
+      "first_2000_chars_hash": -5540091730376891267,
+      "scanned_at": "2026-04-18T06:04:29.217121"
+    },
+    {
+      "path": "src/part1-fundamentals/ch02-rendering/10-gpu-rendering.md",
+      "title": "10-gpu-rendering",
+      "mtime": "2026-04-17T02:44:17.633847",
+      "size": 52433,
+      "first_2000_chars_hash": -474683297884879335,
+      "scanned_at": "2026-04-18T06:04:29.217261"
+    },
+    {
+      "path": "src/part1-fundamentals/ch02-rendering/09-rendering-evolution.md",
+      "title": "渲染机制的版本演进",
+      "mtime": "2026-04-17T01:27:32.143823",
+      "size": 25420,
+      "first_2000_chars_hash": 8940023491300210260,
+      "scanned_at": "2026-04-18T06:04:29.217340"
+    },
+    {
+      "path": "src/part1-fundamentals/ch02-rendering/01-rendering-overview.md",
+      "title": "Android 渲染架构全景",
+      "mtime": "2026-04-17T08:31:55.874202",
+      "size": 49282,
+      "first_2000_chars_hash": 2864465026471339846,
+      "scanned_at": "2026-04-18T06:04:29.217428"
+    },
+    {
+      "path": "src/part1-fundamentals/ch02-rendering/06-surfaceflinger.md",
+      "title": "SurfaceFlinger 与合成",
+      "mtime": "2026-04-15T15:13:04.216482",
+      "size": 35594,
+      "first_2000_chars_hash": 7891433884675712552,
+      "scanned_at": "2026-04-18T06:04:29.217503"
+    },
+    {
+      "path": "src/part1-fundamentals/ch02-rendering/13-buffer-queue.md",
+      "title": "图形缓冲区管理 (BufferQueue)",
+      "mtime": "2026-04-15T15:13:04.218284",
+      "size": 23437,
+      "first_2000_chars_hash": -4803327847605723132,
+      "scanned_at": "2026-04-18T06:04:29.217601"
+    },
+    {
+      "path": "src/part1-fundamentals/ch02-rendering/02-framerate.md",
+      "title": "帧率与刷新率",
+      "mtime": "2026-04-18T03:08:18.314450",
+      "size": 46768,
+      "first_2000_chars_hash": 5478287362754903407,
+      "scanned_at": "2026-04-18T06:04:29.217686"
+    },
+    {
+      "path": "src/part1-fundamentals/ch02-rendering/12-window-manager.md",
+      "title": "Window Manager Service 与窗口管理",
+      "mtime": "2026-04-16T04:45:04.970987",
+      "size": 31757,
+      "first_2000_chars_hash": -4037164944610029451,
+      "scanned_at": "2026-04-18T06:04:29.217758"
+    },
+    {
+      "path": "src/part1-fundamentals/ch05-cpu-power/04-dvfs.md",
+      "title": "DVFS 与功耗管理",
+      "mtime": "2026-04-15T12:27:12.549084",
+      "size": 24452,
+      "first_2000_chars_hash": -4276431846151576531,
+      "scanned_at": "2026-04-18T06:04:29.217869"
+    },
+    {
+      "path": "src/part1-fundamentals/ch05-cpu-power/03-big-little.md",
+      "title": "大小核架构",
+      "mtime": "2026-04-15T12:44:16.937107",
+      "size": 34788,
+      "first_2000_chars_hash": 4256322342754048291,
+      "scanned_at": "2026-04-18T06:04:29.217944"
+    },
+    {
+      "path": "src/part1-fundamentals/ch05-cpu-power/06-android-power.md",
+      "title": "Android 功耗管理",
+      "mtime": "2026-04-15T13:11:36.424332",
+      "size": 37207,
+      "first_2000_chars_hash": 1725976296369058366,
+      "scanned_at": "2026-04-18T06:04:29.218066"
+    },
+    {
+      "path": "src/part1-fundamentals/ch05-cpu-power/05-thermal.md",
+      "title": "Thermal 管控",
+      "mtime": "2026-04-17T19:42:18.421744",
+      "size": 35535,
+      "first_2000_chars_hash": 4394132930942498502,
+      "scanned_at": "2026-04-18T06:04:29.218138"
+    },
+    {
+      "path": "src/part1-fundamentals/ch01-architecture/02-boot-process.md",
+      "title": "系统启动全流程",
+      "mtime": "2026-04-17T03:44:00.610025",
+      "size": 30970,
+      "first_2000_chars_hash": 4225413618673695904,
+      "scanned_at": "2026-04-18T06:04:29.218269"
+    },
+    {
+      "path": "src/part1-fundamentals/ch01-architecture/07-art-compilation.md",
+      "title": "ART 编译管线与 dex2oat 优化",
+      "mtime": "2026-04-17T13:47:08.484162",
+      "size": 34905,
+      "first_2000_chars_hash": -2328551353190198503,
+      "scanned_at": "2026-04-18T06:04:29.218355"
+    },
+    {
+      "path": "src/part1-fundamentals/ch01-architecture/10-content-provider.md",
+      "title": "ContentProvider 性能与优化",
+      "mtime": "2026-04-17T22:42:34.529224",
+      "size": 37276,
+      "first_2000_chars_hash": -1001910577048521576,
+      "scanned_at": "2026-04-18T06:04:29.218421"
+    },
+    {
+      "path": "src/part1-fundamentals/ch01-architecture/01-layered-architecture.md",
+      "title": "Android 分层架构",
+      "mtime": "2026-04-16T05:26:53.631779",
+      "size": 36410,
+      "first_2000_chars_hash": 5374714889996723467,
+      "scanned_at": "2026-04-18T06:04:29.218524"
+    },
+    {
+      "path": "src/part1-fundamentals/ch01-architecture/04-binder.md",
+      "title": "Binder IPC 机制与性能影响",
+      "mtime": "2026-04-17T13:33:15.418259",
+      "size": 27437,
+      "first_2000_chars_hash": -5519919900477992713,
+      "scanned_at": "2026-04-18T06:04:29.218601"
+    },
+    {
+      "path": "src/part1-fundamentals/ch01-architecture/03-process-model.md",
+      "title": "进程模型与生命周期管理",
+      "mtime": "2026-04-16T21:02:47.494426",
+      "size": 40409,
+      "first_2000_chars_hash": -186239140191926707,
+      "scanned_at": "2026-04-18T06:04:29.218692"
+    },
+    {
+      "path": "src/part1-fundamentals/ch06-storage/02-filesystem.md",
+      "title": "文件系统",
+      "mtime": "2026-04-15T20:57:28.325030",
+      "size": 43885,
+      "first_2000_chars_hash": -3956941248480435753,
+      "scanned_at": "2026-04-18T06:04:29.218843"
+    },
+    {
+      "path": "src/part1-fundamentals/ch04-memory/07-16kb-page-size.md",
+      "title": "16KB Page Size 与 Android 性能",
+      "mtime": "2026-04-15T08:42:44.650020",
+      "size": 17528,
+      "first_2000_chars_hash": 2120011207464285703,
+      "scanned_at": "2026-04-18T06:04:29.218951"
+    },
+    {
+      "path": "src/part1-fundamentals/ch04-memory/06-memory-evolution.md",
+      "title": "内存相关的版本演进",
+      "mtime": "2026-04-15T06:12:27.689965",
+      "size": 40589,
+      "first_2000_chars_hash": 3306196733153733554,
+      "scanned_at": "2026-04-18T06:04:29.219038"
+    },
+    {
+      "path": "src/part1-fundamentals/ch03-input/01-input-dispatch.md",
+      "title": "Input 事件分发全流程",
+      "mtime": "2026-04-17T09:07:31.442558",
+      "size": 36462,
+      "first_2000_chars_hash": 6868764911988883698,
+      "scanned_at": "2026-04-18T06:04:29.219183"
+    },
+    {
+      "path": "src/part1-fundamentals/ch03-input/README.md",
+      "title": "README",
+      "mtime": "2026-04-17T07:40:31.464193",
+      "size": 417,
+      "first_2000_chars_hash": 3101514505051563121,
+      "scanned_at": "2026-04-18T06:04:29.219238"
+    },
+    {
+      "path": "src/part2-performance/ch12-apk-network/02-network-performance.md",
+      "title": "网络性能优化",
+      "mtime": "2026-04-18T01:51:03.182812",
+      "size": 30055,
+      "first_2000_chars_hash": -6544350485906205504,
+      "scanned_at": "2026-04-18T06:04:29.219474"
+    },
+    {
+      "path": "src/part2-performance/ch12-apk-network/01-apk-size.md",
+      "title": "APK 体积优化",
+      "mtime": "2026-04-16T22:22:45.463763",
+      "size": 25435,
+      "first_2000_chars_hash": -6618986968490164779,
+      "scanned_at": "2026-04-18T06:04:29.219539"
+    },
+    {
+      "path": "src/part2-performance/ch11-power/04-case-studies.md",
+      "title": "案例集",
+      "mtime": "2026-04-17T00:00:43.622304",
+      "size": 40693,
+      "first_2000_chars_hash": -5053884234387670829,
+      "scanned_at": "2026-04-18T06:04:29.219667"
+    },
+    {
+      "path": "src/part2-performance/ch08-responsiveness/05-case-studies.md",
+      "title": "案例集",
+      "mtime": "2026-04-16T03:10:15.358066",
+      "size": 30459,
+      "first_2000_chars_hash": -6161436599868968828,
+      "scanned_at": "2026-04-18T06:04:29.219781"
+    },
+    {
+      "path": "src/part2-performance/ch08-responsiveness/01-responsiveness-principles.md",
+      "title": "响应速度原理",
+      "mtime": "2026-04-15T23:15:06.165207",
+      "size": 22088,
+      "first_2000_chars_hash": 2712294020959702486,
+      "scanned_at": "2026-04-18T06:04:29.219851"
+    },
+    {
+      "path": "src/part2-performance/ch08-responsiveness/06-coroutine-performance.md",
+      "title": "Kotlin Coroutine 性能实践",
+      "mtime": "2026-04-16T04:10:24.971309",
+      "size": 31405,
+      "first_2000_chars_hash": 7329731931550080354,
+      "scanned_at": "2026-04-18T06:04:29.219932"
+    },
+    {
+      "path": "src/part2-performance/ch08-responsiveness/03-launch-optimization.md",
+      "title": "启动优化策略",
+      "mtime": "2026-04-16T01:45:01.343156",
+      "size": 48912,
+      "first_2000_chars_hash": 4482722020527648,
+      "scanned_at": "2026-04-18T06:04:29.220012"
+    },
+    {
+      "path": "src/part2-performance/ch08-responsiveness/04-other-scenarios.md",
+      "title": "其他响应速度场景",
+      "mtime": "2026-04-16T02:43:16.282213",
+      "size": 30166,
+      "first_2000_chars_hash": -5159920514865048973,
+      "scanned_at": "2026-04-18T06:04:29.220085"
+    },
+    {
+      "path": "src/part2-performance/ch08-responsiveness/README.md",
+      "title": "README",
+      "mtime": "2026-04-17T07:40:31.464193",
+      "size": 378,
+      "first_2000_chars_hash": -6617360183388512869,
+      "scanned_at": "2026-04-18T06:04:29.220142"
+    },
+    {
+      "path": "src/part2-performance/ch08-responsiveness/02-app-launch.md",
+      "title": "App 启动全流程",
+      "mtime": "2026-04-16T00:12:29.567220",
+      "size": 36116,
+      "first_2000_chars_hash": -1520467376023577257,
+      "scanned_at": "2026-04-18T06:04:29.220216"
+    },
+    {
+      "path": "src/part2-performance/ch10-memory-perf/05-case-studies.md",
+      "title": "案例集",
+      "mtime": "2026-04-16T21:26:07.005026",
+      "size": 27260,
+      "first_2000_chars_hash": -985273550982763103,
+      "scanned_at": "2026-04-18T06:04:29.220329"
+    },
+    {
+      "path": "src/part2-performance/ch10-memory-perf/02-memory-leak.md",
+      "title": "内存泄漏",
+      "mtime": "2026-04-16T10:14:57.059122",
+      "size": 18334,
+      "first_2000_chars_hash": -4147881602690594587,
+      "scanned_at": "2026-04-18T06:04:29.220400"
+    },
+    {
+      "path": "src/part2-performance/ch10-memory-perf/04-low-memory-impact.md",
+      "title": "低内存对系统性能的影响",
+      "mtime": "2026-04-16T20:53:01.395153",
+      "size": 27942,
+      "first_2000_chars_hash": 3516385491777358230,
+      "scanned_at": "2026-04-18T06:04:29.220470"
+    },
+    {
+      "path": "src/part2-performance/ch10-memory-perf/06-memory-churn.md",
+      "title": "内存抖动与频繁 GC",
+      "mtime": "2026-04-16T22:16:26.554358",
+      "size": 22722,
+      "first_2000_chars_hash": -7015884809648721652,
+      "scanned_at": "2026-04-18T06:04:29.220546"
+    },
+    {
+      "path": "src/part2-performance/ch10-memory-perf/03-memory-growth.md",
+      "title": "内存持续增长",
+      "mtime": "2026-04-16T18:10:58.633628",
+      "size": 29114,
+      "first_2000_chars_hash": 5594232625232562026,
+      "scanned_at": "2026-04-18T06:04:29.220623"
+    },
+    {
+      "path": "src/part2-performance/ch10-memory-perf/01-app-memory-analysis.md",
+      "title": "App 内存分析",
+      "mtime": "2026-04-15T10:12:03.155762",
+      "size": 31494,
+      "first_2000_chars_hash": -24764436368927890,
+      "scanned_at": "2026-04-18T06:04:29.220696"
+    },
+    {
+      "path": "src/part2-performance/ch07-smoothness/14-gaps-dynamic-analysis.md",
+      "title": "GAPS：Android 动态分析目标可达性路径重建",
+      "mtime": "2026-04-16T18:43:32.438061",
+      "size": 6329,
+      "first_2000_chars_hash": 163414056303651994,
+      "scanned_at": "2026-04-18T06:04:29.220797"
+    },
+    {
+      "path": "src/part2-performance/ch07-smoothness/07-compose-performance.md",
+      "title": "Jetpack Compose 性能优化",
+      "mtime": "2026-04-15T22:17:59.760857",
+      "size": 30132,
+      "first_2000_chars_hash": -6496460626923865967,
+      "scanned_at": "2026-04-18T06:04:29.220885"
+    },
+    {
+      "path": "src/part2-performance/ch07-smoothness/04-typical-scenarios.md",
+      "title": "典型场景分析",
+      "mtime": "2026-04-15T06:47:01.742291",
+      "size": 33406,
+      "first_2000_chars_hash": 6223136362006077891,
+      "scanned_at": "2026-04-18T06:04:29.220988"
+    },
+    {
+      "path": "src/part2-performance/ch07-smoothness/03-jank-methodology.md",
+      "title": "卡顿分析方法论",
+      "mtime": "2026-04-15T21:13:18.551741",
+      "size": 36950,
+      "first_2000_chars_hash": 2684635315222745927,
+      "scanned_at": "2026-04-18T06:04:29.221072"
+    },
+    {
+      "path": "src/part2-performance/ch07-smoothness/02-jank-causes.md",
+      "title": "卡顿原因体系",
+      "mtime": "2026-04-15T18:13:22.632103",
+      "size": 38117,
+      "first_2000_chars_hash": 161615700597355835,
+      "scanned_at": "2026-04-18T06:04:29.221154"
+    },
+    {
+      "path": "src/part2-performance/ch09-anr/05-case-studies.md",
+      "title": "案例集",
+      "mtime": "2026-04-16T19:12:53.971482",
+      "size": 23147,
+      "first_2000_chars_hash": 2923686311291699017,
+      "scanned_at": "2026-04-18T06:04:29.221257"
+    },
+    {
+      "path": "src/part2-performance/ch09-anr/02-anr-types.md",
+      "title": "ANR 类型与触发条件",
+      "mtime": "2026-04-16T09:15:29.152122",
+      "size": 18641,
+      "first_2000_chars_hash": -8172147613808725670,
+      "scanned_at": "2026-04-18T06:04:29.221338"
+    },
+    {
+      "path": "src/part2-performance/ch09-anr/03-anr-analysis.md",
+      "title": "ANR 分析方法",
+      "mtime": "2026-04-16T10:13:28.724927",
+      "size": 23334,
+      "first_2000_chars_hash": -6208816091854284440,
+      "scanned_at": "2026-04-18T06:04:29.221408"
+    },
+    {
+      "path": "src/part2-performance/ch09-anr/README.md",
+      "title": "README",
+      "mtime": "2026-04-17T07:40:31.464118",
+      "size": 224,
+      "first_2000_chars_hash": -4967350863743273901,
+      "scanned_at": "2026-04-18T06:04:29.221472"
+    },
+    {
+      "path": "src/part2-performance/ch09-anr/01-anr-design.md",
+      "title": "01-anr-design",
+      "mtime": "2026-04-16T17:25:51.814441",
+      "size": 32102,
+      "first_2000_chars_hash": 5225738269303463226,
+      "scanned_at": "2026-04-18T06:04:29.221572"
+    },
+    {
+      "path": "src/part2-performance/ch09-anr/04-special-anr.md",
+      "title": "特殊场景的 ANR",
+      "mtime": "2026-04-17T09:33:06.502445",
+      "size": 28023,
+      "first_2000_chars_hash": -6932550170457860212,
+      "scanned_at": "2026-04-18T06:04:29.221641"
+    },
+    {
+      "path": "src/part2-performance/ch18-rendering-pipelines/07-textureview.md",
+      "title": "TextureView 合成链路",
+      "mtime": "2026-04-17T17:11:49.578881",
+      "size": 15736,
+      "first_2000_chars_hash": 9065724027049511385,
+      "scanned_at": "2026-04-18T06:04:29.221745"
+    },
+    {
+      "path": "src/part2-performance/ch18-rendering-pipelines/03-android-view-software.md",
+      "title": "Android View 软件渲染链路",
+      "mtime": "2026-04-18T00:10:42.511910",
+      "size": 12859,
+      "first_2000_chars_hash": -4728261224053316361,
+      "scanned_at": "2026-04-18T06:04:29.221813"
+    },
+    {
+      "path": "src/part2-performance/ch18-rendering-pipelines/15-video-overlay-hwc.md",
+      "title": "视频叠加与 HWC",
+      "mtime": "2026-04-18T05:47:57.380410",
+      "size": 12359,
+      "first_2000_chars_hash": 5320570375902332317,
+      "scanned_at": "2026-04-18T06:04:29.221882"
+    },
+    {
+      "path": "src/part2-performance/ch18-rendering-pipelines/05-android-view-multi-window.md",
+      "title": "Android View 多窗口链路",
+      "mtime": "2026-04-17T08:59:24.375144",
+      "size": 12087,
+      "first_2000_chars_hash": 4886994817866805620,
+      "scanned_at": "2026-04-18T06:04:29.221950"
+    },
+    {
+      "path": "src/part2-performance/ch18-rendering-pipelines/01-pipeline-overview.md",
+      "title": "渲染链路分类与选择矩阵",
+      "mtime": "2026-04-15T07:10:10.338721",
+      "size": 10477,
+      "first_2000_chars_hash": 5155850156680337540,
+      "scanned_at": "2026-04-18T06:04:29.222020"
+    },
+    {
+      "path": "src/part2-performance/ch18-rendering-pipelines/13-webview-rendering.md",
+      "title": "WebView 渲染链路",
+      "mtime": "2026-04-18T02:08:57.945289",
+      "size": 8339,
+      "first_2000_chars_hash": -380872058200167484,
+      "scanned_at": "2026-04-18T06:04:29.222097"
+    },
+    {
+      "path": "src/part2-performance/ch18-rendering-pipelines/16-game-engine.md",
+      "title": "游戏引擎渲染链路",
+      "mtime": "2026-04-18T05:10:47.877222",
+      "size": 7433,
+      "first_2000_chars_hash": 9095895777246338249,
+      "scanned_at": "2026-04-18T06:04:29.222167"
+    },
+    {
+      "path": "src/part2-performance/ch18-rendering-pipelines/11-angle-gles-vulkan.md",
+      "title": "ANGLE（GLES-over-Vulkan 翻译层）",
+      "mtime": "2026-04-18T00:23:38.758595",
+      "size": 6840,
+      "first_2000_chars_hash": 5367169131777296437,
+      "scanned_at": "2026-04-18T06:04:29.222234"
+    },
+    {
+      "path": "src/part2-performance/ch18-rendering-pipelines/10-surface-control-api.md",
+      "title": "SurfaceControl API 深入",
+      "mtime": "2026-04-18T04:02:21.065688",
+      "size": 31036,
+      "first_2000_chars_hash": 440529377707678981,
+      "scanned_at": "2026-04-18T06:04:29.222306"
+    },
+    {
+      "path": "src/part2-performance/ch18-rendering-pipelines/README.md",
+      "title": "README",
+      "mtime": "2026-04-17T07:40:22.786763",
+      "size": 1162,
+      "first_2000_chars_hash": 1486978412034171992,
+      "scanned_at": "2026-04-18T06:04:29.222360"
+    },
+    {
+      "path": "src/part2-performance/ch18-rendering-pipelines/06-surfaceview.md",
+      "title": "SurfaceView 直出链路",
+      "mtime": "2026-04-17T09:11:31.389192",
+      "size": 18078,
+      "first_2000_chars_hash": -6532364673548863837,
+      "scanned_at": "2026-04-18T06:04:29.222426"
+    },
+    {
+      "path": "src/part2-performance/ch18-rendering-pipelines/04-android-view-mixed.md",
+      "title": "Android View 混合渲染链路",
+      "mtime": "2026-04-18T05:38:14.644342",
+      "size": 9601,
+      "first_2000_chars_hash": 2478680058382598113,
+      "scanned_at": "2026-04-18T06:04:29.222493"
+    },
+    {
+      "path": "src/part2-performance/ch18-rendering-pipelines/12-flutter-rendering.md",
+      "title": "Flutter 渲染链路",
+      "mtime": "2026-04-18T01:11:06.489472",
+      "size": 8967,
+      "first_2000_chars_hash": 7532481935565269346,
+      "scanned_at": "2026-04-18T06:04:29.222561"
+    },
+    {
+      "path": "src/part2-performance/ch18-rendering-pipelines/09-vulkan-native.md",
+      "title": "Vulkan 原生渲染链路",
+      "mtime": "2026-04-17T22:14:23.171115",
+      "size": 16804,
+      "first_2000_chars_hash": -4084440787995052250,
+      "scanned_at": "2026-04-18T06:04:29.222628"
+    },
+    {
+      "path": "src/part2-performance/ch18-rendering-pipelines/14-camera-pipeline.md",
+      "title": "Camera 渲染管线",
+      "mtime": "2026-04-18T04:51:22.402746",
+      "size": 14144,
+      "first_2000_chars_hash": 919526474893184190,
+      "scanned_at": "2026-04-18T06:04:29.222694"
+    },
+    {
+      "path": "src/part2-performance/ch18-rendering-pipelines/02-android-view-standard.md",
+      "title": "Android View 标准链路（BLAST 深入）",
+      "mtime": "2026-04-17T02:09:39.045151",
+      "size": 12656,
+      "first_2000_chars_hash": 556480257763043092,
+      "scanned_at": "2026-04-18T06:04:29.222762"
+    },
+    {
+      "path": "src/part2-performance/ch18-rendering-pipelines/08-opengl-es.md",
+      "title": "OpenGL ES 渲染链路",
+      "mtime": "2026-04-17T20:51:37.133526",
+      "size": 16680,
+      "first_2000_chars_hash": -3142196496716031417,
+      "scanned_at": "2026-04-18T06:04:29.222841"
+    },
+    {
+      "path": "src/part3-tools/ch14-other-tools/02-simpleperf.md",
+      "title": "Simpleperf",
+      "mtime": "2026-04-15T14:10:35.568453",
+      "size": 25046,
+      "first_2000_chars_hash": -999456995260722838,
+      "scanned_at": "2026-04-18T06:04:29.223025"
+    },
+    {
+      "path": "src/part3-tools/ch14-other-tools/01-as-profiler.md",
+      "title": "Android Studio Profiler",
+      "mtime": "2026-04-17T06:27:32.820912",
+      "size": 24295,
+      "first_2000_chars_hash": 2331364420446796139,
+      "scanned_at": "2026-04-18T06:04:29.223095"
+    },
+    {
+      "path": "src/part3-tools/ch14-other-tools/03-memory-tools.md",
+      "title": "内存分析工具",
+      "mtime": "2026-04-17T04:16:32.636208",
+      "size": 35959,
+      "first_2000_chars_hash": -6951773670244591510,
+      "scanned_at": "2026-04-18T06:04:29.223174"
+    },
+    {
+      "path": "src/part3-tools/ch14-other-tools/08-gpu-debug-tools.md",
+      "title": "GPU 图形调试与分析工具",
+      "mtime": "2026-04-17T21:45:50.972556",
+      "size": 37844,
+      "first_2000_chars_hash": -1480534048503392607,
+      "scanned_at": "2026-04-18T06:04:29.223260"
+    },
+    {
+      "path": "src/part3-tools/ch14-other-tools/04-dumpsys.md",
+      "title": "dumpsys 系列命令",
+      "mtime": "2026-04-15T19:43:32.237475",
+      "size": 25459,
+      "first_2000_chars_hash": -839327804793059888,
+      "scanned_at": "2026-04-18T06:04:29.223353"
+    },
+    {
+      "path": "src/part3-tools/ch14-other-tools/11-battery-historian.md",
+      "title": "Battery Historian 与功耗分析工具",
+      "mtime": "2026-04-16T07:10:14.326840",
+      "size": 20444,
+      "first_2000_chars_hash": 8136744797565776948,
+      "scanned_at": "2026-04-18T06:04:29.223432"
+    },
+    {
+      "path": "src/part3-tools/ch14-other-tools/06-automation-tools.md",
+      "title": "自动化测试工具",
+      "mtime": "2026-04-16T08:18:07.007452",
+      "size": 24266,
+      "first_2000_chars_hash": -7167533137791447524,
+      "scanned_at": "2026-04-18T06:04:29.223503"
+    },
+    {
+      "path": "src/part3-tools/ch15-methodology/03-metrics.md",
+      "title": "性能指标体系",
+      "mtime": "2026-04-17T12:43:42.289513",
+      "size": 27637,
+      "first_2000_chars_hash": -5559034532888800163,
+      "scanned_at": "2026-04-18T06:04:29.223601"
+    },
+    {
+      "path": "src/part3-tools/ch15-methodology/05-online-monitoring.md",
+      "title": "线上性能监控",
+      "mtime": "2026-04-17T12:14:42.282588",
+      "size": 30954,
+      "first_2000_chars_hash": -9117629058166196319,
+      "scanned_at": "2026-04-18T06:04:29.223672"
+    },
+    {
+      "path": "src/part3-tools/ch15-methodology/08-empirical-performance-issues.md",
+      "title": "Android 性能问题实证：真实世界的分类与代码模式",
+      "mtime": "2026-04-17T19:09:48.607063",
+      "size": 15708,
+      "first_2000_chars_hash": 7556442640417979959,
+      "scanned_at": "2026-04-18T06:04:29.223738"
+    },
+    {
+      "path": "src/part3-tools/ch15-methodology/02-system-vs-app.md",
+      "title": "如何区分系统问题和 App 问题",
+      "mtime": "2026-04-16T13:13:45.371200",
+      "size": 24934,
+      "first_2000_chars_hash": 6469386643213392610,
+      "scanned_at": "2026-04-18T06:04:29.223817"
+    },
+    {
+      "path": "src/part3-tools/ch15-methodology/01-philosophy.md",
+      "title": "性能优化的术、道、器",
+      "mtime": "2026-04-15T23:50:57.980757",
+      "size": 36395,
+      "first_2000_chars_hash": -870482612576899225,
+      "scanned_at": "2026-04-18T06:04:29.223889"
+    },
+    {
+      "path": "src/part3-tools/ch15-methodology/04-competitive-analysis.md",
+      "title": "竞品分析方法",
+      "mtime": "2026-04-17T05:10:28.511781",
+      "size": 28057,
+      "first_2000_chars_hash": -7899621173721424935,
+      "scanned_at": "2026-04-18T06:04:29.223957"
+    },
+    {
+      "path": "src/part3-tools/ch15-methodology/06-testing-best-practices.md",
+      "title": "性能测试最佳实践",
+      "mtime": "2026-04-17T13:48:21.662096",
+      "size": 32368,
+      "first_2000_chars_hash": -174045338571093107,
+      "scanned_at": "2026-04-18T06:04:29.224027"
+    },
+    {
+      "path": "src/part3-tools/ch15-methodology/07-aosp-reading.md",
+      "title": "AOSP 代码阅读",
+      "mtime": "2026-04-17T18:41:59.591745",
+      "size": 26258,
+      "first_2000_chars_hash": 6550300377060508506,
+      "scanned_at": "2026-04-18T06:04:29.224098"
+    },
+    {
+      "path": "src/part3-tools/ch13-perfetto/06-thread-cpu-states.md",
+      "title": "线程 CPU 状态分析",
+      "mtime": "2026-04-17T01:10:50.385381",
+      "size": 35254,
+      "first_2000_chars_hash": 2398087028053526665,
+      "scanned_at": "2026-04-18T06:04:29.224196"
+    },
+    {
+      "path": "src/part3-tools/ch13-perfetto/04-large-traces.md",
+      "title": "命令行打开超大 Trace",
+      "mtime": "2026-04-15T07:44:01.618462",
+      "size": 30180,
+      "first_2000_chars_hash": 577646468835594786,
+      "scanned_at": "2026-04-18T06:04:29.224299"
+    },
+    {
+      "path": "src/part3-tools/ch13-perfetto/10-perfetto-sql-cookbook.md",
+      "title": "Perfetto SQL 性能分析实战手册",
+      "mtime": "2026-04-16T03:43:20.581057",
+      "size": 26886,
+      "first_2000_chars_hash": -2077688997585912119,
+      "scanned_at": "2026-04-18T06:04:29.224365"
+    },
+    {
+      "path": "src/part3-tools/ch13-perfetto/08-input-latency-sql.md",
+      "title": "Perfetto 输入延迟 SQL 深度分析",
+      "mtime": "2026-04-15T14:45:49.243994",
+      "size": 29676,
+      "first_2000_chars_hash": 280590040520108469,
+      "scanned_at": "2026-04-18T06:04:29.224450"
+    }
+  ],
+  "new_docs_count": 95
 }

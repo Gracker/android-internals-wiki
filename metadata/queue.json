@@ -48,6 +48,12 @@
         "location": "文中引用 DEFAULT_INPUT_DISPATCHING_TIMEOUT_NANOS 常量定义路径",
         "detail": "错误路径：frameworks/base/services/core/java/com/android/server/wm/WindowManagerService.java\n正确路径：frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp",
         "suggestion": "修正源码路径引用，更新章节中的常量定义位置"
+      },
+      {
+        "type": "技术核实",
+        "location": "Stale Event 丢弃机制（AIW-源码调研-2026-04-17）代码段",
+        "detail": "mInboundQueue.hasEvent()/peekEvent()/removeEvent()/dropInboundConnection() 等方法名需与 AOSP 源码核实，可能为简化重写版本",
+        "suggestion": "Task 9 对照 AOSP android-14 InputDispatcher.cpp 验证 isStale() 及 dispatchOnce() 中的实际方法签名和调用链"
       }
     ],
     "added_by": "task9-deep-tech-review",
