@@ -1547,3 +1547,9 @@
 - **问题**：章节基于 AI 编造的 API 实现，与真实 Android 17 EyeDropper API 完全不符
 - **建议**：基于官方文档和真实 API 重写。正确用法见 https://developer.android.com/reference/android/content/Intent#ACTION_OPEN_EYE_DROPPER
 - **review 日志**：logs/review/2026-04-18-13-review.md
+
+## [Task9 Deep Review] 1.8 Activity Manager Service 与性能分析 — 2026-04-18
+- **类型**：数据缺失
+- **位置**：L199-L201、L360-L362、L494-L496（3 处 Trace 占位图）
+- **问题**：章节把 `oom_score_adj` 变化、冷启动关键节点、ANR Trace 特征都写成了口头描述，但三处核心位置只有“待补截图”占位，没有一段真实 Perfetto 片段或 SQL 输出。作为“与性能分析”章节，读者无法据此建立可复现的观察基线。
+- **建议**：至少补 1 个冷启动 trace 和 1 个 ANR trace。每个例子给出 10-20 行 SQL 或关键 track 标注，包含 `android_logs` 的 `am_proc_start/am_anr` 与应用主线程 `bindApplication` / `doFrame` 的对照。

@@ -858,3 +858,20 @@ SurfaceControl NDK 的 FrameTimeline 小节缺少“如何从 AChoreographerFram
 - 18.8 OpenGL ES 渲染链路
 - 18.9 Vulkan 原生渲染链路
 
+## [2026-04-18] 1.8 Activity Manager Service 与性能分析 — 知识盲区
+
+### 盲区描述
+章节把 ANR 和广播超时几乎都压进 AMS 视角，遗漏了现代 system_server 中真正负责判责的中间层：WMS `AnrController` 的 Input ANR 归因，以及 `BroadcastQueueImpl` 的 soft-timeout / CPU-delay 扩展逻辑。读者按当前章节去排查，容易直接盯 AMS，而忽略 WMS 焦点仲裁和广播队列的软超时延展。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 梳理 `InputDispatcher` → `InputManagerCallback` → `AnrController` → `ActivityRecord/AMS` 的现代 Input ANR 判责链
+- 研究 `BroadcastQueueImpl.deliveryTimeoutSoftLocked()` 如何根据 runnable-but-waiting 的 CPU delay 延长硬超时
+- 给出一个 no-focused-window ANR 和一个 broadcast CPU-starved 超时的 Perfetto/trace 案例
+
+### 关联章节
+- 3.1 Input 事件分发全流程
+- 9.1 ANR 设计思想
+- 9.2 ANR 类型与触发条件
