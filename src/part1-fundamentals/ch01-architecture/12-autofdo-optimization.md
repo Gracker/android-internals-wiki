@@ -5,7 +5,7 @@ section: "1.12"
 status: ready-for-review
 drafted_date: "2026-04-06"
 drafted_by: "openclaw-task2a"
-reviewed_date: "2026-04-11"
+reviewed_date: "2026-04-19"
 reviewed_by: "openclaw-task6"
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 last_verified: "2026-04-18"
@@ -44,12 +44,12 @@ related_chapters:
 task9_reviewed_date: "2026-04-18"
 task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-04-18T21:43:38+08:00"
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task2b_result: fixed
 task2b_state: fixed
-task6_result: needs-rework
+task6_result: pass-light-edit
 task9_result: needs-rework
 ---
 
@@ -59,7 +59,7 @@ task9_result: needs-rework
 
 我们在 Perfetto 里分析性能问题时，注意力通常集中在 App 层和 Framework 层——主线程在做什么、Binder 调用耗时多少、GC 暂停了多久。但有一个事实经常被忽略：**在 Android 设备上，Linux 内核占用了大约 40% 的 CPU 时间**（[来源: Google Android LLVM toolchain team, 2026](https://android-developers.googleblog.com/2026/03/BoostingAndroid%20PerformanceIntroducingAutoFDO.html)）。
 
-这意味着，即使我们把 App 层的优化做到了极致，剩下的 40% CPU 时间仍然消耗在内核里——进程调度、内存管理、Binder 驱动、文件系统、驱动中断。而这 40% 的性能，App 开发者几乎无法直接控制。
+即使把 App 层的优化做到极致，剩下的 40% CPU 时间仍然消耗在内核里——进程调度、内存管理、Binder 驱动、文件系统、驱动中断。而这 40% 的性能，App 开发者几乎无法直接控制。
 
 AutoFDO（Automatic Feedback-Directed Optimization）是 Google 从系统层面解决这个问题的手段：通过采集真实运行时的执行热点数据，反过来指导编译器对内核和原生库进行优化。这不是一个需要 App 开发者做什么的功能——它是系统构建阶段的工作，但它直接影响所有 App 的运行性能。
 
@@ -186,7 +186,7 @@ create_llvm_prof --profile branch_list.data --profiler text --binary vmlinux --o
 
 **寄存器分配优化**：在热点路径上给关键变量分配物理寄存器，减少栈访问。
 
-值得注意的是，Google 采用了"保守策略"：profile 中没有覆盖到的函数（冷函数），使用标准编译优化——不因为缺少 profile 数据就降低优化级别，也不盲目优化导致代码膨胀。
+Google 采用了"保守策略"：profile 中没有覆盖到的函数（冷函数），使用标准编译优化——不因为缺少 profile 数据就降低优化级别，也不盲目优化导致代码膨胀。
 
 ### 与 dex2oat 的关系
 
@@ -196,7 +196,7 @@ Baseline Profiles 和 `speed-profile` 解决的是前者。App 安装或后台 d
 
 AutoFDO 解决的是后者。它不告诉 ART “哪些 Java 方法要编译”，而是把真实运行时的热点反馈给 LLVM / Clang，让内核、Bionic、系统 native library，甚至 `dex2oat` 这样的原生可执行文件，在重新构建时得到更好的代码布局、分支预测和内联结果。冷启动收益的主路径来自**内核与系统 native binary 的运行时 hot path 被优化**，不是 `dex2oat` 自己跑得更快这一点。
 
-所以更准确的关系应该写成：
+两者的关系可以这样理解：
 
 - Baseline Profiles / `speed-profile` → 决定哪些 App 方法做 AOT
 - AutoFDO → 优化内核和系统 native binary 的机器码质量

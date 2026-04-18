@@ -12,7 +12,7 @@ gap_source: "研究素材+AOSP结构+每日信息+读者需求"
 gap_score: "17/20"
 drafted_date: "2026-04-06"
 drafted_by: "openclaw-task2a"
-reviewed_date: "2026-04-11"
+reviewed_date: "2026-04-19"
 reviewed_by: "openclaw-task6"
 last_verified: "2026-04-11"
 last_verified_against: "AOSP android-16.0.0_r1 + bionic android-9.0.0_r1 + binder android-7.1.2_r39/android-8.0.0_r1 + Perfetto stdlib"
@@ -44,9 +44,9 @@ sources:
     path: "intake/research-feeds/2026-04-06-15-priority-inversion-futex-pi-android-lock-performance.md"
   - type: note
     path: "intake/research-feeds/2026-04-05-19-android17-deliqueue-lockfree-messagequeue.md"
-pipeline_stage: task2b_pending
-task6_state: revisiting
-task6_result: needs-rework
+pipeline_stage: task9_pending
+task6_state: reviewed
+task6_result: pass-light-edit
 task9_state: reviewed
 task9_result: needs-rework
 task9_reviewed_date: "2026-04-18"
@@ -148,11 +148,11 @@ Perfetto 里最容易让人误判的一类问题，是线程看起来“没在�
 
 我们先把 Android 里最常见的四类等待拆开。
 
-第一类是 **Java monitor**。`synchronized`、`wait()`、`notify()` 这一套都属于它。它的关键点不是 Java 语法本身，而是 ART 怎样把对象头里的 lock word、竞争升级和等待队列组织起来。Perfetto 的 `android.monitor_contention` 模块就是专门为这条路径准备的。
+第一类是 **Java monitor**。`synchronized`、`wait()`、`notify()` 这一套都属于它。它的关键点是 ART 怎样把对象头里的 lock word、竞争升级和等待队列组织起来。Perfetto 的 `android.monitor_contention` 模块就是专门为这条路径准备的。
 
 第二类是 **native mutex / condition variable**。这类等待经常出现在 RenderThread、SurfaceFlinger、AudioFlinger，以及系统服务的 C++ 代码里。表面上看，trace 里它和 Java monitor 一样也会出现 `futex_*`，但 owner、调用栈、锁对象全都不一样。看见 `futex_wait`，我们不能自动把它判成 Java 锁。
 
-第三类是 **Binder driver wait queue**。跨进程调用时，调用方常常睡在 `binder_thread_read` 或 reply 等待上。这里的核心不是“谁在持有一把 Java 锁”，而是 Binder worker 有没有空、目标服务是不是被对象锁卡住、驱动是不是还在排队分发事务。
+第三类是 **Binder driver wait queue**。跨进程调用时，调用方常常睡在 `binder_thread_read` 或 reply 等待上。这里要看的是 Binder worker 有没有空、目标服务是不是被对象锁卡住、驱动是不是还在排队分发事务。
 
 第四类是 **MessageQueue / DeliQueue**。这是主线程消息投递路径的特例。它和 Binder、native mutex 都不一样，因为它讨论的是主线程内部事件循环怎样接收来自多个生产者的消息。Android 17 的 DeliQueue 把这里的生产者路径改成无锁，就是因为这条路径足够高频，足够容易把高优先级线程拖进等待里。 
 
@@ -160,7 +160,7 @@ Perfetto 里最容易让人误判的一类问题，是线程看起来“没在�
 
 ## Monitor Lock 的实现细节
 
-`synchronized` 的底层不是一个抽象的“Java 锁”，而是 ART monitor。对象头里的 lock word 先尝试走 thin lock，只有在竞争出现，或者调用 `wait()` 这类需要等待队列的操作时，才会膨胀成 fat monitor。`art/runtime/lock_word.h` 里定义了 `Unlocked`、`ThinLocked`、`FatLocked` 这些状态，`art/runtime/monitor.cc` 里则能看到 monitor 进入、膨胀和等待的实际实现。[已验证: AOSP android-16.0.0_r1, `art/runtime/monitor.cc` + `art/runtime/lock_word.h`]
+`synchronized` 的底层是 ART monitor，不是什么抽象的“Java 锁”。对象头里的 lock word 先尝试走 thin lock，只有在竞争出现，或者调用 `wait()` 这类需要等待队列的操作时，才会膨胀成 fat monitor。`art/runtime/lock_word.h` 里定义了 `Unlocked`、`ThinLocked`、`FatLocked` 这些状态，`art/runtime/monitor.cc` 里则能看到 monitor 进入、膨胀和等待的实际实现。[已验证: AOSP android-16.0.0_r1, `art/runtime/monitor.cc` + `art/runtime/lock_word.h`]
 
 这条设计很重要，因为它解释了为什么“无竞争的 `synchronized`”和“竞争下的 `synchronized`”完全不是一个量级。前者基本上是一次对象头 CAS，后者要创建 fat monitor、进入等待队列、让线程睡眠，再等待别人把它唤醒。`wait()` 也会强制这条路径进入 fat monitor，因为只有 fat monitor 才有完整的等待集合。
 
@@ -182,21 +182,21 @@ Binder 更不能直接写成 “Binder = futex / PI-futex”。Binder 的等待�
 
 Linux 提供 PI-futex，是为了解决这类问题的一种机制。但 Android 官方关于音频延迟与 priority inversion 的文档讲得很直白，实时路径不一定适合直接依赖 PI-futex，因为系统调用成本、信任模型和 DoS 风险都要算进去。所以更稳妥的写法不是“Android 某某子系统统一用了 PI-futex”，而是“Linux 与 bionic 提供了这类机制，具体是否启用要按子系统、按锁类型核实”。[已验证: `source.android.com/docs/core/audio/latency/priority-inversion`]
 
-Binder 这一侧也应该分开写。它要看的重点不是 PI-futex，而是驱动怎样给事务传播优先级，怎样挑 Binder worker，怎样唤醒等待线程。把“Binder transaction priority inheritance”和“Java / ART monitor 等待”混成一条实现链，读者到了 trace 现场基本一定会判断错。
+Binder 这一侧也应该分开写。它要看的重点是驱动怎样给事务传播优先级，怎样挑 Binder worker，怎样唤醒等待线程。把“Binder transaction priority inheritance”和“Java / ART monitor 等待”混成一条实现链，读者到了 trace 现场基本一定会判断错。
 
 ## Binder 框架中的锁竞争
 
 Binder 的问题，通常不是“调用慢”这四个字能概括的。调用方睡在 Binder 上，只说明它在等目标进程；真正的瓶颈，常常在服务端对象锁、Binder worker 数量，或者服务端 worker 持锁时又去做了别的慢操作。
 
-`ProcessState.cpp` 在 `android-7.1.2_r39` 和 `android-8.0.0_r1` 两个 tag 里都把 `DEFAULT_MAX_BINDER_THREADS` 定义为 15。所以“Android 8 把 Binder 默认线程从 8 提到 16”这个说法站不住脚。更准确的说法是，常见 Binder worker 上限长期稳定在 15 个工作线程，外加调用上下文里能看到的主线程或主 Binder 线程，trace 里才会让人形成“像是 16 条线程”的体感。[已验证: AOSP `frameworks/native/libs/binder/ProcessState.cpp` at `android-7.1.2_r39` / `android-8.0.0_r1`]
+`ProcessState.cpp` 在 `android-7.1.2_r39` 和 `android-8.0.0_r1` 两个 tag 里都把 `DEFAULT_MAX_BINDER_THREADS` 定义为 15。所以“Android 8 把 Binder 默认线程从 8 提到 16”这个说法站不住脚。常见 Binder worker 上限长期稳定在 15 个工作线程，外加调用上下文里能看到的主线程或主 Binder 线程，trace 里才会让人形成“像是 16 条线程”的体感。[已验证: AOSP `frameworks/native/libs/binder/ProcessState.cpp` at `android-7.1.2_r39` / `android-8.0.0_r1`]
 
-system_server 里的典型热点不是 Binder 驱动本身，而是服务端全局锁。比如 WindowManager 的 `WindowManagerGlobalLock`，AMS/PMS 的大对象锁，都会把一个 Binder 调用拖成一整串等待。调用方主线程睡在 `binder_thread_read`，服务端 Binder worker 可能睡在 `futex_wait`，而真正持锁的 owner 线程可能又在跑磁盘 I/O、跨服务调用，或者干脆在等另一把锁。只看调用方，我们只能看到结果；把 Binder worker 和 owner 一起看，根因才会露出来。
+system_server 里的典型热点在服务端全局锁，不在 Binder 驱动本身。比如 WindowManager 的 `WindowManagerGlobalLock`，AMS/PMS 的大对象锁，都会把一个 Binder 调用拖成一整串等待。调用方主线程睡在 `binder_thread_read`，服务端 Binder worker 可能睡在 `futex_wait`，而真正持锁的 owner 线程可能又在跑磁盘 I/O、跨服务调用，或者干脆在等另一把锁。只看调用方，我们只能看到结果；把 Binder worker 和 owner 一起看，根因才会露出来。
 
 这就是为什么 Binder 场景里要同时看三层信息，调用方在等什么，服务端 worker 在干什么，持锁线程是不是又被别人卡住了。少看一层，就会把跨进程等待误判成“单点慢函数”。
 
 ## 在 Perfetto 中识别锁竞争
 
-Perfetto 里分析锁竞争，我建议先做分类，再做归因。
+Perfetto 里分析锁竞争，先做分类，再做归因。
 
 **第一步，判断是不是 Java monitor。** 如果 trace 打开了相关数据源，我们可以直接用 `android.monitor_contention` 模块看 owner / waiter 关系，而不是先去翻 raw slice 名字。
 
@@ -299,8 +299,8 @@ Android 17 的 DeliQueue 是这类优化里很典型的一个案例。它不是�
 2. **先给等待分类。** `android_monitor_contention` 命中的是 Java monitor；`futex_*` 但没有 monitor 数据，多半是 native mutex / condvar；`binder_thread_read` / binder reply 则先按 Binder 路径查。
 3. **先找 owner，再找 owner 的 owner。** 调用方不是根因。真正让等待拉长的，往往是持锁线程自己又被别的资源拖住了。
 4. **system_server 要双向看。** 一边看 App 或调用方主线程，一边看 system_server 的 Binder worker、服务线程和全局锁。只看一边，结论很容易少一层。
-5. **修完必须回 trace。** 不是把锁换了就算结束，而是要确认关键线程等待时间、Binder 排队时间、帧预算占用都真的降下来了。
+5. **修完必须回 trace。** 只把锁换了还不够，还要确认关键线程等待时间、Binder 排队时间、帧预算占用都真的降下来了。
 
 ## 小结
 
-锁竞争分析真正难的地方，不是“锁很复杂”，而是不同等待路径长得太像，特别容易被混写。把 Java monitor、native mutex、Binder driver wait queue、MessageQueue 这四类路径拆开，我们再回到 Perfetto 里看线程状态、owner / waiter、Binder worker 和关键线程预算，很多原本糊成一团的问题就会变得非常具体。到这一步，优化才不是碰运气，而是有目标地改。 
+锁竞争分析真正难的地方在于，不同等待路径长得太像，特别容易被混写。把 Java monitor、native mutex、Binder driver wait queue、MessageQueue 这四类路径拆开，我们再回到 Perfetto 里看线程状态、owner / waiter、Binder worker 和关键线程预算，很多原本糊成一团的问题就会变得非常具体。到这一步，优化才不是碰运气，而是有目标地改。 
