@@ -1545,3 +1545,19 @@ API 33+ 的公开帧时间线入口缺位。正文已经解释了框架内部 `d
 - 2.19 刷新率切换与帧率适配性能
 - 13.1 Perfetto 基础与抓取
 
+
+## [2026-04-19] 1.15 JNI/NDK 性能优化 — 知识盲区
+
+### 盲区描述
+正文已经建议在 `JNI_OnLoad()` 缓存 `jclass` / `jmethodID`，也解释了 native 线程 attach/detach，但没有补上 perf-jni 官方文档里的关键边界：natively-created attached thread 上 `FindClass()` 会从 system class loader 开始，App 类查找可能失败。缺这条因果链，读者容易把“缓存 ID”当成经验技巧，而不是和 ClassLoader 语义直接相关的硬边界。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 对照 perf-jni 官方文档整理 `JNI_OnLoad()` 缓存、Java 传入 `Class` / `ClassLoader`、Java-started thread 三种规避方案
+- 补 1 个最小错误示例：native worker thread 中 `FindClass("com/example/Decoder")` 失败，再对照修复版本
+- 说明这条边界和线程 attach/detach、ID 缓存、`FindClass()` 热路径禁用之间的关系
+
+### 关联章节
+- 1.15 JNI/NDK 性能优化

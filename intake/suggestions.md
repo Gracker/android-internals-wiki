@@ -1862,3 +1862,15 @@
 - **位置**：L393-L406 Frame Timeline 起点说明
 - **问题**：Expected Timeline 的起点先被写成“Choreographer 收到 VSYNC-app 的时间”，后面又写成“比 VSYNC-app 更晚”。Perfetto 官方文档的口径是“the time the Choreographer callback was scheduled to run”，这里把 callback scheduled time、实际 `doFrame` 开始时间和 expected presentation time 混在了一起。
 - **建议**：统一三组时间基准：callback scheduled time、实际 `Choreographer#doFrame` start、expected presentation time，并明确 Expected Timeline 不等于 Actual Timeline 的起点。
+
+## [Task9 Deep Review] 1.15 JNI/NDK 性能优化 — 2026-04-19
+- **类型**：交叉引用
+- **位置**：L109 / L248（关联 `§14.2 Simpleperf` L404-L408）
+- **问题**：本节写的是 simpleperf `report-sample --protobuf` 后再导入 Perfetto，这和 Perfetto 官方 other-formats 文档一致；但被引用的 `§14.2` 目前写成“`perf.data` 可直接通过 Perfetto trace_processor 导入”，两节给出的工作流不一致，读者按交叉引用继续操作时会走到错误路径。
+- **建议**：统一成一条已验证流程，优先采用 `simpleperf report-sample --protobuf --show-callchain -i perf.data -o simpleperf.proto` + Perfetto 导入；如果要保留其他导入方式，必须明确区分 raw perf / simpleperf protobuf，并补 perfetto.dev 官方锚点。
+
+## [Task9 Deep Review] 1.15 JNI/NDK 性能优化 — 2026-04-19
+- **类型**：数据缺失
+- **位置**：L218-L222 系统服务的设计启示
+- **问题**：正文给出“native-only 的 Binder 栈可以减少 Java ↔ native 桥接和部分序列化层级”的判断，但没有配套 call stack、trace、simpleperf 样本或 AOSP 路径对照，当前更像经验判断，读者很难据此复核 `libbinder_ndk`、Java Binder、JNI bridge 三者的差异到底落在哪一层。
+- **建议**：补 1 组最小证据链，至少包含 Java Binder → JNI bridge → native-only Binder 三种调用栈或序列化路径对照；如果暂时拿不到样本，就把结论收紧到“减少 Java ↔ native 桥接”，不要额外延伸到“部分序列化层级”。
