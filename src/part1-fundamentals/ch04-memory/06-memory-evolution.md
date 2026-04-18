@@ -23,6 +23,10 @@ sources:
     path: "https://source.android.com/docs/security/test/memory-safety/arm-mte"
   - type: official
     path: "https://developer.android.com/ndk/guides/arm-mte"
+  - type: official
+    path: "https://developer.android.com/reference/android/graphics/Bitmap.Config#HARDWARE"
+  - type: official
+    path: "https://developer.android.com/guide/practices/page-sizes"
   - type: blog
     path: "Cubox/Scudo内存分配器介绍-2022-01-14.md"
   - type: blog
@@ -40,13 +44,15 @@ related_chapters: ["4.1", "4.2", "4.3", "4.4", "4.5", "2.9"]
 drafted_date: "2026-03-31"
 drafted_by: "openclaw-subagent"
 review_count: 3
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
-task9_state: reviewed
+task9_state: pending
 task9_result: needs-rework
 last_task9_at: "2026-04-19T00:54:00+08:00"
-task2b_state: pending
+task2b_state: fixed
+task2b_result: fixed
+last_task2b_at: "2026-04-19T02:05:51+08:00"
 ---
 
 
@@ -205,13 +211,16 @@ Android 10 在 CC GC 的基础上进一步完善了分代垃圾回收。ART 将 
 [已验证: AOSP android-15.0.0_r1, art/runtime/gc/collector/concurrent_copying.cc]
 [来源: research-feed 2026-03-31-11-ch04-art-generational-gc.md]
 
-### Android 15：CMC GC 与 UFFD 的巧妙结合
+### Android 15：UFFD 驱动的 Mark Compact 路径进入 AOSP
 
-Android 15 引入了 Concurrent Mark-Compact（CMC）GC，解决了 CC GC 的两个遗留问题：Read Barrier 的持续性能开销（即使 GC 不运行，每次引用读取也有 1-3% 的额外开销），以及 FromSpace/ToSpace 同时存在时的物理内存短暂翻倍。
+到了 Android 15，ART 源码里已经能看到基于 `userfaultfd` 的 Mark Compact / CMC 路径。这个版本适合写成“UFFD 驱动的 Mark Compact 已进入 AOSP”。不要直接下“collector 已完全切换”的结论，也不要把 Android 15 和 Android 16 QPR2+ 之后的 Generational CMC 对外口径混在一起。
 
-CMC 的核心创新是利用 Linux 的 UFFD（User Fault FD）特性。GC 线程从后向前逐页压缩对象，如果应用线程访问到一个尚未被压缩的页面，UFFD 触发异常，VM 优先压缩这个页面然后返回。这样就不需要 Read Barrier 了——GC 不运行时，没有任何额外开销。
+这条路径把对象迁移和应用线程继续运行拆到页级别协调。GC 线程压缩对象时，如果应用线程访问到尚未整理完成的页，内核会把 fault 交给 ART 处理，ART 先整理目标页，再把控制权交还给应用线程。这里讨论的是 collector 实现变化，分代回收思路本身没有消失。
 
-CMC 的分配器也从 `RegionSpace` 切换为 `BumpPointerSpace`，结构更简单：分配时只需移动一个 top 指针。
+版本边界可以按下面三段记：
+- **Android 8.0-14**：主线仍是 CC / generational CC
+- **Android 15**：AOSP 已有 UFFD 驱动的 Mark Compact / CMC 路径
+- **Android 16 QPR2+**：官方开始把 Generational CMC 作为对外能力明确说明
 
 关于 CMC GC 的详细机制和 Perfetto 观察方法，详见 4.3 节「ART 虚拟机内存管理」。
 
@@ -219,8 +228,10 @@ AOSP 源码路径：
 - CC GC：`art/runtime/gc/collector/concurrent_copying.cc`
 - CMC GC：`art/runtime/gc/collector/mark_compact.cc`
 
-[已修正: AOSP 实际文件名为 mark_compact.cc（非 concurrent_mark_compact.cc），经 android.googlesource.com 验证]
+[已验证: AOSP android-15.0.0_r1, art/runtime/gc/collector/mark_compact.cc]
+[已验证: AOSP android-15.0.0_r1, art/runtime/gc/heap.cc]
 [来源: Cubox/ART虚拟机CMC GC算法核心实现介绍-2023-06-24.md]
+[已验证: Android Developers Blog, Android 16 QPR2 is Released]
 
 ## Android 11+：Native malloc 切换到 Scudo 分配器
 
@@ -350,108 +361,94 @@ adb shell dumpsys meminfo <package_name> --checkin
 
 [已验证: 官方文档 developer.android.com/topic/performance/memory]
 
-## 扩展：MTE 在 Android 14+ 的推进
+## 扩展：MTE 在 Android 13+ 的平台边界
 
-MTE（Memory Tagging Extension）是 ARMv8.5 引入的硬件级内存安全特性，也是 Android 近年在内存安全方面最重要的平台级投入。它的目标是让 Native 内存的越界访问和 use-after-free 等错误在发生时就能被硬件检测到，而不是等到安全漏洞被利用才后知后觉。
+MTE（Memory Tagging Extension）是 ARM 提供的硬件级内存安全能力，用来检测 Native 代码中的越界访问和 use-after-free。这里要把 ARM ISA 的能力演进和 Android 平台真正向 App 暴露的能力边界分开看。
 
 ### MTE 的工作原理
 
 [图：MTE Tag 比对机制示意（指针顶部 4-bit Tag 与内存 Tag Storage 中的 Tag 比对流程）]
 
-MTE 的核心思想是给每块内存和一个指针都打上一个 4-bit 的 Tag（标签，取值 0-15）。当 CPU 访问内存时，硬件自动比较指针的 Tag 和内存的 Tag：如果匹配，正常执行；如果不匹配，触发异常。由于 Tag 只有 4 bit（16 个值），随机碰撞概率是 1/16，约 93.75% 的错误访问会被检测到。
+MTE 会给指针和内存块都附上一段 4-bit Tag。CPU 访问内存时，硬件自动比较两边的 Tag。匹配就继续执行，不匹配就触发异常。对 Native 越界访问和 use-after-free，这是一层直接落在硬件上的检查。
 
-内存的 Tag 存储在独立的物理空间中（Tag Storage），对软件透明。每 16 字节的内存对应 4 bit 的 Tag，所以 Tag Storage 占总物理内存的 1/32（约 3%）。对于一台 8GB 内存的设备，约 256MB 的物理空间被预留给 Tag Storage。
+Tag Storage 独立于普通数据存储。每 16 字节内存对应 4 bit Tag，额外占用约 1/32 的物理内存。这个比例解释了为什么 MTE 会有成本，但成本主要来自标签维护和检查路径，不是 Java 层对象模型的变化。
 
-[已验证: Cubox/四年之后，重新审视 MTE：从硬件架构到工程落地-2025-12-18.md — MTE 架构和性能分析]
-
-### Android 中的 MTE 演进时间线
+### ARM ISA 时间线
 
 | 时间节点 | 事件 |
 |---|---|
-| 2018 | ARMv8.5 发布，定义 FEAT_MTE/FEAT_MTE2 |
-| 2019 | Google 宣布在 Android 中采用 MTE；ARM 发布 MTE 白皮书 |
-| 2020 | ARMv8.7 发布 FEAT_MTE3（引入 Asymmetric 模式） |
-| 2022 | ARMv8.9 发布 FEAT_MTE4（Enhanced MTE） |
-| 2023 末 | Google Pixel 8 成为第一台支持 MTE 的手机 |
-| Android 14 QPR3 | 开始支持 MTE Stack Tagging（实验性） |
-| Android 15+ | Scudo 分配器与 MTE 深度集成 |
-| Android 16 | Stack MTE 和 Global MTE 支持趋于完整 |
+| 2018 | ARMv8.5 引入 FEAT_MTE / FEAT_MTE2 |
+| 2020 | ARMv8.7 增补 FEAT_MTE3 |
+| 2022 | ARMv8.9 增补 FEAT_MTE4 |
 
-[来源: Cubox/四年之后，重新审视 MTE：从硬件架构到工程落地-2025-12-18.md]
+ISA 时间线说明的是硬件能力在扩展，不等于同一时间 Android 平台已经把这些能力完整暴露给 App。
 
-### MTE 的三种检测模式
+### Android 平台时间线
 
-MTE 提供三种检测模式，在安全性和性能之间提供不同的权衡：
+| 时间节点 | 面向 Android 的可见边界 |
+|---|---|
+| Android 13 | 部分设备开始支持 MTE；App 可通过 `android:memtagMode` 使用 `sync` 或 `async` |
+| Android 14 QPR3 | 官方 NDK 指南开始给出 MTE Stack Tagging 的平台边界与构建方式 |
+| 后续版本 | 支持设备继续增加，是否默认开启取决于设备配置 |
 
-**Synchronous（同步模式）**：每次内存访问都立即检测 Tag，如果不匹配立即触发 SIGSEGV(MTESERR) 信号，精确报告出错指令的位置。安全性最高，但性能开销也最大（3%-30%，取决于工作负载），主要用于调试阶段。
+`adb shell grep mte /proc/cpuinfo` 可以先确认设备是否具备 MTE 支持。公开设备里，Pixel 8 系列是较早可直接验证的一组机型。
 
-**Asynchronous（异步模式）**：Tag 检测与正常执行并行，不阻断流水线。错误被记录但不立即报告，等到下一次进入内核（如系统调用）时才结算。性能开销只有 1-2%，适合生产环境使用。代价是报错不精确——我们只知道"某个时间段内发生了错误"，但不知道是哪条指令。
+### App 侧只看 sync / async
 
-**Asymmetric（非对称模式）**（FEAT_MTE3 引入）：读操作使用同步检测（开销几乎为零），写操作使用异步检测。这是一种"性价比"最高的模式，在性能接近异步模式的前提下，对读操作的越界检测更加精确。
+对 App 开发者来说，Manifest 里稳定暴露的模式是 `sync` 和 `async`：
 
-[已验证: Cubox/四年之后，重新审视 MTE：从硬件架构到工程落地-2025-12-18.md — 三种模式的 CPU 流水线分析]
+**Synchronous（同步模式）**：tag 不匹配时立即以 `SIGSEGV`（`SEGV_MTESERR`）终止，定位最精确，适合开发和测试阶段排查问题。
 
-### Scudo 与 MTE 的配合
-
-Scudo 作为 Android 的默认 Native 内存分配器，是 MTE 在堆上检测的核心载体。当 MTE 启用时，Scudo 会在每次 `malloc` 时生成随机 Tag 并写入内存，在 `free` 时擦除 Tag。这样任何对已释放内存的访问（use-after-free）都会因为 Tag 不匹配而被检测到。
-
-一个巧妙的设计细节：Android 配置 GCR_EL1 寄存器排除 Tag 0，只允许生成 Tag 1-15。而 Scudo 的 Chunk Header 使用 Tag 0。任何溢出踩踏到 Chunk Header 的行为都会因为 Tag 不匹配被当场捕获。
-
-### 对 App 开发者的影响
-
-如果 App 包含 Native 代码（JNI 库、C/C++ SDK），MTE 的启用意味着之前"碰巧没出问题"的内存错误可能在新设备上被检测到并导致 crash。这是好事——它帮助提前发现了安全漏洞。但需要确保：
-
-1. **使用最新 NDK 编译**（r25+），确保生成的代码与 MTE 兼容。
-2. **避免硬编码页大小**（`#define PAGE_SIZE 4096`），改为 `sysconf(_SC_PAGESIZE)`。
-3. **在 debug 构建中启用同步模式**，尽早发现内存问题。
-4. **通过 `android:memtagMode`** 在 Manifest 中声明 App 的 MTE 策略。
+**Asynchronous（异步模式）**：tag 不匹配后会在下一次内核入口结算，报 `SIGSEGV`（`SEGV_MTEAERR`）。诊断信息更粗，但运行开销更低，更接近发布阶段的使用方式。
 
 ```xml
-<!-- 在 Manifest 中启用 MTE 异步模式（推荐） -->
+<!-- 在 Manifest 中启用 MTE 异步模式 -->
 <application android:memtagMode="async" ... />
 ```
 
-[已验证: 官方文档 developer.android.com/ndk/guides/arm-mte — MTE 适配指南]
+Stack Tagging 属于另一条能力线。它要求 JNI / NDK 代码重新用 MTE instrumentation 构建，公开文档给出的平台边界是 Android 14 QPR3 起可用。
+
+[已验证: 官方文档 developer.android.com/ndk/guides/arm-mte]
+[已验证: 官方文档 source.android.com/docs/security/test/memory-safety/arm-mte]
 
 ## 扩展：Graphics 内存的计量方式变化
 
-Android 在不同版本中对 Graphics 内存的计量和归属做了几次调整，这会影响我们在 `dumpsys meminfo` 中看到的 `Graphics` 和 `GL` 行的数值。
+Android 在不同版本中对 Graphics 内存的计量和归属做了几次调整，这会影响 `dumpsys meminfo` 里的 `Graphics`、`GL` 和厂商 memtrack 统计。
 
-### Hardware Bitmap 与 GPU 内存
+### Hardware Bitmap 与 Graphics 计量
 
-Android 8.0 引入了 `Bitmap.Config.HARDWARE`。硬件 Bitmap 的像素数据存储在 GPU 内存中，而不是系统 RAM 中。具体表现：
+Android 8.0 引入了 `Bitmap.Config.HARDWARE`。官方定义是：bitmap 像素只存放在 graphic memory 中，bitmap 对象本身始终不可变。它解决的是 Java Heap 不再持有像素副本，不等于这部分内存对进程“完全不可见”。
 
-- **不计入 App 的 PSS**：从 `dumpsys meminfo` 的角度看，这张 Bitmap "不占内存"。
-- **渲染更快**：GPU 直接使用自己的显存绘制，不需要从系统 RAM 拷贝到 GPU。
-- **不能修改**：硬件 Bitmap 是只读的，不能用 Canvas 绘制。
-- **不能跨进程**：不能通过 Binder 传递给 Remote Views。
+[已验证: 官方 API 参考 developer.android.com/reference/android/graphics/Bitmap.Config#HARDWARE]
 
-Glide 和 Coil 等图片加载库默认在 API 26+ 上使用硬件 Bitmap。这解释了一个常见困惑：为什么 App 在 Android 8.0+ 上看起来"内存占用更少"——一部分内存转移到了 GPU 侧，总量并没有减少。
+排查时按下面的口径理解：
+- **不在 Java Heap**：MAT 或 Java Heap 指标看不到像素主体
+- **通常体现在 Graphics / GL / memtrack / 驱动相关统计中**：不同 SoC 和 OEM 的可见性不完全一致
+- **仍然属于进程的整体内存压力**：图片很多时，PSS、RSS 或 Graphics 统计仍然会上升
+- **位图不可变**：`Bitmap.Config.HARDWARE` 只适合解码后直接上屏的场景
+
+如果一台设备上 `dumpsys meminfo` 的 `Graphics` 行不明显，不代表 Hardware Bitmap 没有占内存，往往只是记账口径落在了更底层的 memtrack 或驱动统计上。§10.1 对 Graphics / memtrack 的说明可以直接拿来交叉核对。
 
 ### EGL/GL 内存的跟踪
 
-`dumpsys meminfo` 中的 `GL` 和 `Graphics` 行追踪的是 GPU 相关的内存分配。不同版本的跟踪粒度有所差异：
+`dumpsys meminfo` 中的 `GL` 和 `Graphics` 行追踪的是 GPU 相关的内存分配。不同版本和不同厂商的跟踪粒度并不完全一致：
 
-- **Android 7.0 以前**：GPU 内存跟踪不够精确，`Graphics` 行的数值可能低估了实际 GPU 内存使用。
-- **Android 7.0-8.0**：改进了 GPU 内存的统计方式，`Graphics` 行更准确。
-- **Android 9.0+**：引入了更细粒度的 GPU 内存跟踪，可以区分不同类型的 GPU 内存分配。
-- **Android 10+**：`GpuStats` 服务开始收集 GPU 内存使用数据，可以通过 `dumpsys gpu` 查看。
-
-[待验证: 各版本 GPU 内存统计的具体差异，需要参考更多官方文档]
+- **Android 12+**：系统通过 `memtrack` HAL 提供更精确的 GPU 内存计量，`Graphics` 行通常来自 `libmemtrack` API
+- **不同 SoC / OEM**：实现差异仍然存在，同一 App 在不同设备上的 Graphics 数值不能机械横比
 
 ### 对性能分析的影响
 
-在 Perfetto 中分析内存问题时，需要注意 GPU 内存的"隐藏"占用。如果 App 大量使用 Hardware Bitmap 或 Surface（如视频播放、相机预览），GPU 内存可能是内存大户，但在常规的 `dumpsys meminfo` 中可能不够显眼。建议结合 `dumpsys gpu` 和 Perfetto 的 GPU track 一起分析。
+在 Perfetto 中分析内存问题时，不要只盯 Java Heap。大量 Hardware Bitmap、Surface 或视频缓冲区更常落在 Graphics / GL / memtrack 一侧。实践里通常要把 `dumpsys meminfo`、`dumpsys gpu` 和 Perfetto 的进程内存轨道一起看。
 
 关于 Hardware Bitmap 的使用建议，详见 4.5 节「App 内存优化」。
 
-## Android 15+：16KB Page Size 的全面启用
+## Android 15+：16KB Page Size 支持
 
-传统 Android 设备使用 4KB 的内存页面大小，这是 Linux 内核在大多数架构上的默认值。Android 15 引入了 16KB 页面大小的支持，Android 16 开始在高端设备（8GB+ RAM）上默认启用。Google Play 自 2025 年 11 月起强制要求所有新 App 和更新支持 16KB 页面对齐。
+传统 Android 设备长期以 4KB 页面大小为主。Android 15 开始，AOSP 支持配置为 16KB page size 的设备。Google Play 也规定，自 2025 年 11 月 1 日起，面向 Android 15+ 的新应用和现有应用更新，在 64 位设备上都必须支持 16KB page size。至于某一代机型是否默认采用 16KB，要以具体设备配置和厂商发布信息为准，不能直接写成统一的 Android 16 规则。
 
 这个变化的核心动机是 TLB（Translation Lookaside Buffer）效率。TLB 是 CPU 内部缓存页表映射的高速缓存，容量有限。在 12-16GB 内存的高端设备上，4KB 页面意味着需要管理数百万个页表条目，TLB 的命中率会显著下降。切换到 16KB 页面后，页表条目数量减少为原来的四分之一，TLB 命中率大幅提升——这是所有后续性能改善的底层机制。
 
-Google 官方测试的量化数据相当可观：
+Google 官方测试给出的量化结果包括：
 
 - **App 冷启动**平均快 3.16%，在内存压力下最高可达 30%
 - **启动功耗**降低约 4.56%
@@ -475,12 +472,13 @@ Google 官方测试的量化数据相当可观：
 | Android 5.0 | ART 替代 Dalvik，CMS GC + RosAlloc | GC 暂停从 50-100ms 降到 10-20ms；多线程分配性能提升 |
 | Android 8.0 | CC GC 成为默认；Read Barrier | GC 暂停减少 85%，堆大小减少 32%，分配速度提升 70% |
 | Android 8.0 | Bitmap 像素数据迁移到 Native 堆 | Java 堆 OOM 大幅减少；回收机制改为 NativeAllocationRegistry |
-| Android 8.0 | 引入 Hardware Bitmap | GPU 侧存储，不计入 PSS |
+| Android 8.0 | 引入 Hardware Bitmap | 像素常驻 graphic memory；计量通常落在 Graphics / GL / memtrack |
 | Android 10 | 分代 CC GC 成熟 | Young GC 暂停 1-3ms，Full GC 频率大幅降低 |
 | Android 11 | Scudo 替代 jemalloc（64 位大内存设备） | Native 内存安全检测增强，double-free/UAF 可检测 |
-| Android 14+ | MTE 开始在消费级硬件上启用（Pixel 8 首发） | 硬件级内存安全检测，Async 模式开销 1-2% |
-| Android 15 | CMC GC（基于 UFFD）替代 CC GC | 去掉 Read Barrier，GC 不运行时零额外开销 |
-| Android 15 | 16KB Page Size 支持 | TLB 命中率提升；冷启动快 3-16%；App 需适配 NDK r28+ |
+| Android 13 | 部分设备开始支持 MTE；App 可配置 `memtagMode=sync/async` | Native 内存错误可借助硬件检测 |
+| Android 15 | UFFD 驱动的 Mark Compact / CMC 路径进入 AOSP | GC 路线开始从 CC 扩展到 Mark Compact |
+| Android 15 | 16KB Page Size 支持 | 64 位 App 需确认 NDK / 预编译 so 的页大小兼容 |
+| Android 16 QPR2+ | 官方对外明确 Generational CMC | 版本讨论时要与 Android 15 的 Mark Compact 路径分开写 |
 
 [来源: 综合本节各锚点的验证结果汇总]
 
@@ -488,11 +486,11 @@ Google 官方测试的量化数据相当可观：
 
 ### 误区一：Android 8.0 后 Bitmap 不用管了
 
-Bitmap 像素数据迁移到 Native 堆后，确实不占用 Java 堆配额了。但它仍然占用进程的 Native 堆和 PSS。如果 App 有大量图片（如信息流、图片浏览器），Native 内存同样可能被撑爆。系统通过 lmkd 杀进程时看的是 PSS 总量，不会区分 Java 还是 Native。
+Android 8.0 之后，普通 Bitmap 像素数据更多落在 Native Heap，`Bitmap.Config.HARDWARE` 这类位图则把像素放到 graphic memory。两者都不再占用 Java Heap 配额，但都会形成进程整体内存压力。如果 App 有大量图片（如信息流、图片浏览器），进程照样可能因为总内存过高被 lmkd 选中。
 
 ### 误区二：largeHeap 能解决所有内存问题
 
-largeHeap 只是提高了 Java 堆的上限，它不能增加 Native 堆或进程整体内存的配额。如果问题是 Bitmap 过多（Android 8.0+ 占的是 Native 堆）或 Native 内存泄漏，largeHeap 完全帮不上忙。更糟糕的是，更大的 Java 堆意味着 GC 需要扫描更多对象，可能导致更长的暂停时间。
+largeHeap 只是提高了 Java 堆的上限，它不能增加 Native 堆或进程整体内存的配额。如果瓶颈来自 Bitmap 过多（Android 8.0+ 更常体现在 Native Heap 或 Graphics）或 Native 内存泄漏，largeHeap 完全帮不上忙。更糟糕的是，更大的 Java 堆意味着 GC 需要扫描更多对象，可能导致更长的暂停时间。
 
 ### 误区三：Scudo 让 Native 内存更安全了，不用再关心内存问题
 
@@ -500,7 +498,7 @@ Scudo 能检测很多内存安全错误，但它是"检测"而不是"预防"。�
 
 ### 误区四：MTE 开销太大，应该关闭
 
-MTE 的 Async 模式开销只有 1-2%，这在绝大多数场景下可以忽略。Asymm 模式（如果硬件支持）的性能开销与 Async 相当，但对读操作的检测更精确。对于包含 Native 代码的 App，建议至少启用 Async 模式。
+对 App 来说，稳定暴露的 MTE 模式是 `sync` 和 `async`。测试阶段更适合用 `sync` 抓精确出错点，发布阶段是否启用 `async` 要看设备覆盖和 Native 代码稳定性。把 MTE 一律关掉，只会让已经存在的内存破坏继续潜伏。
 
 ## 与其他章节的关联
 
@@ -527,9 +525,11 @@ MTE 的 Async 模式开销只有 1-2%，这在绝大多数场景下可以忽略�
 ### 官方文档
 - [Manage device memory | source.android.com](https://source.android.com/docs/core/perf/art-management)
 - [Managing Bitmap Memory | developer.android.com](https://developer.android.com/topic/performance/graphics/manage-memory)
+- [Bitmap.Config.HARDWARE | developer.android.com](https://developer.android.com/reference/android/graphics/Bitmap.Config#HARDWARE)
 - [Arm MTE on Android | source.android.com](https://source.android.com/docs/security/test/memory-safety/arm-mte)
 - [MTE Guide for NDK | developer.android.com](https://developer.android.com/ndk/guides/arm-mte)
 - [Investigate RAM Usage | developer.android.com](https://developer.android.com/topic/performance/memory)
+- [Support 16 KB page sizes | developer.android.com](https://developer.android.com/guide/practices/page-sizes)
 
 ### 素材来源
 - [Scudo内存分配器介绍](https://cubox.pro/web/card/6881531810761673398)（内核工匠，2022）
