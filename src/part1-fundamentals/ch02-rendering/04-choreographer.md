@@ -44,14 +44,14 @@ polish_count: 1
 polish_date: "2026-04-04"
 polish_by: "task2b-polish"
 status: ready-for-review
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
 review7_date: "2026-04-19"
 review7_by: "openclaw-task6"
 task9_result: needs-rework
-task9_state: reviewed
-task2b_state: pending
+task9_state: pending
+task2b_state: fixed
 task2b_result: fixed
 last_task9_at: "2026-04-19T02:20:00+08:00"
 ---
@@ -220,7 +220,7 @@ void doFrame(long frameTimeNanos, int frame,
 
 ### 读这段代码时先看四个点
 
-第一，方法签名里第二个参数是 `int frame`，不是旧资料里常见的 `vsyncSource`。从 API 33 开始，`doFrame()` 还会收到 `VsyncEventData`，里面带着 `frameInterval`、preferred timeline、deadline 等帧时间线数据。
+第一，方法签名里第二个参数是 `int frame`，不是旧资料里常见的 `vsyncSource`。从 API 33 开始，`doFrame()` 还会收到 `VsyncEventData`，里面带着 `frameInterval`、preferred timeline、deadline 等帧时间线数据。应用侧对应的公开入口是 `postVsyncCallback(VsyncCallback)`，回调参数 `FrameData` 会把这组信息包装成 `getPreferredFrameTimeline()`、`getFrameTimelines()` 和 `FrameTimeline` 上的 `getExpectedPresentationTimeNanos()`、`getDeadlineNanos()`、`getVsyncId()`。
 
 第二，Perfetto 主线程 slice 的名字不是固定的 `Choreographer#doFrame`。AOSP 会把 `timeline.mVsyncId` 拼到 trace 名称后面，所以现代 trace 里常见的是 `Choreographer#doFrame 123456` 这种形式。
 
@@ -306,6 +306,24 @@ choreographer.postFrameCallback(monitor);
 
 `frameTimeNanos` 是这帧对应的 VSync 时间戳，单位是纳秒，来自 monotonic clock，不受系统时间修改影响。连续两次回调的差值，就是主线程感知到的帧间隔。这个值适合做节奏分析，不适合单独拿来判断“哪一段代码慢”，因为它没有拆阶段。
 
+### API 33+ 的公开帧时间线入口
+
+`postFrameCallback(FrameCallback)` 的回调参数仍然只有 `frameTimeNanos`。如果要在应用侧拿 preferred timeline、deadline、vsyncId，入口是 API 33 新增的 `postVsyncCallback(VsyncCallback)`：
+
+```java
+if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+    Choreographer.getInstance().postVsyncCallback(frameData -> {
+        Choreographer.FrameTimeline timeline = frameData.getPreferredFrameTimeline();
+        long frameTimeNs = frameData.getFrameTimeNanos();
+        long expectedNs = timeline.getExpectedPresentationTimeNanos();
+        long deadlineNs = timeline.getDeadlineNanos();
+        long vsyncId = timeline.getVsyncId();
+    });
+}
+```
+
+`frameData` 只在 `onVsync()` 这次回调里有效，不能缓存到回调外再读。需要比较多个候选 timeline 时，再看 `FrameData.getFrameTimelines()` 返回的数组。前面 `doFrame(..., VsyncEventData)` 里提到的 preferred timeline、deadline、vsyncId，到应用侧就对应这套公开对象，不会出现在传统 `FrameCallback#doFrame(long)` 的参数里。
+
 ### FrameMetrics 看阶段耗时
 
 当我们想知道 draw 花了多久、命令提交花了多久、GPU 又花了多久，就要切到 `FrameMetrics`。监听入口在 `Window`，不是 `View`：
@@ -361,7 +379,7 @@ if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
 
 这三层放在一起，才够把问题定位到能改代码的位置。
 
-[已验证: 官方文档, developer.android.com/reference/android/view/Choreographer.FrameCallback; developer.android.com/reference/android/view/Window; developer.android.com/reference/android/view/FrameMetrics]
+[已验证: 官方文档, developer.android.com/reference/android/view/Choreographer.FrameCallback; developer.android.com/reference/android/view/Choreographer.VsyncCallback; developer.android.com/reference/android/view/Choreographer.FrameData; developer.android.com/reference/android/view/Choreographer.FrameTimeline; developer.android.com/reference/android/view/Window; developer.android.com/reference/android/view/FrameMetrics]
 
 
 ## Choreographer 帧调度在 Systrace/Perfetto 中的标记点：Choreographer#doFrame
@@ -421,12 +439,55 @@ FrameTimeline (Actual)    |====|====|=======|      |====|====|====|
 
 以及 **PresentType**（`On-time` 或 `Late`），直接告诉我们帧是否按时呈现。颜色 + JankType + PresentType 三者组合，让 Frame Timeline 成为定位"卡顿到底发生在 App 侧还是系统侧"的入口工具。关于 SurfaceFlinger 侧的帧合成分析，详见 §2.6。
 
-Frame Timeline 的抓取需要包含 `gfx view` 等 atrace category。最简命令：
+Frame Timeline 的抓取分两档。
+
+只想看主线程 `Choreographer#doFrame` 和 `Callback_Traversal` 时，下面这条 atrace 命令就够了：
 
 ```bash
 adb shell perfetto -o /data/misc/perfetto-traces/trace.perfetto-trace -t 15s \
   sched freq idle am wm gfx view binder_driver hal
 ```
+
+如果后面的 SQL 要直接查询 `actual_frame_timeline_slice` / `expected_frame_timeline_slice`，trace 里还要显式打开 `android.surfaceflinger.frametimeline` 数据源。可以用一份 textproto 配置把 atrace 与 Frame Timeline 一起抓下来：
+
+```text
+buffers {
+  size_kb: 65536
+  fill_policy: DISCARD
+}
+
+data_sources {
+  config {
+    name: "linux.ftrace"
+    ftrace_config {
+      ftrace_events: "sched/sched_switch"
+      ftrace_events: "sched/sched_wakeup"
+      ftrace_events: "power/cpu_frequency"
+      ftrace_events: "power/cpu_idle"
+
+      atrace_categories: "am"
+      atrace_categories: "wm"
+      atrace_categories: "gfx"
+      atrace_categories: "view"
+      atrace_categories: "binder_driver"
+      atrace_categories: "hal"
+      atrace_categories: "sched"
+      atrace_categories: "freq"
+      atrace_categories: "idle"
+    }
+  }
+}
+
+data_sources {
+  config {
+    name: "android.surfaceflinger.frametimeline"
+  }
+}
+
+duration_ms: 15000
+```
+
+抓取时先 `adb push config.pbtxt /data/misc/perfetto-configs/config.pbtxt`，再执行 `adb shell perfetto -c /data/misc/perfetto-configs/config.pbtxt --txt -o /data/misc/perfetto-traces/trace.perfetto-trace`。后文的 Frame Timeline SQL 默认建立在第二档配置之上。
 
 [图：Perfetto Frame Timeline Track 截图，标注 Expected/Actual 条形、颜色编码（绿/红/黄）和 JankType 指示器]
 
@@ -486,7 +547,7 @@ LIMIT 50;
 
 第一组查询回答“主线程 doFrame 有没有长”。第二组查询回答“这帧是不是按时 present，以及 jank 被记在哪一类”。两组一起看，才能分清问题停在 App 主线程、RenderThread，还是已经走到 SurfaceFlinger。
 
-[已验证: AOSP android-16.0.0_r1, Choreographer.java trace 名称；Perfetto stdlib docs, actual_frame_timeline_slice / expected_frame_timeline_slice]
+[已验证: AOSP android-16.0.0_r1, Choreographer.java trace 名称；Perfetto stdlib docs, actual_frame_timeline_slice / expected_frame_timeline_slice; perfetto.dev/docs/quickstart/android-tracing]
 
 ## 扩展：基于 FrameCallback 的帧率监控原理
 
@@ -590,18 +651,18 @@ Project Butter 引入 Choreographer。最早的职责就是让 UI 线程的输�
 `Surface.setFrameRate(float, int, int)` 增加 `changeFrameRateStrategy` 参数。`FrameMetrics.GPU_DURATION` 也在这一版进入公开 API，App 侧第一次能直接拿到 GPU 阶段耗时。
 
 **Android 13（API 33）**  
-`doFrame()` 接入 `DisplayEventReceiver.VsyncEventData`。App 侧可以拿到 preferred frame timeline、deadline、vsyncId 这些信息，Perfetto 里的 Frame Timeline 分析也和 App 主线程 slice 对得更紧。
+`doFrame()` 接入 `DisplayEventReceiver.VsyncEventData`，公开 API 也同步增加 `postVsyncCallback(VsyncCallback)`、`FrameData` 和 `FrameTimeline`。应用侧从 `FrameData.getPreferredFrameTimeline()`、`FrameTimeline.getExpectedPresentationTimeNanos()`、`getDeadlineNanos()`、`getVsyncId()` 读取这组帧时间线信息，Perfetto 里的 Frame Timeline 也从这一版开始更容易和 App 主线程 slice 关联起来。
 
-后面几个版本主要是在高刷新率、帧率 override、Frame Timeline 指标和 trace 可观测性上继续补细节。本节真正需要记住的分界线有四个：API 24 看 FrameMetrics，API 30 看 InsetsAnimation 和两参 `setFrameRate`，API 31 看三参 `setFrameRate` 与 `GPU_DURATION`，API 33 看 `VsyncEventData`。
+后面几个版本主要是在高刷新率、帧率 override、Frame Timeline 指标和 trace 可观测性上继续补细节。本节真正需要记住的分界线有四个：API 24 看 FrameMetrics，API 30 看 InsetsAnimation 和两参 `setFrameRate`，API 31 看三参 `setFrameRate` 与 `GPU_DURATION`，API 33 看 `VsyncCallback` / `FrameData` / `FrameTimeline` 这组公开入口。
 
-[已验证: 官方文档, developer.android.com/reference/android/view/Window; developer.android.com/reference/android/view/FrameMetrics; developer.android.com/reference/android/view/Surface; developer.android.com/reference/android/view/WindowInsetsAnimation; AOSP android-16.0.0_r1, Choreographer.java]
+[已验证: 官方文档, developer.android.com/reference/android/view/Window; developer.android.com/reference/android/view/FrameMetrics; developer.android.com/reference/android/view/Surface; developer.android.com/reference/android/view/WindowInsetsAnimation; developer.android.com/reference/android/view/Choreographer.VsyncCallback; developer.android.com/reference/android/view/Choreographer.FrameData; developer.android.com/reference/android/view/Choreographer.FrameTimeline; AOSP android-16.0.0_r1, Choreographer.java]
 
 
 ## 常见问题与误区
 
 ### "Choreographer 只管 UI 线程吗？"
 
-是的。每个 `Choreographer` 实例与一个 `Looper` 绑定，而 `Choreographer.getInstance()` 返回的是主线程 Looper 对应的实例。所以默认情况下，Choreographer 的所有回调都在主线程执行。如果我们需要在后台线程做帧同步（比如视频渲染），需要创建独立的 `Choreographer`（通过 `Choreographer.getSfInstance()` 获取 SurfaceFlinger 进程的实例，但这通常只对系统进程可用）。
+每个 `Choreographer` 实例都绑定到创建它的 `Looper`。`Choreographer.getInstance()` 的语义是“返回调用线程对应的实例”，前提是当前线程已经准备好 `Looper`。主线程最常见，所以日常讨论常把 `Choreographer` 和 UI 线程放在一起；后台线程如果先 `Looper.prepare()`，再在该线程调用 `getInstance()`，同样可以使用这一线程上的帧回调。`getSfInstance()` 是隐藏且已废弃的内部入口，用来在当前线程上拿到基于 SF vsync source 的 `Choreographer`，不应写成应用侧实践建议。
 
 ### "doFrame 超时就是卡顿吗？"
 
@@ -617,7 +678,7 @@ Project Butter 引入 Choreographer。最早的职责就是让 UI 线程的输�
 
 Choreographer 是帧调度器，不是帧率控制器。它的工作是“在 VSync 到来时执行回调”，而不是“以某个帧率执行回调”。实际帧率取决于回调耗时和 VSync 的频率。如果我们需要做帧率控制（比如游戏固定 30FPS），需要在 `FrameCallback` 内部自行计算跳帧逻辑，或者使用 `Surface.setFrameRate()` 表达帧率偏好，让 SurfaceFlinger 做出调度决策。
 
-[已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/view/Choreographer.java]
+[已验证: 官方文档, developer.android.com/reference/android/view/Choreographer; AOSP android-16.0.0_r1, frameworks/base/core/java/android/view/Choreographer.java]
 
 ## 与其他机制的关系
 
