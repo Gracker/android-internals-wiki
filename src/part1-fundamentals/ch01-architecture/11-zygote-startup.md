@@ -42,13 +42,12 @@ sources:
     path: "https://developer.android.com/reference/android/app/ZygotePreload"
 tags: [zygote, fork, startup, preload, cow, usap, app-zygote, webview]
 related_chapters: ["1.2", "1.3", "8.2", "8.3"]
-pipeline_stage: task6_pending
+pipeline_stage: task2b_pending
 task6_state: revisiting
 task6_result: needs-rework
-task9_state: pending
+task9_state: reviewed
 task9_result: needs-rework
-task2b_state: fixed
-task2b_result: fixed
+task2b_state: pending
 ---
 
 # 1.11 Zygote 机制与启动性能优化
