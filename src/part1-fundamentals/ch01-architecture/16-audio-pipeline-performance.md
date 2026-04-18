@@ -29,10 +29,12 @@ sources:
     path: "intake/research-feeds/2026-04-08-15-android17-background-audio-hardening-audio-focus.md"
   - type: research
     path: "intake/research-feeds/2026-04-08-15-android17-audiotrack-api-assistant-volume-stream.md"
-pipeline_stage: task2b_pending
+pipeline_stage: task6_pending
 task6_state: revisiting
-task9_state: reviewed
-task2b_state: pending
+task9_state: pending
+task2b_state: fixed
+task2b_result: fixed
+last_task2b_at: "2026-04-18T19:04:25+08:00"
 task9_reviewed_date: "2026-04-18"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-04-18T17:55:02+08:00"
@@ -199,28 +201,29 @@ AAudio 的核心设计原则是简洁：创建流（`AAudioStream`）、写入�
 
 [已验证: developer.android.com/ndk/guides/audio/aaudio]
 
-### MMAP 模式：直接写入硬件缓冲区
+### MMAP 模式：把数据面压平，但控制面还在
 
-Android 8.1 引入了 MMAP（Memory Mapped）模式，这是 Android 音频延迟优化的终极武器。
+Android 8.1 引入了 MMAP（Memory Mapped）模式。它缩短的是数据面的搬运路径，不是把 audioserver 完全拿掉。
 
-在传统路径中，音频数据需要经过：App 缓冲区 → Binder IPC → AudioFlinger 混音 → HAL 缓冲区 → 硬件。每经过一层，延迟就多积累一些。
+传统 PCM 播放通常是：
 
-MMAP 模式改变了这个流程。App 通过内存映射直接与 ALSA 驱动共享一个缓冲区，写入的数据直接被硬件消费。在 EXCLUSIVE 模式下，AudioFlinger 的混音器完全被绕过：
-
-```
-传统路径:  App → AudioFlinger → HAL → 硬件    (~20-50ms)
-FAST路径:  App → FastMixer → HAL → 硬件       (~10-20ms)
-MMAP路径:  App → [共享内存] → 硬件              (~5-10ms)
+```text
+数据面: App 缓冲区 → Binder / 共享内存 → AudioFlinger Mixer → HAL 缓冲区 → DSP / Codec
 ```
 
-[已验证: 来源见 research-feeds/2026-04-08-15-audioflinger-fast-mixer-aaudio-mmap-pipeline-architecture.md，引用 Google AOSP 文档]
+MMAP 打开后，App 仍然要先通过 AAudio / Oboe 向 audioserver 内的 AAudioService 申请 endpoint，由 service 和 HAL 协商设备、采样率、buffer 大小、timestamp 与 xrun 统计。变化主要发生在数据面：
 
-MMAP 模式有两个子模式：
+```text
+控制面: App → AAudio / Oboe → AAudioService / AudioFlinger → Audio HAL → MMAP endpoint
+数据面（SHARED）: App → audioserver 侧 timing model / mixer → MMAP buffer → DSP / Codec
+数据面（EXCLUSIVE）: App → MMAP buffer → DSP / Codec
+```
 
-- **SHARED 模式**：AudioServer 仍然参与管理，但使用 MMAP 缓冲区替代传统的 Binder 传输。延迟比传统路径低，但不是最低。
-- **EXCLUSIVE 模式**：App 独占硬件缓冲区，AudioServer 混音器完全绕过。这是延迟最低的路径。
+SHARED 模式仍然保留 audioserver 侧的 timing model 和混音管理，只是把传统的多级拷贝换成 MMAP buffer。EXCLUSIVE 模式会绕过普通 mixer，让单个 App 独占 endpoint，但 stream 的打开、状态切换、设备路由和错误恢复仍然经过 service / HAL 控制通道。
 
-MMAP 模式的效果高度依赖硬件厂商的实现——不是所有设备都支持。这也是为什么同样的 AAudio 代码在不同设备上延迟差异巨大的原因。
+所以 `App → 驱动` 只适合描述 EXCLUSIVE 模式下的数据面，不能拿来概括整个 MMAP 机制。MMAP 的收益也不是无条件成立，设备不支持、format 不匹配、endpoint 被占用时，AAudio / Oboe 仍会回退到 FAST 或 Normal 输出。
+
+[已验证: AAudio 文档、AOSP audio latency 文档与 `frameworks/av/media/libaaudio/service/`]
 
 ### Oboe：Google 推荐的跨版本封装
 
@@ -272,7 +275,7 @@ ORDER BY slice.ts
 | 音频断续 | AudioFlinger 线程执行间隔不均匀 | CPU 被其他高优先级任务抢占 |
 | 延迟过大 | App write → 声音输出间隔过长 | 走了 Normal Mixer 路径而非 FAST |
 | Underrun | AudioFlinger 读取时缓冲区为空 | App 写入不及时或缓冲区太小 |
-| 后台音频卡顿 | AudioFlinger 线程被冻结 | Android 17 后台限制（见下节） |
+| 后台音频卡顿 | App 侧 write/callback 停止，随后 track 在 `dumpsys audio` 中变为 inactive 或被 teardown | Android 17 后台限制、前台服务 / WIU 状态不满足 |
 
 [图：Perfetto 中音频 underrun 的 Trace 表现，标注缓冲区空的时间段]
 
@@ -311,7 +314,7 @@ adb logcat -s AudioHardening
 adb dumpsys audio
 ```
 
-**对性能分析的影响**：这个变更可能导致一些意想不到的性能表现。例如，App 被冻结后意外恢复音频会触发运行时限制波动，表现为短暂的音频卡顿后突然静音。在 Perfetto 中，这看起来像是 AudioFlinger 线程先恢复正常执行、随后又停止——需要在 logcat 中配合 AudioHardening 日志才能准确诊断。
+**对性能分析的影响**：这个变更的主体是 app 生命周期与音频 API 可用性，不是 AudioFlinger 线程被冻结。Perfetto 里更常见的现象是应用自己的写入线程、AAudio callback 或播放器工作线程先停止推数据，随后对应 track 在 `dumpsys audio` 里变成 inactive，必要时还会被 teardown。定位这类问题时，先对照 `logcat -s AudioHardening` 看是否命中后台限制，再用 `dumpsys audio` 核对 output / track 状态，再回看 trace 中的 app 写入停止时点。
 
 ### AudioTrack 新增精确 Flush 控制
 
@@ -337,11 +340,24 @@ Android 17 引入了 `USAGE_ASSISTANT` 专用音量流，将语音助手的音�
 
 [已验证: research-feeds/2026-04-08-15-android17-audiotrack-api-assistant-volume-stream.md]
 
-### AAudio Offload 支持
+### 四类 output path 放在一起看
 
-Android 16 起支持 AAudio Offload，允许通过 AAudio 直接将压缩音频数据（如 AAC/MP3）透传至硬件 DSP 解码。这意味着 CPU 不再需要参与解码过程，在长音频播放场景下可以节省可观的功耗。
+前面已经出现 FAST、MMAP、offload 这几个词，如果不放在同一张表里，很容易把低延迟播放和省电播放写混。
 
-[待验证: AAudio Offload 的 API 入口、编解码格式覆盖范围与设备支持矩阵，仍需结合 Android 16/17 API diff 与实机再核实]
+| 输出类型 | 典型线程 / 组件 | 常见 payload | 目标 | 常见入口 |
+|----------|-----------------|-------------|------|----------|
+| Normal | `MixerThread` / `PlaybackThread` | PCM | 兼容性、通用播放 | 默认 `AudioTrack` / AAudio 输出 |
+| Fast | `FastMixer` + fast track | 与设备 mix port 匹配的 PCM | 降低输出延迟 | `PERFORMANCE_MODE_LOW_LATENCY`，且 output profile / sample rate / frame count / slot 条件满足 |
+| MMAP | `MmapPlaybackThread` / MMAP endpoint | PCM | 压低 round-trip latency | AAudio / Oboe 请求 MMAP shared 或 exclusive，设备需支持 |
+| Direct / Offload | `DirectOutputThread` / `OffloadThread` | 以压缩音频为主，部分新平台资料还提到 offloaded PCM [待验证] | 降低 CPU 唤醒和长时播放功耗 | `AudioTrack.Builder.setOffloadedPlayback(true)`；AAudio offloaded playback 入口见下文 [待验证] |
+
+`flushWrittenFramesFromPosition()` 和 `getCodecProvenance()` 这类 API 应放在 Direct / Offload 这一栏理解。它们服务的是 seek、codec 来源保留、power-saving playback 这类问题，不属于 MMAP low-latency 方案。
+
+### AAudio offloaded playback 的边界
+
+现有公开资料已经出现 AAudio offloaded playback / `AAUDIO_PERFORMANCE_MODE_POWER_SAVING_OFFLOADED` 这类能力描述，但 API level、支持格式、PCM/压缩边界和设备覆盖范围还要结合 Android 16/17 API diff 与实机确认。现阶段更稳妥的理解是：它请求的是省电型 output path，不是低延迟 MMAP；讨论它时要单独看 output profile、offload capability 和 `dumpsys audio` 中的 offload output 状态。
+
+[待验证: AAudio offloaded playback 的最终 API 入口、最小 API level、payload 支持范围]
 
 ## API 选择指南
 
@@ -379,7 +395,7 @@ Audio Pipeline 与全书其他章节的关联点：
 | Android 9 | HIDL Audio HAL 仍是主流实现 | 低延迟能力仍主要取决于厂商 HAL 质量 |
 | Android 12 | AIDL Audio HAL 已可用于新实现，迁移开始进入可用阶段 | 为后续模块化迁移铺路 |
 | Android 14 | 平台明确鼓励迁移到 AIDL，framework 同时支持 HIDL/AIDL；Android 14 之后的新 HAL API 只继续加到 AIDL | 降低后续音频 HAL 演进分叉 |
-| Android 16 | AAudio Offload 支持 | 压缩音频可更早进入 DSP 路径，降低 CPU 功耗 |
+| Android 16+ [待验证] | 平台资料出现 AAudio offloaded playback / power-saving offloaded 能力 | 更偏长音频省电播放，需要按设备支持范围确认 |
 | Android 17 | 后台音频强化 + 精确 flush + codec provenance | 后台播放约束更严，播放控制更细 |
 
 [待验证: Android 9/12 的迁移节奏在不同 SoC 上差异很大，表中描述的是平台方向，不等于所有设备在对应版本统一完成迁移]
@@ -392,7 +408,7 @@ Audio Pipeline 与全书其他章节的关联点：
 
 **误区：Java AudioTrack 的延迟总是比 AAudio 高。**
 
-不完全准确。AudioTrack 在设置 `PERFORMANCE_MODE_LOW_LATENCY` 后，也会走 FAST Mixer 路径。在这种情况下，Java 层的开销主要是 JNI 跨调用的成本（约 100-200 微秒），在总延迟中占比很小。真正的延迟差异来自 API 的灵活性——AAudio 可以直接配置 MMAP EXCLUSIVE 模式，而 AudioTrack 不支持。
+这句话下得过满。`AudioTrack` 把 `PERFORMANCE_MODE_LOW_LATENCY` 作为低延迟请求交给策略层和 `PlaybackThread::createTrack_l()`，只有 output profile 带 `AUDIO_OUTPUT_FLAG_FAST`，并且 sample rate、frame count、fast track slot 条件都满足时，才有机会进入 fast path。条件不满足时，它仍然回到 Normal Mixer。AAudio 的优势主要在于 API 更接近 MMAP 以及新平台上的 offloaded playback 请求，不在于“Java 一定慢”。
 
 **误区：音频延迟只与缓冲区大小有关。**
 
