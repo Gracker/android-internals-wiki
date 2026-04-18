@@ -1,23 +1,33 @@
 ---
-title: "Hardware Buffer Renderer"
-chapter: "18.17"
+title: Hardware Buffer Renderer
+chapter: 18.17
 status: ready-for-review
-applicable_versions: "Android 14 (API 34) - Android 16 (API 36)"
-tags: ["HardwareBufferRenderer", "离屏渲染", "GPU", "RenderNode", "HDR", "BLAST", "渲染链路"]
-related_chapters: ["2.5", "2.10", "18.2"]
-created_by: "rendering-pipelines-merge"
-created_date: "2026-04-09"
+applicable_versions: Android 14 (API 34) - Android 16 (API 36)
+tags:
+  - HardwareBufferRenderer
+  - 离屏渲染
+  - GPU
+  - RenderNode
+  - HDR
+  - BLAST
+  - 渲染链路
+related_chapters:
+  - 2.5
+  - 2.10
+  - 18.2
+created_by: rendering-pipelines-merge
+created_date: 2026-04-09
 pipeline_stage: task6_pending
 task6_state: revisiting
 task9_state: pending
 task2b_state: fixed
-task2b_result: "fixed"
-reviewed_by: "openclaw-task6"
-reviewed_date: "2026-04-18"
-task6_result: "needs-rework"
-task9_result: "needs-rework"
-task9_reviewed_date: "2026-04-18"
-task9_reviewed_by: "openclaw-task9"
+task2b_result: fixed
+reviewed_by: openclaw-task6
+reviewed_date: 2026-04-18
+task6_result: needs-rework
+task9_result: needs-rework
+task9_reviewed_date: 2026-04-18
+task9_reviewed_by: openclaw-task9
 ---
 
 <!-- outline-start -->
@@ -49,7 +59,7 @@ task9_reviewed_by: "openclaw-task9"
 
 ## 核心架构
 
-`HardwareBufferRenderer` 面向的是 “RenderNode → HardwareBuffer → SurfaceControl.Transaction.setBuffer()” 这条 direct buffer 提交模型。`queueBuffer()` / BLAST 只会在目标对象本身还挂在标准窗口生产者-消费者体系后面时出现。
+把 `HardwareBufferRenderer` 放到整体渲染流程里看，定位会更稳。标准 View 硬件渲染由 `ViewRootImpl` 按 VSync 驱动，`RenderNode` 录制、`RenderThread` 调度、窗口 buffer 提交都在框架管理范围内。`HardwareBufferRenderer` 只接管离屏光栅化这一段，调用方要先准备 `HardwareBuffer`，录好 `RenderNode`，再触发一次 GPU 绘制。
 
 ```mermaid
 graph LR
@@ -77,11 +87,14 @@ graph LR
     BQ -. 再进入窗口提交流程 .-> SF
 ```
 
-这里分成三件事看最稳妥：
+这套模型把两件事改清楚了。光栅化从 CPU 写像素换成 GPU 写 `HardwareBuffer`，buffer 的归属也回到了调用方手里。software Canvas 拿到的是已经挂在 `Surface` / BufferQueue 后面的生产者入口，`unlockCanvasAndPost()` 之后的提交、同步、复用沿着窗口体系继续往下走。HBR 拿到的是一块独立 `HardwareBuffer`，提交目标和回收时机都要自己安排。要直接上屏，就走 `SurfaceControl.Transaction.setBuffer()`；要接回窗口体系，才会再碰到 `queueBuffer()` 或 BLAST。
 
-1. **HBR 只负责离屏 GPU 光栅化**：它把 `RenderNode` 树画进 `HardwareBuffer`，不会自动把 buffer 送到某个 `Surface`。
-2. **提交动作由调用方决定**：最直接的做法是 `SurfaceControl.Transaction.setBuffer()`；只有目标对象后面仍挂着 `Surface`、`SurfaceView`、BLASTBufferQueue 这类生产者时，才会再看到 `queueBuffer()`。
-3. **buffer 不会被自动清空**：`HardwareBufferRenderer` 每次 draw 前都不会替你 clear 旧内容。单 buffer 复用时，要么每帧完整覆盖，要么自己显式清屏。[已验证: `HardwareBufferRenderer.java` 注释]
+排查时把职责拆开，判断会直接很多：
+
+1. **HBR 负责把 `RenderNode` 树画进 `HardwareBuffer`**，不负责选 consumer，也不负责安排下一次 draw。
+2. **执行阶段仍会落到硬件渲染栈**。Perfetto 里通常还能看到 app 进程的 `RenderThread` 和对应 GPU 工作，触发者从 `ViewRootImpl` 帧循环变成了 `RenderRequest.draw()`。
+3. **提交与复用是另一层职责**。transaction 何时 `apply()`、buffer 何时能重用、是否需要多 buffer 池，都要靠调用方配套处理。
+
 
 ## API 使用
 
@@ -168,13 +181,21 @@ Android 10-15 只有 `ASurfaceTransaction_setBuffer()`。这几个版本里，`O
 
 ## 性能对比
 
+`HardwareBufferRenderer` 主要用于 CPU 光栅化已经成为主要成本的离屏绘制工作负载。大尺寸 PDF 页面、复杂 path、频繁缩放的 bitmap、wide color 或 HDR 离屏输出，通常更容易从 GPU 光栅化里受益。纯色块、简单文本或低分辨率静态内容，切到 HBR 后差距可能很小，事务提交和 buffer 同步还可能变成额外开销。
+
+仓库里还没有同一设备、同一 workload 的 A/B benchmark 记录，下面只保留定性判断，定量数据继续标记为 `[待验证: 需补同设备 trace 或 benchmark 条件]`。
+
 | 维度 | `lockCanvas()` | `HardwareBufferRenderer` |
 |:---|:---|:---|
 | 光栅化位置 | CPU 直接写入 dequeued `GraphicBuffer` | GPU 直接写入 `HardwareBuffer` |
-| buffer 提交 | `unlockCanvasAndPost()` → BufferQueue / BLAST | `SurfaceControl.Transaction.setBuffer()`；必要时再接回 `Surface` / BLAST |
-| wide color / HDR | software Canvas 不提供 FP16 GPU render target | 可输出 `RGBA_FP16` / wide color buffer；HDR 还要配合 dataspace、display capability 和 compositor 支持 |
-| 线程模型 | 调用线程串行写像素 | `RenderRequest` 非线程安全；buffer / fence 复用要由调用方同步 |
-| 同步信号 | acquire / release fence 多由 `Surface` / BufferQueue 维护 | `RenderResult.getFence()` 管 consumer 读取时机，release callback / release fence 管 buffer 再利用 |
+| 提交路径 | `unlockCanvasAndPost()` → BufferQueue / BLAST | `SurfaceControl.Transaction.setBuffer()`；需要时再接回 `Surface` / BLAST |
+| 颜色输出 | software Canvas 通常受限于软件绘制能力 | 可输出 `RGBA_FP16` / wide color buffer；HDR 还要配合 dataspace、display capability 和 compositor 支持 |
+| CPU 占用 | 复杂绘制直接占用调用线程 | CPU 侧压力通常下降，但 GPU 与 driver 负载会上升 |
+| 调度责任 | `Surface` / BufferQueue 负责大部分提交节奏 | 调用方要自己安排 `draw()` 频率、transaction 提交和 buffer 池 |
+| 同步与复用 | acquire / release 多由 `Surface` / BufferQueue 维护 | `RenderResult.getFence()` 管 consumer 读取时机，release callback / release fence 管 buffer 再利用 |
+
+做 A/B 时，至少固定四个条件：设备型号与 GPU、Android 版本、buffer 尺寸和格式、绘制内容复杂度与目标帧率。少掉任一项，表里的结论只能当方向判断，不能当预算数字。
+
 
 ## 渲染时序
 
@@ -222,10 +243,21 @@ sequenceDiagram
 
 ## 适用场景
 
-1. **自定义离屏 GPU 绘制**：PDF 页面、矢量图编辑器、自绘 UI 卡片，需要把 CPU 光栅化换成 GPU。
-2. **direct SurfaceControl layer 输出**：系统浮层、桌面组件、跨进程内容卡片，需要自己控制 `SurfaceControl`、buffer 和 fence。
-3. **跨进程 buffer 共享**：`HardwareBuffer` 可通过 Binder 传递，producer 与 consumer 不必围着同一个 `Surface` 工作。
-4. **wide color / HDR 输出**：需要 FP16 buffer、明确 dataspace、自己掌控 color pipeline 的场景。
+### CPU 光栅化已经吃紧的离屏绘制
+
+当离屏内容本身就是矢量、路径、滤镜或大图缩放，`lockCanvas()` 的成本会直接落到调用线程。HBR 把这段工作交给 GPU，更适合 PDF 页面缩略图、自绘卡片、复杂贴纸编辑器这类场景。
+
+### 需要自己控制 layer 提交节奏的模块
+
+如果业务本来就拿着 `SurfaceControl` 做 layer 管理，例如系统浮层、桌面卡片、远端内容镜像，HBR 输出 `HardwareBuffer` 后可以直接 transaction 提交，少绕一层 `Surface`。
+
+### 需要跨进程共享 buffer 的模块
+
+`HardwareBuffer` 能通过 Binder 传递。producer 进程离屏画完，consumer 进程拿到同一块 buffer 再做显示或二次处理，适合内容卡片、远程渲染、系统服务代绘这类模型。
+
+### 需要 wide color 或 HDR 离屏结果的内容
+
+software Canvas 很难覆盖 FP16 render target、dataspace 和 layer 级颜色控制。HBR 配合 `RGBA_FP16`、`setDataSpace()` 和显示能力探测，更适合图片编辑、相册预览、HDR UI 混排。
 
 ### wide color 与 HDR 要分开看
 
@@ -236,6 +268,7 @@ sequenceDiagram
 3. 设备不支持时，系统可能回退成 SDR 合成、tone mapping，或者只把它当成普通 wide color buffer 处理。
 
 `DISPLAY_P3` 只能说明 wide color gamut，不能替代 HDR capability。Android 15 / API 35 之后还有 `setDesiredHdrHeadroom()` 这类 layer 亮度 hint，可继续细化 HDR 合成目标，但前提仍是下游显示系统支持。[已验证: `HardwareBuffer.java` / `SurfaceControl.java`]
+
 
 ## 降级策略
 
@@ -253,16 +286,49 @@ if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
 
 ## 在 Perfetto 中识别
 
-[待补充：需补充实际 Perfetto Trace 截图描述和具体的 Track 名称]
+看 HBR 时不要只盯 GPU 轨道，按“发起 draw → `RenderThread` / GPU → transaction 提交 → `SurfaceFlinger` latch”这几段找证据会更稳。
 
-| 位置 | 说明 |
-|:---|:---|
-| GPU Track | 看到 GPU 光栅化到特定 Buffer（非主窗口 Buffer） |
-| SurfaceFlinger | 通过 SurfaceControl Transaction 提交的额外 Layer |
+- **调用线程**：先在 app 进程里找到执行 `RenderRequest.draw()` 的线程。持续动画若卡在这里，多半是在等可复用 buffer，或者上层业务还没把 `RenderNode` 录制完。
+- **`RenderThread`**：HBR 没有绕过硬件渲染栈。trace 里通常还能看到 app 进程 `RenderThread` 的工作片段。这里忙而调用线程很轻，说明时间主要花在 GPU 光栅化。
+- **GPU 轨道**：把 GPU slice 放到同一个 `draw()` 时间窗里看。GPU slice 很长，离屏内容本身通常偏重；GPU slice 很短但结果仍晚到，开销多半在 transaction 提交或 buffer 复用。
+- **`SurfaceFlinger` 与 layer**：direct `setBuffer()` 场景里，会看到目标 layer 在 transaction 后进入 `SurfaceFlinger` 的 latch / present 节奏。acquire fence 等待长，说明 producer 完成晚。
+- **BufferQueue / BLAST 轨道**：只有把 HBR 结果接回 `Surface`、`SurfaceView` 或 BLASTBufferQueue 时，才会出现熟悉的 dequeue/queue 节奏。看到这组轨道，就说明这次不是纯 transaction 直提交流程。
+
+| 想确认的现象 | 优先看的位置 | 常见信号 |
+|:---|:---|:---|
+| 调用线程是否在等可复用 buffer | app 进程业务线程 / executor | `draw()` 触发点稀疏，线程被 fence 或锁等待截断 |
+| GPU 光栅化是否过重 | app 进程 `RenderThread` + GPU 轨道 | 同一时间窗内两侧 slice 都拉长 |
+| transaction 是否提得太晚 | `SurfaceFlinger` + 目标 layer | layer 进入 SF 的时间明显晚于业务触发时间 |
+| 是否又走回 BufferQueue | BufferQueue / BLAST 轨道 | 出现 dequeue / queue 节奏 |
+
+如果 trace 配置里打开了 FrameTimeline 或 `SurfaceFlinger` 数据源，排查顺序通常是：先用 layer 名确认目标 buffer 有没有进 SF，再回到 app 进程看 `RenderThread` 和调用线程，再看 GPU 时间窗。
+
+## 常见问题与误区
+
+### 把 acquire fence 当成 buffer 已可重用
+
+`RenderResult.getFence()` 只说明 consumer 什么时候能开始读这块 buffer，不说明 producer 什么时候能安全覆写。可重用时机要看 release callback 或 release fence。
+
+### 单 buffer 连续覆写却没有完整覆盖或 clear
+
+HBR 不会自动清旧内容。单 buffer 方案下，只改一部分像素又没有显式 clear，很容易把上一帧残留带到下一帧。
+
+### 把 HBR 当成窗口帧调度器
+
+`RenderRequest.draw()` 只是一次离屏绘制请求，不会自动接入 `Choreographer` 的帧节奏。持续动画仍要自己安排触发频率、buffer 池和回收时机。
+
+### 多线程同时操作同一个 `RenderRequest` 或 `HardwareBuffer`
+
+`RenderRequest` 不是线程安全对象。draw 触发、transaction 提交、buffer 回收如果分散在多线程又没有串行化，同一块 buffer 很容易被重复提交，回调顺序也会和业务状态错位。
+
+### 只配 `RGBA_FP16` 不配 dataspace 和显示能力
+
+FP16 只解决精度问题，显示侧仍要看 dataspace、display capability、HWC 合成能力。设备不满足条件时，结果可能只是 wide color，甚至直接回退成 SDR。
 
 ## 与其他章节的关系
 
-HardwareBufferRenderer 的底层机制与标准 Android View 渲染链路（18.2）共享 RenderNode + GPU 光栅化的基础设施，区别在于标准链路通过 RenderThread 自动管理，而 HardwareBufferRenderer 需要调用方手动控制 HardwareBuffer 的生命周期和提交时机。GPU 光栅化的底层工作原理详见 2.10 GPU 渲染深入。
+HardwareBufferRenderer 与 §18.2 的共同点，是两者都复用 `RenderNode` 和 app 进程里的硬件渲染栈，Perfetto 里也都可能落到 `RenderThread`。差别在调度边界。标准 View 路径由 `ViewRootImpl`、`Choreographer`、窗口系统串成完整帧循环；HBR 只借用其中的离屏 GPU 光栅化能力，buffer 分配、transaction 提交和回收都留给调用方。GPU 执行细节可继续看 §2.10，标准窗口提交路径可回看 §18.2。
+
 
 ## 参考资料
 
