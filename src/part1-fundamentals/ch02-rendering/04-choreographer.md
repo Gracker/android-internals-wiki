@@ -6,7 +6,7 @@ drafted_date: "2026-03-30"
 applicable_versions: "Android 12 (API 31) - Android 16 (API 36)"
 last_verified: "2026-04-11"
 last_verified_against: "AOSP android-16.0.0_r1"
-reviewed_date: "2026-04-11"
+reviewed_date: "2026-04-19"
 reviewed_by: "openclaw-task6"
 review2_date: "2026-04-02"
 review2_by: "openclaw-task6"
@@ -44,9 +44,11 @@ polish_count: 1
 polish_date: "2026-04-04"
 polish_by: "task2b-polish"
 status: ready-for-review
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task6_result: pass-light-edit
+review7_date: "2026-04-19"
+review7_by: "openclaw-task6"
 task9_result: needs-rework
 task9_state: pending
 task2b_state: fixed
@@ -82,7 +84,7 @@ task2b_result: fixed
 
 ## 开头：为什么要了解 Choreographer
 
-滑动屏幕时，有时丝般顺滑，有时却莫名卡顿；点击按钮时，有时立即响应，有时却要等待半拍。这些看似简单的用户体验差异，背后都隐藏着一个至关重要的协调者——Choreographer。
+滑动屏幕时，有时丝般顺滑，有时却莫名卡顿；点击按钮时，有时立即响应，有时却要等待半拍。这些看似简单的用户体验差异，背后都有一个共同的协调者——Choreographer。
 
 如果没有 Choreographer，每个 UI 操作都会立即触发渲染，App 的绘制和 SurfaceFlinger 的合成会抢夺 VSync 信号，导致画面撕裂或者浪费刷新周期。Choreographer 的工作是确保在 60Hz 屏幕上每个 16.6ms 的 VSync 周期内，Input、Animation、Traversal 各个环节都能按部就班地完成，最终呈现给用户一个完整的帧。
 
@@ -401,7 +403,7 @@ FrameTimeline (Actual)    |====|====|=======|      |====|====|====|
                           V0   V1   V2   延迟呈现   V3   V4   V5
 ```
 
-**Track 命名**：在 Perfetto UI 中，Frame Timeline 的 Track 名称通常是 `FrameTimeline`，展开后可见 Expected 和 Actual 两个子 Track。Expected Timeline 的每个 slice 起始时间并非简单的 VSYNC-app 时刻，而是平台综合了 VSync offset、SurfaceFlinger 合成时间、Display 显示延迟后计算出的"最优帧呈现时间窗口"。这就是为什么 Expected Timeline 的 slice 与主线程 Track 中的 VSYNC-app 信号之间存在可观测的时间差。
+**Track 命名**：在 Perfetto UI 中，Frame Timeline 的 Track 名称通常是 `FrameTimeline`，展开后可见 Expected 和 Actual 两个子 Track。Expected Timeline 的每个 slice 起始时间比 VSYNC-app 时刻更晚，因为平台综合了 VSync offset、SurfaceFlinger 合成时间、Display 显示延迟后才算出"最优帧呈现时间窗口"。这就是为什么 Expected Timeline 的 slice 与主线程 Track 中的 VSYNC-app 信号之间存在可观测的时间差。
 
 **颜色编码规则**是 Frame Timeline 最实用的分析入口：
 
@@ -532,7 +534,7 @@ Jetpack Compose 的渲染管线分为三个阶段——Composition（确定“�
 
 ### AndroidUiDispatcher 与 Choreographer 的桥接
 
-Compose 通过 `AndroidUiDispatcher` 将协程调度与 Choreographer 的帧节奏绑定。这个 Dispatcher 实现了 `MonotonicFrameClock`，让 `withFrameNanos` 等挂起函数能精确等待 VSync 信号。在 Compose 中写 `LaunchedEffect` 并在内部使用 `animate*AsState` 时，动画帧的更新时机本质上还是由 Choreographer 的 VSync 回调驱动——只是 Compose 在上层把这些细节封装成了声明式 API。
+Compose 通过 `AndroidUiDispatcher` 将协程调度与 Choreographer 的帧节奏绑定。这个 Dispatcher 实现了 `MonotonicFrameClock`，让 `withFrameNanos` 等挂起函数能精确等待 VSync 信号。在 Compose 中写 `LaunchedEffect` 并在内部使用 `animate*AsState` 时，动画帧的更新时机仍然由 Choreographer 的 VSync 回调驱动——只是 Compose 在上层把这些细节封装成了声明式 API。
 
 Compose 1.10（2025 年 12 月稳定版）引入了“可暂停组合”（Pausable Composition），这是一个对帧调度有重大影响的改进。在此之前，Composition 阶段是原子操作——要么一帧内全部完成，要么整帧掉帧。如果 UI 树复杂度高，Composition 可能耗时数毫秒甚至十毫秒以上，超出帧预算后只能放弃这一帧。
 
