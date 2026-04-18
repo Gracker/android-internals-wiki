@@ -26,14 +26,14 @@ sources:
     path: "frameworks/base/core/res/res/values/attrs_manifest.xml"
 tags: [multiwindow, desktop-mode, split-screen, freeform, foldable, surfaceflinger, rendering]
 related_chapters: ["2.6", "2.9", "2.12", "2.13", "7.4", "3.3"]
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task9_result: needs-rework
 task2b_state: fixed
-reviewed_date: "2026-04-11"
+reviewed_date: "2026-04-19"
 reviewed_by: "openclaw-task6"
-task6_result: needs-rework
+task6_result: pass-light-edit
 task2b_result: fixed
 ---
 
@@ -101,7 +101,7 @@ task2b_result: fixed
 
 第三件事是 **display 可能不止一块**。connected display 场景里，SurfaceFlinger 不只是合成更多 layer，还可能同时维护手机内屏和外部显示器两套 display pipeline。外屏分辨率更高、刷新率不同，或者两边窗口树完全不同，都会让合成成本继续上升。
 
-这里不要脱离设备条件写固定毫秒数。把某组固定毫秒数直接写成通用规律，离开 trace、设备型号、刷新率和显示分辨率，就没有复用价值。更稳妥的写法是直接回到观察面：看 layer 数量、看 compositionType、看 FrameTimeline，再决定是不是已经到了 SurfaceFlinger 侧瓶颈。
+这里不要脱离设备条件写固定毫秒数。把某组固定毫秒数直接写成通用规律，离开 trace、设备型号、刷新率和显示分辨率，就没有复用价值。直接回到观察面：看 layer 数量、看 compositionType、看 FrameTimeline，再决定是不是已经到了 SurfaceFlinger 侧瓶颈。
 
 `dumpsys SurfaceFlinger` 适合做静态快照。它能帮我们核对当前有哪些可见 layer、哪些 layer 走 HWC、哪些 layer 走 GLES。Perfetto 适合看动态变化，尤其是窗口切换、拖拽缩放、PiP 持续播放、外接显示器插拔这些过程。
 
@@ -133,7 +133,7 @@ Android 16（API 36）进一步把规则收紧到 `sw >= 600dp`。对 `targetSdk
 
 这条 opt-out 只在 API 36 过渡期有效。行为变更文档已经写明，应用面向 API 37 之后，这个 opt-out 不再生效。到了 Android 17（API 37），`sw >= 600dp` 设备上的方向、宽高比和 resizability 限制会被平台直接忽略。
 
-对应到渲染分析，结论也要跟着改。大屏和外接显示器上的窗口尺寸变化，会更频繁地触发 relayout、buffer 重新分配和 `performTraversals()`，但这不等于存在一个 Android 17 专用 manifest 属性帮你跳过整个过程。更稳妥的做法是保存 UI state，把窗口尺寸变化当成常态输入，而不是把它当成少见异常。
+对应到渲染分析，结论也要跟着改。大屏和外接显示器上的窗口尺寸变化，会更频繁地触发 relayout、buffer 重新分配和 `performTraversals()`，但这不等于存在一个 Android 17 专用 manifest 属性帮你跳过整个过程。保存 UI state，把窗口尺寸变化当成常态输入，而不是把它当成少见异常。
 
 ## Multi-resume 把“失去焦点”和“停止可见”拆开了
 
@@ -173,7 +173,7 @@ PiP 也要单独看。它经常是“可见，但不 focusable”。如果 PiP �
 
 ### 1. 先列出当前 trace 里的 SurfaceFlinger slice 名
 
-`doCompose` 不能直接写成通用过滤条件。更稳妥的做法，是先在当前 trace 里列出 SurfaceFlinger 线程上真正存在的 slice 名，再挑和合成相关的项继续看：
+`doCompose` 不能直接写成通用过滤条件。先在当前 trace 里列出 SurfaceFlinger 线程上真正存在的 slice 名，再挑和合成相关的项继续看：
 
 ```sql
 SELECT DISTINCT slice.name
