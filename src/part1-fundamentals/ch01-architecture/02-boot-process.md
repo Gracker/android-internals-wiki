@@ -3,16 +3,16 @@ title: "系统启动全流程"
 chapter: "1.2"
 status: ready-for-review
 section: "1.2"
-reviewed_date: "2026-04-12"
+reviewed_date: "2026-04-18"
 reviewed_by: openclaw-task6
 review_type: task6-writing-quality-review
-task6_result: needs-rework
+task6_result: pass-light-edit
 drafted_date: "2026-03-30"
 drafted_by: openclaw-task2a
 review_v2_fix: "误区 section boot_completed 事件描述修正 + 事件排序修正"
 polish_count: 1
 polish_date: "2026-04-05"
-review_round: 2
+review_round: 3
 polish_by: task2b-polish
 applicable_versions: "Android 8 (API 26) - Android 16 (API 35)"
 last_verified: "2026-04-17"
@@ -74,8 +74,8 @@ related_chapters:
   - "8.2"
   - "1.11"
   - "8.3"
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task9_result: reworked
 last_task9_at: "2026-04-17T03:44:00+08:00"
@@ -332,7 +332,7 @@ adb pull /data/misc/perfetto-traces/boot-userspace.pftrace .
 - 检查 OTA 后首启是否卡在 APEX 激活、odsign 校验、dexpreopt 产物缺失、snapshot merge 抢 I/O
 - 减少必须在 early boot 读取的大文件和目录扫描
 
-如果 trace 上 system_server 还没起来，先别急着改 Framework Java 代码，问题大概率在更早的装载链上。
+如果 trace 上 system_server 还没起来，问题大概率在更早的装载链上。
 
 ### 2. Zygote：预加载和编译产物命中率
 
@@ -418,7 +418,7 @@ dm-verity（Device Mapper Verity）是 Android 用于验证系统分区完整性
 
 ### 误区：“init 进程是 Android 所有进程的鼻祖”
 
-更准确的说法是：init 是用户空间所有进程的鼻祖。PID 0 的 swapper 才是 Linux 侧最早的起点，PID 2 的 kthreadd 则是内核线程的起点。
+init 是用户空间所有进程的鼻祖。PID 0 的 swapper 才是 Linux 侧最早的起点，PID 2 的 kthreadd 则是内核线程的起点。
 
 ### 误区：“开机时间就是到桌面显示的时间”
 
