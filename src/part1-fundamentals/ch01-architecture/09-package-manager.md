@@ -11,8 +11,8 @@ drafted_by: "openclaw-task2a"
 reviewed_date: "2026-04-18"
 reviewed_by: "openclaw-task6"
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
-last_verified: "2026-04-12"
-last_verified_against: "AOSP android-16.0.0_r1 + Android Developers Baseline Profiles overview"
+last_verified: "2026-04-18"
+last_verified_against: "AOSP android-16.0.0_r1 (`PackageManagerShellCommand` / `DexOptHelper` / `ArtShellCommand` / `BackgroundDexoptJob`) + Android Developers Baseline Profiles overview"
 confidence: medium
 sources:
   - type: aosp
@@ -33,16 +33,18 @@ sources:
     path: "frameworks/base/services/core/java/com/android/server/pm/DexOptHelper.java"
   - type: aosp
     path: "frameworks/native/cmds/installd/InstalldNativeService.cpp"
+  - type: aosp
+    path: "art/libartservice/service/java/com/android/server/art/ArtManagerLocal.java"
+  - type: aosp
+    path: "art/libartservice/service/java/com/android/server/art/ArtShellCommand.java"
+  - type: aosp
+    path: "art/libartservice/service/java/com/android/server/art/BackgroundDexoptJob.java"
   - type: official
     path: "https://developer.android.com/topic/performance/baselineprofiles/overview"
   - type: official
     path: "https://source.android.com/docs/core/perf/vm"
-  - type: official
-    path: "https://source.android.com/docs/core/ota/apex"
   - type: blog
     path: "Android Authority: Android 16 Cloud Compilation"
-  - type: blog
-    path: "Google I/O 2025: What's new in Android performance"
 tags:
   - android
   - pms
@@ -53,16 +55,16 @@ tags:
   - cloud-compilation
   - app-installation
   - compilation
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
-task9_state: reviewed
+task9_state: pending
 task9_result: needs-rework
 last_task9_at: "2026-04-18T20:36:12+08:00"
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-04-18"
 task2b_result: fixed
-task2b_state: pending
+task2b_state: fixed
 ---
 
 # 1.9 Package Manager Service 与应用安装性能
@@ -136,16 +138,18 @@ PMS 在内存中维护了几个关键的数据结构：
 
 PMS 维护包状态和安装策略，真正落到文件系统和应用数据目录的操作由 `Installer` / `installd` 完成。android-16.0.0_r1 里的 `Installer.connect()` 已经不是连 `/dev/socket/installd`，而是通过 `ServiceManager.getService("installd")` 拿到 Binder 服务，再用 `IInstalld.Stub.asInterface(...)` 发起远程调用。
 
-这一层分工大致是这样：
+现代安装路径里，dexopt 的控制面和执行面还要再拆一层：
 
 - PMS / `InstallPackageHelper`：包扫描、签名校验、权限与组件注册、安装状态提交
-- `Installer`：Java 侧的系统服务代理，把 PMS 需要的底层操作转给 `IInstalld`
-- `installd`：创建应用数据目录、设置 UID/GID 和 SELinux 上下文、处理编译产物相关的 native 操作
-- ART Service / `DexOptHelper`：负责 dexopt 调度、编译原因和过滤器选择
+- `DexOptHelper`：基于安装原因、Profile 可用性和包状态，决定是否发起 dexopt
+- ART Service（`ArtManagerLocal` / `ArtShellCommand` 所在服务）：接收 dexopt 请求，组织编译参数和任务调度
+- `artd`：ART 的守护进程，负责把编译任务落到本机执行
+- `dex2oat`：主要消耗 CPU 和 I/O 的工作进程，负责生成 OAT / VDEX 等编译产物
+- `Installer` / `IInstalld` / `installd`：继续处理应用目录、权限、SELinux 上下文和部分编译产物相关的底层文件操作
 
-如果我们在 Trace 里看到 `system_server` 很忙，却没有对应的 `installd` 或 `dex2oat` 开销，问题多半还停留在包扫描和状态提交；如果 `installd` / `dex2oat` 很重，瓶颈通常落在文件 I/O、数据目录准备或编译阶段。
+因此，安装路径更适合按 `PackageInstallerSession -> InstallPackageHelper -> DexOptHelper -> ART Service -> artd -> dex2oat` 来看。`system_server` 里的 Slice 主要反映控制面决策，`dex2oat` 进程承接执行面里最重的编译开销。
 
-[已验证: AOSP android-16.0.0_r1 `Installer.java` / `IInstalld` Binder 服务；`frameworks/native/cmds/installd/InstalldNativeService.cpp`]
+[已验证: AOSP android-16.0.0_r1 `Installer.java` / `DexOptHelper.java` / `art/libartservice/service/java/com/android/server/art/ArtManagerLocal.java` / `ArtShellCommand.java`]
 
 ## 应用安装全流程与性能关键路径
 
@@ -163,7 +167,7 @@ PMS 维护包状态和安装策略，真正落到文件系统和应用数据目�
 
 ### 现代安装控制路径
 
-以 `adb install` 为例，现代 AOSP 的入口在 `PackageManagerShellCommand`。它先创建 session，再写入 APK 或 split，提交时进入 `PackageInstallerSession.commit()`。session 封存后，`InstallingSession.installStage()` 把真正的安装工作投递给 PMS 侧逻辑；包扫描和状态提交主要在 `InstallPackageHelper`，dexopt 调度走 `DexOptHelper` / ART Service，底层目录和文件操作再经 `Installer` 转给 `IInstalld`。
+以 `adb install` 为例，现代 AOSP 的入口在 `PackageManagerShellCommand`。它先创建 session，再写入 APK 或 split，提交时进入 `PackageInstallerSession.commit()`。session 封存后，`InstallingSession.installStage()` 把安装任务交给 PMS 侧逻辑；包扫描和状态提交主要在 `InstallPackageHelper`，dexopt 决策在 `DexOptHelper`，编译请求再交给 ART Service，由 `artd` 拉起 `dex2oat` 执行。Perfetto 里看到的 `system_server`、`artd`、`dex2oat`，分别对应这条链上的控制面和执行面。
 
 这套 session 模型解决了两个实际问题。一个是 split APK、多包安装、staged install 都能共用同一套提交协议；另一个是“写入文件”和“真正生效”被拆成两个阶段，失败回滚、重试、后台安装都更容易做。
 
@@ -199,22 +203,23 @@ PMS 解析 `AndroidManifest.xml`、校验签名、检查 sharedUserId / 权限 /
 
 在 Perfetto 中分析安装耗时，可以关注以下 Track 和 Slice：
 
-- **system_server 进程**：搜索 `PackageInstallerSession`、`installStage`、`commitPackagesLocked` 一类 Slice
-- **installd 进程**：应用目录准备、文件操作耗时
-- **`dex2oat` / `artd` 相关进程**：编译耗时，通常是安装期最重的一段 CPU 开销
-- **I/O Track**：`ext4` / `f2fs` 的写入延迟、fsync 抖动
+- **system_server 进程**：搜索 `PackageInstallerSession`、`installStage`、`commitPackagesLocked` 一类 Slice。这里看到的是安装控制面的提交、扫描和状态发布。
+- **`artd` 进程**：ART Service 下发编译任务后的守护进程活动，适合用来判断 dexopt 是否真的启动。
+- **`dex2oat` 相关进程**：编译耗时通常集中在这里，是安装期最重的 CPU 开销。
+- **installd 进程**：应用目录准备、文件操作耗时。
+- **I/O Track**：`ext4` / `f2fs` 的写入延迟、fsync 抖动。
 
-一个实用的 adb 命令来查看应用的编译状态：
+查看编译状态时，不要再用不存在的 `cmd package compile --dump`。Android 14+ 更稳妥的做法是直接看 ART Service 或 PMS 的输出：
 
 ```bash
-# 查看单个应用的编译状态
-adb shell cmd package compile --dump {package_name}
+# 查看 ART 侧记录的编译状态
+adb shell cmd package art dump com.example.app
 
-# 查看所有应用的编译状态
+# 查看包管理侧的 dexopt 摘要
 adb shell dumpsys package dexopt
 ```
 
-输出中的 `compilation_filter` 字段显示当前的编译级别，`compilation_reason` 显示是什么触发的编译（`install` / `bg-dexopt` / `ota` 等）。
+如果要排查 profile 文件，再看 `cmd package dump-profiles` 或 `cmd package snapshot-profile` 这一组子命令。`art dump` 和 `dumpsys package dexopt` 里的 `compilation_filter`、`reason`、ABI 维度输出，足够先判断这次安装落在哪条编译路径上。
 
 [待补充：安装过程在 Perfetto 中的 Trace 截图，标注各阶段]
 
@@ -234,15 +239,14 @@ adb shell dumpsys package dexopt
 
 **运行时 JIT**：应用运行时即时编译热点方法，同时在后台收集 Profile 供后续的 AOT 编译使用。
 
-从性能分析的角度，我们最关心的是：**应用当前处于哪种编译状态，冷启动路径上的方法有多少是 AOT 编译过的？** 这可以通过以下命令判断：
+从性能分析的角度，更关心的是应用当前处于哪种编译状态，冷启动路径上的方法有多少已经有 AOT 产物。查询时直接看 ART Service 或 PMS 的状态输出：
 
 ```bash
-# 查看编译状态
-adb shell cmd package compile --dump com.example.app
-# 输出示例：
-# [com.example.app]
-#   path: /data/app/~~xxx/com.example-xxx/base.apk
-#   arm64: [status=verify] [compilation_filter=speed-profile] ...
+# 查看 ART 侧记录的编译状态
+adb shell cmd package art dump com.example.app
+
+# 查看系统里的 dexopt 摘要
+adb shell dumpsys package dexopt
 
 # 手动触发全量编译（调试用）
 adb shell cmd package compile -m speed -f com.example.app
@@ -250,6 +254,8 @@ adb shell cmd package compile -m speed -f com.example.app
 # 手动触发 profile 编译
 adb shell cmd package compile -m speed-profile -f com.example.app
 ```
+
+需要导出 profile 文件时，再看 `cmd package dump-profiles` 或 `cmd package snapshot-profile`。
 
 ### 编译模式的选择策略
 
@@ -273,14 +279,14 @@ adb shell cmd package compile -m speed-profile -f com.example.app
 
 ### 触发条件
 
-后台 dexopt（在 Android 14+ 中由 ART Service 管理）的触发条件非常保守：
+后台 dexopt（Android 14+ 由 ART Service 统一调度）在 AOSP 里的约束来自 `BackgroundDexoptJob.schedule()` 对 JobScheduler 的设置：
 
-- **设备正在充电**（AC 或 USB 充电，不是无线充电）
-- **设备处于空闲状态**（屏幕关闭、没有前台应用）
-- **电量充足**（通常要求 > 30%）
-- **特定时间窗口**（通常是凌晨 2-5 点，但各 OEM 可能不同）
+- **`setRequiresDeviceIdle(true)`**：设备处于 idle
+- **`setRequiresCharging(true)`**：设备在充电。AOSP 这一层不区分有线和无线。
+- **`setRequiresBatteryNotLow(true)`**：电量不处于 low battery 状态，不等于固定的 30% 阈值。
+- **周期性任务**：Job 会按周期重新调度，不绑定固定的“凌晨 2-5 点”窗口。
 
-ART Service 通过 JobScheduler 注册一个专门的 `bg-dexopt-job`，当上述条件全部满足时，JobScheduler 会调度这个 Job 执行。如果条件不再满足（比如用户突然点亮屏幕），JobScheduler 会中断正在执行的 dexopt。
+夜间执行常见于用户长时间空闲充电的场景，这属于调度结果，不是 ART Service 固定写死的时间策略。OEM 可以在系统层叠加自己的限制条件，但那已经超出 AOSP 的默认语义。
 
 ### dexopt 对前台应用的影响
 
@@ -299,7 +305,7 @@ ART Service 通过 JobScheduler 注册一个专门的 `bg-dexopt-job`，当上�
 adb shell cmd package bg-dexopt-job
 ```
 
-[已验证: AOSP frameworks/base/services/core/java/com/android/server/art/, ART Service 后台 dexopt 实现; 官方文档 source.android.com]
+[已验证: AOSP android-16.0.0_r1 `art/libartservice/service/java/com/android/server/art/BackgroundDexoptJob.java` / `ArtManagerLocal.java`]
 
 ## Baseline Profiles 与安装时优化
 
@@ -321,47 +327,24 @@ Startup Profiles 作用在 DEX 布局。它们告诉构建工具哪些启动关�
 
 [已验证: https://developer.android.com/topic/performance/baselineprofiles/overview]
 
-## Android 16 云端编译（Cloud Compilation）
+## Android 16 云端编译与 SDM
 
-Android 16 引入了一个可能从根本上改变安装体验的特性：**云端编译（Cloud Compilation）**。
+公开资料把 Android 16 的一条安装优化路径称为 Cloud Compilation。当前能稳妥写下来的信息很有限，本节只保留和安装性能直接相关的边界，不把缺少一手佐证的实现细节写成定论。
 
-### 架构与工作原理
+### 目前能确认的范围
 
-在传统模式中，dex2oat 运行在设备端——每次安装或更新应用时，设备需要消耗 CPU、内存和 I/O 来编译 DEX 代码。云端编译的核心思路是：**把这些编译工作搬到云端，设备只负责下载和使用编译产物**。
+- **分发侧**：这条路径指向 Google Play 分发路径，普通侧载不在这个范围内。
+- **fallback**：设备没有拿到云端产物，或者安装来源不支持时，仍然回到本机 dexopt。
+- **性能含义**：命中云端产物时，本机安装阶段的 `dex2oat` 压力可能下降；没有命中时，Trace 里仍会看到常规的本机编译开销。
+- **设备侧观测**：目前没有公开稳定字段可以直接判断“本次安装命中 cloud compilation”。分析时只能把安装来源、`dex2oat` 是否出现、`cmd package art dump` / `dumpsys package dexopt` 输出放在一起看。
 
-工作流程如下：
+### 本节不下结论的部分
 
-1. **云端预编译**：Google Play 的服务器在应用上架或更新时，在云端运行 dex2oat，生成编译产物
-2. **产物签名**：编译产物使用与应用 APK 相同的密钥签名，确保完整性
-3. **分发**：用户从 Play Store 下载应用时，编译产物以 **Secure DEX Metadata (SDM)** 文件格式一起下载
-4. **设备端加载**：设备直接使用 SDM 文件中的编译产物，跳过本机 dex2oat
+以下几项缺少可公开核对的一手材料，本节不展开确定性描述：SDM 的签名与校验由哪一层完成、设备侧的落盘格式和加载入口、Play 服务端如何生成产物、命中失败后的详细原因码。
 
-```text
-传统模式：APK → 设备端 dex2oat → OAT → 运行
-云端编译：APK + SDM (预编译产物) → 直接加载 OAT → 运行
-```
+放回性能分析场景，Cloud Compilation 更适合当成一个“可能减少本机 dexopt 的分发侧变量”。抓 Play 安装 Trace 时，如果 `system_server` 仍有安装提交 Slice，但几乎没有明显的 `dex2oat` CPU 段，再去对照 ART dump 和包状态输出。
 
-### 对低端设备的改善
-
-云端编译最大的受益者是低端设备。在 2GB 内存的入门级手机上，dex2oat 编译一个大型应用可能需要几分钟，期间 CPU 占用高、内存紧张、用户体验很差。云端编译把这段等待时间完全消除了——只要网络带宽足够（SDM 文件通常比 APK 本身小），安装时间主要由下载 SDM 和文件落盘决定，而不再被设备端 dex2oat 主导。
-
-### 与 Baseline Profiles 的关系
-
-云端编译和 Baseline Profiles 不是替代关系，而是互补：
-
-- **Baseline Profiles** 解决的是"哪些代码需要编译"的问题——标记启动路径和关键交互路径
-- **Cloud Compilation** 解决的是"在哪里编译"的问题——从设备端搬到云端
-- **Cloud Profiles**（Google Play 聚合的用户 Profile）提供了更全面的编译覆盖
-
-三者的结合意味着：应用从 Play Store 安装后，启动路径上的代码已经有了云端预编译的 AOT 产物，冷启动性能接近或超过经过多天后台 dexopt 的状态。
-
-### 隐私与安全考量
-
-SDM 文件使用与应用相同的签名密钥，确保只有应用开发者授权的编译产物才能被加载。从隐私角度，Cloud Profiles 使用的是聚合和匿名化的数据，不包含用户个体信息。
-
-需要注意的是，云端编译目前仅适用于通过 Google Play 分发的应用。侧载（sideload）的应用仍然走传统的设备端 dex2oat 流程。
-
-[已验证: Android Authority, Android 16 Cloud Compilation; Google Blog, SDM 文件格式]
+[资料边界: 当前公开材料主要来自外部报道，缺少可交叉核对的 AOSP 或官方集成文档，本节按可观测现象表述。]
 
 ## 应用更新与 OTA 更新的性能影响
 
@@ -398,7 +381,7 @@ adb shell getprop pm.dexopt.boot-after-ota
 adb shell cmd package compile -m speed -f -a
 ```
 
-[已验证: AOSP frameworks/base/services/core/java/com/android/server/art/, OTA 后编译策略; Google Blog, Android OTA 优化]
+[已验证: AOSP android-16.0.0_r1 `art/libartservice/service/java/com/android/server/art/ArtManagerLocal.java` / `BackgroundDexoptJob.java`]
 
 ## 在 Perfetto 中的表现与调试方法
 
@@ -469,8 +452,8 @@ dex2oat 在 Trace 中以独立进程的形式出现，进程名通常为 `dex2oa
 ### 常用的调试命令
 
 ```bash
-# 查看单个应用的编译状态和编译产物路径
-adb shell cmd package compile --dump {package_name}
+# 查看单个应用在 ART 侧的编译状态
+adb shell cmd package art dump com.example.app
 
 # 查看所有应用的编译状态摘要
 adb shell dumpsys package dexopt
@@ -516,7 +499,7 @@ Package Manager Service 与全书多个章节有交叉：
 | Android 10 | APEX / Mainline 基础设施引入，OTA 与 ART 更新开始解耦 | 后续 OTA 优化和 Virtual A/B 路径有了继续演进的基础 |
 | Android 12 | ART 模块化（Mainline） | 编译优化可通过 Play 系统更新推送 |
 | Android 14 | ART Service 取代直接 dex2oat 调用 | 编译管理更统一，后台 dexopt 更智能 |
-| Android 16 | Cloud Compilation / SDM 格式 | 设备端 dex2oat 大幅减少，安装速度提升 |
+| Android 16 | 公开资料提到 Play 分发侧可能引入 Cloud Compilation / SDM | 命中时可减少本机 dexopt，设备侧细节需以实测为准 |
 | Android 17 | static final 不可变 → 更激进的常量折叠 | 编译优化深度提升（与 §1.7 交叉） |
 
 ## 常见问题与误区
@@ -554,7 +537,9 @@ JIT 在运行时动态编译，理论上可以覆盖更多热点方法。但 JIT
 - `frameworks/base/services/core/java/com/android/server/pm/DexOptHelper.java`：dexopt 调度
 - `frameworks/native/cmds/installd/InstalldNativeService.cpp`：installd native 服务实现
 - `art/dex2oat/`：dex2oat 编译器
-- `frameworks/base/services/core/java/com/android/server/art/`：ART Service（Android 14+）
+- `art/libartservice/service/java/com/android/server/art/ArtManagerLocal.java`：ART Service 的本地调度入口
+- `art/libartservice/service/java/com/android/server/art/ArtShellCommand.java`：`cmd package art ...` 子命令实现
+- `art/libartservice/service/java/com/android/server/art/BackgroundDexoptJob.java`：后台 dexopt 的 JobScheduler 调度
 
 ### 官方文档
 - [Baseline Profiles 概述](https://developer.android.com/topic/performance/baselineprofiles/overview)
@@ -565,6 +550,4 @@ JIT 在运行时动态编译，理论上可以覆盖更多热点方法。但 JIT
 - [Package Manager API](https://developer.android.com/reference/android/content/pm/PackageManager)
 
 ### 深入阅读
-- Android Authority: Android 16 Cloud Compilation
-- Google Blog: Android Performance Updates 2025（dex2oat 编译优化）
-- Google I/O 2025: What's new in Android performance（Cloud Compilation 详解）
+- Android Authority: Android 16 Cloud Compilation（外部报道，适合补背景，不适合单独当作平台契约）
