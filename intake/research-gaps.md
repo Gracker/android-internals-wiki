@@ -1561,3 +1561,23 @@ API 33+ 的公开帧时间线入口缺位。正文已经解释了框架内部 `d
 
 ### 关联章节
 - 1.15 JNI/NDK 性能优化
+
+## [2026-04-19] 18.19 可变刷新率渲染管线 — 知识盲区
+
+### 盲区描述
+章节还缺一张“Android 11-14 多刷新率 / mode switching → Android 15-QPR1+ ARR → Android 16 Display 查询 API”的分层矩阵，也缺一张对应的 Perfetto 观察矩阵。现在正文把 VRR、ARR、模式切换、慢帧显示延长写成一条直线，读者很难判断自己遇到的是面板能力、系统策略，还是 app / SurfaceFlinger deadline miss。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 对比 Android 11-14 多刷新率路径与 Android 15-QPR1+ ARR 的正式能力边界
+- 补齐 Display / View / Surface 三层 API 的时间线，区分查询 API、投票 API、Surface hint
+- 整理 Perfetto 观察矩阵：VSYNC-app、VSYNC-sf、expected_frame_timeline_slice、actual_frame_timeline_slice、surface/display frame token、refresh-rate selection slice
+
+### 关联章节
+- 2.3 VSync 机制
+- 2.18 Adaptive Refresh Rate 与动态帧率控制
+- 2.19 刷新率切换与帧率适配性能
+- 18.19 可变刷新率渲染管线
+

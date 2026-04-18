@@ -3309,5 +3309,44 @@
     "status": "completed",
     "completed_at": "2026-04-19T04:47:00+08:00",
     "completed_by": "task2b-rework"
+  },
+  {
+    "section": "18.19",
+    "section_title": "可变刷新率渲染管线",
+    "priority": 95,
+    "reason": "[Deep Tech Review] P0 事实错误：ARR API 时间线与 Perfetto SQL 写错，VRR / ARR / 多刷新率边界混淆",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "版本差异 / 源码错误",
+        "location": "L107-L118 Android 16+ Enhanced ARR API",
+        "detail": "把 View.setRequestedFrameRate(float) 写成“Android 16 引入”。官方 API 参考显示该方法 Added in API level 35（Android 15）；Android 16 新增的是 Display.hasArrSupport()、Display.getSuggestedFrameRate()、Display.getSupportedRefreshRates() 这一组查询 API。",
+        "suggestion": "拆成 Android 15 的 View / Compose ARR 投票入口，与 Android 16 的 Display 查询 API 两段，并补 hasArrSupport() / getSuggestedFrameRate(int) 的用法与版本边界。"
+      },
+      {
+        "type": "源码错误",
+        "location": "L168-L176 VRR 下的掉帧检测 SQL",
+        "detail": "Perfetto stdlib 中不存在文内写法的 `android.frames` 模块；`android_frames` 表也没有 `jank_type` 列。jank 字段位于 `actual_frame_timeline_slice`，`android_frames` 需要通过 `actual_frame_timeline_id` 关联。照文中 SQL 执行会直接失败。",
+        "suggestion": "改用 `INCLUDE PERFETTO MODULE android.frames.timeline;`，并查询 `actual_frame_timeline_slice`，或从 `android_frames` 连接 `actual_frame_timeline_slice` 后再取 jank_type / present_type。"
+      },
+      {
+        "type": "原理断裂 / 版本差异",
+        "location": "L35-L40 / L52-L63 / L129-L157",
+        "detail": "正文把“App 渲染慢了”直接推导为“屏幕自动延长当前帧显示时间”，把 Android 11-14 的多刷新率 / mode switching 与 Android 15-QPR1+ 的 ARR 动态匹配写成同一种机制，缺少 App 投票、内容检测、Scheduler 决策、设备 HAL 支持这条中间链。",
+        "suggestion": "补一段分层说明：Android 11-14 先讲多刷新率与切模式背景，Android 15-QPR1+ 再讲 ARR 正式能力，强调 missed deadline 仍可能表现为 app / sf jank，不能写成系统自动“救回慢帧”。"
+      },
+      {
+        "type": "知识盲区 / 交叉引用",
+        "location": "L65-L90 / L185-L192",
+        "detail": "系统架构图把 `HWC 2.4+` 和 `LTPO Panel` 写成总前提，但官方 ARR 文档只公开了“Android 15-QPR1+ + specific HAL APIs”的设备条件。Perfetto 观察点也只剩 `VSYNC` / `HW_VSYNC` / `FrameTimeline` 三行表，和 2.3、2.18 当前章节中 `VSYNC-app`、`VSYNC-sf`、`expected/actual_frame_timeline_slice` 的口径不一致。",
+        "suggestion": "把硬件前提改成“device-specific HAL support + panel capability”，把 Composer/HWC 版本要求挪到版本演进处；Perfetto 观察部分统一为 `VSYNC-app`、`VSYNC-sf`、`expected_frame_timeline_slice`、`actual_frame_timeline_slice`、refresh-rate selection slice。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-19T05:37:44+08:00",
+    "status": "pending",
+    "original_review_log": "logs/deep-review/2026-04-19-05-deep-review.md"
   }
 ]

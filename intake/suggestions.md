@@ -1874,3 +1874,10 @@
 - **位置**：L218-L222 系统服务的设计启示
 - **问题**：正文给出“native-only 的 Binder 栈可以减少 Java ↔ native 桥接和部分序列化层级”的判断，但没有配套 call stack、trace、simpleperf 样本或 AOSP 路径对照，当前更像经验判断，读者很难据此复核 `libbinder_ndk`、Java Binder、JNI bridge 三者的差异到底落在哪一层。
 - **建议**：补 1 组最小证据链，至少包含 Java Binder → JNI bridge → native-only Binder 三种调用栈或序列化路径对照；如果暂时拿不到样本，就把结论收紧到“减少 Java ↔ native 桥接”，不要额外延伸到“部分序列化层级”。
+
+## [Task9 Deep Review] 18.19 可变刷新率渲染管线 — 2026-04-19
+- **类型**：交叉引用
+- **位置**：L185-L197 在 Perfetto 中分析 VRR / 与其他章节的关系
+- **问题**：Perfetto 观察点写成 `VSYNC` / `HW_VSYNC` / `FrameTimeline` 三行摘要，和 §2.3、§2.18 现有的 `VSYNC-app`、`VSYNC-sf`、`expected_frame_timeline_slice`、`actual_frame_timeline_slice` 口径不一致，读者无法直接按全书统一方法回溯
+- **建议**：统一术语口径，并在本节明确 surface_frame_token / display_frame_token / jank_type 的实际观察入口
+
