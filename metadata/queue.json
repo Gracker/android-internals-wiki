@@ -86,6 +86,27 @@
       "added_at": "2026-04-19T07:25:26",
       "status": "pending",
       "original_review_log": "logs/review/2026-04-19-07-review.md"
+    },
+    {
+      "section": "16.1",
+      "section_title": "Google 官方的性能优化思路",
+      "priority": 85,
+      "reason": "[Deep Tech Review] Mainline / AutoFDO 交付路径拆分不完整，kernel 与 userspace AutoFDO 被压成同一路径",
+      "material_paths": [
+        "intake/research-gaps.md",
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "原理断裂/版本差异",
+          "location": "L111-L120",
+          "detail": "“三条交付路径”把 AutoFDO 的 userspace/native rollout 与 GKI kernel rollout 压成了一条 GKI/OTA 路径。官方 2026 AutoFDO blog 已明确区分 userspace native binaries 与 GKI kernel 的 profile 来源和 rollout 方式，且 §1.12 也已经把两条路线拆开。",
+          "suggestion": "把 AutoFDO 拆成 userspace/native AutoFDO 与 kernel AutoFDO 两条路径，分别写清对象、版本起点、构建入口和送达设备方式。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-04-19T07:43:40+08:00",
+      "status": "pending"
     }
   ],
   "processing": [],

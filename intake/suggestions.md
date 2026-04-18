@@ -1909,3 +1909,21 @@
 - **问题**：SQL 查询 GROUP BY s.slice_id 后 count(1) 恒为 1，无法真正统计"同一把锁上有多少线程在排队"。查询的实际用途是"按耗时排序的锁竞争事件列表"，与注释描述（统计锁竞争深度）不符。
 - **建议**：重写 SQL 按锁标识 + 时间重叠范围计算真正的锁深度，或修改注释描述使其与查询实际行为一致
 - **review 日志**：logs/review/2026-04-19-07-review.md
+
+## [Task9 Deep Review] 16.1 Google 官方的性能优化思路 — 2026-04-19
+- **类型**：版本差异/交叉引用
+- **位置**：Handler / MessageQueue 段（L153-L155）与参考资料（L223-L224）
+- **问题**：正文和参考资料直接给出 master 分支的 `LockedMessageQueue/MessageQueue.java`，但 related chapter §1.13 以及 `android-16.0.0_r1` 公共 tag 仍使用 `LegacyMessageQueue/MessageQueue.java`。缺少 rename / tag 差异说明时，读者按章节交叉阅读会误以为有一处源码路径写错。
+- **建议**：补一条版本说明，明确 `android-16.0.0_r1` 使用 `LegacyMessageQueue`，master / Android 17 代码树已切到 `LockedMessageQueue`，并在参考资料里给出对应 tag 的路径或说明。
+
+## [Task9 Deep Review] 16.1 Google 官方的性能优化思路 — 2026-04-19
+- **类型**：源码准确性
+- **位置**：BLASTBufferQueue 段（L169）与参考资料（L228）
+- **问题**：`SurfaceControl.java` 被标成 “`mergeWithNextTransaction` Java 侧钩子”。AOSP master 里实际可见的方法名是 `onMergeWithNextTransaction()`，注释也说明它用于 BLAST 走 Java merge 路径时的 logging / callstack debugging，不是 BLAST 同步语义的主实现锚点。
+- **建议**：把引用修正为 `onMergeWithNextTransaction()`，并把 `BLASTBufferQueue.cpp` / `BLASTBufferQueue.h` 作为同步语义的主锚点；如果保留 `SurfaceControl.java`，应明确它在这里主要用于调试路径说明。
+
+## [Task9 Deep Review] 16.1 Google 官方的性能优化思路 — 2026-04-19
+- **类型**：数据缺失/知识盲区
+- **位置**：Google 内部的性能测试基础设施（L202-L207）
+- **问题**：这一节给了 “平台 benchmark 仓库 / 持续回归监控 / 多规格设备池” 三个判断，但没有任何公开锚点，正文还保留了 `[待补充]`。当前内容更像合理推断，读者无法区分哪些是公开可证实的信息，哪些只是工程常识。
+- **建议**：补充至少 1-2 个公开锚点（例如 AOSP `platform_testing`、Perfetto 公开 benchmark / Android Dev Summit 公开演讲），或者把小节降格为 “公开可见部分”，只保留有来源的内容。

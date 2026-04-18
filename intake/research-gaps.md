@@ -1599,3 +1599,22 @@ API 33+ 的公开帧时间线入口缺位。正文已经解释了框架内部 `d
 - 2.13
 - 2.15
 - 16.1
+
+## [2026-04-19] 16.1 Google 官方的性能优化思路 — 知识盲区
+
+### 盲区描述
+“Project Mainline”小节把 AutoFDO 只写成 GKI / kernel OTA 路线，缺少 userspace/native AutoFDO 与 kernel AutoFDO 的拆分。官方 2026 AutoFDO blog 已明确 userspace native binaries 与 GKI kernel 使用不同的 profile 来源和 rollout 方式，§1.12 也已经按这两条路线展开。现有写法会让读者误把 userspace native AutoFDO 也映射到 `android15-6.6` / `android16-6.12` 这类 GKI 目录。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 对照 Google AutoFDO 官方 blog 中 userspace native binaries 与 GKI kernel rollout 的原始表述
+- 补一张 “Mainline / Play 编译 / userspace AutoFDO / kernel AutoFDO” 交付路径对照表
+- 明确 `android15-6.6`、`android16-6.12` 目录只覆盖 kernel profile，不代表 userspace native rollout
+
+### 关联章节
+- 1.12 AutoFDO 反馈导向编译优化
+- 16.1 Google 官方的性能优化思路
+- 16.4 Android 17 + Kernel 6.12 系统级性能优化
+
