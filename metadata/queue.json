@@ -2315,6 +2315,66 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-18T15:21:00+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-18T17:17:59+08:00",
+    "completed_by": "task2b-rework"
+  },
+  {
+    "section": "15.8",
+    "section_title": "Android 性能问题实证：真实世界的分类与代码模式",
+    "priority": 95,
+    "reason": "[Deep Tech Review] P0 事实错误：引文编号、样本口径与 View.invalidate()/requestLayout() 语义存在错误",
+    "material_paths": [
+      "intake/suggestions.md",
+      "intake/research-gaps.md"
+    ],
+    "review_issues": [
+      {
+        "type": "引用错误",
+        "location": "frontmatter L13 / 正文 L42-L56 / 参考资料 L259",
+        "detail": "章节把核心论文写成 arXiv 2407.00240，但当前讨论的《A Comparative Study of Android Performance Issues in Real-world Applications and Literature》对应 arXiv 2407.05090。现有 [已验证] 标记因此失效。",
+        "suggestion": "统一改为 2407.05090，并重新核对摘要、数据点和参考资料。"
+      },
+      {
+        "type": "样本口径错误",
+        "location": "L42-L46 / L60-L66",
+        "detail": "正文把论文简化成“Google Play + GitHub + 学术论文”三源对比，漏掉 Stack Overflow 749,067 question threads；同时把 60,684 / 16,977 / 344,922 的原始抓取量与 62.3% / 80.6% / 81.18% 的最终统计口径混用，并把 82 factors 直接写成 real-world 归纳结果；L66 还写成“十几万个开发者 issue”，与 16,977 issues 不符。",
+        "suggestion": "补全 Google Play / Stack Overflow / GitHub / literature review 的方法路径，明确 raw crawl → keyword filter → manual checking 的分母，并把 real-world 63 factors 与 integrated taxonomy 82 factors 分开写。"
+      },
+      {
+        "type": "框架行为错误",
+        "location": "L138",
+        "detail": "`View.invalidate()` 不会直接触发 measure/layout；它主要标记 redraw。Measure/Layout 由 `requestLayout()`、窗口尺寸变化、insets 变化等路径触发。当前写法与 Android View 文档及书内 §7.12 已验证结论冲突。",
+        "suggestion": "改为“频繁 invalidate() 会增加重绘请求；若伴随 requestLayout() 才会放大 measure/layout 成本”，并与 §7.12 对齐。"
+      },
+      {
+        "type": "版本差异",
+        "location": "frontmatter L7 / L82",
+        "detail": "章节 applicable_versions 覆盖 Android 8-17，但 Perfetto 观测直接落在 Frame Timeline 红标。Frame Timeline 是 Android 12+ 的主观测面，正文没有给 Android 8-11 的 fallback。",
+        "suggestion": "补充 Android 8-11 的 `gfxinfo` / `framestats` / `Choreographer#doFrame` 观测路径，并标注 Frame Timeline 的 Android 12+ 前提。"
+      },
+      {
+        "type": "统计口径不一致",
+        "location": "L53 / L86 / L203",
+        "detail": "`80.6%` 在正文里先后被标成“GitHub issue/commit”“GitHub issue”“GitHub commit”。原论文把 Stack Overflow、GitHub Issues、GitHub Commits 分开统计，当前文字无法判断 80.6% 究竟对应哪一组数据。[待验证]",
+        "suggestion": "回到 Fig. 2 或作者 artifact 锁定 80.6% 的准确数据集，再统一全章口径。"
+      },
+      {
+        "type": "原理断裂",
+        "location": "L189-L191",
+        "detail": "“10 层 LinearLayout 导致指数级放大”“measure 阶段对每个子 View 执行两次遍历”属于过度简化，未说明 repeated measure 的真实触发条件，容易把所有深层布局都说成同一类复杂度问题。",
+        "suggestion": "改为按 ViewRootImpl traversal + 某些 ViewGroup 的 repeated measure 条件解释，并避免泛化成固定的指数级结论。"
+      },
+      {
+        "type": "知识盲区",
+        "location": "L254-L255 / applicable_versions L7",
+        "detail": "章节前文把 taxonomy 直接推广到 Android 8-17，但正文没有按 Android 版本和 App 规模分层的实证边界，只有末尾两个 [待补充] TODO。",
+        "suggestion": "补充 Android 8-11 / 12-14 / 15-17 的版本分层，以及中小应用与大型 App 的问题分布差异；做不到时应明确写成“跨版本综合观察”。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-18T16:41:43+08:00",
+    "status": "pending",
+    "original_review_log": "logs/deep-review/2026-04-18-16-deep-review.md"
   }
 ]
