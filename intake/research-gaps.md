@@ -1486,3 +1486,23 @@ Camera Extensions (Night Mode, HDR 等) 是否引入了新的 HAL 延迟模式�
 - 18.6 SurfaceView 直出链路
 - 18.7 TextureView 合成链路
 
+## [2026-04-19] 4.6 内存相关的版本演进 — 知识盲区
+
+### 盲区描述
+1. **GPU / Graphics 内存归属矩阵缺失** — 章节把 Native Heap、Graphics、Hardware Bitmap、memtrack、`dumpsys meminfo`/`dumpsys gpu` 混在一起讲，但没有给出 Android 8-16 上“哪类图形内存出现在什么统计口径里”的矩阵。缺这张矩阵，读者很难判断 Hardware Bitmap、Surface、GraphicBuffer 到底该看 Java Heap、Native Heap 还是 Graphics/memtrack。
+2. **MTE 的 Android 平台边界缺失** — ARM FEAT_MTE3/4、Android 13+ 设备支持、`android:memtagMode` 能力和 Scudo 集成被揉成一条时间线，缺少“架构特性”和“Android 面向 App 的可用能力”两层边界。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 梳理 Android 8-16 上 software bitmap / native bitmap / hardware bitmap / Surface / GraphicBuffer 在 Java Heap、Native Heap、Graphics、GL、memtrack、PSS 中的可见性矩阵
+- 对照 `dumpsys meminfo`、`dumpsys gpu`、Perfetto process memory track、Memtrack HAL 文档，整理一套现场排查口径
+- 拆分 ARM MTE 架构时间线与 Android 平台时间线，分别标注 Android 13/14/15/16 的设备支持范围、manifest 能力和调试方式
+- 补 Pixel / GKI / NDK 官方资料，明确 sync / async 与架构层 Asymmetric 的边界
+
+### 关联章节
+- 4.5 App 内存优化
+- 10.1 App 内存分析
+- 2.9 渲染机制的版本演进
+- 4.2 Linux 内核内存管理

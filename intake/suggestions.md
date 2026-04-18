@@ -1845,3 +1845,8 @@
 - **问题**：只有口头 heuristic，没有最小 trace 抓取口径、provider 识别步骤和 `dumpsys SurfaceFlinger` 实操示例。现场读者即使知道四种模式，也很难把文章结论落到真实设备上验证。
 - **建议**：补一个最小验证清单：`WebViewCompat.getCurrentWebViewPackage()` / `adb shell dumpsys webviewupdate`、Perfetto 中 functor / Viz / `updateTexImage` 的观察点、`dumpsys SurfaceFlinger` 中 child layer 的识别方法。
 
+## [Task9 Deep Review] 4.6 内存相关的版本演进 — 2026-04-19
+- **类型**：数据缺失
+- **位置**：L293-L305 / L317-L323 常规堆限制与 largeHeap 策略
+- **问题**：按 RAM 分档给出的 normal heap / largeHeap 数值区间，以及“Android 10+ 后台进程即使声明 largeHeap 可用堆空间也会被压缩”的说法，没有附设备 `getprop` / `getMemoryClass()` 样本，也没有给出 AOSP 或官方文档锚点，当前更像经验值汇总而不是可复核结论。
+- **建议**：补 3-4 组真实设备样本（RAM、32/64 位、`dalvik.vm.heapgrowthlimit`、`getMemoryClass()` / `getLargeMemoryClass()` 输出），并把 Android 10+ 的后台限制改成有来源的机制描述；如果拿不到样本，就把表格明确降级为经验范围并标 `[待验证]`。
