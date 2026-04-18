@@ -2553,5 +2553,38 @@
     "status": "completed",
     "completed_at": "2026-04-18T21:59:56+08:00",
     "completed_by": "task2b-rework"
+  },
+  {
+    "section": "1.14",
+    "section_title": "锁竞争与同步性能分析",
+    "priority": 85,
+    "reason": "[Deep Tech Review] P1：版本边界过宽 + condvar/mutex 语义混写 + Perfetto 抓取前置条件缺失",
+    "material_paths": [
+      "intake/suggestions.md",
+      "intake/research-gaps.md"
+    ],
+    "review_issues": [
+      {
+        "type": "版本差异",
+        "location": "frontmatter applicable_versions + 「版本演进中的锁优化」",
+        "detail": "applicable_versions 标成 Android 1.0-17，但正文实现分析实际建立在 ART monitor（Android 5.0+）、Perfetto monitor_contention（现代 Trace 基础设施）和 Android 17 DeliQueue 之上。Dalvik 时代与早期系统缺少单独边界说明，读者会把现代观测方法误套到 Android 1-4.x。附带：正文仍多次出现 technical-writing 禁词“链路”，后续改稿时可顺手清理，但不计入本轮主审级别。",
+        "suggestion": "把章节适用范围至少收窄到 Android 5.0-17，或拆成「Dalvik 时代」「ART 时代」「Android 17 DeliQueue」三段版本边界，并补一句旧版本不具备相同 Perfetto 观测面的说明。"
+      },
+      {
+        "type": "原理断裂/知识盲区",
+        "location": "L151-L152 / L219 / L297，native mutex / condition variable 分类",
+        "detail": "正文把 native mutex 和 condition variable 合并成同一类“锁竞争”等待来讲，但 condvar wait 往往是条件同步，不等于 owner 持锁导致的竞争。pthread_cond_wait 在睡眠前会释放互斥锁，trace 上同样可能落在 futex 路径；如果不拆开，读者会把条件等待误判成锁竞争。",
+        "suggestion": "把 native mutex contention 与 condition-variable wait 拆成两个子类，补充一张诊断矩阵：等待语义、是否存在 owner、常见 blocked_function、应看的调用栈/谓词/唤醒源。"
+      },
+      {
+        "type": "原理断裂",
+        "location": "L199-L217 / L296-L297，Perfetto monitor_contention 使用步骤",
+        "detail": "章节直接给出 android.monitor_contention SQL，但没有把抓取前置条件写成可执行步骤。当前只说“打开相关数据源”，没有说明最小 trace 配置，读者不知道要启用哪些 atrace/ftrace 项，SQL 很容易因数据未采到而返回空结果。",
+        "suggestion": "在 Perfetto 小节补最小可执行配置，例如 linux.ftrace + sched 事件 + binder 事件，并明确 Java monitor 需要 dalvik atrace（system_server 场景再补 ss/对应进程范围）后，android_monitor_contention 才有数据。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-18T22:20:00+08:00",
+    "status": "pending"
   }
 ]

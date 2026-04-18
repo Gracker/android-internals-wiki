@@ -963,3 +963,19 @@ SurfaceControl NDK 的 FrameTimeline 小节缺少“如何从 AChoreographerFram
 ### 关联章节
 1.7, 1.9, 8.3, 16.5
 
+
+## [2026-04-18] 1.14 锁竞争与同步性能分析 — 知识盲区
+
+### 盲区描述
+章节没有拆开 native mutex contention、condition variable wait 和 Binder wait queue 的诊断边界，导致 `futex_*` 观察点容易被统一解释成“锁竞争”。这会直接影响 Perfetto 现场判断，尤其是 `pthread_cond_wait` 这类条件同步等待。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 梳理 `pthread_mutex`、`pthread_cond_wait`、Binder wait queue 在 Perfetto 中的最小可观测差异
+- 给出 owner / waiter、谓词等待、reply 等待三类场景的诊断矩阵和示例 trace
+- 补充 Java monitor 所需的最小 trace 配置，避免 `android_monitor_contention` 空结果被误判为“没有锁竞争”
+
+### 关联章节
+1.5, 1.13, 13.3, 13.6

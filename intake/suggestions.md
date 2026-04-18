@@ -1671,3 +1671,9 @@
 - **位置**：L248 / L309
 - **问题**：两处跨章节链接写成当前目录下的 `03-launch-optimization.md` 和 `07-baseline-profiles.md`，实际文件位于 `src/part2-performance/ch08-responsiveness/`，当前链接都会落空。
 - **建议**：修正为 `../../part2-performance/ch08-responsiveness/03-launch-optimization.md` 和 `../../part2-performance/ch08-responsiveness/07-baseline-profiles.md`
+
+## [Task9 Deep Review] 1.14 锁竞争与同步性能分析 — 2026-04-18
+- **类型**：数据缺失
+- **位置**：L253-L255，DeliQueue 数据段
+- **问题**：文中直接引用“主线程 lock contention time 下降 15%、应用 missed frames 下降 4%、SystemUI / Launcher 下降 7.7%-9.1%”，但没有交代测试边界、样本对象、版本条件或观察口径，读者无法判断这些数字能否外推到普通 App 场景。
+- **建议**：补充数据来源的实验边界，例如 Android 17 beta/internal test、对象范围（App 还是 SystemUI/Launcher）、指标口径（missed frames/lock contention time 的采集方式），并给一条可在 Perfetto 中复核的观察点。

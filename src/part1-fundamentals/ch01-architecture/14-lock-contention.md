@@ -44,13 +44,15 @@ sources:
     path: "intake/research-feeds/2026-04-06-15-priority-inversion-futex-pi-android-lock-performance.md"
   - type: note
     path: "intake/research-feeds/2026-04-05-19-android17-deliqueue-lockfree-messagequeue.md"
-pipeline_stage: task6_pending
+pipeline_stage: task2b_pending
 task6_state: revisiting
 task6_result: needs-rework
-task9_state: pending
+task9_state: reviewed
 task9_result: needs-rework
-task2b_state: fixed
-task2b_result: fixed
+task9_reviewed_date: "2026-04-18"
+task9_reviewed_by: "openclaw-task9"
+last_task9_at: "2026-04-18T22:20:00+08:00"
+task2b_state: pending
 ---
 
 # 1.14 锁竞争与同步性能分析
