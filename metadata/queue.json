@@ -1998,5 +1998,44 @@
     "added_at": "2026-04-18T09:16:00",
     "status": "pending",
     "original_review_log": "logs/review/2026-04-18-09-review.md"
+  },
+  {
+    "section": "18.14",
+    "section_title": "Camera 渲染管线",
+    "priority": 95,
+    "reason": "[Deep Tech Review] P0 HAL 接口引用错误；P1 Request-Buffer 生命周期、SurfaceView/BLAST 版本边界、ZSL 能力边界缺失",
+    "material_paths": [
+      "intake/suggestions.md",
+      "intake/research-gaps.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "参考资料（L205）",
+        "detail": "把 `processCaptureRequest()`、`requestStreamBuffers()`、`returnStreamBuffers()` 一并挂到 `hardware/interfaces/camera/device/3.5/ICameraDeviceSession.hal`。实际 Android 16 公开 tag 中，`requestStreamBuffers()` / `returnStreamBuffers()` 定义在 `hardware/interfaces/camera/device/3.5/ICameraDeviceCallback.hal`；`processCaptureRequest` 也不是 3.5 session 文件里的直接声明。",
+        "suggestion": "按调用面拆开引用：request submission 引到 `ICameraDeviceSession`（3.4/3.7 对应的 `processCaptureRequest_*`），buffer management 引到 `ICameraDeviceCallback.hal` 的 `requestStreamBuffers()` / `returnStreamBuffers()`。"
+      },
+      {
+        "type": "原理断裂",
+        "location": "Request-Buffer 生命周期（L123-L131）",
+        "detail": "章节锚点写的是 HAL3 Request-Buffer 生命周期，但表格直接压成“HAL / Framework 从 BufferQueue 取空闲 Buffer”。这跳过了 Android 10+ Camera HAL3.5 buffer management 的关键环节，读者看不到 Framework 侧 stream buffer cache、`requestStreamBuffers()` / `returnStreamBuffers()`、以及 pre-Android 10 与 Android 10+ 的所有权差异。",
+        "suggestion": "按 Android 5-9 与 Android 10+ 拆成两条时序，明确谁持有 buffer、谁负责申请/归还，以及 `dequeueBuffer` 真正落在 Framework stream/Surface 一侧而不是 HAL 直接操作。"
+      },
+      {
+        "type": "版本差异",
+        "location": "Preview 路径 + 版本演进（L84-L88, L181-L189）",
+        "detail": "正文把 `SurfaceView` 预览统一写成 `HAL → BufferQueue → SurfaceFlinger → HWC → Display`，但 applicable_versions 覆盖 Android 5-16。对于 Android 11+，SurfaceView/preview 路径需要补上 BLASTBufferQueue / `SurfaceControl.Transaction` 的现代通路，不能和 pre-BLAST 设备混写。当前表述也与 §18.6 的版本拆分不一致。",
+        "suggestion": "把 preview 章节拆成 pre-BLAST 与 Android 11+ BLAST 两段，并在文中直接回连 §18.6 的现代 SurfaceView 路径。"
+      },
+      {
+        "type": "知识盲区",
+        "location": "ZSL 小节（L117-L121）",
+        "detail": "把 ZSL 统一写成“缓存 YUV/RAW → Framework 挑帧 → reprocess”，没有交代 `REQUEST_AVAILABLE_CAPABILITIES_PRIVATE_REPROCESSING` / `YUV_REPROCESSING`、`createReprocessableCaptureSession`、`CONTROL_ENABLE_ZSL` 以及 CameraX 的 app-managed ring buffer / 降级路径。当前写法把 capability-gated 行为写成了通用模型。",
+        "suggestion": "拆开 Camera2 reprocessable session、`CONTROL_ENABLE_ZSL` 与 CameraX ZSL 的实现边界，说明哪些能力由 HAL 声明，哪些只是框架或库层的 fallback。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-18T09:45:20+08:00",
+    "status": "pending"
   }
 ]
