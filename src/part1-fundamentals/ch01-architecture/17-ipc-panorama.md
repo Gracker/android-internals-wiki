@@ -28,12 +28,12 @@ tags: [ipc, binder, socket, pipe, shared-memory, mmap, ashmem, intent, aidl, mes
 related_chapters: ["1.4", "1.10", "1.13", "2.15", "4.1", "9.1"]
 created_by: "manual-request"
 created_date: "2026-04-09"
-reviewed_date: "2026-04-11"
+reviewed_date: "2026-04-19"
 reviewed_by: "openclaw-task6"
-task6_result: needs-rework
+task6_result: pass-light-edit
 review_log: "logs/review/2026-04-11-09-review.md"
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_result: needs-rework
 task9_state: pending
 task2b_result: fixed
