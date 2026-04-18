@@ -452,17 +452,18 @@
       "title": "JNI/NDK 性能优化",
       "path": "src/part1-fundamentals/ch01-architecture/15-jni-ndk-performance.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
-      "task6_state": "reviewed",
-      "task9_state": "reviewed",
-      "task2b_state": "pending",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
+      "task9_state": "pending",
+      "task2b_state": "fixed",
       "reviewed_date": "2026-04-11",
       "reviewed_by": "openclaw-task6",
       "task2b_result": "fixed",
       "section": "1.15",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
-      "last_task9_at": "2026-04-19T04:18:34+08:00"
+      "last_task9_at": "2026-04-19T04:18:34+08:00",
+      "last_task2b_at": "2026-04-19T04:47:00+08:00"
     },
     "src/part1-fundamentals/ch01-architecture/16-audio-pipeline-performance.md": {
       "chapter": "1.16",
@@ -3974,13 +3975,15 @@
   "1.15": {
     "section": "1.15",
     "title": "JNI/NDK 性能优化",
-    "pipeline_stage": "task2b_pending",
+    "pipeline_stage": "task6_pending",
     "task6_result": "pass-light-edit",
     "task6_reviewed_date": "2026-04-19",
-    "task6_state": "reviewed",
-    "task9_state": "reviewed",
+    "task6_state": "revisiting",
+    "task9_state": "pending",
     "task9_result": "needs-rework",
-    "task2b_state": "pending",
-    "last_task9_at": "2026-04-19T04:18:34+08:00"
+    "task2b_state": "fixed",
+    "last_task9_at": "2026-04-19T04:18:34+08:00",
+    "task2b_result": "fixed",
+    "last_task2b_at": "2026-04-19T04:47:00+08:00"
   }
 }
