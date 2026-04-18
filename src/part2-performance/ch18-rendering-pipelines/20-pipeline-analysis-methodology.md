@@ -7,13 +7,17 @@ tags: ["方法论", "渲染链路", "Perfetto", "dumpsys", "诊断", "BufferQueu
 related_chapters: ["2.1", "2.6", "13.5", "15.1"]
 created_by: "rendering-pipelines-merge"
 created_date: "2026-04-09"
-pipeline_stage: task9_pending
+pipeline_stage: task2b_pending
 task6_state: reviewed
-task9_state: pending
-task2b_state: idle
+task9_state: reviewed
+task2b_state: pending
 reviewed_by: openclaw-task6
 reviewed_date: "2026-04-18"
 task6_result: pass-light-edit
+task9_result: needs-rework
+task9_reviewed_date: "2026-04-18"
+task9_reviewed_by: openclaw-task9
+last_task9_at: "2026-04-18T14:30:00+08:00"
 ---
 
 <!-- outline-start -->

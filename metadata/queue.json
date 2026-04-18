@@ -2229,5 +2229,43 @@
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-18T13:34:00+08:00",
     "status": "pending"
+  },
+  {
+    "section": "18.20",
+    "section_title": "链路分析方法论",
+    "priority": 95,
+    "reason": "[Deep Tech Review] P0 命令说明错误：`dumpsys SurfaceFlinger --list` 不能查看 Composition Type；另有 BLAST/FrameTimeline 版本范围与链路模型问题",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "命令错误",
+        "location": "L64-L71「dumpsys 快速确认」",
+        "detail": "`dumpsys SurfaceFlinger --list` 被标注为可查看 Layer 及其 Composition Type。该命令只枚举 layer 名称，不能直接给出 DEVICE/CLIENT/OVERLAY 判断，当前方法会把诊断入口带偏。",
+        "suggestion": "把 `--list` 改成“只用于枚举 layer 名”；Composition Type 改为查看完整 layer dump 或其他明确支持 composition 信息的输出，并注明 `--bufferinfo` 若保留需补版本限制/待验证标注。"
+      },
+      {
+        "type": "版本差异",
+        "location": "L5 / L80-L81「标准链路」",
+        "detail": "frontmatter 声明适用 Android 9-16，但 Step 2 直接把标准链路写成 `App UI + RT -> SurfaceFlinger -> BLASTBufferQueue`。BLASTBufferQueue 是 Android 11+ 路径，且被引用的 §18.2 本身也只覆盖 Android 11-16。",
+        "suggestion": "把标准链路拆成 Android 9-10（传统 BufferQueue）与 Android 11+（BLAST）两行，避免读者在旧版本 trace 中寻找不存在的 BLAST 锚点。"
+      },
+      {
+        "type": "原理断裂",
+        "location": "L82-L84「TextureView / WebView GL Functor / Camera」",
+        "detail": "Producer/Consumer 表把三类路径压成单行，导致关键 hop 丢失。TextureView 实际是 `Producer -> SurfaceTexture -> App RenderThread -> SurfaceFlinger`；Camera 预览/录像/分析是三路独立输出，不是一个 consumer 同时写成 `SF + MediaCodec + ImageReader`。这与 §18.7、§18.14 的已展开描述不一致。",
+        "suggestion": "按 TextureView、WebView GL Functor、Camera preview / recording / analysis 分开列链路，并把真正需要看的 BufferQueue/SurfaceTexture/stream 标出来。"
+      },
+      {
+        "type": "版本差异 + 交叉引用",
+        "location": "L128-L133 / L166-L170「VRR 感知 SQL」",
+        "detail": "本章把 `INCLUDE PERFETTO MODULE android.frames; ... FROM android_frames` 作为默认 VRR 检测路径，但 §13.5 的已验证口径是 Android 12+ 使用 `actual_frame_timeline_slice` + `android.frames.jank_type`，Android 10/11 需要回退到 `Choreographer#doFrame`、VSYNC 与 SurfaceFlinger 时间窗。当前写法既缺版本门槛，也与书内已验证 SQL 不一致。",
+        "suggestion": "与 §13.5 对齐：Android 12+ 给出 `actual_frame_timeline_slice` 查询，Android 10/11 明确 fallback 路径；若坚持使用 `android_frames` 视图，需先补版本与 stdlib 依据。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-18T14:30:00+08:00",
+    "status": "pending"
   }
 ]
