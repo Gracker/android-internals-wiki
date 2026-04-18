@@ -30,16 +30,17 @@ tags:
   - anr
   - sqlite
   - app-startup
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task9_result: needs-rework
-task9_reviewed_date: "2026-04-17"
+task9_reviewed_date: "2026-04-18"
 task2b_result: fixed
 task2b_state: fixed
-reviewed_date: "2026-04-11"
+reviewed_date: "2026-04-18"
 reviewed_by: "openclaw-task6"
-task6_result: needs-rework
+task6_result: pass-light-edit
+review_round: 2
 ---
 
 
@@ -76,7 +77,7 @@ outline-end -->
 
 ContentProvider 是 Android 四大组件中最"安静"的一个。我们在日常开发中很少直接感知到它的存在，但它对性能的影响往往比直觉更大。如果我们在做启动速度优化，发现冷启动时间中有数十到数百毫秒无法解释的耗时，很可能就是 ContentProvider 在背后"偷偷"初始化了第三方 SDK。如果我们在排查 ANR，看到 traces.txt 里有 `ContentProvider$Transport.query` 的栈帧，说明远端进程的数据库操作阻塞了主线程。
 
-理解 ContentProvider 的性能特征，本质上是在回答三个问题：**它在什么时候执行**（启动阶段，而且比 Application.onCreate 还早）、**它怎么跨进程传输数据**（Binder + 共享内存，有一套复杂但精巧的窗口机制）、**出问题时怎么在 Trace 里定位**（Binder track + ContentProviderTimeout 日志）。搞清楚这三件事之后，我们就能在启动优化、ANR 排查、数据库性能调优中准确识别 ContentProvider 相关的问题。
+理解 ContentProvider 的性能特征，要回答三个问题：**它在什么时候执行**（启动阶段，而且比 Application.onCreate 还早）、**它怎么跨进程传输数据**（Binder + 共享内存，有一套复杂但精巧的窗口机制）、**出问题时怎么在 Trace 里定位**（Binder track + ContentProviderTimeout 日志）。搞清楚这三件事之后，我们就能在启动优化、ANR 排查、数据库性能调优中准确识别 ContentProvider 相关的问题。
 
 ## ContentProvider 在 Android 架构中的角色
 
@@ -111,7 +112,7 @@ ContentProvider 最容易被忽视的性能问题，出在它的初始化时机�
 
 要点是第 4 步：`installContentProviders()` 会遍历 manifest 中声明的所有 `<provider>`，对每一个调用 `installProvider()`，而 `installProvider()` 会依次调用 `ContentProvider.attachInfo()` 和 `ContentProvider.onCreate()`。**所有 ContentProvider 的 onCreate() 都在 Application.onCreate() 之前执行，而且在主线程上顺序执行。**
 
-这意味着什么呢？假设你的 App 集成了 Firebase Analytics、Crashlytics、WorkManager、LeakCanary，每个库都在 manifest 中声明了一个 ContentProvider 来做自动初始化。那么冷启动时，系统会在主线程上按顺序执行这四个 CP 的 `onCreate()`——每个 CP 的初始化耗时直接累加到冷启动时间中。在实际项目中，多个 SDK 的 ContentProvider 初始化叠加可以产生几十到数百毫秒的额外启动延迟。
+实际场景中的影响：假设 App 集成了 Firebase Analytics、Crashlytics、WorkManager、LeakCanary，每个库都在 manifest 中声明了一个 ContentProvider 来做自动初始化。那么冷启动时，系统会在主线程上按顺序执行这四个 CP 的 `onCreate()`——每个 CP 的初始化耗时直接累加到冷启动时间中。在实际项目中，多个 SDK 的 ContentProvider 初始化叠加可以产生几十到数百毫秒的额外启动延迟。
 
 ### 初始化顺序的控制
 
@@ -132,11 +133,11 @@ ContentProvider 最容易被忽视的性能问题，出在它的初始化时机�
 
 [已验证：AOSP, ActivityThread.installContentProviders() 按 initOrder 排序后遍历]
 
-需要注意：**这个顺序控制非常脆弱**。它依赖于所有 CP 在同一个 manifest 中（包括合并后的 manifest），而且依赖库升级可能改变自己的 initOrder。如果你的 CP 之间有依赖关系（比如 CP B 需要 CP A 初始化完成），应该使用 Jetpack App Startup 的依赖图机制（下面会讲），而不是依赖 initOrder。
+需要注意：**这个顺序控制非常脆弱**。它依赖于所有 CP 在同一个 manifest 中（包括合并后的 manifest），而且依赖库升级可能改变自己的 initOrder。如果 CP 之间有依赖关系（比如 CP B 需要 CP A 初始化完成），应该使用 Jetpack App Startup 的依赖图机制（下面会讲），而不是依赖 initOrder。
 
 ## ContentProvider 的跨进程通信机制
 
-ContentProvider 的跨进程数据传输是理解其性能特征的关键。它不是简单地把查询结果序列化后通过 Binder 发过去——那样对大数据量来说太慢了。ContentProvider 的跨进程通信分两层：**控制信令走 Binder，数据传输走共享内存**。
+ContentProvider 的跨进程数据传输是理解其性能特征的关键。ContentProvider 的跨进程通信分两层：**控制信令走 Binder，数据传输走共享内存**。
 
 ### Transport 层：Binder 的封装
 
@@ -439,7 +440,7 @@ ORDER BY slice.dur DESC;
 
 ContentProvider 不是孤立存在的，它和系统中的多个机制有紧密关联：
 
-- **Binder IPC（§1.4）**：ContentProvider 的所有跨进程调用都基于 Binder。理解 Binder 线程池的模型（默认最大 16 个线程）对排查 ContentProvider ANR 至关重要——如果所有 Binder 线程都在等待数据库锁或 I/O，新的 ContentProvider 请求就会排队，导致超时。
+- **Binder IPC（§1.4）**：ContentProvider 的所有跨进程调用都基于 Binder。理解 Binder 线程池的模型（默认最大 16 个线程）是排查 ContentProvider ANR 的关键基础——如果所有 Binder 线程都在等待数据库锁或 I/O，新的 ContentProvider 请求就会排队，导致超时。
 - **进程模型（§1.3）**：ContentProvider 的"冷启动级联 ANR"问题和 Android 的进程管理直接相关。系统在需要时才启动提供方进程，启动开销直接计入调用方的超时预算。
 - **启动优化（§8.3）**：ContentProvider 初始化是冷启动路径上的一环。App Startup 的合并优化是启动优化策略的一部分。
 - **ANR 机制（§9.1-9.4）**：ContentProvider ANR 是 ANR 体系中的一个子类型，诊断方法和其他类型的 ANR 有共性也有个性。
