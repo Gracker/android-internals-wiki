@@ -2376,5 +2376,45 @@
     "added_at": "2026-04-18T16:41:43+08:00",
     "status": "pending",
     "original_review_log": "logs/deep-review/2026-04-18-16-deep-review.md"
+  },
+  {
+    "section": "1.16",
+    "section_title": "Audio Pipeline 延迟与性能",
+    "priority": 95,
+    "reason": "[Deep Tech Review] P0 事实错误：LOW_LATENCY 选路与 Android 17 后台音频限制的行为描述仍不准确",
+    "material_paths": [
+      "intake/suggestions.md",
+      "intake/research-gaps.md"
+    ],
+    "review_issues": [
+      {
+        "type": "交叉引用错误",
+        "location": "L166-L172 / L393",
+        "detail": "前文已经说明 `PERFORMANCE_MODE_LOW_LATENCY` 只是请求，是否进入 fast track 取决于 output profile、采样率、frame count 和 slot 条件；FAQ 段又写成“AudioTrack 在设置 `PERFORMANCE_MODE_LOW_LATENCY` 后，也会走 FAST Mixer 路径”，把条件性行为写成确定性结论。",
+        "suggestion": "FAQ 改成“有机会进入 fast path”，并回连前文的 output profile + `PlaybackThread::createTrack_l()` 选路条件。"
+      },
+      {
+        "type": "版本差异",
+        "location": "L273 / L283-L312",
+        "detail": "“后台音频卡顿 -> AudioFlinger 线程被冻结 -> Android 17 后台限制”这个映射不成立。Android 17 hardening 约束的是后台 app 的音频 API 调用与生命周期合法性，不是把 `audioserver` 里的 AudioFlinger 线程冻结。Trace 上更应关注 app 写入停止、track inactive/teardown，以及 logcat / dumpsys audio 的状态变化。",
+        "suggestion": "把该行改成 app 侧 API 失败或写入停止的可观测特征，并补 `logcat -s AudioHardening` + `dumpsys audio` 的联动诊断路径。"
+      },
+      {
+        "type": "原理断裂",
+        "location": "L206-L219",
+        "detail": "MMAP 段把数据路径画成“App 直接与 ALSA 驱动共享缓冲区，写入的数据直接被硬件消费”，正文没有交代 AAudioService / AudioFlinger 控制面、MMAP endpoint/timing model，以及 shared/exclusive 两种模式的真实边界，容易让读者误以为 MMAP 等于完全脱离 audioserver。",
+        "suggestion": "补一张 control plane / data plane 对照图，明确 shared 仍由 audioserver 侧 mixer/timing model 管理，exclusive 也保留 service/HAL 控制通道，不要只画成 `App -> 驱动`。"
+      },
+      {
+        "type": "版本差异",
+        "location": "L316-L342 / L365-L380",
+        "detail": "章节已经引入 `flushWrittenFramesFromPosition()`、`getCodecProvenance()` 和“Android 16 起支持 AAudio Offload”，但没有把 Direct/OffloadThread、经典 `AudioTrack` compressed offload、以及 Android 16 AAudio offloaded playback 的边界拆开。当前写法会把 low-latency MMAP、compressed offload、power-saving offloaded playback 混成一条路径。",
+        "suggestion": "单列一节比较 Normal / Fast / MMAP / Direct-Offload 四类 output path，明确各自线程模型、适用 payload（PCM/压缩）、延迟目标与功耗目标；Android 16 的 AAudio offloaded playback 需补 API 入口和 payload 边界后再留在版本表。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-18T17:55:02+08:00",
+    "status": "pending",
+    "original_review_log": "logs/deep-review/2026-04-18-17-deep-review.md"
   }
 ]

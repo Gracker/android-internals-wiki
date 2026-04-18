@@ -444,15 +444,18 @@
       "title": "Audio Pipeline 延迟与性能",
       "path": "src/part1-fundamentals/ch01-architecture/16-audio-pipeline-performance.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "revisiting",
-      "task9_state": "pending",
-      "task2b_state": "fixed",
+      "task9_state": "reviewed",
+      "task2b_state": "pending",
       "reviewed_date": "2026-04-11",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
-      "task2b_result": "fixed"
+      "section": "1.16",
+      "task9_reviewed_date": "2026-04-18",
+      "task9_reviewed_by": "openclaw-task9",
+      "last_task9_at": "2026-04-18T17:55:02+08:00"
     },
     "src/part1-fundamentals/ch01-architecture/17-ipc-panorama.md": {
       "chapter": "1.17",
@@ -3121,7 +3124,7 @@
       "major_issues": 1
     }
   },
-  "last_updated": "2026-04-18T16:41:43+08:00",
+  "last_updated": "2026-04-18T17:55:02+08:00",
   "rework_log": [
     {
       "date": "2026-04-15T19:44:09.836904",
@@ -3616,5 +3619,14 @@
     "task2b_state": "pending",
     "pipeline_stage": "task2b_pending",
     "last_task9_at": "2026-04-18T16:41:43+08:00"
+  },
+  "1.16": {
+    "task9_reviewed_date": "2026-04-18",
+    "task9_reviewed_by": "openclaw-task9",
+    "task9_result": "needs-rework",
+    "task9_state": "reviewed",
+    "task2b_state": "pending",
+    "pipeline_stage": "task2b_pending",
+    "last_task9_at": "2026-04-18T17:55:02+08:00"
   }
 }
