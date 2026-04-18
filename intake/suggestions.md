@@ -1598,3 +1598,38 @@
 - **问题**：正文把“Android 8 之后 WebViewZygote 成为重要角色”直接展开成“WebView 相关进程有自己的 child zygote 链路”。异步源码核验结果显示：android-8.0.0_r1 的 `android/webkit/WebViewZygote.java` 已存在 `webview_zygote32/64` 服务名，但未出现 `startChildZygote()`；android-9.0.0_r1 才出现 `startChildZygote()` 路径。当前表述把“专用 WebView zygote”与“child zygote 路由”压成了一个版本点。
 - **建议**：把版本叙述拆开写，至少区分“Android 8 引入专用 WebView zygote”与“Android 9 起明确走 child zygote 路径”；如果后续还要继续写 `preloadApp()`，再单独标注更高版本的变化。
 
+## [Task9 Deep Review] 15.8 Android 性能问题实证：真实世界的分类与代码模式 — 2026-04-18
+- **类型**：数据缺失
+- **位置**：L60
+- **问题**：`76.39%` 的“另一项研究”没有给出可追溯来源，仓内也没有对应素材。当前写法会让读者误以为该数字已被本项目核验。
+- **建议**：补上可直接访问的论文/报告链接和标题；如果找不到稳定来源，删除该数字或改成 `[待验证]`。
+
+## [Task9 Deep Review] 15.8 Android 性能问题实证：真实世界的分类与代码模式 — 2026-04-18
+- **类型**：数据缺失
+- **位置**：L106
+- **问题**：`启动时间每增加 100ms，转化率下降约 0.7%` 没有给出处，且回指的 §8.1 章节里找不到这个数字。
+- **建议**：补充可核验来源；如果只是行业案例或特定业务数据，明确适用场景，不要写成 Android 通用结论。
+
+## [Task9 Deep Review] 15.8 Android 性能问题实证：真实世界的分类与代码模式 — 2026-04-18
+- **类型**：数据缺失
+- **位置**：L201-L205
+- **问题**：`ANR 是用户卸载 App 的 Top 3 原因之一`、`工具已经相对成熟，因此学术研究的边际收益在降低` 都属于扩展判断，当前没有对应数据或案例支撑。
+- **建议**：给出 Google Play Vitals、行业案例或研究原文证据；若无硬证据，改成更保守的工程判断。
+
+## [Task9 Deep Review] 15.8 Android 性能问题实证：真实世界的分类与代码模式 — 2026-04-18
+- **类型**：版本差异
+- **位置**：L72
+- **问题**：把 ANR 写成统一的 `5 秒` 触发阈值，容易和 Input / Broadcast / Service / ContentProvider / `startForeground()` 的不同超时机制混淆。
+- **建议**：把这里限定为 `Input ANR` 场景，或补一句“不同组件的 ANR 超时并不相同，详见 §9.1 / §9.2”。
+
+## [Task9 Deep Review] 1.16 Audio Pipeline 延迟与性能 — 2026-04-18
+- **类型**：数据缺失
+- **位置**：L253-L264 / L275
+- **问题**：Perfetto 部分仍然没有一份真实 trace 的线程名、slice 名或 SQL 结果闭环；`LIKE "%underrun%"` 这段 SQL 还停留在“需要按设备标签调整”的占位状态，读者没法直接复现。
+- **建议**：补 1 份真实音频 trace，至少给出线程名（如 FastMixer / RecordThread / Mmap* / Offload*）、对应 slice 或 counter 名，以及可直接运行的 SQL；如果不同设备差异大，给一版 Pixel 基线和一版 OEM 注意事项。
+
+## [Task9 Deep Review] 1.16 Audio Pipeline 延迟与性能 — 2026-04-18
+- **类型**：数据缺失
+- **位置**：L393
+- **问题**：`JNI` 开销“约 100-200 微秒”没有给出处，也没有说明设备、buffer size、调用频率和测量方法。当前写法会被读者当成通用结论。
+- **建议**：补 benchmark/trace/官方资料；如果暂时没有稳定数据，把这里降级成定性判断，不要保留具体数值。

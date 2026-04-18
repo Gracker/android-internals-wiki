@@ -896,3 +896,34 @@ SurfaceControl NDK 的 FrameTimeline 小节缺少“如何从 AChoreographerFram
 - 8.2
 - 8.3
 
+## [2026-04-18] 15.8 Android 性能问题实证：真实世界的分类与代码模式 — 知识盲区
+
+### 盲区描述
+章节把七类问题和六类代码模式直接推广到 Android 8-17，但缺少按 Android 版本（尤其 Android 12+ 后台限制、SplashScreen、FrameTimeline、高刷新率普及）和 App 规模分层的实证数据。这样会让读者误以为这些占比和优先级在所有版本、所有体量的应用上都稳定不变。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 按 Android 8-11 / 12-14 / 15-17 分层整理性能问题与 contributing factors 的分布变化
+- 对比中小应用与大型 App 在响应性、内存、启动问题上的差异
+- 补充能映射到 §15.5 线上监控、§16.2 版本演进、§8.1 / §9.1 观测面的案例
+
+### 关联章节
+15.5, 16.2, 8.1, 9.1
+
+## [2026-04-18] 1.16 Audio Pipeline 延迟与性能 — 知识盲区
+
+### 盲区描述
+章节已经覆盖 Normal Mixer / FAST Mixer / MMAP，但仍缺 DirectOutputThread / OffloadThread / MmapPlaybackThread 的完整对照，导致 `flushWrittenFramesFromPosition()`、`getCodecProvenance()`、AAudio offloaded playback 这些 offload only 能力没有落回到明确的线程模型与选路图。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 回源 Android 16/17 的 AAudio offloaded playback API（如 `AAUDIO_PERFORMANCE_MODE_POWER_SAVING_OFFLOADED`）与传统 `AudioTrack` offload 的边界
+- 补齐 AudioPolicyManager output profile 到 PlaybackThread / OffloadThread / MmapThread 的选路图和 `dumpsys audio` 可观测点
+- 给出 1 份 Perfetto + `dumpsys audio` 联合样例，区分 fast path、mmap path、offload path
+
+### 关联章节
+1.16, 5.6, 14.4, 16.5
