@@ -2588,5 +2588,565 @@
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-18T22:20:00+08:00",
     "status": "pending"
+  },
+  {
+    "section": "13.1",
+    "section_title": "",
+    "priority": 95,
+    "reason": "[External Review] `traced` 与 `traced_probes` 的 AOSP 源码路径错误，写成了 `system/tracing; 缺少对于 `Thread State` 概念的基础科普。",
+    "review_issues": [
+      {
+        "type": "P0 事实错误",
+        "location": "参考资料部分",
+        "detail": "`traced` 与 `traced_probes` 的 AOSP 源码路径错误，写成了 `system/tracing/...`。",
+        "suggestion": "修正为 `external/perfetto/src/traced/` 与 `external/perfetto/src/traced/probes/`。"
+      },
+      {
+        "type": "P1 重要缺失",
+        "location": "核心概念",
+        "detail": "缺少对于 `Thread State` 概念的基础科普。",
+        "suggestion": "在 Track、Slice、Counter 同级，补充 `Thread State（线程状态）` 的简述，说明其底层由 ftrace 调度事件驱动。"
+      },
+      {
+        "type": "P0 事实错误",
+        "location": "参考资料部分",
+        "detail": "`traced` 与 `traced_probes` 的 AOSP 源码路径错误，写成了 `system/tracing/...`。",
+        "suggestion": "修正为 `external/perfetto/src/traced/` 与 `external/perfetto/src/traced/probes/`。"
+      },
+      {
+        "type": "P1 重要缺失",
+        "location": "核心概念",
+        "detail": "缺少对于 `Thread State` 概念的基础科普。",
+        "suggestion": "在 Track、Slice、Counter 同级，补充 `Thread State（线程状态）` 的简述，说明其底层由 ftrace 调度事件驱动。"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-18T23:15:10",
+    "status": "pending"
+  },
+  {
+    "section": "13.2",
+    "section_title": "",
+    "priority": 85,
+    "reason": "[External Review] 遗漏了 `atrace_apps: \"*\"` 的全系统通配抓取方案。",
+    "review_issues": [
+      {
+        "type": "P1 重要缺失",
+        "location": "`atrace_apps` 配置讲解处",
+        "detail": "遗漏了 `atrace_apps: \"*\"` 的全系统通配抓取方案。",
+        "suggestion": "补充 `atrace_apps: \"*\"` 可以抓取所有进程的自定义 ATRACE 事件。"
+      },
+      {
+        "type": "P1 重要缺失",
+        "location": "`atrace_apps` 配置讲解处",
+        "detail": "遗漏了 `atrace_apps: \"*\"` 的全系统通配抓取方案。",
+        "suggestion": "补充 `atrace_apps: \"*\"` 可以抓取所有进程的自定义 ATRACE 事件。"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-18T23:15:10",
+    "status": "pending"
+  },
+  {
+    "section": "13.3",
+    "section_title": "",
+    "priority": 95,
+    "reason": "[External Review] 将 Runnable 的颜色错误地描述为“浅绿色”。",
+    "review_issues": [
+      {
+        "type": "P0 事实错误",
+        "location": "`颜色编码：线程状态色` 及 `快速判断口诀`",
+        "detail": "将 Runnable 的颜色错误地描述为“浅绿色”。",
+        "suggestion": "修正为“蓝色（Blue）”或“浅蓝色（Light Blue）”。"
+      },
+      {
+        "type": "P0 事实错误",
+        "location": "`颜色编码：线程状态色` 及 `快速判断口诀`",
+        "detail": "将 Runnable 的颜色错误地描述为“浅绿色”。",
+        "suggestion": "修正为“蓝色（Blue）”或“浅蓝色（Light Blue）”。"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-18T23:15:10",
+    "status": "pending"
+  },
+  {
+    "section": "13.4",
+    "section_title": "",
+    "priority": 85,
+    "reason": "[External Review] 1) Shell 脚本示例未移除错误的 `<` 输入重定向；2) Python 脚本段落有重复。",
+    "review_issues": [
+      {
+        "type": "P1 重要缺失",
+        "location": "`用 trace_processor 批量跑 SQL 脚本` 及 `实战：冷启动分析脚本`",
+        "detail": "1) Shell 脚本示例未移除错误的 `<` 输入重定向；2) Python 脚本段落有重复。",
+        "suggestion": "根据 P1 和 P2 描述，清理重复代码、修正 shell 命令，并删除不必要的 `[已修正]` 历史记录残留。"
+      },
+      {
+        "type": "P1 重要缺失",
+        "location": "`用 trace_processor 批量跑 SQL 脚本` 及 `实战：冷启动分析脚本`",
+        "detail": "1) Shell 脚本示例未移除错误的 `<` 输入重定向；2) Python 脚本段落有重复。",
+        "suggestion": "根据 P1 和 P2 描述，清理重复代码、修正 shell 命令，并删除不必要的 `[已修正]` 历史记录残留。"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-18T23:15:10",
+    "status": "pending"
+  },
+  {
+    "section": "13.7",
+    "section_title": "",
+    "priority": 85,
+    "reason": "[External Review] SQL 存在无约束的 CROSS JOIN 逻辑漏洞，会导致算出负数启动时间。",
+    "review_issues": [
+      {
+        "type": "P1 重要缺失",
+        "location": "`一个实用的自动化示例：冷启动回归检测`",
+        "detail": "SQL 存在无约束的 CROSS JOIN 逻辑漏洞，会导致算出负数启动时间。",
+        "suggestion": "在 JOIN 条件中加入 `s2.ts > s1.ts` 的约束，确保 FirstFrame 发生在 activityStart 之后。"
+      },
+      {
+        "type": "P1 重要缺失",
+        "location": "`一个实用的自动化示例：冷启动回归检测`",
+        "detail": "SQL 存在无约束的 CROSS JOIN 逻辑漏洞，会导致算出负数启动时间。",
+        "suggestion": "在 JOIN 条件中加入 `s2.ts > s1.ts` 的约束，确保 FirstFrame 发生在 activityStart 之后。"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-18T23:15:10",
+    "status": "pending"
+  },
+  {
+    "section": "14.1",
+    "section_title": "",
+    "priority": 95,
+    "reason": "[External Review] `ProfilingManager` 引入版本错写为 Android 16 (API 36)，实际为 Android 1; “Android 提供了 `ProfilingManager` API（Android 16，API 36 新增）...; 文章描述 `ProfilingManager` 完全侧重于“系统级自动触发”（注册触发器等）。",
+    "review_issues": [
+      {
+        "type": "P0 事实错误",
+        "location": "使用 Profiler API 在代码中触发 profiling",
+        "detail": "`ProfilingManager` 引入版本错写为 Android 16 (API 36)，实际为 Android 15 (API 35)；伪造了 `TRIGGER_TYPE_COLD_START` 等不存在的公开 API 常量。",
+        "suggestion": "更正版本号为 API 35，删除伪造的常量，用 `PROFILING_TYPE_SYSTEM_TRACE` 和 `requestProfiling()` 替换。"
+      },
+      {
+        "type": "P0 事实错误",
+        "location": "使用 Profiler API 在代码中触发 profiling",
+        "detail": "“Android 提供了 `ProfilingManager` API（Android 16，API 36 新增）... 触发器包括：`TRIGGER_TYPE_COLD_START`...”",
+        "suggestion": "修正版本号为 Android 15 (API 35)。删除虚假的 `TRIGGER_TYPE_*` 常量，改用官方的 `PROFILING_TYPE_SYSTEM_TRACE` 等真实类型来举例，并正确介绍 `requestProfiling` API。"
+      },
+      {
+        "type": "P1 重要缺失",
+        "location": "使用 Profiler API 在代码中触发 profiling",
+        "detail": "文章描述 `ProfilingManager` 完全侧重于“系统级自动触发”（注册触发器等）。",
+        "suggestion": "补充 `requestProfiling` 的主动调用场景，说明 App 如何通过代码主动请求 Trace/Heap Dump 并在回调中上传到服务端。"
+      },
+      {
+        "type": "P0 事实错误",
+        "location": "使用 Profiler API 在代码中触发 profiling",
+        "detail": "`ProfilingManager` 引入版本错写为 Android 16 (API 36)，实际为 Android 15 (API 35)；伪造了 `TRIGGER_TYPE_COLD_START` 等不存在的公开 API 常量。",
+        "suggestion": "更正版本号为 API 35，删除伪造的常量，用 `PROFILING_TYPE_SYSTEM_TRACE` 和 `requestProfiling()` 替换。"
+      },
+      {
+        "type": "P0 事实错误",
+        "location": "使用 Profiler API 在代码中触发 profiling",
+        "detail": "“Android 提供了 `ProfilingManager` API（Android 16，API 36 新增）... 触发器包括：`TRIGGER_TYPE_COLD_START`...”",
+        "suggestion": "修正版本号为 Android 15 (API 35)。删除虚假的 `TRIGGER_TYPE_*` 常量，改用官方的 `PROFILING_TYPE_SYSTEM_TRACE` 等真实类型来举例，并正确介绍 `requestProfiling` API。"
+      },
+      {
+        "type": "P1 重要缺失",
+        "location": "使用 Profiler API 在代码中触发 profiling",
+        "detail": "文章描述 `ProfilingManager` 完全侧重于“系统级自动触发”（注册触发器等）。",
+        "suggestion": "补充 `requestProfiling` 的主动调用场景，说明 App 如何通过代码主动请求 Trace/Heap Dump 并在回调中上传到服务端。"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-18T23:15:10",
+    "status": "pending"
+  },
+  {
+    "section": "14.10",
+    "section_title": "",
+    "priority": 95,
+    "reason": "[External Review] \"截至 Android 17，GKI 内核版本为 6.6（Android 16）/ 6.12（Android 17 部分; GKI 内核版本与 Android 版本映射完全错位（Android 15=6.6, 16=6.12, 17=6.18，",
+    "review_issues": [
+      {
+        "type": "P0 事实错误",
+        "location": "版本差异覆盖][常见问题与误区 / sched_ext 部分]",
+        "detail": "\"截至 Android 17，GKI 内核版本为 6.6（Android 16）/ 6.12（Android 17 部分设备）\"",
+        "suggestion": "修正 GKI 版本映射，并相应更新 sched_ext 可用性评估——Android 16 (GKI 6.12) 已经在内核层面具备 sched_ext 支持。\n\n## 五、P1 问题（重要缺失）\n（无）\n\n## 六、P2 问题（建议改进）\n（无）\n\n## 七、知识盲区清单\n| 盲区 | 重要程度 | 建议研究方向 |\n|---|---|---|\n| sched_ext 在 Android 16 GKI 6.12 上的实际编译状态 | 高 | 虽然 Linux 6.12 合入了 sched_ext，但 GKI 的 defconfig 是否开启了 `CONFIG_SCHED_CLASS_EXT` 需要确认。 |\n| Android 17 GKI 6.18 的具体新增 eBPF 功能 | 中 | Kernel 6.18 可能带来新的 BPF helper 和 map 类型。 |\n\n## 八、外部核验建议"
+      },
+      {
+        "type": "P0 事实错误",
+        "location": "常见问题与误区 / sched_ext 部分",
+        "detail": "GKI 内核版本与 Android 版本映射完全错位（Android 15=6.6, 16=6.12, 17=6.18，非文中声称的 16=6.6, 17=6.12）。",
+        "suggestion": ""
+      },
+      {
+        "type": "P0 事实错误",
+        "location": "版本差异覆盖][常见问题与误区 / sched_ext 部分]",
+        "detail": "\"截至 Android 17，GKI 内核版本为 6.6（Android 16）/ 6.12（Android 17 部分设备）\"",
+        "suggestion": "修正 GKI 版本映射，并相应更新 sched_ext 可用性评估——Android 16 (GKI 6.12) 已经在内核层面具备 sched_ext 支持。\n\n## 五、P1 问题（重要缺失）\n（无）\n\n## 六、P2 问题（建议改进）\n（无）\n\n## 七、知识盲区清单\n| 盲区 | 重要程度 | 建议研究方向 |\n|---|---|---|\n| sched_ext 在 Android 16 GKI 6.12 上的实际编译状态 | 高 | 虽然 Linux 6.12 合入了 sched_ext，但 GKI 的 defconfig 是否开启了 `CONFIG_SCHED_CLASS_EXT` 需要确认。 |\n| Android 17 GKI 6.18 的具体新增 eBPF 功能 | 中 | Kernel 6.18 可能带来新的 BPF helper 和 map 类型。 |\n\n## 八、外部核验建议"
+      },
+      {
+        "type": "P0 事实错误",
+        "location": "常见问题与误区 / sched_ext 部分",
+        "detail": "GKI 内核版本与 Android 版本映射完全错位（Android 15=6.6, 16=6.12, 17=6.18，非文中声称的 16=6.6, 17=6.12）。",
+        "suggestion": ""
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-18T23:15:10",
+    "status": "pending"
+  },
+  {
+    "section": "14.2",
+    "section_title": "",
+    "priority": 95,
+    "reason": "[External Review] 错误地声称 `task-clock` 包含线程等待 CPU 调度的时间。; “`task-clock`：与 cpu-clock 类似，但还包括线程等待 CPU 调度的时间。”",
+    "review_issues": [
+      {
+        "type": "P0 事实错误",
+        "location": "软件事件：cpu-clock 和 task-clock",
+        "detail": "错误地声称 `task-clock` 包含线程等待 CPU 调度的时间。",
+        "suggestion": "修正为“`task-clock` 仅在线程被调度到 CPU 上执行时才会计时，**绝不**包含等待或阻塞时间。”"
+      },
+      {
+        "type": "P0 事实错误",
+        "location": "软件事件：cpu-clock 和 task-clock",
+        "detail": "“`task-clock`：与 cpu-clock 类似，但还包括线程等待 CPU 调度的时间。”",
+        "suggestion": "明确 `task-clock` 是纯粹的 CPU 执行时间（不包含任何挂起/等待时间），它与 `cpu-clock` 在分析单进程时基本等效，只是一个是 task 粒度，一个是 CPU 粒度。"
+      },
+      {
+        "type": "P0 事实错误",
+        "location": "软件事件：cpu-clock 和 task-clock",
+        "detail": "错误地声称 `task-clock` 包含线程等待 CPU 调度的时间。",
+        "suggestion": "修正为“`task-clock` 仅在线程被调度到 CPU 上执行时才会计时，**绝不**包含等待或阻塞时间。”"
+      },
+      {
+        "type": "P0 事实错误",
+        "location": "软件事件：cpu-clock 和 task-clock",
+        "detail": "“`task-clock`：与 cpu-clock 类似，但还包括线程等待 CPU 调度的时间。”",
+        "suggestion": "明确 `task-clock` 是纯粹的 CPU 执行时间（不包含任何挂起/等待时间），它与 `cpu-clock` 在分析单进程时基本等效，只是一个是 task 粒度，一个是 CPU 粒度。"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-18T23:15:10",
+    "status": "pending"
+  },
+  {
+    "section": "14.3",
+    "section_title": "",
+    "priority": 95,
+    "reason": "[External Review] 错误地建议在 Android 8.0+ 上使用 MAT 的 `mBuffer` 提取 Bitmap 像素。; “在 Dominator Tree 中选中一个 Bitmap 对象，在 Inspector 面板中可以看到 `mBuff",
+    "review_issues": [
+      {
+        "type": "P0 事实错误",
+        "location": "MAT 实战分析方法",
+        "detail": "错误地建议在 Android 8.0+ 上使用 MAT 的 `mBuffer` 提取 Bitmap 像素。",
+        "suggestion": "指出由于 Android 8.0+ Bitmap 像素移至 Native Heap，MAT 中无法直接提取 `mBuffer`。推荐改用 Android Studio Memory Profiler 直接查看图片内容。"
+      },
+      {
+        "type": "P0 事实错误",
+        "location": "实战分析方法 - MAT 分析 Bitmap",
+        "detail": "“在 Dominator Tree 中选中一个 Bitmap 对象，在 Inspector 面板中可以看到 `mBuffer`（像素数据）... 导出为 `.data` 文件后... 就能看到这张 Bitmap 的实际内容。”",
+        "suggestion": "明确指出该 MAT 技巧在 Android 8.0+ 已失效。并补充：在现代 Android 开发中，若要查看堆中的 Bitmap 像素内容，应当直接使用 Android Studio 的 Memory Profiler，它会自动读取 Native 内存并展示图片缩略图。"
+      },
+      {
+        "type": "P0 事实错误",
+        "location": "MAT 实战分析方法",
+        "detail": "错误地建议在 Android 8.0+ 上使用 MAT 的 `mBuffer` 提取 Bitmap 像素。",
+        "suggestion": "指出由于 Android 8.0+ Bitmap 像素移至 Native Heap，MAT 中无法直接提取 `mBuffer`。推荐改用 Android Studio Memory Profiler 直接查看图片内容。"
+      },
+      {
+        "type": "P0 事实错误",
+        "location": "实战分析方法 - MAT 分析 Bitmap",
+        "detail": "“在 Dominator Tree 中选中一个 Bitmap 对象，在 Inspector 面板中可以看到 `mBuffer`（像素数据）... 导出为 `.data` 文件后... 就能看到这张 Bitmap 的实际内容。”",
+        "suggestion": "明确指出该 MAT 技巧在 Android 8.0+ 已失效。并补充：在现代 Android 开发中，若要查看堆中的 Bitmap 像素内容，应当直接使用 Android Studio 的 Memory Profiler，它会自动读取 Native 内存并展示图片缩略图。"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-18T23:15:10",
+    "status": "pending"
+  },
+  {
+    "section": "14.5",
+    "section_title": "",
+    "priority": 95,
+    "reason": "[External Review] 错误地将 ByteHook 描述为结合了 Inline Hook 特点，并错误链接到了 Inline Hook 仓库。; 错误声称 Transform API 在 AGP 8.0 中仍然可用。; “Rhea 在 Hook atrace 相关函数时使用了基于字节跳动自研 ByteHook 的方案，它结合了 PLT H",
+    "review_issues": [
+      {
+        "type": "P0 事实错误",
+        "location": "Inline Hook / 参考资料",
+        "detail": "错误地将 ByteHook 描述为结合了 Inline Hook 特点，并错误链接到了 Inline Hook 仓库。",
+        "suggestion": "理清 ByteHook(PLT) 和 ShadowHook(Inline) 的关系，修正参考链接。"
+      },
+      {
+        "type": "P0 事实错误",
+        "location": "Booster 的局限性",
+        "detail": "错误声称 Transform API 在 AGP 8.0 中仍然可用。",
+        "suggestion": ""
+      },
+      {
+        "type": "P0 事实错误",
+        "location": "扩展：Hook 机制对比",
+        "detail": "“Rhea 在 Hook atrace 相关函数时使用了基于字节跳动自研 ByteHook 的方案，它结合了 PLT Hook 和 Inline Hook 的特点。”以及参考资料中“ByteHook GitHub: https://github.com/bytedance/android-inline-hook (字节跳动 Inline Hook)”",
+        "suggestion": "明确区分 ByteHook（PLT Hook）和 ShadowHook（Inline Hook），并修正底部的参考资料链接，将 ByteHook 指向 `bhook` 仓库，如果提到 Inline Hook 则应指向 `shadowhook` 仓库。"
+      },
+      {
+        "type": "P0 事实错误",
+        "location": "Booster 的局限性",
+        "detail": "“AGP 8.0 中虽然仍可使用，但官方更推荐迁移到 Instrumentation API”及后续“虽然 AGP 8.0 将 Transform API 标记为 deprecated 并推荐 Instrumentation API，但 Transform API 在当前版本仍然可用。”",
+        "suggestion": "明确指出 Transform API 在 AGP 8.0 中已被**彻底移除**。第三方编译期框架（如 Booster 最新的兼容版本）必须通过 `AsmClassVisitorFactory` (Instrumentation API) 等新接口来实现字节码修改。"
+      },
+      {
+        "type": "P0 事实错误",
+        "location": "Inline Hook / 参考资料",
+        "detail": "错误地将 ByteHook 描述为结合了 Inline Hook 特点，并错误链接到了 Inline Hook 仓库。",
+        "suggestion": "理清 ByteHook(PLT) 和 ShadowHook(Inline) 的关系，修正参考链接。"
+      },
+      {
+        "type": "P0 事实错误",
+        "location": "Booster 的局限性",
+        "detail": "错误声称 Transform API 在 AGP 8.0 中仍然可用。",
+        "suggestion": ""
+      },
+      {
+        "type": "P0 事实错误",
+        "location": "扩展：Hook 机制对比",
+        "detail": "“Rhea 在 Hook atrace 相关函数时使用了基于字节跳动自研 ByteHook 的方案，它结合了 PLT Hook 和 Inline Hook 的特点。”以及参考资料中“ByteHook GitHub: https://github.com/bytedance/android-inline-hook (字节跳动 Inline Hook)”",
+        "suggestion": "明确区分 ByteHook（PLT Hook）和 ShadowHook（Inline Hook），并修正底部的参考资料链接，将 ByteHook 指向 `bhook` 仓库，如果提到 Inline Hook 则应指向 `shadowhook` 仓库。"
+      },
+      {
+        "type": "P0 事实错误",
+        "location": "Booster 的局限性",
+        "detail": "“AGP 8.0 中虽然仍可使用，但官方更推荐迁移到 Instrumentation API”及后续“虽然 AGP 8.0 将 Transform API 标记为 deprecated 并推荐 Instrumentation API，但 Transform API 在当前版本仍然可用。”",
+        "suggestion": "明确指出 Transform API 在 AGP 8.0 中已被**彻底移除**。第三方编译期框架（如 Booster 最新的兼容版本）必须通过 `AsmClassVisitorFactory` (Instrumentation API) 等新接口来实现字节码修改。"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-18T23:15:10",
+    "status": "pending"
+  },
+  {
+    "section": "14.7",
+    "section_title": "",
+    "priority": 95,
+    "reason": "[External Review] 整个代码示例使用了 `androidx.tracing.perfetto.Tracing`、`androidx.trac; 文章中的版本对照表将 `TRIGGER_TYPE_COLD_START` 和 `TRIGGER_TYPE_KILL_EX; 触发器表中没有 `TRIGGER_TYPE_APP_FULLY_DRAWN`。",
+    "review_issues": [
+      {
+        "type": "P0 事实错误",
+        "location": "源码准确性][基本使用：从零到跑通]",
+        "detail": "整个代码示例使用了 `androidx.tracing.perfetto.Tracing`、`androidx.tracing.perfetto.ProfilingResult`、`androidx.tracing.perfetto.SystemTraceRequestBuilder`、`androidx.tracing.perfetto.JavaHeapDumpRequestBuilder`、`androidx.tracing.perfetto.HeapProfileRequestBuilder`、`androidx.tracing.perfetto.StackSamplingRequestBuilder` 等类。",
+        "suggestion": "将所有代码示例改为使用平台原生 API（`android.os.ProfilingManager`），或者在文前明确说明 Jetpack 封装尚在开发中/尚未公开发布，代码为预期用法而非实际可用 API。"
+      },
+      {
+        "type": "P0 事实错误",
+        "location": "版本差异覆盖][可用的触发器类型]",
+        "detail": "文章中的版本对照表将 `TRIGGER_TYPE_COLD_START` 和 `TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE` 标记为 Android 16 引入。",
+        "suggestion": "按照官方 API 参考重新整理触发器版本对照表，特别注意 `TRIGGER_TYPE_COLD_START` 是 API 37 而非 36。同时补充遗漏的 `TRIGGER_TYPE_APP_FULLY_DRAWN`（API 36）和 `TRIGGER_TYPE_APP_COMPAT`（API 37）。\n\n## 五、P1 问题（重要缺失）"
+      },
+      {
+        "type": "P1 重要缺失",
+        "location": "知识盲区][可用的触发器类型]",
+        "detail": "触发器表中没有 `TRIGGER_TYPE_APP_FULLY_DRAWN`。",
+        "suggestion": ""
+      },
+      {
+        "type": "P0 事实错误",
+        "location": "全部代码示例",
+        "detail": "使用了虚构的 `androidx.tracing.perfetto.*` Jetpack API 类名。",
+        "suggestion": "改为使用 `android.os.ProfilingManager` 平台原生 API。"
+      },
+      {
+        "type": "P1 重要缺失",
+        "location": "可用的触发器类型",
+        "detail": "遗漏了 `TRIGGER_TYPE_APP_FULLY_DRAWN`，这是 API 36 的核心冷启动相关触发器。",
+        "suggestion": ""
+      },
+      {
+        "type": "P0 事实错误",
+        "location": "源码准确性][基本使用：从零到跑通]",
+        "detail": "整个代码示例使用了 `androidx.tracing.perfetto.Tracing`、`androidx.tracing.perfetto.ProfilingResult`、`androidx.tracing.perfetto.SystemTraceRequestBuilder`、`androidx.tracing.perfetto.JavaHeapDumpRequestBuilder`、`androidx.tracing.perfetto.HeapProfileRequestBuilder`、`androidx.tracing.perfetto.StackSamplingRequestBuilder` 等类。",
+        "suggestion": "将所有代码示例改为使用平台原生 API（`android.os.ProfilingManager`），或者在文前明确说明 Jetpack 封装尚在开发中/尚未公开发布，代码为预期用法而非实际可用 API。"
+      },
+      {
+        "type": "P0 事实错误",
+        "location": "版本差异覆盖][可用的触发器类型]",
+        "detail": "文章中的版本对照表将 `TRIGGER_TYPE_COLD_START` 和 `TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE` 标记为 Android 16 引入。",
+        "suggestion": "按照官方 API 参考重新整理触发器版本对照表，特别注意 `TRIGGER_TYPE_COLD_START` 是 API 37 而非 36。同时补充遗漏的 `TRIGGER_TYPE_APP_FULLY_DRAWN`（API 36）和 `TRIGGER_TYPE_APP_COMPAT`（API 37）。\n\n## 五、P1 问题（重要缺失）"
+      },
+      {
+        "type": "P1 重要缺失",
+        "location": "知识盲区][可用的触发器类型]",
+        "detail": "触发器表中没有 `TRIGGER_TYPE_APP_FULLY_DRAWN`。",
+        "suggestion": ""
+      },
+      {
+        "type": "P0 事实错误",
+        "location": "全部代码示例",
+        "detail": "使用了虚构的 `androidx.tracing.perfetto.*` Jetpack API 类名。",
+        "suggestion": "改为使用 `android.os.ProfilingManager` 平台原生 API。"
+      },
+      {
+        "type": "P1 重要缺失",
+        "location": "可用的触发器类型",
+        "detail": "遗漏了 `TRIGGER_TYPE_APP_FULLY_DRAWN`，这是 API 36 的核心冷启动相关触发器。",
+        "suggestion": ""
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-18T23:15:10",
+    "status": "pending"
+  },
+  {
+    "section": "15.1",
+    "section_title": "",
+    "priority": 95,
+    "reason": "[External Review] ProfilingManager 版本严重错误; FrameMetrics API 版本错误; BlastBufferQueue 版本和性质描述不准确",
+    "review_issues": [
+      {
+        "type": "P0 事实错误",
+        "location": "第 145 行",
+        "detail": "ProfilingManager 版本严重错误",
+        "suggestion": ""
+      },
+      {
+        "type": "P0 事实错误",
+        "location": "第 145 行",
+        "detail": "FrameMetrics API 版本错误",
+        "suggestion": ""
+      },
+      {
+        "type": "P1 重要缺失",
+        "location": "第 144-145 行",
+        "detail": "BlastBufferQueue 版本和性质描述不准确",
+        "suggestion": ""
+      },
+      {
+        "type": "P1 重要缺失",
+        "location": "第 312 行",
+        "detail": "Baseline Profiles 适用版本描述有误",
+        "suggestion": ""
+      },
+      {
+        "type": "P1 重要缺失",
+        "location": "第 99 行",
+        "detail": "Google 搜索流量数据引用不够精确",
+        "suggestion": ""
+      },
+      {
+        "type": "P0 事实错误",
+        "location": "第 145 行",
+        "detail": "ProfilingManager 版本严重错误",
+        "suggestion": ""
+      },
+      {
+        "type": "P0 事实错误",
+        "location": "第 145 行",
+        "detail": "FrameMetrics API 版本错误",
+        "suggestion": ""
+      },
+      {
+        "type": "P1 重要缺失",
+        "location": "第 144-145 行",
+        "detail": "BlastBufferQueue 版本和性质描述不准确",
+        "suggestion": ""
+      },
+      {
+        "type": "P1 重要缺失",
+        "location": "第 312 行",
+        "detail": "Baseline Profiles 适用版本描述有误",
+        "suggestion": ""
+      },
+      {
+        "type": "P1 重要缺失",
+        "location": "第 99 行",
+        "detail": "Google 搜索流量数据引用不够精确",
+        "suggestion": ""
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-18T23:15:10",
+    "status": "pending"
+  },
+  {
+    "section": "15.2",
+    "section_title": "",
+    "priority": 85,
+    "reason": "[External Review] SurfaceFlinger `doComposition` 方法名在现代 AOSP 中已过时; ANR 超时值描述过于简化",
+    "review_issues": [
+      {
+        "type": "P1 重要缺失",
+        "location": "第 108、164、319 行",
+        "detail": "SurfaceFlinger `doComposition` 方法名在现代 AOSP 中已过时",
+        "suggestion": ""
+      },
+      {
+        "type": "P1 重要缺失",
+        "location": "第 338 行",
+        "detail": "ANR 超时值描述过于简化",
+        "suggestion": ""
+      },
+      {
+        "type": "P1 重要缺失",
+        "location": "第 108、164、319 行",
+        "detail": "SurfaceFlinger `doComposition` 方法名在现代 AOSP 中已过时",
+        "suggestion": ""
+      },
+      {
+        "type": "P1 重要缺失",
+        "location": "第 338 行",
+        "detail": "ANR 超时值描述过于简化",
+        "suggestion": ""
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-18T23:15:10",
+    "status": "pending"
+  },
+  {
+    "section": "18.13",
+    "section_title": "WebView 渲染链路",
+    "priority": 95,
+    "reason": "[Deep Tech Review] P0 事实错误：WebView 链路判断把 setLayerType 与 onShowCustomView 语义写错",
+    "material_paths": [
+      "intake/suggestions.md",
+      "intake/research-gaps.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "L181-L183 代码检查",
+        "detail": "把 `View.setLayerType()` 当成 WebView 渲染模式判断依据不成立。`LAYER_TYPE_NONE/HARDWARE` 控制的是 View 子树的 layer cache / compositing layer 策略，不是 WebView 内部在 GL Functor、独立 SurfaceControl child layer 之间的模式开关。按这条规则会把普通硬件加速 WebView 误判成 SurfaceControl 模式。",
+        "suggestion": "删除 `setLayerType` 判断法，改成 provider + trace + layer dump 三重证据：`WebViewCompat.getCurrentWebViewPackage()` / `adb shell dumpsys webviewupdate`、Perfetto 中的 functor/Viz 证据、`dumpsys SurfaceFlinger` 的 child layer 证据。"
+      },
+      {
+        "type": "源码错误",
+        "location": "L105-L110 SurfaceView Wrapper",
+        "detail": "`WebChromeClient.onShowCustomView(View view, CustomViewCallback callback)` 的契约是把一个 custom View 交给宿主全屏展示，返回对象并不保证是 `SurfaceView`，宿主也不是“创建一个 SurfaceView”。把 `view` 直接等同为 `SurfaceView` 会误导读者理解全屏视频实现。",
+        "suggestion": "改成“宿主接管 WebView 提供的 custom View；实际内部可能是 SurfaceView、TextureView 或容器包装层，需以实际 view tree / layer dump 为准”。"
+      },
+      {
+        "type": "版本差异",
+        "location": "L74-L99 GL Functor；frontmatter applicable_versions",
+        "detail": "正文把默认路径统一写成 `DrawGL` + App EGLContext，但章节适用范围覆盖 Android 5-16，且提纲已点名 Android 10+ 的 Hardware Draw Functor API。当前写法混淆了早期 GL functor 与 Android 10+/现代 HWUI 对接路径的差异。",
+        "suggestion": "补一个版本分界小节，拆开 pre-Q 与 Q+ 的 functor / drawfn 口径，并给出 Chromium / AOSP 的真实类名或文档锚点。"
+      },
+      {
+        "type": "原理断裂",
+        "location": "L118-L145 SurfaceControl 模式",
+        "detail": "这段写了 `ASurfaceControl` child layer、hole punching、BLAST 提交，但没有给出 WebView provider 版本、Chromium feature flag、实际类名或启用条件。现有 sources 只有 `frameworks/base/core/java/android/webkit/WebView.java` 和 Viz 文档，无法单独支撑这段实现断言。",
+        "suggestion": "补 Chromium WebView 文档 / 源码锚点与最小可验证条件；如果拿不到稳定锚点，应明确标成 `[待验证]`，不要写成固定实现。"
+      },
+      {
+        "type": "知识盲区",
+        "location": "L147-L157 Custom TextureView；L173-L184 判断链路",
+        "detail": "章节把 X5/UC 等第三方内核概括成“常见 Custom TextureView”，但没有 SDK 版本矩阵、供应商证据或验证方法。国内 SDK 实现差异很大，当前写法会把 proprietary path 误当通用事实。",
+        "suggestion": "补一段第三方内核验证法：SDK 版本、实际 View 树 / Layer dump、Perfetto 里的 `SurfaceTexture` / `updateTexImage` 证据；若缺乏公开资料，降为研究盲区。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-18T23:32:00",
+    "status": "pending"
   }
 ]
