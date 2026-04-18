@@ -927,3 +927,22 @@ SurfaceControl NDK 的 FrameTimeline 小节缺少“如何从 AChoreographerFram
 
 ### 关联章节
 1.16, 5.6, 14.4, 16.5
+
+## [2026-04-18] 18.12 Flutter 渲染链路 — 知识盲区
+
+### 盲区描述
+章节已经覆盖 Flutter Android 渲染主干，但对 Android embedding 的三个关键边界仍然不够清楚：1) Merged Platform Model 下 Main(UI+Platform) 与 engine 内部 task runner 的职责边界；2) `RenderMode.surface` / `texture` / `image` 与 Platform Views composition mode 的组合关系；3) Hybrid Composition 与 Texture Layer Hybrid Composition 在 WebView、Map、SurfaceView 场景里的实际代价，包括滚动 jank、a11y、magnifier 和变换约束。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 回源 Flutter Android embedding 官方文档和 engine 源码，梳理 thread merge 后 Main / Raster / IO 的可观测边界
+- 单独整理 `RenderMode` 与 Platform Views composition mode 的对照表，区分默认路径与少见但重要的 `RenderMode.image`
+- 补 1 份 WebView 或 Map 的真实 Perfetto trace，展示 Hybrid Composition 与 Texture Layer Hybrid Composition 的线程、合成和卡顿差异
+
+### 关联章节
+- 2.11 Flutter 渲染管线与性能
+- 18.6 SurfaceView 直出链路
+- 18.7 TextureView 合成链路
+- 7.11 WebView 渲染性能与优化

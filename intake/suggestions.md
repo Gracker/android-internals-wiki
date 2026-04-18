@@ -1633,3 +1633,21 @@
 - **位置**：L393
 - **问题**：`JNI` 开销“约 100-200 微秒”没有给出处，也没有说明设备、buffer size、调用频率和测量方法。当前写法会被读者当成通用结论。
 - **建议**：补 benchmark/trace/官方资料；如果暂时没有稳定数据，把这里降级成定性判断，不要保留具体数值。
+
+## [Task9 Deep Review] 18.12 Flutter 渲染链路 — 2026-04-18
+- **类型**：源码准确性
+- **位置**：L177-L179
+- **问题**：正文把 Flutter 根视图 render mode 直接写成“SurfaceView 或 TextureView”两种，但 Flutter Android embedding 的 `RenderMode` 官方枚举还包含 `image`，其语义与 PlatformView 交互直接相关。当前写法会把“默认常见路径”和“完整 render mode 集合”混成一层。
+- **建议**：补一句 `RenderMode.image` 的定位和适用边界，至少说明它不是常见默认值，但在 PlatformView 全交互场景里需要被单独区分。
+
+## [Task9 Deep Review] 18.12 Flutter 渲染链路 — 2026-04-18
+- **类型**：数据缺失
+- **位置**：L187-L205
+- **问题**：Perfetto 节已经给出 `Engine::BeginFrame`、`Rasterizer::DrawToSurfaces` 等标签，但没有任何真实 trace、线程名、slice 截图或 SQL 结果闭环。读者无法判断这些标签在不同 engine 版本和 trace 配置下是否稳定可见。
+- **建议**：补 1 份真实 Flutter trace，至少给出 Main/Raster/IO 的线程名、关键 slice、FrameTimeline 或 SurfaceFlinger 对应轨道，以及一条可复用的 SQL / 检查步骤。
+
+## [Task9 Deep Review] 18.12 Flutter 渲染链路 — 2026-04-18
+- **类型**：交叉引用
+- **位置**：L211 / frontmatter `related_chapters`
+- **问题**：正文把 WebView 相关章节写成“13.8 WebView 渲染性能”，仓内实际存在的是 `7.11 WebView 渲染性能与优化`；frontmatter `related_chapters` 也没有回连 `7.11`。
+- **建议**：把正文交叉引用修正为 `7.11 WebView 渲染性能与优化`，并在 `related_chapters` 补 `7.11`。

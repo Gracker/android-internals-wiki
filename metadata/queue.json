@@ -2374,8 +2374,11 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-18T16:41:43+08:00",
-    "status": "pending",
-    "original_review_log": "logs/deep-review/2026-04-18-16-deep-review.md"
+    "status": "completed",
+    "original_review_log": "logs/deep-review/2026-04-18-16-deep-review.md",
+    "completed_at": "2026-04-18T10:33:10.689932+00:00",
+    "completed_by": "task2b-rework",
+    "completion_reason": "定向修复完成：arxiv ID 2407.00240→2407.05090；补 Stack Overflow 749,067 数据源与 raw→keyword→manual 统计口径；区分 63 真实世界因素与 82 综合 taxonomy 因素；修正 invalidate()/requestLayout() 语义与 §7.12 对齐；Frame Timeline 标注 Android 12+ 并补 8-11 fallback（gfxinfo/framestats）；ANR 阈值不再统一 5 秒；UI Operation 模式重写；优先级段落清除 banned phrases；参考资料和 frontmatter 同步更新"
   },
   {
     "section": "1.16",
@@ -2419,5 +2422,45 @@
     "completed_at": "2026-04-18T19:04:25+08:00",
     "completed_by": "task2b-rework",
     "completion_reason": "Fixed 4/4 issues: LOW_LATENCY wording, Android 17 background audio observability, MMAP control/data plane, Direct/Offload comparison"
+  },
+  {
+    "section": "18.12",
+    "section_title": "Flutter 渲染链路",
+    "priority": 95,
+    "reason": "[Deep Tech Review] P0 原理错误：Merged Platform Model 下仍把平台调用写成独立 Platform Thread，且把宿主主线程卡顿错误描述为不影响 Flutter 渲染",
+    "material_paths": [
+      "intake/suggestions.md",
+      "intake/research-gaps.md"
+    ],
+    "review_issues": [
+      {
+        "type": "原理错误",
+        "location": "L45-L73",
+        "detail": "章节一边说明 UI TaskRunner 与 Android Main Looper 已合并，一边又在图和表中保留独立 `Platform Task/Platform Thread` 来承载 MethodChannel 与平台调用。这会把 Android 3.29+ merged model 的主线程职责讲反，直接影响 Perfetto 诊断。",
+        "suggestion": "把线程表改成 Main(UI+Platform) / Raster / IO 的主视图；若要保留 engine 内部 platform task 概念，必须明确它不等于插件回调所见的宿主线程。"
+      },
+      {
+        "type": "原理错误",
+        "location": "L131-L133",
+        "detail": "“宿主主线程或 RenderThread 卡顿不影响 Flutter 渲染”表述错误。SurfaceView 路径主要绕开的是宿主 RenderThread 合成，但 merged model 下宿主主线程阻塞仍会卡住 Dart Build/Layout/Paint 与平台回调。",
+        "suggestion": "把优势收敛为“绕开宿主 RenderThread 的纹理采样与窗口合成路径”；同时补一句“宿主主线程阻塞仍会影响 Flutter CPU 阶段”。"
+      },
+      {
+        "type": "版本差异",
+        "location": "frontmatter L5 / outline L31 / 正文 L45 / L91-L93",
+        "detail": "版本口径冲突严重：frontmatter 写 `Flutter 3.10+`，outline 写 `Flutter 3.29+`，正文写 `Flutter 3.32+ stable`；同时把 Impeller 写成“现代默认”，但官方文档把 Android API 29+ 默认切换点标在 3.27。当前写法把线程合并、渲染后端默认值和 API 范围压成了一个版本段。",
+        "suggestion": "拆成“线程模型版本边界”“Impeller 默认版本边界”“Android API 边界”三条独立说明；不确定的版本点标 `[待验证]`。"
+      },
+      {
+        "type": "知识盲区",
+        "location": "L173-L185",
+        "detail": "Platform Views 只写成“Hybrid Composition 性能较好 / Texture Layer 更灵活”，丢掉了官方文档里最关键的工程代价：Hybrid Composition 会让 Flutter 渲染性能下滑，Texture Layer 下 WebView 快速滚动会 janky，SurfaceView 会被挪进 virtual display 影响 a11y，文本放大镜还依赖 Flutter TextureView。",
+        "suggestion": "补一张 Hybrid Composition vs Texture Layer Hybrid Composition 的对照表，至少覆盖 WebView/Map/SurfaceView 嵌入时的 FPS、a11y、滚动和变换约束。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-18T19:18:00+08:00",
+    "status": "pending",
+    "original_review_log": "logs/deep-review/2026-04-18-19-deep-review.md"
   }
 ]
