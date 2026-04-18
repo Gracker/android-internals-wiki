@@ -7,10 +7,10 @@ tags: ["方法论", "渲染链路", "Perfetto", "dumpsys", "诊断", "BufferQueu
 related_chapters: ["2.1", "2.6", "13.5", "15.1"]
 created_by: "rendering-pipelines-merge"
 created_date: "2026-04-09"
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: pending
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
+task2b_state: fixed
 reviewed_by: openclaw-task6
 reviewed_date: "2026-04-18"
 task6_result: pass-light-edit
@@ -18,6 +18,7 @@ task9_result: needs-rework
 task9_reviewed_date: "2026-04-18"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-04-18T14:30:00+08:00"
+task2b_result: fixed
 ---
 
 <!-- outline-start -->
@@ -51,7 +52,7 @@ last_task9_at: "2026-04-18T14:30:00+08:00"
 
 | 场景 | 典型链路 | 确认方法 |
 |:---|:---|:---|
-| 普通 RecyclerView 列表 | 18.2 Android View 标准链路 | App 主线程 + RenderThread |
+| 普通 RecyclerView 列表 | 18.2 Android View 标准路径（Android 9-10 看 BufferQueue，Android 11+ 看 BLAST） | App 主线程 + RenderThread |
 | 地图模块（GLES） | 18.8 OpenGL ES 链路 | 独立 GL Thread |
 | 视频播放（全屏） | 18.15 Video Overlay + HWC | SurfaceView + HWC Overlay |
 | 视频（内嵌页面） | 18.13 WebView + 18.7 TextureView | 看实现方式 |
@@ -65,27 +66,30 @@ last_task9_at: "2026-04-18T14:30:00+08:00"
 ### dumpsys 快速确认
 
 ```bash
-# 查看所有 Layer 及其 Composition Type
+# 只枚举 Layer 名称，先确认目标 Layer 在不在
 adb shell dumpsys SurfaceFlinger --list
 
-# 查看特定 Layer 的详细信息
-adb shell dumpsys SurfaceFlinger | grep -A 20 "SurfaceView"
-
-# 查看 BufferQueue 状态
-adb shell dumpsys SurfaceFlinger --bufferinfo
+# 查看目标 Layer 的完整信息块，再确认 composition、activeBuffer、transform 等字段
+adb shell dumpsys SurfaceFlinger | sed -n '/SurfaceView/,/^$/p'
 ```
+
+`--list` 只负责枚举 Layer 名称。Composition Type 要看完整的 Layer dump，字段名会随 Android 版本和厂商实现变化。普通窗口先按版本分两档：Android 9-10 看传统 BufferQueue，Android 11+ 再看 BLASTBufferQueue 和 transaction 轨迹。
 
 ## Step 2：确定 Producer-Consumer 链路
 
-确定链路后，画出 Producer-Consumer 关系：
+确定渲染路径后，把 Producer、第一消费点和最终上屏路径拆开：
 
-| 链路 | Producer | Consumer | 中间经过 |
+| 场景 | Producer | Consumer | 中间经过 |
 |:---|:---|:---|:---|
-| 标准链路 | App UI + RT | SurfaceFlinger | BLASTBufferQueue |
-| SurfaceView | 独立线程 | SurfaceFlinger | 独立 BufferQueue |
-| TextureView | 独立线程 | App RT → SF | SurfaceTexture |
-| WebView GL Functor | Chromium (in RT) | SF (via RT) | 共享 EGLContext |
-| Camera | HAL/ISP | SF + MediaCodec + ImageReader | 多 BufferQueue |
+| 标准窗口（Android 9-10） | App 主线程 + RenderThread | SurfaceFlinger | Window BufferQueue |
+| 标准窗口（Android 11+） | App 主线程 + RenderThread | SurfaceFlinger | BLASTBufferQueue + BufferQueue |
+| SurfaceView | 独立线程 / MediaCodec / Camera HAL | SurfaceFlinger | 独立 Surface + BufferQueue |
+| TextureView | 解码器 / Camera / GL Producer | App RenderThread → SurfaceFlinger | SurfaceTexture → App 主窗口 Buffer |
+| WebView GL Functor | Chromium Compositor Thread | App RenderThread → SurfaceFlinger | GL Functor / 共享 EGLContext |
+| Camera preview（SurfaceView） | HAL / ISP | SurfaceFlinger | Camera framework stream → BufferQueue（Android 11+ consumer 侧由 BLAST 协调） |
+| Camera preview（TextureView） | HAL / ISP | App RenderThread → SurfaceFlinger | Camera framework stream → SurfaceTexture → App 主窗口 Buffer |
+| Camera recording | HAL / ISP | MediaCodec | Camera framework stream → codec input surface |
+| Camera analysis | HAL / ISP | ImageReader / 分析线程 | Camera framework stream → ImageReader queue |
 
 **关键问题**：帧数据从 Producer 到 Consumer 经过了几跳？每跳之间有没有多余的拷贝或等待？
 
@@ -129,13 +133,28 @@ WHERE name IN ('dequeueBuffer', 'queueBuffer')
 AND dur > 5000000
 ORDER BY dur DESC;
 
--- 3. VRR 感知的掉帧检测
-INCLUDE PERFETTO MODULE android.frames;
-SELECT frame_id, ts, dur, jank_type
-FROM android_frames
+-- 3. Android 12+：FrameTimeline / VRR 设备优先看实际 timeline
+INCLUDE PERFETTO MODULE android.frames.jank_type;
+SELECT
+  process.name AS process_name,
+  ts,
+  dur,
+  jank_type,
+  present_type,
+  on_time_finish
+FROM actual_frame_timeline_slice
+LEFT JOIN process USING (upid)
 WHERE jank_type != 'None'
 ORDER BY ts DESC LIMIT 20;
+
+-- 4. Android 10/11：回到 doFrame + VSYNC 时间窗
+SELECT ts, dur
+FROM slice
+WHERE name = 'Choreographer#doFrame'
+ORDER BY dur DESC LIMIT 20;
 ```
+
+Android 12+ 先看 `actual_frame_timeline_slice`。Android 10/11 没有 FrameTimeline 主表时，回到 `Choreographer#doFrame`、`VSYNC-app`、`VSYNC-sf` 和 `SurfaceFlinger` 的同一时间窗。
 
 ## Step 4：常见瓶颈模式
 
@@ -164,14 +183,14 @@ ORDER BY ts DESC LIMIT 20;
 
 **特征**：GPU Track 出现额外的合成任务。
 **链路**：本应走 Overlay 的 SurfaceView 回退到 GPU。
-**诊断**：`dumpsys SurfaceFlinger` 查看 Composition Type。
+**诊断**：查看目标 Layer 的完整 `dumpsys SurfaceFlinger` 输出，确认 composition 字段是否从 DEVICE / Overlay 回退到 CLIENT。
 **优化**：移除 SurfaceView 的 Alpha/Transform/圆角设置。
 
 ### 模式 E：VRR 误判
 
 **特征**：工具报告大量"掉帧"，但视觉上并不卡。
 **链路**：VRR 设备（18.19）。
-**诊断**：使用 Perfetto `android_frames` 模块而非固定阈值。
+**诊断**：Android 12+ 用 `actual_frame_timeline_slice`；Android 10/11 用 `Choreographer#doFrame`、`VSYNC-app`、`VSYNC-sf` 和 `SurfaceFlinger` 时间窗复盘。
 **优化**：使用 `setFrameRate()` 明确帧率意图。
 
 ## 链路选型决策树
