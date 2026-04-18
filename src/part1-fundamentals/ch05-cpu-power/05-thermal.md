@@ -373,7 +373,7 @@ data_sources: {
 
 ### DVFS 降频 vs Thermal 降频：怎么区分？
 
-这里有一个容易混淆的点。我们在 [5.4 DVFS 与功耗管理](./04-dvfs.md) 中讨论过，schedutil governor 会根据 CPU utilization 主动调节频率。高负载时升频，低负载时降频——这是正常的 DVFS 行为，不涉及温控。
+这里有一个容易混淆的点。我们在 [5.4 DVFS 与功耗管理](04-dvfs.md) 中讨论过，schedutil governor 会根据 CPU utilization 主动调节频率。高负载时升频，低负载时降频——这是正常的 DVFS 行为，不涉及温控。
 
 Thermal 降频是另一种机制：它是 **强制性的频率上限约束**。即使 CPU utilization 很高，thermal cooling 也会把频率限制在某个上限以下。
 
@@ -591,10 +591,10 @@ Thermal 管控在 Android 各版本中有几项关键变化，这里做一个梳
 
 ## 与其他章节的关联
 
-- **[5.4 DVFS 与功耗管理](./04-dvfs.md)**：DVFS 是温控的执行手段之一。Thermal cooling 通过限制 DVFS 的频率上限来降温。了解 DVFS 机制有助于区分"正常调频"和"thermal 降频"。
-- **[5.3 大小核架构](./03-big-little.md)**：Thermal mitigation 的"限核"操作直接影响大小核的在线核心数，进而影响 EAS 调度决策。
-- **[5.6 Android 功耗管理](./06-android-power.md)**：温控是功耗管理的子系统之一。WakeLock、Doze、App Standby 管的是"谁在用电"，温控管的是"电用多了怎么办"。
-- **[7.3 卡顿分析方法论](../../part2-performance/ch07-smoothness/03-jank-methodology.md)**：卡顿分析中，温控导致的掉帧需要和代码缺陷导致的掉帧区分开来。
+- **[5.4 DVFS 与功耗管理](04-dvfs.md)**：DVFS 是温控的执行手段之一。Thermal cooling 通过限制 DVFS 的频率上限来降温。了解 DVFS 机制有助于区分"正常调频"和"thermal 降频"。
+- **[5.3 大小核架构](03-big-little.md)**：Thermal mitigation 的"限核"操作直接影响大小核的在线核心数，进而影响 EAS 调度决策。
+- **[5.6 Android 功耗管理](06-android-power.md)**：温控是功耗管理的子系统之一。WakeLock、Doze、App Standby 管的是"谁在用电"，温控管的是"电用多了怎么办"。
+- **[7.3 卡顿分析方法论](03-jank-methodology.md)**：卡顿分析中，温控导致的掉帧需要和代码缺陷导致的掉帧区分开来。
 
 ## 参考资料
 

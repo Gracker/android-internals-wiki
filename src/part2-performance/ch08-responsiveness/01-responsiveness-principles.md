@@ -108,7 +108,7 @@ RAIL 是 Google 提出的以用户感知为中心的性能模型，最初用于 
 
 动画和滚动场景下，每一帧的渲染必须在 16ms 内完成（60Hz 屏幕）或 8ms 内完成（120Hz 屏幕）。这个时间包括 Input 事件处理、业务逻辑更新、measure/layout/draw 整套流程。
 
-Android 通过 Choreographer 机制来同步 VSync 信号，如果某一帧的处理时间超过了 VSync 周期，就会产生"掉帧"（jank），用户会感知到画面卡顿。关于 Choreographer 的详细机制，我们在 [2.4 Choreographer 与渲染流水线](../../part1-fundamentals/ch02-rendering/04-choreographer.md) 中专门讨论。
+Android 通过 Choreographer 机制来同步 VSync 信号，如果某一帧的处理时间超过了 VSync 周期，就会产生"掉帧"（jank），用户会感知到画面卡顿。关于 Choreographer 的详细机制，我们在 [2.4 Choreographer 与渲染流水线](04-choreographer.md) 中专门讨论。
 
 ### Idle——空闲
 
@@ -134,7 +134,7 @@ InputDispatcher 通过 Binder IPC 将事件发送给目标 App 进程。App 进�
 
 这条路径在 Perfetto 中对应的是 Input Track 和对应 App 主线程上的 Input 事件处理 slice。从 InputDispatcher 发出到 App 收到，通常耗时在 1-2ms；如果主线程被阻塞（比如正在执行长时间的 measure/layout），这个时间会显著增加。
 
-关于 Input 分发的完整机制，我们在 [3.1 Input 事件分发全流程](../../part1-fundamentals/ch03-input/01-input-dispatch.md) 中详细讨论。
+关于 Input 分发的完整机制，我们在 [3.1 Input 事件分发全流程](01-input-dispatch.md) 中详细讨论。
 
 ### 第二步：App 主线程处理
 
@@ -263,7 +263,7 @@ Android 目前没有直接采用 INP 这个概念，但有功能等价的指标�
 
 **Step 4：检查 SurfaceFlinger 合成**。看 SurfaceFlinger 的 Commit 和合成操作是否按时完成。
 
-关于 Perfetto 的使用方法，我们在 [第 13 章 Perfetto 工具链](../../part3-tools/ch13-perfetto/01-perfetto-intro.md) 中详细讨论。
+关于 Perfetto 的使用方法，我们在 [第 13 章 Perfetto 工具链](01-perfetto-intro.md) 中详细讨论。
 
 ## 常见问题与误区
 

@@ -439,3 +439,10 @@ WMS 维护的 Window Z-order 和区域信息是 InputDispatcher 进行 hit-test 
 - [Android 官方文档 - Desktop Windowing](https://developer.android.com/about/versions/16/features#desktop-windowing) — Android 16 桌面窗口模式
 - [源码路径: frameworks/base/services/core/java/com/android/server/wm/] — WMS 相关所有类的源码目录
 - [源码路径: frameworks/base/core/java/android/view/SurfaceControl.java] — SurfaceControl 和 Transaction 的完整实现
+
+### Android 16 ViewRootImpl Traversal 与 Relayout 内部机制深度解析
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/Android 16 ViewRootImpl Traversal 与 Relayout 内部机制深度解析.md
+- 类型：DeepResearch 调研结果
+- 摘要：调研从 scheduleTraversals、sync barrier、Choreographer CALLBACK_TRAVERSAL 讲到 performTraversals 和 relayoutWindow 判定条件，系统梳理了 ViewRootImpl 与 WMS 的协作边界及性能诊断切口。
+- 注入时间：2026-04-18
+- 价值：适合补强 2.12 对 App 侧窗口根节点和 relayout 触发矩阵的覆盖。

@@ -18,6 +18,8 @@
 - 研究产出：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/research-feeds/
 - 进度追踪：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/metadata/progress.json
 - 研究日志：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/logs/research/
+- 外部 Review 归档：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/logs/external-review/
+- 外部 Review 整合规范：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/external-ai-review-integration-spec.md
 - Obsidian 落盘：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/前沿研究/
 
 ## 核心原则
@@ -30,9 +32,10 @@
 ### Stage 1：焦点确定
 
 优先级排序（从高到低）：
-1. **queue.json 中的高优先级章节**（priority ≥ 80）：读取 queue.json，找出当前最需要素材的章节
-2. **writing-guide.md 中的重点章节**：根据写作规范中的优先级确定研究方向
-3. **固定主题轮转**（兜底）：如果队列空，按以下 20 个主题轮转（根据日期取模）：
+1. **external-review 活跃文件中的知识盲区 / 一手资料线索**：优先读取最近 7 天 `logs/external-review/` 根目录（不含 `archive/`），提取高价值盲区、版本差异、源码线索，作为研究焦点
+2. **queue.json 中的高优先级章节**（priority ≥ 80）：读取 queue.json，找出当前最需要素材的章节
+3. **writing-guide.md 中的重点章节**：根据写作规范中的优先级确定研究方向
+4. **固定主题轮转**（兜底）：如果队列空，按以下 20 个主题轮转（根据日期取模）：
 
 | 序号 | 主题 | 关键词 |
 |------|------|--------|
@@ -124,6 +127,22 @@
 ### 与 queue.json 联动
 - 优先级调整建议：{如"建议将 14.2 的 priority 从 50 提升到 70"}
 - 素材路径建议：{如"可补充到 14.2 的 material_paths"}
+```
+
+### Stage 5.5：external-review 联动
+
+如果本轮研究命中了 external-review 中提到的知识盲区或源码级待验证点：
+- 在研究产出中显式标注“命中 external-review 线索”
+- 尽量把一手资料补齐到可以直接被回炉 AI 使用的程度
+- 如果 external-review 中已有高价值知识资产，但证据还不够，本轮优先补全证据链
+
+### Stage 5.6：归档已消费 external-review（如适用）
+
+如果本轮研究明确消费了某个 external-review 活跃文件中的知识盲区、源码线索或一手资料索引，并且这些结果已经落入 `research-gaps.md`、`suggestions.md`、研究产出或 queue 联动结果中，则在结束前执行：
+
+```bash
+cd "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki"
+python3 scripts/external_review_archive_helper.py archive
 ```
 
 ### Stage 6：元数据联动

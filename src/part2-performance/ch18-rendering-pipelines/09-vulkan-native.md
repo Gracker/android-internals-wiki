@@ -46,7 +46,7 @@ sources:
 
 Vulkan 是 Android 的主低层图形 API，Android 15+ 进一步推进了 AVP（Android Vulkan Profile）等能力。[已验证: Android 15 Developer Preview 文档] 与 OpenGL ES 相比，Vulkan 的核心区别在于**"显式优于隐式"**——内存管理、同步原语、命令提交全部由 App 显式控制，驱动只做传达，不再替你猜。换来的是更低的 CPU 开销、更少的驱动 bug，以及更高的调试可控性。
 
-关于图形 API 的演进历史和 Vulkan 在 Android 上的引入过程，详见 [2.14 图形 API 演进](../../part1-fundamentals/ch02-rendering/14-graphics-api-evolution.md)。本节聚焦 Vulkan 渲染链路的实战视角：从 Acquire 到 Present 的完整流程、Presentation Mode 的选择、以及如何在 Trace 中识别 Vulkan 链路。
+关于图形 API 的演进历史和 Vulkan 在 Android 上的引入过程，详见 [2.14 图形 API 演进](14-graphics-api-evolution.md)。本节聚焦 Vulkan 渲染链路的实战视角：从 Acquire 到 Present 的完整流程、Presentation Mode 的选择、以及如何在 Trace 中识别 Vulkan 链路。
 
 ## 为什么选择 Vulkan
 
@@ -392,5 +392,5 @@ adb shell setprop debug.vulkan.layers VK_LAYER_KHRONOS_validation
 > **交叉引用**：
 > - OpenGL ES 链路（对比参考）详见 [18.8 OpenGL ES 渲染链路](08-opengl-es.md)
 > - SurfaceControl API 与 FrameTimeline 详见 [18.10 SurfaceControl API 深入](10-surface-control-api.md)
-> - 图形 API 演进历史详见 [2.14 图形 API 演进](../../part1-fundamentals/ch02-rendering/14-graphics-api-evolution.md)
-> - BufferQueue 与 Transaction 机制详见 [2.13 图形缓冲区管理](../../part1-fundamentals/ch02-rendering/13-buffer-queue.md)
+> - 图形 API 演进历史详见 [2.14 图形 API 演进](14-graphics-api-evolution.md)
+> - BufferQueue 与 Transaction 机制详见 [2.13 图形缓冲区管理](13-buffer-queue.md)

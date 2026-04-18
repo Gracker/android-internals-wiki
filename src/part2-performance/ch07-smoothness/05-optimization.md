@@ -78,7 +78,7 @@ task2b_state: fixed
 
 ### 为什么布局层级会影响性能
 
-Android 的渲染管线在每一帧都需要执行 measure → layout → draw 三个阶段（参见 [2.4 Choreographer 与渲染流水线](part1-fundamentals/ch02-rendering/04-choreographer.md)）。measure 和 layout 阶段的耗时与 View 树的深度直接相关——measure 是递归的，父 ViewGroup 需要先遍历所有子 View 确定尺寸，然后才能确定自己的尺寸。布局嵌套越深，递归层数越多。
+Android 的渲染管线在每一帧都需要执行 measure → layout → draw 三个阶段（参见 [2.4 Choreographer 与渲染流水线](04-choreographer.md)）。measure 和 layout 阶段的耗时与 View 树的深度直接相关——measure 是递归的，父 ViewGroup 需要先遍历所有子 View 确定尺寸，然后才能确定自己的尺寸。布局嵌套越深，递归层数越多。
 
 更糟糕的是某些 ViewGroup 需要**多次测量**。`RelativeLayout` 需要先做一遍测量确定各子 View 之间的依赖关系，然后再做一遍确定最终位置。`LinearLayout` 使用 `layout_weight` 时也有类似问题。
 
@@ -179,7 +179,7 @@ RecyclerView 从 25.1.0 开始支持预取——在主线程空闲的间隙提�
 
 常见优化：移除不透明 Activity 的 Window 背景、使用 clipPath 裁剪、`View.setWillNotDraw(true)` 跳过不需要绘制的 ViewGroup。
 
-详见 [2.8 过度绘制](part1-fundamentals/ch02-rendering/08-overdraw.md)。
+详见 [2.8 过度绘制](08-overdraw.md)。
 
 ### Hardware Layer：动画加速器
 
@@ -194,7 +194,7 @@ view.setLayerType(View.LAYER_TYPE_NONE, null);
 
 [已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/view/View.java — LAYER_TYPE_HARDWARE 在硬件加速开启时生效]
 
-**三个陷阱：** 不要长期开启（占 GPU 内存）；不要对频繁 invalidate 的 View 使用；对简单 View 没意义。详见 [2.7 Hardware Layer](part1-fundamentals/ch02-rendering/07-hardware-layer.md)。
+**三个陷阱：** 不要长期开启（占 GPU 内存）；不要对频繁 invalidate 的 View 使用；对简单 View 没意义。详见 [2.7 Hardware Layer](07-hardware-layer.md)。
 
 ### Canvas 操作简化
 
@@ -226,7 +226,7 @@ Android 12 的 `RenderEffect` API 模糊效果是性能敏感操作。建议：�
 
 ### Binder 调用优化
 
-Binder 是 Android 进程间通信的核心机制（详见 [1.4 Binder IPC](part1-fundamentals/ch01-architecture/04-binder.md)），但它的耗时极度不可控。系统空闲时一次 Binder 调用可能只要 0.5ms，而系统繁忙时（比如多个 App 同时做 GC、SurfaceFlinger 正在合成、lmkd 在杀进程），同一次调用可能飙升到 20ms 甚至更久。在 120Hz 设备上，20ms 等于两个半 VSync 周期——一次 Binder 调用就能制造一个肉眼可见的卡顿。
+Binder 是 Android 进程间通信的核心机制（详见 [1.4 Binder IPC](04-binder.md)），但它的耗时极度不可控。系统空闲时一次 Binder 调用可能只要 0.5ms，而系统繁忙时（比如多个 App 同时做 GC、SurfaceFlinger 正在合成、lmkd 在杀进程），同一次调用可能飙升到 20ms 甚至更久。在 120Hz 设备上，20ms 等于两个半 VSync 周期——一次 Binder 调用就能制造一个肉眼可见的卡顿。
 
 针对 Binder 调用，有几条实践证明有效的优化策略。
 
@@ -382,7 +382,7 @@ WeSing 在进房场景中发现主线程 inflate 耗时过长，原因是“游�
 - [Jetpack Compose Performance](https://developer.android.com/develop/ui/compose/performance)
 - [ConstraintLayout 性能优化](https://developer.android.com/develop/ui/views/layout/constraint-layout)
 - [ViewStub 文档](https://developer.android.com/reference/android/view/ViewStub)
-- [Hardware Layer](https://developer.android.com/reference/android/view/View#LAYER_TYPE_HARDWARE) — 另见本书 [2.7 Hardware Layer](part1-fundamentals/ch02-rendering/07-hardware-layer.md)
+- [Hardware Layer](https://developer.android.com/reference/android/view/View#LAYER_TYPE_HARDWARE) — 另见本书 [2.7 Hardware Layer](07-hardware-layer.md)
 - AOSP：`ViewStub.java`、`View.java`、`Choreographer.java`
 - 腾讯 WeSing：[Android 深入卡顿分析与实践](https://mp.weixin.qq.com/s?__biz=MzI1NjEwMTM4OA==&mid=2651236641)
 - [Compose BOM 2025.12.00](https://developer.android.com/develop/ui/compose/bom)

@@ -377,6 +377,30 @@ Swappy 和 §2.18 的 Adaptive Refresh Rate 有关系，但不是同一层。Swa
 - Vulkan 有 `VK_PRESENT_MODE_FIFO_KHR`，也不等于已经拿到了 Android 上这一层的 pacing。Swappy 额外处理的是 Android display timing、refresh callback、stats 和 queue depth。
 - 平均 FPS 正常，肉眼依然卡，并不矛盾。帧间隔波动增大时，主观流畅度会明显下降，这就是 frame pacing 这节要处理的问题。
 
+
+
+<!-- AIW-源码调研-2026-04-18 -->
+## §18.8 GLES 渲染链路关联说明
+
+本节（§2.17）与 §18.8 OpenGL ES 渲染链路（Frame Pacing 控制机制）在内容上有直接关联。§18.8 的 Frame Pacing 控制盲区，核心就是 Swappy 接入 GLES 的 `SwappyGL_swap()` 路径和 Choreographer 协调逻辑，已在本节详细覆盖。
+
+关键源码索引（补充 AOSP main 分支最新路径）：
+
+| 源码文件（AOSP main） | 关键内容 |
+|----------------------|---------|
+| `games-frame-pacing/opengl/SwappyGL.cpp` | `swapInternal()` 完整五步链 |
+| `games-frame-pacing/opengl/EGL.cpp` | `insertSyncFence()` / waiter thread |
+| `games-frame-pacing/common/ChoreographerThread.cpp` | NDK/Java/NoChoreographer 回退链 |
+| `games-frame-pacing/common/SwappyCommon.cpp` | `calculateSwapInterval()` 动态算法 |
+| `include/swappy/swappyGL_extra.h` | `SwappyGL_onChoreographer()` / 统计 API |
+
+本节对以下调研盲区已有完整覆盖：
+- ✅ Swappy 与 Choreographer 的协调机制（三层回退链）
+- ✅ `setSwapIntervalNS()` / `setPreferredRefreshPeriodNS()` 设置目标帧率
+- ✅ Auto 模式 swap interval 动态计算（不是固定档位表）
+- ✅ `EGL_ANDROID_presentation_time` 的按需调用逻辑
+- ✅ Buffer Stuffing 防护（fence + waiter thread）
+
 ## 参考资料
 
 - 官方文档：<https://developer.android.com/games/sdk/frame-pacing>
