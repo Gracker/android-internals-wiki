@@ -3,11 +3,11 @@ title: "进程模型与生命周期管理"
 chapter: "1.3"
 section: "1.3"
 status: ready-for-review
-reviewed_date: "2026-04-12"
+reviewed_date: "2026-04-18"
 reviewed_by: openclaw-task6
 review_type: task6-writing-quality-review
-task6_result: needs-rework
-review_round: 2
+task6_result: pass-light-edit
+review_round: 3
 drafted_date: "2026-03-31"
 applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
 last_verified: "2026-04-09"
@@ -53,8 +53,8 @@ sources:
     path: "source.android.com/docs/core/perf/lmkd"
 tags: [process, ams, oom_adj, lmkd, zygote, process-lifecycle, binder]
 related_chapters: ["1.1", "1.2", "1.4", "1.5", "4.4", "5.1", "5.8"]
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task9_result: needs-rework
 task2b_state: fixed
@@ -372,7 +372,7 @@ Android 9 把 userspace `lmkd` 引入主线，但它的启用条件仍然带着 
 
 ## 四大组件与进程的对应关系
 
-一个常见的误解是"一个 App 就是一个进程"。更准确地说，Android 的进程模型是**组件驱动**的，进程的存在是因为里面有组件在运行。
+Android 的进程模型是**组件驱动**的——进程的存在是因为里面有组件在运行。。
 
 ### 默认情况：单进程
 
@@ -527,7 +527,7 @@ Standby Bucket 影响的是 **JobScheduler 的执行频率、Firebase Cloud Mess
 
 [图：`procstate` → `OomAdjuster` → `setProcessGroup()` → task profile / cgroup → Perfetto `sched` / `process stats` 的映射图]
 
-Perfetto 里最先冒出来的信号，往往不是“进程马上要死了”，而是主线程和 RenderThread 在大核上的连续 runnable slice 变少，CPU frequency track 不再跟着交互抬升，或者 cached app 进入 freezer 之后线程 slice 长时间消失。读到这一步，再去看 §4.4《Low Memory Killer》、§5.1《Linux 进程调度基础》、§5.8《后台执行限制与优化》，上下文会更完整。
+Perfetto 里最先冒出来的信号，通常是主线程和 RenderThread 在大核上的连续 runnable slice 变少，CPU frequency track 不再跟着交互抬升，或者 cached app 进入 freezer 之后线程 slice 长时间消失。读到这一步，再去看 §4.4《Low Memory Killer》、§5.1《Linux 进程调度基础》、§5.8《后台执行限制与优化》，上下文会更完整。
 
 [已验证: AOSP android-16.0.0_r1, frameworks/base/services/core/java/com/android/server/am/OomAdjuster.java; frameworks/base/services/core/java/com/android/server/am/ProcessStateRecord.java; frameworks/base/core/java/android/os/Process.java; system/core/libprocessgroup/profiles/task_profiles.json; system/core/libprocessgroup/processgroup.cpp]
 
