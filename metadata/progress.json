@@ -1,16 +1,16 @@
 {
-  "generated_at": "2026-04-18T21:43:38+08:00",
+  "generated_at": "2026-04-18T22:02:12+08:00",
   "state_machine_version": "v2",
   "total_sections": 216,
   "metrics": {
     "total": 216,
     "unknown": 37,
     "ready-for-review": 179,
-    "last_updated": "2026-04-18T21:43:38+08:00",
+    "last_updated": "2026-04-18T22:02:12+08:00",
     "task2b_state_counts": {
       "unknown": 37,
-      "fixed": 92,
-      "pending": 20,
+      "fixed": 93,
+      "pending": 19,
       "idle": 67
     },
     "task6_state_counts": {
@@ -21,45 +21,45 @@
     },
     "task9_state_counts": {
       "unknown": 35,
-      "pending": 163,
-      "reviewed": 18
+      "pending": 164,
+      "reviewed": 17
     },
     "pipeline_stage_counts": {
       "unknown": 32,
-      "task6_pending": 143,
+      "task6_pending": 144,
       "task9_pending": 20,
-      "task2b_pending": 21
+      "task2b_pending": 20
     },
     "total_sections": 216,
     "pipeline_unknown": 32,
-    "pipeline_task6_pending": 143,
-    "pipeline_task2b_pending": 21,
+    "pipeline_task6_pending": 144,
+    "pipeline_task2b_pending": 20,
     "pipeline_task9_pending": 20,
     "task2b_unknown": 37,
-    "task2b_fixed": 92,
-    "task2b_pending": 20,
+    "task2b_fixed": 93,
+    "task2b_pending": 19,
     "task2b_idle": 67,
     "task6_unknown": 33,
     "task6_revisiting": 90,
     "task6_reviewed": 38,
     "task6_pending": 55,
     "task9_unknown": 35,
-    "task9_pending": 163,
-    "task9_reviewed": 18,
+    "task9_pending": 164,
+    "task9_reviewed": 17,
     "ready-to-publish": 0,
     "finalized": 0
   },
   "pipeline": {
     "pipeline_stage_counts": {
       "unknown": 32,
-      "task6_pending": 143,
+      "task6_pending": 144,
       "task9_pending": 20,
-      "task2b_pending": 21
+      "task2b_pending": 20
     },
     "task2b_state_counts": {
       "unknown": 37,
-      "fixed": 92,
-      "pending": 20,
+      "fixed": 93,
+      "pending": 19,
       "idle": 67
     },
     "task6_state_counts": {
@@ -70,8 +70,8 @@
     },
     "task9_state_counts": {
       "unknown": 35,
-      "pending": 163,
-      "reviewed": 18
+      "pending": 164,
+      "reviewed": 17
     }
   },
   "issues": {
@@ -385,10 +385,10 @@
       "title": "AutoFDO 反馈导向编译优化",
       "path": "src/part1-fundamentals/ch01-architecture/12-autofdo-optimization.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
+      "pipeline_stage": "task6_pending",
       "task6_state": "revisiting",
-      "task9_state": "reviewed",
-      "task2b_state": "pending",
+      "task9_state": "pending",
+      "task2b_state": "fixed",
       "reviewed_date": "2026-04-11",
       "reviewed_by": "openclaw-task6",
       "task6_result": "needs-rework",
