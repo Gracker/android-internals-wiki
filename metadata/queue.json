@@ -2126,5 +2126,62 @@
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-18T12:20:00+08:00",
     "status": "pending"
+  },
+  {
+    "section": "18.21",
+    "section_title": "EyeDropper API 与跨设备协作性能",
+    "priority": 90,
+    "reason": "[review回炉] 全文 API 用法与真实实现严重不符，大量代码/数据/类名为 AI 编造",
+    "material_paths": [
+      "intake/suggestions.md（含 review 意见）"
+    ],
+    "review_issues": [
+      {
+        "type": "需重写",
+        "location": "全文",
+        "detail": "EyeDropper API 真实实现为 Intent-based（ACTION_OPEN_EYE_DROPPER + EXTRA_COLOR），章节描述的 EyeDropper 类、pickColor() 方法、OnColorPickedListener 回调接口均为编造",
+        "suggestion": "基于官方 API 文档重写，正确 API 为 Intent(ACTION_OPEN_EYE_DROPPER) + registerForActivityResult 接收 EXTRA_COLOR"
+      },
+      {
+        "type": "需重写",
+        "location": "EyeDropperConfig / CrossDeviceColorPicker / IncrementalColorSync / ColorCompression 等类",
+        "detail": "这些类均为 AI 编造，Android 17 EyeDropper API 不包含这些类",
+        "suggestion": "删除所有编造类，仅保留真实 API 用法"
+      },
+      {
+        "type": "需重写",
+        "location": "SurfaceFlinger/HWC 相关代码",
+        "detail": "SurfaceFlinger.pickColorAt()、Layer.pickColorAt()、HWC GPU shader 代码均为编造",
+        "suggestion": "删除所有编造的底层实现代码"
+      },
+      {
+        "type": "需重写",
+        "location": "性能数据（全文）",
+        "detail": "所有性能数字（10-20x、60%、<5ms、<2MB 等）均为编造，无任何来源",
+        "suggestion": "删除所有编造数据，如需性能数据需实测"
+      },
+      {
+        "type": "需删除",
+        "location": "版本演进-计划中的版本",
+        "detail": "Android 18/19/20 的功能规划为纯编造",
+        "suggestion": "删除，只保留已发布版本的实际信息"
+      },
+      {
+        "type": "需重写",
+        "location": "Perfetto 相关内容",
+        "detail": "eyedropper/color_pick/cross_device/sync_color 等 trace 事件均为编造",
+        "suggestion": "删除或替换为真实可观测的 trace 事件"
+      },
+      {
+        "type": "需重写",
+        "location": "参考资料",
+        "detail": "AOSP 源码路径为编造",
+        "suggestion": "替换为真实 API 路径和官方文档链接"
+      }
+    ],
+    "added_by": "task6-review",
+    "added_at": "2026-04-18T13:32:11",
+    "status": "pending",
+    "original_review_log": "logs/review/2026-04-18-13-review.md"
   }
 ]

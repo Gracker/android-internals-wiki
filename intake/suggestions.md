@@ -1506,3 +1506,44 @@
 - **问题**：当前只给了一个 `LIKE '%vk%'` 的 SQL 和几条泛化判断，没有说明需要打开哪些 trace 数据源、如何限定目标进程、也没有给出 native Vulkan / ANGLE 的对照样例。读者即使拿到 trace，也很难复现“先确认 driver selection，再做归因”的流程。
 - **建议**：补一个最小可执行案例：按包切 ANGLE，记录 gfx + GPU renderstages + Vulkan 相关数据源，给出限定目标进程的 SQL，并把 `GL_RENDERER` 与 trace 结果放在一起对照。
 
+
+
+## [Task6 Review] 18.21 EyeDropper API 与跨设备协作性能 — 2026-04-18
+
+### ⚠️ 严重问题：全文 API 实现与真实 API 严重不符
+
+经过 web search 验证，Android 17 EyeDropper API 确实存在，但章节中的实现描述**完全错误**。
+
+**真实 API：**
+- 基于 Intent：`Intent("android.intent.action.OPEN_EYE_DROPPER")`
+- 通过 `registerForActivityResult` 接收结果
+- 返回颜色通过 `intent.getIntExtra("android.intent.extra.COLOR", defaultColor)`
+- 无需特殊权限（替代 MediaProjection 方案）
+
+**章节中编造的内容：**
+- `EyeDropper` 类及其 `pickColor()` 方法 → 编造
+- `EyeDropper.OnColorPickedListener` 回调接口 → 编造
+- `EyeDropperConfig` Builder 类 → 编造
+- `CrossDeviceColorPicker` 跨设备拾取类 → 编造
+- `IncrementalColorSync` 增量同步类 → 编造
+- `ColorCompression` 颜色压缩类 → 编造
+- `SamplingResolution.HIGH` 等枚举 → 编造
+- SurfaceFlinger.pickColorAt() / Layer.pickColorAt() → 编造
+- HWC GPU shader 采样代码 → 编造
+- 所有性能数字（10-20x、60%、<5ms 等）→ 编造
+- Android 18/19/20 功能规划 → 编造
+- AOSP 源码路径 → 编造
+
+**处理建议：**
+1. 全文重写，基于真实 API（Intent-based workflow）
+2. 删除所有编造的类、方法、代码
+3. 删除所有编造的性能数据
+4. 删除"计划中的版本"整节
+5. 补充与 MediaProjection 方案的真实对比
+6. 如需 Perfetto 分析，需基于实际 trace 数据
+
+- **类型**：需重写（全文）
+- **位置**：全文
+- **问题**：章节基于 AI 编造的 API 实现，与真实 Android 17 EyeDropper API 完全不符
+- **建议**：基于官方文档和真实 API 重写。正确用法见 https://developer.android.com/reference/android/content/Intent#ACTION_OPEN_EYE_DROPPER
+- **review 日志**：logs/review/2026-04-18-13-review.md
