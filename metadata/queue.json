@@ -2039,5 +2039,44 @@
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-18T09:45:20+08:00",
     "status": "pending"
+  },
+  {
+    "section": "18.18",
+    "section_title": "PIP 与自由窗口渲染",
+    "priority": 95,
+    "reason": "[Deep Tech Review] P0: VSync 投递模型描述错误；P1: BLAST 版本边界与 Sync 链路缺失",
+    "material_paths": [
+      "intake/suggestions.md",
+      "intake/research-gaps.md"
+    ],
+    "review_issues": [
+      {
+        "type": "事实错误",
+        "location": "L60 多窗口 VSync 描述",
+        "detail": "章节称“所有可见窗口都会收到 VSync 信号”。实际 App 侧 VSync 由 DisplayEventReceiver/Choreographer 按显示维度分发，ViewRootImpl 在需要绘制时向 Choreographer 订阅；并不是每多一个可见窗口就多一条独立 VSync 源。SurfaceFlinger 还有独立的 VSYNC-SF 调度域。这个描述会把多窗口性能问题误导成“窗口越多，VSync 源越多”。",
+        "suggestion": "改成“同一显示上的 App 侧窗口共享 display-driven VSync 调度，额外窗口增加的是 Layer / BufferQueue / Traversal 负担，而不是新的 VSync 源”，并补 `Choreographer` / `ViewRootImpl.scheduleTraversals()` / `DisplayEventReceiver` 这条链路。"
+      },
+      {
+        "type": "版本差异 / 交叉引用",
+        "location": "L110-L117 BLAST Sync 解决方案",
+        "detail": "章节把 resize 同步问题直接归结为“Android 12+ 通过 BLAST 事务模型缓解”，但书内 §2.5 已明确 `BLASTBufferQueue.cpp` 出现在 `android-11.0.0_r1`。此外 Android N 起就已有 SurfaceView 位置同步改进，Android 12+ 的 PiP / shell transition 又是另一层变化。当前写法把 Android 8-10、11、12+ 三代行为压成一个版本点。",
+        "suggestion": "补一张版本表，至少拆开：Android 8.0（PIP 引入）、Android 11（BLAST 进入主线）、Android 12+（PiP / shell transition 进一步打磨）。并与 §2.5、§18.10 的 BLAST 描述保持一致。"
+      },
+      {
+        "type": "原理断裂",
+        "location": "L112-L115 Sync Token / App Barrier / SF 等待",
+        "detail": "当前把 BLAST Sync 描述成“WMS 生成 token，App 带着同一个 token queueBuffer，SF 等待 token 对应的 buffer”。这个说法过于黑盒，缺少实际可验证的同步链路。BLAST 仍然建立在 BufferQueue/transaction merge 之上，关键是几何变更、buffer latch 和 transaction apply 在同一提交边界内对齐，而不是“App 手工携带 token”。",
+        "suggestion": "补 `BLASTBufferQueue` 的关键接口（如 `syncNextTransaction()` / `mergeWithNextTransaction()`）和 WindowManager / Shell 的同步职责边界，解释 buffer、transaction、fence、latch 各自在 resize 中做什么。"
+      },
+      {
+        "type": "知识盲区",
+        "location": "全文，尤其 L66-L70 与 L108-L117",
+        "detail": "章节完全没有覆盖 Android 12+ Shell 控制面（`PipTaskOrganizer`、`TaskOrganizer`、`WindowContainerTransaction`、Shell transitions）。这会让“进入 PIP”“窗口 resize”“bounds 变更”看起来都像 WMS 直接操作 SurfaceControl，但现代 Android 很多可见行为其实发生在 Shell/WM 之间的控制面。",
+        "suggestion": "新增一小节说明 Shell 控制面在 PIP / Freeform 里的角色，至少给出关键类名和与 SurfaceFlinger/BLAST 的边界。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-18T11:10:00+08:00",
+    "status": "pending"
   }
 ]
