@@ -32,12 +32,13 @@ reviewed_date: "2026-04-19"
 reviewed_by: "openclaw-task6"
 task6_result: pass-light-edit
 review_log: "logs/review/2026-04-11-09-review.md"
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task9_result: needs-rework
-task9_state: reviewed
+task9_state: pending
 task2b_result: fixed
-task2b_state: pending
+task2b_state: fixed
+last_task2b_at: "2026-04-19T07:09:38+08:00"
 ---
 
 # IPC 全景：Android 进程间通信机制对比与性能选型
@@ -52,7 +53,7 @@ task2b_state: pending
    - Binder（含 oneway / 同步 / hwbinder）→ 详细分析见 §1.4
    - Unix Domain Socket（LocalSocket）
    - 匿名/命名 Pipe
-   - 共享内存（ashmem → dmabuf-heaps 演进）
+   - 共享内存、DMA-BUF 与 FMQ 的边界
    - mmap（文件映射跨进程）
    - Signal
 3. **框架层 IPC 抽象**
@@ -67,7 +68,7 @@ task2b_state: pending
 
 ### 扩展点（建议覆盖）
 
-- ashmem → dmabuf-heaps 版本演进（Android 10+ 废弃 ashmem 新分配）
+- 通用共享内存、ION/dmabuf-heaps 与 FMQ 的边界
 - HwBinder 与 Treble 架构下的 IPC 隔离
 - NDK SharedMemory API（API 27+）
 - 跨 PID 传递文件描述符（Binder `BINDER_TYPE_FD`）
@@ -90,7 +91,7 @@ Android 的安全模型基于进程隔离：每个应用运行在独立进程中
 理解全貌有助于：
 1. **分析性能 Trace 时识别 IPC 瓶颈**（不仅仅是 Binder 延迟）
 2. **系统级优化时选择最合适的 IPC 机制**
-3. **理解 Android 版本演进中 IPC 层的变化**（ashmem → dmabuf-heaps, HIDL / hwbinder → Stable AIDL / binder）
+3. **理解 Android 版本演进中 IPC 层的变化**（通用共享内存、图形 allocator 与 HAL 接口各自怎么演进）
 
 ## 2. Android IPC 机制分类
 
@@ -124,7 +125,7 @@ Android 的安全模型基于进程隔离：每个应用运行在独立进程中
 | **Stable AIDL HAL / Binder** | 双向 | ≤1MB | 1 | SELinux + 稳定接口约束 | 新 HAL 控制调用 |
 | **Unix Domain Socket** | 双向 | 无硬限制 | 2（send+recv） | 文件系统权限 | logd、input、本地服务 |
 | **Pipe** | 单向 | 受内核缓冲限制 | 2 | fd 继承/传递 | 子进程标准流、少量控制流 |
-| **共享内存（ashmem/dmabuf）** | 双向 | 大块数据 | 0（零拷贝） | fd 传递 + SELinux | 图形缓冲区、大块数据 |
+| **共享内存 / DMA-BUF** | 双向 | 大块数据 | 0（零拷贝） | fd 传递 + SELinux | SharedMemory、CursorWindow、GraphicBuffer |
 | **mmap 文件映射** | 双向 | 文件大小 | 0 | 文件权限 | 配置共享、数据库 WAL |
 | **Signal** | 单向 | 无数据 | 0 | 内核级 | ANR SIGQUIT、进程杀死 |
 | **eventfd / epoll** | 单向事件 | 8 字节 | 0 | fd 继承 | 线程/进程事件通知 |
@@ -211,48 +212,52 @@ InputDispatcher 这一行最容易写错。输入事件不是通过 `/data/syste
 - 只能传递字节流，无结构化数据支持
 - 通常用于父子进程或同一服务内部的简单控制流
 
-### 3.4 共享内存（ashmem → dmabuf-heaps）
+### 3.4 共享内存、DMA-BUF 与 FMQ
 
-**这是 Android 图形性能的基石。**
+这一组机制最容易被写成一条单线演进，但 Android 里有三条要分开看的路线。
 
-**演进路径：**
+| 路线 | 常见 API / 类型 | 底层对象 | 典型场景 | 版本节点 | 可观测点 |
+|------|----------------|----------|----------|----------|----------|
+| **应用通用共享内存** | `MemoryFile`、`SharedMemory`、`ASharedMemory`、`CursorWindow` | ashmem-compatible fd + `mmap`；如果继续下探内核实现，再单独讨论 memfd | 应用间大块数据、Provider 窗口、匿名共享区域 | Android 8 系列开始提供 `SharedMemory` / `ASharedMemory`；`MemoryFile` 仍是兼容层 | Binder 事务中的 `BINDER_TYPE_FD`、`/proc/<pid>/maps` 里的 ashmem 区域 |
+| **图形与 DMA buffer** | `GraphicBuffer`、`AHardwareBuffer`、gralloc buffer handle | ION → dmabuf / dmabuf-heaps | BufferQueue、SurfaceFlinger、相机/编解码器缓冲区 | Android 10 之后更常见把新分配放到 dmabuf-heaps；Android 13 之后图形路径更统一 | gralloc handle 中的 buffer fd、`/dev/dma_heap/*`、BufferQueue / SurfaceFlinger trace |
+| **HAL 零拷贝队列** | FMQ（`MQDescriptorSync` / `MQDescriptorUnsync`） | 共享内存环形队列 + event flag | 音频、相机、传感器、NNAPI 等高吞吐 HAL 数据流 | Treble 之后广泛使用，接口协商走 HIDL 或 AIDL | HAL 调用里的 descriptor 传递、libfmq 映射、队列读写 trace |
 
-```
-Android 4.x-9:  ashmem (Anonymous Shared Memory)
-Android 10+:    ashmem 新分配弃用 → dmabuf-heaps
-Android 11+:    NDK SharedMemory API 推荐 dmabuf
-Android 13+:    Graphify/GraphicBuffer 全面基于 dmabuf
-```
+[已验证: AOSP main `MemoryFile.java` 把 MemoryFile 写成 SharedMemory wrapper；`android_os_MemoryFile.cpp` 与 `CursorWindow.cpp` 仍直接使用 `cutils/ashmem.h` / `ashmem_create_region()`；`MessageQueueBase.h` 明确 FMQ 可用 ashmem shared memory 创建队列]
+
+把三条路线拆开之后，边界会清楚很多：
+
+- `SharedMemory` / `MemoryFile` / `CursorWindow` 讨论的是通用匿名共享内存。这条线里的关键词是 ashmem、fd 传递、`mmap`。如果继续往内核实现下看，再单独讨论 memfd，不要和 dmabuf-heaps 混写。
+- `GraphicBuffer` / `AHardwareBuffer` / gralloc 讨论的是图形与设备共享 buffer allocator。这条线从 ION 走到 dmabuf-heaps，关注点是 allocator、buffer handle 和硬件设备共享。
+- FMQ 讨论的是 HAL 场景下的环形队列抽象。它可以建立在共享内存之上，但语义是“有读写指针的队列”，和单块共享区域、图形 buffer handle 不是一类对象。
 
 **原理：**
 
-1. 进程 A 通过 `ashmem_create_region` 或 `DmaBufHeap` 分配一块物理内存
-2. 获得 fd（文件描述符）
-3. 通过 Binder（`BINDER_TYPE_FD`）或 Unix Socket（`SCM_RIGHTS`）将 fd 传递给进程 B
-4. 进程 B `mmap` 该 fd，双方共享同一块物理内存
-5. 零拷贝——数据无需在用户空间之间复制
+1. 分配共享区域或 buffer，并拿到 fd / descriptor
+2. 通过 Binder（`BINDER_TYPE_FD`）或 Unix Socket（`SCM_RIGHTS`）把句柄交给对端
+3. 对端 `mmap` 共享区域，或按 GraphicBuffer / FMQ 的约定映射后访问
+4. 数据面走零拷贝路径，控制面仍由 Binder / HwBinder / Socket 协商
 
 **Android 中的关键使用：**
 
-- **BufferQueue / GraphicBuffer**（§2.13）：App 渲染 → SurfaceFlinger 合成
-- **ContentProvider**：`CursorWindow` 底层使用共享内存传递大批量查询结果
-- **SharedMemory API**（API 27+）：应用间大块数据共享
-- **MemoryFile**：旧版共享内存 API（内部 ashmem）
-- **FMQ（Fast Message Queue）**：HAL 零拷贝数据队列
+- **BufferQueue / GraphicBuffer**（§2.13）：Binder 协商 buffer 生命周期，图形数据走 dmabuf / GraphicBuffer
+- **ContentProvider / CursorWindow**：查询窗口在需要扩容时会 inflate 到 ashmem，window fd 通过 Binder 返回给客户端
+- **SharedMemory API / MemoryFile**：应用或系统服务共享匿名内存
+- **FMQ**：HAL 侧高频、小单元、连续读写的数据流
 
 **性能特征：**
 
-- **零拷贝**：设置后读写无额外拷贝
-- 适合**大块数据**（图形缓冲区通常 8-16MB）
-- 延迟：首次 mmap 需要 **~0.5-2ms**，后续访问为内存读写级别（**纳秒级**）
-- 需要手动同步（fence、lock、atomic）——参见 §2.16 Sync Fence
-- 内存生命周期由 fd 引用计数管理
+- 数据面建立完成后读写没有额外用户态拷贝
+- 适合大块数据或高频队列，不适合拿来替代控制面 RPC
+- 首次映射的成本主要来自 `mmap` 与页表建立，后续访问接近普通内存读写
+- 同步要靠 fence、event flag、原子变量或协议约定，零拷贝不等于自动有序
+- 生命周期由 fd、buffer handle 或 descriptor 持有关系决定
 
 **陷阱：**
 
-1. 忘记 `close()` fd 导致内存泄漏（直到进程退出）
-2. 缺乏同步机制导致数据竞争（需要额外 fence/mutex）
-3. 跨进程映射页表开销（大块共享内存的 TLB 压力）
+1. 把 `SharedMemory`、dmabuf-heaps、FMQ 写成一条“新 API 替代旧 API”的单线演进
+2. 忘记 `close()` fd 或释放 buffer handle，导致共享区域长期存活
+3. 只有共享区域，没有同步协议，最终读到半写入数据
+4. 用 Binder 传大 payload，而不是传 fd / descriptor
 
 ### 3.5 mmap 文件映射
 
@@ -278,12 +283,16 @@ Android 13+:    Graphify/GraphicBuffer 全面基于 dmabuf
 
 **Android 中的关键使用：**
 
-| 信号 | 发送者 | 接收者 | 用途 |
-|------|--------|--------|------|
-| `SIGQUIT (3)` | Process.sendSignal | App 进程 | ANR 时 dump ANR trace |
-| `SIGKILL (9)` | AMS/LMK | App 进程 | 强制杀进程 |
-| `SIGUSR1 (10)` | debuggerd | App 进程 | 请求 tombstone |
-| `SIGABRT (6)` | bionic/malloc | 自身 | abort / heap corruption |
+| 信号 | 典型发送者 | 典型接收者 | 用途 |
+|------|-----------|-----------|------|
+| `SIGQUIT (3)` | AMS / `Process.sendSignal()` / `kill -3` | App 或 system 进程 | 导出 Java backtrace / ANR trace |
+| `BIONIC_SIGNAL_DEBUGGER (__SIGRTMIN + 3)` | `libdebuggerd_client` / debuggerd | 目标进程线程 | 请求 native backtrace 或 tombstone dump |
+| `SIGKILL (9)` | AMS / LMKD / init | App 进程 | 强制结束进程 |
+| `SIGABRT (6)` | bionic / malloc / 进程自身 | 自身 | abort、heap corruption、触发 native crash 流程 |
+
+[已验证: AOSP main `bionic/reserved_signals.h` 把 `BIONIC_SIGNAL_DEBUGGER` 定义为 `__SIGRTMIN + 3`；`debuggerd_client.cpp` 中 Java backtrace 走 `SIGQUIT`，native dump 走 `BIONIC_SIGNAL_DEBUGGER`]
+
+当前默认路径已经由 `SIGQUIT` 和 `BIONIC_SIGNAL_DEBUGGER` 覆盖。文档如果另写自定义信号方案，必须单独给出处。
 
 **性能特征：**
 
@@ -439,13 +448,13 @@ IPC 的版本演进，重点不是“又多了一个名词”，而是控制面�
 | 版本 | IPC 变化 | 分析时要注意什么 |
 |------|---------|----------------|
 | Android 8 (Treble) | 引入 Treble，HIDL HAL 进入 `/dev/hwbinder` domain | HAL 控制调用开始和 framework binder domain 分离 |
-| Android 10 | 引入 Stable AIDL；HAL 不再只能走 hwbinder；共享内存新分配开始从 ashmem 转向 dmabuf-heaps | 不能再把“HAL IPC = hwbinder”当默认结论 |
+| Android 10 | 引入 Stable AIDL；图形/多媒体 allocator 继续从 ION 向 dmabuf-heaps 迁移 | 不能把 `SharedMemory` / `MemoryFile` / `CursorWindow` 写成 dmabuf-heaps 的直接替代物 |
 | Android 11 | 新 HAL 可以直接使用 AIDL，迁移开始扩大 | Trace 中要同时接受 HIDL 和 AIDL HAL 并存 |
-| Android 13 | GraphicBuffer 等图形内存路径进一步统一到 dmabuf | 图形类大数据更典型地表现为“Binder 控制 + dmabuf 数据面” |
+| Android 13 | GraphicBuffer 等图形内存路径进一步统一到 dmabuf | 图形类大数据更典型地表现为“Binder 控制 + dmabuf 数据面”；应用通用共享内存仍单独看 |
 | Android 14+ | 持续鼓励 HIDL → AIDL 迁移，而不是一刀切“全面完成” | 同一设备上可能长期共存两套 HAL IPC |
 | Android 16-17 | AIDL HAL 与 Rust HAL 覆盖面继续扩大 | 实现语言会变，但 control plane / data plane 的组合模式不变 |
 
-[已验证: AOSP docs《Work with binder IPC》《AIDL for HALs》；Android 10 开始 Stable AIDL 支持 HAL 使用 `/dev/binder`]
+[已验证: AOSP docs《Work with binder IPC》《AIDL for HALs》；Android 图形 allocator 的 ION → dmabuf-heaps 迁移与通用共享内存 API 是两条独立演进线]
 
 ## 8. 常见性能反模式
 
@@ -502,7 +511,7 @@ Android 的 IPC 生态以 Binder 为核心，但绝非只有 Binder。理解全�
 
 1. **Trace 分析时识别 IPC 类型和瓶颈**：Binder 延迟 ≠ 全部 IPC 延迟
 2. **系统优化时选择最合适的机制**：大数据用共享内存，紧急通知用 Signal，流式数据用 Socket
-3. **理解版本演进方向**：ashmem → dmabuf、HIDL / hwbinder → Stable AIDL / binder 是持续优化 IPC 性能的趋势
+3. **理解版本演进方向**：通用共享内存仍是 `MemoryFile` / `SharedMemory` 这条线，图形 allocator 才是 ION → dmabuf-heaps，HAL 接口再看 HIDL / hwbinder → Stable AIDL / binder
 4. **避免常见反模式**：Binder 调用风暴、大数据走 Binder、缺乏同步的共享内存
 
 ---
