@@ -805,3 +805,20 @@ SurfaceControl NDK 的 FrameTimeline 小节缺少“如何从 AChoreographerFram
 - 13.1 Perfetto 简介与演进
 - 18.8 OpenGL ES 渲染链路
 - 18.9 Vulkan 原生渲染链路
+
+## [2026-04-18] 18.14 Camera 渲染管线 — 知识盲区
+
+### 盲区描述
+1. **ZSL 能力矩阵缺失** — 章节把 ZSL 写成统一的“环形缓冲区挑帧 + reprocess”模型，但没有区分 `PRIVATE_REPROCESSING`、`YUV_REPROCESSING`、`CONTROL_ENABLE_ZSL`、reprocessable session 以及 CameraX 自己的 ZSL/fallback 路径。读者很难判断某台设备为什么能开 ZSL、为什么另一台只能退化成普通 still capture。
+2. **现代 Camera preview / analysis 背压契约缺失** — 没有把 Android 10+ HAL3.5 buffer management、Android 11+ SurfaceView/BLAST、`ImageReader.maxImages` / `acquireLatestImage()` / `image.close()` 这几组决定背压位置的机制串起来。实际排查时，这几个点决定了堵塞到底发生在 HAL、Framework stream 还是 Analysis consumer。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 对照 `ICameraDeviceSession` / `ICameraDeviceCallback`、Camera2 API 和 developer docs，梳理 ZSL 的 capability matrix
+- 补一张 Android 5-9、Android 10+、Android 11+ 的 preview / buffer management 演进图
+- 收集一条 `ImageReader` consumer 堵塞导致 buffer starvation 的真实 Perfetto case，标出 `maxImages`、回调堆积和 buffer 归还的对应关系
+
+### 关联章节
+14.9、18.6、2.15

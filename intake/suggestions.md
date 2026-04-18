@@ -1481,3 +1481,9 @@
   - B3: 补充 Android 11(setFrameRate) → 13(ARR) → 15(LTPO优化) → 16(Enhanced ARR) 版本演进
   - B4: 按叙述为主、列表为辅重写常见问题和 Perfetto 分析节
 - **review 日志**：logs/review/2026-04-18-09-review.md
+
+## [Task9 Deep Review] 18.14 Camera 渲染管线 — 2026-04-18
+- **类型**：数据缺失
+- **位置**：在 Perfetto 中识别 Camera 管线（L144-L159）
+- **问题**：列出了 `queueBuffer`、`BufferTX - SurfaceView`、`binder transaction`、`dma_buf` 等观察点，但没有给一条可运行的 trace 配置、一个正常/异常样例或最小 SQL/时间基线。当前结论更多是经验列表，读者难以拿自己的 trace 逐项对照。
+- **建议**：补一组最小抓取配置，加一条“稳定预览 vs Analysis 背压”的真实 case，至少给出一组帧间隔/回调归还节奏的判断基线；术语和查询口径尽量与 §14.9 对齐。
