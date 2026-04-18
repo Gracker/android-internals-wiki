@@ -1524,3 +1524,24 @@ Android 12+ 的 FrameTimeline 责任归因矩阵没有并入本节原因树。�
 - 7.1 卡顿定义
 - 7.3 卡顿分析方法论
 - 2.6 SurfaceFlinger 与合成
+
+## [2026-04-19] 2.4 Choreographer 与渲染流水线 — 知识盲区
+
+### 盲区描述
+API 33+ 的公开帧时间线入口缺位。正文已经解释了框架内部 `doFrame(..., VsyncEventData)`、`vsyncId`、deadline 和 Frame Timeline，但没有把应用侧真正可用的 `postVsyncCallback(VsyncCallback)` / `FrameData` / `FrameTimeline` 接上来，读者很容易把内部结构和公开 API 混为一谈。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 梳理 `Choreographer.postVsyncCallback(VsyncCallback)`、`FrameData`、`FrameTimeline` 的 API 33+ 公开方法与返回字段
+- 对照 AOSP 内部 `DisplayEventReceiver.VsyncEventData`，解释公开 `FrameData` 能拿到什么、拿不到什么
+- 补 1 份最小示例，展示如何在 App 侧读取 preferred timeline / expected presentation time，并与 Perfetto FrameTimeline 对齐
+- 明确 `FrameCallback#doFrame(long)` 与 `VsyncCallback#onVsync(FrameData)` 的使用边界
+
+### 关联章节
+- 2.3 VSync 机制
+- 2.18 Adaptive Refresh Rate 与动态帧率控制
+- 2.19 刷新率切换与帧率适配性能
+- 13.1 Perfetto 基础与抓取
+

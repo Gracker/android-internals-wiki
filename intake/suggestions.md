@@ -1856,3 +1856,9 @@
 - **位置**：L228-L245 HWC 能力限制
 - **问题**：`高端芯片通常支持 4-8 个 Overlay` 没有给出 SoC / 显示管线边界，紧接着给出的 `SELECT name, composition_type FROM layer` 仍是未验证 SQL。当前这组说法不足以支撑“如何复核 GPU 合成回退”的实操结论。
 - **建议**：补至少 1 组真实设备或 trace_processor 验证材料，给出可执行的 `dumpsys SurfaceFlinger` / Perfetto SQL 口径；如果暂时拿不到验证样本，就删掉 4-8 的范围并把 SQL 明确降级为 `[待验证]`。
+
+## [Task9 Deep Review] 2.4 Choreographer 与渲染流水线 — 2026-04-19
+- **类型**：原理断裂
+- **位置**：L393-L406 Frame Timeline 起点说明
+- **问题**：Expected Timeline 的起点先被写成“Choreographer 收到 VSYNC-app 的时间”，后面又写成“比 VSYNC-app 更晚”。Perfetto 官方文档的口径是“the time the Choreographer callback was scheduled to run”，这里把 callback scheduled time、实际 `doFrame` 开始时间和 expected presentation time 混在了一起。
+- **建议**：统一三组时间基准：callback scheduled time、实际 `Choreographer#doFrame` start、expected presentation time，并明确 Expected Timeline 不等于 Actual Timeline 的起点。

@@ -3242,5 +3242,39 @@
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-19T01:44:00+08:00",
     "status": "pending"
+  },
+  {
+    "section": "2.4",
+    "section_title": "Choreographer 与渲染流水线",
+    "priority": 95,
+    "reason": "[Deep Tech Review] getInstance/getSfInstance 语义写错，且 API 33 FrameTimeline 公开入口与抓取口径不完整",
+    "material_paths": [
+      "intake/suggestions.md",
+      "intake/research-gaps.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "L601-L603 FAQ「Choreographer 只管 UI 线程吗？」",
+        "detail": "把 `Choreographer.getInstance()` 写成“返回主线程 Looper 对应的实例”，又把 `getSfInstance()` 解释成“获取 SurfaceFlinger 进程的实例”。AOSP android-16.0.0_r1 中 `getInstance()` 的注释是 “Gets the choreographer for the calling thread”；`getSfInstance()` 只是当前线程上的 SF vsync-source choreographer，且处于 @hide + @Deprecated 状态。",
+        "suggestion": "改成“任意有 Looper 的线程都可通过 `getInstance()` 拿到本线程的 Choreographer；应用侧如果要在后台线程使用 Choreographer，需要先准备 Looper，再在该线程调用 `getInstance()`。`getSfInstance()` 只作为内部实现背景说明，不应写成应用实践建议。”"
+      },
+      {
+        "type": "版本差异",
+        "location": "L222-L228 / L591-L594 API 33 帧时间线公开入口",
+        "detail": "正文解释了 API 33 `doFrame(..., VsyncEventData)` 的内部变化，也写了“App 侧可以拿到 preferred frame timeline、deadline、vsyncId”，但没有交代应用侧真正可调用的是 `postVsyncCallback(VsyncCallback)` / `FrameData` / `FrameTimeline`。读者容易误以为经典 `FrameCallback#doFrame(long)` 就能直接拿到这些字段。",
+        "suggestion": "在 FrameCallback / 版本演进段补出 API 33+ 的公开入口：`postVsyncCallback(VsyncCallback)`、`FrameData#getPreferredFrameTimeline()`、`FrameTimeline#getExpectedPresentationTimeNanos()` 等，并说明它与内部 `DisplayEventReceiver.VsyncEventData` 的对应关系。"
+      },
+      {
+        "type": "数据缺失",
+        "location": "L423-L428 Perfetto 抓取命令",
+        "detail": "给出的“最简命令”只打开了 `sched freq idle am wm gfx view binder_driver hal` 这些 atrace category，没有加入 Perfetto FrameTimeline 数据源 `android.surfaceflinger.frametimeline`。后文却直接查询 `actual_frame_timeline_slice` / `expected_frame_timeline_slice`，读者按这条命令抓到的 trace 很可能没有这两张表。",
+        "suggestion": "把抓取方案拆成两档：一档只看主线程 `Choreographer#doFrame` 的 atrace 命令；另一档给出包含 `android.surfaceflinger.frametimeline` 的完整 Perfetto config。若继续保留一条命令，至少要明确它不足以支持后文 FrameTimeline SQL。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-19T02:20:00+08:00",
+    "status": "pending",
+    "original_review_log": "logs/deep-review/2026-04-19-02-deep-review.md"
   }
 ]
