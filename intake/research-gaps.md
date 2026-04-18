@@ -979,3 +979,510 @@ SurfaceControl NDK 的 FrameTimeline 小节缺少“如何从 AChoreographerFram
 
 ### 关联章节
 1.5, 1.13, 13.3, 13.6
+
+## [2026-04-18] 13.1  — 知识盲区
+
+### 盲区描述
+------
+
+### 重要程度
+--------
+
+### 建议研究方向
+------------
+
+### 关联章节
+13.1
+
+### 外部 review 来源
+- External AI review
+
+
+## [2026-04-18] 13.1  — 知识盲区
+
+### 盲区描述
+perf 事件（Callstack Sampling）配置差异
+
+### 重要程度
+中
+
+### 建议研究方向
+简介中提及了 Trace Processor 和 Data source，但未说明 native profiling (perf) 与 atrace 的边界，这可作为后续章节深化的方向。
+
+### 关联章节
+13.1
+
+### 外部 review 来源
+- External AI review
+
+
+## [2026-04-18] 13.2  — 知识盲区
+
+### 盲区描述
+------
+
+### 重要程度
+--------
+
+### 建议研究方向
+------------
+
+### 关联章节
+13.2
+
+### 外部 review 来源
+- External AI review
+
+
+## [2026-04-18] 13.2  — 知识盲区
+
+### 盲区描述
+perf 事件（Callstack Sampling）配置差异
+
+### 重要程度
+中
+
+### 建议研究方向
+无
+
+### 关联章节
+13.2
+
+### 外部 review 来源
+- External AI review
+
+
+## [2026-04-18] 14.1  — 知识盲区
+
+### 盲区描述
+---
+
+### 重要程度
+---
+
+### 建议研究方向
+---
+
+### 关联章节
+14.1
+
+### 外部 review 来源
+- External AI review
+
+
+## [2026-04-18] 14.1  — 知识盲区
+
+### 盲区描述
+`ProfilingManager` 的线上数据脱敏 (Redaction) 机制
+
+### 重要程度
+中
+
+### 建议研究方向
+官方提到 profiling 结果通常会通过 redactor 脱敏后返回给 App。这一机制对于隐私安全很重要，建议后续研究。
+
+### 关联章节
+14.1
+
+### 外部 review 来源
+- External AI review
+
+
+## [2026-04-18] 14.10  — 知识盲区
+
+### 盲区描述
+---
+
+### 重要程度
+---
+
+### 建议研究方向
+---
+
+### 关联章节
+14.10
+
+### 外部 review 来源
+- External AI review
+
+
+## [2026-04-18] 14.10  — 知识盲区
+
+### 盲区描述
+sched_ext 在 Android 16 GKI 6.12 上的实际编译状态
+
+### 重要程度
+高
+
+### 建议研究方向
+虽然 Linux 6.12 合入了 sched_ext，但 GKI 的 defconfig 是否开启了 `CONFIG_SCHED_CLASS_EXT` 需要确认。
+
+### 关联章节
+14.10
+
+### 外部 review 来源
+- External AI review
+
+
+## [2026-04-18] 14.10  — 知识盲区
+
+### 盲区描述
+Android 17 GKI 6.18 的具体新增 eBPF 功能
+
+### 重要程度
+中
+
+### 建议研究方向
+Kernel 6.18 可能带来新的 BPF helper 和 map 类型。
+
+### 关联章节
+14.10
+
+### 外部 review 来源
+- External AI review
+
+
+## [2026-04-18] 14.11  — 知识盲区
+
+### 盲区描述
+---
+
+### 重要程度
+---
+
+### 建议研究方向
+---
+
+### 关联章节
+14.11
+
+### 外部 review 来源
+- External AI review
+
+
+## [2026-04-18] 14.11  — 知识盲区
+
+### 盲区描述
+Android 17 ODPM Power Rail 的新增项
+
+### 重要程度
+低
+
+### 建议研究方向
+是否有新的 Power Rail 可以被 Power Profiler 读取。
+
+### 关联章节
+14.11
+
+### 外部 review 来源
+- External AI review
+
+
+## [2026-04-18] 14.2  — 知识盲区
+
+### 盲区描述
+---
+
+### 重要程度
+---
+
+### 建议研究方向
+---
+
+### 关联章节
+14.2
+
+### 外部 review 来源
+- External AI review
+
+
+## [2026-04-18] 14.2  — 知识盲区
+
+### 盲区描述
+off-CPU 火焰图的直观解读
+
+### 重要程度
+中
+
+### 建议研究方向
+文中提到了 off-CPU profiling，但如果没有对比图，读者可能难以直观理解 on/off 区域在 HTML 报告中是如何分布和区分的。
+
+### 关联章节
+14.2
+
+### 外部 review 来源
+- External AI review
+
+
+## [2026-04-18] 14.3  — 知识盲区
+
+### 盲区描述
+---
+
+### 重要程度
+---
+
+### 建议研究方向
+---
+
+### 关联章节
+14.3
+
+### 外部 review 来源
+- External AI review
+
+
+## [2026-04-18] 14.3  — 知识盲区
+
+### 盲区描述
+MTE (Memory Tagging Extension) 在 Android 15 上的默认策略
+
+### 重要程度
+中
+
+### 建议研究方向
+文中提到 MTE 可用异步模式，可以进一步调研 Android 15 是否对开发者开启了更严格的默认 MTE 检查。
+
+### 关联章节
+14.3
+
+### 外部 review 来源
+- External AI review
+
+
+## [2026-04-18] 14.4  — 知识盲区
+
+### 盲区描述
+---
+
+### 重要程度
+---
+
+### 建议研究方向
+---
+
+### 关联章节
+14.4
+
+### 外部 review 来源
+- External AI review
+
+
+## [2026-04-18] 14.4  — 知识盲区
+
+### 盲区描述
+`dumpsys meminfo` 统计口径与 `smaps` PSS 差异
+
+### 重要程度
+低
+
+### 建议研究方向
+dumpsys 从内核读取数据时，针对 GFX 等硬件内存的统计口径在各厂商可能存在差异。
+
+### 关联章节
+14.4
+
+### 外部 review 来源
+- External AI review
+
+
+## [2026-04-18] 14.5  — 知识盲区
+
+### 盲区描述
+---
+
+### 重要程度
+---
+
+### 建议研究方向
+---
+
+### 关联章节
+14.5
+
+### 外部 review 来源
+- External AI review
+
+
+## [2026-04-18] 14.5  — 知识盲区
+
+### 盲区描述
+Booster 对 AGP 8+ 的最新支持状态
+
+### 重要程度
+高
+
+### 建议研究方向
+调研 Booster 官方是否已经完全切完了 Instrumentation API，这对于新项目的选型至关重要。
+
+### 关联章节
+14.5
+
+### 外部 review 来源
+- External AI review
+
+
+## [2026-04-18] 14.6  — 知识盲区
+
+### 盲区描述
+---
+
+### 重要程度
+---
+
+### 建议研究方向
+---
+
+### 关联章节
+14.6
+
+### 外部 review 来源
+- External AI review
+
+
+## [2026-04-18] 14.6  — 知识盲区
+
+### 盲区描述
+Macrobenchmark 1.3+ 新增指标
+
+### 重要程度
+低
+
+### 建议研究方向
+最新版的 Macrobenchmark 库是否新增了 Memory 或 Energy 类指标。
+
+### 关联章节
+14.6
+
+### 外部 review 来源
+- External AI review
+
+
+## [2026-04-18] 14.7  — 知识盲区
+
+### 盲区描述
+---
+
+### 重要程度
+---
+
+### 建议研究方向
+---
+
+### 关联章节
+14.7
+
+### 外部 review 来源
+- External AI review
+
+
+## [2026-04-18] 14.7  — 知识盲区
+
+### 盲区描述
+`version 36.1` 标注的含义
+
+### 重要程度
+中
+
+### 建议研究方向
+部分触发器（`APP_REQUEST_RUNNING_TRACE`、`KILL_FORCE_STOP`、`KILL_RECENTS`、`KILL_TASK_MANAGER`）标注的是 `version 36.1` 而非标准 `API level`，可能代表 Mainline 模块更新。需要确认这在实际设备上的可用性。
+
+### 关联章节
+14.7
+
+### 外部 review 来源
+- External AI review
+
+
+## [2026-04-18] 14.8  — 知识盲区
+
+### 盲区描述
+---
+
+### 重要程度
+---
+
+### 建议研究方向
+---
+
+### 关联章节
+14.8
+
+### 外部 review 来源
+- External AI review
+
+
+## [2026-04-18] 14.8  — 知识盲区
+
+### 盲区描述
+Sokatoa 开源后的实际使用体验
+
+### 重要程度
+中
+
+### 建议研究方向
+文章写作时 Sokatoa 尚在开源计划阶段，建议后续补充开源后的实际操作步骤和功能验证。
+
+### 关联章节
+14.8
+
+### 外部 review 来源
+- External AI review
+
+
+## [2026-04-18] 14.9  — 知识盲区
+
+### 盲区描述
+---
+
+### 重要程度
+---
+
+### 建议研究方向
+---
+
+### 关联章节
+14.9
+
+### 外部 review 来源
+- External AI review
+
+
+## [2026-04-18] 14.9  — 知识盲区
+
+### 盲区描述
+Android 14+ Camera Extension API 的性能影响
+
+### 重要程度
+低
+
+### 建议研究方向
+Camera Extensions (Night Mode, HDR 等) 是否引入了新的 HAL 延迟模式。
+
+### 关联章节
+14.9
+
+### 外部 review 来源
+- External AI review
+
+## [2026-04-18] 18.13 WebView 渲染链路 — 知识盲区
+
+### 盲区描述
+1. **独立 SurfaceControl 合成的触发条件矩阵缺失** — 章节提到 provider、feature、场景条件会影响 WebView 是否切到独立 child layer，但没有整理 provider 版本、feature flag、trace 证据三者之间的对应关系。没有这张矩阵，现场很难判断“当前设备到底有没有这条模式”。
+2. **第三方 WebView SDK 的真实渲染实现缺失** — X5、UC 等 SDK 被概括成 Custom TextureView 路径，但没有版本矩阵、Layer dump 证据和 trace 识别方法。对国内 App 场景，这会直接影响链路判别和优化方向。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 梳理 WebView provider 版本、feature flag 与独立 child layer / OOP rasterization 的对应关系
+- 在 Android 10-16 上抓取最小 trace，对照 `dumpsys SurfaceFlinger` 验证独立 WebView layer 的出现条件
+- 收集 X5 / UC 等第三方 SDK 的公开资料、版本说明和实际 trace / layer dump 证据
+- 补充 `WebViewCompat.getCurrentWebViewPackage()` 与 `adb shell dumpsys webviewupdate` 的现场验证步骤
+
+### 关联章节
+- 7.11 WebView 渲染性能与优化
+- 18.10 SurfaceControl API 深入
+- 18.6 SurfaceView 直出链路
+- 18.7 TextureView 合成链路
+

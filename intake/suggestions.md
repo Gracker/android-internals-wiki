@@ -1677,3 +1677,171 @@
 - **位置**：L253-L255，DeliQueue 数据段
 - **问题**：文中直接引用“主线程 lock contention time 下降 15%、应用 missed frames 下降 4%、SystemUI / Launcher 下降 7.7%-9.1%”，但没有交代测试边界、样本对象、版本条件或观察口径，读者无法判断这些数字能否外推到普通 App 场景。
 - **建议**：补充数据来源的实验边界，例如 Android 17 beta/internal test、对象范围（App 还是 SystemUI/Launcher）、指标口径（missed frames/lock contention time 的采集方式），并给一条可在 Perfetto 中复核的观察点。
+
+## [External Review] 13.1  — 2026-04-18
+- **类型**：P2 建议
+- **位置**：Data Source
+- **问题**：
+- **建议**：
+- **来源**：外部 AI review
+
+## [External Review] 13.10  — 2026-04-18
+- **类型**：P2 建议
+- **位置**：模块加载与表查询不匹配
+- **问题**：
+- **建议**：
+- **来源**：外部 AI review
+
+## [External Review] 13.2  — 2026-04-18
+- **类型**：P2 建议
+- **位置**：Native 代码中的自定义标记
+- **问题**：
+- **建议**：
+- **来源**：外部 AI review
+
+## [External Review] 13.3  — 2026-04-18
+- **类型**：P2 建议
+- **位置**：Sleeping
+- **问题**：
+- **建议**：
+- **来源**：外部 AI review
+
+## [External Review] 13.4  — 2026-04-18
+- **类型**：P2 建议
+- **位置**：冗余文本残留
+- **问题**：
+- **建议**：
+- **来源**：外部 AI review
+
+## [External Review] 13.6  — 2026-04-18
+- **类型**：P2 建议
+- **位置**：Wall 时间的构成
+- **问题**：
+- **建议**：
+- **来源**：外部 AI review
+
+## [External Review] 14.1  — 2026-04-18
+- **类型**：P2 建议
+- **位置**：Callstack Sample
+- **问题**：“在 Android Studio 2025 的最新版本中，Google 引入了新的采样引擎”
+- **建议**：建议明确指出是哪个具体版本（如 Android Studio Ladybug 或 Meerkat 等），或者用“较新的 Android Studio 版本中”进行模糊处理以防过时。
+- **来源**：外部 AI review
+
+## [External Review] 14.1  — 2026-04-18
+- **类型**：P2 建议
+- **位置**：`Callstack Sample` | 问题描述：“Android Studio 2025” 的表述不够精确 | 建议：替换为明确的 AS 动物代号版本（如 Ladybug/Meerkat 等），避免歧义。
+- **问题**：“Android Studio 2025” 的表述不够精确 | 建议：替换为明确的 AS 动物代号版本（如 Ladybug/Meerkat 等），避免歧义。
+- **建议**：替换为明确的 AS 动物代号版本（如 Ladybug/Meerkat 等），避免歧义。
+- **来源**：外部 AI review
+
+## [External Review] 14.11  — 2026-04-18
+- **类型**：P2 建议
+- **位置**：Macrobenchmark PowerMetric
+- **问题**：`PowerMetric(category = PowerMetric.Category.CPU)` 的构造函数签名
+- **建议**：核实最新版 Macrobenchmark API 的 PowerMetric 构造函数签名并修正代码示例。
+- **来源**：外部 AI review
+
+## [External Review] 14.11  — 2026-04-18
+- **类型**：P2 建议
+- **位置**：bugreport 抓取
+- **问题**：`adb bugreport > bugreport.txt  # Android 6.0 及更早`
+- **建议**：可以考虑在 6.0 命令后补充说明"Android 6.0 及更早输出的是纯文本格式"。
+- **来源**：外部 AI review
+
+## [External Review] 14.11  — 2026-04-18
+- **类型**：P2 建议
+- **位置**：Macrobenchmark PowerMetric | 问题描述：PowerMetric 构造函数签名可能不完全准确 | 建议：核实最新 API 并修正。
+- **问题**：PowerMetric 构造函数签名可能不完全准确 | 建议：核实最新 API 并修正。
+- **建议**：核实最新 API 并修正。
+- **来源**：外部 AI review
+
+## [External Review] 14.3  — 2026-04-18
+- **类型**：P2 建议
+- **位置**：heapprofd：Native 堆的实时采样分析
+- **问题**：“Java 分配模式从 Android 12 开始支持... 它无法替代 MAT 的引用链分析。”
+- **建议**：建议补充一句，说明如果需要分析引用链，Perfetto 提供了独立的 Java Heap Dumps (`art.heapprof` 数据源，Android 11+ 支持)。
+- **来源**：外部 AI review
+
+## [External Review] 14.3  — 2026-04-18
+- **类型**：P2 建议
+- **位置**：`heapprofd` | 问题描述：未提及 Perfetto 的 Java Heap Graph 功能。 | 建议：补充 Perfetto 从 Android 11 起支持抓取完整的 Java 堆快照并进行引用链分析，是 MAT 的有力现代替代品。
+- **问题**：未提及 Perfetto 的 Java Heap Graph 功能。 | 建议：补充 Perfetto 从 Android 11 起支持抓取完整的 Java 堆快照并进行引用链分析，是 MAT 的有力现代替代品。
+- **建议**：补充 Perfetto 从 Android 11 起支持抓取完整的 Java 堆快照并进行引用链分析，是 MAT 的有力现代替代品。
+- **来源**：外部 AI review
+
+## [External Review] 14.4  — 2026-04-18
+- **类型**：P2 建议
+- **位置**：关键指标：PSS、USS、Private Dirty
+- **问题**：“Private Dirty 是已经被修改过的私有内存页。这部分内存不能被换出到磁盘（Android 默认不用 swap），必须常驻物理 RAM。”
+- **建议**：补充说明 Private Dirty 内存虽然不能置换到磁盘，但会被系统压缩放入 ZRAM（仍占用 RAM，但体积缩小），以更精确地描述现代 Android 内存管理行为。
+- **来源**：外部 AI review
+
+## [External Review] 14.4  — 2026-04-18
+- **类型**：P2 建议
+- **位置**：dumpsys batterystats：电池使用与功耗分析
+- **问题**：`adb bugreport > bugreport.zip`
+- **建议**：修改为现代标准的命令语法。
+- **来源**：外部 AI review
+
+## [External Review] 14.4  — 2026-04-18
+- **类型**：P2 建议
+- **位置**：`关键指标：PSS、USS、Private Dirty` | 问题描述：未提及 ZRAM 对 Private Dirty 内存的影响。 | 建议：补充说明 Private Dirty 可以被压缩放入 ZRAM，而非完全 1:1 占用物理 RAM。
+- **问题**：未提及 ZRAM 对 Private Dirty 内存的影响。 | 建议：补充说明 Private Dirty 可以被压缩放入 ZRAM，而非完全 1:1 占用物理 RAM。
+- **建议**：补充说明 Private Dirty 可以被压缩放入 ZRAM，而非完全 1:1 占用物理 RAM。
+- **来源**：外部 AI review
+
+## [External Review] 14.4  — 2026-04-18
+- **类型**：P2 建议
+- **位置**：`功耗分析工作流` | 问题描述：`adb bugreport > bugreport.zip` 语法过时且有损坏风险。 | 建议：更新为 `adb bugreport bugreport.zip`。
+- **问题**：`adb bugreport > bugreport.zip` 语法过时且有损坏风险。 | 建议：更新为 `adb bugreport bugreport.zip`。
+- **建议**：更新为 `adb bugreport bugreport.zip`。
+- **来源**：外部 AI review
+
+## [External Review] 14.6  — 2026-04-18
+- **类型**：P2 建议
+- **位置**：CompilationMode：量化编译优化效果
+- **问题**：`CompilationMode.Partial(CompilationMode.Partial.Mode.DEFAULT)`
+- **建议**：修正代码示例中的 API 调用签名。
+- **来源**：外部 AI review
+
+## [External Review] 14.6  — 2026-04-18
+- **类型**：P2 建议
+- **位置**：`CompilationMode` 代码示例 | 问题描述：`CompilationMode.Partial(Mode.DEFAULT)` 不是有效 API 签名。 | 建议：更新为 `CompilationMode.Partial(baselineProfileMode = BaselineProfileMode.Require)`。
+- **问题**：`CompilationMode.Partial(Mode.DEFAULT)` 不是有效 API 签名。 | 建议：更新为 `CompilationMode.Partial(baselineProfileMode = BaselineProfileMode.Require)`。
+- **建议**：更新为 `CompilationMode.Partial(baselineProfileMode = BaselineProfileMode.Require)`。
+- **来源**：外部 AI review
+
+## [External Review] 14.8  — 2026-04-18
+- **类型**：P2 建议
+- **位置**：Perfetto GPU Counter Track 的启用
+- **问题**：配置示例中 `counter_ids: [1, 2, 3, ...]` 需要硬编码 counter ID
+- **建议**：在代码注释中明确说明这些 ID 是设备相关的，推荐使用 `perfetto --query` 或 Perfetto UI 来获取设备支持的实际 counter ID 列表。
+- **来源**：外部 AI review
+
+## [External Review] 14.8  — 2026-04-18
+- **类型**：P2 建议
+- **位置**：`gpu.counters` 配置 | 问题描述：counter_ids 硬编码写法可能误导 | 建议：补充说明 ID 为设备相关值，推荐用工具查询。
+- **问题**：counter_ids 硬编码写法可能误导 | 建议：补充说明 ID 为设备相关值，推荐用工具查询。
+- **建议**：补充说明 ID 为设备相关值，推荐用工具查询。
+- **来源**：外部 AI review
+
+## [External Review] 14.9  — 2026-04-18
+- **类型**：P2 建议
+- **位置**：Perfetto Trace 配置
+- **问题**：`name: "android.trace_config"` 和 `atrace_config` 嵌套格式
+- **建议**：考虑对齐到 Perfetto 官方文档推荐的标准 trace config 格式，或者在注释中说明这是简化格式。
+- **来源**：外部 AI review
+
+## [External Review] 14.9  — 2026-04-18
+- **类型**：P2 建议
+- **位置**：Perfetto Trace 抓取配置 | 问题描述：`android.trace_config` 数据源名称非标准推荐格式 | 建议：对齐到 `linux.ftrace` + `ftrace_config.atrace_categories` 标准格式。
+- **问题**：`android.trace_config` 数据源名称非标准推荐格式 | 建议：对齐到 `linux.ftrace` + `ftrace_config.atrace_categories` 标准格式。
+- **建议**：对齐到 `linux.ftrace` + `ftrace_config.atrace_categories` 标准格式。
+- **来源**：外部 AI review
+
+## [Task9 Deep Review] 18.13 WebView 渲染链路 — 2026-04-18
+- **类型**：数据缺失
+- **位置**：L173-L179 当前链路判断
+- **问题**：只有口头 heuristic，没有最小 trace 抓取口径、provider 识别步骤和 `dumpsys SurfaceFlinger` 实操示例。现场读者即使知道四种模式，也很难把文章结论落到真实设备上验证。
+- **建议**：补一个最小验证清单：`WebViewCompat.getCurrentWebViewPackage()` / `adb shell dumpsys webviewupdate`、Perfetto 中 functor / Viz / `updateTexImage` 的观察点、`dumpsys SurfaceFlinger` 中 child layer 的识别方法。
+
