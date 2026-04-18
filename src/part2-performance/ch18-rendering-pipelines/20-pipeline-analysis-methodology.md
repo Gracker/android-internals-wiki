@@ -7,10 +7,13 @@ tags: ["方法论", "渲染链路", "Perfetto", "dumpsys", "诊断", "BufferQueu
 related_chapters: ["2.1", "2.6", "13.5", "15.1"]
 created_by: "rendering-pipelines-merge"
 created_date: "2026-04-09"
-pipeline_stage: task6_pending
-task6_state: pending
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task2b_state: idle
+reviewed_by: openclaw-task6
+reviewed_date: "2026-04-18"
+task6_result: pass-light-edit
 ---
 
 <!-- outline-start -->
@@ -32,13 +35,13 @@ task2b_state: idle
 
 ## 为什么需要链路分析方法论
 
-当用户反馈"App 卡了"，你打开 Perfetto 看到密密麻麻的 Track，第一步不是去逐行看 Slice——而是**先判断这帧走的是哪条链路**。不同的链路有不同的生产者线程、不同的 Buffer 传输机制、不同的同步模型。SurfaceView 的问题看 SurfaceFlinger，TextureView 的问题看 App RenderThread，WebView 的问题可能看 Chromium 的 Compositor Thread。链路判断错了，后续所有的优化方向都是南辕北辙。[已验证: 实践经验]
+当用户反馈"App 卡了"，我们打开 Perfetto 看到密密麻麻的 Track。在逐行看 Slice 之前，先判断这帧走的是哪条链路。不同的链路有不同的生产者线程、不同的 Buffer 传输机制、不同的同步模型。SurfaceView 的问题看 SurfaceFlinger，TextureView 的问题看 App RenderThread，WebView 的问题可能看 Chromium 的 Compositor Thread。链路判断错了，后续所有的优化方向都是南辕北辙。[已验证: 实践经验]
 
-本章提供一套系统化的链路分析方法论，帮助你在 Perfetto 中快速定位渲染瓶颈。
+本章提供一套系统化的链路分析方法论，用于在 Perfetto 中快速定位渲染瓶颈。
 
 ## Step 1：识别渲染模式
 
-在动手分析之前，先回答一个关键问题：**这个场景走的是哪条链路？**
+分析之前，确认一件事：**这个场景走的是哪条链路？**
 
 ### 快速判断清单
 
@@ -169,7 +172,7 @@ ORDER BY ts DESC LIMIT 20;
 
 ## 链路选型决策树
 
-```
+```text
 需要嵌入复杂 View 层级？
 ├── 是 → 需要动画/变换/圆角？
 │         ├── 是 → TextureView / HardwareBufferRenderer
