@@ -24,14 +24,14 @@ sources:
     path: "https://androidperformance.com"
 tags: ['architecture', '分层架构', 'HAL', 'HIDL', 'AIDL', 'Binder', 'SystemServer', 'Zygote', 'SurfaceFlinger', '性能优化', 'Perfetto']
 related_chapters: ["1.2", "1.3", "2.1", "3.1", "4.1", "5.1", "7.1"]
-reviewed_date: "2026-04-11"
+reviewed_date: "2026-04-18"
 reviewed_by: "openclaw-task6"
 polish_count: 1
 polish_date: "2026-04-05"
 polish_by: "task2b-polish"
-review_notes: "2026-04-11 task6 review: pass-light-edit。小修14处（禁用词替换/句式去模板化/验证标注格式统一）。无B类大问题。评分: 结构5/5·措辞4/5·一致性4/5·验证4/5·元数据5/5。| 2026-04-05 task2b-polish质检: 通过→ready-to-publish。小修1处（补充section字段）。无B类大问题。评分: 结构5/5·措辞5/5·一致性5/5·验证4/5·元数据5/5。| 2026-03-31 二次review: 通过finalized。小修7处（标准化验证标注格式/补充4处待验证标注/补充来源标注）。无B类大问题。评分: 结构4/5·措辞4/5·一致性4/5·验证4/5·元数据4/5。| 历史记录: 2026-03-30 task6 review 回炉 v2：集成3篇新研究素材（Perfetto映射/误区/Treble演进），补充数据源三层映射、HAL追踪完整方法、hwbinder vs binder区别、新增3条误区（线程状态/Binder阻塞/全系统视角），所有锚点已覆盖"
+review_notes: "2026-04-18 task6 re-review (revisiting): pass-light-edit。小修3处（「这意味着」x2 / 「至关重要」x1 禁用词替换）。无B类大问题。评分: 结构5/5·措辞4/5·一致性5/5·验证4/5·元数据5/5。| 2026-04-11 task6 review: pass-light-edit。小修14处（禁用词替换/句式去模板化/验证标注格式统一）。无B类大问题。评分: 结构5/5·措辞4/5·一致性4/5·验证4/5·元数据5/5。| 2026-04-05 task2b-polish质检: 通过→ready-to-publish。小修1处（补充section字段）。无B类大问题。评分: 结构5/5·措辞5/5·一致性5/5·验证4/5·元数据5/5。| 2026-03-31 二次review: 通过finalized。小修7处（标准化验证标注格式/补充4处待验证标注/补充来源标注）。无B类大问题。评分: 结构4/5·措辞4/5·一致性4/5·验证4/5·元数据4/5。| 历史记录: 2026-03-30 task6 review 回炉 v2：集成3篇新研究素材（Perfetto映射/误区/Treble演进），补充数据源三层映射、HAL追踪完整方法、hwbinder vs binder区别、新增3条误区（线程状态/Binder阻塞/全系统视角），所有锚点已覆盖"
 pipeline_stage: task6_pending
-task6_state: revisiting
+task6_state: reviewed
 task6_result: pass-light-edit
 task9_state: reviewed
 task9_result: pass-with-p1-notes
@@ -84,7 +84,7 @@ Android 的架构从底向上分为五层：Linux Kernel、HAL、Native Librarie
 
 ### 从硬件到应用：为什么需要五层
 
-如果没有分层，App 要直接跟硬件打交道。想画一帧画面，就得自己操作 GPU 寄存器；想拍张照片，就得自己写摄像头驱动协议。这意味着每个 App 都要适配每一款 SoC、每一个传感器型号。这在 PC 时代或许勉强可行（驱动安装是常规操作），但在手机上百个 App 共存的环境下完全不可行。
+如果没有分层，App 要直接跟硬件打交道。想画一帧画面，就得自己操作 GPU 寄存器；想拍张照片，就得自己写摄像头驱动协议。每个 App 都要适配每一款 SoC、每一个传感器型号。这在 PC 时代或许勉强可行（驱动安装是常规操作），但在手机上百个 App 共存的环境下完全不可行。
 
 Android 的解法是逐层抽象：Kernel 层把硬件抽象成文件和系统调用，HAL 层把不同厂商的硬件差异藏到统一接口后面，Runtime 层让上层可以用 Java/Kotlin 而不是 C/C++ 写代码，Framework 层把系统功能封装成 Service API。最终，App 开发者只需要调用 `Activity.startActivity()` 就能启动一个新页面，完全不需要知道底层经历了 Binder 通信、Zygote fork、Surface 分配这一系列跨层操作。
 
@@ -104,7 +104,7 @@ graph TB
 
 [图：Android 五层架构图，每层用不同颜色标注，标注关键组件归属]
 
-这个架构的根本设计哲学是：**每一层只对自己的上一层提供接口，对自己的下一层隐藏实现。** 这种设计保证了当硬件更换、系统升级时，上层代码不需要修改。在性能分析中，这意味着每一层都可能成为瓶颈，而瓶颈的表现形式取决于它所在的层次。
+这个架构的根本设计哲学是：**每一层只对自己的上一层提供接口，对自己的下一层隐藏实现。** 这种设计保证了当硬件更换、系统升级时，上层代码不需要修改。在性能分析中，每一层都可能成为瓶颈，瓶颈的表现形式取决于它所在的层次。
 
 ### 各层职责：从 Kernel 到 App 的"责任链"
 
@@ -318,7 +318,7 @@ HAL 在现代 Android 里还承担接口定义之外的进程隔离与硬件访�
 - **渲染卡顿**：根因也可能落在 SurfaceFlinger 的 `doComposition` 耗时过长，也就是 GPU 合成负担过重。
 - **ANR**：Input ANR 的根因也可能出在 SystemServer 端的 InputDispatcher 被其他工作拖慢。
 
-在 Perfetto 中遇到性能问题时，**不要只看 App 进程**——把视线扩展到 `system_server`、`surfaceflinger`、相关 HAL 进程，往往能发现真正的根因。当我们在 Perfetto 中看到 Main Thread 上有一个持续几十毫秒的 Binder slice 时，不要急着去优化 App 代码。先翻到 `system_server` 进程，找到处理这个 Binder 调用的线程——问题可能不在 App 本身，而在系统服务那边排队等待。这就是为什么理解架构分层对性能分析至关重要：每一层都可能是瓶颈所在。
+在 Perfetto 中遇到性能问题时，**不要只看 App 进程**——把视线扩展到 `system_server`、`surfaceflinger`、相关 HAL 进程，往往能发现真正的根因。当我们在 Perfetto 中看到 Main Thread 上有一个持续几十毫秒的 Binder slice 时，不要急着去优化 App 代码。先翻到 `system_server` 进程，找到处理这个 Binder 调用的线程——问题可能不在 App 本身，而在系统服务那边排队等待。理解分层架构是性能分析的基本功：每一层都可能是瓶颈所在。
 
 [已验证: 来源见 research-feeds/2026-03-30-19-ch01-architecture-misconceptions.md]
 
