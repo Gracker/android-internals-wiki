@@ -1,52 +1,52 @@
 {
-  "generated_at": "2026-04-19T02:49:24+08:00",
+  "generated_at": "2026-04-19T03:57:50+08:00",
   "state_machine_version": "v2",
-  "total_sections": 216,
+  "total_sections": 218,
   "metrics": {
     "total": 218,
     "unknown": 38,
     "ready-for-review": 180,
-    "last_updated": "2026-04-19T02:49:24+08:00",
+    "last_updated": "2026-04-19T03:57:50+08:00",
     "task2b_state_counts": {
       "unknown": 39,
-      "fixed": 125,
-      "pending": 10,
+      "fixed": 126,
+      "pending": 9,
       "idle": 44
     },
     "task6_state_counts": {
       "unknown": 33,
-      "reviewed": 70,
-      "revisiting": 112,
+      "reviewed": 69,
+      "revisiting": 113,
       "pending": 3
     },
     "task9_state_counts": {
       "unknown": 37,
-      "reviewed": 19,
-      "pending": 161,
+      "reviewed": 18,
+      "pending": 162,
       "fixed": 1
     },
     "pipeline_stage_counts": {
       "unknown": 32,
-      "task6_pending": 123,
+      "task6_pending": 124,
       "task9_pending": 50,
-      "task2b_pending": 13
+      "task2b_pending": 12
     },
     "total_sections": 218,
     "pipeline_unknown": 32,
-    "pipeline_task6_pending": 123,
-    "pipeline_task2b_pending": 13,
+    "pipeline_task6_pending": 124,
+    "pipeline_task2b_pending": 12,
     "pipeline_task9_pending": 50,
     "task2b_unknown": 39,
-    "task2b_fixed": 125,
-    "task2b_pending": 10,
+    "task2b_fixed": 126,
+    "task2b_pending": 9,
     "task2b_idle": 44,
     "task6_unknown": 33,
-    "task6_revisiting": 112,
-    "task6_reviewed": 70,
+    "task6_revisiting": 113,
+    "task6_reviewed": 69,
     "task6_pending": 3,
     "task9_unknown": 37,
-    "task9_pending": 161,
-    "task9_reviewed": 19,
+    "task9_pending": 162,
+    "task9_reviewed": 18,
     "ready-to-publish": 0,
     "finalized": 0,
     "task9_fixed": 1
@@ -54,26 +54,26 @@
   "pipeline": {
     "pipeline_stage_counts": {
       "unknown": 32,
-      "task6_pending": 123,
+      "task6_pending": 124,
       "task9_pending": 50,
-      "task2b_pending": 13
+      "task2b_pending": 12
     },
     "task2b_state_counts": {
       "unknown": 39,
-      "fixed": 125,
-      "pending": 10,
+      "fixed": 126,
+      "pending": 9,
       "idle": 44
     },
     "task6_state_counts": {
       "unknown": 33,
-      "reviewed": 70,
-      "revisiting": 112,
+      "reviewed": 69,
+      "revisiting": 113,
       "pending": 3
     },
     "task9_state_counts": {
       "unknown": 37,
-      "reviewed": 19,
-      "pending": 161,
+      "reviewed": 18,
+      "pending": 162,
       "fixed": 1
     }
   },
@@ -562,10 +562,10 @@
       "title": "Choreographer 与渲染流水线",
       "path": "src/part1-fundamentals/ch02-rendering/04-choreographer.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
-      "task6_state": "reviewed",
-      "task9_state": "reviewed",
-      "task2b_state": "pending",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
+      "task9_state": "pending",
+      "task2b_state": "fixed",
       "reviewed_date": "2026-04-19",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
