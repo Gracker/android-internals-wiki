@@ -1892,3 +1892,20 @@
 - **位置**：L202-L204 / L513
 - **问题**：正文已经明确 Android 8-17 的 Looper 唤醒路径应理解为 `eventfd + epoll`，但结尾交叉参考仍写成 `§1.13 MessageQueue 机制（Pipe + epoll 在 Looper 中的应用）`。这既和本章自己的结论冲突，也和项目中的实际章节名 `MessageQueue 机制与 DeliQueue 无锁优化` 不一致。另：L346 的“更准确的说法是”、L360 的“先别把”、L190/L310 的“本质上”仍命中 technical-writing SKILL 禁句式，但这不是本轮主审项。
 - **建议**：把交叉参考改成项目中的实际标题，或改写为 `§1.13 MessageQueue / Looper 唤醒路径（eventfd + epoll）`；顺手清掉上述禁句式。
+
+
+## [Task6 Review] 1.4 Binder IPC 机制与性能影响 — 2026-04-19
+
+### 问题 1
+- **类型**：存疑
+- **位置**：「为什么 Binder 只需要"一次拷贝"」段落，scatter-gather 描述
+- **问题**：原文称 scatter-gather 将"原来需要三次拷贝的流程减少到一次"。标准 Binder 叙述是通过 mmap 实现一次拷贝（相比传统 IPC 的两次），scatter-gather 进一步优化事务结构。"三次拷贝"的说法来源不明。
+- **建议**：对照 AOSP binder.c 中 scatter-gather patch（Android 8 引入）确认原始流程的拷贝次数，修正措辞
+- **review 日志**：logs/review/2026-04-19-07-review.md
+
+### 问题 2
+- **类型**：存疑
+- **位置**：「用 SQL 统计锁竞争」段落
+- **问题**：SQL 查询 GROUP BY s.slice_id 后 count(1) 恒为 1，无法真正统计"同一把锁上有多少线程在排队"。查询的实际用途是"按耗时排序的锁竞争事件列表"，与注释描述（统计锁竞争深度）不符。
+- **建议**：重写 SQL 按锁标识 + 时间重叠范围计算真正的锁深度，或修改注释描述使其与查询实际行为一致
+- **review 日志**：logs/review/2026-04-19-07-review.md
