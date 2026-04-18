@@ -2183,5 +2183,50 @@
     "added_at": "2026-04-18T13:32:11",
     "status": "pending",
     "original_review_log": "logs/review/2026-04-18-13-review.md"
+  },
+  {
+    "section": "1.8",
+    "section_title": "Activity Manager Service 与性能分析",
+    "priority": 95,
+    "reason": "[Deep Tech Review] P0 事实错误：Broadcast 超时实现、startForegroundService 超时阈值、ContentProvider 超时模型均与现代 AOSP 不符",
+    "material_paths": [
+      "intake/suggestions.md",
+      "intake/research-gaps.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "L245-L258 / L419-L422，Broadcast ANR 与广播队列实现",
+        "detail": "章节把 BROADCAST_FG_TIMEOUT / BROADCAST_BG_TIMEOUT 写在 BroadcastQueue.java，并把现代实现描述成 mFgBroadcastQueue / mBgBroadcastQueue 两个固定队列。AOSP android-16.0.0_r1 实际是在 ActivityManagerService 中定义超时常量，再注入 BroadcastConstants，由 BroadcastQueueImpl 执行超时与分发。",
+        "suggestion": "把源码引用改为 ActivityManagerService.java + BroadcastConstants.java + BroadcastQueueImpl.java；若保留旧架构描述，明确标注适用版本。"
+      },
+      {
+        "type": "源码错误",
+        "location": "L262-L292，startForegroundService 超时说明",
+        "detail": "章节称 startForeground() 超时固定为 5 秒。AOSP android-16.0.0_r1 中 ActivityManagerConstants.DEFAULT_SERVICE_START_FOREGROUND_TIMEOUT_MS = 30000，且还有 DEFAULT_SERVICE_START_FOREGROUND_ANR_DELAY_MS = 10000。当前写法会把现代版本的判责窗口写短一个数量级。",
+        "suggestion": "按版本拆开说明 create-service ANR 与 startForegroundService grace period，引用 ActivityManagerConstants.java 和 ActiveServices.serviceForegroundTimeout()。旧版本阈值未核实时标注 [待验证]。"
+      },
+      {
+        "type": "源码错误",
+        "location": "L294-L299，ContentProvider 超时模型",
+        "detail": "章节把 ContentProvider ANR 写成 ActivityManagerService.getContentProviderImpl() 的统一 10 秒超时。android-16 实际入口在 ContentProviderHelper.getContentProviderImpl()；发布超时是 ContentResolver.CONTENT_PROVIDER_PUBLISH_TIMEOUT_MILLIS = 10s，但等待 provider ready 走 CONTENT_PROVIDER_READY_TIMEOUT_MILLIS = 20s，已连接远端 provider 还有独立 3s 超时。",
+        "suggestion": "拆成 publish / ready / remote-provider 三段超时，并修正类路径为 ContentProviderHelper.java + ContentResolver.java。"
+      },
+      {
+        "type": "原理断裂",
+        "location": "L224-L237，Input ANR 关键路径",
+        "detail": "章节使用了 notifyANR() / notifyNotResponding() 这套旧链路，遗漏 WMS 的 InputManagerCallback 与 AnrController。android-16 中 InputDispatcher 走 notifyWindowUnresponsive() / notifyNoFocusedWindowAnr()，WMS 会先做焦点归因，再进入 ActivityRecord.inputDispatchingTimedOut() / AMS。少掉这层会让读者在 system_server 中找错判责点。",
+        "suggestion": "把链路更新为 InputDispatcher → InputManagerCallback → AnrController → ActivityRecord/AMS，并补充 no-focused-window 与 pending-focus-request 两个分支。"
+      },
+      {
+        "type": "版本差异",
+        "location": "L6-L8 frontmatter + L511-L524 版本演进表",
+        "detail": "章节声明适用 Android 10-17，但正文的版本表直接跳过 Android 11 和 13，last_verified_against 也只有 android-16.0.0_r1 + 14/17 文档。当前写法会把 android-16 的实现细节误投射到整个 10-17 区间。",
+        "suggestion": "补齐 11 / 13 的 AMS 相关变化，或收窄 applicable_versions；凡是仅按 android-16 核实的机制都要标注版本边界。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-18T13:34:00+08:00",
+    "status": "pending"
   }
 ]
