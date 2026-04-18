@@ -1,77 +1,77 @@
 {
-  "generated_at": "2026-04-18T19:04:25+08:00",
+  "generated_at": "2026-04-18T19:50:17.537515+08:00",
   "state_machine_version": "v2",
   "total_sections": 216,
   "metrics": {
     "total": 216,
     "unknown": 37,
     "ready-for-review": 179,
-    "last_updated": "2026-04-18T18:52:00+08:00",
+    "last_updated": "2026-04-18T19:50:17.537515+08:00",
     "task2b_state_counts": {
-      "unknown": 37,
       "fixed": 93,
-      "pending": 18,
-      "idle": 68
+      "idle": 67,
+      "pending": 19,
+      "unknown": 37
     },
     "task6_state_counts": {
-      "unknown": 33,
-      "reviewed": 36,
-      "revisiting": 91,
-      "pending": 56
+      "pending": 55,
+      "reviewed": 38,
+      "revisiting": 90,
+      "unknown": 33
     },
     "task9_state_counts": {
-      "unknown": 35,
-      "pending": 165,
-      "reviewed": 16
+      "pending": 164,
+      "reviewed": 17,
+      "unknown": 35
     },
     "pipeline_stage_counts": {
-      "unknown": 32,
-      "task6_pending": 147,
-      "task2b_pending": 19,
-      "task9_pending": 18
+      "task2b_pending": 20,
+      "task6_pending": 144,
+      "task9_pending": 20,
+      "unknown": 32
     },
     "total_sections": 216,
     "pipeline_unknown": 32,
-    "pipeline_task6_pending": 147,
-    "pipeline_task2b_pending": 19,
-    "pipeline_task9_pending": 18,
+    "pipeline_task6_pending": 144,
+    "pipeline_task2b_pending": 20,
+    "pipeline_task9_pending": 20,
     "task2b_unknown": 37,
     "task2b_fixed": 93,
-    "task2b_pending": 18,
-    "task2b_idle": 68,
+    "task2b_pending": 19,
+    "task2b_idle": 67,
     "task6_unknown": 33,
-    "task6_revisiting": 91,
-    "task6_reviewed": 36,
-    "task6_pending": 56,
+    "task6_revisiting": 90,
+    "task6_reviewed": 38,
+    "task6_pending": 55,
     "task9_unknown": 35,
-    "task9_pending": 165,
-    "task9_reviewed": 16,
+    "task9_pending": 164,
+    "task9_reviewed": 17,
     "ready-to-publish": 0,
     "finalized": 0
   },
   "pipeline": {
     "pipeline_stage_counts": {
-      "unknown": 32,
-      "task6_pending": 147,
-      "task2b_pending": 19,
-      "task9_pending": 18
+      "task2b_pending": 20,
+      "task6_pending": 144,
+      "task9_pending": 20,
+      "unknown": 32
     },
     "task2b_state_counts": {
-      "unknown": 37,
       "fixed": 93,
-      "pending": 18,
-      "idle": 68
+      "idle": 67,
+      "pending": 19,
+      "unknown": 37
     },
     "task6_state_counts": {
-      "unknown": 33,
-      "reviewed": 36,
-      "revisiting": 91,
-      "pending": 56
+      "pending": 55,
+      "reviewed": 38,
+      "revisiting": 90,
+      "unknown": 33
     },
     "task9_state_counts": {
-      "unknown": 35,
-      "pending": 165,
-      "reviewed": 16
+      "pending": 164,
+      "reviewed": 17,
+      "unknown": 35
     }
   },
   "issues": {
@@ -2201,9 +2201,16 @@
       "path": "src/part2-performance/ch18-rendering-pipelines/12-flutter-rendering.md",
       "status": "ready-for-review",
       "pipeline_stage": "task6_pending",
-      "task6_state": "pending",
+      "task6_state": "revisiting",
       "task9_state": "pending",
-      "task2b_state": "idle"
+      "task2b_state": "fixed",
+      "reviewed_by": "openclaw-task6",
+      "reviewed_date": "2026-04-18",
+      "task6_result": "pass-light-edit",
+      "task9_result": "needs-rework",
+      "task2b_result": "fixed",
+      "section": "18.12",
+      "last_task2b_at": "2026-04-18T19:50:17.537515+08:00"
     },
     "src/part2-performance/ch18-rendering-pipelines/13-webview-rendering.md": {
       "chapter": "18.13",
