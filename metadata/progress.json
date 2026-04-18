@@ -1,23 +1,23 @@
 {
-  "generated_at": "2026-04-18T15:21:00+08:00",
+  "generated_at": "2026-04-18T16:03:14.102932+08:00",
   "state_machine_version": "v2",
-  "total_sections": 215,
+  "total_sections": 216,
   "metrics": {
     "total": 216,
     "unknown": 37,
     "ready-for-review": 179,
-    "last_updated": "2026-04-18T15:21:00+08:00",
+    "last_updated": "2026-04-18T16:03:14.102932+08:00",
     "task2b_state_counts": {
       "unknown": 37,
-      "fixed": 90,
+      "fixed": 91,
       "pending": 20,
-      "idle": 69
+      "idle": 68
     },
     "task6_state_counts": {
       "unknown": 33,
-      "revisiting": 91,
+      "revisiting": 92,
       "reviewed": 35,
-      "pending": 57
+      "pending": 56
     },
     "task9_state_counts": {
       "unknown": 35,
@@ -36,13 +36,13 @@
     "pipeline_task2b_pending": 21,
     "pipeline_task9_pending": 18,
     "task2b_unknown": 37,
-    "task2b_fixed": 90,
+    "task2b_fixed": 91,
     "task2b_pending": 20,
-    "task2b_idle": 69,
+    "task2b_idle": 68,
     "task6_unknown": 33,
-    "task6_revisiting": 91,
+    "task6_revisiting": 92,
     "task6_reviewed": 35,
-    "task6_pending": 57,
+    "task6_pending": 56,
     "task9_unknown": 35,
     "task9_pending": 163,
     "task9_reviewed": 18,
@@ -58,15 +58,15 @@
     },
     "task2b_state_counts": {
       "unknown": 37,
-      "fixed": 90,
+      "fixed": 91,
       "pending": 20,
-      "idle": 69
+      "idle": 68
     },
     "task6_state_counts": {
       "unknown": 33,
-      "revisiting": 91,
+      "revisiting": 92,
       "reviewed": 35,
-      "pending": 57
+      "pending": 56
     },
     "task9_state_counts": {
       "unknown": 35,
@@ -2304,9 +2304,15 @@
       "path": "src/part2-performance/ch18-rendering-pipelines/20-pipeline-analysis-methodology.md",
       "status": "ready-for-review",
       "pipeline_stage": "task6_pending",
-      "task6_state": "pending",
+      "task6_state": "revisiting",
       "task9_state": "pending",
-      "task2b_state": "idle"
+      "task2b_state": "fixed",
+      "section": "18.20",
+      "reviewed_date": "2026-04-18",
+      "reviewed_by": "openclaw-task6",
+      "task6_result": "pass-light-edit",
+      "task9_result": "needs-rework",
+      "task2b_result": "fixed"
     },
     "src/part2-performance/ch18-rendering-pipelines/21-eyedropper-crossdevice.md": {
       "chapter": "18.21",
@@ -3082,14 +3088,14 @@
     }
   ],
   "stats": {
-    "total_sections": 213,
+    "total_sections": 216,
     "by_pipeline_stage": {
       "unknown": 32,
-      "task6_pending": 147,
-      "task2b_pending": 17,
-      "task9_pending": 17
+      "task6_pending": 145,
+      "task2b_pending": 21,
+      "task9_pending": 18
     },
-    "last_updated": "2026-04-18T11:52:47.796878+08:00",
+    "last_updated": "2026-04-18T16:03:14.102932+08:00",
     "total_reviewed": 18
   },
   "4.6": {
@@ -3102,7 +3108,7 @@
       "major_issues": 1
     }
   },
-  "last_updated": "2026-04-18T14:52:10.566766+08:00",
+  "last_updated": "2026-04-18T16:03:14.102932+08:00",
   "rework_log": [
     {
       "date": "2026-04-15T19:44:09.836904",
@@ -3295,6 +3301,21 @@
       ],
       "verification": "technical-writing 禁用词扫描=0，queue=completed",
       "queue_status": "completed"
+    },
+    {
+      "date": "2026-04-18T16:03:14.102932+08:00",
+      "section": "18.20",
+      "section_title": "链路分析方法论",
+      "source": "task9-deep-tech-review",
+      "priority": 95,
+      "fixes": [
+        "命令错误：把 `dumpsys SurfaceFlinger --list` 改成只用于枚举 Layer 名称，Composition 改为查看完整 Layer dump",
+        "版本差异：拆分 Android 9-10 的传统 Window BufferQueue 与 Android 11+ 的 BLASTBufferQueue 路径",
+        "原理断裂：把 TextureView、WebView GL Functor、Camera preview / recording / analysis 的中间跳点拆开写清",
+        "版本差异 + 交叉引用：VRR 查询改为 Android 12+ `actual_frame_timeline_slice`，Android 10/11 回退 `doFrame` + VSYNC 时间窗"
+      ],
+      "verification": "technical-writing 禁用词扫描=0，queue=completed",
+      "queue_status": "completed"
     }
   ],
   "reviews": [
@@ -3432,10 +3453,18 @@
       "by": "task2b-rework",
       "source": "task9-deep-tech-review",
       "issues_fixed": 5
+    },
+    {
+      "section": "18.20",
+      "section_title": "链路分析方法论",
+      "date": "2026-04-18T16:03:14.102932+08:00",
+      "by": "task2b-rework",
+      "source": "task9-deep-tech-review",
+      "issues_fixed": 4
     }
   ],
-  "last_task2b_run": "2026-04-18T14:52:10.566766+08:00",
-  "task2b_fixed": 6,
+  "last_task2b_run": "2026-04-18T16:03:14.102932+08:00",
+  "task2b_fixed": 7,
   "17.1": {
     "task6_review_date": "2026-04-16",
     "task6_result": "pass-light-edit",
@@ -3449,10 +3478,10 @@
     "task6_state": "reviewed",
     "task9_state": "pending"
   },
-  "task2b_last_run": "2026-04-18T14:03:57.099861+08:00",
+  "task2b_last_run": "2026-04-18T16:03:14.102932+08:00",
   "task2b_last_result": "fixed",
   "task2b_task8_processed": 3,
-  "task2b_note": "按 Task9 Deep Tech Review 修复 18.11 ANGLE 的驱动选择、选路与 Perfetto 归因问题",
+  "task2b_note": "按 Task9 Deep Tech Review 修复 18.20 的 dumpsys 口径、Android 9-10/11+ 版本分界、TextureView/WebView/Camera 路径拆分与 VRR 查询入口",
   "15.5": {
     "task6_review_date": "2026-04-17",
     "task6_result": "pass-light-edit",
@@ -3497,6 +3526,14 @@
       ],
       "issues_fixed": 5,
       "by": "task2b-rework"
+    },
+    {
+      "date": "2026-04-18T16:03:14.102932+08:00",
+      "sections": [
+        "18.20"
+      ],
+      "issues_fixed": 4,
+      "by": "task2b-rework"
     }
   ],
   "reviewed_chapters": [
@@ -3510,7 +3547,7 @@
   "total_chapters": 0,
   "reviewed_count": 1,
   "last_review": "18.17",
-  "last_task2b_section": "18.11",
+  "last_task2b_section": "18.20",
   "1.10": {
     "section": "1.10",
     "title": "ContentProvider 性能与优化",
@@ -3538,6 +3575,22 @@
       "原理断裂：新增 GraphicsEnvironment.queryAngleChoice()、setupAngle() 与 Loader.cpp 的运行时选路说明",
       "版本差异：把性能结论收敛到 workload / device dependent，并补首次编译、pipeline 建立、state mapping 的成本来源",
       "原理断裂：重写 Perfetto 小节，改成 settings + GL_RENDERER + 目标进程 trace 的组合证据链"
+    ],
+    "current_status": "ready-for-review",
+    "pipeline_stage": "task6_pending"
+  },
+  "18.20": {
+    "section": "18.20",
+    "title": "链路分析方法论",
+    "last_rework_date": "2026-04-18T16:03:14.102932+08:00",
+    "rework_count": 1,
+    "rework_source": "task9-deep-tech-review",
+    "rework_issues_fixed": 4,
+    "rework_details": [
+      "命令错误：把 `dumpsys SurfaceFlinger --list` 改成只用于枚举 Layer 名称，Composition 改为查看完整 Layer dump",
+      "版本差异：拆分 Android 9-10 的传统 Window BufferQueue 与 Android 11+ 的 BLASTBufferQueue 路径",
+      "原理断裂：把 TextureView、WebView GL Functor、Camera preview / recording / analysis 的中间跳点拆开写清",
+      "版本差异 + 交叉引用：VRR 查询改为 Android 12+ `actual_frame_timeline_slice`，Android 10/11 回退 `doFrame` + VSYNC 时间窗"
     ],
     "current_status": "ready-for-review",
     "pipeline_stage": "task6_pending"
