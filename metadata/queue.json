@@ -3150,5 +3150,44 @@
     "status": "completed",
     "completed_at": "2026-04-19T00:38:18+08:00",
     "completed_by": "task2b-rework"
+  },
+  {
+    "section": "4.6",
+    "section_title": "内存相关的版本演进",
+    "priority": 95,
+    "reason": "[Deep Tech Review] P0 事实错误：GC 版本边界与 Hardware Bitmap 内存归属描述错误",
+    "material_paths": [
+      "intake/suggestions.md",
+      "intake/research-gaps.md"
+    ],
+    "review_issues": [
+      {
+        "type": "版本差异",
+        "location": "L205-L217 / L479-L480",
+        "detail": "把 Android 15 直接写成“CMC GC 替代 CC GC”。但 §4.3 L221-L235 已明确区分：Android 15 更稳妥的表述是 UFFD 驱动的 Mark Compact / CMC 路径已进入 AOSP，公开把 Generational CMC 作为正式能力对外讲清楚是在 Android 16 QPR2 之后。当前写法会把 collector 路线和版本边界说得过满。",
+        "suggestion": "拆开 Android 15 与 Android 16 QPR2+ 的表述，删除“替代”式结论，补上 collector default / public rollout 的版本边界，并与 §4.3 的口径对齐。"
+      },
+      {
+        "type": "原理错误",
+        "location": "L417-L426 / L475",
+        "detail": "把 Hardware Bitmap 写成“GPU 侧存储，不计入 App 的 PSS，从 dumpsys meminfo 看不占内存”。`Bitmap.Config.HARDWARE` 官方定义只说明像素在 graphic memory 中且 bitmap 不可变，不等于对进程内存完全不可见；同时这和 §10.1 L248-L260 关于 Graphics / memtrack 计量的说明互相打架。",
+        "suggestion": "改成“不在 Java Heap，通常体现在 Graphics/GL/memtrack 或驱动相关统计中，设备可见性存在差异”；“不能跨进程/RemoteViews”这句需补官方依据，否则删掉。"
+      },
+      {
+        "type": "版本差异",
+        "location": "L350-L389 / L478-L500",
+        "detail": "MTE 段把 ARM 架构特性时间线、Android 平台启用时间和 App 可配置能力混成一张表。官方 NDK 指南给出的 app-facing 边界是“Android 13 起部分设备支持”，manifest 暴露的是 sync/async；文中的“Android 14+ 推进”“Asymmetric 模式建议启用”缺少 Android 平台侧锚点。",
+        "suggestion": "拆成 ARM ISA 时间线与 Android 平台时间线两部分，面向 App 的建议按 Android 13+ / memtagMode sync|async 重写；Asymmetric 保留为架构背景并标注 [待验证] 或补平台侧来源。"
+      },
+      {
+        "type": "版本差异",
+        "location": "L445-L460",
+        "detail": "16KB page size 段把官方已证实的 Android 15 支持、Play 自 2025-11-01 起的兼容性要求，与“Android 16 开始在 8GB+ 高端设备默认启用”混写。当前官方开发者文档能直接支撑前者，但没有给出这条统一的 Android 16 默认启用规则。",
+        "suggestion": "保留 Android 15 / Play / NDK r28+ 的官方事实，把 Android 16 默认启用改成 [待验证]，或者补充明确的设备/厂商发布依据。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-19T00:54:00",
+    "status": "pending"
   }
 ]

@@ -1051,14 +1051,16 @@
       "title": "内存相关的版本演进",
       "path": "src/part1-fundamentals/ch04-memory/06-memory-evolution.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
-      "task9_state": "pending",
-      "task2b_state": "idle",
+      "task9_state": "reviewed",
+      "task2b_state": "pending",
       "reviewed_date": "2026-04-15",
       "reviewed_by": "openclaw-task6",
       "section": "4.6",
-      "task6_result": "pass-light-edit"
+      "task6_result": "pass-light-edit",
+      "task9_result": "needs-rework",
+      "last_task9_at": "2026-04-19T00:54:00+08:00"
     },
     "src/part1-fundamentals/ch04-memory/07-16kb-page-size.md": {
       "chapter": "4.7",
@@ -3385,9 +3387,19 @@
       "log": "logs/review/2026-04-15-06-review.md",
       "minor_fixes": 10,
       "major_issues": 1
-    }
+    },
+    "section": "4.6",
+    "title": "内存相关的版本演进",
+    "pipeline_stage": "task2b_pending",
+    "task6_result": "pass-light-edit",
+    "task6_reviewed_date": "2026-04-15",
+    "task6_state": "reviewed",
+    "task9_state": "reviewed",
+    "task9_result": "needs-rework",
+    "task2b_state": "pending",
+    "last_task9_at": "2026-04-19T00:54:00+08:00"
   },
-  "last_updated": "2026-04-18T17:55:02+08:00",
+  "last_updated": "2026-04-19T00:54:00+08:00",
   "rework_log": [
     {
       "date": "2026-04-15T19:44:09.836904",

@@ -40,12 +40,15 @@ related_chapters: ["4.1", "4.2", "4.3", "4.4", "4.5", "2.9"]
 drafted_date: "2026-03-31"
 drafted_by: "openclaw-subagent"
 review_count: 3
-pipeline_stage: task9_pending
+pipeline_stage: task2b_pending
 task6_state: reviewed
 task6_result: pass-light-edit
-task9_state: pending
-task2b_state: idle
+task9_state: reviewed
+task9_result: needs-rework
+last_task9_at: "2026-04-19T00:54:00+08:00"
+task2b_state: pending
 ---
+
 
 # 内存相关的版本演进
 
