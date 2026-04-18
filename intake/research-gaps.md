@@ -822,3 +822,19 @@ SurfaceControl NDK 的 FrameTimeline 小节缺少“如何从 AChoreographerFram
 
 ### 关联章节
 14.9、18.6、2.15
+
+## [2026-04-18] 18.18 PIP 与自由窗口渲染 — Shell 控制面链路
+
+### 盲区描述
+章节把多窗口/PIP 的关键同步问题几乎全部落在 SurfaceFlinger + BLAST 上，但没有覆盖 Android 12+ 的 Shell 控制面：`PipTaskOrganizer`、`TaskOrganizer`、`WindowContainerTransaction`、Shell transitions / SyncEngine 这条链路决定了进入 PIP、窗口 resize、bounds 变更何时提交到 WMS 和 SurfaceFlinger。缺了这一层，读者很难解释为什么同样是 resize，Android 8-10、11、12+ 的表现和 Trace 观察点并不一样。
+
+### 重要程度
+高
+
+### 建议研究方向
+- `frameworks/base/libs/WindowManager/Shell/src/com/android/wm/shell/pip/PipTaskOrganizer.java` 与 Shell transition 相关类
+- `WindowContainerTransaction` / SyncEngine / BLASTBufferQueue 在 resize 同步中的职责边界
+- PIP / Freeform 场景下 WindowManager trace、Perfetto FrameTimeline、SurfaceFlinger transaction 的联合观察方法
+
+### 关联章节
+18.18, 18.10, 2.12

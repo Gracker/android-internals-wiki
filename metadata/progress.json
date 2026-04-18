@@ -1,75 +1,75 @@
 {
-  "generated_at": "2026-04-18T10:49:55.750131+08:00",
+  "generated_at": "2026-04-18T11:10:00+08:00",
   "state_machine_version": "v2",
-  "total_sections": 214,
+  "total_sections": 215,
   "metrics": {
-    "total": 214,
+    "total": 215,
     "unknown": 36,
-    "ready-for-review": 178,
-    "last_updated": "2026-04-18T10:49:55.750131+08:00",
+    "ready-for-review": 179,
+    "last_updated": "2026-04-18T11:10:00+08:00",
     "task2b_state_counts": {
-      "unknown": 35,
+      "unknown": 36,
       "fixed": 88,
-      "pending": 18,
-      "idle": 73
+      "pending": 21,
+      "idle": 70
     },
     "task6_state_counts": {
       "unknown": 33,
       "revisiting": 88,
-      "reviewed": 32,
-      "pending": 61
+      "reviewed": 36,
+      "pending": 58
     },
     "task9_state_counts": {
-      "unknown": 34,
-      "pending": 164,
-      "reviewed": 16
+      "unknown": 35,
+      "pending": 161,
+      "reviewed": 19
     },
     "pipeline_stage_counts": {
       "unknown": 32,
-      "task6_pending": 147,
-      "task2b_pending": 18,
+      "task6_pending": 144,
+      "task2b_pending": 22,
       "task9_pending": 17
     },
-    "total_sections": 214,
+    "total_sections": 215,
     "pipeline_unknown": 32,
-    "pipeline_task6_pending": 147,
-    "pipeline_task2b_pending": 18,
+    "pipeline_task6_pending": 144,
+    "pipeline_task2b_pending": 22,
     "pipeline_task9_pending": 17,
-    "task2b_unknown": 35,
+    "task2b_unknown": 36,
     "task2b_fixed": 88,
-    "task2b_pending": 18,
-    "task2b_idle": 73,
+    "task2b_pending": 21,
+    "task2b_idle": 70,
     "task6_unknown": 33,
     "task6_revisiting": 88,
-    "task6_reviewed": 32,
-    "task6_pending": 61,
-    "task9_unknown": 34,
-    "task9_pending": 164,
-    "task9_reviewed": 16
+    "task6_reviewed": 36,
+    "task6_pending": 58,
+    "task9_unknown": 35,
+    "task9_pending": 161,
+    "task9_reviewed": 19
   },
   "pipeline": {
     "pipeline_stage_counts": {
       "unknown": 32,
-      "task6_pending": 147,
-      "task2b_pending": 18,
+      "task6_pending": 144,
+      "task2b_pending": 22,
       "task9_pending": 17
     },
     "task2b_state_counts": {
-      "unknown": 35,
+      "unknown": 36,
       "fixed": 88,
-      "pending": 18,
-      "idle": 73
+      "pending": 21,
+      "idle": 70
     },
     "task6_state_counts": {
       "unknown": 33,
       "revisiting": 88,
-      "reviewed": 32,
-      "pending": 61
+      "reviewed": 36,
+      "pending": 58
     },
     "task9_state_counts": {
-      "unknown": 34,
-      "pending": 164,
-      "reviewed": 16
+      "unknown": 35,
+      "pending": 161,
+      "reviewed": 19
     }
   },
   "issues": {
@@ -2256,10 +2256,18 @@
       "title": "PIP 与自由窗口渲染",
       "path": "src/part2-performance/ch18-rendering-pipelines/18-pip-freeform.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "pending",
-      "task9_state": "pending",
-      "task2b_state": "idle"
+      "pipeline_stage": "task2b_pending",
+      "task6_state": "reviewed",
+      "task9_state": "reviewed",
+      "task2b_state": "pending",
+      "reviewed_date": "2026-04-18",
+      "reviewed_by": "openclaw-task6",
+      "task6_result": "needs-rework",
+      "task9_result": "needs-rework",
+      "task9_reviewed_date": "2026-04-18",
+      "task9_reviewed_by": "openclaw-task9",
+      "last_task9_at": "2026-04-18T11:10:00+08:00",
+      "section": "18.18"
     },
     "src/part2-performance/ch18-rendering-pipelines/19-variable-refresh-rate.md": {
       "chapter": "18.19",

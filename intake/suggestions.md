@@ -1487,3 +1487,15 @@
 - **位置**：在 Perfetto 中识别 Camera 管线（L144-L159）
 - **问题**：列出了 `queueBuffer`、`BufferTX - SurfaceView`、`binder transaction`、`dma_buf` 等观察点，但没有给一条可运行的 trace 配置、一个正常/异常样例或最小 SQL/时间基线。当前结论更多是经验列表，读者难以拿自己的 trace 逐项对照。
 - **建议**：补一组最小抓取配置，加一条“稳定预览 vs Analysis 背压”的真实 case，至少给出一组帧间隔/回调归还节奏的判断基线；术语和查询口径尽量与 §14.9 对齐。
+
+## [Task9 Deep Review] 18.18 PIP 与自由窗口渲染 — 2026-04-18
+- **类型**：数据缺失
+- **位置**：L121-L138 Trace 定位 / 在 Perfetto 中识别多窗口问题
+- **问题**：Trace 指引只给出 `wm_task_moved`、`Transaction.apply`、`queueBuffer` 这类零散关键词，没有说明需要打开哪些数据源，也没有给出 App 主线程 Traversal、BufferQueue 背压、SurfaceFlinger FrameTimeline、WindowManager transition 等联合观察方法。读者很难凭这些描述真正复现 resize / PIP 卡顿分析。
+- **建议**：补一组最小可执行分析路径，例如：WindowManager / SurfaceFlinger / FrameTimeline / app main thread / BufferQueue 各看什么 track；至少给 1 个正常案例和 1 个异常案例的文字版 Trace 描述。
+
+## [Task9 Deep Review] 18.18 PIP 与自由窗口渲染 — 2026-04-18
+- **类型**：数据缺失
+- **位置**：L77-L79 / L128-L130
+- **问题**：`系统通常限制 PIP 窗口的 CPU/GPU 优先级`、`Chrome 会预渲染几个常见尺寸的 Bitmap Cache` 两个判断没有版本、设备或源码依据，且都属于平台/应用特定策略，当前写法容易被读者误解为通用结论。
+- **建议**：如果没有可验证材料，改成 `[待验证]` 或删去；更稳妥的写法应回到通用约束，如 HWC plane 竞争、resize 触发的重新 layout、BufferQueue 槽位背压。
