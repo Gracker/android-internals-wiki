@@ -44,18 +44,19 @@ tags:
 related_chapters:
   - "4.7"
   - "14.2"
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
+task6_result: pass-light-edit
 task9_state: pending
 task2b_state: fixed
 task2b_result: fixed
 reviewed_by: openclaw-task6
-reviewed_date: "2026-04-11"
+reviewed_date: "2026-04-19"
 ---
 
 # 1.15 JNI/NDK 性能优化
 
-只要一段链路跨过 Java/Kotlin 和 C/C++ 的边界，JNI（Java Native Interface）就不再是“实现细节”，而是性能模型的一部分。音视频编解码、图像处理、游戏引擎、端侧 AI 推理，这些场景里的热路径往往不是单个 native 函数有多快，而是我们到底跨了多少次边界、每次跨边界时做了什么、在 Trace 里又能看到多少证据。
+只要一段调用路径跨过 Java/Kotlin 和 C/C++ 的边界，JNI（Java Native Interface）就是性能模型的一部分。音视频编解码、图像处理、游戏引擎、端侧 AI 推理，这些场景里的热路径的瓶颈往往在于跨了多少次边界、每次跨边界时做了什么、在 Trace 里又能看到多少证据。
 
 如果我们只记住“native 比 Java 快”这种口号，真正排查问题时很容易看错方向。很多卡顿不是 native 算法慢，而是 JNI 调用过碎、字符串和数组在两侧来回拷贝、native 线程 attach/detach 用错位置，或者 16KB page size 下第三方 `.so` 根本没有对齐，应用连加载都过不了。
 
@@ -114,7 +115,7 @@ reviewed_date: "2026-04-11"
 
 ## JNI transition 到底有多贵
 
-官方文档在 `@CriticalNative` 说明页里给过一组常被引用的基准值，测试环境是 `angler-userdebug`，时间点是 2016-07。那组数字不是给今天所有设备背书的，而是给我们一个量级感：普通 JNI 约 115ns，`@FastNative` 约 35ns，`@CriticalNative` 约 25ns。[已验证: https://developer.android.com/reference/dalvik/annotation/optimization/CriticalNative]
+官方文档在 `@CriticalNative` 说明页里给过一组常被引用的基准值，测试环境是 `angler-userdebug`，时间点是 2016-07。那组数字给出的是量级感，不能直接当成今天所有设备的固定基准：普通 JNI 约 115ns，`@FastNative` 约 35ns，`@CriticalNative` 约 25ns。[已验证: https://developer.android.com/reference/dalvik/annotation/optimization/CriticalNative]
 
 | 调用路径 | 官方参考值 | 这组数字真正说明了什么 |
 | --- | --- | --- |
@@ -130,7 +131,7 @@ reviewed_date: "2026-04-11"
 
 ART 不会替我们优化 API 设计。如果 Java 侧一次只传一个数字，native 侧再返回一个结果，运行时就只能老老实实陪我们来回过边界。减少 JNI 成本最朴素也最有效的办法，通常不是换注解，而是**减少次数**。
 
-ID 缓存是第一步。`FindClass()`、`GetMethodID()`、`GetFieldID()` 都不该出现在热路径里。更稳的做法是在 `JNI_OnLoad()` 或显式初始化阶段完成查找，把 `jclass` 提升为 global reference，把 `jmethodID` / `jfieldID` 保存在静态缓存里。`jclass` 是 local reference，离开当前 native 调用就失效；`jmethodID` / `jfieldID` 不是 Java 对象，只要对应 class 还活着，就可以跨调用复用。[已验证: https://developer.android.com/training/articles/perf-jni]
+ID 缓存是第一步。`FindClass()`、`GetMethodID()`、`GetFieldID()` 都不该出现在热路径里。推荐的做法是在 `JNI_OnLoad()` 或显式初始化阶段完成查找，把 `jclass` 提升为 global reference，把 `jmethodID` / `jfieldID` 保存在静态缓存里。`jclass` 是 local reference，离开当前 native 调用就失效；`jmethodID` / `jfieldID` 不是 Java 对象，只要对应 class 还活着，就可以跨调用复用。[已验证: https://developer.android.com/training/articles/perf-jni]
 
 ```cpp
 static jclass gDecoderClass;
@@ -165,7 +166,7 @@ private static native void nativeWriteString16(long nativePtr, String val);
 
 这里的 `String val` 已经说明了问题，`@FastNative` 并不是“不能碰托管对象”，它只是要求这条调用链足够短、足够可控。`platform/frameworks/base/core/java/android/os/SystemProperties.java` 里还有一个反例：源码直接注释了 `native_set` **不能**标成 `@FastNative`，因为它会做 IPC，可能阻塞。这个反例比空泛地说“不要乱用”更有说服力。[已验证: platform/frameworks/base/core/java/android/os/Parcel.java, platform/frameworks/base/core/java/android/os/SystemProperties.java]
 
-再看 `@CriticalNative`。官方文档写得很直接，它只能用于**不使用托管对象**的方法，既不能把对象放进参数和返回值，也不能依赖隐式 `this`，所以本质上只适合 `static` native 方法。native 侧函数签名里也没有 `JNIEnv*` 和 `jclass` 参数，因为 ABI 已经变了。如果把 primitive array 也算进去，就会把这条边界讲错，因为数组仍然是 managed object。[已验证: https://developer.android.com/reference/dalvik/annotation/optimization/CriticalNative]
+再看 `@CriticalNative`。官方文档写得很直接，它只能用于**不使用托管对象**的方法，既不能把对象放进参数和返回值，也不能依赖隐式 `this`，所以只适合 `static` native 方法。native 侧函数签名里也没有 `JNIEnv*` 和 `jclass` 参数，因为 ABI 已经变了。如果把 primitive array 也算进去，就会把这条边界讲错，因为数组仍然是 managed object。[已验证: https://developer.android.com/reference/dalvik/annotation/optimization/CriticalNative]
 
 AOSP 里真正符合这条规则的例子很多，`platform/frameworks/base/core/java/android/os/Binder.java` 里的 `getCallingUid()` 就很典型：
 
@@ -184,7 +185,7 @@ public static final native int getCallingUid();
 
 ## native 线程与引用生命周期，才是日常最容易踩坑的地方
 
-对很多项目来说，真正频繁出现的问题不是 `@CriticalNative` 用没用对，而是线程模型和引用生命周期根本没有管住。
+对很多项目来说，线程模型和引用生命周期没有管住，比 `@CriticalNative` 用没用对更容易出问题。
 
 第一条铁律是：`JNIEnv*` 是线程私有的。官方文档明确说过，`JNIEnv` 用在 thread-local storage 上，不能跨线程共享。正确的共享对象是 `JavaVM*`。如果某段 native 代码需要在当前线程拿到 `JNIEnv*`，应该通过 `JavaVM::GetEnv()` 查询当前线程是否已经 attach，而不是把别的线程里的 `JNIEnv*` 偷过来复用。[已验证: https://developer.android.com/training/articles/perf-jni]
 
@@ -200,13 +201,13 @@ public static final native int getCallingUid();
 
 数组也一样。`Get<PrimitiveType>ArrayElements()` 可能返回真实指针，也可能分配一块 native buffer 再拷贝过去；不管哪种情况，都必须对应一次 `Release`。如果运行时直接把堆里的数组暴露给 native，那块数组在 release 之前就可能被 pin 住，无法参与压缩式移动。[已验证: https://developer.android.com/training/articles/perf-jni]
 
-`GetPrimitiveArrayCritical()` 更应该谨慎。它不是“更快的数组 API”这么简单，而是给运行时更少干预空间的一条通道。官方建议是：critical 区域要尽可能短，不要在中间执行任意 JNI 调用，也不要做阻塞系统调用。稳妥的理解方式不是“它一定会暂停整个进程 GC”，而是“运行时在这段时间里对堆移动和关键回收工作的选择会变得非常受限，所以我们必须尽快 release”。这比写一个并无来源的固定阈值可靠得多。
+`GetPrimitiveArrayCritical()` 更应该谨慎。它限制运行时干预空间以换取更短的临界区，不能当成“更快的数组 API”来用。官方建议是：critical 区域要尽可能短，不要在中间执行任意 JNI 调用，也不要做阻塞系统调用。正确的理解是：运行时在这段时间里对堆移动和关键回收工作的选择会变得非常受限，所以我们必须尽快 release。这比写一个并无来源的固定阈值可靠得多。
 
 如果数据本来就很大，而且会长期在 Java 和 native 之间来回传，`DirectByteBuffer` 往往是更像样的方案。它把存储放在 managed heap 之外，native 侧可以通过 `GetDirectBufferAddress()` 直接拿到地址，省掉重复拷贝。代价也很明确：direct buffer 的分配和回收比普通 `byte[]` 重，适合池化复用，不适合每次现建现扔。[已验证: https://developer.android.com/reference/java/nio/ByteBuffer]
 
-## 16KB page size，不是“内存章节的事”，而是 JNI/NDK 项目的上线门槛
+## 16KB page size：JNI/NDK 项目的上线门槛
 
-很多人第一次关注 16KB page size，是因为 Google Play 的兼容性提醒；但对 JNI/NDK 项目来说，它不是“发版前顺手看一眼”的检查项，而是 native library 能不能在目标设备上被正确加载的前提条件。
+很多人第一次关注 16KB page size，是因为 Google Play 的兼容性提醒；但对 JNI/NDK 项目来说，它决定了 native library 能不能在目标设备上被正确加载，远超“发版前顺手看一眼”的检查项级别。
 
 官方文档现在的口径很清楚：**从 2025-11-01 起，所有提交到 Google Play、且 targeting Android 15+ devices 的新应用和更新，都必须在 64 位设备上支持 16KB page sizes。** 这句话的重点有三个。第一，范围是 targeting Android 15+ 的提交，不是所有历史版本一刀切。第二，约束对象是 64 位设备。第三，真正需要处理的是包含 native code 的应用，包括直接引入 NDK 库，或者通过第三方 SDK 间接带入 `.so` 的情况。纯 Java/Kotlin 应用通常不需要为此重编 NDK 库，但如果包里带了 native 依赖，就必须认真检查。[已验证: https://developer.android.com/guide/practices/page-sizes]
 
@@ -218,7 +219,7 @@ public static final native int getCallingUid();
 
 AOSP 自己的实现方式很能说明问题。`Binder.java`、`Parcel.java` 这种 framework 边界里，JNI 主要承担的是 Java API 和 native runtime 之间的桥接，所以我们能看到大量 `@FastNative` / `@CriticalNative`。但到了 SurfaceFlinger、AudioFlinger 这类对时延极敏感、又本来就在 native 世界里的服务，系统更愿意直接保持 native-only 栈，而不是再绕回 Java。
 
-这给我们的判断标准也很简单。如果调用发生在**同进程**里，而且 Java/Kotlin 的确需要借助现成的 C/C++ 库，JNI 是合适的桥。如果问题本质上是**跨进程通信**，那就应该老老实实用 Binder / AIDL，不要为了躲开 IPC 而硬把两个组件塞进一个进程再走 JNI。至于 `libbinder_ndk` 和 Java Binder 谁更快，不能脱离 payload、序列化路径和测试设备去写固定百分比。更稳的结论是：native-only 的 Binder 栈可以减少 Java ↔ native 桥接和部分序列化层级，但具体收益必须结合 workload 单独测。
+这给我们的判断标准也很简单。如果调用发生在**同进程**里，而且 Java/Kotlin 的确需要借助现成的 C/C++ 库，JNI 是合适的桥。如果实际要做的是**跨进程通信**，那就应该老老实实用 Binder / AIDL，不要为了躲开 IPC 而硬把两个组件塞进一个进程再走 JNI。至于 `libbinder_ndk` 和 Java Binder 谁更快，不能脱离 payload、序列化路径和测试设备去写固定百分比。更可靠的结论是：native-only 的 Binder 栈可以减少 Java ↔ native 桥接和部分序列化层级，但具体收益必须结合 workload 单独测。
 
 ## 版本演进
 
