@@ -1,77 +1,77 @@
 {
-  "generated_at": "2026-04-18T16:03:14.102932+08:00",
+  "generated_at": "2026-04-18T17:17:59+08:00",
   "state_machine_version": "v2",
   "total_sections": 216,
   "metrics": {
     "total": 216,
     "unknown": 37,
     "ready-for-review": 179,
-    "last_updated": "2026-04-18T16:03:14.102932+08:00",
+    "last_updated": "2026-04-18T17:17:59+08:00",
     "task2b_state_counts": {
       "unknown": 37,
-      "fixed": 91,
-      "pending": 20,
+      "fixed": 92,
+      "pending": 19,
       "idle": 68
     },
     "task6_state_counts": {
       "unknown": 33,
-      "revisiting": 92,
-      "reviewed": 35,
+      "reviewed": 36,
+      "revisiting": 91,
       "pending": 56
     },
     "task9_state_counts": {
       "unknown": 35,
-      "pending": 163,
-      "reviewed": 18
+      "pending": 164,
+      "reviewed": 17
     },
     "pipeline_stage_counts": {
       "unknown": 32,
-      "task6_pending": 145,
-      "task2b_pending": 21,
+      "task6_pending": 146,
+      "task2b_pending": 20,
       "task9_pending": 18
     },
     "total_sections": 216,
     "pipeline_unknown": 32,
-    "pipeline_task6_pending": 145,
-    "pipeline_task2b_pending": 21,
+    "pipeline_task6_pending": 146,
+    "pipeline_task2b_pending": 20,
     "pipeline_task9_pending": 18,
     "task2b_unknown": 37,
-    "task2b_fixed": 91,
-    "task2b_pending": 20,
+    "task2b_fixed": 92,
+    "task2b_pending": 19,
     "task2b_idle": 68,
     "task6_unknown": 33,
-    "task6_revisiting": 92,
-    "task6_reviewed": 35,
+    "task6_revisiting": 91,
+    "task6_reviewed": 36,
     "task6_pending": 56,
     "task9_unknown": 35,
-    "task9_pending": 163,
-    "task9_reviewed": 18,
+    "task9_pending": 164,
+    "task9_reviewed": 17,
     "ready-to-publish": 0,
     "finalized": 0
   },
   "pipeline": {
     "pipeline_stage_counts": {
       "unknown": 32,
-      "task6_pending": 145,
-      "task2b_pending": 21,
+      "task6_pending": 146,
+      "task2b_pending": 20,
       "task9_pending": 18
     },
     "task2b_state_counts": {
       "unknown": 37,
-      "fixed": 91,
-      "pending": 20,
+      "fixed": 92,
+      "pending": 19,
       "idle": 68
     },
     "task6_state_counts": {
       "unknown": 33,
-      "revisiting": 92,
-      "reviewed": 35,
+      "reviewed": 36,
+      "revisiting": 91,
       "pending": 56
     },
     "task9_state_counts": {
       "unknown": 35,
-      "pending": 163,
-      "reviewed": 18
+      "pending": 164,
+      "reviewed": 17
     }
   },
   "issues": {
@@ -364,15 +364,17 @@
       "title": "Zygote 机制与启动性能优化",
       "path": "src/part1-fundamentals/ch01-architecture/11-zygote-startup.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
+      "pipeline_stage": "task6_pending",
       "task6_state": "revisiting",
-      "task9_state": "reviewed",
-      "task2b_state": "pending",
+      "task9_state": "pending",
+      "task2b_state": "fixed",
       "reviewed_date": "2026-04-11",
       "reviewed_by": "openclaw-task6",
       "task6_result": "needs-rework",
       "task9_result": "needs-rework",
-      "section": "1.11"
+      "section": "1.11",
+      "task2b_result": "fixed",
+      "last_task2b_at": "2026-04-18T17:17:59+08:00"
     },
     "src/part1-fundamentals/ch01-architecture/12-autofdo-optimization.md": {
       "chapter": "1.12",
@@ -3086,6 +3088,15 @@
       "small_fixes": 4,
       "major_issues": 1,
       "log": "logs/review/2026-04-18-15-review.md"
+    },
+    {
+      "date": "2026-04-18 16:41",
+      "section": "15.8",
+      "task": "task9-deep-review",
+      "result": "needs-rework",
+      "fixes": 0,
+      "issues": 12,
+      "log": "logs/deep-review/2026-04-18-16-deep-review.md"
     }
   ],
   "stats": {
@@ -3109,7 +3120,7 @@
       "major_issues": 1
     }
   },
-  "last_updated": "2026-04-18T16:03:14.102932+08:00",
+  "last_updated": "2026-04-18T16:41:43+08:00",
   "rework_log": [
     {
       "date": "2026-04-15T19:44:09.836904",
@@ -3595,5 +3606,14 @@
     ],
     "current_status": "ready-for-review",
     "pipeline_stage": "task6_pending"
+  },
+  "15.8": {
+    "task9_reviewed_date": "2026-04-18",
+    "task9_reviewed_by": "openclaw-task9",
+    "task9_result": "needs-rework",
+    "task9_state": "reviewed",
+    "task2b_state": "pending",
+    "pipeline_stage": "task2b_pending",
+    "last_task9_at": "2026-04-18T16:41:43+08:00"
   }
 }
