@@ -2483,10 +2483,10 @@
       "title": "可变刷新率渲染管线",
       "path": "src/part2-performance/ch18-rendering-pipelines/19-variable-refresh-rate.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
-      "task6_state": "reviewed",
-      "task9_state": "reviewed",
-      "task2b_state": "pending",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
+      "task9_state": "pending",
+      "task2b_state": "fixed",
       "reviewed_date": "2026-04-18",
       "reviewed_by": "openclaw-task6",
       "task6_result": "needs-rework",
@@ -2494,7 +2494,9 @@
       "task9_result": "needs-rework",
       "task9_reviewed_date": "2026-04-19",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-19T05:37:44+08:00"
+      "last_task9_at": "2026-04-19T05:37:44+08:00",
+      "task2b_result": "fixed",
+      "last_task2b_at": "2026-04-19T05:56:37.386035+08:00"
     },
     "src/part2-performance/ch18-rendering-pipelines/20-pipeline-analysis-methodology.md": {
       "chapter": "18.20",
@@ -3288,10 +3290,14 @@
       "title": "可变刷新率渲染管线",
       "status": "ready-for-review",
       "task6_result": "needs-rework",
-      "task6_state": "reviewed",
+      "task6_state": "revisiting",
       "task6_reviewed_date": "2026-04-18",
-      "pipeline_stage": "task2b_pending",
-      "task6_review_log": "logs/review/2026-04-18-09-review.md"
+      "pipeline_stage": "task6_pending",
+      "task6_review_log": "logs/review/2026-04-18-09-review.md",
+      "task9_state": "pending",
+      "task2b_state": "fixed",
+      "task2b_result": "fixed",
+      "last_task2b_at": "2026-04-19T05:56:37.386035+08:00"
     },
     "3.1": {
       "title": "Input 事件分发全流程",
@@ -3426,7 +3432,7 @@
     "task2b_state": "pending",
     "last_task9_at": "2026-04-19T00:54:00+08:00"
   },
-  "last_updated": "2026-04-19T04:18:34+08:00",
+  "last_updated": "2026-04-19T05:56:37.386035+08:00",
   "rework_log": [
     {
       "date": "2026-04-15T19:44:09.836904",
@@ -3805,10 +3811,18 @@
       "by": "task2b-rework",
       "source": "task9-deep-tech-review",
       "issues_fixed": 7
+    },
+    {
+      "section": "18.19",
+      "section_title": "可变刷新率渲染管线",
+      "date": "2026-04-19T05:56:37.386035+08:00",
+      "by": "task2b-rework",
+      "source": "task9-deep-tech-review + task6-review",
+      "issues_fixed": 7
     }
   ],
-  "last_task2b_run": "2026-04-18T10:33:10.689932+00:00",
-  "task2b_fixed": 8,
+  "last_task2b_run": "2026-04-19T05:56:37.386035+08:00",
+  "task2b_fixed": 9,
   "17.1": {
     "task6_review_date": "2026-04-16",
     "task6_result": "pass-light-edit",
@@ -3822,10 +3836,10 @@
     "task6_state": "reviewed",
     "task9_state": "pending"
   },
-  "task2b_last_run": "2026-04-18T10:33:10.689932+00:00",
+  "task2b_last_run": "2026-04-19T05:56:37.386035+08:00",
   "task2b_last_result": "fixed",
   "task2b_task8_processed": 3,
-  "task2b_note": "按 Task9 Deep Tech Review 修复 15.8 的 arxiv 引用、Stack Overflow 数据源补全、63/82 因素区分、invalidate/requestLayout 语义、Frame Timeline 版本边界、UI Operation 模式重写、禁用词清除",
+  "task2b_note": "修复 18.19 的 ARR API 时间线、VRR/ARR 边界、Perfetto SQL 与观察口径，并完成 technical-writing 禁用词复检",
   "15.5": {
     "task6_review_date": "2026-04-17",
     "task6_result": "pass-light-edit",
@@ -3886,6 +3900,14 @@
       ],
       "issues_fixed": 7,
       "by": "task2b-rework"
+    },
+    {
+      "date": "2026-04-19T05:56:37.386035+08:00",
+      "sections": [
+        "18.19"
+      ],
+      "issues_fixed": 7,
+      "by": "task2b-rework"
     }
   ],
   "reviewed_chapters": [
@@ -3899,7 +3921,7 @@
   "total_chapters": 0,
   "reviewed_count": 1,
   "last_review": "18.17",
-  "last_task2b_section": "15.8",
+  "last_task2b_section": "18.19",
   "1.10": {
     "section": "1.10",
     "title": "ContentProvider 性能与优化",
@@ -3999,5 +4021,24 @@
     "task6_review_date": "2026-04-19",
     "task6_result": "pass-light-edit",
     "task6_state": "reviewed"
+  },
+  "18.19": {
+    "section": "18.19",
+    "title": "可变刷新率渲染管线",
+    "last_rework_date": "2026-04-19T05:56:37.386035+08:00",
+    "rework_count": 1,
+    "rework_source": "task9-deep-tech-review + task6-review",
+    "rework_issues_fixed": 7,
+    "rework_details": [
+      "版本边界：拆开 Android 11-14 多刷新率背景、Android 15 API 35 的 View/Compose 投票、Android 16 Display 查询 API",
+      "原理修正：补 App 投票 → Scheduler 决策 → 设备 HAL / 面板能力 → 动态 VSync 的完整过程",
+      "事实修正：删除“慢帧会被系统自动救回”式表述，改成 missed deadline 仍落到 app / sf jank",
+      "Perfetto SQL：改成 android.frames.timeline + actual_frame_timeline_slice，去掉错误的 android.frames / android_frames.jank_type 写法",
+      "观察口径：统一到 VSYNC-app、VSYNC-sf、expected_frame_timeline_slice、actual_frame_timeline_slice、refresh-rate selection slice",
+      "可读性：把表格骨架改成叙述体，并补 Android 11-16 版本演进",
+      "禁用词扫描：按 technical-writing 词库复检，新增内容 0 hit"
+    ],
+    "current_status": "ready-for-review",
+    "pipeline_stage": "task6_pending"
   }
 }
