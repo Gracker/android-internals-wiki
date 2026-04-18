@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-18T11:52:47.796878+08:00",
+  "generated_at": "2026-04-18T12:20:00+08:00",
   "state_machine_version": "v2",
   "total_sections": 215,
   "metrics": {
@@ -2164,10 +2164,18 @@
       "title": "ANGLE（GLES-over-Vulkan 翻译层）",
       "path": "src/part2-performance/ch18-rendering-pipelines/11-angle-gles-vulkan.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "pending",
-      "task9_state": "pending",
-      "task2b_state": "idle"
+      "pipeline_stage": "task2b_pending",
+      "task6_state": "reviewed",
+      "task9_state": "reviewed",
+      "task2b_state": "pending",
+      "section": "18.11",
+      "reviewed_date": "2026-04-18",
+      "reviewed_by": "openclaw-task6",
+      "task6_result": "pass-light-edit",
+      "task9_result": "needs-rework",
+      "task9_reviewed_date": "2026-04-18",
+      "task9_reviewed_by": "openclaw-task9",
+      "last_task9_at": "2026-04-18T12:20:00+08:00"
     },
     "src/part2-performance/ch18-rendering-pipelines/12-flutter-rendering.md": {
       "chapter": "18.12",
@@ -3065,7 +3073,7 @@
       "major_issues": 1
     }
   },
-  "last_updated": "2026-04-18T11:52:47.796878+08:00",
+  "last_updated": "2026-04-18T12:20:00+08:00",
   "rework_log": [
     {
       "date": "2026-04-15T19:44:09.836904",

@@ -2080,5 +2080,49 @@
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-18T11:10:00+08:00",
     "status": "pending"
+  },
+  {
+    "section": "18.11",
+    "section_title": "ANGLE（GLES-over-Vulkan 翻译层）",
+    "priority": 95,
+    "reason": "[Deep Tech Review] P0 事实错误：ANGLE 调试命令键名错误，且章节把 ANGLE 误写成绕开厂商图形驱动",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "“adb 快速检查 / 强制所有 App 使用 ANGLE” 命令块（L144-L149）",
+        "detail": "AOSP GraphicsEnvironment.queryAngleChoice() 读取的是 `angle_gl_driver_all_angle`，按包配置使用 `angle_gl_driver_selection_pkgs` 与 `angle_gl_driver_selection_values`。文中的 `angle_gl_driver_all_apps` 不是受支持的 global setting。",
+        "suggestion": "把全局命令改为 `adb shell settings put global angle_gl_driver_all_angle 1|0`，按包调试示例改为 `angle_gl_driver_selection_pkgs/values`，并同步修正文中的查询键名。"
+      },
+      {
+        "type": "原理错误",
+        "location": "“而不是各家厂商的闭源驱动”与性能表“驱动一致性 | Google 统一维护”（L43-L45, L120-L126）",
+        "detail": "ANGLE 统一的是 GLES frontend / translation layer，并没有绕开厂商 Vulkan driver。真实执行路径仍然是 ANGLE → vendor Vulkan driver → GPU。把它写成“不再依赖厂商闭源驱动”会误导读者低估 Vulkan driver 差异和厂商 bug。",
+        "suggestion": "改成“绕开厂商 GLES driver，但仍依赖厂商 Vulkan driver”。把一致性收益限定为 GLES 行为收敛，而不是整条图形驱动栈完全统一。"
+      },
+      {
+        "type": "原理断裂",
+        "location": "启用条件与运行时选路（全文缺失）",
+        "detail": "章节没有交代 Android 真正决定 ANGLE 是否生效的顺序：全局 `ANGLE_GL_DRIVER_ALL_ANGLE`、per-app `angle_gl_driver_selection_*`、platform allowlist，以及 ANGLE APK / system ANGLE / native fallback。读者无法判断“系统有 ANGLE”和“当前进程实际走 ANGLE”之间的差别。",
+        "suggestion": "补 `GraphicsEnvironment.queryAngleChoice()` 与 `frameworks/native/opengl/libs/EGL/Loader.cpp` 的选路顺序，说明 system ANGLE、ANGLE APK、native driver 的关系和 fallback 条件。"
+      },
+      {
+        "type": "版本差异",
+        "location": "性能表与“Draw Call 密集场景收益通常大于开销”结论（L120-L134）",
+        "detail": "Android 15 图形说明页的口径是“improved compatibility, and in some cases, improved performance”，并没有给出统一的性能方向。文中的 “Draw Call 开销较低”“多线程完全支持”“收益通常大于开销” 缺少 workload、pipeline cache 命中率、state change 密度、原生 GLES driver 质量等边界。",
+        "suggestion": "把结论改成 workload / device dependent，补充首次 shader 翻译、pipeline 建立、state mapping 的成本来源，并明确“需要目标设备实测”。"
+      },
+      {
+        "type": "原理断裂",
+        "location": "“在 Perfetto 中识别 ANGLE”小节（L138-L156）",
+        "detail": "`vkQueueSubmit` / `vkCmdDraw` 不是 ANGLE 独有信号，native Vulkan、Skia/Vulkan、其他系统组件也可能出现 `vk*`。`glDraw*` 也不是 stock Perfetto 的稳定观测点。当前 SQL `name LIKE \"%vk%\"` 会把大量非 ANGLE slice 混在一起。",
+        "suggestion": "把识别方法改成组合证据：driver selection 配置、`glGetString(GL_RENDERER)`、进程已加载库、目标进程的 Vulkan slice / queue，再配一个最小可执行的 Perfetto 或 AGI 示例。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-18T12:20:00+08:00",
+    "status": "pending"
   }
 ]

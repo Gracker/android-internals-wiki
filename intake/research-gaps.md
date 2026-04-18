@@ -838,3 +838,23 @@ SurfaceControl NDK 的 FrameTimeline 小节缺少“如何从 AChoreographerFram
 
 ### 关联章节
 18.18, 18.10, 2.12
+
+## [2026-04-18] 18.11 ANGLE（GLES-over-Vulkan 翻译层） — 知识盲区
+
+### 盲区描述
+文章没有覆盖 Android 上 ANGLE 真正的 driver-selection 机制：GraphicsEnvironment 的全局 / 按包 override、platform allowlist、ANGLE APK 与 system ANGLE 的装载顺序，以及 rules string / debuggable 限制。这个盲区会直接影响“为什么同一 APK 在两台设备上路径不同”的定位。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 梳理 `GraphicsEnvironment.queryAngleChoice()` 与 `frameworks/native/opengl/libs/EGL/Loader.cpp` 的完整选路顺序
+- 区分 system ANGLE、ANGLE APK、native GLES driver、vendor Vulkan driver 的职责边界
+- 补一组 native GLES / ANGLE 对照证据：`GL_RENDERER`、settings、maps、Perfetto / AGI
+- 确认 Android 15 Developer Options 与非 Pixel / 非 debuggable 场景的限制条件
+
+### 关联章节
+- 2.14 图形 API 演进与选择策略
+- 18.8 OpenGL ES 渲染链路
+- 18.9 Vulkan 原生渲染链路
+

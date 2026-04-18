@@ -1499,3 +1499,10 @@
 - **位置**：L77-L79 / L128-L130
 - **问题**：`系统通常限制 PIP 窗口的 CPU/GPU 优先级`、`Chrome 会预渲染几个常见尺寸的 Bitmap Cache` 两个判断没有版本、设备或源码依据，且都属于平台/应用特定策略，当前写法容易被读者误解为通用结论。
 - **建议**：如果没有可验证材料，改成 `[待验证]` 或删去；更稳妥的写法应回到通用约束，如 HWC plane 竞争、resize 触发的重新 layout、BufferQueue 槽位背压。
+
+## [Task9 Deep Review] 18.11 ANGLE（GLES-over-Vulkan 翻译层） — 2026-04-18
+- **类型**：数据缺失
+- **位置**：`在 Perfetto 中识别 ANGLE` 小节
+- **问题**：当前只给了一个 `LIKE '%vk%'` 的 SQL 和几条泛化判断，没有说明需要打开哪些 trace 数据源、如何限定目标进程、也没有给出 native Vulkan / ANGLE 的对照样例。读者即使拿到 trace，也很难复现“先确认 driver selection，再做归因”的流程。
+- **建议**：补一个最小可执行案例：按包切 ANGLE，记录 gfx + GPU renderstages + Vulkan 相关数据源，给出限定目标进程的 SQL，并把 `GL_RENDERER` 与 trace 结果放在一起对照。
+

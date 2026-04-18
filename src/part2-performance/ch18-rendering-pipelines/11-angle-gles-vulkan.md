@@ -11,13 +11,18 @@ sources:
   - "AOSP external/angle/"
 created_by: "rendering-pipelines-merge"
 created_date: "2026-04-09"
-pipeline_stage: task9_pending
+pipeline_stage: task2b_pending
 task6_state: reviewed
 reviewed_by: openclaw-task6
 reviewed_date: 2026-04-18
 task6_result: pass-light-edit
-task9_state: pending
-task2b_state: idle
+last_task9_at: "2026-04-18T12:20:00+08:00"
+task9_reviewed_date: 2026-04-18
+task9_reviewed_by: openclaw-task9
+task9_result: needs-rework
+review_round: 1
+task9_state: reviewed
+task2b_state: pending
 ---
 
 <!-- outline-start -->
