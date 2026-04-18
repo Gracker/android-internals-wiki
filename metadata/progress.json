@@ -1,75 +1,75 @@
 {
-  "generated_at": "2026-04-18T13:34:00+08:00",
+  "generated_at": "2026-04-18T14:03:57.099861+08:00",
   "state_machine_version": "v2",
   "total_sections": 215,
   "metrics": {
     "total": 215,
     "unknown": 36,
     "ready-for-review": 179,
-    "last_updated": "2026-04-18T13:34:00+08:00",
+    "last_updated": "2026-04-18T14:03:57.099861+08:00",
     "task2b_state_counts": {
       "unknown": 36,
-      "fixed": 89,
-      "pending": 21,
+      "fixed": 90,
+      "pending": 20,
       "idle": 69
     },
     "task6_state_counts": {
       "unknown": 33,
-      "revisiting": 90,
-      "reviewed": 35,
+      "revisiting": 91,
+      "reviewed": 34,
       "pending": 57
     },
     "task9_state_counts": {
       "unknown": 35,
-      "pending": 161,
-      "reviewed": 19
+      "pending": 162,
+      "reviewed": 18
     },
     "pipeline_stage_counts": {
       "unknown": 32,
-      "task6_pending": 144,
-      "task2b_pending": 22,
+      "task6_pending": 145,
+      "task2b_pending": 21,
       "task9_pending": 17
     },
     "total_sections": 215,
     "pipeline_unknown": 32,
-    "pipeline_task6_pending": 144,
-    "pipeline_task2b_pending": 22,
+    "pipeline_task6_pending": 145,
+    "pipeline_task2b_pending": 21,
     "pipeline_task9_pending": 17,
     "task2b_unknown": 36,
-    "task2b_fixed": 89,
-    "task2b_pending": 21,
+    "task2b_fixed": 90,
+    "task2b_pending": 20,
     "task2b_idle": 69,
     "task6_unknown": 33,
-    "task6_revisiting": 90,
-    "task6_reviewed": 35,
+    "task6_revisiting": 91,
+    "task6_reviewed": 34,
     "task6_pending": 57,
     "task9_unknown": 35,
-    "task9_pending": 161,
-    "task9_reviewed": 19
+    "task9_pending": 162,
+    "task9_reviewed": 18
   },
   "pipeline": {
     "pipeline_stage_counts": {
       "unknown": 32,
-      "task6_pending": 144,
-      "task2b_pending": 22,
+      "task6_pending": 145,
+      "task2b_pending": 21,
       "task9_pending": 17
     },
     "task2b_state_counts": {
       "unknown": 36,
-      "fixed": 89,
-      "pending": 21,
+      "fixed": 90,
+      "pending": 20,
       "idle": 69
     },
     "task6_state_counts": {
       "unknown": 33,
-      "revisiting": 90,
-      "reviewed": 35,
+      "revisiting": 91,
+      "reviewed": 34,
       "pending": 57
     },
     "task9_state_counts": {
       "unknown": 35,
-      "pending": 161,
-      "reviewed": 19
+      "pending": 162,
+      "reviewed": 18
     }
   },
   "issues": {
@@ -2167,10 +2167,11 @@
       "title": "ANGLE（GLES-over-Vulkan 翻译层）",
       "path": "src/part2-performance/ch18-rendering-pipelines/11-angle-gles-vulkan.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
-      "task6_state": "reviewed",
-      "task9_state": "reviewed",
-      "task2b_state": "pending",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
+      "task9_state": "pending",
+      "task2b_state": "fixed",
+      "task2b_result": "fixed",
       "section": "18.11",
       "reviewed_date": "2026-04-18",
       "reviewed_by": "openclaw-task6",
@@ -2178,7 +2179,8 @@
       "task9_result": "needs-rework",
       "task9_reviewed_date": "2026-04-18",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-18T12:20:00+08:00"
+      "last_task9_at": "2026-04-18T12:20:00+08:00",
+      "last_task2b_at": "2026-04-18T14:03:57.099861+08:00"
     },
     "src/part2-performance/ch18-rendering-pipelines/12-flutter-rendering.md": {
       "chapter": "18.12",
@@ -3077,7 +3079,7 @@
       "major_issues": 1
     }
   },
-  "last_updated": "2026-04-18T12:20:00+08:00",
+  "last_updated": "2026-04-18T14:03:57.099861+08:00",
   "rework_log": [
     {
       "date": "2026-04-15T19:44:09.836904",
@@ -3238,6 +3240,22 @@
       ],
       "verification": "technical-writing 禁用词扫描=0，queue=completed",
       "queue_status": "completed"
+    },
+    {
+      "date": "2026-04-18T14:03:57.099861+08:00",
+      "section": "18.11",
+      "section_title": "ANGLE（GLES-over-Vulkan 翻译层）",
+      "source": "task9-deep-tech-review",
+      "priority": 95,
+      "fixes": [
+        "源码错误：修正 ANGLE 全局开关与按包选择键名，补充 angle_gl_driver_selection_pkgs / values 的对应关系",
+        "原理错误：明确 ANGLE 统一的是 GLES frontend，底层仍依赖厂商 Vulkan driver",
+        "原理断裂：新增 queryAngleChoice()、setupAngle()、system ANGLE / ANGLE APK / native driver 的选路与 fallback 说明",
+        "版本差异：把性能判断改为 device / workload dependent，并补充 shader 首编、pipeline 建立、state mapping 成本",
+        "原理断裂：Perfetto 识别改为 settings、GL_RENDERER、目标进程 `vk*` slice 的组合证据链"
+      ],
+      "verification": "technical-writing 禁用词扫描=0，queue=completed",
+      "queue_status": "completed"
     }
   ],
   "reviews": [
@@ -3359,10 +3377,18 @@
       "by": "task2b-rework",
       "source": "task9-deep-tech-review",
       "issues_fixed": 4
+    },
+    {
+      "section": "18.11",
+      "section_title": "ANGLE（GLES-over-Vulkan 翻译层）",
+      "date": "2026-04-18T14:03:57.099861+08:00",
+      "by": "task2b-rework",
+      "source": "task9-deep-tech-review",
+      "issues_fixed": 5
     }
   ],
-  "last_task2b_run": "2026-04-18T11:52:47.796878+08:00",
-  "task2b_fixed": 4,
+  "last_task2b_run": "2026-04-18T14:03:57.099861+08:00",
+  "task2b_fixed": 5,
   "17.1": {
     "task6_review_date": "2026-04-16",
     "task6_result": "pass-light-edit",
@@ -3376,10 +3402,10 @@
     "task6_state": "reviewed",
     "task9_state": "pending"
   },
-  "task2b_last_run": "2026-04-18T11:52:47.796878+08:00",
+  "task2b_last_run": "2026-04-18T14:03:57.099861+08:00",
   "task2b_last_result": "fixed",
   "task2b_task8_processed": 3,
-  "task2b_note": "Processed 18.14 task9-deep-tech-review rework. Remaining pending: P95 1, P90 3, P85 1.",
+  "task2b_note": "按 Task9 Deep Tech Review 修复 18.11 ANGLE 的驱动选择、选路与 Perfetto 归因问题",
   "15.5": {
     "task6_review_date": "2026-04-17",
     "task6_result": "pass-light-edit",
@@ -3416,6 +3442,14 @@
       ],
       "issues_fixed": 9,
       "by": "task2b-rework"
+    },
+    {
+      "date": "2026-04-18T14:03:57.099861+08:00",
+      "sections": [
+        "18.11"
+      ],
+      "issues_fixed": 5,
+      "by": "task2b-rework"
     }
   ],
   "reviewed_chapters": [
@@ -3429,7 +3463,7 @@
   "total_chapters": 0,
   "reviewed_count": 1,
   "last_review": "18.17",
-  "last_task2b_section": "18.14",
+  "last_task2b_section": "18.11",
   "1.10": {
     "section": "1.10",
     "title": "ContentProvider 性能与优化",
@@ -3440,6 +3474,23 @@
     "rework_details": [
       "知识盲区: 新增「多进程 ContentProvider」完整小节（android:process、独立进程初始化时序、冷启动对调用方的影响、进程间 CursorWindow 行为、适用场景与注意事项）",
       "版本差异: 补充 Android 11（setDetectNotResponding）和 Android 12（getProviderMimeTypeAsync）版本演进条目"
+    ],
+    "current_status": "ready-for-review",
+    "pipeline_stage": "task6_pending"
+  },
+  "18.11": {
+    "section": "18.11",
+    "title": "ANGLE（GLES-over-Vulkan 翻译层）",
+    "last_rework_date": "2026-04-18T14:03:57.099861+08:00",
+    "rework_count": 1,
+    "rework_source": "task9-deep-tech-review",
+    "rework_issues_fixed": 5,
+    "rework_details": [
+      "源码错误：把全局调试键改为 angle_gl_driver_all_angle，并补按包配置的 angle_gl_driver_selection_pkgs / values",
+      "原理错误：把执行链路改成 ANGLE frontend → vendor Vulkan driver → GPU，删除“绕开厂商闭源驱动”式表述",
+      "原理断裂：新增 GraphicsEnvironment.queryAngleChoice()、setupAngle() 与 Loader.cpp 的运行时选路说明",
+      "版本差异：把性能结论收敛到 workload / device dependent，并补首次编译、pipeline 建立、state mapping 的成本来源",
+      "原理断裂：重写 Perfetto 小节，改成 settings + GL_RENDERER + 目标进程 trace 的组合证据链"
     ],
     "current_status": "ready-for-review",
     "pipeline_stage": "task6_pending"

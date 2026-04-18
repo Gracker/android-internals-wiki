@@ -1,28 +1,39 @@
 ---
-title: "ANGLE（GLES-over-Vulkan 翻译层）"
-chapter: "18.11"
+title: ANGLE（GLES-over-Vulkan 翻译层）
+chapter: '18.11'
 status: ready-for-review
-applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
-tags: ["ANGLE", "GLES", "Vulkan", "翻译层", "SPIR-V", "图形驱动", "渲染链路"]
-related_chapters: ["2.14", "18.8", "18.9"]
+applicable_versions: Android 10 (API 29) - Android 16 (API 36)
+tags:
+- ANGLE
+- GLES
+- Vulkan
+- 翻译层
+- SPIR-V
+- 图形驱动
+- 渲染链路
+related_chapters:
+- '2.14'
+- '18.8'
+- '18.9'
 sources:
-  - "Google ANGLE 项目文档 (chromium.googlesource.com/angle)"
-  - "Android 官方文档: ANGLE on Android"
-  - "AOSP external/angle/"
-created_by: "rendering-pipelines-merge"
-created_date: "2026-04-09"
-pipeline_stage: task2b_pending
-task6_state: reviewed
+- Google ANGLE 项目文档 (chromium.googlesource.com/angle)
+- 'Android 官方文档: ANGLE on Android'
+- AOSP external/angle/
+created_by: rendering-pipelines-merge
+created_date: '2026-04-09'
+pipeline_stage: task6_pending
+task6_state: revisiting
 reviewed_by: openclaw-task6
 reviewed_date: 2026-04-18
 task6_result: pass-light-edit
-last_task9_at: "2026-04-18T12:20:00+08:00"
+last_task9_at: '2026-04-18T12:20:00+08:00'
 task9_reviewed_date: 2026-04-18
 task9_reviewed_by: openclaw-task9
 task9_result: needs-rework
 review_round: 1
-task9_state: reviewed
-task2b_state: pending
+task9_state: pending
+task2b_state: fixed
+task2b_result: fixed
 ---
 
 <!-- outline-start -->
@@ -43,11 +54,11 @@ task2b_state: pending
 
 ## 为什么需要 ANGLE
 
-Android 图形生态长期面临一个问题：GLES（OpenGL ES）驱动的碎片化。高通、联发科、三星、ARM……每家 GPU 厂商都有自己的 GLES 驱动实现，质量参差不齐。同一个 `glDrawArrays` 调用，在不同设备上可能产生不同的渲染结果，甚至触发驱动 Bug 导致 Crash。
+Android 的 GLES 兼容性长期受厂商驱动差异影响。同一个 `glDrawArrays` 调用或同一份 GLSL，在不同设备上可能遇到结果偏差、shader 编译差异，或者直接踩到驱动 Bug。
 
-**ANGLE**（Almost Native Graphics Layer Engine）是 Google 开发的开源图形翻译层，核心思路是：**让所有 GLES 调用都先经过 ANGLE 翻译成 Vulkan 指令，再交给 GPU 执行**。这样 App 仍然调用 GLES API，但底层走的是统一维护的翻译层，而不是各家厂商的闭源驱动。
+**ANGLE**（Almost Native Graphics Layer Engine）是 Google 维护的开源图形翻译层。App 侧仍然调用 GLES API，ANGLE 负责把 GLES 状态和命令翻译成 Vulkan 指令，再交给厂商 Vulkan driver 执行。统一的是 GLES frontend、状态管理和 shader 翻译流程，底层执行仍然落在厂商 Vulkan driver 和 GPU 上。
 
-Android 10 起支持手动启用 ANGLE，Android 15+ 将其纳入重要生态方向。但**是否默认启用取决于设备、OEM 和 provider 配置**，不是所有 Android 15+ 设备都会自动走 ANGLE。[已验证: Android 官方文档]
+Android 10 起支持把 ANGLE 作为 GLES driver 选项。Android 15 之后，Google 继续扩大 ANGLE 的覆盖范围，官方口径是兼容性更好，部分场景性能更好。默认是否启用仍取决于设备配置、allowlist 和调试开关。
 
 ## 核心架构
 
@@ -66,7 +77,7 @@ graph TD
     end
     
     subgraph "System"
-        VK[Vulkan Driver]
+        VK[Vendor Vulkan Driver]
         GPU[GPU]
     end
     
@@ -79,12 +90,24 @@ graph TD
 
 1. **GLES API 拦截**：App 调用 `glDrawArrays`、`glUseProgram` 等 GLES 函数，被 ANGLE 的翻译层拦截。
 2. **状态跟踪**：ANGLE 维护一个 GLES 状态机的镜像，将隐式的 GLES 状态转换为 Vulkan 所需的显式状态。
-3. **Shader 翻译**：GLSL Shader 源码被编译为 SPIR-V（Vulkan 的标准 Shader 中间表示），再由 Vulkan 驱动编译为 GPU Binary。
-4. **Vulkan 指令生成**：GLES 绘制调用被翻译为 Vulkan Command Buffer 操作，提交给 GPU 队列。
+3. **Shader 翻译**：GLSL Shader 源码先编译为 SPIR-V，再由厂商 Vulkan driver 编译为 GPU Binary。
+4. **Vulkan 指令生成**：GLES 绘制调用被翻译为 Vulkan Command Buffer 操作，提交给 Vulkan 队列。
+
+## 启用条件与运行时选路
+
+AOSP 里，`GraphicsEnvironment.queryAngleChoice()` 会先决定当前进程该走哪条 GLES driver 路径，顺序如下：
+
+1. `Settings.Global.ANGLE_GL_DRIVER_ALL_ANGLE`，ADB 对应键 `angle_gl_driver_all_angle`。值为 `1` 时，全局强制走 ANGLE。
+2. `angle_gl_driver_selection_pkgs` 和 `angle_gl_driver_selection_values`。两个设置按逗号分组，按包名给出 `angle`、`native` 或 `default`。
+3. 平台自带 allowlist，AOSP 资源里是 `config_angleAllowList`。
+
+如果结果是 `angle`，`GraphicsEnvironment.setupAngle()` 会先尝试 ANGLE APK，再回退到 system ANGLE。EGL loader 随后在 `frameworks/native/opengl/libs/EGL/Loader.cpp` 按当前选择加载 ANGLE 或 native GLES driver。ANGLE 路径的实际执行路径是 ANGLE frontend → vendor Vulkan driver → GPU。Vulkan driver 自身的行为差异仍然会透传到应用侧。
+
+如果结果是 `native`，loader 会回到设备自带 GLES driver。调试时需要把设置值和运行时证据放在一起看，因为 ANGLE APK 缺失、库加载失败、system ANGLE 与 native driver 切换都会影响最终落点。
 
 ## 渲染时序
 
-从 App 的视角，它仍然在调用 GLES API，感觉不到 ANGLE 的存在。但在底层，每一步都有翻译开销：
+从 App 的视角，它仍然在调用 GLES API。底层执行路径已经变成 ANGLE frontend → vendor Vulkan driver → GPU，每一段都会引入自己的成本：
 
 ```mermaid
 sequenceDiagram
@@ -118,48 +141,77 @@ sequenceDiagram
 
 ## 性能特征
 
-ANGLE 不是免费的午餐——翻译层本身有开销，但它带来的好处也很大。
+ANGLE 带来的主要收益在兼容性和行为收敛。性能方向要按 workload 判断，Android 官方对它的表述也是“兼容性更好，部分场景性能更好”。
 
-### 优势
-
-| 方面 | 传统 GLES Driver | ANGLE → Vulkan |
+| 维度 | 原生 GLES 路径 | ANGLE 路径 |
 |:---|:---|:---|
-| **Draw Call 开销** | 较高（GLES 状态机） | 较低（Vulkan 显式状态） |
-| **多线程** | 有限支持 | 完全支持 |
-| **Shader 编译** | 运行时 GLSL → Binary | GLSL → SPIR-V → Pipeline Cache |
-| **驱动一致性** | 每家不同 | Google 统一维护 |
-| **调试** | 厂商闭源 | ANGLE 开源可 Debug |
+| Driver frontend | 厂商 GLES driver | ANGLE GLES frontend + 厂商 Vulkan driver |
+| Shader 路径 | GLSL → vendor compiler | GLSL → SPIR-V → vendor pipeline |
+| 状态管理 | 厂商维护 GLES 状态机 | ANGLE 做状态映射，再落到 Vulkan |
+| 调试可见性 | 厂商差异较大 | ANGLE 路径更容易和源码、设置项对应 |
 
-### 开销
+常见成本来自几处：
 
-- **翻译层开销**：状态转换和命令翻译有 CPU 成本，具体开销取决于 workload
-- **首次 Shader 编译稍慢**：GLSL → SPIR-V → GPU Binary 的编译链比直接编译 GLSL 多一步
-- **内存略高**：需要维护翻译状态
+- **Shader 首次编译**：多了一层 GLSL → SPIR-V，再进入 Vulkan pipeline 建立
+- **State mapping**：GLES 的隐式状态要转换成 Vulkan 的显式状态
+- **命令翻译**：Draw call、render pass、同步对象都要经过一层映射
+- **Cache 冷启动**：pipeline cache 未命中时，首帧和场景切换更容易抬高 CPU / GPU 开销
 
-对于 Draw Call 密集的场景（如地图、游戏），ANGLE 的收益通常大于开销；对于 Draw Call 很少的简单场景，翻译开销可能更明显。[已验证: Google ANGLE 官方文档]
+更容易受益的场景，通常是原生 GLES driver 质量不稳定、机型差异大，或者需要把问题稳定复现到一条更统一的图形路径上。更容易吃亏的场景，通常是 shader 首编很多、pipeline churn 明显，或者目标机型的原生 GLES driver 本来就足够成熟。同一份 workload 在两台设备上可能得出相反结论，发布前要在目标机型上对比 native 与 ANGLE 两条路径。
 
 ## 在 Perfetto 中识别 ANGLE
 
-识别 ANGLE 的关键线索：
+单看 `vkQueueSubmit` 或 `vkCmdDraw` 不够。native Vulkan、Skia Vulkan、系统图形组件都可能产生 `vk*` slice。确认 ANGLE 时，要把 driver 选择、运行时标识和目标进程 trace 放在一起看。
 
-1. **Vulkan 指令替代 GLES 指令**：如果 App 代码只调用了 GLES API，但 Trace 中看到 `vkQueueSubmit`、`vkCmdDraw` 而不是 `glDraw*`，说明走了 ANGLE。
-2. **ANGLE 相关 Track/Slice**：部分 Trace 配置下可能出现 ANGLE 翻译线程或编译 slice。
-3. **Renderer 字符串**：运行时 `glGetString(GL_RENDERER)` 如果返回包含 "ANGLE" 的字符串（如 `"ANGLE (Google, Vulkan 1.3.x, ...)"`），确认 ANGLE 已启用。
+建议至少打开这几类数据源：
+
+- Graphics and display
+- SurfaceFlinger
+- GPU render stages / counters
+- 目标进程的 Vulkan 相关 slice 或 track_event 数据（设备支持时）
+
+### 1. 先确认 driver 选择
 
 ```bash
-# adb 快速检查
-adb shell settings get global angle_gl_driver_all_apps
+# 读取当前设置
+adb shell settings get global angle_gl_driver_all_angle
+adb shell settings get global angle_gl_driver_selection_pkgs
+adb shell settings get global angle_gl_driver_selection_values
 
-# 强制所有 App 使用 ANGLE（调试用）
-adb shell settings put global angle_gl_driver_all_apps angle
+# 全局强制 ANGLE（调试后记得恢复）
+adb shell settings put global angle_gl_driver_all_angle 1
+adb shell settings put global angle_gl_driver_all_angle 0
+
+# 按包切到 ANGLE
+adb shell settings put global angle_gl_driver_selection_pkgs com.example.demo
+adb shell settings put global angle_gl_driver_selection_values angle
 ```
+
+`angle_gl_driver_selection_pkgs` 和 `angle_gl_driver_selection_values` 在 AOSP 中按逗号一一对应。查多包配置时，要确认两个列表长度一致。
+
+### 2. 再看运行时标识
+
+- `glGetString(GL_RENDERER)` 返回值包含 `ANGLE`，例如 `ANGLE (Vendor, Vulkan 1.3.x, ...)`
+- debuggable 进程可以结合 `logcat | grep ANGLE` 或进程已加载库，确认 ANGLE 库已经进入目标进程
+
+### 3. 限定目标进程做 trace 归因
 
 ```sql
--- Perfetto SQL: 查找 ANGLE 相关耗时
-SELECT name, dur FROM slice 
-WHERE name LIKE '%ANGLE%' OR name LIKE '%vk%'
-ORDER BY dur DESC LIMIT 20;
+SELECT p.name AS process,
+       t.name AS thread,
+       s.name,
+       ROUND(s.dur / 1e6, 3) AS dur_ms
+FROM slice s
+JOIN thread_track tt ON s.track_id = tt.id
+JOIN thread t ON tt.utid = t.utid
+JOIN process p ON t.upid = p.upid
+WHERE p.name = 'com.example.demo'
+  AND (s.name GLOB 'vk*' OR s.name LIKE '%ANGLE%')
+ORDER BY s.ts DESC
+LIMIT 50;
 ```
+
+这条查询只能说明目标进程走过 Vulkan 路径。把它和 settings、`GL_RENDERER`、已加载库放在一起，才能把 `vk*` slice 归因到 ANGLE。需要更细的 command 级证据时，用 AGI 抓一帧会更稳。
 
 ## 开发者建议
 
@@ -176,5 +228,6 @@ ORDER BY dur DESC LIMIT 20;
 ## 参考资料
 
 - Google ANGLE 项目：https://chromium.googlesource.com/angle/angle/
-- Android 官方文档：ANGLE on Android
+- AOSP `frameworks/base/core/java/android/os/GraphicsEnvironment.java`
+- AOSP `frameworks/native/opengl/libs/EGL/Loader.cpp`
 - AOSP `external/angle/`
