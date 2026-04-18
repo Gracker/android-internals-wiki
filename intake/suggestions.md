@@ -1665,3 +1665,9 @@
 - **问题**：“2GB 内存设备上大型应用 dex2oat 可能需要几分钟”“SDM 通常比 APK 本身小”这两句没有设备、应用规模、网络条件或来源。当前写法会被读者当成通用量化结论。
 - **建议**：补实验条件和出处；如果暂时拿不到稳定数据，把这段降级成定性描述，不要保留具体量级。
 
+
+## [Task9 Deep Review] 1.12 AutoFDO 反馈导向编译优化 — 2026-04-18
+- **类型**：交叉引用
+- **位置**：L248 / L309
+- **问题**：两处跨章节链接写成当前目录下的 `03-launch-optimization.md` 和 `07-baseline-profiles.md`，实际文件位于 `src/part2-performance/ch08-responsiveness/`，当前链接都会落空。
+- **建议**：修正为 `../../part2-performance/ch08-responsiveness/03-launch-optimization.md` 和 `../../part2-performance/ch08-responsiveness/07-baseline-profiles.md`

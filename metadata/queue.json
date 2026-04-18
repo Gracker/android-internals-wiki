@@ -2513,5 +2513,43 @@
     "original_review_log": "logs/deep-review/2026-04-18-20-deep-review.md",
     "completed_at": "2026-04-18T20:54:00+08:00",
     "completed_by": "task2b-rework"
+  },
+  {
+    "section": "1.12",
+    "section_title": "AutoFDO 反馈导向编译优化",
+    "priority": 95,
+    "reason": "[Deep Tech Review] P0 事实错误：官方性能数据口径错位；P1：OEM 复现命令链与验证链仍不闭合",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "数据错误",
+        "location": "L207-L221 性能数据总结段",
+        "detail": "把 2.1% 开机、4.3% 冷启动、10.5% 几何平均写成 2026-03 官方 blog 的直接结论，但官方材料按 android16-6.12 / android15-6.6 分开给出 benchmark 数据。当前写法把聚合口径当成原始指标，丢掉了 HWBinder、Binder RPC、syscall_mmap 等具体基准名。",
+        "suggestion": "改成按分支列出官方表格，至少保留 6.12 与 6.6 的 boot、cold launch、Binder RPC、HWBinder、syscall_mmap 指标；如果保留 4.3% / 2.1% 这类聚合值，明确标注为二次归纳而非官方原始指标。"
+      },
+      {
+        "type": "原理断裂",
+        "location": "L152-L173 / L292-L303 OEM 复现命令链",
+        "detail": "当前 minimal pipeline 没有交代 kernel.kallsyms / 未剥离 vmlinux 的过滤与映射步骤，也没有说明 kernel 场景下 create_llvm_prof 的 --prof_sym_list=false 约束。章节把它写成可复现流程，但命令闭环仍不够。",
+        "suggestion": "把命令块升级为已验证的 kernel 版流程，补 simpleperf inject 的 kernel 符号输入（如 --binary kernel.kallsyms 或等价方式），并说明 create_llvm_prof --format=extbinary / --prof_sym_list=false 的必要性；如果不打算给可执行命令，就明确标成示意流程。"
+      },
+      {
+        "type": "原理断裂",
+        "location": "L315-L336 Perfetto 观测与验证",
+        "detail": "建议用 android15-6.6 -> android16-6.12 的跨分支对比来判断 AutoFDO 是否生效，这无法隔离 AutoFDO 变量，因为内核版本、配置和代码本身都变了；同时 sched slice 也不能直接给出 binder.c 的函数级耗时。",
+        "suggestion": "把验证方法改成“同一分支、同一配置、profile on/off”的 A/B 构建；Perfetto 只看宏观症状，函数级热点改用 simpleperf、调用栈采样或 binder/ftrace tracepoint。"
+      },
+      {
+        "type": "版本差异",
+        "location": "L342-L349 版本演进表",
+        "detail": "Android 13/14 两行写的是 Baseline Profiles 命名和 ART Service 演进，不是 AutoFDO 自身的版本变化。当前表把 ART profile 体系和 AutoFDO 时间线揉在一起，读者会误读成它们属于同一技术演进链。",
+        "suggestion": "重写版本表，按“userspace AutoFDO rollout -> kernel AutoFDO in android15-6.6 / android16-6.12 -> module/vendor/arch roadmap”组织；把 Baseline Profiles / ART Service 留给 1.7 或 8.7。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-18T21:43:38+08:00",
+    "status": "pending"
   }
 ]
