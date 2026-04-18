@@ -1506,3 +1506,21 @@ Camera Extensions (Night Mode, HDR 等) 是否引入了新的 HAL 延迟模式�
 - 10.1 App 内存分析
 - 2.9 渲染机制的版本演进
 - 4.2 Linux 内核内存管理
+
+## [2026-04-19] 7.2 卡顿原因体系 — 知识盲区
+
+### 盲区描述
+Android 12+ 的 FrameTimeline 责任归因矩阵没有并入本节原因树。当前流程仍以 VSYNC-app / doFrame 为统一入口，缺少 `AppDeadlineMissed`、`SurfaceFlingerCpuDeadlineMissed`、`SurfaceFlingerGpuDeadlineMissed`、`DisplayHAL`、`PredictionError`、`BufferStuffing` 与 MainThread / RenderThread / SurfaceFlinger / Display HAL 根因之间的映射。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 对照 Perfetto FrameTimeline 文档，整理 `JankType` → App / SurfaceFlinger / Display HAL 的归因矩阵
+- 补 1 份 Android 12+ 实际 trace 观察清单，说明 `Actual Timeline`、`On time finish`、`Present Type`、`GPU Composition` 的使用顺序
+- 将 Android 5-11 的 VSYNC / doFrame 路径与 Android 12+ 的 FrameTimeline 路径分开描述
+
+### 关联章节
+- 7.1 卡顿定义
+- 7.3 卡顿分析方法论
+- 2.6 SurfaceFlinger 与合成

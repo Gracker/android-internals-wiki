@@ -1850,3 +1850,9 @@
 - **位置**：L293-L305 / L317-L323 常规堆限制与 largeHeap 策略
 - **问题**：按 RAM 分档给出的 normal heap / largeHeap 数值区间，以及“Android 10+ 后台进程即使声明 largeHeap 可用堆空间也会被压缩”的说法，没有附设备 `getprop` / `getMemoryClass()` 样本，也没有给出 AOSP 或官方文档锚点，当前更像经验值汇总而不是可复核结论。
 - **建议**：补 3-4 组真实设备样本（RAM、32/64 位、`dalvik.vm.heapgrowthlimit`、`getMemoryClass()` / `getLargeMemoryClass()` 输出），并把 Android 10+ 的后台限制改成有来源的机制描述；如果拿不到样本，就把表格明确降级为经验范围并标 `[待验证]`。
+
+## [Task9 Deep Review] 7.2 卡顿原因体系 — 2026-04-19
+- **类型**：数据缺失
+- **位置**：L228-L245 HWC 能力限制
+- **问题**：`高端芯片通常支持 4-8 个 Overlay` 没有给出 SoC / 显示管线边界，紧接着给出的 `SELECT name, composition_type FROM layer` 仍是未验证 SQL。当前这组说法不足以支撑“如何复核 GPU 合成回退”的实操结论。
+- **建议**：补至少 1 组真实设备或 trace_processor 验证材料，给出可执行的 `dumpsys SurfaceFlinger` / Perfetto SQL 口径；如果暂时拿不到验证样本，就删掉 4-8 的范围并把 SQL 明确降级为 `[待验证]`。
