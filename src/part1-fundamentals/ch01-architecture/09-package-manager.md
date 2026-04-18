@@ -8,7 +8,7 @@ polish_count: 1
 polish_date: "2026-04-09"
 polish_by: "task2b-polish"
 drafted_by: "openclaw-task2a"
-reviewed_date: "2026-04-11"
+reviewed_date: "2026-04-18"
 reviewed_by: "openclaw-task6"
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-04-12"
@@ -53,9 +53,9 @@ tags:
   - cloud-compilation
   - app-installation
   - compilation
-pipeline_stage: task6_pending
-task6_state: revisiting
-task6_result: needs-rework
+pipeline_stage: task9_pending
+task6_state: reviewed
+task6_result: pass-light-edit
 task9_state: pending
 task9_result: needs-rework
 task2b_result: fixed
@@ -146,7 +146,7 @@ PMS 维护包状态和安装策略，真正落到文件系统和应用数据目�
 
 ## 应用安装全流程与性能关键路径
 
-了解了 PMS 的架构位置后，我们来看看一个应用从"用户点击安装"到"可以启动"经历了什么。安装流程根据触发方式有所不同（adb install / Google Play / PackageInstaller），但核心流水线是一样的。
+了解了 PMS 的架构位置后，拆解一个应用从"用户点击安装"到"可以启动"经历的完整阶段。安装流程根据触发方式有所不同（adb install / Google Play / PackageInstaller），但核心流水线是一样的。
 
 ### 安装触发路径
 
@@ -333,7 +333,7 @@ Android 16 引入了一个可能从根本上改变安装体验的特性：**云�
 3. **分发**：用户从 Play Store 下载应用时，编译产物以 **Secure DEX Metadata (SDM)** 文件格式一起下载
 4. **设备端加载**：设备直接使用 SDM 文件中的编译产物，跳过本机 dex2oat
 
-```
+```text
 传统模式：APK → 设备端 dex2oat → OAT → 运行
 云端编译：APK + SDM (预编译产物) → 直接加载 OAT → 运行
 ```
@@ -399,7 +399,7 @@ adb shell cmd package compile -m speed -f -a
 
 ## 在 Perfetto 中的表现与调试方法
 
-前面讲了安装流程、编译策略、OTA 更新，这些理论知识在实际分析中需要对应到 Trace 中的具体位置。接下来，我们来看看这些过程在 Perfetto Trace 中长什么样、怎么定位问题。
+前面讲了安装流程、编译策略、OTA 更新，这些理论知识在实际分析中需要对应到 Trace 中的具体位置。这些过程在 Perfetto Trace 中有明确的表现特征，可以据此定位问题。
 
 ### 安装过程的 Trace 特征
 
