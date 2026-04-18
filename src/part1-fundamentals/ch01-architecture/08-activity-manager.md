@@ -4,8 +4,8 @@ chapter: "1.8"
 status: ready-for-review
 drafted_date: "2026-04-05"
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
-last_verified: "2026-04-11"
-last_verified_against: "AOSP android-16.0.0_r1 + Android Developers behavior changes 14/17"
+last_verified: "2026-04-18"
+last_verified_against: "AOSP android-16.0.0_r1 + Android Developers behavior changes 11/12/13/14/17"
 confidence: medium
 sources:
   - type: aosp
@@ -13,19 +13,33 @@ sources:
   - type: aosp
     path: "frameworks/base/services/core/java/com/android/server/am/ActiveServices.java"
   - type: aosp
+    path: "frameworks/base/services/core/java/com/android/server/am/ActivityManagerConstants.java"
+  - type: aosp
     path: "frameworks/base/services/core/java/com/android/server/am/OomAdjuster.java"
   - type: aosp
     path: "frameworks/base/services/core/java/com/android/server/am/EventLogTags.logtags"
   - type: aosp
-    path: "frameworks/base/services/core/java/com/android/server/am/BroadcastQueue.java"
+    path: "frameworks/base/services/core/java/com/android/server/am/BroadcastConstants.java"
+  - type: aosp
+    path: "frameworks/base/services/core/java/com/android/server/am/BroadcastQueueImpl.java"
+  - type: aosp
+    path: "frameworks/base/services/core/java/com/android/server/am/ContentProviderHelper.java"
+  - type: aosp
+    path: "frameworks/base/core/java/android/content/ContentResolver.java"
   - type: aosp
     path: "frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp"
+  - type: aosp
+    path: "frameworks/base/services/core/java/com/android/server/wm/InputManagerCallback.java"
+  - type: aosp
+    path: "frameworks/base/services/core/java/com/android/server/wm/AnrController.java"
   - type: aosp
     path: "frameworks/base/core/java/android/app/Instrumentation.java"
   - type: aosp
     path: "frameworks/base/core/java/android/app/ActivityThread.java"
   - type: aosp
     path: "frameworks/base/services/core/java/com/android/server/wm/ActivityTaskManagerService.java"
+  - type: aosp
+    path: "frameworks/base/services/core/java/com/android/server/wm/ActivityRecord.java"
   - type: aosp
     path: "frameworks/base/services/core/java/com/android/server/wm/RootWindowContainer.java"
   - type: aosp
@@ -39,7 +53,11 @@ sources:
   - type: blog
     path: "https://juejin.cn/post/7136008620658917407"
   - type: official
+    path: "https://developer.android.com/about/versions/11/behavior-changes-all"
+  - type: official
     path: "https://developer.android.com/about/versions/12/behavior-changes-12"
+  - type: official
+    path: "https://developer.android.com/about/versions/13/behavior-changes-all"
   - type: official
     path: "https://developer.android.com/about/versions/14/behavior-changes-14"
   - type: official
@@ -58,11 +76,12 @@ rework_by: "task2a"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-04-10"
 task6_result: needs-rework
-pipeline_stage: task2b_pending
+pipeline_stage: task6_pending
 task6_state: revisiting
 task9_result: needs-rework
-task9_state: reviewed
-task2b_state: pending
+task9_state: pending
+task2b_state: fixed
+task2b_result: fixed
 last_task9_at: "2026-04-18T13:34:00+08:00"
 task9_reviewed_date: 2026-04-18
 task9_reviewed_by: openclaw-task9
@@ -81,6 +100,8 @@ review_round: 2
 读完本节，我们将能够在 Perfetto 中识别 AMS 的关键 Track 和事件，理解进程优先级的动态调整逻辑，以及各类 ANR 的触发路径。这不是为了让你成为 AMS 的开发者，而是让你在分析性能问题时知道"该往哪里看"。
 
 > 阅读本节之前，建议先了解 §1.3 进程模型和 §1.4 Binder IPC，因为 AMS 的几乎所有操作都涉及跨进程调用和进程生命周期管理。
+
+下文涉及 Broadcast、Service、ContentProvider 的超时实现和 Input ANR 归因时，源码口径以 AOSP `android-16.0.0_r1` 为主；跨版本差异放在对应小节和文末版本演进表里。
 
 ---
 
@@ -223,47 +244,39 @@ ANR 检测的核心模式可以用三个字概括：**埋雷、拆雷、爆雷**
 
 ### Input ANR
 
-**超时阈值：5 秒**
+**默认超时：5 秒**
 
-Input ANR 是用户感知最强烈的——App 在前台，点了没反应。检测入口不在 AMS 本身，而是在 Input 系统的 `InputDispatcher` 中。当 InputDispatcher 通过 socket 将输入事件发送给 App 的 `InputConsumer` 后，开始计时。如果 App 在 5 秒内没有消费（consume）这个事件，InputDispatcher 会通过 `InputManagerCallback` 通知 AMS 发起 ANR。
+Input ANR 的起点在 `InputDispatcher`，判责要继续看 WMS。AOSP android-16.0.0_r1 的主路径是：`InputDispatcher` 发现目标连接在 `waitQueue` 中超时后，调用 `notifyWindowUnresponsive()` 或 `notifyNoFocusedWindowAnr()`；`system_server` 里的 `InputManagerCallback` 把事件交给 `AnrController`，再由 `ActivityRecord.inputDispatchingTimedOut()` / AMS 决定是否进入应用级 ANR 流程。
 
 关键路径：
-```
-InputDispatcher.dispatchEvent()
-  → 设置 connection 的 waitQueue（等待消费）
-  → 定期检查：如果 waitQueue 中有事件超时 5s
-    → InputDispatcher.notifyANR()
-      → InputManagerCallback.notifyNotResponding()
-        → AMS.inputDispatchingTimedOut()
+```text
+InputDispatcher.processAnrsLocked()
+  → notifyWindowUnresponsive() / notifyNoFocusedWindowAnr()
+    → InputManagerCallback
+      → AnrController
+        → ActivityRecord.inputDispatchingTimedOut() / AMS
           → AnrHelper.appNotResponding()
 ```
 
-> [已验证: AOSP, frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp — processAnrsLocked()]
+`notifyWindowUnresponsive()` 对应“窗口已经接到焦点，但事件长时间消费不掉”；`notifyNoFocusedWindowAnr()` 对应“焦点事件来了，但系统还没有拿到可接收输入的焦点窗口”。排查 no-focused-window 场景时，还要看 WMS 里是否存在 pending focus request。焦点切换未完成，和应用主线程卡死，判责位置不同。
 
-在 Perfetto 中，Input ANR 表现为：主线程在某个 Message 上执行时间过长（或被阻塞），导致 Input 事件堆积在 `waitQueue` 中。
+> [已验证: AOSP android-16.0.0_r1，`frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp`、`frameworks/base/services/core/java/com/android/server/wm/InputManagerCallback.java`、`frameworks/base/services/core/java/com/android/server/wm/AnrController.java`]
+
+在 Perfetto 中，Input ANR 通常表现为：输入事件长期停留在 `waitQueue`，同时目标窗口的主线程 Message、Binder 回调，或焦点切换路径没有按时完成。
 
 ### Broadcast ANR
 
-**超时阈值：前台广播 10 秒 / 后台广播 60 秒**
+**常见默认超时：前台广播 10 秒 / 普通广播 60 秒**
 
-AMS 通过 `BroadcastQueue` 管理广播的分发。当一个广播被派发给一个 BroadcastReceiver 时，AMS 在主线程 Handler 上 post 一个延时消息。如果 Receiver 在超时时间内没有调用 `finishReceiver()`（对于 `goAsync()` 场景是 `PendingResult.finish()`），ANR 触发。
+把现代广播模型直接写成 `BroadcastQueue.java` 里的两个固定队列，会把源码入口看错。AOSP android-16.0.0_r1 的做法是由 `ActivityManagerService` 组装广播参数，注入 `BroadcastConstants`，再由 `BroadcastQueueImpl` 执行分发、超时检查和 ANR 上报。
 
-关键代码在 `BroadcastQueue.processNextBroadcastLocked()` 中：
+对性能分析，10 秒 / 60 秒仍可作为工作记忆；但“前台队列 = `mFgBroadcastQueue`、后台队列 = `mBgBroadcastQueue`”更接近早期实现。放到现代版本，更稳妥的入口是 `ActivityManagerService.java`、`BroadcastConstants.java` 和 `BroadcastQueueImpl.java`。
 
-```java
-// frameworks/base/services/core/java/com/android/server/am/BroadcastQueue.java
-// @ AOSP android-16.0.0_r1
-// 前台广播超时
-static final int BROADCAST_FG_TIMEOUT = 10 * 1000;  // 10 秒
-// 后台广播超时
-static final int BROADCAST_BG_TIMEOUT = 60 * 1000;  // 60 秒
-```
-
-> [待验证：Android 14+ 引入了基于 CPU 饥饿检测的动态超时调整，前台广播可能在 CPU 紧张时延长到 20 秒]
+> [已验证: AOSP android-16.0.0_r1，`frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java`、`BroadcastConstants.java`、`BroadcastQueueImpl.java`]
 
 ### Service ANR
 
-**超时阈值：前台 Service 20 秒 / 后台 Service 200 秒 / startForeground() 调用 5 秒**
+**超时阈值：前台 Service 20 秒 / 后台 Service 200 秒；`startForegroundService()` 的前台提升窗口需要单独看**
 
 Service ANR 的"埋雷"发生在 `ActiveServices.realStartServiceLocked()` 中。当 AMS 通过 Binder 通知 App 端的 `ActivityThread` 创建 Service 时，同时在 `mAm.mHandler`（AMS 主线程 Handler）上 post 一个延时消息 `SERVICE_TIMEOUT_MSG`：
 
@@ -293,13 +306,19 @@ void scheduleServiceTimeoutLocked(ProcessRecord proc) {
 
 > [已验证: AOSP android-16.0.0_r1，`frameworks/base/core/java/android/app/ActivityThread.java` 的 `handleCreateService()` 与 `frameworks/base/services/core/java/com/android/server/am/ActiveServices.java` 的 `scheduleServiceTimeoutLocked()` / `serviceDoneExecutingLocked()`]
 
-注意 `startForeground()` 的 5 秒超时是另一条独立的检测路径——如果 App 调用了 `Context.startForegroundService()` 但在 5 秒内没有调用 `startForeground()`，AMS 会直接抛出 ANR（早期版本是 crash，Android 12+ 改为 ANR）。
+在 `startForegroundService()` 这段超时判责里，现代版本不能直接写成“固定 5 秒未调用 `startForeground()` 就 ANR”。AOSP android-16.0.0_r1 把这段窗口拆成了两段：`ActivityManagerConstants.DEFAULT_SERVICE_START_FOREGROUND_TIMEOUT_MS = 30000`，`DEFAULT_SERVICE_START_FOREGROUND_ANR_DELAY_MS = 10000`。系统先给 Service 30 秒完成前台提升，超时后再进入额外 10 秒的 ANR 判责缓冲，对应 `ActiveServices.serviceForegroundTimeout()` 这条处理路径。更早版本里常见的 5 秒说法，只能带着版本前提使用。
 
 ### ContentProvider ANR
 
-**超时阈值：10 秒**
+**相关超时不能压成一个固定的 10 秒**
 
-当 App 请求一个 ContentProvider 的数据时，如果目标进程尚未启动，AMS 需要先启动目标进程并等待 ContentProvider 发布（publish）。`ContentProvider` 的 ANR 检测在 `ActivityManagerService.getContentProviderImpl()` 中，超时为 10 秒。
+现代 AOSP 的入口在 `ContentProviderHelper.getContentProviderImpl()`，排查时至少分三段看：
+
+- provider publish：provider 进程 attach 后等待 publish，`ContentResolver.CONTENT_PROVIDER_PUBLISH_TIMEOUT_MILLIS`，默认 10 秒
+- provider ready：调用方等待 provider ready，`ContentResolver.CONTENT_PROVIDER_READY_TIMEOUT_MILLIS`，默认 20 秒
+- remote provider：已连到远端 provider 后的单次等待，`ContentResolver.CONTENT_PROVIDER_TIMEOUT_MILLIS`，默认 3 秒；组合等待窗口可看 `REMOTE_CONTENT_PROVIDER_TIMEOUT_MILLIS`
+
+Provider 卡死时，需要分清卡在 publish、ready 还是 remote-provider 调用，再决定去看 AMS、provider 进程主线程，还是 Binder 调用栈。把这三类场景压成“AMS 里统一 10 秒超时”，很容易把等待点和责任进程混在一起。
 
 ### AMS 的 ANR 数据采集
 
@@ -384,9 +403,13 @@ RootWindowContainer
 
 前台服务是 Android 中一种重要的后台执行机制，允许 App 在用户不可见时继续执行关键任务（如音乐播放、导航、文件下载），代价是必须显示一个持续通知。
 
+**Android 11（API 30）** 开始把后台启动 FGS 的敏感资源访问单独收口。后台拉起的 FGS 不能默认访问相机、麦克风、位置；Manifest 里也要补 `camera` / `microphone` 等对应的 FGS type。
+
 **Android 12（API 31）** 引入了一个重大变更：**禁止从后台启动前台服务**。如果 App 在后台时调用 `startForegroundService()`，系统会抛出 `ForegroundServiceStartNotAllowedException`。例外情况包括：从用户可见状态转换时、收到高优先级 FCM 消息时、以及特定的系统组件调用时。
 
 同时，Android 12 引入了 **Phantom Process Killer**，监控 App 的子进程（通过 `Runtime.exec()` 或 JNI fork），限制系统级总数为 32 个，超出的会被杀掉。
+
+**Android 13（API 33）** 增加了 FGS Task Manager 和 `POST_NOTIFICATIONS` 运行时权限。即使通知权限被拒，用户仍然可以在 FGS Task Manager 里看到并停止正在运行的前台服务。
 
 **Android 14（API 34）** 进一步要求：
 - 每个 FGS 必须在 Manifest 中声明 `foregroundServiceType`（如 `camera`、`connectedDevice`、`dataSync`、`health`）。
@@ -397,16 +420,18 @@ RootWindowContainer
 
 **Android 16（API 36）** 要求后台 Job（包括通过 FGS 启动的）遵守各自的运行配额。
 
-**Android 17（API 37）** 进一步收紧了后台音频行为——没有"while-in-use"能力的 FGS 在后台调用音频 API 会静默失败。
+**Android 17（API 37）** 进一步收紧了后台音频行为，没有"while-in-use"能力的 FGS 在后台调用音频 API 会静默失败。
 
-> [已验证: 官方文档, developer.android.com — Behavior changes for Android 12/14/15/16/17]
+> [已验证: 官方文档, developer.android.com — Behavior changes for Android 11/12/13/14/15/16/17]
 
 ### 后台启动服务的限制链
 
 从 Android 8.0 开始，Google 就在逐步收紧后台启动 Service 的能力。整个演进路线：
 
 - **Android 8.0**：限制后台 App 调用 `startService()`，必须使用 `startForegroundService()`。
+- **Android 11**：后台启动的 FGS 访问相机 / 麦克风 / 位置能力继续收口。
 - **Android 12**：限制后台启动 FGS（`ForegroundServiceStartNotAllowedException`）。
+- **Android 13**：FGS Task Manager + `POST_NOTIFICATIONS` 让长驻服务更容易被看见和停止。
 - **Android 14**：FGS 类型声明强制化 + while-in-use 权限限制。
 - **Android 15**：`dataSync` FGS 运行时间上限。
 - **Android 16**：后台 Job 配额执行。
@@ -420,17 +445,14 @@ Google 的推荐替代方案是使用 `WorkManager` 来调度可延迟的后台�
 
 ### 广播分发机制
 
-AMS 通过 `BroadcastQueue` 管理所有广播的分发。系统维护两个队列：
-
-- **前台广播队列**（`mFgBroadcastQueue`）：处理带 `FLAG_RECEIVER_FOREGROUND` 标志的广播，超时 10 秒。
-- **后台广播队列**（`mBgBroadcastQueue`）：处理普通广播，超时 60 秒。
+AMS 仍然负责广播匹配、调度和 ANR 判责，但源码入口不能只盯着旧版 `BroadcastQueue.java`。AOSP android-16.0.0_r1 的实现由 AMS 组装 `BroadcastConstants`，再交给 `BroadcastQueueImpl` 执行分发。对性能分析，前台广播和普通广播仍然可以视为两组不同配置，但不宜把现代实现硬写成 `mFgBroadcastQueue` / `mBgBroadcastQueue` 这一对固定字段。
 
 分发流程：
 
 1. 发送方通过 `Context.sendBroadcast()` → Binder 调用到 AMS。
 2. AMS 根据 Intent 匹配已注册的 Receiver（包括静态和动态），生成目标列表。
 3. 对于有序广播，按 priority 排序后依次分发；对于无序广播，并行分发。
-4. 每个 Receiver 执行 `onReceive()` 时，AMS 开始计时。如果超时未完成，触发 ANR。
+4. Receiver 执行 `onReceive()` 后，系统按对应广播配置计时；超时未完成时，`BroadcastQueueImpl` 进入广播 ANR 管线。
 
 ### 静态广播 vs 动态广播的性能差异
 
@@ -519,7 +541,9 @@ Android 14 对广播做的变化，重点不在 Extra 大小，而在**投递时
 | Android 8.0 (API 26) | 后台启动 Service 限制 | 后台 App 必须使用 `startForegroundService()` |
 | Android 9.0 (API 28) | App Standby Buckets | AMS 根据使用频率限制后台执行 |
 | Android 10 (API 29) | 后台 Activity 启动限制 | 后台 App 不能随意弹出 Activity |
+| Android 11 (API 30) | 后台启动 FGS 访问敏感资源受限 | 后台拉起的 FGS 不能默认访问相机 / 麦克风 / 位置，Manifest 要补对应 FGS type |
 | Android 12 (API 31) | 后台 FGS 启动限制 + Phantom Process Killer | `ForegroundServiceStartNotAllowedException` |
+| Android 13 (API 33) | FGS Task Manager + `POST_NOTIFICATIONS` | 长驻前台服务更容易被用户感知、停止和审计 |
 | Android 14 (API 34) | FGS 类型声明强制化 + while-in-use 限制 | 必须声明 `foregroundServiceType` |
 | Android 15 (API 35) | dataSync FGS 运行时间上限（6h） | 长时间后台数据同步需换方案 |
 | Android 16 (API 36) | 后台 Job 配额 + ProfilingManager | 后台任务受配额限制 |
@@ -554,22 +578,31 @@ Android 14 对广播做的变化，重点不在 Extra 大小，而在**投递时
 - `frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java` — AMS 主类
 - `frameworks/base/core/java/android/app/Instrumentation.java` — 客户端 `execStartActivity()` 入口
 - `frameworks/base/services/core/java/com/android/server/wm/ActivityTaskManagerService.java` — Activity / Task 管理入口
+- `frameworks/base/services/core/java/com/android/server/wm/ActivityRecord.java` — Activity 记录与 input dispatch timeout 判责入口
 - `frameworks/base/services/core/java/com/android/server/wm/RootWindowContainer.java` — 顶层任务 / 显示容器
 - `frameworks/base/services/core/java/com/android/server/wm/TaskDisplayArea.java` — Display 下的任务容器
 - `frameworks/base/services/core/java/com/android/server/wm/Task.java` — Task 定义与 Recents 语义
 - `frameworks/base/core/res/res/values/attrs_manifest.xml` — `recreateOnConfigChanges` 定义
-- `frameworks/base/services/core/java/com/android/server/am/ActiveServices.java` — Service 管理与 ANR 检测
+- `frameworks/base/services/core/java/com/android/server/am/ActiveServices.java` — Service 管理与 create-service ANR
+- `frameworks/base/services/core/java/com/android/server/am/ActivityManagerConstants.java` — startForegroundService 相关超时配置
 - `frameworks/base/services/core/java/com/android/server/am/OomAdjuster.java` — `oom_adj` / `procState` 动态计算
-- `frameworks/base/services/core/java/com/android/server/am/BroadcastQueue.java` — 广播分发与超时
+- `frameworks/base/services/core/java/com/android/server/am/BroadcastConstants.java` — 广播超时与调度参数
+- `frameworks/base/services/core/java/com/android/server/am/BroadcastQueueImpl.java` — 广播分发与超时执行
+- `frameworks/base/services/core/java/com/android/server/am/ContentProviderHelper.java` — Provider 获取与等待流程
+- `frameworks/base/core/java/android/content/ContentResolver.java` — Provider publish / ready / remote-provider timeout 常量
 - `frameworks/base/services/core/java/com/android/server/am/AnrHelper.java` — ANR 统一处理管线
 - `frameworks/base/services/core/java/com/android/server/am/ProcessList.java` — 进程列表与 lmkd 交互
 - `frameworks/base/core/java/android/app/ActivityThread.java` — App 端主线程入口
 - `frameworks/base/services/core/java/com/android/server/am/EventLogTags.logtags` — `am_*` EventLog 标签定义
-- `frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp` — Input 事件分发与 ANR 检测
+- `frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp` — Input 事件分发与 waitQueue 检查
+- `frameworks/base/services/core/java/com/android/server/wm/InputManagerCallback.java` — Input → WMS 回调桥接
+- `frameworks/base/services/core/java/com/android/server/wm/AnrController.java` — WMS 侧输入 ANR 归因
 - `frameworks/base/core/java/android/app/IActivityManager.aidl` — AMS 的 Binder 接口定义
 
 ### 官方文档
+- [Behavior changes: all apps on Android 11](https://developer.android.com/about/versions/11/behavior-changes-all) — 后台启动 FGS 访问敏感资源的限制
 - [Behavior changes: Android 12](https://developer.android.com/about/versions/12/behavior-changes-12) — FGS 后台启动限制
+- [Behavior changes: all apps on Android 13](https://developer.android.com/about/versions/13/behavior-changes-all) — FGS Task Manager 与通知权限变化
 - [Behavior changes: Android 14](https://developer.android.com/about/versions/14/behavior-changes-14) — 动态注册 Receiver 导出属性与 FGS 相关约束
 - [Behavior changes: all apps on Android 14](https://developer.android.com/about/versions/14/behavior-changes-all) — cached state 下的 context-registered broadcast 排队
 - [Behavior changes: all apps on Android 17](https://developer.android.com/about/versions/17/behavior-changes-all) — 后台音频 API 限制
