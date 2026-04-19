@@ -1,33 +1,6 @@
 {
   "pending": [
     {
-      "section": "1.5",
-      "section_title": "线程模型",
-      "priority": 90,
-      "reason": "[review回炉] Binder pool 线程数与 1.4 章不一致；cgroup CPU 分配比例缺验证来源",
-      "material_paths": [
-        "intake/suggestions.md（含 review 意见）"
-      ],
-      "review_issues": [
-        {
-          "type": "存疑",
-          "location": "线程数量节",
-          "detail": "Binder pool '上限是 16 个'与 1.4 Binder 章'默认上限 15 个'不一致",
-          "suggestion": "对照 AOSP ProcessState.cpp DEFAULT_MAX_BINDER_THREADS 确认"
-        },
-        {
-          "type": "待验证",
-          "location": "线程优先级节 cgroup 段",
-          "detail": "cgroup 'CPU 时间分配比例大约是 95:5' 无验证来源",
-          "suggestion": "补充设备实测数据或内核文档依据，或标注 [待验证]"
-        }
-      ],
-      "added_by": "task6-review",
-      "added_at": "2026-04-19T08:08:00",
-      "status": "pending",
-      "original_review_log": "logs/review/2026-04-19-08-review.md"
-    },
-    {
       "section": "16.1",
       "section_title": "Google 官方的性能优化思路",
       "priority": 85,
@@ -262,6 +235,36 @@
       "completed_at": "2026-04-19T09:31:02+08:00",
       "completed_by": "task2b-rework",
       "completion_reason": "已修正 FrameCallback 线程语义、FrameMetrics 回调线程说明和 JankStats 默认判定逻辑"
+    },
+    {
+      "section": "1.5",
+      "section_title": "线程模型",
+      "priority": 90,
+      "reason": "[review回炉] Binder pool 线程数与 1.4 章不一致；cgroup CPU 分配比例缺验证来源",
+      "material_paths": [
+        "intake/suggestions.md（含 review 意见）"
+      ],
+      "review_issues": [
+        {
+          "type": "存疑",
+          "location": "线程数量节",
+          "detail": "Binder pool '上限是 16 个'与 1.4 Binder 章'默认上限 15 个'不一致",
+          "suggestion": "对照 AOSP ProcessState.cpp DEFAULT_MAX_BINDER_THREADS 确认"
+        },
+        {
+          "type": "待验证",
+          "location": "线程优先级节 cgroup 段",
+          "detail": "cgroup 'CPU 时间分配比例大约是 95:5' 无验证来源",
+          "suggestion": "补充设备实测数据或内核文档依据，或标注 [待验证]"
+        }
+      ],
+      "added_by": "task6-review",
+      "added_at": "2026-04-19T08:08:00",
+      "status": "completed",
+      "original_review_log": "logs/review/2026-04-19-08-review.md",
+      "completed_at": "2026-04-19T09:57:21+08:00",
+      "completed_by": "task2b-rework",
+      "completion_reason": "已统一 Binder 线程池的 15 / 16 两种口径，并删除无依据的 95:5 cgroup 比例，改写为按设备参数判断。"
     }
   ]
 }

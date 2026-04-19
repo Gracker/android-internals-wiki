@@ -1,12 +1,12 @@
 {
-  "generated_at": "2026-04-19T09:31:02+08:00",
+  "generated_at": "2026-04-19T09:57:21+08:00",
   "state_machine_version": "v2",
   "total_sections": 218,
   "metrics": {
     "total": 174,
     "unknown": 0,
     "ready-for-review": 174,
-    "last_updated": "2026-04-19T09:31:02+08:00",
+    "last_updated": "2026-04-19T09:57:21+08:00",
     "task2b_state_counts": {
       "fixed": 125,
       "pending": 8,
@@ -275,13 +275,13 @@
       "task6_state": "revisiting",
       "task9_state": "pending",
       "task2b_state": "fixed",
-      "reviewed_date": "2026-04-12",
+      "reviewed_date": "2026-04-19",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
       "section": "1.5",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
-      "review_round": "3"
+      "review_round": "4"
     },
     "src/part1-fundamentals/ch01-architecture/06-version-evolution.md": {
       "chapter": "1.6",
