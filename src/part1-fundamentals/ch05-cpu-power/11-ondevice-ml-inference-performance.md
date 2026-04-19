@@ -219,3 +219,12 @@ TFLite 支持 post-training quantization 和 quantization-aware training。前�
 - 🔸 **LiteRT in Play Services 的部署取舍**：GMS 依赖、国内设备回退、运行时更新节奏
 - 🔸 **量化 / 裁剪 / 蒸馏的验证顺序**：模型大小、RSS、单次 latency、持续运行后的 thermal 变化
 <!-- outline-end -->
+
+## 延伸阅读
+### 从 NNAPI 到 LiteRT：Android NPU 性能优化全景
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/从 NNAPI 到 LiteRT：Android NPU 性能优化全景 .md
+- 类型：DeepResearch 调研结果
+- 摘要：从 NNAPI 在 Android 15 弃用切入，对比 LiteRT、CompiledModel、AICore 与主流 NPU 厂商栈，补齐量化、AOT、内存/功耗调度、基准可信度和迁移策略，适合端侧 AI 性能选型。
+- 注入时间：2026-04-19
+- 价值：对 AI 手机时代的 NPU 路线迁移和性能选型很有参考价值。
+

@@ -34,7 +34,7 @@
 2. **次优先**：`status: ready-for-review` 且 `task6_state: pending` 的章节（等待 Task 6 文稿质检）
 3. **第三优先**：`status: ready-for-review` 且 `task6_state: revisiting` 的章节（回炉后重新进入 Task 6）
 4. **可选抽检**：`status: finalized` 的章节（每周抽检 1 个已定稿章节，防止质量退化）
-5. **永不选中**：仅 `task9_state: pending`、但 `task6_state` 非 pending 的章节；以及 `status: ready-to-publish` 的章节
+5. **永不选中**：`status: ready-to-publish` 的章节
 如果没有任何待 review 章节，回复"当前无待 review 草稿"并结束。
 
 **区分首次 review 和重审**：
@@ -138,7 +138,7 @@ git commit -m "[openclaw] re-review: {章节号} {小节名} — 素材冲击重
 选择本次 review 目标：
 1. **优先选择尚未被 Task 6 review 过，或距上次 Task 6 review 已超过 7 天的章节**
 2. **同优先级时按章节号排序**（1.1 → 1.2 → 2.1 ...）
-3. **每次 review 1-2 个章节**（默认 2 个；仅当两个章节都较短、问题都偏轻量或 external-review 已提供高质量前置结论时优先处理 2 个；若章节较长或风险复杂则降回 1 个）
+3. **每次 review 3-4 个章节**（默认 3 个；仅当章节都较短、问题都偏轻量或 external-review 已提供高质量前置结论时处理 4 个；若章节极长或风险复杂则降回 2 个）
 4. **必须通过 Step 3 的内容充分性检查**
 5. **如果章节明显存在技术事实风险，不在 Task 6 内做技术裁决，只标记并交给 Task 9 / Task 2B**
 6. 如果 recent external-review 已经给出该章节的高风险信号，优先参考其结论来定位风险段落，但不要直接把 external-review 当最终裁决
@@ -213,10 +213,10 @@ git commit -m "[openclaw] re-review: {章节号} {小节名} — 素材冲击重
 ### Step 7：更新文件
 1. 将小修后的内容写回 src/ 对应文件（使用 exec + python/pathlib + 绝对路径）
 2. 更新 frontmatter：
-   - **如果仅有轻量写作问题且已完成小修**：保持 `status: ready-for-review`，写入 `reviewed_by: openclaw-task6`、`reviewed_date: YYYY-MM-DD`、`task6_result: pass-light-edit`、`task6_state: reviewed`、`task9_state: pending`、`pipeline_stage: task9_pending`
+   - **如果仅有轻量写作问题且已完成小修**：保持 `status: ready-for-review`，写入 `reviewed_by: openclaw-task6`、`reviewed_date: YYYY-MM-DD`、`task6_result: pass-light-edit`、`task6_state: reviewed`、`task9_state: pending`、`pipeline_stage: task9_pending`。**自动晋升检查**：如果同时满足以下全部条件，直接晋升为 `status: finalized`、`pipeline_stage: ready-to-publish`：① `task9_result: pass-tech-review`（Task 9 已通过）② queue.json 中该 section 无 pending 条目 ③ 本次无 B 类大问题。晋升后在报告中标注「✅ 自动晋升 finalized」。
    - **如果存在 B 类大问题**：保持 `status: ready-for-review`，写入 `reviewed_by: openclaw-task6`、`reviewed_date: YYYY-MM-DD`、`task6_result: needs-rework`、`task6_state: reviewed`、`task2b_state: pending`、`pipeline_stage: task2b_pending`
 3. 如果有大问题标注，同步写入 `intake/suggestions.md`（追加到末尾）
-4. 更新 `metadata/progress.json` 中对应小节的状态或 review 记录，但**不要在 Task 6 中把章节推进到 ready-to-publish/finalized**
+4. 更新 `metadata/progress.json` 中对应小节的状态或 review 记录。**自动晋升 finalized 的章节**在 progress.json 中同步更新状态。
 
 ### Step 7.1：大问题回炉（闭环关键）
 
@@ -345,7 +345,7 @@ writing-guide 合规：✅ 合规 / ⚠️ N 处不合规（已修复/已标注�
 下一 review 候选：{章节号} {小节名}
 
 ## 注意事项
-- 每次 review 处理 1-2 个章节，默认 2 个；仅当两个章节都较短、问题较轻或已有 external-review 作为前置信号时优先处理 2 个；若章节较长或存在复杂技术风险则降回 1 个
+- 每次 review 处理 3-4 个章节，默认 3 个；仅当章节都较短、问题较轻或已有 external-review 作为前置信号时处理 4 个；若章节极长或存在复杂技术风险则降回 2 个
 - 不改变高爷的技术观点
 - 不删除已有的验证标注
 - 大问题只标注不改，留给高爷决策

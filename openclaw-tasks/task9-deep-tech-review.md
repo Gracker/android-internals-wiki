@@ -22,7 +22,7 @@
 ## ⚠️ 铁律
 
 1. **只 Review 不修改**——发现问题标注并写入建议，不直接改章节内容；审计结论必须足够具体，能直接指导下一轮精修
-2. **每次 Review 1-2 个章节**，深度优先，默认 2 个；仅当两个章节都较短、问题较聚焦或属于同一主题簇时处理 2 个。若章节极长、源码链复杂，则退回处理 1 个
+2. **每次 Review 3-4 个章节**，深度优先，默认 3 个；仅当章节都较短、问题较聚焦或属于同一主题簇时处理 4 个。若章节极长、源码链复杂，则降回 2 个
 3. **不重复 Task 6 的工作**——不管措辞、格式、中英文间距、段落流畅度等写作质量问题
 4. **只审技术，不做写作层结论**——源码、原理链、版本差异、数据支撑、知识盲区是你的边界
 5. **不编造技术事实**——如果不确定，标注 `[待验证]` 而不是给出错误判断
@@ -40,7 +40,6 @@
 ### 排除
 - `status: draft` 或空壳章节（内容不够，没有 Review 价值）
 - 今天已被 Task 9 Review 过的章节（检查日志防重复）
-- `task6_state: pending` 的章节（先过 Task 6）
 - 已被 Task 6 标记为纯写作问题、且没有技术风险信号的章节
 
 ### 选择规则
@@ -224,8 +223,8 @@
 ### 3e. 无 P0/P1 时的前进规则
 如果本轮无 P0/P1 问题：
 - 更新 frontmatter：`task9_result: pass-tech-review`、`task9_state: reviewed`
-- 若 `task6_result: pass-light-edit` 且无待处理 queue 条目，则将 `pipeline_stage: publish_ready`
-- 章节状态可保持 `ready-for-review`，由后续人工或专门发布流程决定是否推进为 `ready-to-publish`
+- **自动晋升 finalized**：如果同时满足以下全部条件，直接晋升为 `status: finalized`、`pipeline_stage: ready-to-publish`：① `task6_result: pass-light-edit`（Task 6 已通过）② queue.json 中该 section 无 pending 条目 ③ 本次无 P0/P1 问题。晋升后在报告中标注「✅ 自动晋升 finalized」。
+- 若不满足晋升条件，章节保持 `ready-for-review`，等待 Task 6 下一轮处理
 
 ---
 

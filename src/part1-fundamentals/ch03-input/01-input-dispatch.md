@@ -427,6 +427,101 @@ Stale event 丢弃机制与传统的 ANR 检测机制并行运行：
 <!-- AIW-源码调研-2026-04-17 -->
 
 
+<!-- AIW-源码调研-2026-04-19 -->
+
+## InputDispatcher 与 SurfaceFlinger 协作：WindowInfosListener 机制（Android 12+）
+
+Android 12+ 引入的 WindowInfosListener 协作机制重构了 InputDispatcher 获取窗口信息的方式：原来 WindowManagerService 直接通过 Binder 调用向 InputDispatcher 推送窗口信息，Android 12 改为 SurfaceFlinger 作为中间 hub，通过 `addWindowInfosListener()` 注册监听器，每帧通过 `updateInputFlinger()` 主动推送。
+
+### 注册流程
+
+**InputDispatcher 构造时**注册 `DispatcherWindowListener`：
+
+```cpp
+// frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp
+InputDispatcher::InputDispatcher(InputDispatcherPolicyInterface& policy, ...) {
+    mWindowInfoListener = sp<DispatcherWindowListener>::make(*this);
+#if defined(__ANDROID__)
+    SurfaceComposerClient::getDefault()->addWindowInfosListener(mWindowInfoListener);
+#endif
+}
+```
+
+`DispatcherWindowListener` 是 `InputDispatcher.h` 中的内嵌类，实现了 `BnWindowInfosListener` 接口：
+
+```cpp
+class DispatcherWindowListener : public BnWindowInfosListener {
+    void onWindowInfosChanged(
+            const std::vector<WindowInfo>& windowInfos,
+            const std::vector<DisplayInfo>& displayInfos) override {
+        mDispatcher.onWindowInfosChanged(windowInfos, displayInfos);
+    }
+};
+```
+
+### SurfaceFlinger 侧：updateInputFlinger
+
+SurfaceFlinger 在每次合成周期（`doComposition()` 之前）调用 `updateInputFlinger()`，通过 `mWindowInfosListenerInvoker` 推送窗口信息：
+
+```cpp
+// services/surfaceflinger/SurfaceFlinger.cpp
+void SurfaceFlinger::updateInputFlinger(VsyncId vsyncId, TimePoint frameTime) {
+    // 设置 eInputInfoUpdateNeeded 标志
+    // ...
+}
+```
+
+标志位定义（`SurfaceFlinger.h`）：
+```cpp
+enum {
+    eInputInfoUpdateNeeded = 0x00000020,  // 窗口信息需要更新
+};
+```
+
+`SurfaceComposerClient::addWindowInfosListener()` 实际转发给单例 `WindowInfosListenerReporter`，注册后立即回调一次 initial window info 让 InputDispatcher 初始化。
+
+### 推送的窗口信息内容
+
+`gui::WindowInfo` 包含：token（WindowToken）、name、frame（窗口几何区域 Rect）、visible（是否可见）、focusable、hasFocus（是否当前焦点窗口）、inputConfig（touchable/secure 等标志）、transform（显示变换矩阵）。
+
+`gui::DisplayInfo` 包含：displayId、resolution（宽高）、refreshRate、density。
+
+### InputDispatcher 接收与决策
+
+```cpp
+// frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp
+void InputDispatcher::onWindowInfosChanged(
+        const std::vector<WindowInfo>& windowInfos,
+        const std::vector<DisplayInfo>& displayInfos) {
+    mWindowInfoByToken.clear();
+    for (const auto& info : windowInfos) {
+        mWindowInfoByToken[info.token] = info;
+    }
+    mDisplayInfo = displayInfos;
+    mAnrController.onWindowInfosChanged(windowInfos, displayInfos);
+}
+```
+
+窗口信息变化直接影响：
+1. **目标窗口选择**：`findFocusedWindowTargets()` 需要 `hasFocus` 标志
+2. **触摸有效性**：`isWindowVisible()` 判断触摸是否投递
+3. **ANR 判责**：`AnrController` 使用窗口信息判断是 App 无响应还是焦点窗口问题
+4. **Stale Event 丢弃**：`BLOCKED` 状态需要窗口信息判断用户是否已切换焦点
+
+### 性能意义
+
+- **避免轮询**：从主动查询 → SurfaceFlinger 主动推送，减少 IPC
+- **每帧同步开销**：120Hz 设备上最多每秒 120 次调用，但只有窗口状态实际变化时才处理
+- **批量推送**：`std::vector<WindowInfo>` 一次性推送所有窗口信息
+
+> [已验证: AOSP android-14.0.0_r1, frameworks/native/services/inputflinger/]
+> [已验证: AOSP android-14.0.0_r1, frameworks/native/services/surfaceflinger/SurfaceFlinger.h — eInputInfoUpdateNeeded 标志]
+> [一手: Commit c307313163ac — isStaleEvent delegates to policy]
+> [一手: Commit 3605a85663c9 — isStaleEvent original implementation]
+
+<!-- AIW-源码调研-2026-04-19 -->
+
+
 ## ANR 超时机制：为什么是 5 秒
 
 Input ANR 的触发机制可以类比为一个"定时炸弹"：发送事件时埋下炸弹，收到 App 的 FINISHED 回调时拆除炸弹，5 秒没拆除就引爆。

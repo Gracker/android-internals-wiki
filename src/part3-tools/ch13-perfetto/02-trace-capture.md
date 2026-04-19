@@ -635,6 +635,61 @@ data_sources {
 
 在 Perfetto UI 中，调用栈采样数据显示为火焰图，可以直观地看到 CPU 时间花在了哪些函数调用上。
 
+<!-- AIW-源码调研-2026-04-19: perf_event Callstack Sampling 配置差异补充 -->
+
+### perf_event vs atrace：两条正交的追踪路径
+
+理解 `linux.perf` 数据源的关键是认识它与 `linux.ftrace`（即 atrace）之间的本质差异。两者在数据源、overhead 和适用场景上完全不同：
+
+| 维度 | `linux.ftrace`（atrace） | `linux.perf`（perf_event） |
+|------|--------------------------|---------------------------|
+| **底层机制** | ftrace ring buffer + `trace_marker` | `perf_event_open` syscall |
+| **数据类型** | 注解事件（ATrace API 写入）、内核 ftrace 事件 | 硬件计数器采样（CPU cycles、cache-miss）、调用栈 |
+| **调用栈采集** | 不支持 | 支持（DWARF unwind） |
+| **硬件计数器** | 不支持 | 支持（PMU events） |
+| **overhead** | 低（仅注解点） | 中（采样频率可调，100Hz ≈ 1-3%） |
+
+`linux.perf` 数据源通过 `traced_perf` 守护进程实现，它调用 Linux 内核的 `perf_event_open` syscall，为每个 CPU 创建一个 perf event group leader（由 `timebase` 定义），然后周期性采样。
+
+**PerfEventConfig 关键字段详解**：
+
+```protobuf
+// PerfEventConfig 各字段的实际作用（来源：external/perfetto/config/perf_event_config.proto）
+message PerfEventConfig {
+  EventConfig timebase = 1;        // 主采样事件（PERF_TYPE_HARDWARE 等）
+  bool callstack_sampling = 2;      // 是否采集调用栈（对应 perf_event_attr.sample_type |= CALLCHAIN）
+  Scope scope = 3;                  // 限定目标进程范围（target_cmdline 等）
+  repeated EventConfig followers = 4; // 与 timebase 同步采样的额外计数器
+  uint32 ring_buffer_pages = 5;     // 每 CPU ring buffer 大小（必须是 2 的幂）
+  uint32 max_enqueued_footprint_kb = 6; // unwinder 队列最大内存（超出会丢样）
+  uint32 max_daemon_memory_kb = 7;  // traced_perf 进程自身最大内存
+  bool kernel_frames = 8;           // 是否包含内核栈帧
+}
+```
+
+**`timebase` 的两种采样模式**：
+- `frequency`：每秒约 N 次采样（如 100Hz = 每 10ms 一次），适合 CPU profiling
+- `period`：每 N 个硬件事件触发一次采样，适合精确计数
+
+**`followers`**：可同时测量多个硬件事件。例如主事件测 CPU cycles，followers 测量 instructions、cache-misses 等，在同一次采样点同时快照，非常适合分析 CPI（Cycles Per Instruction）效率。
+
+**Perfetto SQL 中的 `perf_sample` 表**：linux.perf 采样数据存入 `perf_sample` 表，可通过 Perfetto Trace Processor 查询：
+
+| 列名 | 含义 |
+|------|------|
+| `id` | 采样唯一 ID |
+| `ts` | 采样时间戳（ns） |
+| `utid` | 被采样线程的 UTID |
+| `cpu` | 采样时所在的 CPU |
+| `cpu_mode` | "user" 或 "kernel" |
+| `callsite_id` | 指向 `stack_profile_callsite` 表的外键（用于重建调用栈） |
+
+通过 JOIN `stack_profile_callsite` 表和 `stack_profile_frame` 表可以重建完整的火焰图调用栈。
+
+**simpleperf 与 Perfetto linux.perf 的关系**：simpleperf（`platform/system/extras/simpleperf/`）是 AOSP 自带的命令行 CPU profiling 工具，输出 `perf.data` 文件；Perfetto linux.perf 将采样数据直接写入 Perfetto trace 文件。两者都基于 `perf_event_open` syscall，核心差异在于输出格式和与 Perfetto UI 的集成程度。
+
+<!-- /AIW-源码调研-2026-04-19 -->
+
 ### 同时收集多种数据的配置示例
 
 在一份 TraceConfig 中，我们可以同时开启多个数据源。下面是一份同时收集 ftrace 事件、Heap Profiling 和 CPU 调用栈采样的配置：
