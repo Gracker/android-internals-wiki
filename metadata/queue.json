@@ -1540,7 +1540,10 @@
     ],
     "added_by": "external-ai-review",
     "added_at": "2026-04-19T12:30:29.391899+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-20T01:46:47+08:00",
+    "completed_by": "task2b-rework",
+    "resolution": "补充 resources.arsc 三层字符串池说明，给 AGP 8.12.0 优化资源缩减加上版本门槛，并说明 Baseline Profile 的磁盘占用代价"
   },
   {
     "section": "11.1",
@@ -2456,6 +2459,30 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-19T22:11:56+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-20T01:46:47+08:00",
+    "completed_by": "task2b-rework",
+    "resolution": "删除不存在的 NetworkRequest.setInterval API，改为 WorkManager/JobScheduler/批量请求的后台同步策略，并清理 frontmatter 重复字段"
+  },
+  {
+    "section": "1.4",
+    "section_title": "Binder IPC 机制与性能影响",
+    "priority": 90,
+    "reason": "[review回炉] 版本演进表中 scatter-gather 拷贝次数描述与正文矛盾",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "版本差异",
+        "location": "版本演进表 Android 8.0 行",
+        "detail": "版本表写 scatter-gather '将 Binder 数据拷贝从最多三次减少到一次'，但正文中已经解释 scatter-gather 是数据组织方式优化（省掉 gather-to-contiguous 中间整理），不是改变拷贝次数。基础 mmap 已经是单次拷贝。表和正文表述矛盾。",
+        "suggestion": "重写版本表中 scatter-gather 行的描述，改为'引入 scatter-gather 优化（BC_TRANSACTION_SG），省掉 Parcel 数据的 gather-to-contiguous 中间整理步骤'，避免与正文'一次拷贝'的解释冲突。"
+      }
+    ],
+    "added_by": "task6-review",
+    "added_at": "2026-04-20T02:13:00",
+    "status": "pending",
+    "original_review_log": "logs/review/2026-04-20-02-review.md"
   }
 ]

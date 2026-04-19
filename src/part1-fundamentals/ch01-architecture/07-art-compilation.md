@@ -1,40 +1,57 @@
 ---
-title: "ART 编译管线与 dex2oat 优化"
-chapter: "1.7"
-section: "1.7"
+title: ART 编译管线与 dex2oat 优化
+chapter: '1.7'
+section: '1.7'
 status: ready-for-review
-drafted_date: "2026-04-05"
-drafted_by: "openclaw-task2a"
-applicable_versions: "Android 7.0 (API 24) - Android 17 (API 37)"
-last_verified: "2026-04-05"
-last_verified_against: "AOSP android-17-beta3"
+drafted_date: '2026-04-05'
+drafted_by: openclaw-task2a
+applicable_versions: Android 7.0 (API 24) - Android 17 (API 37)
+last_verified: '2026-04-05'
+last_verified_against: AOSP android-17-beta3
 confidence: medium
 polish_count: 2
-polish_date: "2026-04-17"
-polish_by: "task2b-polish"
-reviewed_date: "2026-04-13"
-reviewed_by: "openclaw-task6"
-task6_result: needs-rework
+polish_date: '2026-04-17'
+polish_by: task2b-polish
+reviewed_date: '2026-04-20'
+reviewed_by: openclaw-task6
+task6_result: pass-light-edit
 sources:
-  - type: official
-    path: "https://developer.android.com/topic/performance/baselineprofiles/overview"
-  - type: official
-    path: "https://source.android.com/docs/core/runtime"
-  - type: blog
-    path: "https://android-developers.googleblog.com/ (ART Performance Updates 2025)"
-  - type: aosp
-    path: "art/compiler/ + art/dex2oat/ + art/jit/"
-  - type: blog
-    path: "https://android-developers.googleblog.com/ (AutoFDO GKI Kernel)"
-tags: [ART, dex2oat, JIT, AOT, Baseline-Profiles, Startup-Profiles, PGO, compilation, cold-start]
-related_chapters: ["1.6", "1.12", "4.3", "8.2", "8.3", "16.1"]
+- type: official
+  path: https://developer.android.com/topic/performance/baselineprofiles/overview
+- type: official
+  path: https://source.android.com/docs/core/runtime
+- type: blog
+  path: https://android-developers.googleblog.com/ (ART Performance Updates 2025)
+- type: aosp
+  path: art/compiler/ + art/dex2oat/ + art/jit/
+- type: blog
+  path: https://android-developers.googleblog.com/ (AutoFDO GKI Kernel)
+tags:
+- ART
+- dex2oat
+- JIT
+- AOT
+- Baseline-Profiles
+- Startup-Profiles
+- PGO
+- compilation
+- cold-start
+related_chapters:
+- '1.6'
+- '1.12'
+- '4.3'
+- '8.2'
+- '8.3'
+- '16.1'
 task9_result: needs-rework
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task2b_result: fixed
 task2b_state: fixed
+review_round: 2
 ---
+
 
 # 1.7 ART 编译管线与 dex2oat 优化
 
@@ -71,7 +88,7 @@ task2b_state: fixed
 - 冷启动慢，有没有可能是编译策略不够优化？
 - 安装耗时过长，跟 dex2oat 有什么关系？
 - Baseline Profiles 和 Startup Profiles 到底做了什么？
-- 在 Perfetto 中看到 `art::jit::*` 相关的 Slice，意味着什么？
+- 在 Perfetto 中看到 `art::jit::*` 相关的 Slice，该怎么解读？
 
 这篇文章把 ART 的编译策略从历史演进到当前架构梳理一遍，目标是读完之后，我们能在 Trace 中定位编译相关的性能问题，并知道如何通过 Profile 体系优化应用的编译路径。
 
@@ -101,11 +118,11 @@ Android 7.0 引入了当前架构的基石——**混合编译模式**。核心�
 2. **运行时用 JIT 编译热点方法**，同时记录 Profile（哪些方法被频繁调用）。
 3. **设备空闲充电时**，后台 dex2oat 根据 Profile 做 AOT 编译，只编译 Profile 中标记的热点方法。
 
-这个架构的关键在于"**按需编译**"——只编译用户真正用到的代码路径。大部分应用有大量冷门功能，全量 AOT 浪费了大量编译时间和存储空间。
+这个架构的核心原则是"**按需编译**"——只编译用户真正用到的代码路径。大部分应用有大量冷门功能，全量 AOT 浪费了大量编译时间和存储空间。
 
 ### Android 12+：ART 模块化与持续优化
 
-从 Android 12 开始，ART 成为 Mainline 模块（com.android.art），编译优化可以通过 Google Play 系统更新推送，不再需要等系统 OTA。这意味着：
+从 Android 12 开始，ART 成为 Mainline 模块（com.android.art），编译优化可以通过 Google Play 系统更新推送，不再需要等系统 OTA。具体变化：
 
 - **编译器优化独立推送**：dex2oat 内部的优化 Pass 改进（如 2025 年的 18% 编译时间缩减）作为 Mainline 模块更新推送到所有 Android 12+ 设备，不需要 OEM 适配
 - **Profile 格式版本解耦**：Profile 文件格式（`primary.prof`）的升级不再依赖系统版本，ART 模块自行处理向后兼容
@@ -304,7 +321,7 @@ Cloud Profiles 的优势是覆盖面广——它反映的是真实用户的普�
 
 Startup Profiles 是 Baseline Profiles 的**启动子集**，但它影响的不是编译策略，而是 DEX 文件的物理布局。
 
-这里的关键在于类加载器的加载顺序：它按顺序从 classes.dex 开始加载类。如果启动路径上的类散落在 DEX 文件的不同位置（甚至不同的 DEX 文件中），类加载器需要更多的 I/O 操作和内存映射。Startup Profiles 的作用是告诉 R8/D8 编译器：**把这些启动类排列到 classes.dex 的前部**。
+类加载器按顺序从 classes.dex 开始加载类。如果启动路径上的类散落在 DEX 文件的不同位置（甚至不同的 DEX 文件中），类加载器需要更多的 I/O 操作和内存映射。Startup Profiles 的作用是告诉 R8/D8 编译器：**把这些启动类排列到 classes.dex 的前部**。
 
 ```
 没有 Startup Profiles：

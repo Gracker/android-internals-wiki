@@ -1,65 +1,80 @@
 ---
 task9_result: needs-rework
-title: "线程模型"
-chapter: "1.5"
-section: "1.5"
+title: 线程模型
+chapter: '1.5'
+section: '1.5'
 status: ready-for-review
-applicable_versions: "Android 5.0 (API 21) - Android 16 (API 36)"
-last_verified: "2026-03-31"
-reviewed_date: "2026-04-19"
+applicable_versions: Android 5.0 (API 21) - Android 16 (API 36)
+last_verified: '2026-03-31'
+reviewed_date: '2026-04-20'
 reviewed_by: openclaw-task6
-review_round: 4
+review_round: 5
 polish_count: 2
-polish_date: "2026-04-10"
+polish_date: '2026-04-10'
 polish_by: task2b-polish
 drafted_by: openclaw-task2
-last_verified_against: "AOSP android-16.0.0_r1"
-drafted_date: "2026-03-31"
+last_verified_against: AOSP android-16.0.0_r1
+drafted_date: '2026-03-31'
 confidence: high
 sources:
-  - type: blog
-    path: "Personal-Knowlodge/source/Android-Perfetto-07-MainThread-And-RenderThread.md"
-  - type: blog
-    path: "Personal-Knowlodge/source/Android-Systrace-MainThread-And-RenderThread.md"
-  - type: blog
-    path: "Personal-Knowlodge/source/2026-03-05_wechat_Looper到底在等什么.md"
-  - type: blog
-    path: "Personal-Knowlodge/source/2026-03-07_wechat_万字解析Android_Handler实现原理.md"
-  - type: blog
-    path: "Personal-Knowlodge/source/2026-03-06_wechat_Android性能优化之绑定RenderThread到大核CPU.md"
-  - type: aosp
-    path: "frameworks/base/core/java/android/os/Looper.java"
-  - type: aosp
-    path: "frameworks/base/core/java/android/os/LegacyMessageQueue/MessageQueue.java"
-  - type: aosp
-    path: "frameworks/base/core/java/android/os/CombinedMessageQueue/MessageQueue.java"
-  - type: aosp
-    path: "frameworks/base/core/java/android/os/ConcurrentMessageQueue/MessageQueue.java"
-  - type: aosp
-    path: "frameworks/base/core/java/android/os/Handler.java"
-  - type: aosp
-    path: "frameworks/base/core/java/android/app/ActivityThread.java"
-  - type: aosp
-    path: "frameworks/base/graphics/java/android/graphics/HardwareRenderer.java"
-  - type: aosp
-    path: "frameworks/base/libs/hwui/renderthread/RenderThread.cpp"
-  - type: aosp
-    path: "frameworks/native/libs/binder/ProcessState.cpp"
-  - type: aosp
-    path: "frameworks/base/core/java/android/os/Process.java"
-  - type: official
-    path: "developer.android.com/guide/components/processes-and-threads"
-  - type: official
-    path: "developer.android.com/reference/android/os/Process#setThreadPriority(int,int)"
-tags: [thread, handler, looper, messagequeue, renderthread, coroutine, workmanager, thread-priority]
-related_chapters: ["1.2", "1.4", "1.13", "2.4", "2.5", "5.1"]
-pipeline_stage: task6_pending
-task6_state: revisiting
+- type: blog
+  path: Personal-Knowlodge/source/Android-Perfetto-07-MainThread-And-RenderThread.md
+- type: blog
+  path: Personal-Knowlodge/source/Android-Systrace-MainThread-And-RenderThread.md
+- type: blog
+  path: Personal-Knowlodge/source/2026-03-05_wechat_Looper到底在等什么.md
+- type: blog
+  path: Personal-Knowlodge/source/2026-03-07_wechat_万字解析Android_Handler实现原理.md
+- type: blog
+  path: Personal-Knowlodge/source/2026-03-06_wechat_Android性能优化之绑定RenderThread到大核CPU.md
+- type: aosp
+  path: frameworks/base/core/java/android/os/Looper.java
+- type: aosp
+  path: frameworks/base/core/java/android/os/LegacyMessageQueue/MessageQueue.java
+- type: aosp
+  path: frameworks/base/core/java/android/os/CombinedMessageQueue/MessageQueue.java
+- type: aosp
+  path: frameworks/base/core/java/android/os/ConcurrentMessageQueue/MessageQueue.java
+- type: aosp
+  path: frameworks/base/core/java/android/os/Handler.java
+- type: aosp
+  path: frameworks/base/core/java/android/app/ActivityThread.java
+- type: aosp
+  path: frameworks/base/graphics/java/android/graphics/HardwareRenderer.java
+- type: aosp
+  path: frameworks/base/libs/hwui/renderthread/RenderThread.cpp
+- type: aosp
+  path: frameworks/native/libs/binder/ProcessState.cpp
+- type: aosp
+  path: frameworks/base/core/java/android/os/Process.java
+- type: official
+  path: developer.android.com/guide/components/processes-and-threads
+- type: official
+  path: developer.android.com/reference/android/os/Process#setThreadPriority(int,int)
+tags:
+- thread
+- handler
+- looper
+- messagequeue
+- renderthread
+- coroutine
+- workmanager
+- thread-priority
+related_chapters:
+- '1.2'
+- '1.4'
+- '1.13'
+- '2.4'
+- '2.5'
+- '5.1'
+pipeline_stage: task9_pending
+task6_state: reviewed
 task6_result: pass-light-edit
 task9_state: pending
 task2b_state: fixed
 task2b_result: fixed
 ---
+
 
 # 线程模型
 

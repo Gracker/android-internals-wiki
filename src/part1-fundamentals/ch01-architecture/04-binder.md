@@ -1,46 +1,61 @@
 ---
-title: "Binder IPC 机制与性能影响"
-chapter: "1.4"
-section: "1.4"
+title: Binder IPC 机制与性能影响
+chapter: '1.4'
+section: '1.4'
 status: ready-for-review
-reviewed_date: "2026-04-19"
-reviewed_by: "openclaw-task6"
-applicable_versions: "Android 8 (API 26) - Android 16 (API 36)"
-drafted_date: "2026-04-10"
-drafted_by: "openclaw-task2a"
-last_verified: "2026-04-19"
-last_verified_against: "AOSP android-16.0.0_r1, source.android / developer.android 官方文档"
+reviewed_date: '2026-04-20'
+reviewed_by: openclaw-task6
+applicable_versions: Android 8 (API 26) - Android 16 (API 36)
+drafted_date: '2026-04-10'
+drafted_by: openclaw-task2a
+last_verified: '2026-04-19'
+last_verified_against: AOSP android-16.0.0_r1, source.android / developer.android
+  官方文档
 confidence: medium
 sources:
-  - type: blog
-    path: "Personal-Knowlodge/source/Android-Systrace-Binder.md"
-  - type: blog
-    path: "Personal-Knowlodge/source/Android-Perfetto-10-Binder.md"
-  - type: blog
-    path: "Personal-Knowlodge/source/2026-03-06_wechat_Binder驱动中的流程详解.md"
-  - type: official
-    path: "developer.android.com/reference/android/os/IBinder"
-  - type: official
-    path: "developer.android.com/guide/components/aidl"
-  - type: official
-    path: "https://source.android.com/docs/core/architecture/aidl/aidl-hals"
-  - type: official
-    path: "https://source.android.com/docs/core/architecture/ipc/priority-inheritance"
-  - type: official
-    path: "https://source.android.com/docs/core/architecture/ipc/binder-freezer"
-  - type: official
-    path: "https://source.android.com/docs/core/perf/cached-apps-freezer"
-tags: [binder, ipc, aidl, oneway, 线程池, 锁竞争, perfetto]
-related_chapters: ["1.1", "2.5", "7.2", "8.2", "9.1"]
-pipeline_stage: task6_pending
-task6_state: revisiting
-task6_result: needs-rework
+- type: blog
+  path: Personal-Knowlodge/source/Android-Systrace-Binder.md
+- type: blog
+  path: Personal-Knowlodge/source/Android-Perfetto-10-Binder.md
+- type: blog
+  path: Personal-Knowlodge/source/2026-03-06_wechat_Binder驱动中的流程详解.md
+- type: official
+  path: developer.android.com/reference/android/os/IBinder
+- type: official
+  path: developer.android.com/guide/components/aidl
+- type: official
+  path: https://source.android.com/docs/core/architecture/aidl/aidl-hals
+- type: official
+  path: https://source.android.com/docs/core/architecture/ipc/priority-inheritance
+- type: official
+  path: https://source.android.com/docs/core/architecture/ipc/binder-freezer
+- type: official
+  path: https://source.android.com/docs/core/perf/cached-apps-freezer
+tags:
+- binder
+- ipc
+- aidl
+- oneway
+- 线程池
+- 锁竞争
+- perfetto
+related_chapters:
+- '1.1'
+- '2.5'
+- '7.2'
+- '8.2'
+- '9.1'
+pipeline_stage: task9_pending
+task6_state: reviewed
+task6_result: pass-light-edit
 task9_result: pass-with-notes
-last_task9_at: 2026-04-17T13:20:00
+last_task9_at: 2026-04-17 13:20:00
 task9_state: pending
 task2b_result: fixed
 task2b_state: fixed
+review_round: 2
 ---
+
 
 # Binder IPC 机制与性能影响
 
@@ -106,7 +121,7 @@ Binder 的设计目标是让跨进程调用看起来像本地函数调用。当�
 
 工作原理是这样的：每个使用 Binder 的进程在初始化时，会对 `/dev/binder` 调用 `mmap()`，在用户空间映射一块内存（默认约 1MB）。这块内存同时被内核的 Binder Driver 映射。当 Client 发送数据时，Binder Driver 只需要把 `Parcel` 数据拷贝到这块共享内存区域，Server 端进程就能直接读到它——不需要再从内核拷贝到 Server 的用户空间。
 
-严格地说，Binder 的数据路径属于"单次拷贝"（single copy）。发送方仍然需要从自己的用户空间拷贝到共享区域，接收方不需要再拷贝一次。
+Binder 的数据路径属于"单次拷贝"（single copy）：发送方从自己的用户空间拷贝到共享区域，接收方不需要再拷贝一次。
 
 Android 8（Oreo）加入了 scatter-gather 事务（`BC_TRANSACTION_SG` / `BC_REPLY_SG`）。这里讨论的是另一层优化：Binder 的内核态 IPC 仍然是一次 `copy_from_user` 到目标进程的 Binder buffer，变化发生在发送端的数据组织方式。普通事务会先把分散对象整理进连续的 `Parcel` 缓冲区，再交给驱动复制；scatter-gather 会按照 offsets 和 `BINDER_TYPE_PTR` 描述的片段逐段复制，省掉额外的 gather-to-contiguous 中间整理。读 Binder 时，把 mmap 对应的 single copy 和 scatter-gather 对应的数据整理优化分开看，结论就不会打架。
 

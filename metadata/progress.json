@@ -1,16 +1,16 @@
 {
-  "generated_at": "2026-04-20T01:33:22+08:00",
+  "generated_at": "2026-04-20T01:49:11+08:00",
   "state_machine_version": "v2",
   "total_sections": 206,
   "metrics": {
     "total": 206,
     "unknown": 34,
-    "last_updated": "2026-04-20T01:33:22+08:00",
+    "last_updated": "2026-04-20T01:49:11+08:00",
     "task2b_state_counts": {
       "unknown": 34,
-      "fixed": 125,
-      "pending": 17,
-      "idle": 30
+      "fixed": 128,
+      "pending": 16,
+      "idle": 28
     },
     "task6_state_counts": {
       "unknown": 33,
@@ -20,33 +20,33 @@
     },
     "task9_state_counts": {
       "unknown": 33,
-      "reviewed": 28,
-      "pending": 144,
+      "reviewed": 27,
+      "pending": 145,
       "fixed": 1
     },
     "pipeline_stage_counts": {
       "unknown": 33,
       "task6_pending": 105,
-      "task9_pending": 49,
-      "task2b_pending": 16,
+      "task9_pending": 50,
+      "task2b_pending": 15,
       "ready-to-publish": 3
     },
     "total_sections": 206,
     "pipeline_unknown": 33,
     "pipeline_task6_pending": 105,
-    "pipeline_task2b_pending": 16,
-    "pipeline_task9_pending": 49,
+    "pipeline_task2b_pending": 15,
+    "pipeline_task9_pending": 50,
     "task2b_unknown": 34,
-    "task2b_fixed": 125,
-    "task2b_pending": 17,
-    "task2b_idle": 30,
+    "task2b_fixed": 128,
+    "task2b_pending": 16,
+    "task2b_idle": 28,
     "task6_unknown": 33,
     "task6_revisiting": 104,
     "task6_reviewed": 68,
     "task6_pending": 1,
     "task9_unknown": 33,
-    "task9_pending": 144,
-    "task9_reviewed": 28,
+    "task9_pending": 145,
+    "task9_reviewed": 27,
     "task9_fixed": 1,
     "ready-to-publish": 0,
     "finalized": 3,
@@ -57,15 +57,15 @@
     "pipeline_stage_counts": {
       "unknown": 33,
       "task6_pending": 105,
-      "task9_pending": 49,
-      "task2b_pending": 16,
+      "task9_pending": 50,
+      "task2b_pending": 15,
       "ready-to-publish": 3
     },
     "task2b_state_counts": {
       "unknown": 34,
-      "fixed": 125,
-      "pending": 17,
-      "idle": 30
+      "fixed": 128,
+      "pending": 16,
+      "idle": 28
     },
     "task6_state_counts": {
       "unknown": 33,
@@ -75,8 +75,8 @@
     },
     "task9_state_counts": {
       "unknown": 33,
-      "reviewed": 28,
-      "pending": 144,
+      "reviewed": 27,
+      "pending": 145,
       "fixed": 1
     }
   },
@@ -2068,14 +2068,15 @@
       "title": "APK 体积优化",
       "path": "src/part2-performance/ch12-apk-network/01-apk-size.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
-      "task6_state": "reviewed",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
       "task9_state": "pending",
-      "task2b_state": "idle",
+      "task2b_state": "fixed",
       "reviewed_date": "2026-04-10",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
-      "section": "12.1"
+      "section": "12.1",
+      "task2b_result": "fixed"
     },
     "src/part2-performance/ch12-apk-network/02-network-performance.md": {
       "chapter": "12.2",
@@ -2777,15 +2778,16 @@
       "title": "Battery Historian 与功耗分析工具",
       "path": "src/part3-tools/ch14-other-tools/11-battery-historian.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
-      "task6_state": "reviewed",
-      "task9_state": "reviewed",
-      "task2b_state": "pending",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
+      "task9_state": "pending",
+      "task2b_state": "fixed",
       "reviewed_date": "2026-04-16",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
       "section": "14.11",
-      "task9_result": "needs-rework"
+      "task9_result": "needs-rework",
+      "task2b_result": "fixed"
     },
     "src/part3-tools/ch14-other-tools/README.md": {
       "chapter": null,

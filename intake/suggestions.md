@@ -2697,3 +2697,10 @@
 - **位置**：L202-L205 交叉引用块
 - **问题**：`13-buffer-queue.md` 与 `14-graphics-api-evolution.md` 被写成当前目录相对路径，无法跳到第 2 章对应章节。
 - **建议**：改成 `../../part1-fundamentals/ch02-rendering/13-buffer-queue.md` 与 `../../part1-fundamentals/ch02-rendering/14-graphics-api-evolution.md`。
+
+## [Task6 Review] 1.4 Binder IPC 机制与性能影响 — 2026-04-20
+- **类型**：版本差异
+- **位置**：版本演进表 Android 8.0 行
+- **问题**：版本表写 scatter-gather "将 Binder 数据拷贝从最多三次减少到一次"，但正文已解释 scatter-gather 是数据组织方式优化（省掉 gather-to-contiguous 中间整理步骤），不改变拷贝次数。基础 mmap 已是单次拷贝。两处表述矛盾。
+- **建议**：重写版本表中 scatter-gather 行为"引入 scatter-gather 优化（BC_TRANSACTION_SG），省掉 Parcel 数据的 gather-to-contiguous 中间整理步骤"，避免与正文矛盾。
+- **review 日志**：logs/review/2026-04-20-02-review.md
