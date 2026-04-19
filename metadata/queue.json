@@ -994,26 +994,30 @@
     "section": "2.7",
     "section_title": "硬件层 (Hardware Layer) 优化",
     "priority": 85,
-    "reason": "[External Review] 外部 AI review 发现需回炉的问题",
-    "material_paths": [],
+    "reason": "[External Review + Deep Tech Review] Hardware Layer 章节仍有高优技术缺口",
+    "material_paths": [
+      "intake/research-gaps.md"
+    ],
     "review_issues": [
       {
         "type": "版本差异覆盖",
-        "location": "16KB 对齐代价",
-        "detail": "[P1 issue from external review]",
-        "suggestion": "基于外部 AI review 修正"
+        "location": "L171-L177 / L311-L320「Hardware Layer 的代价 / 版本演进」",
+        "detail": "正文把显存代价概括成“多一块 GPU 纹理”，但 applicable_versions 已覆盖 Android 16，却没有补 16KB page size / gralloc 对齐给小尺寸 layer backing store 带来的额外 slack space 与内部碎片，读者无法解释新设备上 layer 显存压力为何更早出现。",
+        "suggestion": "补 Android 15/16 16KB page size 相关版本边界，并给出 Hardware Layer backing store 对齐后的额外占用与可观测信号。"
       },
       {
         "type": "知识盲区",
-        "location": "预算检查机制",
-        "detail": "[P1 issue from external review]",
-        "suggestion": "基于外部 AI review 修正"
+        "location": "L171-L183 / L231-L252「Hardware Layer 的代价 / Perfetto 识别」",
+        "detail": "章节只讲“动画结束后释放显存”，没有交代现代 HWUI 在资源预算压力下的 layer residency / cache purge 边界，也没有告诉读者如何从 Trace 或 GPU memory 角度判断 layer 建立失败或被回收。recent external-review 已命中这一点。",
+        "suggestion": "补充现代 HWUI 的资源预算与回收边界，至少给出 AOSP 锚点和观测点（buildLayer、缓存回收、纹理内存波动）。"
       }
     ],
     "added_by": "external-ai-review",
     "added_at": "2026-04-19T11:44:38.404228+08:00",
     "status": "pending",
-    "source_file": "2026-04-19-38-2.7-external-review.md"
+    "source_file": "2026-04-19-38-2.7-external-review.md",
+    "verified_by": "task9-deep-tech-review",
+    "verified_at": "2026-04-20T06:37:05.733548+08:00"
   },
   {
     "section": "2.8",
@@ -1105,26 +1109,30 @@
     "section": "2.21",
     "section_title": "文本渲染性能优化",
     "priority": 85,
-    "reason": "[External Review] 外部 AI review 发现需回炉的问题",
-    "material_paths": [],
+    "reason": "[External Review + Deep Tech Review] 文本渲染章节仍有高优技术缺口",
+    "material_paths": [
+      "intake/research-gaps.md"
+    ],
     "review_issues": [
       {
         "type": "版本差异覆盖",
-        "location": "字体系统演进",
-        "detail": "[P1 issue from external review]",
-        "suggestion": "基于外部 AI review 修正"
+        "location": "L186-L210「Emoji 渲染性能」/ L340-L350「版本演进」",
+        "detail": "正文覆盖了系统 emoji 与 emoji2，但 applicable_versions 已写到 Android 17，却没有交代 Android 12+ 的 Font APEX（`com.android.fonts`）让系统字体和 emoji 能通过 Play system update 更新的边界，版本时间线仍停在 framework / AndroidX 两层。",
+        "suggestion": "补 Font APEX / updatable fonts 的时间点、作用范围，以及它与系统 emoji、EmojiCompat、downloadable font provider 的分层关系。"
       },
       {
         "type": "知识盲区",
-        "location": "变量字体性能红利",
-        "detail": "[P1 issue from external review]",
-        "suggestion": "基于外部 AI review 修正"
+        "location": "L212-L289「文字渲染优化实践」",
+        "detail": "优化段只覆盖 PrecomputedText、BoringLayout、hyphenation 和 includeFontPadding，完全缺少 variable font / font variation settings。对于支持的字体，宽度中性的轴（如 GRAD）可以在不改 advance width 的前提下调节视觉粗细，这是现代 Android 文本性能里值得交代的优化边界。recent external-review 已命中这一点。",
+        "suggestion": "补 API 26+ font variation settings 与 variable font 的适用条件，说明哪些轴可能避免 relayout，哪些设置仍会触发重新测量。"
       }
     ],
     "added_by": "external-ai-review",
     "added_at": "2026-04-19T11:44:38.404228+08:00",
     "status": "pending",
-    "source_file": "2026-04-19-52-2.21-external-review.md"
+    "source_file": "2026-04-19-52-2.21-external-review.md",
+    "verified_by": "task9-deep-tech-review",
+    "verified_at": "2026-04-20T06:37:05.733548+08:00"
   },
   {
     "section": "5.6",
@@ -1841,9 +1849,12 @@
     ],
     "added_by": "external-ai-review",
     "added_at": "2026-04-19T14:21:48+08:00",
-    "status": "pending",
+    "status": "completed",
     "validated_by": "task9-deep-tech-review",
-    "validated_at": "2026-04-20T01:33:22+08:00"
+    "validated_at": "2026-04-20T01:33:22+08:00",
+    "completed_at": "2026-04-20T07:08:36+08:00",
+    "completed_by": "task2b-rework",
+    "resolution": "修正 syncFrameState 的线程归属，补全 BLAST 的 release callback 回路，并把 FrameTimeline 的传递载体改为 SurfaceControl.Transaction.setFrameTimelineInfo()，同时补充现代 SF trace slice 名称"
   },
   {
     "section": "18.3",
@@ -2633,5 +2644,34 @@
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-20T05:20:00",
     "status": "pending"
+  },
+  {
+    "section": "12.1",
+    "section_title": "APK 体积优化",
+    "priority": 95,
+    "reason": "[Deep Tech Review] APK 打包模型与 Dynamic Feature 配置存在事实/配置错误",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "L69「APK 里面到底装了什么」",
+        "detail": "把 dex 和 .so 直接写成“已经是压缩格式”，把文件格式与 APK/AAB 的打包策略混为一谈。classes.dex 不是压缩文件格式，ELF `.so` 也不是；它们是否压缩取决于 ZIP packaging 与 direct-loading 策略。当前说法会让读者误解 `extractNativeLibs=false`、page-aligned uncompressed `.so` 这类真实机制。",
+        "suggestion": "改成“APK 是 ZIP 容器，dex / .so 的压缩与否取决于 packaging；其中 `.so` 可能为了 direct loading 保持未压缩且 page-aligned”，并补充 `extractNativeLibs` / `useLegacyPackaging` 边界。"
+      },
+      {
+        "type": "配置错误",
+        "location": "L296-L305「Dynamic Feature Module」",
+        "detail": "示例把 `dynamicFeatures.add(\":feature:payment\")` 放在 feature module 语境里，却没有区分 base app module 与 dynamic feature module 的职责。按文中代码，读者既看不到 base 模块的 `android.dynamicFeatures` 声明，也看不到 feature 模块必须应用的 `com.android.dynamic-feature` plugin 和对 base module 的依赖，示例无法直接建包。",
+        "suggestion": "拆成两段配置：base app module 中声明 `dynamicFeatures += setOf(...)`，feature module 中给出 `com.android.dynamic-feature` plugin、`implementation(project(\":app\"))` 等最小可运行示例。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-20T06:37:05.733548+08:00",
+    "status": "completed",
+    "completed_at": "2026-04-20T07:08:36+08:00",
+    "completed_by": "task2b-rework",
+    "resolution": "修正 dex/.so 打包语义，补上 useLegacyPackaging / extractNativeLibs 边界，并把 Dynamic Feature 示例拆成 base app module 与 feature module 的最小可运行配置"
   }
 ]
