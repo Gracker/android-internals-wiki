@@ -80,6 +80,33 @@
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-19T07:43:40+08:00",
       "status": "pending"
+    },
+    {
+      "section": "1.5",
+      "section_title": "线程模型",
+      "priority": 90,
+      "reason": "[review回炉] Binder pool 线程数与 1.4 章不一致；cgroup CPU 分配比例缺验证来源",
+      "material_paths": [
+        "intake/suggestions.md（含 review 意见）"
+      ],
+      "review_issues": [
+        {
+          "type": "存疑",
+          "location": "线程数量节",
+          "detail": "Binder pool '上限是 16 个'与 1.4 Binder 章'默认上限 15 个'不一致",
+          "suggestion": "对照 AOSP ProcessState.cpp DEFAULT_MAX_BINDER_THREADS 确认"
+        },
+        {
+          "type": "待验证",
+          "location": "线程优先级节 cgroup 段",
+          "detail": "cgroup 'CPU 时间分配比例大约是 95:5' 无验证来源",
+          "suggestion": "补充设备实测数据或内核文档依据，或标注 [待验证]"
+        }
+      ],
+      "added_by": "task6-review",
+      "added_at": "2026-04-19T08:08:00",
+      "status": "pending",
+      "original_review_log": "logs/review/2026-04-19-08-review.md"
     }
   ],
   "processing": [],

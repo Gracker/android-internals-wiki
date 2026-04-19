@@ -1927,3 +1927,17 @@
 - **位置**：Google 内部的性能测试基础设施（L202-L207）
 - **问题**：这一节给了 “平台 benchmark 仓库 / 持续回归监控 / 多规格设备池” 三个判断，但没有任何公开锚点，正文还保留了 `[待补充]`。当前内容更像合理推断，读者无法区分哪些是公开可证实的信息，哪些只是工程常识。
 - **建议**：补充至少 1-2 个公开锚点（例如 AOSP `platform_testing`、Perfetto 公开 benchmark / Android Dev Summit 公开演讲），或者把小节降格为 “公开可见部分”，只保留有来源的内容。
+
+## [Task6 Review] 1.5 线程模型 — 2026-04-19
+- **类型**：存疑
+- **位置**：线程数量节
+- **问题**：Binder pool "上限是 16 个"与 1.4 Binder 章 "默认上限 15 个"不一致。本章写"默认是 1 个已经启动的 pool thread，再加上内核按需追加的最多 15 个 pool threads，上限是 16 个"。1.4 章写"默认上限 15 个"。
+- **建议**：对照 AOSP ProcessState.cpp 中 DEFAULT_MAX_BINDER_THREADS 的定义，确认总数是 15 还是 16，并统一两章表述
+- **review 日志**：logs/review/2026-04-19-08-review.md
+
+## [Task6 Review] 1.5 线程模型 — 2026-04-19
+- **类型**：待验证
+- **位置**：线程优先级节 cgroup 段
+- **问题**："前台 cgroup 和后台 cgroup 的 CPU 时间分配比例大约是 95:5" 无具体验证来源或数据支撑
+- **建议**：补充设备实测数据（读取 /dev/cpuctl 的 shares 值）或内核文档依据；如无法确认，标注 [待验证]
+- **review 日志**：logs/review/2026-04-19-08-review.md
