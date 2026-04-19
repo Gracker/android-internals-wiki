@@ -16,9 +16,9 @@ confidence: medium
 polish_count: 1
 polish_date: "2026-04-08"
 polish_by: "task2b-polish"
-reviewed_date: "2026-04-12"
+reviewed_date: "2026-04-20"
 reviewed_by: "openclaw-task6"
-task6_result: needs-rework
+task6_result: pass-light-edit
 sources:
   - type: androidx
     path: "platform/frameworks/support/+/androidx-main/recyclerview/recyclerview/src/main/java/androidx/recyclerview/widget/RecyclerView.java"
@@ -36,8 +36,8 @@ sources:
     path: "https://developer.android.com/reference/androidx/recyclerview/widget/RecyclerView"
   - type: official
     path: "https://developer.android.com/jetpack/androidx/releases/recyclerview"
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task9_result: needs-rework
 task2b_state: fixed
