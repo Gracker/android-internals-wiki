@@ -3233,3 +3233,26 @@ Gemini 外部 review
 
 ### 外部 review 来源
 - 2026-04-19-12-03-network-performance-deep-external-review.md
+
+## [2026-04-19] 10.7 SQLite / Room 性能优化 — 知识盲区
+
+### 盲区描述
+1. **CursorWindow 共享内存机制演进** — 文章仅提到 ashmem FD 共享，但 Android 12+ 已默认使用 memfd 替代 ashmem。Android 15+ GKI 强制使用 memfd，memfd 通过 F_SEAL_WRITE 密封机制替代了 ashmem 的 ioctl 权限控制。现代设备 /proc/pid/maps 中看到的是 memfd:CursorWindow 而非 /dev/ashmem。
+2. **SQLite STRICT 表** — Android 15+ 携带的 SQLite 版本（3.37+）支持 STRICT 表，对 Room 的数据类型约束和性能影响尚未覆盖。
+3. **config_cursorWindowSize OEM 定制** — frameworks/base/core/res/res/values/config.xml 中的 cursorWindowSize 值，不同厂商（华为、小米）可能有不同的定制。
+
+### 重要程度
+中（memfd 版本演进）/ 中（STRICT 表）/ 低（OEM 定制）
+
+### 建议研究方向
+- 查看 AOSP system/core/libcutils 源码中 sys.use_memfd 的判断逻辑
+- 验证 Android 15+ 上 memfd 的 SELinux 约束
+- 梳理主流 OEM 对 cursorWindowSize 的定制情况
+
+### 关联章节
+- 10.7 SQLite / Room 性能优化
+- 10.1 App 内存分析
+- 6.2 文件系统
+
+### 外部 review 来源
+- 外部 AI review: 2026-04-19-11-07-sqlite-room-performance-external-review.md

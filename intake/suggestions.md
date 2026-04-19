@@ -2391,3 +2391,24 @@
 - **问题**：原文仅提到 4G 状态机，缺少 5G RRC_INACTIVE 状态对功耗和延迟优化的说明
 - **建议**：补充 5G RRC_INACTIVE 状态转换逻辑及 tail time 差异，参考 3GPP 文档和 Qualcomm 5G 白皮书
 - **来源**：外部 AI review（2026-04-19-12-03-network-performance-deep-external-review.md）
+
+## [External Review] 10.7 SQLite / Room 性能优化 — 2026-04-19
+- **类型**：版本差异补充
+- **位置**：2.1/2.3 节 CursorWindow 共享内存
+- **问题**：仅描述 ashmem FD 共享，未覆盖 Android 12+ memfd 迁移和 Android 15+ GKI 强制 memfd 路径
+- **建议**：增加 ashmem → memfd 版本演进段落，说明 memfd 密封机制(Sealing)和 /proc/pid/maps 中的表现差异
+- **来源**：外部 AI review
+
+## [External Review] 10.7 SQLite / Room 性能优化 — 2026-04-19
+- **类型**：原理补充
+- **位置**：1.1 节 F2FS WAL 写入放大
+- **问题**：未解释 synchronous=NORMAL 在 WAL 模式下为何安全且高性能
+- **建议**：补充说明 NORMAL 模式在 WAL 下仅在 checkpoint 时 sync，减少 F2FS 双重日志(Double Journaling)压力
+- **来源**：外部 AI review
+
+## [External Review] 10.7 SQLite / Room 性能优化 — 2026-04-19
+- **类型**：数据补充
+- **位置**：3.4 节 Migration 耗时
+- **问题**：Migration 耗时缺乏量化感知
+- **建议**：补充基准参考，如"5000 条记录下增加带索引列可能导致 100ms+ 主线程卡顿"
+- **来源**：外部 AI review
