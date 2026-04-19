@@ -744,16 +744,16 @@
       "title": "DMA-BUF、Gralloc 与跨进程图形内存共享",
       "path": "src/part1-fundamentals/ch02-rendering/15-dmabuf-gralloc.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "revisiting",
-      "task9_state": "pending",
-      "task2b_state": "fixed",
-      "reviewed_date": "2026-04-11",
-      "reviewed_by": "openclaw-task6",
+      "pipeline_stage": "task2b_pending",
+      "task6_state": "reviewed",
+      "task9_state": "reviewed",
+      "task2b_state": "pending",
       "task6_result": "needs-rework",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
-      "section": "2.15"
+      "section": "2.15",
+      "reviewed_date": "2026-04-19",
+      "reviewed_by": "openclaw-task6"
     },
     "src/part1-fundamentals/ch02-rendering/16-sync-fence.md": {
       "chapter": "2.16",
@@ -3454,7 +3454,7 @@
     "task2b_state": "pending",
     "last_task9_at": "2026-04-19T00:54:00+08:00"
   },
-  "last_updated": "2026-04-19T12:02:51+08:00",
+  "last_updated": "2026-04-19T12:32:00+08:00",
   "rework_log": [
     {
       "date": "2026-04-15T19:44:09.836904",
@@ -4196,5 +4196,20 @@
     "task2b_state": "fixed",
     "task2b_result": "fixed",
     "last_task2b_at": "2026-04-19T07:09:38+08:00"
+  },
+  "2.15": {
+    "section": "2.15",
+    "title": "DMA-BUF、Gralloc 与跨进程图形内存共享",
+    "pipeline_stage": "task2b_pending",
+    "task6_result": "needs-rework",
+    "task6_reviewed_date": "2026-04-19",
+    "task6_state": "reviewed",
+    "task9_state": "reviewed",
+    "task9_result": "needs-rework",
+    "task2b_state": "pending",
+    "task2b_result": "fixed",
+    "last_task9_at": "2026-04-19T12:32:00+08:00",
+    "task9_reviewed_date": "2026-04-19",
+    "task9_reviewed_by": "openclaw-task9"
   }
 }
