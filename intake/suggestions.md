@@ -2000,3 +2000,34 @@
 - **位置**：L171-L187（Perfetto 诊断段）
 - **问题**：Perfetto 诊断部分只有 `[图：...]` 占位，没有真实 trace 片段、slice 名称或最小案例，导致“acquire fence 等 producer”和“release fence 等 consumer”的判断缺少可复现证据。
 - **建议**：至少补 1 组真实 trace 证据，给出同窗体 `queueBuffer()` / `latchBuffer` / `presentDisplay()` 的时间对齐关系，或附一段可直接复用的 Perfetto 观察 checklist。
+
+
+## [Task6 Review] 2.14 图形 API 演进与选择策略 — 2026-04-19
+
+### B1. [需补充素材] Vulkan Profile 2025 强制扩展 VK_EXT_host_image_copy
+- **类型**：需补充素材
+- **位置**：第二代 Vulkan 段 / AVP 2025 说明区域
+- **问题**：external-review P1 标记：AVP 2025 强制要求 VK_EXT_host_image_copy，目标是将纹理加载负载降低 50%。当前章节未提及此扩展。
+- **建议**：在 AVP 2025 描述中补充此扩展的能力说明和性能影响数据。
+- **review 日志**：logs/review/2026-04-19-10-review.md
+
+### B2. [需补充素材] Dawn/WebGPU 在 AOSP 16 的系统级集成
+- **类型**：需补充素材
+- **位置**：缺失（目前无 WebGPU 相关内容）
+- **问题**：external-review P1 标记：Dawn 库在 AOSP 16 中作为 WebView 高性能后端集成，支持"高级保护模式"安全隔离。这是图形 API 演进的重要方向，但章节完全未涉及。
+- **建议**：在 ANGLE 段或新增小节中补充 WebGPU/Dawn 的定位，包括它与 ANGLE/Vulkan 的关系、性能影响和安全隔离模型。
+- **review 日志**：logs/review/2026-04-19-10-review.md
+
+### B3. [需补充素材] ADPF 热状态驱动的 driver 降级
+- **类型**：需补充素材
+- **位置**：缺失（ANGLE 角色段）
+- **问题**：external-review P1 标记：GraphicsEnv 支持基于 ADPF 热状态动态降级驱动路径（如强制从 native GLES 切换至 ANGLE 以降低功耗）。这是 Android 15+ 图形栈收敛的重要维度。
+- **建议**：在 ANGLE 角色与 Android 图形栈收敛段中补充"热管理选路"机制：性能优先 → 功耗优先(ANGLE) → 安全优先(禁用 WebGPU)。
+- **review 日志**：logs/review/2026-04-19-10-review.md
+
+### B4. [需补充素材] 验证层性能开销缺乏具体数据
+- **类型**：需补充素材
+- **位置**：迁移策略 → 验证层段落（第 5 条）
+- **问题**："验证层会带来显著的性能开销"使用模糊形容词"显著"，未给出具体数据或参考来源。
+- **建议**：补充大致的性能影响范围（如"2-5x CPU 开销"）或引用 Khronos Validation Layer 性能文档。
+- **review 日志**：logs/review/2026-04-19-10-review.md

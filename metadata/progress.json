@@ -3331,6 +3331,16 @@
       "task9_state": "reviewed",
       "last_reviewed": "2026-04-19",
       "review_count": 1
+    },
+    "2.14": {
+      "title": "图形 API 演进与选择策略",
+      "status": "ready-for-review",
+      "task6_state": "reviewed",
+      "task6_result": "needs-rework",
+      "task6_reviewed_date": "2026-04-19",
+      "task2b_state": "pending",
+      "pipeline_stage": "task2b_pending",
+      "last_review_log": "logs/review/2026-04-19-10-review.md"
     }
   },
   "chapters": {

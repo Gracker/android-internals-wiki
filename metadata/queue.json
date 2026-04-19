@@ -1,290 +1,41 @@
-{
-  "pending": [
-    {
-      "section": "16.1",
-      "section_title": "Google 官方的性能优化思路",
-      "priority": 85,
-      "reason": "[Deep Tech Review] Mainline / AutoFDO 交付路径拆分不完整，kernel 与 userspace AutoFDO 被压成同一路径",
-      "material_paths": [
-        "intake/research-gaps.md",
-        "intake/suggestions.md"
-      ],
-      "review_issues": [
-        {
-          "type": "原理断裂/版本差异",
-          "location": "L111-L120",
-          "detail": "“三条交付路径”把 AutoFDO 的 userspace/native rollout 与 GKI kernel rollout 压成了一条 GKI/OTA 路径。官方 2026 AutoFDO blog 已明确区分 userspace native binaries 与 GKI kernel 的 profile 来源和 rollout 方式，且 §1.12 也已经把两条路线拆开。",
-          "suggestion": "把 AutoFDO 拆成 userspace/native AutoFDO 与 kernel AutoFDO 两条路径，分别写清对象、版本起点、构建入口和送达设备方式。"
-        }
-      ],
-      "added_by": "task9-deep-tech-review",
-      "added_at": "2026-04-19T07:43:40+08:00",
-      "status": "pending"
-    },
-    {
-      "section": "ch16",
-      "section_title": "AOSP 性能优化",
-      "priority": 80,
-      "reason": "[DeepResearch 注入] 新增高价值调研材料，建议补充到章节",
-      "material_paths": [
-        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/btrace 3.0调研.md"
-      ],
-      "review_issues": [
-        {
-          "type": "新增参考材料",
-          "location": "参考资料/延伸阅读",
-          "detail": "btrace 3.0调研 — 聚焦 btrace 3.0 通过 StackVisitor 子类化、2KB 私有字段缓冲和 vptr 替换 hack 实现跨 Android 8-14 Java 栈回溯的核心机制，并评估其对 ART ",
-          "suggestion": "判断是否适合补充为章节参考资料、延伸阅读或正文中的背景材料"
-        }
-      ],
-      "added_by": "task-deepresearch-injector",
-      "added_at": "2026-04-19T06:47:12+08:00",
-      "status": "pending"
-    },
-    {
-      "section": "ch17",
-      "section_title": null,
-      "priority": 68,
-      "reason": "[素材注入] 新增参考文章，建议补充到章节",
-      "material_paths": [
-        "http://android-developers.googleblog.com/2026/04/the-fourth-beta-of-android-17.html"
-      ],
-      "review_issues": [
-        {
-          "type": "新增参考",
-          "location": "参考资料小节",
-          "detail": "The Fourth Beta of Android 17 — Android 17 Beta 4 已发布，这是最后一个正式测试版本，为应用兼容性和平台稳定性提供关键环境。开发者需要确保库、工具和游戏引擎支持新特性，特别是屏幕可调整性、动态代码加载和证书透明度等行",
-          "suggestion": "判断是否适合作为章节参考，如适合请补充"
-        }
-      ],
-      "added_by": "task8-classifier",
-      "added_at": "2026-04-19T06:07:00.480737",
-      "status": "pending"
-    },
-    {
-      "section": "ch17",
-      "section_title": null,
-      "priority": 68,
-      "reason": "[素材注入] 新增参考文章，建议补充到章节",
-      "material_paths": [
-        "http://android-developers.googleblog.com/2026/04/the-fourth-beta-of-android-17.html"
-      ],
-      "review_issues": [
-        {
-          "type": "新增参考",
-          "location": "参考资料小节",
-          "detail": "The Fourth Beta of Android 17 — Android 17 Beta 4 作为最后一个正式测试版本，为应用兼容性验证和平台稳定性测试提供关键环境。开发者需要关注屏幕可调整性限制、动态代码加载的只读要求、证书透明度默认启用以及本地网络访问默",
-          "suggestion": "判断是否适合作为章节参考，如适合请补充"
-        }
-      ],
-      "added_by": "task8-classifier",
-      "added_at": "2026-04-19T06:07:00.497547",
-      "status": "pending"
-    },
-    {
-      "section": "15.4",
-      "section_title": "竞品分析方法",
-      "priority": 85,
-      "reason": "[External Review] TotalTime 端点定义不精确，需回炉修正",
-      "material_paths": [
-        "logs/external-review/2026-04-18-22-15.4-external-review.md"
-      ],
-      "review_issues": [
-        {
-          "type": "源码错误",
-          "location": "第 115 行",
-          "detail": "TotalTime 的测量端点描述不精确：终点不是 onResume() 回调，而是第一帧绘制完成（first frame drawn）。系统通过 ViewRootImpl 监控 doTraversal() 的完成，Choreographer 确认第一帧绘制完成后才报告 TotalTime。",
-          "suggestion": "改为「通过 Activity Manager 发送一个启动 Intent，然后等待目标 Activity 的第一帧绘制完成后返回计时结果。TotalTime 对应的是 TTID（Time to Initial Display），从进程创建到首帧绘制完成的全部耗时。」",
-          "evidence": [
-            "AOSP: frameworks/base/services/core/java/com/android/server/wm/ActivityRecord.java",
-            "AOSP: frameworks/base/core/java/android/view/ViewRootImpl.java",
-            "logcat ActivityTaskManager: Displayed 标记对应 TotalTime/TTID"
-          ]
-        }
-      ],
-      "added_by": "external-ai-review",
-      "added_at": "2026-04-19T09:09:54+08:00",
-      "status": "pending"
-    },
-    {
-      "section": "1.13",
-      "section_title": "MessageQueue 机制与 DeliQueue 无锁优化",
-      "priority": 85,
-      "reason": "[External Review] Tombstone 机制实现细节描述不足；ConcurrentSkipListSet 优先级管理遗漏",
-      "material_paths": [
-        "logs/external-review/2026-04-19-27-1.13-external-review.md"
-      ],
-      "review_issues": [
-        {
-          "type": "源码准确性/重要缺失",
-          "location": "无锁实现细节段",
-          "detail": "Tombstone 机制解决 ABA 问题的具体实现逻辑描述不足。当消息被取消时，通过 CAS 标记为墓碑而非物理移除，直到 Looper 扫描到该位置。",
-          "suggestion": "补充 Tombstone 机制的完整描述：CAS 标记→Looper 扫描→物理移除的完整生命周期"
-        },
-        {
-          "type": "知识盲区/重要缺失",
-          "location": "优先级管理段",
-          "detail": "遗漏了 ConcurrentSkipListSet 在优先级管理中的关键作用。引入 ConcurrentSkipListSet 替代传统 PriorityQueue，在并发环境下提供无锁的有序插入（log(n) 耗时）。",
-          "suggestion": "补充 ConcurrentSkipListSet 的选型原因、性能特征和与传统 PriorityQueue 的对比"
-        }
-      ],
-      "added_by": "external-ai-review",
-      "added_at": "2026-04-19T09:09:54+08:00",
-      "status": "pending"
-    },
-    {
-      "section": "2.16",
-      "section_title": "Sync Fence 框架与帧同步机制",
-      "priority": 85,
-      "reason": "[Deep Tech Review] GL release fence 生成链缺少 native-fence fallback 边界，Perfetto 诊断路径不闭环",
-      "material_paths": [
-        "intake/suggestions.md"
-      ],
-      "review_issues": [
-        {
-          "type": "原理断裂/源码准确性",
-          "location": "L205-L216",
-          "detail": "章节把 Android 14-16 的现代 GL 路径概括成 `FlushAndSubmit(surface)` + `EglManager::createReleaseFence()`，但紧邻源码分支没有交代：当 `createReleaseFence()` 返回 `EGLSyncKHR` 而不是 native fence fd 时，`SkiaOpenGLPipeline::flush()` 会执行 `eglClientWaitSyncKHR()` 并返回 `-1`。缺少这一边界后，读者会误以为 release fence 总能继续作为 fd 传递，也无法解释某些设备/驱动上为何表现为阻塞等待而不是可观测 fence。",
-          "suggestion": "在版本演进或现代 GL 路径处补上 native-fence / EGLSyncKHR fallback 分支，明确 `EGL_ANDROID_native_fence_sync` 支持与否如何影响返回值、等待位置和 Perfetto / logcat 观察面。"
-        }
-      ],
-      "added_by": "task9-deep-tech-review",
-      "added_at": "2026-04-19T09:59:00+08:00",
-      "status": "pending"
-    }
-  ],
-  "processing": [],
-  "completed": [
-    {
-      "section": "1.17",
-      "section_title": "IPC 全景：Android 进程间通信机制对比与性能选型",
-      "priority": 95,
-      "reason": "[Deep Tech Review] 共享内存演进链与 debuggerd 信号机制存在事实错误",
-      "material_paths": [
-        "intake/suggestions.md"
-      ],
-      "review_issues": [
-        {
-          "type": "源码错误/版本差异",
-          "location": "L214-L224 / L442-L445 / L505",
-          "detail": "把通用共享内存演进写成 ashmem → dmabuf-heaps，并把 Android 10+ 新分配与 Android 11+ SharedMemory API 都归到 dmabuf。AOSP main 的 SharedMemory/MemoryFile 仍是 ashmem 体系，dmabuf-heaps 属于 DMA buffer allocator 路线，不是通用 SharedMemory 的直接替代。",
-          "suggestion": "把演进线拆成两条：通用 shared memory（ashmem/MemoryFile/SharedMemory，若讨论内核演进再补 memfd）与图形/媒体 allocator（ION → dmabuf-heaps）。同步修正文中的机制表、版本表和小结。"
-        },
-        {
-          "type": "源码错误",
-          "location": "L283-L285",
-          "detail": "把 tombstone / native backtrace 请求信号写成 SIGUSR1。AOSP main 当前使用的是 BIONIC_SIGNAL_DEBUGGER（reserved realtime signal）；SIGQUIT 对应的是 Java backtrace / ANR trace。",
-          "suggestion": "重写 Signal 对照表，明确 SIGQUIT 与 BIONIC_SIGNAL_DEBUGGER 的职责；如果保留 SIGUSR1，只能标成特定自定义方案并补来源。"
-        },
-        {
-          "type": "原理断裂/知识盲区",
-          "location": "L214-L240 / L442-L445",
-          "detail": "共享内存小节缺少 ashmem/memfd 与 ION/dmabuf-heaps 的边界说明，导致 CursorWindow、SharedMemory、GraphicBuffer、FMQ 被混在一条演进线上。",
-          "suggestion": "新增一张“应用通用共享内存 / 图形与 DMA buffer / HAL 零拷贝队列”对照表，分别写 API、底层对象、典型场景、版本节点和可观测点。"
-        }
-      ],
-      "added_by": "task9-deep-tech-review",
-      "added_at": "2026-04-19T06:24:00",
-      "status": "completed",
-      "completed_at": "2026-04-19T07:09:38+08:00",
-      "completed_by": "task2b-rework",
-      "completion_reason": "已拆分通用共享内存 / 图形 DMA-BUF / FMQ 三条路线，修正 debuggerd 信号表、版本表与小结"
-    },
-    {
-      "section": "1.4",
-      "section_title": "Binder IPC 机制与性能影响",
-      "priority": 90,
-      "reason": "[review回炉] 2处技术准确性存疑：scatter-gather拷贝次数说法、SQL锁竞争查询逻辑",
-      "material_paths": [
-        "intake/suggestions.md（含 review 意见）"
-      ],
-      "review_issues": [
-        {
-          "type": "存疑",
-          "location": "scatter-gather段落",
-          "detail": "原文称scatter-gather将'三次拷贝减少到一次'，标准叙述是mmap实现一次拷贝，scatter-gather进一步优化。'三次'的说法来源不明",
-          "suggestion": "对照binder.c scatter-gather patch确认原始拷贝次数后修正措辞"
-        },
-        {
-          "type": "存疑",
-          "location": "SQL锁竞争查询段落",
-          "detail": "GROUP BY slice_id后count(1)恒为1，无法统计锁竞争深度",
-          "suggestion": "重写SQL或修改注释描述"
-        }
-      ],
-      "added_by": "task6-review",
-      "added_at": "2026-04-19T07:25:26",
-      "status": "completed",
-      "original_review_log": "logs/review/2026-04-19-07-review.md",
-      "completed_at": "2026-04-19T08:02:35+08:00",
-      "completed_by": "task2b-rework",
-      "completion_reason": "已修正 scatter-gather 拷贝语义，改写锁竞争 SQL 段落为按耗时列事件并更新章节状态"
-    },
-    {
-      "section": "15.5",
-      "section_title": "线上性能监控",
-      "priority": 95,
-      "reason": "[Deep Tech Review] FrameCallback/FrameMetrics 线程语义与 JankStats 判定口径存在事实偏差",
-      "material_paths": [
-        "logs/external-review/2026-04-18-22-15.5-external-review.md",
-        "intake/suggestions.md"
-      ],
-      "review_issues": [
-        {
-          "type": "源码错误",
-          "location": "L107",
-          "detail": "把 Choreographer.FrameCallback.doFrame() 写成“API 23 及以下在主线程，API 24+ 在独立线程”。AOSP android-16.0.0_r1 的 Choreographer 明确说明每个 Looper 线程各自拥有 Choreographer，getInstance() 返回调用线程绑定的实例，回调运行在该 Looper 线程上，不存在 API 24 的线程模型切换。",
-          "suggestion": "改成“doFrame() 运行在所属 Choreographer 的 Looper 线程上；通常在主线程调用 getInstance() 时，所有 API 版本都在主线程回调，因此回调里只能做轻量采集，重操作必须异步转移。”"
-        },
-        {
-          "type": "源码错误/原理断裂",
-          "location": "L152",
-          "detail": "把 Window.OnFrameMetricsAvailableListener 笼统写成“在独立线程执行”。AOSP 的 Window/View/FrameMetricsObserver/HardwareRendererObserver 调用链显示，回调线程由调用 addOnFrameMetricsAvailableListener() 时传入的 Handler 决定，且 handler 与其 looper 都不能为空。传主线程 Handler 时，同样可能阻塞主线程。",
-          "suggestion": "改成“FrameMetrics 回调运行在传入 Handler 关联的 Looper 线程上。推荐使用专用后台 HandlerThread，仅在回调中复制/聚合数据，再异步上报。”"
-        },
-        {
-          "type": "源码错误/版本差异",
-          "location": "L169",
-          "detail": "把 JankStats 默认判定简化成“超过刷新率 2 倍就是 jank”。androidx.metrics.performance 源码显示，默认逻辑是 uiDuration > expectedFrameDuration * jankHeuristicMultiplier（默认 2.0f）；API 24-30 的 expectedFrameDuration 近似来自刷新率，API 31+ 则直接取 FrameMetrics.DEADLINE。",
-          "suggestion": "改成“JankStats 默认使用 jankHeuristicMultiplier=2.0f；低版本以刷新率估算 expected frame duration，API 31+ 使用 FrameMetrics.DEADLINE，随后再用 uiDuration 与该阈值比较。”"
-        }
-      ],
-      "added_by": "task9-deep-tech-review",
-      "added_at": "2026-04-19T09:03:50+08:00",
-      "status": "completed",
-      "completed_at": "2026-04-19T09:31:02+08:00",
-      "completed_by": "task2b-rework",
-      "completion_reason": "已修正 FrameCallback 线程语义、FrameMetrics 回调线程说明和 JankStats 默认判定逻辑"
-    },
-    {
-      "section": "1.5",
-      "section_title": "线程模型",
-      "priority": 90,
-      "reason": "[review回炉] Binder pool 线程数与 1.4 章不一致；cgroup CPU 分配比例缺验证来源",
-      "material_paths": [
-        "intake/suggestions.md（含 review 意见）"
-      ],
-      "review_issues": [
-        {
-          "type": "存疑",
-          "location": "线程数量节",
-          "detail": "Binder pool '上限是 16 个'与 1.4 Binder 章'默认上限 15 个'不一致",
-          "suggestion": "对照 AOSP ProcessState.cpp DEFAULT_MAX_BINDER_THREADS 确认"
-        },
-        {
-          "type": "待验证",
-          "location": "线程优先级节 cgroup 段",
-          "detail": "cgroup 'CPU 时间分配比例大约是 95:5' 无验证来源",
-          "suggestion": "补充设备实测数据或内核文档依据，或标注 [待验证]"
-        }
-      ],
-      "added_by": "task6-review",
-      "added_at": "2026-04-19T08:08:00",
-      "status": "completed",
-      "original_review_log": "logs/review/2026-04-19-08-review.md",
-      "completed_at": "2026-04-19T09:57:21+08:00",
-      "completed_by": "task2b-rework",
-      "completion_reason": "已统一 Binder 线程池的 15 / 16 两种口径，并删除无依据的 95:5 cgroup 比例，改写为按设备参数判断。"
-    }
-  ]
-}
+[
+  {
+    "section": "2.14",
+    "section_title": "图形 API 演进与选择策略（OpenGL ES / Vulkan / ANGLE）",
+    "priority": 90,
+    "reason": "[review回炉] external-review P1: 缺少 VK_EXT_host_image_copy、Dawn/WebGPU、ADPF 热管理选路等内容",
+    "material_paths": [
+      "intake/suggestions.md（含 review 意见）"
+    ],
+    "review_issues": [
+      {
+        "type": "需补充素材",
+        "location": "AVP 2025 段",
+        "detail": "AVP 2025 强制要求 VK_EXT_host_image_copy，纹理加载负载降低 50%",
+        "suggestion": "在 AVP 2025 描述中补充此扩展说明"
+      },
+      {
+        "type": "需补充素材",
+        "location": "缺失（无 WebGPU 内容）",
+        "detail": "Dawn 库在 AOSP 16 中作为 WebView 高性能后端集成",
+        "suggestion": "新增 WebGPU/Dawn 定位和与 ANGLE/Vulkan 关系"
+      },
+      {
+        "type": "需补充素材",
+        "location": "ANGLE 角色段",
+        "detail": "GraphicsEnv 支持基于 ADPF 热状态动态降级驱动路径",
+        "suggestion": "补充热管理选路：性能优先→功耗优先(ANGLE)→安全优先"
+      },
+      {
+        "type": "需补充素材",
+        "location": "迁移策略/验证层段",
+        "detail": "验证层'显著的性能开销'缺具体数据",
+        "suggestion": "补充性能影响范围或引用 Khronos 文档"
+      }
+    ],
+    "added_by": "task6-review",
+    "added_at": "2026-04-19T10:46:22",
+    "status": "pending",
+    "original_review_log": "logs/review/2026-04-19-10-review.md"
+  }
+]

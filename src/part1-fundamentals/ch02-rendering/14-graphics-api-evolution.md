@@ -28,14 +28,14 @@ sources:
 tags: [opengl-es, vulkan, angle, gpu, graphics-api, rendering]
 related_chapters: ["2.1", "2.9", "2.10", "14.8"]
 section: "2.14"
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task2b_pending
+task6_state: reviewed
 task9_state: pending
 task2b_result: fixed
-task2b_state: fixed
+task2b_state: pending
 reviewed_by: "openclaw-task6"
-reviewed_date: "2026-04-11"
-task6_result: "pass-light-edit"
+reviewed_date: "2026-04-19"
+task6_result: needs-rework
 review_log: "logs/review/2026-04-11-13-review.md"
 task9_result: needs-rework
 ---
@@ -48,7 +48,7 @@ task9_result: needs-rework
 
 ## Android 图形 API 的三代演进
 
-Android 从诞生到现在，GPU 编程接口经历了三代更迭。这个演进不是跳跃式的替换，而是一个长达十余年的渐进迁移过程。
+Android 从诞生到现在，GPU 编程接口经历了三代更迭。这个演进跨越十余年，是渐进式的。
 
 ### 第一代：OpenGL ES——移动 GPU 的起点
 
@@ -89,7 +89,7 @@ Android 对 Vulkan 的版本基线可以直接看官方 `implement-vulkan` 文�
 
 Vulkan 1.0 就已经提供了 OpenGL ES 不具备的核心能力：Command Buffer 允许多线程并行构建 GPU 命令、显式内存管理让应用控制 GPU 内存的分配和回收时机、Pipeline State Object（PSO）将着色器和渲染状态预编译为一个不可变对象，避免了运行时的状态验证开销。
 
-但 Vulkan 1.0 的 API 复杂度极高。创建一个"画一个三角形"的最小 Vulkan 程序需要约 800 行代码——同样的功能在 OpenGL ES 中只需要不到 100 行。Vulkan 1.1/1.3/1.4 的迭代本质上是在降低这个复杂度：Vulkan 1.3 的动态渲染让开发者不再需要显式定义 RenderPass 对象，Vulkan 1.4 继续把更多现代能力并入核心能力集合。
+但 Vulkan 1.0 的 API 复杂度极高。创建一个"画一个三角形"的最小 Vulkan 程序需要约 800 行代码——同样的功能在 OpenGL ES 中只需要不到 100 行。Vulkan 1.1/1.3/1.4 的迭代目标就是降低这个复杂度：Vulkan 1.3 的动态渲染让开发者不再需要显式定义 RenderPass 对象，Vulkan 1.4 继续把更多现代能力并入核心能力集合。
 
 这里要特别区分两件事。第一，上表说的是平台 / OEM 侧的 Vulkan 版本基线，我们可以把它理解为“这一代 Android 对新设备希望具备什么 Vulkan 能力”；它不等于“所有升级到该版本的旧设备都会自动获得同样的 Vulkan 版本”。第二，**Android Vulkan Profile 2025（AVP 2025）** 不是平台最低门槛，而是面向活跃设备生态的兼容 profile。官方 AVP 页面把它定义为一组“在绝大多数活跃 Android 设备上都能找到”的 Vulkan 扩展、特性、格式和 limits，用来帮助游戏和引擎选择一条更稳定的跨设备能力集合。
 
@@ -246,13 +246,13 @@ ANGLE 的翻译不是简单的 API 映射。最复杂的部分是**状态转换*
 
 从机制上看，ANGLE 的额外成本主要集中在两个阶段。第一次是 shader 翻译和 pipeline 建立：GLES shader 需要被 ANGLE 翻译到后端可用的形式，首次命中时会有额外 CPU 开销。第二次是 draw call 前的状态映射：ANGLE 需要把 OpenGL ES 的状态机语义折算成 Vulkan 的 pipeline、descriptor 和 render pass 语义。如果 workload 状态切换频繁、pipeline cache 命中率又不高，这部分成本就会更明显。
 
-反过来看，如果某个 SoC 的原生 GLES driver 本身存在较重的 CPU 开销或兼容性问题，ANGLE 走 Vulkan 后端反而可能更稳定，甚至更快。所以我们不应该在文章里给出脱离场景的固定百分比，更合理的结论是：**ANGLE 带来的不是统一的性能方向，而是“以一定翻译成本换取更一致的驱动行为”**。真正的答案只能在目标 workload 和目标设备上测出来。
+反过来看，如果某个 SoC 的原生 GLES driver 本身存在较重的 CPU 开销或兼容性问题，ANGLE 走 Vulkan 后端反而可能更稳定，甚至更快。所以我们不应该在文章里给出脱离场景的固定百分比，更合理的结论是：**ANGLE 带来的是“以一定翻译成本换取更一致的驱动行为”**。真正的答案只能在目标 workload 和目标设备上测出来。
 
 另外，Vulkan 确实支持 pipeline cache，但“系统 ANGLE 一定能替所有 GLES 应用统一管理并稳定复用 cache”并不是官方给出的通用承诺。分析启动抖动时，我们可以把 pipeline / shader 首次编译当成重点怀疑对象，但不要先把它写成一条无条件成立的系统保证。
 
 ### ANGLE 路线对开发者的实际影响
 
-对开发者来说，更可靠的判断方式不是先假设“系统一定已经强制切到 ANGLE”，而是先回答三个问题：这个设备的 GL system driver 是什么？这个包有没有被 developer option / adb override 改写？如果都没有，平台默认策略是否把它放进了 ANGLE 路径？
+对开发者来说，更可靠的判断方式是先回答三个问题：这个设备的 GL system driver 是什么？这个包有没有被 developer option / adb override 改写？如果都没有，平台默认策略是否把它放进了 ANGLE 路径？
 
 因此，现阶段更稳妥的工程结论是：
 
@@ -261,7 +261,7 @@ ANGLE 的翻译不是简单的 API 映射。最复杂的部分是**状态转换*
 3. **调试时先确认“是否走 ANGLE”再看 Trace**：没有这一步，后面的 Perfetto 解释很容易错层。
 4. **WebView / WebGL 需要单独判断**：Chromium、Skia、WebView 的 GPU backend 由它自己的构建和运行时选择决定，不能直接套用系统 ANGLE policy 得出结论。
 
-换句话说，系统 ANGLE policy 只解释“系统 GLES driver 怎么选”，它并不自动回答“Chromium 内部这次到底用的是哪条 GPU backend”。
+系统 ANGLE policy 只解释“系统 GLES driver 怎么选”，它并不自动回答“Chromium 内部这次到底用的是哪条 GPU backend”。
 
 ## API 选择对渲染性能的实际影响
 
