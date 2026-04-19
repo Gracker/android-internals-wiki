@@ -42,16 +42,16 @@ created_by: "task2a-knowledge-gap"
 created_date: "2026-04-04"
 gap_source: "AOSP结构+官方文档+读者需求"
 pipeline_stage: task6_pending
-task6_state: revisiting
+task6_state: reviewed
 task9_state: pending
 task2b_state: fixed
 task2b_result: fixed
 reviewed_by: "openclaw-task6"
-reviewed_date: "2026-04-19"
+reviewed_date: "2026-04-20"
 task6_result: "pass-light-edit"
 task9_result: "needs-rework"
 task9_reviewed_by: "openclaw-task9"
-task9_reviewed_date: "2026-04-19"
+task9_reviewed_date: "2026-04-20"
 last_task9_at: "2026-04-19T19:24:00+08:00"
 review_log: "logs/review/2026-04-11-11-review.md"
 ---
@@ -430,9 +430,4 @@ WMS 维护的 Window Z-order 和区域信息是 InputDispatcher 进行 hit-test 
 - [Android 官方文档，Android 17 Behavior Changes](https://developer.android.com/about/versions/17/behavior-changes-all) ，`recreateOnConfigChanges` 的公开 Beta 口径，终版范围仍需核对
 - [Android 官方文档，WindowInsets](https://developer.android.com/develop/ui/views/layout/window-insets) ，Insets 分发与适配实践
 
-### Android 16 ViewRootImpl Traversal 与 Relayout 内部机制深度解析
-- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/Android 16 ViewRootImpl Traversal 与 Relayout 内部机制深度解析.md
-- 类型：DeepResearch 调研结果
-- 摘要：覆盖 `scheduleTraversals()`、6 个 relayout 触发条件、`performSurfacePlacement(true)`、`relayoutAsync()` 与 post-relayout re-measure，适合补强 App 侧 traversal 和 WMS 协作边界。
-- 注入时间：2026-04-18
-- 价值：适合补强 2.12 对 App 侧窗口根节点和 relayout 触发条件汇总的覆盖。
+
