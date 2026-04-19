@@ -9,7 +9,7 @@ polish_by: "task2b-polish"
 drafted_date: "2026-04-03"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 8.0 (API 26) - Android 16 (API 36)"
-last_verified: "2026-04-03"
+last_verified: "2026-04-20"
 last_verified_against: "AOSP android-16.0.0_r1"
 confidence: medium
 sources:
@@ -19,6 +19,8 @@ sources:
     path: "https://perfetto.dev/docs/data-sources/native-heap-profiler"
   - type: official
     path: "https://developer.android.com/topic/performance/memory"
+  - type: aosp
+    path: "frameworks/base/core/java/com/android/internal/os/BinderInternal.java"
   - type: research
     path: "intake/research-feeds/2026-03-31-19-ch04-app-memory-churn-gc-objectpool.md"
   - type: blog
@@ -29,10 +31,11 @@ word_count: "~7500"
 reviewed_date: "2026-04-16"
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
-pipeline_stage: task9_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task9_state: pending
-task2b_state: idle
+task2b_state: fixed
+task2b_result: fixed
 ---
 
 # 内存抖动与频繁 GC
@@ -78,9 +81,9 @@ task2b_state: idle
 
 为什么频繁分配会带来性能问题？核心链条是这样的：
 
-当一个线程在 Java 堆上分配对象时（比如 `new Object()`），ART 运行时需要为这个对象找到一块空闲内存。现代 ART 使用的是 Concurrent Copying（CC）收集器配合 TLAB（Thread-Local Allocation Buffer），小对象的分配通常只需要一次"指针前进"（bump pointer）操作，代价极低。但 TLAB 不是无限的——当 Eden 区被填满，或者分配的对象太大无法放入 TLAB 时，系统就必须触发一次 GC 来回收空间。
+当一个线程在 Java 堆上分配对象时（比如 `new Object()`），ART 运行时需要为这个对象找到一块空闲内存。现代 ART 的快路径仍然依赖 TLAB / RegionTLAB 这类线程本地分配缓冲区，小对象通常只需要一次"指针前进"（bump pointer）操作，代价极低。需要分开描述的是收集器版本：Android 8 到 13 的语境更适合按 Concurrent Copying（CC）或分代 CC 理解，Android 14+ 的平台实现则应按 Concurrent Mark-Compact（CMC）描述，Android 16 又继续演进到分代 CMC。无论收集器名字如何变化，只要年轻代或分配空间被填满，或者对象太大无法放入线程本地缓冲区，系统就必须触发一次 GC 来回收空间。
 
-GC 本身并不一定是问题。ART 的 CC 收集器是并发的（concurrent），大部分标记和拷贝工作与应用线程并行执行。但 GC 仍有短暂的 Stop-The-World（STW）暂停阶段，在这个阶段所有应用线程必须停下来等待。对于 Young GC，这个暂停通常在 1-3ms [适用版本: Android 10 - Android 16]；但对于大对象分配（Large Object Space）触发的同步 GC，暂停可能更长。
+GC 本身并不等于卡顿。这些并发收集器的大部分标记与压缩工作都尽量和应用线程并行执行，但仍然保留短暂的 Stop-The-World（STW）阶段。Android 14+ 的 CMC 把并发压缩放到主路径里，Android 16 的分代 CMC 又把回收重点放到年轻代，所以短生命周期对象密集的场景通常先撞上 Young GC，而不是直接进入全堆回收。暂停仍然存在，只是频率和代价比旧路径更可控。
 
 问题出在"频繁"二字。如果 GC 被触发得太频繁——比如每秒触发十几次甚至几十次——这些暂停就会累积成可感知的卡顿。更严重的是，GC 线程（HeapTaskDaemon）与主线程和 RenderThread 争抢 CPU 时间，进一步加剧帧耗时波动。
 
@@ -256,7 +259,7 @@ adb shell heapprofd --pid=<PID> --java
 如果需要在运行时监控 GC 频率，可以利用 ART 内部的 GC 通知机制。一种轻量的方法是使用弱引用对象触发 GC 感知：
 
 ```java
-// 通过 finalize 监听 GC 事件（简化示例）
+// 通过 finalize 监听 GC 事件（示意代码）
 private static class GcWatcher {
     @Override
     protected void finalize() throws Throwable {
@@ -268,7 +271,7 @@ private static class GcWatcher {
 }
 ```
 
-这种方法在 AOSP 的 `ActivityThread` 中有类似实现，用于监控系统 GC 情况 [已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/app/ActivityThread.java — GcWatcher 内部类]。
+AOSP 当前长期使用的实现位于 `frameworks/base/core/java/com/android/internal/os/BinderInternal.java`。`BinderInternal` 内部维护 `GcWatcher`，并通过 `BinderInternal.addGcWatcher()` 让其他模块注册 GC 回调；`ActivityThread` 在当前版本里是注册方，不再把 `GcWatcher` 定义成自己的内部类。[已验证: AOSP android-16.0.0_r1，`BinderInternal.java`；external review 给出的源码锚点与路径更正]
 
 ## 优化手段
 
@@ -327,7 +330,7 @@ class SimplePool<T>(private val factory: () -> T, private val maxSize: Int = 16)
 
 [已验证: 官方文档, developer.android.com/reference/android/util/SparseArray]
 
-需要注意的是，`SparseArray` 在数据量较大时（通常超过数百个元素）查找性能不如 `HashMap`（二分查找 vs 哈希表 O(1)）。在选择时要根据实际数据规模权衡。
+另外，`SparseArray` 在数据量较大时（通常超过数百个元素）查找性能不如 `HashMap`（二分查找 vs 哈希表 O(1)）。在选择时要根据实际数据规模权衡。
 
 ## Kotlin 内联类（value class）与装箱优化
 
@@ -350,13 +353,13 @@ value class UserId(val id: Long)
 
 ## ART GC 对短生命周期对象的优化：TLAB
 
-[已验证: 官方文档, source.android.com/docs/core/perf/art-management]
+[已验证: AOSP android-16.0.0_r1，ART GC allocator / collector 相关实现]
 
-理解了内存抖动的问题后，我们来看 ART 在系统层面做了哪些优化来缓解它。
+理解了内存抖动的问题后，再看 ART 的系统级优化，最稳定的一层是分配快路径：小对象优先走 TLAB / RegionTLAB，线程只在本地缓冲区里推进指针，只有缓冲区补充或大对象分配时才需要更重的同步与回收。
 
-ART 从 Android 8.0 开始默认使用 Concurrent Copying（CC）收集器。CC 收集器的核心优化之一是 RegionTLAB（Thread-Local Allocation Buffer），它为每个线程分配一块私有的 Eden 区缓冲区。
+GC 名称则要按版本拆开。Android 8 到 13 讨论 ART 默认收集器时，用 CC / 分代 CC 还说得通；Android 14+ 再讨论平台实现，应该切到 CMC；Android 16 则继续发展为分代 CMC。CMC 的重点是并发压缩本身，相关实现会借助 `userfaultfd` 处理对象搬移期间的访问同步，这也是 Android 14+ 与早期 CC 叙述要分开的地方。
 
-TLAB 的工作方式是这样的：当线程需要分配一个小对象时，不需要获取堆的全局锁，只需在自己的 TLAB 中执行一次"指针前进"操作。这个过程极快，不涉及任何同步。只有当 TLAB 空间不足、或者分配的对象太大无法放入 TLAB 时，线程才需要向堆申请更多空间（这时才需要同步）。
+TLAB 的工作方式没有变：当线程需要分配一个小对象时，不需要获取堆的全局锁，只需在自己的 TLAB 中执行一次"指针前进"操作。这个过程极快，不涉及任何同步。只有当 TLAB 空间不足、或者分配的对象太大无法放入 TLAB 时，线程才需要向堆申请更多空间。
 
 不同的分配模式代价差异很大。在 TLAB 中分配的小对象代价极低，而触发 TLAB 补充或大对象分配的代价较高。因此，内存抖动的严重程度取决于分配模式：
 
@@ -364,9 +367,7 @@ TLAB 的工作方式是这样的：当线程需要分配一个小对象时，不
 - **大对象或突发式分配**：更容易触发 TLAB 补充和同步 GC，性能影响更大
 - **分配速率超过 GC 回收速率**：最危险——Eden 区永远处于即将耗尽的边缘，GC 疯狂运转
 
-从 Android 12 开始，ART 引入了分代 CC（Generational CC）收集器，它将堆分为 Young 区和 Old 区，对 Young 区执行更频繁但更快的 GC。这对短生命周期对象尤其友好——那些"用完就丢"的临时对象在 Young GC 中就能被回收，不需要等到 Full GC。
-
-[待验证: Android 16 是否默认启用分代 CC — 不同设备/OEM 可能有差异]
+对内存抖动来说，版本差异不会改变判断方法：短命对象越多，年轻代回收越频繁；分配越突发，越容易把线程从 TLAB 快路径拖到 GC 或 Allocation Stall 上。写 Android 16 时，如果还把分代 CC 当成默认基线，就会把这段版本演进写错。
 
 ## 与其他章节的关系
 
@@ -381,7 +382,7 @@ TLAB 的工作方式是这样的：当线程需要分配一个小对象时，不
 
 **"GC 是并发的，所以不会影响主线程。"**
 
-这是一个常见误解。虽然 ART 的 CC 收集器是并发的，但它仍然有短暂的 STW 暂停阶段。更重要的是，GC 线程与主线程竞争 CPU 时间，在 CPU 资源紧张时这种竞争会导致主线程变慢。此外，Allocation Stall 可能在任何线程上发生，包括主线程。
+这是一个常见误解。虽然 ART 的并发 GC 路径会尽量把回收工作放到并发阶段，但它仍然有短暂的 STW 暂停。同时，GC 线程与主线程竞争 CPU 时间，在 CPU 资源紧张时这种竞争会导致主线程变慢。此外，Allocation Stall 可能在任何线程上发生，包括主线程。
 
 **"内存抖动只发生在低端设备上。"**
 
@@ -398,9 +399,10 @@ TLAB 的工作方式是这样的：当线程需要分配一个小对象时，不
 ## 参考资料
 
 - AOSP 源码路径
-  - `frameworks/base/core/java/android/app/ActivityThread.java` — GcWatcher 内部类
+  - `frameworks/base/core/java/com/android/internal/os/BinderInternal.java` — `GcWatcher` 与 `addGcWatcher()`
+  - `frameworks/base/core/java/android/app/ActivityThread.java` — 通过 `BinderInternal.addGcWatcher()` 注册 GC 回调
   - `art/runtime/gc/heap.cc` — ART GC 核心实现
-  - `art/runtime/gc/allocator/rosalloc.cc` — ROSAlloc 分配器（TLAB 相关）
+  - `art/runtime/gc/space/region_space.cc` — RegionTLAB / 分配空间实现
 - 官方文档
   - [Investigate your app's RAM usage](https://developer.android.com/studio/profile/memory-profiler)
   - [Manage your app's memory](https://developer.android.com/topic/performance/memory)
