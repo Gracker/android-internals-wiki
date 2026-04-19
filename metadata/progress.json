@@ -1,52 +1,52 @@
 {
-  "generated_at": "2026-04-20T04:20:38+08:00",
+  "generated_at": "2026-04-20T05:01:36+08:00",
   "state_machine_version": "v2",
   "total_sections": 206,
   "metrics": {
     "total": 206,
-    "unknown": 34,
-    "last_updated": "2026-04-20T04:20:38+08:00",
+    "unknown": 37,
+    "last_updated": "2026-04-20T05:01:36+08:00",
     "task2b_state_counts": {
-      "unknown": 34,
-      "fixed": 128,
-      "pending": 18,
+      "unknown": 37,
+      "fixed": 130,
+      "pending": 16,
       "idle": 26
     },
     "task6_state_counts": {
       "unknown": 33,
-      "reviewed": 68,
-      "revisiting": 104,
+      "reviewed": 72,
+      "revisiting": 103,
       "pending": 1
     },
     "task9_state_counts": {
-      "unknown": 33,
-      "reviewed": 33,
-      "pending": 139,
+      "unknown": 36,
+      "reviewed": 31,
+      "pending": 141,
       "fixed": 1
     },
     "pipeline_stage_counts": {
-      "unknown": 33,
-      "task6_pending": 102,
-      "task9_pending": 47,
-      "task2b_pending": 17,
+      "unknown": 36,
+      "task6_pending": 101,
+      "task9_pending": 50,
+      "task2b_pending": 15,
       "ready-to-publish": 7
     },
     "total_sections": 206,
-    "pipeline_unknown": 33,
-    "pipeline_task6_pending": 102,
-    "pipeline_task2b_pending": 17,
-    "pipeline_task9_pending": 47,
-    "task2b_unknown": 34,
-    "task2b_fixed": 128,
-    "task2b_pending": 18,
+    "pipeline_unknown": 36,
+    "pipeline_task6_pending": 101,
+    "pipeline_task2b_pending": 15,
+    "pipeline_task9_pending": 50,
+    "task2b_unknown": 37,
+    "task2b_fixed": 130,
+    "task2b_pending": 16,
     "task2b_idle": 26,
     "task6_unknown": 33,
-    "task6_revisiting": 104,
-    "task6_reviewed": 68,
+    "task6_revisiting": 103,
+    "task6_reviewed": 72,
     "task6_pending": 1,
-    "task9_unknown": 33,
-    "task9_pending": 139,
-    "task9_reviewed": 33,
+    "task9_unknown": 36,
+    "task9_pending": 141,
+    "task9_reviewed": 31,
     "task9_fixed": 1,
     "ready-to-publish": 0,
     "finalized": 7,
@@ -55,28 +55,28 @@
   },
   "pipeline": {
     "pipeline_stage_counts": {
-      "unknown": 33,
-      "task6_pending": 102,
-      "task9_pending": 47,
-      "task2b_pending": 17,
+      "unknown": 36,
+      "task6_pending": 101,
+      "task9_pending": 50,
+      "task2b_pending": 15,
       "ready-to-publish": 7
     },
     "task2b_state_counts": {
-      "unknown": 34,
-      "fixed": 128,
-      "pending": 18,
+      "unknown": 37,
+      "fixed": 130,
+      "pending": 16,
       "idle": 26
     },
     "task6_state_counts": {
       "unknown": 33,
-      "reviewed": 68,
-      "revisiting": 104,
+      "reviewed": 72,
+      "revisiting": 103,
       "pending": 1
     },
     "task9_state_counts": {
-      "unknown": 33,
-      "reviewed": 33,
-      "pending": 139,
+      "unknown": 36,
+      "reviewed": 31,
+      "pending": 141,
       "fixed": 1
     }
   },
@@ -2225,15 +2225,18 @@
       "title": "SurfaceView 直出链路",
       "path": "src/part2-performance/ch18-rendering-pipelines/06-surfaceview.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
-      "task6_state": "reviewed",
-      "task9_state": "reviewed",
-      "task2b_state": "pending",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
+      "task9_state": "pending",
+      "task2b_state": "fixed",
       "task6_result": "pass-light-edit",
       "section": "18.6",
       "task9_result": "needs-rework",
       "task9_reviewed_by": "openclaw-task9",
-      "task9_reviewed_date": "2026-04-20"
+      "task9_reviewed_date": "2026-04-20",
+      "task2b_result": "fixed",
+      "task2b_rework_date": "2026-04-20",
+      "task2b_fixed_at": "2026-04-20"
     },
     "src/part2-performance/ch18-rendering-pipelines/07-textureview.md": {
       "chapter": "18.7",
@@ -2675,15 +2678,18 @@
       "title": "内存分析工具",
       "path": "src/part3-tools/ch14-other-tools/03-memory-tools.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
-      "task6_state": "reviewed",
-      "task9_state": "reviewed",
-      "task2b_state": "pending",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
+      "task9_state": "pending",
+      "task2b_state": "fixed",
       "reviewed_date": "2026-04-17",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
       "section": "14.3",
-      "task9_result": "needs-rework"
+      "task9_result": "needs-rework",
+      "task2b_result": "fixed",
+      "task2b_rework_date": "2026-04-20",
+      "task2b_fixed_at": "2026-04-20"
     },
     "src/part3-tools/ch14-other-tools/04-dumpsys.md": {
       "chapter": "14.4",
@@ -3155,7 +3161,7 @@
   },
   "summary": {
     "status_counts": {
-      "unknown": 34,
+      "unknown": 37,
       "ready-for-review": 165,
       "finalized": 7
     }
