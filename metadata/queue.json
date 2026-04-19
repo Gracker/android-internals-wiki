@@ -29,7 +29,10 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-19T13:40:06+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-19T15:08:39+08:00",
+    "completed_by": "task2b-rework",
+    "resolution": "修正 AVP 2025 / host image copy 语义、ANGLE 源码树路径、FrameTimeline Android 12+ 与 SurfaceView 边界，并把定量 draw-call 开销改回定性结论"
   },
   {
     "section": "2.14",
@@ -1899,6 +1902,9 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-19T14:37:48+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-19T15:08:39+08:00",
+    "completed_by": "task2b-rework",
+    "resolution": "补 public API 与内部回退树边界、OpenGL/Vulkan setWindow 接入链、FrameTimeline 版本矩阵与 FrameStatistics 最小证据链"
   }
 ]

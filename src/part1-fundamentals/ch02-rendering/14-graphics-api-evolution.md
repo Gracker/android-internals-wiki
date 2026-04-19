@@ -6,7 +6,7 @@ drafted_date: "2026-04-05"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 4.0 (API 14) - Android 17 (API 37)"
 last_verified: "2026-04-19"
-last_verified_against: "source.android.com + developer.android.com + AOSP main + AndroidX WebGPU docs"
+last_verified_against: "source.android.com + developer.android.com + perfetto.dev + AOSP main + AndroidX WebGPU docs"
 confidence: medium
 sources:
   - type: official
@@ -24,7 +24,7 @@ sources:
   - type: aosp
     path: "frameworks/native/libs/graphicsenv/GraphicsEnv.cpp"
   - type: aosp
-    path: "platform/external/angle/"
+    path: "external/angle/"
   - type: official
     path: "https://developer.android.com/ndk/guides/graphics/validation-layer"
   - type: official
@@ -33,19 +33,22 @@ sources:
     path: "https://developer.android.com/develop/ui/views/graphics/webgpu"
   - type: official
     path: "https://developer.android.com/jetpack/androidx/releases/webgpu"
+  - type: official
+    path: "https://perfetto.dev/docs/data-sources/frametimeline"
 tags: [opengl-es, vulkan, angle, gpu, graphics-api, rendering]
-related_chapters: ["2.1", "2.9", "2.10", "14.8"]
+related_chapters: ["2.1", "2.9", "2.10", "2.17", "14.8"]
 section: "2.14"
-pipeline_stage: task2b_pending
+pipeline_stage: task6_pending
 task6_state: revisiting
-task9_state: reviewed
-task2b_state: pending
+task9_state: pending
+task2b_state: fixed
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-04-19"
 task6_result: needs-rework
 review_log: "logs/review/2026-04-11-13-review.md"
 task9_result: needs-rework
 task9_reviewed_date: "2026-04-19"
+task2b_result: fixed
 last_task9_at: "2026-04-19T13:40:06+08:00"
 ---
 
@@ -102,7 +105,7 @@ Vulkan 1.0 就已经提供了 OpenGL ES 不具备的核心能力：Command Buffe
 
 这里要特别区分两件事。第一，上表说的是平台 / OEM 侧的 Vulkan 版本基线，我们可以把它理解为“这一代 Android 对新设备希望具备什么 Vulkan 能力”；它不等于“所有升级到该版本的旧设备都会自动获得同样的 Vulkan 版本”。第二，**Android Vulkan Profile 2025（AVP 2025）** 不是平台最低门槛，而是面向活跃设备生态的兼容 profile。官方 AVP 页面把它定义为一组“在绝大多数活跃 Android 设备上都能找到”的 Vulkan 扩展、特性、格式和 limits，用来帮助游戏和引擎选择一条更稳定的跨设备能力集合。
 
-AVP 2025 在 AVP 2022 / 2021 的基础上继续扩展了能力范围，官方特别点名了额外内存特性、浮点控制、host query reset，以及更多标准化像素格式。和资源加载直接相关的一项能力，是 `VK_EXT_host_image_copy` 这条 host image copy 路径。它允许应用把 host memory 里的图像数据直接拷入 image，减少传统 staging buffer 上传路径里的中间 copy 和 GPU 参与。对纹理流式加载，收益通常体现在更低的峰值内存占用、更短的加载抖动窗口，以及更少的上传争用。收益大小和图像格式、内存架构、现有上传策略有关，不适合写成所有 workload 固定 50% 提升。这些内容适合放在“兼容性 profile”这一层理解，而不是和“Android 16 新设备要求 Vulkan 1.4”写成同一件事。
+AVP 2025 在 AVP 2022 / 2021 的基础上继续扩展 profile 能力集合，官方点名的是额外内存特性、浮点控制、host query reset，以及更多标准化像素格式。它更适合拿来做 capability audit 和 feature gating：先看目标设备是否满足这组 profile，再决定默认开启哪些渲染路径。像 `VK_EXT_host_image_copy` 这类具体扩展，需要单独按 Vulkan 版本、扩展支持和设备实现核实，不宜直接写成“AVP 2025 必带项”。
 
 [已验证: 官方文档, developer.android.com/ndk/guides/graphics/android-vulkan-profile]
 
@@ -165,9 +168,7 @@ glDrawArrays(GL_TRIANGLES, 0, vertexCount); // 提交绘制——驱动在此做
 3. **资源同步**：确认 GPU 是否还在使用上一次提交的资源
 4. **错误检查**：在 Debug 模式下进行完整的参数验证
 
-这个过程在简单的场景下不是问题，但当 draw call 数量达到数百甚至数千（复杂 UI、游戏场景），CPU 侧的驱动开销就会成为帧时间的瓶颈。实测数据表明，一个 OpenGL ES 的 draw call 的 CPU 侧开销通常在 10-50μs，而同样的操作在 Vulkan 中只需要 1-5μs——差距达一个数量级。
-
-[来源: ARM GPU Best Practices, developer.arm.com]
+这个过程在简单的场景下不是问题，但当 draw call 数量达到数百甚至数千（复杂 UI、游戏场景），CPU 侧的状态验证、资源同步和 driver bookkeeping 就会直接堆在提交线程上。Vulkan 把大量验证前移到 Pipeline 创建阶段，单次命令记录路径通常更轻。具体差值强依赖 GPU 架构、驱动质量和 workload，不适合脱离测试条件写成固定微秒表。
 
 Vulkan 的做法完全不同。它没有全局状态机，取而代之的是不可变的 **Pipeline State Object（PSO）**：
 
@@ -221,7 +222,7 @@ OpenGL ES 没有命令缓冲区的概念——每次绘制都是"即时的"（�
 
 ### ANGLE 的翻译架构
 
-ANGLE 在 AOSP 中的源码路径为 `platform/external/angle`，其核心翻译流程如下：
+ANGLE 在 AOSP 中的源码路径为 `external/angle/`，其核心翻译流程如下：
 
 ```
 App 的 GLES 调用
@@ -232,7 +233,7 @@ GLES 入口函数 (eglMakeCurrent, glDrawArrays, ...)
     ↓
 状态追踪层（State Tracking）—— 维护 OpenGL ES 的状态机
     ↓
-Vulkan 后端（src/libANGLE/renderer/vulkan/）
+Vulkan 后端（external/angle/src/libANGLE/renderer/vulkan/）
     ├─ vk::Renderer —— 管理 VkDevice, VkQueue, 格式表, 内部着色器
     ├─ ContextVk —— 处理 OpenGL Context 的状态变更和命令执行
     └─ Pipeline 缓存 —— 将 OpenGL 状态向量映射到 Vulkan PSO
@@ -240,7 +241,7 @@ Vulkan 后端（src/libANGLE/renderer/vulkan/）
 Vulkan 驱动 → GPU
 ```
 
-[已验证: AOSP 源码, platform/external/angle, src/libANGLE/renderer/vulkan/]
+[已验证: AOSP 源码, external/angle, external/angle/src/libANGLE/renderer/vulkan/]
 
 ANGLE 的翻译不是简单的 API 映射。最复杂的部分是**状态转换**：OpenGL ES 的"随时改变状态"模型需要被翻译为 Vulkan 的"预编译 Pipeline"模型。ANGLE 内部维护了一个状态向量到 Vulkan PSO 的哈希映射表——当应用改变了 OpenGL ES 状态时，ANGLE 会查找是否已经有匹配的 Vulkan Pipeline，如果没有就创建一个新的。
 
@@ -362,9 +363,11 @@ Android GPU Inspector（AGI）是 Google 官方的 GPU 分析工具（详见 §1
 
 ### Frame Timeline 中的表现差异
 
-Frame Timeline（帧时间线）在 Android 10+ 可用，它展示了每帧从 App 提交到 SurfaceFlinger 合成再到显示的完整时间线。它非常适合回答“哪一帧晚了、晚在 App 还是晚在 SurfaceFlinger”，因为这些时间戳记录在合成链路这一层，与上层用的是 Vulkan 还是 GLES 无关。
+Frame Timeline（帧时间线）要求 Android 12(S) 及以上。Perfetto 文档还明确写着 `SurfaceViews are currently not supported`，所以它更适合用来看普通应用窗口的帧结果，以及回答“哪一帧晚了、晚在 App 还是晚在 SurfaceFlinger”。如果你在 Android 10-11 上排查，UI 里不会看到 `Expected Timeline` / `Actual Timeline`，对应的 FrameTimeline 表也不存在。
 
-但 Frame Timeline 本身并不告诉我们“这一帧背后走的是 native Vulkan、native GLES 还是 ANGLE”。它关注的是 frame result，而不是 driver selection。遇到图形 API 归因问题时，正确顺序应该是：先用 driver selection、process maps 或 app 日志确认 API 路径，再回到 Frame Timeline 判断这条路径上的帧延迟究竟卡在 CPU、GPU 还是合成阶段。
+对游戏和 `SurfaceView` 场景，更可靠的入口仍是 `SurfaceView` buffered frames、`gpu.renderstages`、Swappy stats，以及应用自己的 driver / backend 自检日志。Frame Timeline 关注的是 frame result，不直接告诉我们这一帧背后走的是 native Vulkan、native GLES 还是 ANGLE；具体的 Swappy 验证路径见 §2.17。
+
+[已验证: Perfetto 官方文档, https://perfetto.dev/docs/data-sources/frametimeline]
 
 ## 迁移策略与最佳实践
 
@@ -446,4 +449,4 @@ Frame Timeline（帧时间线）在 Android 10+ 可用，它展示了每帧从 A
 - [WebGPU for Android](https://developer.android.com/develop/ui/views/graphics/webgpu) — WebGPU 在 Android 原生应用中的定位
 - [AndroidX WebGPU release notes](https://developer.android.com/jetpack/androidx/releases/webgpu) — AndroidX WebGPU 与 Dawn 更新记录
 - [Dawn README](https://github.com/google/dawn/blob/main/README.md) — Dawn 与 Chromium WebGPU 的关系
-- AOSP 源码路径：`frameworks/base/core/java/android/os/GraphicsEnvironment.java`（driver selection / per-app override）、`frameworks/native/opengl/libs/EGL/Loader.cpp`（ANGLE / native / updated driver 选路）、`frameworks/native/libs/graphicsenv/GraphicsEnv.cpp`（ANGLE APK / system setup 与 rules string 接口）、`platform/external/angle/`（ANGLE 实现）
+- AOSP 源码路径：`frameworks/base/core/java/android/os/GraphicsEnvironment.java`（driver selection / per-app override）、`frameworks/native/opengl/libs/EGL/Loader.cpp`（ANGLE / native / updated driver 选路）、`frameworks/native/libs/graphicsenv/GraphicsEnv.cpp`（ANGLE APK / system setup 与 rules string 接口）、`external/angle/`（ANGLE 实现）
