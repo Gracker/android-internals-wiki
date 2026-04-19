@@ -5,9 +5,9 @@ status: ready-for-review
 applicable_versions: "Android 12 (API S) - Android 16 (API 36)"
 last_verified: "2026-04-12"
 drafted_date: 2026-03-30
-reviewed_date: 2026-04-12
+reviewed_date: 2026-04-19
 reviewed_by: openclaw-task6
-task6_result: needs-rework
+task6_result: pass-light-edit
 rework_date: 2026-04-02
 last_verified_against: "AOSP android-12.0.0_r1, android-14.0.0_r1, android-16.0.0_r1, source.android.com docs"
 confidence: medium
@@ -23,7 +23,7 @@ sources:
     path: "https://www.androidperformance.com/"
 tags: ['surfaceflinger', 'bufferqueue', 'hwc', 'composition', 'layer', 'vsync', 'blastbufferqueue', 'renderengine']
 related_chapters: ["2.1", "2.3", "2.4", "2.5", "2.10", "7.3"]
-pipeline_stage: task6_pending
+pipeline_stage: task9_pending
 task6_state: revisiting
 task9_state: pending
 task9_result: needs-rework
@@ -68,7 +68,7 @@ task2b_result: fixed
 
 理解 SurfaceFlinger 的意义在于，它能将性能分析的视角从"应用画得慢不慢"提升到"整条图形管线的哪个环节出了问题"。很多时候 App 渲染没问题，但用户还是觉得卡——这种问题的根因往往在 SurfaceFlinger 这一层。可能是合成耗时过长，可能是 VSync 信号分发有延迟，也可能是 BufferQueue 的 Buffer 周转不过来。
 
-在 Perfetto 中，SurfaceFlinger 的相关 Track 包括：SurfaceFlinger 主线程（展示合成各阶段耗时）、VSYNC-sf（触发合成的信号）、VSYNC-app（触发渲染的信号）、以及 BufferQueue 系列操作（dequeueBuffer、queueBuffer、acquireBuffer、releaseBuffer）。我们会在后文逐一拆解这些 Track 的含义，但先让我们从 SurfaceFlinger 本身的工作机制说起。
+在 Perfetto 中，SurfaceFlinger 的相关 Track 包括：SurfaceFlinger 主线程（展示合成各阶段耗时）、VSYNC-sf（触发合成的信号）、VSYNC-app（触发渲染的信号）、以及 BufferQueue 系列操作（dequeueBuffer、queueBuffer、acquireBuffer、releaseBuffer）。我们会在后文逐一拆解这些 Track 的含义，下面先从 SurfaceFlinger 本身的工作机制说起。
 
 ## 核心机制：Layer 合成、VSync 分发与 Buffer 管理
 
@@ -89,7 +89,7 @@ SurfaceFlinger 既负责合成画面，也参与软件 VSync 的调度。硬件 
 - **VSYNC-app**：发给应用进程，触发 Choreographer 开始一帧的 `measure → layout → draw`。
 - **VSYNC-sf**：发给 SurfaceFlinger，触发本帧的事务整理、Buffer 获取和合成。
 
-工程上更稳妥的理解是，`Scheduler`、`EventThread`、`VSyncSchedule` 负责生成并投递软件 VSync，`VsyncModulator` 负责在特殊时刻调整 phase。我们在 §2.3 中单独展开 offset 的计算，这里先记住一点，SurfaceFlinger 能不能在合适的时刻拿到 Buffer，取决于 `VSYNC-app` 和 `VSYNC-sf` 的相对 phase 是否稳定。
+工程上更稳妥的理解是，`Scheduler`、`EventThread`、`VSyncSchedule` 负责生成并投递软件 VSync，`VsyncModulator` 负责在特殊时刻调整 phase。我们在 §2.3 中单独展开 offset 的计算，SurfaceFlinger 能不能在合适的时刻拿到 Buffer，取决于 `VSYNC-app` 和 `VSYNC-sf` 的相对 phase 是否稳定。
 
 ### Buffer 管理：BufferQueue 的四步流转
 
@@ -310,7 +310,7 @@ Android 12 引入了 `BLASTBufferQueue`。它没有把 BufferQueue 整套机制�
 
 ## 与其他机制的关系
 
-SurfaceFlinger 不是孤立工作的，它是整条渲染管线中的一个关键环节。让我们把它的上下游关系梳理一下：
+SurfaceFlinger 不是孤立工作的，它是整条渲染管线中的一个关键环节。把它的上下游关系梳理一下：
 
 - **VSync 机制（§2.3）**：VSYNC-sf 信号驱动 SurfaceFlinger 的合成时机，VSYNC-app 信号驱动 App 的渲染时机。两个信号的 offset 配置直接决定了整条管线的效率。
 - **Choreographer（§2.4）**：Choreographer 在收到 VSYNC-app 后调度 App 的 measure/layout/draw 工作。App 渲染完的 Buffer 通过 BufferQueue 提交给 SurfaceFlinger。如果 App 端的 Choreographer 回调执行太慢，Buffer 就来不及在下一个 VSYNC-sf 前准备好。
