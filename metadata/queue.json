@@ -1557,5 +1557,46 @@
     "added_by": "external-ai-review",
     "added_at": "2026-04-19T13:22:04.339271+08:00",
     "status": "pending"
+  },
+  {
+    "section": "10.7",
+    "section_title": "SQLite / Room 性能优化",
+    "priority": 85,
+    "reason": "[External Review] CursorWindow ashmem → memfd 版本演进缺失（Android 12+），synchronous=NORMAL 在 WAL 下的收益原理未覆盖",
+    "material_paths": [
+      "logs/external-review/2026-04-19-11-07-sqlite-room-performance-external-review.md"
+    ],
+    "review_issues": [
+      {
+        "type": "版本差异覆盖",
+        "location": "2.1/2.3 节 CursorWindow 共享内存",
+        "detail": "仅提到 CursorWindow 走 ashmem FD 共享，未提及 Android 12 开始默认偏向 memfd，Android 15+ (GKI) 强制 memfd 的演进路径",
+        "suggestion": "增加 ashmem → memfd 版本演进说明，区分两者在 /proc/pid/maps 中的表现差异",
+        "evidence": [
+          "libcutils/ashmem-dev.cpp",
+          "frameworks/base/core/java/android/database/CursorWindow.java"
+        ]
+      },
+      {
+        "type": "知识盲区",
+        "location": "1.1 节 F2FS WAL 写入放大",
+        "detail": "提到 F2FS 上的 WAL 写入放大但未提及 synchronous=NORMAL 在 WAL 模式下仅在 checkpoint 时 sync 的具体收益原理",
+        "suggestion": "补充说明 NORMAL 模式在 F2FS 下如何减少双重日志(Double Journaling)压力",
+        "evidence": [
+          "sqlite.org/pragma.html#pragma_synchronous"
+        ]
+      },
+      {
+        "type": "数据支撑",
+        "location": "3.4 节 Migration 耗时",
+        "detail": "Migration 耗时缺乏量化感知，读者难以评估大型 ALTER TABLE 的具体量级",
+        "suggestion": "补充基准参考，如'在 5000 条记录下增加带索引列可能导致 100ms+ 主线程卡顿'",
+        "evidence": []
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-19T13:27:45.193562+08:00",
+    "status": "pending",
+    "source_file": "2026-04-19-11-07-sqlite-room-performance-external-review.md"
   }
 ]
