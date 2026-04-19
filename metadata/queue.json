@@ -2224,6 +2224,35 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-19T16:05:00+08:00",
+    "status": "completed",
+    "completed_at": "2026-04-19T16:52:42+08:00",
+    "completed_by": "task2b-rework",
+    "resolution": "统一显式请求入口到 androidx.core.os.Profiling，删除 FLUSH_FULL，按 API 36 / 36.1 / 37 重写 trigger 矩阵，并补结果分发矩阵、错误码表和 8.8 交叉引用"
+  },
+  {
+    "section": "2.18",
+    "section_title": "Adaptive Refresh Rate 与动态帧率控制",
+    "priority": 95,
+    "reason": "[Deep Tech Review] Perfetto SQL 示例不可运行，且 ARR 决策链缺少 DisplayModeDirector 策略层",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "工具/API 错误",
+        "location": "§在 Perfetto 里怎么判断 ARR 是否工作（L161-L176）",
+        "detail": "示例 SQL 直接写成 `FROM track_event WHERE name = 'VSYNC-app'`。Perfetto trace processor 的用户态 track event 主要落在 `slice` 表并依附 `track_id`，`sql-tables` 文档没有给出可直接按这种模式查询的通用 `track_event` 表；同时 `VSYNC-app` 在分析里更像轨道语义而非稳定 slice 名。当前示例大概率无法直接运行，或命中不到预期数据。",
+        "suggestion": "改成可执行查询：至少用 `slice` + `track`/`process_track` 联表定位 VSYNC 轨道，或直接给出 `expected_frame_timeline_slice` / `actual_frame_timeline_slice` 的观察口径，并说明 `VSYNC-app` 的轨道过滤条件。"
+      },
+      {
+        "type": "原理断裂",
+        "location": "§系统里谁在做什么（L60-L64）与 §SurfaceFlinger 怎样做刷新率选择（L142-L146）",
+        "detail": "正文从 DisplayManager 的“提供配置”直接跳到 SurfaceFlinger `mScheduler->chooseRefreshRateForContent(...)`，漏掉了 Android 刷新率主策略链里的 `DisplayModeDirector#getDesiredDisplayModeSpecs()` / allowed refresh-rate ranges。低电量、用户设置、切换类型、App request range 等约束是在这层先被折叠，再交给 SurfaceFlinger/Scheduler 评分。缺这段后，后文 Battery Saver、Game Mode 等约束看起来像“额外覆盖”，而不是主决策链的一部分。",
+        "suggestion": "补一段策略链说明或流程图：DisplayManagerService / DisplayModeDirector 先产出 `DesiredDisplayModeSpecs` 与 allowed ranges，再由 SurfaceFlinger/Scheduler 在允许集合内做 content-based selection；同时给出对应 AOSP 锚点。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-19T17:21:00+08:00",
     "status": "pending"
   }
 ]

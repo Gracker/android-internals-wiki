@@ -2624,3 +2624,14 @@
 - **问题**：提到了 CPU 三层模型，但未明确指出 "Active Base Power"（即 `cpu.active`）的具体物理含义。在异构 SoC 中，只要任一核心唤醒，整个 SoC 的电源平面、内存总线、L3 Cache 都会从 LP 状态切回 Active 状态，这部分固定开销即为 `cpu.active`。
 - **建议**：补充这一物理背景，帮助读者理解为什么"高频低负载"比"低频高负载"更费电。
 - **来源**：Gemini 外部 review (2026-04-19-12-11.0-external-review.md)
+## [Task9 Deep Review] 2.18 Adaptive Refresh Rate 与动态帧率控制 — 2026-04-19
+- **类型**：数据缺失
+- **位置**：Perfetto / 功耗段（L48、L148、L180、L184-L186）
+- **问题**：章节多次用图位和定性判断说明“ARR 正常工作”“模式切换会有长间隔”“高刷驻留会增功耗”，但没有落一份真实 Trace 或电流样本。当前证据链不足以支撑读者复核 ARR 与传统 mode switching 的差异。
+- **建议**：补 1 组真实 Perfetto 证据，至少同时展示 `VSYNC-app`、`VSYNC-sf`、FrameTimeline、refresh-rate selection / mode change 观察点；功耗段补测试条件（面板、亮度、分辨率、场景）和一组电流或功耗对比样本。
+
+## [Task9 Deep Review] 2.18 Adaptive Refresh Rate 与动态帧率控制 — 2026-04-19
+- **类型**：版本差异
+- **位置**：§从多刷新率到 ARR / §Display 查询 API / §版本演进（L54-L56、L70-L87、L190-L194）
+- **问题**：正文强调“检查设备是否公开支持 ARR，以及当前系统给出的刷新率范围”，但给出的公开查询手段全部落在 Android 16 `Display` API。对 Android 15-QPR1 支持设备，读者仍缺少一个可执行的能力确认路径，容易把“API 可调用”和“端到端 ARR 能力可用”混为一谈。
+- **建议**：补一张版本矩阵，明确 API 35 与 API 36 的能力边界。对 Android 15-QPR1 设备补上 fallback 观察路径，例如 OEM 文档、`dumpsys display` / `SurfaceFlinger`、Trace 中的 mode switching 与 refresh-rate selection 行为特征。
