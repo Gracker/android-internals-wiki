@@ -1,11 +1,11 @@
 {
-  "generated_at": "2026-04-19T16:52:42+08:00",
+  "generated_at": "2026-04-19T17:51:52+08:00",
   "state_machine_version": "v2",
   "total_sections": 218,
   "metrics": {
     "total": 175,
     "unknown": 2,
-    "last_updated": "2026-04-19T16:52:42+08:00",
+    "last_updated": "2026-04-19T17:51:52+08:00",
     "task2b_state_counts": {
       "fixed": 125,
       "pending": 9,
@@ -13,8 +13,8 @@
       "unknown": 1
     },
     "task6_state_counts": {
-      "reviewed": 66,
-      "revisiting": 107,
+      "reviewed": 65,
+      "revisiting": 108,
       "pending": 2
     },
     "task9_state_counts": {
@@ -23,22 +23,22 @@
       "fixed": 1
     },
     "pipeline_stage_counts": {
-      "task6_pending": 119,
-      "task9_pending": 47,
+      "task6_pending": 120,
+      "task9_pending": 46,
       "task2b_pending": 9
     },
     "total_sections": 175,
     "pipeline_unknown": 0,
-    "pipeline_task6_pending": 119,
+    "pipeline_task6_pending": 120,
     "pipeline_task2b_pending": 9,
-    "pipeline_task9_pending": 47,
+    "pipeline_task9_pending": 46,
     "task2b_unknown": 1,
     "task2b_fixed": 125,
     "task2b_pending": 9,
     "task2b_idle": 40,
     "task6_unknown": 0,
-    "task6_revisiting": 107,
-    "task6_reviewed": 66,
+    "task6_revisiting": 108,
+    "task6_reviewed": 65,
     "task6_pending": 2,
     "task9_unknown": 0,
     "task9_pending": 157,
@@ -51,8 +51,8 @@
   "pipeline": {
     "pipeline_stage_counts": {
       "unknown": 31,
-      "task6_pending": 120,
-      "task9_pending": 47,
+      "task6_pending": 121,
+      "task9_pending": 46,
       "task2b_pending": 9
     },
     "task2b_state_counts": {
@@ -63,8 +63,8 @@
     },
     "task6_state_counts": {
       "unknown": 31,
-      "reviewed": 66,
-      "revisiting": 107,
+      "reviewed": 65,
+      "revisiting": 108,
       "pending": 3
     },
     "task9_state_counts": {
@@ -788,8 +788,8 @@
       "title": "Adaptive Refresh Rate 与动态帧率控制",
       "path": "src/part1-fundamentals/ch02-rendering/18-adaptive-refresh-rate.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
-      "task6_state": "reviewed",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
       "task9_state": "pending",
       "task2b_state": "fixed",
       "reviewed_date": "2026-04-19",
@@ -3429,11 +3429,11 @@
     "total_sections": 216,
     "by_pipeline_stage": {
       "unknown": 32,
-      "task6_pending": 123,
-      "task9_pending": 51,
+      "task6_pending": 124,
+      "task9_pending": 50,
       "task2b_pending": 12
     },
-    "last_updated": "2026-04-19T11:09:31+08:00",
+    "last_updated": "2026-04-19T17:51:52+08:00",
     "total_reviewed": 69
   },
   "4.6": {
@@ -3456,7 +3456,7 @@
     "task2b_state": "pending",
     "last_task9_at": "2026-04-19T00:54:00+08:00"
   },
-  "last_updated": "2026-04-19T12:48:00+08:00",
+  "last_updated": "2026-04-19T17:51:52+08:00",
   "rework_log": [
     {
       "date": "2026-04-15T19:44:09.836904",
@@ -3796,6 +3796,21 @@
       ],
       "verification": "technical-writing 禁用词扫描=0，frontmatter 解析=ok，queue=completed",
       "queue_status": "completed"
+    },
+    {
+      "date": "2026-04-19T17:51:52+08:00",
+      "section": "2.18",
+      "section_title": "Adaptive Refresh Rate 与动态帧率控制",
+      "source": "task9-deep-tech-review",
+      "priority": 95,
+      "issues_fixed": 3,
+      "fixes": [
+        "补 DisplayModeDirector → DisplayManagerService → LogicalDisplay → LocalDisplayAdapter → SurfaceFlinger 的策略链，写清 allowed ranges 先于 content-based selection 生效",
+        "把不可执行的 `track_event WHERE name = 'VSYNC-app'` SQL 改成 `expected_frame_timeline_slice` / `actual_frame_timeline_slice` 查询，并补 Android 11 fallback 观察口径",
+        "同步 frontmatter / queue / progress 状态，并补 Perfetto 官方文档与新增 AOSP 锚点"
+      ],
+      "verification": "technical-writing 禁用词扫描=0，queue=completed",
+      "queue_status": "completed"
     }
   ],
   "reviews": [
@@ -4023,10 +4038,18 @@
       "by": "task2b-rework",
       "source": "task6-review",
       "issues_fixed": 4
+    },
+    {
+      "section": "2.18",
+      "section_title": "Adaptive Refresh Rate 与动态帧率控制",
+      "date": "2026-04-19T17:51:52+08:00",
+      "by": "task2b-rework",
+      "source": "task9-deep-tech-review",
+      "issues_fixed": 3
     }
   ],
-  "last_task2b_run": "2026-04-19T16:01:59+08:00",
-  "task2b_fixed": 14,
+  "last_task2b_run": "2026-04-19T17:51:52+08:00",
+  "task2b_fixed": 15,
   "17.1": {
     "task6_review_date": "2026-04-16",
     "task6_result": "pass-light-edit",
