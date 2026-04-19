@@ -1220,5 +1220,293 @@
     "added_at": "2026-04-19T11:44:38.404228+08:00",
     "status": "pending",
     "source_file": "2026-04-19-83-6.5-external-review.md"
+  },
+  {
+    "section": "10.3",
+    "section_title": "内存持续增长",
+    "priority": 95,
+    "reason": "[External Review] onTrimMemory 细分级别在 API 34+ 已失效，16KB Page Size 未提及，PSS 监控受 Throttling 限制",
+    "material_paths": [
+      "logs/external-review/2026-04-19-11-03-memory-growth-external-review.md"
+    ],
+    "review_issues": [
+      {
+        "type": "版本差异/事实错误",
+        "location": "LRU Cache 策略 -> 响应系统内存压力",
+        "detail": "推荐使用的 TRIM_MEMORY_MODERATE 在 API 34+ 无法触发，API 35 正式废弃相关常量",
+        "suggestion": "修正代码示例，明确 API 34+ 仅依赖 TRIM_MEMORY_UI_HIDDEN 和 TRIM_MEMORY_BACKGROUND，推荐 Android 16 Headroom API",
+        "evidence": [
+          "ComponentCallbacks2 API 35 弃用说明"
+        ]
+      },
+      {
+        "type": "版本差异覆盖",
+        "location": "内存监控指标",
+        "detail": "未提及 Android 15 的 16KB Page Size，导致物理内存占用增加约 9%",
+        "suggestion": "补充 16KB 页面对齐对 meminfo 数值影响的提示",
+        "evidence": []
+      },
+      {
+        "type": "原理缺失",
+        "location": "PSS 趋势监控",
+        "detail": "Debug.getPss() 在 Android 14+ 受频率限制，可能返回 5 分钟前缓存数据",
+        "suggestion": "推荐转向 RSS 监控或组合使用 Runtime + Debug.getNativeHeapAllocatedSize，补充 ProfilingManager",
+        "evidence": []
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-19T12:30:29.391899+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "10.4",
+    "section_title": "低内存对系统性能的影响",
+    "priority": 95,
+    "reason": "[External Review] mm_events 描述错误（常驻 vs 按需启动），缺失 16KB Page、ZRAM Multi-Comp、MGLRU 核心特性",
+    "material_paths": [
+      "logs/external-review/2026-04-19-11-04-low-memory-impact-external-review.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码准确性",
+        "location": "mm_events 描述",
+        "detail": "称 mm_events '不持续记录，只在检测到压力时自动启动'，实际它是常驻守护进程，通过 perf_event_open 监听内核 tracepoints",
+        "suggestion": "明确其常驻工作模式，点出依赖的内核 Tracepoints（mm_vmscan_* 系列）",
+        "evidence": [
+          "system/memory/mm_events/"
+        ]
+      },
+      {
+        "type": "版本差异覆盖",
+        "location": "系统级内存优化",
+        "detail": "完全遗漏 Android 15 的 16KB Page Size 和 ZRAM Multi-Comp (recomp_algorithm) 特性",
+        "suggestion": "新增 'Android 15+ 专项演进' 小节，覆盖 16KB Page 和 ZRAM 重压缩",
+        "evidence": []
+      },
+      {
+        "type": "原理缺失",
+        "location": "MGLRU 描述",
+        "detail": "提到 MGLRU 但未说明如何在 Trace 中量化其效果",
+        "suggestion": "补充 /sys/kernel/mm/lru_gen/enabled 配置值及 Perfetto 中体现",
+        "evidence": []
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-19T12:30:29.391899+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "10.5",
+    "section_title": "内存案例集",
+    "priority": 85,
+    "reason": "[External Review] 缺失 MGLRU 机制说明，GPU 驱动分析不够具体",
+    "material_paths": [
+      "logs/external-review/2026-04-19-11-05-case-studies-external-review.md"
+    ],
+    "review_issues": [
+      {
+        "type": "版本差异覆盖",
+        "location": "案例一：低内存引发卡顿",
+        "detail": "未提及 Android 13+ MGLRU 对 kswapd0 效率的革命性提升（CPU 占用降低 40%+）",
+        "suggestion": "在根因定位部分增加版本演进说明",
+        "evidence": []
+      },
+      {
+        "type": "源码准确性",
+        "location": "案例三：GPU 驱动内存异常",
+        "detail": "未给出具体的驱动库和触发函数，关键库为 libIMGegl.so，关键函数为 KEGLGetPoolBuffers",
+        "suggestion": "明确标注 libIMGegl.so 和 KEGLGetPoolBuffers 作为根因锚点",
+        "evidence": [
+          "字节跳动技术团队《抖音 renderD128 系统级疑难 OOM 分析与解决》"
+        ]
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-19T12:30:29.391899+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "10.6",
+    "section_title": "内存抖动与频繁 GC",
+    "priority": 95,
+    "reason": "[External Review] CMC 架构缺失（仍以 CC 为 Android 16 基准），GcWatcher 源码路径已变更",
+    "material_paths": [
+      "logs/external-review/2026-04-19-11-06-memory-churn-external-review.md"
+    ],
+    "review_issues": [
+      {
+        "type": "原理断裂/版本差异",
+        "location": "ART GC 对短生命周期对象的优化：TLAB",
+        "detail": "完全忽视 Android 14+ 的 CMC (Concurrent Mark-Compact) 架构，仍以 CC 架构作为 Android 16 的技术底座",
+        "suggestion": "引入 CMC 概念，说明其通过 userfaultfd 消除读屏障，更新 Generational CMC 特性",
+        "evidence": [
+          "source.android.com/docs/core/perf/art-management"
+        ]
+      },
+      {
+        "type": "源码准确性",
+        "location": "代码级检测",
+        "detail": "GcWatcher 路径在 Android 15/16 中已变更至 BinderInternal.java",
+        "suggestion": "修正路径为 frameworks/base/core/java/com/android/internal/os/BinderInternal.java",
+        "evidence": []
+      },
+      {
+        "type": "版本差异覆盖",
+        "location": "Generational CC 描述",
+        "detail": "称 Android 12 引入分代 CC，但 Android 14 中已被 CMC 取代",
+        "suggestion": "明确 Android 12 是 CC 时代终点，Android 14+ 开启 CMC 时代",
+        "evidence": []
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-19T12:30:29.391899+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "12.1",
+    "section_title": "APK 体积优化",
+    "priority": 95,
+    "reason": "[External Review] AGP 8.12.0 特性与 frontmatter 8.7 版本标注冲突，遗漏 Baseline Profile 磁盘空间副作用",
+    "material_paths": [
+      "logs/external-review/2026-04-19-12-01-apk-size-external-review.md"
+    ],
+    "review_issues": [
+      {
+        "type": "版本差异",
+        "location": "第 214 行 - 资源缩减",
+        "detail": "AGP 8.12.0 引入的优化资源缩减与 frontmatter 标注的 AGP 8.7 冲突",
+        "suggestion": "明确标注 '需 AGP 8.12.0+'，建议 gradle.properties 中显式开启",
+        "evidence": [
+          "Android Gradle Plugin 8.12.0 Release Notes"
+        ]
+      },
+      {
+        "type": "原理断裂",
+        "location": "第 442 行 - Baseline Profile",
+        "detail": "遗漏 Baseline Profile 对磁盘占用的副作用（.odex 体积比 DEX 大 10%-30%）",
+        "suggestion": "区分下载体积与磁盘占用，明确空间换时间的权衡",
+        "evidence": [
+          "ART Runtime: Profile-guided optimization"
+        ]
+      },
+      {
+        "type": "源码准确性",
+        "location": "第 102 行 - resources.arsc",
+        "detail": "对 resources.arsc 仅停留在'资源索引表'，缺乏三层池结构解释",
+        "suggestion": "简述 Global String Pool / Type String Pool / Key String Pool 三层结构",
+        "evidence": [
+          "libs/androidfw/include/androidfw/ResourceTypes.h"
+        ]
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-19T12:30:29.391899+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "11.1",
+    "section_title": "功耗模型",
+    "priority": 85,
+    "reason": "[External Review] WorkSource 归因逻辑缺失，Android 17 新特性描述不足",
+    "material_paths": [
+      "logs/external-review/2026-04-19-12-01-power-model-external-review.md",
+      "logs/external-review/2026-04-19-12-README-external-review.md"
+    ],
+    "review_issues": [
+      {
+        "type": "原理断裂",
+        "location": "App 耗电量的归属算法",
+        "detail": "未说明 WorkSource 如何让系统服务的功耗准确算回 App，导致原理链断裂",
+        "suggestion": "新增 WorkSource 专题小节，解释其在 Wakelock/JobScheduler/Network 统计中的作用",
+        "evidence": [
+          "frameworks/base/core/java/android/os/WorkSource.java",
+          "BatteryStatsImpl.java noteStartWakelockSource()"
+        ]
+      },
+      {
+        "type": "版本差异覆盖",
+        "location": "版本演进",
+        "detail": "Android 17 引入 Priority Charging 和更严格的应用内存限制，IPowerStats AIDL 升级",
+        "suggestion": "在版本演进表中细化 Android 17 的 ProfilingManager 异常触发器对功耗监测的增强",
+        "evidence": []
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-19T12:30:29.391899+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "11.4",
+    "section_title": "功耗案例集",
+    "priority": 85,
+    "reason": "[External Review] 网络功耗模型未适配 5G NR，Android 16 Job 配额变更缺失，Android 15 Alarm 强停限制未提及",
+    "material_paths": [
+      "logs/external-review/2026-04-19-12-04-case-studies-external-review.md"
+    ],
+    "review_issues": [
+      {
+        "type": "原理陈旧",
+        "location": "案例三 - 网络功耗",
+        "detail": "30-60s Radio 尾迹描述基于 3G/4G 经验，5G NR 引入 C-DRX 和 RRC_INACTIVE",
+        "suggestion": "修正关于 30-60s 的陈述，加入 5G C-DRX 影响",
+        "evidence": []
+      },
+      {
+        "type": "版本差异",
+        "location": "案例五 - JobScheduler",
+        "detail": "遗漏 Android 16 对前台服务 App 也实施 Job 执行配额限制",
+        "suggestion": "补充 Android 16 配额收紧趋势",
+        "evidence": []
+      },
+      {
+        "type": "版本差异",
+        "location": "案例四 - AlarmManager",
+        "detail": "遗漏 Android 15+ 强行停止 App 后取消所有 PendingIntent 导致 Alarm 彻底失效",
+        "suggestion": "增加'应用强停后 Alarm 失效'的风险提示",
+        "evidence": []
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-19T12:30:29.391899+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "11.5",
+    "section_title": "Wakelock 机制与功耗分析",
+    "priority": 95,
+    "reason": "[External Review] Perfetto android.power 数据源描述错误（混淆能量统计与唤醒事件），OnAlarmListener 免权限动机缺失",
+    "material_paths": [
+      "logs/external-review/2026-04-19-12-05-wakelock-external-review.md"
+    ],
+    "review_issues": [
+      {
+        "type": "原理错误",
+        "location": "Perfetto 中的 wakelock 分析",
+        "detail": "错误声称 android.power track 显示 wakelock 事件，实际是 Power Rails 能量统计，wakelock 事件属于 linux.ftrace",
+        "suggestion": "明确区分 android.power (Power Rails) 和 linux.ftrace (Wakeup Source Events)",
+        "evidence": [
+          "perfetto.dev/docs/data-sources/android-power-energy"
+        ]
+      },
+      {
+        "type": "原理缺失",
+        "location": "Android 17 OnAlarmListener",
+        "detail": "未提及 OnAlarmListener 变体可免 SCHEDULE_EXACT_ALARM 权限的核心设计意图",
+        "suggestion": "对比 OnAlarmListener（免权限、进程内、不持久化）与 PendingIntent 的权衡",
+        "evidence": []
+      },
+      {
+        "type": "源码准确性",
+        "location": "SystemSuspend 服务",
+        "detail": "对 SystemSuspend 描述过于简略，未提及 suspend_backoff 和 wakeup_count 逻辑",
+        "suggestion": "简述 system_suspend 内部的引用计数和 suspend_backoff 机制",
+        "evidence": [
+          "system/hardware/interfaces/suspend/"
+        ]
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-19T12:30:29.391899+08:00",
+    "status": "pending"
   }
 ]
