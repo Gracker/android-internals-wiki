@@ -7,13 +7,14 @@ tags: ["BLAST", "RenderThread", "HWUI", "DisplayList", "FrameTimeline", "Triple-
 related_chapters: ["2.1", "2.5", "2.6", "2.7", "18.1"]
 created_by: "rendering-pipelines-merge"
 created_date: "2026-04-09"
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
 task9_result: needs-rework
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-04-20"
-task2b_state: pending
+task2b_state: fixed
+task2b_result: fixed
 reviewed_by: openclaw-task6
 reviewed_date: 2026-04-17
 task6_result: pass-light-edit
@@ -53,9 +54,9 @@ task6_result: pass-light-edit
 
 ### 第二阶段：Sync — 移交蓝图
 
-UI 线程完成 Draw 后，需要把 DisplayList 及其关联资源（Bitmap 引用、Path 数据等）同步给 RenderThread。这个操作叫 `SyncFrameState`，它会**阻塞 UI 线程**。
+UI 线程完成 Draw 后，会把这一帧封装成 `DrawFrameTask` 交给 RenderThread，然后主线程进入等待。真正执行 `syncFrameState()` 的线程是 RenderThread，它在 `DrawFrameTask::run()` 中把 DisplayList、Bitmap 引用、Path 数据和 Layer 更新同步到渲染上下文。
 
-为什么要阻塞？因为 RenderThread 正在处理上一帧的 GPU 指令，如果 UI 线程此时修改了 DisplayList 引用的 Bitmap 数据，RenderThread 读到的就是不完整的内容。阻塞保证了线程安全——代价是一小段主线程的等待时间。在 Perfetto 中你会看到 `syncFrameState` 这个 slice，正常情况下耗时在 1-2ms，如果突然变长，通常是 Bitmap 过大或资源数量过多导致的。
+这个阶段仍然会表现为 UI 线程被阻塞，因为 `postAndWait()` 要等 RenderThread 至少完成这轮同步后才会返回。Perfetto 里通常能在 RenderThread 看到 `syncFrameState` slice，而 UI Thread 对应的是 `DrawFrame` 内的一段等待时间。`syncFrameState` 变长时，常见原因是 Bitmap 过大、脏区域过多或 Layer 更新量突然上升。
 
 ### 第三阶段：RenderThread — 真正的绘制
 
@@ -70,9 +71,9 @@ RenderThread 拿到蓝图后，开始将它翻译为 GPU 能理解的指令：
 这是 BLAST 模型的核心变化点：
 
 1. **acquireNextBuffer**：BBQ 在 App 进程内作为消费者，从队列中取出刚画好的 Buffer。
-2. **Build Transaction**：创建一个 `SurfaceControl.Transaction`，包含 Buffer 指针、acquireFence、以及窗口几何信息。
-3. **apply Transaction**：通过 Binder 将 Transaction 发送给 SurfaceFlinger。这个调用通常是**异步的**——RenderThread 不等 SF 完成处理就返回。
-4. **VSync-SF 到达**：SurfaceFlinger 被唤醒，等待所有 acquireFence signal（确保 GPU 画完了），执行 `latchBuffer`，将所有 App 的 Layer 按 Z-Order 叠加，交给 HWC 硬件合成，最终上屏。
+2. **Build Transaction**：创建 `SurfaceControl.Transaction`，把 Buffer、acquireFence 和窗口几何信息放进同一次提交。Android 12+ 还会在这里通过 `setFrameTimelineInfo()` 带上这一帧的 VSyncId。
+3. **apply Transaction**：通过 Binder 将 Transaction 发送给 SurfaceFlinger。这个调用通常是**异步的**，RenderThread 不等 SF 完成处理就返回。
+4. **VSync-SF 到达**：SurfaceFlinger 被唤醒，等待 acquireFence signal，执行 `latchBuffer`，将所有 App 的 Layer 按 Z-Order 叠加，交给 HWC 硬件合成，最终上屏。
 
 ## BLAST Buffer 生命周期
 
@@ -86,7 +87,7 @@ stateDiagram-v2
     FREE --> DEQUEUED: dequeueBuffer (RenderThread 拿走)
     DEQUEUED --> QUEUED: queueBuffer (RenderThread 归还)
     QUEUED --> ACQUIRED: acquireBuffer (BBQ 消费)
-    ACQUIRED --> FREE: releaseBuffer (SF 用完释放)
+    ACQUIRED --> FREE: releaseBuffer (TransactionCompleted 回调触发)
 ```
 
 每一个 Buffer 在任意时刻处于以下状态之一：
@@ -96,7 +97,7 @@ stateDiagram-v2
 | **FREE** | 空闲，可被分配 | 无 |
 | **DEQUEUED** | 被 RenderThread 拿走准备写 | RenderThread |
 | **QUEUED** | 写完放回队列，等待消费 | BLASTBufferQueue |
-| **ACQUIRED** | 被 BBQ 消费，已提交给 SF | SurfaceFlinger（通过 Transaction） |
+| **ACQUIRED** | Buffer 已被 BBQ 取走，并已关联到待提交或已提交的 Transaction | App 进程内的 BBQ |
 
 ### Triple Buffering 的意义
 
@@ -120,7 +121,9 @@ Slot 2:            [App Draw F2]  [SF Display F2]
 | **dequeueBuffer** | RenderThread | FREE → DEQUEUED | 返回 releaseFence（前消费者释放信号） |
 | **queueBuffer** | RenderThread | DEQUEUED → QUEUED | 传入 acquireFence（GPU 画完信号） |
 | **acquireBuffer** | BBQ 内部 | QUEUED → ACQUIRED | — |
-| **releaseBuffer** | SF（通过回调） | ACQUIRED → FREE | presentFence（上屏完成信号） |
+| **releaseBuffer** | BBQ（由 SF 的 TransactionCompleted 回调触发） | ACQUIRED → FREE | releaseFence |
+
+`releaseBuffer` 这一行背后有一条跨进程回调链。BLAST 模式下，Consumer 驻留在 App 进程的 BBQ，而不是 SurfaceFlinger。SF 在 Transaction 完成后通过 `TransactionCompletedListener` 把 `ReleaseCallbackId` 和 `releaseFence` 回传给 App，BBQ 再调用 `releaseBufferCallbackLocked()` 与 `BLASTBufferItemConsumer::releaseBuffer()` 归还槽位。排查 `dequeueBuffer` 长等待时，这条释放链要一起看。
 
 ## 渲染时序图（BLAST Sequence）
 
@@ -156,7 +159,7 @@ sequenceDiagram
     rect rgb(230, 250, 230)
         Note over BBQ, SF: 3. BLAST 提交
         BBQ->>BBQ: acquireNextBuffer
-        BBQ->>SF: Transaction(Buffer, acquireFence)
+        BBQ->>SF: Transaction(Buffer, acquireFence, FrameTimelineInfo)
     end
 
     Note over HW, SF: 4. VSync-SF（合成）
@@ -173,7 +176,7 @@ sequenceDiagram
     end
     
     HWC-->>SF: presentFence
-    SF-->>BBQ: releaseFence
+    SF-->>BBQ: TransactionCompleted(releaseFence)
     BBQ-->>RT: Buffer 可复用
 ```
 
@@ -182,6 +185,7 @@ sequenceDiagram
 1. **App 与 SF 的解耦**：RenderThread 通过 `queueBuffer` 将 Buffer 提交给 BBQ 后，不等待 SF 处理。BBQ 在 App 进程内完成 `acquireNextBuffer` 并构造 Transaction，再通过异步 Binder 发给 SF。这使得 App 侧的帧生产不会被 SF 的合成节奏直接阻塞。
 2. **Fence 同步**：CPU 不等 GPU。`acquireFence` 是 GPU 画完的信号，SF 在 `latchBuffer` 时等待这个 fence，而不是 CPU spin-wait。
 3. **槽位循环**：Slot 0 画完进入 ACQUIRED 状态后，RenderThread 可以立即 dequeue Slot 1 开始画下一帧。
+4. **释放回路**：Slot 真正回到 FREE，要等 SF 的 TransactionCompleted 回调把 `releaseFence` 带回 BBQ。`dequeueBuffer` 堵住时，问题也可能出在这条释放链的后段。
 
 ## Trace 视角
 
@@ -194,22 +198,23 @@ sequenceDiagram
 | `Choreographer#doFrame` | 一帧的完整 UI 处理 | < 8ms | 超过 16ms → 必定掉帧 |
 | `measure` / `layout` | 视图树的测量和布局 | < 2ms | 递归层级过深或布局复杂 |
 | `draw` | DisplayList 记录 | < 4ms | onDraw 中有耗时操作 |
-| `syncFrameState` | 同步给 RenderThread | < 2ms | Bitmap 过大或过多 |
+| `syncAndDrawFrame` / `DrawFrame` | 把任务投递给 RenderThread 后进入等待 | < 2ms | 这里变长时，继续看 RenderThread 的 `syncFrameState`、`dequeueBuffer` 和 GPU 提交 |
 
 ### RenderThread 关键 Slice
 
 | Slice | 含义 | 正常耗时 | 异常信号 |
 |:---|:---|:---|:---|
-| `DrawFrame` | 一帧的 GPU 指令生成 | < 8ms | 包含 `dequeueBuffer` 等待 |
-| `dequeueBuffer` | 申请空闲 Buffer | < 1ms | 长等待 → Buffer 瓶颈 |
+| `DrawFrame` | 一帧渲染任务的入口 | < 8ms | 内部若出现长 `syncFrameState` 或长 `dequeueBuffer`，说明瓶颈在状态同步或 Buffer 供给 |
+| `syncFrameState` | 同步 RenderNode、Bitmap、Layer 状态 | < 2ms | Bitmap 过大、Layer 更新突增、脏区域扩大 |
+| `dequeueBuffer` | 申请空闲 Buffer | < 1ms | 长等待 → Buffer 释放链或 SF 节奏跟不上 |
 | `queueBuffer` | 提交画好的 Buffer | < 1ms | 异常少见 |
 
 ### SurfaceFlinger 关键 Slice
 
 | Slice | 含义 | 异常信号 |
 |:---|:---|:---|
-| `setTransactionState` | 收到 App 的 Transaction | 排队过多说明 App 提交过快 |
-| `latchBuffer` | 锁定 Buffer 准备合成 | 等待 acquireFence 久 → GPU 慢 |
+| `setTransactionState` / `applyTransactionState` | 收到并应用 App 的 Transaction | 排队过多说明 Transaction 提交密度过高 |
+| `commit` / `latchBuffer` | 锁定 Buffer 并推进本帧合成 | 等待 acquireFence 久 → GPU 还没画完 |
 
 ### 快速定位口诀
 
@@ -224,8 +229,8 @@ Android 12 引入了 FrameTimeline 机制，彻底改变了 Jank 的判定方式
 ### 核心机制
 
 1. **VSyncId**：每个 VSync 信号携带唯一 ID。`Choreographer` 收到 `VSyncId`（比如 1001）后，在 `doFrame` 开始时根据这个 ID 计算预期上屏时间（`ExpectedPresentTime`）。
-2. **Propagation**：RenderThread 在 `queueBuffer` 时将 VSyncId 传递给 SurfaceFlinger。
-3. **Matching**：SF 收到 Buffer 后，检查当前实际时间是否超过了 VSyncId=1001 对应的预期时间。如果超过，标记为 Jank。
+2. **Propagation**：RenderThread 把 `VSyncId` 交给 BBQ，BBQ 在组装 `SurfaceControl.Transaction` 时调用 `setFrameTimelineInfo()`，再把这份信息跟着 Transaction 跨进程发给 SurfaceFlinger。
+3. **Matching**：SF 以这份 FrameTimelineInfo 为索引，对照 Expected Present Time 和实际 present 结果判断这一帧是否超时。
 
 ### Perfetto 中的表现
 

@@ -29,10 +29,11 @@ sources:
     path: "得物技术《包体积：Layout 二进制文件裁剪优化》2023-09"
 tags: [apk, r8, proguard, app-bundle, resource-optimization, native-libs, dex, code-shrinking, webp, abi-filter, dynamic-feature, apk-analyzer]
 related_chapters: ["8.3", "14.1", "15.6"]
-pipeline_stage: "task9_pending"
-task6_state: "reviewed"
+pipeline_stage: task6_pending
+task6_state: revisiting
 task9_state: pending
 task2b_state: fixed
+task9_result: needs-rework
 task2b_result: fixed
 ---
 
@@ -66,7 +67,9 @@ task2b_result: fixed
 
 `AndroidManifest.xml` 是编译后的二进制清单文件，描述了 App 的组件、权限、SDK 版本等信息。
 
-理解这个结构是优化体积的前提。不同类型的文件需要完全不同的优化策略：dex 靠代码缩减和混淆，res 靠资源压缩和格式替换，lib 靠 ABI 过滤和动态下发。**不加区分地对整个 APK 做「压缩」是无效的**——dex 和 so 已经是压缩格式，再压缩不会减小体积，反而增加安装时的解压开销。
+理解这个结构是优化体积的前提。不同类型的文件需要完全不同的优化策略：dex 靠代码缩减和混淆，res 靠资源压缩和格式替换，lib 靠 ABI 过滤和动态下发。APK 本身是 ZIP 容器，`classes.dex` 和 ELF `.so` 只是被放进容器里的内容，它们是否压缩取决于 packaging 策略，不取决于文件格式本身。
+
+对 dex 来说，APK 里常见的是 ZIP entry 的压缩结果，安装后还会继续进入 dexopt、vdex / odex 这些流程。对 native 库来说，Android 6.0+ 已支持直接从 APK 加载未压缩且 page-aligned 的 `.so`。AGP 4.2+ 更常用 `jniLibs.useLegacyPackaging` 控制这条路径，旧的 `android:extractNativeLibs` 清单属性只是同一问题的旧入口。`useLegacyPackaging=false` 时，`.so` 会保持未压缩以支持 direct loading；`true` 时才会走压缩并提取到文件系统的路径。
 
 ## APK Analyzer：先测量，再优化
 
@@ -237,6 +240,8 @@ android {
 
 对于 Google Play 分发的 App，更好的方案是使用 App Bundle（下一节讨论）——Play 会根据用户设备的 ABI 自动生成只包含对应架构的 APK，不需要手动过滤。
 
+ABI 过滤只解决“带了几份库”。`.so` 是否压缩是另一条轴：在支持 direct loading 的设备上，`useLegacyPackaging=false` 会让库保持未压缩并满足 page alignment，安装后不必再额外抽取一份；`true` 时才会更接近旧式 `extractNativeLibs=true` 的行为。分析下载体积和安装后磁盘占用时，这两条设置要分开看。
+
 ### Strip 符号表
 
 编译 so 库时，默认会包含调试符号表（symbol table）和部分调试信息。这些信息对 release 构建毫无用处，但可能让 so 体积膨胀数倍。
@@ -293,18 +298,49 @@ App Bundle 的进阶用法是 **Dynamic Feature Module**（动态功能模块）
 - **On-demand delivery**：模块仅在用户访问对应功能时才下载（适合支付模块、滤镜编辑器等非核心功能）
 - **Conditional delivery**：模块根据设备条件自动决定是否安装（如只在有 VR 功能的设备上安装 VR 模块）
 
-配置一个 on-demand 的 Dynamic Feature Module：
+配置一个 on-demand 的 Dynamic Feature Module，至少要同时改 base app module 和 feature module。
 
-首先在模块的 `build.gradle.kts` 中声明：
+base app module（通常是 `:app`）负责声明它有哪些动态模块：
 
 ```kotlin
-android {
-    // 动态功能模块的配置
+plugins {
+    id("com.android.application")
+    kotlin("android")
 }
-dynamicFeatures.add(":feature:payment")
+
+android {
+    namespace = "com.example.app"
+    compileSdk = 36
+    defaultConfig {
+        applicationId = "com.example.app"
+        minSdk = 21
+    }
+    dynamicFeatures += setOf(":feature:payment")
+}
 ```
 
-然后在 feature module 的 `AndroidManifest.xml` 中：
+feature module 自己要应用 `com.android.dynamic-feature` plugin，并依赖 base module：
+
+```kotlin
+plugins {
+    id("com.android.dynamic-feature")
+    kotlin("android")
+}
+
+android {
+    namespace = "com.example.app.feature.payment"
+    compileSdk = 36
+    defaultConfig {
+        minSdk = 21
+    }
+}
+
+dependencies {
+    implementation(project(":app"))
+}
+```
+
+`settings.gradle(.kts)` 里也要包含这两个模块。然后再在 feature module 的 `AndroidManifest.xml` 中声明分发策略：
 
 ```xml
 <dist:module
