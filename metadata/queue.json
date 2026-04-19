@@ -1939,5 +1939,250 @@
     "added_at": "2026-04-19T15:14:00",
     "status": "pending",
     "original_review_log": "logs/review/2026-04-19-15-review.md"
+  },
+  {
+    "section": "12.0",
+    "section_title": "APK 体积优化与网络性能 (README)",
+    "priority": 95,
+    "reason": "[External Review] 章节为空壳，仅有占位符和未处理参考链接，无任何实质性技术分析",
+    "material_paths": [],
+    "review_issues": [
+      {
+        "type": "内容缺失",
+        "location": "全局",
+        "detail": "章节标注'本章节正在建设中'，缺少 APK 体积优化与网络性能优化的全部原理说明、源码分析和实战案例",
+        "suggestion": "需完全重写，按 AIW 规范补齐核心原理、AOSP 代码级分析、实战落地与 Trace",
+        "evidence": []
+      },
+      {
+        "type": "源码缺失",
+        "location": "全局",
+        "detail": "没有任何 AOSP 源码引用或锚点",
+        "suggestion": "补充 aapt2、R8/D8、Cronet/OkHttp 核心链路源码分析",
+        "evidence": []
+      },
+      {
+        "type": "资料未消化",
+        "location": "参考资料部分",
+        "detail": "参考资料均为未处理的裸链接，堆砌素材无法阅读",
+        "suggestion": "消化资料后融入正文，或提取关键结论作为扩展阅读",
+        "evidence": []
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-19T15:43:40.480210+08:00",
+    "status": "pending",
+    "source_file": "2026-04-19-14-12.0-external-review.md"
+  },
+  {
+    "section": "18.9",
+    "section_title": "Vulkan 原生渲染链路",
+    "priority": 95,
+    "reason": "[External Review] P0: vkQueuePresentKHR 与 GPU/SurfaceFlinger 边界完全误解; P1: 隐式 Layout 转换、Trace 串联、AVP 版本前提缺失",
+    "material_paths": [],
+    "review_issues": [
+      {
+        "type": "源码错误 / 原理断裂",
+        "location": "18.9.3 渲染流程详解 - 完整时序图",
+        "detail": "完全弄反了 CPU、GPU 驱动和 SurfaceFlinger 在 Present 阶段的职责。原文认为 GPU 内核态驱动执行 queueBuffer 并与 SF 通信。实际是 App 的 CPU 线程在 vkQueuePresentKHR 内部通过 libvulkan.so 直接调用 ANativeWindow::queueBuffer，并将 GPU Semaphore 转为 Fence FD 传给 SF",
+        "suggestion": "重构时序图，明确 libvulkan.so 在 CPU 侧调用 queueBuffer，GPU Semaphore->Fence FD 转换，真正硬件同步在 GPU 与 SF/Display Controller 之间",
+        "evidence": [
+          "frameworks/native/vulkan/libvulkan/swapchain.cpp QueuePresentKHR"
+        ]
+      },
+      {
+        "type": "原理链完整性",
+        "location": "18.9.4 Pipeline Barrier 与 Image Layout",
+        "detail": "以显式 Barrier 作为 Swapchain Image Present Layout 转换主要示例，未提及 RenderPass finalLayout 隐式转换（移动端最佳实践）",
+        "suggestion": "补充 RenderPass finalLayout=PRESENT_SRC_KHR 隐式转换作为移动端首选方案，显式 Barrier 仅在多 Pass 复杂共享资源下使用",
+        "evidence": [
+          "Vulkan Spec: VkRenderPass 与 VkAttachmentDescription"
+        ]
+      },
+      {
+        "type": "原理链完整性",
+        "location": "18.9.7 Trace 视角",
+        "detail": "未讲明如何将 App 层 Vulkan Slice 追踪到 SurfaceFlinger 层合成状态，缺少全链路排查方法",
+        "suggestion": "增加实战方法：在 Perfetto 中寻找 vkQueuePresentKHR 下方的 queueBuffer slice，根据 Buffer ID 找到 SF 侧对应 Buffer Latch/Present",
+        "evidence": [
+          "frameworks/native/libs/gui/BufferQueueProducer.cpp"
+        ]
+      },
+      {
+        "type": "版本差异覆盖",
+        "location": "18.9.2 Android Vulkan Profile (AVP)",
+        "detail": "未指出 Android 13 强制要求 64 位设备支持 Vulkan 1.3 的历史分界线，直接指导使用较新 Profile 而不声明 OS 版本前提",
+        "suggestion": "明确 Android 13 强制 Vulkan 1.3 分界线及 Profile 落地的 OS 版本基础",
+        "evidence": []
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-19T15:43:40.480210+08:00",
+    "status": "pending",
+    "source_file": "2026-04-19-14-18.9-external-review.md"
+  },
+  {
+    "section": "18.10",
+    "section_title": "SurfaceControl API",
+    "priority": 95,
+    "reason": "[External Review] P0: Buffer 回收机制在 API 29-35 的描述严重事实错误; P1: NDK Layer 树挂接初始链路缺失、跨进程 Layer 共享黑盒",
+    "material_paths": [],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "4.1 Buffer Management 及 7.2 常见错误",
+        "detail": "断言 Android 10-15 没有 NDK 级 release callback，OnComplete 不等价于 buffer 释放。实际 API 29 起 OnComplete 回调中的 ASurfaceTransactionStats_getPreviousReleaseFenceFd 就是官方回收路径",
+        "suggestion": "修改 API 29-35 描述，明确 OnComplete + getPreviousReleaseFenceFd 组合用法，API 36 setBufferWithRelease 是简化升级版",
+        "evidence": [
+          "frameworks/native/include/android/surface_control.h ASurfaceTransactionStats_getPreviousReleaseFenceFd"
+        ]
+      },
+      {
+        "type": "原理断裂",
+        "location": "3.1 步骤 1：创建 SurfaceControl",
+        "detail": "给出 ASurfaceControl_createFromWindow 代码但没给出 ANativeWindow 来源，NDK 渲染树与 Java UI 树之间桥接黑盒",
+        "suggestion": "补充通过 JNI ANativeWindow_fromSurface 从 SurfaceView 获取 ANativeWindow 的说明",
+        "evidence": [
+          "NDK android/native_window_jni.h"
+        ]
+      },
+      {
+        "type": "知识盲区",
+        "location": "4.2 Hierarchy Management / 8.2 画中画",
+        "detail": "未讲清跨进程 Layer 共享机制，NDK ASurfaceControl 缺乏显式跨进程 Binder 传递",
+        "suggestion": "明确 NDK 侧 ASurfaceControl 跨进程局限性，IPC 场景需回 Java 层 Parcelable 处理",
+        "evidence": [
+          "android.view.SurfaceControl Parcelable"
+        ]
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-19T15:43:40.480210+08:00",
+    "status": "pending",
+    "source_file": "2026-04-19-14-18.10-external-review.md"
+  },
+  {
+    "section": "18.11",
+    "section_title": "ANGLE (GLES->Vulkan 翻译层)",
+    "priority": 95,
+    "reason": "[External Review] P0: 伪造不存在的 queryAngleChoice 方法; P1: 正文与附录打架、Android 15 ANGLE 成为默认驱动未点出、Trace marker 缺失",
+    "material_paths": [],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "启用条件与运行时选路",
+        "detail": "声称 GraphicsEnvironment.queryAngleChoice() 决定进程走哪条 GLES driver 路径。AOSP 中不存在该方法，真实入口是 setupAngle() -> shouldUseAngleInternal()",
+        "suggestion": "删除 queryAngleChoice() 表述，将附录中正确的 setup()->setupAngle()->shouldUseAngleInternal() 调用链融入正文",
+        "evidence": [
+          "frameworks/base/core/java/android/os/GraphicsEnvironment.java"
+        ]
+      },
+      {
+        "type": "交叉引用不一致",
+        "location": "全文结构",
+        "detail": "文末直接拼接 AIW-源码调研 附录未融入正文，附录内容与正文冲突",
+        "suggestion": "将附录拆解合并到核心架构、启用条件、调试可见性章节，然后删除附录块",
+        "evidence": []
+      },
+      {
+        "type": "版本差异覆盖",
+        "location": "为什么需要 ANGLE",
+        "detail": "对 Android 15 表述过弱（仅'扩大覆盖范围'），实际 ANGLE 已成为受支持设备的默认 GLES 驱动",
+        "suggestion": "明确 Android 15 将 ANGLE 提升为默认 GLES 驱动，后续逐步废弃原生 GLES 驱动",
+        "evidence": [
+          "Android 15 Release Notes / ANGLE on Android 官方博文"
+        ]
+      },
+      {
+        "type": "知识盲区",
+        "location": "在 Perfetto 中识别 ANGLE",
+        "detail": "仅通过 vk* 过滤无法区分 SkiaVK 和 ANGLE，缺乏 ANGLE 自有 trace marker 说明",
+        "suggestion": "补充 ANGLE 内部 perfetto track events 开启方式和 GL 层面耗时观察",
+        "evidence": []
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-19T15:43:40.480210+08:00",
+    "status": "pending",
+    "source_file": "2026-04-19-14-18.11-external-review.md"
+  },
+  {
+    "section": "18.12",
+    "section_title": "Flutter 渲染链路",
+    "priority": 85,
+    "reason": "[External Review] P1: 缺少 Android Embedding 关键源码锚点、TextureView RenderThread 同步原理未讲透、Platform View SurfaceControl 演进缺失",
+    "material_paths": [],
+    "review_issues": [
+      {
+        "type": "源码准确性缺失",
+        "location": "全局及渲染管线全景",
+        "detail": "全篇仅提供 C++ 层 trace name，缺乏 Android Embedding 层关键类（FlutterSurfaceView, FlutterTextureView, VsyncWaiter）指引",
+        "suggestion": "补充 Java 层类名，帮助读者将 Flutter 抽象机制与 Android 源码对应",
+        "evidence": [
+          "io/flutter/embedding/android/FlutterSurfaceView.java",
+          "io/flutter/view/VsyncWaiter.java"
+        ]
+      },
+      {
+        "type": "原理链断裂",
+        "location": "SurfaceView vs TextureView Render Mode",
+        "detail": "TextureView 模式代价仅提'多一次宿主侧纹理采样'，未讲透 SurfaceTexture.updateTexImage 由宿主 RenderThread 执行，Flutter 帧率上限受限于宿主",
+        "suggestion": "细化 TextureView 上屏时序，指出 Perfetto 中须观察宿主 RenderThread 的 updateTexImage 耗时",
+        "evidence": [
+          "SurfaceTexture.setOnFrameAvailableListener -> invalidate -> updateTexImage"
+        ]
+      },
+      {
+        "type": "知识盲区 / 版本差异",
+        "location": "Platform Views 嵌入",
+        "detail": "未解释 Android 10 引入 SurfaceControl 对 HC 模式性能突破的关键作用（独立 Surface + SF 合成 Z-Order）",
+        "suggestion": "补充 Android 10+ HC 模式利用 SurfaceControl 解决 Z-Order 和合成性能的底层机制",
+        "evidence": [
+          "Android 10 ASurfaceControl API"
+        ]
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-19T15:43:40.480210+08:00",
+    "status": "pending",
+    "source_file": "2026-04-19-14-18.12-external-review.md"
+  },
+  {
+    "section": "18.13",
+    "section_title": "WebView 渲染链路",
+    "priority": 95,
+    "reason": "[External Review] P0: SurfaceControl 核心机制被误判为不确定候选路径; P1: Viz Display Compositor 角色缺失、onShowCustomView 触发条件扩大化",
+    "material_paths": [],
+    "review_issues": [
+      {
+        "type": "版本差异 / 原理断裂",
+        "location": "模式三：SurfaceControl / 独立 child layer",
+        "detail": "将 Android 10+ 引入的 WebViewSurfaceControl 核心机制视为不确定候选路径。实际是现代 WebView 性能优化主力：通过 Child ASurfaceControl 让 Viz 独立提交 Buffer，绕过宿主 RenderThread",
+        "suggestion": "明确 WebViewSurfaceControl 演进状态（Android 10+ 引入，现代版本规模化启用），解释 Child Surface 独立提交原理",
+        "evidence": [
+          "Chromium android_webview/browser/gfx/hardware_renderer.cc"
+        ]
+      },
+      {
+        "type": "原理链完整性",
+        "location": "模式一：GL Functor 及进程模型图",
+        "detail": "未讲清 Renderer 进程的帧如何通过 Viz Display Compositor 在 App 进程的 RenderThread 里被 Functor 消费",
+        "suggestion": "补充 Viz Display Compositor 在 App 进程的角色，DrawFunctor 本质是触发 Viz 绘制 CompositorFrame 到宿主画布",
+        "evidence": [
+          "Chromium components/viz/ 和 android_webview/browser/gfx/"
+        ]
+      },
+      {
+        "type": "事实不准确",
+        "location": "模式二：SurfaceView Wrapper",
+        "detail": "未明确 onShowCustomView 仅在网页 JS 显式调用 HTML5 Fullscreen API 时触发，非根据内容大小自动决定",
+        "suggestion": "强调 Fullscreen API 触发前提，区分全屏模式和普通页面内嵌视频",
+        "evidence": []
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-19T15:43:40.480210+08:00",
+    "status": "pending",
+    "source_file": "2026-04-19-14-18.13-external-review.md"
   }
 ]
