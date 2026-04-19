@@ -29,12 +29,12 @@ sources:
     path: "https://developer.android.com/about/versions"
 tags: ['treble', 'mainline', 'apex', 'gki', 'art', 'dalvik', 'privacy', 'background-restrictions', '16k-page', 'compilation', 'profile-guided', 'background-execution']
 related_chapters: ["1.1", "1.4", "1.7", "2.9", "4.4", "4.6", "5.6", "8.7"]
-reviewed_date: "2026-04-14"
+reviewed_date: "2026-04-19"
 reviewed_by: "openclaw-task6"
-review_notes: "task9 P90 rework: 寄存器描述修正(翻倍→精确), Dalvik/Zygote已验证正确；2026-04-14 task6 轻量精修：文风、间距、图示占位"
+review_notes: "task9 P90 rework: 寄存器描述修正(翻倍→精确), Dalvik/Zygote已验证正确；2026-04-14 task6 轻量精修：文风、间距、图示占位; 2026-04-19 task6 re-review (revisiting): L1 fix x2 (not-X-Y pattern)"
 task9_result: needs-rework
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task6_result: pass-light-edit
 task9_state: pending
 task2b_state: fixed
@@ -72,7 +72,7 @@ task2b_result: fixed
 
 打开 Perfetto 抓一份 Trace，那些进程、线程、Binder 调用、渲染管线的形态并非一成不变。Android 从 2008 年的 1.0 到今天的 Android 16，每一次大版本的架构变更都在重塑这些行为。不了解这些变化，分析问题时容易犯经验主义的错误：用 Android 8 的经验去解释 Android 15 的 Trace，得出错误结论。
 
-Android 的版本演进不是随意的功能堆叠，它有一条清晰的主线：**模块化**。从 Project Treble 到 Project Mainline，从 GKI 到 APEX，Google 一直在把 Android 从一个"铁板一块"的操作系统拆解为可独立升级的模块。理解这条主线，不仅能帮你看懂系统架构的设计意图，还能帮你在实际工作中判断"这个问题是系统层面的还是厂商层面的"。这在 OEM 和 App 开发者的日常工作中很关键。
+Android 的版本演进围绕一条清晰的主线：**模块化**。从 Project Treble 到 Project Mainline，从 GKI 到 APEX，Google 一直在把 Android 从一个"铁板一块"的操作系统拆解为可独立升级的模块。理解这条主线，不仅能帮你看懂系统架构的设计意图，还能帮你在实际工作中判断"这个问题是系统层面的还是厂商层面的"。这在 OEM 和 App 开发者的日常工作中很关键。
 
 本节会梳理 Android 版本演进中那些对性能分析有直接影响的架构变化，而不是事无巨细地罗列每个版本的新功能。
 
@@ -259,7 +259,7 @@ Android 7.0 引入了**混合编译策略**，这是 ART 编译策略的最终�
 
 ## Privacy 变更对性能监控工具的影响
 
-模块化解决了系统更新的碎片化问题，但 Android 的另一条演进主线——隐私保护——对性能分析工具的影响同样深远。自 Android 10 起，隐私限制逐步收紧，这对性能监控工具的开发和使用产生了深远影响。这不是一个"锦上添花"的话题——负责维护性能监控 SDK 或内部工具的工程师如果不了解这些限制，工具可能在新版本上直接失效。
+模块化解决了系统更新的碎片化问题，但 Android 的另一条演进主线——隐私保护——对性能分析工具的影响同样直接。自 Android 10 起，隐私限制逐版本收紧，负责维护性能监控 SDK 或内部工具的工程师如果不了解这些限制，工具可能在新版本上直接失效。
 
 ### 包可见性限制（Android 11+）
 
