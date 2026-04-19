@@ -13,8 +13,8 @@
       "unknown": 1
     },
     "task6_state_counts": {
-      "reviewed": 65,
-      "revisiting": 108,
+      "reviewed": 66,
+      "revisiting": 107,
       "pending": 2
     },
     "task9_state_counts": {
@@ -23,8 +23,8 @@
       "fixed": 1
     },
     "pipeline_stage_counts": {
-      "task6_pending": 120,
-      "task9_pending": 46,
+      "task6_pending": 119,
+      "task9_pending": 47,
       "task2b_pending": 9
     },
     "total_sections": 175,
