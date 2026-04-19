@@ -1709,13 +1709,14 @@
       "title": "Kotlin Coroutine 性能实践",
       "path": "src/part2-performance/ch08-responsiveness/06-coroutine-performance.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
-      "task6_state": "reviewed",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
       "task9_state": "pending",
-      "task2b_state": "idle",
+      "task2b_state": "fixed",
       "reviewed_date": "2026-04-16",
       "reviewed_by": "openclaw-task6",
-      "section": "8.6"
+      "section": "8.6",
+      "task2b_result": "fixed"
     },
     "src/part2-performance/ch08-responsiveness/07-baseline-profiles.md": {
       "chapter": "'8.7'",
@@ -3453,7 +3454,7 @@
     "task2b_state": "pending",
     "last_task9_at": "2026-04-19T00:54:00+08:00"
   },
-  "last_updated": "2026-04-19T11:09:31+08:00",
+  "last_updated": "2026-04-19T12:02:51+08:00",
   "rework_log": [
     {
       "date": "2026-04-15T19:44:09.836904",
@@ -3709,6 +3710,22 @@
       ],
       "verification": "technical-writing 禁用词扫描=0，queue=completed",
       "queue_status": "completed"
+    },
+    {
+      "date": "2026-04-19T12:02:51+08:00",
+      "section": "8.6",
+      "section_title": "Kotlin Coroutine 性能实践",
+      "source": "task9-deep-tech-review",
+      "priority": 95,
+      "issues_fixed": 3,
+      "fixes": [
+        "源码错误：Dispatchers.Default 改为 DefaultScheduler / CoroutineScheduler，并补 local queue、全局 CPU/blocking queue、CPU permits 与 blocking task compensation",
+        "源码错误：把 kotlinx-coroutines-debug 改成 JVM-only，Android 侧改为调试器 + app tracing + CPU Profiler 组合",
+        "原理断裂：跨 suspend 的 Trace 示例改成 beginAsyncSection/endAsyncSection，并把不挂起代码段拆成同步 section",
+        "technical-writing 禁用词扫描 0 hit"
+      ],
+      "verification": "technical-writing 禁用词扫描=0，queue=completed",
+      "queue_status": "completed"
     }
   ],
   "reviews": [
@@ -3896,10 +3913,18 @@
       "by": "task2b-rework",
       "source": "task6-review",
       "issues_fixed": 4
+    },
+    {
+      "section": "8.6",
+      "section_title": "Kotlin Coroutine 性能实践",
+      "date": "2026-04-19T12:02:51+08:00",
+      "by": "task2b-rework",
+      "source": "task9-deep-tech-review",
+      "issues_fixed": 3
     }
   ],
-  "last_task2b_run": "2026-04-19T11:09:31+08:00",
-  "task2b_fixed": 11,
+  "last_task2b_run": "2026-04-19T12:02:51+08:00",
+  "task2b_fixed": 12,
   "17.1": {
     "task6_review_date": "2026-04-16",
     "task6_result": "pass-light-edit",
@@ -3913,10 +3938,10 @@
     "task6_state": "reviewed",
     "task9_state": "pending"
   },
-  "task2b_last_run": "2026-04-19T07:09:38+08:00",
+  "task2b_last_run": "2026-04-19T12:02:51+08:00",
   "task2b_last_result": "fixed",
   "task2b_task8_processed": 3,
-  "task2b_note": "修复 1.17 的共享内存 / dmabuf / FMQ 边界、debuggerd 信号表与版本演进表，并完成 technical-writing 禁用词复检",
+  "task2b_note": "修复 8.6 的 CoroutineScheduler / DebugProbes / async trace 三处技术问题，并完成 technical-writing 禁用词复检",
   "15.5": {
     "task6_review_date": "2026-04-17",
     "task6_result": "pass-light-edit",
@@ -3937,6 +3962,14 @@
       "date": "2026-04-19T07:09:38+08:00",
       "section": "1.17",
       "section_title": "IPC 全景：Android 进程间通信机制对比与性能选型",
+      "source": "task9-deep-tech-review",
+      "issues_fixed": 3,
+      "status": "fixed"
+    },
+    {
+      "date": "2026-04-19T12:02:51+08:00",
+      "section": "8.6",
+      "section_title": "Kotlin Coroutine 性能实践",
       "source": "task9-deep-tech-review",
       "issues_fixed": 3,
       "status": "fixed"
@@ -4001,6 +4034,14 @@
       ],
       "issues_fixed": 3,
       "by": "task2b-rework"
+    },
+    {
+      "date": "2026-04-19T12:02:51+08:00",
+      "sections": [
+        "8.6"
+      ],
+      "issues_fixed": 3,
+      "by": "task2b-rework"
     }
   ],
   "reviewed_chapters": [
@@ -4014,7 +4055,7 @@
   "total_chapters": 0,
   "reviewed_count": 1,
   "last_review": "18.17",
-  "last_task2b_section": "1.17",
+  "last_task2b_section": "8.6",
   "1.10": {
     "section": "1.10",
     "title": "ContentProvider 性能与优化",

@@ -27,10 +27,15 @@ sources:
     path: "https://kotlinlang.org/docs/coroutines-context-and-dispatchers.html"
 tags: ['coroutine', 'performance', 'dispatcher', 'structured-concurrency', 'flow', 'backpressure']
 related_chapters: ["1.5", "7.7", "8.1", "8.2"]
-pipeline_stage: "task9_pending"
-task6_state: "reviewed"
-task9_state: "pending"
-task2b_state: idle
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
+task9_result: needs-rework
+task9_reviewed_date: "2026-04-19"
+task9_reviewed_by: openclaw-task9
+last_task9_at: "2026-04-19T11:10:00+08:00"
+task2b_state: fixed
+task2b_result: fixed
 ---
 
 # Kotlin Coroutine 性能实践
@@ -44,7 +49,7 @@ task2b_state: idle
 - 🔹 Coroutine 上下文切换开销 vs 线程切换开销的量化对比
 - 🔹 结构化并发（Structured Concurrency）对资源泄漏的防护
 - 🔹 Flow 的背压与性能：conflate、buffer、collectLatest 的取舍
-- 🔹 Coroutine 在 Perfetto 中的追踪：kotlinx-coroutines-debug
+- 🔹 Coroutine 在 Perfetto 中的追踪：app tracing、调试器与 CPU Profiler 的组合
 
 ### 扩展（可选深入）
 
@@ -78,7 +83,7 @@ Coroutine 不自己运行代码，它需要 Dispatcher 来决定"这段代码在
 
 有两个直接后果：第一，所有在 `Dispatchers.Main` 上的 coroutine 都是串行执行的，因为主线程只有一个；第二，每个 coroutine 的 dispatch 都要排队等主线程 MessageQueue 中前面的消息处理完。
 
-在 Perfetto 中，`Dispatchers.Main` 上的 coroutine 执行表现为 MainThread track 上的普通 CPU slice。我们无法直接区分"这是 coroutine 在执行"还是"这是普通 Handler 消息在执行"——除非开启了 coroutine debug 追踪（后面会讲）。
+在 Perfetto 中，`Dispatchers.Main` 上的 coroutine 执行表现为 MainThread track 上的普通 CPU slice。只看线程时间线，coroutine 和普通 Handler 消息没有固定外观差异。想把某个逻辑操作和 coroutine 对上，通常要把应用侧 trace、`CoroutineName` 和调试器里的 coroutine 栈放到同一个时间窗里看。
 
 [已验证: 官方文档, developer.android.com/kotlin/coroutines/coroutines-contexts]
 
@@ -86,7 +91,9 @@ Coroutine 不自己运行代码，它需要 Dispatcher 来决定"这段代码在
 
 ### Dispatchers.Default：CPU 密集型任务的工作窃取线程池
 
-`Dispatchers.Default` 背后是一个基于 `ScheduledThreadPoolExecutor` 的工作窃取（work-stealing）线程池。线程数量等于 CPU 核心数（最少 2 个），可通过系统属性 `kotlinx.coroutines.default.parallelism` 调整。
+`Dispatchers.Default` 由 `DefaultScheduler -> SchedulerCoroutineDispatcher -> CoroutineScheduler` 这套实现提供。`CoroutineScheduler` 维护 `corePoolSize` 个用于 CPU task 的 worker、每个 worker 的 local queue，以及全局 CPU queue / blocking queue，worker 之间会做 work-stealing。默认并行度接近 CPU 核心数（最少 2 个），也可以通过系统属性 `kotlinx.coroutines.default.parallelism` 调整。
+
+调度器还维护 `corePoolSize` 个 CPU permits。某个 worker 遇到 blocking task 时会释放 permit，调度器再唤醒或创建额外 worker 做补偿，尽量把 CPU task 的并行度稳定在核心并行范围内。看 Perfetto 时，`DefaultDispatcher-worker-N` 数量短时高于核心数，往往对应 blocking task compensation，不一定是线程泄漏。
 
 这个线程池的设计目标是 CPU 密集型任务——排序、JSON 解析、图片解码、加密计算等。如果在这里做 I/O 阻塞操作（比如 `Thread.sleep` 或阻塞式文件读写），就会占用一个本该用来做计算的线程，导致其他 CPU 任务排队等待。
 
@@ -103,7 +110,7 @@ suspend fun loadData() = withContext(Dispatchers.Default) {
 
 这段代码的 `readBytes()` 是阻塞调用，会占用 Default 线程池中的一个线程。如果同时有多个这样的任务，Default 线程池会被耗尽，影响所有使用它的 CPU 密集型 coroutine。
 
-[已验证: 官方文档, kotlinlang.org/docs/coroutines-context-and-dispatchers.html#dispatchers-default]
+[已验证: kotlinx.coroutines 源码, kotlinx-coroutines-core/jvm/src/Dispatchers.kt, kotlinx-coroutines-core/jvm/src/scheduling/CoroutineScheduler.kt]
 
 ### Dispatchers.IO：弹性扩展的 I/O 线程池
 
@@ -307,28 +314,25 @@ searchQueryFlow
 
 这是很多开发者头疼的问题：在 Perfetto 中，coroutine 的执行看起来就像普通的线程执行——我们看到的是线程在跑、CPU 在用，但无法区分"这段执行是哪个 coroutine 触发的"。
 
-### kotlinx-coroutines-debug：DebugProbes
+### kotlinx-coroutines-debug：只适用于 JVM
 
-`kotlinx-coroutines-debug` 模块提供了 `DebugProbes` API，可以记录所有活跃 coroutine 的创建和挂起栈。它的使用方式是：
+`kotlinx-coroutines-debug` 模块提供 `DebugProbes` API，可以记录活跃 coroutine 的创建、挂起和恢复信息。它依赖 JVM Instrument API，适合 JVM 单元测试、桌面程序或服务端排查。
 
-1. 在应用启动时安装 JVM agent，或手动调用 `DebugProbes.install()`
-2. 在需要时调用 `DebugProbes.dumpCoroutines()` 获取当前所有 coroutine 的快照
+Android runtime 不支持这套 Instrument API。官方 README 直接写明，在 Android 上接入 `kotlinx-coroutines-debug` 会触发 `NoClassDefFoundError`，也可能遇到资源合并冲突。因此它不能当成 Android 设备侧的 coroutine trace 方案，也不能当成 Perfetto 的常规配套工具。
 
-**重要的性能限制**：`DebugProbes.enableCreationStackTraces` 在生产环境中不应该开启，因为它会为每个 coroutine 记录创建时的完整栈，开销可达两位数的百分比。即使关闭创建栈追踪，debug probes 也会引入个位数百分比的吞吐量下降。
+如果只在 JVM 环境里用它，`DebugProbes.enableCreationStackTraces` 仍然要谨慎。关闭 creation stack traces 时，官方给出的典型开销仍是吞吐量的个位数百分比，所以更适合短时间诊断，不适合常开。
 
-所以 `kotlinx-coroutines-debug` 主要用于开发调试，不适合在性能测试或线上监控中持续开启。
+[已验证: kotlinx-coroutines-debug README, DebugProbes.install / Android runtime does not support Instrument API / single-digit percentage overhead]
 
-[已验证: 官方文档, github.com/Kotlin/kotlinx.coroutines/tree/master/kotlinx-coroutines-debug]
+### Android 侧怎么定位 Coroutine
 
-### Android Studio 的 Coroutines 调试器
+Android 侧更稳的组合是三类信息：
 
-从 Android Studio 4.0 开始，调试器中提供了 Coroutines 面板，可以查看：
-- 当前所有活跃的 coroutine
-- 每个 coroutine 的状态（RUNNING / SUSPENDED）
-- 按 Dispatcher 分组
-- 创建和调用栈
+- **调试器里的 coroutine 面板**：用来查看 Job 层级、挂起点、Dispatcher 和当前状态，适合回答“哪个 coroutine 还活着、挂在哪里”。
+- **应用侧 trace**：用 `android.os.Trace` 或 `androidx.tracing` 给逻辑操作打点，适合把业务阶段放回 Perfetto 时间线。
+- **CPU Profiler / simpleperf**：用来继续定位到方法级热点，回答“时间到底烧在了哪个函数里”。
 
-这个工具在断点调试时非常有用，但它不适用于 Perfetto Trace 分析。
+这三类工具分工不同。Perfetto 擅长还原时间线，调试器擅长看 coroutine 层级，CPU Profiler 擅长看方法热点。
 
 ### 在 Perfetto 中识别 Coroutine 行为
 
@@ -336,24 +340,42 @@ searchQueryFlow
 
 1. **Dispatcher 线程名称**：`DefaultDispatcher-worker-N` 是 `Dispatchers.Default` 和 `Dispatchers.IO` 的线程。如果看到这些线程有大量非常短的 CPU slice（< 1ms），说明有大量小 coroutine 在调度。
 
-2. **主线程的 dispatch 模式**：在主线程 track 上，如果看到很多微小的"锯齿"——一小段执行后挂起，再一小段执行——这可能是 coroutine 在主线程上反复 resume/suspend 的模式。
+2. **主线程的 dispatch 模式**：在主线程 track 上，如果看到很多微小的“锯齿”，一小段执行后挂起，再一小段执行，往往是 coroutine 在主线程上反复 resume / suspend。
 
-3. **结合 coroutine name**：可以使用 `CoroutineName("MyCoroutine")` 上下文元素给 coroutine 命名，配合自定义 trace event，在 Perfetto 中创建可识别的标记：
+3. **应用侧 async trace**：跨 `suspend` 边界的逻辑操作，用 async section 记录总耗时；单个不挂起的代码段，再用同步 section 细分。
 
 ```kotlin
+private val nextTraceCookie = AtomicInteger(1)
+
 val scope = CoroutineScope(Dispatchers.Main + CoroutineName("ProfileLoad"))
 scope.launch {
-    Trace.beginSection("coroutine:loadProfile")
+    val cookie = nextTraceCookie.getAndIncrement()
+    Trace.beginAsyncSection("coroutine:loadProfile", cookie)
     try {
-        val profile = withContext(Dispatchers.IO) { fetchProfile() }
-        updateUI(profile)
+        val profile = withContext(Dispatchers.IO) {
+            Trace.beginSection("fetchProfile")
+            try {
+                fetchProfile()
+            } finally {
+                Trace.endSection()
+            }
+        }
+
+        Trace.beginSection("updateUI")
+        try {
+            updateUI(profile)
+        } finally {
+            Trace.endSection()
+        }
     } finally {
-        Trace.endSection()
+        Trace.endAsyncSection("coroutine:loadProfile", cookie)
     }
 }
 ```
 
-这样在 Perfetto 的 MainThread track 上就能看到 `coroutine:loadProfile` 这个 slice，方便定位。
+这类写法把一次逻辑操作记成 async slice，再把真正不挂起的代码段拆成同步 slice。Perfetto 里看到的等待时间不会被错误地挂到 MainThread 的同步 section 上。API 29 以下如果还要兼容旧设备，可以改用 `androidx.tracing.Trace.beginAsyncSection()` / `endAsyncSection()`。
+
+[已验证: android.os.Trace API, beginAsyncSection / endAsyncSection; androidx.tracing 文档]
 
 [待补充: Perfetto 中 coroutine 行为的 Trace 截图示例]
 
@@ -511,5 +533,8 @@ Coroutine 的性能与本书其他章节有紧密联系：
 - [Coroutines Context and Dispatchers](https://kotlinlang.org/docs/coroutines-context-and-dispatchers.html)
 - [Android Coroutines Guide](https://developer.android.com/kotlin/coroutines)
 - [kotlinx-coroutines-debug GitHub](https://github.com/Kotlin/kotlinx.coroutines/tree/master/kotlinx-coroutines-debug)
+- [kotlinx.coroutines Dispatchers.kt](https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/src/Dispatchers.kt)
+- [kotlinx.coroutines CoroutineScheduler.kt](https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/src/scheduling/CoroutineScheduler.kt)
+- [android.os.Trace API](https://developer.android.com/reference/android/os/Trace)
 - [Flow — Backpressure and Buffering](https://kotlinlang.org/docs/flow.html#buffering)
 - [Testing Coroutines on Android](https://developer.android.com/kotlin/coroutines/test)
