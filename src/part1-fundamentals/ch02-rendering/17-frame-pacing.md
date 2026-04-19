@@ -57,13 +57,13 @@ related_chapters: ["2.2", "2.3", "2.4", "2.9", "2.13", "2.16", "2.18", "7.1"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-04-05"
 gap_source: "官方文档 + 研究素材"
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task2b_state: fixed
 reviewed_by: "openclaw-task6"
-reviewed_date: "2026-04-11"
-task6_result: needs-rework
+reviewed_date: "2026-04-19"
+task6_result: pass-light-edit
 task9_result: needs-rework
 task2b_result: fixed
 ---
@@ -72,7 +72,7 @@ task2b_result: fixed
 
 在 Perfetto 里，平均 FPS 看着不差，`Actual Timeline` 却一会儿短一会儿长，或者 `SurfaceView` 的 buffered frames 在 1、2、3 之间来回抖，这类卡顿很多时候不是 GPU 算力不够，而是 frame submit 的节奏没有贴住显示系统。Frame Pacing Library，文档里也叫 Swappy，处理的就是这件事。
 
-Swappy 不负责把一帧画出来，它负责决定这一帧该什么时候等、什么时候交、要不要设置 presentation time，以及要不要向平台报告新的 frame rate vote。游戏自己继续跑自己的 update 和 render loop，Swappy 负责把 `eglSwapBuffers()` 或 `vkQueuePresentKHR()` 这一跳，改成更贴近 Android 显示节拍的提交方式。
+Swappy 负责决定这一帧该什么时候等、什么时候交、要不要设置 presentation time，以及要不要向平台报告新的 frame rate vote。游戏自己继续跑自己的 update 和 render loop，Swappy 把 `eglSwapBuffers()` 或 `vkQueuePresentKHR()` 这一跳改成更贴近 Android 显示节拍的提交方式。
 
 <!-- outline-start -->
 ## 本节要点大纲
@@ -151,7 +151,7 @@ bool SwappyGL::swapInternal(EGLDisplay display, EGLSurface surface) {
 
 还有一件是 `setPresentationTime()`。`SwappyGL.cpp` 里没有无脑调用 `eglPresentationTimeANDROID()`，它会先比较“离下一个 vsync 还有多久”和当前 display timing，再决定要不要真的设置 presentation time。离 vsync 太近时，源码直接返回 `EGL_TRUE`，不再额外设置。[已验证: frameworks/opt/gamesdk/games-frame-pacing/opengl/SwappyGL.cpp]
 
-把这几步合在一起看，Swappy 做的事就清楚了：它既不只是 sleep 一下，也不只是把 `swap interval` 改成另一个数。它同时在管 fence、submit 时机、presentation time 和 refresh-rate vote。
+把这几步合在一起看，Swappy 做的事就清楚了：它同时在管 fence、submit 时机、presentation time 和 refresh-rate vote。
 
 ## Choreographer / DisplayManager 的回退路径
 
@@ -376,30 +376,6 @@ Swappy 和 §2.18 的 Adaptive Refresh Rate 有关系，但不是同一层。Swa
 - 用 `Thread.sleep()` 控帧不够。它既不看 vsync，也不知道 display pipeline 现在有几层 buffer。
 - Vulkan 有 `VK_PRESENT_MODE_FIFO_KHR`，也不等于已经拿到了 Android 上这一层的 pacing。Swappy 额外处理的是 Android display timing、refresh callback、stats 和 queue depth。
 - 平均 FPS 正常，肉眼依然卡，并不矛盾。帧间隔波动增大时，主观流畅度会明显下降，这就是 frame pacing 这节要处理的问题。
-
-
-
-<!-- AIW-源码调研-2026-04-18 -->
-## §18.8 GLES 渲染链路关联说明
-
-本节（§2.17）与 §18.8 OpenGL ES 渲染链路（Frame Pacing 控制机制）在内容上有直接关联。§18.8 的 Frame Pacing 控制盲区，核心就是 Swappy 接入 GLES 的 `SwappyGL_swap()` 路径和 Choreographer 协调逻辑，已在本节详细覆盖。
-
-关键源码索引（补充 AOSP main 分支最新路径）：
-
-| 源码文件（AOSP main） | 关键内容 |
-|----------------------|---------|
-| `games-frame-pacing/opengl/SwappyGL.cpp` | `swapInternal()` 完整五步链 |
-| `games-frame-pacing/opengl/EGL.cpp` | `insertSyncFence()` / waiter thread |
-| `games-frame-pacing/common/ChoreographerThread.cpp` | NDK/Java/NoChoreographer 回退链 |
-| `games-frame-pacing/common/SwappyCommon.cpp` | `calculateSwapInterval()` 动态算法 |
-| `include/swappy/swappyGL_extra.h` | `SwappyGL_onChoreographer()` / 统计 API |
-
-本节对以下调研盲区已有完整覆盖：
-- ✅ Swappy 与 Choreographer 的协调机制（三层回退链）
-- ✅ `setSwapIntervalNS()` / `setPreferredRefreshPeriodNS()` 设置目标帧率
-- ✅ Auto 模式 swap interval 动态计算（不是固定档位表）
-- ✅ `EGL_ANDROID_presentation_time` 的按需调用逻辑
-- ✅ Buffer Stuffing 防护（fence + waiter thread）
 
 ## 参考资料
 
