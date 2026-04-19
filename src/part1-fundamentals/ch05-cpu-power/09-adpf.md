@@ -32,13 +32,13 @@ sources:
     path: "frameworks/base/services/core/java/com/android/server/power/hint/HintManagerService.java"
   - type: blog
     path: "https://android-developers.googleblog.com/"
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task2b_state: fixed
 reviewed_by: "openclaw-task6"
-reviewed_date: "2026-04-12"
-task6_result: needs-rework
+reviewed_date: "2026-04-20"
+task6_result: pass-light-edit
 task9_result: needs-rework
 task2b_result: fixed
 ---
