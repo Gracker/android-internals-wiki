@@ -35,8 +35,11 @@
     ],
     "added_by": "task6-review",
     "added_at": "2026-04-19T10:46:22",
-    "status": "pending",
-    "original_review_log": "logs/review/2026-04-19-10-review.md"
+    "status": "completed",
+    "original_review_log": "logs/review/2026-04-19-10-review.md",
+    "completed_at": "2026-04-19T11:09:31+08:00",
+    "completed_by": "task2b-rework",
+    "resolution": "补充 VK_EXT_host_image_copy、WebGPU/Dawn、ADPF 选路与 Validation Layer 边界说明，章节已送回 Task 6"
   },
   {
     "section": "7.3",
