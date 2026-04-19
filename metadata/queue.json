@@ -2673,5 +2673,89 @@
     "completed_at": "2026-04-20T07:08:36+08:00",
     "completed_by": "task2b-rework",
     "resolution": "修正 dex/.so 打包语义，补上 useLegacyPackaging / extractNativeLibs 边界，并把 Dynamic Feature 示例拆成 base app module 与 feature module 的最小可运行配置"
+  },
+  {
+    "section": "1.6",
+    "section_title": "Android 版本演进中的架构变化",
+    "priority": 85,
+    "reason": "[Deep Tech Review] 16KB backcompat 起始版本与 VNDK deprecation 描述需要回炉",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "版本差异",
+        "location": "L154-L158（Android 16 最新变化）",
+        "detail": "把 16KB backcompat mode 写成 Android 16 新增能力。官方 16KB page size 文档显示 Pixel 8/8 Pro/8a 在 Android 15 QPR1+、Pixel 9 系列在 Android 15 QPR2+ 已提供 16 KB backcompat mode，Android 16 只是继续扩大覆盖，不是起始点。",
+        "suggestion": "改成“Android 15 QPR 阶段已在部分 16KB 设备提供 backcompat，Android 16 继续扩大覆盖”，并区分 16KB 内核支持、backcompat mode 与 Play 兼容要求。"
+      },
+      {
+        "type": "版本差异",
+        "location": "L196-L200（VNDK 与 linker namespace）",
+        "detail": "正文把 Android 15 之后的 VNDK 变化写成“逐步淡出”。AOSP VNDK 文档明确写明“deprecate VNDK starting with Android 15”；former VNDK libraries 转移到 vendor/product image，VNDK APEX、ro.vndk.version/ro.product.vndk.version、vendor snapshot 等能力一并移除。当前写法会让读者误以为 Android 15/16 仍以 VNDK APEX 为默认机制。",
+        "suggestion": "补充 Android 15 起的 deprecation 结论、移除项和 LL-NDK 例外，避免把 Treble 初期机制讲成当前默认状态。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-20T07:50:52+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "1.12",
+    "section_title": "AutoFDO 反馈导向编译优化",
+    "priority": 95,
+    "reason": "[Deep Tech Review] AutoFDO 采样转换链与 Android 16 硬件/版本边界仍有高风险误导",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "L155-L175（branch-list → kernel.afdo 命令链）",
+        "detail": "正文把 branch_list.data 直接喂给 create_llvm_prof。simpleperf 官方 Collect ETM data for AutoFDO 文档要求先由 simpleperf inject 读取 branch_list.data 生成 perf_inject.data / per-binary perf_inject_kernel.data，再让 create_llvm_prof 消费该 text profile。当前命令链少了一步 profile 注入/拆分，照抄会生成错误输入。",
+        "suggestion": "把 host 侧流程改成 perf.data → branch_list.data → simpleperf inject 生成 perf_inject*.data → create_llvm_prof；同时说明 kernel 只取 [kernel.kallsyms] 对应的 perf_inject_kernel.data。"
+      },
+      {
+        "type": "版本差异",
+        "location": "L117-L125（硬件基础：PMU 和 ETM）",
+        "detail": "正文把 Android 内核 AutoFDO 采集硬件概括为 PMU+ETM。Google 2026 kernel AutoFDO blog 对 Pixel 设备写的是利用 ARM Embedded Trace Extension (ETE) 和 Trace Buffer Extension (TRBE) 捕获执行流。当前写法停留在 ETM 口径，会把 Android 16 / ARMv9 设备上的实际采样链讲旧。",
+        "suggestion": "改成“ETM 是通用 Coresight 分支追踪概念，Android 16 Pixel 实测链路已落到 ETE + TRBE；OEM 设备再按 ETM/ETE 能力区分”。"
+      },
+      {
+        "type": "版本差异",
+        "location": "frontmatter applicable_versions + L353-L358（版本演进）",
+        "detail": "frontmatter 声称覆盖 Android 17，但 last_verified_against 只核到 android15-6.6 / android16-6.12 与 2026-03 blog；正文对更高版本也只写 roadmap，没有 android17-6.18 profile 或官方文档锚点。当前适用范围超出已验证边界。",
+        "suggestion": "把 applicable_versions 收窄到 Android 12-16，或在纳入 Android 17 前补正式 GKI 分支 / 文档锚点。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-20T07:50:52+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "1.16",
+    "section_title": "Audio Pipeline 延迟与性能",
+    "priority": 85,
+    "reason": "[Deep Tech Review] 音频 HAL 演进与当前版本边界仍有关键缺口",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "版本差异",
+        "location": "L82-L88（架构图）+ L395-L397（版本演进）",
+        "detail": "章节把 Audio HAL 长期写成“AIDL/HIDL 取决于版本和平台实现”，版本表停在 Android 14“鼓励迁移”。Android 16 音频文档已把 Configurable Audio Policy 的 AIDL HAL 支持补齐，并要求新产品在 Android 16 vendor code 上通过 AIDL audio HAL 暴露 CAP 配置；framework 不再从 vendor XML 直接取 CAP 信息。当前写法没有交代“legacy device 可保留 HIDL / current launch 必须 AIDL”这个分界。",
+        "suggestion": "补一段 Android 16 分界线：旧设备升级可保留 HIDL 路径，新 launch with Android 16 vendor 必须用 AIDL HAL + CAP over AIDL，并把架构图改成 legacy/current 双轨说明。"
+      },
+      {
+        "type": "知识盲区",
+        "location": "L352-L360（AAudio offloaded playback）",
+        "detail": "正文已经把 AAudio offloaded playback 放进 output path / 版本演进 / API 选择讨论，但 API level、入口常量、PCM/压缩 payload 边界和设备覆盖范围仍全部留在 [待验证]。这部分已经进入主论述，不再是边角注释。",
+        "suggestion": "在确认 Android 16/17 API diff 与实机 capability 前，不要把它作为正式路径并入版本表；要么单独挪到“研究中”注记，要么补齐官方 API 与 dumpsys audio 验证锚点。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-20T07:50:52+08:00",
+    "status": "pending"
   }
 ]

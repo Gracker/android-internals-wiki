@@ -33,12 +33,15 @@ reviewed_date: "2026-04-19"
 reviewed_by: "openclaw-task6"
 review_notes: "task9 P90 rework: 寄存器描述修正(翻倍→精确), Dalvik/Zygote已验证正确；2026-04-14 task6 轻量精修：文风、间距、图示占位; 2026-04-19 task6 re-review (revisiting): L1 fix x2 (not-X-Y pattern)"
 task9_result: needs-rework
-pipeline_stage: task9_pending
+pipeline_stage: task2b_pending
 task6_state: reviewed
 task6_result: pass-light-edit
-task9_state: pending
-task2b_state: fixed
+task9_state: reviewed
+task2b_state: pending
 task2b_result: fixed
+task9_reviewed_date: "2026-04-20"
+task9_reviewed_by: openclaw-task9
+last_task9_at: "2026-04-20T07:50:52+08:00"
 ---
 
 # Android 版本演进中的架构变化
