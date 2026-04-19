@@ -3511,3 +3511,21 @@ WebView GPU/Viz 线程组在单进程/多进程模式下的 Perfetto 追踪特�
 
 ### 外部 review 来源
 - 2026-04-19-14-18.13-external-review.md
+
+
+## [2026-04-19] 2.20 多窗口与桌面模式渲染性能 — 知识盲区
+
+### 盲区描述
+1. **PiP / 视频类窗口的 FrameTimeline 观测边界** — Perfetto FrameTimeline 文档明确写明该能力要求 Android 12+，且 `SurfaceView` 当前不支持。当前章节把多窗口诊断主线过度收敛到三类 jank，却没有告诉读者 PiP、视频小窗、地图小窗这类高频多窗口场景为什么经常要改看 layer snapshots、BufferQueue 或 `gpu.renderstages`。
+2. **多显示器 pacesetter 调度链** — 当前章节把 connected display 简化成“多一套 display pipeline”，但 AOSP `SurfaceFlinger::commit(PhysicalDisplayId pacesetterId, const scheduler::FrameTargets&)` 已表明多显示帧目标由 pacesetter display 驱动。外接显示器刷新率不同、display mode 变化或 HAL present 抖动时，jank 可能来自跨 display 的调度耦合。external-review 已命中过这个方向，正文仍未闭环。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 对照 Perfetto FrameTimeline 文档，补 PiP / SurfaceView 场景的观测替代路径：layer snapshots、BufferQueue、`gpu.renderstages`、播放器轨道
+- 结合 `SurfaceFlinger::commit(...)`、display scheduler 和 mode 切换路径，梳理 pacesetter display 如何影响内外屏 frame target
+- 抓同一设备的 full-screen / split-screen / connected-display 对照 trace，补 layer 数、jank 类型和 display mode 的联动证据
+
+### 关联章节
+2.20, 2.6, 2.12, 2.13, 2.18, 7.4

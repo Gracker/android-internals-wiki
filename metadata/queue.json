@@ -1024,28 +1024,39 @@
   },
   {
     "section": "2.20",
-    "section_title": "多窗口与桌面模式渲染",
+    "section_title": "多窗口与桌面模式渲染性能",
     "priority": 85,
-    "reason": "[External Review] 外部 AI review 发现需回炉的问题",
-    "material_paths": [],
+    "reason": "[Deep Tech Review] 多窗口章节仍缺 Android 16/17 行为边界、FrameTimeline 观测边界与多显示调度链",
+    "material_paths": [
+      "intake/research-gaps.md",
+      "intake/suggestions.md"
+    ],
     "review_issues": [
       {
-        "type": "版本差异覆盖",
-        "location": "桌面交互优化",
-        "detail": "[P1 issue from external review]",
-        "suggestion": "基于外部 AI review 修正"
+        "type": "版本差异",
+        "location": "§Android 16 / 17 的真实边界（L124-L135）与版本演进表（L225-L226）",
+        "detail": "当前写法把 Android 16 的窗口限制放宽描述成通用规则，并把 connected displays 笼统写成“Android 16 正式能力”。Android Developers 的 Android 16 behavior changes 页面明确列出例外：games、用户在设备宽高比设置中显式选择 app default behavior、以及 sw < 600dp；同时 connected displays 的公开成熟边界在 Android 16 QPR3，而不是所有 Android 16 基线版本。缺少这些条件后，游戏场景和早期 Android 16 设备会被错误归入同一行为模型。",
+        "suggestion": "补一张 API 36 / 36 QPR3 / 37 的行为矩阵，单独列出 exceptions、临时 opt-out 以及 connected displays 的 QPR 边界。"
       },
       {
         "type": "知识盲区",
-        "location": "多屏同步调度",
-        "detail": "[P1 issue from external review]",
-        "suggestion": "基于外部 AI review 修正"
+        "location": "§Perfetto 和 dumpsys 的正确观察面（L205-L213, L238-L240）",
+        "detail": "章节把多窗口诊断主线收敛为 AppDeadlineMissed、SurfaceFlingerCpuDeadlineMissed、SurfaceFlingerGpuDeadlineMissed 三类，但 Perfetto FrameTimeline 文档同时给出 BufferStuffing、DisplayHAL、PredictionError，并明确写明 FrameTimeline 仅支持 Android 12+，且 SurfaceView 当前不支持。PiP、视频小窗、地图小窗正是本章核心场景，很多实现路径依赖 SurfaceView；按现在的三分类去判，读者很容易把 PiP / video jank 错判成 App 或 SurfaceFlinger 主线程问题。",
+        "suggestion": "补 FrameTimeline 使用边界，明确 PiP/视频类窗口需要同时看 layer snapshots、BufferQueue / gpu.renderstages 或播放器轨道，并把 BufferStuffing / DisplayHAL 纳入分流。"
+      },
+      {
+        "type": "原理断裂",
+        "location": "§多窗口形态和 display 会话 + §SurfaceFlinger 在多窗口下多了什么工作（L89-L102）",
+        "detail": "Connected display 段只写了“两套 display pipeline”，但没有把多显示调度耦合讲出来。AOSP android-16.0.0_r1 的 SurfaceFlinger::commit(PhysicalDisplayId pacesetterId, const scheduler::FrameTargets&) 已显示 frame target 由 pacesetter display 驱动。内外屏刷新率不同、模式切换或外屏 present 抖动时，非 pacesetter 屏的 miss 不一定是单屏局部问题，而可能是跨 display 的 scheduler / present deadline 问题。external-review 也提前命中过这个方向，但正文还没有闭环。",
+        "suggestion": "补一段 pacesetterId / frameTargets 简图，说明双屏不同 refresh rate 下为什么要同时看 SF scheduler、DisplayHAL 和两块屏的 mode。"
       }
     ],
     "added_by": "external-ai-review",
     "added_at": "2026-04-19T11:44:38.404228+08:00",
     "status": "pending",
-    "source_file": "2026-04-19-51-2.20-external-review.md"
+    "source_file": "2026-04-19-51-2.20-external-review.md",
+    "updated_at": "2026-04-19T20:31:01+08:00",
+    "updated_by": "task9-deep-tech-review"
   },
   {
     "section": "2.21",

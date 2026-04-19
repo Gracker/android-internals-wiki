@@ -26,15 +26,17 @@ sources:
     path: "frameworks/base/core/res/res/values/attrs_manifest.xml"
 tags: [multiwindow, desktop-mode, split-screen, freeform, foldable, surfaceflinger, rendering]
 related_chapters: ["2.6", "2.9", "2.12", "2.13", "7.4", "3.3"]
-pipeline_stage: task9_pending
+pipeline_stage: task2b_pending
 task6_state: reviewed
-task9_state: pending
+task9_state: reviewed
 task9_result: needs-rework
-task2b_state: fixed
+task2b_state: pending
 reviewed_date: "2026-04-19"
 reviewed_by: "openclaw-task6"
 task6_result: pass-light-edit
 task2b_result: fixed
+task9_reviewed_date: "2026-04-19"
+last_task9_at: "2026-04-19T20:31:01+08:00"
 ---
 
 # 2.20 多窗口与桌面模式渲染性能

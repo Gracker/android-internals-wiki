@@ -2647,3 +2647,9 @@
 - **位置**：版本演进表（L375-L383）
 - **问题**：Android 16/17 的 Desktop Windowing、Adaptive Apps、`recreateOnConfigChanges`、Bubbles for all apps 等条目没有在 `sources:` 中挂官方 behavior/features 文档或对应 AOSP 变更，当前版本表可读但不可追溯。
 - **建议**：为每一行补官方 features/behavior 文档或源码/commit 锚点；拿不准的 Beta 特性改成 `[待验证]` 并明确版本范围。
+
+## [Task9 Deep Review] 2.20 多窗口与桌面模式渲染性能 — 2026-04-19
+- **类型**：数据缺失
+- **位置**：§SurfaceFlinger 在多窗口下多了什么工作（L104-L108）
+- **问题**：整章还没有一个同设备 full-screen / split-screen / connected-display 的 `dumpsys SurfaceFlinger` 或 Perfetto 样例。当前结论停在定性层，读者看不到 layer 数、composition 路径和 jank_type 怎么随窗口形态变化。
+- **建议**：补一组同机型对照样例，至少给出可见 layer 数、HWC/GPU composition 变化，以及主要 jank 类型。
