@@ -27,12 +27,12 @@ related_chapters:
 - '3.2'
 - '9.1'
 - '9.2'
-reviewed_date: '2026-04-12'
+reviewed_date: "2026-04-19"
 reviewed_by: openclaw-task6
-review_notes: '2026-04-12 task6 review: needs-rework。小修8处（措辞/术语/元数据）。大问题5处已写入 queue.json，待 Task 9 / Task 2B 处理。评分: 结构4/5·措辞4/5·一致性3/5·验证3/5·元数据4/5。'
-pipeline_stage: task6_pending
-task6_state: revisiting
-task6_result: needs-rework
+review_notes: '2026-04-19 task6 re-review: pass-light-edit. L1小修7处(删除旧稿/编辑痕迹)。无需回炉。'
+pipeline_stage: task9_pending
+task6_state: reviewed
+task6_result: pass-light-edit
 task9_state: pending
 task2b_result: fixed
 task2b_state: fixed
@@ -108,7 +108,7 @@ public void setInputFilter(IInputFilter filter) {
 }
 ```
 
-这里最容易写错的是 Native 侧的关系。`InputDispatcher` 并不会直接持有 Java 层的 `IInputFilter` 对象，也不会调用旧稿里的 `mInputFilter.filterMotionEvent(args)`。真实做法是，当 `mInputFilterEnabled` 为 `true` 时，`InputDispatcher` 把事件交给 policy 的 `filterInputEvent(...)`，是否继续分发由这个调用的返回值决定。
+这里最容易写错的是 Native 侧的关系。`InputDispatcher` 并不会直接持有 Java 层的 `IInputFilter` 对象，也不会调用 `mInputFilter.filterMotionEvent(args)`。实际做法是，当 `mInputFilterEnabled` 为 `true` 时，`InputDispatcher` 把事件交给 policy 的 `filterInputEvent(...)`，是否继续分发由这个调用的返回值决定。
 
 ```cpp
 // frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp
@@ -138,7 +138,7 @@ if (shouldSendMotionToInputFilterLocked(args)) {
 
 一类是 filter 本身在 system_server 里的本地处理时间，例如 Java 回调、事件复制、坐标变换、`sendInputEvent()` 重新发布。这部分会直接拉长“事件进入 Input 子系统之后，到达目标窗口之前”的时间。
 
-另一类是无障碍按键判定带来的额外等待。它不是 `InputDispatcher` 线程同步等远端 Binder 返回，而是 `KeyboardInterceptor` 把按键交给 `AccessibilityManagerService`，再由 `KeyEventDispatcher` 异步等服务调用 `setOnKeyEventResult()`。旧稿把这件事写成“InputDispatcher 卡在 Binder 上”，这个判断不对。
+另一类是无障碍按键判定带来的额外等待。它不是 `InputDispatcher` 线程同步等远端 Binder 返回，而是 `KeyboardInterceptor` 把按键交给 `AccessibilityManagerService`，再由 `KeyEventDispatcher` 异步等服务调用 `setOnKeyEventResult()`。InputDispatcher 并没有同步卡在 Binder 上等远端返回。
 
 当前素材没有对应的真实 trace 截图，本节只保留可从源码核对到的结论。Perfetto 图例先记为 `[待补充：展示 InputDispatcher、AccessibilityManagerService、无障碍服务进程的时间关系]`。
 
@@ -249,7 +249,7 @@ public void dispatchGesture(int sequence, ParceledListSlice gestureSteps, int di
 | `adb shell input` | `InputManagerService.injectInputEventToTarget()` | 否 | shell 可达的标准注入目标 | 无专门 injected public flag |
 | `AccessibilityService.dispatchGesture()` | `MotionEventInjector.injectEvents()` | 是 | 目标显示与目标窗口 | `FLAG_IS_ACCESSIBILITY_EVENT` |
 
-这里顺手修正一个旧稿里的错误，`POLICY_FLAG_INJECTED` 只是 InputDispatcher 内部 policy flag。普通 App 没有 `InputEvent.getFlags()` 这个统一入口去读它，也不能靠 `MotionEvent.isFromSource()` 把 injected event 和真实硬件事件区分开。
+注意一个常见错误：`POLICY_FLAG_INJECTED` 只是 InputDispatcher 内部 policy flag。普通 App 没有 `InputEvent.getFlags()` 这个统一入口去读它，也不能靠 `MotionEvent.isFromSource()` 把 injected event 和真实硬件事件区分开。
 
 ### 注入事件的权限控制
 
@@ -261,7 +261,7 @@ public void dispatchGesture(int sequence, ParceledListSlice gestureSteps, int di
 
 ### 哪些环节可以被拦截/修改
 
-Input 事件从硬件到 App 之间，真正可编程的拦截点没有旧稿写得那么散。按源码可以落到下面几处：
+Input 事件从硬件到 App 之间，真正可编程的拦截点按源码可以落到下面几处：
 
 | 位置 | 能做什么 | 典型实现 |
 |------|----------|----------|
@@ -280,7 +280,7 @@ Input 事件从硬件到 App 之间，真正可编程的拦截点没有旧稿写
 
 ### 安全策略的版本演进
 
-旧稿那张版本表里混入了几条找不到一手证据的说法。本节改成只保留当前能直接核对的内容。
+本节只保留当前能直接从 AOSP 和官方文档核对到的结论。
 
 | 版本/来源 | 能直接核对到的结论 | 证据 |
 |-----------|--------------------|------|
@@ -289,7 +289,7 @@ Input 事件从硬件到 App 之间，真正可编程的拦截点没有旧稿写
 | android-14.0.0_r1 | 标准 `UiAutomation.injectInputEvent()` 会跳过 accessibility input filter；测试 filter 需要 `injectInputEventToInputFilter()` | `UiAutomation.java` |
 | android-14.0.0_r1 | accessibility 注入事件会在 InputDispatcher 中转成 `FLAG_IS_ACCESSIBILITY_EVENT` 供 App 识别 | `InputDispatcher.cpp`、`KeyEvent.java`、`MotionEvent.java` |
 
-下面这些说法本节先删掉，不再标 `[已验证]`：
+以下结论因缺乏一手证据暂不收录：
 - `MotionEvent.isFromSource()` 可检测 injected event
 - Android 14 需要 `R.string.accessibility_filter_key_events` 资源声明
 - Android 10 只有系统无障碍服务能使用 `FLAG_REQUEST_FILTER_KEY_EVENTS`
@@ -300,7 +300,7 @@ Input 事件从硬件到 App 之间，真正可编程的拦截点没有旧稿写
 
 ### InputFilter 的延迟开销
 
-`InputFilter` 自身带来的延迟主要来自三件事，filter Java 回调、本地变换逻辑、重新发布事件。这里没有现成 trace 数据支持“0.1ms”“2ms”这样的固定数值，所以旧稿里的量化表先撤掉。
+`InputFilter` 自身带来的延迟主要来自三件事，filter Java 回调、本地变换逻辑、重新发布事件。这里没有现成 trace 数据支持“0.1ms”“2ms”这样的固定数值，因此本节不做量化对比。
 
 如果 filter 只是做轻量判断，然后马上 `sendInputEvent()`，额外开销通常很小。若 filter 在回调里做对象分配、复杂手势状态机、跨线程切换，分发前置时间就会拉长。这个时间发生在 system_server 侧，不是 App 主线程自己造成的。
 
@@ -358,7 +358,7 @@ Input 事件从硬件到 App 之间，真正可编程的拦截点没有旧稿写
 
 ## Android 14 时代仍可核对到的权限边界
 
-这一节原来写了几条“Android 14+ 进一步收紧”的判断，但其中有两条找不到 AOSP 或官方文档依据，本轮已经删掉。android-14.0.0_r1 里，至少有下面三条边界可以直接核对：
+这一节原来写了几条“Android 14+ 进一步收紧”的判断，但其中两条因缺乏 AOSP 或官方文档依据，本节暂不收录。android-14.0.0_r1 里，至少有下面三条边界可以直接核对：
 
 1. **按键过滤仍然依赖 capability + runtime flag。** 代码位置在 `AccessibilityServiceInfo.java`，不是某个 `R.string.*` 资源开关。
 2. **手势注入要过无障碍安全检查。** `AccessibilityServiceConnection.dispatchGesture()` 会先看 `mSecurityPolicy.canPerformGestures(this)`，拿到 `MotionEventInjector` 之后才会发事件。
