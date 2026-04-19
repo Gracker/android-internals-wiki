@@ -1637,5 +1637,236 @@
     "added_at": "2026-04-19T13:27:45.193562+08:00",
     "status": "pending",
     "source_file": "2026-04-19-11-07-sqlite-room-performance-external-review.md"
+  },
+  {
+    "section": "12.4",
+    "section_title": "Android 网络安全与 TLS 性能优化",
+    "priority": 90,
+    "reason": "[External Review] OkHttp Perfetto 追踪盲区、ECH 降级攻击原理缺失、0-RTT 配置复杂性被轻描淡写",
+    "material_paths": [
+      "logs/external-review/2026-04-19-13-04-network-security-tls-performance-external-review.md"
+    ],
+    "review_issues": [
+      {
+        "type": "实战落地盲区",
+        "location": "优化实践 > 连接池与 TLS 连接复用",
+        "detail": "误导读者以为 Perfetto 直接可见 okhttp track 和 TLS 握手耗时。OkHttp 默认不输出 ATRACE，必须通过自定义 EventListener + Trace.beginSection 才能被抓取",
+        "suggestion": "说明 Cronet 与 OkHttp 追踪能力差异，提供 EventListener 注入示例",
+        "evidence": [
+          "OkHttp 官方 EventListener 文档"
+        ]
+      },
+      {
+        "type": "原理链缺失",
+        "location": "ECH 机制段",
+        "detail": "未解释 ECH 为何强依赖 DoH/DoT：明文 DNS 下 HTTPS Record 可被中间商篡改/丢弃（降级攻击），导致 ECH 退化为明文 SNI",
+        "suggestion": "补充降级攻击风险机制，让读者理解加密 DNS 与 ECH 的绑定关系",
+        "evidence": []
+      },
+      {
+        "type": "误导性简化",
+        "location": "OkHttp 0-RTT 描述段",
+        "detail": "声称 OkHttp '默认不启用 0-RTT，需手动配置'过于轻描淡写。实际无简单 API 开关，需通过 Conscrypt API（Conscrypt.setUseSessionTickets）干预 SSLSocket 创建，且需自行控制仅幂等请求发送 early data",
+        "suggestion": "明确说明 0-RTT 落地需 Conscrypt 专有 API 和 SSLSocketFactory 集成",
+        "evidence": []
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-19T14:21:48+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "18.1",
+    "section_title": "渲染管线概览",
+    "priority": 95,
+    "reason": "[External Review] BLASTBufferQueue '消费行为移到 App 侧' 完全错误，根本性误解图形合成模型",
+    "material_paths": [
+      "logs/external-review/2026-04-19-14-01-pipeline-overview-external-review.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误 / 原理描述错误",
+        "location": "版本与架构矩阵 - 关键转折点",
+        "detail": "错误声称 BLAST 将 Buffer '消费'行为从 SF 挪到 App 侧。实际上 App 仍为生产者，只做了 Transaction 封装，SF 仍是消费者（acquireBuffer + 合成）。BLAST 改变的是上报产出物的通信方式",
+        "suggestion": "改为：App 将绘制好的 Buffer 通过 BLASTBufferQueue 封装进 SurfaceControl.Transaction 提交给 SF，替代老旧的 Binder IGraphicBufferProducer IPC",
+        "evidence": [
+          "AOSP frameworks/native/libs/gui/BLASTBufferQueue.cpp"
+        ]
+      },
+      {
+        "type": "版本差异缺失",
+        "location": "版本与架构矩阵",
+        "detail": "未指明 Android 11 才是 BLASTBufferQueue 正式作为 App 默认主链路的节点（Android 10 仅机制引入/系统侧试水）",
+        "suggestion": "在版本矩阵中补充 Android 10=引入期、Android 11=全面启用期（ViewRootImpl 默认走 BLAST）",
+        "evidence": [
+          "AOSP ViewRootImpl.java mBlastBufferQueue 引入时间线"
+        ]
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-19T14:21:48+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "18.2",
+    "section_title": "Android View 标准链路",
+    "priority": 95,
+    "reason": "[External Review] syncFrameState 线程归属错误（P0），BLAST Buffer 释放闭环缺失（P1），FrameTimeline 载体不准（P1）",
+    "material_paths": [
+      "logs/external-review/2026-04-19-14-02-android-view-standard-external-review.md"
+    ],
+    "review_issues": [
+      {
+        "type": "事实错误",
+        "location": "18.2.4 Trace 视角 - UI Thread 关键 Slice 表格",
+        "detail": "错误将 syncFrameState Slice 归属到 UI Thread。实际上 UI 线程此时阻塞于 wait()，syncFrameState 由 RenderThread 在 DrawFrameTask::run() 中执行并记录 ATRACE",
+        "suggestion": "将 syncFrameState 移入 RenderThread Slice 列表，说明 UI 线程此时阻塞等待",
+        "evidence": [
+          "AOSP DrawFrameTask.cpp DrawFrameTask::run()"
+        ]
+      },
+      {
+        "type": "原理断裂",
+        "location": "18.2.2 BLAST Buffer 生命周期",
+        "detail": "releaseBuffer 仅简述为 'SF（通过回调）'，未说明 BLAST 模式下 Consumer 实际驻留在 App 进程的 BBQ，通过 SF 的 onTransactionCompleted Binder 回调触发 releaseBuffer",
+        "suggestion": "补充 TransactionCompletedCallback 机制，强调 Consumer 位置转移",
+        "evidence": [
+          "AOSP BLASTBufferQueue.cpp transactionCallback"
+        ]
+      },
+      {
+        "type": "机制描述不准确",
+        "location": "18.2.5 FrameTimeline 与 Jank 检测",
+        "detail": "描述 VSyncId 通过 queueBuffer 传递，但 BLAST 模式下 VSyncId 是通过 SurfaceControl.Transaction.setFrameTimelineInfo() 搭乘 Transaction 跨进程发给 SF",
+        "suggestion": "明确 VSyncId 在 BLAST 下的传递载体是 Transaction.setFrameTimelineInfo()",
+        "evidence": [
+          "AOSP BLASTBufferQueue.cpp setFrameTimelineInfo"
+        ]
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-19T14:21:48+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "18.3",
+    "section_title": "Android View 软件渲染",
+    "priority": 95,
+    "reason": "[External Review] 混淆 Window 级软件渲染与 View 级 LAYER_TYPE_SOFTWARE，导致后续全链路论断在 Software Layer 场景完全错误",
+    "material_paths": [
+      "logs/external-review/2026-04-19-14-03-android-view-software-external-review.md"
+    ],
+    "review_issues": [
+      {
+        "type": "原理断裂 / 源码事实错误",
+        "location": "18.3.1 软件渲染的触发条件",
+        "detail": "错误将 View.setLayerType(LAYER_TYPE_SOFTWARE) 作为导致'无 RenderThread 参与'软件渲染全链路的触发条件。View 级 Software Layer 只生成 Bitmap 纹理，仍由 RenderThread GPU 管线合成上屏。Window 级软件回退才真正绕过 RenderThread",
+        "suggestion": "区分 Window 级全局软件渲染与 View 级局部软件渲染，移除 setLayerType 导致全链路切换的表述",
+        "evidence": [
+          "AOSP ViewRootImpl.draw vs RenderNode 对 Software Layer 的处理"
+        ]
+      },
+      {
+        "type": "版本差异缺失",
+        "location": "18.3.1 lockCanvas 描述处",
+        "detail": "未提及 API 23 引入的 Surface.lockHardwareCanvas()，返回由 RenderNode 支持的硬件加速 Canvas，直接画 Surface 不再必须走纯 CPU 路径",
+        "suggestion": "补充 lockHardwareCanvas 对比，指出 API 23+ 的高性能画板做法",
+        "evidence": [
+          "AOSP Surface.java lockHardwareCanvas()"
+        ]
+      },
+      {
+        "type": "原理缺失",
+        "location": "18.3.5 性能特征 - 内存带宽瓶颈",
+        "detail": "只说'8MB 读写'不足以解释软件渲染比普通 Bitmap 读写慢得多。GraphicBuffer 使用 DMA-BUF 分配（Gralloc 映射），内存属性通常为 uncached/write-combined，CPU 读写有灾难性性能惩罚",
+        "suggestion": "补充 Gralloc 内存映射特性（uncached/WC）导致的 CPU 访存惩罚，特别影响 copyBlt",
+        "evidence": [
+          "AOSP Surface.cpp GraphicBuffer::lock GRALLOC_USAGE_SW_WRITE_OFTEN"
+        ]
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-19T14:21:48+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "18.4",
+    "section_title": "Android View 混合渲染",
+    "priority": 95,
+    "reason": "[External Review] 打洞机制完全讲错（P0），BLAST 同步语义被误解为'减竞态'而非原子级强同步（P0），SurfaceSyncGroup 缺失（P1）",
+    "material_paths": [
+      "logs/external-review/2026-04-19-14-04-android-view-mixed-external-review.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "打洞与合成 -> 挖洞（Hole Punching）",
+        "detail": "错误声称打洞可能是 WMS 的 Z-Order 穿透或 SF 层级叠加。实际上打洞由 SurfaceView.java 在 draw()/dispatchDraw() 中通过 PorterDuff.Mode.CLEAR 在宿主画布对应区域绘制透明像素实现，必须由 App 侧主线程完成",
+        "suggestion": "明确介绍 SurfaceView 如何通过 PorterDuff.Mode.CLEAR 擦除宿主 Canvas 对应区域",
+        "evidence": [
+          "AOSP SurfaceView.java draw() 和 dispatchDraw()"
+        ]
+      },
+      {
+        "type": "原理错误",
+        "location": "性能特征与陷阱 -> 陷阱一：视频飘移",
+        "detail": "错误将 BLASTSyncEngine 描述为'减竞态机制，不是对逐帧完美同步的绝对保证'。实际上 BLAST Transaction merge 实现原子级同步：SF 在 latch 主窗口 Buffer 时同时应用 SurfaceView 位置/尺寸修改，彻底解决飘移",
+        "suggestion": "重写为'原子级强同步机制，保证主窗口挖洞与 SurfaceView 位置/尺寸逐帧完美同步'",
+        "evidence": [
+          "AOSP BLASTSyncEngine.java / SurfaceSyncGroup.java"
+        ]
+      },
+      {
+        "type": "版本差异缺失",
+        "location": "性能特征与陷阱 -> 陷阱一：视频飘移",
+        "detail": "仅提 Android 12+ BLAST，未覆盖 Android 14+ 引入的 SurfaceSyncGroup（支持跨进程、跨窗口、多 Surface 完美同步），对于声明适用到 Android 16 的文章是重大缺失",
+        "suggestion": "补充 Android 14+ SurfaceSyncGroup 版本演进线",
+        "evidence": [
+          "AOSP SurfaceSyncGroup.java (API 34+)"
+        ]
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-19T14:21:48+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "18.5",
+    "section_title": "Android View 多窗口链路",
+    "priority": 95,
+    "reason": "[External Review] 虚构 Android 12 'push 模式'（AI 幻觉，P0），UI 线程被 RenderThread 阻塞的流水线气泡未点透（P1），分屏进程边界未界定（P1）",
+    "material_paths": [
+      "logs/external-review/2026-04-19-14-05-android-view-multi-window-external-review.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误 / AI 幻觉",
+        "location": "全链路执行流程 -> 阶段三：RenderThread 串行执行",
+        "detail": "虚构 Android 12 引入'push 模式'让 UI 线程不阻塞。实际一直使用 DrawFrameTask 的 ConditionVariable 死等阻塞：UI 线程 post task 后 wait()，RenderThread 执行 syncFrameState 后 notify_one() 唤醒",
+        "suggestion": "删除 push 模式描述，改为'UI 线程通过 DrawFrameTask 死等 RenderThread 执行 syncFrameState'",
+        "evidence": [
+          "AOSP DrawFrameTask.cpp DrawFrameTask::run() + mSyncCondition.wait"
+        ]
+      },
+      {
+        "type": "原理断裂",
+        "location": "时序图与阶段说明",
+        "detail": "未点透 UI 线程在 Traversal B 中被 RT 的 Draw A 阻塞的流水线气泡。Traversal B 看起来很长，实际是内部 draw 时 RT 正在执行 Draw A 导致 UI 线程干等",
+        "suggestion": "明确点出：Traversal B 耗时根因不是 Layout 慢，而是等待 RT 完成 Draw A 的流水线气泡",
+        "evidence": [
+          "Perfetto 双窗口 Trace 实测观察"
+        ]
+      },
+      {
+        "type": "边界缺失",
+        "location": "多窗口场景分析 -> 分屏模式",
+        "detail": "将'分屏'直接等同于'UI Thread 竞争'，忽略绝大多数分屏是跨进程（各自独立 UI Thread + RT，完全并行）。需限定为同一进程内分屏（TaskFragment/ActivityEmbedding）",
+        "suggestion": "明确限定场景为'同一 App 进程内的分屏'才会导致串行竞争",
+        "evidence": []
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-19T14:21:48+08:00",
+    "status": "pending"
   }
 ]
