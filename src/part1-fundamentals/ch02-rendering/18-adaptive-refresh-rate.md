@@ -26,13 +26,13 @@ sources:
     path: "intake/research-feeds/2026-04-05-19-android16-arr-surfaceflinger-choreographer-frame-pacing.md"
 tags: [ARR, refresh-rate, VSync, SurfaceFlinger, Choreographer, LTPO, frame-pacing, Android-16]
 related_chapters: ["2.2", "2.3", "2.4", "2.6", "2.13", "2.16"]
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task2b_state: fixed
 reviewed_by: "openclaw-task6"
-reviewed_date: "2026-04-11"
-task6_result: needs-rework
+reviewed_date: "2026-04-19"
+task6_result: pass-light-edit
 task9_result: needs-rework
 task2b_result: fixed
 ---
@@ -59,7 +59,7 @@ LTPO 面板之所以经常和 ARR 一起出现，是因为它更适合低频到�
 
 DisplayManager 负责提供显示配置和约束条件，比如设备支持哪些刷新率、当前模式能用哪些默认档位。真正的刷新率选择发生在 SurfaceFlinger 一侧。AOSP android-16.0.0_r1 里，调用点在 `frameworks/native/services/surfaceflinger/SurfaceFlinger.cpp`，SurfaceFlinger 在合适的提交阶段调用 `mScheduler->chooseRefreshRateForContent(...)`，把选择工作交给 Scheduler 完成。[已验证: AOSP android-16.0.0_r1, frameworks/native/services/surfaceflinger/SurfaceFlinger.cpp]
 
-这里的边界要分清。SurfaceFlinger 负责收集当前可见 Layer 的状态、维护事务和显示提交时序；Scheduler 根据这些输入挑选更合适的刷新率。文档里如果把“刷新率选择函数直接写在 SurfaceFlinger 自己内部”或者把 Scheduler 路径写成 `services/surfaceflinger/...`，都会把实现位置说偏。
+SurfaceFlinger 负责收集当前可见 Layer 的状态、维护事务和显示提交时序；Scheduler 根据这些输入挑选更合适的刷新率。文档里如果把“刷新率选择函数直接写在 SurfaceFlinger 自己内部”或者把 Scheduler 路径写成 `services/surfaceflinger/...`，都会把实现位置说偏。
 
 `VsyncModulator` 负责在某些阶段调整 VSYNC offset，给事务提交和合成留出时间余量。它的源码路径是 `frameworks/native/services/surfaceflinger/Scheduler/VsyncModulator.cpp`。当刷新率变化、事务开始或系统需要更早唤醒 App / SurfaceFlinger 时，offset 会跟着调整。所以我们在 Trace 里看到 VSYNC-app 与 VSYNC-sf 的间距短暂变化，不必马上把它当成异常。[已验证: AOSP android-16.0.0_r1, frameworks/native/services/surfaceflinger/Scheduler/VsyncModulator.cpp]
 
@@ -141,7 +141,7 @@ choreographer.postVsyncCallback(frameData -> {
 
 SurfaceFlinger 会汇总当前可见 Layer 的内容节奏，然后通过 Scheduler 做 refresh-rate selection。这里既可能用到 App 显式给出的偏好，也可能用到系统从内容提交节奏里估出来的结果。官方 ARR 文档写得很清楚，即使应用没有显式请求，系统也可以根据活跃 Layer 及其平均 fps 选择刷新率。[已验证: 官方文档, developer.android.com/develop/ui/views/animations/adaptive-refresh-rate]
 
-这也解释了一个常见现象。很多应用没有接入任何 ARR API，设备照样能在滚动时升频、静止后降频。原因不是系统“猜中了业务语义”，而是它从 Layer 的更新节奏里看到了内容变化。
+这也解释了一个常见现象。很多应用没有接入任何 ARR API，设备照样能在滚动时升频、静止后降频。系统从 Layer 的更新节奏里看到了内容变化，据此做升频判断。
 
 触摸和游戏模式会继续影响选择空间。触摸开始后，系统往往会更积极地把刷新率抬高，以保证滑动和动画的跟手感；Game Mode 则可能约束或放宽上限。我们在看 Trace 时，要把“内容帧率、触摸状态、系统策略”放在一起读。
 
@@ -191,7 +191,7 @@ ORDER BY ts;
 - **Android 15-QPR1 及以上**：官方 ARR 文档把真正的 ARR 支持放在这个窗口，并要求设备实现对应 HAL API。这一阶段的重点是“刷新率能更细地跟着内容变化”。
 - **Android 16**：`Display.hasArrSupport()`、`Display.getSuggestedFrameRate()`、`Display.getSupportedRefreshRates()` 这组查询 API 让 App 更容易知道设备能力和系统建议值。[已验证: 官方文档, developer.android.com/reference/android/view/Display]
 
-这么拆开之后，章节的适用范围就更清楚了。我们谈 Android 11-14 时，主要是在交代背景；谈 ARR 主体时，焦点应该放在 Android 15-QPR1 及以上。
+按这个时间线区分，适用范围就很明确。我们谈 Android 11-14 时，主要是在交代背景；谈 ARR 主体时，焦点应该放在 Android 15-QPR1 及以上。
 
 ## 常见误区
 
