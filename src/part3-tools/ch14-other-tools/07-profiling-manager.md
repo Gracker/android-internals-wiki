@@ -3,10 +3,14 @@ tags:
   - android
   - paper
   - profiling
-pipeline_stage: task6_pending
-task6_state: pending
+pipeline_stage: task9_pending
+status: ready-for-review
+task6_state: reviewed
+task6_result: needs-rework
 task9_state: pending
-task2b_state: idle
+task2b_state: pending
+reviewed_by: openclaw-task6
+reviewed_date: 2026-04-19
 ---
 
 # ProfilingManager
@@ -101,7 +105,7 @@ public class SystemTraceExample {
 }
 ```
 
-这里有几个关键点需要注意：
+几个关键点：
 
 **`Consumer<ProfilingResult>` 是回调模式，不是轮询模式。** 调用 `requestProfiling()` 后方法立即返回，profiling 在后台运行，完成后系统通过 Consumer 回调通知结果。不存在 `getStatus()` 之类的轮询接口——这是与原始草稿中描述的最大区别。
 

@@ -1906,5 +1906,38 @@
     "completed_at": "2026-04-19T15:08:39+08:00",
     "completed_by": "task2b-rework",
     "resolution": "补 public API 与内部回退树边界、OpenGL/Vulkan setWindow 接入链、FrameTimeline 版本矩阵与 FrameStatistics 最小证据链"
+  },
+  {
+    "section": "14.7",
+    "section_title": "ProfilingManager",
+    "priority": 90,
+    "reason": "[review回炉] 内容风格偏向API文档，代码示例过长，需按writing-guide.md叙述规范重写",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "需重写",
+        "location": "全文多处",
+        "detail": "章节整体像Android Developers官方文档扩展版，四个RequestBuilder讲解方式雷同，缺少每个类型的独特实战视角和设计意图解读",
+        "suggestion": "参考writing-guide.md类型C结构，补充'为什么这样设计'的思路，精简重复代码模板"
+      },
+      {
+        "type": "需重写",
+        "location": "全文代码块",
+        "detail": "多个代码示例30-50行，包含完整import和类定义，违反'正文只保留骨架和关键路径'规范",
+        "suggestion": "精简代码到10-15行核心逻辑，去掉import和样板代码"
+      },
+      {
+        "type": "需补充",
+        "location": "frontmatter",
+        "detail": "缺少section/section_title/applicable_versions/sources字段",
+        "suggestion": "补充: section='14.7', section_title='ProfilingManager', applicable_versions='Android 15+'"
+      }
+    ],
+    "added_by": "task6-review",
+    "added_at": "2026-04-19T15:14:00",
+    "status": "pending",
+    "original_review_log": "logs/review/2026-04-19-15-review.md"
   }
 ]
