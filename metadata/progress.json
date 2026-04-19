@@ -684,10 +684,10 @@
       "title": "Window Manager Service 与窗口管理",
       "path": "src/part1-fundamentals/ch02-rendering/12-window-manager.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
-      "task6_state": "reviewed",
-      "task9_state": "reviewed",
-      "task2b_state": "pending",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
+      "task9_state": "pending",
+      "task2b_state": "fixed",
       "reviewed_date": "2026-04-19",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
@@ -696,7 +696,8 @@
       "section": "2.12",
       "task9_reviewed_by": "openclaw-task9",
       "task9_reviewed_date": "2026-04-19",
-      "last_task9_at": "2026-04-19T19:24:00+08:00"
+      "last_task9_at": "2026-04-19T19:24:00+08:00",
+      "last_task2b_at": "2026-04-19T19:41:00+08:00"
     },
     "src/part1-fundamentals/ch02-rendering/13-buffer-queue.md": {
       "chapter": "'2.13'",
@@ -3459,7 +3460,7 @@
     "task2b_state": "pending",
     "last_task9_at": "2026-04-19T00:54:00+08:00"
   },
-  "last_updated": "2026-04-19T17:51:52+08:00",
+  "last_updated": "2026-04-19T19:41:00+08:00",
   "rework_log": [
     {
       "date": "2026-04-15T19:44:09.836904",
@@ -3814,6 +3815,24 @@
       ],
       "verification": "technical-writing 禁用词扫描=0，queue=completed",
       "queue_status": "completed"
+    },
+    {
+      "date": "2026-04-19T19:41:00+08:00",
+      "section": "2.12",
+      "section_title": "Window Manager Service 与窗口管理",
+      "source": "task9-deep-tech-review",
+      "priority": 95,
+      "issues_fixed": 6,
+      "fixes": [
+        "线程模型：删掉“共享同一个主线程”表述，改成 Binder 线程、DisplayThread、UiThread / WindowManagerPolicyThread、AnimationThread 加 `mGlobalLock` 的真实分工",
+        "Surface 创建：删除不存在的 `SurfaceControl::create`，补 `android_view_SurfaceControl.cpp` 与 `SurfaceComposerClient::createSurfaceChecked(...)`",
+        "客户端职责：补 `ViewRootImpl.updateBlastSurfaceIfNeeded()`、`BLASTBufferQueue` 和 `mSurface.transferFrom(...)`，纠正“WMS 直接返回 Surface”表述",
+        "relayout 路径：补 `performTraversals()` 的 6 个触发条件、`relayoutAsync()`，并把 WMS 主路径改成 `performSurfacePlacement(true)`",
+        "Perfetto 口径：把固定 slice 名表改成候选集合与枚举 SQL，补 capture category 前提",
+        "版本差异：重写 Android 16 / 17 版本表，给 Android 16 加官方锚点，把 Android 17 `recreateOnConfigChanges` 标成 `[待验证]`"
+      ],
+      "verification": "technical-writing 禁用词扫描=0，frontmatter 解析=ok，queue=completed",
+      "queue_status": "completed"
     }
   ],
   "reviews": [
@@ -4049,10 +4068,18 @@
       "by": "task2b-rework",
       "source": "task9-deep-tech-review",
       "issues_fixed": 3
+    },
+    {
+      "section": "2.12",
+      "section_title": "Window Manager Service 与窗口管理",
+      "date": "2026-04-19T19:41:00+08:00",
+      "by": "task2b-rework",
+      "source": "task9-deep-tech-review",
+      "issues_fixed": 6
     }
   ],
-  "last_task2b_run": "2026-04-19T17:51:52+08:00",
-  "task2b_fixed": 15,
+  "last_task2b_run": "2026-04-19T19:41:00+08:00",
+  "task2b_fixed": 16,
   "17.1": {
     "task6_review_date": "2026-04-16",
     "task6_result": "pass-light-edit",
@@ -4066,10 +4093,10 @@
     "task6_state": "reviewed",
     "task9_state": "pending"
   },
-  "task2b_last_run": "2026-04-19T16:01:59+08:00",
+  "task2b_last_run": "2026-04-19T19:41:00+08:00",
   "task2b_last_result": "fixed",
   "task2b_task8_processed": 3,
-  "task2b_note": "修复 14.7 的 API 文档腔、长代码块和 frontmatter 缺项，并完成 technical-writing 禁用词复检",
+  "task2b_note": "修复 2.12 的线程模型、BLAST 返回路径、relayout 触发条件、Perfetto 口径和 Android 16/17 版本锚点，并完成 technical-writing 禁用词复检",
   "15.5": {
     "task6_review_date": "2026-04-17",
     "task6_result": "pass-light-edit",
@@ -4116,6 +4143,14 @@
       "section_title": "ProfilingManager",
       "source": "task6-review",
       "issues_fixed": 4,
+      "status": "fixed"
+    },
+    {
+      "date": "2026-04-19T19:41:00+08:00",
+      "section": "2.12",
+      "section_title": "Window Manager Service 与窗口管理",
+      "source": "task9-deep-tech-review",
+      "issues_fixed": 6,
       "status": "fixed"
     }
   ],
@@ -4194,6 +4229,14 @@
       ],
       "issues_fixed": 6,
       "by": "task2b-rework"
+    },
+    {
+      "date": "2026-04-19T19:41:00+08:00",
+      "sections": [
+        "2.12"
+      ],
+      "issues_fixed": 6,
+      "by": "task2b-rework"
     }
   ],
   "reviewed_chapters": [
@@ -4207,7 +4250,7 @@
   "total_chapters": 0,
   "reviewed_count": 1,
   "last_review": "18.17",
-  "last_task2b_section": "14.7",
+  "last_task2b_section": "2.12",
   "1.10": {
     "section": "1.10",
     "title": "ContentProvider 性能与优化",
@@ -4410,5 +4453,30 @@
     "task9_result": "needs-rework",
     "task2b_state": "pending",
     "last_task9_at": "2026-04-19T16:05:00+08:00"
+  },
+  "2.12": {
+    "section": "2.12",
+    "title": "Window Manager Service 与窗口管理",
+    "last_rework_date": "2026-04-19T19:41:00+08:00",
+    "rework_count": 1,
+    "rework_source": "task9-deep-tech-review + task9 suggestions",
+    "rework_issues_fixed": 6,
+    "rework_details": [
+      "线程模型：改成 system_server 同进程、多线程、全局锁耦合的真实口径，补 Binder 线程、DisplayThread、UiThread / WindowManagerPolicyThread、AnimationThread 的分工",
+      "Surface 返回路径：删掉不存在的 `SurfaceControl::create`，改成 `android_view_SurfaceControl.cpp` → `SurfaceComposerClient::createSurfaceChecked(...)`，并补 `ViewRootImpl.updateBlastSurfaceIfNeeded()` + `mSurface.transferFrom(...)`",
+      "relayout 原理：补 `performTraversals()` 的 6 个 relayout 触发条件、`relayoutAsync()` 和 WMS 侧 `performSurfacePlacement(true)`",
+      "Perfetto 观察：把固定 slice 名表改成候选集合 + 先枚举后分析的 SQL，补 capture category 前提",
+      "版本差异：把 Android 16 Desktop Windowing / adaptive behavior 补到官方文档锚点，并把 Android 17 `recreateOnConfigChanges` 收紧为 `[待验证]` 的公开 Beta 口径",
+      "禁用词复检：按 technical-writing 词库扫描，新增内容 0 hit"
+    ],
+    "current_status": "ready-for-review",
+    "pipeline_stage": "task6_pending",
+    "task6_result": "pass-light-edit",
+    "task6_state": "revisiting",
+    "task9_state": "pending",
+    "task9_result": "needs-rework",
+    "task2b_state": "fixed",
+    "task2b_result": "fixed",
+    "last_task2b_at": "2026-04-19T19:41:00+08:00"
   }
 }
