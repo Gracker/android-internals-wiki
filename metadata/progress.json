@@ -1,25 +1,27 @@
 {
-  "generated_at": "2026-04-19T22:11:56+08:00",
+  "generated_at": "2026-04-19T22:26:37.465499",
   "state_machine_version": "v2",
   "total_sections": 206,
   "metrics": {
     "total": 172,
     "unknown": 34,
-    "last_updated": "2026-04-19T22:11:56+08:00",
+    "last_updated": "2026-04-19T22:26:37.465499",
     "task2b_state_counts": {
       "fixed": 124,
       "idle": 35,
       "pending": 13
     },
     "task6_state_counts": {
-      "pending": 1,
-      "reviewed": 64,
-      "revisiting": 108
+      "unknown": 33,
+      "reviewed": 67,
+      "revisiting": 105,
+      "pending": 1
     },
     "task9_state_counts": {
-      "fixed": 1,
+      "unknown": 33,
+      "reviewed": 21,
       "pending": 151,
-      "reviewed": 21
+      "fixed": 1
     },
     "pipeline_stage_counts": {
       "task2b_pending": 12,
@@ -49,10 +51,10 @@
   },
   "pipeline": {
     "pipeline_stage_counts": {
-      "task2b_pending": 12,
-      "task6_pending": 110,
-      "task9_pending": 51,
-      "unknown": 33
+      "unknown": 33,
+      "task6_pending": 107,
+      "task9_pending": 54,
+      "task2b_pending": 12
     },
     "task2b_state_counts": {
       "fixed": 124,
@@ -61,10 +63,10 @@
       "unknown": 34
     },
     "task6_state_counts": {
-      "pending": 1,
-      "reviewed": 64,
-      "revisiting": 108,
-      "unknown": 33
+      "unknown": 33,
+      "reviewed": 67,
+      "revisiting": 105,
+      "pending": 1
     },
     "task9_state_counts": {
       "fixed": 1,
@@ -576,11 +578,11 @@
       "title": "Hardware Layer",
       "path": "src/part1-fundamentals/ch02-rendering/07-hardware-layer.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "revisiting",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
       "task9_state": "pending",
       "task2b_state": "fixed",
-      "reviewed_date": "2026-04-12",
+      "reviewed_date": "2026-04-19",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
@@ -881,13 +883,13 @@
       "title": "输入事件拦截与安全机制",
       "path": "src/part1-fundamentals/ch03-input/05-input-interception-security.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "revisiting",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
       "task9_state": "pending",
       "task2b_state": "fixed",
-      "reviewed_date": "2026-04-12",
+      "reviewed_date": "2026-04-19",
       "reviewed_by": "openclaw-task6",
-      "task6_result": "needs-rework",
+      "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
       "section": "3.5"
@@ -1032,13 +1034,13 @@
       "title": "ART 分代垃圾回收与 GC 暂停优化",
       "path": "src/part1-fundamentals/ch04-memory/08-art-generational-gc.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "revisiting",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
       "task9_state": "pending",
       "task2b_state": "fixed",
-      "reviewed_date": "2026-04-12",
+      "reviewed_date": "2026-04-19",
       "reviewed_by": "openclaw-task6",
-      "task6_result": "needs-rework",
+      "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
       "section": "4.8"

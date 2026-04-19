@@ -48,12 +48,12 @@ tags:
 - art
 - gc
 - perfetto
-reviewed_date: '2026-04-12'
+reviewed_date: "2026-04-19"
 reviewed_by: openclaw-task6
-review_notes: '2026-04-12 task6 review: needs-rework。L1/L2 小修 10 处（section/tags/outline/措辞/验证标注/术语统一）。L3 回炉 4 项（版本结论、源码锚点、Perfetto 表名与采集链、Trace 证据）。'
-pipeline_stage: task6_pending
-task6_state: revisiting
-task6_result: needs-rework
+review_notes: '2026-04-19 task6 re-review: pass-light-edit. L1/L2无需修改，文章质量良好。无需回炉。'
+pipeline_stage: task9_pending
+task6_state: reviewed
+task6_result: pass-light-edit
 task9_state: pending
 task9_result: needs-rework
 task2b_state: fixed
@@ -535,3 +535,11 @@ GC 暂停如果恰好发生在 VSYNC-app 信号到来之后、`doFrame()` 执行
 - 类型：research
 - 摘要：Android 17 引入 Concurrent Mark-Compact + Generational GC，专门优化年轻代对象的快速回收。目标是减少 RecyclerView 场景中的 GC jank，并与 DeliQueue 一起降低 UI 停顿。
 - 入库时间：2026-04-08
+
+### Android 16 QPR2 Gen-CMC 源码级深度技术分析
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/Android 16 QPR2 Gen-CMC 源码级深度技术分析 .md
+- 类型：DeepResearch 调研结果
+- 摘要：围绕 Android 16 QPR2 的 Gen-CMC，追溯 CC→Gen-CC→CMC→Gen-CMC 演进，分析分代假说、card table/write barrier 回归、young/old 回收边界，以及对 jank、CPU 与续航的潜在收益。
+- 注入时间：2026-04-19
+- 价值：能帮助理解 Android 16 ART GC 变化对卡顿与功耗的影响。
+
