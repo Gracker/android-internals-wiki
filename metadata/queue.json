@@ -2,6 +2,38 @@
   {
     "section": "2.14",
     "section_title": "图形 API 演进与选择策略（OpenGL ES / Vulkan / ANGLE）",
+    "priority": 95,
+    "reason": "[Deep Tech Review] AVP 2025 / ANGLE / FrameTimeline 三处技术锚点仍有事实错误",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "版本差异",
+        "location": "第 102-106 行（AVP 2025 段）",
+        "detail": "将 `VK_EXT_host_image_copy` 写成 AVP 2025 profile 能力。官方 AVP 2025 页面与 `VP_ANDROID_vulkan_profile_2025.json` 仅列 `VK_KHR_external_memory_fd`、`VK_KHR_vulkan_memory_model`、`VK_KHR_shader_float_controls`、`VK_EXT_host_query_reset` 及像素格式，不包含 `VK_EXT_host_image_copy`。当前写法把 AVP 2025 与 Android 16 / Vulkan 1.4 语义混写。",
+        "suggestion": "删除“AVP 2025 包含 host image copy”的断言；如需保留 host image copy，请改挂到 Vulkan 1.4 / Android 16 相关段落，并补对应一手资料锚点。"
+      },
+      {
+        "type": "源码错误",
+        "location": "frontmatter source + 第 223/242/448 行（ANGLE 源码路径）",
+        "detail": "`platform/external/angle` 是 git project 名，不是 AOSP checkout 内的源码树路径；按本章其余 AOSP 路径写法，这里应使用 `external/angle/`，子目录应写成 `external/angle/src/libANGLE/renderer/vulkan/`。",
+        "suggestion": "统一修正为源码树路径；如果想保留 Gitiles 项目地址，单独标成仓库 URL，不要混写成源码路径。"
+      },
+      {
+        "type": "版本差异",
+        "location": "第 364-366 行（Frame Timeline 段）",
+        "detail": "“Frame Timeline 在 Android 10+ 可用”与 Perfetto 官方文档不符。Perfetto 明确写的是 “FrameTimeline requires Android 12(S) or higher”，同页还注明 “SurfaceViews are currently not supported”。当前段既写错最低版本，也漏掉了对游戏 / SurfaceView 场景至关重要的使用边界。",
+        "suggestion": "把最低版本改为 Android 12+，并补上 SurfaceView 场景的替代观察路径，例如 buffered frames、gpu.renderstages、Swappy stats。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-19T13:40:06+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "2.14",
+    "section_title": "图形 API 演进与选择策略（OpenGL ES / Vulkan / ANGLE）",
     "priority": 90,
     "reason": "[review回炉] external-review P1: 缺少 VK_EXT_host_image_copy、Dawn/WebGPU、ADPF 热管理选路等内容",
     "material_paths": [
