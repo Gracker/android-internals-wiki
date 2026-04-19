@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-18 06:04",
+  "generated_at": "2026-04-19 06:09",
   "documents": [
     {
       "path": "Cubox/#01 创始人解密 Discord-2023-02-20.md",
@@ -44019,7 +44019,13 @@
         "ch13",
         "ch14",
         "ch16"
-      ]
+      ],
+      "mapped_chapters": [
+        "ch16"
+      ],
+      "total_score": 78,
+      "category": "high_author_original",
+      "last_analyzed": "2026-04-19"
     },
     {
       "path": "src/part4-system/ch16-aosp/README.md",
@@ -44252,11 +44258,15 @@
     {
       "path": "src/ch08/01-responsiveness-principles.md/01-responsiveness-principles.md",
       "title": "01-responsiveness-principles.md",
-      "mapped_chapters": [],
-      "total_score": 50,
+      "mapped_chapters": [
+        "ch08"
+      ],
+      "total_score": 75,
       "size": 12978,
       "status": "substantial",
-      "mtime": "2026-03-29 21:40"
+      "mtime": "2026-03-29 21:40",
+      "category": "high_author_original",
+      "last_analyzed": "2026-04-19"
     },
     {
       "path": "src/part1-fundamentals/ch02-rendering/03-vsync.md",
@@ -44304,7 +44314,13 @@
         "ch08",
         "ch10",
         "ch16"
-      ]
+      ],
+      "mapped_chapters": [
+        "ch02"
+      ],
+      "total_score": 80,
+      "category": "high_author_original",
+      "last_analyzed": "2026-04-19"
     },
     {
       "path": "src/part1-fundamentals/ch02-rendering/07-hardware-layer.md",
@@ -44352,7 +44368,13 @@
         "ch10",
         "ch11",
         "ch16"
-      ]
+      ],
+      "mapped_chapters": [
+        "ch02"
+      ],
+      "total_score": 73,
+      "category": "high_author_original",
+      "last_analyzed": "2026-04-19"
     },
     {
       "path": "src/part1-fundamentals/ch02-rendering/10-gpu-rendering.md",
@@ -44405,10 +44427,12 @@
         "ch10",
         "ch16"
       ],
-      "total_score": 100,
+      "total_score": 78,
       "mapped_chapters": [
         "ch02"
-      ]
+      ],
+      "category": "high_author_original",
+      "last_analyzed": "2026-04-19"
     },
     {
       "path": "src/part1-fundamentals/ch02-rendering/README.md",
@@ -44539,7 +44563,13 @@
         "ch05",
         "ch10",
         "ch16"
-      ]
+      ],
+      "mapped_chapters": [
+        "ch05"
+      ],
+      "total_score": 73,
+      "category": "high_author_original",
+      "last_analyzed": "2026-04-19"
     },
     {
       "path": "src/part1-fundamentals/ch05-cpu-power/03-big-little.md",
@@ -44683,7 +44713,13 @@
         "ch10",
         "ch13",
         "ch16"
-      ]
+      ],
+      "mapped_chapters": [
+        "ch05"
+      ],
+      "total_score": 78,
+      "category": "high_author_original",
+      "last_analyzed": "2026-04-19"
     },
     {
       "path": "src/part1-fundamentals/ch01-architecture/02-boot-process.md",
@@ -44708,10 +44744,12 @@
         "ch10",
         "ch16"
       ],
-      "total_score": 100,
+      "total_score": 85,
       "mapped_chapters": [
         "ch01"
-      ]
+      ],
+      "category": "high_author_original",
+      "last_analyzed": "2026-04-19"
     },
     {
       "path": "src/part1-fundamentals/ch01-architecture/README.md",
@@ -44751,7 +44789,13 @@
         "ch08",
         "ch10",
         "ch16"
-      ]
+      ],
+      "mapped_chapters": [
+        "ch01"
+      ],
+      "total_score": 84,
+      "category": "high_author_original",
+      "last_analyzed": "2026-04-19"
     },
     {
       "path": "src/part1-fundamentals/ch01-architecture/04-binder.md",
@@ -44855,7 +44899,13 @@
         "ch10",
         "ch14",
         "ch16"
-      ]
+      ],
+      "mapped_chapters": [
+        "ch01"
+      ],
+      "total_score": 80,
+      "category": "high_author_original",
+      "last_analyzed": "2026-04-19"
     },
     {
       "path": "src/part1-fundamentals/ch06-storage/03-io-scheduling.md",
@@ -45044,7 +45094,13 @@
         "ch01",
         "ch04",
         "ch16"
-      ]
+      ],
+      "mapped_chapters": [
+        "ch04"
+      ],
+      "total_score": 73,
+      "category": "high_author_original",
+      "last_analyzed": "2026-04-19"
     },
     {
       "path": "src/part1-fundamentals/ch04-memory/02-linux-memory.md",
@@ -45202,10 +45258,12 @@
         "total": 87
       },
       "applicable_versions": "Android 12 (API 31) - Android 16 (API 36)",
-      "total_score": 100,
+      "total_score": 75,
       "mapped_chapters": [
         "ch03"
-      ]
+      ],
+      "category": "high_author_original",
+      "last_analyzed": "2026-04-19"
     },
     {
       "path": "src/part1-fundamentals/ch03-input/README.md",
@@ -45480,7 +45538,13 @@
         "ch07",
         "ch08",
         "ch16"
-      ]
+      ],
+      "mapped_chapters": [
+        "ch08"
+      ],
+      "total_score": 75,
+      "category": "high_author_original",
+      "last_analyzed": "2026-04-19"
     },
     {
       "path": "src/part2-performance/ch08-responsiveness/06-coroutine-performance.md",
@@ -45826,10 +45890,12 @@
         "ch10",
         "ch16"
       ],
-      "total_score": 100,
+      "total_score": 70,
       "mapped_chapters": [
         "ch07"
-      ]
+      ],
+      "category": "high_author_original",
+      "last_analyzed": "2026-04-19"
     },
     {
       "path": "src/part2-performance/ch07-smoothness/04-typical-scenarios.md",
@@ -45873,7 +45939,13 @@
         "ch08",
         "ch13",
         "ch16"
-      ]
+      ],
+      "mapped_chapters": [
+        "ch07"
+      ],
+      "total_score": 78,
+      "category": "high_author_original",
+      "last_analyzed": "2026-04-19"
     },
     {
       "path": "src/part2-performance/ch07-smoothness/03-jank-methodology.md",
@@ -45919,7 +45991,13 @@
         "ch10",
         "ch11",
         "ch16"
-      ]
+      ],
+      "mapped_chapters": [
+        "ch07"
+      ],
+      "total_score": 77,
+      "category": "high_author_original",
+      "last_analyzed": "2026-04-19"
     },
     {
       "path": "src/part2-performance/ch09-anr/05-case-studies.md",
@@ -46394,7 +46472,13 @@
         "ch10",
         "ch14",
         "ch16"
-      ]
+      ],
+      "mapped_chapters": [
+        "ch15"
+      ],
+      "total_score": 70,
+      "category": "high_author_original",
+      "last_analyzed": "2026-04-19"
     },
     {
       "path": "src/part3-tools/ch13-perfetto/06-thread-cpu-states.md",
@@ -46868,10 +46952,12 @@
         "total": 81
       },
       "applicable_versions": "Android 5.0 (API 21) - Android 17 (API 37)",
-      "total_score": 100,
+      "total_score": 75,
       "mapped_chapters": [
         "ch02"
-      ]
+      ],
+      "category": "high_author_original",
+      "last_analyzed": "2026-04-19"
     },
     {
       "path": "intake/research-feeds/2026-04-06-07-android17-power-management-wakelock-policy-aod-minmode.md",
@@ -47082,7 +47168,13 @@
       "chapters": [
         "ch02",
         "ch16"
-      ]
+      ],
+      "mapped_chapters": [
+        "ch02"
+      ],
+      "total_score": 75,
+      "category": "high_author_original",
+      "last_analyzed": "2026-04-19"
     },
     {
       "path": "src/part1-fundamentals/ch02-rendering/19-refresh-rate-switching.md",
@@ -47161,7 +47253,13 @@
         "可用度": 20,
         "total": 85
       },
-      "applicable_versions": "Android 12 (API 31) - Android 17 (API 37)"
+      "applicable_versions": "Android 12 (API 31) - Android 17 (API 37)",
+      "mapped_chapters": [
+        "ch01"
+      ],
+      "total_score": 75,
+      "category": "high_author_original",
+      "last_analyzed": "2026-04-19"
     },
     {
       "path": "src/part1-fundamentals/ch01-architecture/10-content-provider.md",
@@ -47194,7 +47292,13 @@
         "可用度": 20,
         "total": 85
       },
-      "applicable_versions": "Android 8 (API 26) - Android 17 (API 37)"
+      "applicable_versions": "Android 8 (API 26) - Android 17 (API 37)",
+      "mapped_chapters": [
+        "ch01"
+      ],
+      "total_score": 77,
+      "category": "high_author_original",
+      "last_analyzed": "2026-04-19"
     },
     {
       "path": "src/part1-fundamentals/ch01-architecture/15-jni-ndk-performance.md",
@@ -47213,7 +47317,13 @@
         "ch10",
         "ch14",
         "ch16"
-      ]
+      ],
+      "mapped_chapters": [
+        "ch01"
+      ],
+      "total_score": 75,
+      "category": "high_author_original",
+      "last_analyzed": "2026-04-19"
     },
     {
       "path": "src/part1-fundamentals/ch01-architecture/09-package-manager.md",
@@ -47247,7 +47357,13 @@
         "可用度": 20,
         "total": 85
       },
-      "applicable_versions": "Android 5.0 (API 21) - Android 17 (API 37)"
+      "applicable_versions": "Android 5.0 (API 21) - Android 17 (API 37)",
+      "mapped_chapters": [
+        "ch01"
+      ],
+      "total_score": 78,
+      "category": "high_author_original",
+      "last_analyzed": "2026-04-19"
     },
     {
       "path": "src/part1-fundamentals/ch06-storage/05-sharedpreferences-datastore.md",
@@ -47463,7 +47579,13 @@
         "ch09",
         "ch14",
         "ch16"
-      ]
+      ],
+      "mapped_chapters": [
+        "ch15"
+      ],
+      "total_score": 76,
+      "category": "high_author_original",
+      "last_analyzed": "2026-04-19"
     },
     {
       "path": "intake/research-feeds/2026-04-08-19-view-hierarchy-measure-layout-perfetto-jank-optimization.md",
@@ -47601,12 +47723,12 @@
       "title": "Audio Pipeline 延迟与性能",
       "source": "quote",
       "mapped_chapters": [
-        "ch01",
-        "ch02",
-        "ch07",
-        "ch16"
+        "ch01"
       ],
-      "quality_score": 58
+      "quality_score": 58,
+      "total_score": 75,
+      "category": "high_author_original",
+      "last_analyzed": "2026-04-19"
     },
     {
       "path": "part2-performance/ch10-memory-perf/05-case-studies.md",
@@ -47691,12 +47813,12 @@
       "title": "MainThread 与 RenderThread 协作",
       "source": "quote",
       "mapped_chapters": [
-        "ch02",
-        "ch07",
-        "ch09",
-        "ch13"
+        "ch02"
       ],
-      "quality_score": 58
+      "quality_score": 58,
+      "total_score": 73,
+      "category": "high_author_original",
+      "last_analyzed": "2026-04-19"
     },
     {
       "path": "part2-performance/ch09-anr/05-case-studies.md",
@@ -47798,11 +47920,12 @@
       "title": "Android Tracing 基础设施",
       "source": "quote",
       "mapped_chapters": [
-        "ch04",
-        "ch05",
         "ch13"
       ],
-      "quality_score": 50
+      "quality_score": 50,
+      "total_score": 70,
+      "category": "high_author_original",
+      "last_analyzed": "2026-04-19"
     },
     {
       "path": "part2-performance/ch08-responsiveness/06-coroutine-performance.md",
@@ -47909,15 +48032,12 @@
       "title": "卡顿原因体系",
       "source": "quote",
       "mapped_chapters": [
-        "ch02",
-        "ch03",
-        "ch04",
-        "ch05",
-        "ch07",
-        "ch09",
-        "ch13"
+        "ch07"
       ],
-      "quality_score": 58
+      "quality_score": 58,
+      "total_score": 77,
+      "category": "high_author_original",
+      "last_analyzed": "2026-04-19"
     },
     {
       "path": "part2-performance/ch07-smoothness/09-perceived-smoothness.md",
@@ -48127,10 +48247,12 @@
       "title": "响应速度原理",
       "source": "quote",
       "mapped_chapters": [
-        "ch03",
         "ch08"
       ],
-      "quality_score": 53
+      "quality_score": 53,
+      "total_score": 75,
+      "category": "high_author_original",
+      "last_analyzed": "2026-04-19"
     },
     {
       "path": "part1-fundamentals/ch03-input/06-gesture-recognition-performance.md",
@@ -48177,11 +48299,12 @@
       "title": "Thermal",
       "source": "quote",
       "mapped_chapters": [
-        "ch05",
-        "ch07",
-        "ch16"
+        "ch05"
       ],
-      "quality_score": 58
+      "quality_score": 58,
+      "total_score": 78,
+      "category": "high_author_original",
+      "last_analyzed": "2026-04-19"
     },
     {
       "path": "part1-fundamentals/ch01-architecture/13-messagequeue-deliqueue.md",
@@ -48252,12 +48375,12 @@
       "title": "Android 性能问题实证",
       "source": "mixed",
       "mapped_chapters": [
-        "ch04",
-        "ch07",
-        "ch08",
-        "ch09"
+        "ch15"
       ],
-      "quality_score": 53
+      "quality_score": 53,
+      "total_score": 76,
+      "category": "high_author_original",
+      "last_analyzed": "2026-04-19"
     },
     {
       "path": "part3-tools/ch15-methodology/03-metrics.md",
@@ -48296,11 +48419,12 @@
       "title": "优化策略",
       "source": "quote",
       "mapped_chapters": [
-        "ch02",
-        "ch07",
-        "ch15"
+        "ch07"
       ],
-      "quality_score": 58
+      "quality_score": 58,
+      "total_score": 78,
+      "category": "high_author_original",
+      "last_analyzed": "2026-04-19"
     },
     {
       "path": "part2-performance/ch08-responsiveness/07-baseline-profiles.md",
@@ -48348,11 +48472,12 @@
       "title": "Package Manager Service 与应用安装性能",
       "source": "quote",
       "mapped_chapters": [
-        "ch01",
-        "ch06",
-        "ch08"
+        "ch01"
       ],
-      "quality_score": 58
+      "quality_score": 58,
+      "total_score": 78,
+      "category": "high_author_original",
+      "last_analyzed": "2026-04-19"
     },
     {
       "path": "part1-fundamentals/ch01-architecture/15-jni-ndk-performance.md",
@@ -48361,12 +48486,12 @@
       "title": "JNI/NDK 性能优化",
       "source": "quote",
       "mapped_chapters": [
-        "ch01",
-        "ch02",
-        "ch08",
-        "ch13"
+        "ch01"
       ],
-      "quality_score": 58
+      "quality_score": 58,
+      "total_score": 75,
+      "category": "high_author_original",
+      "last_analyzed": "2026-04-19"
     },
     {
       "path": "part1-fundamentals/ch01-architecture/10-content-provider.md",
@@ -48375,11 +48500,12 @@
       "title": "ContentProvider 性能与优化",
       "source": "quote",
       "mapped_chapters": [
-        "ch01",
-        "ch08",
-        "ch09"
+        "ch01"
       ],
-      "quality_score": 58
+      "quality_score": 58,
+      "total_score": 77,
+      "category": "high_author_original",
+      "last_analyzed": "2026-04-19"
     },
     {
       "path": "part1-fundamentals/ch01-architecture/12-autofdo-optimization.md",
@@ -48388,12 +48514,12 @@
       "title": "AutoFDO 反馈导向编译优化",
       "source": "quote",
       "mapped_chapters": [
-        "ch01",
-        "ch04",
-        "ch05",
-        "ch13"
+        "ch01"
       ],
-      "quality_score": 50
+      "quality_score": 50,
+      "total_score": 75,
+      "category": "high_author_original",
+      "last_analyzed": "2026-04-19"
     },
     {
       "path": "part4-system/ch16-aosp/04-android17-kernel612-performance.md",
@@ -48415,14 +48541,12 @@
       "title": "Google 官方的性能优化思路",
       "source": "quote",
       "mapped_chapters": [
-        "ch01",
-        "ch02",
-        "ch04",
-        "ch05",
-        "ch07",
-        "ch08"
+        "ch16"
       ],
-      "quality_score": 58
+      "quality_score": 58,
+      "total_score": 78,
+      "category": "high_author_original",
+      "last_analyzed": "2026-04-19"
     },
     {
       "path": "src/part4-system/ch16-aosp/03-build-debug-env.md",
@@ -48478,7 +48602,13 @@
         "ch07",
         "ch11",
         "ch16"
-      ]
+      ],
+      "mapped_chapters": [
+        "ch02"
+      ],
+      "total_score": 75,
+      "category": "high_author_original",
+      "last_analyzed": "2026-04-19"
     },
     {
       "path": "src/part1-fundamentals/ch02-rendering/16-sync-fence.md",
@@ -48501,7 +48631,13 @@
         "ch05",
         "ch11",
         "ch16"
-      ]
+      ],
+      "mapped_chapters": [
+        "ch02"
+      ],
+      "total_score": 75,
+      "category": "high_author_original",
+      "last_analyzed": "2026-04-19"
     },
     {
       "path": "src/part1-fundamentals/ch02-rendering/14-graphics-api-evolution.md",
@@ -48599,10 +48735,12 @@
         "ch11",
         "ch16"
       ],
-      "total_score": 100,
+      "total_score": 75,
       "mapped_chapters": [
         "ch02"
-      ]
+      ],
+      "category": "high_author_original",
+      "last_analyzed": "2026-04-19"
     },
     {
       "path": "src/part1-fundamentals/ch02-rendering/15-dmabuf-gralloc.md",
@@ -48653,10 +48791,12 @@
         "ch10",
         "ch16"
       ],
-      "total_score": 100,
+      "total_score": 78,
       "mapped_chapters": [
         "ch02"
-      ]
+      ],
+      "category": "high_author_original",
+      "last_analyzed": "2026-04-19"
     },
     {
       "path": "src/part1-fundamentals/ch05-cpu-power/12-thermal-management-deep-dive.md",
@@ -48678,7 +48818,13 @@
         "ch10",
         "ch13",
         "ch16"
-      ]
+      ],
+      "mapped_chapters": [
+        "ch05"
+      ],
+      "total_score": 78,
+      "category": "high_author_original",
+      "last_analyzed": "2026-04-19"
     },
     {
       "path": "src/part1-fundamentals/ch05-cpu-power/09-adpf.md",
@@ -48746,7 +48892,13 @@
         "ch09",
         "ch11",
         "ch16"
-      ]
+      ],
+      "mapped_chapters": [
+        "ch05"
+      ],
+      "total_score": 72,
+      "category": "high_author_original",
+      "last_analyzed": "2026-04-19"
     },
     {
       "path": "src/part1-fundamentals/ch05-cpu-power/11-ondevice-ml-inference-performance.md",
@@ -48812,7 +48964,13 @@
         "ch02",
         "ch08",
         "ch16"
-      ]
+      ],
+      "mapped_chapters": [
+        "ch01"
+      ],
+      "total_score": 75,
+      "category": "high_author_original",
+      "last_analyzed": "2026-04-19"
     },
     {
       "path": "src/part1-fundamentals/ch01-architecture/11-zygote-startup.md",
@@ -48847,7 +49005,13 @@
         "可用度": 20,
         "total": 85
       },
-      "applicable_versions": "Android 5.0 (API 21) - Android 17 (API 37)"
+      "applicable_versions": "Android 5.0 (API 21) - Android 17 (API 37)",
+      "mapped_chapters": [
+        "ch01"
+      ],
+      "total_score": 80,
+      "category": "high_author_original",
+      "last_analyzed": "2026-04-19"
     },
     {
       "path": "src/part1-fundamentals/ch01-architecture/07-art-compilation.md",
@@ -48908,7 +49072,13 @@
         "可用度": 22,
         "total": 94
       },
-      "applicable_versions": "Android 10 (API 29) - Android 17 (API 37)"
+      "applicable_versions": "Android 10 (API 29) - Android 17 (API 37)",
+      "mapped_chapters": [
+        "ch01"
+      ],
+      "total_score": 77,
+      "category": "high_author_original",
+      "last_analyzed": "2026-04-19"
     },
     {
       "path": "src/part1-fundamentals/ch01-architecture/14-lock-contention.md",
@@ -48946,7 +49116,13 @@
         "可用度": 20,
         "total": 85
       },
-      "applicable_versions": "Android 1.0 (API 1) - Android 17 (API 37)"
+      "applicable_versions": "Android 1.0 (API 1) - Android 17 (API 37)",
+      "mapped_chapters": [
+        "ch01"
+      ],
+      "total_score": 75,
+      "category": "high_author_original",
+      "last_analyzed": "2026-04-19"
     },
     {
       "path": "src/part1-fundamentals/ch03-input/05-input-interception-security.md",
@@ -49374,10 +49550,12 @@
         "ch14",
         "ch16"
       ],
-      "total_score": 100,
+      "total_score": 70,
       "mapped_chapters": [
         "ch13"
-      ]
+      ],
+      "category": "high_author_original",
+      "last_analyzed": "2026-04-19"
     },
     {
       "path": "src/part3-tools/ch13-perfetto/08-input-latency-sql.md",
@@ -49422,29 +49600,31 @@
       "path": "src/part2-performance/ch18-rendering-pipelines/02-android-view-standard.md",
       "title": "18.2 Android View 标准绘制路径",
       "mapped_chapters": [
-        "ch18",
-        "18",
-        "2.1"
+        "ch18"
       ],
-      "total_score": 45
+      "total_score": 75,
+      "category": "high_author_original",
+      "last_analyzed": "2026-04-19"
     },
     {
       "path": "src/part2-performance/ch18-rendering-pipelines/03-android-view-software.md",
       "title": "18.3 Android View 软件绘制",
       "mapped_chapters": [
-        "ch18",
-        "18"
+        "ch18"
       ],
-      "total_score": 45
+      "total_score": 72,
+      "category": "high_author_original",
+      "last_analyzed": "2026-04-19"
     },
     {
       "path": "src/part2-performance/ch18-rendering-pipelines/04-android-view-mixed.md",
       "title": "18.4 Android View 混合绘制模式",
       "mapped_chapters": [
-        "ch18",
-        "18"
+        "ch18"
       ],
-      "total_score": 45
+      "total_score": 73,
+      "category": "high_author_original",
+      "last_analyzed": "2026-04-19"
     },
     {
       "path": "src/part2-performance/ch18-rendering-pipelines/05-android-view-multi-window.md",
@@ -49459,11 +49639,11 @@
       "path": "src/part2-performance/ch18-rendering-pipelines/06-surfaceview.md",
       "title": "18.6 SurfaceView 渲染机制",
       "mapped_chapters": [
-        "ch18",
-        "18",
-        "6"
+        "ch18"
       ],
-      "total_score": 55
+      "total_score": 73,
+      "category": "high_author_original",
+      "last_analyzed": "2026-04-19"
     },
     {
       "path": "src/part2-performance/ch18-rendering-pipelines/07-textureview.md",
@@ -49489,57 +49669,61 @@
       "path": "src/part2-performance/ch18-rendering-pipelines/09-vulkan-native.md",
       "title": "18.9 Vulkan 原生渲染",
       "mapped_chapters": [
-        "ch18",
-        "18",
-        "9"
+        "ch18"
       ],
-      "total_score": 45
+      "total_score": 75,
+      "category": "high_author_original",
+      "last_analyzed": "2026-04-19"
     },
     {
       "path": "src/part2-performance/ch18-rendering-pipelines/10-surface-control-api.md",
       "title": "18.10 SurfaceControl API",
       "mapped_chapters": [
-        "ch18",
-        "18"
+        "ch18"
       ],
-      "total_score": 45
+      "total_score": 73,
+      "category": "high_author_original",
+      "last_analyzed": "2026-04-19"
     },
     {
       "path": "src/part2-performance/ch18-rendering-pipelines/11-angle-gles-vulkan.md",
       "title": "18.11 ANGLE 与 GLES/Vulkan 转换层",
       "mapped_chapters": [
-        "ch18",
-        "18"
+        "ch18"
       ],
-      "total_score": 45
+      "total_score": 75,
+      "category": "high_author_original",
+      "last_analyzed": "2026-04-19"
     },
     {
       "path": "src/part2-performance/ch18-rendering-pipelines/12-flutter-rendering.md",
       "title": "18.12 Flutter 渲染管线",
       "mapped_chapters": [
-        "ch18",
-        "18",
-        "2.11"
+        "ch18"
       ],
-      "total_score": 45
+      "total_score": 75,
+      "category": "high_author_original",
+      "last_analyzed": "2026-04-19"
     },
     {
       "path": "src/part2-performance/ch18-rendering-pipelines/13-webview-rendering.md",
       "title": "18.13 WebView 渲染机制",
       "mapped_chapters": [
-        "ch18",
-        "18"
+        "ch18"
       ],
-      "total_score": 55
+      "total_score": 75,
+      "category": "high_author_original",
+      "last_analyzed": "2026-04-19"
     },
     {
       "path": "src/part2-performance/ch18-rendering-pipelines/14-camera-pipeline.md",
       "title": "18.14 Camera 渲染管线",
       "mapped_chapters": [
-        "ch18",
-        "18"
+        "ch18"
       ],
-      "total_score": 45
+      "total_score": 73,
+      "category": "high_author_original",
+      "last_analyzed": "2026-04-19"
     },
     {
       "path": "src/part2-performance/ch18-rendering-pipelines/15-video-overlay-hwc.md",
@@ -49554,46 +49738,51 @@
       "path": "src/part2-performance/ch18-rendering-pipelines/16-game-engine.md",
       "title": "18.16 游戏引擎渲染",
       "mapped_chapters": [
-        "ch18",
-        "18"
+        "ch18"
       ],
-      "total_score": 45
+      "total_score": 73,
+      "category": "high_author_original",
+      "last_analyzed": "2026-04-19"
     },
     {
       "path": "src/part2-performance/ch18-rendering-pipelines/17-hardware-buffer-renderer.md",
       "title": "18.17 HardwareBuffer Renderer",
       "mapped_chapters": [
-        "ch18",
-        "18"
+        "ch18"
       ],
-      "total_score": 45
+      "total_score": 73,
+      "category": "high_author_original",
+      "last_analyzed": "2026-04-19"
     },
     {
       "path": "src/part2-performance/ch18-rendering-pipelines/18-pip-freeform.md",
       "title": "18.18 PIP 与自由窗口模式",
       "mapped_chapters": [
-        "ch18",
-        "18"
+        "ch18"
       ],
-      "total_score": 55
+      "total_score": 73,
+      "category": "high_author_original",
+      "last_analyzed": "2026-04-19"
     },
     {
       "path": "src/part2-performance/ch18-rendering-pipelines/19-variable-refresh-rate.md",
       "title": "18.19 可变刷新率 (VRR)",
       "mapped_chapters": [
-        "ch18",
-        "18"
+        "ch18"
       ],
-      "total_score": 45
+      "total_score": 75,
+      "category": "high_author_original",
+      "last_analyzed": "2026-04-19"
     },
     {
       "path": "src/part2-performance/ch18-rendering-pipelines/20-pipeline-analysis-methodology.md",
       "title": "18.20 渲染管线分析方法论",
       "mapped_chapters": [
-        "ch18",
-        "18"
+        "ch18"
       ],
-      "total_score": 45
+      "total_score": 78,
+      "category": "high_author_original",
+      "last_analyzed": "2026-04-19"
     },
     {
       "path": "appendix/version-changelog.md",
@@ -49716,7 +49905,7 @@
         "ch02",
         "ch13"
       ],
-      "total_score": 68,
+      "total_score": 78,
       "source_type": "高爷原创文章",
       "quality_score": {
         "篇幅分": 20,
@@ -49725,7 +49914,12 @@
         "可用度": 0,
         "total": 68
       },
-      "content_hash": "18c8fa12c5cb8af94eebade0d0a3cf1b"
+      "content_hash": "18c8fa12c5cb8af94eebade0d0a3cf1b",
+      "mapped_chapters": [
+        "ch02"
+      ],
+      "category": "high_author_original",
+      "last_analyzed": "2026-04-19"
     },
     {
       "path": "part1-fundamentals/ch02-rendering/01-rendering-overview.md",
@@ -49777,7 +49971,7 @@
         "ch01",
         "ch07"
       ],
-      "total_score": 73,
+      "total_score": 85,
       "source_type": "高爷原创文章",
       "quality_score": {
         "篇幅分": 25,
@@ -49786,7 +49980,12 @@
         "可用度": 0,
         "total": 73
       },
-      "content_hash": "695e8db3c1beed428e63e1918be5f0c0"
+      "content_hash": "695e8db3c1beed428e63e1918be5f0c0",
+      "mapped_chapters": [
+        "ch01"
+      ],
+      "category": "high_author_original",
+      "last_analyzed": "2026-04-19"
     },
     {
       "path": "part1-fundamentals/ch01-architecture/03-process-model.md",
@@ -49810,7 +50009,7 @@
         "ch01",
         "ch04"
       ],
-      "total_score": 73,
+      "total_score": 80,
       "source_type": "高爷原创文章",
       "quality_score": {
         "篇幅分": 25,
@@ -49819,7 +50018,12 @@
         "可用度": 0,
         "total": 73
       },
-      "content_hash": "f9515148c8a9f6ae6620e063db1bd8b0"
+      "content_hash": "f9515148c8a9f6ae6620e063db1bd8b0",
+      "mapped_chapters": [
+        "ch01"
+      ],
+      "category": "high_author_original",
+      "last_analyzed": "2026-04-19"
     },
     {
       "path": "part2-performance/ch12-apk-network/02-network-performance.md",
@@ -50140,7 +50344,7 @@
         "ch08",
         "ch13"
       ],
-      "total_score": 45,
+      "total_score": 75,
       "source_type": "一般参考",
       "quality_score": {
         "篇幅分": 15,
@@ -50149,7 +50353,12 @@
         "可用度": 0,
         "total": 45
       },
-      "content_hash": "55764c5597b66459aeb1660bc571c6b8"
+      "content_hash": "55764c5597b66459aeb1660bc571c6b8",
+      "mapped_chapters": [
+        "ch18"
+      ],
+      "category": "high_author_original",
+      "last_analyzed": "2026-04-19"
     },
     {
       "path": "part3-tools/ch14-other-tools/03-memory-tools.md",
@@ -50356,6 +50565,26 @@
         "total": 65
       },
       "content_hash": "570bd73fdd8b991f6aeb94b99635755b"
+    },
+    {
+      "path": "external-ai-review-integration-spec.md",
+      "title": "外部 AI Review 结果整合规范",
+      "mapped_chapters": [
+        "process"
+      ],
+      "total_score": 65,
+      "category": "gaoye_notes",
+      "freshness_days": 1
+    },
+    {
+      "path": "aiw-gemini-review-pack.md",
+      "title": "AIW 外部 AI Review 规范（Gemini 专用）",
+      "mapped_chapters": [
+        "process"
+      ],
+      "total_score": 65,
+      "category": "gaoye_notes",
+      "freshness_days": 1
     }
   ],
   "stats": {
@@ -51167,5 +51396,7 @@
       "scanned_at": "2026-04-18T06:04:29.224450"
     }
   ],
-  "new_docs_count": 95
+  "new_docs_count": 95,
+  "scan_type": "incremental",
+  "docs_updated": 69
 }
