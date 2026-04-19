@@ -3,7 +3,7 @@ title: "内存相关的版本演进"
 chapter: "4.6"
 status: ready-for-review
 section: "4.6"
-reviewed_date: "2026-04-15"
+reviewed_date: "2026-04-19"
 reviewed_by: "openclaw-task6"
 polish_count: 1
 polish_date: "2026-04-07"
@@ -43,9 +43,9 @@ tags: ['memory-evolution', 'art', 'dalvik', 'gc', 'bitmap', 'scudo', 'mte', 'lar
 related_chapters: ["4.1", "4.2", "4.3", "4.4", "4.5", "2.9"]
 drafted_date: "2026-03-31"
 drafted_by: "openclaw-subagent"
-review_count: 3
-pipeline_stage: task6_pending
-task6_state: revisiting
+review_count: 4
+pipeline_stage: task9_pending
+task6_state: reviewed
 task6_result: pass-light-edit
 task9_state: pending
 task9_result: needs-rework
@@ -131,7 +131,7 @@ AOSP 源码路径：
 
 ### 为什么 Bitmap 要搬家
 
-在 Android 3.0 到 Android 7.1 的时代，Bitmap 的像素数据存储在 Java 堆中，用一个 `byte[]` 数组持有。这意味着什么？一张 1080×1920 的 ARGB_8888 图片占 `1080 × 1920 × 4 ≈ 8MB` 的 Java 堆空间。一个信息流 App 的列表页同时缓存十几张图片，仅图片就占了上百 MB 的 Java 堆——而 Java 堆的上限通常只有 128-512MB。
+在 Android 3.0 到 Android 7.1 的时代，Bitmap 的像素数据存储在 Java 堆中，用一个 `byte[]` 数组持有。一张 1080×1920 的 ARGB_8888 图片占 `1080 × 1920 × 4 ≈ 8MB` 的 Java 堆空间。一个信息流 App 的列表页同时缓存十几张图片，仅图片就占了上百 MB 的 Java 堆——而 Java 堆的上限通常只有 128-512MB。
 
 这导致了一个常见的问题：App 的 Java 堆被 Bitmap 填满，抛出 `OutOfMemoryError`，但此时 Native 内存和系统整体内存明明还有大量空闲。Bitmap 占了 Java 堆的最大头，但它只是一个"数据搬运工"——像素数据本身不需要 GC 管理，它们只是放在那里等待 GPU 读取。把像素数据放在 Java 堆里，让 GC 每次都要扫描这些不需要 GC 管理的大块数据，既浪费了 GC 的时间，又挤占了真正需要 GC 管理的 Java 对象的空间。
 
@@ -241,7 +241,7 @@ AOSP 源码路径：
 
 Android 11 之前，64 位设备的默认 Native 内存分配器是 jemalloc。jemalloc 在性能和碎片控制方面表现优秀，但它缺乏对内存安全问题的防御能力。在所有安全漏洞中，内存相关的漏洞（缓冲区溢出、use-after-free、double-free）占比超过一半。
 
-Scudo 的全称是 Scudo Hardened Allocator，它的设计目标是在"性能"和"安全"之间取得平衡。它不是追求极致性能的分配器，而是一个"戴着镣铐跳舞"的分配器——在保持合理性能的前提下，尽可能检测和阻止内存安全问题。
+Scudo 的全称是 Scudo Hardened Allocator，它的设计目标是在"性能"和"安全"之间取得平衡。它在保持合理性能的前提下，尽可能检测和阻止内存安全问题。
 
 从 Android 11 开始，Scudo 替代 jemalloc 成为 non-svelte 配置模式下（即大内存设备）的默认分配器。svelte 模式（小内存设备）仍然使用 jemalloc。随着 64 位和大 RAM 设备的普及，Scudo 的覆盖范围不断扩大。
 
