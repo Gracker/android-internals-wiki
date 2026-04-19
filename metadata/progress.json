@@ -1,16 +1,16 @@
 {
-  "generated_at": "2026-04-20T01:49:11+08:00",
+  "generated_at": "2026-04-20T03:17:47+08:00",
   "state_machine_version": "v2",
   "total_sections": 206,
   "metrics": {
     "total": 206,
     "unknown": 34,
-    "last_updated": "2026-04-20T01:49:11+08:00",
+    "last_updated": "2026-04-20T03:17:47+08:00",
     "task2b_state_counts": {
       "unknown": 34,
-      "fixed": 128,
-      "pending": 16,
-      "idle": 28
+      "fixed": 129,
+      "pending": 17,
+      "idle": 26
     },
     "task6_state_counts": {
       "unknown": 33,
@@ -20,52 +20,52 @@
     },
     "task9_state_counts": {
       "unknown": 33,
-      "reviewed": 27,
-      "pending": 145,
+      "reviewed": 30,
+      "pending": 142,
       "fixed": 1
     },
     "pipeline_stage_counts": {
       "unknown": 33,
-      "task6_pending": 105,
-      "task9_pending": 50,
-      "task2b_pending": 15,
-      "ready-to-publish": 3
+      "task6_pending": 103,
+      "task9_pending": 49,
+      "task2b_pending": 16,
+      "ready-to-publish": 5
     },
     "total_sections": 206,
     "pipeline_unknown": 33,
-    "pipeline_task6_pending": 105,
-    "pipeline_task2b_pending": 15,
-    "pipeline_task9_pending": 50,
+    "pipeline_task6_pending": 103,
+    "pipeline_task2b_pending": 16,
+    "pipeline_task9_pending": 49,
     "task2b_unknown": 34,
-    "task2b_fixed": 128,
-    "task2b_pending": 16,
-    "task2b_idle": 28,
+    "task2b_fixed": 129,
+    "task2b_pending": 17,
+    "task2b_idle": 26,
     "task6_unknown": 33,
     "task6_revisiting": 104,
     "task6_reviewed": 68,
     "task6_pending": 1,
     "task9_unknown": 33,
-    "task9_pending": 145,
-    "task9_reviewed": 27,
+    "task9_pending": 142,
+    "task9_reviewed": 30,
     "task9_fixed": 1,
     "ready-to-publish": 0,
-    "finalized": 3,
-    "ready-for-review": 169,
-    "pipeline_ready_to_publish": 3
+    "finalized": 5,
+    "ready-for-review": 167,
+    "pipeline_ready_to_publish": 5
   },
   "pipeline": {
     "pipeline_stage_counts": {
       "unknown": 33,
-      "task6_pending": 105,
-      "task9_pending": 50,
-      "task2b_pending": 15,
-      "ready-to-publish": 3
+      "task6_pending": 103,
+      "task9_pending": 49,
+      "task2b_pending": 16,
+      "ready-to-publish": 5
     },
     "task2b_state_counts": {
       "unknown": 34,
-      "fixed": 128,
-      "pending": 16,
-      "idle": 28
+      "fixed": 129,
+      "pending": 17,
+      "idle": 26
     },
     "task6_state_counts": {
       "unknown": 33,
@@ -75,8 +75,8 @@
     },
     "task9_state_counts": {
       "unknown": 33,
-      "reviewed": 27,
-      "pending": 145,
+      "reviewed": 30,
+      "pending": 142,
       "fixed": 1
     }
   },
@@ -563,9 +563,9 @@
       "section": "2.5"
     },
     "src/part1-fundamentals/ch02-rendering/06-surfaceflinger.md": {
+      "path": "src/part1-fundamentals/ch02-rendering/06-surfaceflinger.md",
       "chapter": "2.6",
       "title": "SurfaceFlinger 与合成",
-      "path": "src/part1-fundamentals/ch02-rendering/06-surfaceflinger.md",
       "status": "ready-for-review",
       "pipeline_stage": "task9_pending",
       "task6_state": "revisiting",
@@ -575,8 +575,7 @@
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
-      "task2b_result": "fixed",
-      "section": "2.6"
+      "task2b_result": "fixed"
     },
     "src/part1-fundamentals/ch02-rendering/07-hardware-layer.md": {
       "chapter": "2.7",
@@ -2136,21 +2135,23 @@
       "task2b_state": "unknown"
     },
     "src/part2-performance/ch18-rendering-pipelines/01-pipeline-overview.md": {
+      "path": "src/part2-performance/ch18-rendering-pipelines/01-pipeline-overview.md",
       "chapter": "18.1",
       "title": "渲染链路分类与选择矩阵",
-      "path": "src/part2-performance/ch18-rendering-pipelines/01-pipeline-overview.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "task6_state": "reviewed",
       "task9_state": "reviewed",
-      "task2b_state": "pending",
+      "task2b_state": "fixed",
       "reviewed_date": "2026-04-15",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
+      "task9_result": "pass-tech-review",
+      "task2b_result": "fixed",
       "section": "18.1",
-      "task9_result": "needs-rework",
+      "task9_reviewed_by": "openclaw-task9",
       "task9_reviewed_date": "2026-04-20",
-      "task9_reviewed_by": "openclaw-task9"
+      "last_task9_at": "2026-04-20T03:17:47+08:00"
     },
     "src/part2-performance/ch18-rendering-pipelines/02-android-view-standard.md": {
       "chapter": "18.2",
@@ -2206,40 +2207,49 @@
       "title": "Android View 多窗口链路",
       "path": "src/part2-performance/ch18-rendering-pipelines/05-android-view-multi-window.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "revisiting",
-      "task9_state": "pending",
-      "task2b_state": "fixed",
+      "task9_state": "reviewed",
+      "task2b_state": "pending",
       "reviewed_date": "2026-04-17",
       "reviewed_by": "openclaw-task6",
       "task6_result": "needs-rework",
-      "section": "18.5"
+      "section": "18.5",
+      "task9_result": "needs-rework",
+      "task9_reviewed_by": "openclaw-task9",
+      "task9_reviewed_date": "2026-04-20"
     },
     "src/part2-performance/ch18-rendering-pipelines/06-surfaceview.md": {
       "chapter": "18.6",
       "title": "SurfaceView 直出链路",
       "path": "src/part2-performance/ch18-rendering-pipelines/06-surfaceview.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
-      "task9_state": "pending",
-      "task2b_state": "idle",
+      "task9_state": "reviewed",
+      "task2b_state": "pending",
       "task6_result": "pass-light-edit",
-      "section": "18.6"
+      "section": "18.6",
+      "task9_result": "needs-rework",
+      "task9_reviewed_by": "openclaw-task9",
+      "task9_reviewed_date": "2026-04-20"
     },
     "src/part2-performance/ch18-rendering-pipelines/07-textureview.md": {
       "chapter": "18.7",
       "title": "TextureView 合成链路",
       "path": "src/part2-performance/ch18-rendering-pipelines/07-textureview.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
-      "task9_state": "pending",
-      "task2b_state": "idle",
+      "task9_state": "reviewed",
+      "task2b_state": "pending",
       "reviewed_date": "2026-04-17",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
-      "section": "18.7"
+      "section": "18.7",
+      "task9_result": "needs-rework",
+      "task9_reviewed_by": "openclaw-task9",
+      "task9_reviewed_date": "2026-04-20"
     },
     "src/part2-performance/ch18-rendering-pipelines/08-opengl-es.md": {
       "chapter": "18.8",
@@ -2641,19 +2651,23 @@
       "section": "14.1"
     },
     "src/part3-tools/ch14-other-tools/02-simpleperf.md": {
+      "path": "src/part3-tools/ch14-other-tools/02-simpleperf.md",
       "chapter": "14.2",
       "title": "Simpleperf",
-      "path": "src/part3-tools/ch14-other-tools/02-simpleperf.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "task6_state": "reviewed",
       "task9_state": "reviewed",
-      "task2b_state": "pending",
+      "task2b_state": "fixed",
       "reviewed_date": "2026-04-15",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
+      "task9_result": "pass-tech-review",
+      "task2b_result": "fixed",
       "section": "14.2",
-      "task9_result": "needs-rework"
+      "task9_reviewed_by": "openclaw-task9",
+      "task9_reviewed_date": "2026-04-20",
+      "last_task9_at": "2026-04-20T03:17:47+08:00"
     },
     "src/part3-tools/ch14-other-tools/03-memory-tools.md": {
       "chapter": "14.3",
@@ -3121,6 +3135,21 @@
       "task6_state": "unknown",
       "task9_state": "unknown",
       "task2b_state": "unknown"
+    },
+    "2.2": {
+      "task6_last_review": "2026-04-20",
+      "task6_result": "pass-light-edit",
+      "task6_state": "reviewed"
+    },
+    "2.14": {
+      "task6_last_review": "2026-04-20",
+      "task6_result": "pass-light-edit",
+      "task6_state": "reviewed"
+    },
+    "2.15": {
+      "task6_last_review": "2026-04-20",
+      "task6_result": "pass-light-edit",
+      "task6_state": "reviewed"
     }
   },
   "summary": {
