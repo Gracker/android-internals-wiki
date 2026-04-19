@@ -29,11 +29,12 @@ related_chapters:
 - '13.2'
 - '13.6'
 - '14.1'
-pipeline_stage: task9_pending
+pipeline_stage: task2b_pending
 task6_state: reviewed
-task9_state: pending
-task2b_state: idle
+task9_state: reviewed
+task2b_state: pending
 task6_result: pass-light-edit
+task9_result: needs-rework
 ---
 # Simpleperf
 

@@ -22,14 +22,15 @@ sources:
     path: "https://developer.android.com/studio/profile/power-profiler"
   - type: official
     path: "https://developer.android.com/topic/performance/batterystats-historian"
-pipeline_stage: task6_pending
+pipeline_stage: task2b_pending
 task6_state: reviewed
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
 reviewed_date: "2026-04-16"
-task9_state: pending
-task2b_state: idle
-pipeline_stage: task9_pending
+task9_state: reviewed
+task2b_state: pending
+pipeline_stage: task2b_pending
+task9_result: needs-rework
 ---
 
 # 14.11 Battery Historian 与功耗分析工具
