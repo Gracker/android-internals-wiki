@@ -1,39 +1,6 @@
 {
   "pending": [
     {
-      "section": "15.5",
-      "section_title": "线上性能监控",
-      "priority": 95,
-      "reason": "[Deep Tech Review] FrameCallback/FrameMetrics 线程语义与 JankStats 判定口径存在事实偏差",
-      "material_paths": [
-        "logs/external-review/2026-04-18-22-15.5-external-review.md",
-        "intake/suggestions.md"
-      ],
-      "review_issues": [
-        {
-          "type": "源码错误",
-          "location": "L107",
-          "detail": "把 Choreographer.FrameCallback.doFrame() 写成“API 23 及以下在主线程，API 24+ 在独立线程”。AOSP android-16.0.0_r1 的 Choreographer 明确说明每个 Looper 线程各自拥有 Choreographer，getInstance() 返回调用线程绑定的实例，回调运行在该 Looper 线程上，不存在 API 24 的线程模型切换。",
-          "suggestion": "改成“doFrame() 运行在所属 Choreographer 的 Looper 线程上；通常在主线程调用 getInstance() 时，所有 API 版本都在主线程回调，因此回调里只能做轻量采集，重操作必须异步转移。”"
-        },
-        {
-          "type": "源码错误/原理断裂",
-          "location": "L152",
-          "detail": "把 Window.OnFrameMetricsAvailableListener 笼统写成“在独立线程执行”。AOSP 的 Window/View/FrameMetricsObserver/HardwareRendererObserver 调用链显示，回调线程由调用 addOnFrameMetricsAvailableListener() 时传入的 Handler 决定，且 handler 与其 looper 都不能为空。传主线程 Handler 时，同样可能阻塞主线程。",
-          "suggestion": "改成“FrameMetrics 回调运行在传入 Handler 关联的 Looper 线程上。推荐使用专用后台 HandlerThread，仅在回调中复制/聚合数据，再异步上报。”"
-        },
-        {
-          "type": "源码错误/版本差异",
-          "location": "L169",
-          "detail": "把 JankStats 默认判定简化成“超过刷新率 2 倍就是 jank”。androidx.metrics.performance 源码显示，默认逻辑是 uiDuration > expectedFrameDuration * jankHeuristicMultiplier（默认 2.0f）；API 24-30 的 expectedFrameDuration 近似来自刷新率，API 31+ 则直接取 FrameMetrics.DEADLINE。",
-          "suggestion": "改成“JankStats 默认使用 jankHeuristicMultiplier=2.0f；低版本以刷新率估算 expected frame duration，API 31+ 使用 FrameMetrics.DEADLINE，随后再用 uiDuration 与该阈值比较。”"
-        }
-      ],
-      "added_by": "task9-deep-tech-review",
-      "added_at": "2026-04-19T09:03:50+08:00",
-      "status": "pending"
-    },
-    {
       "section": "1.5",
       "section_title": "线程模型",
       "priority": 90,
@@ -259,6 +226,42 @@
       "completed_at": "2026-04-19T08:02:35+08:00",
       "completed_by": "task2b-rework",
       "completion_reason": "已修正 scatter-gather 拷贝语义，改写锁竞争 SQL 段落为按耗时列事件并更新章节状态"
+    },
+    {
+      "section": "15.5",
+      "section_title": "线上性能监控",
+      "priority": 95,
+      "reason": "[Deep Tech Review] FrameCallback/FrameMetrics 线程语义与 JankStats 判定口径存在事实偏差",
+      "material_paths": [
+        "logs/external-review/2026-04-18-22-15.5-external-review.md",
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "location": "L107",
+          "detail": "把 Choreographer.FrameCallback.doFrame() 写成“API 23 及以下在主线程，API 24+ 在独立线程”。AOSP android-16.0.0_r1 的 Choreographer 明确说明每个 Looper 线程各自拥有 Choreographer，getInstance() 返回调用线程绑定的实例，回调运行在该 Looper 线程上，不存在 API 24 的线程模型切换。",
+          "suggestion": "改成“doFrame() 运行在所属 Choreographer 的 Looper 线程上；通常在主线程调用 getInstance() 时，所有 API 版本都在主线程回调，因此回调里只能做轻量采集，重操作必须异步转移。”"
+        },
+        {
+          "type": "源码错误/原理断裂",
+          "location": "L152",
+          "detail": "把 Window.OnFrameMetricsAvailableListener 笼统写成“在独立线程执行”。AOSP 的 Window/View/FrameMetricsObserver/HardwareRendererObserver 调用链显示，回调线程由调用 addOnFrameMetricsAvailableListener() 时传入的 Handler 决定，且 handler 与其 looper 都不能为空。传主线程 Handler 时，同样可能阻塞主线程。",
+          "suggestion": "改成“FrameMetrics 回调运行在传入 Handler 关联的 Looper 线程上。推荐使用专用后台 HandlerThread，仅在回调中复制/聚合数据，再异步上报。”"
+        },
+        {
+          "type": "源码错误/版本差异",
+          "location": "L169",
+          "detail": "把 JankStats 默认判定简化成“超过刷新率 2 倍就是 jank”。androidx.metrics.performance 源码显示，默认逻辑是 uiDuration > expectedFrameDuration * jankHeuristicMultiplier（默认 2.0f）；API 24-30 的 expectedFrameDuration 近似来自刷新率，API 31+ 则直接取 FrameMetrics.DEADLINE。",
+          "suggestion": "改成“JankStats 默认使用 jankHeuristicMultiplier=2.0f；低版本以刷新率估算 expected frame duration，API 31+ 使用 FrameMetrics.DEADLINE，随后再用 uiDuration 与该阈值比较。”"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-04-19T09:03:50+08:00",
+      "status": "completed",
+      "completed_at": "2026-04-19T09:31:02+08:00",
+      "completed_by": "task2b-rework",
+      "completion_reason": "已修正 FrameCallback 线程语义、FrameMetrics 回调线程说明和 JankStats 默认判定逻辑"
     }
   ]
 }

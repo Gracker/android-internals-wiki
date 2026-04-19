@@ -23,13 +23,14 @@ sources:
     path: "perfetto.dev/docs/instrumentation/tracing-sdk"
 tags: [monitoring, APM, FrameMetrics, JankStats, ANR, startup, production]
 related_chapters: ["7.3", "9.3", "14.1", "14.6", "15.4"]
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 reviewed_by: openclaw-task6
 reviewed_date: "2026-04-17"
 task6_result: pass-light-edit
-task9_state: reviewed
-task2b_state: pending
+task9_state: pending
+task2b_state: fixed
+task2b_result: fixed
 last_task9_at: "2026-04-19T09:03:50+08:00"
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-04-19"
@@ -108,7 +109,7 @@ Choreographer.getInstance().postFrameCallback(new Choreographer.FrameCallback() 
 
 第二，`frameTimeNanos` 是 VSync 信号到达的时间，而不是你的 `doFrame()` 被执行的时间。这意味着帧间隔测量的是"两个相邻 VSync 之间的距离"，而不是"你的代码执行耗时"。这恰好是我们想要的——它反映的是用户实际感知到的帧率。
 
-第三，在 API 23 及以下版本中，`doFrame()` 回调在主线程执行；API 24 及以上版本会在独立线程执行。所以如果你的回调里有耗时操作（比如写文件），在旧版本上会直接阻塞主线程，反而制造额外的掉帧。
+第三，`doFrame()` 运行在所属 `Choreographer` 的 Looper 线程上。应用通常在主线程调用 `Choreographer.getInstance()`，所以这个回调在所有 API 版本里通常都在主线程执行。回调里只做时间戳采集和计数，写文件、序列化、上报都放到后台线程。
 
 FrameCallback 的方式虽然简单直接，但它有一个明显的短板：只知道"掉了多少帧"，不知道"为什么掉"。它是纯时序层面的感知，没有渲染管线内部的细节。
 
@@ -153,7 +154,7 @@ if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
 [已验证: 官方文档, developer.android.com/reference/android/view/FrameMetrics]
 [已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/view/FrameMetrics.java]
 
-FrameMetrics 的数据通过 `Window.OnFrameMetricsAvailableListener` 回调获取。注意这个回调在独立线程执行（API 24+），不会阻塞主线程，但也不应该在里面做重操作——快速采集、异步上报是正确做法。
+FrameMetrics 的数据通过 `Window.OnFrameMetricsAvailableListener` 回调获取。这个回调运行在 `addOnFrameMetricsAvailableListener()` 传入的 `Handler` 所属 Looper 线程上。接入时通常会准备专用 `HandlerThread`，在回调里复制或聚合数据后再异步上报；如果传的是主线程 `Handler`，回调本身也会占用主线程时间。
 
 ### JankStats：Google 官方的帧率监控库
 
@@ -168,9 +169,9 @@ performanceMetricsState.putState("navigation", "HomeFragment");
 performanceMetricsState.putState("user_action", "scrolling_feed");
 ```
 
-[已验证: 官方文档, developer.android.com/jetpack/androidx/releases/jankstats]
+[已验证: AndroidX androidx-main, metrics/metrics-performance/src/main/java/androidx/metrics/performance/JankStatsApi24Impl.kt, JankStatsApi31Impl.kt]
 
-第三个问题是**掉帧判定策略的可配置性**。JankStats 默认将超过刷新率 2 倍的帧判定为"jank"，但你可以自定义阈值来适应不同的性能目标。
+第三项是**掉帧判定策略的可配置性**。JankStats 默认的 `jankHeuristicMultiplier` 是 `2.0f`。API 24-30 会先按刷新率估算期望帧时长，API 31+ 直接读取 `FrameMetrics.DEADLINE`，再用 `uiDuration` 和这个阈值比较。业务侧可以按自己的流畅度目标调整这个 multiplier。
 
 在实际项目中，如果你的 App 最低支持 API 24+，直接使用 FrameMetrics 就够用了；如果需要覆盖更低的版本，或者想要 UI 状态关联和开箱即用的掉帧判定逻辑，JankStats 是更省心的选择。
 
@@ -403,7 +404,7 @@ Firebase 的局限在于它是 Google 生态内的服务，在国内使用存在
 
 ## 常见问题与误区
 
-**"线上帧率监控会拖慢 App"**——如果实现得当，帧率监控的开销非常小。FrameMetrics 的回调在独立线程（API 24+），JankStats 的开销在每帧微秒级别。真正拖慢 App 的是在回调中做 IO 操作或复杂计算。正确做法是：回调中只做数据采集，上报操作放到后台线程批量执行。
+**"线上帧率监控会拖慢 App"**——如果实现得当，帧率监控的开销非常小。FrameMetrics 的回调线程由注册时传入的 `Handler` 决定，把它放到专用 `HandlerThread` 上时，主线程压力很小；如果传的是主线程 `Handler`，回调本身也会占用主线程时间。真正拖慢 App 的是在回调中做 IO 操作或复杂计算。正确做法是：回调中只做数据采集，上报操作放到后台线程批量执行。
 
 **"ANR Watchdog 能替代 ApplicationExitInfo"**——不能完全替代。Watchdog 是基于启发式的（"主线程 N 秒没响应就认为 ANR"），而 ApplicationExitInfo 提供的是系统认定的 ANR 事件。两者的数据口径不同，Watchdog 的误报率更高。在 API 30+ 设备上应该优先使用 ApplicationExitInfo。
 
