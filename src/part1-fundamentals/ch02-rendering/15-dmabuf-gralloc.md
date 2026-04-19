@@ -3,9 +3,9 @@ title: DMA-BUF、Gralloc 与跨进程图形内存共享
 chapter: '2.15'
 section: '2.15'
 status: ready-for-review
-applicable_versions: Android 10 (API 29) - Android 17 (API 37)
-last_verified: '2026-04-11'
-last_verified_against: AOSP android-16.0.0_r1, Linux kernel 6.12
+applicable_versions: Android 12 (API 31) - Android 16 (API 36)
+last_verified: '2026-04-19'
+last_verified_against: AOSP android-16.0.0_r1, Linux kernel 6.12, developer.android.com/guide/practices/page-sizes
 confidence: medium
 drafted_date: '2026-04-05'
 drafted_by: openclaw-task2a
@@ -26,10 +26,14 @@ sources:
   path: hardware/interfaces/graphics/mapper/4.0/IMapper.hal
 - type: aosp
   path: hardware/interfaces/graphics/common/aidl/android/hardware/graphics/common/BufferUsage.aidl
+- type: aosp
+  path: hardware/interfaces/graphics/allocator/aidl/android/hardware/graphics/allocator/BufferDescriptorInfo.aidl
 - type: official
   path: https://source.android.com/docs/core/graphics/architecture
 - type: official
   path: https://source.android.com/docs/core/architecture/kernel/dma-buf-heaps
+- type: official
+  path: https://developer.android.com/guide/practices/page-sizes
 - type: kernel
   path: drivers/dma-buf/
 tags:
@@ -46,21 +50,23 @@ related_chapters:
 - '2.13'
 - '2.16'
 - '4.2'
+- '4.7'
 - '1.4'
 created_by: task2a-knowledge-gap
 created_date: '2026-04-05'
 gap_source: 素材驱动+AOSP结构+每日信息
 gap_score: 17/20
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: needs-rework
-task9_state: reviewed
+task9_state: pending
 task9_result: needs-rework
 task9_reviewed_date: "2026-04-19"
 task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-04-19T12:32:00+08:00"
-task2b_state: pending
+task2b_state: fixed
 task2b_result: fixed
+last_task2b_at: "2026-04-19T12:48:00+08:00"
 ---
 
 # 2.15 DMA-BUF、Gralloc 与跨进程图形内存共享
@@ -71,9 +77,9 @@ task2b_result: fixed
 
 一帧 1080p RGBA 的像素数据大约 8MB，120Hz 屏幕每秒需要 120 帧。如果每次跨进程传递都要复制像素数据，每秒需要 960MB 的内存带宽——这还不算 SurfaceFlinger 合成后传给 Display HAL 的部分。在移动设备上，这种带宽消耗根本不可行。
 
-答案是：不复制数据，只传递一个「文件描述符」。
+答案是：不复制数据，只传递 `buffer_handle_t` 的 transport payload。常见 RGBA surface 往往只有一个主 DMA-BUF fd，但源码接口允许多个 fd 和 ints 一起跨进程传递。
 
-这个文件描述符背后就是 DMA-BUF，Linux 内核提供的跨设备、跨进程内存共享框架。Gralloc 则是 Android 在 DMA-BUF 之上封装的图形内存分配器。理解了这两个机制，我们就明白了 Android 渲染管线的「物理层」——BufferQueue 和 SurfaceFlinger 在逻辑层管理缓冲区流转，而 DMA-BUF 和 Gralloc 在物理层保证数据能零拷贝地跨进程移动。
+这些 handle 里的 fd 背后对应的就是 DMA-BUF，Linux 内核提供的跨设备、跨进程内存共享框架。Gralloc 则是 Android 在 DMA-BUF 之上封装的图形内存分配器。理解了这两个机制，我们就明白了 Android 渲染管线的「物理层」——BufferQueue 和 SurfaceFlinger 在逻辑层管理缓冲区流转，而 DMA-BUF 和 Gralloc 在物理层保证数据能零拷贝地跨进程移动。
 
 如果我们在 Perfetto 中看到 GPU 内存使用量异常增长，或者在 BufferQueue track 中发现 buffer 释放延迟增大，排查的终点往往会落在 DMA-BUF 的生命周期管理上。
 
@@ -89,7 +95,7 @@ task2b_result: fixed
 
 更糟糕的是，复制操作本身需要 CPU 参与，主线程或其他线程的 CPU 时间被挤占，直接影响帧率和响应速度。
 
-所以 Android 从第一天起就采用了零拷贝方案：图形数据只存在于一块物理内存上，所有需要访问它的组件（App 的 GPU、SurfaceFlinger 的合成器、Display 控制器、Camera ISP）都直接访问同一块物理内存，中间只传递一个「引用」（文件描述符），不复制任何像素数据。
+所以 Android 从第一天起就采用了零拷贝方案：图形数据只存在于一块物理内存上，所有需要访问它的组件（App 的 GPU、SurfaceFlinger 的合成器、Display 控制器、Camera ISP）都直接访问同一块物理内存，中间只传递 handle 引用和元数据，不复制任何像素数据。
 
 ## DMA-BUF 机制核心原理
 
@@ -99,14 +105,14 @@ DMA-BUF 是 Linux 内核提供的一套 buffer sharing framework，定义在 `in
 
 DMA-BUF 的核心是一个 exporter-importer 模型：
 
-- **Exporter（导出方）**：拥有这块内存的组件。它负责分配物理内存，并将其「导出」为一个 DMA-BUF 文件描述符（fd）。在 Android 中，Gralloc HAL 就是典型的 exporter——它通过 DMA-BUF Heap 或 ION 分配物理内存，然后导出为 fd。
-- **Importer（导入方）**：需要访问这块内存的组件。它拿到 fd 后，通过 `mmap()` 将物理内存映射到自己的地址空间，或者通过 `dma_buf_attach()` + `dma_buf_map_attachment()` 让硬件设备（如 GPU）直接访问。
+- **Exporter（导出方）**：拥有这块内存的组件。它负责分配物理内存，并将其导出为 `buffer_handle_t`。这个 handle 底层是 native handle，可以携带多个 fd 和 ints；常见图形 buffer 往往只带一个主 DMA-BUF fd。
+- **Importer（导入方）**：需要访问这块内存的组件。它拿到 handle 后，通过其中的 fd 把物理内存映射到自己的地址空间，或者通过 `dma_buf_attach()` + `dma_buf_map_attachment()` 让硬件设备直接访问。
 
-整个过程的关键点：fd 本身只是一个整数，通过 Binder 的 `BINDER_TYPE_FD` 机制跨进程传递（参见 §1.4 Binder IPC），开销几乎为零。真正的物理内存在整个生命周期中只存在一份。
+整个过程的关键点：真正跨 Binder 走的是 native handle 里的 fd 数组和整数元数据。fd 本身只是整数，通过 `BINDER_TYPE_FD` 在目标进程里创建新的引用，真正的物理内存在整个生命周期中只存在一份。
 
 [已验证: Linux kernel 6.12, drivers/dma-buf/dma-buf.c]
 
-### fd 的跨进程传递
+### handle 的跨进程传递
 
 当 producer 侧某个 slot 第一次拿到新的 `GraphicBuffer`，或者走了 `attachBuffer()` 这类把外部分配 buffer 接进来的路径时，底层才会真的发生一次 fd 引用复制。更常见的 steady-state 情况是，producer 和 consumer 两端都已经缓存了这个 slot 对应的 buffer handle，后续每帧 `queueBuffer()` 只提交 slot 编号、fence 和时序元数据，不会重复把整份 `GraphicBuffer` 重新走一遍 Binder。
 
@@ -190,19 +196,29 @@ Usage flags 这一层也要注意版本语境。很多历史文章还在用 lega
 
 [已验证: AOSP android-16.0.0_r1, hardware/interfaces/graphics/allocator/aidl/android/hardware/graphics/allocator/IAllocator.aidl; hardware/interfaces/graphics/allocator/4.0/IAllocator.hal; hardware/interfaces/graphics/mapper/4.0/IMapper.hal; hardware/interfaces/graphics/common/aidl/android/hardware/graphics/common/BufferUsage.aidl]
 
+### 16KB 页面模式下的分配预算
+
+如果设备运行在 Android 15+ 的 16KB page size 环境，GraphicBuffer 的内存成本不能只看 `width × height × bytesPerPixel`。allocator 最终提交的是 `BufferDescriptorInfo`，其中除了宽高、format、usage 之外，还有 `reservedSize` 这类保留区；这些区域落到内核映射时，都要按页粒度取整。
+
+页大小从 4KB 变成 16KB 后，小尺寸 buffer、图标 atlas、metadata buffer，或者只带少量 `reservedSize` 的 handle，更容易出现尾部空洞。单个 buffer 看起来不大，但同一个 handle 被 App、SurfaceFlinger、Camera 或编解码进程分别 import 之后，PSS 增长会更明显。
+
+排查这类问题时，至少同时核对四组量：像素 payload、stride 或 plane layout、`reservedSize`、以及 handle 被几个进程映射。只看像素分辨率，常常会低估 16KB 设备上的显存和 PSS 占用。
+
+[已验证: AOSP android-16.0.0_r1, hardware/interfaces/graphics/allocator/aidl/android/hardware/graphics/allocator/BufferDescriptorInfo.aidl; 官方文档, developer.android.com/guide/practices/page-sizes]
+
 ### GraphicBuffer：对缓冲区的封装
 
 GraphicBuffer 是 Android framework 中对图形缓冲区的核心封装类，定义在 `frameworks/native/libs/ui/GraphicBuffer.cpp`。它充当像素数据的「护照」——包含了所有让不同进程和硬件能访问这块内存所需的信息：
 
-- **DMA-BUF fd**：指向实际物理内存的文件描述符
+- **buffer_handle_t**：底层 native handle，transport payload 可以携带一个或多个 fd 和 ints
+- **主 DMA-BUF fd**：常见图形 surface 会在 handle 里带一个主 fd，指向实际像素所在的物理内存
 - **元数据**：width、height、stride（行跨度）、format（像素格式）、usage flags
-- **buffer_handle_t**：底层的 native handle，Gralloc 分配时返回的 opaque 数据结构
 
 GraphicBuffer 的跨进程传递通过 Binder 实现。具体来说，它使用 flatten/unflatten 机制：
 
-1. 发送方调用 `flatten()` 将 GraphicBuffer 序列化为 Parcel 中的原始数据（元数据 + fd 数组）
-2. Binder 驱动在传输过程中将 fd 转换为目标进程的新 fd
-3. 接收方调用 `unflatten()` 从 Parcel 中反序列化，重建 GraphicBuffer 对象
+1. 发送方调用 `flatten()`，把元数据和 native handle 的 transport 信息写进 Parcel
+2. Binder 驱动在传输过程中为目标进程复制对应的 fd 引用
+3. 接收方调用 `unflatten()`，按 `mTransportNumFds` 和 `mTransportNumInts` 重建 GraphicBuffer 对象
 
 ```cpp
 // frameworks/native/libs/ui/GraphicBuffer.cpp
@@ -210,12 +226,12 @@ GraphicBuffer 的跨进程传递通过 Binder 实现。具体来说，它使用 
 status_t GraphicBuffer::flatten(void*& buffer, size_t& size,
                                  int*& fds, size_t& count) const {
     // 将 width/height/stride/format/usage 等元数据写入 buffer
-    // 将 DMA-BUF fd 写入 fds 数组
-    // Binder 驱动负责在跨进程时转换 fds
+    // buf[10]/buf[11] 记录 mTransportNumFds 和 mTransportNumInts
+    // fds 数组复制 handle->data 里的 fd 部分
 }
 ```
 
-这段代码说明了一个关键事实：GraphicBuffer 的跨进程传递就是「元数据 + fd」的传递。像素数据始终停留在原始的物理内存中，从未被复制。
+这段代码说明了一个关键事实：GraphicBuffer 的跨进程传递是「元数据 + native_handle transport payload」。常见 surface 看起来像“传一个 fd”，是因为很多图形 buffer 只有一个主 DMA-BUF fd；源码 contract 本身允许多个 fd 和 ints 一起传。像素数据始终停留在原始的物理内存中，从未被复制。
 
 [已验证: AOSP android-16.0.0_r1, frameworks/native/libs/ui/GraphicBuffer.cpp]
 
@@ -227,7 +243,7 @@ status_t GraphicBuffer::flatten(void*& buffer, size_t& size,
 2. `BufferQueue` 如果需要分配新的 GraphicBuffer，调用 `GraphicBufferAllocator`
 3. `GraphicBufferAllocator` 通过 Gralloc Allocator HAL 分配内存
 4. Gralloc Allocator HAL 调用 DMA-BUF Heap（或 SoC 厂商自定义的 allocator）分配物理内存
-5. 返回一个包含 DMA-BUF fd 的 `buffer_handle_t`
+5. 返回一个包含 native handle transport payload 的 `buffer_handle_t`，常见图形 buffer 往往只带一个主 DMA-BUF fd
 
 如果 BufferQueue 的 slot 中已经有合适的 GraphicBuffer（大小和格式匹配），则复用已有的缓冲区，不需要重新分配。这就是为什么我们说 BufferQueue 的「slot」持有的是 GraphicBuffer 的引用（参见 §2.13）——slot 本身不移动，producer / consumer 两端维护的是 slot 到 buffer handle 的镜像关系。
 
@@ -259,8 +275,8 @@ status_t GraphicBuffer::flatten(void*& buffer, size_t& size,
 
 从上面的流程可以看出，BufferQueue 管理的是缓冲区的**状态流转**（谁在用、谁可以用），而 DMA-BUF 管理的是**物理内存的共享**（谁在访问、怎么访问）。两者是正交的：
 
-- BufferQueue：逻辑层，管理 slot 的 DEQUEUED / QUEUED / FREE / ACQUIRED 状态
-- DMA-BUF + Gralloc：物理层，管理 fd 的创建、传递和映射
+- BufferQueue：逻辑层，普通路径里 slot 通常表现为 FREE / DEQUEUED / QUEUED / ACQUIRED 这些可见状态；源码判断要以 `BufferSlot::BufferState::isFree()`、`isDequeued()`、`isQueued()`、`isAcquired()`、`isShared()` 为准，shared mode 下状态可以叠加
+- DMA-BUF + Gralloc：物理层，管理 handle 的创建、传递和映射
 
 这就是为什么在 §2.13 中我们可以完全不讲 DMA-BUF 也能说清楚 BufferQueue 的行为——BufferQueue 的状态机不关心底层用什么机制共享内存。但当需要理解「为什么 dequeueBuffer 会阻塞」或「为什么缓冲区没有释放」时，就需要深入到 DMA-BUF 这一层了。
 
@@ -270,11 +286,11 @@ DMA-BUF 和 Gralloc 本身没有专门的 Perfetto Track，但它们的行为会
 
 ### GPU 内存使用量
 
-在 Perfetto 的 `gfx` 或 `gpu` 相关 Track 中，可以看到 GPU 内存的使用趋势。如果 DMA-BUF fd 泄漏（进程持有 fd 但不再使用），GPU 内存会持续增长而不回落。这种模式下，增长曲线呈阶梯状——每次分配新 buffer 不释放旧的。
+在 Perfetto 的 `gfx` 或 `gpu` 相关 Track 中，能直接读到 GPU 内存的使用趋势。如果 DMA-BUF fd 泄漏（进程持有 fd 但不再使用），GPU 内存会持续增长而不回落。这种模式下，增长曲线呈阶梯状——每次分配新 buffer 不释放旧的。
 
 ### BufferQueue Track 中的 Buffer 状态
 
-BufferQueue Track（如 `BufferQueue - <package> (<surface>)`）中可以看到每个 slot 的 buffer 状态变化。如果某个 buffer 长时间停留在 ACQUIRED 状态不释放，可能意味着 SurfaceFlinger 端的 importBuffer 或 fence 等待出了问题（fence 机制将在 §2.16 详细讨论）。
+BufferQueue Track（如 `BufferQueue - <package> (<surface>)`）中能直接读到每个 slot 的 buffer 状态变化。如果某个 buffer 长时间停留在 ACQUIRED 状态不释放，可能意味着 SurfaceFlinger 端的 importBuffer 或 fence 等待出了问题（fence 机制将在 §2.16 详细讨论）。
 
 ### DMA-BUF 分配追踪
 
@@ -314,11 +330,12 @@ SurfaceFlinger 进程中，每个 Layer 对应一组 GraphicBuffer。在 Layer t
 这类问题的共同特征是，fd 数量和 DMA-BUF 占用一起上涨，但 `GraphicBuffer` 对象本身不一定还在 Java 层可见。排查方法仍然是通过 `/proc/<pid>/fd/` 统计 DMA-BUF 类型的 fd 数量，再结合 Perfetto 或 meminfo 看 buffer 占用是否只涨不回。
 
 [已验证: AOSP android-16.0.0_r1, frameworks/native/libs/ui/GraphicBuffer.cpp]
-[待补充：Trace 截图展示 fd 泄漏时 GPU 内存增长的表现]
+
+如果 trace 里持续看到 DMA-BUF 占用、`/proc/<pid>/fd` 里的 dmabuf 句柄数和 GPU 内存曲线一起上升，而 surface 数量没有同步增加，排查焦点就该落在 imported handle 的释放路径上。
 
 ### Gralloc 分配延迟
 
-首次分配 GraphicBuffer 时，Gralloc 需要与内核交互（通过 DMA-BUF Heap ioctl），这个过程的延迟通常在 1-5ms 之间。对于 60fps 的 App 来说，一帧只有 16.6ms，首帧分配可能占用 10-30% 的帧时间预算。
+首次分配 GraphicBuffer 时，Gralloc 需要走一趟 allocator HAL 到 DMA-BUF Heap 或厂商 allocator 的内核交互，这段成本通常比 steady-state 的 slot 复用明显高。它会直接挤占首帧预算，但具体耗时和设备 SoC、分辨率、像素格式、heap 类型、buffer cache 命中情况都有关系，不能脱离实测给统一毫秒数。
 
 BufferQueue 的三缓冲机制（参见 §2.13）在很大程度上缓解了这个问题——一旦 slot 分配好，后续帧只需状态切换，不再触发物理分配。但以下场景仍可能触发新分配：
 
@@ -336,7 +353,7 @@ Camera ISP 通常需要大尺寸、高帧率的 DMA-BUF 用于预览和录像输
 - SurfaceFlinger 的合成耗时在 Camera 活跃期间波动加大
 - 系统总内存带宽接近饱和
 
-优化方向：确保 Camera 和 App 的缓冲区使用不同的 DMA-BUF Heap（如果 SoC 支持），避免在同一个内存控制器上争抢带宽。
+优化方向：先确认 vendor gralloc、camera HAL 和 BSP 是否真的把不同 heap 映射到可分离的物理内存路径，再决定是否通过 heap 选路降低竞争。heap 名称只说明 allocator 入口，不自动等于内存控制器隔离。
 
 ## 版本演进
 
@@ -359,14 +376,19 @@ Android 14 引入了 per-layer buffer cache 强制清除机制。此前，当 Gr
 
 [已验证: 官方文档, source.android.com/docs/core/graphics/bufferqueue — Android 14 Graphics Changes]
 
+### Android 15：16KB page size 开始进入图形内存预算
+
+Android 15 起，16KB page size 开始进入量产设备。对 DMA-BUF 和 Gralloc 这一层，变化不在接口名，而在分配预算：小尺寸 buffer、metadata region 和 `reservedSize` 保留区的页粒度取整成本会放大。排查时需要把像素 payload、stride 和映射进程数一起算进去。
+
+[已验证: 官方文档, developer.android.com/guide/practices/page-sizes; AOSP android-16.0.0_r1, hardware/interfaces/graphics/allocator/aidl/android/hardware/graphics/allocator/BufferDescriptorInfo.aidl]
+
 ### Android 16：allocator AIDL 与 mapper@4 共存
 
 到 `android-16.0.0_r1` 为止，我们还能同时看到 `graphics/allocator/aidl/android/hardware/graphics/allocator/IAllocator.aidl`、`graphics/allocator/4.0/IAllocator.hal` 和 `graphics/mapper/4.0/IMapper.hal`。AIDL allocator 的注释甚至直接写明，如果 `android.hardware.graphics.mapper@4` 仍在使用，旧的 `allocate()` 入口仍要实现。
 
-所以这一阶段更稳妥的说法是，allocator 接口已经提供稳定 AIDL 版本，但 mapper@4 兼容路径还在，系统并不是“一刀切地彻底 AIDL 化”。至于 Android 17 是否完全收口到 AIDL，需要等正式 tag 再看；在当前稿件里，我们只按已经能核实的接口形态来写，不把“IPC 更少”这类效果判断提前当成结论。
+所以这一阶段更稳妥的说法是，allocator 接口已经提供稳定 AIDL 版本，但 mapper@4 兼容路径还在，系统并不是“一刀切地彻底 AIDL 化”。本文正文的适用范围也据此收窄到 Android 12-16；Android 10/11 的 Gralloc4(HIDL) + ION 组合只放在迁移背景里说明，不把 Android 17 的接口走向提前写成既成事实。
 
 [已验证: AOSP android-16.0.0_r1, hardware/interfaces/graphics/allocator/aidl/android/hardware/graphics/allocator/IAllocator.aidl; hardware/interfaces/graphics/allocator/4.0/IAllocator.hal; hardware/interfaces/graphics/mapper/4.0/IMapper.hal]
-[待验证: Android 17 正式 tag 下 mapper 接口是否仍保留 HIDL 兼容层]
 
 ## 与其他机制的关系
 
@@ -375,21 +397,21 @@ DMA-BUF 和 Gralloc 是 Android 图形栈的「物理基础设施」，它们与
 - **§2.3 VSync**：VSync 信号驱动整个渲染管线的节奏，DMA-BUF 的 fence 机制（§2.16）与 VSync 时序紧密配合
 - **§2.4 Choreographer**：Choreographer 的 `doFrame()` 触发一帧的渲染，渲染结果最终写入 DMA-BUF
 - **§2.5 MainThread/RenderThread**：RenderThread 通过 GPU 将渲染指令写入 DMA-BUF 对应的 GraphicBuffer
-- **§2.6 SurfaceFlinger**：SurfaceFlinger 通过 DMA-BUF fd 读取 App 渲染的帧数据进行合成
+- **§2.6 SurfaceFlinger**：SurfaceFlinger 通过导入 DMA-BUF handle 读取 App 渲染的帧数据进行合成
 - **§2.13 BufferQueue**：BufferQueue 管理 GraphicBuffer 的状态流转，DMA-BUF 提供底层的物理共享
 - **§2.16 Sync Fence**：Fence 机制保证「GPU 写完再读」，建立在 DMA-BUF 的 fence 框架之上
-- **§1.4 Binder IPC**：DMA-BUF fd 通过 Binder 的 `BINDER_TYPE_FD` 跨进程传递
+- **§1.4 Binder IPC**：DMA-BUF handle 内的 fd 通过 Binder 的 `BINDER_TYPE_FD` 跨进程传递
 - **§4.2 Linux 内存管理**：DMA-BUF Heap 的物理内存分配依赖 Linux 内核的 buddy allocator 和 CMA
 
 ## 常见问题与误区
 
 ### 「GraphicBuffer 里存的就是像素数据」
 
-不是。GraphicBuffer 存的是 DMA-BUF fd + 元数据（宽高、格式等），像素数据在 fd 指向的物理内存中。GraphicBuffer 本身只是一个「护照」。
+不是。GraphicBuffer 存的是 `buffer_handle_t` 和元数据（宽高、格式等）。这个 handle 底层是 native handle，常见图形 buffer 会带一个主 DMA-BUF fd，也可以带多个 fd 和 ints。像素数据在 handle 指向的物理内存中，GraphicBuffer 本身只是一个「护照」。
 
 ### 「跨进程传递 GraphicBuffer 会复制像素」
 
-不会。Binder 传递的是 fd（一个整数），不是像素数据。Binder 驱动在目标进程创建新 fd 指向同一个 DMA-BUF 对象。整个过程零拷贝。
+不会。Binder 传递的是元数据和 native handle 的 transport payload。目标进程拿到的是新的 fd 引用，仍然指向同一个 DMA-BUF 对象。很多图形 buffer 只有一个主 fd，但源码接口并不限制成单 fd。整个过程零拷贝。
 
 ### 「所有设备上的 Gralloc 实现都一样」
 
@@ -397,7 +419,7 @@ DMA-BUF 和 Gralloc 是 Android 图形栈的「物理基础设施」，它们与
 
 - 使用不同的 DMA-BUF Heap 策略
 - 对同一组 usage flags 选择不同的内存布局
-- 分配延迟差异显著（1ms vs 5ms）
+- 分配延迟差异显著
 - 对 GPU/CPU 共享访问的优化程度不同
 
 这就是为什么同样的 App 在不同设备上的图形性能可能差异很大，即使 CPU/GPU 算力相近。
@@ -412,11 +434,13 @@ DMA-BUF 泄漏影响的是**物理内存**。如果泄漏的是来自 CMA Heap �
   - `frameworks/native/libs/ui/GraphicBuffer.cpp` — GraphicBuffer 的 flatten/unflatten 实现
   - `frameworks/native/libs/ui/GraphicBufferAllocator.cpp` — 分配器的框架层封装
   - `hardware/interfaces/graphics/allocator/` — Gralloc Allocator HAL 接口定义
+  - `hardware/interfaces/graphics/allocator/aidl/android/hardware/graphics/allocator/BufferDescriptorInfo.aidl` — `reservedSize` 与分配描述字段
   - `hardware/interfaces/graphics/mapper/` — Gralloc Mapper HAL 接口定义
   - `drivers/dma-buf/` — Linux 内核 DMA-BUF 框架源码
 - 官方文档：
   - [Android Graphics Architecture](https://source.android.com/docs/core/graphics/architecture)
   - [DMA-BUF Heaps](https://source.android.com/docs/core/architecture/kernel/dma-buf-heaps)
   - [BufferQueue](https://source.android.com/docs/core/graphics/bufferqueue)
+  - [Support 16 KB page sizes](https://developer.android.com/guide/practices/page-sizes)
 - Linux 内核文档：
   - [DMA-BUF documentation](https://www.kernel.org/doc/html/latest/driver-api/dma-buf.html)

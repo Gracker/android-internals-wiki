@@ -300,9 +300,12 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-19T12:32:00+08:00",
-    "status": "pending",
+    "status": "completed",
     "original_review_log": "logs/review/2026-04-19-11-review.md",
-    "review_log": "logs/deep-review/2026-04-19-12-deep-review.md"
+    "review_log": "logs/deep-review/2026-04-19-12-deep-review.md",
+    "completed_at": "2026-04-19T12:48:00+08:00",
+    "completed_by": "task2b-rework",
+    "resolution": "修正 native_handle 多 fd transport 口径，收窄适用范围到 Android 12-16，补 16KB page size 与 reservedSize 预算说明，改正 BufferQueue 状态描述，删除无实测支撑的 Trace 占位和固定延迟数字，并收紧 Camera heap 与带宽隔离表述"
   },
   {
     "section": "8.1",
