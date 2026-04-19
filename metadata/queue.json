@@ -1937,8 +1937,11 @@
     ],
     "added_by": "task6-review",
     "added_at": "2026-04-19T15:14:00",
-    "status": "pending",
-    "original_review_log": "logs/review/2026-04-19-15-review.md"
+    "status": "completed",
+    "original_review_log": "logs/review/2026-04-19-15-review.md",
+    "completed_at": "2026-04-19T16:01:59+08:00",
+    "completed_by": "task2b-rework",
+    "resolution": "重写采集类型选择与实战判断，压缩全部示例代码到核心调用路径，补齐 frontmatter 元数据并修正 Android 16/17 trigger 版本口径"
   },
   {
     "section": "12.0",
