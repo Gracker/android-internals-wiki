@@ -7,16 +7,19 @@ tags: ["TextureView", "SurfaceTexture", "App 侧合成", "纹理采样", "OES", 
 related_chapters: ["2.1", "2.6", "2.13", "18.6", "18.8"]
 created_by: "rendering-pipelines-merge"
 created_date: "2026-04-09"
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: pending
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
+task2b_state: fixed
 reviewed_by: openclaw-task6
 reviewed_date: 2026-04-17
 task6_result: pass-light-edit
 task9_result: needs-rework
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: 2026-04-20
+task2b_result: fixed
+task2b_rework_date: "2026-04-20"
+task2b_fixed_at: "2026-04-20"
 ---
 
 <!-- outline-start -->
@@ -42,9 +45,13 @@ task9_reviewed_date: 2026-04-20
 
 TextureView 是一个"伪装者"——它表面上是普通的 View，可以设置透明度、做动画、裁剪圆角，和其他 View 一样参与 View 树的绘制流程。但在渲染层面，它背后走了一套复杂的"转手"流程：帧数据先到 SurfaceTexture，再由 App 的 RenderThread 采样合成，最后才提交给 SurfaceFlinger。
 
-这个"转手"过程就是 TextureView 性能不如 SurfaceView 的根本原因。理解这条链路，你就能在 Perfetto 中区分"帧数据卡在 SurfaceTexture 等待"和"帧数据卡在 GPU 绘制"两种完全不同的问题。[已验证: AOSP TextureView 实现]
+这个"转手"过程就是 TextureView 性能不如 SurfaceView 的根本原因。理解这套流程，你就能在 Perfetto 中区分卡在 SurfaceTexture 的 fence 同步点，还是卡在 App 侧 GPU 绘制。[已验证: AOSP TextureView 实现]
 
-TextureView 是 Android 4.0（API 14）引入的，初衷是弥补 SurfaceView 的灵活性不足——SurfaceView 不支持动画变换、不能嵌入 View 层级做裁剪旋转。但随着 Android 11+ BLAST 同步机制的成熟，SurfaceView 的很多老问题已经解决，TextureView 的使用频率在下降。但在特效场景（视频滤镜、直播美颜、画中画动画）中，TextureView 仍然是唯一选择。
+TextureView 是 Android 4.0（API 14）引入的，初衷是补足 SurfaceView 在 View 体系里的灵活性。早期 SurfaceView 的确不擅长和普通 View 一起做位置变换与透明度控制，但这个结论要按版本看：Android 7.0 起，SurfaceView 的窗口位置更新已经能和 View 渲染同步，平移和缩放不再像早期版本那样容易出错；Android 14（U）起，View alpha 也进入官方支持范围。TextureView 仍然保留旋转、复杂裁剪、圆角和与普通 View 深度融合的优势，所以在视频滤镜、直播美颜、需要和 UI 一起做复杂动画的场景里仍然常见。
+
+### 硬件加速是前置条件
+
+TextureView 只能工作在 hardware accelerated window。Android 官方 reference 直接写明，TextureView 在 software rendering 下会 draw nothing。排查 TextureView 黑屏、停在旧帧或只显示占位背景时，应确认 Activity、Window 和 ViewRoot 是否仍处于硬件加速模式。SurfaceView 不依赖 App RenderThread 把内容重新采样进主窗口，所以没有同一条前置条件。
 
 ## 三阶段链路详解
 
@@ -184,8 +191,8 @@ TextureView:  Producer → SurfaceTexture → App RenderThread → SurfaceFlinge
 | **额外 GPU 采样** | 无 | 有（updateTexImage） |
 | **内存占用** | 1x Producer Buffer | 1x Producer + 1x App Buffer |
 | **延迟** | 低（直出） | 高（多一跳） |
-| **HWC Overlay** | 可能 | 不可能 |
-| **变换能力** | 无 | 完整支持（旋转/缩放/透明度/圆角） |
+| **独立 Overlay 机会** | 可能 | 无。TextureView 内容先并入 App 主窗口 |
+| **变换能力** | Android 7.0+ 可稳定平移/缩放，Android 14+ 支持 View alpha；旋转和复杂裁剪仍受限 | 完整支持（旋转/缩放/透明度/圆角） |
 | **帧率独立性** | 独立 | 绑定到 App UI 帧率 |
 
 ## onFrameAvailable 回调模型
@@ -194,24 +201,18 @@ TextureView:  Producer → SurfaceTexture → App RenderThread → SurfaceFlinge
 
 ### 默认行为
 
-`onFrameAvailable` 的回调线程取决于 SurfaceTexture 创建时的配置：
+TextureView 章节里要分清两层 listener：
 
-```java
-// 默认：回调在任意线程（通常是 Producer 所在线程）
-SurfaceTexture texture = new SurfaceTexture(texName);
+- `TextureView.SurfaceTextureListener` 面向普通 App 代码，负责 `SurfaceTexture` 的创建、尺寸变化和销毁回调
+- `SurfaceTexture.OnFrameAvailableListener` 由 `TextureView.java` 在内部绑定，用来感知 Producer 送来的新帧
 
-// 指定回调线程
-HandlerThread ht = new HandlerThread("STCallback");
-ht.start();
-SurfaceTexture texture = new SurfaceTexture(texName, true); // detached
-texture.setOnFrameAvailableListener(listener, new Handler(ht.getLooper()));
-```
+对 TextureView 本身来说，第二条 listener 才决定新帧何时进入 View 绘制流程。它跟着 View 所在线程走，常见场景就是主线程，收到回调后再触发 `invalidate()` 或 `postInvalidateOnAnimation()`。如果直接使用裸 `SurfaceTexture`，调用方可以自己挑选 Looper 和 Handler；讨论 TextureView 时，应按内部这条回调路径理解新帧通知。
 
 ### 回调延迟的来源
 
-1. **线程切换**：如果回调在非 UI 线程触发，最终需要 post 到 UI 线程执行 `invalidate()`
-2. **VSync 同步**：`invalidate()` 只是请求重绘，真正的 `updateTexImage` 要等到下一个 VSync-App 唤醒 RenderThread
-3. **Producer → Consumer → App → RenderThread → SF**：至少 2-3 帧的管线延迟
+1. **主线程拥塞**：TextureView 内部 listener 常挂在 View 所在线程，收到回调后还要请求一次 `invalidate()` / `postInvalidateOnAnimation()`
+2. **VSync 同步**：`invalidate()` 只是请求重绘，真正的 `updateTexImage()` 要等到下一个 VSync-App 唤醒 RenderThread
+3. **Producer → SurfaceTexture → App → RenderThread → SF**：中间多了一次 App 侧纹理采样和主窗口提交
 
 ### 帧丢弃行为
 
@@ -223,16 +224,18 @@ SurfaceTexture 默认只保留最新的一帧。如果 Producer 生产了 3 帧�
 
 识别 TextureView 链路的前提是确认**帧数据经过了 App RenderThread**：
 
-1. **App RenderThread 中的 TextureView 绘制**：在 RenderThread 的 Track 中，你会看到 `DrawFrame` 包含了 TextureView 的纹理采样操作
-2. **updateTexImage 耗时**：如果 SurfaceTexture 的 acquireFence 还未 signal（GPU 还在画），`updateTexImage` 可能阻塞等待
-3. **单一 BufferQueue Track**：与 SurfaceView 不同，TextureView 不会创建额外的 Layer——所有内容都在 App 主窗口的 Buffer 中
-4. **onFrameAvailable 回调**：如果 Trace 配置包含回调追踪，可以看到从 Producer queueBuffer 到 App 收到回调的延迟
+1. **App RenderThread 中的 TextureView 绘制**：在 RenderThread 的 Track 中，`DrawFrame` 会包含 TextureView 的纹理采样操作
+2. **`updateTexImage()` 与 fence 同步点**：常见路径下 CPU 侧的 `updateTexImage()` slice 很短，主要等待落在 acquire fence 对应的 GPU 同步；只有走 fallback 时才可能退化成 CPU 侧 fence wait
+3. **单一 App 主窗口 Layer**：与 SurfaceView 不同，TextureView 不会额外创建一个给 SurfaceFlinger 单独识别的内容 Layer，所有内容都并入 App 主窗口 Buffer
+4. **onFrameAvailable 回调路径**：如果 Trace 配置包含相关回调或 View invalidation 信号，可定位从 Producer `queueBuffer` 到 App 请求重绘之间的延迟
+
+AOSP `GLConsumer.cpp` 的常见路径会把 acquire fence 转成 EGL wait（`eglWaitSyncKHR`）。CPU 端更像是在提交同步点，GPU 在后续采样这张 OES 纹理前再完成等待。驱动缺少 native fence sync 能力时，代码才会退化到 `waitForever()`。
 
 ### 关键 Slice
 
 | 位置 | 可能的 Slice | 说明 |
 |:---|:---|:---|
-| App RenderThread | `DrawFrame`, `updateTexImage` | 纹理采样耗时 |
+| App RenderThread | `DrawFrame`, `updateTexImage` | 看触发点和与 GPU / fence 的对应关系，CPU 侧 `updateTexImage()` 通常很短 |
 | App Main Thread | `Choreographer#doFrame` | VSync 唤醒和 invalidate |
 | Producer Thread | `queueBuffer` | 帧提交到 SurfaceTexture |
 | SurfaceFlinger | 单一 App Layer | 没有 SurfaceView 的独立 Layer |
@@ -244,7 +247,7 @@ SurfaceTexture 默认只保留最新的一帧。如果 Producer 生产了 3 帧�
 | SurfaceFlinger Layer 数量 | ≥2（App + SV） | 1（只有 App） |
 | App 主线程卡顿时 | SV 内容继续更新 | TV 内容跟着卡 |
 | RenderThread 职责 | 只处理 App UI | 还要处理 TextureView 纹理 |
-| Composition Type | 可能是 DEVICE（Overlay） | 总是 CLIENT |
+| Composition Type 观察点 | 可直接看独立 SurfaceView Layer 的 DEVICE / CLIENT | 只能看 App 主窗口 Layer；该 Layer 仍可能是 DEVICE 或 CLIENT |
 
 ## 常见性能问题与优化
 
@@ -258,21 +261,21 @@ SurfaceTexture 默认只保留最新的一帧。如果 Producer 生产了 3 帧�
 - 检查主线程的耗时操作，确保 `doFrame` 在 16ms 内完成
 - 如果可能，迁移到 SurfaceView 以解除帧率绑定
 
-### 2. updateTexImage 延迟
+### 2. `updateTexImage()` 同步点
 
-**现象**：RenderThread 的 `DrawFrame` 耗时增大，瓶颈在 `updateTexImage`。
+**现象**：RenderThread 的 `DrawFrame` 变慢，TextureView 对应帧在 GPU 或 fence 相关轨道上出现等待。
 
-**原因**：Producer 的 acquireFence 未 signal（GPU 还在渲染上一帧），`updateTexImage` 等待 fence。
+**原因**：Producer 提交的 acquire fence 还未 signal 时，`GLConsumer` 需要在消费前建立同步。支持 native fence sync 的常见设备会把这一步转换成 EGL wait，CPU 侧 `updateTexImage()` 通常不长，主要等待落在 GPU 采样之前；驱动能力不足时才可能退化成 CPU 侧 fence wait。
 
 **优化方向**：
 - 减少 Producer 的 GPU 工作量（降低分辨率、简化着色器）
-- 增加 BufferQueue 深度（虽然 SurfaceTexture 的深度不可直接配置）
+- 把观察重点放到 GPU / fence 轨道，而不是只盯 CPU 上的 `updateTexImage()` slice
 
 ### 3. 内存压力
 
 **现象**：低端设备上 OOM 或 GC 频繁触发。
 
-**原因**：TextureView 需要同时持有 Producer Buffer 和 App 主窗口 Buffer，内存约为 SurfaceView 的 2 倍。
+**原因**：TextureView 需要同时持有 Producer Buffer 和 App 主窗口 Buffer。以 1080p RGBA_8888 为例，一个 Buffer 约 8MB；按三缓冲估算，Producer 一侧接近 24MB，再叠加主窗口三缓冲，图形内存很容易比 SurfaceView 多出几十 MB。
 
 **优化方向**：
 - 在低端设备上降级到 SurfaceView
@@ -304,12 +307,12 @@ SurfaceTexture 默认只保留最新的一帧。如果 Producer 生产了 3 帧�
 3. **是否在低端设备运行**：如果目标设备 GPU 性能有限 → 强烈建议迁移到 SurfaceView
 4. **帧率是否需要独立**：如果视频/Camera 需要独立于 App UI 帧率 → 迁移到 SurfaceView
 
-迁移时需要注意：SurfaceView 不支持 `setRotation()`、`setAlpha()`、`setPivotX/Y()` 等 View 变换方法，也不支持 `clipPath` 裁剪。如果你的 UI 设计依赖这些特性，迁移后需要调整设计方案。
+迁移时需要注意：如果业务依赖 `setRotation()`、复杂裁剪、圆角或和普通 View 一致的透明度动画，TextureView 仍然更合适。SurfaceView 在 Android 7.0+ 的平移/缩放同步已经明显改善，Android 14+ 也支持 View alpha，但它仍不是 TextureView 那种完整的 View 变换模型。
 
 ---
 
 > **交叉引用**：
 > - SurfaceView 直出链路（对比参考）详见 [18.6 SurfaceView 直出链路](06-surfaceview.md)
 > - OpenGL ES 链路详见 [18.8 OpenGL ES 渲染链路](08-opengl-es.md)
-> - BufferQueue 与 SurfaceTexture 机制详见 [2.1 BufferQueue](../../part1-foundation/ch02-graphics-foundation/)
-> - SurfaceFlinger 合成策略详见 [2.6 SurfaceFlinger 与合成](../../part1-foundation/ch02-graphics-foundation/)
+> - BufferQueue 与 SurfaceTexture 机制详见 [2.13 图形缓冲区管理（BufferQueue）](../../part1-fundamentals/ch02-rendering/13-buffer-queue.md)
+> - SurfaceFlinger 合成策略详见 [2.6 SurfaceFlinger 与合成](../../part1-fundamentals/ch02-rendering/06-surfaceflinger.md)

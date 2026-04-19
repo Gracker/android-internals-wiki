@@ -10,7 +10,7 @@ drafted_date: "2026-04-03"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 8.0 (API 26) - Android 16 (API 36)"
 last_verified: "2026-04-20"
-last_verified_against: "AOSP android-16.0.0_r1"
+last_verified_against: "AOSP android-14.0.0_r1 / android-15.0.0_r1 / android-16.0.0_r1"
 confidence: medium
 sources:
   - type: official
@@ -31,11 +31,13 @@ word_count: "~7500"
 reviewed_date: "2026-04-16"
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
-pipeline_stage: task2b_pending
+pipeline_stage: task6_pending
 task6_state: revisiting
-task9_state: reviewed
-task2b_state: pending
+task9_state: pending
+task2b_state: fixed
 task2b_result: fixed
+task2b_rework_date: "2026-04-20"
+task2b_fixed_at: "2026-04-20"
 task9_result: needs-rework
 last_task9_at: "2026-04-20T04:20:38+08:00"
 ---
@@ -83,9 +85,9 @@ last_task9_at: "2026-04-20T04:20:38+08:00"
 
 为什么频繁分配会带来性能问题？核心链条是这样的：
 
-当一个线程在 Java 堆上分配对象时（比如 `new Object()`），ART 运行时需要为这个对象找到一块空闲内存。现代 ART 的快路径仍然依赖 TLAB / RegionTLAB 这类线程本地分配缓冲区，小对象通常只需要一次"指针前进"（bump pointer）操作，代价极低。需要分开描述的是收集器版本：Android 8 到 13 的语境更适合按 Concurrent Copying（CC）或分代 CC 理解，Android 14+ 的平台实现则应按 Concurrent Mark-Compact（CMC）描述，Android 16 又继续演进到分代 CMC。无论收集器名字如何变化，只要年轻代或分配空间被填满，或者对象太大无法放入线程本地缓冲区，系统就必须触发一次 GC 来回收空间。
+当一个线程在 Java 堆上分配对象时（比如 `new Object()`），ART 运行时需要为这个对象找到一块空闲内存。现代 ART 的快路径仍然依赖 TLAB / RegionTLAB 这类线程本地分配缓冲区，小对象通常只需要一次"指针前进"（bump pointer）操作，代价极低。收集器的版本边界要单独写清。`android-14.0.0_r1` 的 `art/runtime/gc/heap.cc` 仍保留 `gUseReadBarrier -> kCollectorTypeCC` 路径，所以 Android 8 到 14 更适合按 Concurrent Copying（CC）和后续的分代 CC 理解；到了 Android 15，`heap.cc` 才能明确看到 `gUseUserfaultfd -> kCollectorTypeCMC` / `kCollectorTypeCMCBackground` 这条 CMC 主线；Android 16 再继续把分代能力放到 CMC 路径上。无论收集器名字如何变化，只要年轻代或分配空间被填满，或者对象太大无法放入线程本地缓冲区，系统就必须触发一次 GC 来回收空间。
 
-GC 本身并不等于卡顿。这些并发收集器的大部分标记与压缩工作都尽量和应用线程并行执行，但仍然保留短暂的 Stop-The-World（STW）阶段。Android 14+ 的 CMC 把并发压缩放到主路径里，Android 16 的分代 CMC 又把回收重点放到年轻代，所以短生命周期对象密集的场景通常先撞上 Young GC，而不是直接进入全堆回收。暂停仍然存在，只是频率和代价比旧路径更可控。
+GC 本身并不等于卡顿。这些并发收集器的大部分标记、复制或压缩工作都尽量和应用线程并行执行，但仍然保留短暂的 Stop-The-World（STW）阶段。Android 8 到 14 的代价模型更接近 CC / 分代 CC，Android 15 开始切到 CMC，Android 16 再引入分代 CMC。写内存抖动时，更稳的判断方式是看分配速率、Young GC 频率、Allocation Stall 和 CPU 竞争，而不是把 Android 14、15、16 合成一个统一的 GC 时代。暂停仍然存在，只是不同版本把代价分布在读屏障、并发回收、压缩和年轻代回收上的方式不同。
 
 问题出在"频繁"二字。如果 GC 被触发得太频繁——比如每秒触发十几次甚至几十次——这些暂停就会累积成可感知的卡顿。更严重的是，GC 线程（HeapTaskDaemon）与主线程和 RenderThread 争抢 CPU 时间，进一步加剧帧耗时波动。
 
@@ -359,7 +361,7 @@ value class UserId(val id: Long)
 
 理解了内存抖动的问题后，再看 ART 的系统级优化，最稳定的一层是分配快路径：小对象优先走 TLAB / RegionTLAB，线程只在本地缓冲区里推进指针，只有缓冲区补充或大对象分配时才需要更重的同步与回收。
 
-GC 名称则要按版本拆开。Android 8 到 13 讨论 ART 默认收集器时，用 CC / 分代 CC 还说得通；Android 14+ 再讨论平台实现，应该切到 CMC；Android 16 则继续发展为分代 CMC。CMC 的重点是并发压缩本身，相关实现会借助 `userfaultfd` 处理对象搬移期间的访问同步，这也是 Android 14+ 与早期 CC 叙述要分开的地方。
+GC 名称也要按版本拆开。`android-14.0.0_r1` 还能看到 `gUseReadBarrier` 对应 CC；`android-15.0.0_r1` 开始把 `gUseUserfaultfd` 对到 CMC；`android-16.0.0_r1` 再继续把分代能力并入这条路线。CMC 的重点是并发压缩本身，相关实现会借助 `userfaultfd` 处理对象搬移期间的访问同步。写到 Android 15 以后再讨论 GC 代价，应该用 CMC / 分代 CMC 的语境；写 Android 8 到 14，则仍以 CC / 分代 CC 为主线。
 
 TLAB 的工作方式没有变：当线程需要分配一个小对象时，不需要获取堆的全局锁，只需在自己的 TLAB 中执行一次"指针前进"操作。这个过程极快，不涉及任何同步。只有当 TLAB 空间不足、或者分配的对象太大无法放入 TLAB 时，线程才需要向堆申请更多空间。
 
@@ -403,7 +405,7 @@ TLAB 的工作方式没有变：当线程需要分配一个小对象时，不需
 - AOSP 源码路径
   - `frameworks/base/core/java/com/android/internal/os/BinderInternal.java` — `GcWatcher` 与 `addGcWatcher()`
   - `frameworks/base/core/java/android/app/ActivityThread.java` — 通过 `BinderInternal.addGcWatcher()` 注册 GC 回调
-  - `art/runtime/gc/heap.cc` — ART GC 核心实现
+  - `art/runtime/gc/heap.cc` — 对比 `android-14.0.0_r1`、`android-15.0.0_r1`、`android-16.0.0_r1` 的 GC 路径切换
   - `art/runtime/gc/space/region_space.cc` — RegionTLAB / 分配空间实现
 - 官方文档
   - [Investigate your app's RAM usage](https://developer.android.com/studio/profile/memory-profiler)
