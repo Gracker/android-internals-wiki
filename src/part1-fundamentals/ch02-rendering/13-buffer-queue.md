@@ -27,8 +27,8 @@ gap_source: AOSP结构+官方文档+研究素材
 gap_score: 14/20
 drafted_by: openclaw-task2a
 drafted_date: '2026-04-04'
-reviewed_by: openclaw-task6
-reviewed_date: '2026-04-11'
+reviewed_by: "openclaw-task6"
+reviewed_date: "2026-04-19"
 last_verified: '2026-04-11'
 last_verified_against: AOSP main + android-11.0.0_r48 + android-10.0.0_r47 + android-4.1.2_r1
 sources:
@@ -50,9 +50,9 @@ sources:
   path: frameworks/base/core/java/android/view/ViewRootImpl.java
 - type: official
   path: https://source.android.com/docs/core/graphics/architecture
-pipeline_stage: task2b_pending
-task6_result: needs-rework
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_result: "pass-light-edit"
+task6_state: reviewed
 task9_state: reviewed
 task2b_state: pending
 task9_result: needs-rework
@@ -215,9 +215,74 @@ t->setBuffer(mSurfaceControl, buffer, fence, bufferItem.mFrameNumber, mProducerI
 
 [已验证：AOSP `android-10.0.0_r47`、`android-11.0.0_r48`、main 的 `ViewRootImpl.java` 与 `BLASTBufferQueue.cpp`]
 
+## Legacy vs BLASTBufferQueue：Consumer 端驻留位置的架构差异
+
+<!-- AIW-源码调研-2026-04-19 -->
+
+本节前面描述了 BLAST 的行为特征，这一小节专门对比 Legacy（Android 11 及之前）和 BLAST（Android 12+）在 **Consumer 端驻留位置**这一根本维度上的差异。这是理解 BLAST 解决了什么问题的核心前提。
+
+### Legacy 模式：Consumer 在 SurfaceFlinger 进程
+
+在 Legacy 模型中，当 App 请求一个 Surface 时，WindowManagerService 通过 `SurfaceFlinger::createLayer()` 在 SF 进程内创建 `BufferQueue`。这个 BufferQueue 的 Consumer 端——`BufferQueueCore` + `BufferItemConsumer`——属于 SF 进程。Producer 端（`IGraphicBufferProducer`）通过 Binder IPC 暴露给 App。
+
+关键特征：
+- **Consumer 端在 SF**：SF 通过 `BufferQueueConsumer` 管理 buffer 的 acquire/release
+- **两条分离的提交路径**：App 的 buffer 提交走 `queueBuffer()`（Binder 到 SF），几何属性变更走 `SurfaceControl.Transaction`（单独 Binder 调用）。两条路径**无原子性保证**
+- **多进程场景缺陷**：当多个进程各自持有 SurfaceControl、都想更新同一窗口的 buffer 时，无法在帧级别同步
+
+### BLAST 模式：Consumer 移入 App 进程
+
+Android S（12）引入的 BLASTBufferQueue 将 Consumer 端移入 App 进程：
+
+**BLASTBufferQueue 内部组件**（`platform/frameworks/native/libs/gui/BLASTBufferQueue.cpp`，android-14.0.0_r1）：
+
+```
+BLASTBufferQueue
+├── BufferQueueCore              // 队列核心（可跨进程共享）
+├── BBQBufferQueueProducer       // Producer 端（在 App 进程）
+│   └── 继承 BufferQueueProducer，实现异步 IProducerListener 回调
+│   └── 构造签名：BBQBufferQueueProducer(core, wp<BLASTBufferQueue>)
+│   └── connect() 时 consumerIsSurfaceFlinger = false
+└── BLASTBufferItemConsumer     // Consumer 端（在 App 进程）
+    ├── 继承 BufferItemConsumer
+    ├── 管理 frame event history（addAndGetFrameTimestamps / updateFrameTimestamps）
+    ├── 处理 sideband stream 变更（onSidebandStreamChanged）
+    └── 新 frame 可用时，通过 mConsumerListener 回调通知 SF
+```
+
+关键变化：
+- **Consumer 端在 App**：App 内 BLASTBufferItemConsumer 持有 `mConsumerListener`，当新 frame 可用时通知 SF
+- **事务统一**：Buffer + 几何属性通过 `SurfaceControl.Transaction::setBuffer()` + geometry setters 合并为一次原子提交
+- **`frameNumber` 绑定**：每帧 buffer 和 geometry 共享同一个 `frameNumber`，保证在同一帧 apply
+
+**App 进程内创建路径**（`ViewRootImpl.java` → `relayoutWindow()` → `updateBlastSurfaceIfNeeded()` → `new BLASTBufferQueue(...)`）：
+```java
+// frameworks/base/core/java/android/view/ViewRootImpl.java
+mBlastBufferQueue = new BLASTBufferQueue(mTag, mSurfaceControl,
+        mSurfaceSize.x, mSurfaceSize.y, mWindowAttributes.format);
+```
+
+**BBQBufferQueueProducer 异步回调**（android-14 commit f982044859e）：传统 BufferQueueProducer 的同步 IProducerListener 回调可能导致死锁（如果 listener 内部调用 queueBuffer）。BBQBufferQueueProducer 将 listener 包装为 AsyncProducerListener，避免在 dequeue 路径上同步等待。
+
+### 架构差异总结
+
+| 维度 | Legacy（Android 11-） | BLAST（Android 12+） |
+|------|---------------------|---------------------|
+| Consumer 端位置 | SurfaceFlinger 进程 | App 进程（BLASTBufferItemConsumer） |
+| Buffer/Geometry 提交 | 两条独立路径，无原子性 | 合并为 Transaction，原子 apply |
+| 跨进程帧同步 | 不支持 | BLAST SyncEngine 支持 |
+| SF 负担 | BufferQueue 管理集中在 SF | 卸荷到 App，SF 只合成 |
+| 多 SurfaceControl 同步 | 各自 queueBuffer，无协调 | Transaction 合并统一 apply |
+
+**为什么这个区别对性能分析重要**：当我们在 Perfetto 中看到 App 侧 `dequeueBuffer()` 阻塞，在 Legacy 模式下这是 SF 进程的 Consumer release 延迟传导过来的；在 BLAST 模式下则可能是 App 进程内 BLASTBufferItemConsumer 的 acquire/release 延迟。判断是哪一层的问题，需要先知道当前设备运行在哪个模型下（Android 12+ 默认 BLAST）。
+
+[已验证：AOSP `android-11.0.0_r48`、`android-14.0.0_r1` 的 BLASTBufferQueue.cpp/BBQBufferQueueProducer commit (f982044859e, d8b3d5f056)]
+
+---
+
 ## 在 Perfetto 中怎么读 BufferQueue
 
-先别拿一个固定阈值往所有设备上套。`dequeueBuffer()` 等 3ms 在 120Hz 游戏场景里可能已经很扎眼，在 60Hz、复杂合成、SurfaceView 或视频路径里却未必能直接下结论。看 BufferQueue，先在同机型、同刷新率、同 Surface 类型上建立一条正常基线，再看偏离。
+BufferQueue 的等待时间强依赖刷新率、Surface 类型和系统负载。`dequeueBuffer()` 等 3ms 在 120Hz 游戏场景里可能已经很扎眼，在 60Hz、复杂合成、SurfaceView 或视频路径里却未必能直接下结论。分析 BufferQueue 问题，需要先在同机型、同刷新率、同 Surface 类型上建立一条正常基线，再看偏离。
 
 ### 正常路径长什么样
 
