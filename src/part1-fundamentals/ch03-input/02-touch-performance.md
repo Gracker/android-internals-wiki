@@ -7,7 +7,7 @@ drafted_date: "2026-03-30"
 drafted_by: "openclaw-task2"
 applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
 last_verified: "2026-03-31"
-reviewed_date: "2026-04-13"
+reviewed_date: "2026-04-20"
 reviewed_by: "openclaw-task6"
 last_verified_against: "AOSP android-16.0.0_r1"
 confidence: medium
@@ -33,9 +33,9 @@ sources:
     path: "developer.android.com/jetpack/androidx/releases/input"
 tags: [touch, input, latency, InputReader, InputDispatcher, sampling-rate, batching, Choreographer, responsiveness]
 related_chapters: ["3.1", "2.3", "2.4", "2.5", "8.1"]
-pipeline_stage: task6_pending
-task6_result: needs-rework
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_result: pass-light-edit
+task6_state: reviewed
 task9_state: pending
 task9_result: needs-rework
 task2b_state: fixed
