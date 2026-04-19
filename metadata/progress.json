@@ -1,82 +1,82 @@
 {
-  "generated_at": "2026-04-20T05:01:36+08:00",
+  "generated_at": "2026-04-20T05:20:00+08:00",
   "state_machine_version": "v2",
   "total_sections": 206,
   "metrics": {
-    "total": 206,
+    "total": 209,
     "unknown": 37,
-    "last_updated": "2026-04-20T05:01:36+08:00",
+    "last_updated": "2026-04-20T05:20:00+08:00",
     "task2b_state_counts": {
       "unknown": 37,
-      "fixed": 130,
-      "pending": 16,
+      "fixed": 129,
+      "pending": 17,
       "idle": 26
     },
     "task6_state_counts": {
       "unknown": 33,
-      "reviewed": 72,
-      "revisiting": 103,
+      "reviewed": 75,
+      "revisiting": 100,
       "pending": 1
     },
     "task9_state_counts": {
       "unknown": 36,
-      "reviewed": 31,
-      "pending": 141,
+      "reviewed": 34,
+      "pending": 138,
       "fixed": 1
     },
     "pipeline_stage_counts": {
       "unknown": 36,
-      "task6_pending": 101,
+      "task6_pending": 98,
       "task9_pending": 50,
-      "task2b_pending": 15,
-      "ready-to-publish": 7
+      "task2b_pending": 16,
+      "ready-to-publish": 9
     },
-    "total_sections": 206,
+    "total_sections": 209,
     "pipeline_unknown": 36,
-    "pipeline_task6_pending": 101,
-    "pipeline_task2b_pending": 15,
+    "pipeline_task6_pending": 98,
+    "pipeline_task2b_pending": 16,
     "pipeline_task9_pending": 50,
     "task2b_unknown": 37,
-    "task2b_fixed": 130,
-    "task2b_pending": 16,
+    "task2b_fixed": 129,
+    "task2b_pending": 17,
     "task2b_idle": 26,
     "task6_unknown": 33,
-    "task6_revisiting": 103,
-    "task6_reviewed": 72,
+    "task6_revisiting": 100,
+    "task6_reviewed": 75,
     "task6_pending": 1,
     "task9_unknown": 36,
-    "task9_pending": 141,
-    "task9_reviewed": 31,
+    "task9_pending": 138,
+    "task9_reviewed": 34,
     "task9_fixed": 1,
     "ready-to-publish": 0,
-    "finalized": 7,
-    "ready-for-review": 165,
-    "pipeline_ready_to_publish": 7
+    "finalized": 9,
+    "ready-for-review": 163,
+    "pipeline_ready_to_publish": 9
   },
   "pipeline": {
     "pipeline_stage_counts": {
       "unknown": 36,
-      "task6_pending": 101,
+      "task6_pending": 98,
       "task9_pending": 50,
-      "task2b_pending": 15,
-      "ready-to-publish": 7
+      "task2b_pending": 16,
+      "ready-to-publish": 9
     },
     "task2b_state_counts": {
       "unknown": 37,
-      "fixed": 130,
-      "pending": 16,
+      "fixed": 129,
+      "pending": 17,
       "idle": 26
     },
     "task6_state_counts": {
       "unknown": 33,
-      "reviewed": 72,
-      "revisiting": 103,
+      "reviewed": 75,
+      "revisiting": 100,
       "pending": 1
     },
     "task9_state_counts": {
       "unknown": 36,
-      "reviewed": 31,
-      "pending": 141,
+      "reviewed": 34,
+      "pending": 138,
       "fixed": 1
     }
   },
@@ -770,15 +770,15 @@
       "chapter": "2.19",
       "title": "刷新率切换与帧率适配性能",
       "path": "src/part1-fundamentals/ch02-rendering/19-refresh-rate-switching.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "task6_state": "reviewed",
-      "task9_state": "pending",
+      "task9_state": "reviewed",
       "task2b_state": "fixed",
       "reviewed_date": "2026-04-19",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
-      "task9_result": "needs-rework",
+      "task9_result": "pass-tech-review",
       "task2b_result": "fixed",
       "section": "2.19"
     },
@@ -870,15 +870,15 @@
       "chapter": "3.4",
       "title": "输入延迟与预测输入技术",
       "path": "src/part1-fundamentals/ch03-input/04-input-latency-prediction.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "task6_state": "revisiting",
-      "task9_state": "pending",
+      "task9_state": "reviewed",
       "task2b_state": "fixed",
       "reviewed_date": "2026-04-19",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
-      "task9_result": "needs-rework",
+      "task9_result": "pass-tech-review",
       "task2b_result": "fixed",
       "section": "3.4"
     },
@@ -887,15 +887,14 @@
       "title": "输入事件拦截与安全机制",
       "path": "src/part1-fundamentals/ch03-input/05-input-interception-security.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
-      "task9_state": "pending",
-      "task2b_state": "fixed",
+      "task9_state": "reviewed",
+      "task2b_state": "pending",
       "reviewed_date": "2026-04-19",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
-      "task2b_result": "fixed",
       "section": "3.5"
     },
     "src/part1-fundamentals/ch03-input/06-gesture-recognition-performance.md": {
@@ -3162,8 +3161,8 @@
   "summary": {
     "status_counts": {
       "unknown": 37,
-      "ready-for-review": 165,
-      "finalized": 7
+      "ready-for-review": 163,
+      "finalized": 9
     }
   }
 }

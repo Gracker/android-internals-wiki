@@ -2,7 +2,7 @@
 title: "刷新率切换与帧率适配性能"
 chapter: "2.19"
 section: "2.19"
-status: ready-for-review
+status: finalized
 drafted_date: "2026-04-07"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 11 (API 30) - Android 17 (API 37)"
@@ -30,14 +30,14 @@ sources:
     path: "frameworks/native/services/surfaceflinger/Scheduler/VsyncModulator.cpp"
 tags: [refresh-rate, frame-rate, SurfaceFlinger, VSync, setFrameRate, jank, rendering, display-mode, ARR]
 related_chapters: ["2.2", "2.3", "2.4", "2.6", "2.18"]
-pipeline_stage: task9_pending
+pipeline_stage: ready-to-publish
 task6_state: reviewed
-task9_state: pending
+task9_state: reviewed
 task2b_state: fixed
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-04-19"
 task6_result: pass-light-edit
-task9_result: needs-rework
+task9_result: pass-tech-review
 task2b_result: fixed
 ---
 

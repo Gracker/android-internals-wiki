@@ -2607,5 +2607,25 @@
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-20T04:20:38+08:00",
     "status": "pending"
+  },
+  {
+    "section": "3.5",
+    "section_title": "输入事件拦截与安全机制",
+    "priority": 85,
+    "reason": "[Deep Tech Review] 输入安全边界缺少 obscured touch / untrusted touch 主线，章节需要补足官方防护链路",
+    "material_paths": [
+      "intake/research-gaps.md"
+    ],
+    "review_issues": [
+      {
+        "type": "知识盲区",
+        "location": "L260-L290 安全边界 / 版本演进",
+        "detail": "正文缺少 obscured touch / untrusted touch 主线，没有覆盖 MotionEvent 遮挡标记、View 侧过滤入口，以及 Android 12+ 的系统级阻断策略。",
+        "suggestion": "补齐 FLAG_WINDOW_IS_OBSCURED / FLAG_WINDOW_IS_PARTIALLY_OBSCURED、setFilterTouchesWhenObscured() / onFilterTouchEventForSecurity()、BLOCK_UNTRUSTED_TOUCHES_MODE 的源码与版本边界。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-20T05:20:00",
+    "status": "pending"
   }
 ]

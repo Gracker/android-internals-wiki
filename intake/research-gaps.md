@@ -3586,3 +3586,41 @@ Graphics / dma-buf 内存没有独立诊断分支。正文已经提到 Graphic B
 - 7.7 Jetpack Compose 性能优化
 - 8.1 响应速度原理
 
+
+
+## [2026-04-20] 18.7 TextureView 合成链路 — 知识盲区
+
+### 盲区描述
+TextureView 对硬件加速的强依赖没有被纳入章节主线。`TextureView.java` 明确要求 hardware accelerated window，软件渲染模式下会直接不出图。当前稿件缺少这条边界，导致黑屏 / 不更新问题没有首要排查入口。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 回源 `TextureView.java` 的类注释与 `draw(Canvas)` / `getTextureLayer()` 路径，说明为什么软件渲染窗口无法承载 TextureView
+- 补一个“TextureView 黑屏排查清单”，把硬件加速开关、Window/Activity 级禁用场景、兼容模式列为首项
+- 与 SurfaceView 做一张兼容性矩阵，区分性能、变换能力和硬件加速前置条件
+
+### 关联章节
+- 18.6 SurfaceView 直出链路
+- 18.7 TextureView 合成链路
+- 18.8 OpenGL ES 渲染链路
+
+## [2026-04-20] 3.5 输入事件拦截与安全机制 — 知识盲区
+
+### 盲区描述
+章节把“输入安全边界”集中在 InputFilter、无障碍过滤和事件注入，但缺少官方主线里的 obscured touch / untrusted touch 防护链路。当前正文没有覆盖 `MotionEvent.FLAG_WINDOW_IS_OBSCURED` / `FLAG_WINDOW_IS_PARTIALLY_OBSCURED`、`View.setFilterTouchesWhenObscured()` / `onFilterTouchEventForSecurity()`，也没有纳入 Android 12 引入的 `BLOCK_UNTRUSTED_TOUCHES_MODE` 系统级阻断策略。这样会让读者理解“谁能拦截/注入输入”，却看不到 Android 防 tapjacking / overlay 诱导触摸的核心边界。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 核对 `MotionEvent.FLAG_WINDOW_IS_OBSCURED` 与 `FLAG_WINDOW_IS_PARTIALLY_OBSCURED` 在 App 侧的判定语义
+- 补 `View.setFilterTouchesWhenObscured()` 与 `onFilterTouchEventForSecurity()` 的适用边界
+- 梳理 Android 12+ `BLOCK_UNTRUSTED_TOUCHES_MODE`、`notifyUntrustedTouch()` 与系统遮挡触摸阻断策略
+- 给一段 overlay / toast / accessibility 叠层场景下的 trace 或行为验证
+
+### 关联章节
+- 3.1 Input 事件分发全流程
+- 9.1 ANR 设计思想
+- 9.2 ANR 类型与触发机制

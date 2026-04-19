@@ -2741,3 +2741,15 @@
 - **位置**：L232-L243 Perfetto heapprofd
 - **问题**：heapprofd 段把“追踪 Native 和 Java 堆分配栈”写成统一能力，但 Perfetto 官方文档区分得更细：Java heap dump 需要 Android 11+；Java heap sampling / `--heaps art` 需要 Android 12+。当前 CLI 示例 `adb shell heapprofd --pid=<PID> --java` 没有写版本边界，容易让读者在 Android 11 设备上把 heap dump 与 sampling 能力混为一谈。
 - **建议**：把工具边界拆开写清：Android 11+ 可抓 Java heap dump；Android 12+ 才能用 heapprofd 的 Java sampling / `malloc,art`；Native heap profile 则是另一条 data source。必要时给出一行“这三类能力不要混用名词”的提示。
+
+## [Task9 Deep Review] 2.19 刷新率切换与帧率适配性能 — 2026-04-20
+- **类型**：数据缺失
+- **位置**：L86-L103，L167-L173，L202-L218
+- **问题**：章节把“模式切换通常 1-3 帧”“Snapdragon PLL 5-15ms”“VSYNC-app 可直接用 `track_event` 查询”放在同一条观察链里，但没有给出设备样本、trace 片段或已验证的 trace schema。读者能理解机制，仍拿不到可复现的量化证据。
+- **建议**：补一组真实设备样本（机型、刷新率组合、切换场景）和一段已跑通的 Perfetto 观察方法；如果暂时没有样本，把数值降级成“设备相关/待验证”，并说明 SQL 依赖的具体 trace 表结构。
+
+## [Task9 Deep Review] 3.4 输入延迟与预测输入技术 — 2026-04-20
+- **类型**：数据缺失
+- **位置**：L179-L194
+- **问题**：`120Hz 理想路径约 10-38ms` 这张表没有交代触控采样率、batched input 是否开启、渲染路径（ThreadedRenderer / front buffer）、以及 App 负载条件。数字本身合理，但当前写法更像经验值，缺少复现实验前提。
+- **建议**：把这组数字补成“示例测量条件 + 理论上界”两列，至少注明采样率、屏幕刷新率、是否 batching、是否含 SurfaceFlinger present 时间，避免读者把它当成所有设备的通用基线。
