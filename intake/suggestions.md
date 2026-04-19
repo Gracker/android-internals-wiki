@@ -2635,3 +2635,15 @@
 - **位置**：§从多刷新率到 ARR / §Display 查询 API / §版本演进（L54-L56、L70-L87、L190-L194）
 - **问题**：正文强调“检查设备是否公开支持 ARR，以及当前系统给出的刷新率范围”，但给出的公开查询手段全部落在 Android 16 `Display` API。对 Android 15-QPR1 支持设备，读者仍缺少一个可执行的能力确认路径，容易把“API 可调用”和“端到端 ARR 能力可用”混为一谈。
 - **建议**：补一张版本矩阵，明确 API 35 与 API 36 的能力边界。对 Android 15-QPR1 设备补上 fallback 观察路径，例如 OEM 文档、`dumpsys display` / `SurfaceFlinger`、Trace 中的 mode switching 与 refresh-rate selection 行为特征。
+
+## [Task9 Deep Review] 2.12 Window Manager Service 与窗口管理 — 2026-04-19
+- **类型**：数据缺失
+- **位置**：Perfetto 观察表与 SQL 示例（L225, L321-L331）
+- **问题**：`wm.pause_timeout`、`SurfaceControl.Transaction.apply`、`animator` 以及 `LIKE '%relayout%'` 被当作稳定切片名使用，但文中没有给出 trace 配置、Android 版本或 sample trace 佐证。不同 atrace category / Perfetto config 下这些名字并不稳定。
+- **建议**：补一份可复现的 trace config + sample capture，或把表格改成“常见候选切片/需按版本核对”的写法，并给出至少一条已验证 SQL。
+
+## [Task9 Deep Review] 2.12 Window Manager Service 与窗口管理 — 2026-04-19 #2
+- **类型**：版本差异
+- **位置**：版本演进表（L375-L383）
+- **问题**：Android 16/17 的 Desktop Windowing、Adaptive Apps、`recreateOnConfigChanges`、Bubbles for all apps 等条目没有在 `sources:` 中挂官方 behavior/features 文档或对应 AOSP 变更，当前版本表可读但不可追溯。
+- **建议**：为每一行补官方 features/behavior 文档或源码/commit 锚点；拿不准的 Beta 特性改成 `[待验证]` 并明确版本范围。

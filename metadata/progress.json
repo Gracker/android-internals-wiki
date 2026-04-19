@@ -1,14 +1,14 @@
 {
-  "generated_at": "2026-04-19T17:51:52+08:00",
+  "generated_at": "2026-04-19T19:24:00+08:00",
   "state_machine_version": "v2",
   "total_sections": 218,
   "metrics": {
     "total": 175,
     "unknown": 2,
-    "last_updated": "2026-04-19T17:51:52+08:00",
+    "last_updated": "2026-04-19T19:24:00+08:00",
     "task2b_state_counts": {
-      "fixed": 125,
-      "pending": 9,
+      "fixed": 124,
+      "pending": 10,
       "idle": 40,
       "unknown": 1
     },
@@ -18,31 +18,31 @@
       "pending": 2
     },
     "task9_state_counts": {
-      "reviewed": 17,
-      "pending": 157,
+      "reviewed": 18,
+      "pending": 156,
       "fixed": 1
     },
     "pipeline_stage_counts": {
       "task6_pending": 119,
-      "task9_pending": 47,
-      "task2b_pending": 9
+      "task9_pending": 46,
+      "task2b_pending": 10
     },
     "total_sections": 175,
     "pipeline_unknown": 0,
     "pipeline_task6_pending": 120,
-    "pipeline_task2b_pending": 9,
-    "pipeline_task9_pending": 46,
+    "pipeline_task2b_pending": 10,
+    "pipeline_task9_pending": 45,
     "task2b_unknown": 1,
-    "task2b_fixed": 125,
-    "task2b_pending": 9,
+    "task2b_fixed": 124,
+    "task2b_pending": 10,
     "task2b_idle": 40,
     "task6_unknown": 0,
     "task6_revisiting": 108,
     "task6_reviewed": 65,
     "task6_pending": 2,
     "task9_unknown": 0,
-    "task9_pending": 157,
-    "task9_reviewed": 17,
+    "task9_pending": 156,
+    "task9_reviewed": 18,
     "ready-to-publish": 0,
     "finalized": 0,
     "task9_fixed": 1,
@@ -52,13 +52,13 @@
     "pipeline_stage_counts": {
       "unknown": 31,
       "task6_pending": 121,
-      "task9_pending": 46,
-      "task2b_pending": 9
+      "task9_pending": 45,
+      "task2b_pending": 10
     },
     "task2b_state_counts": {
       "unknown": 32,
-      "fixed": 125,
-      "pending": 9,
+      "fixed": 124,
+      "pending": 10,
       "idle": 41
     },
     "task6_state_counts": {
@@ -69,8 +69,8 @@
     },
     "task9_state_counts": {
       "unknown": 31,
-      "reviewed": 17,
-      "pending": 158,
+      "reviewed": 18,
+      "pending": 157,
       "fixed": 1
     }
   },
@@ -684,16 +684,19 @@
       "title": "Window Manager Service 与窗口管理",
       "path": "src/part1-fundamentals/ch02-rendering/12-window-manager.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
-      "task9_state": "pending",
-      "task2b_state": "fixed",
+      "task9_state": "reviewed",
+      "task2b_state": "pending",
       "reviewed_date": "2026-04-19",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
-      "section": "2.12"
+      "section": "2.12",
+      "task9_reviewed_by": "openclaw-task9",
+      "task9_reviewed_date": "2026-04-19",
+      "last_task9_at": "2026-04-19T19:24:00+08:00"
     },
     "src/part1-fundamentals/ch02-rendering/13-buffer-queue.md": {
       "chapter": "'2.13'",

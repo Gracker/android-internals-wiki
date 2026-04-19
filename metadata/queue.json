@@ -2256,5 +2256,38 @@
     "status": "completed",
     "completed_at": "2026-04-19T17:51:52+08:00",
     "completed_by": "task2b-rework"
+  },
+  {
+    "section": "2.12",
+    "section_title": "Window Manager Service 与窗口管理",
+    "priority": 95,
+    "reason": "[Deep Tech Review] WMS 线程模型、BLAST/Surface 返回链路与 relayout 主路径三处核心描述与当前实现不符",
+    "material_paths": [
+      "intake/research-gaps.md",
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "L58（WMS 的定位）",
+        "detail": "将 WMS 描述成与 AMS/IMS “共享同一个主线程（android.server）”不准确。当前 AOSP 中 WMS 由 DisplayThread 创建，策略初始化跑在 UiThread，动画关键路径挂在 AnimationThread，而 relayout 等入口经 Binder 线程进入后受 mGlobalLock/WindowManagerPolicyThread 等线程协作影响。把瓶颈解释成“同一个主线程”会直接误导 Perfetto 诊断。",
+        "suggestion": "改写为“同进程、多线程、全局锁耦合”的模型，明确区分 DisplayThread / UiThread / AnimationThread / Binder 线程，以及真正造成相互阻塞的是锁与共享状态，而不是单一主线程。"
+      },
+      {
+        "type": "源码错误",
+        "location": "L88-L90（Surface 创建流程）",
+        "detail": "“SurfaceControl::create” 在当前 framework JNI 中并不存在；`android_view_SurfaceControl.cpp` 走的是 `SurfaceComposerClient::createSurfaceChecked(...)`。同时，现代 BLAST 路径下 `relayout()` 返回的是 `RelayoutResult`/`SurfaceControl` 等元数据，App 侧在 `ViewRootImpl.updateBlastSurfaceIfNeeded()` 中创建 `BLASTBufferQueue`，再通过 `mSurface.transferFrom(...)` 获得可绘制 `Surface`。正文把它写成“WMS 包装成 Surface 通过 Binder 返回给 App”会把客户端/服务端职责画错。",
+        "suggestion": "把链路改成“WMS/SurfaceFlinger 创建或更新 SurfaceControl，ViewRootImpl 在客户端基于 BLASTBufferQueue materialize Surface”，并删除不存在的 `SurfaceControl::create` 符号。"
+      },
+      {
+        "type": "原理断裂",
+        "location": "L156-L199（relayoutWindow 小节）",
+        "detail": "正文把 WMS 侧主路径简化成“relayoutWindow 直接调 performLayout()”，与现代实现不符。当前代码会强制走 `mWindowPlacerLocked.performSurfacePlacement(true)`，其上游还受 ViewRootImpl `performTraversals()` 中 6 个 relayout 触发条件和 Android 14+ `relayoutAsync()` 影响。缺这层区分后，读者无法判断“纯 traversal”与“跨进程 relayout”在 Perfetto 中为什么呈现不同成本。",
+        "suggestion": "补齐 `performTraversals()` 的 relayout 触发矩阵、`relayoutAsync()` 适用条件，以及 WMS 侧 `performSurfacePlacement(true)` 到 Surface/Insets/frames 返回的路径。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-19T19:24:00+08:00",
+    "status": "pending"
   }
 ]
