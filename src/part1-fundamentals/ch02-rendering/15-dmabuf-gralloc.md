@@ -9,7 +9,7 @@ last_verified_against: AOSP android-16.0.0_r1, Linux kernel 6.12, developer.andr
 confidence: medium
 drafted_date: '2026-04-05'
 drafted_by: openclaw-task2a
-reviewed_date: '2026-04-19'
+reviewed_date: '2026-04-20'
 reviewed_by: openclaw-task6
 sources:
 - type: aosp
@@ -56,9 +56,9 @@ created_by: task2a-knowledge-gap
 created_date: '2026-04-05'
 gap_source: 素材驱动+AOSP结构+每日信息
 gap_score: 17/20
-pipeline_stage: task6_pending
-task6_state: revisiting
-task6_result: needs-rework
+pipeline_stage: 'task9_pending'
+task6_state: reviewed
+task6_result: 'pass-light-edit'
 task9_state: pending
 task9_result: needs-rework
 task9_reviewed_date: "2026-04-19"
@@ -386,7 +386,7 @@ Android 15 起，16KB page size 开始进入量产设备。对 DMA-BUF 和 Grall
 
 到 `android-16.0.0_r1` 为止，我们还能同时看到 `graphics/allocator/aidl/android/hardware/graphics/allocator/IAllocator.aidl`、`graphics/allocator/4.0/IAllocator.hal` 和 `graphics/mapper/4.0/IMapper.hal`。AIDL allocator 的注释甚至直接写明，如果 `android.hardware.graphics.mapper@4` 仍在使用，旧的 `allocate()` 入口仍要实现。
 
-所以这一阶段更稳妥的说法是，allocator 接口已经提供稳定 AIDL 版本，但 mapper@4 兼容路径还在，系统并不是“一刀切地彻底 AIDL 化”。本文正文的适用范围也据此收窄到 Android 12-16；Android 10/11 的 Gralloc4(HIDL) + ION 组合只放在迁移背景里说明，不把 Android 17 的接口走向提前写成既成事实。
+这一阶段，allocator 接口已经提供稳定 AIDL 版本，但 mapper@4 兼容路径还在，系统并不是“一刀切地彻底 AIDL 化”。本文正文的适用范围也据此收窄到 Android 12-16；Android 10/11 的 Gralloc4(HIDL) + ION 组合只放在迁移背景里说明，不把 Android 17 的接口走向提前写成既成事实。
 
 [已验证: AOSP android-16.0.0_r1, hardware/interfaces/graphics/allocator/aidl/android/hardware/graphics/allocator/IAllocator.aidl; hardware/interfaces/graphics/allocator/4.0/IAllocator.hal; hardware/interfaces/graphics/mapper/4.0/IMapper.hal]
 

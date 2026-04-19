@@ -3,7 +3,7 @@ title: 帧率与刷新率
 chapter: '2.2'
 section: '2.2'
 status: ready-for-review
-reviewed_date: '2026-04-14'
+reviewed_date: '2026-04-20'
 reviewed_by: openclaw-task6
 review_note: Task 6 复审：按 writing-guide / STYLE / content-quality-gate 完成 9 处 L1/L2
   小修；Perfetto 证据链、版本/API 口径与扩展收束已转 Task 9 / Task 2B
@@ -49,9 +49,9 @@ related_chapters:
 - '2.9'
 - '7.1'
 re-review-result: 已纳入1条素材(部分纳入:OEM VSync修改误区+交叉引用),0处修正,待正常review质检
-pipeline_stage: task6_pending
-task6_result: needs-rework
-task6_state: revisiting
+pipeline_stage: 'task9_pending'
+task6_result: 'pass-light-edit'
+task6_state: reviewed
 task9_state: pending
 task9_result: needs-rework
 task9_reviewed_date: "2026-04-15"
@@ -342,11 +342,9 @@ Choreographer.getInstance().postVsyncCallback(new Choreographer.VsyncCallback() 
 });
 ```
 
-这里有两个关键点值得注意：
+`FrameData` 是 API 33 新增的类，它封装了 VSync 相关的全部信息。相比之前只有一个 `frameTimeNanos`，现在 App 能拿到多个候选的帧时间线（`FrameTimeline`），每个时间线包含预期的呈现时间和渲染截止时间。这让 App 可以更智能地选择"我这帧应该在哪个 VSync 时刻显示"——如果渲染比较重，可以选择一个稍晚的时间线，避免匆忙提交导致掉帧。
 
-第一，`FrameData` 是 API 33 新增的类，它封装了 VSync 相关的全部信息。相比之前只有一个 `frameTimeNanos`，现在 App 能拿到多个候选的帧时间线（`FrameTimeline`），每个时间线包含预期的呈现时间和渲染截止时间。这让 App 可以更智能地选择"我这帧应该在哪个 VSync 时刻显示"——如果渲染比较重，可以选择一个稍晚的时间线，避免匆忙提交导致掉帧。
-
-第二，`FrameTimeline` 中的 `deadlineNanos` 是这帧必须完成渲染的截止时间。如果 App 发现自己无法在系统推荐的时间线内完成，可以主动选择一个更晚的时间线，通过 `SurfaceControl.Transaction.setFrameTimeline()` 告知 SurfaceFlinger。这种"协商"机制比之前"死等 VSync"的方式灵活得多。
+`FrameTimeline` 中的 `deadlineNanos` 是这帧必须完成渲染的截止时间。如果 App 发现自己无法在系统推荐的时间线内完成，可以主动选择一个更晚的时间线，通过 `SurfaceControl.Transaction.setFrameTimeline()` 告知 SurfaceFlinger。这种"协商"机制比之前"死等 VSync"的方式灵活得多。
 
 [已修正: 参考 AOSP Choreographer.java API 33+ 的 VsyncCallback/FrameData/FrameTimeline 实际定义重写]
 
@@ -580,7 +578,7 @@ Android 目前没有提供直接的"帧率被覆盖"回调 API（如 `OnFrameRat
 
 ### LTPO 的底层技术
 
-LTPO 面板的关键在于它的像素驱动电路中混合使用了两种 TFT 技术：
+LTPO 面板的像素驱动电路中混合使用了两种 TFT 技术：
 
 - **LTPS 晶体管**：电子迁移率高、开关速度快，负责"高速"部分——高刷新率下快速刷新像素
 - **IGZO 晶体管**：漏电流极低、功耗极小，负责"保持"部分——低刷新率下保持像素状态

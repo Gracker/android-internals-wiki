@@ -38,13 +38,13 @@ sources:
 tags: [opengl-es, vulkan, angle, gpu, graphics-api, rendering]
 related_chapters: ["2.1", "2.9", "2.10", "2.17", "14.8"]
 section: "2.14"
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: 'task9_pending'
+task6_state: reviewed
 task9_state: pending
 task2b_state: fixed
-reviewed_by: "openclaw-task6"
-reviewed_date: "2026-04-19"
-task6_result: needs-rework
+reviewed_by: openclaw-task6
+reviewed_date: '2026-04-20'
+task6_result: 'pass-light-edit'
 review_log: "logs/review/2026-04-11-13-review.md"
 task9_result: needs-rework
 task9_reviewed_date: "2026-04-19"
@@ -103,7 +103,9 @@ Vulkan 1.0 就已经提供了 OpenGL ES 不具备的核心能力：Command Buffe
 
 但 Vulkan 1.0 的 API 复杂度极高。创建一个"画一个三角形"的最小 Vulkan 程序需要约 800 行代码——同样的功能在 OpenGL ES 中只需要不到 100 行。Vulkan 1.1/1.3/1.4 的迭代目标就是降低这个复杂度：Vulkan 1.3 的动态渲染让开发者不再需要显式定义 RenderPass 对象，Vulkan 1.4 继续把更多现代能力并入核心能力集合。
 
-这里要特别区分两件事。第一，上表说的是平台 / OEM 侧的 Vulkan 版本基线，我们可以把它理解为“这一代 Android 对新设备希望具备什么 Vulkan 能力”；它不等于“所有升级到该版本的旧设备都会自动获得同样的 Vulkan 版本”。第二，**Android Vulkan Profile 2025（AVP 2025）** 不是平台最低门槛，而是面向活跃设备生态的兼容 profile。官方 AVP 页面把它定义为一组“在绝大多数活跃 Android 设备上都能找到”的 Vulkan 扩展、特性、格式和 limits，用来帮助游戏和引擎选择一条更稳定的跨设备能力集合。
+上表说的是平台 / OEM 侧的 Vulkan 版本基线，我们可以把它理解为“这一代 Android 对新设备希望具备什么 Vulkan 能力”；它不等于“所有升级到该版本的旧设备都会自动获得同样的 Vulkan 版本”。
+
+**Android Vulkan Profile 2025（AVP 2025）** 不是平台最低门槛，而是面向活跃设备生态的兼容 profile。官方 AVP 页面把它定义为一组“在绝大多数活跃 Android 设备上都能找到”的 Vulkan 扩展、特性、格式和 limits，用来帮助游戏和引擎选择一条更稳定的跨设备能力集合。
 
 AVP 2025 在 AVP 2022 / 2021 的基础上继续扩展 profile 能力集合，官方点名的是额外内存特性、浮点控制、host query reset，以及更多标准化像素格式。它更适合拿来做 capability audit 和 feature gating：先看目标设备是否满足这组 profile，再决定默认开启哪些渲染路径。像 `VK_EXT_host_image_copy` 这类具体扩展，需要单独按 Vulkan 版本、扩展支持和设备实现核实，不宜直接写成“AVP 2025 必带项”。
 
