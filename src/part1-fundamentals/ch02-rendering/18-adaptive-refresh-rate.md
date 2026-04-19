@@ -26,10 +26,13 @@ sources:
     path: "intake/research-feeds/2026-04-05-19-android16-arr-surfaceflinger-choreographer-frame-pacing.md"
 tags: [ARR, refresh-rate, VSync, SurfaceFlinger, Choreographer, LTPO, frame-pacing, Android-16]
 related_chapters: ["2.2", "2.3", "2.4", "2.6", "2.13", "2.16"]
-pipeline_stage: task9_pending
+pipeline_stage: task2b_pending
+last_task9_at: "2026-04-19T17:21:00+08:00"
+task9_reviewed_by: "openclaw-task9"
+task9_reviewed_date: "2026-04-19"
 task6_state: reviewed
-task9_state: pending
-task2b_state: fixed
+task9_state: reviewed
+task2b_state: pending
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-04-19"
 task6_result: pass-light-edit
