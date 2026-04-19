@@ -2763,14 +2763,19 @@
       "section": "14.6"
     },
     "src/part3-tools/ch14-other-tools/07-profiling-manager.md": {
-      "chapter": null,
-      "title": "07-profiling-manager",
+      "chapter": "14.7",
+      "title": "ProfilingManager",
       "path": "src/part3-tools/ch14-other-tools/07-profiling-manager.md",
-      "status": "unknown",
+      "status": "ready-for-review",
       "pipeline_stage": "task6_pending",
-      "task6_state": "pending",
+      "task6_state": "revisiting",
       "task9_state": "pending",
-      "task2b_state": "idle"
+      "task2b_state": "fixed",
+      "reviewed_date": "2026-04-19",
+      "reviewed_by": "openclaw-task6",
+      "task6_result": "needs-rework",
+      "task2b_result": "fixed",
+      "section": "14.7"
     },
     "src/part3-tools/ch14-other-tools/08-gpu-debug-tools.md": {
       "chapter": "14.8",
@@ -3756,6 +3761,22 @@
       ],
       "verification": "technical-writing 禁用词扫描=0，frontmatter 解析=ok，queue=completed",
       "queue_status": "completed"
+    },
+    {
+      "date": "2026-04-19T16:01:59+08:00",
+      "section": "14.7",
+      "section_title": "ProfilingManager",
+      "source": "task6-review",
+      "priority": 90,
+      "issues_fixed": 4,
+      "fixes": [
+        "结构重写：把四种 RequestBuilder 改成选择矩阵 + 场景判断，补 Consumer 回调与显式请求 / trigger 结果通道的设计意图",
+        "代码压缩：删除 import、类定义和样板方法，所有示例只保留核心调用路径",
+        "frontmatter：补 title / chapter / section / section_title / applicable_versions / sources，并把章节重新送回 Task 6 → Task 9 流水线",
+        "自发现修正：开头把系统触发能力拆成 Android 16 基础触发器与 Android 17 扩展触发器，消除版本口径冲突"
+      ],
+      "verification": "technical-writing 禁用词扫描=0，frontmatter 解析=ok，queue=completed",
+      "queue_status": "completed"
     }
   ],
   "reviews": [
@@ -3975,10 +3996,18 @@
       "by": "task2b-rework",
       "source": "task9-deep-tech-review",
       "issues_fixed": 4
+    },
+    {
+      "section": "14.7",
+      "section_title": "ProfilingManager",
+      "date": "2026-04-19T16:01:59+08:00",
+      "by": "task2b-rework",
+      "source": "task6-review",
+      "issues_fixed": 4
     }
   ],
-  "last_task2b_run": "2026-04-19T15:09:55+08:00",
-  "task2b_fixed": 13,
+  "last_task2b_run": "2026-04-19T16:01:59+08:00",
+  "task2b_fixed": 14,
   "17.1": {
     "task6_review_date": "2026-04-16",
     "task6_result": "pass-light-edit",
@@ -3992,10 +4021,10 @@
     "task6_state": "reviewed",
     "task9_state": "pending"
   },
-  "task2b_last_run": "2026-04-19T12:48:00+08:00",
+  "task2b_last_run": "2026-04-19T16:01:59+08:00",
   "task2b_last_result": "fixed",
   "task2b_task8_processed": 3,
-  "task2b_note": "修复 2.15 的多 fd transport 口径、16KB page size 预算、BufferQueue 状态描述与无证据延迟表述，并完成 technical-writing 禁用词复检",
+  "task2b_note": "修复 14.7 的 API 文档腔、长代码块和 frontmatter 缺项，并完成 technical-writing 禁用词复检",
   "15.5": {
     "task6_review_date": "2026-04-17",
     "task6_result": "pass-light-edit",
@@ -4034,6 +4063,14 @@
       "section_title": "DMA-BUF、Gralloc 与跨进程图形内存共享",
       "source": "task9-deep-tech-review",
       "issues_fixed": 6,
+      "status": "fixed"
+    },
+    {
+      "date": "2026-04-19T16:01:59+08:00",
+      "section": "14.7",
+      "section_title": "ProfilingManager",
+      "source": "task6-review",
+      "issues_fixed": 4,
       "status": "fixed"
     }
   ],
@@ -4125,7 +4162,7 @@
   "total_chapters": 0,
   "reviewed_count": 1,
   "last_review": "18.17",
-  "last_task2b_section": "2.15",
+  "last_task2b_section": "14.7",
   "1.10": {
     "section": "1.10",
     "title": "ContentProvider 性能与优化",
@@ -4313,11 +4350,13 @@
   },
   "14.7_profiling-manager": {
     "file": "src/part3-tools/ch14-other-tools/07-profiling-manager.md",
-    "status": "reviewed-by-task6",
+    "status": "reworked-by-task2b",
     "task6_result": "needs-rework",
     "task6_reviewed_date": "2026-04-19",
     "task6_review_log": "logs/review/2026-04-19-15-review.md",
     "task6_issues": 3,
-    "pipeline_stage": "task2b_pending"
+    "task2b_result": "fixed",
+    "task2b_completed_at": "2026-04-19T16:01:59+08:00",
+    "pipeline_stage": "task6_pending"
   }
 }

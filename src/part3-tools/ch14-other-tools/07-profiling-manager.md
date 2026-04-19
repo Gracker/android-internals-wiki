@@ -1,533 +1,240 @@
 ---
+title: "ProfilingManager"
+chapter: "14.7"
+section: "14.7"
+section_title: "ProfilingManager"
+status: ready-for-review
+applicable_versions: "Android 15+（System Triggered Profiling 16+，OOM / ANOMALY / running trace 扩展见 Android 17）"
+sources:
+  - type: official
+    path: "developer.android.com/guide/topics/profiling"
+  - type: official
+    path: "developer.android.com/reference/android/os/ProfilingManager"
+  - type: official
+    path: "packages/modules/Profiling/"
+  - type: official
+    path: "perfetto.dev"
 tags:
   - android
   - paper
   - profiling
-pipeline_stage: task9_pending
-status: ready-for-review
-task6_state: reviewed
+related_chapters:
+  - "13.1"
+  - "15.5"
+  - "9.1"
+  - "8.2"
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: needs-rework
 task9_state: pending
-task2b_state: pending
+task2b_state: fixed
+task2b_result: fixed
 reviewed_by: openclaw-task6
 reviewed_date: 2026-04-19
 ---
 
-# ProfilingManager
+# 14.7 ProfilingManager
 
-## 开头：这个工具解决什么问题
+ProfilingManager 面向量产设备上的系统级取证。Android 15 提供显式请求，Android 16 支持 ANR、冷启动、异常 CPU 使用等系统事件触发，Android 17 再扩到 OOM、ANOMALY 和 running trace snapshot。System Trace、Heap Profile、Stack Sampling 的结果走 Perfetto，Java Heap Dump 输出 `.hprof`。系统同时处理频率限制、结果文件落盘、脱敏和用户通知。
 
-在 Android 15 之前，想在真实用户设备上抓取 profiling 数据，开发者需要集成第三方 SDK（侵入性强）、让用户手动触发（数据不真实），或者依赖厂商定制方案（碎片化严重）。更关键的问题是——ANR、冷启动慢、OOM 这些最难复现的问题，发生时开发者往往不在场，错过了最有价值的诊断时机。
+## 采集类型对照表
 
-Android 15 引入的 ProfilingManager 从系统层面解决了这个问题。它让 App 可以**在量产设备上以最小侵入的方式收集性能数据**，系统自动处理脱敏、频率限制和存储管理。从 Android 16 开始，还支持系统事件触发的自动采集——ANR 发生时、冷启动时、OOM 时，系统会自动抓取对应的 profiling 数据，开发者只需要注册一个触发器就能收到结果。
+| 类型 | 适合问题 | 结果形态 | 参数重点 | 不适合 |
+|------|----------|----------|----------|--------|
+| `SystemTraceRequestBuilder` | 启动慢、掉帧、输入延迟、ANR 前后时序 | Perfetto trace | `durationMs`、`bufferSizeKb`、`bufferFillPolicy` | 只想看对象引用链 |
+| `JavaHeapDumpRequestBuilder` | OOM、泄漏、对象长期滞留 | `.hprof` | `tag` | 观察一段时间内的分配波动 |
+| `HeapProfileRequestBuilder` | 内存抖动、分配过密、分配热点不清 | Perfetto heap profile | `durationMs`、`samplingIntervalBytes`、`bufferSizeKb` | 直接确认 GC root 和引用链 |
+| `StackSamplingRequestBuilder` | 后台线程 CPU 异常、长任务热点、低开销持续采样 | Perfetto stack samples | `durationMs`、`samplingFrequencyHz` | 分析 VSync、Binder、SurfaceFlinger 的完整时间线 |
 
-换一种说法：ProfilingManager 把"开发环境容易分析，生产环境无法抓数据"这个长期矛盾，从系统层面解决了。
+选择顺序可以按问题形态来定。
 
-### 从 API 到实战：这一节覆盖什么
+- 启动、卡顿、ANR，优先 `System Trace`
+- 泄漏已经比较明确，直接 `Java Heap Dump`
+- 内存持续上涨，但还不知道是谁在分配，先做 `Heap Profile`
+- 想在几十秒到几分钟范围内找 CPU 热点，用 `Stack Sampling`
 
-我们接下来分三个层面讲 ProfilingManager。首先是四种 profiling 类型的 API 调用方式——System Trace、Java Heap Dump、Heap Profile、Stack Sampling，每种都有对应的 RequestBuilder，用法大同小异但参数各有侧重。然后是 Android 16 引入的系统事件触发机制，这是 ProfilingManager 最有价值的部分：注册触发器后，ANR、冷启动、OOM 等事件发生时系统自动采集，开发者不需要提前埋点。最后是 Android 17 新增的能力扩展。
+## 显式请求的公共骨架
 
-所有采集结果都以 Perfetto 格式输出，直接在 Perfetto UI 中分析，不需要额外的格式转换工具。
-
-## 基本使用：从零到跑通
-
-### 前置准备
-
-ProfilingManager 的 API 有两个层面：平台原生 API（`android.os.ProfilingManager`）和 Jetpack 封装（`androidx.tracing.perfetto`）。Google 推荐使用 Jetpack 封装以获得更好的兼容性和更简洁的 API。下面的示例以 Jetpack API 为主。
-
-添加依赖：
-
-```kotlin
-dependencies {
-    implementation("androidx.tracing:tracing:1.3.0")
-    implementation("androidx.core:core:1.18.0")
-}
-```
-
-### 第一步：发起一次 System Trace
-
-System Trace 是最常用的 profiling 类型，它记录系统各子系统（调度、渲染、输入、电源等）的时间线，适用于延迟分析和通用性能调试。
+四种 builder 的调用骨架一致，只是请求对象不同。下面代码只保留提交路径，省略上传、重试和清理。
 
 ```java
-import android.content.Context;
-import android.os.CancellationSignal;
-import android.util.Log;
+Executor executor = Executors.newSingleThreadExecutor();
+CancellationSignal stopSignal = new CancellationSignal();
 
-import androidx.tracing.perfetto.Tracing;
-import androidx.tracing.perfetto.ProfilingResult;
-import androidx.tracing.perfetto.SystemTraceRequestBuilder;
-import androidx.tracing.perfetto.core.concurrent.BufferFillPolicy;
+SystemTraceRequestBuilder builder = new SystemTraceRequestBuilder();
+builder.setTag("scroll-jank");
+builder.setDurationMs(5_000);
+builder.setBufferSizeKb(10_240);
+builder.setCancellationSignal(stopSignal);
 
-import java.util.concurrent.Executor;
-import java.util.concurrent.Executors;
-import java.util.function.Consumer;
-
-public class SystemTraceExample {
-
-    private static final String TAG = "Profiling";
-
-    public void startSystemTrace(Context context) {
-        // 1. 用非 UI 线程的 Executor 接收结果，避免在回调中做 I/O 导致 ANR
-        Executor executor = Executors.newSingleThreadExecutor();
-
-        // 2. 定义结果回调
-        Consumer<ProfilingResult> resultCallback = profilingResult -> {
-            if (profilingResult.getErrorCode() == ProfilingResult.ERROR_NONE) {
-                Log.d(TAG, "Trace saved to: " + profilingResult.getResultFilePath());
-                // 这里可以上传到后端、用 adb pull 拉出、或在本地分析
-            } else {
-                Log.e(TAG, "Profiling failed: " + profilingResult.getErrorMessage()
-                        + " (code=" + profilingResult.getErrorCode() + ")");
-            }
-        };
-
-        // 3. 构建请求
-        CancellationSignal stopSignal = new CancellationSignal();
-        SystemTraceRequestBuilder requestBuilder = new SystemTraceRequestBuilder();
-        requestBuilder.setTag("MyAppOperation");           // 标记这次采集，便于后续识别
-        requestBuilder.setDurationMs(10_000);               // 采集 10 秒
-        requestBuilder.setBufferFillPolicy(
-            BufferFillPolicy.RING_BUFFER);                  // 环形缓冲，满时覆盖旧数据
-        requestBuilder.setBufferSizeKb(20_480);             // 20MB 缓冲区
-        requestBuilder.setCancellationSignal(stopSignal);   // 可随时取消
-
-        // 4. 发起采集
-        Tracing.requestProfiling(
-            context,                    // Application Context
-            requestBuilder.build(),     // 构建好的请求
-            executor,                   // 结果回调线程
-            resultCallback              // 结果处理器
-        );
-
-        // 如果需要提前结束，调用：
-        // stopSignal.cancel();
+Tracing.requestProfiling(appContext, builder.build(), executor, result -> {
+    if (result.getErrorCode() == ProfilingResult.ERROR_NONE) {
+        handleResult(result.getResultFilePath()); // 省略实现
     }
-}
+});
 ```
 
-几个关键点：
+这段骨架里有几条固定规则。
 
-**`Consumer<ProfilingResult>` 是回调模式，不是轮询模式。** 调用 `requestProfiling()` 后方法立即返回，profiling 在后台运行，完成后系统通过 Consumer 回调通知结果。不存在 `getStatus()` 之类的轮询接口——这是与原始草稿中描述的最大区别。
+- `Tracing.requestProfiling()` 只负责提交任务，真正的采集、落盘和脱敏都在后台完成，结果通过 `Consumer<ProfilingResult>` 回调返回
+- `executor` 用后台线程，回调里常见操作是上传、压缩和登记 case id
+- `tag` 最好直接映射业务场景、回归单号或埋点事件名，后续检索比文件名稳定
+- `CancellationSignal` 更适合手动短 trace，Heap Dump 通常让系统自然结束更稳妥
+- 显式请求走 Jetpack `Tracing.requestProfiling()`，系统触发的注册入口走平台 `ProfilingManager`
 
-**`CancellationSignal` 用来主动停止采集。** 如果不设置 `setDurationMs()`，系统会使用默认时长。设置了 `stopSignal` 后，可以在任意时刻调用 `stopSignal.cancel()` 提前结束采集。
+## 四种 RequestBuilder 的差异
 
-**必须使用非 UI 线程的 Executor。** 结果回调中可能涉及文件 I/O（读取 trace 文件、上传到服务器），在主线程执行会触发 ANR——正好是我们要分析的问题。
+### 1. System Trace
 
-### 第二步：请求 Heap Dump 和 Heap Profile
-
-当怀疑内存泄漏时，Heap Dump 是第一选择；当需要分析内存分配频率和大小时，用 Heap Profile。
+System Trace 用来回答时间线问题。卡顿发生在哪一帧，输入到提交之间卡在哪个线程，冷启动慢在 `Application.onCreate()` 还是首帧绘制，这类问题都要看 trace。
 
 ```java
-import androidx.tracing.perfetto.JavaHeapDumpRequestBuilder;
-import androidx.tracing.perfetto.HeapProfileRequestBuilder;
-
-// —— Heap Dump：捕获某一时刻的堆快照 ——
-public void requestHeapDump(Context context) {
-    Executor executor = Executors.newSingleThreadExecutor();
-
-    Consumer<ProfilingResult> callback = result -> {
-        if (result.getErrorCode() == ProfilingResult.ERROR_NONE) {
-            // result.getResultFilePath() 指向一个 .hprof 文件
-            // 可以用 Android Studio Profiler 或 jhat 打开分析
-            Log.d(TAG, "Heap dump saved: " + result.getResultFilePath());
-        }
-    };
-
-    JavaHeapDumpRequestBuilder builder = new JavaHeapDumpRequestBuilder();
-    builder.setTag("OOM-Investigation");
-
-    Tracing.requestProfiling(context, builder.build(), executor, callback);
-}
-
-// —— Heap Profile：持续记录分配行为 ——
-public void requestHeapProfile(Context context) {
-    Executor executor = Executors.newSingleThreadExecutor();
-
-    Consumer<ProfilingResult> callback = result -> {
-        if (result.getErrorCode() == ProfilingResult.ERROR_NONE) {
-            Log.d(TAG, "Heap profile saved: " + result.getResultFilePath());
-        }
-    };
-
-    HeapProfileRequestBuilder builder = new HeapProfileRequestBuilder();
-    builder.setTag("AllocationTracking");
-    builder.setDurationMs(30_000);               // 采集 30 秒
-    builder.setBufferSizeKb(8_192);              // 8MB 缓冲区
-    builder.setSamplingIntervalBytes(4096);       // 每 4KB 分配采样一次
-
-    Tracing.requestProfiling(context, builder.build(), executor, callback);
-}
+SystemTraceRequestBuilder builder = new SystemTraceRequestBuilder();
+builder.setTag("cold-start");
+builder.setDurationMs(8_000);
+builder.setBufferFillPolicy(BufferFillPolicy.RING_BUFFER);
+builder.setBufferSizeKb(20_480);
 ```
 
-**Heap Dump 和 Heap Profile 的区别**：Dump 是某一时刻的完整快照（适合找泄漏），Profile 是一段时间内的分配记录（适合分析分配频率和热点）。
+`durationMs` 决定窗口长度，`bufferSizeKb` 决定窗口里能留住多少事件。动作持续时间不稳定时，`RING_BUFFER` 更适合保住问题发生前后的近场样本。固定短窗口、又很看重窗口开头时，可以考虑 `FLUSH_FULL`。
 
-### 第三步：请求 Stack Sampling
+打开 Perfetto 后，优先看主线程、`RenderThread`、`Frame Timeline`、`sched`、Binder 和 `am` track。System Trace 的价值在于把系统和 App 放到同一条时间线上。
 
-Stack Sampling 以固定频率采集调用栈，适用于理解代码执行路径和找出耗时函数，性能开销比 System Trace 小。
+### 2. Java Heap Dump
+
+Java Heap Dump 用来回答谁还持有对象。结果适合放到 Android Studio Profiler 或 MAT 里看 dominator tree、GC root 和 reference chain。
 
 ```java
-import androidx.tracing.perfetto.StackSamplingRequestBuilder;
-
-public void requestStackSampling(Context context) {
-    Executor executor = Executors.newSingleThreadExecutor();
-
-    Consumer<ProfilingResult> callback = result -> {
-        if (result.getErrorCode() == ProfilingResult.ERROR_NONE) {
-            Log.d(TAG, "Stack samples saved: " + result.getResultFilePath());
-        }
-    };
-
-    StackSamplingRequestBuilder builder = new StackSamplingRequestBuilder();
-    builder.setTag("ColdPathAnalysis");
-    builder.setDurationMs(60_000);               // 采样 60 秒
-    builder.setSamplingFrequencyHz(100);         // 每秒 100 次采样
-
-    Tracing.requestProfiling(context, builder.build(), executor, callback);
-}
+JavaHeapDumpRequestBuilder builder = new JavaHeapDumpRequestBuilder();
+builder.setTag("oom-suspect");
 ```
+
+这类请求是单点快照，适合页面退出后对象还活着、缓存引用路径过长、OOM 需要回放对象关系的场景。它不负责解释一段时间里的分配节奏。
+
+### 3. Heap Profile
+
+Heap Profile 用来回答内存为什么一直涨。它更像持续观测，适合看分配热点、分配频率和一段时间内的对象 churn。
+
+```java
+HeapProfileRequestBuilder builder = new HeapProfileRequestBuilder();
+builder.setTag("allocation-churn");
+builder.setDurationMs(30_000);
+builder.setSamplingIntervalBytes(4096);
+builder.setBufferSizeKb(8_192);
+```
+
+`samplingIntervalBytes` 越小，样本越密，开销也越高。线上环境一般先从较粗的采样起步，确认热点模块后再缩小采样间隔。还没确定问题落在谁身上时，Heap Profile 往往比 Heap Dump 更容易收窄范围。
+
+### 4. Stack Sampling
+
+Stack Sampling 用来回答 CPU 时间落在哪段代码路径上。它不提供完整系统时间线，但能用更低的成本拉长观察窗口。
+
+```java
+StackSamplingRequestBuilder builder = new StackSamplingRequestBuilder();
+builder.setTag("bg-cpu");
+builder.setDurationMs(60_000);
+builder.setSamplingFrequencyHz(100);
+```
+
+这类采样适合后台 worker、定时任务、长生命周期线程的热点分析。问题如果和 VSync、输入分发、SurfaceFlinger 合成相关，还是要回到 System Trace。
+
+## Consumer 回调的设计意图
+
+Profiling 请求会跨进程交给系统服务执行，文件生成时间又受到采集时长、写盘和脱敏流程影响。异步回调把请求提交和结果处理拆开，调用线程不会被一个长耗时流程绑住，四种采集类型也能共用一套结果协议。真正需要稳定保存的字段只有三类，`errorCode`、`tag`、`resultFilePath`。
+
+结果通道有两条。
+
+- 显式请求的结果，通过 `requestProfiling(..., callback)` 返回
+- 系统触发的结果，通过 `registerForAllProfilingResults(...)` 返回
+
+这两条通道分开管理，显式请求的 callback 收不到 trigger 结果。
 
 ## System Triggered Profiling（Android 16+）
 
-前面讲的四种 RequestBuilder 都需要手动调用 `requestProfiling()`——这意味着开发者必须提前知道"什么时候该采集"。但 ANR、OOM、冷启动慢这些问题恰恰是不可预测的，发生时开发者往往不在场。Android 16 引入的 System Triggered Profiling 从根本上改变了这个局面：注册一个触发器，当对应系统事件发生时，系统自动采集并回调结果，整个过程不需要 App 代码参与。
+ANR、冷启动、异常杀进程这类问题，最有价值的样本往往出现在开发者不在线的时候。trigger 模式解决的就是这个时间点问题。Android 16 开始支持注册系统事件触发器，Android 17 再补 OOM、ANOMALY 和 running trace snapshot。
 
-### 注册 ANR 触发器
+| 触发器 | 版本 | 适合场景 | 常见结果 |
+|--------|------|----------|----------|
+| `TRIGGER_TYPE_ANR` | Android 16 | 线上 ANR 取证 | System Trace 快照 |
+| `TRIGGER_TYPE_COLD_START` | Android 16 | 冷启动回归 | Stack Sampling + System Trace |
+| `TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE` | Android 16 | 异常 CPU 使用导致被系统杀进程 | Stack Sampling |
+| `TRIGGER_TYPE_OOM` | Android 17 | OOM 根因定位 | Java Heap Dump |
+| `TRIGGER_TYPE_ANOMALY` | Android 17 | 系统判定的异常行为 | 由异常类型决定 |
+| `TRIGGER_TYPE_APP_REQUEST_RUNNING_TRACE` | Android 17 | 获取当前运行中的 trace 快照 | System Trace 快照 |
 
-```java
-import android.app.Application;
-import android.os.ProfilingManager;
-import android.os.ProfilingResult;
-import android.os.ProfilingTrigger;
-import android.util.Log;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.Executor;
-import java.util.concurrent.Executors;
-import java.util.function.Consumer;
-
-public class MyApplication extends Application {
-
-    private static final String TAG = "ANRProfiling";
-
-    @Override
-    public void onCreate() {
-        super.onCreate();
-        setupANRTrigger();
-    }
-
-    private void setupANRTrigger() {
-        ProfilingManager pm = getSystemService(ProfilingManager.class);
-        if (pm == null) {
-            Log.w(TAG, "ProfilingManager not available (requires Android 15+)");
-            return;
-        }
-
-        // 1. 注册全局结果监听器
-        //    这是接收系统触发 profiling 结果的唯一方式
-        Executor executor = Executors.newSingleThreadExecutor();
-        Consumer<ProfilingResult> resultCallback = result -> {
-            if (result.getErrorCode() == ProfilingResult.ERROR_NONE) {
-                Log.d(TAG, "ANR trace captured: " + result.getResultFilePath());
-                // 上传到后端分析平台
-            } else {
-                Log.e(TAG, "ANR trace failed: " + result.getErrorMessage());
-            }
-        };
-        pm.registerForAllProfilingResults(executor, resultCallback);
-
-        // 2. 定义 ANR 触发器
-        List<ProfilingTrigger> triggers = new ArrayList<>();
-        ProfilingTrigger anrTrigger = new ProfilingTrigger.Builder(
-                ProfilingTrigger.TRIGGER_TYPE_ANR)
-            .setRateLimitingPeriodHours(1)   // 每小时最多采集一次
-            .build();
-        triggers.add(anrTrigger);
-
-        // 3. 注册触发器
-        pm.addProfilingTriggers(triggers);
-        Log.d(TAG, "ANR profiling trigger registered");
-    }
-}
-```
-
-**注意**：`registerForAllProfilingResults()` 是接收系统触发结果的唯一途径。`requestProfiling()` 的 Consumer 只接收显式请求的结果，不接收系统触发的结果。这两个 API 的结果通道是独立的。
-
-### 可用的触发器类型
-
-| 触发器 | 引入版本 | 触发时机 | 系统采集的数据类型 |
-|--------|---------|---------|------------------|
-| `TRIGGER_TYPE_ANR` | Android 16 | ANR 被确认后、系统尝试杀进程之前 | System Trace 快照 |
-| `TRIGGER_TYPE_COLD_START` | Android 16 | 冷启动时（`ApplicationStartInfo.getStartType() == START_TYPE_COLD`） | Stack Sampling + System Trace |
-| `TRIGGER_TYPE_OOM` | Android 17 | App 抛出 `OutOfMemoryError` 时 | Java Heap Dump |
-| `TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE` | Android 16 | 因异常高 CPU 消耗被系统杀死时 | Stack Sampling |
-| `TRIGGER_TYPE_ANOMALY` | Android 17 | 系统检测到 App 行为异常（如兼容性问题）时 | 视异常类型而定 |
-| `TRIGGER_TYPE_APP_REQUEST_RUNNING_TRACE` | Android 17 | App 主动调用 `requestRunningSystemTrace()` 请求当前正在运行的 trace 快照 | System Trace 快照 |
-
-[待验证: Android 17 ANOMALY 触发器的子类型（如 ANOMALY_APP_COMPAT）的具体触发条件和返回数据类型]
-
-### 同时注册多个触发器
+每个 App 对每种 trigger type 只保留一个注册项，新注册会覆盖旧值。下面代码只保留注册路径。
 
 ```java
-private void setupMultipleTriggers() {
-    ProfilingManager pm = getSystemService(ProfilingManager.class);
-    if (pm == null) return;
-
-    Executor executor = Executors.newSingleThreadExecutor();
-    pm.registerForAllProfilingResults(executor, result -> {
-        // 通过 result 的触发器类型区分不同来源
-        Log.d(TAG, "Trigger result: tag=" + result.getTag()
-                + " file=" + result.getResultFilePath());
-    });
-
-    List<ProfilingTrigger> triggers = new ArrayList<>();
-    triggers.add(new ProfilingTrigger.Builder(ProfilingTrigger.TRIGGER_TYPE_ANR)
-            .setRateLimitingPeriodHours(1).build());
-    triggers.add(new ProfilingTrigger.Builder(ProfilingTrigger.TRIGGER_TYPE_COLD_START)
-            .setRateLimitingPeriodHours(6).build());
-
-    pm.addProfilingTriggers(triggers);
-}
+ProfilingManager pm = context.getSystemService(ProfilingManager.class);
+Executor executor = Executors.newSingleThreadExecutor();
+pm.registerForAllProfilingResults(executor, result -> {
+    if (result.getErrorCode() == ProfilingResult.ERROR_NONE) handleResult(result.getResultFilePath());
+});
+List<ProfilingTrigger> triggers = new ArrayList<>();
+triggers.add(new ProfilingTrigger.Builder(ProfilingTrigger.TRIGGER_TYPE_ANR)
+        .setRateLimitingPeriodHours(1).build());
+triggers.add(new ProfilingTrigger.Builder(ProfilingTrigger.TRIGGER_TYPE_COLD_START)
+        .setRateLimitingPeriodHours(24).build());
+pm.addProfilingTriggers(triggers);
 ```
 
-**规则**：每个 App 对每种触发器类型只能注册一个。注册同类型的新触发器会覆盖旧的。
+线上注册前，最好把三件事先定清楚。
 
-### Android 17 新增能力
+- 结果怎么和 case 关联，通常是 `tag`、版本号、设备指纹、回归单号一起上传
+- 限流怎么设，ANR/OOM 的预算可以紧一些，冷启动回归一般按天采一条更稳
+- 回调里做什么，建议只做轻量登记，把上传、压缩和解析放到后台 worker
 
-Android 17 在触发器之外还新增了 `requestRunningSystemTrace()` 方法，让 App 可以获取当前正在运行的系统 trace 的快照，适用于在线上环境中获取即时性能数据。
+## 三个常见使用场景
 
-[待验证: `requestRunningSystemTrace()` 的确切签名和调用方式需对照 AOSP android-17 分支确认]
+### 1. 冷启动回归
 
-## 实战示例
+冷启动问题优先注册 `TRIGGER_TYPE_COLD_START`，按设备和版本做低频采样。回到 Perfetto 时，重点看 `am proc_start`、`ActivityThread.handleBindApplication`、首帧绘制、`reportFullyDrawn()` 附近的时间线。这里的目标不是拿到一份完整日志，而是锁定慢在进程创建、应用初始化还是首屏渲染。
 
-### 案例 1：线上冷启动监控
+### 2. 滑动卡顿
 
-**场景**：App 的冷启动时间在部分设备上超标，需要收集真实用户的冷启动 trace 来分析瓶颈。
+滑动卡顿更适合手动发起一次 3 到 5 秒的 System Trace。窗口短、定位快，数据量也容易控住。Perfetto 里优先看 Input、主线程、`RenderThread`、`Frame Timeline`。如果问题落在 `RecyclerView` 绑定、图片解码或 Binder 回调，System Trace 会比 Stack Sampling 更直接。
 
-```java
-public class ColdStartMonitor {
+### 3. 线上内存涨高
 
-    public void setup(Context context) {
-        ProfilingManager pm = context.getSystemService(ProfilingManager.class);
-        if (pm == null) return;
+内存涨高但根因不清时，先做 Heap Profile 找分配热点，再按模块补 Java Heap Dump 看引用链。Android 17 设备可以把 `TRIGGER_TYPE_OOM` 作为兜底样本，至少保证崩溃点附近能留下 `.hprof`。这条路径比在 `OutOfMemoryError` 里临时拼接复杂逻辑稳得多。
 
-        Executor executor = Executors.newSingleThreadExecutor();
+## 与其他工具的分工
 
-        // 注册全局结果接收器
-        pm.registerForAllProfilingResults(executor, result -> {
-            if (result.getErrorCode() != ProfilingResult.ERROR_NONE) return;
+| 工具 | 更适合的场景 | 局限 |
+|------|--------------|------|
+| ProfilingManager | 量产设备、线上回归、系统事件触发 | 受版本和 rate limit 约束 |
+| Android Studio Profiler | 开发机上的交互式分析 | 很难覆盖真实用户现场 |
+| adb / Perfetto CLI | 实验室里的可重复压测和批量脚本化采集 | 需要操作入口，线上设备接入成本高 |
+| 第三方 APM SDK | 业务指标、崩溃路径、埋点体系 | 采样能力和隐私责任都要自行承担 |
 
-            // 将 trace 文件上传到后端
-            uploadTrace(result.getResultFilePath(),
-                        "cold-start-" + result.getTag());
-        });
+## 上线前检查清单
 
-        // 注册冷启动触发器，每天最多采集一次
-        List<ProfilingTrigger> triggers = new ArrayList<>();
-        triggers.add(new ProfilingTrigger.Builder(
-                ProfilingTrigger.TRIGGER_TYPE_COLD_START)
-            .setRateLimitingPeriodHours(24)
-            .build());
-
-        pm.addProfilingTriggers(triggers);
-    }
-
-    private void uploadTrace(String filePath, String name) {
-        // 上传逻辑，后续在 Perfetto UI 或内部平台分析
-        // 冷启动 trace 中重点看：
-        // - am proc_start -> Activity.onCreate -> onFullyDrawn 的完整时间线
-        // - Application.onCreate() 中的初始化耗时
-        // - ContentView measure/layout/draw 的首帧时间
-    }
-}
-```
-
-**在 Perfetto 中的表现**：
-
-[图：冷启动 System Triggered Profiling 在 Perfetto 中捕获的 trace，标注 Activity 启动、View 创建、首次绘制等关键时间节点]
-
-冷启动的 trace 在 Perfetto 中对应 `am` track（ActivityManager 相关操作）和主线程 track。重点关注从 `ActivityThread.handleBindApplication` 到 `Activity.onWindowFocusChanged` 的完整链路。
-
-### 案例 2：按需采集滑动卡顿的 System Trace
-
-**场景**：用户反馈列表滑动卡顿，需要在特定操作时手动触发一次短暂的 trace。
-
-```java
-public class JankTraceCollector {
-
-    private CancellationSignal currentSignal;
-
-    public void captureJankTrace(Context context) {
-        Executor executor = Executors.newSingleThreadExecutor();
-
-        Consumer<ProfilingResult> callback = result -> {
-            if (result.getErrorCode() == ProfilingResult.ERROR_NONE) {
-                Log.d(TAG, "Jank trace saved: " + result.getResultFilePath());
-                analyzeJankTrace(result.getResultFilePath());
-            }
-        };
-
-        currentSignal = new CancellationSignal();
-        SystemTraceRequestBuilder builder = new SystemTraceRequestBuilder();
-        builder.setTag("ScrollJank");
-        builder.setDurationMs(5_000);               // 只采 5 秒，够捕捉一轮滑动
-        builder.setBufferSizeKb(10_240);            // 10MB
-        builder.setCancellationSignal(currentSignal);
-
-        Tracing.requestProfiling(context, builder.build(), executor, callback);
-    }
-
-    // 如果用户停止滑动且已拿到足够数据，可以提前结束
-    public void stopCapture() {
-        if (currentSignal != null) {
-            currentSignal.cancel();
-            currentSignal = null;
-        }
-    }
-
-    private void analyzeJankTrace(String filePath) {
-        // 在 Perfetto UI 中打开后重点看：
-        // - Input track：触摸事件到 VSync-app 的时间
-        // - RenderThread track：DrawOp 耗时
-        // - Frame Timeline track：每帧的实际 vs 预期呈现时间
-    }
-}
-```
-
-### 案例 3：OOM 时的 Heap Dump 自动采集
-
-**场景**：线上出现 OOM 崩溃，堆栈信息不足以定位根因，需要 OOM 发生时的完整堆快照。
-
-```java
-public class OOMMonitor {
-
-    public void setup(Context context) {
-        ProfilingManager pm = context.getSystemService(ProfilingManager.class);
-        if (pm == null) return;
-
-        Executor executor = Executors.newSingleThreadExecutor();
-
-        pm.registerForAllProfilingResults(executor, result -> {
-            if (result.getErrorCode() == ProfilingResult.ERROR_NONE) {
-                // result.getResultFilePath() 是 .hprof 文件
-                // 上传后用 Android Studio Profiler 或 MAT 分析
-                uploadToServer(result.getResultFilePath());
-            }
-        });
-
-        List<ProfilingTrigger> triggers = new ArrayList<>();
-        // Android 17+ 支持 OOM 触发器
-        triggers.add(new ProfilingTrigger.Builder(
-                ProfilingTrigger.TRIGGER_TYPE_OOM)
-            .setRateLimitingPeriodHours(1)
-            .build());
-
-        pm.addProfilingTriggers(triggers);
-    }
-}
-```
-
-**注意**：`TRIGGER_TYPE_OOM` 从 Android 17 才开始支持。对于 Android 16 及以下设备，可以在 `try-catch OutOfMemoryError` 后手动调用 `JavaHeapDumpRequestBuilder` 来实现类似效果。
-
-## 与其他工具的对比
-
-用 ProfilingManager 之前，性能数据采集主要依赖三种方式：Android Studio Profiler（开发机专用）、`atrace`/Systrace（命令行，需要物理连接或 root）、第三方 APM SDK（侵入性强，增加包体积）。
-
-| 维度 | ProfilingManager | Android Studio Profiler | Systrace/`atrace` | 第三方 SDK |
-|------|-----------------|------------------------|---------------------|------------|
-| **使用环境** | 量产设备 | 开发机/模拟器 | 开发机/root 设备 | 量产设备 |
-| **触发方式** | API 调用 + 系统事件 | 手动操作 | 命令行 | API 调用 |
-| **数据真实度** | 高（真实用户场景） | 中（调试器可能影响行为） | 高（但需要物理连接） | 高 |
-| **包体积影响** | 无（系统 API） | 无 | 无 | 增加 SDK 大小 |
-| **隐私处理** | 自动脱敏其他 App | 无需脱敏 | 需手动处理 | 各 SDK 不同 |
-| **性能开销** | 低（有 rate limiter） | 中 | 低 | 取决于实现 |
-| **数据格式** | Perfetto | 自有格式 | Perfetto/自定义 | 各 SDK 不同 |
-| **最低版本** | Android 15（触发器 16+） | 全版本 | Android 4.3+ | 各 SDK 不同 |
-
-[待补充: ProfilingManager 在量产设备上的实际性能开销实测数据（CPU 占用、内存增量、对帧率的影响）]
-
-## 常见问题与使用技巧
-
-### Rate Limiter
-
-系统内置 rate limiter 限制 App 的 profiling 频率。连续快速调用 `requestProfiling()` 可能被拒绝，`ProfilingResult` 的 `errorCode` 会指示 rate limit 错误。触发器也有独立的 rate limit，通过 `setRateLimitingPeriodHours()` 控制。
-
-本地调试时可以临时关闭 rate limiter：
-
-```bash
-# 关闭 rate limiter（仅用于调试，不影响量产设备）
-adb shell setprop persist.debug.profiler.rate_limiter 0
-# [待验证: 此 setprop 属性名需对照 AOSP ProfilingService 源码确认]
-```
-
-### 结果文件处理
-
-采集完成后，`ProfilingResult.getResultFilePath()` 返回文件在设备上的路径。这个文件位于 App 的内部存储目录中。
-
-```bash
-# 通过 adb 拉取
-adb pull /data/user/0/com.your.app/files/profiling/trace_file.pftrace ./
-```
-
-也可以在 Consumer 回调中直接读取文件内容并上传到后端。
-
-### 每个 Builder 的关键参数
-
-| Builder | 关键参数 | 说明 |
-|---------|---------|------|
-| `SystemTraceRequestBuilder` | `setDurationMs()` | 采集时长，默认由系统决定 |
-| | `setBufferFillPolicy()` | `RING_BUFFER`（环形覆盖）或 `FLUSH_FULL`（满了就停） |
-| | `setBufferSizeKb()` | 缓冲区大小 |
-| | `setTag()` | 标记，用于识别结果 |
-| `JavaHeapDumpRequestBuilder` | `setTag()` | 标记 |
-| `HeapProfileRequestBuilder` | `setDurationMs()` | 采集时长 |
-| | `setSamplingIntervalBytes()` | 分配采样间隔（字节数） |
-| | `setBufferSizeKb()` | 缓冲区大小 |
-| `StackSamplingRequestBuilder` | `setDurationMs()` | 采样时长 |
-| | `setSamplingFrequencyHz()` | 采样频率 |
-| | `setBufferSizeKb()` | 缓冲区大小 |
-
-### Jetpack vs 平台 API
-
-Jetpack 封装（`androidx.tracing.perfetto`）在平台 API（`android.os.ProfilingManager`）之上提供了更简洁的调用方式——`Tracing.requestProfiling(context, request, executor, callback)`，并自动处理版本兼容。对于 Android 15 以下的设备，Jetpack 会优雅降级（通常返回错误码）。推荐所有场景都使用 Jetpack 封装。
-
-### 隐私合规
-
-- 采集的数据自动脱敏，只包含调用方 App 的信息
-- 大部分情况下，采集开始时系统会显示用户可见的通知
-- 不需要额外声明权限（TRACE 权限由系统自动管理）
-- 通过 `addProfilingTriggers()` 注册的触发器，每次触发采集也会通知用户
+- release 配置下不要关闭 rate limiter
+- `errorCode`、`tag`、结果文件路径都要落日志或后端元数据
+- 回调线程不要做同步压缩、解析和大文件上传
+- 结果文件要有清理策略，避免长期堆在应用目录里
+- 用户通知、隐私条款和内部合规说明要与实际采集行为一致
 
 ## 参考资料
 
-### 官方文档
+1. **Android Developers, Profiling on Android**  
+   https://developer.android.com/guide/topics/profiling
 
-1. **Android Developers — ProfilingManager API Guide**
-   - https://developer.android.com/guide/topics/profiling
-   - API 使用指南、RequestBuilder 详解、代码示例
+2. **Android SDK Reference, `android.os.ProfilingManager` / `ProfilingTrigger` / `ProfilingResult`**  
+   https://developer.android.com/reference/android/os/ProfilingManager
 
-2. **Android Developers Blog — System Triggered Profiling**
-   - https://android-developers.googleblog.com/
-   - 系统触发 profiling 的设计理念和触发器类型说明
+3. **AOSP Profiling Module**  
+   `packages/modules/Profiling/`
 
-3. **AOSP — Profiling 模块源码**
-   - 路径：`packages/modules/Profiling/`
-   - 关键文件：
-     - `framework/java/android/os/ProfilingManager.java`
-     - `framework/java/android/os/ProfilingResult.java`
-     - `framework/java/android/os/ProfilingTrigger.java`
-     - `framework/java/android/os/SystemTraceRequestBuilder.java`（及其他 RequestBuilder）
-     - `service/java/android/profiling/ProfilingService.java`
+4. **Perfetto Documentation**  
+   https://perfetto.dev/
 
-4. **Perfetto 官方文档**
-   - https://perfetto.dev/
-   - Trace 文件格式说明、分析工具使用
+## 相关章节
 
-### 相关章节
-
-- **13.1 Perfetto 简介与演进** — Trace 文件格式和基础分析概念
-- **15.5 线上性能监控** — 生产环境的性能监控方法论
-- **9.1 ANR 设计思想** — ANR 触发机制与 ProfilingManager ANR 触发器的配合使用
-- **8.2 应用启动过程** — 冷启动 trace 中的关键时间节点分析
+- **13.1 Perfetto 简介与演进**，trace 文件格式和基础分析概念
+- **15.5 线上性能监控**，线上采样预算、上传流程和告警治理
+- **9.1 ANR 设计思想**，ANR 样本和系统触发 profiling 的配合方式
+- **8.2 应用启动过程**，冷启动 trace 的关键节点
 
 <!-- outline-start -->
 ## 本节要点大纲
@@ -535,25 +242,22 @@ Jetpack 封装（`androidx.tracing.perfetto`）在平台 API（`android.os.Profi
 ### 锚点（必须覆盖）
 
 - 🔹 **ProfilingManager API（Android 15+）简介**：[已验证: developer.android.com/guide/topics/profiling]
-  系统级 profiling API，支持 4 种采集类型（System Trace / Java Heap Dump / Heap Profile / Stack Sampling），通过 RequestBuilder 模式构建请求，Consumer<ProfilingResult> 回调接收结果。Jetpack 封装推荐使用。
+  系统级 profiling API，支持 4 种采集类型，显式请求和系统事件触发分工明确。
 
 - 🔹 **支持的 profiling 类型**：[已验证: developer.android.com]
-  - SystemTraceRequestBuilder：系统级 trace，延迟分析和性能调试
-  - JavaHeapDumpRequestBuilder：堆内存快照，检测内存泄漏
-  - HeapProfileRequestBuilder：堆分配记录，内存优化
-  - StackSamplingRequestBuilder：调用栈采样，代码执行路径分析
+  `SystemTraceRequestBuilder`、`JavaHeapDumpRequestBuilder`、`HeapProfileRequestBuilder`、`StackSamplingRequestBuilder` 的适用场景、结果形态和参数重点。
 
 - 🔹 **使用方法：requestProfiling() 调用流程**：[已验证: developer.android.com]
-  获取 Context -> 创建 Executor + Consumer<ProfilingResult> -> 用 RequestBuilder 构建请求 -> 调用 Tracing.requestProfiling(context, request, executor, callback) -> 回调中处理结果。CancellationSignal 可主动取消。
+  获取 `Context`，创建 `Executor` 和结果回调，构建请求，调用 `Tracing.requestProfiling()`，在回调里处理结果。
 
-- 🔹 **System Triggered Profiling（Android 16+）**：[已验证: developer.android.com, android-developers.googleblog.com]
-  通过 ProfilingTrigger.Builder 注册系统事件触发器，registerForAllProfilingResults() 接收结果。支持 ANR / COLD_START / KILL_EXCESSIVE_CPU_USAGE（Android 16）及 OOM / ANOMALY / APP_REQUEST_RUNNING_TRACE（Android 17）。
+- 🔹 **System Triggered Profiling（Android 16+）**：[已验证: developer.android.com]
+  通过 `ProfilingTrigger.Builder` 注册系统事件触发器，`registerForAllProfilingResults()` 接收结果。Android 16 覆盖 ANR / COLD_START / KILL_EXCESSIVE_CPU_USAGE，Android 17 扩展到 OOM / ANOMALY / APP_REQUEST_RUNNING_TRACE。
 
 - 🔹 **隐私与安全约束**：[已验证: developer.android.com]
-  自动数据脱敏、rate limiter 限制频率、用户可见通知、无需额外权限声明。
+  系统负责限流、脱敏、结果文件管理和用户通知，App 侧需要补齐上传、清理和合规流程。
 
 ### 扩展（可选深入）
 
-- 🔸 **线上环境使用实践**：设置合理 rate limit、优先关键路径触发器、结合崩溃数据关联分析
-- 🔸 **Jetpack vs 平台 API 选择**：Jetpack 提供版本兼容和更简洁的 API，推荐所有场景使用
+- 🔸 **线上环境使用实践**：把 tag、版本号、设备指纹和 case id 一起上传，便于回放和聚合分析
+- 🔸 **Jetpack vs 平台 API 选择**：显式请求优先 `Tracing.requestProfiling()`，系统触发注册走 `ProfilingManager`
 <!-- outline-end -->
