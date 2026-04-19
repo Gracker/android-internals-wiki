@@ -3,13 +3,9 @@ title: "特殊场景的 ANR"
 chapter: "9.4"
 section: "9.4"
 status: ready-for-review
-rework_date: "2026-04-08"
-rework_by: "task2b-rework"
 polish_count: 1
 polish_date: "2026-04-08"
 polish_by: "task2b-polish"
-reviewed_date: "2026-04-09"
-reviewed_by: "openclaw-task6"
 drafted_date: "2026-04-02"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 8.0 (API 26) - Android 16 (API 36)"
@@ -30,14 +26,15 @@ sources:
     note: "高爷原创 ANR 分析系列"
 tags: ['anr', 'sharedpreferences', 'contentprovider', 'binder', 'broadcast', 'io-blocking', 'system-load']
 related_chapters: ['9.1', '9.2', '9.3', '1.4', '4.3', '4.4', '6.3']
-pipeline_stage: task2b_pending
-task6_state: revisiting
-task9_state: reviewed
+pipeline_stage: task9_pending
+task6_state: reviewed
+task6_result: pass-light-edit
+task9_state: pending
 task9_result: needs-rework
 task2b_state: fixed
 task2b_result: fixed
 reviewed_by: openclaw-task6
-reviewed_date: "2026-04-16"
+reviewed_date: "2026-04-19"
 rework_date: "2026-04-16"
 rework_by: "task2b-rework"
 ---
@@ -253,7 +250,7 @@ void Heap::CollectGarbageInternal(gc::collector::GcType gc_type,
 
 Android 12 引入了一项严格约束：如果 App 调用了 `startForegroundService()`，必须在 **5 秒内** 调用 `startForeground()`（Android 11 及之前为 10 秒）。超时后系统会抛出 `ForegroundServiceStartNotAllowedException` 并触发 ANR。
 
-这个 ANR 的特殊性在于：它不是 Service 本身的 20 秒超时，而是一个独立的、更短的超时窗口。很多开发者把两者混为一谈，导致优化方向错误——以为改 `onStartCommand()` 的执行时间就行，问题出在 `startForeground()` 调用不及时。
+这个 ANR 的特殊性在于：它有别于 Service 本身的 20 秒超时——是一个独立的、更短的超时窗口。很多开发者把两者混为一谈，导致优化方向错误——以为改 `onStartCommand()` 的执行时间就行，问题出在 `startForeground()` 调用不及时。
 
 ### 典型触发场景
 
