@@ -2364,3 +2364,16 @@
 - **问题**：未提及 Lottie 资源在 assets/ 中的体积优化
 - **建议**：增加 Lottie 资源 zip 压缩或动态下发建议
 - **来源**：Gemini 外部 review
+
+
+## [Task9 Deep Review] 2.15 DMA-BUF、Gralloc 与跨进程图形内存共享 — 2026-04-19
+- **类型**：交叉引用
+- **位置**：L257-L260
+- **问题**：`BufferQueue` 状态被写成互斥的 `DEQUEUED / QUEUED / FREE / ACQUIRED`，和 §2.13 当前 AOSP `BufferSlot::BufferState` 的 counter-based 表述不一致，shared mode 下状态可叠加。
+- **建议**：这里改成“普通路径通常呈现这些状态，但源码判断以 `isFree()/isDequeued()/isQueued()/isAcquired()/isShared()` 为准”，并回链 §2.13 的源码段。
+
+## [Task9 Deep Review] 2.15 DMA-BUF、Gralloc 与跨进程图形内存共享 — 2026-04-19
+- **类型**：数据缺失
+- **位置**：L314-L326
+- **问题**：`[待补充：Trace 截图]` 仍未落地，且“Gralloc 分配延迟通常在 1-5ms 之间”缺少设备、SoC、分辨率、像素格式和 trace/benchmark 证据。
+- **建议**：补一条真实 Perfetto / ftrace / benchmark 观测并标注测试条件；如果暂时没有实测，删掉“1-5ms”只保留定性判断。

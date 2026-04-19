@@ -260,36 +260,49 @@
   {
     "section": "2.15",
     "section_title": "DMA-BUF、Gralloc 与跨进程图形内存共享",
-    "priority": 90,
-    "reason": "[review回炉] external-review P1 技术存疑 + 知识盲区待补充",
+    "priority": 95,
+    "reason": "[Deep Tech Review] 单 fd 表述与源码不符，版本适用范围超出已验证边界，heap/带宽建议缺少 SoC/BSP 证据",
     "material_paths": [
-      "logs/external-review/2026-04-19-46-2.15-external-review.md",
+      "logs/deep-review/2026-04-19-12-deep-review.md",
       "intake/suggestions.md"
     ],
     "review_issues": [
       {
-        "type": "需确认",
-        "location": "Gralloc HAL 版本描述（全文多处）",
-        "detail": "external-review P1 断言 Android 16 强制开启 Gralloc 5.0 AIDL，HIDL 4.0 已进入实质性弃用。当前稿件基于 android-16.0.0_r1 源码观察到的结论是 AIDL 与 HIDL 并存。需 Task 9 核实",
-        "suggestion": "Task 9 对照 AOSP android-16.0.0_r1 最终 tag 和官方 CDD 文档确认 Gralloc AIDL/HIDL 状态"
+        "type": "源码错误",
+        "location": "L71-L73, L89, L194-L200, L385-L389",
+        "detail": "把 GraphicBuffer / DMA-BUF 的跨进程传递写成“只传递一个文件描述符”。AOSP android-16.0.0_r1 的 GraphicBuffer::flatten()/unflatten() 按 mTransportNumFds/mTransportNumInts 传输 native_handle；buffer_handle_t 不是固定单 fd contract。",
+        "suggestion": "改成“跨进程传的是 native_handle/buffer_handle_t 的 transport payload，常见 RGBA surface 往往只有一个主 dma-buf fd，但源码接口允许多 fd + ints”。"
       },
       {
-        "type": "需补充素材",
-        "location": "全文缺失",
-        "detail": "external-review P1 指出 16KB 页面模式下小尺寸 Buffer 产生的 Slack Space 导致显存利用率骤降，PSS 可能翻倍",
-        "suggestion": "Task 2B 补充 16KB 对齐对 Gralloc 分配的影响，包括 reservedSize 参数"
+        "type": "版本差异",
+        "location": "frontmatter applicable_versions, L176-L186, L340-L366",
+        "detail": "frontmatter 声称覆盖 Android 10-17，但验证锚点止于 android-16.0.0_r1，正文仍保留“Android 17 正式 tag 下 mapper 接口是否仍保留 HIDL 兼容层”的 [待验证]。同时正文主要以 Android 12+/AIDL 术语展开，对 Android 10/11 只给过渡性提及。",
+        "suggestion": "把适用范围收窄到已核实版本，或补出 Android 10/11 的 HIDL/common@1.x + ION 视角，并在 Android 17 正式 tag 验证完成前不要写进 applicable_versions。"
       },
       {
-        "type": "需补充素材",
-        "location": "DMA-BUF fd 泄漏节",
-        "detail": "[待补充：Trace 截图展示 fd 泄漏时 GPU 内存增长的表现] 仍为占位符",
-        "suggestion": "高爷补充实际 Trace 截图或描述"
+        "type": "原理断裂",
+        "location": "L330-L336",
+        "detail": "把“Camera 和 App 使用不同 DMA-BUF Heap”直接推导成“避免在同一个内存控制器上争抢带宽”。DMA-BUF heap 只是 allocator 入口，不是通用的内存控制器隔离承诺，是否映射到不同 carveout / controller 取决于 vendor gralloc、BSP 和 SoC 内存拓扑。",
+        "suggestion": "补充 vendor gralloc / camera HAL / BSP 证据或删去该优化结论，改成“先确认 heap 与物理内存布局的设备实现，再看是否存在可分离的带宽路径”。"
+      },
+      {
+        "type": "交叉引用错误",
+        "location": "L257-L260",
+        "detail": "“BufferQueue 管理 slot 的 DEQUEUED / QUEUED / FREE / ACQUIRED 状态”与 §2.13 当前 AOSP `BufferSlot::BufferState` 的 counter-based 描述不一致，shared mode 下状态可以叠加。",
+        "suggestion": "回链 §2.13 的源码段，把这里改成“普通路径通常表现为这些状态，但源码判断应以 isFree()/isDequeued()/isQueued()/isAcquired()/isShared() 为准”。"
+      },
+      {
+        "type": "数据缺失",
+        "location": "L314-L326",
+        "detail": "fd 泄漏段仍保留 `[待补充：Trace 截图]` 占位，且“Gralloc 分配延迟通常在 1-5ms 之间”没有设备、分辨率、格式、SoC 或 Perfetto/ftrace 证据。",
+        "suggestion": "补一条真实 trace / benchmark 观测（设备、格式、buffer 尺寸、采样条件齐全），否则把“1-5ms”改为定性结论。"
       }
     ],
-    "added_by": "task6-review",
-    "added_at": "2026-04-19T11:33:34",
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-19T12:32:00+08:00",
     "status": "pending",
-    "original_review_log": "logs/review/2026-04-19-11-review.md"
+    "original_review_log": "logs/review/2026-04-19-11-review.md",
+    "review_log": "logs/deep-review/2026-04-19-12-deep-review.md"
   },
   {
     "section": "8.1",
