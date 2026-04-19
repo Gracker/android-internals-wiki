@@ -2178,3 +2178,851 @@ unknown
 
 ### 外部 review 来源
 - 外部 AI review (2026-04-19-10-README-external-review.md)
+
+## [2026-04-19] 8.1 响应速度原理 — 知识盲区
+
+### 盲区描述
+ADPF Hint Session (GPU)
+
+### 重要程度
+高
+
+### 建议研究方向
+研究 Android 15 如何通过 `PerformanceHintManager` 报告 GPU 工作时长以优化响应速度。
+
+### 外部 review 来源
+Gemini 外部 review
+
+
+## [2026-04-19] 8.1 响应速度原理 — 知识盲区
+
+### 盲区描述
+ProfilingManager
+
+### 重要程度
+中
+
+### 建议研究方向
+Android 15 引入的自动触发 Perfetto 机制，用于捕捉生产环境的响应速度异常。
+
+### 外部 review 来源
+Gemini 外部 review
+
+
+## [2026-04-19] 8.1 响应速度原理 — 知识盲区
+
+### 盲区描述
+16KB Page Size
+
+### 重要程度
+低
+
+### 建议研究方向
+Android 15/16 内存页大小变化对底层 I/O 响应的影响（虽然主要影响启动，但涉及整机响应）。
+
+### 外部 review 来源
+Gemini 外部 review
+
+
+## [2026-04-19] 7.3 卡顿分析方法论 — 知识盲区
+
+### 盲区描述
+章节
+
+### 重要程度
+高
+
+### 建议研究方向
+7.3
+
+### 外部 review 来源
+Gemini 外部 review
+
+
+## [2026-04-19] 7.3 卡顿分析方法论 — 知识盲区
+
+### 盲区描述
+盲区描述
+
+### 重要程度
+高
+
+### 建议研究方向
+Android 16 引入的 `AppJankStats` 如何取代部分 `FrameMetrics` 职责。
+
+### 外部 review 来源
+Gemini 外部 review
+
+
+## [2026-04-19] 7.3 卡顿分析方法论 — 知识盲区
+
+### 盲区描述
+建议补充方向
+
+### 重要程度
+高
+
+### 建议研究方向
+在 FrameMetrics 章节后增加“未来演进：AppJankStats”小节。
+
+### 外部 review 来源
+Gemini 外部 review
+
+
+## [2026-04-19] 7.5 优化策略汇总 — 知识盲区
+
+### 盲区描述
+章节
+
+### 重要程度
+高
+
+### 建议研究方向
+`05-optimization.md`
+
+### 外部 review 来源
+Gemini 外部 review
+
+
+## [2026-04-19] 7.5 优化策略汇总 — 知识盲区
+
+### 盲区描述
+盲区描述
+
+### 重要程度
+高
+
+### 建议研究方向
+Compose 1.10 的 Pausable Composition。
+
+### 外部 review 来源
+Gemini 外部 review
+
+
+## [2026-04-19] 7.5 优化策略汇总 — 知识盲区
+
+### 盲区描述
+重要程度
+
+### 重要程度
+高
+
+### 建议研究方向
+高。
+
+### 外部 review 来源
+Gemini 外部 review
+
+
+## [2026-04-19] 7.5 优化策略汇总 — 知识盲区
+
+### 盲区描述
+建议研究方向
+
+### 重要程度
+高
+
+### 建议研究方向
+调研 Compose 1.10 如何实现在渲染时间不足时暂停并在下一帧恢复。
+
+### 外部 review 来源
+Gemini 外部 review
+
+
+## [2026-04-19] 7.6 平滑度典型案例 — 知识盲区
+
+### 盲区描述
+章节
+
+### 重要程度
+高
+
+### 建议研究方向
+7.6 案例二
+  **盲区**：`SharedPreferences` 启动阻塞。
+  **建议研究**：在案例二补强 SP 阻塞的分析，提供 `awaitLoadedLocked` 的 Trace 特征。
+
+### 外部 review 来源
+Gemini 外部 review
+
+
+## [2026-04-19] 7.7 Jetpack Compose 性能优化 — 知识盲区
+
+### 盲区描述
+盲区描述
+
+### 重要程度
+高
+
+### 建议研究方向
+Compose 1.9 引入的 `CacheWindow` API 对 Lazy 预取的影响。
+
+### 外部 review 来源
+Gemini 外部 review
+
+
+## [2026-04-19] 7.7 Jetpack Compose 性能优化 — 知识盲区
+
+### 盲区描述
+重要程度
+
+### 重要程度
+高
+
+### 建议研究方向
+高
+
+### 外部 review 来源
+Gemini 外部 review
+
+
+## [2026-04-19] 7.7 Jetpack Compose 性能优化 — 知识盲区
+
+### 盲区描述
+建议研究方向
+
+### 重要程度
+高
+
+### 建议研究方向
+结合 Pausable Composition，研究其如何量化预取窗口以平衡内存与流畅度。
+
+### 外部 review 来源
+Gemini 外部 review
+
+
+## [2026-04-19] 7.8 RecyclerView 滑动优化 — 知识盲区
+
+### 盲区描述
+源码锚点
+
+### 重要程度
+高
+
+### 建议研究方向
+`androidx.recyclerview.widget.GapWorker`
+
+### 外部 review 来源
+Gemini 外部 review
+
+
+## [2026-04-19] 7.8 RecyclerView 滑动优化 — 知识盲区
+
+### 盲区描述
+关键路径
+
+### 重要程度
+高
+
+### 建议研究方向
+`GapWorker.java` -> `prefetchPositionWithDeadline()`
+
+### 外部 review 来源
+Gemini 外部 review
+
+
+## [2026-04-19] 7.8 RecyclerView 滑动优化 — 知识盲区
+
+### 盲区描述
+技术结论
+
+### 重要程度
+高
+
+### 建议研究方向
+预取不仅依赖时间戳，更依赖 `willCreateInTime` 和 `willBindInTime` 对历史成本的实时评估。
+
+### 外部 review 来源
+Gemini 外部 review
+
+
+## [2026-04-19] 7.8 RecyclerView 滑动优化 — 知识盲区
+
+### 盲区描述
+资产价值
+
+### 重要程度
+高
+
+### 建议研究方向
+解释了为什么有时候 Trace 里有预取动作但没有后续 Bind，这是系统在“舍车保帅”防止卡顿。
+
+### 外部 review 来源
+Gemini 外部 review
+
+
+## [2026-04-19] 7.0 第 7 章 平滑度 README — 知识盲区
+
+### 盲区描述
+章节
+
+### 重要程度
+高
+
+### 建议研究方向
+`01-jank-definition.md`
+
+### 外部 review 来源
+Gemini 外部 review
+
+
+## [2026-04-19] 7.0 第 7 章 平滑度 README — 知识盲区
+
+### 盲区描述
+盲区描述
+
+### 重要程度
+高
+
+### 建议研究方向
+Android 16 ARR 深度适配机制
+
+### 外部 review 来源
+Gemini 外部 review
+
+
+## [2026-04-19] 7.0 第 7 章 平滑度 README — 知识盲区
+
+### 盲区描述
+重要程度
+
+### 重要程度
+高
+
+### 建议研究方向
+高
+
+### 外部 review 来源
+Gemini 外部 review
+
+
+## [2026-04-19] 7.0 第 7 章 平滑度 README — 知识盲区
+
+### 盲区描述
+建议研究方向
+
+### 重要程度
+高
+
+### 建议研究方向
+RecyclerView 如何利用新 API 动态提频。
+
+### 外部 review 来源
+Gemini 外部 review
+
+
+## [2026-04-19] 9.1 ANR 设计思想 — 知识盲区
+
+### 盲区描述
+章节
+
+### 重要程度
+高
+
+### 建议研究方向
+9.1
+
+### 外部 review 来源
+Gemini 外部 review
+
+
+## [2026-04-19] 9.1 ANR 设计思想 — 知识盲区
+
+### 盲区描述
+盲区描述
+
+### 重要程度
+高
+
+### 建议研究方向
+system_server 处理 ANR 时的“二次挂起”风险。
+
+### 外部 review 来源
+Gemini 外部 review
+
+
+## [2026-04-19] 9.1 ANR 设计思想 — 知识盲区
+
+### 盲区描述
+重要程度
+
+### 重要程度
+高
+
+### 建议研究方向
+中
+
+### 外部 review 来源
+Gemini 外部 review
+
+
+## [2026-04-19] 9.1 ANR 设计思想 — 知识盲区
+
+### 盲区描述
+建议研究方向
+
+### 重要程度
+高
+
+### 建议研究方向
+调研 `AnrHelper` 虽然异步化了，但其调用的 `dumpStackTraces` 是否仍会竞争全局锁。
+
+### 外部 review 来源
+Gemini 外部 review
+
+
+## [2026-04-19] 10.2 10.2 — 知识盲区
+
+### 盲区描述
+MTE (Memory Tagging Extension)
+
+### 重要程度
+高
+
+### 建议研究方向
+Android 11+ 在 ARMv9 设备上通过硬件标签检测 Native 泄漏的机制
+
+### 外部 review 来源
+Gemini 外部 review
+
+
+## [2026-04-19] 10.2 10.2 — 知识盲区
+
+### 盲区描述
+GWP-ASan
+
+### 重要程度
+中
+
+### 建议研究方向
+针对生产环境的低开销 Native 堆损坏检测
+
+### 外部 review 来源
+Gemini 外部 review
+
+
+## [2026-04-19] 10.2 10.2 — 知识盲区
+
+### 盲区描述
+Heap Redaction
+
+### 重要程度
+中
+
+### 建议研究方向
+Android 15+ 如何在 Dump 过程中移除 PII 隐私数据
+
+### 外部 review 来源
+Gemini 外部 review
+
+
+## [2026-04-19] 10.2 10.2 — 知识盲区
+
+### 盲区描述
+章节
+
+### 重要程度
+高
+
+### 建议研究方向
+10.2
+
+### 外部 review 来源
+Gemini 外部 review
+
+
+## [2026-04-19] 10.2 10.2 — 知识盲区
+
+### 盲区描述
+盲区描述
+
+### 重要程度
+高
+
+### 建议研究方向
+硬件级内存检测（MTE/HWASan）在内存泄漏排查中的角色。
+
+### 外部 review 来源
+Gemini 外部 review
+
+
+## [2026-04-19] 10.2 10.2 — 知识盲区
+
+### 盲区描述
+重要程度
+
+### 重要程度
+高
+
+### 建议研究方向
+高
+
+### 外部 review 来源
+Gemini 外部 review
+
+
+## [2026-04-19] 10.2 10.2 — 知识盲区
+
+### 盲区描述
+可能关联章节
+
+### 重要程度
+高
+
+### 建议研究方向
+4.2 Linux 内存管理, 4.6 内存版本演进
+
+### 外部 review 来源
+Gemini 外部 review
+
+
+## [2026-04-19] 9.3 ANR 分析方法论 — 知识盲区
+
+### 盲区描述
+AnrConsumer / AnrController
+
+### 重要程度
+中
+
+### 建议研究方向
+Android 11+ 系统内部处理 ANR 的新链路（不再仅仅是直接写文件）
+
+### 外部 review 来源
+Gemini 外部 review
+
+
+## [2026-04-19] 9.3 ANR 分析方法论 — 知识盲区
+
+### 盲区描述
+Android 17 Lock-free MessageQueue
+
+### 重要程度
+高
+
+### 建议研究方向
+Android 17 的无锁消息队列如何改变 `nativePollOnce` 的堆栈表现
+
+### 外部 review 来源
+Gemini 外部 review
+
+
+## [2026-04-19] 9.3 ANR 分析方法论 — 知识盲区
+
+### 盲区描述
+Input ANR 5s 超时分档
+
+### 重要程度
+中
+
+### 建议研究方向
+Android 15 对不同 Input 事件（点击 vs 手势）的超时判定差异
+
+### 外部 review 来源
+Gemini 外部 review
+
+
+## [2026-04-19] 8.6 Kotlin Coroutine 性能实践 — 知识盲区
+
+### 盲区描述
+一手资料
+
+### 重要程度
+高
+
+### 建议研究方向
+Android 17 无锁 MessageQueue (DeliQueue)。
+
+### 外部 review 来源
+Gemini 外部 review
+
+
+## [2026-04-19] 8.6 Kotlin Coroutine 性能实践 — 知识盲区
+
+### 盲区描述
+关键结论
+
+### 重要程度
+高
+
+### 建议研究方向
+Android 17 消除了 `withContext(Dispatchers.Main)` 的锁争用，后台协程切回主线程性能提升极大（高并发下最高 5000 倍）。
+
+### 外部 review 来源
+Gemini 外部 review
+
+
+## [2026-04-19] 8.6 Kotlin Coroutine 性能实践 — 知识盲区
+
+### 盲区描述
+Trace 观察点
+
+### 重要程度
+高
+
+### 建议研究方向
+在 Android 17 上，主线程 `MessageQueue#next` 不再会因为后台线程 `enqueueMessage` 而进入 `Waiting` 状态。
+
+### 外部 review 来源
+Gemini 外部 review
+
+
+## [2026-04-19] 9.6 通知性能与 ANR — 知识盲区
+
+### 盲区描述
+DeliQueue 机制
+
+### 重要程度
+高
+
+### 建议研究方向
+建议在第 1.4 章（Binder）或第 1.2 章（Handler）中建立关联，解释无锁队列如何减少多线程竞争。
+
+### 外部 review 来源
+Gemini 外部 review
+
+
+## [2026-04-19] 9.7 非技术 ANR 诊断 — 知识盲区
+
+### 盲区描述
+章节
+
+### 重要程度
+高
+
+### 建议研究方向
+9.7
+
+### 外部 review 来源
+Gemini 外部 review
+
+
+## [2026-04-19] 9.7 非技术 ANR 诊断 — 知识盲区
+
+### 盲区描述
+盲区描述
+
+### 重要程度
+高
+
+### 建议研究方向
+Android 15+ 可能引入的针对 `binderfs` 的更严苛权限限制对 ANR 分析的影响。
+
+### 外部 review 来源
+Gemini 外部 review
+
+
+## [2026-04-19] 9.7 非技术 ANR 诊断 — 知识盲区
+
+### 盲区描述
+建议研究方向
+
+### 重要程度
+高
+
+### 建议研究方向
+调研新版本 `logd` 和 `dumpstate` 如何在没有 root 权限时导出 Binder 状态。
+
+### 外部 review 来源
+Gemini 外部 review
+
+
+## [2026-04-19] 8.8a 媒体管线性能优化 — 知识盲区
+
+### 盲区描述
+核心 SQL (Codec2 聚合分析)
+
+### 重要程度
+高
+
+### 建议研究方向
+```sql
+  SELECT name, AVG(dur)/1e6 as avg_ms, MAX(dur)/1e6 as max_ms
+  FROM slice
+  WHERE name LIKE 'C2Component::process%' OR name LIKE 'C2Component::onWorkDone%'
+  GROUP BY name;
+  ```
+
+### 外部 review 来源
+Gemini 外部 review
+
+
+## [2026-04-19] 8.8a 媒体管线性能优化 — 知识盲区
+
+### 盲区描述
+关键源码路径
+
+### 重要程度
+高
+
+### 建议研究方向
+- `frameworks/native/services/surfaceflinger/CompositionEngine/src/Layer.cpp` (Sideband 传递逻辑)
+  - `frameworks/av/media/libstagefright/MediaCodec.cpp` (异步回调分发逻辑)
+
+### 外部 review 来源
+Gemini 外部 review
+
+
+## [2026-04-19] 8.8b 系统触发式性能追踪 — 知识盲区
+
+### 盲区描述
+章节
+
+### 重要程度
+高
+
+### 建议研究方向
+8.8 系统触发式性能追踪
+
+### 外部 review 来源
+Gemini 外部 review
+
+
+## [2026-04-19] 8.8b 系统触发式性能追踪 — 知识盲区
+
+### 盲区描述
+盲区描述
+
+### 重要程度
+高
+
+### 建议研究方向
+系统层级（System-wide）对 Profiling 请求的具体限流策略。
+
+### 外部 review 来源
+Gemini 外部 review
+
+
+## [2026-04-19] 8.8b 系统触发式性能追踪 — 知识盲区
+
+### 盲区描述
+重要程度
+
+### 重要程度
+高
+
+### 建议研究方向
+中
+
+### 外部 review 来源
+Gemini 外部 review
+
+
+## [2026-04-19] 8.8b 系统触发式性能追踪 — 知识盲区
+
+### 盲区描述
+建议研究方向
+
+### 重要程度
+高
+
+### 建议研究方向
+阅读 `ProfilingService.java` 中关于 `checkLimit` 或 `isQuotaExceeded` 的逻辑，找出 `DeviceConfig` 对应的命名空间。
+
+### 外部 review 来源
+Gemini 外部 review
+
+
+## [2026-04-19] 8.9 游戏性能优化 — 知识盲区
+
+### 盲区描述
+章节
+
+### 重要程度
+高
+
+### 建议研究方向
+8.9
+
+### 外部 review 来源
+Gemini 外部 review
+
+
+## [2026-04-19] 8.9 游戏性能优化 — 知识盲区
+
+### 盲区描述
+盲区描述
+
+### 重要程度
+高
+
+### 建议研究方向
+VRR 与 `preferredFrameRateCategory` 的协同机制。
+
+### 外部 review 来源
+Gemini 外部 review
+
+
+## [2026-04-19] 8.9 游戏性能优化 — 知识盲区
+
+### 盲区描述
+重要程度
+
+### 重要程度
+高
+
+### 建议研究方向
+中
+
+### 外部 review 来源
+Gemini 外部 review
+
+
+## [2026-04-19] 8.9 游戏性能优化 — 知识盲区
+
+### 盲区描述
+建议研究方向
+
+### 重要程度
+高
+
+### 建议研究方向
+SurfaceFlinger 内部对 Category 映射到具体刷新率的权重算法。
+
+### 外部 review 来源
+Gemini 外部 review
+
+
+## [2026-04-19] 9.0 第 9 章 ANR README — 知识盲区
+
+### 盲区描述
+章节
+
+### 重要程度
+高
+
+### 建议研究方向
+`01-anr-design.md`
+
+### 外部 review 来源
+Gemini 外部 review
+
+
+## [2026-04-19] 9.0 第 9 章 ANR README — 知识盲区
+
+### 盲区描述
+盲区描述
+
+### 重要程度
+高
+
+### 建议研究方向
+Android 17 无锁队列对三方监控库的兼容性挑战。
+
+### 外部 review 来源
+Gemini 外部 review
+
+
+## [2026-04-19] 9.0 第 9 章 ANR README — 知识盲区
+
+### 盲区描述
+建议研究方向
+
+### 重要程度
+高
+
+### 建议研究方向
+调研如何不依赖反射 `mMessages` 来获取主线程消息积压情况。
+
+### 外部 review 来源
+Gemini 外部 review
+

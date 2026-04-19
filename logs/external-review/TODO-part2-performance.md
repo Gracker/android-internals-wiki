@@ -31,10 +31,10 @@
 - [x] src/part2-performance/ch09-anr/04-special-anr.md
 - [x] src/part2-performance/ch09-anr/05-case-studies.md
 - [x] src/part2-performance/ch09-anr/06-notification-performance-anr.md
-- [ ] src/part2-performance/ch09-anr/07-non-technical-anr-diagnosis.md
-- [ ] src/part2-performance/ch09-anr/README.md
-- [ ] src/part2-performance/ch10-memory-perf/01-app-memory-analysis.md
-- [ ] src/part2-performance/ch10-memory-perf/02-memory-leak.md
+- [x] src/part2-performance/ch09-anr/07-non-technical-anr-diagnosis.md
+- [x] src/part2-performance/ch09-anr/README.md
+- [x] src/part2-performance/ch10-memory-perf/01-app-memory-analysis.md
+- [x] src/part2-performance/ch10-memory-perf/02-memory-leak.md
 - [ ] src/part2-performance/ch10-memory-perf/03-memory-growth.md
 - [ ] src/part2-performance/ch10-memory-perf/04-low-memory-impact.md
 - [ ] src/part2-performance/ch10-memory-perf/05-case-studies.md

@@ -68,6 +68,12 @@
         "detail": "[Choreographer 阶段]\n- **原文问题**：流水线描述仅包含 Input/Animation/Traversal。\n- **缺失内容**：`CALLBACK_INSETS_ANIMATION` (API 30+) 和 `CALLBACK_COMMIT` (API 23+)。\n- **源码锚点**：`android.view.Choreographer.java` 中的 `CALLBACK_*` 常量定义及 `doFrame` 循环逻辑。\n- **建议补充方向**：补齐这两个阶段，特别是 `COMMIT` 阶段在性能监控（修正时间戳）中的角色。",
         "suggestion": "基于外部 AI review 修正",
         "evidence": []
+      },
+      {
+        "type": "外部Review建议回炉",
+        "location": "external-review 7.3",
+        "detail": "外部 AI review 建议回炉，请查阅 2026-04-19-10-03-jank-methodology-external-review.md 获取详细问题清单",
+        "suggestion": "基于外部 AI review 修正"
       }
     ],
     "added_by": "external-ai-review",
@@ -94,6 +100,12 @@
         "detail": "[案例四：RenderThread sync]\n- **原文问题**：描述“多表情叠加时 GPU 工作量激增，sync 等待时间增加”。\n- **源码锚点**：`frameworks/base/libs/hwui/renderthread/DrawFrameTask.cpp` 中的 `DrawFrameTask::run()`。\n- **关键代码逻辑**：UI 线程在 `syncFrameState` 阶段被阻塞，直到 RenderThread 调用 `unblockUiThread()`。如果 RenderThread 忙于执行上一帧的 `context->draw()`（特别是 `eglSwapBuffers` 阶段因 VSync 阻塞或 GPU 繁忙），它将无法及时处理队列中的下一个 `DrawFrameTask`，导致 UI 线程在 `nSyncAndDrawFrame` 处长时间等待。\n- **缺失内容**：原文未点出“UI 线程阻塞是在等待 RT 空闲”这一本质，也未提到 `canUnblockUiThread` 受纹理上传（Texture Upload）影响的细节。\n- ",
         "suggestion": "基于外部 AI review 修正",
         "evidence": []
+      },
+      {
+        "type": "外部Review建议回炉",
+        "location": "external-review 7.6",
+        "detail": "外部 AI review 建议回炉，请查阅 2026-04-19-10-06-case-studies-external-review.md 获取详细问题清单",
+        "suggestion": "基于外部 AI review 修正"
       }
     ],
     "added_by": "external-ai-review",
@@ -134,6 +146,12 @@
         "detail": "[Compose 动画性能]\n- **原文问题**：未提及 Compose 1.9+ 的后台文本预取（Background Text Prefetch）和 `CacheWindow` API。\n- **建议补充方向**：在 LazyColumn 优化部分补充 `CacheWindow` 如何配合 Pausable Composition 提升滚动预取成功率。",
         "suggestion": "基于外部 AI review 修正",
         "evidence": []
+      },
+      {
+        "type": "外部Review建议回炉",
+        "location": "external-review 7.7",
+        "detail": "外部 AI review 建议回炉，请查阅 2026-04-19-10-07-compose-performance-external-review.md 获取详细问题清单",
+        "suggestion": "基于外部 AI review 修正"
       }
     ],
     "added_by": "external-ai-review",
@@ -153,6 +171,12 @@
         "detail": "[先分清谁负责什么 / StatusBar 与通知更新]\n- 原文问题：直接引入了 `NotificationIconContainerStatusBarViewModel` 等类，但未说明这是属于哪个架构代际的产物。\n- 源码 / 一手资料锚点：`com.android.systemui.scene.domain.interactor.SceneInteractor` / Flexiglass (Scene Framework) Design Doc.\n- 缺失内容：缺乏对 **Flexiglass (Scene Framework)** 这一重大架构重构的背景引入。\n- 运行原理说明：从 Android 15 开始，SystemUI 正在从旧的 Fragment/Controller 模式迁移到基于状态机和 Scene 的响应式架构。\n- 建议补充方向：在“先分清谁负责什么”小节中，增加一段关于 Flexiglass 架构的简单说明，告知读者如果找不到这些类，可能是因为 AOSP 版本过低或未开启该特性旗标。",
         "suggestion": "基于外部 AI review 修正",
         "evidence": []
+      },
+      {
+        "type": "外部Review建议回炉",
+        "location": "external-review 7.13",
+        "detail": "外部 AI review 建议回炉，请查阅 2026-04-19-10-13-systemui-performance-external-review.md 获取详细问题清单",
+        "suggestion": "基于外部 AI review 修正"
       }
     ],
     "added_by": "external-ai-review",
@@ -160,8 +184,8 @@
     "status": "pending"
   },
   {
-    "section": "unknown",
-    "section_title": "",
+    "section": "7.0",
+    "section_title": "第 7 章 README / Jank 定义",
     "priority": 95,
     "reason": "[External Review] 外部 AI review 发现需回炉的问题",
     "material_paths": [],
@@ -186,6 +210,12 @@
         "detail": "[01-jank-definition.md]\n- 缺失内容：**Android 15 Slow Sessions 指标**。\n- 运行原理说明：Google Vitals 在 Android 15 中将“慢会话”作为核心流畅度指标（>25% 的帧超过 50ms/34ms）。\n- 为什么这是重要缺失：这是目前线上监测卡顿的最权威标准。\n- 建议补充方向：在“掉帧率与卡顿率”小节新增 Slow Sessions 详解。",
         "suggestion": "基于外部 AI review 修正",
         "evidence": []
+      },
+      {
+        "type": "外部Review建议回炉",
+        "location": "external-review 7.0",
+        "detail": "外部 AI review 建议回炉，请查阅 2026-04-19-10-README-external-review.md 获取详细问题清单",
+        "suggestion": "基于外部 AI review 修正"
       }
     ],
     "added_by": "external-ai-review",
@@ -257,5 +287,935 @@
     "added_at": "2026-04-19T11:33:34",
     "status": "pending",
     "original_review_log": "logs/review/2026-04-19-11-review.md"
+  },
+  {
+    "section": "8.1",
+    "section_title": "响应速度原理",
+    "priority": 85,
+    "reason": "[External Review] 外部 AI review 发现需回炉的问题",
+    "material_paths": [],
+    "review_issues": [
+      {
+        "type": "版本差异",
+        "location": "启动响应",
+        "detail": "仅提到了传统的 TTID/TTFD，未提及 Android 15 引入的 `ApplicationStartInfo`。",
+        "suggestion": "基于外部 AI review 修正"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-19T11:44:38.404228+08:00",
+    "status": "pending",
+    "source_file": "2026-04-19-10-01-responsiveness-principles-external-review.md"
+  },
+  {
+    "section": "8.2",
+    "section_title": "App 启动全流程",
+    "priority": 95,
+    "reason": "[External Review] 外部 AI review 发现需回炉的问题",
+    "material_paths": [],
+    "review_issues": [
+      {
+        "type": "源码准确性",
+        "location": "热启动小节",
+        "detail": "原文称“logcat 中的 'Displayed' 信息在热启动时不会打印”。",
+        "suggestion": "修正断言，说明热启动同样有 `Displayed` 日志，但耗时通常在 50-200ms 级别。"
+      },
+      {
+        "type": "版本差异覆盖",
+        "location": "度量方法小节",
+        "detail": "完全缺失 Android 15 `ApplicationStartInfo` 介绍。",
+        "suggestion": "基于外部 AI review 修正"
+      },
+      {
+        "type": "知识盲区",
+        "location": "度量方法小节",
+        "detail": "缺失对 Android 12+ SplashScreen 机制对“第一帧”定义的微调。",
+        "suggestion": "说明 SplashScreen 完成展示的时刻与 TTID 的关系。"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-19T11:44:38.404228+08:00",
+    "status": "pending",
+    "source_file": "2026-04-19-10-02-app-launch-external-review.md"
+  },
+  {
+    "section": "8.3",
+    "section_title": "启动优化",
+    "priority": 95,
+    "reason": "[External Review] 外部 AI review 发现需回炉的问题",
+    "material_paths": [],
+    "review_issues": [
+      {
+        "type": "源码准确性",
+        "location": "TTFD 度量部分",
+        "detail": "未提及 Android 12+ 系统会对 `reportFullyDrawn()` 进行强制修正。",
+        "suggestion": "明确指出 Android 12+ 的这一修正行为，建议开发者必须在首帧绘制后再根据业务逻辑上报 TTFD。"
+      },
+      {
+        "type": "版本差异覆盖",
+        "location": "Android 15/16/17 演进",
+        "detail": "对 AutoFDO 的描述停留在表面。",
+        "suggestion": "基于外部 AI review 修正"
+      },
+      {
+        "type": "知识盲区",
+        "location": "启动监控",
+        "detail": "缺失 Android 15 `ApplicationStartInfo` API。",
+        "suggestion": "基于外部 AI review 修正"
+      },
+      {
+        "type": "源码准确性",
+        "location": "ContentProvider 优化",
+        "detail": "对 ContentProvider 加载时机描述不够细致。",
+        "suggestion": "补充这一调用链的关键节点，强调 Provider 实际上是在 Application 对象创建后、但 `onCreate` 执行前加载的。"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-19T11:44:38.404228+08:00",
+    "status": "pending",
+    "source_file": "2026-04-19-10-03-launch-optimization-external-review.md"
+  },
+  {
+    "section": "8.4",
+    "section_title": "其他响应速度场景",
+    "priority": 85,
+    "reason": "[External Review] 外部 AI review 发现需回炉的问题",
+    "material_paths": [],
+    "review_issues": [
+      {
+        "type": "版本差异",
+        "location": "Activity 跳转路径",
+        "detail": "[P1 issue from external review]",
+        "suggestion": "基于外部 AI review 修正"
+      },
+      {
+        "type": "源码准确性",
+        "location": "Fragment Trace 状态",
+        "detail": "[P1 issue from external review]",
+        "suggestion": "基于外部 AI review 修正"
+      },
+      {
+        "type": "知识盲区",
+        "location": "Android 16 性能变更",
+        "detail": "[P1 issue from external review]",
+        "suggestion": "基于外部 AI review 修正"
+      },
+      {
+        "type": "原理链完整性",
+        "location": "ViewPager2 缓存",
+        "detail": "对 `OFFSCREEN_PAGE_LIMIT_DEFAULT (-1)` 的解释仅停留在“不显式保留”。\n    - **核验结论**：需补充其与 RecyclerView 二级缓存 `mCachedViews` (默认 size=2) 的联动。这意味着默认情况下，滑出屏幕的 2 个 Page 仍处于 Bound 状态，回滑时无需 `onBindViewHolder`。\n    - **建议修正**：补充 RecyclerView 缓存层级的说明。",
+        "suggestion": "基于外部 AI review 修正"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-19T11:44:38.404228+08:00",
+    "status": "pending",
+    "source_file": "2026-04-19-10-04-other-scenarios-external-review.md"
+  },
+  {
+    "section": "7.5",
+    "section_title": "优化策略汇总",
+    "priority": 85,
+    "reason": "[External Review] 外部 AI review 发现需回炉的问题",
+    "material_paths": [],
+    "review_issues": [
+      {
+        "type": "外部Review建议回炉",
+        "location": "external-review 7.5",
+        "detail": "外部 AI review 建议回炉，请查阅 2026-04-19-10-05-optimization-external-review.md 获取详细问题清单",
+        "suggestion": "基于外部 AI review 修正"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-19T11:44:38.404228+08:00",
+    "status": "pending",
+    "source_file": "2026-04-19-10-05-optimization-external-review.md"
+  },
+  {
+    "section": "7.8",
+    "section_title": "RecyclerView 滑动优化",
+    "priority": 95,
+    "reason": "[External Review] 外部 AI review 发现需回炉的问题",
+    "material_paths": [],
+    "review_issues": [
+      {
+        "type": "源码准确性",
+        "location": "RecycledViewPool 共享",
+        "detail": "文中提到 `setRecycleChildrenOnDetach(true)` 属于 `LinearLayoutManager`，`GridLayoutManager` 也能直接复用。",
+        "suggestion": "强调 `setRecycleChildrenOnDetach` 必须与共享 Pool 强绑定，否则开启后反而可能导致由于 Detach 过于激进导致的重新 Inflate 开销。"
+      },
+      {
+        "type": "原理链完整性",
+        "location": "GapWorker 预取准入",
+        "detail": "提到 `willBindInTime` 读取运行平均耗时，但未说明算法细节。",
+        "suggestion": "基于外部 AI review 修正"
+      },
+      {
+        "type": "版本差异覆盖",
+        "location": "ARR 适配逻辑",
+        "detail": "提到 RecyclerView 1.4.0 支持 ARR，但对 API 级别描述模糊。",
+        "suggestion": "基于外部 AI review 修正"
+      },
+      {
+        "type": "原理链完整性",
+        "location": "Stride Jitter 补偿",
+        "detail": "提到 VSync 时间精度导致的步幅波动。",
+        "suggestion": "在“无掉帧卡顿”一节，应补充 **“亚像素位移补偿（Sub-pixel Remainder Compensation）”** 方案。即：在 `scrollBy` 时，手动维护一个 `float` 残差，确保长期的像素步进与物理时间戳完美对齐。"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-19T11:44:38.404228+08:00",
+    "status": "pending",
+    "source_file": "2026-04-19-10-08-recyclerview-performance-external-review.md"
+  },
+  {
+    "section": "7.10",
+    "section_title": "图片加载与 Bitmap 性能优化",
+    "priority": 85,
+    "reason": "[External Review] 外部 AI review 发现需回炉的问题",
+    "material_paths": [],
+    "review_issues": [
+      {
+        "type": "版本差异",
+        "location": "Android 14-17 特性缺失",
+        "detail": "虽然标记适用至 Android 17，但完全忽略了 **Ultra HDR (Gainmap)** 这一重大变革。",
+        "suggestion": "基于外部 AI review 修正"
+      },
+      {
+        "type": "原理链完整性",
+        "location": "Hardware Bitmap 的自动降级机制",
+        "detail": "只提到“要留意 fd 消耗”，没有讲清楚工程上是如何自动规避的。",
+        "suggestion": "基于外部 AI review 修正"
+      },
+      {
+        "type": "数据支撑",
+        "location": "AVIF 解码性能的变迁",
+        "detail": "称 AVIF 软解慢，但未提及 Android 15 的重大优化。",
+        "suggestion": "更新 AVIF 章节，明确标注 Android 15 后的性能拐点。"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-19T11:44:38.404228+08:00",
+    "status": "pending",
+    "source_file": "2026-04-19-10-10-image-bitmap-performance-external-review.md"
+  },
+  {
+    "section": "7.11",
+    "section_title": "WebView 性能优化",
+    "priority": 85,
+    "reason": "[External Review] 外部 AI review 发现需回炉的问题",
+    "material_paths": [],
+    "review_issues": [
+      {
+        "type": "外部Review建议回炉",
+        "location": "external-review 7.11",
+        "detail": "外部 AI review 建议回炉，请查阅 2026-04-19-10-11-webview-performance-external-review.md 获取详细问题清单",
+        "suggestion": "基于外部 AI review 修正"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-19T11:44:38.404228+08:00",
+    "status": "pending",
+    "source_file": "2026-04-19-10-11-webview-performance-external-review.md"
+  },
+  {
+    "section": "7.14",
+    "section_title": "GAPS 动态验证分析",
+    "priority": 95,
+    "reason": "[External Review] 外部 AI review 发现需回炉的问题",
+    "material_paths": [],
+    "review_issues": [
+      {
+        "type": "源码准确性",
+        "location": "GAPS 架构/动态验证机制",
+        "detail": "原文称“将静态重建的 GUI 操作序列通过 Android Instrumentation 执行”。",
+        "suggestion": "明确指出 GAPS 使用了 **LLM 驱动的语义映射 + Frida 运行时反馈** 来实现动态验证，这是其性能远超 GoalExplorer 等工具的根本原因。"
+      },
+      {
+        "type": "原理链完整性",
+        "location": "Perfetto 落地配置",
+        "detail": "[待补充：具体 Perfetto 抓取配置] 占位符。",
+        "suggestion": "基于外部 AI review 修正"
+      },
+      {
+        "type": "知识盲区",
+        "location": "Native/反射限制",
+        "detail": "虽然在局限性里提到了反射，但未解释为什么静态路径重建会在这里断裂。",
+        "suggestion": "在局限性中补充 GAPS 对动态代理、混淆代码和 Native 函数的分析能力边界。"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-19T11:44:38.404228+08:00",
+    "status": "pending",
+    "source_file": "2026-04-19-10-14-gaps-dynamic-analysis-external-review.md"
+  },
+  {
+    "section": "9.1",
+    "section_title": "ANR 设计思想",
+    "priority": 85,
+    "reason": "[External Review] 外部 AI review 发现需回炉的问题",
+    "material_paths": [],
+    "review_issues": [
+      {
+        "type": "外部Review建议回炉",
+        "location": "external-review 9.1",
+        "detail": "外部 AI review 建议回炉，请查阅 2026-04-19-11-01-anr-design-external-review.md 获取详细问题清单",
+        "suggestion": "基于外部 AI review 修正"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-19T11:44:38.404228+08:00",
+    "status": "pending",
+    "source_file": "2026-04-19-11-01-anr-design-external-review.md"
+  },
+  {
+    "section": "10.1",
+    "section_title": "App 内存分析",
+    "priority": 85,
+    "reason": "[External Review] 外部 AI review 发现需回炉的问题",
+    "material_paths": [],
+    "review_issues": [
+      {
+        "type": "外部Review建议回炉",
+        "location": "external-review 10.1",
+        "detail": "外部 AI review 建议回炉，请查阅 2026-04-19-11-01-app-memory-analysis-external-review.md 获取详细问题清单",
+        "suggestion": "基于外部 AI review 修正"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-19T11:44:38.404228+08:00",
+    "status": "pending",
+    "source_file": "2026-04-19-11-01-app-memory-analysis-external-review.md"
+  },
+  {
+    "section": "9.2",
+    "section_title": "ANR 类型与触发条件",
+    "priority": 95,
+    "reason": "[External Review] 外部 AI review 发现需回炉的问题",
+    "material_paths": [],
+    "review_issues": [
+      {
+        "type": "源码准确性",
+        "location": "Service Timeout 章节",
+        "detail": "宣称 Service 必须在启动后 5 秒内调用 `startForeground()`。",
+        "suggestion": "基于外部 AI review 修正"
+      },
+      {
+        "type": "源码准确性",
+        "location": "BroadcastReceiver Timeout 章节",
+        "detail": "宣称“只有有序广播（ordered broadcast）才会触发超时检测”。",
+        "suggestion": "明确区分旧版 `BroadcastQueueImpl` 和新版 `BroadcastQueueModernImpl` 的行为差异，强调 Android 14+ 下无序广播也会直接导致 \"Broadcast of intent\" ANR。"
+      },
+      {
+        "type": "知识盲区",
+        "location": "版本演进中的变化",
+        "detail": "对 Android 14+ 引入的 `shortService` 描述不够深入，未提及关键的 `onTimeout` 回调。",
+        "suggestion": "基于外部 AI review 修正"
+      },
+      {
+        "type": "源码准确性",
+        "location": "Service Timeout 章节",
+        "detail": "描述“如果进程本身还在启动（冷启动场景），进程启动时间也计算在内”不够精确。",
+        "suggestion": "精准描述计时的起点是进程 attach 后。"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-19T11:44:38.404228+08:00",
+    "status": "pending",
+    "source_file": "2026-04-19-11-02-anr-types-external-review.md"
+  },
+  {
+    "section": "10.2",
+    "section_title": "内存泄漏检测与修复",
+    "priority": 85,
+    "reason": "[External Review] 外部 AI review 发现需回炉的问题",
+    "material_paths": [],
+    "review_issues": [
+      {
+        "type": "外部Review建议回炉",
+        "location": "external-review 10.2",
+        "detail": "外部 AI review 建议回炉，请查阅 2026-04-19-11-02-memory-leak-external-review.md 获取详细问题清单",
+        "suggestion": "基于外部 AI review 修正"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-19T11:44:38.404228+08:00",
+    "status": "pending",
+    "source_file": "2026-04-19-11-02-memory-leak-external-review.md"
+  },
+  {
+    "section": "9.3",
+    "section_title": "ANR 分析方法论",
+    "priority": 85,
+    "reason": "[External Review] 外部 AI review 发现需回炉的问题",
+    "material_paths": [],
+    "review_issues": [
+      {
+        "type": "外部Review建议回炉",
+        "location": "external-review 9.3",
+        "detail": "外部 AI review 建议回炉，请查阅 2026-04-19-11-03-anr-analysis-external-review.md 获取详细问题清单",
+        "suggestion": "基于外部 AI review 修正"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-19T11:44:38.404228+08:00",
+    "status": "pending",
+    "source_file": "2026-04-19-11-03-anr-analysis-external-review.md"
+  },
+  {
+    "section": "9.5",
+    "section_title": "ANR 案例分析",
+    "priority": 95,
+    "reason": "[External Review] 外部 AI review 发现需回炉的问题",
+    "material_paths": [],
+    "review_issues": [
+      {
+        "type": "源码准确性",
+        "location": "案例 6",
+        "detail": "建议使用 `DuplicateIds`/`NestedScrolling` 等 Lint 规则检测锁顺序。",
+        "suggestion": "应引用 `@GuardedBy` 注解及相关的 `ThreadConfined` 检查，或引用特定的静态分析工具（如 Error Prone 的死锁检测）。"
+      },
+      {
+        "type": "版本差异覆盖",
+        "location": "案例 3 & 案例 4",
+        "detail": "未提及 Android 14 引入的“显性 ANR (Explicit ANRs)”机制对 `JobScheduler` 和 `am_freeze` 场景的影响。",
+        "suggestion": "基于外部 AI review 修正"
+      },
+      {
+        "type": "原理链完整性",
+        "location": "案例 2",
+        "detail": "未讲清 `Notifier` 为什么会阻塞 `InputDispatcher`。",
+        "suggestion": "明确 `Notifier` 属于 `PowerManagerService` 的内部类，负责处理屏幕亮灭等关键回调，这些回调必须在主线程执行。"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-19T11:44:38.404228+08:00",
+    "status": "pending",
+    "source_file": "2026-04-19-11-05-case-studies-external-review.md"
+  },
+  {
+    "section": "8.6",
+    "section_title": "Kotlin Coroutine 性能实践",
+    "priority": 85,
+    "reason": "[External Review] 外部 AI review 发现需回炉的问题",
+    "material_paths": [],
+    "review_issues": [
+      {
+        "type": "源码准确性",
+        "location": "调度器底层实现",
+        "detail": "称其背后是“基于 `ScheduledThreadPoolExecutor` 的工作窃取线程池”。",
+        "suggestion": "基于外部 AI review 修正"
+      },
+      {
+        "type": "知识盲区",
+        "location": "Android 17 DeliQueue 交互",
+        "detail": "仅提到 `Main` 是对 `Looper` 的封装，未提 Android 17 的重大优化。",
+        "suggestion": "基于外部 AI review 修正"
+      },
+      {
+        "type": "平台限制",
+        "location": "kotlinx-coroutines-debug 支持情况",
+        "detail": "建议开发者使用 `kotlinx-coroutines-debug` 模块。",
+        "suggestion": "明确标注该模块仅限 JVM/桌面端，补充 Android 平台推荐的 Trace/调试手段。"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-19T11:44:38.404228+08:00",
+    "status": "pending",
+    "source_file": "2026-04-19-11-06-coroutine-performance-external-review.md"
+  },
+  {
+    "section": "9.6",
+    "section_title": "通知性能与 ANR",
+    "priority": 95,
+    "reason": "[External Review] 外部 AI review 发现需回炉的问题",
+    "material_paths": [],
+    "review_issues": [
+      {
+        "type": "源码准确性",
+        "location": "NotificationManagerService.java",
+        "detail": "引用了 `checkDisqualifyingFeatures()` 作为限流判断方法。",
+        "suggestion": "修正为 `enqueueNotificationInternal` 内部的 `RateEstimator` 校验逻辑，并引用 `mMaxPackageEnqueueRate` 变量。"
+      },
+      {
+        "type": "版本差异覆盖",
+        "location": "Android 17 DeliQueue",
+        "detail": "提到 Android 17 但仅泛泛而谈“性能变更”。",
+        "suggestion": "基于外部 AI review 修正"
+      },
+      {
+        "type": "知识盲区",
+        "location": "NLS 后台限频",
+        "detail": "未提及 Android 17 对后台监听器的硬限制。",
+        "suggestion": "补充 `getRateLimitResetTime()` 等 API 的引入背景。"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-19T11:44:38.404228+08:00",
+    "status": "pending",
+    "source_file": "2026-04-19-11-06-notification-performance-anr-external-review.md"
+  },
+  {
+    "section": "8.7",
+    "section_title": "Baseline Profiles",
+    "priority": 85,
+    "reason": "[External Review] 外部 AI review 发现需回炉的问题",
+    "material_paths": [],
+    "review_issues": [
+      {
+        "type": "源码准确性/版本差异",
+        "location": "Android 14+ 产物路径",
+        "detail": "[P1 issue from external review]",
+        "suggestion": "基于外部 AI review 修正"
+      },
+      {
+        "type": "原理链完整性",
+        "location": "Startup Profiles 与 Dexlayout 的编译时属性",
+        "detail": "[P1 issue from external review]",
+        "suggestion": "基于外部 AI review 修正"
+      },
+      {
+        "type": "版本差异/证据",
+        "location": "Android 16 SDM 机制确认",
+        "detail": "已确认该机制官方术语为 **Secure Dex Metadata (SDM)**。\n- **运行原理说明**：Google Play 预先为目标架构生成机器码并封装在 SDM 文件中，安装时直接加载，跳过本地 `dex2oat`。\n- **建议修正方向**：将 `[待验证]` 标记移除，更新为确定性描述，并补充 SDM 术语。",
+        "suggestion": "将 `[待验证]` 标记移除，更新为确定性描述，并补充 SDM 术语。"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-19T11:44:38.404228+08:00",
+    "status": "pending",
+    "source_file": "2026-04-19-11-07-baseline-profiles-external-review.md"
+  },
+  {
+    "section": "9.7",
+    "section_title": "非技术 ANR 诊断",
+    "priority": 85,
+    "reason": "[External Review] 外部 AI review 发现需回炉的问题",
+    "material_paths": [],
+    "review_issues": [
+      {
+        "type": "知识盲区",
+        "location": "高发四类场景 - 3. Freezer 机制",
+        "detail": "[P1 issue from external review]",
+        "suggestion": "基于外部 AI review 修正"
+      },
+      {
+        "type": "原理链完整性",
+        "location": "第一步 - Input ANR 入口",
+        "detail": "未细分 Input ANR 的两类核心原因及其对应的系统内部状态。\n  - **源码锚点**：`frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp` 中的 `isWindowReadyForMoreInputLocked`。\n  - **关键逻辑**：`(server) is not responding`（窗口已拿走事件但没回 ack）与 `no focused window`（焦点切换或窗口未准备好接收事件）是两种截然不同的机制，前者通常涉及 App 侧阻塞，后者几乎纯属系统侧调度或状态同步问题。\n  - **建议补充方向**：在 Input ANR 表格中补充这两类 Subject 的差异。",
+        "suggestion": "在 Input ANR 表格中补充这两类 Subject 的差异。"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-19T11:44:38.404228+08:00",
+    "status": "pending",
+    "source_file": "2026-04-19-11-07-non-technical-anr-diagnosis-external-review.md"
+  },
+  {
+    "section": "8.8a",
+    "section_title": "媒体管线性能优化",
+    "priority": 85,
+    "reason": "[External Review] 外部 AI review 发现需回炉的问题",
+    "material_paths": [],
+    "review_issues": [
+      {
+        "type": "外部Review建议回炉",
+        "location": "external-review 8.8a",
+        "detail": "外部 AI review 建议回炉，请查阅 2026-04-19-11-08-media-pipeline-external-review.md 获取详细问题清单",
+        "suggestion": "基于外部 AI review 修正"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-19T11:44:38.404228+08:00",
+    "status": "pending",
+    "source_file": "2026-04-19-11-08-media-pipeline-external-review.md"
+  },
+  {
+    "section": "8.8b",
+    "section_title": "系统触发式性能追踪",
+    "priority": 85,
+    "reason": "[External Review] 外部 AI review 发现需回炉的问题",
+    "material_paths": [],
+    "review_issues": [
+      {
+        "type": "外部Review建议回炉",
+        "location": "external-review 8.8b",
+        "detail": "外部 AI review 建议回炉，请查阅 2026-04-19-11-08-system-triggered-profiling-external-review.md 获取详细问题清单",
+        "suggestion": "基于外部 AI review 修正"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-19T11:44:38.404228+08:00",
+    "status": "pending",
+    "source_file": "2026-04-19-11-08-system-triggered-profiling-external-review.md"
+  },
+  {
+    "section": "8.9",
+    "section_title": "游戏性能优化",
+    "priority": 85,
+    "reason": "[External Review] 外部 AI review 发现需回炉的问题",
+    "material_paths": [],
+    "review_issues": [
+      {
+        "type": "源码准确性",
+        "location": "2.3 Game Mode 对系统行为的影响",
+        "detail": "[P1 issue from external review]",
+        "suggestion": "基于外部 AI review 修正"
+      },
+      {
+        "type": "版本差异覆盖",
+        "location": "6. Android 16 与 Android 12/13+ 的平台变化",
+        "detail": "Android 17 仅提到了 Generational GC。\n  - **缺失内容**：Android 17 (API 37) 引入的 `preferredFrameRateCategory` 在 `WindowManager` 中的重要性。\n  - **运行原理说明**：游戏现在可以通过 `Window` 级别声明 `FRAME_RATE_CATEGORY_HIGH`，让系统更智能地处理 LTPO 屏幕的动态刷新率切换，而非硬编码刷新率。\n  - **建议补充方向**：在 Android 17 章节补充 `preferredFrameRateCategory` 对游戏 VRR 适配的简化意义。",
+        "suggestion": "在 Android 17 章节补充 `preferredFrameRateCategory` 对游戏 VRR 适配的简化意义。"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-19T11:44:38.404228+08:00",
+    "status": "pending",
+    "source_file": "2026-04-19-11-09-game-performance-external-review.md"
+  },
+  {
+    "section": "9.0",
+    "section_title": "第 9 章 ANR README",
+    "priority": 85,
+    "reason": "[External Review] 外部 AI review 发现需回炉的问题",
+    "material_paths": [],
+    "review_issues": [
+      {
+        "type": "外部Review建议回炉",
+        "location": "external-review 9.0",
+        "detail": "外部 AI review 建议回炉，请查阅 2026-04-19-11-README-external-review.md 获取详细问题清单",
+        "suggestion": "基于外部 AI review 修正"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-19T11:44:38.404228+08:00",
+    "status": "pending",
+    "source_file": "2026-04-19-11-README-external-review.md"
+  },
+  {
+    "section": "2.7",
+    "section_title": "硬件层 (Hardware Layer) 优化",
+    "priority": 85,
+    "reason": "[External Review] 外部 AI review 发现需回炉的问题",
+    "material_paths": [],
+    "review_issues": [
+      {
+        "type": "版本差异覆盖",
+        "location": "16KB 对齐代价",
+        "detail": "[P1 issue from external review]",
+        "suggestion": "基于外部 AI review 修正"
+      },
+      {
+        "type": "知识盲区",
+        "location": "预算检查机制",
+        "detail": "[P1 issue from external review]",
+        "suggestion": "基于外部 AI review 修正"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-19T11:44:38.404228+08:00",
+    "status": "pending",
+    "source_file": "2026-04-19-38-2.7-external-review.md"
+  },
+  {
+    "section": "2.8",
+    "section_title": "过度绘制 (Overdraw) 分析",
+    "priority": 85,
+    "reason": "[External Review] 外部 AI review 发现需回炉的问题",
+    "material_paths": [],
+    "review_issues": [
+      {
+        "type": "版本差异覆盖",
+        "location": "硬件级优化",
+        "detail": "[P1 issue from external review]",
+        "suggestion": "基于外部 AI review 修正"
+      },
+      {
+        "type": "知识盲区",
+        "location": "工具链演进",
+        "detail": "[P1 issue from external review]",
+        "suggestion": "基于外部 AI review 修正"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-19T11:44:38.404228+08:00",
+    "status": "pending",
+    "source_file": "2026-04-19-39-2.8-external-review.md"
+  },
+  {
+    "section": "2.10",
+    "section_title": "GPU 渲染性能分析",
+    "priority": 85,
+    "reason": "[External Review] 外部 AI review 发现需回炉的问题",
+    "material_paths": [],
+    "review_issues": [
+      {
+        "type": "版本差异覆盖",
+        "location": "主动性能管理",
+        "detail": "[P1 issue from external review]",
+        "suggestion": "基于外部 AI review 修正"
+      },
+      {
+        "type": "知识盲区",
+        "location": "ADPF 闭环反馈",
+        "detail": "[P1 issue from external review]",
+        "suggestion": "基于外部 AI review 修正"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-19T11:44:38.404228+08:00",
+    "status": "pending",
+    "source_file": "2026-04-19-41-2.10-external-review.md"
+  },
+  {
+    "section": "2.20",
+    "section_title": "多窗口与桌面模式渲染",
+    "priority": 85,
+    "reason": "[External Review] 外部 AI review 发现需回炉的问题",
+    "material_paths": [],
+    "review_issues": [
+      {
+        "type": "版本差异覆盖",
+        "location": "桌面交互优化",
+        "detail": "[P1 issue from external review]",
+        "suggestion": "基于外部 AI review 修正"
+      },
+      {
+        "type": "知识盲区",
+        "location": "多屏同步调度",
+        "detail": "[P1 issue from external review]",
+        "suggestion": "基于外部 AI review 修正"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-19T11:44:38.404228+08:00",
+    "status": "pending",
+    "source_file": "2026-04-19-51-2.20-external-review.md"
+  },
+  {
+    "section": "2.21",
+    "section_title": "文本渲染性能优化",
+    "priority": 85,
+    "reason": "[External Review] 外部 AI review 发现需回炉的问题",
+    "material_paths": [],
+    "review_issues": [
+      {
+        "type": "版本差异覆盖",
+        "location": "字体系统演进",
+        "detail": "[P1 issue from external review]",
+        "suggestion": "基于外部 AI review 修正"
+      },
+      {
+        "type": "知识盲区",
+        "location": "变量字体性能红利",
+        "detail": "[P1 issue from external review]",
+        "suggestion": "基于外部 AI review 修正"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-19T11:44:38.404228+08:00",
+    "status": "pending",
+    "source_file": "2026-04-19-52-2.21-external-review.md"
+  },
+  {
+    "section": "5.6",
+    "section_title": "Android 功耗管理",
+    "priority": 85,
+    "reason": "[External Review] 外部 AI review 发现需回炉的问题",
+    "material_paths": [],
+    "review_issues": [
+      {
+        "type": "版本差异覆盖",
+        "location": "配额机制重构",
+        "detail": "[P1 issue from external review]",
+        "suggestion": "基于外部 AI review 修正"
+      },
+      {
+        "type": "知识盲区",
+        "location": "功耗内省代码化",
+        "detail": "[P1 issue from external review]",
+        "suggestion": "基于外部 AI review 修正"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-19T11:44:38.404228+08:00",
+    "status": "pending",
+    "source_file": "2026-04-19-72-5.6-external-review.md"
+  },
+  {
+    "section": "5.7",
+    "section_title": "CPU 相关的版本演进",
+    "priority": 85,
+    "reason": "[External Review] 外部 AI review 发现需回炉的问题",
+    "material_paths": [],
+    "review_issues": [
+      {
+        "type": "版本差异覆盖",
+        "location": "配额机制重构",
+        "detail": "[P1 issue from external review]",
+        "suggestion": "基于外部 AI review 修正"
+      },
+      {
+        "type": "知识盲区",
+        "location": "调度合规性变更",
+        "detail": "[P1 issue from external review]",
+        "suggestion": "基于外部 AI review 修正"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-19T11:44:38.404228+08:00",
+    "status": "pending",
+    "source_file": "2026-04-19-73-5.7-external-review.md"
+  },
+  {
+    "section": "5.9",
+    "section_title": "ADPF 动态性能框架",
+    "priority": 85,
+    "reason": "[External Review] 外部 AI review 发现需回炉的问题",
+    "material_paths": [],
+    "review_issues": [
+      {
+        "type": "版本差异覆盖",
+        "location": "算力余量透明化",
+        "detail": "[P1 issue from external review]",
+        "suggestion": "基于外部 AI review 修正"
+      },
+      {
+        "type": "知识盲区",
+        "location": "热管理异步化",
+        "detail": "[P1 issue from external review]",
+        "suggestion": "基于外部 AI review 修正"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-19T11:44:38.404228+08:00",
+    "status": "pending",
+    "source_file": "2026-04-19-75-5.9-external-review.md"
+  },
+  {
+    "section": "5.10",
+    "section_title": "JobScheduler 性能",
+    "priority": 85,
+    "reason": "[External Review] 外部 AI review 发现需回炉的问题",
+    "material_paths": [],
+    "review_issues": [
+      {
+        "type": "版本差异覆盖",
+        "location": "配额制度转轨",
+        "detail": "[P1 issue from external review]",
+        "suggestion": "基于外部 AI review 修正"
+      },
+      {
+        "type": "知识盲区",
+        "location": "诊断接口分代",
+        "detail": "[P1 issue from external review]",
+        "suggestion": "基于外部 AI review 修正"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-19T11:44:38.404228+08:00",
+    "status": "pending",
+    "source_file": "2026-04-19-76-5.10-external-review.md"
+  },
+  {
+    "section": "5.11",
+    "section_title": "端侧 AI 推理性能优化",
+    "priority": 85,
+    "reason": "[External Review] 外部 AI review 发现需回炉的问题",
+    "material_paths": [],
+    "review_issues": [
+      {
+        "type": "版本差异覆盖",
+        "location": "AI 架构代差升级",
+        "detail": "[P1 issue from external review]",
+        "suggestion": "基于外部 AI review 修正"
+      },
+      {
+        "type": "知识盲区",
+        "location": "矩阵运算硬件红利",
+        "detail": "[P1 issue from external review]",
+        "suggestion": "基于外部 AI review 修正"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-19T11:44:38.404228+08:00",
+    "status": "pending",
+    "source_file": "2026-04-19-77-5.11-external-review.md"
+  },
+  {
+    "section": "5.12",
+    "section_title": "内存管理演进",
+    "priority": 85,
+    "reason": "[External Review] 外部 AI review 发现需回炉的问题",
+    "material_paths": [],
+    "review_issues": [
+      {
+        "type": "版本差异覆盖",
+        "location": "控制算法进化",
+        "detail": "[P1 issue from external review]",
+        "suggestion": "基于外部 AI review 修正"
+      },
+      {
+        "type": "知识盲区",
+        "location": "形态自适应热管理",
+        "detail": "[P1 issue from external review]",
+        "suggestion": "基于外部 AI review 修正"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-19T11:44:38.404228+08:00",
+    "status": "pending",
+    "source_file": "2026-04-19-78-5.12-external-review.md"
+  },
+  {
+    "section": "6.3",
+    "section_title": "线程池与并发优化",
+    "priority": 85,
+    "reason": "[External Review] 外部 AI review 发现需回炉的问题",
+    "material_paths": [],
+    "review_issues": [
+      {
+        "type": "版本差异覆盖",
+        "location": "硬件级 I/O 隔离",
+        "detail": "[P1 issue from external review]",
+        "suggestion": "基于外部 AI review 修正"
+      },
+      {
+        "type": "知识盲区",
+        "location": "回写压力调节",
+        "detail": "[P1 issue from external review]",
+        "suggestion": "基于外部 AI review 修正"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-19T11:44:38.404228+08:00",
+    "status": "pending",
+    "source_file": "2026-04-19-81-6.3-external-review.md"
+  },
+  {
+    "section": "6.5",
+    "section_title": "IPC 性能优化",
+    "priority": 85,
+    "reason": "[External Review] 外部 AI review 发现需回炉的问题",
+    "material_paths": [],
+    "review_issues": [
+      {
+        "type": "版本差异覆盖",
+        "location": "加载路径提速",
+        "detail": "[P1 issue from external review]",
+        "suggestion": "基于外部 AI review 修正"
+      },
+      {
+        "type": "知识盲区",
+        "location": "诊断透明化",
+        "detail": "[P1 issue from external review]",
+        "suggestion": "基于外部 AI review 修正"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-19T11:44:38.404228+08:00",
+    "status": "pending",
+    "source_file": "2026-04-19-83-6.5-external-review.md"
   }
 ]

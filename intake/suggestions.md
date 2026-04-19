@@ -2128,3 +2128,140 @@
 - **问题**：[待补充：Trace 截图] 为占位符
 - **建议**：高爷补充实际 Trace 截图或详细描述
 - **review 日志**：logs/review/2026-04-19-11-review.md
+
+## [External Review] 8.2 App 启动全流程 — 2026-04-19
+- **类型**：原理链完整性
+- **位置**：首帧绘制路径
+- **问题**：将 TTID 终点等同于 `queueBuffer`。
+- **建议**：基于外部 AI review 修正
+- **来源**：Gemini 外部 review
+
+
+## [External Review] 8.3 启动优化 — 2026-04-19
+- **类型**：实战落地
+- **位置**：reportFullyDrawn
+- **问题**：建议手动调用 `reportFullyDrawn()`。
+- **建议**：基于外部 AI review 修正
+- **来源**：Gemini 外部 review
+
+
+## [External Review] 8.4 其他响应速度场景 — 2026-04-19
+- **类型**：数据/案例支撑
+- **位置**：点击延迟数据
+- **问题**：点击响应延迟估算为 30-60ms，缺乏具体设备参考。
+    - **建议**：补充在 120Hz 设备上，一帧仅 8.33ms，若 onClick 阻塞 20ms 会导致丢 3 帧的量化说明，以强调“零阻塞”的紧迫性。
+- **建议**：基于外部 AI review 修正
+- **来源**：Gemini 外部 review
+
+
+## [External Review] 7.8 RecyclerView 滑动优化 — 2026-04-19
+- **类型**：源码准确性
+- **位置**：Trace 断面名称
+- **问题**：文中提到 `RV onCreateViewHolder type=0x%X`。
+- **建议**：加入该公式，并解释其在“性能感知与自我调节”中的设计意图。
+- **来源**：Gemini 外部 review
+
+
+## [External Review] 7.10 图片加载与 Bitmap 性能优化 — 2026-04-19
+- **类型**：知识盲区
+- **位置**：Android 17 ART 优化
+- **问题**：[P2 issue from external review]
+- **建议**：基于外部 AI review 修正
+- **来源**：Gemini 外部 review
+
+
+## [External Review] 7.10 图片加载与 Bitmap 性能优化 — 2026-04-19
+- **类型**：原理链完整性
+- **位置**：Coil 移除 BitmapPool 的深意
+- **问题**：[P2 issue from external review]
+- **建议**：基于外部 AI review 修正
+- **来源**：Gemini 外部 review
+
+
+## [External Review] 7.14 GAPS 动态验证分析 — 2026-04-19
+- **类型**：数据/案例支撑
+- **位置**：AndroTest 基准说明
+- **问题**：[P2 issue from external review]
+- **建议**：参考 `samudoria/GAPS` 源码，重写动态执行阶段逻辑，强调 LLM 在语义映射中的作用。
+- **来源**：Gemini 外部 review
+
+
+## [External Review] 9.2 ANR 类型与触发条件 — 2026-04-19
+- **类型**：数据支撑
+- **位置**：Perfetto 表现
+- **问题**：[P2 issue from external review]
+- **建议**：更新为 40s (30s+10s)，并引用 `ActivityManagerConstants`。
+- **来源**：Gemini 外部 review
+
+
+## [External Review] 9.5 ANR 案例分析 — 2026-04-19
+- **类型**：知识盲区
+- **位置**：案例 1
+- **问题**：PSI 信息仅给出了值，未给出判断阈值。
+- **建议**：基于外部 AI review 修正
+- **来源**：Gemini 外部 review
+
+
+## [External Review] 8.6 Kotlin Coroutine 性能实践 — 2026-04-19
+- **类型**：版本差异
+- **位置**：16 KB 页面支持
+- **问题**：[P2 issue from external review]
+- **建议**：基于外部 AI review 修正
+- **来源**：Gemini 外部 review
+
+
+## [External Review] 8.6 Kotlin Coroutine 性能实践 — 2026-04-19
+- **类型**：原理链
+- **位置**：IO 调度器弹性
+- **问题**：[P2 issue from external review]
+- **建议**：基于外部 AI review 修正
+- **来源**：Gemini 外部 review
+
+
+## [External Review] 8.6 Kotlin Coroutine 性能实践 — 2026-04-19
+- **类型**：源码准确性
+- **位置**：100µs 规则
+- **问题**：[P2 issue from external review]
+- **建议**：基于外部 AI review 修正
+- **来源**：Gemini 外部 review
+
+
+## [External Review] 9.6 通知性能与 ANR — 2026-04-19
+- **类型**：原理链完整性
+- **位置**：RemoteViews 反射开销
+- **问题**：提到 `RemoteViews.apply()` 但未解释反射的具体代价。
+- **建议**：引用 `mMaxPackageEnqueueRate` 和 `mUsageStats.getAppEnqueueRate(pkg)`。
+- **来源**：Gemini 外部 review
+
+
+## [External Review] 8.7 Baseline Profiles — 2026-04-19
+- **类型**：知识盲区
+- **位置**：ARMv9 AutoFDO 演进
+- **问题**：[P2 issue from external review]
+- **建议**：基于外部 AI review 修正
+- **来源**：Gemini 外部 review
+
+
+## [External Review] 9.7 非技术 ANR 诊断 — 2026-04-19
+- **类型**：工具边界
+- **位置**：Android 12-17 表格
+- **问题**：[P2 issue from external review]
+- **建议**：引用 `am_freeze` / `am_unfreeze` 日志，并说明在 Perfetto 中识别该场景的方法。
+- **来源**：Gemini 外部 review
+
+
+## [External Review] 8.9 游戏性能优化 — 2026-04-19
+- **类型**：知识盲区
+- **位置**：5. Perfetto 中的关键 Track
+- **问题**：[P2 issue from external review]
+- **建议**：基于外部 AI review 修正
+- **来源**：Gemini 外部 review
+
+
+## [External Review] 8.9 游戏性能优化 — 2026-04-19
+- **类型**：数据/案例支撑
+- **位置**：5.2 关键分析路径
+- **问题**：[P2 issue from external review]
+- **建议**：明确 5s 超时逻辑；新增 Android 17 帧率类别 API 说明。
+- **来源**：Gemini 外部 review
+
