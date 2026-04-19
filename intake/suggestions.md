@@ -2537,3 +2537,64 @@
 - **问题**：缺少 section、section_title、applicable_versions、sources 字段。
 - **建议**：补充 section: "14.7", section_title: "ProfilingManager", applicable_versions: "Android 15+（System Triggered Profiling 16+）", sources 列出主要素材来源。
 - **review 日志**：logs/review/2026-04-19-15-review.md
+
+## [External Review] 18.9 Vulkan 原生渲染链路 — 2026-04-19
+- **类型**：实战指导
+- **位置**：18.9.5 Presentation Mode
+- **问题**：忽略了国内 OS 对呈现模式的强制覆写现象（IMMEDIATE 被降级为 FIFO）
+- **建议**：增加关于 Android 厂商可能在 SF 层强行限制 IMMEDIATE 模式的提示，实际须通过 Trace 确认帧提交模式
+- **来源**：Gemini 外部 review
+
+## [External Review] 18.9 Vulkan 原生渲染链路 — 2026-04-19
+- **类型**：数据支撑
+- **位置**：18.9.5 Presentation Mode
+- **问题**：MAILBOX 和 IMMEDIATE 缺少在 Android 实际设备上的表现支撑
+- **建议**：补充实战提醒，说明大多数定制系统的 SurfaceFlinger 配置不支持真正的 IMMEDIATE 无撕裂
+- **来源**：Gemini 外部 review
+
+
+## [External Review] 18.10 SurfaceControl API — 2026-04-19
+- **类型**：API 细节
+- **位置**：4.4 Callback 及 4.3 Color Layer
+- **问题**：ASurfaceTransactionStats_getAcquireTime 已被标记 deprecated；缺失对 Buffer Dataspace 的补充
+- **建议**：补充 deprecated 提示，并提及 ASurfaceTransaction_setBufferDataSpace 使色彩管理更完整
+- **来源**：Gemini 外部 review
+
+
+## [External Review] 18.11 ANGLE (GLES->Vulkan 翻译层) — 2026-04-19
+- **类型**：追踪调试
+- **位置**：在 Perfetto 中识别 ANGLE
+- **问题**：缺乏 ANGLE 自有 trace marker 开启方式说明，仅通过 vk* 过滤容易和 Skia Vulkan 混淆
+- **建议**：补充开启 ANGLE 内部 perfetto events 的方式，或通过调用栈特征区分 Skia 和 ANGLE
+- **来源**：Gemini 外部 review
+
+## [External Review] 18.11 ANGLE (GLES->Vulkan 翻译层) — 2026-04-19
+- **类型**：代码严谨性
+- **位置**：A4A Rules JSON
+- **问题**：附录中 a4a_rules.json 描述可能过于具体，存在 AI 脑补风险
+- **建议**：融合到正文时只说明"可通过平台 rules 配置进行设备/驱动黑白名单控制"，避免硬编码 JSON 示例
+- **来源**：Gemini 外部 review
+
+
+## [External Review] 18.12 Flutter 渲染链路 — 2026-04-19
+- **类型**：数据支撑不足
+- **位置**：在 Perfetto 中识别 Flutter 链路
+- **问题**：仅有 [待补充...] 占位符，缺乏实际 Trace 截图或查询语句
+- **建议**：补充 Perfetto SQL 的 Track 过滤查询语句（如 name LIKE '%Engine::BeginFrame%'）
+- **来源**：Gemini 外部 review
+
+
+## [External Review] 18.13 WebView 渲染链路 — 2026-04-19
+- **类型**：细节补充
+- **位置**：Trace 观察点
+- **问题**：缺乏 Perfetto 中关键线程的实际命名说明
+- **建议**：补充 Chrome_InProcGpu、CrRendererMain、VizCompositorThread 等真名与概念模型的对应关系
+- **来源**：Gemini 外部 review
+
+
+## [External Review] 12.0 APK 体积优化与网络性能 (README) — 2026-04-19
+- **类型**：格式与阅读体验
+- **位置**：参考资料部分
+- **问题**：罗列大量未处理 URL，阅读体验差
+- **建议**：正式定稿时剔除重复及低质量链接，提炼有效信息融入正文
+- **来源**：Gemini 外部 review

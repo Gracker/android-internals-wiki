@@ -60,11 +60,11 @@
 - [x] src/part2-performance/ch18-rendering-pipelines/06-surfaceview.md
 - [x] src/part2-performance/ch18-rendering-pipelines/07-textureview.md
 - [x] src/part2-performance/ch18-rendering-pipelines/08-opengl-es.md
-- [ ] src/part2-performance/ch18-rendering-pipelines/09-vulkan-native.md
-- [ ] src/part2-performance/ch18-rendering-pipelines/10-surface-control-api.md
-- [ ] src/part2-performance/ch18-rendering-pipelines/11-angle-gles-vulkan.md
-- [ ] src/part2-performance/ch18-rendering-pipelines/12-flutter-rendering.md
-- [ ] src/part2-performance/ch18-rendering-pipelines/13-webview-rendering.md
+- [x] src/part2-performance/ch18-rendering-pipelines/09-vulkan-native.md
+- [x] src/part2-performance/ch18-rendering-pipelines/10-surface-control-api.md
+- [x] src/part2-performance/ch18-rendering-pipelines/11-angle-gles-vulkan.md
+- [x] src/part2-performance/ch18-rendering-pipelines/12-flutter-rendering.md
+- [x] src/part2-performance/ch18-rendering-pipelines/13-webview-rendering.md
 - [ ] src/part2-performance/ch18-rendering-pipelines/14-camera-pipeline.md
 - [ ] src/part2-performance/ch18-rendering-pipelines/15-video-overlay-hwc.md
 - [ ] src/part2-performance/ch18-rendering-pipelines/16-game-engine.md

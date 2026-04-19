@@ -3389,3 +3389,122 @@ Vulkan 渲染后端在同进程多窗口切换时的底层耗时机制（区别�
 - 2.4 Choreographer 编舞者
 - 2.16 Sync Fence 同步栅栏
 - 2.18 Adaptive Refresh Rate 与动态帧率控制
+
+## [2026-04-19] 12.0 APK 体积优化与网络性能 — 知识盲区（External Review）
+
+### 盲区描述
+APK 编译原理及 aapt2 内部机制；HTTPDNS 实践及底层防劫持原理；网络耗时在 Perfetto 中的特征；App Bundle 与 PackageManagerService 的交互。
+
+### 重要程度
+高
+
+### 建议研究方向
+- cs.android.com 检索 frameworks/base/tools/aapt2 以及 R8/D8 编译器的字节码优化机制
+- 结合 OkHttp 拦截器及系统层 DNS 解析机制 (bionic/libc/dns/) 分析 HTTPDNS
+- 分析网络请求时的唤醒机制及基带模块耗时的 Trace 表现
+- Play Store 分发机制及 frameworks/base/services/core/java/com/android/server/pm/ 中的处理逻辑
+
+### 关联章节
+- 12.1 APK 体积优化
+- 12.3 网络性能深入
+
+### 外部 review 来源
+- 2026-04-19-14-12.0-external-review.md
+
+
+## [2026-04-19] 18.9 Vulkan 原生渲染链路 — 知识盲区（External Review）
+
+### 盲区描述
+vkQueuePresentKHR 的底层 IPC 阻塞风险：当 BufferQueue 满导致 dequeueBuffer 阻塞时，如何反向阻塞 Vulkan 提交流程。Frame Pacing 与 FrameTimeline 的映射逻辑。
+
+### 重要程度
+高
+
+### 建议研究方向
+- AOSP libvulkan QueuePresentKHR 函数中对 BufferQueue 的超时控制
+- Swappy 库如何通过 SurfaceControl API 使用 Choreographer Vsync Id 与 FrameTimeline 握手
+
+### 关联章节
+- 18.1 渲染管线概览
+- 18.10 SurfaceControl API
+
+### 外部 review 来源
+- 2026-04-19-14-18.9-external-review.md
+
+
+## [2026-04-19] 18.10 SurfaceControl API — 知识盲区（External Review）
+
+### 盲区描述
+纯 NDK 下的跨进程 ASurfaceControl 传递与跨进程 Reparent 机制。Java 层可通过 Parcelable 传递 SurfaceControl，但 NDK 层是否有原生 IPC 手段尚不明确。FrameTimeline VsyncId 溯源。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 确认 NDK 层是否有原生 IPC 手段（如 libbinder_ndk 中的映射），或是否必须借道 JNI
+- VsyncId 在 Choreographer 中的生成逻辑及 SF 消费时机
+
+### 关联章节
+- 18.4 混合渲染
+- 18.12 Flutter 渲染链路
+
+### 外部 review 来源
+- 2026-04-19-14-18.10-external-review.md
+
+
+## [2026-04-19] 18.11 ANGLE (GLES->Vulkan 翻译层) — 知识盲区（External Review）
+
+### 盲区描述
+ANGLE 翻译层的 Shader/Pipeline Cache 落盘与跨进程/重启复用机制，与原生 GLES shader cache 的差异。ANGLE 的分层决策树（全局设置 > 包级别 opt-in/out > Game Mode > 平台 rules）。
+
+### 重要程度
+中
+
+### 建议研究方向
+- AOSP external/angle 中的 cache 管理逻辑及 Vulkan Pipeline Cache 交互
+
+### 关联章节
+- 18.9 Vulkan 原生渲染链路
+
+### 外部 review 来源
+- 2026-04-19-14-18.11-external-review.md
+
+
+## [2026-04-19] 18.12 Flutter 渲染链路 — 知识盲区（External Review）
+
+### 盲区描述
+Flutter Raster 线程与宿主 RenderThread 在 TextureView 模式下的 VSync 拍频错位导致的一帧延迟。HC 模式下 SurfaceControl 的 Layer 分配。
+
+### 重要程度
+高
+
+### 建议研究方向
+- Perfetto trace 实证，结合不同帧率场景（60fps vs 120fps）下的表现差异
+- 结合 dumpsys SurfaceFlinger 分析 Flutter 叠加层与原生 View 的 Layer 层级
+
+### 关联章节
+- 18.7 TextureView 原理
+- 18.10 SurfaceControl API
+
+### 外部 review 来源
+- 2026-04-19-14-18.12-external-review.md
+
+
+## [2026-04-19] 18.13 WebView 渲染链路 — 知识盲区（External Review）
+
+### 盲区描述
+WebView GPU/Viz 线程组在单进程/多进程模式下的 Perfetto 追踪特征。CrGpuMain、VizCompositorThread 与 App RenderThread 在 Functor 和 SurfaceControl 两种模式下的时序区别。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 结合 Perfetto Trace 截图分析 CrGpuMain、VizCompositorThread 与 App RenderThread 的时序差异
+- Hardware Draw Functor (DrawFn)：Android 10+ WebViewFunctor.h 的底层实现及 Vulkan 兼容性
+
+### 关联章节
+- 7.11 WebView 渲染性能与优化
+- 18.10 SurfaceControl API
+
+### 外部 review 来源
+- 2026-04-19-14-18.13-external-review.md
