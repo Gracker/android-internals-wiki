@@ -8,9 +8,9 @@ drafted_by: "openclaw-task2a"
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-04-07"
 last_verified_against: "AOSP android-17-beta3"
-reviewed_date: "2026-04-12"
-reviewed_by: "openclaw-task6"
-task6_result: needs-rework
+reviewed_date: 2026-04-20
+reviewed_by: openclaw-task6
+task6_result: pass-light-edit
 confidence: medium
 polish_count: 1
 polish_date: "2026-04-08"
@@ -40,8 +40,8 @@ tags:
   - frame-pacing
   - overScroller
   - research
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task9_result: needs-rework
 task2b_state: fixed
