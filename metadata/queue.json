@@ -2306,5 +2306,83 @@
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-19T19:24:00+08:00",
     "status": "completed"
+  },
+  {
+    "section": "14.2",
+    "section_title": "Simpleperf",
+    "priority": 95,
+    "reason": "[Deep Tech Review] cpu-clock/task-clock 语义写错，且跨版本能力矩阵缺失",
+    "material_paths": [
+      "intake/research-gaps.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "L186-L194",
+        "detail": "把 `cpu-clock` 写成 `task-clock` 的别名，并把 `task-clock` 解释成包含等待 CPU 调度时间。按 perf / simpleperf 的事件语义，task-clock 只在 task 被调度执行时累计，等待/阻塞时间只有在 `--trace-offcpu` 额外采样里才会体现。",
+        "suggestion": "重写 `cpu-cycles` / `cpu-clock` / `task-clock` 的定义，并把 off-CPU profiling 与 `--trace-offcpu` 单列说明。"
+      },
+      {
+        "type": "版本差异",
+        "location": "L71,L95,L392-L400 与 applicable_versions",
+        "detail": "章节覆盖 Android 5-16，但没有把 Java 栈采样（Android 9+）、`profileable` 壳层采样（Android 10+）以及早期版本对 debuggable/root 的限制拆开，读者容易把 Android 10+ 的工作流误投到 5-8 设备。",
+        "suggestion": "补一张 Android 5-8 / 9 / 10+ 的能力矩阵，分别列 Java 采样、profileable、user build 与 PMU/off-CPU 的适用边界。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-19T22:11:56+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "14.3",
+    "section_title": "内存分析工具",
+    "priority": 95,
+    "reason": "[Deep Tech Review] heap dump GC 指令错误，并把 Graphics/dma-buf 错并入 heapprofd",
+    "material_paths": [
+      "intake/research-gaps.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "L149-L154",
+        "detail": "命令行抓 heap dump 的示例把 `kill -SIGHUP <pid>` 写成“触发 GC”。这不是现代 Android 上受支持的 GC 触发接口，当前命令链会把 shell 技巧误写成通用工作流。",
+        "suggestion": "删除 signal 触发 GC 的写法。若需要“更干净”的堆快照，改成 Android Studio Force GC，或在应用侧用 `Runtime.getRuntime().gc()` / `Debug.dumpHprofData()` 并明确它只是 hint。"
+      },
+      {
+        "type": "源码错误",
+        "location": "L540",
+        "detail": "把 `Surface` 的 Graphic Buffer、WebView 渲染内存和 Native Heap 合并成“`dumpsys meminfo` 看到 Native Heap 高就用 heapprofd 排查”。heapprofd 采的是 `malloc/free` 族分配，抓不到 dma-buf / Graphic Buffer 这类图形内存。按现在的说法，读者会把 Graphics / `/dev/dmabuf` 问题送去错误工具链。",
+        "suggestion": "把“malloc native heap”与“Graphics / dma-buf”拆成两条路径。前者继续用 heapprofd，后者改成 `dumpsys meminfo` Graphics、`showmap` `/dev/dmabuf`、SurfaceFlinger / Perfetto GPU 轨道联合排查。"
+      },
+      {
+        "type": "知识盲区",
+        "location": "L198-L343, L501-L540",
+        "detail": "章节多次提到 Graphic Buffer、Graphics bucket 和 `/dev/dmabuf`，但没有给出一条完整的图形内存诊断路径。对现代图片、视频、WebView、SurfaceView 场景，这块比单纯 malloc heap 更常见。",
+        "suggestion": "补一节“Graphics / dma-buf 内存怎么查”，至少串上 `dumpsys meminfo`、`showmap`、SurfaceFlinger layer / buffer 观察点，以及与 §2.15 DMA-BUF 的交叉引用。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-19T22:11:56+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "14.11",
+    "section_title": "Battery Historian 与功耗分析工具",
+    "priority": 95,
+    "reason": "[Deep Tech Review] 频繁网络优化节引用不存在的 NetworkRequest.setInterval API",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "L200",
+        "detail": "“利用 `NetworkRequest` 的 `setInterval` 控制检查频率”引用了不存在的 Android API。`android.net.NetworkRequest` 没有 `setInterval()`，这里把网络能力请求对象和周期任务调度接口混在了一起。",
+        "suggestion": "改成 WorkManager `PeriodicWorkRequest` / JobScheduler 的周期调度与网络约束，或直接写“批处理 + 合并请求 + 退避重试”。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-19T22:11:56+08:00",
+    "status": "pending"
   }
 ]

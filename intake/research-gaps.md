@@ -3529,3 +3529,41 @@ WebView GPU/Viz 线程组在单进程/多进程模式下的 Perfetto 追踪特�
 
 ### 关联章节
 2.20, 2.6, 2.12, 2.13, 2.18, 7.4
+
+
+## [2026-04-19] 14.2 Simpleperf — 知识盲区
+
+### 盲区描述
+Simpleperf 跨版本能力矩阵没有展开。正文已覆盖 Android 5-16，却没有把 Android 5-8 的 native/debbugable 限制、Android 9 的 Java 栈采样、Android 10 的 `profileable`、以及 user / userdebug 在 PMU 与 off-CPU 采样上的差异串成可执行矩阵。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 核对 simpleperf README 与 Android Developers 文档，整理 Android 5-8 / 9 / 10+ 的能力差异
+- 补 user、userdebug、debuggable、profileable 四类运行条件的支持矩阵
+- 补一组 Java 栈采样与 off-CPU 采样的版本边界示例
+
+### 关联章节
+- 14.1
+- 13.6
+- 15.6
+
+
+## [2026-04-19] 14.3 内存分析工具 — 知识盲区
+
+### 盲区描述
+Graphics / dma-buf 内存没有独立诊断分支。正文已经提到 Graphic Buffer、Graphics bucket 和 `/dev/dmabuf`，但没有说明这类内存为何不在 malloc heap 里、该怎样用 `dumpsys meminfo`、`showmap`、SurfaceFlinger 与 Perfetto GPU 轨道闭环定位。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 补 Graphics bucket、Graphic Buffer、dma-buf 与 Native Heap 的边界说明
+- 整理 `dumpsys meminfo` Graphics、`showmap` `/dev/dmabuf` 与 SurfaceFlinger layer 观察点
+- 增加与 §2.15 DMA-BUF、§10.1 App 内存分析、§7.10 图片加载章节的联动
+
+### 关联章节
+- 2.15
+- 10.1
+- 7.10

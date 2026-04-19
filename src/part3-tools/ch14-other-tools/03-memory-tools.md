@@ -30,11 +30,12 @@ sources:
     path: "system/extras/malloc_debug"
 tags: [mat, leakcanary, heapprofd, meminfo, showmap, procrank, memory-tools]
 related_chapters: ["10.1", "10.2", "10.3", "14.1", "13.1"]
-pipeline_stage: task9_pending
+pipeline_stage: task2b_pending
 task6_state: reviewed
 task6_result: pass-light-edit
-task9_state: pending
-task2b_state: idle
+task9_state: reviewed
+task2b_state: pending
+task9_result: needs-rework
 ---
 
 # 内存分析工具

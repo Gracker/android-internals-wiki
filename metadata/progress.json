@@ -1,15 +1,15 @@
 {
-  "generated_at": "2026-04-19T21:50:29+08:00",
+  "generated_at": "2026-04-19T22:11:56+08:00",
   "state_machine_version": "v2",
   "total_sections": 206,
   "metrics": {
     "total": 172,
     "unknown": 34,
-    "last_updated": "2026-04-19T21:50:29+08:00",
+    "last_updated": "2026-04-19T22:11:56+08:00",
     "task2b_state_counts": {
       "fixed": 124,
-      "idle": 38,
-      "pending": 10
+      "idle": 35,
+      "pending": 13
     },
     "task6_state_counts": {
       "pending": 1,
@@ -18,30 +18,30 @@
     },
     "task9_state_counts": {
       "fixed": 1,
-      "pending": 154,
-      "reviewed": 18
+      "pending": 151,
+      "reviewed": 21
     },
     "pipeline_stage_counts": {
-      "task2b_pending": 9,
+      "task2b_pending": 12,
       "task6_pending": 110,
-      "task9_pending": 54
+      "task9_pending": 51
     },
     "total_sections": 173,
     "pipeline_unknown": 33,
     "pipeline_task6_pending": 110,
-    "pipeline_task2b_pending": 9,
-    "pipeline_task9_pending": 54,
+    "pipeline_task2b_pending": 12,
+    "pipeline_task9_pending": 51,
     "task2b_unknown": 34,
     "task2b_fixed": 124,
-    "task2b_pending": 10,
-    "task2b_idle": 38,
+    "task2b_pending": 13,
+    "task2b_idle": 35,
     "task6_unknown": 33,
     "task6_revisiting": 108,
     "task6_reviewed": 64,
     "task6_pending": 1,
     "task9_unknown": 33,
-    "task9_pending": 154,
-    "task9_reviewed": 18,
+    "task9_pending": 151,
+    "task9_reviewed": 21,
     "ready-to-publish": 0,
     "finalized": 0,
     "task9_fixed": 1,
@@ -49,15 +49,15 @@
   },
   "pipeline": {
     "pipeline_stage_counts": {
-      "task2b_pending": 9,
+      "task2b_pending": 12,
       "task6_pending": 110,
-      "task9_pending": 54,
+      "task9_pending": 51,
       "unknown": 33
     },
     "task2b_state_counts": {
       "fixed": 124,
-      "idle": 38,
-      "pending": 10,
+      "idle": 35,
+      "pending": 13,
       "unknown": 34
     },
     "task6_state_counts": {
@@ -68,8 +68,8 @@
     },
     "task9_state_counts": {
       "fixed": 1,
-      "pending": 154,
-      "reviewed": 18,
+      "pending": 151,
+      "reviewed": 21,
       "unknown": 33
     }
   },
@@ -2617,28 +2617,30 @@
       "title": "Simpleperf",
       "path": "src/part3-tools/ch14-other-tools/02-simpleperf.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
-      "task9_state": "pending",
-      "task2b_state": "idle",
+      "task9_state": "reviewed",
+      "task2b_state": "pending",
       "reviewed_date": "2026-04-15",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
-      "section": "14.2"
+      "section": "14.2",
+      "task9_result": "needs-rework"
     },
     "src/part3-tools/ch14-other-tools/03-memory-tools.md": {
       "chapter": "14.3",
       "title": "内存分析工具",
       "path": "src/part3-tools/ch14-other-tools/03-memory-tools.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
-      "task9_state": "pending",
-      "task2b_state": "idle",
+      "task9_state": "reviewed",
+      "task2b_state": "pending",
       "reviewed_date": "2026-04-17",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
-      "section": "14.3"
+      "section": "14.3",
+      "task9_result": "needs-rework"
     },
     "src/part3-tools/ch14-other-tools/04-dumpsys.md": {
       "chapter": "14.4",
@@ -2748,14 +2750,15 @@
       "title": "Battery Historian 与功耗分析工具",
       "path": "src/part3-tools/ch14-other-tools/11-battery-historian.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
-      "task9_state": "pending",
-      "task2b_state": "idle",
+      "task9_state": "reviewed",
+      "task2b_state": "pending",
       "reviewed_date": "2026-04-16",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
-      "section": "14.11"
+      "section": "14.11",
+      "task9_result": "needs-rework"
     },
     "src/part3-tools/ch14-other-tools/README.md": {
       "chapter": null,

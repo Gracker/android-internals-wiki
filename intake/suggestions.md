@@ -2653,3 +2653,10 @@
 - **位置**：§SurfaceFlinger 在多窗口下多了什么工作（L104-L108）
 - **问题**：整章还没有一个同设备 full-screen / split-screen / connected-display 的 `dumpsys SurfaceFlinger` 或 Perfetto 样例。当前结论停在定性层，读者看不到 layer 数、composition 路径和 jank_type 怎么随窗口形态变化。
 - **建议**：补一组同机型对照样例，至少给出可见 layer 数、HWC/GPU composition 变化，以及主要 jank 类型。
+
+
+## [Task9 Deep Review] 14.11 Battery Historian 与功耗分析工具 — 2026-04-19
+- **类型**：交叉引用
+- **位置**：L113 vs L177
+- **问题**：同一章前面把 `wake_lock` 行描述为红色块，后面的模式 1 又写成持续绿色，章节内观察口径自相矛盾。
+- **建议**：统一成“高亮块/持续占用块”，或明确说明不同 Historian 主题下的颜色差异。
