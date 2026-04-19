@@ -2,7 +2,7 @@
 title: "ADPF 自适应性能框架"
 chapter: "5.9"
 section: "5.9"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 11 (API 30, Thermal Headroom 基础能力) - Android 17 (API 37)"
 drafted_date: "2026-04-06"
 drafted_by: "openclaw-task2a"
@@ -32,15 +32,18 @@ sources:
     path: "frameworks/base/services/core/java/com/android/server/power/hint/HintManagerService.java"
   - type: blog
     path: "https://android-developers.googleblog.com/"
-pipeline_stage: task9_pending
+pipeline_stage: ready-to-publish
 task6_state: reviewed
-task9_state: pending
+task9_state: reviewed
 task2b_state: fixed
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-04-20"
 task6_result: pass-light-edit
-task9_result: needs-rework
+task9_result: pass-tech-review
 task2b_result: fixed
+last_task9_at: "2026-04-19T23:59:59+08:00"
+task9_reviewed_by: "openclaw-task9"
+task9_reviewed_date: "2026-04-19"
 ---
 
 # 5.9 ADPF 自适应性能框架

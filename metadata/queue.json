@@ -522,40 +522,48 @@
   },
   {
     "section": "7.8",
-    "section_title": "RecyclerView 滑动优化",
+    "section_title": "RecyclerView 列表滑动性能深度优化",
     "priority": 95,
-    "reason": "[External Review] 外部 AI review 发现需回炉的问题",
-    "material_paths": [],
+    "reason": "[Deep Tech Review] 已复核 external-review 占位问题，7.8 无 P0/P1",
+    "material_paths": [
+      "logs/deep-review/2026-04-19-23-deep-review.md"
+    ],
     "review_issues": [
       {
         "type": "源码准确性",
-        "location": "RecycledViewPool 共享",
-        "detail": "文中提到 `setRecycleChildrenOnDetach(true)` 属于 `LinearLayoutManager`，`GridLayoutManager` 也能直接复用。",
-        "suggestion": "强调 `setRecycleChildrenOnDetach` 必须与共享 Pool 强绑定，否则开启后反而可能导致由于 Detach 过于激进导致的重新 Inflate 开销。"
+        "location": "RecycledViewPool 共享 / setRecycleChildrenOnDetach",
+        "detail": "复核 `LinearLayoutManager#setRecycleChildrenOnDetach()` 与 `GridLayoutManager` 继承关系后，正文第 214-223 / 236-238 行表述成立。external-review 把“建议搭配 sharedPool”上升为 P0/P1 不成立。",
+        "suggestion": "无需回炉。"
       },
       {
         "type": "原理链完整性",
         "location": "GapWorker 预取准入",
-        "detail": "提到 `willBindInTime` 读取运行平均耗时，但未说明算法细节。",
-        "suggestion": "基于外部 AI review 修正"
+        "detail": "正文已写明 `willCreateInTime()` / `willBindInTime()` 以及 `factorInCreateTime()` / `factorInBindTime()` 的预算判断路径。3/4 running average 公式属于可补充细节，但不足以构成 P1。",
+        "suggestion": "维持当前主链；如后续精修，可再补公式。"
       },
       {
         "type": "版本差异覆盖",
         "location": "ARR 适配逻辑",
-        "detail": "提到 RecyclerView 1.4.0 支持 ARR，但对 API 级别描述模糊。",
-        "suggestion": "基于外部 AI review 修正"
+        "detail": "复核 RecyclerView 1.4.0 release notes、`View#setFrameContentVelocity()` 与 `Display` API 后，正文已区分 API 35 速度上报与 Android 16 ARR 能力查询边界，external-review 的版本模糊判断不成立。",
+        "suggestion": "无需回炉。"
       },
       {
-        "type": "原理链完整性",
-        "location": "Stride Jitter 补偿",
-        "detail": "提到 VSync 时间精度导致的步幅波动。",
-        "suggestion": "在“无掉帧卡顿”一节，应补充 **“亚像素位移补偿（Sub-pixel Remainder Compensation）”** 方案。即：在 `scrollBy` 时，手动维护一个 `float` 残差，确保长期的像素步进与物理时间戳完美对齐。"
+        "type": "知识盲区",
+        "location": "Stride jitter / sub-pixel remainder",
+        "detail": "该项属于工程优化建议，不是 RecyclerView 或平台源码层面的既有缺口；当前章节把它放在 VSync 步幅波动语境下已足够。",
+        "suggestion": "不入阻断队列。"
       }
     ],
     "added_by": "external-ai-review",
     "added_at": "2026-04-19T11:44:38.404228+08:00",
-    "status": "pending",
-    "source_file": "2026-04-19-10-08-recyclerview-performance-external-review.md"
+    "status": "completed",
+    "source_file": "2026-04-19-10-08-recyclerview-performance-external-review.md",
+    "validated_by": "task9-deep-tech-review",
+    "validated_at": "2026-04-19T23:59:59+08:00",
+    "completed_at": "2026-04-19T23:59:59+08:00",
+    "completed_by": "task9-deep-tech-review",
+    "resolution": "确认 external-review 的 P0/P1 判断不成立，7.8 通过技术审计并自动晋升。",
+    "review_log": "logs/deep-review/2026-04-19-23-deep-review.md"
   },
   {
     "section": "7.10",
@@ -1170,28 +1178,37 @@
   },
   {
     "section": "5.9",
-    "section_title": "ADPF 动态性能框架",
+    "section_title": "ADPF 自适应性能框架",
     "priority": 85,
-    "reason": "[External Review] 外部 AI review 发现需回炉的问题",
-    "material_paths": [],
+    "reason": "[Deep Tech Review] 已复核 external-review 占位问题，5.9 无 P0/P1",
+    "material_paths": [
+      "intake/suggestions.md",
+      "logs/deep-review/2026-04-19-23-deep-review.md"
+    ],
     "review_issues": [
       {
         "type": "版本差异覆盖",
-        "location": "算力余量透明化",
-        "detail": "[P1 issue from external review]",
-        "suggestion": "基于外部 AI review 修正"
+        "location": "Android 16 Headroom API",
+        "detail": "复核 `SystemHealthManager#getCpuHeadroom()` / `getGpuHeadroom()`、最小轮询间隔与官方调用边界后，确认正文第 113-121 行已覆盖该变化，external-review 的“算力余量透明化”不构成缺口。",
+        "suggestion": "无需回炉；维持正文当前写法。"
       },
       {
         "type": "知识盲区",
-        "location": "热管理异步化",
-        "detail": "[P1 issue from external review]",
-        "suggestion": "基于外部 AI review 修正"
+        "location": "NDK thermal headroom listener",
+        "detail": "复核 NDK thermal 文档后，确认正文第 119 行与版本表已覆盖 `AThermal_HeadroomCallback` / thermal headroom listener，external-review 的“热管理异步化”已被当前稿件吸收。",
+        "suggestion": "无需回炉；关闭占位问题单。"
       }
     ],
     "added_by": "external-ai-review",
     "added_at": "2026-04-19T11:44:38.404228+08:00",
-    "status": "pending",
-    "source_file": "2026-04-19-75-5.9-external-review.md"
+    "status": "completed",
+    "source_file": "2026-04-19-75-5.9-external-review.md",
+    "validated_by": "task9-deep-tech-review",
+    "validated_at": "2026-04-19T23:59:59+08:00",
+    "completed_at": "2026-04-19T23:59:59+08:00",
+    "completed_by": "task9-deep-tech-review",
+    "resolution": "确认 external-review 两条 P1 均已被正文覆盖；仅保留 1 条 P2 精度建议到 suggestions.md，不影响发布。",
+    "review_log": "logs/deep-review/2026-04-19-23-deep-review.md"
   },
   {
     "section": "5.10",
@@ -1270,28 +1287,37 @@
   },
   {
     "section": "6.3",
-    "section_title": "线程池与并发优化",
+    "section_title": "I/O 调度与性能",
     "priority": 85,
-    "reason": "[External Review] 外部 AI review 发现需回炉的问题",
-    "material_paths": [],
+    "reason": "[Deep Tech Review] 已复核 external-review 占位问题，6.3 无 P0/P1",
+    "material_paths": [
+      "intake/suggestions.md",
+      "logs/deep-review/2026-04-19-23-deep-review.md"
+    ],
     "review_issues": [
       {
         "type": "版本差异覆盖",
         "location": "硬件级 I/O 隔离",
-        "detail": "[P1 issue from external review]",
-        "suggestion": "基于外部 AI review 修正"
+        "detail": "复核 docs.kernel cgroup-v2 与 Android cgroups 资料后，未找到“cgroup v2 优先级直接透传至 UFS 4.0 MCQ 硬件队列”的一手资料锚点。正文按 block layer / memcg / writeback ownership 三层拆解更准确。",
+        "suggestion": "关闭 external-review 占位问题单，不新增回炉。"
       },
       {
         "type": "知识盲区",
         "location": "回写压力调节",
-        "detail": "[P1 issue from external review]",
-        "suggestion": "基于外部 AI review 修正"
+        "detail": "复核 VM sysctl 与 Android 16KB page size 资料后，未发现“16KB 页面强制收紧 dirty_background_ratio”的官方依据，也未找到 logd / statsd 量产使用 io_uring 的 AOSP 锚点。",
+        "suggestion": "保留正文现有 vm 参数说明；若后续补充新内核优化，需附一手资料。"
       }
     ],
     "added_by": "external-ai-review",
     "added_at": "2026-04-19T11:44:38.404228+08:00",
-    "status": "pending",
-    "source_file": "2026-04-19-81-6.3-external-review.md"
+    "status": "completed",
+    "source_file": "2026-04-19-81-6.3-external-review.md",
+    "validated_by": "task9-deep-tech-review",
+    "validated_at": "2026-04-19T23:59:59+08:00",
+    "completed_at": "2026-04-19T23:59:59+08:00",
+    "completed_by": "task9-deep-tech-review",
+    "resolution": "external-review 两条 P1 均缺少一手资料支撑，关闭占位问题单；另记 1 条 F2FS 观察点 P2 到 suggestions.md。",
+    "review_log": "logs/deep-review/2026-04-19-23-deep-review.md"
   },
   {
     "section": "6.5",
