@@ -1795,9 +1795,12 @@
     ],
     "added_by": "external-ai-review",
     "added_at": "2026-04-19T14:21:48+08:00",
-    "status": "pending",
+    "status": "completed",
     "validated_by": "task9-deep-tech-review",
-    "validated_at": "2026-04-20T01:33:22+08:00"
+    "validated_at": "2026-04-20T01:33:22+08:00",
+    "completed_at": "2026-04-20T03:17:47+08:00",
+    "completed_by": "task2b-rework",
+    "resolution": "修正 BLAST 的提交流程与 Android 10/11 节点，补入软件渲染的 lockCanvas()/unlockCanvasAndPost() 观察点，并核对交叉引用，章节自动晋升 finalized。"
   },
   {
     "section": "18.2",
@@ -1932,7 +1935,9 @@
     "priority": 95,
     "reason": "[External Review] 虚构 Android 12 'push 模式'（AI 幻觉，P0），UI 线程被 RenderThread 阻塞的流水线气泡未点透（P1），分屏进程边界未界定（P1）",
     "material_paths": [
-      "logs/external-review/2026-04-19-14-05-android-view-multi-window-external-review.md"
+      "logs/external-review/2026-04-19-14-05-android-view-multi-window-external-review.md",
+      "intake/suggestions.md",
+      "intake/research-gaps.md"
     ],
     "review_issues": [
       {
@@ -1959,11 +1964,34 @@
         "detail": "将'分屏'直接等同于'UI Thread 竞争'，忽略绝大多数分屏是跨进程（各自独立 UI Thread + RT，完全并行）。需限定为同一进程内分屏（TaskFragment/ActivityEmbedding）",
         "suggestion": "明确限定场景为'同一 App 进程内的分屏'才会导致串行竞争",
         "evidence": []
+      },
+      {
+        "type": "源码错误 / AI 幻觉",
+        "location": "L135（阶段三：RenderThread 串行执行）",
+        "detail": "“Android 12 起引入更轻量的 push 模式，UI 线程只需短暂等待 DisplayList 引用交换即可返回”与 DrawFrameTask.cpp 不符。当前实现仍是 UI 线程在 postAndWait() 中等待 RenderThread 执行 syncFrameState() 后再被 unblockUiThread() 唤醒。",
+        "suggestion": "删除 push 模式表述，改写为 DrawFrameTask 的阻塞-唤醒同步模型。"
+      },
+      {
+        "type": "原理断裂",
+        "location": "L121-L135、时序图 Window B 段",
+        "detail": "正文没有点透 Window B 的 Traversal 为何会在 trace 里显得很长。真正的耗时常常是 UI 线程进入 B 的 draw 阶段后，仍在等待 RenderThread 先完成 Window A 的 DrawFrame，属于流水线气泡而非纯 Layout 开销。",
+        "suggestion": "在阶段说明和时序图中补出“Traversal B 内部等待 Draw A 完成”的依赖链。"
+      },
+      {
+        "type": "边界缺失",
+        "location": "L46、L260-L265（分屏模式）",
+        "detail": "把“分屏/多窗口”直接写成同一个 Choreographer 串行分发，忽略了绝大多数分屏是跨进程并行。只有同一 App 进程内的多实例 / ActivityEmbedding / TaskFragment 才会共享同一 UI Thread 与 RenderThread。",
+        "suggestion": "把分屏场景限定为同进程多窗口，并补上跨进程分屏不共享 UI/RT 的边界。"
       }
     ],
     "added_by": "external-ai-review",
     "added_at": "2026-04-19T14:21:48+08:00",
-    "status": "pending"
+    "status": "pending",
+    "validated_by": "task9-deep-tech-review",
+    "validated_at": "2026-04-20T02:35:00+08:00",
+    "review_log": "logs/deep-review/2026-04-20-02-deep-review.md",
+    "updated_at": "2026-04-20T02:35:00+08:00",
+    "updated_by": "task9-deep-tech-review"
   },
   {
     "section": "2.17",
@@ -2407,7 +2435,10 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-19T22:11:56+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-20T03:17:47+08:00",
+    "completed_by": "task2b-rework",
+    "resolution": "改写 cpu-cycles / cpu-clock / task-clock 语义，补充 Android 5-8 / 9 / 10+ 能力边界、--trace-offcpu 限制，以及 Perfetto 导入路径，章节自动晋升 finalized。"
   },
   {
     "section": "14.3",
@@ -2484,5 +2515,91 @@
     "added_at": "2026-04-20T02:13:00",
     "status": "pending",
     "original_review_log": "logs/review/2026-04-20-02-review.md"
+  },
+  {
+    "section": "18.6",
+    "section_title": "SurfaceView 直出链路",
+    "priority": 95,
+    "reason": "[Deep Tech Review] BLAST consumer 归属写错，SurfaceView 能力边界仍停留在旧版本",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "L43、L112-L118、L186-L193",
+        "detail": "正文把 SurfaceView 描述成“渲染线程直接与 SurfaceFlinger 交互”，并在对比表中把 Consumer 写成“SurfaceFlinger（直接）”。AOSP BLASTBufferQueue 明确在 client process 内创建 BLASTBufferItemConsumer，先 acquireNextBuffer，再通过 Transaction.apply() 把 buffer/layer state 提交给 SurfaceFlinger，并依赖 addTransactionCompletedCallback / releaseBufferCallback 回收 buffer。",
+        "suggestion": "把链路改成 Producer → BufferQueueProducer → BLASTBufferQueue/BLASTBufferItemConsumer（App 进程）→ SurfaceControl.Transaction → SurfaceFlinger。"
+      },
+      {
+        "type": "版本差异",
+        "location": "L45、L198-L206",
+        "detail": "章节按 Android 16 视角写作，却仍把 SurfaceView 能力写成绝对否定，例如“不支持动画变换、不能调整透明度”。SurfaceView.java 类注释明确写明：Android N 起窗口位置更新与 View 渲染同步，UpsideDownCake 起支持 arbitrary alpha blending。当前表述把现代版本行为讲成旧平台限制。",
+        "suggestion": "把能力边界改成分版本描述，区分旧版限制、N+ 的同步位移/缩放改善，以及 U+ 的 alpha 支持。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-20T02:35:00+08:00",
+    "status": "pending",
+    "review_log": "logs/deep-review/2026-04-20-02-deep-review.md"
+  },
+  {
+    "section": "18.7",
+    "section_title": "TextureView 合成链路",
+    "priority": 95,
+    "reason": "[Deep Tech Review] TextureView 的 Trace 识别规则与平台边界仍有事实错误",
+    "material_paths": [
+      "intake/suggestions.md",
+      "intake/research-gaps.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "L239-L244（与 SurfaceView 的 Trace 差异）",
+        "detail": "把 TextureView 的 Composition Type 写成“总是 CLIENT”不成立。TextureView 不会创建独立 SurfaceFlinger Layer，内容先由 App RenderThread 画进主窗口 GraphicBuffer；SurfaceFlinger 看到的是 App 主窗口这一层，该层在满足条件时仍可能走 DEVICE 合成。",
+        "suggestion": "改成“TextureView 没有独立 Layer，不能用固定 Composition Type 识别；应结合单一 App layer、RenderThread 的 drawTextureLayer / updateTexImage 等信号判断”。"
+      },
+      {
+        "type": "知识盲区",
+        "location": "全文缺失（建议放在导论或排障段）",
+        "detail": "章节没有说明 TextureView 只能工作在 hardware accelerated window。TextureView.java 类注释明确写明“rendered in software, TextureView will draw nothing”。缺少这一边界会让黑屏/不更新问题缺少首要排查项。",
+        "suggestion": "新增“硬件加速是 TextureView 的前置条件”小节，并给出软件渲染窗口下的失败表现。"
+      },
+      {
+        "type": "版本差异",
+        "location": "L44、L184-L185、L304",
+        "detail": "正文把 SurfaceView 的能力写成绝对“无 alpha / 无变换”。TextureView.java 的 capability table 已标明 SurfaceView 在 U+ 支持 View alpha，SurfaceView.java 注释也说明 N 起位置更新与 translating/scaling 同步。当前对比表会把 2025-2026 平台行为误写成老版本限制。",
+        "suggestion": "把比较矩阵改成版本化描述，至少标出 N+ 的同步变换改善与 U+ 的 alpha 支持。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-20T02:35:00+08:00",
+    "status": "pending",
+    "review_log": "logs/deep-review/2026-04-20-02-deep-review.md"
+  },
+  {
+    "section": "10.6",
+    "section_title": "内存抖动与频繁 GC",
+    "priority": 95,
+    "reason": "[Deep Tech Review] Android 14 被过早写成 CMC 基线，GC 版本边界与 AOSP tag 不符",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "版本差异",
+        "location": "L84-L86（内存抖动的本质）",
+        "detail": "正文把 Android 14+ 一刀切写成 Concurrent Mark-Compact 时代，但 AOSP android-14.0.0_r1 的 art/runtime/gc/heap.cc 仍保留 `gUseReadBarrier -> kCollectorTypeCC` 路径；android-15.0.0_r1 才能明确看到 `gUseUserfaultfd -> kCollectorTypeCMC`。当前写法把 Android 14、15、16 的 GC 路线压成一条线，版本边界过早。",
+        "suggestion": "改成更稳的三段式：Android 8-14 以 CC / generational CC 为主线；Android 15 引入 UFFD 驱动的 CMC 路径；Android 16 再把 generational CMC 作为对外能力重点。",
+        "evidence": [
+          "https://android.googlesource.com/platform/art/+/android-14.0.0_r1/runtime/gc/heap.cc?format=TEXT",
+          "https://android.googlesource.com/platform/art/+/android-15.0.0_r1/runtime/gc/heap.cc?format=TEXT",
+          "https://android.googlesource.com/platform/art/+/android-16.0.0_r1/runtime/gc/heap.cc?format=TEXT"
+        ]
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-20T04:20:38+08:00",
+    "status": "pending"
   }
 ]

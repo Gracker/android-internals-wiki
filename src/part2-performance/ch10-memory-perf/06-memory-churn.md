@@ -31,11 +31,13 @@ word_count: "~7500"
 reviewed_date: "2026-04-16"
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
-pipeline_stage: task6_pending
+pipeline_stage: task2b_pending
 task6_state: revisiting
-task9_state: pending
-task2b_state: fixed
+task9_state: reviewed
+task2b_state: pending
 task2b_result: fixed
+task9_result: needs-rework
+last_task9_at: "2026-04-20T04:20:38+08:00"
 ---
 
 # 内存抖动与频繁 GC

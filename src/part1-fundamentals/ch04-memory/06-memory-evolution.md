@@ -1,7 +1,7 @@
 ---
 title: "内存相关的版本演进"
 chapter: "4.6"
-status: ready-for-review
+status: finalized
 section: "4.6"
 reviewed_date: "2026-04-19"
 reviewed_by: "openclaw-task6"
@@ -44,12 +44,12 @@ related_chapters: ["4.1", "4.2", "4.3", "4.4", "4.5", "2.9"]
 drafted_date: "2026-03-31"
 drafted_by: "openclaw-subagent"
 review_count: 4
-pipeline_stage: task9_pending
+pipeline_stage: ready-to-publish
 task6_state: reviewed
 task6_result: pass-light-edit
-task9_state: pending
-task9_result: needs-rework
-last_task9_at: "2026-04-19T00:54:00+08:00"
+task9_state: reviewed
+task9_result: pass-tech-review
+last_task9_at: "2026-04-20T04:20:38+08:00"
 task2b_state: fixed
 task2b_result: fixed
 last_task2b_at: "2026-04-19T02:05:51+08:00"

@@ -1,15 +1,15 @@
 {
-  "generated_at": "2026-04-20T03:17:47+08:00",
+  "generated_at": "2026-04-20T04:20:38+08:00",
   "state_machine_version": "v2",
   "total_sections": 206,
   "metrics": {
     "total": 206,
     "unknown": 34,
-    "last_updated": "2026-04-20T03:17:47+08:00",
+    "last_updated": "2026-04-20T04:20:38+08:00",
     "task2b_state_counts": {
       "unknown": 34,
-      "fixed": 129,
-      "pending": 17,
+      "fixed": 128,
+      "pending": 18,
       "idle": 26
     },
     "task6_state_counts": {
@@ -20,51 +20,51 @@
     },
     "task9_state_counts": {
       "unknown": 33,
-      "reviewed": 30,
-      "pending": 142,
+      "reviewed": 33,
+      "pending": 139,
       "fixed": 1
     },
     "pipeline_stage_counts": {
       "unknown": 33,
-      "task6_pending": 103,
-      "task9_pending": 49,
-      "task2b_pending": 16,
-      "ready-to-publish": 5
+      "task6_pending": 102,
+      "task9_pending": 47,
+      "task2b_pending": 17,
+      "ready-to-publish": 7
     },
     "total_sections": 206,
     "pipeline_unknown": 33,
-    "pipeline_task6_pending": 103,
-    "pipeline_task2b_pending": 16,
-    "pipeline_task9_pending": 49,
+    "pipeline_task6_pending": 102,
+    "pipeline_task2b_pending": 17,
+    "pipeline_task9_pending": 47,
     "task2b_unknown": 34,
-    "task2b_fixed": 129,
-    "task2b_pending": 17,
+    "task2b_fixed": 128,
+    "task2b_pending": 18,
     "task2b_idle": 26,
     "task6_unknown": 33,
     "task6_revisiting": 104,
     "task6_reviewed": 68,
     "task6_pending": 1,
     "task9_unknown": 33,
-    "task9_pending": 142,
-    "task9_reviewed": 30,
+    "task9_pending": 139,
+    "task9_reviewed": 33,
     "task9_fixed": 1,
     "ready-to-publish": 0,
-    "finalized": 5,
-    "ready-for-review": 167,
-    "pipeline_ready_to_publish": 5
+    "finalized": 7,
+    "ready-for-review": 165,
+    "pipeline_ready_to_publish": 7
   },
   "pipeline": {
     "pipeline_stage_counts": {
       "unknown": 33,
-      "task6_pending": 103,
-      "task9_pending": 49,
-      "task2b_pending": 16,
-      "ready-to-publish": 5
+      "task6_pending": 102,
+      "task9_pending": 47,
+      "task2b_pending": 17,
+      "ready-to-publish": 7
     },
     "task2b_state_counts": {
       "unknown": 34,
-      "fixed": 129,
-      "pending": 17,
+      "fixed": 128,
+      "pending": 18,
       "idle": 26
     },
     "task6_state_counts": {
@@ -75,8 +75,8 @@
     },
     "task9_state_counts": {
       "unknown": 33,
-      "reviewed": 30,
-      "pending": 142,
+      "reviewed": 33,
+      "pending": 139,
       "fixed": 1
     }
   },
@@ -1007,15 +1007,15 @@
       "chapter": "4.6",
       "title": "内存相关的版本演进",
       "path": "src/part1-fundamentals/ch04-memory/06-memory-evolution.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "task6_state": "reviewed",
-      "task9_state": "pending",
+      "task9_state": "reviewed",
       "task2b_state": "fixed",
       "reviewed_date": "2026-04-19",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
-      "task9_result": "needs-rework",
+      "task9_result": "pass-tech-review",
       "task2b_result": "fixed",
       "section": "4.6"
     },
@@ -1037,15 +1037,15 @@
       "chapter": "4.8",
       "title": "ART 分代垃圾回收与 GC 暂停优化",
       "path": "src/part1-fundamentals/ch04-memory/08-art-generational-gc.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "task6_state": "reviewed",
-      "task9_state": "pending",
+      "task9_state": "reviewed",
       "task2b_state": "fixed",
       "reviewed_date": "2026-04-19",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
-      "task9_result": "needs-rework",
+      "task9_result": "pass-tech-review",
       "task2b_result": "fixed",
       "section": "4.8"
     },
@@ -1937,15 +1937,16 @@
       "title": "内存抖动与频繁 GC",
       "path": "src/part2-performance/ch10-memory-perf/06-memory-churn.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "revisiting",
-      "task9_state": "pending",
-      "task2b_state": "fixed",
+      "task9_state": "reviewed",
+      "task2b_state": "pending",
       "reviewed_date": "2026-04-20",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
       "section": "10.6",
-      "task2b_result": "fixed"
+      "task2b_result": "fixed",
+      "task9_result": "needs-rework"
     },
     "src/part2-performance/ch10-memory-perf/07-sqlite-room-performance.md": {
       "chapter": "10.7",
@@ -3155,8 +3156,8 @@
   "summary": {
     "status_counts": {
       "unknown": 34,
-      "ready-for-review": 169,
-      "finalized": 3
+      "ready-for-review": 165,
+      "finalized": 7
     }
   }
 }
