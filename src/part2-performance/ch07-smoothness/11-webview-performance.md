@@ -23,11 +23,11 @@ sources:
     path: "frameworks/base/core/java/android/webkit/"
   - type: aosp
     path: "android_webview/docs/ (chromium.googlesource.com)"
-reviewed_date: "2026-04-12"
+reviewed_date: "2026-04-20"
 reviewed_by: "openclaw-task6"
-task6_result: needs-rework
-pipeline_stage: task6_pending
-task6_state: revisiting
+task6_result: pass-light-edit
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_result: needs-rework
 task9_state: pending
 task2b_state: fixed
@@ -353,7 +353,7 @@ WebView 内存分析需要结合多个工具：
 
 ### Chromium 合成器处理滚动
 
-WebView 的滚动可以受益于 Chromium compositor 的 off-main-thread scrolling，但它不是一条完全绕开 Android View 体系的独立高速路。更准确的处理过程是：
+WebView 的滚动可以受益于 Chromium compositor 的 off-main-thread scrolling。实际的处理过程是：
 
 1. 输入事件先经过 Android 的输入分发和 WebView Java / native 层，再交给 Chromium
 2. Blink 完成 layout / paint 后，compositor 把页面内容组织成 compositing layers / tiles
