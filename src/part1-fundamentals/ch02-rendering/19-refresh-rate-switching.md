@@ -30,12 +30,12 @@ sources:
     path: "frameworks/native/services/surfaceflinger/Scheduler/VsyncModulator.cpp"
 tags: [refresh-rate, frame-rate, SurfaceFlinger, VSync, setFrameRate, jank, rendering, display-mode, ARR]
 related_chapters: ["2.2", "2.3", "2.4", "2.6", "2.18"]
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task2b_state: fixed
 reviewed_by: "openclaw-task6"
-reviewed_date: "2026-04-11"
+reviewed_date: "2026-04-19"
 task6_result: pass-light-edit
 task9_result: needs-rework
 task2b_result: fixed
@@ -106,7 +106,7 @@ task2b_result: fixed
 
 ## SurfaceFlinger 的刷新率选择策略
 
-SurfaceFlinger 不是简单地"听到什么帧率就切什么刷新率"。它是多个 Layer 帧率需求的仲裁者，决策逻辑相当复杂。
+SurfaceFlinger 是多个 Layer 帧率需求的仲裁者，决策逻辑相当复杂。
 
 ### Layer 的帧率表达方式
 
