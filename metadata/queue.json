@@ -1318,7 +1318,10 @@
     ],
     "added_by": "external-ai-review",
     "added_at": "2026-04-19T12:30:29.391899+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-19T21:50:29+08:00",
+    "completed_by": "task2b-rework",
+    "resolution": "修正 onTrimMemory 在 API 34+ 的处理方式，补入 16KB Page Size 对内存口径的影响、PSS 节流背景，以及更稳妥的 RSS / Java Heap / Native Heap 监控建议"
   },
   {
     "section": "10.4",
@@ -1362,7 +1365,10 @@
     ],
     "added_by": "external-ai-review",
     "added_at": "2026-04-19T12:30:29.391899+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-19T21:50:29+08:00",
+    "completed_by": "task2b-rework",
+    "resolution": "修正 mm_events 常驻监听模型、补入 Android 15 16KB 页面与 ZRAM Multi-Comp、补全 MGLRU 的观测方法，并把 GC 暂停时间改回更保守的范围"
   },
   {
     "section": "10.5",

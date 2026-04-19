@@ -28,11 +28,12 @@ sources:
     path: "https://perfetto.dev/docs/data-sources/native-heap-profiling"
 tags: [memory, pss, memory-growth, fragmentation, lru-cache, bitmap, native-heap]
 related_chapters: ["10.1", "10.2", "4.1", "4.3", "4.5"]
-pipeline_stage: task9_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
 task9_state: pending
-task2b_state: idle
+task2b_result: fixed
+task2b_state: fixed
 ---
 
 # 内存持续增长
@@ -45,7 +46,7 @@ task2b_state: idle
 - 🔹 内存持续增长（非泄漏）的常见原因：缓存无上限、Bitmap 累积、Native 碎片化
 - 🔹 与内存泄漏的区分方法
 - 🔹 LRU Cache 策略的正确实现
-- 🔹 内存增长的监控指标：PSS 趋势、Java Heap 使用率趋势
+- 🔹 内存增长的监控指标：PSS / RSS 趋势、Java Heap 使用率趋势
 - 🔹 内存碎片化的检测与应对
 
 ### 扩展（可选深入）
@@ -120,7 +121,7 @@ Bitmap 累积的典型路径有两条：一是前面说的缓存无淘汰，图�
 
 在 `dumpsys meminfo` 中，这部分通常体现在 "Private Other" 或 "Unnamed" 行中。如果发现这部分持续增长但 Heap 区域没有对应变化，需要检查是否有线程泄漏或 Native 层的 mmap 操作。
 
-[待验证: Android 16 中 meminfo 输出格式的具体变化]
+[自动发现] 16KB 页面设备上的 `meminfo` 粒度更粗，匿名映射尾页的浪费也更容易抬高 `Private Other` 一类条目。跨设备比对这类指标前，先确认页大小。
 
 ## 与内存泄漏的区分方法
 
@@ -215,22 +216,27 @@ LruCache<String, Bitmap> imageCache = new LruCache<String, Bitmap>(cacheSize) {
 
 ### 响应系统内存压力
 
-`LruCache` 的淘汰只在缓存满时触发，但系统可能在任何时候进入低内存状态。正确做法是在 `onTrimMemory()` 回调中主动释放缓存资源：
+`LruCache` 的淘汰只在缓存满时触发，但系统压力往往更早出现。缓存收缩策略要按版本段理解：
+
+- API 33 及以下，`onTrimMemory()` 还会投递 `TRIM_MEMORY_RUNNING_*`、`TRIM_MEMORY_MODERATE`、`TRIM_MEMORY_COMPLETE` 这类更细的等级。
+- API 34 起，这些等级不再投递给 App；API 35 又把相关常量标成 deprecated。现代版本里，App 侧最稳定的信号主要是 `TRIM_MEMORY_UI_HIDDEN` 和 `TRIM_MEMORY_BACKGROUND`，更细的系统压力判断要回到 RSS、PSS、Perfetto、logcat 和冷启动证据。
 
 ```java
 @Override
 public void onTrimMemory(int level) {
-    if (level >= ComponentCallbacks2.TRIM_MEMORY_MODERATE) {
-        // 系统内存紧张，清空缓存
+    if (level >= ComponentCallbacks2.TRIM_MEMORY_BACKGROUND) {
+        // 进程进入 LRU 区域，尽快收缩后台缓存
         imageCache.evictAll();
-    } else if (level >= ComponentCallbacks2.TRIM_MEMORY_BACKGROUND) {
-        // 应用进入后台，释放一半缓存
+        return;
+    }
+    if (level == ComponentCallbacks2.TRIM_MEMORY_UI_HIDDEN) {
+        // UI 不可见，先释放 UI 相关缓存
         imageCache.trimToSize(imageCache.size() / 2);
     }
 }
 ```
 
-这里我们利用了 `LruCache` 自身的 LRU 特性：`trimToSize()` 会按照 LRU 顺序淘汰条目，保留最近使用的部分。而 `evictAll()` 则清空整个缓存，用于应对严重的内存压力。
+`trimToSize()` 仍然按 LRU 顺序淘汰条目，适合做温和收缩；`evictAll()` 适合在进程退到后台队列后直接清空可再生缓存。如果项目还需要连续的系统余量信号，应该接 RSS 趋势、Perfetto 或系统 health / headroom 能力，不要继续把缓存策略绑定在已经不再投递的 trim 常量上。
 
 [已验证: 官方文档, developer.android.com/reference/android/content/ComponentCallbacks2]
 
@@ -262,19 +268,22 @@ protected void entryRemoved(boolean evicted, String key,
 
 ### PSS 趋势
 
-PSS（Proportional Set Size）是 Android 系统衡量进程实际物理内存占用的核心指标。它将共享库的内存按引用进程数量均摊到每个进程上，比 RSS（Resident Set Size）更准确地反映了每个进程对系统内存的真实消耗。
+PSS（Proportional Set Size）仍然是理解进程真实物理内存占用的重要口径，但更适合做低频校准，不适合做秒级时序指标。
 
-监控系统层面的 PSS 趋势是发现内存增长问题最直接的方式。可以通过 `Debug.getPss()` 获取当前进程的 PSS 值（返回值单位为字节），也可以通过 `Debug.getMemoryInfo()` 获取更详细的 `Debug.MemoryInfo` 对象，其中包含了各内存类别的 PSS 分项。
+一方面，PSS 查询本身成本高。`Debug.getPss()` 直接读 `smaps`，调用频率过高会给线上监控带来额外负担。另一方面，Android 14 之后系统对更快的 PSS 查询路径做了节流，高频调用时可能拿到历史值。把 PSS 放在 30 秒、1 分钟或页面切换点上做校准更稳妥，连续趋势更适合交给 RSS、Java Heap 和 Native Heap 指标。
+
+Android 15 的 16KB Page Size 还会改变这组指标的解释方式。页变大以后，TLB miss 和页表开销会下降，但小块分配的内部碎片会变多。同样一段业务路径，在 16KB 设备上看到的 RSS / PSS 往往会比 4KB 设备更高。跨设备比对内存曲线前，先用 `adb shell getconf PAGE_SIZE` 确认页大小，再判断增长是不是异常。
+
+在实际工程里，更稳妥的组合是三层指标一起看：
+
+- **RSS**：用 `Debug.getRss()` 或 `dumpsys meminfo` 看驻留页变化，适合做连续趋势
+- **Java Heap**：用 `Runtime.getRuntime()` 看托管堆预算和回落幅度
+- **Native Heap**：用 `Debug.getNativeHeapAllocatedSize()` 看 Native 分配是否持续抬高
+
+PSS 保留给低频校准和回归比对。如果线上需要在异常发生时补抓现场，Android 15+ 的 `ProfilingManager` 更适合触发 system trace / heap profile，而不是靠高频轮询 PSS。
 
 [已验证: 官方文档, developer.android.com/reference/android/os/Debug#getPss()]
-
-在实际工程中，PSS 采样的策略通常有两种：
-
-**定时采样**：每隔一定时间（如 30 秒或 1 分钟）采集一次 PSS。适合长生命周期应用的后台监控。需要注意的是 `Debug.getPss()` 本身有执行开销（需要遍历 /proc/pid/smaps），频率不宜过高。
-
-**页面级采样**：在每个页面（Activity/Fragment）进入和退出时各采集一次 PSS，差值即为该页面的内存增量。这种方式能精确定位哪个页面导致了最多的内存增长。
-
-将 PSS 采样数据上报到监控平台后，可以绘制出应用在典型使用路径下的内存曲线。正常的曲线应该是锯齿形——使用时上升，页面退出后回落；如果曲线整体呈上升趋势（每个锯齿的波谷都在抬高），就说明存在持续增长问题。
+[来源: intake/research-feeds/2026-04-07-11-android-16kb-page-size-jni-native-library-quantification.md; src/part3-tools/ch14-other-tools/07-profiling-manager.md]
 
 ### Java Heap 使用率趋势
 
@@ -341,15 +350,11 @@ Native Heap 的碎片化在应用层面很难直接量化，但可以通过以�
 
 **系统层面：**
 
-一些厂商（如 OPPO）在内核中实现了反碎片化机制：
+一些厂商会在内核里做反碎片处理，例如按页迁移类型整理空闲页、把小块虚拟映射收口到更集中的地址范围，目标都是减少高阶页分配失败和大块虚拟地址被零散映射打碎。
 
-- **MF（Multi-Freearea）**：在物理内存管理层面，将空闲页面集中在高 PFN 范围，增加合并为高阶页面的概率
-- **CSVM（Centralize-Small-VirtualMem）**：在虚拟内存管理层面，将小尺寸的虚拟内存分配集中在特定的地址范围，减少对大块虚拟空间的"污染"
-
-这些优化属于 OEM/系统层面的工作，App 开发者无法直接使用，但了解其原理有助于理解碎片化的底层机制，以及在 Perfetto 中观察到的系统级行为。
+这些优化属于 OEM / 系统层面的工作，公开资料里的命名并不完全统一。对 App 开发者来说，更有用的结论是：相同总内存下，分配形态越稳定、对象生命周期越集中，系统越容易把空闲页合并回来，连续物理页和连续虚拟地址也越容易保住。
 
 [已验证: 来源见 Cubox/OPPO内存反碎片优化原理-2022-10-26.md]
-[待验证: OPPO MF/CSVM 在其他厂商平台上的类似实现]
 
 ## WebView 内存增长问题与多进程 WebView
 
@@ -375,7 +380,7 @@ Native Heap 的碎片化在应用层面很难直接量化，但可以通过以�
 
 **定期自检与收缩**：在应用后台运行时，定期检查内存占用。如果超过预算阈值，主动释放非关键资源。比如音乐播放器在后台播放时，可以释放专辑封面缓存、歌词缓存等非必要数据。
 
-**利用 onTrimMemory 分级响应**：`onTrimMemory()` 的不同级别提供了系统内存状态的细粒度信息。对于长生命周期应用，需要实现完整的分级响应策略——从低级别的"减少缓存"到高级别的"释放所有可释放资源"，确保在任何内存压力下都能做出合理的让步。
+**按版本处理 trim 回调**：API 33 及以下还能根据 `TRIM_MEMORY_RUNNING_*` 等级细分策略；API 34+ 只能把 `TRIM_MEMORY_UI_HIDDEN` 和 `TRIM_MEMORY_BACKGROUND` 当作粗粒度信号。长生命周期应用的缓存治理要建立在预算、自检和后台收缩上，不能继续依赖已经不再投递的 trim 常量。
 
 **避免在后台持续累积数据**：长生命周期应用的一个常见错误是在后台持续接收数据并缓存在内存中。比如 IM 应用在后台持续接收消息，如果把所有未读消息都保存在内存中，运行一整天后内存占用可能翻倍。正确的做法是在进入后台后限制内存缓存条目数，超过限制的数据持久化到数据库。
 
@@ -413,6 +418,8 @@ Native Heap 的碎片化在应用层面很难直接量化，但可以通过以�
 - AOSP 源码路径：`frameworks/base/core/java/android/util/LruCache.java`
 - Android 官方文档：[Manage your app's memory](https://developer.android.com/topic/performance/memory)
 - Android 官方文档：[LruCache Reference](https://developer.android.com/reference/android/util/LruCache)
+- Android 官方文档：[Support 16 KB page sizes](https://developer.android.com/guide/practices/page-sizes)
+- Android 官方文档：[ProfilingManager Reference](https://developer.android.com/reference/android/os/ProfilingManager)
 - Perfetto heapprofd：[Native Heap Profiling](https://perfetto.dev/docs/data-sources/native-heap-profiling)
 - OPPO 内存反碎片优化（素材来源：Cubox/OPPO内存反碎片优化原理-2022-10-26.md）
 - Hummer 引擎内存稳定性研究（素材来源：Personal-Knowlodge/source/2026-03-08）

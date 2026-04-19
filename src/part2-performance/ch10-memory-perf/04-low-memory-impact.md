@@ -27,12 +27,13 @@ reviewed_by: openclaw-task6
 polish_count: 3
 polish_date: "2026-04-19"
 polish_by: "task6-review"
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: needs-rework
 task9_result: needs-rework
 task9_state: pending
-task2b_state: pending
+task2b_result: fixed
+task2b_state: fixed
 ---
 
 # 低内存对系统性能的影响
@@ -45,7 +46,7 @@ task2b_state: pending
 - 🔹 低内存对系统性能的连锁反应：kswapd 活跃 → direct reclaim → I/O 阻塞 → 全局卡顿
 - 🔹 lmkd 频繁杀进程 → App 冷启动增加 → 用户感知卡
 - 🔹 低内存下的 GC 行为变化：更频繁的 GC、更长的暂停
-- 🔹 Perfetto 中识别内存压力的信号：mm_event、vmscan、lmk、PSI
+- 🔹 Perfetto 中识别内存压力的信号：mm_events、vmscan、lmk、PSI
 - 🔹 系统级内存优化手段：ZRAM 调优、cgroup 内存限制
 
 ### 扩展（可选深入）
@@ -134,15 +135,13 @@ lmkd 收到内存压力信号后，会根据进程的 `oom_score_adj` 来选择�
 
 ### ART GC 在低内存下的触发策略
 
-ART 虚拟机的垃圾回收策略会受到系统内存压力的直接影响。从 Android 8.0（Oreo）开始，ART 默认使用 Concurrent Copying（CC）垃圾收集器，这是一个分代、并发的收集器。在正常情况下，CC 收集器的 Young GC 暂停时间通常在 1ms 以下 [待验证: 具体数值因设备、堆大小和 GC 策略而异]，对应用帧率几乎没有影响。
+ART 的垃圾回收会直接受到系统内存压力影响。就 Perfetto 的常见观测口径来说，轻量的 Young / Minor GC 往往落在 1ms-3ms；这个范围适合描述短命对象回收，不适合套到 Major / Full GC。后者在低内存、对象晋升多或需要 compaction 时，停顿可以拉到 10ms 以上。
 
-但当系统进入低内存状态时，ART 的 GC 行为会发生几个明显的变化。
+低内存先带来的变化是 GC 频率抬高。ART 在分配对象时会持续检查堆使用量和增长空间。系统压力一上来，可用堆空间更容易逼近上限，GC 事件的间隔会明显缩短，在 Perfetto 里能看到 GC slice 更密。
 
-最直接的影响是 GC 触发更频繁。ART 在分配对象时会检查当前堆的使用量是否接近上限。在低内存环境下，系统给 App 分配的堆空间可能被压缩（通过 `setSoftLimit` 等 API），导致堆更容易"满"，GC 更频繁地被触发。表现为 Perfetto 中 GC Event 的密度显著增加。
+内存继续吃紧时，GC 类型也会升级。除了常规的 Young / Minor GC，系统还可能进入更重的 compaction 或 collector transition 路径。这些阶段会让暂停时间和 CPU 占用一起上升，120Hz 设备尤其容易直接体现为掉帧。
 
-当内存压力持续增加时，GC 类型也会升级。ART 会根据内存压力情况在几种收集器之间切换。轻度压力下使用 Concurrent Copying（并发复制），只需要短暂暂停应用线程。但如果 `onTrimMemory` 回调没有被正确响应，或者系统内存极其紧张，ART 可能会触发 Homogeneous Space Compaction（同构空间压缩）或 Collector Transition（收集器切换），这些操作的暂停时间远高于普通 Young GC，可能导致明显的帧卡顿。[已验证: 官方文档, developer.android.com]
-
-此外，后台 App 也会遭遇压缩 GC。当 App 进入后台后，在低内存环境下 ART 会主动触发压缩 GC 来减少内存占用。这个操作虽然是后台执行的，但会消耗 CPU 资源，可能影响前台 App 的性能。
+后台进程也会在压力下主动做内存收缩。App 退到后台后，ART 可能触发更重的整理型 GC 来降低驻留集。这部分工作虽然不直接阻塞前台界面，但会和 kswapd、压缩 swap 一起争 CPU。
 
 ### 内存抖动与 GC 的恶性循环
 
@@ -161,11 +160,15 @@ ART 虚拟机的垃圾回收策略会受到系统内存压力的直接影响。�
 
 在 Perfetto Trace 中识别内存压力，需要关注以下几个关键信号源。这些信号通常不会单独出现，而是组合在一起时才有诊断价值。
 
-### mm_events：内核内存事件的快照
+### mm_events：常驻守护进程 + 触发式记录
 
-mm_events 是 Android 12+ 引入的内存压力追踪机制。它的工作方式比较特别——不会持续记录，只在检测到内存压力时自动启动一段时间的追踪。具体来说，当 kswapd 被唤醒、Direct Reclaim 被触发或内存规整（compaction）开始时，mm_events 会开始收集内存统计数据，包括 vmstat 字段（如 `nr_free_pages`、`pgpgin`、`pgsteal`）和 ftrace 内存事件。
+`mm_events` 是 Android 12+ 的内存压力追踪组件。守护进程本身常驻，平时通过 `perf_event_open` 订阅内核 tracepoints；当 `mm_vmscan_kswapd_wake`、`mm_vmscan_direct_reclaim_begin`、`mm_compaction_begin` 这类事件出现时，再按配置窗口抓取一段 vmstat 和 ftrace 数据。它以常驻监听的方式工作，记录窗口由内核事件触发。
 
-mm_events 的配置文件通常位于 `/vendor/etc/mm_events.cfg`。在 Perfetto 中，我们可以在 `linux.ftrace` 或 `mem.mm_events` 相关的 track 中找到这些数据。[已验证: 官方文档, source.android.com]
+`mm_events` 的配置文件通常位于 `/vendor/etc/mm_events.cfg`。在 Perfetto 里，它常和 `linux.ftrace` 轨道一起看：前者给出一段压力窗口内的统计快照，后者用 `mm_vmscan_*`、`mm_compaction_*` 把时序补齐。
+
+Android 10/11 还没有 `mm_events` 这条路径。分析这两个版本的低内存问题时，仍然要回到 `vmscan` ftrace、PSI 和 lmkd 日志。到 Android 12+，再把 `mem.mm_events` 纳入统一判断。
+
+[已验证: 官方文档, source.android.com; 源码锚点: system/memory/mm_events/]
 
 ### vmscan ftrace 事件
 
@@ -211,11 +214,19 @@ ZRAM 是 Android 内存管理的核心组件之一。它在 RAM 中创建一个�
 
 ZRAM 的调优涉及几个参数：
 
-**ZRAM 大小**。设备厂商通常在设备初始化时设置 ZRAM 的最大容量。对于 Android Go 设备，Qualcomm 的调优指南建议设为物理 RAM 的 75% [待补充: 具体 Qualcomm 调优指南文档链接]。更大的 ZRAM 意味着更多后台应用可以保持在内存中（以压缩形式），但也会增加压缩/解压缩的 CPU 开销。在设备上可以通过 `cat /proc/swaps` 查看 swap 设备和容量，通过 `cat /sys/block/zram0/mm_stat` 查看原始数据大小、压缩后大小等详细统计。
+**ZRAM 大小**。设备厂商通常在设备初始化阶段给 ZRAM 设一个上限。上限大，后台匿名页更容易驻留；上限小，前台能拿到更多原始物理内存。它是在 RAM 和驻留率之间做取舍，不存在统一最优值。排查设备配置时，可以先用 `cat /proc/swaps` 看 swap 设备和容量，再用 `cat /sys/block/zram0/mm_stat` 看原始数据大小、压缩后大小和回收效果。
 
 **Swappiness**。这个内核参数控制内核回收匿名页（swap out）和回收文件页（drop page cache）的倾向比例。取值范围 0-200，默认值 60。在 Android 设备上，较低值（10-30）通常更适合，因为移动设备优先保证前台 UI 响应，而不是积极地 swap 后台进程。但某些厂商会设置为 100 甚至更高来更积极地利用 ZRAM。[已验证: 官方文档, developer.android.com]
 
-**压缩算法**。Android 通常使用 LZ4 作为 ZRAM 的压缩算法，在压缩速度和压缩比之间取得平衡。Kernel 6.12 引入了 `CONFIG_ZRAM_MULTI_COMP`（多算法重压缩），允许先用 LZ4 快速压缩，后台再用 ZSTD 进一步压缩提升压缩比。同样的物理 RAM 就可以容纳更多压缩后的页面。[已验证: 官方文档, kernel.org; 来源: intake/research-feeds/2026-04-02-11-ch04-zram-multialgo-mglru-2025.md]
+**压缩算法与重压缩**。默认主算法通常还是 LZ4，优先保障压缩和解压延迟。支持 Multi-Comp 的内核会额外暴露 `/sys/block/zram0/recomp_algorithm`，让设备为冷页配置更高压缩比的二级算法。新写入的匿名页先走低延迟算法，长时间驻留的冷页再用 ZSTD 这类算法重压缩，换取更高的驻留密度。排查设备配置时，先 `cat /sys/block/zram0/recomp_algorithm` 看支持列表和当前选择，再结合 `mm_stat` 判断压缩比有没有明显变化。[已验证: 官方文档, kernel.org; 来源: intake/research-feeds/2026-04-02-11-ch04-zram-multialgo-mglru-2025.md]
+
+### Android 15+：16KB 页面与内存压力口径
+
+Android 15 支持 16KB Page Size。页变大后，TLB miss 和 page table walk 会下降，但内部碎片也会增加。公开量化材料和外部 review 都把平均内存占用抬升描述在约 9% 这个量级，跨版本对比 `meminfo`、RSS、PSS 时要先把页大小纳入口径。
+
+低内存分析里最直接的变化有两个。第一，同样一批分配在 16KB 设备上的 RSS 往往更高。第二，回收一个 page 释放的是 16KB 而不是 4KB，kswapd、direct reclaim 和 ZRAM 写入的节奏也会跟着变化。看到 Android 15 设备更早进入压力区时，要把页大小和页边界变化一起纳入判断。
+
+设备侧可以用 `adb shell getconf PAGE_SIZE` 确认页大小。做回归报表时，最好把 4KB 和 16KB 设备分桶。
 
 ### cgroup 内存限制
 
@@ -233,24 +244,32 @@ compactd 的触发条件基于内存压力信号。当系统检测到内存碎�
 
 与 kswapd 的回收不同，compactd 不回收页面，只做规整。它和 kswapd 互补：kswapd 负责释放内存，compactd 负责让剩余内存更"好用"。在 Perfetto 中，compactd 的活动可以通过 `/proc/vmstat` 中的 `compact_*` 计数器间接观察到。[已验证: source.android.com]
 
-### onTrimMemory 级别与内存压力信号的映射
+### onTrimMemory 与系统压力信号的边界
 
-Android 的 `onTrimMemory()` 回调将系统内存压力传递给 App，但很多开发者不清楚这些级别与底层 PSI/lmkd 之间的关系。以下是映射关系：
+`onTrimMemory()` 只能给 App 一个粗粒度提示，PSI、`mm_vmscan_*` 和 lmkd 日志才是系统压力判断的主证据。特别是在 API 34 之后，`TRIM_MEMORY_RUNNING_*`、`TRIM_MEMORY_MODERATE`、`TRIM_MEMORY_COMPLETE` 这些级别已经不再投递给 App；API 35 又把这些常量标成 deprecated。
 
-- **TRIM_MEMORY_UI_HIDDEN (20)**：App UI 不可见，与 PSI 无直接关联，纯粹是生命周期通知
-- **TRIM_MEMORY_RUNNING_LOW / MODERATE / CRITICAL (10/5/15)**：App 在前台运行但系统内存开始紧张，对应 PSI `some` 级别开始上升
-- **TRIM_MEMORY_BACKGROUND (40) / MODERATE (60)**：App 进入后台，对应 lmkd 的缓存进程阈值区域
-- **TRIM_MEMORY_COMPLETE (80)**：系统内存极度紧张，App 可能即将被 lmkd 杀掉，对应 PSI `full` 级别持续升高
+对现代版本来说，更稳的解释方式只有两类：
 
-实际开发中，`TRIM_MEMORY_RUNNING_CRITICAL` 和 `TRIM_MEMORY_COMPLETE` 是最需要响应的级别——前者意味着应该立即释放非必需资源，后者意味着 App 即将死亡。未正确响应 `onTrimMemory` 的 App 在低内存设备上更容易因内存占用过高而被 lmkd 优先选中。
+- `TRIM_MEMORY_UI_HIDDEN (20)`：界面离开前台，适合释放 UI 相关资源
+- `TRIM_MEMORY_BACKGROUND (40)`：进程退到 LRU 背景区，后台缓存继续收缩
+
+API 33 及以下如果还能收到更细的 trim level，可以把它当额外提示，但正文里的系统压力判断不要再建立在这些旧常量上。确认系统是不是已经进入低内存自救阶段，证据还是 PSI、`mm_vmscan_*`、lmkd kill 日志和冷启动回访率。
 
 ### MGLRU：更高效的页面回收
 
-MGLRU（Multi-Generational LRU）是 Linux 6.1 引入的页面回收优化，替代了传统的 Active/Inactive 双链表 LRU。MGLRU 使用多个"代"（generation）来跟踪页面的热度，比传统的二分法更精确。简单来说，传统 LRU 只有"热"和"冷"两个桶，而 MGLRU 有多个温度层级，能更准确地识别真正应该被回收的页面。
+MGLRU（Multi-Generational LRU）用多代链表跟踪页面热度，替代传统 active/inactive 双链表的二分口径。回收时优先淘汰最老一代，所以页面冷热判断更细，错误回收和很快又被读回来的 refault 会更少。
 
-MGLRU 已在 Android Common Kernel 中启用。它的实际效果是减少"误杀"——把还在使用的页面错误回收，然后很快又要读回来（thrashing）的情况显著减少。在 Perfetto 中，MGLRU 减少了 vmscan 事件中的无效回收次数。[已验证: 官方文档, kernel.org; 来源: intake/research-feeds/2026-04-02-11-ch04-zram-multialgo-mglru-2025.md]
+判断设备是否开启这条路径，先看 `/sys/kernel/mm/lru_gen/enabled`。常见值如 `0x0007` 说明核心代际回收能力已经打开，不同 GKI / OEM 分支也可能给出别的 bitmask，所以把它当成能力标记来读，不要写成绝对常量。
 
-`[自动发现]` MGLRU 和 Kernel 6.12 的 ZRAM 多算法重压缩是近两年内存管理的重要进展。在同样 RAM 容量下，更精确的页面回收和更高的压缩比意味着后台应用可以更多地以压缩形式驻留，减少冷启动次数。
+在 Perfetto 里量化 MGLRU 是否起作用，重点看三组信号：
+
+1. `mm_vmscan_direct_reclaim_*` 是否减少，前台线程的 D 状态是否缩短
+2. `mm_vmscan_kswapd_*` 仍然存在，但反复扫描同一批页的迹象是否下降
+3. lmkd 的 thrashing / refault 相关 kill 是否减少，冷启动回访率是否更稳
+
+ZRAM 重压缩和 MGLRU 经常一起出现，但两者解决的问题不同。前者提高匿名页驻留密度，后者减少错误回收。看 Trace 时要把“压得下”和“回得准”分开判断。
+
+[已验证: 官方文档, kernel.org; 来源: intake/research-feeds/2026-04-02-11-ch04-zram-multialgo-mglru-2025.md]
 
 ## 低端机的专项优化策略
 
@@ -258,7 +277,7 @@ MGLRU 已在 Android Common Kernel 中启用。它的实际效果是减少"误�
 
 ### 内存分配策略调整
 
-低端机通常会调低各种内存阈值。比如将 ActivityManager 的后台进程上限从标准设备的 32 个降到 8-12 个 [待补充: 具体来源——AOSP ActivityManagerConstants 或厂商配置文档]；降低缓存进程阈值（如 lmkd 的 min_free_level 配置）让 lmkd 更早开始杀后台进程；减小 ZRAM 的最大容量（因为物理 RAM 本身就少，需要留更多给前台应用使用）。这些调整的目标是：宁可牺牲后台保活能力，也要保证前台应用的流畅性。
+低 RAM 设备通常会把后台进程上限、缓存进程阈值和 ZRAM 预算设得更紧，让 lmkd 更早回收后台进程，把更多物理内存留给前台路径。设计目标很直接：后台保活能力可以下降，前台交互不能被拖垮。
 
 ### App 层面的适配
 
@@ -266,7 +285,7 @@ Google 提供了 `ActivityManager.isLowRamDevice()` API，让 App 可以感知�
 
 ### Android Go Edition 的优化
 
-Android Go Edition（Android 16 Go 版本据称扩展到了 4GB RAM 设备 [待验证: Android 16 Go 的具体 RAM 上限是否确认为 4GB]）是一系列系统级优化的集合。除了上述的 ZRAM 和 cgroup 调优之外，Go Edition 还包括：更轻量的系统 App（如 Google Go、Chrome Lite）、预装应用体积更小、默认开启 Chrome 的数据节省模式、更精简的通知机制。Go Edition 的内核也经过了裁剪，移除了一些在低端硬件上用不到的特性来减少内核自身的内存占用。[已验证: 官方文档, android.com]
+Android Go Edition 是面向低 RAM 设备的一组系统配置和产品策略。除了更紧的内存阈值之外，还会配套更轻量的系统应用、较小的预装体积和更保守的后台策略，目标是把有限内存优先留给前台交互。[已验证: 官方文档, android.com]
 
 ## 常见问题与误区
 
@@ -302,4 +321,5 @@ Android Go Edition（Android 16 Go 版本据称扩展到了 4GB RAM 设备 [待�
 - [Linux 内存变低会发生什么 — 腾讯技术工程](https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649785631) — 低内存的连锁反应分析
 - [ZRAM Multi-Comp — kernel.org](https://kernel.org/doc/html/latest/admin-guide/blockdev/zram.html) — ZRAM 多算法重压缩
 - [MGLRU — kernel.org](https://kernel.org/doc/html/latest/admin-guide/mm/multigen_lru.html) — Multi-Generational LRU 页面回收
+- [Support 16 KB page sizes](https://developer.android.com/guide/practices/page-sizes) — 16KB 页面大小的版本背景与适配要求
 - [Android cgroups — source.android.com](https://source.android.com/docs/core/perf/cgroups) — Android cgroup 抽象层与 Task Profiles
