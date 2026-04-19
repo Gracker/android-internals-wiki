@@ -35,10 +35,11 @@ related_chapters: ["7.1", "7.2", "7.3", "2.4", "2.5", "2.11"]
 drafted_date: "2026-04-01"
 drafted_by: "openclaw-task2a"
 section: "7.7"
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: pending
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
+task2b_state: fixed
+task2b_result: fixed
 ---
 
 # Jetpack Compose 性能优化
@@ -108,7 +109,7 @@ fun Greeting(msg: String) {
 }
 ```
 
-编译后，这个函数的签名会多出 `Composer` 和 `$changed` 两个参数，函数体里会被插入 `startRestartGroup` 和 `endRestartGroup` 调用。`endRestartGroup` 会返回一个 `ScopeUpdateScope` 对象，开发者可以往上面注册一个回调——当状态变化导致这个函数需要重组时，Compose 运行时就通过这个回调递归调用函数自身。
+编译后，这个函数的签名会多出 `Composer` 和 `$changed` 两个参数，函数体里会被插入 `startRestartGroup` 和 `endRestartGroup` 调用。`$changed` 是一个位掩码，编译器把每个参数的变化状态编码进这个 `Int` 里，运行时再配合 `composer.changed(...)` 做按位判断，决定当前调用是直接 skip，还是继续执行函数体。`endRestartGroup` 会返回一个 `ScopeUpdateScope` 对象，开发者可以往上面注册一个回调，当状态变化导致这个函数需要重组时，Compose 运行时就通过这个回调递归调用函数自身。
 
 整个机制基于 Compose 的**状态快照系统（Snapshot）**。当我们通过 `mutableStateOf` 创建一个 State 变量时，它的 getter 和 setter 实际上是自定义的：setter 会通知快照系统"这个值变了"，快照系统再找到订阅了这个值的 ScopeUpdateScope，触发重组。
 
@@ -120,11 +121,11 @@ fun Greeting(msg: String) {
 
 [来源: obsidian/Personal-Knowlodge/source/2026-03-08_wechat_Compose_渲染性能到底怎么样.md]
 
-社区中有开发者做过直接对比：同一个列表页面，分别用 LazyColumn 和 RecyclerView 实现，然后在不同 Android 版本的设备上测量快速滑动时的 FPS。
+社区里确实出现过 LazyColumn 和 RecyclerView 的对比测试：同一个列表页面，分别用两套 UI 实现，然后在不同 Android 版本的设备上测量快速滑动时的 FPS。
 
-结果是这样的：在高端设备（Android 11+）上，两者都能稳定跑满 60fps。但在中低端设备上差距明显——Android 7.1 设备上 LazyColumn 只有约 43fps，而 RecyclerView 仍然能稳定在 60fps。不过有意思的是，同样的测试者在粒子动画场景中对比了 Compose 和 View 的 Canvas 绘制性能，两者几乎完全一致。
+其中一组常被引用的样本里，高端设备（Android 11+）两者都能接近 60fps；中低端的 Android 7.1 设备上，LazyColumn 约 43fps，RecyclerView 约 60fps。同一位测试者在粒子动画场景里又观察到 Compose 和 View 的 Canvas 绘制几乎一致。这类结果更适合当成"特定设备、特定版本、特定页面结构下的观察"，不能直接外推成通用结论。真要拿它指导项目，至少要用 Macrobenchmark 的 `FrameTimingMetric` 或 Perfetto，在自己的机型、刷新率、Compose 版本和滚动场景上复测。
 
-这说明什么？**Compose 本身的渲染性能（Layout + Drawing）已经和传统 View 持平，差距主要在 Composition 阶段——也就是重组的开销**。如果我们的 Compose 页面掉帧，大概率不是"Compose 画得慢"，而是"Compose 重组了不该重组的东西"。
+这组对比说明的方向没有变：**Compose 本身的渲染性能（Layout + Drawing）已经和传统 View 接近，差距更多出现在 Composition 阶段，也就是重组的开销**。如果我们的 Compose 页面掉帧，大概率不是"Compose 画得慢"，而是"Compose 重组了不该重组的东西"。
 
 这也解释了为什么 Compose 性能优化的核心策略就是：**减少不必要的重组、缩小重组的范围**。
 
@@ -134,24 +135,23 @@ fun Greeting(msg: String) {
 
 理解了重组的本质之后，我们来看具体的触发条件和优化策略。这部分是 Compose 性能优化的核心。
 
-### stable 标记：让 Compose 知道"参数没变"
+### Strong Skipping 与 stable 标记：让 Compose 更容易跳过重组
 
-[已验证: 官方文档, developer.android.com/develop/ui/compose/performance#stability]
+[已验证: 官方文档, developer.android.com/develop/ui/compose/performance/stability/strongskipping]
 
-Compose 编译器在编译时会推断每个类型的"稳定性"（Stability）。一个类型如果满足以下条件，就被认为是"稳定"的：
+从 Kotlin 2.0.20 开始，Compose 的 Strong Skipping 默认开启。现在判断一个 restartable Composable 能不能跳过重组，优先看的是"这次参数和上次是不是同一个输入"：稳定参数按 `Object.equals()` 比较，不稳定参数按引用相等 `===` 比较。只要比较结果没变，这个 Composable 就可以被跳过。
 
-- 所有公共属性在创建后不会变化（immutable），或者变化时会通知 Compose
-- 所有公共属性的类型本身也是稳定的
+这改变了优化顺序。老规则里，开发者经常要先把参数都做成稳定类型，才能拿到 skippable。现在大多数 restartable Composable 默认就有跳过机会，很多只为"让它能跳过"而加的包装层可以省掉。编译器还会自动 memoize Composable 内部创建的 lambda，减少因为回调对象重新分配带来的连锁重组。
 
-稳定的类型包括：基本类型（Int、String、Boolean）、标记了 @Stable 或 @Immutable 的类、所有属性都是 val 且类型稳定的 data class。
+稳定性没有失效，但角色变了。`@Stable`、`@Immutable`、不可变集合和清晰的 State holder 设计，现在更像是在解决三类问题：
 
-不稳定的类型最常见的是：`List<T>`（Kotlin 的 List 是接口，编译器无法保证实现类是否可变）、包含 var 属性的类、接口类型。
+- **语义正确**：避免把"内容变了但引用没变"的对象误当成没变化
+- **集合可预测**：`List`、`Map`、`Set` 这类默认不稳定的集合，仍然建议用不可变集合或稳定的包装类型来传递
+- **报告可读**：让 Compiler Metrics 更容易看出哪些参数设计还在扩大重组范围
 
-为什么稳定性很重要？因为 Compose 的跳过机制依赖它：**只有当一个 Composable 的所有参数都是稳定类型时，Compose 才能在参数没有实际变化时跳过这个 Composable 的重组**。如果参数类型不稳定，Compose 只能保守地假设"可能变了"，每次父组件重组时都跟着重组。
+有两种常见手段可以显式表达这种语义：
 
-有两种方式可以声明稳定性：
-
-**@Immutable**：标记完全不可变的类。一旦创建，内部任何内容都不会改变。这是最严格的承诺：
+**@Immutable**：标记完全不可变的类。一旦创建，内部任何内容都不会改变。这适合纯数据模型：
 
 ```kotlin
 @Immutable
@@ -163,7 +163,7 @@ data class ProductListState(
 
 [来源: obsidian/Personal-Knowlodge/source/2026-03-07_wechat_提升Jetpack_Compose_性能.md]
 
-**@Stable**：标记"可变但会通知"的类。它承诺：当属性值变化时，Compose 运行时一定会收到通知。适用于 State holder 类：
+**@Stable**：标记"属性会变，但变化路径对 Compose 可见"的类，常见于 State holder：
 
 ```kotlin
 @Stable
@@ -173,7 +173,7 @@ class ProductListState(
 )
 ```
 
-需要特别注意的是：`@Immutable` 和 `@Stable` 是**契约**，不是提示。如果我们标记了 @Immutable 但类实际上有可变状态，Compose 可能会跳过必要的重组，导致 UI 不更新。这是一种更难发现的 bug。
+`@Immutable` 和 `@Stable` 是**契约**，不是提示。如果标记和真实行为不一致，Compose 可能会跳过本该执行的重组，UI 反而更难排查。
 
 ### remember：跨重组保持数据
 
@@ -360,6 +360,22 @@ composeCompiler {
 
 建议在 CI 流水线中集成 Compiler Metrics 检查，设置 skippable 比例的阈值（比如低于 80% 就告警），在代码合并前就拦截潜在的性能问题。
 
+### Baseline Profiles：把首启和首轮交互先做热
+
+[已验证: 官方文档, developer.android.com/topic/performance/baselineprofiles/overview]
+
+Compose 页面还有一条经常被忽略的性能轴：首次启动、首次进入页面、首次滚动。页面结构没问题，重组次数也控制住了，应用仍然可能在 cold start 或首轮交互里卡一下，原因往往不是 UI 树设计，而是 Compose 运行时和业务热点路径还在解释执行或 JIT 预热。
+
+Baseline Profiles 用来解决这个问题。它把关键用户路径上的方法提前交给 ART 做 AOT 编译，官方文档给出的典型收益是代码执行速度可提升约 30%。对 Compose 来说，这一点很实用，因为 Compose 运行时和大量 UI 代码都来自应用与库本身，不像平台 View 那样天然常驻系统镜像。
+
+实践里有两层 Profile：
+
+- **库自带 Profile**：Compose 与部分 Jetpack 库已经随 AAR 提供 baseline profile，能覆盖通用热点路径
+- **应用自定义 Profile**：仍然要用 Macrobenchmark 覆盖自己的关键用户旅程，例如冷启动、首屏渲染、首页首滚、详情页切换
+- **验收方式**：把 `StartupTimingMetric`、`FrameTimingMetric` 或 Perfetto Trace 放进基准测试，确认 profile 生效后启动时长和首轮 jank 是否收敛
+
+一个常见误判是把首启卡顿全算成 Compose 重组慢。很多场景里，先补 Baseline Profiles，再看是否还存在稳定性、布局层级或状态读取范围的问题，效率更高。
+
 ## Compose 与 View 混合布局的性能考量
 
 [已验证: 官方文档, developer.android.com/develop/ui/compose/migrate/interoperability-apis]
@@ -457,6 +473,8 @@ fun WebViewScreen(url: String) {
 
 - [Jetpack Compose Performance | Android Developers](https://developer.android.com/develop/ui/compose/performance) [已验证: 官方文档]
 - [Compose Mental Model | Android Developers](https://developer.android.com/develop/ui/compose/mental-model) [已验证: 官方文档]
+- [Strong Skipping | Android Developers](https://developer.android.com/develop/ui/compose/performance/stability/strongskipping) [已验证: 官方文档]
+- [Baseline Profiles Overview | Android Developers](https://developer.android.com/topic/performance/baselineprofiles/overview) [已验证: 官方文档]
 - [Compose Compiler Metrics | Android Developers](https://developer.android.com/develop/ui/compose/performance#compose-compiler-metrics) [已验证: 官方文档]
 - [Layout Inspector for Compose | Android Developers](https://developer.android.com/studio/debug/layout-inspector/compose) [已验证: 官方文档]
 - [Compose and View Interoperability | Android Developers](https://developer.android.com/develop/ui/compose/migrate/interoperability-apis) [已验证: 官方文档]

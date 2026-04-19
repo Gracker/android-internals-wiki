@@ -33,12 +33,13 @@ sources:
     path: "https://developer.android.com/reference/android/view/FrameMetrics"
 tags: ['jank', 'methodology', 'Perfetto', 'Systrace', 'FrameTimeline', 'FrameMetrics', 'CPU', 'checklist']
 related_chapters: ["7.1", "7.2", "2.4", "2.5", "2.6", "1.5", "13.3"]
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
 task9_result: needs-rework
-task9_state: reviewed
-task2b_state: pending
+task9_state: pending
+task2b_state: fixed
+task2b_result: fixed
 ---
 
 # 卡顿分析方法论
@@ -155,7 +156,7 @@ data_sources: {
 
 根据耗时发生在哪个线程，分析方向完全不同：
 
-如果耗时在**主线程**（doFrame 的 Input/Animation/Traversal 阶段拉长），可能的原因包括：布局过于复杂（measure/layout 耗时）、View 数量过多、在主线程做了 I/O 操作、大量的对象创建导致 GC、Binder 调用阻塞、锁竞争等。
+如果耗时在**主线程**（doFrame 的 Input、Animation、Insets Animation、Traversal、Commit 阶段拉长），可能的原因包括：布局过于复杂（measure/layout 耗时）、View 数量过多、在主线程做了 I/O 操作、大量的对象创建导致 GC、Binder 调用阻塞、锁竞争等。
 
 如果耗时在**渲染线程**（DrawFrame 阶段拉长），可能的原因包括：绘制命令过于复杂（大量 Path 操作、阴影效果）、GPU 负载过重、CPU 跑在了小核或频率过低。
 
@@ -167,17 +168,17 @@ data_sources: {
 
 ### FrameTimeline：Expected vs Actual
 
-FrameTimeline 是 Android 12 引入的一套帧时间线追踪机制，它在 Perfetto 中展示为两个并排的 Track：**Expected Timeline** 和 **Actual Timeline** [已验证: 官方文档 perfetto.dev, Android 12+]。
+FrameTimeline 是 Android 12 引入的一套帧时间线追踪机制，它在 Perfetto 中展示为两个并排的 Track：**Expected Timeline** 和 **Actual Timeline** [已验证: 官方文档 perfetto.dev, Android 12+]。它只在 Android 12 及以上版本可用，而且当前不覆盖 SurfaceView。分析普通 View 或 TextureView 场景，可以直接依赖这组轨道；分析 SurfaceView、游戏或视频播放场景时，要回到 BufferQueue 的 buffered frames、`gpu.renderstages` 轨道，以及引擎侧的 Swappy stats。
 
 Expected Timeline 展示的是系统为这一帧分配的时间预算。每一帧在 Choreographer 回调被调度时，系统就计算好了这一帧"应该"在什么时间完成渲染、什么时候被 SurfaceFlinger 合成、什么时候最终显示在屏幕上。这个预算基于当前的 VSync 信号周期和 offset 配置。
 
-Actual Timeline 展示的是这一帧实际执行的过程。从 Choreographer 的 doFrame 开始，到 RenderThread 完成绘制，到 SurfaceFlinger 完成合成，每一个环节的实际耗时都如实记录。
+Actual Timeline 展示的是这一帧实际执行的过程。从 Choreographer 的 doFrame 开始，到 RenderThread 完成绘制，到 SurfaceFlinger 完成合成，每一个环节的实际耗时都如实记录。主线程归因时不要只盯 Input / Animation / Traversal 三段，现代 Android 的 doFrame 常见顺序还包括 `CALLBACK_INSETS_ANIMATION` 与 `CALLBACK_COMMIT`，完整视角应该是 Input → Animation → Insets Animation → Traversal → Commit。前者承接系统栏、IME 等 Insets 动画，后者负责提交后的收尾和时间信息修正。
 
 当 Actual 的某个 Slice 超过了对应的 Expected Slice，就意味着这个环节出现了延迟。在 Perfetto UI 中，超时的帧会被标记为红色，一目了然。
 
 [待补充：Trace 截图 — Perfetto 中 FrameTimeline 的 Expected vs Actual Track 对比图，标注红色超时帧]
 
-FrameTimeline 的核心价值是：它把"是否卡顿"的判断标准化了。不再需要人工去对比帧颜色和 BufferQueue 状态——FrameTimeline 直接展示每一帧有没有超时、在哪个环节超时、超了多少。它同时覆盖了 App 侧（doFrame + RenderThread）和 SurfaceFlinger 侧（合成），用同一个 token 关联起来，可以在 Perfetto 中通过点击 Slice 直接跳转到对应的 App 或 SF 帧 [已验证: perfetto.dev Trace Processor 文档]。
+FrameTimeline 的核心价值是：它把"是否卡顿"的判断标准化了。不再需要人工去对比帧颜色和 BufferQueue 状态。FrameTimeline 直接展示每一帧有没有超时、在哪个环节超时、超了多少。它同时覆盖了 App 侧（doFrame + RenderThread）和 SurfaceFlinger 侧（合成），用同一个 token 关联起来，可以在 Perfetto 中通过点击 Slice 直接跳转到对应的 App 或 SF 帧 [已验证: perfetto.dev Trace Processor 文档]。
 
 ### 没有 FrameTimeline 怎么办
 
@@ -185,7 +186,7 @@ FrameTimeline 的核心价值是：它把"是否卡顿"的判断标准化了。�
 
 在 Systrace 中（Perfetto 的前身），关键的标记包括 [来源: obsidian/Personal-Knowlodge/source/android-systrace-smooth-in-action-2.md]：
 
-- **Choreographer#doFrame**：主线程处理一帧的入口，包含 Input Event 处理、Animation 回调、Traversal（measure/layout/draw）三个阶段
+- **Choreographer#doFrame**：主线程处理一帧的入口。现代 Android 常见的回调顺序是 Input → Animation → Insets Animation → Traversal → Commit，分别对应输入、普通动画、Insets 动画、measure/layout/draw 与提交后的收尾
 - **DrawFrame**：渲染线程的绘制入口，将主线程构建的 DisplayList 转化为 GPU 指令
 - **SurfaceFlinger#onMessageReceived**：SurfaceFlinger 在 VSync-sf 到来时执行合成的入口，可以确认 SF 是否处理了这一帧
 
@@ -253,7 +254,7 @@ Uninterruptible Sleep 状态（在 Perfetto 中显示为深橙色）表示线程
 
 对每一个确认掉帧的帧，分析耗时发生在哪个环节：
 
-- [ ] **主线程 doFrame**：耗时是否超过 VSync 周期？如果是，哪个阶段（Input/Animation/Traversal）最耗时？
+- [ ] **主线程 doFrame**：耗时是否超过 VSync 周期？如果是，哪个阶段（Input / Animation / Insets Animation / Traversal / Commit）最耗时？
 - [ ] **渲染线程 DrawFrame**：耗时是否过长？GPU 负载如何？
 - [ ] **主线程等待渲染线程**：主线程有没有因为 syncFrameState 阻塞在等待渲染线程？如果是，说明前一帧的渲染还没完成 [来源: obsidian/Personal-Knowlodge/source/android-systrace-smooth-in-action-3.md]
 - [ ] **Binder 调用**：主线程有没有被 Binder 调用阻塞？点击 Binder Slice 可以看到对端进程
@@ -321,7 +322,7 @@ window.addOnFrameMetricsAvailableListener(
 );
 ```
 
-这里有一个版本兼容性的细节需要注意。`FrameMetrics.DEADLINE` 是 Android 12（API 31）才引入的常量——在那之前，FrameMetrics 只提供了各阶段的耗时数据，但没有系统计算的帧预算值。对于需要兼容 Android 7-11 的应用，我们可以根据屏幕刷新率自行计算 deadline（60Hz 对应 16.6ms，90Hz 对应 11.1ms，120Hz 对应 8.3ms）。这种手动计算虽然不如系统提供的 DEADLINE 精确（系统的 DEADLINE 会考虑 VSync offset 和当前帧率策略），但在绝大多数场景下足够用于判断是否卡顿。[已确认: developer.android.com/reference/android/view/FrameMetrics, DEADLINE 从 API 31 引入]
+这里有一个版本兼容性的细节需要注意。`FrameMetrics.DEADLINE` 是 Android 12（API 31）才引入的常量。更早版本只能自己按刷新率估一个 budget，例如 60Hz≈16.6ms、90Hz≈11.1ms、120Hz≈8.3ms。这个估算只能拿来做粗筛，不能把它当成系统真实 deadline。原因有两点，一是系统侧的 `DEADLINE` 会把 VSync offset 和当前帧率策略算进去，二是多缓冲会在部分瞬时波动里留出缓冲空间。手工公式看不到这些边界，适合做趋势告警，不适合给单帧下绝对结论。[已确认: developer.android.com/reference/android/view/FrameMetrics, DEADLINE 从 API 31 引入]
 
 关键指标说明：
 
@@ -392,12 +393,11 @@ GROUP BY thread.name
 ORDER BY cpu_time_ms DESC;
 ```
 
-### 查询被抢占时间最长的 Runnable 片段
+### 查询被明确抢占时间最长的 Runnable 片段
 
 ```sql
--- [已确认: sched.end_state = 'R' 表示线程被 descheduled 时仍为 Runnable，
--- 即线程被抢占了（不是主动 Sleep/wake）。此查询找的是「被抢占时还没跑完」的调度片段，
--- 反映的是 CPU 竞争激烈程度，而非从唤醒到上 CPU 的调度延迟（wakeup latency）。]
+-- [已确认: Perfetto 中 sched.end_state = 'R+' 表示 Runnable (Preempted)，
+-- 'R' 只表示线程被切出 CPU 时仍处于 runnable 状态。]
 SELECT
     sched.ts,
     sched.dur / 1000000.0 as runnable_ms,
@@ -405,12 +405,12 @@ SELECT
 FROM sched
 JOIN thread ON sched.utid = thread.utid
 WHERE thread.name = 'main'
-    AND sched.end_state = 'R'  -- 被抢占而非主动让出
+    AND sched.end_state = 'R+'  -- Runnable (Preempted)
 ORDER BY sched.dur DESC
 LIMIT 20;
 ```
 
-注意这个查询和调度延迟的区别。`sched.end_state = 'R'` 找的是线程正在执行、但因为 CPU 被其他线程抢占而被迫让出的片段——它的 `dur` 是线程在 CPU 上实际执行的时间，不是等待时间。这个值越大，说明主线程被频繁打断，CPU 竞争激烈。
+注意这个查询和调度延迟的区别。`sched.end_state = 'R+'` 找的是线程正在 CPU 上执行、随后被更高优先级任务或中断打断的片段；`sched.end_state = 'R'` 只说明线程被切出 CPU 时仍然 runnable，不等同于明确抢占。这个值越多，说明主线程更容易在关键路径上被打断。
 
 如果我们真正想测量的是**调度延迟**（从线程被唤醒到它真正上 CPU 开始执行的时间差），需要结合 `sched_wakeup` 事件来计算：
 
@@ -469,7 +469,7 @@ Trace 不是越长越好。5-10 秒的精简 Trace 远比 60 秒的"大杂烩"�
 
 - **7.1 卡顿的定义与分类**：定义了什么是卡顿以及卡顿的分类体系，是本节分析方法论的认知基础
 - **7.2 卡顿原因体系**：系统梳理了卡顿的所有可能原因，本节的 Checklist 中的排查项与此一一对应
-- **2.4 Choreographer 与渲染流水线**：理解 doFrame 的三个阶段（Input → Animation → Traversal）是分析主线程耗时的基础
+- **2.4 Choreographer 与渲染流水线**：理解 doFrame 的五类回调（Input → Animation → Insets Animation → Traversal → Commit）是分析主线程耗时的基础
 - **2.5 MainThread 与 RenderThread 协作**：理解 syncFrameState 的阻塞关系是判断"主线程等待渲染线程"场景的关键
 - **2.6 SurfaceFlinger 与合成**：理解 BufferQueue 的工作机制是判断"是否真正掉帧"的前提
 - **1.5 线程模型**：理解 Binder 线程、Handler 机制是分析 Binder 调用阻塞和锁竞争的基础
@@ -485,6 +485,7 @@ Trace 不是越长越好。5-10 秒的精简 Trace 远比 60 秒的"大杂烩"�
   - [Android 中的卡顿丢帧原因概述 - 方法论](https://www.androidperformance.com/2019/09/05/Android-Jank-Debug/)
 - 官方文档：
   - [Perfetto Trace Processor SQL Documentation](https://perfetto.dev/docs/analysis/sql-tables) — SQL 查询 Trace 数据的完整参考
+  - [Perfetto FrameTimeline](https://perfetto.dev/docs/data-sources/frametimeline) — FrameTimeline 的可用版本、轨道含义与 SurfaceView 使用边界
   - [Android FrameMetrics API](https://developer.android.com/reference/android/view/FrameMetrics) — FrameMetrics 各指标的官方说明
   - [JankStats Library](https://developer.android.com/topic/performance/jankstats) — Google 官方的线上卡顿监控库
 - 其他参考：
