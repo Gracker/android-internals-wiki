@@ -538,3 +538,10 @@ try {
 - 摘要：UI层：Dark Mode、触摸支持、多Track批量操作。分析层：android_anrs新增anr_type字段、android.bitmaps位图时序数据、slice_self_dur自持续时间计算、regexp_extract函数、JSON trace解析性能提升。
 - 入库时间：2026-04-08
 
+### AndroidX Tracing 2.0 架构级深度技术分析
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/AndroidX Tracing 2.0 架构级深度技术分析 .md
+- 类型：DeepResearch 调研结果
+- 摘要：围绕 AndroidX Tracing 2.0 alpha05，拆解 Tracer、TraceDriver、TraceSink 新对象模型、协程上下文传播、纯 Kotlin Perfetto TracePacket 发射链路，以及与 1.x、Benchmark、Studio Profiler 的边界。
+- 注入时间：2026-04-19
+- 价值：补齐应用侧自定义 tracing 与协程归因的新范式。
+

@@ -13,6 +13,7 @@ ARCHIVE = ACTIVE / "archive"
 QUEUE = ROOT / "metadata" / "queue.json"
 SUGGESTIONS = ROOT / "intake" / "suggestions.md"
 RESEARCH_GAPS = ROOT / "intake" / "research-gaps.md"
+INTEGRATION_LOG_DIR = ROOT / "logs" / "external-review-integration"
 
 
 def load_text(path: Path) -> str:
@@ -56,7 +57,24 @@ def consumed(path: Path) -> tuple[bool, list[str]]:
     if f"] {section} " in rtext or f"### 关联章节\n- {section}" in rtext or f"{section} " in rtext:
         reasons.append("research-gaps")
 
-    return (len(reasons) > 0, reasons)
+    if INTEGRATION_LOG_DIR.exists():
+        for log_path in sorted(INTEGRATION_LOG_DIR.glob("*.md"), reverse=True):
+            text = load_text(log_path)
+            if not text:
+                continue
+            if section not in text:
+                continue
+            if any(marker in text for marker in [f"- {section} ", f"### {section}", f"{section}（", f"{section} "]):
+                if "已整合" in text or "上轮已整合" in text or "本轮无需新增写入" in text:
+                    reasons.append("integration-log")
+                    break
+
+    deduped = []
+    for reason in reasons:
+        if reason not in deduped:
+            deduped.append(reason)
+
+    return (len(deduped) > 0, deduped)
 
 
 def main() -> int:

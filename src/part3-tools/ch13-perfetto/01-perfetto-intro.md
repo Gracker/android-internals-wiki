@@ -400,3 +400,11 @@ SDK 的使用方式是继承 `perfetto::DataSource` 类，定义自己的事件 
 - AOSP `traced` 服务源码路径：`system/tracing/traced/`
 - AOSP `traced_probes` 服务源码路径：`system/tracing/traced_probes/`
 - 高爷 Systrace / Perfetto 系列教程：https://www.androidperformance.com/2019/12/01/Android-Systrace(Perfetto)-Basic/
+
+### Perfetto 2026 架构级深度技术分析
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/Perfetto 2026 架构级深度技术分析  .md
+- 类型：DeepResearch 调研结果
+- 摘要：文档系统梳理 Perfetto v51-v54 在 Android 13-16 的架构演进，重点覆盖 Mainline APEX、Trace Summary v2、FrameTimeline/CUJ/monitor contention 联动、CI 自动化与多级 buffer 丢包诊断。
+- 注入时间：2026-04-19
+- 价值：适合作为 2026 年 Perfetto 能力图谱与 CI 化分析入口。
+
