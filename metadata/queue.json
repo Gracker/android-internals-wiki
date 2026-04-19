@@ -61,33 +61,6 @@
       "status": "pending"
     },
     {
-      "section": "1.4",
-      "section_title": "Binder IPC 机制与性能影响",
-      "priority": 90,
-      "reason": "[review回炉] 2处技术准确性存疑：scatter-gather拷贝次数说法、SQL锁竞争查询逻辑",
-      "material_paths": [
-        "intake/suggestions.md（含 review 意见）"
-      ],
-      "review_issues": [
-        {
-          "type": "存疑",
-          "location": "scatter-gather段落",
-          "detail": "原文称scatter-gather将'三次拷贝减少到一次'，标准叙述是mmap实现一次拷贝，scatter-gather进一步优化。'三次'的说法来源不明",
-          "suggestion": "对照binder.c scatter-gather patch确认原始拷贝次数后修正措辞"
-        },
-        {
-          "type": "存疑",
-          "location": "SQL锁竞争查询段落",
-          "detail": "GROUP BY slice_id后count(1)恒为1，无法统计锁竞争深度",
-          "suggestion": "重写SQL或修改注释描述"
-        }
-      ],
-      "added_by": "task6-review",
-      "added_at": "2026-04-19T07:25:26",
-      "status": "pending",
-      "original_review_log": "logs/review/2026-04-19-07-review.md"
-    },
-    {
       "section": "16.1",
       "section_title": "Google 官方的性能优化思路",
       "priority": 85,
@@ -145,6 +118,36 @@
       "completed_at": "2026-04-19T07:09:38+08:00",
       "completed_by": "task2b-rework",
       "completion_reason": "已拆分通用共享内存 / 图形 DMA-BUF / FMQ 三条路线，修正 debuggerd 信号表、版本表与小结"
+    },
+    {
+      "section": "1.4",
+      "section_title": "Binder IPC 机制与性能影响",
+      "priority": 90,
+      "reason": "[review回炉] 2处技术准确性存疑：scatter-gather拷贝次数说法、SQL锁竞争查询逻辑",
+      "material_paths": [
+        "intake/suggestions.md（含 review 意见）"
+      ],
+      "review_issues": [
+        {
+          "type": "存疑",
+          "location": "scatter-gather段落",
+          "detail": "原文称scatter-gather将'三次拷贝减少到一次'，标准叙述是mmap实现一次拷贝，scatter-gather进一步优化。'三次'的说法来源不明",
+          "suggestion": "对照binder.c scatter-gather patch确认原始拷贝次数后修正措辞"
+        },
+        {
+          "type": "存疑",
+          "location": "SQL锁竞争查询段落",
+          "detail": "GROUP BY slice_id后count(1)恒为1，无法统计锁竞争深度",
+          "suggestion": "重写SQL或修改注释描述"
+        }
+      ],
+      "added_by": "task6-review",
+      "added_at": "2026-04-19T07:25:26",
+      "status": "completed",
+      "original_review_log": "logs/review/2026-04-19-07-review.md",
+      "completed_at": "2026-04-19T08:02:35+08:00",
+      "completed_by": "task2b-rework",
+      "completion_reason": "已修正 scatter-gather 拷贝语义，改写锁竞争 SQL 段落为按耗时列事件并更新章节状态"
     }
   ]
 }
