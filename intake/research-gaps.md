@@ -3210,3 +3210,26 @@ Gemini 外部 review
 
 ### 外部 review 来源
 - Gemini 外部 review (2026-04-19)
+
+## [2026-04-19] 12.3 网络性能深入 — 知识盲区
+
+### 盲区描述
+1. **OkHttp 5 setPolicy 预建连** — OkHttp 5 引入 ConnectionPool.setPolicy，允许针对特定地址配置最小连接数（proactive open）。对冷启动首页请求等极低延迟场景有重要实战价值，但章节未涉及。
+2. **DoH3 与运营商防火墙兼容性** — 部分运营商可能拦截 UDP 443 导致 DoH3 回退到传统 DNS。移动端 DNS 优化的实际可靠性受此影响。
+3. **HttpEngine 缓存共享** — Android 14 HttpEngine 是否与 Chrome 浏览器或其他 App 共享缓存尚不明确，影响缓存策略设计。
+
+### 重要程度
+中
+
+### 建议研究方向
+- OkHttp 5 setPolicy 在 App 冷启动网络加速中的实战效果
+- DoH3 在国内运营商环境下的兼容性与回退策略
+- Android 14 HttpEngine 缓存隔离机制与共享边界
+- 5G RRC_INACTIVE 状态对功耗和延迟的优化（原文仅覆盖 4G 状态机）
+
+### 关联章节
+- 12.2 网络性能优化
+- 11.1 功耗模型
+
+### 外部 review 来源
+- 2026-04-19-12-03-network-performance-deep-external-review.md

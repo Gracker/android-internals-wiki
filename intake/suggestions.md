@@ -2377,3 +2377,17 @@
 - **位置**：L314-L326
 - **问题**：`[待补充：Trace 截图]` 仍未落地，且“Gralloc 分配延迟通常在 1-5ms 之间”缺少设备、SoC、分辨率、像素格式和 trace/benchmark 证据。
 - **建议**：补一条真实 Perfetto / ftrace / benchmark 观测并标注测试条件；如果暂时没有实测，删掉“1-5ms”只保留定性判断。
+
+## [External Review] 12.3 网络性能深入 — 2026-04-19
+- **类型**：知识盲区 / 数据支撑
+- **位置**：OkHttp 连接池描述段
+- **问题**：OkHttp 5 引入 ConnectionPool.setPolicy，允许针对特定地址配置最小连接数（proactive open），对冷启动极低延迟场景有实战价值
+- **建议**：补充 OkHttp 5 setPolicy 预建连特性的说明和使用场景
+- **来源**：外部 AI review（2026-04-19-12-03-network-performance-deep-external-review.md）
+
+## [External Review] 12.3 网络性能深入 — 2026-04-19
+- **类型**：版本差异 / 数据支撑
+- **位置**：网络请求对电池的影响段
+- **问题**：原文仅提到 4G 状态机，缺少 5G RRC_INACTIVE 状态对功耗和延迟优化的说明
+- **建议**：补充 5G RRC_INACTIVE 状态转换逻辑及 tail time 差异，参考 3GPP 文档和 Qualcomm 5G 白皮书
+- **来源**：外部 AI review（2026-04-19-12-03-network-performance-deep-external-review.md）

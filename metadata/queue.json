@@ -1524,5 +1524,38 @@
     "added_by": "external-ai-review",
     "added_at": "2026-04-19T12:30:29.391899+08:00",
     "status": "pending"
+  },
+  {
+    "section": "12.3",
+    "section_title": "网络性能深入",
+    "priority": 85,
+    "reason": "[External Review] 外部 AI review 发现 P1 级源码准确性问题：缺失 BlockGuard 机制描述和 DoH3 Rust 实现细节",
+    "material_paths": [],
+    "review_issues": [
+      {
+        "type": "源码准确性",
+        "location": "Android 网络栈全景段",
+        "detail": "NetworkOnMainThreadException 描述中缺失底层 BlockGuard 机制。libcore/luni/src/main/java/dalvik/system/BlockGuard.java 中网络操作调用 BlockGuard.getThreadPolicy().onNetwork()，StrictMode 通过 AndroidBlockGuardPolicy 拦截，若检测到 PENALTY_DEATH_ON_NETWORK 则抛异常。理解 BlockGuard 是理解 Android 线程策略强制执行的关键。",
+        "suggestion": "补充 BlockGuard 拦截逻辑说明，严格模式与 BlockGuard 的关系",
+        "evidence": [
+          "libcore/luni/src/main/java/dalvik/system/BlockGuard.java",
+          "frameworks/base/core/java/android/os/StrictMode.java"
+        ]
+      },
+      {
+        "type": "源码准确性",
+        "location": "DNS 解析性能段",
+        "detail": "DnsResolver 描述中未指出 DoH3 实现使用 Rust 编写。packages/modules/DnsResolver/doh 使用 Rust + quiche (external/quiche) 实现，利用 Tokio 异步运行时处理多流 QUIC。P95 延迟降低 44%。这是 Android 系统现代化的重要标志。",
+        "suggestion": "补充 DoH3 的 Rust 实现背景、packages/modules/DnsResolver/doh 模块说明",
+        "evidence": [
+          "packages/modules/DnsResolver/doh",
+          "external/quiche",
+          "https://security.googleblog.com/2022/07/dns-over-http3-in-android.html"
+        ]
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-19T13:22:04.339271+08:00",
+    "status": "pending"
   }
 ]
