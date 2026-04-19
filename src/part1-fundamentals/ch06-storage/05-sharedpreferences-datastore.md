@@ -7,7 +7,7 @@ drafted_by: "openclaw-task2a"
 applicable_versions: "Android 1.0 (API 1) - Android 17 (API 37)"
 last_verified: "2026-04-08"
 last_verified_against: "AOSP android-16.0.0_r1"
-reviewed_date: "2026-04-12"
+reviewed_date: "2026-04-20"
 reviewed_by: "openclaw-task6"
 task6_result: pass-light-edit
 confidence: medium
@@ -27,8 +27,8 @@ sources:
 tags: [sharedpreferences, datastore, anr, io, storage, performance, queuedwork]
 related_chapters: ["6.1", "6.3", "9.1", "9.2", "8.2", "4.5"]
 section: "6.5"
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task9_result: needs-rework
 task2b_state: fixed
