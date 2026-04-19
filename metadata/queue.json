@@ -1496,7 +1496,10 @@
     ],
     "added_by": "external-ai-review",
     "added_at": "2026-04-19T12:30:29.391899+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-20T00:30:00+08:00",
+    "completed_by": "task2b-rework",
+    "resolution": "改写 Android 14+ / 16 的 GC 版本叙述为 CMC / 分代 CMC，修正 GcWatcher 到 BinderInternal.addGcWatcher() 路径，并补充版本差异说明"
   },
   {
     "section": "12.1",
@@ -1643,7 +1646,10 @@
     ],
     "added_by": "external-ai-review",
     "added_at": "2026-04-19T12:30:29.391899+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-20T00:30:00+08:00",
+    "completed_by": "task2b-rework",
+    "resolution": "修正 Perfetto wakelock 数据源职责，补充 OnAlarmListener 免权限但不持久化的设计约束，并细化 SystemSuspend 的 wakeup_count 握手机制"
   },
   {
     "section": "12.3",
