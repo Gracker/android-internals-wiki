@@ -21,7 +21,7 @@ sources:
   - type: official
     path: "https://developer.android.com/studio/profile/memory-profiler"
   - type: official
-    path: "https://perfetto.dev/docs/data-sources/native-heap-profiling"
+    path: "https://perfetto.dev/docs/data-sources/native-heap-profiler"
   - type: official
     path: "https://developer.android.com/ndk/guides/sanitizers"
   - type: aosp
@@ -30,12 +30,15 @@ sources:
     path: "system/extras/malloc_debug"
 tags: [mat, leakcanary, heapprofd, meminfo, showmap, procrank, memory-tools]
 related_chapters: ["10.1", "10.2", "10.3", "14.1", "13.1"]
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
-task9_state: reviewed
-task2b_state: pending
+task9_state: pending
+task2b_state: fixed
 task9_result: needs-rework
+task2b_result: fixed
+task2b_rework_date: "2026-04-20"
+task2b_fixed_at: "2026-04-20"
 ---
 
 # 内存分析工具
@@ -148,12 +151,14 @@ MAT 分析的输入是 Java 堆转储文件（.hprof）。在 Android 上有几�
 也可以通过命令行抓取：
 
 ```bash
-# 触发 GC（可选但推荐）
+# 请求系统在 dump 前先做一次 GC（可选）
+adb shell am dumpheap -g --user 0 <pid> /data/local/tmp/heap.hprof
+
+# 不带 -g 时直接抓取当前 Java 堆
 adb shell am dumpheap --user 0 <pid> /data/local/tmp/heap.hprof
-# 或者使用 kill 命令
-adb shell kill -SIGHUP <pid>   # 触发 GC
-adb shell am dumpheap <pid> /data/local/tmp/heap.hprof
 ```
+
+如果要在应用代码里控制抓取时机，可以调用 `Runtime.getRuntime().gc()` 或 `Debug.dumpHprofData()`。这里的 GC 只是 hint，不能把它当成“先回收完再 dump”的严格保证。
 
 抓取后需要转换格式：
 
@@ -181,7 +186,7 @@ hprof-conv /data/local/tmp/heap.hprof heap-std.hprof
 
 最后，在引用链的最末端找到 GC Root。GC Root 是 JVM 垃圾回收的起点，通常是静态变量、活跃线程的局部变量、JNI Global Reference 等。如果引用链从一个 GC Root 连到了一个本该被销毁的 Activity，那这条链上的某个引用就是泄漏点。
 
-对于 Bitmap 相关的泄漏，MAT 还支持将 Bitmap 对象的像素数据还原为图片。在 Dominator Tree 中选中一个 Bitmap 对象，在 Inspector 面板中可以看到 `mBuffer`（像素数据）、`mWidth` 和 `mHeight`。将 `mBuffer` 的值导出为 `.data` 文件后，用 ImageJ 或 GIMP 以 Raw 格式打开（设置正确的宽高和 RGBA），就能看到这张 Bitmap 的实际内容。这对于确认"是哪张图片在泄漏"非常有帮助。
+对于 Bitmap 相关的问题，要先看 Android 版本边界。Android 7.x 及以下，Bitmap 像素数据还在 Java 堆里，MAT 能直接看到 `mBuffer` 一类字段；Android 8.0+ 把像素数据移到了 Native Heap，Java 对象里通常只剩 `mNativePtr`。这时标准 hprof 里拿不到像素内容，MAT 也不能再把 Bitmap 直接还原成图片。现代设备上如果要确认“是哪张图在占内存”，优先用 Android Studio Memory Profiler 看 Bitmap 预览，再结合 `dumpsys meminfo` 的 `Graphics` / `Native Heap`、heapprofd 和图形内存排查路径定位。
 
 ### MAT 与 Android Studio Profiler 的关系
 
@@ -205,6 +210,8 @@ heapprofd 是 Perfetto 内置的 Native 堆采样分析器。它的工作方式�
 heapprofd 的基本思路是"采样分配调用栈"。当被监控的进程调用 `malloc` 时，heapprofd 按照可配置的采样间隔（默认 4096 字节）选择性地记录这次分配。对于被选中的分配，它会捕获完整的调用栈，并记录分配的地址和大小。当这块内存被 `free` 时，heapprofd 也会记录释放事件。
 
 这样在采集结束后，heapprofd 就能告诉你：哪些调用栈路径分配了最多内存、哪些分配没有被释放（可能是泄漏）、内存分配的时间趋势是什么。
+
+这里有一个边界要分清。heapprofd 盯的是 `malloc` / `free` 一类分配；Graphic Buffer、`dma-buf`、Surface buffer 这类图形内存通常不走这条路，所以它看不到。
 
 heapprofd 支持 Native 分配和 Java 分配两种模式。Native 分配模式从 Android 10 开始支持，监控 `malloc`/`free` 调用。Java 分配模式从 Android 12 开始支持，监控 ART 虚拟机的对象分配。但需要注意，Java 模式展示的是分配的调用栈，而不是对象之间的引用关系——它无法替代 MAT 的引用链分析。
 
@@ -231,12 +238,12 @@ buffers: {
 }
 data_sources: {
     config {
-        name: "linux.heapprof"
-        heapprof_config {
-            target_cmdline: "com.example.myapp"
+        name: "android.heapprofd"
+        heapprofd_config {
+            process_cmdline: "com.example.myapp"
             sampling_interval_bytes: 4096
             continuous_dump_config {
-                dump_interval_ms: 10000    // 每10秒自动dump一次快照
+                dump_interval_ms: 10000    // 每10秒自动 dump 一次快照
             }
         }
     }
@@ -259,11 +266,11 @@ data_sources: {
 ### 前置条件与限制
 
 - 目标设备需要运行 Android 10+。
-- 在 userdebug/eng 版本上可以直接使用。在 user 版本上，目标应用需要在 Manifest 中声明 `android:debuggable="true"` 或 `android:profileable="true"`。
-- `profileable` 是 Android 10 引入的属性，它允许应用在不开启 debug 模式的情况下被性能分析工具采集数据。对于 release 版本的性能分析，推荐使用 `profileable` 而非 `debuggable`。
+- 在 userdebug/eng 版本上可以直接使用。在 user 版本上，目标应用需要在 Manifest 中声明 `android:debuggable="true"`，或在 `<application>` 下加入 `<profileable android:shell="true" />`。
+- `profileable` 元素从 Android 10 开始可用，允许 shell、Perfetto、simpleperf 在不开启 debug 模式的前提下采集数据。做 release 版本性能分析时，通常优先选 `<profileable android:shell="true" />`。
 - 采样模式意味着 heapprofd 不会记录每一次分配。对于小对象的泄漏，可能因为采样间隔而没有被捕获。
 
-[已验证: 官方文档, https://perfetto.dev/docs/data-sources/native-heap-profiling]
+[已验证: 官方文档, https://perfetto.dev/docs/data-sources/native-heap-profiler]
 [已验证: 官方文档, https://developer.android.com/topic/performance/memory]
 
 ## dumpsys meminfo：内存的全局快照
@@ -288,7 +295,7 @@ data_sources: {
 
 **Private Clean**：未被修改的私有内存页，通常是代码段（mmap 的 .so、.dex 文件）。这些内存可以在内存紧张时被回收，因为内容可以从文件重新加载。
 
-在分类项中，`Java Heap` 对应 ART 虚拟机管理的 Java/Kotlin 对象堆，`Native Heap` 对应 C/C++ 通过 `malloc` 分配的内存，`Code` 包含 dex 代码和 so 库的内存映射，`Graphics` 主要是 GPU 相关的 Graphic Buffer。如果 `Graphics` 占比异常高，可能是 Bitmap 未释放或 Surface 配置过大。
+在分类项中，`Java Heap` 对应 ART 虚拟机管理的 Java/Kotlin 对象堆，`Native Heap` 对应 C/C++ 通过 `malloc` 分配的内存，`Code` 包含 dex 代码和 so 库的内存映射，`Graphics` 主要是 GPU 相关的 Graphic Buffer。`Graphics` 占比异常高时，优先检查 Bitmap、Surface、WebView、视频 buffer 的生命周期；这类问题通常要配合 `showmap`、SurfaceFlinger 和 Perfetto 看，不要直接按 heapprofd 的 Native Heap 路线处理。
 
 **App Summary 区域**在分类汇总表之后，用更简洁的方式总结了几个关键数字：
 
@@ -386,6 +393,19 @@ libmeminfo 提供了以下能力：
 [已验证: 官方文档, https://source.android.com/docs/core/debug/eval-performance]
 [待验证: procrank 在 Android 14+ 设备上的可用性]
 
+## Graphics / dma-buf 内存怎么查
+
+当 `dumpsys meminfo` 里的 `Graphics` 持续上涨，或者 `showmap` 里出现大块 `/dev/dmabuf` 映射时，先不要把它当成 `malloc` 泄漏。Bitmap 像素、SurfaceView / TextureView buffer、WebView 渲染缓存、视频解码输出，很多都落在 Graphic Buffer / dma-buf 上，heapprofd 看不到。
+
+### 一条够用的排查顺序
+
+1. **看 `dumpsys meminfo`**：把 `Graphics`、`Native Heap` 和 `TOTAL PSS` 放在一起看。`Native Heap` 涨而 `Graphics` 平稳，优先走 heapprofd / malloc debug；`Graphics` 涨得快，优先走图形内存路径；两者一起涨时，再同时看 JNI 分配和 buffer 生命周期。
+2. **看 `showmap` / `smaps`**：用 `adb shell showmap <pid>` 或 `/proc/<pid>/smaps` 确认是否有大的 `/dev/dmabuf`、图形映射或匿名图像缓存。这里能回答“涨的是 native heap 还是图形映射”。
+3. **对照 SurfaceFlinger**：图片、视频、WebView、SurfaceView、Camera 预览这类场景，再看 `adb shell dumpsys SurfaceFlinger`，确认对应 layer、buffer 尺寸、数量和 composition type。buffer 比显示区域大、surface 数量异常、旧 layer 没及时释放，往往比 Java 堆更接近根因。
+4. **回到 Perfetto 对时间线**：把内存上涨的时间点和 `SurfaceFlinger`、`BufferQueue`、`gpu.renderstages`、解码线程 / RenderThread 活动放到同一时间窗里看，分清是 bitmap 解码峰值、视频帧缓存堆积，还是几何变化引起的 buffer 重建。
+
+这一组工具和 §2.15 [DMA-BUF 与 Gralloc](../../part1-fundamentals/ch02-rendering/15-dmabuf-gralloc.md) 是配套的。这里解决“怎么查”，那一节解释这些 buffer 为什么会占内存、为什么会跨进程共享。
+
 ## malloc debug 与 malloc hooks：Native 内存调试的利器
 
 ### 解决的问题
@@ -409,18 +429,18 @@ adb shell am start -n com.example.myapp/.MainActivity \
   --wrap "libc.debug.malloc.options=backtrace_enable_on_signal"
 ```
 
-`backtrace_enable_on_signal` 模式下，应用启动时不会记录调用栈（零开销），直到你发送 `SIGUSR1` 信号后才开始记录。这种方式适合在生产环境中按需开启：
+`backtrace_enable_on_signal` 模式下，应用启动时默认不采集分配栈，收到实时信号后才切换状态。按 bionic `malloc_debug` README，这个开关信号是 `SIGRTMAX-19`（Android 上通常是 45）：
 
 ```bash
-# 开始记录调用栈
-adb shell kill -SIGUSR1 <pid>
+# 切换 backtrace 采集开关
+adb shell kill -45 <pid>
 ```
 
-记录后，可以通过信号 `SIGUSR1` 再次触发，将当前的分配信息 dump 到 logcat：
+如果同时启用了 `backtrace` 选项，Android 9+ 还可以用 `SIGRTMAX-17` 把当前堆分配信息写到文件，默认路径通常是 `/data/local/tmp/backtrace_heap.<pid>.txt`：
 
 ```bash
-adb shell kill -SIGUSR1 <pid>
-adb logcat | grep "malloc_debug"
+adb shell kill -47 <pid>
+adb shell ls /data/local/tmp/backtrace_heap.<pid>.txt
 ```
 
 ### malloc hooks
@@ -455,7 +475,7 @@ malloc hooks 的典型应用场景包括：构建轻量级的内存分配追踪�
 
 HWASAN（Hardware-assisted AddressSanitizer）是 Android 上用于检测 Native 内存安全错误的工具。它能检测的问题包括：堆缓冲区溢出、栈缓冲区溢出、use-after-free、double free 等。
 
-与传统的 ASan（AddressSanitizer）相比，HWASAN 的内存开销更低（ASan 通常需要 3-5 倍的内存，HWASAN 只需要约 1.5 倍），这使得它可以在整个系统级别启用，而不仅仅是单个应用。HWASAN 可用于 Android 10+ 的 AArch64 设备。
+与传统的 ASan（AddressSanitizer）相比，HWASAN 的内存开销更低（ASan 通常需要 3-5 倍的内存，HWASAN 只需要约 1.5 倍），这使得它可以在更大的测试范围里使用。HWASAN 主要面向 AArch64 的 userdebug/eng 或专门的 HWASAN 系统镜像，是否可用取决于设备和系统构建，不是所有 Android 10+ 商用机都能直接开启。
 
 HWASAN 的原理是利用 ARM 的 Top Byte Ignore（TBI）特性：在 64 位地址空间中，顶部 8 位（高字节）通常不用于地址翻译。HWASAN 用这 8 位给每个分配的内存块打上标签，在每次内存访问时检查标签是否匹配。如果标签不匹配，说明这次访问越界或访问了已释放的内存。
 
@@ -463,7 +483,7 @@ HWASAN 的原理是利用 ARM 的 Top Byte Ignore（TBI）特性：在 64 位地
 
 ### MTE：Memory Tagging Extension
 
-MTE（Memory Tagging Extension）是 ARM v9 架构引入的硬件级内存安全特性。Pixel 8（2023 年）及更新的设备支持 MTE。
+MTE（Memory Tagging Extension）是 ARM v9 架构引入的硬件级内存安全特性。它依赖硬件、内核和系统一起支持，近几代高端 SoC 与部分 Pixel 设备开始提供这项能力。
 
 MTE 与 HWASAN 的目标相同——检测内存安全错误——但实现方式完全不同。MTE 在硬件层面为每个内存块（通常是 16 字节粒度）分配一个标签（tag），同时在指针中嵌入相同的标签。CPU 在每次内存访问时自动检查标签是否匹配。如果不匹配，触发异常。
 
@@ -473,7 +493,7 @@ MTE 相比 HWASAN 的优势在于：
 - **不需要重新编译**：可以在系统层面启用，对已有应用也有效。
 - **可以检测更多类型的错误**：硬件标签的粒度更细，覆盖更全面。
 
-Android 12+ 的系统组件已经启用了 MTE。对于应用开发者来说，在支持 MTE 的设备上可以通过开发者选项启用异步 MTE 模式（async mode），在这种模式下，内存错误不会立即 crash 应用，而是记录日志。这种方式适合在测试阶段使用，不会影响应用的正常运行。
+Android 已在部分系统组件和设备上逐步引入 MTE 支持。对于应用开发者来说，在支持 MTE 的设备上可以通过开发者选项启用异步 MTE 模式（async mode），这种模式通常记录错误日志而不是立刻让应用崩溃，适合测试阶段使用。
 
 [已验证: 官方文档, https://developer.android.com/ndk/guides/sanitizers]
 [已验证: 官方文档, https://source.android.com/docs/security/test/memory-safety]
@@ -538,7 +558,7 @@ heapprofd 告诉你的是"哪里在分配内存"和"哪些分配没有被释放"
 
 **误区五："Native 内存问题只发生在使用 JNI 的应用中"**
 
-即使你的应用没有直接写 JNI 代码，Android 框架层本身也大量使用 Native 内存。Bitmap 的像素数据（Android 8.0+ 存放在 Native 堆）、Surface 的 Graphic Buffer、WebView 的渲染引擎内存，都是 Native 内存。如果 `dumpsys meminfo` 显示 Native Heap 过大，即使你的代码全是 Java/Kotlin，也需要用 heapprofd 来排查。
+即使你的应用没有直接写 JNI 代码，Android 图形栈也会占用大量非 Java 内存。Bitmap 像素、Surface buffer、WebView 渲染缓存可能出现在 `Native Heap`、`Graphics` 或 `/dev/dmabuf`。看到内存上涨后，先分清是 `malloc` native heap 还是 Graphic Buffer / dma-buf，再决定用 heapprofd 还是图形内存那组工具。
 
 ## 参考资料
 
@@ -547,7 +567,7 @@ heapprofd 告诉你的是"哪里在分配内存"和"哪些分配没有被释放"
 - 高爷 MAT 三部曲（入门）：https://www.androidperformance.com/2015/04/11/AndroidMemory-Usage-Of-MAT/
 - 高爷 MAT 三部曲（进阶）：https://www.androidperformance.com/2015/04/11/AndroidMemory-Usage-Of-MAT-Pro/
 - 高爷 MAT 三部曲（Bitmap）：https://www.androidperformance.com/2015/04/11/AndroidMemory-Open-Bitmap-Object-In-MAT/
-- heapprofd 官方文档：https://perfetto.dev/docs/data-sources/native-heap-profiling
+- heapprofd 官方文档：https://perfetto.dev/docs/data-sources/native-heap-profiler
 - dumpsys meminfo 官方文档：https://developer.android.com/studio/command-line/dumpsys#meminfo
 - Android 内存调试工具总览：https://developer.android.com/ndk/guides/sanitizers
 - AOSP libmeminfo 源码：https://android.googlesource.com/platform/system/core/+/refs/heads/main/libmeminfo/

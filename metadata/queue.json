@@ -2470,7 +2470,10 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-19T22:11:56+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-20T05:01:36+08:00",
+    "completed_by": "task2b-rework",
+    "resolution": "修正 heap dump 的 GC 命令、heapprofd 配置与 profileable 写法，拆分 Native Heap 与 Graphics/dma-buf 诊断路径，并补齐 Bitmap / malloc_debug / HWASAN / MTE 的版本边界。"
   },
   {
     "section": "14.11",
@@ -2540,8 +2543,11 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-20T02:35:00+08:00",
-    "status": "pending",
-    "review_log": "logs/deep-review/2026-04-20-02-deep-review.md"
+    "status": "completed",
+    "review_log": "logs/deep-review/2026-04-20-02-deep-review.md",
+    "completed_at": "2026-04-20T05:01:36+08:00",
+    "completed_by": "task2b-rework",
+    "resolution": "改写 Producer→BLAST→Transaction→SurfaceFlinger 的提交关系，补足 Android N / U 版本边界，修正 Z-order、acquireFence、BufferQueue 内存表述与交叉引用。"
   },
   {
     "section": "18.7",
