@@ -14,9 +14,9 @@ drafted_date: "2026-04-07"
 drafted_by: "openclaw-task2a"
 last_verified: "2026-04-13"
 last_verified_against: "AOSP android-16.0.0_r1"
-reviewed_date: "2026-04-12"
-reviewed_by: "openclaw-task6"
-task6_result: needs-rework
+reviewed_date: 2026-04-20
+reviewed_by: openclaw-task6
+task6_result: pass-light-edit
 confidence: medium
 sources:
   - type: official
@@ -33,8 +33,8 @@ sources:
     path: "抖音 Android 端图片优化最佳实践（AndroidPub，2024-12-19）"
   - type: research
     path: "intake/research-feeds/2026-03-31-19-ch04-app-bitmap-pool-optimization.md"
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task9_result: needs-rework
 task2b_state: fixed
@@ -213,7 +213,7 @@ Bitmap newBitmap = BitmapFactory.decodeResource(res, resId, options);
 // reusableBitmap 被回收，其像素内存被 newBitmap 接管
 ```
 
-API 19+ 的规则：复用 Bitmap 的内存必须 ≥ 新 Bitmap 需要的内存（按 `getAllocationByteCount()` 判断，而非 `getByteCount()`）。这意味着可以用一个大的 Bitmap 复用来解码更小的图片。
+API 19+ 的规则：复用 Bitmap 的内存必须 ≥ 新 Bitmap 需要的内存（按 `getAllocationByteCount()` 判断，而非 `getByteCount()`），可以用一个大的 Bitmap 复用来解码更小的图片。
 
 ### Glide 的 BitmapPool 实现
 
@@ -250,7 +250,7 @@ Glide 的内存缓存体系分成三层：
 
 ### AVIF：压缩率的新天花板
 
-Android 12（API 31）引入了对 AVIF 的基础支持，Android 14 对新设备强制要求支持 AV1 硬件解码（包括 AVIF Baseline Profile）。这意味着 Android 14+ 的设备有硬件加速的 AVIF 解码能力。
+Android 12（API 31）引入了对 AVIF 的基础支持，Android 14 对新设备强制要求支持 AV1 硬件解码（包括 AVIF Baseline Profile），Android 14+ 的设备有硬件加速的 AVIF 解码能力。
 
 AVIF 基于 AV1 视频编码的帧内压缩，相比 JPEG 在同等画质下文件体积减少约 50%。对于带宽敏感的场景（图片 CDN、社交信息流），这是一个巨大的成本优势。抖音的技术团队通过将 JPEG 转为 HEIC（类似思路的格式），带宽成本降低超过 80%。[来源：抖音 Android 端图片优化实践]
 

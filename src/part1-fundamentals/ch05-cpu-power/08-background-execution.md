@@ -48,15 +48,15 @@ sources:
     path: "frameworks/base/apex/jobscheduler/framework/java/android/app/job/JobScheduler.java"
 tags: [后台限制, Doze, App Standby, 前台服务, WorkManager, JobScheduler, AlarmManager, 省电, 后台启动, BAL]
 related_chapters: ["5.6", "5.7", "11.2", "8.4"]
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task9_result: needs-rework
 task2b_state: fixed
-task6_result: "needs-rework"
+task6_result: pass-light-edit
 task2b_result: fixed
-reviewed_date: "2026-04-12"
-reviewed_by: "openclaw-task6"
+reviewed_date: 2026-04-20
+reviewed_by: openclaw-task6
 ---
 
 
@@ -315,7 +315,7 @@ AlarmManager 的强项是精确时间点触发，代价是最难和系统的省�
 - **Temporary allowlist**：Android 8.0 文档明确写了，高优先级 FCM、SMS / MMS 广播、通知 `PendingIntent`、VPN 启动等场景，应用会被临时放进 allowlist 几分钟，这段时间可以启动 service 并继续跑后台逻辑
 - **Android 12+ 的后台启动 FGS 豁免**：高优先级 FCM、用户可见交互、exact alarm 等场景仍可能允许起 FGS，但如果 FCM 最终被系统降级，`startForegroundService()` 依旧会因为 `ForegroundServiceStartNotAllowedException` 失败
 
-因此，看到“受限状态下任务还是执行了”，先别急着怀疑系统不一致，先核对它是不是走了这些例外入口。
+因此，看到“受限状态下任务还是执行了”，先核对它是不是走了这些例外入口。
 
 ### 选型决策
 

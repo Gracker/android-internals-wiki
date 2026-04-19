@@ -3113,5 +3113,12 @@
       "task9_state": "unknown",
       "task2b_state": "unknown"
     }
+  },
+  "summary": {
+    "status_counts": {
+      "unknown": 34,
+      "ready-for-review": 169,
+      "finalized": 3
+    }
   }
 }
