@@ -27,12 +27,12 @@ related_chapters: ["2.1", "2.4", "2.5", "7.8", "7.12"]
 reviewed_by: openclaw-task6
 reviewed_date: "2026-04-19"
 task6_result: pass-light-edit
-pipeline_stage: task9_pending
+pipeline_stage: task2b_pending
 task6_state: reviewed
-task9_state: pending
+task9_state: reviewed
 task9_result: needs-rework
-task2b_state: fixed
-task2b_result: fixed
+task2b_state: pending
+
 ---
 
 # 2.21 文字渲染性能

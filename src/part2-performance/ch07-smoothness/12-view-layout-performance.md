@@ -8,9 +8,9 @@ drafted_by: "openclaw-task2a"
 applicable_versions: "Android 5.0 (API 21) - Android 17 (API 37)"
 last_verified: "2026-04-08"
 last_verified_against: "AOSP android-16.0.0_r1"
-reviewed_date: "2026-04-12"
+reviewed_date: "2026-04-20"
 reviewed_by: "openclaw-task6"
-task6_result: needs-rework
+task6_result: pass-light-edit
 confidence: high
 sources:
   - type: official
@@ -30,8 +30,8 @@ related_chapters: ["7.1", "7.2", "7.4", "7.5", "2.4", "2.5", "8.3"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-04-08"
 gap_source: "AOSP结构+官方文档+读者需求"
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task9_result: needs-rework
 task2b_result: fixed
@@ -71,7 +71,7 @@ task2b_state: fixed
 
 Android 的一次 traversal 可能包含 Measure、Layout、Draw 三个阶段，但只有在 `requestLayout()`、窗口尺寸变化或 insets 变化把 `mLayoutRequested` 置为 true 时，系统才会重新执行 Measure 和 Layout。树越深，节点越多，一旦这两个阶段被触发，主线程就要花更多时间递归整棵 View 树。更麻烦的是，某些 ViewGroup（比如 `RelativeLayout`，以及使用了 `layout_weight` 的 `LinearLayout`）会让重复 measure 次数继续上升。
 
-Google 在 2017 support ConstraintLayout 时代做过一个基准案例 [已验证: Google Developers Blog, 2017-08-24]：一个以 `RelativeLayout` 嵌套 `LinearLayout` 为主的注册表单，在 20 秒 Systrace 窗口里出现了 80 次 expensive measure/layout alerts；换成更扁平的 `ConstraintLayout` 版本后，同一窗口里的 alerts 明显减少。这个数字说明嵌套层级和重复 measure 会把布局成本迅速放大，但它不是“单帧固定 80 次 pass”，也不能直接外推到今天的 AndroidX / 120Hz 设备。
+Google 在 2017 年推广 ConstraintLayout 时做过一组基准测试 [已验证: Google Developers Blog, 2017-08-24]：一个以 `RelativeLayout` 嵌套 `LinearLayout` 为主的注册表单，在 20 秒 Systrace 窗口里出现了 80 次 expensive measure/layout alerts；换成更扁平的 `ConstraintLayout` 版本后，同一窗口里的 alerts 明显减少。这个数字说明嵌套层级和重复 measure 会把布局成本迅速放大，但它不是“单帧固定 80 次 pass”，也不能直接外推到今天的 AndroidX / 120Hz 设备。
 
 [图：Google 官方 benchmark 对比——RelativeLayout 嵌套 vs ConstraintLayout 的 Systrace 截图，标注 pass 数差异]
 
@@ -279,7 +279,7 @@ Google 在 2017 support ConstraintLayout 时代做过一组公开测试 [已验�
 
 这组数据能证明两件事。第一，扁平层级通常更容易减少重复 measure/layout。第二，`RelativeLayout` 这类需要多轮测量的容器，在嵌套后会更容易把 traversal 成本放大。它不能直接说明“当前 AndroidX 项目每帧一定节省多少毫秒”，因为测试对象、support library 版本、设备刷新率和 trace 口径都与今天的项目环境不同。
 
-`ConstraintLayout` 的内部实现也不该被简化成“一次遍历就能确定所有子 View 的位置”。更准确的说法是：它通过约束求解器和更扁平的层级，减少很多传统嵌套布局里的重复 `measure/layout`。真正的收益大小，还是要用当前设备上的 FrameMetrics 或 Perfetto 实测。
+`ConstraintLayout` 的内部实现也不该被简化成“一次遍历就能确定所有子 View 的位置”。它通过约束求解器和更扁平的层级，减少很多传统嵌套布局里的重复 `measure/layout`。真正的收益大小，还是要用当前设备上的 FrameMetrics 或 Perfetto 实测。
 
 [图：Google 官方 benchmark 的 Systrace 对比截图——80 passes vs 扁平化的 pass 数]
 
