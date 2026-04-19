@@ -6,8 +6,8 @@ status: ready-for-review
 drafted_date: "2026-04-05"
 drafted_by: "openclaw-task2a"
 applicable_versions: "ARR 主体：Android 15-QPR1 及以上；背景：Android 11-14 多刷新率支持"
-last_verified: "2026-04-11"
-last_verified_against: "AOSP android-16.0.0_r1 + developer.android.com"
+last_verified: "2026-04-19"
+last_verified_against: "AOSP android-16.0.0_r1 + developer.android.com + perfetto.dev"
 confidence: high
 sources:
   - type: official
@@ -24,15 +24,19 @@ sources:
     path: "https://developer.android.com/games/sdk/frame-pacing"
   - type: research
     path: "intake/research-feeds/2026-04-05-19-android16-arr-surfaceflinger-choreographer-frame-pacing.md"
+  - type: official
+    path: "https://perfetto.dev/docs/data-sources/frametimeline"
+  - type: official
+    path: "https://perfetto.dev/docs/analysis/stdlib-docs"
 tags: [ARR, refresh-rate, VSync, SurfaceFlinger, Choreographer, LTPO, frame-pacing, Android-16]
 related_chapters: ["2.2", "2.3", "2.4", "2.6", "2.13", "2.16"]
-pipeline_stage: task2b_pending
+pipeline_stage: task6_pending
 last_task9_at: "2026-04-19T17:21:00+08:00"
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-04-19"
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: pending
+task6_state: revisiting
+task9_state: pending
+task2b_state: fixed
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-04-19"
 task6_result: pass-light-edit
@@ -60,9 +64,11 @@ LTPO 面板之所以经常和 ARR 一起出现，是因为它更适合低频到�
 
 ## 系统里谁在做什么
 
-DisplayManager 负责提供显示配置和约束条件，比如设备支持哪些刷新率、当前模式能用哪些默认档位。真正的刷新率选择发生在 SurfaceFlinger 一侧。AOSP android-16.0.0_r1 里，调用点在 `frameworks/native/services/surfaceflinger/SurfaceFlinger.cpp`，SurfaceFlinger 在合适的提交阶段调用 `mScheduler->chooseRefreshRateForContent(...)`，把选择工作交给 Scheduler 完成。[已验证: AOSP android-16.0.0_r1, frameworks/native/services/surfaceflinger/SurfaceFlinger.cpp]
+DisplayManager 这一层先决定系统允许在哪些模式里挑。AOSP android-16.0.0_r1 里，`DisplayModeDirector#getDesiredDisplayModeSpecs()` 会把用户设置、低电量、亮度区间、App request range 和 switching type 折叠成 `DesiredDisplayModeSpecs`，里面带着 base mode、physical/render refresh-rate ranges 和 `allowGroupSwitching`。[已验证: AOSP android-16.0.0_r1, frameworks/base/services/core/java/com/android/server/display/mode/DisplayModeDirector.java]
 
-SurfaceFlinger 负责收集当前可见 Layer 的状态、维护事务和显示提交时序；Scheduler 根据这些输入挑选更合适的刷新率。文档里如果把“刷新率选择函数直接写在 SurfaceFlinger 自己内部”或者把 Scheduler 路径写成 `services/surfaceflinger/...`，都会把实现位置说偏。
+`DisplayManagerService` 的 `DesiredDisplayModeSpecsObserver` 取到这组 specs 后，会把它写进 `LogicalDisplay`，再由 `LocalDisplayAdapter` 转成 `SurfaceControl.DesiredDisplayModeSpecs` 下发给 SurfaceFlinger。[已验证: AOSP android-16.0.0_r1, frameworks/base/services/core/java/com/android/server/display/DisplayManagerService.java] [已验证: AOSP android-16.0.0_r1, frameworks/base/services/core/java/com/android/server/display/LogicalDisplay.java] [已验证: AOSP android-16.0.0_r1, frameworks/base/services/core/java/com/android/server/display/LocalDisplayAdapter.java]
+
+到了 SurfaceFlinger 这一层，`mScheduler->chooseRefreshRateForContent(...)` 才开始根据当前可见 Layer 的内容节奏做 content-based selection。这里的输入已经带着前面那层收窄后的 allowed ranges，所以 Battery Saver、用户峰值刷新率和 App 请求范围会先影响候选集合，再交给 Scheduler 做评分。[已验证: AOSP android-16.0.0_r1, frameworks/native/services/surfaceflinger/SurfaceFlinger.cpp]
 
 `VsyncModulator` 负责在某些阶段调整 VSYNC offset，给事务提交和合成留出时间余量。它的源码路径是 `frameworks/native/services/surfaceflinger/Scheduler/VsyncModulator.cpp`。当刷新率变化、事务开始或系统需要更早唤醒 App / SurfaceFlinger 时，offset 会跟着调整。所以我们在 Trace 里看到 VSYNC-app 与 VSYNC-sf 的间距短暂变化，不必马上把它当成异常。[已验证: AOSP android-16.0.0_r1, frameworks/native/services/surfaceflinger/Scheduler/VsyncModulator.cpp]
 
@@ -142,11 +148,11 @@ choreographer.postVsyncCallback(frameData -> {
 
 ## SurfaceFlinger 怎样做刷新率选择
 
-SurfaceFlinger 会汇总当前可见 Layer 的内容节奏，然后通过 Scheduler 做 refresh-rate selection。这里既可能用到 App 显式给出的偏好，也可能用到系统从内容提交节奏里估出来的结果。官方 ARR 文档写得很清楚，即使应用没有显式请求，系统也可以根据活跃 Layer 及其平均 fps 选择刷新率。[已验证: 官方文档, developer.android.com/develop/ui/views/animations/adaptive-refresh-rate]
+SurfaceFlinger 不会在全量 Display Mode 里随意挑选。AOSP android-16.0.0_r1 里，DisplayManager 下发的 policy 最终会进入 `setDesiredDisplayModeSpecsInternal(...)`，写到 `RefreshRateSelector`；后续 `mScheduler->chooseRefreshRateForContent(...)` 只会在 `isModeAllowed(...)` 通过的模式里，根据 Layer 的更新节奏、App 显式偏好和系统估算的内容 fps 做选择。[已验证: AOSP android-16.0.0_r1, frameworks/native/services/surfaceflinger/SurfaceFlinger.cpp]
 
-这也解释了一个常见现象。很多应用没有接入任何 ARR API，设备照样能在滚动时升频、静止后降频。系统从 Layer 的更新节奏里看到了内容变化，据此做升频判断。
+应用没有接入 ARR API，设备也可能在滚动时升频、静止后降频。系统会从 Layer 的更新节奏里估算内容帧率，再在 allowed range 里选更合适的模式。[已验证: 官方文档, developer.android.com/develop/ui/views/animations/adaptive-refresh-rate]
 
-触摸和游戏模式会继续影响选择空间。触摸开始后，系统往往会更积极地把刷新率抬高，以保证滑动和动画的跟手感；Game Mode 则可能约束或放宽上限。我们在看 Trace 时，要把“内容帧率、触摸状态、系统策略”放在一起读。
+触摸和游戏模式会继续影响选择空间。触摸开始后，系统往往会更积极地把刷新率抬高，以保证滑动和动画的跟手感；Game Mode 可能收紧或放宽上限。分析 Trace 时，要把内容帧率、触摸状态、DisplayManager policy 和 SurfaceFlinger 的选择结果放在同一时间窗里看。
 
 [图：模式切换或升频示意图。标出触摸开始后 VSYNC-app 间隔从 16.67ms 收缩到 8.33ms，触摸结束后一段时间再回落。同步标出 SurfaceFlinger 的 refresh-rate selection slice。]
 
@@ -161,24 +167,30 @@ ARR 场景最值得看的对象有四个：
 
 如果滑动时 `VSYNC-app` 长期保持 8.33ms，停止后逐步拉长到 16.67ms 或更长，同时 `FrameTimeline` 没有明显 missed frame，这通常是 ARR 在正常工作。相反，如果我们看到刷新率切换前后伴随一两个明显的长间隔，再加上 mode change 相关 slice，就更像是传统多刷新率设备在做模式切换。
 
-下面这个 SQL 适合先把 `VSYNC-app` 间隔分组，再决定要不要往下追：
+SQL 入口更适合先看 Frame Timeline。Perfetto 官方文档公开了 `expected_frame_timeline_slice` 和 `actual_frame_timeline_slice` 两张表，它们分别表示目标时间线和实际时间线，比把 `VSYNC-app` 当成固定 slice 名更稳。`VSYNC-app` 在 Perfetto UI 里更像轨道语义，常见显示名是 `VSYNC-app` 或 `FrameDisplayEventReceiver.onVsync`，不同版本和 trace 配置下名字会变。分析时先在 UI 里确认轨道，再决定要不要按 `track.id` 继续查。[已验证: Perfetto 官方文档, perfetto.dev/docs/data-sources/frametimeline] [已验证: Perfetto 官方文档, perfetto.dev/docs/analysis/stdlib-docs]
 
 ```sql
 SELECT
-  CAST((ts - LAG(ts) OVER (ORDER BY ts)) / 1e6 AS FLOAT) AS interval_ms,
-  CASE
-    WHEN (ts - LAG(ts) OVER (ORDER BY ts)) BETWEEN 7.5e6 AND 9.5e6 THEN '120Hz'
-    WHEN (ts - LAG(ts) OVER (ORDER BY ts)) BETWEEN 15.5e6 AND 17.5e6 THEN '60Hz'
-    WHEN (ts - LAG(ts) OVER (ORDER BY ts)) BETWEEN 32e6 AND 34e6 THEN '30Hz'
-    WHEN (ts - LAG(ts) OVER (ORDER BY ts)) BETWEEN 40e6 AND 43e6 THEN '24Hz'
-    ELSE 'other'
-  END AS refresh_rate_group
-FROM track_event
-WHERE name = 'VSYNC-app'
-ORDER BY ts;
+  process.name AS process_name,
+  ROUND(actual.ts / 1e6, 2) AS actual_ts_ms,
+  ROUND(actual.dur / 1e6, 2) AS actual_dur_ms,
+  ROUND(expected.dur / 1e6, 2) AS expected_dur_ms,
+  actual.present_type,
+  actual.jank_type,
+  actual.layer_name
+FROM actual_frame_timeline_slice AS actual
+LEFT JOIN expected_frame_timeline_slice AS expected
+  ON actual.display_frame_token = expected.display_frame_token
+ AND actual.surface_frame_token = expected.surface_frame_token
+LEFT JOIN process
+  USING (upid)
+WHERE process.name = 'your.package.name'
+ORDER BY actual.ts;
 ```
 
-`other` 并不自动等于异常。它可能只是离散步进命中了 90Hz、48Hz 这类我们没有单独列出来的档位，也可能是切换瞬间的过渡值。要不要判成问题，得继续看 FrameTimeline 和 SurfaceFlinger 的选择记录。
+这条查询适合先判断两件事：一是 `expected_dur_ms` 有没有在 8.33ms、16.67ms、33.33ms 这类目标值之间切换，二是切换时 `actual_dur_ms`、`jank_type` 和 `present_type` 有没有一起恶化。目标时长在变而 jank 没有明显抬升，通常说明 ARR 在按内容工作；目标时长切换时伴随连续 jank，再结合 mode change 或 `Refresh Rate Selection` slice，才更像传统模式切换带来的抖动。
+
+这组表从 Android 12 起可用。Android 11 或 trace 没打开 Frame Timeline 时，回到 Perfetto UI 里直接看 `VSYNC-app` 轨道间隔，再和 `VSYNC-sf`、`Refresh Rate Selection` slice 放在同一时间窗里对照。需要写 SQL 时，先在 UI 里确认目标轨道，再用 `slice.track_id` 查询，不要把 `WHERE name = 'VSYNC-app'` 当成通用写法。
 
 [图：Game Mode 交互示意图。普通模式下刷新率上限较低，切到 Performance 模式后 VSYNC-app 间隔缩短，FrameTimeline 目标也跟着收紧。]
 
@@ -222,6 +234,10 @@ ARR 本来就会改 VSYNC 周期。先分清是正常降频、模式切换，还
   - `frameworks/base/core/java/android/view/Display.java`
   - `frameworks/base/core/java/android/view/View.java`
   - `frameworks/base/core/java/android/view/Choreographer.java`
+  - `frameworks/base/services/core/java/com/android/server/display/mode/DisplayModeDirector.java`
+  - `frameworks/base/services/core/java/com/android/server/display/DisplayManagerService.java`
+  - `frameworks/base/services/core/java/com/android/server/display/LogicalDisplay.java`
+  - `frameworks/base/services/core/java/com/android/server/display/LocalDisplayAdapter.java`
   - `frameworks/native/services/surfaceflinger/SurfaceFlinger.cpp`
   - `frameworks/native/services/surfaceflinger/Scheduler/VsyncModulator.cpp`
 - 官方文档：
@@ -231,6 +247,8 @@ ARR 本来就会改 VSYNC 周期。先分清是正常降频、模式切换，还
   - `https://developer.android.com/reference/android/view/Surface`
   - `https://developer.android.com/reference/android/view/Choreographer.FrameData`
   - `https://developer.android.com/games/sdk/frame-pacing`
+  - `https://perfetto.dev/docs/data-sources/frametimeline`
+  - `https://perfetto.dev/docs/analysis/stdlib-docs`
 
 <!-- outline-start -->
 ## 本节要点大纲
