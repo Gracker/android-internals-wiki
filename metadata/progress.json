@@ -2767,15 +2767,17 @@
       "title": "ProfilingManager",
       "path": "src/part3-tools/ch14-other-tools/07-profiling-manager.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "revisiting",
-      "task9_state": "pending",
-      "task2b_state": "fixed",
+      "task9_state": "reviewed",
+      "task2b_state": "pending",
       "reviewed_date": "2026-04-19",
       "reviewed_by": "openclaw-task6",
       "task6_result": "needs-rework",
-      "task2b_result": "fixed",
-      "section": "14.7"
+      "task2b_result": "pending",
+      "section": "14.7",
+      "task9_result": "needs-rework",
+      "last_task9_at": "2026-04-19T16:05:00+08:00"
     },
     "src/part3-tools/ch14-other-tools/08-gpu-debug-tools.md": {
       "chapter": "14.8",
@@ -3404,6 +3406,15 @@
       "fixes": 7,
       "issues": 12,
       "log": "logs/deep-review/2026-04-18-16-deep-review.md"
+    },
+    {
+      "date": "2026-04-19T16:05:00+08:00",
+      "section": "14.7",
+      "task": "task9-deep-review",
+      "result": "needs-rework",
+      "fixes": 0,
+      "issues": 6,
+      "log": "logs/deep-review/2026-04-19-16-deep-review.md"
     }
   ],
   "stats": {
@@ -4355,8 +4366,15 @@
     "task6_reviewed_date": "2026-04-19",
     "task6_review_log": "logs/review/2026-04-19-15-review.md",
     "task6_issues": 3,
-    "task2b_result": "fixed",
+    "task2b_result": "pending",
     "task2b_completed_at": "2026-04-19T16:01:59+08:00",
-    "pipeline_stage": "task6_pending"
+    "pipeline_stage": "task2b_pending",
+    "section": "14.7",
+    "title": "ProfilingManager",
+    "task6_state": "revisiting",
+    "task9_state": "reviewed",
+    "task9_result": "needs-rework",
+    "task2b_state": "pending",
+    "last_task9_at": "2026-04-19T16:05:00+08:00"
   }
 }

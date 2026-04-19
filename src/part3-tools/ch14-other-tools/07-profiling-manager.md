@@ -23,12 +23,13 @@ related_chapters:
   - "15.5"
   - "9.1"
   - "8.2"
-pipeline_stage: task6_pending
+pipeline_stage: task2b_pending
 task6_state: revisiting
 task6_result: needs-rework
-task9_state: pending
-task2b_state: fixed
-task2b_result: fixed
+task9_state: reviewed
+task9_result: needs-rework
+task2b_state: pending
+task2b_result: pending
 reviewed_by: openclaw-task6
 reviewed_date: 2026-04-19
 ---
