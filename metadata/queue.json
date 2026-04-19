@@ -2187,5 +2187,43 @@
     "added_at": "2026-04-19T15:43:40.480210+08:00",
     "status": "pending",
     "source_file": "2026-04-19-14-18.13-external-review.md"
+  },
+  {
+    "section": "14.7",
+    "section_title": "ProfilingManager",
+    "priority": 95,
+    "reason": "[Deep Tech Review] Jetpack Profiling API 名称、BufferFillPolicy 常量与 Android 16/36.1/17 trigger 版本矩阵存在事实错误",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "L60-L83, L220-L262",
+        "detail": "显式请求 API 写成 `Tracing.requestProfiling()`，而官方 AndroidX 入口是 `androidx.core.os.Profiling.requestProfiling(Context, ProfilingRequest, Executor, Consumer)`；正文与大纲仍引用 `developer.android.com/guide/topics/profiling`，该链接当前返回 404。",
+        "suggestion": "统一改为 `Profiling.requestProfiling(...)`，补齐 `androidx.core.os` 包路径，并把官方来源替换到有效的 `androidx.core.os.Profiling` / `android.os.ProfilingManager` 参考页。"
+      },
+      {
+        "type": "源码错误",
+        "location": "L91-L100",
+        "detail": "`BufferFillPolicy.FLUSH_FULL` 不在 AndroidX `BufferFillPolicy` 的公开枚举内；官方文档当前只公开 `DISCARD` 和 `RING_BUFFER`。",
+        "suggestion": "删除 `FLUSH_FULL`，改成基于 `DISCARD` / `RING_BUFFER` 的真实枚举说明，并把“保留窗口开头/结尾”的语义和具体策略重新对齐。"
+      },
+      {
+        "type": "版本差异",
+        "location": "L38, L152-L191, L244-L255",
+        "detail": "Android 16/36、36.1、17/37 的 trigger 分层写错。当前文本把 `TRIGGER_TYPE_COLD_START` 与 `TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE` 提前到 Android 16，又把 `TRIGGER_TYPE_APP_REQUEST_RUNNING_TRACE` 推迟到 Android 17，同时漏掉 Android 16 的 `TRIGGER_TYPE_APP_FULLY_DRAWN`。",
+        "suggestion": "按 API 36（ANR、APP_FULLY_DRAWN）、36.1（APP_REQUEST_RUNNING_TRACE 与用户杀进程类 trigger）、37（COLD_START、KILL_EXCESSIVE_CPU_USAGE、OOM、ANOMALY、APP_COMPAT）重写 trigger 矩阵，并同步 frontmatter 的 applicable_versions。"
+      },
+      {
+        "type": "原理断裂",
+        "location": "L141-L150, L183-L185, L212-L214",
+        "detail": "结果通道被写成“显式请求 callback”和“系统触发 global listener”两条彼此分开的路径，但官方文档说明 `registerForAllProfilingResults()` 会收到当前 UID 的全部 profiling 结果。当前章节没有解释同时注册 request callback 与 global listener 时的去重、归档与 case 关联链路。",
+        "suggestion": "补一张结果分发矩阵，明确 request-specific listener、global listener、triggerType、tag、resultFilePath 的关系，并给出重复投递时的去重键建议。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-19T16:05:00+08:00",
+    "status": "pending"
   }
 ]

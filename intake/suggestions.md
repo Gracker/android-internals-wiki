@@ -2598,3 +2598,15 @@
 - **问题**：罗列大量未处理 URL，阅读体验差
 - **建议**：正式定稿时剔除重复及低质量链接，提炼有效信息融入正文
 - **来源**：Gemini 外部 review
+
+## [Task9 Deep Review] 14.7 ProfilingManager — 2026-04-19
+- **类型**：数据缺失
+- **位置**：§14.7 Consumer 回调 / 上线前检查清单（L141-L216）
+- **问题**：章节强调 rate limiter、回调与落盘，但没有给出任何 `ProfilingResult` 失败样例，读者看不出 `ERROR_FAILED_RATE_LIMIT_PROCESS`、`ERROR_FAILED_RATE_LIMIT_SYSTEM`、`ERROR_FAILED_NO_DISK_SPACE`、`ERROR_FAILED_POST_PROCESSING` 分别该怎么判断。
+- **建议**：补一个错误码对照表，至少覆盖 rate limit、磁盘不足、post-processing 失败，并给出一条 callback 失败日志样例。
+
+## [Task9 Deep Review] 14.7 ProfilingManager — 2026-04-19
+- **类型**：交叉引用
+- **位置**：frontmatter `related_chapters` / 文末“相关章节”
+- **问题**：书内已存在 `src/part2-performance/ch08-responsiveness/08-system-triggered-profiling.md` 的 ProfilingManager system-triggered 专章，但本章没有建立交叉引用，导致 trigger 语义在两章里重复铺开且难以统一版本口径。
+- **建议**：把该章节加入 `related_chapters` 与文末“相关章节”，同时把 trigger 细节收束到一处，避免两章各自维护一套版本矩阵。
