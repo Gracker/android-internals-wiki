@@ -54,7 +54,7 @@ sources:
 tags: [thread, handler, looper, messagequeue, renderthread, coroutine, workmanager, thread-priority]
 related_chapters: ["1.2", "1.4", "1.13", "2.4", "2.5", "5.1"]
 pipeline_stage: task6_pending
-task6_state: reviewed
+task6_state: revisiting
 task6_result: pass-light-edit
 task9_state: pending
 task2b_state: fixed
@@ -288,9 +288,9 @@ Process.setThreadPriority(Process.THREAD_PRIORITY_BACKGROUND);
 
 ### cgroup：前台组 vs 后台组
 
-仅仅用 nice 值来区分优先级还不够。Android 引入了 Linux 的 cgroup（控制组）机制来实现更严格的隔离。当一个线程的 nice 值被设置为 `THREAD_PRIORITY_BACKGROUND`（10）或更高时，它会被自动移入后台 cgroup。
+仅仅用 nice 值来区分优先级还不够。Android 还会通过线程组和 cgroup 配置把前台、后台线程拆开调度。当一个线程被设置成 `THREAD_PRIORITY_BACKGROUND`（10）这类后台优先级时，系统会把它放进 background thread group。AOSP `Process.java` 对这个组的定义是“scheduled with a reduced share of the CPU”。
 
-前台 cgroup 和后台 cgroup 的 CPU 时间分配比例大约是 95:5（具体比例因 Android 版本和内核配置可能不同，实际以设备上 `/dev/cpuctl` cgroup 参数为准）。因此，即使后台线程数量很多，它们能获得的 CPU 时间总和也非常有限。这个设计的目的是确保前台 App 的线程能获得充足的 CPU 资源，而后台 App 的工作不会干扰用户体验。
+这里没有一个跨版本都成立的固定比例。不同设备会再叠加 `cpu.shares`、cpuset、uclamp 甚至 cgroup v2 的控制参数，所以不要把它理解成通用的 95:5。分析实机时，直接查看设备上的 `/dev/cpuctl/`、`/dev/stune/` 或 cgroup v2 对应目录参数，更可靠。这样解读 Perfetto 也更稳妥：后台线程的 CPU slice 往往更短、更稀疏，但具体压缩到什么程度，取决于设备配置。
 
 在 Perfetto 的 CPU 视图中，我们可以观察到这个效果：后台线程的 CPU slice 通常很短且稀疏，而前台线程的 CPU slice 更长且连续。如果看到一个后台线程意外地占用了大量 CPU，首先要检查的是它的优先级设置是否正确。
 
@@ -463,9 +463,9 @@ Choreographer 也使用了同样的模式：通过 `ThreadLocal` 为每个线程
 
 4. **内存压力**：每个线程的栈空间加起来可能达到几十甚至上百 MB，在内存紧张的设备上会加速 LMK 回收。
 
-Android Framework 对线程数量的控制体现在多个层面：Binder pool 默认是 1 个已经启动的 pool thread，再加上内核按需追加的最多 15 个 pool threads，上限是 16 个 Binder pool threads。这里不把 App 主线程算进去，因为主线程不是这个 pool 的常驻 worker。`Dispatchers.IO` 和 `Dispatchers.Default` 也各自有并行度上限，目的都是在吞吐量和调度开销之间取平衡。
+Android Framework 对线程数量的控制体现在多个层面。Binder 这里要把两个数字拆开看。`ProcessState.cpp` 里的 `DEFAULT_MAX_BINDER_THREADS=15`，指的是通过 `BINDER_SET_MAX_THREADS` 告诉内核最多再拉起 15 个额外的 Binder worker。与此同时，`startThreadPool()` 会先启动 1 个 pooled thread。于是常见默认配置下，我们会看到 1 个已启动 worker，加上最多 15 个内核追加 worker，也就是最多 16 个 pooled worker。§1.4 写“默认上限 15 个”时，指的是 `DEFAULT_MAX_BINDER_THREADS` 这个驱动配置值；这里写 16，指的是把 `startThreadPool()` 先启动的那个 worker 一起算进去。两种口径说的是同一件事，这里同样不把 App 主线程算进去。`Dispatchers.IO` 和 `Dispatchers.Default` 也各自有并行度上限，目的都是在吞吐量和调度开销之间取平衡。
 
-[已验证: AOSP android-16.0.0_r1, frameworks/native/libs/binder/ProcessState.cpp]
+[已验证: AOSP android-16.0.0_r1, frameworks/native/libs/binder/ProcessState.cpp, DEFAULT_MAX_BINDER_THREADS=15；startThreadPool()；getThreadPoolMaxTotalThreadCount()]
 [已验证: 官方文档, developer.android.com/topic/performance]
 
 ## 常见问题与误区
