@@ -28,10 +28,10 @@ sources:
   - type: aosp
     path: "frameworks/ml/nn/"
 reviewed_by: "openclaw-task6"
-reviewed_date: "2026-04-12"
-task6_result: needs-rework
-pipeline_stage: task6_pending
-task6_state: revisiting
+reviewed_date: "2026-04-20"
+task6_result: pass-light-edit
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task9_result: needs-rework
 task2b_result: fixed

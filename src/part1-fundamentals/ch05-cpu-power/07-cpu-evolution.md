@@ -43,15 +43,15 @@ tags:
 
 polish_count: 1
 drafted_date: "2026-04-01"
-reviewed_date: "2026-04-12"
+reviewed_date: "2026-04-20"
 reviewed_by: "openclaw-task6"
-task6_result: needs-rework
+task6_result: pass-light-edit
 related_chapters:
   - "5.2 EAS 能量感知调度"
   - "5.6 Android 功耗管理"
   - "5.8 后台执行限制与优化"
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task9_result: needs-rework
 task2b_state: fixed
@@ -89,7 +89,7 @@ task2b_result: fixed
 
 ## 为什么要了解 CPU 相关的版本演进
 
-做过 Android 性能优化的工程师，很可能遇到过这种情况：App 在 Android 10 上跑得很好，到了 Android 12 突然后台任务不执行了；或者用 AlarmManager 设了一个精确闹钟，结果在 Android 13 上根本不响。这不是 Bug，是 Google 在每个版本中逐步收紧后台行为限制的结果。
+做过 Android 性能优化的工程师，很可能遇到过这种情况：App 在 Android 10 上跑得很好，到了 Android 12 突然后台任务不执行了；或者用 AlarmManager 设了一个精确闹钟，结果在 Android 13 上根本不响。这些行为的变化是 Google 在每个版本中逐步收紧后台行为限制的结果。
 
 从 Android 5.0 到 Android 16，Google 围绕 CPU 和功耗管理做了一系列层层递进的改动。这些改动覆盖了三个层面：
 
@@ -198,11 +198,11 @@ int bucket = usm.getAppStandbyBucket();
 
 ## Android 10：EAS 成为主流调度路线
 
-前面几个版本讲的是系统如何约束 App 的后台活动。Android 10 这一阶段，调度器本身也在变。更准确的说法是，EAS 在 Android 10 时期成为大.LITTLE 设备的主流路线，很多新设备把它作为默认选择，但前提是内核已经具备 Energy Model、相关 kernel config，厂商 bringup 也把参数校准完成。
+前面几个版本讲的是系统如何约束 App 的后台活动。Android 10 这一阶段，调度器本身也在变。EAS 在 Android 10 时期成为 big.LITTLE 设备的主流路线，很多新设备把它作为默认选择，但前提是内核已经具备 Energy Model、相关 kernel config，厂商 bringup 也把参数校准完成。
 
 我们在 §5.2 详细拆过 EAS 的工作方式，这里只看版本演进带来的变化。EAS 把能量模型接到 CFS 调度决策里。调度器在选择 CPU 时，不只看哪个核心空闲，还会估算不同 CPU 上的能耗和完成时间，然后在性能与功耗之间取一个更合适的点。
 
-这也是为什么“Android 10 默认启用 EAS”这句话不能写得太满。没有 Energy Model，或者厂商没有把 capacity、frequency、util 这一套参数校准好，设备仍可能继续使用更传统的调度方案，或者只启用部分能力。做跨设备 Perfetto 对比时，如果一个 Android 10 设备明显偏向小核、另一个却没有这种特征，先别急着把原因归到 App 代码，先确认内核配置和厂商 bringup。
+这也是为什么“Android 10 默认启用 EAS”这句话不能写得太满。没有 Energy Model，或者厂商没有把 capacity、frequency、util 这一套参数校准好，设备仍可能继续使用更传统的调度方案，或者只启用部分能力。做跨设备 Perfetto 对比时，如果一个 Android 10 设备明显偏向小核、另一个却没有这种特征，排查时先确认内核配置和厂商 bringup，再检查 App 代码。
 
 对 App 开发者来说，同一段工作负载在不同设备上的落核位置可能不同。对系统工程师来说，CPU frequency、CPU idle state、task migration 和 uclamp 提示要一起看，单看利用率很容易误判。
 
