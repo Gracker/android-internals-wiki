@@ -10,9 +10,9 @@ last_verified: "2026-04-12"
 last_verified_against: "AOSP android-16.0.0_r1"
 drafted_date: "2026-03-30"
 confidence: high
-reviewed_date: "2026-04-12"
+reviewed_date: "2026-04-19"
 reviewed_by: openclaw-task6
-task6_result: needs-rework
+task6_result: pass-light-edit
 task2b_result: fixed
 sources:
   - type: blog
@@ -39,7 +39,7 @@ sources:
     path: "developer.android.com/develop/ui/compose/graphics/draw/modifiers"
 tags: [overdraw, GPU, rendering, clipRect, quickReject, 性能优化, Compose, DisplayList, LayoutInspector, AGI]
 related_chapters: ["2.1", "2.4", "2.5", "7.2"]
-pipeline_stage: task6_pending
+pipeline_stage: task9_pending
 task6_state: revisiting
 task9_state: pending
 task2b_state: fixed
@@ -133,7 +133,7 @@ Perfetto 不会直接告诉我们“这里有 3x 过度绘制”。它给的是�
 
 ### 当前主线工具与历史工具
 
-当前的主线工具链是 **Layout Inspector + Debug GPU Overdraw + Profile GPU Rendering + Perfetto / AGI**。Layout Inspector 用来确认 View 或 Composable 的叠层关系，颜色图用来确认像素是否被重复填充，Profile GPU Rendering 用来判断帧预算压力，Perfetto / AGI 负责继续下钻到 FrameTimeline、RenderThread 和 draw call。
+当前的主线工具链是 **Layout Inspector + Debug GPU Overdraw + Profile GPU Rendering + Perfetto / AGI**。Layout Inspector 用来确认 View 或 Composable 的叠层关系，颜色图用来确认像素是否被重复填充，Profile GPU Rendering 用来判断帧预算压力，Perfetto / AGI 负责继续深入到 FrameTimeline、RenderThread 和 draw call。
 
 如果我们在旧博客或旧分享里看到 **Hierarchy Viewer**、**Tracer for OpenGL ES**、**Android Device Monitor**，要先把它们当成历史名词。Android 官方文档已经写明，Android Device Monitor 在 Android Studio 3.1 废弃、3.2 移除。Hierarchy Viewer 的替代工具是 Layout Inspector，Tracer for OpenGL ES 也不该再作为当前 Android Studio 工具链来推荐。
 
@@ -294,7 +294,7 @@ protected void onDraw(Canvas canvas) {
 
 [自动发现: 来源 developer.android.com/develop/ui/compose/graphics/draw/modifiers]
 
-前面讨论的检测手段对 Compose 一样适用。Debug GPU Overdraw 看的是像素重复填充，Layout Inspector 看的是组合树和 layer 结构，必要时再用 Perfetto / AGI 继续下钻。
+前面讨论的检测手段对 Compose 一样适用。Debug GPU Overdraw 看的是像素重复填充，Layout Inspector 看的是组合树和 layer 结构，必要时再用 Perfetto / AGI 继续深入。
 
 ### 哪些场景会真的增加像素重复填充
 

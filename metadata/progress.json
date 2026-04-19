@@ -5,7 +5,7 @@
   "metrics": {
     "total": 175,
     "unknown": 2,
-    "last_updated": "2026-04-19T20:31:01+08:00",
+    "last_updated": "2026-04-19T21:21:37+08:00",
     "task2b_state_counts": {
       "fixed": 123,
       "pending": 11,
@@ -51,8 +51,8 @@
   "pipeline": {
     "pipeline_stage_counts": {
       "unknown": 31,
-      "task6_pending": 121,
-      "task9_pending": 44,
+      "task6_pending": 118,
+      "task9_pending": 47,
       "task2b_pending": 11
     },
     "task2b_state_counts": {
@@ -63,8 +63,8 @@
     },
     "task6_state_counts": {
       "unknown": 31,
-      "reviewed": 65,
-      "revisiting": 108,
+      "reviewed": 68,
+      "revisiting": 105,
       "pending": 3
     },
     "task9_state_counts": {
@@ -3429,6 +3429,33 @@
       "fixes": 0,
       "issues": 6,
       "log": "logs/deep-review/2026-04-19-16-deep-review.md"
+    },
+    {
+      "date": "2026-04-19",
+      "section": "3.4",
+      "task": "task6-re-review",
+      "result": "pass-light-edit",
+      "fixes": 0,
+      "issues": 0,
+      "log": "logs/review/2026-04-19-21-review.md"
+    },
+    {
+      "date": "2026-04-19",
+      "section": "2.6",
+      "task": "task6-re-review",
+      "result": "pass-light-edit",
+      "fixes": 2,
+      "issues": 0,
+      "log": "logs/review/2026-04-19-21-review.md"
+    },
+    {
+      "date": "2026-04-19",
+      "section": "2.8",
+      "task": "task6-re-review",
+      "result": "pass-light-edit",
+      "fixes": 1,
+      "issues": 0,
+      "log": "logs/review/2026-04-19-21-review.md"
     }
   ],
   "stats": {
