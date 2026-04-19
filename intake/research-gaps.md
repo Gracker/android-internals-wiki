@@ -3368,3 +3368,24 @@ Vulkan 渲染后端在同进程多窗口切换时的底层耗时机制（区别�
 
 ### 外部 review 来源
 - Gemini 外部 review
+
+
+## [2026-04-19] 2.17 Frame Pacing Library 与帧节奏控制 — 知识盲区
+
+### 盲区描述
+章节已经写出了 `createChoreographerThread()` 的内部回退树，但还没有把“公开初始化前提”和“内部线程回退实现”拆开。当前缺的不是更多概念，而是一张接入边界矩阵：OpenGL 公开入口 `SwappyGL_init(JNIEnv*, jobject)`、Vulkan 公开入口 `SwappyVk_initAndGetRefreshCycleDuration(JNIEnv*, jobject, ...)`、`SwappyGL_setWindow()` / `SwappyVk_setWindow()` 的窗口句柄前提、以及 API 16-23 / 24-30 / 31+ 在 Choreographer 与 refresh-rate callback 上的差异。如果这块不补，读者很容易把 `vm == nullptr` / `NoChoreographerThread` 误读成“任意 native-only 场景都能直接照抄”的接入方式。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 对照 `include/swappy/swappyGL.h`、`include/swappy/swappyVk.h`，整理公开 API 的 JNI / Activity / ANativeWindow 前置条件
+- 对照 `games-frame-pacing/common/ChoreographerThread.cpp`，梳理 internal fallback 触发条件，区分实现细节与 public contract
+- 输出一张版本矩阵，明确 API 16-23、24-30、31+ 在 Java Choreographer、NDK Choreographer、DisplayManager helper、native refresh-rate callback 上的边界
+- 补 1 组“窗口未配置时 frame-rate vote 不生效”的源码+trace 证据链
+
+### 关联章节
+- 2.3 VSync 信号机制
+- 2.4 Choreographer 编舞者
+- 2.16 Sync Fence 同步栅栏
+- 2.18 Adaptive Refresh Rate 与动态帧率控制

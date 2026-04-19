@@ -2507,3 +2507,10 @@
 - **问题**：eglMakeCurrent 耗时缺乏量化体感
 - **建议**：补充低端机 2-5ms 耗时参考值，提示在 Trace 中搜索 eglMakeCurrent slice
 - **来源**：Gemini 外部 review
+
+
+## [Task9 Deep Review] 2.17 Frame Pacing Library 与帧节奏控制 — 2026-04-19
+- **类型**：数据缺失
+- **位置**：§2.17.6 验证路径（Perfetto / FrameStatistics）
+- **问题**：当前章节给了 SQL 和统计项名称，但仍停留在“应当看哪些轨道/直方图”的层面，没有给出一组真实 trace 截图、FrameStatistics logcat 样例或 SwappyStats 读数，读者很难校准 BufferStuffing、lateFrames、idleFrames 在真实样本里应该长什么样。
+- **建议**：补 1 组最小证据链，至少包含一张启用前后对比图，或 1 段 FrameStatistics / SwappyStats 样例输出，并把结论回连到 buffered frames、jank_type 或某个 histogram 字段。

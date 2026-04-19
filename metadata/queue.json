@@ -1868,5 +1868,37 @@
     "added_by": "external-ai-review",
     "added_at": "2026-04-19T14:21:48+08:00",
     "status": "pending"
+  },
+  {
+    "section": "2.17",
+    "section_title": "Frame Pacing Library 与帧节奏控制",
+    "priority": 85,
+    "reason": "[Deep Tech Review] 2.17 把窗口句柄接入链、内部回退树与 FrameTimeline 版本边界写混，当前示例不足以直接指导真实接入与验证。",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码准确性",
+        "location": "§2.17.5 OpenGL / Vulkan 接入代码块（约 L212-L256）",
+        "detail": "OpenGL 示例漏掉 SwappyGL_setWindow(ANativeWindow*)，Vulkan 示例漏掉 SwappyVk_setWindow(VkDevice, VkSwapchainKHR, ANativeWindow*)。SwappyCommon::updateDisplayTimings() 在 window 未配置时会直接警告 \"ANativeWindow not configured, frame rate will not be reported to Android platform\"，当前“最小可用调用链”不足以覆盖文中强调的 frame-rate vote / display-mode 路径。",
+        "suggestion": "把 setWindow 放到 surface/swapchain 创建后的主链里，并明确区分“能跑通 swap”与“能把帧率投票/显示模式切换链路接完整”的两层接入。"
+      },
+      {
+        "type": "原理断裂",
+        "location": "§2.17.4 Choreographer / DisplayManager 的回退路径（约 L158-L176）",
+        "detail": "正文把 ChoreographerThread::createChoreographerThread() 的内部回退树直接写成对外接入边界，但公开入口 SwappyGL_init(JNIEnv*, jobject) 与 SwappyVk_initAndGetRefreshCycleDuration(JNIEnv*, jobject, ...) 都要求 JNI env 和 Activity。当前写法没有交代“vm == nullptr”描述的是内部线程选择，不是通用 public API 合约，API 16-23 的 no-JVM/native-only 象限也因此被写模糊了。",
+        "suggestion": "补一段“公开初始化前提 vs 内部回退实现”的边界说明，并在版本表里写清 API 16-23 需要 JVM/Activity、Vulkan 路径本身从 API 24 才成立。"
+      },
+      {
+        "type": "版本差异",
+        "location": "§2.17.6 Perfetto 验证路径（约 L289-L347）",
+        "detail": "章节把 Expected Timeline / Actual Timeline 与 actual_frame_timeline_slice / expected_frame_timeline_slice 当成通用验证入口，但没有标出这是 Android 12+ 的 FrameTimeline 能力。当前章节 frontmatter 覆盖 API 16-37，读者如果在 Android 10-11 按这一套排查，会找不到这些轨道和表。",
+        "suggestion": "把验证路径拆成版本矩阵，API 16-30 主看 systrace/SurfaceView buffered frames/SwappyStats，API 31+ 再追加 FrameTimeline UI 与 trace_processor SQL。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-19T14:37:48+08:00",
+    "status": "pending"
   }
 ]
