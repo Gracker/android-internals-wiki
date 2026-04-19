@@ -1,49 +1,62 @@
 ---
-title: "DMA-BUF、Gralloc 与跨进程图形内存共享"
-chapter: "2.15"
-section: "2.15"
+title: DMA-BUF、Gralloc 与跨进程图形内存共享
+chapter: '2.15'
+section: '2.15'
 status: ready-for-review
-applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
-last_verified: "2026-04-11"
-last_verified_against: "AOSP android-16.0.0_r1, Linux kernel 6.12"
+applicable_versions: Android 10 (API 29) - Android 17 (API 37)
+last_verified: '2026-04-11'
+last_verified_against: AOSP android-16.0.0_r1, Linux kernel 6.12
 confidence: medium
-drafted_date: "2026-04-05"
-drafted_by: "openclaw-task2a"
-reviewed_date: "2026-04-11"
-reviewed_by: "openclaw-task6"
+drafted_date: '2026-04-05'
+drafted_by: openclaw-task2a
+reviewed_date: '2026-04-19'
+reviewed_by: openclaw-task6
 sources:
-  - type: aosp
-    path: "frameworks/native/libs/ui/GraphicBuffer.cpp"
-  - type: aosp
-    path: "frameworks/native/libs/gui/BufferQueueProducer.cpp"
-  - type: aosp
-    path: "frameworks/native/libs/gui/BLASTBufferQueue.cpp"
-  - type: aosp
-    path: "hardware/interfaces/graphics/allocator/aidl/android/hardware/graphics/allocator/IAllocator.aidl"
-  - type: aosp
-    path: "hardware/interfaces/graphics/allocator/4.0/IAllocator.hal"
-  - type: aosp
-    path: "hardware/interfaces/graphics/mapper/4.0/IMapper.hal"
-  - type: aosp
-    path: "hardware/interfaces/graphics/common/aidl/android/hardware/graphics/common/BufferUsage.aidl"
-  - type: official
-    path: "https://source.android.com/docs/core/graphics/architecture"
-  - type: official
-    path: "https://source.android.com/docs/core/architecture/kernel/dma-buf-heaps"
-  - type: kernel
-    path: "drivers/dma-buf/"
-tags: [dma-buf, gralloc, graphicbuffer, zero-copy, ion, rendering, cross-process, dma-heap]
-related_chapters: ["2.6", "2.13", "2.16", "4.2", "1.4"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-04-05"
-gap_source: "素材驱动+AOSP结构+每日信息"
-gap_score: "17/20"
-pipeline_stage: task6_pending
-task6_state: revisiting
+- type: aosp
+  path: frameworks/native/libs/ui/GraphicBuffer.cpp
+- type: aosp
+  path: frameworks/native/libs/gui/BufferQueueProducer.cpp
+- type: aosp
+  path: frameworks/native/libs/gui/BLASTBufferQueue.cpp
+- type: aosp
+  path: hardware/interfaces/graphics/allocator/aidl/android/hardware/graphics/allocator/IAllocator.aidl
+- type: aosp
+  path: hardware/interfaces/graphics/allocator/4.0/IAllocator.hal
+- type: aosp
+  path: hardware/interfaces/graphics/mapper/4.0/IMapper.hal
+- type: aosp
+  path: hardware/interfaces/graphics/common/aidl/android/hardware/graphics/common/BufferUsage.aidl
+- type: official
+  path: https://source.android.com/docs/core/graphics/architecture
+- type: official
+  path: https://source.android.com/docs/core/architecture/kernel/dma-buf-heaps
+- type: kernel
+  path: drivers/dma-buf/
+tags:
+- dma-buf
+- gralloc
+- graphicbuffer
+- zero-copy
+- ion
+- rendering
+- cross-process
+- dma-heap
+related_chapters:
+- '2.6'
+- '2.13'
+- '2.16'
+- '4.2'
+- '1.4'
+created_by: task2a-knowledge-gap
+created_date: '2026-04-05'
+gap_source: 素材驱动+AOSP结构+每日信息
+gap_score: 17/20
+pipeline_stage: task2b_pending
+task6_state: reviewed
 task6_result: needs-rework
 task9_state: pending
 task9_result: needs-rework
-task2b_state: fixed
+task2b_state: pending
 task2b_result: fixed
 ---
 
@@ -71,7 +84,7 @@ task2b_result: fixed
 
 如果每次跨进程传递都复制数据，仅渲染管线的数据复制带宽就超过 1.2GB/s。再加上 Camera HAL 预览、Video 解码输出等共享图形内存的场景，系统内存带宽会被完全占满。
 
-更糟糕的是，复制操作本身需要 CPU 参与，这意味着主线程或其他线程的 CPU 时间被挤占，直接影响帧率和响应速度。
+更糟糕的是，复制操作本身需要 CPU 参与，主线程或其他线程的 CPU 时间被挤占，直接影响帧率和响应速度。
 
 所以 Android 从第一天起就采用了零拷贝方案：图形数据只存在于一块物理内存上，所有需要访问它的组件（App 的 GPU、SurfaceFlinger 的合成器、Display 控制器、Camera ISP）都直接访问同一块物理内存，中间只传递一个「引用」（文件描述符），不复制任何像素数据。
 
@@ -94,7 +107,7 @@ DMA-BUF 的核心是一个 exporter-importer 模型：
 
 当 producer 侧某个 slot 第一次拿到新的 `GraphicBuffer`，或者走了 `attachBuffer()` 这类把外部分配 buffer 接进来的路径时，底层才会真的发生一次 fd 引用复制。更常见的 steady-state 情况是，producer 和 consumer 两端都已经缓存了这个 slot 对应的 buffer handle，后续每帧 `queueBuffer()` 只提交 slot 编号、fence 和时序元数据，不会重复把整份 `GraphicBuffer` 重新走一遍 Binder。
 
-以 `dequeueBuffer()` 返回 `BUFFER_NEEDS_REALLOCATION` 的路径为例，更接近源码事实的链路是：
+以 `dequeueBuffer()` 返回 `BUFFER_NEEDS_REALLOCATION` 的路径为例，更接近源码事实的调用过程是：
 
 1. producer 调用 `dequeueBuffer()`，发现某个 slot 需要新 buffer
 2. producer 立即调用 `requestBuffer(slot)`，把该 slot 对应的 `GraphicBuffer` 拉到本地
@@ -176,7 +189,7 @@ Usage flags 这一层也要注意版本语境。很多历史文章还在用 lega
 
 ### GraphicBuffer：对缓冲区的封装
 
-GraphicBuffer 是 Android framework 中对图形缓冲区的核心封装类，定义在 `frameworks/native/libs/ui/GraphicBuffer.cpp`。它不是像素数据本身，而是像素数据的「护照」——包含了所有让不同进程和硬件能访问这块内存所需的信息：
+GraphicBuffer 是 Android framework 中对图形缓冲区的核心封装类，定义在 `frameworks/native/libs/ui/GraphicBuffer.cpp`。它充当像素数据的「护照」——包含了所有让不同进程和硬件能访问这块内存所需的信息：
 
 - **DMA-BUF fd**：指向实际物理内存的文件描述符
 - **元数据**：width、height、stride（行跨度）、format（像素格式）、usage flags
@@ -199,11 +212,11 @@ status_t GraphicBuffer::flatten(void*& buffer, size_t& size,
 }
 ```
 
-这段代码说明了一个关键事实：GraphicBuffer 的跨进程传递，本质上就是「元数据 + fd」的传递。像素数据始终停留在原始的物理内存中，从未被复制。
+这段代码说明了一个关键事实：GraphicBuffer 的跨进程传递就是「元数据 + fd」的传递。像素数据始终停留在原始的物理内存中，从未被复制。
 
 [已验证: AOSP android-16.0.0_r1, frameworks/native/libs/ui/GraphicBuffer.cpp]
 
-### 从 AOSP 源码看分配链路
+### 从 AOSP 源码看分配过程
 
 当 App 调用 `Surface.dequeueBuffer()` 获取一个缓冲区时，底层经历了一条相当长的调用链：
 

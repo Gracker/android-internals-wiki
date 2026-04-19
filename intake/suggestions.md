@@ -2093,3 +2093,38 @@
 - 建议：补充 BufferStuffing 导致“画面流畅但输入极度不跟手”的 Perfetto 观察点（如 BufferQueue 深度 > 1 时 Latency 的阶梯式增长）。
 - **建议**：基于外部 AI review 建议改进
 - **来源**：外部 AI review (2026-04-19-10-README-external-review.md)
+
+## [Task9 Deep Review] 8.6 Kotlin Coroutine 性能实践 — 2026-04-19
+- **类型**：知识盲区
+- **位置**：L108-L128 / L402-L416 `Dispatchers.IO` 与限制并发示例
+- **问题**：正文解释了 `Dispatchers.IO` 的默认并发上限和与 `Dispatchers.Default` 共享线程的实现，但没有补上官方 `Dispatchers.IO.limitedParallelism(n)` 的弹性视图语义。后文直接给出 `Semaphore` 限流示例，容易让读者误以为限制阻塞并发只能靠手写同步器。
+- **建议**：补充 `limitedParallelism`：它可以为特定阻塞资源创建独立并发视图，不受 IO 默认 64 限制约束，但仍与 IO / Default 共享线程资源；再说明它与 `Semaphore` / 自建 Executor 的适用边界。
+
+## [Task9 Deep Review] 8.6 Kotlin Coroutine 性能实践 — 2026-04-19
+- **类型**：数据缺失
+- **位置**：L503-L506 版本演进
+- **问题**：正文给出“多并发请求场景性能提升约 15%”这一量化结论，但紧接着又标注“官方 benchmark 数据待验证”，当前缺少能回溯到 release note / changelog / benchmark 的一手锚点。
+- **建议**：补上具体版本号、基准场景和一手来源；如果暂时拿不到官方 benchmark，就把表述降级为“调度与上下文切换成本继续下降”，不要保留 15% 这个确定数字。
+
+## [Task6 Review] 2.15 DMA-BUF、Gralloc 与跨进程图形内存共享 — 2026-04-19
+
+### Issue 1: 技术存疑 — Gralloc AIDL/HIDL 版本状态
+- **类型**：需确认
+- **位置**：Gralloc HAL 版本描述（全文多处）
+- **问题**：external-review P1 断言 Android 16 强制 Gralloc 5.0 AIDL、HIDL 4.0 实质性弃用。当前稿件基于源码观察为 AIDL 与 HIDL 并存。两者对版本状态描述不一致
+- **建议**：Task 9 对照 AOSP 最终 tag 和 CDD 确认
+- **review 日志**：logs/review/2026-04-19-11-review.md
+
+### Issue 2: 知识盲区 — 16KB 页面模式对 Gralloc 的影响
+- **类型**：需补充素材
+- **位置**：全文缺失
+- **问题**：16KB 页面模式下小尺寸 Buffer 的 Slack Space 导致显存利用率骤降，PSS 可能翻倍
+- **建议**：Task 2B 补充 16KB 对齐影响、reservedSize 参数、BufferDescriptorInfo 新增字段
+- **review 日志**：logs/review/2026-04-19-11-review.md
+
+### Issue 3: 待补充 — Trace 截图
+- **类型**：需补充素材
+- **位置**：DMA-BUF fd 泄漏节
+- **问题**：[待补充：Trace 截图] 为占位符
+- **建议**：高爷补充实际 Trace 截图或详细描述
+- **review 日志**：logs/review/2026-04-19-11-review.md

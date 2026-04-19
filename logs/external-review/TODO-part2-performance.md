@@ -15,22 +15,22 @@
 - [x] src/part2-performance/ch07-smoothness/14-gaps-dynamic-analysis.md
 - [x] src/part2-performance/ch07-smoothness/README.md
 - [x] src/part2-performance/ch08-responsiveness/01-responsiveness-principles.md
-- [ ] src/part2-performance/ch08-responsiveness/02-app-launch.md
-- [ ] src/part2-performance/ch08-responsiveness/03-launch-optimization.md
-- [ ] src/part2-performance/ch08-responsiveness/04-other-scenarios.md
-- [ ] src/part2-performance/ch08-responsiveness/05-case-studies.md
-- [ ] src/part2-performance/ch08-responsiveness/06-coroutine-performance.md
-- [ ] src/part2-performance/ch08-responsiveness/07-baseline-profiles.md
-- [ ] src/part2-performance/ch08-responsiveness/08-media-pipeline.md
-- [ ] src/part2-performance/ch08-responsiveness/08-system-triggered-profiling.md
-- [ ] src/part2-performance/ch08-responsiveness/09-game-performance.md
-- [ ] src/part2-performance/ch08-responsiveness/README.md
-- [ ] src/part2-performance/ch09-anr/01-anr-design.md
-- [ ] src/part2-performance/ch09-anr/02-anr-types.md
-- [ ] src/part2-performance/ch09-anr/03-anr-analysis.md
-- [ ] src/part2-performance/ch09-anr/04-special-anr.md
-- [ ] src/part2-performance/ch09-anr/05-case-studies.md
-- [ ] src/part2-performance/ch09-anr/06-notification-performance-anr.md
+- [x] src/part2-performance/ch08-responsiveness/02-app-launch.md
+- [x] src/part2-performance/ch08-responsiveness/03-launch-optimization.md
+- [x] src/part2-performance/ch08-responsiveness/04-other-scenarios.md
+- [x] src/part2-performance/ch08-responsiveness/05-case-studies.md
+- [x] src/part2-performance/ch08-responsiveness/06-coroutine-performance.md
+- [x] src/part2-performance/ch08-responsiveness/07-baseline-profiles.md
+- [x] src/part2-performance/ch08-responsiveness/08-media-pipeline.md
+- [x] src/part2-performance/ch08-responsiveness/08-system-triggered-profiling.md
+- [x] src/part2-performance/ch08-responsiveness/09-game-performance.md
+- [x] src/part2-performance/ch08-responsiveness/README.md
+- [x] src/part2-performance/ch09-anr/01-anr-design.md
+- [x] src/part2-performance/ch09-anr/02-anr-types.md
+- [x] src/part2-performance/ch09-anr/03-anr-analysis.md
+- [x] src/part2-performance/ch09-anr/04-special-anr.md
+- [x] src/part2-performance/ch09-anr/05-case-studies.md
+- [x] src/part2-performance/ch09-anr/06-notification-performance-anr.md
 - [ ] src/part2-performance/ch09-anr/07-non-technical-anr-diagnosis.md
 - [ ] src/part2-performance/ch09-anr/README.md
 - [ ] src/part2-performance/ch10-memory-perf/01-app-memory-analysis.md
