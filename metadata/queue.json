@@ -1768,14 +1768,14 @@
     "priority": 95,
     "reason": "[External Review] BLASTBufferQueue '消费行为移到 App 侧' 完全错误，根本性误解图形合成模型",
     "material_paths": [
-      "logs/external-review/2026-04-19-14-01-pipeline-overview-external-review.md"
+      "logs/external-review/archive/2026-04-19-14-18.1-external-review.md"
     ],
     "review_issues": [
       {
         "type": "源码错误 / 原理描述错误",
         "location": "版本与架构矩阵 - 关键转折点",
-        "detail": "错误声称 BLAST 将 Buffer '消费'行为从 SF 挪到 App 侧。实际上 App 仍为生产者，只做了 Transaction 封装，SF 仍是消费者（acquireBuffer + 合成）。BLAST 改变的是上报产出物的通信方式",
-        "suggestion": "改为：App 将绘制好的 Buffer 通过 BLASTBufferQueue 封装进 SurfaceControl.Transaction 提交给 SF，替代老旧的 Binder IGraphicBufferProducer IPC",
+        "detail": "错误声称 BLAST 把 Buffer “消费”行为从 SurfaceFlinger 挪到 App 侧，并暗示 App 不再通过 Binder 把 Buffer 交给 SF。实际情况是：App 仍是生产者，BLASTBufferQueue 在 App 侧负责把 buffer + layer state 封装进 SurfaceControl.Transaction，随后仍通过 Transaction.apply() 跨进程提交给 SurfaceFlinger；真正的消费与合成仍发生在 SF 侧。",
+        "suggestion": "改成“BLAST 把提交流程从旧的 queueBuffer/IGraphicBufferProducer 路径重构为 App 侧封装 SurfaceControl.Transaction 后再提交给 SurfaceFlinger”，不要再把 Consumer 位置写成迁到 App 进程。",
         "evidence": [
           "AOSP frameworks/native/libs/gui/BLASTBufferQueue.cpp"
         ]
@@ -1792,7 +1792,9 @@
     ],
     "added_by": "external-ai-review",
     "added_at": "2026-04-19T14:21:48+08:00",
-    "status": "pending"
+    "status": "pending",
+    "validated_by": "task9-deep-tech-review",
+    "validated_at": "2026-04-20T01:33:22+08:00"
   },
   {
     "section": "18.2",
@@ -1800,7 +1802,7 @@
     "priority": 95,
     "reason": "[External Review] syncFrameState 线程归属错误（P0），BLAST Buffer 释放闭环缺失（P1），FrameTimeline 载体不准（P1）",
     "material_paths": [
-      "logs/external-review/2026-04-19-14-02-android-view-standard-external-review.md"
+      "logs/external-review/archive/2026-04-19-14-18.2-external-review.md"
     ],
     "review_issues": [
       {
@@ -1833,7 +1835,9 @@
     ],
     "added_by": "external-ai-review",
     "added_at": "2026-04-19T14:21:48+08:00",
-    "status": "pending"
+    "status": "pending",
+    "validated_by": "task9-deep-tech-review",
+    "validated_at": "2026-04-20T01:33:22+08:00"
   },
   {
     "section": "18.3",
@@ -1841,7 +1845,7 @@
     "priority": 95,
     "reason": "[External Review] 混淆 Window 级软件渲染与 View 级 LAYER_TYPE_SOFTWARE，导致后续全链路论断在 Software Layer 场景完全错误",
     "material_paths": [
-      "logs/external-review/2026-04-19-14-03-android-view-software-external-review.md"
+      "logs/external-review/archive/2026-04-19-14-18.3-external-review.md"
     ],
     "review_issues": [
       {
@@ -1865,8 +1869,8 @@
       {
         "type": "原理缺失",
         "location": "18.3.5 性能特征 - 内存带宽瓶颈",
-        "detail": "只说'8MB 读写'不足以解释软件渲染比普通 Bitmap 读写慢得多。GraphicBuffer 使用 DMA-BUF 分配（Gralloc 映射），内存属性通常为 uncached/write-combined，CPU 读写有灾难性性能惩罚",
-        "suggestion": "补充 Gralloc 内存映射特性（uncached/WC）导致的 CPU 访存惩罚，特别影响 copyBlt",
+        "detail": "“1080p 约 8MB 读写”只能解释数据量，解释不了软件渲染在部分设备上为何会远慢于普通 Bitmap 读写。这里还缺少 GraphicBuffer 由 Gralloc / DMA-BUF 提供、CPU 访问往往伴随 cache maintenance，部分实现可能使用 uncached 或 write-combined 映射这一层边界说明。具体内存属性取决于 vendor gralloc，不能写成所有设备都相同。",
+        "suggestion": "补一段“GraphicBuffer 不是普通 heap 内存”的说明，解释 cache 同步 / 映射属性会放大 copyBlt 与 CPU raster 开销，同时标清 uncached / write-combined 属于常见实现现象，具体仍需看设备。",
         "evidence": [
           "AOSP Surface.cpp GraphicBuffer::lock GRALLOC_USAGE_SW_WRITE_OFTEN"
         ]
@@ -1874,7 +1878,9 @@
     ],
     "added_by": "external-ai-review",
     "added_at": "2026-04-19T14:21:48+08:00",
-    "status": "pending"
+    "status": "pending",
+    "validated_by": "task9-deep-tech-review",
+    "validated_at": "2026-04-20T01:33:22+08:00"
   },
   {
     "section": "18.4",

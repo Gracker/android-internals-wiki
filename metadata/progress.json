@@ -1,16 +1,16 @@
 {
-  "generated_at": "2026-04-19T23:59:59+08:00",
+  "generated_at": "2026-04-20T01:33:22+08:00",
   "state_machine_version": "v2",
   "total_sections": 206,
   "metrics": {
     "total": 206,
     "unknown": 34,
-    "last_updated": "2026-04-19T23:59:59+08:00",
+    "last_updated": "2026-04-20T01:33:22+08:00",
     "task2b_state_counts": {
       "unknown": 34,
-      "fixed": 126,
-      "pending": 14,
-      "idle": 32
+      "fixed": 125,
+      "pending": 17,
+      "idle": 30
     },
     "task6_state_counts": {
       "unknown": 33,
@@ -20,33 +20,33 @@
     },
     "task9_state_counts": {
       "unknown": 33,
-      "reviewed": 25,
-      "pending": 147,
+      "reviewed": 28,
+      "pending": 144,
       "fixed": 1
     },
     "pipeline_stage_counts": {
       "unknown": 33,
-      "task6_pending": 106,
-      "task9_pending": 51,
-      "task2b_pending": 13,
+      "task6_pending": 105,
+      "task9_pending": 49,
+      "task2b_pending": 16,
       "ready-to-publish": 3
     },
     "total_sections": 206,
     "pipeline_unknown": 33,
-    "pipeline_task6_pending": 106,
-    "pipeline_task2b_pending": 13,
-    "pipeline_task9_pending": 51,
+    "pipeline_task6_pending": 105,
+    "pipeline_task2b_pending": 16,
+    "pipeline_task9_pending": 49,
     "task2b_unknown": 34,
-    "task2b_fixed": 126,
-    "task2b_pending": 14,
-    "task2b_idle": 32,
+    "task2b_fixed": 125,
+    "task2b_pending": 17,
+    "task2b_idle": 30,
     "task6_unknown": 33,
     "task6_revisiting": 104,
     "task6_reviewed": 68,
     "task6_pending": 1,
     "task9_unknown": 33,
-    "task9_pending": 147,
-    "task9_reviewed": 25,
+    "task9_pending": 144,
+    "task9_reviewed": 28,
     "task9_fixed": 1,
     "ready-to-publish": 0,
     "finalized": 3,
@@ -56,16 +56,16 @@
   "pipeline": {
     "pipeline_stage_counts": {
       "unknown": 33,
-      "task6_pending": 106,
-      "task9_pending": 51,
-      "task2b_pending": 13,
+      "task6_pending": 105,
+      "task9_pending": 49,
+      "task2b_pending": 16,
       "ready-to-publish": 3
     },
     "task2b_state_counts": {
       "unknown": 34,
-      "fixed": 126,
-      "pending": 14,
-      "idle": 32
+      "fixed": 125,
+      "pending": 17,
+      "idle": 30
     },
     "task6_state_counts": {
       "unknown": 33,
@@ -75,8 +75,8 @@
     },
     "task9_state_counts": {
       "unknown": 33,
-      "reviewed": 25,
-      "pending": 147,
+      "reviewed": 28,
+      "pending": 144,
       "fixed": 1
     }
   },
@@ -2139,44 +2139,51 @@
       "title": "渲染链路分类与选择矩阵",
       "path": "src/part2-performance/ch18-rendering-pipelines/01-pipeline-overview.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
-      "task9_state": "pending",
-      "task2b_state": "idle",
+      "task9_state": "reviewed",
+      "task2b_state": "pending",
       "reviewed_date": "2026-04-15",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
-      "section": "18.1"
+      "section": "18.1",
+      "task9_result": "needs-rework",
+      "task9_reviewed_date": "2026-04-20",
+      "task9_reviewed_by": "openclaw-task9"
     },
     "src/part2-performance/ch18-rendering-pipelines/02-android-view-standard.md": {
       "chapter": "18.2",
       "title": "Android View 标准链路（BLAST 深入）",
       "path": "src/part2-performance/ch18-rendering-pipelines/02-android-view-standard.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
-      "task9_state": "pending",
-      "task2b_state": "idle",
+      "task9_state": "reviewed",
+      "task2b_state": "pending",
       "reviewed_date": "2026-04-17",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
-      "section": "18.2"
+      "section": "18.2",
+      "task9_result": "needs-rework",
+      "task9_reviewed_date": "2026-04-20",
+      "task9_reviewed_by": "openclaw-task9"
     },
     "src/part2-performance/ch18-rendering-pipelines/03-android-view-software.md": {
       "chapter": "18.3",
       "title": "Android View 软件渲染链路",
       "path": "src/part2-performance/ch18-rendering-pipelines/03-android-view-software.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "revisiting",
-      "task9_state": "pending",
-      "task2b_state": "fixed",
+      "task9_state": "reviewed",
+      "task2b_state": "pending",
       "reviewed_date": "2026-04-17",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
-      "task2b_result": "fixed",
-      "section": "18.3"
+      "section": "18.3",
+      "task9_reviewed_date": "2026-04-20",
+      "task9_reviewed_by": "openclaw-task9"
     },
     "src/part2-performance/ch18-rendering-pipelines/04-android-view-mixed.md": {
       "chapter": "18.4",

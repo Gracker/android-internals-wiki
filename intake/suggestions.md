@@ -2679,3 +2679,21 @@
 - **位置**：Perfetto 识别 fsync（L249-L250, L285-L304）
 - **问题**：正文只列 `ext4_sync_file_enter/exit`，但 Android 设备大量使用 F2FS；在 F2FS 机型上，读者需要改看 `f2fs_sync_file_enter/exit` 等 tracepoint。
 - **建议**：在 fsync 观察点里补一条“文件系统相关”的提示，把 ext4 与 F2FS 的常见 tracepoint 一起列出，避免把 Android I/O 观测默认成 ext4 单一路径。
+
+## [Task9 Deep Review] 18.1 渲染链路分类与选择矩阵 — 2026-04-20
+- **类型**：交叉引用
+- **位置**：L137 交叉引用块
+- **问题**：`[2.1 BufferQueue 机制]`、`[2.5 SurfaceFlinger]`、`[2.14 图形 API 演进]` 全部指向 `../../part2-performance/../part1-foundation/ch02-graphics-foundation/`，当前仓库不存在该目录，链接失效。
+- **建议**：分别改成 `../../part1-fundamentals/ch02-rendering/13-buffer-queue.md`、`../../part1-fundamentals/ch02-rendering/06-surfaceflinger.md`、`../../part1-fundamentals/ch02-rendering/14-graphics-api-evolution.md`。
+
+## [Task9 Deep Review] 18.2 Android View 标准链路（BLAST 深入） — 2026-04-20
+- **类型**：交叉引用
+- **位置**：L239-L242 交叉引用块
+- **问题**：`13-buffer-queue.md`、`06-surfaceflinger.md`、`16-sync-fence.md` 被写成当前目录相对路径，但这些文件实际位于 `src/part1-fundamentals/ch02-rendering/`，当前链接全部失效。
+- **建议**：改成 `../../part1-fundamentals/ch02-rendering/13-buffer-queue.md`、`../../part1-fundamentals/ch02-rendering/06-surfaceflinger.md`、`../../part1-fundamentals/ch02-rendering/16-sync-fence.md`。
+
+## [Task9 Deep Review] 18.3 Android View 软件渲染链路 — 2026-04-20
+- **类型**：交叉引用
+- **位置**：L202-L205 交叉引用块
+- **问题**：`13-buffer-queue.md` 与 `14-graphics-api-evolution.md` 被写成当前目录相对路径，无法跳到第 2 章对应章节。
+- **建议**：改成 `../../part1-fundamentals/ch02-rendering/13-buffer-queue.md` 与 `../../part1-fundamentals/ch02-rendering/14-graphics-api-evolution.md`。
