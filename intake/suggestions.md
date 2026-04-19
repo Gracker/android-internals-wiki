@@ -1959,3 +1959,32 @@
 - **位置**：L414-L425 参考资料
 - **问题**：参考资料把 `frameworks/base/services/core/java/com/android/server/am/ProcessRecord.java` 标成“ANR 检测与 traces 写入”主锚点。Android 16 的 ANR 入口和处理链已经主要落在 `ProcessErrorStateRecord.java` 与 `AnrHelper.java`，`ProcessRecord.java` 更多是承接 kill/exit record。
 - **建议**：把 ANR 检测/trace 参考锚点改为 `ProcessErrorStateRecord.java`、`AnrHelper.java`，`ProcessRecord.java` 只在需要说明 killLocked/ApplicationExitInfo 记录时保留。
+
+
+## [External Review] 15.4 竞品分析方法 — 2026-04-19
+- **类型**：数据支撑
+- **位置**：第 274 行 FrameMetrics TOTAL_DURATION 描述
+- **问题**：TOTAL_DURATION 起点描述不够精确。文中说「从 performTraversals() 开始到帧提交到 BufferQueue 结束」，严格来说 TOTAL_DURATION 覆盖从 VSYNC 信号到 GPU 命令提交完成的全过程（SWAP_BUFFERS + COMMAND_ISSUE），包含 VSYNC 到 performTraversals 之间的 input handling 和 animation 时间。
+- **建议**：改为「TOTAL_DURATION 覆盖从 VSync 信号到 GPU 命令提交完成的全过程」
+- **来源**：Claude Opus 4.6 (Thinking) 外部 review
+
+## [External Review] 15.4 竞品分析方法 — 2026-04-19
+- **类型**：数据支撑
+- **位置**：第 280 行 APK 体积转化率
+- **问题**：「APK 体积每增加 10MB，安装转化率下降约 1.5%」——Google 确实公布过类似数据，但具体数字因年份、市场和 App 类型而异。建议标注数据来源和年份。
+- **建议**：加注「来源: Google I/O 2019, "Size matters: Reduce your app size and increase installs"；该数据为全球平均，新兴市场的影响更大」
+- **来源**：Claude Opus 4.6 (Thinking) 外部 review
+
+## [External Review] 15.4 竞品分析方法 — 2026-04-19
+- **类型**：原理完整性
+- **位置**：第 92 行动画缩放建议值
+- **问题**：建议「将动画缩放设为 0.5x 或关闭」，但设为 0x（关闭动画）会导致某些 App 的启动动画被跳过，可能改变启动流程的时序。设为 0.5x 则动画仍存在但更短。建议更明确地说明取舍。
+- **建议**：修改为「设为 0.5x（保留动画但缩短时长）或 1x（保持默认，如果要对比真实用户体验）。不建议完全关闭（0x），因为某些 App 的启动流程可能依赖动画完成回调。」
+- **来源**：Claude Opus 4.6 (Thinking) 外部 review
+
+## [External Review] 1.13 MessageQueue 机制与 DeliQueue 无锁优化 — 2026-04-19
+- **类型**：兼容性预警
+- **位置**：mMessages 反射访问
+- **问题**：mMessages == null 场景下，retarget 37 后的反射代码必崩，需提前告知读者
+- **建议**：在涉及反射访问 MessageQueue 内部字段时增加兼容性警告说明，明确 targetSdkVersion 37+ 的限制
+- **来源**：外部 AI review

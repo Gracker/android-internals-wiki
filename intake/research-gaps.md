@@ -1618,3 +1618,24 @@ API 33+ 的公开帧时间线入口缺位。正文已经解释了框架内部 `d
 - 16.1 Google 官方的性能优化思路
 - 16.4 Android 17 + Kernel 6.12 系统级性能优化
 
+
+
+## [2026-04-19] 15.4 竞品分析方法 — 知识盲区
+
+### 盲区描述
+Macrobenchmark 作为竞品对比工具未被深入介绍。文章在第 394 行标注了「[待补充: 使用 Macrobenchmark 库实现自动化启动和滑动测试的完整示例]」。Macrobenchmark 提供了标准化的启动和滑动性能测试框架，支持自动 CompilationMode 控制（Speed、SpeedProfile、None），这对竞品对比中的编译状态控制是一个更优雅的方案。
+
+### 重要程度
+中
+
+### 建议研究方向
+- 补充使用 Macrobenchmark StartupTimingMetric 和 FrameTimingMetric 做竞品对比的示例
+- 展示如何用 CompilationMode 控制编译状态以保证公平对比
+- 与手动 am start -W 方案的精度和可重复性对比
+
+### 关联章节
+- 15.4（竞品分析方法）
+- 14.1（Macrobenchmark 详细介绍）
+
+### 外部 review 来源
+- Claude Opus 4.6 (Thinking) 外部 review

@@ -140,6 +140,57 @@
       "added_by": "task8-classifier",
       "added_at": "2026-04-19T06:07:00.497547",
       "status": "pending"
+    },
+    {
+      "section": "15.4",
+      "section_title": "竞品分析方法",
+      "priority": 85,
+      "reason": "[External Review] TotalTime 端点定义不精确，需回炉修正",
+      "material_paths": [
+        "logs/external-review/2026-04-18-22-15.4-external-review.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "location": "第 115 行",
+          "detail": "TotalTime 的测量端点描述不精确：终点不是 onResume() 回调，而是第一帧绘制完成（first frame drawn）。系统通过 ViewRootImpl 监控 doTraversal() 的完成，Choreographer 确认第一帧绘制完成后才报告 TotalTime。",
+          "suggestion": "改为「通过 Activity Manager 发送一个启动 Intent，然后等待目标 Activity 的第一帧绘制完成后返回计时结果。TotalTime 对应的是 TTID（Time to Initial Display），从进程创建到首帧绘制完成的全部耗时。」",
+          "evidence": [
+            "AOSP: frameworks/base/services/core/java/com/android/server/wm/ActivityRecord.java",
+            "AOSP: frameworks/base/core/java/android/view/ViewRootImpl.java",
+            "logcat ActivityTaskManager: Displayed 标记对应 TotalTime/TTID"
+          ]
+        }
+      ],
+      "added_by": "external-ai-review",
+      "added_at": "2026-04-19T09:09:54+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "1.13",
+      "section_title": "MessageQueue 机制与 DeliQueue 无锁优化",
+      "priority": 85,
+      "reason": "[External Review] Tombstone 机制实现细节描述不足；ConcurrentSkipListSet 优先级管理遗漏",
+      "material_paths": [
+        "logs/external-review/2026-04-19-27-1.13-external-review.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码准确性/重要缺失",
+          "location": "无锁实现细节段",
+          "detail": "Tombstone 机制解决 ABA 问题的具体实现逻辑描述不足。当消息被取消时，通过 CAS 标记为墓碑而非物理移除，直到 Looper 扫描到该位置。",
+          "suggestion": "补充 Tombstone 机制的完整描述：CAS 标记→Looper 扫描→物理移除的完整生命周期"
+        },
+        {
+          "type": "知识盲区/重要缺失",
+          "location": "优先级管理段",
+          "detail": "遗漏了 ConcurrentSkipListSet 在优先级管理中的关键作用。引入 ConcurrentSkipListSet 替代传统 PriorityQueue，在并发环境下提供无锁的有序插入（log(n) 耗时）。",
+          "suggestion": "补充 ConcurrentSkipListSet 的选型原因、性能特征和与传统 PriorityQueue 的对比"
+        }
+      ],
+      "added_by": "external-ai-review",
+      "added_at": "2026-04-19T09:09:54+08:00",
+      "status": "pending"
     }
   ],
   "processing": [],

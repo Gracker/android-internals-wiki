@@ -15071,41 +15071,183 @@
       "processed_at": "2026-04-18T06:18:00",
       "processed_by": "task-deepresearch-injector",
       "source_type": "DeepResearch 调研结果"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/Android 16 QPR2 Gen-CMC 源码级深度技术分析 .md",
+      "title": "Android 16 QPR2 Gen-CMC 源码级深度技术分析",
+      "score": 19,
+      "relevance": 5,
+      "technical_depth": 5,
+      "timeliness": 5,
+      "verifiability": 4,
+      "chapter": "ch16",
+      "keywords": [
+        "Android",
+        "垃圾收集",
+        "GC",
+        "ART",
+        "Gen-CMC",
+        "性能优化"
+      ],
+      "type": "深度技术分析",
+      "scored_at": "2026-04-19T05:02:39.497071",
+      "summary": "围绕 Android 16 QPR2 的 Gen-CMC，追溯 CC→Gen-CC→CMC→Gen-CMC 演进，分析分代假说、card table/write barrier 回归、young/old 回收边界，以及对 jank、CPU 与续航的潜在收益。",
+      "mapped_chapter": "ch04",
+      "mapped_section": "4.8",
+      "section_title": "ART 分代垃圾回收与 GC 暂停优化",
+      "processed_at": "2026-04-19T06:47:12+08:00",
+      "action_taken": "inject",
+      "source_task": "task-deepresearch-injector"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/AndroidX Tracing 2.0 架构级深度技术分析 .md",
+      "title": "AndroidX Tracing 2.0 架构级深度技术分析",
+      "score": 19,
+      "relevance": 5,
+      "technical_depth": 5,
+      "timeliness": 5,
+      "verifiability": 4,
+      "chapter": "ch13",
+      "keywords": [
+        "Android",
+        "Tracing",
+        "Perfetto",
+        "性能分析",
+        "AndroidX"
+      ],
+      "type": "架构级技术分析",
+      "scored_at": "2026-04-19T05:02:39.497081",
+      "summary": "围绕 AndroidX Tracing 2.0 alpha05，拆解 Tracer、TraceDriver、TraceSink 新对象模型、协程上下文传播、纯 Kotlin Perfetto TracePacket 发射链路，以及与 1.x、Benchmark、Studio Profiler 的边界。",
+      "mapped_chapter": "ch13",
+      "mapped_section": "13.7",
+      "section_title": "Perfetto 的高级用法",
+      "processed_at": "2026-04-19T06:47:12+08:00",
+      "action_taken": "inject",
+      "source_task": "task-deepresearch-injector"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/Perfetto 2026 架构级深度技术分析  .md",
+      "title": "Perfetto 2026 架构级深度技术分析",
+      "score": 19,
+      "relevance": 5,
+      "technical_depth": 5,
+      "timeliness": 5,
+      "verifiability": 4,
+      "chapter": "ch13",
+      "keywords": [
+        "Android",
+        "Perfetto",
+        "Trace",
+        "性能分析",
+        "系统监控"
+      ],
+      "type": "架构级技术分析",
+      "scored_at": "2026-04-19T05:02:39.497085",
+      "summary": "文档系统梳理 Perfetto v51-v54 在 Android 13-16 的架构演进，重点覆盖 Mainline APEX、Trace Summary v2、FrameTimeline/CUJ/monitor contention 联动、CI 自动化与多级 buffer 丢包诊断。",
+      "mapped_chapter": "ch13",
+      "mapped_section": "13.1",
+      "section_title": "Perfetto 简介与演进",
+      "processed_at": "2026-04-19T06:47:12+08:00",
+      "action_taken": "inject",
+      "source_task": "task-deepresearch-injector"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/btrace 3.0调研.md",
+      "title": "btrace 3.0调研",
+      "score": 18,
+      "relevance": 5,
+      "technical_depth": 5,
+      "timeliness": 4,
+      "verifiability": 4,
+      "chapter": "ch16",
+      "keywords": [
+        "Android",
+        "btrace",
+        "Java栈回溯",
+        "性能分析",
+        "ART"
+      ],
+      "type": "调研分析",
+      "scored_at": "2026-04-19T05:02:39.497087",
+      "summary": "聚焦 btrace 3.0 通过 StackVisitor 子类化、2KB 私有字段缓冲和 vptr 替换 hack 实现跨 Android 8-14 Java 栈回溯的核心机制，并评估其对 ART Mainline 演进、隐藏符号与工程稳定性的风险。",
+      "mapped_chapter": "ch16",
+      "mapped_section": "ch16",
+      "section_title": "AOSP 性能优化",
+      "processed_at": "2026-04-19T06:47:12+08:00",
+      "action_taken": "queue",
+      "source_task": "task-deepresearch-injector"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/从 NNAPI 到 LiteRT：Android NPU 性能优化全景 .md",
+      "title": "从 NNAPI 到 LiteRT：Android NPU 性能优化全景",
+      "score": 19,
+      "relevance": 5,
+      "technical_depth": 5,
+      "timeliness": 5,
+      "verifiability": 4,
+      "chapter": "ch16",
+      "keywords": [
+        "Android",
+        "NPU",
+        "AI",
+        "NNAPI",
+        "LiteRT",
+        "性能优化"
+      ],
+      "type": "全景分析",
+      "scored_at": "2026-04-19T05:02:39.497089",
+      "summary": "从 NNAPI 在 Android 15 弃用切入，对比 LiteRT、CompiledModel、AICore 与主流 NPU 厂商栈，补齐量化、AOT、内存/功耗调度、基准可信度和迁移策略，适合端侧 AI 性能选型。",
+      "mapped_chapter": "ch05",
+      "mapped_section": "5.11",
+      "section_title": "端侧 AI 推理性能：NPU/GPU 加速与 TFLite 管线",
+      "processed_at": "2026-04-19T06:47:12+08:00",
+      "action_taken": "inject",
+      "source_task": "task-deepresearch-injector"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/AutoResearchClaw调研报告/2026-04-18-android-angle-driver-selection-mechanism.md",
+      "title": "源码调研：ANGLE Android Driver-Selection 机制",
+      "score": 19,
+      "relevance": 5,
+      "technical_depth": 5,
+      "timeliness": 5,
+      "verifiability": 4,
+      "chapter": "ch02",
+      "keywords": [
+        "Android",
+        "ANGLE",
+        "Vulkan",
+        "图形渲染",
+        "驱动选择"
+      ],
+      "type": "源码调研",
+      "scored_at": "2026-04-19T05:02:39.497090"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/AutoResearchClaw调研报告/2026-04-18-anr-controller-broadcast-queue-soft-timeout.md",
+      "title": "源码调研：WMS AnrController 的 Input ANR 归因 + BroadcastQueueImpl timeout 机制",
+      "score": 19,
+      "relevance": 5,
+      "technical_depth": 5,
+      "timeliness": 5,
+      "verifiability": 4,
+      "chapter": "ch09",
+      "keywords": [
+        "Android",
+        "ANR",
+        "Input",
+        "WMS",
+        "广播超时"
+      ],
+      "type": "源码调研",
+      "scored_at": "2026-04-19T05:02:39.497092"
     }
   ],
-  "https://juejin.cn/post/7612812060795093002": {
-    "url": "https://juejin.cn/post/7612812060795093002",
-    "title": "Android17 为什么重写 MessageQueue",
-    "chapter": "ch04-binder-ipc（Handler/MessageQueue 机制）",
-    "added_date": "2026-04-18T05:55:14.769735",
-    "score": 16
-  },
-  "https://juejin.cn/post/7605097326727266350": {
-    "url": "https://juejin.cn/post/7605097326727266350",
-    "title": "Android Studio Panda 1 正式版来了",
-    "chapter": "ch01-architecture（开发工具链）",
-    "added_date": "2026-04-18T05:55:14.769746",
-    "score": 13
-  },
-  "https://juejin.cn/post/7614897667961143347": {
-    "url": "https://juejin.cn/post/7614897667961143347",
-    "title": "什么 AI 写 Android 最好用？官方做了一个基准测试排名",
-    "chapter": "ch01-architecture（AI 辅助开发）",
-    "added_date": "2026-04-18T05:55:14.769748",
-    "score": 14
-  },
-  "https://juejin.cn/post/7589903499599347766": {
-    "url": "https://juejin.cn/post/7589903499599347766",
-    "title": "聊聊2026年Android开发会是什么样",
-    "chapter": "ch01-architecture（生态趋势）",
-    "added_date": "2026-04-18T05:55:14.769749",
-    "score": 16
-  },
-  "https://juejin.cn/post/7610233341305389099": {
-    "url": "https://juejin.cn/post/7610233341305389099",
-    "title": "Android 17 适配与 2026 禁止侧载",
-    "chapter": "ch02-art（Android 版本变更）",
-    "added_date": "2026-04-18T05:55:14.769750",
-    "score": 16
+  "http://android-developers.googleblog.com/2026/04/the-fourth-beta-of-android-17.html": {
+    "section": "ch01",
+    "section_title": "Android 架构概览",
+    "score": 14,
+    "added_at": "2026-04-19T06:08:00.563701",
+    "content_type": "技术文章"
   }
 }
