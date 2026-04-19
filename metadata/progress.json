@@ -1,20 +1,20 @@
 {
-  "generated_at": "2026-04-19T09:57:21+08:00",
+  "generated_at": "2026-04-19T11:09:31+08:00",
   "state_machine_version": "v2",
   "total_sections": 218,
   "metrics": {
     "total": 174,
     "unknown": 0,
     "ready-for-review": 174,
-    "last_updated": "2026-04-19T09:57:21+08:00",
+    "last_updated": "2026-04-19T11:09:31+08:00",
     "task2b_state_counts": {
-      "fixed": 125,
-      "pending": 8,
+      "fixed": 126,
+      "pending": 7,
       "idle": 41
     },
     "task6_state_counts": {
-      "reviewed": 60,
-      "revisiting": 113,
+      "reviewed": 59,
+      "revisiting": 114,
       "pending": 1
     },
     "task9_state_counts": {
@@ -23,22 +23,22 @@
       "fixed": 1
     },
     "pipeline_stage_counts": {
-      "task6_pending": 122,
+      "task6_pending": 123,
       "task9_pending": 42,
-      "task2b_pending": 10
+      "task2b_pending": 9
     },
     "total_sections": 174,
     "pipeline_unknown": 0,
-    "pipeline_task6_pending": 122,
-    "pipeline_task2b_pending": 10,
+    "pipeline_task6_pending": 123,
+    "pipeline_task2b_pending": 9,
     "pipeline_task9_pending": 42,
     "task2b_unknown": 0,
-    "task2b_fixed": 125,
-    "task2b_pending": 8,
+    "task2b_fixed": 126,
+    "task2b_pending": 7,
     "task2b_idle": 41,
     "task6_unknown": 0,
-    "task6_revisiting": 113,
-    "task6_reviewed": 60,
+    "task6_revisiting": 114,
+    "task6_reviewed": 59,
     "task6_pending": 1,
     "task9_unknown": 0,
     "task9_pending": 156,
@@ -50,20 +50,20 @@
   "pipeline": {
     "pipeline_stage_counts": {
       "unknown": 32,
-      "task6_pending": 126,
+      "task6_pending": 127,
       "task9_pending": 50,
-      "task2b_pending": 11
+      "task2b_pending": 10
     },
     "task2b_state_counts": {
       "unknown": 39,
-      "fixed": 128,
-      "pending": 9,
+      "fixed": 129,
+      "pending": 8,
       "idle": 43
     },
     "task6_state_counts": {
       "unknown": 33,
-      "reviewed": 68,
-      "revisiting": 115,
+      "reviewed": 67,
+      "revisiting": 116,
       "pending": 3
     },
     "task9_state_counts": {
@@ -3335,11 +3335,11 @@
     "2.14": {
       "title": "图形 API 演进与选择策略",
       "status": "ready-for-review",
-      "task6_state": "reviewed",
+      "task6_state": "revisiting",
       "task6_result": "needs-rework",
       "task6_reviewed_date": "2026-04-19",
-      "task2b_state": "pending",
-      "pipeline_stage": "task2b_pending",
+      "task2b_state": "fixed",
+      "pipeline_stage": "task6_pending",
       "last_review_log": "logs/review/2026-04-19-10-review.md"
     }
   },
@@ -3426,11 +3426,11 @@
     "total_sections": 216,
     "by_pipeline_stage": {
       "unknown": 32,
-      "task6_pending": 122,
+      "task6_pending": 123,
       "task9_pending": 51,
-      "task2b_pending": 13
+      "task2b_pending": 12
     },
-    "last_updated": "2026-04-19T07:25:26.018730",
+    "last_updated": "2026-04-19T11:09:31+08:00",
     "total_reviewed": 69
   },
   "4.6": {
@@ -3453,7 +3453,7 @@
     "task2b_state": "pending",
     "last_task9_at": "2026-04-19T00:54:00+08:00"
   },
-  "last_updated": "2026-04-19T07:09:38+08:00",
+  "last_updated": "2026-04-19T11:09:31+08:00",
   "rework_log": [
     {
       "date": "2026-04-15T19:44:09.836904",
@@ -3693,6 +3693,22 @@
       ],
       "verification": "technical-writing 禁用词扫描=0，SIGUSR1=0，ashmem→dmabuf 单线表述已清理",
       "queue_status": "completed"
+    },
+    {
+      "date": "2026-04-19T11:09:31+08:00",
+      "section": "2.14",
+      "section_title": "图形 API 演进与选择策略（OpenGL ES / Vulkan / ANGLE）",
+      "source": "task6-review",
+      "priority": 90,
+      "fixes": [
+        "补充 VK_EXT_host_image_copy 的上传路径、收益边界和 AVP 2025 语境",
+        "新增 WebGPU / Dawn 小节，理清 WebGPU、ANGLE 与 Chromium backend 的关系",
+        "补充 ADPF 热 / 功耗信号对运行时图形选路的影响",
+        "重写 Validation Layer 段，改成官方文档边界说明并移除模糊性能表述",
+        "technical-writing 禁用词扫描 0 hit"
+      ],
+      "verification": "technical-writing 禁用词扫描=0，queue=completed",
+      "queue_status": "completed"
     }
   ],
   "reviews": [
@@ -3862,10 +3878,18 @@
       "by": "task2b-rework",
       "source": "task9-deep-tech-review",
       "issues_fixed": 3
+    },
+    {
+      "section": "2.14",
+      "section_title": "图形 API 演进与选择策略（OpenGL ES / Vulkan / ANGLE）",
+      "date": "2026-04-19T11:09:31+08:00",
+      "by": "task2b-rework",
+      "source": "task6-review",
+      "issues_fixed": 4
     }
   ],
-  "last_task2b_run": "2026-04-19T07:09:38+08:00",
-  "task2b_fixed": 10,
+  "last_task2b_run": "2026-04-19T11:09:31+08:00",
+  "task2b_fixed": 11,
   "17.1": {
     "task6_review_date": "2026-04-16",
     "task6_result": "pass-light-edit",

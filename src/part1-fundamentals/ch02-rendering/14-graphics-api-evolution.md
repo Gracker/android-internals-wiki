@@ -5,8 +5,8 @@ status: ready-for-review
 drafted_date: "2026-04-05"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 4.0 (API 14) - Android 17 (API 37)"
-last_verified: "2026-04-11"
-last_verified_against: "source.android.com + developer.android.com + AOSP main"
+last_verified: "2026-04-19"
+last_verified_against: "source.android.com + developer.android.com + AOSP main + AndroidX WebGPU docs"
 confidence: medium
 sources:
   - type: official
@@ -25,14 +25,22 @@ sources:
     path: "frameworks/native/libs/graphicsenv/GraphicsEnv.cpp"
   - type: aosp
     path: "platform/external/angle/"
+  - type: official
+    path: "https://developer.android.com/ndk/guides/graphics/validation-layer"
+  - type: official
+    path: "https://developer.android.com/games/optimize/adpf"
+  - type: official
+    path: "https://developer.android.com/develop/ui/views/graphics/webgpu"
+  - type: official
+    path: "https://developer.android.com/jetpack/androidx/releases/webgpu"
 tags: [opengl-es, vulkan, angle, gpu, graphics-api, rendering]
 related_chapters: ["2.1", "2.9", "2.10", "14.8"]
 section: "2.14"
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task9_state: pending
 task2b_result: fixed
-task2b_state: pending
+task2b_state: fixed
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-04-19"
 task6_result: needs-rework
@@ -93,7 +101,7 @@ Vulkan 1.0 就已经提供了 OpenGL ES 不具备的核心能力：Command Buffe
 
 这里要特别区分两件事。第一，上表说的是平台 / OEM 侧的 Vulkan 版本基线，我们可以把它理解为“这一代 Android 对新设备希望具备什么 Vulkan 能力”；它不等于“所有升级到该版本的旧设备都会自动获得同样的 Vulkan 版本”。第二，**Android Vulkan Profile 2025（AVP 2025）** 不是平台最低门槛，而是面向活跃设备生态的兼容 profile。官方 AVP 页面把它定义为一组“在绝大多数活跃 Android 设备上都能找到”的 Vulkan 扩展、特性、格式和 limits，用来帮助游戏和引擎选择一条更稳定的跨设备能力集合。
 
-AVP 2025 在 AVP 2022 / 2021 的基础上继续扩展了能力范围，官方特别点名了额外内存特性、浮点控制、host query reset，以及更多标准化像素格式。这些内容适合放在“兼容性 profile”这一层理解，而不是和“Android 16 新设备要求 Vulkan 1.4”写成同一件事。
+AVP 2025 在 AVP 2022 / 2021 的基础上继续扩展了能力范围，官方特别点名了额外内存特性、浮点控制、host query reset，以及更多标准化像素格式。和资源加载直接相关的一项能力，是 `VK_EXT_host_image_copy` 这条 host image copy 路径。它允许应用把 host memory 里的图像数据直接拷入 image，减少传统 staging buffer 上传路径里的中间 copy 和 GPU 参与。对纹理流式加载，收益通常体现在更低的峰值内存占用、更短的加载抖动窗口，以及更少的上传争用。收益大小和图像格式、内存架构、现有上传策略有关，不适合写成所有 workload 固定 50% 提升。这些内容适合放在“兼容性 profile”这一层理解，而不是和“Android 16 新设备要求 Vulkan 1.4”写成同一件事。
 
 [已验证: 官方文档, developer.android.com/ndk/guides/graphics/android-vulkan-profile]
 
@@ -263,6 +271,26 @@ ANGLE 的翻译不是简单的 API 映射。最复杂的部分是**状态转换*
 
 系统 ANGLE policy 只解释“系统 GLES driver 怎么选”，它并不自动回答“Chromium 内部这次到底用的是哪条 GPU backend”。
 
+### 热 / 功耗信号也会进入选路
+
+Android 15 在 ADPF 中新增了 power-efficiency mode、GPU + CPU work duration 上报和 thermal headroom thresholds。图形 API 选路不能只看峰值帧率，还要看长时间运行时的热预算。
+
+`GraphicsEnvironment` 负责 driver 选择入口，ADPF 提供热 / 功耗信号，这两套机制经常一起用，但不是同一个开关。工程上可以把它们组合成三档策略：
+
+1. **性能优先**：thermal headroom 充足，目标是峰值帧率，继续走 native Vulkan 或已经验证稳定的 native GLES
+2. **功耗优先**：headroom 持续收紧，或 hint session 已切到 power-efficiency mode 时，在目标机型上评估更保守的 ANGLE 路径，并同时降低分辨率、后处理、阴影或 texture streaming 频率
+3. **安全 / 兼容优先**：业务含 WebView / WebGPU 时，再叠加浏览器侧的安全与兼容性策略，必要时退回更保守的 backend。系统 GLES driver policy 只能解释 GLES 选路，不能替代 WebGPU 或 Chromium backend 的判断
+
+[已验证: 官方文档, developer.android.com/about/versions/15/features#graphics, developer.android.com/games/optimize/adpf]
+
+### WebGPU / Dawn：另一条新接口
+
+Android 侧新增的一条图形接口路线是 WebGPU。Jetpack 文档把它定义为 WebGPU 标准的 Kotlin bindings，并直接写明它是 WebGL 的后继接口，定位比 Vulkan 更高层，代码量也更小，适合图像处理、数据可视化、ML inference 和游戏这类直接依赖 GPU 的场景。
+
+需要把 WebGPU 和 ANGLE 分开看。ANGLE 是 GLES 到 Vulkan 的翻译层，WebGPU 是另一套 API 语义和 WGSL shader 体系。AndroidX WebGPU 的 release notes 已经写明它会持续更新内部 Dawn source commit，Dawn 项目本身也是 Chromium 中 WebGPU 的底层实现。分析 WebView / WebGL / WebGPU 问题时，要先确认 Chromium / Dawn 这一层的 backend，再去解释系统 ANGLE policy。两者观察路径不同。
+
+[已验证: 官方文档 + 上游实现, developer.android.com/develop/ui/views/graphics/webgpu, developer.android.com/jetpack/androidx/releases/webgpu, github.com/google/dawn]
+
 ## API 选择对渲染性能的实际影响
 
 ### 隐式优化 vs 显式控制
@@ -371,9 +399,9 @@ Frame Timeline（帧时间线）在 Android 10+ 可用，它展示了每帧从 A
 2. **Pipeline Cache 持久化**：将 Pipeline Cache 序列化到磁盘，下次启动时加载。这样可以减少重复建管线的冷启动开销，但具体收益取决于 workload 和驱动实现
 3. **内存管理**：Vulkan 要求应用自己管理 GPU 内存。移动设备使用统一内存架构（CPU/GPU 共享物理内存），`VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT` 的选择策略与桌面端不同
 4. **Pre-rotation**：设备旋转时，Vulkan 应用需要自己在渲染时处理画面旋转，否则 SurfaceFlinger 会做额外的旋转合成，导致性能下降
-5. **验证层**：开发阶段启用 Vulkan Validation Layer（`VK_LAYER_KHRONOS_validation`）检查 API 使用错误，发布时关闭。验证层会带来显著的性能开销
+5. **验证层**：开发阶段启用 Vulkan Validation Layer（`VK_LAYER_KHRONOS_validation`）检查 API 使用错误，发布时关闭。Android 官方文档把它定位为开发期的 error-checking 机制，用来避免 release build 的 performance penalty。它会拦截 Vulkan entry point 做额外校验，不要把开启验证层时测到的 CPU 帧时间直接当成正式性能数据
 
-[已验证: 官方文档, developer.android.com/ndk/guides/graphics]
+[已验证: 官方文档, developer.android.com/ndk/guides/graphics, developer.android.com/ndk/guides/graphics/validation-layer]
 
 ### Android 15+ 图形栈收敛后的实际检查项
 
@@ -382,7 +410,7 @@ Frame Timeline（帧时间线）在 Android 10+ 可用，它展示了每帧从 A
 | 现有 GLES 应用 | 该包在目标设备上究竟走 native GLES 还是 ANGLE | 用 developer option、app 日志、进程 maps 做一次确认 |
 | 游戏 / 重负载渲染 | ANGLE 是否带来额外 shader / pipeline 抖动，或绕开原生 driver bug | 分别测首帧、稳态帧、shader warm-up |
 | Vulkan 应用 | 是否满足 Android 13 / 16 的 Vulkan 1.3 / 1.4 基线，以及目标 AVP profile | 对照 `implement-vulkan` 和 AVP 页面做 capability audit |
-| WebView / WebGL | Chromium backend 与系统 GLES driver 是否一致 | 单独看 Chromium / WebView 构建与运行时配置 |
+| WebView / WebGL / WebGPU | Chromium / Dawn backend 与系统 GLES driver 是否一致，浏览器侧是否单独限制某条能力 | 单独看 Chromium / WebView / Dawn 的构建与运行时配置 |
 | NDK 图形代码 | 代码是否把“GLES == 厂商原生驱动”当成硬编码假设 | 清理这些假设，改成运行时检测 |
 
 ## 与其他章节的关系
@@ -412,4 +440,9 @@ Frame Timeline（帧时间线）在 Android 10+ 可用，它展示了每帧从 A
 - [Implement Vulkan](https://source.android.com/docs/core/graphics/implement-vulkan) — Android 版本与 Vulkan 能力基线
 - [Android Vulkan Profile](https://developer.android.com/ndk/guides/graphics/android-vulkan-profile) — AVP 2025 与 profile 说明
 - [Android 15 Features: Graphics](https://developer.android.com/about/versions/15/features#graphics) — ANGLE as optional layer 与官方 roadmap
+- [Android Dynamic Performance Framework](https://developer.android.com/games/optimize/adpf) — 热 / 功耗信号与 hint session 能力
+- [Vulkan validation layers on Android](https://developer.android.com/ndk/guides/graphics/validation-layer) — Validation Layer 的使用边界
+- [WebGPU for Android](https://developer.android.com/develop/ui/views/graphics/webgpu) — WebGPU 在 Android 原生应用中的定位
+- [AndroidX WebGPU release notes](https://developer.android.com/jetpack/androidx/releases/webgpu) — AndroidX WebGPU 与 Dawn 更新记录
+- [Dawn README](https://github.com/google/dawn/blob/main/README.md) — Dawn 与 Chromium WebGPU 的关系
 - AOSP 源码路径：`frameworks/base/core/java/android/os/GraphicsEnvironment.java`（driver selection / per-app override）、`frameworks/native/opengl/libs/EGL/Loader.cpp`（ANGLE / native / updated driver 选路）、`frameworks/native/libs/graphicsenv/GraphicsEnv.cpp`（ANGLE APK / system setup 与 rules string 接口）、`platform/external/angle/`（ANGLE 实现）
