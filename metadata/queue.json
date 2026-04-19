@@ -2580,8 +2580,11 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-20T02:35:00+08:00",
-    "status": "pending",
-    "review_log": "logs/deep-review/2026-04-20-02-deep-review.md"
+    "status": "completed",
+    "review_log": "logs/deep-review/2026-04-20-02-deep-review.md",
+    "completed_at": "2026-04-20T05:41:00+08:00",
+    "completed_by": "task2b-rework",
+    "resolution": "修正 TextureView 的 Composition Type 识别、硬件加速前置条件、SurfaceView 版本化能力边界，并补充 `updateTexImage()` 的 GPU/fence 观察口径。"
   },
   {
     "section": "10.6",
@@ -2606,7 +2609,10 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-20T04:20:38+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-20T05:41:00+08:00",
+    "completed_by": "task2b-rework",
+    "resolution": "修正 Android 14/15/16 的 GC 版本边界，明确 Android 14 仍属 CC / 分代 CC 语境，并补强 AOSP tag 级源码锚点。"
   },
   {
     "section": "3.5",
