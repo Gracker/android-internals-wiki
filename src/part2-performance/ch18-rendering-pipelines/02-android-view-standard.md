@@ -7,10 +7,13 @@ tags: ["BLAST", "RenderThread", "HWUI", "DisplayList", "FrameTimeline", "Triple-
 related_chapters: ["2.1", "2.5", "2.6", "2.7", "18.1"]
 created_by: "rendering-pipelines-merge"
 created_date: "2026-04-09"
-pipeline_stage: task9_pending
+pipeline_stage: task2b_pending
 task6_state: reviewed
-task9_state: pending
-task2b_state: idle
+task9_state: reviewed
+task9_result: needs-rework
+task9_reviewed_by: "openclaw-task9"
+task9_reviewed_date: "2026-04-20"
+task2b_state: pending
 reviewed_by: openclaw-task6
 reviewed_date: 2026-04-17
 task6_result: pass-light-edit
