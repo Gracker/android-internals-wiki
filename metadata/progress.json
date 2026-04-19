@@ -744,16 +744,17 @@
       "title": "DMA-BUF、Gralloc 与跨进程图形内存共享",
       "path": "src/part1-fundamentals/ch02-rendering/15-dmabuf-gralloc.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
-      "task6_state": "reviewed",
-      "task9_state": "reviewed",
-      "task2b_state": "pending",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
+      "task9_state": "pending",
+      "task2b_state": "fixed",
       "task6_result": "needs-rework",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
       "section": "2.15",
       "reviewed_date": "2026-04-19",
-      "reviewed_by": "openclaw-task6"
+      "reviewed_by": "openclaw-task6",
+      "last_task2b_at": "2026-04-19T12:48:00+08:00"
     },
     "src/part1-fundamentals/ch02-rendering/16-sync-fence.md": {
       "chapter": "2.16",
@@ -3454,7 +3455,7 @@
     "task2b_state": "pending",
     "last_task9_at": "2026-04-19T00:54:00+08:00"
   },
-  "last_updated": "2026-04-19T12:32:00+08:00",
+  "last_updated": "2026-04-19T12:48:00+08:00",
   "rework_log": [
     {
       "date": "2026-04-15T19:44:09.836904",
@@ -3726,6 +3727,24 @@
       ],
       "verification": "technical-writing 禁用词扫描=0，queue=completed",
       "queue_status": "completed"
+    },
+    {
+      "date": "2026-04-19T12:48:00+08:00",
+      "section": "2.15",
+      "section_title": "DMA-BUF、Gralloc 与跨进程图形内存共享",
+      "source": "task9-deep-tech-review",
+      "priority": 95,
+      "issues_fixed": 6,
+      "fixes": [
+        "源码错误：把 GraphicBuffer / DMA-BUF 的跨进程载荷改成 native_handle transport payload，明确常见单主 fd 只是常见形态，不是接口 contract",
+        "版本差异：frontmatter applicable_versions 收窄到 Android 12-16，并删除对 Android 17 走向的待验证占位",
+        "知识补强：新增 16KB page size 与 BufferDescriptorInfo.reservedSize 对分配预算的影响",
+        "交叉引用：把 BufferQueue 状态描述改回 §2.13 的 counter-based 口径，补 isFree/isDequeued/isQueued/isAcquired/isShared",
+        "数据缺失：删除 fd 泄漏段的 Trace 占位和 1-5ms 固定延迟数字，改为只保留有条件约束的定性判断",
+        "原理断裂：把 Camera heap 与带宽隔离的结论收紧到 vendor gralloc / BSP / SoC 实现边界"
+      ],
+      "verification": "technical-writing 禁用词扫描=0，frontmatter 解析=ok，queue=completed",
+      "queue_status": "completed"
     }
   ],
   "reviews": [
@@ -3921,10 +3940,18 @@
       "by": "task2b-rework",
       "source": "task9-deep-tech-review",
       "issues_fixed": 3
+    },
+    {
+      "section": "2.15",
+      "section_title": "DMA-BUF、Gralloc 与跨进程图形内存共享",
+      "date": "2026-04-19T12:48:00+08:00",
+      "by": "task2b-rework",
+      "source": "task9-deep-tech-review",
+      "issues_fixed": 6
     }
   ],
-  "last_task2b_run": "2026-04-19T12:02:51+08:00",
-  "task2b_fixed": 12,
+  "last_task2b_run": "2026-04-19T12:48:00+08:00",
+  "task2b_fixed": 13,
   "17.1": {
     "task6_review_date": "2026-04-16",
     "task6_result": "pass-light-edit",
@@ -3938,10 +3965,10 @@
     "task6_state": "reviewed",
     "task9_state": "pending"
   },
-  "task2b_last_run": "2026-04-19T12:02:51+08:00",
+  "task2b_last_run": "2026-04-19T12:48:00+08:00",
   "task2b_last_result": "fixed",
   "task2b_task8_processed": 3,
-  "task2b_note": "修复 8.6 的 CoroutineScheduler / DebugProbes / async trace 三处技术问题，并完成 technical-writing 禁用词复检",
+  "task2b_note": "修复 2.15 的多 fd transport 口径、16KB page size 预算、BufferQueue 状态描述与无证据延迟表述，并完成 technical-writing 禁用词复检",
   "15.5": {
     "task6_review_date": "2026-04-17",
     "task6_result": "pass-light-edit",
@@ -3972,6 +3999,14 @@
       "section_title": "Kotlin Coroutine 性能实践",
       "source": "task9-deep-tech-review",
       "issues_fixed": 3,
+      "status": "fixed"
+    },
+    {
+      "date": "2026-04-19T12:48:00+08:00",
+      "section": "2.15",
+      "section_title": "DMA-BUF、Gralloc 与跨进程图形内存共享",
+      "source": "task9-deep-tech-review",
+      "issues_fixed": 6,
       "status": "fixed"
     }
   ],
@@ -4042,6 +4077,14 @@
       ],
       "issues_fixed": 3,
       "by": "task2b-rework"
+    },
+    {
+      "date": "2026-04-19T12:48:00+08:00",
+      "sections": [
+        "2.15"
+      ],
+      "issues_fixed": 6,
+      "by": "task2b-rework"
     }
   ],
   "reviewed_chapters": [
@@ -4055,7 +4098,7 @@
   "total_chapters": 0,
   "reviewed_count": 1,
   "last_review": "18.17",
-  "last_task2b_section": "8.6",
+  "last_task2b_section": "2.15",
   "1.10": {
     "section": "1.10",
     "title": "ContentProvider 性能与优化",
@@ -4200,16 +4243,17 @@
   "2.15": {
     "section": "2.15",
     "title": "DMA-BUF、Gralloc 与跨进程图形内存共享",
-    "pipeline_stage": "task2b_pending",
+    "pipeline_stage": "task6_pending",
     "task6_result": "needs-rework",
     "task6_reviewed_date": "2026-04-19",
-    "task6_state": "reviewed",
-    "task9_state": "reviewed",
+    "task6_state": "revisiting",
+    "task9_state": "pending",
     "task9_result": "needs-rework",
-    "task2b_state": "pending",
+    "task2b_state": "fixed",
     "task2b_result": "fixed",
     "last_task9_at": "2026-04-19T12:32:00+08:00",
     "task9_reviewed_date": "2026-04-19",
-    "task9_reviewed_by": "openclaw-task9"
+    "task9_reviewed_by": "openclaw-task9",
+    "last_task2b_at": "2026-04-19T12:48:00+08:00"
   }
 }
