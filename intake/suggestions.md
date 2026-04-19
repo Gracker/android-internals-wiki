@@ -2265,3 +2265,102 @@
 - **建议**：明确 5s 超时逻辑；新增 Android 17 帧率类别 API 说明。
 - **来源**：Gemini 外部 review
 
+
+
+## [External Review] 10.3 内存持续增长 — 2026-04-19
+- **类型**：术语校正
+- **位置**：OPPO 反碎片技术段落
+- **问题**：术语 MF/CSVM 的定义与 OPPO 公开资料有出入
+- **建议**：核实缩写，若无明确证据改为更通用的"物理页迁移分组"和"虚拟地址重排"描述
+- **来源**：Gemini 外部 review
+
+## [External Review] 10.4 低内存对系统性能的影响 — 2026-04-19
+- **类型**：数值修正
+- **位置**：ART GC 暂停时间描述
+- **问题**：描述 CC GC 暂停时间"在 1ms 以下"，实际 Minor GC 暂停目标为 1ms-3ms
+- **建议**：修正数值，强调 1ms 是 Minor GC 理想目标，Major GC 在压力下仍可能达 10ms+
+- **来源**：Gemini 外部 review
+
+## [External Review] 10.5 内存案例集 — 2026-04-19
+- **类型**：分析补充
+- **位置**：案例四 - 内存突增
+- **问题**：未说明如何区分"对象风暴"与"内存泄漏"的 Trace 表现
+- **建议**：补充差异：对象风暴 GC 后基准线平稳；泄漏基准线阶梯式上升
+- **来源**：Gemini 外部 review
+
+## [External Review] 10.5 内存案例集 — 2026-04-19
+- **类型**：源码补充
+- **位置**：案例二 - Bitmap 泄漏
+- **问题**：未详述 Android 8.0+ Bitmap Native 堆回收链路
+- **建议**：补充 NativeAllocationRegistry + Cleaner 机制
+- **来源**：Gemini 外部 review
+
+## [External Review] 10.6 内存抖动与频繁 GC — 2026-04-19
+- **类型**：知识补充
+- **位置**：Kotlin value class 优化
+- **问题**：未提及 Kotlin 对无符号类型（UIntArray 等）的特殊处理
+- **建议**：补充避免 value class 数组装箱的工程实践
+- **来源**：Gemini 外部 review
+
+## [External Review] 10.7 SQLite/Room 性能 — 2026-04-19
+- **类型**：版本差异补充
+- **位置**：CursorWindow 共享内存
+- **问题**：仅提到 ashmem，未提及 Android 12+ memfd 迁移
+- **建议**：增加 memfd 密封机制描述
+- **来源**：Gemini 外部 review
+
+## [External Review] 10.7 SQLite/Room 性能 — 2026-04-19
+- **类型**：数据补充
+- **位置**：F2FS WAL 写入放大
+- **问题**：未提及 synchronous=NORMAL 的收益原理
+- **建议**：补充 WAL 下 NORMAL 仅在 checkpoint 时 sync
+- **来源**：Gemini 外部 review
+
+## [External Review] 10.7 SQLite/Room 性能 — 2026-04-19
+- **类型**：数据补充
+- **位置**：Migration 耗时
+- **问题**：缺乏量化参考
+- **建议**：补充"5000 条记录下增加带索引的列可能导致 100ms+ 主线程卡顿"
+- **来源**：Gemini 外部 review
+
+## [External Review] 11.1 功耗模型 — 2026-04-19
+- **类型**：术语一致性
+- **位置**：CPU 功耗公式
+- **问题**：getAveragePowerForCpuScalingStep() 在 Android 16 中已演进
+- **建议**：指出 getAveragePowerForCpuScalingPolicy 是核心方法
+- **来源**：Gemini 外部 review
+
+## [External Review] 11.1 功耗模型 — 2026-04-19
+- **类型**：原理补充
+- **位置**：ODPM 章节
+- **问题**：未明确 UC 如何从 HAL 的 uWs 转换
+- **建议**：补充 Framework 读取平均电压完成能量到电荷的转换链
+- **来源**：Gemini 外部 review
+
+## [External Review] 11.4 功耗案例集 — 2026-04-19
+- **类型**：内容完整性
+- **位置**：全章
+- **问题**：存在多处 [待补充] 占位符
+- **建议**：补齐关键截图或等效文本描述
+- **来源**：Gemini 外部 review
+
+## [External Review] 11.5 Wakelock 机制与功耗分析 — 2026-04-19
+- **类型**：概念澄清
+- **位置**：Foreground Service 与 Wakelock
+- **问题**：缺乏 FGS vs Wakelock 的源码支撑
+- **建议**：补充 ActiveServices.java 中 FGS 仅提升 OOM 优先级
+- **来源**：Gemini 外部 review
+
+## [External Review] 12.1 APK 体积优化 — 2026-04-19
+- **类型**：工具更新
+- **位置**：Native 库瘦身
+- **问题**：ANDROID_STRIP_DEBUG_SYMBOLS 是较旧方式
+- **建议**：推荐 AGP 8.x packaging DSL 或 nativeSymbolTables 闭包
+- **来源**：Gemini 外部 review
+
+## [External Review] 12.1 APK 体积优化 — 2026-04-19
+- **类型**：遗漏补充
+- **位置**：assets/ 优化
+- **问题**：未提及 Lottie 资源在 assets/ 中的体积优化
+- **建议**：增加 Lottie 资源 zip 压缩或动态下发建议
+- **来源**：Gemini 外部 review

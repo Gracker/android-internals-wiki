@@ -3026,3 +3026,187 @@ Gemini 外部 review
 ### 外部 review 来源
 Gemini 外部 review
 
+
+
+## [2026-04-19] 10.3 内存持续增长 — 知识盲区（External Review）
+
+### 盲区描述
+1. **Android 16 Headroom API**：替代过时的 onTrimMemory 细分级别的新机制，具体 API 形态和触发条件待研究。
+2. **RSS 优先监控策略**：PSS 采集在 Android 14+ 受 Throttling 限制（可能返回 5 分钟前缓存数据），需转向 RSS 趋势监控或组合方案。
+3. **MTE (Memory Tagging Extension) 开销**：在支持 MTE 的硬件（如 Pixel 8/9）上对内存增长的影响。
+
+### 重要程度
+高（Headroom API）/ 中（RSS）/ 低（MTE）
+
+### 建议研究方向
+- AOSP SystemHealthManager.java 查看 Headroom API 实现
+- 对比 RSS 与 PSS 在高频采样下的精度差异
+- Perfetto Native Heap Profiler 在 16KB 页面设备上的 Trace 表现差异
+
+### 关联章节
+- 10.3, 10.4
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-19)
+
+## [2026-04-19] 10.4 低内存对系统性能的影响 — 知识盲区补充（External Review）
+
+### 盲区描述
+补充以下新盲区（已存在 compactd/onTrimMemory 盲区）：
+1. **16KB Page Size 对 RSS 的量化影响**：Android 15 引入后物理内存增加约 9%，meminfo 输出因对齐变粗产生数值跳变。
+2. **ZRAM 后台重压缩触发条件**：Android 15 支持 recomp_algorithm（主算法 LZ4 + 重压缩 ZSTD），空闲时重新压缩 ZRAM 页面。
+3. **PSI 统计窗口厂商定制化**：常见国产厂商（小米、OPPO）对 psi_partial_stall_ms 的魔改情况。
+
+### 重要程度
+高（16KB）/ 中（ZRAM、PSI）
+
+### 建议研究方向
+- Google 官方 16KB Page 性能白皮书
+- zram_config 在 Android 15 中的默认策略
+- 国产厂商 PSI 定制调研
+
+### 关联章节
+- 10.3, 10.4
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-19)
+
+## [2026-04-19] 10.5 内存案例集 — 知识盲区（External Review）
+
+### 盲区描述
+1. **MGLRU 开启后的 kswapd0 调度**：extra_free_kbytes 调优策略是否需要改变？
+2. **GPU 私有 ioctl 监控**：如何通过 eBPF 监控 /dev/dri/renderD128 的私有接口调用。
+3. **硬件加速与 Canvas.saveLayer**：View.setLayerType 与 Canvas.saveLayer 在不同 Android 版本的差异。
+
+### 重要程度
+高（MGLRU）/ 中（GPU ioctl）/ 高（saveLayer）
+
+### 建议研究方向
+- mg_lru_gen 及其对 allocstall 指标的影响
+- eBPF 监控 GPU 驱动私有接口
+- View.setLayerType 版本差异对比
+
+### 关联章节
+- 10.4, 10.5
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-19)
+
+## [2026-04-19] 10.6 内存抖动与频繁 GC — 知识盲区（External Review）
+
+### 盲区描述
+1. **Generational CMC 内部细节**：Android 16 的分代 CMC 如何在 Userfaultfd 基础上划分 Young/Old 区。
+2. **Lock-free MessageQueue 的影响**：Android 17 的 lock-free 机制是否缓解了高频消息导致的抖动感。
+
+### 重要程度
+高（Generational CMC）/ 中（Lock-free MQ）
+
+### 建议研究方向
+- 对比 Generational CC 与 Generational CMC 在相同抖动负载下的 CPU 功耗
+- art/runtime/gc/collector/mark_compact.cc CMC 实现
+
+### 关联章节
+- 10.6
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-19)
+
+## [2026-04-19] 10.7 SQLite/Room 性能 — 知识盲区（External Review）
+
+### 盲区描述
+1. **Android 15+ memfd 对 CursorWindow 的影响**：从 ashmem 迁移到 memfd 后的性能和安全性（SELinux）具体约束。
+2. **SQLite 3.37+ STRICT 表**：Android 15+ 携带的 SQLite 版本是否支持 STRICT 及对 Room 的影响。
+
+### 重要程度
+中
+
+### 建议研究方向
+- 查看 AOSP system/core/libcutils 对 sys.use_memfd 的最新判断逻辑
+- STRICT 表对 Room Schema 的影响
+
+### 关联章节
+- 10.7
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-19)
+
+## [2026-04-19] 11.1 功耗模型 — 知识盲区（External Review）
+
+### 盲区描述
+1. **BatteryUsageStats 架构重构**：Android 12 如何将 BatteryStatsImpl 原始数据封装为 BatteryConsumer 对象。
+2. **系统服务的 WorkSource 传递链路**：DownloadManager/LocationManager 如何将 UID 链传递给 BatteryStats。
+3. **CPU Scaling Policy 与 Cluster 的解耦**：Android 16 为何弃用 getAveragePowerForCpuCluster 转向 ScalingPolicy。
+
+### 重要程度
+高
+
+### 建议研究方向
+- BatteryUsageStatsProvider.java 架构
+- 追踪 DownloadManager 的 WorkSource 传递路径
+- CpuPowerStatsCollector.java (Android 16 新增类)
+
+### 关联章节
+- 11.1, 11.5
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-19)
+
+## [2026-04-19] 11.4 功耗案例集 — 知识盲区补充（External Review）
+
+### 盲区描述
+补充以下新盲区（已存在 5G Radio/FCM 盲区）：
+1. **5G C-DRX 参数对 App 心跳频率的敏感度**：drx-InactivityTimer 对不同频率的影响。
+2. **Android 16 16KB Page Size 对功耗的影响**：NDK 应用在 16KB 页下是否存在缓存未命中导致的额外 CPU 功耗。
+3. **厂商 ODPM 数据格式**：IPowerStats HAL 接口定义。
+
+### 重要程度
+高（5G C-DRX）/ 中（16KB 功耗、ODPM）
+
+### 建议研究方向
+- 5G EN-DC 双连接功耗突增现象
+- perfetto.dev 针对 5G Power Rails 的分析文档
+
+### 关联章节
+- 11.1, 11.2, 11.4
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-19)
+
+## [2026-04-19] 11.5 Wakelock 机制与功耗分析 — 知识盲区（External Review）
+
+### 盲区描述
+1. **SystemSuspend 的引用计数与死锁风险**：IWakeLock.aidl 的调用路径。
+2. **Android 17 对"频繁唤醒"的 Quota 算法**：QuotaController 在 PowerManagement 中的新应用。
+
+### 重要程度
+高（Quota）/ 中（SystemSuspend）
+
+### 建议研究方向
+- system/hardware/interfaces/suspend 的 AIDL 实现
+- Android 17 QuotaController 源码分析
+
+### 关联章节
+- 11.5
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-19)
+
+## [2026-04-19] 12.1 APK 体积优化 — 知识盲区（External Review）
+
+### 盲区描述
+1. **磁盘占用 vs 下载体积**：ART AOT 编译产物对 /data 分区的压力。
+2. **R8 Full Mode 对反射的隐形破坏**：android.enableR8.fullMode 开启后对 Gson/Retrofit 的潜在影响。
+3. **AXML 的内存对齐优化**：AOSP ResXMLTree 的二进制对齐对膨胀效率的影响。
+
+### 重要程度
+高（R8 反射）/ 中（AXML、磁盘占用）
+
+### 建议研究方向
+- libs/androidfw/ResourceTypes.cpp ResTable 解析逻辑
+- R8 Full Mode 兼容性矩阵
+
+### 关联章节
+- 12.1
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-19)
