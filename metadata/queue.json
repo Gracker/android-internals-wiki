@@ -191,5 +191,71 @@
     "added_by": "external-ai-review",
     "added_at": "2026-04-19T10:53:11.619787+08:00",
     "status": "pending"
+  },
+  {
+    "section": "8.6",
+    "section_title": "Kotlin Coroutine 性能实践",
+    "priority": 95,
+    "reason": "[Deep Tech Review] 2 处事实错误 + 1 处原理链断裂，需要回炉修正协程调度与 tracing 章节",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "L89 Dispatchers.Default 段",
+        "detail": "正文把 Dispatchers.Default 写成‘基于 ScheduledThreadPoolExecutor 的工作窃取线程池’。kotlinx.coroutines 当前实现是 DefaultScheduler -> SchedulerCoroutineDispatcher -> CoroutineScheduler，包含独立的 CPU / blocking 队列、CPU permits 和 work-stealing 逻辑，并非 JDK 的 ScheduledThreadPoolExecutor。",
+        "suggestion": "改成 CoroutineScheduler 的真实实现，并补充 CPU permits、blocking task compensation、local/global queue 这几个会影响 Perfetto 判读的机制。"
+      },
+      {
+        "type": "源码错误",
+        "location": "L81 / L310-L321 coroutine debug 与 Perfetto 段",
+        "detail": "正文把 kotlinx-coroutines-debug / DebugProbes.install() 当成 Android 侧可用的协程追踪路径。官方 README 明确写明 Android runtime 不支持 kotlinx-coroutines-debug 依赖的 Instrument API，实际会触发 NoClassDefFoundError 或资源合并问题。",
+        "suggestion": "把 kotlinx-coroutines-debug 明确标成 JVM-only；Android 侧改写为 app tracing、androidx.tracing 或普通调试器 / CPU Profiler 的组合，不要把 DebugProbes 作为 Android/Perfetto 实践建议。"
+      },
+      {
+        "type": "原理断裂",
+        "location": "L343-L356 自定义 Trace 示例",
+        "detail": "示例在 Trace.beginSection()/endSection() 之间穿过 withContext(Dispatchers.IO) 挂起边界。同步 section 只适合同线程同步执行，直接跨 suspend/异步边界会把等待时间错误地挂到 MainThread slice 上，得到误导性的 Perfetto 结果。",
+        "suggestion": "改成 beginAsyncSection()/endAsyncSection()（或 androidx.tracing 的 async API）追踪逻辑操作，或者把同步 section 缩到单个不挂起的代码段内。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-19T11:10:00+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "2.15",
+    "section_title": "DMA-BUF、Gralloc 与跨进程图形内存共享",
+    "priority": 90,
+    "reason": "[review回炉] external-review P1 技术存疑 + 知识盲区待补充",
+    "material_paths": [
+      "logs/external-review/2026-04-19-46-2.15-external-review.md",
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "需确认",
+        "location": "Gralloc HAL 版本描述（全文多处）",
+        "detail": "external-review P1 断言 Android 16 强制开启 Gralloc 5.0 AIDL，HIDL 4.0 已进入实质性弃用。当前稿件基于 android-16.0.0_r1 源码观察到的结论是 AIDL 与 HIDL 并存。需 Task 9 核实",
+        "suggestion": "Task 9 对照 AOSP android-16.0.0_r1 最终 tag 和官方 CDD 文档确认 Gralloc AIDL/HIDL 状态"
+      },
+      {
+        "type": "需补充素材",
+        "location": "全文缺失",
+        "detail": "external-review P1 指出 16KB 页面模式下小尺寸 Buffer 产生的 Slack Space 导致显存利用率骤降，PSS 可能翻倍",
+        "suggestion": "Task 2B 补充 16KB 对齐对 Gralloc 分配的影响，包括 reservedSize 参数"
+      },
+      {
+        "type": "需补充素材",
+        "location": "DMA-BUF fd 泄漏节",
+        "detail": "[待补充：Trace 截图展示 fd 泄漏时 GPU 内存增长的表现] 仍为占位符",
+        "suggestion": "高爷补充实际 Trace 截图或描述"
+      }
+    ],
+    "added_by": "task6-review",
+    "added_at": "2026-04-19T11:33:34",
+    "status": "pending",
+    "original_review_log": "logs/review/2026-04-19-11-review.md"
   }
 ]

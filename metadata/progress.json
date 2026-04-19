@@ -3721,6 +3721,16 @@
       "fixes": 6,
       "issues_flagged": 0,
       "log": "logs/review/2026-04-17-19-review.md"
+    },
+    {
+      "section": "2.15",
+      "title": "DMA-BUF、Gralloc 与跨进程图形内存共享",
+      "date": "2026-04-19",
+      "reviewed_by": "openclaw-task6",
+      "result": "needs-rework",
+      "issues": 3,
+      "fixes": 6,
+      "log": "logs/review/2026-04-19-11-review.md"
     }
   ],
   "rework_history": [
