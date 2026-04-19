@@ -37,5 +37,156 @@
     "added_at": "2026-04-19T10:46:22",
     "status": "pending",
     "original_review_log": "logs/review/2026-04-19-10-review.md"
+  },
+  {
+    "section": "7.3",
+    "section_title": "卡顿分析方法论",
+    "priority": 95,
+    "reason": "[External Review] 外部 AI review 发现需回炉的问题",
+    "material_paths": [],
+    "review_issues": [
+      {
+        "type": "源码准确性",
+        "location": "external-review 7.3",
+        "detail": "[SQL 查询部分]\n- **原文问题**：在 SQL 查询段落中，注释称 `sched.end_state = 'R'` 表示线程被抢占（Preempted）。\n- **源码 / 一手资料锚点**：[Perfetto Documentation - Sched Table](https://perfetto.dev/docs/analysis/sql-tables#sched)\n- **关键代码逻辑**：在 Linux 内核调度中，`R` 状态表示线程处于就绪队列但被换出。Perfetto 将被高优先级任务强制踢下 CPU 的状态专门标记为 `'R+'`。\n- **运行原理说明**：`R` 可能只是时间片耗尽或自愿让出，而 `R+` 才是明确的 CPU 资源争抢信号。\n- **核验结论**：原文解释混淆了“就绪”与“抢占”，会导致开发者在分析时过度诊断 CPU 竞争。\n- **建议修正方向**：将 SQL 条件修正为 `end_state = 'R+'` 以准确识别抢占，或在文中明确区分 `R` 和 `R+` 的语义差异。",
+        "suggestion": "基于外部 AI review 修正",
+        "evidence": []
+      },
+      {
+        "type": "版本差异覆盖",
+        "location": "external-review 7.3",
+        "detail": "[全文演进]\n- **原文问题**：缺失 Android 15/16/17 的核心流畅性特性。\n- **缺失内容**：\n    1. **Android 15**: ADPF 的 GPU/CPU 实际工作时长报告，以及 `ProfilingManager` API（生产环境自动触发堆栈/Trace）。\n    2. **Android 16**: **Adaptive Refresh Rate (ARR)** 及其对 RecyclerView 1.4 的原生支持；新增 **`AppJankStats`** API（比 FrameMetrics 更细粒度）；`FrameMetrics.FRAME_TIMELINE_VSYNC_ID`（打通跨进程帧追踪的钥匙）。\n    3. **Android 17**: **MessageQueue 无锁优化（DeliQueue）** 对主线程抖动的影响；`MemoryLimiter` 触发的自动分析。\n- **为什么这是重要缺失**：这些特性改变了现代 Android 性能优化的游戏规则（从手动抓 Trace 到系统自动反馈和 ADPF 智能调度）。",
+        "suggestion": "基于外部 AI review 修正",
+        "evidence": []
+      },
+      {
+        "type": "原理链完整性",
+        "location": "external-review 7.3",
+        "detail": "[Choreographer 阶段]\n- **原文问题**：流水线描述仅包含 Input/Animation/Traversal。\n- **缺失内容**：`CALLBACK_INSETS_ANIMATION` (API 30+) 和 `CALLBACK_COMMIT` (API 23+)。\n- **源码锚点**：`android.view.Choreographer.java` 中的 `CALLBACK_*` 常量定义及 `doFrame` 循环逻辑。\n- **建议补充方向**：补齐这两个阶段，特别是 `COMMIT` 阶段在性能监控（修正时间戳）中的角色。",
+        "suggestion": "基于外部 AI review 修正",
+        "evidence": []
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-19T10:53:11.619787+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "7.6",
+    "section_title": "典型案例",
+    "priority": 95,
+    "reason": "[External Review] 外部 AI review 发现需回炉的问题",
+    "material_paths": [],
+    "review_issues": [
+      {
+        "type": "版本差异覆盖",
+        "location": "external-review 7.6",
+        "detail": "[案例五：系统低内存]\n- **原文问题**：建议开发者响应 `onTrimMemory`，并未明确指出 `TRIM_MEMORY_RUNNING_*` 的状态。\n- **一手资料锚点**：`android.content.ComponentCallbacks2` API 35 (Android 15)。\n- **核验结论**：Android 15 正式弃用了 `TRIM_MEMORY_RUNNING_MODERATE/LOW/CRITICAL` 以及 `TRIM_MEMORY_MODERATE/COMPLETE`。系统不再保证发送这些信号，应用应依赖 `onLowMemory()` 或 `TRIM_MEMORY_UI_HIDDEN`。\n- **为什么错**：原文虽提到了 Android 14 的变化，但给出的代码示例和建议仍带有旧时代的惯性，未明确告知开发者这些常量在最新版本中已不可靠。\n- **建议修正方向**：明确标注 API 35 的弃用，将建议导向 `onLowMemory()` 和 `ActivityManager.MemoryInfo.lowMemory`。",
+        "suggestion": "基于外部 AI review 修正",
+        "evidence": []
+      },
+      {
+        "type": "源码准确性",
+        "location": "external-review 7.6",
+        "detail": "[案例四：RenderThread sync]\n- **原文问题**：描述“多表情叠加时 GPU 工作量激增，sync 等待时间增加”。\n- **源码锚点**：`frameworks/base/libs/hwui/renderthread/DrawFrameTask.cpp` 中的 `DrawFrameTask::run()`。\n- **关键代码逻辑**：UI 线程在 `syncFrameState` 阶段被阻塞，直到 RenderThread 调用 `unblockUiThread()`。如果 RenderThread 忙于执行上一帧的 `context->draw()`（特别是 `eglSwapBuffers` 阶段因 VSync 阻塞或 GPU 繁忙），它将无法及时处理队列中的下一个 `DrawFrameTask`，导致 UI 线程在 `nSyncAndDrawFrame` 处长时间等待。\n- **缺失内容**：原文未点出“UI 线程阻塞是在等待 RT 空闲”这一本质，也未提到 `canUnblockUiThread` 受纹理上传（Texture Upload）影响的细节。\n- ",
+        "suggestion": "基于外部 AI review 修正",
+        "evidence": []
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-19T10:53:11.619787+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "7.7",
+    "section_title": "Compose 性能",
+    "priority": 95,
+    "reason": "[External Review] 外部 AI review 发现需回炉的问题",
+    "material_paths": [],
+    "review_issues": [
+      {
+        "type": "版本差异覆盖",
+        "location": "external-review 7.7",
+        "detail": "[全文]\n- **原文问题**：文章将性能优化的核心几乎全部押注在“手动维护稳定性”上（@Stable, @Immutable）。\n- **源码 / 一手资料锚点**：`androidx.compose.compiler.plugins.kotlin.lower.StrongSkippingMode`；[Android Developers Blog: Compose Compiler updates](https://android-developers.googleblog.com/2024/04/jetpack-compose-compiler-moving-to-kotlin-repo.html)\n- **关键代码逻辑**：在 Strong Skipping 模式下，所有可重启的 Composable 均可跳过。不稳定参数使用 `===` (实例相等性) 比较，稳定参数使用 `equals()`。\n- **运行原理说明**：这是 2025-2026 年 Compose 优化的分水岭。原文建议读者手动为 List 包装不可变集合或标注注解，这增加了大量开发成本。在 2026 年，",
+        "suggestion": "基于外部 AI review 修正",
+        "evidence": []
+      },
+      {
+        "type": "原理链完整性",
+        "location": "external-review 7.7",
+        "detail": "[渲染模型章节]\n- **原文问题**：对 Composition 阶段的描述仍然是“原子执行、不可中断”。\n- **源码 / 一手资料锚点**：`androidx.compose.runtime.Recomposer` 中的 `setPausableContent` 和 `resume` 逻辑；[Compose 1.10 Release Notes]\n- **运行原理说明**：Compose 1.10 引入了时间片轮转（Time-slicing）。如果重组即将耗尽帧预算（deadlineNanos），它会在 slot 边界处暂停，释放主线程。\n- **为什么错**：文中说“如果重组耗时 30ms 就会掉帧”，在 1.10 默认开启 Pausable 后，这 30ms 会被自动拆分到 2-3 帧中执行，显著降低掉帧率。\n- **建议修正方向**：增加“可暂停重组（Pausable Composition）”专节，解释其如何通过 `deadlineNanos` 实现增量执行。",
+        "suggestion": "基于外部 AI review 修正",
+        "evidence": []
+      },
+      {
+        "type": "知识盲区",
+        "location": "external-review 7.7",
+        "detail": "[性能检测工具章节]\n- **原文问题**：完全未提及 Baseline Profiles。\n- **缺失内容**：Baseline Profiles 是解决 Compose 首次启动卡顿（First-run Jank）和库执行效率的关键。\n- **运行原理说明**：通过 Macrobenchmark 记录关键路径，生成二进制 Profile 并在安装时进行 AOT 编译。\n- **建议补充方向**：在“性能检测”或“通用建议”中增加 Baseline Profiles 章节，明确其在生产环境的强制性。",
+        "suggestion": "基于外部 AI review 修正",
+        "evidence": []
+      },
+      {
+        "type": "原理链完整性",
+        "location": "external-review 7.7",
+        "detail": "[Compose 动画性能]\n- **原文问题**：未提及 Compose 1.9+ 的后台文本预取（Background Text Prefetch）和 `CacheWindow` API。\n- **建议补充方向**：在 LazyColumn 优化部分补充 `CacheWindow` 如何配合 Pausable Composition 提升滚动预取成功率。",
+        "suggestion": "基于外部 AI review 修正",
+        "evidence": []
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-19T10:53:11.619787+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "7.12",
+    "section_title": "SystemUI 性能",
+    "priority": 85,
+    "reason": "[External Review] 外部 AI review 发现需回炉的问题",
+    "material_paths": [],
+    "review_issues": [
+      {
+        "type": "原理链完整性",
+        "location": "external-review 7.12",
+        "detail": "[先分清谁负责什么 / StatusBar 与通知更新]\n- 原文问题：直接引入了 `NotificationIconContainerStatusBarViewModel` 等类，但未说明这是属于哪个架构代际的产物。\n- 源码 / 一手资料锚点：`com.android.systemui.scene.domain.interactor.SceneInteractor` / Flexiglass (Scene Framework) Design Doc.\n- 缺失内容：缺乏对 **Flexiglass (Scene Framework)** 这一重大架构重构的背景引入。\n- 运行原理说明：从 Android 15 开始，SystemUI 正在从旧的 Fragment/Controller 模式迁移到基于状态机和 Scene 的响应式架构。\n- 建议补充方向：在“先分清谁负责什么”小节中，增加一段关于 Flexiglass 架构的简单说明，告知读者如果找不到这些类，可能是因为 AOSP 版本过低或未开启该特性旗标。",
+        "suggestion": "基于外部 AI review 修正",
+        "evidence": []
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-19T10:53:11.619787+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "unknown",
+    "section_title": "",
+    "priority": 95,
+    "reason": "[External Review] 外部 AI review 发现需回炉的问题",
+    "material_paths": [],
+    "review_issues": [
+      {
+        "type": "版本差异覆盖",
+        "location": "external-review unknown",
+        "detail": "[frontmatter]\n- 原文问题：声明 `last_verified_against: \"AOSP android-16.0.0_r1\"`，但在 Jank 分类中未提及该版本引入的任何新特性。\n- 源码 / 一手资料锚点：`frameworks/native/services/surfaceflinger/FrameTimeline/JankInfo.h` (Android 15+ 增加 `JANK_DISPLAY_MODE_CHANGE_IN_PROGRESS` 等枚举)。\n- 关键代码逻辑：系统在进行自适应刷新率切换时，会自动标记此类延迟以避免归责给 App。\n- 运行原理说明：Android 15 引入 ARR，VSync 信号在单模式内可变。\n- 核验结论：原文描述的 Jank 分类仍基于 Android 12。\n- 为什么错：作者可能只更新了日期，未同步 AOSP 最新的代码演进。\n- 建议修正方向：在 Jank 分类节补充 Android 15+ 的 4 种新分类。",
+        "suggestion": "基于外部 AI review 修正",
+        "evidence": []
+      },
+      {
+        "type": "交叉引用一致性",
+        "location": "external-review unknown",
+        "detail": "[README.md]\n- 原文问题：目录仅列出 6 项，而目录下实际有 14 个文件。\n- 缺失内容：7.7-7.14 章节（Compose, Webview, SystemUI, GAPS 等）。\n- 为什么这是重要缺失：读者无法通过 README 导航到这些高价值实战篇章。\n- 建议补充方向：更新 README.md 中的“本章内容”列表，确保与物理文件同步。",
+        "suggestion": "基于外部 AI review 修正",
+        "evidence": []
+      },
+      {
+        "type": "知识盲区",
+        "location": "external-review unknown",
+        "detail": "[01-jank-definition.md]\n- 缺失内容：**Android 15 Slow Sessions 指标**。\n- 运行原理说明：Google Vitals 在 Android 15 中将“慢会话”作为核心流畅度指标（>25% 的帧超过 50ms/34ms）。\n- 为什么这是重要缺失：这是目前线上监测卡顿的最权威标准。\n- 建议补充方向：在“掉帧率与卡顿率”小节新增 Slow Sessions 详解。",
+        "suggestion": "基于外部 AI review 修正",
+        "evidence": []
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-19T10:53:11.619787+08:00",
+    "status": "pending"
   }
 ]

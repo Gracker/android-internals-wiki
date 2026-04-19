@@ -1639,3 +1639,542 @@ Macrobenchmark 作为竞品对比工具未被深入介绍。文章在第 394 行
 
 ### 外部 review 来源
 - Claude Opus 4.6 (Thinking) 外部 review
+
+## [2026-04-19] 7.3 卡顿分析方法论 — 知识盲区（External Review）
+
+### 盲区描述
+ADPF Hint Session 实战
+
+### 重要程度
+高
+
+### 建议研究方向
+研究 App 如何通过 ADPF 告知系统工作负载以避免随机掉帧。
+
+### 关联章节
+7.3
+
+### 外部 review 来源
+- 外部 AI review (2026-04-19-10-03-jank-methodology-external-review.md)
+
+
+## [2026-04-19] 7.3 卡顿分析方法论 — 知识盲区（External Review）
+
+### 盲区描述
+Android 16 System-triggered Profiling
+
+### 重要程度
+中
+
+### 建议研究方向
+研究系统如何在检测到卡顿时自动触发并保存 Trace 到 `/data/misc/perfetto-traces`。
+
+### 关联章节
+7.3
+
+### 外部 review 来源
+- 外部 AI review (2026-04-19-10-03-jank-methodology-external-review.md)
+
+
+## [2026-04-19] 7.3 卡顿分析方法论 — 知识盲区（External Review）
+
+### 盲区描述
+Android 17 DeliQueue 机制
+
+### 重要程度
+中
+
+### 建议研究方向
+深入 AOSP 源码分析 MessageQueue 无锁化对 Handler 消息延迟的改善程度。
+
+### 关联章节
+7.3
+
+### 外部 review 来源
+- 外部 AI review (2026-04-19-10-03-jank-methodology-external-review.md)
+
+
+## [2026-04-19] 7.5 优化策略 — 知识盲区（External Review）
+
+### 盲区描述
+------
+
+### 重要程度
+------
+
+### 建议研究方向
+-------
+
+### 关联章节
+7.5
+
+### 外部 review 来源
+- 外部 AI review (2026-04-19-10-05-optimization-external-review.md)
+
+
+## [2026-04-19] 7.5 优化策略 — 知识盲区（External Review）
+
+### 盲区描述
+Compose Pausable Composition
+
+### 重要程度
+高
+
+### 建议研究方向
+Android 17 (Compose 1.10) 引入的可暂停重组对长列表平滑度的贡献
+
+### 关联章节
+7.5
+
+### 外部 review 来源
+- 外部 AI review (2026-04-19-10-05-optimization-external-review.md)
+
+
+## [2026-04-19] 7.5 优化策略 — 知识盲区（External Review）
+
+### 盲区描述
+FrameTimeline 与 ARR
+
+### 重要程度
+中
+
+### 建议研究方向
+在 ARR 开启时，Perfetto 中 FrameTimeline 预测帧耗时的变化规律
+
+### 关联章节
+7.5
+
+### 外部 review 来源
+- 外部 AI review (2026-04-19-10-05-optimization-external-review.md)
+
+
+## [2026-04-19] 7.6 典型案例 — 知识盲区（External Review）
+
+### 盲区描述
+------
+
+### 重要程度
+------
+
+### 建议研究方向
+-------
+
+### 关联章节
+7.6
+
+### 外部 review 来源
+- 外部 AI review (2026-04-19-10-06-case-studies-external-review.md)
+
+
+## [2026-04-19] 7.6 典型案例 — 知识盲区（External Review）
+
+### 盲区描述
+16 KB 页支持 (Android 15)
+
+### 重要程度
+中
+
+### 建议研究方向
+研究其对内存分配效率及 NDK 应用的影响
+
+### 关联章节
+7.6
+
+### 外部 review 来源
+- 外部 AI review (2026-04-19-10-06-case-studies-external-review.md)
+
+
+## [2026-04-19] 7.6 典型案例 — 知识盲区（External Review）
+
+### 盲区描述
+Variable Refresh Rate (VRR)
+
+### 重要程度
+高
+
+### 建议研究方向
+120Hz 下 8.3ms 预算对 `sync` 阻塞的放大效应
+
+### 关联章节
+7.6
+
+### 外部 review 来源
+- 外部 AI review (2026-04-19-10-06-case-studies-external-review.md)
+
+
+## [2026-04-19] 7.6 典型案例 — 知识盲区（External Review）
+
+### 盲区描述
+Bitmap.prepareToDraw()
+
+### 重要程度
+中
+
+### 建议研究方向
+异步上传纹理以缓解 `syncFrameState` 阻塞
+
+### 关联章节
+7.6
+
+### 外部 review 来源
+- 外部 AI review (2026-04-19-10-06-case-studies-external-review.md)
+
+
+## [2026-04-19] 7.7 Compose 性能 — 知识盲区（External Review）
+
+### 盲区描述
+------
+
+### 重要程度
+----------
+
+### 建议研究方向
+--------------
+
+### 关联章节
+7.7
+
+### 外部 review 来源
+- 外部 AI review (2026-04-19-10-07-compose-performance-external-review.md)
+
+
+## [2026-04-19] 7.7 Compose 性能 — 知识盲区（External Review）
+
+### 盲区描述
+Pausable Composition 状态恢复机制
+
+### 重要程度
+高
+
+### 建议研究方向
+研究 SlotTable 在暂停点如何保存上下文，以及是否会造成过期的状态读取。
+
+### 关联章节
+7.7
+
+### 外部 review 来源
+- 外部 AI review (2026-04-19-10-07-compose-performance-external-review.md)
+
+
+## [2026-04-19] 7.7 Compose 性能 — 知识盲区（External Review）
+
+### 盲区描述
+Strong Skipping 与 Lambda Memoization
+
+### 重要程度
+中
+
+### 建议研究方向
+深入研究编译器如何自动为捕获不稳定变量的 Lambda 包裹 remember。
+
+### 关联章节
+7.7
+
+### 外部 review 来源
+- 外部 AI review (2026-04-19-10-07-compose-performance-external-review.md)
+
+
+## [2026-04-19] 7.7 Compose 性能 — 知识盲区（External Review）
+
+### 盲区描述
+LookaheadScope 性能边界
+
+### 重要程度
+中
+
+### 建议研究方向
+研究其在复杂共享元素动画中对 Layout 阶段耗时的具体影响。
+
+### 关联章节
+7.7
+
+### 外部 review 来源
+- 外部 AI review (2026-04-19-10-07-compose-performance-external-review.md)
+
+
+## [2026-04-19] 7.8 RecyclerView 性能 — 知识盲区（External Review）
+
+### 盲区描述
+------
+
+### 重要程度
+------
+
+### 建议研究方向
+-------
+
+### 关联章节
+7.8
+
+### 外部 review 来源
+- 外部 AI review (2026-04-19-10-08-recyclerview-performance-external-review.md)
+
+
+## [2026-04-19] 7.8 RecyclerView 性能 — 知识盲区（External Review）
+
+### 盲区描述
+Prefetch 与自定义 LayoutManager 的对接
+
+### 重要程度
+中
+
+### 建议研究方向
+研究 `LayoutManager.collectAdjacentPrefetchPositions` 的实现要求
+
+### 关联章节
+7.8
+
+### 外部 review 来源
+- 外部 AI review (2026-04-19-10-08-recyclerview-performance-external-review.md)
+
+
+## [2026-04-19] 7.8 RecyclerView 性能 — 知识盲区（External Review）
+
+### 盲区描述
+144Hz/165Hz 高刷新率下的 GapWorker 表现
+
+### 重要程度
+低
+
+### 建议研究方向
+测试极短 Gap 时间（<2ms）下的预取放弃率
+
+### 关联章节
+7.8
+
+### 外部 review 来源
+- 外部 AI review (2026-04-19-10-08-recyclerview-performance-external-review.md)
+
+
+## [2026-04-19] 7.10 图片加载与 Bitmap 性能优化 — 知识盲区（External Review）
+
+### 盲区描述
+Ultra HDR Gainmap 合成
+
+### 重要程度
+高
+
+### 建议研究方向
+研究 `Gainmap` 在 GPU 侧的合成成本及 CPU 回退风险
+
+### 关联章节
+7.10
+
+### 外部 review 来源
+- 外部 AI review (2026-04-19-10-10-image-bitmap-performance-external-review.md)
+
+
+## [2026-04-19] 7.10 图片加载与 Bitmap 性能优化 — 知识盲区（External Review）
+
+### 盲区描述
+AGSL 自定义滤镜
+
+### 重要程度
+中
+
+### 建议研究方向
+探索 `RuntimeColorFilter` 替代传统 Bitmap 像素操作的性能优势
+
+### 关联章节
+7.10
+
+### 外部 review 来源
+- 外部 AI review (2026-04-19-10-10-image-bitmap-performance-external-review.md)
+
+
+## [2026-04-19] 7.10 图片加载与 Bitmap 性能优化 — 知识盲区（External Review）
+
+### 盲区描述
+16KB 内存页影响
+
+### 重要程度
+低
+
+### 建议研究方向
+分析 Android 15 强制 16KB 页对大图加载的 PSS 影响
+
+### 关联章节
+7.10
+
+### 外部 review 来源
+- 外部 AI review (2026-04-19-10-10-image-bitmap-performance-external-review.md)
+
+
+## [2026-04-19] 7.12 SystemUI 性能 — 知识盲区（External Review）
+
+### 盲区描述
+------
+
+### 重要程度
+----------
+
+### 建议研究方向
+--------------
+
+### 关联章节
+7.12
+
+### 外部 review 来源
+- 外部 AI review (2026-04-19-10-13-systemui-performance-external-review.md)
+
+
+## [2026-04-19] 7.12 SystemUI 性能 — 知识盲区（External Review）
+
+### 盲区描述
+Flexiglass / Scene Framework
+
+### 重要程度
+高
+
+### 建议研究方向
+了解 SystemUI 如何通过 `SceneInteractor` 管理状态栏、抽屉、锁屏的切换逻辑。
+
+### 关联章节
+7.12
+
+### 外部 review 来源
+- 外部 AI review (2026-04-19-10-13-systemui-performance-external-review.md)
+
+
+## [2026-04-19] 7.12 SystemUI 性能 — 知识盲区（External Review）
+
+### 盲区描述
+Notification Pipeline v2 过滤机制
+
+### 重要程度
+中
+
+### 建议研究方向
+研究 `NotifFilter` 和 `NotifPromoter` 如何在绑定前影响性能。
+
+### 关联章节
+7.12
+
+### 外部 review 来源
+- 外部 AI review (2026-04-19-10-13-systemui-performance-external-review.md)
+
+
+## [2026-04-19] 7.14 GAPS 动态分析 — 知识盲区（External Review）
+
+### 盲区描述
+------
+
+### 重要程度
+----------
+
+### 建议研究方向
+--------------
+
+### 关联章节
+7.14
+
+### 外部 review 来源
+- 外部 AI review (2026-04-19-10-14-gaps-dynamic-analysis-external-review.md)
+
+
+## [2026-04-19] 7.14 GAPS 动态分析 — 知识盲区（External Review）
+
+### 盲区描述
+混淆代码路径重建
+
+### 重要程度
+高
+
+### 建议研究方向
+研究 GAPS 如何配合 mapping.txt 或利用语义恢复技术分析混淆后的方法路径
+
+### 关联章节
+7.14
+
+### 外部 review 来源
+- 外部 AI review (2026-04-19-10-14-gaps-dynamic-analysis-external-review.md)
+
+
+## [2026-04-19] 7.14 GAPS 动态分析 — 知识盲区（External Review）
+
+### 盲区描述
+Android 17 新型 UI 组件适配
+
+### 重要程度
+中
+
+### 建议研究方向
+研究 Compose/Compose-Multiplatform 等非传统 View 层级对 GAPS 静态 ID 提取的影响
+
+### 关联章节
+7.14
+
+### 外部 review 来源
+- 外部 AI review (2026-04-19-10-14-gaps-dynamic-analysis-external-review.md)
+
+
+## [2026-04-19] unknown  — 知识盲区（External Review）
+
+### 盲区描述
+------
+
+### 重要程度
+----------
+
+### 建议研究方向
+--------------
+
+### 关联章节
+unknown
+
+### 外部 review 来源
+- 外部 AI review (2026-04-19-10-README-external-review.md)
+
+
+## [2026-04-19] unknown  — 知识盲区（External Review）
+
+### 盲区描述
+ARR (Adaptive Refresh Rate) 与 VSync 解耦
+
+### 重要程度
+高
+
+### 建议研究方向
+研究 HWC 3.0 如何在单模式内通过 VSync 步长调整刷新率
+
+### 关联章节
+unknown
+
+### 外部 review 来源
+- 外部 AI review (2026-04-19-10-README-external-review.md)
+
+
+## [2026-04-19] unknown  — 知识盲区（External Review）
+
+### 盲区描述
+ProfilingManager 系统触发采样
+
+### 重要程度
+中
+
+### 建议研究方向
+研究 Android 16 如何根据卡顿自动触发 Perfetto 追踪
+
+### 关联章节
+unknown
+
+### 外部 review 来源
+- 外部 AI review (2026-04-19-10-README-external-review.md)
+
+
+## [2026-04-19] unknown  — 知识盲区（External Review）
+
+### 盲区描述
+RecyclerView 1.4 的 ARR 自动适配
+
+### 重要程度
+高
+
+### 建议研究方向
+分析其如何通过 WindowInsets 接口向 SF 请求动态刷新率
+
+### 关联章节
+unknown
+
+### 外部 review 来源
+- 外部 AI review (2026-04-19-10-README-external-review.md)

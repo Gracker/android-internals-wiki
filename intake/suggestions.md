@@ -2031,3 +2031,65 @@
 - **问题**："验证层会带来显著的性能开销"使用模糊形容词"显著"，未给出具体数据或参考来源。
 - **建议**：补充大致的性能影响范围（如"2-5x CPU 开销"）或引用 Khronos Validation Layer 性能文档。
 - **review 日志**：logs/review/2026-04-19-10-review.md
+
+## [External Review] 7.3 卡顿分析方法论 — 2026-04-19
+- **类型**：外部 review 建议
+- **位置**：7.3
+- **问题**：[FrameMetrics 判定细节]
+- **原文问题**：建议补充 FrameMetrics 在 API 31 之前手动计算 deadline 的一个关键缺陷：它无法识别系统正在利用“三级缓冲”来消化瞬时波动的意图。
+- **建议**：在对比 `DEADLINE` API 时，强调原生 `DEADLINE` 包含了 SurfaceFlinger 对 VSync Offset 的动态调整，这是手动计算 `1000/refreshRate` 永远无法覆盖的。
+- **建议**：基于外部 AI review 建议改进
+- **来源**：外部 AI review (2026-04-19-10-03-jank-methodology-external-review.md)
+
+
+## [External Review] 7.6 典型案例 — 2026-04-19
+- **类型**：外部 review 建议
+- **位置**：7.6
+- **问题**：[案例二：Binder 调用]
+- **问题描述**：原文列举了 I/O 阻塞来源，但遗漏了最隐蔽的 `SharedPreferences.getString()`。
+- **证据依据**：`SharedPreferencesImpl.awaitLoadedLocked` 在冷启动或 SP 文件过大时会直接导致主线程 `wait()`，这是极高频的卡顿根因。
+- **建议**：在“举一反三”中加入 SP 阻塞的说明，并推荐 MMKV 或 DataStore。
+- **建议**：基于外部 AI review 建议改进
+- **来源**：外部 AI review (2026-04-19-10-06-case-studies-external-review.md)
+
+
+## [External Review] 7.6 典型案例 — 2026-04-19
+- **类型**：外部 review 建议
+- **位置**：7.6
+- **问题**：[案例三：内存压力]
+- **原文问题**：代码示例 `LruCache<String, Bitmap>(Int.MAX_VALUE)`。
+- **问题描述**：`LruCache` 的构造函数必须传入一个合理的 `maxSize`，传入 `MAX_VALUE` 虽技术可行但属于极差实践，且未说明 `sizeOf` 的计算逻辑。
+- **建议**：修正示例代码，强调 `maxSize` 应基于 `Runtime.maxMemory()` 动态计算。
+- **建议**：基于外部 AI review 建议改进
+- **来源**：外部 AI review (2026-04-19-10-06-case-studies-external-review.md)
+
+
+## [External Review] 7.7 Compose 性能 — 2026-04-19
+- **类型**：外部 review 建议
+- **位置**：7.7
+- **问题**：[重组本质]
+- **原文位置**：`Greeting` 编译后代码示例。
+- **建议**：建议补充 `$changed` 位运算的简要说明，说明 Compose 如何通过一个 `Int` 存储多个参数的变化状态，这是实现“智能重组”的高效底层设计。
+- **建议**：基于外部 AI review 建议改进
+- **来源**：外部 AI review (2026-04-19-10-07-compose-performance-external-review.md)
+
+
+## [External Review] 7.12 SystemUI 性能 — 2026-04-19
+- **类型**：外部 review 建议
+- **位置**：7.12
+- **问题**：[通知内容绑定]
+- 原文问题：提到 `applyAsync()` / `reapplyAsync()`，但未区分两者的性能差异。
+- 证据或观察依据：`RemoteViews.reapplyAsync` 在通知更新（而非新增）时通过 `diff` 算法仅更新变化的 View，开销远小于 `applyAsync`。
+- 建议：补充说明在 Trace 中如果看到频繁的 `apply`（全量绑定）而非 `reapply`，通常意味着 App 侧发送的通知数据结构发生了不必要的剧变。
+- **建议**：基于外部 AI review 建议改进
+- **来源**：外部 AI review (2026-04-19-10-13-systemui-performance-external-review.md)
+
+
+## [External Review] unknown  — 2026-04-19
+- **类型**：外部 review 建议
+- **位置**：unknown
+- **问题**：[01-jank-definition.md]
+- 原文问题：BufferStuffing 节缺少具体的 Latency 增加数据说明。
+- 建议：补充 BufferStuffing 导致“画面流畅但输入极度不跟手”的 Perfetto 观察点（如 BufferQueue 深度 > 1 时 Latency 的阶梯式增长）。
+- **建议**：基于外部 AI review 建议改进
+- **来源**：外部 AI review (2026-04-19-10-README-external-review.md)

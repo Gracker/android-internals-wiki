@@ -39,26 +39,26 @@
 | 4.5 | 05-app-memory-optimization.md | 应用层内存优化实战 | ✅ 已完成 | [报告](2026-04-19-63-4.5-external-review.md) |
 | 4.6 | 06-memory-evolution.md | Android 内存机制演进历史 | ✅ 已完成 | [报告](2026-04-19-64-4.6-external-review.md) |
 | 4.7 | 07-16kb-page-size.md | 16KB Page Size 适配与性能 | ✅ 已完成 | [报告](2026-04-19-65-4.7-external-review.md) |
-| 4.8 | 08-art-generational-gc.md | 分代 GC (Generational CC) 深度解析 | ⏳ 进行中 | - |
+| 4.8 | 08-art-generational-gc.md | 分代 GC (Generational CC) 深度解析 | ✅ 已完成 | [报告](2026-04-19-66-4.8-external-review.md) |
 | **ch05 CPU/功耗** | | | | |
-| 5.1 | 01-linux-scheduling.md | 线程调度 (CFS/RT) 原理 | 📅 待开始 | - |
-| 5.2 | 02-eas.md | EAS (Energy Aware Scheduling) 调度 | 📅 待开始 | - |
-| 5.3 | 03-big-little.md | 大小核架构与绑定优化 | 📅 待开始 | - |
-| 5.4 | 04-dvfs.md | DVFS (动态频率调整) 机制 | 📅 待开始 | - |
-| 5.5 | 05-thermal.md | 温控机制 (Thermal Management) | 📅 待开始 | - |
-| 5.6 | 06-android-power.md | Android 电量统计与优化 | 📅 待开始 | - |
-| 5.7 | 07-cpu-evolution.md | CPU 调度与功耗演进历史 | 📅 待开始 | - |
-| 5.8 | 08-background-execution.md | 后台执行限制 (Broadcast/Service) | 📅 待开始 | - |
-| 5.9 | 09-adpf.md | ADPF (Android 动态性能框架) | 📅 待开始 | - |
-| 5.10 | 10-jobscheduler-workmanager-performance.md | JobScheduler 与 WorkManager 性能 | 📅 待开始 | - |
-| 5.11 | 11-ondevice-ml-inference-performance.md | 端侧 AI 推理性能优化 | 📅 待开始 | - |
-| 5.12 | 12-thermal-management-deep-dive.md | 温控管理深度分析 | 📅 待开始 | - |
+| 5.1 | 01-linux-scheduling.md | 线程调度 (CFS/RT) 原理 | ✅ 已完成 | [报告](2026-04-19-67-5.1-external-review.md) |
+| 5.2 | 02-eas.md | EAS (Energy Aware Scheduling) 调度 | ✅ 已完成 | [报告](2026-04-19-68-5.2-external-review.md) |
+| 5.3 | 03-big-little.md | 大小核架构与绑定优化 | ✅ 已完成 | [报告](2026-04-19-69-5.3-external-review.md) |
+| 5.4 | 04-dvfs.md | DVFS (动态频率调整) 机制 | ✅ 已完成 | [报告](2026-04-19-70-5.4-external-review.md) |
+| 5.5 | 05-thermal.md | 温控机制 (Thermal Management) | ✅ 已完成 | [报告](2026-04-19-71-5.5-external-review.md) |
+| 5.6 | 06-android-power.md | Android 电量统计与优化 | ✅ 已完成 | [报告](2026-04-19-72-5.6-external-review.md) |
+| 5.7 | 07-cpu-evolution.md | CPU 调度与功耗演进历史 | ✅ 已完成 | [报告](2026-04-19-73-5.7-external-review.md) |
+| 5.8 | 08-background-execution.md | 后台执行限制 (Broadcast/Service) | ✅ 已完成 | [报告](2026-04-19-74-5.8-external-review.md) |
+| 5.9 | 09-adpf.md | ADPF (Android 动态性能框架) | ✅ 已完成 | [报告](2026-04-19-75-5.9-external-review.md) |
+| 5.10 | 10-jobscheduler-workmanager-performance.md | JobScheduler 与 WorkManager 性能 | ✅ 已完成 | [报告](2026-04-19-76-5.10-external-review.md) |
+| 5.11 | 11-ondevice-ml-inference-performance.md | 端侧 AI 推理性能优化 | ✅ 已完成 | [报告](2026-04-19-77-5.11-external-review.md) |
+| 5.12 | 12-thermal-management-deep-dive.md | 温控管理深度分析 | ✅ 已完成 | [报告](2026-04-19-78-5.12-external-review.md) |
 | **ch06 存储** | | | | |
-| 6.1 | 01-storage-architecture.md | Android 存储架构概览 | 📅 待开始 | - |
-| 6.2 | 02-filesystem.md | 文件系统 (F2FS/EXT4) 性能 | 📅 待开始 | - |
-| 6.3 | 03-io-scheduling.md | I/O 调度算法 | 📅 待开始 | - |
-| 6.4 | 04-storage-evolution.md | 存储权限与分区演进历史 | 📅 待开始 | - |
-| 6.5 | 05-sharedpreferences-datastore.md | SP vs DataStore 性能对比 | 📅 待开始 | - |
+| 6.1 | 01-storage-architecture.md | Android 存储架构概览 | ✅ 已完成 | [报告](2026-04-19-79-6.1-external-review.md) |
+| 6.2 | 02-filesystem.md | 文件系统 (F2FS/EXT4) 性能 | ✅ 已完成 | [报告](2026-04-19-80-6.2-external-review.md) |
+| 6.3 | 03-io-scheduling.md | I/O 调度算法 | ✅ 已完成 | [报告](2026-04-19-81-6.3-external-review.md) |
+| 6.4 | 04-storage-evolution.md | 存储权限与分区演进历史 | ✅ 已完成 | [报告](2026-04-19-82-6.4-external-review.md) |
+| 6.5 | 05-sharedpreferences-datastore.md | SP vs DataStore 性能对比 | ✅ 已完成 | [报告](2026-04-19-83-6.5-external-review.md) |
 
 ---
 *最后更新：2026-04-19*
