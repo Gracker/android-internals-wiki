@@ -3256,3 +3256,115 @@ Gemini 外部 review
 
 ### 外部 review 来源
 - 外部 AI review: 2026-04-19-11-07-sqlite-room-performance-external-review.md
+
+## [2026-04-19] 12.4 Android 网络安全与 TLS 性能优化 — 知识盲区
+
+### 盲区描述
+1. **OkHttp 0-RTT 实战打通** — OkHttp 并无简单 API 开关启用 0-RTT，需通过 Conscrypt API（Conscrypt.setUseSessionTickets）干预 SSLSocket 创建，且需自行控制仅幂等请求发送 early data 防止重放攻击
+2. **平台级 ECH 对应用层 Socket 的透明代理机制** — Android 17 平台层 DNS 劫持/代理机制（Bionic 层改动）如何向 OkHttp 提供 ECH 透明传输
+
+### 重要程度
+高（0-RTT）/ 中（ECH 透明代理）
+
+### 建议研究方向
+- 研究 Conscrypt 与 OkHttp 结合的 0-RTT 最佳实践与拦截器配置，补充代码示例
+- 研究 Android 17 平台层的 DNS 劫持/代理机制
+
+### 关联章节
+- 12.3 网络性能深入
+
+### 外部 review 来源
+- Gemini 外部 review
+
+## [2026-04-19] 18.1 渲染管线概览 — 知识盲区
+
+### 盲区描述
+WebView 在 Android 14+ / Vulkan 启用后的 GL Functor 行为变化。HWUI 默认开启 Vulkan 渲染后，WebView 的传统 GL 绘制调用链（DrawGlInfo）如何通过 ANGLE 或过渡层完成适配。
+
+### 重要程度
+中
+
+### 建议研究方向
+- AOSP frameworks/webview/ 和 Chromium android_webview/ 源码
+- DrawGlInfo 结构体在不同 Android 版本的演进
+
+### 关联章节
+- 第 18 章 WebView 专题
+
+### 外部 review 来源
+- Gemini 外部 review
+
+## [2026-04-19] 18.2 Android View 标准链路 — 知识盲区
+
+### 盲区描述
+1. **BBQ 内部并发与锁竞争** — BLASTBufferQueue 内部处理 queueBuffer、acquireNextBuffer 和 transactionCallback 时存在的锁机制，极端情况可能导致 App 阻塞
+2. **VSync Phase Offset 设计** — DispSync / VsyncModulator 如何控制 App 和 SF 的唤醒时间差（App 通常早于 SF 唤醒），对 Triple Buffering 流水线优势至关重要
+
+### 重要程度
+高（BBQ 锁竞争）/ 中（Phase Offset）
+
+### 建议研究方向
+- 深入分析 BLASTBufferQueue.cpp 锁竞争场景
+- 研究 DispSync 如何为 App 和 SF 分配不同偏移量
+
+### 关联章节
+- 18.1 渲染管线概览
+- 2.3 VSync 机制
+
+### 外部 review 来源
+- Gemini 外部 review
+
+## [2026-04-19] 18.3 Android View 软件渲染 — 知识盲区
+
+### 盲区描述
+各家 GPU 供应商（Adreno, Mali）的 Gralloc/Mapper 对 CPU 映射 GraphicBuffer 时的 Cache 策略，以及这对 Surface.cpp::copyBlt 的具体性能影响数值。DMA-BUF 分配的 GraphicBuffer 通常为 uncached/write-combined，CPU 读写性能惩罚远高于普通 RAM。
+
+### 重要程度
+高
+
+### 建议研究方向
+- AOSP Gralloc 接口实现及实际 Trace 对比
+- 不同供应商的 SW_READ_OFTEN 标志下的 DMA-BUF Cache 行为
+
+### 关联章节
+- 2.13 BufferQueue 内存管理
+
+### 外部 review 来源
+- Gemini 外部 review
+
+## [2026-04-19] 18.4 Android View 混合渲染 — 知识盲区
+
+### 盲区描述
+1. **Android 14 SurfaceSyncGroup** — 跨窗口、多 Surface 动画中的具体编排流程，如何收集、等待、合并多个底层 Transaction
+2. **SurfaceView vs TextureView 性能边界** — 什么情况下必须回退到 TextureView（如需对视频进行 Shader 处理或 View 级层级穿插）
+
+### 重要程度
+高（SurfaceSyncGroup）/ 中（TextureView 边界）
+
+### 建议研究方向
+- 阅读 SurfaceSyncGroup.java，分析其多 Transaction 合并流程
+- SurfaceView/TextureView 混合渲染的实战选型决策树
+
+### 关联章节
+- 系统同步机制、动画子系统
+
+### 外部 review 来源
+- Gemini 外部 review
+
+## [2026-04-19] 18.5 Android View 多窗口链路 — 知识盲区
+
+### 盲区描述
+Vulkan 渲染后端在同进程多窗口切换时的底层耗时机制（区别于 EGL eglMakeCurrent）。Android 10+ 默认启用 Vulkan 渲染后，需研究 VulkanManager 对应的 Surface 切换逻辑（VkSwapchainKHR acquire/present 争抢）。
+
+### 重要程度
+中
+
+### 建议研究方向
+- AOSP hwui/renderthread/VulkanManager.cpp
+- Vulkan 多 Surface 场景下的 swapchain 管理
+
+### 关联章节
+- 第 2 部分底层图形 API 章节
+
+### 外部 review 来源
+- Gemini 外部 review

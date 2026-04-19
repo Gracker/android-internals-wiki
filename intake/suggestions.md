@@ -2444,3 +2444,66 @@
 - **建议**：修正数值范围，区分 Minor GC 与 Major/Full GC 的暂停时间差异
 - **review 日志**：logs/review/2026-04-19-14-review.md
 
+
+## [External Review] 12.4 Android 网络安全与 TLS 性能优化 — 2026-04-19
+- **类型**：源码锚点补充
+- **位置**：CT 验证机制段
+- **问题**：未给出 Conscrypt CT 检查核心类源码锚点
+- **建议**：补充 external/conscrypt/src/main/java/org/conscrypt/ct/CTVerifier.java 及 TrustManagerImpl.checkTrustedRecursive() 集成调用
+- **来源**：Gemini 外部 review
+
+## [External Review] 12.4 Android 网络安全与 TLS 性能优化 — 2026-04-19
+- **类型**：数据量化
+- **位置**：HTTP→HTTPS 重定向延迟
+- **问题**："额外增加 1-2 个 RTT" 缺乏体感量化
+- **建议**：补充弱网/4G 环境下重定向导致首屏 API 返回时间被拉长 100-300ms 的参考数据
+- **来源**：Gemini 外部 review
+
+## [External Review] 12.4 Android 网络安全与 TLS 性能优化 — 2026-04-19
+- **类型**：原理链完善
+- **位置**：ECH 性能影响段
+- **问题**：对 DoH/DoT 依赖只写结论，未提降级攻击
+- **建议**：补充一句话解释明文 DNS 下 HTTPS Record 被篡改/丢弃的降级攻击风险
+- **来源**：Gemini 外部 review
+
+## [External Review] 18.1 渲染管线概览 — 2026-04-19
+- **类型**：关键 API 提示
+- **位置**：典型模式对比 - Android View（软件）
+- **问题**：缺乏 Trace 视角的关键 API 提示
+- **建议**：补充 lockCanvas 和 unlockCanvasAndPost 的字眼，帮助分析人员在 Trace 中快速识别 UI 线程软件渲染
+- **来源**：Gemini 外部 review
+
+## [External Review] 18.1 渲染管线概览 — 2026-04-19
+- **类型**：表述严谨性
+- **位置**：Flutter 补充概览
+- **问题**：线程合并描述缺乏场景前提
+- **建议**：明确指出 Flutter UI/Platform 线程合并主要发生在依赖 Platform View 混合渲染的场景，以解决帧同步问题
+- **来源**：Gemini 外部 review
+
+## [External Review] 18.2 Android View 标准链路 — 2026-04-19
+- **类型**：版本差异覆盖
+- **位置**：18.2.4 Trace 视角 - SF 端 Slice
+- **问题**：仅列举 setTransactionState，未覆盖 Android 12+ 的新 Slice 名称
+- **建议**：补充 commit、applyTransactionState 等现代版本 Slice 名称
+- **来源**：Gemini 外部 review
+
+## [External Review] 18.3 Android View 软件渲染 — 2026-04-19
+- **类型**：描述严谨性
+- **位置**：18.3.4 Trace 视角
+- **问题**："几乎看不到 dequeueBuffer"表述不准
+- **建议**：修正为"dequeueBuffer 和 queueBuffer 被转移到 UI Thread 执行，出现在 lockCanvas/unlockCanvasAndPost 调用栈内"
+- **来源**：Gemini 外部 review
+
+## [External Review] 18.4 Android View 混合渲染 — 2026-04-19
+- **类型**：配图修正
+- **位置**：渲染时序图
+- **问题**：时序图中 UI->>UI: Draw（带裁剪区域）未能体现擦除/打洞
+- **建议**：修改为 'Draw（在宿主 Buffer 中以透明色挖洞）'
+- **来源**：Gemini 外部 review
+
+## [External Review] 18.5 Android View 多窗口链路 — 2026-04-19
+- **类型**：数据支撑
+- **位置**：Trace 视角 - eglMakeCurrent
+- **问题**：eglMakeCurrent 耗时缺乏量化体感
+- **建议**：补充低端机 2-5ms 耗时参考值，提示在 Trace 中搜索 eglMakeCurrent slice
+- **来源**：Gemini 外部 review
