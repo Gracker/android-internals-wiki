@@ -2,7 +2,7 @@
 title: ART 分代垃圾回收与 GC 暂停优化
 chapter: '4.8'
 section: '4.8'
-status: ready-for-review
+status: finalized
 drafted_date: '2026-04-06'
 applicable_versions: Android 14 (API 34) - Android 17 (API 37)
 last_verified: '2026-04-12'
@@ -51,11 +51,12 @@ tags:
 reviewed_date: "2026-04-19"
 reviewed_by: openclaw-task6
 review_notes: '2026-04-19 task6 re-review: pass-light-edit. L1/L2无需修改，文章质量良好。无需回炉。'
-pipeline_stage: task9_pending
+pipeline_stage: ready-to-publish
 task6_state: reviewed
 task6_result: pass-light-edit
-task9_state: pending
-task9_result: needs-rework
+task9_state: reviewed
+task9_result: pass-tech-review
+last_task9_at: "2026-04-20T04:20:38+08:00"
 task2b_state: fixed
 task2b_result: fixed
 ---

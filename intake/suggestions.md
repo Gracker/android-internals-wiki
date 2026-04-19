@@ -2704,3 +2704,40 @@
 - **问题**：版本表写 scatter-gather "将 Binder 数据拷贝从最多三次减少到一次"，但正文已解释 scatter-gather 是数据组织方式优化（省掉 gather-to-contiguous 中间整理步骤），不改变拷贝次数。基础 mmap 已是单次拷贝。两处表述矛盾。
 - **建议**：重写版本表中 scatter-gather 行为"引入 scatter-gather 优化（BC_TRANSACTION_SG），省掉 Parcel 数据的 gather-to-contiguous 中间整理步骤"，避免与正文矛盾。
 - **review 日志**：logs/review/2026-04-20-02-review.md
+
+
+## [Task9 Deep Review] 18.5 Android View 多窗口链路 — 2026-04-20
+- **类型**：源码准确性
+- **位置**：L45-L48 场景列表
+- **问题**：Dialog / BottomSheetDialog / PopupWindow 被写成“不是独立 Window（在某些实现中）”。AOSP `Dialog` 直接创建 `PhoneWindow`，`PopupWindow` 也会通过 `WindowManager.LayoutParams` + `invokePopup()` 添加独立窗口。当前说法会把多窗口候选的定义讲混。
+- **建议**：改成“它们都是独立窗口，只是 window type / sub-layer 不同”，不要再写“不是独立 Window”。
+
+## [Task9 Deep Review] 18.5 Android View 多窗口链路 — 2026-04-20
+- **类型**：交叉引用
+- **位置**：L269-L272 交叉引用块
+- **问题**：`../../part1-foundation/ch02-graphics-foundation/` 路径不存在，且“2.5 SurfaceFlinger”与全书章节编号不一致（应为 2.6）。
+- **建议**：分别改成 `../../part1-fundamentals/ch02-rendering/14-graphics-api-evolution.md` 与 `../../part1-fundamentals/ch02-rendering/06-surfaceflinger.md`，并把章节号修正为 2.6。
+
+## [Task9 Deep Review] 18.6 SurfaceView 直出链路 — 2026-04-20
+- **类型**：交叉引用
+- **位置**：L315-L321 交叉引用块
+- **问题**：`13-buffer-queue.md`、`06-surfaceflinger.md`、`14-graphics-api-evolution.md` 被写成当前目录相对路径，都会跳转失败。
+- **建议**：改成 `../../part1-fundamentals/ch02-rendering/13-buffer-queue.md`、`../../part1-fundamentals/ch02-rendering/06-surfaceflinger.md`、`../../part1-fundamentals/ch02-rendering/14-graphics-api-evolution.md`。
+
+## [Task9 Deep Review] 18.7 TextureView 合成链路 — 2026-04-20
+- **类型**：交叉引用
+- **位置**：L308-L312 交叉引用块
+- **问题**：底部把 BufferQueue 写成“2.1”，且 `../../part1-foundation/ch02-graphics-foundation/` 路径不存在，两个链接都会失效。
+- **建议**：把章节号改成 2.13，并改用 `../../part1-fundamentals/ch02-rendering/13-buffer-queue.md` 与 `../../part1-fundamentals/ch02-rendering/06-surfaceflinger.md`。
+
+## [Task9 Deep Review] 4.8 ART 分代垃圾回收与 GC 暂停优化 — 2026-04-20
+- **类型**：源码准确性
+- **位置**：L424-L428 避免 finalize()
+- **问题**：`Android 10+ 已经标记 finalize() 为 deprecated` 这一句没有对应到 Android API 参考或 AOSP libcore 的实际标注。当前 `Object#finalize()` 参考页仍只显示 Added in API 1，AOSP `libcore/.../java/lang/Object.java` 在 android-10.0.0_r1 与 android-16.0.0_r1 里也没有 `@Deprecated` 注解。把它写成 Android 10+ 的平台分界，容易让读者误以为这是 Android SDK 的明确弃用节点。
+- **建议**：改成更稳的表述：`finalize()` 长期被认为有性能和资源回收问题，应避免在高频对象上使用；如果要写“deprecated”背景，明确说明这是更广义的 Java finalization 弃用语境，不要写成 Android 10+ 的 SDK 版本边界。
+
+## [Task9 Deep Review] 10.6 内存抖动与频繁 GC — 2026-04-20
+- **类型**：版本差异
+- **位置**：L232-L243 Perfetto heapprofd
+- **问题**：heapprofd 段把“追踪 Native 和 Java 堆分配栈”写成统一能力，但 Perfetto 官方文档区分得更细：Java heap dump 需要 Android 11+；Java heap sampling / `--heaps art` 需要 Android 12+。当前 CLI 示例 `adb shell heapprofd --pid=<PID> --java` 没有写版本边界，容易让读者在 Android 11 设备上把 heap dump 与 sampling 能力混为一谈。
+- **建议**：把工具边界拆开写清：Android 11+ 可抓 Java heap dump；Android 12+ 才能用 heapprofd 的 Java sampling / `malloc,art`；Native heap profile 则是另一条 data source。必要时给出一行“这三类能力不要混用名词”的提示。
