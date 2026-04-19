@@ -1,12 +1,12 @@
 {
-  "generated_at": "2026-04-19T07:09:38+08:00",
+  "generated_at": "2026-04-19T08:02:35+08:00",
   "state_machine_version": "v2",
   "total_sections": 218,
   "metrics": {
     "total": 174,
     "unknown": 1,
     "ready-for-review": 173,
-    "last_updated": "2026-04-19T07:09:38+08:00",
+    "last_updated": "2026-04-19T08:02:35+08:00",
     "task2b_state_counts": {
       "idle": 41,
       "fixed": 125,
@@ -19,8 +19,8 @@
       "revisiting": 109
     },
     "task9_state_counts": {
-      "pending": 156,
-      "reviewed": 17,
+      "pending": 157,
+      "reviewed": 16,
       "fixed": 1
     },
     "pipeline_stage_counts": {
@@ -42,8 +42,8 @@
     "task6_reviewed": 64,
     "task6_pending": 1,
     "task9_unknown": 0,
-    "task9_pending": 156,
-    "task9_reviewed": 17,
+    "task9_pending": 157,
+    "task9_reviewed": 16,
     "ready-to-publish": 0,
     "finalized": 0,
     "task9_fixed": 1
@@ -69,8 +69,8 @@
     },
     "task9_state_counts": {
       "unknown": 36,
-      "reviewed": 19,
-      "pending": 162,
+      "reviewed": 18,
+      "pending": 163,
       "fixed": 1
     }
   },
@@ -257,11 +257,11 @@
       "status": "ready-for-review",
       "pipeline_stage": "task6_pending",
       "task6_state": "revisiting",
-      "task9_state": "reviewed",
+      "task9_state": "pending",
       "task2b_state": "fixed",
-      "reviewed_date": "2026-04-13",
+      "reviewed_date": "2026-04-19",
       "reviewed_by": "openclaw-task6",
-      "task6_result": "pass-light-edit",
+      "task6_result": "needs-rework",
       "section": "1.4",
       "task9_result": "pass-with-notes",
       "task2b_result": "fixed",

@@ -32,12 +32,12 @@ sources:
     path: "https://source.android.com/docs/core/perf/cached-apps-freezer"
 tags: [binder, ipc, aidl, oneway, 线程池, 锁竞争, perfetto]
 related_chapters: ["1.1", "2.5", "7.2", "8.2", "9.1"]
-pipeline_stage: task9_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: needs-rework
 task9_result: pass-with-notes
 last_task9_at: 2026-04-17T13:20:00
-task9_state: reviewed
+task9_state: pending
 task2b_result: fixed
 task2b_state: fixed
 ---
@@ -106,9 +106,11 @@ Binder 的设计目标是让跨进程调用看起来像本地函数调用。当�
 
 工作原理是这样的：每个使用 Binder 的进程在初始化时，会对 `/dev/binder` 调用 `mmap()`，在用户空间映射一块内存（默认约 1MB）。这块内存同时被内核的 Binder Driver 映射。当 Client 发送数据时，Binder Driver 只需要把 `Parcel` 数据拷贝到这块共享内存区域，Server 端进程就能直接读到它——不需要再从内核拷贝到 Server 的用户空间。
 
-严格地说，这不是真正的"零拷贝"，而是"单次拷贝"（single copy）。发送方仍然需要从自己的用户空间拷贝到共享区域，但接收方不需要再拷贝一次。Android 8（Oreo）进一步引入了 scatter-gather 优化，将拷贝次数进一步压缩。
+严格地说，Binder 的数据路径属于"单次拷贝"（single copy）。发送方仍然需要从自己的用户空间拷贝到共享区域，接收方不需要再拷贝一次。
 
-[存疑: "三次拷贝"的说法来源不明确。标准叙述是 Binder 通过 mmap 实现一次拷贝（相比传统 IPC 的两次）。scatter-gather 的优化是将多段数据的拼接从"先复制到连续缓冲再传输"改为直接 scatter-gather 传输，具体减少了哪一步需要对照 binder.c 源码确认。建议 Task 9 验证后修正措辞。]
+Android 8（Oreo）加入了 scatter-gather 事务（`BC_TRANSACTION_SG` / `BC_REPLY_SG`）。这里讨论的是另一层优化：Binder 的内核态 IPC 仍然是一次 `copy_from_user` 到目标进程的 Binder buffer，变化发生在发送端的数据组织方式。普通事务会先把分散对象整理进连续的 `Parcel` 缓冲区，再交给驱动复制；scatter-gather 会按照 offsets 和 `BINDER_TYPE_PTR` 描述的片段逐段复制，省掉额外的 gather-to-contiguous 中间整理。读 Binder 时，把 mmap 对应的 single copy 和 scatter-gather 对应的数据整理优化分开看，结论就不会打架。
+
+[已验证: AOSP android-mainline, include/uapi/linux/android/binder.h 中 `BC_TRANSACTION_SG` / `BC_REPLY_SG`; drivers/android/binder.c 中 `binder_transaction()` 的 offsets/object 逐段 copy 逻辑]
 
 这个 mmap 缓冲区的大小限制是 Binder 的一个重要约束。每个进程的所有 Binder 事务共享这块约 1MB 的缓冲区。如果一次性传输一个大 Bitmap 或一个超长列表，就可能撞到 `TransactionTooLargeException`。传输大数据应该使用 `SharedMemory`（基于 ashmem/memfd）或 `ParcelFileDescriptor`，只通过 Binder 传递文件描述符句柄。
 
@@ -264,28 +266,27 @@ Perfetto 提供两层 Binder 数据源：
 
 [来源: obsidian/Personal-Knowlodge/source/Android-Perfetto-10-Binder.md]
 
-### 用 SQL 统计锁竞争
+### 用 SQL 列出耗时最长的锁竞争事件
 
-如果已经熟悉 Perfetto SQL，可以用下面的查询统计 `system_server` 中 Java monitor 锁竞争的深度（同一把锁上有多少个线程在排队）：
+如果已经熟悉 Perfetto SQL，可以先用下面的查询把 `system_server` 中耗时最长的 Java monitor 锁竞争事件列出来，再沿着具体事件跳回 UI 看 owner、waiter 和调用栈：
 
 ```sql
-SELECT count(1) AS lock_depth, s.slice_id, s.ts, s.dur,
+SELECT thread.name AS waiter_thread,
+       s.slice_id,
+       s.ts,
+       s.dur,
        s.dur/1e6 AS dur_ms,
-       substr(s.name, 46, instr(s.name,')')-46) AS owner_tid
+       s.name AS contention_slice
 FROM slice s
 JOIN thread_track ON s.track_id = thread_track.id
 JOIN thread USING(utid)
 JOIN process USING(upid)
 WHERE process.name = 'system_server'
   AND s.name LIKE 'Lock contention on a monitor lock %'
-GROUP BY s.slice_id
-HAVING lock_depth > 0
 ORDER BY s.dur DESC;
 ```
 
-这段查询会找出 `system_server` 中所有锁竞争事件，按耗时排序。
-
-[存疑: 当前查询 GROUP BY s.slice_id 后 count(1) 恒为 1，无法真正统计"同一把锁上有多少线程在排队"。要统计锁竞争深度，需要基于锁标识（如 owner_tid）和时间重叠范围来计算。当前 SQL 的实际用途是"按耗时排序的锁竞争事件列表"，建议 Task 9 确认后修正注释或重写查询。]
+这段查询的输出是一份按耗时排序的锁竞争事件列表。它适合回答“哪些 monitor wait 最久”。如果还要估算同一把锁在同一时间窗里的排队深度，需要再按锁标识和时间重叠范围做二次聚合。
 
 [已验证: L2, Perfetto SQL 语法正确] [来源: obsidian/Personal-Knowlodge/source/Android-Perfetto-10-Binder.md]
 
