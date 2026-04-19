@@ -1988,3 +1988,15 @@
 - **问题**：mMessages == null 场景下，retarget 37 后的反射代码必崩，需提前告知读者
 - **建议**：在涉及反射访问 MessageQueue 内部字段时增加兼容性警告说明，明确 targetSdkVersion 37+ 的限制
 - **来源**：外部 AI review
+
+## [Task9 Deep Review] 2.16 Sync Fence 框架与帧同步机制 — 2026-04-19
+- **类型**：源码准确性
+- **位置**：L96-L108, L222-L224（`sw_sync` 边界）
+- **问题**：AOSP `libsync/sw_sync.h` 的头注释只明确 `sw_sync` “mainly intended for testing and should not be compiled into production kernels”，但正文把它扩展成“测试和特定软件管线 / fallback 工具”的通用表述，证据链超出了当前引用源码能直接支撑的范围。
+- **建议**：把正文收紧为“`sw_sync` 主要面向测试；是否在量产内核中可用取决于内核配置，不应默认当作生产路径 fallback”，如果要保留“特定软件管线”说法，补充实际 shipping 场景或内核配置依据。
+
+## [Task9 Deep Review] 2.16 Sync Fence 框架与帧同步机制 — 2026-04-19
+- **类型**：数据缺失
+- **位置**：L171-L187（Perfetto 诊断段）
+- **问题**：Perfetto 诊断部分只有 `[图：...]` 占位，没有真实 trace 片段、slice 名称或最小案例，导致“acquire fence 等 producer”和“release fence 等 consumer”的判断缺少可复现证据。
+- **建议**：至少补 1 组真实 trace 证据，给出同窗体 `queueBuffer()` / `latchBuffer` / `presentDisplay()` 的时间对齐关系，或附一段可直接复用的 Perfetto 观察 checklist。

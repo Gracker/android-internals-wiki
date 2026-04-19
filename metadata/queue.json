@@ -131,6 +131,26 @@
       "added_by": "external-ai-review",
       "added_at": "2026-04-19T09:09:54+08:00",
       "status": "pending"
+    },
+    {
+      "section": "2.16",
+      "section_title": "Sync Fence 框架与帧同步机制",
+      "priority": 85,
+      "reason": "[Deep Tech Review] GL release fence 生成链缺少 native-fence fallback 边界，Perfetto 诊断路径不闭环",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "原理断裂/源码准确性",
+          "location": "L205-L216",
+          "detail": "章节把 Android 14-16 的现代 GL 路径概括成 `FlushAndSubmit(surface)` + `EglManager::createReleaseFence()`，但紧邻源码分支没有交代：当 `createReleaseFence()` 返回 `EGLSyncKHR` 而不是 native fence fd 时，`SkiaOpenGLPipeline::flush()` 会执行 `eglClientWaitSyncKHR()` 并返回 `-1`。缺少这一边界后，读者会误以为 release fence 总能继续作为 fd 传递，也无法解释某些设备/驱动上为何表现为阻塞等待而不是可观测 fence。",
+          "suggestion": "在版本演进或现代 GL 路径处补上 native-fence / EGLSyncKHR fallback 分支，明确 `EGL_ANDROID_native_fence_sync` 支持与否如何影响返回值、等待位置和 Perfetto / logcat 观察面。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-04-19T09:59:00+08:00",
+      "status": "pending"
     }
   ],
   "processing": [],
