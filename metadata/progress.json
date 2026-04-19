@@ -1957,15 +1957,16 @@
       "path": "src/part2-performance/ch10-memory-perf/04-low-memory-impact.md",
       "status": "ready-for-review",
       "pipeline_stage": "task6_pending",
-      "task6_state": "revisiting",
+      "task6_state": "reviewed",
       "task9_state": "pending",
       "task2b_state": "fixed",
       "reviewed_date": "2026-04-16",
       "reviewed_by": "openclaw-task6",
       "section": "10.4",
       "task2b_result": "fixed",
-      "task6_result": "pass-light-edit",
-      "task9_result": "needs-rework"
+      "task6_result": "needs-rework",
+      "task9_result": "needs-rework",
+      "task6_review_date": "2026-04-19"
     },
     "src/part2-performance/ch10-memory-perf/05-case-studies.md": {
       "chapter": "10.5",

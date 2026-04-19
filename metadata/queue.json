@@ -1310,7 +1310,7 @@
     "section": "10.4",
     "section_title": "低内存对系统性能的影响",
     "priority": 95,
-    "reason": "[External Review] mm_events 描述错误（常驻 vs 按需启动），缺失 16KB Page、ZRAM Multi-Comp、MGLRU 核心特性",
+    "reason": "[External Review] mm_events 描述错误（常驻 vs 按需启动），缺失 16KB Page、ZRAM Multi-Comp、MGLRU 核心特性；ART GC 暂停时间数值需修正",
     "material_paths": [
       "logs/external-review/2026-04-19-11-04-low-memory-impact-external-review.md"
     ],
@@ -1336,6 +1336,13 @@
         "location": "MGLRU 描述",
         "detail": "提到 MGLRU 但未说明如何在 Trace 中量化其效果",
         "suggestion": "补充 /sys/kernel/mm/lru_gen/enabled 配置值及 Perfetto 中体现",
+        "evidence": []
+      },
+      {
+        "type": "数值准确性",
+        "location": "ART GC 低内存下的 GC 行为变化",
+        "detail": "原文描述 CC GC Young GC 暂停时间'通常在 1ms 以下'，外部 review 指出 Android 15 Generational CC 的 Minor GC 暂停目标通常为 1ms-3ms。需修正数值范围并区分 Minor GC 与 Major/Full GC",
+        "suggestion": "将'1ms 以下'修正为更准确的数值范围，补充 Major GC 在压力下的暂停时间可达 10ms+",
         "evidence": []
       }
     ],
