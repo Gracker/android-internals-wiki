@@ -12,7 +12,7 @@ gap_source: "官方文档+读者需求"
 gap_score: "15/20"
 drafted_by: "openclaw-task2a"
 drafted_date: "2026-04-10"
-last_verified: "2026-04-10"
+last_verified: "2026-04-20"
 last_verified_against: "Android 17 (API 37)"
 confidence: medium
 sources:
@@ -22,14 +22,14 @@ sources:
     path: "https://developer.android.com/studio/profile/power-profiler"
   - type: official
     path: "https://developer.android.com/topic/performance/batterystats-historian"
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
 reviewed_date: "2026-04-16"
-task9_state: reviewed
-task2b_state: pending
-pipeline_stage: task2b_pending
+task9_state: pending
+task2b_state: fixed
+task2b_result: fixed
 task9_result: needs-rework
 ---
 
@@ -198,7 +198,7 @@ adb shell dumpsys batterystats | grep -A 5 "Wake lock" | grep "com.example.app"
 2. 用 `adb shell dumpsys netstats` 查看网络流量详情
 3. 检查 App 的网络请求策略：是否有轮询？批量请求是否合并？
 
-**优化方向**：使用 WorkManager 替代手动的定时轮询；将多个小请求合并为一个批量请求；利用 `NetworkRequest` 的 `setInterval` 控制检查频率。
+**优化方向**：使用 WorkManager 或 JobScheduler 代替手写定时轮询，把多个小请求合并成批量请求。`NetworkRequest` 只负责声明网络能力和回调条件，不提供轮询频率控制。需要周期调度时，用 `PeriodicWorkRequestBuilder`、网络约束或服务器 push 来减少无线模块唤醒次数。
 
 ### 模式 3：GPS 持续活跃
 

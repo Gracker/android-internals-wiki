@@ -9,7 +9,7 @@ polish_date: "2026-04-09"
 polish_by: "task2b-polish"
 applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37)"
 last_verified: "2026-04-12"
-reviewed_date: "2026-04-12"
+reviewed_date: "2026-04-20"
 reviewed_by: "openclaw-task6"
 last_verified_against: "AOSP android-16.0.0_r1, developer.android.com reference, perfetto.dev stdlib docs"
 confidence: medium
@@ -38,11 +38,11 @@ sources:
     path: "frameworks/base/apex/jobscheduler/framework/java/android/app/job/JobScheduler.java"
 tags: [jobscheduler, workmanager, background-scheduling, power, doze, battery, wakelock, app-standby, quota]
 related_chapters: ["5.6", "5.8", "1.5", "11.2", "15.5"]
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: "task9_pending"
+task6_state: "reviewed"
 task9_state: pending
 task2b_state: fixed
-task6_result: needs-rework
+task6_result: "pass-light-edit"
 task9_result: needs-rework
 task2b_result: fixed
 ---
@@ -275,7 +275,7 @@ WorkManager.getInstance(context)
 
 [自动发现] 建议：轻量级的连续操作（如多步数据处理）优先考虑在单个 Worker 中顺序完成，而不是拆成链式 WorkRequest。
 
-以上内容覆盖了 JobScheduler 和 WorkManager 的核心调度机制。在实际开发中，还有一个难点一直存在：任务提交后，怎么知道它为什么没执行？Android 17 在这方面补上了重要的一块拼图。
+任务提交后为什么没执行？这是后台任务调试中最常见的问题。Android 16 / 17 提供了新的调试接口来回答这个问题。
 
 ## Android 16 / 17 的调试能力补强
 
@@ -415,7 +415,7 @@ Android Studio 提供了 **WorkManager Inspector**（View → Tool Windows → A
 
 [来源: 实战经验总结]
 
-技术层面的优化之外，还有一个现实维度需要考虑：Google Play Store 从 2026 年开始对后台行为实施惩罚性政策。如果 App 的后台 WakeLock 使用超标，不只是系统会限制执行——应用市场的分发也会受到影响。
+技术层面的优化之外，还要考虑一个现实因素：Google Play Store 从 2026 年开始对后台行为实施惩罚性政策。如果 App 的后台 WakeLock 使用超标，不只是系统会限制执行，应用市场的分发也会受到影响。
 
 ## Play Store 后台行为政策
 

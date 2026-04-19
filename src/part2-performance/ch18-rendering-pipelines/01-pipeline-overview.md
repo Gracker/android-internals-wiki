@@ -2,19 +2,24 @@
 title: "渲染链路分类与选择矩阵"
 chapter: "18.1"
 section: "18.1"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 9 (API 28) - Android 16 (API 36)"
+last_verified: "2026-04-20"
+last_verified_against: "AOSP android-11 BLASTBufferQueue / SurfaceFlinger notes + internal rendering chapters"
+confidence: medium
 tags: ["rendering-pipeline", "BLAST", "SurfaceFlinger", "HWUI", "SurfaceView", "TextureView", "Vulkan", "OpenGL ES"]
-related_chapters: ["2.1", "2.5", "2.6", "2.7", "2.14", "18.2", "18.3", "18.4", "18.5", "18.6", "18.7", "18.8", "18.9", "18.10"]
+related_chapters: ["2.5", "2.6", "2.7", "2.13", "2.14", "2.16", "18.2", "18.3", "18.4", "18.5", "18.6", "18.7", "18.8", "18.9", "18.10"]
 created_by: "rendering-pipelines-merge"
 created_date: "2026-04-09"
-pipeline_stage: task2b_pending
+pipeline_stage: ready-to-publish
 task6_state: reviewed
 task9_state: reviewed
-task9_result: needs-rework
+task9_result: pass-tech-review
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-04-20"
-task2b_state: pending
+task2b_state: fixed
+task2b_result: fixed
+last_task9_at: "2026-04-20T03:17:47+08:00"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-04-15"
 task6_result: pass-light-edit
@@ -46,16 +51,18 @@ Android 图形栈在过去几年经历了系统性重构。理解版本差异是
 
 | Android 版本 | 常见主链路 | 关键特性 |
 |:---|:---|:---|
-| **Android 16** (API 36) | BLAST + 持续演进的 FrameTimeline / ARR / AVP 能力 | ARR API 继续演进，部分图形 API 和着色器能力增强 [已验证: Android 16 Developer Preview 文档] |
-| **Android 15** (API 35) | BLAST + Vulkan 作为主低层图形 API + ANGLE 可选层 | Android Vulkan Profile (AVP) / ANGLE adoption trend [已验证: Android 15 API 变更] |
-| **Android 14** (API 34) | BLAST + HardwareBufferRenderer 等现代接口 | 现代软件渲染 API、SurfaceControl/Transaction 能力继续完善 |
-| **Android 12-13** (API 31-33) | BLAST 成熟期 | FrameTimeline、Transaction/合成可观测性增强 |
-| **Android 10-11** (API 29-30) | 过渡期：Legacy BufferQueue 与 BLAST/SurfaceControl 共存 | BLASTBufferQueue、SurfaceControl NDK 引入 [已验证: Android 10/11 Release Notes] |
-| **Android 9 及以下** | Legacy BufferQueue | 传统 queueBuffer 模式，Buffer 需经 Binder 传给 SF |
+| **Android 16** (API 36) | BLAST + 持续演进的 FrameTimeline / ARR / AVP 能力 | ARR 能力查询与现代图形 API 继续扩展 [已验证: Android 16 Developer Preview 文档] |
+| **Android 14-15** (API 34-35) | BLAST + 成熟的 SurfaceControl / FrameTimeline 体系 | HardwareBufferRenderer、FrameTimeline、现代图层事务接口继续完善 |
+| **Android 12-13** (API 31-33) | BLAST 稳定期 | FrameTimeline 成为常用观测入口，Transaction / 合成可观测性更完整 |
+| **Android 11** (API 30) | App View 默认 BLAST 提交流程 | `BLASTBufferQueue` 进入 AOSP 主线，ViewRootImpl 默认通过 `SurfaceControl.Transaction` 提交 buffer 与窗口状态 |
+| **Android 10** (API 29) | 过渡期，App View 仍以 Legacy BufferQueue 为主 | `SurfaceControl` / Transaction 能力扩展，部分系统侧窗口场景开始向新提交流程过渡 |
+| **Android 9 及以下** | Legacy BufferQueue | `queueBuffer` / `IGraphicBufferProducer` 是常态，App 侧看不到 BLAST 相关 slice |
 
-**关键转折点**：Android 10 引入了 BLASTBufferQueue，将 Buffer 的"消费"行为从 SurfaceFlinger 侧挪到了 App 进程侧。这意味着 App 不再需要通过 Binder IPC 把 Buffer 交给 SF，而是直接在本地构造 `SurfaceControl.Transaction` 提交。这一变化在 Trace 中最直观的体现是：Android 10+ 的 App 进程内开始出现 `BLASTBufferQueue` 相关的 slice，而更早版本中这些操作发生在 `Binder` 线程上。
+**关键转折点**：BLAST 改的是提交通道，不是消费位置。Android 11 之后，App 侧的 ViewRootImpl / RenderThread 会把绘制好的 buffer 和图层几何状态封装进 `SurfaceControl.Transaction`，再通过 `apply()` 交给 SurfaceFlinger。SurfaceFlinger 侧的 `BufferStateLayer` 仍负责 `acquireBuffer`、latch 和合成。App 还是 producer，SurfaceFlinger 还是 consumer。
 
-如果你在分析一台 Android 9 设备的 Trace，看到的是一套完全不同的时序模型；而到了 Android 12+，FrameTimeline 又引入了 Expected vs Actual 的 Jank 判定框架（详见 [18.2 Android View 标准链路](02-android-view-standard.md)）。**版本是 Trace 分析的第一变量。**
+放到 Trace 里看，App 进程新增的 `BLASTBufferQueue` slice 代表本地打包 transaction；真正的消费与合成仍然在 SurfaceFlinger 进程里。Android 10 的 Trace 处在过渡期，很多 App View 场景仍然更像 Legacy BufferQueue。
+
+[已验证: external review archive + 2.5 节 BLAST 验证记录 + AOSP `frameworks/native/services/surfaceflinger/BufferStateLayer.cpp`]
 
 ## 典型模式对比
 
@@ -64,7 +71,7 @@ Android 图形栈在过去几年经历了系统性重构。理解版本差异是
 | 模式 | 核心组件 | 生产者线程 | 消费者 | 核心特点 | 本章章节 |
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | **Android View（标准）** | RecyclerView + HWUI | UI Thread + RenderThread | SurfaceFlinger | 最通用，绝大多数 App 的默认链路 | [18.2](02-android-view-standard.md) |
-| **Android View（软件）** | Canvas + Skia | UI Thread（纯 CPU） | SurfaceFlinger | 绕过 GPU，CPU 光栅化，已少见 | [18.3](03-android-view-software.md) |
+| **Android View（软件）** | Canvas + Skia | UI Thread（纯 CPU） | SurfaceFlinger | UI 线程用 `lockCanvas()` / `unlockCanvasAndPost()` 直接写 GraphicBuffer，绕过 RenderThread | [18.3](03-android-view-software.md) |
 | **Android View（混合）** | Recycler + SurfaceView | UI Thread + Producer Thread | SurfaceFlinger | 并行双管线，视频流/直播场景 | [18.4](04-android-view-mixed.md) |
 | **Android View（多窗口）** | Activity + Dialog | UI Thread（串行处理两个窗口） | SurfaceFlinger | 单进程双窗口，主线程串行瓶颈 | [18.5](05-android-view-multi-window.md) |
 | **SurfaceView** | SurfaceView + EGL | Dedicated Thread | SurfaceFlinger | 独立 Surface 直出，低延迟 | [18.6](06-surfaceview.md) |
@@ -78,8 +85,8 @@ Android 图形栈在过去几年经历了系统性重构。理解版本差异是
 
 1. **看线程**：如果只有 UI Thread 和 RenderThread 活动 → 标准链路。如果有独立的 GL Thread 或 Producer Thread → 可能是 OpenGL ES 或 SurfaceView 链路。
 2. **看 Surface 数量**：`dumpsys SurfaceFlinger` 或 Perfetto 的 SurfaceFlinger track 中，如果 App 对应两个 Layer → SurfaceView 或混合渲染。
-3. **看 Buffer 提交方式**：`queueBuffer` 出现在 RenderThread → 标准 HWUI；出现在独立线程 → 需要进一步判断是 GLES 还是 Vulkan。
-4. **看 CPU 占用**：UI Thread 长时间满载且无 RenderThread 活动 → 软件渲染。
+3. **看 Buffer 提交方式**：Android 11+ 的标准 View 常在 RenderThread / ViewRootImpl 一侧看到 `BLASTBufferQueue`、`SurfaceControl.Transaction::apply()`；Android 9-10 更常见的是传统 `queueBuffer` / Binder 提交。
+4. **看 CPU 占用**：UI Thread 长时间满载且看不到 RenderThread 提交，Trace 中还伴随 `lockCanvas()` / `unlockCanvasAndPost()`，通常是软件渲染。
 
 ## 本章阅读指南
 
@@ -128,7 +135,7 @@ WebView 的链路选择不是 App 开发者能直接控制的，它取决于 Chr
 
 ## 补充：Flutter 渲染架构（概览）
 
-Flutter 在 Android 上的渲染架构有其独特的线程模型。Flutter 3.29+ 将 UI Thread 和 Platform Thread 合并，简化了线程切换开销。Flutter 的 Platform View 集成方式（SurfaceView vs TextureView）会直接影响最终链路选择：
+Flutter 在 Android 上的渲染架构有自己的线程分工。纯 Flutter 渲染时，raster 线程和 platform 线程的分工仍然存在。Flutter 3.29+ 在 Platform View 混合场景里把 UI Task Runner 和 Platform Task Runner 收到同一条主线程执行，目标是减少平台视图组合时的同步闪烁和层级错位。Platform View 集成方式（SurfaceView vs TextureView）会直接影响最终渲染路径：
 
 - **Flutter SurfaceView**：走 SurfaceView 直出链路（见 [18.6](06-surfaceview.md)），适合全屏 Flutter 页面
 - **Flutter TextureView**：走 App 侧合成链路（见 [18.7](07-textureview.md)），适合需要与原生 View 混合的场景
@@ -137,4 +144,4 @@ Flutter 在 Android 上的渲染架构有其独特的线程模型。Flutter 3.29
 
 ---
 
-> **交叉引用**：本章讨论的是"链路实战"，即各种场景下 Buffer 的流转路径。涉及 BufferQueue 的内部机制、Fence 同步原理、SurfaceFlinger 合成策略等底层知识，请参考第 2 章对应章节（[2.1 BufferQueue 机制](../../part2-performance/../part1-foundation/ch02-graphics-foundation/)、[2.5 SurfaceFlinger](../../part2-performance/../part1-foundation/ch02-graphics-foundation/)、[2.14 图形 API 演进](../../part2-performance/../part1-foundation/ch02-graphics-foundation/)）。
+> **交叉引用**：本章讨论的是不同场景下 buffer 的流转方式。App 侧的提交线程可先看 [2.5 MainThread 与 RenderThread 协作](../../part1-fundamentals/ch02-rendering/05-main-render-thread.md)，SurfaceFlinger 的合成职责见 [2.6 SurfaceFlinger 与合成](../../part1-fundamentals/ch02-rendering/06-surfaceflinger.md)，BufferQueue 与 BLAST 的底层队列机制见 [2.13 图形缓冲区管理](../../part1-fundamentals/ch02-rendering/13-buffer-queue.md)，Fence 同步见 [2.16 Sync Fence 框架与帧同步机制](../../part1-fundamentals/ch02-rendering/16-sync-fence.md)，图形 API 选型见 [2.14 图形 API 演进](../../part1-fundamentals/ch02-rendering/14-graphics-api-evolution.md)。
