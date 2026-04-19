@@ -4310,5 +4310,14 @@
     "task2b_result": "fixed",
     "last_task9_at": "2026-04-19T14:37:48+08:00",
     "last_task2b_at": "2026-04-19T15:09:55+08:00"
+  },
+  "14.7_profiling-manager": {
+    "file": "src/part3-tools/ch14-other-tools/07-profiling-manager.md",
+    "status": "reviewed-by-task6",
+    "task6_result": "needs-rework",
+    "task6_reviewed_date": "2026-04-19",
+    "task6_review_log": "logs/review/2026-04-19-15-review.md",
+    "task6_issues": 3,
+    "pipeline_stage": "task2b_pending"
   }
 }

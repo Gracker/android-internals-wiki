@@ -2514,3 +2514,26 @@
 - **位置**：§2.17.6 验证路径（Perfetto / FrameStatistics）
 - **问题**：当前章节给了 SQL 和统计项名称，但仍停留在“应当看哪些轨道/直方图”的层面，没有给出一组真实 trace 截图、FrameStatistics logcat 样例或 SwappyStats 读数，读者很难校准 BufferStuffing、lateFrames、idleFrames 在真实样本里应该长什么样。
 - **建议**：补 1 组最小证据链，至少包含一张启用前后对比图，或 1 段 FrameStatistics / SwappyStats 样例输出，并把结论回连到 buffered frames、jank_type 或某个 histogram 字段。
+
+## [Task6 Review] 14.7 ProfilingManager — 2026-04-19
+
+### 问题 1
+- **类型**：需重写
+- **位置**：全文多处（四个 RequestBuilder 的讲解段落）
+- **问题**：章节整体风格偏向 API 文档，像 Android Developers 官方文档的中文扩展版。四个 RequestBuilder（SystemTrace / JavaHeapDump / HeapProfile / StackSampling）的讲解方式几乎相同：建 Builder → 设参数 → 调 requestProfiling → 处理回调。缺少每个类型的独特实战视角和"为什么这样设计"的设计意图解读。
+- **建议**：参考 writing-guide.md 类型 C（工具使用篇）结构，补充：(1) 每种 profiling 类型适合什么场景、不适合什么场景的判断框架；(2) RequestBuilder 为什么选择 Consumer 回调模式；(3) 精简重复的代码模板，只保留各类型的差异部分。
+- **review 日志**：logs/review/2026-04-19-15-review.md
+
+### 问题 2
+- **类型**：需重写
+- **位置**：全文代码块（SystemTraceExample、HeapDump/HeapProfile/StackSampling 示例、ANR 触发器示例等）
+- **问题**：多个代码示例包含完整的 import 语句、类定义、辅助方法，每个 30-50 行。按 writing-guide.md 规范，正文只保留骨架和关键路径，过长代码应放附录。连续多个长代码块导致节奏偏平，读者容易跳过。
+- **建议**：精简代码到 10-15 行的核心逻辑，去掉 import 和样板代码。用注释标明省略部分。保留关键参数和调用逻辑即可。
+- **review 日志**：logs/review/2026-04-19-15-review.md
+
+### 问题 3
+- **类型**：需补充
+- **位置**：frontmatter
+- **问题**：缺少 section、section_title、applicable_versions、sources 字段。
+- **建议**：补充 section: "14.7", section_title: "ProfilingManager", applicable_versions: "Android 15+（System Triggered Profiling 16+）", sources 列出主要素材来源。
+- **review 日志**：logs/review/2026-04-19-15-review.md
