@@ -30,12 +30,11 @@ related_chapters:
 reviewed_date: "2026-04-19"
 reviewed_by: openclaw-task6
 review_notes: '2026-04-19 task6 re-review: pass-light-edit. L1小修7处(删除旧稿/编辑痕迹)。无需回炉。'
-pipeline_stage: task9_pending
+pipeline_stage: task2b_pending
 task6_state: reviewed
 task6_result: pass-light-edit
-task9_state: pending
-task2b_result: fixed
-task2b_state: fixed
+task9_state: reviewed
+task2b_state: pending
 task9_result: needs-rework
 ---
 # 输入事件拦截与安全机制
