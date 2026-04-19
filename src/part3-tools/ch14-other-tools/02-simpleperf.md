@@ -2,20 +2,22 @@
 title: Simpleperf
 chapter: '14.2'
 section: '14.2'
-status: ready-for-review
+status: finalized
 reviewed_date: '2026-04-15'
 reviewed_by: openclaw-task6
 drafted_date: '2026-04-03'
 drafted_by: openclaw-task2a
 applicable_versions: Android 5.0 (API 21) - Android 16 (API 36)
-last_verified: '2026-04-03'
-last_verified_against: AOSP NDK simpleperf + official documentation
-confidence: medium
+last_verified: '2026-04-20'
+last_verified_against: NDK r29 simpleperf docs + Perfetto external format docs
+confidence: high
 sources:
 - type: official
-  path: android.googlesource.com/platform/system/extras/+/master/simpleperf/README.md
+  path: android.googlesource.com/platform/system/extras/+/master/simpleperf/doc/README.md
 - type: official
   path: developer.android.com/ndk/guides/simpleperf
+- type: official
+  path: perfetto.dev/docs/getting-started/other-formats
 - type: blog
   path: 'Web research: simpleperf usage guide 2025-2026'
 tags:
@@ -29,12 +31,16 @@ related_chapters:
 - '13.2'
 - '13.6'
 - '14.1'
-pipeline_stage: task2b_pending
+pipeline_stage: ready-to-publish
 task6_state: reviewed
 task9_state: reviewed
-task2b_state: pending
+task2b_state: fixed
 task6_result: pass-light-edit
-task9_result: needs-rework
+task9_result: pass-tech-review
+task2b_result: fixed
+task9_reviewed_by: "openclaw-task9"
+task9_reviewed_date: "2026-04-20"
+last_task9_at: "2026-04-20T03:17:47+08:00"
 ---
 # Simpleperf
 
@@ -69,7 +75,7 @@ task9_result: needs-rework
 
 这时候就需要 CPU profiling 工具了。Android Studio Profiler 的 Callstack Sample 功能底层用的就是 Simpleperf（详见 14.1 节），但 IDE 集成的方案有时不够灵活——比如需要在 CI 环境中自动采集、需要 profiling 系统进程、或者需要使用特定的硬件 PMU 事件做深度分析。这些场景下，命令行的 Simpleperf 是不可替代的。
 
-Simpleperf 是 Android NDK 中自带的 CPU profiling 工具，它的设计思路来源于 Linux 的 `perf` 工具，但针对 Android 做了大量适配：能识别 APK 内嵌的 so 库、支持 Java/Kotlin 代码的采样（Android 9+）、能生成带符号解析的 HTML 报告。如果我们在 Linux 上用过 `perf record` + `perf report` 的工作流，上手 Simpleperf 会非常自然。
+Simpleperf 是 Android NDK 中自带的 CPU profiling 工具，它的设计思路来源于 Linux 的 `perf` 工具，但针对 Android 做了大量适配：能识别 APK 内嵌的 so 库、能生成带符号解析的 HTML 报告，Android 9+ 还能直接采样解释执行和 JIT 的 Java/Kotlin 栈。Android 7-8 对 Java 层的支持还停留在 fully compiled code，Android 5-6 基本以 Native/C++ 采样为主。如果我们在 Linux 上用过 `perf record` + `perf report` 的工作流，上手 Simpleperf 会非常自然。
 
 [已验证: 官方文档, developer.android.com/ndk/guides/simpleperf]
 
@@ -89,13 +95,26 @@ Simpleperf 基于 Linux 内核的 `perf_event_open` 系统调用。这个系统�
 
 ### 准备工作
 
-使用 Simpleperf 之前，需要满足几个前提条件：
+使用 Simpleperf 之前，需要先确认设备与 App 是否满足采样权限。
 
-首先是 NDK 环境。Simpleperf 的可执行文件在 NDK 目录的 `simpleperf/` 子目录下，随 NDK 一起安装。确认 NDK 已配置好即可。
+NDK 环境要先就位。Simpleperf 的可执行文件在 NDK 目录的 `simpleperf/` 子目录下，随 NDK 一起安装。
 
-其次是被 profiling 的 App 需要是 debuggable 或 profileable 的。对于日常开发，debug build 天然是 debuggable 的。但如果需要在接近 release 的环境下分析性能（推荐做法），可以在 `AndroidManifest.xml` 中声明 `<profileable android:shell="true" />`，这样即使是 release build，也可以通过 shell 命令进行 profiling，而且开销比 debuggable 模式更低。
+App 侧的权限边界要按版本看。debug build 自带 `debuggable`，本地排查最省事。release build 的工作流从 Android 10 开始明显变好，可以在 `AndroidManifest.xml` 里声明 `<profileable android:shell="true" />`，adb 下发的 simpleperf 会转调系统镜像里的 simpleperf 做采样。Android 8-9 如果没有 root，常见做法是保留 `debuggable` 并配合 `wrap.sh`；再早的版本，或者需要看系统进程、内核栈时，通常要 root 或 userdebug / eng 设备。
 
 [已验证: 官方文档, developer.android.com/topic/performance/profileable]
+
+### 版本能力边界
+
+| Android 版本 | Java/Kotlin 栈 | release build 入口 | 常见限制 |
+|------|----------------|--------------------|----------|
+| Android 5-6 | 以 Native/C++ 为主，Java 栈基本不可用 | debuggable 或 root | Android 7 之前的内核经常过旧，DWARF call graph 能力也更受限 |
+| Android 7-8 | 只支持 fully compiled Java | debuggable；Android 8 release 常配合 `wrap.sh`；root 更稳妥 | 解释执行与 JIT Java 栈还拿不到 |
+| Android 9 | 支持 interpreted / JIT / compiled Java | debuggable 或 root | `profileable from shell` 还没进入公开工作流 |
+| Android 10+ | 支持 interpreted / JIT / compiled Java | debug build，或声明 `<profileable android:shell="true" />` 的 release build | 非 root 设备仍受 shell / profileable 边界限制 |
+
+`--trace-offcpu` 还取决于内核能力，文档给出的门槛是 kernel 4.2+。PMU 事件是否可用，则受 SoC 和 kernel 配置影响。
+
+[已验证: NDK simpleperf `doc/README.md` + `doc/android_application_profiling.md`]
 
 ### simpleperf stat：快速查看事件计数
 
@@ -186,13 +205,15 @@ Simpleperf 的一大优势在于它不仅能采样 CPU 时间，还能利用 ARM
 
 ### 软件事件：cpu-clock 和 task-clock
 
-默认情况下，`simpleperf record` 使用 `cpu-cycles` 事件采样。但我们也经常看到 `cpu-clock` 和 `task-clock`：
+默认情况下，`simpleperf record` 使用 `cpu-cycles` 事件采样。但在按时间看热点或做 off-CPU 分析时，`cpu-clock` 和 `task-clock` 更常见：
 
-- **cpu-cycles**：CPU 周期数。这是最常用的采样事件，直接反映"CPU 在这个函数上花了多少个时钟周期"。适合定位 CPU 密集型的热点。
-- **cpu-clock**（task-clock 的别名）：跟踪线程在 CPU 上的运行时间（以纳秒为单位）。与 cpu-cycles 的区别是：cpu-clock 不关心 CPU 频率，纯粹按时间采样。
-- **task-clock**：与 cpu-clock 类似，但还包括线程等待 CPU 调度的时间。
+- **cpu-cycles**：CPU 周期数。它直接反映某段代码消耗了多少时钟周期，适合找 CPU 密集型热点。
+- **task-clock**：目标 task 真正被调度运行的 on-CPU 时间，单位纳秒。它只在目标线程占用 CPU 时累计。
+- **cpu-clock**：软件时钟事件，sample period 表示经过的纳秒数。Simpleperf 在 `--trace-offcpu` 模式下会用它生成 on-CPU 样本。
 
-日常分析中，用默认的 cpu-cycles 就足够了。如果我们需要精确到"时间"而非"周期"，可以改用 task-clock。
+`task-clock` 和 `cpu-clock` 都是时间型事件。它们单独使用时只能描述 on-CPU 样本，阻塞、等待 I/O、等锁、被别的线程抢占出去的那段时间，要靠 `--trace-offcpu` 追加的 `sched_switch` 样本和 context switch 记录来分析。
+
+只想找 CPU 热点时，默认的 `cpu-cycles` 就够用。要按时间观察线程执行，或需要把 on-CPU / off-CPU 一起看时，再切到 `task-clock` 或 `cpu-clock`。
 
 ### 硬件 PMU 事件
 
@@ -344,17 +365,19 @@ python <ndk-path>/simpleperf/binary_cache_builder.py \
 
 ### off-CPU Profiling
 
-除了分析"CPU 在忙什么"，有时候我们还需要分析"线程在等什么"。`--trace-offcpu` 选项可以同时记录线程离开 CPU 的时间：
+除了分析"CPU 在忙什么"，有时候我们还要看线程离开 CPU 以后去了哪里。`--trace-offcpu` 会在 on-CPU samples 之外，再记录 `sched:sched_switch` 和 context switch 数据：
 
 ```bash
 python <ndk-path>/simpleperf/app_profiler.py \
     --app com.example.myapp \
-    -r "-g --duration 10 --trace-offcpu"
+    -r "-g -e cpu-clock:u --duration 10 --trace-offcpu"
 ```
 
-启用后，报告中会区分 on-CPU 时间和 off-CPU 时间。如果某个函数的 off-CPU 时间异常高，说明线程在执行这个函数期间被阻塞了（比如等锁、等 I/O、等 Binder 返回）。这对于分析 ANR 和响应速度问题非常有用——因为很多时候主线程的"慢"不是因为 CPU 忙不过来，而是因为被某个阻塞操作卡住了。
+`--trace-offcpu` 只允许和 `cpu-clock` 或 `task-clock` 搭配使用，文档示例默认用 `cpu-clock`。off-CPU 时间覆盖的是线程离开 CPU 到再次被调度回来之间的整段区间，其中既可能是等锁、等 I/O、等 Binder，也可能只是被其他线程抢占。
 
-[已验证: 官方文档, android.googlesource.com NDK simpleperf off-cpu]
+报告阶段可以切到 `on-cpu`、`off-cpu`、`on-off-cpu` 或 `mixed-on-off-cpu` 四种视图。分析 ANR、长尾卡顿、线程池饥饿时，这类样本很有用。这项能力还依赖 kernel 4.2+。
+
+[已验证: NDK simpleperf `doc/executable_commands_reference.md` --trace-offcpu 段]
 [待补充: off-CPU profiling 的火焰图解读示例，标注 on/off 区域的对比]
 
 ## 内核符号解析与 kallsyms
@@ -402,11 +425,15 @@ profileable 模式下，Simpleperf 只能采集 CPU 采样数据，无法录制 
 
 ## 在 Perfetto 中的表现
 
-虽然 Simpleperf 自成体系，但在某些场景下我们需要把 Simpleperf 的数据和 Perfetto Trace 结合分析。Perfetto 的高级用法（13.7 节）中提到的 `linux.perf` 数据源，本质上就是在 Perfetto Trace 中集成了 Simpleperf 的采样能力。
+虽然 Simpleperf 自成体系，但有些场景需要把 CPU 采样放到 Perfetto 里一起看。这里要把"采样数据"和"导入格式"分开理解：
 
-当在 Perfetto UI 中启用 callstack sampling 后，Trace 中会出现一个 `CPU Profile` 的 flamegraph 图标，点击即可查看火焰图。这个火焰图的数据来源和 Simpleperf 是同一个内核接口（`perf_event_open`），只是采集和展示框架不同。
+- **Perfetto UI 的时间顺序视图**：用 `gecko_profile_generator.py` 把 `perf.data` 转成 Gecko JSON，再拖到 `ui.perfetto.dev`。
+- **Perfetto / FlameGraph / Speedscope 共用的 perf script 入口**：用 `report_sample.py` 导出文本格式。
+- **Perfetto Trace Processor 直接解析 simpleperf proto**：用 `simpleperf report-sample --protobuf -i perf.data -o report_sample.trace` 导出。
 
-反过来，如果我们已经用 Simpleperf 采集了 `perf.data`，也可以通过 Perfetto 的 `trace_processor` 导入分析——虽然这不如直接用 Simpleperf 自带的报告工具方便。
+`perf.data` 自己也能被部分工具直接打开，但符号化、反混淆和线程聚合通常没有前两条路径稳定。日常分析优先选 `gecko_profile_generator.py` 或 `report_sample.py`；要给 Perfetto 的 profiling importer / Trace Processor 读，再用 `report-sample --protobuf`。
+
+[已验证: Perfetto `other-formats` 文档 + NDK simpleperf `view_the_profile.md` / `scripts_reference.md`]
 
 [图：Perfetto UI 中的 CPU Callstack 视图，标注火焰图入口和数据来源说明]
 

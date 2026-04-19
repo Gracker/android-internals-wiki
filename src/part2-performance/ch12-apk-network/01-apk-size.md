@@ -5,16 +5,16 @@ chapter: "12.1"
 status: ready-for-review
 drafted_date: "2026-04-03"
 drafted_by: "openclaw-task2a"
-reviewed_date: "2026-04-10"
+reviewed_date: "2026-04-20"
 reviewed_by: "openclaw-task6"
-task6_result: pass-light-edit
+task6_result: "pass-light-edit"
 task6_reviewed_date: "2026-04-16"
 polish_count: 1
 polish_date: "2026-04-10"
 polish_by: "task2b-polish"
 applicable_versions: "Android 8 (API 26) - Android 16 (API 36)"
-last_verified: "2026-04-03"
-last_verified_against: "AGP 8.7 / R8 default"
+last_verified: "2026-04-20"
+last_verified_against: "AGP 8.7 / R8 default + AGP 8.12.0 release notes"
 confidence: medium
 sources:
   - type: official
@@ -29,10 +29,11 @@ sources:
     path: "得物技术《包体积：Layout 二进制文件裁剪优化》2023-09"
 tags: [apk, r8, proguard, app-bundle, resource-optimization, native-libs, dex, code-shrinking, webp, abi-filter, dynamic-feature, apk-analyzer]
 related_chapters: ["8.3", "14.1", "15.6"]
-pipeline_stage: task9_pending
-task6_state: reviewed
+pipeline_stage: "task9_pending"
+task6_state: "reviewed"
 task9_state: pending
-task2b_state: idle
+task2b_state: fixed
+task2b_result: fixed
 ---
 
 # APK 体积优化
@@ -53,7 +54,7 @@ task2b_state: idle
 
 **Dex 文件（classes.dex, classes2.dex, ...）** 是编译后的 Dalvik 字节码。所有 Kotlin/Java 代码——包括业务代码、AndroidX 库、第三方 SDK——最终都会编译进 dex 文件。一个中等规模的 App，dex 通常占总大小的 30%-50%。当方法数超过 65536（即一个 dex 文件的理论上限）时，Gradle 会自动进行多 dex 分包，产生 classes2.dex、classes3.dex 等文件。
 
-**resources.arsc** 是资源索引表。它记录了所有资源 ID 到具体资源的映射关系——比如 `R.string.app_name` 对应哪个字符串值，`R.drawable.icon` 对应哪个 drawable 资源。这个文件不大（通常几百 KB 到几 MB），但它是资源加载的入口点。资源混淆工具（如 AndResGuard）的核心优化目标之一就是缩短这个表中的字符串条目。
+**resources.arsc** 是资源索引表。把它看成一张总目录更接近实际实现。文件里至少有三层和体积直接相关的字符串池：全局字符串池、每个 `ResTable_package` 下的 Type String Pool（`string`、`layout`、`drawable` 这类资源类型名），以及 Key String Pool（`app_name`、`main_title` 这类 entry 名称）。系统根据资源 ID 定位 package、type、entry 后，再回到这些池和对应的类型块取元数据。AndResGuard 这类工具压缩 `resources.arsc` 时，主要就是缩短 Type String Pool 和 Key String Pool 里的字符串条目，资源表本身和内存映射开销也会跟着下降。
 
 **res/ 目录**包含编译后的二进制资源文件——布局 XML 的二进制编译版、图片资源、颜色值等。Android 构建工具会把 XML 布局文件编译成二进制格式（AXML），这不是普通的文本 XML。得物技术团队曾经通过裁剪二进制 XML 中的冗余字段（如 Namespace 声明、重复的属性名）实现了单个 Layout 文件体积缩减约 40%[已验证: 来源见 Cubox/包体积：Layout 二进制文件裁剪优化｜得物技术-2023-09-18.md]。
 
@@ -152,7 +153,7 @@ data class ApiResponse(
 
 AGP 8.0 开始，R8 Full Mode 成为默认行为。Full Mode 比 compatibility mode 更激进——它会改变类的可见性（把 public 改为 package-private）、内联短方法、合并只有单一实现的接口。如果项目是从很早的 AGP 版本迁移过来的，检查 `gradle.properties` 里有没有 `android.enableR8.fullMode=false`，如果有就删掉这一行。
 
-AGP 8.12.0 引入了**优化的资源缩减**（Optimized Resource Shrinking），把资源缩减逻辑也整合进了 R8 的优化管线。启用方式：
+本章前面的 `isMinifyEnabled` / `isShrinkResources` 配置以 AGP 8.7 为基线。升级到 AGP 8.12.0+ 后，还可以打开**优化的资源缩减**（Optimized Resource Shrinking），把资源缩减逻辑并入 R8 的引用图分析。启用方式：
 
 ```properties
 # gradle.properties
@@ -161,7 +162,7 @@ android.r8.optimizedResourceShrinking=true
 
 [适用版本: AGP 8.12.0+]
 
-这个选项能让 R8 在代码优化阶段就识别出无用资源，比传统的资源缩减更精准，减少误删有用的资源。
+这个开关只在 AGP 8.12.0 及以上版本生效。低版本仍然使用传统的资源缩减流程。
 
 ## 资源瘦身：图片、布局和字符串的优化
 
@@ -372,7 +373,7 @@ APK 体积优化不是孤立的主题。代码瘦身（R8）不仅减小 dex 体
 
 Baseline Profile（基线配置文件）是 Android 从 7.0 开始引入的 AOT 编译优化机制。它在 APK 中嵌入一个列表，告诉 ART 运行时「这些代码路径很重要，请在安装时就预编译它们」，从而避免运行时 JIT 编译的卡顿。
 
-从体积角度，Baseline Profile 文件本身很小（通常几十 KB），对 APK 体积几乎无影响。但有一个间接影响值得注意：如果使用 Cloud Profile（从真实用户收集的编译配置），需要确保 Profile 中的类没有被 R8 混淆——否则 Profile 指向的类名在混淆后的 dex 中不存在，等于白配。AGP 在构建时会自动处理 Profile 和混淆的映射关系，但如果手动管理 Profile，需要注意这一点。
+从下载体积看，Baseline Profile 文件本身很小，通常只有几十 KB，对 APK 或 AAB 的下载大小影响很弱。安装后的磁盘占用要单独看。Profile 会让 ART 在安装或后台编译阶段生成更多 AOT 产物，这些机器码会落到 `.odex` / `.vdex`。常见业务包里，这部分新增磁盘占用往往会比对应的 DEX 字节码再大 10%-30%。Profile 范围写得过宽，冷启动也许会更快，但 `/data` 分区占用、安装后的编译时间和更新成本都会上升。如果使用 Cloud Profile，还要确保 Profile 中的类和方法在混淆后仍能正确映射。AGP 会在构建时处理这层映射；手动管理 Profile 时，需要额外检查。
 
 [待补充: Baseline Profile 生成和配置的详细流程]
 

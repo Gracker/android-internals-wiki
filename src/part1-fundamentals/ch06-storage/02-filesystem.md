@@ -297,6 +297,61 @@ EROFS（Enhanced Read-Only File System）就是为解决这个问题而生的。
 
 **安全增强**：只读属性本身就是一种安全机制——`system` 分区上的文件无法被运行时修改，配合 dm-verity 的完整性校验，构成了双重保护。
 
+
+### dm-verity 与 EROFS 的协同工作机制
+
+在第 6.1 节中我们提到 dm-verity，但未深入展开它与 EROFS 的协作机制。两者实际上是**互补关系**，而非耦合关系：
+
+**dm-verity 的职责**（完整性校验）：
+- 在运行时**按需逐块**验证 system/vendor 分区的数据完整性（每个 4KB block 的 SHA256 hash）
+- 信任锚点是 build 阶段由 OEM 私钥签名的 root hash，存储在 vbmeta 分区
+- dm-verity 要求保护分区必须是**只读**的——EROFS 天生只读，两者的要求天然匹配
+
+**EROFS 的职责**（高效只读存储）：
+- 提供压缩的只读文件系统（LZ4 默认压缩，镜像减小 30-45%）
+- 本身不提供完整性校验，需要 dm-verity 在下层叠加完整性保护
+- 设计为与 dm-verity 协同工作（Android build system 中 EROFS 分区配置 `ro + verify` flag）
+
+**Build 阶段协作**：
+`avbtool add_hashtree_footer`（`external/avb/avbtool.py`）生成 EROFS 镜像的哈希树：
+1. 对每个 4KB data block 计算 SHA256 hash（leaf）
+2. 递归聚合形成 Merkle tree，最终得到 root hash
+3. root hash + salt + hash tree offset 存入 vbmeta struct
+4. vbmeta struct 由 OEM 私钥签名，嵌入 vbmeta partition
+
+**Boot 阶段协作**：
+1. Bootloader 读取 vbmeta partition，用内置 OEM 公钥验证签名
+2. 从 vbmeta 提取 system 分区的 root hash，传递给 kernel
+3. kernel dm-verity 模块挂载 EROFS 时重建 hash tree，逐块验证
+4. 每读一块数据 → 计算 SHA256(data + salt) → 查 hash tree → 验证到 root
+5. 验证通过 → 数据返回给 EROFS 文件系统层；验证失败 → I/O error
+
+**dm-verity 保护下的 EROFS 挂载栈**（Dynamic Partition 场景）：
+```
+物理 super partition
+  → dm-linear（映射 dynamic partition 边界）
+    → dm-verity（哈希校验层）
+      → EROFS 文件系统
+        → /system 挂载点
+```
+
+**性能数据**（来源：android.com 官方文档）：
+- 顺序读取：dm-verity 额外开销约 5-15%（SHA256 计算）
+- 缓存读取：几乎无额外开销（hash 结果被内核页缓存）
+- 内存开销：10GB 分区约需 81MB hash storage（约 0.8% overhead）
+- EROFS 压缩带来 10-15% 启动时间改善（间接减少 dm-verity 校验的绝对数据量）
+
+**为什么 EROFS 是 dm-verity 的「理想搭档」**：
+1. EROFS 只读设计满足 dm-verity 对保护分区的只读要求，无需额外 flag 检查
+2. EROFS 的 in-place decompression（LZ4 在同一 page 内解压）减少了 dm-verity 按需校验时的内存分配开销
+3. EROFS 压缩使相同数据量的 dm-verity 校验绝对字节数减少 30-45%
+4. Android 13 launch devices 全面采用 EROFS，使 dm-verity 保护的系统分区更小、更快
+
+**Perfetto 中的可观测性**：
+dm-verity 的 block-level 验证目前没有独立的 Trace slice。在 Perfetto 中，dm-verity 校验的延迟会体现在 storage I/O 延迟中（通过 `disk Greenland` 或 `mmc` trace），但无法直接区分「数据读取」和「hash 验证」两个子步骤。dm-verity hash prefetch 机制（`DM_VERITY_HASH_PREFETCH_MIN_SIZE`，默认 128 blocks）通过预取哈希块来隐藏验证延迟。
+
+<!-- AIW-源码调研-2026-04-20 -->
+
 ### EROFS 与 OTA 升级
 
 EROFS 完全支持 Android 13+ 的 Virtual A/B OTA 升级机制。OTA 包生成工具能够智能地解压 LZ4 流来生成增量包（delta），因此 EROFS 分区的 OTA 包大小与 ext4 分区相比几乎没有差异。这意味着切换到 EROFS 不会增加用户的 OTA 下载量和升级时间。[已验证: 官方文档, source.android.com/docs/core/ota]

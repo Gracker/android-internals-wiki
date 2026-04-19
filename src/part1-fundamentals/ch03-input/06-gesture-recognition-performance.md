@@ -35,15 +35,15 @@ related_chapters:
 - '3.3'
 - '3.4'
 - '2.4'
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: "task9_pending"
+task6_state: "reviewed"
 task9_state: pending
 task9_result: needs-rework
 task2b_state: fixed
 task2b_result: fixed
-reviewed_date: '2026-04-12'
-reviewed_by: openclaw-task6
-task6_result: needs-rework
+reviewed_date: "2026-04-20"
+reviewed_by: "openclaw-task6"
+task6_result: "pass-light-edit"
 review_notes: '2026-04-12 task6 review: needs-rework。小修 8 处（frontmatter 标签、禁用词替换、段落拆分、代码注释格式统一）。回炉
   4 项（VelocityTracker 版本演进、双击回调语义、Perfetto 证据、扩展素材与来源）。评分: 结构 4/5·措辞 4/5·一致性 3/5·验证
   3/5·元数据 4/5。'
@@ -149,27 +149,6 @@ private static final Pools.SynchronizedPool<VelocityTracker> sPool =
 
 前面那几个 Java API 只是入口。公开 AOSP 里的真实调用链是 `android.view.VelocityTracker` 把事件交给 JNI，再由 `frameworks/native/libs/input/VelocityTracker.cpp` 按 axis 选择策略并完成拟合。Java 层负责对象池、策略 ID 和 `MotionEvent` 封装，不负责真正的速度拟合。
 
-```java
-// frameworks/base/core/java/android/view/VelocityTracker.java
-static public VelocityTracker obtain() {
-    VelocityTracker instance = sPool.acquire();
-    return (instance != null) ? instance
-            : new VelocityTracker(VELOCITY_TRACKER_STRATEGY_DEFAULT);
-}
-
-private VelocityTracker(@VelocityTrackerStrategy int strategy) {
-    ...
-    mPtr = nativeInitialize(mStrategy);
-}
-
-public void addMovement(MotionEvent event) {
-    nativeAddMovement(mPtr, event);
-}
-
-public void computeCurrentVelocity(int units, float maxVelocity) {
-    nativeComputeCurrentVelocity(mPtr, units, maxVelocity);
-}
-```
 
 `obtain(String strategy)` 和 `obtain(int strategy)` 也确实存在，但注释写得很直白，它们是 “For testing and comparison purposes only”。平时业务代码用 `obtain()` 即可。只有在做算法对比、回归测试或排查设备差异时，才会显式指定 strategy。
 
