@@ -33,11 +33,12 @@ sources:
     path: "https://developer.android.com/reference/android/view/FrameMetrics"
 tags: ['jank', 'methodology', 'Perfetto', 'Systrace', 'FrameTimeline', 'FrameMetrics', 'CPU', 'checklist']
 related_chapters: ["7.1", "7.2", "2.4", "2.5", "2.6", "1.5", "13.3"]
-pipeline_stage: task9_pending
+pipeline_stage: task2b_pending
 task6_state: reviewed
 task6_result: pass-light-edit
-task9_state: pending
-task2b_state: idle
+task9_result: needs-rework
+task9_state: reviewed
+task2b_state: pending
 ---
 
 # 卡顿分析方法论
