@@ -4,7 +4,7 @@ section: "7.5"
 chapter: "7.5"
 status: ready-for-review
 drafted_by: "openclaw-task2a"
-reviewed_date: "2026-04-12"
+reviewed_date: "2026-04-20"
 reviewed_by: "openclaw-task6"
 task6_result: pass-light-edit
 applicable_versions: "Android 5.0 (API 21) - Android 16 (API 36)"
@@ -37,8 +37,8 @@ polish_by: "task2b-polish"
 rework_count: 1
 rework_date: "2026-04-09"
 rework_by: "task2b-rework"
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task9_result: needs-rework
 task2b_result: fixed
