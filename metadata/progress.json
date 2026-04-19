@@ -1,15 +1,15 @@
 {
-  "generated_at": "2026-04-20T07:08:36+08:00",
+  "generated_at": "2026-04-20T07:50:52+08:00",
   "state_machine_version": "v2",
   "total_sections": 209,
   "metrics": {
     "total": 209,
     "unknown": 37,
-    "last_updated": "2026-04-20T07:08:36+08:00",
+    "last_updated": "2026-04-20T07:50:52+08:00",
     "task2b_state_counts": {
       "unknown": 37,
-      "fixed": 130,
-      "pending": 16,
+      "fixed": 127,
+      "pending": 19,
       "idle": 26
     },
     "task6_state_counts": {
@@ -20,51 +20,51 @@
     },
     "task9_state_counts": {
       "unknown": 36,
-      "reviewed": 33,
-      "pending": 139,
+      "reviewed": 36,
+      "pending": 136,
       "fixed": 1
     },
     "pipeline_stage_counts": {
       "unknown": 36,
       "task6_pending": 102,
-      "task9_pending": 47,
-      "task2b_pending": 15,
+      "task9_pending": 44,
+      "task2b_pending": 18,
       "ready-to-publish": 9
     },
     "total_sections": 209,
     "pipeline_unknown": 36,
     "pipeline_task6_pending": 102,
-    "pipeline_task2b_pending": 15,
-    "pipeline_task9_pending": 47,
+    "pipeline_task9_pending": 44,
+    "pipeline_task2b_pending": 18,
+    "pipeline_ready_to_publish": 9,
     "task2b_unknown": 37,
-    "task2b_fixed": 130,
-    "task2b_pending": 16,
+    "task2b_fixed": 127,
+    "task2b_pending": 19,
     "task2b_idle": 26,
     "task6_unknown": 33,
-    "task6_revisiting": 103,
     "task6_reviewed": 72,
+    "task6_revisiting": 103,
     "task6_pending": 1,
     "task9_unknown": 36,
-    "task9_pending": 139,
-    "task9_reviewed": 33,
+    "task9_reviewed": 36,
+    "task9_pending": 136,
     "task9_fixed": 1,
     "ready-to-publish": 0,
     "finalized": 9,
-    "ready-for-review": 163,
-    "pipeline_ready_to_publish": 9
+    "ready-for-review": 163
   },
   "pipeline": {
     "pipeline_stage_counts": {
       "unknown": 36,
       "task6_pending": 102,
-      "task9_pending": 47,
-      "task2b_pending": 15,
+      "task9_pending": 44,
+      "task2b_pending": 18,
       "ready-to-publish": 9
     },
     "task2b_state_counts": {
       "unknown": 37,
-      "fixed": 130,
-      "pending": 16,
+      "fixed": 127,
+      "pending": 19,
       "idle": 26
     },
     "task6_state_counts": {
@@ -75,8 +75,8 @@
     },
     "task9_state_counts": {
       "unknown": 36,
-      "reviewed": 33,
-      "pending": 139,
+      "reviewed": 36,
+      "pending": 136,
       "fixed": 1
     }
   },
@@ -287,16 +287,19 @@
       "title": "Android 版本演进中的架构变化",
       "path": "src/part1-fundamentals/ch01-architecture/06-version-evolution.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
-      "task9_state": "pending",
-      "task2b_state": "fixed",
+      "task9_state": "reviewed",
+      "task2b_state": "pending",
       "reviewed_date": "2026-04-19",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
-      "section": "1.6"
+      "section": "1.6",
+      "task9_reviewed_date": "2026-04-20",
+      "task9_reviewed_by": "openclaw-task9",
+      "last_task9_at": "2026-04-20T07:50:52+08:00"
     },
     "src/part1-fundamentals/ch01-architecture/07-art-compilation.md": {
       "chapter": "1.7",
@@ -383,16 +386,19 @@
       "title": "AutoFDO 反馈导向编译优化",
       "path": "src/part1-fundamentals/ch01-architecture/12-autofdo-optimization.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
-      "task9_state": "pending",
-      "task2b_state": "fixed",
+      "task9_state": "reviewed",
+      "task2b_state": "pending",
       "reviewed_date": "2026-04-19",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
-      "section": "1.12"
+      "section": "1.12",
+      "task9_reviewed_date": "2026-04-20",
+      "task9_reviewed_by": "openclaw-task9",
+      "last_task9_at": "2026-04-20T07:50:52+08:00"
     },
     "src/part1-fundamentals/ch01-architecture/13-messagequeue-deliqueue.md": {
       "chapter": "1.13",
@@ -446,16 +452,19 @@
       "title": "Audio Pipeline 延迟与性能",
       "path": "src/part1-fundamentals/ch01-architecture/16-audio-pipeline-performance.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
-      "task9_state": "pending",
-      "task2b_state": "fixed",
+      "task9_state": "reviewed",
+      "task2b_state": "pending",
       "reviewed_date": "2026-04-19",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
-      "section": "1.16"
+      "section": "1.16",
+      "task9_reviewed_date": "2026-04-20",
+      "task9_reviewed_by": "openclaw-task9",
+      "last_task9_at": "2026-04-20T07:50:52+08:00"
     },
     "src/part1-fundamentals/ch01-architecture/17-ipc-panorama.md": {
       "chapter": "1.17",

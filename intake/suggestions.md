@@ -2753,3 +2753,47 @@
 - **位置**：L179-L194
 - **问题**：`120Hz 理想路径约 10-38ms` 这张表没有交代触控采样率、batched input 是否开启、渲染路径（ThreadedRenderer / front buffer）、以及 App 负载条件。数字本身合理，但当前写法更像经验值，缺少复现实验前提。
 - **建议**：把这组数字补成“示例测量条件 + 理论上界”两列，至少注明采样率、屏幕刷新率、是否 batching、是否含 SurfaceFlinger present 时间，避免读者把它当成所有设备的通用基线。
+
+## [Task9 Deep Review] 2.7 Hardware Layer — 2026-04-20
+
+- **类型**：数据缺失
+- **位置**：L187-L229 gfxinfo / Perfetto 对比实验
+- **问题**：两组 LayerType 对比表没有设备型号、Android 版本、刷新率、动画脚本、样本量和采集命令。当前只能证明“曾做过实验”，不能支持读者复现实验或判断结论边界。
+- **建议**：补完整实验条件，至少给出设备、系统版本、`adb shell dumpsys gfxinfo` 采集方式、样本帧数，以及对应 Trace 文件或截图。
+
+## [Task9 Deep Review] 2.21 文字渲染性能 — 2026-04-20
+
+- **类型**：数据缺失
+- **位置**：L93 / L116 / L175 / L263 / L313
+- **问题**：多处把 CJK/复杂脚本/Span/单行布局写成“耗时更高”“高出数倍”“数毫秒”，但没有 benchmark、设备、字体集、文本长度或 trace 配置。即使保留了 [待验证]，当前仍缺一组能落地的量化样本。
+- **建议**：至少补 1 组可复现实验，覆盖纯文本 vs Span、Latin vs CJK、BoringLayout vs StaticLayout 的测量差异，并给出 Perfetto 配置或 benchmark 条件。
+
+## [Task9 Deep Review] 12.1 APK 体积优化 — 2026-04-20
+
+- **类型**：数据缺失
+- **位置**：L43 开头转化率数据
+- **问题**：“APK 每增加 6 MB，安装转化率下降约 1%”仍停留在 [待验证]。当前又被放在开场核心动机位置，读者容易把它当成 Google 官方可复用基线。
+- **建议**：补准确出处与实验上下文；如果找不到可靠原始来源，建议删除具体数字，改用 Google Play / App Bundle 官方可核对的下载体积收益描述。
+
+- **类型**：版本差异 / 数据缺失
+- **位置**：L372-L378 Baseline Profile 扩展段
+- **问题**：这一段把 Baseline Profile 写成“Android 从 7.0 开始引入”的机制，又给出“磁盘占用往往比对应 DEX 大 10%-30%”的范围，但没有区分 ART profile-guided compilation 的历史、Baseline Profile 作为现代构建产物的支持边界，也没有给任何设备或构建条件。
+- **建议**：把“兼容 API 24+”和“Jetpack/AGP 时代的 Baseline Profile 交付方式”拆开描述，并补一组真实安装前后磁盘占用样本，或删除 10%-30% 这类无来源数字。
+
+## [Task9 Deep Review] 1.6 Android 版本演进中的架构变化 — 2026-04-20
+- **类型**：数据缺失
+- **位置**：L330-L348（16KB 页面大小数据与兼容要求）
+- **问题**：16KB page size 段引用了官方数字，但把系统开机改善写成约 0.8 秒，官方页面给的是约 950ms；同时漏掉“Google Play 要求同时适用于新 app 和已有 app 更新”的条件，还省略了相机 hot start 4.48% 的上下文。
+- **建议**：把数据改回官方口径，并补一句这些数据来自 16KB 设备/内存压力场景下的测试条件。
+
+## [Task9 Deep Review] 1.12 AutoFDO 反馈导向编译优化 — 2026-04-20
+- **类型**：知识盲区
+- **位置**：L257-L261（系统级集成）
+- **问题**：userspace native AutoFDO 只给出抽象描述，没有落到具体 AOSP 锚点。当前 AOSP 已有 `frameworks/base/libs/hwui/Android.bp` 的 `libhwui`、`art/libartbase/Android.bp` 的 `libartbase`、`art/runtime/Android.bp` 的 `libart` 直接配置 `afdo: true`，正文缺这层会让“Android 12+ userspace AutoFDO”难以复核。
+- **建议**：在支持状态小节补 2-3 个代表性模块名和路径，给读者一个可复查的源码落点。
+
+## [Task9 Deep Review] 1.16 Audio Pipeline 延迟与性能 — 2026-04-20
+- **类型**：数据缺失
+- **位置**：L423-L428（蓝牙音频延迟范围）
+- **问题**：SBC / aptX / LDAC / LC3 的延迟范围都给了具体毫秒数，但没有设备、码率、packet size、head tracking 开关、链路质量或测量方法。当前写法更像经验值，不足以支撑“代表未来方向”的技术判断。
+- **建议**：补一条测试条件说明，或把具体毫秒区间改成定性描述，并把 codec / transport / buffering 三层影响拆开写。

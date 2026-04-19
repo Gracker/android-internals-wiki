@@ -3624,3 +3624,57 @@ TextureView 对硬件加速的强依赖没有被纳入章节主线。`TextureVie
 - 3.1 Input 事件分发全流程
 - 9.1 ANR 设计思想
 - 9.2 ANR 类型与触发机制
+
+## [2026-04-20] 2.7 Hardware Layer — 知识盲区
+
+### 盲区描述
+1. **16KB page size / gralloc 对齐对 Hardware Layer backing store 的影响** — recent external-review 已命中。章节把显存代价泛化成“多一块 GPU 纹理”，但没有解释 Android 15/16 上 16KB page size 与 buffer 对齐如何放大小尺寸 layer 的 slack space / 内部碎片。
+2. **现代 HWUI 的资源预算与回收边界** — recent external-review 已命中。缺少 layer residency、cache purge、budget pressure 的机制说明，也没有给出 Perfetto 或 GPU memory 观察点。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 梳理 Android 15/16 的 16KB page size、gralloc 对齐与 Hardware Layer backing store 的对应关系
+- 追踪 HWUI / Skia resource cache 在 budget pressure 下的 purge 触发点与可观测信号
+- 补一组大面积 layer + 内存压力实验，给出 Trace / GPU memory 对照
+
+### 关联章节
+- 2.15 DMA-BUF 与 Gralloc
+- 4.7 16KB Page Size 适配与性能
+- 18.17 HardwareBuffer 直接渲染
+
+## [2026-04-20] 2.21 文字渲染性能 — 知识盲区
+
+### 盲区描述
+1. **Android 12+ Font APEX / `com.android.fonts` 的版本边界** — recent external-review 已命中。章节讲了系统 emoji 与 emoji2，但没有交代系统字体和 emoji 可通过 Play system update 更新后的分层变化。
+2. **Variable font / font variation settings 的性能边界** — recent external-review 已命中。优化实践未覆盖 variable font，缺少对宽度中性轴（如 GRAD）与 relayout 关系的说明。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 梳理 Font APEX、系统 emoji、EmojiCompat、downloadable font provider 的时间线与职责边界
+- 补 `setFontVariationSettings()` / Compose 字体轴配置在 TextView 与 Compose 中的性能观察点
+- 实测 width-neutral 轴与 `wght` / `wdth` 轴对测量与重排的影响差异
+
+### 关联章节
+- 7.12 View 体系性能
+- 12.1 APK 体积优化（字体资源与 downloadable font）
+- 16.2 各 Android 版本性能变更追踪
+
+## [2026-04-20] 1.16 Audio Pipeline 延迟与性能 — 知识盲区
+
+### 盲区描述
+AAudio offloaded playback 已进入正文主线，但 API level、入口常量、PCM/压缩 payload 支持边界与设备 capability 仍未完成正式核验。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 核对 Android 16/17 API diff 中 AAudio/AudioTrack/offload 相关新增常量与 builder 入口
+- 补查 `dumpsys audio`、AudioPolicy profile 与 HAL capability 如何区分 MMAP / direct / offload
+- 确认 Oboe 与 AAudio power-saving/offloaded 模式的映射关系及最低 API level
+
+### 关联章节
+1.16、5.6、16.5
