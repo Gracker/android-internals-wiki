@@ -114,9 +114,12 @@
     ],
     "added_by": "external-ai-review",
     "added_at": "2026-04-19T10:53:11.619787+08:00",
-    "status": "pending",
+    "status": "completed",
     "validated_by": "task9-deep-tech-review",
-    "validated_at": "2026-04-19T22:53:58+08:00"
+    "validated_at": "2026-04-19T22:53:58+08:00",
+    "completed_at": "2026-04-19T23:15:43+08:00",
+    "completed_by": "task2b-rework",
+    "resolution": "修正 FrameTimeline Android 12+ / SurfaceView 边界，补齐 Choreographer 五类 callback，并把 sched.end_state 抢占查询改为 R+，同时收紧 FrameMetrics DEADLINE 的使用边界"
   },
   {
     "section": "7.6",
@@ -182,9 +185,12 @@
     ],
     "added_by": "external-ai-review",
     "added_at": "2026-04-19T10:53:11.619787+08:00",
-    "status": "pending",
+    "status": "completed",
     "validated_by": "task9-deep-tech-review",
-    "validated_at": "2026-04-19T22:53:58+08:00"
+    "validated_at": "2026-04-19T22:53:58+08:00",
+    "completed_at": "2026-04-19T23:15:43+08:00",
+    "completed_by": "task2b-rework",
+    "resolution": "重写 Strong Skipping 稳定性章节，补入 Baseline Profiles 与 Macrobenchmark 首启验证路径，并为编译后代码补齐 $changed 位掩码说明和社区基准边界"
   },
   {
     "section": "7.12",
