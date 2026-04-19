@@ -6,9 +6,9 @@ section: "1.5"
 status: ready-for-review
 applicable_versions: "Android 5.0 (API 21) - Android 16 (API 36)"
 last_verified: "2026-03-31"
-reviewed_date: "2026-04-12"
+reviewed_date: "2026-04-19"
 reviewed_by: openclaw-task6
-review_round: 3
+review_round: 4
 polish_count: 2
 polish_date: "2026-04-10"
 polish_by: task2b-polish
@@ -54,7 +54,7 @@ sources:
 tags: [thread, handler, looper, messagequeue, renderthread, coroutine, workmanager, thread-priority]
 related_chapters: ["1.2", "1.4", "1.13", "2.4", "2.5", "5.1"]
 pipeline_stage: task6_pending
-task6_state: revisiting
+task6_state: reviewed
 task6_result: pass-light-edit
 task9_state: pending
 task2b_state: fixed
@@ -94,7 +94,7 @@ task2b_result: fixed
 
 打开 Perfetto，我们会看到每个 App 进程下都有好几个线程在活动。其中最显眼的两条是 UI Thread（主线程）和 RenderThread（渲染线程）。在滑动列表的时候，UI Thread 上会出现一串整齐的 `doFrame` 方块，紧跟着 RenderThread 上出现对应的 `DrawFrame` 方块——两个线程像齿轮一样咬合，一帧一帧地把画面推到屏幕上。
 
-做卡顿分析、ANR 排查或启动速度优化，都必须理解这套线程模型。因为 Android 的主线程承担了几乎所有与用户交互相关的工作——处理 Input 事件、执行动画、measure/layout/draw、响应 Binder 调用。任何一项工作阻塞了主线程，用户就会感知到卡顿甚至 ANR。而理解主线程为什么会被阻塞、阻塞在哪里，首先要搞清楚主线程是怎么运转的。更精确地说，主线程会不断地从消息队列中取出消息并处理，代码执行只是这个循环中的一个片段。
+做卡顿分析、ANR 排查或启动速度优化，都必须理解这套线程模型。因为 Android 的主线程承担了几乎所有与用户交互相关的工作——处理 Input 事件、执行动画、measure/layout/draw、响应 Binder 调用。任何一项工作阻塞了主线程，用户就会感知到卡顿甚至 ANR。而理解主线程为什么会被阻塞、阻塞在哪里，首先要搞清楚主线程是怎么运转的。主线程会不断地从消息队列中取出消息并处理，代码执行只是这个循环中的一个片段。
 
 同时，从 Android 5.0 开始，渲染工作被分离到了独立的 RenderThread。理解主线程和 RenderThread 之间的分工和同步机制，是在 Perfetto 中正确解读渲染性能数据的前提。
 
@@ -163,7 +163,7 @@ public static void loop() {
 [已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/os/Looper.java]
 [已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/os/LegacyMessageQueue/MessageQueue.java、frameworks/base/core/java/android/os/CombinedMessageQueue/MessageQueue.java、frameworks/base/core/java/android/os/ConcurrentMessageQueue/MessageQueue.java]
 
-这里有一个容易被忽略的设计：`msg.target` 就是发送这条消息的 Handler。因此，同一条 MessageQueue 可以被多个 Handler 共享。不同 Handler 发送的消息都会进入同一个队列，但每条消息都会被自己的 Handler 处理。主线程上，ActivityThread 的内部类 `H` 就是最核心的 Handler，它处理 BIND_APPLICATION、CREATE_SERVICE、RECEIVER、BIND_SERVICE 等消息，驱动四大组件的生命周期。
+`msg.target` 就是发送这条消息的 Handler——这条消息的发送者。因此，同一条 MessageQueue 可以被多个 Handler 共享。不同 Handler 发送的消息都会进入同一个队列，但每条消息都会被自己的 Handler 处理。主线程上，ActivityThread 的内部类 `H` 就是最核心的 Handler，它处理 BIND_APPLICATION、CREATE_SERVICE、RECEIVER、BIND_SERVICE 等消息，驱动四大组件的生命周期。
 
 [图：Looper → MessageQueue → Handler 消息驱动模型示意图 — 展示多 Handler 共享同一 MessageQueue 的消息流转]
 
@@ -266,7 +266,7 @@ int syncResult = syncAndDrawFrame(choreographer.mFrameInfo);
 
 ## 线程优先级：nice 值、cgroup 和调度策略
 
-Android 的线程调度建立在 Linux 内核的调度机制之上，但在此基础上做了一层重要的封装。理解这层封装，对分析 Perfetto 中的线程行为至关重要。
+Android 的线程调度建立在 Linux 内核的调度机制之上，但在此基础上做了一层重要的封装。理解这层封装，是分析 Perfetto 中线程行为的前提。
 
 ### nice 值与 Process.setThreadPriority
 
