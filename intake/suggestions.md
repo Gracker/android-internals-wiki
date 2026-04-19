@@ -2419,3 +2419,28 @@
 - **位置**：第 167-169 行（draw call CPU 开销对比）
 - **问题**："OpenGL ES 10-50μs vs Vulkan 1-5μs" 只有宽泛来源，缺少 SoC/GPU、驱动版本、draw call 形态、采样方法和测试条件，当前写法会被读者误读成通用基线。
 - **建议**：补上具体测试条件和原始出处；如果拿不到稳定对比数据，改成定性结论，只保留"Vulkan 通常能显著降低 CPU driver overhead"这一层。
+
+## [Task6 Review] 10.4 低内存对系统性能的影响 — 2026-04-19
+
+- **类型**：需确认（技术事实准确性）
+- **位置**：mm_events：内核内存事件的快照
+- **问题**：原文描述 mm_events "不会持续记录，只在检测到压力时自动启动"，外部 review 指出它实际是常驻守护进程，通过 perf_event_open 监听内核 tracepoints。属于技术事实错误，需 Task 9 验证后由 Task 2B 修正。
+- **建议**：明确 mm_events 的常驻工作模式，补充其依赖的内核 tracepoints（mm_vmscan_* 系列）
+- **review 日志**：logs/review/2026-04-19-14-review.md
+
+## [Task6 Review] 10.4 低内存对系统性能的影响 — 2026-04-19
+
+- **类型**：需补充素材
+- **位置**：系统级内存优化 / 低端机专项优化
+- **问题**：缺失 Android 15 的 16KB Page Size 对低内存场景的影响分析（RSS 通常增加约 9%，内存压力感知提前）；ZRAM recomp_algorithm sysfs 接口未覆盖具体配置方式；MGLRU 缺少 /sys/kernel/mm/lru_gen/enabled 配置值及 Perfetto 中的量化方法
+- **建议**：在"系统级内存优化"章节新增"Android 15+ 专项演进"小节，覆盖 16KB Page 和 ZRAM 重压缩细节；补充 MGLRU 的 Trace 量化方法
+- **review 日志**：logs/review/2026-04-19-14-review.md
+
+## [Task6 Review] 10.4 低内存对系统性能的影响 — 2026-04-19
+
+- **类型**：需确认（数值准确性）
+- **位置**：低内存下的 GC 行为变化 / ART GC 在低内存下的触发策略
+- **问题**：原文称 CC GC Young GC 暂停时间"通常在 1ms 以下"，外部 review 指出 Android 15 Generational CC 的 Minor GC 暂停目标通常为 1ms-3ms，且 Major GC/Full GC 在压力下可达 10ms+。当前数值需 Task 9 验证后修正范围。
+- **建议**：修正数值范围，区分 Minor GC 与 Major/Full GC 的暂停时间差异
+- **review 日志**：logs/review/2026-04-19-14-review.md
+

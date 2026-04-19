@@ -22,17 +22,17 @@ sources:
     path: "source.android.com - mm_events, PSI, lmkd"
 tags: ['low-memory', 'kswapd', 'direct-reclaim', 'lmkd', 'GC', 'memory-pressure', 'PSI', 'ZRAM', 'Perfetto', 'MGLRU', 'cgroup', 'mm-events', 'vmscan', 'oom-score-adj']
 related_chapters: ["4.1", "4.2", "4.4", "4.5", "4.8", "10.1", "10.6"]
-reviewed_date: "2026-04-16"
+reviewed_date: "2026-04-19"
 reviewed_by: openclaw-task6
-polish_count: 2
-polish_date: "2026-04-09"
-polish_by: "task2b-polish"
-pipeline_stage: task6_pending
-task6_state: revisiting
-task6_result: pass-light-edit
+polish_count: 3
+polish_date: "2026-04-19"
+polish_by: "task6-review"
+pipeline_stage: task2b_pending
+task6_state: reviewed
+task6_result: needs-rework
 task9_result: needs-rework
 task9_state: pending
-task2b_state: fixed
+task2b_state: pending
 ---
 
 # 低内存对系统性能的影响
@@ -64,7 +64,7 @@ task2b_state: fixed
 
 ## 为什么要了解低内存对性能的影响
 
-当我们在 Perfetto 里看到主线程长时间处于 D 状态（Uninterruptible Sleep），或者一个前台 App 突然被杀掉、用户重新打开后走了完整的冷启动流程，根因往往不是 App 自身的问题，而是系统整体进入了低内存状态。低内存不会只影响某一个进程，它会像一场连锁反应——从内核的内存回收机制被激活开始，到 I/O 被打满、GC 频繁触发、进程被杀、用户感知到系统卡顿——整个过程环环相扣。
+当我们在 Perfetto 里看到主线程长时间处于 D 状态（Uninterruptible Sleep），或者一个前台 App 突然被杀掉、用户重新打开后走了完整的冷启动流程，根因往往是系统整体进入了低内存状态。低内存的影响像一场连锁反应——从内核的内存回收机制被激活开始，到 I/O 被打满、GC 频繁触发、进程被杀、用户感知到系统卡顿——整个过程环环相扣。
 
 理解这条因果链，是我们在 Perfetto 中准确判断"这个卡顿到底是 App 问题还是系统问题"的关键。本节会从内核的内存回收机制出发，逐步展开低内存是如何一步步拖慢整个系统的，以及我们如何通过工具识别和定位这些问题。
 
