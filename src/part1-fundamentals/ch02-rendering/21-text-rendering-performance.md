@@ -25,10 +25,10 @@ sources:
 tags: [text, rendering, minikin, skia, emoji, layout, performance, textview, staticlayout]
 related_chapters: ["2.1", "2.4", "2.5", "7.8", "7.12"]
 reviewed_by: openclaw-task6
-reviewed_date: "2026-04-11"
-task6_result: needs-rework
-pipeline_stage: task6_pending
-task6_state: revisiting
+reviewed_date: "2026-04-19"
+task6_result: pass-light-edit
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task9_result: needs-rework
 task2b_state: fixed
@@ -185,7 +185,7 @@ StaticLayout 本身不做缓存——每次创建新的 StaticLayout 实例都�
 
 ## Emoji 渲染性能
 
-Emoji 这一节最容易写偏的地方，是把所有 emoji 都当成同一条渲染流程。站在当前可核对的 AOSP / AndroidX 实现上，我们至少要分清三件事。
+分析 emoji 渲染性能时，需要把不同实现路径区分开。站在当前可核对的 AOSP / AndroidX 实现上，我们至少要分清三件事。
 
 **Android 4.4 - 7.1**：Emoji 主要依赖系统字体。它和普通文字一样参与字体 fallback、整形和绘制，只是字体文件里保存的是 color emoji glyph。这个阶段的主要问题，是字体版本跟系统版本绑定，新 emoji 很容易显示成 tofu。
 
@@ -207,7 +207,7 @@ canvas.drawText(mMetadataRepo.getEmojiCharArray(), charArrayStartIndex, 2, x, y,
 2. **EmojiCompat / emoji2 span**：`EmojiSpan` 会把文本切成更多 run，`getSize()` / `draw()` 也会增加一次 span 级开销。
 3. **下载字体 provider**：首次加载的成本在字体元数据初始化和字体文件准备，不等于每次绘制都走 bitmap decode。
 
-所以，这一章不再把“Android 11 之后统一转向 bitmap emoji”写成版本事实。基于当前能核对的实现，更稳的结论是：emoji 可能让 run 数量变多、span 测量变重、首帧字体准备更慢；至于某台设备上是否会出现明显的 GPU upload 突刺，还要结合字体、字符集和机型继续核实。
+基于当前能核对的实现，emoji 的性能特征可以总结为：emoji 可能让 run 数量变多、span 测量变重、首帧字体准备更慢；至于某台设备上是否会出现明显的 GPU upload 突刺，还要结合字体、字符集和机型继续核实。
 
 ## 文字渲染优化实践
 
@@ -339,7 +339,7 @@ RenderThread / HWUI 侧当然也可能有文字相关成本，但要分清“能
 
 ## 版本演进
 
-下面只保留能直接核对到 tag、源码或官方文档的节点，拿不稳的版本判断先不写。
+下面只保留能直接核对到 tag、源码或官方文档的节点。
 
 | 版本 / 组件 | 可直接核对的变化 | 证据锚点 |
 |-------------|------------------|----------|
@@ -348,8 +348,6 @@ RenderThread / HWUI 侧当然也可能有文字相关成本，但要分清“能
 | Android 9.0 (API 28) | framework 引入 `PrecomputedText` | Android Developers `PrecomputedText` reference（Added in API 28） |
 | AndroidX core / appcompat | `PrecomputedTextCompat.getTextFuture()` 配合 `AppCompatTextView.setTextFuture()` 提供异步预计算接入 | androidx-main `PrecomputedTextCompat.java` / `AppCompatTextView.java` |
 | AndroidX emoji / emoji2 | `EmojiCompat` 通过 `EmojiSpan` / `TypefaceEmojiSpan` 兼容新 emoji，字体来源可选 bundled 或 downloadable font provider | Android Developers EmojiCompat 文档；androidx-main `TypefaceEmojiSpan.java` |
-
-这张表没有再写“Android 11 统一切到 bitmap emoji”或“Android 14 自动后台测量”这类说法，因为它们对不上当前能核对的源码与文档。
 
 ## 常见问题与误区
 
