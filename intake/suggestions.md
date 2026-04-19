@@ -2610,3 +2610,17 @@
 - **位置**：frontmatter `related_chapters` / 文末“相关章节”
 - **问题**：书内已存在 `src/part2-performance/ch08-responsiveness/08-system-triggered-profiling.md` 的 ProfilingManager system-triggered 专章，但本章没有建立交叉引用，导致 trigger 语义在两章里重复铺开且难以统一版本口径。
 - **建议**：把该章节加入 `related_chapters` 与文末“相关章节”，同时把 trigger 细节收束到一处，避免两章各自维护一套版本矩阵。
+
+## [External Review] 7.13 SystemUI 性能优化 — 2026-04-19
+- **类型**：数据支撑
+- **位置**：通知内容绑定段落
+- **问题**：提到 `applyAsync()` / `reapplyAsync()`，但未区分两者的性能差异。`RemoteViews.reapplyAsync` 在通知更新（而非新增）时通过 `diff` 算法仅更新变化的 View，开销远小于 `applyAsync`。
+- **建议**：补充说明在 Trace 中如果看到频繁的 `apply`（全量绑定）而非 `reapply`，通常意味着 App 侧发送的通知数据结构发生了不必要的剧变。
+- **来源**：Gemini 外部 review (2026-04-19-10-7.13-external-review.md)
+
+## [External Review] 11.1 功耗模型与评估 — 2026-04-19
+- **类型**：数据支撑
+- **位置**：CPU 三层模型 / Active Base Power 段
+- **问题**：提到了 CPU 三层模型，但未明确指出 "Active Base Power"（即 `cpu.active`）的具体物理含义。在异构 SoC 中，只要任一核心唤醒，整个 SoC 的电源平面、内存总线、L3 Cache 都会从 LP 状态切回 Active 状态，这部分固定开销即为 `cpu.active`。
+- **建议**：补充这一物理背景，帮助读者理解为什么"高频低负载"比"低频高负载"更费电。
+- **来源**：Gemini 外部 review (2026-04-19-12-11.0-external-review.md)
