@@ -1,6 +1,107 @@
 {
   "pending": [
     {
+      "section": "15.5",
+      "section_title": "线上性能监控",
+      "priority": 95,
+      "reason": "[Deep Tech Review] FrameCallback/FrameMetrics 线程语义与 JankStats 判定口径存在事实偏差",
+      "material_paths": [
+        "logs/external-review/2026-04-18-22-15.5-external-review.md",
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "location": "L107",
+          "detail": "把 Choreographer.FrameCallback.doFrame() 写成“API 23 及以下在主线程，API 24+ 在独立线程”。AOSP android-16.0.0_r1 的 Choreographer 明确说明每个 Looper 线程各自拥有 Choreographer，getInstance() 返回调用线程绑定的实例，回调运行在该 Looper 线程上，不存在 API 24 的线程模型切换。",
+          "suggestion": "改成“doFrame() 运行在所属 Choreographer 的 Looper 线程上；通常在主线程调用 getInstance() 时，所有 API 版本都在主线程回调，因此回调里只能做轻量采集，重操作必须异步转移。”"
+        },
+        {
+          "type": "源码错误/原理断裂",
+          "location": "L152",
+          "detail": "把 Window.OnFrameMetricsAvailableListener 笼统写成“在独立线程执行”。AOSP 的 Window/View/FrameMetricsObserver/HardwareRendererObserver 调用链显示，回调线程由调用 addOnFrameMetricsAvailableListener() 时传入的 Handler 决定，且 handler 与其 looper 都不能为空。传主线程 Handler 时，同样可能阻塞主线程。",
+          "suggestion": "改成“FrameMetrics 回调运行在传入 Handler 关联的 Looper 线程上。推荐使用专用后台 HandlerThread，仅在回调中复制/聚合数据，再异步上报。”"
+        },
+        {
+          "type": "源码错误/版本差异",
+          "location": "L169",
+          "detail": "把 JankStats 默认判定简化成“超过刷新率 2 倍就是 jank”。androidx.metrics.performance 源码显示，默认逻辑是 uiDuration > expectedFrameDuration * jankHeuristicMultiplier（默认 2.0f）；API 24-30 的 expectedFrameDuration 近似来自刷新率，API 31+ 则直接取 FrameMetrics.DEADLINE。",
+          "suggestion": "改成“JankStats 默认使用 jankHeuristicMultiplier=2.0f；低版本以刷新率估算 expected frame duration，API 31+ 使用 FrameMetrics.DEADLINE，随后再用 uiDuration 与该阈值比较。”"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-04-19T09:03:50+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "1.5",
+      "section_title": "线程模型",
+      "priority": 90,
+      "reason": "[review回炉] Binder pool 线程数与 1.4 章不一致；cgroup CPU 分配比例缺验证来源",
+      "material_paths": [
+        "intake/suggestions.md（含 review 意见）"
+      ],
+      "review_issues": [
+        {
+          "type": "存疑",
+          "location": "线程数量节",
+          "detail": "Binder pool '上限是 16 个'与 1.4 Binder 章'默认上限 15 个'不一致",
+          "suggestion": "对照 AOSP ProcessState.cpp DEFAULT_MAX_BINDER_THREADS 确认"
+        },
+        {
+          "type": "待验证",
+          "location": "线程优先级节 cgroup 段",
+          "detail": "cgroup 'CPU 时间分配比例大约是 95:5' 无验证来源",
+          "suggestion": "补充设备实测数据或内核文档依据，或标注 [待验证]"
+        }
+      ],
+      "added_by": "task6-review",
+      "added_at": "2026-04-19T08:08:00",
+      "status": "pending",
+      "original_review_log": "logs/review/2026-04-19-08-review.md"
+    },
+    {
+      "section": "16.1",
+      "section_title": "Google 官方的性能优化思路",
+      "priority": 85,
+      "reason": "[Deep Tech Review] Mainline / AutoFDO 交付路径拆分不完整，kernel 与 userspace AutoFDO 被压成同一路径",
+      "material_paths": [
+        "intake/research-gaps.md",
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "原理断裂/版本差异",
+          "location": "L111-L120",
+          "detail": "“三条交付路径”把 AutoFDO 的 userspace/native rollout 与 GKI kernel rollout 压成了一条 GKI/OTA 路径。官方 2026 AutoFDO blog 已明确区分 userspace native binaries 与 GKI kernel 的 profile 来源和 rollout 方式，且 §1.12 也已经把两条路线拆开。",
+          "suggestion": "把 AutoFDO 拆成 userspace/native AutoFDO 与 kernel AutoFDO 两条路径，分别写清对象、版本起点、构建入口和送达设备方式。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-04-19T07:43:40+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "ch16",
+      "section_title": "AOSP 性能优化",
+      "priority": 80,
+      "reason": "[DeepResearch 注入] 新增高价值调研材料，建议补充到章节",
+      "material_paths": [
+        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/btrace 3.0调研.md"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考材料",
+          "location": "参考资料/延伸阅读",
+          "detail": "btrace 3.0调研 — 聚焦 btrace 3.0 通过 StackVisitor 子类化、2KB 私有字段缓冲和 vptr 替换 hack 实现跨 Android 8-14 Java 栈回溯的核心机制，并评估其对 ART ",
+          "suggestion": "判断是否适合补充为章节参考资料、延伸阅读或正文中的背景材料"
+        }
+      ],
+      "added_by": "task-deepresearch-injector",
+      "added_at": "2026-04-19T06:47:12+08:00",
+      "status": "pending"
+    },
+    {
       "section": "ch17",
       "section_title": null,
       "priority": 68,
@@ -39,74 +140,6 @@
       "added_by": "task8-classifier",
       "added_at": "2026-04-19T06:07:00.497547",
       "status": "pending"
-    },
-    {
-      "section": "ch16",
-      "section_title": "AOSP 性能优化",
-      "priority": 80,
-      "reason": "[DeepResearch 注入] 新增高价值调研材料，建议补充到章节",
-      "material_paths": [
-        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/btrace 3.0调研.md"
-      ],
-      "review_issues": [
-        {
-          "type": "新增参考材料",
-          "location": "参考资料/延伸阅读",
-          "detail": "btrace 3.0调研 — 聚焦 btrace 3.0 通过 StackVisitor 子类化、2KB 私有字段缓冲和 vptr 替换 hack 实现跨 Android 8-14 Java 栈回溯的核心机制，并评估其对 ART ",
-          "suggestion": "判断是否适合补充为章节参考资料、延伸阅读或正文中的背景材料"
-        }
-      ],
-      "added_by": "task-deepresearch-injector",
-      "added_at": "2026-04-19T06:47:12+08:00",
-      "status": "pending"
-    },
-    {
-      "section": "16.1",
-      "section_title": "Google 官方的性能优化思路",
-      "priority": 85,
-      "reason": "[Deep Tech Review] Mainline / AutoFDO 交付路径拆分不完整，kernel 与 userspace AutoFDO 被压成同一路径",
-      "material_paths": [
-        "intake/research-gaps.md",
-        "intake/suggestions.md"
-      ],
-      "review_issues": [
-        {
-          "type": "原理断裂/版本差异",
-          "location": "L111-L120",
-          "detail": "“三条交付路径”把 AutoFDO 的 userspace/native rollout 与 GKI kernel rollout 压成了一条 GKI/OTA 路径。官方 2026 AutoFDO blog 已明确区分 userspace native binaries 与 GKI kernel 的 profile 来源和 rollout 方式，且 §1.12 也已经把两条路线拆开。",
-          "suggestion": "把 AutoFDO 拆成 userspace/native AutoFDO 与 kernel AutoFDO 两条路径，分别写清对象、版本起点、构建入口和送达设备方式。"
-        }
-      ],
-      "added_by": "task9-deep-tech-review",
-      "added_at": "2026-04-19T07:43:40+08:00",
-      "status": "pending"
-    },
-    {
-      "section": "1.5",
-      "section_title": "线程模型",
-      "priority": 90,
-      "reason": "[review回炉] Binder pool 线程数与 1.4 章不一致；cgroup CPU 分配比例缺验证来源",
-      "material_paths": [
-        "intake/suggestions.md（含 review 意见）"
-      ],
-      "review_issues": [
-        {
-          "type": "存疑",
-          "location": "线程数量节",
-          "detail": "Binder pool '上限是 16 个'与 1.4 Binder 章'默认上限 15 个'不一致",
-          "suggestion": "对照 AOSP ProcessState.cpp DEFAULT_MAX_BINDER_THREADS 确认"
-        },
-        {
-          "type": "待验证",
-          "location": "线程优先级节 cgroup 段",
-          "detail": "cgroup 'CPU 时间分配比例大约是 95:5' 无验证来源",
-          "suggestion": "补充设备实测数据或内核文档依据，或标注 [待验证]"
-        }
-      ],
-      "added_by": "task6-review",
-      "added_at": "2026-04-19T08:08:00",
-      "status": "pending",
-      "original_review_log": "logs/review/2026-04-19-08-review.md"
     }
   ],
   "processing": [],
