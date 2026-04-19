@@ -80,40 +80,43 @@
     "section": "7.3",
     "section_title": "卡顿分析方法论",
     "priority": 95,
-    "reason": "[External Review] 外部 AI review 发现需回炉的问题",
+    "reason": "[Deep Tech Review] 已核验 1 处源码错误 + 2 处关键补洞",
     "material_paths": [],
     "review_issues": [
       {
-        "type": "源码准确性",
-        "location": "external-review 7.3",
-        "detail": "[SQL 查询部分]\n- **原文问题**：在 SQL 查询段落中，注释称 `sched.end_state = 'R'` 表示线程被抢占（Preempted）。\n- **源码 / 一手资料锚点**：[Perfetto Documentation - Sched Table](https://perfetto.dev/docs/analysis/sql-tables#sched)\n- **关键代码逻辑**：在 Linux 内核调度中，`R` 状态表示线程处于就绪队列但被换出。Perfetto 将被高优先级任务强制踢下 CPU 的状态专门标记为 `'R+'`。\n- **运行原理说明**：`R` 可能只是时间片耗尽或自愿让出，而 `R+` 才是明确的 CPU 资源争抢信号。\n- **核验结论**：原文解释混淆了“就绪”与“抢占”，会导致开发者在分析时过度诊断 CPU 竞争。\n- **建议修正方向**：将 SQL 条件修正为 `end_state = 'R+'` 以准确识别抢占，或在文中明确区分 `R` 和 `R+` 的语义差异。",
-        "suggestion": "基于外部 AI review 修正",
-        "evidence": []
+        "type": "源码错误",
+        "location": "L397-L412（Perfetto SQL：sched.end_state）",
+        "detail": "把 `sched.end_state = 'R'` 解释成“线程被抢占”。Perfetto 调度状态文档里 `R+` 才是 Runnable (Preempted)，`R` 仅表示线程在被切出 CPU 时仍处于 runnable 状态。当前 SQL 会把普通 runnable 片段误判成明确抢占。",
+        "suggestion": "将“被抢占”查询改为 `end_state = 'R+'`，或在文中明确区分 `R` 与 `R+` 的语义。",
+        "evidence": [
+          "https://perfetto.dev/docs/analysis/sql-tables",
+          "https://perfetto.dev/docs/data-sources/cpu-scheduling"
+        ]
       },
       {
-        "type": "版本差异覆盖",
-        "location": "external-review 7.3",
-        "detail": "[全文演进]\n- **原文问题**：缺失 Android 15/16/17 的核心流畅性特性。\n- **缺失内容**：\n    1. **Android 15**: ADPF 的 GPU/CPU 实际工作时长报告，以及 `ProfilingManager` API（生产环境自动触发堆栈/Trace）。\n    2. **Android 16**: **Adaptive Refresh Rate (ARR)** 及其对 RecyclerView 1.4 的原生支持；新增 **`AppJankStats`** API（比 FrameMetrics 更细粒度）；`FrameMetrics.FRAME_TIMELINE_VSYNC_ID`（打通跨进程帧追踪的钥匙）。\n    3. **Android 17**: **MessageQueue 无锁优化（DeliQueue）** 对主线程抖动的影响；`MemoryLimiter` 触发的自动分析。\n- **为什么这是重要缺失**：这些特性改变了现代 Android 性能优化的游戏规则（从手动抓 Trace 到系统自动反馈和 ADPF 智能调度）。",
-        "suggestion": "基于外部 AI review 修正",
-        "evidence": []
+        "type": "版本差异",
+        "location": "L165-L183（FrameTimeline）",
+        "detail": "FrameTimeline 段把它写成通用卡顿判断标准，但 Perfetto 文档同时写明“FrameTimeline requires Android 12(S) or higher”以及“SurfaceViews are currently not supported”。当前缺少 SurfaceView / 游戏场景边界，读者会把它误用到不支持的 trace 上。",
+        "suggestion": "补上 Android 12+ 与 SurfaceView 不支持的限制，并给出 buffered frames、gpu.renderstages、Swappy stats 等替代观察路径。",
+        "evidence": [
+          "https://perfetto.dev/docs/data-sources/frametimeline"
+        ]
       },
       {
-        "type": "原理链完整性",
-        "location": "external-review 7.3",
-        "detail": "[Choreographer 阶段]\n- **原文问题**：流水线描述仅包含 Input/Animation/Traversal。\n- **缺失内容**：`CALLBACK_INSETS_ANIMATION` (API 30+) 和 `CALLBACK_COMMIT` (API 23+)。\n- **源码锚点**：`android.view.Choreographer.java` 中的 `CALLBACK_*` 常量定义及 `doFrame` 循环逻辑。\n- **建议补充方向**：补齐这两个阶段，特别是 `COMMIT` 阶段在性能监控（修正时间戳）中的角色。",
-        "suggestion": "基于外部 AI review 修正",
-        "evidence": []
-      },
-      {
-        "type": "外部Review建议回炉",
-        "location": "external-review 7.3",
-        "detail": "外部 AI review 建议回炉，请查阅 2026-04-19-10-03-jank-methodology-external-review.md 获取详细问题清单",
-        "suggestion": "基于外部 AI review 修正"
+        "type": "原理断裂",
+        "location": "L157，L187（doFrame 阶段说明）",
+        "detail": "正文只写了 Input / Animation / Traversal 三段，遗漏了 `Choreographer` 中的 `CALLBACK_INSETS_ANIMATION` 与 `CALLBACK_COMMIT`。这会把 doFrame 的实际回调序列讲短，尤其会漏掉 Insets 动画和 commit 阶段的时间戳修正语义。",
+        "suggestion": "补齐 5 类 callback，并说明它们在 trace 归因里的位置。",
+        "evidence": [
+          "https://android.googlesource.com/platform/frameworks/base/+/refs/heads/main/core/java/android/view/Choreographer.java?format=TEXT"
+        ]
       }
     ],
     "added_by": "external-ai-review",
     "added_at": "2026-04-19T10:53:11.619787+08:00",
-    "status": "pending"
+    "status": "pending",
+    "validated_by": "task9-deep-tech-review",
+    "validated_at": "2026-04-19T22:53:58+08:00"
   },
   {
     "section": "7.6",
@@ -149,49 +152,39 @@
   },
   {
     "section": "7.7",
-    "section_title": "Compose 性能",
+    "section_title": "Jetpack Compose 性能优化",
     "priority": 95,
-    "reason": "[External Review] 外部 AI review 发现需回炉的问题",
-    "material_paths": [],
+    "reason": "[Deep Tech Review] 已核验 Compose 版本边界与首启性能缺口",
+    "material_paths": [
+      "intake/research-gaps.md",
+      "intake/suggestions.md"
+    ],
     "review_issues": [
       {
-        "type": "版本差异覆盖",
-        "location": "external-review 7.7",
-        "detail": "[全文]\n- **原文问题**：文章将性能优化的核心几乎全部押注在“手动维护稳定性”上（@Stable, @Immutable）。\n- **源码 / 一手资料锚点**：`androidx.compose.compiler.plugins.kotlin.lower.StrongSkippingMode`；[Android Developers Blog: Compose Compiler updates](https://android-developers.googleblog.com/2024/04/jetpack-compose-compiler-moving-to-kotlin-repo.html)\n- **关键代码逻辑**：在 Strong Skipping 模式下，所有可重启的 Composable 均可跳过。不稳定参数使用 `===` (实例相等性) 比较，稳定参数使用 `equals()`。\n- **运行原理说明**：这是 2025-2026 年 Compose 优化的分水岭。原文建议读者手动为 List 包装不可变集合或标注注解，这增加了大量开发成本。在 2026 年，",
-        "suggestion": "基于外部 AI review 修正",
-        "evidence": []
-      },
-      {
-        "type": "原理链完整性",
-        "location": "external-review 7.7",
-        "detail": "[渲染模型章节]\n- **原文问题**：对 Composition 阶段的描述仍然是“原子执行、不可中断”。\n- **源码 / 一手资料锚点**：`androidx.compose.runtime.Recomposer` 中的 `setPausableContent` 和 `resume` 逻辑；[Compose 1.10 Release Notes]\n- **运行原理说明**：Compose 1.10 引入了时间片轮转（Time-slicing）。如果重组即将耗尽帧预算（deadlineNanos），它会在 slot 边界处暂停，释放主线程。\n- **为什么错**：文中说“如果重组耗时 30ms 就会掉帧”，在 1.10 默认开启 Pausable 后，这 30ms 会被自动拆分到 2-3 帧中执行，显著降低掉帧率。\n- **建议修正方向**：增加“可暂停重组（Pausable Composition）”专节，解释其如何通过 `deadlineNanos` 实现增量执行。",
-        "suggestion": "基于外部 AI review 修正",
-        "evidence": []
+        "type": "版本差异",
+        "location": "L149-L150，L263-L273（稳定性与跳过机制）",
+        "detail": "正文把“只有所有参数稳定时才能跳过重组”写成通用规则，但官方 Strong Skipping 文档明确写明该模式在 Kotlin 2.0.20 默认开启。默认强跳过下，所有 restartable composable 都可 skippable，不稳定参数按 `===` 比较，稳定参数按 `Object.equals()` 比较。当前写法会把 2025-2026 的默认编译器行为讲成旧规则。",
+        "suggestion": "把稳定性章节改成“默认强跳过 + 何时仍需 `@Stable` / `@Immutable`”，并明确引用相等与对象相等的差别。",
+        "evidence": [
+          "https://developer.android.com/develop/ui/compose/performance/stability/strongskipping"
+        ]
       },
       {
         "type": "知识盲区",
-        "location": "external-review 7.7",
-        "detail": "[性能检测工具章节]\n- **原文问题**：完全未提及 Baseline Profiles。\n- **缺失内容**：Baseline Profiles 是解决 Compose 首次启动卡顿（First-run Jank）和库执行效率的关键。\n- **运行原理说明**：通过 Macrobenchmark 记录关键路径，生成二进制 Profile 并在安装时进行 AOT 编译。\n- **建议补充方向**：在“性能检测”或“通用建议”中增加 Baseline Profiles 章节，明确其在生产环境的强制性。",
-        "suggestion": "基于外部 AI review 修正",
-        "evidence": []
-      },
-      {
-        "type": "原理链完整性",
-        "location": "external-review 7.7",
-        "detail": "[Compose 动画性能]\n- **原文问题**：未提及 Compose 1.9+ 的后台文本预取（Background Text Prefetch）和 `CacheWindow` API。\n- **建议补充方向**：在 LazyColumn 优化部分补充 `CacheWindow` 如何配合 Pausable Composition 提升滚动预取成功率。",
-        "suggestion": "基于外部 AI review 修正",
-        "evidence": []
-      },
-      {
-        "type": "外部Review建议回炉",
-        "location": "external-review 7.7",
-        "detail": "外部 AI review 建议回炉，请查阅 2026-04-19-10-07-compose-performance-external-review.md 获取详细问题清单",
-        "suggestion": "基于外部 AI review 修正"
+        "location": "L324-L360（性能检测工具）",
+        "detail": "章节完全没有覆盖 Baseline Profiles。官方 Baseline Profiles 概览明确指出它能在首次启动通过 AOT 编译把代码执行速度提升约 30%，Compose 官方性能导航也单列了 Baseline profiles。当前章节只讲运行期重组与稳定性，没有覆盖 Compose 首启卡顿这条关键性能轴。",
+        "suggestion": "新增 Baseline Profiles 小节，说明 Macrobenchmark 生成 app-specific profile、库自带 profile 与 first-run jank 的关系。",
+        "evidence": [
+          "https://developer.android.com/topic/performance/baselineprofiles/overview",
+          "https://developer.android.com/develop/ui/compose/performance"
+        ]
       }
     ],
     "added_by": "external-ai-review",
     "added_at": "2026-04-19T10:53:11.619787+08:00",
-    "status": "pending"
+    "status": "pending",
+    "validated_by": "task9-deep-tech-review",
+    "validated_at": "2026-04-19T22:53:58+08:00"
   },
   {
     "section": "7.12",
@@ -345,21 +338,57 @@
   {
     "section": "8.1",
     "section_title": "响应速度原理",
-    "priority": 85,
-    "reason": "[External Review] 外部 AI review 发现需回炉的问题",
+    "priority": 95,
+    "reason": "[Deep Tech Review] 已核验输入分发、启动指标、Android Vitals 三处高风险问题",
     "material_paths": [],
     "review_issues": [
       {
+        "type": "源码错误",
+        "location": "L131-L135（输入分发链路）",
+        "detail": "把 InputDispatcher 到 App 的传输写成 Binder IPC。AOSP `InputChannel::openInputChannelPair()` 直接用 `socketpair(AF_UNIX, SOCK_SEQPACKET)` 创建通道，后续由 `InputChannel::sendMessage()` 与 `InputDispatcher::publishMotionEvent()` 走 InputTransport 路径，不是 Binder。",
+        "suggestion": "改成 InputReader → InputDispatcher → InputChannel / InputTransport → NativeMessageQueue / InputConsumer → Java MotionEvent 的链路。",
+        "evidence": [
+          "https://android.googlesource.com/platform/frameworks/native/+/refs/heads/main/libs/input/InputTransport.cpp?format=TEXT",
+          "https://android.googlesource.com/platform/frameworks/native/+/refs/heads/main/services/inputflinger/dispatcher/InputDispatcher.cpp?format=TEXT"
+        ]
+      },
+      {
+        "type": "事实错误",
+        "location": "L178-L181（Android Vitals 呈现速度）",
+        "detail": "正文把 Android Vitals 写成“超过 50% 的用户会话 + 单帧 >16ms”这一套统一规则。官方文档实际把 slow frames（16-700ms）与 frozen frames（>700ms）分开统计；Slow Sessions 则是 games only，定义为 >25% 帧超过 50ms / 34ms。当前段把不同指标家族和阈值混在了一起。",
+        "suggestion": "拆成 slow frames、frozen frames、slow sessions 三部分，标清后者只适用于游戏，并给出对应阈值。",
+        "evidence": [
+          "https://developer.android.com/topic/performance/vitals/render",
+          "https://developer.android.com/topic/performance/vitals/slow-session"
+        ]
+      },
+      {
+        "type": "事实错误",
+        "location": "L195-L199（TTID / TTFD）",
+        "detail": "把 TTID / TTFD 说成“从 Android 12 开始引入”。官方启动时间文档把 TTID / TTFD 作为通用启动指标使用，`Activity#reportFullyDrawn()` 的参考页也显示该方法在 API 19 就已存在。当前表述把长期存在的启动指标和较新的启动遥测能力混成了一起。",
+        "suggestion": "改成 TTID / TTFD 是既有启动指标，再单独介绍较新的结构化启动信息来源。",
+        "evidence": [
+          "https://developer.android.com/topic/performance/vitals/launch-time",
+          "https://developer.android.com/reference/android/app/Activity"
+        ]
+      },
+      {
         "type": "版本差异",
-        "location": "启动响应",
-        "detail": "仅提到了传统的 TTID/TTFD，未提及 Android 15 引入的 `ApplicationStartInfo`。",
-        "suggestion": "基于外部 AI review 修正"
+        "location": "L183-L199（启动时间）",
+        "detail": "章节没有覆盖 `ApplicationStartInfo`。按当前 applicable_versions（Android 12-16）和 last_verified_against（Android 16），缺少 `START_TYPE_COLD/WARM/HOT` 以及 `START_TIMESTAMP_LAUNCH`、`FIRST_FRAME`、`FULLY_DRAWN` 等结构化时间戳，会让启动分析停留在旧的 Logcat + `reportFullyDrawn()` 口径。",
+        "suggestion": "补一个 `ApplicationStartInfo` 小节，说明如何用 `getStartupTimestamps()` 将 TTID / TTFD 与系统启动阶段对齐。",
+        "evidence": [
+          "https://developer.android.com/reference/android/app/ApplicationStartInfo",
+          "https://android.googlesource.com/platform/frameworks/base/+/refs/heads/main/core/java/android/app/ApplicationStartInfo.java?format=TEXT"
+        ]
       }
     ],
     "added_by": "external-ai-review",
     "added_at": "2026-04-19T11:44:38.404228+08:00",
     "status": "pending",
-    "source_file": "2026-04-19-10-01-responsiveness-principles-external-review.md"
+    "source_file": "2026-04-19-10-01-responsiveness-principles-external-review.md",
+    "validated_by": "task9-deep-tech-review",
+    "validated_at": "2026-04-19T22:53:58+08:00"
   },
   {
     "section": "8.2",

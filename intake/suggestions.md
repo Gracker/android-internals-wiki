@@ -2660,3 +2660,10 @@
 - **位置**：L113 vs L177
 - **问题**：同一章前面把 `wake_lock` 行描述为红色块，后面的模式 1 又写成持续绿色，章节内观察口径自相矛盾。
 - **建议**：统一成“高亮块/持续占用块”，或明确说明不同 Historian 主题下的颜色差异。
+
+## [Task9 Deep Review] 7.7 Jetpack Compose 性能优化 — 2026-04-19
+- **类型**：数据缺失
+- **位置**：L122-L126、L441（Compose vs View 性能对比）
+- **问题**：`LazyColumn 约 43fps vs RecyclerView 60fps` 与“Canvas 绘制几乎一致”只引用社区对比，缺少设备型号、刷新率、Compose / RecyclerView 版本、测试场景和复现实验方法，读者容易把它当成通用结论。
+- **建议**：补充 Macrobenchmark / FrameTimingMetric 或 Perfetto Trace 的复现实验，至少标出设备、刷新率、Compose 版本、滚动场景与样本次数；如果暂时没有可复现数据，改成“个别社区测试观察到”。
+

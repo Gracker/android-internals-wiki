@@ -29,11 +29,12 @@ sources:
     path: "https://web.dev/articles/rail"
 tags: [responsiveness, TTID, TTFD, RAIL, input-latency, perceived-performance]
 related_chapters: ["2.3", "2.4", "3.1", "8.2", "9.1"]
-pipeline_stage: task9_pending
+pipeline_stage: task2b_pending
 task6_state: reviewed
 task6_result: pass-light-edit
-task9_state: pending
-task2b_state: idle
+task9_result: needs-rework
+task9_state: reviewed
+task2b_state: pending
 ---
 
 # 响应速度原理

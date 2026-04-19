@@ -3567,3 +3567,22 @@ Graphics / dma-buf 内存没有独立诊断分支。正文已经提到 Graphic B
 - 2.15
 - 10.1
 - 7.10
+
+## [2026-04-19] 7.7 Jetpack Compose 性能优化 — Baseline Profiles 与首启性能
+
+### 盲区描述
+章节没有覆盖 Baseline Profiles 在 Compose 首次启动、首帧渲染和库代码 AOT 编译中的作用。当前内容几乎把优化重心全部放在重组与稳定性上，缺少安装时编译这条与 Compose 运行时同样关键的性能轴。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 梳理 Compose 官方性能文档中 Baseline Profiles 的推荐位置和适用场景
+- 用 Macrobenchmark 生成 app-specific Baseline Profile，并总结与库自带 profile 的边界
+- 补一个“首启卡顿 vs 运行期重组卡顿”的诊断分流表
+- 核对 Baseline Profiles 对 Compose 首次进入页面、首次滚动、首次动画的改善证据
+
+### 关联章节
+- 7.7 Jetpack Compose 性能优化
+- 8.1 响应速度原理
+
