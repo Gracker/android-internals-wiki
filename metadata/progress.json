@@ -1,11 +1,11 @@
 {
-  "generated_at": "2026-04-20T23:24:00+08:00",
+  "generated_at": "2026-04-19T23:59:59+08:00",
   "state_machine_version": "v2",
   "total_sections": 206,
   "metrics": {
     "total": 206,
     "unknown": 34,
-    "last_updated": "2026-04-20T23:24:00+08:00",
+    "last_updated": "2026-04-19T23:59:59+08:00",
     "task2b_state_counts": {
       "unknown": 34,
       "fixed": 126,
@@ -20,21 +20,22 @@
     },
     "task9_state_counts": {
       "unknown": 33,
-      "reviewed": 22,
-      "pending": 150,
+      "reviewed": 25,
+      "pending": 147,
       "fixed": 1
     },
     "pipeline_stage_counts": {
       "unknown": 33,
       "task6_pending": 106,
-      "task9_pending": 54,
-      "task2b_pending": 13
+      "task9_pending": 51,
+      "task2b_pending": 13,
+      "ready-to-publish": 3
     },
     "total_sections": 206,
     "pipeline_unknown": 33,
     "pipeline_task6_pending": 106,
     "pipeline_task2b_pending": 13,
-    "pipeline_task9_pending": 54,
+    "pipeline_task9_pending": 51,
     "task2b_unknown": 34,
     "task2b_fixed": 126,
     "task2b_pending": 14,
@@ -44,19 +45,21 @@
     "task6_reviewed": 68,
     "task6_pending": 1,
     "task9_unknown": 33,
-    "task9_pending": 150,
-    "task9_reviewed": 22,
+    "task9_pending": 147,
+    "task9_reviewed": 25,
     "task9_fixed": 1,
     "ready-to-publish": 0,
-    "finalized": 0,
-    "ready-for-review": 172
+    "finalized": 3,
+    "ready-for-review": 169,
+    "pipeline_ready_to_publish": 3
   },
   "pipeline": {
     "pipeline_stage_counts": {
       "unknown": 33,
       "task6_pending": 106,
-      "task9_pending": 54,
-      "task2b_pending": 13
+      "task9_pending": 51,
+      "task2b_pending": 13,
+      "ready-to-publish": 3
     },
     "task2b_state_counts": {
       "unknown": 34,
@@ -72,8 +75,8 @@
     },
     "task9_state_counts": {
       "unknown": 33,
-      "reviewed": 22,
-      "pending": 150,
+      "reviewed": 25,
+      "pending": 147,
       "fixed": 1
     }
   },
@@ -1184,17 +1187,20 @@
       "chapter": "5.9",
       "title": "ADPF 自适应性能框架",
       "path": "src/part1-fundamentals/ch05-cpu-power/09-adpf.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "task6_state": "reviewed",
-      "task9_state": "pending",
+      "task9_state": "reviewed",
       "task2b_state": "fixed",
-      "reviewed_date": "2026-04-12",
+      "reviewed_date": "2026-04-20",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
-      "task9_result": "needs-rework",
+      "task9_result": "pass-tech-review",
       "task2b_result": "fixed",
-      "section": "5.9"
+      "section": "5.9",
+      "task9_reviewed_by": "openclaw-task9",
+      "task9_reviewed_date": "2026-04-19",
+      "last_task9_at": "2026-04-19T23:59:59+08:00"
     },
     "src/part1-fundamentals/ch05-cpu-power/10-jobscheduler-workmanager-performance.md": {
       "chapter": "5.10",
@@ -1288,17 +1294,20 @@
       "chapter": "6.3",
       "title": "I/O 调度与性能",
       "path": "src/part1-fundamentals/ch06-storage/03-io-scheduling.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "task6_state": "reviewed",
-      "task9_state": "pending",
+      "task9_state": "reviewed",
       "task2b_state": "fixed",
-      "reviewed_date": "2026-04-12",
+      "reviewed_date": "2026-04-20",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
-      "task9_result": "needs-rework",
+      "task9_result": "pass-tech-review",
       "task2b_result": "fixed",
-      "section": "6.3"
+      "section": "6.3",
+      "task9_reviewed_by": "openclaw-task9",
+      "task9_reviewed_date": "2026-04-19",
+      "last_task9_at": "2026-04-19T23:59:59+08:00"
     },
     "src/part1-fundamentals/ch06-storage/04-storage-evolution.md": {
       "chapter": "6.4",
@@ -1455,17 +1464,20 @@
       "chapter": "7.8",
       "title": "RecyclerView 列表滑动性能深度优化",
       "path": "src/part2-performance/ch07-smoothness/08-recyclerview-performance.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "task6_state": "reviewed",
-      "task9_state": "pending",
+      "task9_state": "reviewed",
       "task2b_state": "fixed",
-      "reviewed_date": "2026-04-12",
+      "reviewed_date": "2026-04-20",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
-      "task9_result": "needs-rework",
+      "task9_result": "pass-tech-review",
       "task2b_result": "fixed",
-      "section": "7.8"
+      "section": "7.8",
+      "task9_reviewed_by": "openclaw-task9",
+      "task9_reviewed_date": "2026-04-19",
+      "last_task9_at": "2026-04-19T23:59:59+08:00"
     },
     "src/part2-performance/ch07-smoothness/09-perceived-smoothness.md": {
       "chapter": "7.9",

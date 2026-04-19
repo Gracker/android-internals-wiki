@@ -2667,3 +2667,15 @@
 - **问题**：`LazyColumn 约 43fps vs RecyclerView 60fps` 与“Canvas 绘制几乎一致”只引用社区对比，缺少设备型号、刷新率、Compose / RecyclerView 版本、测试场景和复现实验方法，读者容易把它当成通用结论。
 - **建议**：补充 Macrobenchmark / FrameTimingMetric 或 Perfetto Trace 的复现实验，至少标出设备、刷新率、Compose 版本、滚动场景与样本次数；如果暂时没有可复现数据，改成“个别社区测试观察到”。
 
+
+## [Task9 Deep Review] 5.9 ADPF 自适应性能框架 — 2026-04-19
+- **类型**：源码准确性
+- **位置**：Android 15 能效模式（L109-L110）
+- **问题**：正文把 `PerformanceHintManager.Session#setPreferPowerEfficiency(boolean)` 直接写成“把线程调度到 E-core”。官方公开 API 语义是偏向能效而非性能，没有承诺具体落到哪类 CPU 核心。
+- **建议**：把表述收紧成“系统可按能效优先调度这些线程”，不要把公开 API 语义写成固定 E-core 行为。
+
+## [Task9 Deep Review] 6.3 I/O 调度与性能 — 2026-04-19
+- **类型**：知识盲区
+- **位置**：Perfetto 识别 fsync（L249-L250, L285-L304）
+- **问题**：正文只列 `ext4_sync_file_enter/exit`，但 Android 设备大量使用 F2FS；在 F2FS 机型上，读者需要改看 `f2fs_sync_file_enter/exit` 等 tracepoint。
+- **建议**：在 fsync 观察点里补一条“文件系统相关”的提示，把 ext4 与 F2FS 的常见 tracepoint 一起列出，避免把 Android I/O 观测默认成 ext4 单一路径。

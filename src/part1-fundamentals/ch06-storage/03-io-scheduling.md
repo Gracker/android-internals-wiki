@@ -2,7 +2,7 @@
 title: "I/O 调度与性能"
 chapter: "6.3"
 section: "6.3"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 10–16"
 last_verified: "2026-04-01"
 last_verified_against: "Linux 6.1 + Android 14 GKI"
@@ -15,12 +15,15 @@ tags:
   - linux
   - android
   - research
-pipeline_stage: task9_pending
+pipeline_stage: ready-to-publish
 task6_state: reviewed
-task9_state: pending
-task9_result: needs-rework
+task9_state: reviewed
+task9_result: pass-tech-review
 task2b_state: fixed
 task2b_result: fixed
+last_task9_at: "2026-04-19T23:59:59+08:00"
+task9_reviewed_by: "openclaw-task9"
+task9_reviewed_date: "2026-04-19"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-04-20"
 task6_result: pass-light-edit
