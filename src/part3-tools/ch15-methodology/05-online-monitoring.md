@@ -23,13 +23,17 @@ sources:
     path: "perfetto.dev/docs/instrumentation/tracing-sdk"
 tags: [monitoring, APM, FrameMetrics, JankStats, ANR, startup, production]
 related_chapters: ["7.3", "9.3", "14.1", "14.6", "15.4"]
-pipeline_stage: task9_pending
+pipeline_stage: task2b_pending
 task6_state: reviewed
 reviewed_by: openclaw-task6
 reviewed_date: "2026-04-17"
 task6_result: pass-light-edit
-task9_state: pending
-task2b_state: idle
+task9_state: reviewed
+task2b_state: pending
+last_task9_at: "2026-04-19T09:03:50+08:00"
+task9_reviewed_by: "openclaw-task9"
+task9_reviewed_date: "2026-04-19"
+task9_result: needs-rework
 ---
 
 # 线上性能监控

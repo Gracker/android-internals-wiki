@@ -1941,3 +1941,21 @@
 - **问题**："前台 cgroup 和后台 cgroup 的 CPU 时间分配比例大约是 95:5" 无具体验证来源或数据支撑
 - **建议**：补充设备实测数据（读取 /dev/cpuctl 的 shares 值）或内核文档依据；如无法确认，标注 [待验证]
 - **review 日志**：logs/review/2026-04-19-08-review.md
+
+## [Task9 Deep Review] 15.5 线上性能监控 — 2026-04-19
+- **类型**：数据缺失/版本差异
+- **位置**：L222-L224
+- **问题**：把 `Displayed` 日志写成“从 API 24 开始包含 TTID 信息”，并紧接着给出 `Jetpack App Startup` “每个 ContentProvider 约 2ms” 的确定数值。官方启动文档确认 `Displayed` 可用于取 TTID，但未在该处给出 API 24 边界；App Startup 官方文档只说 ContentProvider 昂贵、合并到单一 InitializationProvider 可显著改善启动时间，没有给出 2ms 官方口径。
+- **建议**：把 `Displayed` 改成 TTID 的检索方式说明，不额外绑定未经证实的 API 24 分界；把 `2ms` 改成非量化描述，或明确标注 `[待验证]` 并补一手来源。
+
+## [Task9 Deep Review] 15.5 线上性能监控 — 2026-04-19
+- **类型**：交叉引用/来源准确性
+- **位置**：frontmatter sources / L167 / L422
+- **问题**：JankStats 的官方 release note 链接仍写成 `developer.android.com/jetpack/androidx/releases/jankstats`。当前该地址会跳转到通用 versions 页，稳定版 1.0.0 的有效发布说明位于 `developer.android.com/jetpack/androidx/releases/metrics`。
+- **建议**：把 JankStats 的版本来源统一更新到 `androidx.metrics` 的 `metrics` 发布页，避免读者回源时落到无效锚点。
+
+## [Task9 Deep Review] 15.5 线上性能监控 — 2026-04-19
+- **类型**：源码准确性
+- **位置**：L414-L425 参考资料
+- **问题**：参考资料把 `frameworks/base/services/core/java/com/android/server/am/ProcessRecord.java` 标成“ANR 检测与 traces 写入”主锚点。Android 16 的 ANR 入口和处理链已经主要落在 `ProcessErrorStateRecord.java` 与 `AnrHelper.java`，`ProcessRecord.java` 更多是承接 kill/exit record。
+- **建议**：把 ANR 检测/trace 参考锚点改为 `ProcessErrorStateRecord.java`、`AnrHelper.java`，`ProcessRecord.java` 只在需要说明 killLocked/ApplicationExitInfo 记录时保留。
