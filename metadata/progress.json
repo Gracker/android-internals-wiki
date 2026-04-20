@@ -1,57 +1,55 @@
 {
-  "generated_at": "2026-04-20T22:47:21+08:00",
+  "generated_at": "2026-04-21T00:06:46+08:00",
   "state_machine_version": "v2",
   "total_sections": 173,
   "metrics": {
     "total": 173,
     "unknown": 0,
-    "last_updated": "2026-04-20T22:47:21+08:00",
+    "last_updated": "2026-04-21T00:06:46+08:00",
     "task2b_state_counts": {
-      "fixed": 130,
+      "pending": 22,
       "idle": 21,
-      "pending": 21,
+      "fixed": 129,
       "unknown": 1
     },
     "task9_state_counts": {
-      "pending": 123,
-      "reviewed": 49,
+      "reviewed": 51,
+      "pending": 121,
       "fixed": 1
     },
     "pipeline_stage_counts": {
-      "task6_pending": 88,
-      "ready-to-publish": 19,
-      "task9_pending": 44,
-      "task2b_pending": 19,
-      "'task9_pending'": 3
+      "task2b_pending": 21,
+      "task9_pending": 35,
+      "task6_pending": 97,
+      "ready-to-publish": 20
     },
-    "pipeline_task9_pending": 44,
-    "pipeline_task2b_pending": 19,
-    "pipeline_ready_to_publish": 19,
+    "pipeline_task9_pending": 35,
+    "pipeline_task2b_pending": 21,
+    "pipeline_ready_to_publish": 20,
     "ready-to-publish": 0,
-    "finalized": 19,
-    "ready-for-review": 154
+    "finalized": 20,
+    "ready-for-review": 153
   },
   "pipeline": {
     "pipeline_stage_counts": {
-      "task6_pending": 88,
-      "ready-to-publish": 19,
-      "task9_pending": 44,
-      "task2b_pending": 19,
-      "'task9_pending'": 3
+      "task2b_pending": 21,
+      "task9_pending": 35,
+      "task6_pending": 97,
+      "ready-to-publish": 20
     },
     "task2b_state_counts": {
-      "fixed": 130,
+      "pending": 22,
       "idle": 21,
-      "pending": 21,
+      "fixed": 129,
       "unknown": 1
     },
     "task6_state_counts": {
-      "revisiting": 81,
-      "reviewed": 92
+      "reviewed": 81,
+      "revisiting": 92
     },
     "task9_state_counts": {
-      "pending": 123,
-      "reviewed": 49,
+      "reviewed": 51,
+      "pending": 121,
       "fixed": 1
     }
   },
@@ -513,16 +511,18 @@
       "title": "帧率与刷新率",
       "chapter": "2.2",
       "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
-      "task9_state": "pending",
-      "task2b_state": "fixed",
-      "reviewed_date": "2026-04-20",
+      "task9_state": "reviewed",
+      "task2b_state": "pending",
+      "reviewed_date": "2026-04-21",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
-      "task9_reviewed_date": "2026-04-15",
-      "section": "2.2"
+      "task9_reviewed_date": "2026-04-21",
+      "section": "2.2",
+      "task9_reviewed_by": "openclaw-task9",
+      "last_task9_at": "2026-04-21T00:05:03+08:00"
     },
     "src/part1-fundamentals/ch02-rendering/03-vsync.md": {
       "path": "src/part1-fundamentals/ch02-rendering/03-vsync.md",
@@ -711,37 +711,38 @@
       "path": "src/part1-fundamentals/ch02-rendering/14-graphics-api-evolution.md",
       "title": "图形 API 演进与选择策略（OpenGL ES / Vulkan / ANGLE）",
       "chapter": "2.14",
-      "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "task6_state": "reviewed",
-      "task9_state": "pending",
+      "task9_state": "reviewed",
       "task2b_state": "fixed",
-      "reviewed_date": "2026-04-20",
+      "reviewed_date": "2026-04-21",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
-      "task9_result": "needs-rework",
+      "task9_result": "pass-tech-review",
       "task2b_result": "fixed",
-      "task9_reviewed_date": "2026-04-19",
-      "last_task9_at": "2026-04-19T13:40:06+08:00",
-      "section": "2.14"
+      "task9_reviewed_date": "2026-04-21",
+      "last_task9_at": "2026-04-21T00:05:03+08:00",
+      "section": "2.14",
+      "task9_reviewed_by": "openclaw-task9"
     },
     "src/part1-fundamentals/ch02-rendering/15-dmabuf-gralloc.md": {
       "path": "src/part1-fundamentals/ch02-rendering/15-dmabuf-gralloc.md",
       "title": "DMA-BUF、Gralloc 与跨进程图形内存共享",
       "chapter": "2.15",
-      "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "task6_state": "reviewed",
-      "task9_state": "pending",
+      "task9_state": "reviewed",
       "task2b_state": "fixed",
-      "reviewed_date": "2026-04-20",
+      "reviewed_date": "2026-04-21",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
-      "task9_result": "needs-rework",
+      "task9_result": "pass-tech-review",
       "task2b_result": "fixed",
-      "task9_reviewed_date": "2026-04-19",
+      "task9_reviewed_date": "2026-04-21",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-19T12:32:00+08:00",
+      "last_task9_at": "2026-04-21T00:05:03+08:00",
       "section": "2.15"
     },
     "src/part1-fundamentals/ch02-rendering/16-sync-fence.md": {

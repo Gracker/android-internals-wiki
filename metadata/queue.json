@@ -652,6 +652,32 @@
       "completed_at": "2026-04-20T22:47:21+08:00",
       "completed_by": "task2b-content-processing-rework",
       "resolution": "已修正 AOSP eBPF 路径到 system/bpf、UprobeStats bpf_progs 和 gpuMem.c，并把开销量化降回带条件的经验表述。"
+    },
+    {
+      "section": "2.2",
+      "section_title": "帧率与刷新率",
+      "priority": 95,
+      "reason": "[Deep Tech Review] FrameMetrics 常量名仍与官方 API 不符，且刷新率决策主线仍把 RefreshRateSelector 简化成“被所有 Layer 帧率整除”。",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "location": "L420-L426",
+          "detail": "FrameMetrics 常量名仍与官方 API 不一致。当前正文把 `INPUT_HANDLING_DURATION` 写成 `INPUT_EVENT_HANDLING_DURATION`，并声称 `GPU_DURATION` 不存在，但 Android Developers reference 当前列出的常量是 `INPUT_HANDLING_DURATION`（API 24+）和 `GPU_DURATION`（API 31+）。这会让读者直接写出无法编译或误判阶段含义的监控代码。",
+          "suggestion": "把常量列表修正为 `INPUT_HANDLING_DURATION` 与 `GPU_DURATION`，并把 `COMMAND_ISSUE_DURATION` 保留为“命令下发阶段”而不是 GPU 耗时的唯一替身。"
+        },
+        {
+          "type": "原理断裂",
+          "location": "L214-L225 / L603-L638",
+          "detail": "正文主线仍把 SurfaceFlinger 刷新率选择概括成“选择能被所有活跃 Layer 帧率整除的刷新率”，但扩展段已经说明 RefreshRateSelector 实际是 layer vote + score ranking。主线与扩展的口径没有收拢，读者会先建立过时的 LCM 心智模型。",
+          "suggestion": "把主线改成“整除只是部分 vote 的高分条件”，在首次引入决策逻辑时就补一段候选 refresh rate 评分 / 排序思路，再把详细实现留给扩展段展开。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-04-21T00:05:03+08:00",
+      "status": "pending"
     }
   ]
 }

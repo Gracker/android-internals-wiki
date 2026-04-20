@@ -49,14 +49,15 @@ related_chapters:
 - '2.9'
 - '7.1'
 re-review-result: 已纳入1条素材(部分纳入:OEM VSync修改误区+交叉引用),0处修正,待正常review质检
-pipeline_stage: 'task9_pending'
+pipeline_stage: task2b_pending
 task6_result: 'pass-light-edit'
 task6_state: reviewed
-task9_state: pending
+task9_state: reviewed
 task9_result: needs-rework
-task9_reviewed_date: "2026-04-15"
-task2b_state: fixed
-task2b_rework_date: "2026-04-15"
+task9_reviewed_date: "2026-04-21"
+task2b_state: pending
+task9_reviewed_by: openclaw-task9
+last_task9_at: "2026-04-21T00:05:03+08:00"
 ---
 
 # 帧率与刷新率
