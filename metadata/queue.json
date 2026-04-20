@@ -651,7 +651,24 @@
       "status": "completed",
       "completed_at": "2026-04-20T22:47:21+08:00",
       "completed_by": "task2b-content-processing-rework",
-      "resolution": "已修正 AOSP eBPF 路径到 system/bpf、UprobeStats bpf_progs 和 gpuMem.c，并把开销量化降回带条件的经验表述。"
+      "resolution": "已修正 AOSP eBPF 路径到 system/bpf、UprobeStats bpf_progs 和 gpuMem.c，并把开销量化降回带条件的经验表述。",
+      "external_review_supplements": [
+        {
+          "type": "版本差异/补充",
+          "location": "bpftrace 可用性描述",
+          "detail": "原文称 bpftrace 不是 Android 标准工具链一部分，但自 Android 12/13 起 AOSP external/bpftrace 已引入，userdebug/eng 可通过 m bpftrace 编译运行",
+          "suggestion": "修正关于 bpftrace 的绝对表述，说明 AOSP external/bpftrace 项目及 userdebug 环境下的标准路径",
+          "evidence": [
+            "AOSP external/bpftrace"
+          ]
+        },
+        {
+          "type": "版本差异/补充",
+          "location": "GKI 内核版本描述",
+          "detail": "Android 15 GKI 基于 6.6，Android 16 预期包含 6.12 LTS，Android 17 可能跨越到 6.14",
+          "suggestion": "明确 Kernel 6.12 LTS 作为 Android 16/17 GKI 核心选项，说明 sched_ext 进入 Android 生态的必然性"
+        }
+      ]
     },
     {
       "section": "2.2",
@@ -756,6 +773,73 @@
       "completed_at": "2026-04-21T01:55:15+08:00",
       "completed_by": "task2b-content-processing-rework",
       "resolution": "已把 AGDK 工具链拆成平台 API 与库/服务两条边界，并补充 GameManagerService 的 5 秒 loading boost 上限。"
+    },
+    {
+      "section": "14.8",
+      "section_title": "GPU 图形调试与分析工具",
+      "priority": 95,
+      "reason": "[External Review] AGI 2026 路线图断言基于 GFXReconstruct 重建 Frame Profiler，存在事实风险，需官方证据或删除",
+      "review_issues": [
+        {
+          "type": "源码/事实错误",
+          "location": "AGI 2025-2026 路线图",
+          "detail": "断言 AGI 将基于 GFXReconstruct 重建，AGI 传统基于 GAPID 追踪框架。Sokatoa 基于 GFXReconstruct 但 AGI 是否切换缺乏官方声明",
+          "suggestion": "查证 Google 官方关于 AGI 切换 GFXReconstruct 的声明；无证据则移除断言或标注为社区推测",
+          "evidence": [
+            "AGI 传统基于 GAPID",
+            "Samsung Sokatoa 基于 GFXReconstruct",
+            "需搜索: Android GPU Inspector GFXReconstruct"
+          ]
+        }
+      ],
+      "added_by": "external-ai-review",
+      "status": "pending"
+    },
+    {
+      "section": "14.8",
+      "section_title": "GPU 图形调试与分析工具",
+      "priority": 85,
+      "reason": "[External Review] ANGLE 从 allowlist 转 denylist 的渐进过程未准确描述，仅提 Android 17 而忽略 15/16 的渐进变化",
+      "review_issues": [
+        {
+          "type": "版本差异缺失",
+          "location": "ANGLE 行为描述段落",
+          "detail": "Android 15 已开始将 ANGLE 作为默认 GLES 驱动，到 16/17 是强制行为，应描述渐进过程而非仅提 17",
+          "suggestion": "明确 Android 15/16 期间 ANGLE 作为默认选项的渐进过程",
+          "evidence": [
+            "Android 15 Developer Options 中 ANGLE 切换选项",
+            "ro.gfx.angle.supported 属性变化"
+          ]
+        },
+        {
+          "type": "知识盲区",
+          "location": "GPU Profiling 性能开销段落",
+          "detail": "未提及 AGI System Profiler 采集 GPU Counter 时的驱动层开销（Mali GPU 高频轮询可能引发 CPU 侧中断）",
+          "suggestion": "补充说明 System Profiler 在极高采样率下可能引起的 CPU 扰动"
+        }
+      ],
+      "added_by": "external-ai-review",
+      "status": "pending"
+    },
+    {
+      "section": "14.9",
+      "section_title": "Android Camera 性能与 Perfetto 分析",
+      "priority": 85,
+      "reason": "[External Review] CameraMetadataNative 内存泄漏归因不准确，未讲清 NativeAllocationRegistry 机制，App 层无法直接 close",
+      "review_issues": [
+        {
+          "type": "源码逻辑过期",
+          "location": "误区三：CameraMetaDataNative 的内存泄漏",
+          "detail": "将内存泄漏归因为 Finalizer 且建议调用 close() 不符现代 AOSP 逻辑。Android 10+ 使用 NativeAllocationRegistry 注册释放回调；App 层拿到的是 TotalCaptureResult，无法直接调用 CameraMetadataNative.close()",
+          "suggestion": "用 AOSP 源码核验 CameraMetadataNative 的回收机制（frameworks/base/core/java/android/hardware/camera2/impl/CameraMetadataNative.java），修正防泄漏建议为避免长期持有过多 CaptureResult 强引用",
+          "evidence": [
+            "frameworks/base/core/java/android/hardware/camera2/impl/CameraMetadataNative.java",
+            "NativeAllocationRegistry 在 Android 10+ 中的作用"
+          ]
+        }
+      ],
+      "added_by": "external-ai-review",
+      "status": "pending"
     }
   ]
 }
