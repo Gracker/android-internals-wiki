@@ -5,7 +5,7 @@ chapter: "16.1"
 status: ready-for-review
 drafted_date: "2026-04-10"
 drafted_by: "openclaw-task2a"
-reviewed_date: "2026-04-19"
+reviewed_date: "2026-04-20"
 reviewed_by: "openclaw-task6"
 applicable_versions: "Android 4.1 (API 16) - Android 17 (API 37)"
 last_verified: "2026-04-11"
@@ -15,14 +15,15 @@ tags:
   - android
   - performance
   - aosp
-pipeline_stage: task2b_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: reviewed
 task9_result: needs-rework
 task9_reviewed_date: "2026-04-19"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-04-19T07:43:40+08:00"
 task2b_state: pending
+task6_result: pass-light-edit
 sources:
   - type: official
     path: "https://developer.android.com/about/versions/17/release-notes"
@@ -81,7 +82,7 @@ AutoFDO 就是典型例子。它优化的是内核和系统 native binary 的机
 
 这层思路决定了 Google 的工具长什么样。Android Vitals 追踪的是 ANR 率、崩溃率、卡顿率这类用户感知指标，不是“某个线程平均占了多少 CPU”。Macrobenchmark 的目标是复现冷启动、滚动、页面切换这些用户动作，然后确认优化前后用户真的会感觉到差别。
 
-这两层并不是二选一。系统层决定平台天花板，用户感知层决定 App 有没有把这个天花板用出来。系统已经把渲染、调度、编译链路做得很快了，但如果 App 还在主线程做同步 I/O、启动时塞满阻塞初始化、滚动里频繁分配对象，用户感知到的照样是慢。
+这两层并不是二选一。系统层决定平台天花板，用户感知层决定 App 有没有把这个天花板用出来。系统已经把渲染、调度、编译流程做得很快了，但如果 App 还在主线程做同步 I/O、启动时塞满阻塞初始化、滚动里频繁分配对象，用户感知到的照样是慢。
 
 ## 版本旗舰特性：一条清晰的演进线
 Google 从 Android 4.1 开始，几乎每个关键版本都有一轮很鲜明的性能主线。把这些主线串起来看，比单独背技术名词更有用。
@@ -106,7 +107,7 @@ Dalvik 到 ART 的切换，是 Android 运行时层面最重要的一次重写�
 但纯 AOT 很快又暴露出安装慢、产物大、全量编译不划算这些问题，所以从 Android 7.0 开始，ART 逐步走向 JIT、AOT、Profile-Guided 混合编译。系统先解释和采样，再根据真实热路径做更有针对性的编译。这条线最终演变成了 Baseline Profiles、Cloud Profiles、Startup Profiles 这些今天仍然在用的工具链。
 
 ### Project Treble（Android 8.0，2017）
-Project Treble 表面上讲的是架构解耦，实际上它解决了另一个性能大问题，Google 修好的系统优化到底能不能及时送到用户手里。
+Project Treble 表面上讲的是架构解耦，真实情况是它解决了另一个性能大问题，Google 修好的系统优化到底能不能及时送到用户手里。
 
 Treble 之前，Framework 和厂商 HAL 绑得很紧。Google 即使修好了框架层的性能 bug，也得等 SoC 厂商和 OEM 一层层适配，很多设备根本等不到更新。Treble 通过稳定接口把 Framework 和 HAL 拆开，把“平台层改进”和“厂商适配”之间的耦合降下来，这才给后面的 Mainline、Stable AIDL、模块化更新创造了前提。
 
@@ -117,7 +118,7 @@ Mainline 的最大价值在于把“系统能力更新如何送达设备”做�
 
 - Mainline / APEX / APK 模块更新。这是 ART、DNS Resolver、Permission Controller 这类系统模块的交付方式。像 ART runtime 的能力演进，才可能走这条路。
 - GKI kernel 分支与设备 OTA。AutoFDO 属于内核与系统 native binary 的构建优化，落在 `android15-6.6`、`android16-6.12` 这类内核分支和对应构建产物里，最终通过厂商 kernel OTA 或完整 OTA 到达设备，不属于 ART Mainline。
-- Google Play 安装期编译。Baseline Profiles 由 App 自己随 APK/AAB 打包，Cloud Profiles 由 Google Play 聚合用户行为后参与安装或后台编译。这条链路作用在 App 的安装与编译阶段，也不是 Mainline。
+- Google Play 安装期编译。Baseline Profiles 由 App 自己随 APK/AAB 打包，Cloud Profiles 由 Google Play 聚合用户行为后参与安装或后台编译。这条流程作用在 App 的安装与编译阶段，也不是 Mainline。
 
 这样再回头看 Android 17 的 runtime 变化，很多表述就会自然变准。比如 generational GC 是 Android 17 release notes 里写出的 runtime 能力变化，但不能因此把它直接写成“Mainline 推送的特性”；它是否回推到旧设备，要看对应 ART 模块版本、设备集成和 Google Play system update 的实际覆盖范围。Cloud Profiles 也是一样，它服务于 Play 安装期编译，不属于 ART Mainline 本身。
 
@@ -127,7 +128,7 @@ ART 这些年的优化，最值得我们盯住的是三条线，编译策略、G
 ### 编译策略：从 AOT 走向 Profile-Guided
 纯 AOT 的问题很直接，安装成本高、产物大、并不是所有方法都值得提前编译。Android 7.0 之后，ART 把解释执行、JIT 和后台 AOT 编译揉到一起，先靠运行时收集热路径，再决定哪些方法值得编译。
 
-这条路继续往前走，就有了 Google Play 参与的 Cloud Profiles 和开发者可控的 Baseline Profiles。官方 Baseline Profiles 文档给出的表述很清楚，Baseline Profiles 可以让关键代码路径从第一次启动开始就避免解释执行和 JIT，很多应用测得的执行速度提升大约在 30% 左右。更重要的是，官方同时强调了另一件事，发布 Baseline Profile 之后，优化生效会明显快于“只依赖 Cloud Profiles”的情况。这其实就是前面那三条交付路径里的第三条，Play 安装期编译链路，而不是 Mainline。
+这条路继续往前走，就有了 Google Play 参与的 Cloud Profiles 和开发者可控的 Baseline Profiles。官方 Baseline Profiles 文档给出的表述很清楚，Baseline Profiles 可以让关键代码路径从第一次启动开始就避免解释执行和 JIT，很多应用测得的执行速度提升大约在 30% 左右。更重要的是，官方同时强调了另一件事，发布 Baseline Profile 之后，优化生效会明显快于“只依赖 Cloud Profiles”的情况。这其实就是前面那三条交付方式里的第三条，Play 安装期编译流程，而不是 Mainline。
 
 ### GC：目标是减少前台打断
 Dalvik 时代的痛点我们都熟，STW 时间长、碎片化重、前台容易直接被顶住。ART 后续通过 Concurrent Copying、并发标记与对象搬移，一直在往“少打断前台”这件事上使劲。

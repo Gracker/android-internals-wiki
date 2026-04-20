@@ -13,7 +13,7 @@ applicable_versions: "Android 5.0 (API 21) - Android 17 (API 37)"
 last_verified: "2026-04-08"
 last_verified_against: "AOSP android-16.0.0_r1"
 confidence: high
-reviewed_date: "2026-04-14"
+reviewed_date: "2026-04-20"
 reviewed_by: openclaw-task6
 review_note: "Task 6 复审：按 writing-guide / STYLE / content-quality-gate 完成 10 处 L1/L2 小修，未新增回炉项，转入 Task 9"
 sources:
@@ -29,9 +29,9 @@ sources:
     path: "Cubox/结合源码和Perfetto分析Android渲染机制-2024-12-13.md"
 tags: ['renderthread', 'mainthread', 'displaylist', 'rendernode', 'syncframestate', 'hwui', '渲染流水线', 'GPU绘制']
 related_chapters: ["2.3", "2.4", "2.6", "2.15", "2.16", "3.1"]
-pipeline_stage: task6_pending
+pipeline_stage: task9_pending
 task6_result: pass-light-edit
-task6_state: revisiting
+task6_state: reviewed
 task9_result: needs-rework
 task9_state: pending
 task2b_state: fixed
