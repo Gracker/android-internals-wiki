@@ -5,7 +5,7 @@ section: "1.13"
 status: ready-for-review
 applicable_versions: "传统 MessageQueue：Android 1.0 (API 1)+；并发实现公开源码：Android 16；面向应用默认启用：Android 17 (API 37)"
 drafted_date: "2026-04-04"
-reviewed_date: "2026-04-14"
+reviewed_date: "2026-04-20"
 reviewed_by: openclaw-task6
 last_verified: "2026-04-14"
 last_verified_against: "AOSP android-15.0.0_r1 + android-16.0.0_r1 + Android Developers 2026-03-30"
@@ -33,9 +33,9 @@ tags:
   - messagequeue
   - deliqueue
 related_chapters: ["1.5", "1.14", "2.4", "2.5", "7.1"]
-pipeline_stage: task6_pending
-task6_state: revisiting
-task6_result: needs-rework
+pipeline_stage: task9_pending
+task6_state: reviewed
+task6_result: pass-light-edit
 task9_state: pending
 task9_result: needs-rework
 task2b_state: fixed

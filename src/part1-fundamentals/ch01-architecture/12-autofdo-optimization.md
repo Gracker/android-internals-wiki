@@ -5,7 +5,7 @@ section: "1.12"
 status: ready-for-review
 drafted_date: "2026-04-06"
 drafted_by: "openclaw-task2a"
-reviewed_date: "2026-04-19"
+reviewed_date: "2026-04-20"
 reviewed_by: "openclaw-task6"
 applicable_versions: "Android 12 (API 31) - Android 16 (API 36)"
 last_verified: "2026-04-20"
@@ -44,8 +44,8 @@ related_chapters:
 task9_reviewed_date: "2026-04-20"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-04-20T07:50:52+08:00"
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task2b_result: fixed
 task2b_state: fixed
@@ -404,6 +404,6 @@ Google 的官方说法是：AutoFDO 主要影响编译器的启发式决策（�
 ### AutoFDO：从数据中心到 Android 内核的编译优化革命
 - 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/AutoFDO：从数据中心到 Android 内核的编译优化革命.md
 - 类型：DeepResearch 调研结果
-- 摘要：这篇调研把 AutoFDO 从 Google 数据中心一路串到 Android 内核，拆开 ETM/simpleperf 采样、profile 转换和 LLVM 应用闭环，并补上 Pixel 设备在 mmap、冷启动、Binder RPC 上的收益数据。
+- 摘要：这篇调研把 AutoFDO 从 Google 数据中心一路串到 Android 内核，拆开 ETM/simpleperf 采样、profile 转换和 LLVM 应用流程，并补上 Pixel 设备在 mmap、冷启动、Binder RPC 上的收益数据。
 - 注入时间：2026-04-18
-- 价值：把 1.12 从概念介绍推进到实验闭环和内核落地细节。
+- 价值：把 1.12 从概念介绍推进到实验验证和内核集成细节。
