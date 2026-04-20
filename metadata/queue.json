@@ -537,6 +537,46 @@
       "completed_at": "2026-04-20T18:33:00+08:00",
       "completed_by": "task2b-content-processing-rework",
       "resolution": "已修正 BroadcastQueue AOSP 锚点与 Android 14 实现分工，改用 ActivityManagerConstants 说明 Service / FGS 默认超时，并按版本拆开 startForeground 宽限期演进。"
+    },
+    {
+      "section": "4.4",
+      "section_title": "Low Memory Killer",
+      "priority": 95,
+      "reason": "[Deep Tech Review] `ro.lmk.psi_complete_stall_ms` 默认值写成 70ms，与 android-16.0.0_r1 的 lmkd.cpp 默认 700ms 不符。",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "location": "L214-L215",
+          "detail": "正文把 `ro.lmk.psi_complete_stall_ms` 默认值写成 70ms，但 AOSP android-16.0.0_r1 `system/memory/lmkd/lmkd.cpp` 的 `DEF_COMPLETE_STALL` 为 700。当前写法会把 PSI severe stall 判定阈值缩小 10 倍。",
+          "suggestion": "改成 `ro.lmk.psi_complete_stall_ms` 默认 700ms，并补一句 partial/complete stall 默认值并不对称，避免把两级 stall window 写成同一阈值。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-04-20T20:06:23+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "8.7",
+      "section_title": "Baseline Profiles 与编译优化实践",
+      "priority": 85,
+      "reason": "[Deep Tech Review] 非 Google Play 安装路径被写成安装时直接消费 Baseline Profile，漏掉 ProfileInstaller / 后台 dexopt 的真实触发边界。",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "原理断裂/版本差异",
+          "location": "L310-L314",
+          "detail": "正文写成 Baseline Profiles 在任意渠道安装时都会被 dex2oat 直接消费。官方 debug 文档明确区分三条路径：Studio/Gradle non-debuggable build 自动编译，Google Play 在 background device updates 期间编译，其他 installer 由 ProfileInstaller 入队到下一次 background DEX optimization。当前写法会误导读者把侧载首装和 Play/Studio 路径当成同一种生效时机。",
+          "suggestion": "改成分渠道描述，并强调非 Play 侧载常常需要 `ProfileInstaller` 或手工 `cmd package compile -r bg-dexopt` 才能稳定看到 `speed-profile` 产物。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-04-20T20:06:23+08:00",
+      "status": "pending"
     }
   ]
 }
