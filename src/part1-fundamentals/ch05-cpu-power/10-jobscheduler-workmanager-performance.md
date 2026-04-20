@@ -8,7 +8,7 @@ polish_count: 1
 polish_date: "2026-04-09"
 polish_by: "task2b-polish"
 applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37)"
-last_verified: "2026-04-12"
+last_verified: "2026-04-20"
 reviewed_date: "2026-04-20"
 reviewed_by: "openclaw-task6"
 last_verified_against: "AOSP android-16.0.0_r1, developer.android.com reference, perfetto.dev stdlib docs"
@@ -22,6 +22,8 @@ sources:
     path: "https://developer.android.com/reference/android/app/usage/UsageStatsManager"
   - type: official
     path: "https://developer.android.com/topic/libraries/architecture/workmanager/how-to/define-work"
+  - type: official
+    path: "https://developer.android.com/about/versions/16/behavior-changes-all"
   - type: official
     path: "https://developer.android.com/about/versions/17/features#job-debugging"
   - type: official
@@ -38,10 +40,11 @@ sources:
     path: "frameworks/base/apex/jobscheduler/framework/java/android/app/job/JobScheduler.java"
 tags: [jobscheduler, workmanager, background-scheduling, power, doze, battery, wakelock, app-standby, quota]
 related_chapters: ["5.6", "5.8", "1.5", "11.2", "15.5"]
-pipeline_stage: task2b_pending
-task6_state: "reviewed"
-task9_state: reviewed
-task2b_state: pending
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
+task2b_state: fixed
+task2b_result: fixed
 task6_result: "pass-light-edit"
 task9_result: needs-rework
 task9_reviewed_by: "openclaw-task9"
@@ -116,7 +119,7 @@ JobScheduler 在 Android 16 的代码已经搬到 `frameworks/base/apex/jobsched
 
 当某个 Controller 检测到状态变化时（比如设备开始充电），它会通知 JobSchedulerService 重新评估所有符合条件的任务。
 
-**JobStore** 负责任务的持久化。任务信息以 XML 格式存储在 `/data/system/job/jobs.xml` 中，设备重启后任务不会丢失。这一点是 AlarmManager + PendingIntent 方案的一个关键优势——PendingIntent 中的 BroadcastReceiver 在设备重启后会丢失。
+**JobStore** 负责任务的持久化。带 `setPersisted(true)` 的 job 会以 XML 形式存储在 `/data/system/job/jobs.xml` 中，系统重启后可以由 JobStore 恢复。这一点是 JobScheduler 相比 AlarmManager 方案的一条实际差异。alarm 本身不会跨 reboot 保留，App 通常要在 `BOOT_COMPLETED` 之后自行重建调度；`BroadcastReceiver` 组件不会因为 `PendingIntent` 而“丢失”，真正消失的是系统里那条已经注册的 alarm。
 
 ```java
 // frameworks/base/apex/jobscheduler/service/java/com/android/server/job/JobSchedulerService.java
@@ -171,6 +174,8 @@ JobScheduler 不是“先 schedule 先执行”。系统会同时看 job priorit
 
 App Standby Bucket 的时间线也要写清楚。Android 9（API 28）引入的起点是四档：`ACTIVE`、`WORKING_SET`、`FREQUENT`、`RARE`。`STANDBY_BUCKET_RESTRICTED` 是 API 30 新增常量，`UsageStatsManager` 文档还专门标注它在 Android 11（R）默认未启用。实践里可以把它理解成“系统已经开始明显收紧这个 App 的后台额度”，但不要把它回写到 Android 9 的起点表里。
 
+Android 16 把 quota 规则又收紧了一层。regular job 和 expedited job 的 runtime quota 除了看 standby bucket，还看 job 是不是在 App 处于 top state 时启动、是否与 Foreground Service 并发执行。连 `ACTIVE` bucket 也进入了“较宽松但有限”的额度模型。用户明确发起的数据传输，更适合改用 UIDT job。
+
 ```java
 // frameworks/base/apex/jobscheduler/service/java/com/android/server/job/controllers/QuotaController.java
 // @ AOSP android-16.0.0_r1
@@ -185,7 +190,7 @@ boolean isWithinQuotaLocked(JobStatus job) {
 
 Bucket 越靠后，系统给后台 job 的窗口越紧。我们在排查“任务一直不跑”时，不能只看 `requiresCharging`、`requiresUnmeteredNetwork` 这类显式约束，还要同时看调用方是不是已经掉进了更严格的 bucket。
 
-[已验证: AOSP android-16.0.0_r1, frameworks/base/apex/jobscheduler/service/java/com/android/server/job/controllers/QuotaController.java; developer.android.com/reference/android/app/job/JobInfo.Builder; developer.android.com/reference/android/app/usage/UsageStatsManager]
+[已验证: AOSP android-16.0.0_r1, frameworks/base/apex/jobscheduler/service/java/com/android/server/job/controllers/QuotaController.java; developer.android.com/reference/android/app/job/JobInfo.Builder; developer.android.com/reference/android/app/usage/UsageStatsManager; developer.android.com/about/versions/16/behavior-changes-all]
 
 ### Expedited Job
 
@@ -227,7 +232,7 @@ WorkManager 内部使用 `Schedulers` 类来选择底层的调度实现。选择
 2. **API 14-22**：回退到 `SystemAlarmScheduler`，使用 `AlarmManager` + `BroadcastReceiver` 实现
 3. **进程内调度**：当 App 进程存活时，WorkManager 还可以使用 `GreedyScheduler` 立即执行满足约束的任务，无需等待系统调度
 
-这个过程对开发者透明，但理解底层机制对性能分析很重要——当我们在 Perfetto 中看到 AlarmManager 相关的唤醒而不是 JobScheduler 时，可能是因为 App target 的是低 API 版本，或者设备厂商定制了调度行为。
+这个过程对开发者透明，但理解底层机制对性能分析很有用。当我们在 Perfetto 中看到 AlarmManager 相关的唤醒而不是 JobScheduler，常见原因是设备 API level 低于 23、WorkManager 走了 `SystemAlarmScheduler` fallback，或者任务在进程存活时直接由 `GreedyScheduler` 在进程内执行。这里看的主轴是设备 API level 和运行时调度路径，不是 `targetSdkVersion`。
 
 ```java
 // androidx/work/impl/WorkManagerImpl.java
@@ -531,8 +536,10 @@ App 进入 Rare 或 Restricted Bucket 后，后台任务几乎无法执行。应
 - `JobInfo.Builder.setUserInitiated(true)` 引入，用于用户发起的 network data transfer
 - `setPriority(int)` 的文档说明收窄到同一 `job namespace` 内排序，不再暗示跨 namespace 的更大范围影响
 
-### Android 16（API 36）：pending 原因与历史
+### Android 16（API 36）：quota 优化 + pending 原因历史
 
+- regular / expedited job 的 runtime quota 继续细化，`ACTIVE` bucket 也进入“较宽松但有限”的额度模型
+- job 如果在 App 可见时启动，转到后台后仍继续按 quota 计时；与 Foreground Service 并发执行的 job 也会被计入 quota
 - `getPendingJobReasons(int)` 返回当前 pending 原因数组
 - `getPendingJobReasonsHistory(int)` 返回有限历史窗口，元素类型是 `PendingJobReasonsInfo`
 
@@ -541,7 +548,7 @@ App 进入 Rare 或 Restricted Bucket 后，后台任务几乎无法执行。应
 - `getPendingJobReasonStats(int)` 返回 `Map<Integer, Duration>`
 - 适合统计一个 job 在整个等待期里，quota、network、battery 等原因各自占了多长时间
 
-[已验证: developer.android.com/reference/android/app/job/JobScheduler; developer.android.com/reference/android/app/job/JobInfo.Builder; developer.android.com/reference/android/app/usage/UsageStatsManager]
+[已验证: developer.android.com/reference/android/app/job/JobScheduler; developer.android.com/reference/android/app/job/JobInfo.Builder; developer.android.com/reference/android/app/usage/UsageStatsManager; developer.android.com/about/versions/16/behavior-changes-all]
 
 ## 常见问题与误区
 
