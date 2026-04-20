@@ -3991,3 +3991,28 @@
 - **位置**：L281-L288
 - **问题**：版本演进里把“Android 16：Perfetto 增强 heapprofd 的 Java 堆采样能力”写成事实条目，但正文只给出 `[待验证]`，缺少 Perfetto 文档或 AOSP 依据。
 - **建议**：在拿到一手来源前，把这条移出正式版本演进，改成 research gap 或待核实备注。
+
+
+## [Task9 Deep Review] 4.4 Low Memory Killer — 2026-04-20
+- **类型**：数据缺失
+- **位置**：L382-L390
+- **问题**：16KB Page Size 小节引用“冷启动速度提升 20%-40%”，但没有给出测试设备、工作负载和与 LMK 行为之间的因果边界。
+- **建议**：把数值改成带条件的官方结论，并补一句“这是平台级冷启动收益，不直接等价于 LMK 杀进程频率下降”。
+
+## [Task9 Deep Review] 8.7 Baseline Profiles 与编译优化实践 — 2026-04-20
+- **类型**：版本差异
+- **位置**：L230
+- **问题**：Startup Profile DEX layout 优化的描述缺少 R8 `isMinifyEnabled=true` 前提，也没有说明 Startup Profiles 不能由库贡献。
+- **建议**：补上“AGP 8.3 默认开启 dex layout optimization 仍以 R8 打开为前提”，并补一行库 profile 与 startup profile 的边界。
+
+## [Task9 Deep Review] 9.6 Notification 性能与 ANR — 2026-04-20
+- **类型**：交叉引用
+- **位置**：L453
+- **问题**：Perfetto SQL 分析指向 §13.7，但书内 SQL 实战手册是 §13.10。
+- **建议**：改成 §13.10，或同时标出 §13.7（高级用法）与 §13.10（SQL 手册）的分工。
+
+## [Task9 Deep Review] 9.6 Notification 性能与 ANR — 2026-04-20
+- **类型**：版本差异
+- **位置**：L459
+- **问题**：版本演进表把包级通知速率限制放在 Android 12 项里，容易误读为 Android 12 新增；相同常量和 `mUsageStats.getAppEnqueueRate()` 路径在 android-10.0.0_r1 已存在。
+- **建议**：改成“Android 10+ 延续到 Android 16 的限制”，或把它挪出版本增量表，改成跨版本通用边界说明。

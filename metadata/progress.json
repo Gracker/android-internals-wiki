@@ -1,50 +1,50 @@
 {
-  "generated_at": "2026-04-20T18:33:00+08:00",
+  "generated_at": "2026-04-20T20:06:23+08:00",
   "state_machine_version": "v2",
   "total_sections": 176,
   "metrics": {
     "total": 176,
     "unknown": 2,
-    "last_updated": "2026-04-20T18:33:00+08:00",
+    "last_updated": "2026-04-20T20:06:23+08:00",
     "task2b_state_counts": {
       "unknown": 2,
-      "fixed": 129,
+      "fixed": 127,
       "idle": 23,
-      "pending": 22
+      "pending": 24
     },
     "task9_state_counts": {
       "unknown": 1,
-      "pending": 128,
-      "reviewed": 46,
+      "pending": 125,
+      "reviewed": 49,
       "fixed": 1
     },
     "pipeline_stage_counts": {
       "unknown": 1,
       "task6_pending": 96,
-      "ready-to-publish": 15,
-      "task9_pending": 43,
-      "task2b_pending": 21
+      "ready-to-publish": 16,
+      "task9_pending": 40,
+      "task2b_pending": 23
     },
-    "pipeline_task9_pending": 43,
-    "pipeline_task2b_pending": 21,
-    "pipeline_ready_to_publish": 15,
+    "pipeline_task9_pending": 40,
+    "pipeline_task2b_pending": 23,
+    "pipeline_ready_to_publish": 16,
     "ready-to-publish": 0,
-    "finalized": 15,
-    "ready-for-review": 159
+    "finalized": 16,
+    "ready-for-review": 158
   },
   "pipeline": {
     "pipeline_stage_counts": {
       "unknown": 1,
       "task6_pending": 96,
-      "ready-to-publish": 15,
-      "task9_pending": 43,
-      "task2b_pending": 21
+      "ready-to-publish": 16,
+      "task9_pending": 40,
+      "task2b_pending": 23
     },
     "task2b_state_counts": {
       "unknown": 2,
-      "fixed": 129,
+      "fixed": 127,
       "idle": 23,
-      "pending": 22
+      "pending": 24
     },
     "task6_state_counts": {
       "unknown": 1,
@@ -54,8 +54,8 @@
     },
     "task9_state_counts": {
       "unknown": 1,
-      "pending": 128,
-      "reviewed": 46,
+      "pending": 125,
+      "reviewed": 49,
       "fixed": 1
     }
   },
@@ -1025,16 +1025,19 @@
       "title": "Low Memory Killer",
       "chapter": "4.4",
       "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
-      "task9_state": "pending",
-      "task2b_state": "fixed",
+      "task9_state": "reviewed",
+      "task2b_state": "pending",
       "reviewed_date": "2026-04-20",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
-      "section": "4.4"
+      "section": "4.4",
+      "task9_reviewed_date": "2026-04-20",
+      "task9_reviewed_by": "openclaw-task9",
+      "last_task9_at": "2026-04-20T20:06:23+08:00"
     },
     "src/part1-fundamentals/ch04-memory/05-app-memory-optimization.md": {
       "path": "src/part1-fundamentals/ch04-memory/05-app-memory-optimization.md",
@@ -1771,16 +1774,19 @@
       "title": "Baseline Profiles 与编译优化实践",
       "chapter": "8.7",
       "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
-      "task9_state": "pending",
-      "task2b_state": "fixed",
+      "task9_state": "reviewed",
+      "task2b_state": "pending",
       "reviewed_date": "2026-04-20",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
-      "section": "8.7"
+      "section": "8.7",
+      "task9_reviewed_date": "2026-04-20",
+      "task9_reviewed_by": "openclaw-task9",
+      "last_task9_at": "2026-04-20T20:06:23+08:00"
     },
     "src/part2-performance/ch08-responsiveness/08-media-pipeline.md": {
       "path": "src/part2-performance/ch08-responsiveness/08-media-pipeline.md",
@@ -1927,17 +1933,20 @@
       "path": "src/part2-performance/ch09-anr/06-notification-performance-anr.md",
       "title": "Notification 性能与 ANR",
       "chapter": "9.6",
-      "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "task6_state": "reviewed",
-      "task9_state": "pending",
+      "task9_state": "reviewed",
       "task2b_state": "fixed",
       "reviewed_date": "2026-04-20",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
-      "task9_result": "needs-rework",
+      "task9_result": "pass-tech-review",
       "task2b_result": "fixed",
-      "section": "9.6"
+      "section": "9.6",
+      "task9_reviewed_date": "2026-04-20",
+      "task9_reviewed_by": "openclaw-task9",
+      "last_task9_at": "2026-04-20T20:06:23+08:00"
     },
     "src/part2-performance/ch09-anr/07-non-technical-anr-diagnosis.md": {
       "path": "src/part2-performance/ch09-anr/07-non-technical-anr-diagnosis.md",
