@@ -1,32 +1,32 @@
 {
-  "generated_at": "2026-04-20T18:09:27+08:00",
+  "generated_at": "2026-04-20T18:33:00+08:00",
   "state_machine_version": "v2",
   "total_sections": 176,
   "metrics": {
     "total": 176,
     "unknown": 2,
-    "last_updated": "2026-04-20T18:09:27+08:00",
+    "last_updated": "2026-04-20T18:33:00+08:00",
     "task2b_state_counts": {
       "unknown": 2,
-      "fixed": 127,
+      "fixed": 129,
       "idle": 23,
-      "pending": 24
+      "pending": 22
     },
     "task9_state_counts": {
       "unknown": 1,
-      "pending": 126,
-      "reviewed": 48,
+      "pending": 128,
+      "reviewed": 46,
       "fixed": 1
     },
     "pipeline_stage_counts": {
       "unknown": 1,
-      "task6_pending": 94,
+      "task6_pending": 96,
       "ready-to-publish": 15,
       "task9_pending": 43,
-      "task2b_pending": 23
+      "task2b_pending": 21
     },
     "pipeline_task9_pending": 43,
-    "pipeline_task2b_pending": 23,
+    "pipeline_task2b_pending": 21,
     "pipeline_ready_to_publish": 15,
     "ready-to-publish": 0,
     "finalized": 15,
@@ -35,27 +35,27 @@
   "pipeline": {
     "pipeline_stage_counts": {
       "unknown": 1,
-      "task6_pending": 94,
+      "task6_pending": 96,
       "ready-to-publish": 15,
       "task9_pending": 43,
-      "task2b_pending": 23
+      "task2b_pending": 21
     },
     "task2b_state_counts": {
       "unknown": 2,
-      "fixed": 127,
+      "fixed": 129,
       "idle": 23,
-      "pending": 24
+      "pending": 22
     },
     "task6_state_counts": {
       "unknown": 1,
-      "revisiting": 88,
-      "reviewed": 86,
+      "revisiting": 90,
+      "reviewed": 84,
       "pending": 1
     },
     "task9_state_counts": {
       "unknown": 1,
-      "pending": 126,
-      "reviewed": 48,
+      "pending": 128,
+      "reviewed": 46,
       "fixed": 1
     }
   },
@@ -1689,10 +1689,10 @@
       "title": "App 启动全流程",
       "chapter": "8.2",
       "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
-      "task6_state": "reviewed",
-      "task9_state": "reviewed",
-      "task2b_state": "pending",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
+      "task9_state": "pending",
+      "task2b_state": "fixed",
       "reviewed_date": "2026-04-16",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
@@ -1700,7 +1700,9 @@
       "task9_result": "needs-rework",
       "task9_reviewed_date": "2026-04-20",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-20T18:09:27+08:00"
+      "last_task9_at": "2026-04-20T18:09:27+08:00",
+      "task2b_result": "fixed",
+      "last_task2b_at": "2026-04-20T18:33:00+08:00"
     },
     "src/part2-performance/ch08-responsiveness/03-launch-optimization.md": {
       "path": "src/part2-performance/ch08-responsiveness/03-launch-optimization.md",
@@ -1863,10 +1865,10 @@
       "title": "ANR 类型与触发条件",
       "chapter": "9.2",
       "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
-      "task6_state": "reviewed",
-      "task9_state": "reviewed",
-      "task2b_state": "pending",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
+      "task9_state": "pending",
+      "task2b_state": "fixed",
       "reviewed_date": "2026-04-16",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
@@ -1874,7 +1876,9 @@
       "task9_result": "needs-rework",
       "task9_reviewed_date": "2026-04-20",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-20T18:09:27+08:00"
+      "last_task9_at": "2026-04-20T18:09:27+08:00",
+      "task2b_result": "fixed",
+      "last_task2b_at": "2026-04-20T18:33:00+08:00"
     },
     "src/part2-performance/ch09-anr/03-anr-analysis.md": {
       "path": "src/part2-performance/ch09-anr/03-anr-analysis.md",

@@ -3,8 +3,8 @@ title: "App 启动全流程"
 chapter: "8.2"
 status: ready-for-review
 applicable_versions: "Android 8.0 (API 26) - Android 16 (API 36)"
-last_verified: "2026-04-01"
-last_verified_against: "AOSP android-15.0.0_r1"
+last_verified: "2026-04-20"
+last_verified_against: "AOSP android-15.0.0_r1, AndroidX Activity release notes, Perfetto atrace docs, Android Developers baseline profiles docs"
 confidence: medium
 sources:
   - type: blog
@@ -17,6 +17,12 @@ sources:
     path: "Cubox/Android 强推的 Baseline Profiles 国内能用吗？我找 Google 工程师求证了！ - 掘金-2022-07-17.md"
   - type: official
     path: "developer.android.com/topic/performance/vitals/launch-time"
+  - type: official
+    path: "https://developer.android.com/jetpack/androidx/releases/activity"
+  - type: official
+    path: "https://perfetto.dev/docs/getting-started/atrace"
+  - type: official
+    path: "https://developer.android.com/topic/performance/baselineprofiles"
 tags: [cold-start, warm-start, hot-start, TTID, TTFD, launch, startup, reportFullyDrawn, baseline-profiles, app-startup, contentprovider, process-creation]
 related_chapters: ["8.1", "1.2", "1.10", "2.4", "2.5", "7.1"]
 section: "8.2"
@@ -27,12 +33,14 @@ reviewed_by: "openclaw-task6"
 polish_count: 1
 polish_date: "2026-04-06"
 polish_by: "task2b-polish"
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
-task9_state: reviewed
+task9_state: pending
 task9_result: needs-rework
-task2b_state: pending
+task2b_state: fixed
+task2b_result: fixed
+last_task2b_at: "2026-04-20T18:33:00+08:00"
 ---
 
 # App 启动全流程
@@ -234,7 +242,9 @@ ActivityTaskManager: Fully drawn com.example.app/.MainActivity: +2s156ms
 
 ### FullyDrawnReporter：多条件 TTFD 统计
 
-如果应用的界面需要等待多个异步任务（比如同时发起 A、B、C 三个网络请求，全部完成后才算界面完整），AndroidX Activity 1.8.0 引入了 FullyDrawnReporter 工具来简化这种场景：
+如果应用的界面需要等待多个异步任务（比如同时发起 A、B、C 三个网络请求，全部完成后才算界面完整），AndroidX Activity 1.7.0 就已经提供了 `FullyDrawnReporter`。1.8.x 主要是后续修复和兼容性调整，不是首次引入。
+
+`ComponentActivity` 持有 `fullyDrawnReporter`，Activity Compose 1.7.0 还提供了 `ReportDrawn`、`ReportDrawnWhen`、`ReportDrawnAfter` 这组辅助 API，用来把多个就绪信号汇总到同一个 reporter：
 
 ```kotlin
 // 在每个异步任务开始前注册 reporter
@@ -327,6 +337,7 @@ data_sources: {
             ftrace_events: "power/cpu_frequency"
             ftrace_events: "power/cpu_idle"
             atrace_categories: "am"
+            atrace_apps: "com.example.app"
             atrace_categories: "view"
             atrace_categories: "gfx"
             atrace_categories: "dalvik"
@@ -338,11 +349,13 @@ duration_ms: 10000
 EOF
 ```
 
+system_server 和应用进程的采集条件要分开看。`atrace_categories: "am"` 负责拿到 system_server 里的启动切片；应用侧的 `performTraversals`、`DrawFrame`、`queueBuffer`、自定义 `Trace` marker 要靠 `atrace_apps` 打开目标进程的 atrace 通道。只配 category 不配 app，App 进程里的 `view` / `gfx` / `dalvik` slice 往往不会稳定出现。排查单个应用时填包名，做通用模板时可以改成 `atrace_apps: "*"`。
+
 在 Perfetto 中，我们应该关注这些关键 slice：
 
 | Slice 名称 | 所在进程 | 含义 |
 |---|---|---|
-| `launching: xxx` | system_server | ATMS 记录的启动过程，从 startActivity 返回到首帧完成 |
+| `launchingActivity#...` / `launching: xxx` | system_server | ActivityMetricsLogger 的启动区间，从 `notifyActivityLaunching()` 建立 `LaunchingState` 到首帧完成 |
 | `BindApplication` | App 进程 | Application 对象创建和初始化 |
 | `activityCreate` / `activityStart` / `activityResume` | App 进程 | Activity 生命周期的各阶段 |
 | `performTraversals` | App 主线程 | View 树的 measure/layout/draw |
@@ -351,15 +364,15 @@ EOF
 
 [已验证: 官方文档, developer.android.com/topic/performance/vitals/launch-time]
 
-### 各度量方法的差异
+### 各度量方法的口径
 
-这些度量方法的统计起止时间有微妙差异：
+这几种工具共享同一条启动主线，但展示粒度不同：
 
-- **Displayed / am start -W TotalTime**：从 ActivityMetricsLogger.notifyActivityLaunching() 到 ViewRootImpl 报告的首帧绘制完成时间
-- **Perfetto "launching: xxx"**：从 notifyActivityLaunched()（在 startActivity() 返回之后）到首帧绘制完成。比 Displayed 少了 startActivity() 内部的处理时间
-- **reportFullyDrawn()**：起始时间同 TTID，但结束时间由应用决定
+- **Displayed / am start -W TotalTime**：以 `ActivityMetricsLogger.notifyActivityLaunching()` 建立启动记录的时刻为起点，到首帧绘制完成结束
+- **Perfetto `launching: xxx` / `launchingActivity#...`**：复用同一份 `LaunchingState`，起点同样是 `notifyActivityLaunching()`；`notifyActivityLaunched()` 负责把已解析的目标 Activity 挂到这次启动记录上，不是计时起点
+- **`reportFullyDrawn()`**：起点和 TTID 一样，结束时间由应用主动声明
 
-所以我们发现 Perfetto 中的 "launching" 时间总是比 logcat 中的 "Displayed" 时间少一些。这不是 Bug，是统计口径的差异。
+因此三者的差别主要在可观测粒度和结束点，而不是 `notifyActivityLaunched()` 是否参与计时。想拆分 system_server、App 主线程、RenderThread 各段耗时，用 Perfetto；想做批量回归或自动化门禁，用 `am start -W` 和 `Displayed` 更直接。
 
 [来源: obsidian/Cubox/Activity 启动速度分析方法（启动流程分析） - Light.Moon-2022-04-11.md]
 
@@ -445,9 +458,9 @@ Baseline Profile 的核心思想是：与其等系统自动收集 Profile，不�
 
 ### Cloud Profile：不依赖应用更新的 Profile 下发
 
-Baseline Profile 需要打包在 APK 中（或通过 AndroidX BaselineProfile Gradle 插件生成），这意味着开发者需要在应用更新中才能更新 Profile。Android 15 引入了 Cloud Profile 机制：Google Play 可以下发由平台收集的聚合 Profile（基于大量用户的使用数据），不需要应用更新。这意味着即使没有在自己的 APK 中打包 Baseline Profile，Google Play 也能提供一份。
+Baseline Profile 需要打包在 APK 中（或通过 AndroidX BaselineProfile Gradle 插件生成），开发者发版时就能把启动关键路径一起交付给用户。Cloud Profile 不是 Android 15 才出现的新机制。Android 9 及以上的 Google Play 安装流程就会把聚合后的运行时 Profile 分发给后续安装或更新的设备，用来补齐真实用户热点执行路径。
 
-但需要注意的是，Cloud Profile 在国内的 Google Play 服务不可用的环境下无法使用。
+Cloud Profile 依赖 Google Play 的安装和分发流程。国内常见的无 Play 环境通常拿不到这部分，只能依赖 APK 内自带的 Baseline Profile，以及设备本地运行后逐步生成的 ART Profile。
 
 ## App Startup Library：统一初始化入口
 
@@ -538,6 +551,9 @@ ContentProvider 的初始化发生在 Application.onCreate 之前，是启动流
 - [启动优化 · 基础论 · 浅析Android启动优化 | 小木箱](https://juejin.cn/post/7183144743411384375) [来源: obsidian/Cubox/启动优化 ·  基础论 ·  浅析Android启动优化-2022-12-31.md]
 - [FullyDrawnReporter—一个官方冷启动耗时统计小工具 | 掘金](https://juejin.cn/post/7315265525772124223) [来源: obsidian/Cubox/FullyDrawnReporter—一个官方冷启动耗时统计小工具 - 掘金-2023-12-24.md]
 - [Android 强推的 Baseline Profiles 国内能用吗？ | 朱涛·沉思录](https://juejin.cn/post/7104230480391864356) [来源: obsidian/Cubox/Android 强推的 Baseline Profiles 国内能用吗？我找 Google 工程师求证了！ - 掘金-2022-07-17.md]
+- [AndroidX Activity release notes](https://developer.android.com/jetpack/androidx/releases/activity) [已验证: 官方文档]
+- [Instrumenting Android apps/platform with atrace | Perfetto](https://perfetto.dev/docs/getting-started/atrace) [已验证: 官方文档]
+- [Baseline Profiles | Android Developers](https://developer.android.com/topic/performance/baselineprofiles) [已验证: 官方文档]
 - [Jetpack App Startup | Android Developers](https://developer.android.com/topic/libraries/app-startup) [已验证: 官方文档]
 - [AOSP ActivityThread.java](https://cs.android.com/android/platform/superproject/+/android-15.0.0_r1:frameworks/base/core/java/android/app/ActivityThread.java) [已验证: AOSP android-15.0.0_r1]
 - [AOSP TransactionExecutor.java](https://cs.android.com/android/platform/superproject/+/android-15.0.0_r1:frameworks/base/core/java/android/app/servertransaction/TransactionExecutor.java) [已验证: AOSP android-15.0.0_r1]

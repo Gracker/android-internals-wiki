@@ -498,7 +498,10 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-20T18:09:27+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-04-20T18:33:00+08:00",
+      "completed_by": "task2b-content-processing-rework",
+      "resolution": "已补充 Perfetto `atrace_apps` 采集条件，修正 FullyDrawnReporter 首次引入版本、launching trace 计时口径与 Cloud Profile 版本边界，并补上对应官方来源。"
     },
     {
       "section": "9.2",
@@ -530,7 +533,10 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-20T18:09:27+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-04-20T18:33:00+08:00",
+      "completed_by": "task2b-content-processing-rework",
+      "resolution": "已修正 BroadcastQueue AOSP 锚点与 Android 14 实现分工，改用 ActivityManagerConstants 说明 Service / FGS 默认超时，并按版本拆开 startForeground 宽限期演进。"
     }
   ]
 }
