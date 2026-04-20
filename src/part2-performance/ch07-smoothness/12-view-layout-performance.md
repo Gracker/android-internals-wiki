@@ -30,11 +30,12 @@ related_chapters: ["7.1", "7.2", "7.4", "7.5", "2.4", "2.5", "8.3"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-04-08"
 gap_source: "AOSP结构+官方文档+读者需求"
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
 task9_result: needs-rework
-task2b_state: pending
+task2b_state: fixed
+task2b_result: fixed
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-04-20"
 last_task9_at: "2026-04-20T14:50:48+08:00"
@@ -262,7 +263,7 @@ void scheduleTraversals() {
 优化思路：
 
 - 如果只是视觉变化（颜色、文字、图标），用 `invalidate()` 或 `setText()` / `setImageDrawable()` 等方法，这些方法内部会自动调用 `invalidate()`
-- 如果确实需要改变尺寸，考虑是否可以通过 `setVisibility(GONE/VISIBLE)` 配合固定高度来避免频繁的 `requestLayout()`
+- 如果只是想保留占位并减少重排，优先用 `INVISIBLE`、`alpha`、`translation` 或固定尺寸容器；`GONE/VISIBLE` 会改变子 View 是否参与布局，仍然会触发父容器向上的重新布局
 - 在自定义 View 中，`onDraw()` 内不应该调用 `requestLayout()`
 
 ## ConstraintLayout 与传统布局的性能差异
@@ -299,7 +300,7 @@ Google 在 2017 support ConstraintLayout 时代做过一组公开测试 [已验�
 - `chain`：Chain 布局优化
 - `dimensions`：尺寸测量优化
 
-默认开启全部优化。在复杂布局中，这些优化能减少约 20-30% 的 measure 时间。
+默认会按版本启用一组可用优化。收益大小取决于约束关系、子树规模和重复测量次数，最好用当前设备上的 Perfetto 或 FrameMetrics 验证。
 
 ### 什么时候不该用 ConstraintLayout
 
@@ -361,9 +362,9 @@ View errorPanel = ((ViewStub) findViewById(R.id.stub_error_panel)).inflate();
 
 ### Include 标签：布局复用
 
-`<include>` 标签在编译时会被 `aapt2` 展开为实际布局内容，不是运行时的动态加载。所以 `<include>` 本身不产生运行时开销，但它意味着被 include 的布局会成为 View 树的一部分，参与每次 measure/layout/draw。
+`<include>` 仍然由 `LayoutInflater` 在运行时处理。inflate 走到 `<include>` 节点时，会进入 `parseInclude()` 解析被包含布局的资源 ID，再继续创建其中的根 View 或 `<merge>` 子树。它的价值在于复用布局定义，inflate 成本仍然存在。
 
-如果被 include 的布局很大但不总是需要显示，考虑改用 `ViewStub`。
+真正能减少层级的是让被 include 的布局以 `<merge>` 作为根，这样父容器在运行时不会再多包一层 ViewGroup。如果这块内容很大且大多数时候不显示，再考虑改用 `ViewStub` 做延迟 inflate。
 
 ## AsyncLayoutInflater 异步布局加载
 
