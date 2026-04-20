@@ -2,7 +2,7 @@
 title: "后台执行限制与优化"
 chapter: "5.8"
 section: "5.8"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 6.0 (API 23) - Android 16 (API 36)"
 drafted_date: "2026-04-05"
 drafted_by: "openclaw-task2a"
@@ -48,10 +48,13 @@ sources:
     path: "frameworks/base/apex/jobscheduler/framework/java/android/app/job/JobScheduler.java"
 tags: [后台限制, Doze, App Standby, 前台服务, WorkManager, JobScheduler, AlarmManager, 省电, 后台启动, BAL]
 related_chapters: ["5.6", "5.7", "11.2", "8.4"]
-pipeline_stage: task9_pending
+pipeline_stage: ready-to-publish
 task6_state: reviewed
-task9_state: pending
-task9_result: needs-rework
+task9_state: reviewed
+task9_result: pass-tech-review
+task9_reviewed_date: 2026-04-20
+task9_reviewed_by: openclaw-task9
+last_task9_at: "2026-04-20T10:22:00+08:00"
 task2b_state: fixed
 task6_result: pass-light-edit
 task2b_result: fixed
