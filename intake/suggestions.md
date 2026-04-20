@@ -4214,3 +4214,15 @@
 - **问题**：该段落与 6.1 的 f2fs 章节内容重叠（CoW、冷热数据分离、SQLite 原子写），6.4 定位为版本演进时间线，不应重复展开机制细节。
 - **建议**：聚焦版本时间线（f2fs 引入时间、各厂商采用节点、Pixel 默认启用时间），机制解释改为交叉引用 6.1 对应段落。
 - **review 日志**：logs/review/2026-04-21-06-review.md
+
+## [Task9 Deep Review] 2.8 过度绘制 — 2026-04-21
+- **类型**：数据支撑
+- **位置**：Perfetto / AGI 联合定位（L129-L130）
+- **问题**：章节已经把 Debug GPU Overdraw → Perfetto FrameTimeline → AGI 的排查顺序讲清楚，但这里只留下了示意图和 `[待补充]` 占位，缺少一组真实 FrameTimeline 或 frame capture 证据，读者还不能直接复刻 GPU 侧定位路径。
+- **建议**：补 1 组真实证据，至少同时给出同一时间窗里的 overdraw 颜色块、FrameTimeline 的 Actual/Expected Timeline，以及 AGI 或等价 frame capture 的 draw call 观察点。
+
+## [Task9 Deep Review] 10.3 内存持续增长 — 2026-04-21
+- **类型**：源码准确性
+- **位置**：PSS 趋势（L273-L285）
+- **问题**：正文把 `Debug.getPss()` 写成“直接读 smaps”，但 AOSP android-14.0.0_r1 `frameworks/base/core/jni/android_os_Debug.cpp` 的 `android_os_Debug_getPssPid()` 实际调用 `ProcMemInfo.SmapsOrRollup()`，并不等同于固定解析 `/proc/<pid>/smaps`。同段后文又在讨论更快路径的节流，当前写法会把旧 `smaps` 路径和 rollup 路径混成一件事。
+- **建议**：把表述改成“PSS 采集需要读取 `smaps` / `smaps_rollup` 一类内核内存统计，成本仍高于 RSS”，再把“高频调用可能拿到历史值”的版本边界和来源单独挂出来；拿不准的细节先降为 `[待验证]`。
