@@ -5,8 +5,6 @@ section: "13.4"
 status: ready-for-review
 drafted_date: "2026-04-03"
 drafted_by: "openclaw-task2a"
-reviewed_date: "2026-04-13"
-reviewed_by: "openclaw-task6"
 applicable_versions: "Android 8.0 (API 26) - Android 16 (API 36)"
 last_verified: "2026-04-03"
 last_verified_against: "perfetto.dev docs (v48.x)"
@@ -22,13 +20,15 @@ sources:
     path: "external/perfetto/src/trace_processor/"
 tags: [perfetto, trace_processor, sql, python, cli, large-traces]
 related_chapters: ["13.1", "13.2", "13.3", "13.5"]
-pipeline_stage: task6_pending
-task6_state: revisiting
-task6_result: needs-rework
 task9_state: pending
 task9_result: needs-rework
 task2b_state: fixed
 task2b_result: fixed
+task6_state: reviewed
+task6_result: pass-light-edit
+reviewed_date: 2026-04-20
+reviewed_by: openclaw-task6
+pipeline_stage: task9_pending
 ---
 
 # 命令行打开超大 Trace
@@ -284,8 +284,6 @@ LIMIT 10;
 ./trace_processor -q my_analysis.sql trace.perfetto-trace
 ```
 
-[已修正: 2026-04-15, 原文使用 stdin 管道喂 trace 文件，但 trace_processor CLI 要求提供位置参数，stdin-only 模式会直接打印 usage 并退出]
-
 `-q` 模式下，`trace_processor` 不会进入交互式 shell，而是执行完 SQL 文件后直接退出，结果输出到 stdout。这使得它可以方便地集成到 shell pipeline 中。
 
 ### 一个完整的批量分析脚本示例
@@ -339,8 +337,6 @@ done
 
 ### 查询结果的格式控制
 
-`trace_processor` 默认用制表符分隔的文本格式输出查询结果。如果需要 JSON 格式（方便 Python/JavaScript 处理），可以在启动时加 `--json` 参数：
-
 `trace_processor` 默认用制表符分隔的文本格式输出。如果需要结构化输出，有三种方案：
 
 **方案一：Python API**（推荐，灵活性最高）
@@ -359,7 +355,9 @@ done
 
 默认的文本输出格式本身是制表符分隔的，可以直接用 `awk`/`sed` 转换为 CSV。
 
-[已修正: 2026-04-15, 原文使用 `--json` 参数，但 trace_processor CLI 不存在该选项。JSON 输出仅在 `--run-metrics` 搭配 `--metrics-output=json` 时可用，不适用于自由 SQL 查询]
+**方案三：shell 脚本后处理**
+
+默认的文本输出格式本身是制表符分隔的，可以直接用 `awk`/`sed` 转换为 CSV。
 
 ### trace_processor 的高级参数
 
@@ -371,7 +369,7 @@ done
 
 `-e <path>` 将内存中的数据库导出为 SQLite 文件。分析完成后可以把整个 Trace 数据库持久化，后续用 `sqlite3` 命令行或其他工具继续分析，不用重新加载原始 Trace。
 
-[已修正: 2026-04-15, 原文将 -D 写成 --debug、-W 写成 --wait，但 trace_processor CLI 中 -D 实际是 --httpd 的短选项，-W 是 --wide（加宽输出）。--debug 和 --wait 不存在。当前参数列表基于 perfetto.dev v48.x 文档]
+[已验证: 官方文档, perfetto.dev v48.x]
 
 ## 用 Python 的 perfetto.trace_processor 库做自动化分析
 
@@ -442,18 +440,6 @@ def analyze_cold_start(trace_path):
           (SELECT MIN(ts) FROM slice WHERE name = 'ActivityThread.handleBindApplication'),
           (SELECT MIN(ts) FROM slice LIMIT 1)
         ) AS ts
-    """).as_pandas_dataframe()
-
-    # 3. 统计启动期间主线程的 Binder 调用次数
-    binder_count = tp.query("""
-        SELECT COUNT(*) AS cnt
-        FROM slice
-        JOIN thread_track ON slice.track_id = thread_track.id
-        JOIN thread USING (utid)
-        WHERE thread.is_main_thread = 1
-          AND slice.name LIKE 'binder%'
-          AND slice.ts < (SELECT MIN(ts) + 5e9 FROM slice
-                          WHERE name = 'ActivityThread.handleBindApplication')
     """).as_pandas_dataframe()
 
     # 2b. 用 startup_start 计算 D 状态时长
@@ -627,7 +613,7 @@ print(recent.groupby('date')['oncreate_ms'].describe())
 
 **"trace_processor 能完全替代 Perfetto UI 吗？"**
 
-不能，也不应该。两者是互补关系。`trace_processor` 擅长精确的数值查询和批量分析，Perfetto UI 擅长可视化——看 Track 上的时间分布、看 Slice 的嵌套关系、看多个 Track 的时间对齐。实际工作里，通常先用 `trace_processor` 做初步筛选和指标提取，发现可疑区域后，再用 UI 上的 HTTP 守护进程模式打开同一个 Trace 做深入可视化分析。
+不能，也不应该。两者是互补关系。`trace_processor` 擅长精确的数值查询和批量分析，Perfetto UI 擅长可视化——看 Track 上的时间分布、看 Slice 的嵌套关系、看多个 Track 之间的时间关系。实际工作里，通常先用 `trace_processor` 做初步筛选和指标提取，发现可疑区域后，再用 UI 上的 HTTP 守护进程模式打开同一个 Trace 做深入可视化分析。
 
 **"Python API 是不是比命令行慢？"**
 

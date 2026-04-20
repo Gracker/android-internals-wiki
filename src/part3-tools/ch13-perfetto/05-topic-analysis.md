@@ -46,15 +46,15 @@ related_chapters:
 - '7.1'
 - '8.1'
 - '9.1'
-pipeline_stage: task6_pending
-task6_state: revisiting
 task9_state: pending
 task2b_state: fixed
-reviewed_by: openclaw-task6
-reviewed_date: '2026-04-13'
-task6_result: needs-rework
 task9_result: needs-rework
 task2b_result: fixed
+task6_state: reviewed
+task6_result: pass-light-edit
+reviewed_date: 2026-04-20
+reviewed_by: openclaw-task6
+pipeline_stage: task9_pending
 ---
 
 # 专题解读
