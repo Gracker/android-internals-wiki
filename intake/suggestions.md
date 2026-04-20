@@ -2797,3 +2797,22 @@
 - **位置**：L423-L428（蓝牙音频延迟范围）
 - **问题**：SBC / aptX / LDAC / LC3 的延迟范围都给了具体毫秒数，但没有设备、码率、packet size、head tracking 开关、链路质量或测量方法。当前写法更像经验值，不足以支撑“代表未来方向”的技术判断。
 - **建议**：补一条测试条件说明，或把具体毫秒区间改成定性描述，并把 codec / transport / buffering 三层影响拆开写。
+
+
+## [Task9 Deep Review] 5.7 CPU 相关的版本演进 — 2026-04-20
+- **类型**：版本差异
+- **位置**：L333 版本趋势总结
+- **问题**：将 Android 15 总结成“后台网络异常提示”会把 lifecycle/network exception 误写成用户可见能力，和前文行为变化不一致。
+- **建议**：改成“后台网络访问限制（valid process lifecycle）”，或直接删除这一条“用户可见性”演进。
+
+## [Task9 Deep Review] 5.10 JobScheduler/WorkManager 调度与后台任务性能 — 2026-04-20
+- **类型**：数据缺失
+- **位置**：L418-L432 Play Store 后台行为政策
+- **问题**：该段使用了具体阈值、豁免项和分发惩罚，但 frontmatter sources 未收录对应一手来源，也没有把“Google Play 分发生态规则”和“Android 平台调度机制”分层。
+- **建议**：补 Android vitals / Google Play 官方来源，并把该段明确标成 distribution policy，不要和平台调度行为混写。
+
+## [Task9 Deep Review] 5.11 端侧 AI 推理性能：NPU/GPU 加速与 TFLite 管线 — 2026-04-20
+- **类型**：数据缺失
+- **位置**：L67-L71 + L107 + L203
+- **问题**：多处把 GPU delegate 公开路径写成“OpenCL / OpenGL ES 为主”，但当前 cited `ai.google.dev/edge/litert/android/gpu` 页面并未给出稳定 backend 合约。
+- **建议**：补能明确说明 backend 的一手资料；如果拿不到，降级成“具体 backend 取决于 delegate/runtime/driver 实现”。

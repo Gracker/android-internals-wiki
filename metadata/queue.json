@@ -1181,8 +1181,11 @@
     ],
     "added_by": "external-ai-review",
     "added_at": "2026-04-19T11:44:38.404228+08:00",
-    "status": "pending",
-    "source_file": "2026-04-19-73-5.7-external-review.md"
+    "status": "completed",
+    "source_file": "2026-04-19-73-5.7-external-review.md",
+    "completed_at": "2026-04-20T08:57:48+08:00",
+    "completed_by": "task9-deep-tech-review",
+    "resolution": "Superseded by 2026-04-20 task9 deep review with concrete verified issues."
   },
   {
     "section": "5.9",
@@ -1240,8 +1243,11 @@
     ],
     "added_by": "external-ai-review",
     "added_at": "2026-04-19T11:44:38.404228+08:00",
-    "status": "pending",
-    "source_file": "2026-04-19-76-5.10-external-review.md"
+    "status": "completed",
+    "source_file": "2026-04-19-76-5.10-external-review.md",
+    "completed_at": "2026-04-20T08:57:48+08:00",
+    "completed_by": "task9-deep-tech-review",
+    "resolution": "Superseded by 2026-04-20 task9 deep review with concrete verified issues."
   },
   {
     "section": "5.11",
@@ -1265,8 +1271,11 @@
     ],
     "added_by": "external-ai-review",
     "added_at": "2026-04-19T11:44:38.404228+08:00",
-    "status": "pending",
-    "source_file": "2026-04-19-77-5.11-external-review.md"
+    "status": "completed",
+    "source_file": "2026-04-19-77-5.11-external-review.md",
+    "completed_at": "2026-04-20T08:57:48+08:00",
+    "completed_by": "task9-deep-tech-review",
+    "resolution": "Superseded by 2026-04-20 task9 deep review with concrete verified issues."
   },
   {
     "section": "5.12",
@@ -2762,6 +2771,84 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-20T07:50:52+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "5.7",
+    "section_title": "CPU 相关的版本演进",
+    "priority": 95,
+    "reason": "[Deep Tech Review] 精确闹钟权限与 Android 15 后台网络/Doze 段存在事实误差",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "版本差异",
+        "location": "L239-L243",
+        "detail": "把 Android 12+ exact alarm 规则写成 setExact()/setExactAndAllowWhileIdle()/setAlarmClock() 一律要求 SCHEDULE_EXACT_ALARM 并在缺失时直接 SecurityException。官方 schedule alarms 文档补充：使用 OnAlarmListener 形式设置 exact alarm（例如 setExact 的 listener 变体）时，不需要 SCHEDULE_EXACT_ALARM；Android 13+ 还存在 USE_EXACT_ALARM 路径。当前写法会误导权限矩阵。",
+        "suggestion": "按 API / 权限 / 调用形态拆开写 exact alarm 边界，补 OnAlarmListener 例外与 USE_EXACT_ALARM。"
+      },
+      {
+        "type": "版本差异",
+        "location": "L273-L277",
+        "detail": "将 Android 15 网络限制简化成 Activity.onStop() 之后不久必抛 UnknownHostException，并把 Doze 50% / 3 小时待机指标标成 behavior-changes 文档已验证。官方 behavior-changes-all 的口径是 network request outside of a valid process lifecycle may trigger UnknownHostException or other IOExceptions；当前引用页并未给出 Doze 50% / 3h 数字。",
+        "suggestion": "把网络限制改回 valid process lifecycle 口径，并为 Doze 数字补官方发布来源，或降级为待验证。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-20T08:57:48+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "5.10",
+    "section_title": "JobScheduler/WorkManager 调度与后台任务性能",
+    "priority": 95,
+    "reason": "[Deep Tech Review] reboot 持久化对比、WorkManager 调度轴与 Android 16 quota 缺口需回炉",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "原理断裂",
+        "location": "L117-L118",
+        "detail": "把 JobStore 的重启优势解释成“AlarmManager + PendingIntent 的 BroadcastReceiver 会在重启后丢失”。实际问题是 alarm 本身不会跨 reboot 保留，App 需要用 BOOT_COMPLETED 重新注册；BroadcastReceiver 组件不会因为 PendingIntent 而“丢失”。当前因果链写反。",
+        "suggestion": "改成“persisted Job 可由 JobStore 跨重启恢复；AlarmManager 方案通常需要在 reboot 后自行重建调度”。"
+      },
+      {
+        "type": "源码错误",
+        "location": "L222-L228",
+        "detail": "上文代码明确以 Build.VERSION.SDK_INT 选择 SystemJobScheduler / SystemAlarmScheduler，但结论段又写“看到 AlarmManager 可能是因为 App target 的是低 API 版本”。这里把 device API level 和 targetSdkVersion 混成了一条轴。",
+        "suggestion": "统一成“主要看设备 API level、运行时 fallback 和进程内 GreedyScheduler”，不要把 targetSdkVersion 写成切换条件。"
+      },
+      {
+        "type": "版本差异",
+        "location": "L162-L178 + L527-L535",
+        "detail": "章节覆盖到 Android 17，但 quota 段缺 Android 16 JobScheduler quota optimizations：regular / expedited job runtime quota 还会受 standby bucket、job 是否在 top state 启动、是否与 Foreground Service 并发执行等因素影响。当前只补了 API 36/37 pending 原因接口，版本线断在 quota 行为本身。",
+        "suggestion": "在配额小节补 Android 16 quota 优化因素，并把它和 pending reason / stats 调试接口连起来写。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-20T08:57:48+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "5.11",
+    "section_title": "端侧 AI 推理性能：NPU/GPU 加速与 TFLite 管线",
+    "priority": 95,
+    "reason": "[Deep Tech Review] NNAPI 迁移路径被写窄，LiteRT / Play Services / Delegate 边界混叠",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "版本差异",
+        "location": "L93-L107",
+        "detail": "正文把“Google 推荐的迁移方向”写成 TFLite in Google Play Services / LiteRT in Play Services。官方 NNAPI 文档的原话是：NNAPI deprecated，performance critical workloads should migrate to alternative solutions, for example the TF Lite GPU runtime。Play Services runtime 只是 LiteRT 的一种分发 / 部署选项，不是唯一官方迁移路径。当前写法把 runtime 分发、delegate 选择和迁移建议混成了一层。",
+        "suggestion": "补一张迁移矩阵，分开写 bundled LiteRT runtime、Play Services runtime、GPU delegate、厂商 NPU 路径和 AICore，说明各自适用条件与限制。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-20T08:57:48+08:00",
     "status": "pending"
   }
 ]
