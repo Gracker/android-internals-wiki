@@ -29,7 +29,8 @@ tags: ['memory-leak', 'leakcanary', 'mat', 'heapprofd', 'heap-dump', 'gc-root', 
 related_chapters: ["4.1", "4.3", "4.5", "10.1", "10.6"]
 pipeline_stage: task9_pending
 task6_state: reviewed
-task9_state: pending
+task9_state: reviewed
+task9_result: pass-tech-review
 task2b_state: idle
 ---
 
