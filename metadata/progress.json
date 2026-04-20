@@ -1,53 +1,53 @@
 {
-  "generated_at": "2026-04-20T07:50:52+08:00",
+  "generated_at": "2026-04-20T08:14:14+08:00",
   "state_machine_version": "v2",
   "total_sections": 209,
   "metrics": {
     "total": 209,
     "unknown": 37,
-    "last_updated": "2026-04-20T07:50:52+08:00",
+    "last_updated": "2026-04-20T08:14:14+08:00",
     "task2b_state_counts": {
       "unknown": 37,
-      "fixed": 127,
-      "pending": 19,
+      "fixed": 128,
+      "pending": 18,
       "idle": 26
     },
     "task6_state_counts": {
       "unknown": 33,
-      "reviewed": 72,
-      "revisiting": 103,
+      "reviewed": 71,
+      "revisiting": 104,
       "pending": 1
     },
     "task9_state_counts": {
       "unknown": 36,
-      "reviewed": 36,
-      "pending": 136,
+      "reviewed": 35,
+      "pending": 137,
       "fixed": 1
     },
     "pipeline_stage_counts": {
       "unknown": 36,
-      "task6_pending": 102,
+      "task6_pending": 103,
       "task9_pending": 44,
-      "task2b_pending": 18,
+      "task2b_pending": 17,
       "ready-to-publish": 9
     },
     "total_sections": 209,
     "pipeline_unknown": 36,
-    "pipeline_task6_pending": 102,
+    "pipeline_task6_pending": 103,
     "pipeline_task9_pending": 44,
-    "pipeline_task2b_pending": 18,
+    "pipeline_task2b_pending": 17,
     "pipeline_ready_to_publish": 9,
     "task2b_unknown": 37,
-    "task2b_fixed": 127,
-    "task2b_pending": 19,
+    "task2b_fixed": 128,
+    "task2b_pending": 18,
     "task2b_idle": 26,
     "task6_unknown": 33,
-    "task6_reviewed": 72,
-    "task6_revisiting": 103,
+    "task6_reviewed": 71,
+    "task6_revisiting": 104,
     "task6_pending": 1,
     "task9_unknown": 36,
-    "task9_reviewed": 36,
-    "task9_pending": 136,
+    "task9_reviewed": 35,
+    "task9_pending": 137,
     "task9_fixed": 1,
     "ready-to-publish": 0,
     "finalized": 9,
@@ -56,27 +56,27 @@
   "pipeline": {
     "pipeline_stage_counts": {
       "unknown": 36,
-      "task6_pending": 102,
+      "task6_pending": 103,
       "task9_pending": 44,
-      "task2b_pending": 18,
+      "task2b_pending": 17,
       "ready-to-publish": 9
     },
     "task2b_state_counts": {
       "unknown": 37,
-      "fixed": 127,
-      "pending": 19,
+      "fixed": 128,
+      "pending": 18,
       "idle": 26
     },
     "task6_state_counts": {
       "unknown": 33,
-      "reviewed": 72,
-      "revisiting": 103,
+      "reviewed": 71,
+      "revisiting": 104,
       "pending": 1
     },
     "task9_state_counts": {
       "unknown": 36,
-      "reviewed": 36,
-      "pending": 136,
+      "reviewed": 35,
+      "pending": 137,
       "fixed": 1
     }
   },
@@ -386,10 +386,10 @@
       "title": "AutoFDO 反馈导向编译优化",
       "path": "src/part1-fundamentals/ch01-architecture/12-autofdo-optimization.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
-      "task6_state": "reviewed",
-      "task9_state": "reviewed",
-      "task2b_state": "pending",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
+      "task9_state": "pending",
+      "task2b_state": "fixed",
       "reviewed_date": "2026-04-19",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
@@ -2312,7 +2312,8 @@
       "task6_result": "needs-rework",
       "task9_result": "reworked",
       "task2b_result": "fixed",
-      "section": "18.10"
+      "section": "18.10",
+      "last_task9_at": "2026-04-18T03:45:00+08:00"
     },
     "src/part2-performance/ch18-rendering-pipelines/11-angle-gles-vulkan.md": {
       "chapter": "18.11",

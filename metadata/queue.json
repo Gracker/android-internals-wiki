@@ -2193,8 +2193,11 @@
     ],
     "added_by": "external-ai-review",
     "added_at": "2026-04-19T15:43:40.480210+08:00",
-    "status": "pending",
-    "source_file": "2026-04-19-14-18.10-external-review.md"
+    "status": "completed",
+    "source_file": "2026-04-19-14-18.10-external-review.md",
+    "completed_at": "2026-04-20T08:14:14+08:00",
+    "completed_by": "task2b-rework",
+    "resolution": "修正 API 29-35 buffer 回收路径，补入 Surface -> ANativeWindow -> ASurfaceControl 桥接、跨进程 SurfaceControl 局限、Buffer Dataspace / deprecated callback 说明，并补充 Layer / WebView 的最小证据链。"
   },
   {
     "section": "18.11",
@@ -2730,7 +2733,10 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-20T07:50:52+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-20T08:14:14+08:00",
+    "completed_by": "task2b-rework",
+    "resolution": "修正 ETE/TRBE 硬件边界、补全 branch_list.data → perf_inject_kernel.data → create_llvm_prof 的 profile 转换顺序，收窄 applicable_versions 到 Android 12-16，并补入 userspace AutoFDO 的 AOSP 锚点。"
   },
   {
     "section": "1.16",

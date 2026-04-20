@@ -7,9 +7,9 @@ drafted_date: "2026-04-06"
 drafted_by: "openclaw-task2a"
 reviewed_date: "2026-04-19"
 reviewed_by: "openclaw-task6"
-applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
-last_verified: "2026-04-18"
-last_verified_against: "Google blog 2026-03 + AOSP android16-6.12/android15-6.6 + simpleperf ETM doc"
+applicable_versions: "Android 12 (API 31) - Android 16 (API 36)"
+last_verified: "2026-04-20"
+last_verified_against: "Google blog 2026-03 + AOSP android16-6.12/android15-6.6 + simpleperf ETM doc + AOSP userspace afdo: true examples"
 confidence: medium
 sources:
   - type: blog
@@ -44,11 +44,11 @@ related_chapters:
 task9_reviewed_date: "2026-04-20"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-04-20T07:50:52+08:00"
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
 task2b_result: fixed
-task2b_state: pending
+task2b_state: fixed
 task6_result: pass-light-edit
 task9_result: needs-rework
 ---
@@ -77,11 +77,11 @@ AutoFDO（Automatic Feedback-Directed Optimization）是 Google 从系统层面�
 - 🔹 **AutoFDO 在 Android 编译体系中的位置**：[已验证: Google blog + AOSP 文档]
   Baseline Profiles 决定 Java/Kotlin 方法的 AOT 范围；AutoFDO 优化内核与系统 native binary 的机器码质量，两者不是同一层。
 
-- 🔹 **ARM64 场景下的采样基础**：[已验证: simpleperf ETM 文档 + Coresight 驱动]
-  Android 内核 AutoFDO 依赖 ETM / Coresight 采集分支轨迹；PMU 负责计数采样，ETM / ETE / TRBE 决定 profile 的精细度。
+- 🔹 **ARM64 场景下的采样基础**：[已验证: simpleperf ETM 文档 + Coresight 驱动 + Google blog]
+  ETM 是通用的 Coresight 分支追踪口径；Android 16 Pixel 的公开实现已经落到 ETE + TRBE，OEM 设备再按 ETM / ETE 能力区分。
 
-- 🔹 **ETM → perf.data → branch-list → LLVM profile 的转换顺序**：[已验证: simpleperf ETM 文档 + AutoFDO 工具说明]
-  `simpleperf record` 先生成 `perf.data`，`simpleperf inject --output branch-list` 再生成 `branch_list.data`，最后 `create_llvm_prof` 为单个 binary 生成 `kernel.afdo`。
+- 🔹 **ETM → perf.data → branch-list → AutoFDO text profile → LLVM profile 的转换顺序**：[已验证: simpleperf ETM 文档 + AutoFDO 工具说明]
+  `simpleperf record` 先生成 `perf.data`，`simpleperf inject --output branch-list` 生成 `branch_list.data`，再转成 `perf_inject.data` / `perf_inject_kernel.data` 这类 AutoFDO text profile，随后由 `create_llvm_prof` 为单个 binary 生成 `kernel.afdo`。
 
 - 🔹 **GKI 分支对应的 profile 路径**：[已验证: AOSP kernel/common android15-6.6 / android16-6.12]
   `android15-6.6` 使用 `android/gki/aarch64/afdo/`，`android16-6.12` 使用 `gki/aarch64/afdo/`，不能把两个分支写成同一路径。
@@ -112,23 +112,23 @@ Google 早在 2014 年就发表了 AutoFDO 的[研究论文](https://research.go
 
 ## AutoFDO 的工作机制
 
-### 硬件基础：PMU 和 ETM
+### 硬件基础：PMU、ETM / ETE 与 TRBE
 
-AutoFDO 的数据来源是 ARM 处理器上的两个硬件特性：
+AutoFDO 的采样过程要分成两层看。
 
-**PMU（Performance Monitoring Unit）**：ARM CPU 内置的性能计数器，能统计 CPU 周期、缓存命中/未命中、分支预测成功/失败等事件。simpleperf 通过 Linux 内核的 `perf_event_open` 系统调用读取这些计数器。
+**PMU（Performance Monitoring Unit）**：ARM CPU 的性能计数与采样入口。simpleperf 仍通过 Linux 内核的 `perf_event_open` 系统调用接这套基础设施。
 
-**ETM（Embedded Trace Macrocell）**：ARM Coresight 调试架构的一部分，能实时记录 CPU 执行的每一条分支指令的方向（taken / not taken）。这是 AutoFDO 采集分支 profile 的核心硬件。ETM 数据通过内核的 Coresight 驱动（`drivers/hwtracing/coresight`）导出给用户态。
+**ETM（Embedded Trace Macrocell）**：较早期 ARM Coresight 的分支追踪单元。到了 ARMv9，公开资料里更常见的是 **ETE（Embedded Trace Extension）** 配合 **TRBE（Trace Buffer Extension）** 把分支轨迹写入内存。Google 在 2026 年 kernel AutoFDO blog 里对 Pixel 设备描述的就是 ETE + TRBE 组合。
 
-对于 AutoFDO 来说，关键信息是"哪些代码路径被执行了"和"分支走向是什么"。PMU 提供采样粒度的数据（每隔 N 个事件采一次），ETM 提供全量分支追踪。实际生产环境中，Android 使用 ETM 来获取内核的精确分支 profile。
+对内核 AutoFDO 来说，真正需要的是可还原 branch history 的 Coresight trace，而不是普通 PMU 周期采样。simpleperf 的事件名仍常写成 `cs-etm`，因为它暴露的是 Coresight trace 入口；落到具体 SoC 时，底层可能是 ETM，也可能是 ETE + TRBE。
 
-`[适用版本: Android 12+ 用户态 AutoFDO；Android 16+ 内核 AutoFDO（GKI）]`
+`[适用版本: Android 12+ 用户态 AutoFDO；Android 16+ kernel AutoFDO（GKI）]`
 
 ### 数据采集流程
 
-这里最容易写错的是顺序。设备侧先把 ETM 数据录成 `perf.data`，host 侧再把 `perf.data` 转成 branch-list，最后才由 `create_llvm_prof` 为单个 binary 生成 LLVM sample profile。把这三个阶段写反，后面的命令和文件名就会全部错位。
+这里最容易写错的是顺序。设备侧先把 Coresight trace 录成 `perf.data`，host 侧转成 `branch_list.data`，再继续生成 AutoFDO text profile，随后才由 `create_llvm_prof` 为单个 binary 生成 LLVM sample profile。把这几个阶段写反，后面的命令和文件名就会全部错位。
 
-[图：AutoFDO 数据流程示意。设备侧运行 `simpleperf record` 产出 `perf.data`；host 侧运行 `simpleperf inject --output branch-list` 产出 `branch_list.data`；随后 `create_llvm_prof` 针对 `vmlinux` 生成 `kernel.afdo`；最后构建系统在 Kleaf / DDK 中消费 `kernel.afdo`。]
+[图：AutoFDO 数据流程示意。设备侧运行 `simpleperf record` 产出 `perf.data`；host 侧运行 `simpleperf inject --output branch-list` 产出 `branch_list.data`；随后继续转成 `perf_inject.data` / `perf_inject_kernel.data`；再由 `create_llvm_prof` 针对 `vmlinux` 生成 `kernel.afdo`，构建系统在 Kleaf / DDK 中消费。]
 
 **Step 1：构建代表性工作负载**
 
@@ -139,7 +139,7 @@ Google 在实验室环境中模拟真实用户的使用模式。工作负载包�
 
 Google 的测试表明，这套合成工作负载与从内部设备 fleet 采集到的真实执行模式有 **85% 的相似度**，已经足够接近真实用户场景。
 
-**Step 2：设备侧使用 simpleperf 采集 ETM 数据**
+**Step 2：设备侧使用 simpleperf 采集 Coresight trace**
 
 在测试设备上运行：
 
@@ -148,13 +148,13 @@ adb root
 adb shell simpleperf record -e cs-etm:k -a -o /data/local/tmp/perf.data --duration 60
 ```
 
-这一步的产物是 `perf.data`。`cs-etm:k` 表示 Coresight ETM 事件，只追踪内核态（`:k` 后缀）。
+这一步的产物是 `perf.data`。`cs-etm:k` 仍是 simpleperf 暴露给用户的事件名，代表只追踪内核态的 Coresight 分支轨迹。底层硬件在不同 SoC 上可能是 ETM，也可能是 ETE + TRBE。
 
-`[已验证: AOSP system/extras/simpleperf/doc/collect_etm_data_for_autofdo.md]`
+`[已验证: AOSP simpleperf ETM 文档 + Google blog 2026-03]`
 
 **Step 3：host 侧把 `perf.data` 转成 branch-list**
 
-把设备上的采样结果拉回 host 后，还要准备与当前内核匹配的 `kernel.kallsyms`。`simpleperf inject` 需要它把 ETM 里的内核地址映射回符号，只有 `perf.data` 还不够。
+把设备上的采样结果拉回 host 后，还要准备与当前内核匹配的 `kernel.kallsyms`。`simpleperf inject` 需要它把 Coresight 里的内核地址映射回符号，只有 `perf.data` 还不够。
 
 ```bash
 adb pull /data/local/tmp/perf.data .
@@ -162,17 +162,26 @@ adb shell cat /proc/kallsyms > kernel.kallsyms
 simpleperf inject -i perf.data --output branch-list -o branch_list.data --binary kernel.kallsyms
 ```
 
-`branch_list.data` 才是后续 AutoFDO 工具消费的输入。量产流程通常会先合并多次采集得到的 branch-list，再生成最终 profile；单次示例里可以直接把这一份 branch-list 继续往下传。
+`branch_list.data` 还是中间产物。量产流程通常会先合并多次采集得到的 branch-list，再进入下一步。
 
-**Step 4：用未剥离 `vmlinux` 生成 `kernel.afdo`**
+**Step 4：把 branch-list 转成 AutoFDO text profile**
 
 ```bash
-create_llvm_prof --profile branch_list.data --profiler text --binary vmlinux --out kernel.afdo --format=extbinary --prof_sym_list=false
+simpleperf inject -i branch_list.data --output autofdo -o perf_inject.data
+# 如果 branch-list 里覆盖多个 binary，要先按 binary 拆分；内核只保留 [kernel.kallsyms] 对应的 perf_inject_kernel.data
+```
+
+这一层经常被漏掉。`create_llvm_prof` 消费的是 AutoFDO text profile，而不是原始 `branch_list.data`。内核场景常见的输入文件名是 `perf_inject_kernel.data`，它对应 `[kernel.kallsyms]` 这一个 binary。
+
+**Step 5：用未剥离 `vmlinux` 生成 `kernel.afdo`**
+
+```bash
+create_llvm_prof --profile perf_inject_kernel.data --profiler text --binary vmlinux --out kernel.afdo --format=extbinary --prof_sym_list=false
 ```
 
 这里有三个约束。
 
-第一，`create_llvm_prof` 的输入仍然是 branch-list，而不是 `perf.data`。第二，`vmlinux` 必须是未剥离版本，否则行号和符号映射会断。第三，内核场景要显式指定 `--format=extbinary` 和 `--prof_sym_list=false`，前者对应当前内核 AutoFDO 文档使用的输出格式，后者用来避免把未出现在 profile 里的内核函数一律当成冷函数。
+第一，`create_llvm_prof` 的输入是 AutoFDO text profile，不是 `perf.data`，也不是还没拆分 binary 的原始 trace。第二，`vmlinux` 必须是未剥离版本，否则行号和符号映射会断。第三，内核场景要显式指定 `--format=extbinary` 和 `--prof_sym_list=false`，前者对应当前内核 AutoFDO 文档使用的输出格式，后者用来避免把未出现在 profile 里的内核函数一律当成冷函数。
 
 ### 编译器如何利用 Profile
 
@@ -256,9 +265,11 @@ AutoFDO 解决的是后者。它不告诉 ART “哪些 Java 方法要编译”�
 
 | 方向 | 版本 / 分支 | 主要对象 | AOSP 验证锚点 |
 |------|-------------|----------|---------------|
-| userspace / native AutoFDO | Android 12+ | 系统 native library、native executable | Google blog + 系统构建说明 |
+| userspace / native AutoFDO | Android 12+ | 系统 native library、native executable | `frameworks/base/libs/hwui/Android.bp`、`art/libartbase/Android.bp`、`art/runtime/Android.bp` 中可直接搜索 `afdo: true` |
 | kernel AutoFDO | `android15-6.6` | GKI `vmlinux` | `android/gki/aarch64/afdo/README.md`、`kernel.afdo` |
 | kernel AutoFDO | `android16-6.12` | GKI `vmlinux` | `gki/aarch64/afdo/README.md`、`kernel.afdo` |
+
+userspace 这一层不是抽象描述。AOSP 里已经有 `hwui`、`libartbase`、`libart` 这类代表性目标在 `Android.bp` 里打开 `afdo: true`，读者可以直接搜这些路径验证。
 
 如果把仓库前缀也写全，可以理解成在 `kernel/common` 仓库里，只是分支内部的相对路径不同：
 
@@ -267,7 +278,7 @@ AutoFDO 解决的是后者。它不告诉 ART “哪些 Java 方法要编译”�
 
 这个 `android/` 目录的差别看起来很小，但会直接决定你能不能找到正确的 `README.md` 和 `kernel.afdo`。
 
-`[已验证: AOSP kernel/common 仓库中，android15-6.6 与 android16-6.12 分支目录结构不同；可用 README.md 与 kernel.afdo 交叉核对]`
+`[已验证: AOSP kernel/common 仓库中，android15-6.6 与 android16-6.12 分支目录结构不同；userspace 代表性模块可在对应 Android.bp 中搜索 afdo: true]`
 
 ### OEM 能做什么
 
@@ -275,7 +286,7 @@ AutoFDO 解决的是后者。它不告诉 ART “哪些 Java 方法要编译”�
 
 在动手之前，我们先确认四个前置条件：
 
-- 设备是 ARM64，并且具备 ETM 能力；ARMv9 设备通常会把这套能力演进为 ETE + TRBE。
+- 设备是 ARM64，并且具备 Coresight 分支追踪能力；较早的平台常见 ETM，新一些 ARMv9 平台则是 ETE + TRBE。
 - 构建版本至少是 `userdebug` / `eng`，并能 `adb root`，否则 ETM 采集往往拿不到完整数据。
 - host 侧要有未剥离的 `vmlinux` 或目标模块符号，`create_llvm_prof` 需要把 branch-list 映射回真实符号。
 - 构建系统要能把生成的 profile 接到 Kleaf / DDK 的构建配置里，否则采集结果没法真正进入编译。
@@ -290,15 +301,17 @@ adb shell simpleperf record -e cs-etm:k -a -o /data/local/tmp/perf.data --durati
 adb pull /data/local/tmp/perf.data .
 ```
 
-**host 侧：转换成 branch-list，再生成 LLVM sample profile**
+**host 侧：先转 branch-list，再转 AutoFDO text profile，再生成 LLVM sample profile**
 
 ```bash
 adb shell cat /proc/kallsyms > kernel.kallsyms
 simpleperf inject -i perf.data --output branch-list -o branch_list.data --binary kernel.kallsyms
-create_llvm_prof --profile branch_list.data --profiler text --binary vmlinux --out kernel.afdo --format=extbinary --prof_sym_list=false
+simpleperf inject -i branch_list.data --output autofdo -o perf_inject.data
+# 如果输入里覆盖多个 binary，要先拆出 [kernel.kallsyms] 对应的 perf_inject_kernel.data
+create_llvm_prof --profile perf_inject_kernel.data --profiler text --binary vmlinux --out kernel.afdo --format=extbinary --prof_sym_list=false
 ```
 
-这里的分工不能写反。`kernel.kallsyms` 负责把运行时地址映射回内核符号，未剥离 `vmlinux` 负责把 profile 对回真实 binary。单次示例可以直接从 `branch_list.data` 生成 `kernel.afdo`；如果采了多份 branch-list，先合并再生成最终 profile。
+这里的分工不能写反。`kernel.kallsyms` 负责把运行时地址映射回内核符号，未剥离 `vmlinux` 负责把 text profile 对回真实 binary。单次示例可以直接从一份 branch-list 继续往下跑；如果采了多份 branch-list，先合并，再生成最终的 `perf_inject_kernel.data` 和 `kernel.afdo`。
 
 **build 侧：把 profile 接回目标构建**
 
@@ -355,7 +368,7 @@ simpleperf stat -e cycles,instructions,cache-misses,branch-misses --app com.exam
 | Android 12 | userspace native AutoFDO 已用于系统 native executable 和 native library |
 | Android 15 / `android15-6.6` | kernel AutoFDO 进入 GKI `vmlinux`，profile 路径为 `android/gki/aarch64/afdo/` |
 | Android 16 / `android16-6.12` | kernel AutoFDO 扩展到 `gki/aarch64/afdo/`，官方 blog 公布了 Boot、Cold Launch、Binder RPC、HWBinder、`syscall_mmap` 等基准数据 |
-| 后续 roadmap | 官方 blog 提到更高版本 GKI、GKI module、vendor module 和更多构建目标；当前公开实现仍以 aarch64 的 `vmlinux` 为主 |
+| 后续 roadmap | 官方 blog 提到 `android17-6.18`、GKI module、vendor module 和更多构建目标；这些计划还没进入本文的已验证适用范围 |
 
 Baseline Profiles / ART Service 的演进放在相关章节单独讨论，这里不再并表。
 
