@@ -22,7 +22,7 @@ sources:
 tags: ['big.LITTLE', 'DynamIQ', 'schedutil', 'cpufreq', 'capacity', 'cluster', 'DVFS', 'PELT', 'RTG', 'core-migration', 'EAS', 'HMP']
 related_chapters: ["5.1", "5.2", "5.4", "5.5", "5.6", "2.5"]
 drafted_date: "2026-03-31"
-reviewed_date: "2026-04-15"
+reviewed_date: "2026-04-21"
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
 polish_count: 1
@@ -30,9 +30,9 @@ polish_date: "2026-04-07"
 polish_by: "task2b-polish"
 task2b_result: fixed
 task2b_state: fixed
-task6_state: revisiting
+task6_state: reviewed
 task9_state: pending
-pipeline_stage: task6_pending
+pipeline_stage: task9_pending
 ---
 
 # 大小核架构

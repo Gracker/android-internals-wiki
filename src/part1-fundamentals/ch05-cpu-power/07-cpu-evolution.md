@@ -47,15 +47,15 @@ tags:
 
 polish_count: 1
 drafted_date: "2026-04-01"
-reviewed_date: "2026-04-20"
+reviewed_date: "2026-04-21"
 reviewed_by: "openclaw-task6"
 task6_result: pass-light-edit
 related_chapters:
   - "5.2 EAS 能量感知调度"
   - "5.6 Android 功耗管理"
   - "5.8 后台执行限制与优化"
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task9_result: needs-rework
 task2b_state: fixed
@@ -330,7 +330,7 @@ GKI 对 CPU 调度的影响，主要体现在厂商还能在哪里放自己的�
 | 12 | Performance Hint API 引入 + 精确闹钟权限化 | API 层 + 应用层 |
 | 13 | 精确闹钟默认拒绝 + FGS Task Manager | 应用层（用户可见） |
 | 14 | FGS 类型化 + 后台 Activity opt-in | 应用层（类型化） |
-| 15 | GKI 6.6 常见化 + 后台网络受限 + Doze 加速 50% | 内核层 + 应用层 + 系统策略层 |
+| 15 | GKI 6.6 常见化 + 后台网络受限 + Doze 进入更快 | 内核层 + 应用层 + 系统策略层 |
 | 16 | JobScheduler 配额优化 | 系统策略层（精细化） |
 
 这条演进线背后有三个趋势：
