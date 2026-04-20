@@ -24,14 +24,15 @@ sources:
     path: "https://perfetto.dev/docs/data-sources/cpu-scheduling"
 tags: ['perfetto', 'thread-state', 'sched-switch', 'running', 'runnable', 'sleep', 'uninterruptible-sleep', 'cpu-scheduling']
 related_chapters: ["5.1", "13.1", "13.5"]
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: pending
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
+task2b_state: fixed
 task9_result: needs-rework
 task9_reviewed_date: "2026-04-20"
 task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-04-20T21:48:59+08:00"
+task2b_result: fixed
 ---
 
 # 线程 CPU 状态分析
@@ -43,8 +44,8 @@ last_task9_at: "2026-04-20T21:48:59+08:00"
 
 - 🔹 线程 CPU 状态定义：Running (R)、Runnable (R+)、Sleeping (S)、Uninterruptible Sleep (D)、Stopped (T)
 - 🔹 在 Perfetto 中读取线程状态：sched_switch events、thread state track
-- 🔹 Runnable 过长意味着什么：CPU 争抢、核数不足、优先级过低
-- 🔹 Uninterruptible Sleep 意味着什么：I/O 等待、内核锁、Page Fault
+- 🔹 Runnable 过长的常见含义：CPU 争抢、核数不足、优先级过低
+- 🔹 Uninterruptible Sleep 的常见含义：I/O 等待、内核锁、Page Fault
 - 🔹 从线程状态分析性能瓶颈的方法论
 
 ### 扩展（可选深入）
@@ -142,7 +143,7 @@ data_sources {
 }
 ```
 
-其中 `sched/sched_switch` 是绝对必需的，它是所有线程状态分析的基础数据源。`sched/sched_blocked_reason` 则对于分析 Uninterruptible Sleep 至关重要——它会记录线程进入 D 状态时正在执行的内核函数，是定位 I/O 瓶颈的关键线索。`sched/sched_waking` 用于唤醒关系分析，我们后面会详细讨论。
+其中 `sched/sched_switch` 是绝对必需的，它是所有线程状态分析的基础数据源。`sched/sched_blocked_reason` 对分析 Uninterruptible Sleep 很有用，它会记录线程进入 D 状态时正在执行的内核函数，是定位 I/O 瓶颈的关键线索。`sched/sched_waking` 用于唤醒关系分析，我们后面会详细讨论。
 
 [已验证: 来源见 Android-Perfetto-09-CPU.md §TraceConfig]
 
@@ -173,12 +174,12 @@ Running 是最"健康"的状态——线程正在 CPU 上执行代码。对于 U
 - **Wall** 是这个切片从开始到结束的真实世界时间。
 - **CPU** 是线程真正在 CPU 上运行的时间。
 
-它们的关系是：`Wall = CPU + Runnable + Sleep`。
+更稳妥的理解是：`Wall = CPU + 该时间窗内全部 off-CPU 状态的总和`。这里的 off-CPU 不只包含 Runnable 和 Sleeping，也包含 Uninterruptible Sleep、Stopped 等没有占到 CPU 的时间。
 
-这个公式是性能分析的利器。选中一个关键切片（比如 `Choreographer#doFrame`），比较 Wall 和 CPU：
+这个对比在定位瓶颈时很好用。选中一个关键切片（比如 `Choreographer#doFrame`），比较 Wall 和 CPU：
 
-- 如果 `Wall ≈ CPU`，说明线程几乎一直在执行代码，瓶颈在于计算过重。这时候用火焰图定位热点函数。
-- 如果 `Wall >> CPU`，说明线程花了大量时间在等 CPU 或等资源。这时候去查看 thread_state 轨道中 R/S/D 状态的分布，找出等待的根因。
+- 如果 `Wall ≈ CPU`，说明线程大部分时间都在真正执行代码，瓶颈更接近计算过重。这时优先看火焰图和函数热点。
+- 如果 `Wall >> CPU`，说明大量时间花在排队或等待上。回到 `thread_state` 轨道，再拆 R、S、D 和其他 off-CPU 状态的占比，才能判断是在等 CPU、等 Binder、等锁，还是卡在 I/O。
 
 [图：Perfetto 中 Wall 与 CPU 时间的对比展示] [待高爷补充]
 
@@ -231,7 +232,7 @@ Runnable 状态的出现是正常的——毕竟 CPU 核心数量有限，不可
 
 [已验证: 来源见 Android-Perfetto-09-CPU.md §R-Runnable]
 
-## Sleeping：线程在等，问题是"等谁"
+## Sleeping：线程在等，要找清它在等谁
 
 ### 正常情况
 
@@ -255,13 +256,13 @@ Sleeping 本身不是问题。问题在于关键线程在不该等的时候等�
 
 ### 唤醒关系：找到"等谁"的方法
 
-当一个线程长时间 Sleeping 时，最关键的问题是：它在等谁？Perfetto 提供了唤醒关系的可视化功能来回答这个问题。
+当一个线程长时间 Sleeping 时，先定位它在等谁。Perfetto 提供了唤醒关系的可视化功能来回答这个问题。
 
-在 Perfetto 的 CPU 区域中，选中一个处于 Running 状态的线程切片，Perfetto 会自动绘制一条从"唤醒者"到"被唤醒者"的箭头，高亮显示唤醒源所在的线程。底层原理是：当线程 T1 释放了某个资源（如解锁、完成 Binder 调用），而线程 T2 正在等待该资源时，内核会将 T2 标记为 Runnable，并记录下 T1 → T2 的这次唤醒事件（`sched_waking` ftrace 事件）。Perfetto 解析这些事件，构建出线程间的依赖链。
+在 Perfetto 的 CPU 区域中，选中一个处于 Running 状态的线程切片，Perfetto 会自动绘制一条从"唤醒者"到"被唤醒者"的箭头，高亮显示唤醒源所在的线程。底层原理是：当线程 T1 释放了某个资源（如解锁、完成 Binder 调用），而线程 T2 正在等待该资源时，内核会将 T2 标记为 Runnable，并记录一条 `sched_waking` 事件。Perfetto 解析这条事件，把 waker 线程和被唤醒线程连起来，帮助我们回看依赖链。这里看到的是"谁让线程变成 runnable"，后面是否立刻拿到 CPU，还要再看 runqueue 排队、迁核和优先级竞争。
 
 通过唤醒分析，可以清晰地追踪复杂的调用链。例如：UI 线程等待 Binder 调用 → Binder 线程执行任务 → Binder 线程等待另一个锁 → 持锁线程释放锁并唤醒 Binder 线程 → Binder 线程完成任务并唤醒 UI 线程。整个过程中的瓶颈点一目了然。
 
-不过需要注意，`wakeup from` 信息有时候不准确——原因是跟具体的 tracepoint 类型有关。分析时要注意甄别，不要一味相信这个数据是对的。
+不过 `wakeup from` 信息有时候并不稳定，原因和具体的 tracepoint 类型、内核实现有关。它也不是完整的锁依赖图。分析时要把它和 Binder 轨道、slice、代码路径一起交叉看。
 
 [已验证: 来源见 Android-Perfetto-09-CPU.md §唤醒关系分析]
 [已验证: 来源见 android-systrace-cpu-state-sleep.md §诊断方法]
@@ -282,7 +283,15 @@ Linux 内核中很多路径使用了 Uninterruptible Sleep：Swap 读数据、�
 
 ### Uninterruptible Sleep 分为两类
 
-**I/O 等待（iowait）**。线程在等待磁盘 I/O 完成。在 Perfetto 的 Current State 面板中，D 状态如果伴有 `(iowait)` 标记，则明确表示在等待 I/O。CPU 内部缓存（L1/L2/L3）的访问速度最快，其次是内存，最后是磁盘——它们之间的延迟差异是数量级的。系统越是从磁盘中读取数据，对整体性能的影响就越大。
+Perfetto v53+ 的 `thread_state` 表把 D 状态再拆了一层，排查时可以把 `state='D'` 和 `io_wait` 一起看：
+
+| 观测项 | 常见含义 | 排查入口 |
+|---|---|---|
+| `state='D'` 且 `io_wait=1` | 更接近磁盘、块设备、Swap 等 I/O 等待 | 结合 Block Reason、文件访问、Page Fault、存储负载看 |
+| `state='D'` 且 `io_wait=0` | 更接近内核锁、页表、内存回收、驱动内部等待 | 结合 Block Reason、锁路径、内存压力看 |
+| `state='D'` 但 `io_wait` 为空 | 这份 trace 没把相关字段带出来 | 回到 Current State 面板和 `sched_blocked_reason` 交叉看 |
+
+**I/O 等待（iowait）**。线程在等待磁盘 I/O 完成。在 Perfetto 的 Current State 面板中，D 状态如果伴有 `(iowait)` 标记，则明确表示在等待 I/O。CPU 内部缓存（L1/L2/L3）的访问速度最快，内存次之，磁盘最慢，它们之间的延迟差异是数量级的。系统越是从磁盘中读取数据，对整体性能的影响就越大。
 
 **非 I/O 等待（内核锁等）**。线程在等待内核级别的锁或资源。Binder 驱动在高负载下的内部锁竞争是典型场景。与 I/O 等待不同，这类等待的根因通常更隐蔽，需要结合 Block Reason 和内核代码来定位。
 
@@ -304,7 +313,7 @@ Linux 内核中很多路径使用了 Uninterruptible Sleep：Swap 读数据、�
 
 Perfetto 提供了一个非常有用的线索来帮助定位 D 状态的原因——**Block Reason**。
 
-Android 内核中有一个由 Google 工程师 Riley Andrews 提交的 tracepoint 补丁，它在线程进入 D 状态时记录一条 `sched_blocked_reason` 事件，包含线程是否在等待 I/O（`iowait` 字段）以及进入 D 状态前最后一个非调度器函数的调用地址（`caller` 字段）。
+Android 内核中有一个由 Google 工程师 Riley Andrews 提交的 tracepoint 补丁，它在线程进入 D 状态时记录一条 `sched_blocked_reason` 事件，包含线程是否在等待 I/O（`iowait` 字段）以及进入 D 状态前最后一个非调度器函数的调用地址（`caller` 字段）。Perfetto v53+ 的 `thread_state.io_wait` 也是围绕这组信息展开的，所以 SQL 里不必只靠颜色判断 D 状态。
 
 在 ftrace 中的记录格式如下：
 
@@ -314,7 +323,7 @@ sched_blocked_reason: pid=30235 iowait=0 caller=get_user_pages_fast+0x34/0x70
 
 在 Perfetto 中，选中 D 状态的色块，Current State 面板会显示 Block Reason。例如 `get_user_pages_fast` 表示线程在执行内存页面映射时被阻塞，`do_page_fault` 表示在处理缺页中断。
 
-定位到具体的内核函数后，需要结合内核源码来理解该函数的行为。以 `get_user_pages_fast` 为例，它首先通过无锁方式 pin 应用侧的 pages，如果失败则走慢速执行路径，需要获取 `mmap_lock`。如果此时锁被其他线程持有（比如另一个线程正在执行 `mmap` 操作），当前线程就会陷入等待。
+定位到具体的内核函数后，需要结合内核源码来理解该函数的行为。以 `get_user_pages_fast` 为例，它会先通过无锁方式 pin 应用侧的 pages，如果失败则走慢速执行路径，需要获取 `mmap_lock`。如果此时锁被其他线程持有（比如另一个线程正在执行 `mmap` 操作），当前线程就会陷入等待。
 
 需要注意，这个补丁未合入 Linux 上游主线，是 Android 内核的独有特性。不同厂商的内核是否包含此补丁需要确认。
 
@@ -407,6 +416,21 @@ WHERE utid = (SELECT utid FROM thread WHERE name = 'surfaceflinger' LIMIT 1)
 GROUP BY state_name
 ORDER BY total_time_ms DESC;
 ```
+
+**查询某线程 D 状态里 `io_wait` 的分布：**
+
+```sql
+SELECT
+  io_wait,
+  sum(dur) / 1e6 AS total_time_ms
+FROM thread_state
+WHERE utid = (SELECT utid FROM thread WHERE name = 'surfaceflinger' LIMIT 1)
+  AND state = 'D'
+GROUP BY io_wait
+ORDER BY total_time_ms DESC;
+```
+
+`io_wait=1` 更接近 I/O 等待，`io_wait=0` 更接近内核锁或内存回收；为空时，说明这份 trace 没把相关字段带出来。
 
 **查询某线程在各 CPU 核心上的运行时间分布（判断是否被调度到小核）：**
 

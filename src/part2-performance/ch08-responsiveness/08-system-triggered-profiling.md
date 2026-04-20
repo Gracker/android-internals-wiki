@@ -35,10 +35,14 @@ sources:
     path: "packages/modules/Profiling/framework/java/android/os/ProfilingResult.java"
   - type: aosp
     path: "packages/modules/Profiling/service/java/com/android/os/profiling/ProfilingService.java"
-pipeline_stage: task2b_pending
+  - type: official
+    path: "https://developer.android.com/reference/android/os/ext/SdkExtensions"
+    title: "SdkExtensions API Reference"
+    date: "2026"
+pipeline_stage: task6_pending
 task6_state: revisiting
-task9_state: reviewed
-task2b_state: pending
+task9_state: pending
+task2b_state: fixed
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-04-20"
 task6_result: pass-light-edit
@@ -46,6 +50,7 @@ task9_result: needs-rework
 task9_reviewed_date: "2026-04-20"
 task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-04-20T21:48:59+08:00"
+task2b_result: fixed
 ---
 
 # ProfilingManager 系统触发式性能追踪
@@ -71,7 +76,7 @@ last_task9_at: "2026-04-20T21:48:59+08:00"
 
 ### 🔹 Android 16、36.1、17 的版本分层
 - API 36：`APP_FULLY_DRAWN=1`、`ANR=2`
-- extension 36.1：`APP_REQUEST_RUNNING_TRACE=3`、`KILL_FORCE_STOP=4`、`KILL_RECENTS=5`、`KILL_TASK_MANAGER=6`
+- extension 36.1：`APP_REQUEST_RUNNING_TRACE=3`、`KILL_FORCE_STOP=4`、`KILL_RECENTS=5`、`KILL_TASK_MANAGER=6`，运行时还要做 Extension SDK gating
 - API 37：`OOM=7`、`ANOMALY=8`、`KILL_EXCESSIVE_CPU_USAGE=9`、`COLD_START=10`、`APP_COMPAT=11`
 
 ### 🔹 冷启动、ANR、OOM 的使用方式
@@ -182,6 +187,12 @@ public final class TriggeredProfilingRegistrar {
 
 [已验证: 官方文档, developer.android.com/reference/android/os/ProfilingTrigger]
 
+### 36.1 trigger 还要单独判 extension version
+
+`APP_REQUEST_RUNNING_TRACE`、`KILL_FORCE_STOP`、`KILL_RECENTS`、`KILL_TASK_MANAGER` 都挂在 36.1 扩展上。运行时不能只看 API level，还要再用 `SdkExtensions.getExtensionVersion()` 或等价封装确认对应的 platform extension 已经到位。扩展值不够时，应用侧只能回退到 API 36 公开的 `APP_FULLY_DRAWN` 和 `ANR`。
+
+[已验证: 官方文档, developer.android.com/reference/android/os/ext/SdkExtensions]
+
 ### `APP_FULLY_DRAWN` 和 `COLD_START` 不是同一件事
 
 Android 16 的 `TRIGGER_TYPE_APP_FULLY_DRAWN = 1`，语义是“冷启动里已经调用 `Activity.reportFullyDrawn()`，系统给出一份 running system trace snapshot”。它更像在启动完成点拿一张快照，帮助我们比对启动后段和 fully drawn 时刻前后的线程活动。
@@ -234,6 +245,29 @@ ANR 结果同样是 `.perfetto-trace`，但目标从启动耗时换成了“找�
 
 如果一个章节把 OOM、ANR、cold start 全都说成“自动抓 Trace”，读者在工具选择上就已经走偏了。
 
+### 本地验证与 redaction 边界
+
+ProfilingManager 返回的结果默认是 redacted 版本，只保留请求进程本身的信息。拿到 `.perfetto-trace` 之后，看不到其他应用的完整上下文，依赖全局系统视角的 Perfetto 标准库查询也可能缩水。
+
+做本地验证时，Android 16+ 和 Android 15 的调试开关不同：
+
+- Android 16+：`device_config put profiling_testing delete_temporary_results.disabled true`。打开后，系统会在临时目录保留 redacted 和 unredacted 结果（适用时），logcat 会给出路径。
+- Android 15：`device_config put profiling_testing delete_unredacted_trace.disabled true`。这一代只会在临时目录保留 unredacted 文件；无 root 的设备若想取 redacted 结果，需要把文档里的 `/pkg/files/profiling/file.type` 复制到 `/pkg/cache/file.type`。
+
+要测试 system-triggered trigger，还要给目标包打开 testing mode：
+
+```bash
+device_config put profiling_testing system_triggered_profiling.testing_package_name com.your.app
+```
+
+这个开关会确保后台 trace 常驻，并让目标包的 trigger 绕过系统级 rate limiter。测试结束后，再执行：
+
+```bash
+device_config delete profiling_testing system_triggered_profiling.testing_package_name
+```
+
+[已验证: 官方文档, developer.android.com/reference/android/os/ProfilingManager]
+
 ## 与其他机制的关系
 
 ### 和 `Activity.reportFullyDrawn()` 的关系
@@ -254,7 +288,7 @@ ANR 结果同样是 `.perfetto-trace`，但目标从启动耗时换成了“找�
 |---|---|---|
 | Android 15 (API 35) | `ProfilingManager` 基础请求能力 | 重点是 `requestProfiling()` 和结果回调，本节的 system-triggered profiling 还没出现 |
 | Android 16 (API 36) | `addProfilingTriggers()`、`APP_FULLY_DRAWN=1`、`ANR=2` | 首次把“由系统条件触发结果采集”放进公开 API |
-| Android 16 extension 36.1 | `APP_REQUEST_RUNNING_TRACE=3`、`KILL_FORCE_STOP=4`、`KILL_RECENTS=5`、`KILL_TASK_MANAGER=6` | 这几类都属于 running system trace snapshot，偏系统事件补充 |
+| Android 16 extension 36.1 | `APP_REQUEST_RUNNING_TRACE=3`、`KILL_FORCE_STOP=4`、`KILL_RECENTS=5`、`KILL_TASK_MANAGER=6` | 这几类都属于 running system trace snapshot，运行时要按 extension 36.1 做 gating |
 | Android 17 (API 37) | `OOM=7`、`ANOMALY=8`、`KILL_EXCESSIVE_CPU_USAGE=9`、`COLD_START=10`、`APP_COMPAT=11` | 触发器不再只返回 running trace，开始出现新开 trace、stack sampling、heap dump 和“artifact varies” 这类更细分的模型 |
 
 `ANOMALY` 和 `APP_COMPAT` 也要点一下。文档没有把它们都固定成某一种结果文件，而是明确写了 artifact 会按 anomaly 类型变化，`ProfilingResult#getTag()` 里会带额外信息。写版本表时，如果把 Android 17 只概括成 OOM 和 excessive CPU，就把 public surface 少写了一截。
@@ -284,6 +318,7 @@ system-triggered profiling 的结果只会通过 `registerForAllProfilingResults
 - 官方文档：`https://developer.android.com/reference/android/os/ProfilingManager`
 - 官方文档：`https://developer.android.com/reference/android/os/ProfilingTrigger`
 - 官方文档：`https://developer.android.com/reference/android/os/ProfilingResult`
+- 官方文档：`https://developer.android.com/reference/android/os/ext/SdkExtensions`
 - AOSP：`packages/modules/Profiling/framework/java/android/os/ProfilingManager.java`
 - AOSP：`packages/modules/Profiling/framework/java/android/os/ProfilingTrigger.java`
 - AOSP：`packages/modules/Profiling/framework/java/android/os/ProfilingResult.java`
