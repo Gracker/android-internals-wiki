@@ -2850,5 +2850,77 @@
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-20T08:57:48+08:00",
     "status": "pending"
+  },
+  {
+    "section": "1.2",
+    "section_title": "系统启动全流程",
+    "priority": 85,
+    "reason": "[Deep Tech Review] Cloud Profiles 分发路径误写成 Mainline 模块；profileable build 术语不明确",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "L197",
+        "detail": "把 Cloud Profiles 写成\"作为 Mainline 模块推送给设备\"。Cloud Profiles 是 Google Play 基于真实用户聚合使用数据生成的 profile，通过 Play 分发给后续用户。Mainline 模块是 APEX（如 ART APEX），是系统组件的独立更新机制。两者是不同层面的东西：Cloud Profiles 是 profile 数据分发，Mainline 是系统组件更新。混写会误导读者认为 Cloud Profiles 随 ART APEX 推送。",
+        "suggestion": "改成\"Cloud Profiles 由 Google Play 基于早期用户使用数据聚合生成，通过 Play 分发给后续安装用户\"，去掉\"Mainline 模块\"的说法。"
+      },
+      {
+        "type": "原理断裂",
+        "location": "L198",
+        "detail": "\"profileable build 配置的变化影响 Zygote 预加载的命中路径\"中\"profileable build\"不是标准 AOSP/Android 术语。可能指的是 `profileable` manifest 属性、profile-guided optimization 配置或 ART 的 profile 相关配置变化，但没有给出具体配置项名。",
+        "suggestion": "明确指出具体配置项（如 `profileable` manifest 属性、`ProfileInstaller` 或 ART APEX profile 路径变化），或改写成更宽泛的\"profile 指导编译配置\"。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-20T09:17:31+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "1.3",
+    "section_title": "进程模型与生命周期管理",
+    "priority": 95,
+    "reason": "[Deep Tech Review] Freezer 版本引入时间内部矛盾：section header 写 Android 12+，版本演进段写 Android 11 QPR3",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "版本差异",
+        "location": "L171 section header vs L278 version evolution",
+        "detail": "Section header \"CachedAppOptimizer / Freezer 机制（Android 12+）\" 暗示该机制从 Android 12 开始。但同一章节的版本演进子节明确写了\"Android 11 QPR3: 引入 CachedAppOptimizer 概念，但 cgroup v1 实现\"。官方 source.android.com/docs/core/perf/cached-apps-freezer 原文是 \"Android 11 QPR3 or higher supports the cached apps freezer\"。章节内部存在版本线矛盾。",
+        "suggestion": "把 section header 改成 \"CachedAppOptimizer / Freezer 机制（Android 11 QPR3+）\"，或在正文开头段就明确 \"Android 11 QPR3 首次引入，Android 12 迁移到 cgroup v2\"。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-20T09:17:31+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "1.4",
+    "section_title": "Binder IPC 机制与性能影响",
+    "priority": 95,
+    "reason": "[Deep Tech Review] \"Lazy Async\" 不是 AOSP 官方术语，用不存在的特性名解释 oneway 反压是事实错误",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "L218",
+        "detail": "\"特别是在 Android 14+ 引入 Lazy Async 之后\"——\"Lazy Async\" 不是 AOSP 官方术语。在 source.android.com 的 binder-threading、binder-freezer、cached-apps-freezer 等文档中均无此词。Google 搜索确认该词不存在于官方文档或 AOSP 源码中。实际导致 oneway 调用方可能阻塞的机制是：(1) async transaction buffer 限制（同一 node 的 oneway 调用会被序列化，buffer 满时施加反压）；(2) BINDER_ENABLE_ONEWAY_SPAM_DETECTION 检测机制；(3) binder-freezer 对 frozen process 的异步事务缓冲。这些都不是 Android 14 才引入的。用不存在的特性名解释行为是事实错误。",
+        "suggestion": "删除 \"Lazy Async\" 引用，改成\"async transaction buffer 溢出时 Binder Driver 会对调用方施加反压\"，或引用 BINDER_ENABLE_ONEWAY_SPAM_DETECTION。"
+      },
+      {
+        "type": "原理断裂",
+        "location": "L358 version evolution",
+        "detail": "\"Android 8.0（API 26）：引入 scatter-gather 优化，将 Binder 数据拷贝从最多三次减少到一次\"——前文（L100-L112）已经正确区分了 mmap single copy 和 scatter-gather 是不同层面的优化（single copy 解决的是传统 IPC 的两次拷贝问题；scatter-gather 解决的是发送端 gather-to-contiguous 中间整理开销）。但版本演进段又把它们混写成\"scatter-gather 把三次减少到一次\"。前后口径不一致。",
+        "suggestion": "版本演进段改为\"引入 scatter-gather 事务优化，省掉发送端 gather-to-contiguous 的中间拷贝整理\"，不要和 mmap single copy 的优化效果混写。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-20T09:17:31+08:00",
+    "status": "pending"
   }
 ]
