@@ -26,8 +26,8 @@
 | 8.6 | 06-coroutine-performance.md | 协程性能优化 | 📅 待开始 | - |
 | 8.7 | 07-baseline-profiles.md | Baseline Profiles 优化 | 📅 待开始 | - |
 | 8.8 | 08-media-pipeline.md | 媒体管线响应性 | 📅 待开始 | - |
-| 8.9 | 08-system-triggered-profiling.md | 系统触发式性能采集 | 📅 待开始 | - |
-| 8.10 | 09-game-performance.md | 游戏性能优化 | 📅 待开始 | - |
+| 8.10 | 08-system-triggered-profiling.md | 系统触发式性能采集 | 📅 待开始 | - |
+| 8.9 | 09-game-performance.md | 游戏性能优化 | 📅 待开始 | - |
 | **ch09 ANR** | | | | |
 | 9.1 | 01-anr-design.md | ANR 设计思想 | 📅 待开始 | - |
 | 9.2 | 02-anr-types.md | ANR 类型与触发机制 | 📅 待开始 | - |

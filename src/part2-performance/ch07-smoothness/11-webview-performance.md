@@ -26,14 +26,15 @@ sources:
 reviewed_date: "2026-04-20"
 reviewed_by: "openclaw-task6"
 task6_result: pass-light-edit
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task9_result: needs-rework
-task9_state: reviewed
-task2b_state: pending
+task9_state: pending
+task2b_state: fixed
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-04-20"
 last_task9_at: "2026-04-20T14:50:48+08:00"
+task2b_result: fixed
 ---
 
 # 7.11 WebView 渲染性能与优化
@@ -284,7 +285,7 @@ WebView 相关的 ANR 通常有以下几种模式：
 
 ### Chromium 的内存模型
 
-WebView 的内存不能简单理解成“一个 WebView = 一个独立 Chromium 进程”。更准确的说法是：同一宿主 App 中的多个 WebView 共享同一份 browser-side provider 代码、data directory 和一部分 service 状态；页面自己的 DOM、JavaScript heap、图层和 tile 资源则可能分布在宿主进程与 renderer 进程两侧，具体取决于当前是否启用 multiprocess renderer。
+同一宿主 App 中的多个 WebView 共享同一份 browser-side provider 代码、data directory 和一部分 service 状态；页面自己的 DOM、JavaScript heap、图层和 tile 资源则可能分布在宿主进程与 renderer 进程两侧，是否落到独立 renderer 进程，取决于当前 provider 版本和 multiprocess 配置。
 
 因此，查 WebView 内存时，至少要同时看两类对象：
 
@@ -297,20 +298,19 @@ WebView 的内存不能简单理解成“一个 WebView = 一个独立 Chromium 
 
 WebView 的内存泄漏是 Android 开发中一个经典问题，主要原因是 WebView 持有了不应该持有的引用。
 
-**原因一：WebView 持有 Activity Context**
+**原因一：把 Context 选择写成了通用泄漏解法**
 
-这是最常见的泄漏。WebView 创建时传入 Activity Context，WebView 内部的 Chromium 引擎会持有这个 Context 的引用。即使 Activity 销毁了，如果 WebView 没有被正确清理，Activity 的整个 View 树和资源都无法被 GC 回收。
+展示态 WebView 挂到窗口时，仍然应该使用 Activity 或带主题的 UI Context。文件选择器、对话框、Autofill、窗口 token 和主题资源都依赖这类上下文。`applicationContext` 更适合 provider 预热、Cookie 初始化、离屏预创建这类不加入窗口的场景，不能当成展示态 WebView 的通用做法。真正影响泄漏的是宿主生命周期是否收干净，WebView 是否从父容器移除，以及 `destroy()` 是否被调用。
 
 ```java
-// ❌ 泄漏：WebView 持有 Activity Context
-WebView webView = new WebView(activityContext);
-// Activity 销毁后，webView 仍然持有 activityContext
+// 展示态 WebView：使用 Activity 或带主题的 UI Context
+WebView webView = new WebView(activity);
 ```
 
 ```java
-// ✅ 安全：使用 Application Context 创建
-WebView webView = new WebView(activity.getApplicationContext());
-// 或者在 Activity.onDestroy() 中主动销毁
+// 仅预热、不加入窗口：可以使用 applicationContext
+Context appContext = activity.getApplicationContext();
+WebView warmupWebView = new WebView(appContext);
 ```
 
 **原因二：未调用 destroy()**
