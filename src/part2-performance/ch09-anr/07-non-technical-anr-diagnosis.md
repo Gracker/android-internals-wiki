@@ -56,14 +56,14 @@ sources:
   path: frameworks/base/services/core/java/com/android/server/am/ContentProviderHelper.java
   title: Content provider ANR entry
   date: android-16.0.0_r1
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task2b_state: fixed
 section: '9.7'
 reviewed_by: openclaw-task6
-reviewed_date: '2026-04-13'
-task6_result: needs-rework
+reviewed_date: "2026-04-20"
+task6_result: pass-light-edit
 task9_result: needs-rework
 task2b_result: fixed
 last_verified: '2026-04-14'

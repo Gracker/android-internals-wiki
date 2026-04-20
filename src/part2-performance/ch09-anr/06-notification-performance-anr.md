@@ -34,11 +34,11 @@ sources:
     path: "intake/research-feeds/2026-04-03-11-android16-live-updates-progressstyle.md"
 tags: [notification, anr, notificationmanagerservice, remoteviews, performance, notificationlistenerservice, foreground-service]
 related_chapters: ["9.2", "9.3", "9.4", "1.4", "9.5"]
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 reviewed_by: openclaw-task6
-reviewed_date: "2026-04-13"
-task6_result: needs-rework
+reviewed_date: "2026-04-20"
+task6_result: pass-light-edit
 task9_state: pending
 task9_result: needs-rework
 task2b_result: fixed
@@ -319,11 +319,11 @@ SystemUI 忙于锁屏动画、面板刷新或大量图片通知时，用户会�
 
 `Notification.ProgressStyle` 是 API 36 新增的系统模板样式，用于 rideshare、delivery、navigation 这类有明确起点和终点的进度型通知。promoted ongoing / Live Update 是单独的展示资格，需要额外满足权限和样式约束。
 
-从性能角度，`ProgressStyle` 的收益可以保守地理解成“优先走系统模板，减少自定义 `RemoteViews` 的需求”。这里不再写“系统自动节流所有更新”或“完全没有模板渲染路径”这类过度推断。
+从性能角度，`ProgressStyle` 的收益可以保守地理解成“优先走系统模板，减少自定义 `RemoteViews` 的需求”。
 
 ### Android 17 条目暂缓
 
-截至本轮，没有拿到足够可靠的一手公开材料来确认“后台 NLS 回调限频”已经作为 Android 17 的正式行为发布。主文先不写这个版本结论，等下一轮拿到 release note 或 AOSP 证据再恢复。
+目前没有足够可靠的一手公开材料来确认“后台 NLS 回调限频”已经作为 Android 17 的正式行为发布。
 
 ## 在 Perfetto 中诊断通知 ANR
 

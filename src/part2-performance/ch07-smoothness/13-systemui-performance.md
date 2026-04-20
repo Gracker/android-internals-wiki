@@ -46,15 +46,15 @@ sources:
     path: "https://developer.android.com/develop/ui/views/notifications"
   - type: official
     path: "https://developer.android.com/guide/topics/ui/splash-screen"
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task9_result: needs-rework
 task2b_state: fixed
 task2b_result: fixed
 reviewed_by: "openclaw-task6"
-reviewed_date: "2026-04-13"
-task6_result: needs-rework
+reviewed_date: "2026-04-20"
+task6_result: pass-light-edit
 ---
 
 # 7.13 SystemUI 性能分析
@@ -146,13 +146,13 @@ SystemUI 不是“所有系统 UI 的总包”。在 Android 12-17 里，SystemU
 - 三按钮导航，先看导航栏窗口和 `NavigationBarView` 的触摸处理。
 - 手势返回，先看 `edge-swipe` 这条 input monitor、`EdgeBackGestureHandler`、back animation 相关 slice，再看 SystemUI 主线程是否被别的工作拖慢。
 
-原文里“Android 17 迁到 system_server”那种提前下结论的说法应该删掉。当前证据只够支持“手势路径独立于三按钮按钮点击路径”，不够支持更大的版本结论。
+当前证据只够支持“手势路径独立于三按钮按钮点击路径”，不够支持更大的版本结论。
 
 [图：同一份 Perfetto 中并排标出两条输入路径。左侧是三按钮导航，标注 `NavigationBarView` 所在窗口与主线程 slice；右侧是手势返回，标注 `edge-swipe` input monitor、`EdgeBackGestureHandler`、back animation 相关 slice。]
 
 ## App 启动转场，要把 Launcher3、WM Shell、StartingWindow 放到一张图里
 
-SystemUI 和 Launcher3 在启动动画里确实要协作，但中间不能跳过 WM Shell。更贴近 Android 12-17 实现的表述是：
+SystemUI 和 Launcher3 在启动动画里确实要协作，但中间不能跳过 WM Shell。Android 12-17 的实际流程是：
 
 1. Launcher3 Quickstep 接收点击或手势，发起启动请求。
 2. WM Shell `Transitions` 接管窗口转场，安排过渡动画。
