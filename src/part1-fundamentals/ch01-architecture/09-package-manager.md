@@ -8,7 +8,7 @@ polish_count: 1
 polish_date: "2026-04-09"
 polish_by: "task2b-polish"
 drafted_by: "openclaw-task2a"
-reviewed_date: "2026-04-18"
+reviewed_date: "2026-04-20"
 reviewed_by: "openclaw-task6"
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-04-18"
@@ -55,8 +55,8 @@ tags:
   - cloud-compilation
   - app-installation
   - compilation
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task6_result: pass-light-edit
 task9_state: pending
 task9_result: needs-rework
@@ -290,7 +290,7 @@ adb shell cmd package compile -m speed-profile -f com.example.app
 
 ### dexopt 对前台应用的影响
 
-后台 dexopt 设计得尽量不影响前台体验，但实际上仍然存在资源竞争：
+后台 dexopt 设计得尽量不影响前台体验，但仍然存在资源竞争：
 
 **CPU 争用**：dex2oat 是 CPU 密集型操作，即使系统会限制后台 dexopt 的 CPU 优先级（通过 `sched_setscheduler` 设置为 `SCHED_BATCH`），在核心数量有限的设备上仍然可能抢占前台应用的 CPU 时间。
 
@@ -493,7 +493,7 @@ Package Manager Service 与全书多个章节有交叉：
 
 | 版本 | 包管理与编译变化 | 性能影响 |
 |------|----------------|---------|
-| Android 7.0 | 混合编译模式（JIT + Profile-Guided AOT） | 安装速度大幅提升（不再全量 AOT） |
+| Android 7.0 | 混合编译模式（JIT + Profile-Guided AOT） | 安装速度显著加快，不再需要安装时全量 AOT 编译 |
 | Android 8.0 | 后台 dexopt 改由 JobScheduler 调度 | 更智能的后台编译时机 |
 | Android 9.0 | 引入 Cloud Profiles（dex metadata） | 安装时有更全面的 Profile 覆盖 |
 | Android 10 | APEX / Mainline 基础设施引入，OTA 与 ART 更新开始解耦 | 后续 OTA 优化和 Virtual A/B 路径有了继续演进的基础 |
