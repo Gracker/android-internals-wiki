@@ -1,32 +1,32 @@
 {
-  "generated_at": "2026-04-20T20:06:23+08:00",
+  "generated_at": "2026-04-20T20:35:40+08:00",
   "state_machine_version": "v2",
   "total_sections": 176,
   "metrics": {
     "total": 176,
     "unknown": 2,
-    "last_updated": "2026-04-20T20:06:23+08:00",
+    "last_updated": "2026-04-20T20:35:40+08:00",
     "task2b_state_counts": {
       "unknown": 2,
-      "fixed": 127,
+      "fixed": 129,
       "idle": 23,
-      "pending": 24
+      "pending": 22
     },
     "task9_state_counts": {
       "unknown": 1,
-      "pending": 125,
-      "reviewed": 49,
+      "pending": 127,
+      "reviewed": 47,
       "fixed": 1
     },
     "pipeline_stage_counts": {
       "unknown": 1,
-      "task6_pending": 96,
+      "task6_pending": 98,
       "ready-to-publish": 16,
       "task9_pending": 40,
-      "task2b_pending": 23
+      "task2b_pending": 21
     },
     "pipeline_task9_pending": 40,
-    "pipeline_task2b_pending": 23,
+    "pipeline_task2b_pending": 21,
     "pipeline_ready_to_publish": 16,
     "ready-to-publish": 0,
     "finalized": 16,
@@ -35,27 +35,27 @@
   "pipeline": {
     "pipeline_stage_counts": {
       "unknown": 30,
-      "task6_pending": 96,
-      "task2b_pending": 22,
+      "task6_pending": 98,
+      "task2b_pending": 20,
       "ready-to-publish": 18,
       "task9_pending": 39
     },
     "task2b_state_counts": {
       "unknown": 2,
-      "fixed": 127,
+      "fixed": 129,
       "idle": 23,
-      "pending": 24
+      "pending": 22
     },
     "task6_state_counts": {
       "unknown": 30,
-      "reviewed": 87,
-      "revisiting": 90,
+      "reviewed": 85,
+      "revisiting": 92,
       "pending": 1
     },
     "task9_state_counts": {
       "unknown": 1,
-      "pending": 125,
-      "reviewed": 49,
+      "pending": 127,
+      "reviewed": 47,
       "fixed": 1
     }
   },
@@ -1025,10 +1025,10 @@
       "title": "Low Memory Killer",
       "chapter": "4.4",
       "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
-      "task6_state": "reviewed",
-      "task9_state": "reviewed",
-      "task2b_state": "pending",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
+      "task9_state": "pending",
+      "task2b_state": "fixed",
       "reviewed_date": "2026-04-20",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
@@ -1774,10 +1774,10 @@
       "title": "Baseline Profiles 与编译优化实践",
       "chapter": "8.7",
       "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
-      "task6_state": "reviewed",
-      "task9_state": "reviewed",
-      "task2b_state": "pending",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
+      "task9_state": "pending",
+      "task2b_state": "fixed",
       "reviewed_date": "2026-04-20",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",

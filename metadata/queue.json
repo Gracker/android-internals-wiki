@@ -556,7 +556,10 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-20T20:06:23+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-04-20T20:35:40+08:00",
+      "completed_by": "task2b-content-processing-rework",
+      "resolution": "已把 `ro.lmk.psi_complete_stall_ms` 默认值修正为 700ms，并与 android-16.0.0_r1 的 lmkd.cpp 默认常量对齐。"
     },
     {
       "section": "8.7",
@@ -576,7 +579,10 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-20T20:06:23+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-04-20T20:35:40+08:00",
+      "completed_by": "task2b-content-processing-rework",
+      "resolution": "已把非 Google Play 安装路径改回 ProfileInstaller + bg-dexopt 口径，并补齐“包内有 profile”与“设备端已完成编译”的边界。"
     }
   ]
 }

@@ -29,10 +29,10 @@ sources:
 tags:
 - android
 - research
-pipeline_stage: "task2b_pending"
-task6_state: reviewed
-task9_state: "reviewed"
-task2b_state: "pending"
+pipeline_stage: "task6_pending"
+task6_state: revisiting
+task9_state: "pending"
+task2b_state: "fixed"
 task2b_result: fixed
 review_round: 2
 task9_reviewed_date: "2026-04-20"
@@ -47,7 +47,7 @@ Android 的 ART 运行时经历了多次编译策略的演变——从 Android 5
 
 在这个时间窗口内，ART 还没有收集到足够的运行时 profile 数据，无法知道哪些方法是热点。结果是大量关键代码只能解释执行，冷启动速度比经过优化的状态慢 30% 甚至更多。
 
-Baseline Profiles 就是 Google 给出的解决方案：**让开发者在 APK 中预置一份"热点方法清单"，在安装时直接告诉 dex2oat 编译器哪些代码需要优先编译为机器码**。这样即使没有任何用户使用数据，首次启动也能获得接近稳态的性能。
+Baseline Profiles 的作用是让开发者在 APK 中预置一份"热点方法清单"，并在设备端的安装期或后续 Profile 编译阶段优先告诉 dex2oat 哪些代码需要先编译为机器码。这样即使没有任何用户使用数据，首次启动也更容易接近稳态性能。
 
 [已验证: 官方文档, developer.android.com/topic/performance/baselineprofiles]
 
@@ -144,7 +144,7 @@ Google 官方给出的通用范围是 **15-30% 的启动速度提升**。实际�
 |----------|--------------|--------------|----------|
 | Google Play | APK 自带 Baseline Profile + Play 聚合的 Cloud Profiles | 安装期或后续后台设备更新 | `ProfileVerifier`、`dumpsys package dexopt` |
 | Android Studio / Gradle 安装的 non-debuggable build | APK 自带 Baseline Profile | 设备端自动编译，必要时可手工触发 `bg-dexopt` | `ProfileVerifier`、`dumpsys package dexopt` |
-| 其他 installer / 侧载 | APK 自带 Baseline Profile，常配合 `ProfileInstaller` 入队 | 常见为排队等待 `bg-dexopt`，或手工执行 `cmd package compile -r bg-dexopt` | `ProfileVerifier`、`dumpsys package dexopt` |
+| 其他 installer / 侧载 | APK 自带 Baseline Profile，`ProfileInstaller` 负责把 profile 入队 | 常见为等待下一次 `bg-dexopt`，必要时手工执行 `cmd package compile -r bg-dexopt` | `ProfileVerifier`、`dumpsys package dexopt` |
 
 无论哪条路径，`/data/misc/profiles/...` 放的是 Profile 数据，`/data/app/.../oat/arm64/base.odex` 放的是编译后的应用 OAT 产物。把这两类目录分开看，`dumpsys package dexopt` 的输出才不会读反。
 
@@ -312,9 +312,13 @@ AAB 里的 `BUNDLE-METADATA` 是构建产物视角，安装到设备后不会原
 
 ### 非 Google Play 渠道的 Profile 处理
 
-这是国内开发者最关心的问题。Baseline Profiles 本身**不依赖 Google Play**——它打包在 APK 中，安装时直接被 dex2oat 消费。无论用户通过什么渠道安装（侧载、国内应用商店），只要设备的 ART 支持 speed-profile 编译过滤器（Android 9+），Baseline Profiles 都会生效。
+这是国内开发者最关心的问题。Baseline Profiles 本身不依赖 Google Play，但离线安装也不能写成“APK 一装上，dex2oat 就一定已经按 profile 编完”。更稳妥的边界是：
 
-但是，Cloud Profiles 和 Cloud Compilation **依赖 Google Play 服务**。非 Google Play 渠道拿不到这两类优化时，Baseline Profiles 往往就是最现实的 profile 优化手段。
+- APK 可以携带 `baseline.prof`，这表示安装包里带了规则，不等于设备侧已经生成 `speed-profile` 产物
+- 通过其他 installer 或侧载安装时，Jetpack `ProfileInstaller` 负责把 profile 入队，等待下一次后台 DEX 优化流程处理
+- 想确认当前设备是否已经吃到编译收益，还是要看 `ProfileVerifier` 或 `dumpsys package dexopt`，必要时手工执行 `cmd package compile -r bg-dexopt`
+
+所以，非 Google Play 渠道并不是拿不到 Baseline Profile 收益，而是“何时完成编译”取决于安装器、`ProfileInstaller` 和后台 dexopt 是否已经跑完。Cloud Profiles 和 Cloud Compilation 仍然依赖 Google Play 服务，离线渠道拿不到这两类分发增强能力。
 
 [待验证: 国内主流应用商店是否有类似的云端 profile 基础设施]
 
