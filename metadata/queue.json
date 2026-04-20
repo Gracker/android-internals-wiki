@@ -951,6 +951,25 @@
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-21T03:54:40+08:00",
       "status": "pending"
+    },
+    {
+      "section": "5.3",
+      "section_title": "大小核架构",
+      "priority": 85,
+      "reason": "[Task6 Review] cpufreq governor 章节中的 uclamp 子节仍为待补充状态，内容在 §5.2 已有完整覆盖，建议交叉引用或补写聚焦版本",
+      "material_paths": [],
+      "review_issues": [
+        {
+          "type": "需补充素材",
+          "location": "cpufreq governor → uclamp 子节",
+          "detail": "uclamp（Utilization Clamping）子节标记为 [待补充]，但 §5.2 已有完整的 uclamp 工作原理、Android 集成（task_profiles.json）和 Perfetto 观测说明。当前 5.3 的 uclamp 子节内容为空，读者在阅读 cpufreq + schedutil 主题时缺少 uclamp 上下文。",
+          "suggestion": "两种方案：(1) 将待补充块替换为 200-300 字的摘要 + 交叉引用指向 §5.2 的完整 uclamp 章节；(2) 补写一个聚焦 cpufreq/schedutil 场景的 uclamp 缩写版，重点说明 uclamp_min 如何影响 schedutil 的频率选择。"
+        }
+      ],
+      "added_by": "task6-review",
+      "added_at": "2026-04-21T04:19:44",
+      "status": "pending",
+      "original_review_log": "logs/review/2026-04-21-04-review.md"
     }
   ]
 }

@@ -21,16 +21,16 @@ sources:
 tags: ['EAS', 'energy-aware-scheduling', 'PELT', 'energy-model', 'OPP', 'task-placement', 'uclamp', 'schedutil']
 related_chapters: ["5.1", "5.3", "5.4", "2.5"]
 drafted_date: "2026-03-31"
-reviewed_date: "2026-04-14"
+reviewed_date: "2026-04-21"
 reviewed_by: "openclaw-task6"
 review2_date: "2026-04-06"
 review2_by: openclaw-task6
 polish_count: 1
 polish_date: "2026-04-06"
 polish_by: "task2b-polish"
-pipeline_stage: task6_pending
-task6_state: revisiting
-task6_result: needs-rework
+pipeline_stage: task9_pending
+task6_state: reviewed
+task6_result: pass-light-edit
 task9_state: pending
 task9_result: needs-rework
 task2b_state: fixed
