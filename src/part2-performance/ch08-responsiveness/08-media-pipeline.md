@@ -8,9 +8,9 @@ drafted_by: "openclaw-task2a"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
 last_verified: "2026-04-13"
 last_verified_against: "AOSP android-17.0.0_r1 + androidx/media release"
-reviewed_date: "2026-04-13"
+reviewed_date: "2026-04-20"
 reviewed_by: "openclaw-task6"
-task6_result: needs-rework
+task6_result: pass-light-edit
 task9_result: needs-rework
 task2b_result: fixed
 confidence: medium
@@ -33,8 +33,8 @@ created_by: "task2a-knowledge-gap"
 created_date: "2026-04-06"
 gap_source: "AOSP结构+官方文档+读者需求"
 gap_score: "16/20"
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task2b_state: fixed
 ---
@@ -71,7 +71,7 @@ task2b_state: fixed
 
 理解这条管线的架构和性能特征，可以让我们在 Perfetto 中精准定位问题发生在哪个环节：是解码慢、渲染慢、还是合成慢？是音频 buffer 供给不上、还是 CPU 调度不够及时？本节的目标就是帮我们建立这种端到端的定位能力。
 
-在 Perfetto 中，多媒体相关的信息分布在多个 track 上，比如 MediaCodec 的编解码耗时、AudioFlinger 的 mixer 活动，以及 Surface 渲染的帧时间线。理解这些 track 之间的关联，是分析多媒体性能问题的关键。
+多媒体相关的信息在 Perfetto 中分布在多个 track 上——MediaCodec 的编解码耗时、AudioFlinger 的 mixer 活动、Surface 渲染的帧时间线，后续章节会逐项拆解怎么对应到具体问题。
 
 ## 多媒体管线架构全景
 

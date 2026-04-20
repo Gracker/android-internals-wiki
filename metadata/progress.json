@@ -34,11 +34,11 @@
   },
   "pipeline": {
     "pipeline_stage_counts": {
-      "unknown": 1,
+      "unknown": 30,
       "task6_pending": 96,
-      "ready-to-publish": 16,
-      "task9_pending": 40,
-      "task2b_pending": 23
+      "task2b_pending": 22,
+      "ready-to-publish": 18,
+      "task9_pending": 39
     },
     "task2b_state_counts": {
       "unknown": 2,
@@ -47,9 +47,9 @@
       "pending": 24
     },
     "task6_state_counts": {
-      "unknown": 1,
+      "unknown": 30,
+      "reviewed": 87,
       "revisiting": 90,
-      "reviewed": 84,
       "pending": 1
     },
     "task9_state_counts": {
@@ -566,11 +566,11 @@
       "title": "MainThread 与 RenderThread 协作",
       "chapter": "2.5",
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "revisiting",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
       "task9_state": "pending",
       "task2b_state": "fixed",
-      "reviewed_date": "2026-04-14",
+      "reviewed_date": "2026-04-20",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
@@ -1793,13 +1793,13 @@
       "title": "Android 多媒体管线性能",
       "chapter": "8.8",
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "revisiting",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
       "task9_state": "pending",
       "task2b_state": "fixed",
-      "reviewed_date": "2026-04-13",
+      "reviewed_date": "2026-04-20",
       "reviewed_by": "openclaw-task6",
-      "task6_result": "needs-rework",
+      "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
       "section": "8.8"
@@ -1828,13 +1828,13 @@
       "title": "Android 游戏性能与 Game Mode/State API",
       "chapter": "8.9",
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "revisiting",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
       "task9_state": "pending",
       "task2b_state": "fixed",
-      "reviewed_date": "2026-04-13",
+      "reviewed_date": "2026-04-20",
       "reviewed_by": "openclaw-task6",
-      "task6_result": "needs-rework",
+      "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
       "section": "8.9"

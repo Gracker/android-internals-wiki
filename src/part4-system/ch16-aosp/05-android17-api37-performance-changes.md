@@ -24,13 +24,13 @@ created_by: "task2a-knowledge-gap"
 created_date: "2026-04-08"
 gap_source: "官方文档+研究素材+AOSP结构+读者需求"
 gap_score: 20
-pipeline_stage: task6_pending
-task6_state: revisiting
-task6_result: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
+task6_result: pass-light-edit
 task9_state: pending
 task2b_state: fixed
 reviewed_by: openclaw-task6
-reviewed_date: "2026-04-15"
+reviewed_date: "2026-04-20"
 task2b_result: fixed
 task2b_rework_date: "2026-04-15"
 task2b_fixed_at: "2026-04-15"
@@ -186,7 +186,7 @@ Android 17 新增了三个**系统自动触发器**，开发者不需要写任�
 
 ### 为什么需要这个 API
 
-`JobScheduler` 是 Android 后台任务调度的核心机制。但长期以来，开发者面临一个痛点：**Job 不执行了，但不知道为什么。** 系统可能因为电量低、设备空闲条件不满足、网络不可用、App 处于待机模式（App Standby）等原因跳过 Job 执行。这些信息分散在 `dumpsys jobscheduler` 的输出中，不容易在运行时程序化地获取。
+`JobScheduler` 是 Android 后台任务调度的核心机制。但长期以来，开发者面临一个问题：**Job 不执行了，但不知道为什么。** 系统可能因为电量低、设备空闲条件不满足、网络不可用、App 处于待机模式（App Standby）等原因跳过 Job 执行。这些信息分散在 `dumpsys jobscheduler` 的输出中，不容易在运行时程序化地获取。
 
 ### 新增 API
 
@@ -340,10 +340,10 @@ Google 公布的数据：
 
 这些优化不需要 App 开发者做任何适配，是系统层面的改进。但了解这些优化有助于你在 Perfetto 中观察到性能提升时理解其来源。
 
-### 全链路编译优化一览
+### 端到端编译优化一览
 
 ```
-[图：Android 17 编译优化全链路]
+[图：Android 17 编译优化端到端]
 App 安装 → Baseline Profiles (AOT编译关键路径)
          → Startup Profiles (DEX布局优化)
          → Cloud Profiles (持续优化热门路径)
