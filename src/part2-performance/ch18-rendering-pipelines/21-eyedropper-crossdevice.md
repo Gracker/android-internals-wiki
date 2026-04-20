@@ -3,6 +3,10 @@ title: "EyeDropper API 与跨设备协作性能"
 chapter: "18.21"
 status: ready-for-review
 applicable_versions: "Android 17 (API 37)"
+task9_result: needs-rework
+task9_reviewed_date: "2026-04-20"
+task9_reviewed_by: openclaw-task9
+last_task9_at: "2026-04-20T12:34:00+08:00"
 tags: [eyedropper, cross-device, performance, color-picking, collaboration]
 related_chapters: ["18.1", "2.1", "8.2"]
 created_by: "task2a-knowledge-gap"
@@ -20,7 +24,7 @@ sources:
     date: "2026"
 pipeline_stage: task2b_pending
 task6_state: reviewed
-task9_state: pending
+task9_state: reviewed
 task2b_state: pending
 reviewed_by: openclaw-task6
 reviewed_date: 2026-04-18
