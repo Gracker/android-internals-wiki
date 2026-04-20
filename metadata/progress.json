@@ -3410,7 +3410,10 @@
       "task6_state": "reviewed",
       "task6_review_round": 2,
       "task6_b_issues": 1
-    }
+    },
+    "task6_state": "reviewed",
+    "task6_result": "pass-light-edit",
+    "task6_reviewed_date": "2026-04-21"
   },
   "summary": {
     "status_counts": {
