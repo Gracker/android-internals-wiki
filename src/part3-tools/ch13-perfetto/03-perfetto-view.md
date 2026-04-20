@@ -9,7 +9,7 @@ applicable_versions: "Android 10 (API 29) - Android 16 (API 35)"
 last_verified: "2026-04-14"
 last_verified_against: "perfetto.dev docs + source.android FrameTimeline + AOSP android-16.0.0_r1"
 confidence: medium-high
-reviewed_date: "2026-04-13"
+reviewed_date: "2026-04-21"
 reviewed_by: "openclaw-task6"
 task6_result: pass-light-edit
 sources:
@@ -41,8 +41,8 @@ related_chapters: ["13.1", "13.2", "13.4", "2.6", "14.2", "14.3"]
 polish_count: 1
 polish_date: "2026-04-10"
 polish_by: "task2b-polish"
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task2b_state: fixed
 task2b_result: fixed

@@ -24,13 +24,13 @@ sources:
     path: "intake/research-feeds/2026-04-07-19-android17-ebpf-sched-ext-uprobestats-observability.md"
 tags: [tracing, atrace, ftrace, tracepoint, perfetto, kernel, observability]
 related_chapters: ["13.1", "13.2", "13.5", "14.10", "1.5"]
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task2b_state: fixed
 reviewed_by: openclaw-task6
-reviewed_date: '2026-04-13'
-task6_result: needs-rework
+reviewed_date: "2026-04-21"
+task6_result: pass-light-edit
 task9_result: needs-rework
 ---
 
@@ -65,7 +65,7 @@ task9_result: needs-rework
 
 ## Linux 内核 ftrace 框架
 
-Perfetto Trace 中大部分内核事件的数据源头都是 ftrace。它是 Linux 内核自 2.6.27 起内置的函数追踪框架，不是"一个工具"，而是一整套追踪基础设施的总称。
+Perfetto Trace 中大部分内核事件的数据源头都是 ftrace。它是 Linux 内核自 2.6.27 起内置的函数追踪框架，是一整套追踪基础设施的总称。
 
 ### ftrace 的三种核心模式
 

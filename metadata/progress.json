@@ -974,16 +974,17 @@
       "title": "Android 内存模型全景",
       "chapter": "4.1",
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "revisiting",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
       "task9_state": "pending",
       "task2b_state": "fixed",
       "reviewed_date": "2026-04-14",
       "reviewed_by": "openclaw-task6",
-      "task6_result": "needs-rework",
+      "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
-      "section": "4.1"
+      "section": "4.1",
+      "task6_reviewed_date": "2026-04-21"
     },
     "src/part1-fundamentals/ch04-memory/02-linux-memory.md": {
       "path": "src/part1-fundamentals/ch04-memory/02-linux-memory.md",
@@ -2670,15 +2671,16 @@
       "title": "Perfetto View 解读",
       "chapter": "13.3",
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "revisiting",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
       "task9_state": "pending",
       "task2b_state": "fixed",
       "reviewed_date": "2026-04-13",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
       "task2b_result": "fixed",
-      "section": "13.3"
+      "section": "13.3",
+      "task6_reviewed_date": "2026-04-21"
     },
     "src/part3-tools/ch13-perfetto/04-large-traces.md": {
       "path": "src/part3-tools/ch13-perfetto/04-large-traces.md",
@@ -2763,15 +2765,16 @@
       "title": "Android Tracing 基础设施：atrace、ftrace 与 Perfetto 数据采集原理",
       "chapter": "13.9",
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "revisiting",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
       "task9_state": "pending",
       "task2b_state": "fixed",
       "reviewed_date": "2026-04-13",
       "reviewed_by": "openclaw-task6",
-      "task6_result": "needs-rework",
+      "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
-      "section": "13.9"
+      "section": "13.9",
+      "task6_reviewed_date": "2026-04-21"
     },
     "src/part3-tools/ch13-perfetto/10-perfetto-sql-cookbook.md": {
       "path": "src/part3-tools/ch13-perfetto/10-perfetto-sql-cookbook.md",
