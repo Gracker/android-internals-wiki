@@ -28,12 +28,12 @@ tags: [ipc, binder, socket, pipe, shared-memory, mmap, ashmem, intent, aidl, mes
 related_chapters: ["1.4", "1.10", "1.13", "2.15", "4.1", "9.1"]
 created_by: "manual-request"
 created_date: "2026-04-09"
-reviewed_date: "2026-04-19"
-reviewed_by: "openclaw-task6"
+reviewed_date: 2026-04-20
+reviewed_by: openclaw-task6
 task6_result: pass-light-edit
 review_log: "logs/review/2026-04-11-09-review.md"
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_result: needs-rework
 task9_state: pending
 task2b_result: fixed
@@ -188,7 +188,7 @@ InputDispatcher 这一行最容易写错。输入事件不是通过 `/data/syste
 - 支持 `sendmsg` + `SCM_RIGHTS` 传递文件描述符
 - **SELinux 策略控制访问**
 
-**与其他 IPC 配合：** InputDispatcher 的事件面本质上是 `InputChannel` 的 socketpair，channel 本身通过 Binder parcel 把 fd 交给 App，所以它更像“Binder 控制面 + socket 数据面”的组合式 IPC。
+**与其他 IPC 配合：** InputDispatcher 的事件面走的是 `InputChannel` 的 socketpair，channel 本身通过 Binder parcel 把 fd 交给 App，所以它更像“Binder 控制面 + socket 数据面”的组合式 IPC。
 
 ### 3.3 Pipe
 
@@ -316,7 +316,7 @@ InputDispatcher 这一行最容易写错。输入事件不是通过 `/data/syste
 
 **性能影响：**
 
-- 控制面上的 HAL 调用，本质上仍是 Binder 家族的 RPC，开销更多取决于服务端干了什么，而不是“hwbinder 天生更慢”
+- 控制面上的 HAL 调用，仍是 Binder 家族的 RPC，开销更多取决于服务端干了什么，而不是“hwbinder 天生更慢”
 - 音频、相机、传感器这类高吞吐路径，常见做法是 Binder / HwBinder 只负责控制面，真正的数据面走 FMQ、共享内存或 dmabuf
 
 [已验证: AOSP docs《Work with binder IPC》《AIDL for HALs》— Android 8 将 vendor IPC 隔离到 `/dev/hwbinder`；Android 10 Stable AIDL 允许 HAL 使用 `/dev/binder`]
@@ -366,7 +366,7 @@ Signal        █                                ~1% (ANR/kill)
 
 ## 5. IPC 选型决策树
 
-先别把 IPC 选型理解成“在 Binder、Socket、共享内存里三选一”。在 Android 里，我们通常先定控制面，再定数据面。
+在 Android 里，IPC 选型通常是先定控制面，再定数据面。
 
 ```
 需要 IPC？

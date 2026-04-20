@@ -44,8 +44,8 @@ tags:
 related_chapters:
   - "4.7"
   - "14.2"
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task6_result: pass-light-edit
 task9_state: pending
 task9_result: needs-rework
@@ -55,7 +55,7 @@ last_task9_at: "2026-04-19T04:18:34+08:00"
 task2b_state: fixed
 task2b_result: fixed
 reviewed_by: openclaw-task6
-reviewed_date: "2026-04-19"
+reviewed_date: 2026-04-20
 last_task2b_at: "2026-04-19T04:47:00+08:00"
 ---
 
@@ -186,7 +186,7 @@ public static final native int getCallingUid();
 
 这两个注解还有一条共同约束，官方文档专门强调过：**执行期间，GC 不能把当前线程挂起做关键工作，因此长时间运行、I/O、长时间持有 native 锁都不合适。** 文档没有给 1ms、10ms 这类阈值，也不鼓励我们自己编阈值。更稳的写法是，把它们理解为“只给很短、很确定、很少阻塞的 native 路径使用”。如果方法里会等锁、等 Binder、等磁盘、等网络，那就不该指望 `@FastNative` / `@CriticalNative` 帮我们省时间。[已验证: https://developer.android.com/reference/dalvik/annotation/optimization/FastNative, https://developer.android.com/reference/dalvik/annotation/optimization/CriticalNative]
 
-兼容性上也别想当然。官方文档给出的口径是：这套优化从 Android 8 开始在系统内部使用，Android 14 才成为 CTS-tested public API。内建的动态 JNI linking 只在 Android 12+ 工作，Android 8-11 如果要认真依赖它，必须显式 `RegisterNatives()`；Android 7 及以下会忽略注解，而 `@CriticalNative` 还会因为 ABI 不匹配带来参数编组错误甚至崩溃。这意味着，如果应用真要跨很多版本用这条路，最好把兼容矩阵写清楚，而不是只在 Java 层加个注解就当完事。[已验证: https://developer.android.com/reference/dalvik/annotation/optimization/FastNative, https://developer.android.com/reference/dalvik/annotation/optimization/CriticalNative]
+兼容性上也别想当然。官方文档给出的口径是：这套优化从 Android 8 开始在系统内部使用，Android 14 才成为 CTS-tested public API。内建的动态 JNI linking 只在 Android 12+ 工作，Android 8-11 如果要认真依赖它，必须显式 `RegisterNatives()`；Android 7 及以下会忽略注解，而 `@CriticalNative` 还会因为 ABI 不匹配带来参数编组错误甚至崩溃。如果应用要跨很多版本用这条路，最好把兼容矩阵写清楚，而不是只在 Java 层加个注解就当完事。[已验证: https://developer.android.com/reference/dalvik/annotation/optimization/FastNative, https://developer.android.com/reference/dalvik/annotation/optimization/CriticalNative]
 
 官方文档还给了一个很实用的建议：如果调用方在启动路径上，最好把这些调用方放进 Baseline Profile。原因很简单，过边界路径再快，如果调用方本身还在解释执行或刚进入 JIT 预热，启动阶段仍然看不到理想收益。[已验证: https://developer.android.com/training/articles/perf-jni]
 
@@ -248,7 +248,7 @@ AOSP 自己的实现方式很能说明问题。`Binder.java`、`Parcel.java` 这
 
 **误区四：`AttachCurrentThread()` 是小事，哪里需要哪里调。** attach/detach 应该跟线程生命周期绑定，不该跟单次任务绑定。否则线程上下文管理本身就会进入热路径。
 
-**误区五：`GetPrimitiveArrayCritical()` 等于零拷贝且没副作用。** 运行时可能返回真实指针，也可能返回拷贝；真正重要的是，critical 区域必须短，且要尽快 release。
+**误区五：`GetPrimitiveArrayCritical()` 等于零拷贝且没副作用。** 运行时可能返回真实指针，也可能返回拷贝；关键在于 critical 区域必须短，且要尽快 release。
 
 ## 与其他章节的关系
 
