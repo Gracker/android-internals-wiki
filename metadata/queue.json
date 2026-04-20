@@ -976,6 +976,98 @@
       "added_at": "2026-04-21T04:19:44",
       "status": "pending",
       "original_review_log": "logs/review/2026-04-21-04-review.md"
+    },
+    {
+      "section": "15.2",
+      "section_title": "如何区分系统问题和 App 问题",
+      "priority": 95,
+      "reason": "[Deep Tech Review] `oom_adj_score` 字段名写错，且 ANR 超时口径把多版本/前后台差异压成单一结论。",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "location": "L152",
+          "detail": "正文把 LMK 相关字段写成 `oom_adj_score`，当前 Android / Linux 口径应为 `oom_score_adj`（历史旧名为 `oom_adj`）。字段名写错会把读者带到不存在的 dumpsys / proc 观察点。",
+          "suggestion": "统一改成 `oom_score_adj`，并补一句现代 Android 由 userspace `lmkd` 结合 adj / PSI / reclaim 信号做决策，避免把 kernel lowmemorykiller 旧口径和新实现混写。"
+        },
+        {
+          "type": "版本差异",
+          "location": "L338",
+          "detail": "ANR 超时被压缩成“Input 5 秒、Service 20 秒、BroadcastReceiver 等等待队列超时”，对 Android 8-16 的 applicable_versions 来说过粗。Service / BroadcastReceiver 的超时和前后台状态、组件类型、版本实现都有差异。",
+          "suggestion": "把 ANR 阈值拆成 Input / Broadcast / Service 的明确矩阵，至少标出前后台差异和版本边界，避免把单一 20 秒口径写成通用规则。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-04-21T04:38:00+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "16.3",
+      "section_title": "AOSP 源码编译与调试环境",
+      "priority": 95,
+      "reason": "[Deep Tech Review] `adb sync framework` 被写成可直接执行的命令，且 Pixel 真机支持路径把设备树与驱动公开策略混成一件事。",
+      "material_paths": [
+        "intake/suggestions.md",
+        "intake/research-gaps.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "location": "L202-L213",
+          "detail": "正文把 `adb sync framework` 写成标准工作流，并声称它会把 `framework.jar` 推到 `/system/framework/`。`adb sync` 实际按分区工作，常见口径是 `system` / `vendor` / `product` / `all`，不是单模块 `framework`。",
+          "suggestion": "把流程改成 `adb root` + `adb remount` + `adb shell stop` + `adb sync system`，或明确使用 `adb push out/.../framework.jar /system/framework/` 的单文件路径，再配套 `start`/重启边界说明。"
+        },
+        {
+          "type": "版本差异",
+          "location": "L380-L392",
+          "detail": "章节把“停止公开 Pixel 设备树”与“驱动二进制不再公开发布”混成同一结论，并进一步给出“建议只用 Pixel 4/5”的泛化建议。公开信息更接近“设备树/硬件仓库策略变化，但 driver binaries 页面仍在”。",
+          "suggestion": "拆开设备树、kernel history、driver binaries 三条线，给出 2025+ 真机验证的公开支持矩阵或明确标 `[待验证]`，避免把仍可获得的 driver binaries 误写成彻底停发。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-04-21T04:38:00+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "16.4",
+      "section_title": "Android 17 + Kernel 6.12 系统级性能优化",
+      "priority": 95,
+      "reason": "[Deep Tech Review] GKI rollout 被写成 Android 12+ 自动生效，且 F2FS / dm-verity 源码锚点与函数名和 android16-6.12 分支不对位。",
+      "material_paths": [
+        "intake/suggestions.md",
+        "intake/research-gaps.md"
+      ],
+      "review_issues": [
+        {
+          "type": "原理断裂/版本差异",
+          "location": "L27-L29 / L47 / L156 / L262",
+          "detail": "正文把 GKI 6.12 的收益写成“Android 12+ 设备自动生效、不需要 OEM 适配”。GKI 文档强调的是 stable KMI + vendor modules 边界，boot image 可在兼容前提下替换，不等于所有 Android 12+ 设备都会自动收到同一 6.12 rollout。",
+          "suggestion": "补一段 GKI branch / vendor module / 设备兼容矩阵，明确“可独立更新核心内核”与“实际设备是否收到 6.12 分支更新”是两层问题。"
+        },
+        {
+          "type": "源码错误",
+          "location": "L87-L91",
+          "detail": "章节把 F2FS Checkpoint Merge 锚到 `f2fs_merge_checkpoint_bio()` 与 `sbi->cp_merge_list`，但在 `android16-6.12` 的 `fs/f2fs/checkpoint.c` 中找不到这组函数名/字段，当前源码锚点无法复核。",
+          "suggestion": "回到 patch series 或当前分支的真实函数名、struct 字段重新落锚；如果只能确认机制级描述，就不要把不存在的符号写成已验证源码事实。"
+        },
+        {
+          "type": "源码错误",
+          "location": "L109-L113",
+          "detail": "正文把 dm-verity 锚点写成 `drivers/md/dm-verity.c` + `verity_hash_batch()`，但 `android16-6.12` 当前路径是 `drivers/md/dm-verity-target.c`，且文中函数名在该分支中也不可定位。",
+          "suggestion": "修正到实际文件路径与可定位函数，再重新核对 35% 吞吐提升对应的是哪组 patch / 测试条件。"
+        },
+        {
+          "type": "版本差异",
+          "location": "L175-L181",
+          "detail": "章节把 generational GC 写成“Android 17 引入”，但书内已完成的 §4.8 frontmatter 范围是 Android 14-17。当前说法会把 Android 14-16 已存在的分代 GC 基线误写成 Android 17 新特性。",
+          "suggestion": "把这里改成“Android 17 对既有 generational GC / concurrent collector 的增强”，并指向 §4.8 的版本演进结论。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-04-21T04:38:00+08:00",
+      "status": "pending"
     }
   ]
 }
