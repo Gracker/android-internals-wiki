@@ -12,7 +12,7 @@ confidence: medium
 polish_count: 2
 polish_date: '2026-04-17'
 polish_by: task2b-polish
-reviewed_date: '2026-04-20'
+reviewed_date: 2026-04-20
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
 sources:
@@ -47,8 +47,8 @@ task9_result: needs-rework
 last_task9_at: '2026-04-20T16:33:00+08:00'
 task9_reviewed_by: 'openclaw-task9'
 task9_reviewed_date: '2026-04-20'
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task2b_result: fixed
 task2b_state: fixed
@@ -240,7 +240,7 @@ dex2oat 的输入是 DEX 文件（APK 中的 classes.dex），输出是 OAT 文�
    - **边界检查消除**：数组访问的边界检查在能证明索引安全时被移除
 5. **寄存器分配**：将虚拟寄存器映射到物理寄存器。ARM64 有 31 个通用寄存器，溢出（spill）到栈的操作代价较高，编译器通过图着色算法（graph coloring）尽量减少溢出
 6. **代码生成**：将优化后的 H 图 lowering 为目标架构的机器码（ARM64/x86_64）
-6. **输出 OAT**：将编译结果写入 OAT 文件（ELF 格式），同时生成 VDEX 文件（存储原始 DEX 的快速验证信息）
+7. **输出 OAT**：将编译结果写入 OAT 文件（ELF 格式），同时生成 VDEX 文件（存储原始 DEX 的快速验证信息）
 
 ```
 DEX bytecode
