@@ -9,11 +9,14 @@ reviewed_date: "2026-04-20"
 reviewed_by: "openclaw-task6"
 task6_result: pass-light-edit
 applicable_versions: "Android 6.0 (API 23) - Android 16 (API 36)"
-last_verified: "2026-04-14"
-last_verified_against: "AOSP android-16.0.0_r1"
+last_verified: "2026-04-20"
+last_verified_against: "AOSP android-16.0.0_r1, Android Developers Doze / location / foreground service docs"
 polish_count: 1
 polish_date: "2026-04-05"
 polish_by: "task2b-polish"
+rework_count: 1
+rework_date: "2026-04-20"
+rework_by: "task2b-rework"
 confidence: medium
 sources:
   - type: official
@@ -24,6 +27,10 @@ sources:
     path: "https://developer.android.com/topic/performance/power/power-details#app-stdby-bucket"
   - type: official
     path: "https://developer.android.com/guide/components/activities/background-starts"
+  - type: official
+    path: "https://developer.android.com/develop/background-work/services/fgs/restrictions-bg-start"
+  - type: official
+    path: "https://developer.android.com/training/location/background"
   - type: official
     path: "https://source.android.com/docs/core/power"
   - type: aosp
@@ -44,11 +51,11 @@ sources:
     path: "https://dontkillmyapp.com/"
 tags: ['doze', 'standby', 'battery-saver', 'background-restriction', 'oem-power', 'adaptive-battery', 'foreground-service']
 related_chapters: ["5.6", "11.1", "11.2", "1.3", "4.4"]
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
 task9_result: needs-rework
-task2b_state: pending
+task2b_state: fixed
 task2b_result: fixed
 task9_reviewed_date: "2026-04-20"
 task9_reviewed_by: "openclaw-task9"
@@ -146,7 +153,7 @@ Doze 的取证不要依赖某个固定名字的 Track。更稳的做法，是把
 - **设备在充电时**：Doze 完全不激活
 - **高优先级 FCM 消息**：可以在 Doze 期间唤醒 App（这是 Google 推荐的紧急通知方式）
 - **用户在设置中手动豁免的 App**：设置 → 电池 → 未受限
-- **前台服务**：一旦 App 拥有前台服务，Doze 对它的限制大幅放宽
+- **前台服务**：前台服务能提高进程优先级，降低因后台执行限制被回收的概率，但它不等于 Doze 豁免。设备进入 Doze 后，网络、JobScheduler、普通 Alarm 和同步限制仍按 device idle policy 生效。
 - **紧急闹钟**（`setAndAllowWhileIdle` / `setExactAndAllowWhileIdle`）：可以在 Doze 期间触发，但每个 App 有速率限制（大约每 9 分钟一次）
 
 [已验证: 官方文档, developer.android.com/training/monitoring-device-state/doze-standby]
@@ -244,19 +251,19 @@ Doze 和 Standby Buckets 会根据设备状态和用户行为动态收紧后台�
 
 ### 后台定位限制
 
-位置信息是功耗大户（GPS 模块的功耗可以占到整机的 10-20%），Android 对后台定位的限制逐年收紧：
+位置信息本身耗电高，平台对“后台取位置”的限制也越来越明确，排查时要把权限、可见性和前台服务拆开看：
 
-**Android 8.0（API 26）**——后台 App 的位置更新频率被限制为"每小时几次"，无论 App 的 targetSdkVersion 是多少。
+**Android 8.0（API 26）**——后台 App 的位置更新频率被限制为“每小时几次”，与 targetSdkVersion 无关。
 
-**Android 10（API 29）**——引入 `ACCESS_BACKGROUND_LOCATION` 权限。App 如果需要在后台获取位置，必须单独声明这个权限。用户可以选择"仅在使用中允许"或"始终允许"，前者意味着 App 在后台无法获取位置。
+**Android 10（API 29）**——引入 `ACCESS_BACKGROUND_LOCATION`。应用如果要在不可见状态下持续取位置，需要单独申请这项权限；仅有 `ACCESS_COARSE_LOCATION` / `ACCESS_FINE_LOCATION` 只覆盖 while-in-use 场景。
 
-**Android 11（API 30）**——进一步收紧：即使 App 持有前台服务，如果用户没有授予"始终允许"权限，App 在后台仍然无法获取位置。
+**Android 11（API 30）**——前台服务不再被当成后台位置权限的替代品。应用退到后台后，如果用户没有授予“始终允许”，location access 仍然拿不到。
 
-**Android 14（API 34）**——如果 App 没有 `ACCESS_BACKGROUND_LOCATION` 权限却尝试通过前台服务获取位置，会直接抛出 `SecurityException`。
+**Android 14（API 34）**——系统在创建 `location` 类型的 foreground service 时就会检查前置条件。若应用已经在后台，且用户只给了 while-in-use 位置权限，启动这类服务可能直接抛 `SecurityException`。如果应用此时有可见 Activity，并且已经拿到前台位置权限，则可以启动 location FGS；只有“后台持续取位置”这条路径才要求 `ACCESS_BACKGROUND_LOCATION`。Manifest 里还要声明 `android:foregroundServiceType="location"` 和 `FOREGROUND_SERVICE_LOCATION`。
 
-这对性能优化的影响是：如果我们的 App 有后台轨迹记录或位置上报需求，需要仔细设计权限请求流程，确保用户理解并授权。否则在较新的 Android 版本上，后台定位功能会静默失败。
+对性能优化的影响是：轨迹记录、后台导航、地理围栏回传这类场景，要把权限流程、前后台状态和 FGS 生命周期一起设计。否则在新系统上，问题看起来像定位偶发失效，根因往往是权限条件没有配齐。
 
-[已验证: 官方文档, developer.android.com/training/location/background]
+[已验证: 官方文档, developer.android.com/training/location/background; developer.android.com/develop/background-work/services/fgs/restrictions-bg-start]
 
 ### 后台服务限制（Android 8.0+）
 
@@ -341,7 +348,7 @@ AOSP 提供的功耗管理机制（Doze、Standby、省电模式）只是“官�
 
 **应用启动管理**——设置 → 电池 → 应用启动管理中，华为为每个 App 提供了"自动管理"和"手动管理"两种模式。自动管理模式下，系统会根据使用频率决定是否允许 App 在后台运行。手动管理模式允许用户分别控制"自启动"、"关联启动"和"后台活动"三个开关。
 
-**PowerGenie**——在 EMUI 9+ 设备上，系统内置了一个名为 PowerGenie 的任务管理器，它会主动扫描并杀掉"不活跃"的后台进程。PowerGenie 没有用户可配置的白名单，唯一的绕过方式是通过 ADB 卸载它（`adb shell pm uninstall -k --user 0 com.huawei.powergenie`），但这需要开发者模式的用户才能操作。
+**PowerGenie**——公开机型经验里，PowerGenie 常被当作华为 ROM 的后台清理与限活跃策略之一。它会主动扫描长期不活跃的后台进程。面向普通用户的处理路径通常还是系统设置里的电池优化、应用启动管理和后台活动开关；部分开发者会用 `adb shell pm uninstall -k --user 0 com.huawei.powergenie` 做实验隔离，但这只是调试手段，不是所有版本都适用的通用解法。
 
 **超级省电模式**——极端省电模式下，系统只保留电话、短信等核心功能，所有第三方 App 被暂停。
 

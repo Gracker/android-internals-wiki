@@ -5,28 +5,28 @@
   "metrics": {
     "total": 176,
     "unknown": 2,
-    "last_updated": "2026-04-20T15:59:02+08:00",
+    "last_updated": "2026-04-20T16:13:43+08:00",
     "task2b_state_counts": {
       "unknown": 2,
-      "fixed": 125,
+      "fixed": 127,
       "idle": 25,
-      "pending": 24
+      "pending": 22
     },
     "task9_state_counts": {
       "unknown": 1,
-      "pending": 127,
-      "reviewed": 47,
+      "pending": 129,
+      "reviewed": 45,
       "fixed": 1
     },
     "pipeline_stage_counts": {
       "unknown": 1,
-      "task6_pending": 92,
+      "task6_pending": 94,
       "ready-to-publish": 15,
       "task9_pending": 45,
-      "task2b_pending": 23
+      "task2b_pending": 21
     },
     "pipeline_task9_pending": 45,
-    "pipeline_task2b_pending": 23,
+    "pipeline_task2b_pending": 21,
     "pipeline_ready_to_publish": 15,
     "ready-to-publish": 0,
     "finalized": 15,
@@ -35,27 +35,27 @@
   "pipeline": {
     "pipeline_stage_counts": {
       "unknown": 1,
-      "task6_pending": 92,
+      "task6_pending": 94,
       "ready-to-publish": 15,
       "task9_pending": 45,
-      "task2b_pending": 23
+      "task2b_pending": 21
     },
     "task2b_state_counts": {
       "unknown": 2,
-      "fixed": 125,
+      "fixed": 127,
       "idle": 25,
-      "pending": 24
+      "pending": 22
     },
     "task6_state_counts": {
       "unknown": 1,
-      "revisiting": 86,
-      "reviewed": 88,
+      "revisiting": 88,
+      "reviewed": 86,
       "pending": 1
     },
     "task9_state_counts": {
       "unknown": 1,
-      "pending": 127,
-      "reviewed": 47,
+      "pending": 129,
+      "reviewed": 45,
       "fixed": 1
     }
   },
@@ -2082,10 +2082,10 @@
       "title": "App 耗电优化",
       "chapter": "11.2",
       "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
-      "task6_state": "reviewed",
-      "task9_state": "reviewed",
-      "task2b_state": "pending",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
+      "task9_state": "pending",
+      "task2b_state": "fixed",
       "reviewed_date": "2026-04-20",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
@@ -2101,10 +2101,10 @@
       "title": "系统级功耗优化",
       "chapter": "11.3",
       "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
-      "task6_state": "reviewed",
-      "task9_state": "reviewed",
-      "task2b_state": "pending",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
+      "task9_state": "pending",
+      "task2b_state": "fixed",
       "reviewed_date": "2026-04-20",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",

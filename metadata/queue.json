@@ -378,7 +378,10 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-20T15:56:56+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-04-20T16:13:43+08:00",
+      "completed_by": "task2b-content-processing-rework",
+      "resolution": "已拆开 Android 12 引入 exact alarm 与 Android 14 默认 denied 的版本线，补齐 canScheduleExactAlarms()/ACTION_REQUEST_SCHEDULE_EXACT_ALARM、FGS 三类异常边界，并收紧音频高采样率表述。"
     },
     {
       "section": "11.3",
@@ -410,7 +413,10 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-20T15:56:56+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-04-20T16:13:43+08:00",
+      "completed_by": "task2b-content-processing-rework",
+      "resolution": "已改写 Doze 与 FGS 的边界、location FGS 在前台可见/后台态的权限条件，并把 PowerGenie 调整为 OEM 案例口径。"
     }
   ]
 }
