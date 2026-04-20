@@ -28,12 +28,12 @@ sources:
     path: "https://android-developers.googleblog.com/2020/07/lmkd-userspace-low-memory-killer-daemon.html"
 tags: ['lmk', 'lmkd', 'oom_adj', 'oom_score_adj', 'PSI', 'memory-pressure', 'process-kill']
 related_chapters: ["4.1", "4.2", "4.3", "1.3", "10.4"]
-pipeline_stage: "task2b_pending"
-task6_state: reviewed
+pipeline_stage: "task6_pending"
+task6_state: revisiting
 task6_result: pass-light-edit
 task9_result: "needs-rework"
-task9_state: "reviewed"
-task2b_state: "pending"
+task9_state: "pending"
+task2b_state: "fixed"
 task2b_result: fixed
 task9_reviewed_date: "2026-04-20"
 task9_reviewed_by: "openclaw-task9"
@@ -215,7 +215,7 @@ PSI 是 Linux 内核在 4.20（主线合入）中引入的一个机制，Android
 `lmkd` 通过两个属性来配置 PSI 阈值：
 
 - **`ro.lmk.psi_partial_stall_ms`**（默认 70ms）：在时间窗口内，如果 `memory.some` 的 stall 时间累计超过这个值，触发"中等"内存压力
-- **`ro.lmk.psi_complete_stall_ms`**（默认 70ms）：`memory.full` 的 stall 时间累计超过这个值，触发"严重"内存压力
+- **`ro.lmk.psi_complete_stall_ms`**（默认 700ms）：`memory.full` 的 stall 时间累计超过这个值，触发"严重"内存压力
 
 [已验证: AOSP system/memory/lmkd/lmkd.cpp]
 
