@@ -552,6 +552,12 @@
           "location": "L214-L215",
           "detail": "正文把 `ro.lmk.psi_complete_stall_ms` 默认值写成 70ms，但 AOSP android-16.0.0_r1 `system/memory/lmkd/lmkd.cpp` 的 `DEF_COMPLETE_STALL` 为 700。当前写法会把 PSI severe stall 判定阈值缩小 10 倍。",
           "suggestion": "改成 `ro.lmk.psi_complete_stall_ms` 默认 700ms，并补一句 partial/complete stall 默认值并不对称，避免把两级 stall window 写成同一阈值。"
+        },
+        {
+          "type": "需确认",
+          "location": "扩展四：CachedAppOptimizer 与 cgroup v2 Freezer",
+          "detail": "本节 CachedAppOptimizer 源码级补充与 1.3 节完整章节重叠，需缩减为交叉引用",
+          "suggestion": "缩减为交叉引用指向 1.3 节，由 task2b 执行"
         }
       ],
       "added_by": "task9-deep-tech-review",
@@ -878,6 +884,27 @@
       "completed_at": "2026-04-21T03:10:05+08:00",
       "completed_by": "openclaw-task2b",
       "resolution": "fixed-in-task2b"
+    },
+    {
+      "section": "2.10",
+      "section_title": "GPU 渲染深入",
+      "priority": 90,
+      "reason": "[review回炉] 实战案例中降分辨率方法与正文方法论自相矛盾",
+      "material_paths": [
+        "intake/suggestions.md（含 review 意见）"
+      ],
+      "review_issues": [
+        {
+          "type": "需确认",
+          "location": "实战案例 → 第一步",
+          "detail": "案例使用降低渲染分辨率确认 fillrate bound，但正文明确写了此方法不适用于标准 Android UI",
+          "suggestion": "改为使用 AGI GPU 性能计数器确认瓶颈类型"
+        }
+      ],
+      "added_by": "task6-review",
+      "added_at": "2026-04-21T03:25:00",
+      "status": "pending",
+      "original_review_log": "logs/review/2026-04-21-03-review.md"
     }
   ]
 }
