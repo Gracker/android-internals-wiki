@@ -1,32 +1,32 @@
 {
-  "generated_at": "2026-04-21T05:29:00+08:00",
+  "generated_at": "2026-04-21T06:04:49+08:00",
   "state_machine_version": "v2",
   "total_sections": 212,
   "metrics": {
     "total": 212,
     "unknown": 37,
-    "last_updated": "2026-04-21T05:29:00+08:00",
+    "last_updated": "2026-04-21T06:04:49+08:00",
     "task2b_state_counts": {
-      "fixed": 132,
-      "idle": 17,
-      "pending": 26,
-      "unknown": 37
+      "unknown": 37,
+      "fixed": 134,
+      "pending": 24,
+      "idle": 17
     },
     "task9_state_counts": {
-      "fixed": 1,
-      "pending": 117,
-      "reviewed": 58,
-      "unknown": 36
+      "unknown": 36,
+      "reviewed": 56,
+      "pending": 119,
+      "fixed": 1
     },
     "pipeline_stage_counts": {
+      "unknown": 36,
+      "task6_pending": 99,
+      "task2b_pending": 23,
       "ready-to-publish": 23,
-      "task2b_pending": 25,
-      "task6_pending": 97,
-      "task9_pending": 31,
-      "unknown": 36
+      "task9_pending": 31
     },
     "pipeline_task9_pending": 31,
-    "pipeline_task2b_pending": 25,
+    "pipeline_task2b_pending": 23,
     "pipeline_ready_to_publish": 23,
     "ready-to-publish": 0,
     "finalized": 23,
@@ -34,29 +34,29 @@
   },
   "pipeline": {
     "pipeline_stage_counts": {
+      "unknown": 36,
+      "task6_pending": 99,
+      "task2b_pending": 23,
       "ready-to-publish": 23,
-      "task2b_pending": 25,
-      "task6_pending": 97,
-      "task9_pending": 31,
-      "unknown": 36
+      "task9_pending": 31
     },
     "task2b_state_counts": {
-      "fixed": 132,
-      "idle": 17,
-      "pending": 26,
-      "unknown": 37
+      "unknown": 37,
+      "fixed": 134,
+      "pending": 24,
+      "idle": 17
     },
     "task6_state_counts": {
-      "pending": 1,
-      "reviewed": 89,
-      "revisiting": 92,
-      "unknown": 30
+      "unknown": 30,
+      "reviewed": 87,
+      "revisiting": 94,
+      "pending": 1
     },
     "task9_state_counts": {
-      "fixed": 1,
-      "pending": 117,
-      "reviewed": 58,
-      "unknown": 36
+      "unknown": 36,
+      "reviewed": 56,
+      "pending": 119,
+      "fixed": 1
     }
   },
   "issues": {
@@ -1754,18 +1754,19 @@
       "title": "案例集",
       "chapter": "8.5",
       "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
-      "task6_state": "reviewed",
-      "task9_state": "reviewed",
-      "task2b_state": "pending",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
+      "task9_state": "pending",
+      "task2b_state": "fixed",
       "reviewed_date": "2026-04-16",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
       "section": "8.5",
       "task9_result": "needs-rework",
-      "task9_reviewed_date": "2026-04-21",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-21T05:29:00+08:00"
+      "task9_reviewed_date": "2026-04-21",
+      "last_task9_at": "2026-04-21T05:29:00+08:00",
+      "task2b_result": "fixed"
     },
     "src/part2-performance/ch08-responsiveness/06-coroutine-performance.md": {
       "path": "src/part2-performance/ch08-responsiveness/06-coroutine-performance.md",
@@ -3224,10 +3225,10 @@
       "title": "Android 17 + Kernel 6.12 系统级性能优化",
       "chapter": "16.4",
       "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
-      "task6_state": "reviewed",
-      "task9_state": "reviewed",
-      "task2b_state": "pending",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
+      "task9_state": "pending",
+      "task2b_state": "fixed",
       "reviewed_date": "2026-04-17",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
@@ -3235,7 +3236,8 @@
       "task9_result": "needs-rework",
       "task9_reviewed_by": "openclaw-task9",
       "task9_reviewed_date": "2026-04-21",
-      "last_task9_at": "2026-04-21T04:38:00+08:00"
+      "last_task9_at": "2026-04-21T04:38:00+08:00",
+      "task2b_result": "fixed"
     },
     "src/part4-system/ch16-aosp/05-android17-api37-performance-changes.md": {
       "path": "src/part4-system/ch16-aosp/05-android17-api37-performance-changes.md",
@@ -3412,8 +3414,8 @@
   },
   "summary": {
     "status_counts": {
-      "ready-for-review": 148,
-      "finalized": 26
+      "ready-for-review": 152,
+      "finalized": 23
     }
   },
   "7.13": {
@@ -3507,8 +3509,8 @@
   ],
   "last_review": "2026-04-21T02:51",
   "status_counts": {
-    "ready-for-review": 148,
-    "finalized": 26
+    "ready-for-review": 152,
+    "finalized": 23
   },
   "8.9": {
     "status": "ready-for-review",

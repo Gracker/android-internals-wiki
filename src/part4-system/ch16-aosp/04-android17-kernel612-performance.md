@@ -8,14 +8,15 @@ drafted_by: "openclaw-task2a"
 reviewed_date: "2026-04-17"
 reviewed_by: "openclaw-task6"
 task6_result: pass-light-edit
-task6_state: reviewed
-task9_state: reviewed
+task6_state: revisiting
+task9_state: pending
 task9_result: "needs-rework"
 last_task9_at: "2026-04-21T04:38:00+08:00"
 task9_reviewed_date: "2026-04-21"
 task9_reviewed_by: "openclaw-task9"
-task2b_state: pending
-pipeline_stage: task2b_pending
+task2b_state: fixed
+task2b_result: fixed
+pipeline_stage: task6_pending
 applicable_versions: "Android 17 (API 37)"
 tags:
   - android
@@ -27,9 +28,9 @@ tags:
 
 ## 为什么要了解 Android 17 + Kernel 6.12 的性能变化
 
-如果你在做 Android 性能优化，大概率会碰到一些"难以解释"的改善：同一套代码，升级系统版本后冷启动快了、滑动更丝滑了、App 安装更快了。这些改善背后，有一部分来自 Google 通过 GKI（Generic Kernel Image）Kernel 6.12 推送到底层的优化——它们不需要你改一行代码，也不需要 OEM 做适配，只要设备在 GKI Mainline 覆盖范围内就自动生效。
+升级系统版本后出现的冷启动、滑动和安装速度改善，常常来自内核与运行时的共同演进。GKI（Generic Kernel Image）的价值，是把通用内核与 SoC / 板级代码分开：核心内核由 Google 提供 release build，厂商特定能力放进 vendor modules，并通过 stable KMI 约束接口。这让同一条 LTS / Android 分支内的内核更新更容易独立交付，但是否能落到某台设备上，仍取决于该设备是否采用兼容的 GKI release build，以及 vendor modules 是否满足对应 KMI 边界。
 
-Android 17 Beta 3 搭载了 GKI Kernel 6.12，Google 发布了系统级性能量化数据。这些数据来自真实设备（Pixel 8/9、Samsung Galaxy S25 系列）的 A/B 测试，不是实验室里的微基准。理解这些优化意味着两件事：第一，在分析 Trace 时能识别出这些新机制的表现；第二，在做版本间性能对比时能把系统层面的贡献剥离出来。
+Android 17 对应的讨论语境是 `android16-6.12` 这条 GKI release branch。Google 公布了一批系统级性能数据，覆盖 Pixel 8/9 和 Samsung Galaxy S25 等设备。读这类数据时，需要同时看两层信息：一层是 6.12 分支本身带来的调度、存储和内存改动，另一层是具体设备是否真的收到这条分支的 GKI 更新。
 
 本章从调度器、存储栈、编译优化、内存管理四个维度拆解 Kernel 6.12 的性能变化。
 
@@ -47,7 +48,7 @@ Android 17 Beta 3 搭载了 GKI Kernel 6.12，Google 发布了系统级性能量
 | Checkpoint 写放大 | -40% | F2FS Checkpoint Merge |
 | 随机 I/O 延迟 | -12%（fio randread 4k，UFS 4.0） | 三项存储优化协同 |
 
-这些优化全部通过 GKI Mainline 推送到 Android 12+ 设备，不需要 OEM 做 kernel 适配。
+这些优化来自 GKI release build、内核 patch 和运行时改动的组合。能否在某台 Android 12+ 设备上看到同样收益，取决于它是否落在兼容的 GKI 分支，以及厂商模块是否满足 stable KMI 约束。
 
 [待补充：GKI Mainline 推送范围的设备列表截图]
 
@@ -87,11 +88,11 @@ Kernel 6.12 对 Android 存储栈引入了三项相互配合的优化，随机 I
 
 F2FS 是 Android 设备的主流文件系统（4.2 节）。它的 checkpoint 机制在每次 fsync()/sync() 时，需要将 NAT（Node Address Table）、SIT（Segment Information Table）、CURSEG（Current Segment）等元数据刷盘。如果多个线程同时调用 fsync()（这在 Android 中很常见——每个 ContentProvider 的写操作都走 SQLite WAL 模式），就会触发多次完整 checkpoint，产生大量冗余的元数据写入。
 
-Kernel 6.12 引入的 checkpoint merge 机制（`f2fs_merge_checkpoint_bio()`）将这些同步 checkpoint 的 bio 请求排队到 `sbi->cp_merge_list`，在一个 CP 周期内统一提交，而不是各自触发完整 checkpoint。
+在 `android16-6.12` 中，更稳的源码锚点是 `fs/f2fs/super.c`、`fs/f2fs/checkpoint.c` 和 `fs/f2fs/f2fs.h`。`checkpoint_merge` 挂载选项开启后，`f2fs_issue_checkpoint()` 会把并发的 `CP_SYNC` 请求挂到 `cprc->issue_list`，再由 `issue_checkpoint_thread` 统一执行；`struct ckpt_req_control` 里还能看到 `queued_ckpt`、`ckpt_wait_queue` 和 `ckpt_thread_ioprio` 这些配套字段。这里该把重点放在机制上：多个同步 checkpoint 请求会被串到同一个 checkpoint 线程里统一落盘，各个进程不再各自触发一轮完整 checkpoint。
 
 量化效果：Checkpoint 写放大减少 40%。对 SQLite WAL 模式的 commit 性能影响最大（Android 中 SQLite 是最常见的同步 I/O 模式之一），因为每次 ContentProvider 写操作都走 SQLite WAL + fsync 路径。
 
-[已验证: AOSP android16-6.12, fs/f2fs/checkpoint.c; lore.kernel.org F2FS patch series]
+[已验证: AOSP android16-6.12, fs/f2fs/super.c + fs/f2fs/checkpoint.c + fs/f2fs/f2fs.h; Linux F2FS checkpoint_merge mount option]
 
 ### io_uring multishot + zero-copy：减少 50% 系统调用开销
 
@@ -107,13 +108,11 @@ io_uring 是 Linux 5.1 引入的高性能异步 I/O 框架（6.3 节有基础介
 
 ### dm-verity multi-buffer hashing：ARM64 吞吐提升 35%
 
-dm-verity 是 Android 用于验证系统分区完整性的内核模块。它在每次读取 block 时都需要验证对应 hash tree 中的哈希值。传统实现是逐块（4KB page）调用 `crypto_shash_digest()`，每次只处理一个 page。
+dm-verity 是 Android 用于验证系统分区完整性的内核模块。传统路径按块计算哈希，热点函数是 `verity_hash()`。在 `android16-6.12` 中，对应源码文件是 `drivers/md/dm-verity-target.c`，多块哈希路径落在 `verity_hash_mb()`，shash 分支会调用 `crypto_shash_finup_mb(desc, data, len, digests, num_blocks)`，ahash 分支则保留逐块 fallback。
 
-Kernel 6.12 将逐块验证改为批量提交（`verity_hash_batch()`），单次提交最多 128 pages（512KB），利用 `crypto_ahash` 异步接口在 ARMv8.2+ 上并行执行 SHA256/SHA512 计算。
+公开 patch 讨论把这组改动的收益表述为 dm-verity / fsverity 的 cold-cache read 吞吐提升，ARM64 场景约在 35% 左右。这里更稳的结论是：6.12 把哈希热点从单块计算扩展到多块交错计算，对安装、首读和 OTA 校验这类需要连续完整性验证的路径更敏感。
 
-实测数据：在 UFS 4.0 + Cortex-A715 上，吞吐从 1.2 GB/s 提升到 1.62 GB/s（+35%）。对 APK 安装速度和 OTA 更新验证耗时影响最大（Pixel 设备 OTA 验证从 45s 降至 29s）。
-
-[已验证: AOSP android16-6.12, drivers/md/dm-verity.c; Google Android Developers Blog 2026-03]
+[已验证: AOSP android16-6.12, drivers/md/dm-verity-target.c; dm-verity multi-buffer hashing patch discussion]
 
 ### 三项优化的协同效果
 
@@ -156,7 +155,7 @@ AutoFDO 对内核的优化路径与用户空间相同：
 2. 生成 AFDO profile 文件
 3. 编译器（GCC/Clang）根据 profile 优化内核代码布局——热路径代码放在一起提高指令缓存命中率，冷路径代码分开减少对热路径的污染
 
-区别在于：用户空间的 AutoFDO 只优化 App 代码（通过 dex2oat/ART），而内核的 AutoFDO 优化的是 GKI kernel 的编译产物。Google 通过 GKI Mainline 推送优化后的内核，设备端不需要做任何操作。
+区别在于：用户空间的 AutoFDO 只优化 App 代码（通过 dex2oat/ART），而内核的 AutoFDO 优化的是 GKI kernel 的编译产物。设备是否拿到这批优化，取决于对应 GKI release build 是否已经下发到该设备的兼容分支。Android 12+ 只是平台下限，不代表设备会进入同一条 6.12 内核线。
 
 [已验证: Google Android Developers Blog, "Boosting Android Performance: Introducing AutoFDO for GKI Kernel", 2026-03]
 
@@ -175,13 +174,13 @@ Android 17 的 ART 运行时引入了两项与性能直接相关的变化。
 
 ### Concurrent Mark-Compact + Generational GC
 
-在 4.3 节和 4.8 节中我们详细讨论了 ART 的垃圾回收机制。Android 17 引入了 Concurrent Mark-Compact collector Enhanced with Generational GC——通过更频繁的低开销 young generation 回收减少 full-heap GC 频率。
+在 4.3 节和 4.8 节中已经把 ART 的垃圾回收机制展开过，这里只保留和系统性能结论直接相关的部分。4.8 的适用范围已经覆盖 Android 14-17，因此这里讨论的是 Android 17 对既有分代 GC 的增强。Concurrent Mark-Compact（CMC）路径把更多 young collection 维持在更小的扫描范围内。
 
-分代策略的核心：新创建的对象放入 young generation，高频低开销回收。经过多次 GC 仍然存活的对象晋升到 old generation，低频回收。这减少了每次 GC 需要扫描的对象数量，从而降低 GC 暂停时间。
+分代策略本身没有变化：新对象优先留在 young generation，短命对象尽量在小范围回收，存活对象再逐步晋升。收益点在于 full-heap collection 的频率更低，GC 线程的 CPU 占用也更容易被压住。
 
-历史演进：Android 8.0 的 Concurrent Copying GC 将暂停时间缩小 85%，Android 17 的分代 GC 进一步将平均暂停时间压缩到 1-3ms（1.83ms 平均值）。对 RecyclerView 滑动的影响最直接——GC 暂停导致的掉帧大幅减少。
+把版本演进压缩来看：Android 8.0 先把 pause time 大幅压短；Android 10 之后的 Concurrent Copying 路径已经带有分代回收；Android 17 在 CMC 路径上继续强化 generational GC。对 RecyclerView 滑动和启动阶段的直接收益，是 GC 暂停与并发 GC 的 CPU 抢占都更容易被压到较小范围内。
 
-[已验证: AOSP art/runtime/gc/; Android 17 Beta 3 release notes]
+[已验证: AOSP art/runtime/gc/; Android 17 Beta 3 release notes; §4.8 ART 分代垃圾回收与 GC 暂停优化]
 
 ### DeliQueue 无锁消息队列
 
@@ -256,13 +255,13 @@ Kernel 6.12 的优化在 Perfetto 中有多个可观测维度：
 
 从 Android 16 到 17 的存储栈优化是累积性的：Android 16 开始了 F2FS 的 Folio 转换（将 page-based 操作迁移到 folio-based，减少 `get_page()` 的调用次数），Android 17 在此基础上叠加了 Checkpoint Merge。
 
-调度器方面，EEVDF 从可选到默认的改变意味着所有 Android 17 设备都会受益。
+调度器方面，EEVDF 从可选到默认的改变，直接作用在使用 6.12 GKI release build 的 Android 17 设备上。
 
 ## 常见问题与误区
 
 **误区 1："Kernel 6.12 的优化只影响新设备"**
 
-错。GKI Mainline 推送覆盖 Android 12+ 设备（GKI 架构的设备），不限于 Android 17 新机。Pixel 6/7/8 系列和 Samsung Galaxy S22+ 系列都可以收到 Kernel 6.12 的优化推送。前提是设备的 SoC 厂商提供了对应的 GKI 兼容配置。
+不准确。6.12 的优化先落在对应的 GKI release branch 上，再由兼容这条 branch 的设备去接收。能否看到收益，取决于设备是否采用对应的 GKI 内核、vendor modules 是否满足 stable KMI 约束，以及 OEM 是否真的把这条 release build 交付到量产版本。把“GKI 支持独立更新”理解成“所有 Android 12+ 设备都会自动收到同一条 6.12 更新”，会把边界讲错。
 
 **误区 2："EEVDF 替代 CFS 是因为 CFS 有 bug"**
 
@@ -279,7 +278,7 @@ MGLRU 优化的是页面回收策略，它让内核更聪明地决定回收哪�
 ## 参考资料
 
 - [Google Android Developers Blog: Boosting Android Performance - AutoFDO for GKI Kernel](https://android-developers.googleblog.com/2026/03/BoostingAndroidPerformanceIntroducingAutoFDO.html)
-- [GKI Kernel 架构文档](https://source.android.com/docs/core/architecture/kernel/gki)
+- [GKI Kernel 架构文档](https://source.android.com/docs/core/architecture/kernel/generic-kernel-image)
 - [AOSP GKI Kernel android16-6.12 分支](https://android.googlesource.com/kernel/common/+/android16-6.12)
 - [Lore.kernel.org: F2FS Checkpoint Merge 补丁系列](https://lore.kernel.org/all/)
 - [Lore.kernel.org: MGLRU 补丁系列](https://lore.kernel.org/all/)

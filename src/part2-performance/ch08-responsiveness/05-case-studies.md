@@ -32,11 +32,12 @@ sources:
     path: "性能优化日报/2026-03-15-Baseline-Profiles-启动优化标配.md"
 tags: ['case-study', 'cold-start', 'response-optimization', 'baseline-profile', 'r8-full-mode', 'page-switch', 'macrobenchmark', 'auto-fdo', '16kb-page', 'dag-scheduler', 'aot-compilation']
 related_chapters: ["8.1", "8.2", "8.3", "8.4", "3.2"]
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
-task9_state: reviewed
-task2b_state: pending
+task9_state: pending
+task2b_state: fixed
+task2b_result: fixed
 task9_result: needs-rework
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-04-21"
@@ -94,29 +95,34 @@ Reddit 的性能团队首先通过 Macrobenchmark 建立了启动耗时基线。
 
 Reddit 采用了"Baseline Profiles + R8 Full Mode"的组合策略，整个集成耗时不到两周 [已验证: developer.android.com, Google Performance Spotlight Week 2025]。
 
-**Baseline Profiles 方面**，他们使用 Macrobenchmark 库自动生成了覆盖冷启动、首页浏览、帖子详情页三个关键用户路径（CUJ）的 profile 文件。生成的 `baseline-prof.txt` 经过编译后大小控制在 1.2MB 以内（Google 建议不超过 1.5MB）。
-
-在安装时，ART 会根据这个 profile 对关键代码路径做 AOT（Ahead-of-Time）编译。用户首次打开 App 时，启动路径上的热点代码已经是机器码而非字节码，省去了 JIT 编译的延迟。
+**Baseline Profiles 方面**，Reddit 用独立的 generator module 维护 CUJ。官方推荐的结构是：profile 生成模块应用 `androidx.baselineprofile` Gradle plugin，测试依赖里引入 `androidx.benchmark:benchmark-macro-junit4`，App 模块按需加入 `androidx.profileinstaller` 处理本地 sideload 安装。`BaselineProfileRule` 就来自 Macrobenchmark 依赖，生成出来的 `baseline-prof.txt` 会随 App 打包，在安装阶段提供给 ART 做 AOT 编译。
 
 ```groovy
-// Reddit 项目中 Baseline Profile 模块的配置示意
-// baselineprofile/build.gradle
-android {
-    defaultConfig {
-        minSdk 24
-        targetSdk 35
-    }
+// :baselineprofile/build.gradle
+plugins {
+    id 'com.android.test'
+    id 'androidx.baselineprofile'
 }
+
+android {
+    targetProjectPath = ':app'
+}
+
 dependencies {
-    // Macrobenchmark 库用于自动化生成 Profile
     implementation 'androidx.benchmark:benchmark-macro-junit4:1.3.3'
-    implementation 'androidx.benchmark:benchmark-baseline-profile-gradle-plugin:1.3.3'
 }
 ```
 
-这段配置的关键在于 `BaselineProfileRule` 中定义的 CUJ 必须准确覆盖启动路径——定义得越精确，Profile 的命中率越高。Reddit 团队发现，如果 CUJ 包含了用户不常走的分支，profile 的命中率会下降，优化效果大打折扣。
+```groovy
+// :app/build.gradle
+dependencies {
+    implementation 'androidx.profileinstaller:profileinstaller:1.4.1'
+}
+```
 
-**R8 Full Mode 方面**，他们将 ProGuard 配置从传统的 `proguard-android-optimize.txt` 升级为 `proguard-android.txt`（R8 full mode），并在 `build.gradle` 中启用了完整的代码缩减和优化：
+这里最容易写错的地方，是把 Baseline Profile plugin 当成普通 `implementation` 依赖。正确分工是：插件负责生成和维护 profile，Macrobenchmark 负责跑 CUJ，`profileinstaller` 负责本地安装场景的 profile 安装。
+
+**R8 优化配置方面**，默认规则文件应继续使用 `proguard-android-optimize.txt`。官方文档已经明确，`proguard-android.txt` 内含 `-dontoptimize`，会关闭优化；`proguard-android-optimize.txt` 才是当前推荐入口。
 
 ```groovy
 android {
@@ -124,13 +130,14 @@ android {
         release {
             minifyEnabled true
             shrinkResources true
-            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'),
+                'proguard-rules.pro'
         }
     }
 }
 ```
 
-R8 full mode 相比 ProGuard 的一个关键差异在于深度优化阶段：R8 会做方法内联、无用代码消除、类合并等 ProGuard 不做的优化。对于启动路径来说，方法内联的效果最为明显——它减少了虚方法调用的开销，直接缩短了调用链。
+R8 full mode 的判断条件也不在文件名上。`gradle.properties` 里不要保留 `android.enableR8.fullMode=false` 这类 compat mode 开关；AGP 8.0+ 已默认走 full mode。需要投入验证的部分，是 keep rules、反射调用和 JNI 入口。
 
 ### 优化结果
 
@@ -230,11 +237,9 @@ Disney+ 是全球前三大流媒体应用之一。与 Reddit 案例类似，Disn
 
 ### 优化手段
 
-Disney+ 的优化切入点相对聚焦：将混淆器从 ProGuard 迁移到 R8 full mode。
+Disney+ 的切入点，是把历史上的 ProGuard / R8 compat 配置收敛到现代 R8 优化配置。
 
-这不是一个简单的"换一个配置文件"的操作。ProGuard 和 R8 虽然功能相似，但在规则解析和优化行为上有微妙差异。Disney+ 团队需要逐一验证现有的 ProGuard keep 规则在 R8 下是否仍然有效——特别是涉及反射调用和 JNI 的部分。
-
-迁移过程中的一个关键决策是：将 `proguard-android-optimize.txt` 替换为 `proguard-android.txt`。这里的命名容易让人困惑——`proguard-android.txt` 实际上是 R8 full mode 的配置入口，而 `proguard-android-optimize.txt` 对应的是较旧的优化模式。R8 full mode 会执行更深层的代码优化，包括方法内联、类合并和垂直/水平合并。
+这项迁移的重点，在于避开 `proguard-android.txt` 这条默认文件路径。官方文档已经把它列为不推荐路径，因为它自带 `-dontoptimize`。更稳的做法是保留 `proguard-android-optimize.txt`，清理 `android.enableR8.fullMode=false` 这类 compat mode 开关，再逐条验证 keep rules 在 R8 下的行为，尤其是反射和 JNI 相关规则。
 
 ### 优化结果
 
@@ -245,13 +250,13 @@ Disney+ 在 Google Play 上线后的效果 [已验证: developer.android.com, Go
 | 启动时间 | **-30%** |
 | ANR 率 | **-25%** |
 
-这个结果尤其值得关注，因为 Disney+ 只做了 R8 迁移这一项改动，没有配合 Baseline Profiles 或其他优化。30% 的冷启动改善全部来自 R8 full mode 的代码优化。
+这个结果值得关注，因为 Disney+ 主要做的是 shrinker 配置迁移，没有再叠加 Baseline Profiles 这类改动。30% 的冷启动改善应理解为 R8 优化配置、规则收敛和代码体积下降的综合结果，和 `proguard-android.txt` 这个文件名本身无关。
 
-ANR 率降低 25% 是一个附带收益。分析原因，R8 的代码缩减移除了大量未使用的类和方法，使得 DEX 文件更小、加载更快。方法内联减少了虚方法调用的开销，这意味着主线程上每个方法的执行时间都有微小的缩短——在启动阶段数百次方法调用累积下来，就形成了可观的改善。
+ANR 率降低 25% 可以从两个方向理解：一类收益来自未使用代码被移除后，DEX 更小、加载更快；另一类收益来自方法内联和类合并这类优化，让启动主线程路径更短。
 
 ### 本案例的关键启示
 
-这个案例证明了一个重要事实：如果我们的项目还在使用 ProGuard 而非 R8 full mode，这是一个几乎零成本的高收益优化点。R8 从 Android Gradle Plugin 3.4 开始已成为默认的编译器，但很多项目由于历史原因仍在使用 ProGuard 兼容模式。迁移的工作量主要在于验证 keep 规则，而不是重写代码。
+这个案例说明，如果项目里还残留 ProGuard 时代的默认文件和 compat mode 开关，值得尽快清理。R8 从 Android Gradle Plugin 3.4 起就是默认 shrinker，但 full mode 与 compat mode 的边界要单独核对，现代项目应以官方 shrink-code 文档为准。
 
 ---
 
@@ -390,7 +395,7 @@ Google 的内部基准测试显示 [已验证: developer.android.com, Google Blo
 
 **第一，先度量，再优化。** Reddit 用 Macrobenchmark 建基线，抖音用 Rhea 做毫秒级差异分析，电商案例用 Perfetto 精确定位瓶颈。没有一个团队是凭直觉做优化的。度量工具的选择取决于我们的规模——小型 App 用 Macrobenchmark + Perfetto 就够了，大型 App 可能需要自建分析平台。
 
-**第二，区分"平台红利"和"应用优化"。** Baseline Profiles、R8 full mode、AutoFDO、16KB 页面——这些是平台提供的能力，接入成本极低。应该优先利用这些红利，然后再投入人力做应用层的深度优化。
+**第二，区分"平台红利"和"应用优化"。** Baseline Profiles、R8 优化配置、AutoFDO、16KB 页面——这些是平台提供的能力，接入成本极低。应该优先利用这些红利，然后再投入人力做应用层的深度优化。
 
 **第三，系统化 > 贴膏药。** 抖音的启动任务调度框架、Reddit 的 CUJ Profile 管理——它们把优化过程从"每次手动排查"变成了"系统自动处理"。这种投入的 ROI 是长期累积的。
 
@@ -412,7 +417,7 @@ Google 的内部基准测试显示 [已验证: developer.android.com, Google Blo
 
 **误区三：“R8 full mode 风险太高，不敢开。”**
 
-R8 full mode 从 Android Gradle Plugin 3.4 开始已是默认编译器。真正需要注意的是 keep 规则的迁移——特别是涉及反射调用和 JNI 的部分。迁移的推荐路径是：先在 CI 环境中开启 full mode + 严格的混淆规则检查，跑完整测试套件，确认无运行时 ClassNotFoundException 后再发布。Disney+ 的案例证明，迁移的工作量主要在于验证规则，而非重写代码。
+风险点不在 `proguard-android.txt` 这个文件名上，而在 keep rules 是否覆盖了反射、JNI 和动态加载。现代文档给出的基线配置是 `proguard-android-optimize.txt`，同时清理 `android.enableR8.fullMode=false` 这类 compat mode 开关；AGP 8.0+ 默认已经是 full mode。更稳的迁移路径，是在 CI 里先跑完整测试，再根据崩溃和反混淆结果补 keep rules。
 
 **误区四：“页面切换慢就是网络请求慢。”**
 
