@@ -3,7 +3,7 @@ title: "SystemUI 性能分析"
 chapter: "7.13"
 section: "7.13"
 status: ready-for-review
-applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
+applicable_versions: "Android 12 (API 31) - Android 17 (API 37)，通知图标源码入口需区分 Android 12-14 与 Android 15+"
 tags: [systemui, jank, launcher, statusbar, navigationbar, notification-shade, perfetto]
 related_chapters: ["2.4", "2.5", "7.1", "7.3", "7.4", "13.3"]
 created_by: "task2a-knowledge-gap"
@@ -27,6 +27,8 @@ sources:
   - type: aosp
     path: "frameworks/base/packages/SystemUI/src/com/android/systemui/statusbar/notification/row/NotificationContentInflater.java"
   - type: aosp
+    path: "frameworks/base/packages/SystemUI/src/com/android/systemui/statusbar/phone/StatusBarNotificationPresenter.java"
+  - type: aosp
     path: "frameworks/base/packages/SystemUI/src/com/android/systemui/statusbar/notification/icon/ui/viewmodel/NotificationIconContainerStatusBarViewModel.kt"
   - type: aosp
     path: "frameworks/base/packages/SystemUI/src/com/android/systemui/statusbar/notification/icon/ui/viewbinder/NotificationIconContainerStatusBarViewBinder.kt"
@@ -46,11 +48,11 @@ sources:
     path: "https://developer.android.com/develop/ui/views/notifications"
   - type: official
     path: "https://developer.android.com/guide/topics/ui/splash-screen"
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
 task9_result: needs-rework
-task2b_state: pending
+task2b_state: fixed
 task2b_result: fixed
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-04-20"
@@ -75,7 +77,7 @@ last_task9_at: "2026-04-21T01:15:00+08:00"
 
 - 🔹 **Android 12-17 的组件边界**：SystemUI 负责 StatusBar / Notification Shade / NavigationBar，Overview 属于 Launcher3 Quickstep。
 - 🔹 **窗口拓扑**：`super_notification_shade.xml` 把 `status_bar_expanded` 放进 `NotificationShadeWindowView`，NavigationBar 才是稳定独立窗口。
-- 🔹 **通知更新与内容绑定**：状态栏通知图标与通知内容绑定都已经不是旧版 `StatusBarNotificationPresenter + NotificationInflater + 主线程 apply()` 口径。
+- 🔹 **通知更新与内容绑定**：通知内容绑定在 Android 12-17 已经转向异步 apply / reapply；左侧通知图标则要区分 Android 12-14 的 presenter/controller 入口和 Android 15+ 的 icon/ui 路线。
 - 🔹 **输入路径拆分**：三按钮导航看 `NavigationBarView`，手势返回看 `EdgeBackGestureHandler + InputMonitorCompat("edge-swipe")`。
 - 🔹 **启动转场观察法**：Launcher3 Quickstep、WM Shell `Transitions`、`StartingWindowController`、目标 App 第一帧、SurfaceFlinger 要一起看。
 - 🔹 **Perfetto 定位方法**：优先确认窗口归属、MainThread/RenderThread、SurfaceFlinger Layers，再回到具体源码锚点。
@@ -103,17 +105,17 @@ SystemUI 不是“所有系统 UI 的总包”。在 Android 12-17 里，SystemU
 
 读 Layers Track 时，不要先假设一定能看到三个名字固定的 layer。更稳妥的做法是先从 WindowManager / SurfaceFlinger 中找到 `NotificationShade` 和 `NavigationBar` 相关窗口，再回头检查 `com.android.systemui` 主线程上的 `NotificationShadeWindowView#onMeasure`、`NotificationStackScrollLayout#onMeasure` 这些 slice。
 
-## StatusBar 与通知更新，现行实现已经换了口径
+## StatusBar 与通知更新，源码入口要按版本分代看
 
-### 左侧通知图标：看图标数据流，不看旧版 Presenter
+### 左侧通知图标：Android 12-14 和 Android 15+ 不是同一套入口
 
-状态栏左侧通知图标在新实现里已经拆到了 `statusbar/notification/icon/` 目录。当前 AOSP main 的做法更接近下面这组部件：
+这一段最容易被 Android 15+/16 的新路径带偏。`statusbar/notification/icon/ui/` 目录下的 `NotificationIconContainerStatusBarViewModel` 和 `NotificationIconContainerStatusBarViewBinder` 只适合 Android 15+ / 16 当前主线。Android 12-14 读源码时，更稳的入口仍是 `StatusBarNotificationPresenter` 这一代控制链，再沿着状态栏图标更新逻辑继续查。
 
-- `NotificationIconContainerStatusBarViewModel` 暴露 `icons` 流，决定状态栏要显示哪些通知图标。
-- `NotificationIconContainerStatusBarViewBinder.bindWhileAttached()` 在视图 attach 后把数据绑定到 `NotificationIconContainer`。
-- `StatusBarNotificationIconViewStore` 负责图标 View 的复用。
+- Android 12-14：先看 `StatusBarNotificationPresenter`，再结合 `StatusBarIconControllerImpl` 和状态栏容器遍历判断通知图标更新是否把主线程拖长。
+- Android 15+ / 16：看 `NotificationIconContainerStatusBarViewModel.icons`、`NotificationIconContainerStatusBarViewBinder.bindWhileAttached()` 和 `StatusBarNotificationIconViewStore`，重点放在图标集合变化后的重绑、重测量、重布局。
+- 两代实现的共同观察点没有变：图标批量增删之后，状态栏容器有没有反复 traversal。
 
-因此，通知图标更新造成 jank 时，观察点应该放在“图标集合变化后，容器要不要重新绑定、重新测量、重新布局”，而不是旧文档常见的 `StatusBarNotificationPresenter -> NotificationIconController.updateNotificationIcons()`。那套类名和路径在当前 SystemUI 分支里已经不是这章该依赖的主口径。
+这样分开写，Android 12-14 读者不会去找 15+ 才出现的 ViewModel/Binder，Android 15+ 读者也不会被旧版 presenter/controller 路径拖回去。
 
 ### 右侧系统图标：仍由 `StatusBarIconControllerImpl` 一类控制器管理
 
@@ -177,7 +179,7 @@ Overview 侧的源码锚点可以先看 `RecentsView.applyLoadPlan()`。它不�
 | --- | --- | --- | --- | --- |
 | Shade 展开 / 收起 | `com.android.systemui` MainThread、RenderThread、SurfaceFlinger Layers | `NotificationShadeWindowView#onMeasure`、`NotificationStackScrollLayout#onMeasure`、`NSSL#updateChildren` | 主线程 slice 跟手指移动同步，Layers 变化连续 | `onMeasure` 或 `NSSL#updateChildren` 长时间占用，SurfaceFlinger 合成出现空洞 |
 | 通知内容绑定 | `com.android.systemui` MainThread + 绑定相关异步任务 | `NotifInflaterImpl`、`NotificationContentInflater.AsyncInflationTask`、`applyAsync()` / `reapplyAsync()` | 异步绑定启动后，主线程只承担有限的挂接和布局工作 | 异步任务堆积，或异步完成后主线程再被批量 requestLayout 压住 |
-| 状态栏通知图标更新 | `com.android.systemui` MainThread、ViewRootImpl traversal | `NotificationIconContainerStatusBarViewModel.icons`、`NotificationIconContainerStatusBarViewBinder.bindWhileAttached()` | 图标增删量小，状态栏遍历时间稳定 | 图标批量变更后，状态栏容器反复测量、布局 |
+| 状态栏通知图标更新 | `com.android.systemui` MainThread、ViewRootImpl traversal | `Android 12-14: StatusBarNotificationPresenter`；`Android 15+: NotificationIconContainerStatusBarViewModel.icons`、`NotificationIconContainerStatusBarViewBinder.bindWhileAttached()` | 版本对应的源码入口清楚，图标增删量小，状态栏遍历时间稳定 | 读错版本入口，或图标批量变更后状态栏容器反复测量、布局 |
 | 三按钮导航点击 | `com.android.systemui` MainThread、Input 轨道 | `NavigationBarView.onInterceptTouchEvent()`、`onTouchEvent()` | 触摸到按钮反馈间隔稳定 | Input 到达后，主线程被别的窗口工作阻塞 |
 | 手势返回 | Input 轨道、`com.android.systemui` MainThread | `EdgeBackGestureHandler`、`InputMonitorCompat("edge-swipe")` | 边缘滑动、back animation、窗口切换时间靠得很紧 | input receiver 已收到事件，但手势判定或动画回调滞后 |
 | Overview / 最近任务 | `com.android.launcher3` MainThread、RenderThread、SurfaceFlinger Layers | `RecentsView.applyLoadPlan()` | Launcher 与 SurfaceFlinger 时间分布平稳 | Launcher 自己的视图更新过重，和系统栏动画一起争 CPU |
@@ -236,6 +238,7 @@ App 启动、Overview 切换、返回桌面都可能碰到这个形态。Launche
 - AOSP：`packages/SystemUI/src/com/android/systemui/statusbar/notification/stack/NotificationStackScrollLayout.java`
 - AOSP：`packages/SystemUI/src/com/android/systemui/statusbar/notification/collection/NotifInflaterImpl.java`
 - AOSP：`packages/SystemUI/src/com/android/systemui/statusbar/notification/row/NotificationContentInflater.java`
+- AOSP：`packages/SystemUI/src/com/android/systemui/statusbar/phone/StatusBarNotificationPresenter.java`
 - AOSP：`packages/SystemUI/src/com/android/systemui/navigationbar/views/NavigationBarView.java`
 - AOSP：`packages/SystemUI/src/com/android/systemui/navigationbar/gestural/EdgeBackGestureHandler.java`
 - AOSP：`libs/WindowManager/Shell/src/com/android/wm/shell/startingsurface/StartingWindowController.java`

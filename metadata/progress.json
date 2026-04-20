@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-21T01:15:00+08:00",
+  "generated_at": "2026-04-21T01:55:15+08:00",
   "state_machine_version": "v2",
   "total_sections": 175,
   "metrics": {
@@ -1632,12 +1632,12 @@
       "title": "SystemUI 性能分析",
       "chapter": "7.13",
       "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
-      "task6_state": "reviewed",
-      "task9_state": "reviewed",
-      "task2b_state": "pending",
-      "reviewed_date": "2026-04-20",
-      "reviewed_by": "openclaw-task6",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
+      "task9_state": "pending",
+      "task2b_state": "fixed",
+      "reviewed_date": "2026-04-21",
+      "reviewed_by": "openclaw-task2b",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
@@ -1827,12 +1827,12 @@
       "title": "Android 游戏性能与 Game Mode/State API",
       "chapter": "8.9",
       "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
-      "task6_state": "reviewed",
-      "task9_state": "reviewed",
-      "task2b_state": "pending",
-      "reviewed_date": "2026-04-20",
-      "reviewed_by": "openclaw-task6",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
+      "task9_state": "pending",
+      "task2b_state": "fixed",
+      "reviewed_date": "2026-04-21",
+      "reviewed_by": "openclaw-task2b",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
@@ -3353,10 +3353,10 @@
   },
   "7.13": {
     "status": "ready-for-review",
-    "task6_state": "reviewed",
+    "task6_state": "revisiting",
     "task6_result": "pass-light-edit",
-    "last_reviewed": "2026-04-20",
-    "reviewed_by": "openclaw-task6"
+    "last_reviewed": "2026-04-21",
+    "reviewed_by": "openclaw-task2b"
   },
   "9.6": {
     "status": "ready-for-review",
@@ -3434,9 +3434,9 @@
   },
   "8.9": {
     "status": "ready-for-review",
-    "task6_state": "reviewed",
+    "task6_state": "revisiting",
     "task6_result": "pass-light-edit",
-    "last_reviewed": "2026-04-20",
-    "reviewed_by": "openclaw-task6"
+    "last_reviewed": "2026-04-21",
+    "reviewed_by": "openclaw-task2b"
   }
 }

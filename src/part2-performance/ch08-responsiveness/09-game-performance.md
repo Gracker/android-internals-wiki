@@ -24,6 +24,12 @@ sources:
     path: "https://developer.android.com/reference/android/app/GameState"
   - type: official
     path: "https://developer.android.com/reference/android/os/health/SystemHealthManager"
+  - type: official
+    path: "https://developer.android.com/games/agdk/performance-tuner"
+  - type: official
+    path: "https://developer.android.com/games/agdk/game-activity/get-started"
+  - type: official
+    path: "https://developer.android.com/games/agdk/game-text-input"
   - type: aosp
     path: "frameworks/base/core/java/android/app/GameManager.java"
   - type: aosp
@@ -37,10 +43,10 @@ related_chapters: ["2.17", "5.9", "5.5", "7.1", "7.9", "14.10"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-04-08"
 gap_source: "官方文档+读者需求+研究素材"
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: pending
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
+task2b_state: fixed
 task2b_result: fixed
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-04-20"
@@ -187,7 +193,7 @@ Game Mode 给游戏的第一手信息是用户偏好，不是一个直接控制 
 
 第二层是 `GameManagerService` 这个 `system_server` 服务。它负责保存模式配置、转发 `getGameMode()` / `setGameState()` 调用，并把状态变化写入 statsd。这个服务本身不对外承诺“锁大核”或“抬调度优先级”这类行为。
 
-第三层才是能在 AOSP 中直接看到的 loading boost。`GameManagerService#setGameState()` 收到 `GameState` 后，会先记录 `FrameworkStatsLog.GAME_STATE_CHANGED`。当当前模式是 `GAME_MODE_PERFORMANCE` 且 `gameState.isLoading()` 为 `true` 时，服务会调用 `PowerManagerInternal.setPowerMode(Mode.GAME_LOADING, true)`，在一个受限时长内打开加载期 boost；加载结束或超时后再关闭。
+第三层才是能在 AOSP 中直接看到的 loading boost。`GameManagerService#setGameState()` 收到 `GameState` 后，会先记录 `FrameworkStatsLog.GAME_STATE_CHANGED`。当当前模式是 `GAME_MODE_PERFORMANCE` 且 `gameState.isLoading()` 为 `true` 时，服务会调用 `PowerManagerInternal.setPowerMode(Mode.GAME_LOADING, true)`，在一个受限时长内打开加载期 boost；加载结束或超时后再关闭。AOSP 默认上限写在 `LOADING_BOOST_MAX_DURATION = 5 * 1000`，也就是 5 秒。加载态如果长时间不收敛，`Mode.GAME_LOADING` boost 会自己撤销，不能拿它覆盖整场对局。
 
 OEM 还可以在这三层之外叠加自己的实现，例如 downscale、FPS override、ANGLE 驱动替换，或者更激进的频率策略。但这些都属于设备配置，不是 `GameMode` / `GameState` 默认保证的行为。
 
@@ -245,15 +251,19 @@ if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
 
 ### Android Game Development Kit 概览
 
-AGDK（Android Game Development Kit）是 Google 为 Android 游戏开发者提供的工具集，包含以下核心组件：
+AGDK（Android Game Development Kit）里既有平台 API，也有通过 SDK 或服务分发的库。把它们都写成“Android 某个版本才引入”，会把平台边界和库边界混在一起。更合适的拆法如下：
 
-| 组件 | 功能 | 引入版本 |
-|------|------|---------|
-| **Frame Pacing Library (Swappy)** | 帧节奏控制，与 VSync 同步 | Android 9 (API 28) |
-| **Game Activity** | 替代 NativeActivity 的优化 Activity | Android 12 (API 31) |
-| **Game Text Input** | 低延迟文本输入 | Android 12 (API 31) |
-| **Performance Tuner** | 自动化性能数据收集 + Play Console 集成 | Android 12 (API 31) |
-| **Android GPU Inspector (AGI)** | GPU 性能分析和帧调试 | 独立工具 |
+| 组件 | 类型 | 平台 API 首发版本 | 库 / 服务可用范围 |
+|------|------|------------------|------------------|
+| **Game Mode API** (`GameManager#getGameMode()`) | 平台 API | Android 12 (API 31) | 系统框架内置 |
+| **Game State API** (`GameManager#setGameState()`, `GameState`) | 平台 API | Android 13 (API 33) | 系统框架内置 |
+| **Frame Pacing Library (Swappy)** | AGDK 库 | 不与 OS 版本绑定 | 通过 AGDK 集成，最低版本取决于当前 SDK 与接入方式 |
+| **Game Activity** | AGDK 库 | 不与 OS 版本绑定 | 通过 AGDK 集成，官方文档当前要求 minSdk 19+ |
+| **Game Text Input** | AGDK 库 | 不与 OS 版本绑定 | 通过 AGDK 集成，官方文档当前要求 minSdk 19+ |
+| **Performance Tuner** | AGDK 库 + Play Console 服务 | 不与 OS 版本绑定 | 官方文档写明可运行在 Android 4.1 (API 16)+ |
+| **Android GPU Inspector (AGI)** | 独立工具 | 不适用 | 主机侧工具，按 GPU 驱动与设备支持情况工作 |
+
+真正和平台版本硬绑定的只有 `Game Mode` / `Game State`。`Game Activity`、`Game Text Input`、`Swappy`、`Performance Tuner` 都跟着 AGDK 自己的发布节奏走。`Performance Tuner` 这一行最容易写错，它不是 Android 12 特性，平台门槛也不是 API 31。
 
 Frame Pacing Library 已在 §2.17 详细讨论，这里重点关注与性能优化直接相关的其他组件。
 
