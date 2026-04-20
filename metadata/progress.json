@@ -1,32 +1,32 @@
 {
-  "generated_at": "2026-04-20T15:01:59+08:00",
+  "generated_at": "2026-04-20T15:59:02+08:00",
   "state_machine_version": "v2",
   "total_sections": 176,
   "metrics": {
     "total": 176,
     "unknown": 2,
-    "last_updated": "2026-04-20T15:01:59+08:00",
+    "last_updated": "2026-04-20T15:59:02+08:00",
     "task2b_state_counts": {
       "unknown": 2,
-      "fixed": 128,
+      "fixed": 125,
       "idle": 25,
-      "pending": 21
+      "pending": 24
     },
     "task9_state_counts": {
       "unknown": 1,
-      "pending": 130,
-      "reviewed": 44,
+      "pending": 127,
+      "reviewed": 47,
       "fixed": 1
     },
     "pipeline_stage_counts": {
       "unknown": 1,
-      "task6_pending": 95,
+      "task6_pending": 92,
       "ready-to-publish": 15,
       "task9_pending": 45,
-      "task2b_pending": 20
+      "task2b_pending": 23
     },
     "pipeline_task9_pending": 45,
-    "pipeline_task2b_pending": 20,
+    "pipeline_task2b_pending": 23,
     "pipeline_ready_to_publish": 15,
     "ready-to-publish": 0,
     "finalized": 15,
@@ -35,27 +35,27 @@
   "pipeline": {
     "pipeline_stage_counts": {
       "unknown": 1,
-      "task6_pending": 95,
+      "task6_pending": 92,
       "ready-to-publish": 15,
       "task9_pending": 45,
-      "task2b_pending": 20
+      "task2b_pending": 23
     },
     "task2b_state_counts": {
       "unknown": 2,
-      "fixed": 128,
+      "fixed": 125,
       "idle": 25,
-      "pending": 21
+      "pending": 24
     },
     "task6_state_counts": {
       "unknown": 1,
-      "revisiting": 89,
-      "reviewed": 85,
+      "revisiting": 86,
+      "reviewed": 88,
       "pending": 1
     },
     "task9_state_counts": {
       "unknown": 1,
-      "pending": 130,
-      "reviewed": 44,
+      "pending": 127,
+      "reviewed": 47,
       "fixed": 1
     }
   },
@@ -1790,15 +1790,18 @@
       "title": "ProfilingManager 系统触发式性能追踪",
       "chapter": "8.8",
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "revisiting",
-      "task9_state": "pending",
-      "task2b_state": "fixed",
-      "reviewed_date": "2026-04-13",
+      "pipeline_stage": "task2b_pending",
+      "task6_state": "reviewed",
+      "task9_state": "reviewed",
+      "task2b_state": "pending",
+      "reviewed_date": "2026-04-20",
       "reviewed_by": "openclaw-task6",
-      "task6_result": "needs-rework",
+      "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
+      "task9_reviewed_date": "2026-04-20",
+      "task9_reviewed_by": "openclaw-task9",
+      "last_task9_at": "2026-04-20T15:59:02+08:00",
       "section": "8.8"
     },
     "src/part2-performance/ch08-responsiveness/09-game-performance.md": {
@@ -2079,15 +2082,18 @@
       "title": "App 耗电优化",
       "chapter": "11.2",
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "revisiting",
-      "task9_state": "pending",
-      "task2b_state": "fixed",
-      "reviewed_date": "2026-04-13",
+      "pipeline_stage": "task2b_pending",
+      "task6_state": "reviewed",
+      "task9_state": "reviewed",
+      "task2b_state": "pending",
+      "reviewed_date": "2026-04-20",
       "reviewed_by": "openclaw-task6",
-      "task6_result": "needs-rework",
+      "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
+      "task9_reviewed_date": "2026-04-20",
+      "task9_reviewed_by": "openclaw-task9",
+      "last_task9_at": "2026-04-20T15:59:02+08:00",
       "section": "11.2"
     },
     "src/part2-performance/ch11-power/03-system-power-optimization.md": {
@@ -2095,15 +2101,18 @@
       "title": "系统级功耗优化",
       "chapter": "11.3",
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "revisiting",
-      "task9_state": "pending",
-      "task2b_state": "fixed",
-      "reviewed_date": "2026-04-13",
+      "pipeline_stage": "task2b_pending",
+      "task6_state": "reviewed",
+      "task9_state": "reviewed",
+      "task2b_state": "pending",
+      "reviewed_date": "2026-04-20",
       "reviewed_by": "openclaw-task6",
-      "task6_result": "needs-rework",
+      "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
+      "task9_reviewed_date": "2026-04-20",
+      "task9_reviewed_by": "openclaw-task9",
+      "last_task9_at": "2026-04-20T15:59:02+08:00",
       "section": "11.3"
     },
     "src/part2-performance/ch11-power/04-case-studies.md": {
@@ -3288,8 +3297,8 @@
   "summary": {
     "status_counts": {
       "unknown": 2,
-      "ready-for-review": 160,
-      "finalized": 14
+      "ready-for-review": 159,
+      "finalized": 15
     }
   },
   "7.13": {

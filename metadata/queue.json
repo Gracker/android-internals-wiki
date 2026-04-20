@@ -326,6 +326,91 @@
       "completed_at": "2026-04-20T15:01:15+08:00",
       "completed_by": "task2b-content-processing-rework",
       "resolution": "已改写 requestLayout 优化建议与 <include> 运行时行为，补清 GONE/VISIBLE 的布局代价、parseInclude() 路径，以及 <merge> / ViewStub 的边界。"
+    },
+    {
+      "section": "8.8",
+      "section_title": "ProfilingManager 系统触发式性能追踪",
+      "priority": 85,
+      "reason": "[Deep Tech Review] frontmatter 章节号与 SUMMARY / external-review backlog 冲突，导致 8.8 编号重复和流水线映射失真。",
+      "material_paths": [
+        "src/SUMMARY.md",
+        "logs/external-review/part2-performance-todo.md"
+      ],
+      "review_issues": [
+        {
+          "type": "交叉引用错误",
+          "location": "frontmatter L3-L4 / src/SUMMARY.md L131-L133 / logs/external-review/part2-performance-todo.md L28-L30",
+          "detail": "文件 frontmatter 把本章写成 `chapter: \"8.8\"`、`section: \"8.8\"`，而 `08-media-pipeline.md` 已占用 8.8；同时 `SUMMARY.md` 与 external-review backlog 对 profiling / game 两章的编号也互相不一致，进而触发 `progress.json` 的 `duplicate_chapter_ids[\"8.8\"] = 2`。",
+          "suggestion": "先统一 `08-media-pipeline.md`、`08-system-triggered-profiling.md`、`09-game-performance.md` 在 frontmatter / SUMMARY / external-review backlog 三处的章节号，再同步修正 progress / queue 中的 section 映射。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-04-20T15:56:56+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "11.2",
+      "section_title": "App 耗电优化",
+      "priority": 95,
+      "reason": "[Deep Tech Review] Exact alarm 版本线和 FGS 异常语义存在事实错误，frontmatter 也已损坏。",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "版本差异",
+          "location": "L319-L325",
+          "detail": "章节把 `SCHEDULE_EXACT_ALARM` 写成 Android 14 才开始要求，和平台真实演进不符。该 special app access 从 Android 12 (API 31) 就已引入，Android 14 的变化是多数 targetSdk 33+ 新安装应用默认不再预授予；闹钟 / 日历类应用还可能改走 `USE_EXACT_ALARM`。",
+          "suggestion": "把这段拆成 Android 12 引入权限、Android 14 默认授权收紧两层，并补 `AlarmManager.canScheduleExactAlarms()`、`ACTION_REQUEST_SCHEDULE_EXACT_ALARM` 与 `USE_EXACT_ALARM` 的边界。"
+        },
+        {
+          "type": "源码错误",
+          "location": "L351-L357",
+          "detail": "章节把“类型和权限不匹配”统一写成 `MissingForegroundServiceTypeException`。真实行为是：缺少 `foregroundServiceType` 才会抛 `MissingForegroundServiceTypeException`；缺少 service-type 权限、while-in-use 运行时权限或在后台不满足前提时，通常抛的是 `SecurityException`，后台启动本身还可能走 `ForegroundServiceStartNotAllowedException`。",
+          "suggestion": "把 missing type、permission mismatch、background start 三类失败路径拆开说明，并给出对应异常名。"
+        },
+        {
+          "type": "交叉引用错误",
+          "location": "frontmatter L50-L53",
+          "detail": "frontmatter 出现 `task6_result: pass-light-edit---`，导致 YAML 终止符和 Task 6 结果合并，后续 `pipeline_stage` / `task9_state` / `task2b_state` 无法被稳定解析，`progress.json` 仍停留在旧的 needs-rework 状态。",
+          "suggestion": "恢复合法 frontmatter 终止符，并把 task6 / task9 / task2b 状态与 progress.json 同步。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-04-20T15:56:56+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "11.3",
+      "section_title": "系统级功耗优化",
+      "priority": 95,
+      "reason": "[Deep Tech Review] Doze 与 FGS、后台定位权限边界存在事实错误，frontmatter 版本字段也已损坏。",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "原理断裂",
+          "location": "L138-L147",
+          "detail": "章节把“拥有前台服务”写成 Doze 限制会被“大幅放宽”。这会把 app background limits 和 device idle policy 混成一层。Doze 期间前台服务可以继续存活，但网络访问、Job / Sync 调度、普通 Alarm 和 wake lock 语义并不会因此恢复到正常后台态。",
+          "suggestion": "改成“FGS 解决的是后台执行优先级，不等于 Doze 豁免”，并把 network / job / wake lock 的限制分别写清楚。"
+        },
+        {
+          "type": "版本差异",
+          "location": "L249-L253",
+          "detail": "章节把 Android 14 的位置 FGS 限制写成“没有 `ACCESS_BACKGROUND_LOCATION` 就会直接抛 `SecurityException`”。真实边界是后台创建 location FGS 且只有 while-in-use 权限时才会立刻失败；应用处于可见前台且已有前台位置权限时，不需要 `ACCESS_BACKGROUND_LOCATION` 也可以启动 location FGS。",
+          "suggestion": "把“后台启动 location FGS”与“前台可见时使用 location FGS”拆开描述，并明确 while-in-use 权限只在应用可见时生效。"
+        },
+        {
+          "type": "交叉引用错误",
+          "location": "frontmatter L10",
+          "detail": "frontmatter 把 `task6_result` 和 `applicable_versions` 合并成同一行，导致版本范围和 Task 6 结果一起损坏，容易继续把章节识别成旧的 needs-rework 状态。",
+          "suggestion": "拆回独立的 `task6_result` 与 `applicable_versions` 字段，并同步 progress.json。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-04-20T15:56:56+08:00",
+      "status": "pending"
     }
   ]
 }

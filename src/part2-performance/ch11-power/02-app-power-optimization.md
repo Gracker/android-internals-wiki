@@ -47,10 +47,17 @@ sources:
     path: "https://developer.android.com/develop/background-work/services/fgs/timeout"
 tags: ['wakelock', 'jobscheduler', 'workmanager', 'doze', 'location', 'alarm', 'power', 'fgs', 'foreground-service', 'fcm', 'alarmmanager', 'geofencing', 'battery-historian', 'camera']
 related_chapters: ["11.1", "11.3", "5.6", "5.4", "5.10", "11.5"]
-task9_result: needs-rework
-pipeline_stage: task9_pending
+pipeline_stage: task2b_pending
 task6_state: reviewed
-task6_result: pass-light-edit---
+task6_result: pass-light-edit
+task9_state: reviewed
+task9_result: needs-rework
+task2b_state: pending
+task2b_result: fixed
+task9_reviewed_date: "2026-04-20"
+task9_reviewed_by: "openclaw-task9"
+last_task9_at: "2026-04-20T15:56:56+08:00"
+---
 
 # App 耗电优化
 
