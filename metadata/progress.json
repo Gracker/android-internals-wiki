@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-20T15:59:02+08:00",
+  "generated_at": "2026-04-20T17:33:06+08:00",
   "state_machine_version": "v2",
   "total_sections": 176,
   "metrics": {
@@ -60,9 +60,7 @@
     }
   },
   "issues": {
-    "duplicate_chapter_ids": {
-      "8.8": 2
-    },
+    "duplicate_chapter_ids": {},
     "missing_chapter": [
       "src/SUMMARY.md",
       "src/appendix/analysis-checklist.md",
@@ -289,10 +287,10 @@
       "title": "ART 编译管线与 dex2oat 优化",
       "chapter": "1.7",
       "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
-      "task6_state": "reviewed",
-      "task9_state": "reviewed",
-      "task2b_state": "pending",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
+      "task9_state": "pending",
+      "task2b_state": "fixed",
       "reviewed_date": "2026-04-20",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
@@ -1600,8 +1598,8 @@
       "title": "WebView 渲染性能与优化",
       "chapter": "7.11",
       "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
-      "task6_state": "reviewed",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
       "task9_state": "pending",
       "task2b_state": "fixed",
       "reviewed_date": "2026-04-20",
@@ -1797,12 +1795,12 @@
     "src/part2-performance/ch08-responsiveness/08-system-triggered-profiling.md": {
       "path": "src/part2-performance/ch08-responsiveness/08-system-triggered-profiling.md",
       "title": "ProfilingManager 系统触发式性能追踪",
-      "chapter": "8.8",
+      "chapter": "8.10",
       "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
-      "task6_state": "reviewed",
-      "task9_state": "reviewed",
-      "task2b_state": "pending",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
+      "task9_state": "pending",
+      "task2b_state": "fixed",
       "reviewed_date": "2026-04-20",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
@@ -1811,7 +1809,7 @@
       "task9_reviewed_date": "2026-04-20",
       "task9_reviewed_by": "openclaw-task9",
       "last_task9_at": "2026-04-20T15:59:02+08:00",
-      "section": "8.8"
+      "section": "8.10"
     },
     "src/part2-performance/ch08-responsiveness/09-game-performance.md": {
       "path": "src/part2-performance/ch08-responsiveness/09-game-performance.md",

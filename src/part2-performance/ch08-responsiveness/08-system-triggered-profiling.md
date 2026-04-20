@@ -1,7 +1,7 @@
 ---
 title: "ProfilingManager 系统触发式性能追踪"
-chapter: "8.8"
-section: "8.8"
+chapter: "8.10"
+section: "8.10"
 status: ready-for-review
 applicable_versions: "Android 16 (API 36) - Android 17 (API 37)"
 tags: [profiling-manager, system-triggered, cold-start, anr, tracing, performance-monitoring]
@@ -35,10 +35,10 @@ sources:
     path: "packages/modules/Profiling/framework/java/android/os/ProfilingResult.java"
   - type: aosp
     path: "packages/modules/Profiling/service/java/com/android/os/profiling/ProfilingService.java"
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: pending
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
+task2b_state: fixed
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-04-20"
 task6_result: pass-light-edit

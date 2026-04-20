@@ -224,7 +224,10 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-20T12:57:45.948236+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-04-20T17:33:06+08:00",
+      "completed_by": "task2b-content-processing-rework",
+      "resolution": "已在 ch18 README 增加 BufferQueue、BLASTBufferQueue、Vsync、Frame Timeline、JankTracker、AGSL、RenderEffect、可更新 GPU 驱动与 Game Mode API 的前置索引，并把阅读建议改成可定位的编号写法。"
     },
     {
       "section": "7.1",
@@ -296,7 +299,10 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-20T14:50:48+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-04-20T17:33:06+08:00",
+      "completed_by": "task2b-content-processing-rework",
+      "resolution": "已把 applicationContext 的适用范围改为预热或不入窗场景，展示态 WebView 改回 Activity 或 UI Context，并保留 removeView + destroy() 作为泄漏治理主线。"
     },
     {
       "section": "7.12",
@@ -328,7 +334,7 @@
       "resolution": "已改写 requestLayout 优化建议与 <include> 运行时行为，补清 GONE/VISIBLE 的布局代价、parseInclude() 路径，以及 <merge> / ViewStub 的边界。"
     },
     {
-      "section": "8.8",
+      "section": "8.10",
       "section_title": "ProfilingManager 系统触发式性能追踪",
       "priority": 85,
       "reason": "[Deep Tech Review] frontmatter 章节号与 SUMMARY / external-review backlog 冲突，导致 8.8 编号重复和流水线映射失真。",
@@ -346,7 +352,10 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-20T15:56:56+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-04-20T17:33:06+08:00",
+      "completed_by": "task2b-content-processing-rework",
+      "resolution": "已以 SUMMARY 为准把 ProfilingManager 统一到 8.10，同步修正 external-review backlog、progress 与 queue 映射，并消除 progress 中的 8.8 重号。"
     },
     {
       "section": "11.2",
@@ -454,7 +463,10 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-20T16:33:00+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-04-20T17:33:06+08:00",
+      "completed_by": "task2b-content-processing-rework",
+      "resolution": "已把 JIT 路径改回 art/runtime/jit/，删除 MaybeCompileMethod/IsMethodPortable 等不存在锚点，并把 speed-profile、Cloud Compilation、static final 的表述降到源码和公开资料可支撑的边界。"
     }
   ]
 }
