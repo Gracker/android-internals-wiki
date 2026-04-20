@@ -24,8 +24,8 @@
 - [ ] src/part3-tools/ch14-other-tools/08-gpu-debug-tools.md
 - [ ] src/part3-tools/ch14-other-tools/09-camera-performance-analysis.md
 - [ ] src/part3-tools/ch14-other-tools/10-ebpf-performance-analysis.md
-- [ ] src/part3-tools/ch14-other-tools/11-battery-historian.md
-- [ ] src/part3-tools/ch14-other-tools/README.md
+- [x] src/part3-tools/ch14-other-tools/11-battery-historian.md
+- [x] src/part3-tools/ch14-other-tools/README.md
 
 ## Ch 15 Methodology
 - [ ] src/part3-tools/ch15-methodology/01-philosophy.md

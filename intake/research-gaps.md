@@ -2761,3 +2761,23 @@ bpftrace 在 AOSP 的集成现状未准确描述。自 Android 12/13 起 AOSP ex
 
 ### 关联章节
 16.2, 16.4, 6.3
+
+
+## [2026-04-21] 14.11 Battery Historian 与功耗分析工具 — 知识盲区
+
+### 盲区描述
+Power Stats HAL（android.hardware.power.stats）接口在 Android 14/15 中的演进变化未梳理。ODPM 数据上报依赖此 HAL，不同 OEM 对 HAL 的实现程度差异直接影响 Power Profiler 可观测的数据粒度。
+
+### 重要程度
+低
+
+### 建议研究方向
+- 查阅 hardware/interfaces/power/stats 在 Android 14/15 的变化
+- 梳理不同 OEM 对 Power Stats HAL 的实现差异
+- 确认非 Pixel 设备上 ODPM 数据的可用性和精度
+
+### 关联章节
+- 14.11
+
+### 外部 review 来源
+- Gemini 外部 review（2026-04-20-14-11-external-review.md）

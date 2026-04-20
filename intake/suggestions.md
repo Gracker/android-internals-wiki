@@ -4171,3 +4171,10 @@
 - **位置**：L95-L103
 - **问题**：io_uring 段直接把收益外推到 OkHttp/Cronet/SQLite，并写出 “Bionic libc 中实验性提供 liburing 兼容层”，但没有交代 Android 上 io_uring 的安全限制、system-only 边界和 userspace 接入条件。
 - **建议**：补充 Android 上 io_uring 可用范围、SELinux / app sandbox 限制，以及 `external/liburing` 与 Bionic 的边界；如果证据不足，先降级为 `[待验证]`。
+
+
+- **类型**：内容补充
+- **位置**：ch14 Other Tools README
+- **问题**：本章正在建设中，仅有目录清单，缺少章节导读和全章工具概览图
+- **建议**：补充章节导读和全章工具概览图，为读者提供 Part 3 工具链的全景导航
+- **来源**：Gemini 外部 review（2026-04-20-14-README-external-review.md）
