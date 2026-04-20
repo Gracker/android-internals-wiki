@@ -1,7 +1,10 @@
 ---
+last_task9_at: "2026-04-20T11:51:17+08:00"
+task9_reviewed_by: openclaw-task9
+task9_reviewed_date: 2026-04-20
 title: "SharedPreferences/DataStore 性能与 ANR 优化"
 chapter: "6.5"
-status: ready-for-review
+status: finalized
 drafted_date: "2026-04-08"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 1.0 (API 1) - Android 17 (API 37)"
@@ -27,10 +30,10 @@ sources:
 tags: [sharedpreferences, datastore, anr, io, storage, performance, queuedwork]
 related_chapters: ["6.1", "6.3", "9.1", "9.2", "8.2", "4.5"]
 section: "6.5"
-pipeline_stage: task9_pending
+pipeline_stage: ready-to-publish
 task6_state: reviewed
-task9_state: pending
-task9_result: needs-rework
+task9_state: reviewed
+task9_result: pass-tech-review
 task2b_state: fixed
 task2b_result: fixed
 ---

@@ -2866,3 +2866,26 @@
 - **问题**：观测顺序和 API 口径已经正确，但缺少一个最小可复现样例，读者还看不到 `dumpsys jobscheduler` 字段、`PendingJobReasonsInfo` 返回值和 pre-36 fallback 的并排对照。
 - **建议**：补一个 API 36+ 代码片段和一段 `dumpsys jobscheduler` 真实输出，顺带标清旧版本仍需走 shell/bugreport 的回退路径。
 
+## [Task9 Deep Review] 3.3 手势导航与系统交互 — 2026-04-20
+- **类型**：数据缺失
+- **位置**：L257-L271
+- **问题**：Perfetto 观察部分仍停留在 `[图：...]` 和 `[待验证]` 占位，缺少最小可复现的 trace config，以及 legacy / predictive back 的对照样例。
+- **建议**：补一套最小抓取配置（至少说明 input / wm / surfaceflinger 相关数据源），并给出一组能看到 cancel、back progress 或目标层预览时间关系的真实 trace 判读样例。
+
+## [Task9 Deep Review] 5.12 Thermal 管控深度：从内核子系统到 ADPF 主动降频 — 2026-04-20
+- **类型**：数据缺失
+- **位置**：L476-L495
+- **问题**：MAGT 案例给出了 FPS、功耗和续航提升数字，但缺少测试时长、环境温度、分辨率/帧率档位与 baseline 条件，当前只能当厂商案例引用，不能直接支撑通用结论。
+- **建议**：补厂商原始链接或把这些数字降格为 vendor case study，并显式列出 workload、环境温度、测试时长和对照组。
+
+## [Task9 Deep Review] 6.5 SharedPreferences/DataStore 性能与 ANR 优化 — 2026-04-20
+- **类型**：版本差异
+- **位置**：frontmatter L7
+- **问题**：`applicable_versions` 写到了 Android 17 / API 37，但正文和 `last_verified_against` 只核到 android-16.0.0_r1，版本边界比证据链多了一代。
+- **建议**：要么把适用版本收窄到 Android 16 / API 36，要么补齐 Android 17 上 SharedPreferences / DataStore 行为变化与官方锚点后再放开范围。
+
+## [Task9 Deep Review] 6.5 SharedPreferences/DataStore 性能与 ANR 优化 — 2026-04-20
+- **类型**：原理边界
+- **位置**：L279-L300
+- **问题**：“DataStore 的所有 I/O 都必须在 `Dispatchers.IO` 上执行”表述过满。`preferencesDataStore` 委托默认用 IO scope，但 `DataStoreFactory` / `MultiProcessDataStoreFactory` 可以传自定义 scope；真正要强调的是单写者模型和不要在主线程做 blocking read / `first()`。
+- **建议**：改成“默认委托使用 IO scope，手工创建时应提供合适的后台 scope”，并补一句调用方若在主线程做阻塞式读取，仍可能把等待带回主线程。

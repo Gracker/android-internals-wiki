@@ -1,61 +1,60 @@
 {
-  "generated_at": "2026-04-20T10:23:00+08:00",
+  "generated_at": "2026-04-20T11:51:17+08:00",
   "state_machine_version": "v2",
   "total_sections": 176,
   "metrics": {
     "total": 176,
     "unknown": 2,
-    "last_updated": "2026-04-20T10:23:00+08:00",
+    "last_updated": "2026-04-20T11:51:17+08:00",
     "task2b_state_counts": {
-      "unknown": 2,
-      "fixed": 126,
-      "idle": 26,
-      "pending": 22
+      "unknown": 3,
+      "fixed": 124,
+      "idle": 25,
+      "pending": 24
     },
     "task9_state_counts": {
-      "unknown": 1,
-      "pending": 132,
-      "reviewed": 42,
+      "unknown": 2,
+      "pending": 128,
+      "reviewed": 45,
       "fixed": 1
     },
     "pipeline_stage_counts": {
-      "unknown": 1,
-      "task6_pending": 91,
-      "ready-to-publish": 13,
-      "task9_pending": 50,
-      "task2b_pending": 21
+      "unknown": 2,
+      "task6_pending": 90,
+      "ready-to-publish": 14,
+      "task9_pending": 47,
+      "task2b_pending": 23
     },
-    "pipeline_task9_pending": 50,
-    "pipeline_task2b_pending": 21,
-    "pipeline_ready_to_publish": 13,
+    "pipeline_task9_pending": 47,
+    "pipeline_task2b_pending": 23,
+    "pipeline_ready_to_publish": 14,
     "ready-to-publish": 0,
-    "finalized": 13,
-    "ready-for-review": 161
+    "finalized": 14,
+    "ready-for-review": 160
   },
   "pipeline": {
     "pipeline_stage_counts": {
-      "unknown": 1,
-      "task6_pending": 91,
-      "ready-to-publish": 13,
-      "task9_pending": 50,
-      "task2b_pending": 21
+      "unknown": 2,
+      "task6_pending": 90,
+      "ready-to-publish": 14,
+      "task9_pending": 47,
+      "task2b_pending": 23
     },
     "task2b_state_counts": {
-      "unknown": 2,
-      "fixed": 126,
-      "idle": 26,
-      "pending": 22
+      "unknown": 3,
+      "fixed": 124,
+      "idle": 25,
+      "pending": 24
     },
     "task6_state_counts": {
-      "unknown": 1,
+      "unknown": 2,
       "revisiting": 85,
-      "reviewed": 89,
-      "pending": 1
+      "reviewed": 89
     },
     "task9_state_counts": {
-      "unknown": 1,
-      "pending": 132,
-      "reviewed": 42,
+      "unknown": 2,
+      "pending": 128,
+      "reviewed": 45,
       "fixed": 1
     }
   },
@@ -894,16 +893,18 @@
       "title": "手势导航与系统交互",
       "path": "src/part1-fundamentals/ch03-input/03-gesture-navigation.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
-      "task9_state": "pending",
-      "task2b_state": "fixed",
+      "task9_state": "reviewed",
+      "task2b_state": "pending",
       "section": "3.3",
       "reviewed_date": "2026-04-20",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
-      "task2b_result": "fixed"
+      "task9_reviewed_date": "2026-04-20",
+      "task9_reviewed_by": "openclaw-task9",
+      "last_task9_at": "2026-04-20T11:51:17+08:00"
     },
     "src/part1-fundamentals/ch03-input/04-input-latency-prediction.md": {
       "chapter": "3.4",
@@ -1290,16 +1291,18 @@
       "title": "Thermal 管控深度：从内核子系统到 ADPF 主动降频",
       "path": "src/part1-fundamentals/ch05-cpu-power/12-thermal-management-deep-dive.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
-      "task9_state": "pending",
-      "task2b_state": "fixed",
+      "task9_state": "reviewed",
+      "task2b_state": "pending",
       "section": "5.12",
       "reviewed_date": "2026-04-20",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
-      "task2b_result": "fixed"
+      "task9_reviewed_date": "2026-04-20",
+      "task9_reviewed_by": "openclaw-task9",
+      "last_task9_at": "2026-04-20T11:51:17+08:00"
     },
     "src/part1-fundamentals/ch05-cpu-power/README.md": {
       "chapter": null,
@@ -1382,17 +1385,20 @@
       "chapter": "6.5",
       "title": "SharedPreferences/DataStore 性能与 ANR 优化",
       "path": "src/part1-fundamentals/ch06-storage/05-sharedpreferences-datastore.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "task6_state": "reviewed",
-      "task9_state": "pending",
+      "task9_state": "reviewed",
       "task2b_state": "fixed",
       "section": "6.5",
       "reviewed_date": "2026-04-20",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
-      "task9_result": "needs-rework",
-      "task2b_result": "fixed"
+      "task9_result": "pass-tech-review",
+      "task2b_result": "fixed",
+      "task9_reviewed_date": "2026-04-20",
+      "task9_reviewed_by": "openclaw-task9",
+      "last_task9_at": "2026-04-20T11:51:17+08:00"
     },
     "src/part1-fundamentals/ch06-storage/README.md": {
       "chapter": null,
@@ -3256,9 +3262,8 @@
   "summary": {
     "status_counts": {
       "unknown": 2,
-      "ready-for-review": 161,
-      "ready-to-publish": 0,
-      "finalized": 13
+      "ready-for-review": 160,
+      "finalized": 14
     }
   },
   "7.13": {
