@@ -709,6 +709,47 @@
       "completed_at": "2026-04-21T00:42:56+08:00",
       "completed_by": "openclaw-task2b",
       "resolution": "补全 README 中 13.8-13.10 目录，加入 UprobeStats / AndroidX Tracing 2.0 的 2026 综述，并补 frontmatter 重新纳入流水线。"
+    },
+    {
+      "section": "7.13",
+      "section_title": "SystemUI 性能分析",
+      "priority": 85,
+      "reason": "[Deep Tech Review] 章节把 Android 15+/16 的通知图标新架构当成 Android 12-17 通用主路径，版本边界写穿了。",
+      "material_paths": [
+        "logs/deep-review/2026-04-21-01-deep-review.md"
+      ],
+      "review_issues": [
+        {
+          "type": "版本差异",
+          "location": "frontmatter applicable_versions / L64-L64 / L103-L113 / L177-L177",
+          "detail": "正文把 `NotificationIconContainerStatusBarViewModel`、`NotificationIconContainerStatusBarViewBinder` 这套 `statusbar/notification/icon/ui/` 新路径当成 Android 12-17 的主口径，但该 ViewModel 文件在 `android-12.0.0_r1`、`android-13.0.0_r1`、`android-14.0.0_r1` 标签下均不存在，只在 `android-15.0.0_r1` 与 `android-16.0.0_r1` 可定位。与之相对，`StatusBarNotificationPresenter.java` 在 Android 12-15 标签都存在。当前写法会让 12-14 读者按 15+/main 分支类名找源码。",
+          "suggestion": "把通知图标这一段拆成版本边界：Android 12-14 保留旧版 presenter/controller 观察口径，Android 15+/16 再切到 `statusbar/notification/icon/ui/` 的 ViewModel/Binder 路线；或者把章节适用范围收窄到 Android 15-17。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-04-21T01:15:00+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "8.9",
+      "section_title": "Android 游戏性能与 Game Mode/State API",
+      "priority": 85,
+      "reason": "[Deep Tech Review] AGDK 工具链表把平台 API 和 AGDK 库/服务混成同一条版本线，至少 `Performance Tuner` 的引入版本已经写错。",
+      "material_paths": [
+        "logs/deep-review/2026-04-21-01-deep-review.md",
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "版本差异",
+          "location": "L243-L252",
+          "detail": "AGDK 工具链表把 `Game Mode / Game State` 这类平台 API 与 `Game Activity`、`Game Text Input`、`Performance Tuner` 这类库/服务放在同一列里写“引入版本”。其中 `Performance Tuner` 一行写成 `Android 12 (API 31)` 已与官方文档冲突，Android Developers 明确写的是 “Android Performance Tuner (APT) works on any Android device ... running Android 4.1 (API level 16) or later.” 当前表格会把读者带向错误的平台门槛。",
+          "suggestion": "把这张表拆成“平台 API 首发版本”和“AGDK 库/服务可用范围”两列或两张表。至少把 `Performance Tuner` 改成 Android 4.1 / API 16+ 可用，再把 `Game Mode`、`Game State` 的 API 31 / API 33 边界单独写清。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-04-21T01:15:00+08:00",
+      "status": "pending"
     }
   ]
 }

@@ -1,7 +1,7 @@
 ---
 title: ANR 非技术故障诊断
 chapter: '9.7'
-status: ready-for-review
+status: "finalized"
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
 tags:
 - anr
@@ -56,18 +56,21 @@ sources:
   path: frameworks/base/services/core/java/com/android/server/am/ContentProviderHelper.java
   title: Content provider ANR entry
   date: android-16.0.0_r1
-pipeline_stage: task9_pending
+pipeline_stage: "ready-to-publish"
 task6_state: reviewed
-task9_state: pending
+task9_state: "reviewed"
 task2b_state: fixed
 section: '9.7'
 reviewed_by: openclaw-task6
 reviewed_date: "2026-04-20"
 task6_result: pass-light-edit
-task9_result: needs-rework
+task9_result: "pass-tech-review"
 task2b_result: fixed
 last_verified: '2026-04-14'
 last_verified_against: AOSP android-16.0.0_r1
+task9_reviewed_by: "openclaw-task9"
+task9_reviewed_date: "2026-04-21"
+last_task9_at: "2026-04-21T01:15:00+08:00"
 ---
 
 # ANR 非技术故障诊断
