@@ -677,7 +677,10 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-21T00:05:03+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-04-21T00:42:56+08:00",
+      "completed_by": "openclaw-task2b",
+      "resolution": "修正 FrameMetrics 常量与监听代码，刷新率决策主线改为 vote + score ranking，并同步章节终态为 finalized。"
     },
     {
       "priority": 85,
@@ -702,7 +705,10 @@
           ]
         }
       ],
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-04-21T00:42:56+08:00",
+      "completed_by": "openclaw-task2b",
+      "resolution": "补全 README 中 13.8-13.10 目录，加入 UprobeStats / AndroidX Tracing 2.0 的 2026 综述，并补 frontmatter 重新纳入流水线。"
     }
   ]
 }

@@ -1,55 +1,53 @@
 {
-  "generated_at": "2026-04-21T00:06:46+08:00",
+  "generated_at": "2026-04-21T00:44:34+08:00",
   "state_machine_version": "v2",
-  "total_sections": 173,
+  "total_sections": 175,
   "metrics": {
-    "total": 173,
+    "total": 175,
     "unknown": 0,
-    "last_updated": "2026-04-21T00:06:46+08:00",
+    "last_updated": "2026-04-21T00:44:34+08:00",
     "task2b_state_counts": {
-      "pending": 22,
-      "idle": 21,
-      "fixed": 129,
-      "unknown": 1
+      "fixed": 132,
+      "pending": 21,
+      "idle": 21
     },
     "task9_state_counts": {
       "reviewed": 51,
-      "pending": 121,
+      "pending": 123,
       "fixed": 1
     },
     "pipeline_stage_counts": {
-      "task2b_pending": 21,
-      "task9_pending": 35,
-      "task6_pending": 97,
-      "ready-to-publish": 20
+      "task6_pending": 96,
+      "task2b_pending": 20,
+      "ready-to-publish": 21,
+      "task9_pending": 38
     },
-    "pipeline_task9_pending": 35,
-    "pipeline_task2b_pending": 21,
-    "pipeline_ready_to_publish": 20,
+    "pipeline_task9_pending": 38,
+    "pipeline_task2b_pending": 20,
+    "pipeline_ready_to_publish": 21,
     "ready-to-publish": 0,
-    "finalized": 20,
-    "ready-for-review": 153
+    "finalized": 21,
+    "ready-for-review": 154
   },
   "pipeline": {
     "pipeline_stage_counts": {
-      "task2b_pending": 21,
-      "task9_pending": 35,
-      "task6_pending": 97,
-      "ready-to-publish": 20
+      "task6_pending": 96,
+      "task2b_pending": 20,
+      "ready-to-publish": 21,
+      "task9_pending": 38
     },
     "task2b_state_counts": {
-      "pending": 22,
-      "idle": 21,
-      "fixed": 129,
-      "unknown": 1
+      "fixed": 132,
+      "pending": 21,
+      "idle": 21
     },
     "task6_state_counts": {
-      "reviewed": 81,
-      "revisiting": 92
+      "reviewed": 84,
+      "revisiting": 91
     },
     "task9_state_counts": {
       "reviewed": 51,
-      "pending": 121,
+      "pending": 123,
       "fixed": 1
     }
   },
@@ -79,7 +77,6 @@
       "src/part2-performance/ch12-apk-network/README.md",
       "src/part2-performance/ch18-rendering-pipelines/README.md",
       "src/part3-tools/ch13-perfetto/08-input-latency-sql.md",
-      "src/part3-tools/ch13-perfetto/README.md",
       "src/part3-tools/ch14-other-tools/README.md",
       "src/part3-tools/ch15-methodology/README.md",
       "src/part4-system/ch16-aosp/README.md",
@@ -510,17 +507,18 @@
       "path": "src/part1-fundamentals/ch02-rendering/02-framerate.md",
       "title": "帧率与刷新率",
       "chapter": "2.2",
-      "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
+      "section": "2.2",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "task6_state": "reviewed",
       "task9_state": "reviewed",
-      "task2b_state": "pending",
-      "reviewed_date": "2026-04-21",
+      "task2b_state": "fixed",
+      "reviewed_date": "2026-04-20",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
-      "task9_result": "needs-rework",
+      "task9_result": "pass-tech-review",
+      "task2b_result": "fixed",
       "task9_reviewed_date": "2026-04-21",
-      "section": "2.2",
       "task9_reviewed_by": "openclaw-task9",
       "last_task9_at": "2026-04-21T00:05:03+08:00"
     },
@@ -2792,14 +2790,16 @@
       "section": "13.10"
     },
     "src/part3-tools/ch13-perfetto/README.md": {
-      "chapter": null,
-      "title": "README",
       "path": "src/part3-tools/ch13-perfetto/README.md",
-      "status": "unknown",
-      "pipeline_stage": "unknown",
-      "task6_state": "unknown",
-      "task9_state": "unknown",
-      "task2b_state": "unknown"
+      "title": "第 13 章：Perfetto",
+      "chapter": "13.0",
+      "section": "13.0",
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
+      "task9_state": "pending",
+      "task2b_state": "fixed",
+      "task2b_result": "fixed"
     },
     "src/part3-tools/ch14-other-tools/01-as-profiler.md": {
       "path": "src/part3-tools/ch14-other-tools/01-as-profiler.md",
@@ -3339,7 +3339,7 @@
   "summary": {
     "status_counts": {
       "ready-for-review": 154,
-      "finalized": 19
+      "finalized": 21
     }
   },
   "7.13": {
@@ -3420,9 +3420,7 @@
   ],
   "last_review": "2026-04-20T23:37",
   "status_counts": {
-    "draft": 2,
-    "ready-for-review": 152,
-    "finalized": 19,
-    "ready-to-publish": 0
+    "ready-for-review": 154,
+    "finalized": 21
   }
 }

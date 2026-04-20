@@ -2,7 +2,7 @@
 title: 帧率与刷新率
 chapter: '2.2'
 section: '2.2'
-status: ready-for-review
+status: finalized
 reviewed_date: '2026-04-20'
 reviewed_by: openclaw-task6
 review_note: Task 6 复审：按 writing-guide / STYLE / content-quality-gate 完成 9 处 L1/L2
@@ -49,13 +49,14 @@ related_chapters:
 - '2.9'
 - '7.1'
 re-review-result: 已纳入1条素材(部分纳入:OEM VSync修改误区+交叉引用),0处修正,待正常review质检
-pipeline_stage: task2b_pending
+pipeline_stage: ready-to-publish
 task6_result: 'pass-light-edit'
 task6_state: reviewed
 task9_state: reviewed
-task9_result: needs-rework
+task9_result: pass-tech-review
 task9_reviewed_date: "2026-04-21"
-task2b_state: pending
+task2b_result: fixed
+task2b_state: fixed
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-04-21T00:05:03+08:00"
 ---
@@ -212,21 +213,21 @@ LTPO 的典型工作场景：
 
 ### SurfaceFlinger 的刷新率选择策略
 
-SurfaceFlinger 在选择刷新率时，考虑的核心原则是：**选择一个能被所有活跃图层（Layer）的帧率整除的刷新率**。
+SurfaceFlinger 会先拿到 Display policy 允许的候选刷新率，再按每个可见 Layer 的 vote、目标帧率、内容检测结果、触摸状态、是否支持 seamless 切换等信号给候选模式打分，选出分数最高的一项。整数倍关系只是部分 vote 的高分条件，不是唯一规则。
 
 举个例子，如果屏幕上同时有两个活跃图层：
 - 视频 Layer 以 24 FPS 播放
 - UI Layer 以 60 FPS 更新
 
-SurfaceFlinger 会选择 120Hz，因为 120 既能被 24 整除（每 5 个刷新周期显示一帧视频），也能被 60 整除（每 2 个刷新周期显示一帧 UI）。如果选择 60Hz，24 FPS 的视频就会出现 3:2 pulldown 问题——有些帧显示 2 次（33ms），有些帧显示 3 次（50ms），造成 judder。
+120Hz 往往会排在前面，因为它同时照顾了 24 FPS 视频的整数倍显示和 60 FPS UI 的交互节奏。如果 Battery Saver 把上限压到 60Hz，或者 Display policy 不允许某个模式参与排序，最终结果也可能是 60Hz 或 90Hz。
 
 具体来说，SurfaceFlinger 的刷新率决策涉及以下输入：
 
-1. **每个 Layer 的 setFrameRate() 请求**：App 通过 `Surface.setFrameRate()` 告知系统自己期望的帧率
-2. **Layer 的实际提交频率**：SurfaceFlinger 会统计每个 Layer 实际提交 Buffer 的平均 FPS
-3. **触摸状态**：当用户正在触摸屏幕时，会临时提升刷新率（"touch boost"），以提供更好的跟手性
-4. **DisplayManager 的策略**：系统设置了最低和最高刷新率范围
-5. **省电模式**：在 Battery Saver 模式下，刷新率可能被强制限制在 60Hz
+1. **每个 Layer 的 `setFrameRate()` 请求**：App 通过 `Surface.setFrameRate()` 告知系统自己期望的帧率
+2. **Layer 的实际提交频率与内容检测结果**：SurfaceFlinger 会统计 Layer 实际提交 Buffer 的平均 FPS，并把这类信息交给 `RefreshRateSelector` 做排序
+3. **触摸状态**：当用户正在触摸屏幕时，会临时提升刷新率（touch boost），以改善跟手性
+4. **DisplayManager 的策略边界**：系统会限定最低和最高刷新率范围，并过滤掉不允许参与的模式
+5. **省电模式与其他系统约束**：在 Battery Saver 等场景下，刷新率上限可能被进一步收窄
 
 ### App 如何参与刷新率选择
 
@@ -396,35 +397,48 @@ LIMIT 50;
 ```java
 // 在 Activity 中注册 FrameMetrics 监听
 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-    getWindow().getDecorView().setOnFrameMetricsAvailableListener(
-        (view, frameMetrics, dropCountSinceLastCall) -> {
-            // 总帧耗时（从 VSync 到帧显示）
+    Handler handler = new Handler(Looper.getMainLooper());
+    getWindow().addOnFrameMetricsAvailableListener(
+        (window, frameMetrics, dropCountSinceLastInvocation) -> {
             long totalDuration = frameMetrics.getMetric(
                 FrameMetrics.TOTAL_DURATION);
-            // UI 线程耗时（measure/layout/draw）
+            long inputDuration = frameMetrics.getMetric(
+                FrameMetrics.INPUT_HANDLING_DURATION);
             long drawDuration = frameMetrics.getMetric(
                 FrameMetrics.DRAW_DURATION);
-            // 是否是 Janky Frame
-            boolean isJanky = totalDuration > targetFrameTimeNanos;
+            long issueDuration = frameMetrics.getMetric(
+                FrameMetrics.COMMAND_ISSUE_DURATION);
+            long gpuDuration = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
+                ? frameMetrics.getMetric(FrameMetrics.GPU_DURATION)
+                : 0L;
 
+            boolean isJanky = totalDuration > targetFrameTimeNanos;
             if (isJanky) {
                 Log.w("FrameMetrics",
-                    String.format("Jank! total=%.1fms draw=%.1fms",
-                        totalDuration / 1e6, drawDuration / 1e6));
+                    String.format("Jank! total=%.1fms input=%.1fms draw=%.1fms issue=%.1fms gpu=%.1fms",
+                        totalDuration / 1e6,
+                        inputDuration / 1e6,
+                        drawDuration / 1e6,
+                        issueDuration / 1e6,
+                        gpuDuration / 1e6));
             }
-        });
+        },
+        handler);
 }
 ```
 
 FrameMetrics 提供的度量维度包括：
 
 - `TOTAL_DURATION`：从 VSync 到帧显示完成的总耗时
-- `INPUT_EVENT_HANDLING_DURATION`（API 31+）：Input 事件处理耗时
+- `INPUT_HANDLING_DURATION`（API 24+）：Input 事件处理耗时
 - `ANIMATION_DURATION`：动画计算耗时
 - `LAYOUT_MEASURE_DURATION`：measure/layout 耗时
 - `DRAW_DURATION`：draw 耗时
 - `SYNC_DURATION`：同步阶段耗时（将绘制命令同步给 RenderThread）
-- `COMMAND_ISSUE_DURATION`：GPU 命令下发与执行耗时（FrameMetrics 没有独立的 `GPU_DURATION` 常量，GPU 渲染耗时通过此项间接衡量）
+- `COMMAND_ISSUE_DURATION`：命令下发阶段耗时，适合观察 UI 线程把绘制工作提交给渲染后端的成本
+- `GPU_DURATION`（API 31+）：GPU 实际执行渲染命令的耗时
+
+API 24 到 API 30 没有独立的 `GPU_DURATION` 常量，排查 GPU 压力时通常把 `DRAW_DURATION`、`COMMAND_ISSUE_DURATION` 和 Perfetto 的 Frame Timeline 一起看；API 31+ 再把 `GPU_DURATION` 加进来做分段判断。
 
 [已验证: 官方文档, developer.android.com/reference/android/view/FrameMetrics]
 
