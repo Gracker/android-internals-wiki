@@ -1,82 +1,82 @@
 {
-  "generated_at": "2026-04-20T08:14:14+08:00",
+  "generated_at": "2026-04-20T08:58:48+08:00",
   "state_machine_version": "v2",
-  "total_sections": 209,
+  "total_sections": 176,
   "metrics": {
-    "total": 209,
-    "unknown": 37,
-    "last_updated": "2026-04-20T08:14:14+08:00",
+    "total": 176,
+    "unknown": 2,
+    "last_updated": "2026-04-20T08:58:48+08:00",
     "task2b_state_counts": {
-      "unknown": 37,
-      "fixed": 128,
-      "pending": 18,
+      "unknown": 2,
+      "fixed": 127,
+      "pending": 21,
       "idle": 26
     },
     "task6_state_counts": {
-      "unknown": 33,
-      "reviewed": 74,
-      "revisiting": 101,
+      "unknown": 1,
+      "reviewed": 88,
+      "revisiting": 86,
       "pending": 1
     },
     "task9_state_counts": {
-      "unknown": 36,
-      "reviewed": 35,
-      "pending": 137,
+      "unknown": 1,
+      "reviewed": 38,
+      "pending": 136,
       "fixed": 1
     },
     "pipeline_stage_counts": {
-      "unknown": 36,
-      "task6_pending": 100,
-      "task9_pending": 47,
-      "task2b_pending": 17,
-      "ready-to-publish": 9
+      "unknown": 1,
+      "task6_pending": 92,
+      "task9_pending": 53,
+      "task2b_pending": 20,
+      "ready-to-publish": 10
     },
-    "total_sections": 209,
-    "pipeline_unknown": 36,
-    "pipeline_task6_pending": 103,
-    "pipeline_task9_pending": 44,
-    "pipeline_task2b_pending": 17,
-    "pipeline_ready_to_publish": 9,
-    "task2b_unknown": 37,
-    "task2b_fixed": 128,
-    "task2b_pending": 18,
+    "total_sections": 176,
+    "pipeline_unknown": 1,
+    "pipeline_task6_pending": 92,
+    "pipeline_task9_pending": 53,
+    "pipeline_task2b_pending": 20,
+    "pipeline_ready_to_publish": 10,
+    "task2b_unknown": 2,
+    "task2b_fixed": 127,
+    "task2b_pending": 21,
     "task2b_idle": 26,
-    "task6_unknown": 33,
-    "task6_reviewed": 71,
-    "task6_revisiting": 104,
+    "task6_unknown": 1,
+    "task6_reviewed": 88,
+    "task6_revisiting": 86,
     "task6_pending": 1,
-    "task9_unknown": 36,
-    "task9_reviewed": 35,
-    "task9_pending": 137,
+    "task9_unknown": 1,
+    "task9_reviewed": 38,
+    "task9_pending": 136,
     "task9_fixed": 1,
     "ready-to-publish": 0,
-    "finalized": 9,
-    "ready-for-review": 163
+    "finalized": 10,
+    "ready-for-review": 164
   },
   "pipeline": {
     "pipeline_stage_counts": {
-      "unknown": 36,
-      "task6_pending": 100,
-      "task9_pending": 47,
-      "task2b_pending": 17,
-      "ready-to-publish": 9
+      "unknown": 1,
+      "task6_pending": 92,
+      "task9_pending": 53,
+      "task2b_pending": 20,
+      "ready-to-publish": 10
     },
     "task2b_state_counts": {
-      "unknown": 37,
-      "fixed": 128,
-      "pending": 18,
+      "unknown": 2,
+      "fixed": 127,
+      "pending": 21,
       "idle": 26
     },
     "task6_state_counts": {
-      "unknown": 33,
-      "reviewed": 74,
-      "revisiting": 101,
+      "unknown": 1,
+      "reviewed": 88,
+      "revisiting": 86,
       "pending": 1
     },
     "task9_state_counts": {
-      "unknown": 36,
-      "reviewed": 35,
-      "pending": 137,
+      "unknown": 1,
+      "reviewed": 38,
+      "pending": 136,
       "fixed": 1
     }
   },
@@ -123,14 +123,15 @@
   },
   "sections": {
     "src/SUMMARY.md": {
-      "chapter": null,
-      "title": "SUMMARY",
+      "chapter": "",
+      "title": "",
       "path": "src/SUMMARY.md",
       "status": "unknown",
       "pipeline_stage": "unknown",
       "task6_state": "unknown",
       "task9_state": "unknown",
-      "task2b_state": "unknown"
+      "task2b_state": "unknown",
+      "section": ""
     },
     "src/appendix/analysis-checklist.md": {
       "chapter": null,
@@ -211,12 +212,13 @@
       "task6_state": "reviewed",
       "task9_state": "reviewed",
       "task2b_state": "fixed",
+      "section": "1.1",
       "reviewed_date": "2026-04-18",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
       "task9_result": "pass-with-p1-notes",
       "task2b_result": "fixed",
-      "section": "1.1"
+      "task9_reviewed_date": "2026-04-16"
     },
     "src/part1-fundamentals/ch01-architecture/02-boot-process.md": {
       "chapter": "1.2",
@@ -227,12 +229,13 @@
       "task6_state": "reviewed",
       "task9_state": "pending",
       "task2b_state": "fixed",
+      "section": "1.2",
       "reviewed_date": "2026-04-18",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
       "task9_result": "reworked",
       "task2b_result": "fixed",
-      "section": "1.2"
+      "last_task9_at": "2026-04-17T03:44:00+08:00"
     },
     "src/part1-fundamentals/ch01-architecture/03-process-model.md": {
       "chapter": "1.3",
@@ -243,44 +246,45 @@
       "task6_state": "reviewed",
       "task9_state": "pending",
       "task2b_state": "fixed",
+      "section": "1.3",
       "reviewed_date": "2026-04-18",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
-      "task2b_result": "fixed",
-      "section": "1.3"
+      "task2b_result": "fixed"
     },
     "src/part1-fundamentals/ch01-architecture/04-binder.md": {
       "chapter": "1.4",
       "title": "Binder IPC 机制与性能影响",
       "path": "src/part1-fundamentals/ch01-architecture/04-binder.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "revisiting",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
       "task9_state": "pending",
       "task2b_state": "fixed",
-      "reviewed_date": "2026-04-19",
+      "section": "1.4",
+      "reviewed_date": "2026-04-20",
       "reviewed_by": "openclaw-task6",
-      "task6_result": "needs-rework",
+      "task6_result": "pass-light-edit",
       "task9_result": "pass-with-notes",
       "task2b_result": "fixed",
-      "section": "1.4"
+      "last_task9_at": "2026-04-17 13:20:00"
     },
     "src/part1-fundamentals/ch01-architecture/05-threading-model.md": {
       "chapter": "1.5",
       "title": "线程模型",
       "path": "src/part1-fundamentals/ch01-architecture/05-threading-model.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "revisiting",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
       "task9_state": "pending",
       "task2b_state": "fixed",
-      "reviewed_date": "2026-04-19",
+      "section": "1.5",
+      "reviewed_date": "2026-04-20",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
-      "task2b_result": "fixed",
-      "section": "1.5"
+      "task2b_result": "fixed"
     },
     "src/part1-fundamentals/ch01-architecture/06-version-evolution.md": {
       "chapter": "1.6",
@@ -291,12 +295,12 @@
       "task6_state": "reviewed",
       "task9_state": "reviewed",
       "task2b_state": "pending",
+      "section": "1.6",
       "reviewed_date": "2026-04-19",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
-      "section": "1.6",
       "task9_reviewed_date": "2026-04-20",
       "task9_reviewed_by": "openclaw-task9",
       "last_task9_at": "2026-04-20T07:50:52+08:00"
@@ -306,16 +310,16 @@
       "title": "ART 编译管线与 dex2oat 优化",
       "path": "src/part1-fundamentals/ch01-architecture/07-art-compilation.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "revisiting",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
       "task9_state": "pending",
       "task2b_state": "fixed",
-      "reviewed_date": "2026-04-13",
+      "section": "1.7",
+      "reviewed_date": "2026-04-20",
       "reviewed_by": "openclaw-task6",
-      "task6_result": "needs-rework",
+      "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
-      "task2b_result": "fixed",
-      "section": "1.7"
+      "task2b_result": "fixed"
     },
     "src/part1-fundamentals/ch01-architecture/08-activity-manager.md": {
       "chapter": "1.8",
@@ -326,12 +330,15 @@
       "task6_state": "reviewed",
       "task9_state": "pending",
       "task2b_state": "fixed",
+      "section": "1.8",
       "reviewed_date": "2026-04-18",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
-      "section": "1.8"
+      "task9_reviewed_date": "2026-04-18",
+      "task9_reviewed_by": "openclaw-task9",
+      "last_task9_at": "2026-04-18T13:34:00+08:00"
     },
     "src/part1-fundamentals/ch01-architecture/09-package-manager.md": {
       "chapter": "1.9",
@@ -342,12 +349,15 @@
       "task6_state": "revisiting",
       "task9_state": "pending",
       "task2b_state": "fixed",
+      "section": "1.9",
       "reviewed_date": "2026-04-18",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
-      "section": "1.9"
+      "task9_reviewed_date": "2026-04-18",
+      "task9_reviewed_by": "openclaw-task9",
+      "last_task9_at": "2026-04-18T20:36:12+08:00"
     },
     "src/part1-fundamentals/ch01-architecture/10-content-provider.md": {
       "chapter": "1.10",
@@ -358,12 +368,13 @@
       "task6_state": "reviewed",
       "task9_state": "pending",
       "task2b_state": "fixed",
+      "section": "1.10",
       "reviewed_date": "2026-04-18",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
-      "section": "1.10"
+      "task9_reviewed_date": "2026-04-18"
     },
     "src/part1-fundamentals/ch01-architecture/11-zygote-startup.md": {
       "chapter": "1.11",
@@ -374,12 +385,12 @@
       "task6_state": "reviewed",
       "task9_state": "pending",
       "task2b_state": "fixed",
+      "section": "1.11",
       "reviewed_date": "2026-04-18",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
-      "task2b_result": "fixed",
-      "section": "1.11"
+      "task2b_result": "fixed"
     },
     "src/part1-fundamentals/ch01-architecture/12-autofdo-optimization.md": {
       "chapter": "1.12",
@@ -390,12 +401,12 @@
       "task6_state": "revisiting",
       "task9_state": "pending",
       "task2b_state": "fixed",
+      "section": "1.12",
       "reviewed_date": "2026-04-19",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
-      "section": "1.12",
       "task9_reviewed_date": "2026-04-20",
       "task9_reviewed_by": "openclaw-task9",
       "last_task9_at": "2026-04-20T07:50:52+08:00"
@@ -409,12 +420,12 @@
       "task6_state": "revisiting",
       "task9_state": "pending",
       "task2b_state": "fixed",
+      "section": "1.13",
       "reviewed_date": "2026-04-14",
       "reviewed_by": "openclaw-task6",
       "task6_result": "needs-rework",
       "task9_result": "needs-rework",
-      "task2b_result": "fixed",
-      "section": "1.13"
+      "task2b_result": "fixed"
     },
     "src/part1-fundamentals/ch01-architecture/14-lock-contention.md": {
       "chapter": "1.14",
@@ -425,11 +436,14 @@
       "task6_state": "reviewed",
       "task9_state": "reviewed",
       "task2b_state": "pending",
+      "section": "1.14",
       "reviewed_date": "2026-04-19",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
-      "section": "1.14"
+      "task9_reviewed_date": "2026-04-18",
+      "task9_reviewed_by": "openclaw-task9",
+      "last_task9_at": "2026-04-18T22:20:00+08:00"
     },
     "src/part1-fundamentals/ch01-architecture/15-jni-ndk-performance.md": {
       "chapter": "1.15",
@@ -440,12 +454,15 @@
       "task6_state": "revisiting",
       "task9_state": "pending",
       "task2b_state": "fixed",
+      "section": "1.15",
       "reviewed_date": "2026-04-19",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
-      "section": "1.15"
+      "task9_reviewed_date": "2026-04-19",
+      "task9_reviewed_by": "openclaw-task9",
+      "last_task9_at": "2026-04-19T04:18:34+08:00"
     },
     "src/part1-fundamentals/ch01-architecture/16-audio-pipeline-performance.md": {
       "chapter": "1.16",
@@ -456,12 +473,12 @@
       "task6_state": "reviewed",
       "task9_state": "reviewed",
       "task2b_state": "pending",
+      "section": "1.16",
       "reviewed_date": "2026-04-19",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
-      "section": "1.16",
       "task9_reviewed_date": "2026-04-20",
       "task9_reviewed_by": "openclaw-task9",
       "last_task9_at": "2026-04-20T07:50:52+08:00"
@@ -475,12 +492,12 @@
       "task6_state": "revisiting",
       "task9_state": "pending",
       "task2b_state": "fixed",
+      "section": "1.17",
       "reviewed_date": "2026-04-19",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
-      "task2b_result": "fixed",
-      "section": "1.17"
+      "task2b_result": "fixed"
     },
     "src/part1-fundamentals/ch01-architecture/README.md": {
       "chapter": null,
@@ -501,27 +518,29 @@
       "task6_state": "reviewed",
       "task9_state": "reviewed",
       "task2b_state": "fixed",
+      "section": "2.1",
       "reviewed_date": "2026-04-17",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework-v2",
       "task2b_result": "fixed",
-      "section": "2.1"
+      "task9_reviewed_date": "2026-04-16"
     },
     "src/part1-fundamentals/ch02-rendering/02-framerate.md": {
       "chapter": "2.2",
       "title": "帧率与刷新率",
       "path": "src/part1-fundamentals/ch02-rendering/02-framerate.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "revisiting",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
       "task9_state": "pending",
       "task2b_state": "fixed",
-      "reviewed_date": "2026-04-14",
+      "section": "2.2",
+      "reviewed_date": "2026-04-20",
       "reviewed_by": "openclaw-task6",
-      "task6_result": "needs-rework",
+      "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
-      "section": "2.2"
+      "task9_reviewed_date": "2026-04-15"
     },
     "src/part1-fundamentals/ch02-rendering/03-vsync.md": {
       "chapter": "2.3",
@@ -529,15 +548,15 @@
       "path": "src/part1-fundamentals/ch02-rendering/03-vsync.md",
       "status": "ready-for-review",
       "pipeline_stage": "task6_pending",
-      "task6_state": "revisiting",
+      "task6_state": "reviewed",
       "task9_state": "pending",
       "task2b_state": "fixed",
+      "section": "2.3",
       "reviewed_date": "2026-04-16",
       "reviewed_by": "openclaw-task6",
-      "task6_result": "needs-rework",
+      "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
-      "task2b_result": "fixed",
-      "section": "2.3"
+      "task2b_result": "fixed"
     },
     "src/part1-fundamentals/ch02-rendering/04-choreographer.md": {
       "chapter": "2.4",
@@ -548,12 +567,13 @@
       "task6_state": "revisiting",
       "task9_state": "pending",
       "task2b_state": "fixed",
+      "section": "2.4",
       "reviewed_date": "2026-04-19",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
-      "section": "2.4"
+      "last_task9_at": "2026-04-19T02:20:00+08:00"
     },
     "src/part1-fundamentals/ch02-rendering/05-main-render-thread.md": {
       "chapter": "2.5",
@@ -564,22 +584,23 @@
       "task6_state": "revisiting",
       "task9_state": "pending",
       "task2b_state": "fixed",
+      "section": "2.5",
       "reviewed_date": "2026-04-14",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
-      "task2b_result": "fixed",
-      "section": "2.5"
+      "task2b_result": "fixed"
     },
     "src/part1-fundamentals/ch02-rendering/06-surfaceflinger.md": {
-      "path": "src/part1-fundamentals/ch02-rendering/06-surfaceflinger.md",
       "chapter": "2.6",
       "title": "SurfaceFlinger 与合成",
+      "path": "src/part1-fundamentals/ch02-rendering/06-surfaceflinger.md",
       "status": "ready-for-review",
       "pipeline_stage": "task9_pending",
       "task6_state": "revisiting",
       "task9_state": "pending",
       "task2b_state": "fixed",
+      "section": "2.6",
       "reviewed_date": "2026-04-19",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
@@ -595,12 +616,11 @@
       "task6_state": "reviewed",
       "task9_state": "reviewed",
       "task2b_state": "pending",
+      "section": "2.7",
       "reviewed_date": "2026-04-19",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
-      "task9_result": "needs-rework",
-      "task2b_result": "fixed",
-      "section": "2.7"
+      "task9_result": "needs-rework"
     },
     "src/part1-fundamentals/ch02-rendering/08-overdraw.md": {
       "chapter": "2.8",
@@ -611,12 +631,12 @@
       "task6_state": "revisiting",
       "task9_state": "pending",
       "task2b_state": "fixed",
+      "section": "2.8",
       "reviewed_date": "2026-04-19",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
-      "task2b_result": "fixed",
-      "section": "2.8"
+      "task2b_result": "fixed"
     },
     "src/part1-fundamentals/ch02-rendering/09-rendering-evolution.md": {
       "chapter": "2.9",
@@ -627,11 +647,13 @@
       "task6_state": "reviewed",
       "task9_state": "reviewed",
       "task2b_state": "idle",
+      "section": "2.9",
       "reviewed_date": "2026-04-15",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
-      "section": "2.9"
+      "task9_reviewed_date": "2026-04-17",
+      "task9_reviewed_by": "openclaw-task9"
     },
     "src/part1-fundamentals/ch02-rendering/10-gpu-rendering.md": {
       "chapter": "2.10",
@@ -642,11 +664,13 @@
       "task6_state": "revisiting",
       "task9_state": "pending",
       "task2b_state": "fixed",
+      "section": "2.10",
       "reviewed_date": "2026-04-15",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
-      "section": "2.10"
+      "task9_reviewed_date": "2026-04-17",
+      "task9_reviewed_by": "openclaw-task9"
     },
     "src/part1-fundamentals/ch02-rendering/11-flutter-rendering.md": {
       "chapter": "2.11",
@@ -657,11 +681,11 @@
       "task6_state": "reviewed",
       "task9_state": "reviewed",
       "task2b_state": "fixed",
+      "section": "2.11",
       "reviewed_date": "2026-04-19",
       "reviewed_by": "openclaw-task6",
       "task9_result": "needs-rework",
-      "task2b_result": "fixed",
-      "section": "2.11"
+      "task2b_result": "fixed"
     },
     "src/part1-fundamentals/ch02-rendering/12-window-manager.md": {
       "chapter": "2.12",
@@ -669,15 +693,18 @@
       "path": "src/part1-fundamentals/ch02-rendering/12-window-manager.md",
       "status": "ready-for-review",
       "pipeline_stage": "task6_pending",
-      "task6_state": "revisiting",
+      "task6_state": "reviewed",
       "task9_state": "pending",
       "task2b_state": "fixed",
-      "reviewed_date": "2026-04-19",
+      "section": "2.12",
+      "reviewed_date": "2026-04-20",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
-      "section": "2.12"
+      "task9_reviewed_date": "2026-04-20",
+      "task9_reviewed_by": "openclaw-task9",
+      "last_task9_at": "2026-04-19T19:24:00+08:00"
     },
     "src/part1-fundamentals/ch02-rendering/13-buffer-queue.md": {
       "chapter": "2.13",
@@ -688,44 +715,49 @@
       "task6_state": "reviewed",
       "task9_state": "reviewed",
       "task2b_state": "pending",
+      "section": "2.13",
       "reviewed_date": "2026-04-19",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
-      "task2b_result": "fixed",
-      "section": "2.13"
+      "task2b_result": "fixed"
     },
     "src/part1-fundamentals/ch02-rendering/14-graphics-api-evolution.md": {
       "chapter": "2.14",
       "title": "图形 API 演进与选择策略（OpenGL ES / Vulkan / ANGLE）",
       "path": "src/part1-fundamentals/ch02-rendering/14-graphics-api-evolution.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "revisiting",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
       "task9_state": "pending",
       "task2b_state": "fixed",
-      "reviewed_date": "2026-04-19",
+      "section": "2.14",
+      "reviewed_date": "2026-04-20",
       "reviewed_by": "openclaw-task6",
-      "task6_result": "needs-rework",
+      "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
-      "section": "2.14"
+      "task9_reviewed_date": "2026-04-19",
+      "last_task9_at": "2026-04-19T13:40:06+08:00"
     },
     "src/part1-fundamentals/ch02-rendering/15-dmabuf-gralloc.md": {
       "chapter": "2.15",
       "title": "DMA-BUF、Gralloc 与跨进程图形内存共享",
       "path": "src/part1-fundamentals/ch02-rendering/15-dmabuf-gralloc.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "revisiting",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
       "task9_state": "pending",
       "task2b_state": "fixed",
-      "reviewed_date": "2026-04-19",
+      "section": "2.15",
+      "reviewed_date": "2026-04-20",
       "reviewed_by": "openclaw-task6",
-      "task6_result": "needs-rework",
+      "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
-      "section": "2.15"
+      "task9_reviewed_date": "2026-04-19",
+      "task9_reviewed_by": "openclaw-task9",
+      "last_task9_at": "2026-04-19T12:32:00+08:00"
     },
     "src/part1-fundamentals/ch02-rendering/16-sync-fence.md": {
       "chapter": "2.16",
@@ -736,12 +768,15 @@
       "task6_state": "reviewed",
       "task9_state": "reviewed",
       "task2b_state": "pending",
+      "section": "2.16",
       "reviewed_date": "2026-04-19",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
-      "section": "2.16"
+      "task9_reviewed_date": "2026-04-19",
+      "task9_reviewed_by": "openclaw-task9",
+      "last_task9_at": "2026-04-19T09:59:00+08:00"
     },
     "src/part1-fundamentals/ch02-rendering/17-frame-pacing.md": {
       "chapter": "2.17",
@@ -749,15 +784,18 @@
       "path": "src/part1-fundamentals/ch02-rendering/17-frame-pacing.md",
       "status": "ready-for-review",
       "pipeline_stage": "task6_pending",
-      "task6_state": "revisiting",
+      "task6_state": "reviewed",
       "task9_state": "pending",
       "task2b_state": "fixed",
-      "reviewed_date": "2026-04-19",
+      "section": "2.17",
+      "reviewed_date": "2026-04-20",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
-      "section": "2.17"
+      "task9_reviewed_date": "2026-04-20",
+      "task9_reviewed_by": "openclaw-task9",
+      "last_task9_at": "2026-04-19T14:37:48+08:00"
     },
     "src/part1-fundamentals/ch02-rendering/18-adaptive-refresh-rate.md": {
       "chapter": "2.18",
@@ -768,12 +806,15 @@
       "task6_state": "revisiting",
       "task9_state": "pending",
       "task2b_state": "fixed",
+      "section": "2.18",
       "reviewed_date": "2026-04-19",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
-      "section": "2.18"
+      "task9_reviewed_date": "2026-04-19",
+      "task9_reviewed_by": "openclaw-task9",
+      "last_task9_at": "2026-04-19T17:21:00+08:00"
     },
     "src/part1-fundamentals/ch02-rendering/19-refresh-rate-switching.md": {
       "chapter": "2.19",
@@ -784,12 +825,12 @@
       "task6_state": "reviewed",
       "task9_state": "reviewed",
       "task2b_state": "fixed",
+      "section": "2.19",
       "reviewed_date": "2026-04-19",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
       "task9_result": "pass-tech-review",
-      "task2b_result": "fixed",
-      "section": "2.19"
+      "task2b_result": "fixed"
     },
     "src/part1-fundamentals/ch02-rendering/20-multiwindow-desktop-rendering.md": {
       "chapter": "2.20",
@@ -800,12 +841,14 @@
       "task6_state": "reviewed",
       "task9_state": "reviewed",
       "task2b_state": "pending",
+      "section": "2.20",
       "reviewed_date": "2026-04-19",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
-      "section": "2.20"
+      "task9_reviewed_date": "2026-04-19",
+      "last_task9_at": "2026-04-19T20:31:01+08:00"
     },
     "src/part1-fundamentals/ch02-rendering/21-text-rendering-performance.md": {
       "chapter": "2.21",
@@ -816,12 +859,11 @@
       "task6_state": "reviewed",
       "task9_state": "reviewed",
       "task2b_state": "pending",
+      "section": "2.21",
       "reviewed_date": "2026-04-19",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
-      "task9_result": "needs-rework",
-      "task2b_result": "fixed",
-      "section": "2.21"
+      "task9_result": "needs-rework"
     },
     "src/part1-fundamentals/ch02-rendering/README.md": {
       "chapter": null,
@@ -834,30 +876,35 @@
       "task2b_state": "unknown"
     },
     "src/part1-fundamentals/ch03-input/01-input-dispatch.md": {
-      "chapter": null,
-      "title": "01-input-dispatch",
+      "chapter": "3.1",
+      "title": "Input 事件分发全流程",
       "path": "src/part1-fundamentals/ch03-input/01-input-dispatch.md",
-      "status": "unknown",
-      "pipeline_stage": "unknown",
-      "task6_state": "unknown",
-      "task9_state": "unknown",
-      "task2b_state": "unknown"
+      "status": "ready-for-review",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
+      "task9_state": "pending",
+      "task2b_state": "fixed",
+      "section": "3.1",
+      "reviewed_date": "2026-04-18",
+      "reviewed_by": "openclaw-task6",
+      "task6_result": "needs-rework",
+      "task9_result": "pass-tech-review"
     },
     "src/part1-fundamentals/ch03-input/02-touch-performance.md": {
       "chapter": "3.2",
       "title": "触摸响应的性能分析",
       "path": "src/part1-fundamentals/ch03-input/02-touch-performance.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "revisiting",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
       "task9_state": "pending",
       "task2b_state": "fixed",
-      "reviewed_date": "2026-04-13",
+      "section": "3.2",
+      "reviewed_date": "2026-04-20",
       "reviewed_by": "openclaw-task6",
-      "task6_result": "needs-rework",
+      "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
-      "task2b_result": "fixed",
-      "section": "3.2"
+      "task2b_result": "fixed"
     },
     "src/part1-fundamentals/ch03-input/03-gesture-navigation.md": {
       "chapter": "3.3",
@@ -868,13 +915,12 @@
       "task6_state": "reviewed",
       "task9_state": "pending",
       "task2b_state": "fixed",
+      "section": "3.3",
       "reviewed_date": "2026-04-20",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
-      "task2b_result": "fixed",
-      "section": "3.3",
-      "review_round": 3
+      "task2b_result": "fixed"
     },
     "src/part1-fundamentals/ch03-input/04-input-latency-prediction.md": {
       "chapter": "3.4",
@@ -885,12 +931,12 @@
       "task6_state": "revisiting",
       "task9_state": "reviewed",
       "task2b_state": "fixed",
+      "section": "3.4",
       "reviewed_date": "2026-04-19",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
       "task9_result": "pass-tech-review",
-      "task2b_result": "fixed",
-      "section": "3.4"
+      "task2b_result": "fixed"
     },
     "src/part1-fundamentals/ch03-input/05-input-interception-security.md": {
       "chapter": "3.5",
@@ -901,11 +947,11 @@
       "task6_state": "reviewed",
       "task9_state": "reviewed",
       "task2b_state": "pending",
+      "section": "3.5",
       "reviewed_date": "2026-04-19",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
-      "task9_result": "needs-rework",
-      "section": "3.5"
+      "task9_result": "needs-rework"
     },
     "src/part1-fundamentals/ch03-input/06-gesture-recognition-performance.md": {
       "chapter": "3.6",
@@ -916,22 +962,23 @@
       "task6_state": "reviewed",
       "task9_state": "pending",
       "task2b_state": "fixed",
+      "section": "3.6",
       "reviewed_date": "2026-04-20",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
-      "task2b_result": "fixed",
-      "section": "3.6"
+      "task2b_result": "fixed"
     },
     "src/part1-fundamentals/ch03-input/README.md": {
-      "chapter": null,
-      "title": "README",
+      "chapter": "",
+      "title": "",
       "path": "src/part1-fundamentals/ch03-input/README.md",
       "status": "unknown",
       "pipeline_stage": "task6_pending",
       "task6_state": "pending",
       "task9_state": "pending",
-      "task2b_state": "idle"
+      "task2b_state": "idle",
+      "section": ""
     },
     "src/part1-fundamentals/ch04-memory/01-memory-overview.md": {
       "chapter": "4.1",
@@ -942,12 +989,12 @@
       "task6_state": "revisiting",
       "task9_state": "pending",
       "task2b_state": "fixed",
+      "section": "4.1",
       "reviewed_date": "2026-04-14",
       "reviewed_by": "openclaw-task6",
       "task6_result": "needs-rework",
       "task9_result": "needs-rework",
-      "task2b_result": "fixed",
-      "section": "4.1"
+      "task2b_result": "fixed"
     },
     "src/part1-fundamentals/ch04-memory/02-linux-memory.md": {
       "chapter": "4.2",
@@ -958,12 +1005,12 @@
       "task6_state": "revisiting",
       "task9_state": "pending",
       "task2b_state": "fixed",
+      "section": "4.2",
       "reviewed_date": "2026-04-14",
       "reviewed_by": "openclaw-task6",
       "task6_result": "needs-rework",
       "task9_result": "needs-rework",
-      "task2b_result": "fixed",
-      "section": "4.2"
+      "task2b_result": "fixed"
     },
     "src/part1-fundamentals/ch04-memory/03-art-memory.md": {
       "chapter": "4.3",
@@ -974,28 +1021,28 @@
       "task6_state": "revisiting",
       "task9_state": "pending",
       "task2b_state": "fixed",
+      "section": "4.3",
       "reviewed_date": "2026-04-14",
       "reviewed_by": "openclaw-task6",
       "task6_result": "needs-rework",
       "task9_result": "needs-rework",
-      "task2b_result": "fixed",
-      "section": "4.3"
+      "task2b_result": "fixed"
     },
     "src/part1-fundamentals/ch04-memory/04-lmk.md": {
       "chapter": "4.4",
       "title": "Low Memory Killer",
       "path": "src/part1-fundamentals/ch04-memory/04-lmk.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "revisiting",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
       "task9_state": "pending",
       "task2b_state": "fixed",
-      "reviewed_date": "2026-04-13",
+      "section": "4.4",
+      "reviewed_date": "2026-04-20",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
-      "task2b_result": "fixed",
-      "section": "4.4"
+      "task2b_result": "fixed"
     },
     "src/part1-fundamentals/ch04-memory/05-app-memory-optimization.md": {
       "chapter": "4.5",
@@ -1006,11 +1053,11 @@
       "task6_state": "reviewed",
       "task9_state": "reviewed",
       "task2b_state": "idle",
+      "section": "4.5",
       "reviewed_date": "2026-04-15",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
-      "task9_result": "pass-tech-review",
-      "section": "4.5"
+      "task9_result": "pass-tech-review"
     },
     "src/part1-fundamentals/ch04-memory/06-memory-evolution.md": {
       "chapter": "4.6",
@@ -1021,12 +1068,13 @@
       "task6_state": "reviewed",
       "task9_state": "reviewed",
       "task2b_state": "fixed",
+      "section": "4.6",
       "reviewed_date": "2026-04-19",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
       "task9_result": "pass-tech-review",
       "task2b_result": "fixed",
-      "section": "4.6"
+      "last_task9_at": "2026-04-20T04:20:38+08:00"
     },
     "src/part1-fundamentals/ch04-memory/07-16kb-page-size.md": {
       "chapter": "4.7",
@@ -1037,10 +1085,10 @@
       "task6_state": "revisiting",
       "task9_state": "pending",
       "task2b_state": "fixed",
+      "section": "4.7",
       "reviewed_date": "2026-04-15",
       "reviewed_by": "openclaw-task6",
-      "task2b_result": "fixed",
-      "section": "4.7"
+      "task2b_result": "fixed"
     },
     "src/part1-fundamentals/ch04-memory/08-art-generational-gc.md": {
       "chapter": "4.8",
@@ -1051,12 +1099,13 @@
       "task6_state": "reviewed",
       "task9_state": "reviewed",
       "task2b_state": "fixed",
+      "section": "4.8",
       "reviewed_date": "2026-04-19",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
       "task9_result": "pass-tech-review",
       "task2b_result": "fixed",
-      "section": "4.8"
+      "last_task9_at": "2026-04-20T04:20:38+08:00"
     },
     "src/part1-fundamentals/ch04-memory/README.md": {
       "chapter": null,
@@ -1077,12 +1126,12 @@
       "task6_state": "revisiting",
       "task9_state": "pending",
       "task2b_state": "fixed",
+      "section": "5.1",
       "reviewed_date": "2026-04-14",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
-      "task2b_result": "fixed",
-      "section": "5.1"
+      "task2b_result": "fixed"
     },
     "src/part1-fundamentals/ch05-cpu-power/02-eas.md": {
       "chapter": "5.2",
@@ -1093,12 +1142,12 @@
       "task6_state": "revisiting",
       "task9_state": "pending",
       "task2b_state": "fixed",
+      "section": "5.2",
       "reviewed_date": "2026-04-14",
       "reviewed_by": "openclaw-task6",
       "task6_result": "needs-rework",
       "task9_result": "needs-rework",
-      "task2b_result": "fixed",
-      "section": "5.2"
+      "task2b_result": "fixed"
     },
     "src/part1-fundamentals/ch05-cpu-power/03-big-little.md": {
       "chapter": "5.3",
@@ -1109,26 +1158,27 @@
       "task6_state": "revisiting",
       "task9_state": "pending",
       "task2b_state": "fixed",
+      "section": "5.3",
       "reviewed_date": "2026-04-15",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
-      "task2b_result": "fixed",
-      "section": "5.3"
+      "task2b_result": "fixed"
     },
     "src/part1-fundamentals/ch05-cpu-power/04-dvfs.md": {
       "chapter": "5.4",
       "title": "DVFS 与功耗管理",
       "path": "src/part1-fundamentals/ch05-cpu-power/04-dvfs.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "task6_state": "reviewed",
       "task9_state": "reviewed",
       "task2b_state": "idle",
+      "section": "5.4",
       "reviewed_date": "2026-04-15",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
       "task9_result": "pass-tech-review",
-      "section": "5.4"
+      "task9_reviewed_date": "2026-04-15"
     },
     "src/part1-fundamentals/ch05-cpu-power/05-thermal.md": {
       "chapter": "5.5",
@@ -1139,11 +1189,13 @@
       "task6_state": "reviewed",
       "task9_state": "pending",
       "task2b_state": "unknown",
+      "section": "5.5",
       "reviewed_date": "2026-04-15",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
       "task9_result": "reworked",
-      "section": "5.5"
+      "task9_reviewed_date": "2026-04-17",
+      "task9_reviewed_by": "openclaw-task9"
     },
     "src/part1-fundamentals/ch05-cpu-power/06-android-power.md": {
       "chapter": "5.6",
@@ -1154,42 +1206,44 @@
       "task6_state": "reviewed",
       "task9_state": "pending",
       "task2b_state": "idle",
+      "section": "5.6",
       "reviewed_date": "2026-04-15",
       "reviewed_by": "openclaw-task6",
-      "task6_result": "pass-light-edit",
-      "section": "5.6"
+      "task6_result": "pass-light-edit"
     },
     "src/part1-fundamentals/ch05-cpu-power/07-cpu-evolution.md": {
       "chapter": "5.7",
       "title": "CPU 相关的版本演进",
       "path": "src/part1-fundamentals/ch05-cpu-power/07-cpu-evolution.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
-      "task9_state": "pending",
-      "task2b_state": "fixed",
+      "task9_state": "reviewed",
+      "task2b_state": "pending",
+      "section": "5.7",
       "reviewed_date": "2026-04-20",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
-      "task2b_result": "fixed",
-      "section": "5.7"
+      "task9_reviewed_date": "2026-04-20",
+      "task9_reviewed_by": "openclaw-task9",
+      "last_task9_at": "2026-04-20T08:57:48+08:00"
     },
     "src/part1-fundamentals/ch05-cpu-power/08-background-execution.md": {
       "chapter": "5.8",
       "title": "后台执行限制与优化",
       "path": "src/part1-fundamentals/ch05-cpu-power/08-background-execution.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "revisiting",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
       "task9_state": "pending",
       "task2b_state": "fixed",
-      "reviewed_date": "2026-04-12",
+      "section": "5.8",
+      "reviewed_date": "2026-04-20",
       "reviewed_by": "openclaw-task6",
-      "task6_result": "needs-rework",
+      "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
-      "task2b_result": "fixed",
-      "section": "5.8"
+      "task2b_result": "fixed"
     },
     "src/part1-fundamentals/ch05-cpu-power/09-adpf.md": {
       "chapter": "5.9",
@@ -1200,14 +1254,14 @@
       "task6_state": "reviewed",
       "task9_state": "reviewed",
       "task2b_state": "fixed",
+      "section": "5.9",
       "reviewed_date": "2026-04-20",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
       "task9_result": "pass-tech-review",
       "task2b_result": "fixed",
-      "section": "5.9",
-      "task9_reviewed_by": "openclaw-task9",
       "task9_reviewed_date": "2026-04-19",
+      "task9_reviewed_by": "openclaw-task9",
       "last_task9_at": "2026-04-19T23:59:59+08:00"
     },
     "src/part1-fundamentals/ch05-cpu-power/10-jobscheduler-workmanager-performance.md": {
@@ -1215,32 +1269,36 @@
       "title": "JobScheduler/WorkManager 调度与后台任务性能",
       "path": "src/part1-fundamentals/ch05-cpu-power/10-jobscheduler-workmanager-performance.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
-      "task9_state": "pending",
-      "task2b_state": "fixed",
+      "task9_state": "reviewed",
+      "task2b_state": "pending",
+      "section": "5.10",
       "reviewed_date": "2026-04-20",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
-      "task2b_result": "fixed",
-      "section": "5.10"
+      "task9_reviewed_date": "2026-04-20",
+      "task9_reviewed_by": "openclaw-task9",
+      "last_task9_at": "2026-04-20T08:57:48+08:00"
     },
     "src/part1-fundamentals/ch05-cpu-power/11-ondevice-ml-inference-performance.md": {
       "chapter": "5.11",
       "title": "端侧 AI 推理性能：NPU/GPU 加速与 TFLite 管线",
       "path": "src/part1-fundamentals/ch05-cpu-power/11-ondevice-ml-inference-performance.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
-      "task9_state": "pending",
-      "task2b_state": "fixed",
+      "task9_state": "reviewed",
+      "task2b_state": "pending",
+      "section": "5.11",
       "reviewed_date": "2026-04-20",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
-      "task2b_result": "fixed",
-      "section": "5.11"
+      "task9_reviewed_date": "2026-04-20",
+      "task9_reviewed_by": "openclaw-task9",
+      "last_task9_at": "2026-04-20T08:57:48+08:00"
     },
     "src/part1-fundamentals/ch05-cpu-power/12-thermal-management-deep-dive.md": {
       "chapter": "5.12",
@@ -1251,12 +1309,12 @@
       "task6_state": "reviewed",
       "task9_state": "pending",
       "task2b_state": "fixed",
-      "reviewed_date": "2026-04-12",
+      "section": "5.12",
+      "reviewed_date": "2026-04-20",
       "reviewed_by": "openclaw-task6",
-      "task6_result": "needs-rework",
+      "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
-      "task2b_result": "fixed",
-      "section": "5.12"
+      "task2b_result": "fixed"
     },
     "src/part1-fundamentals/ch05-cpu-power/README.md": {
       "chapter": null,
@@ -1277,12 +1335,12 @@
       "task6_state": "revisiting",
       "task9_state": "pending",
       "task2b_state": "fixed",
+      "section": "6.1",
       "reviewed_date": "2026-04-14",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
-      "task2b_result": "fixed",
-      "section": "6.1"
+      "task2b_result": "fixed"
     },
     "src/part1-fundamentals/ch06-storage/02-filesystem.md": {
       "chapter": "6.2",
@@ -1293,10 +1351,12 @@
       "task6_state": "reviewed",
       "task9_state": "reviewed",
       "task2b_state": "idle",
+      "section": "6.2",
       "reviewed_date": "2026-04-15",
       "reviewed_by": "openclaw-task6",
       "task9_result": "pass-tech-review-with-notes",
-      "section": "6.2"
+      "task9_reviewed_date": "2026-04-15",
+      "task9_reviewed_by": "openclaw-task9"
     },
     "src/part1-fundamentals/ch06-storage/03-io-scheduling.md": {
       "chapter": "6.3",
@@ -1307,14 +1367,14 @@
       "task6_state": "reviewed",
       "task9_state": "reviewed",
       "task2b_state": "fixed",
+      "section": "6.3",
       "reviewed_date": "2026-04-20",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
       "task9_result": "pass-tech-review",
       "task2b_result": "fixed",
-      "section": "6.3",
-      "task9_reviewed_by": "openclaw-task9",
       "task9_reviewed_date": "2026-04-19",
+      "task9_reviewed_by": "openclaw-task9",
       "last_task9_at": "2026-04-19T23:59:59+08:00"
     },
     "src/part1-fundamentals/ch06-storage/04-storage-evolution.md": {
@@ -1326,12 +1386,12 @@
       "task6_state": "revisiting",
       "task9_state": "pending",
       "task2b_state": "fixed",
+      "section": "6.4",
       "reviewed_date": "2026-04-14",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
-      "task2b_result": "fixed",
-      "section": "6.4"
+      "task2b_result": "fixed"
     },
     "src/part1-fundamentals/ch06-storage/05-sharedpreferences-datastore.md": {
       "chapter": "6.5",
@@ -1342,12 +1402,12 @@
       "task6_state": "reviewed",
       "task9_state": "pending",
       "task2b_state": "fixed",
-      "reviewed_date": "2026-04-12",
+      "section": "6.5",
+      "reviewed_date": "2026-04-20",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
-      "task2b_result": "fixed",
-      "section": "6.5"
+      "task2b_result": "fixed"
     },
     "src/part1-fundamentals/ch06-storage/README.md": {
       "chapter": null,
@@ -1368,13 +1428,12 @@
       "task6_state": "reviewed",
       "task9_state": "pending",
       "task2b_state": "fixed",
+      "section": "7.1",
       "reviewed_date": "2026-04-20",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
-      "task2b_result": "fixed",
-      "section": "7.1",
-      "review_round": 3
+      "task2b_result": "fixed"
     },
     "src/part2-performance/ch07-smoothness/02-jank-causes.md": {
       "chapter": "7.2",
@@ -1385,12 +1444,13 @@
       "task6_state": "revisiting",
       "task9_state": "pending",
       "task2b_state": "fixed",
+      "section": "7.2",
       "reviewed_date": "2026-04-15",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
-      "section": "7.2"
+      "last_task9_at": "2026-04-19T01:44:00+08:00"
     },
     "src/part2-performance/ch07-smoothness/03-jank-methodology.md": {
       "chapter": "7.3",
@@ -1401,11 +1461,12 @@
       "task6_state": "revisiting",
       "task9_state": "pending",
       "task2b_state": "fixed",
+      "section": "7.3",
       "reviewed_date": "2026-04-15",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
-      "section": "7.3",
-      "task9_result": "needs-rework"
+      "task9_result": "needs-rework",
+      "task2b_result": "fixed"
     },
     "src/part2-performance/ch07-smoothness/04-typical-scenarios.md": {
       "chapter": "7.4",
@@ -1416,12 +1477,12 @@
       "task6_state": "revisiting",
       "task9_state": "pending",
       "task2b_state": "fixed",
+      "section": "7.4",
       "reviewed_date": "2026-04-14",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
-      "task2b_result": "fixed",
-      "section": "7.4"
+      "task2b_result": "fixed"
     },
     "src/part2-performance/ch07-smoothness/05-optimization.md": {
       "chapter": "7.5",
@@ -1432,12 +1493,12 @@
       "task6_state": "reviewed",
       "task9_state": "pending",
       "task2b_state": "fixed",
+      "section": "7.5",
       "reviewed_date": "2026-04-20",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
-      "task2b_result": "fixed",
-      "section": "7.5"
+      "task2b_result": "fixed"
     },
     "src/part2-performance/ch07-smoothness/06-case-studies.md": {
       "chapter": "7.6",
@@ -1448,11 +1509,11 @@
       "task6_state": "reviewed",
       "task9_state": "reviewed",
       "task2b_state": "fixed",
+      "section": "7.6",
       "reviewed_date": "2026-04-14",
       "reviewed_by": "openclaw-task6",
       "task6_result": "needs-rework",
-      "task9_result": "needs-rework",
-      "section": "7.6"
+      "task9_result": "needs-rework"
     },
     "src/part2-performance/ch07-smoothness/07-compose-performance.md": {
       "chapter": "7.7",
@@ -1463,11 +1524,12 @@
       "task6_state": "revisiting",
       "task9_state": "pending",
       "task2b_state": "fixed",
+      "section": "7.7",
       "reviewed_date": "2026-04-15",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
-      "section": "7.7",
-      "task9_result": "needs-rework"
+      "task9_result": "needs-rework",
+      "task2b_result": "fixed"
     },
     "src/part2-performance/ch07-smoothness/08-recyclerview-performance.md": {
       "chapter": "7.8",
@@ -1478,14 +1540,14 @@
       "task6_state": "reviewed",
       "task9_state": "reviewed",
       "task2b_state": "fixed",
+      "section": "7.8",
       "reviewed_date": "2026-04-20",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
       "task9_result": "pass-tech-review",
       "task2b_result": "fixed",
-      "section": "7.8",
-      "task9_reviewed_by": "openclaw-task9",
       "task9_reviewed_date": "2026-04-19",
+      "task9_reviewed_by": "openclaw-task9",
       "last_task9_at": "2026-04-19T23:59:59+08:00"
     },
     "src/part2-performance/ch07-smoothness/09-perceived-smoothness.md": {
@@ -1493,32 +1555,32 @@
       "title": "感知流畅性：步幅波动与无掉帧卡顿",
       "path": "src/part2-performance/ch07-smoothness/09-perceived-smoothness.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "revisiting",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
       "task9_state": "pending",
       "task2b_state": "fixed",
-      "reviewed_date": "2026-04-12",
+      "section": "7.9",
+      "reviewed_date": "2026-04-20",
       "reviewed_by": "openclaw-task6",
-      "task6_result": "needs-rework",
+      "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
-      "task2b_result": "fixed",
-      "section": "7.9"
+      "task2b_result": "fixed"
     },
     "src/part2-performance/ch07-smoothness/10-image-bitmap-performance.md": {
       "chapter": "7.10",
       "title": "图片加载与 Bitmap 性能优化",
       "path": "src/part2-performance/ch07-smoothness/10-image-bitmap-performance.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "revisiting",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
       "task9_state": "pending",
       "task2b_state": "fixed",
-      "reviewed_date": "2026-04-12",
+      "section": "7.10",
+      "reviewed_date": "2026-04-20",
       "reviewed_by": "openclaw-task6",
-      "task6_result": "needs-rework",
+      "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
-      "task2b_result": "fixed",
-      "section": "7.10"
+      "task2b_result": "fixed"
     },
     "src/part2-performance/ch07-smoothness/11-webview-performance.md": {
       "chapter": "7.11",
@@ -1529,28 +1591,28 @@
       "task6_state": "reviewed",
       "task9_state": "pending",
       "task2b_state": "fixed",
-      "reviewed_date": "2026-04-12",
+      "section": "7.11",
+      "reviewed_date": "2026-04-20",
       "reviewed_by": "openclaw-task6",
-      "task6_result": "needs-rework",
+      "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
-      "task2b_result": "fixed",
-      "section": "7.11"
+      "task2b_result": "fixed"
     },
     "src/part2-performance/ch07-smoothness/12-view-layout-performance.md": {
       "chapter": "7.12",
       "title": "View 体系性能优化：布局层级、inflate 与 measure/layout 开销",
       "path": "src/part2-performance/ch07-smoothness/12-view-layout-performance.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "revisiting",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
       "task9_state": "pending",
       "task2b_state": "fixed",
-      "reviewed_date": "2026-04-12",
+      "section": "7.12",
+      "reviewed_date": "2026-04-20",
       "reviewed_by": "openclaw-task6",
-      "task6_result": "needs-rework",
+      "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
-      "task2b_result": "fixed",
-      "section": "7.12"
+      "task2b_result": "fixed"
     },
     "src/part2-performance/ch07-smoothness/13-systemui-performance.md": {
       "chapter": "7.13",
@@ -1561,12 +1623,12 @@
       "task6_state": "revisiting",
       "task9_state": "pending",
       "task2b_state": "fixed",
+      "section": "7.13",
       "reviewed_date": "2026-04-13",
       "reviewed_by": "openclaw-task6",
       "task6_result": "needs-rework",
       "task9_result": "needs-rework",
-      "task2b_result": "fixed",
-      "section": "7.13"
+      "task2b_result": "fixed"
     },
     "src/part2-performance/ch07-smoothness/14-gaps-dynamic-analysis.md": {
       "chapter": "7.14",
@@ -1574,14 +1636,14 @@
       "path": "src/part2-performance/ch07-smoothness/14-gaps-dynamic-analysis.md",
       "status": "ready-for-review",
       "pipeline_stage": "task6_pending",
-      "task6_state": "revisiting",
+      "task6_state": "reviewed",
       "task9_state": "pending",
       "task2b_state": "fixed",
+      "section": "7.14",
       "reviewed_date": "2026-04-16",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
-      "task2b_result": "fixed",
-      "section": "7.14"
+      "task2b_result": "fixed"
     },
     "src/part2-performance/ch07-smoothness/README.md": {
       "chapter": null,
@@ -1602,10 +1664,10 @@
       "task6_state": "reviewed",
       "task9_state": "reviewed",
       "task2b_state": "pending",
+      "section": "8.1",
       "reviewed_date": "2026-04-15",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
-      "section": "8.1",
       "task9_result": "needs-rework"
     },
     "src/part2-performance/ch08-responsiveness/02-app-launch.md": {
@@ -1617,10 +1679,10 @@
       "task6_state": "reviewed",
       "task9_state": "pending",
       "task2b_state": "idle",
+      "section": "8.2",
       "reviewed_date": "2026-04-16",
       "reviewed_by": "openclaw-task6",
-      "task6_result": "pass-light-edit",
-      "section": "8.2"
+      "task6_result": "pass-light-edit"
     },
     "src/part2-performance/ch08-responsiveness/03-launch-optimization.md": {
       "chapter": "8.3",
@@ -1631,11 +1693,11 @@
       "task6_state": "revisiting",
       "task9_state": "pending",
       "task2b_state": "fixed",
+      "section": "8.3",
       "reviewed_date": "2026-04-16",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
-      "task2b_result": "fixed",
-      "section": "8.3"
+      "task2b_result": "fixed"
     },
     "src/part2-performance/ch08-responsiveness/04-other-scenarios.md": {
       "chapter": "8.4",
@@ -1646,11 +1708,11 @@
       "task6_state": "revisiting",
       "task9_state": "pending",
       "task2b_state": "fixed",
+      "section": "8.4",
       "reviewed_date": "2026-04-16",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
-      "task9_result": "pending-recheck",
-      "section": "8.4"
+      "task9_result": "pending-recheck"
     },
     "src/part2-performance/ch08-responsiveness/05-case-studies.md": {
       "chapter": "8.5",
@@ -1661,10 +1723,10 @@
       "task6_state": "reviewed",
       "task9_state": "pending",
       "task2b_state": "idle",
+      "section": "8.5",
       "reviewed_date": "2026-04-16",
       "reviewed_by": "openclaw-task6",
-      "task6_result": "pass-light-edit",
-      "section": "8.5"
+      "task6_result": "pass-light-edit"
     },
     "src/part2-performance/ch08-responsiveness/06-coroutine-performance.md": {
       "chapter": "8.6",
@@ -1675,11 +1737,14 @@
       "task6_state": "revisiting",
       "task9_state": "pending",
       "task2b_state": "fixed",
+      "section": "8.6",
       "reviewed_date": "2026-04-16",
       "reviewed_by": "openclaw-task6",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
-      "section": "8.6"
+      "task9_reviewed_date": "2026-04-19",
+      "task9_reviewed_by": "openclaw-task9",
+      "last_task9_at": "2026-04-19T11:10:00+08:00"
     },
     "src/part2-performance/ch08-responsiveness/07-baseline-profiles.md": {
       "chapter": "8.7",
@@ -1690,13 +1755,12 @@
       "task6_state": "reviewed",
       "task9_state": "pending",
       "task2b_state": "fixed",
+      "section": "8.7",
       "reviewed_date": "2026-04-20",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
-      "task2b_result": "fixed",
-      "section": "8.7",
-      "review_round": 2
+      "task2b_result": "fixed"
     },
     "src/part2-performance/ch08-responsiveness/08-media-pipeline.md": {
       "chapter": "8.8",
@@ -1707,12 +1771,12 @@
       "task6_state": "revisiting",
       "task9_state": "pending",
       "task2b_state": "fixed",
+      "section": "8.8",
       "reviewed_date": "2026-04-13",
       "reviewed_by": "openclaw-task6",
       "task6_result": "needs-rework",
       "task9_result": "needs-rework",
-      "task2b_result": "fixed",
-      "section": "8.8"
+      "task2b_result": "fixed"
     },
     "src/part2-performance/ch08-responsiveness/08-system-triggered-profiling.md": {
       "chapter": "8.8",
@@ -1723,12 +1787,12 @@
       "task6_state": "revisiting",
       "task9_state": "pending",
       "task2b_state": "fixed",
+      "section": "8.8",
       "reviewed_date": "2026-04-13",
       "reviewed_by": "openclaw-task6",
       "task6_result": "needs-rework",
       "task9_result": "needs-rework",
-      "task2b_result": "fixed",
-      "section": "8.8"
+      "task2b_result": "fixed"
     },
     "src/part2-performance/ch08-responsiveness/09-game-performance.md": {
       "chapter": "8.9",
@@ -1739,12 +1803,12 @@
       "task6_state": "revisiting",
       "task9_state": "pending",
       "task2b_state": "fixed",
+      "section": "8.9",
       "reviewed_date": "2026-04-13",
       "reviewed_by": "openclaw-task6",
       "task6_result": "needs-rework",
       "task9_result": "needs-rework",
-      "task2b_result": "fixed",
-      "section": "8.9"
+      "task2b_result": "fixed"
     },
     "src/part2-performance/ch08-responsiveness/README.md": {
       "chapter": null,
@@ -1765,12 +1829,13 @@
       "task6_state": "revisiting",
       "task9_state": "reviewed",
       "task2b_state": "pending",
+      "section": "9.1",
       "reviewed_date": "2026-04-16",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
-      "section": "9.1"
+      "last_task9_at": "2026-04-16T17:25:51.813647"
     },
     "src/part2-performance/ch09-anr/02-anr-types.md": {
       "chapter": "9.2",
@@ -1781,10 +1846,10 @@
       "task6_state": "reviewed",
       "task9_state": "pending",
       "task2b_state": "idle",
+      "section": "9.2",
       "reviewed_date": "2026-04-16",
       "reviewed_by": "openclaw-task6",
-      "task6_result": "pass-light-edit",
-      "section": "9.2"
+      "task6_result": "pass-light-edit"
     },
     "src/part2-performance/ch09-anr/03-anr-analysis.md": {
       "chapter": "9.3",
@@ -1795,9 +1860,9 @@
       "task6_state": "reviewed",
       "task9_state": "pending",
       "task2b_state": "idle",
+      "section": "9.3",
       "reviewed_date": "2026-04-16",
-      "reviewed_by": "openclaw-task6",
-      "section": "9.3"
+      "reviewed_by": "openclaw-task6"
     },
     "src/part2-performance/ch09-anr/04-special-anr.md": {
       "chapter": "9.4",
@@ -1808,12 +1873,12 @@
       "task6_state": "reviewed",
       "task9_state": "pending",
       "task2b_state": "fixed",
+      "section": "9.4",
       "reviewed_date": "2026-04-19",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
-      "task2b_result": "fixed",
-      "section": "9.4"
+      "task2b_result": "fixed"
     },
     "src/part2-performance/ch09-anr/05-case-studies.md": {
       "chapter": "9.5",
@@ -1824,10 +1889,10 @@
       "task6_state": "reviewed",
       "task9_state": "pending",
       "task2b_state": "idle",
+      "section": "9.5",
       "reviewed_date": "2026-04-16",
       "reviewed_by": "openclaw-task6",
-      "task6_result": "pass-light-edit",
-      "section": "9.5"
+      "task6_result": "pass-light-edit"
     },
     "src/part2-performance/ch09-anr/06-notification-performance-anr.md": {
       "chapter": "9.6",
@@ -1838,12 +1903,12 @@
       "task6_state": "revisiting",
       "task9_state": "pending",
       "task2b_state": "fixed",
+      "section": "9.6",
       "reviewed_date": "2026-04-13",
       "reviewed_by": "openclaw-task6",
       "task6_result": "needs-rework",
       "task9_result": "needs-rework",
-      "task2b_result": "fixed",
-      "section": "9.6"
+      "task2b_result": "fixed"
     },
     "src/part2-performance/ch09-anr/07-non-technical-anr-diagnosis.md": {
       "chapter": "9.7",
@@ -1854,12 +1919,12 @@
       "task6_state": "revisiting",
       "task9_state": "pending",
       "task2b_state": "fixed",
+      "section": "9.7",
       "reviewed_date": "2026-04-13",
       "reviewed_by": "openclaw-task6",
       "task6_result": "needs-rework",
       "task9_result": "needs-rework",
-      "task2b_result": "fixed",
-      "section": "9.7"
+      "task2b_result": "fixed"
     },
     "src/part2-performance/ch09-anr/README.md": {
       "chapter": null,
@@ -1880,10 +1945,10 @@
       "task6_state": "reviewed",
       "task9_state": "pending",
       "task2b_state": "idle",
+      "section": "10",
       "reviewed_date": "2026-04-15",
       "reviewed_by": "openclaw-task6",
-      "task6_result": "pass-light-edit",
-      "section": "10.1"
+      "task6_result": "pass-light-edit"
     },
     "src/part2-performance/ch10-memory-perf/02-memory-leak.md": {
       "chapter": "10.2",
@@ -1894,9 +1959,9 @@
       "task6_state": "reviewed",
       "task9_state": "pending",
       "task2b_state": "idle",
+      "section": "10.2",
       "reviewed_date": "2026-04-16",
-      "reviewed_by": "openclaw-task6",
-      "section": "10.2"
+      "reviewed_by": "openclaw-task6"
     },
     "src/part2-performance/ch10-memory-perf/03-memory-growth.md": {
       "chapter": "10.3",
@@ -1907,11 +1972,11 @@
       "task6_state": "revisiting",
       "task9_state": "pending",
       "task2b_state": "fixed",
+      "section": "10.3",
       "reviewed_date": "2026-04-16",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
-      "task2b_result": "fixed",
-      "section": "10.3"
+      "task2b_result": "fixed"
     },
     "src/part2-performance/ch10-memory-perf/04-low-memory-impact.md": {
       "chapter": "10.4",
@@ -1922,12 +1987,12 @@
       "task6_state": "revisiting",
       "task9_state": "pending",
       "task2b_state": "fixed",
+      "section": "10.4",
       "reviewed_date": "2026-04-19",
       "reviewed_by": "openclaw-task6",
       "task6_result": "needs-rework",
       "task9_result": "needs-rework",
-      "task2b_result": "fixed",
-      "section": "10.4"
+      "task2b_result": "fixed"
     },
     "src/part2-performance/ch10-memory-perf/05-case-studies.md": {
       "chapter": "10.5",
@@ -1938,10 +2003,10 @@
       "task6_state": "reviewed",
       "task9_state": "pending",
       "task2b_state": "idle",
+      "section": "10.5",
       "reviewed_date": "2026-04-16",
       "reviewed_by": "openclaw-task6",
-      "task6_result": "pass-light-edit",
-      "section": "10.5"
+      "task6_result": "pass-light-edit"
     },
     "src/part2-performance/ch10-memory-perf/06-memory-churn.md": {
       "chapter": "10.6",
@@ -1952,14 +2017,13 @@
       "task6_state": "revisiting",
       "task9_state": "pending",
       "task2b_state": "fixed",
-      "reviewed_date": "2026-04-20",
+      "section": "10.6",
+      "reviewed_date": "2026-04-16",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
-      "section": "10.6",
-      "task2b_result": "fixed",
       "task9_result": "needs-rework",
-      "task2b_rework_date": "2026-04-20",
-      "task2b_fixed_at": "2026-04-20"
+      "task2b_result": "fixed",
+      "last_task9_at": "2026-04-20T04:20:38+08:00"
     },
     "src/part2-performance/ch10-memory-perf/07-sqlite-room-performance.md": {
       "chapter": "10.7",
@@ -1970,12 +2034,12 @@
       "task6_state": "revisiting",
       "task9_state": "pending",
       "task2b_state": "fixed",
+      "section": "10.7",
       "reviewed_date": "2026-04-13",
       "reviewed_by": "openclaw-task6",
       "task6_result": "needs-rework",
       "task9_result": "needs-rework",
-      "task2b_result": "fixed",
-      "section": "10.7"
+      "task2b_result": "fixed"
     },
     "src/part2-performance/ch10-memory-perf/README.md": {
       "chapter": null,
@@ -1996,12 +2060,12 @@
       "task6_state": "revisiting",
       "task9_state": "pending",
       "task2b_state": "fixed",
+      "section": "11.1",
       "reviewed_date": "2026-04-13",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
-      "task2b_result": "fixed",
-      "section": "11.1"
+      "task2b_result": "fixed"
     },
     "src/part2-performance/ch11-power/02-app-power-optimization.md": {
       "chapter": "11.2",
@@ -2012,12 +2076,12 @@
       "task6_state": "revisiting",
       "task9_state": "pending",
       "task2b_state": "fixed",
+      "section": "11.2",
       "reviewed_date": "2026-04-13",
       "reviewed_by": "openclaw-task6",
       "task6_result": "needs-rework",
       "task9_result": "needs-rework",
-      "task2b_result": "fixed",
-      "section": "11.2"
+      "task2b_result": "fixed"
     },
     "src/part2-performance/ch11-power/03-system-power-optimization.md": {
       "chapter": "11.3",
@@ -2028,12 +2092,12 @@
       "task6_state": "revisiting",
       "task9_state": "pending",
       "task2b_state": "fixed",
+      "section": "11.3",
       "reviewed_date": "2026-04-13",
       "reviewed_by": "openclaw-task6",
       "task6_result": "needs-rework",
       "task9_result": "needs-rework",
-      "task2b_result": "fixed",
-      "section": "11.3"
+      "task2b_result": "fixed"
     },
     "src/part2-performance/ch11-power/04-case-studies.md": {
       "chapter": "11.4",
@@ -2044,11 +2108,11 @@
       "task6_state": "revisiting",
       "task9_state": "fixed",
       "task2b_state": "fixed",
+      "section": "11.4",
       "reviewed_date": "2026-04-16",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
-      "task2b_result": "fixed",
-      "section": "11.4"
+      "task2b_result": "fixed"
     },
     "src/part2-performance/ch11-power/05-wakelock.md": {
       "chapter": "11.5",
@@ -2059,12 +2123,12 @@
       "task6_state": "revisiting",
       "task9_state": "pending",
       "task2b_state": "fixed",
-      "reviewed_date": "2026-04-20",
+      "section": "11.5",
+      "reviewed_date": "2026-04-14",
       "reviewed_by": "openclaw-task6",
       "task6_result": "needs-rework",
       "task9_result": "needs-rework",
-      "task2b_result": "fixed",
-      "section": "11.5"
+      "task2b_result": "fixed"
     },
     "src/part2-performance/ch11-power/README.md": {
       "chapter": null,
@@ -2085,12 +2149,12 @@
       "task6_state": "revisiting",
       "task9_state": "pending",
       "task2b_state": "fixed",
+      "section": "12.1",
       "reviewed_date": "2026-04-20",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
-      "section": "12.1",
-      "task2b_result": "fixed",
-      "task9_result": "needs-rework"
+      "task9_result": "needs-rework",
+      "task2b_result": "fixed"
     },
     "src/part2-performance/ch12-apk-network/02-network-performance.md": {
       "chapter": "12.2",
@@ -2101,12 +2165,12 @@
       "task6_state": "revisiting",
       "task9_state": "pending",
       "task2b_state": "fixed",
+      "section": "12.2",
       "reviewed_date": "2026-04-17",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
-      "task2b_result": "fixed",
-      "section": "12.2"
+      "task2b_result": "fixed"
     },
     "src/part2-performance/ch12-apk-network/03-network-performance-deep.md": {
       "chapter": "12.3",
@@ -2117,12 +2181,12 @@
       "task6_state": "revisiting",
       "task9_state": "pending",
       "task2b_state": "fixed",
+      "section": "12.3",
       "reviewed_date": "2026-04-13",
       "reviewed_by": "openclaw-task6",
       "task6_result": "needs-rework",
       "task9_result": "needs-rework",
-      "task2b_result": "fixed",
-      "section": "12.3"
+      "task2b_result": "fixed"
     },
     "src/part2-performance/ch12-apk-network/04-network-security-tls-performance.md": {
       "chapter": "12.4",
@@ -2133,11 +2197,11 @@
       "task6_state": "revisiting",
       "task9_state": "pending",
       "task2b_state": "fixed",
+      "section": "12.4",
       "reviewed_date": "2026-04-14",
       "reviewed_by": "openclaw-task6",
       "task6_result": "needs-rework",
-      "task9_result": "needs-rework",
-      "section": "12.4"
+      "task9_result": "needs-rework"
     },
     "src/part2-performance/ch12-apk-network/README.md": {
       "chapter": null,
@@ -2150,22 +2214,22 @@
       "task2b_state": "unknown"
     },
     "src/part2-performance/ch18-rendering-pipelines/01-pipeline-overview.md": {
-      "path": "src/part2-performance/ch18-rendering-pipelines/01-pipeline-overview.md",
       "chapter": "18.1",
       "title": "渲染链路分类与选择矩阵",
+      "path": "src/part2-performance/ch18-rendering-pipelines/01-pipeline-overview.md",
       "status": "finalized",
       "pipeline_stage": "ready-to-publish",
       "task6_state": "reviewed",
       "task9_state": "reviewed",
       "task2b_state": "fixed",
+      "section": "18.1",
       "reviewed_date": "2026-04-15",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
       "task9_result": "pass-tech-review",
       "task2b_result": "fixed",
-      "section": "18.1",
-      "task9_reviewed_by": "openclaw-task9",
       "task9_reviewed_date": "2026-04-20",
+      "task9_reviewed_by": "openclaw-task9",
       "last_task9_at": "2026-04-20T03:17:47+08:00"
     },
     "src/part2-performance/ch18-rendering-pipelines/02-android-view-standard.md": {
@@ -2177,14 +2241,14 @@
       "task6_state": "revisiting",
       "task9_state": "pending",
       "task2b_state": "fixed",
+      "section": "18.2",
       "reviewed_date": "2026-04-17",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
-      "task9_reviewed_date": "2026-04-20",
-      "task9_reviewed_by": "openclaw-task9",
       "task2b_result": "fixed",
-      "section": "18.2"
+      "task9_reviewed_date": "2026-04-20",
+      "task9_reviewed_by": "openclaw-task9"
     },
     "src/part2-performance/ch18-rendering-pipelines/03-android-view-software.md": {
       "chapter": "18.3",
@@ -2195,11 +2259,11 @@
       "task6_state": "revisiting",
       "task9_state": "reviewed",
       "task2b_state": "pending",
+      "section": "18.3",
       "reviewed_date": "2026-04-17",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
-      "section": "18.3",
       "task9_reviewed_date": "2026-04-20",
       "task9_reviewed_by": "openclaw-task9"
     },
@@ -2212,11 +2276,12 @@
       "task6_state": "reviewed",
       "task9_state": "reviewed",
       "task2b_state": "pending",
+      "section": "18.4",
       "reviewed_date": "2026-04-17",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
-      "section": "18.4"
+      "task9_reviewed_date": "2026-04-18"
     },
     "src/part2-performance/ch18-rendering-pipelines/05-android-view-multi-window.md": {
       "chapter": "18.5",
@@ -2227,13 +2292,13 @@
       "task6_state": "revisiting",
       "task9_state": "reviewed",
       "task2b_state": "pending",
+      "section": "18.5",
       "reviewed_date": "2026-04-17",
       "reviewed_by": "openclaw-task6",
       "task6_result": "needs-rework",
-      "section": "18.5",
       "task9_result": "needs-rework",
-      "task9_reviewed_by": "openclaw-task9",
-      "task9_reviewed_date": "2026-04-20"
+      "task9_reviewed_date": "2026-04-20",
+      "task9_reviewed_by": "openclaw-task9"
     },
     "src/part2-performance/ch18-rendering-pipelines/06-surfaceview.md": {
       "chapter": "18.6",
@@ -2244,14 +2309,12 @@
       "task6_state": "revisiting",
       "task9_state": "pending",
       "task2b_state": "fixed",
-      "task6_result": "pass-light-edit",
       "section": "18.6",
+      "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
-      "task9_reviewed_by": "openclaw-task9",
-      "task9_reviewed_date": "2026-04-20",
       "task2b_result": "fixed",
-      "task2b_rework_date": "2026-04-20",
-      "task2b_fixed_at": "2026-04-20"
+      "task9_reviewed_date": "2026-04-20",
+      "task9_reviewed_by": "openclaw-task9"
     },
     "src/part2-performance/ch18-rendering-pipelines/07-textureview.md": {
       "chapter": "18.7",
@@ -2262,16 +2325,14 @@
       "task6_state": "revisiting",
       "task9_state": "pending",
       "task2b_state": "fixed",
+      "section": "18.7",
       "reviewed_date": "2026-04-17",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
-      "section": "18.7",
       "task9_result": "needs-rework",
-      "task9_reviewed_by": "openclaw-task9",
-      "task9_reviewed_date": "2026-04-20",
       "task2b_result": "fixed",
-      "task2b_rework_date": "2026-04-20",
-      "task2b_fixed_at": "2026-04-20"
+      "task9_reviewed_date": "2026-04-20",
+      "task9_reviewed_by": "openclaw-task9"
     },
     "src/part2-performance/ch18-rendering-pipelines/08-opengl-es.md": {
       "chapter": "18.8",
@@ -2282,24 +2343,24 @@
       "task6_state": "revisiting",
       "task9_state": "pending",
       "task2b_state": "fixed",
+      "section": "18.8",
       "reviewed_date": "2026-04-17",
       "reviewed_by": "openclaw-task6",
-      "task6_result": "pass-light-edit",
-      "section": "18.8"
+      "task6_result": "pass-light-edit"
     },
     "src/part2-performance/ch18-rendering-pipelines/09-vulkan-native.md": {
       "chapter": "18.9",
       "title": "Vulkan 原生渲染链路",
       "path": "src/part2-performance/ch18-rendering-pipelines/09-vulkan-native.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "pipeline_stage": "task6_pending",
       "task6_state": "reviewed",
       "task9_state": "pending",
       "task2b_state": "idle",
+      "section": "18.9",
       "reviewed_date": "2026-04-17",
       "reviewed_by": "openclaw-task6",
-      "task6_result": "pass-light-edit",
-      "section": "18.9"
+      "task6_result": "pass-light-edit"
     },
     "src/part2-performance/ch18-rendering-pipelines/10-surface-control-api.md": {
       "chapter": "18.10",
@@ -2310,12 +2371,12 @@
       "task6_state": "revisiting",
       "task9_state": "pending",
       "task2b_state": "fixed",
+      "section": "18.10",
       "reviewed_date": "2026-04-17",
       "reviewed_by": "openclaw-task6",
       "task6_result": "needs-rework",
       "task9_result": "reworked",
       "task2b_result": "fixed",
-      "section": "18.10",
       "last_task9_at": "2026-04-18T03:45:00+08:00"
     },
     "src/part2-performance/ch18-rendering-pipelines/11-angle-gles-vulkan.md": {
@@ -2327,12 +2388,15 @@
       "task6_state": "revisiting",
       "task9_state": "pending",
       "task2b_state": "fixed",
+      "section": "18.11",
       "reviewed_date": "2026-04-18",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
-      "section": "18.11"
+      "task9_reviewed_date": "2026-04-18",
+      "task9_reviewed_by": "openclaw-task9",
+      "last_task9_at": "2026-04-18T12:20:00+08:00"
     },
     "src/part2-performance/ch18-rendering-pipelines/12-flutter-rendering.md": {
       "chapter": "18.12",
@@ -2343,12 +2407,12 @@
       "task6_state": "revisiting",
       "task9_state": "pending",
       "task2b_state": "fixed",
+      "section": "18.12",
       "reviewed_date": "2026-04-18",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
-      "task2b_result": "fixed",
-      "section": "18.12"
+      "task2b_result": "fixed"
     },
     "src/part2-performance/ch18-rendering-pipelines/13-webview-rendering.md": {
       "chapter": "18.13",
@@ -2359,12 +2423,13 @@
       "task6_state": "revisiting",
       "task9_state": "pending",
       "task2b_state": "fixed",
+      "section": "18.13",
       "reviewed_date": "2026-04-18",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
-      "section": "18.13"
+      "last_task9_at": "2026-04-18T23:32:00+08:00"
     },
     "src/part2-performance/ch18-rendering-pipelines/14-camera-pipeline.md": {
       "chapter": "18.14",
@@ -2375,12 +2440,12 @@
       "task6_state": "revisiting",
       "task9_state": "pending",
       "task2b_state": "fixed",
+      "section": "18.14",
       "reviewed_date": "2026-04-18",
       "reviewed_by": "openclaw-task6",
       "task6_result": "needs-rework",
       "task9_result": "needs-rework",
-      "task2b_result": "fixed",
-      "section": "18.14"
+      "task2b_result": "fixed"
     },
     "src/part2-performance/ch18-rendering-pipelines/15-video-overlay-hwc.md": {
       "chapter": "18.15",
@@ -2391,12 +2456,12 @@
       "task6_state": "revisiting",
       "task9_state": "pending",
       "task2b_state": "fixed",
+      "section": "18.15",
       "reviewed_date": "2026-04-18",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
-      "task2b_result": "fixed",
-      "section": "18.15"
+      "task2b_result": "fixed"
     },
     "src/part2-performance/ch18-rendering-pipelines/16-game-engine.md": {
       "chapter": "18.16",
@@ -2407,12 +2472,12 @@
       "task6_state": "revisiting",
       "task9_state": "pending",
       "task2b_state": "fixed",
+      "section": "18.16",
       "reviewed_date": "2026-04-18",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
-      "task2b_result": "fixed",
-      "section": "18.16"
+      "task2b_result": "fixed"
     },
     "src/part2-performance/ch18-rendering-pipelines/17-hardware-buffer-renderer.md": {
       "chapter": "18.17",
@@ -2423,12 +2488,14 @@
       "task6_state": "revisiting",
       "task9_state": "pending",
       "task2b_state": "fixed",
+      "section": "18.17",
       "reviewed_date": "2026-04-18",
       "reviewed_by": "openclaw-task6",
       "task6_result": "needs-rework",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
-      "section": "18.17"
+      "task9_reviewed_date": "2026-04-18",
+      "task9_reviewed_by": "openclaw-task9"
     },
     "src/part2-performance/ch18-rendering-pipelines/18-pip-freeform.md": {
       "chapter": "18.18",
@@ -2439,12 +2506,15 @@
       "task6_state": "revisiting",
       "task9_state": "pending",
       "task2b_state": "fixed",
+      "section": "18.18",
       "reviewed_date": "2026-04-18",
       "reviewed_by": "openclaw-task6",
       "task6_result": "needs-rework",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
-      "section": "18.18"
+      "task9_reviewed_date": "2026-04-18",
+      "task9_reviewed_by": "openclaw-task9",
+      "last_task9_at": "2026-04-18T11:10:00+08:00"
     },
     "src/part2-performance/ch18-rendering-pipelines/19-variable-refresh-rate.md": {
       "chapter": "18.19",
@@ -2455,12 +2525,15 @@
       "task6_state": "revisiting",
       "task9_state": "pending",
       "task2b_state": "fixed",
+      "section": "18.19",
       "reviewed_date": "2026-04-18",
       "reviewed_by": "openclaw-task6",
       "task6_result": "needs-rework",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
-      "section": "18.19"
+      "task9_reviewed_date": "2026-04-19",
+      "task9_reviewed_by": "openclaw-task9",
+      "last_task9_at": "2026-04-19T05:37:44+08:00"
     },
     "src/part2-performance/ch18-rendering-pipelines/20-pipeline-analysis-methodology.md": {
       "chapter": "18.20",
@@ -2471,12 +2544,15 @@
       "task6_state": "revisiting",
       "task9_state": "pending",
       "task2b_state": "fixed",
+      "section": "18.20",
       "reviewed_date": "2026-04-18",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
-      "section": "18.20"
+      "task9_reviewed_date": "2026-04-18",
+      "task9_reviewed_by": "openclaw-task9",
+      "last_task9_at": "2026-04-18T14:30:00+08:00"
     },
     "src/part2-performance/ch18-rendering-pipelines/21-eyedropper-crossdevice.md": {
       "chapter": "18.21",
@@ -2487,10 +2563,10 @@
       "task6_state": "reviewed",
       "task9_state": "pending",
       "task2b_state": "pending",
+      "section": "18.21",
       "reviewed_date": "2026-04-18",
       "reviewed_by": "openclaw-task6",
-      "task6_result": "needs-rework",
-      "section": "18.21"
+      "task6_result": "needs-rework"
     },
     "src/part2-performance/ch18-rendering-pipelines/README.md": {
       "chapter": null,
@@ -2511,12 +2587,12 @@
       "task6_state": "revisiting",
       "task9_state": "pending",
       "task2b_state": "fixed",
+      "section": "13.1",
       "reviewed_date": "2026-04-14",
       "reviewed_by": "openclaw-task6",
       "task6_result": "needs-rework",
       "task9_result": "needs-rework",
-      "task2b_result": "fixed",
-      "section": "13.1"
+      "task2b_result": "fixed"
     },
     "src/part3-tools/ch13-perfetto/02-trace-capture.md": {
       "chapter": "13.2",
@@ -2527,12 +2603,12 @@
       "task6_state": "revisiting",
       "task9_state": "pending",
       "task2b_state": "fixed",
+      "section": "13.2",
       "reviewed_date": "2026-04-14",
       "reviewed_by": "openclaw-task6",
       "task6_result": "needs-rework",
       "task9_result": "needs-rework",
-      "task2b_result": "fixed",
-      "section": "13.2"
+      "task2b_result": "fixed"
     },
     "src/part3-tools/ch13-perfetto/03-perfetto-view.md": {
       "chapter": "13.3",
@@ -2543,11 +2619,11 @@
       "task6_state": "revisiting",
       "task9_state": "pending",
       "task2b_state": "fixed",
+      "section": "13.3",
       "reviewed_date": "2026-04-13",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
-      "task2b_result": "fixed",
-      "section": "13.3"
+      "task2b_result": "fixed"
     },
     "src/part3-tools/ch13-perfetto/04-large-traces.md": {
       "chapter": "13.4",
@@ -2558,12 +2634,12 @@
       "task6_state": "revisiting",
       "task9_state": "pending",
       "task2b_state": "fixed",
+      "section": "13.4",
       "reviewed_date": "2026-04-13",
       "reviewed_by": "openclaw-task6",
       "task6_result": "needs-rework",
       "task9_result": "needs-rework",
-      "task2b_result": "fixed",
-      "section": "13.4"
+      "task2b_result": "fixed"
     },
     "src/part3-tools/ch13-perfetto/05-topic-analysis.md": {
       "chapter": "13.5",
@@ -2574,12 +2650,12 @@
       "task6_state": "revisiting",
       "task9_state": "pending",
       "task2b_state": "fixed",
+      "section": "13.5",
       "reviewed_date": "2026-04-13",
       "reviewed_by": "openclaw-task6",
       "task6_result": "needs-rework",
       "task9_result": "needs-rework",
-      "task2b_result": "fixed",
-      "section": "13.5"
+      "task2b_result": "fixed"
     },
     "src/part3-tools/ch13-perfetto/06-thread-cpu-states.md": {
       "chapter": "13.6",
@@ -2590,9 +2666,9 @@
       "task6_state": "reviewed",
       "task9_state": "pending",
       "task2b_state": "idle",
+      "section": "13.6",
       "reviewed_date": "2026-04-17",
-      "reviewed_by": "openclaw-task6",
-      "section": "13.6"
+      "reviewed_by": "openclaw-task6"
     },
     "src/part3-tools/ch13-perfetto/07-advanced-usage.md": {
       "chapter": "13.7",
@@ -2603,20 +2679,24 @@
       "task6_state": "reviewed",
       "task9_state": "pending",
       "task2b_state": "pending",
+      "section": "13.7",
       "reviewed_date": "2026-04-14",
       "reviewed_by": "openclaw-task6",
-      "task6_result": "needs-rework",
-      "section": "13.7"
+      "task6_result": "needs-rework"
     },
     "src/part3-tools/ch13-perfetto/08-input-latency-sql.md": {
-      "chapter": null,
-      "title": "08-input-latency-sql",
+      "chapter": "13.8",
+      "title": "Perfetto 输入延迟 SQL 深度分析",
       "path": "src/part3-tools/ch13-perfetto/08-input-latency-sql.md",
-      "status": "unknown",
-      "pipeline_stage": "unknown",
-      "task6_state": "unknown",
-      "task9_state": "unknown",
-      "task2b_state": "unknown"
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
+      "task9_state": "pending",
+      "task2b_state": "fixed",
+      "section": "13.8",
+      "reviewed_date": "2026-04-13",
+      "reviewed_by": "openclaw-task6",
+      "task2b_result": "fixed"
     },
     "src/part3-tools/ch13-perfetto/09-tracing-infrastructure.md": {
       "chapter": "13.9",
@@ -2627,11 +2707,11 @@
       "task6_state": "revisiting",
       "task9_state": "pending",
       "task2b_state": "fixed",
+      "section": "13.9",
       "reviewed_date": "2026-04-13",
       "reviewed_by": "openclaw-task6",
       "task6_result": "needs-rework",
-      "task9_result": "needs-rework",
-      "section": "13.9"
+      "task9_result": "needs-rework"
     },
     "src/part3-tools/ch13-perfetto/10-perfetto-sql-cookbook.md": {
       "chapter": "13.10",
@@ -2642,11 +2722,11 @@
       "task6_state": "revisiting",
       "task9_state": "pending",
       "task2b_state": "fixed",
+      "section": "13.10",
       "reviewed_date": "2026-04-13",
       "reviewed_by": "openclaw-task6",
       "task6_result": "needs-rework",
-      "task2b_result": "fixed",
-      "section": "13.10"
+      "task2b_result": "fixed"
     },
     "src/part3-tools/ch13-perfetto/README.md": {
       "chapter": null,
@@ -2667,29 +2747,30 @@
       "task6_state": "reviewed",
       "task9_state": "reviewed",
       "task2b_state": "idle",
+      "section": "14.1",
       "reviewed_date": "2026-04-15",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
       "task9_result": "pass-tech-review-with-notes",
-      "section": "14.1"
+      "task9_reviewed_date": "2026-04-17"
     },
     "src/part3-tools/ch14-other-tools/02-simpleperf.md": {
-      "path": "src/part3-tools/ch14-other-tools/02-simpleperf.md",
       "chapter": "14.2",
       "title": "Simpleperf",
+      "path": "src/part3-tools/ch14-other-tools/02-simpleperf.md",
       "status": "finalized",
       "pipeline_stage": "ready-to-publish",
       "task6_state": "reviewed",
       "task9_state": "reviewed",
       "task2b_state": "fixed",
+      "section": "14.2",
       "reviewed_date": "2026-04-15",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
       "task9_result": "pass-tech-review",
       "task2b_result": "fixed",
-      "section": "14.2",
-      "task9_reviewed_by": "openclaw-task9",
       "task9_reviewed_date": "2026-04-20",
+      "task9_reviewed_by": "openclaw-task9",
       "last_task9_at": "2026-04-20T03:17:47+08:00"
     },
     "src/part3-tools/ch14-other-tools/03-memory-tools.md": {
@@ -2701,14 +2782,12 @@
       "task6_state": "revisiting",
       "task9_state": "pending",
       "task2b_state": "fixed",
+      "section": "14.3",
       "reviewed_date": "2026-04-17",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
-      "section": "14.3",
       "task9_result": "needs-rework",
-      "task2b_result": "fixed",
-      "task2b_rework_date": "2026-04-20",
-      "task2b_fixed_at": "2026-04-20"
+      "task2b_result": "fixed"
     },
     "src/part3-tools/ch14-other-tools/04-dumpsys.md": {
       "chapter": "14.4",
@@ -2719,11 +2798,11 @@
       "task6_state": "revisiting",
       "task9_state": "pending",
       "task2b_state": "fixed",
+      "section": "14.4",
       "reviewed_date": "2026-04-14",
       "reviewed_by": "openclaw-task6",
       "task6_result": "rework-done",
-      "task9_result": "rework-done",
-      "section": "14.4"
+      "task9_result": "rework-done"
     },
     "src/part3-tools/ch14-other-tools/05-third-party-libs.md": {
       "chapter": "14.5",
@@ -2734,11 +2813,11 @@
       "task6_state": "reviewed",
       "task9_state": "reviewed",
       "task2b_state": "pending",
+      "section": "14.5",
       "reviewed_date": "2026-04-14",
       "reviewed_by": "openclaw-task6",
       "task6_result": "needs-rework",
-      "task9_result": "needs-rework",
-      "section": "14.5"
+      "task9_result": "needs-rework"
     },
     "src/part3-tools/ch14-other-tools/06-automation-tools.md": {
       "chapter": "14.6",
@@ -2749,10 +2828,10 @@
       "task6_state": "reviewed",
       "task9_state": "pending",
       "task2b_state": "idle",
+      "section": "14.6",
       "reviewed_date": "2026-04-16",
       "reviewed_by": "openclaw-task6",
-      "task6_result": "pass-light-edit",
-      "section": "14.6"
+      "task6_result": "pass-light-edit"
     },
     "src/part3-tools/ch14-other-tools/07-profiling-manager.md": {
       "chapter": "14.7",
@@ -2763,12 +2842,12 @@
       "task6_state": "revisiting",
       "task9_state": "pending",
       "task2b_state": "fixed",
+      "section": "14.7",
       "reviewed_date": "2026-04-19",
       "reviewed_by": "openclaw-task6",
       "task6_result": "needs-rework",
       "task9_result": "needs-rework",
-      "task2b_result": "fixed",
-      "section": "14.7"
+      "task2b_result": "fixed"
     },
     "src/part3-tools/ch14-other-tools/08-gpu-debug-tools.md": {
       "chapter": "14.8",
@@ -2779,10 +2858,10 @@
       "task6_state": "revisiting",
       "task9_state": "pending",
       "task2b_state": "fixed",
+      "section": "14.8",
       "reviewed_date": "2026-04-14",
       "reviewed_by": "openclaw-task6",
-      "task6_result": "needs-rework",
-      "section": "14.8"
+      "task6_result": "needs-rework"
     },
     "src/part3-tools/ch14-other-tools/09-camera-performance-analysis.md": {
       "chapter": "14.9",
@@ -2793,11 +2872,11 @@
       "task6_state": "revisiting",
       "task9_state": "pending",
       "task2b_state": "fixed",
+      "section": "14.9",
       "reviewed_date": "2026-04-14",
       "reviewed_by": "openclaw-task6",
       "task6_result": "needs-rework",
-      "task2b_result": "fixed",
-      "section": "14.9"
+      "task2b_result": "fixed"
     },
     "src/part3-tools/ch14-other-tools/10-ebpf-performance-analysis.md": {
       "chapter": "14.10",
@@ -2808,10 +2887,10 @@
       "task6_state": "revisiting",
       "task9_state": "pending",
       "task2b_state": "fixed",
+      "section": "14.10",
       "reviewed_date": "2026-04-14",
       "reviewed_by": "openclaw-task6",
-      "task6_result": "needs-rework",
-      "section": "14.10"
+      "task6_result": "needs-rework"
     },
     "src/part3-tools/ch14-other-tools/11-battery-historian.md": {
       "chapter": "14.11",
@@ -2822,10 +2901,10 @@
       "task6_state": "revisiting",
       "task9_state": "pending",
       "task2b_state": "fixed",
+      "section": "14.11",
       "reviewed_date": "2026-04-16",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
-      "section": "14.11",
       "task9_result": "needs-rework",
       "task2b_result": "fixed"
     },
@@ -2848,11 +2927,11 @@
       "task6_state": "revisiting",
       "task9_state": "pending",
       "task2b_state": "fixed",
+      "section": "15.1",
       "reviewed_date": "2026-04-15",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
-      "task2b_result": "fixed",
-      "section": "15.1"
+      "task2b_result": "fixed"
     },
     "src/part3-tools/ch15-methodology/02-system-vs-app.md": {
       "chapter": "15.2",
@@ -2863,10 +2942,10 @@
       "task6_state": "reviewed",
       "task9_state": "pending",
       "task2b_state": "idle",
+      "section": "15.2",
       "reviewed_date": "2026-04-16",
       "reviewed_by": "openclaw-task6",
-      "task6_result": "pass-light-edit",
-      "section": "15.2"
+      "task6_result": "pass-light-edit"
     },
     "src/part3-tools/ch15-methodology/03-metrics.md": {
       "chapter": "15.3",
@@ -2877,12 +2956,13 @@
       "task6_state": "revisiting",
       "task9_state": "reviewed",
       "task2b_state": "fixed",
+      "section": "15.3",
       "reviewed_date": "2026-04-17",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "task2b_result": "partial-fixed",
-      "section": "15.3"
+      "task9_reviewed_date": "2026-04-17"
     },
     "src/part3-tools/ch15-methodology/04-competitive-analysis.md": {
       "chapter": "15.4",
@@ -2893,10 +2973,10 @@
       "task6_state": "reviewed",
       "task9_state": "pending",
       "task2b_state": "idle",
+      "section": "15.4",
       "reviewed_date": "2026-04-17",
       "reviewed_by": "openclaw-task6",
-      "task6_result": "pass-light-edit",
-      "section": "15.4"
+      "task6_result": "pass-light-edit"
     },
     "src/part3-tools/ch15-methodology/05-online-monitoring.md": {
       "chapter": "15.5",
@@ -2907,12 +2987,15 @@
       "task6_state": "revisiting",
       "task9_state": "pending",
       "task2b_state": "fixed",
+      "section": "15.5",
       "reviewed_date": "2026-04-17",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
-      "section": "15.5"
+      "task9_reviewed_date": "2026-04-19",
+      "task9_reviewed_by": "openclaw-task9",
+      "last_task9_at": "2026-04-19T09:03:50+08:00"
     },
     "src/part3-tools/ch15-methodology/06-testing-best-practices.md": {
       "chapter": "15.6",
@@ -2923,10 +3006,10 @@
       "task6_state": "reviewed",
       "task9_state": "pending",
       "task2b_state": "fixed",
+      "section": "15.6",
       "reviewed_date": "2026-04-17",
       "reviewed_by": "openclaw-task6",
-      "task6_result": "needs-rework",
-      "section": "15.6"
+      "task6_result": "needs-rework"
     },
     "src/part3-tools/ch15-methodology/07-aosp-reading.md": {
       "chapter": "15.7",
@@ -2937,11 +3020,12 @@
       "task6_state": "reviewed",
       "task9_state": "pending",
       "task2b_state": "fixed",
+      "section": "15.7",
       "reviewed_date": "2026-04-18",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
-      "section": "15.7"
+      "task9_reviewed_date": "2026-04-17"
     },
     "src/part3-tools/ch15-methodology/08-empirical-performance-issues.md": {
       "chapter": "15.8",
@@ -2952,12 +3036,15 @@
       "task6_state": "revisiting",
       "task9_state": "pending",
       "task2b_state": "fixed",
+      "section": "15.8",
       "reviewed_date": "2026-04-17",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
-      "section": "15.8"
+      "task9_reviewed_date": "2026-04-18",
+      "task9_reviewed_by": "openclaw-task9",
+      "last_task9_at": "2026-04-18T16:41:43+08:00"
     },
     "src/part3-tools/ch15-methodology/README.md": {
       "chapter": null,
@@ -2978,10 +3065,13 @@
       "task6_state": "revisiting",
       "task9_state": "reviewed",
       "task2b_state": "pending",
+      "section": "16.1",
       "reviewed_date": "2026-04-19",
       "reviewed_by": "openclaw-task6",
       "task9_result": "needs-rework",
-      "section": "16.1"
+      "task9_reviewed_date": "2026-04-19",
+      "task9_reviewed_by": "openclaw-task9",
+      "last_task9_at": "2026-04-19T07:43:40+08:00"
     },
     "src/part4-system/ch16-aosp/02-version-changes.md": {
       "chapter": "16.2",
@@ -2992,10 +3082,10 @@
       "task6_state": "reviewed",
       "task9_state": "pending",
       "task2b_state": "idle",
+      "section": "16.2",
       "reviewed_date": "2026-04-17",
       "reviewed_by": "openclaw-task6",
-      "task6_result": "pass-light-edit",
-      "section": "16.2"
+      "task6_result": "pass-light-edit"
     },
     "src/part4-system/ch16-aosp/03-aosp-build.md": {
       "chapter": "16.3",
@@ -3006,10 +3096,10 @@
       "task6_state": "reviewed",
       "task9_state": "pending",
       "task2b_state": "idle",
+      "section": "16.3",
       "reviewed_date": "2026-04-17",
       "reviewed_by": "openclaw-task6",
-      "task6_result": "pass-light-edit",
-      "section": "16.3"
+      "task6_result": "pass-light-edit"
     },
     "src/part4-system/ch16-aosp/04-android17-kernel612-performance.md": {
       "chapter": "16.4",
@@ -3020,10 +3110,10 @@
       "task6_state": "reviewed",
       "task9_state": "pending",
       "task2b_state": "idle",
+      "section": "16.4",
       "reviewed_date": "2026-04-17",
       "reviewed_by": "openclaw-task6",
-      "task6_result": "pass-light-edit",
-      "section": "16.4"
+      "task6_result": "pass-light-edit"
     },
     "src/part4-system/ch16-aosp/05-android17-api37-performance-changes.md": {
       "chapter": "16.5",
@@ -3034,11 +3124,11 @@
       "task6_state": "revisiting",
       "task9_state": "pending",
       "task2b_state": "fixed",
+      "section": "16.5",
       "reviewed_date": "2026-04-15",
       "reviewed_by": "openclaw-task6",
       "task6_result": "revisiting",
-      "task2b_result": "fixed",
-      "section": "16.5"
+      "task2b_result": "fixed"
     },
     "src/part4-system/ch16-aosp/README.md": {
       "chapter": null,
@@ -3059,38 +3149,38 @@
       "task6_state": "reviewed",
       "task9_state": "pending",
       "task2b_state": "idle",
+      "section": "17.1",
       "reviewed_date": "2026-04-16",
       "reviewed_by": "openclaw-task6",
-      "task6_result": "pass-light-edit",
-      "section": "17.1"
+      "task6_result": "pass-light-edit"
     },
     "src/part4-system/ch17-oem/02-soc-differences.md": {
       "chapter": "17.2",
       "title": "SoC 平台差异",
       "path": "src/part4-system/ch17-oem/02-soc-differences.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "pipeline_stage": "task6_pending",
       "task6_state": "reviewed",
       "task9_state": "pending",
       "task2b_state": "idle",
+      "section": "17.2",
       "reviewed_date": "2026-04-17",
       "reviewed_by": "openclaw-task6",
-      "task6_result": "pass-light-edit",
-      "section": "17.2"
+      "task6_result": "pass-light-edit"
     },
     "src/part4-system/ch17-oem/03-industry-cases.md": {
       "chapter": "17.3",
       "title": "行业案例",
       "path": "src/part4-system/ch17-oem/03-industry-cases.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "pipeline_stage": "task6_pending",
       "task6_state": "reviewed",
       "task9_state": "pending",
       "task2b_state": "idle",
+      "section": "17.3",
       "reviewed_date": "2026-04-17",
       "reviewed_by": "openclaw-task6",
-      "task6_result": "pass-light-edit",
-      "section": "17.3"
+      "task6_result": "pass-light-edit"
     },
     "src/part4-system/ch17-oem/README.md": {
       "chapter": null,
@@ -3180,9 +3270,10 @@
   },
   "summary": {
     "status_counts": {
-      "unknown": 37,
-      "ready-for-review": 163,
-      "finalized": 9
+      "unknown": 2,
+      "ready-for-review": 164,
+      "ready-to-publish": 0,
+      "finalized": 10
     }
   }
 }
