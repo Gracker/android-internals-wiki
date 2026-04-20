@@ -13,8 +13,6 @@ sources:
   - type: aosp
     path: "frameworks/native/cmds/atrace/"
   - type: aosp
-    path: "system/traced/"
-  - type: aosp
     path: "external/perfetto/src/traced/"
   - type: official
     path: "https://source.android.com/docs/core/debug/atrace"
@@ -24,14 +22,17 @@ sources:
     path: "intake/research-feeds/2026-04-07-19-android17-ebpf-sched-ext-uprobestats-observability.md"
 tags: [tracing, atrace, ftrace, tracepoint, perfetto, kernel, observability]
 related_chapters: ["13.1", "13.2", "13.5", "14.10", "1.5"]
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: pending
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
+task2b_state: fixed
 reviewed_by: openclaw-task6
 reviewed_date: "2026-04-21"
+rework_date: "2026-04-21"
+rework_by: openclaw-task2b
 task6_result: pass-light-edit
 task9_result: needs-rework
+task2b_result: fixed
 last_task9_at: "2026-04-21T03:54:40+08:00"
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-04-21"
@@ -125,10 +126,10 @@ ftrace 是内核层的机制。Android 应用和 Framework 代码运行在用户
 
 例如：
 - `atrace sched` → 启用 ftrace 的 `sched_switch`, `sched_wakeup`, `sched_wakeup_new` 等 tracepoint
-- `atrace gfx` → 启用 `drm_vblank_event` + 用户空间 tag `gfx`
+- `atrace gfx` → 主线实现里至少启用 `ATRACE_TAG_GRAPHICS`，并可附带 `events/gpu_mem/gpu_mem_total/enable` 这类 graphics 相关 sysfs 开关；厂商还可以追加自己的 vendor categories，因此不能把 `gfx` 直接等同为某一个固定的 kernel event
 - `atrace freq` → 启用 `cpu_frequency`, `cpu_idle` 等 tracepoint
 
-[已验证: AOSP android-17-beta3, frameworks/native/cmds/atrace/atrace.cpp]
+[已验证: AOSP main, frameworks/native/cmds/atrace/atrace.cpp]
 
 Perfetto 的 `TraceConfig.ftrace_events` 直接绕过 atrace 的分类，直接操作 ftrace 的 event 名称。这也是为什么 Perfetto 比 atrace 更灵活——我们可以精确指定需要哪些 tracepoint，而不受 atrace 预设分类的限制。
 
@@ -149,11 +150,16 @@ Perfetto 的 `TraceConfig.ftrace_events` 直接绕过 atrace 的分类，直接�
 
 这就是为什么 Perfetto 中的用户空间追踪事件能和内核的 `sched_switch` 等事件出现在同一根时间线上——它们共用同一个 ring buffer。
 
-### atrace 在启动过程中的角色
+### atrace / Perfetto 在启动过程中的角色
 
-Android 系统启动时（init 进程阶段），如果检测到 `persist.sys.atrace.boot` 属性为 `1`，atrace 会自动启用 boot trace 模式，持续采集启动过程中的追踪数据。这对于分析冷启动耗时、系统服务初始化顺序等问题非常有用。boot trace 数据最终写入 `/data/misc/trace/` 目录。
+启动期 trace 需要按版本区分两条路径。
 
-[待验证: Android 17 中 boot trace 的默认配置是否仍然使用此属性]
+- **较早的 atrace boot trace**：`init` 监听 `persist.debug.atrace.boottrace=1`，随后启动 `boottrace` 服务。该服务实际执行的是 `atrace --async_start -f /data/misc/boottrace/categories`，从 `/data/misc/boottrace/categories` 读取 category 列表，把事件写进内核 trace buffer。它没有固定的 trace 文件输出目录，通常要在系统起来后再执行 `atrace --async_stop -z -o <path>` 导出结果。
+- **Android 13+ 的 Perfetto boot trace**：`perfetto.rc` 监听 `persist.debug.perfetto.boottrace=1`，启动 `perfetto_trace_on_boot`。配置文件固定放在 `/data/misc/perfetto-configs/boottrace.pbtxt`，输出文件固定写到 `/data/misc/perfetto-traces/boottrace.perfetto-trace`。
+
+两条路径都依赖 init 属性触发，但落盘方式不同。atrace 负责先把 trace 挂到 ring buffer 上，Perfetto 则在启动期直接按配置生成可分析的 `.perfetto-trace` 文件。
+
+[已验证: AOSP main, frameworks/native/cmds/atrace/atrace.rc, external/perfetto/perfetto.rc]
 
 ## Perfetto traced 守护进程与数据流
 

@@ -1,30 +1,30 @@
 {
-  "generated_at": "2026-04-21T03:54:40+08:00",
+  "generated_at": "2026-04-21T04:34:34+08:00",
   "state_machine_version": "v2",
-  "total_sections": 175,
+  "total_sections": 174,
   "metrics": {
     "total": 174,
     "unknown": 0,
-    "last_updated": "2026-04-21T03:54:40+08:00",
+    "last_updated": "2026-04-21T04:34:34+08:00",
     "task2b_state_counts": {
-      "fixed": 127,
+      "fixed": 130,
       "idle": 21,
-      "pending": 24,
-      "unknown": 2
+      "pending": 22,
+      "unknown": 1
     },
     "task9_state_counts": {
-      "pending": 114,
-      "reviewed": 59,
+      "pending": 116,
+      "reviewed": 57,
       "fixed": 1
     },
     "pipeline_stage_counts": {
-      "task6_pending": 79,
+      "task6_pending": 75,
       "ready-to-publish": 26,
-      "task9_pending": 47,
-      "task2b_pending": 22
+      "task9_pending": 53,
+      "task2b_pending": 20
     },
-    "pipeline_task9_pending": 47,
-    "pipeline_task2b_pending": 22,
+    "pipeline_task9_pending": 53,
+    "pipeline_task2b_pending": 20,
     "pipeline_ready_to_publish": 26,
     "ready-to-publish": 0,
     "finalized": 26,
@@ -32,24 +32,24 @@
   },
   "pipeline": {
     "pipeline_stage_counts": {
-      "task6_pending": 79,
+      "task6_pending": 75,
       "ready-to-publish": 26,
-      "task9_pending": 47,
-      "task2b_pending": 22
+      "task9_pending": 53,
+      "task2b_pending": 20
     },
     "task2b_state_counts": {
-      "fixed": 127,
+      "fixed": 130,
       "idle": 21,
-      "pending": 24,
-      "unknown": 2
+      "pending": 22,
+      "unknown": 1
     },
     "task6_state_counts": {
-      "revisiting": 72,
-      "reviewed": 102
+      "revisiting": 68,
+      "reviewed": 106
     },
     "task9_state_counts": {
-      "pending": 114,
-      "reviewed": 59,
+      "pending": 116,
+      "reviewed": 57,
       "fixed": 1
     }
   },
@@ -649,10 +649,11 @@
       "task6_state": "revisiting",
       "task9_state": "pending",
       "task2b_state": "fixed",
-      "reviewed_date": "2026-04-15",
+      "reviewed_date": "2026-04-21",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
+      "task2b_result": "fixed",
       "task9_reviewed_date": "2026-04-17",
       "task9_reviewed_by": "openclaw-task9",
       "section": "2.10"
@@ -2783,19 +2784,19 @@
       "title": "Android Tracing 基础设施：atrace、ftrace 与 Perfetto 数据采集原理",
       "chapter": "13.9",
       "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
-      "task6_state": "reviewed",
-      "task9_state": "reviewed",
-      "task2b_state": "pending",
-      "reviewed_date": "2026-04-13",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
+      "task9_state": "pending",
+      "task2b_state": "fixed",
+      "reviewed_date": "2026-04-21",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
-      "section": "13.9",
-      "task6_reviewed_date": "2026-04-21",
+      "task2b_result": "fixed",
       "task9_reviewed_date": "2026-04-21",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-21T03:54:40+08:00"
+      "last_task9_at": "2026-04-21T03:54:40+08:00",
+      "section": "13.9"
     },
     "src/part3-tools/ch13-perfetto/10-perfetto-sql-cookbook.md": {
       "path": "src/part3-tools/ch13-perfetto/10-perfetto-sql-cookbook.md",
@@ -3367,9 +3368,9 @@
     "2.10": {
       "task6_last_review": "2026-04-21",
       "task6_result": "pass-light-edit",
-      "task6_state": "reviewed",
+      "task6_state": "revisiting",
       "task6_review_round": 6,
-      "task6_b_issues": 1
+      "task6_b_issues": 0
     },
     "4.4": {
       "task6_last_review": "2026-04-21",
@@ -3381,8 +3382,8 @@
   },
   "summary": {
     "status_counts": {
-      "ready-for-review": 149,
-      "finalized": 25
+      "ready-for-review": 148,
+      "finalized": 26
     }
   },
   "7.13": {
@@ -3476,8 +3477,8 @@
   ],
   "last_review": "2026-04-21T02:51",
   "status_counts": {
-    "ready-for-review": 149,
-    "finalized": 25
+    "ready-for-review": 148,
+    "finalized": 26
   },
   "8.9": {
     "status": "ready-for-review",

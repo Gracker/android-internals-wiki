@@ -903,8 +903,11 @@
       ],
       "added_by": "task6-review",
       "added_at": "2026-04-21T03:25:00",
-      "status": "pending",
-      "original_review_log": "logs/review/2026-04-21-03-review.md"
+      "status": "completed",
+      "original_review_log": "logs/review/2026-04-21-03-review.md",
+      "completed_at": "2026-04-21T04:34:34+08:00",
+      "completed_by": "task2b-content-processing-rework",
+      "resolution": "已把实战案例的瓶颈确认步骤改成 AGI GPU Counters 判读，删除与正文冲突的降分辨率方法，并顺手修正同章一处待验证注释的 Markdown 格式。"
     },
     {
       "section": "12.3",
@@ -950,7 +953,10 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-21T03:54:40+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-04-21T04:34:34+08:00",
+      "completed_by": "task2b-content-processing-rework",
+      "resolution": "已按版本拆开 atrace boot trace 与 Perfetto boot trace，修正 gfx category 说明，删除错误的 system/traced 源码路径，并补齐可直接定位的 AOSP 锚点。"
     },
     {
       "section": "5.3",
