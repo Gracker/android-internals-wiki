@@ -11,9 +11,11 @@ last_verified_against: "AOSP android-16.0.0_r1 + kernel.org sched-ext docs"
 confidence: medium
 sources:
   - type: aosp
-    path: "packages/modules/UprobeStats/src/"
+    path: "packages/modules/UprobeStats/src/bpf_progs/"
   - type: aosp
     path: "system/bpf/"
+  - type: aosp
+    path: "frameworks/native/services/gpuservice/bpfprogs/gpuMem.c"
   - type: blog
     path: "Cubox/在 Android 中使用 eBPF：开篇-2022-06-12.md"
   - type: blog
@@ -44,10 +46,10 @@ gap_source: "AOSP结构+官方文档+研究素材"
 polish_count: 1
 polish_date: "2026-04-08"
 polish_by: "task2b-polish"
-pipeline_stage: task2b_pending
+pipeline_stage: task6_pending
 task6_state: revisiting
-task9_state: reviewed
-task2b_state: pending
+task9_state: pending
+task2b_state: fixed
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-04-14"
 task6_result: needs-rework
@@ -55,6 +57,7 @@ task9_result: needs-rework
 task9_reviewed_date: "2026-04-20"
 task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-04-20T21:48:59+08:00"
+task2b_result: fixed
 ---
 
 # 14.10 eBPF/BPF 在 Android 性能分析中的应用
@@ -63,7 +66,7 @@ last_task9_at: "2026-04-20T21:48:59+08:00"
 
 eBPF（extended Berkeley Packet Filter）改变了这类分析方式。它让我们能在内核中安全运行自定义追踪程序，用更低的观测开销拿到更细粒度的数据。Android 从 10 开始在系统侧使用 eBPF，Android 15 引入 UprobeStats 做动态埋点，Linux 6.12 的 sched_ext 又把 eBPF 推进到调度器扩展。
 
-读完这一节，我们应该能回答四个问题：Android 上已经有哪些 eBPF 基础设施，哪些工具链现在就能用，sched_ext 对后续调度器演进意味着什么，以及 eBPF 分析的边界在哪里。
+读完这一节，我们应该能回答四个问题：Android 上已经有哪些 eBPF 基础设施，哪些工具链现在就能用，sched_ext 会给后续调度器演进带来什么变化，以及 eBPF 分析的边界在哪里。
 
 <!-- outline-start -->
 <!--
@@ -119,7 +122,7 @@ eBPF 的工作方式完全不同。它的事件处理程序运行在内核态，
 
 [图：eBPF 与传统性能分析工具的对比——从开销、精度、安全性、适用场景四个维度]
 
-对 Android 来说，GKI（General Kernel Image）的出现让 eBPF 真正可用。在 GKI 之前，不同设备的内核编译选项千差万别，eBPF 的核心功能（如 BTF 类型信息）在很多设备上根本不可用。Android 12 开始强制要求设备使用 GKI 内核，而 GKI 内核完整支持 eBPF 的几乎所有功能——这意味着在一台 GKI 设备上编写的 eBPF 程序，可以在任何其他 GKI 设备上运行。
+对 Android 来说，GKI（General Kernel Image）的出现让 eBPF 真正可用。在 GKI 之前，不同设备的内核编译选项千差万别，eBPF 的核心功能（如 BTF 类型信息）在很多设备上根本不可用。Android 12 开始强制要求设备使用 GKI 内核，而 GKI 内核完整支持 eBPF 的几乎所有功能。这样一来，在一台 GKI 设备上编写的 eBPF 程序，可以在任何其他 GKI 设备上运行。
 
 [已验证: 官方文档, source.android.com/docs/core/architecture/kernel/bpf]
 
@@ -151,12 +154,15 @@ eBPF 程序的一个传统难题是内核版本兼容性。不同内核版本的
 
 ### AOSP 中 eBPF 程序的位置
 
-AOSP 中系统级 eBPF 程序主要分布在以下路径：
+按 android-16.0.0_r1 去看，能直接落到源码文件的目录主要是下面几处：
 
-- `system/bpf/`：BPF loader 和基础框架
-- `system/netd/bpf_progs/`：网络相关的 eBPF 程序
-- `packages/modules/UprobeStats/`：Android 15 引入的用户态动态追踪框架
-- `frameworks/base/services/core/jni/`：部分与框架服务集成的 BPF 程序
+| 路径 | 这里放的是什么 | 本章要用到的观察点 |
+|---|---|---|
+| `system/bpf/` | Android 的 BPF loader、共享头文件和基础框架 | 系统级 BPF 能力的装载入口 |
+| `packages/modules/UprobeStats/src/bpf_progs/` | UprobeStats 随模块下发的 BPF 程序，如 `BitmapAllocation.c`、`GenericInstrumentation.c`、`MalwareSignal.c`、`ProcessManagement.c` | 动态埋点与 user space instrumentation 的主线源码 |
+| `frameworks/native/services/gpuservice/bpfprogs/gpuMem.c` | GPU 内存统计用的 BPF 程序 | GPU memory tracking 的具体实现锚点 |
+
+`netd` 确实大量使用 BPF maps 和程序，但在 android-16.0.0_r1 中，`system/netd/bpf_progs/` 不是可直接定位到源码文件的目录。`frameworks/base/services/core/jni/` 里也没有适合作为本章锚点的 BPF program，它更接近 JNI bridge 和服务侧 native 代码。写 AOSP 路径时，最好把“谁在使用 BPF”和“BPF 程序源码放在哪里”拆开。
 
 [已验证: AOSP android-16.0.0_r1]
 
@@ -234,7 +240,7 @@ bpftrace 的 `stats()` 函数会自动计算均值、方差、最大值、最小
 
 ## UprobeStats 与动态埋点
 
-Android 15 引入的 UprobeStats 是 eBPF 在 Android 上的一个代表性落地场景。它利用 eBPF 的 uprobe 机制实现了"零代码侵入"的动态埋点——不需要在 Framework 代码中插入统计逻辑，只需编写一个配置文件指定要监控的 Java 方法，系统就会自动采集执行数据并上报给 StatsD。
+Android 15 引入的 UprobeStats 是 eBPF 在 Android 上的一个代表性使用场景。它利用 eBPF 的 uprobe 机制实现了"零代码侵入"的动态埋点——不需要在 Framework 代码中插入统计逻辑，只需编写一个配置文件指定要监控的 Java 方法，系统就会自动采集执行数据并上报给 StatsD。
 
 ### UprobeStats 的工作原理
 
@@ -401,7 +407,7 @@ simpleperf record -a -g --exclude-perf \
 实际情况：非 GKI 设备上 eBPF 功能严重受限（缺少 BTF、内核版本过低）。即使是 GKI 设备，在 user 版本上加载自定义 eBPF 程序也受 SELinux 策略限制。自定义 eBPF 追踪通常需要 userdebug/eng 版本或 root 权限。
 
 **误区：eBPF 对性能完全没有影响。**
-实际情况：eBPF 程序本身开销很低（单次执行 <100ns），但高频事件会累积可观的开销。以 uprobe 为例，如果追踪的函数每秒被调用 100 万次，即使每次只花 100ns，累积就是 100ms/s——占了一个 CPU 核心的 10%。在使用 eBPF 追踪前，需要评估目标事件的频率。
+实际情况：eBPF 回调通常很轻，但开销没有一个跨设备通用常数。probe 类型、helper 调用次数、map 访问、ringbuf 写入、栈回溯和内核版本都会把成本拉开。事件频率一高，哪怕单次开销不大，累计代价也会很快显现。使用前先估目标事件频率，再决定是全量追踪、采样，还是加过滤条件。
 
 **误区：bpftrace 可以直接在 Android 上使用。**
 实际情况：bpftrace 不是 Android 标准工具链的一部分，需要从源码编译或使用第三方构建。Android 上更实际的做法是使用 Simpleperf 的 `--uprobe`/`--kprobe` 选项，或者通过 AOSP 构建系统编译自定义 eBPF 程序。
@@ -417,9 +423,9 @@ simpleperf record -a -g --exclude-perf \
 
 ### 性能开销
 
-虽然 eBPF 程序经过 JIT 编译为本机指令、单次执行开销通常在纳秒级（社区基准测试约 100ns [待验证: 来源为 eBPF.io 社区数据]），但每次事件触发都会执行一次 BPF 程序，如果事件频率极高（如每秒百万次的内存分配），累积开销仍然不可忽略。在 Perfetto 中，过度密集的 eBPF 事件可能导致 trace 文件膨胀。
+虽然 eBPF 程序经过 JIT 编译后通常只做很短的工作，常见 probe 回调往往落在纳秒到亚微秒量级，但这里没有固定的“100ns 标准答案”。helper 调用、map 类型、ringbuf 写入、符号解析、栈回溯和设备内核配置都会改变成本。如果事件频率极高，比如内存分配、调度切换或热点函数入口，累计开销仍然可能不可忽略。在 Perfetto 中，过密的 eBPF 事件也会让 trace 文件快速膨胀。
 
-一般经验：uprobe/kprobe 触发频率较低时（如每秒万次级别），CPU 开销可以忽略；频率越高（百万次/秒），累积开销越需要评估。
+经验做法是先测频率，再决定追踪粒度。万次每秒以下的 uprobe/kprobe 往往更容易控制；到十万次、百万次每秒这个量级时，过滤条件、采样率和写出路径都要先压住。
 
 ### 与 SELinux 的交互
 
@@ -445,7 +451,8 @@ eBPF 程序运行在内核态，调试手段有限。不能像用户态程序那
 ## 参考资料
 
 - AOSP eBPF 文档：https://source.android.com/docs/core/architecture/kernel/bpf
-- AOSP UprobeStats 源码：https://cs.android.com/android/platform/superproject/main/+/main:packages/modules/UprobeStats/src/
+- AOSP UprobeStats BPF 程序：https://cs.android.com/android/platform/superproject/main/+/main:packages/modules/UprobeStats/src/bpf_progs/
+- AOSP GPU memory BPF 程序：https://cs.android.com/android/platform/superproject/main/+/main:frameworks/native/services/gpuservice/bpfprogs/gpuMem.c
 - Linux kernel sched_ext 文档：https://kernel.org/doc/html/latest/scheduler/sched-ext.html
 - sched-ext 项目：https://github.com/sched-ext/scx
 - Cubox/在 Android 中使用 eBPF：开篇-2022-06-12.md

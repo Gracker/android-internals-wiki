@@ -1,61 +1,57 @@
 {
-  "generated_at": "2026-04-20T20:35:40+08:00",
+  "generated_at": "2026-04-20T22:47:21+08:00",
   "state_machine_version": "v2",
-  "total_sections": 176,
+  "total_sections": 173,
   "metrics": {
-    "total": 176,
-    "unknown": 2,
-    "last_updated": "2026-04-20T20:35:40+08:00",
+    "total": 173,
+    "unknown": 0,
+    "last_updated": "2026-04-20T22:47:21+08:00",
     "task2b_state_counts": {
-      "unknown": 2,
-      "fixed": 129,
-      "idle": 23,
-      "pending": 22
+      "fixed": 130,
+      "idle": 21,
+      "pending": 21,
+      "unknown": 1
     },
     "task9_state_counts": {
-      "unknown": 1,
-      "pending": 127,
-      "reviewed": 47,
+      "pending": 123,
+      "reviewed": 49,
       "fixed": 1
     },
     "pipeline_stage_counts": {
-      "unknown": 1,
-      "task6_pending": 98,
-      "ready-to-publish": 16,
-      "task9_pending": 40,
-      "task2b_pending": 21
+      "task6_pending": 88,
+      "ready-to-publish": 19,
+      "task9_pending": 44,
+      "task2b_pending": 19,
+      "'task9_pending'": 3
     },
-    "pipeline_task9_pending": 40,
-    "pipeline_task2b_pending": 21,
-    "pipeline_ready_to_publish": 16,
+    "pipeline_task9_pending": 44,
+    "pipeline_task2b_pending": 19,
+    "pipeline_ready_to_publish": 19,
     "ready-to-publish": 0,
-    "finalized": 16,
-    "ready-for-review": 158
+    "finalized": 19,
+    "ready-for-review": 154
   },
   "pipeline": {
     "pipeline_stage_counts": {
-      "unknown": 30,
-      "task6_pending": 98,
-      "task2b_pending": 20,
-      "ready-to-publish": 18,
-      "task9_pending": 39
+      "task6_pending": 88,
+      "ready-to-publish": 19,
+      "task9_pending": 44,
+      "task2b_pending": 19,
+      "'task9_pending'": 3
     },
     "task2b_state_counts": {
-      "unknown": 2,
-      "fixed": 129,
-      "idle": 23,
-      "pending": 22
+      "fixed": 130,
+      "idle": 21,
+      "pending": 21,
+      "unknown": 1
     },
     "task6_state_counts": {
-      "unknown": 30,
-      "reviewed": 85,
-      "revisiting": 92,
-      "pending": 1
+      "revisiting": 81,
+      "reviewed": 92
     },
     "task9_state_counts": {
-      "unknown": 1,
-      "pending": 127,
-      "reviewed": 47,
+      "pending": 123,
+      "reviewed": 49,
       "fixed": 1
     }
   },
@@ -1820,7 +1816,7 @@
       "task2b_result": "fixed",
       "task9_reviewed_date": "2026-04-20",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-20T15:59:02+08:00",
+      "last_task9_at": "2026-04-20T21:48:59+08:00",
       "section": "8.10"
     },
     "src/part2-performance/ch08-responsiveness/09-game-performance.md": {
@@ -2720,13 +2716,18 @@
       "title": "线程 CPU 状态分析",
       "chapter": "13.6",
       "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
-      "task6_state": "reviewed",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
       "task9_state": "pending",
-      "task2b_state": "idle",
+      "task2b_state": "fixed",
       "reviewed_date": "2026-04-17",
       "reviewed_by": "openclaw-task6",
-      "section": "13.6"
+      "section": "13.6",
+      "task9_result": "needs-rework",
+      "task2b_result": "fixed",
+      "task9_reviewed_date": "2026-04-20",
+      "task9_reviewed_by": "openclaw-task9",
+      "last_task9_at": "2026-04-20T21:48:59+08:00"
     },
     "src/part3-tools/ch13-perfetto/07-advanced-usage.md": {
       "path": "src/part3-tools/ch13-perfetto/07-advanced-usage.md",
@@ -2948,7 +2949,12 @@
       "reviewed_date": "2026-04-14",
       "reviewed_by": "openclaw-task6",
       "task6_result": "needs-rework",
-      "section": "14.10"
+      "section": "14.10",
+      "task9_result": "needs-rework",
+      "task2b_result": "fixed",
+      "task9_reviewed_date": "2026-04-20",
+      "task9_reviewed_by": "openclaw-task9",
+      "last_task9_at": "2026-04-20T21:48:59+08:00"
     },
     "src/part3-tools/ch14-other-tools/11-battery-historian.md": {
       "path": "src/part3-tools/ch14-other-tools/11-battery-historian.md",
@@ -3328,9 +3334,8 @@
   },
   "summary": {
     "status_counts": {
-      "unknown": 2,
-      "ready-for-review": 159,
-      "finalized": 15
+      "ready-for-review": 154,
+      "finalized": 19
     }
   },
   "7.13": {

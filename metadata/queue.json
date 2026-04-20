@@ -602,7 +602,10 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-20T21:48:59+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-04-20T22:47:21+08:00",
+      "completed_by": "task2b-content-processing-rework",
+      "resolution": "已补充 36.1 trigger 的 Extension SDK gating、本地 testing mode 与 redaction/debug 命令，并区分 Android 15 和 Android 16+ 的验证路径。"
     },
     {
       "section": "13.6",
@@ -622,7 +625,10 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-20T21:48:59+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-04-20T22:47:21+08:00",
+      "completed_by": "task2b-content-processing-rework",
+      "resolution": "已把 Wall/CPU 关系改成全部 off-CPU 口径，补充 sched_waking 只表示变为 runnable 的边界，并新增 D 状态 io_wait 对照表与 SQL。"
     },
     {
       "section": "14.10",
@@ -642,7 +648,10 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-20T21:48:59+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-04-20T22:47:21+08:00",
+      "completed_by": "task2b-content-processing-rework",
+      "resolution": "已修正 AOSP eBPF 路径到 system/bpf、UprobeStats bpf_progs 和 gpuMem.c，并把开销量化降回带条件的经验表述。"
     }
   ]
 }
