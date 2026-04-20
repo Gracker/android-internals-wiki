@@ -1,4 +1,7 @@
 ---
+last_task9_at: "2026-04-20T11:51:17+08:00"
+task9_reviewed_by: openclaw-task9
+task9_reviewed_date: 2026-04-20
 title: "Thermal 管控深度：从内核子系统到 ADPF 主动降频"
 chapter: "5.12"
 status: ready-for-review
@@ -37,14 +40,13 @@ created_by: "task2a-knowledge-gap"
 created_date: "2026-04-09"
 gap_source: "官方文档+研究素材+AOSP结构+读者需求"
 gap_score: "18/20"
-pipeline_stage: task9_pending
+pipeline_stage: task2b_pending
 task6_state: reviewed
 reviewed_date: "2026-04-20"
 reviewed_by: "openclaw-task6"
 task6_result: pass-light-edit
-task9_state: pending
-task2b_state: fixed
-task2b_result: fixed
+task9_state: reviewed
+task2b_state: pending
 task9_result: needs-rework
 ---
 
