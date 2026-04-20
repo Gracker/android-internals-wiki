@@ -1,50 +1,50 @@
 {
-  "generated_at": "2026-04-20T13:13:29+08:00",
+  "generated_at": "2026-04-20T13:38:00+08:00",
   "state_machine_version": "v2",
   "total_sections": 176,
   "metrics": {
     "total": 176,
     "unknown": 2,
-    "last_updated": "2026-04-20T13:13:29+08:00",
+    "last_updated": "2026-04-20T13:38:00+08:00",
     "task2b_state_counts": {
       "unknown": 2,
-      "fixed": 127,
+      "fixed": 125,
       "idle": 25,
-      "pending": 22
+      "pending": 24
     },
     "task9_state_counts": {
       "unknown": 1,
-      "pending": 130,
-      "reviewed": 44,
+      "pending": 127,
+      "reviewed": 47,
       "fixed": 1
     },
     "pipeline_stage_counts": {
       "unknown": 1,
       "task6_pending": 91,
-      "ready-to-publish": 14,
-      "task9_pending": 49,
-      "task2b_pending": 21
+      "ready-to-publish": 15,
+      "task9_pending": 46,
+      "task2b_pending": 23
     },
-    "pipeline_task9_pending": 49,
-    "pipeline_task2b_pending": 21,
-    "pipeline_ready_to_publish": 14,
+    "pipeline_task9_pending": 46,
+    "pipeline_task2b_pending": 23,
+    "pipeline_ready_to_publish": 15,
     "ready-to-publish": 0,
-    "finalized": 14,
-    "ready-for-review": 160
+    "finalized": 15,
+    "ready-for-review": 159
   },
   "pipeline": {
     "pipeline_stage_counts": {
       "unknown": 1,
       "task6_pending": 91,
-      "ready-to-publish": 14,
-      "task9_pending": 49,
-      "task2b_pending": 21
+      "ready-to-publish": 15,
+      "task9_pending": 46,
+      "task2b_pending": 23
     },
     "task2b_state_counts": {
       "unknown": 2,
-      "fixed": 127,
+      "fixed": 125,
       "idle": 25,
-      "pending": 22
+      "pending": 24
     },
     "task6_state_counts": {
       "unknown": 1,
@@ -54,8 +54,8 @@
     },
     "task9_state_counts": {
       "unknown": 1,
-      "pending": 130,
-      "reviewed": 44,
+      "pending": 127,
+      "reviewed": 47,
       "fixed": 1
     }
   },
@@ -1419,16 +1419,18 @@
       "title": "卡顿的定义与分类",
       "chapter": "7.1",
       "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
-      "task9_state": "pending",
-      "task2b_state": "fixed",
+      "task9_state": "reviewed",
+      "task2b_state": "pending",
       "reviewed_date": "2026-04-20",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
-      "task2b_result": "fixed",
-      "section": "7.1"
+      "section": "7.1",
+      "task9_reviewed_by": "openclaw-task9",
+      "task9_reviewed_date": "2026-04-20",
+      "last_task9_at": "2026-04-20T13:38:00+08:00"
     },
     "src/part2-performance/ch07-smoothness/02-jank-causes.md": {
       "path": "src/part2-performance/ch07-smoothness/02-jank-causes.md",
@@ -1484,16 +1486,18 @@
       "title": "优化策略",
       "chapter": "7.5",
       "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
-      "task9_state": "pending",
-      "task2b_state": "fixed",
+      "task9_state": "reviewed",
+      "task2b_state": "pending",
       "reviewed_date": "2026-04-20",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
-      "task2b_result": "fixed",
-      "section": "7.5"
+      "section": "7.5",
+      "task9_reviewed_by": "openclaw-task9",
+      "task9_reviewed_date": "2026-04-20",
+      "last_task9_at": "2026-04-20T13:38:00+08:00"
     },
     "src/part2-performance/ch07-smoothness/06-case-studies.md": {
       "path": "src/part2-performance/ch07-smoothness/06-case-studies.md",
@@ -1549,17 +1553,20 @@
       "path": "src/part2-performance/ch07-smoothness/09-perceived-smoothness.md",
       "title": "感知流畅性：步幅波动与无掉帧卡顿",
       "chapter": "7.9",
-      "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "task6_state": "reviewed",
-      "task9_state": "pending",
+      "task9_state": "reviewed",
       "task2b_state": "fixed",
       "reviewed_date": "2026-04-20",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
-      "task9_result": "needs-rework",
+      "task9_result": "pass-tech-review",
       "task2b_result": "fixed",
-      "section": "7.9"
+      "section": "7.9",
+      "task9_reviewed_by": "openclaw-task9",
+      "task9_reviewed_date": "2026-04-20",
+      "last_task9_at": "2026-04-20T13:38:00+08:00"
     },
     "src/part2-performance/ch07-smoothness/10-image-bitmap-performance.md": {
       "path": "src/part2-performance/ch07-smoothness/10-image-bitmap-performance.md",
