@@ -106,7 +106,10 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-20T12:34:00+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-04-20T13:12:02+08:00",
+      "completed_by": "task2b-content-processing-rework",
+      "resolution": "已拆开 Android 11 主窗口 BLAST 与 Android 12+ 分析口径，补齐 ViewRootImpl / BLASTBufferQueue 锚点，并修正 Overlay plane 边界与相关章节索引。"
     },
     {
       "section": "18.9",
@@ -171,7 +174,10 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-20T12:34:00+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-04-20T13:12:02+08:00",
+      "completed_by": "task2b-content-processing-rework",
+      "resolution": "已删除编造 API、跨设备系统能力和伪造 Perfetto 口径，按 ACTION_OPEN_EYE_DROPPER + EXTRA_COLOR 重写调用链、隐私边界、观测方法和应用层协作方案。"
     },
     {
       "section": "18.0",
