@@ -1073,7 +1073,10 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-21T04:38:00+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-04-21T06:04:49+08:00",
+      "completed_by": "task2b-content-processing-rework",
+      "resolution": "已补 GKI stable KMI / vendor modules 边界，改正 F2FS 与 dm-verity 源码锚点，并把 generational GC 改为 Android 17 对既有分代 GC 的增强。"
     },
     {
       "section": "14.11",
@@ -1158,7 +1161,10 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-21T05:29:00+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-04-21T06:04:49+08:00",
+      "completed_by": "task2b-content-processing-rework",
+      "resolution": "已改正 Baseline Profile 的插件化接入方式，统一为 proguard-android-optimize.txt + full mode 配置边界，并同步修正 Disney+ / 常见误区段落。"
     },
     {
       "section": "9.3",
