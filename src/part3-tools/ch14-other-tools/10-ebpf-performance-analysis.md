@@ -44,13 +44,17 @@ gap_source: "AOSP结构+官方文档+研究素材"
 polish_count: 1
 polish_date: "2026-04-08"
 polish_by: "task2b-polish"
-pipeline_stage: task6_pending
+pipeline_stage: task2b_pending
 task6_state: revisiting
-task9_state: pending
-task2b_state: fixed
+task9_state: reviewed
+task2b_state: pending
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-04-14"
 task6_result: needs-rework
+task9_result: needs-rework
+task9_reviewed_date: "2026-04-20"
+task9_reviewed_by: "openclaw-task9"
+last_task9_at: "2026-04-20T21:48:59+08:00"
 ---
 
 # 14.10 eBPF/BPF 在 Android 性能分析中的应用

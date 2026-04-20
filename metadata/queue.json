@@ -583,6 +583,66 @@
       "completed_at": "2026-04-20T20:35:40+08:00",
       "completed_by": "task2b-content-processing-rework",
       "resolution": "已把非 Google Play 安装路径改回 ProfileInstaller + bg-dexopt 口径，并补齐“包内有 profile”与“设备端已完成编译”的边界。"
+    },
+    {
+      "section": "8.10",
+      "section_title": "ProfilingManager 系统触发式性能追踪",
+      "priority": 85,
+      "reason": "[Deep Tech Review] 章节遗漏 ProfilingManager 官方 redaction / debug mode / trigger testing 路径，Android 16+ 与 Android 15 的本地验证边界未交代。",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "版本差异/知识盲区",
+          "location": "全文，尤其“在工具中的表现与验证路径”与“版本演进”",
+          "detail": "官方 ProfilingManager 文档明确给出结果默认会被 redaction、本地调试下 Android 16+ 使用 `device_config put profiling_testing delete_temporary_results.disabled true` 保留 redacted + unredacted 临时结果，Android 15 则走 `delete_unredacted_trace.disabled` 与 `/pkg/files/profiling` → `/pkg/cache` 路径；system-triggered trigger 测试还需要 `device_config put profiling_testing system_triggered_profiling.testing_package_name <pkg>`。当前章节没有交代这组验证入口，读者无法在真机上复现实验，也看不到 15 与 16+ 的行为分层。",
+          "suggestion": "补一段“本地验证与 redaction 边界”，把 Android 15 与 Android 16+ 的调试命令、结果可见性、testing package 开关和“结果只保留请求进程信息”的约束写清。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-04-20T21:48:59+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "13.6",
+      "section_title": "线程 CPU 状态分析",
+      "priority": 95,
+      "reason": "[Deep Tech Review] Wall/CPU 公式写错，遗漏 Uninterruptible Sleep 等 off-CPU 状态，会直接误导 Perfetto 判读。",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误/原理断裂",
+          "location": "L167-L176",
+          "detail": "章节写成 `Wall = CPU + Runnable + Sleep`，但同文后面已经把 `Uninterruptible Sleep (D)` 作为核心线程态展开。Perfetto 中的 Wall Duration 覆盖所选时间窗里的全部线程态，不能把 D 等 off-CPU 时间从公式里抹掉，否则会把“CPU 少、Wall 大”的 I/O / fence / 内核阻塞场景误判成只有 Runnable/Sleep 两类等待。",
+          "suggestion": "把公式改成“Wall = CPU + 该时间窗内全部 off-CPU 状态之和”，或直接写成“Wall 与 CPU 的差值需要再回 thread_state 看 Runnable / S / D 等分布”，不要给出漏项公式。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-04-20T21:48:59+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "14.10",
+      "section_title": "eBPF/BPF 在 Android 性能分析中的应用",
+      "priority": 95,
+      "reason": "[Deep Tech Review] AOSP eBPF 源码路径表包含不存在或错误目录，读者无法按文中路径定位 netd 与 framework 侧 BPF 实现。",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "location": "L148-L156",
+          "detail": "章节把 AOSP eBPF 程序位置写成 `system/netd/bpf_progs/` 和 `frameworks/base/services/core/jni/`。实际检查 AOSP main：`system/netd/bpf_progs/` 不存在，`frameworks/base/services/core/jni/` 目录也没有 BPF program；GPU memory 相关程序在 `frameworks/native/services/gpuservice/bpfprogs/gpuMem.c`，UprobeStats 的 BPF 程序在 `packages/modules/UprobeStats/src/bpf_progs/`。当前路径表会把源码核对直接带偏。",
+          "suggestion": "把路径表改成可实际定位的目录，并把“netd 通过 eBPF 工作”与“BPF 对象源码放在哪个仓目录”拆开写，避免把不存在的目录当成 canonical path。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-04-20T21:48:59+08:00",
+      "status": "pending"
     }
   ]
 }
