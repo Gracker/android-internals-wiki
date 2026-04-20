@@ -4065,3 +4065,32 @@
 - **问题**：正文只写“受限时长”与 `Mode.GAME_LOADING` boost，但没把 AOSP `GameManagerService` 里的 `LOADING_BOOST_MAX_DURATION = 5 * 1000` 默认上限写出来。长加载场景下，读者不容易判断 boost 何时会自动退场。
 - **建议**：补一句 AOSP 默认上限 5 秒，并注明超出 5 秒的加载流程需要分段上报 loading，或接受 boost 超时后回落。
 
+
+
+## [External Review] 14.8 GPU 图形调试与分析工具 — 2026-04-21
+- **类型**：数据支撑
+- **位置**：案例 1：UI 渲染中的 GPU 带宽瓶颈
+- **问题**：使用"待验证：具体优化数据来自类似场景的经验，非本案例实测"的编造数据降低可信度
+- **建议**：使用真实开源项目（如 Plaid 或 Now in Android）的真实 trace 截图和带宽降低比例
+- **来源**：Gemini 外部 review
+
+## [External Review] 14.9 Android Camera 性能与 Perfetto 分析 — 2026-04-21
+- **类型**：数据缺失
+- **位置**：HAL3 管线延迟段落（待验证标记处）
+- **问题**：缺少不同 SoC 平台（高通/联发科/三星）上 HAL3 管线延迟的典型值
+- **建议**：补充参考值——ZSL 开启时约 2-3 帧（66-100ms），关闭 ZSL 更长，ISP 处理约 10-20ms
+- **来源**：Gemini 外部 review
+
+## [External Review] 14.10 eBPF/BPF 在 Android 性能分析中的应用 — 2026-04-21
+- **类型**：原理链完整性
+- **位置**：UprobeStats 工作原理段落
+- **问题**：未提及 RingBuf 在高频触发方法时可能丢失事件以保护内核性能
+- **建议**：补充说明 UprobeStats 中 eBPF 程序通过 RingBuf 送数据给用户态 Collector 时的高频 drop 风险
+- **来源**：Gemini 外部 review
+
+## [External Review] 14.10 eBPF/BPF 在 Android 性能分析中的应用 — 2026-04-21
+- **类型**：事实修正
+- **位置**：bpftrace 可用性描述
+- **问题**：断言 bpftrace 不是 Android 标准工具链一部分，但 AOSP external/bpftrace 自 Android 12/13 已引入
+- **建议**：修正表述，说明 AOSP external/bpftrace 项目存在且 userdebug 环境下可编译使用
+- **来源**：Gemini 外部 review

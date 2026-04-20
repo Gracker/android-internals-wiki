@@ -2646,3 +2646,86 @@
 
 ### 外部 review 来源
 - Gemini 外部 review (2026-04-20-13-README-external-review.md)
+
+
+## [2026-04-21] 14.8 GPU 图形调试与分析工具 — 知识盲区
+
+### 盲区描述
+AGI 底层架构演进方向不明确。AGI 传统基于 GAPID 追踪框架，Samsung Sokatoa 基于 GFXReconstruct，但 Google 是否将 AGI 的 Frame Profiler 底层完全切换为 GFXReconstruct 缺乏官方确认。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 确认 AGI 是否正在或已经合入 GFXReconstruct 相关代码（cs.android.com 搜索 AGI 源码）
+- 搜索 "Android GPU Inspector" "GFXReconstruct" 关键词获取官方声明
+
+### 关联章节
+- 14.8
+- 14.10
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-20)
+
+---
+
+## [2026-04-21] 14.8 GPU 图形调试与分析工具 — ANGLE 版本差异
+
+### 盲区描述
+Android 15/16/17 中 ANGLE 作为默认 GLES 驱动的渐进策略细节未梳理。需要明确 `ro.gfx.angle.supported` 和默认驱动选择的属性变化逻辑。
+
+### 重要程度
+中
+
+### 建议研究方向
+- AOSP 中关于 ANGLE 默认驱动选择属性的版本变化逻辑
+- Android 15 Developer Options 中 ANGLE 切换机制
+
+### 关联章节
+- 14.8
+- 2.6 SurfaceFlinger 与合成
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-20)
+
+---
+
+## [2026-04-21] 14.9 Android Camera 性能与 Perfetto 分析 — 知识盲区
+
+### 盲区描述
+CameraMetadataNative 的内存回收机制演进未覆盖。Android 10+ 已使用 NativeAllocationRegistry 替代 Finalizer，App 层实际拿到 TotalCaptureResult 而非 CameraMetadataNative，无法直接 close。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 查阅 AOSP 中 CameraMetadataNative.java 的 NativeAllocationRegistry 使用情况
+- 梳理 Camera API 中 CaptureResult 持有与 GC 触发机制
+- 搜索: AOSP CameraMetadataNative NativeAllocationRegistry
+
+### 关联章节
+- 14.9
+- 11.2 App 耗电优化
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-20)
+
+---
+
+## [2026-04-21] 14.10 eBPF/BPF 在 Android 性能分析中的应用 — 知识盲区
+
+### 盲区描述
+bpftrace 在 AOSP 的集成现状未准确描述。自 Android 12/13 起 AOSP external/bpftrace 已引入，userdebug/eng 版本可通过 m bpftrace 编译运行。
+
+### 重要程度
+中
+
+### 建议研究方向
+- 查阅 external/bpftrace 在 Android 14/15 的编译支持和系统预置情况
+- 搜索: AOSP external/bpftrace
+
+### 关联章节
+- 14.10
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-20)
