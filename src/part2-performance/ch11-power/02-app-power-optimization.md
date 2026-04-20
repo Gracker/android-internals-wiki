@@ -10,9 +10,12 @@ reviewed_by: "openclaw-task6"
 polish_count: 1
 polish_date: "2026-04-07"
 polish_by: "task2b-polish"
+rework_count: 1
+rework_date: "2026-04-20"
+rework_by: "task2b-rework"
 applicable_versions: "Android 5.0 (API 21) - Android 16 (API 36)"
-last_verified: "2026-04-03"
-last_verified_against: "AOSP android-16.0.0_r1"
+last_verified: "2026-04-20"
+last_verified_against: "AOSP android-16.0.0_r1, Android Developers exact alarm / foreground service docs"
 confidence: medium-high
 sources:
   - type: official
@@ -44,15 +47,19 @@ sources:
   - type: official
     path: "https://developer.android.com/about/versions/14/changes/fgs-types-required"
   - type: official
+    path: "https://developer.android.com/develop/background-work/services/fgs/restrictions-bg-start"
+  - type: official
     path: "https://developer.android.com/develop/background-work/services/fgs/timeout"
+  - type: official
+    path: "https://developer.android.com/about/versions/14/changes/schedule-exact-alarms"
 tags: ['wakelock', 'jobscheduler', 'workmanager', 'doze', 'location', 'alarm', 'power', 'fgs', 'foreground-service', 'fcm', 'alarmmanager', 'geofencing', 'battery-historian', 'camera']
 related_chapters: ["11.1", "11.3", "5.6", "5.4", "5.10", "11.5"]
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
-task9_state: reviewed
+task9_state: pending
 task9_result: needs-rework
-task2b_state: pending
+task2b_state: fixed
 task2b_result: fixed
 task9_reviewed_date: "2026-04-20"
 task9_reviewed_by: "openclaw-task9"
@@ -323,13 +330,15 @@ Android 的闹钟分为两种：精确闹钟（exact alarm）和不精确闹钟�
 
 [已验证: 官方文档, developer.android.com/reference/android/app/AlarmManager]
 
-### Android 14 的 SCHEDULE_EXACT_ALARM 权限
+### Android 12 引入精确闹钟 special app access，Android 14 收紧默认授权
 
-从 Android 14 开始，非闹钟/日历类 App 默认不能使用精确闹钟。App 需要声明 `SCHEDULE_EXACT_ALARM` 权限，而且用户可以在设置中关闭这个权限。
+`SCHEDULE_EXACT_ALARM` 不是 Android 14 才出现的限制。Android 12（API 31）已经把它作为精确闹钟的 special app access 引入。对 `setExact()`、`setExactAndAllowWhileIdle()` 和 `setAlarmClock()` 这类 API，应用应先调用 `AlarmManager.canScheduleExactAlarms()` 检查授权状态；没有授权时，用 `Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM` 引导用户进入系统设置页。
 
-这个变化背后的逻辑是：精确闹钟的功耗影响太大，应该由用户决定哪些 App 有权使用。如果 App 只是需要定时执行后台任务，应该用 WorkManager 而不是 AlarmManager。
+Android 14（API 34）的变化在默认授权策略。对 targetSdk 33+ 的多数新安装应用，`SCHEDULE_EXACT_ALARM` 不再预授予，备份恢复到 Android 14 设备时也按 denied 处理。系统升级前已经拿到这项 special app access 的存量应用，升级后通常会保留授权。闹钟和日历这类以精确提醒为主功能的应用，可以按官方分类声明 `USE_EXACT_ALARM`。
 
-[已验证: 官方文档, developer.android.com/about/versions/14/behavior-changes-14#schedule-exact-alarms]
+这个变化的影响是：如果业务只是定时同步、重试、批量上报，优先用 WorkManager 或不精确闹钟；只有提醒、闹钟、倒计时结束这类用户明确期待准点触发的场景，才值得继续走 exact alarm。
+
+[已验证: 官方文档, developer.android.com/about/versions/14/changes/schedule-exact-alarms]
 
 ### setAndAllowWhileIdle 的使用限制
 
@@ -355,7 +364,13 @@ Android 14（API 34）对 FGS 的治理经历了重大变革，系统从"信任�
 
 ### FGS 类型与权限
 
-Android 14 要求所有前台服务必须声明一个具体类型（如 `location`、`camera`、`mediaPlayback`），并且在 Manifest 中声明对应的权限（如 `FOREGROUND_SERVICE_LOCATION`）。如果类型和权限不匹配，系统会抛出 `MissingForegroundServiceTypeException`。
+Android 14 要求前台服务同时满足三层约束：Manifest 里的 `android:foregroundServiceType`、对应的 `FOREGROUND_SERVICE_*` 清单权限，以及运行时前置条件。
+
+- **缺少 service type**：targetSdk 34+ 的服务如果没有声明 `foregroundServiceType`，调用 `startForeground()` 时会抛 `MissingForegroundServiceTypeException`。
+- **类型权限或运行时权限不满足**：如果缺少对应的 `FOREGROUND_SERVICE_*` 权限，或者 location / camera / microphone 这类 while-in-use 权限在当前状态下不可用，系统更常抛 `SecurityException`。
+- **后台启动条件不满足**：如果问题出在 background start exemption 不成立，例如应用已经退到后台又不满足豁免条件，常见结果是 `ForegroundServiceStartNotAllowedException`。
+
+排查 FGS 失败时，要把这三类入口分开看。把“类型和权限不匹配”一概归到 `MissingForegroundServiceTypeException`，会把日志判读带偏。
 
 新增的 FGS 类型中，有两个值得特别关注：
 
@@ -406,7 +421,7 @@ Camera 往往是高功耗器件，实际开销和分辨率、帧率、HDR、EIS/
 
 Audio 的功耗优化主要关注两个方面：
 
-**避免使用不必要的高采样率**。44.1kHz 对于大多数应用已经足够，96kHz 虽然在专业音频场景有价值，但在普通 App 中只是浪费处理能力。
+**避免使用不必要的高采样率**。多数普通媒体播放和语音业务用 44.1kHz 或 48kHz 就够了。96kHz 更常见于专业采集、低延迟监听或外接音频接口场景，是否值得开启要看 codec、输出路径和设备是否真的支持高采样率直通。若最终仍在 AudioFlinger / HAL 里被重采样，处理开销会上去，听感收益不一定能保留下来。
 
 **后台播放需要 FGS**。从 Android 12 开始，后台播放音乐必须使用 `mediaPlayback` 类型的 FGS。这是合理的要求——后台音频确实需要持续运行，但系统需要通过通知告知用户。
 
