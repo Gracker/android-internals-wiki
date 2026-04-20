@@ -222,6 +222,52 @@
       "added_by": "external-ai-review",
       "added_at": "2026-04-20T12:57:45.948236+08:00",
       "status": "pending"
+    },
+    {
+      "section": "7.1",
+      "section_title": "卡顿的定义与分类",
+      "priority": 95,
+      "reason": "[Deep Tech Review] `JankInfo.h` 源码锚点写成 `frameworks/native/services/surfaceflinger/FrameTimeline/JankInfo.h`，与 android-16.0.0_r1 实际源码树不符。",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "location": "frontmatter sources / 参考资料 L22 / L326",
+          "detail": "android-16.0.0_r1 的 `services/surfaceflinger/FrameTimeline/` 目录只有 `FrameTimeline.cpp` 和 `FrameTimeline.h`。`FrameTimeline.h` 实际 include 的是 `<gui/JankInfo.h>`，对应源码文件在 `frameworks/native/libs/gui/include/gui/JankInfo.h`。当前路径会让读者在 AOSP 主线中无法定位 JankType 定义。",
+          "suggestion": "把 JankType 定义的源码锚点改成 `frameworks/native/libs/gui/include/gui/JankInfo.h`；若要解释 SurfaceFlinger 侧归因逻辑，再配套引用 `frameworks/native/services/surfaceflinger/FrameTimeline/FrameTimeline.cpp`。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-04-20T13:38:00+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "7.5",
+      "section_title": "优化策略",
+      "priority": 95,
+      "reason": "[Deep Tech Review] RenderEffect API 版本写错，且 RecyclerView / SnapHelper 的 ARR 版本边界仍停留在 `[待验证]`。",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "版本差异/源码错误",
+          "location": "L209",
+          "detail": "正文写成“Android 13+ 使用 `RenderEffect.createBlurEffect()`”，但该 API 在官方 reference 中标注为 API 31，引入版本是 Android 12，不是 Android 13。当前写法会把 RenderEffect 的可用版本整体后移一代。",
+          "suggestion": "改成“Android 12+ 可用 `RenderEffect.createBlurEffect()`”；如果要讨论 Android 13+/16 的实现差异，需要补具体 API、驱动或平台证据，不能直接把方法可用性写成 13+。"
+        },
+        {
+          "type": "版本差异/原理断裂",
+          "location": "L168",
+          "detail": "RecyclerView 小节把 “SnapHelper 在 Android 16 中是否有新的优化” 留在 `[待验证]`。AndroidX RecyclerView 1.4.0 的官方 release notes 已明确说明：RecyclerView 在通过 `OverScroller` 滚动时会调用 `setFrameContentVelocity()` 以支持 adaptive refresh rate。当前写法让 Android 15 QPR1+/16 的高刷适配边界没有闭环。",
+          "suggestion": "补成已验证结论，并明确边界是“RecyclerView 1.4.0+ + 平台 ARR 支持 + 通过 OverScroller 的滚动/settling 路径”；不要只写成笼统的“Android 16 新优化”。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-04-20T13:38:00+08:00",
+      "status": "pending"
     }
   ]
 }

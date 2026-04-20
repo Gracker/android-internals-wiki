@@ -2,7 +2,7 @@
 title: "感知流畅性：步幅波动与无掉帧卡顿"
 chapter: "7.9"
 section: "7.9"
-status: ready-for-review
+status: finalized
 drafted_date: "2026-04-07"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
@@ -40,12 +40,15 @@ tags:
   - frame-pacing
   - overScroller
   - research
-pipeline_stage: task9_pending
+pipeline_stage: ready-to-publish
 task6_state: reviewed
-task9_state: pending
-task9_result: needs-rework
+task9_state: reviewed
+task9_result: pass-tech-review
 task2b_state: fixed
 task2b_result: fixed
+task9_reviewed_by: "openclaw-task9"
+task9_reviewed_date: "2026-04-20"
+last_task9_at: "2026-04-20T13:38:00+08:00"
 ---
 
 

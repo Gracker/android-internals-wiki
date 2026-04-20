@@ -2928,3 +2928,9 @@
 - **问题**：阅读建议中的数字引用（如 18.20、18.7）在无序列表中无法被定位，索引标号与列表结构不对应。
 - **建议**：为「本章内容」列表添加明确的 18.X 序号结构，确保上下文引用精准。
 - **来源**：Gemini 外部 review (2026-04-20-11-18.0-external-review.md)
+
+## [Task9 Deep Review] 7.5 优化策略 — 2026-04-20
+- **类型**：交叉引用
+- **位置**：L81 / L182 / L197 / L229 / L385
+- **问题**：跨章节链接使用同目录相对路径，指向 `04-choreographer.md`、`08-overdraw.md`、`07-hardware-layer.md`、`04-binder.md` 等当前目录下不存在的文件，读者无法跳转到 2.x/1.4 章节。
+- **建议**：统一改为实际相对路径，例如 `../../part1-fundamentals/ch02-rendering/04-choreographer.md`、`../../part1-fundamentals/ch02-rendering/08-overdraw.md`、`../../part1-fundamentals/ch02-rendering/07-hardware-layer.md`、`../../part1-fundamentals/ch01-architecture/04-binder.md`，并复核引用标题与目标章节一致。
