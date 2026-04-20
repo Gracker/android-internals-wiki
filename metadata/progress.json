@@ -1,32 +1,32 @@
 {
-  "generated_at": "2026-04-21T05:14:56+08:00",
+  "generated_at": "2026-04-21T05:29:00+08:00",
   "state_machine_version": "v2",
   "total_sections": 212,
   "metrics": {
     "total": 212,
     "unknown": 37,
-    "last_updated": "2026-04-21T05:14:56+08:00",
+    "last_updated": "2026-04-21T05:29:00+08:00",
     "task2b_state_counts": {
-      "unknown": 37,
-      "fixed": 133,
-      "pending": 23,
-      "idle": 19
+      "fixed": 132,
+      "idle": 17,
+      "pending": 26,
+      "unknown": 37
     },
     "task9_state_counts": {
-      "unknown": 36,
-      "reviewed": 55,
-      "pending": 120,
-      "fixed": 1
+      "fixed": 1,
+      "pending": 117,
+      "reviewed": 58,
+      "unknown": 36
     },
     "pipeline_stage_counts": {
-      "unknown": 36,
-      "task6_pending": 99,
-      "task2b_pending": 22,
       "ready-to-publish": 23,
-      "task9_pending": 32
+      "task2b_pending": 25,
+      "task6_pending": 97,
+      "task9_pending": 31,
+      "unknown": 36
     },
-    "pipeline_task9_pending": 32,
-    "pipeline_task2b_pending": 22,
+    "pipeline_task9_pending": 31,
+    "pipeline_task2b_pending": 25,
     "pipeline_ready_to_publish": 23,
     "ready-to-publish": 0,
     "finalized": 23,
@@ -34,29 +34,29 @@
   },
   "pipeline": {
     "pipeline_stage_counts": {
-      "unknown": 36,
-      "task6_pending": 99,
-      "task2b_pending": 22,
       "ready-to-publish": 23,
-      "task9_pending": 32
+      "task2b_pending": 25,
+      "task6_pending": 97,
+      "task9_pending": 31,
+      "unknown": 36
     },
     "task2b_state_counts": {
-      "unknown": 37,
-      "fixed": 133,
-      "pending": 23,
-      "idle": 19
+      "fixed": 132,
+      "idle": 17,
+      "pending": 26,
+      "unknown": 37
     },
     "task6_state_counts": {
-      "unknown": 30,
-      "reviewed": 87,
-      "revisiting": 94,
-      "pending": 1
+      "pending": 1,
+      "reviewed": 89,
+      "revisiting": 92,
+      "unknown": 30
     },
     "task9_state_counts": {
-      "unknown": 36,
-      "reviewed": 55,
-      "pending": 120,
-      "fixed": 1
+      "fixed": 1,
+      "pending": 117,
+      "reviewed": 58,
+      "unknown": 36
     }
   },
   "issues": {
@@ -982,17 +982,19 @@
       "title": "Android 内存模型全景",
       "chapter": "4.1",
       "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
-      "task9_state": "pending",
-      "task2b_state": "fixed",
-      "reviewed_date": "2026-04-14",
+      "task9_state": "reviewed",
+      "task2b_state": "pending",
+      "reviewed_date": "2026-04-21",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
-      "task2b_result": "fixed",
       "section": "4.1",
-      "task6_reviewed_date": "2026-04-21"
+      "task6_reviewed_date": "2026-04-21",
+      "task9_reviewed_date": "2026-04-21",
+      "task9_reviewed_by": "openclaw-task9",
+      "last_task9_at": "2026-04-21T05:29:00+08:00"
     },
     "src/part1-fundamentals/ch04-memory/02-linux-memory.md": {
       "path": "src/part1-fundamentals/ch04-memory/02-linux-memory.md",
@@ -1752,14 +1754,18 @@
       "title": "案例集",
       "chapter": "8.5",
       "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
-      "task9_state": "pending",
-      "task2b_state": "idle",
+      "task9_state": "reviewed",
+      "task2b_state": "pending",
       "reviewed_date": "2026-04-16",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
-      "section": "8.5"
+      "section": "8.5",
+      "task9_result": "needs-rework",
+      "task9_reviewed_date": "2026-04-21",
+      "task9_reviewed_by": "openclaw-task9",
+      "last_task9_at": "2026-04-21T05:29:00+08:00"
     },
     "src/part2-performance/ch08-responsiveness/06-coroutine-performance.md": {
       "path": "src/part2-performance/ch08-responsiveness/06-coroutine-performance.md",
@@ -1904,13 +1910,17 @@
       "title": "ANR 分析方法",
       "chapter": "9.3",
       "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
-      "task9_state": "pending",
-      "task2b_state": "idle",
+      "task9_state": "reviewed",
+      "task2b_state": "pending",
       "reviewed_date": "2026-04-16",
       "reviewed_by": "openclaw-task6",
-      "section": "9.3"
+      "section": "9.3",
+      "task9_result": "needs-rework",
+      "task9_reviewed_date": "2026-04-21",
+      "task9_reviewed_by": "openclaw-task9",
+      "last_task9_at": "2026-04-21T05:29:00+08:00"
     },
     "src/part2-performance/ch09-anr/04-special-anr.md": {
       "path": "src/part2-performance/ch09-anr/04-special-anr.md",

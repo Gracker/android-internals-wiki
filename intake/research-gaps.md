@@ -2781,3 +2781,20 @@ Power Stats HAL（android.hardware.power.stats）接口在 Android 14/15 中的�
 
 ### 外部 review 来源
 - Gemini 外部 review（2026-04-20-14-11-external-review.md）
+
+
+## [2026-04-21] 4.1 Android 内存模型全景 — 知识盲区
+
+### 盲区描述
+章节适用范围覆盖 Android 17，但没有把 Android 15+ 的 16KB page size 纳入内存模型总览。读者在解读 `/proc/<pid>/smaps`、`KernelPageSize/MMUPageSize`、页表/TLB 开销和 mmap 粒度时，会默认沿用 4KB 心智模型。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 梳理 4KB 与 16KB 设备在 `smaps`、PSS/RSS、page table/TLB 成本上的差异
+- 补充 `adb shell getconf PAGE_SIZE`、`KernelPageSize`、`MMUPageSize` 的判读方法
+- 明确 16KB page size 与 4.7 章节的衔接边界，避免重复讲解
+
+### 关联章节
+4.7, 10.1, 16.2
