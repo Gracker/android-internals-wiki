@@ -4,7 +4,7 @@ chapter: "5.7"
 section: "5.7"
 status: ready-for-review
 applicable_versions: "Android 5.0 - 16"
-last_verified: "2026-04-12"
+last_verified: "2026-04-20"
 last_verified_against: "developer.android.com + source.android.com + AOSP android-16.0.0_r1 + android15-6.6.98_r00"
 confidence: medium
 sources:
@@ -14,6 +14,10 @@ sources:
     path: "developer.android.com/about/versions/pie/power"
   - type: official
     path: "developer.android.com/about/versions/12/behavior-changes-12"
+  - type: official
+    path: "developer.android.com/develop/background-work/services/alarms"
+  - type: official
+    path: "developer.android.com/about/versions/15/behavior-changes-all"
   - type: official
     path: "source.android.com/docs/core/power"
   - type: official
@@ -50,11 +54,12 @@ related_chapters:
   - "5.2 EAS 能量感知调度"
   - "5.6 Android 功耗管理"
   - "5.8 后台执行限制与优化"
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
 task9_result: needs-rework
-task2b_state: pending
+task2b_state: fixed
+task2b_result: fixed
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-04-20"
 last_task9_at: "2026-04-20T08:57:48+08:00"
@@ -236,17 +241,17 @@ Android 10 还做了两件和功耗直接相关的改动：
 
 从 Android 12 开始，Google 对后台行为的管控进入了一个新的阶段——不再是大框架的改变，而是对每一个"后门"逐一封堵。这一阶段的特征是：权限管控精细化、前台服务类型化、后台网络访问受限。
 
-### Android 12：精确闹钟需要权限
+### Android 12：精确闹钟进入特殊访问控制
 
-Android 12 引入了 `SCHEDULE_EXACT_ALARM` 权限。在此之前，任何 App 都可以通过 `AlarmManager.setExact()` 或 `setExactAndAllowWhileIdle()` 设置精确闹钟。精确闹钟会绕过 Doze 模式，在指定时刻唤醒 CPU。
+Android 12 把精确闹钟纳入 “Alarms & reminders” 特殊访问。走 `PendingIntent` 形态的 exact alarm，比如 `setExact()`、`setExactAndAllowWhileIdle()`、`setAlarmClock()`，通常需要声明 `SCHEDULE_EXACT_ALARM`，并在运行时确认 `canScheduleExactAlarms()` 为 `true`。缺少这项访问时，相关调用会失败。
 
-从 Android 12 开始，如果要使用精确闹钟 API（`setExact()`、`setExactAndAllowWhileIdle()`、`setAlarmClock()`），必须在 Manifest 中声明这个权限。不声明的话，调用会直接抛出 `SecurityException`。
+这里有一个容易漏掉的边界。官方文档明确写到，如果 exact alarm 走 `OnAlarmListener` 形态，例如 `setExact()` 的 listener 变体，则不需要 `SCHEDULE_EXACT_ALARM`。排查权限问题时，要先区分调用形态，再看权限状态。
 
-对于闹钟类 App 和日历类 App，Google Play 提供了一个更宽松的替代权限 `USE_EXACT_ALARM`（Android 13 引入），这是一个普通权限，安装时自动授予。但 Google Play 会对声明了这个权限的 App 进行政策审查。
+Android 13 起，闹钟类、日历类这类场景还可以声明 `USE_EXACT_ALARM`。它是普通权限，安装时授予，但受 Google Play 政策限制，只适用于少数类别，不能当成通用替代方案。
 
 同时，Android 12 对后台启动前台服务也做了限制。如果 App 处于后台（有少数豁免场景），调用 `startForegroundService()` 会抛出 `ForegroundServiceStartNotAllowedException`。
 
-[已验证: 官方文档, developer.android.com/about/versions/12/behavior-changes-12#exact-alarm-permission]
+[已验证: 官方文档, developer.android.com/develop/background-work/services/alarms；developer.android.com/about/versions/12/behavior-changes-12#exact-alarm-permission]
 
 ### Android 13：精确闹钟默认拒绝 + FGS Task Manager
 
@@ -268,15 +273,15 @@ Android 14 还引入了后台 Activity 启动的显式 opt-in 机制。在此之
 
 [已验证: 官方文档, developer.android.com/about/versions/14/behavior-changes-14]
 
-### Android 15：后台网络访问受限 + Doze 加速
+### Android 15：后台网络请求跟随 valid process lifecycle，Doze 进入更快
 
-Android 15 在两个方面做了重要改进：
+Android 15 新增了后台网络访问限制。官方文档的边界写法是 `valid process lifecycle`：App 在有效进程生命周期之外发起网络请求时，会收到 `UnknownHostException` 或其他 socket 相关 `IOException`。文档没有给出 “`Activity.onStop()` 之后固定几秒必现” 这样的时间承诺，因此排查时应以生命周期边界为准，不要写死秒数。
 
-**后台网络访问被限制**：如果一个 App 在 `Activity.onStop()` 之后不久发起网络请求（即 App 进入了缓存或后台状态），系统会返回 `UnknownHostException`。从 Android 15 开始，后台网络操作必须通过 `WorkManager` 或前台服务来执行。直接在后台线程中做网络请求变得不可靠了。
+对应的工程动作也要跟着改。用户离开界面后仍需继续的网络工作，适合交给 `WorkManager`；任务如果必须保持用户可见，则改走 Foreground Service。普通后台线程上的裸网络请求，在 Android 15 上已经不能当成稳定路径。
 
-**Doze 激活速度提升 50%**：设备进入 Doze 模式的速度比 Android 14 快了一倍。根据 Google 的数据，这可以带来最多 3 小时的额外待机时间。这个变化不需要开发者做任何适配，但对后台任务的时间窗口有影响——App 可能比以前更早被 Doze "冻住"。
+Android 15 还让设备更快进入 Doze。官方行为变更页强调了这个方向，但没有在该页面给出 “50% 更快”“额外 3 小时待机” 这类统一测试口径。写版本演进时保留行为变化即可，不把这两个数字当成 behavior changes 文档里的硬指标。
 
-[已验证: 官方文档, developer.android.com/about/versions/15/behavior-changes-15]
+[已验证: 官方文档, developer.android.com/about/versions/15/behavior-changes-all]
 
 ### [自动发现: 来源 web search - Android developer docs] Android 16：JobScheduler 配额优化
 
@@ -288,7 +293,7 @@ Android 16 继续对 JobScheduler 进行精细化管控。核心变化是 Job �
 
 具体来说：一个在前台启动、用户正在交互时发起的 Job，会获得更多的执行时间；而一个在后台静默启动的 Job，执行时间会更短。同时，Android 16 提供了更好的诊断工具，开发者可以通过 API 查询 Job 为什么没执行或被停止。
 
-[待验证: Android 16 仍处于 beta 阶段，最终行为可能变化]
+[已验证: developer.android.com/about/versions/16/behavior-changes-all；developer.android.com/reference/android/app/job/JobScheduler]
 
 ## GKI 对内核调度模块定制化的影响
 

@@ -2797,7 +2797,10 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-20T08:57:48+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-20T09:35:58+08:00",
+    "completed_by": "task2b-rework",
+    "resolution": "拆开 exact alarm 的 API / 权限边界，补 OnAlarmListener 与 USE_EXACT_ALARM，收回 Android 15 后台网络和 Doze 的过度断言"
   },
   {
     "section": "5.10",
@@ -2829,7 +2832,10 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-20T08:57:48+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-20T09:35:58+08:00",
+    "completed_by": "task2b-rework",
+    "resolution": "修正 JobStore 的跨重启表述、WorkManager 调度主轴与 Android 16 quota 演进，并补 pending 原因接口的上下文"
   },
   {
     "section": "5.11",
