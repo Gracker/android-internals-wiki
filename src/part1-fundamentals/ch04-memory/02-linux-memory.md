@@ -9,9 +9,9 @@ polish_date: "2026-04-06"
 polish_by: "task2b-polish"
 applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
 last_verified: "2026-03-31"
-reviewed_date: "2026-04-14"
-reviewed_by: "openclaw-task6"
-task6_result: needs-rework
+reviewed_date: "2026-04-21"
+reviewed_by: openclaw-task6
+task6_result: pass-light-edit
 last_verified_against: "Linux kernel 6.6 (android14-6.6-lts)"
 confidence: medium
 sources:
@@ -33,8 +33,8 @@ sources:
     path: "Cubox/LPC2025-Android MC主题-2026-01-10.md"
 tags: ['kernel', 'memory', 'buddy', 'slab', 'kswapd', 'page-reclaim', 'compaction', 'ION', 'DMA-BUF', 'LRU', 'MGLRU', '16K-page']
 related_chapters: ["4.1", "4.3", "4.4", "2.6"]
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task9_result: needs-rework
 task2b_state: fixed
@@ -425,7 +425,7 @@ Android 使用 zRAM 替代 swap。回收匿名页时，内核需要将其压缩�
 
 ### "DMA-BUF 内存不算应用的内存"
 
-实际上，通过 DMA-BUF 分配的图形缓冲区在 `/proc/<pid>/smaps` 中是可以追踪的。一个 App 的 Gralloc 内存（主要是图片、Surface buffer）可能占其总内存的 30% 以上。在分析 App 内存问题时，不能忽略图形内存部分。
+通过 DMA-BUF 分配的图形缓冲区在 `/proc/<pid>/smaps` 中是可以追踪的。一个 App 的 Gralloc 内存（主要是图片、Surface buffer）可能占其总内存的 30% 以上。在分析 App 内存问题时，不能忽略图形内存部分。
 
 ## 参考资料
 
