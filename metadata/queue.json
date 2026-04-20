@@ -840,6 +840,32 @@
       ],
       "added_by": "external-ai-review",
       "status": "pending"
+    },
+    {
+      "section": "8.8",
+      "section_title": "Android 多媒体管线性能",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 8.8 把 Media3 1.6/1.8/1.9/1.10 的能力混写成“Media3 1.10 新特性”，且示例硬编码 vendor OMX 组件名，不适合作为 Android 8-17 通用主路径。",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "location": "L107-L112（MediaCodec 示例代码）",
+          "detail": "示例直接写 `MediaCodec.createByCodecName(\"OMX.qcom.video.decoder.avc\")`。这会把 Qualcomm/OMX 组件名误写成通用做法，在 Codec2 命名或非高通设备上不成立，也会掩盖 `createDecoderByType(\"video/avc\")` / `MediaCodecList` 才是跨设备入口。",
+          "suggestion": "把示例改为 MIME type 选 codec，若确需点名具体组件，补一段“仅用于诊断/厂商定制场景，不适合作为跨设备范式”的边界说明。"
+        },
+        {
+          "type": "版本差异",
+          "location": "L229-L245，L452",
+          "detail": "官方 Media3 release notes 显示：ExoPlayer.Builder.experimentalSetDynamicSchedulingEnabled 出现在 1.8.0，PlayerSurface / ContentFrame 在 1.9.0，Player composable 在 1.10.0，ExoPlayer pre-warming 出现在 1.6.0。当前章节把这些能力统一写成“Media3 1.10 新特性”，会把版本线和 API 引入点写乱。",
+          "suggestion": "把段落拆成“1.6 prewarming / 1.8 dynamic scheduling / 1.9 PlayerSurface / 1.10 Player composable”四条，版本表同步改写。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-04-21T02:51:50+08:00",
+      "status": "pending"
     }
   ]
 }
