@@ -65,12 +65,12 @@
 - [x] src/part2-performance/ch18-rendering-pipelines/11-angle-gles-vulkan.md
 - [x] src/part2-performance/ch18-rendering-pipelines/12-flutter-rendering.md
 - [x] src/part2-performance/ch18-rendering-pipelines/13-webview-rendering.md
-- [ ] src/part2-performance/ch18-rendering-pipelines/14-camera-pipeline.md
-- [ ] src/part2-performance/ch18-rendering-pipelines/15-video-overlay-hwc.md
-- [ ] src/part2-performance/ch18-rendering-pipelines/16-game-engine.md
-- [ ] src/part2-performance/ch18-rendering-pipelines/17-hardware-buffer-renderer.md
-- [ ] src/part2-performance/ch18-rendering-pipelines/18-pip-freeform.md
-- [ ] src/part2-performance/ch18-rendering-pipelines/19-variable-refresh-rate.md
-- [ ] src/part2-performance/ch18-rendering-pipelines/20-pipeline-analysis-methodology.md
-- [ ] src/part2-performance/ch18-rendering-pipelines/21-eyedropper-crossdevice.md
-- [ ] src/part2-performance/ch18-rendering-pipelines/README.md
+- [x] src/part2-performance/ch18-rendering-pipelines/14-camera-pipeline.md
+- [x] src/part2-performance/ch18-rendering-pipelines/15-video-overlay-hwc.md
+- [x] src/part2-performance/ch18-rendering-pipelines/16-game-engine.md
+- [x] src/part2-performance/ch18-rendering-pipelines/17-hardware-buffer-renderer.md
+- [x] src/part2-performance/ch18-rendering-pipelines/18-pip-freeform.md
+- [x] src/part2-performance/ch18-rendering-pipelines/19-variable-refresh-rate.md
+- [x] src/part2-performance/ch18-rendering-pipelines/20-pipeline-analysis-methodology.md
+- [x] src/part2-performance/ch18-rendering-pipelines/21-eyedropper-crossdevice.md
+- [x] src/part2-performance/ch18-rendering-pipelines/README.md

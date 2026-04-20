@@ -2913,3 +2913,18 @@
 - **位置**：L220-L247 在 Perfetto 中的表现
 - **问题**：`%eyedropper%` / `%cross_device%` 这类 SQL 关键字和 `<5ms`、`<50ms` 延迟数据没有真实 trace、数据源或官方 trace marker 依据，当前属于伪造的观测口径。
 - **建议**：重写为真实可抓取的证据链，例如 ActivityResult 启动到返回的时序、SystemUI 进程的渲染 slice，以及是否存在公开 trace marker 的核验结果。
+
+
+## [External Review] 18.0 渲染链路全景大纲 — 2026-04-20
+
+- **类型**：结构层级
+- **位置**：「本章内容」列表 — BLASTBufferQueue 条目
+- **问题**：BLAST 深入仅作为 Android View 标准链路的括号补充，层级偏低。BLAST 架构改动极大，涉及 SurfaceControl 事务处理和客户端合并提交，作为括号补充容易被轻视。
+- **建议**：将 BLASTBufferQueue 独立为一个小节，如「BLASTBufferQueue 与现代事务同步链路」。
+- **来源**：Gemini 外部 review (2026-04-20-11-18.0-external-review.md)
+
+- **类型**：交叉引用
+- **位置**：「本章内容」和「阅读建议」
+- **问题**：阅读建议中的数字引用（如 18.20、18.7）在无序列表中无法被定位，索引标号与列表结构不对应。
+- **建议**：为「本章内容」列表添加明确的 18.X 序号结构，确保上下文引用精准。
+- **来源**：Gemini 外部 review (2026-04-20-11-18.0-external-review.md)

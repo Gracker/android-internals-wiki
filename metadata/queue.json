@@ -172,6 +172,50 @@
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-20T12:34:00+08:00",
       "status": "pending"
+    },
+    {
+      "section": "18.0",
+      "section_title": "渲染链路全景大纲 (ch18 README)",
+      "priority": 85,
+      "reason": "[External Review] ch18 README 大纲缺失 BufferQueue/Vsync 底层机制、Frame Timeline 监控抓手、AGSL/RenderEffect 等 Android 12+ 核心图形架构组件，导致后续子章节编写出现知识断层",
+      "material_paths": [
+        "logs/external-review/2026-04-20-11-18.0-external-review.md"
+      ],
+      "review_issues": [
+        {
+          "type": "原理缺失",
+          "location": "本章内容列表",
+          "detail": "大纲列表严重缺失 BufferQueue (IGraphicBufferProducer/Consumer) 和 Vsync (Vsync-app/Vsync-sf) 核心流转机制。所有渲染链路最终都通过 BufferQueue 流转，缺乏此底层机制将导致后续各链路章节原理断层。",
+          "suggestion": "在 Android View 标准链路之前，补充「底层流转核心：BufferQueue 与 Vsync 机制」章节索引。",
+          "evidence": [
+            "AOSP frameworks/native/libs/gui/BufferQueue.cpp",
+            "IGraphicBufferProducer 接口"
+          ]
+        },
+        {
+          "type": "版本差异遗漏",
+          "location": "本章内容列表",
+          "detail": "遗漏 Android 12+ 引入的 Frame Timeline 监控体系和 JankTracker。Frame Timeline 追踪一帧从 App 到 Display 的完整生命周期，是 Perfetto 中分析 Jank 的核心 UI 轨道，替代了旧的 Systrace Vsync 观察法。",
+          "suggestion": "在「链路分析方法论」中新增子话题或单独开设「Frame Timeline 与 Jank 分析模型」。",
+          "evidence": [
+            "frameworks/native/services/surfaceflinger/FrameTimeline/",
+            "Perfetto Expected/Actual Timeline"
+          ]
+        },
+        {
+          "type": "版本差异遗漏",
+          "location": "本章内容列表",
+          "detail": "忽略 Android 12+ 的 RenderEffect / AGSL (Android Graphics Shading Language) 以及可更新 GPU 驱动机制 (Updatable Drivers)。AGSL 是实现复杂 UI 效果的标准途径，可更新 GPU 驱动是性能优化领域重大变革。",
+          "suggestion": "在大纲中纳入 AGSL 与 RenderEffect 渲染机制及可更新 GPU 驱动与 Game Mode API 相关占位章节。",
+          "evidence": [
+            "Android 13+ AGSL 官方文档",
+            "Project Mainline GPU driver module"
+          ]
+        }
+      ],
+      "added_by": "external-ai-review",
+      "added_at": "2026-04-20T12:57:45.948236+08:00",
+      "status": "pending"
     }
   ]
 }

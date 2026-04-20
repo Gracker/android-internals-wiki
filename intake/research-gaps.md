@@ -1303,3 +1303,41 @@
 
 ### 关联章节
 18.21, 2.6, 8.2
+
+
+## [2026-04-20] 18.0 渲染链路全景大纲 (ch18 README) — 知识盲区
+
+### 盲区描述
+ch18 README 大纲作为渲染链路全景指南，严重缺失底层核心机制的章节索引：
+1. BufferQueue (IGraphicBufferProducer/Consumer) 跨进程图像流转机制 — 连接 App 渲染与 SurfaceFlinger 合成的核心桥梁
+2. Frame Timeline (Android 12+) 掉帧追踪体系 — Perfetto 中分析 Jank 的核心 UI 轨道
+3. BLASTBufferQueue 事务同步机制 (Android 11+) — 替代传统 BufferQueue 的现代方案
+4. AGSL (Android Graphics Shading Language, Android 13+) — 实现复杂 UI 效果的标准途径
+
+### 重要程度
+高
+
+### 建议研究方向
+- AOSP `frameworks/native/libs/gui/BufferQueue.cpp` 及 IGraphicBufferProducer 接口模型
+- Perfetto 官方文档 Frame Timeline，AOSP `surfaceflinger/FrameTimeline` 模块
+- Android 11+ BLASTBufferQueue.cpp 与 SurfaceControl Transaction 结合机制
+- Android 13+ AGSL 官方文档、RenderEffect 运行机制及对 GPU 性能的影响
+- Android 12+ 可更新 GPU 驱动与 Game Mode API
+
+### 关联章节
+- 18.1 (渲染管线总览)
+- 18.2 (标准 View 渲染路径)
+- 18.10 (SurfaceControl API)
+- 2.13 (BufferQueue)
+- 2.6 (SurfaceFlinger)
+- 2.17 (Frame Pacing)
+
+### 外部 review 来源
+- Gemini 外部 review: 2026-04-20-11-18.0-external-review.md
+
+### 可复用知识资产（源码锚点）
+- `frameworks/native/services/surfaceflinger/FrameTimeline/FrameTimeline.cpp`
+- 关键类：TokenManager, DisplayFrame, SurfaceFrame
+- Frame Timeline 调用链：Choreographer → VsyncId → queueBuffer → SF 匹配 Expected vs Actual → 判定 App/SF Deadline Miss
+- 版本差异：Android 12 引入，替代 Vsync-App/SF 切片观测
+- Perfetto 观察点：Expected Timeline (绿框) vs Actual Timeline (红/蓝框) 叠加对比
