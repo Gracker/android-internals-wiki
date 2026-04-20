@@ -1,49 +1,67 @@
 ---
-title: "过度绘制"
-chapter: "2.8"
-status: ready-for-review
+title: 过度绘制
+chapter: '2.8'
+section: '2.8'
+status: finalized
 polish_count: 1
-polish_date: "2026-04-05"
-polish_by: "task2b-polish"
-applicable_versions: "Android 4.2 (API 17) - Android 16"
-last_verified: "2026-04-12"
-last_verified_against: "AOSP android-16.0.0_r1"
-drafted_date: "2026-03-30"
+polish_date: '2026-04-05'
+polish_by: task2b-polish
+applicable_versions: Android 4.2 (API 17) - Android 16
+last_verified: '2026-04-12'
+last_verified_against: AOSP android-16.0.0_r1
+drafted_date: '2026-03-30'
 confidence: high
-reviewed_date: "2026-04-20"
-reviewed_by: "openclaw-task6"
+reviewed_date: '2026-04-20'
+reviewed_by: openclaw-task6
 task6_result: pass-light-edit
 task2b_result: fixed
 sources:
-  - type: blog
-    path: "Personal-Knowlodge/source/android-performance-optimization-overdraw-1.md"
-  - type: blog
-    path: "Personal-Knowlodge/source/android-performance-optimization-overdraw-2.md"
-  - type: official
-    path: "developer.android.com/topic/performance/rendering/overdraw"
-  - type: official
-    path: "developer.android.com/topic/performance/vitals/render"
-  - type: official
-    path: "developer.android.com/reference/android/graphics/Canvas#clipRect"
-  - type: official
-    path: "developer.android.com/reference/android/graphics/Canvas#quickReject"
-  - type: official
-    path: "developer.android.com/develop/ui/views/graphics/hardware-accel"
-  - type: official
-    path: "developer.android.com/training/improving-layouts/optimizing-layout"
-  - type: official
-    path: "developer.android.com/studio/profile/monitor"
-  - type: official
-    path: "developer.android.com/studio/debug/layout-inspector"
-  - type: official
-    path: "developer.android.com/develop/ui/compose/graphics/draw/modifiers"
-tags: [overdraw, GPU, rendering, clipRect, quickReject, 性能优化, Compose, DisplayList, LayoutInspector, AGI]
-related_chapters: ["2.1", "2.4", "2.5", "7.2"]
-pipeline_stage: task9_pending
+- type: blog
+  path: Personal-Knowlodge/source/android-performance-optimization-overdraw-1.md
+- type: blog
+  path: Personal-Knowlodge/source/android-performance-optimization-overdraw-2.md
+- type: official
+  path: developer.android.com/topic/performance/rendering/overdraw
+- type: official
+  path: developer.android.com/topic/performance/vitals/render
+- type: official
+  path: developer.android.com/reference/android/graphics/Canvas#clipRect
+- type: official
+  path: developer.android.com/reference/android/graphics/Canvas#quickReject
+- type: official
+  path: developer.android.com/develop/ui/views/graphics/hardware-accel
+- type: official
+  path: developer.android.com/training/improving-layouts/optimizing-layout
+- type: official
+  path: developer.android.com/studio/profile/monitor
+- type: official
+  path: developer.android.com/studio/debug/layout-inspector
+- type: official
+  path: developer.android.com/develop/ui/compose/graphics/draw/modifiers
+tags:
+- overdraw
+- GPU
+- rendering
+- clipRect
+- quickReject
+- 性能优化
+- Compose
+- DisplayList
+- LayoutInspector
+- AGI
+related_chapters:
+- '2.1'
+- '2.4'
+- '2.5'
+- '7.2'
+pipeline_stage: ready-to-publish
 task6_state: reviewed
-task9_state: pending
+task9_state: reviewed
 task2b_state: fixed
-task9_result: needs-rework
+task9_result: pass-tech-review
+task9_reviewed_by: openclaw-task9
+task9_reviewed_date: '2026-04-21'
+last_task9_at: '2026-04-21T07:38:43+08:00'
 ---
 
 # 过度绘制

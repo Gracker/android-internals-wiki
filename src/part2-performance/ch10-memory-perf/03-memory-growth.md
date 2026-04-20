@@ -1,39 +1,55 @@
 ---
-title: "内存持续增长"
-chapter: "10.3"
-section: "10.3"
-status: ready-for-review
-drafted_date: "2026-04-02"
-drafted_by: "openclaw-task2a"
-applicable_versions: "Android 8.0 (API 26) - Android 16 (API 36)"
-last_verified: "2026-04-02"
-last_verified_against: "AOSP android-16.0.0_r1"
-reviewed_date: "2026-04-16"
-reviewed_by: "openclaw-task6"
+title: 内存持续增长
+chapter: '10.3'
+section: '10.3'
+status: finalized
+drafted_date: '2026-04-02'
+drafted_by: openclaw-task2a
+applicable_versions: Android 8.0 (API 26) - Android 16 (API 36)
+last_verified: '2026-04-02'
+last_verified_against: AOSP android-16.0.0_r1
+reviewed_date: '2026-04-16'
+reviewed_by: openclaw-task6
 polish_count: 1
-polish_date: "2026-04-08"
-polish_by: "task2b-polish"
+polish_date: '2026-04-08'
+polish_by: task2b-polish
 confidence: medium
-word_count: "~8000"
+word_count: ~8000
 sources:
-  - type: blog
-    path: "OPPO内存反碎片优化原理"
-  - type: blog
-    path: "RTC 性能自动化工具在内存优化场景下的实践"
-  - type: blog
-    path: "Hummer引擎优化系列 - 内存稳定性研究与优化"
-  - type: official
-    path: "https://developer.android.com/reference/android/util/LruCache"
-  - type: official
-    path: "https://perfetto.dev/docs/data-sources/native-heap-profiling"
-tags: [memory, pss, memory-growth, fragmentation, lru-cache, bitmap, native-heap]
-related_chapters: ["10.1", "10.2", "4.1", "4.3", "4.5"]
-pipeline_stage: task6_pending
-task6_state: revisiting
+- type: blog
+  path: OPPO内存反碎片优化原理
+- type: blog
+  path: RTC 性能自动化工具在内存优化场景下的实践
+- type: blog
+  path: Hummer引擎优化系列 - 内存稳定性研究与优化
+- type: official
+  path: https://developer.android.com/reference/android/util/LruCache
+- type: official
+  path: https://perfetto.dev/docs/data-sources/native-heap-profiling
+tags:
+- memory
+- pss
+- memory-growth
+- fragmentation
+- lru-cache
+- bitmap
+- native-heap
+related_chapters:
+- '10.1'
+- '10.2'
+- '4.1'
+- '4.3'
+- '4.5'
+pipeline_stage: ready-to-publish
+task6_state: reviewed
 task6_result: pass-light-edit
-task9_state: pending
+task9_state: reviewed
 task2b_result: fixed
 task2b_state: fixed
+task9_result: pass-tech-review
+task9_reviewed_by: openclaw-task9
+task9_reviewed_date: '2026-04-21'
+last_task9_at: '2026-04-21T07:38:43+08:00'
 ---
 
 # 内存持续增长

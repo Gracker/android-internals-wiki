@@ -1,11 +1,11 @@
 {
-  "generated_at": "2026-04-21T07:14:00+08:00",
+  "generated_at": "2026-04-21T07:38:43+08:00",
   "state_machine_version": "v2",
   "total_sections": 212,
   "metrics": {
     "total": 212,
     "unknown": 37,
-    "last_updated": "2026-04-21T06:04:49+08:00",
+    "last_updated": "2026-04-21T07:38:43+08:00",
     "task2b_state_counts": {
       "unknown": 37,
       "fixed": 134,
@@ -14,31 +14,31 @@
     },
     "task9_state_counts": {
       "unknown": 36,
-      "reviewed": 56,
-      "pending": 119,
+      "reviewed": 59,
+      "pending": 116,
       "fixed": 1
     },
     "pipeline_stage_counts": {
       "unknown": 36,
-      "task6_pending": 99,
+      "task6_pending": 97,
       "task2b_pending": 23,
-      "ready-to-publish": 23,
-      "task9_pending": 31
+      "ready-to-publish": 26,
+      "task9_pending": 30
     },
-    "pipeline_task9_pending": 31,
+    "pipeline_task9_pending": 30,
     "pipeline_task2b_pending": 23,
-    "pipeline_ready_to_publish": 23,
+    "pipeline_ready_to_publish": 26,
     "ready-to-publish": 0,
-    "finalized": 23,
-    "ready-for-review": 152
+    "finalized": 26,
+    "ready-for-review": 149
   },
   "pipeline": {
     "pipeline_stage_counts": {
       "unknown": 36,
-      "task6_pending": 96,
+      "task6_pending": 97,
       "task2b_pending": 23,
-      "ready-to-publish": 23,
-      "task9_pending": 34
+      "ready-to-publish": 26,
+      "task9_pending": 30
     },
     "task2b_state_counts": {
       "unknown": 37,
@@ -54,8 +54,8 @@
     },
     "task9_state_counts": {
       "unknown": 36,
-      "reviewed": 56,
-      "pending": 119,
+      "reviewed": 59,
+      "pending": 116,
       "fixed": 1
     }
   },
@@ -617,17 +617,20 @@
       "path": "src/part1-fundamentals/ch02-rendering/08-overdraw.md",
       "title": "过度绘制",
       "chapter": "2.8",
-      "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
-      "task6_state": "revisiting",
-      "task9_state": "pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
+      "task6_state": "reviewed",
+      "task9_state": "reviewed",
       "task2b_state": "fixed",
-      "reviewed_date": "2026-04-19",
+      "reviewed_date": "2026-04-20",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
-      "task9_result": "needs-rework",
+      "task9_result": "pass-tech-review",
       "task2b_result": "fixed",
-      "section": "2.8"
+      "section": "2.8",
+      "task9_reviewed_by": "openclaw-task9",
+      "task9_reviewed_date": "2026-04-21",
+      "last_task9_at": "2026-04-21T07:38:43+08:00"
     },
     "src/part1-fundamentals/ch02-rendering/09-rendering-evolution.md": {
       "path": "src/part1-fundamentals/ch02-rendering/09-rendering-evolution.md",
@@ -2036,16 +2039,20 @@
       "path": "src/part2-performance/ch10-memory-perf/03-memory-growth.md",
       "title": "内存持续增长",
       "chapter": "10.3",
-      "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "revisiting",
-      "task9_state": "pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
+      "task6_state": "reviewed",
+      "task9_state": "reviewed",
       "task2b_state": "fixed",
       "reviewed_date": "2026-04-16",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
       "task2b_result": "fixed",
-      "section": "10.3"
+      "section": "10.3",
+      "task9_result": "pass-tech-review",
+      "task9_reviewed_by": "openclaw-task9",
+      "task9_reviewed_date": "2026-04-21",
+      "last_task9_at": "2026-04-21T07:38:43+08:00"
     },
     "src/part2-performance/ch10-memory-perf/04-low-memory-impact.md": {
       "path": "src/part2-performance/ch10-memory-perf/04-low-memory-impact.md",
@@ -2738,17 +2745,20 @@
       "path": "src/part3-tools/ch13-perfetto/05-topic-analysis.md",
       "title": "专题解读",
       "chapter": "13.5",
-      "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "revisiting",
-      "task9_state": "pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
+      "task6_state": "reviewed",
+      "task9_state": "reviewed",
       "task2b_state": "fixed",
-      "reviewed_date": "2026-04-13",
+      "reviewed_date": "2026-04-20",
       "reviewed_by": "openclaw-task6",
-      "task6_result": "needs-rework",
-      "task9_result": "needs-rework",
+      "task6_result": "pass-light-edit",
+      "task9_result": "pass-tech-review",
       "task2b_result": "fixed",
-      "section": "13.5"
+      "section": "13.5",
+      "task9_reviewed_by": "openclaw-task9",
+      "task9_reviewed_date": "2026-04-21",
+      "last_task9_at": "2026-04-21T07:38:43+08:00"
     },
     "src/part3-tools/ch13-perfetto/06-thread-cpu-states.md": {
       "path": "src/part3-tools/ch13-perfetto/06-thread-cpu-states.md",
@@ -3417,8 +3427,8 @@
   },
   "summary": {
     "status_counts": {
-      "ready-for-review": 152,
-      "finalized": 23
+      "ready-for-review": 149,
+      "finalized": 26
     }
   },
   "7.13": {
@@ -3510,10 +3520,10 @@
       "p2": 4
     }
   ],
-  "last_review": "2026-04-21T02:51",
+  "last_review": "2026-04-21T07:38",
   "status_counts": {
-    "ready-for-review": 152,
-    "finalized": 23
+    "ready-for-review": 149,
+    "finalized": 26
   },
   "8.9": {
     "status": "ready-for-review",
