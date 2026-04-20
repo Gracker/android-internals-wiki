@@ -1,0 +1,39 @@
+# Review TODO List for `src/part3-tools`
+
+## ch13-perfetto
+- [ ] src/part3-tools/ch13-perfetto/README.md
+- [ ] src/part3-tools/ch13-perfetto/01-perfetto-intro.md
+- [ ] src/part3-tools/ch13-perfetto/02-trace-capture.md
+- [ ] src/part3-tools/ch13-perfetto/03-perfetto-view.md
+- [ ] src/part3-tools/ch13-perfetto/04-large-traces.md
+- [ ] src/part3-tools/ch13-perfetto/05-topic-analysis.md
+- [ ] src/part3-tools/ch13-perfetto/06-thread-cpu-states.md
+- [ ] src/part3-tools/ch13-perfetto/07-advanced-usage.md
+- [ ] src/part3-tools/ch13-perfetto/08-input-latency-sql.md
+- [ ] src/part3-tools/ch13-perfetto/09-tracing-infrastructure.md
+- [ ] src/part3-tools/ch13-perfetto/10-perfetto-sql-cookbook.md
+
+## ch14-other-tools
+- [ ] src/part3-tools/ch14-other-tools/README.md
+- [ ] src/part3-tools/ch14-other-tools/01-as-profiler.md
+- [ ] src/part3-tools/ch14-other-tools/02-simpleperf.md
+- [ ] src/part3-tools/ch14-other-tools/03-memory-tools.md
+- [ ] src/part3-tools/ch14-other-tools/04-dumpsys.md
+- [ ] src/part3-tools/ch14-other-tools/05-third-party-libs.md
+- [ ] src/part3-tools/ch14-other-tools/06-automation-tools.md
+- [ ] src/part3-tools/ch14-other-tools/07-profiling-manager.md
+- [ ] src/part3-tools/ch14-other-tools/08-gpu-debug-tools.md
+- [ ] src/part3-tools/ch14-other-tools/09-camera-performance-analysis.md
+- [ ] src/part3-tools/ch14-other-tools/10-ebpf-performance-analysis.md
+- [ ] src/part3-tools/ch14-other-tools/11-battery-historian.md
+
+## ch15-methodology
+- [ ] src/part3-tools/ch15-methodology/README.md
+- [ ] src/part3-tools/ch15-methodology/01-philosophy.md
+- [ ] src/part3-tools/ch15-methodology/02-system-vs-app.md
+- [ ] src/part3-tools/ch15-methodology/03-metrics.md
+- [ ] src/part3-tools/ch15-methodology/04-competitive-analysis.md
+- [ ] src/part3-tools/ch15-methodology/05-online-monitoring.md
+- [ ] src/part3-tools/ch15-methodology/06-testing-best-practices.md
+- [ ] src/part3-tools/ch15-methodology/07-aosp-reading.md
+- [ ] src/part3-tools/ch15-methodology/08-empirical-performance-issues.md

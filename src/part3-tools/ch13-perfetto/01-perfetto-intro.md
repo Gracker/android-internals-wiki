@@ -401,6 +401,18 @@ SDK 的使用方式是继承 `perfetto::DataSource` 类，定义自己的事件 
 - AOSP `traced_probes` 服务源码路径：`system/tracing/traced_probes/`
 - 高爷 Systrace / Perfetto 系列教程：https://www.androidperformance.com/2019/12/01/Android-Systrace(Perfetto)-Basic/
 
+
+<!-- AIW-源码调研-2026-04-20: lmkd trace 事件补充 -->
+### Perfetto 追踪 Android LMKD 行为（源码级补充）
+
+Perfetto 支持追踪 lmkd（Low Memory Killer Daemon）的杀死行为，对应 `android_lmk_proc_state` 和 `linux.lowmemorykiller` 事件。Android 14 中 lmkd 已迁移至 `platform/system/memory/lmkd/lmkd.cpp`（C++），默认使用 PSI 监控（`PSI_WINDOW_SIZE_MS=1000`）。
+
+在 Perfetto UI 中，lmkd 活动通常出现在系统级 Counter Track 或 Event Table 中。当 `linux.lowmemorykiller` 事件密集出现时，说明系统内存压力持续升高。配合 `TRIM_MEMORY_*` 级别应用回调（通过应用 `ComponentCallbacks2.onTrimMemory()` 触发）的 trace 记录，可以判断"Jank 是否由低内存导致"。
+
+详细源码分析见 §7.3「卡顿分析方法论」。
+
+[源码验证: lmkd.cpp (android-14.0.0_r44), ProcessList.java (android14-release)]
+
 ### Perfetto 2026 架构级深度技术分析
 - 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/Perfetto 2026 架构级深度技术分析  .md
 - 类型：DeepResearch 调研结果

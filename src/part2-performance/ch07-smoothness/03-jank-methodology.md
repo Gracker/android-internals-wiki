@@ -218,6 +218,22 @@ Uninterruptible Sleep 状态（在 Perfetto 中显示为深橙色）表示线程
 
 当系统内存紧张时，App 在主线程执行过程中可能触发 page fault（访问的内存页被回收了），需要从磁盘或 ZRAM 中把数据读回来。这个过程中主线程就处于 Uninterruptible Sleep 状态，看起来像是"卡住了但其实什么都没做"。在 Perfetto 中，如果主线程出现大量深橙色片段，且时间点恰好与 kswapd（内核内存回收线程）或 lmkd（Low Memory Killer）的活动重合，那基本可以确定是低内存导致的 I/O 阻塞 [来源: obsidian/Personal-Knowlodge/source/Android-Perfetto-09-CPU.md]。
 
+
+<!-- AIW-源码调研-2026-04-20: Android TrimMemory 机制补充 -->
+#### TrimMemory 机制与 Jank 的关联（源码级补充）
+
+上述低内存导致的 Uninterruptible Sleep 背后，是一条从内核 PSI 监控到应用组件回调的完整链路。Android 14 源码验证了以下关键细节：
+
+**lmkd 的 PSI 监控（Android 10+ 默认）**：lmkd（Low Memory Killer Daemon）已从 C 实现迁移至 C++（`platform/system/memory/lmkd/lmkd.cpp`），默认使用内核 PSI（Pressure Stall Information）监控内存压力，相比旧版 `vmpressure` 更准确反映任务阻塞延迟。关键参数：`PSI_WINDOW_SIZE_MS=1000`（窗口大小），`PSI_POLL_PERIOD_SHORT_MS=10`（高压力时轮询周期）。AMS 与 lmkd 通过 socket 通信，命令码定义在 `ProcessList.java`（`LMK_TARGET=0`、`LMK_PROCPRIO=1`、`LMK_PROCREMOVE=2`、`LMK_PROCKILL=6` 等）。
+
+**OOM Adj 分数体系**（`services/core/java/com/android/server/am/ProcessList.java`）：FOREGROUND_APP_ADJ=0（前台）到 CACHED_APP_MAX_ADJ=999（缓存进程上限）。`mOomMinFree` 数组定义内存阈值，当可用内存低于阈值时，同档 oom_adj 及以上的进程成为候选杀死目标。
+
+**TrimMemory 完整调用链**：lmkd 判断需要回收内存 → AMS `appTrimMemory()` 计算 trim level（`TRIM_MEMORY_RUNNING_MODERATE=5` ~ `TRIM_MEMORY_COMPLETE=80`，定义在 `ComponentCallbacks2.java`）→ `IApplicationThread.scheduleTrimMemory(level)` → `ActivityThread.handleTrimMemory()` → 遍历所有 `ComponentCallbacks2` 实例逐一调用 `onTrimMemory(level)`。
+
+**Perfetto 追踪点**：`android_lmk_proc_state`（lmkd 杀死进程事件）和 `linux.lowmemorykiller` trace 事件可追踪 lmkd 行为。kswapd/lmkd 在时间线上密集出现，配合 `TRIM_MEMORY_*` 级别应用回调，是判断低内存导致 Jank 的直接证据。
+
+[源码验证: ComponentCallbacks2.java (android14-release), ProcessList.java (android14-release), lmkd.cpp (android-14.0.0_r44)]
+
 ### 分析 CPU 调度问题的工具技巧
 
 在 Perfetto 中分析 CPU 调度问题，有几个非常实用的技巧 [来源: obsidian/Personal-Knowlodge/source/Android-Perfetto-03-how-to-analysis-perfetto.md] [来源: obsidian/Personal-Knowlodge/source/Android-Perfetto-09-CPU.md]：
