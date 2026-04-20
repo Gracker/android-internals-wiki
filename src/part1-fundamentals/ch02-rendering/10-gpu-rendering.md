@@ -24,21 +24,22 @@ drafted_date: 2026-03-30
 drafted_by: openclaw-task2a
 reviewed_date: "2026-04-21"
 reviewed_by: openclaw-task6
-rework_date: 2026-04-17
+rework_date: "2026-04-21"
 rework_by: openclaw-task2b
 review_round: 5
 last_polish_notes: "第2轮出版级精修：修复applicable_versions范围、ANGLE URL拼写、叙述过渡、口语化表达"
 polish_count: 2
 polish_date: "2026-04-10"
 polish_by: "task2b-polish"
-pipeline_stage: task9_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
 task9_state: pending
 task9_result: needs-rework
 task9_reviewed_date: "2026-04-17"
 task9_reviewed_by: "openclaw-task9"
 task2b_state: fixed
+task2b_result: fixed
 ---
 
 # GPU 渲染深入
@@ -314,8 +315,9 @@ Vertex bound 在 Android UI 渲染中相对少见，但在某些场景下会出�
 
 优化的方向包括：使用更简单的几何形状替代复杂 Path（用矩形近似圆角矩形在视觉可接受的情况下）；减少 Canvas 的 save/restore 和矩阵变换层数；对于静态的复杂图形，考虑预渲染为 Bitmap 缓存。
 
-> [待验证: frameworks/native/opengl/ 在 AOSP android-16 中不存在，OpenGL ES 系统头文件位于 system/core/libsystem/include/，TBR 架构描述的准确来源需重新确认
-> 在瓦片式渲染（TBR）架构的移动 GPU 上，通过高效管理加载和存储操作以及附件，可以显著提高性能。TBR 架构的 GPU（如 ARM Mali）会将一帧的渲染任务划分为多个瓦片，每个瓦片独立处理，这减少了对主显存的访问频率。
+> [待验证: frameworks/native/opengl/ 在 AOSP android-16 中不存在，OpenGL ES 系统头文件位于 system/core/libsystem/include/。TBR 架构描述的准确来源需重新确认。]
+
+在瓦片式渲染（TBR）架构的移动 GPU 上，通过高效管理加载和存储操作以及附件，可以显著提高性能。TBR 架构的 GPU（如 ARM Mali）会将一帧的渲染任务划分为多个瓦片，每个瓦片独立处理，这减少了对主显存的访问频率。
 
 ### Bandwidth Bound：内存带宽瓶颈
 
@@ -474,7 +476,7 @@ adb devices
 
 接下来我们用 AGI 对滚动过程进行了 GPU 帧分析。AGI 的帧分析结果显示：
 
-**第一步：确认瓶颈类型。** 我们将渲染分辨率降到 720p 重新测试，发现帧率从 40fps 提升到 55fps，提升幅度超过 30%。这确认了瓶颈类型是 fillrate bound——像素处理能力不足。
+**第一步：确认瓶颈类型。** 在 AGI 的 GPU Counters 里对比同一批掉帧帧的 Fragment、Texture 和 External Memory 相关计数器。这组数据表现为 Fragment 和纹理读取一侧持续处于高位，外部内存读写也同步抬升，而 Vertex 相关计数器没有同步放大。这个组合更符合 fillrate bound，瓶颈在像素处理和纹理带宽，不在顶点阶段。具体计数器名称会随 GPU 厂商变化，在 Adreno 上通常看 Fragment Busy、Texture Unit Busy、External Memory Read/Write 一类指标。
 
 **第二步：分析 Fragment Shader 时间。** 在 AGI 的着色器分析中，我们看到 Fragment Shader 的执行时间占 GPU 总时间的 70% 以上。主要的耗时操作是纹理采样——每个图片 item 的渲染需要采样 4-8 次纹理（圆角裁剪 mask + 图片本身 + 阴影效果 + 叠加渐变）。
 
