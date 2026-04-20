@@ -2,7 +2,7 @@
 title: "MessageQueue 机制与 DeliQueue 无锁优化"
 chapter: "1.13"
 section: "1.13"
-status: ready-for-review
+status: finalized
 applicable_versions: "传统 MessageQueue：Android 1.0 (API 1)+；并发实现公开源码：Android 16；面向应用默认启用：Android 17 (API 37)"
 drafted_date: "2026-04-04"
 reviewed_date: "2026-04-20"
@@ -33,11 +33,14 @@ tags:
   - messagequeue
   - deliqueue
 related_chapters: ["1.5", "1.14", "2.4", "2.5", "7.1"]
-pipeline_stage: task9_pending
+pipeline_stage: ready-to-publish
 task6_state: reviewed
 task6_result: pass-light-edit
-task9_state: pending
-task9_result: needs-rework
+task9_state: reviewed
+task9_result: pass-tech-review
+last_task9_at: '2026-04-20T16:33:00+08:00'
+task9_reviewed_by: 'openclaw-task9'
+task9_reviewed_date: '2026-04-20'
 task2b_state: fixed
 task2b_result: fixed
 ---

@@ -417,6 +417,44 @@
       "completed_at": "2026-04-20T16:13:43+08:00",
       "completed_by": "task2b-content-processing-rework",
       "resolution": "已改写 Doze 与 FGS 的边界、location FGS 在前台可见/后台态的权限条件，并把 PowerGenie 调整为 OEM 案例口径。"
+    },
+    {
+      "section": "1.7",
+      "section_title": "ART 编译管线与 dex2oat 优化",
+      "priority": 95,
+      "reason": "[Deep Tech Review] JIT 路径与方法锚点写错，JIT code cache 回收逻辑含不存在符号，Cloud Compilation / static final / speed-profile 的版本与生效边界写得过满。",
+      "material_paths": [
+        "logs/deep-review/2026-04-20-16-deep-review.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "location": "frontmatter sources / JIT 原理 / 参考资料（L26 / L148-L152 / L552）",
+          "detail": "文中把 JIT 实现路径写成 `art/jit/`，并把 `Jit::MaybeCompileMethod()` 当成公开入口；android-16 公开分支中 JIT 路径是 `art/runtime/jit/`，`jit.cc` 可核对的入口是 `CompileMethod()` / `CompileMethodInternal()` 等。",
+          "suggestion": "把源码路径统一改为 `art/runtime/jit/`，正文伪代码改成“示意”，不要把 `MaybeCompileMethod()` 当真实 AOSP 入口。"
+        },
+        {
+          "type": "源码错误",
+          "location": "JIT 代码缓存回收（L167-L170）",
+          "detail": "`JitCodeCache::GarbageCollectCache()` 的解释引入了不存在的 `IsMethodPortable()`，并写成“按编译时间最早优先回收”的确定算法；当前公开源码无法直接支持这套描述。",
+          "suggestion": "降级为“code cache 会在空间压力下做回收，回收受活动栈帧、debug info 与 code/data 区管理约束”，只保留源码可核对的边界。"
+        },
+        {
+          "type": "版本差异",
+          "location": "编译过滤器 / 安装时编译状态（L265-L270 / L410 / L466）",
+          "detail": "把 `speed-profile` 写成 Android 12+ 的默认编译级别，并据此直接推导首次安装与 Profile 生效结论，忽略了 install channel、Profile 是否存在和设备策略差异。",
+          "suggestion": "改成“Baseline/Profile 命中时常见 `speed-profile`；未命中时可能退回 `verify` 或设备策略值”，并用 `cmd package art dump` / `dumpsys package dexopt` 举例。"
+        },
+        {
+          "type": "版本差异/原理断裂",
+          "location": "Android 16/17 演进与 static final 小节（L134-L136 / L504-L515）",
+          "detail": "`Cloud Compilation / SDM`、Android 17 `static final` 不可变和“因此 dex2oat 更激进常量折叠/内联”的因果链写得过满。当前公开可稳定核到的是行为变化本身；量产分发边界和编译收益结论仍缺足够一手证据。",
+          "suggestion": "拆成两层写法，先写官方已公开确认的行为变化，再把编译收益降级为“可能的优化空间 / 待进一步核源码或官方说明”。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-04-20T16:33:00+08:00",
+      "status": "pending"
     }
   ]
 }
