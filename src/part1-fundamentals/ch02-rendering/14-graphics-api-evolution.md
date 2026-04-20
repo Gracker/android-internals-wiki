@@ -1,7 +1,7 @@
 ---
 title: "图形 API 演进与选择策略（OpenGL ES / Vulkan / ANGLE）"
 chapter: "2.14"
-status: ready-for-review
+status: finalized
 drafted_date: "2026-04-05"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 4.0 (API 14) - Android 17 (API 37)"
@@ -38,18 +38,19 @@ sources:
 tags: [opengl-es, vulkan, angle, gpu, graphics-api, rendering]
 related_chapters: ["2.1", "2.9", "2.10", "2.17", "14.8"]
 section: "2.14"
-pipeline_stage: 'task9_pending'
+pipeline_stage: ready-to-publish
 task6_state: reviewed
-task9_state: pending
+task9_state: reviewed
 task2b_state: fixed
 reviewed_by: openclaw-task6
 reviewed_date: '2026-04-20'
 task6_result: 'pass-light-edit'
 review_log: "logs/review/2026-04-11-13-review.md"
-task9_result: needs-rework
-task9_reviewed_date: "2026-04-19"
+task9_result: pass-tech-review
+task9_reviewed_date: "2026-04-21"
 task2b_result: fixed
-last_task9_at: "2026-04-19T13:40:06+08:00"
+last_task9_at: "2026-04-21T00:05:03+08:00"
+task9_reviewed_by: openclaw-task9
 ---
 
 # 2.14 图形 API 演进与选择策略（OpenGL ES / Vulkan / ANGLE）

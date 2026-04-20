@@ -4034,3 +4034,27 @@
 - **位置**：L399-L400
 - **问题**：`单次执行 <100ns` 与“100 万次调用≈100ms/s”这组数字没有测试条件、内核版本、probe 类型和设备环境，当前写法像通用事实。
 - **建议**：如果拿不出可复现 benchmark，就把数字降格为经验量级，并标清“不同 helper / map 访问 / ringbuf 写入路径开销差异很大”。
+
+## [Task9 Deep Review] 2.2 帧率与刷新率 — 2026-04-21
+- **类型**：源码准确性 / 工具边界
+- **位置**：L260-L265 / L365-L370
+- **问题**：Perfetto SQL 示例直接查询 `track_event` 并匹配 `refreshRate` / `FrameTimeline` 名称，但这不是稳定的标准分析入口。常规 trace 往往查不到这组事件名，读者会把查询无结果误判成抓 trace 失败。
+- **建议**：改成基于 FrameTimeline 标准表 / 轨道和 display refresh-rate 轨道的观察路径，注明对应 data source 与可运行 SQL。
+
+## [Task9 Deep Review] 2.14 图形 API 演进与选择策略（OpenGL ES / Vulkan / ANGLE） — 2026-04-21
+- **类型**：版本差异
+- **位置**：frontmatter `applicable_versions`
+- **问题**：frontmatter 把适用范围写到 Android 17，但正文与验证锚点实际停在 Android 16 / Android 15 图形说明页，没有给出 Android 17 的新增图形栈变化或验证来源。
+- **建议**：如果暂无 Android 17 的公开差异结论，把范围收窄到 Android 16；如果要继续保留 Android 17，需补一手 release note / AOSP 锚点。
+
+## [Task9 Deep Review] 2.14 图形 API 演进与选择策略（OpenGL ES / Vulkan / ANGLE） — 2026-04-21
+- **类型**：数据缺失
+- **位置**：L362
+- **问题**：AGI “2026 H1 / H2” 路线图仍是 `[待验证]`，正文没有官方 roadmap 或 release note 链接支撑。
+- **建议**：删除未来 roadmap 数字，或改成已发布版本能力与公开 release note。
+
+## [Task9 Deep Review] 2.15 DMA-BUF、Gralloc 与跨进程图形内存共享 — 2026-04-21
+- **类型**：数据缺失 / 工具边界
+- **位置**：L289-L305
+- **问题**：`android_dmabuf_allocs` 与 `dmabuf_heap/dma_heap_stat` 的 Perfetto 路径没有写清前置条件。若 trace 没录到相应 ftrace 事件或缺少 binder-to-gralloc 上下文，读者会拿不到可归因的分配结果。
+- **建议**：在示例前补充 trace config 前提，区分“能看到 dmabuf 事件”和“能把分配归因回 Gralloc / 调用线程”这两个层次。
