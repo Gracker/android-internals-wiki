@@ -4,7 +4,7 @@ section: "4.4"
 chapter: "4.4"
 status: ready-for-review
 drafted_date: "2026-03-31"
-reviewed_date: "2026-04-20"
+reviewed_date: "2026-04-21"
 reviewed_by: "openclaw-task6"
 polish_count: 1
 polish_date: "2026-04-05"
@@ -28,8 +28,8 @@ sources:
     path: "https://android-developers.googleblog.com/2020/07/lmkd-userspace-low-memory-killer-daemon.html"
 tags: ['lmk', 'lmkd', 'oom_adj', 'oom_score_adj', 'PSI', 'memory-pressure', 'process-kill']
 related_chapters: ["4.1", "4.2", "4.3", "1.3", "10.4"]
-pipeline_stage: "task6_pending"
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task6_result: pass-light-edit
 task9_result: "needs-rework"
 task9_state: "pending"

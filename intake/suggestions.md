@@ -4113,3 +4113,18 @@
 - **位置**：L255-L256，L445-L449
 - **问题**：`Normal Mixer Thread` “每约 20ms 执行一次混合”和“端到端 40-80ms”被写成跨版本、跨设备稳定数值，但实际还受 HAL period size、fast path 命中、buffer depth 和厂商实现影响。当前写法容易让读者把经验值误读为固定平台常量。
 - **建议**：保留 20ms 作为常见设计量级或 AOSP 经验值，同时补充“不同设备需结合 HAL/trace 实测”的边界说明；如果要保留 40-80ms 区间，最好补一组设备条件。
+
+
+## [Task6 Review] 2.10 GPU 渲染深入 — 2026-04-21
+- **类型**：需确认
+- **位置**：实战案例「社交应用图片滚动中的 GPU 瓶颈定位」→ 第一步「降低渲染分辨率」
+- **问题**：文中「GPU 性能瓶颈分析」一节明确写了"降低渲染分辨率判断瓶颈类型的方法不适用于标准 Android UI 渲染"，但实战案例的第一步就是"将渲染分辨率降到 720p 重新测试"。案例描述的是社交 App 图片滚动（标准 Android UI），方法论自相矛盾。读者会困惑：到底能不能用降分辨率的方法？
+- **建议**：二选一修复——（1）案例中改为使用 AGI GPU 性能计数器确认 fillrate bound（与前面的方法论一致）；（2）在前面的注意事项中补充说明某些设备可通过开发者选项或 SurfaceView 控制渲染分辨率。推荐方案 (1)。
+- **review 日志**：logs/review/2026-04-21-03-review.md
+
+## [Task6 Review] 4.4 Low Memory Killer — 2026-04-21
+- **类型**：需确认
+- **位置**：扩展四「Android 12+ CachedAppOptimizer 与 cgroup v2 Freezer」
+- **问题**：本节「扩展四」包含较详细的 CachedAppOptimizer 源码级补充（freezeBinderThreads、解冻原因码、Perfetto 区分方法等），但 1.3 节「进程模型与生命周期管理」中已有完整的 CachedAppOptimizer/Freezer 机制章节（含架构设计、实现机制、Perfetto 表现、版本演进），两处内容高度重叠。读者在两处看到类似内容会产生困惑，维护时也容易版本不一致。
+- **建议**：本节（4.4）的 CachedAppOptimizer 补充应缩减为"此处仅说明 Freezer 与 LMK kill 的区别，详细机制见 1.3 节"的交叉引用，避免重复展开。具体执行由 task2b 完成。
+- **review 日志**：logs/review/2026-04-21-03-review.md

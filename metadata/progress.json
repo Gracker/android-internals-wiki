@@ -3348,6 +3348,26 @@
       "task6_last_review": "2026-04-20",
       "task6_result": "pass-light-edit",
       "task6_state": "reviewed"
+    },
+    "2.4": {
+      "task6_last_review": "2026-04-21",
+      "task6_result": "pass-light-edit",
+      "task6_state": "reviewed",
+      "task6_review_round": 8
+    },
+    "2.10": {
+      "task6_last_review": "2026-04-21",
+      "task6_result": "pass-light-edit",
+      "task6_state": "reviewed",
+      "task6_review_round": 6,
+      "task6_b_issues": 1
+    },
+    "4.4": {
+      "task6_last_review": "2026-04-21",
+      "task6_result": "pass-light-edit",
+      "task6_state": "reviewed",
+      "task6_review_round": 2,
+      "task6_b_issues": 1
     }
   },
   "summary": {

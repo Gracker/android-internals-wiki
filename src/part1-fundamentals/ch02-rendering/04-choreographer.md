@@ -6,7 +6,7 @@ drafted_date: "2026-03-30"
 applicable_versions: "Android 12 (API 31) - Android 16 (API 36)"
 last_verified: "2026-04-11"
 last_verified_against: "AOSP android-16.0.0_r1"
-reviewed_date: "2026-04-19"
+reviewed_date: "2026-04-21"
 reviewed_by: "openclaw-task6"
 review2_date: "2026-04-02"
 review2_by: "openclaw-task6"
@@ -44,8 +44,8 @@ polish_count: 1
 polish_date: "2026-04-04"
 polish_by: "task2b-polish"
 status: ready-for-review
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task6_result: pass-light-edit
 review7_date: "2026-04-19"
 review7_by: "openclaw-task6"
