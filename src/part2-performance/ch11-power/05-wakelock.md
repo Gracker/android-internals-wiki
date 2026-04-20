@@ -33,11 +33,11 @@ sources:
     path: "https://source.android.com/docs/core/power/systemsuspend"
   - type: official
     path: "https://perfetto.dev/docs/data-sources/android-power-energy"
-reviewed_date: "2026-04-14"
+reviewed_date: "2026-04-21"
 reviewed_by: "openclaw-task6"
-task6_result: needs-rework
-pipeline_stage: task6_pending
-task6_state: revisiting
+task6_result: pass-light-edit
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task2b_state: fixed
 task9_result: needs-rework
@@ -124,7 +124,7 @@ wl.release();
 1. 客户端 `WakeLock`（`PowerManager.WakeLock`）在构造时就创建了 `mToken = new Binder()`，这个 IBinder token 代表本地 wakelock 对象
 2. 客户端调用 `mService.acquireWakeLock(mToken, ...)` 将 token 传入 PowerManagerService
 3. PowerManagerService 构造服务端 `WakeLock` 记录：`new WakeLock(lock, displayId, flags, tag, packageName, ws, ...)`
-4. 在构造函数中执行 `linkToDeath()`：对客户端传入的 lock（Biner）注册 DeathRecipient
+4. 在构造函数中执行 `linkToDeath()`：对客户端传入的 lock（Binder）注册 DeathRecipient
 5. PowerManagerService 更新全局电源状态，根据所有活跃 wakelock 类型决定是否允许系统进入 suspend
 
 注意区分两个角色：客户端 `WakeLock` 的 `mToken` 在客户端创建后传入服务端；服务端的 `WakeLock`（PMS 内部类）才是 PMS 持有的记录，它对客户端传入的 IBinder 执行 linkToDeath()，从而在客户端进程死亡时自动清理记录。
