@@ -3258,5 +3258,26 @@
       "ready-to-publish": 0,
       "finalized": 10
     }
+  },
+  "7.13": {
+    "status": "ready-for-review",
+    "task6_state": "reviewed",
+    "task6_result": "pass-light-edit",
+    "last_reviewed": "2026-04-20",
+    "reviewed_by": "openclaw-task6"
+  },
+  "9.6": {
+    "status": "ready-for-review",
+    "task6_state": "reviewed",
+    "task6_result": "pass-light-edit",
+    "last_reviewed": "2026-04-20",
+    "reviewed_by": "openclaw-task6"
+  },
+  "9.7": {
+    "status": "ready-for-review",
+    "task6_state": "reviewed",
+    "task6_result": "pass-light-edit",
+    "last_reviewed": "2026-04-20",
+    "reviewed_by": "openclaw-task6"
   }
 }
