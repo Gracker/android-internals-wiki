@@ -1,11 +1,11 @@
 {
-  "generated_at": "2026-04-20T09:37:09+08:00",
+  "generated_at": "2026-04-20T10:23:00+08:00",
   "state_machine_version": "v2",
   "total_sections": 176,
   "metrics": {
     "total": 176,
     "unknown": 2,
-    "last_updated": "2026-04-20T09:37:09+08:00",
+    "last_updated": "2026-04-20T10:23:00+08:00",
     "task2b_state_counts": {
       "unknown": 2,
       "fixed": 126,
@@ -14,30 +14,30 @@
     },
     "task9_state_counts": {
       "unknown": 1,
-      "pending": 135,
-      "reviewed": 39,
+      "pending": 132,
+      "reviewed": 42,
       "fixed": 1
     },
     "pipeline_stage_counts": {
       "unknown": 1,
       "task6_pending": 91,
-      "ready-to-publish": 10,
-      "task9_pending": 53,
+      "ready-to-publish": 13,
+      "task9_pending": 50,
       "task2b_pending": 21
     },
-    "pipeline_task9_pending": 53,
+    "pipeline_task9_pending": 50,
     "pipeline_task2b_pending": 21,
-    "pipeline_ready_to_publish": 10,
+    "pipeline_ready_to_publish": 13,
     "ready-to-publish": 0,
-    "finalized": 10,
-    "ready-for-review": 164
+    "finalized": 13,
+    "ready-for-review": 161
   },
   "pipeline": {
     "pipeline_stage_counts": {
       "unknown": 1,
       "task6_pending": 91,
-      "ready-to-publish": 10,
-      "task9_pending": 53,
+      "ready-to-publish": 13,
+      "task9_pending": 50,
       "task2b_pending": 21
     },
     "task2b_state_counts": {
@@ -54,8 +54,8 @@
     },
     "task9_state_counts": {
       "unknown": 1,
-      "pending": 135,
-      "reviewed": 39,
+      "pending": 132,
+      "reviewed": 42,
       "fixed": 1
     }
   },
@@ -257,16 +257,16 @@
       "chapter": "1.5",
       "title": "线程模型",
       "path": "src/part1-fundamentals/ch01-architecture/05-threading-model.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "task6_state": "reviewed",
-      "task9_state": "pending",
+      "task9_state": "reviewed",
       "task2b_state": "fixed",
       "section": "1.5",
       "reviewed_date": "2026-04-20",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
-      "task9_result": "needs-rework",
+      "task9_result": "pass-tech-review",
       "task2b_result": "fixed"
     },
     "src/part1-fundamentals/ch01-architecture/06-version-evolution.md": {
@@ -940,16 +940,16 @@
       "chapter": "3.6",
       "title": "手势识别算法与性能优化",
       "path": "src/part1-fundamentals/ch03-input/06-gesture-recognition-performance.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "task6_state": "reviewed",
-      "task9_state": "pending",
+      "task9_state": "reviewed",
       "task2b_state": "fixed",
       "section": "3.6",
       "reviewed_date": "2026-04-20",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
-      "task9_result": "needs-rework",
+      "task9_result": "pass-tech-review",
       "task2b_result": "fixed"
     },
     "src/part1-fundamentals/ch03-input/README.md": {
@@ -1217,16 +1217,16 @@
       "chapter": "5.8",
       "title": "后台执行限制与优化",
       "path": "src/part1-fundamentals/ch05-cpu-power/08-background-execution.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "task6_state": "reviewed",
-      "task9_state": "pending",
+      "task9_state": "reviewed",
       "task2b_state": "fixed",
       "section": "5.8",
       "reviewed_date": "2026-04-20",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
-      "task9_result": "needs-rework",
+      "task9_result": "pass-tech-review",
       "task2b_result": "fixed"
     },
     "src/part1-fundamentals/ch05-cpu-power/09-adpf.md": {
@@ -3256,9 +3256,9 @@
   "summary": {
     "status_counts": {
       "unknown": 2,
-      "ready-for-review": 164,
+      "ready-for-review": 161,
       "ready-to-publish": 0,
-      "finalized": 10
+      "finalized": 13
     }
   },
   "7.13": {

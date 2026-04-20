@@ -2835,3 +2835,34 @@
 - **位置**：全局
 - **问题**：章节 confidence 为 medium，未覆盖 binder fd leak 检测（`binder_stats`）、RPC 回调线程模型（`IBinder.DeathRecipient` 虽然提到但未展开 binder 死亡通知的调度路径）、以及 vendor binder domain 的差异。
 - **建议**：P3 级别，不阻塞当前 review，可作为后续增强素材。
+
+## [Task9 Deep Review] 1.5 线程模型 — 2026-04-20
+- **类型**：源码准确性
+- **位置**：L189-L197（`nativePollOnce` / epoll 解释）
+- **问题**：正文已正确说明主线程在 native 层通过 epoll 等待消息与 fd 事件，但当前证据只挂到 `MessageQueue` 官方 reference，缺少对应的 native 源码锚点，读者不容易继续向下追到 `android_os_MessageQueue.cpp` / `Looper.cpp`。
+- **建议**：补一条 native 路径级来源，明确 Java `MessageQueue.next()` 到 native poll 的落点。
+
+## [Task9 Deep Review] 1.5 线程模型 — 2026-04-20
+- **类型**：数据缺失
+- **位置**：L463-L465（RenderThread 延迟分析）
+- **问题**：章节已经给出“主线程 `syncAndDrawFrame` 对比 RenderThread `DrawFrame`”的诊断方法，但这里仍停在占位符，没有真实 Perfetto 截图或最小判读样例。
+- **建议**：补一张 60Hz/120Hz 任一真实 trace 截图，标出 UI 线程同步等待段和 RenderThread 长帧段的对应关系。
+
+## [Task9 Deep Review] 3.6 手势识别算法与性能优化 — 2026-04-20
+- **类型**：数据缺失
+- **位置**：L181-L183（VelocityTracker 微秒级耗时）
+- **问题**：`addMovement()` 1-5μs、`computeCurrentVelocity()` 5-20μs 属于量化结论，但没有设备型号、采样频率、trace 方法或 benchmark 条件。
+- **建议**：补充测试环境，或把数值改成“参考量级”，避免被误读成跨设备通用结论。
+
+## [Task9 Deep Review] 3.6 手势识别算法与性能优化 — 2026-04-20
+- **类型**：数据缺失
+- **位置**：L372（`requestDisallowInterceptTouchEvent(true)` 深层级开销）
+- **问题**：正文提醒了深层 Parent 链递归的成本，但“20+ 层会有不可忽视开销”还缺少 method trace / systrace 量化支撑。
+- **建议**：补一个深层嵌套样例或 trace 截图，说明开销出现在哪段调用链上。
+
+## [Task9 Deep Review] 5.8 后台执行限制与优化 — 2026-04-20
+- **类型**：数据缺失
+- **位置**：L199-L215 / L287-L295（Doze 观测路径与 JobScheduler pending reason API）
+- **问题**：观测顺序和 API 口径已经正确，但缺少一个最小可复现样例，读者还看不到 `dumpsys jobscheduler` 字段、`PendingJobReasonsInfo` 返回值和 pre-36 fallback 的并排对照。
+- **建议**：补一个 API 36+ 代码片段和一段 `dumpsys jobscheduler` 真实输出，顺带标清旧版本仍需走 shell/bugreport 的回退路径。
+
