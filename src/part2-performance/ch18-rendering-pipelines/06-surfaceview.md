@@ -1,5 +1,6 @@
 ---
 title: "SurfaceView 直出链路"
+section: "18.6"
 chapter: "18.6"
 status: ready-for-review
 applicable_versions: "Android 1.0 (API 1) - Android 16 (API 36)"
@@ -7,10 +8,11 @@ tags: ["SurfaceView", "BLAST", "SurfaceFlinger", "HWC", "Direct-Producer", "独�
 related_chapters: ["2.1", "2.6", "2.13", "2.14", "18.1", "18.7", "18.8", "18.9"]
 created_by: "rendering-pipelines-merge"
 created_date: "2026-04-09"
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task6_result: pass-light-edit
-task6_reviewed_date: "2026-04-17"
+reviewed_by: openclaw-task6
+reviewed_date: "2026-04-20"
 task9_state: pending
 task2b_state: fixed
 task9_result: needs-rework

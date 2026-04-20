@@ -3,7 +3,7 @@ title: "Android 功耗模型"
 section: "11.1"
 chapter: "11.1"
 status: ready-for-review
-reviewed_date: "2026-04-13"
+reviewed_date: "2026-04-20"
 reviewed_by: "openclaw-task6"
 task6_result: pass-light-edit
 task9_result: needs-rework
@@ -39,8 +39,8 @@ sources:
     path: "https://developer.android.com/topic/performance/power"
 tags: ['power', 'battery', 'power_profile', 'BatteryStats', 'ODPM', 'Coulomb Counter', 'Fuel Gauge', 'IPowerStats', '功耗归属']
 related_chapters: ["5.4", "5.5", "5.6", "11.2", "11.3", "13.1"]
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task2b_state: fixed
 task2b_result: fixed
@@ -379,7 +379,7 @@ ODPM 目前也有几个比较明确的局限：
 
 ## 功耗模型的准确性问题与校准
 
-了解完整个功耗模型的架构之后，我们需要正视一个现实：Android 的功耗估算并不总是准确的。准确地说，它的准确性取决于一长串前提条件。
+了解完整个功耗模型的架构之后，我们需要正视一个现实：Android 的功耗估算并不总是准确的。它的准确性取决于一长串前提条件。
 
 ### 影响准确性的因素
 
