@@ -4094,3 +4094,22 @@
 - **问题**：断言 bpftrace 不是 Android 标准工具链一部分，但 AOSP external/bpftrace 自 Android 12/13 已引入
 - **建议**：修正表述，说明 AOSP external/bpftrace 项目存在且 userdebug 环境下可编译使用
 - **来源**：Gemini 外部 review
+
+
+## [Task9 Deep Review] 2.5 MainThread 与 RenderThread 协作 — 2026-04-21
+- **类型**：源码准确性
+- **位置**：L341-L351
+- **问题**：两处排查结论写得过满。其一，“View 层级超过 10 层就会指数增长、每多一层 measure 次数就可能翻倍”更接近特定布局算法的最坏情况，不适合作为通用规律。其二，`adb shell dumpsys gfxinfo <package>` 被写成会直接列出“每个 View 的 DisplayList 大小和 command count”，这和常见 gfxinfo / framestats 输出不一致，读者按文操作很难得到文中描述的视图级命令统计。
+- **建议**：把布局复杂度改成条件化描述，限定到特定 ViewGroup/重复测量场景；把 DisplayList 排查工具改成 Layout Inspector / Perfetto / gfxinfo framestats 的组合，并说明各自能看到什么。
+
+## [Task9 Deep Review] 3.2 触摸响应的性能分析 — 2026-04-21
+- **类型**：数据缺失
+- **位置**：L76，L164-L173，L285
+- **问题**：30-80ms 总时延、各阶段典型耗时表，以及“120Hz 应该每 8.3ms 一个 Slice”都以通用基线口径出现，但没有绑定设备、触控控制器、刷新率、trace 配置和 batching 状态。对不同面板 / SoC / trace 采样配置，这些数字只能当经验区间，不能直接当判定阈值。
+- **建议**：给一组可复现样例，补充设备刷新率、触控采样率、trace categories 和 batching / unbuffered 状态；正文把这些数字改写为“经验区间”而不是固定基线。
+
+## [Task9 Deep Review] 8.8 Android 多媒体管线性能 — 2026-04-21
+- **类型**：数据缺失
+- **位置**：L255-L256，L445-L449
+- **问题**：`Normal Mixer Thread` “每约 20ms 执行一次混合”和“端到端 40-80ms”被写成跨版本、跨设备稳定数值，但实际还受 HAL period size、fast path 命中、buffer depth 和厂商实现影响。当前写法容易让读者把经验值误读为固定平台常量。
+- **建议**：保留 20ms 作为常见设计量级或 AOSP 经验值，同时补充“不同设备需结合 HAL/trace 实测”的边界说明；如果要保留 40-80ms 区间，最好补一组设备条件。

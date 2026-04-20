@@ -2,7 +2,7 @@
 title: "触摸响应的性能分析"
 chapter: "3.2"
 section: "3.2"
-status: ready-for-review
+status: finalized
 drafted_date: "2026-03-30"
 drafted_by: "openclaw-task2"
 applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
@@ -33,11 +33,11 @@ sources:
     path: "developer.android.com/jetpack/androidx/releases/input"
 tags: [touch, input, latency, InputReader, InputDispatcher, sampling-rate, batching, Choreographer, responsiveness]
 related_chapters: ["3.1", "2.3", "2.4", "2.5", "8.1"]
-pipeline_stage: task9_pending
+pipeline_stage: ready-to-publish
 task6_result: pass-light-edit
 task6_state: reviewed
-task9_state: pending
-task9_result: needs-rework
+task9_state: reviewed
+task9_result: pass-tech-review
 task2b_state: fixed
 task2b_result: fixed
 ---

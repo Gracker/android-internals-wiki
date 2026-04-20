@@ -12,7 +12,6 @@ reviewed_date: "2026-04-20"
 reviewed_by: "openclaw-task6"
 task6_result: pass-light-edit
 task9_result: needs-rework
-task2b_result: fixed
 confidence: medium
 sources:
   - type: official
@@ -33,10 +32,10 @@ created_by: "task2a-knowledge-gap"
 created_date: "2026-04-06"
 gap_source: "AOSP结构+官方文档+读者需求"
 gap_score: "16/20"
-pipeline_stage: task9_pending
+pipeline_stage: task2b_pending
 task6_state: reviewed
-task9_state: pending
-task2b_state: fixed
+task9_state: reviewed
+task2b_state: pending
 ---
 
 # 8.8 Android 多媒体管线性能
