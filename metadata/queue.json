@@ -905,6 +905,52 @@
       "added_at": "2026-04-21T03:25:00",
       "status": "pending",
       "original_review_log": "logs/review/2026-04-21-03-review.md"
+    },
+    {
+      "section": "12.3",
+      "section_title": "网络性能深入：连接池、TLS 与传输优化",
+      "priority": 85,
+      "reason": "[Deep Tech Review] 把 OkHttp、Cronet、HttpEngine 合并成同一条 java.net/Conscrypt 调用链，混淆了 Chromium 网络栈与系统 Java/TLS 栈的边界。",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "原理断裂/源码准确性",
+          "location": "L90-L92",
+          "detail": "正文把 OkHttp、Cronet、HttpEngine 并列后，继续统一写成 `java.net` / `javax.net.ssl` / `libcore Conscrypt` 这一路径。OkHttp 常见路径可以这样讲，但 Cronet / `android.net.http.HttpEngine` 属于 Chromium/Cronet 栈，TLS 与 HTTP/3 也不应按 Java 网络栈去理解。",
+          "suggestion": "把调用链拆成两条：OkHttp/HttpURLConnection → Java Socket + Conscrypt；Cronet/HttpEngine → Chromium network stack/Cronet。并分别说明性能观测入口，如 OkHttp EventListener 与 Cronet/HttpEngine 的能力边界。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-04-21T03:54:40+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "13.9",
+      "section_title": "Android Tracing 基础设施：atrace、ftrace 与 Perfetto 数据采集原理",
+      "priority": 95,
+      "reason": "[Deep Tech Review] boot trace 属性/输出路径写成 `persist.sys.atrace.boot` 与 `/data/misc/trace/`，且把 `atrace gfx` 默认映射成 `drm_vblank_event`，与当前文档/AOSP 口径不符。",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误/版本差异",
+          "location": "L151-L153",
+          "detail": "boot trace 小节把属性写成 `persist.sys.atrace.boot`，输出目录写成 `/data/misc/trace/`。当前公开口径区分两条路径：较旧 atrace boot trace 使用 `persist.debug.atrace.boottrace`，Android 13+ 的 Perfetto boot trace 使用 `persist.debug.perfetto.boottrace` + `/data/misc/perfetto-traces/boottrace.perfetto-trace`。",
+          "suggestion": "按版本拆开 atrace boot trace 与 Perfetto boot trace，补上各自属性名、配置文件位置和输出路径，不要继续用 `persist.sys.atrace.boot` 这条过时说法。"
+        },
+        {
+          "type": "源码错误",
+          "location": "frontmatter sources / L123-L126",
+          "detail": "frontmatter 把 traced 源码锚点写成 `system/traced/`，无法对应当前 Perfetto 主线目录；正文又把 `atrace gfx` 直接等同为启用 `drm_vblank_event`。实际 traced 服务源码主线在 `external/perfetto/src/traced/`，`gfx` 分类也主要是 `ATRACE_TAG_GRAPHICS` 加可选 sysfs/ftrace 项，具体 ftrace event 受平台与 vendor 配置影响。",
+          "suggestion": "删掉 `system/traced/` 这一错误源码路径，并把 atrace category 的说明改成“用户态 tag + 可选内核事件组”的抽象层描述，避免把 vendor/设备相关 event 写成 Android 默认映射。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-04-21T03:54:40+08:00",
+      "status": "pending"
     }
   ]
 }
