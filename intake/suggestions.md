@@ -4058,3 +4058,10 @@
 - **位置**：L289-L305
 - **问题**：`android_dmabuf_allocs` 与 `dmabuf_heap/dma_heap_stat` 的 Perfetto 路径没有写清前置条件。若 trace 没录到相应 ftrace 事件或缺少 binder-to-gralloc 上下文，读者会拿不到可归因的分配结果。
 - **建议**：在示例前补充 trace config 前提，区分“能看到 dmabuf 事件”和“能把分配归因回 Gralloc / 调用线程”这两个层次。
+
+## [Task9 Deep Review] 8.9 Android 游戏性能与 Game Mode/State API — 2026-04-21
+- **类型**：数据缺失
+- **位置**：L187-L187 / L235-L235
+- **问题**：正文只写“受限时长”与 `Mode.GAME_LOADING` boost，但没把 AOSP `GameManagerService` 里的 `LOADING_BOOST_MAX_DURATION = 5 * 1000` 默认上限写出来。长加载场景下，读者不容易判断 boost 何时会自动退场。
+- **建议**：补一句 AOSP 默认上限 5 秒，并注明超出 5 秒的加载流程需要分段上报 loading，或接受 boost 超时后回落。
+

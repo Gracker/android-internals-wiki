@@ -1,44 +1,44 @@
 {
-  "generated_at": "2026-04-21T00:44:34+08:00",
+  "generated_at": "2026-04-21T01:15:00+08:00",
   "state_machine_version": "v2",
   "total_sections": 175,
   "metrics": {
     "total": 175,
     "unknown": 0,
-    "last_updated": "2026-04-21T00:44:34+08:00",
+    "last_updated": "2026-04-21T01:15:00+08:00",
     "task2b_state_counts": {
-      "fixed": 132,
-      "pending": 21,
+      "fixed": 130,
+      "pending": 23,
       "idle": 21
     },
     "task9_state_counts": {
-      "reviewed": 51,
-      "pending": 123,
+      "reviewed": 54,
+      "pending": 120,
       "fixed": 1
     },
     "pipeline_stage_counts": {
       "task6_pending": 96,
-      "task2b_pending": 20,
-      "ready-to-publish": 21,
-      "task9_pending": 38
+      "task2b_pending": 22,
+      "ready-to-publish": 22,
+      "task9_pending": 35
     },
-    "pipeline_task9_pending": 38,
-    "pipeline_task2b_pending": 20,
-    "pipeline_ready_to_publish": 21,
+    "pipeline_task9_pending": 35,
+    "pipeline_task2b_pending": 22,
+    "pipeline_ready_to_publish": 22,
     "ready-to-publish": 0,
-    "finalized": 21,
-    "ready-for-review": 154
+    "finalized": 22,
+    "ready-for-review": 153
   },
   "pipeline": {
     "pipeline_stage_counts": {
       "task6_pending": 96,
-      "task2b_pending": 20,
-      "ready-to-publish": 21,
-      "task9_pending": 38
+      "task2b_pending": 22,
+      "ready-to-publish": 22,
+      "task9_pending": 35
     },
     "task2b_state_counts": {
-      "fixed": 132,
-      "pending": 21,
+      "fixed": 130,
+      "pending": 23,
       "idle": 21
     },
     "task6_state_counts": {
@@ -46,8 +46,8 @@
       "revisiting": 91
     },
     "task9_state_counts": {
-      "reviewed": 51,
-      "pending": 123,
+      "reviewed": 54,
+      "pending": 120,
       "fixed": 1
     }
   },
@@ -1632,16 +1632,19 @@
       "title": "SystemUI 性能分析",
       "chapter": "7.13",
       "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
-      "task9_state": "pending",
-      "task2b_state": "fixed",
+      "task9_state": "reviewed",
+      "task2b_state": "pending",
       "reviewed_date": "2026-04-20",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
-      "section": "7.13"
+      "section": "7.13",
+      "task9_reviewed_by": "openclaw-task9",
+      "task9_reviewed_date": "2026-04-21",
+      "last_task9_at": "2026-04-21T01:15:00+08:00"
     },
     "src/part2-performance/ch07-smoothness/14-gaps-dynamic-analysis.md": {
       "path": "src/part2-performance/ch07-smoothness/14-gaps-dynamic-analysis.md",
@@ -1824,16 +1827,19 @@
       "title": "Android 游戏性能与 Game Mode/State API",
       "chapter": "8.9",
       "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
-      "task9_state": "pending",
-      "task2b_state": "fixed",
+      "task9_state": "reviewed",
+      "task2b_state": "pending",
       "reviewed_date": "2026-04-20",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
-      "section": "8.9"
+      "section": "8.9",
+      "task9_reviewed_by": "openclaw-task9",
+      "task9_reviewed_date": "2026-04-21",
+      "last_task9_at": "2026-04-21T01:15:00+08:00"
     },
     "src/part2-performance/ch08-responsiveness/README.md": {
       "chapter": null,
@@ -1948,17 +1954,20 @@
       "path": "src/part2-performance/ch09-anr/07-non-technical-anr-diagnosis.md",
       "title": "ANR 非技术故障诊断",
       "chapter": "9.7",
-      "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "task6_state": "reviewed",
-      "task9_state": "pending",
+      "task9_state": "reviewed",
       "task2b_state": "fixed",
       "reviewed_date": "2026-04-20",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
-      "task9_result": "needs-rework",
+      "task9_result": "pass-tech-review",
       "task2b_result": "fixed",
-      "section": "9.7"
+      "section": "9.7",
+      "task9_reviewed_by": "openclaw-task9",
+      "task9_reviewed_date": "2026-04-21",
+      "last_task9_at": "2026-04-21T01:15:00+08:00"
     },
     "src/part2-performance/ch09-anr/README.md": {
       "chapter": null,
@@ -3338,8 +3347,8 @@
   },
   "summary": {
     "status_counts": {
-      "ready-for-review": 154,
-      "finalized": 21
+      "ready-for-review": 153,
+      "finalized": 22
     }
   },
   "7.13": {
@@ -3357,7 +3366,7 @@
     "reviewed_by": "openclaw-task6"
   },
   "9.7": {
-    "status": "ready-for-review",
+    "status": "finalized",
     "task6_state": "reviewed",
     "task6_result": "pass-light-edit",
     "last_reviewed": "2026-04-20",
@@ -3418,9 +3427,16 @@
       "big_issues": 0
     }
   ],
-  "last_review": "2026-04-20T23:37",
+  "last_review": "2026-04-21T01:15",
   "status_counts": {
-    "ready-for-review": 154,
-    "finalized": 21
+    "ready-for-review": 153,
+    "finalized": 22
+  },
+  "8.9": {
+    "status": "ready-for-review",
+    "task6_state": "reviewed",
+    "task6_result": "pass-light-edit",
+    "last_reviewed": "2026-04-20",
+    "reviewed_by": "openclaw-task6"
   }
 }
