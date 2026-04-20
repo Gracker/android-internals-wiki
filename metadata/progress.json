@@ -3359,5 +3359,31 @@
     "task6_reviewed_date": "2026-04-20",
     "task6_state": "reviewed",
     "task6_result": "pass-light-edit"
+  },
+  "task6_reviews": {
+    "2.6": [
+      {
+        "date": "2026-04-20",
+        "result": "pass-light-edit",
+        "type": "revisiting-re-review",
+        "reviewer": "openclaw-task6"
+      }
+    ],
+    "2.8": [
+      {
+        "date": "2026-04-20",
+        "result": "pass-light-edit",
+        "type": "revisiting-re-review",
+        "reviewer": "openclaw-task6"
+      }
+    ],
+    "2.18": [
+      {
+        "date": "2026-04-20",
+        "result": "pass-light-edit",
+        "type": "revisiting-re-review",
+        "reviewer": "openclaw-task6"
+      }
+    ]
   }
 }

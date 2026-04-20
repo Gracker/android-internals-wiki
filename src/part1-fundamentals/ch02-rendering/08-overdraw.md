@@ -10,8 +10,8 @@ last_verified: "2026-04-12"
 last_verified_against: "AOSP android-16.0.0_r1"
 drafted_date: "2026-03-30"
 confidence: high
-reviewed_date: "2026-04-19"
-reviewed_by: openclaw-task6
+reviewed_date: "2026-04-20"
+reviewed_by: "openclaw-task6"
 task6_result: pass-light-edit
 task2b_result: fixed
 sources:
@@ -40,7 +40,7 @@ sources:
 tags: [overdraw, GPU, rendering, clipRect, quickReject, 性能优化, Compose, DisplayList, LayoutInspector, AGI]
 related_chapters: ["2.1", "2.4", "2.5", "7.2"]
 pipeline_stage: task9_pending
-task6_state: revisiting
+task6_state: reviewed
 task9_state: pending
 task2b_state: fixed
 task9_result: needs-rework
@@ -147,7 +147,7 @@ Perfetto 不会直接告诉我们“这里有 3x 过度绘制”。它给的是�
 
 每个 Activity 的 Window 都有一个默认背景。这个背景由 Activity 的主题（Theme）决定，通常是一个不透明的颜色或 drawable。当我们在 Activity 的布局根节点又设置了自己的背景时，Window 的默认背景就被完全遮挡了，但它仍然被绘制了一次。
 
-在实际优化案例中发现了一个典型案例：文件管理器应用的 ActionBar 和内容区域整体呈现蓝色（1x 过度绘制），追踪后发现是整个 Window 的主题背景导致的。这个背景在所有内容之下，被完全覆盖，没有任何视觉贡献。
+实战中遇到过一个典型案例：文件管理器应用的 ActionBar 和内容区域整体呈现蓝色（1x 过度绘制），追踪后发现是整个 Window 的主题背景导致的。这个背景在所有内容之下，被完全覆盖，没有任何视觉贡献。
 
 解决方法是透明化 Window 背景：
 
