@@ -25,12 +25,12 @@ sources:
   - type: blog
     path: "https://www.androidperformance.com/"
 tags: ['surfaceflinger', 'bufferqueue', 'hwc', 'composition', 'layer', 'vsync', 'blastbufferqueue', 'renderengine']
-related_chapters: ["2.1", "2.3", "2.4", "2.5", "2.10", "7.3"]
-pipeline_stage: task2b_pending
+related_chapters: ["2.1", "2.3", "2.4", "2.5", "2.10", "2.13", "2.16", "7.3"]
+pipeline_stage: task6_pending
 task6_state: revisiting
-task9_state: reviewed
+task9_state: pending
 task9_result: needs-rework
-task2b_state: pending
+task2b_state: fixed
 task2b_result: fixed
 ---
 
@@ -46,7 +46,7 @@ task2b_result: fixed
 - 🔹 Layer 的概念与 z-order 排列
 - 🔹 SurfaceFlinger 主循环：Android 12-13 为 onMessageReceived → INVALIDATE/REFRESH，Android 14+ 为 commit/composite
 - 🔹 Jank 与 SurfaceFlinger 的关系：SF 主线程卡顿对全局帧率的影响
-- 🔹 BlastBufferQueue 的引入与改进（Android 12+）
+- 🔹 BLASTBufferQueue 的版本边界（Android 11 进入主线，Android 12+ 观察口径继续完善）
 - 🔹 在 Perfetto 中的表现：各 Track 对照与正常/异常判断
 
 ### 扩展（可选深入）
@@ -123,7 +123,7 @@ SurfaceFlinger 有两种合成方式：Client 合成（也叫 GPU 合成）和 D
 
 ### Client 合成：GPU 走一遍完整渲染流程
 
-当 SurfaceFlinger 决定使用 Client 合成时，它会通过 RenderEngine（底层使用 OpenGL ES 或 Vulkan）将所有需要合成的 Layer 按顺序渲染到一个 Framebuffer 目标上。可以把这理解为一次特殊的"渲染 Pass"——SurfaceFlinger 充当 GPU 客户端，把每个 Layer 当作一个纹理，设置好变换矩阵和混合模式，然后逐层绘制。
+当 SurfaceFlinger 决定使用 Client 合成时，它会通过 RenderEngine（底层使用 OpenGL ES 或 Vulkan）将所有需要合成的 Layer 按顺序渲染到一个 Framebuffer 目标上。这可以视作一次特殊的渲染 Pass。SurfaceFlinger 充当 GPU 客户端，把每个 Layer 当作一个纹理，设置好变换参数和混合模式，然后逐层绘制。
 
 Client 合成的优势在于灵活性——GPU 能处理任何复杂的变换、缩放、旋转和混合效果。但代价也很明显：它需要占用 GPU 算力，消耗额外的内存带宽，并且整个合成过程是"实打实的渲染"，需要等待 GPU 完成。当 Layer 数量多或者 Layer 内容复杂时，Client 合成的耗时可能达到好几毫秒，直接挤占 App 可用的 GPU 时间，导致 App 渲染变慢。
 
@@ -133,7 +133,7 @@ HWC（Hardware Composer）是显示控制器中专门用于合成的硬件单元
 
 HWC 硬件合成的效率很高——它不经过 GPU 渲染管线，而是把多个 Layer 的 Buffer 指针交给显示控制器，让硬件在扫描输出时直接从多个 Buffer 中读取像素并混合。这样做几乎不占用 GPU，CPU 参与也更少，功耗通常更低。
 
-不过 HWC 也有其限制。每个设备的 HWC 支持的 Overlay 平面数量是有限的（不同设备从 4 个到 16 个不等，取决于 SoC 和显示控制器型号），超出数量限制的 Layer 必须退回 Client 合成。此外，某些复杂的变换（如圆角裁剪、模糊效果）HWC 可能不支持，也会退回 GPU。
+不过 HWC 也有其限制。Overlay plane 数量、缩放能力、旋转支持和颜色格式约束都强依赖 SoC 的 DPU 实现，不能把某台设备的 4 个、8 个或 16 个 plane 当成通用基线。排查时以 `dumpsys SurfaceFlinger`、厂商显示文档和实际 Trace 为准；一旦超出设备能力，相关 Layer 就会退回 Client 合成。
 
 ### 合成方式的选择逻辑
 
@@ -201,7 +201,7 @@ void Scheduler::onFrameSignal(ICompositor& compositor, VsyncId vsyncId,
 
 ## 在 Perfetto 中的表现
 
-做性能分析时，最关心的往往不是 SurfaceFlinger 内部代码怎么写的，而是"在 Trace 里我怎么看出它出了问题"。这一节我们对照 Perfetto 的 Track，把 SurfaceFlinger 的工作过程映射到界面上能直接看到的东西。
+做性能分析时，常见任务是在 Trace 里判断 SurfaceFlinger 什么时候开始异常、异常落在哪个阶段。这一节对照 Perfetto 的 Track，把 SurfaceFlinger 的工作过程映射到界面上能直接看到的东西。
 
 ### SurfaceFlinger 主线程 Track
 
@@ -278,7 +278,7 @@ Layer 之间有父子关系，构成树形结构。父 Layer 可以控制子 Lay
 
 ## Jank 与 SurfaceFlinger 的关系
 
-SurfaceFlinger 的性能问题有一个特点：它不是"某个 App 卡了"，而是"整个系统卡了"。因为 SurfaceFlinger 是全局合成器，它的主线程卡顿会影响所有可见的应用。
+SurfaceFlinger 的性能问题会表现成系统级卡顿。因为 SurfaceFlinger 是全局合成器，它的主线程卡顿会影响所有可见的应用。
 
 具体来说，如果 SurfaceFlinger 在某一帧的事务处理或合成过程中耗时过长，会发生以下连锁反应：
 
@@ -297,19 +297,23 @@ SurfaceFlinger 的性能问题有一个特点：它不是"某个 App 卡了"，�
 
 ## BlastBufferQueue
 
-Android 12 引入了 `BLASTBufferQueue`。它没有把 BufferQueue 整套机制“搬回 App 进程”，也没有让 acquire / release 这类消费者动作消失。更准确的说法是，BLAST 把 Buffer 提交和 `SurfaceControl.Transaction` 绑到同一帧语义里，减少几何变更和 Buffer 更新错位。
+本节聚焦 Android 12-16，但主窗口 BLAST 进入主线的时间点要往前挪到 Android 11。Android 11 的 `ViewRootImpl` 已经把主窗口 Buffer 提交和 `SurfaceControl.Transaction` 绑定到 BLAST 路径里；Android 12 之后，这套路径再和 FrameTimeline、窗口同步分析口径一起变得更容易观测。
 
-### Android 12 之前：Buffer 和几何信息可能不同步
+### Android 11：主窗口 BLAST 进入主线
 
-旧模型里，Buffer 仍然通过 BufferQueue 在 producer 和 consumer 之间流转，窗口大小、裁剪、位置这类几何信息则通过 `SurfaceControl.Transaction` 单独提交。窗口 resize、旋转、分屏切换、IME 顶起这类场景里，二者如果落在不同的 frame boundary，上层就可能看到内容已经换成新 Buffer，几何信息却还是旧状态，表现为 stretch、jump 或短暂不同步。
+Legacy 模型里，Buffer 通过 BufferQueue 在 producer 和 consumer 之间流转，窗口大小、裁剪、位置这类几何信息则通过 `SurfaceControl.Transaction` 单独提交。窗口 resize、旋转、分屏切换、IME 顶起这类场景里，二者如果落在不同的 frame boundary，上层就可能看到内容已经换成新 Buffer，几何信息却还是旧状态，表现为 stretch、jump 或短暂不同步。
 
-### BLAST 做了什么
+Android 11 把主窗口 BLAST 放进 `ViewRootImpl` 主线后，应用侧会在 `BLASTBufferQueue` 中先取到待提交 Buffer，再把 Buffer、fence 和几何 transaction 合成一笔 `SurfaceControl.Transaction` 送给 SurfaceFlinger。这条路径解决的是“同一帧里内容和壳子怎么一起到位”的问题。
 
-`frameworks/native/libs/gui/BLASTBufferQueue.cpp` 里，`BLASTBufferQueue::onFrameAvailable()` 会进入 `acquireNextBufferLocked()`；这个函数内部仍调用 `mBufferItemConsumer->acquireBuffer()`。拿到 Buffer 后，BLAST 通过 `SurfaceComposerClient::Transaction::setBuffer()` 把 Buffer、fence、dataspace、damage、FrameTimeline 信息写进同一个 `Transaction`，再用 `mergeWithNextTransaction()` 把挂起的几何 transaction 合并进去。释放阶段仍会走 `releaseBufferCallbackLocked()`，最终回到 `mBufferItemConsumer->releaseBuffer()`。
+### Android 12+：分析口径更完整
 
-这带来两点直接效果。第一，Buffer 内容和几何属性更容易在同一次 `Transaction` 里生效，窗口缩放、旋转、reparent 这类场景更不容易出现“内容先到、壳子后到”的错位。第二，应用侧仍然通过 `Surface` / `SurfaceControl` 使用熟悉的 API，SurfaceFlinger 侧仍然通过 BufferQueue consumer 获取和释放 Buffer。BLAST 改的是提交同步方式，不是把 BufferQueue 换成另一套无消费者模型。
+Android 12 没有“才引入 BLAST”，它做的是把既有 BLAST 路径和 FrameTimeline、VSyncId、窗口同步分析口径更紧地绑在一起。做 Perfetto 分析时，Android 12+ 更容易把 Buffer 提交、transaction 应用、expected present 和 actual present 放到同一组观察点里。
 
-对性能分析来说，读 Trace 时最好把 BLAST 看成“BufferQueue + Transaction 的同帧提交适配层”。如果某一帧既有 Buffer 更新又有 geometry 变化，重点看这两类操作是否在同一个 frame number 上被合并，而不是假定 acquire / release 已经不再跨进程可见。
+### 代码锚点
+
+`frameworks/native/libs/gui/BLASTBufferQueue.cpp` 里，`BLASTBufferQueue::onFrameAvailable()` 会进入 `acquireNextBufferLocked()`。拿到 Buffer 后，BLAST 通过 `SurfaceComposerClient::Transaction::setBuffer()` 把 Buffer、fence、dataspace、damage 和帧信息写进同一笔 transaction；释放阶段仍会走 `releaseBufferCallbackLocked()`，最终回到 `mBufferItemConsumer->releaseBuffer()`。主窗口接入 BLAST 的 Java 侧入口则在 `frameworks/base/core/java/android/view/ViewRootImpl.java`。
+
+读 Trace 时，把 BLAST 当成“BufferQueue + 同帧 transaction 提交”这层适配即可。如果某一帧同时发生 Buffer 更新和 geometry 变化，重点看它们是否落在同一个 frame number 上。consumer、fence 和 release 链仍然存在，只是提交组织方式变了。
 
 ## 与其他机制的关系
 
@@ -333,7 +337,9 @@ SurfaceFlinger 的主干职责没有变，变化主要发生在调度入口、Bu
 
 **Android 10**：围绕帧统计、present fence 和合成观测的能力继续完善，SurfaceFlinger 与性能工具能拿到的时间戳更多，但 Perfetto 中今天所说的 FrameTimeline 还没有作为完整体系出现。
 
-**Android 12**：引入 `BLASTBufferQueue`，把 Buffer 提交与 `SurfaceControl.Transaction` 合到同一帧语义里，减少 Buffer 内容与窗口几何信息错位；同时 FrameTimeline 开始进入官方性能分析语境，Perfetto 能把预期 present、实际 present 和 jank 分类放到同一条时间线上。VSync 调度仍由 `Scheduler`、`EventThread`、`VSyncSchedule` 负责，`VsyncModulator` 负责 phase 调整。
+**Android 11**：主窗口 BLAST 进入 `ViewRootImpl` 主线，Buffer 提交和窗口几何 transaction 开始按同帧语义组织。分析 resize、rotation、relayout 这类问题时，BLAST 已经是主路径之一。
+
+**Android 12**：FrameTimeline 进入官方性能分析体系，BLAST 路径上的 VSyncId、expected present、actual present 更容易放到同一时间基准里观察；窗口同步和 SurfaceView 相关分析口径也更稳定。
 
 **Android 13**：HWC HAL 开始支持 AIDL 接口（`android.hardware.graphics.composer3` / `IComposer.aidl`），用于替代 HIDL composer；RenderEngine 的常见 backend 仍以 GLES / SkiaGL 路径为主。
 
@@ -343,23 +349,23 @@ SurfaceFlinger 的主干职责没有变，变化主要发生在调度入口、Bu
 
 **Android 16**：`SurfaceFlinger::commit(PhysicalDisplayId, FrameTargets)` 与 `composite(PhysicalDisplayId, FrameTargeters)` 继续沿用分阶段模型，多显示 target 计算更细，入口没有回到旧版 `onMessageReceived()`。
 
-## 常见问题与误区
+## 几个容易混淆的边界
 
-### 误区一："App 渲染快就不会卡"
+### App 帧按时产出，只说明 producer 侧正常
 
-不完全对。即使 App 每帧都在 16ms 内完成渲染，如果 SurfaceFlinger 合成太慢，帧仍然会被延迟呈现。在 Perfetto 中排查卡顿时，不要只看 App 的 MainThread 和 RenderThread，一定要同时检查 SurfaceFlinger 主线程 Track。
+App 的 MainThread 和 RenderThread 都在预算内，只能说明 producer 侧没有拖延。SurfaceFlinger 合成、HWC present 或 release fence 回收拉长时，FrameTimeline 仍然会把这一帧记成 display 侧超时。
 
-### 误区二："SurfaceFlinger 卡了就是 SurfaceFlinger 的 bug"
+### SurfaceFlinger slice 变长，先查输入条件
 
-不一定。SurfaceFlinger 的卡顿往往是"被拖累"的。比如某个 App 提交了一个超大 Layer（含复杂变换），SurfaceFlinger 不得不对它做 Client 合成，GPU 渲染耗时增加。根因在 App 端的 Layer 属性设置不合理，但表现为 SurfaceFlinger 卡顿。
+SurfaceFlinger 的长 slice 经常是上游输入条件推高的结果，例如 Layer 数量突然增加、几何事务暴增、某个 Layer 退回 Client 合成，或者 GPU 同时被 App 渲染任务占满。排查时要把事务量、Layer 属性和 GPU 竞争一起看。
 
-### 误区三："HWC 合成一定比 GPU 合成好"
+### HWC 合成通常更省 GPU，但判断要结合设备约束
 
-大多数情况下是的，但也有例外。HWC 的叠加平面（Overlay Plane）在内容完全不变时效率可能低于 GL 合成——因为 GL 合成可以在 Layer 没有变化时跳过处理，而 HWC 的 Overlay 每帧都需要硬件读取 Buffer。不过这个差异在实际应用中通常可以忽略。
+Device composition 往往更省 GPU 和带宽，但前提是当前 Layer 组合没有踩中 plane 数量、缩放、旋转、颜色格式和特效限制。是否划算，要看这台设备的 DPU 能力和当时的 Layer 组合，而不是只看抽象概念。
 
-### 误区四："dumpsys SurfaceFlinger 能看到所有性能问题"
+### `dumpsys SurfaceFlinger` 适合看快照，Perfetto 负责时序
 
-`dumpsys SurfaceFlinger` 能看到 Layer 列表、HWC 合成类型分配、Buffer 状态等静态信息，但它不能替代 Perfetto Trace。性能问题的时间特性（什么时候卡、卡了多久、影响范围多大）只能从 Trace 中获取。`dumpsys` 适合做现状快照，Perfetto 适合做时序分析。
+`dumpsys SurfaceFlinger` 适合确认 Layer 树、合成类型、Buffer 状态和刷新率配置。真正的掉帧时刻、Fence 等待、present 延迟和 transaction 风暴，还是要回到 Perfetto 的时间线里判断。
 
 ## 参考资料
 
@@ -367,7 +373,8 @@ SurfaceFlinger 的主干职责没有变，变化主要发生在调度入口、Bu
 
 - `frameworks/native/services/surfaceflinger/SurfaceFlinger.cpp` — SurfaceFlinger 主流程实现，Android 12-13 侧重 `onMessageReceived` / `handleMessageInvalidate` / `onMessageRefresh`，Android 14+ 侧重 `commit()` / `composite()`
 - `frameworks/native/services/surfaceflinger/` — SurfaceFlinger 服务完整实现
-- `frameworks/native/libs/gui/BLASTBufferQueue.cpp` — BLASTBufferQueue 实现（Android 12+）
+- `frameworks/base/core/java/android/view/ViewRootImpl.java` — 主窗口 BLAST 接入路径
+- `frameworks/native/libs/gui/BLASTBufferQueue.cpp` — BLASTBufferQueue 实现（Android 11 进入主线，Android 12+ 更适合结合 FrameTimeline 一起分析）
 - `hardware/interfaces/graphics/composer/` — HWC HAL 接口定义（HIDL @2.x 和 AIDL composer3）
 - `frameworks/native/libs/renderengine/` — RenderEngine 实现（OpenGL ES / Vulkan 后端）
 
