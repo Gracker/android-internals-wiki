@@ -1,32 +1,32 @@
 {
-  "generated_at": "2026-04-20T11:51:17+08:00",
+  "generated_at": "2026-04-20T12:16:05+08:00",
   "state_machine_version": "v2",
   "total_sections": 176,
   "metrics": {
     "total": 176,
     "unknown": 2,
-    "last_updated": "2026-04-20T11:51:17+08:00",
+    "last_updated": "2026-04-20T12:16:05+08:00",
     "task2b_state_counts": {
       "unknown": 3,
-      "fixed": 124,
+      "fixed": 126,
       "idle": 25,
-      "pending": 24
+      "pending": 22
     },
     "task9_state_counts": {
       "unknown": 2,
-      "pending": 128,
-      "reviewed": 45,
+      "pending": 130,
+      "reviewed": 43,
       "fixed": 1
     },
     "pipeline_stage_counts": {
       "unknown": 2,
-      "task6_pending": 90,
+      "task6_pending": 92,
       "ready-to-publish": 14,
       "task9_pending": 47,
-      "task2b_pending": 23
+      "task2b_pending": 21
     },
     "pipeline_task9_pending": 47,
-    "pipeline_task2b_pending": 23,
+    "pipeline_task2b_pending": 21,
     "pipeline_ready_to_publish": 14,
     "ready-to-publish": 0,
     "finalized": 14,
@@ -35,26 +35,26 @@
   "pipeline": {
     "pipeline_stage_counts": {
       "unknown": 2,
-      "task6_pending": 90,
+      "task6_pending": 92,
       "ready-to-publish": 14,
       "task9_pending": 47,
-      "task2b_pending": 23
+      "task2b_pending": 21
     },
     "task2b_state_counts": {
       "unknown": 3,
-      "fixed": 124,
+      "fixed": 126,
       "idle": 25,
-      "pending": 24
+      "pending": 22
     },
     "task6_state_counts": {
       "unknown": 2,
-      "revisiting": 85,
-      "reviewed": 89
+      "revisiting": 87,
+      "reviewed": 87
     },
     "task9_state_counts": {
       "unknown": 2,
-      "pending": 128,
-      "reviewed": 45,
+      "pending": 130,
+      "reviewed": 43,
       "fixed": 1
     }
   },
@@ -893,10 +893,10 @@
       "title": "手势导航与系统交互",
       "path": "src/part1-fundamentals/ch03-input/03-gesture-navigation.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
-      "task6_state": "reviewed",
-      "task9_state": "reviewed",
-      "task2b_state": "pending",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
+      "task9_state": "pending",
+      "task2b_state": "fixed",
       "section": "3.3",
       "reviewed_date": "2026-04-20",
       "reviewed_by": "openclaw-task6",
@@ -904,7 +904,8 @@
       "task9_result": "needs-rework",
       "task9_reviewed_date": "2026-04-20",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-20T11:51:17+08:00"
+      "last_task9_at": "2026-04-20T11:51:17+08:00",
+      "task2b_result": "fixed"
     },
     "src/part1-fundamentals/ch03-input/04-input-latency-prediction.md": {
       "chapter": "3.4",
@@ -1291,10 +1292,10 @@
       "title": "Thermal 管控深度：从内核子系统到 ADPF 主动降频",
       "path": "src/part1-fundamentals/ch05-cpu-power/12-thermal-management-deep-dive.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
-      "task6_state": "reviewed",
-      "task9_state": "reviewed",
-      "task2b_state": "pending",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
+      "task9_state": "pending",
+      "task2b_state": "fixed",
       "section": "5.12",
       "reviewed_date": "2026-04-20",
       "reviewed_by": "openclaw-task6",
@@ -1302,7 +1303,8 @@
       "task9_result": "needs-rework",
       "task9_reviewed_date": "2026-04-20",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-20T11:51:17+08:00"
+      "last_task9_at": "2026-04-20T11:51:17+08:00",
+      "task2b_result": "fixed"
     },
     "src/part1-fundamentals/ch05-cpu-power/README.md": {
       "chapter": null,

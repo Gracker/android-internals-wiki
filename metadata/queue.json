@@ -48,7 +48,10 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-20T11:51:17+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-04-20T12:16:05+08:00",
+      "completed_by": "task2b-content-processing-rework",
+      "resolution": "已统一修正 OnBackInvoked* / OnBackInvokedDispatcher 的 AOSP 根路径，并补上可复现的 Perfetto 抓取基线与 legacy / predictive back 判读步骤。"
     },
     {
       "section": "5.12",
@@ -80,7 +83,10 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-20T11:51:17+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-04-20T12:16:05+08:00",
+      "completed_by": "task2b-content-processing-rework",
+      "resolution": "已把 cpufreq cooling 映射改回 OPP / freq_qos 口径，重写 hotplug 边界，降格 MAGT 数字为 vendor case study，并把 Perfetto 频率查询改成 counter + cpu_counter_track。"
     }
   ]
 }
