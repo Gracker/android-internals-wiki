@@ -4016,3 +4016,21 @@
 - **位置**：L459
 - **问题**：版本演进表把包级通知速率限制放在 Android 12 项里，容易误读为 Android 12 新增；相同常量和 `mUsageStats.getAppEnqueueRate()` 路径在 android-10.0.0_r1 已存在。
 - **建议**：改成“Android 10+ 延续到 Android 16 的限制”，或把它挪出版本增量表，改成跨版本通用边界说明。
+
+## [Task9 Deep Review] 8.10 ProfilingManager 系统触发式性能追踪 — 2026-04-20
+- **类型**：版本差异
+- **位置**：L73-L76 / L254-L259
+- **问题**：章节列出了 extension 36.1 的 trigger 常量，但没有补 runtime gating 入口。读者容易把 36.1 扩展能力误读成“只要 API 36 就稳定可用”，从而漏掉 Extension SDK 检查。
+- **建议**：补一句“36.1 trigger 需要按 extension version 判定，不应只看 API level”，并给出运行时 gating 提示。
+
+## [Task9 Deep Review] 13.6 线程 CPU 状态分析 — 2026-04-20
+- **类型**：原理边界/数据缺失
+- **位置**：L252-L260
+- **问题**：唤醒关系段把 `sched_waking` 近似写成“资源释放后 T1 直接唤醒 T2”，且只笼统提示 `wakeup from` 可能不准，没有交代“wakeup 只代表线程变为 runnable，不代表立刻拿到 CPU”这条边界。
+- **建议**：补一句“`sched_waking` 记录的是 runnable 时刻与 waker 线程，后续仍可能有 runqueue 排队、迁核和优先级竞争”，避免把 wake source 当成完整依赖图。
+
+## [Task9 Deep Review] 14.10 eBPF/BPF 在 Android 性能分析中的应用 — 2026-04-20
+- **类型**：数据缺失
+- **位置**：L399-L400
+- **问题**：`单次执行 <100ns` 与“100 万次调用≈100ms/s”这组数字没有测试条件、内核版本、probe 类型和设备环境，当前写法像通用事实。
+- **建议**：如果拿不出可复现 benchmark，就把数字降格为经验量级，并标清“不同 helper / map 访问 / ringbuf 写入路径开销差异很大”。

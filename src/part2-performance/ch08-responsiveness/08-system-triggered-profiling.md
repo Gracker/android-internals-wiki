@@ -35,18 +35,17 @@ sources:
     path: "packages/modules/Profiling/framework/java/android/os/ProfilingResult.java"
   - type: aosp
     path: "packages/modules/Profiling/service/java/com/android/os/profiling/ProfilingService.java"
-pipeline_stage: task6_pending
+pipeline_stage: task2b_pending
 task6_state: revisiting
-task9_state: pending
-task2b_state: fixed
+task9_state: reviewed
+task2b_state: pending
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-04-20"
 task6_result: pass-light-edit
 task9_result: needs-rework
-task2b_result: fixed
 task9_reviewed_date: "2026-04-20"
 task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-04-20T15:56:56+08:00"
+last_task9_at: "2026-04-20T21:48:59+08:00"
 ---
 
 # ProfilingManager 系统触发式性能追踪

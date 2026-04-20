@@ -24,10 +24,14 @@ sources:
     path: "https://perfetto.dev/docs/data-sources/cpu-scheduling"
 tags: ['perfetto', 'thread-state', 'sched-switch', 'running', 'runnable', 'sleep', 'uninterruptible-sleep', 'cpu-scheduling']
 related_chapters: ["5.1", "13.1", "13.5"]
-pipeline_stage: task9_pending
+pipeline_stage: task2b_pending
 task6_state: reviewed
-task9_state: pending
-task2b_state: idle
+task9_state: reviewed
+task2b_state: pending
+task9_result: needs-rework
+task9_reviewed_date: "2026-04-20"
+task9_reviewed_by: "openclaw-task9"
+last_task9_at: "2026-04-20T21:48:59+08:00"
 ---
 
 # 线程 CPU 状态分析
