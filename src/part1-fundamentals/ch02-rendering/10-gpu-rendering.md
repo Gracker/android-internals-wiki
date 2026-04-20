@@ -26,13 +26,13 @@ reviewed_date: "2026-04-21"
 reviewed_by: openclaw-task6
 rework_date: "2026-04-21"
 rework_by: openclaw-task2b
-review_round: 5
+review_round: 6
 last_polish_notes: "第2轮出版级精修：修复applicable_versions范围、ANGLE URL拼写、叙述过渡、口语化表达"
 polish_count: 2
 polish_date: "2026-04-10"
 polish_by: "task2b-polish"
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task6_result: pass-light-edit
 task9_state: pending
 task9_result: needs-rework
@@ -85,13 +85,13 @@ task2b_result: fixed
 
 流程的起点在 CPU 侧：应用主线程执行 `View.onDraw()`，通过 Canvas API 绘制界面。这些 Canvas 调用被 Skia 图形库接收后，Skia 会根据运行环境将其转换为 OpenGL ES 或 Vulkan 调用——这是 GPU 指令生成阶段。接下来 GPU 接管工作，依次执行顶点处理、片段处理等计算任务，将渲染结果写入显存中的帧缓冲区。最后，SurfaceFlinger 将多个图层合成为最终图像，提交给显示硬件。
 
-CPU 和 GPU 之间的分工经历了几个重要阶段的演进。在 Android 5.0 之前，主线程包揽了所有渲染工作——measure/layout、DisplayList 录制、GPU 命令提交全部在同一线程完成。Android 5.0 引入了独立的 RenderThread，将 GPU 命令的提交和执行从主线程剥离出来，主线程只负责 measure/layout 和 DisplayList（draw 命令列表）的录制。从 Android 12 开始，Google 进一步优化了这一分工，RenderThread 承担了更多工作，使得主线程的渲染负担进一步减轻。我们在 Trace 中看到的"GPU 耗时"，实际上对应的是 RenderThread 将命令提交到 GPU 直到 GPU 完成渲染的整个过程。
+CPU 和 GPU 之间的分工经历了几个重要阶段的演进。在 Android 5.0 之前，主线程包揽了所有渲染工作——measure/layout、DisplayList 录制、GPU 命令提交全部在同一线程完成。Android 5.0 引入了独立的 RenderThread，将 GPU 命令的提交和执行从主线程剥离出来，主线程只负责 measure/layout 和 DisplayList（draw 命令列表）的录制。从 Android 12 开始，Google 进一步优化了这一分工，RenderThread 承担了更多工作，使得主线程的渲染负担进一步减轻。我们在 Trace 中看到的"GPU 耗时"，对应的是 RenderThread 将命令提交到 GPU 直到 GPU 完成渲染的整个过程。
 
 [图：Android GPU 渲染管线全景图——从 CPU 准备到屏幕合成的完整数据流]
 
 ### Vertex Shader：顶点处理的起点
 
-Vertex Shader 是 GPU 渲染管线的第一个可编程阶段，它负责处理图元中的每个顶点。在 Android UI 渲染中，顶点处理看起来简单——一个矩形只有四个顶点——但实际上大量的 UI 元素最终都会转换为三角形图元，复杂界面的顶点数量可能非常可观。
+Vertex Shader 是 GPU 渲染管线的第一个可编程阶段，它负责处理图元中的每个顶点。在 Android UI 渲染中，顶点处理看起来简单——一个矩形只有四个顶点——但大量 UI 元素最终都会转换为三角形图元，复杂界面的顶点数量可能非常可观。
 
 当我们调用 `Canvas.drawRect()` 时，这个调用最终会触发 GPU 执行 Vertex Shader。其核心工作是三件事：首先，将模型的顶点从本地坐标转换到屏幕坐标，这个过程涉及矩阵变换（模型矩阵、视图矩阵、投影矩阵的组合）；其次，计算每个顶点的颜色、纹理坐标等插值属性，这些属性会在后续的 Fragment Shader 阶段被插值使用；最后，判断顶点是否在视口范围内，剔除不可见的图元，避免 GPU 在后续阶段做无用功。
 
@@ -357,7 +357,7 @@ Bandwidth bound 是三种瓶颈中最容易被忽略的一种。它的本质是 
 
 Android 的 GPU 内存管理涉及多个层次。从上往下看：应用层通过 `GraphicBuffer` 类来引用和管理图形缓冲区；系统框架层通过 BufferQueue 机制协调生产者（应用）和消费者（SurfaceFlinger）对缓冲区的使用；HAL 层通过 Gralloc 模块负责实际的物理内存分配；硬件层的 GPU 则直接访问这些物理内存来执行渲染和合成操作。
 
-理解这个层次结构，有一点至关重要：在移动设备上，CPU 和 GPU 共享同一块物理内存（统一内存架构，UMA）。这与 PC 上 CPU 内存和 GPU 显存分离的架构有本质区别。在 UMA 架构下，"GPU 内存"并不是独立的物理存储，而是从系统内存中划分出来的、具有特定对齐和访问属性的内存区域。GPU 的内存使用会直接影响系统的可用内存总量。在分析应用内存占用时，不能只看 Java heap——GPU 占用的内存同样重要。
+理解这个层次结构有一个关键前提：在移动设备上，CPU 和 GPU 共享同一块物理内存（统一内存架构，UMA）。这与 PC 上 CPU 内存和 GPU 显存分离的架构有本质区别。在 UMA 架构下，"GPU 内存"并不是独立的物理存储，而是从系统内存中划分出来的、具有特定对齐和访问属性的内存区域。GPU 的内存使用会直接影响系统的可用内存总量。在分析应用内存占用时，不能只看 Java heap——GPU 占用的内存同样重要。
 
 ```java
 // frameworks/base/core/java/android/graphics/GraphicBuffer.java
@@ -410,7 +410,7 @@ Android 12 引入了改进的 GPU 内存追踪机制，使得开发者和性能�
 
 ### ANGLE 的设计目标
 
-ANGLE（Almost Native Graphics Layer Engine）是 Google 开发的兼容层，它将 OpenGL ES API 调用翻译为 Vulkan 调用。ANGLE 的设计目标不仅仅是"兼容"——更重要的是"统一"。在 Android 16 之前，不同 GPU 厂商各自实现 OpenGL ES 驱动，质量参差不齐，bug 各不相同。ANGLE 将 OpenGL ES 的实现统一为一套代码（翻译到 Vulkan），Google 只需要维护这一套实现的质量，而不需要分别与三个厂商协调驱动修复。
+ANGLE（Almost Native Graphics Layer Engine）是 Google 开发的兼容层，它将 OpenGL ES API 调用翻译为 Vulkan 调用。ANGLE 的设计目标远不止"兼容"——根本目标是"统一"。在 Android 16 之前，不同 GPU 厂商各自实现 OpenGL ES 驱动，质量参差不齐，bug 各不相同。ANGLE 将 OpenGL ES 的实现统一为一套代码（翻译到 Vulkan），Google 只需要维护这一套实现的质量，而不需要分别与三个厂商协调驱动修复。
 
 ANGLE 的架构可以理解为一个翻译层：上层应用仍然使用熟悉的 OpenGL ES API（glDrawArrays、glTexImage2D 等），ANGLE 在内部将这些调用翻译为对应的 Vulkan 操作（vkCmdDraw、vkCreateImage 等）。对于应用开发者来说，这个过程完全透明——不需要修改任何代码，应用就自动运行在 Vulkan 后端上。
 
@@ -462,7 +462,7 @@ adb devices
 
 ### 抓取与定位
 
-我们使用 Perfetto 抓取了滚动场景的完整 Trace。在 Trace 中可以看到：
+我们使用 Perfetto 抓取了滚动场景的完整 Trace。在 Trace 中：
 
 - **主线程**：doFrame 耗时约 3-5ms，measure/layout 正常，CPU 侧不是瓶颈。
 - **RenderThread**：DrawCommands 录制约 1-2ms，正常范围。
@@ -508,7 +508,7 @@ adb devices
 
 ### 举一反三
 
-这个案例揭示了一个通用的 GPU 性能优化规律：**GPU 瓶颈往往是多个小问题叠加的结果，而不是单一的大问题。** 每个单独的因素（过度绘制、多次纹理采样、未压缩纹理）可能只贡献了几毫秒的开销，但加在一起就超过了 16.67ms 的帧预算。因此 GPU 优化的思路不是"找一个最大的问题解决它"，而是"逐一消除所有小的性能浪费"。
+这个案例揭示了一个通用的 GPU 性能优化规律：**GPU 瓶颈很少由单一的大问题导致，通常是多个小问题叠加的结果。** 每个单独的因素（过度绘制、多次纹理采样、未压缩纹理）可能只贡献了几毫秒的开销，但加在一起就超过了 16.67ms 的帧预算。因此 GPU 优化的思路不是"找一个最大的问题解决它"，而是"逐一消除所有小的性能浪费"。
 
 另外，这个案例也说明了一个重要观点：GPU 性能优化不等于"减少代码"。很多时候，问题的根因对 GPU 工作方式的理解不足——比如不理解纹理压缩可以减少带宽消耗，不理解过度绘制会让 GPU 做大量无用功，不理解多个半透明叠加层的性能代价。
 
@@ -520,7 +520,7 @@ GPU 渲染并不是一个独立的环节，它是整个 Android 渲染管线中�
 
 **Choreographer → GPU 的关系。** Choreographer（详见 §2.4）在 VSync-app 信号到来时触发 doFrame，驱动主线程完成 measure/layout/draw。主线程完成 draw 命令的录制后，RenderThread 将这些命令提交给 GPU。在 Perfetto 中，我们可以清楚地看到这个时序关系：Choreographer.doFrame → RenderThread.draw → GPU 渲染。
 
-**MainThread/RenderThread → GPU 的关系。** 在 Android 12+ 的架构中（详见 §2.5），主线程负责录制 DisplayList（draw 命令列表），RenderThread 负责将 DisplayList 通过 Skia 转换为 GPU 命令并提交。这意味着 GPU 渲染的开始时间取决于 RenderThread 何时完成命令提交，而 RenderThread 的提交又取决于主线程何时完成 draw 命令录制。任何一个环节的延迟都会推迟 GPU 开始工作的时间。
+**MainThread/RenderThread → GPU 的关系。** 在 Android 12+ 的架构中（详见 §2.5），主线程负责录制 DisplayList（draw 命令列表），RenderThread 负责将 DisplayList 通过 Skia 转换为 GPU 命令并提交。GPU 渲染的开始时间取决于 RenderThread 何时完成命令提交，而 RenderThread 的提交又取决于主线程何时完成 draw 命令录制。任何一个环节的延迟都会推迟 GPU 开始工作的时间。
 
 **SurfaceFlinger → GPU 的关系。** SurfaceFlinger（详见 §2.6）在 VSync-sf 信号到来时读取应用渲染好的缓冲区，将其与其他图层合成为最终图像。SurfaceFlinger 的合成操作本身也可能使用 GPU（GPU 合成路径），应用和 SurfaceFlinger 在某些时刻会因此竞争 GPU 资源。在 Perfetto 中，我们有时会看到应用的 GPU 渲染和 SurfaceFlinger 的 GPU 合成时间重叠，这就是 GPU 资源竞争的表现。
 
@@ -530,7 +530,7 @@ GPU 渲染并不是一个独立的环节，它是整个 Android 渲染管线中�
 
 ### GPU 相关 Track
 
-**gpu_render_stages track。** 这是最核心的 GPU track，它显示了 GPU 在每个时间段执行的具体渲染阶段。在 Qualcomm Adreno 设备上，我们可以看到 Vertex Shader、Fragment Shader 等阶段的明确标注。在 ARM Mali 设备上，对应的 track 可能以不同的名称出现，但核心信息相同。如果这个 track 显示某帧的 Fragment Shader 阶段特别长，就是 fillrate bound 的直接信号。
+**gpu_render_stages track。** 这是最核心的 GPU track，它显示了 GPU 在每个时间段执行的具体渲染阶段。在 Qualcomm Adreno 设备上，Vertex Shader、Fragment Shader 等阶段有明确标注。在 ARM Mali 设备上，对应的 track 可能以不同的名称出现，但核心信息相同。如果这个 track 显示某帧的 Fragment Shader 阶段特别长，就是 fillrate bound 的直接信号。
 
 **RenderThread track。** 虽然 RenderThread 是 CPU 侧的线程，但它的活动与 GPU 渲染直接相关。当 RenderThread 调用 `eglSwapBuffers()` 或 Vulkan 的 `vkQueuePresentKHR()` 提交帧时，如果 GPU 还没有完成上一帧的渲染，RenderThread 会被阻塞等待。在 Perfetto 中，这种等待表现为 RenderThread 上的长段 sleep/wait 状态——这通常意味着 GPU 是瓶颈。
 

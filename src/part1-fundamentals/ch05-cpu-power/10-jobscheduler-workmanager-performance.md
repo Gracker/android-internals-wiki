@@ -9,8 +9,8 @@ polish_date: "2026-04-09"
 polish_by: "task2b-polish"
 applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37)"
 last_verified: "2026-04-20"
-reviewed_date: "2026-04-20"
-reviewed_by: "openclaw-task6"
+reviewed_date: "2026-04-21"
+reviewed_by: openclaw-task6
 last_verified_against: "AOSP android-16.0.0_r1, developer.android.com reference, perfetto.dev stdlib docs"
 confidence: medium
 sources:
@@ -40,12 +40,12 @@ sources:
     path: "frameworks/base/apex/jobscheduler/framework/java/android/app/job/JobScheduler.java"
 tags: [jobscheduler, workmanager, background-scheduling, power, doze, battery, wakelock, app-standby, quota]
 related_chapters: ["5.6", "5.8", "1.5", "11.2", "15.5"]
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task2b_state: fixed
 task2b_result: fixed
-task6_result: "pass-light-edit"
+task6_result: pass-light-edit
 task9_result: needs-rework
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-04-20"
@@ -256,7 +256,7 @@ WorkManager 有两种 WorkRequest：
 
 **PeriodicWorkRequest** 用于周期性任务。最小周期是 15 分钟（与 JobScheduler 的最小周期一致），有一个 flex interval 参数控制"在周期末尾的哪个时间窗口内可以执行"。例如 `PeriodicWorkRequest.Builder(workerClass, 30, TimeUnit.MINUTES, 15, TimeUnit.MINUTES)` 表示每 30 分钟执行一次，但实际执行时间会在第 15-30 分钟之间。
 
-性能差异的关键点：PeriodicWorkRequest 底层不是一个永远运行的 Job，而是在每个周期结束时重新 schedule 一个新的 Job。这意味着每次周期执行后，WorkManager 需要写入数据库记录下次执行时间，然后通过 JobScheduler 或 AlarmManager 注册下一次唤醒。这个"写入 + 注册"的开销大约是几十毫秒，对于大多数场景可以忽略，但如果 PeriodicWorkRequest 的周期非常短（接近 15 分钟下限）且 Worker 执行本身也很快（几秒），调度开销的占比就会变得显著。
+性能差异的关键点：PeriodicWorkRequest 底层不是一个永远运行的 Job，而是在每个周期结束时重新 schedule 一个新的 Job。所以每次周期执行后，WorkManager 需要写入数据库记录下次执行时间，然后通过 JobScheduler 或 AlarmManager 注册下一次唤醒。这个"写入 + 注册"的开销大约是几十毫秒，对于大多数场景可以忽略，但如果 PeriodicWorkRequest 的周期非常短（接近 15 分钟下限）且 Worker 执行本身也很快（几秒），调度开销的占比就会变得显著。
 
 ### 链式任务（Chained Work）的调度开销
 
