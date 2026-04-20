@@ -30,21 +30,22 @@ created_by: "task2a-knowledge-gap"
 created_date: "2026-04-09"
 gap_source: "官方文档 + 读者需求 + AOSP 结构"
 gap_score: "19/20"
-pipeline_stage: "task6_pending"
-task6_state: "revisiting"
 task9_state: "pending"
 task2b_state: "fixed"
 task2b_result: "fixed"
-reviewed_by: "openclaw-task6"
-reviewed_date: "2026-04-13"
-task6_result: "needs-rework"
+
+task6_state: reviewed
+task6_result: pass-light-edit
+reviewed_date: 2026-04-20
+reviewed_by: openclaw-task6
+pipeline_stage: task9_pending
 ---
 
 # 13.10 Perfetto SQL 性能分析实战手册
 
 在前面的章节中，我们分别介绍了 Perfetto 的 UI 可视化（§13.3）、专题解读（§13.5）和命令行工具（§13.4）。但在实际工作中，很多性能问题无法单靠肉眼在 UI 中定位——我们需要精确的数字：第 47 帧耗时多少毫秒？主线程有多少时间花在等锁上？Binder 调用中排队占了多少时间？这类定量分析，离不开 SQL。
 
-Perfetto Trace Processor 内置了一个完整的 SQL 引擎（基于 SQLite），我们可以用它对 Trace 数据做任意维度的查询和聚合。本章不会逐个罗列 SQL 语法，而是围绕性能分析中最常见的几类问题——帧时间与卡顿、线程调度、Binder 事务、内存与 GC、启动时间、ANR、锁竞争——逐个给出**从问题到 SQL 到结论**的完整分析路径。每条 SQL 都可以直接在 Perfetto UI 的 Query 标签页或 `trace_processor_shell` 中运行。
+Perfetto Trace Processor 内置了一个完整的 SQL 引擎（基于 SQLite），我们可以用它对 Trace 数据做任意维度的查询和聚合。本节不会逐个罗列 SQL 语法，而是围绕性能分析中最常见的几类问题——帧时间与卡顿、线程调度、Binder 事务、内存与 GC、启动时间、ANR、锁竞争——逐个给出**从问题到 SQL 到结论**的完整分析路径。每条 SQL 都可以直接在 Perfetto UI 的 Query 标签页或 `trace_processor_shell` 中运行。
 
 ## Trace Processor SQL 基础
 
@@ -300,7 +301,7 @@ LIMIT 20;
 
 ### 跨进程 Binder 调用链追踪
 
-在实际分析中，我们经常需要追踪一个 Binder 调用从客户端到服务端的完整路径。在 Perfetto UI 中，这对应的是 Android Binder / Transactions track。在 SQL 中，需要通过时间戳对齐来关联客户端和服务端的 slice：
+在实际分析中，我们经常需要追踪一个 Binder 调用从客户端到服务端的完整路径。在 Perfetto UI 中，这对应的是 Android Binder / Transactions track。在 SQL 中，需要通过时间戳关联来连接客户端和服务端的 slice：
 
 ```sql
 -- 查找主线程发起的长时间 Binder 调用
@@ -407,7 +408,7 @@ ORDER BY counter.ts;
 
 冷启动是从用户点击 App 图标到首帧渲染完成的过程。Perfetto SQL 可以精确分解这个过程中的每个阶段耗时。
 
-### 冷启动全链路时间分解
+### 冷启动全流程时间分解
 
 ```sql
 -- 冷启动关键时间节点

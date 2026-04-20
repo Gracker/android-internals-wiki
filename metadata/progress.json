@@ -3399,5 +3399,26 @@
         "reviewer": "openclaw-task6"
       }
     ]
+  },
+  "reviews": [
+    {
+      "date": "2026-04-20",
+      "task": "task6-draft-review",
+      "chapters": [
+        "13.4",
+        "13.5",
+        "13.10"
+      ],
+      "result": "pass-light-edit",
+      "fixes": 10,
+      "big_issues": 0
+    }
+  ],
+  "last_review": "2026-04-20T23:37",
+  "status_counts": {
+    "draft": 2,
+    "ready-for-review": 152,
+    "finalized": 19,
+    "ready-to-publish": 0
   }
 }
