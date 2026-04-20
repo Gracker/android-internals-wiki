@@ -7,10 +7,10 @@ drafted_date: "2026-03-31"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
 last_verified: "2026-04-14"
 last_verified_against: "AOSP android-16.0.0_r1"
-reviewed_date: "2026-04-14"
+reviewed_date: "2026-04-21"
 reviewed_by: "openclaw-task6"
 review_notes: "task2b-polish: 已做首轮润色；2026-04-14 Task6：L1/L2 小修，lmkd / cgroup / ZRAM 段落的技术风险已转 Task 9 / Task 2B"
-task6_result: needs-rework
+task6_result: pass-light-edit
 confidence: medium
 polish_count: 1
 polish_date: "2026-04-06"
@@ -38,8 +38,8 @@ sources:
     path: "https://juejin.cn/post/7530909474103296039"
 tags: ['memory', 'PSS', 'RSS', 'dumpsys', 'meminfo', 'procfs', 'ZRAM', 'cgroup']
 related_chapters: ["4.2", "4.3", "4.4", "4.5", "10.1"]
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task9_result: needs-rework
 task2b_state: fixed
