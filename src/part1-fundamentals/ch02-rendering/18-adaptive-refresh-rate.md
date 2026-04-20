@@ -30,21 +30,52 @@ sources:
     path: "https://perfetto.dev/docs/analysis/stdlib-docs"
 tags: [ARR, refresh-rate, VSync, SurfaceFlinger, Choreographer, LTPO, frame-pacing, Android-16]
 related_chapters: ["2.2", "2.3", "2.4", "2.6", "2.13", "2.16"]
-pipeline_stage: task6_pending
+pipeline_stage: task9_pending
 last_task9_at: "2026-04-19T17:21:00+08:00"
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-04-19"
-task6_state: revisiting
+task6_state: reviewed
 task9_state: pending
 task2b_state: fixed
 reviewed_by: "openclaw-task6"
-reviewed_date: "2026-04-19"
+reviewed_date: "2026-04-20"
 task6_result: pass-light-edit
 task9_result: needs-rework
 task2b_result: fixed
 ---
 
 # 2.18 Adaptive Refresh Rate 与动态帧率控制
+
+<!-- outline-start -->
+## 本节要点大纲
+
+### 锚点（必须覆盖）
+
+- 🔹 **ARR 的适用范围要和 Android 11-14 的多刷新率背景分开写**：[已验证: developer.android.com/develop/ui/views/animations/adaptive-refresh-rate]
+  Android 11-14 重点是多刷新率与 mode switching，ARR 主体能力面向 Android 15-QPR1 及以上，且依赖设备 HAL 支持。
+
+- 🔹 **SurfaceFlinger 通过 Scheduler 做 refresh-rate selection**：[已验证: AOSP android-16.0.0_r1, frameworks/native/services/surfaceflinger/SurfaceFlinger.cpp]
+  调用点在 `SurfaceFlinger.cpp` 的 `mScheduler->chooseRefreshRateForContent(...)`，不是把选择函数简单归到 SurfaceFlinger 某个公开方法名上。
+
+- 🔹 **Display 查询 API 的真实语义**：[已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/view/Display.java]
+  `hasArrSupport()` 查能力，`getSupportedRefreshRates()` 查当前显示可用档位，`getSuggestedFrameRate(int)` 只接受 `FRAME_RATE_CATEGORY_NORMAL/HIGH` 这两个类别。
+
+- 🔹 **View / RecyclerView / Compose 才是普通 UI 应用的主入口**：[已验证: developer.android.com/develop/ui/views/animations/adaptive-refresh-rate]
+  `setRequestedFrameRate()`、`setFrameContentVelocity()`、`Modifier.preferredFrameRate()` 负责表达 UI 偏好，`Surface.setFrameRate()` 属于更底层的 Surface 提示。
+
+- 🔹 **Choreographer 公开的是 `FrameData` / `FrameTimeline`**：[已验证: developer.android.com/reference/android/view/Choreographer.FrameData]
+  App 回调签名是 `onVsync(FrameData data)`，公开 API 没有 `refreshRate` 字段，刷新节奏要结合时间线和 Display / View API 判断。
+
+- 🔹 **Perfetto 分析 ARR 时先看 VSYNC 间隔和 FrameTimeline，再判断异常**：[已验证: developer.android.com/games/sdk/frame-pacing]
+  VSYNC 周期变化本身可能是正常降频，不能直接按固定 16.67ms 阈值判掉帧。
+
+### 扩展（可选深入）
+
+- 🔸 **触摸与 Game Mode 对刷新率选择的影响**
+- 🔸 **Swappy 在游戏场景里的帧节奏控制**
+- 🔸 **非 LTPO 设备上的模式切换与短暂卡顿**
+<!-- outline-end -->
+
 
 ## 为什么要了解 ARR
 
@@ -250,32 +281,4 @@ ARR 本来就会改 VSYNC 周期。先分清是正常降频、模式切换，还
   - `https://perfetto.dev/docs/data-sources/frametimeline`
   - `https://perfetto.dev/docs/analysis/stdlib-docs`
 
-<!-- outline-start -->
-## 本节要点大纲
 
-### 锚点（必须覆盖）
-
-- 🔹 **ARR 的适用范围要和 Android 11-14 的多刷新率背景分开写**：[已验证: developer.android.com/develop/ui/views/animations/adaptive-refresh-rate]
-  Android 11-14 重点是多刷新率与 mode switching，ARR 主体能力面向 Android 15-QPR1 及以上，且依赖设备 HAL 支持。
-
-- 🔹 **SurfaceFlinger 通过 Scheduler 做 refresh-rate selection**：[已验证: AOSP android-16.0.0_r1, frameworks/native/services/surfaceflinger/SurfaceFlinger.cpp]
-  调用点在 `SurfaceFlinger.cpp` 的 `mScheduler->chooseRefreshRateForContent(...)`，不是把选择函数简单归到 SurfaceFlinger 某个公开方法名上。
-
-- 🔹 **Display 查询 API 的真实语义**：[已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/view/Display.java]
-  `hasArrSupport()` 查能力，`getSupportedRefreshRates()` 查当前显示可用档位，`getSuggestedFrameRate(int)` 只接受 `FRAME_RATE_CATEGORY_NORMAL/HIGH` 这两个类别。
-
-- 🔹 **View / RecyclerView / Compose 才是普通 UI 应用的主入口**：[已验证: developer.android.com/develop/ui/views/animations/adaptive-refresh-rate]
-  `setRequestedFrameRate()`、`setFrameContentVelocity()`、`Modifier.preferredFrameRate()` 负责表达 UI 偏好，`Surface.setFrameRate()` 属于更底层的 Surface 提示。
-
-- 🔹 **Choreographer 公开的是 `FrameData` / `FrameTimeline`**：[已验证: developer.android.com/reference/android/view/Choreographer.FrameData]
-  App 回调签名是 `onVsync(FrameData data)`，公开 API 没有 `refreshRate` 字段，刷新节奏要结合时间线和 Display / View API 判断。
-
-- 🔹 **Perfetto 分析 ARR 时先看 VSYNC 间隔和 FrameTimeline，再判断异常**：[已验证: developer.android.com/games/sdk/frame-pacing]
-  VSYNC 周期变化本身可能是正常降频，不能直接按固定 16.67ms 阈值判掉帧。
-
-### 扩展（可选深入）
-
-- 🔸 **触摸与 Game Mode 对刷新率选择的影响**
-- 🔸 **Swappy 在游戏场景里的帧节奏控制**
-- 🔸 **非 LTPO 设备上的模式切换与短暂卡顿**
-<!-- outline-end -->

@@ -5,8 +5,8 @@ status: ready-for-review
 applicable_versions: "Android 12 (API S) - Android 16 (API 36)"
 last_verified: "2026-04-12"
 drafted_date: 2026-03-30
-reviewed_date: 2026-04-19
-reviewed_by: openclaw-task6
+reviewed_date: "2026-04-20"
+reviewed_by: "openclaw-task6"
 task6_result: pass-light-edit
 rework_date: 2026-04-02
 last_verified_against: "AOSP android-12.0.0_r1, android-14.0.0_r1, android-16.0.0_r1, source.android.com docs"
@@ -26,8 +26,8 @@ sources:
     path: "https://www.androidperformance.com/"
 tags: ['surfaceflinger', 'bufferqueue', 'hwc', 'composition', 'layer', 'vsync', 'blastbufferqueue', 'renderengine']
 related_chapters: ["2.1", "2.3", "2.4", "2.5", "2.10", "2.13", "2.16", "7.3"]
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task9_result: needs-rework
 task2b_state: fixed
