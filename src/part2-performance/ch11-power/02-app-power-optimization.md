@@ -5,7 +5,7 @@ status: ready-for-review
 section: "11.2"
 drafted_date: "2026-04-03"
 drafted_by: "openclaw-task2a"
-reviewed_date: "2026-04-13"
+reviewed_date: "2026-04-20"
 reviewed_by: "openclaw-task6"
 polish_count: 1
 polish_date: "2026-04-07"
@@ -48,13 +48,9 @@ sources:
 tags: ['wakelock', 'jobscheduler', 'workmanager', 'doze', 'location', 'alarm', 'power', 'fgs', 'foreground-service', 'fcm', 'alarmmanager', 'geofencing', 'battery-historian', 'camera']
 related_chapters: ["11.1", "11.3", "5.6", "5.4", "5.10", "11.5"]
 task9_result: needs-rework
-pipeline_stage: task6_pending
-task6_state: revisiting
-task6_result: needs-rework
-task9_state: pending
-task2b_state: fixed
-task2b_result: fixed
----
+pipeline_stage: task9_pending
+task6_state: reviewed
+task6_result: pass-light-edit---
 
 # App 耗电优化
 

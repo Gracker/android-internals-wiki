@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-19 06:09",
+  "generated_at": "2026-04-20 06:11",
   "documents": [
     {
       "path": "Cubox/#01 创始人解密 Discord-2023-02-20.md",
@@ -44021,11 +44021,26 @@
         "ch16"
       ],
       "mapped_chapters": [
-        "ch16"
+        "ch15",
+        "ch05",
+        "ch01",
+        "ch13",
+        "ch14",
+        "ch16",
+        "ch04",
+        "ch07",
+        "ch10",
+        "ch12",
+        "ch02",
+        "ch06"
       ],
-      "total_score": 78,
+      "total_score": 88,
       "category": "high_author_original",
-      "last_analyzed": "2026-04-19"
+      "last_analyzed": "2026-04-19",
+      "last_modified": "2026-04-19 07:45",
+      "word_count": 3000,
+      "doc_type": "高爷原创文章",
+      "content_hash": "e581489a367c61ebf7dce4418396f2a6"
     },
     {
       "path": "src/part4-system/ch16-aosp/README.md",
@@ -44343,7 +44358,24 @@
         "ch04",
         "ch05",
         "ch16"
-      ]
+      ],
+      "last_modified": "2026-04-19 22:26",
+      "word_count": 3000,
+      "total_score": 88,
+      "mapped_chapters": [
+        "ch05",
+        "ch18",
+        "ch13",
+        "ch14",
+        "ch16",
+        "ch04",
+        "ch07",
+        "ch12",
+        "ch02",
+        "ch06"
+      ],
+      "doc_type": "高爷原创文章",
+      "content_hash": "aa385627b77ae67e2bc9589d6c7074c6"
     },
     {
       "path": "src/part1-fundamentals/ch02-rendering/05-main-render-thread.md",
@@ -44495,7 +44527,20 @@
         "ch08",
         "ch10",
         "ch16"
-      ]
+      ],
+      "last_modified": "2026-04-20 03:29",
+      "word_count": 3000,
+      "total_score": 88,
+      "mapped_chapters": [
+        "ch05",
+        "ch13",
+        "ch07",
+        "ch12",
+        "ch02",
+        "ch06"
+      ],
+      "doc_type": "高爷原创文章",
+      "content_hash": "55cfa4e78fb78a348ef09d2ce8bacd7e"
     },
     {
       "path": "src/part1-fundamentals/ch02-rendering/08-overdraw.md",
@@ -44518,7 +44563,24 @@
         "ch08",
         "ch14",
         "ch16"
-      ]
+      ],
+      "last_modified": "2026-04-19 21:20",
+      "word_count": 3000,
+      "total_score": 88,
+      "mapped_chapters": [
+        "ch15",
+        "ch18",
+        "ch13",
+        "ch14",
+        "ch16",
+        "ch04",
+        "ch07",
+        "ch12",
+        "ch02",
+        "ch06"
+      ],
+      "doc_type": "高爷原创文章",
+      "content_hash": "30b3d174af6391e8cb6317bae2c23ec4"
     },
     {
       "path": "src/part1-fundamentals/ch02-rendering/02-framerate.md",
@@ -44540,7 +44602,25 @@
         "ch02",
         "ch08",
         "ch16"
-      ]
+      ],
+      "last_modified": "2026-04-20 03:49",
+      "word_count": 3000,
+      "total_score": 88,
+      "mapped_chapters": [
+        "ch03",
+        "ch15",
+        "ch05",
+        "ch13",
+        "ch16",
+        "ch17",
+        "ch11",
+        "ch07",
+        "ch12",
+        "ch02",
+        "ch06"
+      ],
+      "doc_type": "高爷原创文章",
+      "content_hash": "b24c54d9bd6fb14e4e95d36172250aa1"
     },
     {
       "path": "src/part1-fundamentals/ch05-cpu-power/04-dvfs.md",
@@ -44565,11 +44645,22 @@
         "ch16"
       ],
       "mapped_chapters": [
-        "ch05"
+        "ch05",
+        "ch13",
+        "ch16",
+        "ch04",
+        "ch11",
+        "ch07",
+        "ch02",
+        "ch06"
       ],
-      "total_score": 73,
+      "total_score": 88,
       "category": "high_author_original",
-      "last_analyzed": "2026-04-19"
+      "last_analyzed": "2026-04-19",
+      "last_modified": "2026-04-20 01:15",
+      "word_count": 3000,
+      "doc_type": "高爷原创文章",
+      "content_hash": "6c08974ad8ac7e5d94e2166048ee2d6d"
     },
     {
       "path": "src/part1-fundamentals/ch05-cpu-power/03-big-little.md",
@@ -44648,7 +44739,20 @@
         "ch07",
         "ch09",
         "ch16"
-      ]
+      ],
+      "last_modified": "2026-04-20 00:28",
+      "word_count": 3000,
+      "total_score": 88,
+      "mapped_chapters": [
+        "ch05",
+        "ch13",
+        "ch08",
+        "ch11",
+        "ch07",
+        "ch06"
+      ],
+      "doc_type": "高爷原创文章",
+      "content_hash": "48235c132b5b062a4f37ae5d4ccb4555"
     },
     {
       "path": "src/part1-fundamentals/ch05-cpu-power/02-eas.md",
@@ -44802,11 +44906,21 @@
       "title": "Binder IPC 机制与性能影响",
       "chapter": "1.4",
       "mapped_chapters": [
-        "1.4"
+        "ch03",
+        "ch05",
+        "ch01",
+        "ch13",
+        "ch16",
+        "ch08",
+        "ch04",
+        "ch09",
+        "ch07",
+        "ch12",
+        "ch06"
       ],
-      "word_count": 23564,
+      "word_count": 3000,
       "status": "draft",
-      "last_modified": "2026-03-31T01:42:15",
+      "last_modified": "2026-04-20 02:20",
       "source_type": "高爷原创",
       "confidence": "medium",
       "quality_score": {
@@ -44822,7 +44936,10 @@
         "aidl",
         "oneway",
         "perfetto"
-      ]
+      ],
+      "total_score": 88,
+      "doc_type": "高爷原创文章",
+      "content_hash": "43a72d333239437d117ad2060e2d6daf"
     },
     {
       "path": "src/part1-fundamentals/ch01-architecture/05-threading-model.md",
@@ -44849,7 +44966,20 @@
         "ch10",
         "ch11",
         "ch16"
-      ]
+      ],
+      "last_modified": "2026-04-20 02:20",
+      "word_count": 3000,
+      "total_score": 88,
+      "mapped_chapters": [
+        "ch05",
+        "ch01",
+        "ch13",
+        "ch07",
+        "ch02",
+        "ch06"
+      ],
+      "doc_type": "高爷原创文章",
+      "content_hash": "29a39633b712bcbb9dab74f7917ffc08"
     },
     {
       "path": "src/part1-fundamentals/ch01-architecture/06-version-evolution.md",
@@ -44873,7 +45003,22 @@
         "ch14",
         "ch16",
         "ch17"
-      ]
+      ],
+      "last_modified": "2026-04-19 20:17",
+      "word_count": 3000,
+      "total_score": 88,
+      "mapped_chapters": [
+        "ch13",
+        "ch01",
+        "ch14",
+        "ch16",
+        "ch17",
+        "ch12",
+        "ch02",
+        "ch06"
+      ],
+      "doc_type": "高爷原创文章",
+      "content_hash": "59a4c86ceb9b10de5f1bd4dbe700a8bc"
     },
     {
       "path": "src/part1-fundamentals/ch01-architecture/03-process-model.md",
@@ -44927,7 +45072,22 @@
         "ch10",
         "ch11",
         "ch16"
-      ]
+      ],
+      "last_modified": "2026-04-19 23:59",
+      "word_count": 3000,
+      "total_score": 80,
+      "mapped_chapters": [
+        "ch05",
+        "ch01",
+        "ch13",
+        "ch08",
+        "ch04",
+        "ch07",
+        "ch12",
+        "ch06"
+      ],
+      "doc_type": "高爷原创文章",
+      "content_hash": "48bb6614fdbe3c746f076c22c044a65b"
     },
     {
       "path": "src/part1-fundamentals/ch06-storage/README.md",
@@ -44993,7 +45153,7 @@
     },
     {
       "path": "src/part1-fundamentals/ch06-storage/02-filesystem.md",
-      "title": "02-filesystem.md",
+      "title": "文件系统",
       "mtime": "2026-04-08 13:36",
       "size_kb": 38.8,
       "wc": 265,
@@ -45009,7 +45169,23 @@
         "ch10",
         "ch11",
         "ch16"
-      ]
+      ],
+      "last_modified": "2026-04-20 03:37",
+      "word_count": 3000,
+      "total_score": 88,
+      "mapped_chapters": [
+        "ch01",
+        "ch13",
+        "ch16",
+        "ch08",
+        "ch17",
+        "ch04",
+        "ch07",
+        "ch14",
+        "ch06"
+      ],
+      "doc_type": "高爷原创文章",
+      "content_hash": "d8024abcb897ba0c077c66429c7b1b0e"
     },
     {
       "path": "src/part1-fundamentals/ch04-memory/03-art-memory.md",
@@ -45096,11 +45272,23 @@
         "ch16"
       ],
       "mapped_chapters": [
-        "ch04"
+        "ch01",
+        "ch13",
+        "ch14",
+        "ch04",
+        "ch07",
+        "ch10",
+        "ch12",
+        "ch02",
+        "ch06"
       ],
-      "total_score": 73,
+      "total_score": 88,
       "category": "high_author_original",
-      "last_analyzed": "2026-04-19"
+      "last_analyzed": "2026-04-19",
+      "last_modified": "2026-04-20 04:20",
+      "word_count": 3000,
+      "doc_type": "高爷原创文章",
+      "content_hash": "c37d64f1ff6fd76bf81940db6177b597"
     },
     {
       "path": "src/part1-fundamentals/ch04-memory/02-linux-memory.md",
@@ -45246,7 +45434,7 @@
         "ch01"
       ],
       "chapter": "3.1",
-      "word_count": 1935,
+      "word_count": 3000,
       "status": "ready-for-review",
       "source_type": "高爷原创",
       "confidence": "high",
@@ -45258,12 +45446,23 @@
         "total": 87
       },
       "applicable_versions": "Android 12 (API 31) - Android 16 (API 36)",
-      "total_score": 75,
+      "total_score": 88,
       "mapped_chapters": [
-        "ch03"
+        "ch03",
+        "ch05",
+        "ch01",
+        "ch13",
+        "ch16",
+        "ch09",
+        "ch07",
+        "ch12",
+        "ch06"
       ],
       "category": "high_author_original",
-      "last_analyzed": "2026-04-19"
+      "last_analyzed": "2026-04-19",
+      "last_modified": "2026-04-19 09:48",
+      "doc_type": "高爷原创文章",
+      "content_hash": "e566d93316354318b622c7cd995378db"
     },
     {
       "path": "src/part1-fundamentals/ch03-input/README.md",
@@ -45388,7 +45587,23 @@
         "ch14",
         "ch16",
         "ch17"
-      ]
+      ],
+      "last_modified": "2026-04-20 04:37",
+      "word_count": 3000,
+      "total_score": 78,
+      "mapped_chapters": [
+        "ch05",
+        "ch18",
+        "ch16",
+        "ch08",
+        "ch04",
+        "ch07",
+        "ch12",
+        "ch14",
+        "ch06"
+      ],
+      "doc_type": "高爷原创文章",
+      "content_hash": "ab1324db90641cb44645f3e0241dcfe8"
     },
     {
       "path": "src/part2-performance/ch11-power/01-power-model.md",
@@ -45540,11 +45755,25 @@
         "ch16"
       ],
       "mapped_chapters": [
-        "ch08"
+        "ch03",
+        "ch15",
+        "ch13",
+        "ch14",
+        "ch16",
+        "ch08",
+        "ch17",
+        "ch07",
+        "ch12",
+        "ch02",
+        "ch06"
       ],
-      "total_score": 75,
+      "total_score": 88,
       "category": "high_author_original",
-      "last_analyzed": "2026-04-19"
+      "last_analyzed": "2026-04-19",
+      "last_modified": "2026-04-19 22:53",
+      "word_count": 3000,
+      "doc_type": "高爷原创文章",
+      "content_hash": "2071392f348f9a2dcf2646e10ee664f5"
     },
     {
       "path": "src/part2-performance/ch08-responsiveness/06-coroutine-performance.md",
@@ -45568,7 +45797,22 @@
         "ch10",
         "ch11",
         "ch16"
-      ]
+      ],
+      "last_modified": "2026-04-19 12:01",
+      "word_count": 3000,
+      "total_score": 88,
+      "mapped_chapters": [
+        "ch05",
+        "ch13",
+        "ch14",
+        "ch08",
+        "ch07",
+        "ch12",
+        "ch02",
+        "ch06"
+      ],
+      "doc_type": "高爷原创文章",
+      "content_hash": "3df53aa189a9a195ed28ca77bd0b1466"
     },
     {
       "path": "src/part2-performance/ch08-responsiveness/03-launch-optimization.md",
@@ -45724,7 +45968,23 @@
         "ch11",
         "ch14",
         "ch16"
-      ]
+      ],
+      "last_modified": "2026-04-19 21:40",
+      "word_count": 3000,
+      "total_score": 88,
+      "mapped_chapters": [
+        "ch05",
+        "ch13",
+        "ch16",
+        "ch08",
+        "ch04",
+        "ch07",
+        "ch10",
+        "ch14",
+        "ch06"
+      ],
+      "doc_type": "高爷原创文章",
+      "content_hash": "673d65ef3d10a3956def52f405bc900b"
     },
     {
       "path": "src/part2-performance/ch10-memory-perf/06-memory-churn.md",
@@ -45747,7 +46007,24 @@
         "ch10",
         "ch11",
         "ch16"
-      ]
+      ],
+      "last_modified": "2026-04-20 05:56",
+      "word_count": 3000,
+      "total_score": 88,
+      "mapped_chapters": [
+        "ch05",
+        "ch01",
+        "ch13",
+        "ch14",
+        "ch16",
+        "ch04",
+        "ch07",
+        "ch12",
+        "ch02",
+        "ch06"
+      ],
+      "doc_type": "高爷原创文章",
+      "content_hash": "e5848ef38c93e326403f9737d6ad3054"
     },
     {
       "path": "src/part2-performance/ch10-memory-perf/README.md",
@@ -45781,7 +46058,25 @@
         "ch14",
         "ch15",
         "ch16"
-      ]
+      ],
+      "last_modified": "2026-04-19 21:39",
+      "word_count": 3000,
+      "total_score": 88,
+      "mapped_chapters": [
+        "ch15",
+        "ch18",
+        "ch13",
+        "ch14",
+        "ch16",
+        "ch04",
+        "ch07",
+        "ch10",
+        "ch12",
+        "ch02",
+        "ch06"
+      ],
+      "doc_type": "高爷原创文章",
+      "content_hash": "4a155b913836517bf848642069275f5e"
     },
     {
       "path": "src/part2-performance/ch10-memory-perf/01-app-memory-analysis.md",
@@ -45852,7 +46147,24 @@
         "ch02",
         "ch07",
         "ch16"
-      ]
+      ],
+      "last_modified": "2026-04-19 23:16",
+      "word_count": 3000,
+      "total_score": 88,
+      "mapped_chapters": [
+        "ch15",
+        "ch05",
+        "ch18",
+        "ch13",
+        "ch14",
+        "ch16",
+        "ch08",
+        "ch07",
+        "ch02",
+        "ch06"
+      ],
+      "doc_type": "高爷原创文章",
+      "content_hash": "b130276f12d7529fcda62c0696adc9a7"
     },
     {
       "path": "src/part2-performance/ch07-smoothness/README.md",
@@ -45941,11 +46253,22 @@
         "ch16"
       ],
       "mapped_chapters": [
-        "ch07"
+        "ch05",
+        "ch18",
+        "ch01",
+        "ch13",
+        "ch16",
+        "ch07",
+        "ch02",
+        "ch06"
       ],
-      "total_score": 78,
+      "total_score": 88,
       "category": "high_author_original",
-      "last_analyzed": "2026-04-19"
+      "last_analyzed": "2026-04-19",
+      "last_modified": "2026-04-20 00:28",
+      "word_count": 3000,
+      "doc_type": "高爷原创文章",
+      "content_hash": "e22d8cea2e42bf07e0bc9d5ae371840b"
     },
     {
       "path": "src/part2-performance/ch07-smoothness/03-jank-methodology.md",
@@ -45969,7 +46292,23 @@
         "ch10",
         "ch14",
         "ch16"
-      ]
+      ],
+      "last_modified": "2026-04-19 23:14",
+      "word_count": 3000,
+      "total_score": 88,
+      "mapped_chapters": [
+        "ch15",
+        "ch05",
+        "ch13",
+        "ch14",
+        "ch16",
+        "ch07",
+        "ch12",
+        "ch02",
+        "ch06"
+      ],
+      "doc_type": "高爷原创文章",
+      "content_hash": "d57b2994d729a2b6c112ecc3b1ec3df6"
     },
     {
       "path": "src/part2-performance/ch07-smoothness/02-jank-causes.md",
@@ -46129,7 +46468,21 @@
         "ch08",
         "ch10",
         "ch16"
-      ]
+      ],
+      "last_modified": "2026-04-19 17:13",
+      "word_count": 3000,
+      "total_score": 80,
+      "mapped_chapters": [
+        "ch03",
+        "ch05",
+        "ch01",
+        "ch13",
+        "ch09",
+        "ch12",
+        "ch06"
+      ],
+      "doc_type": "高爷原创文章",
+      "content_hash": "ed93d445f3fdceedafacfc69490e92d3"
     },
     {
       "path": "src/part3-tools/ch14-other-tools/07-profiling-manager.md",
@@ -46150,7 +46503,25 @@
         "ch10",
         "ch14",
         "ch16"
-      ]
+      ],
+      "last_modified": "2026-04-19 16:58",
+      "word_count": 3000,
+      "total_score": 88,
+      "mapped_chapters": [
+        "ch03",
+        "ch05",
+        "ch01",
+        "ch13",
+        "ch08",
+        "ch04",
+        "ch09",
+        "ch07",
+        "ch12",
+        "ch14",
+        "ch06"
+      ],
+      "doc_type": "高爷原创文章",
+      "content_hash": "46d6691758c3b37157939de7fa4c59e1"
     },
     {
       "path": "src/part3-tools/ch14-other-tools/02-simpleperf.md",
@@ -46173,7 +46544,20 @@
         "ch10",
         "ch14",
         "ch16"
-      ]
+      ],
+      "last_modified": "2026-04-20 03:28",
+      "word_count": 3000,
+      "total_score": 88,
+      "mapped_chapters": [
+        "ch02",
+        "ch05",
+        "ch13",
+        "ch16",
+        "ch14",
+        "ch06"
+      ],
+      "doc_type": "高爷原创文章",
+      "content_hash": "583e609ad2cd06f9459175d9a8e87c63"
     },
     {
       "path": "src/part3-tools/ch14-other-tools/01-as-profiler.md",
@@ -46215,7 +46599,21 @@
         "ch04",
         "ch14",
         "ch16"
-      ]
+      ],
+      "last_modified": "2026-04-20 04:59",
+      "word_count": 3000,
+      "total_score": 88,
+      "mapped_chapters": [
+        "ch13",
+        "ch04",
+        "ch07",
+        "ch10",
+        "ch12",
+        "ch14",
+        "ch06"
+      ],
+      "doc_type": "高爷原创文章",
+      "content_hash": "d3fef401c47c9310aed22862e96f181d"
     },
     {
       "path": "src/part3-tools/ch14-other-tools/README.md",
@@ -46343,7 +46741,27 @@
         "ch13",
         "ch16",
         "ch17"
-      ]
+      ],
+      "last_modified": "2026-04-19 09:31",
+      "word_count": 3000,
+      "total_score": 88,
+      "mapped_chapters": [
+        "ch03",
+        "ch15",
+        "ch05",
+        "ch13",
+        "ch14",
+        "ch08",
+        "ch17",
+        "ch04",
+        "ch09",
+        "ch07",
+        "ch12",
+        "ch02",
+        "ch06"
+      ],
+      "doc_type": "高爷原创文章",
+      "content_hash": "3dc9bb7d5dd393877593d4b6bda5979b"
     },
     {
       "path": "src/part3-tools/ch15-methodology/README.md",
@@ -46525,7 +46943,21 @@
         "ch13",
         "ch15",
         "ch16"
-      ]
+      ],
+      "last_modified": "2026-04-19 06:47",
+      "word_count": 3000,
+      "total_score": 80,
+      "mapped_chapters": [
+        "ch15",
+        "ch05",
+        "ch13",
+        "ch08",
+        "ch07",
+        "ch12",
+        "ch06"
+      ],
+      "doc_type": "高爷原创文章",
+      "content_hash": "6641d23fec8e70039791f315b8b39bde"
     },
     {
       "path": "src/part3-tools/ch13-perfetto/05-topic-analysis.md",
@@ -46574,7 +47006,7 @@
         "ch13"
       ],
       "chapter": "13.1",
-      "word_count": 1450,
+      "word_count": 3000,
       "status": "ready-for-review",
       "source_type": "高爷原创",
       "confidence": "medium",
@@ -46585,7 +47017,24 @@
         "可用度": 20,
         "total": 80
       },
-      "applicable_versions": "Android 10 (API 29) - Android 17 (API 37)"
+      "applicable_versions": "Android 10 (API 29) - Android 17 (API 37)",
+      "last_modified": "2026-04-19 06:47",
+      "total_score": 88,
+      "mapped_chapters": [
+        "ch03",
+        "ch05",
+        "ch01",
+        "ch13",
+        "ch16",
+        "ch04",
+        "ch09",
+        "ch07",
+        "ch12",
+        "ch14",
+        "ch06"
+      ],
+      "doc_type": "高爷原创文章",
+      "content_hash": "74f4e88ccf6ecbc315a66027c5604444"
     },
     {
       "path": "src/part3-tools/ch13-perfetto/README.md",
@@ -46665,7 +47114,27 @@
         "ch10",
         "ch14",
         "ch16"
-      ]
+      ],
+      "last_modified": "2026-04-19 15:33",
+      "word_count": 3000,
+      "total_score": 80,
+      "mapped_chapters": [
+        "ch03",
+        "ch05",
+        "ch01",
+        "ch13",
+        "ch16",
+        "ch08",
+        "ch04",
+        "ch09",
+        "ch07",
+        "ch10",
+        "ch12",
+        "ch14",
+        "ch06"
+      ],
+      "doc_type": "高爷原创文章",
+      "content_hash": "eaf24510f21589e14d541215a534ad81"
     },
     {
       "path": "intake/research-feeds/2026-03-30-15-vsync-dispsync-pipeline.md",
@@ -47151,7 +47620,7 @@
     },
     {
       "path": "src/part1-fundamentals/ch02-rendering/20-multiwindow-desktop-rendering.md",
-      "title": "2.20 多窗口与桌面模式渲染性能",
+      "title": "多窗口与桌面模式渲染性能",
       "mtime": "2026-04-08 03:13",
       "size_kb": 18.5,
       "wc": 311,
@@ -47170,15 +47639,25 @@
         "ch16"
       ],
       "mapped_chapters": [
-        "ch02"
+        "ch18",
+        "ch13",
+        "ch04",
+        "ch07",
+        "ch12",
+        "ch02",
+        "ch06"
       ],
-      "total_score": 75,
+      "total_score": 88,
       "category": "high_author_original",
-      "last_analyzed": "2026-04-19"
+      "last_analyzed": "2026-04-19",
+      "last_modified": "2026-04-19 20:36",
+      "word_count": 3000,
+      "doc_type": "高爷原创文章",
+      "content_hash": "cce8e307666f14ab37e272133ab91126"
     },
     {
       "path": "src/part1-fundamentals/ch02-rendering/19-refresh-rate-switching.md",
-      "title": "2.19 刷新率切换与帧率适配性能",
+      "title": "刷新率切换与帧率适配性能",
       "mtime": "2026-04-07 22:21",
       "size_kb": 27.1,
       "wc": 227,
@@ -47199,7 +47678,25 @@
         "ch10",
         "ch16",
         "ch17"
-      ]
+      ],
+      "last_modified": "2026-04-20 05:37",
+      "word_count": 3000,
+      "total_score": 88,
+      "mapped_chapters": [
+        "ch05",
+        "ch18",
+        "ch13",
+        "ch14",
+        "ch17",
+        "ch09",
+        "ch07",
+        "ch11",
+        "ch12",
+        "ch02",
+        "ch06"
+      ],
+      "doc_type": "高爷原创文章",
+      "content_hash": "15754635389b88872c60ff6295c856ae"
     },
     {
       "path": "src/part1-fundamentals/ch01-architecture/13-messagequeue-deliqueue.md",
@@ -47367,7 +47864,7 @@
     },
     {
       "path": "src/part1-fundamentals/ch06-storage/05-sharedpreferences-datastore.md",
-      "title": "6.5 SharedPreferences/DataStore 性能与 ANR 优化",
+      "title": "SharedPreferences/DataStore 性能与 ANR 优化",
       "mtime": "2026-04-08 00:07",
       "size_kb": 19.0,
       "wc": 253,
@@ -47386,11 +47883,25 @@
         "ch07",
         "ch10",
         "ch16"
-      ]
+      ],
+      "last_modified": "2026-04-20 05:15",
+      "word_count": 3000,
+      "total_score": 88,
+      "mapped_chapters": [
+        "ch03",
+        "ch13",
+        "ch04",
+        "ch09",
+        "ch07",
+        "ch12",
+        "ch06"
+      ],
+      "doc_type": "高爷原创文章",
+      "content_hash": "cc4d5d0a1e45e34ce13a2793580b439c"
     },
     {
       "path": "src/part1-fundamentals/ch04-memory/08-art-generational-gc.md",
-      "title": "4.8 ART 分代垃圾回收与 GC 暂停优化",
+      "title": "ART 分代垃圾回收与 GC 暂停优化",
       "mtime": "2026-04-08 06:15",
       "size_kb": 27.4,
       "wc": 289,
@@ -47405,7 +47916,22 @@
         "ch10",
         "ch11",
         "ch16"
-      ]
+      ],
+      "last_modified": "2026-04-20 04:20",
+      "word_count": 3000,
+      "total_score": 88,
+      "mapped_chapters": [
+        "ch13",
+        "ch14",
+        "ch04",
+        "ch07",
+        "ch10",
+        "ch12",
+        "ch02",
+        "ch06"
+      ],
+      "doc_type": "高爷原创文章",
+      "content_hash": "7f925f55bfb60632cbd7890be88e34a1"
     },
     {
       "path": "src/part1-fundamentals/ch04-memory/07-16kb-page-size.md",
@@ -47498,7 +48024,7 @@
     },
     {
       "path": "src/part2-performance/ch07-smoothness/09-perceived-smoothness.md",
-      "title": "7.9 感知流畅性：步幅波动与无掉帧卡顿",
+      "title": "感知流畅性：步幅波动与无掉帧卡顿",
       "mtime": "2026-04-08 18:44",
       "size_kb": 18.5,
       "wc": 227,
@@ -47511,11 +48037,28 @@
         "ch10",
         "ch14",
         "ch16"
-      ]
+      ],
+      "last_modified": "2026-04-20 01:15",
+      "word_count": 3000,
+      "total_score": 88,
+      "mapped_chapters": [
+        "ch03",
+        "ch15",
+        "ch13",
+        "ch14",
+        "ch17",
+        "ch09",
+        "ch07",
+        "ch12",
+        "ch02",
+        "ch06"
+      ],
+      "doc_type": "高爷原创文章",
+      "content_hash": "a470a1413b9e3d9f308ce614dd5212c0"
     },
     {
       "path": "src/part2-performance/ch07-smoothness/10-image-bitmap-performance.md",
-      "title": "7.10 图片加载与 Bitmap 性能优化",
+      "title": "图片加载与 Bitmap 性能优化",
       "mtime": "2026-04-07 22:21",
       "size_kb": 26.3,
       "wc": 241,
@@ -47533,7 +48076,23 @@
         "ch04",
         "ch10",
         "ch16"
-      ]
+      ],
+      "last_modified": "2026-04-20 01:15",
+      "word_count": 3000,
+      "total_score": 88,
+      "mapped_chapters": [
+        "ch01",
+        "ch13",
+        "ch16",
+        "ch04",
+        "ch07",
+        "ch10",
+        "ch12",
+        "ch02",
+        "ch06"
+      ],
+      "doc_type": "高爷原创文章",
+      "content_hash": "ef2555f51ae5ea565ec12ad45e59f8bb"
     },
     {
       "path": "src/part3-tools/ch14-other-tools/10-ebpf-performance-analysis.md",
@@ -48583,7 +49142,7 @@
     },
     {
       "path": "src/part1-fundamentals/ch02-rendering/17-frame-pacing.md",
-      "title": "2.17 Frame Pacing Library 与帧节奏控制",
+      "title": "Frame Pacing Library 与帧节奏控制",
       "mtime": "2026-04-07 07:56",
       "size_kb": 21.0,
       "wc": 268,
@@ -48604,15 +49163,26 @@
         "ch16"
       ],
       "mapped_chapters": [
-        "ch02"
+        "ch15",
+        "ch18",
+        "ch13",
+        "ch16",
+        "ch07",
+        "ch12",
+        "ch02",
+        "ch06"
       ],
-      "total_score": 75,
+      "total_score": 88,
       "category": "high_author_original",
-      "last_analyzed": "2026-04-19"
+      "last_analyzed": "2026-04-19",
+      "last_modified": "2026-04-19 15:06",
+      "word_count": 3000,
+      "doc_type": "高爷原创文章",
+      "content_hash": "9cf2d8b455a3bdf0d118b89c9c151f53"
     },
     {
       "path": "src/part1-fundamentals/ch02-rendering/16-sync-fence.md",
-      "title": "2.16 Sync Fence 框架与帧同步机制",
+      "title": "Sync Fence 框架与帧同步机制",
       "mtime": "2026-04-07 07:56",
       "size_kb": 17.4,
       "wc": 274,
@@ -48633,15 +49203,26 @@
         "ch16"
       ],
       "mapped_chapters": [
-        "ch02"
+        "ch03",
+        "ch05",
+        "ch18",
+        "ch13",
+        "ch07",
+        "ch12",
+        "ch02",
+        "ch06"
       ],
-      "total_score": 75,
+      "total_score": 88,
       "category": "high_author_original",
-      "last_analyzed": "2026-04-19"
+      "last_analyzed": "2026-04-19",
+      "last_modified": "2026-04-19 10:11",
+      "word_count": 3000,
+      "doc_type": "高爷原创文章",
+      "content_hash": "e52c173cca45a46266a602ac939bd3c8"
     },
     {
       "path": "src/part1-fundamentals/ch02-rendering/14-graphics-api-evolution.md",
-      "title": "2.14 图形 API 演进与选择策略（OpenGL ES / Vulkan / ANGLE）",
+      "title": "图形 API 演进与选择策略（OpenGL ES / Vulkan / ANGLE）",
       "mtime": "2026-04-05 12:44",
       "size_kb": 24.6,
       "wc": 372,
@@ -48661,11 +49242,28 @@
         "ch11",
         "ch14",
         "ch16"
-      ]
+      ],
+      "last_modified": "2026-04-20 03:49",
+      "word_count": 3000,
+      "total_score": 88,
+      "mapped_chapters": [
+        "ch05",
+        "ch18",
+        "ch01",
+        "ch13",
+        "ch14",
+        "ch17",
+        "ch07",
+        "ch12",
+        "ch02",
+        "ch06"
+      ],
+      "doc_type": "高爷原创文章",
+      "content_hash": "624bc6ccf454897e6e85b071b07fac2d"
     },
     {
       "path": "src/part1-fundamentals/ch02-rendering/21-text-rendering-performance.md",
-      "title": "2.21 文字渲染性能",
+      "title": "文字渲染性能",
       "mtime": "2026-04-09 01:11",
       "size_kb": 23.1,
       "wc": 272,
@@ -48684,14 +49282,22 @@
         "ch05",
         "ch16"
       ],
-      "total_score": 100,
+      "total_score": 88,
       "mapped_chapters": [
-        "ch02"
-      ]
+        "ch05",
+        "ch13",
+        "ch07",
+        "ch02",
+        "ch06"
+      ],
+      "last_modified": "2026-04-19 19:17",
+      "word_count": 3000,
+      "doc_type": "高爷原创文章",
+      "content_hash": "c42f0cf40517314a49eb59360000bf26"
     },
     {
       "path": "src/part1-fundamentals/ch02-rendering/18-adaptive-refresh-rate.md",
-      "title": "2.18 Adaptive Refresh Rate 与动态帧率控制",
+      "title": "Adaptive Refresh Rate 与动态帧率控制",
       "mtime": "2026-04-05 22:43",
       "size_kb": 24.2,
       "wc": 260,
@@ -48710,11 +49316,27 @@
         "ch08",
         "ch10",
         "ch16"
-      ]
+      ],
+      "last_modified": "2026-04-19 17:51",
+      "word_count": 3000,
+      "total_score": 88,
+      "mapped_chapters": [
+        "ch05",
+        "ch13",
+        "ch14",
+        "ch16",
+        "ch11",
+        "ch07",
+        "ch12",
+        "ch02",
+        "ch06"
+      ],
+      "doc_type": "高爷原创文章",
+      "content_hash": "e9ef8c883fe7861b282f2a2ab5ed5660"
     },
     {
       "path": "src/part1-fundamentals/ch02-rendering/13-buffer-queue.md",
-      "title": "2.13 图形缓冲区管理 (BufferQueue)",
+      "title": "图形缓冲区管理 (BufferQueue)",
       "mtime": "2026-04-04 22:11",
       "size_kb": 18.0,
       "wc": 235,
@@ -48735,16 +49357,25 @@
         "ch11",
         "ch16"
       ],
-      "total_score": 75,
+      "total_score": 88,
       "mapped_chapters": [
-        "ch02"
+        "ch13",
+        "ch16",
+        "ch07",
+        "ch12",
+        "ch02",
+        "ch06"
       ],
       "category": "high_author_original",
-      "last_analyzed": "2026-04-19"
+      "last_analyzed": "2026-04-19",
+      "last_modified": "2026-04-19 09:20",
+      "word_count": 3000,
+      "doc_type": "高爷原创文章",
+      "content_hash": "27facf1e8078d62c9dacad08934010bd"
     },
     {
       "path": "src/part1-fundamentals/ch02-rendering/15-dmabuf-gralloc.md",
-      "title": "2.15 DMA-BUF、Gralloc 与跨进程图形内存共享",
+      "title": "DMA-BUF、Gralloc 与跨进程图形内存共享",
       "mtime": "2026-04-05 20:47",
       "size_kb": 23.1,
       "wc": 283,
@@ -48764,11 +49395,25 @@
         "ch04",
         "ch08",
         "ch16"
-      ]
+      ],
+      "last_modified": "2026-04-20 03:49",
+      "word_count": 3000,
+      "total_score": 88,
+      "mapped_chapters": [
+        "ch13",
+        "ch14",
+        "ch04",
+        "ch07",
+        "ch12",
+        "ch02",
+        "ch06"
+      ],
+      "doc_type": "高爷原创文章",
+      "content_hash": "880d83d43cc6098b85d23a9d69b59f5c"
     },
     {
       "path": "src/part1-fundamentals/ch02-rendering/12-window-manager.md",
-      "title": "2.12 Window Manager Service 与窗口管理",
+      "title": "Window Manager Service 与窗口管理",
       "mtime": "2026-04-05 03:47",
       "size_kb": 30.7,
       "wc": 272,
@@ -48791,16 +49436,28 @@
         "ch10",
         "ch16"
       ],
-      "total_score": 78,
+      "total_score": 88,
       "mapped_chapters": [
-        "ch02"
+        "ch03",
+        "ch05",
+        "ch01",
+        "ch13",
+        "ch16",
+        "ch08",
+        "ch07",
+        "ch02",
+        "ch06"
       ],
       "category": "high_author_original",
-      "last_analyzed": "2026-04-19"
+      "last_analyzed": "2026-04-19",
+      "last_modified": "2026-04-19 19:58",
+      "word_count": 3000,
+      "doc_type": "高爷原创文章",
+      "content_hash": "7b979adf18db8b63490342eeb3e1486d"
     },
     {
       "path": "src/part1-fundamentals/ch05-cpu-power/12-thermal-management-deep-dive.md",
-      "title": "5.12 Thermal 管控深度：从内核子系统到 ADPF 主动降频",
+      "title": "Thermal 管控深度：从内核子系统到 ADPF 主动降频",
       "mtime": "2026-04-09 13:12",
       "size_kb": 36.7,
       "wc": 289,
@@ -48820,15 +49477,27 @@
         "ch16"
       ],
       "mapped_chapters": [
-        "ch05"
+        "ch05",
+        "ch13",
+        "ch16",
+        "ch17",
+        "ch04",
+        "ch11",
+        "ch07",
+        "ch02",
+        "ch06"
       ],
-      "total_score": 78,
+      "total_score": 88,
       "category": "high_author_original",
-      "last_analyzed": "2026-04-19"
+      "last_analyzed": "2026-04-19",
+      "last_modified": "2026-04-20 05:15",
+      "word_count": 3000,
+      "doc_type": "高爷原创文章",
+      "content_hash": "a619de21ff1e77a97e04953dfb1e9693"
     },
     {
       "path": "src/part1-fundamentals/ch05-cpu-power/09-adpf.md",
-      "title": "5.9 ADPF 自适应性能框架",
+      "title": "ADPF 自适应性能框架",
       "mtime": "2026-04-07 07:56",
       "size_kb": 21.6,
       "wc": 222,
@@ -48846,11 +49515,26 @@
         "ch02",
         "ch05",
         "ch16"
-      ]
+      ],
+      "last_modified": "2026-04-19 23:59",
+      "word_count": 3000,
+      "total_score": 88,
+      "mapped_chapters": [
+        "ch05",
+        "ch16",
+        "ch04",
+        "ch11",
+        "ch07",
+        "ch12",
+        "ch02",
+        "ch06"
+      ],
+      "doc_type": "高爷原创文章",
+      "content_hash": "6bea8397b961e64308e519530005a261"
     },
     {
       "path": "src/part1-fundamentals/ch05-cpu-power/10-jobscheduler-workmanager-performance.md",
-      "title": "5.10 JobScheduler/WorkManager 调度与后台任务性能",
+      "title": "JobScheduler/WorkManager 调度与后台任务性能",
       "mtime": "2026-04-09 06:49",
       "size_kb": 30.2,
       "wc": 228,
@@ -48868,11 +49552,26 @@
         "ch05",
         "ch09",
         "ch16"
-      ]
+      ],
+      "last_modified": "2026-04-20 04:37",
+      "word_count": 3000,
+      "total_score": 88,
+      "mapped_chapters": [
+        "ch05",
+        "ch01",
+        "ch13",
+        "ch16",
+        "ch11",
+        "ch12",
+        "ch14",
+        "ch06"
+      ],
+      "doc_type": "高爷原创文章",
+      "content_hash": "0a0522c8a563a118beaa117192bd9446"
     },
     {
       "path": "src/part1-fundamentals/ch05-cpu-power/08-background-execution.md",
-      "title": "5.8 后台执行限制与优化",
+      "title": "后台执行限制与优化",
       "mtime": "2026-04-05 02:42",
       "size_kb": 27.5,
       "wc": 233,
@@ -48894,15 +49593,28 @@
         "ch16"
       ],
       "mapped_chapters": [
-        "ch05"
+        "ch05",
+        "ch13",
+        "ch08",
+        "ch04",
+        "ch09",
+        "ch07",
+        "ch11",
+        "ch12",
+        "ch14",
+        "ch06"
       ],
-      "total_score": 72,
+      "total_score": 88,
       "category": "high_author_original",
-      "last_analyzed": "2026-04-19"
+      "last_analyzed": "2026-04-19",
+      "last_modified": "2026-04-20 01:15",
+      "word_count": 3000,
+      "doc_type": "高爷原创文章",
+      "content_hash": "0add0de740a471417693d9254783e318"
     },
     {
       "path": "src/part1-fundamentals/ch05-cpu-power/11-ondevice-ml-inference-performance.md",
-      "title": "5.11 端侧 AI 推理性能：NPU/GPU 加速与 TFLite 管线",
+      "title": "端侧 AI 推理性能：NPU/GPU 加速与 TFLite 管线",
       "mtime": "2026-04-08 10:18",
       "size_kb": 16.1,
       "wc": 341,
@@ -48916,7 +49628,24 @@
         "ch08",
         "ch10",
         "ch16"
-      ]
+      ],
+      "last_modified": "2026-04-20 00:28",
+      "word_count": 3000,
+      "total_score": 88,
+      "mapped_chapters": [
+        "ch05",
+        "ch18",
+        "ch13",
+        "ch17",
+        "ch04",
+        "ch11",
+        "ch07",
+        "ch12",
+        "ch02",
+        "ch06"
+      ],
+      "doc_type": "高爷原创文章",
+      "content_hash": "71a64f5b583a0f479515304cea99451a"
     },
     {
       "path": "src/part1-fundamentals/ch01-architecture/17-ipc-panorama.md",
@@ -48941,7 +49670,22 @@
         "ch10",
         "ch11",
         "ch16"
-      ]
+      ],
+      "last_modified": "2026-04-19 07:10",
+      "word_count": 3000,
+      "total_score": 88,
+      "mapped_chapters": [
+        "ch03",
+        "ch01",
+        "ch13",
+        "ch14",
+        "ch04",
+        "ch12",
+        "ch02",
+        "ch06"
+      ],
+      "doc_type": "高爷原创文章",
+      "content_hash": "12410a359eee0910f36d02f319f7d3e7"
     },
     {
       "path": "src/part1-fundamentals/ch01-architecture/16-audio-pipeline-performance.md",
@@ -49015,7 +49759,7 @@
     },
     {
       "path": "src/part1-fundamentals/ch01-architecture/07-art-compilation.md",
-      "title": "1.7 ART 编译管线与 dex2oat 优化",
+      "title": "ART 编译管线与 dex2oat 优化",
       "mtime": "2026-04-09 07:23",
       "size_kb": 25.7,
       "wc": 293,
@@ -49036,7 +49780,22 @@
         "ch13",
         "ch15",
         "ch16"
-      ]
+      ],
+      "last_modified": "2026-04-20 02:20",
+      "word_count": 3000,
+      "total_score": 88,
+      "mapped_chapters": [
+        "ch01",
+        "ch13",
+        "ch16",
+        "ch08",
+        "ch07",
+        "ch12",
+        "ch14",
+        "ch06"
+      ],
+      "doc_type": "高爷原创文章",
+      "content_hash": "9f39a7845ed7647db3a90915dfba50e2"
     },
     {
       "path": "src/part1-fundamentals/ch01-architecture/08-activity-manager.md",
@@ -49138,7 +49897,21 @@
         "ch03",
         "ch08",
         "ch16"
-      ]
+      ],
+      "last_modified": "2026-04-20 05:37",
+      "word_count": 3000,
+      "total_score": 88,
+      "mapped_chapters": [
+        "ch03",
+        "ch13",
+        "ch17",
+        "ch07",
+        "ch12",
+        "ch14",
+        "ch06"
+      ],
+      "doc_type": "高爷原创文章",
+      "content_hash": "46d337a756bc74f1727a549f761d5537"
     },
     {
       "path": "src/part1-fundamentals/ch03-input/06-gesture-recognition-performance.md",
@@ -49159,7 +49932,7 @@
         "ch03"
       ],
       "chapter": "3.6",
-      "word_count": 1541,
+      "word_count": 3000,
       "status": "ready-for-review",
       "source_type": "高爷原创",
       "confidence": "medium",
@@ -49170,7 +49943,24 @@
         "可用度": 18,
         "total": 81
       },
-      "applicable_versions": "Android 10 (API 29) - Android 16 (API 36)"
+      "applicable_versions": "Android 10 (API 29) - Android 16 (API 36)",
+      "last_modified": "2026-04-20 04:37",
+      "total_score": 80,
+      "mapped_chapters": [
+        "ch03",
+        "ch18",
+        "ch01",
+        "ch13",
+        "ch14",
+        "ch17",
+        "ch04",
+        "ch09",
+        "ch07",
+        "ch02",
+        "ch06"
+      ],
+      "doc_type": "高爷原创文章",
+      "content_hash": "4dc6190531e00c8847914a701046fb7f"
     },
     {
       "path": "src/part1-fundamentals/ch03-input/04-input-latency-prediction.md",
@@ -49192,7 +49982,7 @@
         "ch02"
       ],
       "chapter": "3.4",
-      "word_count": 1389,
+      "word_count": 3000,
       "status": "ready-for-review",
       "source_type": "高爷原创",
       "confidence": "medium",
@@ -49203,11 +49993,24 @@
         "可用度": 20,
         "total": 85
       },
-      "applicable_versions": "Android 10 (API 29) - Android 17 (API 37)"
+      "applicable_versions": "Android 10 (API 29) - Android 17 (API 37)",
+      "last_modified": "2026-04-20 05:37",
+      "total_score": 88,
+      "mapped_chapters": [
+        "ch03",
+        "ch05",
+        "ch13",
+        "ch07",
+        "ch12",
+        "ch02",
+        "ch06"
+      ],
+      "doc_type": "高爷原创文章",
+      "content_hash": "ec7e4621a24730520b60007ff34644b6"
     },
     {
       "path": "src/part2-performance/ch11-power/05-wakelock.md",
-      "title": "11.5 Wakelock 机制与功耗分析",
+      "title": "Wakelock 机制与功耗分析",
       "mtime": "2026-04-07 08:12",
       "size_kb": 26.5,
       "wc": 257,
@@ -49226,7 +50029,22 @@
         "ch05",
         "ch09",
         "ch16"
-      ]
+      ],
+      "last_modified": "2026-04-20 00:53",
+      "word_count": 3000,
+      "total_score": 88,
+      "mapped_chapters": [
+        "ch05",
+        "ch13",
+        "ch16",
+        "ch11",
+        "ch07",
+        "ch12",
+        "ch14",
+        "ch06"
+      ],
+      "doc_type": "高爷原创文章",
+      "content_hash": "5c49e74681b72bd4801dde574d140d74"
     },
     {
       "path": "src/part2-performance/ch08-responsiveness/09-game-performance.md",
@@ -49305,7 +50123,7 @@
     },
     {
       "path": "src/part2-performance/ch07-smoothness/11-webview-performance.md",
-      "title": "7.11 WebView 渲染性能与优化",
+      "title": "WebView 渲染性能与优化",
       "mtime": "2026-04-08 16:12",
       "size_kb": 25.7,
       "wc": 322,
@@ -49324,7 +50142,28 @@
         "ch07",
         "ch08",
         "ch16"
-      ]
+      ],
+      "last_modified": "2026-04-20 05:15",
+      "word_count": 3000,
+      "total_score": 88,
+      "mapped_chapters": [
+        "ch03",
+        "ch05",
+        "ch18",
+        "ch01",
+        "ch13",
+        "ch16",
+        "ch08",
+        "ch04",
+        "ch09",
+        "ch07",
+        "ch10",
+        "ch12",
+        "ch02",
+        "ch06"
+      ],
+      "doc_type": "高爷原创文章",
+      "content_hash": "d7c639f42ea2627d92abd37b6d584bd5"
     },
     {
       "path": "src/part2-performance/ch07-smoothness/13-systemui-performance.md",
@@ -49376,7 +50215,7 @@
     },
     {
       "path": "src/part2-performance/ch07-smoothness/08-recyclerview-performance.md",
-      "title": "7.8 RecyclerView 列表滑动性能深度优化",
+      "title": "RecyclerView 列表滑动性能深度优化",
       "mtime": "2026-04-08 14:01",
       "size_kb": 24.0,
       "wc": 230,
@@ -49395,7 +50234,22 @@
         "ch07",
         "ch10",
         "ch16"
-      ]
+      ],
+      "last_modified": "2026-04-19 23:59",
+      "word_count": 3000,
+      "total_score": 88,
+      "mapped_chapters": [
+        "ch05",
+        "ch01",
+        "ch13",
+        "ch14",
+        "ch07",
+        "ch12",
+        "ch02",
+        "ch06"
+      ],
+      "doc_type": "高爷原创文章",
+      "content_hash": "65cd9965683b3c63240a6d3eb3f08601"
     },
     {
       "path": "src/part2-performance/ch09-anr/06-notification-performance-anr.md",
@@ -49476,7 +50330,7 @@
     },
     {
       "path": "src/part3-tools/ch14-other-tools/11-battery-historian.md",
-      "title": "14.11 Battery Historian 与功耗分析工具",
+      "title": "Battery Historian 与功耗分析工具",
       "mtime": "2026-04-09 12:19",
       "size_kb": 3.4,
       "wc": 304,
@@ -49496,7 +50350,23 @@
         "ch11",
         "ch13",
         "ch16"
-      ]
+      ],
+      "last_modified": "2026-04-20 01:46",
+      "word_count": 3000,
+      "total_score": 78,
+      "mapped_chapters": [
+        "ch03",
+        "ch15",
+        "ch05",
+        "ch16",
+        "ch04",
+        "ch11",
+        "ch12",
+        "ch14",
+        "ch06"
+      ],
+      "doc_type": "高爷原创文章",
+      "content_hash": "525e58b9e49562b90ad7f180a91565a6"
     },
     {
       "path": "src/part3-tools/ch13-perfetto/10-perfetto-sql-cookbook.md",
@@ -49589,32 +50459,66 @@
     },
     {
       "path": "src/part2-performance/ch18-rendering-pipelines/01-pipeline-overview.md",
-      "title": "18.1 渲染管线全景",
+      "title": "渲染链路分类与选择矩阵",
       "mapped_chapters": [
+        "ch05",
         "ch18",
-        "18"
+        "ch01",
+        "ch13",
+        "ch07",
+        "ch02",
+        "ch06"
       ],
-      "total_score": 45
+      "total_score": 80,
+      "last_modified": "2026-04-20 03:28",
+      "word_count": 3000,
+      "doc_type": "高爷原创文章",
+      "content_hash": "2d62d559e307682ec20b8bc975abc1e6"
     },
     {
       "path": "src/part2-performance/ch18-rendering-pipelines/02-android-view-standard.md",
-      "title": "18.2 Android View 标准绘制路径",
+      "title": "Android View 标准链路（BLAST 深入）",
       "mapped_chapters": [
-        "ch18"
+        "ch03",
+        "ch05",
+        "ch18",
+        "ch01",
+        "ch13",
+        "ch14",
+        "ch04",
+        "ch07",
+        "ch10",
+        "ch02",
+        "ch06"
       ],
-      "total_score": 75,
+      "total_score": 70,
       "category": "high_author_original",
-      "last_analyzed": "2026-04-19"
+      "last_analyzed": "2026-04-19",
+      "last_modified": "2026-04-20 01:38",
+      "word_count": 3000,
+      "doc_type": "高爷原创文章",
+      "content_hash": "51f5c2ac93eace36a949c310ea3d256f"
     },
     {
       "path": "src/part2-performance/ch18-rendering-pipelines/03-android-view-software.md",
-      "title": "18.3 Android View 软件绘制",
+      "title": "Android View 软件渲染链路",
       "mapped_chapters": [
-        "ch18"
+        "ch05",
+        "ch18",
+        "ch13",
+        "ch16",
+        "ch04",
+        "ch10",
+        "ch02",
+        "ch06"
       ],
-      "total_score": 72,
+      "total_score": 70,
       "category": "high_author_original",
-      "last_analyzed": "2026-04-19"
+      "last_analyzed": "2026-04-19",
+      "last_modified": "2026-04-20 01:38",
+      "word_count": 3000,
+      "doc_type": "高爷原创文章",
+      "content_hash": "491e3416c15c4702e9c700ba57cd074d"
     },
     {
       "path": "src/part2-performance/ch18-rendering-pipelines/04-android-view-mixed.md",
@@ -49628,32 +50532,59 @@
     },
     {
       "path": "src/part2-performance/ch18-rendering-pipelines/05-android-view-multi-window.md",
-      "title": "18.5 多窗口模式下的渲染",
+      "title": "Android View 多窗口链路",
       "mapped_chapters": [
+        "ch03",
         "ch18",
-        "18"
+        "ch13",
+        "ch14",
+        "ch07",
+        "ch02",
+        "ch06"
       ],
-      "total_score": 45
+      "total_score": 80,
+      "last_modified": "2026-04-20 02:52",
+      "word_count": 3000,
+      "doc_type": "高爷原创文章",
+      "content_hash": "50571a4bd61f5fef7b371db48e55e610"
     },
     {
       "path": "src/part2-performance/ch18-rendering-pipelines/06-surfaceview.md",
-      "title": "18.6 SurfaceView 渲染机制",
+      "title": "SurfaceView 直出链路",
       "mapped_chapters": [
-        "ch18"
+        "ch05",
+        "ch18",
+        "ch01",
+        "ch13",
+        "ch07",
+        "ch02",
+        "ch06"
       ],
-      "total_score": 73,
+      "total_score": 80,
       "category": "high_author_original",
-      "last_analyzed": "2026-04-19"
+      "last_analyzed": "2026-04-19",
+      "last_modified": "2026-04-20 05:00",
+      "word_count": 3000,
+      "doc_type": "高爷原创文章",
+      "content_hash": "03ec3ae5603bf9b1b75bbf771f852dfd"
     },
     {
       "path": "src/part2-performance/ch18-rendering-pipelines/07-textureview.md",
-      "title": "18.7 TextureView 渲染机制",
+      "title": "TextureView 合成链路",
       "mapped_chapters": [
         "ch18",
-        "18",
-        "7"
+        "ch13",
+        "ch01",
+        "ch16",
+        "ch07",
+        "ch02",
+        "ch06"
       ],
-      "total_score": 55
+      "total_score": 80,
+      "last_modified": "2026-04-20 05:57",
+      "word_count": 3000,
+      "doc_type": "高爷原创文章",
+      "content_hash": "4eb0bce634bc4f0c31bed7e1146f9fd5"
     },
     {
       "path": "src/part2-performance/ch18-rendering-pipelines/08-opengl-es.md",
@@ -51398,5 +52329,6 @@
   ],
   "new_docs_count": 95,
   "scan_type": "incremental",
-  "docs_updated": 69
+  "docs_updated": 69,
+  "last_scan_mtime": 1776636697.873438
 }

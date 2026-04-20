@@ -1,8 +1,13 @@
 {
-  "current_issue": 3,
+  "current_issue": 4,
   "total_issues": 58,
-  "completed_issues": [0, 1, 2],
-  "indexed_links": 3,
+  "completed_issues": [
+    0,
+    1,
+    2,
+    3
+  ],
+  "indexed_links": 15,
   "skipped_links": 28,
   "fetch_failures": 11,
   "issue_list": [

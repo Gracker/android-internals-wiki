@@ -54,7 +54,7 @@ graph TD
     Sensor -->|GraphicBuffer| IA
 ```
 
-CameraService 负责资源仲裁和会话管理。App 调用 `CameraManager.openCamera()` 后，请求先到 CameraService，由它检查 camera id、客户端优先级、当前占用状态，再把请求交给 `Camera3Device`。会话建立阶段，CameraService 还要把各个输出 Surface 的尺寸、像素格式、usage flag 汇总给 HAL，决定这组输出能不能同时成立。
+CameraService 负责资源仲裁和会话管理。App 调用 `CameraManager.openCamera()` 后，请求先到 CameraService，由它检查 camera id、客户端优先级、当前占用状态，再把请求交给 `Camera3Device`。Android 13+ 的主线实现里，这一步对应 `hardware/interfaces/camera/device/aidl/android/hardware/camera/device/ICameraDevice.aidl` 定义的设备接口，`open()` 之后再进入活跃的 `ICameraDeviceSession`。会话建立阶段，CameraService 还要把各个输出 Surface 的尺寸、像素格式、usage flag 汇总给 HAL，决定这组输出能不能同时成立。
 
 HAL3 / ISP 负责把 Sensor 原始数据变成可以消费的帧。ISP 完成曝光、去噪、白平衡、色彩校正后，HAL 按 `CaptureRequest` 的目标 Surface 把结果写入对应 Buffer。预览、录像、分析可以共享同一次曝光得到的图像，但它们拿到的是不同用途的输出 Buffer，而不是一块 Buffer 在多个线程里反复回拷。
 
@@ -74,11 +74,13 @@ cameraDevice.createCaptureSession(
 );
 ```
 
-这一调用对应的不是“马上开始出帧”，而是一次流配置。Framework 会把 Preview、Recording、Analysis 三路 Surface 的尺寸、格式、usage flag 交给 `Camera3Device::configureStreamsLocked()`，HAL 决定是否支持这组组合。如果这一步失败，后续 request 再正确也不会稳定出帧。
+这一调用对应的是一次流配置。Framework 会把 Preview、Recording、Analysis 三路 Surface 的尺寸、格式、usage flag 交给 `Camera3Device::configureStreamsLocked()`，HAL 决定是否支持这组组合。配置失败时，后续 request 再正确也不会稳定出帧。
+
+Android 12+ 的 Extensions 是这一步的一个变体。App 通过 `CameraDevice.createExtensionSession()` 或 CameraX Extensions 建立 `CameraExtensionSession` 时，session 配置仍然要校验输出 Surface 组合，但 OEM extension 库会在 Preview 或 Still Capture 路径里插入额外的多帧后处理节点。夜景、HDR、虚化模式下，排查范围要同时覆盖 extension service、额外的中间 Buffer 和后处理线程。
 
 ### 阶段二：生产（Request & Produce）
 
-稳态预览阶段，App 通常通过 `setRepeatingRequest()` 持续下发同一组 request。HAL 收到 request 后驱动 Sensor 曝光，ISP 完成图像处理，再把结果写入对应输出 Buffer。对预览和录像场景，主路径通常保持在 GraphicBuffer 内流转，CPU 不直接搬运像素数据。
+稳态预览阶段，App 通常通过 `setRepeatingRequest()` 持续下发同一组 request。Android 13+ 的主线实现里，CameraService 通过 AIDL `ICameraDeviceSession.processCaptureRequest()` 把 request 送到 vendor HAL；Android 10-12 机型仍常见 `processCaptureRequest_3_4()` 或 `processCaptureRequest_3_7()` 这类 HIDL 方法。HAL 收到 request 后驱动 Sensor 曝光，ISP 完成图像处理，再把结果写入对应输出 Buffer。对预览和录像场景，主路径通常保持在 GraphicBuffer 内流转，CPU 不直接搬运像素数据。
 
 ### 阶段三：消费（Preview / Recording / Analysis）
 
@@ -107,13 +109,17 @@ sequenceDiagram
     App->>CS: setRepeatingRequest()
 
     loop Every Frame
-        CS->>HAL: processCaptureRequest_3_4 / 3_7(Frame N)
+        alt Android 13+ AIDL HAL
+            CS->>HAL: ICameraDeviceSession.processCaptureRequest(Frame N)
+        else Android 10-12 HIDL HAL
+            CS->>HAL: processCaptureRequest_3_4 / 3_7(Frame N)
+        end
 
-        alt Android 10+ HAL buffer management
-            HAL->>CS: requestStreamBuffers()
+        alt HAL buffer management in use
+            HAL->>CS: ICameraDeviceCallback.requestStreamBuffers()
             CS->>FW: get buffers from stream cache / Surface
             CS-->>HAL: stream buffers + fences
-        else Android 5-9
+        else Legacy buffer handoff
             CS->>FW: dequeue output buffers from Surface / ImageReader
             CS-->>HAL: output buffers in request
         end
@@ -147,11 +153,11 @@ ZSL 需要先分清楚两层能力。底层前提是 Camera HAL 声明可重处�
 
 `CONTROL_ENABLE_ZSL` 处理的是 device-operated ZSL。对 `STILL_CAPTURE` request 打开这个开关后，设备可以复用过去已经采到的帧来生成拍照结果。文档使用 may，不保证每次都会回用历史帧。是否真的回用历史帧，取决于 HAL 能力、当前模板、闪光灯和会话配置。
 
-CameraX 的 ZSL 是另一层实现。`ImageCapture` 的零快门延迟模式会维护一个 app-managed ring buffer，从最近几帧里挑时间戳最接近快门的一帧，再走重处理或库层封装的输出路径。它要求设备支持 PRIVATE reprocessing，启用前要通过 `isZslSupported()` 判断；不满足条件时会回退到 `CAPTURE_MODE_MINIMIZE_LATENCY`。flash 为 `ON` 或 `AUTO`、VideoCapture、Extensions 场景都不走这条路径。
+CameraX 的 ZSL 是另一层实现。`ImageCapture` 的零快门延迟模式会维护一个 app-managed ring buffer，从最近几帧里挑时间戳最接近快门的一帧，再走重处理或库层封装的输出路径。这个 ring buffer 负责保留候选帧，真正落到设备侧时仍然依赖 `createReprocessableCaptureSession()` 对应的 reprocess pipeline，把候选帧重新组织成 HAL 可消费的 reprocess request。它要求设备支持 PRIVATE reprocessing，启用前要通过 `isZslSupported()` 判断；不满足条件时会回退到 `CAPTURE_MODE_MINIMIZE_LATENCY`。flash 为 `ON` 或 `AUTO`、VideoCapture、Extensions 场景都不走这条路径。
 
 ## Request-Buffer 生命周期
 
-同一个标题在 Android 5-9 和 Android 10+ 指的是两套不同的 buffer 管理规则，分开看更清楚。
+同一个标题在 Android 5-9、Android 10-12 和 Android 13+ 指的是三段连续演进，分开看更清楚。
 
 ### Android 5-9：Framework 先拿 buffer，再把 request 交给 HAL
 
@@ -162,7 +168,7 @@ CameraX 的 ZSL 是另一层实现。`ImageCapture` 的零快门延迟模式会�
 
 这一版里，`dequeueBuffer` 的等待时间落在 Framework stream / Surface 一侧。HAL 看到的是已经分配好的 buffer handle，不直接操作应用侧 `BufferQueue` API。
 
-### Android 10+：HAL3.5 buffer management 把“提交 request”和“借 buffer”拆开
+### Android 10-12：HAL3.5 buffer management 先在 HIDL 里把“提交 request”和“借 buffer”拆开
 
 1. Framework 仍然通过 `processCaptureRequest_3_4()` 或 `processCaptureRequest_3_7()` 提交 request。
 2. 如果设备声明 HAL buffer management，HAL 可以在需要输出 buffer 时通过 `ICameraDeviceCallback.requestStreamBuffers()` 向 CameraService 申请。
@@ -170,7 +176,15 @@ CameraX 的 ZSL 是另一层实现。`ImageCapture` 的零快门延迟模式会�
 4. HAL 完成写入后，常规结果仍通过 `processCaptureResult` 返回，多借出的 buffer 则通过 `returnStreamBuffers()` 归还给 CameraService。
 5. Preview / Recording / Analysis consumer 释放 buffer 之后，Framework 再把它放回可复用池。
 
-这一版把“谁负责申请 buffer”和“谁持有 buffer 最久”分得更清楚。多流并发场景里，观察点应拆成三段：Framework 侧的 `dequeueBuffer` / stream cache 压力、HAL 持有 buffer 的时长、consumer 侧的归还速度。
+### Android 13+：AIDL Camera HAL 把同一套 buffer management 迁到新版接口
+
+1. CameraService 通过 `hardware/interfaces/camera/device/aidl/android/hardware/camera/device/ICameraDeviceSession.aidl` 定义的 `processCaptureRequest()` 向活跃 session 提交 request。
+2. HAL 需要补借输出 buffer 时，通过 AIDL callback `requestStreamBuffers()` 向 Framework 申请。
+3. CameraService 仍然从 `Camera3OutputStream` 管理的 stream cache / Surface 池取出 buffer，再把 handle 和 fence 交给 HAL。
+4. HAL 完成写入后，通过 `processCaptureResult()` 归还正常输出；超出本次 request 实际消耗的 buffer 通过 `returnStreamBuffers()` 返还给 Framework。
+5. consumer 释放 buffer 之后，Framework 把它重新放回可复用池。
+
+三版的观察重点一致：Framework 侧的 `dequeueBuffer` / stream cache 压力、HAL 持有 buffer 的时长、consumer 侧的归还速度。差别在于 Android 13+ 要优先按 AIDL 接口和 slice 名称定位，Android 10-12 再去对照 HIDL 3.x 的方法名。
 
 `CaptureCallback` 提供了把 request 节奏和结果节奏关联起来的时间戳：
 
@@ -183,9 +197,15 @@ CameraX 的 ZSL 是另一层实现。`ImageCapture` 的零快门延迟模式会�
 
 ## 在 Perfetto 中识别 Camera 管线
 
-排查 Camera 问题时，先看配置阶段，再看稳态帧节奏，再看 Buffer 和 IPC 压力。抓 Trace 时至少带上 `camera`、`gfx`、`view`、`binder_driver`、`dmabuf` 或等价厂商数据源。[待补充：Trace 截图]
+排查 Camera 问题时，先看配置阶段，再看稳态帧节奏，再看 Buffer 和 IPC 压力。抓 Trace 时至少带上 `camera`、`gfx`、`view`、`binder_driver`、`dmabuf` 或等价厂商数据源。暂时没有截图时，也可以先按左侧 Track 树和 Slice 关键字定位。
 
-[图：Perfetto 中 cameraserver、SurfaceFlinger、vendor camera threads、dma_buf counters 的对照截图]
+- `cameraserver`：先找 `connectDevice`、`beginConfigure`、`endConfigure`、`submitRequestList`
+- vendor camera / provider 进程：搜索 `processCaptureRequest`、`requestStreamBuffers`、`processCaptureResult`、`notify`
+- `SurfaceFlinger`：找 `BufferTX - SurfaceView`、对应 Preview layer 的 latch / transaction slice
+- App 进程：找 `onImageAvailable()`、分析线程上的 YUV 转换、推理或 `image.close()` 归还点
+- `dma_buf` 或 `dmabuf_heap` counters：看 buffer 常驻量、突增点和回落速度
+
+Android 13+ 设备更常见带 `AIDL` 前缀或 `ICameraDeviceSession` 关键字的 Binder slice。Android 10-12 机型更常见 `HIDL::...processCaptureRequest_3_4`、`processCaptureRequest_3_7` 这类旧名字。很多 OEM 会裁短前缀，直接搜 `processCaptureRequest`、`requestStreamBuffers`、`processCaptureResult` 更稳。
 
 第一组观察点是会话建立阶段。`cameraserver` 进程里的 `connectDevice`、`beginConfigure`、`endConfigure`、`submitRequestList` 可以判断启动慢是卡在打开设备、流配置，还是首个 request 提交。
 
@@ -228,9 +248,10 @@ Analysis 回调里频繁 `new byte[]`、做 YUV 平面拼接、把每帧都转�
 | Camera2 / HAL3（Android 5.0+） | 引入 `CaptureRequest`、多输出 Surface、reprocess session | 预览、录像、分析三路可以并行，问题开始集中到 request 节奏和 buffer 所有权 |
 | Reprocessable session / ZSL 能力声明（Android 6.0+） | `createReprocessableCaptureSession()`、`PRIVATE_REPROCESSING`、`YUV_REPROCESSING` 进入公开 API | ZSL 需要按 capability 判断，不能把重处理流程当成所有设备的默认行为 |
 | Logical multi-camera（Android 9） | 同一逻辑 camera id 下组合多个物理 Camera | 变焦、广角切换的切流成本下降，输出组合复杂度上升 |
-| HAL 3.5 buffer management（Android 10+） | `requestStreamBuffers()` / `returnStreamBuffers()` 把 request 提交与 buffer 申请拆开 | 多流并发时可以区分 Framework 池深度不足、HAL 持有过久、consumer 归还过慢 |
+| HAL 3.5 buffer management（Android 10-12） | HIDL 3.4 / 3.5 / 3.7 把 `requestStreamBuffers()` / `returnStreamBuffers()` 引入 Camera buffer management API | 多流并发时可以区分 Framework 池深度不足、HAL 持有过久、consumer 归还过慢 |
 | SurfaceView 进入 BLAST 路径（Android 11+） | preview 的 consumer 侧开始通过 `BLASTBufferQueue + SurfaceControl.Transaction` 协调 buffer 和几何更新 | 排查 Camera preview resize、窗口切换和几何不同步时，需要回连 §18.6 的 SurfaceView 现代路径 |
-| CameraX ZSL（Jetpack 1.2+） | `ImageCapture` 提供 app-managed ring buffer 与降级策略 | App 侧看到的 ZSL 体验可能来自库层封装，不等于 HAL 一定支持完整 reprocess pipeline |
+| AIDL Camera HAL（Android 13+） | 设备接口迁到 `ICameraDevice.aidl` / `ICameraDeviceSession.aidl`，`processCaptureRequest()`、`requestStreamBuffers()` 延续同一套 buffer management 语义 | Android 14-16 排查底层接口时，应优先按 AIDL slice 和 `aidl/` 源码路径定位 |
+| CameraX ZSL（Jetpack 1.2+） | `ImageCapture` 在库层维护 ring buffer，并把候选帧桥接回 reprocess pipeline | App 侧看到的 ZSL 体验来自库层封装，但底层仍要满足 HAL reprocess 能力 |
 
 CameraX 不是新的底层渲染路径。它把 Camera2 常见的会话管理错误和生命周期错误收敛掉了，能减少“配置没错但输出组合很差”的问题。真正的像素生产、Buffer 流转、Surface 合成仍然落在 Camera2 / HAL3 这条管线上。
 
@@ -245,6 +266,8 @@ CameraX 不是新的底层渲染路径。它把 Camera2 常见的会话管理错
 - Android Developers, Camera2 概览: https://developer.android.com/media/camera/camera2
 - Android Developers, CameraX 概览: https://developer.android.com/media/camera/camerax
 - Android Developers, CameraX Zero-Shutter Lag: https://developer.android.com/media/camera/camerax/take-photo/zsl
+- Android Developers, Camera2 Extensions API: https://developer.android.com/media/camera/camera2/extensions-api
+- Android Developers, `CameraExtensionSession`: https://developer.android.com/reference/android/hardware/camera2/CameraExtensionSession
 - Android Developers, `CaptureRequest.CONTROL_ENABLE_ZSL`: https://developer.android.com/reference/android/hardware/camera2/CaptureRequest#CONTROL_ENABLE_ZSL
 - Android Developers, `CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES_PRIVATE_REPROCESSING` / `YUV_REPROCESSING`: https://developer.android.com/reference/android/hardware/camera2/CameraCharacteristics
 - Android Developers, `CameraDevice.createReprocessableCaptureSession()`: https://developer.android.com/reference/android/hardware/camera2/CameraDevice
@@ -252,8 +275,8 @@ CameraX 不是新的底层渲染路径。它把 Camera2 常见的会话管理错
 - AOSP `android-16.0.0_r1` `frameworks/av/services/camera/libcameraservice/CameraService.cpp`：`CameraService::connect()`、`CameraService::connectHelper()`
 - AOSP `android-16.0.0_r1` `frameworks/av/services/camera/libcameraservice/device3/Camera3Device.cpp`：`Camera3Device::configureStreamsLocked()`、`Camera3Device::RequestThread::threadLoop()`
 - AOSP `android-16.0.0_r1` `frameworks/av/services/camera/libcameraservice/device3/Camera3OutputStream.cpp`：`getBufferLocked()`、`returnBufferLocked()`
-- AOSP `android-16.0.0_r1` `hardware/interfaces/camera/device/3.4/ICameraDeviceSession.hal`：`processCaptureRequest_3_4()`
-- AOSP `android-16.0.0_r1` `hardware/interfaces/camera/device/3.5/ICameraDeviceCallback.hal`：`requestStreamBuffers()`、`returnStreamBuffers()`
-- AOSP `android-16.0.0_r1` `hardware/interfaces/camera/device/3.7/ICameraDeviceSession.hal`：`processCaptureRequest_3_7()`
+- AOSP `android-16.0.0_r1` `hardware/interfaces/camera/device/aidl/android/hardware/camera/device/ICameraDevice.aidl`：`open()`
+- AOSP `android-16.0.0_r1` `hardware/interfaces/camera/device/aidl/android/hardware/camera/device/ICameraDeviceSession.aidl`：`configureStreams()`、`processCaptureRequest()`
+- AOSP `android-16.0.0_r1` `hardware/interfaces/camera/device/aidl/android/hardware/camera/device/ICameraDeviceCallback.aidl`：`requestStreamBuffers()`、`returnStreamBuffers()`
 - AOSP `android-16.0.0_r1` `frameworks/native/libs/gui/BLASTBufferQueue.cpp`：`syncNextTransaction()`、`mergeWithNextTransaction()`
 - AOSP `android-16.0.0_r1` `frameworks/base/core/java/android/view/SurfaceView.java`：`applyTransactionOnVriDraw()`、`syncNextFrame()`

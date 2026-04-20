@@ -35,13 +35,13 @@ sources:
     path: "packages/modules/Profiling/framework/java/android/os/ProfilingResult.java"
   - type: aosp
     path: "packages/modules/Profiling/service/java/com/android/os/profiling/ProfilingService.java"
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task2b_state: fixed
 reviewed_by: "openclaw-task6"
-reviewed_date: "2026-04-13"
-task6_result: "needs-rework"
+reviewed_date: "2026-04-20"
+task6_result: pass-light-edit
 task9_result: needs-rework
 task2b_result: fixed
 ---
@@ -52,7 +52,7 @@ task2b_result: fixed
 
 线上冷启动慢、偶发 ANR、一次性 OOM，最麻烦的地方不是不会分析，而是问题发生时根本没开 Trace。ProfilingManager 的 system-triggered profiling 解决的正是这个空档。我们先把关心的系统事件注册给系统，等事件真的发生时，再由系统把结果放到应用目录，回调给应用自己处理。
 
-对启动优化来说，这让 `Activity.reportFullyDrawn()` 前后的启动收尾不再只能靠人工复现。对 ANR 排查来说，我们拿到的也不再只是 `traces.txt` 的定格画面，而是一份围绕触发时刻保存下来的 trace。对 OOM 来说，返回物甚至不是 trace，而是 Java heap dump。只有把这些触发器、产物类型、版本边界和结果交付方式拆开，后面的分析方法才站得住。
+对启动优化来说，这让 `Activity.reportFullyDrawn()` 前后的启动收尾不再只能靠人工复现。对 ANR 排查来说，我们拿到的也不再只是 `traces.txt` 的定格画面，而是一份围绕触发时刻保存下来的 trace。对 OOM 来说，返回物甚至不是 trace，而是 Java heap dump。只有把这些触发器、产物类型、版本边界和结果交付方式拆开，后面分析时才知道该用什么工具、看什么轨道。
 
 <!-- outline-start -->
 ## 要点
