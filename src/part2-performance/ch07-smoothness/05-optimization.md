@@ -8,8 +8,8 @@ reviewed_date: "2026-04-20"
 reviewed_by: "openclaw-task6"
 task6_result: pass-light-edit
 applicable_versions: "Android 5.0 (API 21) - Android 16 (API 36)"
-last_verified: "2026-04-01"
-last_verified_against: "AOSP android-16.0.0_r1, Android 官方文档"
+last_verified: "2026-04-20"
+last_verified_against: "AOSP android-16.0.0_r1, Android 官方文档, AndroidX RecyclerView release notes"
 confidence: high
 sources:
   - type: blog
@@ -18,6 +18,10 @@ sources:
     path: "developer.android.com/topic/performance/recycler-view"
   - type: official
     path: "developer.android.com/develop/ui/compose/performance"
+  - type: official
+    path: "https://developer.android.com/reference/android/graphics/RenderEffect"
+  - type: official
+    path: "https://developer.android.com/jetpack/androidx/releases/recyclerview"
   - type: official
     path: "developer.android.com/develop/ui/views/layout/constraint-layout"
   - type: aosp
@@ -37,11 +41,12 @@ polish_by: "task2b-polish"
 rework_count: 1
 rework_date: "2026-04-09"
 rework_by: "task2b-rework"
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
 task9_result: needs-rework
-task2b_state: pending
+task2b_state: fixed
+task2b_result: fixed
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-04-20"
 last_task9_at: "2026-04-20T13:38:00+08:00"
@@ -165,9 +170,11 @@ RecyclerView 从 25.1.0 开始支持预取——在主线程空闲的间隙提�
 
 ### SnapHelper 的性能考量
 
-`findSnapView` 和 `calculateDistanceToFinalSnap` 在滑动停止时调用。自定义 SnapHelper 要确保时间复杂度不超过 O(log n)。
+`findSnapView()` 和 `calculateDistanceToFinalSnap()` 会在列表进入 settling 阶段时参与目标 item 计算。自定义 SnapHelper 仍要把复杂度控制在 O(log n) 或更低，避免在停止前的几帧里重复扫描大列表。
 
-[待验证: SnapHelper 在 Android 16 中是否有新的优化]
+RecyclerView 1.4.0 已把 adaptive refresh rate 支持接到滚动路径上。列表通过 `OverScroller` 滚动时，例如 fling 之后的 settling 或 smooth scroll，RecyclerView 会调用 `setFrameContentVelocity()` 向平台上报内容速度。这个优化要同时满足三个条件：RecyclerView 1.4.0+、设备平台支持 adaptive refresh rate、滚动路径经过 `OverScroller`。SnapHelper 本身没有额外的 Android 16 专属 API；它受益于的是这套已有的滚动速度上报机制。
+
+[已验证: AndroidX RecyclerView 1.4.0 release notes — RecyclerView 在通过 OverScroller 滚动时调用 setFrameContentVelocity() 以支持 adaptive refresh rate]
 
 ### RecyclerView 卡顿在 Perfetto 中的定位
 
@@ -208,9 +215,9 @@ view.setLayerType(View.LAYER_TYPE_NONE, null);
 
 ### RenderEffect / Blur 等特效的性能考量 🔸
 
-Android 12 的 `RenderEffect` API 模糊效果是性能敏感操作。建议：降低模糊分辨率、缓存模糊结果、Android 13+ 使用 `RenderEffect.createBlurEffect()`。
+`RenderEffect.createBlurEffect()` 从 Android 12（API 31）开始可用。模糊半径越大、参与模糊的像素越多，RenderThread 和 GPU 的负载越高。实战里更稳妥的做法是控制模糊区域、降低输入分辨率，并缓存可复用的模糊结果。
 
-[待验证: Android 16 中 RenderEffect 是否有新的硬件加速路径]
+[已验证: Android Developers reference，`RenderEffect#createBlurEffect(...)` 标注 Added in API level 31]
 
 ## 线程优化：耗时操作异步化、Binder 调用、线程池
 
@@ -381,9 +388,11 @@ WeSing 在进房场景中发现主线程 inflate 耗时过长，原因是“游�
 ## 参考资料
 
 - [RecyclerView 官方指南](https://developer.android.com/topic/performance/recycler-view)
+- [AndroidX RecyclerView release notes](https://developer.android.com/jetpack/androidx/releases/recyclerview)
 - [Jetpack Compose Performance](https://developer.android.com/develop/ui/compose/performance)
 - [ConstraintLayout 性能优化](https://developer.android.com/develop/ui/views/layout/constraint-layout)
 - [ViewStub 文档](https://developer.android.com/reference/android/view/ViewStub)
+- [RenderEffect API](https://developer.android.com/reference/android/graphics/RenderEffect)
 - [Hardware Layer](https://developer.android.com/reference/android/view/View#LAYER_TYPE_HARDWARE) — 另见本书 [2.7 Hardware Layer](07-hardware-layer.md)
 - AOSP：`ViewStub.java`、`View.java`、`Choreographer.java`
 - 腾讯 WeSing：[Android 深入卡顿分析与实践](https://mp.weixin.qq.com/s?__biz=MzI1NjEwMTM4OA==&mid=2651236641)
