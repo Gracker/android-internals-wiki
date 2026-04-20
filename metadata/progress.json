@@ -1,46 +1,46 @@
 {
-  "generated_at": "2026-04-21T02:51:50+08:00",
+  "generated_at": "2026-04-21T03:54:40+08:00",
   "state_machine_version": "v2",
   "total_sections": 175,
   "metrics": {
     "total": 174,
     "unknown": 0,
-    "last_updated": "2026-04-21T02:51:50+08:00",
+    "last_updated": "2026-04-21T03:54:40+08:00",
     "task2b_state_counts": {
-      "fixed": 129,
+      "fixed": 127,
       "idle": 21,
-      "pending": 22,
+      "pending": 24,
       "unknown": 2
     },
     "task9_state_counts": {
-      "pending": 117,
-      "reviewed": 56,
+      "pending": 114,
+      "reviewed": 59,
       "fixed": 1
     },
     "pipeline_stage_counts": {
       "task6_pending": 79,
-      "ready-to-publish": 25,
-      "task9_pending": 50,
-      "task2b_pending": 20
+      "ready-to-publish": 26,
+      "task9_pending": 47,
+      "task2b_pending": 22
     },
-    "pipeline_task9_pending": 50,
-    "pipeline_task2b_pending": 20,
-    "pipeline_ready_to_publish": 25,
+    "pipeline_task9_pending": 47,
+    "pipeline_task2b_pending": 22,
+    "pipeline_ready_to_publish": 26,
     "ready-to-publish": 0,
-    "finalized": 25,
-    "ready-for-review": 149
+    "finalized": 26,
+    "ready-for-review": 148
   },
   "pipeline": {
     "pipeline_stage_counts": {
       "task6_pending": 79,
-      "ready-to-publish": 25,
-      "task9_pending": 50,
-      "task2b_pending": 20
+      "ready-to-publish": 26,
+      "task9_pending": 47,
+      "task2b_pending": 22
     },
     "task2b_state_counts": {
-      "fixed": 129,
+      "fixed": 127,
       "idle": 21,
-      "pending": 22,
+      "pending": 24,
       "unknown": 2
     },
     "task6_state_counts": {
@@ -48,8 +48,8 @@
       "reviewed": 102
     },
     "task9_state_counts": {
-      "pending": 117,
-      "reviewed": 56,
+      "pending": 114,
+      "reviewed": 59,
       "fixed": 1
     }
   },
@@ -2234,17 +2234,19 @@
       "title": "网络性能深入：连接池、TLS 与传输优化",
       "chapter": "12.3",
       "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
-      "task9_state": "pending",
-      "task2b_state": "fixed",
+      "task9_state": "reviewed",
+      "task2b_state": "pending",
       "reviewed_date": "2026-04-13",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
-      "task2b_result": "fixed",
       "section": "12.3",
-      "task6_reviewed_date": "2026-04-21"
+      "task6_reviewed_date": "2026-04-21",
+      "task9_reviewed_date": "2026-04-21",
+      "task9_reviewed_by": "openclaw-task9",
+      "last_task9_at": "2026-04-21T03:54:40+08:00"
     },
     "src/part2-performance/ch12-apk-network/04-network-security-tls-performance.md": {
       "path": "src/part2-performance/ch12-apk-network/04-network-security-tls-performance.md",
@@ -2682,17 +2684,21 @@
       "path": "src/part3-tools/ch13-perfetto/03-perfetto-view.md",
       "title": "Perfetto View 解读",
       "chapter": "13.3",
-      "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "task6_state": "reviewed",
-      "task9_state": "pending",
+      "task9_state": "reviewed",
       "task2b_state": "fixed",
       "reviewed_date": "2026-04-13",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
       "task2b_result": "fixed",
       "section": "13.3",
-      "task6_reviewed_date": "2026-04-21"
+      "task6_reviewed_date": "2026-04-21",
+      "task9_result": "pass-tech-review",
+      "task9_reviewed_date": "2026-04-21",
+      "task9_reviewed_by": "openclaw-task9",
+      "last_task9_at": "2026-04-21T03:54:40+08:00"
     },
     "src/part3-tools/ch13-perfetto/04-large-traces.md": {
       "path": "src/part3-tools/ch13-perfetto/04-large-traces.md",
@@ -2777,16 +2783,19 @@
       "title": "Android Tracing 基础设施：atrace、ftrace 与 Perfetto 数据采集原理",
       "chapter": "13.9",
       "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
-      "task9_state": "pending",
-      "task2b_state": "fixed",
+      "task9_state": "reviewed",
+      "task2b_state": "pending",
       "reviewed_date": "2026-04-13",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "section": "13.9",
-      "task6_reviewed_date": "2026-04-21"
+      "task6_reviewed_date": "2026-04-21",
+      "task9_reviewed_date": "2026-04-21",
+      "task9_reviewed_by": "openclaw-task9",
+      "last_task9_at": "2026-04-21T03:54:40+08:00"
     },
     "src/part3-tools/ch13-perfetto/10-perfetto-sql-cookbook.md": {
       "path": "src/part3-tools/ch13-perfetto/10-perfetto-sql-cookbook.md",

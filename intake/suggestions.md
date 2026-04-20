@@ -4128,3 +4128,22 @@
 - **问题**：本节「扩展四」包含较详细的 CachedAppOptimizer 源码级补充（freezeBinderThreads、解冻原因码、Perfetto 区分方法等），但 1.3 节「进程模型与生命周期管理」中已有完整的 CachedAppOptimizer/Freezer 机制章节（含架构设计、实现机制、Perfetto 表现、版本演进），两处内容高度重叠。读者在两处看到类似内容会产生困惑，维护时也容易版本不一致。
 - **建议**：本节（4.4）的 CachedAppOptimizer 补充应缩减为"此处仅说明 Freezer 与 LMK kill 的区别，详细机制见 1.3 节"的交叉引用，避免重复展开。具体执行由 task2b 完成。
 - **review 日志**：logs/review/2026-04-21-03-review.md
+
+
+## [Task9 Deep Review] 12.3 网络性能深入：连接池、TLS 与传输优化 — 2026-04-21
+- **类型**：版本差异
+- **位置**：L235-L256
+- **问题**：DNS Resolver 模块被写成“从 Android 11 开始作为独立 Mainline 模块”，但公开口径更接近“Android 10 引入、Android 11 起强制模块化”；DoH3 rollout 也不只覆盖 Android 11+，还包括部分 Android 10 设备。
+- **建议**：把版本线改成“Android 10 引入 Mainline DNS Resolver，Android 11 起强制；2022 年 DoH3 通过 Google Play system update rollout 到 Android 11-13 与部分 Android 10 设备”。
+
+## [Task9 Deep Review] 13.3 Perfetto View 解读 — 2026-04-21
+- **类型**：版本差异
+- **位置**：L356 / L459
+- **问题**：暗色主题被写成 “Perfetto v52 起成为一等公民功能（不再是实验性的）”，并给出命令面板切换路径。Perfetto release notes 口径更接近 v52/v53 阶段仍是 Settings 里的 `[Experimental] UI Theme`。
+- **建议**：改成“v52 左右引入暗色主题，早期 release 仍以实验性设置项出现；具体入口以当前 UI 版本为准”，不要把切换入口写死成命令面板。
+
+## [Task9 Deep Review] 13.3 Perfetto View 解读 — 2026-04-21
+- **类型**：源码准确性
+- **位置**：L460
+- **问题**：`slice_self_dur()` 被写成可直接调用的函数。当前公开口径更常见的是 `slice_self_dur` 表 / `slices.self_dur` 标准库模块，不宜写成顶层函数名。
+- **建议**：改成“Perfetto v52 引入 `slice_self_dur` 相关标准库能力”，并给出可运行示例，如 `INCLUDE PERFETTO MODULE slices.self_dur; ... JOIN slice_self_dur ...`。
