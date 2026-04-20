@@ -793,7 +793,10 @@
         }
       ],
       "added_by": "external-ai-review",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-04-21T03:10:05+08:00",
+      "completed_by": "openclaw-task2b",
+      "resolution": "fixed-in-task2b"
     },
     {
       "section": "14.8",
@@ -819,7 +822,10 @@
         }
       ],
       "added_by": "external-ai-review",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-04-21T03:10:05+08:00",
+      "completed_by": "openclaw-task2b",
+      "resolution": "fixed-in-task2b"
     },
     {
       "section": "14.9",
@@ -839,7 +845,10 @@
         }
       ],
       "added_by": "external-ai-review",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-04-21T03:10:05+08:00",
+      "completed_by": "openclaw-task2b",
+      "resolution": "fixed-in-task2b"
     },
     {
       "section": "8.8",
@@ -865,7 +874,10 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-21T02:51:50+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-04-21T03:10:05+08:00",
+      "completed_by": "openclaw-task2b",
+      "resolution": "fixed-in-task2b"
     }
   ]
 }

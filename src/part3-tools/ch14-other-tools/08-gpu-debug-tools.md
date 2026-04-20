@@ -32,6 +32,8 @@ gap_source: "AOSP结构+官方文档+研究素材"
 drafted_by: "openclaw-task2a"
 drafted_date: "2026-04-05"
 reviewed_by: "openclaw-task6"
+last_task2b_at: "2026-04-21T03:10:05+08:00"
+task2b_result: fixed
 reviewed_date: "2026-04-14"
 task6_result: "needs-rework"
 pipeline_stage: task6_pending
@@ -189,30 +191,27 @@ Frame Profiler 的核心视图：
 
 **资源查看器**：查看每个 Draw Call 的输入纹理和输出 render target。如果一个 4096×4096 的纹理被一个只画 100×100 像素的 Draw Call 采样，这就是一个明显的优化点，缩小纹理通常就能减少带宽消耗。
 
-### AGI 2025-2026 路线图
+### AGI 的近期演进
 
-[已验证：AGI 官方文档 + Google I/O 2025/2026 session，developer.android.com/agi]
+[已验证：AGI 官方文档，developer.android.com/agi]
 
-AGI 在 2025-2026 年有一系列重大更新：
+当前能在官方产品页稳定核对到的，是 AGI 继续围绕 System Profiler 和 Frame Profiler 两条线完善功能。System Profiler 负责长时间 trace、GPU counter 和进程级 GPU 时间；Frame Profiler 负责单帧命令、shader 和 render target 的深入查看。
 
-**2026 H1：改进版 System Profiler**。速度和可靠性大幅提升，支持超大 trace 文件，新增帧截图功能（在 System Profiler 的时间轴上直接看到某一帧的画面），支持并排对比多个 trace。另一个变化是，改进版 System Profiler 计划开源。
+本地研究素材里提到 2026 年的改进版 System Profiler，以及更强的帧级分析能力方向。这里要加一条边界：AGI 官方主站当前没有公开到可以直接引用的“Frame Profiler 已切到 GFXReconstruct 内核”产品说明。写作时可以把 GFXReconstruct、RenderDoc 导出、Frame Looping 这类信息当作 roadmap 线索，但不要把它写成已经公开确认的既定事实。
 
-**2026 H2：高级 Frame Profiler Alpha**。基于 GFXReconstruct 重建，核心特性包括：
+因此，当前章节在工具选型上只依赖已公开能力：
 
-- **Frame Looping**：重复执行同一帧来精确测量 GPU 性能，消除首次执行时的编译和缓存冷启动噪声
-- **Render Pass Graph**：可视化 RenderPass 之间的依赖关系，帮助识别不必要的内存带宽消耗
-- **帧/RenderPass 级别的计时和硬件计数器**：比逐 Draw Call 更粗粒度但更稳定的性能数据
-- **导出到 RenderDoc**：AGI 捕获的帧数据可以直接导出到 RenderDoc 进行更深入的分析
-
-这两次更新意味着 AGI 将在 2026 年覆盖从系统级到帧级的完整 GPU 分析场景，并且开源后社区可以参与扩展。
+- 长时间采集、看 GPU counter 或进程级 GPU 时间，用 System Profiler
+- 单帧 GPU 命令、Draw Call、Shader / Render Pass 定位，用 Frame Profiler
+- 若要验证 GFXReconstruct 生态里的多帧分析，优先看 Sokatoa 这类已经明确公开实现路径的工具
 
 ### AGI 对 GLES 应用的分析路径
 
 [已验证：AGI 官方文档，developer.android.com/agi]
 
-随着 Android 17 将 ANGLE 从 allowlist 转向 denylist（详见 §2.14），很多 GLES 应用已经通过 ANGLE 到 Vulkan 的翻译层运行。AGI 的帧分析也走同一条路径：先用自定义的 ANGLE 构建把 GLES 命令翻译为 Vulkan，再做追踪。
+Android 15 开始，ANGLE 已经提供了更明确的系统级开关和每应用切换路径，排查 GLES 应用时不能只把它当成实验功能。到 Android 16 的新设备，ANGLE 覆盖范围继续扩大；Android 17 的新设备再转到 denylist 策略，默认大多数应用经由 ANGLE，只有兼容性例外回退到原生 GLES 驱动。AGI 的帧分析沿着这条迁移线工作：它会用自定义 ANGLE 构建把 GLES 命令翻译为 Vulkan 再做追踪。
 
-在 Android 17+ 上，GLES 应用的 GPU 行为很大程度上取决于 ANGLE 的 Vulkan 翻译质量。如果分析中发现某个 GLES Draw Call 的 GPU 时间异常，可能不是 GLES 代码本身的问题，而是 ANGLE 翻译后的 Vulkan 命令效率低。这种情况需要在分析报告中区分"应用层问题"和"ANGLE 翻译层问题"。
+在 Android 15-16 这段过渡期，同一款应用是否真的走 ANGLE，仍要结合设备配置、开发者选项和厂商策略确认。到 Android 17 新设备上，这条路径更接近系统默认值。如果分析中发现某个 GLES Draw Call 的 GPU 时间异常，要区分是应用层问题、ANGLE 翻译层问题，还是设备仍在走原生 GLES 驱动。
 
 ## Perfetto 中的 GPU 分析能力
 
@@ -542,6 +541,7 @@ MediaTek 没有独立的 GPU 分析工具，但 AGI 对 Mali GPU（MediaTek SoC 
 - 不能用帧捕获来测量真实帧率
 - 捕获的帧的 GPU 时间数据可能因为工具注入的拦截代码而不完全准确
 - System Profiler 的开销小得多（通常 < 5%），适合长时间采集
+- GPU counter 采样频率拉得很高时，System Profiler 也会引入可观测扰动；某些 Mali 驱动上会看到额外的 CPU 中断或 kworker 活动。长时间录制先用默认采样率，只在短窗口提高采样频率
 
 ### profileable vs debuggable
 
@@ -581,17 +581,18 @@ GAPID（Graphics API Debugger）是 Google 早期的图形调试工具，定位�
 
 ### ANGLE 对 GLES 帧分析的影响
 
-Android 从 12L 开始逐步扩大 ANGLE（将 GLES 翻译为 Vulkan 的兼容层）的应用范围。到 Android 17，ANGLE 从 allowlist 转向 denylist，绝大部分 GLES 应用已经通过 Vulkan 后端运行。
+Android 15 开始，ANGLE 已经从“可选实验路径”走到“系统内可显式切换的兼容层”。Android 16 的新设备继续扩大默认覆盖，Android 17 的新设备转到 denylist 策略，默认大多数 GLES 应用经由 ANGLE。
 
 这对 GPU 帧分析的影响：
 
-- **Android 12L-16**：GLES 应用可以选择走 ANGLE 或原生 GLES 驱动，AGI 的帧分析路径取决于应用是否启用 ANGLE
-- **Android 17+**：绝大多数 GLES 应用通过 ANGLE/Vulkan 运行，AGI 的 ANGLE 翻译路径与系统实际执行路径一致，分析结果更可靠。但需要注意，此时看到的 Vulkan 命令是 ANGLE 翻译后的结果，不是应用原始的 GLES 调用
-- **ANGLE denylist 例外**：被加入 denylist 的 GLES 应用（有兼容性问题的）仍然走原生 GLES 驱动，AGI 需要单独处理
+- **Android 15**：开发者已经可以在系统设置或 adb 中强制指定应用走 ANGLE，排查时要先确认真实 driver 选择
+- **Android 16 新设备**：ANGLE 覆盖范围继续扩大，很多新机型上的 GLES 工作负载已经更接近 GLES-over-Vulkan
+- **Android 17 新设备**：默认大多数应用走 ANGLE，只有 denylist 例外回退到原生 GLES
+- **旧设备升级场景**：系统版本升上去，不等于所有旧设备都立刻切到同一条 ANGLE 策略，结论仍要和设备实测一致
 
 ### AGI 2025-2026 演进
 
-AGI 在 2026 年有两次重大更新（上文已详述），核心变化：System Profiler 改进并开源、Frame Profiler 基于 GFXReconstruct 重建、新增 Frame Looping 和 Render Pass Graph。AGI 在此之后将覆盖从系统级到帧级的完整分析场景。
+公开文档已经明确的是 System Profiler / Frame Profiler 两条产品线会继续增强。至于“Frame Profiler 已切到 GFXReconstruct”这类表述，当前更适合放在研究备注里，等官方 release notes 或产品页公开后再写成正式结论。
 
 ## 参考资料
 

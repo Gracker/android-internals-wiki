@@ -12,12 +12,16 @@ reviewed_date: "2026-04-20"
 reviewed_by: "openclaw-task6"
 task6_result: pass-light-edit
 task9_result: needs-rework
+last_task2b_at: "2026-04-21T03:10:05+08:00"
+task2b_result: fixed
 confidence: medium
 sources:
   - type: official
     path: "https://developer.android.com/reference/android/media/MediaCodec"
   - type: official
     path: "https://developer.android.com/ndk/guides/audio/aaudio/low-latency-audio"
+  - type: official
+    path: "https://developer.android.com/jetpack/androidx/releases/media3"
   - type: blog
     path: "https://android-developers.googleblog.com/ (Media3 1.10 Release)"
   - type: source
@@ -32,10 +36,10 @@ created_by: "task2a-knowledge-gap"
 created_date: "2026-04-06"
 gap_source: "AOSP结构+官方文档+读者需求"
 gap_score: "16/20"
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: pending
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
+task2b_state: fixed
 ---
 
 # 8.8 Android 多媒体管线性能
@@ -105,13 +109,13 @@ MediaCodec 管理着一组 input buffer 和 output buffer，用索引（index）
 
 ```java
 // 配置 MediaCodec 时指定 output Surface，启用零拷贝路径
-MediaCodec codec = MediaCodec.createByCodecName("OMX.qcom.video.decoder.avc");
 MediaFormat format = MediaFormat.createVideoFormat("video/avc", width, height);
+MediaCodec codec = MediaCodec.createDecoderByType("video/avc");
 codec.configure(format, surface, null, 0);  // surface 参数开启 Surface 输出路径
 codec.start();
 ```
 
-这段代码里真正决定输出模型的是 `configure()` 的第二个参数。传入 `surface` 之后，解码器的 output buffer 不再以 `ByteBuffer` 暴露给 App，而是作为 `GraphicBuffer` 进入对应的图形队列。后续由谁消费，取决于这个 `surface` 来自哪里：`SurfaceView` 通常把帧交给 `SurfaceFlinger` / HWC，`TextureView` 背后则是 `SurfaceTexture`，帧会先被 App 的 `RenderThread` 当作外部纹理采样，再并入 UI 场景。
+这段代码里真正决定输出模型的是 `configure()` 的第二个参数。传入 `surface` 之后，解码器的 output buffer 不再以 `ByteBuffer` 暴露给 App，而是作为 `GraphicBuffer` 进入对应的图形队列。后续由谁消费，取决于这个 `surface` 来自哪里：`SurfaceView` 通常把帧交给 `SurfaceFlinger` / HWC，`TextureView` 背后则是 `SurfaceTexture`，帧会先被 App 的 `RenderThread` 当作外部纹理采样，再并入 UI 场景。若排查厂商编解码器兼容性，再用 `MediaCodecList` 或设备实际返回的 codec name 去锁定具体组件；直接写死 `OMX.qcom...` 只适合设备定向诊断，不能当跨设备范式。
 
 [已验证: 官方文档, developer.android.com/reference/android/media/MediaCodec — Buffer Management]
 
@@ -225,20 +229,18 @@ Media3 近期版本在带宽估算上做了改进，引入了更主动的预测�
 
 在实际优化中，需要根据场景调整这些参数。短视频 Feed 场景常把 `bufferForPlaybackMs` 压到 500-1000ms 量级，以缩短首帧前的等待；长视频或弱网场景更看重 `minBufferMs` 和 `bufferForPlaybackAfterRebufferMs`，避免恢复播放后马上再次卡住。
 
-### Media3 1.10：动态调度与 Player 池化
+### Media3 1.6-1.10：预热、动态调度与 Compose 播放器演进
 
-Media3 1.10（2026-03-30 发布）引入了几个对性能有重要影响的新特性：
+Media3 近几个版本对播放性能的改动分布在不同 release 里，不能都归到 1.10：
 
-**动态调度**（`experimentalSetDynamicSchedulingEnabled()`）让 ExoPlayer 的核心播放循环不再固定频率运行，而是根据实际需要动态调整调度时机。这对长视频播放和后台音频场景的功耗优化尤其有效——不需要处理帧的时候不唤醒 CPU。
+- **1.6.0**：ExoPlayer 新增实验性的 `MediaCodecVideoRenderer` prewarming，`DefaultRenderersFactory.experimentalSetEnableMediaCodecVideoRendererPrewarming(...)` 可以让播放器在连续媒体项切换前预热第二个视频 renderer，降低切换延迟。
+- **1.8.0**：`ExoPlayer.Builder.experimentalSetDynamicSchedulingEnabled()` 出现，播放器主循环可以按是否需要 render 动态放慢调度节奏，减少无效 CPU 唤醒。
+- **1.9.0**：`media3-ui-compose` 新增 `ContentFrame`，并把 `PlayerSurface` 作为 Compose 视频 surface 的标准入口；这解决的是 Compose 中视频画面的承载方式。
+- **1.10.0**：`media3-ui-compose-material3` 新增 `Player` composable，把 `ContentFrame` 和一组 Material3 控件封装成可直接复用的播放 UI。
 
-**Compose 原生 PlayerSurface** 替代了之前的 `AndroidView` 嵌入方式。`AndroidView` 的开销在于 View-Compose 互操作层需要维护额外的状态同步和布局协调。原生的 `PlayerSurface` composable 直接使用 `ComposeView` 管道，省去了这部分开销。对于视频 Feed 这种需要频繁创建和销毁播放器 UI 的场景，这个改进可以显著减少掉帧。
+Player 池化与 `prepare()` 预热仍然是短视频 Feed 常用的工程模式，但它们属于应用层策略，不应写成“Media3 1.10 新增能力”。Media3 1.6.0 之后，官方 API 让 renderer 级预热更容易实施；池化规模、预热窗口和 Compose 状态读取策略仍要按业务自己控制。
 
-**Player 池化与预热** 是视频 Feed 场景的标准优化模式：
-- 池化：复用 ExoPlayer 实例，避免每次创建新的编解码器（创建一个 MediaCodec 实例大约需要 80ms）
-- 预热：在视频进入可视区域之前就调用 `prepare()`，让解码器提前初始化
-- `derivedStateOf` + `remember`：延迟 Compose 状态读取，避免不必要的重组
-
-[已验证: Google Android Developers Blog, Media3 1.10 Release, 2026-03-30]
+[已验证: AndroidX Media3 release notes 1.6.0 / 1.8.0 / 1.9.0 / 1.10.0, developer.android.com/jetpack/androidx/releases/media3]
 [来源: intake/research-feeds/2026-04-03-19-ch07-media3-10-dynamic-scheduling-compose.md]
 
 低内存设备上需要注意 Player 实例数量。每个 ExoPlayer 实例至少占用 20-30MB 内存（解码器 buffer + 缓冲数据），同时持有 3-4 个实例可能触发 LMK。建议通过 `ActivityManager.isLowRamDevice` 动态调整池化大小。
@@ -448,7 +450,10 @@ Camera 采集和视频编码的组合管线（如直播、录屏）需要特别�
 - **Android 8.1**：AAudio 支持 MMAP 路径，延迟可降至 10ms 以下
 - **Android 11**：引入 low-latency decoding 模式（需要 SoC 支持），支持 tunneled playback via Codec2
 - **Android 10+**：媒体模块（`com.android.media`）通过 APEX 格式可独立更新，不再依赖系统 OTA
-- **Media3 1.10 (2026-03)**：动态调度、Compose PlayerSurface、Player 池化预热
+- **Media3 1.6.0 (2025-03)**：引入 `MediaCodecVideoRenderer` 预热支持，减少连续媒体项切换延迟
+- **Media3 1.8.0 (2025-07)**：引入实验性的动态调度开关 `experimentalSetDynamicSchedulingEnabled()`
+- **Media3 1.9.0 (2025-11)**：`media3-ui-compose` 提供 `ContentFrame` 和 `PlayerSurface`
+- **Media3 1.10.0 (2026-03)**：`media3-ui-compose-material3` 提供 `Player` composable 与一组 Material3 播放控件
 
 [待验证: low-latency decoding 在不同 SoC 上的支持情况]
 
@@ -459,5 +464,6 @@ Camera 采集和视频编码的组合管线（如直播、录屏）需要特别�
 - 官方文档 MediaCodec：https://developer.android.com/reference/android/media/MediaCodec
 - 官方文档 AAudio Low Latency：https://developer.android.com/ndk/guides/audio/aaudio/low-latency-audio
 - Media3 官方文档：https://developer.android.com/media/media3
+- AndroidX Media3 release notes：https://developer.android.com/jetpack/androidx/releases/media3
 - Google Android Developers Blog, Media3 1.10 Release, 2026-03-30
 - Perfetto SQL Reference：https://ui.perfetto.dev
