@@ -7,8 +7,8 @@ drafted_by: "openclaw-task2"
 status: ready-for-review
 applicable_versions: "Android 8.0 (API 26) - Android 17 (API 36)"
 last_verified: "2026-03-31"
-reviewed_date: "2026-04-14"
-reviewed_by: "openclaw-task6"
+reviewed_date: "2026-04-21"
+reviewed_by: openclaw-task6
 polish_count: 1
 polish_date: "2026-04-06"
 polish_by: "task2b-polish"
@@ -31,10 +31,10 @@ sources:
     path: "https://android-developers.googleblog.com/2025/12/android-16-qpr2-is-released.html"
 tags: ['art', 'gc', 'heap', 'tlab', 'aot', 'jit', 'cc-gc', 'cmc-gc', 'uffd', 'read-barrier', 'memory-allocation', 'generational-gc']
 related_chapters: ["4.1", "4.2", "4.4", "4.6", "4.7", "4.8", "7.1", "7.7"]
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
-task6_result: needs-rework
+task6_result: pass-light-edit
 task2b_state: fixed
 task2b_result: fixed
 task9_result: needs-rework
