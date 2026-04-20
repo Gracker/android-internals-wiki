@@ -1,55 +1,61 @@
 {
-  "generated_at": "2026-04-21T04:34:34+08:00",
+  "generated_at": "2026-04-21T04:38:00+08:00",
   "state_machine_version": "v2",
-  "total_sections": 174,
+  "total_sections": 212,
   "metrics": {
-    "total": 174,
-    "unknown": 0,
-    "last_updated": "2026-04-21T04:34:34+08:00",
+    "total": 212,
+    "unknown": 37,
+    "last_updated": "2026-04-21T04:38:00+08:00",
     "task2b_state_counts": {
-      "fixed": 130,
-      "idle": 21,
-      "pending": 22,
-      "unknown": 1
+      "unknown": 37,
+      "fixed": 131,
+      "pending": 25,
+      "idle": 19
     },
     "task9_state_counts": {
-      "pending": 116,
+      "unknown": 36,
       "reviewed": 57,
+      "pending": 118,
       "fixed": 1
     },
     "pipeline_stage_counts": {
-      "task6_pending": 75,
-      "ready-to-publish": 26,
-      "task9_pending": 53,
-      "task2b_pending": 20
+      "unknown": 36,
+      "task6_pending": 97,
+      "task2b_pending": 24,
+      "ready-to-publish": 23,
+      "task9_pending": 32
     },
-    "pipeline_task9_pending": 53,
-    "pipeline_task2b_pending": 20,
-    "pipeline_ready_to_publish": 26,
+    "pipeline_task9_pending": 32,
+    "pipeline_task2b_pending": 24,
+    "pipeline_ready_to_publish": 23,
     "ready-to-publish": 0,
-    "finalized": 26,
-    "ready-for-review": 148
+    "finalized": 23,
+    "ready-for-review": 152
   },
   "pipeline": {
     "pipeline_stage_counts": {
-      "task6_pending": 75,
-      "ready-to-publish": 26,
-      "task9_pending": 53,
-      "task2b_pending": 20
+      "unknown": 36,
+      "task6_pending": 97,
+      "task2b_pending": 24,
+      "ready-to-publish": 23,
+      "task9_pending": 32
     },
     "task2b_state_counts": {
-      "fixed": 130,
-      "idle": 21,
-      "pending": 22,
-      "unknown": 1
+      "unknown": 37,
+      "fixed": 131,
+      "pending": 25,
+      "idle": 19
     },
     "task6_state_counts": {
-      "revisiting": 68,
-      "reviewed": 106
+      "unknown": 30,
+      "reviewed": 89,
+      "revisiting": 92,
+      "pending": 1
     },
     "task9_state_counts": {
-      "pending": 116,
+      "unknown": 36,
       "reviewed": 57,
+      "pending": 118,
       "fixed": 1
     }
   },
@@ -3030,14 +3036,18 @@
       "title": "如何区分系统问题和 App 问题",
       "chapter": "15.2",
       "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
-      "task9_state": "pending",
-      "task2b_state": "idle",
+      "task9_state": "reviewed",
+      "task2b_state": "pending",
       "reviewed_date": "2026-04-16",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
-      "section": "15.2"
+      "section": "15.2",
+      "task9_result": "needs-rework",
+      "task9_reviewed_by": "openclaw-task9",
+      "task9_reviewed_date": "2026-04-21",
+      "last_task9_at": "2026-04-21T04:38:00+08:00"
     },
     "src/part3-tools/ch15-methodology/03-metrics.md": {
       "path": "src/part3-tools/ch15-methodology/03-metrics.md",
@@ -3184,28 +3194,36 @@
       "title": "AOSP 源码编译与调试环境",
       "chapter": "16.3",
       "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
-      "task9_state": "pending",
-      "task2b_state": "idle",
+      "task9_state": "reviewed",
+      "task2b_state": "pending",
       "reviewed_date": "2026-04-17",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
-      "section": "16.3"
+      "section": "16.3",
+      "task9_result": "needs-rework",
+      "task9_reviewed_by": "openclaw-task9",
+      "task9_reviewed_date": "2026-04-21",
+      "last_task9_at": "2026-04-21T04:38:00+08:00"
     },
     "src/part4-system/ch16-aosp/04-android17-kernel612-performance.md": {
       "path": "src/part4-system/ch16-aosp/04-android17-kernel612-performance.md",
       "title": "Android 17 + Kernel 6.12 系统级性能优化",
       "chapter": "16.4",
       "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
-      "task9_state": "pending",
-      "task2b_state": "idle",
+      "task9_state": "reviewed",
+      "task2b_state": "pending",
       "reviewed_date": "2026-04-17",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
-      "section": "16.4"
+      "section": "16.4",
+      "task9_result": "needs-rework",
+      "task9_reviewed_by": "openclaw-task9",
+      "task9_reviewed_date": "2026-04-21",
+      "last_task9_at": "2026-04-21T04:38:00+08:00"
     },
     "src/part4-system/ch16-aosp/05-android17-api37-performance-changes.md": {
       "path": "src/part4-system/ch16-aosp/05-android17-api37-performance-changes.md",

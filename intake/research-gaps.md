@@ -2729,3 +2729,35 @@ bpftrace 在 AOSP 的集成现状未准确描述。自 Android 12/13 起 AOSP ex
 
 ### 外部 review 来源
 - Gemini 外部 review (2026-04-20)
+
+## [2026-04-21] 16.3 AOSP 源码编译与调试环境 — Pixel 真机刷机路径在 2025+ 的公开支持矩阵
+
+### 盲区描述
+章节已经触到 2025 年后 Pixel 设备树 / 驱动公开策略变化，但缺少一份可执行的“哪些 Pixel 型号还能按官方公开材料完成 AOSP 真机验证”的矩阵。当前正文把设备树、driver binaries、kernel history 混写，读者很难判断真机验证边界。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 核对 developers.google.com/android/drivers 当前仍公开的 Pixel / Nexus 驱动包范围
+- 梳理 Android 16 之后 Pixel 设备树与 kernel history 的公开边界
+- 形成“Cuttlefish / 老 Pixel / 新 Pixel”三类验证路径建议
+
+### 关联章节
+16.2, 16.3
+
+## [2026-04-21] 16.4 Android 17 + Kernel 6.12 系统级性能优化 — android16-6.12 的真实 rollout 边界与 io_uring 用户态可见性
+
+### 盲区描述
+章节有大量 2026 新信息，但最关键的两条边界还没实锤：一是哪些设备 / 分支真的拿到 `android16-6.12` 或 AutoFDO rollout；二是 Android 17 上 io_uring 到底只对系统进程开放，还是已有可公开验证的 userspace 接口。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 整理 GKI `android15-6.6` / `android16-6.12` / 未来分支与设备更新关系
+- 核对 source.android.com GKI release builds 与设备兼容说明
+- 核对 Android 上 io_uring 的 SELinux / app sandbox 限制，以及 `external/liburing` 的公开使用场景
+
+### 关联章节
+16.2, 16.4, 6.3

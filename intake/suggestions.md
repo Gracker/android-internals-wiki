@@ -4147,3 +4147,27 @@
 - **位置**：L460
 - **问题**：`slice_self_dur()` 被写成可直接调用的函数。当前公开口径更常见的是 `slice_self_dur` 表 / `slices.self_dur` 标准库模块，不宜写成顶层函数名。
 - **建议**：改成“Perfetto v52 引入 `slice_self_dur` 相关标准库能力”，并给出可运行示例，如 `INCLUDE PERFETTO MODULE slices.self_dur; ... JOIN slice_self_dur ...`。
+
+## [Task9 Deep Review] 15.2 如何区分系统问题和 App 问题 — 2026-04-21
+- **类型**：数据缺失
+- **位置**：L164-L166
+- **问题**：把 SurfaceFlinger Client 合成“正常情况通常在 2-5ms”写成通用基线，但没有设备、分辨率、刷新率、layer 复杂度条件。这个数字在高刷和高分辨率场景下很容易失真。
+- **建议**：把 2-5ms 改成示例量级并补测试前提，或换成 FrameTimeline / SurfaceFlinger trace 的实测案例。
+
+## [Task9 Deep Review] 16.3 AOSP 源码编译与调试环境 — 2026-04-21
+- **类型**：版本差异
+- **位置**：L107 / L163 / L185
+- **问题**：文中把 Cuttlefish target 固定成 `*-trunk_staging-*` / `aosp_cf_arm64_only_phone`，但当前官方文档示例已转向 `aosp_current` 命名，target 后缀会随分支变动。
+- **建议**：把示例改成“以 `lunch` 列表或 ci.android.com 当前 branch target 为准”，正文只保留 target 结构，不把分支后缀写死。
+
+## [Task9 Deep Review] 16.4 Android 17 + Kernel 6.12 系统级性能优化 — 2026-04-21
+- **类型**：数据缺失
+- **位置**：L37-L45
+- **问题**：总览表把 boot、cold start、dm-verity、random I/O 的数字直接映射到具体机制，但没有给出每组数据的设备、workload、采样窗口和原始出处，像把多篇材料拼成一张表。
+- **建议**：为每一行补测试设备、工作负载和来源链接，必要时拆成“官方实测”与“patch/bench 推算”两类表。
+
+## [Task9 Deep Review] 16.4 Android 17 + Kernel 6.12 系统级性能优化 — 2026-04-21
+- **类型**：知识盲区
+- **位置**：L95-L103
+- **问题**：io_uring 段直接把收益外推到 OkHttp/Cronet/SQLite，并写出 “Bionic libc 中实验性提供 liburing 兼容层”，但没有交代 Android 上 io_uring 的安全限制、system-only 边界和 userspace 接入条件。
+- **建议**：补充 Android 上 io_uring 可用范围、SELinux / app sandbox 限制，以及 `external/liburing` 与 Bionic 的边界；如果证据不足，先降级为 `[待验证]`。
