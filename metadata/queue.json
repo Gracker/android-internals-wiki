@@ -87,6 +87,91 @@
       "completed_at": "2026-04-20T12:16:05+08:00",
       "completed_by": "task2b-content-processing-rework",
       "resolution": "已把 cpufreq cooling 映射改回 OPP / freq_qos 口径，重写 hotplug 边界，降格 MAGT 数字为 vendor case study，并把 Perfetto 频率查询改成 counter + cpu_counter_track。"
+    },
+    {
+      "section": "2.6",
+      "section_title": "SurfaceFlinger 与合成",
+      "priority": 85,
+      "reason": "[Deep Tech Review] BLASTBufferQueue 的引入时间写成 Android 12，混淆了 Android 11 的主窗口 BLAST 入口与 Android 12+ 的后续演进。",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "版本差异",
+          "location": "L297 / L333 / L367",
+          "detail": "章节把 BLASTBufferQueue 的引入统一写成 Android 12，并把源码参考也标成“Android 12+”。但主窗口 BLAST 入口实际在 Android 11 已进入 ViewRootImpl 路径，Android 12 更适合描述为在 FrameTimeline / SurfaceView / 事务同步分析口径上继续完善。当前写法会把 Android 11 与 Android 12 的演进边界抹平。",
+          "suggestion": "把版本演进拆成“Android 11：主窗口 BLAST 进入主线；Android 12+：同帧事务语义、FrameTimeline 和更稳定的窗口同步分析口径继续完善”，同时同步修正文中“Android 12 引入 BLAST”与参考资料标注。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-04-20T12:34:00+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "18.9",
+      "section_title": "Vulkan 原生渲染链路",
+      "priority": 85,
+      "reason": "[Deep Tech Review] AVP 路线图沿用了过时的 baseline_2024 说法，Swappy Trace 判读也把默认可见性写得过满，容易把 Vulkan 实战调试带偏。",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "版本差异",
+          "location": "L97-L116",
+          "detail": "AVP 章节把 `VP_ANDROID_baseline_2024` 写成 Android 16+ 的下一层 Profile，并沿用“baseline 2021 → 2022 → 2024”的主线。当前 Android 15+ 的官方口径已经转向前瞻性的 requirements profiles（如 `VP_ANDROID_15_requirements`、`VP_ANDROID_16_requirements`），继续把 baseline_2024 写成主路线会让读者瞄准错误的目标 Profile 名称。",
+          "suggestion": "把 AVP 演进改成“两段式”：ABP/VP baseline 2021/2022 负责历史基线，Android 15+ 转向 requirements profiles；如果要提 2024 Roadmap，需要明确它不是 Android 官方 requirements target。"
+        },
+        {
+          "type": "原理断裂",
+          "location": "L338-L366",
+          "detail": "Swappy Trace 小节把“Swappy track/slice”和 `Swappy_*` 关键 Slice 写成接入后即可直接可见，但默认 Perfetto 并不会稳定暴露这些标记。若应用没有注入 tracer 或主动写 ATrace，实战里更常见的证据是 `vkQueuePresentKHR`、FrameTimeline，以及额外 graphics tracing / AGI 数据。当前写法会误导读者把“看不到 Swappy Track”误判成“没有接入 Swappy”。",
+          "suggestion": "把默认诊断入口改成 `vkQueuePresentKHR` + FrameTimeline + graphics tracing/AGI，并明确只有在应用主动注入 tracer 或写 trace marker 时，`Swappy_*` 才会出现在 Trace 里。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-04-20T12:34:00+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "18.21",
+      "section_title": "EyeDropper API 与跨设备协作性能",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 章节把 Android 17 取色器写成可实例化 API，并扩展出不存在的跨设备同步与 SurfaceFlinger/HWC 采样链路，属于整章级事实错误。",
+      "material_paths": [
+        "intake/suggestions.md",
+        "intake/research-gaps.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "location": "L38-L68",
+          "detail": "正文把 Android 17 取色器写成 `new EyeDropper()` + `pickColor()` + `EyeDropperConfig` 的对象式 API，但该类、回调接口和 Builder 配置均不存在。现行公开口径是通过 `android.intent.action.OPEN_EYE_DROPPER` 启动系统取色流程，再从结果 Intent 读取 `android.intent.extra.COLOR`。",
+          "suggestion": "删除整段伪造 API，用真实的 Intent / Activity Result 调用链重写，并把“系统 UI 返回颜色结果”作为基础使用方式。"
+        },
+        {
+          "type": "源码错误",
+          "location": "L71-L110",
+          "detail": "章节编造了 `SurfaceFlinger::pickColorAt`、`convertRGBtoLab` 和 HWC 直接取色逻辑，还给出了“10-20 倍”“60%”等无来源性能数字。这些方法名、源码路径和性能结论都无法对应到公开 Android 17 取色器实现。",
+          "suggestion": "删除伪造的 SurfaceFlinger/HWC 采样链路。若要解释底层原理，应回到 SystemUI 取色悬浮层、截图隔离和结果回传，而不是编造应用可控的 SurfaceFlinger 入口。"
+        },
+        {
+          "type": "源码错误",
+          "location": "L111-L188 / L298-L300 / L357-L388",
+          "detail": "`CrossDeviceColorPicker`、`IncrementalColorSync`、颜色压缩算法、Android 18-20 版本规划和后文案例代码都建立在不存在的跨设备系统 API 上，属于整章级 AI 幻觉扩写。",
+          "suggestion": "删除跨设备同步、压缩算法和未来版本规划整段内容。若后续确有跨设备能力，应先有公开 API / 文档 / AOSP 证据后再重建章节边界。"
+        },
+        {
+          "type": "原理断裂",
+          "location": "导语 + 核心机制",
+          "detail": "章节没有交代真实的 Intent → SystemUI 取色界面 → 返回颜色结果 → App 消费结果 的基本因果链，也没有解释“为什么无需 screen capture 权限”的隐私边界。读者看完只会记住一套不存在的对象模型。",
+          "suggestion": "用真实的 Intent / SystemUI 工作流重建章节主线，补清系统 UI 隔离、用户确认、结果回传与权限边界。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-04-20T12:34:00+08:00",
+      "status": "pending"
     }
   ]
 }

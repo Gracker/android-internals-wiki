@@ -2889,3 +2889,27 @@
 - **位置**：L279-L300
 - **问题**：“DataStore 的所有 I/O 都必须在 `Dispatchers.IO` 上执行”表述过满。`preferencesDataStore` 委托默认用 IO scope，但 `DataStoreFactory` / `MultiProcessDataStoreFactory` 可以传自定义 scope；真正要强调的是单写者模型和不要在主线程做 blocking read / `first()`。
 - **建议**：改成“默认委托使用 IO scope，手工创建时应提供合适的后台 scope”，并补一句调用方若在主线程做阻塞式读取，仍可能把等待带回主线程。
+
+## [Task9 Deep Review] 2.6 SurfaceFlinger 与合成 — 2026-04-20
+- **类型**：数据缺失
+- **位置**：L133 Overlay plane 数量说明
+- **问题**：`4-16` 个 Overlay plane 的数字没有 SoC、Display Engine、Android 版本或 dumpsys 样本上下文，容易被读者误读成跨平台通用基线。
+- **建议**：补一组设备级样本，或者降级为“Overlay plane 数量强依赖 SoC / DPU 实现，需以 dumpsys SurfaceFlinger 和厂商文档为准”。
+
+## [Task9 Deep Review] 2.6 SurfaceFlinger 与合成 — 2026-04-20
+- **类型**：交叉引用
+- **位置**：frontmatter `related_chapters`
+- **问题**：正文已经把 backpressure、release fence、BufferQueue 周转写成主解释链，但 `related_chapters` 仍缺 `2.13`（BufferQueue）和 `2.16`（Sync Fence）。
+- **建议**：在 frontmatter 中补上 `2.13`、`2.16`，让章节跳转和正文依赖保持一致。
+
+## [Task9 Deep Review] 18.9 Vulkan 原生渲染链路 — 2026-04-20
+- **类型**：数据缺失
+- **位置**：L70 “Vulkan 的 CPU 开销比 GLES 低 20-40%”
+- **问题**：量化结论没有设备型号、驱动版本、渲染负载、采样方法或基准场景说明，读者无法判断该数字适用于 draw-call 受限场景、driver-bound 场景，还是某篇特定 benchmark。
+- **建议**：补充至少一组可复查的 benchmark 条件，或者把表述降级为“在 driver-bound 的移动图形负载里通常可见更低 CPU 开销”。
+
+## [Task9 Deep Review] 18.21 EyeDropper API 与跨设备协作性能 — 2026-04-20
+- **类型**：数据缺失
+- **位置**：L220-L247 在 Perfetto 中的表现
+- **问题**：`%eyedropper%` / `%cross_device%` 这类 SQL 关键字和 `<5ms`、`<50ms` 延迟数据没有真实 trace、数据源或官方 trace marker 依据，当前属于伪造的观测口径。
+- **建议**：重写为真实可抓取的证据链，例如 ActivityResult 启动到返回的时序、SystemUI 进程的渲染 slice，以及是否存在公开 trace marker 的核验结果。

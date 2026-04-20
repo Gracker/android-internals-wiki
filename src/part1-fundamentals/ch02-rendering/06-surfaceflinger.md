@@ -14,6 +14,9 @@ confidence: medium
 polish_count: 1
 polish_date: "2026-04-04"
 polish_by: "task2b-polish"
+task9_reviewed_date: "2026-04-20"
+task9_reviewed_by: openclaw-task9
+last_task9_at: "2026-04-20T12:34:00+08:00"
 sources:
   - type: aosp
     path: "frameworks/native/services/surfaceflinger/"
@@ -23,11 +26,11 @@ sources:
     path: "https://www.androidperformance.com/"
 tags: ['surfaceflinger', 'bufferqueue', 'hwc', 'composition', 'layer', 'vsync', 'blastbufferqueue', 'renderengine']
 related_chapters: ["2.1", "2.3", "2.4", "2.5", "2.10", "7.3"]
-pipeline_stage: task9_pending
+pipeline_stage: task2b_pending
 task6_state: revisiting
-task9_state: pending
+task9_state: reviewed
 task9_result: needs-rework
-task2b_state: fixed
+task2b_state: pending
 task2b_result: fixed
 ---
 

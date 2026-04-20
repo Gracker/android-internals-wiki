@@ -3,18 +3,22 @@ title: "Vulkan 原生渲染链路"
 chapter: "18.9"
 status: ready-for-review
 applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
+task9_result: needs-rework
+task9_reviewed_date: "2026-04-20"
+task9_reviewed_by: openclaw-task9
+last_task9_at: "2026-04-20T12:34:00+08:00"
 tags: ["Vulkan", "VkSwapchainKHR", "explicit-control", "AVP", "Swappy", "frame-pacing", "VkQueue", "Presentation-Mode"]
 related_chapters: ["2.1", "2.6", "2.14", "18.8", "18.10"]
 created_by: "rendering-pipelines-merge"
 created_date: "2026-04-09"
-pipeline_stage: task6_pending
+pipeline_stage: task2b_pending
 task6_state: reviewed
 reviewed_by: openclaw-task6
 reviewed_date: "2026-04-17"
 task6_result: pass-light-edit
-pipeline_stage: task9_pending
-task9_state: pending
-task2b_state: idle
+pipeline_stage: task2b_pending
+task9_state: reviewed
+task2b_state: pending
 sources:
   - type: official
     path: "developer.android.com/ndk/guides/graphics"
