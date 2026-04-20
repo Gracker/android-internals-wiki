@@ -5,10 +5,9 @@ status: ready-for-review
 section: "11.3"
 drafted_date: "2026-04-03"
 drafted_by: "openclaw-task2a"
-reviewed_date: "2026-04-13"
+reviewed_date: "2026-04-20"
 reviewed_by: "openclaw-task6"
-task6_result: needs-rework
-applicable_versions: "Android 6.0 (API 23) - Android 16 (API 36)"
+task6_result: pass-light-editAndroid 6.0 (API 23) - Android 16 (API 36)"
 last_verified: "2026-04-14"
 last_verified_against: "AOSP android-16.0.0_r1"
 polish_count: 1
@@ -44,8 +43,8 @@ sources:
     path: "https://dontkillmyapp.com/"
 tags: ['doze', 'standby', 'battery-saver', 'background-restriction', 'oem-power', 'adaptive-battery', 'foreground-service']
 related_chapters: ["5.6", "11.1", "11.2", "1.3", "4.4"]
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task9_result: needs-rework
 task2b_state: fixed

@@ -269,6 +269,28 @@ ORDER BY slice.ts;
 
 [图：Primary Zygote / secondary zygote 负责普通 App 与 `system_server`；child zygote 分出 WebViewZygote 和 App Zygote，并标出各自独立 socket]
 
+<!-- AIW-源码调研-2026-04-20 -->
+**补充：USAP Pool 不服务 Child Zygote 的源码级证据**
+
+android14-release 的 `ZygoteServer.java` 中存在明确的代码级隔离：
+
+```java
+// ZygoteServer(boolean isPrimaryZygote) 构造函数
+// frameworks/base/core/java/com/android/internal/os/ZygoteServer.java @ android14-release
+ZygoteServer(boolean isPrimaryZygote) {
+    // ...
+    mUsapPoolSupported = true;  // Primary/Secondary 均为 true
+}
+
+// 无参构造函数（Child Zygote 使用）
+ZygoteServer() {
+    mUsapPoolSupported = false;  // Child Zygote 禁用了 USAP Pool
+}
+```
+
+`mUsapPoolSupported` 字段在 ZygoteServer 构造时即被固定，Child Zygote 的 `ZygoteServer()` 无参构造将 `mUsapPoolSupported` 设为 `false`，导致 poll 循环中 USAP socket 和 pipeFDs 的注册逻辑被完全跳过。源码路径：`frameworks/base/core/java/com/android/internal/os/ZygoteServer.java`，行 95-130。
+
+
 ## 版本演进里真正和 Zygote 相关的变化
 
 把版本线收成下面这张表更稳，能避免把 android-16 的 trace 名和能力边界套到老版本上。
