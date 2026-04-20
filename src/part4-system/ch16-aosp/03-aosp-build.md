@@ -7,16 +7,17 @@ drafted_by: "openclaw-task2a"
 reviewed_date: "2026-04-17"
 reviewed_by: "openclaw-task6"
 task6_result: pass-light-edit
-task6_state: reviewed
-task9_state: reviewed
+task6_state: revisiting
+task9_state: pending
 task9_result: "needs-rework"
 last_task9_at: "2026-04-21T04:38:00+08:00"
 task9_reviewed_date: "2026-04-21"
 task9_reviewed_by: "openclaw-task9"
-task2b_state: pending
-pipeline_stage: task2b_pending
+task2b_state: fixed
+task2b_result: fixed
+pipeline_stage: task6_pending
 applicable_versions: "Android 11 (API 30) - Android 16 (API 36)"
-last_verified: "2026-04-04"
+last_verified: "2026-04-21"
 last_verified_against: "AOSP android-16.0.0_r1 + source.android.com"
 confidence: medium
 sources:
@@ -28,6 +29,10 @@ sources:
     path: "source.android.com/docs/setup/create/avd"
   - type: official
     path: "source.android.com/docs/setup/build/downloading"
+  - type: official
+    path: "https://android.googlesource.com/platform/packages/modules/adb/+/main/docs/user/adb.1.md"
+  - type: official
+    path: "https://developers.google.com/android/drivers"
 section: "16.3"
 tags: ['aosp', 'build', 'soong', 'ninja', 'emulator', 'cuttlefish', 'debug']
 related_chapters: ["16.1", "16.2", "15.7", "14.7"]
@@ -184,7 +189,7 @@ adb connect 0.0.0.0:6520
 adb devices  # 应该能看到一个 Cuttlefish 设备
 ```
 
-Cuttlefish 的核心优势在于它与 AOSP 构建系统的深度集成。修改 Framework 代码后，只需要增量编译并 `adb sync`，不需要每次都重新刷机。对于经常需要改一点、跑一下、看日志的 Framework 调试循环，效率提升非常明显。
+Cuttlefish 的核心优势在于它与 AOSP 构建系统的深度集成。修改 Framework 代码后，只需要增量编译，再用 `adb sync system` 或单文件 `adb push` 同步改动，不需要每次都重新刷机。对于经常需要改一点、跑一下、看日志的 Framework 调试循环，效率提升非常明显。
 
 ARM64 主机（如 Apple Silicon Mac 上的 Linux 虚拟机）也可以运行 Cuttlefish，但需要使用 `aosp_cf_arm64_only_phone` target，且性能会略低于 x86_64 方案。
 
@@ -208,21 +213,36 @@ ARM64 主机（如 Apple Silicon Mac 上的 Linux 虚拟机）也可以运行 Cu
 m framework -j$(nproc)
 
 # 推送到设备（Cuttlefish 或 userdebug 设备）
-adb sync framework
+adb root
+adb remount
+adb shell stop
+adb sync system
 
-# 重启 framework（不需要重启整个设备）
-adb shell stop && adb shell start
+# 重启 framework
+adb shell start
 ```
 
-`adb sync framework` 会把新编译的 framework.jar 推送到设备的 `/system/framework/` 目录。`stop && start` 会重启 Java 层的 System Server 进程（zygote 会重新 fork），所有 App 进程也会随之重启。这比完整的 `adb reboot` 快得多，通常几秒钟就能回到桌面。
+ADB man page 里的 `sync` 只接受 `all`、`data`、`odm`、`oem`、`product`、`system`、`system_ext`、`vendor` 这些分区参数，不接受 `framework` 这种模块名。`framework.jar` 属于 `system` 分区，所以这里应该用 `adb sync system`。如果只想替换单个文件，也可以直接：
+
+```bash
+adb push out/target/product/<device>/system/framework/framework.jar /system/framework/
+```
+
+[已验证: 官方文档, https://android.googlesource.com/platform/packages/modules/adb/+/main/docs/user/adb.1.md]
+
+`stop` / `start` 会重启 Java 层的 System Server 进程（zygote 会重新 fork），所有 App 进程也会随之重启。这比完整的 `adb reboot` 快得多，通常几秒钟就能回到桌面。
 
 对于 Native 层的修改（如 SurfaceFlinger），流程类似但需要重启对应的服务：
 
 ```bash
 m surfaceflinger -j$(nproc)
-adb sync
+adb root
+adb remount
+adb sync system
 adb shell killall surfaceflinger   # surfaceflinger 会自动重启
 ```
+
+如果只替换单个二进制，也可以直接 push `out/target/product/<device>/system/bin/surfaceflinger` 到 `/system/bin/`。
 
 **第三步：观察效果。** 这一步的具体手段取决于我们在验证什么。下一节会详细展开。
 
@@ -327,10 +347,10 @@ adb shell dumpsys meminfo com.example.app
 
 ```bash
 adb root
-adb remount    # 将 /system 分区重新挂载为可读写
+adb remount    # 首次可能提示先 adb disable-verity 并重启
 ```
 
-`adb remount` 在动态分区（Dynamic Partition）设备上使用 OverlayFS 机制，在只读的 system 分区上叠加一个可写层。这意味着我们可以直接 push 修改后的文件到 `/system/` 下，而不需要重新刷入完整镜像。
+`adb remount` 在动态分区设备上通常借助 OverlayFS 提供可写层，在只读的 system 分区上叠加一个可写层。这样可以直接 push 修改后的文件到 `/system/` 下，而不需要重新刷入完整镜像。首次在某台 userdebug 设备上操作时，往往还需要先 `adb disable-verity` 并重启，然后再执行 `adb remount`。
 
 [已验证: 官方文档, source.android.com/docs/setup/build/adb]
 
@@ -351,11 +371,11 @@ adb push out/target/product/<device>/system/framework/framework.jar /system/fram
 adb shell stop && adb shell start
 ```
 
-需要注意两点：首先，`adb remount` 要求关闭 dm-verity（设备验证启动），这会降低设备安全性，不应在生产设备上使用。其次，部分系统分区在 Android 12+ 使用了 ERFS 只读文件系统，`adb remount` 在这些分区上可能无法正常工作，需要确认具体的分区方案。
+需要注意两点。`adb remount` 可能要求先关闭 dm-verity，这会降低设备安全性，不应在生产设备上使用。部分系统分区在 Android 12+ 使用了 EROFS 等只读文件系统，`adb remount` 能否工作取决于设备的分区方案和 OverlayFS 支持。
 
 ## Pixel 设备刷入自编译 ROM
 
-对于需要在真实硬件上验证的场景（比如 GPU 合成路径、调度器行为），Cuttlefish 和 Emulator 无法完全替代真机。Pixel 设备因为 bootloader 可解锁、驱动二进制公开，一直是 AOSP 开发的首选真机平台。
+对于需要在真实硬件上验证的场景（比如 GPU 合成路径、调度器行为），Cuttlefish 和 Emulator 无法完全替代真机。Pixel 设备因为 bootloader 可解锁，factory image 和 driver binaries 资料也相对完整，仍然是最常见的 AOSP 真机验证平台之一。
 
 刷机的基本流程：
 
@@ -369,7 +389,7 @@ fastboot flashing unlock
 # 执行 extract.sh 脚本安装驱动
 
 # 3. 选择 Pixel 对应的 lunch target
-lunch aosp_oriole-userdebug    # Pixel 6 (oriole)
+lunch aosp_oriole-userdebug    # 以当前 branch 中实际存在的 Pixel target 为准
 
 # 4. 编译
 m -j$(nproc)
@@ -381,9 +401,17 @@ fastboot flashall -w
 
 [已验证: 官方文档, source.android.com/docs/setup/build/downloading]
 
-[待验证: 2025 年 Google 调整了 Pixel 设备二进制驱动发布策略，部分新型号可能不再公开完整设备树]
+真机验证至少要分三条资源线看：
 
-需要注意 2025 年 Google 对 AOSP 的政策变化。Google 已停止在 AOSP 中公开发布 Pixel 设备的完整设备树、驱动二进制和内核源码提交历史。对于 Pixel 6 及之后的型号，从 AOSP 直接编译可运行的 ROM 变得更加困难。开发者可能需要依赖厂商发布的二进制包或社区维护的设备树。
+| 资源 | 当前公开情况 | 用途 |
+|:--|:--|:--|
+| Factory Images / Full OTA | 公开，Google 仍持续提供 | 回退基线、恢复官方系统 |
+| Driver binaries / vendor image | 公开，`developers.google.com/android/drivers` 仍可看到 Pixel 8、8a、9、9a、9 Pro Fold 等条目 | 让 AOSP 构建补齐闭源硬件支持 |
+| 设备树 / 硬件仓库 / kernel history | `[待验证]`，不同机型和分支公开程度不一致 | 决定是否能直接按某个 Pixel target 完整编译 |
+
+[已验证: 官方文档, https://developers.google.com/android/drivers]
+
+设备树公开策略、kernel history、driver binaries 是三条不同的线，不能混写。当前至少可以确认 driver binaries 页面还在更新新款 Pixel 条目，但这不等于每个机型都保留了同等完整的公开设备树。做真机计划前，先核对目标机型在当前 AOSP branch 里是否还有可用 target，再核对 factory image 和 driver binaries 页面是否具备对应资源。
 
 ## 常见问题与误区
 
@@ -393,7 +421,7 @@ fastboot flashall -w
 
 **「全量编译每次都要等几小时」**。Ninja 的增量编译在 AOSP 上非常高效。修改一个 Java 文件后，`m framework` 通常只需 30 秒到 2 分钟。只有修改了 `Android.bp` 构建描述文件或触发了全量依赖重建时，才需要较长的编译时间。善用模块级编译（`m <module>`）而非全量编译（`m`），可以大幅缩短调试循环。
 
-**「刷 Pixel 就能跑自编译 AOSP」**。2025 年的政策变化让这变得不再简单。新型号 Pixel 的驱动二进制不再公开发布，AOSP 中缺少完整的设备配置。如果需要真机验证，建议使用 Google Pixel 6 之前的旧型号（如 Pixel 4/5），或使用 Cuttlefish 作为主要验证平台。
+**「刷 Pixel 就能跑自编译 AOSP」**。这条经验在新旧机型上的成立条件不同。Pixel 的 factory image 和 driver binaries 页面仍在更新，真机验证通道没有消失；收紧的是部分设备树、硬件仓库和公开提交历史。对刷机和回归验证，先核对三样东西：当前 branch 有没有可用的 lunch target、drivers page 有没有对应 vendor image、factory images page 有没有同版本基线。缺一项时，Cuttlefish 往往更稳。
 
 ## 与其他章节的关系
 
