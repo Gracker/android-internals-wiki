@@ -80,17 +80,29 @@ Transaction 只是在提交点声明“这组属性和这个 buffer 应一起生
 
 ### 步骤 1：创建 SurfaceControl
 
-你需要一个父 `ASurfaceControl`，或者从 `ANativeWindow` 创建根节点：
+NDK 侧的根节点通常来自 Java 层已经创建好的 `SurfaceView` / `Surface`。常见桥接方式是：Java 把 `Surface` 传进 JNI，native 侧用 `ANativeWindow_fromSurface()` 拿到 `ANativeWindow*`，再调用 `ASurfaceControl_createFromWindow()` 把这块 native window 变成 Layer 树的挂接点。[已验证: `android/native_window_jni.h` + Android NDK surface_control 文档]
 
-```c
-// 从现有 SurfaceControl 创建子 Layer
-ASurfaceControl* child = ASurfaceControl_create(parent, "MyOverlay");
-
-// 或从 ANativeWindow 创建
-ASurfaceControl* child = ASurfaceControl_createFromWindow(window, "MyOverlay");
+```java
+Surface surface = surfaceView.getHolder().getSurface();
+nativeAttach(surface);
 ```
 
-创建出来的 child layer 默认还没有可见内容；后续要通过 transaction 设置 buffer、位置、Z 序，再 `apply()` 提交。[已验证: Android NDK surface_control 文档]
+```c
+void nativeAttach(JNIEnv* env, jobject surface) {
+    ANativeWindow* window = ANativeWindow_fromSurface(env, surface);
+    ASurfaceControl* root = ASurfaceControl_createFromWindow(window, "RootLayer");
+    // ... 基于 root 创建子 Layer
+    ANativeWindow_release(window);
+}
+```
+
+如果当前进程已经持有父 `ASurfaceControl`，也可以直接在这棵树下面创建子 Layer：
+
+```c
+ASurfaceControl* child = ASurfaceControl_create(parent, "MyOverlay");
+```
+
+创建出来的 child layer 默认还没有可见内容；后续还要通过 transaction 设置 buffer、位置、Z 序，再 `apply()` 提交。`ANativeWindow_fromSurface()` 会拿一个额外引用，使用结束后要配对 `ANativeWindow_release()`。[已验证: `android/native_window_jni.h` 所有权说明]
 
 ### 步骤 2：配置 Transaction
 
@@ -164,7 +176,7 @@ ASurfaceTransaction_setBuffer(
 
 - **`AHardwareBuffer` 来源**：可以来自 `AHardwareBuffer_allocate()`、Vulkan Image 导出、MediaCodec 输出 buffer，或者其他本地图形组件
 - **release callback 的作用**：`ASurfaceTransaction_setBufferWithRelease()` 从 API 36 可用。它会在 buffer 可复用时触发 `ASurfaceTransaction_OnBufferRelease` 回调，回调给出的 release fence fd 由调用方负责等待并关闭；这条路径适合直接接 buffer pool 回收逻辑。[已验证: `android/surface_control.h` 中 `ASurfaceTransaction_setBufferWithRelease()` 的 API level 注释]
-- **Android 10-15 的处理方式**：这几个版本只有 `ASurfaceTransaction_setBuffer()`。调用方需要继续维护自己的 in-flight buffer 计数或额外同步；`OnComplete` 只能说明事务完成，不直接等价于 buffer 已释放。[已验证: Android NDK OnComplete / OnBufferRelease 回调语义]
+- **Android 10-15 的处理方式**：API 29 起已经可以在 `ASurfaceTransaction_setOnComplete()` 回调里，通过 `ASurfaceTransactionStats_getPreviousReleaseFenceFd(stats, sc)` 取到“上一块 buffer 何时释放”的 per-layer release fence。`OnComplete` 只是回调边界，是否能复用上一块 buffer 仍要看这个 fd；若返回值大于等于 0，需要等待 signal 并关闭，返回 `-1` 才表示上一块 buffer 已可直接复用。[已验证: `android/surface_control.h` 中 `ASurfaceTransactionStats_getPreviousReleaseFenceFd()` 的 API level 注释]
 - **不要把 `apply()` 当成释放信号**：只调用 `setBuffer` 时，`apply()` 返回不能代表 buffer 已经安全可写。[已验证: Android NDK transaction apply 语义]
 
 ### Hierarchy Management
@@ -179,6 +191,8 @@ ASurfaceTransaction_reparent(transaction, sc, newParent);
 1. **画中画动画**：把视频 Layer 从 Activity 的 SurfaceView 移到系统管理的 PiP 容器
 2. **多窗口切换**：把同一个内容 Layer 挂到新的父节点下面，沿用原有 buffer 提交节奏
 3. **浏览器 / 自绘引擎**：把独立合成得到的内容树接到宿主窗口下面，而不是塞回 View 树统一重绘
+
+这套关系默认只在当前进程持有的 `ASurfaceControl` 句柄里成立。NDK 侧没有公开的 Parcelable / Binder 传递入口，让一个进程把裸 `ASurfaceControl*` 直接交给另一个进程继续 `reparent`。遇到跨进程 Layer 共享时，常见做法是回到 Java 层通过 `android.view.SurfaceControl` 走 Parcelable，或者直接交给 WindowManager / shell 维护跨进程树结构。[已验证: Android Framework `SurfaceControl` Parcelable 能力；NDK 头文件未公开跨进程句柄传递接口]
 
 ### Color Layer
 
@@ -195,19 +209,25 @@ ASurfaceTransaction_setColor(
 );
 ```
 
-`setColor()` 直接写入背景色层的 `r/g/b/alpha/dataspace`。`dataspace` 决定颜色解释方式，普通 SDR UI 一般用 `ADATASPACE_SRGB`；如果 Layer 需要和 HDR 或广色域内容混合，dataspace 要和上游 buffer 的色域保持一致。[已验证: `android/surface_control.h` 中 `ASurfaceTransaction_setColor()` 的真实签名]
+`setColor()` 直接写入背景色层的 `r/g/b/alpha/dataspace`。`dataspace` 决定颜色解释方式，普通 SDR UI 一般用 `ADATASPACE_SRGB`；如果 Layer 需要和 HDR 或广色域内容混合，dataspace 要和上游 buffer 的色域保持一致。[已验证: `android/surface_control.h` 中 `ASurfaceTransaction_setColor()` 的真实签名] Buffer Layer 的色域解释则要单独通过 `ASurfaceTransaction_setBufferDataSpace()` 设置，不要把 `setColor()` 的规则直接套到带 `AHardwareBuffer` 的 Layer 上。[已验证: `android/surface_control.h` 中 `ASurfaceTransaction_setBufferDataSpace()` 的函数声明]
 
 ### Callback
 
 ```c
-// 设置 Transaction 完成回调
+// sc 是本次提交目标 Layer
 ASurfaceTransaction_setOnComplete(transaction, context,
     [](void* context, ASurfaceTransactionStats* stats) {
-        // 可在这里拿到本次 transaction 的统计信息
+        int previousReleaseFenceFd =
+                ASurfaceTransactionStats_getPreviousReleaseFenceFd(stats, sc);
+        if (previousReleaseFenceFd >= 0) {
+            // 等待 fence signal 后回收上一帧 buffer，并关闭 fd
+        }
     });
 ```
 
-`OnComplete` 适合拿 transaction 统计信息，例如 present fence、显示时间戳等。buffer 的复用时机仍应以 `setBufferWithRelease` 对应的 release callback 为准，不要把二者混在一起。[已验证: Android NDK OnComplete / OnBufferRelease 回调语义]
+`OnComplete` 里最有用的两类信息是 present 相关统计和 previous release fence。API 29-35 回收上一块 buffer 时，要从 `ASurfaceTransactionStats_getPreviousReleaseFenceFd()` 取 per-layer release fence；API 36 起再按 `setBufferWithRelease()` 的专用 callback 接 buffer pool 更顺手。[已验证: `android/surface_control.h` 中 `ASurfaceTransactionStats_getPreviousReleaseFenceFd()` 与 `ASurfaceTransaction_setBufferWithRelease()` 的说明]
+
+`ASurfaceTransactionStats_getAcquireTime()` 已被标记 deprecated。排查 acquire 时序时，更稳妥的做法是回到应用自己持有的 acquire fence，或回到 GPU / codec 生产端时间线看 signal 时刻。
 
 ## Layer 层级管理
 
@@ -237,6 +257,15 @@ Layer 数量增加会直接抬高 SurfaceFlinger 的工作量。每多一个独�
 3. **buffer 占用增长**：每个 buffer layer 都可能对应独立的 GraphicBuffer / AHardwareBuffer 池
 
 实战里不建议给出“5 个以内”这种固定阈值。更稳妥的做法是：先用 `dumpsys SurfaceFlinger` 和 Perfetto 看当前场景到底需要几个独立 buffer layer，再判断哪些层必须异步更新，哪些层可以并回同一个 buffer，或者改成只承担结构关系的 Container Layer。[已验证: SurfaceFlinger 合成决策思路；待验证: 具体阈值需按目标设备验证]
+
+如果要把“Layer 变多了，SurfaceFlinger 变重了”这句话落到可复查证据，最小证据可以这样抓：
+
+1. `adb shell dumpsys SurfaceFlinger --list`，确认父子 Layer 数量和命名有没有明显增加
+2. Perfetto 里看 `setTransactionState`、`latchBuffer` 是否随着 child layer 增多而变密
+3. 在 `dumpsys SurfaceFlinger` 的 layer dump 里看 CompositionType 是否从 HWC DEVICE 退回 GPU CLIENT
+4. 再回到 App 侧线程，确认 RenderThread 的 `DrawFrame` 范围有没有真的缩小
+
+这四步连起来，才知道瓶颈是在 Layer 数量、合成策略，还是仍然在 App 自己的绘制路径上。
 
 ## FrameTimeline API（完整 NDK 用法需 Android 13+）
 
@@ -341,16 +370,16 @@ Fence 处理最容易踩坑，因为这里同时有 acquire fence、release fenc
 
 - **acquire fence**：生产者写完这块 buffer 之前，消费者不能读
 - **release fence**：消费者用完这块 buffer 之前，生产者不能复写
-- **buffer 生命周期**：只有拿到 release callback 或明确的 release fence 后，应用才知道这块 buffer 可以回收到池里
+- **buffer 生命周期**：只有拿到 release callback，或拿到明确的 release fence，应用才知道这块 buffer 可以回收到池里。API 29-35 这条 release fence 入口就在 `OnComplete` 回调里的 `ASurfaceTransactionStats_getPreviousReleaseFenceFd()`。
 
 这三者一旦混淆，常见结果就是 SurfaceFlinger 长时间等 fence、应用过早复写 buffer，或者 buffer 池越来越大却回不来。
 
 ### 常见错误
 
 1. **传了 acquire fence，又在应用侧把同一个 fd 再关一次**：传给 NDK API 的 acquire fence fd 不应该再被应用复用或二次关闭。[已验证: Android sync fence fd ownership 约定]
-2. **拿 `OnComplete` 当 buffer 释放信号**：`OnComplete` 说明 transaction 生命周期结束，不是给 buffer 池做复用判断的最佳接口。[已验证: Android NDK OnComplete / OnBufferRelease 文档]
+2. **把 `OnComplete` 当成立刻可复用的信号，却不看 previous release fence**：API 29-35 期间，回调本身还不够，仍要看 `ASurfaceTransactionStats_getPreviousReleaseFenceFd()` 返回的 fd 有没有 signal。[已验证: `android/surface_control.h` 中 previous release fence 语义]
 3. **CPU 写 buffer 却挂了一个永远不 signal 的 fence**：SurfaceFlinger 会一直卡在 `latchBuffer` 等待
-4. **buffer 池没有 release callback**：应用只能靠保守延迟或额外同步保护自己，最终把内存和延迟一起抬高
+4. **buffer 池既没接 API 36 的 release callback，也没处理 API 29-35 的 previous release fence**：应用只能靠保守延迟或额外同步保护自己，最终把内存和延迟一起抬高
 
 ### ASurfaceControl 生命周期
 
@@ -369,7 +398,7 @@ ASurfaceControl_release(sc);
 
 如果应用自己管理 `AHardwareBuffer` 池，API 36 起可以把“何时可复用”直接绑定到 `ASurfaceTransaction_setBufferWithRelease()` 的 release callback。回调拿到的 release fence fd 如果大于等于 0，表示系统还没彻底放开这块 buffer；调用方负责等待并关闭这个 fd。返回 `-1` 时，buffer 已经可直接复用。[已验证: `android/surface_control.h` 中 `ASurfaceTransaction_setBufferWithRelease()` 的说明]
 
-Android 10-15 没有 NDK 级 release callback 时，应用仍然要靠 `ASurfaceTransaction_setBuffer()`、自己的 in-flight buffer 记账、或更高层封装维护复用时机。`OnComplete` 可以观察事务完成状态，但不能直接替代 release fence。
+Android 10-15 没有专用的 NDK release callback，但不是没有官方回收路径。做法是继续用 `ASurfaceTransaction_setBuffer()` 提交，再在 `OnComplete` 里通过 `ASurfaceTransactionStats_getPreviousReleaseFenceFd(stats, sc)` 取回上一块 buffer 的 release fence。拿到 fd 后的处理规则和 API 36 一样：大于等于 0 就等待并关闭，返回 `-1` 表示可直接复用。
 
 实际工程里通常不会在 callback 里立刻销毁 buffer，而是把它归还到 buffer pool。这样既能保证时序安全，也能避免频繁分配 / 释放硬件 buffer 带来的额外抖动。
 
@@ -382,6 +411,15 @@ WebView 并不是每次都走独立 SurfaceControl 子 Layer。普通页面仍�
 这个模式的价值，是把网页重绘和宿主窗口绘制拆开。信息流页面最常见的现象，是顶部原生 Toolbar 和底部原生输入条都很轻，但页面主体是复杂 H5。只要网页里有大面积重排、Canvas 动画或视频贴片，宿主 App 的 RenderThread 就会跟着被拖慢。若 WebView 仍在宿主绘制过程中同步执行那一大段网页绘制，原生按钮和网页会一起掉帧。把网页内容放进独立 SurfaceControl layer 后，宿主窗口只保留原生控件和透明占位，网页内容由 Chromium 自己的合成线程按自己的节奏产出 buffer，SurfaceFlinger 在合成阶段把两边拼在一起。[已确认: 与 §18.13 WebView 渲染链路对 WebView 多模式的描述一致]
 
 排查时，重点看三处证据。第一，看 `dumpsys SurfaceFlinger`，宿主窗口下面是否多出一个属于 WebView 的 child layer。第二，看 Perfetto，是否能看到 Viz / Compositor 相关线程在提交独立 buffer，而不是所有网页绘制都堆在宿主 RenderThread 的 `DrawFrame` 里。第三，看 SurfaceFlinger 侧的 `setTransactionState`、`latchBuffer` 和 FrameTimeline，如果网页内容单独更新，宿主窗口的产帧节奏和网页 layer 的产帧节奏通常不会完全重合。
+
+如果要把“宿主 RenderThread 变轻了”这句话说得可复查，至少补齐这条最小证据链：
+
+- `dumpsys SurfaceFlinger --list` 能看到宿主窗口下面新增 WebView child layer
+- Perfetto 里，宿主 `RenderThread` 主要留下原生 UI 的 `DrawFrame`，网页 raster / 合成活动转移到 Chromium Viz / Compositor 线程
+- SurfaceFlinger 侧能看到对应 child layer 的 `setTransactionState`、`latchBuffer` 与网页更新拍点保持一致
+- `dumpsys SurfaceFlinger` 的 layer dump 或厂商图形调试面板能说明该 layer 最终走 HWC 还是 GPU 合成
+
+这组证据不成立时，不能直接把收益归因到独立 SurfaceControl。
 
 这个场景里的常见瓶颈也很典型。如果 Chromium 提交 Transaction 的频率高于显示侧能稳定消费的频率，SurfaceFlinger 侧会出现事务堆积；如果网页内容依赖 GPU 结果，acquire fence 没及时 signal，就会在 `latchBuffer` 上等待；如果这个 child layer 还叠了圆角、alpha、缩放或视频，HWC 可能接不了，只能退回 GPU 合成。[待验证: 目标设备的 HWC 约束和 provider 实现差异]
 
@@ -397,7 +435,7 @@ PiP 是 SurfaceControl 最适合观察的系统场景之一，因为进入小窗
 
 Perfetto 里可以沿着这个顺序看：WindowManager / shell transition 发起 PiP 进入，SurfaceFlinger 收到几何 Transaction，随后 `latchBuffer` 是否顺利跟上；如果 `latchBuffer` 之前有明显等待，通常是内容准备慢；如果几何变换很顺，但合成时间突然上升，通常是小窗的圆角、阴影或额外 overlay 让 HWC 直合成失败，掉回 GPU 合成。[待验证: 具体回退条件按设备而异]
 
-PiP 场景给 SurfaceControl API 的启示很直接：已有内容层尽量复用，几何变化尽量放在事务里完成，避免每次状态切换都回到“应用整页重绘”这条更重的路径。
+PiP 场景给 SurfaceControl API 的启示很直接：已有内容层尽量复用，几何变化尽量放在事务里完成，避免每次状态切换都回到“应用整页重绘”这条更重的路径。需要跨进程挂接时，App 也不能指望纯 NDK 把一个 `ASurfaceControl*` 直接交给系统 PiP 容器继续 `reparent`；真正的跨进程树调整通常还是走 WindowManager / shell 的 Java / Binder 路径。
 
 ### 自绘引擎
 
