@@ -11,14 +11,14 @@ tags: ["Vulkan", "VkSwapchainKHR", "explicit-control", "AVP", "Swappy", "frame-p
 related_chapters: ["2.1", "2.6", "2.14", "18.8", "18.10"]
 created_by: "rendering-pipelines-merge"
 created_date: "2026-04-09"
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 reviewed_by: openclaw-task6
 reviewed_date: "2026-04-17"
 task6_result: pass-light-edit
-pipeline_stage: task2b_pending
-task9_state: reviewed
-task2b_state: pending
+task9_state: pending
+task2b_state: fixed
+task2b_result: fixed
 sources:
   - type: official
     path: "developer.android.com/ndk/guides/graphics"
@@ -71,7 +71,7 @@ Vulkan 要求 App 对一切负责：
 | **CPU 开销** | 高（驱动猜测多） | 低（显式路径短路） |
 | **多线程** | 有限（Context 绑定线程） | 完全支持（Command Buffer 并行录制） |
 
-**实测优势**：Vulkan 的 CPU 开销比 GLES 低 20-40%，省出的 CPU 时间可以留给游戏逻辑、AI 计算、音频处理等。[已验证: Android Developer Vulkan 性能文档]
+官方文档强调，Vulkan 把内存、同步和命令提交流程交回给应用后，CPU 侧的 driver work 更可控。收益大小取决于引擎结构、驱动实现和 draw call 组织方式，适合用目标设备上的 AGI 或 Perfetto 实测，而不要把某个百分比当成通用结论。
 
 ### 代价
 
@@ -96,32 +96,22 @@ Vulkan 最大的问题是碎片化——不同设备支持的 Extension 不同�
 | **能力查询成本** | 运行时逐一查询数十个 Extension | 声明式 Profile 匹配，一次检查 |
 | **开发复杂度** | 需要大量 fallback 代码 | 保证 Profile 内特性全支持 |
 
-### 标准 Profile 层级
+### Profile 演进口径
 
-```
-VP_ANDROID_baseline_2021  ← 基础层（Android 10+）
-       ↓
-VP_ANDROID_baseline_2022  ← 推荐层（Android 14+）
-       ↓
-VP_ANDROID_baseline_2024  ← 最新层（Android 16+，计划中）
-```
+可以把 Android Vulkan Profile 的演进分成两段：
+
+- `VP_ANDROID_baseline_2021`、`VP_ANDROID_baseline_2022`：描述当年 Android 设备上广泛可用的能力集合，适合当兼容性基线
+- Android 15+：平台口径转向按系统代际命名的 requirements profiles，例如 `VP_ANDROID_15_requirements`、`VP_ANDROID_16_requirements`。它们描述的是新设备 launch / 续签时必须满足的 Vulkan 能力，不等价于“baseline_2024”
+- 如果资料里提到 2024 roadmap 或 community profile，需要单独标注其身份是生态路线图，并与 Android 官方 requirements target 分开表述
 
 ### 使用方式
 
-```c
-// 检查设备是否支持目标 Profile
-VpProfileProperties profileProps = { VP_ANDROID_BASELINE_2022, 1 };
-VkBool32 supported;
-vpGetPhysicalDeviceProfileSupport(instance, physicalDevice, &profileProps, &supported);
+工程上更稳的做法是分两步：
 
-if (supported) {
-    // 可以安全使用 Profile 内所有特性，无需逐个查询 Extension
-    VkDeviceCreateInfo createInfo = { ... };
-    vpCreateDevice(physicalDevice, &createInfo, &profileProps, &device);
-}
-```
+1. 先用 baseline profile 检查目标设备是否满足你的兼容性下限
+2. 如果产品明确瞄准 Android 15+ 新机，再额外检查对应的 requirements profile，确认能否依赖该代际要求的特性集合
 
-AVP 的引入意味着 Vulkan 的碎片化问题正在被系统性解决。对于新项目，推荐直接以 `VP_ANDROID_baseline_2022` 为最低目标。
+这样可以把“广覆盖兼容基线”和“新设备强制要求”分开处理，不会把 `VP_ANDROID_baseline_2022` 与 requirements profile 混成一个名字。
 
 ## 渲染流程详解
 
@@ -291,7 +281,7 @@ vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface, &count, modes
 ### Android 注意事项
 
 - **FIFO 最常见**：Android 上 FIFO 往往是最普遍、最保守的选择，具体可用 mode 与默认策略取决于驱动和设备
-- **MAILBOX 支持**：需要 Android 10+ 且部分厂商 Driver 支持
+- **MAILBOX / IMMEDIATE 不要只看枚举值**：部分设备会在驱动、SurfaceFlinger 或 vendor policy 中把请求的 mode 降级为 FIFO。是否真的拿到低延迟模式，最好把 `vkGetPhysicalDeviceSurfacePresentModesKHR` 的返回值和 Trace 中的帧节奏表现一起核对
 - **VRR（可变刷新率）**：需要搭配 Display 的 VRR 能力
 
 ## Swappy Frame Pacing
@@ -344,10 +334,13 @@ SwappyVk_setAutoSwapInterval(true);
 
 ### Trace 特征
 
-Perfetto 中如果应用接入了 Swappy：
-- **Swappy track/slice**：独立的 trace 标记，显示帧节奏控制行为
-- **FrameTimeline**：Android 12+ 的原生帧时间线支持，可以看到 Expected vs Actual Present Time 的差异
-- **帧间隔均匀**：接入 Swappy 后帧间隔的方差显著减小
+Perfetto 里的默认诊断入口应先看三类证据：
+
+- **`vkQueuePresentKHR` / `vkAcquireNextImageKHR`**：确认应用确实走的是 Vulkan swapchain 路径，并观察 acquire/present 是否被 buffer 压力拉长
+- **FrameTimeline**：Android 12+ 的 Expected / Actual Timeline 用来判断帧是否按目标节奏落屏
+- **graphics tracing / AGI / app-side ATrace**：当默认系统轨道不够细时，再补图形 tracing，或在 Swappy 调用附近写 trace marker
+
+只有在应用或库主动注入 ATrace / Perfetto marker 时，`Swappy_*` 或独立的 Swappy track 才会稳定出现。看不到这些标记，不等于应用没有接入 Swappy。
 
 ## Trace 视角
 
@@ -367,7 +360,7 @@ Perfetto 中如果应用接入了 Swappy：
 | `vkQueueSubmit` | 提交 Command Buffer 到 GPU | 正常情况 CPU 端不耗时 |
 | `vkQueuePresentKHR` | 请求 Present | 配合 Swappy 控制时机 |
 | `vkCmdPipelineBarrier` | 显式同步 | 频繁出现可能说明过度同步 |
-| `Swappy_*` | 帧节奏控制 | 接入 Swappy 后可见 |
+| `Swappy_*` | 应用或库主动写出的帧节奏标记 | 只在启用 ATrace / Perfetto marker 时可见 |
 
 ### 与 GLES 链路的 Trace 差异
 

@@ -135,7 +135,10 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-20T12:34:00+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-04-20T15:01:15+08:00",
+      "completed_by": "task2b-content-processing-rework",
+      "resolution": "已把 AVP 演进口径改成 baseline profile + requirements profile 两段式，并重写 Swappy Trace 诊断入口，补充 present mode 可能被驱动或 SurfaceFlinger 降级的实战边界。"
     },
     {
       "section": "18.21",
@@ -319,7 +322,10 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-20T14:50:48+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-04-20T15:01:15+08:00",
+      "completed_by": "task2b-content-processing-rework",
+      "resolution": "已改写 requestLayout 优化建议与 <include> 运行时行为，补清 GONE/VISIBLE 的布局代价、parseInclude() 路径，以及 <merge> / ViewStub 的边界。"
     }
   ]
 }
