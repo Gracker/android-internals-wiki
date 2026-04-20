@@ -2,7 +2,7 @@
 title: "图片加载与 Bitmap 性能优化"
 chapter: "7.10"
 section: "7.10"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37)"
 tags: [bitmap, image-decode, hardware-bitmap, glide, coil, image-loading, memory, jank]
 related_chapters: ["7.4", "7.5", "7.8", "4.5", "2.10", "14.1"]
@@ -33,12 +33,15 @@ sources:
     path: "抖音 Android 端图片优化最佳实践（AndroidPub，2024-12-19）"
   - type: research
     path: "intake/research-feeds/2026-03-31-19-ch04-app-bitmap-pool-optimization.md"
-pipeline_stage: task9_pending
+pipeline_stage: ready-to-publish
 task6_state: reviewed
-task9_state: pending
-task9_result: needs-rework
+task9_state: reviewed
+task9_result: pass-tech-review
 task2b_state: fixed
 task2b_result: fixed
+task9_reviewed_by: "openclaw-task9"
+task9_reviewed_date: "2026-04-20"
+last_task9_at: "2026-04-20T14:50:48+08:00"
 ---
 
 # 7.10 图片加载与 Bitmap 性能优化
