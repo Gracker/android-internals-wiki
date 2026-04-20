@@ -1106,6 +1106,85 @@
       "added_by": "external-ai-review",
       "added_at": "2026-04-21T04:59:17.202869+08:00",
       "status": "pending"
+    },
+    {
+      "section": "4.1",
+      "section_title": "Android 内存模型全景",
+      "priority": 85,
+      "reason": "[Deep Tech Review] Bitmap 像素内存的版本演进写错，且遗漏 Android 15+ 16KB page size 对 smaps / 页粒度内存判读的影响。",
+      "material_paths": [
+        "intake/research-gaps.md",
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "版本差异/源码错误",
+          "location": "L225 / L516",
+          "detail": "章节把 Bitmap 像素内存简化成“Android 8.0 前在 Java Heap，8.0 后在 Native Heap”。官方文档的实际演进是 API 10 及以下在 native，API 11-25 在 Dalvik/Java Heap，API 26+ 回到 native。当前写法会把 pre-O 的 OOM 边界和回收机制讲错。",
+          "suggestion": "把版本矩阵拆成 2.3.3 及以下 / 3.0-7.1 / 8.0+ 三段，避免把所有 pre-O 行为归并成一类；如果正文只关心 Android 8+，要明确收窄适用边界。"
+        },
+        {
+          "type": "版本差异/知识盲区",
+          "location": "L313-L343 / L488-L505",
+          "detail": "章节适用范围写到 Android 17，但 smaps 与 Perfetto 判读完全按 4KB page 假设展开，没有提示 Android 15+ 已支持 16KB page size。读者会误把 KernelPageSize/MMUPageSize、页表/TLB 开销和页粒度内存膨胀都按 4KB 理解。",
+          "suggestion": "在 smaps 与内存指标章节补一段“4KB vs 16KB page size”的判读提醒，并交叉引用 4.7，说明 `adb shell getconf PAGE_SIZE`、`KernelPageSize/MMUPageSize` 与指标解释的关系。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-04-21T05:29:00+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "8.5",
+      "section_title": "案例集",
+      "priority": 95,
+      "reason": "[Deep Tech Review] Baseline Profile 与 R8 full mode 的 Gradle 配置示例写反，当前代码片段会把读者带到错误的构建配置。",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "location": "L97-L110",
+          "detail": "Baseline Profile 示例把 `androidx.benchmark:benchmark-baseline-profile-gradle-plugin` 当成普通 `implementation` 依赖使用。官方文档要求在 plugins block 中应用 `androidx.baselineprofile` Gradle plugin，Macrobenchmark / BaselineProfileRule 才是测试模块依赖。当前示例无法按文中方式完成集成。",
+          "suggestion": "改成“插件 + 基准测试模块”两层结构，示例里区分 `androidx.baselineprofile`、`androidx.benchmark:benchmark-macro-junit4` 和可选的 `androidx.profileinstaller`。"
+        },
+        {
+          "type": "源码错误/版本差异",
+          "location": "L115-L123 / L233 / L409-L411",
+          "detail": "章节把 `proguard-android.txt` 写成 R8 full mode 入口，把 `proguard-android-optimize.txt` 说成旧模式；这与官方 shrink-code 文档相反。`proguard-android.txt` 内含 `-dontoptimize`，官方已不推荐继续使用；R8 full mode 的关键是不要保留 `android.enableR8.fullMode=false`，而不是把 optimize 配置切回普通配置。",
+          "suggestion": "统一改成 `getDefaultProguardFile(\"proguard-android-optimize.txt\")`，并单独解释 compat/full mode 的切换条件与 AGP 版本边界。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-04-21T05:29:00+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "9.3",
+      "section_title": "ANR 分析方法",
+      "priority": 85,
+      "reason": "[Deep Tech Review] 线上 ANR 工作流遗漏 Android 11+ 的 ApplicationExitInfo 主路径，ProfilingManager 也缺少可执行接入链。",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "原理断裂/知识盲区",
+          "location": "L315-L325",
+          "detail": "线上 ANR 工具链只写了 watchdog、SIGQUIT 监听和 APM 方案，没有交代 Android 11+ 官方的 `ActivityManager.getHistoricalProcessExitReasons()` → `ApplicationExitInfo(REASON_ANR)` → `getTraceInputStream()` 主路径。读者会错过当前生产环境最合规的系统 trace 获取方式。",
+          "suggestion": "在“线上监控工具链”中新增 ApplicationExitInfo 小节，明确适用版本、trace 子集边界，以及它与自建 SIGQUIT 监听方案的差异。"
+        },
+        {
+          "type": "版本差异/原理断裂",
+          "location": "L325-L327",
+          "detail": "ProfilingManager 小节只说“系统检测到 ANR 时自动触发”，但没有说明 ProfilingManager 自身是 API 35、`ProfilingTrigger.TRIGGER_TYPE_ANR` 与 `addProfilingTriggers()` 是 API 36 的注册链。缺掉这条接入链后，读者无法真正落地 Android 16+ 的 system-triggered profiling。",
+          "suggestion": "补上 `ProfilingManager` / `ProfilingTrigger` 的 API 35/36 边界、`addProfilingTriggers()` 注册方式和结果回调监听。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-04-21T05:29:00+08:00",
+      "status": "pending"
     }
   ]
 }
