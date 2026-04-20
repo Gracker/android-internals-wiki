@@ -2623,3 +2623,26 @@
 
 - Perfetto 观察点：Expected Timeline (绿框) vs Actual Timeline (红/蓝框) 叠加对比
 
+
+
+## [2026-04-20] 13.0 Perfetto README — 知识盲区
+
+### 盲区描述
+13.0 Perfetto README 综述未体现 2026 年平台化特征。需提炼 eBPF (UprobeStats) 和 AndroidX Tracing 2.0 对 2026 版 Trace 体系的影响。目录缺失 13.8/13.9/13.10 三篇核心章节。
+
+### 重要程度
+中高
+
+### 建议研究方向
+- eBPF (UprobeStats) 在 Android 16/17 Perfetto 中的集成状态
+- AndroidX Tracing 2.0 新能力与 Perfetto 的配合关系
+- 2026 年 Trace 体系平台化趋势总结
+- 补全 README 目录条目 13.8/13.9/13.10
+
+### 关联章节
+- 13.1
+- 14.10
+- 15.6
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-20-13-README-external-review.md)

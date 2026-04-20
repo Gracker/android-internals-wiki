@@ -678,6 +678,31 @@
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-21T00:05:03+08:00",
       "status": "pending"
+    },
+    {
+      "priority": 85,
+      "description": "[External Review] 13.0 Perfetto README 目录失配导致 13.8-13.10 三篇核心章节被漏掉；综述未体现 2026 年平台化特征",
+      "chapter": "13.0",
+      "added_by": "external-ai-review",
+      "review_issues": [
+        {
+          "priority": 85,
+          "content": "目录缺少 13.8 Perfetto 输入延迟 SQL 深度分析、13.9 Android Tracing 基础设施、13.10 Perfetto SQL 性能分析实战手册",
+          "suggestion": "补全目录，增加 13.8/13.9/13.10 条目",
+          "evidence": [
+            "外部 AI Review 2026-04-20"
+          ]
+        },
+        {
+          "priority": 85,
+          "content": "综述陈旧，未提炼 2026 年平台化趋势：eBPF (UprobeStats)、AndroidX Tracing 2.0",
+          "suggestion": "在综述中提及 eBPF (UprobeStats) 和 AndroidX Tracing 2.0 对 2026 版 Trace 体系的影响",
+          "evidence": [
+            "外部 AI Review 2026-04-20"
+          ]
+        }
+      ],
+      "status": "pending"
     }
   ]
 }
