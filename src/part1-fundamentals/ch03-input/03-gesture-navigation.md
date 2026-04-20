@@ -34,9 +34,15 @@ sources:
   - type: aosp
     path: "frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp"
   - type: aosp
-    path: "core/java/android/window/OnBackInvokedCallback.java"
+    path: "frameworks/base/core/java/android/window/OnBackInvokedCallback.java"
   - type: aosp
-    path: "core/java/android/window/OnBackAnimationCallback.java"
+    path: "frameworks/base/core/java/android/window/OnBackAnimationCallback.java"
+  - type: aosp
+    path: "frameworks/base/core/java/android/window/OnBackInvokedDispatcher.java"
+  - type: official
+    path: "https://perfetto.dev/docs/quickstart/android-tracing"
+  - type: official
+    path: "https://perfetto.dev/docs/data-sources/frametimeline"
   - type: official
     path: "https://developer.android.com/training/gestures/gesturenav"
   - type: official
@@ -53,11 +59,12 @@ sources:
     path: "https://developer.android.com/reference/androidx/activity/OnBackPressedCallback"
 tags: [gesture-navigation, input-monitor, back-gesture, predictive-back, edge-swipe, systemui, windowinsets]
 related_chapters: ["3.1", "3.2", "2.3", "2.4", "1.5"]
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
 task9_result: needs-rework
-task2b_state: pending
+task2b_state: fixed
+task2b_result: fixed
 ---
 
 # 3.3 手势导航与系统交互
@@ -136,7 +143,7 @@ legacy back path 里，一旦横向位移越过阈值且 `mBackAnimation == null
 
 这个拆分直接影响性能分析。legacy path 里常见的现象，是 pointer 被 pilfer 之后 App 为什么突然收到 cancel；predictive path 里更常见的现象，是 back progress 动画、跨 Activity 预览和 App 自定义返回动画之间的配合是否掉帧。
 
-[已验证: AOSP android-16.0.0_r1, packages/SystemUI/src/com/android/systemui/navigationbar/gestural/EdgeBackGestureHandler.java; frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp; core/java/android/window/OnBackInvokedCallback.java; core/java/android/window/OnBackAnimationCallback.java]
+[已验证: AOSP android-16.0.0_r1, packages/SystemUI/src/com/android/systemui/navigationbar/gestural/EdgeBackGestureHandler.java; frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp; frameworks/base/core/java/android/window/OnBackInvokedCallback.java; frameworks/base/core/java/android/window/OnBackAnimationCallback.java]
 
 ## 手势冲突处理：系统手势优先区域 vs App 的 WindowInsets
 
@@ -250,27 +257,66 @@ android-16.0.0_r1 默认的边缘反馈插件是 `BackPanelController` / `BackPa
 
 ## 在 Perfetto 中的表现
 
-这一节只保留已经能落到源码和架构层的观察路径。具体 slice 名、trace config 和截图，要等真实设备 trace 补齐后再收紧。
+这一节给一套能复现的最小抓取基线，再说明 legacy / predictive 两条路径怎么判读。目标是把输入接管、动画进度和目标层预览放回同一时间轴里，不把某个固定 slice 名当成通用答案。
 
-### 1. legacy back gesture：看 InputDispatcher、cancel 和注入链
+### 最小抓取配置
 
-legacy path 最稳的观察顺序是：用户边缘按下，App 和 `edge-swipe` monitor 同时收到第一批 `MotionEvent`；阈值越过后，原目标窗口收到 cancel；手势提交后再出现 injected `KEYCODE_BACK`。这一段如果没有打开足够的 input 相关数据源，Perfetto 里未必会把每个环节都展开成清晰 slice，因此正文不再把某个固定 slice 名写成“所有设备都能直接看到”的结论。
+命令行先用这组基线 category：
 
-[图：legacy 返回手势的 Perfetto 观察顺序。标出 ACTION_DOWN、阈值越过、原窗口收到 cancel、随后出现 injected back key 的时间关系。]
+```bash
+adb shell perfetto -o /data/misc/perfetto-traces/back-gesture.perfetto-trace -t 15s \
+  sched freq idle am wm gfx view binder_driver hal input aidl
+adb pull /data/misc/perfetto-traces/back-gesture.perfetto-trace
+```
 
-### 2. Predictive Back：看 back progress 与多层预览
+Android 12+ 如果还要看当前层和目标层的预览重叠，再额外开启 FrameTimeline：
 
-Predictive Back 里更稳妥的观察对象，是当前 Activity、目标 Activity / Launcher surface、WM Shell back animation 的相对时间关系。`triggerBack`、`sendEvent`、`INJECT KEYCODE_BACK` 这类关键词不该再被当成 predictive path 的通用证据，因为提交路径本身可能根本不走按键注入。
+```protobuf
+data_sources {
+  config { name: "android.surfaceflinger.frametimeline" }
+}
+```
 
-[图：Predictive Back 的 Perfetto 观察点。标出当前 Activity surface、目标层 surface、系统 back animation，以及 App 自定义 progress 动画的时间重叠。]
+这组配置能覆盖三类信息：
 
-### 3. 排除区冲突：Perfetto 只给时间关系，命中边界要结合 Insets 和 dumpsys
+- `input` + `wm`：看 `edge-swipe` monitor、InputDispatcher、WindowManager / WM Shell 的接管时序
+- `gfx` + `view`：看 App 主线程、`Choreographer#doFrame` 和返回动画相关 UI 工作
+- `android.surfaceflinger.frametimeline`：看当前 Activity 与目标 Activity 或 Launcher surface 的预览重叠
 
-边缘冲突排查时，Perfetto 更适合回答“事件在哪个时间点被系统接走了”“SystemUI 处理有没有卡住”，不适合单独回答“排除区域是不是声明对了”。后一个问题要结合 `WindowInsets`、`setSystemGestureExclusionRects()` 的布局边界、必要时再看 `dumpsys window`。左右 back edge 和底部 mandatory gesture 区域如果没有先分开，trace 很容易读偏。
+如果要观察 App 自己的 `onBackProgressed()` 或 AndroidX progress 回调，录制时再把目标包名加入 atrace app 列表。
 
-[图：边缘冲突排查图。把左右 back edge exclusion、底部 mandatory gesture、SystemUI monitor 处理和 App 触摸处理放在同一张时间图里。]
+[已验证: Perfetto 官方文档, https://perfetto.dev/docs/quickstart/android-tracing; https://perfetto.dev/docs/data-sources/frametimeline]
 
-[待验证: Perfetto 抓取配置、slice 名称，以及 legacy / predictive 两套真实 trace 截图仍需设备侧补齐。]
+### 1. legacy back gesture：看 cancel 和注入链
+
+legacy path 的判读顺序可以按这四步走：
+
+1. 手指从左右边缘按下时，App 窗口和 `edge-swipe` monitor 同时出现第一批触摸事件。
+2. 横向位移越过阈值后，原目标窗口会在同一时间窗附近收到 cancel，和 `pilferPointers()` 的接管时刻对应。
+3. 手势提交后，再去找 injected `KEYCODE_BACK` 或后续 back dispatch。
+4. 如果 App 一直收到完整 pointer stream，没有 cancel，先回到 exclusion rect、生效边界，或这次根本没有命中 back edge。
+
+稳定证据是“边缘按下 → cancel → back dispatch”这条时间关系，不是某一个设备私有 slice 名。
+
+### 2. Predictive Back：看 progress 回调和目标层预览
+
+Predictive Back 的关键区别，是提交阶段不一定再出现 injected `KEYCODE_BACK`。更稳的观察顺序是：
+
+1. 起手仍然从 `edge-swipe` monitor 和当前窗口同时看到第一批输入。
+2. 阈值越过后，WM Shell back animation、当前 Activity surface、目标 Activity 或 Launcher surface 会开始重叠。
+3. 如果 App 注册了 `OnBackAnimationCallback` 或 AndroidX progress API，`onBackStarted()` / `onBackProgressed()` 对应的 UI 工作应和这段预览时间窗重合。
+4. 手势取消时，目标层预览回撤；手势提交时，当前层退出，目标层接管前台。
+
+这里最有用的是比较三条轨道的相对顺序：当前层、目标层、SystemUI / WM Shell 的动画层。看到目标层预览已经启动，却没有 App 侧 progress 更新，问题通常在回调实现或渲染路径。
+
+### 3. 排除区冲突：Perfetto 只负责时序，命中边界还要回到 Insets 和 dumpsys
+
+排查排除区冲突时，Perfetto 负责回答两个问题：事件有没有被 SystemUI 提前接走，SystemUI 自己有没有卡住。它不负责证明 exclusion rect 一定声明正确。遇到“边缘手势偶发被系统抢走”的 case，建议把 trace 和下面两项一起看：
+
+- `WindowInsets.Type.systemGestures()` / `mandatorySystemGestures()` 的布局边界
+- `dumpsys window` 里和 system gesture exclusion 相关的窗口状态
+
+如果 trace 里能看到 App 完整收到 pointer stream，但用户体感仍像“系统抢了手势”，就回到排除区宽度限制和沉浸式布局边界上查，不要继续在 Perfetto 里兜圈。
 
 ## 常见问题与误区
 
@@ -309,9 +355,9 @@ Predictive Back 里更稳妥的观察对象，是当前 Activity、目标 Activi
   - `packages/SystemUI/src/com/android/systemui/navigationbar/gestural/BackPanel.kt` — 边缘面板的绘制与动画实现
   - `packages/SystemUI/shared/src/com/android/systemui/shared/system/InputMonitorCompat.java` — `monitorGestureInput()` 的 SystemUI 包装层
   - `frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp` — `pilferPointersLocked()` 与 `CANCEL_POINTER_EVENTS` 合成
-  - `core/java/android/window/OnBackInvokedCallback.java` — API 33 的 commit callback
-  - `core/java/android/window/OnBackAnimationCallback.java` — API 34 的 progress callback
-  - `core/java/android/window/OnBackInvokedDispatcher.java` — observer priority 与回调注册入口
+  - `frameworks/base/core/java/android/window/OnBackInvokedCallback.java` — API 33 的 commit callback
+  - `frameworks/base/core/java/android/window/OnBackAnimationCallback.java` — API 34 的 progress callback
+  - `frameworks/base/core/java/android/window/OnBackInvokedDispatcher.java` — observer priority 与回调注册入口
 - 官方文档：
   - [Gesture navigation | Android Developers](https://developer.android.com/training/gestures/gesturenav)
   - [Predictive back gesture | Android Developers](https://developer.android.com/about/versions/13/features/predictive-back-gesture)
@@ -320,6 +366,8 @@ Predictive Back 里更稳妥的观察对象，是当前 Activity、目标 Activi
   - [OnBackInvokedDispatcher | Android Developers](https://developer.android.com/reference/android/window/OnBackInvokedDispatcher)
   - [WindowInsets | Android Developers](https://developer.android.com/reference/android/view/WindowInsets)
   - [OnBackPressedCallback | Android Developers](https://developer.android.com/reference/androidx/activity/OnBackPressedCallback)
+  - [Android tracing quickstart | Perfetto](https://perfetto.dev/docs/quickstart/android-tracing)
+  - [FrameTimeline data source | Perfetto](https://perfetto.dev/docs/data-sources/frametimeline)
 - 外部参考：
   - TechMerger《深入理解 Android 系统 Back Gesture 的实现》
   - 郭霖《Android 15 新特性：预测性返回手势》

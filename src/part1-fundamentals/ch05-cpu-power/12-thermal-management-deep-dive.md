@@ -32,6 +32,8 @@ sources:
     path: "developer.android.com/games/optimize/adpf"
   - type: official
     path: "source.android.com/docs/core/power/thermal-mitigation"
+  - type: official
+    path: "https://perfetto.dev/docs/analysis/trace-analysis-with-sql"
   - type: blog
     path: "mediatek.com - MAGT ADPF integration case studies"
 tags: [thermal, throttling, ADPF, Thermal HAL, sustained performance, 游戏性能, 功耗, devfreq, power_allocator]
@@ -40,13 +42,14 @@ created_by: "task2a-knowledge-gap"
 created_date: "2026-04-09"
 gap_source: "官方文档+研究素材+AOSP结构+读者需求"
 gap_score: "18/20"
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 reviewed_date: "2026-04-20"
 reviewed_by: "openclaw-task6"
 task6_result: pass-light-edit
-task9_state: reviewed
-task2b_state: pending
+task9_state: pending
+task2b_state: fixed
+task2b_result: fixed
 task9_result: needs-rework
 ---
 
@@ -293,7 +296,9 @@ $ cat /sys/class/thermal/cooling_device0/cur_state
 2        # 第 2 级限制，CPU 最大频率被压低
 ```
 
-频率表通常是等间距的。假设大核最高 3.0GHz、4 级限制，频率表可能是 [3000, 2600, 2200, 1800, 1400] MHz。state 0 表示无限制（3000MHz），state 4 表示最严格限制（1400MHz）。
+state 和实际频点之间没有统一的线性关系。cpufreq cooling 更常见的做法，是按 SoC 的 OPP 表、功耗模型或 freq_qos 约束，把 target state 映射成一个最高频率上限。下面这组数字只是假想示例，用来说明“state 越高，允许的最高频率越低”，不能当成通用频点表。
+
+假设某颗大核集群的 OPP 表是 [3000, 2840, 2490, 2010, 1490] MHz，厂商把 state 0-4 分别映射到“无限制 / ≤2840 / ≤2490 / ≤2010 / ≤1490”。另一颗 SoC 完全可能有不同的频点数、不同的 state 数，甚至同一个 state 还会同时绑定功耗预算，而不只是单一频点。
 
 #### devfreq cooling：限制 GPU/NPU 频率
 
@@ -315,13 +320,15 @@ $ cat /sys/class/devfreq/gpu.0/max_freq
 
 [待验证：不同 SoC 的 devfreq cooling 实现差异，Qualcomm Adreno vs MediaTek Mali 的具体行为]
 
-#### CPU hotplug：核心离线
+#### CPU hotplug：历史方案与极端保护路径
 
-在极端情况下，thermal 子系统通过 CPU hotplug 直接关闭部分 CPU 核心。这比限制频率更激进——频率限制至少还能用全部核心（只是跑得慢），hotplug 直接减少了可用的计算资源。
+Android 手机上更常见的 thermal 动作，还是 cpufreq/devfreq 限频、vendor thermal daemon、core control，或者 cpuset / cgroup 一类负载约束。CPU hotplug 更像历史方案或厂商的极端保护手段，不该写成 Framework / HAL severity 升高后的常规结果。
 
-Hotplug 通常在 severity 达到 SEVERE 或 CRITICAL 时触发。比如一台 8 核设备（1+3+4 big.LITTLE），在 CRITICAL 时可能只保留 4 个小核在线，大核全部离线。这对性能的影响是毁灭性的，但目的是保护硬件——设备快烧了的时候，性能已经不重要了。
+这里要把三层概念拆开。kernel thermal trip 和 governor 决定 thermal zone 到 cooling device 的本地动作；Thermal HAL 再把传感器状态折算成 `ThrottlingSeverity`；Framework 的 `THERMAL_STATUS_*` 则把这个 severity 暴露给系统服务和 App。这三层之间没有“severity 升一级，内核就 hotplug 一批核心”的直接映射。
 
-[已验证: Linux kernel drivers/thermal/cpufreq_cooling.c, drivers/base/cpu.c]
+如果某台设备真的出现核心离线，更稳妥的解释是：厂商在用户空间 thermal daemon、vendor kernel 模块或 core control 策略里额外加了激进保护。正文把 hotplug 降格为“可能存在的设备策略”，更符合近几代 Android 手机的主流实现。
+
+[已验证: Linux kernel drivers/thermal/cpufreq_cooling.c, drivers/thermal/devfreq_cooling.c; source.android.com/docs/core/power/thermal-mitigation]
 
 ## Android Thermal HAL：内核与 Framework 的桥梁
 
@@ -450,20 +457,15 @@ void adjustForThermal(float headroom) {
 }
 ```
 
-### MediaTek MAGT：芯片级热数据反馈
+### MediaTek MAGT：vendor case study
 
-Google 与 MediaTek 的合作为 ADPF 提供了更精细的热数据来源。标准的 ADPF Thermal API 基于 Thermal HAL 上报的系统级温度，而 MAGT（MediaTek Adaptive Gaming Technology）可以提供芯片级的温度和功耗数据——直接读取 SoC 内部的传感器，而不是经过 OEM HAL 层的抽象和映射。
+Google 和 MediaTek 的公开材料，把 MAGT（MediaTek Adaptive Gaming Technology）放在 ADPF 协同优化的案例里。正文更稳妥的读法，是把它当成 vendor case study：同样是“更早感知热余量，再更早降载”，Dimensity 平台在 Unity Boat Attack、Lineage W、Ares: Rise of Guardians 这些 workload 上展示了帧率稳定性和功耗改善的方向。
 
-根据 MediaTek 公布的案例数据：
+这一组材料能证明的重点，是厂商确实在做芯片级热数据和游戏负载控制的联动；它还不能直接推出“所有 SoC 都能拿到同样的 FPS、功耗、续航收益”。原始页面没有同时给出完整的环境温度、测试时长、分辨率 / 帧率档位和 baseline 配置，正文不再把 8.5 FPS、12% 功耗、25 分钟续航这类数字写成通用结论。
 
-- **Unity Boat Attack demo**（Dimensity 9300）：平均帧率提升 8.5 FPS，帧时间标准差降低 25%，功耗降低 12%，游戏续航延长 25 分钟以上。
-- **Lineage W（NCSoft）**（Dimensity 9300）：平均帧率提升 7.4 FPS，帧抖动降低 25%，功耗降低 9%。
-- **Ares: Rise of Guardians（Kakao Games）**（Dimensity 9400）：帧抖动降低 17%，功耗降低 6%。
+如果要把这类案例转成项目内的决策依据，至少要补四类测试元数据：workload 场景、环境温度、单次测试时长、对照组的分辨率 / 帧率 / 画质档位。条件没补齐之前，MAGT 更适合作为“厂商做过这类协同优化”的参考，不适合直接拷贝阈值或收益百分比。
 
-这些改进来自更精准的温度反馈——游戏可以更早、更准确地预判 thermal throttling 的到来，从而更平滑地降载。MAGT 还提供了额外的 SDK，允许开发者在 Dimensity 设备上使用更底层的性能调控接口。
-
-[来源: MediaTek 官方博客 mediatek.com, ADPF 开发者文档]
-[待验证：Qualcomm 是否有类似的芯片级热数据 API；MAGT SDK 的具体接口文档]
+[来源: Google ADPF / MediaTek MAGT 公开案例页面]
 
 ## 在 Perfetto 中分析 Thermal 问题
 
@@ -522,19 +524,25 @@ ORDER BY f.ts;
 
 ### 区分 Thermal 降频和调度延迟
 
+这条查询的前提，是抓 trace 时已经打开 `power/cpu_frequency` ftrace 事件，或者 `linux.sys_stats` 里的 `cpufreq_period_ms`。CPU 频率本身来自 counter 轨道，标准表是 `counter` + `cpu_counter_track`，不是 `cpu_frequency_scans`。
+
 ```sql
--- 高 CPU utilization + 低频率 = thermal throttling
--- 低 CPU utilization + 低频率 = 正常 DVFS
--- 高 CPU utilization + 高频率 + 长帧时间 = 代码性能问题
+-- 先看每个 CPU 的频率 counter
 SELECT
-  ts / 1e9 AS time_sec,
-  cpu,
-  freq / 1e6 AS freq_mhz,
-  -- 需要配合 sched slice 数据判断 utilization
-FROM cpu_frequency_scans
-ORDER BY ts
+  c.ts / 1e9 AS time_sec,
+  t.cpu,
+  c.value AS freq_khz
+FROM counter c
+JOIN cpu_counter_track t
+  ON c.track_id = t.id
+WHERE t.name GLOB '*cpufreq*'
+ORDER BY c.ts, t.cpu
 LIMIT 100;
 ```
+
+如果这条查询没有结果，先执行 `SELECT DISTINCT name FROM cpu_counter_track;`，确认设备把 CPU 频率轨道命名成了什么。拿到频率曲线之后，再和 `sched` / `thread_state` 一起看：高 CPU 利用率 + 持续低频，更像 thermal throttling；低利用率 + 低频，很多时候只是 DVFS 正常回落。
+
+[已验证: Perfetto SQL 文档, https://perfetto.dev/docs/analysis/trace-analysis-with-sql]
 
 这三组查询覆盖了 thermal 分析的核心需求：确认 thermal 事件发生了、量化它对帧率的影响、排除其他原因（调度延迟或代码性能问题）。
 
@@ -666,6 +674,7 @@ thermal governor（尤其是 power_allocator）利用了这个非线性特性—
 
 ### 官方文档
 - [Android Thermal Management](https://source.android.com/docs/core/power/thermal-mitigation) — 系统级温控架构 [已验证]
+- [Perfetto SQL getting started](https://perfetto.dev/docs/analysis/trace-analysis-with-sql) — Trace Processor 与标准表查询 [已验证]
 - [ADPF for Games](https://developer.android.com/games/optimize/performance#adpf) — 游戏 ADPF 集成指南 [已验证]
 - [Thermal API Reference](https://developer.android.com/reference/android/os/PowerManager) — PowerManager Thermal API [已验证]
 - [Game Mode API](https://developer.android.com/games/gamemode/gamemode-api) — Game Mode 文档 [已验证]
