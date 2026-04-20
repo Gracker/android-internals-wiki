@@ -400,6 +400,21 @@ Android 15 引入了对 16KB 内存页的支持（传统为 4KB）。这不会�
 
 [已验证: AOSP android-12.0.0_r1 ~ android-16.0.0_r1, system/memory/lmkd/lmkd.cpp]
 
+
+<!-- AIW-源码调研-2026-04-20: CachedAppOptimizer 机制补充 -->
+### 扩展四：Android 12+ CachedAppOptimizer 与 cgroup v2 Freezer（源码级补充）
+
+`CachedAppOptimizer` 是 Android 12 引入的「缓存进程冻结」机制，与 lmkd 的「杀死进程」不同，它使用 Linux cgroup v2 freezer 将进程冻结在内存中：进程 Track 仍存在但所有线程 Slice 消失（状态 = FROZEN），既避免冷启动延迟，又节省 CPU/功耗。
+
+**核心源码**（android14-release）：
+- `services/core/java/com/android/server/am/CachedAppOptimizer.java` — 冻结逻辑，`FREEZER_DEBOUNCE_TIMEOUT=10_000`（Android 14 从 10 分钟骤降至 10 秒），`FREEZE_BINDER_TIMEOUT_MS=100`，解冻原因码（30+ 种）
+- 触发条件：`OomAdjuster.updateOomAdjLocked()` 中进程 oom_adj 达到 `CACHED_APP_MIN_ADJ`（=900）后保持 10 秒
+- 冻结流程：`freezeAppAsyncLSP()` → 文件锁检查 → `freezeBinderThreads()` → `android.os.Process.setProcessFrozen(pid, uid, true)` → 写入 `cgroup.freeze="1"`
+
+**Perfetto 区分**：被 LMK 杀死 = 进程消失 + `android_lmk_proc_state` 事件；被 Freezer 冻结 = 进程 Track 仍在 + 所有线程无 Slice（无 `process_exit` 事件）。查看 `linux.process_freeze_state` 事件可确认冻结状态。
+
+[源码验证: CachedAppOptimizer.java (android14-release), libprocessgroup/task_profiles.json (android14-release)]
+
 ## 参考资料
 
 ### AOSP 源码

@@ -630,6 +630,23 @@ ORDER BY core_type;
 
 不一定。Runnable 状态本身是正常的——线程不可能永远在 Running。只有当 Runnable 时间在关键路径（如主线程的 doFrame 期间）中占比过高时，才需要关注。
 
+
+<!-- AIW-源码调研-2026-04-20: Android LMK/OOM Adj 机制源码补充 -->
+### Android OOM Adj 与 TrimMemory 机制（跨章节引用：§7.3）
+
+Android 的进程优先级体系与 Linux kernel 的 cgroup/oom_score_adj 紧密协作，但内存压力响应的核心在 userspace。关键源码验证（android14-release）：
+
+**lmkd**（`platform/system/memory/lmkd/lmkd.cpp`，Android 14）：userspace Low Memory Killer daemon，已从 C 迁移至 C++。默认使用 **PSI（Pressure Stall Information）** 监控内存压力（Android 10+），关键参数：`PSI_WINDOW_SIZE_MS=1000`、`PSI_POLL_PERIOD_SHORT_MS=10`。AMS 与 lmkd 通过 socket 通信，命令码定义在 `ProcessList.java` 中的 `enum lmk_cmd`（`LMK_TARGET=0`、`LMK_PROCPRIO=1`、`LMK_PROCKILL=6`）。
+
+**OOM Adj 分数**（`services/core/java/com/android/server/am/ProcessList.java`）：Android 进程优先级体系，FOREGROUND_APP_ADJ=0 到 NATIVE_ADJ=-1000（共约20档）。`mOomMinFree` 数组定义 6 档内存阈值（单位 KB），从高端设备（1280x800, ~1GB）的 `mOomMinFreeHigh` 到低端设备（HVGA, <512MB）的 `mOomMinFreeLow`。
+
+**TrimMemory 机制**（`ComponentCallbacks2.java`，`ActivityThread.java`，`ActivityManagerService.java`）：系统通过 `onTrimMemory(level)` 回调通知应用释放内存。level 范围 5~80（`TRIM_MEMORY_RUNNING_MODERATE` ~ `TRIM_MEMORY_COMPLETE`），由 AMS 在 `updateOomAdjLocked()` 期间计算，经 `IApplicationThread.scheduleTrimMemory()` 派发。
+
+详细分析见 §7.3「卡顿分析方法论」。
+
+[源码验证: ProcessList.java, ComponentCallbacks2.java, ActivityThread.java, lmkd.cpp (android14-release/android-14.0.0_r44)]
+
+
 ## 参考资料
 
 - AOSP 源码：`kernel/sched/fair.c`、`kernel/sched/core.c`、`system/core/libprocessgroup/profiles/task_profiles.json`、`bionic/libc/include/pthread.h`

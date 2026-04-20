@@ -4,7 +4,7 @@ import subprocess
 import time
 from datetime import datetime
 
-TODO_FILE = "logs/external-review/TODO-part2-performance.md"
+TODO_FILE = "logs/external-review/TODO-part3-tools.md"
 REVIEW_DIR = "logs/external-review"
 
 def get_next_task():
@@ -52,7 +52,7 @@ def run_review(filepath):
     
     # Call gemini cli with non-interactive flag -p
     try:
-        result = subprocess.run(["gemini", "-m", "gemini-3.1-pro-preview", "-y", "-p", prompt], capture_output=True, text=True, check=True)
+        result = subprocess.run(["gemini", "-m", "gemini-3.1-flash-lite-preview", "-y", "-p", prompt], capture_output=True, text=True, check=True)
         print(f"[{datetime.now().strftime('%H:%M:%S')}] Review completed for {filepath}.")
         print(f"Output excerpt: {result.stdout[:200]}...")
         
