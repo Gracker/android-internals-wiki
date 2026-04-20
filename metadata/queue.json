@@ -1001,7 +1001,10 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-21T04:38:00+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-04-21T05:14:56+08:00",
+      "completed_by": "task2b-content-processing-rework",
+      "resolution": "已修正 SurfaceFlinger 现代 trace 入口、`oom_score_adj` / `lmkd` 口径，并补全 ANR 超时矩阵与版本边界。"
     },
     {
       "section": "16.3",
@@ -1028,7 +1031,10 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-21T04:38:00+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-04-21T05:14:56+08:00",
+      "completed_by": "task2b-content-processing-rework",
+      "resolution": "已把 `adb sync framework` 改为分区级 `adb sync system` / 单文件 `adb push` 工作流，并拆开 Pixel device tree、driver binaries、factory image 三条资源线。"
     },
     {
       "section": "16.4",

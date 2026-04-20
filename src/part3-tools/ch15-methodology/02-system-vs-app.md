@@ -6,7 +6,7 @@ status: ready-for-review
 drafted_date: "2026-04-04"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 8.0 (API 26) - Android 16 (API 36)"
-last_verified: "2026-04-04"
+last_verified: "2026-04-21"
 last_verified_against: "AOSP android-16.0.0_r1"
 confidence: high
 sources:
@@ -18,21 +18,26 @@ sources:
     path: "perfetto.dev/docs/data-sources/cpu-scheduling"
   - type: official
     path: "developer.android.com/topic/performance"
+  - type: official
+    path: "developer.android.com/topic/performance/vitals/anr"
+  - type: official
+    path: "perfetto.dev/docs/data-sources/frametimeline"
   - type: aosp
     path: "frameworks/native/services/surfaceflinger/"
 tags: ['methodology', 'system-vs-app', 'trace-analysis', 'attribution']
 related_chapters: ["5.1", "7.1", "7.2", "7.3", "13.3", "13.6", "15.1"]
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 reviewed_by: openclaw-task6
 reviewed_date: "2026-04-16"
 task6_result: pass-light-edit
-task9_state: reviewed
+task9_state: pending
 task9_result: "needs-rework"
 last_task9_at: "2026-04-21T04:38:00+08:00"
 task9_reviewed_date: "2026-04-21"
 task9_reviewed_by: "openclaw-task9"
-task2b_state: pending
+task2b_state: fixed
+task2b_result: fixed
 ---
 
 # 如何区分系统问题和 App 问题
@@ -109,7 +114,7 @@ Wall = CPU 时间 + Runnable 时间 + Sleep 时间
 - **CPU 区域**：所有核心是否满载？如果是，说明系统负载确实很高，主线程拿不到 CPU 是合理的。
 - **频率轨道**：CPU 频率是否正常？如果被温控限频（`scaling_max_freq` 被压低），即使主线程分到了 CPU，执行速度也会打折扣。
 - **内存压力**：有没有看到 `kswapd` 线程活跃？有没有大量的 `direct reclaim` 事件？
-- **SurfaceFlinger 轨道**：SurfaceFlinger 主线程的合成耗时是否正常？如果 SF 的 `doComposition` 也变长，可能说明 GPU 被其他进程占用了。
+- **SurfaceFlinger 轨道**：SurfaceFlinger 主线程上的 `onMessageRefresh`、`commit`、`composite` 这些 slice 是否明显变长？Android 10+ 的合成逻辑已经收敛到 CompositionEngine，旧资料里的 `doComposition` 在现代 Perfetto 中通常对应这里的刷新入口。
 
 这三步形成了一个从局部到全局的判断链：先看问题线程本身，再看它在等什么，最后看系统环境是否支持它。
 
@@ -153,9 +158,9 @@ LIMIT 10;
 
 这种内存压力会导致一系列连锁反应：
 
-1. **App 进程被 LMK 杀掉**：如果 `kswapd` 回收不够快，LMK（Low Memory Killer）会介入，按 `oom_adj_score` 从高到低杀进程。App 被杀后用户下次打开就是冷启动，体验变差。
+1. **App 进程被 LMK 杀掉**：如果 `kswapd` 回收不够快，现代 Android 通常由 userspace `lmkd` 结合 `oom_score_adj`、PSI 和 reclaim 信号决定是否杀进程。旧资料里的 `oom_adj` 是历史字段名。App 被杀后用户下次打开就是冷启动，体验变差。
 2. **主线程进入 D 状态**：内存不足时，页面换入（page fault）会触发同步的磁盘 I/O，主线程如果触发了 page fault，就会进入不可中断的 D 状态等待 I/O 完成。
-3. **GC 频繁触发**：ART 虚拟机在内存紧张时会更频繁地触发 GC，而 GC 暂停（即使是年轻的 Generational GC 通常在 1-3ms）在高负载时可能被放大，因为 GC 线程本身也需要争抢 CPU。
+3. **GC 频繁触发**：ART 在内存紧张时会更频繁地触发 GC。Android 10+ 默认的 Generational Concurrent Copying GC 中，Young GC 暂停往往在 1-3ms，但在高负载场景里这段暂停仍可能被放大，因为 GC 线程本身也要争抢 CPU。
 
 所以当你看到 `kswapd` 活跃 + 主线程出现 D 状态 + LMK 频繁杀进程这三件套，基本可以判定这是系统级的内存问题，不是单个 App 能解决的。App 端能做的最多是减少自身内存占用（详见 §4.5），但根本解决需要系统层面调整 LMK 策略或增加物理内存。
 
@@ -165,7 +170,7 @@ SurfaceFlinger 是系统级的合成服务，它负责把所有 App 的 Layer �
 
 在 Perfetto 中排查 SurfaceFlinger 延迟，主要看这几个信号（详见 §2.6）：
 
-- SurfaceFlinger 主线程 Track 上 `doComposition` 的耗时。正常情况下 Client 合成通常在 2-5ms，如果突然变成 10ms+，说明合成遇到了瓶颈。
+- SurfaceFlinger 主线程 Track 上 `onMessageRefresh`、`commit`、`composite` 这一组 slice 的耗时。Android 10+ 之后，旧教程里的 `doComposition` 基本对应这里的刷新入口。经验上 Client 合成常见于几毫秒级，如果稳定拉长到 10ms+，说明合成遇到了瓶颈。
 - `VSYNC-sf` 信号到来时 SurfaceFlinger 是否及时响应。如果 SF 在一个 VSync 周期内没能完成合成，这一帧就会被延迟到下一个 VSync 才呈现——表现为全局性的掉帧，不只是一个 App 的掉帧。
 - Android 12+ 的 `FrameTimeline` 数据会明确标记 jank 的类型：如果是 `SurfaceFlingerCpuDeadlineMissed` 或 `SurfaceFlingerGpuDeadlineMissed`，那就是 SF 侧的问题。
 
@@ -290,7 +295,7 @@ LIMIT 15;
 
 ### 3. 检查新增的系统服务或后台任务
 
-Android 大版本升级往往会引入新的系统服务。比如 Android 14 引入的 `HealthFitness` 服务、Android 15 的 `CredentialManager` 等。这些新服务可能在后台运行，增加系统负载。在 Perfetto 的进程列表中对比升级前后多出来的进程，分析它们的 CPU 和内存开销。
+Android 大版本升级往往会引入新的系统服务，或者让既有服务承担新的任务。在 Perfetto 的进程列表中对比升级前后多出来的进程、Binder 服务和后台任务，再看它们的 CPU、内存和 Binder 活动，定位会更稳。
 
 [待验证: 上述排查方法适用于所有 OEM 厂商的定制 ROM]
 
@@ -304,7 +309,7 @@ Android 大版本升级往往会引入新的系统服务。比如 Android 14 引
 | `doFrame` Wall >> CPU，差值主要是 Runnable | 系统：调度延迟 | CPU 区域是否满载？哪些进程在占 CPU？ |
 | `doFrame` Wall >> CPU，差值主要是 Sleep (binder) | App 或系统：Binder 对端慢 | 查看服务端线程的 Trace |
 | `doFrame` Wall >> CPU，差值主要是 D 状态 | 系统：I/O 延迟（可能是内存不足） | 看 kswapd 活跃度、zRAM 使用率 |
-| SurfaceFlinger doComposition 耗时异常 | 系统：合成瓶颈 | 看 GPU 占用、Layer 数量 |
+| SurfaceFlinger `onMessageRefresh` / `composite` 耗时异常 | 系统：合成瓶颈 | 看 GPU 占用、Layer 数量、FrameTimeline jank 类型 |
 | 升级后性能普遍下降 | 系统：版本回归 | A/B 对比 Trace |
 | 特定操作才卡，其他时候正常 | App：操作触发 | 对比问题帧和正常帧 |
 
@@ -320,7 +325,7 @@ Android 大版本升级往往会引入新的系统服务。比如 Android 14 引
 4. **查看 CPU 全局状态**：跳到顶部 CPU 区域，看这段时间所有核心的负载情况。是否有空闲核心？主线程是否被调度到了小核？
 5. **查看频率限制**：在 CPU Frequency Track 看 `scaling_max_freq` 是否被压低。
 6. **查看内存状态**：搜索 `kswapd`，看它在这段时间是否活跃。查看 `lmkd` 事件，看是否有进程被杀。
-7. **查看 SurfaceFlinger**：跳到 SurfaceFlinger 进程，看它的 `doComposition` 耗时是否异常。
+7. **查看 SurfaceFlinger**：跳到 SurfaceFlinger 进程，看 `onMessageRefresh`、`commit`、`composite` 这些 slice 是否明显变长。
 8. **形成结论**：综合以上信息，判断问题归属——是 App 代码慢，还是系统资源不够。
 
 ## 常见误区
@@ -339,7 +344,22 @@ CPU 利用率低可能恰恰说明有问题——如果你的主线程在 Runnab
 
 **误区四："ANR 一定是 App 的问题"**
 
-ANR 的触发条件是主线程在一定时间内（Input 事件 5 秒、Service 20 秒、BroadcastReceiver 等待队列处理超时等）没有响应。如果主线程被调度延迟阻塞了 3 秒，再加上自身代码耗时 2 秒，总共就超过了 5 秒的 Input ANR 阈值。这种情况下，如果只看 App 代码可能只找到了 2 秒的问题，漏掉了调度延迟的 3 秒。分析 ANR 时一定要同时看系统上下文。
+AOSP 默认的 ANR 窗口要按组件类型拆开看，不能压成一个统一数字：
+
+| 场景 | 常见默认阈值 | 备注 |
+|:--|:--|:--|
+| Input dispatching | 5 秒 | 前台输入无响应最常见 |
+| Service timeout（前台进程） | 20 秒 | `ActiveServices` 前台 service 执行超时 |
+| Service timeout（后台进程） | 200 秒 | 后台 service 窗口更长 |
+| BroadcastReceiver（前台优先级） | 10 秒，Android 14+ 在 CPU 饥饿时可放宽到 20 秒 | 冷启动时间也算在窗口内 |
+| BroadcastReceiver（后台优先级） | 60 秒，Android 14+ 在 CPU 饥饿时可放宽到 120 秒 | `goAsync()` 也算在窗口内 |
+| `startForegroundService()` 后未及时调用 `startForeground()` | 5 秒 | 会触发前台服务启动超时 |
+
+具体值仍以当版 `ActiveServices`、Broadcast 常量和官方 ANR 文档为准。
+
+[已验证: 官方文档, developer.android.com/topic/performance/vitals/anr]
+
+如果主线程被调度延迟阻塞了 3 秒，再加上自身代码耗时 2 秒，总共就超过了 5 秒的 Input ANR 阈值。这种情况下，如果只看 App 代码可能只看到了 2 秒，漏掉了调度延迟的 3 秒。分析 ANR 时要把主线程、Binder 对端、系统负载和组件类型一起看。
 
 **误区五："SurfaceFlinger 延迟是 GPU 厂商的问题"**
 
@@ -351,6 +371,8 @@ SurfaceFlinger 合成延迟的原因有很多，不一定是 GPU 硬件的问题
 - [Perfetto Thread State 分析](https://perfetto.dev/docs/data-sources/cpu-scheduling#thread-states) — 线程状态详解
 - [Android Memory Management 官方文档](https://source.android.com/docs/core/admin/memory) — kswapd、LMK、zRAM 机制
 - [Android Performance 官方指南](https://developer.android.com/topic/performance) — 性能优化最佳实践
+- [Android vitals, Diagnose and fix ANRs](https://developer.android.com/topic/performance/vitals/anr) — ANR 类型与超时口径
+- [Perfetto FrameTimeline 官方文档](https://perfetto.dev/docs/data-sources/frametimeline) — App / SurfaceFlinger jank 归因
 - [AOSP SurfaceFlinger 源码](https://cs.android.com/android/platform/superproject/+/master:frameworks/native/services/surfaceflinger/) — 合成流程源码
 
 ---
