@@ -6,20 +6,28 @@ status: ready-for-review
 drafted_date: "2026-04-02"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37)"
-last_verified: "2026-04-02"
-last_verified_against: "AOSP android-14.0.0_r1"
+last_verified: "2026-04-20"
+last_verified_against: "AOSP android-14.0.0_r1, Android Developers foreground service docs"
 confidence: high
 sources:
   - type: aosp
     path: "frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java"
   - type: aosp
+    path: "frameworks/base/services/core/java/com/android/server/am/ActivityManagerConstants.java"
+  - type: aosp
     path: "frameworks/base/services/core/java/com/android/server/am/ActiveServices.java"
   - type: aosp
-    path: "frameworks/base/services/core/java/com/android/server/BroadcastQueue.java"
+    path: "frameworks/base/services/core/java/com/android/server/am/BroadcastQueue.java"
+  - type: aosp
+    path: "frameworks/base/services/core/java/com/android/server/am/BroadcastQueueImpl.java"
+  - type: aosp
+    path: "frameworks/base/services/core/java/com/android/server/am/BroadcastQueueModernImpl.java"
   - type: aosp
     path: "frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp"
   - type: official
     path: "https://developer.android.com/topic/performance/vitals/anr"
+  - type: official
+    path: "https://developer.android.com/develop/background-work/services/fgs/troubleshooting"
   - type: blog
     path: "intake/research-feeds/2026-04-01-07-ch09-binder-anr-android15-16-17.md"
 tags: [anr, input-dispatching, broadcast, service, contentprovider, timeout]
@@ -34,11 +42,13 @@ task6_review_date: "2026-04-16"
 polish_count: 1
 polish_date: "2026-04-07"
 polish_by: "task2b-polish"
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
 task9_result: needs-rework
-task2b_state: pending
+task2b_state: fixed
+task2b_result: fixed
+last_task2b_at: "2026-04-20T18:33:00+08:00"
 ---
 
 # ANR 类型与触发条件
@@ -142,9 +152,11 @@ static final int BROADCAST_BG_TIMEOUT = 60 * 1000;  // 60 seconds
 
 ### 检测机制：BroadcastQueue 的超时 Handler
 
-Broadcast ANR 的检测逻辑在 `BroadcastQueue.broadcastTimeoutLocked()` 方法中。**只有有序广播（ordered broadcast）才会触发超时检测。** 普通的无序广播是并行分发给所有 Receiver 的，不会等待单个 Receiver 完成，因此不会产生 ANR。
+Broadcast ANR 的检测逻辑仍然从 `BroadcastQueue.broadcastTimeoutLocked()` 这条抽象接口进入。**只有有序广播（ordered broadcast）才会触发超时检测。** 普通的无序广播是并行分发给所有 Receiver 的，不会等待单个 Receiver 完成，因此不会产生 ANR。
 
-`goAsync()` 的引入让这个问题更复杂了。调用 `goAsync()` 将广播处理移到后台线程时，超时计时器并不会停止——仍然需要在原始超时时间内调用 `PendingResult.finish()`。如果后台线程执行时间超过 10 秒（前台广播）或 60 秒（后台广播），仍然会触发 ANR，即使主线程完全空闲。
+Android 14 上继续往下追时，需要同时看 `BroadcastQueueImpl` 和 `BroadcastQueueModernImpl`。前者保留传统广播队列实现，后者承接新的分发状态机；设备具体走哪条路径，取决于系统开启的广播实现和场景。排查超时路径时，`BroadcastQueue.java` 只是入口，真正的调度细节在这两个实现类里展开。
+
+`goAsync()` 的引入让这个问题更复杂了。调用 `goAsync()` 将广播处理移到后台线程时，超时计时器并不会停止，仍然需要在原始超时时间内调用 `PendingResult.finish()`。如果后台线程执行时间超过 10 秒（前台广播）或 60 秒（后台广播），仍然会触发 ANR，即使主线程完全空闲。
 
 ### 在 Logcat 中的特征
 
@@ -171,17 +183,21 @@ Reason: Broadcast of Intent { act=android.intent.action.BOOT_COMPLETED
 Service ANR 的超时阈值在所有类型中跨度最大：前台 Service 是 **20 秒**，后台 Service 是 **200 秒**。
 
 ```java
-// frameworks/base/services/core/java/com/android/server/am/ActiveServices.java
+// frameworks/base/services/core/java/com/android/server/am/ActivityManagerConstants.java
 // @ AOSP android-14.0.0_r1
-static final int SERVICE_FOREGROUND_TIMEOUT = 20 * 1000;  // 20 seconds
-static final int SERVICE_BACKGROUND_TIMEOUT = 200 * 1000; // 200 seconds
+private static final long DEFAULT_SERVICE_TIMEOUT =
+        20 * 1000 * Build.HW_TIMEOUT_MULTIPLIER;
+private static final long DEFAULT_SERVICE_BACKGROUND_TIMEOUT =
+        DEFAULT_SERVICE_TIMEOUT * 10;
 ```
 
-[已验证: AOSP android-14.0.0_r1, frameworks/base/services/core/java/com/android/server/am/ActiveServices.java]
+[已验证: AOSP android-14.0.0_r1, frameworks/base/services/core/java/com/android/server/am/ActivityManagerConstants.java]
 
 ### 检测机制：ActiveServices 的超时 Handler
 
-超时检测的目标是 Service 的生命周期方法：`onCreate()`、`onStartCommand()` 或 `onBind()`。重要细节：**超时计算是从 Service 被调度到进程执行开始的，不是从代码开始执行开始的。** 如果进程本身还在启动（冷启动场景），进程启动时间也计算在内。
+超时检测的目标是 Service 的生命周期方法：`onCreate()`、`onStartCommand()` 或 `onBind()`。Android 14 的 `ActiveServices` 不再自己声明固定的 20 秒 / 200 秒常量，而是在调度超时时读取 `mAm.mConstants.SERVICE_TIMEOUT` 和 `mAm.mConstants.SERVICE_BACKGROUND_TIMEOUT`。默认值仍对应前台 20 秒、后台 200 秒，但会乘 `Build.HW_TIMEOUT_MULTIPLIER`，运行时也可能被系统配置覆盖。
+
+另一个细节是，超时计算从 Service 被调度到进程执行开始，不是从业务代码第一行开始。如果进程本身还在启动，进程启动时间也计算在内。
 
 ### 在 Logcat 中的特征
 
@@ -192,17 +208,20 @@ Reason: executing service com.example.app/com.example.app.MyService
 
 特征是 Reason 行以 **"executing service"** 开头。
 
-### startForeground 的 5 秒超时
+### startForegroundService 到 startForeground 的宽限期
 
-从 Android 8.0 开始，系统引入了 `Context.startForegroundService()` 方法。严格要求：**Service 必须在启动后 5 秒内调用 `startForeground()`**。超时后果按版本不同：
+这条超时链和普通 Service 的 20 秒 / 200 秒执行超时不是一回事。它约束的是 `Context.startForegroundService()` 之后，Service 多久必须调用 `startForeground()` 完成前台晋升。
 
-- **Android 8-11：** 触发 ANR 对话框
-- **Android 12+：** 直接抛出 `ForegroundServiceDidNotStartInTimeException`，导致 App 崩溃
+- **Android 8.0：** AOSP `ActiveServices.SERVICE_START_FOREGROUND_TIMEOUT = 5 * 1000`，宽限期 5 秒
+- **Android 9-12：** AOSP 把这条宽限期提升到 10 秒
+- **Android 13-14+：** 默认值迁到 `ActivityManagerConstants.DEFAULT_SERVICE_START_FOREGROUND_TIMEOUT_MS`，默认 30 秒，对应运行时字段 `mServiceStartForegroundTimeoutMs`
+
+超时后的后果也要分开看：Android 8-11 多表现为 ANR 或系统杀服务，Android 12+ 常见为 `ForegroundServiceDidNotStartInTimeException`。它与普通 Service 的执行超时、Android 15 `shortService` 约 3 分钟超时是三套不同机制。
 
 常见触发场景：
 
 1. `onStartCommand()` 中有阻塞操作，阻塞了 `startForeground()` 的调用
-2. 等待异步结果（如网络请求）后再调用 `startForeground()`，但异步操作超过 5 秒
+2. 等待异步结果（如网络请求）后再调用 `startForeground()`，但异步操作超过当前版本的宽限期
 3. 从后台启动，被系统调度延迟
 
 **正确做法：** 先调用 `startForeground()` 展示通知，再执行其他逻辑。
@@ -240,7 +259,7 @@ Reason: ContentProvider com.example.app/.provider.MyProvider not responding
 | Service (前台) | 20s | ActiveServices (AMS) | onCreate/onStartCommand/onBind 未完成 | 可能无感知 |
 | Service (后台) | 200s | ActiveServices (AMS) | onCreate/onStartCommand/onBind 未完成 | 无感知 |
 | ContentProvider | 10s | AMS | Provider 未在时间内 publish | 间接感知（阻塞启动） |
-| startForeground | 5s | AMS | startForeground() 未在时间内调用 | Android 12+ 直接崩溃 |
+| startForeground | Android 8.0 5s / 9-12 10s / 13-14+ 默认 30s | AMS | `startForeground()` 未在宽限期内调用 | Android 12+ 常见直接崩溃 |
 
 ## 在 Perfetto 中的表现
 
@@ -256,11 +275,11 @@ Reason: ContentProvider com.example.app/.provider.MyProvider not responding
 
 > 本节追踪 Android 8.0 到 Android 17 中与 ANR 触发条件和超时阈值相关的关键变更。未提及的版本意味着对应版本没有重大变化。
 
-**Android 8.0（API 26）：** 引入 `startForegroundService()` / `startForeground()` 的 5 秒超时要求。
+**Android 8.0（API 26）：** 引入 `startForegroundService()` / `startForeground()` 的 5 秒宽限期。
 
-**Android 12（API 31）：** `startForeground()` 超时不再触发 ANR 对话框，而是直接抛出 `ForegroundServiceDidNotStartInTimeException` 导致崩溃。
+**Android 9-12（API 28-32）：** AOSP 把 `startForegroundService()` 到 `startForeground()` 的宽限期提升到 10 秒；Android 12 同时把超时结果收紧为 `ForegroundServiceDidNotStartInTimeException`。
 
-**Android 14（API 34）：** 对前台 Service 限制进一步收紧，引入更多前台 Service 类型和对应的超时策略。
+**Android 13-14（API 33-34）：** 默认宽限期迁到 `ActivityManagerConstants.DEFAULT_SERVICE_START_FOREGROUND_TIMEOUT_MS`，默认值提升到 30 秒。普通 Service 的执行超时仍然是前台 20 秒、后台 200 秒这一组口径。
 
 **Android 15（API 35）：** 新增 `dataSync` 和 `mediaProcessing` 前台 Service 的累计运行时间限制（后台 24 小时内 6 小时），以及 `shortService` 类型约 3 分钟的超时直接触发机制 [待验证: shortService 具体超时阈值因 OEM 实现可能不同]。
 
@@ -315,11 +334,15 @@ adb shell cat /data/anr/anr_* | tail -200
 
 - AOSP 源码路径：
   - `frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp` — Input ANR 超时检测
-  - `frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java` — ANR 常量定义
-  - `frameworks/base/services/core/java/com/android/server/am/ActiveServices.java` — Service 超时检测
-  - `frameworks/base/services/core/java/com/android/server/BroadcastQueue.java` — Broadcast 超时检测
+  - `frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java` — Broadcast 超时常量定义
+  - `frameworks/base/services/core/java/com/android/server/am/ActivityManagerConstants.java` — Service / FGS 默认超时配置
+  - `frameworks/base/services/core/java/com/android/server/am/ActiveServices.java` — Service 超时调度与运行时读取入口
+  - `frameworks/base/services/core/java/com/android/server/am/BroadcastQueue.java` — Broadcast 超时抽象入口
+  - `frameworks/base/services/core/java/com/android/server/am/BroadcastQueueImpl.java` — Android 14 传统广播队列实现
+  - `frameworks/base/services/core/java/com/android/server/am/BroadcastQueueModernImpl.java` — Android 14 新广播分发实现
 - 官方文档：
   - https://developer.android.com/topic/performance/vitals/anr
+  - https://developer.android.com/develop/background-work/services/fgs/troubleshooting
   - https://developer.android.com/guide/components/fg-services
 - 研究素材：
   - intake/research-feeds/2026-04-01-07-ch09-binder-anr-android15-16-17.md
