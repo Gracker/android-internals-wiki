@@ -2816,3 +2816,22 @@
 - **位置**：L67-L71 + L107 + L203
 - **问题**：多处把 GPU delegate 公开路径写成“OpenCL / OpenGL ES 为主”，但当前 cited `ai.google.dev/edge/litert/android/gpu` 页面并未给出稳定 backend 合约。
 - **建议**：补能明确说明 backend 的一手资料；如果拿不到，降级成“具体 backend 取决于 delegate/runtime/driver 实现”。
+
+
+## [Task9 Deep Review] 1.2 系统启动全流程 — 2026-04-20
+- **类型**：数据缺失
+- **位置**：L290-L300 参考基线数据表
+- **问题**：Pixel 8 各阶段耗时标注为"基于公开 bootstat 输出和 AOSP 默认配置的估算值"，但未给出具体来源链接或 bootstat 输出样本。读者无法复现或验证这些数字。
+- **建议**：补具体 Pixel 8 bootstat 输出截图或公开 Benchmark 来源，或把表头改为"分段比例示意（非实测值）"。
+
+## [Task9 Deep Review] 1.3 进程模型与生命周期管理 — 2026-04-20
+- **类型**：数据缺失
+- **位置**：L79-L80 outline 扩展
+- **问题**：大纲扩展提到 Phantom Process Killer 和 SDK Sandbox，但正文对 SDK Sandbox 的覆盖极轻。SDK Sandbox 是 Android 14 引入的重要进程隔离机制，影响广告 SDK 和第三方 SDK 的进程模型。
+- **建议**：补 SDK Sandbox 对进程模型的影响（独立进程、内存隔离、与 phantom process killer 的交互）。
+
+## [Task9 Deep Review] 1.4 Binder IPC 机制与性能影响 — 2026-04-20
+- **类型**：知识盲区
+- **位置**：全局
+- **问题**：章节 confidence 为 medium，未覆盖 binder fd leak 检测（`binder_stats`）、RPC 回调线程模型（`IBinder.DeathRecipient` 虽然提到但未展开 binder 死亡通知的调度路径）、以及 vendor binder domain 的差异。
+- **建议**：P3 级别，不阻塞当前 review，可作为后续增强素材。
