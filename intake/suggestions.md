@@ -2934,3 +2934,32 @@
 - **位置**：L81 / L182 / L197 / L229 / L385
 - **问题**：跨章节链接使用同目录相对路径，指向 `04-choreographer.md`、`08-overdraw.md`、`07-hardware-layer.md`、`04-binder.md` 等当前目录下不存在的文件，读者无法跳转到 2.x/1.4 章节。
 - **建议**：统一改为实际相对路径，例如 `../../part1-fundamentals/ch02-rendering/04-choreographer.md`、`../../part1-fundamentals/ch02-rendering/08-overdraw.md`、`../../part1-fundamentals/ch02-rendering/07-hardware-layer.md`、`../../part1-fundamentals/ch01-architecture/04-binder.md`，并复核引用标题与目标章节一致。
+## [Task9 Deep Review] 7.10 图片加载与 Bitmap 性能优化 — 2026-04-20
+- **类型**：数据缺失
+- **位置**：L255（AVIF 小节）
+- **问题**：用“AVIF 同等画质约小 50%”作为结论时，没有给出测试图片集、质量目标和设备条件；随后又用 HEIC 降本案例为 AVIF 背书，证据对象并不一致。
+- **建议**：补一组 AVIF vs JPEG 的同条件样本数据，或把这段降格为趋势性描述，并把 HEIC 案例单独标成“相邻格式实践”
+
+## [Task9 Deep Review] 7.10 图片加载与 Bitmap 性能优化 — 2026-04-20
+- **类型**：数据缺失
+- **位置**：L458（检查清单第 8 条）
+- **问题**：“WebP 有损替代 JPEG 同等画质下体积小 25-35%”缺少来源、编码参数和图片语料边界。
+- **建议**：补充 encoder、quality、样本类型与测试条件；如果没有统一基准，把结论改成“通常更小，但幅度依内容而异”
+
+## [Task9 Deep Review] 7.11 WebView 渲染性能与优化 — 2026-04-20
+- **类型**：交叉引用
+- **位置**：L470 / related_chapters
+- **问题**：正文把“渲染机制版本演进”指到 §2.10，但 §2.10 实际是《GPU 渲染深入》，版本演进章节是 §2.9。
+- **建议**：把正文与 frontmatter 的相关章节统一改成 §2.9，并核对引用标题
+
+## [Task9 Deep Review] 7.11 WebView 渲染性能与优化 — 2026-04-20
+- **类型**：交叉引用
+- **位置**：L472 / related_chapters
+- **问题**：正文把“功耗管理”指到 §8.1，但 §8.1 实际是《响应速度原理》，不是功耗章节。
+- **建议**：改到真正的功耗章节（如 §11.1 Android 功耗模型或更贴切的功耗分析章节），并同步 frontmatter
+
+## [Task9 Deep Review] 7.12 View 体系性能优化：布局层级、inflate 与 measure/layout 开销 — 2026-04-20
+- **类型**：交叉引用
+- **位置**：L154
+- **问题**：文中链接到 `../ch08-responsiveness/03-startup-optimization.md`，仓库内不存在该文件；实际章节文件为 `03-launch-optimization.md`。
+- **建议**：修正为真实文件路径，并确认标题仍对应 §8.3《启动优化策略》

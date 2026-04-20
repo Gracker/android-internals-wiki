@@ -274,6 +274,52 @@
       "completed_at": "2026-04-20T14:30:19+08:00",
       "completed_by": "task2b-content-processing-rework",
       "resolution": "已修正 RenderEffect.createBlurEffect() 的可用版本为 Android 12/API 31，并补齐 RecyclerView 1.4.0 的 adaptive refresh rate / setFrameContentVelocity() 边界说明。"
+    },
+    {
+      "section": "7.11",
+      "section_title": "WebView 渲染性能与优化",
+      "priority": 85,
+      "reason": "[Deep Tech Review] WebView 泄漏小节把 applicationContext 写成展示态 WebView 的通用解法，缺少“仅预热/不挂窗体可用”的边界。",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "原理断裂",
+          "location": "L305-L310（内存泄漏原因一）",
+          "detail": "章节把 `new WebView(activity.getApplicationContext())` 标成“✅ 安全”，容易让读者把 applicationContext 当成展示态 WebView 的通用解法。对真正挂到窗口里的 WebView，这会遗漏 theme、window token、文件选择器/对话框、autofill 等依赖 Activity/窗口上下文的边界。正确的泄漏治理重点仍是宿主生命周期管理、从父容器移除并调用 destroy()；applicationContext 更适合预热或不展示的场景。",
+          "suggestion": "把这段改成“展示态 WebView 使用 Activity 或带主题的 UI Context；若只是 provider 预热、且不加入窗口，可单独用 applicationContext”。同时保留 removeView + destroy() 作为主线做法。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-04-20T14:50:48+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "7.12",
+      "section_title": "View 体系性能优化：布局层级、inflate 与 measure/layout 开销",
+      "priority": 95,
+      "reason": "[Deep Tech Review] `<include>` 被误写成 aapt2 编译期展开且无运行时开销，同时把 GONE/VISIBLE 当成规避 requestLayout 的手段，属于布局机制级错误。",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "location": "L362-L364（`<include>` 小节）",
+          "detail": "正文写成“`<include>` 标签在编译时会被 `aapt2` 展开为实际布局内容，不是运行时的动态加载，所以 `<include>` 本身不产生运行时开销”。这与 `LayoutInflater` 的真实实现不符。AOSP 里 `<include>` 由运行时 inflate 流程处理，进入 `parseInclude()` 后继续解析并创建被包含布局。",
+          "suggestion": "改成“`<include>` 仍在运行时由 `LayoutInflater` 处理，它的价值是复用布局定义，不是消除 inflate 成本”；若想压平层级，应结合 `<merge>` 讨论，而不是把 `<include>` 写成编译期展开。"
+        },
+        {
+          "type": "原理断裂",
+          "location": "L263（requestLayout 优化建议）",
+          "detail": "正文建议通过 `setVisibility(GONE/VISIBLE)` 配合固定高度来避免频繁 `requestLayout()`，这会把读者带偏。GONE/VISIBLE 会改变子 View 是否参与布局，本身就会触发父链路重新布局，不能作为规避 requestLayout 的通用手段。",
+          "suggestion": "把这里改成“若只需保留占位并避免重新参与布局，优先讨论 VISIBLE/INVISIBLE、alpha/translation 或固定尺寸容器；GONE/VISIBLE 仍然属于会触发布局的方案”。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-04-20T14:50:48+08:00",
+      "status": "pending"
     }
   ]
 }
