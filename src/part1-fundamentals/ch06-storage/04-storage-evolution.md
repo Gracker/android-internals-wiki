@@ -31,11 +31,11 @@ tags: [storage, FUSE, SDCardFS, Scoped-Storage, EROFS, UFS, f2fs, MediaStore]
 related_chapters: ["6.1", "6.2", "6.3", "1.6"]
 drafted_date: "2026-04-01"
 drafted_by: "openclaw-task2a"
-reviewed_date: "2026-04-14"
-reviewed_by: "openclaw-task6"
-task6_result: "pass-light-edit"
+reviewed_date: 2026-04-21
+reviewed_by: openclaw-task6
+task6_result: pass-light-edit
 pipeline_stage: task6_pending
-task6_state: revisiting
+task6_state: reviewed
 task9_state: pending
 task9_result: needs-rework
 task2b_result: fixed
@@ -73,7 +73,7 @@ task2b_state: fixed
 
 做过 Android 性能优化的工程师，多半遇到过这种困惑：同一款 App 在不同 Android 版本上的文件操作性能差异巨大，却找不到明确原因。比如 Android 10 上拍照保存速度正常，升级到 Android 11 后同样的操作变慢了；又或者新买的 UFS 4.0 手机跑分很漂亮，日常使用的流畅度提升却远不如跑分那么惊艳。
 
-这些现象背后的根本原因，是 Android 存储子系统在过去十多年里经历了翻天覆地的变化。从文件系统的切换（FUSE → SDCardFS → 回归 FUSE），到隐私模型的重构（Scoped Storage），到只读分区格式的升级（ext4 → EROFS），再到底层硬件协议的跃进（eMMC → UFS 2.1 → 3.1 → 4.0），每一个变化都在性能、安全、隐私之间做了不同的取舍。
+这些现象背后的根本原因，是 Android 存储子系统在过去十多年里经历了显著的变化。从文件系统的切换（FUSE → SDCardFS → 回归 FUSE），到隐私模型的重构（Scoped Storage），到只读分区格式的升级（ext4 → EROFS），再到底层硬件协议的跃进（eMMC → UFS 2.1 → 3.1 → 4.0），每一个变化都在性能、安全、隐私之间做了不同的取舍。
 
 理解这些演进，是为了在面对存储相关的性能问题时，能快速判断这个行为是哪个版本引入的变化，以及在目标版本上应该用什么方式优化。我们在这一节里，按照时间线把 Android 存储子系统的变化梳理一遍。
 
@@ -107,13 +107,13 @@ FUSE 当年会成为 emulated storage 的基础方案，是因为 Android 需要
 
 [已验证: 官方文档, source.android.com/docs/core/storage]
 
-SDCardFS 看起来是一个完美的方案——用内核态实现取代用户态模拟，性能好、延迟低。但它在 Android 上的生命周期只有短短三年。
+SDCardFS 在性能层面看起来是一个理想方案——用内核态实现取代用户态模拟，性能好、延迟低。但它在 Android 上的生命周期只有短短三年。
 
 ### 回归 FUSE：隐私与安全驱动的设计反转
 
-Android 11 做了一个出人意料的决定：弃用 SDCardFS，重新回归 FUSE。这不是技术倒退，而是为了支持 Scoped Storage 这一重大隐私变革。
+Android 11 弃用了 SDCardFS，重新回归 FUSE。这不是技术倒退，而是为了支持 Scoped Storage 这一重大隐私变革。
 
-SDCardFS 虽然性能好，但它有两个致命的局限性：它工作在内核态，很难与用户空间的权限检查逻辑深度集成；它的设计目标是模拟 FAT32 语义，而不是实现精细的文件访问控制。
+SDCardFS 虽然性能好，但它有两个根本限制：它工作在内核态，很难与用户空间的权限检查逻辑深度集成；它的设计目标是模拟 FAT32 语义，而不是实现精细的文件访问控制。
 
 回归后的 FUSE 不是 Android 7 及更早版本那套原始实现。Google 在 Android 11 里重做了用户态 FUSE 路径，主要有几层变化：
 

@@ -28,12 +28,12 @@ related_chapters: ['6.2', '6.3', '4.1', '7.1']
 created: 2026-04-01
 drafted_date: 2026-04-01
 drafted_by: openclaw-task2a
-reviewed_date: 2026-04-14
+reviewed_date: 2026-04-21
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
 reviewers: []
 pipeline_stage: task6_pending
-task6_state: revisiting
+task6_state: reviewed
 task9_state: pending
 task9_result: needs-rework
 task2b_result: fixed

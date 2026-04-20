@@ -4197,3 +4197,20 @@
 - **位置**：L72 / L369
 - **问题**：章节把新版 ANR 文件路径写成 `/data/anr/<process_name>_anr_<timestamp>`，并默认读者可直接从 `/data/anr/` 拉取；官方文档只承诺新系统为 `/data/anr/anr_*`，访问方式需要 `adb root` / `adb bugreport`，应用侧则应走 ApplicationExitInfo。
 - **建议**：改成“旧版 traces.txt vs 新版 anr_*”的访问矩阵，并区分 adb root、bugreport、ApplicationExitInfo 三种取证路径。
+
+
+## [Task6 Review] 6.4 存储相关的版本演进 — 2026-04-21
+
+- **类型**：需确认
+- **位置**：6.4 eMMC 5.1 性能表格 vs 6.1 UFS/eMMC 对比表
+- **问题**：6.1 表格显示 eMMC 5.1 顺序读 ~330 MB/s、顺序写 ~200 MB/s、随机读 ~12K IOPS；6.4 表格显示 eMMC 5.1 顺序读 ~250 MB/s、顺序写 ~125 MB/s、随机读 ~5000 IOPS。两处数据差异显著，需确认标准来源。
+- **建议**：统一数据来源，或标注不同测试条件下的差异。建议 Task 9 裁决后统一修正。
+- **review 日志**：logs/review/2026-04-21-06-review.md
+
+## [Task6 Review] 6.4 存储相关的版本演进 — 2026-04-21
+
+- **类型**：需重写
+- **位置**：6.4 [自动发现] 文件系统迁移：从 ext4 到 f2fs 全段
+- **问题**：该段落与 6.1 的 f2fs 章节内容重叠（CoW、冷热数据分离、SQLite 原子写），6.4 定位为版本演进时间线，不应重复展开机制细节。
+- **建议**：聚焦版本时间线（f2fs 引入时间、各厂商采用节点、Pixel 默认启用时间），机制解释改为交叉引用 6.1 对应段落。
+- **review 日志**：logs/review/2026-04-21-06-review.md

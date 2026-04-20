@@ -1191,6 +1191,33 @@
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-21T05:29:00+08:00",
       "status": "pending"
+    },
+    {
+      "section": "6.4",
+      "section_title": "存储相关的版本演进",
+      "priority": 90,
+      "reason": "[review回炉] 6.4 与 6.1 eMMC 5.1 性能数据不一致；6.4 [自动发现]f2fs 段落与 6.1 f2fs 章节内容重叠",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "需确认",
+          "location": "6.4 eMMC 5.1 性能表格 vs 6.1 UFS/eMMC 对比表",
+          "detail": "6.1: eMMC 5.1 seq read ~330 MB/s, seq write ~200 MB/s, random read ~12K IOPS; 6.4: eMMC 5.1 seq read ~250 MB/s, seq write ~125 MB/s, random read ~5000 IOPS. 两处数据不匹配，需确认哪个来源更准确",
+          "suggestion": "统一使用同一数据来源，或标注不同测试条件下的差异。建议由 Task 9 裁决后统一修正"
+        },
+        {
+          "type": "需重写",
+          "location": "6.4 [自动发现] 文件系统迁移：从 ext4 到 f2fs 全段",
+          "detail": "6.4 的 f2fs 自动发现段落与 6.1 的 f2fs 章节存在显著内容重叠（CoW、冷热分离、SQLite 优化），导致读者在两处看到类似信息。6.4 定位是版本演进，不应重复 6.1 已展开的机制细节",
+          "suggestion": "6.4 的 f2fs 段落应聚焦版本时间线（何时引入、哪些厂商先采用、Pixel 从哪代默认使用），将机制解释替换为对 6.1 章节的交叉引用"
+        }
+      ],
+      "added_by": "task6-review",
+      "added_at": "2026-04-21T06:14:00",
+      "status": "pending",
+      "original_review_log": "logs/review/2026-04-21-06-review.md"
     }
   ]
 }
