@@ -241,7 +241,10 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-20T13:38:00+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-04-20T14:30:19+08:00",
+      "completed_by": "task2b-content-processing-rework",
+      "resolution": "已把 JankType 源码锚点统一修正为 frameworks/native/libs/gui/include/gui/JankInfo.h，并同步 frontmatter 与参考资料。"
     },
     {
       "section": "7.5",
@@ -267,7 +270,10 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-20T13:38:00+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-04-20T14:30:19+08:00",
+      "completed_by": "task2b-content-processing-rework",
+      "resolution": "已修正 RenderEffect.createBlurEffect() 的可用版本为 Android 12/API 31，并补齐 RecyclerView 1.4.0 的 adaptive refresh rate / setFrameContentVelocity() 边界说明。"
     }
   ]
 }

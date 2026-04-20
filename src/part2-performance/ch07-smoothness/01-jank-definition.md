@@ -8,7 +8,7 @@ drafted_by: "openclaw-task2"
 reviewed_date: '2026-04-20'
 reviewed_by: openclaw-task6
 applicable_versions: "Android 4.1 (API 16) - Android 16 (API 36)"
-last_verified: "2026-04-13"
+last_verified: "2026-04-20"
 last_verified_against: "AOSP android-16.0.0_r1 + Perfetto docs / Android Developers docs"
 polish_count: 2
 review_type: "post-polish-quality-gate"
@@ -19,7 +19,7 @@ sources:
   - type: aosp
     path: "frameworks/native/services/surfaceflinger/FrameTimeline/FrameTimeline.cpp"
   - type: aosp
-    path: "frameworks/native/services/surfaceflinger/FrameTimeline/JankInfo.h"
+    path: "frameworks/native/libs/gui/include/gui/JankInfo.h"
   - type: official
     path: "https://perfetto.dev/docs/data-sources/frametimeline"
   - type: official
@@ -38,12 +38,13 @@ sources:
     path: "Personal-Knowlodge/source/Android-Perfetto-05-Chorergrapher.md"
 tags: [jank, smoothness, FrameTimeline, Choreographer, 掉帧, 渲染性能]
 related_chapters: ["2.1", "2.3", "2.4", "2.5", "7.2", "7.3"]
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
-task9_state: reviewed
+task9_state: pending
 task9_result: needs-rework
-task2b_state: pending
+task2b_state: fixed
+task2b_result: fixed
 review_round: 3
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-04-20"
@@ -325,7 +326,7 @@ JankStats 里有一个 `jankHeuristicMultiplier`。官方 reference 写得很直
 
 - AOSP 源码路径：
   - `frameworks/native/services/surfaceflinger/FrameTimeline/FrameTimeline.cpp` — FrameTimeline 归因逻辑
-  - `frameworks/native/services/surfaceflinger/FrameTimeline/JankInfo.h` — JankType 定义
+  - `frameworks/native/libs/gui/include/gui/JankInfo.h` — JankType 定义
   - `frameworks/base/core/java/android/view/Choreographer.java` — App 侧 frame 调度入口
   - `frameworks/base/core/java/android/view/FrameMetrics.java` — UI frame 指标接口
 - 官方文档：
