@@ -467,6 +467,70 @@
       "completed_at": "2026-04-20T17:33:06+08:00",
       "completed_by": "task2b-content-processing-rework",
       "resolution": "已把 JIT 路径改回 art/runtime/jit/，删除 MaybeCompileMethod/IsMethodPortable 等不存在锚点，并把 speed-profile、Cloud Compilation、static final 的表述降到源码和公开资料可支撑的边界。"
+    },
+    {
+      "section": "8.2",
+      "section_title": "App 启动全流程",
+      "priority": 95,
+      "reason": "[Deep Tech Review] Perfetto 启动抓取配置缺少 atrace_apps，且 FullyDrawnReporter / Cloud Profile / launch trace 的版本与口径存在错误。",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "location": "L312-L349",
+          "detail": "Perfetto 示例只配置了 atrace_categories，没有配置 atrace_apps，但正文却要求读者在 App 进程里观察 performTraversals / DrawFrame / queueBuffer。Perfetto 官方文档明确要求对应用侧 atrace 事件单独声明 atrace_apps；否则这些 App 侧切片不会稳定出现。",
+          "suggestion": "在配置中补充 atrace_apps: \"<package>\" 或 \"*\"，并区分 system_server 的 am slice 与应用进程的 view/gfx/dalvik slice 采集条件。"
+        },
+        {
+          "type": "版本差异",
+          "location": "L234-L260",
+          "detail": "正文写成“AndroidX Activity 1.8.0 引入 FullyDrawnReporter”，但 AndroidX Activity release notes 中 1.7.0 已经引入 FullyDrawnReporter 及 ReportDrawn / ReportDrawnWhen / ReportDrawnAfter 系列能力。",
+          "suggestion": "把 FullyDrawnReporter 的引入版本修正为 1.7.0，并把后续版本的 bugfix / API 演进与“首次引入”分开写。"
+        },
+        {
+          "type": "版本差异",
+          "location": "L353-L361 / L445-L449",
+          "detail": "一处把 Perfetto launching slice 的起点写成 notifyActivityLaunched()，但 AOSP ActivityMetricsLogger 的 LaunchingState 在 notifyActivityLaunching() 记录 mStartRealtimeNs，launching trace 也复用了该起点；另一处又把 Cloud Profile 说成 Android 15 新引入。两处都会把启动指标口径和 ART profile 演进边界讲歪。",
+          "suggestion": "重新核对 ActivityMetricsLogger 的 launching trace 起止点；Cloud Profile 改写为 Google Play 在 Android 9+ 设备上分发的既有机制，而不是 Android 15 新能力。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-04-20T18:09:27+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "9.2",
+      "section_title": "ANR 类型与触发条件",
+      "priority": 95,
+      "reason": "[Deep Tech Review] BroadcastQueue 源码锚点路径错误，Service / FGS 超时常量沿用了过时实现，适用版本边界失真。",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "location": "frontmatter sources / L142-L145 / L315-L319",
+          "detail": "章节把广播超时实现锚到 frameworks/base/services/core/java/com/android/server/BroadcastQueue.java，缺少 /am/ 路径前缀；Android 14 的具体超时处理也不只在抽象 BroadcastQueue，而是在 BroadcastQueueImpl / BroadcastQueueModernImpl 中展开。当前路径无法让读者在 AOSP 中直接定位。",
+          "suggestion": "把源码路径改成 frameworks/base/services/core/java/com/android/server/am/BroadcastQueue.java，并在正文里补充 Android 14 的 BroadcastQueueImpl / BroadcastQueueModernImpl 实现分工。"
+        },
+        {
+          "type": "源码错误",
+          "location": "L172-L179",
+          "detail": "正文给出 ActiveServices.java 中的 SERVICE_FOREGROUND_TIMEOUT=20s / SERVICE_BACKGROUND_TIMEOUT=200s 代码片段，但 Android 14 真实实现把默认值定义在 ActivityManagerConstants.DEFAULT_SERVICE_TIMEOUT / DEFAULT_SERVICE_BACKGROUND_TIMEOUT，ActiveServices 运行时读取的是 mAm.mConstants.SERVICE_TIMEOUT / SERVICE_BACKGROUND_TIMEOUT。当前代码锚点与实际源码不符。",
+          "suggestion": "把超时常量锚点迁到 ActivityManagerConstants，并说明 ActiveServices 通过 mAm.mConstants 读取运行时值，默认值还会乘 Build.HW_TIMEOUT_MULTIPLIER。"
+        },
+        {
+          "type": "版本差异",
+          "location": "L194-L200 / L258-L265",
+          "detail": "章节把 startForegroundService() 到 startForeground() 的宽限期写成 Android 8+ 一直固定 5 秒，但 AOSP 实际经历了 8.0 的 5s、9-12 的 10s，以及 13-14+ 默认 30s（mServiceStartForegroundTimeoutMs）的演进。把 8-17 全范围压成“5 秒”会误导排障。",
+          "suggestion": "按版本拆开 FGS 启动超时演进，并把 ForegroundServiceDidNotStartInTimeException、普通 Service 执行超时、shortService 约 3 分钟超时三类机制分开写。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-04-20T18:09:27+08:00",
+      "status": "pending"
     }
   ]
 }
