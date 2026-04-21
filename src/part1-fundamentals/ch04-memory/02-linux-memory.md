@@ -1,4 +1,7 @@
 ---
+task9_reviewed_date: "2026-04-21"
+task9_reviewed_by: openclaw-task9
+last_task9_at: "2026-04-21T17:18:00+08:00"
 title: "Linux 内核内存管理"
 chapter: "4.2"
 section: "4.2"
@@ -33,12 +36,11 @@ sources:
     path: "Cubox/LPC2025-Android MC主题-2026-01-10.md"
 tags: ['kernel', 'memory', 'buddy', 'slab', 'kswapd', 'page-reclaim', 'compaction', 'ION', 'DMA-BUF', 'LRU', 'MGLRU', '16K-page']
 related_chapters: ["4.1", "4.3", "4.4", "2.6"]
-pipeline_stage: task9_pending
+pipeline_stage: task2b_pending
 task6_state: reviewed
-task9_state: pending
+task9_state: reviewed
 task9_result: needs-rework
-task2b_state: fixed
-task2b_result: fixed
+task2b_state: pending
 ---
 
 # Linux 内核内存管理

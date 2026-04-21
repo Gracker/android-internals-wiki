@@ -2188,6 +2188,46 @@
       "review_issues": [
         "- **建议补充方向**：删除 `always_finish_activities` 的建议。补充 Macrobenchmark 通过控制 `CompilationMode` 和锁定 CPU 频率（如果在 Root 设备上）来减少变量的现代实践。"
       ]
+    },
+    {
+      "section": "4.2",
+      "section_title": "Linux 内核内存管理",
+      "priority": 95,
+      "reason": "[Deep Tech Review] ARM64 页表版本线写错，Linux 4.11 被误写成 arm64 五级页表引入点，会把源码核对和版本判断带偏。",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误/版本差异",
+          "location": "L89",
+          "detail": "正文把“ARM64 五级页表支持”写成 Linux 4.11，引入线混淆了通用 64 位页表层级与 arm64 52-bit VA/LVA 的后续支持条件。按 arm64 主线内核口径，这里不能直接落成“4.11 引入五级页表”。",
+          "suggestion": "改成“arm64 在 Android 常见配置下以四级页表为主；52-bit VA/LVA 相关支持需按后续内核版本、页大小和硬件条件单独说明”，并给出 arm64 memory 文档或对应内核版本锚点。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-04-21T17:18:00+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "5.1",
+      "section_title": "Linux 进程调度基础",
+      "priority": 95,
+      "reason": "[Deep Tech Review] nice 与 CPU 份额的换算写成“每级约 10%”，与内核权重表的 1.25 比例不符。",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "location": "L215",
+          "detail": "正文把“每增加 1 个 nice 值，CPU 份额大约减少 10%”写成内核设计结论，但 CFS 实际使用 `prio_to_weight[]` 的 1.25 相邻权重比。以 nice 0 vs nice 1 为例，权重是 1024 vs 820，对应双线程竞争下约 55.5% vs 44.5%，不是线性的 10% 递减。",
+          "suggestion": "把这里改成“nice 每变化 1 级对应约 1.25 的权重比，实际 CPU 份额取决于同 runqueue 上的竞争者集合”，并用 1024/820 的例子重写说明。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-04-21T17:18:00+08:00",
+      "status": "pending"
     }
   ]
 }
