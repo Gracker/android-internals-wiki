@@ -238,3 +238,15 @@
 - **位置**：`Android 提供了四种 wakelock 类型，但后三种已经废弃`
 - **问题**：这里把 wake lock level 简化成四种，漏掉 `PROXIMITY_SCREEN_OFF_WAKE_LOCK` 这一类特殊屏幕相关 level，读者会以为 PowerManager 里只剩四种枚举。
 - **建议**：补一句“本文聚焦功耗分析常见的 partial / screen 类 wakelock，`PROXIMITY_SCREEN_OFF_WAKE_LOCK` 等特殊 level 不展开”，避免把范围写成全集。
+
+## [Task9 Deep Review] 15.9 从采集到治理的闭环 — 2026-04-22
+- **类型**：版本差异
+- **位置**：第三步“采集”中的信号源列表 / `稳定性：ApplicationExitInfo`
+- **问题**：章节适用版本覆盖 Android 8-16，但把 `ApplicationExitInfo` 与通用信号源并列，没有标出它是 Android 11（API 30）起才可直接使用的能力。低版本读者容易误判线上稳定性采集入口。
+- **建议**：在该 bullet 补 `Android 11+/API 30+` 版本标识，并给 Android 8-10 的替代入口提示，例如 Play vitals、自建退出原因日志或 tombstone / signal 侧证据。
+
+## [Task9 Deep Review] 6.1 Android 存储架构 — 2026-04-22
+- **类型**：数据缺失
+- **位置**：`性能差距有多大？` 表格（eMMC 5.1 / UFS 3.1 / UFS 4.0）
+- **问题**：顺序吞吐和随机 IOPS 对比没有标出 queue depth、块大小、测试端或厂商口径，容易把 JEDEC / 器件公开值、样片测试和整机实测混成同一层结论。
+- **建议**：在表下注明“为协议/器件公开口径，非统一整机 benchmark”，并补测试条件或来源链接，避免读者把表中的数值直接当成 Perfetto 分析基线。

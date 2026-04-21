@@ -2,11 +2,11 @@
 title: "性能治理工程化"
 chapter: "15.10"
 section: "15.10"
-status: ready-for-review
+status: finalized
 drafted_date: "2026-04-21"
 drafted_by: "codex"
 applicable_versions: "Android 8 (API 26) - Android 16 (API 36)"
-last_verified: "2026-04-21"
+last_verified: "2026-04-22"
 last_verified_against: "Android Developers docs"
 confidence: medium
 sources:
@@ -20,14 +20,18 @@ sources:
     path: "https://developer.android.com/topic/libraries/app-startup"
 tags: [governance, benchmark, ci, budget, release]
 related_chapters: ["7.1", "8.1", "8.3", "9.1", "14.12", "15.3", "15.5", "15.6", "15.9"]
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: ready-to-publish
+task6_state: reviewed
 task6_result: pass-light-edit
 reviewed_date: "2026-04-21"
 reviewed_by: openclaw-task6
-task9_state: pending
-repaired_date: "2026-04-21"
+task9_state: reviewed
+repaired_date: "2026-04-22"
 repaired_by: "codex"
+task9_result: pass-tech-review
+task9_reviewed_date: "2026-04-22"
+task9_reviewed_by: "openclaw-task9"
+last_task9_at: "2026-04-22T07:35:00+08:00"
 ---
 
 # 性能治理工程化
