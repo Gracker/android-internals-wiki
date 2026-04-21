@@ -409,5 +409,89 @@
     "added_by": "external-ai-review",
     "added_at": "2026-04-21T19:25:48.814496+08:00",
     "status": "pending"
+  },
+  {
+    "section": "13.2",
+    "section_title": "Trace 抓取",
+    "priority": 95,
+    "reason": "[Deep Tech Review] linux.perf / PerfEventConfig 段落把 proto 路径与字段结构写错，文中 schema 与真实 perf_event_config.proto 不一致。",
+    "material_paths": [
+      "logs/deep-review/2026-04-21-19-deep-review.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "“PerfEventConfig 关键字段详解”代码块（Heap Profiling 与 Callstack Sampling 小节）",
+        "detail": "文中声称来源是 `external/perfetto/config/perf_event_config.proto`，并给出 `EventConfig timebase = 1`、`bool callstack_sampling = 2`、`Scope scope = 3` 等字段。上游当前 proto 路径是 `protos/perfetto/config/profiling/perf_event_config.proto`；`PerfEventConfig` 实际使用 `optional PerfEvents.Timebase timebase = 15`、`optional CallstackSampling callstack_sampling = 16`、`repeated FollowerEvent followers = 19`，`Scope` 也嵌套在 `CallstackSampling` 内。",
+        "suggestion": "删掉伪造/过时的 proto 代码块，改成基于真实 proto 的字段说明，并把源码锚点改为 `protos/perfetto/config/profiling/perf_event_config.proto`。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-21T19:59:00+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "13.4",
+    "section_title": "命令行打开超大 Trace",
+    "priority": 95,
+    "reason": "[Deep Tech Review] trace_processor 批量脚本把 trace 文件错误地从 stdin 喂给 `-q`，且 FAQ 把 Python API 描述成支持按 track 部分加载。",
+    "material_paths": [
+      "logs/deep-review/2026-04-21-19-deep-review.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "“一个完整的批量分析脚本示例”shell 脚本",
+        "detail": "脚本使用 `\"$TRACE_PROCESSOR\" -q analyze_trace.sql < \"$trace\"`。`trace_processor --help`/usage 明确 `-q/--query-file` 只指定 SQL 文件，trace 仍需作为位置参数 `trace_file.pb` 传入；当前写法会把 trace 当 stdin，而不是 CLI 要求的 trace positional argument。",
+        "suggestion": "改成 `\"$TRACE_PROCESSOR\" -q analyze_trace.sql \"$trace\"`，或统一用 `trace_processor_shell \"$trace\" -q analyze_trace.sql` 这一类真实可执行形式。"
+      },
+      {
+        "type": "原理断裂/能力描述失真",
+        "location": "常见问题与误区，“trace_processor 也吃不下怎么办？”",
+        "detail": "文中建议“用 Python API 分段加载，只加载需要的 track”。上游 `python/perfetto/trace_processor/api.py` 的 `TraceProcessor` / `TraceProcessorConfig` 公开参数只有 trace、addr、config、file_path、metadata 以及 `ingest_ftrace_in_raw` 等选项，没有按 track 局部加载的能力入口。",
+        "suggestion": "删掉“只加载需要的 track”这句，改成真实可用的办法，例如缩短采集窗口、预裁剪 trace、降低采集面，或切到 Bigtrace/批处理方案。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-21T19:59:00+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "13.8",
+    "section_title": "Perfetto 输入延迟 SQL 深度分析",
+    "priority": 95,
+    "reason": "[Deep Tech Review] android.input 章节仍有多处不可执行的 schema/SQL 错误，包括不存在的 ack_ts、frame、android_callback，以及错误的 motion/key/dispatch 表结构。",
+    "material_paths": [
+      "logs/deep-review/2026-04-21-19-deep-review.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "android_input_events 字段说明，以及“最慢输入事件 Top 100 / 延迟分布 / ANR / 模板 1/3”等查询",
+        "detail": "当前章节反复使用 `ack_ts` 计算 handling/total latency。上游 `src/trace_processor/perfetto_sql/stdlib/android/input.sql` 里 `android_input_events` 暴露的是 `dispatch_latency_dur`、`handling_latency_dur`、`ack_latency_dur`、`total_latency_dur`、`end_to_end_latency_dur`、`read_time`、`dispatch_ts`、`receive_ts`、`frame_id`、`is_speculative_frame`，并没有 `ack_ts` 列。按文中 SQL 直接执行会报列不存在。",
+        "suggestion": "把所有 latency 查询改写为基于 `dispatch_latency_dur` / `handling_latency_dur` / `ack_latency_dur` / `total_latency_dur` 的版本，不要再引用不存在的 `ack_ts`。"
+      },
+      {
+        "type": "源码错误",
+        "location": "android_motion_events / android_key_events / android_input_event_dispatch 表结构说明",
+        "detail": "文中把 `android_motion_events` / `android_key_events` 写成带 `input_event_id`、`motion_event_id`、`key_event_id`、`action_code` 的表，还把 `android_input_event_dispatch` 写成带 `dispatch_track_id`，并宣称其 `event_id` 对应 `android_input_events.input_event_id`。上游 stdlib 实际暴露的是：`android_motion_events(id, event_id, ts, arg_set_id, source, action, device_id, display_id)`、`android_key_events(..., key_code)`、`android_input_event_dispatch(id, event_id, arg_set_id, vsync_id, window_id)`；其中 `event_id` 是 LONG，而 `android_input_events.input_event_id` 是 STRING，当前描述会误导读者按错误字段做 JOIN。",
+        "suggestion": "重写这三个表的 schema 说明，并把事件关联关系改成基于真实的 `event_id`/`input_event_id` 边界说明，不要再把两者当成同一列。"
+      },
+      {
+        "type": "源码错误",
+        "location": "“输入事件到帧渲染的精确关联”与“Choreographer 回调耗时分析”两组查询",
+        "detail": "查询使用 `LEFT JOIN frame ON frame.id = input.frame_id`，以及 `FROM android_callback` / `CALLBACK_INPUT` / `CALLBACK_TRAVERSAL`。在已核对的上游 stdlib 中，没有公开的 `frame` 表/视图，也没有 `android_callback` 视图；`android.input` 模块内部是通过 `_frame_choreographer_lookup`、`_android_input_lifecycle_by_slice_id` 等内部对象完成关联。当前 SQL 直接执行会报表不存在。",
+        "suggestion": "删掉对 `frame` 和 `android_callback` 的直接依赖。若要保留这一节，应改为基于 `android_input_events.frame_id` / `is_speculative_frame` 的解释，并明确哪些关联需要自定义 view 或直接沿用 stdlib 内部逻辑。"
+      },
+      {
+        "type": "版本差异/配置边界 [待验证]",
+        "location": "“自定义 input trace config”里 `android.input.inputevent` 的最小化配置示例",
+        "detail": "示例把空的 `android_input_event_config {}` 解释成“默认配置已包含 InputReader 到 App 的完整链路”。但上游 `protos/perfetto/config/android/android_input_event_config.proto` 明确存在 `trace_dispatcher_input_events`、`trace_dispatcher_window_dispatch`、`mode`、`rules` 等关键控制项，且只注明 debuggable build 可用。当前章节没有交代这些开关的作用与隐私/trace level 边界，默认行为缺乏源码或文档支撑。",
+        "suggestion": "把配置示例改成基于真实字段的最小可解释配置，并补“debuggable build 限制 + trace level/rules 边界”；如果无法确认空配置默认行为，明确标 `[待验证]`。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-21T19:59:00+08:00",
+    "status": "pending"
   }
 ]
