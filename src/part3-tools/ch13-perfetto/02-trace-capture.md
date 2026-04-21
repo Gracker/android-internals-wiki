@@ -6,8 +6,8 @@ status: ready-for-review
 drafted_date: "2026-04-03"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
-last_verified: "2026-04-03"
-last_verified_against: "perfetto.dev docs, AOSP android-16.0.0_r1"
+last_verified: "2026-04-21"
+last_verified_against: "perfetto.dev docs, google/perfetto main perf_event_config.proto"
 confidence: high
 reviewed_date: "2026-04-21"
 reviewed_by: "openclaw-task6"
@@ -32,11 +32,11 @@ tags: ['perfetto', 'trace', 'atrace', 'trace-capture', 'heapprofd']
 related_chapters: ["13.1", "13.3", "13.4", "14.1", "15.1"]
 
 re-review-result: "审查 2 条素材，无需修改（素材内容为 Trace Processor SQL 分析，与 Trace 抓取阶段不匹配，更适合 §13.3/§13.5）"
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
 task9_result: needs-rework
-task2b_state: pending
+task2b_state: fixed
 task2b_result: fixed
 ---
 
@@ -653,25 +653,35 @@ data_sources {
 
 **PerfEventConfig 关键字段详解**：
 
+源码锚点在 `protos/perfetto/config/profiling/perf_event_config.proto`。当前主干里的 `PerfEventConfig` 已经把调用栈相关约束收进 `CallstackSampling` 子消息，字段编号也和早期文章里常见的旧 schema 不同：
+
 ```protobuf
-// PerfEventConfig 各字段的实际作用（来源：external/perfetto/config/perf_event_config.proto）
+// 节选自 protos/perfetto/config/profiling/perf_event_config.proto
 message PerfEventConfig {
-  EventConfig timebase = 1;        // 主采样事件（PERF_TYPE_HARDWARE 等）
-  bool callstack_sampling = 2;      // 是否采集调用栈（对应 perf_event_attr.sample_type |= CALLCHAIN）
-  Scope scope = 3;                  // 限定目标进程范围（target_cmdline 等）
-  repeated EventConfig followers = 4; // 与 timebase 同步采样的额外计数器
-  uint32 ring_buffer_pages = 5;     // 每 CPU ring buffer 大小（必须是 2 的幂）
-  uint32 max_enqueued_footprint_kb = 6; // unwinder 队列最大内存（超出会丢样）
-  uint32 max_daemon_memory_kb = 7;  // traced_perf 进程自身最大内存
-  bool kernel_frames = 8;           // 是否包含内核栈帧
+  optional PerfEvents.Timebase timebase = 15;
+  optional CallstackSampling callstack_sampling = 16;
+  repeated FollowerEvent followers = 19;
+  optional uint32 ring_buffer_pages = 3;
+  optional uint32 ring_buffer_read_period_ms = 8;
+  optional uint64 max_enqueued_footprint_kb = 17;
+  optional uint32 max_daemon_memory_kb = 13;
+  repeated uint32 target_cpu = 20;
+}
+
+message CallstackSampling {
+  optional Scope scope = 1;
+  optional bool kernel_frames = 2;
+  optional UnwindMode user_frames = 3;
 }
 ```
 
-**`timebase` 的两种采样模式**：
-- `frequency`：每秒约 N 次采样（如 100Hz = 每 10ms 一次），适合 CPU profiling
-- `period`：每 N 个硬件事件触发一次采样，适合精确计数
+- `timebase`：定义主采样事件和采样频率，常见写法是 `frequency: 100`。
+- `callstack_sampling`：打开调用栈采样，并通过 `scope`、`kernel_frames`、`user_frames` 控制保留哪些进程、是否带内核栈、使用哪种 userspace unwinder。
+- `followers`：在同一个采样点附带记录其他硬件计数器，适合同时看 cycles、instructions、cache-misses。
+- `ring_buffer_pages` / `ring_buffer_read_period_ms`：控制 kernel 到 `traced_perf` 的 ring buffer 容量和读取节奏。
+- `max_enqueued_footprint_kb` / `max_daemon_memory_kb`：限制 unwinder 队列和 `traced_perf` 自身的内存占用，超限后会丢样或停止数据源。
 
-**`followers`**：可同时测量多个硬件事件。例如主事件测 CPU cycles，followers 测量 instructions、cache-misses 等，在同一次采样点同时快照，非常适合分析 CPI（Cycles Per Instruction）效率。
+旧资料里常见的顶层 `target_cmdline`、`target_pid`、`kernel_frames` 字段在当前 proto 中已经标成 deprecated。新配置优先写在 `callstack_sampling.scope` 里。
 
 **Perfetto SQL 中的 `perf_sample` 表**：linux.perf 采样数据存入 `perf_sample` 表，可通过 Perfetto Trace Processor 查询：
 
