@@ -28,7 +28,7 @@ sources:
   - type: official
     path: "https://developer.android.com/topic/performance/vitals/anr"
 tags: [anr, watchdog, traces, dropbox, activitymanagerservice, input-dispatcher, anrhelper, sigquit]
-related_chapters: ["9.2", "9.3", "1.5", "8.1"]
+related_chapters: ["9.2", "9.3", "1.5", "7.1", "8.1", "15.3", "15.5"]
 pipeline_stage: task2b_pending
 task6_state: revisiting
 task6_result: pass-light-edit
@@ -72,6 +72,8 @@ last_task9_at: 2026-04-16T17:25:51.813647
 当用户点击屏幕后等了几秒钟，屏幕没有任何反应——没有动画，没有反馈，就像手机死了一样。这种体验会让用户焦虑，进而愤怒，最后卸载你的 App。Android 的设计者很早就意识到，一个无响应的应用会严重损害用户对整个系统的信任，而不仅仅是对单个 App 的不满。
 
 ANR（Application Not Responding）机制就是 Android 对这个问题的系统性回答。它不是事后诊断工具，而是一道运行时的防线：在应用失去响应能力的瞬间介入，给用户选择权——继续等待，或者杀掉它。
+
+如果把全书的主线连起来看，ANR 并不是“完全不同的一类问题”，而是广义流畅性里最极端的一层：`7.1` 讲的是用户把“卡顿、响应慢、ANR”统称为卡；`8.1` 讲的是系统还能在多大程度上及时反馈；到了 ANR，这条反馈链已经断到系统必须介入。所以 ANR 设计思想本质上也是一篇“体验保护机制”章节，而不只是异常处理机制。
 
 理解 ANR 的设计思想之所以重要，不仅因为它是 Android 性能优化的核心课题之一，更因为它直接决定了我们分析 ANR 问题时的思路。如果不了解系统"为什么这样设计"，拿到一份 traces.txt 时很容易陷入"看堆栈猜原因"的盲人摸象——ANR trace 的堆栈经常是"替罪羊"，真正导致超时的代码可能早已执行完毕。
 

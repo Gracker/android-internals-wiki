@@ -519,5 +519,39 @@
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-21T19:59:00+08:00",
     "status": "pending"
+  },
+  {
+    "section": "14.5",
+    "section_title": "三方性能库",
+    "priority": 95,
+    "reason": "[Deep Tech Review] P0: Matrix Trace Canary 段落把 AGP 8.0+ 适配写成已迁到 AsmClassVisitorFactory，但当前上游仍暴露 android.registerTransform 移除问题；P1: xHook 支持边界写成 Android 4.0+，遗漏 README 仅声明 API 14-29。",
+    "material_paths": [
+      "logs/deep-review/2026-04-21-23-deep-review.md",
+      "logs/external-review/archive/2026-04-21-14-05-third-party-libs-external-review.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误/版本差异",
+        "location": "Trace Canary：卡顿与 ANR 的精准定位",
+        "detail": "正文写成 Matrix 在 AGP 8.0+ 已转到 Instrumentation API 的 `AsmClassVisitorFactory`，并标成已验证。但当前上游仓库仍可直接定位到 `matrix-gradle-plugin` 下的 Transform 路径，公开 issue #888 也明确报出 `API 'android.registerTransform' is removed`。在没有明确 release / commit 证明前，不能把迁移写成既成事实。",
+        "suggestion": "改成“早期依赖 Transform，AGP 8.x 的适配状态必须结合具体 Matrix 版本或 fork 核实；若无一手发布说明，不要断言已迁到 AsmClassVisitorFactory”。",
+        "evidence": [
+          "https://github.com/Tencent/matrix/issues/888",
+          "matrix/matrix-android/matrix-gradle-plugin/src/main/kotlin/com/tencent/matrix/plugin/transform/MatrixTraceLegacyTransform.kt"
+        ]
+      },
+      {
+        "type": "版本差异/工具边界",
+        "location": "扩展：Hook 机制对比 -> PLT Hook（以 xHook 为代表）",
+        "detail": "正文写成 xHook “支持 Android 4.0+”，且 ABI 只列 armeabi / armeabi-v7a / arm64-v8a。上游 README 明确写的是 Android 4.0 - 10（API 14 - 29），并额外支持 x86 / x86_64。对 Android 11+ 不能直接写成无上限支持。",
+        "suggestion": "把支持边界改成“上游 README 标注 API 14 - 29，更新系统需自行回归验证”；ABI 说明补上 x86 / x86_64。",
+        "evidence": [
+          "https://github.com/iqiyi/xHook"
+        ]
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-21T23:18:40+08:00",
+    "status": "pending"
   }
 ]

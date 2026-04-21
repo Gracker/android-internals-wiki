@@ -36,3 +36,4 @@ node_modules/
 # Environment
 .env
 .env.local
+.omx/

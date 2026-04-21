@@ -2,7 +2,7 @@
 title: "Hook 基础设施与性能工具实现原理"
 chapter: "14.13"
 section: "14.13"
-status: ready-for-review
+status: finalized
 drafted_date: "2026-04-21"
 drafted_by: "codex"
 applicable_versions: "Android 8 (API 26) - Android 16 (API 36)"
@@ -23,13 +23,19 @@ sources:
   - type: blog
     path: "https://github.com/KwaiAppTeam/KOOM"
 tags: [hook, bytehook, shadowhook, xhook, booster, tracing]
-related_chapters: ["14.5", "13.9", "15.5", "15.9"]
-pipeline_stage: task9_pending
+related_chapters: ["14.5", "14.12", "13.9", "15.5", "15.9"]
+pipeline_stage: ready-to-publish
 task6_state: reviewed
 reviewed_by: openclaw-task6
 reviewed_date: "2026-04-21"
 task6_result: pass-light-edit
-task9_state: pending
+task9_state: reviewed
+task9_result: pass-tech-review
+task9_reviewed_date: "2026-04-21"
+task9_reviewed_by: "openclaw-task9"
+last_task9_at: "2026-04-21T23:18:40+08:00"
+repaired_date: "2026-04-21"
+repaired_by: "codex"
 ---
 
 # Hook 基础设施与性能工具实现原理
@@ -53,14 +59,14 @@ task9_state: pending
 
 ## 为什么性能书里要讲 Hook
 
-很多团队第一次接入线上性能工具时，会把它们理解成“多加了一个 SDK”。这其实不够准确。无论是监控 IO、追踪 malloc、记录函数耗时，还是在运行时抓取特定系统行为，背后都离不开某种形式的 Hook、插桩或系统回调。
+很多团队第一次接入线上性能工具时，会把它理解成“多加了一个 SDK”。这个理解太浅。无论是监控 IO、追踪 malloc、记录函数耗时，还是在运行时抓某个系统行为，背后都离不开某种形式的 Hook、插桩或系统回调。
 
 如果只会“接库”，但不知道库是怎么拿到数据的，就会出现两个典型问题：
 
 - 不知道为什么某个能力在某些机型上不稳定。
 - 不知道为什么某个能力开销很高，或者为什么它只能覆盖一部分调用链。
 
-这一节不是教读者手写 Hook，而是建立一张实现机制地图。
+这一节不教手写 Hook，只做一件事：把实现机制和工程边界讲清楚。
 
 ## 四条常见路线
 
@@ -125,7 +131,7 @@ Inline Hook 直接改目标函数入口处的机器码，把执行流跳到代�
 | `ShadowHook` | 维护成本和兼容风险更高 |
 | `Booster` | 强依赖构建链和 AGP 版本 |
 
-这里最容易犯的错是把它们当成互相替代品。实际上它们常常是不同层次的能力：
+最常见的误判，是把这些能力当成互相替代。实际上它们经常不在同一层：
 
 - 想在 Java / Kotlin 方法入口出口打点，优先想插桩，不是 native hook。
 - 想拦 `malloc/free`、`open/read/write`，优先想 PLT Hook。
@@ -183,8 +189,59 @@ Hook 能力越强，通常维护成本越高。因为它不仅要和 Android API
 - 只需要启动时间：优先手动埋点 / Macrobenchmark / Android Vitals
 - 只需要本地排障：优先 Perfetto、LeakCanary、Profiler
 
-Hook 真正的价值，在于补上系统未直接暴露、但业务又确实需要的那部分信息。  
-如果官方接口已经能回答问题，先用官方接口通常更稳。
+Hook 真正的价值，在于补上系统没直接暴露、但业务又确实需要的那部分信息。  
+官方接口已经能回答问题时，先用官方接口通常更稳。
+
+## 把机制和风险一起看
+
+只讲“怎么 Hook”是不够的，真正决定是否可落地的是它附带的风险。
+
+### 1. 兼容性风险
+
+- Android API 版本变化
+- linker / namespace 行为差异
+- ABI 与指令集差异
+- ROM 对 so 装载和安全策略的定制
+
+### 2. 运维风险
+
+- 升级 AGP / NDK 后是否需要额外适配
+- 某些机型上是否存在特定 crash / deadlock 风险
+- debug / release 行为是否一致
+
+### 3. 数据正确性风险
+
+Hook 到了，不代表结论就一定对。例如：
+
+- PLT Hook 可能漏掉未经过动态符号表的调用
+- Inline Hook 可能因为指令修补或调用链差异导致栈信息不完整
+- 插桩可能只覆盖了你自己的代码，没覆盖第三方 SDK
+
+所以评估工具时，要同时问“它能拿到什么”和“它会漏掉什么”。
+
+## 一条更实用的决策顺序
+
+当团队为了某个监控能力考虑上 Hook 时，建议按这个顺序问：
+
+1. 官方接口能不能回答问题？
+2. 不能的话，编译期插桩能不能回答？
+3. 再不行，PLT Hook 是否足够？
+4. 只有前三者都不行时，再考虑 Inline Hook。
+
+这个顺序的价值，是把高风险能力尽量后置。
+
+## 典型能力和实现路线映射
+
+| 需求 | 更常见的路线 |
+|---|---|
+| 帧级 jank 感知 | 官方接口 |
+| 启动时间 / 首屏阶段 | 埋点 + 官方接口 |
+| 方法级耗时 | 字节码插桩 / trace 插桩 |
+| IO 监控 | PLT Hook |
+| malloc / free 统计 | PLT Hook |
+| 某些内部 native 函数拦截 | Inline Hook |
+
+这张表不是绝对规则，但足够帮助大多数团队建立“先尝试什么”的直觉。
 
 ## 对读者最重要的结论
 
@@ -197,3 +254,9 @@ Hook 真正的价值，在于补上系统未直接暴露、但业务又确实需
 - 一旦升级 AGP / NDK / Android API，它的维护成本会不会爆炸
 
 理解这件事，后面再看三方性能库选型，就不会只停留在“哪个库名更响”。
+
+这一节不是孤立的底层技术补充，它和全书主线是直接相连的：
+
+- `14.5` 里提到的很多三方性能库，本质都依赖这里的实现路线
+- `14.12` 里的 APM 选型，如果不懂机制，选型就很容易只停留在功能表层
+- `15.5` 讲线上监控时，很多“客户端增强层”能力实际都建立在这里
