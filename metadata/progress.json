@@ -1,49 +1,49 @@
 {
-  "generated_at": "2026-04-21T12:07:11+08:00",
+  "generated_at": "2026-04-21T12:29:00+08:00",
   "state_machine_version": "v2",
   "total_sections": 206,
   "metrics": {
     "total": 206,
     "unknown": 31,
-    "last_updated": "2026-04-21T12:07:11+08:00",
+    "last_updated": "2026-04-21T12:29:00+08:00",
     "task2b_state_counts": {
       "unknown": 31,
-      "fixed": 139,
-      "pending": 24,
+      "fixed": 137,
+      "pending": 26,
       "idle": 12
     },
     "task9_state_counts": {
       "unknown": 30,
-      "reviewed": 62,
-      "pending": 113,
+      "reviewed": 65,
+      "pending": 110,
       "fixed": 1
     },
     "pipeline_stage_counts": {
       "unknown": 30,
       "task6_pending": 76,
-      "task2b_pending": 21,
-      "ready-to-publish": 29,
-      "task9_pending": 50
+      "task2b_pending": 23,
+      "ready-to-publish": 30,
+      "task9_pending": 47
     },
-    "pipeline_task9_pending": 50,
-    "pipeline_task2b_pending": 21,
-    "pipeline_ready_to_publish": 29,
+    "pipeline_task9_pending": 47,
+    "pipeline_task2b_pending": 23,
+    "pipeline_ready_to_publish": 30,
     "ready-to-publish": 0,
-    "finalized": 29,
-    "ready-for-review": 146
+    "finalized": 30,
+    "ready-for-review": 145
   },
   "pipeline": {
     "pipeline_stage_counts": {
       "unknown": 30,
       "task6_pending": 76,
-      "task2b_pending": 21,
-      "ready-to-publish": 29,
-      "task9_pending": 50
+      "task2b_pending": 23,
+      "ready-to-publish": 30,
+      "task9_pending": 47
     },
     "task2b_state_counts": {
       "unknown": 31,
-      "fixed": 139,
-      "pending": 24,
+      "fixed": 137,
+      "pending": 26,
       "idle": 12
     },
     "task6_state_counts": {
@@ -54,8 +54,8 @@
     },
     "task9_state_counts": {
       "unknown": 30,
-      "reviewed": 62,
-      "pending": 113,
+      "reviewed": 65,
+      "pending": 110,
       "fixed": 1
     }
   },
@@ -2016,15 +2016,15 @@
       "path": "src/part2-performance/ch10-memory-perf/07-sqlite-room-performance.md",
       "title": "SQLite/Room 数据库性能优化",
       "chapter": "10.7",
-      "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "task6_state": "reviewed",
-      "task9_state": "pending",
+      "task9_state": "reviewed",
       "task2b_state": "fixed",
       "reviewed_date": "2026-04-20",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
-      "task9_result": "needs-rework",
+      "task9_result": "pass-tech-review",
       "task2b_result": "fixed",
       "section": "10.7"
     },
@@ -2037,10 +2037,10 @@
       "title": "Android 功耗模型",
       "chapter": "11.1",
       "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
-      "task9_state": "pending",
-      "task2b_state": "fixed",
+      "task9_state": "reviewed",
+      "task2b_state": "pending",
       "reviewed_date": "2026-04-20",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
@@ -3138,15 +3138,16 @@
       "title": "Android 17 (API 37) 性能行为变更与适配方法",
       "chapter": "16.5",
       "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
-      "task9_state": "pending",
-      "task2b_state": "fixed",
+      "task9_state": "reviewed",
+      "task2b_state": "pending",
       "reviewed_date": "2026-04-20",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
       "task2b_result": "fixed",
-      "section": "16.5"
+      "section": "16.5",
+      "task9_result": "needs-rework"
     },
     "src/part4-system/ch16-aosp/README.md": {
       "path": "src/part4-system/ch16-aosp/README.md",
