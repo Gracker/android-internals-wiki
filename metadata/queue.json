@@ -1233,6 +1233,96 @@
       "completed_at": "2026-04-21T08:24:09+08:00",
       "completed_by": "task2b-content-processing-rework",
       "resolution": "已统一 6.4 / 6.1 的 eMMC 5.1 口径，并把 f2fs 段改成版本采用路径，机制细节交叉引用到 §6.1。"
+    },
+    {
+      "section": "15.4",
+      "section_title": "竞品分析方法",
+      "priority": 85,
+      "reason": "[Deep Tech Review] `am start -W` 的现代输出字段、FrameMetrics `TOTAL_DURATION` 口径和 Battery Historian 命令都存在版本漂移。",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "版本差异/源码错误",
+          "location": "L126-L145",
+          "detail": "正文把 `am start -W` 的现代输出写成固定包含 `ThisTime / TotalTime / WaitTime`，并进一步解释 `ThisTime` 的含义。AOSP android-14.0.0_r1 中 `WaitResult` 已不再携带 `thisTime`，`ActivityManagerShellCommand` 当前只打印 `TotalTime` 与 `WaitTime`。在适用范围写到 Android 16 的前提下，这会把现代命令输出讲旧。",
+          "suggestion": "补清 `ThisTime` 仅适用于旧版 shell 输出的版本边界，正文改成当前口径的 `TotalTime` / `WaitTime`，并把更稳定的启动指标衔接到 `Displayed`(TTID) 与 `reportFullyDrawn()`(TTFD)。"
+        },
+        {
+          "type": "源码错误",
+          "location": "L256-L275",
+          "detail": "正文把 `FrameMetrics.TOTAL_DURATION` 解释成“从 `performTraversals()` 开始到帧提交到 BufferQueue 结束”。但 AOSP `FrameMetrics.java` 的定义覆盖 `UNKNOWN_DELAY`、`INPUT_HANDLING`、`ANIMATION`、`LAYOUT_MEASURE`、`DRAW`、`SYNC`、`COMMAND_ISSUE`、`SWAP_BUFFERS` 等阶段，含义明显宽于单纯的 traversal + swap。",
+          "suggestion": "把 `TOTAL_DURATION` 改写成“单帧从输入/动画回调到提交显示子系统的总时长”，并解释它与 `LAYOUT_MEASURE_DURATION`、`DRAW_DURATION` 等拆分指标的关系，避免读者把它误当成纯 UI 线程 traversal 时间。"
+        },
+        {
+          "type": "版本差异/工具命令",
+          "location": "L404-L415",
+          "detail": "Battery Historian 章节仍在使用 `adb bugreport > bugreport.txt` 和 `battery-historian --port 9998` 这套旧路径。官方文档对 Android 7+ 的主流工作流已转向生成 `bugreport.zip` 后上传/容器化分析，当前命令会把现代设备与主机环境带到过期流程。",
+          "suggestion": "把命令更新为 Android 7+ 的 `adb bugreport bugreport.zip` 工作流，并明确 Historian 的当前运行方式（上传或容器），旧 `bugreport.txt` 仅保留给 Android 6 及以下。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-04-21T09:26:24+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "15.6",
+      "section_title": "性能测试最佳实践",
+      "priority": 95,
+      "reason": "[Deep Tech Review] `cmd thermal override 0` 与 Macrobenchmark `CompilationMode` / Rule 示例都已和现代 API 脱节，FPM / CrUX 限制也有事实错误。",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "location": "L174",
+          "detail": "正文给出的命令是 `adb shell cmd thermal override 0`。当前 AOSP / Pixel shell 命令空间是 `cmd thermalservice override-status <level>` 与 `cmd thermalservice reset`，不是 `cmd thermal override`。照文中执行会直接命中错误命令。",
+          "suggestion": "改成 `adb shell cmd thermalservice override-status 0`，并补上 `reset` 恢复命令、root/设备兼容边界和仅适用于受支持机型的说明。"
+        },
+        {
+          "type": "源码错误/版本差异",
+          "location": "L219-L244",
+          "detail": "Macrobenchmark 示例把 JUnit Rule 写成 `@BenchmarkRule val benchmarkRule = MacrobenchmarkRule()`，Kotlin/JUnit4 下这段代码无法按官方写法运行；同段又把 `CompilationMode` 仍解释为 `DEFAULT / SpeedProfile / None / Full`。当前官方文档列出的模式是 `DEFAULT / Full / Partial / None / Ignore`，`SpeedProfile()` 已经不是面向读者的主 API 口径。",
+          "suggestion": "把示例修正为 `@get:Rule val benchmarkRule = MacrobenchmarkRule()`，并把模式解释改成 `DEFAULT / Full / Partial / None / Ignore`，再单独说明 `Partial` 如何承载 Baseline Profile 与 warmup 场景。"
+        },
+        {
+          "type": "版本差异/知识盲区",
+          "location": "L438-L448",
+          "detail": "FPM 段落把“100”写成自定义 Trace 数量上限，但 Firebase 官方文档对应的是 trace name 长度上限 100 字符、每条 trace 最多 5 个 attributes 和 32 个 metrics。紧接着又写成“CrUX 可以通过 WebView API 获取类似指标”，但 CrUX 不覆盖 Android WebView，也没有给 App 侧提供可查询的公开 API。",
+          "suggestion": "把 FPM 的限制改成官方可核验的 name / attribute / metric 边界；CrUX 段落改为“WebView 需要自建 RUM 或使用 Web 平台指标”，不要把不存在的 CrUX-WebView API 写成备选方案。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-04-21T09:26:24+08:00",
+      "status": "completed",
+      "completed_at": "2026-04-21T10:49:25+08:00",
+      "completed_by": "task2b-content-processing-rework",
+      "resolution": "已改正 thermalservice shell 命令、重写 Macrobenchmark CompilationMode 示例与模式说明，并按 Firebase 官方限制重写 FPM / CrUX 段落。"
+    },
+    {
+      "section": "9.5",
+      "section_title": "案例集",
+      "priority": 95,
+      "reason": "[Deep Tech Review] Binder 线程池默认大小与源码锚点写错，死锁扩展示例把不存在的常量和属性名当成已验证事实。",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "location": "L422-L424",
+          "detail": "正文把 Binder 线程池写成“默认 16 个线程”，并声称 `ProcessState.cpp` 中存在 `SP_BUNDLE_THREADS` 常量、还可通过 `persist.device_config.bundle_threads` 自定义。AOSP android-14.0.0_r1 的 `frameworks/native/libs/binder/ProcessState.cpp` 实际常量是 `DEFAULT_MAX_BINDER_THREADS = 15`，文中的常量名与属性名都无法落锚。",
+          "suggestion": "把这里改成“libbinder 默认最大 binder 线程数为 15，实测常会连同调用方主线程一起看到 16 条相关线程”之类可复核的表述，并引用真实的 `DEFAULT_MAX_BINDER_THREADS` / `setThreadPoolMaxThreadCount()` 口径。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-04-21T09:26:24+08:00",
+      "status": "completed",
+      "completed_at": "2026-04-21T10:49:25+08:00",
+      "completed_by": "task2b-content-processing-rework",
+      "resolution": "已把 Binder 线程池口径改为 ProcessState 默认上限 15 并说明 joinThreadPool 的边界，删除不存在的常量/属性名，同时修正死锁案例中的静态检测说法与破损代码块。"
     }
   ]
 }
