@@ -5,8 +5,8 @@ section: "12.3"
 status: ready-for-review
 drafted_date: "2026-04-07"
 applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37)"
-last_verified: "2026-04-14"
-last_verified_against: "Android Developers docs / source.android / OkHttp 5.x docs / Google Security Blog 2022-07"
+last_verified: "2026-04-21"
+last_verified_against: "Android Developers docs / source.android / OkHttp 5.x docs / Google Security Blog 2022-07 / AOSP libcore & DnsResolver paths"
 confidence: medium
 sources:
   - type: official
@@ -15,12 +15,16 @@ sources:
     path: "https://developer.android.com/reference/android/os/NetworkOnMainThreadException"
   - type: official
     path: "https://developer.android.com/reference/android/os/StrictMode.ThreadPolicy.Builder#detectNetwork()"
+  - type: aosp
+    path: "libcore/luni/src/main/java/dalvik/system/BlockGuard.java"
   - type: official
     path: "https://developer.android.com/reference/android/net/http/HttpEngine"
   - type: official
     path: "https://developer.android.com/reference/android/net/http/HttpEngine.Builder"
   - type: official
     path: "https://developer.android.com/develop/connectivity/cronet"
+  - type: aosp
+    path: "packages/modules/DnsResolver/doh"
   - type: official
     path: "https://developers.google.com/android/reference/com/google/android/gms/security/ProviderInstaller"
   - type: official
@@ -47,11 +51,12 @@ drafted_by: "openclaw-task2a"
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-04-20"
 task6_result: pass-light-edit
-task6_state: reviewed
-pipeline_stage: task2b_pending
-task9_state: reviewed
+task6_state: revisiting
+pipeline_stage: task6_pending
+task9_state: pending
 task9_result: needs-rework
-task2b_state: pending
+task2b_state: fixed
+task2b_result: fixed
 last_task9_at: "2026-04-21T03:54:40+08:00"
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-04-21"
@@ -92,9 +97,13 @@ task9_reviewed_date: "2026-04-21"
 
 ## Android 网络栈全景
 
-一个 HTTP 请求从 App 代码调用 `OkHttpClient.newCall().execute()` 开始，到拿到 Response 对象，中间经历了一条完整的调用链。我们逐层拆解。
+一个 HTTP 请求从 App 代码调用开始，到拿到 Response 对象，中间不止一条实现路径。排查性能时，分清自己站在哪条栈上。
 
-应用层是 OkHttp（或者 Cronet、HttpEngine 等网络库），负责 HTTP 协议的处理——构建请求、解析响应、管理连接池。往下是 Java 层的 `java.net` 和 `javax.net.ssl`，提供 Socket 和 TLS 抽象。再往下进入系统层，Android 的 DNS resolver 模块负责域名解析，`libcore` 中的 `Conscrypt` 安全提供者处理 TLS 加解密。最终通过内核的 TCP/IP 协议栈、网卡驱动，经由无线电模块发送出去。
+- **OkHttp**：默认路径通常经由 `java.net`、`javax.net.ssl` 和平台 socket。TLS 常见落到 `libcore` 的 `Conscrypt` provider，DNS 默认走 `Dns.SYSTEM` 对应的系统 resolver。
+- **Cronet**：它是以库形式提供给应用的 Chromium 网络栈，HTTP/2、HTTP/3、QUIC、连接调度和大部分网络状态机都在 Chromium 层完成。
+- **HttpEngine**：Android 14 / API 34 把 Cronet 能力以 `android.net.http` SDK 形式暴露出来，底层仍是 Chromium / Cronet 栈。
+
+把 OkHttp、Cronet、HttpEngine 压成同一条 `java.net -> Conscrypt -> kernel` 调用链，会把 QUIC、HTTP/3 和连接管理的边界写混。后续分析 DNS、TLS、连接复用或 Perfetto 线程时，都要先按具体网络栈分流。
 
 这条路径上的每个环节都有可能成为性能瓶颈。一个典型 HTTPS 请求的完整时间分解如下：
 
@@ -107,7 +116,7 @@ task9_reviewed_date: "2026-04-21"
 
 ### 网络操作与主线程性能
 
-Android 在主线程直接做网络操作时，通常先抛 `NetworkOnMainThreadException`。这个异常对 `targetSdk >= 11` 的应用生效。`StrictMode` 是另一层开发期诊断机制，只有显式启用 `detectNetwork()` 才会把主线程网络访问记成违规；`permitAll()` 会关闭这类检测。两条机制职责不同，不能混写。
+对 `targetSdk >= 11` 的应用，主线程直接做网络操作时通常会触发 `NetworkOnMainThreadException`。底层入口是 `BlockGuard` 的线程策略检查，`StrictMode` 会在这条检查链上把主线程网络访问记成违规并决定处罚方式。`StrictMode.detectNetwork()` 属于开发期诊断开关，只有显式启用时才会额外记录网络违规；`permitAll()` 会关闭这类检测。两条机制职责不同，不能混写。
 
 冷启动里更常见的风险是主线程同步等待网络结果。App 在 `Application.onCreate()` 或首屏初始化中发起后台请求后，又在主线程用 `Future.get()`、`CountDownLatch.await()`、`runBlocking` 等方式等结果，首帧就会被卡住。直接在主线程做 Java 网络调用，通常会更早触发 `NetworkOnMainThreadException`。
 
@@ -237,9 +246,9 @@ DNS 解析是网络请求过程的第一步，也是最容易被忽视的性能�
 
 ### Android DNS 解析流程
 
-当 App 通过 `InetAddress.getAllByName()` 或底层的 `getaddrinfo()` 系统调用发起 DNS 查询时，请求会进入 Android 的 DNS resolver 模块。这个模块是 Android 网络栈的一部分，从 Android 11 开始作为独立模块（DNS Resolver module）通过 Mainline 更新。
+当 App 通过 `InetAddress.getAllByName()` 或底层的 `getaddrinfo()` 发起 DNS 查询时，请求会进入 Android 的系统 resolver。对 OkHttp 默认 `Dns.SYSTEM` 这类路径，常见路径是 `InetAddress` → `libcore.io.Linux`（JNI）→ `getaddrinfo()`（bionic/libc）→ Android DNS resolver → 配置的 DNS 服务器。
 
-解析流程是：Java 层的 `InetAddress` → `libcore.io.Linux`（JNI）→ `getaddrinfo()`（libc）→ Android DNS resolver → 发送 DNS 查询到配置的 DNS 服务器。
+DNS Resolver 在 Android 10 已以 Mainline 模块形态引入，Android 11 起成为强制模块化组件。Cronet / HttpEngine 则维护自己的 Chromium 异步网络栈，分析这两类请求时，不要把它们简单压成同一条 `InetAddress` 调用链。
 
 系统层面，Android 维护了 DNS 缓存，但这个缓存的 TTL（Time To Live）由 DNS 记录本身的 TTL 值决定。如果域名的 DNS 记录 TTL 很短（比如 60 秒），频繁的解析请求会反复命中网络查询。
 
@@ -256,11 +265,11 @@ DNS 解析的耗时差异很大，取决于缓存命中情况和网络环境：
 
 ### DNS over HTTPS 与性能
 
-DoT、DoH、DoH3 容易被写混。DoT 是 DNS over TLS，对应 Android 9 引入的 Private DNS。DoH 是把 DNS 报文封装到 HTTP 里的协议族，底层可以跑在 HTTP/2 或 HTTP/3 上。DoH3 则是 DoH over HTTP/3，底层传输是 QUIC。
+DoT、DoH、DoH3 容易被写混。DoT 是 DNS over TLS，对应 Android 9 引入的 Private DNS。DoH 是把 DNS 报文封装到 HTTP 的协议族，底层可以跑在 HTTP/2 或 HTTP/3 上。DoH3 则是 DoH over HTTP/3，底层传输是 QUIC。
 
-Android 系统 resolver 的公开入口，长期稳定的是 Private DNS 这条 DoT 路径。Google 在 2022 年披露，DoH3 作为 Google Play system update 向 Android 11 及以上设备 rollout。对支持的 well-known DNS servers，系统会把原来的 DoT transport 升级为 DoH3；用户使用的 DNS 服务本身不变。
+Android 系统 resolver 的公开入口，长期稳定的是 Private DNS 这条 DoT 路径。Google 在 2022 年披露，DoH3 通过 Google Play system update rollout 到 Android 11 及以上设备，另有一部分较早接入 Play system update 的 Android 10 设备也会收到这项能力。对支持的 well-known DNS servers，系统会把原来的 DoT transport 升级为 DoH3；用户使用的 DNS 服务本身不变。
 
-Google 给出的初始 rollout 数据是：成功查询上，DoH3 相比 DoT 的 median query time 下降 24%，95th percentile 下降 44%。这组数据出自 Google Online Security Blog。
+这部分实现位于 `packages/modules/DnsResolver/doh`，属于系统 resolver 的 transport 演进，不是 App 侧通用 API。Google 给出的初始 rollout 数据是：成功查询上，DoH3 相比 DoT 的 median query time 下降 24%，95th percentile 下降 44%。这组数据出自 Google Online Security Blog。
 
 对性能分析来说，这段版本线的价值在于分清瓶颈落点。若 DNS P95 偏高，要继续区分是 resolver 选择、解析协议、运营商网络，还是单个 DNS 服务实现的问题。DoT 单流上的 head-of-line blocking，和 DoH3 / QUIC 的多 stream 行为，对尾延迟的影响不同。
 
@@ -402,7 +411,7 @@ Perfetto 里更常见的现象是主线程等待网络线程，而不是主线�
 | HTTP/3 over QUIC | 不绑定单一系统 API，取决于库版本 | 原生支持 | API 34+，`setEnableQuic(true)`，可配 `addQuicHint()` | `OkHttpClient.Builder.protocols()` 文档当前只列 `http/1.1`、`h2`、`h2 prior knowledge` | 需要区分系统 API 与客户端库能力 |
 | 0-RTT / 会话恢复 | 依赖服务端和客户端栈 | 可能使用 | 可能使用 | 无公开原生入口 | 不要把每次恢复连接都当成 0-RTT |
 | DoT | Android 9+ / API 28+ | - | - | - | 公开系统入口是 Private DNS |
-| DoH3（系统 resolver） | Android 11+，经 Google Play system update 对 well-known DNS servers rollout | - | - | - | 这是系统解析器能力，不是通用 App API |
+| DoH3（系统 resolver） | Android 11+ 主线覆盖，另有部分 Android 10 设备通过 Google Play system update 获取 | - | - | - | 这是系统解析器能力，不是通用 App API |
 
 `android.net.http.HttpEngine` 是 Android 14 / API 34 新增类。`HttpEngine.Builder` 暴露了 `setEnableQuic(true)` 和 `addQuicHint(host, port, alternatePort)` 这类 QUIC 入口。时间线写法要和 API 形态保持一致，不能写成“Android 11 起以 HttpEngine 形式默认支持”。
 

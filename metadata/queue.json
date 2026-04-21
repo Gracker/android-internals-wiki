@@ -927,7 +927,10 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-21T03:54:40+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-04-21T09:10:26+08:00",
+      "completed_by": "task2b-content-processing-rework",
+      "resolution": "已拆开 OkHttp 与 Cronet/HttpEngine 的网络栈边界，补写 BlockGuard 线程策略、Android 10/11 DNS Resolver 版本线，以及 DoH3 rollout 与系统 resolver 范围。"
     },
     {
       "section": "13.9",
@@ -1141,7 +1144,10 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-21T05:29:00+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-04-21T09:10:26+08:00",
+      "completed_by": "task2b-content-processing-rework",
+      "resolution": "已修正 Bitmap 像素内存三段式版本演进，补充 16 KB page size 对 smaps/PSS 判读的影响，并删除无一手来源的 ZRAM 通用比例。"
     },
     {
       "section": "8.5",

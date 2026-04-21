@@ -5,8 +5,8 @@ section: "4.1"
 status: ready-for-review
 drafted_date: "2026-03-31"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
-last_verified: "2026-04-14"
-last_verified_against: "AOSP android-16.0.0_r1"
+last_verified: "2026-04-21"
+last_verified_against: "AOSP android-16.0.0_r1 / Android Developers bitmap memory & 16 KB page size docs / kernel zram docs"
 reviewed_date: "2026-04-21"
 reviewed_by: "openclaw-task6"
 review_notes: "task2b-polish: 已做首轮润色；2026-04-14 Task6：L1/L2 小修，lmkd / cgroup / ZRAM 段落的技术风险已转 Task 9 / Task 2B"
@@ -18,6 +18,10 @@ polish_by: "task2b-polish"
 sources:
   - type: official
     path: "https://developer.android.com/topic/performance/memory-management"
+  - type: official
+    path: "https://developer.android.com/topic/performance/graphics/manage-memory"
+  - type: official
+    path: "https://developer.android.com/guide/practices/page-sizes"
   - type: official
     path: "https://source.android.com/docs/core/perf/lmkd"
   - type: official
@@ -38,11 +42,12 @@ sources:
     path: "https://juejin.cn/post/7530909474103296039"
 tags: ['memory', 'PSS', 'RSS', 'dumpsys', 'meminfo', 'procfs', 'ZRAM', 'cgroup']
 related_chapters: ["4.2", "4.3", "4.4", "4.5", "10.1"]
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
 task9_result: needs-rework
-task2b_state: pending
+task2b_state: fixed
+task2b_result: fixed
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-04-21"
 last_task9_at: "2026-04-21T05:29:00+08:00"
@@ -81,7 +86,7 @@ last_task9_at: "2026-04-21T05:29:00+08:00"
 
 这些现象的背后，是 Android 内存系统在工作。理解内存模型，是为了在遇到内存相关的问题时，无论是 OOM 崩溃、GC 导致的卡顿，还是后台进程被杀，都知道从哪里入手排查。
 
-这一节我们要建立一个完整的内存认知框架：从物理内存到内核管理，再到进程的各个内存区域，最后到工具中的数字代表什么含义。有了这张全景图，后面关于内存优化、GC 机制、LMK 等章节才有落脚点。
+这一节我们要建立一个完整的内存认知框架：从物理内存到内核管理，再到进程的各个内存区域，也把工具中的数字代表什么含义讲清。有了这张全景图，后面关于内存优化、GC 机制、LMK 等章节才有落脚点。
 
 [已验证: 官方文档, developer.android.com/topic/performance/memory-management]
 
@@ -222,11 +227,13 @@ Java Heap 有一个硬性上限，这个上限因设备的总内存大小和 And
 
 ### Native Heap
 
-Native Heap 是 C/C++ 代码通过 `malloc`/`free`（或 `new`/`delete`）管理的内存。即使 App 完全用 Java/Kotlin 编写，Native Heap 也不会是 0——Android 框架的很多内部实现是 native 代码，它们在运行时需要 native 内存。
+Native Heap 是 C/C++ 代码通过 `malloc`/`free`（或 `new`/`delete`）管理的内存。即使 App 完全用 Java/Kotlin 编写，Native Heap 也不会是 0，Android 框架和图形栈里仍有大量 native 分配。
 
-从 Android 8.0（Oreo）开始，**Bitmap 的像素数据存放在 Native Heap 中**，而不是 Java Heap。这是 Android 内存管理的一个重要变化——它意味着在 Java 层释放 Bitmap 对象引用后，native 层的像素数据就会被 GC 的 finalize 机制自动回收（通过 `NativeAllocationRegistry`）。这也解释了为什么 Android 8.0 之后 Bitmap 不再是 Java Heap OOM 的主要原因。
+Bitmap 像素内存的版本线要分三段看：Android 2.3.3（API 10）及更早版本放在 native memory，Android 3.0-7.1（API 11-25）放在 Dalvik / Java Heap，Android 8.0（API 26）及更高版本又回到 native heap。排查 Bitmap 相关 OOM 时，要先看设备版本，再判断压力落在 Java Heap 还是 Native Heap。
 
-[已验证: 官方文档, developer.android.com/topic/performance/graphics/manage-memory]
+在 API 26+ 设备上，Java 层 `Bitmap` 对象释放后，对应的 native allocation 会随对象生命周期回收。它不再计入 Java Heap 上限，但仍会体现在进程的 Native Heap、RSS 和 PSS 里。
+
+[已验证: Android Developers Managing Bitmap Memory]
 
 Native Heap 的内存泄漏比 Java Heap 更难排查，因为没有自动的 GC 机制。常用的排查工具包括 Perfetto 的 native heap profile、`heapprofd`、以及 Android Studio 的 Native Memory Profiler。
 
@@ -342,11 +349,13 @@ SwapPss:            0 kB
 Locked:             0 kB
 ```
 
-smaps 的实际使用场景通常是：**当发现进程的 PSS 异常高，但 `dumpsys meminfo` 的分类无法定位具体原因时，逐项查看 smaps 来找到那个异常大的映射区域。**
+上面这个片段按 4 KB page 设备展示。Android 15 开始，AOSP 支持 16 KB page size 设备。到这类设备上，`KernelPageSize`、`MMUPageSize` 以及很多 `Rss` / `Pss` 增量都会按 16 KB 粒度出现，`mmap` offset 粒度和 native 库页面边界要求也会跟着变化。
+
+smaps 的实际使用场景通常是：**当发现进程的 PSS 异常高，但 `dumpsys meminfo` 的分类无法定位具体原因时，逐项查看 smaps 来找到那个异常大的映射区域。**跨设备比对 `smaps`、Perfetto 内存曲线或 native 崩溃现场时，用 `adb shell getconf PAGE_SIZE` 或 `smaps` 里的页大小字段确认当前页大小，再解释页粒度带来的页内碎片、页表开销和 PSS / RSS 跳变。
 
 读取 `/proc/<pid>/smaps` 需要足够的权限（通常是 root，或者目标 App 是 debuggable 的），且读取操作本身有性能开销（内核需要遍历所有页表），不建议在高频循环中调用。
 
-[已验证: Linux kernel documentation, kernel.org/doc/Documentation/filesystems/proc.txt]
+[已验证: Linux kernel documentation, kernel.org/doc/Documentation/filesystems/proc.txt / Android Developers 16 KB page size]
 
 ## dumpsys meminfo：日常内存分析的主力工具
 
@@ -468,7 +477,7 @@ Android 不使用传统磁盘 Swap，原因很简单：闪存的写入寿命有�
 
 当系统内存紧张时，后台回收路径会把匿名页面换出到 swap 设备；如果设备启用了 ZRAM，这些页会先被压缩后写进 ZRAM。`kswapd` 负责后台回收和换出，但页被再次访问时，解压和换入发生在 page fault 触发的 swapin 路径，不是 `kswapd` 主动把页搬回内存。
 
-ZRAM 的核心参数是压缩磁盘的最大大小（由 OEM 配置）。Qualcomm 的调优指南建议将 ZRAM 大小设置为物理内存的 75%。[待验证: Qualcomm 调优指南 ZRAM 75% 建议，未找到一手来源]在实际设备上，ZRAM 的有效压缩比通常在 2x-4x 之间——2GB 的 ZRAM 空间可以容纳约 4-8GB 的原始数据。
+ZRAM 大小、压缩算法和 swappiness 都是 OEM case-by-case 配置，没有可以直接套用的统一比例。不同设备常见 `lz4` 或 `lz4hc` 等算法，实际压缩收益取决于页面可压缩性、前后台负载和匿名页类型。读 `dumpsys meminfo` 或 `/sys/block/zram0/` 指标时，以本机的 `physical used`、原始换出量和当前压缩占用为准，不要把单一机型经验写成通用调参公式。
 
 ### 在 dumpsys meminfo 中看 ZRAM
 
@@ -478,7 +487,7 @@ ZRAM 的核心参数是压缩磁盘的最大大小（由 OEM 配置）。Qualcom
 ZRAM:  123,456K physical used for 456,789K in swap (500,000K total swap)
 ```
 
-这行数据告诉我们：ZRAM 设备占用了 123MB 的物理内存来存储 456MB 的压缩数据（压缩比约 3.7x），ZRAM 总容量为 500MB。如果 physical used 接近 ZRAM 总大小，说明压缩空间即将耗尽，系统可能会更积极地杀后台进程。
+这行数据告诉我们：ZRAM 设备占用了 123MB 的物理内存来存储 456MB 的压缩数据，这次采样的压缩结果约为 3.7x，ZRAM 总容量为 500MB。如果 `physical used` 接近 ZRAM 总大小，说明压缩空间即将耗尽，系统可能会更积极地杀后台进程。
 
 ### ZRAM 的性能代价
 
@@ -515,7 +524,9 @@ PSS 确实是最接近"App 对系统的内存压力"的指标，但它包含了�
 
 ### 误区二："Java Heap 超过限制就 OOM"
 
-这个说法在 Android 8.0 之前大致成立（Bitmap 像素存放在 Java Heap）。但从 Android 8.0 开始，Bitmap 像素迁移到了 Native Heap，Java Heap 的 OOM 风险降低了。但 Native Heap 的内存增长不受 `getMemoryClass()` 限制——它受系统整体内存和 `lmkd` 机制的约束。
+这句话只能覆盖一部分版本。Android 2.3.3 及更早版本，Bitmap 像素在 native memory；Android 3.0-7.1，像素回到 Dalvik / Java Heap，Bitmap 更容易直接推高 Java Heap；Android 8.0 及更高版本，像素又回到 native heap。
+
+判断 OOM 时，要一起看 Java Heap、Native Heap 和图形缓冲区，而不是只盯 `getMemoryClass()`。API 26+ 之后，Native Heap 的内存增长也不受 `getMemoryClass()` 直接约束，它更受系统整体内存和 `lmkd` 行为影响。
 
 ### 误区三："MemFree 很低就是内存不够"
 
