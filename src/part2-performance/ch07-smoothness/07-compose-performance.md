@@ -1,42 +1,57 @@
 ---
-title: "Jetpack Compose 性能优化"
-chapter: "7.7"
+title: Jetpack Compose 性能优化
+chapter: '7.7'
 status: ready-for-review
-applicable_versions: "Android 8.0 (API 26) - Android 16 (API 36)"
-last_verified: "2026-04-01"
-last_verified_against: "Android 16 Developer Preview"
+applicable_versions: Android 8.0 (API 26) - Android 16 (API 36)
+last_verified: '2026-04-01'
+last_verified_against: Android 16 Developer Preview
 confidence: medium
-reviewed_date: "2026-04-15"
-reviewed_by: "openclaw-task6"
+reviewed_date: '2026-04-21'
+reviewed_by: openclaw-task6
 task6_result: pass-light-edit
 task9_result: needs-rework
 polish_count: 1
-polish_date: "2026-04-04"
-polish_by: "task2b-polish"
+polish_date: '2026-04-04'
+polish_by: task2b-polish
 review_type: post-polish-quality-gate
 review_round: 3
 sources:
-  - type: blog
-    path: "Personal-Knowlodge/source/2026-03-08_wechat_沉思录_如何优化_Compose_的性能_通过_底层原理_寻找答案.md"
-  - type: blog
-    path: "Personal-Knowlodge/source/2026-03-07_wechat_提升Jetpack_Compose_性能.md"
-  - type: blog
-    path: "Personal-Knowlodge/source/2026-03-08_wechat_Compose_渲染性能到底怎么样.md"
-  - type: blog
-    path: "Personal-Knowlodge/source/2026-03-06_wechat_原创_写给初学者的Jetpack_Compose教程_用derivedStateOf提升性能.md"
-  - type: blog
-    path: "Personal-Knowlodge/source/2026-03-08_wechat_Compose_与原生启动性能对比.md"
-  - type: blog
-    path: "Personal-Knowlodge/source/2026-03-06_wechat_掌握_Android_Compose_从基础到性能优化全面指南.md"
-  - type: official
-    path: "developer.android.com/develop/ui/compose/performance"
-tags: [compose, jank, recomposition, stability, lazy-column, layout-inspector, compose-compiler, animation, compose-interop]
-related_chapters: ["7.1", "7.2", "7.3", "2.4", "2.5", "2.11"]
-drafted_date: "2026-04-01"
-drafted_by: "openclaw-task2a"
-section: "7.7"
-pipeline_stage: task6_pending
-task6_state: revisiting
+- type: blog
+  path: Personal-Knowlodge/source/2026-03-08_wechat_沉思录_如何优化_Compose_的性能_通过_底层原理_寻找答案.md
+- type: blog
+  path: Personal-Knowlodge/source/2026-03-07_wechat_提升Jetpack_Compose_性能.md
+- type: blog
+  path: Personal-Knowlodge/source/2026-03-08_wechat_Compose_渲染性能到底怎么样.md
+- type: blog
+  path: Personal-Knowlodge/source/2026-03-06_wechat_原创_写给初学者的Jetpack_Compose教程_用derivedStateOf提升性能.md
+- type: blog
+  path: Personal-Knowlodge/source/2026-03-08_wechat_Compose_与原生启动性能对比.md
+- type: blog
+  path: Personal-Knowlodge/source/2026-03-06_wechat_掌握_Android_Compose_从基础到性能优化全面指南.md
+- type: official
+  path: developer.android.com/develop/ui/compose/performance
+tags:
+- compose
+- jank
+- recomposition
+- stability
+- lazy-column
+- layout-inspector
+- compose-compiler
+- animation
+- compose-interop
+related_chapters:
+- '7.1'
+- '7.2'
+- '7.3'
+- '2.4'
+- '2.5'
+- '2.11'
+drafted_date: '2026-04-01'
+drafted_by: openclaw-task2a
+section: '7.7'
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task2b_state: fixed
 task2b_result: fixed
@@ -111,7 +126,7 @@ fun Greeting(msg: String) {
 
 编译后，这个函数的签名会多出 `Composer` 和 `$changed` 两个参数，函数体里会被插入 `startRestartGroup` 和 `endRestartGroup` 调用。`$changed` 是一个位掩码，编译器把每个参数的变化状态编码进这个 `Int` 里，运行时再配合 `composer.changed(...)` 做按位判断，决定当前调用是直接 skip，还是继续执行函数体。`endRestartGroup` 会返回一个 `ScopeUpdateScope` 对象，开发者可以往上面注册一个回调，当状态变化导致这个函数需要重组时，Compose 运行时就通过这个回调递归调用函数自身。
 
-整个机制基于 Compose 的**状态快照系统（Snapshot）**。当我们通过 `mutableStateOf` 创建一个 State 变量时，它的 getter 和 setter 实际上是自定义的：setter 会通知快照系统"这个值变了"，快照系统再找到订阅了这个值的 ScopeUpdateScope，触发重组。
+整个机制基于 Compose 的**状态快照系统（Snapshot）**。当我们通过 `mutableStateOf` 创建一个 State 变量时，它的 getter 和 setter 是自定义的：setter 会通知快照系统"这个值变了"，快照系统再找到订阅了这个值的 ScopeUpdateScope，触发重组。
 
 所以当我们说"某个 Composable 发生了重组"，准确的意思是：Compose 运行时重新调用了一次这个 @Composable 函数。重组的范围取决于状态读取发生在哪个 Scope——**状态读取发生在哪个 Scope，状态更新时哪个 Scope 就发生重组**。
 
@@ -125,7 +140,7 @@ fun Greeting(msg: String) {
 
 其中一组常被引用的样本里，高端设备（Android 11+）两者都能接近 60fps；中低端的 Android 7.1 设备上，LazyColumn 约 43fps，RecyclerView 约 60fps。同一位测试者在粒子动画场景里又观察到 Compose 和 View 的 Canvas 绘制几乎一致。这类结果更适合当成"特定设备、特定版本、特定页面结构下的观察"，不能直接外推成通用结论。真要拿它指导项目，至少要用 Macrobenchmark 的 `FrameTimingMetric` 或 Perfetto，在自己的机型、刷新率、Compose 版本和滚动场景上复测。
 
-这组对比说明的方向没有变：**Compose 本身的渲染性能（Layout + Drawing）已经和传统 View 接近，差距更多出现在 Composition 阶段，也就是重组的开销**。如果我们的 Compose 页面掉帧，大概率不是"Compose 画得慢"，而是"Compose 重组了不该重组的东西"。
+这组对比说明的方向没有变：**Compose 本身的渲染性能（Layout + Drawing）已经和传统 View 接近，差距更多出现在 Composition 阶段，也就是重组的开销**。如果我们的 Compose 页面掉帧，大概率就是"Compose 重组了不该重组的东西"。
 
 这也解释了为什么 Compose 性能优化的核心策略就是：**减少不必要的重组、缩小重组的范围**。
 
@@ -354,7 +369,7 @@ composeCompiler {
 
 - **module.json**：模块级汇总，包括 skippable Composable 占比、restartable Composable 占比等。如果 skippable 比例很低，说明很多 Composable 因为参数不稳定无法被跳过。
 - **composables.txt**：每个 Composable 的详细信息——是否 restartable、是否 skippable、每个参数的稳定性。这个文件是定位问题的主力。
-- **classes.txt**：每个类的稳定性推断结果。我们可以看到哪些类被判定为不稳定，以及原因。
+- **classes.txt**：每个类的稳定性推断结果。哪些类被判定为不稳定，以及原因。
 
 社区工具 `compose-report-to-html` 可以把这些文本报告转换成更直观的 HTML 页面，方便团队分享。
 
@@ -364,7 +379,7 @@ composeCompiler {
 
 [已验证: 官方文档, developer.android.com/topic/performance/baselineprofiles/overview]
 
-Compose 页面还有一条经常被忽略的性能轴：首次启动、首次进入页面、首次滚动。页面结构没问题，重组次数也控制住了，应用仍然可能在 cold start 或首轮交互里卡一下，原因往往不是 UI 树设计，而是 Compose 运行时和业务热点路径还在解释执行或 JIT 预热。
+Compose 页面还有一条经常被忽略的性能轴：首次启动、首次进入页面、首次滚动。页面结构没问题，重组次数也控制住了，应用仍然可能在 cold start 或首轮交互里卡一下，原因往往是 Compose 运行时和业务热点路径还在解释执行或 JIT 预热。
 
 Baseline Profiles 用来解决这个问题。它把关键用户路径上的方法提前交给 ART 做 AOT 编译，官方文档给出的典型收益是代码执行速度可提升约 30%。对 Compose 来说，这一点很实用，因为 Compose 运行时和大量 UI 代码都来自应用与库本身，不像平台 View 那样天然常驻系统镜像。
 
@@ -449,7 +464,7 @@ fun WebViewScreen(url: String) {
 
 从卡顿的定义来看（7.1），Compose 的卡顿仍然是"某帧耗时超限"，只是卡顿的来源从传统的 measure/layout/draw 变成了 Composition/Recomposition。从分析方法论来看（7.3），通用的分析框架同样适用——先定位到掉帧的时间段，再分析是什么导致了长帧，只是在 Compose 场景下需要额外检查重组次数。
 
-在底层渲染管线上，Compose 的渲染同样由 Choreographer 驱动（2.4），VSync → doFrame → Composition/Layout/Draw 的链路和传统 View 一致。Composition 和 Layout 阶段在主线程执行，Draw 阶段可能涉及 RenderThread（2.5）。值得一提的是，Jetpack Compose 与 Flutter（2.11）的渲染模型有相似的思路——都采用了组合式的 UI 树和差异化的更新策略，但两者的运行时实现完全不同。
+在底层渲染管线上，Compose 的渲染同样由 Choreographer 驱动（2.4），VSync → doFrame → Composition/Layout/Draw 的过程和传统 View 一致。Composition 和 Layout 阶段在主线程执行，Draw 阶段可能涉及 RenderThread（2.5）。Jetpack Compose 与 Flutter（2.11）的渲染模型有相似的思路——都采用了组合式的 UI 树和差异化的更新策略，但两者的运行时实现完全不同。
 
 ## 常见问题与误区
 
@@ -459,7 +474,7 @@ fun WebViewScreen(url: String) {
 
 **误区二："给所有类加 @Stable 就能解决性能问题"**
 
-`@Stable` 是一个契约，不是魔法。如果我们的类实际上不满足稳定性的要求（比如内部有不受 State 管理的可变状态），加注解不仅不能提升性能，还会导致 UI 不更新的 bug。正确做法是先用 Compiler Metrics 找到真正不稳定的类，然后根据实际情况选择修复方式。
+`@Stable` 是一个契约，不是魔法。如果我们的类不满足稳定性的要求（比如内部有不受 State 管理的可变状态），加注解不仅不能提升性能，还会导致 UI 不更新的 bug。正确做法是先用 Compiler Metrics 找到真正不稳定的类，然后根据实际情况选择修复方式。
 
 **误区三："Compose 的 remember 就是缓存，什么都能往里塞"**
 

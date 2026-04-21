@@ -420,3 +420,11 @@ Android 16 引入的 UprobeStats 就是基于 eBPF uprobe 机制的动态埋点�
 - 摘要：XTrace 利用 ART Instrumentation 机制做非侵入式动态追踪，并通过改造 entry point 路径绕开全局方法注入与强制解释执行两大性能坑，还给出了线上 A/B 测试与故障诊断收益。
 - 注入时间：2026-04-18
 - 价值：能把 13.9 从基础设施层延伸到生产级动态追踪方案对比。
+
+### btrace (bytedance/btrace) 深度调研报告
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/btrace (bytedance:btrace) 深度调研报告.md
+- 类型：DeepResearch 调研结果
+- 摘要：围绕 btrace 1.0→3.0 演进，拆解从编译期插桩转向 Runtime Hook + 同步抓栈的设计原因，覆盖 ShadowHook、StackVisitor hack、ART method pointer 批量符号化，以及与 Perfetto、异步采样方案的取舍边界。
+- 注入时间：2026-04-21
+- 价值：把第三方 tracing 工具的架构取舍讲透，适合补强 Android tracing 生态的横向对比。
+

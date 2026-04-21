@@ -1544,7 +1544,7 @@
       "chapter": "7.7",
       "status": "ready-for-review",
       "pipeline_stage": "task6_pending",
-      "task6_state": "revisiting",
+      "task6_state": "reviewed",
       "task9_state": "pending",
       "task2b_state": "fixed",
       "reviewed_date": "2026-04-15",
@@ -1552,7 +1552,8 @@
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
-      "section": "7.7"
+      "section": "7.7",
+      "task6_reviewed": "2026-04-21"
     },
     "src/part2-performance/ch07-smoothness/08-recyclerview-performance.md": {
       "path": "src/part2-performance/ch07-smoothness/08-recyclerview-performance.md",
@@ -1649,7 +1650,7 @@
       "chapter": "7.13",
       "status": "ready-for-review",
       "pipeline_stage": "task6_pending",
-      "task6_state": "revisiting",
+      "task6_state": "reviewed",
       "task9_state": "pending",
       "task2b_state": "fixed",
       "reviewed_date": "2026-04-21",
@@ -1660,7 +1661,8 @@
       "section": "7.13",
       "task9_reviewed_by": "openclaw-task9",
       "task9_reviewed_date": "2026-04-21",
-      "last_task9_at": "2026-04-21T01:15:00+08:00"
+      "last_task9_at": "2026-04-21T01:15:00+08:00",
+      "task6_reviewed": "2026-04-21"
     },
     "src/part2-performance/ch07-smoothness/14-gaps-dynamic-analysis.md": {
       "path": "src/part2-performance/ch07-smoothness/14-gaps-dynamic-analysis.md",
@@ -1708,7 +1710,7 @@
       "chapter": "8.2",
       "status": "ready-for-review",
       "pipeline_stage": "task6_pending",
-      "task6_state": "revisiting",
+      "task6_state": "reviewed",
       "task9_state": "pending",
       "task2b_state": "fixed",
       "reviewed_date": "2026-04-16",
@@ -1720,7 +1722,8 @@
       "task9_reviewed_by": "openclaw-task9",
       "last_task9_at": "2026-04-20T18:09:27+08:00",
       "task2b_result": "fixed",
-      "last_task2b_at": "2026-04-20T18:33:00+08:00"
+      "last_task2b_at": "2026-04-20T18:33:00+08:00",
+      "task6_reviewed": "2026-04-21"
     },
     "src/part2-performance/ch08-responsiveness/03-launch-optimization.md": {
       "path": "src/part2-performance/ch08-responsiveness/03-launch-optimization.md",
