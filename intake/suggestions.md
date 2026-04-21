@@ -92,3 +92,21 @@
 - **建议**：修正USS描述；补充dumpsys input建议；说明ADJ版本变化
 - **来源**：external-review/2026-04-21-14-04-dumpsys-external-review.md
 - **review 日志**：logs/review/2026-04-21-18-review.md
+
+## [Task9 Deep Review] 14.7 ProfilingManager — 2026-04-21
+- **类型**：交叉引用
+- **位置**：结果分发 / trigger 版本对照表 / 相关章节
+- **问题**：文中多次写“详见 §8.8 ProfilingManager 系统触发式性能追踪”，但当前 `8.8` 实际是“Android 多媒体管线性能”，引用目标不存在。
+- **建议**：把交叉引用改成真实存在的章节编号或文件路径，再同步正文里的“§8.8”描述。
+
+## [Task9 Deep Review] 14.9 Android Camera 性能与 Perfetto 分析 — 2026-04-21
+- **类型**：数据缺失/案例泛化
+- **位置**：SQL 查询：量化帧率和帧间隔
+- **问题**：示例把 `thread.name like '%PreviewSpacer%'` 写成默认筛选条件，但没有说明它不是稳定的公开 AOSP 命名，也没有给通用 fallback。
+- **建议**：补充“该筛选依赖具体 trace/实现”的边界，并给出按 `cameraserver` + `queueBuffer`/stream track 做通用筛选的替代写法。
+
+## [Task9 Deep Review] 14.11 Battery Historian 与功耗分析工具 — 2026-04-21
+- **类型**：交叉工具链
+- **位置**：ODPM 的工作原理 / Power Profiler vs Energy Profiler
+- **问题**：章节把 ODPM 基本限定在 Android Studio Profiler 视角，缺少 Perfetto `android.power_rails` trace 与 SQL 分析链路。
+- **建议**：补一段 Perfetto 抓取 power rails、和 CPU 调度/线程事件联查的入口，避免工具链割裂。

@@ -58,5 +58,58 @@
     "added_at": "2026-04-21T18:36:56",
     "status": "pending",
     "original_review_log": "logs/review/2026-04-21-18-review.md"
+  },
+  {
+    "section": "14.9",
+    "section_title": "Android Camera 性能与 Perfetto 分析",
+    "priority": 95,
+    "reason": "[Deep Tech Review] Perfetto SQL 示例使用了错误表名，且 Camera3OutputStream 与 HAL stream 的继承关系描述失真",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "SQL错误",
+        "location": "SQL 查询：量化帧率和帧间隔 / 场景：预览帧率不达标 / cam2_frame 查询",
+        "detail": "多处 SQL 使用 `FROM counters`，与 Perfetto Trace Processor 的 `counter` 表名不一致，示例直接照抄会报错。",
+        "suggestion": "把 `counters` 改为 `counter`，并同步核对相关查询里的列引用与 track join。"
+      },
+      {
+        "type": "源码错误",
+        "location": "Camera 管线的 Buffer 流转 / Buffer 管理方面",
+        "detail": "原文写成“Camera3OutputStream 继承自 camera3_stream 结构体”。AOSP android16-release 中 `Camera3OutputStream -> Camera3IOStreamBase -> Camera3Stream`，真正继承 `camera3_stream` 的是 `Camera3Stream`。",
+        "suggestion": "改写成“Camera3OutputStream 通过 Camera3IOStreamBase/Camera3Stream 封装 HAL `camera3_stream`，而不是直接等同于 HAL 结构体”。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-21T18:42:00+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "14.11",
+    "section_title": "Battery Historian 与功耗分析工具",
+    "priority": 95,
+    "reason": "[Deep Tech Review] BatteryStatsService AOSP 路径写错，且遗漏 Android 15+ PowerMonitor 代码级功耗采集链路",
+    "material_paths": [
+      "intake/suggestions.md",
+      "intake/research-gaps.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "参考资料 / AOSP 源码路径",
+        "detail": "原文给出 `frameworks/base/services/core/java/com/android/server/BatteryStatsService.java`。最新 AOSP 路径在 `frameworks/base/services/core/java/com/android/server/am/BatteryStatsService.java`。",
+        "suggestion": "把 BatteryStatsService 源码锚点改到 `.../com/android/server/am/BatteryStatsService.java`，避免读者按旧路径查不到类。"
+      },
+      {
+        "type": "版本差异/知识盲区",
+        "location": "Android Studio Power Profiler / ODPM 的工作原理",
+        "detail": "章节覆盖到 Android 17，但没有补 Android 15(API 35) 起 `android.os.health.SystemHealthManager#getSupportedPowerMonitors()` 与 `getPowerMonitorReadings()` 这一组代码级 PowerMonitor API。",
+        "suggestion": "补一段 Android 15+ 版本差异，说明 PowerMonitor/PowerMonitorReadings 的入口类、异步读取方式，以及它和 Studio Power Profiler 的关系。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-21T18:42:00+08:00",
+    "status": "pending"
   }
 ]
