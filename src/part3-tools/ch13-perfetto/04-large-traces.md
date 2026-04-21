@@ -6,8 +6,8 @@ status: ready-for-review
 drafted_date: "2026-04-03"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 8.0 (API 26) - Android 16 (API 36)"
-last_verified: "2026-04-03"
-last_verified_against: "perfetto.dev docs (v48.x)"
+last_verified: "2026-04-21"
+last_verified_against: "perfetto.dev docs, google/perfetto main trace_processor docs/python api"
 confidence: medium
 sources:
   - type: official
@@ -20,15 +20,15 @@ sources:
     path: "external/perfetto/src/trace_processor/"
 tags: [perfetto, trace_processor, sql, python, cli, large-traces]
 related_chapters: ["13.1", "13.2", "13.3", "13.5"]
-task9_state: reviewed
+task9_state: pending
 task9_result: needs-rework
-task2b_state: pending
+task2b_state: fixed
 task2b_result: fixed
-task6_state: reviewed
+task6_state: revisiting
 task6_result: pass-light-edit
 reviewed_date: 2026-04-20
 reviewed_by: openclaw-task6
-pipeline_stage: task2b_pending
+pipeline_stage: task6_pending
 ---
 
 # 命令行打开超大 Trace
@@ -320,11 +320,12 @@ WHERE name = 'ANR';
 #!/bin/bash
 TRACE_DIR="/data/traces/daily"
 TRACE_PROCESSOR="./trace_processor"
+SQL_FILE="analyze_trace.sql"
 
 echo "trace_file,metric,value"
 for trace in "$TRACE_DIR"/*.perfetto-trace; do
   filename=$(basename "$trace")
-  "$TRACE_PROCESSOR" -q analyze_trace.sql < "$trace" \
+  "$TRACE_PROCESSOR" -q "$SQL_FILE" "$trace" \
     | grep -v '^$' \
     | tail -n +2 \
     | while IFS='|' read -r metric value; do
@@ -332,6 +333,8 @@ for trace in "$TRACE_DIR"/*.perfetto-trace; do
       done
 done
 ```
+
+这里 trace 文件要作为位置参数传给 `trace_processor`，`-q` 只负责指定 SQL 文件。
 
 这个脚本会输出 CSV 格式的结果，可以直接导入 Excel 或进一步处理。
 
@@ -350,10 +353,6 @@ done
 ```
 
 `-e` 参数会把 trace_processor 的内存数据库导出为 SQLite 文件，之后可以用任意 SQLite 工具查询，也可以用 `sqlite3` 命令行的 `.mode json` 输出 JSON。
-
-**方案三：shell 脚本后处理**
-
-默认的文本输出格式本身是制表符分隔的，可以直接用 `awk`/`sed` 转换为 CSV。
 
 **方案三：shell 脚本后处理**
 
@@ -621,7 +620,7 @@ print(recent.groupby('date')['oncreate_ms'].describe())
 
 **"Trace 文件太大，trace_processor 也吃不下怎么办？"**
 
-可以尝试几种方法：一是抓 Trace 时缩小时间范围（只在需要分析的时段开启 trace）；二是用 ring buffer 模式抓取，只保留最近的数据；三是用 Bigtrace 方案（Perfettto 官方提供的分布式分析能力，适用于需要分析数百个 Trace 的场景）；四是用 Python API 分段加载，只加载需要的 track。
+可以尝试几种方法：一是抓 Trace 时缩小时间范围，只保留要分析的窗口；二是用 ring buffer 模式抓取，只保留最近的数据；三是减少 atrace category 和高开销 data source；四是把多份文件拆批交给 `BatchTraceProcessor`；五是在更大规模场景下改用 Bigtrace。Python `TraceProcessor` / `BatchTraceProcessor` 都会 ingest 整个 trace，不支持按 track 局部加载。
 
 **"PerfettoSQL 和标准 SQL 有什么区别？"**
 

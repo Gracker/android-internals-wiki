@@ -1,11 +1,11 @@
 {
-  "generated_at": "2026-04-21T19:54:52+08:00",
+  "generated_at": "2026-04-21T21:14:01+08:00",
   "state_machine_version": "v2",
   "total_sections": 209,
   "metrics": {
     "total": 209,
     "unknown": 31,
-    "last_updated": "2026-04-21T19:54:52+08:00",
+    "last_updated": "2026-04-21T21:14:01+08:00",
     "task2b_state_counts": {
       "unknown": 31,
       "fixed": 139,
@@ -20,31 +20,31 @@
     },
     "pipeline_stage_counts": {
       "unknown": 30,
-      "task6_pending": 71,
+      "task6_pending": 72,
       "task2b_pending": 22,
       "ready-to-publish": 33,
-      "task9_pending": 53
+      "task9_pending": 52
     },
-    "pipeline_task9_pending": 47,
+    "pipeline_task9_pending": 52,
     "pipeline_task2b_pending": 22,
     "pipeline_ready_to_publish": 33,
     "ready-to-publish": 0,
     "finalized": 33,
-    "ready-for-review": 142,
+    "ready-for-review": 145,
     "task6_state_counts": {
       "unknown": 30,
-      "reviewed": 113,
-      "revisiting": 65,
+      "reviewed": 112,
+      "revisiting": 66,
       "pending": 1
     }
   },
   "pipeline": {
     "pipeline_stage_counts": {
       "unknown": 30,
-      "task6_pending": 71,
+      "task6_pending": 72,
       "task2b_pending": 22,
       "ready-to-publish": 33,
-      "task9_pending": 53
+      "task9_pending": 52
     },
     "task2b_state_counts": {
       "unknown": 31,
@@ -54,8 +54,8 @@
     },
     "task6_state_counts": {
       "unknown": 30,
-      "reviewed": 113,
-      "revisiting": 65,
+      "reviewed": 112,
+      "revisiting": 66,
       "pending": 1
     },
     "task9_state_counts": {
@@ -2613,9 +2613,9 @@
       "task6_state": "revisiting",
       "task9_state": "pending",
       "task2b_state": "fixed",
-      "reviewed_date": "2026-04-14",
+      "reviewed_date": "2026-04-21",
       "reviewed_by": "openclaw-task6",
-      "task6_result": "needs-rework",
+      "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
       "section": "13.2"
@@ -2641,8 +2641,8 @@
       "title": "命令行打开超大 Trace",
       "chapter": "13.4",
       "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
-      "task6_state": "reviewed",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
       "task9_state": "pending",
       "task2b_state": "fixed",
       "reviewed_date": "2026-04-20",
