@@ -1574,6 +1574,38 @@
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-21T13:57:22+08:00",
       "status": "pending"
+    },
+    {
+      "section": "7.14",
+      "section_title": "GAPS：Android 动态分析目标可达性路径重建",
+      "priority": 95,
+      "reason": "[Deep Tech Review] GAPS 的动态执行链被误写成 Android Instrumentation + Perfetto，且把静态路径识别率和动态触达率混作同一对比基线。",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "数据错误",
+          "location": "L68",
+          "detail": "正文把 `88.24%` 的静态路径生成率直接拿去对比 `12.82%`，但 `12.82%` 在论文 Table 1 中是 APE 的动态触达率。GAPS 的静态基线应是 FlowDroid `58.81%` 与 DroidReach `9.48%`，动态基线才是 GoalExplorer / APE / Guardian。",
+          "suggestion": "把静态与动态评测拆开叙述，静态对比 FlowDroid / DroidReach，动态对比 GoalExplorer / APE / Guardian，避免跨实验维度比较。"
+        },
+        {
+          "type": "源码错误/原理断裂",
+          "location": "L75 / L82-L85",
+          "detail": "正文把动态验证阶段写成“Android Instrumentation 执行 + Perfetto trace 验证目标方法”。论文 6.2/6.3 和仓库 README 的真实链路是：静态阶段生成 JSON 指令与 entry point，运行期通过 adb 触发入口，再由 AndroidViewClient 的 `findViewById` / `touch` 执行 GUI 交互；找不到控件或 Activity 时才让 Guardian 兜底；目标方法执行确认依赖可选 Frida hook。Perfetto 不是论文中的核心验证机制。",
+          "suggestion": "把动态执行改写为“静态指令驱动的 AndroidViewClient 交互 + Guardian fallback + 可选 Frida reachability hook”，删除把 Perfetto 写成 GAPS 核心组件的表述。"
+        },
+        {
+          "type": "版本差异/实验边界",
+          "location": "frontmatter L6-L7 / L70-L76",
+          "detail": "章节把适用范围写成 `Android 8 - Android 17`，并把实验环境概括成“Android 真机环境”。论文实际只给出了静态实验运行在 CloudLab Ubuntu 22.04（64GB RAM），动态实验运行在 Android 13 x86-64 emulator，ARM 场景使用 Pixel 2 Android 11。当前写法会把论文验证边界、Android 17 适配和 Perfetto/jank 场景混成一个已证实结论。",
+          "suggestion": "把章节边界改成“论文已验证的实验环境”与“面向性能分析的潜在衍生场景”两层，避免把 Android 17 / 真机 / Perfetto 说成论文既有结论。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-04-21T15:34:18+08:00",
+      "status": "pending"
     }
   ]
 }

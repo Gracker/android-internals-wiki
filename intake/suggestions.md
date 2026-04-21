@@ -4328,3 +4328,15 @@
 - **位置**：frontmatter sources + 参考资料
 - **问题**：`Google Case Study: TikTok Android performance optimization (2022)` 不是可直接访问的 URL，参考资料末尾还混入与 OEM/性能案例无直接关系的条目，案例证据链不闭合。
 - **建议**：按案例逐条补齐可访问 URL 或明确归档路径，移出无关参考资料，避免把素材池当作章节证据链。
+
+## [Task9 Deep Review] 7.14 GAPS：Android 动态分析目标可达性路径重建 — 2026-04-21
+- **类型**：源码准确性
+- **位置**：frontmatter sources
+- **问题**：frontmatter 把论文标题写成 `Mind the GAPS: Automated Path Reconstruction for Android Method Reachability`，与论文 PDF / ACM 标题不一致，后续做一手资料回溯时容易对不上来源。
+- **建议**：统一改成 `Mind the GAPS: Bridging the GAPS between Targeted Dynamic Analysis and Static Path Reconstruction in Android Apps`，并区分 arXiv 版本日期与 ACM publication date。
+
+## [Task9 Deep Review] 7.14 GAPS：Android 动态分析目标可达性路径重建 — 2026-04-21
+- **类型**：数据与案例支撑
+- **位置**：L92-L95
+- **问题**：正文把 “jank 根因分析 / ANR 分析 / 自动化回归测试” 写成实际应用，但论文的 real-world case study 其实是用 SPECK 在 Google Play Top 50 上验证潜在漏洞方法的可达性，没有直接给出性能场景实验或 trace 证据。
+- **建议**：把这部分改成“潜在衍生场景”或补一段桥接条件，说明需要额外的 trace / 方法探针设计，避免让读者误以为论文已经验证了性能分析工作流。
