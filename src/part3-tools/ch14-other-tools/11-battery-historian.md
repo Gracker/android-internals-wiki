@@ -28,15 +28,15 @@ sources:
     path: "https://developer.android.com/jetpack/androidx/releases/benchmark"
   - type: official
     path: "https://source.android.com/docs/core/power/power-stats-hal"
-pipeline_stage: task2b_pending
+pipeline_stage: task6_pending
 task6_state: revisiting
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
 reviewed_date: "2026-04-16"
-task9_state: reviewed
-task2b_state: pending
+task9_state: pending
+task2b_state: fixed
 task2b_result: fixed
-last_task2b_at: "2026-04-21T08:24:09+08:00"
+last_task2b_at: "2026-04-21T19:53:32+08:00"
 task9_result: needs-rework
 last_task9_at: "2026-04-21T18:42:00+08:00"
 task9_reviewed_by: openclaw-task9
@@ -85,7 +85,7 @@ adb bugreport bugreport.zip    # Android 7.0+
 adb bugreport > bugreport.txt  # Android 6.0 及更早
 ```
 
-这里有一个容易忽略的细节：**断开 USB**。USB 连接时设备处于充电状态，这会影响电池状态数据的准确性。要获得真实的电池消耗数据，需要在完全脱离 USB 的条件下运行测试场景。
+这里有一个容易忽略的细节：**断开 USB**。USB 连接时设备处于充电状态，这会影响电池状态数据的准确性。要获得真实的电池消耗数据，需要在完全脱离 USB 的条件下运行测试场景。部分 Android 14+ 的 OEM 机型会对 `dumpsys batterystats` 历史记录做额外限制，如果发现 wakelock 历史为空，先确认开发者选项、USB 调试和厂商自带的调试权限都已打开。
 
 bugreport 文件中与功耗直接相关的部分包括：
 - **batterystats**：按 UID 统计的电池使用明细，包含 CPU 时间、网络流量、Wakelock 持有时长、传感器使用等
@@ -94,23 +94,25 @@ bugreport 文件中与功耗直接相关的部分包括：
 
 ### Battery Historian 的部署
 
-Battery Historian 是一个 Go 语言编写的 Web 工具，接收 bugreport 文件后在浏览器中呈现交互式功耗时间线。部署方式有三种：
+Battery Historian 是一个 Go 语言编写的 Web 工具，接收 bugreport 文件后在浏览器中呈现交互式功耗时间线。当前更稳妥的部署顺序如下：
 
 ```bash
-# 方式 1：Docker（推荐，最简单）
-docker run -p 9999:9999 gcr.io/android-battery-historian/stable/battery-historian \
-  --port 9999
+# 方式 1：社区维护镜像（当前最省事）
+docker run -p 9999:9999 itachi1706/battery-historian:stable-3.1 --port 9999
 
-# 方式 2：Go 本地编译
-go run cmd/battery-historian/battery-historian.go --port 9999
+# Apple Silicon / arm64 Docker 主机如果遇到镜像架构不匹配，再补这一项
+docker run --platform linux/amd64 -p 9999:9999 itachi1706/battery-historian:stable-3.1 --port 9999
+
+# 方式 2：从源码自建（要按仓库 README 补齐旧版 Go / Python / JS 依赖）
+git clone https://github.com/google/battery-historian.git
+cd battery-historian
+# 再按 README 执行 setup / build 步骤
 
 # 方式 3：在线工具
 # 上传 bugreport 到 https://bathist.ef.lc/（第三方托管，注意数据安全）
 ```
 
-⚠️ **截至 2025 年底，Battery Historian 已不再由 Google 积极维护。** 官方推荐迁移到 Power Profiler 和 Macrobenchmark PowerMetric。但 Battery Historian 仍然是分析 bugreport 中功耗数据的最佳工具之一，特别是当你需要回顾一段较长时间（数小时）的电池消耗模式时，目前没有完美的替代品。
-
-[待验证: Battery Historian Docker 镜像在 2026 年是否仍然可用]
+Google 仓库仍然保留了 Battery Historian 源码，但官方 gcr.io 镜像已经长期不维护，实操里常见情况是镜像拉取失败，或者前端依赖过旧导致页面资源加载异常。只要目标是把 bugreport 跑起来，直接切到社区镜像更省时间。Battery Historian 现在更适合做离线回顾和长时间趋势分析；日常开发阶段的实时观测，优先用 Power Profiler、Perfetto 和 Macrobenchmark。
 
 ### 时间线视图解读
 
@@ -272,6 +274,15 @@ ODPM 测量的 Power Rail 包括：
 
 这些数据可以在 Power Profiler 的 System Trace 视图中直接查看，与 CPU 调度、线程活动放在同一条时间线上，可以在同一个视图里同时看到代码行为和功耗变化的对应关系。
 
+### Android 15+ 的 PowerMonitor API
+
+Android 15 (API 35) 把这条能力开放到了代码层。入口类是 `android.os.health.SystemHealthManager`，通过 `context.getSystemService(Context.SYSTEM_HEALTH_SERVICE)` 获取。实际接入分两步：
+
+- `getSupportedPowerMonitors(executor, consumer)`：异步枚举当前设备暴露的 `PowerMonitor`
+- `getPowerMonitorReadings(monitors, executor, outcomeReceiver)`：异步读取这组 monitor 的累计功耗读数，结果封装在 `PowerMonitorReadings` 中
+
+这组 API 适合自动化测试、实验开关和线上诊断工具。它和 Studio Power Profiler 看到的是同一类底层 monitor 数据，是否能拿到细粒度 rail、采样分辨率有多高，仍然取决于设备有没有实现 Power Stats HAL / ODPM。
+
 ### Power Profiler vs Energy Profiler
 
 | 维度 | Energy Profiler (旧) | Power Profiler (新) |
@@ -283,6 +294,35 @@ ODPM 测量的 Power Rail 包括：
 | 能否在模拟器使用 | 是（因为是估算） | 否（需要 ODPM 硬件） |
 
 如果你的设备不支持 ODPM，Power Profiler 会回退到 Energy Profiler 的估算模式。两者的 UI 位置相同：View → Tool Windows → Profiler → ENERGY。
+
+### Perfetto 的 power rails 分析路径
+
+Power Profiler 适合交互式观察，Perfetto 更适合和 CPU 调度、线程活动一起做系统级联查。录制 trace 时启用 `android.power` 数据源，并在 `android_power_config` 里打开 `collect_power_rails: true`，就能把 rail 数据写进同一份 trace。
+
+```protobuf
+data_sources: {
+  config {
+    name: "android.power"
+    android_power_config {
+      battery_poll_ms: 250
+      collect_power_rails: true
+    }
+  }
+}
+```
+
+分析时把 `sched_switch`、进程轨道和线程轨道一起抓进来。这样既能在 UI 里对应功耗峰值和线程活动，也能在 SQL 里直接查 `counter` / `counter_track`：
+
+```sql
+SELECT ct.name, c.ts, c.value
+FROM counter c
+JOIN counter_track ct ON c.track_id = ct.id
+WHERE ct.name LIKE 'power.%'
+ORDER BY c.ts
+LIMIT 20;
+```
+
+如果某个 rail 峰值刚好和 RenderThread、Binder 线程或 camera 线程的调度切片重叠，根因定位会比单看 Studio 时间线更直接。
 
 ### 使用流程
 
@@ -408,7 +448,7 @@ class PowerBenchmark {
   - [Measure power with Macrobenchmark](https://developer.android.com/topic/performance/power/measuring) — Macrobenchmark 功耗测试
 
 - **AOSP 源码路径**：
-  - `frameworks/base/services/core/java/com/android/server/BatteryStatsService.java` — 电池统计服务
+  - `frameworks/base/services/core/java/com/android/server/am/BatteryStatsService.java` — 电池统计服务
   - `frameworks/base/core/java/android/os/BatteryStats.java` — 电池统计 API
   - `hardware/interfaces/power/stats/` — Power Stats HAL 接口定义
 

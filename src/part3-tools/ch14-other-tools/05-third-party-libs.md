@@ -23,14 +23,16 @@ sources:
 tags:
   - android
   - research
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
 task9_result: needs-rework
-task2b_state: pending
+task2b_state: fixed
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-04-14"
 task6_result: needs-rework
+task2b_result: fixed
+last_task2b_at: "2026-04-21T19:51:48+08:00"
 ---
 
 
@@ -87,13 +89,13 @@ Matrix 的设计思路是"无侵入接入、全链路覆盖"。它通过 Gradle 
 
 Trace Canary 的核心能力是检测卡顿、慢函数、ANR、启动耗时和帧率异常。它的工作原理可以分两层来看。
 
-第一层是**编译期插桩**。Trace Canary 通过 Gradle 插件在编译阶段对应用字节码进行修改，在每个方法的入口和出口处插入计时代码。这种插桩是选择性的——我们可以配置插桩范围（比如只插桩特定包名下的类），以控制运行时性能开销。插桩后的代码会在方法执行时记录起止时间戳和调用堆栈。
+第一层是**编译期插桩**。Trace Canary 会在编译阶段对应用字节码做方法级改写，在每个方法的入口和出口插入计时逻辑。这种插桩是选择性的，可以按包名、类名或白名单限制范围，控制运行时开销。插桩后的代码会在方法执行时记录起止时间戳和调用堆栈。早期版本主要依赖 Transform API，AGP 8.0+ 已经转到基于 Instrumentation API 的 `AsmClassVisitorFactory` 方案，插桩本质仍然是编译期字节码修改。
 
 第二层是**运行时检测**。Trace Canary 监听主线程的 Looper 消息分发和 Choreographer 的 doFrame 回调。当一个 Message 的执行耗时超过阈值（比如默认 700ms），或者一帧的渲染超过 16.6ms 导致连续掉帧，它就会触发上报逻辑。对于 ANR 检测，Trace Canary 提供两种方式：LooperAnrTracer 在主线程 Message 开始执行时设置一个 5 秒超时（类似"埋炸弹"），如果超时触发则判定为 ANR；SignalAnrTracer 则通过捕捉系统发出的 SIGQUIT 信号来检测。
 
 在实际分析中，我们可以通过 Trace Canary 的上报数据看到：触发卡顿的具体方法、完整的调用堆栈、该方法的执行耗时以及执行次数。这比在 Perfetto 中逐帧查看 Trace 要高效得多，特别是在线上环境中。
 
-[待验证: Matrix 最新版本 Trace Canary 是否仍基于字节码插桩，或有新方案]
+[已验证: 新版 Matrix Trace Canary 在 AGP 8.0+ 下使用基于 Instrumentation API 的 ASM visitor 方案，插桩本质仍然是编译期字节码改写]
 
 ### Resource Canary：内存泄漏与冗余 Bitmap
 
@@ -149,13 +151,13 @@ KOOM 的 Native 泄漏检测模块（koom-native-leak）采用了与 Android 系
 
 ### 线程泄漏检测
 
-KOOM 还提供了线程泄漏检测能力。它通过 Hook pthread_create 和 pthread_exit，记录线程的创建和退出。如果一个线程在创建后长时间没有退出（超过可配置的阈值），且线程栈中看不到有意义的业务逻辑（比如卡在 Object.wait 或 nativePollOnce），KOOM 会将其标记为疑似泄漏线程。线程泄漏在生产环境中经常被忽视，但它占用的不仅是内存（每个线程默认 1MB 栈空间），还有文件描述符和调度资源。
+KOOM 还提供了线程泄漏检测能力。它通过 Hook pthread_create 和 pthread_exit，记录线程的创建和退出。如果一个线程在创建后长时间没有退出（超过可配置的阈值），且线程栈中看不到有意义的业务逻辑（比如卡在 Object.wait 或 nativePollOnce），KOOM 会将其标记为疑似泄漏线程。线程泄漏在生产环境中经常被忽视，但它占用的不仅是内存（每个线程默认 1MB 栈空间），还有文件描述符和调度资源。线上使用时通常还要配合线程白名单、业务线程命名规范或常驻线程标记，先过滤掉 Binder 线程池、线程池 worker、监控线程这类预期长期存活的线程，避免误报。
 
 [待验证: KOOM 线程泄漏模块的线上稳定性表现]
 
 ## Booster：滴滴的编译期优化框架
 
-前面两个工具都是运行时监控方案，Booster 走的是完全不同的路线——它在编译期解决问题。Booster 是滴滴团队开源的 Gradle 插件框架，通过 Transform API 在 .class 转 .dex 之前对字节码进行扫描和修改。
+前面两个工具都是运行时监控方案，Booster 走的是编译期路线。Booster 是滴滴团队开源的 Gradle 插件框架，经典实现建立在 Transform API 这一代 AGP 扩展点上，在 .class 转 .dex 之前对字节码做扫描和改写。理解这条历史路径，有助于判断它在新旧 AGP 版本里的兼容性边界。
 
 ### Transform API 的工作位置
 
@@ -181,9 +183,9 @@ Booster 的功能以模块化形式提供，我们可以按需引入。
 
 ### Booster 的局限性
 
-Booster 基于 Transform API 的方案也有局限。Transform API 在 AGP 7.0+ 中已被标记为 deprecated，AGP 8.0 中虽然仍可使用，但官方更推荐迁移到 Instrumentation API。新项目如果使用较新的 AGP 版本，通常要同步评估替代方案。另一个限制是编译期分析无法覆盖运行时行为，Booster 能发现"这段代码在主线程调用了 I/O"，但无法判断"这个 I/O 在实际运行中到底耗时多久"。
+Booster 基于 Transform API 的经典方案也有局限。Transform API 在 AGP 7.x 已经进入废弃阶段，到了 AGP 8.0 被彻底移除。旧版 Booster 或自研 Transform 插件在 AGP 8.0+ 环境下会直接失去接入点，继续做同类字节码改写需要迁移到 Instrumentation API 的 `AsmClassVisitorFactory`，以及处理产物编排的 Artifacts API。另一个限制是编译期分析无法覆盖运行时行为，Booster 能发现“这段代码在主线程调用了 I/O”，但无法判断“这个 I/O 在实际运行中到底耗时多久”。
 
-[待验证: Booster 在 AGP 8.x 上的兼容性状态]
+[已验证: AGP 8.0 Release Notes，Booster 的兼容性边界仍要看具体版本或 fork]
 
 ## 启动优化框架：Anchors、AppInit 与任务调度
 
@@ -209,9 +211,9 @@ Booster 基于 Transform API 的方案也有局限。Transform API 在 AGP 7.0+ 
 
 [待验证: 各框架的最新维护状态]
 
-## 扩展：Rhea —— 字节跳动的 Trace 工具
+## 扩展：Rhea / btrace —— 字节跳动的 Trace 工具
 
-Rhea 是字节跳动抖音团队开发的 Trace 工具，虽然它不是一个开源的通用 SDK（核心代码未完全开源），但其设计思路对理解 Trace 工具的演进方向非常有价值。
+Rhea 是字节跳动在 Trace 工具上的一条演进线，后续以 `btrace` 项目的形式完全开源。它基于 Perfetto 生态，支持 Android 和 iOS，适合用来理解函数级 Trace 工具在真实业务里的工程化演进。
 
 ### 从 Systrace 到 Rhea 的三阶段演进
 
@@ -223,11 +225,11 @@ Rhea 是字节跳动抖音团队开发的 Trace 工具，虽然它不是一个�
 
 **第三阶段是动态一体化 Trace**。Rhea 3.0 放弃了前面的方案，重新设计了一套完整架构：不限层级插桩获取函数耗时 + Hook atrace_marker_fd 拦截用户态 Trace + Hook libc 的 open/read/write/fsync 收集 I/O 信息 + Hook libbinder.so 的 IPCThreadState.transact 收集 Binder 耗时 + 运行时动态打开 ART 虚拟机的轻锁日志。最终将用户态 atrace 和内核态 ftrace 合并为一个完整的 Trace 文件，兼容 Systrace/Perfetto 可视化格式。
 
-Rhea 的一个关键优化是将直接写入内核态 trace_marker 文件的 Trace 在用户态拦截、缓存，再异步转储。这避免了大量线程同时向同一文件写入导致的 pos 锁竞争问题——这个问题在实际优化中非常容易误导方向，因为工具本身的性能开销表现为 I/O Wait，很容易误判为业务代码的 I/O 问题。
+Rhea 的一个关键优化是将直接写入内核态 trace_marker 文件的 Trace 在用户态拦截、缓存，再异步转储。这避免了大量线程同时向同一文件写入导致的 pos 锁竞争问题。这个问题在实际优化中很容易误导方向，因为工具本身的性能开销会表现为 I/O Wait。开源后的 btrace 3.0 又补了同步采样模式，用更低的持续开销换取函数级时序观测能力，更适合长时间抓取。
 
 [来源: Cubox/抖音 Android 性能优化系列：新一代全能型性能分析工具 Rhea]
 
-[待验证: Rhea 最新版本的开源状态和技术演进]
+[已验证: Rhea 后续以 btrace 形式完全开源，3.0 版本补充了同步采样等新能力]
 
 ## 扩展：Hook 机制对比
 
@@ -247,9 +249,9 @@ Matrix 的 IO Canary、KOOM 的内存分配 Hook 都使用了 PLT Hook 方案。
 
 Inline Hook 直接修改目标函数的机器码（通常是将函数入口处的几条指令替换为跳转指令），将执行流导向 Hook 函数。这种方式理论上可以 Hook 任何函数调用，包括 ELF 内部的直接调用。
 
-优势是覆盖范围广，理论上无 Hook 盲区。劣势是：需要处理不同 CPU 架构的指令差异（ARM、ARM64、x86 等），兼容性风险高；如果目标函数很短（短于一条跳转指令的长度），可能无法 Hook；在多线程环境下修改代码段存在竞态条件。Rhea 在 Hook atrace 相关函数时使用了基于字节跳动自研 ByteHook 的方案，它结合了 PLT Hook 和 Inline Hook 的特点。
+优势是覆盖范围广，理论上无 Hook 盲区。劣势是：需要处理不同 CPU 架构的指令差异（ARM、ARM64、x86 等），兼容性风险高；如果目标函数很短（短于一条跳转指令的长度），可能无法 Hook；在多线程环境下修改代码段存在竞态条件。字节跳动在开源生态里把这两条路线拆得很清楚：`ByteHook` 是 PLT Hook 库，`ShadowHook` 才是 Inline Hook 库。分析字节系方案时，先区分自己看到的是 ELF 导入表拦截，还是函数入口改写。两者的稳定性边界和适用场景不同。
 
-[待验证: ByteHook 具体使用何种 Hook 策略]
+[已验证: bytedance/bhook 为 PLT Hook，bytedance/android-inline-hook 为 ShadowHook Inline Hook]
 
 ### Transform（编译期字节码修改）
 
@@ -289,7 +291,7 @@ Booster 使用的 Transform 属于编译期方案。它在 .class 文件阶段�
 
 **"KOOM 的 Native 泄漏检测可以替代 ASan"**。KOOM 的 Mark-and-Sweep 方案是"不精确"的——它只能检测到"不可达"的内存块，但"不可达"不等于"泄漏"（某些长期存活的内存块可能在扫描瞬间没有被任何栈变量引用）。AddressSanitizer (ASan) 是更精确的工具，但它需要特殊编译且开销大，不适合生产环境。KOOM 适合生产环境的持续监控，ASan 适合开发阶段的问题定位。
 
-**"Booster 的 Transform API 已经过时了"**。虽然 AGP 8.0 将 Transform API 标记为 deprecated 并推荐 Instrumentation API，但 Transform API 在当前版本仍然可用。Booster 的核心价值在它提供的优化模块和字节码处理思路，即使入口 API 迁移，这些优化逻辑本身也不会过时。
+**"Booster 的 Transform API 已经过时了"**。Transform API 在 AGP 8.0 已经被移除，旧版基于 Transform 的 Booster 方案不能直接带到新的构建流程里。编译期优化本身还有效，只是接入点换成了 Instrumentation API 和 Artifacts API。
 
 **"启动框架能自动优化启动速度"**。启动调度框架只是帮你更好地组织任务——把可以并行的任务并行化、把非关键路径的任务延迟化。它本身不会让任何单个任务执行得更快。如果每个初始化任务本身就很慢，用了框架也不会有质的变化。优化启动的根本还是减少启动路径上的工作量。
 
@@ -299,7 +301,9 @@ Booster 使用的 Transform 属于编译期方案。它在 .class 文件阶段�
 - KOOM GitHub: https://github.com/KwaiAppTeam/KOOM
 - Booster GitHub: https://github.com/didi/Booster
 - xHook GitHub: https://github.com/iqiyi/xHook
-- ByteHook GitHub: https://github.com/bytedance/android-inline-hook (字节跳动 Inline Hook)
+- ByteHook GitHub: https://github.com/bytedance/bhook (字节跳动 PLT Hook)
+- ShadowHook GitHub: https://github.com/bytedance/android-inline-hook (字节跳动 Inline Hook)
+- btrace GitHub: https://github.com/bytedance/btrace
 - 抖音 Android 性能优化系列：Rhea Trace 工具: https://mp.weixin.qq.com/s/vkBeZ6hmVn_RaXS5Xv_L2g
 - Android PLT Hook 概述（xHook 文档）: https://github.com/iqiyi/xHook/blob/master/docs/overview/android_plt_hook_overview.zh-CN.md
 - Alpha 启动调度框架: https://github.com/alibaba/alpha
