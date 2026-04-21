@@ -6,7 +6,7 @@ status: ready-for-review
 drafted_date: "2026-04-02"
 applicable_versions: "Android 8.0 (API 26) - Android 16 (API 36)"
 last_verified: "2026-04-02"
-reviewed_date: "2026-04-16"
+reviewed_date: "2026-04-21"
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
 last_verified_against: "AOSP android-16.0.0_r1"
@@ -33,8 +33,8 @@ polish_count: 1
 polish_date: "2026-04-09"
 polish_by: "task2b-polish"
 related_chapters: ["10.1", "10.2", "10.3", "10.4", "10.6"]
-task6_state: revisiting
-pipeline_stage: task6_pending
+task6_state: reviewed
+pipeline_stage: task9_pending
 task9_state: pending
 task9_result: needs-rework
 task9_reviewed_date: "2026-04-21"
@@ -101,7 +101,7 @@ task2b_result: fixed
 
 **进程被频繁查杀和重启**。在 Android 8+ 的主线实现里，低内存查杀主要由 userspace `lmkd` 负责；Android 10+ 在内核具备支持时，`lmkd` 会优先使用 PSI monitors 判断是否进入真实内存压力，`vmpressure` 更多是兼容旧内核的回退路径。SystemServer 日志会记录某些进程（比如 QQ）在短时间内被反复杀死又拉起，形成"杀 → 起 → 杀 → 起"的死循环。每次杀进程和拉起进程都会消耗 CPU、I/O 和内存资源，进一步恶化整机性能。
 
-```
+```logcat
 07-23 14:32:16.932  am_proc_start: com.tencent.mobileqq, restart
 07-23 14:32:16.969  am_proc_bound: com.tencent.mobileqq
 07-23 14:32:16.979  am_kill: com.tencent.mobileqq, adj 901, empty #3

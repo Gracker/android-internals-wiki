@@ -32,7 +32,7 @@ sources:
     path: "intake/research-feeds/2026-04-01-07-ch09-binder-anr-android15-16-17.md"
 tags: [anr, input-dispatching, broadcast, service, contentprovider, timeout]
 related_chapters: ["9.1", "9.3", "9.4", "1.4", "1.5", "1.10"]
-reviewed_date: "2026-04-16"
+reviewed_date: "2026-04-21"
 review_v2_date: "2026-04-09"
 review_v2_by: "openclaw-task6"
 review_type: "post-polish-quality-gate"
@@ -42,8 +42,8 @@ task6_review_date: "2026-04-16"
 polish_count: 1
 polish_date: "2026-04-07"
 polish_by: "task2b-polish"
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task9_result: needs-rework
 task2b_state: fixed
@@ -116,7 +116,7 @@ const nsecs_t DEFAULT_INPUT_DISPATCHING_TIMEOUT = 5000 * 1000000LL; // 5 sec
 
 ### 在 Logcat 中的特征
 
-```
+```logcat
 E/ActivityManager: ANR in com.example.app (PID: 12345)
 Reason: Input dispatching timed out (Waiting to send non-key event because the
         touched window has not finished processing certain input events that were
@@ -129,7 +129,7 @@ Reason: Input dispatching timed out (Waiting to send non-key event because the
 
 ### 特殊情况：无焦点窗口的 Input ANR
 
-有一种容易忽略的 Input ANR 变体："no focused window" ANR。它发生在 InputDispatcher 试图将事件分发给一个应该有焦点、但实际上没有对应窗口的 App。这种情况虽然也归类为 Input ANR，但根因可能不是主线程阻塞，而是窗口切换过程中的状态不一致。
+有一种容易忽略的 Input ANR 变体："no focused window" ANR。它发生在 InputDispatcher 试图将事件分发给一个应该有焦点、但没有对应窗口的 App。这种情况虽然也归类为 Input ANR，但根因可能不是主线程阻塞，而是窗口切换过程中的状态不一致。
 
 ## BroadcastReceiver Timeout（广播超时）
 
@@ -160,7 +160,7 @@ Android 14 上继续往下追时，需要同时看 `BroadcastQueueImpl` 和 `Bro
 
 ### 在 Logcat 中的特征
 
-```
+```logcat
 E/ActivityManager: ANR in com.example.app (PID: 12345)
 Reason: Broadcast of Intent { act=android.intent.action.BOOT_COMPLETED
         cmp=com.example.app/.receiver.BootReceiver }
@@ -201,7 +201,7 @@ private static final long DEFAULT_SERVICE_BACKGROUND_TIMEOUT =
 
 ### 在 Logcat 中的特征
 
-```
+```logcat
 E/ActivityManager: ANR in com.example.app (PID: 12345)
 Reason: executing service com.example.app/com.example.app.MyService
 ```
@@ -242,7 +242,7 @@ Reason: executing service com.example.app/com.example.app.MyService
 
 ### 在 Logcat 中的特征
 
-```
+```logcat
 E/ActivityManager: ANR in com.example.app (PID: 12345)
 Reason: ContentProvider com.example.app/.provider.MyProvider not responding
 ```

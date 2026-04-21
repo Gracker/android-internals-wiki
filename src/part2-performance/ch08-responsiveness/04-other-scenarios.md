@@ -5,8 +5,8 @@ section: "8.4"
 status: ready-for-review
 drafted_date: "2026-04-02"
 drafted_by: "openclaw-task2a"
-reviewed_date: "2026-04-16"
-reviewed_by: "openclaw-task6"
+reviewed_date: "2026-04-21"
+reviewed_by: openclaw-task6
 applicable_versions: "Android 8.0 (API 26) - Android 16 (API 36)"
 last_verified: "2026-04-02"
 last_verified_against: "AOSP android-16.0.0_r1, developer.android.com"
@@ -29,8 +29,8 @@ sources:
     path: "https://developer.android.com/reference/androidx/viewpager2/widget/ViewPager2"
 tags: ['responsiveness', 'page-switch', 'click-response', 'search', 'viewpager2', 'fragment', 'debounce']
 related_chapters: ["8.1", "8.2", "8.3", "3.1", "3.2", "7.4"]
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task6_result: pass-light-edit
 task9_result: pending-recheck
 task9_state: pending
@@ -92,7 +92,7 @@ task2b_state: fixed
 
 在 Perfetto 中，我们可以通过以下方式定位 Activity 跳转的耗时：
 
-```
+```text
 [图：Perfetto 中 Activity 跳转的典型 Trace 片段]
 - 在主线程 track 中搜索 "ActivityThread" 相关 slice
 - 关注 handleLaunchActivity → performLaunchActivity → activityStart 的时间跨度
@@ -233,7 +233,7 @@ viewPager2.registerOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback
 
 在 Perfetto 中，Tab 切换的性能问题通常表现为：主线程上的 `inflate` 操作耗时过长、或者 Fragment 生命周期回调中的同步 IO 操作。我们可以搜索 `FragmentManager` 相关的 trace slice，或者通过自定义 `Trace.beginSection("TabSwitch_" + position)` 来精确度量每个 Tab 的切换耗时。
 
-```
+```text
 [图：Perfetto 中 ViewPager2 Tab 切换的典型 Trace]
 - 关注主线程的 inflate 操作
 - 关注 Fragment 生命周期回调的耗时
@@ -393,7 +393,7 @@ fun View.setOnSingleClickListener(delay: Long = 500L, onClick: (View) -> Unit) {
 
 **搜索响应**：网络请求可以在 `HttpURLConnection` 或 OkHttp 的 trace 中观察到。关注从 debounce 结束到搜索结果返回的端到端延迟。
 
-```
+```text
 [图：四种响应速度场景在 Perfetto 中的典型模式对比]
 [待补充：Perfetto Trace 截图——同一 Trace 文件中四种场景的对照视图]
 ```
