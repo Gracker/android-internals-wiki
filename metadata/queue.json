@@ -553,5 +553,72 @@
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-21T23:18:40+08:00",
     "status": "pending"
+  },
+  {
+    "section": "11.5",
+    "section_title": "Wakelock 机制与功耗分析",
+    "priority": 85,
+    "reason": "[Deep Tech Review] Play policy 表述超出官方口径；App Standby Bucket 与 wakelock 配额关系缺少证据闭环",
+    "material_paths": [
+      "intake/research-gaps.md",
+      "intake/suggestions.md",
+      "logs/deep-review/2026-04-22-07-deep-review.md"
+    ],
+    "review_issues": [
+      {
+        "type": "版本差异/政策表述",
+        "location": "开头两段；### Play Store 的 Wakelock 惩罚政策",
+        "detail": "正文把 Android vitals 的“visibility on Play once the metric is out of beta”扩写成“2026年3月正式生效 + 搜索/推荐降权 + 详情页警告标签”，但现有官方 vitals 文档只明确阈值与可见性影响，没有给出这一组正式生效日期和商店标签措辞。",
+        "suggestion": "回到官方口径：写清 2h/24h、>5% sessions、out of beta 后影响 visibility；若要保留 2026-03 和 warning label，需要补 Play 官方公告原文链接。"
+      },
+      {
+        "type": "知识盲区/原理断裂",
+        "location": "### App Standby Bucket 的影响",
+        "detail": "把 Rare/Restricted 桶写成“直接对 wakelock 施加配额限制”，会把 Job/Alarm/Network 配额与 wakelock 行为混成一层。公开 App Standby 文档展示的是 bucket 对 jobs/alarms/network 的限制，没有给出 per-bucket wakelock quota 规则。",
+        "suggestion": "改写成“bucket 会通过后台执行限制间接影响可持续持锁的场景”，并补 PowerManagerService / DeviceIdle / app standby policy 的 AOSP 证据；拿不准时标 [待验证]。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-22T07:21:28+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "12.4",
+    "section_title": "Android 网络安全与 TLS 性能优化",
+    "priority": 95,
+    "reason": "[Deep Tech Review] ECH RFC 错引；HPKE 官方 API 锚点失效；ECH 与 DoH/DoT 关系写错",
+    "material_paths": [
+      "intake/suggestions.md",
+      "logs/deep-review/2026-04-22-07-deep-review.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误/标准引用错误",
+        "location": "## Encrypted Client Hello (ECH) 的性能影响 开头",
+        "detail": "正文写成“ECH，RFC 9180 相关扩展”。RFC 9180 是 HPKE，不是 ECH；Android 17 的 security-config 文档把 ECH 标为 RFC 9849。",
+        "suggestion": "把 ECH 的规范锚点改成 RFC 9849，并单独说明 ECH 内部会用到 HPKE；不要把协议本身和底层加密原语合成一个 RFC。"
+      },
+      {
+        "type": "源码错误/官方锚点失效",
+        "location": "frontmatter sources / HPKE 小节",
+        "detail": "引用的官方 API 路径 https://developer.android.com/reference/android/net/ssl/HPKE 当前返回 404，读者无法据此核对 Android 17 的 HPKE SPI。",
+        "suggestion": "替换为实际存在的 Android 17 HPKE / HpkeSpi API 文档路径，或改用 Android 17 behavior changes / 安全文档里的正式入口，再核对文中类名。"
+      },
+      {
+        "type": "原理断裂",
+        "location": "ECH 的工作流程依赖 DNS-over-HTTPS（DoH）或 DNS-over-TLS（DoT）",
+        "detail": "正文把 ECH 配置获取写成“依赖 DoH/DoT + 额外 HTTPS 请求”，容易把 ECH 与 DNS 传输加密绑死。Android 17 官方文档强调的是 networking library 集成 ECH + server support，并没有把 DoH/DoT 作为平台前提。",
+        "suggestion": "改成：ECHConfig 通过 DNS HTTPS/SVCB 记录分发，是否用 DoH/DoT 是解析链路实现细节，不是 ECH 协商的同义前提；性能分析要把 DNS 解析开销和 ECH 握手开销拆开。"
+      },
+      {
+        "type": "原理断裂/概念混淆",
+        "location": "导语第一段",
+        "detail": "把 HPKE 与 TLS 1.3 / CT / ECH 并列写成“逐步推到默认路径里”，会让读者误以为普通 HTTPS 首包都默认走 HPKE API。Android 17 暴露的是 HPKE SPI 能力，不是把通用应用流量默认切到 HPKE。",
+        "suggestion": "把 HPKE 单独放到“Android 17 新增安全能力”小节，和默认 TLS 握手路径分开。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-22T07:21:28+08:00",
+    "status": "pending"
   }
 ]

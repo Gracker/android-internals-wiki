@@ -214,3 +214,27 @@
 - **位置**：CompilationMode：量化编译优化效果
 - **问题**：示例仍写 `CompilationMode.Partial(CompilationMode.Partial.Mode.DEFAULT)`，偏旧，容易和当前 `CompilationMode.Partial()` 的默认写法混淆。
 - **建议**：把示例收敛到当前默认写法，并补一句默认模式与 Baseline Profile 关系。
+
+## [Task9 Deep Review] 5.2 EAS 能量感知调度 — 2026-04-22
+- **类型**：版本差异 / 观测边界
+- **位置**：`## EAS 在 Perfetto 中的观察 > CPU Frequency Track`
+- **问题**：正文写成“同簇 CPU 通常以簇为单位调频”，缺少硬件边界。新平台存在按 policy / per-core DVFS 的实现，读者如果只按“同簇同频”判断，容易误读频率轨。
+- **建议**：改成“很多移动 SoC 仍按 policy / 簇调频，但要以 `/sys/devices/system/cpu/cpufreq/policy*` 为准”，并补一句不要只凭同簇同频下结论。
+
+## [Task9 Deep Review] 11.5 Wakelock 机制与功耗分析 — 2026-04-22
+- **类型**：数据缺失
+- **位置**：`## Wakelock 的本质：为什么 Android 需要“阻止睡眠”`
+- **问题**：正文写“整机功耗可以降到 1mA 以下”，但没有给机型、温度、调制解调器状态、Always-on 组件条件，这个数值跨设备不可直接复用。
+- **建议**：改成“可降到极低待机电流”或补测试条件，避免把单机观测写成通用基线。
+
+## [Task9 Deep Review] 5.2 EAS 能量感知调度 — 2026-04-22
+- **类型**：源码准确性
+- **位置**：`## 参考资料`
+- **问题**：`kernel/sched/fair.c`、`kernel/power/energy_model.c` 被标成 “AOSP 源码”，但路径缺少内核仓库根和分支信息，读者无法在 AOSP / GKI 树直接定位。
+- **建议**：改成 Linux kernel / Android common kernel 锚点，并给出可检索入口，例如对应分支下的 `kernel/common` 路径或直接引用内核文档。
+
+## [Task9 Deep Review] 11.5 Wakelock 机制与功耗分析 — 2026-04-22
+- **类型**：知识盲区
+- **位置**：`Android 提供了四种 wakelock 类型，但后三种已经废弃`
+- **问题**：这里把 wake lock level 简化成四种，漏掉 `PROXIMITY_SCREEN_OFF_WAKE_LOCK` 这一类特殊屏幕相关 level，读者会以为 PowerManager 里只剩四种枚举。
+- **建议**：补一句“本文聚焦功耗分析常见的 partial / screen 类 wakelock，`PROXIMITY_SCREEN_OFF_WAKE_LOCK` 等特殊 level 不展开”，避免把范围写成全集。

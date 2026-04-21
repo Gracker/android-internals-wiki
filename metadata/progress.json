@@ -5,32 +5,32 @@
   "metrics": {
     "total": 211,
     "unknown": 31,
-    "last_updated": "2026-04-21T22:42:29+08:00",
+    "last_updated": "2026-04-22T07:22:53+08:00",
     "task2b_state_counts": {
       "unknown": 31,
-      "fixed": 139,
-      "pending": 28,
+      "fixed": 137,
+      "pending": 30,
       "idle": 13
     },
     "task9_state_counts": {
       "unknown": 30,
-      "reviewed": 69,
-      "pending": 111,
+      "reviewed": 72,
+      "pending": 108,
       "fixed": 1
     },
     "pipeline_stage_counts": {
       "unknown": 30,
       "task6_pending": 72,
-      "task2b_pending": 24,
-      "ready-to-publish": 33,
-      "task9_pending": 52
+      "task2b_pending": 26,
+      "ready-to-publish": 34,
+      "task9_pending": 49
     },
-    "pipeline_task9_pending": 52,
-    "pipeline_task2b_pending": 24,
-    "pipeline_ready_to_publish": 33,
+    "pipeline_task9_pending": 49,
+    "pipeline_task2b_pending": 26,
+    "pipeline_ready_to_publish": 34,
     "ready-to-publish": 0,
-    "finalized": 33,
-    "ready-for-review": 147,
+    "finalized": 34,
+    "ready-for-review": 146,
     "task6_state_counts": {
       "unknown": 30,
       "reviewed": 113,
@@ -43,14 +43,14 @@
     "pipeline_stage_counts": {
       "unknown": 30,
       "task6_pending": 72,
-      "task2b_pending": 24,
-      "ready-to-publish": 33,
-      "task9_pending": 52
+      "task2b_pending": 26,
+      "ready-to-publish": 34,
+      "task9_pending": 49
     },
     "task2b_state_counts": {
       "unknown": 31,
-      "fixed": 139,
-      "pending": 28,
+      "fixed": 137,
+      "pending": 30,
       "idle": 13
     },
     "task6_state_counts": {
@@ -61,8 +61,8 @@
     },
     "task9_state_counts": {
       "unknown": 30,
-      "reviewed": 69,
-      "pending": 111,
+      "reviewed": 72,
+      "pending": 108,
       "fixed": 1
     }
   },
@@ -1095,17 +1095,20 @@
       "path": "src/part1-fundamentals/ch05-cpu-power/02-eas.md",
       "title": "EAS 能量感知调度",
       "chapter": "5.2",
-      "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "task6_state": "reviewed",
-      "task9_state": "pending",
+      "task9_state": "reviewed",
       "task2b_state": "fixed",
       "reviewed_date": "2026-04-21",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
-      "task9_result": "needs-rework",
+      "task9_result": "pass-tech-review",
       "task2b_result": "fixed",
-      "section": "5.2"
+      "section": "5.2",
+      "task9_reviewed_by": "openclaw-task9",
+      "task9_reviewed_date": "2026-04-22",
+      "last_task9_at": "2026-04-22T07:21:28+08:00"
     },
     "src/part1-fundamentals/ch05-cpu-power/03-big-little.md": {
       "path": "src/part1-fundamentals/ch05-cpu-power/03-big-little.md",
@@ -2133,16 +2136,19 @@
       "title": "Wakelock 机制与功耗分析",
       "chapter": "11.5",
       "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
-      "task9_state": "pending",
-      "task2b_state": "fixed",
+      "task9_state": "reviewed",
+      "task2b_state": "pending",
       "reviewed_date": "2026-04-21",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
-      "task2b_result": "fixed",
-      "section": "11.5"
+      "task2b_result": "pending",
+      "section": "11.5",
+      "task9_reviewed_by": "openclaw-task9",
+      "task9_reviewed_date": "2026-04-22",
+      "last_task9_at": "2026-04-22T07:21:28+08:00"
     },
     "src/part2-performance/ch11-power/README.md": {
       "path": "src/part2-performance/ch11-power/README.md",
@@ -2204,15 +2210,19 @@
       "title": "Android 网络安全与 TLS 性能优化",
       "chapter": "12.4",
       "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
-      "task9_state": "pending",
-      "task2b_state": "fixed",
+      "task9_state": "reviewed",
+      "task2b_state": "pending",
       "reviewed_date": "2026-04-21",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
-      "section": "12.4"
+      "section": "12.4",
+      "task2b_result": "pending",
+      "task9_reviewed_by": "openclaw-task9",
+      "task9_reviewed_date": "2026-04-22",
+      "last_task9_at": "2026-04-22T07:21:28+08:00"
     },
     "src/part2-performance/ch12-apk-network/README.md": {
       "path": "src/part2-performance/ch12-apk-network/README.md",

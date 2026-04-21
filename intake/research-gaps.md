@@ -255,3 +255,18 @@ Perfetto `android.power_rails` 数据源的分析方法：ODPM 轨道功耗数�
 ### 外部 review 来源
 - Gemini 外部 review（14-11）
 
+## [2026-04-22] 11.5 Wakelock 机制与功耗分析 — 知识盲区
+
+### 盲区描述
+App Standby Bucket 与 wakelock 的直接限制边界没有官方 / AOSP 证据闭环。正文把 Rare / Restricted 写成“wakelock 配额”，但公开资料目前只明确 jobs / alarms / network 的限制，缺少对持锁行为的直接规则说明。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 追 `PowerManagerService`、`DeviceIdleController`、app standby policy 是否存在 bucket → wakelock veto / quota 的代码路径
+- 对照 Android 14-17 power management docs，区分 direct wakelock enforcement 与 indirect background execution constraints
+- 补一份可复现实验：不同 standby bucket 下 partial wakelock 持锁、alarm、job 的行为差异
+
+### 关联章节
+11.1, 11.2, 11.5, 5.6
