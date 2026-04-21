@@ -16,19 +16,20 @@ sources:
     title: "Mind the GAPS: Automated Path Reconstruction for Android Method Reachability"
     authors: "arXiv 2025"
     date: "2025-11"
-pipeline_stage: task6_pending
+pipeline_stage: task2b_pending
 task6_state: reviewed
 task6_result: pass-light-edit
-task9_state: pending
-task2b_state: fixed
-task2b_result: fixed
-task6_state: revisiting
-pipeline_stage: task6_pending
+task9_state: reviewed
+task9_result: needs-rework
+task2b_state: pending
 reviewed_date: "2026-04-16"
 reviewed_by: "openclaw-task6"
 review_type: "task6-writing-quality-review"
 repaired_date: "2026-04-16"
 repaired_by: "openclaw-task2b"
+task9_reviewed_by: openclaw-task9
+task9_reviewed_date: "2026-04-21"
+last_task9_at: "2026-04-21T15:34:18+08:00"
 ---
 
 # 7.14 GAPS：Android 动态分析目标可达性路径重建

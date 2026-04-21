@@ -1,32 +1,32 @@
 {
-  "generated_at": "2026-04-21T15:16:43+08:00",
+  "generated_at": "2026-04-21T15:34:18+08:00",
   "state_machine_version": "v2",
   "total_sections": 206,
   "metrics": {
     "total": 206,
     "unknown": 31,
-    "last_updated": "2026-04-21T15:16:43+08:00",
+    "last_updated": "2026-04-21T15:34:18+08:00",
     "task2b_state_counts": {
       "unknown": 31,
-      "fixed": 141,
-      "pending": 25,
+      "fixed": 140,
+      "pending": 26,
       "idle": 9
     },
     "task9_state_counts": {
       "unknown": 30,
-      "reviewed": 66,
-      "pending": 109,
+      "reviewed": 67,
+      "pending": 108,
       "fixed": 1
     },
     "pipeline_stage_counts": {
       "unknown": 30,
-      "task6_pending": 72,
-      "task2b_pending": 22,
+      "task6_pending": 71,
+      "task2b_pending": 23,
       "ready-to-publish": 32,
       "task9_pending": 50
     },
     "pipeline_task9_pending": 50,
-    "pipeline_task2b_pending": 22,
+    "pipeline_task2b_pending": 23,
     "pipeline_ready_to_publish": 32,
     "ready-to-publish": 0,
     "finalized": 32,
@@ -35,15 +35,15 @@
   "pipeline": {
     "pipeline_stage_counts": {
       "unknown": 30,
-      "task6_pending": 72,
-      "task2b_pending": 22,
+      "task6_pending": 71,
+      "task2b_pending": 23,
       "ready-to-publish": 32,
       "task9_pending": 50
     },
     "task2b_state_counts": {
       "unknown": 31,
-      "fixed": 141,
-      "pending": 25,
+      "fixed": 140,
+      "pending": 26,
       "idle": 9
     },
     "task6_state_counts": {
@@ -54,8 +54,8 @@
     },
     "task9_state_counts": {
       "unknown": 30,
-      "reviewed": 66,
-      "pending": 109,
+      "reviewed": 67,
+      "pending": 108,
       "fixed": 1
     }
   },
@@ -1601,15 +1601,18 @@
       "title": "GAPS：Android 动态分析目标可达性路径重建",
       "chapter": "7.14",
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
-      "task9_state": "pending",
-      "task2b_state": "fixed",
+      "task9_state": "reviewed",
+      "task2b_state": "pending",
       "reviewed_date": "2026-04-16",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
-      "task2b_result": "fixed",
-      "section": "7.14"
+      "section": "7.14",
+      "task9_result": "needs-rework",
+      "task9_reviewed_date": "2026-04-21",
+      "task9_reviewed_by": "openclaw-task9",
+      "last_task9_at": "2026-04-21T15:34:18+08:00"
     },
     "src/part2-performance/ch07-smoothness/README.md": {
       "path": "src/part2-performance/ch07-smoothness/README.md",
