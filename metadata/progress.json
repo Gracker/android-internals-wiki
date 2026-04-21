@@ -1,32 +1,32 @@
 {
-  "generated_at": "2026-04-21T15:34:18+08:00",
+  "generated_at": "2026-04-21T16:50:07+08:00",
   "state_machine_version": "v2",
   "total_sections": 206,
   "metrics": {
     "total": 206,
     "unknown": 31,
-    "last_updated": "2026-04-21T15:34:18+08:00",
+    "last_updated": "2026-04-21T16:50:07+08:00",
     "task2b_state_counts": {
       "unknown": 31,
-      "fixed": 140,
-      "pending": 26,
+      "fixed": 142,
+      "pending": 24,
       "idle": 9
     },
     "task9_state_counts": {
       "unknown": 30,
-      "reviewed": 67,
-      "pending": 108,
+      "reviewed": 65,
+      "pending": 110,
       "fixed": 1
     },
     "pipeline_stage_counts": {
       "unknown": 30,
-      "task6_pending": 71,
-      "task2b_pending": 23,
+      "task6_pending": 73,
+      "task2b_pending": 21,
       "ready-to-publish": 32,
       "task9_pending": 50
     },
     "pipeline_task9_pending": 50,
-    "pipeline_task2b_pending": 23,
+    "pipeline_task2b_pending": 21,
     "pipeline_ready_to_publish": 32,
     "ready-to-publish": 0,
     "finalized": 32,
@@ -35,27 +35,27 @@
   "pipeline": {
     "pipeline_stage_counts": {
       "unknown": 30,
-      "task6_pending": 71,
-      "task2b_pending": 23,
+      "task6_pending": 73,
+      "task2b_pending": 21,
       "ready-to-publish": 32,
       "task9_pending": 50
     },
     "task2b_state_counts": {
       "unknown": 31,
-      "fixed": 140,
-      "pending": 26,
+      "fixed": 142,
+      "pending": 24,
       "idle": 9
     },
     "task6_state_counts": {
       "unknown": 30,
-      "reviewed": 110,
-      "revisiting": 65,
+      "reviewed": 108,
+      "revisiting": 67,
       "pending": 1
     },
     "task9_state_counts": {
       "unknown": 30,
-      "reviewed": 67,
-      "pending": 108,
+      "reviewed": 65,
+      "pending": 110,
       "fixed": 1
     }
   },
@@ -1601,10 +1601,10 @@
       "title": "GAPS：Android 动态分析目标可达性路径重建",
       "chapter": "7.14",
       "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
-      "task6_state": "reviewed",
-      "task9_state": "reviewed",
-      "task2b_state": "pending",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
+      "task9_state": "pending",
+      "task2b_state": "fixed",
       "reviewed_date": "2026-04-16",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
@@ -1612,7 +1612,8 @@
       "task9_result": "needs-rework",
       "task9_reviewed_date": "2026-04-21",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-21T15:34:18+08:00"
+      "last_task9_at": "2026-04-21T15:34:18+08:00",
+      "task2b_result": "fixed"
     },
     "src/part2-performance/ch07-smoothness/README.md": {
       "path": "src/part2-performance/ch07-smoothness/README.md",
@@ -3206,10 +3207,10 @@
       "title": "行业案例",
       "chapter": "17.3",
       "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
-      "task6_state": "reviewed",
-      "task9_state": "reviewed",
-      "task2b_state": "pending",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
+      "task9_state": "pending",
+      "task2b_state": "fixed",
       "reviewed_date": "2026-04-17",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
@@ -3217,7 +3218,8 @@
       "task9_reviewed_date": "2026-04-21",
       "task9_reviewed_by": "openclaw-task9",
       "last_task9_at": "2026-04-21T13:57:22+08:00",
-      "section": "17.3"
+      "section": "17.3",
+      "task2b_result": "fixed"
     },
     "src/part4-system/ch17-oem/README.md": {
       "path": "src/part4-system/ch17-oem/README.md",

@@ -1573,7 +1573,10 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-21T13:57:22+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-04-21T16:50:07+08:00",
+      "completed_by": "task2b-content-processing-rework",
+      "resolution": "已把 Game Mode Interventions 收缩回官方公开能力，区分 Samsung Game Booster 与 SceneSDK 边界，删除缺乏一手证据的 Max Boost 机制级断言，并清理 TikTok case study 与参考资料。"
     },
     {
       "section": "7.14",
@@ -1605,7 +1608,10 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-21T15:34:18+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-04-21T16:50:07+08:00",
+      "completed_by": "task2b-content-processing-rework",
+      "resolution": "已拆开 GAPS 的静态路径重建与动态触达评测，改写动态执行链为 AndroidViewClient + Guardian fallback + 可选 Frida hook，并把 Perfetto 降格为衍生观测手段。"
     },
     {
       "priority": 95,
