@@ -2,42 +2,47 @@
 title: "行业案例"
 chapter: "17.3"
 applicable_versions: "Android 12 (API 31) - Android 16 (API 36)"
-last_verified: "2026-04-04"
-last_verified_against: "Google 官方文档, ByteDance 技术博客, Samsung Developer, ADPF 官方文档"
+last_verified: "2026-04-21"
+last_verified_against: "Android Developers Game Mode/ADPF 文档, Samsung Support Game Booster, Samsung Developer SceneSDK, Android Developers Blog TikTok case study"
 confidence: medium
 sources:
   - type: official
-    path: "developer.android.com/games/agdk/game-mode"
+    path: "https://developer.android.com/games/optimize/adpf/gamemode/about-API-and-interventions"
   - type: official
-    path: "developer.android.com/topic/performance/adpf"
-  - type: blog
-    path: "Cubox/利用ADPF性能提示优化Android应用体验-2024-12-06.md"
-  - type: blog
-    path: "Cubox/打造卓越的 Android 游戏体验-2022-09-05.md"
-  - type: blog
-    path: "Cubox/谷歌官方性能文档：Android 动态性能框架优化散热和 CPU 性能-Thermal API部分-2025-08-09.md"
+    path: "https://developer.android.com/games/optimize/adpf/gamemode/gamemode-interventions"
+  - type: official
+    path: "https://developer.android.com/games/optimize/adpf/gamemode/fps-throttling"
+  - type: official
+    path: "https://developer.android.com/topic/performance/adpf"
+  - type: official
+    path: "https://www.samsung.com/levant/support/apps-services/know-more-about-the-game-booster-app/"
+  - type: official
+    path: "https://developer.samsung.com/galaxy-gamedev/blog/en/2022/04/26/accelerate-game-performance-based-on-scenesdk"
+  - type: official
+    path: "https://android-developers.googleblog.com/2022/08/precise-improvements-how-tiktok-enhanced-its-social-experience-on-android.html"
   - type: blog
     path: "Cubox/抖音 Android 性能优化系列：启动优化实践 - 掘金-2024-01-15.md"
   - type: blog
     path: "Cubox/抖音 Android 性能优化系列：新一代全能型性能分析工具 Rhea-2022-01-13.md"
-  - type: blog
-    path: "Cubox/华为-性能最佳实践导读-2025-02-18.md"
   - type: official
-    path: "Google Case Study: TikTok Android performance optimization (2022)"
+    path: "https://developer.android.com/jetpack/androidx/releases/window"
 tags: ['case-study', 'game-mode', 'adpf', 'startup', 'foldable', 'oem', 'industry']
 related_chapters: ["5.6", "7.4", "7.5", "8.2", "8.3", "11.1", "16.1", "17.1", "17.2"]
 drafted_date: "2026-04-04"
 drafted_by: "openclaw-task2a"
-task6_state: reviewed
+task6_state: revisiting
 reviewed_by: openclaw-task6
 reviewed_date: "2026-04-17"
 task6_result: pass-light-edit
 section: "17.3"
 status: ready-for-review
-pipeline_stage: task2b_pending
-task9_state: reviewed
+pipeline_stage: task6_pending
+task9_state: pending
 task9_result: needs-rework
-task2b_state: pending
+task2b_state: fixed
+task2b_result: fixed
+repaired_date: "2026-04-21"
+repaired_by: "openclaw-task2b"
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-04-21"
 last_task9_at: "2026-04-21T13:57:22+08:00"
@@ -81,37 +86,45 @@ last_task9_at: "2026-04-21T13:57:22+08:00"
 
 手机厂商处于 Android 生态中一个独特位置：它们既控制着硬件（SoC、屏幕、散热结构），又深度定制着系统软件（Framework 层的调度策略、内核的 CPU governor、GPU 驱动参数）。这种"软硬一体"的控制力，使得厂商能够实现应用层无法触及的优化。
 
-### Samsung：从 Game Booster 到 Max Boost
+### Samsung：Game Booster 是用户入口，SceneSDK 才是私有调度接口
 
-Samsung 的游戏优化方案经历了几个阶段的演进。早期的 Game Booster 主要做两件事：自动清理后台内存和优化 CPU/GPU 调度。这些策略基于 Samsung 对自家 Exynos 和骁龙 SoC 的深入理解，可以在识别到游戏场景时自动调整 DVFS 策略，将大核频率拉高以减少帧时间波动。
+Samsung 公开一手资料能确认两条线。用户侧有 Game Booster，Samsung 支持页把它定义为在游戏运行时自动介入的功能，目标是在 battery usage、performance 和 temperature 之间做平衡。开发者协作侧有 SceneSDK，Samsung Galaxy GameDev 的文章明确写到，游戏可以把场景信息发给 SceneSDK，设备侧再按场景调整 CPU/GPU frequency，并在发生降频时回传通知。
 
-到 2025 年，Samsung 引入了"Max Boost"模式——这个功能是在用户主动开启后，将设备的性能调度从"平衡"切换到"极致"：CPU 频率天花板打开、GPU 渲染优先级提升、温控阈值放宽。代价是电池消耗显著增加，以及设备温度更快触达热保护。这是典型的**场景化性能策略**：用户在竞技游戏中愿意牺牲续航换取帧率稳定性，而在日常使用中则不需要这种极致模式。
+这两条线要分开写。Game Booster 里的 Max Boost、Performance Priority 这类开关，属于用户可见的模式入口。公开资料没有展开 governor 参数、线程调度优先级、热阈值这些内部实现。SceneSDK 则是 Samsung 私有的厂商协作能力，不等于 Android 标准 API，也不意味着所有 Galaxy 机型都会给所有游戏开放同一套调度策略。
 
-在 Perfetto 中观察 Samsung 设备的游戏场景，你会发现当 Game Booster 激活时，CPU 频率的调节延迟明显缩短——这背后的机制是 Samsung 在 kernel 层对 governor 参数做了针对游戏场景的定制。这和我们在 5.4 节（DVFS）中讨论的通用原理是一致的，但 Samsung 的实现更激进，因为它只需要适配自己的硬件。
+把 Samsung 案例落到实战，比较稳的写法有三点：
 
-### Xiaomi：Game Turbo 与 HyperOS 的性能调度
+- **用户侧可观察事实**：Game Booster 会在游戏启动后自动工作，用户可以在面板里切换更偏性能或更偏续航的模式
+- **厂商私有能力**：SceneSDK 支持按 scene 调整 CPU/GPU 资源，并在系统发生 frequency reduction 时通知游戏
+- **验证方法**：如果要判断某台 Galaxy 设备是否真的抬高了频率或缩短了频率响应，仍要看 Perfetto、频率 counter、热状态和帧时间，不能把 UI 上的“Max Boost”直接翻译成固定的底层机制
 
-Xiaomi 的 Game Turbo（游戏加速）是 HyperOS 系统内置的游戏优化套件。和 Samsung 的思路类似，Xiaomi 也采用了"场景识别 + 策略切换"的模式，但侧重点有所不同。
+[已验证: Samsung Support Game Booster + Samsung Developer SceneSDK]
 
-Game Turbo 提供两种核心模式：**均衡模式**（适合长时间游戏，限制功耗和发热）和**性能模式**（适合竞技场景，拉高频率但增加发热）。此外，它还提供了一组辅助功能：免打扰、锁定屏幕亮度、禁用手势导航等。这些辅助功能虽然不直接改变调度策略，但通过减少系统中断和 UI 切换，间接降低了游戏的帧时间抖动。
+### Xiaomi：Game Turbo 更适合写成设备侧模式入口
 
-从技术角度看，Game Turbo 对性能的影响主要体现在两个层面：
+Xiaomi 的 Game Turbo 是 HyperOS 里的游戏模式入口。公开能稳定确认的是用户侧能力：均衡模式、性能模式，以及免打扰、亮度锁定、手势限制这类配套开关。至于“主线程固定绑大核”“GPU governor 一定更激进”这类底层行为，仍会随着机型、SoC 和系统版本变化，不能直接写成跨设备结论。
 
-第一，**CPU 核心调度**。性能模式下，系统倾向于将游戏主线程绑定到大核集群，并减少 mid-core 的任务迁移。这在 Perfetto 中表现为：游戏主线程长时间运行在高频大核上，CPU 迁移（migration）事件明显减少。我们在 5.3 节（big.LITTLE）中讨论过迁移代价，而 Game Turbo 的策略正是通过减少迁移来降低这种代价。
+因此，这一类案例更适合保留两层信息：
 
-第二，**GPU 渲染策略**。性能模式下 GPU governor 的响应速度加快，频率提升更积极。这和我们在 2.10 节（GPU 渲染深入）中讨论的 GPU 调频机制直接相关。
+- **用户可见模式**：均衡模式偏续航和温控，性能模式偏帧率和响应
+- **设备侧观测口径**：如果要判断 HyperOS 某个版本是否真的改变了 CPU 迁移、频率投票或 GPU 响应，仍要回到 Perfetto、频率 counter、migration 事件和帧时间分布
 
-### OPPO/vivo：ADPF 实际应用与温控协同
+这样写既保留了 OEM 游戏模式的实用价值，也不会把设备观察误写成 Android 通用机制。
 
-OPPO 和 vivo 作为国内主要厂商，在性能优化上的一个共同趋势是**深度集成 Google 的 ADPF（Android Dynamic Performance Framework）**。前面 5.6 节（Android 功耗管理）已经介绍了 ADPF 的原理，这里我们关注它在厂商侧的实际应用。
+### OPPO/vivo：ADPF 的价值在于更早给系统负载信号
 
-以 OPPO 和 MTK 平台的协作为例，ADPF 的 Performance Hint API 在 MTK 平台上的实现过程是：App 通过 `PerformanceHintManager` 创建 hint session → Framework 层将 hint 信号传递给 MTK 的 perfservice → perfservice 调整 CPU 频率和核心分配。
+OPPO、vivo 这类案例更适合用来说明 ADPF 与 vendor thermal / power stack 的协作边界。公开标准 API 只有 `PerformanceHintManager`、Thermal Headroom 和 Game Mode 这类入口。应用把 workload signal 提前交给系统后，真正怎样换成 cluster placement、frequency vote 或 thermal policy，仍要经过厂商的 power HAL、perfservice 或调度栈。
 
-这条调用链的关键优势在于**延迟大幅缩短**。传统的 DVFS 机制（PELT/WALT 负载追踪 → governor 决策 → 频率切换）大约需要 200ms 才能将 CPU 频率拉到目标值。而 ADPF 的 hint 机制将这个过程缩短到了 30-50ms，因为 App 直接告诉系统"我接下来需要什么性能"，系统不需要通过历史负载去猜测。
+因此，这里保留定性判断，不再写成通用时延数字。ADPF 的价值是让游戏把目标帧时间和实际工作时长更早交给系统，减少纯靠历史负载猜测的滞后。具体能快多少，取决于 SoC、governor、power HAL、thermal policy 和游戏引擎接入方式。
 
-在实际测试中，我们可以用 Perfetto 来对比 ADPF 开启前后的 CPU 频率曲线。开启前，当游戏场景从低负载切换到高负载时，CPU 频率呈阶梯式上升，大约经过 4-6 帧（约 66-100ms@60fps）才达到目标频率，这期间的帧时间会显著抖动。开启 ADPF 后，频率切换几乎是阶跃式的，在 1-2 帧内完成，帧时间稳定性明显改善。
+在设备上验证这件事，建议看四组信号：
 
-[待高爷补充：Perfetto 中 ADPF 开启前后的 CPU 频率对比截图]
+- **FrameTimeline / 帧时间**：用户态工作负载变化后，帧时间是否更快收敛
+- **CPU/GPU 频率 counter**：频率变化是提前发生，还是等掉帧之后才追上来
+- **thermal status / thermal headroom**：系统是在主动留余量，还是已经进入被动降频
+- **hint session 相关轨道或日志**：应用是否真的按帧上报了 target / actual duration
+
+[待高爷补充：同一设备、同一场景下的 ADPF 开关对照 trace]
 
 ## 游戏性能优化：ADPF 与 Game Mode 的实战
 
@@ -119,15 +132,16 @@ OPPO 和 vivo 作为国内主要厂商，在性能优化上的一个共同趋势
 
 ### Game Mode API：让用户选择优化方向
 
-Game Mode API 的核心思想很简单：**让用户决定优先性能还是优先续航**。它提供了三种模式：
+Game Mode API 的作用是把“用户更想要性能还是续航”这件事传给游戏。公开模式仍是 Standard、Performance 和 Battery Saver。开发者通过 `GameManager` 读取模式，再决定帧率、分辨率和画质策略。
 
-- **Standard**（标准模式）：系统默认行为，不施加额外优化
-- **Performance**（性能模式）：提升帧率、降低延迟、更积极的 CPU/GPU 调度
-- **Battery Saver**（省电模式）：降低帧率目标、减少 GPU 负载、限制 CPU 频率
+`Game Mode Interventions` 要和游戏自己实现的模式处理分开看。Android Developers 当前公开的干预项，主线是 `WindowManager` backbuffer resize 和 FPS throttling，文档还给出了 `downscaleFactor`、`allowGameDownscaling`、`allowGameFpsOverride` 这些配置与 opt-out 方式。公开文档没有提供“按包名调整线程调度策略”的标准接口或配置项。
 
-开发者通过 `GameManager` API 查询用户选择的游戏模式，然后据此调整游戏的渲染策略。例如，在 Performance 模式下可以关闭动态分辨率缩放（保持满分辨率渲染），而在 Battery Saver 模式下开启动态分辨率（将渲染分辨率降至 75%），同时将帧率目标从 60fps 降到 30fps。
+因此，正文里更合适的边界是：
 
-**Game Mode Interventions** 是另一个关键机制——这是 OEM 可以设置的系统级优化，**不需要游戏开发者做任何适配**。厂商可以针对特定游戏（通过包名识别）自动应用 GPU 负载降低（通过缩小 backbuffer 尺寸）或 CPU 优化（通过调整线程调度策略）。即使游戏没有集成 Game Mode API，厂商也可以通过系统层面改善该游戏的性能表现。
+- **标准能力**：`game_mode_config.xml`、`GameManager#getGameMode()`、backbuffer downscale、FPS throttling/override
+- **厂商私有能力**：线程调度、频率策略、驱动参数、Game Booster / Game Turbo 的设备定制逻辑
+
+如果 OEM 真的在系统侧做了线程调度或 governor 调整，那也应单列为厂商私有策略，不应写进 Game Mode Interventions 的公开能力清单。
 
 ### ADPF Thermal API：主动温控避免降频
 
@@ -161,7 +175,7 @@ ADPF 的 Thermal API 提供了一种**主动温控**的思路：在温度接近�
 
 ### 从 300+ 启动任务到架构重构
 
-抖音在启动优化的深水区面临的核心问题是：启动阶段有超过 300 个任务需要执行，传统的"任务调度 + 并行化"已经无法带来显著的提升。根本原因在于，300 个任务中大量是 SDK 初始化（配置任务）和预加载（预加载任务），它们的依赖关系错综复杂，简单增加并行度反而会因为锁竞争和 I/O 争用导致整体变慢。
+抖音在启动优化的深水区面临的难点是：启动阶段有超过 300 个任务需要执行，传统的"任务调度 + 并行化"已经无法带来显著的提升。根本原因在于，300 个任务中大量是 SDK 初始化（配置任务）和预加载（预加载任务），它们的依赖关系错综复杂，简单增加并行度反而会因为锁竞争和 I/O 争用导致整体变慢。
 
 抖音团队的解决思路是**三步走**：
 
@@ -171,11 +185,11 @@ ADPF 的 Thermal API 提供了一种**主动温控**的思路：在温度接近�
 
 第三步，**预加载任务评估**。对每个预加载任务进行 A/B 实验，评估它的命中率和收益。结果是大量预加载任务被移除或延迟——因为统计发现很多预加载的内容在启动后的前 30 秒根本没有被用到。
 
-这套方法论的核心思想是：**启动优化的关键是减少启动阶段真正需要执行的任务。** 这和我们在 8.3 节（启动优化）中讨论的"延迟初始化"原则完全一致，但抖音的工程规模让这个原则的应用变得极具挑战。
+这套方法论关注的是：**启动优化要先减少启动阶段真正需要执行的任务。** 这和我们在 8.3 节（启动优化）中讨论的"延迟初始化"原则完全一致，但抖音的工程规模让这个原则的应用变得极具挑战。
 
 ### ContentProvider 优化：字节码插桩的妙用
 
-抖音在启动优化中发现的一个经典问题是 ContentProvider 的隐式初始化。Android 在 App 启动时会自动实例化并调用所有注册的 ContentProvider 的 `onCreate()`，即使 App 在启动阶段不使用某个 ContentProvider，它的初始化开销也会被计入启动时间。
+抖音在启动优化中发现过一个典型现象，ContentProvider 会发生隐式初始化。Android 在 App 启动时会自动实例化并调用所有注册的 ContentProvider 的 `onCreate()`，即使 App 在启动阶段不使用某个 ContentProvider，它的初始化开销也会被计入启动时间。
 
 Google 自己的 Lifecycle 组件（`ProcessLifecycleOwnerInitializer`）和 FileProvider 就是典型的例子。单个 ContentProvider 的耗时可能只有几毫秒，但大型 App 可能注册了几十个 ContentProvider，累积起来就是几十毫秒甚至上百毫秒的开销。
 
@@ -183,47 +197,43 @@ Google 自己的 Lifecycle 组件（`ProcessLifecycleOwnerInitializer`）和 Fil
 
 这种方案的技术亮点在于：它不修改业务代码，而是在构建流水线中自动完成，对开发者完全透明。对于 WorkManager 等其他有类似问题的库，也可以用同样的方式处理。
 
-### 自研工具 Rhea：从"能抓 Trace"到"能发现问题"
+### 自研工具 Rhea：方法论价值高于产品细节
 
-抖音团队在优化过程中发现一个核心难点：Systrace 只能监控特定的系统调用，对应用层函数需要手动打点；TraceView 采样频率过高时性能开销巨大，频率过低又抓不到问题；Nanoscope 几乎零开销但需要定制 ROM。没有一个工具能同时满足"低开销、高覆盖、线上可用"的需求。
+字节公开资料能确认的是一套方法论：通过自动化插桩把函数耗时、锁等待、I/O 和 Binder 信息放到统一分析面里，再做启动与页面场景的差异分析。对外资料没有完整公开 Rhea 的全部产品形态和内部插件边界，所以这类工具更适合写成“方法论案例”，不适合写成“已有完整开源平台”。
 
-于是他们开发了 Rhea——一个基于静态字节码插桩的自动 Trace 工具。Rhea 的核心能力包括：
+对外团队真正能带走的有三点：
 
-自动在所有应用层函数的入口和出口插入 Trace 点，通过运行时栈深度控制（默认最多 6 层）来平衡信息量和开销。开发者不需要手动在可疑函数上加 `Trace.beginSection()`，Rhea 会自动覆盖所有函数。
+- **自动插桩**：减少人工到处加 trace marker 的维护成本
+- **统一事件面**：把函数、锁、I/O、Binder 放到同一条时间线里看
+- **差异分析**：关注“这一次为什么比基线慢了多少、慢在哪个阶段”，而不只是导出一份 trace
 
-除了函数耗时，Rhea 还能自动捕获锁信息（哪个线程持有了什么锁、等待了多久）、I/O 耗时（每次文件读写的具体时间）和 Binder IPC 耗时。这些信息在 Perfetto 中需要手动配置 atrace 分类才能看到，而 Rhea 将它们整合进了统一的 Trace 输出。
-
-Rhea 还支持**线上抓取**——它不需要连接 PC，可以在用户设备上直接运行，通过性能损耗控制（约 5%）使得线上采集成为可能。这让抖音团队能够收集真实用户的性能数据，而不只是测试环境的数据。
-
-Rhea 已经在字节跳动的多个 App（抖音、今日头条等）上投入使用，并在开源社区发布了核心框架。对于做性能优化的团队来说，这种"自研工具 + 线上监控"的配合是一个重要的方法论参考。
+如果只保留这些可验证结论，本章的案例链就成立了。至于 Rhea 的完整实现细节、线上采集开销和开源边界，应以字节后续公开材料为准。
 
 ## 大型 App 与厂商的协作优化
 
-### TikTok × Google：从数据驱动的性能优化到业务成果
+### TikTok × Google：官方 case study 的价值在于完整证据链
 
-Google 在 2022 年发布的 TikTok 案例研究是少有的公开数据最完整的行业案例。根据该案例，TikTok 通过一轮系统性的性能优化，将 Android 端冷启动时间降低了 **45%**，流畅度提升了 **49%**，视频首帧显示速度提升了 **41%**。
+Google 在 2022 年发布了 TikTok Android 性能案例，给出的三组结果分别是：启动时间下降 **45%**、UI smoothness 改善 **49%**、视频首帧显示速度提升 **41%**。同一篇文章还提到 active days per user 提升 **1%**。这些数字来自 Google 和 TikTok 联合发布的 case study，适合当成单一应用、单一优化周期里的公开结果，不适合直接当作行业基线。
 
-这个案例之所以值得关注，不只是因为数字，而是因为它的优化方法论完整覆盖了我们前面讨论的多个层面：
+这个案例的参考价值在于它把“分析路径 → 工程动作 → 业务结果”接完整了：
 
-在启动优化方面，TikTok 重构了启动框架，将组件加载从串行改为按需加载（on-demand loading），并引入了精细化的任务调度。这和我们前面看到的抖音案例是同一套方法论。
+- **启动路径**：按需加载组件、细化任务调度、把部分 View 初始化移到后台线程
+- **界面流畅性**：精简首屏层级，只保留当前帧真正需要的内容，减少每帧任务量
+- **视频首帧**：复用 player、做 preload / prerender，并联优化 codec 与 network path
 
-在渲染优化方面，TikTok 简化了首屏 UI——只渲染真正必要的元素，减少每帧的任务执行数量。这直接降低了帧时间，提升了流畅度。在 Perfetto 中，优化后的每帧 doFrame 耗时更短、更均匀。
+这类官方案例最有用的地方，不在数字本身，而在证据链完整。能看到优化目标、主要动作和业务结果之间的对应关系。
 
-在视频播放方面，TikTok 对编解码器、网络连接、预加载和预渲染都进行了优化，还引入了设备端超分辨率（on-device super-resolution）。首帧显示时间的优化在 Perfetto 中体现为：从用户点击视频到 Surface 上出现第一帧画面的时间间隔大幅缩短。
-
-这些优化带来的业务成果同样值得关注：**用户活跃天数增加了 1%，平均会话时长也有显著提升**。这证明了性能优化不是纯粹的工程投入——它直接关联到用户留存和商业指标。
+[已验证: Android Developers Blog, 2022-08]
 
 ### 厂商与应用的联合优化模式
 
-在实际行业中，大型 App 和手机厂商之间的性能协作通常有以下几种模式：
+在实际行业里，大型 App 和手机厂商的协作大体有三种形态：
 
-**模式一：系统级 API 适配**。App 集成 Google 提供的 ADPF、Game Mode 等标准 API，通过标准接口与系统交互。这是成本最低、通用性最强的模式，但优化效果受限于 API 的粒度和系统能力。
+- **模式一：标准 API 适配**。App 集成 ADPF、Game Mode 等公开接口。这条路通用性最好，跨设备成本最低。
+- **模式二：设备侧定制配置**。厂商通过 game overlay、驱动白名单、per-app profile 或内部调度策略给头部应用做设备定制。这类能力通常不会完整公开，外部团队更适合把它当成设备差异来观察和验证。
+- **模式三：联合调优**。厂商提供系统 trace、驱动或 thermal 观测能力，应用团队提供稳定复现场景和 workload 约束，双方一起缩小问题范围。
 
-**模式二：厂商定制适配**。厂商为头部 App 提供专属的优化通道。例如 Samsung 为 TikTok、微信等高频应用在 Game Booster 中设置了专门的优化配置文件（per-app profile），即使这些应用不是游戏，也能享受到优先的调度策略。Xiaomi 的 Game Turbo 也有类似的机制。这种模式的优化效果最好，但维护成本高——每次 App 更新都可能破坏之前的优化配置。
-
-**模式三：联合调优**。厂商和 App 团队深度合作，共同分析性能瓶颈。典型流程是：厂商提供系统级的 Trace 能力和底层调试接口 → App 团队提供场景复现和优化需求 → 双方联合分析 → 厂商在系统层（调度器、内存管理、I/O 优先级）做定制优化，App 在应用层做代码优化。这种模式能解决其他两种模式无法触及的问题，比如系统服务中的锁竞争对 App 主线程的影响，或者内核调度器在特定场景下的不合理决策。
-
-[待验证：具体的厂商-App 联合调优案例数据，目前公开资料有限]
+这三种形态可以同时存在。写案例时要把“公开 API”“设备配置”“合作调优”分层，不要把其中一层的能力外推成整条 Android 通用机制。
 
 ## 折叠屏与大屏设备的性能挑战 [自动发现]
 
@@ -233,7 +243,7 @@ Google 在 2022 年发布的 TikTok 案例研究是少有的公开数据最完�
 
 折叠屏设备的内屏和外屏通常有不同的分辨率、刷新率和宽高比。以 Galaxy Z Fold 7 为例，外屏是 21:9 比例，内屏是接近方形的宽屏比例。当用户展开或折叠设备时，系统需要处理配置变更（Configuration Change）、重建 Surface、重新分配 BufferQueue，并可能需要重新布局整个 UI。
 
-这个过程在 Perfetto 中可以看到一系列事件：Configuration Changed → Activity 重建 → Surface 分配 → 首帧渲染。如果 App 没有正确处理配置变更（比如在 `onConfigurationChanged()` 中做了大量同步工作），这个切换过程会导致明显的卡顿甚至黑屏。
+这个过程在 Perfetto 中常会出现一串事件：Configuration Changed → Activity 重建 → Surface 分配 → 首帧渲染。如果 App 没有正确处理配置变更（比如在 `onConfigurationChanged()` 中做了大量同步工作），这个切换过程会导致明显的卡顿甚至黑屏。
 
 Google 从 Android 12L 开始为大屏和折叠屏提供了一系列平台支持：改进的任务栏、增强的多窗口能力、可调整大小的应用窗口。开发者需要使用 Jetpack WindowManager 库来获取设备的折叠状态（通过 `FoldingFeature` API），并根据状态调整布局。
 
@@ -265,8 +275,8 @@ App 在屏幕切换时需要重新适配帧率策略。如果 App 使用了 Chor
 
 本节的案例涉及了全书多个章节的技术内容，它们的关联如下：
 
-- **5.4 DVFS / 5.6 Android 功耗管理**：Samsung Game Booster 和 Xiaomi Game Turbo 的核心优化之一就是调整 CPU/GPU 的调频策略
-- **5.3 big.LITTLE**：厂商的游戏优化模式中，线程绑核和减少迁移是关键手段
+- **5.4 DVFS / 5.6 Android 功耗管理**：OEM 游戏模式经常围绕 CPU/GPU 频率、功耗预算和热策略做差异化实现
+- **5.3 big.LITTLE**：关键线程是否迁移、迁到哪一组核心，常常决定游戏场景的帧时间波动
 - **2.2 帧率与刷新率**：折叠屏的 VRR 技术和多窗口帧率适配
 - **2.10 GPU 渲染深入**：Game Mode Interventions 中 GPU 负载降低的具体实现
 - **7.4 典型场景分析 / 7.5 优化策略**：抖音的启动优化案例是这些章节方法论的大规模实践
@@ -275,51 +285,21 @@ App 在屏幕切换时需要重新适配帧率策略。如果 App 使用了 Chor
 
 ## 参考资料
 
-### 豆包手机为什么会被其他厂商抵制？它的工作原理是什么？
-- 来源：https://juejin.cn/post/7582469532326920228
-- 类型：技术文章
-- 摘要：分析豆包手机的AI原生架构、系统级AI集成技术原理，以及被抵制的行业竞争原因。
-- 入库时间：2026-04-09
+### 官方文档与官方案例
 
-
-### 已有Flutter项目适配鸿蒙6
-- 来源：https://juejin.cn/post/7582149417768812594
-- 类型：技术文章
-- 摘要：介绍现有Flutter项目适配HarmonyOS 6的完整流程，涵盖鸿蒙特性分析、Flutter鸿蒙适配插件使用、原生模块开发。
-- 入库时间：2026-04-09
-
-
-### Android15适配之targetSdkVersion升到35后全是坑
-- 来源：https://juejin.cn/post/7584295332340858943
-- 类型：技术文章
-- 摘要：深度分析Android 15适配过程中targetSdkVersion升级到35后的各种兼容性问题及解决方案。
-- 入库时间：2026-04-09
-
-
-### 聊聊2026年Android开发会是什么样
-- 来源：https://juejin.cn/post/7589903499599347766
-- 类型：技术文章
-- 摘要：分析2026年Android开发六大趋势：AI原生应用、Compose标准UI、Kotlin Multiplatform生产化等。
-- 入库时间：2026-04-09
-
-
-### 官方文档
-
-- Android Game Mode API: https://developer.android.com/games/agdk/game-mode
-- Android Game State API: https://developer.android.com/games/agdk/game-state
+- Android Game Mode API and interventions: https://developer.android.com/games/optimize/adpf/gamemode/about-API-and-interventions
+- Game Mode interventions: https://developer.android.com/games/optimize/adpf/gamemode/gamemode-interventions
+- FPS throttling: https://developer.android.com/games/optimize/adpf/gamemode/fps-throttling
 - ADPF 官方指南: https://developer.android.com/topic/performance/adpf
-- ADPF Thermal API: https://developer.android.com/games/optimize/adpf/thermal
-- Android Performance Tuner: https://developer.android.com/games/agdk/android-performance-tuner
-- Jetpack WindowManager (折叠屏适配): https://developer.android.com/jetpack/androidx/releases/window
-- Baseline Profiles: https://developer.android.com/topic/performance/baselineprofiles
+- Samsung Support, Know more about the Game Booster app: https://www.samsung.com/levant/support/apps-services/know-more-about-the-game-booster-app/
+- Samsung Developer, Accelerate game performance based on SceneSDK: https://developer.samsung.com/galaxy-gamedev/blog/en/2022/04/26/accelerate-game-performance-based-on-scenesdk
+- Android Developers Blog, Precise improvements, how TikTok enhanced its social experience on Android: https://android-developers.googleblog.com/2022/08/precise-improvements-how-tiktok-enhanced-its-social-experience-on-android.html
+- Jetpack WindowManager: https://developer.android.com/jetpack/androidx/releases/window
 
-### 行业案例与技术博客
+### 归档材料与技术分享
 
-- Google Case Study: TikTok Performance Optimization on Android (2022): https://opensource.googleblog.com/
-- 字节跳动技术团队：抖音 Android 性能优化系列（启动优化实践）: https://juejin.cn/post/7080065015197204511
-- 字节跳动技术团队：抖音 Android 性能优化系列（Rhea 性能分析工具）: https://mp.weixin.qq.com/s/vkBeZ6hmVn_RaXS5Xv_L2g
-- 华为开发者文档：性能最佳实践导读: https://developer.huawei.com/consumer/cn/doc/best-practices-V5/bpta-performance-guide-reading-V5
-- Google: 打造卓越的 Android 游戏体验 (AGDK): https://mp.weixin.qq.com/s/相关链接
+- 字节跳动技术团队：抖音 Android 性能优化系列（启动优化实践）: `Cubox/抖音 Android 性能优化系列：启动优化实践 - 掘金-2024-01-15.md`
+- 字节跳动技术团队：抖音 Android 性能优化系列（Rhea 性能分析工具）: `Cubox/抖音 Android 性能优化系列：新一代全能型性能分析工具 Rhea-2022-01-13.md`
 
 ### AOSP 源码路径
 
@@ -331,9 +311,3 @@ App 在屏幕切换时需要重新适配帧率策略。如果 App 使用了 Chor
 ### 开源项目
 
 - ByteDance BoostMultiDex: https://github.com/bytedance/BoostMultiDex
-- ByteDance Rhea (内部工具，部分功能已开源)
-### 什么 AI 写 Android 最好用？官方基准测试排名
-- 来源：https://juejin.cn/post/7614897667961143347
-- 类型：技术文章
-- 摘要：谷歌Android Bench基准测试：LLM在Android开发中的表现，Gemini 3.1 Pro领先。
-- 入库时间：2026-04-06
