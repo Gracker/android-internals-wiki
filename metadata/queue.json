@@ -63,9 +63,10 @@
     "section": "14.9",
     "section_title": "Android Camera 性能与 Perfetto 分析",
     "priority": 95,
-    "reason": "[Deep Tech Review] Perfetto SQL 示例使用了错误表名，且 Camera3OutputStream 与 HAL stream 的继承关系描述失真",
+    "reason": "[Deep Tech Review] Perfetto SQL 示例使用了错误表名，且 Camera3OutputStream 与 HAL stream 的继承关系描述失真；[External Review 合并] P0: CameraMetadataNative Cleaner 变更未覆盖；P1: PreviewSpacer 帧平滑原理缺失",
     "material_paths": [
-      "intake/suggestions.md"
+      "intake/suggestions.md",
+      "logs/external-review/2026-04-21-14-09-camera-performance-analysis-external-review.md"
     ],
     "review_issues": [
       {
@@ -79,6 +80,28 @@
         "location": "Camera 管线的 Buffer 流转 / Buffer 管理方面",
         "detail": "原文写成“Camera3OutputStream 继承自 camera3_stream 结构体”。AOSP android16-release 中 `Camera3OutputStream -> Camera3IOStreamBase -> Camera3Stream`，真正继承 `camera3_stream` 的是 `Camera3Stream`。",
         "suggestion": "改写成“Camera3OutputStream 通过 Camera3IOStreamBase/Camera3Stream 封装 HAL `camera3_stream`，而不是直接等同于 HAL 结构体”。"
+      },
+      {
+        "type": "源码错误/版本差异",
+        "location": "内存压力 / 常见问题与误区三",
+        "detail": "内存回收机制描述停留在 finalize()，未跟进 Android 15+ 的 Cleaner 和 NativeAllocationRegistry 变化",
+        "suggestion": "重写回收机制，引入 Cleaner 和 NativeAllocationRegistry 概念",
+        "evidence": [
+          "java.lang.ref.Cleaner (Android 15+)",
+          "NativeAllocationRegistry"
+        ]
+      },
+      {
+        "type": "原理缺失",
+        "location": "SQL 查询小节",
+        "detail": "PreviewSpacer 线程用于帧平滑（Frame Pacing），但全文未解释其原理。读者可能误将有规律的 Sleep 视为性能瓶颈",
+        "suggestion": "增加 PreviewSpacer 帧平滑机制的简短描述：通过预测-等待模型规整帧间隔"
+      },
+      {
+        "type": "性能损耗遗漏",
+        "location": "Camera2 vs CameraX 对比",
+        "detail": "CameraX 在冷启动场景下相比原生 Camera2 API 存在一定的初始化耗时开销（Load Config/Resolving capabilities）",
+        "suggestion": "在 Camera2 vs CameraX 对比中增加初始化性能开销的提醒"
       }
     ],
     "added_by": "task9-deep-tech-review",
@@ -89,10 +112,11 @@
     "section": "14.11",
     "section_title": "Battery Historian 与功耗分析工具",
     "priority": 95,
-    "reason": "[Deep Tech Review] BatteryStatsService AOSP 路径写错，且遗漏 Android 15+ PowerMonitor 代码级功耗采集链路",
+    "reason": "[Deep Tech Review] BatteryStatsService AOSP 路径写错，且遗漏 Android 15+ PowerMonitor 代码级功耗采集链路；[External Review 合并] P1: Docker 镜像已失效；P1: Perfetto power_rails 分析链路缺失",
     "material_paths": [
       "intake/suggestions.md",
-      "intake/research-gaps.md"
+      "intake/research-gaps.md",
+      "logs/external-review/2026-04-21-14-11-battery-historian-external-review.md"
     ],
     "review_issues": [
       {
@@ -106,10 +130,280 @@
         "location": "Android Studio Power Profiler / ODPM 的工作原理",
         "detail": "章节覆盖到 Android 17，但没有补 Android 15(API 35) 起 `android.os.health.SystemHealthManager#getSupportedPowerMonitors()` 与 `getPowerMonitorReadings()` 这一组代码级 PowerMonitor API。",
         "suggestion": "补一段 Android 15+ 版本差异，说明 PowerMonitor/PowerMonitorReadings 的入口类、异步读取方式，以及它和 Studio Power Profiler 的关系。"
+      },
+      {
+        "type": "实操断裂",
+        "location": "Battery Historian 的部署",
+        "detail": "推荐的官方 Docker 镜像 gcr.io/android-battery-historian/stable/battery-historian 已无法使用（JS 依赖失效），且带有'待验证'标注",
+        "suggestion": "删除待验证标记，明确官方镜像不可用，提供社区替代方案（如 itachi1706/battery-historian 镜像）"
+      },
+      {
+        "type": "知识盲区/工具链脱节",
+        "location": "Power Profiler vs Energy Profiler",
+        "detail": "ODPM 轨道功耗数据作为 android.power_rails 数据源记录在系统级 Trace 中，但未提及 Perfetto SQL 分析链路",
+        "suggestion": "补充 Perfetto 抓取 power rails、与 CPU 调度/线程事件联查的入口"
       }
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-21T18:42:00+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "15.6",
+    "section_title": "Testing Best Practices",
+    "priority": 85,
+    "reason": "[External Review] P1: 缺失稳态性能测试（Steady-state Performance）方法论，仅覆盖峰值性能测试",
+    "material_paths": [
+      "logs/external-review/2026-04-21-06-15.6-external-review.md"
+    ],
+    "review_issues": [
+      {
+        "type": "知识盲区/测试场景缺失",
+        "location": "## 测试环境标准化 -> ### 温度控制：性能测试的隐形杀手 之后",
+        "detail": "仅教导如何'冷却设备测峰值'，缺乏'如何测试热稳定态'的方法论。现代SoC峰值功耗远超散热极限，持续负载下必然20%-30%性能衰减",
+        "suggestion": "新增'峰值帧率 vs 稳态帧率'子主题，强调长时负载Benchmark的必要性",
+        "evidence": [
+          "Google Blog: 性能分析误区：峰值帧率 vs 稳态帧率"
+        ]
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-21T19:25:48.814496+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "14.1",
+    "section_title": "Android Studio Profiler",
+    "priority": 85,
+    "reason": "[External Review] P1: ODPM 硬件/软件要求逻辑矛盾；ProfilingManager API 35/36 混淆",
+    "material_paths": [
+      "logs/external-review/2026-04-21-14-01-as-profiler-external-review.md"
+    ],
+    "review_issues": [
+      {
+        "type": "版本差异/逻辑矛盾",
+        "location": "Power Profiler 小节",
+        "detail": "Pixel 6 出厂系统是 Android 12，但原文称 Pixel 6 且 Android 10 支持 ODPM，逻辑矛盾",
+        "suggestion": "解耦硬件与软件要求：硬件需支持 ODPM（如 Pixel 6+），软件需 Android 10+（API 29+）"
+      },
+      {
+        "type": "版本差异/API 混淆",
+        "location": "使用 Profiler API 在代码中触发 profiling",
+        "detail": "ProfilingManager 首次引入于 API 35（基础调用），系统触发器（System-triggered）增强于 API 36。原文笼统说 API 36 新增",
+        "suggestion": "明确拆分 API 35（基础请求）与 API 36（系统自动触发器）的能力边界"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-21T19:25:48.814496+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "14.2",
+    "section_title": "Simpleperf",
+    "priority": 95,
+    "reason": "[External Review] P0: 工具链关联错误（Gecko JSON 误指向 Perfetto UI）；P1: PMU 硬件事件权限限制缺失",
+    "material_paths": [
+      "logs/external-review/2026-04-21-14-02-simpleperf-external-review.md"
+    ],
+    "review_issues": [
+      {
+        "type": "事实错误/工具链错配",
+        "location": "在 Perfetto 中的表现",
+        "detail": "gecko_profile_generator.py 生成 Gecko JSON 专为 Firefox Profiler 设计，Perfetto UI 不支持解析 Gecko JSON。原文将两者错误关联",
+        "suggestion": "拆分两条可视化路径：1) Gecko JSON → profiler.firefox.com; 2) --protobuf .trace → ui.perfetto.dev",
+        "evidence": [
+          "Simpleperf AOSP scripts_reference.md",
+          "gecko_profile_generator.py 源码"
+        ]
+      },
+      {
+        "type": "知识盲区/权限缺失",
+        "location": "硬件 PMU 事件",
+        "detail": "未指明访问 PMU 硬件事件（如 cache-misses）需 Root 权限（kernel.perf_event_paranoid），非 Root 设备只能用 cpu-clock 等软件事件",
+        "suggestion": "补充强提醒：采集硬件 PMU 事件通常强制要求 Root 权限"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-21T19:25:48.814496+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "14.3",
+    "section_title": "Memory Tools",
+    "priority": 85,
+    "reason": "[External Review] P1: Perfetto Java 堆分析能力描述错误（遗漏 Heap Dumps）；P1: procrank/malloc debug 权限前提未说明",
+    "material_paths": [
+      "logs/external-review/2026-04-21-14-03-memory-tools-external-review.md"
+    ],
+    "review_issues": [
+      {
+        "type": "事实错误/能力低估",
+        "location": "heapprofd：Native 堆的实时采样分析 -> 工作机制",
+        "detail": "错误声称 Perfetto Java 模式仅展示调用栈且无法替代 MAT 引用链分析。遗漏 Android 11 引入的 Java Heap Dumps 功能（可提取完整引用关系）",
+        "suggestion": "重写该段落，区分 Android 11+ Java Heap Dumps（引用关系，对标 MAT）和 Android 12+ Java Heap Sampling（分配栈）",
+        "evidence": [
+          "https://perfetto.dev/docs/data-sources/java-heap-profiler"
+        ]
+      },
+      {
+        "type": "实战缺失/权限断裂",
+        "location": "showmap / procrank / libmeminfo 及 malloc debug 与 malloc hooks",
+        "detail": "procrank 强依赖读取 /proc/<pid>/pagemap（需 Root），setprop 开启 malloc debug 也需 adb root。User build 生产设备上无法运行",
+        "suggestion": "明确指出强依赖 adb root 或 userdebug/eng 环境。User 版本引导使用 wrap.sh 或 profileable 替代方案"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-21T19:25:48.814496+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "14.5",
+    "section_title": "三方性能库",
+    "priority": 95,
+    "reason": "[External Review] P0: AGP 8.0 Transform API 已彻底移除（非deprecated）；P0: ByteHook 是纯 PLT Hook 非 Inline Hook；P1: Rhea 已更名 btrace 并完全开源；P1: Matrix 插桩方式需更新",
+    "material_paths": [
+      "logs/external-review/2026-04-21-14-05-third-party-libs-external-review.md"
+    ],
+    "review_issues": [
+      {
+        "type": "版本差异/事实错误",
+        "location": "Booster 的局限性",
+        "detail": "原文称 AGP 8.0 仍可使用 Transform API（deprecated）。事实上 Transform API 在 AGP 8.0 已被彻底移除",
+        "suggestion": "明确指出 Transform API 在 AGP 8.0 被彻底移除，需迁移至 AsmClassVisitorFactory (Instrumentation API) 和 Artifacts API",
+        "evidence": [
+          "Android Gradle Plugin 8.0 Release Notes"
+        ]
+      },
+      {
+        "type": "事实错误",
+        "location": "Hook 机制对比 - Inline Hook",
+        "detail": "原文称 ByteHook 结合了 PLT Hook 和 Inline Hook 的特点。实际上 ByteHook 纯粹是 PLT Hook，字节的 Inline Hook 库名为 ShadowHook",
+        "suggestion": "修正 ByteHook 为纯 PLT Hook 库。如需介绍 Inline Hook，引入 ShadowHook",
+        "evidence": [
+          "https://github.com/bytedance/android-bytehook"
+        ]
+      },
+      {
+        "type": "信息滞后",
+        "location": "扩展：Rhea",
+        "detail": "原文称 Rhea 核心代码未完全开源。实际上已更名为 btrace 并在 GitHub 完全开源，演进到 3.0 版本",
+        "suggestion": "更新 Rhea 状态为已完全开源（btrace），补充 3.0 新特性并给出 GitHub 链接",
+        "evidence": [
+          "https://github.com/bytedance/btrace"
+        ]
+      },
+      {
+        "type": "版本差异/补充",
+        "location": "Matrix Trace Canary",
+        "detail": "未说明在 AGP 8.0+ 时代 Matrix 如何进行字节码修改。早期依赖 Transform API，现已迁移至 AsmClassVisitorFactory",
+        "suggestion": "补充 Matrix 已迁移至基于 Instrumentation API 的 AsmClassVisitorFactory"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-21T19:25:48.814496+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "14.6",
+    "section_title": "自动化测试工具",
+    "priority": 85,
+    "reason": "[External Review] P1: Microbenchmark API 14 要求过时（应为 API 19/推荐 29+）；P1: PowerMetric API 31+ 描述不准且遗漏 ODPM 硬件依赖",
+    "material_paths": [
+      "logs/external-review/2026-04-21-14-06-automation-tools-external-review.md"
+    ],
+    "review_issues": [
+      {
+        "type": "版本差异/事实错误",
+        "location": "Macrobenchmark 与 Microbenchmark 节",
+        "detail": "Microbenchmark 最低 API 14 已严重过时，现代 Jetpack Microbenchmark (1.1.0+) 最低 API 为 19，推荐 API 29+ 以获取完整 Perfetto 数据和热治理控制",
+        "suggestion": "修正 Microbenchmark 最低版本为 API 19，并建议在 API 29+ 设备运行"
+      },
+      {
+        "type": "版本差异/硬件依赖遗漏",
+        "location": "测量启动时间和滑动帧率 节",
+        "detail": "PowerMetric 的 API 31+ 描述不准确，且过度强调温度变化。高精度功耗追踪需 API 29+ 且强依赖 ODPM 硬件（如 Pixel 6+），非所有 Android 12 设备都支持",
+        "suggestion": "更新为 API 29+，强调 ODPM 硬件依赖，去掉温度为主的误导性描述"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-21T19:25:48.814496+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "14.8",
+    "section_title": "GPU 调试工具",
+    "priority": 95,
+    "reason": "[External Review] P0: profileable 标签语法误写为属性（正确为子标签）；P1: 缺失 ANGLE 强制切换命令；P1: Perfetto GPU 数据源路径不具体",
+    "material_paths": [
+      "logs/external-review/2026-04-21-14-08-gpu-debug-tools-external-review.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误/配置语法",
+        "location": "常见问题与误区 / 误区 4",
+        "detail": "profileable 误写为属性（android:profileable enabled=\"true\"），正确为子标签 <profileable android:shell=\"true\" android:enabled=\"true\" />",
+        "suggestion": "更正为子标签写法，并给出正确的 XML 示例。注意该标签由 Android 10 (API 29) 引入",
+        "evidence": [
+          "https://developer.android.com/guide/topics/manifest/profileable-element"
+        ]
+      },
+      {
+        "type": "原理断裂/缺失",
+        "location": "AGI 对 GLES 应用的分析路径",
+        "detail": "缺失开发阶段强制切换 ANGLE 的命令（adb shell cmd gpu），无法在 Android 17 之前验证 ANGLE 下 GPU 表现",
+        "suggestion": "增加 `adb shell cmd gpu set-graphics-driver --package <pkg> --driver angle` 命令说明"
+      },
+      {
+        "type": "源码锚点缺失",
+        "location": "Perfetto GPU 数据源",
+        "detail": "提到 gpu.counters 数据源但未给出 AOSP 定义路径（protos/perfetto/config/gpu/gpu_counter_config.proto）",
+        "suggestion": "引用具体 proto 路径，提示使用 perfetto --query 获取 Counter ID"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-21T19:25:48.814496+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "14.10",
+    "section_title": "eBPF/BPF 在 Android 性能分析中的应用",
+    "priority": 95,
+    "reason": "[External Review] P0: GKI 内核版本映射错误（Android 16 GKI 为 6.12 非 6.6）；P1: eBPF 内核态聚合原理解释断裂；P1: uprobe 性能陷阱缺失；P1: Simpleperf uprobe 语法过旧",
+    "material_paths": [
+      "logs/external-review/2026-04-21-14-10-ebpf-performance-analysis-external-review.md"
+    ],
+    "review_issues": [
+      {
+        "type": "事实错误/版本映射",
+        "location": "sched_ext 与可扩展调度器 / 常见问题与误区",
+        "detail": "将 Android 16 的 GKI 内核版本误写为 6.6，将 6.12 误认为 Android 17。实际 Android 15 GKI 为 6.6，Android 16 引入 6.12",
+        "suggestion": "修正为'Android 15 GKI 为 6.6，Android 16 引入了 6.12 GKI，sched_ext 在 Android 16+ 可开始底层支持评估'",
+        "evidence": [
+          "Android 官方 GKI Release Notes",
+          "AOSP build manifests"
+        ]
+      },
+      {
+        "type": "原理断裂",
+        "location": "eBPF 是什么，为什么 Android 性能分析需要它",
+        "detail": "未讲清 eBPF 低开销的核心架构原因（内核态可编程聚合 In-kernel Aggregation），对 perf 的描述过于绝对化",
+        "suggestion": "对比 ftrace/perf 会大量拷贝数据到用户态，强调 eBPF 通过 BPF Map 在内核态就地聚合数据"
+      },
+      {
+        "type": "知识盲区/性能陷阱",
+        "location": "UprobeStats 与动态埋点",
+        "detail": "未指出 uprobe (User->Kernel->User) 巨大的上下文切换性能陷阱，单次 1-3 微秒。高频调用会导致断崖式下跌",
+        "suggestion": "补充 uprobe 性能开销警告，强调动态埋点仅适用于低频关键路径"
+      },
+      {
+        "type": "源码准确性/语法过旧",
+        "location": "Simpleperf 与 eBPF 的结合",
+        "detail": "使用的 Simpleperf uprobe 命令行语法过旧，非官方推荐的最佳实践",
+        "suggestion": "更新为现代 `-e probe:` 语法格式"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-21T19:25:48.814496+08:00",
     "status": "pending"
   }
 ]

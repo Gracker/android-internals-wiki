@@ -110,3 +110,88 @@
 - **位置**：ODPM 的工作原理 / Power Profiler vs Energy Profiler
 - **问题**：章节把 ODPM 基本限定在 Android Studio Profiler 视角，缺少 Perfetto `android.power_rails` trace 与 SQL 分析链路。
 - **建议**：补一段 Perfetto 抓取 power rails、和 CPU 调度/线程事件联查的入口，避免工具链割裂。
+
+## [External Review] 15.6 Testing Best Practices — 2026-04-21
+- **类型**：最佳实践补充
+- **位置**：固定 CPU 频率（进阶）
+- **问题**：未提及 Jetpack Benchmark 自带的 LockClocks 自动化锁频能力
+- **建议**：补充 `androidx.benchmark` 内部 `LockClocks` 机制可自动锁定 CPU 频率，无需手动编写 Shell 脚本
+- **来源**：外部 AI Review（06-15.6）
+
+## [External Review] 15.8 实证性能问题研究 — 2026-04-21
+- **类型**：原理描述优化
+- **位置**：模式一：API 误用 -> GlobalScope 协程
+- **问题**：GlobalScope 导致泄漏的根本条件描述不够严谨，需补充闭包捕获外部引用的前提
+- **建议**：补充说明 GlobalScope 导致泄漏的根本条件是"闭包捕获了外部生命周期组件的引用"，而非必然泄漏
+- **来源**：外部 AI Review（08-15.8）
+
+## [External Review] 14.1 Android Studio Profiler — 2026-04-21
+- **类型**：描述模糊
+- **位置**：Callstack Sample 小节
+- **问题**："Android Studio 2025" 命名不够专业确切
+- **建议**：定位到具体动物代号（如 Koala, Ladybug, Meerkat），避免模糊版本描述
+- **来源**：外部 AI Review（14-01）
+
+## [External Review] 14.2 Simpleperf — 2026-04-21
+- **类型**：原理链补充
+- **位置**：软件事件：cpu-clock 和 task-clock
+- **问题**：`--trace-offcpu` 机制解释不够透彻，未点出 off-CPU 时间如何被可视化
+- **建议**：补充基于 `sched_switch` 计算时间差加权的原理：监听调度切换事件，计算线程被换出和下一次被换入之间的时间差，伪造 off-CPU 样本
+- **来源**：外部 AI Review（14-02）
+
+## [External Review] 14.3 Memory Tools — 2026-04-21
+- **类型**：版本差异
+- **位置**：HWASAN 与 MTE -> MTE
+- **问题**：关于应用如何主动启用 MTE 检查，缺少 Android 15 的 Manifest 配置方法
+- **建议**：补充 Android 15 引入的 `android:memtagMode="async"` Manifest 属性说明
+- **来源**：外部 AI Review（14-03）
+
+## [External Review] 14.5 三方性能库 — 2026-04-21
+- **类型**：内容补充
+- **位置**：KOOM 线程泄漏检测
+- **问题**：未提及线上实际使用中可能遇到的误报和性能开销问题
+- **建议**：补充 KOOM 如何通过白名单或业务线程标记来过滤正常常驻线程，降低误报率
+- **来源**：外部 AI Review（14-05）
+
+## [External Review] 14.6 自动化测试工具 — 2026-04-21
+- **类型**：代码示例准确性
+- **位置**：CompilationMode：量化编译优化效果
+- **问题**：`CompilationMode.Partial(CompilationMode.Partial.Mode.DEFAULT)` 代码偏老且冗余
+- **建议**：简化为 `CompilationMode.Partial()`
+- **来源**：外部 AI Review（14-06）
+
+## [External Review] 14.7 ProfilingManager — 2026-04-21
+- **类型**：API 签名准确性
+- **位置**：显式请求的公共骨架
+- **问题**：CancellationSignal 的传递方式未在代码中体现，且可能是通过方法参数传递而非 Builder
+- **建议**：核实 AndroidX 最终 API，更新代码示例并补充 `adb shell device_config put profiling_manager rate_limiter.disabled true` 绕过限流的调试指令
+- **来源**：外部 AI Review（14-07）
+
+## [External Review] 14.8 GPU 调试工具 — 2026-04-21
+- **类型**：版本差异
+- **位置**：Snapdragon Profiler 状态
+- **问题**：称 Snapdragon Profiler 仍在活跃维护，但高通正逐渐向 Qualcomm Profiler 整合
+- **建议**：提及 Qualcomm Profiler 的出现及其作为系统级工具的地位
+- **来源**：外部 AI Review（14-08）
+
+## [External Review] 14.9 Android Camera 性能与 Perfetto 分析 — 2026-04-21
+- **类型**：版本标注
+- **位置**：requestStreamBuffers
+- **问题**：未标注 requestStreamBuffers 是 Camera HAL 3.5 的核心特性
+- **建议**：明确标注为 Camera HAL 3.5 引入的"按需分配（Buffer Management）"特性
+- **来源**：外部 AI Review（14-09）
+
+## [External Review] 14.10 eBPF/BPF 性能分析 — 2026-04-21
+- **类型**：原理补充
+- **位置**：BPF CO-RE：一次编译，到处运行
+- **问题**：对 CO-RE 的跨设备兼容性描述过于乐观，未指出厂商驱动层可能面临的 BTF 缺失问题
+- **建议**：补充说明 CO-RE 绝对稳定性仅限标准 Linux/GKI 数据结构，追踪厂商驱动层结构仍面临 BTF 信息缺失
+- **来源**：外部 AI Review（14-10）
+
+## [External Review] 14.11 Battery Historian 与功耗分析工具 — 2026-04-21
+- **类型**：内容补充
+- **位置**：bugreport 抓取
+- **问题**：现代 Android 14+ 上部分受限 OEM 手机 dumpsys batterystats 可能受权限/后台策略影响
+- **建议**：简单提示某些受限 OEM 手机可能需要显式赋予开发者选项相关安全权限
+- **来源**：外部 AI Review（14-11）
+
