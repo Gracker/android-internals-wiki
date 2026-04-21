@@ -1323,6 +1323,84 @@
       "completed_at": "2026-04-21T10:49:25+08:00",
       "completed_by": "task2b-content-processing-rework",
       "resolution": "已把 Binder 线程池口径改为 ProcessState 默认上限 15 并说明 joinThreadPool 的边界，删除不存在的常量/属性名，同时修正死锁案例中的静态检测说法与破损代码块。"
+    },
+    {
+      "section": "10.5",
+      "section_title": "案例集",
+      "priority": 95,
+      "reason": "[Deep Tech Review] WeakHashMap 被误写成通用缓存替代方案，且 Android 8-16 仍沿用 LMK 口径描述低内存查杀路径。",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "原理错误",
+          "location": "L163",
+          "detail": "文中把 `WeakHashMap` 写成全局 `HashMap` 缓存的直接替代方案，会误导读者以为缓存条目会在内存紧张时自动、安全地释放。`WeakHashMap` 只有 key 是弱引用，value 仍是强引用；对 `String`/userId 这类常见 key，条目生命周期往往不可控，也不能替代按大小治理的缓存。",
+          "suggestion": "把这里改成 `LruCache` / 显式失效 / `WeakReference` 包装 value 的边界说明，不要把 `WeakHashMap` 当作通用缓存治理手段。"
+        },
+        {
+          "type": "版本差异",
+          "location": "L96",
+          "detail": "章节在 API 26-36 语境下直接用 “LMK（Low Memory Killer）” 描述低内存杀进程路径，混淆了历史内核 LMK 与 userspace `lmkd`。Android 10+ 还要进一步区分 PSI / `vmpressure` 驱动的 `lmkd` 路径。",
+          "suggestion": "把案例一的系统侧机制改成 “Android 8+ 进入 userspace `lmkd` 时代，Android 10+ 常见 PSI 监控路径”，仅在历史背景里再提内核 LMK。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-04-21T11:16:00+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "17.1",
+      "section_title": "OEM 性能优化的通用思路",
+      "priority": 85,
+      "reason": "[Deep Tech Review] 预创建进程段落混淆 AOSP USAP 与 OEM 预热，Android 14 里 Samsung 协作也被误写成后台 API 演进。",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "原理断裂/版本差异",
+          "location": "L162-L167",
+          "detail": "“预创建进程” 段把已 fork 但尚未 specialize 的进程直接写成 OEM 常用预热技巧，却没有区分 Android 10+ 的 AOSP USAP（Unspecialized App Process）池和 OEM 在其上叠加的 per-app preload / prediction。读者会把 trace 里缺少 fork 阶段误判成厂商私有能力。",
+          "suggestion": "拆成两层：AOSP USAP 负责预 fork 通用 app process，OEM 可能再叠加按应用/按场景的预热与预测启动；同时把 Perfetto 判读口径改成版本化描述。"
+        },
+        {
+          "type": "版本差异",
+          "location": "L249",
+          "detail": "章节把 Android 14 写成“与 Samsung 合作改进后台 App 管理 API”，会让读者以为 Android 14 新增了通用后台管理 API。公开口径更接近前台服务类型约束与厂商后台行为一致性协作，而不是新的平台 API 面。",
+          "suggestion": "把版本演进改成 “Android 14：FGS type / policy 收紧，并与 Samsung 等 OEM 推进后台行为一致性”，不要写成新增后台 App 管理 API。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-04-21T11:16:00+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "17.2",
+      "section_title": "SoC 平台差异",
+      "priority": 85,
+      "reason": "[Deep Tech Review] Perflock 权限边界写得过宽，且把微架构缓存参数直接映射到 Perfetto 结论，证据链不足。",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码准确性/边界错误",
+          "location": "L126-L143 / L275 / L279",
+          "detail": "Perflock 例子引用的是 `vendor/qcom/proprietary/...` 私有实现，却把能力描述成“系统服务或应用直接请求锁定 CPU 频率”。这会让读者误以为普通第三方应用也能稳定、直接地调用该机制。",
+          "suggestion": "明确标注 Perflock 是 vendor-private / privileged 能力。若要讨论合作应用场景，单独说明白名单、系统签名或厂商 SDK 的边界，不要写成通用 App 手段。"
+        },
+        {
+          "type": "原理断裂",
+          "location": "L116-L118",
+          "detail": "章节把 Oryon 的 cache size / cycle latency 直接外推为 Perfetto 中“缓存不命中时偶发 latency spike”的可观察现象，但常规 Perfetto CPU track 并不给出 cache miss / cycle 级证据。缺少 PMU、Streamline 或厂商计数器这一步，证据链不成立。",
+          "suggestion": "把微架构参数降格为背景知识；若要建立 trace 结论，补充 PMU/厂商计数器或删掉“Perfetto 中可直接观察到”的推断。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-04-21T11:16:00+08:00",
+      "status": "pending"
     }
   ]
 }
