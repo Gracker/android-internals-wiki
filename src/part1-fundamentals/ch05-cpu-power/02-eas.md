@@ -2,7 +2,7 @@
 title: "EAS 能量感知调度"
 chapter: "5.2"
 section: "5.2"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 9 (API 28) - Android 16 (API 36)"
 last_verified: "2026-03-31"
 last_verified_against: "Linux kernel 6.6, Documentation/scheduler/sched-energy.rst"
@@ -28,13 +28,16 @@ review2_by: openclaw-task6
 polish_count: 1
 polish_date: "2026-04-06"
 polish_by: "task2b-polish"
-pipeline_stage: task9_pending
+pipeline_stage: ready-to-publish
 task6_state: reviewed
 task6_result: pass-light-edit
-task9_state: pending
-task9_result: needs-rework
+task9_state: reviewed
+task9_result: pass-tech-review
 task2b_state: fixed
 task2b_result: fixed
+task9_reviewed_by: openclaw-task9
+task9_reviewed_date: "2026-04-22"
+last_task9_at: "2026-04-22T07:21:28+08:00"
 ---
 
 # EAS 能量感知调度
