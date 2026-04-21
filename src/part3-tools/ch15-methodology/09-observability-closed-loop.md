@@ -21,13 +21,15 @@ sources:
   - type: blog
     path: "https://github.com/measure-sh/measure"
 tags: [observability, apm, pipeline, governance, monitoring]
-related_chapters: ["14.12", "15.3", "15.5", "15.6", "15.10"]
-pipeline_stage: task9_pending
-task6_state: reviewed
+related_chapters: ["7.1", "8.1", "9.1", "14.12", "15.3", "15.5", "15.6", "15.10"]
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
 reviewed_date: "2026-04-21"
 reviewed_by: openclaw-task6
 task9_state: pending
+repaired_date: "2026-04-21"
+repaired_by: "codex"
 ---
 
 # 从采集到治理的闭环
@@ -59,6 +61,8 @@ task9_state: pending
 根因通常是缺了一整条后续环节。
 
 **闭环的目标是把一个线上性能问题变成可修、可验、可回归追踪的工程任务。**
+
+放回整本书的结构里，本节承担的是把“体验问题”翻译成“工程流转”的那一层：前面的章节负责解释什么是卡、什么是慢、什么是 ANR；而本节要解决的是，这些问题在线上被发现后，如何不在团队流程里丢失。
 
 ## 一条完整闭环至少有八步
 

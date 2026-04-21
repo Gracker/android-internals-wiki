@@ -29,6 +29,9 @@
 # 安装 mdbook
 cargo install mdbook
 
+# 安装 Mermaid 预处理器
+cargo install mdbook-mermaid
+
 # 构建
 mdbook build
 
@@ -40,17 +43,19 @@ mdbook serve
 
 ```
 ├── src/              # 书的内容源文件（中文）
-├── staging/          # OpenClaw 工作区（草稿）
 ├── intake/           # 外部输入（建议、资料）
 ├── metadata/         # 项目元数据
 ├── evidence/         # 验证证据（Trace、截图、源码引用）
+├── logs/             # review / research / integration 日志
+├── openclaw-tasks/   # 内容流水线任务定义
 ├── scripts/          # 辅助脚本
 └── i18n/             # 国际化相关（术语映射等，v1.0 后启用）
 ```
 
 ## 内容验证标准
 
-每个知识点都标注验证状态：
+章节 frontmatter 目前主要跟踪工作流状态，如 `ready-for-review`、`finalized`。
+正文中的知识点级标注仍使用以下验证状态：
 
 - `verified` — 已通过 AOSP 源码或实机验证
 - `draft` — 初稿完成，等待验证
@@ -59,21 +64,24 @@ mdbook serve
 
 ## 项目进度
 
-当前版本：**v0.1-alpha**（框架就绪，内容加工中）
+当前版本：**v0.1-alpha**（结构稳定，正文已进入批量 review / finalize 阶段）
 
-| 部分 | 章节数 | 小节数 | 状态 |
-|------|--------|--------|------|
-| Part 1: 系统运行机制 | 6 | 36 | 🔄 加工中 |
-| Part 2: 性能专题 | 6 | 31 | ⏳ 待加工 |
-| Part 3: 工具与方法论 | 3 | 21 | ⏳ 待加工 |
-| Part 4: 系统级优化 | 2 | 6 | ⏳ 待加工 |
-| 前言 + 附录 | - | 11 | ⏳ 待加工 |
+| 部分 | 章节数 | 内容文件数 | 状态 |
+|------|--------|------------|------|
+| Part 1: 系统运行机制 | 6 | 69 文件 | 🔄 主体已成型，持续精修 |
+| Part 2: 性能专题 | 7 | 68 文件 | 🔄 主体已成型，持续精修 |
+| Part 3: 工具与方法论 | 3 | 29 文件 | 🔄 持续精修 |
+| Part 4: 系统级优化 | 2 | 8 文件 | ⏳ 仍在补齐 |
+| 前言 + 附录 | - | 12 文件 | ⏳ 前言待补齐，附录已部分完成 |
 
-详细路线图见 [metadata/roadmap.md](roadmap.md)
+目前 `src/` 中已有 200+ 篇 Markdown 内容文件。正文主体以 `ready-for-review`
+和 `finalized` 为主，但全书尚未公开发布。
+
+详细路线图见 [metadata/roadmap.md](metadata/roadmap.md)
 
 ## 贡献
 
-欢迎贡献！请阅读 [CONTRIBUTING.md](Obsidian/AgentOS/Android-Internal-Wiki/CONTRIBUTING.md) 了解贡献方式和规范。
+欢迎贡献！请阅读 [CONTRIBUTING.md](CONTRIBUTING.md) 了解贡献方式和规范。
 
 ## 关于 AI 辅助
 

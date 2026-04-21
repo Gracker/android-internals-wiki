@@ -19,13 +19,15 @@ sources:
   - type: official
     path: "https://developer.android.com/topic/libraries/app-startup"
 tags: [governance, benchmark, ci, budget, release]
-related_chapters: ["8.3", "15.3", "15.6", "15.9", "14.12"]
-pipeline_stage: task9_pending
-task6_state: reviewed
+related_chapters: ["7.1", "8.1", "8.3", "9.1", "14.12", "15.3", "15.5", "15.6", "15.9"]
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
 reviewed_date: "2026-04-21"
 reviewed_by: openclaw-task6
 task9_state: pending
+repaired_date: "2026-04-21"
+repaired_by: "codex"
 ---
 
 # 性能治理工程化
@@ -59,6 +61,8 @@ task9_state: pending
 
 这也是为什么“治理工程化”和“有几个高手懂性能”不是一回事。  
 前者追求的是版本质量可预测，后者往往只会在出事时表现出价值。
+
+如果顺着全书主线往下看，本节其实是最后一层：`7/8/9` 说明用户体验为什么会坏，`15.3` 和 `15.5` 说明怎样把坏体验量化并在线上感知，`15.9` 说明如何闭环，而本节则回答“团队怎样长期把这件事做对”。
 
 ## 工程化治理最少要有五个维度
 

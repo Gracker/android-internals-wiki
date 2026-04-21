@@ -97,7 +97,9 @@ def main():
     for meta in items:
         chapter_sections[chapter_num(meta.get("chapter"))].append(meta)
 
-    publish_like = {"publish_ready"}
+    # Keep the legacy name for compatibility, but count the stage actually used
+    # by the repository metadata today.
+    ready_to_publish_like = {"ready-to-publish", "publish_ready"}
     for part_name, ch_nums in PARTS.items():
         part_items = []
         for ch in ch_nums:
@@ -107,16 +109,20 @@ def main():
             print()
             continue
         part_total = len(part_items)
-        part_done = sum(1 for m in part_items if m.get("pipeline_stage") in publish_like)
+        part_done = sum(
+            1 for m in part_items if m.get("pipeline_stage") in ready_to_publish_like
+        )
         pct = (part_done / part_total * 100) if part_total else 0
-        print(f"{part_name}: {pct:.0f}% publish_ready")
+        print(f"{part_name}: {pct:.0f}% ready-to-publish")
         for ch in ch_nums:
             ch_items = chapter_sections.get(ch, [])
             ch_total = len(ch_items)
             if ch_total == 0:
                 print(f"  Ch{ch:>2} {CHAPTER_TITLES.get(ch, ''):<20s} [░░░░░░░░░░] 0%")
                 continue
-            ch_done = sum(1 for m in ch_items if m.get("pipeline_stage") in publish_like)
+            ch_done = sum(
+                1 for m in ch_items if m.get("pipeline_stage") in ready_to_publish_like
+            )
             ch_pct = ch_done / ch_total * 100
             filled = int(ch_pct / 10)
             bar = "█" * filled + "░" * (10 - filled)

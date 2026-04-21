@@ -21,7 +21,7 @@ tags:
   - research
 pipeline_stage: task6_pending
 task6_state: revisiting
-task9_state: reviewed
+task9_state: pending
 task9_result: needs-rework
 task9_reviewed_date: "2026-04-17"
 task2b_state: fixed
@@ -29,8 +29,10 @@ task2b_result: partial-fixed
 reviewed_by: openclaw-task6
 reviewed_date: 2026-04-17
 task6_result: pass-light-edit
+repaired_date: "2026-04-21"
+repaired_by: "codex"
 section: "15.3"
-related_chapters: ['7.1', '7.2', '7.3', '8.1', '8.2', '9.1', '10.1', '11.1']
+related_chapters: ['7.1', '7.2', '7.3', '8.1', '8.2', '9.1', '10.1', '11.1', '15.5', '15.9', '15.10']
 ---
 
 
@@ -62,31 +64,43 @@ related_chapters: ['7.1', '7.2', '7.3', '8.1', '8.2', '9.1', '10.1', '11.1']
 > 锚点内容需 L1/L2 验证，扩展内容至少 L2 验证，自动发现内容至少标注来源。
 <!-- outline-end -->
 
-## 为什么要建立一套指标体系
+## 为什么要先讲指标
 
-做性能优化最怕两件事：不知道怎么优化，以及优化完却说不清效果。如果你在 Perfetto 里花了一整天分析卡顿，最后交出一版修改，却说不清楚帧率提升了多少、用户感知有没有改善，那这轮优化就缺了验证环节。
+性能优化最容易掉进一个陷阱：花了很多时间分析和修改，最后却说不清到底好没好。
 
-一套完善的性能指标体系解决的是"度量"问题。它回答三个层面的需求：在开发阶段，我们需要一套线下指标来精确定位瓶颈；在灰度和上线阶段，我们需要线上指标来监控回归和验证效果；在长期迭代中，我们需要把不同维度的指标聚合起来，形成对产品性能的全局判断。
+如果一轮优化结束后，只能说“感觉顺了一点”“看起来没那么卡了”，那这轮工作其实还没闭环。性能问题和功能问题不一样，很多时候不是“能不能用”，而是“比之前好多少”“影响了多少人”“值得不值得优先修”。这些判断都离不开指标。
 
-这一节我们把 Android 性能领域最核心的指标类别梳理一遍——流畅性、响应速度、稳定性、内存、功耗——每个指标讲清楚它度量什么、怎么采集、多少算好。最后讨论一下指标体系的设计原则：线上和线下的区别在哪里、聚合粒度怎么选、分位数比均值好在哪里。
+所以这一节不是单纯列几个数字名词，而是先把“什么数字值得长期盯、什么数字适合拿来诊断、什么数字适合做发布门禁”讲清楚。
+
+## 指标体系不是“多几个数字”，而是决策接口
+
+指标体系真正有价值，不是因为它看起来完整，而是因为它能支持决策。一个好的指标至少要回答下面三个问题中的一个：
+
+- 现在有没有问题？
+- 这个问题影响面多大？
+- 它更像哪一类问题，应该先找谁？
+
+如果一个指标既不能决定优先级，也不能帮助归因，那它大概率只是“好看但不好用”。
 
 ## 流畅性指标
 
-流畅性是用户最直接能感知到的性能维度。一个 App 界面滑起来是否顺滑、动画是否流畅，都由流畅性指标来量化。
+流畅性是用户最先感知到的性能维度。界面顺不顺，动画跟不跟手，列表是不是一滑就顿，最后都要落到流畅性指标上。
 
 ### FPS（每秒帧数）
 
 FPS 是最直觉的流畅性指标：一秒钟内屏幕上成功渲染了多少帧。60Hz 屏幕的理论上限是 60 FPS，120Hz 屏幕是 120 FPS。在 Perfetto 中，你可以通过统计 RenderThread 和 SurfaceFlinger 的工作周期来计算实际 FPS。
 
-但 FPS 有一个显著的缺陷：它是一个平均值概念。假设你在 120Hz 设备上一秒内渲染了 117 帧，FPS 看起来很漂亮（97.5% 帧率），但如果其中有 3 帧是连续掉帧——用户刚好在这 3 帧的窗口里看到了明显的卡顿，平均 FPS 却几乎不受影响。
+但 FPS 的问题也很明显：它是平均值。平均值看起来漂亮，不代表体验稳定。
 
 这就是为什么我们做性能分析时，很少只用 FPS。
+
+更准确地说，FPS 更像展示指标，不太适合做治理主指标。治理时更有价值的，通常是帧时间分位数、jank rate 和 frozen frame rate 这类更能反映尾部体验的指标。
 
 [已验证: 官方文档, developer.android.com/topic/performance/vitals]
 
 ### Frame Time 与分位数（P90 / P99）
 
-Frame Time 是单帧渲染耗时，精度到微秒级。它比 FPS 更有分析价值，因为它能看到每一帧的真实情况，而不是被平均化掩盖。
+Frame Time 是单帧渲染耗时。它比 FPS 更有分析价值，因为它保留了“每一帧到底花了多久”这件事，而不是把一切都摊平。
 
 在做线上监控时，我们通常关心的是分位数——P50（中位数）、P90、P99。P50 告诉你"大多数用户看到的帧有多快"，P90 告诉你"10% 的帧有多慢"，P99 则暴露最差的 1% 的尾部延迟。
 
@@ -109,6 +123,8 @@ window.addOnFrameMetricsAvailableListener(listener, handler);
 
 [已验证: 官方文档, developer.android.com/reference/android/view/FrameMetrics]
 
+这里有一个常见误区：直接把所有帧混在一起算全局 P90。更稳的做法是至少按页面 / 场景分桶，再计算分位数。否则首页、详情页、播放页、后台恢复全混在一起，结论很容易失真。
+
 ### Janky Frame Rate（慢帧率）
 
 Google 在 Android Vitals 中定义了"慢帧"（Slow / Janky Frame）的标准：渲染耗时超过帧预算的帧。具体阈值因设备刷新率而异——60Hz 设备是 16ms，120Hz 设备是 8ms。Janky Frame Rate 是指用户会话中出现慢帧的比例。
@@ -116,6 +132,8 @@ Google 在 Android Vitals 中定义了"慢帧"（Slow / Janky Frame）的标准�
 Google Play Console 的 Android Vitals 看板中，有两个层级的慢帧指标：一般慢帧（>16ms）和严重慢帧（>50ms）。如果超过 50% 的用户会话中出现严重慢帧，Google Play 会认为你的 App 存在"不良行为"（Bad Behavior），这会直接影响 Play Store 中的曝光和推荐。
 
 [已验证: 官方文档, developer.android.com/topic/performance/vitals]
+
+从治理角度看，`Janky Frame Rate` 更像平台监控指标，`Frame Time P90/P99` 更像工程诊断指标。前者便于横向比较版本和机型，后者更适合回到具体页面或 trace 做深入分析。
 
 ### Frozen Frame Rate（冻帧率）
 
@@ -125,9 +143,11 @@ Google Play Console 的 Android Vitals 看板中，有两个层级的慢帧指�
 
 [已验证: 官方文档, developer.android.com/topic/performance/vitals]
 
+这类指标的治理价值通常比平均 FPS 更高，因为它更接近“用户真的会抱怨”的那部分体验。
+
 ## 响应速度指标
 
-响应速度关注的是"从用户发出操作到看到结果"的延迟。它与流畅性的区别在于：流畅性度量的是持续的渲染质量，响应速度度量的是单次交互的反馈延迟。
+响应速度关注的是“从用户发出操作到看到结果”的延迟。它和流畅性的区别，不在于哪个更重要，而在于观察窗口不同：流畅性看的是持续渲染，响应速度看的是单次反馈。
 
 ### TTID（Time to Initial Display）
 
@@ -167,6 +187,13 @@ Android 16 引入了 system-triggered profiling，可以在 `reportFullyDrawn` �
 
 [已验证: 官方文档, developer.android.com/topic/performance/launch-time]
 
+TTID 和 TTFD 的治理分工也应分开：
+
+- **TTID** 更适合看“框架、初始化、首帧渲染”这段问题
+- **TTFD** 更适合看“首屏数据、可交互时机、骨架屏停留时间”这段问题
+
+如果把二者混成一个“启动时长”，大概率会丢失很多定位价值。
+
 ### Click-to-Display（点击到显示延迟）
 
 Click-to-Display 是一个端到端的延迟指标：从用户手指触碰屏幕的那一刻，到屏幕上显示对应的视觉反馈，经历了多少毫秒。这个指标覆盖了完整的事件路径：触摸中断 → InputDispatcher 分发 → App 主线程处理事件 → UI 更新 → RenderThread 渲染 → SurfaceFlinger 合成 → 显示硬件输出。
@@ -179,7 +206,9 @@ Click-to-Display 是一个端到端的延迟指标：从用户手指触碰屏幕
 
 ## 稳定性指标
 
-稳定性是最基础的质量指标——一个频繁崩溃或无响应的 App，性能再好也没用。
+稳定性是最基础的质量指标。一个频繁崩溃或无响应的 App，性能再好也没用。
+
+这也是为什么很多团队在绩效或版本门禁里，会把 crash / ANR 作为硬性红线，而把流畅性和启动作为持续优化目标。
 
 ### ANR Rate（应用无响应率）
 
@@ -196,6 +225,13 @@ Google Play 设定的不良行为阈值（截至 2026 年）：
 
 [已验证: 官方文档, support.google.com/googleplay/android-developer/answer/9844476]
 
+线上治理时，不要只盯总 ANR rate，还应看：
+
+- user-perceived ANR rate
+- 单机型 ANR rate
+- 前台 / 后台分布
+- 版本回归趋势
+
 ### Crash Rate（崩溃率）
 
 Crash Rate 的统计方式与 ANR Rate 类似，度量的是每日活跃用户中经历过至少一次崩溃的比例。Android Vitals 同样区分"用户感知的崩溃"（App 在前台时崩溃）和后台崩溃。
@@ -211,9 +247,13 @@ Google Play 设定的不良行为阈值：
 
 [已验证: 官方文档, support.google.com/googleplay/android-developer/answer/9844476]
 
+Crash rate 和 ANR rate 的治理方法也不同。Crash 更适合按错误簇、版本、堆栈聚类；ANR 更依赖线程状态、等待链路和系统负载背景。
+
 ## 内存指标
 
 内存指标的重要性常常被低估。在 Android 上，内存问题不只是 OOM——一个 App 占用内存过多，会触发系统更频繁的 GC、增加 LMK（Low Memory Killer）杀进程的概率、影响其他 App 的可用内存，最终以卡顿或闪退的形式呈现给用户。
+
+所以内存指标最容易出现的误区，就是“只在 OOM 时才看”。实际上，很多性能差评在真正 OOM 之前很久就已经开始发生了。
 
 ### PSS（Proportional Set Size）
 
@@ -241,6 +281,8 @@ PSS 是 Android 上度量 App 真实物理内存占用的标准指标。它的�
 
 [已验证: 官方文档, developer.android.com/studio/profile/memory]
 
+从线上治理角度，PSS 更适合作为“系统压力代理指标”，而 Java Heap Usage 更适合作为“应用内部堆行为指标”。二者不要混用。
+
 ### Java Heap Usage
 
 Java Heap 是 ART 虚拟机管理的堆内存，App 中所有 Java/Kotlin 对象分配都在这里。每个 App 的 Java Heap 有一个上限（由 `dalvik.vm.heapsize` 系统属性决定，不同设备从 128MB 到 512MB 不等），超过上限就会抛出 `OutOfMemoryError`。
@@ -250,6 +292,8 @@ Java Heap Usage 在 Perfetto 中可以通过 `Memory` track 观察。在 Android
 线上监控 Java Heap 的推荐方式是通过 `Runtime.getRuntime().totalMemory()` 和 `Runtime.getRuntime().freeMemory()` 定期采样，或者使用 `android.os.Debug.getMemoryInfo()` 获取更详细的内存分类数据。
 
 [已验证: 官方文档, developer.android.com/topic/performance/memory]
+
+真正落地时，Java Heap 更适合做趋势观察，而不是做绝对门禁。因为它太容易受场景、设备和采样点影响。
 
 ### OOM Rate
 
@@ -322,6 +366,19 @@ Active Power 是 App 在前台活跃使用时的功耗，主要由 CPU 计算、
 
 一个健康的指标分布应该是：P90 接近 P50，P99 略高于 P90。如果 P99 远高于 P50（比如 P50=8ms 但 P99=150ms），说明系统存在偶发的严重问题，需要排查。
 
+## 线上 vs 线下：不要用一套指标打天下
+
+同一个名字的指标，在线上和线下的职责经常不同：
+
+| 指标 | 线下更关注 | 线上更关注 |
+|---|---|---|
+| Frame Time | 具体帧、具体阶段、具体 trace | P90/P99、机型差异、版本回归 |
+| TTID / TTFD | 单次启动链路和阶段耗时 | 中位数、P95、冷温热分布 |
+| ANR / Crash | 复现条件和线程状态 | 受影响用户比例、机型 / 版本趋势 |
+| PSS / Java Heap | 场景峰值和增长曲线 | 分布、异常版本、设备聚类 |
+
+如果直接把线下单次结果当成线上结论，或把线上聚合指标拿来替代线下分析，都会出偏差。
+
 ## Android Vitals 与 Google Play Console
 
 Android Vitals 是 Google Play Console 内置的性能监控面板，它自动采集所有 Play Store 分发的 App 的核心性能数据，不需要开发者额外集成 SDK。
@@ -344,6 +401,32 @@ Android Vitals 的核心指标（Core Vitals）包括：
 对于大多数 App 团队来说，Android Vitals 是最基础的性能监控入口——在建设自有的线上监控体系之前，先把 Android Vitals 看板用起来。
 
 [已验证: 官方文档, developer.android.com/topic/performance/vitals]
+
+## 一个更可执行的指标分层
+
+比较稳的做法，是把指标分成三层：
+
+### 1. 门禁指标
+
+- 启动预算
+- 核心场景 frame time / jank 阈值
+- Crash / ANR 红线
+
+### 2. 诊断指标
+
+- 分阶段 frame metrics
+- 启动子阶段耗时
+- 内存维度拆解
+- trace / stack / exit reason
+
+### 3. 治理指标
+
+- 版本趋势
+- 机型聚类
+- 页面 / 场景榜单
+- 回归是否修复
+
+当指标被这样分层后，团队就不容易再问“到底应该看哪个数”，而是先问“我现在是在做门禁、诊断，还是治理”。
 
 ## 自定义业务性能指标的设计原则
 

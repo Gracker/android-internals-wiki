@@ -374,6 +374,72 @@ class PowerBenchmark {
 
 ---
 
+
+### PowerMonitor API（API 35 应用层接口）
+
+Macrobenchmark `PowerMetric` 在 API 34+ 就能用，但 Android 35 (API 35) 进一步向应用层开放了直接查询功耗数据的接口：`android.os.PowerMonitor` + `SystemHealthManager` 组合。
+
+核心三类：
+
+**1. PowerMonitor（API 35）**
+
+`android.os.PowerMonitor` 代表一个电源监控实体，分为两类：
+
+- `POWER_MONITOR_TYPE_MEASUREMENT`（0x1）：直接测量的电源轨，轨名设备特有（如 "S2S_VDD_G3D"），跨设备不可比
+- `POWER_MONITOR_TYPE_CONSUMER`（0x2）：建模能耗消费者，名称相对通用（如 "GPU"、"MODEM"），可能组合多个轨或共享轨的建模估算
+
+```kotlin
+// 获取支持的 PowerMonitor 列表
+val systemHealthManager = context.getSystemService(SystemHealthManager::class.java)
+systemHealthManager.getSupportedPowerMonitors(executor) { monitors ->
+    monitors.forEach { monitor ->
+        println("${monitor.name} (type=${monitor.type})")
+    }
+}
+
+// 异步获取功耗快照
+systemHealthManager.getPowerMonitorReadings(
+    listOf(selectedMonitor),
+    executor,
+    object : OutcomeReceiver<PowerMonitorReadings, RuntimeException> {
+        override fun onSuccess(result: PowerMonitorReadings) {
+            val energy = result.getConsumedEnergy(selectedMonitor) // 微瓦秒
+            val ts = result.getTimestampMillis(selectedMonitor)    // 毫秒
+        }
+        override fun onError(error: RuntimeException) { ... }
+    }
+)
+```
+
+**2. PowerMonitorReadings（API 35）**
+
+封装一次功耗快照，提供两个方法：
+
+- `getConsumedEnergy(PowerMonitor)`：设备启动以来累计能耗，单位微瓦秒（μWs），重启清零
+- `getTimestampMillis(PowerMonitor)`：快照采集时基于 `SystemClock.elapsedRealtime()` 的时间戳
+
+注意返回值是**累计值**而非瞬时功率，要计算瞬时功率需要取两次快照的差值。
+
+**3. 与 Perfetto 的数据通路关系**
+
+```
+应用层：PowerMonitor API (API 35)
+    ↓ SystemHealthManager
+    ├── IPowerStats HAL
+    │       ↓
+    │   ├── Perfetto (android.power_rails, collect_power_rails: true)
+    │   │       → android_power_rails_counters 表（PerfettoSQL）
+    │   │
+    │   ├── Studio Power Profiler
+    │   │
+    │   └── batterystats / bugreport
+```
+
+底层都走 `IPowerStats HAL`，差异只是暴露给谁、以什么格式。Perfetto 录制的是系统级 Trace，应用层 API 是单次异步查询。
+
+**版本门槛**：应用层 PowerMonitor API 需要 API 35； Perfetto `android.power_rails` 从 Android 10 就存在，但需要设备支持 ODPM（Pixel 6+ 确认支持）。
+
+
 ## 功耗分析的最佳实践
 
 ### 测试前准备

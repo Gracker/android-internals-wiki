@@ -2,7 +2,7 @@
 title: "APM / 可观测性平台与 SDK 选型"
 chapter: "14.12"
 section: "14.12"
-status: ready-for-review
+status: finalized
 drafted_date: "2026-04-21"
 drafted_by: "codex"
 applicable_versions: "Android 8 (API 26) - Android 16 (API 36)"
@@ -27,13 +27,19 @@ sources:
   - type: blog
     path: "https://github.com/didi/DoKit"
 tags: [apm, observability, monitoring, matrix, koom, jankstats, firebase]
-related_chapters: ["14.5", "15.3", "15.5", "15.9", "15.10"]
-pipeline_stage: task9_pending
+related_chapters: ["14.5", "14.13", "15.3", "15.5", "15.9", "15.10"]
+pipeline_stage: ready-to-publish
 task6_state: reviewed
 reviewed_by: openclaw-task6
 reviewed_date: "2026-04-21"
 task6_result: pass-light-edit
-task9_state: pending
+task9_state: reviewed
+task9_result: pass-tech-review
+task9_reviewed_date: "2026-04-21"
+task9_reviewed_by: "openclaw-task9"
+last_task9_at: "2026-04-21T23:18:40+08:00"
+repaired_date: "2026-04-21"
+repaired_by: "codex"
 ---
 
 # APM / 可观测性平台与 SDK 选型
@@ -57,7 +63,7 @@ task9_state: pending
 
 ## 为什么要单独讨论 APM / 可观测性
 
-很多团队谈 Android 性能时，脑子里只有两类东西：一种是 Perfetto、Simpleperf 这种线下深分析工具；另一种是“线上埋点”。但真正能把性能问题治理起来的，往往是中间这层可观测性体系。它既不是纯工具说明，也不是简单地往日志里打几个时间戳，而是一整套“线上感知 -> 归因定位 -> 聚合分析 -> 回流修复”的结构。
+很多团队聊 Android 性能时，只会在两端来回跳：一端是 Perfetto、Simpleperf 这类线下深分析工具，另一端是“线上打点”。真正决定治理效率的，往往是中间这层可观测性体系。它不是多加一个 SDK，也不是多埋几个时间戳，而是一整套“怎么发现、怎么归因、怎么聚合、怎么回查、怎么进入修复”的结构。
 
 如果不把这一层讲清楚，读者很容易出现两个偏差：
 
@@ -90,7 +96,7 @@ task9_state: pending
 | `btrace`（RheaTrace） | 低开销方法级 trace + 系统 trace 融合 | 线上 / 灰度取证工具 |
 | `DoKit` | 研发 / 测试辅助、可视化诊断 | 研发助手，不是纯线上 APM |
 
-这一层的共同点是：它们解决的是“客户端怎么采到问题”。但采到了之后怎么聚合、怎么出报表、怎么做版本 / 机型维度分析，往往还需要后端配套。
+这一层的共同点是：它们解决的是“客户端怎么采到问题”。采到之后怎么聚合、怎么做报表、怎么做版本和机型分析，通常还需要平台配套。
 
 ### 第三层：平台型方案
 
@@ -172,6 +178,64 @@ task9_state: pending
 
 没有哪套方案能在所有维度都最优。选型的关键，是让团队知道自己在换什么。
 
+## 按团队成熟度选，而不是按流行度选
+
+除了工具能力本身，团队成熟度往往才是决定成败的主变量。
+
+### 阶段 1：还没有稳定线上信号
+
+目标是先建立“能看到问题”的能力。这时优先级通常是：
+
+- `JankStats`
+- 启动埋点
+- `ApplicationExitInfo`
+- Android Vitals / Firebase 这类平台基础盘
+
+这个阶段最忌讳一上来接过重方案。因为团队连“哪些指标最有用”都还没形成共识，过度建设只会放大噪音。
+
+### 阶段 2：已经能看到问题，但拿不到现场
+
+这时应该补客户端证据层：
+
+- `Matrix`
+- `btrace`
+- `KOOM`
+
+目标从“有没有问题”变成“问题发生时能不能更快落到责任链路”。
+
+### 阶段 3：已经有不少证据，但治理效率低
+
+这时真正该投的是平台和流程：
+
+- 会话时间线
+- 版本 / 机型聚合
+- 告警分级
+- 问题榜单
+- 回查能力
+
+也就是 `15.9` 和 `15.10` 里讲的闭环和工程化。
+
+## 一套更现实的选型流程
+
+实际落地时，建议按下面顺序做，而不是先列库名：
+
+1. 先列清楚最痛的问题：卡顿、启动、ANR、OOM、研发联调，哪三个最痛。
+2. 再决定哪些必须线上发现，哪些可以留在线下。
+3. 决定平台是自建、半自建还是完全依赖 SaaS。
+4. 最后才决定客户端接哪些 SDK。
+
+这个顺序的价值，是防止“先接了库，再倒推需求”。
+
+## 什么时候不该扩 APM 体系
+
+下面几种情况，往往不该继续堆能力：
+
+- 指标已经足够，但 backlog 没有人消费
+- trace / hprof 证据已经很多，但平台回查能力很弱
+- 团队没有明确 owner 维护 SDK 版本兼容和采样策略
+
+这时继续加能力，通常只会增加复杂度，而不会增加治理效果。
+
 ## 推荐的组合方式
 
 ### 组合 A：官方基线 + 自建平台
@@ -215,3 +279,11 @@ task9_state: pending
 3. 选型前先回答目标问题，再选工具。
 
 如果读者读完后，能先分层、再评估目标、最后按团队能力做组合，而不是直接抄一个库名列表，这一节就算达到了目的。
+
+放回整本书的结构里，本节承担的是“把工具能力放回治理体系里看”的那一层：
+
+- `7/8/9` 解释了体验问题是什么
+- `15.3` 解释了要看哪些指标
+- `15.5` 解释了线上怎么感知
+- `15.9` 解释了感知之后怎么闭环
+- `15.10` 解释了团队怎么长期把这件事做对
