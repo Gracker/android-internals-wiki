@@ -195,3 +195,22 @@
 - **建议**：简单提示某些受限 OEM 手机可能需要显式赋予开发者选项相关安全权限
 - **来源**：外部 AI Review（14-11）
 
+
+
+## [Task9 Deep Review] 14.3 内存分析工具 — 2026-04-21
+- **类型**：版本差异
+- **位置**：HWASAN 与 MTE -> MTE
+- **问题**：正文只写“通过开发者选项启用异步 MTE 模式”，遗漏 Android 15+ 可通过 `android:memtagMode="async"` / `sync` 在 Manifest 侧显式 opt-in 的新入口。
+- **建议**：补一段版本化说明，区分开发者选项、系统镜像限制与 Android 15+ Manifest opt-in 三条启用路径。
+
+## [Task9 Deep Review] 14.4 dumpsys 系列命令 — 2026-04-21
+- **类型**：版本差异
+- **位置**：dumpsys activity：进程优先级与 ANR
+- **问题**：正文直接给出 `VISIBLE_APP_ADJ=100`，没有说明 Android 10 前常见资料里是 `1`。读者对照旧文或老设备时容易误判。
+- **建议**：加一句版本差异提示，说明 Android 10+ 把 ADJ 数值整体放大，但优先级顺序没变。
+
+## [Task9 Deep Review] 14.6 自动化测试工具 — 2026-04-21
+- **类型**：源码准确性
+- **位置**：CompilationMode：量化编译优化效果
+- **问题**：示例仍写 `CompilationMode.Partial(CompilationMode.Partial.Mode.DEFAULT)`，偏旧，容易和当前 `CompilationMode.Partial()` 的默认写法混淆。
+- **建议**：把示例收敛到当前默认写法，并补一句默认模式与 Baseline Profile 关系。

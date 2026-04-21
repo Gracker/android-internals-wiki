@@ -29,35 +29,39 @@
   {
     "section": "14.4",
     "section_title": "dumpsys 系列命令",
-    "priority": 90,
-    "reason": "[review回炉] External review P0: LMKD/USS事实错误；P1: 遗漏dumpsys input联动；P2: VISIBLE_APP_ADJ版本变化",
+    "priority": 95,
+    "reason": "[Deep Tech Review] LMKD/USS 事实错误；遗漏 dumpsys input 焦点证据链",
     "material_paths": [
-      "logs/external-review/2026-04-21-14-04-dumpsys-external-review.md"
+      "logs/external-review/2026-04-21-14-04-dumpsys-external-review.md",
+      "intake/suggestions.md",
+      "logs/deep-review/2026-04-21-22-deep-review.md"
     ],
     "review_issues": [
       {
-        "type": "需修正",
+        "type": "事实错误/原理错误",
         "location": "dumpsys meminfo：关键指标 -> USS 段落",
-        "detail": "原文称LMK在选择杀进程时会参考USS，这是严重事实错误。LMKD运行时只看oom_score_adj和RSS",
-        "suggestion": "删掉'LMK在选择杀谁时会参考这个值'，改为：USS是帮助开发者精确定位内存泄漏的指标"
+        "detail": "正文写成“LMK 在选择杀谁时，会参考 USS”。这把开发者线下分析指标和 LMKD 运行时决策指标混成了一件事，会把读者带到错误的系统模型。",
+        "suggestion": "删掉 LMK 参考 USS 的表述，改成 USS 只适合估算杀掉进程后理论可回收的私有内存；LMKD 目标选择仍应回到 oom_score_adj / RSS / PSI 等真实决策线索。",
+        "evidence": [
+          "system/memory/lmkd/lmkd.cpp"
+        ]
       },
       {
-        "type": "需补充",
+        "type": "原理断裂",
         "location": "dumpsys window：窗口层级与焦点",
-        "detail": "只靠dumpsys window排查'点了没反应'不够，遗漏dumpsys input查看输入系统焦点",
-        "suggestion": "在焦点排查段落补充联动dumpsys input查看FocusedWindow的建议"
-      },
-      {
-        "type": "需确认",
-        "location": "dumpsys activity：进程优先级",
-        "detail": "VISIBLE_APP_ADJ在Android 10前是1，现在是100，文章未说明版本变化",
-        "suggestion": "加一句话说明Android 10+ ADJ数值放大的变化"
+        "detail": "正文把“点了没反应”几乎全部收束到 `mCurrentFocus` / `mFocusedApp`，没有补上 `adb shell dumpsys input` 的 FocusedWindow / InputDispatcher 证据链。窗口焦点和输入焦点不完全等价。",
+        "suggestion": "在焦点排查段补一句“窗口焦点用于看 WMS 视角，触摸事件去向还要联动 `dumpsys input` 看输入焦点”，把 WMS 与 InputDispatcher 的闭环补齐。",
+        "evidence": [
+          "frameworks/base/services/core/java/com/android/server/wm/WindowManagerService.java"
+        ]
       }
     ],
     "added_by": "task6-review",
     "added_at": "2026-04-21T18:36:56",
     "status": "pending",
-    "original_review_log": "logs/review/2026-04-21-18-review.md"
+    "original_review_log": "logs/review/2026-04-21-18-review.md",
+    "updated_by": "task9-deep-tech-review",
+    "updated_at": "2026-04-21T22:00:33.103917+08:00"
   },
   {
     "section": "14.9",
@@ -231,32 +235,36 @@
   },
   {
     "section": "14.3",
-    "section_title": "Memory Tools",
+    "section_title": "内存分析工具",
     "priority": 85,
-    "reason": "[External Review] P1: Perfetto Java 堆分析能力描述错误（遗漏 Heap Dumps）；P1: procrank/malloc debug 权限前提未说明",
+    "reason": "[Deep Tech Review] Perfetto Java Heap Dumps/Sampling 描述错误；procrank 与 malloc debug 权限前提缺失",
     "material_paths": [
-      "logs/external-review/2026-04-21-14-03-memory-tools-external-review.md"
+      "logs/external-review/2026-04-21-14-03-memory-tools-external-review.md",
+      "intake/suggestions.md",
+      "logs/deep-review/2026-04-21-22-deep-review.md"
     ],
     "review_issues": [
       {
-        "type": "事实错误/能力低估",
+        "type": "版本差异/事实错误",
         "location": "heapprofd：Native 堆的实时采样分析 -> 工作机制",
-        "detail": "错误声称 Perfetto Java 模式仅展示调用栈且无法替代 MAT 引用链分析。遗漏 Android 11 引入的 Java Heap Dumps 功能（可提取完整引用关系）",
-        "suggestion": "重写该段落，区分 Android 11+ Java Heap Dumps（引用关系，对标 MAT）和 Android 12+ Java Heap Sampling（分配栈）",
+        "detail": "正文把 Perfetto 的 Java 模式一概写成“只看分配栈、不能替代 MAT 引用链分析”，遗漏 Android 11+ 的 Java Heap Dumps 能抓取对象图和引用关系，也把 Android 12+ 的 Java Heap Sampling 与其混成一段。",
+        "suggestion": "拆开写清两条能力线：Android 11+ Java Heap Dumps 负责对象快照和支配树，Android 12+ Java Heap Sampling 负责分配调用栈。再把“无法替代 MAT 引用链分析”的结论改成版本化表述。",
         "evidence": [
           "https://perfetto.dev/docs/data-sources/java-heap-profiler"
         ]
       },
       {
-        "type": "实战缺失/权限断裂",
-        "location": "showmap / procrank / libmeminfo 及 malloc debug 与 malloc hooks",
-        "detail": "procrank 强依赖读取 /proc/<pid>/pagemap（需 Root），setprop 开启 malloc debug 也需 adb root。User build 生产设备上无法运行",
-        "suggestion": "明确指出强依赖 adb root 或 userdebug/eng 环境。User 版本引导使用 wrap.sh 或 profileable 替代方案"
+        "type": "原理断裂/权限前提",
+        "location": "showmap / procrank / libmeminfo；malloc debug 与 malloc hooks",
+        "detail": "正文给了 procrank 和 setprop 开启 malloc debug 的命令，但没有写明这些路径在现代 Android 上通常要求 adb root 或 userdebug/eng 环境。普通 user build 设备执行时会直接遇到 pagemap/系统属性权限限制。",
+        "suggestion": "在命令前补充 Root 或 userdebug 前提，并给 user build 的替代路径，如 wrap.sh、profileable、heapprofd。"
       }
     ],
     "added_by": "external-ai-review",
     "added_at": "2026-04-21T19:25:48.814496+08:00",
-    "status": "pending"
+    "status": "pending",
+    "updated_by": "task9-deep-tech-review",
+    "updated_at": "2026-04-21T22:00:33.103917+08:00"
   },
   {
     "section": "14.5",
@@ -311,27 +319,37 @@
     "section": "14.6",
     "section_title": "自动化测试工具",
     "priority": 85,
-    "reason": "[External Review] P1: Microbenchmark API 14 要求过时（应为 API 19/推荐 29+）；P1: PowerMetric API 31+ 描述不准且遗漏 ODPM 硬件依赖",
+    "reason": "[Deep Tech Review] Microbenchmark 最低 API 版本过时；PowerMetric 版本边界与硬件前提失真",
     "material_paths": [
-      "logs/external-review/2026-04-21-14-06-automation-tools-external-review.md"
+      "logs/external-review/2026-04-21-14-06-automation-tools-external-review.md",
+      "intake/suggestions.md",
+      "logs/deep-review/2026-04-21-22-deep-review.md"
     ],
     "review_issues": [
       {
-        "type": "版本差异/事实错误",
-        "location": "Macrobenchmark 与 Microbenchmark 节",
-        "detail": "Microbenchmark 最低 API 14 已严重过时，现代 Jetpack Microbenchmark (1.1.0+) 最低 API 为 19，推荐 API 29+ 以获取完整 Perfetto 数据和热治理控制",
-        "suggestion": "修正 Microbenchmark 最低版本为 API 19，并建议在 API 29+ 设备运行"
+        "type": "版本差异",
+        "location": "Macrobenchmark 与 Microbenchmark：两种层次，两种用途",
+        "detail": "正文仍写“Microbenchmark 最低 API 14”。这已经落后于 AndroidX Benchmark 近年的最小版本线，容易把读者引到无法构建或功能缺失的环境。",
+        "suggestion": "把最低版本改到现代 AndroidX 基线（API 19），再把“推荐 API 29+ 以拿到更完整 Perfetto / 热治理能力”作为实战建议单独写清。",
+        "evidence": [
+          "developer.android.com/topic/performance/benchmarking/microbenchmark-overview"
+        ]
       },
       {
-        "type": "版本差异/硬件依赖遗漏",
-        "location": "测量启动时间和滑动帧率 节",
-        "detail": "PowerMetric 的 API 31+ 描述不准确，且过度强调温度变化。高精度功耗追踪需 API 29+ 且强依赖 ODPM 硬件（如 Pixel 6+），非所有 Android 12 设备都支持",
-        "suggestion": "更新为 API 29+，强调 ODPM 硬件依赖，去掉温度为主的误导性描述"
+        "type": "版本差异/硬件前提",
+        "location": "Macrobenchmark：端到端的用户体验测量 -> PowerMetric",
+        "detail": "正文写成“PowerMetric(API 31+) 测量功耗指标，包括电量消耗和温度变化”。这把 API 门槛、指标含义和硬件依赖都写窄了。现代 PowerMetric 关键门槛是 API 29+，高精度 power rails 还依赖 ODPM/Power Stats HAL，不是所有 Android 12 设备都能直接测。",
+        "suggestion": "改成 API 29+，明确区分 Battery 与高精度 Energy/Power 模式，并补 ODPM / 设备支持前提。",
+        "evidence": [
+          "https://developer.android.com/reference/kotlin/androidx/benchmark/macro/PowerMetric"
+        ]
       }
     ],
     "added_by": "external-ai-review",
     "added_at": "2026-04-21T19:25:48.814496+08:00",
-    "status": "pending"
+    "status": "pending",
+    "updated_by": "task9-deep-tech-review",
+    "updated_at": "2026-04-21T22:00:33.103917+08:00"
   },
   {
     "section": "14.8",
