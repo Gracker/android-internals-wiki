@@ -25,17 +25,21 @@ sources:
   - type: official
     path: "https://developer.android.com/topic/performance/memory"
     note: "Android 内存管理官方指南"
+  - type: official
+    path: "https://source.android.com/docs/core/perf/lmkd"
+    note: "userspace lmkd 与 PSI / vmpressure 机制"
 tags: ['case-study', 'memory-leak', 'native-memory', 'low-memory', 'oom', 'cache', 'gc']
 polish_count: 1
 polish_date: "2026-04-09"
 polish_by: "task2b-polish"
 related_chapters: ["10.1", "10.2", "10.3", "10.4", "10.6"]
-task6_state: reviewed
-pipeline_stage: task2b_pending
-task9_state: reviewed
+task6_state: revisiting
+pipeline_stage: task6_pending
+task9_state: pending
 task9_result: needs-rework
 task9_reviewed_date: "2026-04-21"
-task2b_state: pending
+task2b_state: fixed
+task2b_result: fixed
 ---
 
 # 案例集
@@ -95,7 +99,7 @@ task2b_state: pending
 
 [图：低内存 vs 正常内存下主线程的 Block I/O 对比]
 
-**进程被频繁查杀和重启**。LMK（Low Memory Killer）在低内存时疯狂工作。从 SystemServer 的日志可以看到，某些进程（比如 QQ）在短时间内被反复杀死又拉起，形成"杀 → 起 → 杀 → 起"的死循环。每次杀进程和拉起进程都会消耗 CPU、I/O 和内存资源，进一步恶化整机性能。
+**进程被频繁查杀和重启**。在 Android 8+ 的主线实现里，低内存查杀主要由 userspace `lmkd` 负责；Android 10+ 在内核具备支持时，`lmkd` 会优先使用 PSI monitors 判断是否进入真实内存压力，`vmpressure` 更多是兼容旧内核的回退路径。SystemServer 日志会记录某些进程（比如 QQ）在短时间内被反复杀死又拉起，形成"杀 → 起 → 杀 → 起"的死循环。每次杀进程和拉起进程都会消耗 CPU、I/O 和内存资源，进一步恶化整机性能。
 
 ```
 07-23 14:32:16.932  am_proc_start: com.tencent.mobileqq, restart
@@ -108,7 +112,7 @@ task2b_state: pending
 ...（循环重复数十次）
 ```
 
-[已验证: 官方文档, source.android.com — Low Memory Killer 机制确认]
+[已验证: 官方文档, source.android.com/docs/core/perf/lmkd — userspace lmkd、PSI / vmpressure 机制确认]
 
 ### 修复方案与效果
 
@@ -116,7 +120,7 @@ task2b_state: pending
 
 **提高 extra_free_kbytes 值**。这个内核参数控制了 kswapd0 提前回收内存的触发阈值。适当提高这个值，可以让系统更早开始内存回收，避免进入紧急回收状态时对前台应用造成冲击。
 
-**优化 LMK 的杀进程策略**。避免对"可快速重启"的缓存进程进行无意义的反复杀起。可以通过调整 adj 级别的阈值，让 LMK 一次性释放足够的内存，而不是杀一个进程发现不够又杀一个。
+**优化 `lmkd` 的杀进程策略**。避免对"可快速重启"的缓存进程进行无意义的反复杀起。可以通过调整 minfree / adj 阈值和厂商侧回收策略，让一次回收释放足够的内存，而不是杀一个进程发现不够又杀一个。
 
 **限制后台进程的 I/O**。使用 cgroup 的 blkio 控制器限制后台进程的磁盘读写带宽，确保前台应用的 I/O 请求能优先得到处理。
 
@@ -162,7 +166,7 @@ task2b_state: pending
 
 ### 修复方案与效果
 
-**方案一：使用 WeakHashMap 替代 HashMap**。对于缓存场景，把全局 `HashMap` 替换为 `WeakHashMap`，让 GC 可以在内存不足时自动回收不再被其他地方引用的缓存条目。对于需要精确控制缓存大小的场景，引入 LruCache，设置合理的 maxCapacity 上限。
+**方案一：改成容量可控的缓存和显式失效**。不要把 `WeakHashMap` 当作全局 `HashMap` 缓存的通用替代。`WeakHashMap` 只有 key 是弱引用，value 仍由 map 强持有；如果 key 是 `String`、userId 这类长生命周期对象，回收时机并不受缓存策略控制。更稳妥的做法是，对容量型缓存使用 `LruCache`，对页面级或会话级数据做显式失效；只有在 value 可以独立失效、业务也能接受 GC 抖动时，再考虑用 `WeakReference` 包装 value。
 
 **方案二：生命周期感知的资源清理**。在 Activity/Fragment 的 `onDestroy()` 中，主动释放大对象（Bitmap、大数组等），并清空与该页面相关的静态引用。对于异步回调，使用 WeakReference 包装，或者在页面销毁时取消未完成的异步任务。
 
@@ -313,7 +317,7 @@ Java 堆泄漏有一个典型特征：**崩溃堆栈分散，但根因集中**�
 - **10.3 内存持续增长**：案例四中的"缓存膨胀"问题，属于 10.3 讨论的持续增长模式之一。
 - **10.4 低内存对系统性能的影响**：案例一完整展示了 10.4 中描述的低内存连锁反应机制。
 - **10.6 内存抖动与频繁 GC**：案例四中的"对象风暴"是 10.6 要深入讨论的核心话题。
-- **4.4 Low Memory Killer**：案例一中进程被频繁查杀的机制，在 4.4 中有系统层面的详解。
+- **4.4 Low Memory Killer**：案例一中进程被频繁查杀的 userspace `lmkd` 路径，在 4.4 中有系统层面的详解。
 - **7.4 典型场景分析**：从卡顿分析的角度，低内存引发的卡顿也属于 7.4 讨论的典型场景。
 
 ## 参考资料

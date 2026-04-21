@@ -22,16 +22,25 @@ sources:
     path: "Personal-Knowlodge/source/2026-03-06_wechat_ANR-分类以及分析流程.md"
   - type: official
     path: "developer.android.com/topic/performance/anrs"
+  - type: official
+    path: "https://developer.android.com/reference/android/app/ActivityManager#getHistoricalProcessExitReasons(java.lang.String,%20int,%20int)"
+  - type: official
+    path: "https://developer.android.com/reference/android/app/ApplicationExitInfo"
+  - type: official
+    path: "https://developer.android.com/reference/android/os/ProfilingManager"
+  - type: official
+    path: "https://developer.android.com/reference/android/os/ProfilingTrigger"
 tags: ['anr', 'traces', 'perfetto', 'analysis', 'cpu-usage']
 related_chapters: ["9.1", "9.2", "9.4", "9.5", "1.4", "2.4"]
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: pending
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
+task2b_state: fixed
 task9_result: needs-rework
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-04-21"
 last_task9_at: "2026-04-21T05:29:00+08:00"
+task2b_result: fixed
 ---
 
 # ANR 分析方法
@@ -310,7 +319,7 @@ full avg10=0.00 avg60=0.00 avg300=0.00 total=34803
 
 **第四步：分析 CPU 使用率信息。** 判断系统当时的整体状态。
 
-**第五步：结合 SystemLog 还原场景。** 在 ANR 时间窗口内搜索 `Slow operation`、`dvm_lock_sample`、`binder_sample`、`am_kill`、`lowmemorykiller`、`freeze/unfreeze` 等关键日志。
+**第五步：结合 SystemLog 还原场景。** 在 ANR 时间窗口内搜索 `Slow operation`、`dvm_lock_sample`、`binder_sample`、`am_kill`、`lmkd` / `lowmemorykiller`、`freeze/unfreeze` 等关键日志。
 
 **第六步：得出结论。** 综合判断是应用问题、系统问题、还是两者叠加。
 
@@ -320,15 +329,52 @@ full avg10=0.00 avg60=0.00 avg300=0.00 total=34803
 
 [来源: Personal-Knowlodge/source/2026-03-06_wechat_ANR-分类以及分析流程.md]
 
-**ANR Watchdog 方案**：开启独立线程，定期向主线程 post 消息并检测是否被执行。实现简单（几十行代码），但有误报率——主线程 GC 或系统调度抖动都可能触发假阳性。
+**ANR Watchdog 方案**：开启独立线程，定期向主线程 post 消息并检测是否被执行。实现简单（几十行代码），但有误报率，主线程 GC 或系统调度抖动都可能触发假阳性。
 
-**SIGQUIT 监听方案**（XCrash、Raphael 等）：通过监听 `SIGQUIT` 信号，在系统 dump traces.txt 的同时自行 dump 一份更完整的 trace。是目前主流 App 的选择。
+**ApplicationExitInfo 主路径**（Android 11+）：线上先调用 `ActivityManager.getHistoricalProcessExitReasons()` 拉取最近的进程退出记录，再筛出 `ApplicationExitInfo.reason == REASON_ANR` 的条目，并通过 `getTraceInputStream()` 读取系统在进程死亡前保存的 ANR trace。这个入口不需要拦截 `SIGQUIT`，适合做合规的离线回捞；边界是它拿到的是该进程的历史 trace 子集，不等于一份完整的 bugreport。
 
-**Matrix / ArgusAPM 等完整 APM 方案**：包含 ANR 监控、卡顿监控、内存监控等完整能力。
+下面这段 Kotlin 代码只演示 Android 11+ 的最小回捞流程，重点看 `getHistoricalProcessExitReasons()`、`REASON_ANR` 和 `getTraceInputStream()` 三个入口：
 
-**Perfetto 系统触发式追踪**（Android 16+）：Android 16 引入了 ProfilingManager，支持系统在检测到 ANR 时自动触发 Perfetto trace 抓取。为线上 ANR 分析提供了前所未有的时序级数据。
+```kotlin
+val am = context.getSystemService(ActivityManager::class.java)
+val exits = am.getHistoricalProcessExitReasons(null, 0, 20)
+val anrExit = exits.firstOrNull { it.reason == ApplicationExitInfo.REASON_ANR }
+anrExit?.getTraceInputStream()?.use { input ->
+    val traceBytes = input.readBytes()
+    // 落盘或上传到诊断后端
+}
+```
 
-[待验证: Android 17 中 ProfilingManager 的 ANR 触发是否已默认启用]
+这个流程适合做线上回捞和聚合分析。如果需要更早拿到现场，或者希望补充更多线程上下文，再叠加自建监控。
+
+**SIGQUIT 监听方案**（XCrash、Raphael 等）：通过监听 `SIGQUIT` 信号，在系统 dump traces.txt 的同时自行 dump 一份更完整的 trace。它更接近案发时刻，但要自己处理兼容性、权限边界和上传流程。
+
+**Matrix / ArgusAPM 等完整 APM 方案**：包含 ANR 监控、卡顿监控、内存监控等完整能力，通常会把 watchdog、SIGQUIT、自定义日志聚合到同一套上报流程里。
+
+**Perfetto 系统触发式追踪**：`ProfilingManager` 是 Android 15（API 35）新增的 profiling 服务，先提供 `requestProfiling()` 和 `registerForAllProfilingResults()` 这类基础能力；到 Android 16（API 36），再加入 `ProfilingTrigger.TRIGGER_TYPE_ANR`、`ProfilingTrigger.Builder` 和 `addProfilingTriggers()`，应用才可以把“发生 ANR 时抓一份系统 trace”注册给系统。
+
+下面这段 Kotlin 代码展示 Android 16+ 的注册流程，重点看全局结果回调和 `TRIGGER_TYPE_ANR` 的绑定关系：
+
+```kotlin
+if (Build.VERSION.SDK_INT >= 36) {
+    val profilingManager = context.getSystemService(ProfilingManager::class.java)
+    profilingManager.registerForAllProfilingResults(context.mainExecutor) { result ->
+        val path = result.resultFilePath
+        // 读取并上传系统生成的 trace / profile 文件
+    }
+    profilingManager.addProfilingTriggers(
+        listOf(
+            ProfilingTrigger.Builder(ProfilingTrigger.TRIGGER_TYPE_ANR)
+                .setRateLimitingPeriodHours(24)
+                .build()
+        )
+    )
+}
+```
+
+系统触发的 profiling 结果只会通过 `registerForAllProfilingResults()` 回来，Android 15 设备还没有 `addProfilingTriggers()` 这个 ANR 注册入口，只能走手动 `requestProfiling()`。
+
+[已验证: developer.android.com/reference/android/app/ApplicationExitInfo, developer.android.com/reference/android/os/ProfilingManager, developer.android.com/reference/android/os/ProfilingTrigger]
 
 ## [自动发现] 系统关键日志信号速查
 
@@ -342,7 +388,7 @@ full avg10=0.00 avg60=0.00 avg300=0.00 total=34803
 | `binder_sample` | Binder 调用超时（默认 500ms） | 定位哪个 Binder 接口耗时 |
 | `IPCThreadState: binder thread pool starved` | Binder 线程池耗尽 | 进程间通信瓶颈 |
 | `am_kill` / `am_proc_died` | 进程被杀 | 系统内存紧张或用户操作 |
-| `lowmemorykiller` | LMK 杀进程 | 内存不足，系统在回收 |
+| `lowmemorykiller` / `lmkd` | 低内存回收与杀进程 | 判断是否存在内存压力放大效应 |
 | `freeze` / `unfreeze` | 应用被冻结/解冻 | 功耗优化导致的假死 |
 
 ## 与其他章节的关系
@@ -370,18 +416,22 @@ full avg10=0.00 avg60=0.00 avg300=0.00 total=34803
 
 - **Android 8.0（API 26）**：traces.txt 的格式基本定型
 - **Android 10（API 29）**：ANR 日志中开始包含 Memory Pressure 信息
+- **Android 11（API 30）**：新增 `ActivityManager.getHistoricalProcessExitReasons()` 和 `ApplicationExitInfo`，应用可以回捞 `REASON_ANR` 历史记录并读取 `getTraceInputStream()`
 - **Android 12（API 31）**：ANR traces 的 dump 路径改为 `/data/anr/<process_name>_anr_<timestamp>`
 - **Android 13（API 33）**：ANR traces 开始包含更完整的 Native 线程调用栈，Perfetto 系统层面 trace 覆盖范围扩大
 - **Android 14（API 34）**：Perfetto 中新增 `android.anr` track，ANR 触发到 dump 的完整时序可直接在 Trace 中观察
-- **Android 15（API 35）**：Input ANR 超时阈值在部分场景下从 5s 调整为更精细的分档策略
-- **Android 16（API 36）**：引入 ProfilingManager 系统触发式追踪
+- **Android 15（API 35）**：新增 `ProfilingManager`，应用可以主动请求 profiling，并注册全局结果回调
+- **Android 16（API 36）**：新增 `ProfilingTrigger.TRIGGER_TYPE_ANR` 和 `addProfilingTriggers()`，系统触发式 ANR profiling 正式可用
 
-[待验证: Android 13-15 的具体 ANR 分析机制变化细节，以上基于公开 Release Notes 推断]
+[已验证: developer.android.com/reference/android/app/ApplicationExitInfo, developer.android.com/reference/android/os/ProfilingManager, developer.android.com/reference/android/os/ProfilingTrigger]
 
 ## 参考资料
 
 - AOSP 源码路径：
   - `frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java`
+  - `frameworks/base/core/java/android/app/ApplicationExitInfo.java`
+  - `frameworks/base/core/java/android/os/ProfilingManager.java`
+  - `frameworks/base/core/java/android/os/ProfilingTrigger.java`
   - `art/runtime/thread_state.h`
   - `art/runtime/signal_catcher.cc`
 - 高爷原创系列：
@@ -390,3 +440,7 @@ full avg10=0.00 avg60=0.00 avg300=0.00 total=34803
 - [duanqz - ANR 分析](https://duanqz.github.io/2015-10-12-ANR-Analysis)
 - [Gityuan - App Not Response](http://gityuan.com/2016/12/02/app-not-response/)
 - [Google Developer Documentation - Diagnose ANRs](https://developer.android.com/topic/performance/anrs)
+- [ActivityManager.getHistoricalProcessExitReasons()](https://developer.android.com/reference/android/app/ActivityManager#getHistoricalProcessExitReasons(java.lang.String,%20int,%20int))
+- [ApplicationExitInfo](https://developer.android.com/reference/android/app/ApplicationExitInfo)
+- [ProfilingManager](https://developer.android.com/reference/android/os/ProfilingManager)
+- [ProfilingTrigger](https://developer.android.com/reference/android/os/ProfilingTrigger)

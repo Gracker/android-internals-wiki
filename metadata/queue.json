@@ -1202,7 +1202,10 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-21T05:29:00+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-04-21T12:06:24+08:00",
+      "completed_by": "task2b-content-processing-rework",
+      "resolution": "已补上 Android 11+ ApplicationExitInfo 回捞路径，以及 Android 15/16 ProfilingManager / ProfilingTrigger 的接入流程，并把线上日志关键词扩展到 lmkd / lowmemorykiller。"
     },
     {
       "section": "6.4",
@@ -1348,7 +1351,10 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-21T11:16:00+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-04-21T12:06:24+08:00",
+      "completed_by": "task2b-content-processing-rework",
+      "resolution": "已把低内存查杀口径改为 userspace lmkd + Android 10+ PSI / vmpressure 边界，并删除 WeakHashMap 作为通用缓存替代的误导说法，改回 LruCache、显式失效和 WeakReference 的使用边界。"
     },
     {
       "section": "17.1",

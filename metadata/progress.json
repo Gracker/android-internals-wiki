@@ -1,32 +1,32 @@
 {
-  "generated_at": "2026-04-21T11:16:00+08:00",
+  "generated_at": "2026-04-21T12:07:11+08:00",
   "state_machine_version": "v2",
-  "total_sections": 212,
+  "total_sections": 206,
   "metrics": {
-    "total": 212,
-    "unknown": 37,
-    "last_updated": "2026-04-21T11:16:00+08:00",
+    "total": 206,
+    "unknown": 31,
+    "last_updated": "2026-04-21T12:07:11+08:00",
     "task2b_state_counts": {
-      "fixed": 137,
-      "idle": 12,
-      "pending": 26,
-      "unknown": 37
+      "unknown": 31,
+      "fixed": 139,
+      "pending": 24,
+      "idle": 12
     },
     "task9_state_counts": {
-      "fixed": 1,
-      "pending": 111,
-      "reviewed": 64,
-      "unknown": 36
+      "unknown": 30,
+      "reviewed": 62,
+      "pending": 113,
+      "fixed": 1
     },
     "pipeline_stage_counts": {
+      "unknown": 30,
+      "task6_pending": 76,
+      "task2b_pending": 21,
       "ready-to-publish": 29,
-      "task2b_pending": 23,
-      "task6_pending": 74,
-      "task9_pending": 50,
-      "unknown": 36
+      "task9_pending": 50
     },
     "pipeline_task9_pending": 50,
-    "pipeline_task2b_pending": 23,
+    "pipeline_task2b_pending": 21,
     "pipeline_ready_to_publish": 29,
     "ready-to-publish": 0,
     "finalized": 29,
@@ -34,29 +34,29 @@
   },
   "pipeline": {
     "pipeline_stage_counts": {
+      "unknown": 30,
+      "task6_pending": 76,
+      "task2b_pending": 21,
       "ready-to-publish": 29,
-      "task2b_pending": 23,
-      "task6_pending": 74,
-      "task9_pending": 50,
-      "unknown": 36
+      "task9_pending": 50
     },
     "task2b_state_counts": {
-      "fixed": 137,
-      "idle": 12,
-      "pending": 26,
-      "unknown": 37
+      "unknown": 31,
+      "fixed": 139,
+      "pending": 24,
+      "idle": 12
     },
     "task6_state_counts": {
-      "pending": 1,
-      "reviewed": 116,
-      "revisiting": 65,
-      "unknown": 30
+      "unknown": 30,
+      "reviewed": 109,
+      "revisiting": 66,
+      "pending": 1
     },
     "task9_state_counts": {
-      "fixed": 1,
-      "pending": 111,
-      "reviewed": 64,
-      "unknown": 36
+      "unknown": 30,
+      "reviewed": 62,
+      "pending": 113,
+      "fixed": 1
     }
   },
   "issues": {
@@ -72,7 +72,6 @@
       "src/graphify-out/GRAPH_REPORT.md",
       "src/part1-fundamentals/ch01-architecture/README.md",
       "src/part1-fundamentals/ch02-rendering/README.md",
-      "src/part1-fundamentals/ch03-input/01-input-dispatch.md",
       "src/part1-fundamentals/ch03-input/README.md",
       "src/part1-fundamentals/ch04-memory/README.md",
       "src/part1-fundamentals/ch05-cpu-power/README.md",
@@ -84,7 +83,6 @@
       "src/part2-performance/ch11-power/README.md",
       "src/part2-performance/ch12-apk-network/README.md",
       "src/part2-performance/ch18-rendering-pipelines/README.md",
-      "src/part3-tools/ch13-perfetto/08-input-latency-sql.md",
       "src/part3-tools/ch14-other-tools/README.md",
       "src/part3-tools/ch15-methodology/README.md",
       "src/part4-system/ch16-aosp/README.md",
@@ -103,74 +101,32 @@
       "section": ""
     },
     "src/appendix/analysis-checklist.md": {
-      "chapter": null,
-      "title": "analysis-checklist",
       "path": "src/appendix/analysis-checklist.md",
-      "status": "unknown",
-      "pipeline_stage": "unknown",
-      "task6_state": "unknown",
-      "task9_state": "unknown",
-      "task2b_state": "unknown"
+      "section": ""
     },
     "src/appendix/commands-cheatsheet.md": {
-      "chapter": null,
-      "title": "commands-cheatsheet",
       "path": "src/appendix/commands-cheatsheet.md",
-      "status": "unknown",
-      "pipeline_stage": "unknown",
-      "task6_state": "unknown",
-      "task9_state": "unknown",
-      "task2b_state": "unknown"
+      "section": ""
     },
     "src/appendix/glossary.md": {
-      "chapter": null,
-      "title": "glossary",
       "path": "src/appendix/glossary.md",
-      "status": "unknown",
-      "pipeline_stage": "unknown",
-      "task6_state": "unknown",
-      "task9_state": "unknown",
-      "task2b_state": "unknown"
+      "section": ""
     },
     "src/appendix/perfetto-templates.md": {
-      "chapter": null,
-      "title": "perfetto-templates",
       "path": "src/appendix/perfetto-templates.md",
-      "status": "unknown",
-      "pipeline_stage": "unknown",
-      "task6_state": "unknown",
-      "task9_state": "unknown",
-      "task2b_state": "unknown"
+      "section": ""
     },
     "src/appendix/recommended-reading.md": {
-      "chapter": null,
-      "title": "recommended-reading",
       "path": "src/appendix/recommended-reading.md",
-      "status": "unknown",
-      "pipeline_stage": "unknown",
-      "task6_state": "unknown",
-      "task9_state": "unknown",
-      "task2b_state": "unknown"
+      "section": ""
     },
     "src/appendix/version-changelog.md": {
-      "chapter": null,
-      "title": "version-changelog",
       "path": "src/appendix/version-changelog.md",
-      "status": "unknown",
-      "pipeline_stage": "unknown",
-      "task6_state": "unknown",
-      "task9_state": "unknown",
-      "task2b_state": "unknown"
+      "section": ""
     },
     "src/graphify-out/GRAPH_REPORT.md": {
-      "chapter": null,
-      "title": "GRAPH_REPORT",
       "path": "src/graphify-out/GRAPH_REPORT.md",
-      "status": "unknown",
-      "pipeline_stage": "unknown",
-      "task6_state": "unknown",
-      "task9_state": "unknown",
-      "task2b_state": "unknown"
+      "section": ""
     },
     "src/part1-fundamentals/ch01-architecture/01-layered-architecture.md": {
       "path": "src/part1-fundamentals/ch01-architecture/01-layered-architecture.md",
@@ -228,31 +184,31 @@
     "src/part1-fundamentals/ch01-architecture/04-binder.md": {
       "path": "src/part1-fundamentals/ch01-architecture/04-binder.md",
       "title": "Binder IPC 机制与性能影响",
-      "chapter": "'1.4'",
+      "chapter": "1.4",
       "status": "ready-for-review",
       "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
       "task9_state": "reviewed",
       "task2b_state": "pending",
-      "reviewed_date": "'2026-04-20'",
+      "reviewed_date": "2026-04-20",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "task9_reviewed_date": "2026-04-20",
       "task9_reviewed_by": "openclaw-task9",
       "last_task9_at": "2026-04-20T09:17:31+08:00",
-      "section": "'1.4'"
+      "section": "1.4"
     },
     "src/part1-fundamentals/ch01-architecture/05-threading-model.md": {
       "path": "src/part1-fundamentals/ch01-architecture/05-threading-model.md",
       "title": "线程模型",
-      "chapter": "'1.5'",
+      "chapter": "1.5",
       "status": "finalized",
       "pipeline_stage": "ready-to-publish",
       "task6_state": "reviewed",
       "task9_state": "reviewed",
       "task2b_state": "fixed",
-      "reviewed_date": "'2026-04-20'",
+      "reviewed_date": "2026-04-20",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
       "task9_result": "pass-tech-review",
@@ -260,7 +216,7 @@
       "task9_reviewed_date": "2026-04-20",
       "task9_reviewed_by": "openclaw-task9",
       "last_task9_at": "2026-04-20T10:22:00+08:00",
-      "section": "'1.5'"
+      "section": "1.5"
     },
     "src/part1-fundamentals/ch01-architecture/06-version-evolution.md": {
       "path": "src/part1-fundamentals/ch01-architecture/06-version-evolution.md",
@@ -284,7 +240,7 @@
     "src/part1-fundamentals/ch01-architecture/07-art-compilation.md": {
       "path": "src/part1-fundamentals/ch01-architecture/07-art-compilation.md",
       "title": "ART 编译管线与 dex2oat 优化",
-      "chapter": "'1.7'",
+      "chapter": "1.7",
       "status": "ready-for-review",
       "pipeline_stage": "task9_pending",
       "task6_state": "reviewed",
@@ -295,10 +251,10 @@
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
-      "section": "'1.7'",
-      "task9_reviewed_date": "'2026-04-20'",
+      "task9_reviewed_date": "2026-04-20",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-20T16:33:00+08:00"
+      "last_task9_at": "2026-04-20T16:33:00+08:00",
+      "section": "1.7"
     },
     "src/part1-fundamentals/ch01-architecture/08-activity-manager.md": {
       "path": "src/part1-fundamentals/ch01-architecture/08-activity-manager.md",
@@ -369,10 +325,10 @@
       "task6_result": "pass-light-edit",
       "task9_result": "pass-tech-review",
       "task2b_result": "fixed",
-      "section": "1.11",
-      "task9_reviewed_date": "'2026-04-20'",
+      "task9_reviewed_date": "2026-04-20",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-20T16:33:00+08:00"
+      "last_task9_at": "2026-04-20T16:33:00+08:00",
+      "section": "1.11"
     },
     "src/part1-fundamentals/ch01-architecture/12-autofdo-optimization.md": {
       "path": "src/part1-fundamentals/ch01-architecture/12-autofdo-optimization.md",
@@ -407,10 +363,10 @@
       "task6_result": "pass-light-edit",
       "task9_result": "pass-tech-review",
       "task2b_result": "fixed",
-      "section": "1.13",
-      "task9_reviewed_date": "'2026-04-20'",
+      "task9_reviewed_date": "2026-04-20",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-20T16:33:00+08:00"
+      "last_task9_at": "2026-04-20T16:33:00+08:00",
+      "section": "1.13"
     },
     "src/part1-fundamentals/ch01-architecture/14-lock-contention.md": {
       "path": "src/part1-fundamentals/ch01-architecture/14-lock-contention.md",
@@ -485,14 +441,8 @@
       "section": "1.17"
     },
     "src/part1-fundamentals/ch01-architecture/README.md": {
-      "chapter": null,
-      "title": "README",
       "path": "src/part1-fundamentals/ch01-architecture/README.md",
-      "status": "unknown",
-      "pipeline_stage": "unknown",
-      "task6_state": "unknown",
-      "task9_state": "unknown",
-      "task2b_state": "unknown"
+      "section": ""
     },
     "src/part1-fundamentals/ch02-rendering/01-rendering-overview.md": {
       "path": "src/part1-fundamentals/ch02-rendering/01-rendering-overview.md",
@@ -514,21 +464,21 @@
     "src/part1-fundamentals/ch02-rendering/02-framerate.md": {
       "path": "src/part1-fundamentals/ch02-rendering/02-framerate.md",
       "title": "帧率与刷新率",
-      "chapter": "'2.2'",
-      "section": "'2.2'",
+      "chapter": "2.2",
       "status": "finalized",
       "pipeline_stage": "ready-to-publish",
       "task6_state": "reviewed",
       "task9_state": "reviewed",
       "task2b_state": "fixed",
-      "reviewed_date": "'2026-04-20'",
+      "reviewed_date": "2026-04-20",
       "reviewed_by": "openclaw-task6",
-      "task6_result": "'pass-light-edit'",
+      "task6_result": "pass-light-edit",
       "task9_result": "pass-tech-review",
       "task2b_result": "fixed",
       "task9_reviewed_date": "2026-04-21",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-21T00:05:03+08:00"
+      "last_task9_at": "2026-04-21T00:05:03+08:00",
+      "section": "2.2"
     },
     "src/part1-fundamentals/ch02-rendering/03-vsync.md": {
       "path": "src/part1-fundamentals/ch02-rendering/03-vsync.md",
@@ -616,21 +566,21 @@
     "src/part1-fundamentals/ch02-rendering/08-overdraw.md": {
       "path": "src/part1-fundamentals/ch02-rendering/08-overdraw.md",
       "title": "过度绘制",
-      "chapter": "'2.8'",
+      "chapter": "2.8",
       "status": "finalized",
       "pipeline_stage": "ready-to-publish",
       "task6_state": "reviewed",
       "task9_state": "reviewed",
       "task2b_state": "fixed",
-      "reviewed_date": "'2026-04-20'",
+      "reviewed_date": "2026-04-20",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
       "task9_result": "pass-tech-review",
       "task2b_result": "fixed",
-      "section": "'2.8'",
+      "task9_reviewed_date": "2026-04-21",
       "task9_reviewed_by": "openclaw-task9",
-      "task9_reviewed_date": "'2026-04-21'",
-      "last_task9_at": "2026-04-21T07:38:43+08:00"
+      "last_task9_at": "2026-04-21T07:38:43+08:00",
+      "section": "2.8"
     },
     "src/part1-fundamentals/ch02-rendering/09-rendering-evolution.md": {
       "path": "src/part1-fundamentals/ch02-rendering/09-rendering-evolution.md",
@@ -704,7 +654,7 @@
     "src/part1-fundamentals/ch02-rendering/13-buffer-queue.md": {
       "path": "src/part1-fundamentals/ch02-rendering/13-buffer-queue.md",
       "title": "图形缓冲区管理 (BufferQueue)",
-      "chapter": "'2.13'",
+      "chapter": "2.13",
       "status": "ready-for-review",
       "pipeline_stage": "task9_pending",
       "task6_state": "reviewed",
@@ -715,7 +665,7 @@
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
-      "section": "'2.13'"
+      "section": "2.13"
     },
     "src/part1-fundamentals/ch02-rendering/14-graphics-api-evolution.md": {
       "path": "src/part1-fundamentals/ch02-rendering/14-graphics-api-evolution.md",
@@ -726,34 +676,34 @@
       "task6_state": "reviewed",
       "task9_state": "reviewed",
       "task2b_state": "fixed",
-      "reviewed_date": "'2026-04-20'",
+      "reviewed_date": "2026-04-20",
       "reviewed_by": "openclaw-task6",
-      "task6_result": "'pass-light-edit'",
-      "task9_result": "pass-tech-review",
-      "task2b_result": "fixed",
-      "task9_reviewed_date": "2026-04-21",
-      "last_task9_at": "2026-04-21T00:05:03+08:00",
-      "section": "2.14",
-      "task9_reviewed_by": "openclaw-task9"
-    },
-    "src/part1-fundamentals/ch02-rendering/15-dmabuf-gralloc.md": {
-      "path": "src/part1-fundamentals/ch02-rendering/15-dmabuf-gralloc.md",
-      "title": "DMA-BUF、Gralloc 与跨进程图形内存共享",
-      "chapter": "'2.15'",
-      "status": "finalized",
-      "pipeline_stage": "ready-to-publish",
-      "task6_state": "reviewed",
-      "task9_state": "reviewed",
-      "task2b_state": "fixed",
-      "reviewed_date": "'2026-04-20'",
-      "reviewed_by": "openclaw-task6",
-      "task6_result": "'pass-light-edit'",
+      "task6_result": "pass-light-edit",
       "task9_result": "pass-tech-review",
       "task2b_result": "fixed",
       "task9_reviewed_date": "2026-04-21",
       "task9_reviewed_by": "openclaw-task9",
       "last_task9_at": "2026-04-21T00:05:03+08:00",
-      "section": "'2.15'"
+      "section": "2.14"
+    },
+    "src/part1-fundamentals/ch02-rendering/15-dmabuf-gralloc.md": {
+      "path": "src/part1-fundamentals/ch02-rendering/15-dmabuf-gralloc.md",
+      "title": "DMA-BUF、Gralloc 与跨进程图形内存共享",
+      "chapter": "2.15",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
+      "task6_state": "reviewed",
+      "task9_state": "reviewed",
+      "task2b_state": "fixed",
+      "reviewed_date": "2026-04-20",
+      "reviewed_by": "openclaw-task6",
+      "task6_result": "pass-light-edit",
+      "task9_result": "pass-tech-review",
+      "task2b_result": "fixed",
+      "task9_reviewed_date": "2026-04-21",
+      "task9_reviewed_by": "openclaw-task9",
+      "last_task9_at": "2026-04-21T00:05:03+08:00",
+      "section": "2.15"
     },
     "src/part1-fundamentals/ch02-rendering/16-sync-fence.md": {
       "path": "src/part1-fundamentals/ch02-rendering/16-sync-fence.md",
@@ -862,14 +812,8 @@
       "section": "2.21"
     },
     "src/part1-fundamentals/ch02-rendering/README.md": {
-      "chapter": null,
-      "title": "README",
       "path": "src/part1-fundamentals/ch02-rendering/README.md",
-      "status": "unknown",
-      "pipeline_stage": "unknown",
-      "task6_state": "unknown",
-      "task9_state": "unknown",
-      "task2b_state": "unknown"
+      "section": ""
     },
     "src/part1-fundamentals/ch03-input/01-input-dispatch.md": {
       "path": "src/part1-fundamentals/ch03-input/01-input-dispatch.md",
@@ -911,7 +855,7 @@
       "task6_state": "reviewed",
       "task9_state": "pending",
       "task2b_state": "fixed",
-      "reviewed_date": "'2026-04-21'",
+      "reviewed_date": "2026-04-21",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
@@ -919,8 +863,7 @@
       "task9_reviewed_date": "2026-04-20",
       "task9_reviewed_by": "openclaw-task9",
       "last_task9_at": "2026-04-20T11:51:17+08:00",
-      "section": "3.3",
-      "task6_reviewed_date": "2026-04-21"
+      "section": "3.3"
     },
     "src/part1-fundamentals/ch03-input/04-input-latency-prediction.md": {
       "path": "src/part1-fundamentals/ch03-input/04-input-latency-prediction.md",
@@ -941,7 +884,7 @@
     "src/part1-fundamentals/ch03-input/05-input-interception-security.md": {
       "path": "src/part1-fundamentals/ch03-input/05-input-interception-security.md",
       "title": "输入事件拦截与安全机制",
-      "chapter": "'3.5'",
+      "chapter": "3.5",
       "status": "ready-for-review",
       "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
@@ -951,12 +894,12 @@
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
-      "section": "'3.5'"
+      "section": "3.5"
     },
     "src/part1-fundamentals/ch03-input/06-gesture-recognition-performance.md": {
       "path": "src/part1-fundamentals/ch03-input/06-gesture-recognition-performance.md",
       "title": "手势识别算法与性能优化",
-      "chapter": "'3.6'",
+      "chapter": "3.6",
       "status": "finalized",
       "pipeline_stage": "ready-to-publish",
       "task6_state": "reviewed",
@@ -970,7 +913,7 @@
       "task9_reviewed_date": "2026-04-20",
       "task9_reviewed_by": "openclaw-task9",
       "last_task9_at": "2026-04-20T10:22:00+08:00",
-      "section": "'3.6'"
+      "section": "3.6"
     },
     "src/part1-fundamentals/ch03-input/README.md": {
       "path": "src/part1-fundamentals/ch03-input/README.md",
@@ -993,12 +936,11 @@
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
-      "section": "4.1",
-      "task6_reviewed_date": "2026-04-21",
+      "task2b_result": "fixed",
       "task9_reviewed_date": "2026-04-21",
       "task9_reviewed_by": "openclaw-task9",
       "last_task9_at": "2026-04-21T05:29:00+08:00",
-      "task2b_result": "fixed"
+      "section": "4.1"
     },
     "src/part1-fundamentals/ch04-memory/02-linux-memory.md": {
       "path": "src/part1-fundamentals/ch04-memory/02-linux-memory.md",
@@ -1046,10 +988,10 @@
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
-      "section": "4.4",
       "task9_reviewed_date": "2026-04-20",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-20T20:06:23+08:00"
+      "last_task9_at": "2026-04-20T20:06:23+08:00",
+      "section": "4.4"
     },
     "src/part1-fundamentals/ch04-memory/05-app-memory-optimization.md": {
       "path": "src/part1-fundamentals/ch04-memory/05-app-memory-optimization.md",
@@ -1094,14 +1036,14 @@
       "task2b_state": "fixed",
       "reviewed_date": "2026-04-21",
       "reviewed_by": "openclaw-task6",
+      "task6_result": "pass-light-edit",
       "task2b_result": "fixed",
-      "section": "4.7",
-      "task6_result": "pass-light-edit"
+      "section": "4.7"
     },
     "src/part1-fundamentals/ch04-memory/08-art-generational-gc.md": {
       "path": "src/part1-fundamentals/ch04-memory/08-art-generational-gc.md",
       "title": "ART 分代垃圾回收与 GC 暂停优化",
-      "chapter": "'4.8'",
+      "chapter": "4.8",
       "status": "finalized",
       "pipeline_stage": "ready-to-publish",
       "task6_state": "reviewed",
@@ -1113,17 +1055,11 @@
       "task9_result": "pass-tech-review",
       "task2b_result": "fixed",
       "last_task9_at": "2026-04-20T04:20:38+08:00",
-      "section": "'4.8'"
+      "section": "4.8"
     },
     "src/part1-fundamentals/ch04-memory/README.md": {
-      "chapter": null,
-      "title": "README",
       "path": "src/part1-fundamentals/ch04-memory/README.md",
-      "status": "unknown",
-      "pipeline_stage": "unknown",
-      "task6_state": "unknown",
-      "task9_state": "unknown",
-      "task2b_state": "unknown"
+      "section": ""
     },
     "src/part1-fundamentals/ch05-cpu-power/01-linux-scheduling.md": {
       "path": "src/part1-fundamentals/ch05-cpu-power/01-linux-scheduling.md",
@@ -1327,19 +1263,13 @@
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
       "task9_reviewed_date": "2026-04-21",
-      "task9_reviewed_by": "openclaw-task9",
+      "task9_reviewed_by": "openclaw-task6",
       "last_task9_at": "2026-04-20T11:51:17+08:00",
       "section": "5.12"
     },
     "src/part1-fundamentals/ch05-cpu-power/README.md": {
-      "chapter": null,
-      "title": "README",
       "path": "src/part1-fundamentals/ch05-cpu-power/README.md",
-      "status": "unknown",
-      "pipeline_stage": "unknown",
-      "task6_state": "unknown",
-      "task9_state": "unknown",
-      "task2b_state": "unknown"
+      "section": ""
     },
     "src/part1-fundamentals/ch06-storage/01-storage-architecture.md": {
       "path": "src/part1-fundamentals/ch06-storage/01-storage-architecture.md",
@@ -1428,14 +1358,8 @@
       "section": "6.5"
     },
     "src/part1-fundamentals/ch06-storage/README.md": {
-      "chapter": null,
-      "title": "README",
       "path": "src/part1-fundamentals/ch06-storage/README.md",
-      "status": "unknown",
-      "pipeline_stage": "unknown",
-      "task6_state": "unknown",
-      "task9_state": "unknown",
-      "task2b_state": "unknown"
+      "section": ""
     },
     "src/part2-performance/ch07-smoothness/01-jank-definition.md": {
       "path": "src/part2-performance/ch07-smoothness/01-jank-definition.md",
@@ -1446,16 +1370,15 @@
       "task6_state": "reviewed",
       "task9_state": "pending",
       "task2b_state": "fixed",
-      "reviewed_date": "'2026-04-21'",
+      "reviewed_date": "2026-04-21",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
-      "section": "7.1",
-      "task9_reviewed_by": "openclaw-task9",
-      "task9_reviewed_date": "'2026-04-21'",
-      "last_task9_at": "2026-04-20T13:38:00+08:00",
       "task2b_result": "fixed",
-      "task6_reviewed_date": "2026-04-21"
+      "task9_reviewed_date": "2026-04-21",
+      "task9_reviewed_by": "openclaw-task9",
+      "last_task9_at": "2026-04-20T13:38:00+08:00",
+      "section": "7.1"
     },
     "src/part2-performance/ch07-smoothness/02-jank-causes.md": {
       "path": "src/part2-performance/ch07-smoothness/02-jank-causes.md",
@@ -1519,11 +1442,11 @@
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
-      "section": "7.5",
-      "task9_reviewed_by": "openclaw-task9",
+      "task2b_result": "fixed",
       "task9_reviewed_date": "2026-04-20",
+      "task9_reviewed_by": "openclaw-task9",
       "last_task9_at": "2026-04-20T13:38:00+08:00",
-      "task2b_result": "fixed"
+      "section": "7.5"
     },
     "src/part2-performance/ch07-smoothness/06-case-studies.md": {
       "path": "src/part2-performance/ch07-smoothness/06-case-studies.md",
@@ -1543,19 +1466,18 @@
     "src/part2-performance/ch07-smoothness/07-compose-performance.md": {
       "path": "src/part2-performance/ch07-smoothness/07-compose-performance.md",
       "title": "Jetpack Compose 性能优化",
-      "chapter": "'7.7'",
+      "chapter": "7.7",
       "status": "ready-for-review",
       "pipeline_stage": "task9_pending",
       "task6_state": "reviewed",
       "task9_state": "pending",
       "task2b_state": "fixed",
-      "reviewed_date": "'2026-04-21'",
+      "reviewed_date": "2026-04-21",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
-      "section": "'7.7'",
-      "task6_reviewed": "2026-04-21"
+      "section": "7.7"
     },
     "src/part2-performance/ch07-smoothness/08-recyclerview-performance.md": {
       "path": "src/part2-performance/ch07-smoothness/08-recyclerview-performance.md",
@@ -1590,10 +1512,10 @@
       "task6_result": "pass-light-edit",
       "task9_result": "pass-tech-review",
       "task2b_result": "fixed",
-      "section": "7.9",
-      "task9_reviewed_by": "openclaw-task9",
       "task9_reviewed_date": "2026-04-20",
-      "last_task9_at": "2026-04-20T13:38:00+08:00"
+      "task9_reviewed_by": "openclaw-task9",
+      "last_task9_at": "2026-04-20T13:38:00+08:00",
+      "section": "7.9"
     },
     "src/part2-performance/ch07-smoothness/10-image-bitmap-performance.md": {
       "path": "src/part2-performance/ch07-smoothness/10-image-bitmap-performance.md",
@@ -1609,8 +1531,10 @@
       "task6_result": "pass-light-edit",
       "task9_result": "pass-tech-review",
       "task2b_result": "fixed",
-      "section": "7.10",
-      "task9_reviewed_date": "2026-04-20"
+      "task9_reviewed_date": "2026-04-20",
+      "task9_reviewed_by": "openclaw-task9",
+      "last_task9_at": "2026-04-20T14:50:48+08:00",
+      "section": "7.10"
     },
     "src/part2-performance/ch07-smoothness/11-webview-performance.md": {
       "path": "src/part2-performance/ch07-smoothness/11-webview-performance.md",
@@ -1626,8 +1550,10 @@
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
-      "section": "7.11",
-      "task9_reviewed_date": "2026-04-20"
+      "task9_reviewed_date": "2026-04-20",
+      "task9_reviewed_by": "openclaw-task9",
+      "last_task9_at": "2026-04-20T14:50:48+08:00",
+      "section": "7.11"
     },
     "src/part2-performance/ch07-smoothness/12-view-layout-performance.md": {
       "path": "src/part2-performance/ch07-smoothness/12-view-layout-performance.md",
@@ -1643,30 +1569,29 @@
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
-      "section": "7.12",
       "task9_reviewed_date": "2026-04-20",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-20T14:50:48+08:00"
+      "last_task9_at": "2026-04-20T14:50:48+08:00",
+      "section": "7.12"
     },
     "src/part2-performance/ch07-smoothness/13-systemui-performance.md": {
       "path": "src/part2-performance/ch07-smoothness/13-systemui-performance.md",
       "title": "SystemUI 性能分析",
-      "chapter": "'7.13'",
+      "chapter": "7.13",
       "status": "ready-for-review",
       "pipeline_stage": "task9_pending",
       "task6_state": "reviewed",
       "task9_state": "pending",
       "task2b_state": "fixed",
-      "reviewed_date": "'2026-04-21'",
+      "reviewed_date": "2026-04-21",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
-      "section": "'7.13'",
+      "task9_reviewed_date": "2026-04-21",
       "task9_reviewed_by": "openclaw-task9",
-      "task9_reviewed_date": "'2026-04-21'",
       "last_task9_at": "2026-04-21T01:15:00+08:00",
-      "task6_reviewed": "2026-04-21"
+      "section": "7.13"
     },
     "src/part2-performance/ch07-smoothness/14-gaps-dynamic-analysis.md": {
       "path": "src/part2-performance/ch07-smoothness/14-gaps-dynamic-analysis.md",
@@ -1684,14 +1609,8 @@
       "section": "7.14"
     },
     "src/part2-performance/ch07-smoothness/README.md": {
-      "chapter": null,
-      "title": "README",
       "path": "src/part2-performance/ch07-smoothness/README.md",
-      "status": "unknown",
-      "pipeline_stage": "unknown",
-      "task6_state": "unknown",
-      "task9_state": "unknown",
-      "task2b_state": "unknown"
+      "section": ""
     },
     "src/part2-performance/ch08-responsiveness/01-responsiveness-principles.md": {
       "path": "src/part2-performance/ch08-responsiveness/01-responsiveness-principles.md",
@@ -1711,23 +1630,18 @@
     "src/part2-performance/ch08-responsiveness/02-app-launch.md": {
       "path": "src/part2-performance/ch08-responsiveness/02-app-launch.md",
       "title": "App 启动全流程",
-      "chapter": "'8.2'",
+      "chapter": "8.2",
       "status": "ready-for-review",
       "pipeline_stage": "task9_pending",
       "task6_state": "reviewed",
       "task9_state": "pending",
       "task2b_state": "fixed",
-      "reviewed_date": "'2026-04-21'",
+      "reviewed_date": "2026-04-21",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
-      "section": "'8.2'",
       "task9_result": "needs-rework",
-      "task9_reviewed_date": "2026-04-20",
-      "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-20T18:09:27+08:00",
       "task2b_result": "fixed",
-      "last_task2b_at": "2026-04-20T18:33:00+08:00",
-      "task6_reviewed": "2026-04-21"
+      "section": "8.2"
     },
     "src/part2-performance/ch08-responsiveness/03-launch-optimization.md": {
       "path": "src/part2-performance/ch08-responsiveness/03-launch-optimization.md",
@@ -1771,12 +1685,12 @@
       "reviewed_date": "2026-04-16",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
-      "section": "8.5",
       "task9_result": "needs-rework",
-      "task9_reviewed_by": "openclaw-task9",
+      "task2b_result": "fixed",
       "task9_reviewed_date": "2026-04-21",
+      "task9_reviewed_by": "openclaw-task9",
       "last_task9_at": "2026-04-21T05:29:00+08:00",
-      "task2b_result": "fixed"
+      "section": "8.5"
     },
     "src/part2-performance/ch08-responsiveness/06-coroutine-performance.md": {
       "path": "src/part2-performance/ch08-responsiveness/06-coroutine-performance.md",
@@ -1799,21 +1713,21 @@
     "src/part2-performance/ch08-responsiveness/07-baseline-profiles.md": {
       "path": "src/part2-performance/ch08-responsiveness/07-baseline-profiles.md",
       "title": "Baseline Profiles 与编译优化实践",
-      "chapter": "'8.7'",
+      "chapter": "8.7",
       "status": "ready-for-review",
       "pipeline_stage": "task6_pending",
       "task6_state": "revisiting",
       "task9_state": "pending",
       "task2b_state": "fixed",
-      "reviewed_date": "'2026-04-20'",
+      "reviewed_date": "2026-04-20",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
-      "section": "'8.7'",
       "task9_reviewed_date": "2026-04-20",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-20T20:06:23+08:00"
+      "last_task9_at": "2026-04-20T20:06:23+08:00",
+      "section": "8.7"
     },
     "src/part2-performance/ch08-responsiveness/08-media-pipeline.md": {
       "path": "src/part2-performance/ch08-responsiveness/08-media-pipeline.md",
@@ -1864,20 +1778,14 @@
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
-      "section": "8.9",
-      "task9_reviewed_by": "openclaw-task9",
       "task9_reviewed_date": "2026-04-21",
-      "last_task9_at": "2026-04-21T01:15:00+08:00"
+      "task9_reviewed_by": "openclaw-task9",
+      "last_task9_at": "2026-04-21T01:15:00+08:00",
+      "section": "8.9"
     },
     "src/part2-performance/ch08-responsiveness/README.md": {
-      "chapter": null,
-      "title": "README",
       "path": "src/part2-performance/ch08-responsiveness/README.md",
-      "status": "unknown",
-      "pipeline_stage": "unknown",
-      "task6_state": "unknown",
-      "task9_state": "unknown",
-      "task2b_state": "unknown"
+      "section": ""
     },
     "src/part2-performance/ch09-anr/01-anr-design.md": {
       "path": "src/part2-performance/ch09-anr/01-anr-design.md",
@@ -1908,30 +1816,27 @@
       "reviewed_date": "2026-04-16",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
-      "section": "9.2",
       "task9_result": "needs-rework",
-      "task9_reviewed_date": "2026-04-20",
-      "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-20T18:09:27+08:00",
       "task2b_result": "fixed",
-      "last_task2b_at": "2026-04-20T18:33:00+08:00"
+      "section": "9.2"
     },
     "src/part2-performance/ch09-anr/03-anr-analysis.md": {
       "path": "src/part2-performance/ch09-anr/03-anr-analysis.md",
       "title": "ANR 分析方法",
       "chapter": "9.3",
       "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
-      "task6_state": "reviewed",
-      "task9_state": "reviewed",
-      "task2b_state": "pending",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
+      "task9_state": "pending",
+      "task2b_state": "fixed",
       "reviewed_date": "2026-04-16",
       "reviewed_by": "openclaw-task6",
-      "section": "9.3",
       "task9_result": "needs-rework",
+      "task2b_result": "fixed",
       "task9_reviewed_date": "2026-04-21",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-21T05:29:00+08:00"
+      "last_task9_at": "2026-04-21T05:29:00+08:00",
+      "section": "9.3"
     },
     "src/part2-performance/ch09-anr/04-special-anr.md": {
       "path": "src/part2-performance/ch09-anr/04-special-anr.md",
@@ -1961,12 +1866,12 @@
       "reviewed_date": "2026-04-16",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
-      "section": "9.5",
       "task9_result": "needs-rework",
-      "task9_reviewed_by": "openclaw-task9",
+      "task2b_result": "fixed",
       "task9_reviewed_date": "2026-04-21",
+      "task9_reviewed_by": "openclaw-task9",
       "last_task9_at": "2026-04-21T09:26:24+08:00",
-      "task2b_result": "fixed"
+      "section": "9.5"
     },
     "src/part2-performance/ch09-anr/06-notification-performance-anr.md": {
       "path": "src/part2-performance/ch09-anr/06-notification-performance-anr.md",
@@ -1982,15 +1887,15 @@
       "task6_result": "pass-light-edit",
       "task9_result": "pass-tech-review",
       "task2b_result": "fixed",
-      "section": "9.6",
       "task9_reviewed_date": "2026-04-20",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-20T20:06:23+08:00"
+      "last_task9_at": "2026-04-20T20:06:23+08:00",
+      "section": "9.6"
     },
     "src/part2-performance/ch09-anr/07-non-technical-anr-diagnosis.md": {
       "path": "src/part2-performance/ch09-anr/07-non-technical-anr-diagnosis.md",
       "title": "ANR 非技术故障诊断",
-      "chapter": "'9.7'",
+      "chapter": "9.7",
       "status": "finalized",
       "pipeline_stage": "ready-to-publish",
       "task6_state": "reviewed",
@@ -2001,20 +1906,14 @@
       "task6_result": "pass-light-edit",
       "task9_result": "pass-tech-review",
       "task2b_result": "fixed",
-      "section": "'9.7'",
-      "task9_reviewed_by": "openclaw-task9",
       "task9_reviewed_date": "2026-04-21",
-      "last_task9_at": "2026-04-21T01:15:00+08:00"
+      "task9_reviewed_by": "openclaw-task9",
+      "last_task9_at": "2026-04-21T01:15:00+08:00",
+      "section": "9.7"
     },
     "src/part2-performance/ch09-anr/README.md": {
-      "chapter": null,
-      "title": "README",
       "path": "src/part2-performance/ch09-anr/README.md",
-      "status": "unknown",
-      "pipeline_stage": "unknown",
-      "task6_state": "unknown",
-      "task9_state": "unknown",
-      "task2b_state": "unknown"
+      "section": ""
     },
     "src/part2-performance/ch10-memory-perf/01-app-memory-analysis.md": {
       "path": "src/part2-performance/ch10-memory-perf/01-app-memory-analysis.md",
@@ -2028,7 +1927,7 @@
       "reviewed_date": "2026-04-15",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
-      "section": "10"
+      "section": "\"10"
     },
     "src/part2-performance/ch10-memory-perf/02-memory-leak.md": {
       "path": "src/part2-performance/ch10-memory-perf/02-memory-leak.md",
@@ -2041,30 +1940,27 @@
       "task2b_state": "idle",
       "reviewed_date": "2026-04-16",
       "reviewed_by": "openclaw-task6",
-      "section": "10.2",
       "task9_result": "pass-tech-review",
-      "task9_reviewed_date": "2026-04-20",
-      "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-20T18:09:27+08:00"
+      "section": "10.2"
     },
     "src/part2-performance/ch10-memory-perf/03-memory-growth.md": {
       "path": "src/part2-performance/ch10-memory-perf/03-memory-growth.md",
       "title": "内存持续增长",
-      "chapter": "'10.3'",
+      "chapter": "10.3",
       "status": "finalized",
       "pipeline_stage": "ready-to-publish",
       "task6_state": "reviewed",
       "task9_state": "reviewed",
       "task2b_state": "fixed",
-      "reviewed_date": "'2026-04-16'",
+      "reviewed_date": "2026-04-16",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
-      "task2b_result": "fixed",
-      "section": "'10.3'",
       "task9_result": "pass-tech-review",
+      "task2b_result": "fixed",
+      "task9_reviewed_date": "2026-04-21",
       "task9_reviewed_by": "openclaw-task9",
-      "task9_reviewed_date": "'2026-04-21'",
-      "last_task9_at": "2026-04-21T07:38:43+08:00"
+      "last_task9_at": "2026-04-21T07:38:43+08:00",
+      "section": "10.3"
     },
     "src/part2-performance/ch10-memory-perf/04-low-memory-impact.md": {
       "path": "src/part2-performance/ch10-memory-perf/04-low-memory-impact.md",
@@ -2087,16 +1983,17 @@
       "title": "案例集",
       "chapter": "10.5",
       "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
-      "task6_state": "reviewed",
-      "task9_state": "reviewed",
-      "task2b_state": "pending",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
+      "task9_state": "pending",
+      "task2b_state": "fixed",
       "reviewed_date": "2026-04-16",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
-      "section": "10.5",
       "task9_result": "needs-rework",
-      "task9_reviewed_date": "2026-04-21"
+      "task2b_result": "fixed",
+      "task9_reviewed_date": "2026-04-21",
+      "section": "10.5"
     },
     "src/part2-performance/ch10-memory-perf/06-memory-churn.md": {
       "path": "src/part2-performance/ch10-memory-perf/06-memory-churn.md",
@@ -2132,14 +2029,8 @@
       "section": "10.7"
     },
     "src/part2-performance/ch10-memory-perf/README.md": {
-      "chapter": null,
-      "title": "README",
       "path": "src/part2-performance/ch10-memory-perf/README.md",
-      "status": "unknown",
-      "pipeline_stage": "unknown",
-      "task6_state": "unknown",
-      "task9_state": "unknown",
-      "task2b_state": "unknown"
+      "section": ""
     },
     "src/part2-performance/ch11-power/01-power-model.md": {
       "path": "src/part2-performance/ch11-power/01-power-model.md",
@@ -2173,7 +2064,7 @@
       "task2b_result": "fixed",
       "task9_reviewed_date": "2026-04-20",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-20T15:59:02+08:00",
+      "last_task9_at": "2026-04-20T15:56:56+08:00",
       "section": "11.2"
     },
     "src/part2-performance/ch11-power/03-system-power-optimization.md": {
@@ -2192,7 +2083,7 @@
       "task2b_result": "fixed",
       "task9_reviewed_date": "2026-04-20",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-20T15:59:02+08:00",
+      "last_task9_at": "2026-04-20T15:56:56+08:00",
       "section": "11.3"
     },
     "src/part2-performance/ch11-power/04-case-studies.md": {
@@ -2227,14 +2118,8 @@
       "section": "11.5"
     },
     "src/part2-performance/ch11-power/README.md": {
-      "chapter": null,
-      "title": "README",
       "path": "src/part2-performance/ch11-power/README.md",
-      "status": "unknown",
-      "pipeline_stage": "unknown",
-      "task6_state": "unknown",
-      "task9_state": "unknown",
-      "task2b_state": "unknown"
+      "section": ""
     },
     "src/part2-performance/ch12-apk-network/01-apk-size.md": {
       "path": "src/part2-performance/ch12-apk-network/01-apk-size.md",
@@ -2255,18 +2140,18 @@
     "src/part2-performance/ch12-apk-network/02-network-performance.md": {
       "path": "src/part2-performance/ch12-apk-network/02-network-performance.md",
       "title": "网络性能优化",
-      "chapter": "'12.2'",
+      "chapter": "12.2",
       "status": "ready-for-review",
       "pipeline_stage": "task6_pending",
       "task6_state": "revisiting",
       "task9_state": "pending",
       "task2b_state": "fixed",
-      "reviewed_date": "'2026-04-17'",
+      "reviewed_date": "2026-04-17",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
-      "section": "'12.2'"
+      "section": "12.2"
     },
     "src/part2-performance/ch12-apk-network/03-network-performance-deep.md": {
       "path": "src/part2-performance/ch12-apk-network/03-network-performance-deep.md",
@@ -2281,12 +2166,11 @@
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
-      "section": "12.3",
-      "task6_reviewed_date": "2026-04-21",
+      "task2b_result": "fixed",
       "task9_reviewed_date": "2026-04-21",
       "task9_reviewed_by": "openclaw-task9",
       "last_task9_at": "2026-04-21T03:54:40+08:00",
-      "task2b_result": "fixed"
+      "section": "12.3"
     },
     "src/part2-performance/ch12-apk-network/04-network-security-tls-performance.md": {
       "path": "src/part2-performance/ch12-apk-network/04-network-security-tls-performance.md",
@@ -2304,14 +2188,8 @@
       "section": "12.4"
     },
     "src/part2-performance/ch12-apk-network/README.md": {
-      "chapter": null,
-      "title": "README",
       "path": "src/part2-performance/ch12-apk-network/README.md",
-      "status": "unknown",
-      "pipeline_stage": "unknown",
-      "task6_state": "unknown",
-      "task9_state": "unknown",
-      "task2b_state": "unknown"
+      "section": ""
     },
     "src/part2-performance/ch18-rendering-pipelines/01-pipeline-overview.md": {
       "path": "src/part2-performance/ch18-rendering-pipelines/01-pipeline-overview.md",
@@ -2409,14 +2287,14 @@
       "task6_state": "reviewed",
       "task9_state": "pending",
       "task2b_state": "fixed",
+      "reviewed_date": "2026-04-20",
+      "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
       "task9_reviewed_date": "2026-04-20",
       "task9_reviewed_by": "openclaw-task9",
-      "section": "18.6",
-      "reviewed_date": "2026-04-20",
-      "reviewed_by": "openclaw-task6"
+      "section": "18.6"
     },
     "src/part2-performance/ch18-rendering-pipelines/07-textureview.md": {
       "path": "src/part2-performance/ch18-rendering-pipelines/07-textureview.md",
@@ -2463,11 +2341,11 @@
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
+      "task2b_result": "fixed",
       "task9_reviewed_date": "2026-04-20",
       "task9_reviewed_by": "openclaw-task9",
       "last_task9_at": "2026-04-20T12:34:00+08:00",
-      "section": "18.9",
-      "task2b_result": "fixed"
+      "section": "18.9"
     },
     "src/part2-performance/ch18-rendering-pipelines/10-surface-control-api.md": {
       "path": "src/part2-performance/ch18-rendering-pipelines/10-surface-control-api.md",
@@ -2489,7 +2367,7 @@
     "src/part2-performance/ch18-rendering-pipelines/11-angle-gles-vulkan.md": {
       "path": "src/part2-performance/ch18-rendering-pipelines/11-angle-gles-vulkan.md",
       "title": "ANGLE（GLES-over-Vulkan 翻译层）",
-      "chapter": "'18.11'",
+      "chapter": "18.11",
       "status": "ready-for-review",
       "pipeline_stage": "task6_pending",
       "task6_state": "revisiting",
@@ -2681,14 +2559,8 @@
       "section": "18.21"
     },
     "src/part2-performance/ch18-rendering-pipelines/README.md": {
-      "chapter": null,
-      "title": "README",
       "path": "src/part2-performance/ch18-rendering-pipelines/README.md",
-      "status": "unknown",
-      "pipeline_stage": "unknown",
-      "task6_state": "unknown",
-      "task9_state": "unknown",
-      "task2b_state": "unknown"
+      "section": ""
     },
     "src/part3-tools/ch13-perfetto/01-perfetto-intro.md": {
       "path": "src/part3-tools/ch13-perfetto/01-perfetto-intro.md",
@@ -2734,13 +2606,9 @@
       "reviewed_date": "2026-04-21",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
-      "task2b_result": "fixed",
-      "section": "13.3",
-      "task6_reviewed_date": "2026-04-21",
       "task9_result": "pass-tech-review",
-      "task9_reviewed_date": "2026-04-21",
-      "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-21T03:54:40+08:00"
+      "task2b_result": "fixed",
+      "section": "13.3"
     },
     "src/part3-tools/ch13-perfetto/04-large-traces.md": {
       "path": "src/part3-tools/ch13-perfetto/04-large-traces.md",
@@ -2761,7 +2629,7 @@
     "src/part3-tools/ch13-perfetto/05-topic-analysis.md": {
       "path": "src/part3-tools/ch13-perfetto/05-topic-analysis.md",
       "title": "专题解读",
-      "chapter": "'13.5'",
+      "chapter": "13.5",
       "status": "finalized",
       "pipeline_stage": "ready-to-publish",
       "task6_state": "reviewed",
@@ -2772,10 +2640,10 @@
       "task6_result": "pass-light-edit",
       "task9_result": "pass-tech-review",
       "task2b_result": "fixed",
-      "section": "'13.5'",
+      "task9_reviewed_date": "2026-04-21",
       "task9_reviewed_by": "openclaw-task9",
-      "task9_reviewed_date": "'2026-04-21'",
-      "last_task9_at": "2026-04-21T07:38:43+08:00"
+      "last_task9_at": "2026-04-21T07:38:43+08:00",
+      "section": "13.5"
     },
     "src/part3-tools/ch13-perfetto/06-thread-cpu-states.md": {
       "path": "src/part3-tools/ch13-perfetto/06-thread-cpu-states.md",
@@ -2788,12 +2656,12 @@
       "task2b_state": "fixed",
       "reviewed_date": "2026-04-17",
       "reviewed_by": "openclaw-task6",
-      "section": "13.6",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
       "task9_reviewed_date": "2026-04-20",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-20T21:48:59+08:00"
+      "last_task9_at": "2026-04-20T21:48:59+08:00",
+      "section": "13.6"
     },
     "src/part3-tools/ch13-perfetto/07-advanced-usage.md": {
       "path": "src/part3-tools/ch13-perfetto/07-advanced-usage.md",
@@ -2861,13 +2729,13 @@
       "path": "src/part3-tools/ch13-perfetto/README.md",
       "title": "第 13 章：Perfetto",
       "chapter": "13.0",
-      "section": "13.0",
       "status": "ready-for-review",
       "pipeline_stage": "task6_pending",
       "task6_state": "revisiting",
       "task9_state": "pending",
       "task2b_state": "fixed",
-      "task2b_result": "fixed"
+      "task2b_result": "fixed",
+      "section": "13.0"
     },
     "src/part3-tools/ch14-other-tools/01-as-profiler.md": {
       "path": "src/part3-tools/ch14-other-tools/01-as-profiler.md",
@@ -2888,13 +2756,13 @@
     "src/part3-tools/ch14-other-tools/02-simpleperf.md": {
       "path": "src/part3-tools/ch14-other-tools/02-simpleperf.md",
       "title": "Simpleperf",
-      "chapter": "'14.2'",
+      "chapter": "14.2",
       "status": "finalized",
       "pipeline_stage": "ready-to-publish",
       "task6_state": "reviewed",
       "task9_state": "reviewed",
       "task2b_state": "fixed",
-      "reviewed_date": "'2026-04-15'",
+      "reviewed_date": "2026-04-15",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
       "task9_result": "pass-tech-review",
@@ -2902,7 +2770,7 @@
       "task9_reviewed_date": "2026-04-20",
       "task9_reviewed_by": "openclaw-task9",
       "last_task9_at": "2026-04-20T03:17:47+08:00",
-      "section": "'14.2'"
+      "section": "14.2"
     },
     "src/part3-tools/ch14-other-tools/03-memory-tools.md": {
       "path": "src/part3-tools/ch14-other-tools/03-memory-tools.md",
@@ -2992,8 +2860,8 @@
       "reviewed_date": "2026-04-14",
       "reviewed_by": "openclaw-task6",
       "task6_result": "needs-rework",
-      "section": "14.8",
-      "task2b_result": "fixed"
+      "task2b_result": "fixed",
+      "section": "14.8"
     },
     "src/part3-tools/ch14-other-tools/09-camera-performance-analysis.md": {
       "path": "src/part3-tools/ch14-other-tools/09-camera-performance-analysis.md",
@@ -3022,12 +2890,12 @@
       "reviewed_date": "2026-04-14",
       "reviewed_by": "openclaw-task6",
       "task6_result": "needs-rework",
-      "section": "14.10",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
       "task9_reviewed_date": "2026-04-20",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-20T21:48:59+08:00"
+      "last_task9_at": "2026-04-20T21:48:59+08:00",
+      "section": "14.10"
     },
     "src/part3-tools/ch14-other-tools/11-battery-historian.md": {
       "path": "src/part3-tools/ch14-other-tools/11-battery-historian.md",
@@ -3046,29 +2914,23 @@
       "section": "14.11"
     },
     "src/part3-tools/ch14-other-tools/README.md": {
-      "chapter": null,
-      "title": "README",
       "path": "src/part3-tools/ch14-other-tools/README.md",
-      "status": "unknown",
-      "pipeline_stage": "unknown",
-      "task6_state": "unknown",
-      "task9_state": "unknown",
-      "task2b_state": "unknown"
+      "section": ""
     },
     "src/part3-tools/ch15-methodology/01-philosophy.md": {
       "path": "src/part3-tools/ch15-methodology/01-philosophy.md",
       "title": "性能优化的术、道、器",
-      "chapter": "'15.1'",
+      "chapter": "15.1",
       "status": "ready-for-review",
       "pipeline_stage": "task6_pending",
       "task6_state": "revisiting",
       "task9_state": "pending",
       "task2b_state": "fixed",
-      "reviewed_date": "'2026-04-15'",
+      "reviewed_date": "2026-04-15",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
       "task2b_result": "fixed",
-      "section": "'15.1'"
+      "section": "15.1"
     },
     "src/part3-tools/ch15-methodology/02-system-vs-app.md": {
       "path": "src/part3-tools/ch15-methodology/02-system-vs-app.md",
@@ -3082,12 +2944,12 @@
       "reviewed_date": "2026-04-16",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
-      "section": "15.2",
       "task9_result": "needs-rework",
-      "task9_reviewed_by": "openclaw-task9",
+      "task2b_result": "fixed",
       "task9_reviewed_date": "2026-04-21",
+      "task9_reviewed_by": "openclaw-task9",
       "last_task9_at": "2026-04-21T04:38:00+08:00",
-      "task2b_result": "fixed"
+      "section": "15.2"
     },
     "src/part3-tools/ch15-methodology/03-metrics.md": {
       "path": "src/part3-tools/ch15-methodology/03-metrics.md",
@@ -3118,11 +2980,11 @@
       "reviewed_date": "2026-04-17",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
-      "section": "15.4",
       "task9_result": "needs-rework",
-      "task9_reviewed_by": "openclaw-task9",
       "task9_reviewed_date": "2026-04-21",
-      "last_task9_at": "2026-04-21T09:26:24+08:00"
+      "task9_reviewed_by": "openclaw-task9",
+      "last_task9_at": "2026-04-21T09:26:24+08:00",
+      "section": "15.4"
     },
     "src/part3-tools/ch15-methodology/05-online-monitoring.md": {
       "path": "src/part3-tools/ch15-methodology/05-online-monitoring.md",
@@ -3155,12 +3017,12 @@
       "reviewed_date": "2026-04-17",
       "reviewed_by": "openclaw-task6",
       "task6_result": "needs-rework",
-      "section": "15.6",
       "task9_result": "needs-rework",
-      "task9_reviewed_by": "openclaw-task9",
+      "task2b_result": "fixed",
       "task9_reviewed_date": "2026-04-21",
+      "task9_reviewed_by": "openclaw-task9",
       "last_task9_at": "2026-04-21T09:26:24+08:00",
-      "task2b_result": "fixed"
+      "section": "15.6"
     },
     "src/part3-tools/ch15-methodology/07-aosp-reading.md": {
       "path": "src/part3-tools/ch15-methodology/07-aosp-reading.md",
@@ -3198,14 +3060,8 @@
       "section": "15.8"
     },
     "src/part3-tools/ch15-methodology/README.md": {
-      "chapter": null,
-      "title": "README",
       "path": "src/part3-tools/ch15-methodology/README.md",
-      "status": "unknown",
-      "pipeline_stage": "unknown",
-      "task6_state": "unknown",
-      "task9_state": "unknown",
-      "task2b_state": "unknown"
+      "section": ""
     },
     "src/part4-system/ch16-aosp/01-google-optimization.md": {
       "path": "src/part4-system/ch16-aosp/01-google-optimization.md",
@@ -3218,12 +3074,12 @@
       "task2b_state": "pending",
       "reviewed_date": "2026-04-20",
       "reviewed_by": "openclaw-task6",
+      "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "task9_reviewed_date": "2026-04-19",
       "task9_reviewed_by": "openclaw-task9",
       "last_task9_at": "2026-04-19T07:43:40+08:00",
-      "section": "16.1",
-      "task6_result": "pass-light-edit"
+      "section": "16.1"
     },
     "src/part4-system/ch16-aosp/02-version-changes.md": {
       "path": "src/part4-system/ch16-aosp/02-version-changes.md",
@@ -3251,12 +3107,12 @@
       "reviewed_date": "2026-04-17",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
-      "section": "16.3",
       "task9_result": "needs-rework",
-      "task9_reviewed_by": "openclaw-task9",
+      "task2b_result": "fixed",
       "task9_reviewed_date": "2026-04-21",
+      "task9_reviewed_by": "openclaw-task9",
       "last_task9_at": "2026-04-21T04:38:00+08:00",
-      "task2b_result": "fixed"
+      "section": "16.3"
     },
     "src/part4-system/ch16-aosp/04-android17-kernel612-performance.md": {
       "path": "src/part4-system/ch16-aosp/04-android17-kernel612-performance.md",
@@ -3270,12 +3126,12 @@
       "reviewed_date": "2026-04-17",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
-      "section": "16.4",
       "task9_result": "needs-rework",
-      "task9_reviewed_by": "openclaw-task9",
+      "task2b_result": "fixed",
       "task9_reviewed_date": "2026-04-21",
+      "task9_reviewed_by": "openclaw-task9",
       "last_task9_at": "2026-04-21T04:38:00+08:00",
-      "task2b_result": "fixed"
+      "section": "16.4"
     },
     "src/part4-system/ch16-aosp/05-android17-api37-performance-changes.md": {
       "path": "src/part4-system/ch16-aosp/05-android17-api37-performance-changes.md",
@@ -3293,14 +3149,8 @@
       "section": "16.5"
     },
     "src/part4-system/ch16-aosp/README.md": {
-      "chapter": null,
-      "title": "README",
       "path": "src/part4-system/ch16-aosp/README.md",
-      "status": "unknown",
-      "pipeline_stage": "unknown",
-      "task6_state": "unknown",
-      "task9_state": "unknown",
-      "task2b_state": "unknown"
+      "section": ""
     },
     "src/part4-system/ch17-oem/01-oem-overview.md": {
       "path": "src/part4-system/ch17-oem/01-oem-overview.md",
@@ -3314,9 +3164,9 @@
       "reviewed_date": "2026-04-16",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
-      "section": "17.1",
       "task9_result": "needs-rework",
-      "task9_reviewed_date": "2026-04-21"
+      "task9_reviewed_date": "2026-04-21",
+      "section": "17.1"
     },
     "src/part4-system/ch17-oem/02-soc-differences.md": {
       "path": "src/part4-system/ch17-oem/02-soc-differences.md",
@@ -3330,9 +3180,9 @@
       "reviewed_date": "2026-04-17",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
-      "section": "17.2",
       "task9_result": "needs-rework",
-      "task9_reviewed_date": "2026-04-21"
+      "task9_reviewed_date": "2026-04-21",
+      "section": "17.2"
     },
     "src/part4-system/ch17-oem/03-industry-cases.md": {
       "path": "src/part4-system/ch17-oem/03-industry-cases.md",
@@ -3349,280 +3199,32 @@
       "section": "17.3"
     },
     "src/part4-system/ch17-oem/README.md": {
-      "chapter": null,
-      "title": "README",
       "path": "src/part4-system/ch17-oem/README.md",
-      "status": "unknown",
-      "pipeline_stage": "unknown",
-      "task6_state": "unknown",
-      "task9_state": "unknown",
-      "task2b_state": "unknown"
+      "section": ""
     },
     "src/preface/how-to-use.md": {
-      "chapter": null,
-      "title": "how-to-use",
       "path": "src/preface/how-to-use.md",
-      "status": "unknown",
-      "pipeline_stage": "unknown",
-      "task6_state": "unknown",
-      "task9_state": "unknown",
-      "task2b_state": "unknown"
+      "section": ""
     },
     "src/preface/intro.md": {
-      "chapter": null,
-      "title": "intro",
       "path": "src/preface/intro.md",
-      "status": "unknown",
-      "pipeline_stage": "unknown",
-      "task6_state": "unknown",
-      "task9_state": "unknown",
-      "task2b_state": "unknown"
+      "section": ""
     },
     "src/preface/reading-paths.md": {
-      "chapter": null,
-      "title": "reading-paths",
       "path": "src/preface/reading-paths.md",
-      "status": "unknown",
-      "pipeline_stage": "unknown",
-      "task6_state": "unknown",
-      "task9_state": "unknown",
-      "task2b_state": "unknown"
+      "section": ""
     },
     "src/preface/target-audience.md": {
-      "chapter": null,
-      "title": "target-audience",
       "path": "src/preface/target-audience.md",
-      "status": "unknown",
-      "pipeline_stage": "unknown",
-      "task6_state": "unknown",
-      "task9_state": "unknown",
-      "task2b_state": "unknown"
+      "section": ""
     },
     "src/preface/verification-standards.md": {
-      "chapter": null,
-      "title": "verification-standards",
       "path": "src/preface/verification-standards.md",
-      "status": "unknown",
-      "pipeline_stage": "unknown",
-      "task6_state": "unknown",
-      "task9_state": "unknown",
-      "task2b_state": "unknown"
+      "section": ""
     },
     "src/preface/version-conventions.md": {
-      "chapter": null,
-      "title": "version-conventions",
       "path": "src/preface/version-conventions.md",
-      "status": "unknown",
-      "pipeline_stage": "unknown",
-      "task6_state": "unknown",
-      "task9_state": "unknown",
-      "task2b_state": "unknown"
-    },
-    "2.2": {
-      "task6_last_review": "2026-04-20",
-      "task6_result": "pass-light-edit",
-      "task6_state": "reviewed"
-    },
-    "2.14": {
-      "task6_last_review": "2026-04-20",
-      "task6_result": "pass-light-edit",
-      "task6_state": "reviewed"
-    },
-    "2.15": {
-      "task6_last_review": "2026-04-20",
-      "task6_result": "pass-light-edit",
-      "task6_state": "reviewed"
-    },
-    "2.4": {
-      "task6_last_review": "2026-04-21",
-      "task6_result": "pass-light-edit",
-      "task6_state": "reviewed",
-      "task6_review_round": 8
-    },
-    "2.10": {
-      "task6_last_review": "2026-04-21",
-      "task6_result": "pass-light-edit",
-      "task6_state": "revisiting",
-      "task6_review_round": 6,
-      "task6_b_issues": 0
-    },
-    "4.4": {
-      "task6_last_review": "2026-04-21",
-      "task6_result": "pass-light-edit",
-      "task6_state": "reviewed",
-      "task6_review_round": 2,
-      "task6_b_issues": 1
+      "section": ""
     }
-  },
-  "summary": {
-    "status_counts": {
-      "finalized": 26,
-      "ready-for-review": 149,
-      "unknown": 37
-    }
-  },
-  "7.13": {
-    "status": "ready-for-review",
-    "task6_state": "revisiting",
-    "task6_result": "pass-light-edit",
-    "last_reviewed": "2026-04-21",
-    "reviewed_by": "openclaw-task2b"
-  },
-  "9.6": {
-    "status": "ready-for-review",
-    "task6_state": "reviewed",
-    "task6_result": "pass-light-edit",
-    "last_reviewed": "2026-04-20",
-    "reviewed_by": "openclaw-task6"
-  },
-  "9.7": {
-    "status": "finalized",
-    "task6_state": "reviewed",
-    "task6_result": "pass-light-edit",
-    "last_reviewed": "2026-04-20",
-    "reviewed_by": "openclaw-task6"
-  },
-  "1.9": {
-    "task6_reviewed_date": "2026-04-20",
-    "task6_state": "reviewed",
-    "task6_result": "pass-light-edit"
-  },
-  "1.12": {
-    "task6_reviewed_date": "2026-04-20",
-    "task6_state": "reviewed",
-    "task6_result": "pass-light-edit"
-  },
-  "1.13": {
-    "task6_reviewed_date": "2026-04-20",
-    "task6_state": "reviewed",
-    "task6_result": "pass-light-edit"
-  },
-  "task6_reviews": {
-    "2.6": [
-      {
-        "date": "2026-04-20",
-        "result": "pass-light-edit",
-        "type": "revisiting-re-review",
-        "reviewer": "openclaw-task6"
-      }
-    ],
-    "2.8": [
-      {
-        "date": "2026-04-20",
-        "result": "pass-light-edit",
-        "type": "revisiting-re-review",
-        "reviewer": "openclaw-task6"
-      }
-    ],
-    "2.18": [
-      {
-        "date": "2026-04-20",
-        "result": "pass-light-edit",
-        "type": "revisiting-re-review",
-        "reviewer": "openclaw-task6"
-      }
-    ]
-  },
-  "reviews": [
-    {
-      "date": "2026-04-20",
-      "task": "task6-draft-review",
-      "chapters": [
-        "13.4",
-        "13.5",
-        "13.10"
-      ],
-      "result": "pass-light-edit",
-      "fixes": 10,
-      "big_issues": 0
-    },
-    {
-      "date": "2026-04-21",
-      "task": "task9-deep-tech-review",
-      "chapters": [
-        "2.5",
-        "3.2",
-        "8.8"
-      ],
-      "result": "2 pass-tech-review, 1 needs-rework",
-      "p0": 1,
-      "p1": 1,
-      "p2": 4
-    },
-    {
-      "date": "2026-04-21",
-      "task": "task9-deep-tech-review",
-      "chapters": [
-        "15.4",
-        "15.6",
-        "9.5"
-      ],
-      "result": "0 pass-tech-review, 3 needs-rework",
-      "p0": 3,
-      "p1": 4,
-      "p2": 2
-    }
-  ],
-  "last_review": "2026-04-21T09:26",
-  "status_counts": {
-    "finalized": 26,
-    "ready-for-review": 149,
-    "unknown": 37
-  },
-  "8.9": {
-    "status": "ready-for-review",
-    "task6_state": "revisiting",
-    "task6_result": "pass-light-edit",
-    "last_reviewed": "2026-04-21",
-    "reviewed_by": "openclaw-task2b"
-  },
-  "src/part2-performance/ch08-responsiveness/08-media-pipeline.md": {
-    "path": "src/part2-performance/ch08-responsiveness/08-media-pipeline.md",
-    "title": "Android 多媒体管线性能",
-    "chapter": "8.8",
-    "section": "8.8",
-    "status": "ready-for-review",
-    "pipeline_stage": "task6_pending",
-    "task6_state": "revisiting",
-    "task6_result": "pass-light-edit",
-    "task9_state": "pending",
-    "task9_result": "needs-rework",
-    "task2b_state": "fixed",
-    "task2b_result": "fixed",
-    "reviewed_date": "2026-04-20",
-    "reviewed_by": "openclaw-task6",
-    "last_task2b_at": "2026-04-21T03:10:05+08:00"
-  },
-  "src/part3-tools/ch14-other-tools/08-gpu-debug-tools.md": {
-    "path": "src/part3-tools/ch14-other-tools/08-gpu-debug-tools.md",
-    "title": "GPU 图形调试与分析工具",
-    "chapter": "14.8",
-    "section": "14.8",
-    "status": "ready-for-review",
-    "pipeline_stage": "task6_pending",
-    "task6_state": "revisiting",
-    "task6_result": "needs-rework",
-    "task9_state": "pending",
-    "task2b_state": "fixed",
-    "task2b_result": "fixed",
-    "reviewed_date": "2026-04-14",
-    "reviewed_by": "openclaw-task6",
-    "last_task2b_at": "2026-04-21T03:10:05+08:00"
-  },
-  "src/part3-tools/ch14-other-tools/09-camera-performance-analysis.md": {
-    "path": "src/part3-tools/ch14-other-tools/09-camera-performance-analysis.md",
-    "title": "Android Camera 性能与 Perfetto 分析",
-    "chapter": "14.9",
-    "section": "14.9",
-    "status": "ready-for-review",
-    "pipeline_stage": "task6_pending",
-    "task6_state": "revisiting",
-    "task6_result": "needs-rework",
-    "task9_state": "pending",
-    "task2b_state": "fixed",
-    "task2b_result": "fixed",
-    "reviewed_date": "2026-04-14",
-    "reviewed_by": "openclaw-task6",
-    "last_task2b_at": "2026-04-21T03:10:05+08:00"
   }
 }
