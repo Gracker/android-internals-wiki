@@ -1407,6 +1407,76 @@
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-21T11:16:00+08:00",
       "status": "pending"
+    },
+    {
+      "section": "11.1",
+      "section_title": "Android 功耗模型",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 把设置页耗电百分比和 ODPM 一律写成 power_profile 校准路径，与 EnergyConsumer / BatteryUsageStats 的实际归属链路矛盾。",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "原理断裂/交叉引用",
+          "location": "L172-L190 / L473-L475",
+          "detail": "前文已说明 CpuPowerCalculator / ScreenPowerCalculator 在有 EnergyConsumer 时会优先使用硬件能量数据，但“误区一”又把设置页 App 耗电百分比一概写成 power_profile 估算值，和当前 BatteryUsageStats 路径矛盾。",
+          "suggestion": "改成“设置页结果取决于组件是否拿到硬件 energy data；缺失时才回退到 power_profile 估算”，并补一小段区分 CPU / Screen / WiFi 等组件回退条件。"
+        },
+        {
+          "type": "原理断裂",
+          "location": "L333-L352 / L489-L491",
+          "detail": "ODPM 段前文已写到 EnergyConsumerResult 可带 attribution 并被 BatteryUsageStats 消费，但“误区五”又把 ODPM 解释成“校准 power_profile 参数”的工具，弱化了硬件能量数据直接进入归属链路的事实。",
+          "suggestion": "把 ODPM 关系改成“提供 meter / energy consumer 读数，Framework 在可用时直接消费；power_profile 只在缺失硬件数据时兜底”。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-04-21T12:29:00+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "16.5",
+      "section_title": "Android 17 (API 37) 性能行为变更与适配方法",
+      "priority": 95,
+      "reason": "[Deep Tech Review] ProfilingTrigger、cleartext、JobScheduler 与 ECH/CT 的 API37 行为边界写错，当前章节会把 Android 17 适配方向带偏。",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误/原理断裂",
+          "location": "L154-L177",
+          "detail": "ProfilingTrigger 段把 system trigger 写成“默认开启、无需代码”，且把 TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE 的输出写成 system trace。官方 features / reference 说明仍需通过 ProfilingManager 注册 trigger-based capture，且该触发器返回 call stack sample。",
+          "suggestion": "补 trigger-based capture 的注册流程，修正各 trigger 的输出类型，区分 COLD_START 的 stack sample + system trace 与 KILL_EXCESSIVE_CPU_USAGE 的 call stack sample。"
+        },
+        {
+          "type": "版本差异",
+          "location": "L281-L292 / L401",
+          "detail": "`usesCleartextTraffic` 被写成 Android 17 / API 37 立即生效的默认阻断。Android 17 release notes 写的是“将在未来 release 中弃用，按 future SDK gate 生效”，当前 API 37 不应描述成已强制切换。",
+          "suggestion": "改成“Android 17 先发布弃用信号，建议迁移到 Network Security Configuration”，如果要写默认阻断必须注明 future SDK gate 和来源。"
+        },
+        {
+          "type": "版本差异/能力边界",
+          "location": "L298-L300",
+          "detail": "ECH 段把 HttpEngine / WebView 写成“已支持”，而官方 features 页写的是这些库预计在后续更新中集成平台 API。当前写法把平台能力和库落地状态混为一谈。",
+          "suggestion": "改成“平台已提供 API，具体库需看各自版本何时接入”，并给出按库版本核验的落点。"
+        },
+        {
+          "type": "原理断裂",
+          "location": "L304-L306",
+          "detail": "CT 段把验证过程写成“额外请求 CT Log 服务器”，容易误导读者以为每次 HTTPS 建连都会多一次网络往返。CT 更常见的是校验证书内嵌或握手携带的 SCT，客户端不一定额外发请求。",
+          "suggestion": "把性能说明改成“CT 主要增加证书 / SCT 校验约束，是否额外网络往返取决于证书链和服务器交付方式”，不要给固定 50ms 结论。"
+        },
+        {
+          "type": "源码错误",
+          "location": "L193-L196",
+          "detail": "`getPendingJobReasonStats()` 被写成返回含 Job ID、原因分类、累计等待时间的“记录”。实际 API 是 `JobScheduler.getPendingJobReasonStats(int jobId)`，返回某个指定 job 的 `Map<Integer, Duration>`。",
+          "suggestion": "按真实签名改写，并补上它与 `getPendingJobReasonsHistory()` / `getPendingJobReasons()` 的关系。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-04-21T12:29:00+08:00",
+      "status": "pending"
     }
   ]
 }

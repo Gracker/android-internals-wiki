@@ -4275,3 +4275,29 @@
 - **位置**：L159-L171 / L257-L259
 - **问题**：Adreno / Mali / Xclipse 在 Perfetto 中的 `gpu_render_stages` 完整度排序缺少 trace 配置、设备型号、驱动版本或数据源依赖说明，读者难以判断这是不是工具链差异还是厂商实现差异。
 - **建议**：补充至少一组设备 + Android 版本 + trace config 的对照，或把这些结论降格为“经验观察，依设备和驱动而变”。
+
+## [Task9 Deep Review] 10.7 SQLite/Room 数据库性能优化 — 2026-04-21
+- **类型**：数据缺失
+- **位置**：L240
+- **问题**：`10x-100x` 的批量插入收益写成固定量级，但正文没有给出设备、SQLite 版本、表结构、行大小、事务大小等测试条件，读者无法判断适用边界。
+- **建议**：补一组最小 benchmark 条件，或改成“量级取决于事务批次、fsync 成本和闪存介质”的定性结论。
+- **类型**：源码准确性
+- **位置**：L301-L303
+- **问题**：把 `SCAN TABLE USING INDEX` 直接解释成“索引扫描，正常”，会弱化 `SCAN` 仍可能表示遍历整张表或整棵索引的事实。SQLite 官方 EQP 文档把 `SEARCH` 才定义为“只访问子集行”。
+- **建议**：补一句“SCAN USING INDEX 仍可能是全索引遍历，只有 SEARCH 才表示按谓词缩小了访问范围”，避免把是否用到索引和是否高效混成一件事。
+- **类型**：版本差异
+- **位置**：L330
+- **问题**：`synchronous=NORMAL` 的风险边界写成“只有系统崩溃后可能丢失最近一次检查点后的事务”，范围过窄。SQLite 文档写的是 WAL + NORMAL 在 power loss 或 system crash 后都可能回滚最近提交事务，但不会损坏数据库一致性。
+- **建议**：把 durability 边界改成“可能在掉电或系统崩溃后回滚最近提交事务，但数据库仍保持一致”，并去掉“最近一次检查点之后”这种过窄表述。
+
+## [Task9 Deep Review] 11.1 Android 功耗模型 — 2026-04-21
+- **类型**：源码准确性
+- **位置**：L95-L102 / L158
+- **问题**：当前 `power_profile.xml` 结构示例沿用了 `screen.on`、`screen.full`、`cpu.speeds` 这类旧式键名，而 Android 16 公共示例文件已经以 `screen.on.display0`、`screen.full.display0`、`cpu.speeds.cluster0` 为主。正文虽标注“简化示例”，但没提醒这是 legacy schematic，容易让读者按旧键名去对照新文件。
+- **建议**：把示例明确标成“简化 / 旧式示意”，或直接替换成带 display / cluster 后缀的现代命名。
+
+## [Task9 Deep Review] 16.5 Android 17 (API 37) 性能行为变更与适配方法 — 2026-04-21
+- **类型**：数据缺失
+- **位置**：L314-L354
+- **问题**：Cloud Compilation / AutoFDO 小节写入了大量安装提速和内核性能数字，但 frontmatter 没有提供对应的一手官方来源，且这段内容与“API 37 行为变更”边界不够清楚。
+- **建议**：补齐官方 blog / release note / AOSP 变更锚点；如果拿不到一手来源，建议把这段降格为“平台演进背景”并移出 API 37 行为变更主干。
