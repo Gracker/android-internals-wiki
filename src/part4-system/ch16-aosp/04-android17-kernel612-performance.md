@@ -8,7 +8,7 @@ drafted_by: "openclaw-task2a"
 reviewed_date: "2026-04-17"
 reviewed_by: "openclaw-task6"
 task6_result: pass-light-edit
-task6_state: revisiting
+task6_state: reviewed
 task9_state: pending
 task9_result: "needs-rework"
 last_task9_at: "2026-04-21T04:38:00+08:00"
@@ -255,7 +255,7 @@ Kernel 6.12 的优化在 Perfetto 中有多个可观测维度：
 
 从 Android 16 到 17 的存储栈优化是累积性的：Android 16 开始了 F2FS 的 Folio 转换（将 page-based 操作迁移到 folio-based，减少 `get_page()` 的调用次数），Android 17 在此基础上叠加了 Checkpoint Merge。
 
-调度器方面，EEVDF 从可选到默认的改变，直接作用在使用 6.12 GKI release build 的 Android 17 设备上。
+调度器方面，Kernel 6.12 的 EEVDF 从可选到默认的改变，直接作用在使用对应 GKI release build 的 Android 17 设备上。
 
 ## 常见问题与误区
 

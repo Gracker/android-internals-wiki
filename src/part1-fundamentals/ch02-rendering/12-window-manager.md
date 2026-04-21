@@ -205,6 +205,50 @@ WMS 侧的执行过程不能简化成“`relayoutWindow()` 直接调 `performLay
 | 首帧、窗口 resize、Insets 变化 | 是 | App 主线程 Binder 等待，加 system_server Binder / DisplayThread 配套工作 |
 | 安全属性变更走 `relayoutAsync()` | 异步 | 当前帧轻量 traversal，后续 `W.resized()` 回调触发下一轮布局 |
 
+
+### scheduleTraversals() 与 performTraversals() 的职责边界
+
+`ViewRootImpl.scheduleTraversals()` 是 App 侧调度入口，不跨进程。它向 Choreographer 投递 `TraversalRunnable`，在下一次 VSync 时触发 `doTraversal()` → `performTraversals()`。真正的 WMS 跨进程调用只发生在 `performTraversals()` 内部条件满足时。
+
+**关键源码路径**（android-14，`ViewRootImpl.java`）：
+
+```java
+// 调度入口 — App 进程内，不跨进程
+void scheduleTraversals() {
+    if (!mTraversalScheduled) {
+        mTraversalScheduled = true;
+        mChoreographer.postCallback(Choreographer.CALLBACK_TRAVERSAL,
+                mTraversalRunnable, null);
+    }
+}
+
+// performTraversals 内部的条件判断 — 跨进程阈值
+final boolean relayoutRequested = mFirst || windowShouldResize
+        || viewVisibilityChanged || insetsChanged || params != null
+        || mForceNextWindowRelayout;
+
+if (relayoutRequested) {
+    // 这里才跨进程 → WMS
+    relayoutWindow(mAttributes, viewVisibilityChanged, insetsFlags, ...);
+}
+```
+
+**因此**：`requestLayout()` → `scheduleTraversals()` → `performTraversals()`，全程在 App 进程内执行；只有当窗口尺寸、Insets 或属性实际变化时，才在 `performTraversals()` 内部触发 `relayoutWindow()` 跨进程调用 WMS。
+
+**Perfetto 区分矩阵**：
+
+| Slice 名称 | 进程 | 线程 | 含义 |
+|-----------|------|------|------|
+| `ViewRootImpl#doTraversal` | App | UI Thread | App 侧 measure/layout/draw 调度 |
+| `ViewRootImpl#performTraversals` | App | UI Thread | 完整 measure+layout+draw，内可能嵌套 `relayoutWindow` |
+| `relayoutWindow` | system_server | WMS 线程 | WMS 侧 Window 属性更新，跨进程入口 |
+
+**时序判读**：
+- WMS 发起 → App：`relayoutWindow` 先于 `doTraversal`（键盘弹出、屏幕旋转等系统事件）
+- App 发起 → WMS：`performTraversals` 内嵌套 `relayoutWindow`（App 的 LayoutParams 变化驱动）
+
+<!-- AIW-源码调研-2026-04-21 -->
+
 ### 在 Perfetto 中的表现
 
 看 WMS 相关 trace，先确认 capture 配置里是否打开了 `wm`、`view`、`am`、`input`、`gfx`、`surfaceflinger` 这些类别。没有这些类别时，system_server 侧只会留下零散 Binder slice，很难还原 relayout 路径。

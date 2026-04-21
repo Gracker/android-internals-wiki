@@ -6,8 +6,8 @@ status: ready-for-review
 drafted_date: "2026-04-03"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 5.0 (API 21) - Android 16 (API 36)"
-last_verified: "2026-04-03"
-last_verified_against: "AOSP android-16.0.0_r1"
+last_verified: "2026-04-21"
+last_verified_against: "GitHub upstream READMEs + Firebase docs + AndroidX docs"
 confidence: medium
 sources:
   - type: blog
@@ -20,9 +20,27 @@ sources:
     path: "https://github.com/didi/Booster (滴滴 Booster)"
   - type: blog
     path: "https://github.com/iqiyi/xHook (爱奇艺 xHook)"
+  - type: blog
+    path: "https://github.com/square/leakcanary (Square LeakCanary)"
+  - type: blog
+    path: "https://github.com/bytedance/btrace (字节 btrace / RheaTrace)"
+  - type: official
+    path: "https://firebase.google.com/docs/perf-mon (Firebase Performance Monitoring)"
+  - type: blog
+    path: "https://github.com/measure-sh/measure (Measure)"
+  - type: blog
+    path: "https://github.com/didi/DoKit (滴滴 DoKit)"
 tags:
   - android
   - research
+  - apm
+  - observability
+  - tracing
+related_chapters:
+  - "14.12"
+  - "14.13"
+  - "15.5"
+  - "15.9"
 pipeline_stage: task6_pending
 task6_state: revisiting
 task9_state: pending
@@ -33,6 +51,8 @@ reviewed_date: "2026-04-14"
 task6_result: needs-rework
 task2b_result: fixed
 last_task2b_at: "2026-04-21T19:51:48+08:00"
+repaired_date: "2026-04-21"
+repaired_by: "codex"
 ---
 
 
@@ -47,6 +67,7 @@ last_task2b_at: "2026-04-21T19:51:48+08:00"
 - 🔹 KOOM（快手）：Java/Native 内存泄漏检测
 - 🔹 Booster（滴滴）：编译期优化插件
 - 🔹 Anchors / AppInit 等启动优化框架
+- 🔹 LeakCanary、btrace、Firebase Performance、Measure、DoKit 的定位差异
 - 🔹 各工具的核心原理、优缺点对比
 
 ### 扩展（可选深入）
@@ -68,6 +89,18 @@ last_task2b_at: "2026-04-21T19:51:48+08:00"
 我们在前面几章介绍了 Perfetto、Simpleperf、Android Studio Profiler 等官方工具。这些工具能力强大，但有一个共同的局限：它们主要服务于线下分析场景。当我们需要在线上（生产环境）监控真实用户的性能数据、在灰度阶段快速定位特定用户的卡顿问题、或者在编译期自动扫描潜在性能陷阱时，就需要借助三方性能库了。
 
 本章介绍的工具和 Perfetto 互补，覆盖的是线上监控、自动检测、编译期预防这些场景。理解每个工具的核心原理和适用场景，能帮助我们在合适的时机选对工具组合。
+
+## 先按层看三方性能库
+
+很多团队第一次整理“性能库清单”时，会把所有名字堆在一起。但实际落地时，至少要先分三层：
+
+| 层次 | 代表方案 | 更接近什么 |
+|---|---|---|
+| **官方基础能力** | JankStats、FrameMetrics、ApplicationExitInfo | 指标与系统回调，不是完整 APM |
+| **客户端 SDK / 组件** | Matrix、KOOM、LeakCanary、btrace、DoKit | 在 App 里负责采集或研发诊断 |
+| **平台 / 可观测性方案** | Firebase Performance、Measure | 聚合、展示、分析、告警 |
+
+先把这一层分清楚，后面的选型才不会变成“哪个库名更响就接哪个”。
 
 ## Matrix：微信的全链路性能监控
 
@@ -210,6 +243,45 @@ Booster 基于 Transform API 的经典方案也有局限。Transform API 在 AGP
 在实际项目中，选择哪个框架不如理解背后的设计原则重要：**任务颗粒化、依赖显式化、并行最大化、监控可量化**。即使不引入三方框架，团队也应该按这个思路组织自己的启动任务。
 
 [待验证: 各框架的最新维护状态]
+
+## 再补几类经常被漏掉的工具
+
+### LeakCanary：研发期最顺手的内存放大镜
+
+`LeakCanary` 不是泛用线上 APM，而是开发和测试阶段最实用的内存泄漏分析工具之一。它最大的价值，不是大规模在线上监控，而是能在本地把对象引用链解释得非常清楚。
+
+放到这本书里，最好把它和 `KOOM` 分开写：
+
+- `LeakCanary`：更偏本地调试和研发自查
+- `KOOM`：更偏线上内存治理和生产环境取证
+
+这两者是互补，不是互斥。
+
+[已验证: github.com/square/leakcanary]
+
+### Firebase Performance：平台型方案的最小样本
+
+`Firebase Performance Monitoring` 的优点是接入成本低、启动 / 渲染 / HTTP 监控开箱即用，适合快速建立“线上能看到一些性能指标”的基础盘。它的边界也很明显：对复杂归因、私有化部署、自定义 trace 流程的控制不如自建方案灵活。
+
+在本章里，它更适合被当成“平台型 APM”的典型代表，而不是和 `Matrix`、`KOOM` 按同一种维度比较。
+
+[已验证: firebase.google.com/docs/perf-mon]
+
+### Measure：自托管的移动可观测性平台
+
+`Measure` 的价值在于它不只是一个客户端 SDK，而是一整套以 session timeline 为中心的移动可观测性平台：把点击、导航、HTTP、log、crash、ANR 和 trace 放进同一个会话视角里。
+
+对已经跨过“只想看单项指标”的团队来说，这类平台更接近真正的线上治理底座。
+
+[已验证: github.com/measure-sh/measure]
+
+### DoKit：研发助手，不要误写成纯线上 APM
+
+`DoKit` 的覆盖面很广，FPS、启动耗时、网络、沙盒浏览、各种研发辅助能力都在里面。它对开发和测试现场非常有价值，但定位更接近“研发工具箱”，而不是面向生产环境的大规模线上 APM。
+
+把它和 `Firebase Performance`、`Measure` 完全写成同一类工具，会让读者误判其使用场景。
+
+[已验证: github.com/didi/DoKit]
 
 ## 扩展：Rhea / btrace —— 字节跳动的 Trace 工具
 
