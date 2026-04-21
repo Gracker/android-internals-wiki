@@ -23,12 +23,16 @@ sources:
     path: "frameworks/base/core/java/android/hardware/camera2/impl/CameraMetadataNative.java"
 tags: ['camera', 'perfetto', 'buffer-queue', 'preview-stutter', 'hal3']
 related_chapters: ["2.13", "13.5", "11.2", "4.3"]
-pipeline_stage: task6_pending
+pipeline_stage: task2b_pending
 task6_state: revisiting
 task6_result: needs-rework
-task9_state: pending
-task2b_state: fixed
+task9_state: reviewed
+task2b_state: pending
 task2b_result: fixed
+task9_result: needs-rework
+last_task9_at: "2026-04-21T18:42:00+08:00"
+task9_reviewed_by: openclaw-task9
+task9_reviewed_date: "2026-04-21"
 ---
 
 # 14.9 Android Camera 性能与 Perfetto 分析
