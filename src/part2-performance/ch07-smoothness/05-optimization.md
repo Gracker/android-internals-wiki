@@ -4,8 +4,8 @@ section: "7.5"
 chapter: "7.5"
 status: ready-for-review
 drafted_by: "openclaw-task2a"
-reviewed_date: "2026-04-20"
-reviewed_by: "openclaw-task6"
+reviewed_date: "2026-04-21"
+reviewed_by: openclaw-task6
 task6_result: pass-light-edit
 applicable_versions: "Android 5.0 (API 21) - Android 16 (API 36)"
 last_verified: "2026-04-20"
@@ -41,8 +41,8 @@ polish_by: "task2b-polish"
 rework_count: 1
 rework_date: "2026-04-09"
 rework_by: "task2b-rework"
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task9_result: needs-rework
 task2b_state: fixed
@@ -178,7 +178,7 @@ RecyclerView 1.4.0 已把 adaptive refresh rate 支持接到滚动路径上。�
 
 ### RecyclerView 卡顿在 Perfetto 中的定位
 
-在 Perfetto 中排查 RecyclerView 滑动卡顿，重点看三个 Track。首先是主线程的 `ui_thread` Track，在 doFrame 的调用栈中搜索 `onBindViewHolder` 或 `onCreateViewHolder`，如果它们的耗时超过 1ms，说明绑定或创建逻辑太重。其次是 `RenderThread` Track，如果主线程的 doFrame 很快完成，但 RenderThread 耗时突增，说明瓶颈更可能在渲染本身，比如 item 布局过于复杂。第三是 FrameMetrics 的 `FrameTimeline` Track，持续观察整段滑动过程中的帧时间分布。如果大量帧超过 VSync 周期（120Hz 设备为 8.33ms），且对应的调用栈集中在 RecyclerView 相关方法上，这一段就是优化重点。[图：RecyclerView 高速滑动时，主线程出现 `onBindViewHolder` / `onCreateViewHolder` 长 slice，对应 `FrameTimeline` 中连续超时帧]
+在 Perfetto 中排查 RecyclerView 滑动卡顿，重点看三个 Track。第一是主线程的 `ui_thread` Track，在 doFrame 的调用栈中搜索 `onBindViewHolder` 或 `onCreateViewHolder`，如果它们的耗时超过 1ms，说明绑定或创建逻辑太重。第二是 `RenderThread` Track，如果主线程的 doFrame 很快完成，但 RenderThread 耗时突增，说明瓶颈更可能在渲染本身，比如 item 布局过于复杂。第三是 FrameMetrics 的 `FrameTimeline` Track，持续观察整段滑动过程中的帧时间分布。如果大量帧超过 VSync 周期（120Hz 设备为 8.33ms），且对应的调用栈集中在 RecyclerView 相关方法上，这一段就是优化重点。[图：RecyclerView 高速滑动时，主线程出现 `onBindViewHolder` / `onCreateViewHolder` 长 slice，对应 `FrameTimeline` 中连续超时帧]
 
 ## 渲染优化：减少 Overdraw、Hardware Layer、Canvas 简化
 
@@ -249,7 +249,7 @@ Binder 是 Android 进程间通信的核心机制（详见 [1.4 Binder IPC](04-b
 
 [已验证: 官方文档, developer.android.com/reference/android/content/ContentProvider — 批量操作减少跨进程调用次数]
 
-最后，对于不需要返回值的场景（如日志上报、状态通知），使用 AIDL 的 `oneway` 关键字让调用异步化——调用方不会阻塞等待对端执行完毕，而是直接返回。
+对于不需要返回值的场景（如日志上报、状态通知），使用 AIDL 的 `oneway` 关键字让调用异步化——调用方不会阻塞等待对端执行完毕，而是直接返回。
 
 在 Perfetto 中观察同步 Binder 延迟，不要把 `linux.ftrace/binder_transaction` 当成主线程上的长 slice。它只是事务事件，不能直接拿来读 thread duration。更可靠的做法有两条：一条是打开 Android Binder / Transactions 轨道，直接看同步事务对应的阻塞时间；另一条是回到主线程的调用栈，观察它是否卡在 `binder_thread_read` 或 `ioctl(BINDER_WRITE_READ)`，再和服务端 binder 线程的 Running / Runnable 状态对起来。只有当这些阻塞恰好落在 `doFrame`、`dispatchTouchEvent()` 或启动关键路径里时，这笔 Binder 开销才值得优先处理。[图：主线程 `doFrame` 中卡在 `ioctl(BINDER_WRITE_READ)`，同时 Android Binder / Transactions 轨道出现对应同步事务]
 

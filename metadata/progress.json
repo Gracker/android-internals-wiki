@@ -48,8 +48,8 @@
     },
     "task6_state_counts": {
       "unknown": 30,
-      "reviewed": 107,
-      "revisiting": 68,
+      "reviewed": 110,
+      "revisiting": 65,
       "pending": 1
     },
     "task9_state_counts": {
@@ -1402,8 +1402,8 @@
       "title": "卡顿分析方法论",
       "chapter": "7.3",
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "revisiting",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
       "task9_state": "pending",
       "task2b_state": "fixed",
       "reviewed_date": "2026-04-15",
@@ -1411,7 +1411,8 @@
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
-      "section": "7.3"
+      "section": "7.3",
+      "task6_reviewed_date": "2026-04-21"
     },
     "src/part2-performance/ch07-smoothness/04-typical-scenarios.md": {
       "path": "src/part2-performance/ch07-smoothness/04-typical-scenarios.md",
@@ -1434,8 +1435,8 @@
       "title": "优化策略",
       "chapter": "7.5",
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "revisiting",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
       "task9_state": "pending",
       "task2b_state": "fixed",
       "reviewed_date": "2026-04-20",
@@ -1446,7 +1447,8 @@
       "task9_reviewed_date": "2026-04-20",
       "task9_reviewed_by": "openclaw-task9",
       "last_task9_at": "2026-04-20T13:38:00+08:00",
-      "section": "7.5"
+      "section": "7.5",
+      "task6_reviewed_date": "2026-04-21"
     },
     "src/part2-performance/ch07-smoothness/06-case-studies.md": {
       "path": "src/part2-performance/ch07-smoothness/06-case-studies.md",
@@ -1541,8 +1543,8 @@
       "title": "WebView 渲染性能与优化",
       "chapter": "7.11",
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "revisiting",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
       "task9_state": "pending",
       "task2b_state": "fixed",
       "reviewed_date": "2026-04-20",
@@ -1553,7 +1555,8 @@
       "task9_reviewed_date": "2026-04-20",
       "task9_reviewed_by": "openclaw-task9",
       "last_task9_at": "2026-04-20T14:50:48+08:00",
-      "section": "7.11"
+      "section": "7.11",
+      "task6_reviewed_date": "2026-04-21"
     },
     "src/part2-performance/ch07-smoothness/12-view-layout-performance.md": {
       "path": "src/part2-performance/ch07-smoothness/12-view-layout-performance.md",
