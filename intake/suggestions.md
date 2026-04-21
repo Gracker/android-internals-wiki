@@ -4309,3 +4309,22 @@
 - **问题**：章节仅有目录清单，缺少导读内容，读者无法快速理解方法论章节的整体框架和各子章节关系
 - **建议**：补充章节导读，将方法论的道法术和具体落地章节进行串联
 - **来源**：Gemini 外部 review (2026-04-20-15-README-external-review.md)
+
+
+## [Task9 Deep Review] 10.1 App 内存分析 — 2026-04-21
+- **类型**：数据缺失
+- **位置**：L279-L283
+- **问题**：Perfetto SQL 直接假设 `process_counter_track.name = 'mem.android.graphics'` 在所有 trace 中稳定存在，但章节没有说明该计数器依赖具体 data source / 设备实现，缺少可复现 trace 样本。
+- **建议**：补一个实际 trace 截图，或增加 `SELECT DISTINCT process_counter_track.name ...` 的探测步骤，并注明 Track 名称可能随数据源和设备实现变化。
+
+## [Task9 Deep Review] 17.3 行业案例 — 2026-04-21
+- **类型**：数据缺失
+- **位置**：L107-L113
+- **问题**：`传统 DVFS ≈ 200ms`、`ADPF ≈ 30-50ms` 被写成通用事实，但 frontmatter 与正文都没有给出可复现实验、芯片范围或一手论文/厂商材料。
+- **建议**：若拿不到可复现 Perfetto/benchmark 证据，建议降格为定性比较，并明确“具体时延依赖 SoC、governor、thermal/power HAL 实现”。
+
+## [Task9 Deep Review] 17.3 行业案例 — 2026-04-21
+- **类型**：交叉引用/来源治理
+- **位置**：frontmatter sources + 参考资料
+- **问题**：`Google Case Study: TikTok Android performance optimization (2022)` 不是可直接访问的 URL，参考资料末尾还混入与 OEM/性能案例无直接关系的条目，案例证据链不闭合。
+- **建议**：按案例逐条补齐可访问 URL 或明确归档路径，移出无关参考资料，避免把素材池当作章节证据链。

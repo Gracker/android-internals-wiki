@@ -1,32 +1,32 @@
 {
-  "generated_at": "2026-04-21T13:17:26+08:00",
+  "generated_at": "2026-04-21T13:57:22+08:00",
   "state_machine_version": "v2",
   "total_sections": 206,
   "metrics": {
     "total": 206,
     "unknown": 31,
-    "last_updated": "2026-04-21T13:17:26+08:00",
+    "last_updated": "2026-04-21T13:57:22+08:00",
     "task2b_state_counts": {
       "unknown": 31,
       "fixed": 139,
-      "pending": 24,
-      "idle": 12
+      "pending": 27,
+      "idle": 9
     },
     "task9_state_counts": {
       "unknown": 30,
-      "reviewed": 63,
-      "pending": 112,
+      "reviewed": 66,
+      "pending": 109,
       "fixed": 1
     },
     "pipeline_stage_counts": {
       "unknown": 30,
-      "task6_pending": 78,
-      "task2b_pending": 21,
+      "task6_pending": 75,
+      "task2b_pending": 24,
       "ready-to-publish": 30,
       "task9_pending": 47
     },
     "pipeline_task9_pending": 47,
-    "pipeline_task2b_pending": 21,
+    "pipeline_task2b_pending": 24,
     "pipeline_ready_to_publish": 30,
     "ready-to-publish": 0,
     "finalized": 30,
@@ -35,16 +35,16 @@
   "pipeline": {
     "pipeline_stage_counts": {
       "unknown": 30,
-      "task6_pending": 78,
-      "task2b_pending": 21,
+      "task6_pending": 75,
+      "task2b_pending": 24,
       "ready-to-publish": 30,
       "task9_pending": 47
     },
     "task2b_state_counts": {
       "unknown": 31,
       "fixed": 139,
-      "pending": 24,
-      "idle": 12
+      "pending": 27,
+      "idle": 9
     },
     "task6_state_counts": {
       "unknown": 30,
@@ -54,8 +54,8 @@
     },
     "task9_state_counts": {
       "unknown": 30,
-      "reviewed": 63,
-      "pending": 112,
+      "reviewed": 66,
+      "pending": 109,
       "fixed": 1
     }
   },
@@ -1923,14 +1923,18 @@
       "title": "App 内存分析",
       "chapter": "10.1",
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
-      "task9_state": "pending",
-      "task2b_state": "idle",
+      "task9_state": "reviewed",
+      "task2b_state": "pending",
       "reviewed_date": "2026-04-15",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
-      "section": "\"10"
+      "task9_result": "needs-rework",
+      "task9_reviewed_date": "2026-04-21",
+      "task9_reviewed_by": "openclaw-task9",
+      "last_task9_at": "2026-04-21T13:57:22+08:00",
+      "section": "10.1"
     },
     "src/part2-performance/ch10-memory-perf/02-memory-leak.md": {
       "path": "src/part2-performance/ch10-memory-perf/02-memory-leak.md",
@@ -3089,13 +3093,17 @@
       "title": "各 Android 版本性能变更追踪",
       "chapter": "16.2",
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
-      "task9_state": "pending",
-      "task2b_state": "idle",
+      "task9_state": "reviewed",
+      "task2b_state": "pending",
       "reviewed_date": "2026-04-17",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
+      "task9_result": "needs-rework",
+      "task9_reviewed_date": "2026-04-21",
+      "task9_reviewed_by": "openclaw-task9",
+      "last_task9_at": "2026-04-21T13:57:22+08:00",
       "section": "16.2"
     },
     "src/part4-system/ch16-aosp/03-aosp-build.md": {
@@ -3193,13 +3201,17 @@
       "title": "行业案例",
       "chapter": "17.3",
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
-      "task9_state": "pending",
-      "task2b_state": "idle",
+      "task9_state": "reviewed",
+      "task2b_state": "pending",
       "reviewed_date": "2026-04-17",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
+      "task9_result": "needs-rework",
+      "task9_reviewed_date": "2026-04-21",
+      "task9_reviewed_by": "openclaw-task9",
+      "last_task9_at": "2026-04-21T13:57:22+08:00",
       "section": "17.3"
     },
     "src/part4-system/ch17-oem/README.md": {

@@ -1,7 +1,6 @@
 ---
 title: "各 Android 版本性能变更追踪"
 chapter: "16.2"
-status: ready-for-review
 drafted_date: "2026-04-04"
 last_verified: "2026-04-04"
 last_verified_against: "developer.android.com behavior-changes + API reference"
@@ -27,13 +26,19 @@ sources:
     path: "android-developers.googleblog.com (ADPF updates)"
 tags: ['version-changes', 'behavior-changes', 'api-evolution', 'migration', 'performance-api']
 related_chapters: ["1.6", "2.9", "4.6", "5.7", "6.4", "9.2", "13.1", "14.7"]
-pipeline_stage: task6_pending
 task6_state: reviewed
 task6_result: pass-light-edit
-task9_state: pending
-task2b_state: idle
 reviewed_by: openclaw-task6
 reviewed_date: "2026-04-17"
+section: "16.2"
+status: ready-for-review
+pipeline_stage: task2b_pending
+task9_state: reviewed
+task9_result: needs-rework
+task2b_state: pending
+task9_reviewed_by: "openclaw-task9"
+task9_reviewed_date: "2026-04-21"
+last_task9_at: "2026-04-21T13:57:22+08:00"
 ---
 
 # 各 Android 版本性能变更追踪

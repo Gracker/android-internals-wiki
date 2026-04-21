@@ -1483,6 +1483,91 @@
       "completed_at": "2026-04-21T13:17:26+08:00",
       "completed_by": "task2b-content-processing-rework",
       "resolution": "已改写 ProfilingTrigger 的注册式触发流程，修正 JobScheduler pending reasons API 签名，收窄 cleartext/ECH/CT 的 API 37 边界，并把编译链内容降格为平台背景。"
+    },
+    {
+      "section": "10.1",
+      "section_title": "App 内存分析",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 现代 lmkd 杀进程机制被写成“基于 PSS 决策”，且 Graphics/memtrack 段把 memtrack HAL 的版本边界与引用文档写错。",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误/版本差异",
+          "location": "L98",
+          "detail": "文中称“Android 的 LMK 正是基于 PSS 来决定杀死哪个进程”。source.android 的 lmkd 文档说明 Android 10+ 的 userspace lmkd 使用 PSI monitors 检测内存压力；android-16.0.0_r1 的 lmkd.cpp 依据 oom_score_adj 筛选进程，并在 kill_heaviest_task 路径通过 proc_get_size() 读取 /proc/<pid>/statm 的 RSS 选取 victim。PSS 是 meminfo/分析指标，不是现代 lmkd 的单一决策依据。",
+          "suggestion": "改成“PSS 适合做进程内存归因与回归监控；现代 lmkd 的杀进程决策由 oom_adj、内存压力与 RSS/size 等启发式共同决定”，并给出 Android 10+ userspace lmkd 的版本边界。"
+        },
+        {
+          "type": "版本差异/源码错误",
+          "location": "L250-L265 / frontmatter sources L29",
+          "detail": "Graphics 段将 memtrack HAL 写成“从 Android 12 开始”才提供，并把验证锚点指向 source.android.com/docs/core/debug/interpreting-cpu。memtrack HAL 至少在 Android 11 的 hardware/interfaces/memtrack/1.0/IMemtrack.hal 已存在，android-16.0.0_r1 的 AIDL IMemtrack 仍暴露 getMemory()/getGpuDeviceInfo()；当前 CPU 文档链接不能支撑 Graphics 内存计量结论。",
+          "suggestion": "把“Android 12 开始”改成“Android 12 对 Graphics/DMA-BUF 记账口径继续收紧/完善”，并改引 memtrack HAL / graphics memory accounting 的一手资料。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-04-21T13:57:22+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "16.2",
+      "section_title": "各 Android 版本性能变更追踪",
+      "priority": 95,
+      "reason": "[Deep Tech Review] ProfilingManager 系统触发式 profiling 的版本边界和示例代码形态写错，headroom/ARR 小节也把 flagged API 写成了默认可用能力。",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误/版本差异",
+          "location": "L242-L253 / L342-L350",
+          "detail": "章节把 Android 16 的“第一版触发器”写成同时包含 TRIGGER_TYPE_ANR 和 TRIGGER_TYPE_COLD_START。官方 ProfilingTrigger 参考页显示：ProfilingTrigger 类 Added in API level 36，TRIGGER_TYPE_ANR Added in API level 36，但 TRIGGER_TYPE_COLD_START Added in API level 37。把冷启动触发器放进 Android 16 小节会把 API 36 与 API 37 的边界写混。",
+          "suggestion": "Android 16 只保留 ANR / APP_FULLY_DRAWN 等 API 36 触发器；把 COLD_START 移到 Android 17 演进段，并单独说明其 trace + stack sampling 组合行为。"
+        },
+        {
+          "type": "源码错误",
+          "location": "L250-L253",
+          "detail": "示例代码使用 pm.addProfilingTriggers(new ProfilingTrigger[]{...}) 和 new ProfilingTrigger(... )。官方参考页显示 addProfilingTriggers 接收 List<ProfilingTrigger>，ProfilingTrigger.Builder 是公开构造入口；当前示例的数组参数和直接构造都与公开 API 形态不符。",
+          "suggestion": "改成 List<ProfilingTrigger> + new ProfilingTrigger.Builder(triggerType).build() 的形态，并给出 registerForAllProfilingResults(...) 的结果接收方式。"
+        },
+        {
+          "type": "版本差异/原理断裂",
+          "location": "L307 / L358",
+          "detail": "Headroom/ARR 小节把这些能力写成 Android 16 上“App 可直接查询/参与决策”的默认能力。android-16.0.0_r1 的 SystemHealthManager.getCpuHeadroom()/getGpuHeadroom()、Display.hasArrSupport()、Display.getSuggestedFrameRate() 都带 @FlaggedApi；其中 headroom 方法返回 0..100 的 float、可能抛 UnsupportedOperationException，并包含同步 binder 成本。正文还把类路径写成了不存在的 developer.android.com/reference/android/os/SystemHealthManager。",
+          "suggestion": "把类路径修正为 android.os.health.SystemHealthManager，并补充“flag/device support/调用开销/异常路径”的边界，避免把 API 36 的受 flag 约束能力写成所有设备都稳定开放的通用接口。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-04-21T13:57:22+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "17.3",
+      "section_title": "行业案例",
+      "priority": 95,
+      "reason": "[Deep Tech Review] OEM 游戏优化案例把官方未文档化的 CPU 调度能力写进 Game Mode Interventions，Samsung Max Boost 机制细节也缺一手证据链。",
+      "material_paths": [
+        "intake/suggestions.md",
+        "intake/research-gaps.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误/数据缺失",
+          "location": "L127-L128",
+          "detail": "章节称 Game Mode Interventions 可对特定游戏自动应用“CPU 优化（通过调整线程调度策略）”。但官方 Game Mode interventions 文档只公开了 WindowManager backbuffer resize（downscaleFactor）和 FPS throttling/override 两类干预，没有公开 thread scheduling intervention 的接口或配置项。",
+          "suggestion": "把正文收缩到官方已公开的 downscaling / FPS throttling 机制；若要讨论 OEM 线程调度优化，需单列为“厂商私有策略”，并附一手证据。"
+        },
+        {
+          "type": "数据缺失",
+          "location": "L81-L94 / frontmatter sources",
+          "detail": "Samsung “Max Boost” 段写入了“CPU 频率天花板打开、GPU 渲染优先级提升、温控阈值放宽、kernel governor 更激进”等机制判断，但 frontmatter 没有任何可落到 Samsung 一手页面的 URL，现有证据链主要是新闻/博客二手转述。以当前证据强度不足以支撑机制级表述。",
+          "suggestion": "要么补 Samsung 官方页面、应用 release note、实际设备 UI/trace 证据，只保留可观察事实；要么把 Max Boost 降格为“市场观察”而不是技术案例主干。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-04-21T13:57:22+08:00",
+      "status": "pending"
     }
   ]
 }

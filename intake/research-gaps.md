@@ -2798,3 +2798,20 @@ Power Stats HAL（android.hardware.power.stats）接口在 Android 14/15 中的�
 
 ### 关联章节
 4.7, 10.1, 16.2
+
+
+## [2026-04-21] 17.3 行业案例 — 知识盲区
+
+### 盲区描述
+OEM 侧游戏/性能调度案例缺少可复现的一手证据链。Samsung Game Booster / Max Boost、Xiaomi Game Turbo、MTK perfservice 这类说法如果只有新闻稿和二手博客，容易把 OEM 私有策略写成 Android 通用机制。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 收集 Samsung / Xiaomi / MediaTek 的一手文档、开发者大会材料、官方 app release notes
+- 补充 OEM 设备上的 Game Mode / device_config / dumpsys 可观测证据
+- 给 OEM 私有策略与 Google 标准 API（ADPF / Game Mode Interventions）做边界表
+
+### 关联章节
+5.3, 5.4, 5.6, 17.1, 17.3
