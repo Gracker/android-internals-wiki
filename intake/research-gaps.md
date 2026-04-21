@@ -2815,3 +2815,69 @@ OEM 侧游戏/性能调度案例缺少可复现的一手证据链。Samsung Game
 
 ### 关联章节
 5.3, 5.4, 5.6, 17.1, 17.3
+
+- | 盲区 | 重要程度 | 建议研究方向 | (来自 ch16.4)
+
+- |------|---------|-------------| (来自 ch16.4)
+
+- | io_uring 在 Android 17 的安全策略与开启状态 | 中 | 查阅 Google 针对 Android 17 的 Security release notes 或 Bionic 代码库，确认 io_uring 的默认开关策略及 SELinux 限制。 | (来自 ch16.4)
+
+- 无。 (来自 ch15.4)
+
+- | 盲区 | 重要程度 | 建议研究方向 | (来自 ch15.6)
+
+- |------|--------|------------| (来自 ch15.6)
+
+- | 稳态性能测试 (Steady-state Performance) | 高 | 明确区分微观峰值性能基准与宏观稳态性能基准的设计差异，指导游戏/复杂应用开发者建立正确的测试指标。 | (来自 ch15.6)
+
+- | 盲区 | 重要程度 | 建议研究方向 | (来自 ch17.1)
+
+- |------|----------|--------------| (来自 ch17.1)
+
+- | 系统服务如何安全向冻结进程发起回调 | 高 | 调研 Android 14+ 引入的 Binder freeze 策略配置，如 `RemoteCallbackList` 中的 `FROZEN_CALLEE_POLICY_DROP` 或 `ENQUEUE_MOST_RECENT`。 | (来自 ch17.1)
+
+- | 盲区 | 重要程度 | 建议研究方向 | (来自 ch16.1)
+
+- |------|---------|-------------| (来自 ch16.1)
+
+- | Google 内部 Perfetto 回归测试管线 | 低 | 收集 Android Dev Summit 或 Google I/O 中关于 Android 团队内部如何自动化拦截性能劣化的工程实践演讲资料。 | (来自 ch16.1)
+
+- 无。 (来自 ch15.7)
+
+- 无高优盲区。文章内容已相当完备。 (来自 ch16.2)
+
+- | 盲区 | 重要程度 | 建议研究方向 | (来自 ch17.2)
+
+- |------|----------|--------------| (来自 ch17.2)
+
+- | EAS 调度器中的 `cpu_capacity` 机制 | 中 | Linux Kernel 中 `cpu_capacity_orig` 的设备树（Device Tree）标定方式，以及它是如何随 DVFS 动态折算的。 | (来自 ch17.2)
+
+- 无。 (来自 ch15.5)
+
+- | 盲区 | 重要程度 | 建议研究方向 | (来自 ch16.3)
+
+- |------|---------|-------------| (来自 ch16.3)
+
+- | Framework 修改后的 Bootloop 救援 | 中 | 总结一套标准的不刷机救援流程（stop -> push 正常 jar -> start）。 | (来自 ch16.3)
+
+- | 自定义 atrace tag | 低 | 在 Framework 中增加 `Atrace.traceBegin` 后，如何在 userdebug 机器上确保该 tag 能被 Perfetto 抓取到（涉及 atrace categories 配置）。 | (来自 ch16.3)
+
+- *(无)* (来自 ch17.3)
+
+- 无。 (来自 ch15.8)
+
+- 无。 (来自 ch15.2)
+
+- 无。 (来自 ch15.3)
+
+- | 盲区 | 重要程度 | 建议研究方向 | (来自 ch16.5)
+
+- |------|---------|-------------| (来自 ch16.5)
+
+- | DeliQueue 兼容模式与反射失效的最终 fallback | 低 | 检查 AOSP 中是否有对使用 targetSdk 37 以下应用在使用反射获取 `mMessages` 时的特殊兼容层。 | (来自 ch16.5)
+
+- | 盲区 | 重要程度 | 建议研究方向 | (来自 ch15.1)
+
+- |------|--------|------------| (来自 ch15.1)
+
+- | Macrobenchmark `CompilationMode` 控制变量的底层机制 | 高 | 研究 ART 在不同 CompilationMode 下的 JIT/AOT 行为表现，并在相关章节补充。 | (来自 ch15.1)

@@ -4340,3 +4340,147 @@
 - **位置**：L92-L95
 - **问题**：正文把 “jank 根因分析 / ANR 分析 / 自动化回归测试” 写成实际应用，但论文的 real-world case study 其实是用 SPECK 在 Google Play Top 50 上验证潜在漏洞方法的可达性，没有直接给出性能场景实验或 trace 证据。
 - **建议**：把这部分改成“潜在衍生场景”或补一段桥接条件，说明需要额外的 trace / 方法探针设计，避免让读者误以为论文已经验证了性能分析工作流。
+
+- - [P2][知识盲区][存储栈三重优化] (来自 ch16.4)
+
+- - 原文问题：`[待验证: liburing 兼容层在 Android 17 正式版中是否默认启用]` (来自 ch16.4)
+
+- - 证据或观察依据：io_uring 在 Android 上的启用一直非常谨慎，主要受限于安全漏洞历史（如 CVE-2024 等）。 (来自 ch16.4)
+
+- - 问题描述：将一个未经最终确认的兼容层作为 Android 17 确定性优化点可能误导读者。 (来自 ch16.4)
+
+- - 建议：改为“Android 17 的 Bionic libc 中实验性提供了 `liburing` 兼容层，但受限于 io_uring 的历史安全漏洞，设备厂商在量产版本中是否默认开启 io_uring 仍需通过探测系统调用（如 `/proc/sys/kernel/io_uring_disabled`）来确认，不能默认其全量可用。” (来自 ch16.4)
+
+- - [P2][数据/案例支撑][各个段落的 `[待补充]`] (来自 ch16.4)
+
+- - 原文问题：文中存在多处截图待补充标记（如 Trace 对比截图）。 (来自 ch16.4)
+
+- - 问题描述：占位符影响阅读体验。 (来自 ch16.4)
+
+- - 建议：在发布前，若无法获取真实设备的 6.12 Trace 对比，可采用文字形式描述 Trace 中的变化（例如：“在 Perfetto 的 sched track 中，可以观察到使用 EEVDF 后，doFrame 线程被低优先级后台任务抢占的切出（slice gap）显著减少”），或者直接移除占位符。 (来自 ch16.4)
+
+- 无。 (来自 ch15.4)
+
+- - [P2][原理链完整性][固定 CPU 频率] (来自 ch15.6)
+
+- - **原文问题**：给出了修改 `/sys/devices/system/cpu/cpu0/cpufreq/scaling_governor` 的 shell 命令。 (来自 ch15.6)
+
+- - **建议**：可以补充说明，如果设备已 Root，Jetpack Benchmark 库（`androidx.benchmark`）内部提供了 `LockClocks` 机制，在运行时会自动尝试锁定 CPU 频率，无需开发者手动编写 Shell 脚本干预，降低了实操门槛。 (来自 ch15.6)
+
+- 1. (来自 ch17.1)
+
+- - **[P2][数据/案例支撑][预加载与预测启动/AI预测启动]** (来自 ch17.1)
+
+- - **原文问题**：“据 OPPO 公开的数据，Trinity Engine 可以将 App 启动速度提升 28%，加载时间缩短 21%。” (来自 ch17.1)
+
+- - **证据或观察依据**：厂商发布会的营销数据通常是在极理想的实验室条件、特定白名单应用、且在特定测试模型（如热启动转冷启动测算）下得出的。 (来自 ch17.1)
+
+- - **建议**：建议加半句话说明其局限性，比如：“这些数据通常基于特定头部应用的实验室测试，普通 App 的实际提升可能会因预热命中率而打折扣。” (来自 ch17.1)
+
+- - [P2][版本差异覆盖][ART 的持续优化方向 > GC] (来自 ch16.1)
+
+- - 原文问题：“Android 17 release notes 对 generational GC 的描述也保持了这个口径，ART 的 Concurrent Mark-Compact collector 现在支持 generational GC” (来自 ch16.1)
+
+- - 证据或观察依据：Generational Concurrent Mark-Compact (Generational CMC) 结合 `userfaultfd` 实际上是从 Android 14 开始引入并逐渐成为主流的。 (来自 ch16.1)
+
+- - 问题描述：读者可能会误以为 Generational CMC 是 Android 17 才有的新特性。 (来自 ch16.1)
+
+- - 建议：建议补充说明“Generational CMC 实际上从 Android 14 开始引入并替代 CC（Concurrent Copying），Android 17 则在此基础上进一步强化了其频繁且低成本的 young generation 回收”。 (来自 ch16.1)
+
+- - [P2][数据/案例支撑][Google 内部的性能测试基础设施] (来自 ch16.1)
+
+- - 原文问题：结尾留有 `[待补充：公开演讲中关于内部 Perfetto Dashboard 与大规模设备回归的更多材料]`。 (来自 ch16.1)
+
+- - 证据或观察依据：文章结构完整，但此处留白。 (来自 ch16.1)
+
+- - 问题描述：占位符降低了完稿度。 (来自 ch16.1)
+
+- - 建议：如暂时缺乏公开资料，可直接总结 Google 依托内部 CI/CD 和大规模设备农场进行自动化 trace 抓取与比对的方法论，不必强求具体的 Dashboard 名称。 (来自 ch16.1)
+
+- 无。 (来自 ch15.7)
+
+- 无 (来自 ch16.2)
+
+- 1. (来自 ch17.2)
+
+- - **[P2][数据支撑][CPU 核心架构差异]** (来自 ch17.2)
+
+- - **原文问题**：描述天玑 9400 的配置为“3×Cortex-X4（2.85GHz）+ 4×Cortex-A720（2.0GHz）”。 (来自 ch17.2)
+
+- - **证据依据**：联发科官方及公开规格显示，天玑 9400 的 3 个 X4 大核频率为 3.3GHz，4 个 A720 能效核频率为 2.4GHz。原文的数据偏低（可能是混用了上一代或早期爆料数据）。 (来自 ch17.2)
+
+- - **建议**：更正为准确的主频数据：X4 @ 3.3GHz，A720 @ 2.4GHz。 (来自 ch17.2)
+
+- 2. (来自 ch17.2)
+
+- - **[P2][数据支撑][内存控制器与带宽差异]** (来自 ch17.2)
+
+- - **原文问题**：“Snapdragon 8 Elite 支持最高 LPDDR5X 4800MHz，理论峰值带宽约 76.8 GB/s”。 (来自 ch17.2)
+
+- - **证据依据**：4800MHz（即 9600 MT/s）和 76.8 GB/s 是骁龙 8 Gen 3 时代的顶配。骁龙 8 Elite 实际已支持更高的 LPDDR5X-10667（等效 5333MHz）标准，带宽更高。 (来自 ch17.2)
+
+- - **建议**：修正为骁龙 8 Elite 支持 LPDDR5X-10667 的规格。 (来自 ch17.2)
+
+- 无。 (来自 ch15.5)
+
+- - [P2][原理链完整性][修改 Framework 代码并验证] (来自 ch16.3)
+
+- - 原文问题：介绍了 `adb sync system` 和 `adb shell stop/start` 流程，但未提及修改 framework 导致系统无法启动（Bootloop）时的救援方案。 (来自 ch16.3)
+
+- - 证据或观察依据：在 Framework 调试中，经常会因为写错代码或打错 Log 导致 SystemServer 崩溃从而陷入 Bootloop，此时屏幕黑屏或一直卡在 Google Logo。 (来自 ch16.3)
+
+- - 问题描述：缺少 Bootloop 的快速恢复手段，新手遇到容易不知所措，甚至重新全量刷机。 (来自 ch16.3)
+
+- - 建议：补充说明：“如果修改导致 SystemServer 不断崩溃（Bootloop），可通过 `adb shell stop` 停止不断重启的框架，在 host 端回退代码并重新 `m framework`，再通过 `adb push` 覆盖错误产物，最后 `adb shell start` 即可恢复，无需重新刷机。” (来自 ch16.3)
+
+- - [P2][版本差异覆盖][常用 Debug 手段 > SystemProperties] (来自 ch16.3)
+
+- - 原文问题：“Android 16 中，Google 推荐在新增 Framework 调试开关时使用 Sysprop API...” (来自 ch16.3)
+
+- - 证据或观察依据：Sysprop API 实际上从 Android 10 开始就已引入并被推荐用于系统开发。 (来自 ch16.3)
+
+- - 问题描述：表述容易让人误以为这是 Android 16 的新特性。 (来自 ch16.3)
+
+- - 建议：微调表述为“在现代 Android 系统（特别是 Android 10 引入 Sysprop API 之后），Google 强烈推荐...”。 (来自 ch16.3)
+
+- *(无，正文的技术案例拆解极其精准，无明显缺陷)* (来自 ch17.3)
+
+- - [P2][原理链完整性][GlobalScope 协程] (来自 ch15.8)
+
+- - **原文问题**：提到“即使界面销毁了仍在执行（同时持有外部引用，造成内存泄漏）”。 (来自 ch15.8)
+
+- - **建议**：`GlobalScope` 本身最大的问题是生命周期失控（导致后台 CPU/网络资源浪费），它**只有在隐式或显式捕获了外部 Activity/View 引用时**才会导致内存泄漏。可以稍微严谨化这半句表述，如“...仍在执行，且极易因隐式捕获外部引用而造成内存泄漏”。 (来自 ch15.8)
+
+- 无明显需改进项。文章关于 `always_finish_activities` 和 `CompositionEngine` 的描述都在点上。 (来自 ch15.2)
+
+- - [P2][数据/案例支撑][Click-to-Display（点击到显示延迟）] (来自 ch15.3)
+
+- - **原文问题**：提到“Google 在内部测试中使用的标准是：触摸响应延迟应控制在 100ms 以内，超过 200ms 用户会明显感到迟钝。” (来自 ch15.3)
+
+- - **问题描述**：该数据（100ms/200ms）是业界广泛接受的 RAIL 模型（Response, Animation, Idle, Load）经验值，并非专指 Google 的“内部测试标准”，而是 Web/App 通用的用户心理学阈值。 (来自 ch15.3)
+
+- - **建议**：可稍微修正话术，指出这是基于人机交互心理学（如 RAIL 模型）的行业通行标准。 (来自 ch15.3)
+
+- - [P2][数据/案例支撑][DeliQueue 章节] (来自 ch16.5)
+
+- - 原文问题：留有 `[待补充：Perfetto Trace 截图，展示旧 MessageQueue 实现下主线程 "monitor contention with MessageQueue" 锁等待切片...]`。 (来自 ch16.5)
+
+- - 问题描述：占位符影响文章完整性。 (来自 ch16.5)
+
+- - 建议：在正式发布前补齐旧版 MessageQueue 典型锁争用的 Perfetto 截图，或者如果确实无法获得完美示例，直接用文字描述 "在 Perfetto 中搜索 `monitor contention` 切片，观察其与 `Choreographer#doFrame` 的重叠情况" 代替占位符。 (来自 ch16.5)
+
+- - [P2][知识盲区][DeliQueue 适配要点] (来自 ch16.5)
+
+- - 原文问题：留有 `[待验证：AOSP android-17-beta3 中 MessageQueue.java 的具体字段变更]`。 (来自 ch16.5)
+
+- - 问题描述：文中推测 `mMessages` 始终为 null，这种具体的 API 破坏性行为应当确认后删除 `[待验证]` 标签。 (来自 ch16.5)
+
+- - 建议：直接确认 AOSP 代码（如前几章所述，Android 17 引入了 ConcurrentMessageQueue 等实现），`mMessages` 确实因兼容性保留但不再承载实际链表。可以去掉待验证标签，改为笃定的陈述。 (来自 ch16.5)
+
+- - [P2][交叉引用一致性][性能优化之「道」 -> 持续优化] (来自 ch15.1)
+
+- - **原文问题**：“Android 12 引入了 BlastBufferQueue 替代 BufferQueue” (来自 ch15.1)
+
+- - **问题描述**：BlastBufferQueue 并不是“替代” BufferQueue。BlastBufferQueue 的引入改变了 SurfaceFlinger 的合成提交方式，Producer 端通过 BLAST 提交事务，但底层跨进程的内存流转仍然建立在 BufferQueue 之上。 (来自 ch15.1)
+
+- - **建议**：改为“Android 12 引入了 BlastBufferQueue，改变了 BufferQueue 的事务提交模式（将 Buffer 的提交合并到 WindowManager 的 SurfaceControl 事务中）”。 (来自 ch15.1)
