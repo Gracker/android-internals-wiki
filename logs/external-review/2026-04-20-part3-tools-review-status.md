@@ -21,19 +21,19 @@
 - [x] src/part3-tools/ch14-other-tools/05-third-party-libs.md
 - [x] src/part3-tools/ch14-other-tools/06-automation-tools.md
 - [x] src/part3-tools/ch14-other-tools/07-profiling-manager.md
-- [ ] src/part3-tools/ch14-other-tools/08-gpu-debug-tools.md
-- [ ] src/part3-tools/ch14-other-tools/09-camera-performance-analysis.md
-- [ ] src/part3-tools/ch14-other-tools/10-ebpf-performance-analysis.md
+- [x] src/part3-tools/ch14-other-tools/08-gpu-debug-tools.md
+- [x] src/part3-tools/ch14-other-tools/09-camera-performance-analysis.md
+- [x] src/part3-tools/ch14-other-tools/10-ebpf-performance-analysis.md
 - [x] src/part3-tools/ch14-other-tools/11-battery-historian.md
 - [x] src/part3-tools/ch14-other-tools/README.md
 
 ## Ch 15 Methodology
-- [ ] src/part3-tools/ch15-methodology/01-philosophy.md
-- [ ] src/part3-tools/ch15-methodology/02-system-vs-app.md
-- [ ] src/part3-tools/ch15-methodology/03-metrics.md
-- [ ] src/part3-tools/ch15-methodology/04-competitive-analysis.md
-- [ ] src/part3-tools/ch15-methodology/05-online-monitoring.md
-- [ ] src/part3-tools/ch15-methodology/06-testing-best-practices.md
-- [ ] src/part3-tools/ch15-methodology/07-aosp-reading.md
-- [ ] src/part3-tools/ch15-methodology/08-empirical-performance-issues.md
-- [ ] src/part3-tools/ch15-methodology/README.md
+- [x] src/part3-tools/ch15-methodology/01-philosophy.md
+- [x] src/part3-tools/ch15-methodology/02-system-vs-app.md
+- [x] src/part3-tools/ch15-methodology/03-metrics.md
+- [x] src/part3-tools/ch15-methodology/04-competitive-analysis.md
+- [x] src/part3-tools/ch15-methodology/05-online-monitoring.md
+- [x] src/part3-tools/ch15-methodology/06-testing-best-practices.md
+- [x] src/part3-tools/ch15-methodology/07-aosp-reading.md
+- [x] src/part3-tools/ch15-methodology/08-empirical-performance-issues.md
+- [x] src/part3-tools/ch15-methodology/README.md
