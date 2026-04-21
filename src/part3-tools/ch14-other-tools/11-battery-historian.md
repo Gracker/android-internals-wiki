@@ -22,6 +22,12 @@ sources:
     path: "https://developer.android.com/studio/profile/power-profiler"
   - type: official
     path: "https://developer.android.com/topic/performance/batterystats-historian"
+  - type: official
+    path: "https://developer.android.com/reference/kotlin/androidx/benchmark/macro/PowerMetric"
+  - type: official
+    path: "https://developer.android.com/jetpack/androidx/releases/benchmark"
+  - type: official
+    path: "https://source.android.com/docs/core/power/power-stats-hal"
 pipeline_stage: task6_pending
 task6_state: revisiting
 task6_result: pass-light-edit
@@ -30,6 +36,7 @@ reviewed_date: "2026-04-16"
 task9_state: pending
 task2b_state: fixed
 task2b_result: fixed
+last_task2b_at: "2026-04-21T08:24:09+08:00"
 task9_result: needs-rework
 ---
 
@@ -48,7 +55,7 @@ Android 提供了从系统级到应用级的一整套功耗分析工具链，覆
 - **Android Studio Power Profiler**（AS Hedgehog+）：基于 ODPM 硬件的实时功耗子系统可视化，适合精确关联代码行为与功耗
 - **Macrobenchmark PowerMetric**：自动化功耗基准测试，适合 CI 中的回归检测
 
-这几个工具各有侧重，不是替代关系，而是互补关系。我们在这篇里把它们串起来讲清楚——什么场景用什么工具，怎么搭配使用。
+这几个工具各有侧重，组合起来用最顺手。我们在这篇里把它们放到同一张图里讲清楚，方便按场景选工具。
 
 [图：Android 功耗分析工具链定位图——从离线分析（Battery Historian）到实时分析（Power Profiler）到自动化测试（Macrobenchmark）]
 
@@ -140,7 +147,7 @@ Battery Historian 提供的信息需要我们主动去"读"。以下是几个最
 
 > 后台 Partial Wakelock 累计持有时长在 24 小时内达到 2 小时以上。
 
-这个阈值是 Google 定义的，但任何超过预期的 Wakelock 持有时间都值得关注。在 Battery Historian 的 System Stats 面板中，可以看到每个 UID 的 Wakelock 统计：
+这个阈值是 Google 定义的，但任何超过预期的 Wakelock 持有时间都值得关注。在 Battery Historian 的 System Stats 面板中，会显示每个 UID 的 Wakelock 统计：
 
 ```
 Wake lock u0a123:my_wakelock_tag  2h 15m 30s (held)
@@ -161,7 +168,7 @@ GPS 是功耗最高的传感器之一。持续定位请求（`requestLocationUpd
 
 ### Top App CPU 时间
 
-在 Battery Historian 的 App Stats 中，可以看到每个 App 的 CPU 使用时间。这是一个相对粗糙但直观的指标：如果你的 App 在后台的 CPU 时间与前台相当，几乎可以确定存在功耗问题。
+在 Battery Historian 的 App Stats 中，会显示每个 App 的 CPU 使用时间。这是一个相对粗糙但直观的指标：如果你的 App 在后台的 CPU 时间与前台相当，几乎可以确定存在功耗问题。
 
 ### 电池电量曲线
 
@@ -243,7 +250,7 @@ adb shell dumpsys batterystats | grep -A 10 "Package com.example.app"
 
 ### ODPM 的工作原理
 
-ODPM 是 Android 10 (API 29) 引入的硬件功耗监控机制，在 Pixel 6 及后续设备上可用。它直接测量电池下游各硬件子系统的功耗，不依赖估算模型，精度远高于 Energy Profiler 的 CPU/网络/GPS 估算。
+ODPM 这条能力从 Android 10 (API 29) 的 Power Stats HAL 开始进入平台。真正能不能在 Studio 里看到 power rail，取决于设备是否实现并暴露 `android.hardware.power.stats` HAL。Pixel 6 及后续 Pixel 设备是官方文档明确列出的现成支持样本，但这不是 Pixel 独占能力，其他 OEM 机型只要实现了同一套 HAL，也可以上报对应的 rail 数据。它直接测量电池下游各硬件子系统的功耗，不依赖估算模型，精度远高于 Energy Profiler 的 CPU/网络/GPS 估算。
 
 ODPM 测量的 Power Rail 包括：
 
@@ -260,7 +267,7 @@ ODPM 测量的 Power Rail 包括：
 | UFS | 存储功耗 |
 | Sensor Core | 传感器子系统功耗 |
 
-这些数据可以在 Power Profiler 的 System Trace 视图中直接查看，与 CPU 调度、线程活动在同一个时间线上对齐——可以在同一个视图里同时看到代码行为和功耗变化的对应关系。
+这些数据可以在 Power Profiler 的 System Trace 视图中直接查看，与 CPU 调度、线程活动放在同一条时间线上，可以在同一个视图里同时看到代码行为和功耗变化的对应关系。
 
 ### Power Profiler vs Energy Profiler
 
@@ -268,7 +275,7 @@ ODPM 测量的 Power Rail 包括：
 |------|---------------------|-------------------|
 | 数据来源 | CPU/网络/GPS 活动的估算模型 | ODPM 硬件实测功耗 |
 | 精度 | 估算值，不能用于精确对比 | 实测值，可用于 A/B 测试 |
-| 设备要求 | Android 8.0+ | Pixel 6+ 且 Android 10+ |
+| 设备要求 | Android 8.0+ | Android 10+，且设备实现并暴露 Power Stats HAL（Pixel 6+ 是常见代表） |
 | 子系统粒度 | 仅 CPU/网络/GPS 三类 | 10+ 个独立 Power Rail |
 | 能否在模拟器使用 | 是（因为是估算） | 否（需要 ODPM 硬件） |
 
@@ -276,7 +283,7 @@ ODPM 测量的 Power Rail 包括：
 
 ### 使用流程
 
-1. 连接支持 ODPM 的设备（Pixel 6+）
+1. 连接支持 ODPM 的设备（典型如 Pixel 6+，或其他已实现 Power Stats HAL 的 Android 10+ 机型）
 2. 在 Android Studio 中启动 Profiler，选择 ENERGY
 3. 执行你的测试场景
 4. 在时间线上找到功耗异常的时段
@@ -289,32 +296,38 @@ ODPM 测量的 Power Rail 包括：
 
 ## Macrobenchmark PowerMetric
 
-对于需要在 CI 中自动检测功耗回归的场景，Jetpack Macrobenchmark 库从 v3 开始支持功耗指标：
+对于需要在 CI 中自动检测功耗回归的场景，`androidx.benchmark:benchmark-macro` 从 1.2.0 就开始提供实验性的 `PowerMetric`。1.3.0 又补了设备能力判断 API，便于在不支持高精度 rail 采集的设备上跳过或降级测试。
 
 ```kotlin
+@OptIn(ExperimentalMetricApi::class)
 @RunWith(AndroidJUnit4::class)
 class PowerBenchmark {
     @get:Rule
     val benchmarkRule = MacrobenchmarkRule()
 
     @Test
-    fun measureAppStartupPower() = benchmarkRule.measureRepeated(
+    fun measureAppStartupEnergy() = benchmarkRule.measureRepeated(
         packageName = "com.example.app",
         metrics = listOf(
-            PowerMetric(category = PowerMetric.Category.CPU),       // CPU 功耗
-            PowerMetric(category = PowerMetric.Category.DISPLAY),   // 屏幕功耗
-            PowerMetric(category = PowerMetric.Category.NETWORK),   // 网络功耗
+            PowerMetric(
+                type = PowerMetric.Type.Energy(
+                    mapOf(
+                        PowerCategory.CPU to PowerCategoryDisplayLevel.TOTAL,
+                        PowerCategory.DISPLAY to PowerCategoryDisplayLevel.TOTAL,
+                        PowerCategory.NETWORK to PowerCategoryDisplayLevel.TOTAL,
+                    )
+                )
+            )
         ),
         iterations = 10,
         startupMode = StartupMode.COLD
     ) {
-        // 启动 App 并执行操作
         startActivityAndWait()
     }
 }
 ```
 
-`PowerMetric` 目前是实验性 API（`@ExperimentalMetricApi`），仅在支持 ODPM 的设备上可用。它提供的是整个测试周期内各子系统的累计能耗（毫焦耳），适合做相对比较（优化前 vs 优化后），不适合做绝对值的功耗评估。
+`PowerMetric` 文档页标注为 Added in 1.2.0，运行前提是 API 29+；高精度 rail 采集仍要看设备是否支持 Power Stats HAL / ODPM。`1.3.0` 起又补了 `deviceBatteryHasMinimumCharge()`、`deviceSupportsHighPrecisionTracking()` 这类能力判断接口。它提供的是整个测试周期内各子系统的累计能耗或功率读数，适合做相对比较，不适合直接当成绝对功耗结论。
 
 ---
 
@@ -332,7 +345,7 @@ class PowerBenchmark {
 
 ### 对比测试法
 
-功耗分析最有效的方法不是看绝对值，而是对比：
+功耗分析最有效的方法是做对比：
 
 ```
 基线场景：App 当前版本，执行标准测试用例，记录 bugreport
@@ -359,17 +372,16 @@ class PowerBenchmark {
 
 ---
 
-## 版本演进
+## 平台 / 工具版本演进
 
-| Android 版本 | 功耗分析工具变化 |
+| 时间点 | 功耗分析工具变化 |
 |-------------|----------------|
 | Android 5.0 | Battery Historian 首次发布，基于 bugreport 的功耗时间线分析 |
-| Android 8.0 | Energy Profiler 随 Android Studio 3.0 引入，实时估算 CPU/网络/GPS 功耗 |
-| Android 10 | ODPM (On-Device Power Rails Monitor) 引入，硬件级功耗监控 |
-| Android 14 (AS Hedgehog) | Power Profiler 取代 Energy Profiler，直接展示 ODPM 数据 |
-| Android 16+ | Macrobenchmark PowerMetric 支持更多 Power Rail，CI 自动化功耗回归检测 |
-
-[待补充: Android 17 对 ODPM 或 Power Profiler 的更新内容]
+| Android 8.0 + Android Studio 3.0 | Energy Profiler 引入，实时估算 CPU/网络/GPS 功耗 |
+| Android 10 | Power Stats HAL / ODPM 进入平台，设备可以开始上报 power rail |
+| Jetpack Benchmark 1.2.0 | Macrobenchmark 引入实验性的 `PowerMetric` |
+| Jetpack Benchmark 1.3.0 | 增加设备能力判断 API，便于按设备能力启用或跳过高精度功耗测试 |
+| Android Studio Hedgehog | Power Profiler 取代旧 Energy Profiler UI，优先展示 ODPM 数据 |
 
 ---
 
@@ -395,7 +407,7 @@ class PowerBenchmark {
 - **AOSP 源码路径**：
   - `frameworks/base/services/core/java/com/android/server/BatteryStatsService.java` — 电池统计服务
   - `frameworks/base/core/java/android/os/BatteryStats.java` — 电池统计 API
-  - `system/hardware/interfaces/power/stats/` — ODPM HAL 接口定义
+  - `hardware/interfaces/power/stats/` — Power Stats HAL 接口定义
 
 - **交叉引用**：
   - §11.1 功耗模型 — 功耗分析的理论基础

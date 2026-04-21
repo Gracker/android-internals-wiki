@@ -1,11 +1,11 @@
 {
-  "generated_at": "2026-04-21T07:38:43+08:00",
+  "generated_at": "2026-04-21T08:24:09+08:00",
   "state_machine_version": "v2",
   "total_sections": 212,
   "metrics": {
     "total": 212,
-    "unknown": 37,
-    "last_updated": "2026-04-21T07:38:43+08:00",
+    "unknown": 36,
+    "last_updated": "2026-04-21T08:24:09+08:00",
     "task2b_state_counts": {
       "unknown": 37,
       "fixed": 134,
@@ -1164,7 +1164,7 @@
       "task6_state": "revisiting",
       "task9_state": "pending",
       "task2b_state": "fixed",
-      "reviewed_date": "2026-04-15",
+      "reviewed_date": "2026-04-21",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
       "task2b_result": "fixed",
@@ -1399,7 +1399,7 @@
       "task6_state": "revisiting",
       "task9_state": "pending",
       "task2b_state": "fixed",
-      "reviewed_date": "2026-04-14",
+      "reviewed_date": "2026-04-21",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
@@ -3420,10 +3420,7 @@
       "task6_state": "reviewed",
       "task6_review_round": 2,
       "task6_b_issues": 1
-    },
-    "task6_state": "reviewed",
-    "task6_result": "pass-light-edit",
-    "task6_reviewed_date": "2026-04-21"
+    }
   },
   "summary": {
     "status_counts": {

@@ -974,8 +974,11 @@
       ],
       "added_by": "task6-review",
       "added_at": "2026-04-21T04:19:44",
-      "status": "pending",
-      "original_review_log": "logs/review/2026-04-21-04-review.md"
+      "status": "completed",
+      "original_review_log": "logs/review/2026-04-21-04-review.md",
+      "completed_at": "2026-04-21T08:24:09+08:00",
+      "completed_by": "task2b-content-processing-rework",
+      "resolution": "已用聚焦 schedutil 调频的 uclamp 摘要替换待补充块，并补上 section 元数据。"
     },
     {
       "section": "15.2",
@@ -1108,7 +1111,10 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-21T04:59:17.202869+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-04-21T08:24:09+08:00",
+      "completed_by": "task2b-content-processing-rework",
+      "resolution": "已把 PowerMetric 改回 benchmark-macro 1.2+/1.3 的真实版本线，并把 ODPM 描述改成基于 Power Stats HAL 的能力说明。"
     },
     {
       "section": "4.1",
@@ -1216,8 +1222,11 @@
       ],
       "added_by": "task6-review",
       "added_at": "2026-04-21T06:14:00",
-      "status": "pending",
-      "original_review_log": "logs/review/2026-04-21-06-review.md"
+      "status": "completed",
+      "original_review_log": "logs/review/2026-04-21-06-review.md",
+      "completed_at": "2026-04-21T08:24:09+08:00",
+      "completed_by": "task2b-content-processing-rework",
+      "resolution": "已统一 6.4 / 6.1 的 eMMC 5.1 口径，并把 f2fs 段改成版本采用路径，机制细节交叉引用到 §6.1。"
     }
   ]
 }
