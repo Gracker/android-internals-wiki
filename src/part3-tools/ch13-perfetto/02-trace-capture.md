@@ -9,9 +9,9 @@ applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
 last_verified: "2026-04-03"
 last_verified_against: "perfetto.dev docs, AOSP android-16.0.0_r1"
 confidence: high
-reviewed_date: "2026-04-14"
+reviewed_date: "2026-04-21"
 reviewed_by: "openclaw-task6"
-task6_result: needs-rework
+task6_result: pass-light-edit
 polish_count: 1
 polish_date: "2026-04-06"
 polish_by: "task2b-polish"
@@ -32,8 +32,8 @@ tags: ['perfetto', 'trace', 'atrace', 'trace-capture', 'heapprofd']
 related_chapters: ["13.1", "13.3", "13.4", "14.1", "15.1"]
 
 re-review-result: "审查 2 条素材，无需修改（素材内容为 Trace Processor SQL 分析，与 Trace 抓取阶段不匹配，更适合 §13.3/§13.5）"
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task9_result: needs-rework
 task2b_state: fixed
@@ -71,7 +71,7 @@ task2b_result: fixed
 
 性能分析的第一步永远是"拿到数据"。不管我们是排查卡顿、分析启动速度、还是调查 ANR，都需要先抓取一份 Trace 文件，然后在 Perfetto UI 中打开它。如果抓取的配置不对——比如漏掉了关键的 atrace category，或者 buffer 太小导致数据被覆盖——后续分析就无从谈起。
 
-更关键的是，Trace 抓取不是只有一种方式。不同场景需要不同的抓取策略：快速复现一个卡顿问题，用 `record_android_trace` 脚本几行命令就能搞定；分析启动性能，需要在 App 代码中插入自定义标记来精确度量各个阶段；排查内存泄漏，则需要额外开启 Heap Profiling。了解这些方式的差异和适用场景，能让我们在最短时间内拿到最有价值的 Trace 数据。
+而且，Trace 抓取不是只有一种方式。不同场景需要不同的抓取策略：快速复现一个卡顿问题，用 `record_android_trace` 脚本几行命令就能搞定；分析启动性能，需要在 App 代码中插入自定义标记来精确度量各个阶段；排查内存泄漏，则需要额外开启 Heap Profiling。了解这些方式的差异和适用场景，能让我们在最短时间内拿到最有价值的 Trace 数据。
 
 本节按从简单到复杂的顺序，逐一介绍 Perfetto Trace 的几种常见抓取方式，并给出一份覆盖常见分析场景的推荐配置。
 
