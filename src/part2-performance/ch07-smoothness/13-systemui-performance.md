@@ -1,65 +1,79 @@
 ---
-title: "SystemUI 性能分析"
-chapter: "7.13"
-section: "7.13"
+title: SystemUI 性能分析
+chapter: '7.13'
+section: '7.13'
 status: ready-for-review
-applicable_versions: "Android 12 (API 31) - Android 17 (API 37)，通知图标源码入口需区分 Android 12-14 与 Android 15+"
-tags: [systemui, jank, launcher, statusbar, navigationbar, notification-shade, perfetto]
-related_chapters: ["2.4", "2.5", "7.1", "7.3", "7.4", "13.3"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-04-09"
-drafted_date: "2026-04-09"
-drafted_by: "openclaw-task2a"
-gap_source: "AOSP结构+读者需求+素材驱动"
+applicable_versions: Android 12 (API 31) - Android 17 (API 37)，通知图标源码入口需区分 Android
+  12-14 与 Android 15+
+tags:
+- systemui
+- jank
+- launcher
+- statusbar
+- navigationbar
+- notification-shade
+- perfetto
+related_chapters:
+- '2.4'
+- '2.5'
+- '7.1'
+- '7.3'
+- '7.4'
+- '13.3'
+created_by: task2a-knowledge-gap
+created_date: '2026-04-09'
+drafted_date: '2026-04-09'
+drafted_by: openclaw-task2a
+gap_source: AOSP结构+读者需求+素材驱动
 gap_score: 18
 confidence: medium
 sources:
-  - type: aosp
-    path: "frameworks/base/packages/SystemUI/res/layout/super_notification_shade.xml"
-  - type: aosp
-    path: "frameworks/base/packages/SystemUI/src/com/android/systemui/shade/NotificationShadeWindowView.java"
-  - type: aosp
-    path: "frameworks/base/packages/SystemUI/src/com/android/systemui/statusbar/notification/stack/NotificationStackScrollLayout.java"
-  - type: aosp
-    path: "frameworks/base/packages/SystemUI/src/com/android/systemui/statusbar/notification/collection/NotifInflaterImpl.java"
-  - type: aosp
-    path: "frameworks/base/packages/SystemUI/src/com/android/systemui/statusbar/notification/collection/inflation/NotificationRowBinderImpl.java"
-  - type: aosp
-    path: "frameworks/base/packages/SystemUI/src/com/android/systemui/statusbar/notification/row/NotificationContentInflater.java"
-  - type: aosp
-    path: "frameworks/base/packages/SystemUI/src/com/android/systemui/statusbar/phone/StatusBarNotificationPresenter.java"
-  - type: aosp
-    path: "frameworks/base/packages/SystemUI/src/com/android/systemui/statusbar/notification/icon/ui/viewmodel/NotificationIconContainerStatusBarViewModel.kt"
-  - type: aosp
-    path: "frameworks/base/packages/SystemUI/src/com/android/systemui/statusbar/notification/icon/ui/viewbinder/NotificationIconContainerStatusBarViewBinder.kt"
-  - type: aosp
-    path: "frameworks/base/packages/SystemUI/src/com/android/systemui/statusbar/phone/ui/StatusBarIconControllerImpl.java"
-  - type: aosp
-    path: "frameworks/base/packages/SystemUI/src/com/android/systemui/navigationbar/views/NavigationBarView.java"
-  - type: aosp
-    path: "frameworks/base/packages/SystemUI/src/com/android/systemui/navigationbar/gestural/EdgeBackGestureHandler.java"
-  - type: aosp
-    path: "frameworks/base/libs/WindowManager/Shell/src/com/android/wm/shell/startingsurface/StartingWindowController.java"
-  - type: aosp
-    path: "frameworks/base/libs/WindowManager/Shell/src/com/android/wm/shell/transition/Transitions.java"
-  - type: aosp
-    path: "packages/apps/Launcher3/quickstep/src/com/android/quickstep/views/RecentsView.java"
-  - type: official
-    path: "https://developer.android.com/develop/ui/views/notifications"
-  - type: official
-    path: "https://developer.android.com/guide/topics/ui/splash-screen"
-pipeline_stage: task6_pending
-task6_state: revisiting
+- type: aosp
+  path: frameworks/base/packages/SystemUI/res/layout/super_notification_shade.xml
+- type: aosp
+  path: frameworks/base/packages/SystemUI/src/com/android/systemui/shade/NotificationShadeWindowView.java
+- type: aosp
+  path: frameworks/base/packages/SystemUI/src/com/android/systemui/statusbar/notification/stack/NotificationStackScrollLayout.java
+- type: aosp
+  path: frameworks/base/packages/SystemUI/src/com/android/systemui/statusbar/notification/collection/NotifInflaterImpl.java
+- type: aosp
+  path: frameworks/base/packages/SystemUI/src/com/android/systemui/statusbar/notification/collection/inflation/NotificationRowBinderImpl.java
+- type: aosp
+  path: frameworks/base/packages/SystemUI/src/com/android/systemui/statusbar/notification/row/NotificationContentInflater.java
+- type: aosp
+  path: frameworks/base/packages/SystemUI/src/com/android/systemui/statusbar/phone/StatusBarNotificationPresenter.java
+- type: aosp
+  path: frameworks/base/packages/SystemUI/src/com/android/systemui/statusbar/notification/icon/ui/viewmodel/NotificationIconContainerStatusBarViewModel.kt
+- type: aosp
+  path: frameworks/base/packages/SystemUI/src/com/android/systemui/statusbar/notification/icon/ui/viewbinder/NotificationIconContainerStatusBarViewBinder.kt
+- type: aosp
+  path: frameworks/base/packages/SystemUI/src/com/android/systemui/statusbar/phone/ui/StatusBarIconControllerImpl.java
+- type: aosp
+  path: frameworks/base/packages/SystemUI/src/com/android/systemui/navigationbar/views/NavigationBarView.java
+- type: aosp
+  path: frameworks/base/packages/SystemUI/src/com/android/systemui/navigationbar/gestural/EdgeBackGestureHandler.java
+- type: aosp
+  path: frameworks/base/libs/WindowManager/Shell/src/com/android/wm/shell/startingsurface/StartingWindowController.java
+- type: aosp
+  path: frameworks/base/libs/WindowManager/Shell/src/com/android/wm/shell/transition/Transitions.java
+- type: aosp
+  path: packages/apps/Launcher3/quickstep/src/com/android/quickstep/views/RecentsView.java
+- type: official
+  path: https://developer.android.com/develop/ui/views/notifications
+- type: official
+  path: https://developer.android.com/guide/topics/ui/splash-screen
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task9_result: needs-rework
 task2b_state: fixed
 task2b_result: fixed
-reviewed_by: "openclaw-task6"
-reviewed_date: "2026-04-20"
+reviewed_by: openclaw-task6
+reviewed_date: '2026-04-21'
 task6_result: pass-light-edit
-task9_reviewed_by: "openclaw-task9"
-task9_reviewed_date: "2026-04-21"
-last_task9_at: "2026-04-21T01:15:00+08:00"
+task9_reviewed_by: openclaw-task9
+task9_reviewed_date: '2026-04-21'
+last_task9_at: '2026-04-21T01:15:00+08:00'
 ---
 
 # 7.13 SystemUI 性能分析

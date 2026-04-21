@@ -18262,6 +18262,48 @@
       "indexed_at": "2026-04-21T05:21:04.648389",
       "aiw_chapter": "ch16",
       "scored_at": "2026-04-21T05:21:04.698629"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/btrace (bytedance:btrace) 深度调研报告.md",
+      "title": "btrace (bytedance/btrace) 深度调研报告",
+      "summary": "围绕 btrace 1.0→3.0 演进，拆解从编译期插桩转向 Runtime Hook + 同步抓栈的设计原因，覆盖 ShadowHook、StackVisitor hack、ART method pointer 批量符号化，以及与 Perfetto、异步采样方案的取舍边界。",
+      "matched_chapters": [
+        "ch13",
+        "13.9"
+      ],
+      "section": "13.9",
+      "section_title": "Android Tracing 基础设施：atrace、ftrace 与 Perfetto 数据采集原理",
+      "processed_at": "2026-04-21T06:33:20+08:00",
+      "processed_by": "task-deepresearch-injector",
+      "source_type": "DeepResearch 调研结果"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/Android GPU 性能分析工具链现状：AGI、Perfetto 与厂商工具的技术全景（2025-2026）.md",
+      "title": "Android GPU 性能分析工具链现状：AGI、Perfetto 与厂商工具的技术全景（2025-2026）",
+      "summary": "系统梳理 AGI、Perfetto、RenderDoc、Sokatoa 与 Arm/Qualcomm 厂商工具的分层关系，明确 System Profiler 本质是 Perfetto 封装、Frame Profiler 与帧级调试边界，并给出 2025-2026 年 GPU 分析工作流与兼容性判断。",
+      "matched_chapters": [
+        "ch14",
+        "14.8"
+      ],
+      "section": "14.8",
+      "section_title": "GPU 图形调试与分析工具",
+      "processed_at": "2026-04-21T06:33:20+08:00",
+      "processed_by": "task-deepresearch-injector",
+      "source_type": "DeepResearch 调研结果"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/AIOS 架构深度解析与 Android Agent OS 演进全景.md",
+      "title": "AIOS 架构深度解析与 Android Agent OS 演进全景",
+      "summary": "从学术原型 AIOS 的 LLM Core、Scheduler、Memory/Storage/Tool/Access Manager 出发，对照 Android 的 AICore、AppFunctions、PCC、Binder/SystemService 架构，梳理移动端 Agent OS 已有能力、缺口与 A2A/AppFunctions 的分工边界。",
+      "matched_chapters": [
+        "ch16",
+        "16.0"
+      ],
+      "section": "16.0",
+      "section_title": "第 16 章：AOSP 性能优化",
+      "processed_at": "2026-04-21T06:33:20+08:00",
+      "processed_by": "task-deepresearch-injector",
+      "source_type": "DeepResearch 调研结果"
     }
   ]
 }

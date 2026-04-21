@@ -1,46 +1,65 @@
 ---
-title: "App 启动全流程"
-chapter: "8.2"
+title: App 启动全流程
+chapter: '8.2'
 status: ready-for-review
-applicable_versions: "Android 8.0 (API 26) - Android 16 (API 36)"
-last_verified: "2026-04-20"
-last_verified_against: "AOSP android-15.0.0_r1, AndroidX Activity release notes, Perfetto atrace docs, Android Developers baseline profiles docs"
+applicable_versions: Android 8.0 (API 26) - Android 16 (API 36)
+last_verified: '2026-04-20'
+last_verified_against: AOSP android-15.0.0_r1, AndroidX Activity release notes, Perfetto
+  atrace docs, Android Developers baseline profiles docs
 confidence: medium
 sources:
-  - type: blog
-    path: "Cubox/启动优化 ·  基础论 ·  浅析Android启动优化-2022-12-31.md"
-  - type: blog
-    path: "Cubox/FullyDrawnReporter—一个官方冷启动耗时统计小工具 - 掘金-2023-12-24.md"
-  - type: blog
-    path: "Cubox/Activity 启动速度分析方法（启动流程分析） - Light.Moon-2022-04-11.md"
-  - type: blog
-    path: "Cubox/Android 强推的 Baseline Profiles 国内能用吗？我找 Google 工程师求证了！ - 掘金-2022-07-17.md"
-  - type: official
-    path: "developer.android.com/topic/performance/vitals/launch-time"
-  - type: official
-    path: "https://developer.android.com/jetpack/androidx/releases/activity"
-  - type: official
-    path: "https://perfetto.dev/docs/getting-started/atrace"
-  - type: official
-    path: "https://developer.android.com/topic/performance/baselineprofiles"
-tags: [cold-start, warm-start, hot-start, TTID, TTFD, launch, startup, reportFullyDrawn, baseline-profiles, app-startup, contentprovider, process-creation]
-related_chapters: ["8.1", "1.2", "1.10", "2.4", "2.5", "7.1"]
-section: "8.2"
-drafted_date: "2026-04-01"
-drafted_by: "openclaw-task2a"
-reviewed_date: "2026-04-16"
-reviewed_by: "openclaw-task6"
+- type: blog
+  path: Cubox/启动优化 ·  基础论 ·  浅析Android启动优化-2022-12-31.md
+- type: blog
+  path: Cubox/FullyDrawnReporter—一个官方冷启动耗时统计小工具 - 掘金-2023-12-24.md
+- type: blog
+  path: Cubox/Activity 启动速度分析方法（启动流程分析） - Light.Moon-2022-04-11.md
+- type: blog
+  path: Cubox/Android 强推的 Baseline Profiles 国内能用吗？我找 Google 工程师求证了！ - 掘金-2022-07-17.md
+- type: official
+  path: developer.android.com/topic/performance/vitals/launch-time
+- type: official
+  path: https://developer.android.com/jetpack/androidx/releases/activity
+- type: official
+  path: https://perfetto.dev/docs/getting-started/atrace
+- type: official
+  path: https://developer.android.com/topic/performance/baselineprofiles
+tags:
+- cold-start
+- warm-start
+- hot-start
+- TTID
+- TTFD
+- launch
+- startup
+- reportFullyDrawn
+- baseline-profiles
+- app-startup
+- contentprovider
+- process-creation
+related_chapters:
+- '8.1'
+- '1.2'
+- '1.10'
+- '2.4'
+- '2.5'
+- '7.1'
+section: '8.2'
+drafted_date: '2026-04-01'
+drafted_by: openclaw-task2a
+reviewed_date: '2026-04-21'
+reviewed_by: openclaw-task6
 polish_count: 1
-polish_date: "2026-04-06"
-polish_by: "task2b-polish"
-pipeline_stage: task6_pending
-task6_state: revisiting
+polish_date: '2026-04-06'
+polish_by: task2b-polish
+pipeline_stage: task9_pending
+task6_state: reviewed
 task6_result: pass-light-edit
 task9_state: pending
 task9_result: needs-rework
 task2b_state: fixed
 task2b_result: fixed
-last_task2b_at: "2026-04-20T18:33:00+08:00"
+last_task2b_at: '2026-04-20T18:33:00+08:00'
 ---
 
 # App 启动全流程
@@ -188,7 +207,7 @@ Activity.onResume() 执行完后，并不是立刻就能看到界面。真正的
 
 在 onResume 的处理过程中，WindowManager 会将 DecorView 添加到 WindowManagerGlobal 中，这会创建 ViewRootImpl。ViewRootImpl 做了两件事：
 
-**请求布局**：调用 requestLayout()，这实际上是通过 Choreographer 向主线程 post 一个回调（TRAVERSAL）。注意，这个回调不会立即执行——它要等下一个 VSync 信号到来。
+**请求布局**：调用 requestLayout()，这是通过 Choreographer 向主线程 post 一个回调（TRAVERSAL）。注意，这个回调不会立即执行——它要等下一个 VSync 信号到来。
 
 **创建 SurfaceSession 连接**：通过 IWindowSession.addWindow() 向 WindowManagerService 注册窗口。WMS 会与 SurfaceFlinger 建立连接，为这个窗口创建 Layer 和 BufferQueue。
 
@@ -466,7 +485,7 @@ Cloud Profile 依赖 Google Play 的安装和分发流程。国内常见的无 P
 
 [已验证: 官方文档, developer.android.com/topic/libraries/app-startup]
 
-AndroidX App Startup 库解决的问题是：多个 SDK 通过 ContentProvider 初始化导致的启动开销。
+AndroidX App Startup 库针对的是多个 SDK 通过 ContentProvider 初始化导致的启动开销。
 
 没有 App Startup 时，每个 SDK 声明自己的 ContentProvider，每个 ContentProvider 在 Application.onCreate 之前独立初始化。假设有 10 个 SDK 各声明一个 ContentProvider，系统就需要创建 10 个 ContentProvider 实例，10 个 ContentProvider 实例的创建开销可达 50-100ms，不容忽视。
 

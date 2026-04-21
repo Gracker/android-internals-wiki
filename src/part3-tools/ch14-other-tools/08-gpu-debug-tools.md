@@ -614,3 +614,10 @@ Android 15 开始，ANGLE 已经从“可选实验路径”走到“系统内可
 ### 进阶阅读
 - 移动平台 GPU 性能分析（知乎）：https://zhuanlan.zhihu.com/p/560738175
 - 基于 GPU Counters 数据的性能优化（Cubox 收藏）
+### Android GPU 性能分析工具链现状：AGI、Perfetto 与厂商工具的技术全景（2025-2026）
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/Android GPU 性能分析工具链现状：AGI、Perfetto 与厂商工具的技术全景（2025-2026）.md
+- 类型：DeepResearch 调研结果
+- 摘要：系统梳理 AGI、Perfetto、RenderDoc、Sokatoa 与 Arm/Qualcomm 厂商工具的分层关系，明确 System Profiler 本质是 Perfetto 封装、Frame Profiler 与帧级调试边界，并给出 2025-2026 年 GPU 分析工作流与兼容性判断。
+- 注入时间：2026-04-21
+- 价值：能把“先 Perfetto 定位，再帧级或厂商工具下钻”的工具链方法论讲清。
+
