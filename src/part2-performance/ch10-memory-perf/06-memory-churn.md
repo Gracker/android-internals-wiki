@@ -28,11 +28,11 @@ sources:
 tags: ['memory', 'gc', 'churn', 'object-pool', 'tlab', 'autoboxing', 'heapprofd']
 related_chapters: ["4.3", "7.1", "7.2", "10.1", "10.4"]
 word_count: "~7500"
-reviewed_date: "2026-04-16"
+reviewed_date: "2026-04-21"
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task2b_state: fixed
 task2b_result: fixed
@@ -283,7 +283,7 @@ AOSP 当前长期使用的实现位于 `frameworks/base/core/java/com/android/in
 
 [已验证: research-feed, intake/research-feeds/2026-03-31-19-ch04-app-memory-churn-gc-objectpool.md]
 
-对象池的核心思想很简单：不丢弃用完的对象，而是放入池中，下次需要同类对象时从池中取出复用，避免反复分配和回收。
+对象池的核心思想很简单：对象用完后放入池中，下次需要同类对象时从池中取出复用，避免反复分配和回收。
 
 Android 系统自身大量使用了对象池模式。最经典的例子是 `Message.obtain()`——Android 的消息机制不会每次都 `new Message()`，而是从一个静态链表中取用已回收的 Message 对象。类似的还有 `Parcel.obtain()` / `Parcel.recycle()`、`MotionEvent.obtain()` 等。
 
