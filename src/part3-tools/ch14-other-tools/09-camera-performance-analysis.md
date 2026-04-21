@@ -6,7 +6,7 @@ status: ready-for-review
 drafted_date: "2026-04-06"
 drafted_by: "openclaw-task2a"
 reviewed_by: "openclaw-task6"
-last_task2b_at: "2026-04-21T03:10:05+08:00"
+last_task2b_at: "2026-04-21T22:42:29+08:00"
 reviewed_date: "2026-04-21"
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 last_verified: "2026-04-06"
@@ -23,11 +23,11 @@ sources:
     path: "frameworks/base/core/java/android/hardware/camera2/impl/CameraMetadataNative.java"
 tags: ['camera', 'perfetto', 'buffer-queue', 'preview-stutter', 'hal3']
 related_chapters: ["2.13", "13.5", "11.2", "4.3"]
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
-task9_state: reviewed
-task2b_state: pending
+task9_state: pending
+task2b_state: fixed
 task2b_result: fixed
 task9_result: needs-rework
 last_task9_at: "2026-04-21T18:42:00+08:00"
@@ -102,7 +102,7 @@ Camera 子系统的性能问题可以归纳为四个大类，每一类的排查�
 
 **录像丢帧**发生在视频录制场景。录像对帧率的稳定性要求极高——30fps 录制要求每帧间隔稳定在 33ms 左右。如果 HAL 或 Codec2 编码器处理不过来，帧间隔就会出现大幅抖动。在 Perfetto 中，我们需要看 `/system/bin/mediaserver` 进程中 `queueBuffer` 的帧间隔分布，用 SQL 的 `LAG()` 窗口函数可以直接计算相邻帧的差值。
 
-**内存压力**是 Camera 场景的隐形杀手。`CameraMetadataNative` 通过 JNI 在 Native 层持有 `camera_metadata_t` 内存，AOSP 会用 `VMRuntime.registerNativeAllocation()` / `registerNativeFree()` 把这部分 native 大小计入 GC 压力，但释放仍要等 Java 对象变成不可达后再由 `finalize()` 触发内部 `close()`。如果 App 长时间攒着 `TotalCaptureResult`、`CaptureResult` 或 `CameraCharacteristics` 这类包装对象，Native metadata 还是会持续堆积。
+**内存压力**是 Camera 场景的隐形杀手。`CameraMetadataNative` 通过 JNI 在 Native 层持有 `camera_metadata_t` 内存，而 Java 层只暴露 `TotalCaptureResult`、`CaptureResult`、`CameraCharacteristics` 等包装对象。Android 14 及更早版本主要沿 finalizer 路径清理这块 Native 内存，Android 15+ 切到 `NativeAllocationRegistry` + `Cleaner`，不再把释放逻辑绑在 `finalize()` 上。只要结果对象被长时间强引用，metadata 仍会持续堆积。
 
 字节跳动西瓜视频团队曾报告过这类问题：`CameraMetadataNative` 对象积累到 6658 个，Native 内存达到 1.3 GB，最终因虚拟内存触顶而崩溃。这个案例说明的是结果对象积压会把 metadata 一起留在内存里；App 层并没有公开的 `CameraMetadataNative.close()` 接口。[来源: Cubox/Android Camera内存问题剖析-2024-02-04.md；已验证: AOSP `frameworks/base/core/java/android/hardware/camera2/impl/CameraMetadataNative.java`]
 
@@ -114,7 +114,7 @@ Camera 子系统的性能问题可以归纳为四个大类，每一类的排查�
 
 Camera 硬件（Sensor）采集到原始数据后，经过 ISP（Image Signal Processor）处理成 YUV/RGB 格式，写入 GraphicBuffer。这个 Buffer 通过 BufferQueue 机制流转给消费端。以预览为例：
 
-1. Camera HAL 通过 `requestStreamBuffers` 向 Framework 请求输出 Buffer
+1. 支持 Buffer Management 的 Camera HAL 3.5 设备会通过 `requestStreamBuffers` 向 Framework 请求输出 Buffer
 2. Framework 从对应的 Camera3OutputStream 中 dequeue 一个空闲 Buffer 给 HAL
 3. HAL 将 ISP 处理完的帧数据写入这个 Buffer，通过 `returnStreamBuffers` 归还
 4. Framework 收到帧后，通过 `queueBuffer` 将 Buffer 推给 SurfaceFlinger
@@ -126,7 +126,7 @@ Camera 硬件（Sensor）采集到原始数据后，经过 ISP（Image Signal Pr
 
 每打开一个 Camera 设备，cameraserver 就会创建一个 Client 实例负责与该设备交互。Camera3Device 封装了对 HAL3 Device 的操作，它内部维护了 Request Queue 和 Result Queue，FrameProcessor 线程不断从 Result Queue 中取出 CaptureResult 回调给上层。[已验证: AOSP frameworks/av/services/camera/libcameraservice/, Cubox/一文N张图带你理解Android Camera Native Framework架构-2023-08-13.md]
 
-Buffer 管理方面，Camera3OutputStream 继承自 camera3_stream 结构体（和 HAL Stream 定义完全一致），负责管理 Output Buffer 的生命周期。Camera3Device 根据 Session 配置创建对应数量和类型的 Stream——预览流、拍照流、录像流各有独立的 Stream，共享 HAL 的 Request 处理管线但 Buffer 互不干扰。
+Buffer 管理方面，Camera3OutputStream 并不是直接继承 HAL 的 `camera3_stream`。在 AOSP android16-release 中，它的继承链是 `Camera3OutputStream -> Camera3IOStreamBase -> Camera3Stream`，由 `Camera3Stream` 负责封装底层 `camera3_stream` 并管理 Output Buffer 的生命周期。Camera3Device 根据 Session 配置创建对应数量和类型的 Stream，预览流、拍照流、录像流各有独立的 Stream，共享 HAL 的 Request 处理管线，但 Buffer 互不干扰。
 
 ## 在 Perfetto 中分析 Camera 性能
 
@@ -182,21 +182,40 @@ WHERE name='frame capture'
 
 这个查询统计 `frame capture` Slice 的频率，直接反映了 HAL 处理帧的速度。如果预览设定为 30fps 但 Request_FPS 只有 25，说明 HAL 处理能力不足。
 
-统计某路预览流的帧率和帧间隔抖动：
+统计某路预览流的帧率和帧间隔抖动时，先在 `cameraserver` 进程里找到承载 `queueBuffer` 的线程，再按该线程单独计算帧间隔：
 
 ```sql
 SELECT
-  ((slice.ts) - LAG(slice.ts,1) OVER (ORDER BY (slice.ts) ASC))/1e6 AS diff_ms
+  thread.name,
+  slice.ts / 1e6 AS ts_ms
 FROM slice
 JOIN thread_track ON slice.track_id = thread_track.id
 JOIN thread USING(utid)
-WHERE slice.name LIKE '%queueBuffer%' AND thread.name like '%PreviewSpacer%'
+JOIN process USING(upid)
+WHERE process.name = 'cameraserver'
+  AND slice.name LIKE '%queueBuffer%'
+ORDER BY slice.ts ASC
+LIMIT 50
+```
+
+拿到实际线程名后，再对同一线程计算相邻帧间隔：
+
+```sql
+SELECT
+  (slice.ts - LAG(slice.ts, 1) OVER (ORDER BY slice.ts ASC)) / 1e6 AS diff_ms
+FROM slice
+JOIN thread_track ON slice.track_id = thread_track.id
+JOIN thread USING(utid)
+WHERE slice.name LIKE '%queueBuffer%'
+  AND thread.name LIKE '%PreviewSpacer%'
 LIMIT -1 OFFSET 1
 ```
 
 [已验证: 来源见 Cubox/如何利用 Perfetto 自动化分析 Android Camera 性能-2023-12-15.md]
 
-`LAG()` 窗口函数计算相邻帧的时间差。理想情况下 30fps 预览的 diff_ms 应该稳定在 33ms 左右。如果出现 40ms 甚至 50ms 的间隔，说明那一帧被延迟了，用户会感知到卡顿。更严重的是间隔的方差——如果平均 33ms 但标准差很大，说明管线不稳定。
+`PreviewSpacer` 的职责是做预览帧平滑。它会按照目标帧率预测下一次出帧时刻，必要时主动等待，把硬件侧不均匀的产帧节拍整理成更稳定的 `queueBuffer` 间隔。Perfetto 里看到它周期性 `Sleep`，通常说明它在做 Frame Pacing。这个线程名不是稳定的公开 ABI，有些版本会显示成 `PreviewFrameSpacer`，也可能落在别的 stream 线程上，所以实战里先用上一条查询确认实际 track。
+
+`LAG()` 窗口函数计算相邻帧的时间差。理想情况下 30fps 预览的 diff_ms 应该稳定在 33ms 左右。如果出现 40ms 甚至 50ms 的间隔，说明那一帧被延迟了，用户会感知到卡顿。更严重的是间隔的方差，如果平均 33ms 但标准差很大，说明管线不稳定。
 
 ### SQL 查询：定位 Event 所属的进程和线程
 
@@ -226,12 +245,12 @@ WHERE slice.name LIKE '%sendRequestsBatch%'
 Camera 分析中经常需要用 `cam2_frame` Counter 来追踪帧到达：
 
 ```sql
-SELECT counters.value, process.pid, process.name
-FROM counters
-JOIN process_counter_track ON counters.track_id = process_counter_track.id
+SELECT counter.value, process.pid, process.name
+FROM counter
+JOIN process_counter_track ON counter.track_id = process_counter_track.id
 JOIN process USING(upid)
-WHERE counters.name LIKE '%cam2_frame%'
-ORDER BY counters.ts
+WHERE counter.name LIKE '%cam2_frame%'
+ORDER BY counter.ts
 LIMIT 20
 ```
 
@@ -276,9 +295,9 @@ for row in result:
 
 ```sql
 SELECT ts/1e6
-FROM counters
+FROM counter
 WHERE name LIKE '%BufferTX - SurfaceView%' AND value=1
-ORDER BY counters.ts ASC
+ORDER BY ts ASC
 ```
 
 将结果导出后，用 Python 计算帧间隔分布和抖动：
@@ -288,7 +307,7 @@ import pandas as pd
 
 df = tp.query("""
     SELECT ts/1e6 as ts_ms
-    FROM counters
+    FROM counter
     WHERE name LIKE '%BufferTX - SurfaceView%' AND value=1
     ORDER BY ts ASC
 """).as_pandas_dataframe()
@@ -390,7 +409,7 @@ Camera 是移动设备上功耗最高的模块之一。Sensor 持续采集、ISP
 
 **Sensor 模式选择**：Camera Sensor 通常支持多种输出模式（不同分辨率、不同帧率上限）。选择最匹配使用场景的 Sensor 模式可以减少 ISP 的处理负担。例如预览时使用低分辨率模式，拍照时临时切换到全分辨率模式。
 
-**HAL Buffer 管理策略**：Android 10 引入了 `requestStreamBuffers`/`returnStreamBuffers` API，允许 HAL 和 Framework 解耦 Buffer 分配。HAL 可以按需请求 Buffer，而不是在 Session 配置时一次性分配所有 Buffer。这减少了内存占用，也降低了因 Buffer 数量不足导致卡顿的风险。
+**HAL Buffer 管理策略**：Android 10 引入了 Camera HAL 3.5 的 `requestStreamBuffers`/`returnStreamBuffers` API，允许 HAL 和 Framework 解耦 Buffer 分配。HAL 可以按需请求 Buffer，而不是在 Session 配置时一次性分配所有 Buffer。这减少了内存占用，也降低了因 Buffer 数量不足导致卡顿的风险。
 
 **功耗度量**：在 Perfetto 中可以用 `android_cpu` Metric 查看 Camera 相关进程的 CPU 时间。如果 `cameraserver` 的 CPU 时间异常高，说明 HAL 的处理负载很重；如果 App 进程的 CPU 时间高，说明可能在主线程做了过多处理（如直接在 `onPreviewFrame` 中做图像处理）。将 Camera 操作移到后台线程，或者用 RenderScript/HAL 硬件加速来替代 CPU 软处理，通常能带来明显的功耗下降。
 
@@ -403,7 +422,7 @@ Camera 性能分析和全书多个章节有交叉：
 - **2.13 图形缓冲区管理 (BufferQueue)**：Camera 管线中的 Buffer 流转，就是 BufferQueue 的 dequeue → queue → acquire → release 循环。理解 BufferQueue 的工作原理，是分析 Camera 预览卡顿的基础。
 - **13.5 专题解读**：Perfetto 中的 Camera 相关 Track 和 Slice 的详细解读，包括 `cameraserver` 进程中各个 Slice 的含义。
 - **11.2 App 耗电优化**：Camera 是 App 功耗大户，Camera 功耗优化的方法论和通用功耗优化策略一脉相承。
-- **4.3 ART 虚拟机内存管理**：CameraMetadataNative 的 Native 内存增长，和 Java 可达性、GC 触发时机、finalize 回收链直接相关。理解 ART 何时感知 native allocation 压力，有助于判断为什么 Camera 场景里 `TotalCaptureResult` 积压会很快顶高 Native RSS。
+- **4.3 ART 虚拟机内存管理**：CameraMetadataNative 的 Native 内存增长，和 Java 可达性、GC 触发时机，以及 `NativeAllocationRegistry` / `Cleaner`（旧版本还包括 finalizer 路径）的清理时机直接相关。理解 ART 何时感知 native allocation 压力，有助于判断为什么 Camera 场景里 `TotalCaptureResult` 积压会很快顶高 Native RSS。
 
 ## Camera2 API vs CameraX API 的性能差异
 
@@ -414,6 +433,7 @@ CameraX 是 Jetpack 提供的高层 Camera 库，构建在 Camera2 之上。它�
 - **自动选择最优的 Sensor 模式和分辨率组合**，避免 App 手动配置时选择了低效的组合
 - **内部管理 Camera Session 的生命周期**，避免了 App 因不当的 Session 操作导致的帧率波动
 - **对低版本设备的兼容性处理**，在不支持某些 Camera2 高级特性的设备上自动降级到更高效的实现
+- **冷启动阶段多一层 capability 解析、UseCase 绑定和默认配置收敛**，首帧前通常会比直接调用 Camera2 多出一段初始化开销。扫码、即拍即走这类冷启动敏感场景，要实测首帧时间，再决定是否接受这层封装
 
 从 Perfetto Trace 的角度看，使用 CameraX 的 App 通常会在 `cameraserver` 中呈现更简洁的调用流程，因为 CameraX 会把不少配置步骤收束到库内部。代价是多了一层抽象，在极端性能场景（如高帧率录像、多摄像头并发）里，CameraX 反而可能成为限制，这时候还是需要直接使用 Camera2 API。
 
@@ -445,7 +465,7 @@ HAL3 管线中，从 App 下发 CaptureRequest 到收到 CaptureResult，经历�
 
 **误区二：Camera 预览用 TextureView 和 SurfaceView 性能差不多。** TextureView 需要经过一次 GPU 纹理上传，而 SurfaceView 可以直接由 SurfaceFlinger 从 BufferQueue 中 latch Buffer 合成上屏，省了一次 GPU 操作。在低端设备上这个差异很明显。
 
-**误区三：CameraMetadataNative 内存增长要沿着结果对象引用链排查。** 这类问题更接近“框架对象被长期强引用后，native metadata 无法尽快回收”。以 AOSP `frameworks/base/core/java/android/hardware/camera2/impl/CameraMetadataNative.java` 为准，类内部仍通过 `finalize()` 调用 private `close()` 释放 `mMetadataPtr`，同时用 `VMRuntime.registerNativeAllocation()` / `registerNativeFree()` 把 buffer 大小上报给 ART。App 层拿到的是 `TotalCaptureResult` / `CaptureResult` 等包装对象，没有公开的 `CameraMetadataNative.close()` 可调接口。
+**误区三：CameraMetadataNative 内存增长要沿着结果对象引用链排查。** 这类问题更接近“框架对象被长期强引用后，native metadata 无法尽快清理”。以 AOSP `frameworks/base/core/java/android/hardware/camera2/impl/CameraMetadataNative.java` 为准，Android 14 及更早版本主要沿 `finalize()` -> private `close()` 释放 `mMetadataPtr`；Android 15+ 改为 `NativeAllocationRegistry` 注册 Native 内存，并由 `Cleaner` 执行清理回调。App 层拿到的仍是 `TotalCaptureResult` / `CaptureResult` 等包装对象，没有公开的 `CameraMetadataNative.close()` 可调接口。
 
 排查和治理时，重点放在引用链：不要把大量 `TotalCaptureResult` 长时间塞进队列、缓存或跨线程消息里；只提取需要的 metadata 字段，处理完就尽快丢掉结果对象；对长期统计场景，优先落成轻量结构体或自定义 DTO，再释放原始 result 引用。[来源: Cubox/Android Camera内存问题剖析-2024-02-04.md；已验证: AOSP `frameworks/base/core/java/android/hardware/camera2/impl/CameraMetadataNative.java`，android-14.0.0_r1 / android-16.0.0_r1]
 

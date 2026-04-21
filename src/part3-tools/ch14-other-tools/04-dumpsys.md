@@ -31,11 +31,13 @@ related_chapters:
 - '7.3'
 - '13.1'
 - '14.1'
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
 task9_result: needs-rework
-task2b_state: pending
+task2b_state: fixed
+task2b_result: fixed
+last_task2b_at: '2026-04-21T22:42:29+08:00'
 reviewed_by: openclaw-task6
 reviewed_date: '2026-04-21'
 task6_result: needs-rework
@@ -106,7 +108,7 @@ dumpsys 会遍历 Android 系统中所有注册到 ServiceManager 的系统服�
 
 ### 进程优先级与 ANR
 
-`dumpsys activity processes` 会列出所有进程的 `oom_adj` 值和调度优先级。当分析 Low Memory Killer 误杀问题时，这里的 `oom_adj` 值就是最直接的证据。AOSP `ProcessList.java` 中定义了各级别的 `adj` 值：`FOREGROUND_APP_ADJ=0`（前台进程，优先级最高）、`VISIBLE_APP_ADJ=100`（可见但非前台）、`PERCEPTIBLE_APP_ADJ=200`（可感知但不可见）。`oom_adj` 值越低，进程优先级越高，越不容易被 LMK 杀掉。
+`dumpsys activity processes` 会列出所有进程的 `oom_adj` 值和调度优先级。当分析 Low Memory Killer 误杀问题时，这里的 `oom_adj` 值就是最直接的证据。AOSP `ProcessList.java` 中定义了各级别的 `adj` 值。以 Android 10+ 为例，`FOREGROUND_APP_ADJ=0`（前台进程，优先级最高）、`VISIBLE_APP_ADJ=100`（可见但非前台）、`PERCEPTIBLE_APP_ADJ=200`（可感知但不可见）。Android 10 之前的常见资料里，`VISIBLE_APP_ADJ` 通常写成 `1`，只是数值尺度不同，优先级顺序没有变。`oom_adj` 值越低，进程优先级越高，越不容易被 LMK 杀掉。
 
 举个例子：如果一个 App 当前在前台展示界面，本应处于 `adj=0`（FOREGROUND），但 dumpsys 显示它的 `oom_adj=100`（VISIBLE），说明系统的进程优先级计算出了问题——进程被错误降级，LMK 在内存紧张时会优先杀掉它。
 
@@ -137,7 +139,7 @@ adb shell dumpsys meminfo --slab
 
 **PSS（Proportional Set Size）** 是我们最关注的指标。它衡量的是一个进程"实际占用"的物理内存。PSS 的特殊之处在于，对于被多个进程共享的内存页（比如共享库的代码段），它会按比例分摊：如果一张 4KB 的内存页被两个进程共享，每个进程的 PSS 只计入 2KB。把所有进程的 PSS 加起来，结果就接近系统实际使用的总物理内存。在判断一个 App "占了多少内存"时，PSS 是最准确的标准。
 
-**USS（Unique Set Size）** 是进程独占的物理内存，不被任何其他进程共享。如果这个进程被杀掉，USS 这部分内存会被完全释放。USS 帮助我们评估一个进程的"可回收价值"——LMK 在选择杀谁时，会参考这个值。
+**USS（Unique Set Size）** 是进程独占的物理内存，不被任何其他进程共享。如果这个进程被杀掉，USS 这部分内存会被完全释放。USS 适合用来估算一个进程被杀掉后理论上能回收多少私有内存，也适合做线下泄漏分析和方案对比。LMKD 运行时不会去计算 USS，目标选择仍要回到 `oom_score_adj`、RSS 和 PSI 这类实时决策线索。
 
 **Private Dirty** 是已经被修改过的私有内存页。这部分内存不能被换出到磁盘（Android 默认不用 swap），必须常驻物理 RAM。在内存分析中，Private Dirty 持续增长通常是内存泄漏的信号。
 
@@ -273,17 +275,20 @@ adb shell dumpsys window
 # 窗口列表（含 Z-order）
 adb shell dumpsys window windows
 
-# 当前焦点窗口
+# WindowManager 视角的焦点
 adb shell dumpsys window windows | grep -E 'mCurrentFocus|mFocusedApp'
+
+# InputDispatcher 视角的焦点
+adb shell dumpsys input | grep -E 'FocusedWindow|FocusedApplication'
 ```
 
 ### 关键信息
 
 在性能分析中，dumpsys window 主要用于两类场景。
 
-**第一类是确认窗口焦点。** 当用户报告"点了没反应"或"触摸不灵敏"时，可能是焦点不在预期的窗口上。`mCurrentFocus` 显示当前获得输入焦点的窗口，`mFocusedApp` 显示获得焦点的是哪个 App。注意这两个不一定一致：比如用户拉下通知栏时，`mCurrentFocus` 会切换到 SystemUI 的通知面板，但 `mFocusedApp` 仍然是之前使用的 App。
+**第一类是确认窗口焦点。** 当用户报告"点了没反应"或"触摸不灵敏"时，先看 `mCurrentFocus` 和 `mFocusedApp`，确认 WindowManagerService 眼里的前台窗口是谁。它们不一定一致：比如用户拉下通知栏时，`mCurrentFocus` 会切换到 SystemUI 的通知面板，但 `mFocusedApp` 仍然是之前使用的 App。
 
-**第二类是排查 Input ANR。** 当 Input 系统无法将事件投递到目标窗口时（比如窗口已经不存在但系统没有及时清理），会导致 Input ANR。通过 `dumpsys window windows` 可以检查目标窗口的状态——是否还存在、是否可触摸（`NOT_TOUCHABLE` 标志）、touchable region 是否正确。
+**第二类是排查 Input ANR。** `dumpsys window` 只能回答 WMS 视角的窗口状态，真正决定触摸事件去向的还是 InputDispatcher。遇到窗口看起来有焦点、点击却没有反应的场景，要再执行 `adb shell dumpsys input`，联动查看 `FocusedWindow` 和 `FocusedApplication`。如果两边不一致，或者 InputDispatcher 指向了意料之外的窗口，再回头检查 `NOT_TOUCHABLE`、InputChannel 和覆盖层拦截。
 
 `dumpsys window` 的输出还包含 Z-order 信息，窗口从上到下排列。在排查覆盖层问题时（比如 Dialog 没有正确 dismiss 导致遮挡了底下的 Activity），Z-order 列表可以直观看到哪些窗口叠加在目标窗口上面。
 
