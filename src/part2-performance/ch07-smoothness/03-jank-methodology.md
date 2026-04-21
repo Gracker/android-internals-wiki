@@ -2,7 +2,7 @@
 title: "卡顿分析方法论"
 chapter: "7.3"
 status: ready-for-review
-reviewed_date: "2026-04-15"
+reviewed_date: "2026-04-21"
 reviewed_by: openclaw-task6
 rework_date: "2026-04-04"
 rework_by: openclaw-task2b
@@ -33,8 +33,8 @@ sources:
     path: "https://developer.android.com/reference/android/view/FrameMetrics"
 tags: ['jank', 'methodology', 'Perfetto', 'Systrace', 'FrameTimeline', 'FrameMetrics', 'CPU', 'checklist']
 related_chapters: ["7.1", "7.2", "2.4", "2.5", "2.6", "1.5", "13.3"]
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task6_result: pass-light-edit
 task9_result: needs-rework
 task9_state: pending
@@ -71,11 +71,11 @@ task2b_result: fixed
 
 ## 为什么要掌握一套分析方法论
 
-卡顿分析这件事，最怕的不是"看不出问题"，而是"看错方向"。
+卡顿分析这件事，最怕的是"看错方向"。
 
 我们在 Perfetto 里打开一份 Trace，面对密密麻麻的色块，很容易陷入一种"漫无目的地找红色"的状态——看到哪帧红了就点进去，看到一个耗时的 Slice 就去追，追了半天发现是个无关紧要的日志打印。更糟糕的情况是，明明用户反馈了"滑动卡"，抓了 Trace 却找不到任何异常帧，因为卡顿的原因不在 App 进程里，而在系统的 CPU 调度或者 SurfaceFlinger 的合成环节。
 
-这就是为什么我们需要一套方法论。它不是教条式的步骤清单，而是一个有经验的工程师面对卡顿问题时脑子里的决策路径：先判断问题类型，再确定分析工具，然后沿着正确的链路追踪，最终定位到根因。掌握这套方法，拿到一份 Trace 后应该在 10 分钟内给出初步结论——是 App 自身的问题还是系统环境的问题，瓶颈在主线程还是渲染线程还是 GPU，是代码执行慢还是 CPU 没给够。
+这就是为什么我们需要一套方法论。它是一个有经验的工程师面对卡顿问题时脑子里的决策路径：先判断问题类型，再确定分析工具，然后沿着正确的链路追踪，最终定位到根因。掌握这套方法，拿到一份 Trace 后应该在 10 分钟内给出初步结论——是 App 自身的问题还是系统环境的问题，瓶颈在主线程还是渲染线程还是 GPU，是代码执行慢还是 CPU 没给够。
 
 本节的内容基于大量的实战经验总结。其中分析流程和方法论框架主要参考了高爷在 androidperformance.com 上的 Systrace 流畅性实战系列文章 [来源: obsidian/Personal-Knowlodge/source/android-systrace-smooth-in-action-2.md] [来源: obsidian/Personal-Knowlodge/source/android-systrace-smooth-in-action-3.md]，以及 Perfetto 系列中关于 Trace 解读的方法 [来源: obsidian/Personal-Knowlodge/source/Android-Perfetto-03-how-to-analysis-perfetto.md]。
 
@@ -244,7 +244,7 @@ Uninterruptible Sleep 状态（在 Perfetto 中显示为深橙色）表示线程
 
 **查看唤醒延迟**：Perfetto 的信息区会自动计算唤醒延迟（从线程被唤醒到真正 Running 的时间）。如果这个延迟超过 1-2ms，就需要关注了——在 120fps 设备上，一个 VSync 周期才 8.3ms，调度延迟吃掉 2ms 就很可观了。
 
-**CPU 频率追踪**：在 CPU Frequency Track 中可以看到每个核心的频率变化。如果发现关键线程运行时 CPU 频率很低（比如被温控限制到了最低频率），那就是性能瓶颈的直接证据。
+**CPU 频率追踪**：在 CPU Frequency Track 展示每个核心的频率变化。如果发现关键线程运行时 CPU 频率很低（比如被温控限制到了最低频率），那就是性能瓶颈的直接证据。
 
 ## 标准化 Jank 分析 Checklist
 
@@ -273,7 +273,7 @@ Uninterruptible Sleep 状态（在 Perfetto 中显示为深橙色）表示线程
 - [ ] **主线程 doFrame**：耗时是否超过 VSync 周期？如果是，哪个阶段（Input / Animation / Insets Animation / Traversal / Commit）最耗时？
 - [ ] **渲染线程 DrawFrame**：耗时是否过长？GPU 负载如何？
 - [ ] **主线程等待渲染线程**：主线程有没有因为 syncFrameState 阻塞在等待渲染线程？如果是，说明前一帧的渲染还没完成 [来源: obsidian/Personal-Knowlodge/source/android-systrace-smooth-in-action-3.md]
-- [ ] **Binder 调用**：主线程有没有被 Binder 调用阻塞？点击 Binder Slice 可以看到对端进程
+- [ ] **Binder 调用**：主线程有没有被 Binder 调用阻塞？点击 Binder Slice 会显示对端进程
 
 ### 第四阶段：调度级排查（3-5 分钟）
 
@@ -469,7 +469,7 @@ SQL 分析的好处是能快速处理整份 Trace 的数据，给出统计级别
 
 ### 误区："没有红帧就没有卡顿"
 
-在分析中，黄帧（超过一个 VSync 周期但不到两个）同样需要关注。连续的黄帧可能在多缓冲机制的保护下不导致掉帧，但如果连续出现，缓冲迟早会被消耗完，最终还是会出现可见的卡顿 [来源: obsidian/Personal-Knowlodge/source/android-systrace-smooth-in-action-3.md]。更重要的是，黄帧说明渲染已经到了极限边缘，任何微小的波动都可能把它推过阈值。
+在分析中，黄帧（超过一个 VSync 周期但不到两个）同样需要关注。连续的黄帧可能在多缓冲机制的保护下不导致掉帧，但如果连续出现，缓冲迟早会被消耗完，最终还是会出现可见的卡顿 [来源: obsidian/Personal-Knowlodge/source/android-systrace-smooth-in-action-3.md]。而且黄帧还说明渲染已经到了极限边缘，任何微小的波动都可能把它推过阈值。
 
 ### 误区："主线程 Sleep 就不是主线程的问题"
 

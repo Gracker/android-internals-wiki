@@ -23,11 +23,11 @@ sources:
     path: "frameworks/base/core/java/android/webkit/"
   - type: aosp
     path: "android_webview/docs/ (chromium.googlesource.com)"
-reviewed_date: "2026-04-20"
-reviewed_by: "openclaw-task6"
+reviewed_date: "2026-04-21"
+reviewed_by: openclaw-task6
 task6_result: pass-light-edit
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_result: needs-rework
 task9_state: pending
 task2b_state: fixed
@@ -346,7 +346,7 @@ protected void onDestroy() {
 WebView 内存分析需要结合多个工具：
 
 1. **Perfetto 的内存计数器**：可以观察 App 进程的 `anon_rss` 和 `java_heap` 变化。创建 WebView 时这两个指标会有明显跳升。
-2. **`dumpsys meminfo`**：可以看到 WebView 相关的 native 内存分配（GPU 纹理、Skia 缓存等）。
+2. **`dumpsys meminfo`**：展示 WebView 相关的 native 内存分配（GPU 纹理、Skia 缓存等）。
 3. **Chrome DevTools Protocol**：通过 `webView.setWebChromeClient()` 配合远程调试，可以观察 V8 堆内存和 DOM 节点数量。
 
 在 Perfetto 中，如果观察到 App 进程的内存在每次打开 WebView 页面后持续上升且不回落，就说明存在 WebView 内存泄漏。
@@ -447,7 +447,7 @@ WebView 的 GPU 相关工作不应该再写成“独立 GPU 进程”这个固�
 - compositor 提交后，GPU service 是否持续积压
 - 混合渲染场景下，SurfaceFlinger 合成时长是否同步抬高
 
-如果 `CrGpuMain` 很忙，而 App RenderThread 和 SurfaceFlinger 也同步变长，多半不是“单独的 GPU 进程卡住了”，而是 WebView 页面复杂度、宿主 UI 叠加和最终合成一起把 GPU 压满了。
+如果 `CrGpuMain` 很忙，而 App RenderThread 和 SurfaceFlinger 也同步变长，多半是 WebView 页面复杂度、宿主 UI 叠加和最终合成一起把 GPU 压满了。
 
 ### JS 执行在主线程的表现
 
