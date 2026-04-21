@@ -35,10 +35,11 @@ reviewed_date: 2026-04-21
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
 pipeline_stage: task6_pending
-task6_state: reviewed
+task6_state: revisiting
 task9_state: pending
 task9_result: needs-rework
 task2b_result: fixed
+last_task2b_at: "2026-04-21T08:24:09+08:00"
 task2b_state: fixed
 ---
 
@@ -111,7 +112,7 @@ SDCardFS 在性能层面看起来是一个理想方案——用内核态实现�
 
 ### 回归 FUSE：隐私与安全驱动的设计反转
 
-Android 11 弃用了 SDCardFS，重新回归 FUSE。这不是技术倒退，而是为了支持 Scoped Storage 这一重大隐私变革。
+Android 11 弃用了 SDCardFS，重新回归 FUSE。这一步是为了支持 Scoped Storage 这一重大隐私变革。
 
 SDCardFS 虽然性能好，但它有两个根本限制：它工作在内核态，很难与用户空间的权限检查逻辑深度集成；它的设计目标是模拟 FAT32 语义，而不是实现精细的文件访问控制。
 
@@ -197,7 +198,7 @@ EROFS（Enhanced Read-Only File System）最初由华为开发，在 EMUI 9.1 �
 
 ### EROFS 的核心技术优势
 
-EROFS 不是简单地把 ext4 设为只读，而是从设计之初就为只读场景做了深度优化：
+EROFS 从设计之初就为只读场景做了深度优化：
 
 **1. 透明压缩与原地解压**
 
@@ -207,7 +208,7 @@ EROFS 默认使用 LZ4（LZ4HC 变体）压缩算法。它的关键创新是原�
 
 **2. 读取性能优于 ext4**
 
-华为在 LPC 2019 大会上分享的测试数据显示，EROFS 的随机和顺序读取速度均优于 ext4。特别是在系统负载较重时，App 启动速度最高可提升 22.9%。这得益于两点：压缩减少了实际需要从闪存读取的数据量；EROFS 的元数据结构比 ext4 更精简，查找路径更短。
+华为在 LPC 2019 大会给出的测试数据显示，EROFS 的随机和顺序读取速度均优于 ext4。特别是在系统负载较重时，App 启动速度最高可提升 22.9%。这得益于两点：压缩减少了实际需要从闪存读取的数据量；EROFS 的元数据结构比 ext4 更精简，查找路径更短。
 
 **3. 安全性增强**
 
@@ -266,7 +267,7 @@ UFS（Universal Flash Storage）是 JEDEC 制定的移动设备存储标准，�
 
 **UFS 2.0/2.1（2016-2018 年旗舰机）**
 
-UFS 2.1 相比 eMMC 5.1 的提升是跨代级的：顺序读取从约 250MB/s 提升到 880MB/s，随机读写 IOPS 从约 5000 提升到 40000。用户最直接的感知是 App 安装和启动速度大幅提升。一些实现（如 OnePlus 5）使用双通道模式，读写各有两条通道。
+为了和 §6.1 保持同一口径，下面的对比统一采用 JEDEC 规范与厂商公开资料里常见的上限级别，具体机型实测会因控制器、并发负载和测试方法低于这个值。按这个口径看，UFS 2.1 相比 eMMC 5.1 已经是跨代差距：顺序读取从约 330MB/s 提升到 880MB/s，顺序写从约 200MB/s 提升到 250MB/s，随机 I/O 能力也从 1 万级抬到 4 万级。用户最直接的感知通常是安装、冷启动和大文件解包明显变快。一些实现（如 OnePlus 5）还会启用双通道设计。
 
 **UFS 3.0/3.1（2019-2021 年）**
 
@@ -292,7 +293,7 @@ UFS 4.0 还引入了多循环队列（Multi-Circular Queue，MCQ），可以类�
 
 | 规格 | 接口 | 顺序读 (MB/s) | 顺序写 (MB/s) | 随机读 IOPS | 关键特性 |
 |:---:|:---:|:---:|:---:|:---:|:---:|
-| eMMC 5.1 | 并行/半双工 | ~250 | ~125 | ~5000 | 无命令队列 |
+| eMMC 5.1 | 并行/半双工 | ~330 | ~200 | ~12000 | 无命令队列 |
 | UFS 2.1 | 串行/全双工 | ~880 | ~250 | ~40000 | 命令队列 |
 | UFS 3.1 | 串行/全双工 | ~2100 | ~1200 | ~68000 | Write Booster, HPB |
 | UFS 4.0 | 串行/全双工 | ~4200 | ~2800 | ~100000+ | MCQ 多循环队列 |
@@ -313,19 +314,13 @@ adb shell dd if=/data/local/tmp/storage-bench.bin of=/dev/null bs=1M count=256 i
 
 如果需要直接读取 live userdata block device，只建议在 rooted / userdebug 实验机上操作，并在测试前单独处理 page cache。`conv=fsync` 只影响输出端刷盘，不能拿来判断输入侧读缓存。
 
-## [自动发现] 文件系统迁移：从 ext4 到 f2fs
+## [自动发现] data 分区文件系统迁移：ext4 → f2fs
 
-在梳理完外部存储模拟层（FUSE/SDCardFS）和只读分区（EROFS）的演进之后，我们还需要关注 data 分区（用户数据分区）的文件系统变化。ext4 到 f2fs 的迁移与前面讨论的 EROFS（只读 system 分区）和 FUSE/SDCardFS（外部存储模拟）共同构成了 Android 存储栈的完整演进图——每一层都在针对闪存存储的特性做专项优化。
+这一层更适合看采用路径，不必把机制再讲一遍。Android 早期设备的 `/data` 分区长期以 ext4 为主。Android 6.0 起，AOSP 已经提供 f2fs 支持，随后三星、华为、一加等厂商开始把它放进量产机的 userdata 分区。Google Pixel 近几代设备也把 f2fs 作为主线 userdata 文件系统。
 
-ext4 是为机械硬盘时代设计的文件系统，采用原地更新（in-place update）策略和 jbd2 日志机制。在闪存存储上，原地更新会加剧写放大（Write Amplification），而 jbd2 的 physical logging 在 fsync 频繁的场景下容易导致性能退化——这正是 Android 的典型场景（SQLite 频繁 fsync）。
+推动迁移的背景，是手机 I/O 负载从大块顺序读写转成 SQLite、SharedPreferences、媒体索引这类小块随机写。f2fs 对 NAND 闪存的顺序写、冷热数据分离和 GC 路径做了专项优化，所以更适合长期承载 `/data` 这类混合负载。机制细节已经在 §6.1「文件系统：从 ext4 到 f2fs 的演进」展开，这里只保留时间线和采用范围。
 
-f2fs（Flash-Friendly File System）由三星开发，专门针对闪存存储优化：将随机写转换为顺序写、采用 Copy-on-Write 策略、对 SQLite 小文件写入有专门的原子写优化、实现冷热数据分离以减少闪存的垃圾回收压力。Android 从 6.0 开始支持 f2fs，多个厂商（如三星、华为、OnePlus）率先在 data 分区使用 f2fs，Google Pixel 系列从 Pixel 3 起也默认使用 f2fs。
-
-f2fs 的核心优化点与 Android 的 I/O 特征高度匹配：
-
-- **SQLite 原子写**：f2fs 对小文件的追加写做了专门的 NFS（Node/Footer）结构优化，减少了 fsync 的磁盘同步操作
-- **冷热数据分离**：根据文件的访问频率将数据分为 hot/warm/cold 三类，分别存储在不同的 segment 中，有助于闪存 FTL 的垃圾回收效率
-- **日志机制**：使用 logical logging（而非 ext4 的 physical logging），避免了 jbd2 的 fsync 性能问题
+落到排查时，先确认目标设备的 `/data` 到底还是 ext4 还是 f2fs，再解释同样的 `fsync`、checkpoint 或随机写为什么基线不同。章节之间的分工可以简单记成：§6.4 回答“什么时候开始换”，§6.1 回答“换了之后为什么会影响性能”。
 
 [已验证: 来源见 obsidian/Personal-Knowlodge/source/2026-03-08_wechat_手机Android存储性能优化架构分析_1.md]
 [已验证: 来源见 obsidian/Personal-Knowlodge/source/2026-03-06_wechat_深入代码细节看f2fs在磁盘上的组织方式.md]

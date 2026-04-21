@@ -1,6 +1,7 @@
 ---
 title: "大小核架构"
 chapter: "5.3"
+section: "5.3"
 status: ready-for-review
 applicable_versions: "Android 5.0 (API 21) - Android 17 (API 37)"
 last_verified: "2026-03-31"
@@ -29,10 +30,11 @@ polish_count: 1
 polish_date: "2026-04-07"
 polish_by: "task2b-polish"
 task2b_result: fixed
+last_task2b_at: "2026-04-21T08:24:09+08:00"
 task2b_state: fixed
-task6_state: reviewed
+task6_state: revisiting
 task9_state: pending
-pipeline_stage: task9_pending
+pipeline_stage: task6_pending
 ---
 
 # 大小核架构
@@ -279,7 +281,11 @@ static void sugov_get_util(struct sugov_cpu *sg_cpu)
 
 ### uclamp：约束调度器和 governor 的利用率先验
 
-[待补充：uclamp（utility clamping）机制详解。uclamp 是 Linux 5.3 引入的框架，允许从用户空间或内核为任务设置 util 的上下限（UCLAMP_MIN / UCLAMP_MAX）。Android 从 Android 12 开始通过 task profile（如 `TaskProfileCpuBoost`）利用 uclamp 来告诉 schedutil 和 EAS：“即使这个线程当前的 PELT util 很低，也请至少按照某个下限来分配 CPU 频率或选核”。这直接解释了应用启动等场景下大核频率会“提前拉高”的现象——不是 PELT 算出了高 util，而是 uclamp_min 把 util 钳位到了一个较高的地板值。uclamp 是理解现代 Android 调度行为的关键前提，需补完其工作原理、Android 集成方式和 Perfetto 观测入口。]
+在 cpufreq / schedutil 这条线上，uclamp 可以直接理解成对 util 信号加上下限和上限。`effective_cpu_util()` 汇总 CFS、RT、DL 负载之后，还会把 `UCLAMP_MIN` / `UCLAMP_MAX` 一起算进去，所以 schedutil 看到的是 clamp 之后的有效 util，不再等同于原始 PELT util。
+
+这会直接改变调频结果。前台关键线程带着较高的 `uclamp_min` 被唤醒时，即使 PELT 还没爬起来，schedutil 也会按更高的 util 计算目标频率，大核频率因此更早拉起；后台任务如果被写了较低的 `uclamp_max`，瞬时 util 冲高时也更难把频率和选核一路推到顶。Android 用户态怎样通过 task profile、libprocessgroup 和 cgroup 把 clamp 值送进内核，§5.2 已完整展开，这里只保留与频率选择直接相关的部分。
+
+排查这类场景时，把 `/proc/<tid>/sched` 里的 clamp 字段、CPU Frequency 轨和线程迁移一起看，通常就能解释“util 看起来不高，频率却先上来了”的现象。
 
 ### 影响频率的其他因素
 
@@ -287,7 +293,7 @@ schedutil 的决策并不是最终频率，还有几个约束会叠加在 schedu
 
 1. **Power HAL 的场景策略**：Android Framework 通过 Power HAL 向内核传递当前的系统"场景"信息。比如在应用启动（LAUNCH）、触摸交互（INTERACTION）、游戏等场景，Power HAL 会抬高 CPU 的**地板频（floor frequency）**——即 `scaling_min_freq`。这保证了在关键场景下 CPU 不会因为利用率低而降频到很低的水平。
 
-2. **温控（Thermal Throttling）**：当设备温度超过预设阈值时，温控系统会强制降低 `scaling_max_freq`（天花板频）。此时即使 schedutil 想要更高的频率、Power HAL 也申请了更高的性能，CPU 频率也上不去。这是分析游戏掉帧、持续负载性能下降时首先要排查的因素。
+2. **温控（Thermal Throttling）**：当设备温度超过预设阈值时，温控系统会强制降低 `scaling_max_freq`（天花板频）。此时即使 schedutil 想要更高的频率、Power HAL 也申请了更高的性能，CPU 频率也上不去。这是分析游戏掉帧、持续负载性能下降时优先要排查的因素。
 
 3. **省电模式**：低电量或手动开启省电模式时，系统同样会压低天花板频。
 
@@ -409,7 +415,7 @@ ORDER BY cpu;
 
 ### 误区 5："绑核（affinity）是万能的优化手段"
 
-绑核确实能解决"关键线程被调度到小核"的问题，但也有代价：一旦绑定了某个核心，即使那个核心被温控降频，线程也无法迁移到其他核心上。在实际优化中，绑核通常是"最后手段"，首选方案是调整 RTG 策略或调度器 upmigrate 阈值，让调度器自己做出正确的选核决策。绑核适合用于经过充分验证的固定场景（比如已知 RenderThread 的负载特征稳定），但不适合负载波动大的场景。
+绑核确实能解决"关键线程被调度到小核"的问题，但也有代价：一旦绑定了某个核心，即使那个核心被温控降频，线程也无法迁移到其他核心上。在实际优化中，绑核通常是"兜底手段"，更稳的做法是调整 RTG 策略或调度器 upmigrate 阈值，让调度器自己做出正确的选核决策。绑核适合用于经过充分验证的固定场景（比如已知 RenderThread 的负载特征稳定），但不适合负载波动大的场景。
 
 [来源: Personal-Knowlodge/source/2026-03-06_wechat_Android性能优化之绑定RenderThread到大核CPU.md]
 [来源: Personal-Knowlodge/source/Android-Perfetto-09-CPU.md]
