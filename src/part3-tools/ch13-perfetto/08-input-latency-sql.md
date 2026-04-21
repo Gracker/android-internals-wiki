@@ -22,12 +22,13 @@ sources:
     path: "intake/research-feeds/2026-04-05-15-input-pipeline-latency-breakdown.md"
 tags: [Perfetto, SQL, input-latency, android.input, input-events, trace-analysis]
 related_chapters: ["3.1", "3.4", "13.3", "13.5"]
-pipeline_stage: task9_pending
+pipeline_stage: task2b_pending
 task2b_result: fixed
-task2b_state: fixed
+task2b_state: pending
 task6_state: reviewed
 task6_result: "pass-light-edit"
-task9_state: pending
+task9_state: reviewed
+task9_result: needs-rework
 
 # Task 9 Deep Tech Review 修复内容
 - **源码错误修正**：字段名错误（ts/dur/utid/android_input_id → dispatch_ts/dispatch_dur/tid/input_event_id）
