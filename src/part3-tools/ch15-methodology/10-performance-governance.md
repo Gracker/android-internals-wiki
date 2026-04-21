@@ -20,8 +20,11 @@ sources:
     path: "https://developer.android.com/topic/libraries/app-startup"
 tags: [governance, benchmark, ci, budget, release]
 related_chapters: ["8.3", "15.3", "15.6", "15.9", "14.12"]
-pipeline_stage: task6_pending
-task6_state: pending
+pipeline_stage: task9_pending
+task6_state: reviewed
+task6_result: pass-light-edit
+reviewed_date: "2026-04-21"
+reviewed_by: openclaw-task6
 task9_state: pending
 ---
 
@@ -34,7 +37,7 @@ task9_state: pending
 
 - 🔹 性能治理要从“高手经验”升级成“团队机制”
 - 🔹 预算、基线、回归门禁、灰度观测、发布验收缺一不可
-- 🔹 Macrobenchmark / Baseline Profiles / CI 是工程化落地的关键支点
+- 🔹 Macrobenchmark / Baseline Profiles / CI 是工程化实践的关键支撑
 - 🔹 性能问题需要 owner、优先级、SLO 和验收标准
 - 🔹 治理体系不该只覆盖 crash / ANR，也要覆盖流畅性和启动
 
@@ -52,16 +55,16 @@ task9_state: pending
 - 每次出大问题都紧急优化，但平时没有门禁。
 - 线上指标一直看着“还行”，直到某次版本或活动把问题放大。
 
-真正长期有效的性能治理，必须把个人能力沉淀成团队制度。
+真正长期有效的性能治理，必须把个人能力转化成团队制度。
 
 这也是为什么“治理工程化”和“有几个高手懂性能”不是一回事。  
 前者追求的是版本质量可预测，后者往往只会在出事时表现出价值。
 
-## 工程化治理最少要有五个抓手
+## 工程化治理最少要有五个维度
 
 ### 1. 性能预算
 
-预算的意思不是写一个漂亮数字，而是明确：
+预算的意思是明确：
 
 - 首页 TTFD 预算
 - 核心场景 Janky Frame Rate 预算
@@ -146,7 +149,7 @@ task9_state: pending
 事故处理最忌讳两件事：
 
 - 只修表象，不改门禁
-- 只做一次复盘，不把规则沉淀回日常机制
+- 只做一次复盘，不把规则固化回日常机制
 
 ## 角色分工也要工程化
 
@@ -201,7 +204,7 @@ task9_state: pending
 - 问题不会总靠少数专家救火
 - 性能成为版本质量的一部分
 
-## 一个现实可落地的最小组合
+## 一个现实可执行的最小组合
 
 如果团队现在还没有完整治理体系，可以先用这个组合起步：
 
