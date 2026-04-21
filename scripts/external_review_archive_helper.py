@@ -21,12 +21,27 @@ def load_text(path: Path) -> str:
 
 
 def infer_section(path: Path) -> str | None:
-    m = re.search(r"\d{4}-\d{2}-\d{2}-\d{2}-(.+)-external-review\.md$", path.name)
+    # Capture everything after YYYY-MM-DD- (include HH in the value)
+    m = re.search(r"\d{4}-\d{2}-\d{2}-(.+)-external-review\.md$", path.name)
     if not m:
         return None
-    value = m.group(1)
+    value = m.group(1)  # e.g. "14-01-as-profiler" or "06-15.6"
+
+    # Direct section number (e.g. "15.6")
     if re.fullmatch(r"\d+(?:\.\d+)?", value):
         return value
+
+    # XX-YY-slug → XX.YY (e.g. "14-01-as-profiler" → 14.1)
+    m_sub = re.fullmatch(r"(\d+)-(\d+)-.+", value)
+    if m_sub:
+        return f"{int(m_sub.group(1))}.{int(m_sub.group(2))}"
+
+    # HH-XX.YY → XX.YY (e.g. "06-15.6" → 15.6)
+    m_dot = re.fullmatch(r"\d+-(\d+\.\d+)", value)
+    if m_dot:
+        return m_dot.group(1)
+
+    # Fallback: search file content for explicit section marker
     text = load_text(path)
     m2 = re.search(r"\*\*章节号\*\*：\s*([^\n]+)", text)
     return m2.group(1).strip() if m2 else None
