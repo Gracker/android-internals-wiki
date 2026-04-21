@@ -1,1 +1,62 @@
-[]
+[
+  {
+    "section": "13.1",
+    "section_title": "Perfetto 简介与演进",
+    "priority": 90,
+    "reason": "[review回炉] External review P0: AOSP源码路径错误(system/tracing/不存在)；P1: 遗漏heapprofd/traced_perf架构组件",
+    "material_paths": [
+      "logs/external-review/2026-04-21-22-13.1-external-review.md"
+    ],
+    "review_issues": [
+      {
+        "type": "需修正",
+        "location": "参考资料",
+        "detail": "AOSP源码路径 system/tracing/traced/ 和 system/tracing/traced_probes/ 不存在，Perfetto源码位于 external/perfetto/ 下",
+        "suggestion": "修正为 external/perfetto/src/traced/service/ 和 external/perfetto/src/traced/probes/"
+      },
+      {
+        "type": "需补充",
+        "location": "Perfetto 的架构 > traced_probes 之后",
+        "detail": "遗漏核心架构组件 heapprofd（Native内存分配追踪）和 traced_perf（CPU采样分析）",
+        "suggestion": "在 traced_probes 之后补充这两个组件的角色说明"
+      }
+    ],
+    "added_by": "task6-review",
+    "added_at": "2026-04-21T18:36:56",
+    "status": "pending",
+    "original_review_log": "logs/review/2026-04-21-18-review.md"
+  },
+  {
+    "section": "14.4",
+    "section_title": "dumpsys 系列命令",
+    "priority": 90,
+    "reason": "[review回炉] External review P0: LMKD/USS事实错误；P1: 遗漏dumpsys input联动；P2: VISIBLE_APP_ADJ版本变化",
+    "material_paths": [
+      "logs/external-review/2026-04-21-14-04-dumpsys-external-review.md"
+    ],
+    "review_issues": [
+      {
+        "type": "需修正",
+        "location": "dumpsys meminfo：关键指标 -> USS 段落",
+        "detail": "原文称LMK在选择杀进程时会参考USS，这是严重事实错误。LMKD运行时只看oom_score_adj和RSS",
+        "suggestion": "删掉'LMK在选择杀谁时会参考这个值'，改为：USS是帮助开发者精确定位内存泄漏的指标"
+      },
+      {
+        "type": "需补充",
+        "location": "dumpsys window：窗口层级与焦点",
+        "detail": "只靠dumpsys window排查'点了没反应'不够，遗漏dumpsys input查看输入系统焦点",
+        "suggestion": "在焦点排查段落补充联动dumpsys input查看FocusedWindow的建议"
+      },
+      {
+        "type": "需确认",
+        "location": "dumpsys activity：进程优先级",
+        "detail": "VISIBLE_APP_ADJ在Android 10前是1，现在是100，文章未说明版本变化",
+        "suggestion": "加一句话说明Android 10+ ADJ数值放大的变化"
+      }
+    ],
+    "added_by": "task6-review",
+    "added_at": "2026-04-21T18:36:56",
+    "status": "pending",
+    "original_review_log": "logs/review/2026-04-21-18-review.md"
+  }
+]

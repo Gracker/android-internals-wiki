@@ -5,7 +5,7 @@ section: "13.1"
 status: ready-for-review
 drafted_date: "2026-04-03"
 drafted_by: "openclaw-task2a"
-reviewed_date: "2026-04-14"
+reviewed_date: "2026-04-21"
 reviewed_by: "openclaw-task6"
 task6_result: "needs-rework"
 polish_count: 2
@@ -24,11 +24,11 @@ sources:
     path: "https://www.androidperformance.com/2019/12/01/Android-Systrace(Perfetto)-Basic/"
 tags: ['perfetto', 'systrace', 'tracing', 'trace-processor', 'traced', 'ftrace', 'atrace', 'heapprofd', 'performance-analysis']
 related_chapters: ["13.2", "13.3", "2.1", "7.1"]
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task9_result: needs-rework
-task2b_state: fixed
+task2b_state: pending
 task2b_result: fixed
 ---
 
@@ -113,7 +113,7 @@ Perfetto 从架构和数据模型两边一起改了这件事。Producer 先把�
 
 ## Perfetto 的架构
 
-理解 Perfetto 的架构，有助于在遇到问题时知道问题出在哪一层。更准确的概括是：**Producer 先把事件写进与 `traced` 共享的 shared memory，`traced` 再把这些数据汇聚到 central trace buffers；Consumer 负责发起采集、停止采集，并决定结果是录制结束后一次性写出，还是按 long trace 配置周期性刷到文件。**
+理解 Perfetto 的架构，有助于在遇到问题时知道问题出在哪一层。Producer 先把事件写进与 `traced` 共享的 shared memory，`traced` 再把这些数据汇聚到 central trace buffers；Consumer 负责发起采集、停止采集，并决定结果是录制结束后一次性写出，还是按 long trace 配置周期性刷到文件。
 
 [图：Perfetto 架构示意图，Producer shared memory page → `traced` central buffers → Consumer / 输出文件]
 

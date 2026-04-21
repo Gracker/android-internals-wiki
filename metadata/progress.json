@@ -2586,16 +2586,17 @@
       "title": "Perfetto 简介与演进",
       "chapter": "13.1",
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "revisiting",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
       "task9_state": "pending",
-      "task2b_state": "fixed",
+      "task2b_state": "pending",
       "reviewed_date": "2026-04-14",
       "reviewed_by": "openclaw-task6",
       "task6_result": "needs-rework",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
-      "section": "13.1"
+      "section": "13.1",
+      "task6_reviewed_date": "2026-04-21"
     },
     "src/part3-tools/ch13-perfetto/02-trace-capture.md": {
       "path": "src/part3-tools/ch13-perfetto/02-trace-capture.md",
@@ -2701,14 +2702,16 @@
       "title": "Perfetto 输入延迟 SQL 深度分析",
       "chapter": "13.8",
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "revisiting",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
       "task9_state": "pending",
       "task2b_state": "fixed",
       "reviewed_date": "2026-04-13",
       "reviewed_by": "openclaw-task6",
       "task2b_result": "fixed",
-      "section": "13.8"
+      "section": "13.8",
+      "task6_result": "pass-light-edit",
+      "task6_reviewed_date": "2026-04-21"
     },
     "src/part3-tools/ch13-perfetto/09-tracing-infrastructure.md": {
       "path": "src/part3-tools/ch13-perfetto/09-tracing-infrastructure.md",
@@ -2812,15 +2815,16 @@
       "title": "dumpsys 系列命令",
       "chapter": "14.4",
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "revisiting",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
       "task9_state": "pending",
-      "task2b_state": "fixed",
+      "task2b_state": "pending",
       "reviewed_date": "2026-04-14",
       "reviewed_by": "openclaw-task6",
-      "task6_result": "rework-done",
+      "task6_result": "needs-rework",
       "task9_result": "rework-done",
-      "section": "14.4"
+      "section": "14.4",
+      "task6_reviewed_date": "2026-04-21"
     },
     "src/part3-tools/ch14-other-tools/05-third-party-libs.md": {
       "path": "src/part3-tools/ch14-other-tools/05-third-party-libs.md",

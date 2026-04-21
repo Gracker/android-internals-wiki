@@ -6,7 +6,7 @@ status: ready-for-review
 drafted_date: "2026-04-06"
 drafted_by: "openclaw-task2a"
 reviewed_by: "openclaw-task6"
-reviewed_date: "2026-04-13"
+reviewed_date: "2026-04-21"
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 last_verified: "2026-04-15"
 last_verified_against: "perfetto.dev/docs/analysis/sql-tables/android-input"
@@ -22,10 +22,11 @@ sources:
     path: "intake/research-feeds/2026-04-05-15-input-pipeline-latency-breakdown.md"
 tags: [Perfetto, SQL, input-latency, android.input, input-events, trace-analysis]
 related_chapters: ["3.1", "3.4", "13.3", "13.5"]
-pipeline_stage: task6_pending
+pipeline_stage: task9_pending
 task2b_result: fixed
 task2b_state: fixed
-task6_state: revisiting
+task6_state: reviewed
+task6_result: "pass-light-edit"
 task9_state: pending
 
 # Task 9 Deep Tech Review 修复内容
@@ -150,25 +151,7 @@ FROM android_input_events;
 
 分析手势卡顿时使用 `android_motion_events`，分析按键响应时使用 `android_key_events`。
 
-延迟维度的计算：
 
-```sql
--- 基础延迟维度（由 stdlib 计算）
-SELECT
-  input_event_id,
-  dispatch_ts,
-  receive_ts,  -- App 接收时间（stdlib 提供）
-  ack_ts,     -- App ACK 时间（stdlib 提供）
-  -- 计算各阶段延迟
-  (receive_ts - dispatch_ts) AS dispatch_latency_ns,
-  (ack_ts - receive_ts) AS handling_latency_ns,
-  (ack_ts - dispatch_ts) AS total_latency_ns
-FROM android_input_events;
-```
-
-`dispatch_ts` 是 InputDispatcher 开始分发事件的时间，`receive_ts` 是 App 主线程接收到事件的时间（Binder 调用返回），`ack_ts` 是 App 处理完成发送 ACK 的时间。这三个时间戳构成了输入延迟的完整度量。
-
-注意：`end_to_end_latency` 需要关联帧事件，通过 `frame_id` 和 `is_speculative_frame` 字段可以实现更精确的端到端延迟分析。如果 Trace 中没有帧事件关联，相关字段为 NULL。
 
 [已验证: perfetto.dev/docs/analysis/sql-tables/android-input]
 
@@ -261,17 +244,7 @@ FROM android_input_events
 WHERE ack_ts IS NOT NULL AND dispatch_ts IS NOT NULL;
 ```
 
-**重要**：该查询使用实际字段名 dispatch_ts/receive_ts/ack_ts，字段命名错误已修正。
-
 **参考值示例**：Pixel 7 / Android 14 / 60Hz / 主线程无阻塞 / 滑动场景 / 2000 样本
-| 阶段 | P50 | P95 | P99 |
-|------|-----|-----|-----|
-| dispatch | < 1 ms | < 3 ms | < 5 ms |
-| handling | < 2 ms | < 8 ms | < 16 ms |
-| total | < 4 ms | < 12 ms | < 24 ms |
-
-**注意**：P95 与 P99 差值大说明存在偶发极端延迟，需回溯具体时间点的系统状态。
-
 | 阶段 | P50 | P95 | P99 |
 |------|-----|-----|-----|
 | dispatch | < 1 ms | < 3 ms | < 5 ms |
@@ -636,7 +609,7 @@ data_sources: {
 }
 ```
 
-**重要澄清**：
+**区分查询模块和数据源**：
 - `android.input` 是**查询模块**（用于 SQL 分析）
 - 实际**数据源**是 `android.input.inputevent`（需要 debuggable build）
 - 端到端延迟需要 FrameTimeline 数据补充 InputReader 阶段

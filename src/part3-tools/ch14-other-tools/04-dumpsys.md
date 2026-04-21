@@ -18,14 +18,14 @@ sources:
     path: "source.android.com/docs/core/graphics/surfaceflinger-windowmanager"
 tags: [dumpsys, meminfo, gfxinfo, activity, window, batterystats, SurfaceFlinger, debugging]
 related_chapters: ["4.1", "4.5", "7.3", "13.1", "14.1"]
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task9_result: rework-done
-task2b_state: fixed
+task2b_state: pending
 reviewed_by: "openclaw-task6"
-reviewed_date: "2026-04-14"
-task6_result: rework-done
+reviewed_date: "2026-04-21"
+task6_result: "needs-rework"
 ---
 
 # dumpsys 系列命令
@@ -60,9 +60,9 @@ task6_result: rework-done
 
 在分析 Android 性能问题的过程中，我们经常需要快速了解系统某一时刻的"状态快照"——比如某个进程占用了多少内存、当前屏幕上叠加了多少个 Layer、哪个窗口持有焦点、最近 120 帧的渲染耗时分布如何。Perfetto 可以告诉我们"过程"（事情是怎么一步步发生的），但如果我们需要的是一个"截面"（此刻系统长什么样），dumpsys 就是最趁手的工具。
 
-可以把 dumpsys 看成一个桥梁。它会遍历 Android 系统中所有注册到 ServiceManager 的系统服务，调用每个服务的 `dump()` 方法，再把服务内部状态以文本形式输出到终端。
+dumpsys 会遍历 Android 系统中所有注册到 ServiceManager 的系统服务，调用每个服务的 `dump()` 方法，把服务内部状态以文本形式输出到终端。
 
-因为每个系统服务都实现了自己的 `dump()` 方法，dumpsys 的输出覆盖了 Android 系统的多个关键面向，从 Activity 栈到电池统计，从内存分配到图形合成，都能拿到对应的状态快照。
+每个系统服务都实现了自己的 `dump()` 方法，因此 dumpsys 的输出覆盖了 Android 系统的多个关键面向，从 Activity 栈到电池统计，从内存分配到图形合成，都能拿到对应的状态快照。
 
 本章不打算穷举 dumpsys 支持的所有子命令（在设备上运行 `adb shell dumpsys -l` 就能列出完整列表），而是聚焦于性能分析中最常用的六个子命令，逐个讲清楚它的用途、输出结构、关键指标的含义，以及在实际性能分析中怎么用。
 

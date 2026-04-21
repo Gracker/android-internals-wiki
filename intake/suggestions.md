@@ -76,3 +76,19 @@
 1. 优先处理涉及 P1 级别问题的章节（如内存工具章节的 Perfetto 能力修正）
 2. 补充工具权限要求的详细说明，提升实战指导价值
 3. 增加真实案例分析，提升内容的实用性
+
+## [Task6 Review] 13.1 Perfetto 简介与演进 — 2026-04-21
+- **类型**：需修正 + 需补充
+- **位置**：参考资料 / Perfetto 的架构
+- **问题**：(P0) AOSP源码路径 system/tracing/ 不存在，正确路径为 external/perfetto/src/traced/；(P1) 架构章节遗漏 heapprofd 和 traced_perf 两个核心组件
+- **建议**：修正源码路径；在 traced_probes 之后补充 heapprofd/traced_perf 的角色说明
+- **来源**：external-review/2026-04-21-22-13.1-external-review.md
+- **review 日志**：logs/review/2026-04-21-18-review.md
+
+## [Task6 Review] 14.4 dumpsys 系列命令 — 2026-04-21
+- **类型**：需修正 + 需补充 + 需确认
+- **位置**：meminfo USS段落 / window焦点段落 / activity进程优先级
+- **问题**：(P0) LMKD不使用USS，使用RSS+oom_score_adj；(P1) 遗漏dumpsys input联动；(P2) VISIBLE_APP_ADJ值在Android 10前后不同
+- **建议**：修正USS描述；补充dumpsys input建议；说明ADJ版本变化
+- **来源**：external-review/2026-04-21-14-04-dumpsys-external-review.md
+- **review 日志**：logs/review/2026-04-21-18-review.md
