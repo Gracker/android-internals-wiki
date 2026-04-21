@@ -32,9 +32,9 @@ polish_by: "task2b-polish"
 task2b_result: fixed
 last_task2b_at: "2026-04-21T08:24:09+08:00"
 task2b_state: fixed
-task6_state: revisiting
+task6_state: reviewed
 task9_state: pending
-pipeline_stage: task6_pending
+pipeline_stage: task9_pending
 ---
 
 # 大小核架构
@@ -44,7 +44,7 @@ pipeline_stage: task6_pending
 
 打开 Perfetto 的 CPU 视图，我们会看到 8 个（或更多）CPU 核心，编号从 0 开始。点击某个线程的 Running 切片，详情面板里有一个 `cpu` 字段，告诉你这个线程此刻跑在几号核心上。仔细观察会发现，同一线程在不同时间段跑在不同的核心上——有时候在 CPU 0，有时候在 CPU 7，而且在这两个核心上的执行速度差异巨大。
 
-这不是调度器在"随机分配"。现代手机 SoC 普遍采用大小核（big.LITTLE）异构多核架构，不同类型的核心在性能和功耗之间存在巨大的设计权衡。理解这种架构，是读懂 CPU Scheduling 轨道、判断调度器行为是否合理的基础。一个计算密集型任务如果长时间运行在小核上，它的耗时可能比在大核上慢 2-3 倍；反过来，一个后台同步任务如果被错误地调度到大核上，会白白浪费电量。
+现代手机 SoC 普遍采用大小核（big.LITTLE）异构多核架构，不同类型的核心在性能和功耗之间存在巨大的设计权衡。理解这种架构，是读懂 CPU Scheduling 轨道、判断调度器行为是否合理的基础。一个计算密集型任务如果长时间运行在小核上，它的耗时可能比在大核上慢 2-3 倍；反过来，一个后台同步任务如果被错误地调度到大核上，会白白浪费电量。
 
 本节我们来看大小核架构是怎么设计的、核心迁移的触发机制是什么、以及 cpufreq governor（尤其是 schedutil）如何根据负载动态调频——这些都是性能分析时"看懂 CPU 行为"的前提。
 
