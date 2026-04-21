@@ -1508,7 +1508,10 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-21T13:57:22+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-04-21T15:10:26+08:00",
+      "completed_by": "task2b-content-processing-rework",
+      "resolution": "已改写 PSS 与 userspace lmkd 的关系，修正 memtrack HAL 版本边界与一手来源，并把 Perfetto graphics counter 查询改为先探测 track 再下钻。"
     },
     {
       "section": "16.2",
@@ -1540,7 +1543,10 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-21T13:57:22+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-04-21T15:10:26+08:00",
+      "completed_by": "task2b-content-processing-rework",
+      "resolution": "已校正 ProfilingTrigger 的 API 36 / 37 边界与 Builder + List 示例，补上 SystemHealthManager / Display flagged API 的可用性与调用边界。"
     },
     {
       "section": "17.3",

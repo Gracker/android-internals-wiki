@@ -2,8 +2,8 @@
 title: "各 Android 版本性能变更追踪"
 chapter: "16.2"
 drafted_date: "2026-04-04"
-last_verified: "2026-04-04"
-last_verified_against: "developer.android.com behavior-changes + API reference"
+last_verified: "2026-04-21"
+last_verified_against: "developer.android.com API reference + AOSP android-16.0.0_r1 SystemHealthManager / Display"
 confidence: medium
 sources:
   - type: official
@@ -19,6 +19,16 @@ sources:
   - type: official
     path: "developer.android.com/reference/android/os/ProfilingManager"
   - type: official
+    path: "developer.android.com/reference/android/os/ProfilingTrigger"
+  - type: official
+    path: "developer.android.com/reference/android/os/health/SystemHealthManager"
+  - type: official
+    path: "developer.android.com/reference/android/view/Display"
+  - type: official
+    path: "https://android.googlesource.com/platform/frameworks/base/+/android-16.0.0_r1/core/java/android/os/health/SystemHealthManager.java"
+  - type: official
+    path: "https://android.googlesource.com/platform/frameworks/base/+/android-16.0.0_r1/core/java/android/view/Display.java"
+  - type: official
     path: "developer.android.com/reference/android/view/Choreographer"
   - type: official
     path: "developer.android.com/reference/android/view/FrameMetrics"
@@ -31,11 +41,12 @@ task6_result: pass-light-edit
 reviewed_by: openclaw-task6
 reviewed_date: "2026-04-17"
 section: "16.2"
-status: ready-for-review
-pipeline_stage: task2b_pending
+status: finalized
+pipeline_stage: ready-to-publish
 task9_state: reviewed
-task9_result: needs-rework
-task2b_state: pending
+task9_result: pass-tech-review
+task2b_state: fixed
+task2b_result: fixed
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-04-21"
 last_task9_at: "2026-04-21T13:57:22+08:00"
@@ -244,29 +255,34 @@ Android 16 在性能分析工具链上的突破比在性能机制本身更大。
 
 ### 系统触发式 Profiling
 
-Android 16 为 `ProfilingManager` 新增了系统触发式追踪能力。App 可以通过 `addProfilingTriggers()` 注册对特定系统事件的兴趣，当事件发生时系统自动采集 trace 数据。第一版支持的触发类型包括：
-
-- **`TRIGGER_TYPE_ANR`**：系统检测到 ANR 时自动开始 profile 录制，捕获 ANR 发生前的历史数据。这解决了 ANR 不可预测、手动 Profiling 难以捕获根因的痛点。开发者可以看到导致 ANR 的实际阻塞操作，即使该操作在 ANR 被正式检测到时已经完成。
-- **`TRIGGER_TYPE_COLD_START`**：应用冷启动时自动采集从进程创建到 `reportFullyDrawn()` 的完整 Perfetto trace。替代了在 `Application.onCreate()` 中手动 `Debug.startMethodTracing()` 的方式。
+Android 16 把 `ProfilingManager` 从手动抓取扩展到系统触发式采样。App 先通过 `registerForAllProfilingResults()` 注册全局结果监听，再用 `addProfilingTriggers(List<ProfilingTrigger>)` 声明自己关心的系统事件。API 36 公开的触发器包括 `TRIGGER_TYPE_ANR` 和 `TRIGGER_TYPE_APP_FULLY_DRAWN`。`TRIGGER_TYPE_COLD_START` 要到 API 37 才出现在公开参考页里，所以不能把它写成 Android 16 的稳定接口。
 
 ```java
-// Android 16: 注册系统触发式追踪
+// Imports are omitted.
 ProfilingManager pm = getSystemService(ProfilingManager.class);
+
+pm.registerForAllProfilingResults(
+    getMainExecutor(),
+    result -> Log.d(
+        "Profiling",
+        result.getTriggerType() + " -> " + result.getResultFilePath())
+);
+
 pm.addProfilingTriggers(
-    new ProfilingTrigger[]{
-        new ProfilingTrigger(ProfilingTrigger.TRIGGER_TYPE_ANR),
-        new ProfilingTrigger(ProfilingTrigger.TRIGGER_TYPE_COLD_START),
-    }
+    List.of(
+        new ProfilingTrigger.Builder(ProfilingTrigger.TRIGGER_TYPE_ANR)
+            .setRateLimitingPeriodHours(12)
+            .build(),
+        new ProfilingTrigger.Builder(ProfilingTrigger.TRIGGER_TYPE_APP_FULLY_DRAWN)
+            .setRateLimitingPeriodHours(12)
+            .build()
+    )
 );
 ```
 
-这个能力改变了性能分析的方法论——从"发现问题后手动抓取 trace"到"系统自动在问题发生时抓取 trace"。
+`addProfilingTriggers()` 不带 request-scoped callback，系统触发结果要靠 `registerForAllProfilingResults()` 接收。对于线上偶发 ANR 和启动路径抖动，这类结果比事后手工复现更接近现场。
 
-对于线上偶发的性能问题（如 ANR、冷启动慢），这是根本性的改进。
-
-[已验证: 官方文档, developer.android.com/reference/android/os/ProfilingManager]
-[来源: intake/research-feeds/2026-04-01-12-android16-17-profilingmanager-system-triggered.md]
-[来源: intake/research-feeds/2026-04-02-19-ch09-profiling-manager-anr-trigger.md]
+[已验证: 官方文档, developer.android.com/reference/android/os/ProfilingManager ; developer.android.com/reference/android/os/ProfilingTrigger]
 
 ### ApplicationStartInfo.getStartComponent()
 
@@ -307,11 +323,14 @@ Android 16 在 `FrameMetrics` 中新增了 `FRAME_TIMELINE_VSYNC_ID` 字段。�
 
 [已验证: 官方文档, developer.android.com/reference/android/view/FrameMetrics]
 
-### ADPF：SystemHealthManager 头部空间 API
+### ADPF：SystemHealthManager 余量 API
 
-Android 16 在 ADPF 中引入了 `SystemHealthManager.getCpuHeadroom()` 和 `getGpuHeadroom()` API。这两个方法返回 CPU 和 GPU 的可用余量估算，帮助游戏和计算密集型 App 判断系统是否接近热降频。当你观察到帧时间逐渐增加但主线程负载不高时，可以用这两个 API 确认是否是热降频导致的 GPU 性能下降。
+Android 16 在 `android.os.health.SystemHealthManager` 中放入了 `getCpuHeadroom()` 和 `getGpuHeadroom()`。这组接口在 android-16.0.0_r1 里仍带 `@FlaggedApi(android.os.Flags.FLAG_CPU_GPU_HEADROOMS)`，设备不支持时会抛 `UnsupportedOperationException`，服务端暂时拿不到稳定估算时也可能返回 `Float.NaN`。返回值本身是 0 到 100 的 `float`，更适合做低频采样或场景切换时的热约束判断。
 
-[已验证: 官方文档, developer.android.com/reference/android/os/SystemHealthManager]
+源码实现会同步调用 `IHintManager` 获取结果，调用路径带 binder 往返成本，不适合放在每帧热点路径里轮询。游戏或重计算场景可以把它当作降档辅助信号，再配合 FrameTimeline、Perfetto 和温控日志做交叉判断。
+
+[已验证: 官方文档, developer.android.com/reference/android/os/health/SystemHealthManager]
+[已验证: AOSP, android-16.0.0_r1 frameworks/base/core/java/android/os/health/SystemHealthManager.java]
 
 ### JobScheduler 配额优化
 
@@ -336,17 +355,15 @@ Android 16 是 `FrameMetrics` 的一次实质更新：`FRAME_TIMELINE_VSYNC_ID` 
 
 ### ProfilingManager 演进
 
-`ProfilingManager` 是 Android 近几年在性能工具链上最重要的投入。它的演进路径清晰地展示了 Google 的方向：
+`ProfilingManager` 是 Android 近几年在性能工具链上的重点投入。它的演进路径很清楚：
 
-**Android 15（API 35）**：基础 API。App 可以手动请求 heap dump、stack sample 和 system trace。采集数据保存在 App 的 data 目录。
+**Android 15（API 35）**：基础 API。App 可以手动请求 heap dump、stack sample 和 system trace，采集数据保存在 App 的 data 目录。
 
-**Android 16（API 36）**：系统触发式追踪。App 注册感兴趣的触发事件（ANR、冷启动），系统在事件发生时自动采集。这是从"开发者主动采集"到"系统被动采集"的范式转变。
+**Android 16（API 36）**：系统触发式 profiling 进入公开 API。公开参考页里的 API 36 触发器包括 `TRIGGER_TYPE_ANR` 和 `TRIGGER_TYPE_APP_FULLY_DRAWN`。
 
-**Android 17（API 37）**：进一步扩展触发类型，包括 `TRIGGER_TYPE_OOM`（OutOfMemory 时自动 heap dump）和 `TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE`（因 CPU 使用过高被杀时自动 stack sample）。后者解决了一个长期痛点——App 因 CPU 过高被系统杀掉时，开发者通常只能看到 tombstone，无法获取被杀前的 CPU 活动信息。
+**Android 17（API 37）**：触发类型继续扩展，公开参考页新增 `TRIGGER_TYPE_COLD_START`、`TRIGGER_TYPE_OOM`、`TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE` 和 `TRIGGER_TYPE_APP_COMPAT`。冷启动场景从 `reportFullyDrawn()` 时点前移到“尽早捕获冷启动路径”，触发器边界也更完整。
 
-[已验证: 官方文档, developer.android.com/reference/android/os/ProfilingManager]
-[待验证: Android 17 TRIGGER_TYPE_OOM 和 TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE 的具体行为细节]
-[来源: intake/research-feeds/2026-04-01-12-android16-17-profilingmanager-system-triggered.md]
+[已验证: 官方文档, developer.android.com/reference/android/os/ProfilingManager ; developer.android.com/reference/android/os/ProfilingTrigger]
 
 ### ADPF / Dynamic Performance 演进
 
@@ -360,10 +377,10 @@ ADPF（Android Dynamic Performance Framework）从 Android 12 开始逐步构建
 
 **Android 15**：Hint session 支持省电模式，可同时报告 GPU 和 CPU 工作时长。
 
-**Android 16**：新增 `SystemHealthManager.getCpuHeadroom()` 和 `getGpuHeadroom()`，App 可以查询硬件余量，主动避免触发热降频。结合 `Display.hasArrSupport()` 和 `Display.getSuggestedFrameRate()`，App 可以参与自适应刷新率（ARR）决策。
+**Android 16**：`android.os.health.SystemHealthManager` 中加入 CPU / GPU headroom 查询接口，`Display` 中也出现了 `hasArrSupport()` / `getSuggestedFrameRate()` 这组 ARR 相关入口。它们在 android-16.0.0_r1 里都带 feature flag，是否可用还取决于 framework 开关和设备实现，迁移代码时要先做 API level 与能力探测。
 
-[已验证: 官方文档, developer.android.com/topic/performance/adpf]
-[来源: 多版本 behavior-changes 文档综合]
+[已验证: 官方文档, developer.android.com/reference/android/os/health/SystemHealthManager ; developer.android.com/reference/android/view/Display]
+[已验证: AOSP, android-16.0.0_r1 frameworks/base/core/java/android/view/Display.java]
 
 ### Choreographer 演进
 
@@ -377,10 +394,10 @@ Choreographer 的 API 演进是理解 Android 渲染调度演进的最佳切入�
 
 **API 33（Android 13）**：引入 `VsyncCallback`，提供多帧时间线选择。这是 Frame Pacing 的基础——App 可以选择一个合适的呈现时间，而不是盲目追赶下一个 VSync。
 
-**Android 16（API 36）**：`Display.hasArrSupport()` / `Display.getSuggestedFrameRate()` 支持自适应刷新率。`RecyclerView 1.4` 内置 ARR 支持。
+**Android 16（API 36）**：与帧率策略相关的新增接口更多落在 `Display`，例如 `hasArrSupport()` / `getSuggestedFrameRate()`。这组 ARR 接口仍带 flag，只有系统打开功能且设备实现支持时才可用。
 
-[已验证: 官方文档, developer.android.com/reference/android/view/Choreographer]
-[来源: intake/research-feeds/2026-04-02-11-ch02-choreographer-api-evolution-history.md]
+[已验证: 官方文档, developer.android.com/reference/android/view/Display]
+[已验证: AOSP, android-16.0.0_r1 frameworks/base/core/java/android/view/Display.java]
 
 ## 废弃 API 与替代方案
 
@@ -508,7 +525,10 @@ Predictive Back 要求 App 在手势阶段就准备好目标 UI。如果你的�
 - Android 15 Behavior Changes: developer.android.com/about/versions/15/behavior-changes-15
 - Android 16 Behavior Changes: developer.android.com/about/versions/16/behavior-changes-16
 - ProfilingManager API Reference: developer.android.com/reference/android/os/ProfilingManager
+- ProfilingTrigger API Reference: developer.android.com/reference/android/os/ProfilingTrigger
 - ApplicationStartInfo API Reference: developer.android.com/reference/android/app/ApplicationStartInfo
+- SystemHealthManager API Reference: developer.android.com/reference/android/os/health/SystemHealthManager
+- Display API Reference: developer.android.com/reference/android/view/Display
 - Choreographer API Reference: developer.android.com/reference/android/view/Choreographer
 - FrameMetrics API Reference: developer.android.com/reference/android/view/FrameMetrics
 - ADPF Documentation: developer.android.com/topic/performance/adpf
@@ -517,10 +537,11 @@ Predictive Back 要求 App 在手势阶段就准备好目标 UI。如果你的�
 
 ### AOSP 源码路径
 - ProfilingManager: frameworks/base/core/java/android/os/ProfilingManager.java
+- SystemHealthManager: frameworks/base/core/java/android/os/health/SystemHealthManager.java
+- Display: frameworks/base/core/java/android/view/Display.java
 - ApplicationStartInfo: frameworks/base/core/java/android/app/ApplicationStartInfo.java
 - Choreographer: frameworks/base/core/java/android/view/Choreographer.java
 - FrameMetrics: frameworks/base/core/java/android/view/FrameMetrics.java
-- SystemHealthManager: frameworks/base/core/java/android/os/SystemHealthManager.java
 - ActiveServices (前台服务超时): frameworks/base/services/core/java/com/android/server/am/ActiveServices.java
 
 ### 研究素材

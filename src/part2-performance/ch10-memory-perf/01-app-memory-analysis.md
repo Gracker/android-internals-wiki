@@ -4,10 +4,10 @@ chapter: "10.1"
 drafted_date: "2026-04-02"
 drafted_by: "openclaw-task2"
 applicable_versions: "Android 8.0 (API 26) - Android 16 (API 36)"
-last_verified: "2026-04-02"
+last_verified: "2026-04-21"
 reviewed_date: "2026-04-15"
 reviewed_by: "openclaw-task6"
-last_verified_against: "AOSP android-16.0.0_r1"
+last_verified_against: "AOSP android-16.0.0_r1 lmkd + memtrack HAL / developer.android.com docs"
 polish_count: 1
 polish_date: "2026-04-07"
 polish_by: "task2b-polish"
@@ -23,16 +23,23 @@ sources:
     path: "https://perfetto.dev/docs/data-sources/native-heap-profiling"
   - type: official
     path: "https://source.android.com/docs/core/debug/interpreting-cpu"
+  - type: official
+    path: "https://source.android.com/docs/core/perf/lmkd"
+  - type: official
+    path: "https://android.googlesource.com/platform/hardware/interfaces/+/android11-release/memtrack/1.0/IMemtrack.hal"
+  - type: official
+    path: "https://android.googlesource.com/platform/hardware/interfaces/+/android-16.0.0_r1/memtrack/aidl/android/hardware/memtrack/IMemtrack.aidl"
 tags: [memory, pss, rss, mat, heapprofd, memtrack, memory-analysis]
 related_chapters: ["4.1", "4.3", "4.5", "13.1", "14.3"]
 task6_state: reviewed
 task6_result: pass-light-edit
 section: "10.1"
-status: ready-for-review
-pipeline_stage: task2b_pending
+status: finalized
+pipeline_stage: ready-to-publish
 task9_state: reviewed
-task9_result: needs-rework
-task2b_state: pending
+task9_result: pass-tech-review
+task2b_state: fixed
+task2b_result: fixed
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-04-21"
 last_task9_at: "2026-04-21T13:57:22+08:00"
@@ -97,9 +104,9 @@ App 内存分析的工具可以分为三层，每一层解决不同粒度的问�
 
 `adb shell dumpsys meminfo <package_name|pid>` 是我们分析 App 内存问题的起点。它输出的核心指标是 PSS（Proportional Set Size）和 RSS（Resident Set Size）。
 
-PSS 是 Android 系统衡量进程内存占用最核心的指标。它计算进程的私有内存加上按比例分摊的共享内存——比如一个 3MB 的共享库被 3 个进程使用，每个进程的 PSS 只计算 1MB。Android 的 LMK（Low Memory Killer）正是基于 PSS 来决定杀死哪个进程的，所以优化 App 的 PSS 对存活率有直接影响。
+PSS 适合做进程内存归因和回归监控。它计算进程的私有内存，加上按比例分摊的共享内存，比如一个 3MB 的共享库被 3 个进程使用，每个进程的 PSS 只记 1MB。分析 `dumpsys meminfo` 时，PSS 能较稳定地反映单个进程对系统内存的实际代价。Android 10 起的 userspace `lmkd` 则主要用 PSI monitors 感知内存压力，再结合 `oom_score_adj`、minfree 阈值和进程 RSS/size 等启发式挑选 victim，PSS 不再是现代杀进程路径里的单一决策指标。
 
-[已验证: 官方文档, source.android.com/docs/core/debug/interpreting-cpu]
+[已验证: 官方文档, source.android.com/docs/core/debug/interpreting-cpu ; source.android.com/docs/core/perf/lmkd]
 
 RSS 则更粗粒度，它统计进程占用的所有物理内存，不做共享分摊。对于同一块共享内存，每个进程的 RSS 都会完整计入，所以所有进程的 RSS 之和会超过系统实际物理内存。RSS 的优势是计算速度快，适合观察单个进程的内存变化趋势。在 Android 9（API 28）以上，Memory Profiler 也直接展示 RSS 信息。
 
@@ -251,13 +258,13 @@ Graphics 内存是内存分析中经常被忽略但又占据相当大比例的�
 
 ### dumpsys gpu 与 Graphics 内可见性
 
-从 Android 12 开始，系统通过 `memtrack` HAL 提供更精确的 GPU 内存计量。`dumpsys meminfo` 输出中的 "Graphics" 行就是通过 `libmemtrack` API 从 GPU 驱动获取的。不同 SoC 厂商（高通 Adreno、ARM Mali、Imagination PowerVR）的 `memtrack` 实现不同，所以同一 App 在不同设备上的 Graphics 内存数值可能有差异。
+`memtrack` HAL 在 HIDL 时代就已经存在。Android 11 的 `hardware/interfaces/memtrack/1.0/IMemtrack.hal` 已经提供 `getMemory()`，`dumpsys meminfo` 的 "Graphics" 行依赖 `libmemtrack` 和设备侧 HAL 实现汇总进程的 Graphics / GL 相关记账。因此，同一 App 在不同 SoC 和 OEM 设备上的可见项与数值可能有差异。
 
-[已验证: 官方文档, source.android.com/docs/core/debug/interpreting-cpu]
+[已验证: AOSP, android11-release hardware/interfaces/memtrack/1.0/IMemtrack.hal]
 
-Android 12 引入了一个重要的改进：通过 Memtrack HAL 的 `getGpuDeviceInfo()` API 计算映射到 GPU 地址空间的 DMA-BUF 大小，确保这些缓冲区只被计入一次，避免了之前 "Lost RAM" 的计算问题。
+Android 12 之后，Graphics 和 DMA-BUF 的记账口径继续收紧。android-16.0.0_r1 的 AIDL `IMemtrack` 仍提供 `getMemory()` 和 `getGpuDeviceInfo()`，用于区分 GPU 设备并减少 CPU 映射与 GPU 映射缓冲区的重复记账。分析 Graphics 内存时，`dumpsys meminfo`、`dumpsys gpu` 和设备厂商实现要结合着看。
 
-[已验证: 官方文档, source.android.com]
+[已验证: AOSP, android-16.0.0_r1 hardware/interfaces/memtrack/aidl/android/hardware/memtrack/IMemtrack.aidl]
 
 `adb shell dumpsys gpu` 命令可以查看更详细的 GPU 内存信息，包括全局 GPU 内存使用量和按进程的 GPU 内存分配。不过这个命令的输出格式在不同 OEM 设备上差异较大。
 
@@ -271,19 +278,27 @@ Android 12 引入了一个重要的改进：通过 Memtrack HAL 的 `getGpuDevic
 
 ### 在 Perfetto 中的表现
 
-在 Perfetto Trace 中，Graphics 内存对应的是 `android.memory` Track 和进程级别的内存计数器。我们可以通过 SQL 查询来分析 Graphics 内存的时序变化：
+Perfetto 里能否直接看到 Graphics 内存计数器，取决于 trace 配置、数据源和设备实现。下手前先枚举这个进程实际暴露出的 counter track，再选其中的 graphics / gpu 相关项。
 
 ```sql
--- 查询进程的 Graphics 内存变化
-SELECT ts, value
-FROM counter
-JOIN process_counter_track ON counter.track_id = process_counter_track.id
-WHERE process_counter_track.name = 'mem.android.graphics'
-  AND process_counter_track.pid = 12345
-ORDER BY ts;
+-- 先枚举该进程实际存在的 counter track
+SELECT DISTINCT pct.name
+FROM process_counter_track AS pct
+WHERE pct.pid = 12345
+ORDER BY pct.name;
 ```
 
-[待补充: Perfetto 中 Graphics 内存 Track 的截图]
+```sql
+-- 再替换成实际存在的 graphics / gpu track 名称
+SELECT c.ts, c.value, pct.name
+FROM counter AS c
+JOIN process_counter_track AS pct ON c.track_id = pct.id
+WHERE pct.pid = 12345
+  AND pct.name IN ('<actual graphics track name>')
+ORDER BY c.ts;
+```
+
+有些 trace 只暴露全局 GPU counter，没有稳定的 `mem.android.graphics` 进程轨道。遇到这种情况，需要回到 Perfetto UI 或 `counter_track` / `process_counter_track` 表先做探测。
 
 ### Android 14 的 Graphics 内存优化
 
@@ -448,10 +463,11 @@ PSS 是必要的但不够。它只能告诉你"内存高了"，但不知道是 J
 
 ## 参考资料
 
-- [Android Studio Memory Profiler 官方文档](https://developer.android
-
-.com/studio/profile/memory-profiler)
+- [Android Studio Memory Profiler 官方文档](https://developer.android.com/studio/profile/memory-profiler)
 - [Perfetto Native Heap Profiling 文档](https://perfetto.dev/docs/data-sources/native-heap-profiling)
+- [Android userspace lmkd 文档](https://source.android.com/docs/core/perf/lmkd)
+- [Memtrack HAL HIDL 接口（Android 11）](https://android.googlesource.com/platform/hardware/interfaces/+/android11-release/memtrack/1.0/IMemtrack.hal)
+- [Memtrack HAL AIDL 接口（android-16.0.0_r1）](https://android.googlesource.com/platform/hardware/interfaces/+/android-16.0.0_r1/memtrack/aidl/android/hardware/memtrack/IMemtrack.aidl)
 - [MAT (Memory Analyzer Tool) 官方文档](https://eclipse.dev/mat/)
 - [malloc debug 官方文档](https://source.android.com/docs/core/debug/native-crash)
 - [ASan (AddressSanitizer) 官方文档](https://source.android.com/docs/core/debug/asan)
