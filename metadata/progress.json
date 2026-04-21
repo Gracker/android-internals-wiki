@@ -1,32 +1,32 @@
 {
-  "generated_at": "2026-04-21T12:29:00+08:00",
+  "generated_at": "2026-04-21T13:17:26+08:00",
   "state_machine_version": "v2",
   "total_sections": 206,
   "metrics": {
     "total": 206,
     "unknown": 31,
-    "last_updated": "2026-04-21T12:29:00+08:00",
+    "last_updated": "2026-04-21T13:17:26+08:00",
     "task2b_state_counts": {
       "unknown": 31,
-      "fixed": 137,
-      "pending": 26,
+      "fixed": 139,
+      "pending": 24,
       "idle": 12
     },
     "task9_state_counts": {
       "unknown": 30,
-      "reviewed": 65,
-      "pending": 110,
+      "reviewed": 63,
+      "pending": 112,
       "fixed": 1
     },
     "pipeline_stage_counts": {
       "unknown": 30,
-      "task6_pending": 76,
-      "task2b_pending": 23,
+      "task6_pending": 78,
+      "task2b_pending": 21,
       "ready-to-publish": 30,
       "task9_pending": 47
     },
     "pipeline_task9_pending": 47,
-    "pipeline_task2b_pending": 23,
+    "pipeline_task2b_pending": 21,
     "pipeline_ready_to_publish": 30,
     "ready-to-publish": 0,
     "finalized": 30,
@@ -35,27 +35,27 @@
   "pipeline": {
     "pipeline_stage_counts": {
       "unknown": 30,
-      "task6_pending": 76,
-      "task2b_pending": 23,
+      "task6_pending": 78,
+      "task2b_pending": 21,
       "ready-to-publish": 30,
       "task9_pending": 47
     },
     "task2b_state_counts": {
       "unknown": 31,
-      "fixed": 137,
-      "pending": 26,
+      "fixed": 139,
+      "pending": 24,
       "idle": 12
     },
     "task6_state_counts": {
       "unknown": 30,
-      "reviewed": 109,
-      "revisiting": 66,
+      "reviewed": 107,
+      "revisiting": 68,
       "pending": 1
     },
     "task9_state_counts": {
       "unknown": 30,
-      "reviewed": 65,
-      "pending": 110,
+      "reviewed": 63,
+      "pending": 112,
       "fixed": 1
     }
   },
@@ -2037,10 +2037,10 @@
       "title": "Android 功耗模型",
       "chapter": "11.1",
       "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
-      "task6_state": "reviewed",
-      "task9_state": "reviewed",
-      "task2b_state": "pending",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
+      "task9_state": "pending",
+      "task2b_state": "fixed",
       "reviewed_date": "2026-04-20",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
@@ -3138,10 +3138,10 @@
       "title": "Android 17 (API 37) 性能行为变更与适配方法",
       "chapter": "16.5",
       "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
-      "task6_state": "reviewed",
-      "task9_state": "reviewed",
-      "task2b_state": "pending",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
+      "task9_state": "pending",
+      "task2b_state": "fixed",
       "reviewed_date": "2026-04-20",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
