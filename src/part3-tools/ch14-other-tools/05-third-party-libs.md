@@ -41,14 +41,14 @@ related_chapters:
   - "14.13"
   - "15.5"
   - "15.9"
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task9_result: needs-rework
 task2b_state: fixed
 reviewed_by: "openclaw-task6"
-reviewed_date: "2026-04-14"
-task6_result: needs-rework
+reviewed_date: "2026-04-21"
+task6_result: pass-light-edit
 task2b_result: fixed
 last_task2b_at: "2026-04-21T19:51:48+08:00"
 repaired_date: "2026-04-21"
@@ -84,15 +84,17 @@ repaired_by: "codex"
 > 锚点内容需 L1/L2 验证，扩展内容至少 L2 验证，自动发现内容至少标注来源。
 <!-- outline-end -->
 
-## 为什么要了解三方性能库
+## 为什么这一章值得单独写
 
-我们在前面几章介绍了 Perfetto、Simpleperf、Android Studio Profiler 等官方工具。这些工具能力强大，但有一个共同的局限：它们主要服务于线下分析场景。当我们需要在线上（生产环境）监控真实用户的性能数据、在灰度阶段快速定位特定用户的卡顿问题、或者在编译期自动扫描潜在性能陷阱时，就需要借助三方性能库了。
+官方工具已经很强了。Perfetto、Simpleperf、Profiler 这些能力，足够把很多问题看得很深。那为什么还要讲三方性能库？
 
-本章介绍的工具和 Perfetto 互补，覆盖的是线上监控、自动检测、编译期预防这些场景。理解每个工具的核心原理和适用场景，能帮助我们在合适的时机选对工具组合。
+因为真实工作里，很多问题发生在线上版本、灰度用户、复杂设备分布里。官方工具擅长把问题看透，三方库更擅长把问题先感知到、保留住、或者提前拦下来。两者在不同位置上各有分工。
 
-## 先按层看三方性能库
+这一章真正想回答的问题是：**什么场景下需要借助三方能力，它们各自补的是哪一块空白。**
 
-很多团队第一次整理“性能库清单”时，会把所有名字堆在一起。但实际落地时，至少要先分三层：
+## 先按层看，不要先按库名看
+
+一上来就列库名，读者很容易只记住“Matrix、KOOM、LeakCanary、btrace”。这样记不住真正有用的东西。更稳的方式，是先把它们放回各自所在的层。
 
 | 层次 | 代表方案 | 更接近什么 |
 |---|---|---|
@@ -100,15 +102,15 @@ repaired_by: "codex"
 | **客户端 SDK / 组件** | Matrix、KOOM、LeakCanary、btrace、DoKit | 在 App 里负责采集或研发诊断 |
 | **平台 / 可观测性方案** | Firebase Performance、Measure | 聚合、展示、分析、告警 |
 
-先把这一层分清楚，后面的选型才不会变成“哪个库名更响就接哪个”。
+先把层次分清楚，后面的选型才不会变成“哪个名字更响就接哪个”。
 
-## Matrix：微信的全链路性能监控
+## Matrix：最像“客户端 APM 框架”的方案
 
-Matrix 是腾讯微信团队开源的 Android 性能监控框架，也是目前国内覆盖面最广、集成度最高的性能监控方案之一。它是一套完整的 APM（Application Performance Monitoring）体系，包含多个子模块，每个模块针对一个特定的性能维度。
+Matrix 是腾讯微信团队开源的 Android 性能监控框架。它的价值在于把客户端常见的性能监控问题组织成了一套相对统一的框架。
 
 ### 整体架构
 
-Matrix 的设计思路是"无侵入接入、全链路覆盖"。它通过 Gradle 插件在编译期完成字节码插桩，运行时通过 Hook 收集各类性能数据，最终将数据上报到监控平台。整个框架分为五个核心模块：
+Matrix 的设计目标是低侵入接入，覆盖从采集到上报的完整监控流程。它通过 Gradle 插件在编译期完成字节码插桩，运行时通过 Hook 收集各类性能数据，最终将数据上报到监控平台。整个框架分为五个核心模块：
 
 - **Trace Canary**：卡顿、ANR、启动耗时、帧率监控
 - **Resource Canary**：Activity/Fragment 内存泄漏、冗余 Bitmap 检测
@@ -156,9 +158,9 @@ IO Canary 通过 Native Hook 的方式拦截 POSIX 层的文件操作接口（op
 
 [已验证: 官方文档, github.com/Tencent/matrix/wiki]
 
-## KOOM：快手的内存泄漏监控
+## KOOM：把内存问题单独拉出来处理
 
-KOOM（Kwai OOM）是快手团队开源的内存监控方案，解决的核心问题是：如何在生产环境中高效检测 Java 堆、Native 堆以及线程的泄漏。相比 Matrix 的 Resource Canary（主要关注 Activity/Fragment 泄漏），KOOM 的监控范围更广。
+KOOM（Kwai OOM）是快手团队开源的内存监控方案。它最适合解决的，不是“所有性能问题”，而是**那些已经明确落在内存侧的问题**。相比 Matrix 的 Resource Canary，KOOM 更像一个专项治理工具。
 
 ### Java 堆泄漏检测
 
@@ -188,9 +190,9 @@ KOOM 还提供了线程泄漏检测能力。它通过 Hook pthread_create 和 pt
 
 [待验证: KOOM 线程泄漏模块的线上稳定性表现]
 
-## Booster：滴滴的编译期优化框架
+## Booster：把问题尽量拦在编译期
 
-前面两个工具都是运行时监控方案，Booster 走的是编译期路线。Booster 是滴滴团队开源的 Gradle 插件框架，经典实现建立在 Transform API 这一代 AGP 扩展点上，在 .class 转 .dex 之前对字节码做扫描和改写。理解这条历史路径，有助于判断它在新旧 AGP 版本里的兼容性边界。
+前面几个工具更多在运行时工作，Booster 走的是另一条路：尽量在编译期就把问题扫出来，或者把优化提前做掉。它是一种编译期治理方案，和前面几个运行时工具的定位完全不同。
 
 ### Transform API 的工作位置
 
@@ -220,9 +222,9 @@ Booster 基于 Transform API 的经典方案也有局限。Transform API 在 AGP
 
 [已验证: AGP 8.0 Release Notes，Booster 的兼容性边界仍要看具体版本或 fork]
 
-## 启动优化框架：Anchors、AppInit 与任务调度
+## 启动优化框架：它们解决的是“怎么组织”，不是“怎么监控”
 
-启动优化领域的三方库走的是另一条路线：它们不检测问题，而是提供一套框架来帮助我们组织和管理启动任务，减少冷启动耗时。
+启动优化框架和前面的监控库也不是一类东西。它们不负责发现问题，而是负责把启动阶段的任务组织得更清楚，减少串行依赖和不必要的阻塞。
 
 ### 核心思路：有向无环图（DAG）调度
 
@@ -246,9 +248,9 @@ Booster 基于 Transform API 的经典方案也有局限。Transform API 在 AGP
 
 ## 再补几类经常被漏掉的工具
 
-### LeakCanary：研发期最顺手的内存放大镜
+### LeakCanary：本地排泄漏时最好用
 
-`LeakCanary` 不是泛用线上 APM，而是开发和测试阶段最实用的内存泄漏分析工具之一。它最大的价值，不是大规模在线上监控，而是能在本地把对象引用链解释得非常清楚。
+`LeakCanary` 是开发和测试阶段最实用的内存泄漏分析工具之一。它最大的价值是能在本地把对象引用链解释得非常清楚。
 
 放到这本书里，最好把它和 `KOOM` 分开写：
 
@@ -259,7 +261,7 @@ Booster 基于 Transform API 的经典方案也有局限。Transform API 在 AGP
 
 [已验证: github.com/square/leakcanary]
 
-### Firebase Performance：平台型方案的最小样本
+### Firebase Performance：平台型方案里最容易上手的一类
 
 `Firebase Performance Monitoring` 的优点是接入成本低、启动 / 渲染 / HTTP 监控开箱即用，适合快速建立“线上能看到一些性能指标”的基础盘。它的边界也很明显：对复杂归因、私有化部署、自定义 trace 流程的控制不如自建方案灵活。
 
@@ -267,15 +269,15 @@ Booster 基于 Transform API 的经典方案也有局限。Transform API 在 AGP
 
 [已验证: firebase.google.com/docs/perf-mon]
 
-### Measure：自托管的移动可观测性平台
+### Measure：更完整的平台视角
 
 `Measure` 的价值在于它不只是一个客户端 SDK，而是一整套以 session timeline 为中心的移动可观测性平台：把点击、导航、HTTP、log、crash、ANR 和 trace 放进同一个会话视角里。
 
-对已经跨过“只想看单项指标”的团队来说，这类平台更接近真正的线上治理底座。
+对已经跨过“只想看单项指标”的团队来说，这类平台更接近完整的线上性能治理方案。
 
 [已验证: github.com/measure-sh/measure]
 
-### DoKit：研发助手，不要误写成纯线上 APM
+### DoKit：更像研发工具箱
 
 `DoKit` 的覆盖面很广，FPS、启动耗时、网络、沙盒浏览、各种研发辅助能力都在里面。它对开发和测试现场非常有价值，但定位更接近“研发工具箱”，而不是面向生产环境的大规模线上 APM。
 

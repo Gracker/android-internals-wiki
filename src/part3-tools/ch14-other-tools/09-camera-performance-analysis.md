@@ -7,7 +7,7 @@ drafted_date: "2026-04-06"
 drafted_by: "openclaw-task2a"
 reviewed_by: "openclaw-task6"
 last_task2b_at: "2026-04-21T03:10:05+08:00"
-reviewed_date: "2026-04-14"
+reviewed_date: "2026-04-21"
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 last_verified: "2026-04-06"
 last_verified_against: "AOSP android-14.0.0_r1"
@@ -24,8 +24,8 @@ sources:
 tags: ['camera', 'perfetto', 'buffer-queue', 'preview-stutter', 'hal3']
 related_chapters: ["2.13", "13.5", "11.2", "4.3"]
 pipeline_stage: task2b_pending
-task6_state: revisiting
-task6_result: needs-rework
+task6_state: reviewed
+task6_result: pass-light-edit
 task9_state: reviewed
 task2b_state: pending
 task2b_result: fixed
