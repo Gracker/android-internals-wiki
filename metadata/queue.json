@@ -1606,6 +1606,582 @@
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-21T15:34:18+08:00",
       "status": "pending"
+    },
+    {
+      "priority": 95,
+      "description": "无",
+      "chapter": "ch16.4",
+      "added_by": "external-ai-review",
+      "review_issues": [
+        "无"
+      ]
+    },
+    {
+      "priority": 95,
+      "description": "无。",
+      "chapter": "ch15.4",
+      "added_by": "external-ai-review",
+      "review_issues": [
+        "无。"
+      ]
+    },
+    {
+      "priority": 95,
+      "description": "无。",
+      "chapter": "ch15.6",
+      "added_by": "external-ai-review",
+      "review_issues": [
+        "无。"
+      ]
+    },
+    {
+      "priority": 85,
+      "description": "- [P1][知识盲区][温度控制与测试场景设计]",
+      "chapter": "ch15.6",
+      "added_by": "external-ai-review",
+      "review_issues": [
+        "- [P1][知识盲区][温度控制与测试场景设计]"
+      ]
+    },
+    {
+      "priority": 85,
+      "description": "- **原文问题**：文章详细强调了如何“控制温度”以防止降频干扰短时基准测试，但完全忽略了真实场景中无法避免的发热降频态。",
+      "chapter": "ch15.6",
+      "added_by": "external-ai-review",
+      "review_issues": [
+        "- **原文问题**：文章详细强调了如何“控制温度”以防止降频干扰短时基准测试，但完全忽略了真实场景中无法避免的发热降频态。"
+      ]
+    },
+    {
+      "priority": 85,
+      "description": "- **缺失内容**：针对重负载应用（如游戏、长视频），除了要测量冷却状态下的“峰值性能（Peak Performance）”，还必须测量持续运行（如 30 分钟）后的“稳态性能（Steady-state Performance）”。",
+      "chapter": "ch15.6",
+      "added_by": "external-ai-review",
+      "review_issues": [
+        "- **缺失内容**：针对重负载应用（如游戏、长视频），除了要测量冷却状态下的“峰值性能（Peak Performance）”，还必须测量持续运行（如 30 分钟）后的“稳态性能（Steady-state Performance）”。"
+      ]
+    },
+    {
+      "priority": 85,
+      "description": "- **为什么这是重要缺失**：现代 SoC（如骁龙 8 系等）的峰值功耗远超机身散热极限，持续负载下必然触发 20%~30% 的性能衰减。如果只测试前几分钟的“峰值性能”，会掩盖用户在长时间使用后真正面临的卡顿体验。",
+      "chapter": "ch15.6",
+      "added_by": "external-ai-review",
+      "review_issues": [
+        "- **为什么这是重要缺失**：现代 SoC（如骁龙 8 系等）的峰值功耗远超机身散热极限，持续负载下必然触发 20%~30% 的性能衰减。如果只测试前几分钟的“峰值性能”，会掩盖用户在长时间使用后真正面临的卡顿体验。"
+      ]
+    },
+    {
+      "priority": 85,
+      "description": "- **建议补充方向**：在“温度控制”小节后，增加“峰值性能 vs 稳态性能”的内容。指出针对重负载应用，Benchmark 应该包含热稳定态测试（即让设备发热到平衡点后再进行采样）。",
+      "chapter": "ch15.6",
+      "added_by": "external-ai-review",
+      "review_issues": [
+        "- **建议补充方向**：在“温度控制”小节后，增加“峰值性能 vs 稳态性能”的内容。指出针对重负载应用，Benchmark 应该包含热稳定态测试（即让设备发热到平衡点后再进行采样）。"
+      ]
+    },
+    {
+      "priority": 95,
+      "description": "*(无)*",
+      "chapter": "ch17.1",
+      "added_by": "external-ai-review",
+      "review_issues": [
+        "*(无)*"
+      ]
+    },
+    {
+      "priority": 85,
+      "description": "1.",
+      "chapter": "ch17.1",
+      "added_by": "external-ai-review",
+      "review_issues": [
+        "1."
+      ]
+    },
+    {
+      "priority": 85,
+      "description": "- **[P1][源码准确性][应用冻结技术/cgroup freezer]**",
+      "chapter": "ch17.1",
+      "added_by": "external-ai-review",
+      "review_issues": [
+        "- **[P1][源码准确性][应用冻结技术/cgroup freezer]**"
+      ]
+    },
+    {
+      "priority": 85,
+      "description": "- **原文问题**：“在 AOSP 中，这个机制由 ActivityManager 的 `setProcessFrozen` 和 `enableFreezer` 两个隐藏 API 控制。”",
+      "chapter": "ch17.1",
+      "added_by": "external-ai-review",
+      "review_issues": [
+        "- **原文问题**：“在 AOSP 中，这个机制由 ActivityManager 的 `setProcessFrozen` 和 `enableFreezer` 两个隐藏 API 控制。”"
+      ]
+    },
+    {
+      "priority": 85,
+      "description": "- **源码 / 一手资料锚点**：`frameworks/base/core/java/android/os/Process.java` 以及 `frameworks/base/services/core/java/com/android/server/am/CachedAppOptimizer.java`",
+      "chapter": "ch17.1",
+      "added_by": "external-ai-review",
+      "review_issues": [
+        "- **源码 / 一手资料锚点**：`frameworks/base/core/java/android/os/Process.java` 以及 `frameworks/base/services/core/java/com/android/server/am/CachedAppOptimizer.java`"
+      ]
+    },
+    {
+      "priority": 85,
+      "description": "- **关键代码逻辑**：`setProcessFrozen` 实际上是 `android.os.Process` 类里的 native 方法，而不是 ActivityManager 的 API。在 Framework 层面，是 `ActivityManagerService` 内部的 `CachedAppOptimizer` 通过计算 OOM Adj，最终调度并调用了 `Process.setProcessFrozen(pid, app.uid, true)`。",
+      "chapter": "ch17.1",
+      "added_by": "external-ai-review",
+      "review_issues": [
+        "- **关键代码逻辑**：`setProcessFrozen` 实际上是 `android.os.Process` 类里的 native 方法，而不是 ActivityManager 的 API。在 Framework 层面，是 `ActivityManagerService` 内部的 `CachedAppOptimizer` 通过计算 OOM Adj，最终调度并调用了 `Process.setProcessFrozen(pid, app.uid, true)`。"
+      ]
+    },
+    {
+      "priority": 85,
+      "description": "- **为什么这是重要缺失**：指错了最核心的源码位置，如果读者去 ActivityManager 中搜索这两个 API，会一无所获，破坏了 AIW 源码级指导的初衷。",
+      "chapter": "ch17.1",
+      "added_by": "external-ai-review",
+      "review_issues": [
+        "- **为什么这是重要缺失**：指错了最核心的源码位置，如果读者去 ActivityManager 中搜索这两个 API，会一无所获，破坏了 AIW 源码级指导的初衷。"
+      ]
+    },
+    {
+      "priority": 85,
+      "description": "- **建议补充方向**：更正 API 的归属，指明由 `android.os.Process.setProcessFrozen` 执行底层冻结，而在 Framework 层由 `CachedAppOptimizer` 统筹调用策略。",
+      "chapter": "ch17.1",
+      "added_by": "external-ai-review",
+      "review_issues": [
+        "- **建议补充方向**：更正 API 的归属，指明由 `android.os.Process.setProcessFrozen` 执行底层冻结，而在 Framework 层由 `CachedAppOptimizer` 统筹调用策略。"
+      ]
+    },
+    {
+      "priority": 85,
+      "description": "2.",
+      "chapter": "ch17.1",
+      "added_by": "external-ai-review",
+      "review_issues": [
+        "2."
+      ]
+    },
+    {
+      "priority": 85,
+      "description": "- **[P1][知识盲区][应用冻结技术/cgroup freezer]**",
+      "chapter": "ch17.1",
+      "added_by": "external-ai-review",
+      "review_issues": [
+        "- **[P1][知识盲区][应用冻结技术/cgroup freezer]**"
+      ]
+    },
+    {
+      "priority": 85,
+      "description": "- **原文问题**：只提到了进程被挂起，不占用 CPU 时间，但完全没有提到进程冻结对跨进程通信（Binder）的致命影响。",
+      "chapter": "ch17.1",
+      "added_by": "external-ai-review",
+      "review_issues": [
+        "- **原文问题**：只提到了进程被挂起，不占用 CPU 时间，但完全没有提到进程冻结对跨进程通信（Binder）的致命影响。"
+      ]
+    },
+    {
+      "priority": 85,
+      "description": "- **缺失内容**：当其他活跃进程（或系统服务）试图向被冻结的进程发起 Binder 调用时，会发生什么？",
+      "chapter": "ch17.1",
+      "added_by": "external-ai-review",
+      "review_issues": [
+        "- **缺失内容**：当其他活跃进程（或系统服务）试图向被冻结的进程发起 Binder 调用时，会发生什么？"
+      ]
+    },
+    {
+      "priority": 85,
+      "description": "- **运行原理说明**：如果是**同步 Binder 请求**发给被冻结的进程，由于目标处于 SIGSTOP/cgroup freeze 状态无法响应，系统为了防止发起端线程死锁（长时间挂起），会直接**杀死**被冻结的进程并返回错误。如果是**异步 (Oneway) 请求**，消息会被缓存在内核缓冲区中，若积压过多导致缓冲区溢出，进程同样会被杀。",
+      "chapter": "ch17.1",
+      "added_by": "external-ai-review",
+      "review_issues": [
+        "- **运行原理说明**：如果是**同步 Binder 请求**发给被冻结的进程，由于目标处于 SIGSTOP/cgroup freeze 状态无法响应，系统为了防止发起端线程死锁（长时间挂起），会直接**杀死**被冻结的进程并返回错误。如果是**异步 (Oneway) 请求**，消息会被缓存在内核缓冲区中，若积压过多导致缓冲区溢出，进程同样会被杀。"
+      ]
+    },
+    {
+      "priority": 85,
+      "description": "- **为什么这是重要缺失**：这是开发者在线上排查中遇到“Cached Apps Freezer 导致 App 莫名其妙死亡”的最常见原因。了解这一点，读者才能真正明白在实战中如何应对冻结（例如使用 Foreground Service 提升状态避免被冻结）。",
+      "chapter": "ch17.1",
+      "added_by": "external-ai-review",
+      "review_issues": [
+        "- **为什么这是重要缺失**：这是开发者在线上排查中遇到“Cached Apps Freezer 导致 App 莫名其妙死亡”的最常见原因。了解这一点，读者才能真正明白在实战中如何应对冻结（例如使用 Foreground Service 提升状态避免被冻结）。"
+      ]
+    },
+    {
+      "priority": 85,
+      "description": "- **建议补充方向**：在“cgroup freezer”小节末尾或“常见问题”小节中，补充说明冻结进程在处理 Binder 调用时的行为差异和系统的查杀机制。",
+      "chapter": "ch17.1",
+      "added_by": "external-ai-review",
+      "review_issues": [
+        "- **建议补充方向**：在“cgroup freezer”小节末尾或“常见问题”小节中，补充说明冻结进程在处理 Binder 调用时的行为差异和系统的查杀机制。"
+      ]
+    },
+    {
+      "priority": 95,
+      "description": "无",
+      "chapter": "ch16.1",
+      "added_by": "external-ai-review",
+      "review_issues": [
+        "无"
+      ]
+    },
+    {
+      "priority": 95,
+      "description": "无。",
+      "chapter": "ch15.7",
+      "added_by": "external-ai-review",
+      "review_issues": [
+        "无。"
+      ]
+    },
+    {
+      "priority": 95,
+      "description": "无",
+      "chapter": "ch16.2",
+      "added_by": "external-ai-review",
+      "review_issues": [
+        "无"
+      ]
+    },
+    {
+      "priority": 95,
+      "description": "*(无)*",
+      "chapter": "ch17.2",
+      "added_by": "external-ai-review",
+      "review_issues": [
+        "*(无)*"
+      ]
+    },
+    {
+      "priority": 85,
+      "description": "1.",
+      "chapter": "ch17.2",
+      "added_by": "external-ai-review",
+      "review_issues": [
+        "1."
+      ]
+    },
+    {
+      "priority": 85,
+      "description": "- **[P1][知识盲区/原理链完整性][CPU 核心架构差异与性能调度策略]**",
+      "chapter": "ch17.2",
+      "added_by": "external-ai-review",
+      "review_issues": [
+        "- **[P1][知识盲区/原理链完整性][CPU 核心架构差异与性能调度策略]**"
+      ]
+    },
+    {
+      "priority": 85,
+      "description": "- **原文问题**：“在 Perfetto 中识别不同 SoC 的核心拓扑，最直接的方法是看 CPU Frequency Track：高通 Oryon 的双集群只有两个频率档位...”",
+      "chapter": "ch17.2",
+      "added_by": "external-ai-review",
+      "review_issues": [
+        "- **原文问题**：“在 Perfetto 中识别不同 SoC 的核心拓扑，最直接的方法是看 CPU Frequency Track：高通 Oryon 的双集群只有两个频率档位...”"
+      ]
+    },
+    {
+      "priority": 85,
+      "description": "- **缺失内容**：只教读者看“频率档位”来区分大小核是非常表层的，遗漏了 Linux EAS 调度器区分异构核心的真正标尺——`cpu_capacity`。",
+      "chapter": "ch17.2",
+      "added_by": "external-ai-review",
+      "review_issues": [
+        "- **缺失内容**：只教读者看“频率档位”来区分大小核是非常表层的，遗漏了 Linux EAS 调度器区分异构核心的真正标尺——`cpu_capacity`。"
+      ]
+    },
+    {
+      "priority": 85,
+      "description": "- **运行原理说明**：在 ARM 异构计算和 Android Linux 内核中，每个 CPU 核心都有一个标定的 Capacity 值（可通过 sysfs 节点 `/sys/devices/system/cpu/cpu*/cpu_capacity` 查看，最大核通常被归一化为 1024）。EAS 调度器在做任务迁移（Task Placement）时，是计算 Task 的 util 与 CPU 的 capacity 是否匹配，而不是看频率档位。在 Perfetto 中，分析调度问题时，脑海中必须有这个 Capacity 的概念，才能理解为什么低负载任务会被强制打包到小 Capacity 的核心上。",
+      "chapter": "ch17.2",
+      "added_by": "external-ai-review",
+      "review_issues": [
+        "- **运行原理说明**：在 ARM 异构计算和 Android Linux 内核中，每个 CPU 核心都有一个标定的 Capacity 值（可通过 sysfs 节点 `/sys/devices/system/cpu/cpu*/cpu_capacity` 查看，最大核通常被归一化为 1024）。EAS 调度器在做任务迁移（Task Placement）时，是计算 Task 的 util 与 CPU 的 capacity 是否匹配，而不是看频率档位。在 Perfetto 中，分析调度问题时，脑海中必须有这个 Capacity 的概念，才能理解为什么低负载任务会被强制打包到小 Capacity 的核心上。"
+      ]
+    },
+    {
+      "priority": 85,
+      "description": "- **为什么这是重要缺失**：只看频率容易在厂商魔改策略中迷失，引入 `cpu_capacity` 概念能帮读者建立更正统的内核调度视角。",
+      "chapter": "ch17.2",
+      "added_by": "external-ai-review",
+      "review_issues": [
+        "- **为什么这是重要缺失**：只看频率容易在厂商魔改策略中迷失，引入 `cpu_capacity` 概念能帮读者建立更正统的内核调度视角。"
+      ]
+    },
+    {
+      "priority": 85,
+      "description": "- **建议补充方向**：在“核心拓扑”小节末尾，补充说明除了看频率，更底层决定调度行为的是 `cpu_capacity`，这才是系统眼中的“大小核”定义。",
+      "chapter": "ch17.2",
+      "added_by": "external-ai-review",
+      "review_issues": [
+        "- **建议补充方向**：在“核心拓扑”小节末尾，补充说明除了看频率，更底层决定调度行为的是 `cpu_capacity`，这才是系统眼中的“大小核”定义。"
+      ]
+    },
+    {
+      "priority": 95,
+      "description": "无。",
+      "chapter": "ch15.5",
+      "added_by": "external-ai-review",
+      "review_issues": [
+        "无。"
+      ]
+    },
+    {
+      "priority": 95,
+      "description": "无",
+      "chapter": "ch16.3",
+      "added_by": "external-ai-review",
+      "review_issues": [
+        "无"
+      ]
+    },
+    {
+      "priority": 95,
+      "description": "*(无)*",
+      "chapter": "ch17.3",
+      "added_by": "external-ai-review",
+      "review_issues": [
+        "*(无)*"
+      ]
+    },
+    {
+      "priority": 95,
+      "description": "无。",
+      "chapter": "ch15.8",
+      "added_by": "external-ai-review",
+      "review_issues": [
+        "无。"
+      ]
+    },
+    {
+      "priority": 95,
+      "description": "无。",
+      "chapter": "ch15.2",
+      "added_by": "external-ai-review",
+      "review_issues": [
+        "无。"
+      ]
+    },
+    {
+      "priority": 95,
+      "description": "无。",
+      "chapter": "ch15.3",
+      "added_by": "external-ai-review",
+      "review_issues": [
+        "无。"
+      ]
+    },
+    {
+      "priority": 95,
+      "description": "无",
+      "chapter": "ch16.5",
+      "added_by": "external-ai-review",
+      "review_issues": [
+        "无"
+      ]
+    },
+    {
+      "priority": 95,
+      "description": "- [P0][版本差异覆盖][性能优化之「道」 -> 持续优化]",
+      "chapter": "ch15.1",
+      "added_by": "external-ai-review",
+      "review_issues": [
+        "- [P0][版本差异覆盖][性能优化之「道」 -> 持续优化]"
+      ]
+    },
+    {
+      "priority": 95,
+      "description": "- **原文问题**：“Android 8 引入 ProfilingManager 并开始支持更多动态 trace point。”",
+      "chapter": "ch15.1",
+      "added_by": "external-ai-review",
+      "review_issues": [
+        "- **原文问题**：“Android 8 引入 ProfilingManager 并开始支持更多动态 trace point。”"
+      ]
+    },
+    {
+      "priority": 95,
+      "description": "- **源码 / 一手资料锚点**：[Android 官方文档 - ProfilingManager](https://developer.android.com/reference/android/os/ProfilingManager)",
+      "chapter": "ch15.1",
+      "added_by": "external-ai-review",
+      "review_issues": [
+        "- **源码 / 一手资料锚点**：[Android 官方文档 - ProfilingManager](https://developer.android.com/reference/android/os/ProfilingManager)"
+      ]
+    },
+    {
+      "priority": 95,
+      "description": "- **关键代码逻辑**：`android.os.ProfilingManager`。",
+      "chapter": "ch15.1",
+      "added_by": "external-ai-review",
+      "review_issues": [
+        "- **关键代码逻辑**：`android.os.ProfilingManager`。"
+      ]
+    },
+    {
+      "priority": 95,
+      "description": "- **运行原理说明**：`ProfilingManager` 是允许应用在生产环境中请求系统收集性能数据（如 Heap Dump, System Trace）的服务。",
+      "chapter": "ch15.1",
+      "added_by": "external-ai-review",
+      "review_issues": [
+        "- **运行原理说明**：`ProfilingManager` 是允许应用在生产环境中请求系统收集性能数据（如 Heap Dump, System Trace）的服务。"
+      ]
+    },
+    {
+      "priority": 95,
+      "description": "- **版本差异**：`ProfilingManager` 是在 **Android 15 (API 35)** 引入的，并不是 Android 8。Android 8 并没有这个公开 API。",
+      "chapter": "ch15.1",
+      "added_by": "external-ai-review",
+      "review_issues": [
+        "- **版本差异**：`ProfilingManager` 是在 **Android 15 (API 35)** 引入的，并不是 Android 8。Android 8 并没有这个公开 API。"
+      ]
+    },
+    {
+      "priority": 95,
+      "description": "- **核验结论**：原文把 Android 15 的新特性写成了 Android 8 的特性，严重误导。",
+      "chapter": "ch15.1",
+      "added_by": "external-ai-review",
+      "review_issues": [
+        "- **核验结论**：原文把 Android 15 的新特性写成了 Android 8 的特性，严重误导。"
+      ]
+    },
+    {
+      "priority": 95,
+      "description": "- **为什么错**：事实错误。",
+      "chapter": "ch15.1",
+      "added_by": "external-ai-review",
+      "review_issues": [
+        "- **为什么错**：事实错误。"
+      ]
+    },
+    {
+      "priority": 95,
+      "description": "- **建议修正方向**：删除 Android 8 引入 ProfilingManager 的描述。可以将 Android 8 的演进改为 Android 8.0 引入了 SystemTracing API (如 `Trace.beginAsyncSection`) 或者 Atrace 的增强，并将 ProfilingManager 移至 Android 15 的演进描述中。",
+      "chapter": "ch15.1",
+      "added_by": "external-ai-review",
+      "review_issues": [
+        "- **建议修正方向**：删除 Android 8 引入 ProfilingManager 的描述。可以将 Android 8 的演进改为 Android 8.0 引入了 SystemTracing API (如 `Trace.beginAsyncSection`) 或者 Atrace 的增强，并将 ProfilingManager 移至 Android 15 的演进描述中。"
+      ]
+    },
+    {
+      "priority": 95,
+      "description": "- **原文问题**：“Android 11-13 引入了 BlastBufferQueue 替代 BufferQueue、FrameMetrics API 暴露逐帧渲染耗时、以及 Baseline Profiles 等新机制”",
+      "chapter": "ch15.1",
+      "added_by": "external-ai-review",
+      "review_issues": [
+        "- **原文问题**：“Android 11-13 引入了 BlastBufferQueue 替代 BufferQueue、FrameMetrics API 暴露逐帧渲染耗时、以及 Baseline Profiles 等新机制”"
+      ]
+    },
+    {
+      "priority": 95,
+      "description": "- **源码 / 一手资料锚点**：[Android 官方文档 - FrameMetrics](https://developer.android.com/reference/android/view/FrameMetrics)",
+      "chapter": "ch15.1",
+      "added_by": "external-ai-review",
+      "review_issues": [
+        "- **源码 / 一手资料锚点**：[Android 官方文档 - FrameMetrics](https://developer.android.com/reference/android/view/FrameMetrics)"
+      ]
+    },
+    {
+      "priority": 95,
+      "description": "- **关键代码逻辑**：`android.view.Window.OnFrameMetricsAvailableListener`",
+      "chapter": "ch15.1",
+      "added_by": "external-ai-review",
+      "review_issues": [
+        "- **关键代码逻辑**：`android.view.Window.OnFrameMetricsAvailableListener`"
+      ]
+    },
+    {
+      "priority": 95,
+      "description": "- **版本差异**：`FrameMetrics` API 是在 **Android 7.0 (API 24)** 引入的，绝不是 Android 11-13。",
+      "chapter": "ch15.1",
+      "added_by": "external-ai-review",
+      "review_issues": [
+        "- **版本差异**：`FrameMetrics` API 是在 **Android 7.0 (API 24)** 引入的，绝不是 Android 11-13。"
+      ]
+    },
+    {
+      "priority": 95,
+      "description": "- **核验结论**：API 引入版本严重错误。",
+      "chapter": "ch15.1",
+      "added_by": "external-ai-review",
+      "review_issues": [
+        "- **核验结论**：API 引入版本严重错误。"
+      ]
+    },
+    {
+      "priority": 95,
+      "description": "- **建议修正方向**：将 `FrameMetrics` 归类到 Android 7.0 的工具演进中。对于 Android 11-13，可保留 Baseline Profiles (通过 Jetpack 引入)。关于 BlastBufferQueue，不要用“替代”一词，BlastBufferQueue 底层依然使用 BufferQueue 进行跨进程内存传递。",
+      "chapter": "ch15.1",
+      "added_by": "external-ai-review",
+      "review_issues": [
+        "- **建议修正方向**：将 `FrameMetrics` 归类到 Android 7.0 的工具演进中。对于 Android 11-13，可保留 Baseline Profiles (通过 Jetpack 引入)。关于 BlastBufferQueue，不要用“替代”一词，BlastBufferQueue 底层依然使用 BufferQueue 进行跨进程内存传递。"
+      ]
+    },
+    {
+      "priority": 85,
+      "description": "- [P1][知识盲区][测量本身会影响被测系统]",
+      "chapter": "ch15.1",
+      "added_by": "external-ai-review",
+      "review_issues": [
+        "- [P1][知识盲区][测量本身会影响被测系统]"
+      ]
+    },
+    {
+      "priority": 85,
+      "description": "- **原文问题**：“Macrobenchmark 连续跑几十次冷启动，设备可能因发热触发降频，导致后几轮数据偏低。这些影响在单次测量中往往可以忽略... 或者用 `adb shell settings put global always_finish_activities 1` 配合固定屏幕亮度减少变量。”",
+      "chapter": "ch15.1",
+      "added_by": "external-ai-review",
+      "review_issues": [
+        "- **原文问题**：“Macrobenchmark 连续跑几十次冷启动，设备可能因发热触发降频，导致后几轮数据偏低。这些影响在单次测量中往往可以忽略... 或者用 `adb shell settings put global always_finish_activities 1` 配合固定屏幕亮度减少变量。”"
+      ]
+    },
+    {
+      "priority": 85,
+      "description": "- **源码 / 一手资料锚点**：[Macrobenchmark 官方文档](https://developer.android.com/topic/performance/benchmarking/macrobenchmark-overview)",
+      "chapter": "ch15.1",
+      "added_by": "external-ai-review",
+      "review_issues": [
+        "- **源码 / 一手资料锚点**：[Macrobenchmark 官方文档](https://developer.android.com/topic/performance/benchmarking/macrobenchmark-overview)"
+      ]
+    },
+    {
+      "priority": 85,
+      "description": "- **关键代码逻辑**：`CompilationMode` 配置。",
+      "chapter": "ch15.1",
+      "added_by": "external-ai-review",
+      "review_issues": [
+        "- **关键代码逻辑**：`CompilationMode` 配置。"
+      ]
+    },
+    {
+      "priority": 85,
+      "description": "- **缺失内容**：在使用 Macrobenchmark 测量冷启动时，最大的变量实际上是**应用的编译状态（Compilation State）**（如 JIT 预热、AOT 编译、Baseline Profile）。",
+      "chapter": "ch15.1",
+      "added_by": "external-ai-review",
+      "review_issues": [
+        "- **缺失内容**：在使用 Macrobenchmark 测量冷启动时，最大的变量实际上是**应用的编译状态（Compilation State）**（如 JIT 预热、AOT 编译、Baseline Profile）。"
+      ]
+    },
+    {
+      "priority": 85,
+      "description": "- **运行原理说明**：Macrobenchmark 框架自身会在每次迭代前自动调用 `killProcess()` 杀掉应用以确保冷启动，**完全不需要（也不推荐）手动设置 `always_finish_activities 1`**，后者是早期人工测试的 Hack 手段。同时，Macrobenchmark 的核心能力是控制 `CompilationMode`（如 `CompilationMode.None()`, `CompilationMode.Partial()`）来对齐基线，这是减少变量的最重要手段，但原文未提及。",
+      "chapter": "ch15.1",
+      "added_by": "external-ai-review",
+      "review_issues": [
+        "- **运行原理说明**：Macrobenchmark 框架自身会在每次迭代前自动调用 `killProcess()` 杀掉应用以确保冷启动，**完全不需要（也不推荐）手动设置 `always_finish_activities 1`**，后者是早期人工测试的 Hack 手段。同时，Macrobenchmark 的核心能力是控制 `CompilationMode`（如 `CompilationMode.None()`, `CompilationMode.Partial()`）来对齐基线，这是减少变量的最重要手段，但原文未提及。"
+      ]
+    },
+    {
+      "priority": 85,
+      "description": "- **为什么这是重要缺失**：给出了过时的 Hack 手段，却遗漏了现代 Benchmark 框架控制变量的最核心机制。",
+      "chapter": "ch15.1",
+      "added_by": "external-ai-review",
+      "review_issues": [
+        "- **为什么这是重要缺失**：给出了过时的 Hack 手段，却遗漏了现代 Benchmark 框架控制变量的最核心机制。"
+      ]
+    },
+    {
+      "priority": 85,
+      "description": "- **建议补充方向**：删除 `always_finish_activities` 的建议。补充 Macrobenchmark 通过控制 `CompilationMode` 和锁定 CPU 频率（如果在 Root 设备上）来减少变量的现代实践。",
+      "chapter": "ch15.1",
+      "added_by": "external-ai-review",
+      "review_issues": [
+        "- **建议补充方向**：删除 `always_finish_activities` 的建议。补充 Macrobenchmark 通过控制 `CompilationMode` 和锁定 CPU 频率（如果在 Root 设备上）来减少变量的现代实践。"
+      ]
     }
   ]
 }
