@@ -1,44 +1,59 @@
 ---
-title: "内存分析工具"
-chapter: "14.3"
-section: "14.3"
+title: 内存分析工具
+chapter: '14.3'
+section: '14.3'
 status: ready-for-review
-reviewed_date: "2026-04-17"
-reviewed_by: "openclaw-task6"
-drafted_date: "2026-04-03"
-drafted_by: "openclaw-task2a"
-applicable_versions: "Android 8 (API 26) - Android 16 (API 36)"
-last_verified: "2026-04-03"
-last_verified_against: "AOSP android-16.0.0_r1"
+reviewed_date: '2026-04-17'
+reviewed_by: openclaw-task6
+drafted_date: '2026-04-03'
+drafted_by: openclaw-task2a
+applicable_versions: Android 8 (API 26) - Android 16 (API 36)
+last_verified: '2026-04-03'
+last_verified_against: AOSP android-16.0.0_r1
 confidence: medium
 sources:
-  - type: blog
-    path: "https://www.androidperformance.com/2015/04/11/AndroidMemory-Usage-Of-MAT/"
-  - type: blog
-    path: "https://www.androidperformance.com/2015/04/11/AndroidMemory-Usage-Of-MAT-Pro/"
-  - type: blog
-    path: "https://www.androidperformance.com/2015/04/11/AndroidMemory-Open-Bitmap-Object-In-MAT/"
-  - type: official
-    path: "https://developer.android.com/studio/profile/memory-profiler"
-  - type: official
-    path: "https://perfetto.dev/docs/data-sources/native-heap-profiler"
-  - type: official
-    path: "https://developer.android.com/ndk/guides/sanitizers"
-  - type: aosp
-    path: "system/core/libmeminfo"
-  - type: aosp
-    path: "system/extras/malloc_debug"
-tags: [mat, leakcanary, heapprofd, meminfo, showmap, procrank, memory-tools]
-related_chapters: ["10.1", "10.2", "10.3", "14.1", "13.1"]
-pipeline_stage: task6_pending
+- type: blog
+  path: https://www.androidperformance.com/2015/04/11/AndroidMemory-Usage-Of-MAT/
+- type: blog
+  path: https://www.androidperformance.com/2015/04/11/AndroidMemory-Usage-Of-MAT-Pro/
+- type: blog
+  path: https://www.androidperformance.com/2015/04/11/AndroidMemory-Open-Bitmap-Object-In-MAT/
+- type: official
+  path: https://developer.android.com/studio/profile/memory-profiler
+- type: official
+  path: https://perfetto.dev/docs/data-sources/native-heap-profiler
+- type: official
+  path: https://developer.android.com/ndk/guides/sanitizers
+- type: aosp
+  path: system/core/libmeminfo
+- type: aosp
+  path: system/extras/malloc_debug
+tags:
+- mat
+- leakcanary
+- heapprofd
+- meminfo
+- showmap
+- procrank
+- memory-tools
+related_chapters:
+- '10.1'
+- '10.2'
+- '10.3'
+- '14.1'
+- '13.1'
+pipeline_stage: task2b_pending
 task6_state: revisiting
 task6_result: pass-light-edit
-task9_state: pending
-task2b_state: fixed
+task9_state: reviewed
+task2b_state: pending
 task9_result: needs-rework
 task2b_result: fixed
-task2b_rework_date: "2026-04-20"
-task2b_fixed_at: "2026-04-20"
+task2b_rework_date: '2026-04-20'
+task2b_fixed_at: '2026-04-20'
+task9_reviewed_date: '2026-04-21'
+task9_reviewed_by: openclaw-task9
+last_task9_at: '2026-04-21T22:00:33.103917+08:00'
 ---
 
 # 内存分析工具

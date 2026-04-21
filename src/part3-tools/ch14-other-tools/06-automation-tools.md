@@ -1,28 +1,43 @@
 ---
-title: "自动化测试工具"
-chapter: "14.6"
+title: 自动化测试工具
+chapter: '14.6'
 status: ready-for-review
-drafted_date: "2026-04-04"
-applicable_versions: "Android 8 (API 26) - Android 16 (API 36)"
-last_verified: "2026-04-04"
-last_verified_against: "developer.android.com"
+drafted_date: '2026-04-04'
+applicable_versions: Android 8 (API 26) - Android 16 (API 36)
+last_verified: '2026-04-04'
+last_verified_against: developer.android.com
 confidence: medium
 sources:
-  - type: official
-    path: "developer.android.com/topic/performance/benchmarking/macrobenchmark-overview"
-  - type: official
-    path: "developer.android.com/topic/performance/benchmarking/microbenchmark-overview"
-  - type: official
-    path: "developer.android.com/topic/performance/benchmarking/benchmarking-in-ci"
-tags: [macrobenchmark, microbenchmark, espresso, uiautomator, ci/cd, baseline-profiles]
-related_chapters: ["13.1", "13.2", "14.1", "8.3", "8.7"]
-pipeline_stage: task9_pending
+- type: official
+  path: developer.android.com/topic/performance/benchmarking/macrobenchmark-overview
+- type: official
+  path: developer.android.com/topic/performance/benchmarking/microbenchmark-overview
+- type: official
+  path: developer.android.com/topic/performance/benchmarking/benchmarking-in-ci
+tags:
+- macrobenchmark
+- microbenchmark
+- espresso
+- uiautomator
+- ci/cd
+- baseline-profiles
+related_chapters:
+- '13.1'
+- '13.2'
+- '14.1'
+- '8.3'
+- '8.7'
+pipeline_stage: task2b_pending
 task6_state: reviewed
-task9_state: pending
-task2b_state: idle
+task9_state: reviewed
+task2b_state: pending
 reviewed_by: openclaw-task6
-reviewed_date: "2026-04-16"
+reviewed_date: '2026-04-16'
 task6_result: pass-light-edit
+task9_result: needs-rework
+task9_reviewed_date: '2026-04-21'
+task9_reviewed_by: openclaw-task9
+last_task9_at: '2026-04-21T22:00:33.103917+08:00'
 ---
 
 # 自动化测试工具

@@ -1,31 +1,47 @@
 ---
-title: "dumpsys 系列命令"
-chapter: "14.4"
-section: "14.4"
+title: dumpsys 系列命令
+chapter: '14.4'
+section: '14.4'
 status: ready-for-review
-drafted_date: "2026-04-03"
-drafted_by: "openclaw-task2a"
-applicable_versions: "Android 6.0 (API 23) - Android 16 (API 36)"
-last_verified: "2026-04-15"
-last_verified_against: "AOSP android-16.0.0_r1"
+drafted_date: '2026-04-03'
+drafted_by: openclaw-task2a
+applicable_versions: Android 6.0 (API 23) - Android 16 (API 36)
+last_verified: '2026-04-15'
+last_verified_against: AOSP android-16.0.0_r1
 confidence: medium
 sources:
-  - type: aosp
-    path: "frameworks/native/cmds/dumpsys/"
-  - type: official
-    path: "developer.android.com/studio/profile/battery-historian"
-  - type: blog
-    path: "source.android.com/docs/core/graphics/surfaceflinger-windowmanager"
-tags: [dumpsys, meminfo, gfxinfo, activity, window, batterystats, SurfaceFlinger, debugging]
-related_chapters: ["4.1", "4.5", "7.3", "13.1", "14.1"]
-pipeline_stage: task9_pending
+- type: aosp
+  path: frameworks/native/cmds/dumpsys/
+- type: official
+  path: developer.android.com/studio/profile/battery-historian
+- type: blog
+  path: source.android.com/docs/core/graphics/surfaceflinger-windowmanager
+tags:
+- dumpsys
+- meminfo
+- gfxinfo
+- activity
+- window
+- batterystats
+- SurfaceFlinger
+- debugging
+related_chapters:
+- '4.1'
+- '4.5'
+- '7.3'
+- '13.1'
+- '14.1'
+pipeline_stage: task2b_pending
 task6_state: reviewed
-task9_state: pending
-task9_result: rework-done
+task9_state: reviewed
+task9_result: needs-rework
 task2b_state: pending
-reviewed_by: "openclaw-task6"
-reviewed_date: "2026-04-21"
-task6_result: "needs-rework"
+reviewed_by: openclaw-task6
+reviewed_date: '2026-04-21'
+task6_result: needs-rework
+task9_reviewed_date: '2026-04-21'
+task9_reviewed_by: openclaw-task9
+last_task9_at: '2026-04-21T22:00:33.103917+08:00'
 ---
 
 # dumpsys 系列命令
