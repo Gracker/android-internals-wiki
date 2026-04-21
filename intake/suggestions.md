@@ -4484,3 +4484,27 @@
 - - **问题描述**：BlastBufferQueue 并不是“替代” BufferQueue。BlastBufferQueue 的引入改变了 SurfaceFlinger 的合成提交方式，Producer 端通过 BLAST 提交事务，但底层跨进程的内存流转仍然建立在 BufferQueue 之上。 (来自 ch15.1)
 
 - - **建议**：改为“Android 12 引入了 BlastBufferQueue，改变了 BufferQueue 的事务提交模式（将 Buffer 的提交合并到 WindowManager 的 SurfaceControl 事务中）”。 (来自 ch15.1)
+
+## [Task9 Deep Review] 4.2 Linux 内核内存管理 — 2026-04-21
+- **类型**：源码准确性
+- **位置**：L322
+- **问题**：把 `DmaBufTotal`、`DmaBufMapped`、`DmaBufUnmapped` 写成 `/proc/meminfo` 的固定字段，和 Android 12+ 常见的 DMA-BUF 观测入口不一致。读者按这一条去核对时，很容易抓不到对应数据。
+- **建议**：把观测入口改成 `dmabufinfo` / `/sys/kernel/dmabuf/buffers` / `Debug.getDmabufTotalExportedKb()` 这条链，并说明 `dmabufMapped`、`dmabufUnmapped` 属于 Android 侧核算口径，不要直接写成 `/proc/meminfo` 字段。
+
+## [Task9 Deep Review] 4.3 ART 虚拟机内存管理 — 2026-04-21
+- **类型**：数据缺失
+- **位置**：L399-L433
+- **问题**：Perfetto 观察段把 `art_gc` counter track 和 `AllocObject` slice 写成默认可见，并直接给出 `track.name LIKE '%art_gc%'` 的 SQL。但标准 Perfetto 抓取并不稳定暴露这两个名字，缺少 trace config、atrace category 或构建前提时，这段查询不可直接复现。
+- **建议**：补一段“抓取前提”，写清需要的 trace categories / 构建条件 / 版本边界，再把 SQL 改成和目标 trace 真正可见的 track、slice 名称对齐。
+
+## [Task9 Deep Review] 5.1 Linux 进程调度基础 — 2026-04-21
+- **类型**：知识盲区
+- **位置**：观察路径整体
+- **问题**：章节从调度原理直接跳到 Perfetto，缺少 `dumpsys cpuinfo` 这一条 Android 实战里最常用的快速分诊入口。没有这一步，读者在拿不到 trace 时缺少低成本的 first-pass 观测手段。
+- **建议**：补一个 `dumpsys cpuinfo` 小节，说明 CPU usage per process、load average、top runnable 线程怎么读，再衔接到 Perfetto 的 runqueue / Runnable 分析。
+
+## [Task9 Deep Review] 4.3 ART 虚拟机内存管理 — 2026-04-21
+- **类型**：数据缺失
+- **位置**：L444-L447
+- **问题**：把“中等复杂度应用”的 Young GC、Full GC、GC 吞吐量直接写成默认正常值，但没有设备、collector、heap 上限、Android 版本和 workload 条件。
+- **建议**：把这些数字改成“经验阈值”并补测试条件，或者删掉固定数值，改成“同设备同版本下对比基线”的观察方法。
