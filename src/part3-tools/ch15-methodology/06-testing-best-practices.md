@@ -5,8 +5,8 @@ section: "15.6"
 status: ready-for-review
 drafted_date: "2026-04-04"
 applicable_versions: "Android 8 (API 26) - Android 16 (API 36)"
-last_verified: "2026-04-04"
-last_verified_against: "developer.android.com"
+last_verified: "2026-04-21"
+last_verified_against: "developer.android.com, firebase.google.com, androidx-main, AOSP android-14.0.0_r1"
 confidence: medium
 sources:
   - type: official
@@ -15,17 +15,28 @@ sources:
     path: "developer.android.com/topic/performance/benchmarking/benchmarking-in-ci"
   - type: official
     path: "developer.android.com/topic/performance/benchmarking/macrobenchmark-overview"
+  - type: official
+    path: "developer.android.com/reference/kotlin/androidx/benchmark/macro/CompilationMode"
+  - type: official
+    path: "firebase.google.com/docs/perf-mon/troubleshooting#performance-monitoring-limits"
+  - type: aosp
+    path: "frameworks/base/services/core/java/com/android/server/power/ThermalManagerService.java"
 tags:
   - android
   - benchmark
   - research
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 reviewed_by: openclaw-task6
 reviewed_date: "2026-04-17"
 task6_result: needs-rework
 task9_state: pending
 task2b_state: fixed
+task2b_result: fixed
+task9_result: needs-rework
+task9_reviewed_by: openclaw-task9
+task9_reviewed_date: "2026-04-21"
+last_task9_at: "2026-04-21T09:26:24+08:00"
 ---
 
 
@@ -171,9 +182,9 @@ adb shell "echo 1785600 > /sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq"
 
 [已验证: AOSP sysfs 接口, /sys/devices/system/cpu/cpu*/cpufreq/ 路径在 ARM64 内核中通用。具体频率值因 SoC 而异，可通过 `cat scaling_available_frequencies` 查询。]
 
-更常用的做法是使用 `adb shell settings put global low_power 0` 确保系统不进入低功耗模式，配合 `adb shell cmd thermal override 0`（Pixel 设备，需要 root，将温控状态强制覆盖为正常级别）或 `adb shell dumpsys thermalservice` 查看当前温控状态来辅助排查。[待验证: thermal override 命令在不同 OEM 设备上的可用性]
+更常用的做法是使用 `adb shell settings put global low_power 0` 确保系统不进入低功耗模式，再配合 `adb shell cmd thermalservice override-status 0` 临时把热状态锁到 `THERMAL_STATUS_NONE`。测试结束后用 `adb shell cmd thermalservice reset` 恢复默认热控，执行前先用 `adb shell cmd thermalservice help` 或 `adb shell dumpsys thermalservice` 确认设备是否开放了这组 shell 命令。[已验证: AOSP android-14.0.0_r1, `frameworks/base/services/core/java/com/android/server/power/ThermalManagerService.java` 的 shell 命令为 `override-status` 与 `reset`]
 
-Macrobenchmark 库在内部会自动执行一些环境稳定化操作——它会在每次测量前设置设备为"适合测量"的状态，包括关闭多窗口模式、设置屏幕亮度为固定值等 [已验证: 官方文档, developer.android.com/topic/performance/benchmarking/macrobenchmark-overview]。
+Macrobenchmark 库在内部会自动执行一些环境稳定化操作，它会在每次测量前设置设备为"适合测量"的状态，包括关闭多窗口模式、设置屏幕亮度为固定值等 [已验证: 官方文档, developer.android.com/topic/performance/benchmarking/macrobenchmark-overview]。
 
 ### 屏幕亮度与显示设置
 
@@ -212,36 +223,45 @@ Google 官方建议 Macrobenchmark 的迭代次数至少 **10 次** [已验证: 
 
 ### Warm-up 轮次
 
-Warm-up（预热）是处理 JIT 编译和缓存冷启动效应的标准方法。基本思路是：先跑几次不记录结果，让系统"热起来"，然后再开始正式测量。
-
-在 Macrobenchmark 中，warmup 通过 `CompilationMode` 来控制：
+Warm-up（预热）用于消除 JIT 和 profile 收集阶段的初始波动。Macrobenchmark 当前通过 `CompilationMode` 明确控制预编译状态，示例代码也要跟着当前 API 一起更新：
 
 ```kotlin
-@BenchmarkRule
+private const val TARGET_PACKAGE = "com.example.app"
+
+@get:Rule
 val benchmarkRule = MacrobenchmarkRule()
 
 @Test
-fun startupWithBaselineProfile() = benchmarkRule.measureRepeated(
-    packageName = "com.example.app",
+fun startupWithPartialCompilation() = benchmarkRule.measureRepeated(
+    packageName = TARGET_PACKAGE,
     metrics = listOf(StartupTimingMetric()),
-    compilationMode = CompilationMode.DEFAULT(),  // 使用 Baseline Profile
+    compilationMode = CompilationMode.Partial(
+        baselineProfileMode = BaselineProfileMode.Require,
+        warmupIterations = 3,
+    ),
     iterations = 10,
-    startupMode = StartupMode.COLD
+    startupMode = StartupMode.COLD,
 ) {
-    // 测量冷启动
     pressHome()
-    startActivityAndWait()
+    startActivityAndWait(
+        Intent(Intent.ACTION_MAIN).apply {
+            setPackage(TARGET_PACKAGE)
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+    )
 }
 ```
 
-`CompilationMode` 有几种模式值得理解：
+`CompilationMode` 现在主要看四种口径：
 
-- **`DEFAULT()`**：如果 App 包含 Baseline Profile，会先安装 Profile 再测量。这模拟的是"用户从应用商店安装后"的真实体验
-- **`SpeedProfile()`**：先跑几次 warmup 收集 profiling 数据，然后用这些数据做 profile-guided 编译。这模拟的是"App 已经使用一段时间，系统已经优化过"的状态
-- **`None()`**：不做任何预编译，模拟最差情况（刚安装、没有任何优化）
-- **`Full()`**：完全 AOT 编译，模拟所有代码都已预编译的理想情况
+- **`CompilationMode.DEFAULT`**：平台默认安装态。API 24+ 上等价于 `Partial(BaselineProfileMode.UseIfAvailable)`，适合模拟用户刚安装后的常见状态
+- **`CompilationMode.Partial(...)`**：显式指定部分预编译。可以用 `BaselineProfileMode.Require` 校验 Baseline Profile 是否真的生效，也可以用 `warmupIterations` 模拟 profile guided 编译后的状态
+- **`CompilationMode.None()`**：不做预编译，适合观察 fresh install 的最差启动路径
+- **`CompilationMode.Full()`**：完全 AOT 编译，适合在实验环境里压低 JIT 噪声，但不代表大多数用户设备上的默认状态
 
-在不同 Compilation Mode 之间对比结果，可以量化 Baseline Profile 带来的具体收益。通常 `DEFAULT()` 和 `None()` 之间的差距就是 Baseline Profile 的优化幅度，Android 官方数据显示这个差距可以达到 30% [已验证: 官方文档, developer.android.com/topic/performance/benchmarking/macrobenchmark-overview]。
+旧资料里常见的 `SpeedProfile()` 已经不在当前公开 API 中。如果你想表达"先跑几轮再按热点编译"，现在应改用 `CompilationMode.Partial(warmupIterations = N)` 这组参数。
+
+对比 `DEFAULT`、`Partial(...)` 和 `None()` 可以量化 Baseline Profile 与 warm-up 的收益。具体提升幅度要看你的 App、构建配置和测试设备，不要直接套用固定百分比。
 
 ### 冷启动 vs 热启动
 
@@ -413,12 +433,17 @@ fun startupBenchmark() {
     benchmarkRule.measureRepeated(
         packageName = "com.example.app",
         metrics = listOf(StartupTimingMetric()),
-        compilationMode = CompilationMode.DEFAULT(),
+        compilationMode = CompilationMode.DEFAULT,
         iterations = 10,
-        startupMode = StartupMode.COLD
+        startupMode = StartupMode.COLD,
     ) {
         pressHome()
-        startActivityAndWait()
+        startActivityAndWait(
+            Intent(Intent.ACTION_MAIN).apply {
+                setPackage("com.example.app")
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+        )
     }
 }
 ```
@@ -431,23 +456,24 @@ Firebase Performance Monitoring（FPM）是 Google 提供的线上性能监控�
 
 ### FPM 的主要限制
 
-**采样率不可控**。FPM 使用固定采样策略，开发者无法精确控制哪些用户的数据被收集、收集多少。这意味着在某些场景下你可能拿不到足够的样本量来做有统计意义的分析。
+**采样策略不透明**。FPM 的采样由平台侧控制，开发者不能按实验批次或设备分层精确指定样本量。它更适合看整体趋势，不适合拿来做严格的实验设计。
 
-**数据粒度有限**。FPM 提供的是聚合数据（P50/P95/P99），不支持单次会话级别的分析。如果你需要分析某个特定用户的性能问题，FPM 帮不上忙。
+**自定义 Trace 的限制是按单条 trace 计算**。官方约束包括：trace name 最长 100 个字符、每条 custom code trace 最多 5 个 custom attributes、最多 32 个 metrics（含默认的 Duration）。这里要控制的是字段数量和名称基数，不是简单记成"应用最多 100 个 Trace" [已验证: Firebase Performance Monitoring limits, firebase.google.com/docs/perf-mon/troubleshooting#performance-monitoring-limits]。
 
-**自定义 Trace 有数量限制**。每个 App 最多只能创建一定数量的自定义 Trace（官方文档建议不超过 100 个），超过后新创建的 Trace 会被丢弃 [已验证: 官方文档, firebase.google.com/docs/perf-mon]。
+**数据粒度有限**。FPM 提供的是聚合指标，适合看 P50/P95/P99 和版本趋势，不适合还原单个会话的完整上下文。
 
-**延迟**。FPM 的数据上报有延迟，通常在 24-48 小时后才能在 Dashboard 上看到。这对快速迭代的开发节奏来说太慢了——你今天发布的版本，后天才能看到性能数据。
+**数据延迟**。FPM 的数据上报通常存在小时级到天级延迟，适合版本趋势观察，不适合发布后立刻做小时级回归判定。
 
 ### 替代方案
 
-对于需要更细粒度、更低延迟的线上性能监控，可以考虑以下方案：
+对于需要更细粒度或更低延迟的线上性能监控，可以考虑以下方案：
 
-- **自建性能数据采集**：通过 `Choreographer.FrameCallback` 采集帧时间、通过 `System.nanoTime()` 标记关键时间点、通过 `ActivityManager.RunningAppProcessInfo` 监控内存状态，将数据批量上报到自建服务端。这就是 §15.5 线上性能监控中介绍的方法
-- **APM 平台**：使用第三方 APM（Application Performance Monitoring）平台，如 Matrix（微信开源）、Booster、DoKit 等。这些工具通常提供比 FPM 更细粒度的数据采集和分析能力
-- **Google Chrome UX Report (CrUX)**：虽然 CrUX 主要是 Web 性能指标，但 Android 上也可以通过 `WebView` 相关的 API 获取类似的用户体验数据
+- **自建性能数据采集**：通过 `Choreographer.FrameCallback`、`System.nanoTime()`、自定义埋点和批量上报拿到会话级数据。这是 §15.5 线上性能监控里展开的方法
+- **APM 平台**：使用 Matrix、Booster、DoKit 等工具补足更细粒度的端侧采样与聚合
+- **Android vitals / Play Console**：用来观察慢帧、卡帧、ANR 等版本级趋势，适合和实验室基准测试做交叉验证
+- **CrUX**：只适用于公开网页在 Chrome 侧的真实用户指标，不覆盖 Android WebView 容器内的页面。App 内嵌 WebView 仍然要靠自埋点或 APM 采集
 
-在实际项目中，通常的做法是：**FPM 作为基础的线上监控（零接入成本），自建或 APM 平台作为深度分析工具**。两者互补，不互斥。
+实战里常见的组合是：实验室基准测试负责回归闸门，FPM 或 Android vitals 负责版本趋势，自建/APM 负责会话级排查。
 
 ## 在 Perfetto 中的表现
 
@@ -497,11 +523,15 @@ Firebase Performance Monitoring（FPM）是 Google 提供的线上性能监控�
 
 - [Benchmarking in CI | Android Developers](https://developer.android.com/topic/performance/benchmarking/benchmarking-in-ci) — 官方 CI 集成指南
 - [Macrobenchmark | Android Developers](https://developer.android.com/topic/performance/benchmarking/macrobenchmark-overview) — Macrobenchmark 使用文档
+- [CompilationMode | Android Developers](https://developer.android.com/reference/kotlin/androidx/benchmark/macro/CompilationMode) — Macrobenchmark 编译模式定义
+- [Firebase Performance Monitoring limits | Firebase](https://firebase.google.com/docs/perf-mon/troubleshooting#performance-monitoring-limits) — 自定义 Trace 的字段限制
 - [Microbenchmark | Android Developers](https://developer.android.com/topic/performance/benchmarking/microbenchmark-overview) — Microbenchmark 使用文档
 - [Baseline Profiles | Android Developers](https://developer.android.com/topic/performance/baselineprofiles) — Baseline Profiles 生成与使用
 - [Measure performance | Android Developers](https://developer.android.com/topic/performance) — 性能测量总入口
+- AOSP 路径：`frameworks/base/services/core/java/com/android/server/power/ThermalManagerService.java`（thermalservice shell 命令）
 - AOSP 路径：`frameworks/base/core/java/android/app/Activity.java`（启动时间相关 API）
 - AOSP 路径：`frameworks/base/core/java/android/view/Choreographer.java`（帧回调 API）
+- AndroidX 路径：`androidx-main/benchmark/benchmark-macro/src/main/java/androidx/benchmark/macro/CompilationMode.kt`（CompilationMode 定义）
 
 
 ### 性能分析误区：峰值帧率 vs 稳态帧率

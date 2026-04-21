@@ -1,31 +1,31 @@
 {
-  "generated_at": "2026-04-21T09:10:26+08:00",
+  "generated_at": "2026-04-21T10:51:22+08:00",
   "state_machine_version": "v2",
   "total_sections": 212,
   "metrics": {
     "total": 212,
     "unknown": 37,
-    "last_updated": "2026-04-21T09:10:26+08:00",
+    "last_updated": "2026-04-21T10:51:22+08:00",
     "task2b_state_counts": {
-      "unknown": 37,
-      "fixed": 136,
-      "pending": 22,
-      "idle": 17
+      "fixed": 137,
+      "idle": 15,
+      "pending": 23,
+      "unknown": 37
     },
     "task9_state_counts": {
-      "unknown": 36,
-      "reviewed": 57,
-      "pending": 118,
-      "fixed": 1
+      "fixed": 1,
+      "pending": 117,
+      "reviewed": 58,
+      "unknown": 36
     },
     "pipeline_stage_counts": {
-      "unknown": 36,
-      "task6_pending": 99,
-      "task2b_pending": 21,
       "ready-to-publish": 26,
-      "task9_pending": 30
+      "task2b_pending": 21,
+      "task6_pending": 101,
+      "task9_pending": 28,
+      "unknown": 36
     },
-    "pipeline_task9_pending": 30,
+    "pipeline_task9_pending": 28,
     "pipeline_task2b_pending": 21,
     "pipeline_ready_to_publish": 26,
     "ready-to-publish": 0,
@@ -34,29 +34,29 @@
   },
   "pipeline": {
     "pipeline_stage_counts": {
-      "unknown": 36,
-      "task6_pending": 99,
-      "task2b_pending": 21,
       "ready-to-publish": 26,
-      "task9_pending": 30
+      "task2b_pending": 21,
+      "task6_pending": 101,
+      "task9_pending": 28,
+      "unknown": 36
     },
     "task2b_state_counts": {
-      "unknown": 37,
-      "fixed": 136,
-      "pending": 22,
-      "idle": 17
+      "fixed": 137,
+      "idle": 15,
+      "pending": 23,
+      "unknown": 37
     },
     "task6_state_counts": {
-      "unknown": 30,
-      "reviewed": 91,
-      "revisiting": 90,
-      "pending": 1
+      "pending": 1,
+      "reviewed": 89,
+      "revisiting": 92,
+      "unknown": 30
     },
     "task9_state_counts": {
-      "unknown": 36,
-      "reviewed": 57,
-      "pending": 118,
-      "fixed": 1
+      "fixed": 1,
+      "pending": 117,
+      "reviewed": 58,
+      "unknown": 36
     }
   },
   "issues": {
@@ -1951,14 +1951,18 @@
       "title": "案例集",
       "chapter": "9.5",
       "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
-      "task9_state": "pending",
-      "task2b_state": "idle",
+      "task9_state": "reviewed",
+      "task2b_state": "pending",
       "reviewed_date": "2026-04-16",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
-      "section": "9.5"
+      "section": "9.5",
+      "task9_result": "needs-rework",
+      "task9_reviewed_by": "openclaw-task9",
+      "task9_reviewed_date": "2026-04-21",
+      "last_task9_at": "2026-04-21T09:26:24+08:00"
     },
     "src/part2-performance/ch09-anr/06-notification-performance-anr.md": {
       "path": "src/part2-performance/ch09-anr/06-notification-performance-anr.md",
@@ -3098,14 +3102,18 @@
       "title": "竞品分析方法",
       "chapter": "15.4",
       "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
-      "task9_state": "pending",
-      "task2b_state": "idle",
+      "task9_state": "reviewed",
+      "task2b_state": "pending",
       "reviewed_date": "2026-04-17",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
-      "section": "15.4"
+      "section": "15.4",
+      "task9_result": "needs-rework",
+      "task9_reviewed_by": "openclaw-task9",
+      "task9_reviewed_date": "2026-04-21",
+      "last_task9_at": "2026-04-21T09:26:24+08:00"
     },
     "src/part3-tools/ch15-methodology/05-online-monitoring.md": {
       "path": "src/part3-tools/ch15-methodology/05-online-monitoring.md",
@@ -3133,12 +3141,16 @@
       "status": "ready-for-review",
       "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
-      "task9_state": "pending",
-      "task2b_state": "fixed",
+      "task9_state": "reviewed",
+      "task2b_state": "pending",
       "reviewed_date": "2026-04-17",
       "reviewed_by": "openclaw-task6",
       "task6_result": "needs-rework",
-      "section": "15.6"
+      "section": "15.6",
+      "task9_result": "needs-rework",
+      "task9_reviewed_by": "openclaw-task9",
+      "task9_reviewed_date": "2026-04-21",
+      "last_task9_at": "2026-04-21T09:26:24+08:00"
     },
     "src/part3-tools/ch15-methodology/07-aosp-reading.md": {
       "path": "src/part3-tools/ch15-methodology/07-aosp-reading.md",
@@ -3429,8 +3441,9 @@
   },
   "summary": {
     "status_counts": {
+      "finalized": 26,
       "ready-for-review": 149,
-      "finalized": 26
+      "unknown": 37
     }
   },
   "7.13": {
@@ -3520,12 +3533,26 @@
       "p0": 1,
       "p1": 1,
       "p2": 4
+    },
+    {
+      "date": "2026-04-21",
+      "task": "task9-deep-tech-review",
+      "chapters": [
+        "15.4",
+        "15.6",
+        "9.5"
+      ],
+      "result": "0 pass-tech-review, 3 needs-rework",
+      "p0": 3,
+      "p1": 4,
+      "p2": 2
     }
   ],
-  "last_review": "2026-04-21T07:38",
+  "last_review": "2026-04-21T09:26",
   "status_counts": {
+    "finalized": 26,
     "ready-for-review": 149,
-    "finalized": 26
+    "unknown": 37
   },
   "8.9": {
     "status": "ready-for-review",

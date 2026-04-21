@@ -8,7 +8,7 @@ drafted_by: "openclaw-task2a"
 reviewed_date: "2026-04-16"
 reviewed_by: "openclaw-task6"
 applicable_versions: "Android 8.0 (API 26) - Android 16 (API 36)"
-last_verified: "2026-04-02"
+last_verified: "2026-04-21"
 last_verified_against: "AOSP android-14.0.0_r1"
 confidence: medium
 sources:
@@ -30,11 +30,16 @@ sources:
     path: "frameworks/native/libs/binder/ProcessState.cpp"
 tags: ['anr', 'case-study', 'input-dispatching', 'sharedpreferences', 'system-load', 'binder', 'process-freeze', 'deadlock', 'lock-ordering', 'synchronized']
 related_chapters: ["9.1", "9.2", "9.3", "9.4", "1.4"]
-pipeline_stage: task9_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
 task9_state: pending
-task2b_state: idle
+task2b_state: fixed
+task2b_result: fixed
+task9_result: needs-rework
+task9_reviewed_by: openclaw-task9
+task9_reviewed_date: "2026-04-21"
+last_task9_at: "2026-04-21T09:26:24+08:00"
 ---
 
 # 案例集
@@ -353,7 +358,7 @@ Service 的 `onBind()` 超时，触发了 Service ANR（前台 Service 20 秒超
   | held by thread "SyncWorker-2"
   at com.example.app.data.DataManager.flushCache(DataManager.java:187)
   at com.example.app.sync.SyncService.onBind(SyncService.java:45)
-``'
+```
 
 主线程处于 `BLOCKED` 状态，在 `DataManager.flushCache()` 中等待获取 `DatabaseHelper` 实例的锁（地址 `0x0f3c2a81`），这把锁被 `SyncWorker-2` 线程持有。
 
@@ -365,7 +370,7 @@ Service 的 `onBind()` 超时，触发了 Service ANR（前台 Service 20 秒超
   | held by thread "main"
   at com.example.app.data.DatabaseHelper.query(DatabaseHelper.java:92)
   at com.example.app.sync.SyncWorker.syncContacts(SyncWorker.java:134)
-``'
+```
 
 经典死锁的轮廓已经出来了：
 
@@ -413,15 +418,15 @@ public synchronized Cursor query(String table, String selection) {
 1. **统一锁获取顺序** — 规定所有代码路径必须先获取 `DataManager` 的锁，再获取 `DatabaseHelper` 的锁。将 `DatabaseHelper.query()` 中的 `synchronized` 改为在方法入口先获取 `DataManager` 锁或改用细粒度锁
 2. **缩小锁的范围** — `DatabaseHelper.query()` 不需要在持有锁的情况下回调 `DataManager`，可以将结果先缓存到局部变量，释放锁后再回调
 3. **使用 `tryLock` 替代阻塞等待** — 将 `synchronized` 替换为 `ReentrantLock.tryLock(timeout)`，在超时后记录告警并走降级路径，而不是无限等待
-4. **静态检测** — 启用 Android Lint 的 `"DuplicateIds"/"NestedScrolling"/` 等资源竞争检测规则，[存疑: "DuplicateIds"/"NestedScrolling" Lint 规则分别检查 XML 重复 ID 和嵌套滚动，与 synchronized 锁顺序/死锁检测无关，引用疑似错误] 配合 `-extra-check` 自定义锁顺序检查
+4. **静态检测** — Android Lint 没有现成的 `synchronized` 锁顺序检查规则。更可靠的做法是用 Error Prone、SpotBugs 或自定义静态分析约束锁层级，再配合 code review 检查跨类回调时的持锁边界
 
 ### 举一反三
 
 trace 中出现 `BLOCKED` 状态且堆栈指向 `synchronized` 方法，是死锁的典型信号。分析方法：找到主线程等待的锁（trace 中有 `waiting to lock` 和 `held by thread` 信息），再看持有者的堆栈是否也在等另一把锁。如果形成环，就是死锁。
 
-另一类常见的 Android 死锁是 **Binder 线程池耗尽**：主线程同步调用其他进程的 Binder 接口（占一个 Binder 线程），而对方进程又回调到本进程（需要另一个 Binder 线程）。当进程的 16 个 Binder 线程（默认值，见 `ProcessState` 源码）全部被同步调用占满时，回调无法进来，形成隐式死锁。这类问题在 trace 中表现为大量 `Binder:XXX_X` 线程处于 `WAITING` 或 `BLOCKED` 状态。
+另一类常见的 Android 死锁是 **Binder 线程池被同步调用压满**：主线程同步调用其他进程的 Binder 接口，而对方进程又回调到本进程，这时本进程需要有空闲 Binder 线程继续接收事务。AOSP android-14.0.0_r1 的 `frameworks/native/libs/binder/ProcessState.cpp` 定义 `DEFAULT_MAX_BINDER_THREADS = 15`，这是 `setThreadPoolMaxThreadCount()` 下发给 Binder driver 的默认上限。调用方线程如果主动 `joinThreadPool()`，总可用处理线程可能比这个值再多 1 个，所以实战里不要把它硬记成“固定 16 个 Binder 线程”。这类问题在 trace 中更常见的表现，是大量 `Binder:XXX_X` 线程堵在事务等待上，主线程也卡在同步 Binder 调用链里。
 
-[已验证: Binder 线程池默认大小为 16，见 AOSP frameworks/native/libs/binder/ProcessState.cpp 中 `SP_BUNDLE_THREADS` 的默认值（Android 14），部分设备通过 `persist.device_config.bundle_threads` 自定义]
+[已验证: AOSP android-14.0.0_r1, `frameworks/native/libs/binder/ProcessState.cpp` 定义 `DEFAULT_MAX_BINDER_THREADS = 15`，并通过 `setThreadPoolMaxThreadCount()` 设置线程池上限。文中已删除不存在的 `SP_BUNDLE_THREADS` 常量与 `persist.device_config.bundle_threads` 属性名。]
 
 ## 分析方法总结
 
@@ -462,6 +467,7 @@ Shopee 团队的 MDAP LooperMonitor 方案是一个参考实践。核心思路�
 - `frameworks/base/core/java/android/app/QueuedWork.java`
 - `frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp`
 - `frameworks/base/services/core/java/com/android/server/power/Notifier.java`
+- `frameworks/native/libs/binder/ProcessState.cpp`
 
 ### 文章与资料
 
