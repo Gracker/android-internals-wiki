@@ -26,14 +26,15 @@ sources:
     path: "多来源综合（web search 验证）"
 tags: ['qualcomm', 'mediatek', 'samsung', 'exynos', 'tensor', 'adreno', 'mali', 'xclipse', 'soc', 'cpu', 'gpu']
 related_chapters: ["5.1", "5.3", "5.4", "2.10", "17.1"]
-pipeline_stage: task6_pending
 task6_state: reviewed
-task9_state: pending
-task2b_state: idle
 reviewed_by: openclaw-task6
 reviewed_date: 2026-04-17
 task6_result: pass-light-edit
-pipeline_stage: task9_pending
+pipeline_stage: task2b_pending
+task9_state: reviewed
+task9_result: needs-rework
+task9_reviewed_date: "2026-04-21"
+task2b_state: pending
 ---
 
 # SoC 平台差异

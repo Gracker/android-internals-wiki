@@ -30,10 +30,12 @@ polish_count: 1
 polish_date: "2026-04-09"
 polish_by: "task2b-polish"
 related_chapters: ["10.1", "10.2", "10.3", "10.4", "10.6"]
-pipeline_stage: task9_pending
 task6_state: reviewed
-task9_state: pending
-task2b_state: idle
+pipeline_stage: task2b_pending
+task9_state: reviewed
+task9_result: needs-rework
+task9_reviewed_date: "2026-04-21"
+task2b_state: pending
 ---
 
 # 案例集
